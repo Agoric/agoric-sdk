@@ -1,11 +1,11 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-import { heapVowE as E } from '@agoric/vow/vat.js';
+import { prepareSwingsetVowTools } from '@agoric/vow/vat.js';
 import { setupZCFTest } from '@agoric/zoe/test/unitTests/zcf/setupZcfTest.js';
 import type { CosmosChainInfo, IBCConnectionInfo } from '../src/cosmos-api.js';
 import type { Chain } from '../src/orchestration-api.js';
 import { provideOrchestration } from '../src/utils/start-helper.js';
-import { commonSetup } from './supports.js';
+import { commonSetup, provideDurableZone } from './supports.js';
 
 const test = anyTest;
 
@@ -39,13 +39,15 @@ export const mockChainConnection: IBCConnectionInfo = {
   },
 };
 
-const makeLocalOrchestrationAccountKit = () => assert.fail(`not used`);
-
 test('chain info', async t => {
   const { bootstrap, facadeServices, commonPrivateArgs } = await commonSetup(t);
 
-  const zone = bootstrap.rootZone;
   const { zcf } = await setupZCFTest();
+
+  // After setupZCFTest because this disables relaxDurabilityRules
+  // which breaks Zoe test setup's fakeVatAdmin
+  const zone = provideDurableZone('test');
+  const vt = prepareSwingsetVowTools(zone);
 
   const orchKit = provideOrchestration(
     zcf,
@@ -74,7 +76,7 @@ test('chain info', async t => {
   });
 
   const result = (await handle()) as Chain<any>;
-  t.deepEqual(await E.when(result.getChainInfo()), mockChainInfo);
+  t.deepEqual(await vt.when(result.getChainInfo()), mockChainInfo);
 });
 
 test.todo('contract upgrade');

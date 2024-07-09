@@ -47,7 +47,7 @@ export const start = async (zcf, privateArgs, baggage) => {
     zcf,
     privateArgs.timerService,
     vowTools,
-    makeChainHub(privateArgs.agoricNames),
+    makeChainHub(privateArgs.agoricNames, vowTools),
   );
 
   // ----------------

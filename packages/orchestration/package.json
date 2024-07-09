@@ -53,6 +53,7 @@
     "@endo/patterns": "^1.4.0"
   },
   "devDependencies": {
+    "@agoric/swingset-liveslots": "^0.10.2",
     "@chain-registry/client": "^1.47.4",
     "@cosmjs/amino": "^0.32.3",
     "@cosmjs/proto-signing": "^0.32.3",

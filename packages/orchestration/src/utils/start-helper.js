@@ -51,9 +51,9 @@ export const provideOrchestration = (
   const zone = makeDurableZone(baggage);
   const { agoricNames, timerService } = remotePowers;
 
-  const chainHub = makeChainHub(agoricNames);
-
   const vowTools = prepareVowTools(zone.subZone('vows'));
+
+  const chainHub = makeChainHub(agoricNames, vowTools);
 
   const { makeRecorderKit } = prepareRecorderKitMakers(baggage, marshaller);
   const makeLocalOrchestrationAccountKit = prepareLocalOrchestrationAccountKit(

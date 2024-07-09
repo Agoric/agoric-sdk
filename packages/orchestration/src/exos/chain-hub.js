@@ -3,18 +3,12 @@ import { E } from '@endo/far';
 import { M } from '@endo/patterns';
 
 import { VowShape } from '@agoric/vow';
-// eslint-disable-next-line no-restricted-syntax
-import { heapVowTools } from '@agoric/vow/vat.js';
 import { makeHeapZone } from '@agoric/zone';
 import { CosmosChainInfoShape, IBCConnectionInfoShape } from '../typeGuards.js';
 
-// FIXME test thoroughly whether heap suffices for ChainHub
-// eslint-disable-next-line no-restricted-syntax
-const { allVows, watch } = heapVowTools;
-
 /**
  * @import {NameHub} from '@agoric/vats';
- * @import {Vow} from '@agoric/vow';
+ * @import {Vow, VowTools} from '@agoric/vow';
  * @import {CosmosChainInfo, IBCConnectionInfo} from '../cosmos-api.js';
  * @import {ChainInfo, KnownChains} from '../chain-info.js';
  * @import {Remote} from '@agoric/internal';
@@ -94,9 +88,10 @@ const ChainHubI = M.interface('ChainHub', {
  * hub and repeat the registrations.
  *
  * @param {Remote<NameHub>} agoricNames
- * @param {Zone} [zone]
+ * @param {VowTools} vowTools
  */
-export const makeChainHub = (agoricNames, zone = makeHeapZone()) => {
+export const makeChainHub = (agoricNames, vowTools) => {
+  const zone = makeHeapZone();
   /** @type {MapStore<string, CosmosChainInfo>} */
   const chainInfos = zone.mapStore('chainInfos', {
     keyShape: M.string(),
@@ -107,6 +102,89 @@ export const makeChainHub = (agoricNames, zone = makeHeapZone()) => {
     keyShape: M.string(),
     valueShape: IBCConnectionInfoShape,
   });
+
+  const lookupChainInfo = vowTools.retriable(
+    zone,
+    'lookupChainInfo',
+    /** @param {string} chainName */
+    // eslint-disable-next-line no-restricted-syntax -- TODO more exact rules for vow best practices
+    async chainName => {
+      await null;
+      try {
+        const chainInfo = await E(agoricNames).lookup(CHAIN_KEY, chainName);
+        // It may have been set by another concurrent call
+        // TODO consider makeAtomicProvider for vows
+        if (!chainInfos.has(chainName)) {
+          chainInfos.init(chainName, chainInfo);
+        }
+        return chainInfo;
+      } catch (e) {
+        console.error('lookupChainInfo', chainName, 'error', e);
+        throw makeError(`chain not found:${chainName}`);
+      }
+    },
+  );
+
+  const lookupConnectionInfo = vowTools.retriable(
+    zone,
+    'lookupConnectionInfo',
+    /**
+     * @param {string} chainId1
+     * @param {string} chainId2
+     */
+    // eslint-disable-next-line no-restricted-syntax -- TODO more exact rules for vow best practices
+    async (chainId1, chainId2) => {
+      await null;
+      const key = connectionKey(chainId1, chainId2);
+      try {
+        const connectionInfo = await E(agoricNames).lookup(
+          CONNECTIONS_KEY,
+          key,
+        );
+        // It may have been set by another concurrent call
+        // TODO consider makeAtomicProvider for vows
+        if (!connectionInfos.has(key)) {
+          connectionInfos.init(key, connectionInfo);
+        }
+        return connectionInfo;
+      } catch (e) {
+        console.error('lookupConnectionInfo', chainId1, chainId2, 'error', e);
+        throw makeError(`connection not found: ${chainId1}<->${chainId2}`);
+      }
+    },
+  );
+
+  /* eslint-disable no-use-before-define -- chainHub defined below */
+  const lookupChainsAndConnection = vowTools.retriable(
+    zone,
+    'lookupChainsAndConnection',
+    /**
+     * @template {string} C1
+     * @template {string} C2
+     * @param {C1} chainName1
+     * @param {C2} chainName2
+     * @returns {Promise<
+     *   [ActualChainInfo<C1>, ActualChainInfo<C2>, IBCConnectionInfo]
+     * >}
+     */
+    // eslint-disable-next-line no-restricted-syntax -- TODO more exact rules for vow best practices
+    async (chainName1, chainName2) => {
+      const [chain1, chain2] = await vowTools.asPromise(
+        vowTools.allVows([
+          chainHub.getChainInfo(chainName1),
+          chainHub.getChainInfo(chainName2),
+        ]),
+      );
+      const connectionInfo = await vowTools.asPromise(
+        chainHub.getConnectionInfo(chain2, chain1),
+      );
+      return /** @type {[ActualChainInfo<C1>, ActualChainInfo<C2>, IBCConnectionInfo]} */ ([
+        chain1,
+        chain2,
+        connectionInfo,
+      ]);
+    },
+  );
 
   const chainHub = zone.exo('ChainHub', ChainHubI, {
     /**
@@ -133,19 +211,11 @@ export const makeChainHub = (agoricNames, zone = makeHeapZone()) => {
       // Either from registerChain or memoized remote lookup()
       if (chainInfos.has(chainName)) {
         return /** @type {Vow<ActualChainInfo<K>>} */ (
-          watch(chainInfos.get(chainName))
+          vowTools.asVow(() => chainInfos.get(chainName))
         );
       }
 
-      return watch(E(agoricNames).lookup(CHAIN_KEY, chainName), {
-        onFulfilled: chainInfo => {
-          chainInfos.init(chainName, chainInfo);
-          return chainInfo;
-        },
-        onRejected: _cause => {
-          throw makeError(`chain not found:${chainName}`);
-        },
-      });
+      return lookupChainInfo(chainName);
     },
     /**
      * @param {string} chainId1
@@ -167,18 +237,10 @@ export const makeChainHub = (agoricNames, zone = makeHeapZone()) => {
       const chainId2 = typeof chain2 === 'string' ? chain2 : chain2.chainId;
       const key = connectionKey(chainId1, chainId2);
       if (connectionInfos.has(key)) {
-        return watch(connectionInfos.get(key));
+        return vowTools.asVow(() => connectionInfos.get(key));
       }
 
-      return watch(E(agoricNames).lookup(CONNECTIONS_KEY, key), {
-        onFulfilled: connectionInfo => {
-          connectionInfos.init(key, connectionInfo);
-          return connectionInfo;
-        },
-        onRejected: _cause => {
-          throw makeError(`connection not found: ${chainId1}<->${chainId2}`);
-        },
-      });
+      return lookupConnectionInfo(chainId1, chainId2);
     },
 
     /**
@@ -191,21 +253,8 @@ export const makeChainHub = (agoricNames, zone = makeHeapZone()) => {
      * >}
      */
     getChainsAndConnection(chainName1, chainName2) {
-      return watch(
-        allVows([
-          chainHub.getChainInfo(chainName1),
-          chainHub.getChainInfo(chainName2),
-        ]),
-        {
-          onFulfilled: ([chain1, chain2]) => {
-            return watch(chainHub.getConnectionInfo(chain2, chain1), {
-              onFulfilled: connectionInfo => {
-                return [chain1, chain2, connectionInfo];
-              },
-            });
-          },
-        },
-      );
+      // @ts-expect-error XXX generic parameter propagation
+      return lookupChainsAndConnection(chainName1, chainName2);
     },
   });
 
