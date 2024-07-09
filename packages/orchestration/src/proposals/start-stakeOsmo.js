@@ -66,7 +66,7 @@ export const startStakeOsmo = async ({
       icqEnabled: osmosis.icqEnabled,
     },
     privateArgs: {
-      orchestration: await cosmosInterchainService,
+      cosmosInterchainService: await cosmosInterchainService,
       storageNode,
       marshaller,
       timer: await chainTimerService,

@@ -69,7 +69,7 @@ const startContract = async ({
     terms,
     {
       marshaller,
-      orchestration,
+      cosmosInterchainService: orchestration,
       storageNode: storage.rootNode.makeChildNode(storagePath),
       timer,
     },

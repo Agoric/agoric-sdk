@@ -30,7 +30,7 @@ export const meta = harden({
     icqEnabled: M.boolean(),
   },
   privateArgsShape: {
-    orchestration: M.remotable('orchestration'),
+    cosmosInterchainService: M.remotable('cosmosInterchainService'),
     storageNode: StorageNodeShape,
     marshaller: M.remotable('marshaller'),
     timer: TimerServiceShape,
@@ -51,7 +51,7 @@ export const privateArgsShape = meta.privateArgsShape;
 /**
  * @param {ZCF<StakeIcaTerms>} zcf
  * @param {{
- *   orchestration: CosmosInterchainService;
+ *   cosmosInterchainService: CosmosInterchainService;
  *   storageNode: StorageNode;
  *   marshaller: Marshaller;
  *   timer: TimerService;
@@ -66,7 +66,12 @@ export const start = async (zcf, privateArgs, baggage) => {
     bondDenom,
     icqEnabled,
   } = zcf.getTerms();
-  const { orchestration, marshaller, storageNode, timer } = privateArgs;
+  const {
+    cosmosInterchainService: orchestration,
+    marshaller,
+    storageNode,
+    timer,
+  } = privateArgs;
 
   const zone = makeDurableZone(baggage);
 

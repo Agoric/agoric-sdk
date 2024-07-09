@@ -65,7 +65,7 @@ export const startStakeAtom = async ({
       icqEnabled: cosmoshub.icqEnabled,
     },
     privateArgs: {
-      orchestration: await cosmosInterchainService,
+      cosmosInterchainService: await cosmosInterchainService,
       storageNode,
       marshaller,
       timer: await chainTimerService,
