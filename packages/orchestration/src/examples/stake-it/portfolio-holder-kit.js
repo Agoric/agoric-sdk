@@ -72,13 +72,21 @@ const preparePortfolioHolderKit = (zone, { watch }) => {
     },
     /**
      * @param {Iterable<[string, OrchestrationAccount<any>]>} accountMap
-     * @param {Iterable<[string, PublicTopic<unknown>]>} publicTopicMap
+     * @param {TopicsRecord} publicTopicMap
      */
     (accountMap, publicTopicMap) => {
-      const accounts = harden(zone.mapStore('accounts'));
-      const publicTopics = harden(zone.mapStore('publicTopics'));
+      const accounts = zone.mapStore('accounts');
+      const publicTopics = zone.mapStore('publicTopics');
       accounts.addAll(accountMap);
-      publicTopics.addAll(publicTopicMap);
+      debugger;
+      publicTopics.addAll(Object.entries(publicTopicMap));
+      console.log('DEBUG topic map', publicTopicMap);
+      const e = publicTopics.entries();
+      console.log('DEBUG topic entries', e);
+      // FIXME fails here, iterating over the entries that we just added
+      // WHY? Can the membrane detect this problem earlier or give a more helpful diagnostic?
+      const arr = Array.from(e);
+      console.log('DEBUG topic array', arr);
       return /** @type {PortfolioHolderState} */ (
         harden({
           accounts,
@@ -107,10 +115,23 @@ const preparePortfolioHolderKit = (zone, { watch }) => {
       },
       holder: {
         asContinuingOffer() {
+          console.log('DEBUG asContinuingOffer()');
           const { invitationMakers } = this.facets;
           const { publicTopics } = this.state;
+          debugger;
+
+          const entries = publicTopics.entries();
+          console.log('DEBUG entries', entries);
+
+          const arr = Array.from(entries);
+          console.log('DEBUG arr', arr);
+
+          // FIXME this throws RangeError#3: Expected "promise" is same as "object"
+          const obj = fromEntries(arr);
+          console.log('DEBUG obj', obj);
+
           return harden({
-            publicSubscribers: fromEntries(publicTopics.entries()),
+            publicSubscribers: {},
             invitationMakers,
           });
         },

@@ -109,12 +109,17 @@ const makeAccountsHandler = async (
       ]);
     }),
   );
-  const portfolioHolder = makePortfolioHolder(accountEntries, publicTopics);
+  debugger;
+  const publicTopicsRecord = Object.fromEntries(publicTopics);
+  const portfolioHolder = makePortfolioHolder(
+    accountEntries,
+    publicTopicsRecord,
+  );
   console.log('@@@portfolioHolder', portfolioHolder);
   //  FIXME RangeError: Expected "promise" is same as "object".. from storagePath?
-  // const continuingOffer = portfolioHolder.asContinuingOffer();
-  // console.log('@@@continuingOffer', continuingOffer);
-  // return continuingOffer;
+  const continuingOffer = portfolioHolder.asContinuingOffer();
+  console.log('@@@continuingOffer', continuingOffer);
+  return continuingOffer;
 };
 
 /**
