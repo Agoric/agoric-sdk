@@ -1,10 +1,12 @@
 {
-  "$comment": "This SwingSet config file (see loadSwingsetConfigFile) is designed to bring up vaults test networks in an automated fashion. It includes coreProposals to start vaults. Testing facilities are limited to an initialPrice for ATOM and addresses with known keys.",
+  "$comment": "Not just vaults! This SwingSet config (see loadSwingsetConfigFile) started for integration testing of Vaults is designed to bring up vaults but became the defacto config for integration testing outside this repo (e.g. instagoric). It includes coreProposals to start Inter Protocol (including vaults) plus Orchestration. Testing facilities are limited to an initialPrice for ATOM and addresses with known keys.",
   "bootstrap": "bootstrap",
   "defaultReapInterval": 1000,
   "coreProposals": [
     "@agoric/builders/scripts/vats/init-core.js",
     "@agoric/builders/scripts/vats/init-network.js",
+    "@agoric/builders/scripts/vats/init-localchain.js",
+    "@agoric/builders/scripts/vats/init-transfer.js",
     {
       "module": "@agoric/builders/scripts/inter-protocol/init-core.js",
       "entrypoint": "defaultProposalBuilder",
