@@ -139,7 +139,12 @@ export const makeChainHub = (agoricNames, zone = makeHeapZone()) => {
 
       return watch(E(agoricNames).lookup(CHAIN_KEY, chainName), {
         onFulfilled: chainInfo => {
-          chainInfos.init(chainName, chainInfo);
+          if (chainInfos.has(chainName)) {
+            // XXX race conidtion?
+            chainInfos.set(chainName, chainInfo);
+          } else {
+            chainInfos.init(chainName, chainInfo);
+          }
           return chainInfo;
         },
         onRejected: _cause => {
