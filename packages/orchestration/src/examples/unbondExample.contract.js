@@ -1,4 +1,3 @@
-import { Far } from '@endo/far';
 import { M } from '@endo/patterns';
 import { withOrchestration } from '../utils/start-helper.js';
 
@@ -67,21 +66,20 @@ const contract = async (zcf, privateArgs, zone, { orchestrate }) => {
     unbondAndLiquidStakeFn,
   );
 
-  const makeUnbondAndLiquidStakeInvitation = () =>
-    zcf.makeInvitation(
-      unbondAndLiquidStake,
-      'Unbond and liquid stake',
-      undefined,
-      harden({
-        // Nothing to give; the funds come from undelegating
-        give: {},
-        want: {}, // XXX ChainAccount Ownable?
-        exit: M.any(),
-      }),
-    );
-
-  const publicFacet = Far('SwapAndStake Public Facet', {
-    makeUnbondAndLiquidStakeInvitation,
+  const publicFacet = zone.exo('publicFacet', undefined, {
+    makeUnbondAndLiquidStakeInvitation() {
+      return zcf.makeInvitation(
+        unbondAndLiquidStake,
+        'Unbond and liquid stake',
+        undefined,
+        harden({
+          // Nothing to give; the funds come from undelegating
+          give: {},
+          want: {}, // XXX ChainAccount Ownable?
+          exit: M.any(),
+        }),
+      );
+    },
   });
 
   return harden({ publicFacet });

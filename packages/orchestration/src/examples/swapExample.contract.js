@@ -1,7 +1,6 @@
 import { StorageNodeShape } from '@agoric/internal';
 import { TimerServiceShape } from '@agoric/time';
 import { withdrawFromSeat } from '@agoric/zoe/src/contractSupport/zoeHelpers.js';
-import { Far } from '@endo/far';
 import { deeplyFulfilled } from '@endo/marshal';
 import { M, objectMap } from '@endo/patterns';
 import { orcUtils } from '../utils/orc.js';
@@ -117,20 +116,19 @@ const contract = async (zcf, privateArgs, zone, { orchestrate }) => {
    */
   const swapAndStakeHandler = orchestrate('LSTTia', { zcf }, stackAndSwapFn);
 
-  const makeSwapAndStakeInvitation = () =>
-    zcf.makeInvitation(
-      swapAndStakeHandler,
-      'Swap for TIA and stake',
-      undefined,
-      harden({
-        give: { Stable: makeNatAmountShape(brands.Stable, 1n) },
-        want: {}, // XXX ChainAccount Ownable?
-        exit: M.any(),
-      }),
-    );
-
-  const publicFacet = Far('SwapAndStake Public Facet', {
-    makeSwapAndStakeInvitation,
+  const publicFacet = zone.exo('publicFacet', undefined, {
+    makeSwapAndStakeInvitation() {
+      return zcf.makeInvitation(
+        swapAndStakeHandler,
+        'Swap for TIA and stake',
+        undefined,
+        harden({
+          give: { Stable: makeNatAmountShape(brands.Stable, 1n) },
+          want: {}, // XXX ChainAccount Ownable?
+          exit: M.any(),
+        }),
+      );
+    },
   });
 
   return harden({ publicFacet });
