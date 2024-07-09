@@ -1,6 +1,7 @@
 import { M } from '@endo/patterns';
 import { Shape as NetworkShape } from '@agoric/network';
 import { VowShape } from '@agoric/vow';
+import { TopicsRecordShape } from '@agoric/zoe/src/contractSupport/topics.js';
 import { AmountArgShape, ChainAddressShape, CoinShape } from '../typeGuards.js';
 
 /** @import {OrchestrationAccountI} from '../orchestration-api.js'; */
@@ -17,4 +18,9 @@ export const orchestrationAccountMethods = {
     .optional(M.record())
     .returns(VowShape),
   transferSteps: M.call(AmountArgShape, M.any()).returns(VowShape),
+  asContinuingOffer: M.call().returns({
+    publicSubscribers: TopicsRecordShape,
+    invitationMakers: M.any(),
+    holder: M.remotable(),
+  }),
 };
