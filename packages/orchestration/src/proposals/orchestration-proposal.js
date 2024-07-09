@@ -9,8 +9,7 @@ const trace = makeTracer('CoreEvalOrchestration', true);
 
 /**
  * @import {PortAllocator} from '@agoric/network';
- * @import {OrchestrationService} from '../service.js'
- * @import {OrchestrationVat} from '../vat-orchestration.js'
+ * @import {CosmosInterchainService} from '../exos/cosmos-interchain-service.js'
  */
 
 /**
@@ -19,8 +18,6 @@ const trace = makeTracer('CoreEvalOrchestration', true);
  *     portAllocator: PortAllocator;
  *   };
  *   produce: {
- *     orchestration: Producer<any>;
- *     orchestrationKit: Producer<any>;
  *     orchestrationVat: Producer<any>;
  *   };
  * }} powers
@@ -29,11 +26,7 @@ const trace = makeTracer('CoreEvalOrchestration', true);
 export const setupOrchestrationVat = async (
   {
     consume: { loadCriticalVat, portAllocator: portAllocatorP },
-    produce: {
-      orchestrationVat,
-      orchestration,
-      orchestrationKit: orchestrationKitP,
-    },
+    produce: { orchestrationVat, ...produce },
   },
   options,
 ) => {
@@ -49,14 +42,14 @@ export const setupOrchestrationVat = async (
 
   const portAllocator = await portAllocatorP;
 
-  const newOrchestrationKit = await E(vats.orchestration).makeOrchestrationKit({
+  const cosmosInterchainService = await E(
+    vats.orchestration,
+  ).makeCosmosInterchainService({
     portAllocator,
   });
 
-  orchestration.reset();
-  orchestration.resolve(newOrchestrationKit.public);
-  orchestrationKitP.reset();
-  orchestrationKitP.resolve(newOrchestrationKit);
+  produce.cosmosInterchainService.reset();
+  produce.cosmosInterchainService.resolve(cosmosInterchainService);
 };
 
 /**
@@ -138,21 +131,6 @@ export const initChainInfo = async ({
 };
 harden(initChainInfo);
 
-/**
- * @param {BootstrapPowers & {
- *   consume: {
- *     orchestration: OrchestrationService;
- *   };
- * }} powers
- * @param {object} _options
- */
-export const addOrchestrationToClient = async (
-  { consume: { client, orchestration } },
-  _options,
-) => {
-  return E(client).assignBundle([_a => ({ orchestration })]);
-};
-
 export const getManifestForOrchestration = (_powers, { orchestrationRef }) => ({
   manifest: {
     [setupOrchestrationVat.name]: {
@@ -161,8 +139,7 @@ export const getManifestForOrchestration = (_powers, { orchestrationRef }) => ({
         portAllocator: 'portAllocator',
       },
       produce: {
-        orchestration: 'orchestration',
-        orchestrationKit: 'orchestrationKit',
+        cosmosInterchainService: 'cosmosInterchainService',
         orchestrationVat: 'orchestrationVat',
       },
     },

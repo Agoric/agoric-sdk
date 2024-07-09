@@ -16,13 +16,14 @@ import { prepareLocalChainFacade } from '../exos/local-chain-facade.js';
  * @import {Baggage} from '@agoric/vat-data';
  * @import {NameHub} from '@agoric/vats';
  * @import {Remote} from '@agoric/vow';
- * @import {OrchestrationService} from '../service.js';
+ * @import {Zone} from '@agoric/zone';
+ * @import {CosmosInterchainService} from '../exos/cosmos-interchain-service.js';
  */
 
 /**
  * @typedef {{
  *   localchain: Remote<LocalChain>;
- *   orchestrationService: Remote<OrchestrationService>;
+ *   orchestrationService: Remote<CosmosInterchainService>;
  *   storageNode: Remote<StorageNode>;
  *   timerService: Remote<TimerService>;
  *   agoricNames: Remote<NameHub>;
@@ -48,16 +49,27 @@ export const provideOrchestration = (
     baggage,
   }));
 
-  const zone = makeDurableZone(baggage);
+  // separate zones
+  const zones = (() => {
+    const zone = makeDurableZone(baggage);
+    return {
+      asyncFlow: zone.subZone('asyncFlow'),
+      /** for contract-provided names */
+      contract: zone.subZone('contract'),
+      orchestration: zone.subZone('orchestration'),
+      vows: zone.subZone('vows'),
+    };
+  })();
+
   const { agoricNames, timerService } = remotePowers;
 
-  const vowTools = prepareVowTools(zone.subZone('vows'));
+  const vowTools = prepareVowTools(zones.vows);
 
   const chainHub = makeChainHub(agoricNames, vowTools);
 
   const { makeRecorderKit } = prepareRecorderKitMakers(baggage, marshaller);
   const makeLocalOrchestrationAccountKit = prepareLocalOrchestrationAccountKit(
-    zone,
+    zones.orchestration,
     makeRecorderKit,
     zcf,
     timerService,
@@ -65,19 +77,18 @@ export const provideOrchestration = (
     chainHub,
   );
 
-  const asyncFlowTools = prepareAsyncFlowTools(zone.subZone('asyncFlow'), {
+  const asyncFlowTools = prepareAsyncFlowTools(zones.asyncFlow, {
     vowTools,
   });
 
   const makeCosmosOrchestrationAccount = prepareCosmosOrchestrationAccount(
-    // FIXME what zone?
-    zone,
+    zones.orchestration,
     makeRecorderKit,
     vowTools,
     zcf,
   );
 
-  const makeRemoteChainFacade = prepareRemoteChainFacade(zone, {
+  const makeRemoteChainFacade = prepareRemoteChainFacade(zones.orchestration, {
     makeCosmosOrchestrationAccount,
     orchestration: remotePowers.orchestrationService,
     storageNode: remotePowers.storageNode,
@@ -85,7 +96,7 @@ export const provideOrchestration = (
     vowTools,
   });
 
-  const makeLocalChainFacade = prepareLocalChainFacade(zone, {
+  const makeLocalChainFacade = prepareLocalChainFacade(zones.orchestration, {
     makeLocalOrchestrationAccountKit,
     localchain: remotePowers.localchain,
     // FIXME what path?
@@ -97,7 +108,7 @@ export const provideOrchestration = (
 
   const facade = makeOrchestrationFacade({
     zcf,
-    zone,
+    zone: zones.orchestration,
     chainHub,
     makeLocalOrchestrationAccountKit,
     makeRecorderKit,
@@ -108,6 +119,38 @@ export const provideOrchestration = (
     vowTools,
     ...remotePowers,
   });
-  return { ...facade, chainHub, vowTools, zone };
+  return { ...facade, chainHub, vowTools, zone: zones.contract };
 };
 harden(provideOrchestration);
+
+/** @typedef {Omit<ReturnType<typeof provideOrchestration>, 'zone'>} OrchestrationTools */
+
+/**
+ * Simplifies contract functions for Orchestration by wrapping a simpler
+ * function with all the tools it needs in order to use Orchestration.
+ *
+ * @template {Record<string, unknown>} CT
+ * @template {OrchestrationPowers & {
+ *   marshaller: Marshaller;
+ * }} PA
+ * @template R
+ * @param {(
+ *   zcf: ZCF<CT>,
+ *   privateArgs: PA,
+ *   zone: Zone,
+ *   tools: OrchestrationTools,
+ * ) => Promise<R>} contractFn
+ * @returns {(zcf: ZCF<CT>, privateArgs: PA, baggage: Baggage) => Promise<R>} a
+ *   Zoe start function
+ */
+export const withOrchestration =
+  contractFn => async (zcf, privateArgs, baggage) => {
+    const { zone, ...tools } = provideOrchestration(
+      zcf,
+      baggage,
+      privateArgs,
+      privateArgs.marshaller,
+    );
+    return contractFn(zcf, privateArgs, zone, tools);
+  };
+harden(withOrchestration);

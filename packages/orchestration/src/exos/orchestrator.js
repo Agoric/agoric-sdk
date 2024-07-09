@@ -22,7 +22,7 @@ import {
  * @import {RecorderKit, MakeRecorderKit} from '@agoric/zoe/src/contractSupport/recorder.js'.
  * @import {Remote} from '@agoric/internal';
  * @import {PickFacet} from '@agoric/swingset-liveslots';
- * @import {OrchestrationService} from '../service.js';
+ * @import {CosmosInterchainService} from './cosmos-interchain-service.js';
  * @import {MakeLocalOrchestrationAccountKit} from './local-orchestration-account.js';
  * @import {MakeLocalChainFacade} from './local-chain-facade.js';
  * @import {MakeRemoteChainFacade} from './remote-chain-facade.js';
@@ -50,7 +50,7 @@ export const OrchestratorI = M.interface('Orchestrator', {
  *   makeRecorderKit: MakeRecorderKit;
  *   makeLocalChainFacade: MakeLocalChainFacade;
  *   makeRemoteChainFacade: MakeRemoteChainFacade;
- *   orchestrationService: Remote<OrchestrationService>;
+ *   orchestrationService: Remote<CosmosInterchainService>;
  *   storageNode: Remote<StorageNode>;
  *   timerService: Remote<TimerService>;
  *   vowTools: VowTools;

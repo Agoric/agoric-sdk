@@ -22,7 +22,7 @@ import { makeDurableZone } from '@agoric/zone/durable.js';
 import { E } from '@endo/far';
 import type { ExecutionContext } from 'ava';
 import { registerChainNamespace } from '../src/chain-info.js';
-import { prepareOrchestrationTools } from '../src/service.js';
+import { prepareCosmosInterchainService } from '../src/exos/cosmos-interchain-service.js';
 import { setupFakeNetwork } from './network-fakes.js';
 
 export {
@@ -113,11 +113,13 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
   );
   await setupIBCProtocol();
 
-  const { makeOrchestrationKit } = prepareOrchestrationTools(
+  const makeCosmosInterchainService = prepareCosmosInterchainService(
     rootZone.subZone('orchestration'),
     vowTools,
   );
-  const { public: orchestration } = makeOrchestrationKit({ portAllocator });
+  const cosmosInterchainService = makeCosmosInterchainService({
+    portAllocator,
+  });
 
   await registerChainNamespace(agoricNamesAdmin, () => {});
 
@@ -129,7 +131,7 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
       timer,
       localchain,
       marshaller,
-      orchestration,
+      cosmosInterchainService,
       // TODO remove; bootstrap doesn't have a zone
       rootZone: rootZone.subZone('contract'),
       storage,
@@ -143,7 +145,7 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
     commonPrivateArgs: {
       agoricNames,
       localchain,
-      orchestrationService: orchestration,
+      orchestrationService: cosmosInterchainService,
       storageNode: storage.rootNode,
       marshaller,
       timerService: timer,
@@ -151,7 +153,7 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
     facadeServices: {
       agoricNames,
       localchain,
-      orchestrationService: orchestration,
+      orchestrationService: cosmosInterchainService,
       timerService: timer,
     },
     utils: {

@@ -1,32 +1,33 @@
-import { withdrawFromSeat } from '@agoric/zoe/src/contractSupport/zoeHelpers.js';
-import { InvitationShape } from '@agoric/zoe/src/typeGuards.js';
-import { M, mustMatch } from '@endo/patterns';
-import { E } from '@endo/far';
-import { heapVowE } from '@agoric/vow/vat.js';
 import { makeStateRecord } from '@agoric/async-flow';
 import { AmountShape } from '@agoric/ertp';
-import { CosmosChainInfoShape } from '../typeGuards.js';
-import { provideOrchestration } from '../utils/start-helper.js';
+import { heapVowE } from '@agoric/vow/vat.js';
+import { withdrawFromSeat } from '@agoric/zoe/src/contractSupport/zoeHelpers.js';
+import { InvitationShape } from '@agoric/zoe/src/typeGuards.js';
+import { E } from '@endo/far';
+import { M, mustMatch } from '@endo/patterns';
 import { makeResumableAgoricNamesHack } from '../exos/agoric-names-tools.js';
+import { CosmosChainInfoShape } from '../typeGuards.js';
+import { withOrchestration } from '../utils/start-helper.js';
 
 const { entries } = Object;
 
 /**
- * @import {Baggage} from '@agoric/vat-data';
  * @import {TimerService} from '@agoric/time';
  * @import {LocalChain} from '@agoric/vats/src/localchain.js';
  * @import {NameHub} from '@agoric/vats';
  * @import {Remote} from '@agoric/vow';
+ * @import {Zone} from '@agoric/zone';
  * @import {CosmosChainInfo, IBCConnectionInfo} from '../cosmos-api';
- * @import {OrchestrationService} from '../service.js';
+ * @import {CosmosInterchainService} from '../exos/cosmos-interchain-service.js';
  * @import {Orchestrator} from '../types.js'
+ * @import {OrchestrationTools} from '../utils/start-helper.js';
  * @import {OrchestrationAccount} from '../orchestration-api.js'
  */
 
 /**
  * @typedef {{
  *   localchain: Remote<LocalChain>;
- *   orchestrationService: Remote<OrchestrationService>;
+ *   orchestrationService: Remote<CosmosInterchainService>;
  *   storageNode: Remote<StorageNode>;
  *   timerService: Remote<TimerService>;
  *   agoricNames: Remote<NameHub>;
@@ -89,19 +90,21 @@ export const SingleAmountRecord = M.and(
 );
 
 /**
+ * Orchestration contract to be wrapped by withOrchestration for Zoe
+ *
  * @param {ZCF} zcf
  * @param {OrchestrationPowers & {
  *   marshaller: Marshaller;
  * }} privateArgs
- * @param {Baggage} baggage
+ * @param {Zone} zone
+ * @param {OrchestrationTools} tools
  */
-export const start = async (zcf, privateArgs, baggage) => {
-  const { chainHub, orchestrate, vowTools, zone } = provideOrchestration(
-    zcf,
-    baggage,
-    privateArgs,
-    privateArgs.marshaller,
-  );
+const contract = async (
+  zcf,
+  privateArgs,
+  zone,
+  { chainHub, orchestrate, vowTools },
+) => {
   const agoricNamesTools = makeResumableAgoricNamesHack(zone, {
     agoricNames: privateArgs.agoricNames,
     vowTools,
@@ -171,3 +174,5 @@ export const start = async (zcf, privateArgs, baggage) => {
 
   return { publicFacet, creatorFacet };
 };
+
+export const start = withOrchestration(contract);

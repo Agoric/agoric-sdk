@@ -18,12 +18,12 @@ import { tryDecodeResponse } from '../src/utils/cosmos.js';
 
 test('makeICQConnection returns an ICQConnection', async t => {
   const {
-    bootstrap: { orchestration },
+    bootstrap: { cosmosInterchainService },
   } = await commonSetup(t);
 
   const CONTROLLER_CONNECTION_ID = 'connection-0';
 
-  const icqConnection = await E(orchestration).provideICQConnection(
+  const icqConnection = await E(cosmosInterchainService).provideICQConnection(
     CONTROLLER_CONNECTION_ID,
   );
   const [localAddr, remoteAddr] = await Promise.all([
@@ -46,7 +46,7 @@ test('makeICQConnection returns an ICQConnection', async t => {
     'remote address contains icqhost port, unordered ordering, and icq-1 version string',
   );
 
-  const icqConnection2 = await E(orchestration).provideICQConnection(
+  const icqConnection2 = await E(cosmosInterchainService).provideICQConnection(
     CONTROLLER_CONNECTION_ID,
   );
   const localAddr2 = await E(icqConnection2).getLocalAddress();
@@ -68,14 +68,14 @@ test('makeICQConnection returns an ICQConnection', async t => {
 
 test('makeAccount returns a ChainAccount', async t => {
   const {
-    bootstrap: { orchestration },
+    bootstrap: { cosmosInterchainService },
   } = await commonSetup(t);
 
   const CHAIN_ID = 'cosmoshub-99';
   const HOST_CONNECTION_ID = 'connection-0';
   const CONTROLLER_CONNECTION_ID = 'connection-1';
 
-  const account = await E(orchestration).makeAccount(
+  const account = await E(cosmosInterchainService).makeAccount(
     CHAIN_ID,
     HOST_CONNECTION_ID,
     CONTROLLER_CONNECTION_ID,
