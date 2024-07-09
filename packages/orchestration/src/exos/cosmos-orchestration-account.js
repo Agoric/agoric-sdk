@@ -104,7 +104,7 @@ export const prepareCosmosOrchestrationAccountKit = (
   zcf,
 ) => {
   const makeCosmosOrchestrationAccountKit = zone.exoClassKit(
-    'Staking Account Holder',
+    'Cosmos Orchestration Account Holder',
     {
       helper: M.interface('helper', {
         owned: M.call().returns(M.remotable()),
