@@ -10,6 +10,7 @@ import { prepareLocalOrchestrationAccountKit } from '../exos/local-orchestration
 import { prepareOrchestratorKit } from '../exos/orchestrator.js';
 import { prepareRemoteChainFacade } from '../exos/remote-chain-facade.js';
 import { makeOrchestrationFacade } from '../facade.js';
+import { makeZoeTools } from './zoe-tools.js';
 
 /**
  * @import {PromiseKit} from '@endo/promise-kit'
@@ -36,6 +37,8 @@ import { makeOrchestrationFacade } from '../facade.js';
  * Helper that a contract start function can use to set up the objects needed
  * for orchestration.
  *
+ * TODO strip problematic operations from ZCF (e.g., getPayouts)
+ *
  * @param {ZCF} zcf
  * @param {Baggage} baggage
  * @param {OrchestrationPowers} remotePowers
@@ -60,6 +63,7 @@ export const provideOrchestration = (
       contract: zone.subZone('contract'),
       orchestration: zone.subZone('orchestration'),
       vows: zone.subZone('vows'),
+      zoe: zone.subZone('zoe'),
     };
   })();
 
@@ -68,6 +72,8 @@ export const provideOrchestration = (
   const vowTools = prepareVowTools(zones.vows);
 
   const chainHub = makeChainHub(agoricNames, vowTools);
+
+  const zoeTools = makeZoeTools(zones.zoe, { zcf, vowTools });
 
   const { makeRecorderKit } = prepareRecorderKitMakers(baggage, marshaller);
   const makeLocalOrchestrationAccountKit = prepareLocalOrchestrationAccountKit(
@@ -133,7 +139,13 @@ export const provideOrchestration = (
     vowTools,
     ...remotePowers,
   });
-  return { ...facade, chainHub, vowTools, zone: zones.contract };
+  return {
+    ...facade,
+    chainHub,
+    vowTools,
+    zoeTools,
+    zone: zones.contract,
+  };
 };
 harden(provideOrchestration);
 
