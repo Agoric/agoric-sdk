@@ -1,7 +1,7 @@
 // @ts-check
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
-import { VTRANSFER_IBC_EVENT } from '@agoric/internal';
+import { VTRANSFER_IBC_EVENT } from '@agoric/internal/src/action-types.js';
 import { coerceToByteSource, byteSourceToBase64 } from '@agoric/network';
 import { TargetAppI, AppTransformerI } from './bridge-target.js';
 

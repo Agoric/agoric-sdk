@@ -6,7 +6,8 @@ import type { TestFn } from 'ava';
 import type { ScopedBridgeManager } from '@agoric/vats';
 import type { TransferMiddleware } from '@agoric/vats/src/transfer.js';
 import type { TransferVat } from '@agoric/vats/src/vat-transfer.js';
-import { BridgeId, VTRANSFER_IBC_EVENT } from '@agoric/internal';
+import { BridgeId } from '@agoric/internal';
+import { VTRANSFER_IBC_EVENT } from '@agoric/internal/src/action-types.js';
 import { makeSwingsetTestKit } from '../../tools/supports.ts';
 
 const makeDefaultTestContext = async t => {

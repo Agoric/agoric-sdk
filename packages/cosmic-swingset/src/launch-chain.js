@@ -581,6 +581,11 @@ export async function launch({
         break;
       }
 
+      case ActionType.VTRANSFER_IBC_EVENT: {
+        p = doBridgeInbound(BRIDGE_ID.VTRANSFER, action, inboundNum);
+        break;
+      }
+
       case ActionType.PLEASE_PROVISION: {
         p = doBridgeInbound(BRIDGE_ID.PROVISION, action, inboundNum);
         break;
