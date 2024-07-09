@@ -200,7 +200,7 @@ const prepareBankChannelHandler = zone =>
                   updater = addressToUpdater.get(address);
                 }
               } catch (e) {
-                console.error('Unregistered denom in', update, e);
+                console.debug('Unregistered denom in', update, e);
               }
               if (updater) {
                 try {
