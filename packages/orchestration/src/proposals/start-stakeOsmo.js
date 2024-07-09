@@ -29,7 +29,7 @@ export const startStakeOsmo = async ({
     board,
     chainStorage,
     chainTimerService,
-    orchestration,
+    cosmosInterchainService,
     startUpgradable,
   },
   installation: {
@@ -66,7 +66,7 @@ export const startStakeOsmo = async ({
       icqEnabled: osmosis.icqEnabled,
     },
     privateArgs: {
-      orchestration: await orchestration,
+      orchestration: await cosmosInterchainService,
       storageNode,
       marshaller,
       timer: await chainTimerService,
@@ -90,7 +90,7 @@ export const getManifestForStakeOsmo = (
           board: true,
           chainStorage: true,
           chainTimerService: true,
-          orchestration: true,
+          cosmosInterchainService: true,
           startUpgradable: true,
         },
         installation: {

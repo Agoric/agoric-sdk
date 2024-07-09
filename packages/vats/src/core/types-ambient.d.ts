@@ -344,6 +344,7 @@ type ChainBootstrapSpaceT = {
   client: ClientManager;
   clientCreator: any;
   coreEvalBridgeHandler: import('../types.js').BridgeHandler;
+  cosmosInterchainService: import('@agoric/orchestration').CosmosInterchainService;
   /** Utilities to support debugging */
   diagnostics: {
     /**
@@ -370,7 +371,6 @@ type ChainBootstrapSpaceT = {
   namesByAddress: import('../types.js').NameHub;
   namesByAddressAdmin: import('../types.js').NamesByAddressAdmin;
   networkVat: NetworkVat;
-  orchestration: import('@agoric/orchestration/src/service.js').CosmosInterchainService;
   pegasusConnections: import('@agoric/vats').NameHubKit;
   pegasusConnectionsAdmin: import('@agoric/vats').NameAdmin;
   priceAuthorityVat: Awaited<PriceAuthorityVat>;

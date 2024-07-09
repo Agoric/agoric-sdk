@@ -18,7 +18,6 @@ const trace = makeTracer('CoreEvalOrchestration', true);
  *     portAllocator: PortAllocator;
  *   };
  *   produce: {
- *     orchestration: Producer<any>;
  *     orchestrationVat: Producer<any>;
  *   };
  * }} powers
@@ -27,7 +26,7 @@ const trace = makeTracer('CoreEvalOrchestration', true);
 export const setupOrchestrationVat = async (
   {
     consume: { loadCriticalVat, portAllocator: portAllocatorP },
-    produce: { orchestrationVat, orchestration },
+    produce: { orchestrationVat, ...produce },
   },
   options,
 ) => {
@@ -49,8 +48,8 @@ export const setupOrchestrationVat = async (
     portAllocator,
   });
 
-  orchestration.reset();
-  orchestration.resolve(cosmosInterchainService);
+  produce.cosmosInterchainService.reset();
+  produce.cosmosInterchainService.resolve(cosmosInterchainService);
 };
 
 /**
@@ -140,7 +139,7 @@ export const getManifestForOrchestration = (_powers, { orchestrationRef }) => ({
         portAllocator: 'portAllocator',
       },
       produce: {
-        orchestration: 'orchestration',
+        cosmosInterchainService: 'cosmosInterchainService',
         orchestrationVat: 'orchestrationVat',
       },
     },

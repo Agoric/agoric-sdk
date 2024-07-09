@@ -29,7 +29,7 @@ export const startStakeAtom = async ({
     board,
     chainStorage,
     chainTimerService,
-    orchestration,
+    cosmosInterchainService,
     startUpgradable,
   },
   installation: {
@@ -65,7 +65,7 @@ export const startStakeAtom = async ({
       icqEnabled: cosmoshub.icqEnabled,
     },
     privateArgs: {
-      orchestration: await orchestration,
+      orchestration: await cosmosInterchainService,
       storageNode,
       marshaller,
       timer: await chainTimerService,
@@ -89,7 +89,7 @@ export const getManifestForStakeAtom = (
           board: true,
           chainStorage: true,
           chainTimerService: true,
-          orchestration: true,
+          cosmosInterchainService: true,
           startUpgradable: true,
         },
         installation: {
