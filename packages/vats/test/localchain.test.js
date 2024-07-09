@@ -7,7 +7,7 @@ import { reincarnate } from '@agoric/swingset-liveslots/tools/setup-vat-data.js'
 import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
 import { makeDurableZone } from '@agoric/zone/durable.js';
 import { getInterfaceOf } from '@endo/marshal';
-import { VTRANSFER_IBC_EVENT } from '@agoric/internal';
+import { VTRANSFER_IBC_EVENT } from '@agoric/internal/src/action-types.js';
 import { prepareVowTools, heapVowE as E } from '@agoric/vow/vat.js';
 import { prepareLocalChainTools } from '../src/localchain.js';
 import { prepareBridgeTargetModule } from '../src/bridge-target.js';
