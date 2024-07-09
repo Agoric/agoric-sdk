@@ -1,12 +1,13 @@
 // @ts-check
 import { test as anyTest } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
-import { NonNullish, VTRANSFER_IBC_EVENT } from '@agoric/internal';
+import { NonNullish } from '@agoric/internal';
 import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { reincarnate } from '@agoric/swingset-liveslots/tools/setup-vat-data.js';
 import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
 import { makeDurableZone } from '@agoric/zone/durable.js';
 import { getInterfaceOf } from '@endo/marshal';
+import { VTRANSFER_IBC_EVENT } from '@agoric/internal/src/action-types.js';
 import { prepareVowTools, heapVowE as E } from '@agoric/vow/vat.js';
 import { prepareLocalChainTools } from '../src/localchain.js';
 import { prepareBridgeTargetModule } from '../src/bridge-target.js';
