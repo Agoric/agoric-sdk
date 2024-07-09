@@ -3,61 +3,19 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { AmountMath } from '@agoric/ertp';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { heapVowE as E } from '@agoric/vow/vat.js';
-import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/recorder.js';
-import { Far } from '@endo/far';
-import { ExecutionContext } from 'ava';
 import { TargetApp } from '@agoric/vats/src/bridge-target.js';
 import { VTRANSFER_IBC_EVENT } from '@agoric/internal';
-import { prepareLocalOrchestrationAccountKit } from '../../src/exos/local-orchestration-account.js';
 import { ChainAddress } from '../../src/orchestration-api.js';
-import { makeChainHub } from '../../src/exos/chain-hub.js';
 import { NANOSECONDS_PER_SECOND } from '../../src/utils/time.js';
 import { commonSetup } from '../supports.js';
 import { UNBOND_PERIOD_SECONDS } from '../ibc-mocks.js';
 import { maxClockSkew } from '../../src/utils/cosmos.js';
-
-const setupLCAKit = async (
-  t: ExecutionContext,
-  { bootstrap }: Awaited<ReturnType<typeof commonSetup>>,
-) => {
-  const { timer, localchain, marshaller, rootZone, storage, vowTools } =
-    bootstrap;
-
-  t.log('exo setup - prepareLocalChainAccountKit');
-  const { makeRecorderKit } = prepareRecorderKitMakers(
-    rootZone.mapStore('recorder'),
-    marshaller,
-  );
-  const makeLocalOrchestrationAccountKit = prepareLocalOrchestrationAccountKit(
-    rootZone,
-    makeRecorderKit,
-    // @ts-expect-error mocked zcf. use `stake-bld.contract.test.ts` to test LCA with offer
-    Far('MockZCF', {}),
-    timer,
-    vowTools,
-    makeChainHub(bootstrap.agoricNames),
-  );
-
-  t.log('request account from vat-localchain');
-  const lca = await E(localchain).makeAccount();
-  const address = await E(lca).getAddress();
-
-  t.log('make a LocalChainAccountKit');
-  const { holder: account } = makeLocalOrchestrationAccountKit({
-    account: lca,
-    address: harden({
-      address,
-      chainId: 'agoric-n',
-      addressEncoding: 'bech32',
-    }),
-    storageNode: storage.rootNode.makeChildNode('lcaKit'),
-  });
-  return account;
-};
+import { prepareMakeTestLOAKit } from './make-test-loa-kit.js';
 
 test('deposit, withdraw', async t => {
   const common = await commonSetup(t);
-  const account = await setupLCAKit(t, common);
+  const makeTestLOAKit = prepareMakeTestLOAKit(t, common.bootstrap);
+  const account = await makeTestLOAKit();
 
   const {
     brands: { bld: stake },
@@ -99,7 +57,8 @@ test('deposit, withdraw', async t => {
 
 test('delegate, undelegate', async t => {
   const common = await commonSetup(t);
-  const account = await setupLCAKit(t, common);
+  const makeTestLOAKit = prepareMakeTestLOAKit(t, common.bootstrap);
+  const account = await makeTestLOAKit();
 
   const {
     bootstrap: { timer },
@@ -134,7 +93,8 @@ test('delegate, undelegate', async t => {
 
 test('transfer', async t => {
   const common = await commonSetup(t);
-  const account = await setupLCAKit(t, common);
+  const makeTestLOAKit = prepareMakeTestLOAKit(t, common.bootstrap);
+  const account = await makeTestLOAKit();
 
   const {
     brands: { bld: stake },
@@ -216,7 +176,8 @@ test('transfer', async t => {
 
 test('monitor transfers', async t => {
   const common = await commonSetup(t);
-  const account = await setupLCAKit(t, common);
+  const makeTestLOAKit = prepareMakeTestLOAKit(t, common.bootstrap);
+  const account = await makeTestLOAKit();
   const {
     mocks: { transferBridge },
     bootstrap: { rootZone },
