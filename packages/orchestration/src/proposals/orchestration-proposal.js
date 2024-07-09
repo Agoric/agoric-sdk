@@ -132,21 +132,6 @@ export const initChainInfo = async ({
 };
 harden(initChainInfo);
 
-/**
- * @param {BootstrapPowers & {
- *   consume: {
- *     orchestration: CosmosInterchainService;
- *   };
- * }} powers
- * @param {object} _options
- */
-export const addOrchestrationToClient = async (
-  { consume: { client, orchestration } },
-  _options,
-) => {
-  return E(client).assignBundle([_a => ({ orchestration })]);
-};
-
 export const getManifestForOrchestration = (_powers, { orchestrationRef }) => ({
   manifest: {
     [setupOrchestrationVat.name]: {
