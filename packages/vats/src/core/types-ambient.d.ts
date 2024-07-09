@@ -109,7 +109,9 @@ type Producer<T> = {
 };
 
 type VatSourceRef = { bundleName?: string; bundleID?: string };
-type VatLoader<Names extends string = keyof WellKnownVats> = <N extends Names>(
+type VatLoader<Names extends keyof WellKnownVats = keyof WellKnownVats> = <
+  N extends Names,
+>(
   name: N,
   sourceRef?: VatSourceRef,
 ) => Promise<Awaited<WellKnownVats[N]>>;
