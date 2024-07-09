@@ -1,13 +1,15 @@
 import { prepareAsyncFlowTools } from '@agoric/async-flow';
+import { pickFacet } from '@agoric/vat-data';
 import { prepareVowTools } from '@agoric/vow';
 import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/recorder.js';
 import { makeDurableZone } from '@agoric/zone/durable.js';
-import { prepareLocalOrchestrationAccountKit } from '../exos/local-orchestration-account.js';
-import { makeOrchestrationFacade } from '../facade.js';
 import { makeChainHub } from '../exos/chain-hub.js';
-import { prepareRemoteChainFacade } from '../exos/remote-chain-facade.js';
 import { prepareCosmosOrchestrationAccount } from '../exos/cosmos-orchestration-account.js';
 import { prepareLocalChainFacade } from '../exos/local-chain-facade.js';
+import { prepareLocalOrchestrationAccountKit } from '../exos/local-orchestration-account.js';
+import { prepareOrchestratorKit } from '../exos/orchestrator.js';
+import { prepareRemoteChainFacade } from '../exos/remote-chain-facade.js';
+import { makeOrchestrationFacade } from '../facade.js';
 
 /**
  * @import {PromiseKit} from '@endo/promise-kit'
@@ -106,15 +108,27 @@ export const provideOrchestration = (
     vowTools,
   });
 
+  const makeOrchestratorKit = prepareOrchestratorKit(zones.orchestration, {
+    asyncFlowTools,
+    chainHub,
+    localchain: remotePowers.localchain,
+    makeRecorderKit,
+    makeLocalChainFacade,
+    makeRemoteChainFacade,
+    storageNode: remotePowers.storageNode,
+    orchestrationService: remotePowers.orchestrationService,
+    timerService,
+    vowTools,
+    zcf,
+  });
+
+  const makeOrchestrator = pickFacet(makeOrchestratorKit, 'orchestrator');
+
   const facade = makeOrchestrationFacade({
     zcf,
     zone: zones.orchestration,
-    chainHub,
-    makeLocalOrchestrationAccountKit,
     makeRecorderKit,
-    makeCosmosOrchestrationAccount,
-    makeLocalChainFacade,
-    makeRemoteChainFacade,
+    makeOrchestrator,
     asyncFlowTools,
     vowTools,
     ...remotePowers,
