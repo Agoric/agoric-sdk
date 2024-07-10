@@ -14,7 +14,7 @@ import { ChainFacadeI } from '../typeGuards.js';
  * @import {Vow, VowTools} from '@agoric/vow';
  * @import {CosmosInterchainService} from './cosmos-interchain-service.js';
  * @import {MakeLocalOrchestrationAccountKit} from './local-orchestration-account.js';
- * @import {ChainAddress, ChainInfo, CosmosChainInfo, IBCConnectionInfo, OrchestrationAccount, PromiseToVow} from '../types.js';
+ * @import {ChainAddress, ChainInfo, CosmosChainInfo, IBCConnectionInfo, OrchestrationAccount} from '../types.js';
  */
 
 /**
@@ -72,7 +72,7 @@ const prepareLocalChainFacadeKit = (
 
         // FIXME parameterize on the remoteChainInfo to make()
         // That used to work but got lost in the migration to Exo
-        /** @returns {Vow<PromiseToVow<OrchestrationAccount<ChainInfo>>>} */
+        /** @returns {Vow<OrchestrationAccount<ChainInfo>>} */
         makeAccount() {
           const lcaP = E(localchain).makeAccount();
           // TODO #9449 fix types
