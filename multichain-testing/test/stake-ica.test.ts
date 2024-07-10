@@ -114,7 +114,7 @@ const stakeScenario = test.macro(async (t, scenario: StakeIcaScenario) => {
   const queryClient = makeQueryClient(getRestEndpoint());
 
   t.log('Requesting faucet funds');
-  // XXX fails intermitently until https://github.com/cosmology-tech/starship/issues/417
+  // XXX fails intermittently until https://github.com/cosmology-tech/starship/issues/417
   await creditFromFaucet(address);
 
   const { balances } = await retryUntilCondition(

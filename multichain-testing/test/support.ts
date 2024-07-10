@@ -12,6 +12,26 @@ import { makeDeployBuilder } from '../tools/deploy.js';
 
 const setupRegistry = makeSetupRegistry(makeGetFile({ dirname, join }));
 
+export const chainConfig = {
+  cosmoshub: {
+    chainId: 'gaialocal',
+    denom: 'uatom',
+    expectedAddressPrefix: 'cosmos',
+  },
+  osmosis: {
+    chainId: 'osmosislocal',
+    denom: 'uosmo',
+    expectedAddressPrefix: 'osmo',
+  },
+  agoric: {
+    chainId: 'agoriclocal',
+    denom: 'ubld',
+    expectedAddressPrefix: 'agoric',
+  },
+};
+
+export const chainNames = Object.keys(chainConfig);
+
 const makeKeyring = async (
   e2eTools: Pick<E2ETools, 'addKey' | 'deleteKey'>,
 ) => {
