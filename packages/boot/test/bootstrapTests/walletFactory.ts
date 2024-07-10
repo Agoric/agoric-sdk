@@ -12,6 +12,8 @@ export const makeWalletFactoryContext = async (
 ) => {
   const swingsetTestKit = await makeSwingsetTestKit(t.log, undefined, {
     configSpecifier,
+    // DEBUG
+    defaultManagerType: 'xs-worker',
   });
 
   const { runUtils, storage } = swingsetTestKit;
