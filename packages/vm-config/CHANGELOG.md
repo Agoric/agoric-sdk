@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.1.1-u16.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/vm-config@0.1.1-u16.0...@agoric/vm-config@0.1.1-u16.1) (2024-07-10)
+
+
+### Bug Fixes
+
+* **vm-config:** always use `init-localchain` and `init-transfer` ([1db4ed6](https://github.com/Agoric/agoric-sdk/commit/1db4ed635299cca315ff349ba8a0f3b26b605bf2))
+
+
+
 ### 0.1.1-u16.0 (2024-07-02)
 
 

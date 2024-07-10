@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.2.0-u16.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/boot@0.2.0-u16.0...@agoric/boot@0.2.0-u16.1) (2024-07-10)
+
+
+### Bug Fixes
+
+* adopt `VTRANSFER_IBC_EVENT` as an action-type ([#9671](https://github.com/Agoric/agoric-sdk/issues/9671)) ([67569d4](https://github.com/Agoric/agoric-sdk/commit/67569d4a2461c5415b3cc33f5faee9070f8d3c2e)), closes [#9670](https://github.com/Agoric/agoric-sdk/issues/9670)
+
+
+
 ## 0.2.0-u16.0 (2024-07-02)
 
 
