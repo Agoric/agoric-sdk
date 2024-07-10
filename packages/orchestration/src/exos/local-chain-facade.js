@@ -1,5 +1,7 @@
 /** @file ChainAccount exo */
 import { E } from '@endo/far';
+// eslint-disable-next-line no-restricted-syntax -- just the import
+import { heapVowE } from '@agoric/vow/vat.js';
 import { M } from '@endo/patterns';
 import { pickFacet } from '@agoric/vat-data';
 import { VowShape } from '@agoric/vow';
@@ -13,7 +15,7 @@ import { ChainFacadeI } from '../typeGuards.js';
  * @import {LocalChain, LocalChainAccount} from '@agoric/vats/src/localchain.js';
  * @import {Vow, VowTools} from '@agoric/vow';
  * @import {CosmosInterchainService} from './cosmos-interchain-service.js';
- * @import {MakeLocalOrchestrationAccountKit} from './local-orchestration-account.js';
+ * @import {LocalOrchestrationAccountKit, MakeLocalOrchestrationAccountKit} from './local-orchestration-account.js';
  * @import {ChainAddress, ChainInfo, CosmosChainInfo, IBCConnectionInfo, OrchestrationAccount} from '../types.js';
  */
 
@@ -70,17 +72,14 @@ const prepareLocalChainFacadeKit = (
           return watch(this.state.localChainInfo);
         },
 
-        // FIXME parameterize on the remoteChainInfo to make()
-        // That used to work but got lost in the migration to Exo
-        /** @returns {Vow<OrchestrationAccount<ChainInfo>>} */
+        /** @returns {Vow<LocalOrchestrationAccountKit['holder']>} */
         makeAccount() {
           const lcaP = E(localchain).makeAccount();
-          // TODO #9449 fix types
-          // @ts-expect-error Type 'Vow<Voidless>' is not assignable to type 'Vow<OrchestrationAccountI>'.
           return watch(
-            // TODO #9449 fix types
-            // @ts-expect-error Property 'getAddress' does not exist on type 'EMethods<Required<Guarded<{ getAddress()...
-            allVows([lcaP, E(lcaP).getAddress()]),
+            // XXX makeAccount returns a Promise for an exo but reserves being able to return a vow
+            // so we use heapVowE to shorten the promise path
+            // eslint-disable-next-line no-restricted-syntax -- will run in one turn
+            allVows([lcaP, heapVowE(lcaP).getAddress()]),
             this.facets.makeAccountWatcher,
           );
         },
