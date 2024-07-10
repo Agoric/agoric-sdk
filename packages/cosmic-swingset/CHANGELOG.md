@@ -3,6 +3,16 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.42.0-u16.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.42.0-u16.0...@agoric/cosmic-swingset@0.42.0-u16.1) (2024-07-10)
+
+
+### Bug Fixes
+
+* adopt `VTRANSFER_IBC_EVENT` as an action-type ([#9671](https://github.com/Agoric/agoric-sdk/issues/9671)) ([67569d4](https://github.com/Agoric/agoric-sdk/commit/67569d4a2461c5415b3cc33f5faee9070f8d3c2e)), closes [#9670](https://github.com/Agoric/agoric-sdk/issues/9670)
+* **vm-config:** always use `init-localchain` and `init-transfer` ([1db4ed6](https://github.com/Agoric/agoric-sdk/commit/1db4ed635299cca315ff349ba8a0f3b26b605bf2))
+
+
+
 ## [0.42.0-u16.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.41.3...@agoric/cosmic-swingset@0.42.0-u16.0) (2024-07-02)
 
 

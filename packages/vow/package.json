@@ -1,6 +1,6 @@
 {
   "name": "@agoric/vow",
-  "version": "0.2.0-u16.0",
+  "version": "0.2.0-u16.1",
   "description": "Remote (shortening and disconnection-tolerant) Promise-likes",
   "type": "module",
   "main": "src/index.js",
@@ -21,7 +21,7 @@
   },
   "dependencies": {
     "@agoric/base-zone": "^0.1.1-u16.0",
-    "@agoric/internal": "^0.4.0-u16.0",
+    "@agoric/internal": "^0.4.0-u16.1",
     "@endo/env-options": "^1.1.4",
     "@endo/eventual-send": "^1.2.2",
     "@endo/pass-style": "^1.4.0",

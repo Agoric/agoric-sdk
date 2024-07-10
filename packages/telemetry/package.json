@@ -1,6 +1,6 @@
 {
   "name": "@agoric/telemetry",
-  "version": "0.6.3-u16.0",
+  "version": "0.6.3-u16.1",
   "description": "Agoric's telemetry implementation",
   "type": "module",
   "repository": "https://github.com/Agoric/agoric-sdk",
@@ -23,7 +23,7 @@
   "license": "Apache-2.0",
   "dependencies": {
     "@agoric/assert": "^0.6.1-u16.0",
-    "@agoric/internal": "^0.4.0-u16.0",
+    "@agoric/internal": "^0.4.0-u16.1",
     "@agoric/store": "^0.9.3-u16.0",
     "@endo/init": "^1.1.2",
     "@endo/marshal": "^1.5.0",

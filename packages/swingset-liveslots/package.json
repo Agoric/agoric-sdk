@@ -1,6 +1,6 @@
 {
   "name": "@agoric/swingset-liveslots",
-  "version": "0.10.3-u16.0",
+  "version": "0.10.3-u16.1",
   "description": "SwingSet ocap support layer",
   "type": "module",
   "main": "src/index.js",
@@ -18,7 +18,7 @@
   },
   "dependencies": {
     "@agoric/assert": "^0.6.1-u16.0",
-    "@agoric/internal": "^0.4.0-u16.0",
+    "@agoric/internal": "^0.4.0-u16.1",
     "@agoric/store": "^0.9.3-u16.0",
     "@endo/env-options": "^1.1.4",
     "@endo/errors": "^1.2.2",

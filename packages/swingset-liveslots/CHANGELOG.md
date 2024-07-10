@@ -3,6 +3,14 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.10.3-u16.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-liveslots@0.10.3-u16.0...@agoric/swingset-liveslots@0.10.3-u16.1) (2024-07-10)
+
+**Note:** Version bump only for package @agoric/swingset-liveslots
+
+
+
+
+
 ### [0.10.3-u16.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-liveslots@0.10.2...@agoric/swingset-liveslots@0.10.3-u16.0) (2024-07-02)
 
 
