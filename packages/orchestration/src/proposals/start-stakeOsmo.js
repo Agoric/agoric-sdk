@@ -21,6 +21,11 @@ const trace = makeTracer('StartStakeOsmo', true);
  *       >;
  *     };
  *   };
+ *   instance: {
+ *     produce: {
+ *       stakeOsmo: any;
+ *     };
+ *   };
  * }} powers
  */
 export const startStakeOsmo = async ({
@@ -36,7 +41,6 @@ export const startStakeOsmo = async ({
     consume: { stakeIca },
   },
   instance: {
-    // @ts-expect-error stakeOsmo not typed
     produce: { stakeOsmo: produceInstance },
   },
 }) => {
