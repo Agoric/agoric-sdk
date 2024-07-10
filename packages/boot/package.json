@@ -1,6 +1,6 @@
 {
   "name": "@agoric/boot",
-  "version": "0.2.0-u16.1",
+  "version": "0.2.0-u16.2",
   "private": true,
   "description": "Config and utilities to bootstrap an Agoric chain",
   "type": "module",
@@ -19,11 +19,11 @@
   "license": "Apache-2.0",
   "dependencies": {
     "@agoric/assert": "^0.6.1-u16.0",
-    "@agoric/builders": "^0.2.0-u16.1",
-    "@agoric/cosmic-proto": "^0.4.1-u16.1",
-    "@agoric/cosmic-swingset": "^0.42.0-u16.1",
+    "@agoric/builders": "^0.2.0-u16.2",
+    "@agoric/cosmic-proto": "^0.4.1-u16.2",
+    "@agoric/cosmic-swingset": "^0.42.0-u16.2",
     "@agoric/ertp": "^0.16.3-u16.1",
-    "@agoric/inter-protocol": "^0.17.0-u16.1",
+    "@agoric/inter-protocol": "^0.17.0-u16.2",
     "@agoric/internal": "^0.4.0-u16.1",
     "@agoric/kmarshal": "^0.1.1-u16.0",
     "@agoric/notifier": "^0.7.0-u16.1",
@@ -32,7 +32,7 @@
     "@agoric/telemetry": "^0.6.3-u16.1",
     "@agoric/time": "^0.3.3-u16.0",
     "@agoric/vat-data": "^0.5.3-u16.1",
-    "@agoric/vats": "^0.16.0-u16.1",
+    "@agoric/vats": "^0.16.0-u16.2",
     "@agoric/vm-config": "^0.1.1-u16.1",
     "@agoric/vow": "^0.2.0-u16.1",
     "@agoric/zoe": "^0.26.3-u16.1",
@@ -48,7 +48,7 @@
     "import-meta-resolve": "^2.2.1"
   },
   "devDependencies": {
-    "@agoric/deploy-script-support": "^0.10.4-u16.1",
+    "@agoric/deploy-script-support": "^0.10.4-u16.2",
     "@agoric/governance": "^0.10.4-u16.1",
     "@agoric/store": "^0.9.3-u16.0",
     "@agoric/swingset-liveslots": "^0.10.3-u16.1",
