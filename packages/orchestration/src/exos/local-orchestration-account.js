@@ -19,8 +19,9 @@ import { orchestrationAccountMethods } from '../utils/orchestrationAccount.js';
 import { makeTimestampHelper } from '../utils/time.js';
 
 /**
+ * @import {HostOf} from '@agoric/async-flow';
  * @import {LocalChainAccount} from '@agoric/vats/src/localchain.js';
- * @import {AmountArg, ChainAddress, DenomAmount, IBCMsgTransferOptions, OrchestrationAccount, ChainInfo, IBCConnectionInfo, PromiseToVow} from '@agoric/orchestration';
+ * @import {AmountArg, ChainAddress, DenomAmount, IBCMsgTransferOptions, OrchestrationAccount, ChainInfo, IBCConnectionInfo} from '@agoric/orchestration';
  * @import {RecorderKit, MakeRecorderKit} from '@agoric/zoe/src/contractSupport/recorder.js'.
  * @import {Zone} from '@agoric/zone';
  * @import {Remote} from '@agoric/internal';
@@ -306,7 +307,7 @@ export const prepareLocalOrchestrationAccountKit = (
         /**
          * TODO: balance lookups for non-vbank assets
          *
-         * @type {PromiseToVow<OrchestrationAccount<any>['getBalance']>}
+         * @type {HostOf<OrchestrationAccount<any>['getBalance']>}
          */
         getBalance(denomArg) {
           // FIXME look up real values
@@ -393,18 +394,18 @@ export const prepareLocalOrchestrationAccountKit = (
          * updater will get a special notification that the account is being
          * transferred.
          */
-        /** @type {PromiseToVow<LocalChainAccount['deposit']>} */
+        /** @type {HostOf<LocalChainAccount['deposit']>} */
         deposit(payment) {
           return watch(
             E(this.state.account).deposit(payment),
             this.facets.returnVoidWatcher,
           );
         },
-        /** @type {PromiseToVow<LocalChainAccount['withdraw']>} */
+        /** @type {HostOf<LocalChainAccount['withdraw']>} */
         withdraw(amount) {
           return watch(E(this.state.account).withdraw(amount));
         },
-        /** @type {PromiseToVow<LocalChainAccount['executeTx']>} */
+        /** @type {HostOf<LocalChainAccount['executeTx']>} */
         executeTx(messages) {
           return watch(E(this.state.account).executeTx(messages));
         },
@@ -456,7 +457,7 @@ export const prepareLocalOrchestrationAccountKit = (
             return watch(transferV, this.facets.returnVoidWatcher);
           });
         },
-        /** @type {PromiseToVow<OrchestrationAccount<any>['transferSteps']>} */
+        /** @type {HostOf<OrchestrationAccount<any>['transferSteps']>} */
         transferSteps(amount, msg) {
           return asVow(() => {
             console.log('transferSteps got', amount, msg);

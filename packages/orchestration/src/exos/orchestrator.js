@@ -15,7 +15,7 @@ import {
 /**
  * @import {Zone} from '@agoric/base-zone';
  * @import {ChainHub} from './chain-hub.js';
- * @import {AsyncFlowTools} from '@agoric/async-flow';
+ * @import {AsyncFlowTools, HostOf} from '@agoric/async-flow';
  * @import {Vow, VowTools} from '@agoric/vow';
  * @import {TimerService} from '@agoric/time';
  * @import {LocalChain} from '@agoric/vats/src/localchain.js';
@@ -26,7 +26,7 @@ import {
  * @import {MakeLocalOrchestrationAccountKit} from './local-orchestration-account.js';
  * @import {MakeLocalChainFacade} from './local-chain-facade.js';
  * @import {MakeRemoteChainFacade} from './remote-chain-facade.js';
- * @import {Chain, ChainInfo, CosmosChainInfo, IBCConnectionInfo, OrchestrationAccount, Orchestrator, PromiseToVow} from '../types.js';
+ * @import {Chain, ChainInfo, IBCConnectionInfo, Orchestrator} from '../types.js';
  */
 
 const { Fail } = assert;
@@ -113,7 +113,7 @@ export const prepareOrchestratorKit = (
         },
       },
       orchestrator: {
-        /** @type {PromiseToVow<Orchestrator['getChain']>} */
+        /** @type {HostOf<Orchestrator['getChain']>} */
         getChain(name) {
           if (name === 'agoric') {
             // TODO #9449 fix types
@@ -123,8 +123,6 @@ export const prepareOrchestratorKit = (
               this.facets.makeLocalChainFacadeWatcher,
             );
           }
-          // TODO #9449 fix types
-          // @ts-expect-error Type 'Vow<Voidless>' is not assignable to type 'Vow<Chain<any>>'.
           return watch(
             chainHub.getChainsAndConnection('agoric', name),
             this.facets.makeRemoteChainFacadeWatcher,

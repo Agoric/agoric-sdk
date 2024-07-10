@@ -7,13 +7,14 @@ import { VowShape } from '@agoric/vow';
 import { ChainAddressShape, ChainFacadeI } from '../typeGuards.js';
 
 /**
+ * @import {HostInterface, HostOf} from '@agoric/async-flow';
  * @import {Zone} from '@agoric/base-zone';
  * @import {TimerService} from '@agoric/time';
  * @import {Remote} from '@agoric/internal';
  * @import {Vow, VowTools} from '@agoric/vow';
  * @import {CosmosInterchainService} from './cosmos-interchain-service.js';
  * @import {prepareCosmosOrchestrationAccount} from './cosmos-orchestration-account.js';
- * @import {ChainInfo, CosmosChainInfo, IBCConnectionInfo, OrchestrationAccount, ChainAddress, IcaAccount, PromiseToVow, Denom} from '../types.js';
+ * @import {ChainInfo, CosmosChainInfo, IBCConnectionInfo, OrchestrationAccount, ChainAddress, IcaAccount, PromiseToVow, Denom, Chain} from '../types.js';
  */
 
 const { Fail } = assert;
@@ -83,30 +84,27 @@ const prepareRemoteChainFacadeKit = (
     },
     {
       public: {
+        /** @type {HostOf<Chain['getChainInfo']>} */
         getChainInfo() {
           return watch(this.state.remoteChainInfo);
         },
 
-        /** @returns {Vow<PromiseToVow<OrchestrationAccount<ChainInfo>>>} */
+        /** @type {HostOf<Chain['makeAccount']>} */
         makeAccount() {
-          // TODO #9449 fix types
-          // @ts-expect-error Type 'Vow<Voidless>' is not assignable to type 'Vow<OrchestrationAccountI>'
-          return asVow(() => {
-            const { remoteChainInfo, connectionInfo } = this.state;
-            const stakingDenom = remoteChainInfo.stakingTokens?.[0]?.denom;
-            if (!stakingDenom) {
-              throw Fail`chain info lacks staking denom`;
-            }
+          const { remoteChainInfo, connectionInfo } = this.state;
+          const stakingDenom = remoteChainInfo.stakingTokens?.[0]?.denom;
+          if (!stakingDenom) {
+            return asVow(Fail`chain info lacks staking denom`);
+          }
 
-            return watch(
-              E(orchestration).makeAccount(
-                remoteChainInfo.chainId,
-                connectionInfo.id,
-                connectionInfo.counterparty.connection_id,
-              ),
-              this.facets.makeAccountWatcher,
-            );
-          });
+          return watch(
+            E(orchestration).makeAccount(
+              remoteChainInfo.chainId,
+              connectionInfo.id,
+              connectionInfo.counterparty.connection_id,
+            ),
+            this.facets.makeAccountWatcher,
+          );
         },
       },
       makeAccountWatcher: {
