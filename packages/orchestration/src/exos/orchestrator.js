@@ -116,8 +116,6 @@ export const prepareOrchestratorKit = (
         /** @type {HostOf<Orchestrator['getChain']>} */
         getChain(name) {
           if (name === 'agoric') {
-            // TODO #9449 fix types
-            // @ts-expect-error Type 'Vow<Voidless>' is not assignable to type 'Vow<Chain<any>>'.
             return watch(
               chainHub.getChainInfo('agoric'),
               this.facets.makeLocalChainFacadeWatcher,
