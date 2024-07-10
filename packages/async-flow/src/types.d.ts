@@ -10,6 +10,7 @@ export type FlowState =
   | 'Replaying'
   | 'Failed'
   | 'Done';
+
 /**
  * `T` defaults to `any`, not `Passable`, because unwrapped guests include
  * non-passables, like unwrapped functions and unwrapped state records.
@@ -19,15 +20,46 @@ export type FlowState =
  */
 export type Guest<T extends unknown = any> = T;
 export type Host<T extends Passable = Passable> = T;
+
 /**
  * A HostVow must be durably storable. It corresponds to an
  * ephemeral guest promise.
  */
 export type HostVow<T extends Passable = Passable> = Host<Vow<T>>;
+
 export type GuestAsyncFunc = (
   ...activationArgs: Guest[]
 ) => Guest<Promise<any>>;
+
 export type HostAsyncFuncWrapper = (...activationArgs: Host[]) => HostVow;
+
+/**
+ * The function from the host as it will be available in the guest.
+ *
+ * Specifically, Vow return values are converted to Promises.
+ */
+export type GuestOf<F extends HostAsyncFuncWrapper> = F extends (
+  ...args: infer A
+) => Vow<infer R>
+  ? (...args: A) => Promise<R>
+  : F;
+
+/**
+ * Convert an entire Guest interface into what the host will implement.
+ */
+type HostInterface<T> = {
+  [K in keyof T]: HostOf<T[K]>;
+};
+
+/**
+ * The function the host must provide to match an interface the guest expects.
+ *
+ * Specifically, Promise return values are converted to Vows.
+ */
+export type HostOf<F> = F extends (...args: infer A) => Promise<infer R>
+  ? (...args: A) => Vow<R extends Passable ? R : HostInterface<R>>
+  : F;
+
 export type PreparationOptions = {
   vowTools?: VowTools;
   makeLogStore?: (() => LogStore) | undefined;
@@ -35,6 +67,7 @@ export type PreparationOptions = {
   endowmentTools?: EndowmentTools;
 };
 export type OutcomeKind = 'return' | 'throw';
+
 export type Outcome =
   | {
       kind: 'return';
@@ -44,6 +77,7 @@ export type Outcome =
       kind: 'throw';
       problem: any;
     };
+
 export type Ephemera<S extends WeakKey = WeakKey, V extends unknown = any> = {
   for: (self: S) => V;
   resetFor: (self: S) => void;
