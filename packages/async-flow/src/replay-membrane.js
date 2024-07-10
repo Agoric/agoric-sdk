@@ -43,7 +43,7 @@ export const makeReplayMembrane = ({
   watchWake,
   panic,
 }) => {
-  const { when, watch, makeVowKit } = vowTools;
+  const { when, makeVowKit } = vowTools;
 
   const equate = makeEquate(bijection);
 
@@ -154,14 +154,9 @@ export const makeReplayMembrane = ({
     const passStyle = passStyleOf(h);
     switch (passStyle) {
       case 'promise': {
-        const e = Error('where warning happened');
-        console.log('Warning for now: vow expected, not promise', h, e);
-        // TODO remove this stopgap. Here for now because host-side
-        // promises are everywhere!
-        // Note: A good place to set a breakpoint, or to uncomment the
-        // `debugger;` line, to work around bundling.
-        // debugger;
-        return watch(h);
+        const e = Error('where promise detected');
+        console.error('vow expected, not promise', h, e);
+        throw e;
       }
       case 'copyRecord': {
         const o = /** @type {object} */ (h);
