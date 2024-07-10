@@ -337,6 +337,25 @@ export async function launch({
 }) {
   console.info('Launching SwingSet kernel');
 
+  // The swingstore export-data callback gives us export-data records,
+  // which must be written into IAVL by sending them over to the
+  // golang side with swingStoreExportCallback . However, that
+  // callback isn't ready right away, so if e.g. openSwingStore() were
+  // to invoke it, we might lose those records. Likewise
+  // saveOutsideState() gathers the chainSends just before calling
+  // commit, so if the callback were invoked during commit(), those
+  // records would be left for a subsequent block, which would break
+  // consensus if the node crashed before the next commit. So this
+  // `allowExportCallback` flag serves to catch these two cases.
+  //
+  // Note that swingstore is within its rights to call exportCallback
+  // during openSwingStore() or commit(), it just happens to not do so
+  // right now. If that changes under maintenance, this guard should
+  // turn a corruption bug into a crash bug. See
+  // https://github.com/Agoric/agoric-sdk/issues/9655 for details
+
+  let allowExportCallback = false;
+
   // The swingStore's exportCallback is synchronous, however we allow the
   // callback provided to launch-chain to be asynchronous. The callbacks are
   // invoked sequentially like if they were awaited, and the block manager
@@ -347,6 +366,7 @@ export async function launch({
   const swingStoreExportSyncCallback =
     swingStoreExportCallback &&
     (updates => {
+      assert(allowExportCallback, 'export-data callback called at bad time');
       pendingSwingStoreExport = swingStoreExportCallbackWithQueue(updates);
     });
 
@@ -474,6 +494,7 @@ export async function launch({
   }
 
   async function saveOutsideState(blockHeight) {
+    allowExportCallback = false;
     const chainSends = await clearChainSends();
     kvStore.set(getHostKey('height'), `${blockHeight}`);
     kvStore.set(getHostKey('chainSends'), JSON.stringify(chainSends));
@@ -893,6 +914,7 @@ export async function launch({
     // );
     switch (action.type) {
       case ActionType.AG_COSMOS_INIT: {
+        allowExportCallback = true; // cleared by saveOutsideState in COMMIT_BLOCK
         const { blockHeight, isBootstrap, upgradeDetails } = action;
 
         if (!blockNeedsExecution(blockHeight)) {
@@ -979,6 +1001,7 @@ export async function launch({
       }
 
       case ActionType.BEGIN_BLOCK: {
+        allowExportCallback = true; // cleared by saveOutsideState in COMMIT_BLOCK
         const { blockHeight, blockTime, params } = action;
         blockParams = parseParams(params);
         verboseBlocks &&
