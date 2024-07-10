@@ -7,26 +7,34 @@ import { Far } from '@endo/marshal';
 import { makeScalarMapStore } from '@agoric/store';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
 
+import { makeHeapZone } from '@agoric/zone';
 import { evalContractBundle } from '../src/contractFacet/evalContractCode.js';
 import { handlePKitWarning } from '../src/handleWarning.js';
-import { makeHandle } from '../src/makeHandle.js';
+import { defineDurableHandle } from '../src/makeHandle.js';
 import zcfBundle from '../bundles/bundle-contractFacet.js';
 
 /** @typedef { import('@agoric/swingset-vat').BundleID} BundleID */
 /** @typedef { import('@agoric/swingset-vat').EndoZipBase64Bundle} EndoZipBase64Bundle */
 
-// this simulates a bundlecap, which is normally a swingset "device node"
-/** @typedef { import('@agoric/swingset-vat').BundleCap } BundleCap */
-/** @type {() => BundleCap} */
-const fakeBundleCap = () => makeHandle('FakeBundleCap');
-const bogusBundleCap = () => makeHandle('BogusBundleCap');
-export const zcfBundleCap = fakeBundleCap();
-
 /**
  * @param {(...args) => unknown} [testContextSetter]
  * @param {(x: unknown) => unknown} [makeRemote]
+ * @param {import('@agoric/zone').Zone} [zone]
  */
-function makeFakeVatAdmin(testContextSetter = undefined, makeRemote = x => x) {
+function makeFakeVatAdmin(
+  testContextSetter = undefined,
+  makeRemote = x => x,
+  zone = makeHeapZone(),
+) {
+  const baggage = zone.mapStore('baggage');
+
+  // this simulates a bundlecap, which is normally a swingset "device node"
+  /** @typedef { import('@agoric/swingset-vat').BundleCap } BundleCap */
+  /** @type {() => BundleCap} */
+  const fakeBundleCap = () => defineDurableHandle(baggage, 'FakeBundleCap');
+  const bogusBundleCap = () => defineDurableHandle(baggage, 'BogusBundleCap');
+  const zcfBundleCap = fakeBundleCap();
+
   // FakeVatPowers isn't intended to support testing of vat termination, it is
   // provided to allow unit testing of contracts that call zcf.shutdown()
   let exitMessage;
@@ -53,7 +61,7 @@ function makeFakeVatAdmin(testContextSetter = undefined, makeRemote = x => x) {
   // This is explicitly intended to be mutable so that
   // test-only state can be provided from contracts
   // to their tests.
-  const admin = Far('vatAdmin', {
+  const admin = zone.exo('vatAdmin', undefined, {
     getBundleCap: bundleID => {
       if (!idToBundleCap.has(bundleID)) {
         idToBundleCap.init(bundleID, bogusBundleCap());
@@ -144,7 +152,7 @@ function makeFakeVatAdmin(testContextSetter = undefined, makeRemote = x => x) {
         );
         return idToBundleCap.get(id);
       }
-      const bundleCap = fakeBundleCap();
+      const bundleCap = defineDurableHandle(baggage, 'FakeBundleCap');
       idToBundleCap.init(id, bundleCap);
       bundleCapToBundle.init(bundleCap, bundle);
       return bundleCap;
