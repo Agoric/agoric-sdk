@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.35.0-u16.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmos@0.35.0-u16.1...@agoric/cosmos@0.35.0-u16.2) (2024-07-10)
+
+
+### Bug Fixes
+
+* **cosmos:** don't rerun store migrations on upgrade ([#9683](https://github.com/Agoric/agoric-sdk/issues/9683)) ([12b78e3](https://github.com/Agoric/agoric-sdk/commit/12b78e307e22d0dc0c95f40099300e16655781c4)), closes [#9682](https://github.com/Agoric/agoric-sdk/issues/9682)
+
+
+
 ## [0.35.0-u16.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmos@0.35.0-u16.0...@agoric/cosmos@0.35.0-u16.1) (2024-07-10)
 
 **Note:** Version bump only for package @agoric/cosmos

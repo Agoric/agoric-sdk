@@ -1,6 +1,6 @@
 {
   "name": "@agoric/pegasus",
-  "version": "0.8.0-u16.1",
+  "version": "0.8.0-u16.2",
   "description": "Peg-as-us contract",
   "type": "module",
   "main": "./src/pegasus.js",
@@ -35,7 +35,7 @@
     "@agoric/notifier": "^0.7.0-u16.1",
     "@agoric/store": "^0.9.3-u16.0",
     "@agoric/swingset-vat": "^0.33.0-u16.1",
-    "@agoric/vats": "^0.16.0-u16.1",
+    "@agoric/vats": "^0.16.0-u16.2",
     "@agoric/vow": "^0.2.0-u16.1",
     "@agoric/zoe": "^0.26.3-u16.1",
     "@agoric/zone": "^0.3.0-u16.1",

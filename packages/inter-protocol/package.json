@@ -1,6 +1,6 @@
 {
   "name": "@agoric/inter-protocol",
-  "version": "0.17.0-u16.1",
+  "version": "0.17.0-u16.2",
   "description": "Core cryptoeconomy contracts",
   "type": "module",
   "main": "src/index.js",
@@ -39,7 +39,7 @@
     "@agoric/store": "^0.9.3-u16.0",
     "@agoric/time": "^0.3.3-u16.0",
     "@agoric/vat-data": "^0.5.3-u16.1",
-    "@agoric/vats": "^0.16.0-u16.1",
+    "@agoric/vats": "^0.16.0-u16.2",
     "@agoric/zoe": "^0.26.3-u16.1",
     "@endo/captp": "^4.2.0",
     "@endo/eventual-send": "^1.2.2",
@@ -50,7 +50,7 @@
     "jessie.js": "^0.3.4"
   },
   "devDependencies": {
-    "@agoric/smart-wallet": "^0.5.4-u16.1",
+    "@agoric/smart-wallet": "^0.5.4-u16.2",
     "@agoric/swingset-liveslots": "^0.10.3-u16.1",
     "@agoric/swingset-vat": "^0.33.0-u16.1",
     "@agoric/zone": "^0.3.0-u16.1",
