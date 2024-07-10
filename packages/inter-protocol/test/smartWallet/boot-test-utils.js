@@ -5,6 +5,7 @@
  */
 // @ts-check
 import { Fail } from '@endo/errors';
+import { E } from '@endo/eventual-send';
 import {
   makeFakeVatAdmin,
   zcfBundleCap,
@@ -109,7 +110,8 @@ export const makePopulatedFakeVatAdmin = () => {
     const baggage = makeScalarBigMapStore('baggage');
     const adminNode =
       /** @type {import('@agoric/swingset-vat').VatAdminFacet} */ ({});
-    return { root: buildRoot({}, vatParameters, baggage), adminNode };
+    const rootP = buildRoot({}, vatParameters, baggage);
+    return E.when(rootP, root => harden({ root, adminNode }));
   };
   const createVatByName = async name => {
     return createVat(fakeNameToCap.get(name) || Fail`unknown vat ${name}`);
