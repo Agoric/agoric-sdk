@@ -10,6 +10,7 @@ export type FlowState =
   | 'Replaying'
   | 'Failed'
   | 'Done';
+
 /**
  * `T` defaults to `any`, not `Passable`, because unwrapped guests include
  * non-passables, like unwrapped functions and unwrapped state records.
@@ -19,6 +20,7 @@ export type FlowState =
  */
 export type Guest<T extends unknown = any> = T;
 export type Host<T extends Passable = Passable> = T;
+
 /**
  * A HostVow must be durably storable. It corresponds to an
  * ephemeral guest promise.
@@ -65,6 +67,7 @@ export type PreparationOptions = {
   endowmentTools?: EndowmentTools;
 };
 export type OutcomeKind = 'return' | 'throw';
+
 export type Outcome =
   | {
       kind: 'return';
@@ -74,6 +77,7 @@ export type Outcome =
       kind: 'throw';
       problem: any;
     };
+
 export type Ephemera<S extends WeakKey = WeakKey, V extends unknown = any> = {
   for: (self: S) => V;
   resetFor: (self: S) => void;
