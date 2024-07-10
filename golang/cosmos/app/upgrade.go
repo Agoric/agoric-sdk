@@ -9,7 +9,8 @@ import (
 )
 
 var upgradeNamesOfThisVersion = map[string]bool{
-	"agoric-upgrade-16": true,
+	"agoric-upgrade-16":   true,
+	"agoric-upgrade-16-2": true,
 }
 
 func isFirstTimeUpgradeOfThisVersion(app *GaiaApp, ctx sdk.Context) bool {
