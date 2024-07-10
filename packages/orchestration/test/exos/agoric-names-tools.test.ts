@@ -1,20 +1,19 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-import { heapVowE as E } from '@agoric/vow/vat.js';
-import { makeHeapZone } from '@agoric/zone';
-import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
 import { makeIssuerKit } from '@agoric/ertp';
 import { AssetInfo } from '@agoric/vats/src/vat-bank.js';
+import { heapVowE as E } from '@agoric/vow/vat.js';
+import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
 import { makeResumableAgoricNamesHack } from '../../src/exos/agoric-names-tools.js';
-import { commonSetup } from '../supports.js';
+import { commonSetup, provideDurableZone } from '../supports.js';
 
 test('agoric names tools', async t => {
+  const zone = provideDurableZone('test');
   const {
     bootstrap: { agoricNames, agoricNamesAdmin, bankManager, vowTools },
     brands: { ist },
-  } = await commonSetup(t);
+  } = await commonSetup(t, zone);
 
-  const zone = makeHeapZone();
   const agNamesTools = makeResumableAgoricNamesHack(zone, {
     agoricNames,
     vowTools,

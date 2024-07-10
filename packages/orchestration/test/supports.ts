@@ -21,6 +21,7 @@ import { makeHeapZone, type Zone } from '@agoric/zone';
 import { makeDurableZone } from '@agoric/zone/durable.js';
 import { E } from '@endo/far';
 import type { ExecutionContext } from 'ava';
+import { prepareChainStorageNode } from '@agoric/internal/src/lib-chainStorage.js';
 import { registerChainNamespace } from '../src/chain-info.js';
 import { prepareCosmosInterchainService } from '../src/exos/cosmos-interchain-service.js';
 import { setupFakeNetwork } from './network-fakes.js';
@@ -30,13 +31,15 @@ export {
   makeFakeTransferBridge,
 } from '@agoric/vats/tools/fake-bridge.js';
 
-export const commonSetup = async (t: ExecutionContext<any>) => {
+// The common setup cannot support a durable zone because many of the fakes are not durable.
+// They were made before we had durable kinds (and thus don't take a zone or baggage).
+// To test durability in unit tests, test a particular entity with `relaxDurabilityRules: false`.
+// To test durability integrating multiple vats, use a RunUtils/bootstrap test.
+export const commonSetup = async (
+  t: ExecutionContext<any>,
+  rootZone = makeHeapZone(),
+) => {
   t.log('bootstrap vat dependencies');
-  // The common setup cannot support a durable zone because many of the fakes are not durable.
-  // They were made before we had durable kinds (and thus don't take a zone or baggage).
-  // To test durability in unit tests, test a particular entity with `relaxDurabilityRules: false`.
-  // To test durability integrating multiple vats, use a RunUtils/bootstrap test.
-  const rootZone = makeHeapZone();
 
   const { nameHub: agoricNames, nameAdmin: agoricNamesAdmin } =
     makeNameHubKit();
@@ -103,9 +106,17 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
   });
   const timer = buildZoeManualTimer(t.log);
   const marshaller = makeFakeBoard().getReadonlyMarshaller();
-  const storage = makeFakeStorageKit('mockChainStorageRoot', {
-    sequence: false,
-  });
+  const makeChainStorageNode = prepareChainStorageNode(
+    rootZone.subZone('storage'),
+  );
+  const storage = makeFakeStorageKit(
+    'mockChainStorageRoot',
+    {
+      sequence: false,
+    },
+    rootZone,
+  );
+  storage.rootNode;
 
   const { portAllocator, setupIBCProtocol, ibcBridge } = setupFakeNetwork(
     rootZone.subZone('network'),

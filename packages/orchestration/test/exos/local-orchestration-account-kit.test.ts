@@ -11,13 +11,13 @@ import { prepareLocalOrchestrationAccountKit } from '../../src/exos/local-orches
 import { ChainAddress } from '../../src/orchestration-api.js';
 import { makeChainHub } from '../../src/exos/chain-hub.js';
 import { NANOSECONDS_PER_SECOND } from '../../src/utils/time.js';
-import { commonSetup } from '../supports.js';
+import { commonSetup, provideDurableZone } from '../supports.js';
 import { UNBOND_PERIOD_SECONDS } from '../ibc-mocks.js';
 import { maxClockSkew } from '../../src/utils/cosmos.js';
 
 test('deposit, withdraw', async t => {
   const rootZone = makeHeapZone();
-  const { bootstrap, brands, utils } = await commonSetup(t);
+  const { bootstrap, brands, utils } = await commonSetup(t, rootZone);
 
   const { bld: stake } = brands;
 
@@ -90,7 +90,7 @@ test('deposit, withdraw', async t => {
 
 test('delegate, undelegate', async t => {
   const rootZone = makeHeapZone();
-  const { bootstrap, brands, utils } = await commonSetup(t);
+  const { bootstrap, brands, utils } = await commonSetup(t, rootZone);
 
   const { bld } = brands;
 
@@ -153,7 +153,7 @@ test('delegate, undelegate', async t => {
 
 test('transfer', async t => {
   const rootZone = makeHeapZone();
-  const { bootstrap, brands, utils } = await commonSetup(t);
+  const { bootstrap, brands, utils } = await commonSetup(t, rootZone);
 
   const { bld: stake } = brands;
 
