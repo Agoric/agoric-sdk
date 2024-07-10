@@ -5,6 +5,8 @@ import { orcUtils } from '../utils/orc.js';
 import { withOrchestration } from '../utils/start-helper.js';
 
 /**
+ * @import {GuestInterface, GuestOf} from '@agoric/async-flow';
+ * @import {LocalTransfer} from '../utils/zoe-tools.js';
  * @import {Orchestrator, CosmosValidatorAddress} from '../types.js'
  * @import {TimerService} from '@agoric/time';
  * @import {LocalChain} from '@agoric/vats/src/localchain.js';
@@ -18,7 +20,7 @@ import { withOrchestration } from '../utils/start-helper.js';
 /**
  * @param {Orchestrator} orch
  * @param {object} ctx
- * @param {OrchestrationTools['zoeTools']['localTransfer']} ctx.localTransfer
+ * @param {LocalTransfer} ctx.localTransfer
  * @param {ZCFSeat} seat
  * @param {object} offerArgs
  * @param {Amount<'nat'>} offerArgs.staked
@@ -38,8 +40,6 @@ const stackAndSwapFn = async (orch, { localTransfer }, seat, offerArgs) => {
   const omniAddress = omniAccount.getAddress();
 
   // deposit funds from user seat to LocalChainAccount
-  // TODO localTransfer type returns vow but in the guest context it should be a promise
-  // @ts-expect-error XXX localAccount type
   await localTransfer(seat, localAccount, give);
   seat.exit();
 

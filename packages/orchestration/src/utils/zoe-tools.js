@@ -6,6 +6,15 @@ import { atomicTransfer } from '@agoric/zoe/src/contractSupport/index.js';
  * @import {Vow, VowTools} from '@agoric/vow';
  * @import {Zone} from '@agoric/zone';
  * @import {OrchestrationAccount} from '../orchestration-api.js'
+ * @import {LocalAccountMethods} from '../types.js';
+ */
+
+/**
+ * @typedef {(
+ *   srcSeat: ZCFSeat,
+ *   localAccount: LocalAccountMethods,
+ *   give: AmountKeywordRecord,
+ * ) => Promise<void>} LocalTransfer
  */
 
 /**
@@ -20,11 +29,7 @@ export const makeZoeTools = (zone, { zcf, vowTools }) => {
     zone,
     'localTransfer',
     /**
-     * @type {(
-     *   srcSeat: ZCFSeat,
-     *   localAccount: LocalOrchestrationAccountKit['holder'],
-     *   give: AmountKeywordRecord,
-     * ) => Promise<void>}
+     * @type {LocalTransfer}
      */
     async (srcSeat, localAccount, give) => {
       !srcSeat.hasExited() || Fail`The seat cannot have exited.`;
