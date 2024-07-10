@@ -1,15 +1,13 @@
 import { makeStateRecord } from '@agoric/async-flow';
 import { AmountShape } from '@agoric/ertp';
 import { heapVowE } from '@agoric/vow/vat.js';
-import { withdrawFromSeat } from '@agoric/zoe/src/contractSupport/zoeHelpers.js';
 import { InvitationShape } from '@agoric/zoe/src/typeGuards.js';
+import { Fail } from '@endo/errors';
 import { E } from '@endo/far';
-import { M, mustMatch } from '@endo/patterns';
-import { makeResumableAgoricNamesHack } from '../exos/agoric-names-tools.js';
+import { M } from '@endo/patterns';
 import { CosmosChainInfoShape } from '../typeGuards.js';
 import { withOrchestration } from '../utils/start-helper.js';
-
-const { entries } = Object;
+import { orchestrationFns } from './sendAnywhereFlows.js';
 
 /**
  * @import {TimerService} from '@agoric/time';
@@ -19,9 +17,7 @@ const { entries } = Object;
  * @import {Zone} from '@agoric/zone';
  * @import {CosmosChainInfo, IBCConnectionInfo} from '../cosmos-api';
  * @import {CosmosInterchainService} from '../exos/cosmos-interchain-service.js';
- * @import {Orchestrator} from '../types.js'
  * @import {OrchestrationTools} from '../utils/start-helper.js';
- * @import {OrchestrationAccount} from '../orchestration-api.js'
  */
 
 /**
@@ -33,54 +29,6 @@ const { entries } = Object;
  *   agoricNames: Remote<NameHub>;
  * }} OrchestrationPowers
  */
-
-/**
- * @param {Orchestrator} orch
- * @param {object} ctx
- * @param {ZCF} ctx.zcf
- * @param {any} ctx.agoricNamesTools TODO Give this a better type
- * @param {{ account: OrchestrationAccount<any> | undefined }} ctx.contractState
- * @param {ZCFSeat} seat
- * @param {object} offerArgs
- * @param {string} offerArgs.chainName
- * @param {string} offerArgs.destAddr
- */
-const sendItFn = async (
-  orch,
-  { zcf, agoricNamesTools, contractState },
-  seat,
-  offerArgs,
-) => {
-  mustMatch(offerArgs, harden({ chainName: M.scalar(), destAddr: M.string() }));
-  const { chainName, destAddr } = offerArgs;
-  const { give } = seat.getProposal();
-  const [[kw, amt]] = entries(give);
-  const { denom } = await agoricNamesTools.findBrandInVBank(amt.brand);
-  const chain = await orch.getChain(chainName);
-
-  if (!contractState.account) {
-    const agoricChain = await orch.getChain('agoric');
-    contractState.account = await agoricChain.makeAccount();
-    console.log('contractState.account', contractState.account);
-  }
-
-  const info = await chain.getChainInfo();
-  console.log('info', info);
-  const { chainId } = info;
-  assert(typeof chainId === 'string', 'bad chainId');
-  const { [kw]: pmtP } = await withdrawFromSeat(zcf, seat, give);
-  // #9212 types for chain account helpers
-  // @ts-expect-error LCA should have .deposit() method
-  await E.when(pmtP, pmt => contractState.account?.deposit(pmt));
-  await contractState.account?.transfer(
-    { denom, value: amt.value },
-    {
-      value: destAddr,
-      encoding: 'bech32',
-      chainId,
-    },
-  );
-};
 
 export const SingleAmountRecord = M.and(
   M.recordOf(M.string(), AmountShape, {
@@ -103,25 +51,35 @@ const contract = async (
   zcf,
   privateArgs,
   zone,
-  { chainHub, orchestrate, vowTools },
+  { chainHub, orchestrateAll, vowTools, zoeTools },
 ) => {
-  const agoricNamesTools = makeResumableAgoricNamesHack(zone, {
-    agoricNames: privateArgs.agoricNames,
-    vowTools,
-  });
-
   const contractState = makeStateRecord(
     /** @type {{ account: OrchestrationAccount<any> | undefined }} */ {
       account: undefined,
     },
   );
 
-  /** @type {OfferHandler} */
-  const sendIt = orchestrate(
-    'sendIt',
-    { zcf, agoricNamesTools, contractState },
-    sendItFn,
+  // TODO should be a provided helper
+  const findBrandInVBank = vowTools.retriable(
+    zone,
+    'findBrandInVBank',
+    /** @param {Brand} brand */
+    async brand => {
+      const { agoricNames } = privateArgs;
+      const assets = await E(E(agoricNames).lookup('vbankAsset')).values();
+      const it = assets.find(a => a.brand === brand);
+      it || Fail`brand ${brand} not in agoricNames.vbankAsset`;
+      return it;
+    },
   );
+
+  // orchestrate uses the names on orchestrationFns to do a "prepare" of the associated behavior
+  const orchFns = orchestrateAll(orchestrationFns, {
+    zcf,
+    contractState,
+    localTransfer: zoeTools.localTransfer,
+    findBrandInVBank,
+  });
 
   const publicFacet = zone.exo(
     'Send PF',
@@ -131,7 +89,7 @@ const contract = async (
     {
       makeSendInvitation() {
         return zcf.makeInvitation(
-          sendIt,
+          orchFns.sendIt,
           'send',
           undefined,
           M.splitRecord({ give: SingleAmountRecord }),

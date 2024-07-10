@@ -139,3 +139,11 @@ export const prepareOrchestratorKit = (
     },
   );
 harden(prepareOrchestratorKit);
+/**
+ * Host side of the Orchestrator interface. (Methods return vows instead of
+ * promises as the interface within the guest function.)
+ *
+ * @typedef {ReturnType<
+ *   ReturnType<typeof prepareOrchestratorKit>
+ * >['orchestrator']} HostOrchestrator
+ */

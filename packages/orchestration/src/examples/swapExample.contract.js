@@ -1,13 +1,11 @@
 import { StorageNodeShape } from '@agoric/internal';
 import { TimerServiceShape } from '@agoric/time';
-import { withdrawFromSeat } from '@agoric/zoe/src/contractSupport/zoeHelpers.js';
-import { deeplyFulfilled } from '@endo/marshal';
-import { M, objectMap } from '@endo/patterns';
+import { M } from '@endo/patterns';
 import { orcUtils } from '../utils/orc.js';
 import { withOrchestration } from '../utils/start-helper.js';
 
 /**
- * @import {Orchestrator, IcaAccount, CosmosValidatorAddress} from '../types.js'
+ * @import {Orchestrator, CosmosValidatorAddress} from '../types.js'
  * @import {TimerService} from '@agoric/time';
  * @import {LocalChain} from '@agoric/vats/src/localchain.js';
  * @import {Remote} from '@agoric/internal';
@@ -20,13 +18,13 @@ import { withOrchestration } from '../utils/start-helper.js';
 /**
  * @param {Orchestrator} orch
  * @param {object} ctx
- * @param {ZCF} ctx.zcf
+ * @param {OrchestrationTools['zoeTools']['localTransfer']} ctx.localTransfer
  * @param {ZCFSeat} seat
  * @param {object} offerArgs
  * @param {Amount<'nat'>} offerArgs.staked
  * @param {CosmosValidatorAddress} offerArgs.validator
  */
-const stackAndSwapFn = async (orch, { zcf }, seat, offerArgs) => {
+const stackAndSwapFn = async (orch, { localTransfer }, seat, offerArgs) => {
   const { give } = seat.getProposal();
 
   const omni = await orch.getChain('omniflixhub');
@@ -40,13 +38,9 @@ const stackAndSwapFn = async (orch, { zcf }, seat, offerArgs) => {
   const omniAddress = omniAccount.getAddress();
 
   // deposit funds from user seat to LocalChainAccount
-  const payments = await withdrawFromSeat(zcf, seat, give);
-  await deeplyFulfilled(
-    objectMap(payments, payment =>
-      // @ts-expect-error payment is ERef<Payment> which happens to work but isn't officially supported
-      localAccount.deposit(payment),
-    ),
-  );
+  // TODO localTransfer type returns vow but in the guest context it should be a promise
+  // @ts-expect-error XXX localAccount type
+  await localTransfer(seat, localAccount, give);
   seat.exit();
 
   // build swap instructions with orcUtils library
@@ -104,7 +98,7 @@ export const makeNatAmountShape = (brand, min) =>
  * @param {Zone} zone
  * @param {OrchestrationTools} tools
  */
-const contract = async (zcf, privateArgs, zone, { orchestrate }) => {
+const contract = async (zcf, privateArgs, zone, { orchestrate, zoeTools }) => {
   const { brands } = zcf.getTerms();
 
   /** deprecated historical example */
@@ -114,7 +108,11 @@ const contract = async (zcf, privateArgs, zone, { orchestrate }) => {
    *   { staked: Amount<'nat'>; validator: CosmosValidatorAddress }
    * >}
    */
-  const swapAndStakeHandler = orchestrate('LSTTia', { zcf }, stackAndSwapFn);
+  const swapAndStakeHandler = orchestrate(
+    'LSTTia',
+    { zcf, localTransfer: zoeTools.localTransfer },
+    stackAndSwapFn,
+  );
 
   const publicFacet = zone.exo('publicFacet', undefined, {
     makeSwapAndStakeInvitation() {
