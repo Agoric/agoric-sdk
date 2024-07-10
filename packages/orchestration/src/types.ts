@@ -5,7 +5,6 @@ export type * from './cosmos-api.js';
 export type * from './ethereum-api.js';
 export type * from './exos/chain-account-kit.js';
 export type * from './exos/icq-connection-kit.js';
-export type * from './internal.js';
 export type * from './orchestration-api.js';
 export type * from './exos/cosmos-interchain-service.js';
 export type * from './vat-orchestration.js';
