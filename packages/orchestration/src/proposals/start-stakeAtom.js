@@ -1,9 +1,6 @@
 import { makeTracer } from '@agoric/internal';
 import { makeStorageNodeChild } from '@agoric/internal/src/lib-chainStorage.js';
-import { prepareVowTools } from '@agoric/vow';
-import { makeHeapZone } from '@agoric/zone';
 import { E } from '@endo/far';
-import { makeChainHub } from '../exos/chain-hub.js';
 
 /**
  * @import {IBCConnectionID} from '@agoric/vats';
@@ -46,25 +43,15 @@ export const startStakeAtom = async ({
   const storageNode = await makeStorageNodeChild(chainStorage, VSTORAGE_PATH);
   const marshaller = await E(board).getPublishingMarshaller();
 
-  const vt = prepareVowTools(makeHeapZone());
-  const chainHub = makeChainHub(await agoricNames, vt);
-
-  const [_, cosmoshub, connectionInfo] = await vt.when(
-    chainHub.getChainsAndConnection('agoric', 'cosmoshub'),
-  );
-
   /** @type {StartUpgradableOpts<StakeIcaSF>} */
   const startOpts = {
     label: 'stakeAtom',
     installation: stakeIca,
     terms: {
-      chainId: cosmoshub.chainId,
-      hostConnectionId: connectionInfo.id,
-      controllerConnectionId: connectionInfo.counterparty.connection_id,
-      bondDenom: cosmoshub.stakingTokens[0].denom,
-      icqEnabled: cosmoshub.icqEnabled,
+      remoteChainName: 'cosmoshub',
     },
     privateArgs: {
+      agoricNames: await agoricNames,
       cosmosInterchainService: await cosmosInterchainService,
       storageNode,
       marshaller,

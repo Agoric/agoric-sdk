@@ -2,7 +2,7 @@
 
 import { makeTracer, StorageNodeShape } from '@agoric/internal';
 import { TimerServiceShape } from '@agoric/time';
-import { heapVowE as E, prepareVowTools } from '@agoric/vow/vat.js';
+import { heapVowE as E, prepareSwingsetVowTools } from '@agoric/vow/vat.js';
 import {
   prepareRecorderKitMakers,
   provideAll,
@@ -10,10 +10,13 @@ import {
 import { InvitationShape } from '@agoric/zoe/src/typeGuards.js';
 import { makeDurableZone } from '@agoric/zone/durable.js';
 import { M } from '@endo/patterns';
+import { makeChainHub } from '../exos/chain-hub.js';
 import { prepareCosmosOrchestrationAccount } from '../exos/cosmos-orchestration-account.js';
 
 const trace = makeTracer('StakeIca');
 /**
+ * @import {NameHub} from '@agoric/vats';
+ * @import {Remote} from '@agoric/vow';
  * @import {Baggage} from '@agoric/vat-data';
  * @import {IBCConnectionID} from '@agoric/vats';
  * @import {TimerService} from '@agoric/time';
@@ -23,13 +26,10 @@ const trace = makeTracer('StakeIca');
 /** @type {ContractMeta<typeof start>} */
 export const meta = harden({
   customTermsShape: {
-    chainId: M.string(),
-    hostConnectionId: M.string(),
-    controllerConnectionId: M.string(),
-    bondDenom: M.string(),
-    icqEnabled: M.boolean(),
+    remoteChainName: M.string(),
   },
   privateArgsShape: {
+    agoricNames: M.remotable('agoricNames'),
     cosmosInterchainService: M.remotable('cosmosInterchainService'),
     storageNode: StorageNodeShape,
     marshaller: M.remotable('marshaller'),
@@ -40,17 +40,14 @@ export const privateArgsShape = meta.privateArgsShape;
 
 /**
  * @typedef {{
- *   chainId: string;
- *   hostConnectionId: IBCConnectionID;
- *   controllerConnectionId: IBCConnectionID;
- *   bondDenom: string;
- *   icqEnabled: boolean;
+ *   remoteChainName: string;
  * }} StakeIcaTerms
  */
 
 /**
  * @param {ZCF<StakeIcaTerms>} zcf
  * @param {{
+ *   agoricNames: Remote<NameHub>;
  *   cosmosInterchainService: CosmosInterchainService;
  *   storageNode: StorageNode;
  *   marshaller: Marshaller;
@@ -59,14 +56,9 @@ export const privateArgsShape = meta.privateArgsShape;
  * @param {Baggage} baggage
  */
 export const start = async (zcf, privateArgs, baggage) => {
+  const { remoteChainName } = zcf.getTerms();
   const {
-    chainId,
-    hostConnectionId,
-    controllerConnectionId,
-    bondDenom,
-    icqEnabled,
-  } = zcf.getTerms();
-  const {
+    agoricNames,
     cosmosInterchainService: orchestration,
     marshaller,
     storageNode,
@@ -81,7 +73,7 @@ export const start = async (zcf, privateArgs, baggage) => {
 
   const { makeRecorderKit } = prepareRecorderKitMakers(baggage, marshaller);
 
-  const vowTools = prepareVowTools(zone.subZone('vows'));
+  const vowTools = prepareSwingsetVowTools(zone.subZone('vows'));
 
   const makeCosmosOrchestrationAccount = prepareCosmosOrchestrationAccount(
     zone,
@@ -89,6 +81,19 @@ export const start = async (zcf, privateArgs, baggage) => {
     vowTools,
     zcf,
   );
+
+  const chainHub = makeChainHub(agoricNames, vowTools);
+  const [_, remote, connection] = await vowTools.when(
+    chainHub.getChainsAndConnection('agoric', remoteChainName),
+  );
+
+  const chainId = remote.chainId;
+  const hostConnectionId = connection.id;
+  const controllerConnectionId = connection.counterparty.connection_id;
+  // @ts-expect-error XXX ChainHub literal
+  const bondDenom = remote.stakingTokens[0].denom;
+  // @ts-expect-error XXX ChainHub literal
+  const icqEnabled = remote.icqEnabled;
 
   async function makeAccountKit() {
     const account = await E(orchestration).makeAccount(
