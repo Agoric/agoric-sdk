@@ -18,9 +18,12 @@ export const orchestrationAccountMethods = {
     .optional(M.record())
     .returns(VowShape),
   transferSteps: M.call(AmountArgShape, M.any()).returns(VowShape),
-  asContinuingOffer: M.call().returns({
-    publicSubscribers: TopicsRecordShape,
-    invitationMakers: M.any(),
-    holder: M.remotable(),
-  }),
+  asContinuingOffer: M.call().returns(
+    Vow$({
+      publicSubscribers: TopicsRecordShape,
+      invitationMakers: M.any(),
+      holder: M.remotable(),
+    }),
+  ),
+  getPublicTopics: M.call().returns(Vow$(TopicsRecordShape)),
 };

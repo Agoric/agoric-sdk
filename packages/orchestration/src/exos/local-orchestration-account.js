@@ -5,7 +5,6 @@ import { makeTracer } from '@agoric/internal';
 import { Shape as NetworkShape } from '@agoric/network';
 import { M } from '@agoric/vat-data';
 import { VowShape } from '@agoric/vow';
-import { TopicsRecordShape } from '@agoric/zoe/src/contractSupport/index.js';
 import { E } from '@endo/far';
 import {
   ChainAddressShape,
@@ -51,7 +50,6 @@ const { Vow$ } = NetworkShape; // TODO #9611
 
 const HolderI = M.interface('holder', {
   ...orchestrationAccountMethods,
-  getPublicTopics: M.call().returns(TopicsRecordShape),
   delegate: M.call(M.string(), AmountShape).returns(VowShape),
   undelegate: M.call(M.string(), AmountShape).returns(VowShape),
   deposit: M.call(PaymentShape).returns(VowShape),
@@ -77,7 +75,7 @@ export const prepareLocalOrchestrationAccountKit = (
   makeRecorderKit,
   zcf,
   timerService,
-  { watch, allVows, asVow },
+  { watch, allVows, asVow, when },
   chainHub,
 ) => {
   const timestampHelper = makeTimestampHelper(timerService);
@@ -290,11 +288,19 @@ export const prepareLocalOrchestrationAccountKit = (
       },
       holder: {
         asContinuingOffer() {
-          const { holder, invitationMakers } = this.facets;
-          return harden({
-            publicSubscribers: holder.getPublicTopics(),
-            invitationMakers,
-            holder,
+          // getPublicTopics resolves promptly (same run), so we don't need a watcher
+          // eslint-disable-next-line no-restricted-syntax
+          return asVow(async () => {
+            await null;
+            const { holder, invitationMakers } = this.facets;
+            return harden({
+              // getPublicTopics returns a vow, for membrane compatibility.
+              // it's safe to unwrap to a promise and get the result as we
+              // expect this complete in the same run
+              publicSubscribers: await when(holder.getPublicTopics()),
+              invitationMakers,
+              holder,
+            });
           });
         },
         /**
@@ -322,13 +328,18 @@ export const prepareLocalOrchestrationAccountKit = (
         },
 
         getPublicTopics() {
-          const { topicKit } = this.state;
-          return harden({
-            account: {
-              description: PUBLIC_TOPICS.account[0],
-              subscriber: topicKit.subscriber,
-              storagePath: topicKit.recorder.getStoragePath(),
-            },
+          // getStoragePath resolves promptly (same run), so we don't need a watcher
+          // eslint-disable-next-line no-restricted-syntax
+          return asVow(async () => {
+            await null;
+            const { topicKit } = this.state;
+            return harden({
+              account: {
+                description: PUBLIC_TOPICS.account[0],
+                subscriber: topicKit.subscriber,
+                storagePath: await topicKit.recorder.getStoragePath(),
+              },
+            });
           });
         },
         /**
