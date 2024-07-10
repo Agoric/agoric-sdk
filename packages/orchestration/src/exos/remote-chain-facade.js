@@ -14,7 +14,7 @@ import { ChainAddressShape, ChainFacadeI } from '../typeGuards.js';
  * @import {Vow, VowTools} from '@agoric/vow';
  * @import {CosmosInterchainService} from './cosmos-interchain-service.js';
  * @import {prepareCosmosOrchestrationAccount} from './cosmos-orchestration-account.js';
- * @import {ChainInfo, CosmosChainInfo, IBCConnectionInfo, OrchestrationAccount, ChainAddress, IcaAccount, PromiseToVow, Denom, Chain} from '../types.js';
+ * @import {ChainInfo, CosmosChainInfo, IBCConnectionInfo, OrchestrationAccount, ChainAddress, IcaAccount, Denom, Chain} from '../types.js';
  */
 
 const { Fail } = assert;
