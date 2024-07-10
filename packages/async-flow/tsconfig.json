@@ -9,5 +9,7 @@
     "scripts",
     "src/**/*.js",
     "test/**/*.js",
+    "src/**/*.ts",
+    "test/**/*.ts",
   ],
 }
