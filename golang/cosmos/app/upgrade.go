@@ -1,6 +1,8 @@
 package gaia
 
 import (
+	"fmt"
+
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	swingsetkeeper "github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/keeper"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -8,13 +10,23 @@ import (
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
 )
 
-var upgradeNamesOfThisVersion = map[string]bool{
-	"agoric-upgrade-16":   true,
-	"agoric-upgrade-16-2": true,
+var upgradeNamesOfThisVersion = []string{
+	"agoric-upgrade-16",
+	"agoric-upgrade-16-2",
 }
 
+// isPrimaryUpgradeName returns wether the provided plan name is considered a
+// primary for the purpose of applying store migrations for the first upgrade
+// of this version.
+// It is expected that only primary plan names are used for non testing chains.
+func isPrimaryUpgradeName(name string) bool {
+	return upgradeNamesOfThisVersion[0] == name
+}
+
+// isFirstTimeUpgradeOfThisVersion looks up in the upgrade store whether no
+// upgrade plan name of this version have previously been applied.
 func isFirstTimeUpgradeOfThisVersion(app *GaiaApp, ctx sdk.Context) bool {
-	for name := range upgradeNamesOfThisVersion {
+	for _, name := range upgradeNamesOfThisVersion {
 		if app.UpgradeKeeper.GetDoneHeight(ctx, name) != 0 {
 			return false
 		}
@@ -48,6 +60,13 @@ func upgrade16Handler(app *GaiaApp, targetUpgrade string) func(sdk.Context, upgr
 					"@agoric/builders/scripts/vats/init-localchain.js",
 					"@agoric/builders/scripts/vats/init-transfer.js",
 				),
+			}
+
+			// The storeUpgrades defined in app.go only execute for the primary upgrade name
+			// If we got here and this first upgrade of this version does not use the
+			// primary upgrade name, stores have not been initialized correctly.
+			if !isPrimaryUpgradeName(plan.Name) {
+				return module.VersionMap{}, fmt.Errorf("cannot run %s as first upgrade", plan.Name)
 			}
 		}
 
