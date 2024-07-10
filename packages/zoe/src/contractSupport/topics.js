@@ -7,7 +7,7 @@ export { SubscriberShape };
 export const PublicTopicShape = M.splitRecord(
   {
     subscriber: SubscriberShape,
-    storagePath: M.promise(/* string */),
+    storagePath: M.or(M.promise(/* string */), M.string()),
   },
   { description: M.string() },
 );
