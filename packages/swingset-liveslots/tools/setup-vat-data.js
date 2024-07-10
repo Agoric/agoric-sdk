@@ -37,10 +37,14 @@ globalThis.VatData = harden({
     fakeVomKit.cm.makeScalarBigWeakSetStore(...args),
 });
 
+/**
+ *
+ * @param {Partial<Exclude<Parameters<typeof makeFakeVirtualStuff>[0], WeakMap | WeakSet> & {fakeVomKit: ReturnType<typeof makeFakeVirtualStuff>}>} options
+ */
 export const reincarnate = (options = {}) => {
   const { fakeStore = new Map(), fakeVomKit: fvk } = options;
 
-  if (options.fakeVomKit) {
+  if (fvk) {
     fvk.vom.flushStateCache();
     fvk.cm.flushSchemaCache();
     fvk.vrm.flushIDCounters();
