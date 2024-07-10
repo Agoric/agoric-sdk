@@ -6,6 +6,7 @@ import { heapVowE as E } from '@agoric/vow/vat.js';
 import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/recorder.js';
 import { Far } from '@endo/far';
 import { TimeMath } from '@agoric/time';
+import { makeHeapZone } from '@agoric/zone';
 import { prepareLocalOrchestrationAccountKit } from '../../src/exos/local-orchestration-account.js';
 import { ChainAddress } from '../../src/orchestration-api.js';
 import { makeChainHub } from '../../src/exos/chain-hub.js';
@@ -15,12 +16,12 @@ import { UNBOND_PERIOD_SECONDS } from '../ibc-mocks.js';
 import { maxClockSkew } from '../../src/utils/cosmos.js';
 
 test('deposit, withdraw', async t => {
+  const rootZone = makeHeapZone();
   const { bootstrap, brands, utils } = await commonSetup(t);
 
   const { bld: stake } = brands;
 
-  const { timer, localchain, marshaller, rootZone, storage, vowTools } =
-    bootstrap;
+  const { timer, localchain, marshaller, storage, vowTools } = bootstrap;
 
   t.log('chainInfo mocked via `prepareMockChainInfo` until #8879');
 
@@ -88,12 +89,12 @@ test('deposit, withdraw', async t => {
 });
 
 test('delegate, undelegate', async t => {
+  const rootZone = makeHeapZone();
   const { bootstrap, brands, utils } = await commonSetup(t);
 
   const { bld } = brands;
 
-  const { timer, localchain, marshaller, rootZone, storage, vowTools } =
-    bootstrap;
+  const { timer, localchain, marshaller, storage, vowTools } = bootstrap;
 
   t.log('exo setup - prepareLocalChainAccountKit');
   const { makeRecorderKit } = prepareRecorderKitMakers(
@@ -151,12 +152,12 @@ test('delegate, undelegate', async t => {
 });
 
 test('transfer', async t => {
+  const rootZone = makeHeapZone();
   const { bootstrap, brands, utils } = await commonSetup(t);
 
   const { bld: stake } = brands;
 
-  const { timer, localchain, marshaller, rootZone, storage, vowTools } =
-    bootstrap;
+  const { timer, localchain, marshaller, storage, vowTools } = bootstrap;
 
   t.log('exo setup - prepareLocalChainAccountKit');
   const { makeRecorderKit } = prepareRecorderKitMakers(

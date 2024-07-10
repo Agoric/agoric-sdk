@@ -132,8 +132,6 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
       localchain,
       marshaller,
       cosmosInterchainService,
-      // TODO remove; bootstrap doesn't have a zone
-      rootZone: rootZone.subZone('contract'),
       storage,
       vowTools,
       ibcBridge,
