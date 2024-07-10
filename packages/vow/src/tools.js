@@ -10,22 +10,6 @@ import { makeWhen } from './when.js';
  * @import {IsRetryableReason, AsPromiseFunction, EVow, Vow, ERef} from './types.js';
  */
 
-// TODO find a good home, DRY with orchestration package.
-/**
- * Converts a function type that returns a Promise to a function type that
- * returns a Vow. If the input is not a function returning a Promise, it
- * preserves the original type.
- *
- * @template T - The type to transform
- * @typedef {T extends (
- * ...args: infer Args
- * ) => Promise<infer R>
- * ? (...args: Args) => Vow<R>
- * : T extends (...args: infer Args) => infer R
- * ? (...args: Args) => R
- * : T} PromiseToVow
- */
-
 /**
  * NB: Not to be used in a Vat. It doesn't know what an upgrade is. For that you
  * need `prepareVowTools` from `vat.js`.
@@ -54,13 +38,11 @@ export const prepareVowTools = (zone, powers = {}) => {
    * Create a function that retries the given function if the underlying
    * functions rejects due to upgrade disconnection.
    *
-   * The internal functions
-   *
-   * @template {(...args: any[]) => any} F
+   * @template {(...args: any[]) => Promise<any>} F
    * @param {Zone} fnZone - the zone for the named function
    * @param {string} name
    * @param {F} fn
-   * @returns {PromiseToVow<F>}
+   * @returns {F extends (...args: infer Args) => Promise<infer R> ? (...args: Args) => Vow<R> : never}
    */
   const retriable =
     (fnZone, name, fn) =>
