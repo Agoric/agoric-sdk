@@ -2,6 +2,7 @@
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
 import { pickFacet } from '@agoric/vat-data';
+import { VowShape } from '@agoric/vow';
 
 import { ChainFacadeI } from '../typeGuards.js';
 
@@ -36,6 +37,8 @@ const prepareLocalChainFacadeKit = (
   {
     makeLocalOrchestrationAccountKit,
     localchain,
+    // TODO vstorage design https://github.com/Agoric/agoric-sdk/issues/9066
+    // consider making an `accounts` childNode
     storageNode,
     vowTools: { allVows, watch },
   },
@@ -44,9 +47,14 @@ const prepareLocalChainFacadeKit = (
     'LocalChainFacade',
     {
       public: ChainFacadeI,
-      makeAccountWatcher: M.interface('undelegateWatcher', {
+      makeAccountWatcher: M.interface('makeAccountWatcher', {
         onFulfilled: M.call([M.remotable('LCA Account'), M.string()])
           .optional(M.arrayOf(M.undefined())) // empty context
+          .returns(VowShape),
+      }),
+      makeChildNodeWatcher: M.interface('makeChildNodeWatcher', {
+        onFulfilled: M.call(M.remotable())
+          .optional({ account: M.remotable(), address: M.string() }) // empty context
           .returns(M.remotable()),
       }),
     },
@@ -82,6 +90,22 @@ const prepareLocalChainFacadeKit = (
          * @param {[LocalChainAccount, ChainAddress['value']]} results
          */
         onFulfilled([account, address]) {
+          return watch(
+            E(storageNode).makeChildNode(address),
+            this.facets.makeChildNodeWatcher,
+            { account, address },
+          );
+        },
+      },
+      makeChildNodeWatcher: {
+        /**
+         * @param {Remote<StorageNode>} childNode
+         * @param {{
+         *   account: LocalChainAccount;
+         *   address: ChainAddress['value'];
+         * }} ctx
+         */
+        onFulfilled(childNode, { account, address }) {
           const { localChainInfo } = this.state;
           const { holder } = makeLocalOrchestrationAccountKit({
             account,
@@ -91,7 +115,7 @@ const prepareLocalChainFacadeKit = (
               chainId: localChainInfo.chainId,
             }),
             // FIXME storage path https://github.com/Agoric/agoric-sdk/issues/9066
-            storageNode,
+            storageNode: childNode,
           });
           return holder;
         },

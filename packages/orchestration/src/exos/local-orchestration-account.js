@@ -140,6 +140,8 @@ export const prepareLocalOrchestrationAccountKit = (
       // must be the fully synchronous maker because the kit is held in durable state
       // @ts-expect-error XXX Patterns
       const topicKit = makeRecorderKit(storageNode, PUBLIC_TOPICS.account[1]);
+      // TODO determine what goes in vstorage https://github.com/Agoric/agoric-sdk/issues/9066
+      void E(topicKit.recorder).write('');
 
       return { account, address, topicKit };
     },
