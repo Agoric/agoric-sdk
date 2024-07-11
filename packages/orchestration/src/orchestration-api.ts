@@ -15,7 +15,9 @@ import type {
   CosmosChainAccountMethods,
   CosmosChainInfo,
   IBCMsgTransferOptions,
+  IcaAccount,
   KnownChains,
+  LocalAccountMethods,
 } from './types.js';
 
 /**
@@ -62,7 +64,11 @@ export type ChainAddress = {
 };
 
 export type OrchestrationAccount<CI extends ChainInfo> = OrchestrationAccountI &
-  (CI extends CosmosChainInfo ? CosmosChainAccountMethods<CI> : never);
+  (CI extends CosmosChainInfo
+    ? CI['chainId'] extends `agoric${string}`
+      ? CosmosChainAccountMethods<CI> & LocalAccountMethods
+      : CosmosChainAccountMethods<CI>
+    : {});
 
 /**
  * An object for access the core functions of a remote chain.
