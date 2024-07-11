@@ -310,3 +310,13 @@ test('basic-flows', async t => {
   });
   t.is(readLatest('published.basicFlows.agoric1mockVlocalchainAddress'), '');
 });
+
+test.serial('auto-stake-it - proposal', async t => {
+  const { buildProposal, evalProposal } = t.context;
+
+  await t.notThrowsAsync(
+    evalProposal(
+      buildProposal('@agoric/builders/scripts/testing/start-auto-stake-it.js'),
+    ),
+  );
+});
