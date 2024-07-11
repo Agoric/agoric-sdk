@@ -39,7 +39,7 @@ export default function setFakeChain(basedir, GCI, fakeDelay) {
   };
   add(newconn);
   const connections = [];
-  for (const [_type, conns] of Object.entries(connsByType)) {
+  for (const conns of Object.values(connsByType)) {
     connections.push(...conns);
   }
   fs.writeFileSync(fn, `${JSON.stringify(connections, undefined, 2)}\n`);

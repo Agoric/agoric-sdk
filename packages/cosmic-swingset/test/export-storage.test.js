@@ -47,13 +47,12 @@ const makeBatchChainStorage = published => {
         const [path] = args;
         return entries(path).map(([key]) => key);
       }
-      case 'setWithoutNotify':
-        {
-          for (const [path] of args) {
-            deleted.push(path);
-          }
+      case 'setWithoutNotify': {
+        for (const [path] of args) {
+          deleted.push(path);
         }
         return;
+      }
       default:
         throw Error(`not impl: ${method}`);
     }
