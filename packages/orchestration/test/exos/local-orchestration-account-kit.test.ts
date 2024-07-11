@@ -10,6 +10,7 @@ import { commonSetup } from '../supports.js';
 import { UNBOND_PERIOD_SECONDS } from '../ibc-mocks.js';
 import { maxClockSkew } from '../../src/utils/cosmos.js';
 import { prepareMakeTestLOAKit } from './make-test-loa-kit.js';
+import { buildVTransferEvent } from '../../tools/ibc-mocks.js';
 
 test('deposit, withdraw', async t => {
   const common = await commonSetup(t);
@@ -171,4 +172,44 @@ test('transfer', async t => {
       }),
     'accepts custom timeoutHeight',
   );
+});
+
+test('monitor transfers', async t => {
+  const common = await commonSetup(t);
+  const makeTestLOAKit = prepareMakeTestLOAKit(t, common.bootstrap);
+  const account = await makeTestLOAKit();
+  const {
+    mocks: { transferBridge },
+    bootstrap: { rootZone },
+  } = common;
+
+  let upcallCount = 0;
+  const zone = rootZone.subZone('tap');
+  const tap: TargetApp = zone.exo('tap', undefined, {
+    receiveUpcall: (obj: unknown) => {
+      upcallCount += 1;
+      t.log('receiveUpcall', obj);
+      return Promise.resolve();
+    },
+  });
+
+  const { value: target } = await E(account).getAddress();
+  const appRegistration = await E(account).monitorTransfers(tap);
+
+  // simulate upcall from golang to VM
+  const simulateIncomingTransfer = async () =>
+    E(transferBridge).fromBridge(
+      buildVTransferEvent({
+        receiver: target,
+      }),
+    );
+
+  await simulateIncomingTransfer();
+  t.is(upcallCount, 1, 'first upcall received');
+  await simulateIncomingTransfer();
+  t.is(upcallCount, 2, 'second upcall received');
+
+  await appRegistration.revoke();
+  await t.throwsAsync(simulateIncomingTransfer());
+  t.is(upcallCount, 2, 'no more events after app is revoked');
 });

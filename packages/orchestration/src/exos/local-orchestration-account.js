@@ -20,13 +20,13 @@ import { makeTimestampHelper } from '../utils/time.js';
 /**
  * @import {HostOf} from '@agoric/async-flow';
  * @import {LocalChainAccount} from '@agoric/vats/src/localchain.js';
- * @import {AmountArg, ChainAddress, DenomAmount, IBCMsgTransferOptions, OrchestrationAccount, ChainInfo, IBCConnectionInfo, OrchestrationAccountI} from '@agoric/orchestration';
+ * @import {AmountArg, ChainAddress, DenomAmount, IBCMsgTransferOptions, ChainInfo, IBCConnectionInfo, OrchestrationAccountI} from '@agoric/orchestration';
  * @import {RecorderKit, MakeRecorderKit} from '@agoric/zoe/src/contractSupport/recorder.js'.
  * @import {Zone} from '@agoric/zone';
  * @import {Remote} from '@agoric/internal';
  * @import {InvitationMakers} from '@agoric/smart-wallet/src/types.js';
- * @import {TimerService, TimerBrand, TimestampRecord} from '@agoric/time';
- * @import {PromiseVow, Vow, VowTools} from '@agoric/vow';
+ * @import {TimerService, TimestampRecord} from '@agoric/time';
+ * @import {Vow, VowTools} from '@agoric/vow';
  * @import {TypedJson, JsonSafe} from '@agoric/cosmic-proto';
  * @import {Matcher} from '@endo/patterns';
  * @import {ChainHub} from './chain-hub.js';
@@ -57,6 +57,9 @@ const HolderI = M.interface('holder', {
   deposit: M.call(PaymentShape).returns(VowShape),
   withdraw: M.call(AmountShape).returns(Vow$(PaymentShape)),
   executeTx: M.call(M.arrayOf(M.record())).returns(Vow$(M.record())),
+  monitorTransfers: M.call(M.remotable('TransferTap')).returns(
+    Vow$(M.remotable('TargetRegistration')),
+  ),
 });
 
 /** @type {{ [name: string]: [description: string, valueShape: Matcher] }} */
@@ -474,6 +477,10 @@ export const prepareLocalOrchestrationAccountKit = (
             console.log('transferSteps got', amount, msg);
             throw Fail`not yet implemented`;
           });
+        },
+        /** @type {HostOf<LocalChainAccount['monitorTransfers']>} */
+        monitorTransfers(tap) {
+          return watch(E(this.state.account).monitorTransfers(tap));
         },
       },
     },
