@@ -316,13 +316,13 @@ export function exportKernelStats({
     }
     kernelStatsLast = now;
     kernelStatsCache = controller.getStats();
-    Object.keys(kernelStatsCache).forEach(key => {
+    for (const key of Object.keys(kernelStatsCache)) {
       warnUnexpectedKernelStat(key);
-    });
+    }
     return kernelStatsCache;
   };
 
-  KERNEL_STATS_SUM_METRICS.forEach(({ key, name, sub, ...options }) => {
+  for (const { key, name, sub, ...options } of KERNEL_STATS_SUM_METRICS) {
     expectedKernelStats.add(key);
     let counter = kernelStatsCounters.get(name);
     if (!counter) {
@@ -337,9 +337,9 @@ export function exportKernelStats({
       observableResult.observe(getKernelStats()[key], reportedAttributes);
     });
     kernelStatsMetrics.add(key);
-  });
+  }
 
-  KERNEL_STATS_UPDOWN_METRICS.forEach(({ key, name, sub, ...options }) => {
+  for (const { key, name, sub, ...options } of KERNEL_STATS_UPDOWN_METRICS) {
     expectedKernelStats.add(key);
     expectedKernelStats.add(`${key}Up`);
     expectedKernelStats.add(`${key}Down`);
@@ -357,7 +357,7 @@ export function exportKernelStats({
       observableResult.observe(getKernelStats()[key], reportedAttributes);
     });
     kernelStatsMetrics.add(key);
-  });
+  }
 
   if (inboundQueueMetrics) {
     // These are not kernelStatsMetrics, they're outside the kernel.
@@ -425,13 +425,13 @@ export function exportKernelStats({
 
   function checkKernelStats(stats) {
     const notYetFoundKernelStats = new Set(kernelStatsMetrics.keys());
-    Object.keys(stats).forEach(key => {
+    for (const key of Object.keys(stats)) {
       notYetFoundKernelStats.delete(key);
       warnUnexpectedKernelStat(key);
-    });
-    notYetFoundKernelStats.forEach(key => {
+    }
+    for (const key of notYetFoundKernelStats) {
       log.warn(`Expected SwingSet kernel statistic`, key, `not found`);
-    });
+    }
   }
 
   // We check everything on initialization.  Other checks happen when scraping.

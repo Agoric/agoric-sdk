@@ -384,7 +384,9 @@ export async function main(
 
     stats.total += results.total;
     stats.pass += results.pass;
-    results.fail.forEach(info => stats.fail.push(info));
+    for (const info of results.fail) {
+      stats.fail.push(info);
+    }
   }
 
   console.log(stats.pass, 'tests passed');
