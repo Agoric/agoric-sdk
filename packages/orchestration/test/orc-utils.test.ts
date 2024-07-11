@@ -101,7 +101,7 @@ const mockContractStartup = async (t, chainHub) => {
   const { bootstrap, facadeServices, commonPrivateArgs } = t.context;
   //   const { zcf } = await setupZCFTest(t);
   const zcf = {} as ZCF;
-  const { marshaller } = commonPrivateArgs;
+  const zcf = { setTestJig: () => {} } as ZCF;
   const zone = bootstrap.rootZone.subZone('orchContractStartup');
   const baggage = zone.mapStore('baggage1');
 
