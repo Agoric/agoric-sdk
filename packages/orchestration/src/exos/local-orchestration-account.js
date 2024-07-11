@@ -21,7 +21,7 @@ import { makeTimestampHelper } from '../utils/time.js';
 /**
  * @import {HostOf} from '@agoric/async-flow';
  * @import {LocalChainAccount} from '@agoric/vats/src/localchain.js';
- * @import {AmountArg, ChainAddress, DenomAmount, IBCMsgTransferOptions, OrchestrationAccount, ChainInfo, IBCConnectionInfo} from '@agoric/orchestration';
+ * @import {AmountArg, ChainAddress, DenomAmount, IBCMsgTransferOptions, OrchestrationAccount, ChainInfo, IBCConnectionInfo, OrchestrationAccountI} from '@agoric/orchestration';
  * @import {RecorderKit, MakeRecorderKit} from '@agoric/zoe/src/contractSupport/recorder.js'.
  * @import {Zone} from '@agoric/zone';
  * @import {Remote} from '@agoric/internal';
@@ -288,6 +288,7 @@ export const prepareLocalOrchestrationAccountKit = (
         },
       },
       holder: {
+        /** @type {HostOf<OrchestrationAccountI['asContinuingOffer']>} */
         asContinuingOffer() {
           // getPublicTopics resolves promptly (same run), so we don't need a watcher
           // eslint-disable-next-line no-restricted-syntax
@@ -307,7 +308,7 @@ export const prepareLocalOrchestrationAccountKit = (
         /**
          * TODO: balance lookups for non-vbank assets
          *
-         * @type {HostOf<OrchestrationAccount<any>['getBalance']>}
+         * @type {HostOf<OrchestrationAccountI['getBalance']>}
          */
         getBalance(denomArg) {
           // FIXME look up real values
@@ -323,11 +324,15 @@ export const prepareLocalOrchestrationAccountKit = (
             denom,
           );
         },
+        /** @type {HostOf<OrchestrationAccountI['getBalances']>} */
         getBalances() {
           // TODO https://github.com/Agoric/agoric-sdk/issues/9610
           return asVow(() => Fail`not yet implemented`);
         },
 
+        /**
+         * @type {HostOf<OrchestrationAccountI['getPublicTopics']>}
+         */
         getPublicTopics() {
           // getStoragePath resolves promptly (same run), so we don't need a watcher
           // eslint-disable-next-line no-restricted-syntax
@@ -343,6 +348,7 @@ export const prepareLocalOrchestrationAccountKit = (
             });
           });
         },
+        // FIXME take ChainAddress to match OrchestrationAccountI
         /**
          * @param {string} validatorAddress
          * @param {Amount<'nat'>} ertpAmount
@@ -366,6 +372,7 @@ export const prepareLocalOrchestrationAccountKit = (
             this.facets.extractFirstResultWatcher,
           );
         },
+        // FIXME take ChainAddress to match OrchestrationAccountI
         /**
          * @param {string} validatorAddress
          * @param {Amount<'nat'>} ertpAmount
@@ -409,7 +416,7 @@ export const prepareLocalOrchestrationAccountKit = (
         executeTx(messages) {
           return watch(E(this.state.account).executeTx(messages));
         },
-        /** @type {OrchestrationAccount<any>['getAddress']} */
+        /** @type {OrchestrationAccountI['getAddress']} */
         getAddress() {
           return this.state.address;
         },
@@ -457,7 +464,7 @@ export const prepareLocalOrchestrationAccountKit = (
             return watch(transferV, this.facets.returnVoidWatcher);
           });
         },
-        /** @type {HostOf<OrchestrationAccount<any>['transferSteps']>} */
+        /** @type {HostOf<OrchestrationAccountI['transferSteps']>} */
         transferSteps(amount, msg) {
           return asVow(() => {
             console.log('transferSteps got', amount, msg);

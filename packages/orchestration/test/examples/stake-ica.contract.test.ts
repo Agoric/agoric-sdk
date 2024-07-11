@@ -253,7 +253,7 @@ test('CosmosOrchestrationAccount - not yet implemented', async t => {
   await t.throwsAsync(E(account).transfer(mockAmountArg, mockChainAddress), {
     message: 'not yet implemented',
   });
-  await t.throwsAsync(E(account).transferSteps(mockAmountArg, []), {
+  await t.throwsAsync(E(account).transferSteps(mockAmountArg, null as any), {
     message: 'not yet implemented',
   });
   await t.throwsAsync(E(account).withdrawRewards(), {

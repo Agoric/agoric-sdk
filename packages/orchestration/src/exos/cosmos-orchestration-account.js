@@ -33,6 +33,7 @@ import { maxClockSkew, tryDecodeResponse } from '../utils/cosmos.js';
 import { orchestrationAccountMethods } from '../utils/orchestrationAccount.js';
 
 /**
+ * @import {HostOf} from '@agoric/async-flow';
  * @import {AmountArg, IcaAccount, ChainAddress, CosmosValidatorAddress, ICQConnection, StakingAccountActions, DenomAmount, OrchestrationAccountI, DenomArg} from '../types.js';
  * @import {RecorderKit, MakeRecorderKit} from '@agoric/zoe/src/contractSupport/recorder.js';
  * @import {Coin} from '@agoric/cosmic-proto/cosmos/base/v1beta1/coin.js';
@@ -309,6 +310,7 @@ export const prepareCosmosOrchestrationAccountKit = (
         },
       },
       holder: {
+        /** @type {HostOf<OrchestrationAccountI['asContinuingOffer']>} */
         asContinuingOffer() {
           // getPublicTopics resolves promptly (same run), so we don't need a watcher
           // eslint-disable-next-line no-restricted-syntax
@@ -325,6 +327,7 @@ export const prepareCosmosOrchestrationAccountKit = (
             });
           });
         },
+        /** @type {HostOf<OrchestrationAccountI['getPublicTopics']>} */
         getPublicTopics() {
           // getStoragePath resolves promptly (same run), so we don't need a watcher
           // eslint-disable-next-line no-restricted-syntax
@@ -341,18 +344,11 @@ export const prepareCosmosOrchestrationAccountKit = (
           });
         },
 
-        // TODO move this beneath the Orchestration abstraction,
-        // to the OrchestrationAccount provided by makeAccount()
-        /** @returns {ChainAddress} */
+        /** @type {HostOf<OrchestrationAccountI['getAddress']>} */
         getAddress() {
           return this.state.chainAddress;
         },
-        /**
-         * _Assumes users has already sent funds to their ICA, until #9193
-         *
-         * @param {CosmosValidatorAddress} validator
-         * @param {AmountArg} amount
-         */
+        /** @type {HostOf<StakingAccountActions['delegate']>} */
         delegate(validator, amount) {
           return asVow(() => {
             trace('delegate', validator, amount);
@@ -371,17 +367,12 @@ export const prepareCosmosOrchestrationAccountKit = (
             return watch(results, this.facets.returnVoidWatcher);
           });
         },
+        /** @type {HostOf<OrchestrationAccountI['getBalances']>} */
         getBalances() {
           // TODO https://github.com/Agoric/agoric-sdk/issues/9610
           return asVow(() => Fail`not yet implemented`);
         },
-        /**
-         * _Assumes users has already sent funds to their ICA, until #9193
-         *
-         * @param {CosmosValidatorAddress} srcValidator
-         * @param {CosmosValidatorAddress} dstValidator
-         * @param {AmountArg} amount
-         */
+        /** @type {HostOf<StakingAccountActions['redelegate']>} */
         redelegate(srcValidator, dstValidator, amount) {
           return asVow(() => {
             trace('redelegate', srcValidator, dstValidator, amount);
@@ -406,10 +397,7 @@ export const prepareCosmosOrchestrationAccountKit = (
             );
           });
         },
-        /**
-         * @param {CosmosValidatorAddress} validator
-         * @returns {Vow<DenomAmount[]>}
-         */
+        /** @type {HostOf<StakingAccountActions['withdrawReward']>} */
         withdrawReward(validator) {
           return asVow(() => {
             trace('withdrawReward', validator);
@@ -425,10 +413,7 @@ export const prepareCosmosOrchestrationAccountKit = (
             return watch(results, this.facets.withdrawRewardWatcher);
           });
         },
-        /**
-         * @param {DenomArg} denom
-         * @returns {Vow<DenomAmount>}
-         */
+        /** @type {HostOf<OrchestrationAccountI['getBalance']>} */
         getBalance(denom) {
           return asVow(() => {
             const { chainAddress, icqConnection } = this.state;
@@ -450,26 +435,30 @@ export const prepareCosmosOrchestrationAccountKit = (
           });
         },
 
+        /** @type {HostOf<OrchestrationAccountI['send']>} */
         send(toAccount, amount) {
           console.log('send got', toAccount, amount);
           return asVow(() => Fail`not yet implemented`);
         },
 
+        /** @type {HostOf<OrchestrationAccountI['transfer']>} */
         transfer(amount, msg) {
           console.log('transferSteps got', amount, msg);
           return asVow(() => Fail`not yet implemented`);
         },
 
+        /** @type {HostOf<OrchestrationAccountI['transferSteps']>} */
         transferSteps(amount, msg) {
           console.log('transferSteps got', amount, msg);
           return asVow(() => Fail`not yet implemented`);
         },
 
+        /** @type {HostOf<StakingAccountActions['withdrawRewards']>} */
         withdrawRewards() {
           return asVow(() => Fail`Not Implemented. Try using withdrawReward.`);
         },
 
-        /** @param {Omit<Delegation, 'delegatorAddress'>[]} delegations */
+        /** @type {HostOf<StakingAccountActions['undelegate']>} */
         undelegate(delegations) {
           return asVow(() => {
             trace('undelegate', delegations);
