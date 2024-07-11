@@ -974,11 +974,8 @@ export default function buildKernel(
     const abandonedObjects = [
       ...kernelKeeper.enumerateNonDurableObjectExports(vatID),
     ];
-    for (const { kref, vref } of abandonedObjects) {
-      /** @see translateAbandonExports in {@link ./vatTranslator.js} */
-      vatKeeper.deleteCListEntry(kref, vref);
-      /** @see abandonExports in {@link ./kernelSyscall.js} */
-      kernelKeeper.orphanKernelObject(kref, vatID);
+    for (const { kref } of abandonedObjects) {
+      kernelKeeper.abandonKernelObject(kref, vatID);
     }
 
     // cleanup done, now we reset the worker to a clean state with no

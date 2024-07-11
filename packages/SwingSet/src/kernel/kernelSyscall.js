@@ -178,16 +178,7 @@ export function makeKernelSyscallHandler(tools) {
 
   function retireExports(koids) {
     Array.isArray(koids) || Fail`retireExports given non-Array ${koids}`;
-    const newActions = [];
-    for (const koid of koids) {
-      const importers = kernelKeeper.getImporters(koid);
-      for (const vatID of importers) {
-        newActions.push(`${vatID} retireImport ${koid}`);
-      }
-      // TODO: decref and delete any #2069 auxdata
-      kernelKeeper.deleteKernelObject(koid);
-    }
-    kernelKeeper.addGCActions(newActions);
+    kernelKeeper.retireKernelObjects(koids);
     return OKNULL;
   }
 
@@ -196,7 +187,7 @@ export function makeKernelSyscallHandler(tools) {
     for (const koid of koids) {
       // note that this is effectful and also performed outside of a syscall
       // by processUpgradeVat in {@link ./kernel.js}
-      kernelKeeper.orphanKernelObject(koid, vatID);
+      kernelKeeper.abandonKernelObject(koid, vatID);
     }
     return OKNULL;
   }

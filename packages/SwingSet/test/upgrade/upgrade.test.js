@@ -707,20 +707,11 @@ test('non-durable exports are abandoned by upgrade of non-liveslots vat', async 
     '1,1',
     'strong observation of abandoned object retains ref counts',
   );
-  // TODO: Expect and verify observer receipt of dispatch.retireExports
-  // and corresponding removal of weakKref ref counts.
-  // https://github.com/Agoric/agoric-sdk/issues/7212
   t.is(
     kvStore.get(`${weakKref}.refCount`),
-    '0,1',
-    'weak observation of abandoned object retains ref counts before #7212',
+    undefined,
+    'unreachable abandoned object is forgotten',
   );
-  // t.is(
-  //   kvStore.get(`${weakKref}.refCount`),
-  //   undefined,
-  //   'unreachable abandoned object is forgotten',
-  // );
-  // const observerLog = await messageToVat('observer', 'getDispatchLog');
 });
 
 // No longer valid as of removing stopVat per #6650
