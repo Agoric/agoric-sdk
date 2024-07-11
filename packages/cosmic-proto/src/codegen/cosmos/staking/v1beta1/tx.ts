@@ -12,9 +12,13 @@ import {
   TimestampSDKType,
 } from '../../../google/protobuf/timestamp.js';
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
-import { isSet, fromJsonTimestamp, fromTimestamp } from '../../../helpers.js';
+import {
+  isSet,
+  Decimal,
+  fromJsonTimestamp,
+  fromTimestamp,
+} from '../../../helpers.js';
 import { JsonSafe } from '../../../json-safe.js';
-import { Decimal } from '@cosmjs/math';
 /** MsgCreateValidator defines a SDK message for creating a new validator. */
 export interface MsgCreateValidator {
   description: Description;

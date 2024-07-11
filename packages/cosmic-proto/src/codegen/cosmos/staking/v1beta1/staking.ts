@@ -11,9 +11,13 @@ import {
 } from '../../../google/protobuf/duration.js';
 import { Coin, CoinSDKType } from '../../base/v1beta1/coin.js';
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
-import { isSet, fromJsonTimestamp, fromTimestamp } from '../../../helpers.js';
+import {
+  isSet,
+  Decimal,
+  fromJsonTimestamp,
+  fromTimestamp,
+} from '../../../helpers.js';
 import { JsonSafe } from '../../../json-safe.js';
-import { Decimal } from '@cosmjs/math';
 /** BondStatus is the status of a validator. */
 export enum BondStatus {
   /** BOND_STATUS_UNSPECIFIED - UNSPECIFIED defines an invalid validator status. */
