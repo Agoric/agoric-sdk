@@ -128,9 +128,10 @@ export const prepareOfferWatcher = (baggage, vowTools) => {
     baggage,
     'OfferWatcher',
     offerWatcherGuard,
+    // XXX walletHelper is `any` because the helper facet is too nested to export its type
     /**
      * @param {any} walletHelper
-     * @param {any} deposit
+     * @param {{ receive: (payment: Payment) => Promise<Amount> }} deposit
      * @param {OfferSpec} offerSpec
      * @param {string} address
      * @param {Amount<'set'>} invitationAmount
