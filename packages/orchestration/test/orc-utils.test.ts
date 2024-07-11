@@ -101,8 +101,8 @@ const mockContractStartup = async (t, chainHub) => {
   const { bootstrap, facadeServices, commonPrivateArgs } = t.context;
   // FIXME use a realish ZCF
   //   const { zcf } = await setupZCFTest(t);
-  const zcf = {} as ZCF;
   const zcf = { setTestJig: () => {} } as ZCF;
+  const { marshaller } = commonPrivateArgs;
   const zone = bootstrap.rootZone.subZone('orchContractStartup');
   const baggage = zone.mapStore('baggage1');
 
