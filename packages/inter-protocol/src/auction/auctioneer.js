@@ -440,7 +440,7 @@ export const start = async (zcf, privateArgs, baggage) => {
   const scheduleKit = makeERecorderKit(
     E(privateArgs.storageNode).makeChildNode('schedule'),
     /**
-     * @type {import('@agoric/zoe/src/contractSupport/recorder.js').TypedMatcher<
+     * @type {import('@agoric/zoe/src/contractSupport/recorder.js').TypedPattern<
      *     import('./scheduler.js').ScheduleNotification
      *   >}
      */ (M.any()),
