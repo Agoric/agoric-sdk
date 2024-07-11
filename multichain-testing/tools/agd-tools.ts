@@ -8,7 +8,7 @@ export const makeAgdTools = async (
     execFileSync,
   }: Pick<typeof import('child_process'), 'execFile' | 'execFileSync'>,
 ) => {
-  const bundleCache = unsafeMakeBundleCache('bundles');
+  const bundleCache = await unsafeMakeBundleCache('bundles');
   const tools = await makeE2ETools(log, bundleCache, {
     execFileSync,
     execFile,

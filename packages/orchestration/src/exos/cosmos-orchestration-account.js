@@ -22,7 +22,6 @@ import { makeTracer } from '@agoric/internal';
 import { Shape as NetworkShape } from '@agoric/network';
 import { M } from '@agoric/vat-data';
 import { VowShape } from '@agoric/vow';
-import { TopicsRecordShape } from '@agoric/zoe/src/contractSupport/index.js';
 import {
   AmountArgShape,
   ChainAddressShape,
@@ -69,12 +68,6 @@ const { Vow$ } = NetworkShape; // TODO #9611
 /** @see {OrchestrationAccountI} */
 export const IcaAccountHolderI = M.interface('IcaAccountHolder', {
   ...orchestrationAccountMethods,
-  asContinuingOffer: M.call().returns({
-    publicSubscribers: M.any(),
-    invitationMakers: M.any(),
-    holder: M.any(),
-  }),
-  getPublicTopics: M.call().returns(TopicsRecordShape),
   delegate: M.call(ChainAddressShape, AmountArgShape).returns(VowShape),
   redelegate: M.call(
     ChainAddressShape,
@@ -105,11 +98,11 @@ const toDenomAmount = c => ({ denom: c.denom, value: BigInt(c.amount) });
 export const prepareCosmosOrchestrationAccountKit = (
   zone,
   makeRecorderKit,
-  { watch, asVow },
+  { watch, asVow, when },
   zcf,
 ) => {
   const makeCosmosOrchestrationAccountKit = zone.exoClassKit(
-    'Staking Account Holder',
+    'Cosmos Orchestration Account Holder',
     {
       helper: M.interface('helper', {
         owned: M.call().returns(M.remotable()),
@@ -317,21 +310,34 @@ export const prepareCosmosOrchestrationAccountKit = (
       },
       holder: {
         asContinuingOffer() {
-          const { holder, invitationMakers } = this.facets;
-          return harden({
-            publicSubscribers: holder.getPublicTopics(),
-            invitationMakers,
-            holder,
+          // getPublicTopics resolves promptly (same run), so we don't need a watcher
+          // eslint-disable-next-line no-restricted-syntax
+          return asVow(async () => {
+            await null;
+            const { holder, invitationMakers } = this.facets;
+            return harden({
+              // getPublicTopics returns a vow, for membrane compatibility.
+              // it's safe to unwrap to a promise and get the result as we
+              // expect this complete in the same run
+              publicSubscribers: await when(holder.getPublicTopics()),
+              invitationMakers,
+              holder,
+            });
           });
         },
         getPublicTopics() {
-          const { topicKit } = this.state;
-          return harden({
-            account: {
-              description: PUBLIC_TOPICS.account[0],
-              subscriber: topicKit.subscriber,
-              storagePath: topicKit.recorder.getStoragePath(),
-            },
+          // getStoragePath resolves promptly (same run), so we don't need a watcher
+          // eslint-disable-next-line no-restricted-syntax
+          return asVow(async () => {
+            await null;
+            const { topicKit } = this.state;
+            return harden({
+              account: {
+                description: PUBLIC_TOPICS.account[0],
+                subscriber: topicKit.subscriber,
+                storagePath: await topicKit.recorder.getStoragePath(),
+              },
+            });
           });
         },
 

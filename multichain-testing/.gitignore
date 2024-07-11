@@ -2,4 +2,4 @@
 .yarn/*
 !.yarn/patches/*
 revise-chain-info*
-start-*
+start*

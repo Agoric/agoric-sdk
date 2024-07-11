@@ -227,3 +227,68 @@ test.serial('revise chain info', async t => {
     client_id: '07-tendermint-3',
   });
 });
+
+test('basic-flows', async t => {
+  const { buildProposal, evalProposal, agoricNamesRemotes, readLatest } =
+    t.context;
+
+  await evalProposal(
+    buildProposal('@agoric/builders/scripts/orchestration/init-basic-flows.js'),
+  );
+
+  const wd =
+    await t.context.walletFactoryDriver.provideSmartWallet('agoric1test');
+
+  // create a cosmos orchestration account
+  await wd.executeOffer({
+    id: 'request-coa',
+    invitationSpec: {
+      source: 'agoricContract',
+      instancePath: ['basicFlows'],
+      callPipe: [['makeOrchAccountInvitation']],
+    },
+    offerArgs: {
+      chainName: 'cosmoshub',
+    },
+    proposal: {},
+  });
+  t.like(wd.getCurrentWalletRecord(), {
+    offerToPublicSubscriberPaths: [
+      [
+        'request-coa',
+        {
+          account: 'published.basicFlows.cosmos1test',
+        },
+      ],
+    ],
+  });
+  t.like(wd.getLatestUpdateRecord(), {
+    status: { id: 'request-coa', numWantsSatisfied: 1 },
+  });
+  t.is(readLatest('published.basicFlows.cosmos1test'), '');
+
+  // create a local orchestration account
+  await wd.executeOffer({
+    id: 'request-loa',
+    invitationSpec: {
+      source: 'agoricContract',
+      instancePath: ['basicFlows'],
+      callPipe: [['makeOrchAccountInvitation']],
+    },
+    offerArgs: {
+      chainName: 'agoric',
+    },
+    proposal: {},
+  });
+
+  const publicSubscriberPaths = Object.fromEntries(
+    wd.getCurrentWalletRecord().offerToPublicSubscriberPaths,
+  );
+  t.deepEqual(publicSubscriberPaths['request-loa'], {
+    account: 'published.basicFlows.agoric1mockVlocalchainAddress',
+  });
+  t.like(wd.getLatestUpdateRecord(), {
+    status: { id: 'request-loa', numWantsSatisfied: 1 },
+  });
+  t.is(readLatest('published.basicFlows.agoric1mockVlocalchainAddress'), '');
+});

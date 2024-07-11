@@ -114,7 +114,7 @@ const stakeScenario = test.macro(async (t, scenario: StakeIcaScenario) => {
   const queryClient = makeQueryClient(getRestEndpoint());
 
   t.log('Requesting faucet funds');
-  // XXX fails intermitently until https://github.com/cosmology-tech/starship/issues/417
+  // XXX fails intermittently until https://github.com/cosmology-tech/starship/issues/417
   await creditFromFaucet(address);
 
   const { balances } = await retryUntilCondition(
@@ -136,7 +136,7 @@ const stakeScenario = test.macro(async (t, scenario: StakeIcaScenario) => {
   t.truthy(validatorAddress, 'found a validator to delegate to');
   t.log({ validatorAddress }, 'found a validator to delegate to');
   const validatorChainAddress = {
-    address: validatorAddress,
+    value: validatorAddress,
     chainId: scenario.chainId,
     encoding: 'bech32',
   };
@@ -155,6 +155,19 @@ const stakeScenario = test.macro(async (t, scenario: StakeIcaScenario) => {
   });
   t.true(_delegateOfferResult, 'delegate payouts (none) returned');
 
+  const latestWalletUpdate = await vstorageClient.queryData(
+    `published.wallet.${wallets[scenario.wallet]}`,
+  );
+  t.log('latest wallet update', latestWalletUpdate);
+  t.like(
+    latestWalletUpdate.status,
+    {
+      id: delegateOfferId,
+      error: undefined,
+      numWantsSatisfied: 1,
+    },
+    `${scenario.chain} delegate offer satisfied without errors`,
+  );
   // query remote chain to verify delegations
   const { delegation_responses } = await retryUntilCondition(
     () => queryClient.queryDelegations(address),

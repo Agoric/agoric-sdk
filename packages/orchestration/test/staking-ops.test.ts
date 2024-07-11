@@ -237,7 +237,7 @@ test('makeAccount() writes to storage', async t => {
     icqConnection,
     timer,
   });
-  const { publicSubscribers } = holder.asContinuingOffer();
+  const { publicSubscribers } = await E.when(holder.asContinuingOffer());
   const accountNotifier = makeNotifierFromSubscriber(
     publicSubscribers.account.subscriber,
   );
