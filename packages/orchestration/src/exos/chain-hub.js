@@ -303,7 +303,7 @@ export const makeChainHub = (agoricNames, vowTools) => {
     },
 
     saveVBankAssets() {
-      return watch(E(E(agoricNames).lookup('vbankAsset')).entries(), {
+      return vowTools.watch(E(E(agoricNames).lookup('vbankAsset')).entries(), {
         onFulfilled: todo => {
           for (const [denom, info] of todo) {
             chainHub.registerAsset(denom, info); // TODO: base chain and such??
