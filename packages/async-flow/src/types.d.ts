@@ -1,7 +1,8 @@
 import type { Passable } from '@endo/pass-style';
-import type { Vow } from '@agoric/vow';
+import type { Vow, VowTools } from '@agoric/vow';
 import type { LogStore } from './log-store.js';
 import type { Bijection } from './bijection.js';
+import type { EndowmentTools } from './endowments.js';
 
 export type FlowState =
   | 'Running'
@@ -60,73 +61,10 @@ export type HostOf<F> = F extends (...args: infer A) => Promise<infer R>
   : F;
 
 export type PreparationOptions = {
-  vowTools?:
-    | {
-        when: <
-          T,
-          TResult1 = import('@agoric/vow').EUnwrap<T>,
-          TResult2 = never,
-        >(
-          specimenP: T,
-          onFulfilled?:
-            | ((
-                value: import('@agoric/vow').EUnwrap<T>,
-              ) => TResult1 | PromiseLike<TResult1>)
-            | undefined,
-          onRejected?:
-            | ((reason: any) => TResult2 | PromiseLike<TResult2>)
-            | undefined,
-        ) => Promise<TResult1 | TResult2>;
-        watch: <
-          T = any,
-          TResult1 = T,
-          TResult2 = never,
-          C extends any[] = any[],
-        >(
-          specimenP: import('@agoric/vow').EVow<T>,
-          watcher?:
-            | import('@agoric/vow').Watcher<T, TResult1, TResult2, C>
-            | undefined,
-          ...watcherArgs: C
-        ) => Vow<
-          Exclude<TResult1, void> | Exclude<TResult2, void> extends never
-            ? TResult1
-            : Exclude<TResult1, void> | Exclude<TResult2, void>
-        >;
-        makeVowKit: <T>() => import('@agoric/vow').VowKit<T>;
-        allVows: (
-          maybeVows: import('@agoric/vow').EVow<unknown>[],
-        ) => Vow<any[]>;
-        asVow: <T extends unknown>(
-          fn: (
-            ...args: any[]
-          ) =>
-            | Vow<Awaited<T>>
-            | Awaited<T>
-            | import('@agoric/vow').PromiseVow<T>,
-        ) => Vow<Awaited<T>>;
-        asPromise: import('@agoric/vow').AsPromiseFunction;
-        retriable: <F extends (...args: any[]) => Promise<any>>(
-          fnZone: import('@agoric/base-zone').Zone,
-          name: string,
-          fn: F,
-        ) => F extends (...args: infer Args) => Promise<infer R>
-          ? (...args: Args) => Vow<R>
-          : never;
-      }
-    | undefined;
+  vowTools?: VowTools;
   makeLogStore?: (() => LogStore) | undefined;
   makeBijection?: (() => Bijection) | undefined;
-  endowmentTools?:
-    | {
-        prepareEndowment: (
-          zone: import('@agoric/base-zone').Zone,
-          tag: string,
-          e: unknown,
-        ) => any;
-        unwrap: (wrapped: any, guestWrapped: any) => any;
-      }
-    | undefined;
+  endowmentTools?: EndowmentTools;
 };
 export type OutcomeKind = 'return' | 'throw';
 
@@ -146,9 +84,10 @@ export type Ephemera<S extends WeakKey = WeakKey, V extends unknown = any> = {
 };
 
 /**
- * This is the typedef for the membrane log entries we currently implement.
- * See comment below for the commented-out typedef for the full
- * membrane log entry, which we do not yet support.
+ * This is the type alias for the membrane log entries we currently implement.
+ *
+ * @see {FutureLogEntry} below for the full membrane log entry, which we do not
+ * yet support.
  */
 export type LogEntry =
   | [
@@ -184,9 +123,9 @@ export type LogEntry =
     ];
 
 /**
- * This would be the typedef for the full membrane log, if we supported
+ * This would be the type alias for the full membrane log, if we supported:
  * - the guest sending guest-promises and guest-remotables to the host
- * - the guest using `E` to eventual-send to guest wrappers of host
+ * - the guest using `E` to eventual-send to guest wrappers of the host
  *   vows and remotables.
  */
 export type FutureLogEntry =
