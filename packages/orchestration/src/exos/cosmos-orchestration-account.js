@@ -39,11 +39,13 @@ import { orchestrationAccountMethods } from '../utils/orchestrationAccount.js';
  * @import {Coin} from '@agoric/cosmic-proto/cosmos/base/v1beta1/coin.js';
  * @import {Delegation} from '@agoric/cosmic-proto/cosmos/staking/v1beta1/staking.js';
  * @import {Remote} from '@agoric/internal';
+ * @import {InvitationMakers} from '@agoric/smart-wallet/src/types.js';
  * @import {TimerService} from '@agoric/time';
  * @import {Vow, VowTools} from '@agoric/vow';
  * @import {Zone} from '@agoric/zone';
  * @import {ResponseQuery} from '@agoric/cosmic-proto/tendermint/abci/types.js';
  * @import {JsonSafe} from '@agoric/cosmic-proto';
+ * @import {Matcher} from '@endo/patterns';
  */
 
 const trace = makeTracer('ComosOrchestrationAccountHolder');
@@ -82,7 +84,7 @@ export const IcaAccountHolderI = M.interface('IcaAccountHolder', {
   undelegate: M.call(M.arrayOf(DelegationShape)).returns(VowShape),
 });
 
-/** @type {{ [name: string]: [description: string, valueShape: Pattern] }} */
+/** @type {{ [name: string]: [description: string, valueShape: Matcher] }} */
 const PUBLIC_TOPICS = {
   account: ['Staking Account holder status', M.any()],
 };
@@ -159,7 +161,6 @@ export const prepareCosmosOrchestrationAccountKit = (
     (chainAddress, bondDenom, io) => {
       const { storageNode, ...rest } = io;
       // must be the fully synchronous maker because the kit is held in durable state
-      // @ts-expect-error XXX Patterns
       const topicKit = makeRecorderKit(storageNode, PUBLIC_TOPICS.account[1]);
       // TODO determine what goes in vstorage https://github.com/Agoric/agoric-sdk/issues/9066
       void E(topicKit.recorder).write('');
@@ -316,7 +317,12 @@ export const prepareCosmosOrchestrationAccountKit = (
           // eslint-disable-next-line no-restricted-syntax
           return asVow(async () => {
             await null;
-            const { holder, invitationMakers } = this.facets;
+            const { holder, invitationMakers: im } = this.facets;
+            // XXX cast to a type that has string index signature
+            const invitationMakers = /** @type {InvitationMakers} */ (
+              /** @type {unknown} */ (im)
+            );
+
             return harden({
               // getPublicTopics returns a vow, for membrane compatibility.
               // it's safe to unwrap to a promise and get the result as we

@@ -25,9 +25,11 @@ import { makeTimestampHelper } from '../utils/time.js';
  * @import {RecorderKit, MakeRecorderKit} from '@agoric/zoe/src/contractSupport/recorder.js'.
  * @import {Zone} from '@agoric/zone';
  * @import {Remote} from '@agoric/internal';
+ * @import {InvitationMakers} from '@agoric/smart-wallet/src/types.js';
  * @import {TimerService, TimerBrand, TimestampRecord} from '@agoric/time';
  * @import {PromiseVow, Vow, VowTools} from '@agoric/vow';
  * @import {TypedJson, JsonSafe} from '@agoric/cosmic-proto';
+ * @import {Matcher} from '@endo/patterns';
  * @import {ChainHub} from './chain-hub.js';
  */
 
@@ -58,7 +60,7 @@ const HolderI = M.interface('holder', {
   executeTx: M.call(M.arrayOf(M.record())).returns(Vow$(M.record())),
 });
 
-/** @type {{ [name: string]: [description: string, valueShape: Pattern] }} */
+/** @type {{ [name: string]: [description: string, valueShape: Matcher] }} */
 const PUBLIC_TOPICS = {
   account: ['Account holder status', M.any()],
 };
@@ -137,7 +139,6 @@ export const prepareLocalOrchestrationAccountKit = (
      */
     ({ account, address, storageNode }) => {
       // must be the fully synchronous maker because the kit is held in durable state
-      // @ts-expect-error XXX Patterns
       const topicKit = makeRecorderKit(storageNode, PUBLIC_TOPICS.account[1]);
       // TODO determine what goes in vstorage https://github.com/Agoric/agoric-sdk/issues/9066
       void E(topicKit.recorder).write('');
@@ -294,7 +295,12 @@ export const prepareLocalOrchestrationAccountKit = (
           // eslint-disable-next-line no-restricted-syntax
           return asVow(async () => {
             await null;
-            const { holder, invitationMakers } = this.facets;
+            const { holder, invitationMakers: im } = this.facets;
+            // XXX cast to a type that has string index signature
+            const invitationMakers = /** @type {InvitationMakers} */ (
+              /** @type {unknown} */ (im)
+            );
+
             return harden({
               // getPublicTopics returns a vow, for membrane compatibility.
               // it's safe to unwrap to a promise and get the result as we
