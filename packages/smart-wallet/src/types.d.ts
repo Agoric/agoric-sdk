@@ -10,6 +10,7 @@ import type { CapData } from '@endo/marshal';
 import type { agoric } from '@agoric/cosmic-proto';
 import type { AgoricNamesRemotes } from '@agoric/vats/tools/board-utils.js';
 import type { StoredFacet } from '@agoric/internal/src/lib-chainStorage.js';
+import type { PublicTopic } from '@agoric/zoe/src/contractSupport/topics.js';
 import type { OfferSpec } from './offers.js';
 
 declare const CapDataShape: unique symbol;
@@ -27,7 +28,7 @@ export type InvitationMakers = Record<
   (...args: any[]) => Promise<Invitation>
 >;
 
-export type PublicSubscribers = Record<string, ERef<StoredFacet>>;
+export type PublicSubscribers = Record<string, PublicTopic>;
 
 export interface ContinuingOfferResult {
   invitationMakers: InvitationMakers;

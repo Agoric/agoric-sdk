@@ -56,12 +56,12 @@ export const prepareRecorder = (baggage, marshaller) => {
      * @template T
      * @param {PublishKit<T>['publisher']} publisher
      * @param {Awaited<import('@endo/far').FarRef<StorageNode>>} storageNode
-     * @param {TypedMatcher<T>} [valueShape]
+     * @param {TypedPattern<T>} [valueShape]
      */
     (
       publisher,
       storageNode,
-      valueShape = /** @type {TypedMatcher<any>} */ (M.any()),
+      valueShape = /** @type {TypedPattern<any>} */ (M.any()),
     ) => {
       return {
         closed: false,
@@ -145,7 +145,7 @@ export const defineRecorderKit = ({ makeRecorder, makeDurablePublishKit }) => {
   /**
    * @template T
    * @param {StorageNode | Awaited<import('@endo/far').FarRef<StorageNode>>} storageNode
-   * @param {TypedMatcher<T>} [valueShape]
+   * @param {TypedPattern<T>} [valueShape]
    * @returns {RecorderKit<T>}
    */
   const makeRecorderKit = (storageNode, valueShape) => {
@@ -174,7 +174,7 @@ export const defineERecorderKit = ({ makeRecorder, makeDurablePublishKit }) => {
   /**
    * @template T
    * @param {ERef<StorageNode>} storageNodeP
-   * @param {TypedMatcher<T>} [valueShape]
+   * @param {TypedPattern<T>} [valueShape]
    * @returns {EventualRecorderKit<T>}
    */
   const makeERecorderKit = (storageNodeP, valueShape) => {
@@ -263,14 +263,11 @@ export const prepareMockRecorderKitMakers = () => {
  * Stop-gap until https://github.com/Agoric/agoric-sdk/issues/6160
  * explictly specify the type that the Pattern will verify through a match.
  *
- * This is a Pattern but since that's `any`, including in the typedef turns the
- * whole thing to `any`.
- *
  * @template T
- * @typedef {import('@endo/patterns').Matcher & { validatedType?: T }} TypedMatcher
+ * @typedef {import('@endo/patterns').Pattern & { validatedType?: T }} TypedPattern
  */
 
 /**
- * @template {TypedMatcher<any>} TM
- * @typedef {TM extends TypedMatcher<infer T> ? T : never} MatchedType
+ * @template {TypedPattern<any>} TM
+ * @typedef {TM extends TypedPattern<infer T> ? T : never} MatchedType
  */

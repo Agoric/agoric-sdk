@@ -19,14 +19,17 @@ import { orchestrationAccountMethods } from '../utils/orchestrationAccount.js';
 import { makeTimestampHelper } from '../utils/time.js';
 
 /**
+ * @import {HostOf} from '@agoric/async-flow';
  * @import {LocalChainAccount} from '@agoric/vats/src/localchain.js';
- * @import {AmountArg, ChainAddress, DenomAmount, IBCMsgTransferOptions, OrchestrationAccount, ChainInfo, IBCConnectionInfo, PromiseToVow} from '@agoric/orchestration';
+ * @import {AmountArg, ChainAddress, DenomAmount, IBCMsgTransferOptions, OrchestrationAccount, ChainInfo, IBCConnectionInfo, OrchestrationAccountI} from '@agoric/orchestration';
  * @import {RecorderKit, MakeRecorderKit} from '@agoric/zoe/src/contractSupport/recorder.js'.
  * @import {Zone} from '@agoric/zone';
  * @import {Remote} from '@agoric/internal';
+ * @import {InvitationMakers} from '@agoric/smart-wallet/src/types.js';
  * @import {TimerService, TimerBrand, TimestampRecord} from '@agoric/time';
  * @import {PromiseVow, Vow, VowTools} from '@agoric/vow';
  * @import {TypedJson, JsonSafe} from '@agoric/cosmic-proto';
+ * @import {Matcher} from '@endo/patterns';
  * @import {ChainHub} from './chain-hub.js';
  */
 
@@ -57,7 +60,7 @@ const HolderI = M.interface('holder', {
   executeTx: M.call(M.arrayOf(M.record())).returns(Vow$(M.record())),
 });
 
-/** @type {{ [name: string]: [description: string, valueShape: Pattern] }} */
+/** @type {{ [name: string]: [description: string, valueShape: Matcher] }} */
 const PUBLIC_TOPICS = {
   account: ['Account holder status', M.any()],
 };
@@ -136,7 +139,6 @@ export const prepareLocalOrchestrationAccountKit = (
      */
     ({ account, address, storageNode }) => {
       // must be the fully synchronous maker because the kit is held in durable state
-      // @ts-expect-error XXX Patterns
       const topicKit = makeRecorderKit(storageNode, PUBLIC_TOPICS.account[1]);
       // TODO determine what goes in vstorage https://github.com/Agoric/agoric-sdk/issues/9066
       void E(topicKit.recorder).write('');
@@ -287,12 +289,18 @@ export const prepareLocalOrchestrationAccountKit = (
         },
       },
       holder: {
+        /** @type {HostOf<OrchestrationAccountI['asContinuingOffer']>} */
         asContinuingOffer() {
           // getPublicTopics resolves promptly (same run), so we don't need a watcher
           // eslint-disable-next-line no-restricted-syntax
           return asVow(async () => {
             await null;
-            const { holder, invitationMakers } = this.facets;
+            const { holder, invitationMakers: im } = this.facets;
+            // XXX cast to a type that has string index signature
+            const invitationMakers = /** @type {InvitationMakers} */ (
+              /** @type {unknown} */ (im)
+            );
+
             return harden({
               // getPublicTopics returns a vow, for membrane compatibility.
               // it's safe to unwrap to a promise and get the result as we
@@ -306,7 +314,7 @@ export const prepareLocalOrchestrationAccountKit = (
         /**
          * TODO: balance lookups for non-vbank assets
          *
-         * @type {PromiseToVow<OrchestrationAccount<any>['getBalance']>}
+         * @type {HostOf<OrchestrationAccountI['getBalance']>}
          */
         getBalance(denomArg) {
           // FIXME look up real values
@@ -322,11 +330,15 @@ export const prepareLocalOrchestrationAccountKit = (
             denom,
           );
         },
+        /** @type {HostOf<OrchestrationAccountI['getBalances']>} */
         getBalances() {
           // TODO https://github.com/Agoric/agoric-sdk/issues/9610
           return asVow(() => Fail`not yet implemented`);
         },
 
+        /**
+         * @type {HostOf<OrchestrationAccountI['getPublicTopics']>}
+         */
         getPublicTopics() {
           // getStoragePath resolves promptly (same run), so we don't need a watcher
           // eslint-disable-next-line no-restricted-syntax
@@ -342,6 +354,7 @@ export const prepareLocalOrchestrationAccountKit = (
             });
           });
         },
+        // FIXME take ChainAddress to match OrchestrationAccountI
         /**
          * @param {string} validatorAddress
          * @param {Amount<'nat'>} ertpAmount
@@ -365,6 +378,7 @@ export const prepareLocalOrchestrationAccountKit = (
             this.facets.extractFirstResultWatcher,
           );
         },
+        // FIXME take ChainAddress to match OrchestrationAccountI
         /**
          * @param {string} validatorAddress
          * @param {Amount<'nat'>} ertpAmount
@@ -393,22 +407,22 @@ export const prepareLocalOrchestrationAccountKit = (
          * updater will get a special notification that the account is being
          * transferred.
          */
-        /** @type {PromiseToVow<LocalChainAccount['deposit']>} */
+        /** @type {HostOf<LocalChainAccount['deposit']>} */
         deposit(payment) {
           return watch(
             E(this.state.account).deposit(payment),
             this.facets.returnVoidWatcher,
           );
         },
-        /** @type {PromiseToVow<LocalChainAccount['withdraw']>} */
+        /** @type {HostOf<LocalChainAccount['withdraw']>} */
         withdraw(amount) {
           return watch(E(this.state.account).withdraw(amount));
         },
-        /** @type {PromiseToVow<LocalChainAccount['executeTx']>} */
+        /** @type {HostOf<LocalChainAccount['executeTx']>} */
         executeTx(messages) {
           return watch(E(this.state.account).executeTx(messages));
         },
-        /** @type {OrchestrationAccount<any>['getAddress']} */
+        /** @type {OrchestrationAccountI['getAddress']} */
         getAddress() {
           return this.state.address;
         },
@@ -456,7 +470,7 @@ export const prepareLocalOrchestrationAccountKit = (
             return watch(transferV, this.facets.returnVoidWatcher);
           });
         },
-        /** @type {PromiseToVow<OrchestrationAccount<any>['transferSteps']>} */
+        /** @type {HostOf<OrchestrationAccountI['transferSteps']>} */
         transferSteps(amount, msg) {
           return asVow(() => {
             console.log('transferSteps got', amount, msg);

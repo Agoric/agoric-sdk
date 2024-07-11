@@ -88,7 +88,7 @@ export const prepareAssetReserveKit = async (
         keywordForBrand,
         metricsKit: makeRecorderKit(
           metricsNode,
-          /** @type {import('@agoric/zoe/src/contractSupport/recorder.js').TypedMatcher<MetricsNotification>} */ (
+          /** @type {import('@agoric/zoe/src/contractSupport/recorder.js').TypedPattern<MetricsNotification>} */ (
             M.any()
           ),
         ),

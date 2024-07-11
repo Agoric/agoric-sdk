@@ -141,7 +141,7 @@ const testBadHostReplay1 = async (t, zone) => {
         },
         {
           message:
-            'Remotables must be explicitly declared: "[Function nonPassableFunc]"',
+            'converting badMethod result: Remotables must be explicitly declared: "[Function nonPassableFunc]"',
         },
       );
       t.log('  badHost replay1 guest error caused by host error', gErr);
@@ -177,7 +177,7 @@ const testBadHostReplay1 = async (t, zone) => {
       'doThrow',
       2,
       Error(
-        'Remotables must be explicitly declared: "[Function nonPassableFunc]"',
+        'converting badMethod result: Remotables must be explicitly declared: "[Function nonPassableFunc]"',
       ),
     ],
     ['checkCall', badHost, 'badMethod', [], 4],

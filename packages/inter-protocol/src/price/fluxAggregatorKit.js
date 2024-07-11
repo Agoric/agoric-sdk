@@ -144,7 +144,7 @@ export const prepareFluxAggregatorKit = async (
     priceKit: () =>
       makeRecorderKit(
         storageNode,
-        /** @type {import('@agoric/zoe/src/contractSupport/recorder.js').TypedMatcher<PriceDescription>} */ (
+        /** @type {import('@agoric/zoe/src/contractSupport/recorder.js').TypedPattern<PriceDescription>} */ (
           M.any()
         ),
       ),
@@ -153,7 +153,7 @@ export const prepareFluxAggregatorKit = async (
         makeRecorderKit(
           node,
           /**
-           * @type {import('@agoric/zoe/src/contractSupport/recorder.js').TypedMatcher<
+           * @type {import('@agoric/zoe/src/contractSupport/recorder.js').TypedPattern<
            *     import('./roundsManager.js').LatestRound
            *   >}
            */ (M.any()),

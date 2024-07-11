@@ -174,7 +174,7 @@ export const start = async (zcf, privateArgs, baggage) => {
       E.when(E(privateArgs.storageNode).makeChildNode('metrics'), node =>
         makeRecorderKit(
           node,
-          /** @type {import('@agoric/zoe/src/contractSupport/recorder.js').TypedMatcher<MetricsNotification>} */ (
+          /** @type {import('@agoric/zoe/src/contractSupport/recorder.js').TypedPattern<MetricsNotification>} */ (
             M.any()
           ),
         ),

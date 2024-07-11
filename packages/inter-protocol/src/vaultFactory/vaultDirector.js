@@ -131,7 +131,7 @@ const prepareVaultDirector = (
 
   const metricsKit = makeERecorderKit(
     metricsNode,
-    /** @type {import('@agoric/zoe/src/contractSupport/recorder.js').TypedMatcher<MetricsNotification>} */ (
+    /** @type {import('@agoric/zoe/src/contractSupport/recorder.js').TypedPattern<MetricsNotification>} */ (
       M.any()
     ),
   );

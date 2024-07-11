@@ -172,7 +172,7 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
 
       const bookDataKit = makeRecorderKit(
         node,
-        /** @type {import('@agoric/zoe/src/contractSupport/recorder.js').TypedMatcher<BookDataNotification>} */ (
+        /** @type {import('@agoric/zoe/src/contractSupport/recorder.js').TypedPattern<BookDataNotification>} */ (
           M.any()
         ),
       );

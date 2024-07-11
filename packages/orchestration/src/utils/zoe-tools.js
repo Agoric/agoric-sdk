@@ -2,10 +2,29 @@ import { Fail } from '@endo/errors';
 import { atomicTransfer } from '@agoric/zoe/src/contractSupport/index.js';
 
 /**
- * @import {LocalOrchestrationAccountKit} from '../exos/local-orchestration-account.js';
+ * @import {InvitationMakers} from '@agoric/smart-wallet/src/types.js';
+ * @import {ResolvedPublicTopic} from '@agoric/zoe/src/contractSupport/topics.js';
  * @import {Vow, VowTools} from '@agoric/vow';
  * @import {Zone} from '@agoric/zone';
  * @import {OrchestrationAccount} from '../orchestration-api.js'
+ * @import {LocalAccountMethods} from '../types.js';
+ */
+
+/**
+ * @typedef {{
+ *   invitationMakers: InvitationMakers;
+ *   publicSubscribers: Record<string, ResolvedPublicTopic<any>>;
+ * }} ResolvedContinuingOfferResult
+ *
+ * @see {ContinuingOfferResult}
+ */
+
+/**
+ * @typedef {(
+ *   srcSeat: ZCFSeat,
+ *   localAccount: LocalAccountMethods,
+ *   give: AmountKeywordRecord,
+ * ) => Promise<void>} LocalTransfer
  */
 
 /**
@@ -20,11 +39,7 @@ export const makeZoeTools = (zone, { zcf, vowTools }) => {
     zone,
     'localTransfer',
     /**
-     * @type {(
-     *   srcSeat: ZCFSeat,
-     *   localAccount: LocalOrchestrationAccountKit['holder'],
-     *   give: AmountKeywordRecord,
-     * ) => Promise<void>}
+     * @type {LocalTransfer}
      */
     async (srcSeat, localAccount, give) => {
       !srcSeat.hasExited() || Fail`The seat cannot have exited.`;
