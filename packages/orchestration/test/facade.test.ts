@@ -79,7 +79,7 @@ test('chain info', async t => {
   const result = (await handle()) as Chain<any>;
   t.deepEqual(await vt.when(result.getChainInfo()), mockChainInfo);
 
-  const handle2 = orchestrate('mock', {}, async orc => {
+  const handle2 = orchestrate('handle2', {}, async orc => {
     await orc.getChain('mock');
     await orc.getChain('mock');
   });
