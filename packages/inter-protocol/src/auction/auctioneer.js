@@ -12,7 +12,6 @@ import { mustMatch } from '@agoric/store';
 import { appendToStoredArray } from '@agoric/store/src/stores/store-utils.js';
 import { M, provideDurableMapStore } from '@agoric/vat-data';
 import {
-  atomicRearrange,
   ceilDivideBy,
   ceilMultiplyBy,
   defineERecorderKit,
@@ -491,8 +490,7 @@ export const start = async (zcf, privateArgs, baggage) => {
         // send it all to the one
         const liqSeat = depositsForBrand[0].seat;
 
-        atomicRearrange(
-          zcf,
+        zcf.atomicRearrange(
           harden([
             [collateralSeat, liqSeat, collateralSeat.getCurrentAllocation()],
             [bidHoldingSeat, liqSeat, bidHoldingSeat.getCurrentAllocation()],
@@ -515,7 +513,7 @@ export const start = async (zcf, privateArgs, baggage) => {
           reserveSeat,
           brand,
         );
-        atomicRearrange(zcf, harden(transfers));
+        zcf.atomicRearrange(harden(transfers));
 
         for (const { seat } of depositsForBrand) {
           seat.exit();
