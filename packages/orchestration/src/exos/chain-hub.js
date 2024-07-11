@@ -2,6 +2,7 @@ import { Fail, makeError } from '@endo/errors';
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
 
+import { assertAllDefined } from '@agoric/internal';
 import { VowShape } from '@agoric/vow';
 import { makeHeapZone } from '@agoric/zone';
 import { CosmosChainInfoShape, IBCConnectionInfoShape } from '../typeGuards.js';
@@ -108,6 +109,7 @@ const ChainHubI = M.interface('ChainHub', {
  * @param {VowTools} vowTools
  */
 export const makeChainHub = (agoricNames, vowTools) => {
+  assertAllDefined({ agoricNames, vowTools });
   const zone = makeHeapZone();
   /** @type {MapStore<string, CosmosChainInfo>} */
   const chainInfos = zone.mapStore('chainInfos', {
