@@ -99,6 +99,7 @@ test.before(async t => (t.context = await makeTestContext(t)));
 
 const mockContractStartup = async (t, chainHub) => {
   const { bootstrap, facadeServices, commonPrivateArgs } = t.context;
+  // FIXME use a realish ZCF
   //   const { zcf } = await setupZCFTest(t);
   const zcf = {} as ZCF;
   const zcf = { setTestJig: () => {} } as ZCF;
@@ -110,7 +111,7 @@ const mockContractStartup = async (t, chainHub) => {
 
 test('Agoric ATOM denom -> cosmos hub ATOM denom -> osmosis ATOM denom', async t => {
   const { bootstrap } = t.context;
-  const { agoricNames } = bootstrap;
+  const { agoricNames, vowTools: vt } = bootstrap;
 
   // somehow (XXX?), we start with the ATOM denom on Agoric
   const assetEntries: [string, VBankAssetInfo][] = await E(
@@ -121,7 +122,7 @@ test('Agoric ATOM denom -> cosmos hub ATOM denom -> osmosis ATOM denom', async t
   const atomDenomOnAgoric = vbank.ATOM.denom;
 
   // Contract does typical orchestration setup
-  const chainHub = makeChainHub(bootstrap.agoricNames);
+  const chainHub = makeChainHub(bootstrap.agoricNames, vt);
   const { orchestrate } = await mockContractStartup(t, chainHub);
 
   await orchestrate('TradePrep', {}, async orch => {
@@ -141,9 +142,8 @@ test('Agoric ATOM denom -> cosmos hub ATOM denom -> osmosis ATOM denom', async t
     const osmosis = await orch.getChain('osmosis');
     const osmosisInfo = await osmosis.getChainInfo();
     const hubInfo = await cosmoshub.getChainInfo();
-    const { transferChannel } = await chainHub.getConnectionInfo(
-      osmosisInfo.chainId,
-      hubInfo.chainId,
+    const { transferChannel } = await vt.when(
+      chainHub.getConnectionInfo(osmosisInfo.chainId, hubInfo.chainId),
     );
     t.log('cosmoshub <-> osmosis', transferChannel);
 
@@ -197,7 +197,20 @@ test('makeOsmosisSwap', async t => {
     slippage: 0.03,
   });
 
-  t.deepEqual(actual, 'TODO');
+  t.deepEqual(actual, {
+    osmosis_swap: {
+      next_memo: null,
+      on_failed_delivery: 'do_nothing',
+      output_denom: '// @@@TODO',
+      receiver: undefined,
+      slippage: {
+        twap: {
+          slippage_percentage: '3',
+          window_seconds: 10,
+        },
+      },
+    },
+  });
 });
 
 test('denomHash', t => {
