@@ -25,6 +25,7 @@ import { makeTimestampHelper } from '../utils/time.js';
  * @import {RecorderKit, MakeRecorderKit} from '@agoric/zoe/src/contractSupport/recorder.js'.
  * @import {Zone} from '@agoric/zone';
  * @import {Remote} from '@agoric/internal';
+ * @import {InvitationMakers} from '@agoric/smart-wallet/src/types.js';
  * @import {TimerService, TimerBrand, TimestampRecord} from '@agoric/time';
  * @import {PromiseVow, Vow, VowTools} from '@agoric/vow';
  * @import {TypedJson, JsonSafe} from '@agoric/cosmic-proto';
@@ -294,7 +295,12 @@ export const prepareLocalOrchestrationAccountKit = (
           // eslint-disable-next-line no-restricted-syntax
           return asVow(async () => {
             await null;
-            const { holder, invitationMakers } = this.facets;
+            const { holder, invitationMakers: im } = this.facets;
+            // XXX cast to a type that has string index signature
+            const invitationMakers = /** @type {InvitationMakers} */ (
+              /** @type {unknown} */ (im)
+            );
+
             return harden({
               // getPublicTopics returns a vow, for membrane compatibility.
               // it's safe to unwrap to a promise and get the result as we

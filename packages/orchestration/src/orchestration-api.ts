@@ -7,9 +7,16 @@
 import type { Amount, Brand, NatAmount } from '@agoric/ertp/src/types.js';
 import type { LocalChainAccount } from '@agoric/vats/src/localchain.js';
 import type { Timestamp } from '@agoric/time';
-import type { ContinuingOfferResult } from '@agoric/smart-wallet/src/types.js';
-import type { TopicsRecord } from '@agoric/zoe/src/contractSupport/topics.js';
+import type {
+  ContinuingOfferResult,
+  InvitationMakers,
+} from '@agoric/smart-wallet/src/types.js';
+import type {
+  ResolvedPublicTopic,
+  TopicsRecord,
+} from '@agoric/zoe/src/contractSupport/topics.js';
 import type { CurrentWalletRecord } from '@agoric/smart-wallet/src/smartWallet.js';
+import type { StoredFacet } from '@agoric/internal/src/lib-chainStorage.js';
 import type {
   ChainInfo,
   CosmosChainAccountMethods,
@@ -19,6 +26,7 @@ import type {
   KnownChains,
   LocalAccountMethods,
 } from './types.js';
+import type { ResolvedContinuingOfferResult } from './utils/zoe-tools.js';
 
 /**
  * A denom that designates a path to a token type on some blockchain.
@@ -182,14 +190,15 @@ export interface OrchestrationAccountI {
    * holder's smart wallet so they can continue interacting with the account
    * and read account state in vstorage if published.
    */
-  asContinuingOffer: () => Promise<ContinuingOfferResult>;
+  asContinuingOffer: () => Promise<ResolvedContinuingOfferResult>;
+
   /**
    * Public topics are a map to different vstorage paths and subscribers that
    * can be shared with on or offchain clients.
    * When returned as part of a continuing invitation, it will appear
    * in the {@link CurrentWalletRecord} in vstorage.
    */
-  getPublicTopics: () => Promise<TopicsRecord>;
+  getPublicTopics: () => Promise<Record<string, ResolvedPublicTopic<unknown>>>;
 }
 
 /**

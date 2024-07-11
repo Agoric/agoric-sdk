@@ -21,6 +21,16 @@ export const PublicTopicShape = M.splitRecord(
  * }} PublicTopic
  */
 
+/**
+ * A {PublicTopic} in which the `storagePath` is a string.
+ * @template {object} T topic value
+ * @typedef {{
+ *   description?: string,
+ *   subscriber: Subscriber<T>,
+ *   storagePath: string,
+ * }} ResolvedPublicTopic
+ */
+
 export const TopicsRecordShape = M.recordOf(M.string(), PublicTopicShape);
 
 /**
