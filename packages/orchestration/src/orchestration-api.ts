@@ -5,24 +5,15 @@
  * - should remain relatively stable.
  */
 import type { Amount, Brand, NatAmount } from '@agoric/ertp/src/types.js';
-import type { LocalChainAccount } from '@agoric/vats/src/localchain.js';
-import type { Timestamp } from '@agoric/time';
-import type {
-  ContinuingOfferResult,
-  InvitationMakers,
-} from '@agoric/smart-wallet/src/types.js';
-import type {
-  ResolvedPublicTopic,
-  TopicsRecord,
-} from '@agoric/zoe/src/contractSupport/topics.js';
 import type { CurrentWalletRecord } from '@agoric/smart-wallet/src/smartWallet.js';
-import type { StoredFacet } from '@agoric/internal/src/lib-chainStorage.js';
+import type { Timestamp } from '@agoric/time';
+import type { LocalChainAccount } from '@agoric/vats/src/localchain.js';
+import type { ResolvedPublicTopic } from '@agoric/zoe/src/contractSupport/topics.js';
 import type {
   ChainInfo,
   CosmosChainAccountMethods,
   CosmosChainInfo,
   IBCMsgTransferOptions,
-  IcaAccount,
   KnownChains,
   LocalAccountMethods,
 } from './types.js';

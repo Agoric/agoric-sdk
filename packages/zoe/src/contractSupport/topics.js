@@ -22,7 +22,10 @@ export const PublicTopicShape = M.splitRecord(
  */
 
 /**
- * A {PublicTopic} in which the `storagePath` is a string.
+ * A {PublicTopic} in which the `storagePath` is always a resolved string.
+ *
+ * Useful when working with Vows and async-flow.
+ *
  * @template {object} T topic value
  * @typedef {{
  *   description?: string,

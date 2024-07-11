@@ -29,6 +29,7 @@ import { makeTimestampHelper } from '../utils/time.js';
  * @import {TimerService, TimerBrand, TimestampRecord} from '@agoric/time';
  * @import {PromiseVow, Vow, VowTools} from '@agoric/vow';
  * @import {TypedJson, JsonSafe} from '@agoric/cosmic-proto';
+ * @import {Matcher} from '@endo/patterns';
  * @import {ChainHub} from './chain-hub.js';
  */
 
@@ -59,7 +60,7 @@ const HolderI = M.interface('holder', {
   executeTx: M.call(M.arrayOf(M.record())).returns(Vow$(M.record())),
 });
 
-/** @type {{ [name: string]: [description: string, valueShape: Pattern] }} */
+/** @type {{ [name: string]: [description: string, valueShape: Matcher] }} */
 const PUBLIC_TOPICS = {
   account: ['Account holder status', M.any()],
 };
@@ -138,7 +139,6 @@ export const prepareLocalOrchestrationAccountKit = (
      */
     ({ account, address, storageNode }) => {
       // must be the fully synchronous maker because the kit is held in durable state
-      // @ts-expect-error XXX Patterns
       const topicKit = makeRecorderKit(storageNode, PUBLIC_TOPICS.account[1]);
       // TODO determine what goes in vstorage https://github.com/Agoric/agoric-sdk/issues/9066
       void E(topicKit.recorder).write('');
