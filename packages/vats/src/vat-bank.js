@@ -22,8 +22,8 @@ import {
 } from './virtual-purse.js';
 
 /**
- * @import {Guarded} from '@endo/exo')
- * @import {Passable, RemotableObject} from '@endo/pass-style')
+ * @import {Guarded} from '@endo/exo'
+ * @import {Passable, RemotableObject} from '@endo/pass-style'
  */
 
 const { VirtualPurseControllerI } = makeVirtualPurseKitIKit();

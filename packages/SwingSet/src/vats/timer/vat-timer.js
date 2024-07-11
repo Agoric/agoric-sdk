@@ -16,8 +16,8 @@ import { makeScalarWeakMapStore } from '@agoric/store';
 import { TimeMath } from '@agoric/time';
 
 /**
- * @import {Passable, RemotableObject} from '@endo/pass-style')
- * @import {Key} from '@endo/patterns')
+ * @import {Passable, RemotableObject} from '@endo/pass-style'
+ * @import {Key} from '@endo/patterns'
  */
 
 // This consumes O(N) RAM only for outstanding promises, via wakeAt(),

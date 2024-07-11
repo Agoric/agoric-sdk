@@ -6,7 +6,7 @@ import { mustMatch } from '@agoric/store';
 import { AmountMath } from './amountMath.js';
 
 /**
- * @import {ERef} from '@endo/far');
+ * @import {ERef} from '@endo/far';
  * @import {Amount, AssetKind, AmountValue, AssetKindForValue, Payment, Brand, Purse} from './types.js'
  */
 

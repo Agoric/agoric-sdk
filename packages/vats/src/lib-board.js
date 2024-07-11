@@ -17,7 +17,7 @@ import { crc6 } from './crc.js';
 
 /**
  * @import {RemotableObject} from '@endo/pass-style';
- * @import {Key} from '@endo/patterns');
+ * @import {Key} from '@endo/patterns';
  */
 
 export const DEFAULT_CRC_DIGITS = 2;

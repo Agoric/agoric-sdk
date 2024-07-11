@@ -6,7 +6,7 @@ import { makeNotifierKit } from '@agoric/notifier';
 
 /**
  * @import {Purse} from './types.js';
- * @import {LatestTopic, NotifierRecord} from '@agoric/notifier');
+ * @import {LatestTopic, NotifierRecord} from '@agoric/notifier';
  */
 
 // Note: Virtual for high cardinality, but *not* durable, and so
