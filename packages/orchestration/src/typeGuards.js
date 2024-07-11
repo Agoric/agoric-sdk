@@ -3,6 +3,11 @@ import { VowShape } from '@agoric/vow';
 import { M } from '@endo/patterns';
 
 /**
+ * @import {TypedPattern} from '@agoric/internal';
+ * @import {CosmosChainInfo} from './cosmos-api.js';
+ */
+
+/**
  * Used for IBC Channel Connections that only send outgoing transactions. If
  * your channel expects incoming transactions, please extend this interface to
  * include the `onReceive` handler.

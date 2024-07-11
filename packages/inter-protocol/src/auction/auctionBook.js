@@ -31,6 +31,7 @@ import {
 /**
  * @import {Baggage} from '@agoric/vat-data';
  * @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js';
+ * @import {TypedPattern} from '@agoric/internal';
  */
 
 const { makeEmpty } = AmountMath;
@@ -172,9 +173,7 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
 
       const bookDataKit = makeRecorderKit(
         node,
-        /** @type {import('@agoric/zoe/src/contractSupport/recorder.js').TypedPattern<BookDataNotification>} */ (
-          M.any()
-        ),
+        /** @type {TypedPattern<BookDataNotification>} */ (M.any()),
       );
 
       return {

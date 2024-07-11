@@ -36,6 +36,7 @@ import { makeScheduler } from './scheduler.js';
 import { AuctionState } from './util.js';
 
 /**
+ * @import {TypedPattern} from '@agoric/internal';
  * @import {Baggage} from '@agoric/vat-data';
  * @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js';
  */
@@ -440,9 +441,7 @@ export const start = async (zcf, privateArgs, baggage) => {
   const scheduleKit = makeERecorderKit(
     E(privateArgs.storageNode).makeChildNode('schedule'),
     /**
-     * @type {import('@agoric/zoe/src/contractSupport/recorder.js').TypedPattern<
-     *     import('./scheduler.js').ScheduleNotification
-     *   >}
+     * @type {TypedPattern<import('./scheduler.js').ScheduleNotification>}
      */ (M.any()),
   );
 

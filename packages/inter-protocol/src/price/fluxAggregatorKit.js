@@ -144,18 +144,14 @@ export const prepareFluxAggregatorKit = async (
     priceKit: () =>
       makeRecorderKit(
         storageNode,
-        /** @type {import('@agoric/zoe/src/contractSupport/recorder.js').TypedPattern<PriceDescription>} */ (
-          M.any()
-        ),
+        /** @type {TypedPattern<PriceDescription>} */ (M.any()),
       ),
     latestRoundKit: () =>
       E.when(E(storageNode).makeChildNode('latestRound'), node =>
         makeRecorderKit(
           node,
           /**
-           * @type {import('@agoric/zoe/src/contractSupport/recorder.js').TypedPattern<
-           *     import('./roundsManager.js').LatestRound
-           *   >}
+           * @type {TypedPattern<import('./roundsManager.js').LatestRound>}
            */ (M.any()),
         ),
       ),

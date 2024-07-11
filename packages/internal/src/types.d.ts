@@ -64,3 +64,12 @@ export type Remote<Primary, Local = DataOnly<Primary>> =
 export type FarRef<Primary, Local = DataOnly<Primary>> = ERef<
   Remote<Primary, Local>
 >;
+
+/**
+ * Stop-gap until https://github.com/Agoric/agoric-sdk/issues/6160
+ * explictly specify the type that the Pattern will verify through a match.
+ */
+export type TypedPattern<T> = Pattern & { validatedType?: T };
+
+export declare type PatternType<TM extends TypedPattern<any>> =
+  TM extends TypedPattern<infer T> ? T : never;

@@ -59,7 +59,10 @@ import { makeNatAmountShape } from '../contractSupport.js';
  *   given by this contract
  */
 
-/** @import {Baggage} from '@agoric/vat-data' */
+/**
+ * @import {TypedPattern} from '@agoric/internal';
+ * @import {Baggage} from '@agoric/vat-data'
+ */
 
 /** @type {ContractMeta} */
 export const meta = {
@@ -174,9 +177,7 @@ export const start = async (zcf, privateArgs, baggage) => {
       E.when(E(privateArgs.storageNode).makeChildNode('metrics'), node =>
         makeRecorderKit(
           node,
-          /** @type {import('@agoric/zoe/src/contractSupport/recorder.js').TypedPattern<MetricsNotification>} */ (
-            M.any()
-          ),
+          /** @type {TypedPattern<MetricsNotification>} */ (M.any()),
         ),
       ),
   });
