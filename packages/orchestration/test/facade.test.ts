@@ -76,7 +76,7 @@ test.serial('chain info', async t => {
     return orc.getChain('mock');
   });
 
-  const result = (await handle()) as Chain<any>;
+  const result = (await vt.when(handle())) as Chain<any>;
   t.deepEqual(await vt.when(result.getChainInfo()), mockChainInfo);
 });
 
@@ -122,7 +122,7 @@ test.serial('faulty chain info', async t => {
     return account;
   });
 
-  await t.throwsAsync(handle(), {
+  await t.throwsAsync(vt.when(handle()), {
     message: 'chain info lacks staking denom',
   });
 });

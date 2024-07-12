@@ -61,12 +61,17 @@ const orchestrationAccountScenario = test.macro({
       return t.fail(`Unknown chain: ${chainName}`);
     }
 
-    const { zoe, instance } = t.context;
+    const {
+      bootstrap: { vowTools: vt },
+      zoe,
+      instance,
+    } = t.context;
     const publicFacet = await E(zoe).getPublicFacet(instance);
     const inv = E(publicFacet).makeOrchAccountInvitation();
     const userSeat = E(zoe).offer(inv, {}, undefined, { chainName });
-    const { invitationMakers, publicSubscribers } =
-      await E(userSeat).getOfferResult();
+    const { invitationMakers, publicSubscribers } = await vt.when(
+      E(userSeat).getOfferResult(),
+    );
 
     t.regex(getInterfaceOf(invitationMakers)!, /invitationMakers/);
 

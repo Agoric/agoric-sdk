@@ -52,8 +52,6 @@ export const makeOrchestrationFacade = ({
 
   const { prepareEndowment, asyncFlow, adminAsyncFlow } = asyncFlowTools;
 
-  const { when } = vowTools;
-
   /**
    * @template RT - return type
    * @template HC - host context
@@ -66,7 +64,7 @@ export const makeOrchestrationFacade = ({
    *   guestCtx: GuestInterface<HC>,
    *   ...args: GA
    * ) => Promise<RT>} guestFn
-   * @returns {(...args: HostArgs<GA>) => Promise<RT>}
+   * @returns {(...args: HostArgs<GA>) => Vow<RT>}
    */
   const orchestrate = (durableName, hostCtx, guestFn) => {
     const subZone = zone.subZone(durableName);
@@ -81,10 +79,8 @@ export const makeOrchestrationFacade = ({
     const hostFn = asyncFlow(subZone, 'asyncFlow', guestFn);
 
     const orcFn = (...args) =>
-      // TODO remove the `when` after fixing the return type
-      // to `Vow<HostReturn>`
       // @ts-expect-error cast
-      when(hostFn(wrappedOrc, wrappedCtx, ...args));
+      hostFn(wrappedOrc, wrappedCtx, ...args);
 
     // @ts-expect-error cast
     return harden(orcFn);
