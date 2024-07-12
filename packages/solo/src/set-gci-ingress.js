@@ -70,7 +70,6 @@ export default function setGCIIngress(basedir, GCI, rpcAddresses, chainID) {
   };
   add(newconn);
   const connections = [];
-
   for (const conns of Object.values(connsByType)) {
     connections.push(...conns);
   }

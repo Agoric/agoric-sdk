@@ -414,8 +414,6 @@ export const createSeatManager = (
         reallocate(/** @type {ZCFSeat[]} */ ...seats) {
           for (const seat of seats) {
             assertActive(seat);
-          }
-          for (const seat of seats) {
             assertStagedAllocation(seat);
           }
 
