@@ -2,14 +2,7 @@ name: Multichain E2E Tests
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      # $default-branch
-      - master
-      - 'release-*'
-      - 'dev-*'
-    tags:
-      - '@agoric/sdk@*'
+  workflow_call:
 
 jobs:
   multichain-e2e:
