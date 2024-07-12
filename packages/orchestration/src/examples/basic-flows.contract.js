@@ -10,7 +10,6 @@ import { provideOrchestration } from '../utils/start-helper.js';
  * @import {Baggage} from '@agoric/vat-data';
  * @import {Orchestrator} from '@agoric/orchestration';
  * @import {OrchestrationPowers} from '../utils/start-helper.js';
- * @import {ResolvedContinuingOfferResult} from '../utils/zoe-tools.js';
  */
 
 /**
@@ -45,7 +44,6 @@ export const start = async (zcf, privateArgs, baggage) => {
     privateArgs.marshaller,
   );
 
-  /** @type {OfferHandler<Promise<ResolvedContinuingOfferResult>>} */
   const makeOrchAccount = orchestrate(
     'makeOrchAccount',
     undefined,

@@ -52,6 +52,13 @@ type HostInterface<T> = {
 };
 
 /**
+ * Convert an entire Host interface into what the Guest will receive.
+ */
+type GuestInterface<T> = {
+  [K in keyof T]: GuestOf<T[K]>;
+};
+
+/**
  * The function the host must provide to match an interface the guest expects.
  *
  * Specifically, Promise return values are converted to Vows.
@@ -59,6 +66,8 @@ type HostInterface<T> = {
 export type HostOf<F> = F extends (...args: infer A) => Promise<infer R>
   ? (...args: A) => Vow<R extends Passable ? R : HostInterface<R>>
   : F;
+
+export type HostArgs<GA extends any[]> = { [K in keyof GA]: HostOf<GA[K]> };
 
 export type PreparationOptions = {
   vowTools?: VowTools;

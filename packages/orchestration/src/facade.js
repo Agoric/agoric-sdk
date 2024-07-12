@@ -3,7 +3,7 @@
 import { assertAllDefined } from '@agoric/internal';
 
 /**
- * @import {AsyncFlowTools} from '@agoric/async-flow';
+ * @import {AsyncFlowTools, GuestInterface, HostArgs} from '@agoric/async-flow';
  * @import {Zone} from '@agoric/zone';
  * @import {Vow, VowTools} from '@agoric/vow';
  * @import {TimerService} from '@agoric/time';
@@ -55,24 +55,18 @@ export const makeOrchestrationFacade = ({
   const { when } = vowTools;
 
   /**
-   * @template GuestReturn
-   * @template HostReturn
-   * @template GuestContext
-   * @template HostContext
-   * @template {any[]} GuestArgs
-   * @template {any[]} HostArgs
+   * @template RT - return type
+   * @template HC - host context
+   * @template {any[]} GA - guest args
    * @param {string} durableName - the orchestration flow identity in the zone
    *   (to resume across upgrades)
-   * @param {HostContext} hostCtx - values to pass through the async flow
-   *   membrane
+   * @param {HC} hostCtx - values to pass through the async flow membrane
    * @param {(
    *   guestOrc: Orchestrator,
-   *   guestCtx: GuestContext,
-   *   ...args: GuestArgs
-   * ) => Promise<GuestReturn>} guestFn
-   * @returns {(...args: HostArgs) => Promise<HostReturn>} TODO returns a
-   *   Promise for now for compat before use of asyncFlow. But really should be
-   *   `Vow<HostReturn>`
+   *   guestCtx: GuestInterface<HC>,
+   *   ...args: GA
+   * ) => Promise<RT>} guestFn
+   * @returns {(...args: HostArgs<GA>) => Promise<RT>}
    */
   const orchestrate = (durableName, hostCtx, guestFn) => {
     const subZone = zone.subZone(durableName);
@@ -89,7 +83,10 @@ export const makeOrchestrationFacade = ({
     const orcFn = (...args) =>
       // TODO remove the `when` after fixing the return type
       // to `Vow<HostReturn>`
+      // @ts-expect-error cast
       when(hostFn(wrappedOrc, wrappedCtx, ...args));
+
+    // @ts-expect-error cast
     return harden(orcFn);
   };
 
