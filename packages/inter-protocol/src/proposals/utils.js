@@ -3,7 +3,7 @@ import { E } from '@endo/far';
 import { WalletName } from '@agoric/internal';
 import { getCopyMapEntries, makeCopyMap } from '@agoric/store';
 
-/** @import {CopyMap} from '@endo/patterns' */
+/** @import {CopyMap} from '@endo/patterns'; */
 
 /**
  * @param {ERef<import('@agoric/vats').NameAdmin>} nameAdmin
