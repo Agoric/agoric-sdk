@@ -40,6 +40,10 @@ import {
   provideAndStartVaultManagerKits,
 } from './vaultManager.js';
 
+/**
+ * @import {TypedPattern} from '@agoric/internal';
+ */
+
 const trace = makeTracer('VD', true);
 
 /**
@@ -131,9 +135,7 @@ const prepareVaultDirector = (
 
   const metricsKit = makeERecorderKit(
     metricsNode,
-    /** @type {import('@agoric/zoe/src/contractSupport/recorder.js').TypedPattern<MetricsNotification>} */ (
-      M.any()
-    ),
+    /** @type {TypedPattern<MetricsNotification>} */ (M.any()),
   );
 
   const managersNode = E(storageNode).makeChildNode('managers');

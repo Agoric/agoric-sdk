@@ -15,13 +15,15 @@ import { BrandI, makeIssuerInterfaces } from './typeGuards.js';
 /**
  * @import {Amount, AssetKind, DisplayInfo, PaymentLedger, Payment, Brand, RecoverySetsOption, Purse, Issuer, Mint} from './types.js'
  * @import {ShutdownWithFailure} from '@agoric/swingset-vat'
- * @import {Key} from '@endo/patterns';
+ * @import {TypedPattern} from '@agoric/internal';
  */
 
 /**
+ * @template {AssetKind} K
  * @param {Brand} brand
- * @param {AssetKind} assetKind
+ * @param {K} assetKind
  * @param {Pattern} elementShape
+ * @returns {TypedPattern<Amount<K>>}
  */
 const amountShapeFromElementShape = (brand, assetKind, elementShape) => {
   let valueShape;

@@ -64,3 +64,33 @@ export type Remote<Primary, Local = DataOnly<Primary>> =
 export type FarRef<Primary, Local = DataOnly<Primary>> = ERef<
   Remote<Primary, Local>
 >;
+
+/*
+ * Stop-gap until https://github.com/Agoric/agoric-sdk/issues/6160
+ * explictly specify the type that the Pattern will verify through a match.
+ *
+ * TODO move all this pattern typing stuff to @endo/patterns
+ */
+declare const validatedType: unique symbol;
+/**
+ * Tag a pattern with the static type it represents.
+ */
+export type TypedPattern<T> = Pattern & { [validatedType]?: T };
+
+export declare type PatternType<TM extends TypedPattern<any>> =
+  TM extends TypedPattern<infer T> ? T : never;
+
+// TODO make Endo's mustMatch do this
+/**
+ * Returning normally indicates success. Match failure is indicated by
+ * throwing.
+ *
+ * Note: remotables can only be matched as "remotable", not the specific kind.
+ *
+ * @see {import('@endo/patterns').mustMatch} for the implementation. This one has a type annotation to narrow if the pattern is a TypedPattern.
+ */
+export declare type MustMatch = <P extends Pattern>(
+  specimen: unknown,
+  pattern: P,
+  label?: string | number,
+) => asserts specimen is P extends TypedPattern<any> ? PatternType<P> : unknown;

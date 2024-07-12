@@ -10,6 +10,10 @@ import { M, makeScalarBigMapStore, prepareExoClass } from '@agoric/vat-data';
 import { E } from '@endo/eventual-send';
 
 /**
+ * @import {TypedPattern} from '@agoric/internal';
+ */
+
+/**
  * Recorders support publishing data to vstorage.
  *
  * `Recorder` is similar to `Publisher` (in that they send out data) but has different signatures:
@@ -56,7 +60,7 @@ export const prepareRecorder = (baggage, marshaller) => {
      * @template T
      * @param {PublishKit<T>['publisher']} publisher
      * @param {Awaited<import('@endo/far').FarRef<StorageNode>>} storageNode
-     * @param {TypedPattern<T>} [valueShape]
+     * @param {TypedPattern<any>} [valueShape]
      */
     (
       publisher,
@@ -258,16 +262,3 @@ export const prepareMockRecorderKitMakers = () => {
     storageNode: makeFakeStorage('mock recorder storage'),
   };
 };
-
-/**
- * Stop-gap until https://github.com/Agoric/agoric-sdk/issues/6160
- * explictly specify the type that the Pattern will verify through a match.
- *
- * @template T
- * @typedef {import('@endo/patterns').Pattern & { validatedType?: T }} TypedPattern
- */
-
-/**
- * @template {TypedPattern<any>} TM
- * @typedef {TM extends TypedPattern<infer T> ? T : never} MatchedType
- */

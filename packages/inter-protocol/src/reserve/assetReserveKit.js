@@ -14,6 +14,10 @@ import { UnguardedHelperI } from '@agoric/internal/src/typeGuards.js';
 const trace = makeTracer('ReserveKit', true);
 
 /**
+ * @import {TypedPattern} from '@agoric/internal';
+ */
+
+/**
  * @typedef {object} MetricsNotification
  * @property {AmountKeywordRecord} allocations
  * @property {Amount<'nat'>} shortfallBalance shortfall from liquidation that
@@ -88,9 +92,7 @@ export const prepareAssetReserveKit = async (
         keywordForBrand,
         metricsKit: makeRecorderKit(
           metricsNode,
-          /** @type {import('@agoric/zoe/src/contractSupport/recorder.js').TypedPattern<MetricsNotification>} */ (
-            M.any()
-          ),
+          /** @type {TypedPattern<MetricsNotification>} */ (M.any()),
         ),
         totalFeeMinted: emptyAmount,
         totalFeeBurned: emptyAmount,

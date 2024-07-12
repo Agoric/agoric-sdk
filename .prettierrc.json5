@@ -11,6 +11,7 @@
         'packages/store/**/*.js',
         'packages/smart-wallet/**/*.js',
         'packages/vats/**/*.js',
+        'packages/vat-data/**/*.js',
       ],
       options: {
         plugins: ['prettier-plugin-jsdoc'],
