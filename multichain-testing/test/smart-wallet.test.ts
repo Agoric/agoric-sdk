@@ -29,7 +29,7 @@ test('provision smart wallet', async t => {
   );
   t.like(walletCurrent, { liveOffers: [], offerToPublicSubscriberPaths: [] });
 
-  const agQueryClient = makeQueryClient(useChain('agoric').getRestEndpoint());
+  const agQueryClient = makeQueryClient(await useChain('agoric').getRestEndpoint());
   const { balances } = await agQueryClient.queryBalances(wallets.user1);
   t.deepEqual(
     balances,

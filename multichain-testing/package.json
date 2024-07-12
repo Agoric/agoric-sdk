@@ -36,7 +36,7 @@
     "execa": "^9.2.0",
     "fs-extra": "^11.2.0",
     "patch-package": "^8.0.0",
-    "starshipjs": "2.0.0",
+    "starshipjs": "2.4.0",
     "tsimp": "^2.0.10",
     "tsx": "^4.15.6",
     "typescript": "^5.3.3"

@@ -608,7 +608,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@noble/hashes@npm:^1, @noble/hashes@npm:^1.0.0":
+"@noble/hashes@npm:^1, @noble/hashes@npm:^1.0.0, @noble/hashes@npm:^1.2.0":
   version: 1.4.0
   resolution: "@noble/hashes@npm:1.4.0"
   checksum: 10c0/8c3f005ee72e7b8f9cff756dfae1241485187254e3f743873e22073d63906863df5d4f13d441b7530ea614b7a093f0d889309f28b59850f33b66cb26a779a4a5
@@ -1316,6 +1316,15 @@ __metadata:
   dependencies:
     file-uri-to-path: "npm:1.0.0"
   checksum: 10c0/3dab2491b4bb24124252a91e656803eac24292473e56554e35bbfe3cc1875332cfa77600c3bac7564049dc95075bf6fcc63a4609920ff2d64d0fe405fcf0d4ba
+  languageName: node
+  linkType: hard
+
+"bip39@npm:^3.1.0":
+  version: 3.1.0
+  resolution: "bip39@npm:3.1.0"
+  dependencies:
+    "@noble/hashes": "npm:^1.2.0"
+  checksum: 10c0/68f9673a0d6a851e9635f3af8a85f2a1ecef9066c76d77e6f0d58d274b5bf22a67f429da3997e07c0d2cf153a4d7321f9273e656cac0526f667575ddee28ef71
   languageName: node
   linkType: hard
 
@@ -3843,7 +3852,7 @@ __metadata:
     execa: "npm:^9.2.0"
     fs-extra: "npm:^11.2.0"
     patch-package: "npm:^8.0.0"
-    starshipjs: "npm:2.0.0"
+    starshipjs: "npm:2.4.0"
     tsimp: "npm:^2.0.10"
     tsx: "npm:^4.15.6"
     typescript: "npm:^5.3.3"
@@ -4081,14 +4090,15 @@ __metadata:
   languageName: node
   linkType: hard
 
-"starshipjs@npm:2.0.0":
-  version: 2.0.0
-  resolution: "starshipjs@npm:2.0.0"
+"starshipjs@npm:2.4.0":
+  version: 2.4.0
+  resolution: "starshipjs@npm:2.4.0"
   dependencies:
     "@chain-registry/client": "npm:1.18.1"
+    bip39: "npm:^3.1.0"
     js-yaml: "npm:^4.1.0"
     node-fetch: "npm:^2.6.9"
-  checksum: 10c0/8091142dac71b0f0544db87f0f6d101c4fa26792adda05f629dfb3c2f6d087233ede3672fa41ada2cd92d42ad07bbb17481049c491a2adba4a3114f363299121
+  checksum: 10c0/e62cc540bc9e8700d3bdb61ac1261b71417f0e687c98a0e3733317d363e425c7188a205d9af70f5218e87f99195fbfb5b759b4f3f9d87823989ef6b4d90442d6
   languageName: node
   linkType: hard
 
