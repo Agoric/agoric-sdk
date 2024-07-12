@@ -4,7 +4,6 @@ import { withOrchestration } from '../utils/start-helper.js';
 /**
  * @import {Orchestrator, IcaAccount, CosmosValidatorAddress} from '../types.js'
  * @import {TimerService} from '@agoric/time';
- * @import {Baggage} from '@agoric/vat-data';
  * @import {LocalChain} from '@agoric/vats/src/localchain.js';
  * @import {NameHub} from '@agoric/vats';
  * @import {Remote} from '@agoric/internal';
@@ -59,7 +58,6 @@ const unbondAndLiquidStakeFn = async (orch, { zcf }, _seat, _offerArgs) => {
  * @param {OrchestrationTools} tools
  */
 const contract = async (zcf, privateArgs, zone, { orchestrate }) => {
-  /** @type {OfferHandler} */
   const unbondAndLiquidStake = orchestrate(
     'LSTTia',
     { zcf },
