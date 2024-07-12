@@ -307,7 +307,6 @@ export const prepareLocalOrchestrationAccountKit = (
               // expect this complete in the same run
               publicSubscribers: await when(holder.getPublicTopics()),
               invitationMakers,
-              holder,
             });
           });
         },
