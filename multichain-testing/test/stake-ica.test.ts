@@ -102,13 +102,6 @@ const stakeScenario = test.macro(async (t, scenario: StakeIcaScenario) => {
     `address for ${scenario.chain} is valid`,
   );
 
-  if (scenario.chain === 'cosmoshub') {
-    // see https://github.com/cosmos/cosmjs/pull/1593 for upstream fix
-    t.pass(
-      `SKIP ${scenario.chain}. @cosmjs/faucet does not support ICA address length.`,
-    );
-    return;
-  }
   const { creditFromFaucet, getRestEndpoint } = useChain(scenario.chain);
   const queryClient = makeQueryClient(getRestEndpoint());
 

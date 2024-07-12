@@ -29,21 +29,6 @@ const ibc: {
   data: IBCInfo[];
 } = await fetch(`${BASE_URL}ibc`).then(r => r.json());
 
-// UNTIL https://github.com/cosmology-tech/starship/issues/494
-const backmap = {
-  agoriclocal: 'agoric',
-  osmosislocal: 'osmosis',
-  gaialocal: 'cosmoshub',
-};
-for (const ibcInfo of ibc.data) {
-  ibcInfo.chain_1.chain_name = backmap[ibcInfo.chain_1.chain_name];
-  ibcInfo.chain_2.chain_name = backmap[ibcInfo.chain_2.chain_name];
-  for (const c of ibcInfo.channels) {
-    // @ts-expect-error XXX bad typedef
-    c.tags.preferred = c.tags.perferred;
-  }
-}
-
 const chainInfo = await convertChainInfo({
   chains,
   ibcData: ibc.data,

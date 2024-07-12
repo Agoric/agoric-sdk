@@ -208,10 +208,6 @@ const autoStakeItScenario = test.macro({
     await fundAndTransfer(chainName, lcaAddress, transferAmount);
 
     // 7. verify the COA has active delegations
-    if (chainName === 'cosmoshub') {
-      // FIXME: delegations are not visible on cosmoshub
-      return t.pass('skipping verifying delegations on cosmoshub');
-    }
     const { delegation_responses } = await retryUntilCondition(
       () => remoteQueryClient.queryDelegations(icaAddress),
       ({ delegation_responses }) => !!delegation_responses.length,
