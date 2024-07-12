@@ -1,3 +1,8 @@
+/**
+ * @import {MustMatch} from '@agoric/internal';
+ */
+import { mustMatch as typelessMustMatch } from '@endo/patterns';
+
 export { makeScalarWeakSetStore } from './stores/scalarWeakSetStore.js';
 export { makeScalarSetStore } from './stores/scalarSetStore.js';
 export { makeScalarWeakMapStore } from './stores/scalarWeakMapStore.js';
@@ -51,10 +56,14 @@ export {
   isPattern,
   assertPattern,
   matches,
-  mustMatch,
   isCopySet,
   isCopyMap,
 } from '@endo/patterns';
+
+// XXX @agoric/store should not depend on @agoric/internal
+// TODO move to Endo
+/** @type {MustMatch} */
+export const mustMatch = typelessMustMatch;
 
 export {
   initEmpty,

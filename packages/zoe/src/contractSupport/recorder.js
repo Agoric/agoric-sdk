@@ -60,7 +60,7 @@ export const prepareRecorder = (baggage, marshaller) => {
      * @template T
      * @param {PublishKit<T>['publisher']} publisher
      * @param {Awaited<import('@endo/far').FarRef<StorageNode>>} storageNode
-     * @param {TypedPattern<T>} [valueShape]
+     * @param {TypedPattern<any>} [valueShape]
      */
     (
       publisher,

@@ -14,6 +14,10 @@ import { UnguardedHelperI } from '@agoric/internal/src/typeGuards.js';
 const trace = makeTracer('ReserveKit', true);
 
 /**
+ * @import {TypedPattern} from '@agoric/internal';
+ */
+
+/**
  * @typedef {object} MetricsNotification
  * @property {AmountKeywordRecord} allocations
  * @property {Amount<'nat'>} shortfallBalance shortfall from liquidation that

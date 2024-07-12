@@ -81,6 +81,9 @@ export const IBCConnectionInfoShape = M.splitRecord({
   transferChannel: IBCChannelInfoShape,
 });
 
+/**
+ * @type {TypedPattern<CosmosChainInfo>}
+ */
 export const CosmosChainInfoShape = M.splitRecord(
   {
     chainId: M.string(),
