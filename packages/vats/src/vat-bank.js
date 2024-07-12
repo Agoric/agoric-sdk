@@ -22,8 +22,9 @@ import {
 } from './virtual-purse.js';
 
 /**
- * @import {Guarded} from '@endo/exo')
- * @import {Passable, RemotableObject} from '@endo/pass-style')
+ * @import {Guarded} from '@endo/exo';
+ * @import {Passable, RemotableObject} from '@endo/pass-style';
+ * @import {VirtualPurseController} from './virtual-purse.js';
  */
 
 const { VirtualPurseControllerI } = makeVirtualPurseKitIKit();
@@ -37,7 +38,6 @@ const BridgeChannelI = M.interface('BridgeChannel', {
 
 /**
  * @typedef {Awaited<ReturnType<ReturnType<typeof prepareVirtualPurse>>>} VirtualPurse
- * @import {VirtualPurseController} from './virtual-purse.js'
  */
 
 /**

@@ -12,7 +12,7 @@ import { makeWeakSetStoreMethods } from './scalarWeakSetStore.js';
 import { makeCurrentKeysKit } from './store-utils.js';
 
 /**
- * @import {Key, Pattern} from '@endo/patterns');
+ * @import {Key, Pattern} from '@endo/patterns';
  * @import {SetStore, SetStoreMethods, StoreOptions} from '../types.js';
  */
 

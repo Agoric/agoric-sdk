@@ -114,6 +114,27 @@ module.exports = {
     // The default is 'warn', but we want to enforce 'error'.
     '@jessie.js/safe-await-separator': 'error',
 
+    'jsdoc/check-tag-names': [
+      'error',
+      {
+        // TypeDoc adds tags not otherwise known to JSDoc
+        // https://typedoc.org/guides/tags/
+        definedTags: [
+          'alpha',
+          'beta',
+          'category',
+          'categoryDescription',
+          'defaultValue',
+          'document',
+          'group',
+          'groupDescription',
+          'internal',
+          'privateRemarks',
+          'remarks',
+        ],
+      },
+    ],
+
     // CI has a separate format check but keep this warn to maintain that "eslint --fix" prettifies
     // UNTIL https://github.com/Agoric/agoric-sdk/issues/4339
     'prettier/prettier': 'warn',
