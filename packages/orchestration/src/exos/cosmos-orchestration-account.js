@@ -329,7 +329,6 @@ export const prepareCosmosOrchestrationAccountKit = (
               // expect this complete in the same run
               publicSubscribers: await when(holder.getPublicTopics()),
               invitationMakers,
-              holder,
             });
           });
         },

@@ -65,15 +65,13 @@ const orchestrationAccountScenario = test.macro({
     const publicFacet = await E(zoe).getPublicFacet(instance);
     const inv = E(publicFacet).makeOrchAccountInvitation();
     const userSeat = E(zoe).offer(inv, {}, undefined, { chainName });
-    // @ts-expect-error TODO: type expected offer result
-    const { holder, invitationMakers, publicSubscribers } =
+    const { invitationMakers, publicSubscribers } =
       await E(userSeat).getOfferResult();
 
-    t.regex(getInterfaceOf(holder)!, /Orchestration (.*) holder/);
     t.regex(getInterfaceOf(invitationMakers)!, /invitationMakers/);
 
     const { description, storagePath, subscriber } = publicSubscribers.account;
-    t.regex(description, /Account holder/);
+    t.regex(description!, /Account holder/);
 
     const expectedStoragePath = `mockChainStorageRoot.basic-flows.${config.addressPrefix}`;
     t.is(storagePath, expectedStoragePath);
