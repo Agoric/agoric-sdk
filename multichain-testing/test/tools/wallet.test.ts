@@ -16,7 +16,7 @@ const walletScenario = test.macro(async (t, scenario: string) => {
   t.regex(addr, new RegExp(`^${prefix}1`));
   t.log('Made temp wallet:', addr);
 
-  const apiUrl = useChain(scenario).getRestEndpoint();
+  const apiUrl = await useChain(scenario).getRestEndpoint();
   const queryClient = makeQueryClient(apiUrl);
   t.log('Made query client');
 

@@ -117,7 +117,7 @@ const autoStakeItScenario = test.macro({
     const { portId, channelId } =
       agoricConns[remoteChainInfo.chainId].transferChannel;
     const agoricQueryClient = makeQueryClient(
-      useChain('agoric').getRestEndpoint(),
+      await useChain('agoric').getRestEndpoint(),
     );
     const stakingDenom = remoteChainInfo?.stakingTokens?.[0].denom;
     if (!stakingDenom) throw Error(`staking denom found for ${chainName}`);
@@ -131,7 +131,7 @@ const autoStakeItScenario = test.macro({
 
     // 3. Find a remoteChain validator to delegate to
     const remoteQueryClient = makeQueryClient(
-      useChain(chainName).getRestEndpoint(),
+      await useChain(chainName).getRestEndpoint(),
     );
     const { validators } = await remoteQueryClient.queryValidators();
     const validatorAddress = validators[0]?.operator_address;

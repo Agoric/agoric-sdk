@@ -126,7 +126,7 @@ export const createFundedWalletAndClient = async (
   // TODO use telescope generated rpc client from @agoric/cosmic-proto
   // https://github.com/Agoric/agoric-sdk/issues/9200
   const client = await SigningStargateClient.connectWithSigner(
-    getRpcEndpoint(),
+    await getRpcEndpoint(),
     wallet,
   );
   return { client, wallet, address };

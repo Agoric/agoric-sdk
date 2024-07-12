@@ -103,7 +103,7 @@ const stakeScenario = test.macro(async (t, scenario: StakeIcaScenario) => {
   );
 
   const { creditFromFaucet, getRestEndpoint } = useChain(scenario.chain);
-  const queryClient = makeQueryClient(getRestEndpoint());
+  const queryClient = makeQueryClient(await getRestEndpoint());
 
   t.log(`Requesting faucet funds for ${address}`);
   // XXX fails intermittently until https://github.com/cosmology-tech/starship/issues/417
