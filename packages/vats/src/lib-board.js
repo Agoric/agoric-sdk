@@ -80,9 +80,6 @@ const calcCrc = (data, crcDigits) => {
 /**
  * @typedef {ReturnType<typeof initDurableBoardState>} BoardState // TODO: use
  *   Key from @agoric/store when available
- * @import {Passable} from '@endo/marshal';
- * @see {prepareExoClassKit}
- * @see {@link ../../SwingSet/docs/virtual-objects.md|SwingSet Virtual Objects} Hoisting this function makes defining the state type concise.
  */
 
 // TODO consider tightening initSequence to bigint only
