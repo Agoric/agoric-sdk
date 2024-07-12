@@ -68,7 +68,8 @@ test.skip('start', async t => {
       } as const,
     },
   );
-  const result = await E(userSeat).getOfferResult();
+  const vt = bootstrap.vowTools;
+  const result = await vt.when(E(userSeat).getOfferResult());
   t.is(result, undefined);
 
   // bank purse now has the 10 IST

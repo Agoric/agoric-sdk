@@ -14,6 +14,7 @@ type StartFn =
 
 test('start', async t => {
   const {
+    bootstrap: { vowTools: vt },
     brands: { ist },
     commonPrivateArgs,
   } = await commonSetup(t);
@@ -47,7 +48,7 @@ test('start', async t => {
     {},
     { validator: 'agoric1valopsfufu' },
   );
-  const result = await E(userSeat).getOfferResult();
+  const result = await vt.when(E(userSeat).getOfferResult());
   t.is(result, undefined);
 
   const tree = inspectMapStore(contractBaggage);

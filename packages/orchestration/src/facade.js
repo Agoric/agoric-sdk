@@ -52,8 +52,6 @@ export const makeOrchestrationFacade = ({
 
   const { prepareEndowment, asyncFlow, adminAsyncFlow } = asyncFlowTools;
 
-  const { when } = vowTools;
-
   /**
    * @template GuestReturn
    * @template HostReturn
@@ -70,9 +68,7 @@ export const makeOrchestrationFacade = ({
    *   guestCtx: GuestContext,
    *   ...args: GuestArgs
    * ) => Promise<GuestReturn>} guestFn
-   * @returns {(...args: HostArgs) => Promise<HostReturn>} TODO returns a
-   *   Promise for now for compat before use of asyncFlow. But really should be
-   *   `Vow<HostReturn>`
+   * @returns {(...args: HostArgs) => Vow<HostReturn>}
    */
   const orchestrate = (durableName, hostCtx, guestFn) => {
     const subZone = zone.subZone(durableName);
@@ -86,10 +82,9 @@ export const makeOrchestrationFacade = ({
 
     const hostFn = asyncFlow(subZone, 'asyncFlow', guestFn);
 
-    const orcFn = (...args) =>
-      // TODO remove the `when` after fixing the return type
-      // to `Vow<HostReturn>`
-      when(hostFn(wrappedOrc, wrappedCtx, ...args));
+    const orcFn = (...args) => hostFn(wrappedOrc, wrappedCtx, ...args);
+
+    // @ts-expect-error cast
     return harden(orcFn);
   };
 
