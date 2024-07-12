@@ -1,6 +1,9 @@
+import type { FungibleTokenPacketData } from '@agoric/cosmic-proto/ibc/applications/transfer/v2/packet.js';
 import type { BridgeIdValue, Remote } from '@agoric/internal';
 import type { Bytes } from '@agoric/network';
 import type { Guarded } from '@endo/exo';
+import type { LocalChainAccount } from './localchain.js';
+import type { TargetApp } from './bridge-target.js';
 
 export type Board = ReturnType<
   ReturnType<typeof import('./lib-board.js').prepareBoardKit>
@@ -263,4 +266,30 @@ type ChannelOpenAckDowncall = ChannelOpenDowncallBase & {
 type SendPacketDownCall = {
   packet: IBCPacket;
   relativeTimeoutNs: bigint;
+};
+
+/**
+ * This event is emitted when a FungibleTokenPacket is sent or received
+ * by a target (e.g. a {@link LocalChainAccount}) that has a registered
+ * {@link TargetApp}. It is passed through the `receiveUpcall` handler.
+ */
+export type VTransferIBCEvent = {
+  type: 'VTRANSFER_IBC_EVENT';
+  blockHeight: number;
+  blockTime: number;
+  /**
+   * Indicates the type of IBC packet event:
+   * - 'acknowledgementPacket': passive tap that communicates the result of an acknowledged packet
+   * - 'writeAcknowledgement': active tap where the receiver can return a write acknowledgement
+   */
+  event: 'acknowledgementPacket' | 'writeAcknowledgement';
+  acknowledgement: Bytes;
+  /**
+   * Use `JSON.parse(atob(packet.data))` to get a
+   * {@link FungibleTokenPacketData} object.
+   */
+  packet: IBCPacket;
+  relayer: string;
+  /** e.g. the chain address of the LocalChainAccount */
+  target: string;
 };
