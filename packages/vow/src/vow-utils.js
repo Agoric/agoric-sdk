@@ -94,9 +94,9 @@ export const makeAsVow = makeVowKit => {
     if (isVow(result)) {
       return result;
     }
-    const kit = makeVowKit();
-    kit.resolver.resolve(result);
-    return kit.vow;
+    const { vow, resolver } = makeVowKit();
+    resolver.resolve(result);
+    return vow;
   };
   return harden(asVow);
 };
