@@ -1,5 +1,5 @@
 diff --git a/node_modules/@cosmology/telescope/main/helpers/internal-for-bigint.js b/node_modules/@cosmology/telescope/main/helpers/internal-for-bigint.js
-index 950827a..b51746c 100644
+index 950827a..9e9214c 100644
 --- a/node_modules/@cosmology/telescope/main/helpers/internal-for-bigint.js
 +++ b/node_modules/@cosmology/telescope/main/helpers/internal-for-bigint.js
 @@ -5,41 +5,11 @@ const getHelperForBigint = (options) => {
@@ -29,12 +29,12 @@ index 950827a..b51746c 100644
 -  }
 -  return arr;
 -}
-+import { encodeBase64, decodeBase64 } from '@endo/base64';
- 
+-
 -const btoa: (bin: string) => string =
 -  globalThis.btoa ||
 -  ((bin) => globalThis.Buffer.from(bin, 'binary').toString('base64'));
--
++import { encodeBase64, decodeBase64 } from '@endo/base64';
+ 
 -export function base64FromBytes(arr: Uint8Array): string {
 -  const bin: string[] = [];
 -  arr.forEach((byte) => {
@@ -48,8 +48,97 @@ index 950827a..b51746c 100644
  
  export interface AminoHeight {
    readonly revision_number?: string;
+@@ -252,6 +222,88 @@ export function fromJsonTimestamp(o: any): Timestamp {
+ function numberToLong(number: number) {
+   return BigInt(Math.trunc(number));
+ }
++
++// The largest value we need is 18 (Ether).
++const maxFractionalDigits = 30;
++// Subset of Decimal in @cosmjs/math
++/**
++ * A type for arbitrary precision, non-negative decimals.
++ *
++ * Instances of this class are immutable.
++ */
++export class Decimal {
++  public static fromUserInput(
++    input: string,
++    fractionalDigits: number,
++  ): Decimal {
++    Decimal.verifyFractionalDigits(fractionalDigits);
++
++    const badCharacter = input.match(/[^0-9.]/);
++    if (badCharacter) {
++      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
++      throw new Error(
++        \`Invalid character at position \${badCharacter.index! + 1}\`,
++      );
++    }
++
++    let whole: string;
++    let fractional: string;
++
++    if (input === '') {
++      whole = '0';
++      fractional = '';
++    } else if (input.search(/\./) === -1) {
++      // integer format, no separator
++      whole = input;
++      fractional = '';
++    } else {
++      const parts = input.split('.');
++      switch (parts.length) {
++        case 0:
++        case 1:
++          throw new Error(
++            'Fewer than two elements in split result. This must not happen here.',
++          );
++        case 2:
++          if (!parts[1]) throw new Error('Fractional part missing');
++          whole = parts[0];
++          fractional = parts[1].replace(/0+$/, '');
++          break;
++        default:
++          throw new Error('More than one separator found');
++      }
++    }
++
++    if (fractional.length > fractionalDigits) {
++      throw new Error('Got more fractional digits than supported');
++    }
++
++    const quantity = \`\${whole}\${fractional.padEnd(fractionalDigits, '0')}\`;
++
++    return new Decimal(quantity, fractionalDigits);
++  }
++
++  public static fromAtomics(
++    atomics: string,
++    fractionalDigits: number,
++  ): Decimal {
++    Decimal.verifyFractionalDigits(fractionalDigits);
++    return new Decimal(atomics, fractionalDigits);
++  }
++
++  private static verifyFractionalDigits(fractionalDigits: number): void {
++    if (!Number.isInteger(fractionalDigits))
++      throw new Error('Fractional digits is not an integer');
++    if (fractionalDigits < 0)
++      throw new Error('Fractional digits must not be negative');
++    if (fractionalDigits > maxFractionalDigits) {
++      throw new Error(
++        \`Fractional digits must not exceed \${maxFractionalDigits}\`,
++      );
++    }
++  }
++}
++
+ ${options.aminoEncoding?.customTypes?.useCosmosSDKDec ?
+         `
+ export function padDecimal(decStr: string): string{
 diff --git a/node_modules/@cosmology/telescope/main/helpers/internal.js b/node_modules/@cosmology/telescope/main/helpers/internal.js
-index b27664f..3ae9cd9 100644
+index b27664f..5cf4c6a 100644
 --- a/node_modules/@cosmology/telescope/main/helpers/internal.js
 +++ b/node_modules/@cosmology/telescope/main/helpers/internal.js
 @@ -5,6 +5,8 @@ const getHelper = (options) => {
@@ -104,6 +193,99 @@ index b27664f..3ae9cd9 100644
  
  export interface AminoHeight {
      readonly revision_number?: string;
+@@ -236,7 +208,91 @@ export function fromJsonTimestamp(o: any): Timestamp {
+ 
+ function numberToLong(number: number) {
+     return Long.fromNumber(number);
+-}${options.aminoEncoding?.customTypes?.useCosmosSDKDec ? `
++}
++
++
++// The largest value we need is 18 (Ether).
++const maxFractionalDigits = 30;
++// Subset of Decimal in @cosmjs/math
++/**
++ * A type for arbitrary precision, non-negative decimals.
++ *
++ * Instances of this class are immutable.
++ */
++export class Decimal {
++  public static fromUserInput(
++    input: string,
++    fractionalDigits: number,
++  ): Decimal {
++    Decimal.verifyFractionalDigits(fractionalDigits);
++
++    const badCharacter = input.match(/[^0-9.]/);
++    if (badCharacter) {
++      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
++      throw new Error(
++        \`Invalid character at position \${badCharacter.index! + 1}\`,
++      );
++    }
++
++    let whole: string;
++    let fractional: string;
++
++    if (input === '') {
++      whole = '0';
++      fractional = '';
++    } else if (input.search(/\./) === -1) {
++      // integer format, no separator
++      whole = input;
++      fractional = '';
++    } else {
++      const parts = input.split('.');
++      switch (parts.length) {
++        case 0:
++        case 1:
++          throw new Error(
++            'Fewer than two elements in split result. This must not happen here.',
++          );
++        case 2:
++          if (!parts[1]) throw new Error('Fractional part missing');
++          whole = parts[0];
++          fractional = parts[1].replace(/0+$/, '');
++          break;
++        default:
++          throw new Error('More than one separator found');
++      }
++    }
++
++    if (fractional.length > fractionalDigits) {
++      throw new Error('Got more fractional digits than supported');
++    }
++
++    const quantity = \`\${whole}\${fractional.padEnd(fractionalDigits, '0')}\`;
++
++    return new Decimal(quantity, fractionalDigits);
++  }
++
++  public static fromAtomics(
++    atomics: string,
++    fractionalDigits: number,
++  ): Decimal {
++    Decimal.verifyFractionalDigits(fractionalDigits);
++    return new Decimal(atomics, fractionalDigits);
++  }
++
++  private static verifyFractionalDigits(fractionalDigits: number): void {
++    if (!Number.isInteger(fractionalDigits))
++      throw new Error('Fractional digits is not an integer');
++    if (fractionalDigits < 0)
++      throw new Error('Fractional digits must not be negative');
++    if (fractionalDigits > maxFractionalDigits) {
++      throw new Error(
++        \`Fractional digits must not exceed \${maxFractionalDigits}\`,
++      );
++    }
++  }
++}
++
++${options.aminoEncoding?.customTypes?.useCosmosSDKDec ? `
+ 
+ export function padDecimal(decStr: string): string{
+   return decStr ? new Dec(decStr).toString() : decStr;
 diff --git a/node_modules/@cosmology/telescope/main/helpers/internalForBigInt.js b/node_modules/@cosmology/telescope/main/helpers/internalForBigInt.js
 index 07b6e47..87c78db 100644
 --- a/node_modules/@cosmology/telescope/main/helpers/internalForBigInt.js
@@ -154,8 +336,21 @@ index 07b6e47..87c78db 100644
  
  export interface AminoHeight {
    readonly revision_number?: string;
+diff --git a/node_modules/@cosmology/telescope/main/utils/index.js b/node_modules/@cosmology/telescope/main/utils/index.js
+index 998db7f..3301179 100644
+--- a/node_modules/@cosmology/telescope/main/utils/index.js
++++ b/node_modules/@cosmology/telescope/main/utils/index.js
+@@ -36,7 +36,7 @@ exports.UTILS = {
+     bytesFromBase64: '__helpers__',
+     BrowserHeaders: 'browser-headers',
+     connectComet: '@cosmjs/tendermint-rpc',
+-    Decimal: '@cosmjs/math',
++    Decimal: '__helpers__',
+     padDecimal: '__helpers__',
+     createProtobufRpcClient: '@cosmjs/stargate',
+     Pubkey: '@cosmjs/amino',
 diff --git a/node_modules/@cosmology/telescope/module/helpers/internal-for-bigint.js b/node_modules/@cosmology/telescope/module/helpers/internal-for-bigint.js
-index 1d19b1c..1c182dc 100644
+index 1d19b1c..5a9ec29 100644
 --- a/node_modules/@cosmology/telescope/module/helpers/internal-for-bigint.js
 +++ b/node_modules/@cosmology/telescope/module/helpers/internal-for-bigint.js
 @@ -2,41 +2,11 @@ export const getHelperForBigint = (options) => {
@@ -204,8 +399,104 @@ index 1d19b1c..1c182dc 100644
  
  export interface AminoHeight {
    readonly revision_number?: string;
+@@ -249,11 +219,95 @@ export function fromJsonTimestamp(o: any): Timestamp {
+ function numberToLong(number: number) {
+   return BigInt(Math.trunc(number));
+ }
++
++
++// The largest value we need is 18 (Ether).
++const maxFractionalDigits = 30;
++// Subset of Decimal in @cosmjs/math
++/**
++ * A type for arbitrary precision, non-negative decimals.
++ *
++ * Instances of this class are immutable.
++ */
++export class Decimal {
++  public static fromUserInput(
++    input: string,
++    fractionalDigits: number,
++  ): Decimal {
++    Decimal.verifyFractionalDigits(fractionalDigits);
++
++    const badCharacter = input.match(/[^0-9.]/);
++    if (badCharacter) {
++      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
++      throw new Error(
++        \`Invalid character at position \${badCharacter.index! + 1}\`,
++      );
++    }
++
++    let whole: string;
++    let fractional: string;
++
++    if (input === '') {
++      whole = '0';
++      fractional = '';
++    } else if (input.search(/\./) === -1) {
++      // integer format, no separator
++      whole = input;
++      fractional = '';
++    } else {
++      const parts = input.split('.');
++      switch (parts.length) {
++        case 0:
++        case 1:
++          throw new Error(
++            'Fewer than two elements in split result. This must not happen here.',
++          );
++        case 2:
++          if (!parts[1]) throw new Error('Fractional part missing');
++          whole = parts[0];
++          fractional = parts[1].replace(/0+$/, '');
++          break;
++        default:
++          throw new Error('More than one separator found');
++      }
++    }
++
++    if (fractional.length > fractionalDigits) {
++      throw new Error('Got more fractional digits than supported');
++    }
++
++    const quantity = \`\${whole}\${fractional.padEnd(fractionalDigits, '0')}\`;
++
++    return new Decimal(quantity, fractionalDigits);
++  }
++
++  public static fromAtomics(
++    atomics: string,
++    fractionalDigits: number,
++  ): Decimal {
++    Decimal.verifyFractionalDigits(fractionalDigits);
++    return new Decimal(atomics, fractionalDigits);
++  }
++
++  private static verifyFractionalDigits(fractionalDigits: number): void {
++    if (!Number.isInteger(fractionalDigits))
++      throw new Error('Fractional digits is not an integer');
++    if (fractionalDigits < 0)
++      throw new Error('Fractional digits must not be negative');
++    if (fractionalDigits > maxFractionalDigits) {
++      throw new Error(
++        \`Fractional digits must not exceed \${maxFractionalDigits}\`,
++      );
++    }
++  }
++}
++
+ ${options.aminoEncoding?.customTypes?.useCosmosSDKDec ?
+         `
+ export function padDecimal(decStr: string): string{
+   return decStr ? new Dec(decStr).toString() : decStr;
+ }
++
+ ` : ""}
+ `;
+ };
 diff --git a/node_modules/@cosmology/telescope/module/helpers/internal.js b/node_modules/@cosmology/telescope/module/helpers/internal.js
-index 28e50cf..bc0843a 100644
+index 28e50cf..c713941 100644
 --- a/node_modules/@cosmology/telescope/module/helpers/internal.js
 +++ b/node_modules/@cosmology/telescope/module/helpers/internal.js
 @@ -2,6 +2,7 @@ export const getHelper = (options) => {
@@ -259,6 +550,102 @@ index 28e50cf..bc0843a 100644
  
  export interface AminoHeight {
      readonly revision_number?: string;
+@@ -231,6 +202,87 @@ export function fromJsonTimestamp(o: any): Timestamp {
+   }
+ }
+ 
++// The largest value we need is 18 (Ether).
++const maxFractionalDigits = 30;
++// Subset of Decimal in @cosmjs/math
++/**
++ * A type for arbitrary precision, non-negative decimals.
++ *
++ * Instances of this class are immutable.
++ */
++export class Decimal {
++  public static fromUserInput(
++    input: string,
++    fractionalDigits: number,
++  ): Decimal {
++    Decimal.verifyFractionalDigits(fractionalDigits);
++
++    const badCharacter = input.match(/[^0-9.]/);
++    if (badCharacter) {
++      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
++      throw new Error(
++        \`Invalid character at position \${badCharacter.index! + 1}\`,
++      );
++    }
++
++    let whole: string;
++    let fractional: string;
++
++    if (input === '') {
++      whole = '0';
++      fractional = '';
++    } else if (input.search(/\./) === -1) {
++      // integer format, no separator
++      whole = input;
++      fractional = '';
++    } else {
++      const parts = input.split('.');
++      switch (parts.length) {
++        case 0:
++        case 1:
++          throw new Error(
++            'Fewer than two elements in split result. This must not happen here.',
++          );
++        case 2:
++          if (!parts[1]) throw new Error('Fractional part missing');
++          whole = parts[0];
++          fractional = parts[1].replace(/0+$/, '');
++          break;
++        default:
++          throw new Error('More than one separator found');
++      }
++    }
++
++    if (fractional.length > fractionalDigits) {
++      throw new Error('Got more fractional digits than supported');
++    }
++
++    const quantity = \`\${whole}\${fractional.padEnd(fractionalDigits, '0')}\`;
++
++    return new Decimal(quantity, fractionalDigits);
++  }
++
++  public static fromAtomics(
++    atomics: string,
++    fractionalDigits: number,
++  ): Decimal {
++    Decimal.verifyFractionalDigits(fractionalDigits);
++    return new Decimal(atomics, fractionalDigits);
++  }
++
++  private static verifyFractionalDigits(fractionalDigits: number): void {
++    if (!Number.isInteger(fractionalDigits))
++      throw new Error('Fractional digits is not an integer');
++    if (fractionalDigits < 0)
++      throw new Error('Fractional digits must not be negative');
++    if (fractionalDigits > maxFractionalDigits) {
++      throw new Error(
++        \`Fractional digits must not exceed \${maxFractionalDigits}\`,
++      );
++    }
++  }
++}
++
+ function numberToLong(number: number) {
+     return Long.fromNumber(number);
+ }${options.aminoEncoding?.customTypes?.useCosmosSDKDec ? `
+@@ -238,6 +290,7 @@ function numberToLong(number: number) {
+ export function padDecimal(decStr: string): string{
+   return decStr ? new Dec(decStr).toString() : decStr;
+ }
++
+ ` : ""}
+ `;
+ };
 diff --git a/node_modules/@cosmology/telescope/module/helpers/internalForBigInt.js b/node_modules/@cosmology/telescope/module/helpers/internalForBigInt.js
 index ecb2e3e..4e96aff 100644
 --- a/node_modules/@cosmology/telescope/module/helpers/internalForBigInt.js
@@ -307,8 +694,21 @@ index ecb2e3e..4e96aff 100644
  
  export interface AminoHeight {
    readonly revision_number?: string;
+diff --git a/node_modules/@cosmology/telescope/module/utils/index.js b/node_modules/@cosmology/telescope/module/utils/index.js
+index aa561fd..21c4e00 100644
+--- a/node_modules/@cosmology/telescope/module/utils/index.js
++++ b/node_modules/@cosmology/telescope/module/utils/index.js
+@@ -18,7 +18,7 @@ export const UTILS = {
+     bytesFromBase64: '__helpers__',
+     BrowserHeaders: 'browser-headers',
+     connectComet: '@cosmjs/tendermint-rpc',
+-    Decimal: '@cosmjs/math',
++    Decimal: '__helpers__',
+     padDecimal: '__helpers__',
+     createProtobufRpcClient: '@cosmjs/stargate',
+     Pubkey: '@cosmjs/amino',
 diff --git a/node_modules/@cosmology/telescope/src/helpers/internal-for-bigint.ts b/node_modules/@cosmology/telescope/src/helpers/internal-for-bigint.ts
-index f7daa3d..1680276 100644
+index f7daa3d..555ffda 100644
 --- a/node_modules/@cosmology/telescope/src/helpers/internal-for-bigint.ts
 +++ b/node_modules/@cosmology/telescope/src/helpers/internal-for-bigint.ts
 @@ -4,41 +4,11 @@ export const getHelperForBigint = (options: TelescopeOptions) => {
@@ -338,12 +738,12 @@ index f7daa3d..1680276 100644
 -  }
 -  return arr;
 -}
-+import { encodeBase64, decodeBase64 } from '@endo/base64';
- 
+-
 -const btoa: (bin: string) => string =
 -  globalThis.btoa ||
 -  ((bin) => globalThis.Buffer.from(bin, 'binary').toString('base64'));
--
++import { encodeBase64, decodeBase64 } from '@endo/base64';
+ 
 -export function base64FromBytes(arr: Uint8Array): string {
 -  const bin: string[] = [];
 -  arr.forEach((byte) => {
@@ -357,8 +757,97 @@ index f7daa3d..1680276 100644
  
  export interface AminoHeight {
    readonly revision_number?: string;
+@@ -251,6 +221,88 @@ export function fromJsonTimestamp(o: any): Timestamp {
+ function numberToLong(number: number) {
+   return BigInt(Math.trunc(number));
+ }
++
++// The largest value we need is 18 (Ether).
++const maxFractionalDigits = 30;
++// Subset of Decimal in @cosmjs/math
++/**
++ * A type for arbitrary precision, non-negative decimals.
++ *
++ * Instances of this class are immutable.
++ */
++export class Decimal {
++  public static fromUserInput(
++    input: string,
++    fractionalDigits: number,
++  ): Decimal {
++    Decimal.verifyFractionalDigits(fractionalDigits);
++
++    const badCharacter = input.match(/[^0-9.]/);
++    if (badCharacter) {
++      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
++      throw new Error(
++        \`Invalid character at position \${badCharacter.index! + 1}\`,
++      );
++    }
++
++    let whole: string;
++    let fractional: string;
++
++    if (input === '') {
++      whole = '0';
++      fractional = '';
++    } else if (input.search(/\./) === -1) {
++      // integer format, no separator
++      whole = input;
++      fractional = '';
++    } else {
++      const parts = input.split('.');
++      switch (parts.length) {
++        case 0:
++        case 1:
++          throw new Error(
++            'Fewer than two elements in split result. This must not happen here.',
++          );
++        case 2:
++          if (!parts[1]) throw new Error('Fractional part missing');
++          whole = parts[0];
++          fractional = parts[1].replace(/0+$/, '');
++          break;
++        default:
++          throw new Error('More than one separator found');
++      }
++    }
++
++    if (fractional.length > fractionalDigits) {
++      throw new Error('Got more fractional digits than supported');
++    }
++
++    const quantity = \`\${whole}\${fractional.padEnd(fractionalDigits, '0')}\`;
++
++    return new Decimal(quantity, fractionalDigits);
++  }
++
++  public static fromAtomics(
++    atomics: string,
++    fractionalDigits: number,
++  ): Decimal {
++    Decimal.verifyFractionalDigits(fractionalDigits);
++    return new Decimal(atomics, fractionalDigits);
++  }
++
++  private static verifyFractionalDigits(fractionalDigits: number): void {
++    if (!Number.isInteger(fractionalDigits))
++      throw new Error('Fractional digits is not an integer');
++    if (fractionalDigits < 0)
++      throw new Error('Fractional digits must not be negative');
++    if (fractionalDigits > maxFractionalDigits) {
++      throw new Error(
++        \`Fractional digits must not exceed \${maxFractionalDigits}\`,
++      );
++    }
++  }
++}
++
+ ${
+   options.aminoEncoding?.customTypes?.useCosmosSDKDec ?
+ `
 diff --git a/node_modules/@cosmology/telescope/src/helpers/internal.ts b/node_modules/@cosmology/telescope/src/helpers/internal.ts
-index fc58715..c21df0a 100644
+index fc58715..98a1582 100644
 --- a/node_modules/@cosmology/telescope/src/helpers/internal.ts
 +++ b/node_modules/@cosmology/telescope/src/helpers/internal.ts
 @@ -4,6 +4,8 @@ export const getHelper = (options: TelescopeOptions) => {
@@ -413,3 +902,104 @@ index fc58715..c21df0a 100644
  
  export interface AminoHeight {
      readonly revision_number?: string;
+@@ -233,6 +205,87 @@ export function fromJsonTimestamp(o: any): Timestamp {
+   }
+ }
+ 
++// The largest value we need is 18 (Ether).
++const maxFractionalDigits = 30;
++// Subset of Decimal in @cosmjs/math
++/**
++ * A type for arbitrary precision, non-negative decimals.
++ *
++ * Instances of this class are immutable.
++ */
++export class Decimal {
++  public static fromUserInput(
++    input: string,
++    fractionalDigits: number,
++  ): Decimal {
++    Decimal.verifyFractionalDigits(fractionalDigits);
++
++    const badCharacter = input.match(/[^0-9.]/);
++    if (badCharacter) {
++      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
++      throw new Error(
++        \`Invalid character at position \${badCharacter.index! + 1}\`,
++      );
++    }
++
++    let whole: string;
++    let fractional: string;
++
++    if (input === '') {
++      whole = '0';
++      fractional = '';
++    } else if (input.search(/\./) === -1) {
++      // integer format, no separator
++      whole = input;
++      fractional = '';
++    } else {
++      const parts = input.split('.');
++      switch (parts.length) {
++        case 0:
++        case 1:
++          throw new Error(
++            'Fewer than two elements in split result. This must not happen here.',
++          );
++        case 2:
++          if (!parts[1]) throw new Error('Fractional part missing');
++          whole = parts[0];
++          fractional = parts[1].replace(/0+$/, '');
++          break;
++        default:
++          throw new Error('More than one separator found');
++      }
++    }
++
++    if (fractional.length > fractionalDigits) {
++      throw new Error('Got more fractional digits than supported');
++    }
++
++    const quantity = \`\${whole}\${fractional.padEnd(fractionalDigits, '0')}\`;
++
++    return new Decimal(quantity, fractionalDigits);
++  }
++
++  public static fromAtomics(
++    atomics: string,
++    fractionalDigits: number,
++  ): Decimal {
++    Decimal.verifyFractionalDigits(fractionalDigits);
++    return new Decimal(atomics, fractionalDigits);
++  }
++
++  private static verifyFractionalDigits(fractionalDigits: number): void {
++    if (!Number.isInteger(fractionalDigits))
++      throw new Error('Fractional digits is not an integer');
++    if (fractionalDigits < 0)
++      throw new Error('Fractional digits must not be negative');
++    if (fractionalDigits > maxFractionalDigits) {
++      throw new Error(
++        \`Fractional digits must not exceed \${maxFractionalDigits}\`,
++      );
++    }
++  }
++}
++
+ function numberToLong(number: number) {
+     return Long.fromNumber(number);
+ }${options.aminoEncoding?.customTypes?.useCosmosSDKDec ? `
+diff --git a/node_modules/@cosmology/telescope/src/utils/index.ts b/node_modules/@cosmology/telescope/src/utils/index.ts
+index 1ed202f..6d2cc38 100644
+--- a/node_modules/@cosmology/telescope/src/utils/index.ts
++++ b/node_modules/@cosmology/telescope/src/utils/index.ts
+@@ -21,7 +21,7 @@ export const UTILS = {
+   bytesFromBase64: '__helpers__',
+   BrowserHeaders: 'browser-headers',
+   connectComet: '@cosmjs/tendermint-rpc',
+-  Decimal: '@cosmjs/math',
++  Decimal: '__helpers__',
+   padDecimal: '__helpers__',
+   createProtobufRpcClient: '@cosmjs/stargate',
+   Pubkey: '@cosmjs/amino',
