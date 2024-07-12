@@ -62,7 +62,6 @@ function set_helm_args() {
     return 0
   fi
   for i in $(seq 0 $num_chains); do
-    chain=$(yq -r ".chains[$i].name" ${CONFIGFILE})
     scripts=$(yq -r ".chains[$i].scripts" ${CONFIGFILE})
     if [[ "$scripts" == "null" ]]; then
       return 0
@@ -114,7 +113,7 @@ while [ $# -gt 0 ]; do
       DRY_RUN=1
       shift # past argument
       ;;
-    -* | --*)
+    -)
       echo "Unknown option $1"
       exit 1
       ;;
