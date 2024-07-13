@@ -28,47 +28,54 @@ export const makeWhen = (
     // Ensure we don't run until a subsequent turn.
     await null;
 
-    // Ensure we have a presence that won't be disconnected later.
-    let result = await specimenP;
-    let payload = getVowPayload(result);
-    let priorRetryValue;
-    const seenPayloads = new WeakSet();
-    while (payload) {
-      // TODO: rely on endowed helpers for getting storable cap and performing
-      // shorten "next step"
-      const { vowV0 } = payload;
-      if (seenPayloads.has(vowV0)) {
-        throw Error('Vow resolution cycle detected');
+    try {
+      // Ensure we have a presence that won't be disconnected later.
+      let result = await specimenP;
+      let payload = getVowPayload(result);
+      let priorRetryValue;
+      const seenPayloads = new WeakSet();
+      while (payload) {
+        // TODO: rely on endowed helpers for getting storable cap and performing
+        // shorten "next step"
+        const { vowV0 } = payload;
+        if (seenPayloads.has(vowV0)) {
+          throw Error('Vow resolution cycle detected');
+        }
+        result = await basicE(vowV0)
+          .shorten()
+          .then(
+            res => {
+              seenPayloads.add(vowV0);
+              priorRetryValue = undefined;
+              return res;
+            },
+            e => {
+              const nextValue = isRetryableReason(e, priorRetryValue);
+              if (nextValue) {
+                // Shorten the same specimen to try again.
+                priorRetryValue = nextValue;
+                return result;
+              }
+              throw e;
+            },
+          );
+        // Advance to the next vow.
+        payload = getVowPayload(result);
       }
-      result = await basicE(vowV0)
-        .shorten()
-        .then(
-          res => {
-            seenPayloads.add(vowV0);
-            priorRetryValue = undefined;
-            return res;
-          },
-          e => {
-            const nextValue = isRetryableReason(e, priorRetryValue);
-            if (nextValue) {
-              // Shorten the same specimen to try again.
-              priorRetryValue = nextValue;
-              return result;
-            }
-            throw e;
-          },
-        );
-      // Advance to the next vow.
-      payload = getVowPayload(result);
-    }
 
-    const unwrapped = /** @type {EUnwrap<T>} */ (result);
+      const unwrapped = /** @type {EUnwrap<T>} */ (result);
 
-    // We've extracted the final result.
-    if (onFulfilled == null && onRejected == null) {
-      return /** @type {TResult1} */ (unwrapped);
+      // We've extracted the final result.
+      if (onFulfilled == null && onRejected == null) {
+        return /** @type {TResult1} */ (unwrapped);
+      }
+      return basicE.resolve(unwrapped).then(onFulfilled, onRejected);
+    } catch (thrownReason) {
+      if (onRejected == null) {
+        throw thrownReason;
+      }
+      return onRejected(thrownReason);
     }
-    return basicE.resolve(unwrapped).then(onFulfilled, onRejected);
   };
   harden(when);
 

@@ -571,7 +571,7 @@ export const makeReplayMembrane = ({
           }
         }
       },
-    ).catch(reject);
+    );
     return promise;
   };
   harden(makeGuestForHostVow);
