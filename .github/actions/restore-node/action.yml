@@ -106,7 +106,6 @@ runs:
         echo "sha=$sha" >> $GITHUB_OUTPUT
         cd "${{ inputs.path }}"
         echo "$sha" > endo-sha.txt
-        git add endo-sha.txt
 
     - name: Reconfigure git to use HTTP authentication
       shell: bash
@@ -187,9 +186,12 @@ runs:
       shell: bash
       run: |-
         set -x
-        # In case of Endo override, ignore matching index and worktree.
-        # (First column is non-space, second column is space, followed by separator.)
-        if [ -n "$(git status --porcelain | grep -Eve '^[^ ]  '; true)" ]; then
+        # Fail if `git status` reports anything other than the following:
+        # * an untracked endo-sha.txt from above
+        # * work tree files that have been staged without further changes
+        #   (e.g., package.json or yarn.lock) as indicated by the Y position
+        #   in "XY PATH" being a space
+        if [ -n "$(git status --porcelain | grep -vE '^[?][?] endo-sha.txt$|^. '; true)" ]; then
           git status
           echo "Unexpected dirty git status" 1>&2
           exit 1
