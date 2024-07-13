@@ -31,17 +31,19 @@ runs:
   using: composite
   steps:
     - name: set default environment variables
-      run: echo ESM_DISABLE_CACHE=true >> $GITHUB_ENV
       shell: bash
+      run: echo ESM_DISABLE_CACHE=true >> $GITHUB_ENV
+
     - uses: actions/checkout@v4
       with:
         clean: false
         submodules: 'true'
         persist-credentials: false
         path: ${{ inputs.path }}
+
     # Select a branch on Endo to test against by adding text to the body of the
     # pull request. For example: #endo-branch: some-pr-branch
-    # The default is '*NOPE*' to indicate not to check out Endo, just use
+    # The default is 'NOPE' to indicate not to check out Endo, just use
     # the published NPM packages.
     - name: Get the appropriate Endo branch
       id: endo-branch
@@ -62,10 +64,14 @@ runs:
               branch = result[1];
             }
           }
-          console.log(branch);
+          console.log('Endo override branch: ' + branch);
           return branch;
+
     - name: merge endo integration branch
       id: endo-integration-merge
+      if: steps.endo-branch.outputs.result != 'NOPE'
+      working-directory: ${{ inputs.path }}
+      shell: bash
       run: |-
         set -e
         git ls-remote --exit-code --heads origin "refs/heads/integration-endo-${{ steps.endo-branch.outputs.result }}" || exit 0
@@ -73,11 +79,10 @@ runs:
         git config user.name github-actions
         git config user.email github-actions@github.com
         git merge --commit --no-edit origin/integration-endo-${{ steps.endo-branch.outputs.result }}
-      shell: bash
-      working-directory: ${{ inputs.path }}
-      if: steps.endo-branch.outputs.result != 'NOPE'
+
     - name: check out Endo if necessary
       id: endo-checkout
+      if: steps.endo-branch.outputs.result != 'NOPE'
       uses: actions/checkout@v4
       with:
         repository: agoric/endo
@@ -86,9 +91,10 @@ runs:
         clean: 'false'
         submodules: 'true'
         persist-credentials: false
-      if: steps.endo-branch.outputs.result != 'NOPE'
+
     - name: Move Endo checkout outside the working directory
       id: endo-sha
+      shell: bash
       run: |-
         set -ex
         if test -e ./replacement-endo; then
@@ -101,10 +107,11 @@ runs:
         cd "${{ inputs.path }}"
         echo "$sha" > endo-sha.txt
         git add endo-sha.txt
-      shell: bash
+
     - name: Reconfigure git to use HTTP authentication
-      run: git config --global url."https://github.com/".insteadOf ssh://git@github.com/
       shell: bash
+      run: git config --global url."https://github.com/".insteadOf ssh://git@github.com/
+
     - uses: actions/setup-node@v4
       with:
         node-version: ${{ inputs.node-version }}
@@ -112,20 +119,26 @@ runs:
         cache-dependency-path: |
           ${{ inputs.path }}/yarn.lock
           ${{ inputs.path }}/endo-sha.txt
+
     - uses: kenchan0130/actions-system-info@master
       id: system-info
+
     - run: corepack enable
       shell: bash
+
     - name: restore built files
       id: built
       uses: actions/cache@v4
       with:
         path: ${{ inputs.path }}
         key: ${{ runner.os }}-${{ runner.arch }}-${{ steps.system-info.outputs.release }}-node-${{ inputs.node-version }}-built-${{ inputs.xsnap-random-init }}-${{ github.sha }}-${{ steps.endo-sha.outputs.sha }}
+
     # This and the git diff below are to detect if `yarn install` results in a
     # change to the lock file.
     - name: yarn install
+      if: steps.built.outputs.cache-hit != 'true'
       working-directory: ${{ inputs.path }}
+      shell: bash
       run: |-
         set -ex
         if test "${{ inputs.xsnap-random-init }}" != 0 && test -d /etc/apt; then
@@ -156,21 +169,22 @@ runs:
           git add package.json yarn.lock
           ${{ inputs.keep-endo }} || rm -rf ~/endo
         fi
-      shell: bash
-      if: steps.built.outputs.cache-hit != 'true'
+
     - name: yarn build
+      if: steps.built.outputs.cache-hit != 'true'
       working-directory: ${{ inputs.path }}
+      env:
+        XSNAP_RANDOM_INIT: ${{ inputs.xsnap-random-init }}
+      shell: bash
       run: |-
         set -ex
         yarn build
         mkdir -p node_modules/.cache/agoric
         date > node_modules/.cache/agoric/yarn-built
-      shell: bash
-      if: steps.built.outputs.cache-hit != 'true'
-      env:
-        XSNAP_RANDOM_INIT: ${{ inputs.xsnap-random-init }}
+
     - name: git dirty check
       working-directory: ${{ inputs.path }}
+      shell: bash
       run: |-
         set -x
         # In case of Endo override, ignore matching index and worktree.
@@ -180,4 +194,3 @@ runs:
           echo "Unexpected dirty git status" 1>&2
           exit 1
         fi
-      shell: bash
