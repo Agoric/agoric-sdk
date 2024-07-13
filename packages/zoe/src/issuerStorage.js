@@ -182,7 +182,9 @@ export const provideIssuerStorage = zcfBaggage => {
     if (!zcfBaggage.has(STORAGE_INSTANTIATED_KEY)) {
       zcfBaggage.init(STORAGE_INSTANTIATED_KEY, true);
       instantiated = true;
-      issuerRecords.forEach(storeIssuerRecord);
+      for (const record of issuerRecords) {
+        storeIssuerRecord(record);
+      }
     }
   };
 

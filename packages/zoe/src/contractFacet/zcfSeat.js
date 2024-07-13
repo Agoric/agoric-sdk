@@ -412,8 +412,10 @@ export const createSeatManager = (
           }
         },
         reallocate(/** @type {ZCFSeat[]} */ ...seats) {
-          seats.forEach(assertActive);
-          seats.forEach(assertStagedAllocation);
+          for (const seat of seats) {
+            assertActive(seat);
+            assertStagedAllocation(seat);
+          }
 
           // Ensure that rights are conserved overall.
           const flattenAllocations = allocations =>
@@ -458,8 +460,9 @@ export const createSeatManager = (
             // for each of the seats) and inform Zoe of the
             // newAllocation.
 
-            seats.forEach(commitStagedAllocation);
-
+            for (const seat of seats) {
+              commitStagedAllocation(seat);
+            }
             const seatHandleAllocations = seats.map(seat => {
               const seatHandle = zcfSeatToSeatHandle.get(seat);
               return { seatHandle, allocation: seat.getCurrentAllocation() };

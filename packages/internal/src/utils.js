@@ -227,7 +227,9 @@ export const synchronizedTee = (sourceStream, readerCount) => {
         doneResult = { done: true, value: undefined };
       },
     );
-    resolvers.forEach(resolve => resolve(result));
+    for (const resolve of resolvers) {
+      resolve(result);
+    }
     return pullNext();
   };
 

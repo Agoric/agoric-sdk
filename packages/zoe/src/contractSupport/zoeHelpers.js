@@ -136,11 +136,10 @@ export const assertProposalShape = (seat, expected) => {
   !Array.isArray(expected) || Fail`Expected must be an non-array object`;
   const assertValuesNull = e => {
     if (e !== undefined) {
-      Object.values(e).forEach(
-        value =>
-          value === null ||
-          Fail`The value of the expected record must be null but was ${value}`,
-      );
+      for (const value of Object.values(e)) {
+        value === null ||
+          Fail`The value of the expected record must be null but was ${value}`;
+      }
     }
   };
 
