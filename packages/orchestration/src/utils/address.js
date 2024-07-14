@@ -7,7 +7,7 @@ import { Fail } from '@endo/errors';
  */
 
 /**
- * @param {IBCConnectionID} hostConnectionId Counterpart Connection ID
+ * @param {IBCConnectionID} hostConnectionId Counterparty Connection ID
  * @param {IBCConnectionID} controllerConnectionId Self Connection ID
  * @param {object} [opts]
  * @param {string} [opts.encoding] - message encoding format for the channel.

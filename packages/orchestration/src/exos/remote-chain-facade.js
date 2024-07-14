@@ -101,8 +101,8 @@ const prepareRemoteChainFacadeKit = (
             return watch(
               E(orchestration).makeAccount(
                 remoteChainInfo.chainId,
-                connectionInfo.id,
                 connectionInfo.counterparty.connection_id,
+                connectionInfo.id,
               ),
               this.facets.makeAccountWatcher,
             );
