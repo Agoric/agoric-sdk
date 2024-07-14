@@ -68,3 +68,18 @@ jobs:
       - name: Run @agoric/multichain-testing E2E Tests
         run: yarn test
         working-directory: ./agoric-sdk/multichain-testing
+
+      - name: Capture and print agoric validator logs
+        if: always()
+        run: kubectl logs agoriclocal-genesis-0 --container=validator || true
+        working-directory: ./agoric-sdk/multichain-testing
+
+      - name: Capture and print agoric-osmosis relayer logs
+        if: always()
+        run: kubectl logs hermes-agoric-osmosis-0 --container=relayer || true
+        working-directory: ./agoric-sdk/multichain-testing
+
+      - name: Capture and print agoric-cosmos relayer logs
+        if: always()
+        run: kubectl logs hermes-agoric-gaia-0 --container=relayer || true
+        working-directory: ./agoric-sdk/multichain-testing
