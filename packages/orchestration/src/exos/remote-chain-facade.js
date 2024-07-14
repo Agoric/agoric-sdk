@@ -91,20 +91,22 @@ const prepareRemoteChainFacadeKit = (
 
         /** @type {HostOf<Chain['makeAccount']>} */
         makeAccount() {
-          const { remoteChainInfo, connectionInfo } = this.state;
-          const stakingDenom = remoteChainInfo.stakingTokens?.[0]?.denom;
-          if (!stakingDenom) {
-            return asVow(Fail`chain info lacks staking denom`);
-          }
+          return asVow(() => {
+            const { remoteChainInfo, connectionInfo } = this.state;
+            const stakingDenom = remoteChainInfo.stakingTokens?.[0]?.denom;
+            if (!stakingDenom) {
+              throw Fail`chain info lacks staking denom`;
+            }
 
-          return watch(
-            E(orchestration).makeAccount(
-              remoteChainInfo.chainId,
-              connectionInfo.id,
-              connectionInfo.counterparty.connection_id,
-            ),
-            this.facets.makeAccountWatcher,
-          );
+            return watch(
+              E(orchestration).makeAccount(
+                remoteChainInfo.chainId,
+                connectionInfo.id,
+                connectionInfo.counterparty.connection_id,
+              ),
+              this.facets.makeAccountWatcher,
+            );
+          });
         },
       },
       makeAccountWatcher: {
