@@ -54,8 +54,14 @@ type HostInterface<T> = {
 /**
  * Convert an entire Host interface into what the Guest will receive.
  */
-type GuestInterface<T> = {
-  [K in keyof T]: GuestOf<T[K]>;
+export type GuestInterface<T> = {
+  [K in keyof T]: T[K] extends (...args: any[]) => Vow<infer R>
+    ? (...args: Parameters<T[K]>) => Promise<R>
+    : T[K] extends HostAsyncFuncWrapper
+      ? GuestOf<T[K]>
+      : T[K] extends object
+        ? GuestInterface<T[K]>
+        : T[K];
 };
 
 /**
