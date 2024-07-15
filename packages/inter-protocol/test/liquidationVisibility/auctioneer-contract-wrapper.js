@@ -38,7 +38,10 @@ import { auctioneerParamTypes } from '../../src/auction/params.js';
 import { makeScheduler } from '../../src/auction/scheduler.js';
 import { AuctionState } from '../../src/auction/util.js';
 
-/** @typedef {import('@agoric/vat-data').Baggage} Baggage */
+/**
+ * @typedef {import('@agoric/vat-data').Baggage} Baggage
+ * @import {TypedPattern} from '@agoric/internal'
+ */
 
 const { Fail, quote: q } = assert;
 const { add, multiply } = natSafeMath;
@@ -446,9 +449,9 @@ export const start = async (zcf, privateArgs, baggage) => {
   const scheduleKit = makeERecorderKit(
     E(privateArgs.storageNode).makeChildNode('schedule'),
     /**
-     * @type {import('@agoric/zoe/src/contractSupport/recorder.js').TypedMatcher<
-     *     import('../../src/auction/scheduler.js').ScheduleNotification
-     *   >}
+     * @type {TypedPattern<
+     *   import('../../src/auction/scheduler.js').ScheduleNotification
+     * >} }
      */ (M.any()),
   );
 
