@@ -21,7 +21,7 @@ import { makeHeapZone, type Zone } from '@agoric/zone';
 import { makeDurableZone } from '@agoric/zone/durable.js';
 import { E } from '@endo/far';
 import type { ExecutionContext } from 'ava';
-import { registerChainNamespace } from '../src/chain-info.js';
+import { registerKnownChains } from '../src/chain-info.js';
 import { prepareCosmosInterchainService } from '../src/exos/cosmos-interchain-service.js';
 import { setupFakeNetwork } from './network-fakes.js';
 
@@ -121,7 +121,7 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
     portAllocator,
   });
 
-  await registerChainNamespace(agoricNamesAdmin, () => {});
+  await registerKnownChains(agoricNamesAdmin, () => {});
 
   return {
     bootstrap: {

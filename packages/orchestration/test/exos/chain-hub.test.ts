@@ -7,7 +7,9 @@ import { prepareSwingsetVowTools } from '@agoric/vow/vat.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { makeChainHub } from '../../src/exos/chain-hub.js';
 import { provideDurableZone } from '../supports.js';
-import { registerChainNamespace } from '../../src/chain-info.js';
+import { registerKnownChains } from '../../src/chain-info.js';
+import knownChains from '../../src/fetched-chain-info.js';
+import type { IBCConnectionInfo } from '../../src/cosmos-api.js';
 
 const connection = {
   id: 'connection-1',
@@ -44,7 +46,7 @@ const setup = () => {
 test.serial('getChainInfo', async t => {
   const { chainHub, nameAdmin, vt } = setup();
   // use fetched chain info
-  await registerChainNamespace(nameAdmin);
+  await registerKnownChains(nameAdmin);
 
   const vow = chainHub.getChainInfo('celestia');
   t.like(await vt.asPromise(vow), { chainId: 'celestia' });
@@ -53,7 +55,7 @@ test.serial('getChainInfo', async t => {
 test.serial('concurrency', async t => {
   const { chainHub, nameAdmin, vt } = setup();
   // use fetched chain info
-  await registerChainNamespace(nameAdmin);
+  await registerKnownChains(nameAdmin);
 
   const v1 = chainHub.getChainInfo('celestia');
   const v2 = chainHub.getChainInfo('celestia');
@@ -66,17 +68,22 @@ test.serial('concurrency', async t => {
 test.serial('getConnectionInfo', async t => {
   const { chainHub, vt } = setup();
 
-  const aChain = { chainId: 'a-1' };
-  const bChain = { chainId: 'b-2' };
-  chainHub.registerConnection(aChain.chainId, bChain.chainId, connection);
+  // https://mapofzones.com/zones/celestia/peers
+  const a = { chainId: knownChains.celestia.chainId };
+  // https://mapofzones.com/zones/neutron-1/peers
+  const b = { chainId: knownChains.neutron.chainId };
+  const ab: IBCConnectionInfo = knownChains.celestia.connections['neutron-1'];
+  const ba = knownChains.neutron.connections.celestia;
+
+  chainHub.registerConnection(a.chainId, b.chainId, ab);
 
   // Look up by string or info object
   t.deepEqual(
-    await vt.when(chainHub.getConnectionInfo(aChain.chainId, bChain.chainId)),
-    connection,
+    await vt.when(chainHub.getConnectionInfo(a.chainId, b.chainId)),
+    ab,
   );
-  t.deepEqual(
-    await vt.when(chainHub.getConnectionInfo(aChain, bChain)),
-    connection,
-  );
+  t.deepEqual(await vt.when(chainHub.getConnectionInfo(a, b)), ab);
+
+  // Look up the opposite direction
+  t.deepEqual(await vt.when(chainHub.getConnectionInfo(b, a)), ba);
 });

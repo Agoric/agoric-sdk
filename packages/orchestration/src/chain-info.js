@@ -1,6 +1,6 @@
 import { E } from '@endo/far';
 import { mustMatch } from '@endo/patterns';
-import { connectionKey } from './exos/chain-hub.js';
+import { normalizeConnectionInfo } from './exos/chain-hub.js';
 import fetchedChainInfo from './fetched-chain-info.js'; // Refresh with scripts/refresh-chain-info.ts
 import { CosmosChainInfoShape } from './typeGuards.js';
 
@@ -66,45 +66,19 @@ const knownChains = /** @satisfies {Record<string, ChainInfo>} */ (
 /** @typedef {typeof knownChains} KnownChains */
 
 /**
- * Utility to reverse connection info perspective.
- *
- * @param {IBCConnectionInfo} connInfo
- * @returns {IBCConnectionInfo}
- */
-const reverseConnInfo = connInfo => {
-  const { transferChannel } = connInfo;
-  return {
-    id: connInfo.counterparty.connection_id,
-    client_id: connInfo.counterparty.client_id,
-    counterparty: {
-      client_id: connInfo.client_id,
-      connection_id: connInfo.id,
-      prefix: {
-        key_prefix: '',
-      },
-    },
-    state: connInfo.state,
-    transferChannel: {
-      ...transferChannel,
-      channelId: transferChannel.counterPartyChannelId,
-      counterPartyChannelId: transferChannel.channelId,
-      portId: transferChannel.counterPartyPortId,
-      counterPartyPortId: transferChannel.portId,
-    },
-  };
-};
-
-/**
  * @param {ERef<import('@agoric/vats').NameHubKit['nameAdmin']>} agoricNamesAdmin
  * @param {string} name
  * @param {CosmosChainInfo} chainInfo
  * @param {(...messages: string[]) => void} [log]
+ * @param {Set<string>} [handledConnections] connection keys that need not be
+ *   updated
  */
 export const registerChain = async (
   agoricNamesAdmin,
   name,
   chainInfo,
   log = () => {},
+  handledConnections = new Set(),
 ) => {
   const { nameAdmin } = await E(agoricNamesAdmin).provideChild('chain');
   const { nameAdmin: connAdmin } =
@@ -120,28 +94,37 @@ export const registerChain = async (
   ];
 
   const { chainId } = chainInfo;
-  // FIXME updates redundantly, twice per edge
   for (const [counterChainId, connInfo] of Object.entries(connections)) {
-    const key = connectionKey(chainId, counterChainId);
-    const normalizedConnInfo =
-      chainId < counterChainId ? connInfo : reverseConnInfo(connInfo);
+    const [key, connectionInfo] = normalizeConnectionInfo(
+      chainId,
+      counterChainId,
+      connInfo,
+    );
+    if (handledConnections.has(key)) {
+      continue;
+    }
 
     promises.push(
       E(connAdmin)
-        .update(key, normalizedConnInfo)
+        .update(key, connectionInfo)
         .then(() => log(`registering agoricNames chainConnection.${key}`)),
     );
+
+    handledConnections.add(key);
   }
   // Bundle to pipeline IO
   await Promise.all(promises);
 };
 
 /**
+ * Register all the chains that are known statically.
+ *
  * @param {ERef<import('@agoric/vats').NameHubKit['nameAdmin']>} agoricNamesAdmin
  * @param {(...messages: string[]) => void} [log]
  */
-export const registerChainNamespace = async (agoricNamesAdmin, log) => {
+export const registerKnownChains = async (agoricNamesAdmin, log) => {
+  const handledConnections = new Set();
   for await (const [name, info] of Object.entries(knownChains)) {
-    await registerChain(agoricNamesAdmin, name, info, log);
+    await registerChain(agoricNamesAdmin, name, info, log, handledConnections);
   }
 };

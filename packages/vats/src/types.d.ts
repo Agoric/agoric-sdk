@@ -59,10 +59,16 @@ export type NameAdmin = {
   delete: (key: string) => void;
   /** get the NameHub corresponding to the current NameAdmin */
   readonly: () => NameHub;
+  /**
+   * Set a function to be called whenever an update or deletion is made, with all the entries as of that point.
+   *
+   * Note: can be called at most once.
+   */
   onUpdate: (fn: undefined | NameHubUpdateHandler) => void;
 };
 
 export type NameHubUpdateHandler = {
+  /** Called when an update or deletion is made, with all entries as of that point. */
   write: (entries: [string, any][]) => void;
 };
 
