@@ -8,7 +8,10 @@ const SECONDS_PER_MINUTE = 60n;
 const SECONDS_PER_HOUR = 60n * 60n;
 const SECONDS_PER_DAY = 24n * SECONDS_PER_HOUR;
 
-export const initManualTimerFaucet = async (powers, { options: { manualTimerRef } }) => {
+export const initManualTimerFaucet = async (
+  powers,
+  { options: { manualTimerRef } },
+) => {
   trace('InitManualTimerFaucet...');
   trace('Installing manualTimer...', manualTimerRef);
   const {
@@ -27,7 +30,13 @@ export const initManualTimerFaucet = async (powers, { options: { manualTimerRef 
   });
 
   const installation = await E(zoe).installBundleID(manualTimerRef.bundleID);
-  const instanceFacets = await E(zoe).startInstance(installation, undefined, terms, undefined, 'manualTimerFaucet');
+  const instanceFacets = await E(zoe).startInstance(
+    installation,
+    undefined,
+    terms,
+    undefined,
+    'manualTimerFaucet',
+  );
 
   manualTimerKit.reset();
   manualTimerKit.resolve(instanceFacets);
@@ -59,7 +68,10 @@ export const startFakeAuctioneer = async powers => {
       consume: { reserve: reserveInstance },
     },
     installation: {
-      consume: { auctioneer: fakeAuctionInstallation, contractGovernor: contractGovernorInstallation },
+      consume: {
+        auctioneer: fakeAuctionInstallation,
+        contractGovernor: contractGovernorInstallation,
+      },
     },
     issuer: {
       consume: { IST: istIssuerP },
@@ -81,10 +93,11 @@ export const startFakeAuctioneer = async powers => {
 
   const poserInvitationP = E(electorateCreatorFacet).getPoserInvitation();
 
-  const [initialPoserInvitation, electorateInvitationAmount] = await Promise.all([
-    poserInvitationP,
-    E(E(zoe).getInvitationIssuer()).getAmountOf(poserInvitationP),
-  ]);
+  const [initialPoserInvitation, electorateInvitationAmount] =
+    await Promise.all([
+      poserInvitationP,
+      E(E(zoe).getInvitationIssuer()).getAmountOf(poserInvitationP),
+    ]);
 
   const timerBrand = await E(manualTimer).getTimerBrand();
 
@@ -138,11 +151,12 @@ export const startFakeAuctioneer = async powers => {
     'auctioneer.governor',
   );
 
-  const [governedInstance, governedCreatorFacet, governedPublicFacet] = await Promise.all([
-    E(governorStartResult.creatorFacet).getInstance(),
-    E(governorStartResult.creatorFacet).getCreatorFacet(),
-    E(governorStartResult.creatorFacet).getPublicFacet(),
-  ]);
+  const [governedInstance, governedCreatorFacet, governedPublicFacet] =
+    await Promise.all([
+      E(governorStartResult.creatorFacet).getInstance(),
+      E(governorStartResult.creatorFacet).getCreatorFacet(),
+      E(governorStartResult.creatorFacet).getPublicFacet(),
+    ]);
 
   trace('Reset fakeAuctioneerKit...');
   fakeAuctioneerKit.reset();
@@ -165,7 +179,10 @@ export const startFakeAuctioneer = async powers => {
   trace('Completed...');
 };
 
-export const upgradeVaultFactory = async (powers, { options: { vaultFactoryInc2Ref } }) => {
+export const upgradeVaultFactory = async (
+  powers,
+  { options: { vaultFactoryInc2Ref } },
+) => {
   trace('Init upgradeVaultFactory...');
   trace({ vaultFactoryInc2Ref });
 
@@ -177,14 +194,10 @@ export const upgradeVaultFactory = async (powers, { options: { vaultFactoryInc2R
       fakeAuctioneerKit: fakeAuctioneerKitP,
       instancePrivateArgs,
     },
-    produce: {
-      auctioneerKit,
-    },
+    produce: { auctioneerKit },
     instance: {
-      produce: {
-        auctioneer
-      }
-    }
+      produce: { auctioneer },
+    },
   } = powers;
 
   const { publicFacet } = E.get(manualTimerKit);
@@ -198,7 +211,7 @@ export const upgradeVaultFactory = async (powers, { options: { vaultFactoryInc2R
     vfKitP,
     E(publicFacet).getManualTimer(),
     E.get(fakeAuctioneerKitP).publicFacet,
-    fakeAuctioneerKitP
+    fakeAuctioneerKitP,
   ]);
 
   const { privateArgs, adminFacet, instance } = vaultFactoryKit;
@@ -216,7 +229,10 @@ export const upgradeVaultFactory = async (powers, { options: { vaultFactoryInc2R
   await E(instancePrivateArgs).set(instance, newPrivateArgs);
 
   trace('Upgrading vaultFactory to incarnation 2...');
-  await E(adminFacet).upgradeContract(vaultFactoryInc2Ref.bundleID, newPrivateArgs);
+  await E(adminFacet).upgradeContract(
+    vaultFactoryInc2Ref.bundleID,
+    newPrivateArgs,
+  );
 
   // We do this after upgrading the vaultFactory to make sure it's upgraded
   // with the correct auctioneer version
@@ -229,9 +245,12 @@ export const upgradeVaultFactory = async (powers, { options: { vaultFactoryInc2R
   auctioneer.resolve(fakeAuctioneerKit.instance);
 
   trace('Done.');
-}
+};
 
-export const getManifestForInitManualTimerFaucet = async (_powers, { manualTimerRef, vaultFactoryInc2Ref }) =>
+export const getManifestForInitManualTimerFaucet = async (
+  _powers,
+  { manualTimerRef, vaultFactoryInc2Ref },
+) =>
   harden({
     manifest: {
       [initManualTimerFaucet.name]: {
@@ -289,10 +308,10 @@ export const getManifestForInitManualTimerFaucet = async (_powers, { manualTimer
         },
         instance: {
           produce: {
-            auctioneer: "to use agops"
-          }
-        }
-      }
+            auctioneer: 'to use agops',
+          },
+        },
+      },
     },
     options: { manualTimerRef, vaultFactoryInc2Ref },
   });

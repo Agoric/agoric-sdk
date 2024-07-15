@@ -1,12 +1,12 @@
 #! /usr/local/bin/node
-import { getContractInfo, agoric, agd } from "@agoric/synthetic-chain";
+import { getContractInfo, agoric, agd } from '@agoric/synthetic-chain';
 
 /**
  * @file A helper tool for displaying data from vstorage.
  * Especially for the kind = 'data' where unmarshalling is required.
  */
 
-const [,,kind, path, interestedProperty] = process.argv;
+const [, , kind, path, interestedProperty] = process.argv;
 
 if (kind === 'data') {
   const result = await getContractInfo(path, { agoric, prefix: '' });
@@ -24,5 +24,3 @@ if (kind === 'data') {
 } else {
   console.log('ERROR: Unknown kind');
 }
-
-

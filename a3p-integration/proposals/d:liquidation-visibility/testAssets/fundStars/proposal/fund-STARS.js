@@ -1,18 +1,14 @@
-import { AmountMath } from "@agoric/ertp";
-import { reserveThenDeposit } from "@agoric/inter-protocol/src/proposals/utils.js"
-import { E } from "@endo/far";
+import { AmountMath } from '@agoric/ertp';
+import { reserveThenDeposit } from '@agoric/inter-protocol/src/proposals/utils.js';
+import { E } from '@endo/far';
 
 const log = (...args) => {
   console.log('FUND STARS', args);
-}
+};
 
 export const init = async (
   {
-    consume: {
-      contractKits: contractKitsP,
-      agoricNames,
-      namesByAddressAdmin,
-    }
+    consume: { contractKits: contractKitsP, agoricNames, namesByAddressAdmin },
   },
   { options: { fundAccounts } },
 ) => {
@@ -21,7 +17,7 @@ export const init = async (
   const [contractKits, starsIssuer] = await Promise.all([
     contractKitsP,
     E(agoricNames).lookup('issuer', 'STARS'),
-  ])
+  ]);
   log('Powers: ', starsIssuer, contractKits);
 
   log('Finding stars kit...');
@@ -32,8 +28,7 @@ export const init = async (
 
   log('Found stars kit:', starsKit);
 
-  const { creatorFacet: mint, publicFacet: issuer } =
-    starsKit;
+  const { creatorFacet: mint, publicFacet: issuer } = starsKit;
 
   const starsBrand = await E(issuer).getBrand();
   log('Stars Brand: ', starsBrand);
@@ -48,17 +43,14 @@ export const init = async (
 
     const starsPayment = await E(mint).mintPayment(starsAmount);
     log('STARS Payment: ', starsPayment);
-    await reserveThenDeposit(
-      `Fund ${addr}`,
-      namesByAddressAdmin,
-      addr,
-      [starsPayment],
-    );
+    await reserveThenDeposit(`Fund ${addr}`, namesByAddressAdmin, addr, [
+      starsPayment,
+    ]);
   };
 
   log('Depositing payments...');
   await Promise.all([...fundAccounts].map(fundAcct));
-  log('Payments deposited.')
+  log('Payments deposited.');
 };
 
 export const getFundStarsManifest = async (_powers, { fundAccounts }) =>
@@ -69,7 +61,7 @@ export const getFundStarsManifest = async (_powers, { fundAccounts }) =>
           contractKits: true,
           agoricNames: true,
           namesByAddressAdmin: true,
-        }
+        },
       },
     },
     options: {

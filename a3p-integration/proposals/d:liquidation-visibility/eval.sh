@@ -8,4 +8,3 @@ source /usr/src/upgrade-test-scripts/env_setup.sh
 ls -al
 
 yarn test:eval
-

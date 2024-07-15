@@ -13,10 +13,7 @@ import * as fsp from 'fs/promises';
 import { existsSync } from 'fs';
 import { tmpName } from 'tmp';
 import * as path from 'path';
-import {
-  copyAll,
-  extractNameFromPath,
-} from "./core-eval-support.js";
+import { copyAll, extractNameFromPath } from './core-eval-support.js';
 
 const config = {
   installer: 'user1',
@@ -24,7 +21,8 @@ const config = {
   featuresSrc: 'visibilityFeaturesProof.tar',
   release:
     'https://github.com/Jorge-Lopes/agoric-sdk/releases/tag/liq-visibility-a3p-v0.2',
-  originalBundle: 'b1-0daeb28abf2bb95cd27bebe80cdcd53ecd670244cb4ca6fe07784697fa8b40bcbc8f3ab1fd92a6d7ce8197efa0d2a28716737f77c68ab2eba88b3c72179f15e0.json'
+  originalBundle:
+    'b1-0daeb28abf2bb95cd27bebe80cdcd53ecd670244cb4ca6fe07784697fa8b40bcbc8f3ab1fd92a6d7ce8197efa0d2a28716737f77c68ab2eba88b3c72179f15e0.json',
 };
 
 test.before(async t => {
@@ -42,7 +40,7 @@ test.before(async t => {
     assets,
     tmpNameP,
   };
-})
+});
 
 /**
  * TODO: Make sure to use SHA512 instead of cksum
@@ -76,7 +74,6 @@ test.serial('unarchive .tar and copy content under agoric-sdk', async t => {
     await fsp.mkdir(unarchiveFolder);
   }
 
-
   await executeCommand('tar', [
     '-xf',
     'visibilityFeaturesProof.tar',
@@ -88,9 +85,7 @@ test.serial('unarchive .tar and copy content under agoric-sdk', async t => {
 
   const interProtocolPath = '/usr/src/agoric-sdk/packages/inter-protocol';
   if (
-    existsSync(
-      `${interProtocolPath}/src/proposals/vaultsUpgrade.js`,
-    ) &&
+    existsSync(`${interProtocolPath}/src/proposals/vaultsUpgrade.js`) &&
     existsSync(`${interProtocolPath}/scripts/upgrade-vaults.js`)
   ) {
     t.pass();
@@ -114,9 +109,11 @@ test.serial('make sure bundle hashes match', async t => {
     default: { endoZipBase64Sha512: copiedVFaHash },
   } = await import(
     '/usr/src/agoric-sdk/packages/inter-protocol/bundles/bundle-vaultFactory.js'
-    );
+  );
 
-  const { endoZipBase64Sha512: originalHash } = bundleDetail(`./assets/${config.originalBundle}`)
+  const { endoZipBase64Sha512: originalHash } = bundleDetail(
+    `./assets/${config.originalBundle}`,
+  );
 
   t.is(originalHash, copiedVFaHash);
 });
@@ -141,88 +138,112 @@ test.serial('prepare vault factory', async t => {
   console.log('TERM WRAPPER');
   console.log(content);
 
-  const replaceText = 'termsWrapper(zcf.getTerms(), privateArgs);'
+  const replaceText = 'termsWrapper(zcf.getTerms(), privateArgs);';
 
   // Make vaultManager use the custom timer
   const vmRW = rootRW.join('./artifacts/src/vaultFactory/vaultManager.js');
-  const vmVersion2 = rootRW.join('./artifacts/src/vaultFactory/vaultManagerV2.js');
+  const vmVersion2 = rootRW.join(
+    './artifacts/src/vaultFactory/vaultManagerV2.js',
+  );
   const vmRead = vmRW.readOnly();
   const vmText = await vmRead.readText();
-  const vmMutated = vmText.replace('{ zcf, marshaller, makeRecorderKit,' +
-    ' factoryPowers }', '{ zcf, marshaller, makeRecorderKit, factoryPowers,' +
-    ' timerService }').replace('{ priceAuthority, timerService,' +
-    ' reservePublicFacet' +
-    ' }', '{ priceAuthority, reservePublicFacet }');
+  const vmMutated = vmText
+    .replace(
+      '{ zcf, marshaller, makeRecorderKit,' + ' factoryPowers }',
+      '{ zcf, marshaller, makeRecorderKit, factoryPowers,' + ' timerService }',
+    )
+    .replace(
+      '{ priceAuthority, timerService,' + ' reservePublicFacet' + ' }',
+      '{ priceAuthority, reservePublicFacet }',
+    );
   await vmVersion2.writeText(vmMutated);
 
   // Make vaultDirector forward the custom timer
   const vdRW = rootRW.join('./artifacts/src/vaultFactory/vaultDirector.js');
-  const vdVersion2 = rootRW.join('./artifacts/src/vaultFactory/vaultDirectorV2.js');
+  const vdVersion2 = rootRW.join(
+    './artifacts/src/vaultFactory/vaultDirectorV2.js',
+  );
   const vdRead = vdRW.readOnly();
   const vdText = await vdRead.readText();
-  const vdMutated = vdText.replace('./vaultManager', './vaultManagerV2').replace('\n' +
-    '    makeERecorderKit,\n' +
-    '    makeRecorderKit,\n' +
-    '    marshaller,\n' +
-    '    factoryPowers,\n' +
-    '    zcf,\n' +
-    '  }', '\n' +
-    '    makeERecorderKit,\n' +
-    '    makeRecorderKit,\n' +
-    '    marshaller,\n' +
-    '    factoryPowers,\n' +
-    '    zcf,\n' +
-    '    timerService: timer,\n' +
-    '  }').replace('fn(vm)', 'Promise.resolve(vm).then(vm => fn(vm)).catch(e => trace(\'ERROR: allManagersDo\', e))');
+  const vdMutated = vdText
+    .replace('./vaultManager', './vaultManagerV2')
+    .replace(
+      '\n' +
+        '    makeERecorderKit,\n' +
+        '    makeRecorderKit,\n' +
+        '    marshaller,\n' +
+        '    factoryPowers,\n' +
+        '    zcf,\n' +
+        '  }',
+      '\n' +
+        '    makeERecorderKit,\n' +
+        '    makeRecorderKit,\n' +
+        '    marshaller,\n' +
+        '    factoryPowers,\n' +
+        '    zcf,\n' +
+        '    timerService: timer,\n' +
+        '  }',
+    )
+    .replace(
+      'fn(vm)',
+      "Promise.resolve(vm).then(vm => fn(vm)).catch(e => trace('ERROR: allManagersDo', e))",
+    );
   await vdVersion2.writeText(vdMutated);
 
   // Override vaultFactory zcf.getTerms();
   const vfRW = rootRW.join('./artifacts/src/vaultFactory/vaultFactory.js');
-  const vfVersion2 = rootRW.join('./artifacts/src/vaultFactory/vaultFactoryV2.js');
+  const vfVersion2 = rootRW.join(
+    './artifacts/src/vaultFactory/vaultFactoryV2.js',
+  );
   const vfRead = vfRW.readOnly();
   const vfText = await vfRead.readText();
   const vfMutatedTermsOnly = vfText.replace('zcf.getTerms();', replaceText);
-  const vfMutatedFinal = vfMutatedTermsOnly.replace('./vaultDirector', './vaultDirectorV2');
+  const vfMutatedFinal = vfMutatedTermsOnly.replace(
+    './vaultDirector',
+    './vaultDirectorV2',
+  );
   await vfVersion2.writeText(content + '\n' + vfMutatedFinal);
 
   t.pass();
 });
 
 test.serial('build proposal', async t => {
-  await copyAll([
-    {
-      src: './artifacts/src/vaultFactory/vaultFactoryV2.js',
-      dest: '/usr/src/agoric-sdk/packages/inter-protocol/src/vaultFactory/vaultFactoryV2.js'
-    },
-    {
-      src: './artifacts/src/vaultFactory/vaultManagerV2.js',
-      dest: '/usr/src/agoric-sdk/packages/inter-protocol/src/vaultFactory/vaultManagerV2.js'
-    },
-    {
-      src: './artifacts/src/vaultFactory/vaultDirectorV2.js',
-      dest: '/usr/src/agoric-sdk/packages/inter-protocol/src/vaultFactory/vaultDirectorV2.js'
-    },
-    {
-      src: './testAssets/manipulateAuction/manualTimerFaucet.js',
-      dest: '/usr/src/agoric-sdk/packages/inter-protocol/src/manualTimerFaucet.js'
-    },
-    {
-      src: './testAssets/manipulateAuction/liq-prep-proposal.js',
-      dest: '/usr/src/agoric-sdk/packages/inter-protocol/src/proposals/liq-prep-proposal.js'
-    },
-    {
-      src: './testAssets/manipulateAuction/liq-prep-script.js',
-      dest: '/usr/src/agoric-sdk/packages/inter-protocol/scripts/liq-prep-script.js'
-    },
-  ], { fsp })
-  const {
-    evals,
-    bundles
-  } = await proposalBuilder('/usr/src/agoric-sdk/packages/inter-protocol/scripts/liq-prep-script.js')
+  await copyAll(
+    [
+      {
+        src: './artifacts/src/vaultFactory/vaultFactoryV2.js',
+        dest: '/usr/src/agoric-sdk/packages/inter-protocol/src/vaultFactory/vaultFactoryV2.js',
+      },
+      {
+        src: './artifacts/src/vaultFactory/vaultManagerV2.js',
+        dest: '/usr/src/agoric-sdk/packages/inter-protocol/src/vaultFactory/vaultManagerV2.js',
+      },
+      {
+        src: './artifacts/src/vaultFactory/vaultDirectorV2.js',
+        dest: '/usr/src/agoric-sdk/packages/inter-protocol/src/vaultFactory/vaultDirectorV2.js',
+      },
+      {
+        src: './testAssets/manipulateAuction/manualTimerFaucet.js',
+        dest: '/usr/src/agoric-sdk/packages/inter-protocol/src/manualTimerFaucet.js',
+      },
+      {
+        src: './testAssets/manipulateAuction/liq-prep-proposal.js',
+        dest: '/usr/src/agoric-sdk/packages/inter-protocol/src/proposals/liq-prep-proposal.js',
+      },
+      {
+        src: './testAssets/manipulateAuction/liq-prep-script.js',
+        dest: '/usr/src/agoric-sdk/packages/inter-protocol/scripts/liq-prep-script.js',
+      },
+    ],
+    { fsp },
+  );
+  const { evals, bundles } = await proposalBuilder(
+    '/usr/src/agoric-sdk/packages/inter-protocol/scripts/liq-prep-script.js',
+  );
 
   const evalsFixed = evals.map(({ script, permit }) => ({
     permit,
-    script: script.replace('-permit.json', '.js')
+    script: script.replace('-permit.json', '.js'),
   }));
   t.log(evalsFixed);
   config.proposal = { evals: evalsFixed, bundles };
@@ -240,34 +261,29 @@ test.serial('build proposal', async t => {
 test.serial('deploy incarnation 2', async t => {
   t.log(config.proposal);
   const { tmpNameP } = t.context;
-  const { proposal: { evals, bundles } } = config;
+  const {
+    proposal: { evals, bundles },
+  } = config;
   const tmpName = await tmpNameP('liq-prep');
   await fsp.mkdir(tmpName);
 
-  const evalsCopyP = evals.flatMap(
-    ({
-       permit,
-       script
-     }) => [
-      fsp.cp(permit, `${tmpName}/${extractNameFromPath(permit)}`),
-      fsp.cp(script, `${tmpName}/${extractNameFromPath(script)}`)
-    ]);
+  const evalsCopyP = evals.flatMap(({ permit, script }) => [
+    fsp.cp(permit, `${tmpName}/${extractNameFromPath(permit)}`),
+    fsp.cp(script, `${tmpName}/${extractNameFromPath(script)}`),
+  ]);
 
-  const bundlesCopyP = bundles.map(
-    bundlePath => fsp.cp(bundlePath, `${tmpName}/${extractNameFromPath(bundlePath)}`)
+  const bundlesCopyP = bundles.map(bundlePath =>
+    fsp.cp(bundlePath, `${tmpName}/${extractNameFromPath(bundlePath)}`),
   );
 
-  await Promise.all([
-    ...evalsCopyP,
-    ...bundlesCopyP,
-  ])
+  await Promise.all([...evalsCopyP, ...bundlesCopyP]);
 
   t.log({ tmpName });
   const bundleInfos = await readBundles(tmpName);
 
-  await passCoreEvalProposal(
-    bundleInfos,
-    { title: `Core eval of ${tmpName}`, ...config }
-  );
+  await passCoreEvalProposal(bundleInfos, {
+    title: `Core eval of ${tmpName}`,
+    ...config,
+  });
   t.pass();
 });

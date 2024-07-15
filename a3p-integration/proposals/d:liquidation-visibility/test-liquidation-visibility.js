@@ -8,9 +8,7 @@
  */
 
 import anyTest from 'ava';
-import {
-  makeTestContext,
-} from './core-eval-support.js';
+import { makeTestContext } from './core-eval-support.js';
 import {
   mintIST,
   readBundles,
@@ -26,11 +24,14 @@ const assetInfo = {
   buildAssets: {
     coreEvalInfo: {
       evals: [
-        { permit: 'upgrade-vaults-liq-visibility-permit.json', script: 'upgrade-vaults-liq-visibility.js' },
+        {
+          permit: 'upgrade-vaults-liq-visibility-permit.json',
+          script: 'upgrade-vaults-liq-visibility.js',
+        },
       ],
       bundles: [
         'b1-0daeb28abf2bb95cd27bebe80cdcd53ecd670244cb4ca6fe07784697fa8b40bcbc8f3ab1fd92a6d7ce8197efa0d2a28716737f77c68ab2eba88b3c72179f15e0.json',
-        'b1-88b8532be656b66ebc0298f916802fae523a263bd1935160ee0042cf0cb4136bdba57165a7ca70b78b37402404aaafc02400019383c6d6b076a7236a352a6ba3.json'
+        'b1-88b8532be656b66ebc0298f916802fae523a263bd1935160ee0042cf0cb4136bdba57165a7ca70b78b37402404aaafc02400019383c6d6b076a7236a352a6ba3.json',
       ],
     },
   },
@@ -52,7 +53,13 @@ const staticConfig = {
   ...dappAPI,
 };
 
-test.before(async t => (t.context = await makeTestContext({ testConfig: staticConfig, srcDir: 'assets' })));
+test.before(
+  async t =>
+    (t.context = await makeTestContext({
+      testConfig: staticConfig,
+      srcDir: 'assets',
+    })),
+);
 
 test.serial('fund user1 before the upgrade', async t => {
   const { agd } = t.context;
@@ -66,10 +73,12 @@ test.serial('fund user1 before the upgrade', async t => {
 });
 
 test.serial('test', async t => {
-
   const dir = '/usr/src/proposals/b:liquidation-visibility/assets';
   const bundleInfos = await readBundles(dir);
 
-  await passCoreEvalProposal(bundleInfos, { title: `Core eval of ${dir}`, ...staticConfig });
+  await passCoreEvalProposal(bundleInfos, {
+    title: `Core eval of ${dir}`,
+    ...staticConfig,
+  });
   t.pass();
 });

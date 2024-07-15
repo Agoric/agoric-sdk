@@ -18,23 +18,23 @@ import {
 } from '@agoric/synthetic-chain';
 import {
   boardValToSlot,
-  slotToBoardRemote
-} from "@agoric/vats/tools/board-utils.js";
-import { makeMarshal } from "@endo/marshal";
-import processAmbient from "process";
-import cpAmbient from "child_process";
-import dbOpenAmbient from "better-sqlite3";
-import fspAmbient from "fs/promises";
-import pathAmbient from "path";
-import { tmpName as tmpNameAmbient } from "tmp";
-import { Liquidation } from "./spec.test.js";
+  slotToBoardRemote,
+} from '@agoric/vats/tools/board-utils.js';
+import { makeMarshal } from '@endo/marshal';
+import processAmbient from 'process';
+import cpAmbient from 'child_process';
+import dbOpenAmbient from 'better-sqlite3';
+import fspAmbient from 'fs/promises';
+import pathAmbient from 'path';
+import { tmpName as tmpNameAmbient } from 'tmp';
+import { Liquidation } from './spec.test.js';
 
 const AdvanceTimeExactOfferSpec = ({ id, timestamp }) => ({
   id,
   invitationSpec: {
-    source: "agoricContract",
+    source: 'agoricContract',
     instancePath: ['manualTimerInstance'],
-    callPipe: [["makeAdvanceTimeInvitation"]],
+    callPipe: [['makeAdvanceTimeInvitation']],
   },
   proposal: {},
   offerArgs: { timestamp },
@@ -43,9 +43,9 @@ const AdvanceTimeExactOfferSpec = ({ id, timestamp }) => ({
 const AdvanceTimeStepByStepOfferSpec = ({ id, steps, duration }) => ({
   id,
   invitationSpec: {
-    source: "agoricContract",
+    source: 'agoricContract',
     instancePath: ['manualTimerInstance'],
-    callPipe: [["makeAdvanceTimeStepByStepInvitation"]],
+    callPipe: [['makeAdvanceTimeStepByStepInvitation']],
   },
   proposal: {},
   offerArgs: { duration },
@@ -121,13 +121,7 @@ export const poll = async (check, maxTries) => {
  *
  * @param {AgopsOfferParams}
  */
-export const agopsOffer = async ({
-  t,
-  agopsParams,
-  txParams,
-  from,
-  src,
-}) => {
+export const agopsOffer = async ({ t, agopsParams, txParams, from, src }) => {
   const { agops, agoric } = t.context;
 
   await src.mkdir(from);
@@ -136,7 +130,7 @@ export const agopsOffer = async ({
   try {
     const test = await agops.oracle(...agopsParams);
     await fileRW.writeText(test);
-    t.log({ test })
+    t.log({ test });
     await agoric.wallet(...txParams, '--offer', fileRW.toString());
   } catch (e) {
     t.fail(e);
@@ -149,9 +143,7 @@ export const agopsOffer = async ({
  * @return {Promise<string[]>}
  */
 export const getStorageChildren = async path => {
-  const { children } = await agd.query('vstorage',
-    'children',
-    path);
+  const { children } = await agd.query('vstorage', 'children', path);
 
   return children;
 };
@@ -160,12 +152,17 @@ export const getStorageChildren = async path => {
  * @return {Promise<number>}
  */
 const getPriceRound = async () => {
-  const children = await getStorageChildren('published.priceFeed.STARS-USD_price_feed');
+  const children = await getStorageChildren(
+    'published.priceFeed.STARS-USD_price_feed',
+  );
   console.log({ children });
   const roundChild = [...children].find(element => element === 'latestRound');
   if (roundChild === undefined) return 0;
 
-  const { roundId } = await getContractInfo('priceFeed.STARS-USD_price_feed.latestRound', { agoric });
+  const { roundId } = await getContractInfo(
+    'priceFeed.STARS-USD_price_feed.latestRound',
+    { agoric },
+  );
   return Number(roundId);
 };
 
@@ -191,27 +188,21 @@ export const pushPrice = async (t, price, oracles) => {
       curRound + 1,
       '--oracleAdminAcceptOfferId',
       id,
-    ]
+    ];
   };
 
   const buildOfferArgs = from => {
-    return [
-      'send',
-      '--from',
-      from,
-      '--keyring-backend=test',
-    ]
+    return ['send', '--from', from, '--keyring-backend=test'];
   };
 
   for (const { address, acceptId } of oracles) {
     await agopsOffer({
-        t,
-        agopsParams: buildAgopsArgs(acceptId),
-        txParams: buildOfferArgs(address),
-        src: tmpRW,
-        from: address
-      }
-    )
+      t,
+      agopsParams: buildAgopsArgs(acceptId),
+      txParams: buildOfferArgs(address),
+      src: tmpRW,
+      from: address,
+    });
   }
 
   await waitForBlock(5);
@@ -232,8 +223,14 @@ export const acceptsOracleInvitations = async (t, oracles) => {
   const offersP = [];
   for (const { address, acceptId } of oracles) {
     offersP.push(
-      agopsOffer({ t, agopsParams: buildAgopsParams(acceptId), txParams: buildOfferParams(address), from: address, src: tmpRW}),
-    )
+      agopsOffer({
+        t,
+        agopsParams: buildAgopsParams(acceptId),
+        txParams: buildOfferParams(address),
+        from: address,
+        src: tmpRW,
+      }),
+    );
   }
 
   await Promise.all(offersP);
@@ -258,17 +255,19 @@ export const copyAll = (config, { fsp }) => {
   }
 
   return Promise.all(copyPs);
-}
+};
 
 /**
  * Use this method when you need to extract filename from a path
  *
  * @param {string} filePath
  */
-export const extractNameFromPath = filePath => filePath.split('/').at(-1)
+export const extractNameFromPath = filePath => filePath.split('/').at(-1);
 
-export const makeBoardMarshaller = () => makeMarshal(boardValToSlot, slotToBoardRemote, { serializeBodyFormat: 'smallcaps'});
-
+export const makeBoardMarshaller = () =>
+  makeMarshal(boardValToSlot, slotToBoardRemote, {
+    serializeBodyFormat: 'smallcaps',
+  });
 
 /**
  * Like getContractInfo from @agoric/synthetic-chain but also returns
@@ -279,9 +278,7 @@ export const makeBoardMarshaller = () => makeMarshal(boardValToSlot, slotToBoard
  *
  */
 export const makeStorageInfoGetter = io => {
-  const {
-    agoric
-  } = io;
+  const { agoric } = io;
 
   const marshaller = makeBoardMarshaller();
 
@@ -292,7 +289,7 @@ export const makeStorageInfoGetter = io => {
   };
 
   return { getStorageInfo, marshaller };
-}
+};
 
 export const makeAuctionTimerDriver = async (context, from) => {
   const { mkTempRW, agoric } = context;
@@ -301,15 +298,20 @@ export const makeAuctionTimerDriver = async (context, from) => {
 
   const { getStorageInfo, marshaller } = makeStorageInfoGetter({ agoric });
 
-
   const startAuction = async () => {
-    const { nextStartTime, nominalStart } = await calculateNominalStart({ agoric });
+    const { nextStartTime, nominalStart } = await calculateNominalStart({
+      agoric,
+    });
 
     // First move the timer to nominalStart
-    await sendTimerOffer(from, marshaller, tmpRW, 'exact', { timestamp: nominalStart });
+    await sendTimerOffer(from, marshaller, tmpRW, 'exact', {
+      timestamp: nominalStart,
+    });
 
     // Now start the auction
-    await sendTimerOffer(from, marshaller, tmpRW, 'exact', { timestamp: nextStartTime});
+    await sendTimerOffer(from, marshaller, tmpRW, 'exact', {
+      timestamp: nextStartTime,
+    });
 
     return { nextStartTime, nominalStart };
   };
@@ -321,7 +323,9 @@ export const makeAuctionTimerDriver = async (context, from) => {
     console.log(schedule);
 
     // Now start the auction
-    await sendTimerOffer(from, marshaller, tmpRW, 'exact', { timestamp: nextDescendingStepTime.absValue });
+    await sendTimerOffer(from, marshaller, tmpRW, 'exact', {
+      timestamp: nextDescendingStepTime.absValue,
+    });
   };
 
   /**
@@ -330,37 +334,55 @@ export const makeAuctionTimerDriver = async (context, from) => {
    * @return {Promise<void>}
    */
   const advanceAuctionStepMulti = async steps => {
-    const governance = await getStorageInfo('published.fakeAuctioneer.governance');
+    const governance = await getStorageInfo(
+      'published.fakeAuctioneer.governance',
+    );
 
-    const { ClockStep: {
-      value: { relValue: clockStepVal }
-    } } = governance.current;
+    const {
+      ClockStep: {
+        value: { relValue: clockStepVal },
+      },
+    } = governance.current;
 
     let currentStep = 0;
-    while(currentStep < steps) {
-      await sendTimerOffer(from, marshaller, tmpRW, 'step', { duration: clockStepVal });
+    while (currentStep < steps) {
+      await sendTimerOffer(from, marshaller, tmpRW, 'step', {
+        duration: clockStepVal,
+      });
       currentStep += 1;
       await waitForBlock(5);
     }
-  }
+  };
 
   return {
     advanceAuctionStepByOne,
     advanceAuctionStepMulti,
     startAuction,
   };
-}
+};
 
-export const sendTimerOffer = async (from, marshaller, fileSrc, type, offerArgs) => {
+export const sendTimerOffer = async (
+  from,
+  marshaller,
+  fileSrc,
+  type,
+  offerArgs,
+) => {
   let offerSpec;
   if (type === 'exact') {
-    offerSpec = AdvanceTimeExactOfferSpec({ id: `${Date.now()}`, ...offerArgs });
-  } else if(type === 'step') {
-    offerSpec = AdvanceTimeStepByStepOfferSpec({ id: `${Date.now()}`, ...offerArgs });
+    offerSpec = AdvanceTimeExactOfferSpec({
+      id: `${Date.now()}`,
+      ...offerArgs,
+    });
+  } else if (type === 'step') {
+    offerSpec = AdvanceTimeStepByStepOfferSpec({
+      id: `${Date.now()}`,
+      ...offerArgs,
+    });
   }
 
   const spendAction = {
-    method: "executeOffer",
+    method: 'executeOffer',
     offer: offerSpec,
   };
 
@@ -373,13 +395,18 @@ export const sendTimerOffer = async (from, marshaller, fileSrc, type, offerArgs)
     from,
     '--keyring-backend=test',
     '--offer',
-    fileSrc.toString()
+    fileSrc.toString(),
   );
-}
+};
 
 // TODO Feature request: Open an issue asking for a parameterized collateral
 //  brand
-export const openVault = (address, mint, collateral, collateralBrand = "ATOM") => {
+export const openVault = (
+  address,
+  mint,
+  collateral,
+  collateralBrand = 'ATOM',
+) => {
   return executeOffer(
     address,
     agops.vaults(
@@ -389,7 +416,7 @@ export const openVault = (address, mint, collateral, collateralBrand = "ATOM") =
       '--giveCollateral',
       collateral,
       '--collateralBrand',
-      collateralBrand
+      collateralBrand,
     ),
   );
 };
@@ -418,10 +445,10 @@ export const bidByPrice = (address, spend, colKeyword, price) => {
       price,
       `--from`,
       address,
-      '--generate-only'
+      '--generate-only',
     ),
   );
-}
+};
 
 export const bidByDiscount = (address, spend, colKeyword, discount) => {
   /**
@@ -441,7 +468,7 @@ export const bidByDiscount = (address, spend, colKeyword, discount) => {
       discount,
       `--from`,
       address,
-      '--generate-only'
+      '--generate-only',
     ),
   );
 };
@@ -461,9 +488,13 @@ const calculateNominalStart = async ({ agoric }) => {
     getContractInfo('fakeAuctioneer.governance', { agoric }),
   ]);
 
-  const { nextStartTime: { absValue: nextStartTimeVal } } = schedule;
   const {
-    AuctionStartDelay: { value: { relValue: auctionStartDelay} },
+    nextStartTime: { absValue: nextStartTimeVal },
+  } = schedule;
+  const {
+    AuctionStartDelay: {
+      value: { relValue: auctionStartDelay },
+    },
   } = governance.current;
 
   const nominalStart = nextStartTimeVal - auctionStartDelay;
@@ -473,13 +504,27 @@ const calculateNominalStart = async ({ agoric }) => {
 
 export const scale6 = x => BigInt(Math.round(x * 1_000_000));
 
-export const assertVisibility = async (t, managerIndex, base = 0, { nominalStart }) => {
+export const assertVisibility = async (
+  t,
+  managerIndex,
+  base = 0,
+  { nominalStart },
+) => {
   const { agoric } = t.context;
 
   const [preAuction, postAuction, auctionResult] = await Promise.all([
-    getContractInfo(`vaultFactory.managers.manager${managerIndex}.liquidations.${nominalStart}.vaults.preAuction`, { agoric }),
-    getContractInfo(`vaultFactory.managers.manager${managerIndex}.liquidations.${nominalStart}.vaults.postAuction`, { agoric }),
-    getContractInfo(`vaultFactory.managers.manager${managerIndex}.liquidations.${nominalStart}.auctionResult`, { agoric }),
+    getContractInfo(
+      `vaultFactory.managers.manager${managerIndex}.liquidations.${nominalStart}.vaults.preAuction`,
+      { agoric },
+    ),
+    getContractInfo(
+      `vaultFactory.managers.manager${managerIndex}.liquidations.${nominalStart}.vaults.postAuction`,
+      { agoric },
+    ),
+    getContractInfo(
+      `vaultFactory.managers.manager${managerIndex}.liquidations.${nominalStart}.auctionResult`,
+      { agoric },
+    ),
   ]);
 
   const expectedPreAuction = [];
@@ -487,7 +532,9 @@ export const assertVisibility = async (t, managerIndex, base = 0, { nominalStart
     expectedPreAuction.push([
       `vault${base + i}`,
       {
-        collateralAmount: { value: scale6(Liquidation.setup.vaults[i].collateral) },
+        collateralAmount: {
+          value: scale6(Liquidation.setup.vaults[i].collateral),
+        },
         debtAmount: { value: scale6(Liquidation.setup.vaults[i].debt) },
       },
     ]);
@@ -513,9 +560,13 @@ export const assertVisibility = async (t, managerIndex, base = 0, { nominalStart
   );
 
   t.like(auctionResult, {
-    collateralOffered: { value: scale6(Liquidation.setup.auction.start.collateral) },
+    collateralOffered: {
+      value: scale6(Liquidation.setup.auction.start.collateral),
+    },
     istTarget: { value: scale6(Liquidation.setup.auction.start.debt) },
-    collateralForReserve: { value: scale6(Liquidation.outcome.reserve.allocations.ATOM) },
+    collateralForReserve: {
+      value: scale6(Liquidation.outcome.reserve.allocations.ATOM),
+    },
     shortfallToReserve: { value: 0n },
     mintedProceeds: { value: scale6(Liquidation.setup.auction.start.debt) },
     collateralSold: {
@@ -525,7 +576,9 @@ export const assertVisibility = async (t, managerIndex, base = 0, { nominalStart
     },
     // endTime: { absValue: endTime.absValue }, Figure out how to read the
     // schedule
-    collateralRemaining: { value: scale6(Liquidation.outcome.remaining.collateral) },
+    collateralRemaining: {
+      value: scale6(Liquidation.outcome.remaining.collateral),
+    },
     debtToBurn: { value: scale6(Liquidation.setup.auction.start.debt) },
     mintedForReserve: { value: scale6(Liquidation.outcome.reserve.minted) },
     totalPenalty: { value: scale6(Liquidation.outcome.penalty) },

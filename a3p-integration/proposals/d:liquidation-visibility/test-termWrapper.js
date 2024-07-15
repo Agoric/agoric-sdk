@@ -1,5 +1,5 @@
-import test from "ava";
-import { termsWrapper } from "./termsWrapper.js";
+import test from 'ava';
+import { termsWrapper } from './termsWrapper.js';
 
 test('wrapper-overrides-terms', t => {
   const terms = {
@@ -24,12 +24,13 @@ test('wrapper-overrides-terms', t => {
 
   t.deepEqual(overridenTerms, {
     ...terms,
-    timer: { src: 'manualTimerService' }
+    timer: { src: 'manualTimerService' },
   });
 });
 
 test.only('test-regex', t => {
-  const testString = 'oracleAddresses: [\n' +
+  const testString =
+    'oracleAddresses: [\n' +
     '      "agoricNamesAdmin",\n' +
     '      "agoric180apa567ssxdc7a7vjqklnyfaq94uk3qe9g00j",\n' +
     '      "agoric1w5a2us973uatperzxdfpzzasgaanfgr2ywhhn9",\n' +
@@ -38,9 +39,9 @@ test.only('test-regex', t => {
     '      "agoric1n4fcxsnkxe4gj6e24naec99hzmc4pjfdccy5nj",\n' +
     '    ],';
 
-  const expected = 'oracleAddresses: [gov1, gov2]'
+  const expected = 'oracleAddresses: [gov1, gov2]';
 
-  const regex = /oracleAddresses: \[(.|\n)*\]/g
+  const regex = /oracleAddresses: \[(.|\n)*\]/g;
   const result = testString.replace(regex, expected);
   t.log(result);
   t.pass();
