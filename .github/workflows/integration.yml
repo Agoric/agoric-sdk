@@ -286,6 +286,11 @@ jobs:
         with:
           datadog-token: ${{ secrets.DATADOG_API_KEY }}
 
+  test-multichain-e2e:
+    needs: pre_check
+    if: needs.pre_check.outputs.should_run == 'true'
+    uses: ./.github/workflows/multichain-e2e.yml
+
   finalize-integration-result:
     needs:
       - pre_check

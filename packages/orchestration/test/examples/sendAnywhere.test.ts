@@ -210,7 +210,7 @@ test('send using arbitrary chain info', async t => {
       '@type': '/ibc.applications.transfer.v1.MsgTransfer',
       receiver: 'hot1destAddr',
       sender: execAddr,
-      sourceChannel: 'channel-0',
+      sourceChannel: 'channel-1',
       token: { amount: '4250000', denom: 'uist' },
     });
   }

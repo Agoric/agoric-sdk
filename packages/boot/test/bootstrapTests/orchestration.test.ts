@@ -69,6 +69,24 @@ test.serial('config', async t => {
       node: 'agoricNames.chainConnection',
     });
   }
+  {
+    const connection = await EV(agoricNames).lookup(
+      'chainConnection',
+      'agoric-3_osmosis-1',
+    );
+    t.like(connection, {
+      id: 'connection-1',
+      client_id: '07-tendermint-1',
+      counterparty: {
+        client_id: '07-tendermint-2109',
+        connection_id: 'connection-1649',
+      },
+      transferChannel: {
+        counterPartyChannelId: 'channel-320',
+        channelId: 'channel-1',
+      },
+    });
+  }
 });
 
 test.skip('stakeOsmo - queries', async t => {
@@ -223,8 +241,8 @@ test.serial('revise chain info', async t => {
     'cosmoshub-4_hot-1',
   );
   t.like(connection, {
-    id: 'connection-99',
-    client_id: '07-tendermint-3',
+    id: 'connection-1',
+    client_id: '07-tendermint-2',
   });
 });
 

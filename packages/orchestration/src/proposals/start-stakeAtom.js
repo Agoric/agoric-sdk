@@ -59,8 +59,8 @@ export const startStakeAtom = async ({
     installation: stakeIca,
     terms: {
       chainId: cosmoshub.chainId,
-      hostConnectionId: connectionInfo.id,
-      controllerConnectionId: connectionInfo.counterparty.connection_id,
+      hostConnectionId: connectionInfo.counterparty.connection_id,
+      controllerConnectionId: connectionInfo.id,
       bondDenom: cosmoshub.stakingTokens[0].denom,
       icqEnabled: cosmoshub.icqEnabled,
     },
