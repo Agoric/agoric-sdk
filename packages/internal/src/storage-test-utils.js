@@ -2,14 +2,19 @@
 import { Fail } from '@endo/errors';
 import { Far } from '@endo/far';
 import { makeMarshal, Remotable } from '@endo/marshal';
+import { makeHeapZone } from '@agoric/base-zone/heap.js';
 import { unmarshalFromVstorage } from './marshal.js';
 import { makeTracer } from './debug.js';
-import { isStreamCell, makeChainStorageRoot } from './lib-chainStorage.js';
+import {
+  isStreamCell,
+  makeChainStorageRoot,
+  prepareChainStorageNode,
+} from './lib-chainStorage.js';
 import { bindAllMethods } from './method-tools.js';
 import { eventLoopIteration } from './testing-utils.js';
 
 /**
- * @import {Marshaller, StorageEntry, StorageMessage, StorageNode} from './lib-chainStorage.js';
+ * @import {MakeChainStorageNode, Marshaller, StorageEntry, StorageMessage, StorageNode} from './lib-chainStorage.js';
  */
 
 const trace = makeTracer('StorTU', false);
@@ -97,8 +102,13 @@ export const slotStringUnserialize = makeSlotStringUnserialize();
  *
  * @param {string} rootPath
  * @param {Parameters<typeof makeChainStorageRoot>[2]} [rootOptions]
+ * @param {import('@agoric/base-zone').Zone} [zone]
  */
-export const makeFakeStorageKit = (rootPath, rootOptions) => {
+export const makeFakeStorageKit = (
+  rootPath,
+  rootOptions,
+  zone = makeHeapZone(),
+) => {
   const resolvedOptions = { sequence: true, ...rootOptions };
   /** @type {TotalMap<string, string>} */
   const data = new Map();
@@ -121,89 +131,99 @@ export const makeFakeStorageKit = (rootPath, rootOptions) => {
   };
   /** @type {StorageMessage[]} */
   const messages = [];
-  /** @param {StorageMessage} message */
 
-  const toStorage = message => {
-    messages.push(message);
-    switch (message.method) {
-      case 'getStoreKey': {
-        const [key] = message.args;
-        return { storeName: 'swingset', storeSubkey: `fake:${key}` };
-      }
-      case 'get': {
-        const [key] = message.args;
-        return data.has(key) ? data.get(key) : null;
-      }
-      case 'children': {
-        const [key] = message.args;
-        const childEntries = getChildEntries(`${key}.`);
-        return [...childEntries.keys()];
-      }
-      case 'entries': {
-        const [key] = message.args;
-        const childEntries = getChildEntries(`${key}.`);
-        return [...childEntries.entries()].map(entry =>
-          entry[1] != null ? entry : [entry[0]],
-        );
-      }
-      case 'set':
-      case 'setWithoutNotify': {
-        trace('toStorage set', message);
-        /** @type {StorageEntry[]} */
-        const newEntries = message.args;
-        for (const [key, value] of newEntries) {
-          if (value != null) {
-            data.set(key, value);
-          } else {
-            data.delete(key);
-          }
+  const storer = zone.exo('storer', undefined, {
+    /** @param {StorageMessage} message */
+    toStorage(message) {
+      messages.push(message);
+      switch (message.method) {
+        case 'getStoreKey': {
+          const [key] = message.args;
+          return { storeName: 'swingset', storeSubkey: `fake:${key}` };
         }
-        break;
-      }
-      case 'append': {
-        trace('toStorage append', message);
-        /** @type {StorageEntry[]} */
-        const newEntries = message.args;
-        for (const [key, value] of newEntries) {
-          value != null || Fail`attempt to append with no value`;
-          // In the absence of block boundaries, everything goes in a single StreamCell.
-          const oldVal = data.get(key);
-          let streamCell;
-          if (oldVal != null) {
-            try {
-              streamCell = JSON.parse(oldVal);
-              assert(isStreamCell(streamCell));
-            } catch (_err) {
-              streamCell = undefined;
+        case 'get': {
+          const [key] = message.args;
+          return data.has(key) ? data.get(key) : null;
+        }
+        case 'children': {
+          const [key] = message.args;
+          const childEntries = getChildEntries(`${key}.`);
+          return [...childEntries.keys()];
+        }
+        case 'entries': {
+          const [key] = message.args;
+          const childEntries = getChildEntries(`${key}.`);
+          return [...childEntries.entries()].map(entry =>
+            entry[1] != null ? entry : [entry[0]],
+          );
+        }
+        case 'set':
+        case 'setWithoutNotify': {
+          trace('toStorage set', message);
+          /** @type {StorageEntry[]} */
+          const newEntries = message.args;
+          for (const [key, value] of newEntries) {
+            if (value != null) {
+              data.set(key, value);
+            } else {
+              data.delete(key);
             }
           }
-          if (streamCell === undefined) {
-            streamCell = {
-              blockHeight: '0',
-              values: oldVal != null ? [oldVal] : [],
-            };
-          }
-          streamCell.values.push(value);
-          data.set(key, JSON.stringify(streamCell));
+          break;
         }
-        break;
+        case 'append': {
+          trace('toStorage append', message);
+          /** @type {StorageEntry[]} */
+          const newEntries = message.args;
+          for (const [key, value] of newEntries) {
+            value != null || Fail`attempt to append with no value`;
+            // In the absence of block boundaries, everything goes in a single StreamCell.
+            const oldVal = data.get(key);
+            let streamCell;
+            if (oldVal != null) {
+              try {
+                streamCell = JSON.parse(oldVal);
+                assert(isStreamCell(streamCell));
+              } catch (_err) {
+                streamCell = undefined;
+              }
+            }
+            if (streamCell === undefined) {
+              streamCell = {
+                blockHeight: '0',
+                values: oldVal != null ? [oldVal] : [],
+              };
+            }
+            streamCell.values.push(value);
+            data.set(key, JSON.stringify(streamCell));
+          }
+          break;
+        }
+        case 'size':
+          // Intentionally incorrect because it counts non-child descendants,
+          // but nevertheless supports a "has children" test.
+          return [...data.keys()].filter(k =>
+            k.startsWith(`${message.args[0]}.`),
+          ).length;
+        default:
+          throw Error(`unsupported method: ${message.method}`);
       }
-      case 'size':
-        // Intentionally incorrect because it counts non-child descendants,
-        // but nevertheless supports a "has children" test.
-        return [...data.keys()].filter(k => k.startsWith(`${message.args[0]}.`))
-          .length;
-      default:
-        throw Error(`unsupported method: ${message.method}`);
-    }
-  };
-  const rootNode = makeChainStorageRoot(toStorage, rootPath, resolvedOptions);
+    },
+  });
+
+  const makeStorageNode = prepareChainStorageNode(zone);
+  const rootNode = makeChainStorageRoot(
+    storer,
+    rootPath,
+    resolvedOptions,
+    makeStorageNode,
+  );
   return {
     rootNode,
     // eslint-disable-next-line object-shorthand
     data: /** @type {Map<string, string>} */ (data),
     messages,
-    toStorage,
+    toStorage: storer.toStorage,
   };
 };
 harden(makeFakeStorageKit);

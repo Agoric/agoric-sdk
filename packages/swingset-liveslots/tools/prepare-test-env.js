@@ -9,5 +9,5 @@ import '@agoric/internal/src/install-ses-debug.js';
 
 import { reincarnate } from './setup-vat-data.js';
 
-// Install the VatData globals.
+// Install the fakeVomKit that the VatData global needs.
 reincarnate();

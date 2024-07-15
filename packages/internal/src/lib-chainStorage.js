@@ -244,31 +244,31 @@ export const prepareChainStorageNode = zone => {
   );
   return makeChainStorageNode;
 };
-
-const makeHeapChainStorageNode = prepareChainStorageNode(makeHeapZone());
+/** @typedef {ReturnType<typeof prepareChainStorageNode>} MakeChainStorageNode */
 
 /**
  * Create a heap-based root storage node for a given backing function and root
  * path.
  *
- * @param {(message: StorageMessage) => any} handleStorageMessage a function for
- *   sending a storageMessage object to the storage implementation (cf.
- *   golang/cosmos/x/vstorage/vstorage.go)
+ * @param {{ toStorage: (message: StorageMessage) => any }} messageHandler a
+ *   function for sending a storageMessage object to the storage implementation
+ *   (cf. golang/cosmos/x/vstorage/vstorage.go)
  * @param {string} rootPath
  * @param {object} [rootOptions]
  * @param {boolean} [rootOptions.sequence] employ a wrapping structure that
  *   preserves each value set within a single block, and default child nodes to
  *   do the same
+ * @param {MakeChainStorageNode} makeStorageNode
  */
 export function makeChainStorageRoot(
-  handleStorageMessage,
+  messageHandler,
   rootPath,
   rootOptions = {},
+  makeStorageNode = prepareChainStorageNode(makeHeapZone()),
 ) {
-  const messenger = cb.makeFunctionCallback(handleStorageMessage);
+  const messenger = cb.makeMethodCallback(messageHandler, 'toStorage');
 
-  // Use the heapZone directly.
-  const rootNode = makeHeapChainStorageNode(messenger, rootPath, rootOptions);
+  const rootNode = makeStorageNode(messenger, rootPath, rootOptions);
   return rootNode;
 }
 
@@ -278,7 +278,7 @@ export function makeChainStorageRoot(
  */
 const makeNullStorageNode = () => {
   // XXX re-use "ChainStorage" methods above which don't actually depend on chains
-  return makeChainStorageRoot(() => null, 'null');
+  return makeChainStorageRoot({ toStorage: () => null }, 'null');
 };
 
 /**
