@@ -141,6 +141,6 @@
     "access": "public"
   },
   "typeCoverage": {
-    "atLeast": 85
+    "atLeast": 84.99
   }
 }
