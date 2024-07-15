@@ -99,12 +99,15 @@ const reverseConnInfo = connInfo => {
  * @param {string} name
  * @param {CosmosChainInfo} chainInfo
  * @param {(...messages: string[]) => void} [log]
+ * @param {Set<string>} [handledConnections] connection keys that need not be
+ *   updated
  */
 export const registerChain = async (
   agoricNamesAdmin,
   name,
   chainInfo,
   log = () => {},
+  handledConnections = new Set(),
 ) => {
   const { nameAdmin } = await E(agoricNamesAdmin).provideChild('chain');
   const { nameAdmin: connAdmin } =
@@ -120,17 +123,21 @@ export const registerChain = async (
   ];
 
   const { chainId } = chainInfo;
-  // FIXME updates redundantly, twice per edge
   for (const [counterChainId, connInfo] of Object.entries(connections)) {
     const key = connectionKey(chainId, counterChainId);
     const normalizedConnInfo =
       chainId < counterChainId ? connInfo : reverseConnInfo(connInfo);
+    if (handledConnections.has(key)) {
+      continue;
+    }
 
     promises.push(
       E(connAdmin)
         .update(key, normalizedConnInfo)
         .then(() => log(`registering agoricNames chainConnection.${key}`)),
     );
+
+    handledConnections.add(key);
   }
   // Bundle to pipeline IO
   await Promise.all(promises);
@@ -143,7 +150,8 @@ export const registerChain = async (
  * @param {(...messages: string[]) => void} [log]
  */
 export const registerKnownChains = async (agoricNamesAdmin, log) => {
+  const handledConnections = new Set();
   for await (const [name, info] of Object.entries(knownChains)) {
-    await registerChain(agoricNamesAdmin, name, info, log);
+    await registerChain(agoricNamesAdmin, name, info, log, handledConnections);
   }
 };
