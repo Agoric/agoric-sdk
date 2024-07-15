@@ -56,6 +56,75 @@ export const connectionKey = (chainId1, chainId2) => {
   return [chainId1, chainId2].sort().join(CHAIN_ID_SEPARATOR);
 };
 
+/**
+ * Utility to reverse connection info perspective.
+ *
+ * @param {IBCConnectionInfo} connInfo
+ * @returns {IBCConnectionInfo}
+ */
+export const reverseConnInfo = connInfo => {
+  const { transferChannel } = connInfo;
+  return {
+    id: connInfo.counterparty.connection_id,
+    client_id: connInfo.counterparty.client_id,
+    counterparty: {
+      client_id: connInfo.client_id,
+      connection_id: connInfo.id,
+      prefix: {
+        key_prefix: 'FIXME',
+      },
+    },
+    state: connInfo.state,
+    transferChannel: {
+      ...transferChannel,
+      channelId: transferChannel.counterPartyChannelId,
+      counterPartyChannelId: transferChannel.channelId,
+      portId: transferChannel.counterPartyPortId,
+      counterPartyPortId: transferChannel.portId,
+    },
+  };
+};
+
+/**
+ * Convert the info to an undirected form.
+ *
+ * @param {string} primaryChainId
+ * @param {string} counterChainId
+ * @param {IBCConnectionInfo} directed
+ * @returns {[string, IBCConnectionInfo]}
+ */
+export const normalizeConnectionInfo = (
+  primaryChainId,
+  counterChainId,
+  directed,
+) => {
+  const key = connectionKey(primaryChainId, counterChainId);
+  if (primaryChainId < counterChainId) {
+    return [key, directed];
+  } else {
+    return [key, reverseConnInfo(directed)];
+  }
+};
+
+/**
+ * Provide a view on the connection from the primary chain's perspective.
+ *
+ * @param {string} primaryChainId
+ * @param {string} counterChainId
+ * @param {IBCConnectionInfo} normalized
+ */
+const denormalizeConnectionInfo = (
+  primaryChainId,
+  counterChainId,
+  normalized,
+) => {
+  if (primaryChainId < counterChainId) {
+    return normalized;
+  } else {
+    return reverseConnInfo(normalized);
+  }
+};
+
 const ChainIdArgShape = M.or(
   M.string(),
   M.splitRecord(
@@ -146,7 +215,8 @@ export const makeChainHub = (agoricNames, vowTools) => {
         if (!connectionInfos.has(key)) {
           connectionInfos.init(key, connectionInfo);
         }
-        return connectionInfo;
+
+        return denormalizeConnectionInfo(chainId1, chainId2, connectionInfo);
       } catch (e) {
         console.error('lookupConnectionInfo', chainId1, chainId2, 'error', e);
         throw makeError(`connection not found: ${chainId1}<->${chainId2}`);
@@ -161,26 +231,26 @@ export const makeChainHub = (agoricNames, vowTools) => {
     /**
      * @template {string} C1
      * @template {string} C2
-     * @param {C1} chainName1
-     * @param {C2} chainName2
+     * @param {C1} primaryName
+     * @param {C2} counterName
      * @returns {Promise<
      *   [ActualChainInfo<C1>, ActualChainInfo<C2>, IBCConnectionInfo]
      * >}
      */
     // eslint-disable-next-line no-restricted-syntax -- TODO more exact rules for vow best practices
-    async (chainName1, chainName2) => {
-      const [chain1, chain2] = await vowTools.asPromise(
+    async (primaryName, counterName) => {
+      const [primary, counter] = await vowTools.asPromise(
         vowTools.allVows([
-          chainHub.getChainInfo(chainName1),
-          chainHub.getChainInfo(chainName2),
+          chainHub.getChainInfo(primaryName),
+          chainHub.getChainInfo(counterName),
         ]),
       );
       const connectionInfo = await vowTools.asPromise(
-        chainHub.getConnectionInfo(chain2, chain1),
+        chainHub.getConnectionInfo(primary, counter),
       );
       return /** @type {[ActualChainInfo<C1>, ActualChainInfo<C2>, IBCConnectionInfo]} */ ([
-        chain1,
-        chain2,
+        primary,
+        counter,
         connectionInfo,
       ]);
     },
@@ -218,43 +288,53 @@ export const makeChainHub = (agoricNames, vowTools) => {
       return lookupChainInfo(chainName);
     },
     /**
-     * @param {string} chainId1
-     * @param {string} chainId2
-     * @param {IBCConnectionInfo} connectionInfo
+     * @param {string} primaryChainId
+     * @param {string} counterpartyChainId
+     * @param {IBCConnectionInfo} connectionInfo from primary to counterparty
      */
-    registerConnection(chainId1, chainId2, connectionInfo) {
-      const key = connectionKey(chainId1, chainId2);
-      connectionInfos.init(key, connectionInfo);
+    registerConnection(primaryChainId, counterpartyChainId, connectionInfo) {
+      const [key, normalized] = normalizeConnectionInfo(
+        primaryChainId,
+        counterpartyChainId,
+        connectionInfo,
+      );
+      connectionInfos.init(key, normalized);
     },
 
     /**
-     * @param {string | { chainId: string }} chain1
-     * @param {string | { chainId: string }} chain2
+     * @param {string | { chainId: string }} primary the primary chain
+     * @param {string | { chainId: string }} counter the counterparty chain
      * @returns {Vow<IBCConnectionInfo>}
      */
-    getConnectionInfo(chain1, chain2) {
-      const chainId1 = typeof chain1 === 'string' ? chain1 : chain1.chainId;
-      const chainId2 = typeof chain2 === 'string' ? chain2 : chain2.chainId;
-      const key = connectionKey(chainId1, chainId2);
+    getConnectionInfo(primary, counter) {
+      const primaryId = typeof primary === 'string' ? primary : primary.chainId;
+      const counterId = typeof counter === 'string' ? counter : counter.chainId;
+      const key = connectionKey(primaryId, counterId);
       if (connectionInfos.has(key)) {
-        return vowTools.asVow(() => connectionInfos.get(key));
+        return vowTools.asVow(() =>
+          denormalizeConnectionInfo(
+            primaryId,
+            counterId,
+            connectionInfos.get(key),
+          ),
+        );
       }
 
-      return lookupConnectionInfo(chainId1, chainId2);
+      return lookupConnectionInfo(primaryId, counterId);
     },
 
     /**
      * @template {string} C1
      * @template {string} C2
-     * @param {C1} chainName1
-     * @param {C2} chainName2
+     * @param {C1} primaryName the primary chain name
+     * @param {C2} counterName the counterparty chain name
      * @returns {Vow<
      *   [ActualChainInfo<C1>, ActualChainInfo<C2>, IBCConnectionInfo]
      * >}
      */
-    getChainsAndConnection(chainName1, chainName2) {
+    getChainsAndConnection(primaryName, counterName) {
       // @ts-expect-error XXX generic parameter propagation
-      return lookupChainsAndConnection(chainName1, chainName2);
+      return lookupChainsAndConnection(primaryName, counterName);
     },
   });
 
