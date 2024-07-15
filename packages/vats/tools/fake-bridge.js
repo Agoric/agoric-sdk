@@ -166,6 +166,7 @@ export const makeFakeLocalchainBridge = (zone, onToBridge = () => {}) => {
   /** @type {Remote<BridgeHandler>} */
   let hndlr;
   let lcaExecuteTxSequence = 0;
+  let accountsCreated = 0;
   return zone.exo('Fake Localchain Bridge Manager', undefined, {
     getBridgeId: () => 'vlocalchain',
     toBridge: async obj => {
@@ -173,8 +174,11 @@ export const makeFakeLocalchainBridge = (zone, onToBridge = () => {}) => {
       const { method, type, ...params } = obj;
       trace('toBridge', type, method, params);
       switch (type) {
-        case 'VLOCALCHAIN_ALLOCATE_ADDRESS':
-          return LOCALCHAIN_DEFAULT_ADDRESS;
+        case 'VLOCALCHAIN_ALLOCATE_ADDRESS': {
+          const address = `${LOCALCHAIN_DEFAULT_ADDRESS}${accountsCreated || ''}`;
+          accountsCreated += 1;
+          return address;
+        }
         case 'VLOCALCHAIN_EXECUTE_TX': {
           lcaExecuteTxSequence += 1;
           return obj.messages.map(message => {
