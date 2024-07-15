@@ -4,7 +4,7 @@ import { M } from '@endo/patterns';
 
 /**
  * @import {TypedPattern} from '@agoric/internal';
- * @import {CosmosChainInfo} from './cosmos-api.js';
+ * @import {ChainInfo, CosmosChainInfo} from './types.js';
  */
 
 /**
@@ -81,9 +81,7 @@ export const IBCConnectionInfoShape = M.splitRecord({
   transferChannel: IBCChannelInfoShape,
 });
 
-/**
- * @type {TypedPattern<CosmosChainInfo>}
- */
+/** @type {TypedPattern<CosmosChainInfo>} */
 export const CosmosChainInfoShape = M.splitRecord(
   {
     chainId: M.string(),
@@ -96,11 +94,13 @@ export const CosmosChainInfoShape = M.splitRecord(
   },
 );
 
-// FIXME more validation
-export const ChainInfoShape = M.any();
+/** @type {TypedPattern<ChainInfo>} */
+export const ChainInfoShape = M.splitRecord({
+  chainId: M.string(),
+});
 export const LocalChainAccountShape = M.remotable('LocalChainAccount');
 export const DenomShape = M.string();
-// FIXME more validation
+// TODO define for #9211
 export const BrandInfoShape = M.any();
 
 export const DenomAmountShape = { denom: DenomShape, value: M.bigint() };
