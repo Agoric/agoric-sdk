@@ -7,7 +7,7 @@ import { prepareSwingsetVowTools } from '@agoric/vow/vat.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { makeChainHub } from '../../src/exos/chain-hub.js';
 import { provideDurableZone } from '../supports.js';
-import { registerChainNamespace } from '../../src/chain-info.js';
+import { registerKnownChains } from '../../src/chain-info.js';
 
 const connection = {
   id: 'connection-1',
@@ -44,7 +44,7 @@ const setup = () => {
 test.serial('getChainInfo', async t => {
   const { chainHub, nameAdmin, vt } = setup();
   // use fetched chain info
-  await registerChainNamespace(nameAdmin);
+  await registerKnownChains(nameAdmin);
 
   const vow = chainHub.getChainInfo('celestia');
   t.like(await vt.asPromise(vow), { chainId: 'celestia' });
@@ -53,7 +53,7 @@ test.serial('getChainInfo', async t => {
 test.serial('concurrency', async t => {
   const { chainHub, nameAdmin, vt } = setup();
   // use fetched chain info
-  await registerChainNamespace(nameAdmin);
+  await registerKnownChains(nameAdmin);
 
   const v1 = chainHub.getChainInfo('celestia');
   const v2 = chainHub.getChainInfo('celestia');

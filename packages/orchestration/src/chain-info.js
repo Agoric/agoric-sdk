@@ -137,10 +137,12 @@ export const registerChain = async (
 };
 
 /**
+ * Register all the chains that are known statically.
+ *
  * @param {ERef<import('@agoric/vats').NameHubKit['nameAdmin']>} agoricNamesAdmin
  * @param {(...messages: string[]) => void} [log]
  */
-export const registerChainNamespace = async (agoricNamesAdmin, log) => {
+export const registerKnownChains = async (agoricNamesAdmin, log) => {
   for await (const [name, info] of Object.entries(knownChains)) {
     await registerChain(agoricNamesAdmin, name, info, log);
   }

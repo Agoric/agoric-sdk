@@ -1,13 +1,13 @@
 import test from 'ava';
 
 import { makeNameHubKit } from '@agoric/vats';
-import { registerChainNamespace } from '../src/chain-info.js';
+import { registerKnownChains } from '../src/chain-info.js';
 
 test('chain-info', async t => {
   const { nameHub: agoricNames, nameAdmin: agoricNamesAdmin } =
     makeNameHubKit();
 
-  await registerChainNamespace(agoricNamesAdmin);
+  await registerKnownChains(agoricNamesAdmin);
   const chainNames = await agoricNames.lookup('chain');
   t.like(await chainNames.lookup('cosmoshub'), {
     chainId: 'cosmoshub-4',
