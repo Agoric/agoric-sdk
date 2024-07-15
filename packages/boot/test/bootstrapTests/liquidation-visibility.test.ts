@@ -1,7 +1,7 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { ExecutionContext, TestFn } from 'ava';
 import { ScheduleNotification } from '@agoric/inter-protocol/src/auction/scheduler.js';
-import { NonNullish } from '@agoric/assert/src/assert.js';
+import { NonNullish } from '@agoric/internal';
 import { TimeMath } from '@agoric/time/src/timeMath.js';
 import { TimestampRecord } from '@agoric/time/src/types';
 import { EconomyBootstrapSpace } from '@agoric/inter-protocol/src/proposals/econ-behaviors.js';

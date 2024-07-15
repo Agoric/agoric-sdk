@@ -1510,14 +1510,13 @@ export const prepareVaultManagerKit = (
   /**
    * @param {Omit<
    *   Parameters<typeof makeVaultManagerKitInternal>[0],
-   *   'metricsStorageNode' | 'liquidationsStorageNode'
+   *   'metricsStorageNode'
    * >} externalParams
    */
   const makeVaultManagerKit = async externalParams => {
     const metricsStorageNode = await E(
       externalParams.storageNode,
     ).makeChildNode('metrics');
-
     return makeVaultManagerKitInternal({
       ...externalParams,
       metricsStorageNode,
