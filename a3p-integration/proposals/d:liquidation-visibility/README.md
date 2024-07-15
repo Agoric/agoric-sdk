@@ -3,11 +3,6 @@ This proposal aims to perform a `core-eval` upgrade to `vaultFactory`. The purpo
 improve the visibility of liquidating vaults. For the full spec please see [this issue](https://github.com/Jorge-Lopes/liquidation-visibility/issues/2)
 and for minor additional specs see [this one](https://github.com/Jorge-Lopes/agoric-sdk/issues/36).
 
-## Work Backlog
-* Main workspace => https://github.com/Jorge-Lopes/agoric-sdk
-* PR => https://github.com/Agoric/agoric-sdk/pull/8994
-* Release => https://github.com/Jorge-Lopes/agoric-sdk/releases/tag/liq-visibility-a3p-v0.2
- 
 ## Test Structure
 We follow the usual `a3p` flow where we first perform our upgrade at `EVAL` phase then run our tests in `TEST`
 phase. Notice that we don't run anything under `USE` phase as we don't want the changes we make to create the 
