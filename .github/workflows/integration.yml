@@ -61,7 +61,7 @@ jobs:
           keep-endo: 'true'
 
       # Select a branch on dapp to test against by adding text to the body of the
-      # pull request. For example: #dapp-encouragement-branch: zoe-release-0.7.0
+      # pull request. For example: #getting-started-branch: zoe-release-0.7.0
       # The default is 'main'
       - name: Get the appropriate dapp branch
         id: get-branch
@@ -78,7 +78,7 @@ jobs:
                 branch = result[1];
               }
             }
-            console.log(branch);
+            console.log('getting-started dapp branch: ' + branch);
             return branch;
 
       - name: Start local NPM registry
@@ -86,6 +86,7 @@ jobs:
         run: |
           set -xe
           git reset --hard HEAD
+          git clean -f
           git config user.email "noreply@agoric.com"
           REGISTRY_PUBLISH_WORKSPACES="$HOME/endo" scripts/registry.sh bg-publish ${{ matrix.cli }}
 
@@ -153,7 +154,7 @@ jobs:
                 branch = result[1];
               }
             }
-            console.log(branch);
+            console.log('loadgen branch: ' + branch);
             return branch;
 
       - name: Check out loadgen
