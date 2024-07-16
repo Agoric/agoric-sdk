@@ -62,6 +62,30 @@ const makeVaultProposal = ({ brand }, opts) => {
 };
 
 /**
+ * @param {string} addr
+ * @param {Promise<
+ *   import('@agoric/smart-wallet/src/smartWallet.js').CurrentWalletRecord
+ * >} currentP
+ * @returns {Promise<string>} offer id in which the vault was made
+ */
+export const lookupOfferIdForEvaluator = async (addr, currentP) => {
+  const { liveOffers } = await currentP;
+
+  for (const [offerId] of liveOffers) {
+    const oid = `${offerId}`;
+    if (oid.startsWith(`claimEval-`) && oid.endsWith(`-${addr}`)) {
+      return oid;
+    }
+  }
+  throw Fail`evaluator offerId for address ${addr} not found`;
+};
+
+const makeEvalProposal = (_args, _opts) => {
+  const proposal = { give: {}, want: {} };
+  return harden(proposal);
+};
+
+/**
  * @param {Pick<
  *   import('@agoric/vats/tools/board-utils.js').AgoricNamesRemotes,
  *   'brand'
@@ -92,6 +116,61 @@ const makeOpenOffer = ({ brand }, opts) => {
         ['getCollateralManager', [collateralBrand]],
         ['makeVaultInvitation'],
       ],
+    },
+    proposal,
+  };
+};
+
+/**
+ * @param {Pick<
+ *   import('@agoric/vats/tools/board-utils.js').AgoricNamesRemotes,
+ *   'brand'
+ * >} agoricNames
+ * @param {{
+ *   offerId: string;
+ *   instance: Instance;
+ * }} opts
+ * @returns {import('@agoric/smart-wallet/src/offers.js').OfferSpec}
+ */
+const makeClaimEvaluatorOffer = (agoricNames, opts) => {
+  const proposal = makeEvalProposal(agoricNames, opts);
+
+  return {
+    id: opts.offerId,
+    invitationSpec: {
+      source: 'purse',
+      instance: opts.instance,
+      description: 'evaluator',
+    },
+    proposal,
+  };
+};
+
+/**
+ * @param {Pick<
+ *   import('@agoric/vats/tools/board-utils.js').AgoricNamesRemotes,
+ *   'brand'
+ * >} agoricNames
+ * @param {{
+ *   offerId: string;
+ *   stringToEval: string;
+ * }} opts
+ * @param {string} previousOffer
+ * @returns {import('@agoric/smart-wallet/src/offers.js').OfferSpec}
+ */
+const makeEvalOffer = (agoricNames, opts, previousOffer) => {
+  // NB: not really a Proposal because the brands are not remotes
+  // Instead they're copyRecord like  "{"boardId":"board0257","iface":"Alleged: IST brand"}" to pass through the boardId
+  // mustMatch(harden(proposal), ProposalShape);
+  const proposal = makeEvalProposal(agoricNames, opts);
+
+  return {
+    id: opts.offerId,
+    invitationSpec: {
+      source: 'continuing',
+      previousOffer,
+      invitationMakerName: 'Eval',
+      invitationArgs: harden([opts.stringToEval]),
     },
     proposal,
   };
@@ -438,6 +517,10 @@ export const Offers = {
   },
   fluxAggregator: {
     PushPrice: makePushPriceOffer,
+  },
+  evaluators: {
+    Claim: makeClaimEvaluatorOffer,
+    Eval: makeEvalOffer,
   },
   psm: {
     // lowercase because it's not an invitation name. Instead it's an abstraction over two invitation makers.

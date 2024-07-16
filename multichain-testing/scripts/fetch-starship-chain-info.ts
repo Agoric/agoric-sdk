@@ -1,6 +1,7 @@
 #!/usr/bin/env tsx
 
 import nodeFetch from 'node-fetch';
+import util from 'node:util';
 import fsp from 'node:fs/promises';
 import prettier from 'prettier';
 
@@ -29,9 +30,12 @@ const ibc: {
   data: IBCInfo[];
 } = await fetch(`${BASE_URL}ibc`).then(r => r.json());
 
+
+
 // UNTIL https://github.com/cosmology-tech/starship/issues/494
 const backmap = {
   agoriclocal: 'agoric',
+  agoricdriver: 'agoricdriver',
   osmosislocal: 'osmosis',
   gaialocal: 'cosmoshub',
 };
@@ -43,6 +47,9 @@ for (const ibcInfo of ibc.data) {
     c.tags.preferred = c.tags.perferred;
   }
 }
+
+// console.log(util.inspect({data: ibc.data}, undefined, Infinity));
+// process.exit(0)
 
 const chainInfo = await convertChainInfo({
   chains,

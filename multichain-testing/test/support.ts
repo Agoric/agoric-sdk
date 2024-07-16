@@ -23,7 +23,12 @@ export const chainConfig: Record<string, { expectedAddressPrefix: string }> = {
   agoric: {
     expectedAddressPrefix: 'agoric',
   },
+  agoricdriver: {
+    expectedAddressPrefix: 'agoric',
+  },
 } as const;
+
+export const chainNames = Object.keys(chainConfig);
 
 const makeKeyring = async (
   e2eTools: Pick<E2ETools, 'addKey' | 'deleteKey'>,
