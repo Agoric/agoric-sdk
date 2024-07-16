@@ -1,7 +1,10 @@
 {
   "name": "liquidation-visibility",
   "agoricProposal": {
-    "type": "/agoric.swingset.CoreEvalProposal"
+    "type": "/agoric.swingset.CoreEvalProposal",
+    "sdk-generate": [
+      "inter-protocol/upgrade-vaults.js"
+    ]
   },
   "type": "module",
   "license": "Apache-2.0",

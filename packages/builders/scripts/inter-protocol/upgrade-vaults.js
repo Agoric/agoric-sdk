@@ -16,10 +16,7 @@ export const vaultsUpgradeProposalBuilder = async ({
       getManifestVaultsUpgrade.name,
       {
         vaultFactoryRef: publishRef(
-          install(
-            '@agoric/inter-protocol/src/vaultFactory/vaultFactory.js',
-            '@agoric/inter-protocol/bundles/bundle-vaultFactory.js',
-          ),
+          install('@agoric/inter-protocol/src/vaultFactory/vaultFactory.js'),
         ),
       },
     ],
@@ -27,14 +24,10 @@ export const vaultsUpgradeProposalBuilder = async ({
 };
 
 export default async (homeP, endowments) => {
-  const { writeCoreProposal } = await makeHelpers(homeP, endowments);
+  const { writeCoreEval } = await makeHelpers(homeP, endowments);
 
-  const tool = await makeInstallCache(homeP, {
-    loadBundle: spec => import(spec),
-  });
-
-  await writeCoreProposal('upgrade-vaults-liq-visibility', opts =>
-    // @ts-expect-error XXX makeInstallCache types
-    vaultsUpgradeProposalBuilder({ ...opts, wrapInstall: tool.wrapInstall }),
+  await writeCoreEval(
+    'upgrade-vaults-liq-visibility',
+    vaultsUpgradeProposalBuilder,
   );
 };
