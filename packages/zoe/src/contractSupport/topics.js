@@ -43,6 +43,12 @@ export const TopicsRecordShape = M.recordOf(M.string(), PublicTopicShape);
  */
 
 /**
+ * @typedef {{
+ *   [topicName: string]: ResolvedPublicTopic<unknown>,
+ * }} ResolvedTopicsRecord
+ */
+
+/**
  * @template T
  * @param {string} description
  * @param {import('./recorder.js').RecorderKit<T> | import('./recorder.js').EventualRecorderKit<T>} recorderKit
