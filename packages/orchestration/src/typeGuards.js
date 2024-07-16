@@ -4,7 +4,8 @@ import { M } from '@endo/patterns';
 
 /**
  * @import {TypedPattern} from '@agoric/internal';
- * @import {ChainInfo, CosmosChainInfo} from './types.js';
+ * @import {ChainAddress, ChainInfo, CosmosChainInfo, DenomAmount} from './types.js';
+ * @import {Delegation} from '@agoric/cosmic-proto/cosmos/staking/v1beta1/staking.js';
  */
 
 /**
@@ -22,6 +23,7 @@ export const OutboundConnectionHandlerI = M.interface(
   },
 );
 
+/** @type {TypedPattern<ChainAddress>} */
 export const ChainAddressShape = {
   chainId: M.string(),
   encoding: M.string(),
@@ -33,12 +35,15 @@ export const Proto3Shape = {
   value: M.string(),
 };
 
+// XXX same as ChainAmountShape and DenomAmount type
 export const CoinShape = { value: M.bigint(), denom: M.string() };
 
 export const ChainAmountShape = harden({ denom: M.string(), value: M.nat() });
 
 export const AmountArgShape = M.or(AmountShape, ChainAmountShape);
 
+// FIXME missing `delegatorAddress` from the type
+/** @type {TypedPattern<Delegation>} */
 export const DelegationShape = harden({
   validatorAddress: M.string(),
   shares: M.string(), // TODO: bigint?
@@ -103,6 +108,7 @@ export const DenomShape = M.string();
 // TODO define for #9211
 export const BrandInfoShape = M.any();
 
+/** @type {TypedPattern<DenomAmount>} */
 export const DenomAmountShape = { denom: DenomShape, value: M.bigint() };
 
 /** @see {Chain} */
