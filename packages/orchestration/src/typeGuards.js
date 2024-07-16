@@ -35,13 +35,6 @@ export const Proto3Shape = {
   value: M.string(),
 };
 
-// XXX same as ChainAmountShape and DenomAmount type
-export const CoinShape = { value: M.bigint(), denom: M.string() };
-
-export const ChainAmountShape = harden({ denom: M.string(), value: M.nat() });
-
-export const AmountArgShape = M.or(AmountShape, ChainAmountShape);
-
 // FIXME missing `delegatorAddress` from the type
 /** @type {TypedPattern<Delegation>} */
 export const DelegationShape = harden({
@@ -110,6 +103,8 @@ export const BrandInfoShape = M.any();
 
 /** @type {TypedPattern<DenomAmount>} */
 export const DenomAmountShape = { denom: DenomShape, value: M.bigint() };
+
+export const AmountArgShape = M.or(AmountShape, DenomAmountShape);
 
 /** @see {Chain} */
 export const ChainFacadeI = M.interface('ChainFacade', {

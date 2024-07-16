@@ -1,7 +1,10 @@
 import { M, mustMatch } from '@endo/patterns';
 
 /**
- * @import {Orchestrator, OrchestrationAccount} from '../types.js';
+ * @import {GuestOf} from '@agoric/async-flow';
+ * @import {VBankAssetDetail} from '@agoric/vats/tools/board-utils.js';
+ * @import {ZoeTools} from '../utils/zoe-tools.js';
+ * @import {Orchestrator, OrchestrationAccount, LocalAccountMethods, OrchestrationAccountI} from '../types.js';
  */
 
 const { entries } = Object;
@@ -13,9 +16,9 @@ export const orchestrationFns = harden({
   /**
    * @param {Orchestrator} orch
    * @param {object} ctx
-   * @param {{ account: OrchestrationAccount<any> }} ctx.contractState
-   * @param {any} ctx.localTransfer
-   * @param {any} ctx.findBrandInVBank
+   * @param {{ account?: OrchestrationAccountI & LocalAccountMethods }} ctx.contractState
+   * @param {GuestOf<ZoeTools['localTransfer']>} ctx.localTransfer
+   * @param {(brand: Brand) => Promise<VBankAssetDetail>} ctx.findBrandInVBank
    * @param {ZCFSeat} seat
    * @param {{ chainName: string; destAddr: string }} offerArgs
    */

@@ -1,7 +1,4 @@
 /** @file Use-object for the owner of a staking account */
-import { Fail } from '@endo/errors';
-import { decodeBase64 } from '@endo/base64';
-import { E } from '@endo/far';
 import { toRequestQueryJson } from '@agoric/cosmic-proto';
 import {
   QueryBalanceRequest,
@@ -22,12 +19,14 @@ import { makeTracer } from '@agoric/internal';
 import { Shape as NetworkShape } from '@agoric/network';
 import { M } from '@agoric/vat-data';
 import { VowShape } from '@agoric/vow';
+import { decodeBase64 } from '@endo/base64';
+import { Fail } from '@endo/errors';
+import { E } from '@endo/far';
 import {
   AmountArgShape,
   ChainAddressShape,
-  ChainAmountShape,
-  CoinShape,
   DelegationShape,
+  DenomAmountShape,
 } from '../typeGuards.js';
 import { maxClockSkew, tryDecodeResponse } from '../utils/cosmos.js';
 import { orchestrationAccountMethods } from '../utils/orchestrationAccount.js';
@@ -78,9 +77,9 @@ export const IcaAccountHolderI = M.interface('IcaAccountHolder', {
     AmountArgShape,
   ).returns(VowShape),
   withdrawReward: M.call(ChainAddressShape).returns(
-    Vow$(M.arrayOf(ChainAmountShape)),
+    Vow$(M.arrayOf(DenomAmountShape)),
   ),
-  withdrawRewards: M.call().returns(Vow$(M.arrayOf(ChainAmountShape))),
+  withdrawRewards: M.call().returns(Vow$(M.arrayOf(DenomAmountShape))),
   undelegate: M.call(M.arrayOf(DelegationShape)).returns(VowShape),
 });
 
@@ -130,7 +129,7 @@ export const prepareCosmosOrchestrationAccountKit = (
       withdrawRewardWatcher: M.interface('withdrawRewardWatcher', {
         onFulfilled: M.call(M.string())
           .optional(M.arrayOf(M.undefined())) // empty context
-          .returns(M.arrayOf(CoinShape)),
+          .returns(M.arrayOf(DenomAmountShape)),
       }),
       holder: IcaAccountHolderI,
       invitationMakers: M.interface('invitationMakers', {

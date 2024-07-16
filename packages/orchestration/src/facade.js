@@ -3,7 +3,7 @@
 import { assertAllDefined } from '@agoric/internal';
 
 /**
- * @import {AsyncFlowTools, GuestInterface, HostArgs} from '@agoric/async-flow';
+ * @import {AsyncFlowTools, GuestInterface, HostArgs, HostOf} from '@agoric/async-flow';
  * @import {Zone} from '@agoric/zone';
  * @import {Vow, VowTools} from '@agoric/vow';
  * @import {TimerService} from '@agoric/time';
@@ -12,6 +12,19 @@ import { assertAllDefined } from '@agoric/internal';
  * @import {Remote} from '@agoric/internal';
  * @import {CosmosInterchainService} from './exos/cosmos-interchain-service.js';
  * @import {Chain, ChainInfo, CosmosChainInfo, IBCConnectionInfo, OrchestrationAccount, Orchestrator} from './types.js';
+ */
+
+/**
+ * For a given guest passed to orchestrate(), return the host-side form.
+ *
+ * @template {(orc: Orchestrator, ctx: any, ...args: any[]) => Promise<any>} GF
+ * @typedef {GF extends (
+ *   orc: Orchestrator,
+ *   ctx: any,
+ *   ...args: infer GA
+ * ) => Promise<infer GR>
+ *   ? (...args: HostArgs<GA>) => Vow<GR>
+ *   : never} HostForGuest
  */
 
 /**
@@ -91,15 +104,27 @@ export const makeOrchestrationFacade = ({
    *
    * NOTE multiple calls to this with the same guestFn name will fail
    *
-   * @param {{ [durableName: string]: (...args: any[]) => any }} guestFns
-   * @param {any} hostCtx
+   * @template HC - host context
+   * @template {{
+   *   [durableName: string]: (
+   *     orc: Orchestrator,
+   *     ctx: GuestInterface<HC>,
+   *     ...args: any[]
+   *   ) => Promise<any>;
+   * }} GFM
+   *   guest fn map
+   * @param {GFM} guestFns
+   * @param {HC} hostCtx
+   * @returns {{ [N in keyof GFM]: HostForGuest<GFM[N]> }}
    */
   const orchestrateAll = (guestFns, hostCtx) =>
-    Object.fromEntries(
-      Object.entries(guestFns).map(([name, guestFn]) => [
-        name,
-        orchestrate(name, hostCtx, guestFn),
-      ]),
+    /** @type {{ [N in keyof GFM]: HostForGuest<GFM[N]> }} */ (
+      Object.fromEntries(
+        Object.entries(guestFns).map(([name, guestFn]) => [
+          name,
+          orchestrate(name, hostCtx, guestFn),
+        ]),
+      )
     );
 
   return harden({
