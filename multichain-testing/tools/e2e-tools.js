@@ -579,7 +579,6 @@ export const makeDoOffer = wallet => {
     // const result = await seat.getOfferResult();
     await seatLike(updates).getPayoutAmounts();
     // return result;
-    return true;
   };
 
   return doOffer;

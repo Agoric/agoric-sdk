@@ -62,10 +62,7 @@ const makeAccountScenario = test.macro({
     t.log(`${chainName} makeAccount offer`);
     const offerId = `${chainName}-makeAccount-${Date.now()}`;
 
-    // FIXME we get payouts but not an offer result; it times out
-    // https://github.com/Agoric/agoric-sdk/issues/9643
-    // chain logs shows an UNPUBLISHED result
-    const _offerResult = await doOffer({
+    await doOffer({
       id: offerId,
       invitationSpec: {
         source: 'agoricContract',
@@ -75,9 +72,6 @@ const makeAccountScenario = test.macro({
       offerArgs: { chainName },
       proposal: {},
     });
-    t.true(_offerResult);
-    // t.is(await _offerResult, 'UNPUBLISHED', 'representation of continuing offer');
-
     // TODO fix above so we don't have to poll for the offer result to be published
     // https://github.com/Agoric/agoric-sdk/issues/9643
     const currentWalletRecord = await retryUntilCondition(
