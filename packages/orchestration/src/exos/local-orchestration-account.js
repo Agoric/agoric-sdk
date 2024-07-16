@@ -8,7 +8,6 @@ import { VowShape } from '@agoric/vow';
 import { E } from '@endo/far';
 import {
   ChainAddressShape,
-  ChainAmountShape,
   DenomAmountShape,
   DenomShape,
   IBCTransferOptionsShape,
@@ -105,7 +104,7 @@ export const prepareLocalOrchestrationAccountKit = (
           .optional({
             destination: ChainAddressShape,
             opts: M.or(M.undefined(), IBCTransferOptionsShape),
-            amount: ChainAmountShape,
+            amount: DenomAmountShape,
           })
           .returns(Vow$(M.record())),
       }),
