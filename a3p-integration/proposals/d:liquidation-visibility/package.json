@@ -23,7 +23,7 @@
   },
   "scripts": {
     "agops": "yarn --cwd /usr/src/agoric-sdk/ --silent agops",
-    "test:eval": "yarn ava test-liquidation-visibility.js",
+    "test:eval": "yarn ava eval-liquidation-visibility.js",
     "test:post-liq": "yarn ava post.liquidation.js",
     "test:post": "yarn ava post.test.js",
     "test:scenario": "yarn ava post.scenario.js"

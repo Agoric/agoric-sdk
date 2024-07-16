@@ -9,7 +9,7 @@ phase. Notice that we don't run anything under `USE` phase as we don't want the 
 appropriate test circumstances to effect future builds.
 
 To execute our core-eval we use;
-* [test-liquidation-visibility.js](./test-liquidation-visibility.js)
+* [eval-liquidation-visibility.js](./eval-liquidation-visibility.js)
 
 Our main challenge in testing the visibility of liquidations is to trigger an actual liquidation in our post
 eval tests. Below files are used to set up that environment;
@@ -51,7 +51,7 @@ sequenceDiagram
     participant web as release
     Note over image,image: vaultFactory: inc 0 code
     Note over testFlow,agd: PHASE: EVAL
-    testFlow ->>+ agd: test-liquidation-visibility.js
+    testFlow ->>+ agd: eval-liquidation-visibility.js
     agd -->>- testFlow: upgrade successful
     Note over agd,agd: vaultFactory: inc 1
     Note over testFlow,agd: PHASE: TEST

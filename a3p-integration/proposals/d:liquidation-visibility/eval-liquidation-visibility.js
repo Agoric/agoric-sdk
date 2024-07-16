@@ -73,7 +73,7 @@ test.serial('fund user1 before the upgrade', async t => {
 });
 
 test.serial('test', async t => {
-  const dir = '/usr/src/proposals/b:liquidation-visibility/assets';
+  const dir = '/usr/src/proposals/d:liquidation-visibility/assets';
   const bundleInfos = await readBundles(dir);
 
   await passCoreEvalProposal(bundleInfos, {
