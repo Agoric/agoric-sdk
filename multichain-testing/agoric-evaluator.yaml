@@ -1,0 +1,113 @@
+chains:
+  - id: agoriclocal
+    name: agoric
+    image: ghcr.io/agoric/agoric-sdk:upgrade-16-dev
+    numValidators: 1
+    env:
+      - name: DEBUG
+        value: SwingSet:vat,SwingSet:ls
+    genesis:
+      app_state:
+        staking:
+          params:
+            unbonding_time: '2m'
+        swingset:
+          params:
+            bootstrap_vat_config: '@agoric/vm-config/decentral-itest-vaults-config.json'
+    scripts:
+      updateConfig:
+        file: scripts/update-config.sh
+    faucet:
+      enabled: false
+    ports:
+      rest: 1317
+      rpc: 26657
+      exposer: 38087
+      grpc: 9090
+    resources:
+      cpu: 1
+      memory: 4Gi
+  - id: agoricdriver
+    name: custom
+    image: ghcr.io/agoric/agoric-sdk:upgrade-16-dev
+    home: /root/.agoric
+    binary: agd
+    prefix: agoric
+    denom: ubld
+    prettyName: Agoric driver
+    coins: 100000000000000ubld,100000000000000uist
+    hdPath: m/44'/564'/0'/0/0
+    coinType: 564
+    repo: https://github.com/Agoric/agoric-sdk
+    assets:
+      - base: ubld
+        description: "The native token of Agoric"
+        name: Agoric
+        display: bld
+        symbol: BLD
+        logo_URIs:
+          png: "https://raw.githubusercontent.com/cosmos/chain-registry/master/agoric/images/bld.png"
+          svg: "https://raw.githubusercontent.com/cosmos/chain-registry/master/agoric/images/bld.svg"
+        denom_units:
+          - denom: ubld
+            exponent: 0
+          - denom: bld
+            exponent: 6
+        coingecko_id: agoric
+        keywords: [ "agoric" ]
+      - base: uist
+        description: "IST is the stable token used by the Agoric chain for execution fees and commerce."
+        name: Inter Stable Token
+        display: ist
+        symbol: IST
+        logo_URIs:
+          png: "https://raw.githubusercontent.com/cosmos/chain-registry/master/agoric/images/ist.png"
+          svg: "https://raw.githubusercontent.com/cosmos/chain-registry/master/agoric/images/ist.svg"
+        denom_units:
+          - denom: uist
+            exponent: 0
+          - denom: ist
+            exponent: 6
+        coingecko_id: inter-stable-token
+        keywords: [ "inter-stable-token" ]
+    numValidators: 1
+    env:
+      - name: DEBUG
+        value: SwingSet:vat,SwingSet:ls
+    genesis:
+      app_state:
+        staking:
+          params:
+            unbonding_time: '2m'
+        swingset:
+          params:
+            bootstrap_vat_config: '@agoric/vm-config/decentral-itest-vaults-config.json'
+    scripts:
+      updateConfig:
+        file: scripts/update-config.sh
+    faucet:
+      enabled: false
+    ports:
+      rest: 2317
+      rpc: 27657
+      exposer: 39087
+      grpc: 10090
+    resources:
+      cpu: 1
+      memory: 4Gi
+
+relayers:
+  - name: agoric-agoric
+    type: hermes
+    replicas: 1
+    chains:
+      - agoriclocal
+      - agoricdriver
+
+explorer:
+  enabled: false
+
+registry:
+  enabled: true
+  ports:
+    rest: 8081

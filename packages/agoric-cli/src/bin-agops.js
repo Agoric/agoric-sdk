@@ -21,6 +21,7 @@ import { makeGovCommand } from './commands/gov.js';
 import { makePsmCommand } from './commands/psm.js';
 import { makeReserveCommand } from './commands/reserve.js';
 import { makeVaultsCommand } from './commands/vaults.js';
+import { makeEvalCommand } from './commands/eval.js';
 import { makePerfCommand } from './commands/perf.js';
 import { makeInterCommand } from './commands/inter.js';
 import { makeAuctionCommand } from './commands/auction.js';
@@ -34,6 +35,7 @@ program.name(progname).version('unversioned');
 
 program.addCommand(makeOracleCommand(logger));
 program.addCommand(makeGovCommand(logger));
+program.addCommand(makeEvalCommand(logger));
 program.addCommand(makePerfCommand(logger));
 program.addCommand(makePsmCommand(logger));
 program.addCommand(makeVaultsCommand(logger));

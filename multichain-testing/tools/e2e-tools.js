@@ -299,7 +299,7 @@ export const provisionSmartWallet = async (
  *   chainId?: string;
  * }} opts
  * @returns {Promise<{
- *   proposal_id: string;
+ *   id: string;
  *   voting_end_time: unknown;
  *   status: string;
  * }>}
@@ -336,6 +336,7 @@ const voteLatestProposalAndWait = async ({
     await blockTool.waitForBlock(1, { step: `voting`, on: lastProposalId })
   ) {
     info = await agd.query(['gov', 'proposal', lastProposalId]);
+    info.id = lastProposalId;
     console.log(
       `Waiting for proposal ${lastProposalId} to pass (status=${info.status})`,
     );
@@ -396,10 +397,13 @@ const runCoreEval = async (
 
   console.log('await voteLatestProposalAndWait', evalPaths);
   const detail = await voteLatestProposalAndWait({ agd, blockTool });
-  log(detail.proposal_id, detail.voting_end_time, detail.status);
+  log(detail.id, detail.voting_end_time, detail.status);
 
   // TODO: how long is long enough? poll?
-  await blockTool.waitForBlock(5, { step: 'run', propsal: detail.proposal_id });
+  await blockTool.waitForBlock(5, {
+    step: 'run',
+    proposal: detail.id,
+  });
 
   assert(detail.status, 'PROPOSAL_STATUS_PASSED');
   return detail;

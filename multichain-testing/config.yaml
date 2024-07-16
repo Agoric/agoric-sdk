@@ -71,7 +71,6 @@ chains:
               allow_messages: ['*']
     faucet:
       enabled: true
-      type: starship
     ports:
       rest: 1314
       rpc: 26654

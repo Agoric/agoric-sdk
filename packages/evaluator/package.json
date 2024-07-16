@@ -1,0 +1,60 @@
+{
+  "name": "@agoric/evaluator",
+  "version": "0.1.0",
+  "description": "Agoric's on-chain evaluator",
+  "type": "module",
+  "main": "./src/index.js",
+  "repository": "https://github.com/Agoric/agoric-sdk",
+  "scripts": {
+    "build": "exit 0",
+    "prepack": "tsc --build tsconfig.build.json",
+    "postpack": "git clean -f '*.d.ts*'",
+    "test": "ava",
+    "test:c8": "c8 $C8_OPTIONS ava",
+    "test:xs": "exit 0",
+    "lint-fix": "yarn lint:eslint --fix",
+    "lint": "run-s --continue-on-error lint:*",
+    "lint:types": "tsc",
+    "lint:eslint": "eslint ."
+  },
+  "keywords": [],
+  "author": "Agoric",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "@agoric/internal": "^0.3.2",
+    "@agoric/vow": "^0.1.0",
+    "@agoric/zoe": "^0.26.2",
+    "@agoric/zone": "^0.2.2",
+    "@endo/far": "^1.1.2",
+    "@endo/patterns": "^1.4.0"
+  },
+  "devDependencies": {
+    "ava": "^5.3.0",
+    "c8": "^9.1.0"
+  },
+  "files": [
+    "CHANGELOG.md",
+    "src/",
+    "scripts/",
+    "tools/"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": "^18.12 || ^20.9"
+  },
+  "ava": {
+    "files": [
+      "test/**/*.test.*"
+    ],
+    "require": [
+      "@endo/init/debug.js"
+    ],
+    "timeout": "20m",
+    "workerThreads": false
+  },
+  "typeCoverage": {
+    "atLeast": 0
+  }
+}
