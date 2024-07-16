@@ -32,7 +32,7 @@ harden(SingleNatAmountRecord);
  * @param {Zone} zone
  * @param {OrchestrationTools} tools
  */
-const contract = async (
+export const contract = async (
   zcf,
   privateArgs,
   zone,
@@ -77,6 +77,7 @@ const contract = async (
 
   return { publicFacet, creatorFacet };
 };
+harden(contract);
 
 export const start = withOrchestration(contract);
 harden(start);
