@@ -5,18 +5,23 @@ import { expectNotType, expectType } from 'tsd';
 import { typedJson } from '@agoric/cosmic-proto';
 import type { MsgDelegateResponse } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/tx.js';
 import type { QueryAllBalancesResponse } from '@agoric/cosmic-proto/cosmos/bank/v1beta1/query.js';
-import type { Vow } from '@agoric/vow';
+import type { Vow, VowTools } from '@agoric/vow';
 import type { GuestAsyncFunc, HostInterface, HostOf } from '@agoric/async-flow';
 import type {
   ChainAddress,
   CosmosValidatorAddress,
   StakingAccountActions,
   OrchestrationAccount,
+  Orchestrator,
 } from '../src/types.js';
 import type { LocalOrchestrationAccountKit } from '../src/exos/local-orchestration-account.js';
 import { prepareCosmosOrchestrationAccount } from '../src/exos/cosmos-orchestration-account.js';
+import type { OrchestrationFacade } from '../src/facade.js';
+import type { ResolvedContinuingOfferResult } from '../src/utils/zoe-tools.js';
 
 const anyVal = null as any;
+
+const vt: VowTools = null as any;
 
 const validatorAddr = {
   chainId: 'agoric3',
@@ -91,7 +96,7 @@ expectNotType<CosmosValidatorAddress>(chainAddr);
   expectNotType<() => Promise<number>>(vowFn);
 }
 
-// PromiseToVow with TransferSteps
+// HostOf with TransferSteps
 {
   type TransferStepsVow = HostOf<OrchestrationAccount<any>['transferSteps']>;
 
@@ -121,4 +126,32 @@ expectNotType<CosmosValidatorAddress>(chainAddr);
     bar: (x: string) => Vow<boolean>;
     bizz: () => Record<string, number>;
   }>(vowObject);
+}
+
+{
+  // orchestrate()
+
+  const facade: OrchestrationFacade = null as any;
+  const echo = <T extends number>(orc: Orchestrator, ctx: undefined, num: T) =>
+    num;
+  // @ts-expect-error requires an async function
+  facade.orchestrate('name', undefined, echo);
+
+  const slowEcho = <T extends number>(
+    orc: Orchestrator,
+    ctx: undefined,
+    num: T,
+  ) => Promise.resolve(num);
+  {
+    const h = facade.orchestrate('name', undefined, slowEcho);
+    expectType<Vow<number>>(h(42));
+    expectType<Vow<42>>(h(42));
+  }
+
+  const makeOfferResult = () =>
+    Promise.resolve({} as ResolvedContinuingOfferResult);
+  {
+    const h = facade.orchestrate('name', undefined, makeOfferResult);
+    expectType<Vow<ResolvedContinuingOfferResult>>(h());
+  }
 }

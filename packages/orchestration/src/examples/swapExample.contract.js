@@ -5,7 +5,6 @@ import { orcUtils } from '../utils/orc.js';
 import { withOrchestration } from '../utils/start-helper.js';
 
 /**
- * @import {GuestInterface, GuestOf} from '@agoric/async-flow';
  * @import {LocalTransfer} from '../utils/zoe-tools.js';
  * @import {Orchestrator, CosmosValidatorAddress} from '../types.js'
  * @import {TimerService} from '@agoric/time';
@@ -102,12 +101,6 @@ const contract = async (zcf, privateArgs, zone, { orchestrate, zoeTools }) => {
   const { brands } = zcf.getTerms();
 
   /** deprecated historical example */
-  /**
-   * @type {OfferHandler<
-   *   unknown,
-   *   { staked: Amount<'nat'>; validator: CosmosValidatorAddress }
-   * >}
-   */
   const swapAndStakeHandler = orchestrate(
     'LSTTia',
     { zcf, localTransfer: zoeTools.localTransfer },

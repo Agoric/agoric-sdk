@@ -61,19 +61,22 @@ const orchestrationAccountScenario = test.macro({
       return t.fail(`Unknown chain: ${chainName}`);
     }
 
-    const { zoe, instance } = t.context;
+    const {
+      bootstrap: { vowTools: vt },
+      zoe,
+      instance,
+    } = t.context;
     const publicFacet = await E(zoe).getPublicFacet(instance);
     const inv = E(publicFacet).makeOrchAccountInvitation();
     const userSeat = E(zoe).offer(inv, {}, undefined, { chainName });
-    // @ts-expect-error TODO: type expected offer result
-    const { holder, invitationMakers, publicSubscribers } =
-      await E(userSeat).getOfferResult();
+    const { invitationMakers, publicSubscribers } = await vt.when(
+      E(userSeat).getOfferResult(),
+    );
 
-    t.regex(getInterfaceOf(holder)!, /Orchestration (.*) holder/);
     t.regex(getInterfaceOf(invitationMakers)!, /invitationMakers/);
 
     const { description, storagePath, subscriber } = publicSubscribers.account;
-    t.regex(description, /Account holder/);
+    t.regex(description!, /Account holder/);
 
     const expectedStoragePath = `mockChainStorageRoot.basic-flows.${config.addressPrefix}`;
     t.is(storagePath, expectedStoragePath);

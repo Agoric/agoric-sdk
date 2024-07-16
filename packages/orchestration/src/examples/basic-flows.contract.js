@@ -9,6 +9,7 @@ import { provideOrchestration } from '../utils/start-helper.js';
 /**
  * @import {Baggage} from '@agoric/vat-data';
  * @import {Orchestrator} from '@agoric/orchestration';
+ * @import {Vow, VowTools} from '@agoric/vow';
  * @import {OrchestrationPowers} from '../utils/start-helper.js';
  */
 
@@ -44,7 +45,6 @@ export const start = async (zcf, privateArgs, baggage) => {
     privateArgs.marshaller,
   );
 
-  /** @type {OfferHandler} */
   const makeOrchAccount = orchestrate(
     'makeOrchAccount',
     undefined,
