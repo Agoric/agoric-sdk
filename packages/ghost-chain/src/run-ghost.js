@@ -564,7 +564,32 @@ function makeRunPolicies() {
 async function run() {
   const args = process.argv.slice(2);
   const [swingstorefn, ...actionArgs] = args;
-  const { kernelStorage, hostStorage } = openSwingStore(swingstorefn);
+
+  let iavlChanges = 0
+  let iavlDeletes = 0;
+  let iavlChangeKey = new Set();
+  let iavlDeleteKey = new Set();
+  function resetIAVLCounters() {
+    iavlChanges = 0;
+    iavlDeletes = 0;
+    iavlChangeKey = new Set();
+    iavlDeleteKey = new Set();
+  }
+  function exportCallback(updates) {
+    iavlChanges += updates.length;
+    for (let [key,value] of updates) {
+      if (value == null) { // undefined or null
+        iavlDeletes += 1;
+        iavlDeleteKey.add(key);
+        iavlChangeKey.delete(key);
+      } else {
+        iavlChangeKey.add(key);
+        iavlDeleteKey.delete(key);
+      }
+    }
+  }
+
+  const { kernelStorage, hostStorage } = openSwingStore(swingstorefn, { exportCallback });
 
   async function doCommit() {
     // I once observed a SQLITE_PROTOCOL (aka "SqliteError#1: locking
@@ -737,10 +762,15 @@ async function run() {
   //slogSender.forceFlush = async () => stream.flush();
   //slogSender.shutdown = async () => stream.close();
 
-  const timedSlogSender = obj => {
+  const timedSlogSender = (obj, start) => {
     const time = microtime.nowDouble();
     const monotime = performance.now() / 1000;
-    return slogSender({...obj, time, monotime});
+    let elapsed;
+    if (start) {
+      elapsed = monotime - start;
+    }
+    slogSender({...obj, time, monotime, elapsed});
+    return monotime;
   }
 
   const runtimeOptions = { slogSender };
@@ -883,11 +913,14 @@ async function run() {
   while (1) {
     run++;
     console.log(`  cleanup run ${run}`);
-    timedSlogSender({ type: 'ghost-cleanup-run-start', run });
+    resetIAVLCounters();
+    const runStart = timedSlogSender({ type: 'ghost-cleanup-run-start', run });
     const { cleanupPolicy } = makeRunPolicies();
     await controller.run(cleanupPolicy);
     const didWork = cleanupPolicy.didAnyWork();
-    timedSlogSender({ type: 'ghost-cleanup-run-finish', run, didWork });
+    const iavl = { changes: iavlChanges, deletes: iavlDeletes };
+    const iavlKeys = { changes: iavlChangeKey.size, deletes: iavlDeleteKey.size };
+    timedSlogSender({ type: 'ghost-cleanup-run-finish', run, didWork, iavl, iavlKeys }, runStart);
     const elapsed = await doCommit();
     slogSender({type: 'commit', elapsed });
     if (!didWork) {
