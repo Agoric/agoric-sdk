@@ -26,7 +26,7 @@ import {
   AmountArgShape,
   ChainAddressShape,
   ChainAmountShape,
-  CoinShape,
+  DenomAmountShape,
   DelegationShape,
 } from '../typeGuards.js';
 import { maxClockSkew, tryDecodeResponse } from '../utils/cosmos.js';
@@ -130,7 +130,7 @@ export const prepareCosmosOrchestrationAccountKit = (
       withdrawRewardWatcher: M.interface('withdrawRewardWatcher', {
         onFulfilled: M.call(M.string())
           .optional(M.arrayOf(M.undefined())) // empty context
-          .returns(M.arrayOf(CoinShape)),
+          .returns(M.arrayOf(DenomAmountShape)),
       }),
       holder: IcaAccountHolderI,
       invitationMakers: M.interface('invitationMakers', {

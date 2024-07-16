@@ -35,9 +35,6 @@ export const Proto3Shape = {
   value: M.string(),
 };
 
-// XXX same as ChainAmountShape and DenomAmount type
-export const CoinShape = { value: M.bigint(), denom: M.string() };
-
 export const ChainAmountShape = harden({ denom: M.string(), value: M.nat() });
 
 export const AmountArgShape = M.or(AmountShape, ChainAmountShape);
