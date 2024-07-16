@@ -8,6 +8,7 @@ import { TimeMath } from '@agoric/time';
 
 export const SECONDS_PER_MINUTE = 60n;
 export const MILLISECONDS_PER_SECOND = 1000n;
+export const NANOSECONDS_PER_MILLISECOND = 1_000_000n;
 export const NANOSECONDS_PER_SECOND = 1_000_000_000n;
 
 /**
