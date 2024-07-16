@@ -16,7 +16,7 @@ export const orchestrationFns = harden({
   /**
    * @param {Orchestrator} orch
    * @param {object} ctx
-   * @param {{ account: OrchestrationAccountI & LocalAccountMethods }} ctx.contractState
+   * @param {{ account?: OrchestrationAccountI & LocalAccountMethods }} ctx.contractState
    * @param {GuestOf<ZoeTools['localTransfer']>} ctx.localTransfer
    * @param {(brand: Brand) => Promise<VBankAssetDetail>} ctx.findBrandInVBank
    * @param {ZCFSeat} seat
