@@ -13,8 +13,9 @@ import { orchestrationFns } from './sendAnywhereFlows.js';
  * @import {TimerService} from '@agoric/time';
  * @import {LocalChain} from '@agoric/vats/src/localchain.js';
  * @import {NameHub} from '@agoric/vats';
- * @import {Remote} from '@agoric/vow';
+ * @import {Remote, Vow} from '@agoric/vow';
  * @import {Zone} from '@agoric/zone';
+ * @import {VBankAssetDetail} from '@agoric/vats/tools/board-utils.js';
  * @import {CosmosChainInfo, IBCConnectionInfo} from '../cosmos-api';
  * @import {CosmosInterchainService} from '../exos/cosmos-interchain-service.js';
  * @import {OrchestrationTools} from '../utils/start-helper.js';
@@ -60,6 +61,7 @@ const contract = async (
   );
 
   // TODO should be a provided helper
+  /** @type {(brand: Brand) => Vow<VBankAssetDetail>} */
   const findBrandInVBank = vowTools.retriable(
     zone,
     'findBrandInVBank',

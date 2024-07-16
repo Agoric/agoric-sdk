@@ -77,3 +77,4 @@ export const makeZoeTools = (zone, { zcf, vowTools }) => {
     localTransfer,
   });
 };
+/** @typedef {ReturnType<typeof makeZoeTools>} ZoeTools */
