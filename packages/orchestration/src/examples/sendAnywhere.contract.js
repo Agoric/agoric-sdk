@@ -5,7 +5,7 @@ import { Fail } from '@endo/errors';
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
 import { withOrchestration } from '../utils/start-helper.js';
-import { orchestrationFns } from './sendAnywhere.flows.js';
+import * as flows from './sendAnywhere.flows.js';
 import { prepareChainHubAdmin } from '../exos/chain-hub-admin.js';
 
 /**
@@ -76,7 +76,7 @@ const contract = async (
   );
 
   // orchestrate uses the names on orchestrationFns to do a "prepare" of the associated behavior
-  const orchFns = orchestrateAll(orchestrationFns, {
+  const orchFns = orchestrateAll(flows, {
     zcf,
     contractState,
     localTransfer: zoeTools.localTransfer,
