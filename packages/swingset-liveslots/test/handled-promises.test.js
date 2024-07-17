@@ -103,27 +103,33 @@ const buildPromiseWatcherRootObject = (vatPowers, _vatParameters, baggage) => {
     },
   );
 
-  const localPromises = new Map();
+  const knownPromises = new Map();
 
-  return Far('root', {
-    exportPromise: () => [Promise.resolve()],
+  const root = Far('root', {
+    getPromise: name => {
+      const promise = knownPromises.get(name);
+      promise || Fail`promise doesn't exists: ${name}`;
+      return { promise };
+    },
     createLocalPromise: (name, fulfillment, rejection) => {
-      !localPromises.has(name) || Fail`local promise already exists: ${name}`;
+      !knownPromises.has(name) || Fail`promise already exists: ${name}`;
       const { promise, resolve, reject } = makePromiseKit();
       if (fulfillment !== undefined) {
         resolve(fulfillment);
       } else if (rejection !== undefined) {
         reject(rejection);
       }
-      localPromises.set(name, promise);
+      knownPromises.set(name, promise);
       return `created local promise: ${name}`;
     },
-    watchLocalPromise: name => {
-      localPromises.has(name) || Fail`local promise not found: ${name}`;
-      watchPromise(localPromises.get(name), watcher, name);
-      return `watched local promise: ${name}`;
+    watchPromise: name => {
+      knownPromises.has(name) || Fail`promise not found: ${name}`;
+      watchPromise(knownPromises.get(name), watcher, name);
+      return `watched promise: ${name}`;
     },
   });
+
+  return root;
 };
 const kvStoreDataV1 = Object.entries({
   baggageID: 'o+d6/1',
@@ -176,23 +182,41 @@ const kvStoreDataV1VpidsToKeep = ['p-8'];
 const kvStoreDataV1KeysToKeep = ['vc.4.sp-8'];
 
 test('past-incarnation watched promises', async t => {
+  const S = 'settlement';
+  // Anchor promise counters upon which the other assertions depend.
+  const firstPImport = 9;
+  // cf. src/liveslots.js:initialIDCounters
+  const firstPExport = 5;
+
   const kvStore = new Map();
-  let { v, dispatch, dispatchMessage } = await setupTestLiveslots(
+  let {
+    v,
+    dispatch,
+    dispatchMessage: rawDispatch,
+  } = await setupTestLiveslots(
     t,
     buildPromiseWatcherRootObject,
     'durable-promise-watcher',
-    { kvStore },
+    { kvStore, nextPromiseImportNumber: firstPImport },
   );
   let vatLogs = v.log;
 
-  // Anchor promise counters upon which the other assertions depend.
-  const firstPImport = 1;
-  // cf. src/liveslots.js:initialIDCounters
-  const firstPExport = 5;
   let lastPImport = firstPImport - 1;
   let lastPExport = firstPExport - 1;
+  let dispatches = 0;
+  const exportedPromises = new Set();
+  const v1OrphanedPExports = [];
   const nextPImport = () => (lastPImport += 1);
   const nextPExport = () => (lastPExport += 1);
+  /** @type {typeof rawDispatch} */
+  const dispatchMessage = (...args) => {
+    dispatches += 1;
+    return rawDispatch(...args);
+  };
+  const recordExportedPromise = name => {
+    exportedPromises.add(name);
+    return name;
+  };
   // Ignore vatstore syscalls.
   const getDispatchLogs = () =>
     vatLogs.splice(0).filter(m => !m.type.startsWith('vatstore'));
@@ -208,14 +232,18 @@ test('past-incarnation watched promises', async t => {
     type: 'subscribe',
     target: vpid,
   });
-  vatLogs.length = 0;
-  await dispatchMessage('exportPromise');
-  t.deepEqual(getDispatchLogs(), [
-    fulfillmentMessage(`p-${nextPImport()}`, [kslot(`p+${nextPExport()}`)]),
-    fulfillmentMessage(`p+${lastPExport}`, undefined),
-  ]);
 
-  const S = 'settlement';
+  await dispatchMessage('createLocalPromise', 'exported', S);
+  t.deepEqual(getDispatchLogs(), [
+    fulfillmentMessage(`p-${nextPImport()}`, 'created local promise: exported'),
+  ]);
+  await dispatchMessage('getPromise', recordExportedPromise('exported'));
+  t.deepEqual(getDispatchLogs(), [
+    fulfillmentMessage(`p-${nextPImport()}`, {
+      promise: kslot(`p+${nextPExport()}`),
+    }),
+    fulfillmentMessage(`p+${lastPExport}`, S),
+  ]);
   await dispatchMessage('createLocalPromise', 'orphaned');
   t.deepEqual(getDispatchLogs(), [
     fulfillmentMessage(`p-${nextPImport()}`, 'created local promise: orphaned'),
@@ -233,46 +261,52 @@ test('past-incarnation watched promises', async t => {
   ]);
   t.is(
     lastPImport - firstPImport + 1,
-    4,
-    'imported 4 promises (1 per dispatch)',
+    dispatches,
+    `imported ${dispatches} promises (1 per dispatch)`,
   );
-  t.is(lastPExport - firstPExport + 1, 1, 'exported 1 promise: first');
+  t.is(
+    lastPExport - firstPExport + 1,
+    exportedPromises.size,
+    `exported ${exportedPromises.size} promises: ${[...exportedPromises].join(', ')}`,
+  );
 
-  await dispatchMessage('watchLocalPromise', 'orphaned');
+  await dispatchMessage('watchPromise', recordExportedPromise('orphaned'));
+  v1OrphanedPExports.push(nextPExport());
   t.deepEqual(getDispatchLogs(), [
-    subscribeMessage(`p+${nextPExport()}`),
-    fulfillmentMessage(`p-${nextPImport()}`, 'watched local promise: orphaned'),
+    subscribeMessage(`p+${lastPExport}`),
+    fulfillmentMessage(`p-${nextPImport()}`, 'watched promise: orphaned'),
   ]);
-  await dispatchMessage('watchLocalPromise', 'fulfilled');
+  await dispatchMessage('watchPromise', recordExportedPromise('fulfilled'));
   t.deepEqual(getDispatchLogs(), [
     subscribeMessage(`p+${nextPExport()}`),
-    fulfillmentMessage(
-      `p-${nextPImport()}`,
-      'watched local promise: fulfilled',
-    ),
+    fulfillmentMessage(`p-${nextPImport()}`, 'watched promise: fulfilled'),
     fulfillmentMessage(`p+${lastPExport}`, S),
   ]);
-  await dispatchMessage('watchLocalPromise', 'rejected');
+  await dispatchMessage('watchPromise', recordExportedPromise('rejected'));
   t.deepEqual(getDispatchLogs(), [
     subscribeMessage(`p+${nextPExport()}`),
-    fulfillmentMessage(`p-${nextPImport()}`, 'watched local promise: rejected'),
+    fulfillmentMessage(`p-${nextPImport()}`, 'watched promise: rejected'),
     rejectionMessage(`p+${lastPExport}`, S),
   ]);
   t.is(
     lastPImport - firstPImport + 1,
-    7,
-    'imported 7 promises (1 per dispatch)',
+    dispatches,
+    `imported ${dispatches} promises (1 per dispatch)`,
   );
   t.is(
     lastPExport - firstPExport + 1,
-    4,
-    'exported 4 promises: first, orphaned, fulfilled, rejected',
+    exportedPromises.size,
+    `exported ${exportedPromises.size} promises: ${[...exportedPromises].join(', ')}`,
   );
 
   // Simulate upgrade by starting from the non-empty kvStore.
   // t.log(Object.fromEntries([...kvStore.entries()].sort(compareEntriesByKey)));
   const clonedStore = new Map(kvStore);
-  ({ v, dispatch, dispatchMessage } = await setupTestLiveslots(
+  ({
+    v,
+    dispatch,
+    dispatchMessage: rawDispatch,
+  } = await setupTestLiveslots(
     t,
     buildPromiseWatcherRootObject,
     'durable-promise-watcher-v2',
@@ -285,16 +319,22 @@ test('past-incarnation watched promises', async t => {
     entry[1].includes('orphaned'),
   );
   t.true(expectedDeletions.length >= 1);
-  await dispatch(
-    makeReject(`p+${firstPExport + 1}`, kser('tomorrow never came')),
-  );
+  for (const orphanedPExport of v1OrphanedPExports) {
+    await dispatch(
+      makeReject(`p+${orphanedPExport}`, kser('tomorrow never came')),
+    );
+  }
   for (const [key, value] of expectedDeletions) {
     t.false(clonedStore.has(key), `entry should be removed: ${key}: ${value}`);
   }
 
   // Verify that the data is still in loadable condition.
   const finalClonedStore = new Map(clonedStore);
-  ({ v, dispatch, dispatchMessage } = await setupTestLiveslots(
+  ({
+    v,
+    dispatch,
+    dispatchMessage: rawDispatch,
+  } = await setupTestLiveslots(
     t,
     buildPromiseWatcherRootObject,
     'durable-promise-watcher-final',
@@ -303,11 +343,11 @@ test('past-incarnation watched promises', async t => {
   vatLogs = v.log;
   vatLogs.length = 0;
   await dispatchMessage('createLocalPromise', 'final', S);
-  await dispatchMessage('watchLocalPromise', 'final');
+  await dispatchMessage('watchPromise', 'final');
   t.deepEqual(getDispatchLogs(), [
     fulfillmentMessage(`p-${nextPImport()}`, 'created local promise: final'),
     subscribeMessage(`p+${nextPExport()}`),
-    fulfillmentMessage(`p-${nextPImport()}`, 'watched local promise: final'),
+    fulfillmentMessage(`p-${nextPImport()}`, 'watched promise: final'),
     fulfillmentMessage(`p+${lastPExport}`, S),
   ]);
 });
