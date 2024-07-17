@@ -1,4 +1,16 @@
 /* eslint-env node */
+
+const orchestrationFlowRestrictions = [
+  {
+    selector: "Identifier[name='heapVowE']",
+    message: 'Eventual send is not yet supported within an orchestration flow',
+  },
+  {
+    selector: "Identifier[name='E']",
+    message: 'Eventual send is not yet supported within an orchestration flow',
+  },
+];
+
 module.exports = {
   extends: [
     'airbnb-base',
@@ -93,6 +105,13 @@ module.exports = {
         // Handled better by tsc
         'import/no-unresolved': 'off',
         'no-unused-vars': 'off',
+      },
+    },
+    {
+      // Orchestration flows
+      files: ['**/*.flows.js'],
+      rules: {
+        'no-restricted-syntax': ['error', ...orchestrationFlowRestrictions],
       },
     },
   ],
