@@ -49,7 +49,7 @@
     "clean": "yarn lerna run --no-bail clean",
     "check-dependencies": "node ./scripts/check-mismatched-dependencies.cjs",
     "docs": "typedoc --tsconfig tsconfig.build.json",
-    "docs:markdown-for-agoric-documentation-repo": "typedoc --plugin typedoc-plugin-markdown --tsconfig tsconfig.build.json --logLevel Verbose",
+    "docs:markdown-for-agoric-documentation-repo": "typedoc --showConfig; typedoc --plugin typedoc-plugin-markdown --tsconfig tsconfig.build.json --logLevel Verbose",
     "lerna": "lerna",
     "link-cli": "yarn run create-agoric-cli",
     "create-agoric-cli": "node ./scripts/create-agoric-cli.cjs",
