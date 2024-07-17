@@ -8,6 +8,7 @@ import { TargetAppI, AppTransformerI } from './bridge-target.js';
 
 /**
  * @import {TargetApp, TargetHost} from './bridge-target.js'
+ * @import {VTransferIBCEvent} from './types.js';
  */
 
 /**
@@ -49,6 +50,7 @@ const prepareTransferInterceptor = (zone, vowTools) => {
     }),
     {
       public: {
+        /** @param {VTransferIBCEvent} obj */
         async receiveUpcall(obj) {
           const { isActiveTap, tap } = this.state;
 

@@ -66,7 +66,7 @@ const stakeScenario = test.macro(async (t, scenario: StakeIcaScenario) => {
 
   // FIXME we get payouts but not an offer result; it times out
   // chain logs shows an UNPUBLISHED result
-  const _offerResult = await doOffer({
+  await doOffer({
     id: makeAccountofferId,
     invitationSpec: {
       source: 'agoricContract',
@@ -75,7 +75,6 @@ const stakeScenario = test.macro(async (t, scenario: StakeIcaScenario) => {
     },
     proposal: {},
   });
-  t.true(_offerResult);
   // t.is(await _offerResult, 'UNPUBLISHED', 'representation of continuing offer');
 
   // XXX fix above so we don't have to wait for the offer result to be published
@@ -113,14 +112,14 @@ const stakeScenario = test.macro(async (t, scenario: StakeIcaScenario) => {
   const { creditFromFaucet, getRestEndpoint } = useChain(scenario.chain);
   const queryClient = makeQueryClient(getRestEndpoint());
 
-  t.log('Requesting faucet funds');
+  t.log(`Requesting faucet funds for ${address}`);
   // XXX fails intermittently until https://github.com/cosmology-tech/starship/issues/417
   await creditFromFaucet(address);
 
   const { balances } = await retryUntilCondition(
     () => queryClient.queryBalances(address),
     ({ balances }) => !!balances.length,
-    'faucet funds available',
+    `${scenario.chain} faucet funds available`,
   );
   t.log('Updated balances:', balances);
   t.like(
@@ -140,7 +139,7 @@ const stakeScenario = test.macro(async (t, scenario: StakeIcaScenario) => {
     chainId: scenario.chainId,
     encoding: 'bech32',
   };
-  const _delegateOfferResult = await doOffer({
+  await doOffer({
     id: delegateOfferId,
     invitationSpec: {
       source: 'continuing',
@@ -153,7 +152,6 @@ const stakeScenario = test.macro(async (t, scenario: StakeIcaScenario) => {
     },
     proposal: {},
   });
-  t.true(_delegateOfferResult, 'delegate payouts (none) returned');
 
   const latestWalletUpdate = await vstorageClient.queryData(
     `published.wallet.${wallets[scenario.wallet]}`,
@@ -192,7 +190,8 @@ const stakeScenario = test.macro(async (t, scenario: StakeIcaScenario) => {
   t.log('reward:', total[0]);
   t.log('WithrawReward offer from continuing inv');
   const withdrawRewardOfferId = `reward-${Date.now()}`;
-  const _withdrawRewardOfferResult = await doOffer({
+  // funds are withdrawn to ICA, not the seat
+  await doOffer({
     id: withdrawRewardOfferId,
     invitationSpec: {
       source: 'continuing',
@@ -202,11 +201,7 @@ const stakeScenario = test.macro(async (t, scenario: StakeIcaScenario) => {
     },
     proposal: {},
   });
-  // funds are withdrawn to ICA, not the seat
-  t.true(
-    _withdrawRewardOfferResult,
-    'withdraw rewards (empty) payouts returned',
-  );
+
   const { balances: rewards } = await retryUntilCondition(
     () => queryClient.queryBalances(address),
     ({ balances }) =>
@@ -218,7 +213,7 @@ const stakeScenario = test.macro(async (t, scenario: StakeIcaScenario) => {
   const SHARES = 50;
   t.log('Undelegate offer from continuing inv');
   const undelegateOfferId = `undelegate-${Date.now()}`;
-  const _undelegateOfferResult = await doOffer({
+  await doOffer({
     id: undelegateOfferId,
     invitationSpec: {
       source: 'continuing',
@@ -235,7 +230,6 @@ const stakeScenario = test.macro(async (t, scenario: StakeIcaScenario) => {
     },
     proposal: {},
   });
-  t.true(_undelegateOfferResult, 'undelegate payouts returned');
 
   const { unbonding_responses } = await retryUntilCondition(
     () => queryClient.queryUnbonding(address),

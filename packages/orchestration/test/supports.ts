@@ -88,6 +88,7 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
     interceptorFactory,
   );
   finisher.useRegistry(bridgeTargetKit.targetRegistry);
+  await E(transferBridge).initHandler(bridgeTargetKit.bridgeHandler);
 
   const localBrigeMessages = [] as any[];
   const localchainBridge = makeFakeLocalchainBridge(rootZone, obj =>
@@ -136,11 +137,14 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
       rootZone: rootZone.subZone('contract'),
       storage,
       vowTools,
-      ibcBridge,
     },
     brands: {
       bld: bldSansMint,
       ist: istSansMint,
+    },
+    mocks: {
+      ibcBridge,
+      transferBridge,
     },
     commonPrivateArgs: {
       agoricNames,
@@ -159,6 +163,7 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
     utils: {
       pourPayment,
       inspectLocalBridge: () => harden([...localBrigeMessages]),
+      inspectDibcBridge: () => E(ibcBridge).inspectDibcBridge(),
     },
   };
 };

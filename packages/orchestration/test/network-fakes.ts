@@ -118,6 +118,10 @@ export const ibcBridgeMocks: {
   },
 };
 
+type BridgeEvents = Array<
+  IBCEvent<'channelOpenAck'> | IBCEvent<'acknowledgementPacket'>
+>;
+
 /**
  * Make a fake IBC Bridge, extended from the dibc ScopedBridgeManager.
  *
@@ -131,6 +135,7 @@ export const makeFakeIBCBridge = (
   ScopedBridgeManagerMethods<'dibc'> & {
     setMockAck: (mockAckMap: Record<string, string>) => void;
     setAddressPrefix: (addressPrefix: string) => void;
+    inspectDibcBridge: () => BridgeEvents;
   }
 > => {
   let bridgeHandler: any;
@@ -155,27 +160,30 @@ export const makeFakeIBCBridge = (
    * @type {Record<string, string>}
    */
   let mockAckMap = defaultMockAckMap;
+  let bridgeEvents: BridgeEvents = [];
 
   return zone.exo('Fake IBC Bridge Manager', undefined, {
     getBridgeId: () => BridgeId.DIBC,
     toBridge: async obj => {
       if (obj.type === 'IBC_METHOD') {
         switch (obj.method) {
-          case 'startChannelOpenInit':
-            bridgeHandler?.fromBridge(
-              ibcBridgeMocks.channelOpenAck(obj, {
-                bech32Prefix,
-                sequence: channelCount,
-              }),
-            );
+          case 'startChannelOpenInit': {
+            const ackEvent = ibcBridgeMocks.channelOpenAck(obj, {
+              bech32Prefix,
+              sequence: channelCount,
+            });
+            bridgeHandler?.fromBridge(ackEvent);
+            bridgeEvents = bridgeEvents.concat(ackEvent);
             channelCount += 1;
             return undefined;
+          }
           case 'sendPacket': {
             const ackEvent = ibcBridgeMocks.acknowledgementPacket(obj, {
               sequence: ibcSequenceNonce,
               acknowledgement:
                 mockAckMap?.[obj.packet.data] || errorAcknowledgments.error5,
             });
+            bridgeEvents = bridgeEvents.concat(ackEvent);
             ibcSequenceNonce += 1;
             bridgeHandler?.fromBridge(ackEvent);
             return ackEvent.packet;
@@ -214,6 +222,12 @@ export const makeFakeIBCBridge = (
      */
     setAddressPrefix: (newPrefix: typeof bech32Prefix) => {
       bech32Prefix = newPrefix;
+    },
+    /**
+     * for debugging and testing
+     */
+    inspectDibcBridge() {
+      return bridgeEvents;
     },
   });
 };

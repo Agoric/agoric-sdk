@@ -15,6 +15,10 @@ import type { Brand, Purse, Payment, Amount } from '@agoric/ertp/src/types.js';
 import type { Port } from '@agoric/network';
 import type { IBCChannelID, IBCConnectionID } from '@agoric/vats';
 import type {
+  TargetApp,
+  TargetRegistration,
+} from '@agoric/vats/src/bridge-target.js';
+import type {
   LocalIbcAddress,
   RemoteIbcAddress,
 } from '@agoric/vats/tools/ibc-utils.js';
@@ -208,6 +212,17 @@ export type LocalAccountMethods = {
   deposit: (payment: Payment<'nat'>) => Promise<void>;
   /** withdraw a Payment from the account */
   withdraw: (amount: Amount<'nat'>) => Promise<Payment<'nat'>>;
+  /**
+   * Register a handler that receives an event each time ICS-20 transfers are
+   * sent or received by the underlying account. Each account may be associated
+   * with at most one handler at a given time.
+   * Does not grant the handler the ability to intercept a transfer. For a
+   * blocking handler, aka 'IBC Hooks', leverage `registerActiveTap` from
+   * `transferMiddleware` directly.
+   *
+   * @param tap
+   */
+  monitorTransfers: (tap: TargetApp) => Promise<TargetRegistration>;
 };
 
 export type IBCMsgTransferOptions = {

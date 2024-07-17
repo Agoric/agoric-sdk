@@ -14,7 +14,7 @@ const retryUntilCondition = async <T>(
   retryIntervalMs: number,
   log: Log,
 ): Promise<T> => {
-  console.log({ maxRetries, retryIntervalMs });
+  console.log({ maxRetries, retryIntervalMs, message });
   let retries = 0;
 
   while (retries < maxRetries) {
@@ -32,7 +32,9 @@ const retryUntilCondition = async <T>(
     }
 
     retries++;
-    log(`Retry ${retries}/${maxRetries} - Waiting for ${retryIntervalMs}ms...`);
+    console.log(
+      `Retry ${retries}/${maxRetries} - Waiting for ${retryIntervalMs}ms for ${message}...`,
+    );
     await sleep(retryIntervalMs, log);
   }
 
