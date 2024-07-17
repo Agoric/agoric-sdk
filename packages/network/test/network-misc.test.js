@@ -82,11 +82,28 @@ test('verify port allocation', async t => {
 
   const ibcPort = await when(portAllocator.allocateCustomIBCPort());
   t.is(ibcPort.getLocalAddress(), '/ibc-port/port-1');
+  const ibcPort2 = await when(portAllocator.allocateCustomIBCPort());
+  t.not(
+    ibcPort.getLocalAddress(),
+    ibcPort2.getLocalAddress(),
+    'unique ports must not collide',
+  );
+  t.is(ibcPort2.getLocalAddress(), '/ibc-port/port-2');
 
   const namedIbcPort = await when(
     portAllocator.allocateCustomIBCPort('test-1'),
   );
   t.is(namedIbcPort.getLocalAddress(), '/ibc-port/custom-test-1');
+
+  const ibcDuplicatePort = await when(
+    portAllocator.allocateCustomIBCPort('port-1'),
+  );
+  t.not(
+    ibcPort.getLocalAddress(),
+    ibcDuplicatePort.getLocalAddress(),
+    'named ports should not collide with unique ports',
+  );
+  t.is(ibcDuplicatePort.getLocalAddress(), '/ibc-port/custom-port-1');
 
   const icaControllerPort1 = await when(
     portAllocator.allocateICAControllerPort(),
@@ -99,12 +116,21 @@ test('verify port allocation', async t => {
   t.is(icaControllerPort2.getLocalAddress(), '/ibc-port/icacontroller-2');
 
   const localPort = await when(portAllocator.allocateCustomLocalPort());
-  t.is(localPort.getLocalAddress(), '/local/port-5');
+  t.is(localPort.getLocalAddress(), '/local/port-7');
 
   const namedLocalPort = await when(
     portAllocator.allocateCustomLocalPort('local-1'),
   );
   t.is(namedLocalPort.getLocalAddress(), '/local/custom-local-1');
+  const namedDuplicatePort = await when(
+    portAllocator.allocateCustomLocalPort('port-7'),
+  );
+  t.not(
+    namedLocalPort.getLocalAddress(),
+    namedDuplicatePort.getLocalAddress(),
+    'named ports should not collide with unique ports',
+  );
+  t.is(namedDuplicatePort.getLocalAddress(), '/local/custom-port-7');
 
   await t.throwsAsync(when(portAllocator.allocateCustomIBCPort('/test-1')), {
     message: 'Invalid IBC port name: /test-1',
