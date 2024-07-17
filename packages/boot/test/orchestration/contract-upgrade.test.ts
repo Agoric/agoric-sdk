@@ -51,12 +51,9 @@ test('resume', async t => {
   // TODO verify in vstorage that the offer hangs
 
   t.log('upgrade sendAnywhere with fix');
-  await t.throwsAsync(
-    evalProposal(
-      buildProposal(
-        '@agoric/builders/scripts/testing/fix-buggy-sendAnywhere.js',
-      ),
-    ),
+
+  await evalProposal(
+    buildProposal('@agoric/builders/scripts/testing/fix-buggy-sendAnywhere.js'),
   );
   // FIXME the upgrade to fix is failing on:
   /*
