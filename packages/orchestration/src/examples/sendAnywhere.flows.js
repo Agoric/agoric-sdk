@@ -4,7 +4,7 @@ import { M, mustMatch } from '@endo/patterns';
  * @import {GuestOf} from '@agoric/async-flow';
  * @import {VBankAssetDetail} from '@agoric/vats/tools/board-utils.js';
  * @import {ZoeTools} from '../utils/zoe-tools.js';
- * @import {Orchestrator, OrchestrationAccount, LocalAccountMethods, OrchestrationAccountI} from '../types.js';
+ * @import {Orchestrator, LocalAccountMethods, OrchestrationAccountI, OrchestrationFlow} from '../types.js';
  */
 
 const { entries } = Object;
@@ -13,6 +13,7 @@ const { entries } = Object;
 // the second argument is all the endowments provided
 
 /**
+ * @satisfies {OrchestrationFlow}
  * @param {Orchestrator} orch
  * @param {object} ctx
  * @param {{ account?: OrchestrationAccountI & LocalAccountMethods }} ctx.contractState

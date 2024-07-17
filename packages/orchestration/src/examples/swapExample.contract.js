@@ -6,7 +6,7 @@ import { withOrchestration } from '../utils/start-helper.js';
 
 /**
  * @import {LocalTransfer} from '../utils/zoe-tools.js';
- * @import {Orchestrator, CosmosValidatorAddress} from '../types.js'
+ * @import {Orchestrator, CosmosValidatorAddress, OrchestrationFlow} from '../types.js'
  * @import {TimerService} from '@agoric/time';
  * @import {LocalChain} from '@agoric/vats/src/localchain.js';
  * @import {Remote} from '@agoric/internal';
@@ -17,6 +17,7 @@ import { withOrchestration } from '../utils/start-helper.js';
  */
 
 /**
+ * @satisfies {OrchestrationFlow}
  * @param {Orchestrator} orch
  * @param {object} ctx
  * @param {LocalTransfer} ctx.localTransfer

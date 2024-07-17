@@ -2,7 +2,7 @@ import { M } from '@endo/patterns';
 import { withOrchestration } from '../utils/start-helper.js';
 
 /**
- * @import {Orchestrator, IcaAccount, CosmosValidatorAddress} from '../types.js'
+ * @import {Orchestrator, OrchestrationFlow} from '../types.js'
  * @import {TimerService} from '@agoric/time';
  * @import {LocalChain} from '@agoric/vats/src/localchain.js';
  * @import {NameHub} from '@agoric/vats';
@@ -13,6 +13,7 @@ import { withOrchestration } from '../utils/start-helper.js';
  */
 
 /**
+ * @satisfies {OrchestrationFlow}
  * @param {Orchestrator} orch
  * @param {object} ctx
  * @param {ZCF} ctx.zcf
