@@ -11,13 +11,13 @@ import { assertAllDefined } from '@agoric/internal';
  * @import {HostOrchestrator} from './exos/orchestrator.js';
  * @import {Remote} from '@agoric/internal';
  * @import {CosmosInterchainService} from './exos/cosmos-interchain-service.js';
- * @import {Chain, ChainInfo, CosmosChainInfo, IBCConnectionInfo, OrchestrationAccount, Orchestrator} from './types.js';
+ * @import {Chain, ChainInfo, CosmosChainInfo, IBCConnectionInfo, OrchestrationAccount, OrchestrationFlow, Orchestrator} from './types.js';
  */
 
 /**
  * For a given guest passed to orchestrate(), return the host-side form.
  *
- * @template {(orc: Orchestrator, ctx: any, ...args: any[]) => Promise<any>} GF
+ * @template {OrchestrationFlow} GF
  * @typedef {GF extends (
  *   orc: Orchestrator,
  *   ctx: any,
@@ -66,18 +66,13 @@ export const makeOrchestrationFacade = ({
   const { prepareEndowment, asyncFlow, adminAsyncFlow } = asyncFlowTools;
 
   /**
-   * @template GR - return type
    * @template HC - host context
-   * @template {any[]} GA - guest args
+   * @template {OrchestrationFlow<GuestInterface<HC>>} GF guest fn
    * @param {string} durableName - the orchestration flow identity in the zone
    *   (to resume across upgrades)
    * @param {HC} hostCtx - values to pass through the async flow membrane
-   * @param {(
-   *   guestOrc: Orchestrator,
-   *   guestCtx: GuestInterface<HC>,
-   *   ...args: GA
-   * ) => Promise<GR>} guestFn
-   * @returns {(...args: HostArgs<GA>) => Vow<GR>}
+   * @param {GF} guestFn
+   * @returns {HostForGuest<GF>}
    */
   const orchestrate = (durableName, hostCtx, guestFn) => {
     const subZone = zone.subZone(durableName);
@@ -92,7 +87,7 @@ export const makeOrchestrationFacade = ({
     const hostFn = asyncFlow(subZone, 'asyncFlow', guestFn);
 
     // cast because return could be arbitrary subtype
-    const orcFn = /** @type {(...args: HostArgs<GA>) => Vow<GR>} */ (
+    const orcFn = /** @type {HostForGuest<GF>} */ (
       (...args) => hostFn(wrappedOrc, wrappedCtx, ...args)
     );
 
@@ -106,11 +101,7 @@ export const makeOrchestrationFacade = ({
    *
    * @template HC - host context
    * @template {{
-   *   [durableName: string]: (
-   *     orc: Orchestrator,
-   *     ctx: GuestInterface<HC>,
-   *     ...args: any[]
-   *   ) => Promise<any>;
+   *   [durableName: string]: OrchestrationFlow<GuestInterface<HC>>;
    * }} GFM
    *   guest fn map
    * @param {GFM} guestFns

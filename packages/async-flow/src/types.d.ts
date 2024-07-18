@@ -31,7 +31,9 @@ export type GuestAsyncFunc = (
   ...activationArgs: Guest[]
 ) => Guest<Promise<any>>;
 
-export type HostAsyncFuncWrapper = (...activationArgs: Host[]) => HostVow;
+export type HostAsyncFuncWrapper = (
+  ...activationArgs: Host<any>[]
+) => HostVow<any>;
 
 /**
  * The function from the host as it will be available in the guest.

@@ -17,7 +17,7 @@ import { preparePortfolioHolder } from '../exos/portfolio-holder-kit.js';
  * @import {Remote} from '@agoric/vow';
  * @import {Zone} from '@agoric/zone';
  * @import {GuestInterface} from '@agoric/async-flow';
- * @import {CosmosValidatorAddress, Orchestrator, CosmosInterchainService, Denom, OrchestrationAccount, StakingAccountActions} from '@agoric/orchestration';
+ * @import {CosmosValidatorAddress, Orchestrator, CosmosInterchainService, Denom, OrchestrationAccount, StakingAccountActions, OrchestrationFlow} from '@agoric/orchestration';
  * @import {MakeStakingTap} from './auto-stake-it-tap-kit.js';
  * @import {MakePortfolioHolder} from '../exos/portfolio-holder-kit.js';
  * @import {ChainHub} from '../exos/chain-hub.js';
@@ -35,6 +35,7 @@ import { preparePortfolioHolder } from '../exos/portfolio-holder-kit.js';
  */
 
 /**
+ * @satisfies {OrchestrationFlow}
  * @param {Orchestrator} orch
  * @param {{
  *   makeStakingTap: MakeStakingTap;

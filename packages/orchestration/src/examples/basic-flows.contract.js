@@ -9,7 +9,7 @@ import { preparePortfolioHolder } from '../exos/portfolio-holder-kit.js';
 
 /**
  * @import {Zone} from '@agoric/zone';
- * @import {OrchestrationAccount, Orchestrator} from '@agoric/orchestration';
+ * @import {OrchestrationAccount, OrchestrationFlow, Orchestrator} from '@agoric/orchestration';
  * @import {ResolvedPublicTopic} from '@agoric/zoe/src/contractSupport/topics.js';
  * @import {OrchestrationPowers} from '../utils/start-helper.js';
  * @import {MakePortfolioHolder} from '../exos/portfolio-holder-kit.js';
@@ -20,6 +20,7 @@ import { preparePortfolioHolder } from '../exos/portfolio-holder-kit.js';
  * Create an account on a Cosmos chain and return a continuing offer with
  * invitations makers for Delegate, WithdrawRewards, Transfer, etc.
  *
+ * @satisfies {OrchestrationFlow}
  * @param {Orchestrator} orch
  * @param {undefined} _ctx
  * @param {ZCFSeat} seat
@@ -39,6 +40,7 @@ const makeOrchAccountHandler = async (orch, _ctx, seat, { chainName }) => {
  * Calls to the underlying invitationMakers are proxied through the
  * `MakeInvitation` invitation maker.
  *
+ * @satisfies {OrchestrationFlow}
  * @param {Orchestrator} orch
  * @param {MakePortfolioHolder} makePortfolioHolder
  * @param {ZCFSeat} seat
