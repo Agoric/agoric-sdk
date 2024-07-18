@@ -117,6 +117,11 @@ const buildPromiseWatcherRootObject = (vatPowers, _vatParameters, baggage) => {
       promise || Fail`promise doesn't exists: ${name}`;
       return { promise };
     },
+    importPromise: (name, promise) => {
+      !knownPromises.has(name) || Fail`promise already exists: ${name}`;
+      knownPromises.set(name, promise);
+      return `imported promise: ${name}`;
+    },
     createLocalPromise: (name, fulfillment, rejection) => {
       !knownPromises.has(name) || Fail`promise already exists: ${name}`;
       const { promise, resolve, reject } = makePromiseKit();
@@ -253,6 +258,12 @@ test('past-incarnation watched promises', async t => {
     }),
     fulfillmentMessage(`p+${lastPExport}`, S),
   ]);
+  const importedP = firstPImport - 1;
+  await dispatchMessage('importPromise', 'imported', kslot(`p-${importedP}`));
+  t.deepEqual(getDispatchLogs(), [
+    subscribeMessage(`p-${importedP}`),
+    fulfillmentMessage(`p-${nextPImport()}`, 'imported promise: imported'),
+  ]);
   await dispatchMessage('createLocalPromise', 'orphaned');
   t.deepEqual(getDispatchLogs(), [
     fulfillmentMessage(`p-${nextPImport()}`, 'created local promise: orphaned'),
@@ -296,6 +307,11 @@ test('past-incarnation watched promises', async t => {
     subscribeMessage(`p+${nextPExport()}`),
     fulfillmentMessage(`p-${nextPImport()}`, 'watched promise: rejected'),
     rejectionMessage(`p+${lastPExport}`, S),
+  ]);
+  await dispatchMessage('watchPromise', 'imported');
+  t.deepEqual(getDispatchLogs(), [
+    // no subscribe, we already did at import
+    fulfillmentMessage(`p-${nextPImport()}`, 'watched promise: imported'),
   ]);
   await dispatchMessage('getWatchResolution', 'fulfilled');
   t.deepEqual(getDispatchLogs(), [
@@ -358,6 +374,15 @@ test('past-incarnation watched promises', async t => {
   for (const [key, value] of expectedDeletions) {
     t.false(clonedStore.has(key), `entry should be removed: ${key}: ${value}`);
   }
+  // Simulate resolution of imported promise watched in previous incarnation
+  await dispatch(makeResolve(`p-${importedP}`, kser(undefined)));
+  await dispatchMessage('getWatchResolution', 'imported');
+  t.deepEqual(getDispatchLogs(), [
+    fulfillmentMessage(`p-${nextPImport()}`, {
+      status: 'fulfilled',
+      value: undefined,
+    }),
+  ]);
 
   // Verify that the data is still in loadable condition.
   const finalClonedStore = new Map(clonedStore);
