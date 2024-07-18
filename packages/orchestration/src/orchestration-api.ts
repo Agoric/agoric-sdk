@@ -9,6 +9,7 @@ import type { CurrentWalletRecord } from '@agoric/smart-wallet/src/smartWallet.j
 import type { Timestamp } from '@agoric/time';
 import type { LocalChainAccount } from '@agoric/vats/src/localchain.js';
 import type { ResolvedPublicTopic } from '@agoric/zoe/src/contractSupport/topics.js';
+import type { Passable } from '@endo/marshal';
 import type {
   ChainInfo,
   CosmosChainAccountMethods,
@@ -190,6 +191,10 @@ export interface OrchestrationAccountI {
    * in the {@link CurrentWalletRecord} in vstorage.
    */
   getPublicTopics: () => Promise<Record<string, ResolvedPublicTopic<unknown>>>;
+}
+
+export interface OrchestrationFlow<CT = unknown> {
+  (orc: Orchestrator, ctx: CT, ...args: Passable[]): Promise<unknown>;
 }
 
 /**

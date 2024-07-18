@@ -144,7 +144,10 @@ expectNotType<CosmosValidatorAddress>(chainAddr);
   ) => Promise.resolve(num);
   {
     const h = facade.orchestrate('name', undefined, slowEcho);
+    // TODO keep the return type as Vow<T>
+    expectType<(num: number) => Vow<number>>(h);
     expectType<Vow<number>>(h(42));
+    // @ts-expect-error literal not carried, widened to number
     expectType<Vow<42>>(h(42));
   }
 
