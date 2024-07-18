@@ -115,12 +115,15 @@ export const prepareLocalChainAccountKit = (zone, { watch }) =>
           const purse = E(bank).getPurse(brand);
           return E(purse).getCurrentAmount();
         },
+
+        // TODO The payment parameter type below should be Payment<'nat'>.
+        // https://github.com/Agoric/agoric-sdk/issues/9828
         /**
          * Deposit a payment into the bank purse that matches the alleged brand.
          * This is safe, since even if the payment lies about its brand, ERTP
          * will reject spoofed payment objects when depositing into a purse.
          *
-         * @param {Payment<'nat'>} payment
+         * @param {ERef<Payment<'nat'>>} payment
          * @param {Pattern} [optAmountShape] throws if the Amount of the Payment
          *   does not match the provided Pattern
          * @returns {PromiseVow<Amount<'nat'>>}
