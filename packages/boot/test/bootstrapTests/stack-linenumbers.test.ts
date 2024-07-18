@@ -36,7 +36,7 @@ boot/test/bootstrapTests/stack-linenumbers.test.ts:40:32
 
 */
 
-test('foo', t => {
+test('for manual validation of error stack line number transparency', t => {
   t.log('look at linenumbers', Error('what me worry'));
   t.pass();
 });
