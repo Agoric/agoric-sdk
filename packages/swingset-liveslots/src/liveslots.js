@@ -752,32 +752,43 @@ function build(
       if (facet !== undefined) {
         result = vrm.getFacet(id, val, facet);
       }
-    } else {
+    } else if (type === 'object') {
+      // Note: an abandonned (e.g. by an upgrade) exported ephemeral or virtual
+      // object would appear as an import if re-introduced. In the future we
+      // may need to change that if we want to keep recognizing such references
+      // In that case we'd need to create an imported presence for these
+      // unknown vrefs allocated by the vat.
+      // See https://github.com/Agoric/agoric-sdk/issues/9746
       !allocatedByVat || Fail`I don't remember allocating ${slot}`;
-      if (type === 'object') {
-        // this is a new import value
-        val = makeImportedPresence(slot, iface);
-      } else if (type === 'promise') {
-        const pRec = makePipelinablePromise(slot);
-        importedVPIDs.set(slot, pRec);
-        val = pRec.promise;
-        // ideally we'd wait until .then is called on p before subscribing,
-        // but the current Promise API doesn't give us a way to discover
-        // this, so we must subscribe right away. If we were using Vows or
-        // some other then-able, we could just hook then() to notify us.
-        if (importedPromises) {
-          // leave the subscribe() up to dispatch.notify()
-          importedPromises.add(slot);
-        } else {
-          // probably in dispatch.deliver(), so subscribe now
-          syscall.subscribe(slot);
-        }
-      } else if (type === 'device') {
-        val = makeDeviceNode(slot, iface);
-        importedDevices.add(val);
+      // this is a new import value
+      val = makeImportedPresence(slot, iface);
+    } else if (type === 'promise') {
+      // We unconditionally create a promise record, even if the promise looks
+      // like it was allocated by us. This can happen when re-importing a
+      // promise created by the previous incarnation. We may or may not have
+      // been the decider of the promise. If we were, the kernel will be
+      // rejecting the promise on our behalf. We may have previously been
+      // subscribed to that promise, but subscription is idempotent.
+      const pRec = makePipelinablePromise(slot);
+      importedVPIDs.set(slot, pRec);
+      val = pRec.promise;
+      // ideally we'd wait until .then is called on p before subscribing,
+      // but the current Promise API doesn't give us a way to discover
+      // this, so we must subscribe right away. If we were using Vows or
+      // some other then-able, we could just hook then() to notify us.
+      if (importedPromises) {
+        // leave the subscribe() up to dispatch.notify()
+        importedPromises.add(slot);
       } else {
-        Fail`unrecognized slot type '${type}'`;
+        // probably in dispatch.deliver(), so subscribe now
+        syscall.subscribe(slot);
       }
+    } else if (type === 'device') {
+      !allocatedByVat || Fail`unexpected device ${slot} allocated by vat`;
+      val = makeDeviceNode(slot, iface);
+      importedDevices.add(val);
+    } else {
+      Fail`unrecognized slot type '${type}'`;
     }
     registerValue(baseRef, val, facet !== undefined);
     if (!result) {
