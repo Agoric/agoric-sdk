@@ -25,7 +25,7 @@
     "eslint-config.*"
   ],
   "peerDependencies": {
-    "@endo/eslint-plugin": "^2.1.3",
+    "@endo/eslint-plugin": "https://gitpkg.now.sh/endojs/endo/packages/eslint-plugin?dde94f22b831eec0a200197552bb287ddda5cf3f",
     "@jessie.js/eslint-plugin": "^0.4.1",
     "typescript-eslint": "^7.13.1",
     "eslint": "^8.57.0",
