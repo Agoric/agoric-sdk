@@ -112,6 +112,7 @@ module.exports = {
       files: ['**/*.flows.js'],
       rules: {
         'no-restricted-syntax': ['error', ...orchestrationFlowRestrictions],
+        '@endo/harden-exports': 'error',
       },
     },
   ],
