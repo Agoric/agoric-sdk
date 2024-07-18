@@ -207,7 +207,16 @@ test('past-incarnation watched promises', async t => {
   // cf. src/liveslots.js:initialIDCounters
   const firstPExport = 5;
 
-  const v1StartOperations = [];
+  const startImportedP = firstPImport - 2;
+
+  const v1StartOperations = [
+    ['createLocalPromise', 'start orphaned'],
+    ['watchPromise', 'start orphaned'],
+    ['createLocalPromise', 'start fulfilled', S],
+    ['watchPromise', 'start fulfilled'],
+    ['importPromise', 'start imported', kslot(`p-${startImportedP}`)],
+    ['watchPromise', 'start imported'],
+  ];
   const kvStore = new Map();
   let {
     v,
@@ -257,6 +266,17 @@ test('past-incarnation watched promises', async t => {
     target: vpid,
   });
 
+  // startVat logs
+  v1OrphanedPExports.push(nextPExport());
+  recordExportedPromise('start orphaned');
+  v1OrphanedPExports.push(nextPExport());
+  recordExportedPromise('start fulfilled');
+  t.deepEqual(getDispatchLogs(), [
+    subscribeMessage(`p-${startImportedP}`),
+    subscribeMessage(`p+${lastPExport - 1}`),
+    subscribeMessage(`p+${lastPExport}`),
+    fulfillmentMessage(`p+${lastPExport}`, S),
+  ]);
   await dispatchMessage('createLocalPromise', 'exported', S);
   t.deepEqual(getDispatchLogs(), [
     fulfillmentMessage(`p-${nextPImport()}`, 'created local promise: exported'),
@@ -277,6 +297,22 @@ test('past-incarnation watched promises', async t => {
   await dispatchMessage('createLocalPromise', 'orphaned');
   t.deepEqual(getDispatchLogs(), [
     fulfillmentMessage(`p-${nextPImport()}`, 'created local promise: orphaned'),
+  ]);
+  await dispatchMessage('createLocalPromise', 'orphaned exported');
+  await dispatchMessage(
+    'getPromise',
+    recordExportedPromise('orphaned exported'),
+  );
+  const orphanedExportedP = nextPExport();
+  v1OrphanedPExports.push(orphanedExportedP);
+  t.deepEqual(getDispatchLogs(), [
+    fulfillmentMessage(
+      `p-${nextPImport()}`,
+      'created local promise: orphaned exported',
+    ),
+    fulfillmentMessage(`p-${nextPImport()}`, {
+      promise: kslot(`p+${orphanedExportedP}`),
+    }),
   ]);
   await dispatchMessage('createLocalPromise', 'fulfilled', S);
   t.deepEqual(getDispatchLogs(), [
@@ -337,6 +373,13 @@ test('past-incarnation watched promises', async t => {
       reason: S,
     }),
   ]);
+  await dispatchMessage('getWatchResolution', 'start fulfilled');
+  t.deepEqual(getDispatchLogs(), [
+    fulfillmentMessage(`p-${nextPImport()}`, {
+      status: 'fulfilled',
+      value: S,
+    }),
+  ]);
 
   t.is(
     lastPImport - firstPImport + 1,
@@ -352,7 +395,13 @@ test('past-incarnation watched promises', async t => {
   // Simulate upgrade by starting from the non-empty kvStore.
   // t.log(Object.fromEntries([...kvStore.entries()].sort(compareEntriesByKey)));
   const clonedStore = new Map(kvStore);
-  const v2StartOperations = [];
+  const startImported2P = firstPImport - 3;
+  const v2StartOperations = [
+    ['importPromise', 'start imported 2', kslot(`p-${startImported2P}`)], // import of new promise
+    ['importPromise', 'imported', kslot(`p-${importedP}`)], // import previously imported and watched promise
+    ['importPromise', 'orphaned exported', kslot(`p+${orphanedExportedP}`)], // import previously exported but unwatched promise
+    ['watchPromise', 'orphaned exported'],
+  ];
   ({
     v,
     dispatch,
@@ -369,6 +418,12 @@ test('past-incarnation watched promises', async t => {
   ));
   vatLogs = v.log;
 
+  // startVat logs
+  t.deepEqual(getDispatchLogs(), [
+    subscribeMessage(`p-${startImported2P}`),
+    subscribeMessage(`p-${importedP}`),
+    subscribeMessage(`p+${orphanedExportedP}`),
+  ]);
   // Simulate kernel rejection of promises orphaned by termination/upgrade of their decider vat.
   const expectedDeletions = [...clonedStore.entries()].filter(entry =>
     entry[1].includes('orphaned'),
@@ -386,12 +441,57 @@ test('past-incarnation watched promises', async t => {
       reason: 'tomorrow never came',
     }),
   ]);
+  await dispatchMessage('getWatchResolution', 'start orphaned');
+  t.deepEqual(getDispatchLogs(), [
+    fulfillmentMessage(`p-${nextPImport()}`, {
+      status: 'rejected',
+      reason: 'tomorrow never came',
+    }),
+  ]);
+  await dispatchMessage('getWatchResolution', 'orphaned exported');
+  t.deepEqual(getDispatchLogs(), [
+    fulfillmentMessage(`p-${nextPImport()}`, {
+      status: 'rejected',
+      reason: 'tomorrow never came',
+    }),
+  ]);
   for (const [key, value] of expectedDeletions) {
     t.false(clonedStore.has(key), `entry should be removed: ${key}: ${value}`);
   }
-  // Simulate resolution of imported promise watched in previous incarnation
+  // Simulate resolution of imported promises watched in previous incarnation
   await dispatch(makeResolve(`p-${importedP}`, kser(undefined)));
   await dispatchMessage('getWatchResolution', 'imported');
+  t.deepEqual(getDispatchLogs(), [
+    fulfillmentMessage(`p-${nextPImport()}`, {
+      status: 'fulfilled',
+      value: undefined,
+    }),
+  ]);
+  await dispatch(makeResolve(`p-${startImportedP}`, kser(undefined)));
+  await dispatchMessage('getWatchResolution', 'start imported');
+  t.deepEqual(getDispatchLogs(), [
+    fulfillmentMessage(`p-${nextPImport()}`, {
+      status: 'fulfilled',
+      value: undefined,
+    }),
+  ]);
+  await dispatch(makeResolve(`p-${startImported2P}`, kser(undefined)));
+  await dispatchMessage('getWatchResolution', 'start imported 2');
+  t.deepEqual(getDispatchLogs(), [
+    fulfillmentMessage(`p-${nextPImport()}`, undefined),
+  ]);
+  // simulate resolution of imported promise watched after resolution
+  await dispatchMessage('watchPromise', 'start imported 2');
+  t.deepEqual(getDispatchLogs(), [
+    // Promise was previously resolved, so it is re-exported
+    subscribeMessage(`p+${nextPExport()}`),
+    fulfillmentMessage(
+      `p-${nextPImport()}`,
+      'watched promise: start imported 2',
+    ),
+    fulfillmentMessage(`p+${lastPExport}`, undefined),
+  ]);
+  await dispatchMessage('getWatchResolution', 'start imported 2');
   t.deepEqual(getDispatchLogs(), [
     fulfillmentMessage(`p-${nextPImport()}`, {
       status: 'fulfilled',
