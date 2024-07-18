@@ -136,8 +136,21 @@ export { bootPlugin } from ${JSON.stringify(absPath)};
       // Use Node.js ESM support if package.json of template says "type":
       // "module".
       const read = async location => fs.readFile(url.fileURLToPath(location));
+      /**
+       * @param {string} location
+       */
+      const maybeRead = location =>
+        read(location).catch(error => {
+          if (
+            error.message.startsWith('ENOENT: ') ||
+            error.message.startsWith('EISDIR: ')
+          ) {
+            return undefined;
+          }
+          throw error;
+        });
       const { packageDescriptorText } = await readContainingPackageDescriptor(
-        read,
+        maybeRead,
         url.pathToFileURL(moduleFile).href,
       ).catch(cause => {
         throw Error(
