@@ -46,6 +46,9 @@ export const stringify = (x, pretty = false) =>
 export const mergePermits = m => {
   const isObj = o => o !== null && typeof o === 'object';
   const merge = (left, right) => {
+    if (left === true || right === true) {
+      return true;
+    }
     if (left === undefined) {
       return right;
     }
