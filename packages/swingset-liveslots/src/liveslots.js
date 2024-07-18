@@ -801,7 +801,25 @@ function build(
     meterControl.assertNotMetered();
     const { type } = parseVatSlot(slot);
     type === 'promise' || Fail`revivePromise called on non-promise ${slot}`;
-    !getValForSlot(slot) || Fail`revivePromise called on pre-existing ${slot}`;
+    const val = getValForSlot(slot);
+    if (val) {
+      // revivePromise is only called by loadWatchedPromiseTable, which runs
+      // after buildRootObject(), which is given the deserialized vatParameters.
+      // The only way revivePromise() might encounter a pre-existing vpid is if
+      // these vatParameters include a promise that the previous incarnation
+      // watched, but that `buildRootObject` in the new incarnation didn't
+      // explicitly watch again. This can be either a previously imported
+      // promise, or a promise the previous incarnation exported, regardless of
+      // who the decider now is.
+      //
+      // In that case convertSlotToVal() has already deserialized the vpid, but
+      // since `buildRootObject` didn't explicitely call watchPromise on it, no
+      // registration exists so loadWatchedPromiseTable attempts to revive the
+      // promise.
+      return val;
+    }
+    // NOTE: it is important that this code not do anything *more*
+    // than what convertSlotToVal(vpid) would do
     const pRec = makePipelinablePromise(slot);
     importedVPIDs.set(slot, pRec);
     const p = pRec.promise;
