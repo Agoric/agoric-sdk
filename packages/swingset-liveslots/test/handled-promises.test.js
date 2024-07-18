@@ -93,13 +93,19 @@ const buildPromiseWatcherRootObject = (vatPowers, _vatParameters, baggage) => {
     onFulfilled: M.call(M.any(), M.string()).returns(),
     onRejected: M.call(M.any(), M.string()).returns(),
   });
+  const watchResolutions = new Map();
   const watcher = prepareExo(
     baggage,
+    // No longer ignoring, but the name is set in stone in `kvStoreDataV1`
     'DurablePromiseIgnorer',
     PromiseWatcherI,
     {
-      onFulfilled(_value, _name) {},
-      onRejected(_reason, _name) {},
+      onFulfilled(value, name) {
+        watchResolutions.set(name, { status: 'fulfilled', value });
+      },
+      onRejected(reason, name) {
+        watchResolutions.set(name, { status: 'rejected', reason });
+      },
     },
   );
 
@@ -126,6 +132,9 @@ const buildPromiseWatcherRootObject = (vatPowers, _vatParameters, baggage) => {
       knownPromises.has(name) || Fail`promise not found: ${name}`;
       watchPromise(knownPromises.get(name), watcher, name);
       return `watched promise: ${name}`;
+    },
+    getWatchResolution: name => {
+      return watchResolutions.get(name);
     },
   });
 
@@ -288,6 +297,21 @@ test('past-incarnation watched promises', async t => {
     fulfillmentMessage(`p-${nextPImport()}`, 'watched promise: rejected'),
     rejectionMessage(`p+${lastPExport}`, S),
   ]);
+  await dispatchMessage('getWatchResolution', 'fulfilled');
+  t.deepEqual(getDispatchLogs(), [
+    fulfillmentMessage(`p-${nextPImport()}`, {
+      status: 'fulfilled',
+      value: S,
+    }),
+  ]);
+  await dispatchMessage('getWatchResolution', 'rejected');
+  t.deepEqual(getDispatchLogs(), [
+    fulfillmentMessage(`p-${nextPImport()}`, {
+      status: 'rejected',
+      reason: S,
+    }),
+  ]);
+
   t.is(
     lastPImport - firstPImport + 1,
     dispatches,
@@ -324,6 +348,13 @@ test('past-incarnation watched promises', async t => {
       makeReject(`p+${orphanedPExport}`, kser('tomorrow never came')),
     );
   }
+  await dispatchMessage('getWatchResolution', 'orphaned');
+  t.deepEqual(getDispatchLogs(), [
+    fulfillmentMessage(`p-${nextPImport()}`, {
+      status: 'rejected',
+      reason: 'tomorrow never came',
+    }),
+  ]);
   for (const [key, value] of expectedDeletions) {
     t.false(clonedStore.has(key), `entry should be removed: ${key}: ${value}`);
   }
@@ -344,11 +375,16 @@ test('past-incarnation watched promises', async t => {
   vatLogs.length = 0;
   await dispatchMessage('createLocalPromise', 'final', S);
   await dispatchMessage('watchPromise', 'final');
+  await dispatchMessage('getWatchResolution', 'final');
   t.deepEqual(getDispatchLogs(), [
     fulfillmentMessage(`p-${nextPImport()}`, 'created local promise: final'),
     subscribeMessage(`p+${nextPExport()}`),
     fulfillmentMessage(`p-${nextPImport()}`, 'watched promise: final'),
     fulfillmentMessage(`p+${lastPExport}`, S),
+    fulfillmentMessage(`p-${nextPImport()}`, {
+      status: 'fulfilled',
+      value: S,
+    }),
   ]);
 });
 
