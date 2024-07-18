@@ -84,7 +84,7 @@ const makeExoUtils = VatData => {
 };
 
 // cf. packages/SwingSet/test/vat-durable-promise-watcher.js
-const buildPromiseWatcherRootObject = (vatPowers, _vatParameters, baggage) => {
+const buildPromiseWatcherRootObject = (vatPowers, vatParameters, baggage) => {
   const { VatData } = vatPowers;
   const { watchPromise } = VatData;
   const { prepareExo } = makeExoUtils(VatData);
@@ -142,6 +142,11 @@ const buildPromiseWatcherRootObject = (vatPowers, _vatParameters, baggage) => {
       return watchResolutions.get(name);
     },
   });
+
+  const startOperations = vatParameters?.startOperations || [];
+  for (const [method, ...args] of startOperations) {
+    root[method](...args);
+  }
 
   return root;
 };
@@ -202,6 +207,7 @@ test('past-incarnation watched promises', async t => {
   // cf. src/liveslots.js:initialIDCounters
   const firstPExport = 5;
 
+  const v1StartOperations = [];
   const kvStore = new Map();
   let {
     v,
@@ -211,7 +217,11 @@ test('past-incarnation watched promises', async t => {
     t,
     buildPromiseWatcherRootObject,
     'durable-promise-watcher',
-    { kvStore, nextPromiseImportNumber: firstPImport },
+    {
+      kvStore,
+      nextPromiseImportNumber: firstPImport,
+      vatParameters: { startOperations: v1StartOperations },
+    },
   );
   let vatLogs = v.log;
 
@@ -342,6 +352,7 @@ test('past-incarnation watched promises', async t => {
   // Simulate upgrade by starting from the non-empty kvStore.
   // t.log(Object.fromEntries([...kvStore.entries()].sort(compareEntriesByKey)));
   const clonedStore = new Map(kvStore);
+  const v2StartOperations = [];
   ({
     v,
     dispatch,
@@ -350,7 +361,11 @@ test('past-incarnation watched promises', async t => {
     t,
     buildPromiseWatcherRootObject,
     'durable-promise-watcher-v2',
-    { kvStore: clonedStore, nextPromiseImportNumber: lastPImport + 1 },
+    {
+      kvStore: clonedStore,
+      nextPromiseImportNumber: lastPImport + 1,
+      vatParameters: { startOperations: v2StartOperations },
+    },
   ));
   vatLogs = v.log;
 
