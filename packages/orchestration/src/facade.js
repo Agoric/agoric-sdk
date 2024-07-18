@@ -66,18 +66,13 @@ export const makeOrchestrationFacade = ({
   const { prepareEndowment, asyncFlow, adminAsyncFlow } = asyncFlowTools;
 
   /**
-   * @template GR - return type
    * @template HC - host context
-   * @template {any[]} GA - guest args
+   * @template {OrchestrationFlow<GuestInterface<HC>>} GF guest fn
    * @param {string} durableName - the orchestration flow identity in the zone
    *   (to resume across upgrades)
    * @param {HC} hostCtx - values to pass through the async flow membrane
-   * @param {(
-   *   guestOrc: Orchestrator,
-   *   guestCtx: GuestInterface<HC>,
-   *   ...args: GA
-   * ) => Promise<GR>} guestFn
-   * @returns {(...args: HostArgs<GA>) => Vow<GR>}
+   * @param {GF} guestFn
+   * @returns {HostForGuest<GF>}
    */
   const orchestrate = (durableName, hostCtx, guestFn) => {
     const subZone = zone.subZone(durableName);
@@ -92,7 +87,7 @@ export const makeOrchestrationFacade = ({
     const hostFn = asyncFlow(subZone, 'asyncFlow', guestFn);
 
     // cast because return could be arbitrary subtype
-    const orcFn = /** @type {(...args: HostArgs<GA>) => Vow<GR>} */ (
+    const orcFn = /** @type {HostForGuest<GF>} */ (
       (...args) => hostFn(wrappedOrc, wrappedCtx, ...args)
     );
 
