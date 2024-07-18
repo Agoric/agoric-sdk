@@ -120,7 +120,7 @@ export const prepareLocalChainAccountKit = (zone, { watch }) =>
          * This is safe, since even if the payment lies about its brand, ERTP
          * will reject spoofed payment objects when depositing into a purse.
          *
-         * @param {Payment<'nat'>} payment
+         * @param {ERef<Payment<'nat'>>} payment
          * @param {Pattern} [optAmountShape] throws if the Amount of the Payment
          *   does not match the provided Pattern
          * @returns {PromiseVow<Amount<'nat'>>}
