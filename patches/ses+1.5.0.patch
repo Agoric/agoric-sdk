@@ -15,7 +15,7 @@ index 2788c42..db59952 100644
    },
  };
 +let initialGetStackString = tamedMethods.getStackString;
-
+ 
  export default function tameErrorConstructor(
    errorTaming = 'safe',
    stackFiltering = 'concise',
@@ -32,19 +32,19 @@ index 2788c42..db59952 100644
 @@ -42,9 +48,9 @@ export default function tameErrorConstructor(
    }
    const ErrorPrototype = FERAL_ERROR.prototype;
-
+ 
 -  const platform =
 -    typeof FERAL_ERROR.captureStackTrace === 'function' ? 'v8' : 'unknown';
    const { captureStackTrace: originalCaptureStackTrace } = FERAL_ERROR;
 +  const platform =
 +    typeof originalCaptureStackTrace === 'function' ? 'v8' : 'unknown';
-
+ 
    const makeErrorConstructor = (_ = {}) => {
      // eslint-disable-next-line no-shadow
 @@ -122,6 +128,45 @@ export default function tameErrorConstructor(
      },
    });
-
+ 
 +  if (errorTaming === 'unsafe-debug' && platform === 'v8') {
 +    // This case is a kludge to work around
 +    // https://github.com/endojs/endo/issues/1798
@@ -90,7 +90,7 @@ index 2788c42..db59952 100644
 @@ -171,7 +216,6 @@ export default function tameErrorConstructor(
      });
    }
-
+ 
 -  let initialGetStackString = tamedMethods.getStackString;
    if (platform === 'v8') {
      initialGetStackString = tameV8ErrorConstructor(
@@ -102,19 +102,19 @@ index 2788c42..db59952 100644
 -  } else if (errorTaming === 'unsafe') {
 +  } else if (errorTaming === 'unsafe' || errorTaming === 'unsafe-debug') {
      // v8 has too much magic around their 'stack' own property for it to
-    // coexist cleanly with this accessor. So only install it on non-v8
-
+     // coexist cleanly with this accessor. So only install it on non-v8
+ 
 diff --git a/node_modules/ses/src/lockdown.js b/node_modules/ses/src/lockdown.js
 index 107b5d0..dd709e5 100644
 --- a/node_modules/ses/src/lockdown.js
 +++ b/node_modules/ses/src/lockdown.js
 @@ -58,7 +58,7 @@ import { tameFauxDataProperties } from './tame-faux-data-properties.js';
-
+ 
  /** @import {LockdownOptions} from '../types.js' */
-
+ 
 -const { Fail, details: d, quote: q } = assert;
 +const { Fail, details: X, quote: q } = assert;
-
+ 
  /** @type {Error=} */
  let priorRepairIntrinsics;
 @@ -200,7 +200,7 @@ export const repairIntrinsics = (options = {}) => {
@@ -143,7 +143,7 @@ index 107b5d0..dd709e5 100644
 +      /** @type {any} */(consoleRecord.console)._times,
      );
    }
-
+ 
    // @ts-ignore assert is absent on globalThis type def.
 -  if (errorTaming === 'unsafe' && globalThis.assert === assert) {
 -    // If errorTaming is 'unsafe' we replace the global assert with
