@@ -5,7 +5,7 @@ import { Fail } from '@endo/errors';
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
 import { withOrchestration } from '../utils/start-helper.js';
-import { orchestrationFns } from './sendAnywhereFlows.js';
+import { orchestrationFns } from './sendAnywhere.flows.js';
 import { prepareChainHubAdmin } from '../exos/chain-hub-admin.js';
 
 /**
