@@ -1593,12 +1593,10 @@ function build(
     } else if (delivery[0] === 'stopVat') {
       return meterControl.runWithoutMeteringAsync(() => stopVat(delivery[1]));
     } else {
-      let complete = false;
       // Start user code running, record any internal liveslots errors. We do
       // *not* directly wait for the userspace function to complete, nor for
       // any promise it returns to fire.
       const p = Promise.resolve(delivery).then(unmeteredDispatch);
-      void p.finally(() => (complete = true));
 
       // Instead, we wait for userspace to become idle by draining the
       // promise queue. We clean up and then examine/return 'p' so any
@@ -1609,10 +1607,11 @@ function build(
       return gcTools.waitUntilQuiescent().then(() => {
         afterDispatchActions();
         // eslint-disable-next-line prefer-promise-reject-errors
-        return complete ? p : Promise.reject('buildRootObject unresolved');
+        return Promise.race([p, Promise.reject('buildRootObject unresolved')]);
         // the only delivery that pays attention to a user-provided
         // Promise is startVat, so the error message is specialized to
-        // the only user problem that could cause complete===false
+        // the only user problem that could cause the promise to not be
+        // settled.
       });
     }
   }
