@@ -4,9 +4,9 @@ import { makeHelpers } from '@agoric/deploy-script-support';
 export const defaultProposalBuilder = async ({ publishRef, install }) =>
   harden({
     sourceSpec:
-      '@agoric/inter-protocol/src/proposals/upgrade-scaledPriceAuthorities.js',
+      '@agoric/inter-protocol/src/proposals/replace-scaledPriceAuthorities.js',
     getManifestCall: [
-      'getManifestForUpgradeScaledPriceAuthorities',
+      'getManifestForReplaceScaledPriceAuthorities',
       {
         scaledPARef: publishRef(
           install('@agoric/zoe/src/contracts/scaledPriceAuthority.js'),
@@ -18,5 +18,5 @@ export const defaultProposalBuilder = async ({ publishRef, install }) =>
 export default async (homeP, endowments) => {
   const { writeCoreEval } = await makeHelpers(homeP, endowments);
 
-  await writeCoreEval('upgradeScaledPriceAuthorities', defaultProposalBuilder);
+  await writeCoreEval('replaceScaledPriceAuthorities', defaultProposalBuilder);
 };

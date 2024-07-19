@@ -26,7 +26,7 @@ import { provideQuoteMint } from '../contractSupport/priceAuthorityQuoteMint.js'
  * via ratios.
  *
  * No durable state. Because it only transforms there's nothing important to save.
- * However that also means that the contract terms cannot be modified and should
+ * However, that also means that the contract terms cannot be modified and should
  * a `sourcePriceAuthority` reference sever this contract will break. A future version
  * could allow changing that term through privateArgs or governance.
  *
@@ -52,7 +52,8 @@ export const prepare = async (zcf, privateArgs, baggage) => {
 
   const priceAuthority = makePriceAuthorityTransform({
     quoteMint,
-    sourcePriceAuthority,
+    // If the priceAuthority is overridden in privateArgs, use that version
+    sourcePriceAuthority: privateArgs?.priceAuthority || sourcePriceAuthority,
     sourceBrandIn,
     sourceBrandOut,
     actualBrandIn,
