@@ -12,17 +12,21 @@ But the more sophisticated approach is to call `controller.run(policy)`, with a 
 
 ## Cranks
 
-The kernel maintains two queues. The highest priority queue contains "GC Actions", which are messages to vats that indicate an object has been garbage collected and can now be freed. These are provoked by reference-counting operations that occur as a side-effect of GC syscalls, as well as vat termination events. Each GC Action counts as a "crank", and is reported to the policy object. The policy may end a block while there is still GC Action work to do, in which case the kernel will pick it back up again when the next block begins.
+The kernel maintains multiple internal action queues. The highest priority is a special "acceptance queue" containing messages to be placed on other queues in a "routing crank" that is reported to the policy without details via `policy.emptyCrank()`. All the other queues contain messages that will prompt a "delivery crank" whose details are reported to the policy object via a different `policy` method. The policy may end a block while one or more queues still contain messages, in which case the kernel will start the next block by trying to drain them in priority order.
 
-If the GC Action queue is entirely empty, the kernel will look for regular work to do. This consists of the following event types:
+The highest priority delivery queue contains "GC Actions", which are messages to vats indicating that an object has been garbage collected and can now be freed. These are provoked by reference-counting operations which occur as a side-effect of GC syscalls and vat termination events.
+
+If the GC Action queue is empty, the kernel will check the "reap queue", which contains vatIDs that need to receive a "bringOutYourDead" delivery.
+
+If the GC Action queue and reap queue are both empty, the kernel will look for regular work to do. This consists of the following event types:
 
 * message deliveries to vats (provoked by `syscall.send`, delivered as `dispatch.deliver`)
 * promise resolution notifications (provoked by `syscall.resolve`, delivered as `dispatch.notify`)
 * vat creation
 
-Each message delivery and resolution notification causes (at most) one vat to execute one "crank" (it might not execute any crank, e.g. when a message is delivered to an unresolved promise, it just gets added to the promise's queue). This crank gives the vat some amount of time to process the delivery, during which it may invoke any number of syscalls. The crank might cause the vat to be terminated, either because of an error, or because it took too much CPU and exceeded its Meter's allowance. Each crank yields a "delivery results object", which indicates the success or failure of the delivery.
+Each message delivery and resolution notification causes at most one vat to execute one "crank" (but such vat cranks are not guaranteed, e.g. delivery of a message to an unresolved promise just adds the message to the promise's queue, and delivery of a message to an abandoned object [having no owner vat] goes "splat"). This crank gives the vat some amount of time to process the delivery, during which it may invoke any number of syscalls. The crank might cause the vat to be terminated, either because of an error, or because it took too much CPU and exceeded its Meter's allowance. Each crank yields a "delivery results object", which indicates the success or failure of the delivery.
 
-When run in a suitable vat worker (`managerType: 'xs-worker'`), the delivery results also include the number of "computrons" consumed, as counted by the JS engine. Computrons are vaguely correlated to CPU cycles (despite being much larger) and thus some correspondence to wallclock time. A Run Policy which wishes to limit wallclock time in a consensus-base manner should pay attention to the cumulative computron count, and end the block after some experimentally-determined limit.
+When run in a suitable vat worker (`managerType: 'xs-worker'`), the delivery results also include the number of "computrons" consumed, as counted by the JS engine. Computrons are vaguely correlated to CPU cycles (despite being much larger) and thus have some correspondence to wallclock time. A Run Policy which wishes to limit wallclock time in a consensus-based manner should pay attention to the cumulative computron count, and end the block after some experimentally-determined limit.
 
 Vat creation also gives a single vat (the brand new one) time to run the top-level forms of its source bundle, as well as the invocation of its `buildRootObject()` method. This typically takes considerably longer than the subsequent messages, and is not currently metered.
 
@@ -39,9 +43,9 @@ All methods should return `true` if the kernel should keep running, or `false` i
 
 The `computrons` argument may be `undefined` (e.g. if the crank was delivered to a non-`xs worker`-based vat, such as the comms vat). The policy should probably treat this as equivalent to some "typical" number of computrons.
 
-`crankFailed` indicates the vat suffered an error during crank delivery, such as a metering fault, memory allocation fault, or fatal syscall. We do not currently have a way to measure the computron usage of failed cranks (many of the error cases are signaled by the worker process exiting with a distinctive status code, which does not give it an opportunity to report back detailed metering data). The run policy should assume the worst.
+`crankFailed` indicates that the vat suffered an error during crank delivery, such as a metering fault, memory allocation fault, or fatal syscall. We do not currently have a way to measure the computron usage of failed cranks (many of the error cases are signaled by the worker process exiting with a distinctive status code, which does not give it an opportunity to report back detailed metering data). The run policy should assume the worst.
 
-`emptyCrank` indicates the kernel processed a queued messages which didn't result in a delivery.
+`emptyCrank` indicates that the kernel processed a queued message which didn't result in a delivery.
 
 More arguments may be added in the future, such as:
 * `vatCreated:` the size of the source bundle
@@ -93,7 +97,7 @@ while(1) {
 }
 ```
 
-Note that a new policy object should be provided for each call to `run()`.
+Note that a new instance of this kind of policy object should be provided in each call to `controller.run()`.
 
 A more sophisticated one would count computrons. Suppose that experiments suggest that one million computrons take about 5 seconds to execute. The policy would look like:
 
