@@ -31,9 +31,11 @@ export const gettingStartedWorkflowTest = async (t, options = {}) => {
   const pkill = (cp, signal = 'SIGINT') => process.kill(-cp.pid, signal);
 
   function pspawnStdout(...args) {
-    const ps = pspawn(...args);
+    const [cmd, cargs, opts, onStdout] = args;
+    const ps = pspawn(cmd, cargs, opts);
     ps.childProcess.stdout.on('data', chunk => {
       process.stdout.write(chunk);
+      onStdout?.(chunk);
     });
     // ps.childProcess.unref();
     return ps;
@@ -58,12 +60,17 @@ export const gettingStartedWorkflowTest = async (t, options = {}) => {
     });
   }
 
-  function yarn(args) {
-    return pspawnStdout('yarn', args, {
-      stdio: ['ignore', 'pipe', 'inherit'],
-      env: { ...process.env },
-      detached: true,
-    });
+  function yarn(args, onStdout = () => {}) {
+    return pspawnStdout(
+      'yarn',
+      args,
+      {
+        stdio: ['ignore', 'pipe', 'inherit'],
+        env: { ...process.env },
+        detached: true,
+      },
+      onStdout,
+    );
   }
 
   const olddir = process.cwd();
@@ -121,7 +128,16 @@ export const gettingStartedWorkflowTest = async (t, options = {}) => {
 
     // ==============
     // yarn start:contract
-    t.is(await yarn(['start:contract']), 0, 'yarn start:contract works');
+    const failOnAccountSequenceMismatch = chunk => {
+      if (chunk.toString().includes('account sequence mismatch')) {
+        throw new Error('Account sequence mismatch occurred');
+      }
+    };
+    t.is(
+      await yarn(['start:contract'], failOnAccountSequenceMismatch),
+      0,
+      'yarn start:contract works',
+    );
 
     // ==============
     // yarn start:ui
