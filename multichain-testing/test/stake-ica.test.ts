@@ -1,9 +1,9 @@
 import anyTest from '@endo/ses-ava/prepare-endo.js';
 import type { TestFn } from 'ava';
+import { scheduler } from 'node:timers/promises';
 import { commonSetup, SetupContextWithWallets } from './support.js';
 import { makeDoOffer } from '../tools/e2e-tools.js';
 import { makeQueryClient } from '../tools/query.js';
-import { sleep } from '../tools/sleep.js';
 
 const test = anyTest as TestFn<SetupContextWithWallets>;
 
@@ -249,7 +249,7 @@ const stakeScenario = test.macro(async (t, scenario: StakeIcaScenario) => {
   t.log('Current Balance:', currentBalances[0]);
 
   console.log('waiting for unbonding period');
-  await sleep(120000);
+  await scheduler.wait(120000);
   const { balances: rewardsWithUndelegations } = await retryUntilCondition(
     () => queryClient.queryBalances(address),
     ({ balances }) => {

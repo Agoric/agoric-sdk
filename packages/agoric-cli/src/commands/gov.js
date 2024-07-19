@@ -1,8 +1,9 @@
 // @ts-check
 /* eslint-disable func-names */
-/* global globalThis, process, setTimeout */
+/* global globalThis, process */
 import { execFileSync as execFileSyncAmbient } from 'child_process';
 import { Command, CommanderError } from 'commander';
+import { scheduler } from 'node:timers/promises';
 import { normalizeAddressWithOptions, pollBlocks } from '../lib/chain.js';
 import { getNetworkConfig, makeRpcUtils } from '../lib/rpc.js';
 import {
@@ -45,7 +46,7 @@ export const makeGovCommand = (_logger, io = {}) => {
     stderr = process.stderr,
     fetch = globalThis.fetch,
     execFileSync = execFileSyncAmbient,
-    delay = ms => new Promise(resolve => setTimeout(resolve, ms)),
+    delay = scheduler.wait,
   } = io;
 
   const cmd = new Command('gov').description('Electoral governance commands');

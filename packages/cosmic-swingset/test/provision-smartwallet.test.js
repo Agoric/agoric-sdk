@@ -1,7 +1,7 @@
-/* global setTimeout */
 import test from 'ava';
 
 // Use ambient authority only in test.before()
+import { scheduler } from 'node:timers/promises';
 import { spawn as ambientSpawn } from 'child_process';
 import * as ambientPath from 'path';
 import * as ambientFs from 'fs';
@@ -35,7 +35,7 @@ test.before(async t => {
   const dirname = ambientPath.dirname(filename);
   const makefileDir = ambientPath.join(dirname, '..');
 
-  const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+  const delay = ms => scheduler.wait(ms);
 
   const io = { spawn: ambientSpawn, cwd: makefileDir };
   const pspawnMake = pspawn('make', io);

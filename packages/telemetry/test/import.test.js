@@ -1,10 +1,7 @@
-/* global setTimeout */
+import { setTimeout } from 'node:timers/promises';
 import { test } from './prepare-test-env-ava.js';
 
 import { getTelemetryProviders } from '../src/index.js';
-
-const sleep = timeoutMs =>
-  new Promise(resolve => setTimeout(resolve, timeoutMs));
 
 test('get telemetry providers', async t => {
   const logged = [];
@@ -17,7 +14,7 @@ test('get telemetry providers', async t => {
   t.is(providers.metricsProvider, undefined);
 
   t.deepEqual(logged, []);
-  await sleep(250);
+  await setTimeout(250);
   t.deepEqual(logged, []);
 
   const providers2 = getTelemetryProviders({
@@ -29,7 +26,7 @@ test('get telemetry providers', async t => {
   t.is(typeof providers2.metricsProvider, 'object');
 
   t.deepEqual(logged, []);
-  await sleep(250);
+  await setTimeout(250);
   t.deepEqual(logged, [
     ['Prometheus scrape endpoint: http://0.0.0.0:9393/metrics'],
   ]);

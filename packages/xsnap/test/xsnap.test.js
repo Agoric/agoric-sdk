@@ -1,7 +1,8 @@
-/* global setTimeout, FinalizationRegistry, setImmediate, process */
+/* global  FinalizationRegistry, setImmediate, process */
 
 import test from 'ava';
 
+import { scheduler } from 'node:timers/promises';
 import { createHash } from 'crypto';
 import * as proc from 'child_process';
 import * as os from 'os';
@@ -381,9 +382,7 @@ test('execute immediately after makeSnapshotStream', async t => {
   t.deepEqual(messages, ['before']);
 });
 
-function delay(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
+const delay = scheduler.wait;
 
 test('fail to send command to already-closed xsnap worker', async t => {
   const vat = await xsnap({ ...options(io) });
@@ -420,7 +419,7 @@ test('abnormal termination', async t => {
   });
 
   // Allow the evaluate command to flush.
-  await delay(10);
+  await scheduler.wait(10);
   await vat.terminate();
   await hang;
 });

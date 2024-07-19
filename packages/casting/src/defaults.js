@@ -1,4 +1,5 @@
-/* global setTimeout */
+/* global */
+import { scheduler } from 'node:timers/promises';
 import { Far } from '@endo/far';
 import { makeMarshal } from '@endo/marshal';
 
@@ -21,7 +22,7 @@ export const DEFAULT_KEEP_POLLING_SECONDS = 5;
  * @param {number} ms
  * @returns {Promise<void>}
  */
-export const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+export const delay = ms => scheduler.wait(ms);
 
 /**
  * @param {number} range
