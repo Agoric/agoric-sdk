@@ -1,4 +1,3 @@
-/* global */
 import { scheduler } from 'node:timers/promises';
 import { Far } from '@endo/far';
 import { makeMarshal } from '@endo/marshal';
