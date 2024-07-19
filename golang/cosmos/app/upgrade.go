@@ -148,6 +148,8 @@ func upgradePriceFeedCoreProposalSteps(upgradeName string) ([]vm.CoreProposalSte
 	return []vm.CoreProposalStep{
 		// Add new vats for price feeds. The existing ones will be retired shortly.
 		vm.CoreProposalStepForModules(proposals...),
+        // add new scaledPriceAuthorities. The existing ones will be retired shortly.
+        vm.CoreProposalStepForModules("@agoric/builders/scripts/vats/replaceScaledPriceAuthorities.js"),
 		// Add new auction contract. The old one will be retired shortly.
 		vm.CoreProposalStepForModules("@agoric/builders/scripts/vats/add-auction.js"),
 		// upgrade vaultFactory.
