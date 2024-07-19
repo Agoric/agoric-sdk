@@ -1,5 +1,5 @@
 /** @file Use-object for the owner of a localchain account */
-import { typedJson } from '@agoric/cosmic-proto/vatsafe';
+import { typedJson } from '@agoric/cosmic-proto';
 import { AmountShape, PaymentShape } from '@agoric/ertp';
 import { makeTracer } from '@agoric/internal';
 import { Shape as NetworkShape } from '@agoric/network';
