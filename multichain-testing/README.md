@@ -16,10 +16,12 @@ The `agoric` software revision includes the vats necessary for building and test
 
 ## Initial Setup
 
-Ensure you have `kubectl`, `kind`, `helm`, and `yq` installed on your machine.
+First, ensure you have Kubernetes available. See https://docs.cosmology.zone/starship/get-started/step-2.
+
+The following will install `kubectl`, `kind`, `helm`, and `yq` as needed.
 
 ```sh
-make setup
+make clean setup
 ```
 
 ## Getting Started
@@ -28,15 +30,18 @@ make setup
 # install helm chart and start starship service
 make install
 
-# expose ports on your local machine. useful for testing dapps
-make port-forward
+# wait for all pods to spin up
+watch kubectl get pods
 ```
 
-**Wait 10-12** minutes. It takes some time for the above to finish setting up. Use `watch kubectl get pods` to confirm all pods are up and running before running the next command.
+**Wait 10-12** minutes. It takes some time for the above to finish setting up. The watch command should show a table in which the STATUS of every pod is Running.
 
-To setup finish setting up Agoric, then run:
 
 ```bash
+# expose ports on your local machine. useful for testing dapps
+make port-forward
+
+# set up Agoric testing environment
 make fund-provision-pool override-chain-registry
 ```
 
