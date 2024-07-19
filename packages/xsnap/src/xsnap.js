@@ -10,16 +10,12 @@ import { makeNodeReader, makeNodeWriter } from '@endo/stream-node';
 import { makePromiseKit, racePromises } from '@endo/promise-kit';
 import { forever } from '@agoric/internal';
 import { ErrorCode, ErrorSignal, ErrorMessage, METER_TYPE } from '../api.js';
-import { defer } from './defer.js';
+
+/** @import {PromiseKit} from '@endo/promise-kit' */
 
 /**
  * @typedef {typeof import('child_process').spawn} Spawn
  * @import {Writable} from 'stream'
- */
-
-/**
- * @template T
- * @typedef {import('./defer.js').Deferred<T>} Deferred
  */
 
 // This will need adjustment, but seems to be fine for a start.
@@ -185,8 +181,8 @@ export async function xsnap(options) {
     import.meta.url,
   ).pathname;
 
-  /** @type {Deferred<void>} */
-  const vatExit = defer();
+  /** @type {PromiseKit<void>} */
+  const vatExit = makePromiseKit();
 
   assert(!/^-/.test(name), `name '${name}' cannot start with hyphen`);
 
