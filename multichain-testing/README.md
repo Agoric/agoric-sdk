@@ -5,7 +5,7 @@ End-to-end testing environment for fully simulated chains, powered by [Starship]
 
 ## Configuration
 
-The current commands will read from [`config.yaml`](./config.yaml) to build a multi-chain teting environment. Currently, the image includes `agoric`, `osmosis`, and `cosmos-hub` chains and a hermes relayer between each.
+The current commands will read from [`config.yaml`](./config.yaml) to build a multi-chain testing environment. Currently, the image includes `agoric`, `osmosis`, and `cosmos-hub` chains and a hermes relayer between each.
 
 The `agoric` software revision includes the vats necessary for building and testing orchestration applications:
 - vat-network
