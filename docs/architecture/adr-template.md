@@ -18,7 +18,7 @@ describing facts.
 
 ## Decision
 
-> This section describes our response to these forces. It is stated in full sentences, with active voice. "We will …"
+> This section describes our response to these forces. It is stated in full sentences, with an active voice. "We will …"
 
 ## Consequences
 
