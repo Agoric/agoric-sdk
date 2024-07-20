@@ -1,5 +1,5 @@
 #!/bin/sh
-# Generate PNGs from PlantUML files and put put into the Markdown
+# Generate PNGs from PlantUML files and put into the Markdown
 
 CMD="java -jar ${PLANTUML:-$HOME/plantuml/plantuml.jar}"
 if command -v plantuml; then
