@@ -25,11 +25,11 @@
   (on cancellationP (lambda (cancellation) (error cancellation))))
 
 
-(define . assq-ref)
+(define @ assq-ref)
 
 ;; a from Alice , b from Bob
 (define (escrowExchange a b)
-  (define-values decisionP decide (spawn-promise-values))
+  (define-values (decisionP decide) (spawn-promise-values))
 
   (decide
    (Q.race  ;; TODO: race
@@ -37,12 +37,12 @@
      (Q.all
       [
        (transfer decisionP
-                 (. a 'moneySrcP) (. b 'moneyDstP) (. b 'moneyNeeded))
+                 (@ a 'moneySrcP) (@ b 'moneyDstP) (@ b 'moneyNeeded))
        (transfer decisionP
-                 (. b 'stockSrcP) (. a 'stockDstP) (. a 'stockNeeded))
+                 (@ b 'stockSrcP) (@ a 'stockDstP) (@ a 'stockNeeded))
        ])
-     (failOnly (. a 'cancellationP))
-     (failOnly (. b 'cancellationP))
+     (failOnly (@ a 'cancellationP))
+     (failOnly (@ b 'cancellationP))
      ])
    )
   decisionP
