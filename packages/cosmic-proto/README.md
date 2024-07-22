@@ -27,21 +27,14 @@ npm install @agoric/cosmic-proto
 ## Usage
 ### RPC Clients
 
-```js
-import { agoric } from '@agoric/cosmic-proto';
-
-const { createRPCQueryClient } = agoric.ClientFactory; 
-const client = await createRPCQueryClient({ rpcEndpoint: RPC_ENDPOINT });
-
-const swingsetParams = await client.agoric.swingset.params()
-```
+TODO #9200
 
 ### Composing Messages
 
-Import the `agoric` object from `@agoric/cosmic-proto`. 
+Import the `agoric` object from the Agoric bundle.
 
 ```js
-import { agoric } from '@agoric/cosmic-proto';
+import { agoric } from '@agoric/cosmic-proto/agoric/bundle.js';
 
 const {
     installBundle,
@@ -54,18 +47,7 @@ const {
 
 Here are the docs on [creating signers](https://github.com/cosmology-tech/cosmos-kit/tree/main/packages/react#signing-clients) in cosmos-kit that can be used with Keplr and other wallets.
 
-### Initializing the Stargate Client
 
-Use `getSigningAgoricClient` to get your `SigningStargateClient`, with the proto/amino messages full-loaded. No need to manually add amino types, just require and initialize the client:
-
-```js
-import { getSigningAgoricClient } from '@agoric/cosmic-proto';
-
-const stargateClient = await getSigningAgoricClient({
-  rpcEndpoint,
-  signer // OfflineSigner
-});
-```
 ### Creating Signers
 
 To broadcast messages, you can create signers with a variety of options:

@@ -19,10 +19,6 @@
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
     },
-    "./vatsafe": {
-      "types": "./dist/vatsafe.d.ts",
-      "default": "./dist/vatsafe.js"
-    },
     "./package.json": "./package.json",
     "./agoric/*.js": {
       "types": "./dist/codegen/agoric/*.d.ts",
