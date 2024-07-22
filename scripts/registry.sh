@@ -104,6 +104,8 @@ integrationTest() {
   # Install the Agoric CLI on this machine's $PATH.
   case $1 in
     link-cli | link-cli/*)
+      # Prevent retries from failing with "must not already exist"
+      rm -f "$HOME/bin/agoric"
       yarn link-cli "$HOME/bin/agoric"
       persistVar AGORIC_CMD "[\"$HOME/bin/agoric\"]"
       ;;
