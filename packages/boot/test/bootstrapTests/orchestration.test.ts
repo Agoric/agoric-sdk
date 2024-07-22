@@ -132,8 +132,13 @@ test.skip('stakeOsmo - queries', async t => {
 });
 
 test.serial('stakeAtom - smart wallet', async t => {
-  const { buildProposal, evalProposal, agoricNamesRemotes, readLatest } =
-    t.context;
+  const {
+    buildProposal,
+    evalProposal,
+    agoricNamesRemotes,
+    flushInboundQueue,
+    readLatest,
+  } = t.context;
 
   await evalProposal(
     buildProposal('@agoric/builders/scripts/orchestration/init-stakeAtom.js'),
@@ -170,7 +175,9 @@ test.serial('stakeAtom - smart wallet', async t => {
   const { ATOM } = agoricNamesRemotes.brand;
   ATOM || Fail`ATOM missing from agoricNames`;
 
-  await wd.executeOffer({
+  // Cannot await executeOffer because the offer won't resolve until after the bridge's inbound queue is flushed.
+  // But this test doesn't require that.
+  await wd.sendOffer({
     id: 'request-delegate-success',
     invitationSpec: {
       source: 'continuing',
@@ -190,6 +197,7 @@ test.serial('stakeAtom - smart wallet', async t => {
     encoding: 'bech32',
   };
 
+  // This will trigger the immediate ack of the mock bridge
   await t.throwsAsync(
     wd.executeOffer({
       id: 'request-delegate-fail',
@@ -332,7 +340,7 @@ test.serial('basic-flows - portfolio holder', async t => {
     await t.context.walletFactoryDriver.provideSmartWallet('agoric1test2');
 
   // create a cosmos orchestration account
-  await wd.executeOffer({
+  await wd.sendOffer({
     id: 'request-portfolio-acct',
     invitationSpec: {
       source: 'agoricContract',
@@ -369,7 +377,7 @@ test.serial('basic-flows - portfolio holder', async t => {
   ATOM || Fail`ATOM missing from agoricNames`;
   BLD || Fail`BLD missing from agoricNames`;
 
-  await wd.executeOffer({
+  await wd.sendOffer({
     id: 'delegate-cosmoshub',
     invitationSpec: {
       source: 'continuing',
@@ -387,7 +395,7 @@ test.serial('basic-flows - portfolio holder', async t => {
     status: { id: 'delegate-cosmoshub', numWantsSatisfied: 1 },
   });
 
-  await wd.executeOffer({
+  await wd.sendOffer({
     id: 'delegate-agoric',
     invitationSpec: {
       source: 'continuing',

@@ -13,6 +13,7 @@ import {
   NonNullish,
   VBankAccount,
   makeTracer,
+  type BridgeIdValue,
   type Remote,
 } from '@agoric/internal';
 import { unmarshalFromVstorage } from '@agoric/internal/src/marshal.js';
@@ -40,7 +41,7 @@ import type { MsgDelegateResponse } from '@agoric/cosmic-proto/cosmos/staking/v1
 import type { CoreEvalSDKType } from '@agoric/cosmic-proto/swingset/swingset.js';
 import type { EconomyBootstrapPowers } from '@agoric/inter-protocol/src/proposals/econ-behaviors.js';
 import type { SwingsetController } from '@agoric/swingset-vat/src/controller/controller.js';
-import type { BridgeHandler, IBCMethod } from '@agoric/vats';
+import type { BridgeHandler, IBCMethod, IBCPacket } from '@agoric/vats';
 import type { BootstrapRootObject } from '@agoric/vats/src/core/lib-boot.js';
 import type { EProxy } from '@endo/eventual-send';
 import { icaMocks, protoMsgMocks } from './ibc/mocks.js';
@@ -324,15 +325,26 @@ export const makeSwingsetTestKit = async (
 
   const outboundMessages = new Map();
 
-  let inbound;
+  const inbound: Awaited<ReturnType<typeof buildSwingset>>['bridgeInbound'] = (
+    ...args
+  ) => {
+    console.log('inbound', ...args);
+    // eslint-disable-next-line no-use-before-define
+    bridgeInbound!(...args);
+  };
   let ibcSequenceNonce = 0;
+
+  const addSequenceNonce = ({ packet }: IBCMethod<'sendPacket'>): IBCPacket => {
+    ibcSequenceNonce += 1;
+    return { ...packet, sequence: ibcSequenceNonce };
+  };
 
   /**
    * Adds the sequence so the bridge knows what response to connect it to.
    * Then queue it send it over the bridge over this returns.
    * Finally return the packet that will be sent.
    */
-  const makeAckEvent = (obj: IBCMethod<'sendPacket'>, ack: string) => {
+  const ackImmediately = (obj: IBCMethod<'sendPacket'>, ack: string) => {
     ibcSequenceNonce += 1;
     const msg = icaMocks.ackPacketEvent(obj, ibcSequenceNonce, ack);
     setTimeout(() => {
@@ -342,6 +354,18 @@ export const makeSwingsetTestKit = async (
        */
       inbound(BridgeId.DIBC, msg);
     });
+    return msg.packet;
+  };
+
+  const inboundQueue: [bridgeId: BridgeIdValue, arg1: unknown][] = [];
+  /**
+   * Like ackImmediately but defers in the inbound receiverAck
+   * until `bridgeQueue()` is awaited.
+   */
+  const ackLater = (obj: IBCMethod<'sendPacket'>, ack: string) => {
+    ibcSequenceNonce += 1;
+    const msg = icaMocks.ackPacketEvent(obj, ibcSequenceNonce, ack);
+    inboundQueue.push([BridgeId.DIBC, msg]);
     return msg.packet;
   };
 
@@ -413,42 +437,34 @@ export const makeSwingsetTestKit = async (
           case 'IBC_METHOD':
             switch (obj.method) {
               case 'startChannelOpenInit':
-                inbound(BridgeId.DIBC, icaMocks.channelOpenAck(obj));
+                inbound!(BridgeId.DIBC, icaMocks.channelOpenAck(obj));
                 return undefined;
               case 'sendPacket':
                 switch (obj.packet.data) {
                   case protoMsgMocks.delegate.msg: {
-                    return makeAckEvent(obj, protoMsgMocks.delegate.ack);
+                    return ackLater(obj, protoMsgMocks.delegate.ack);
                   }
                   case protoMsgMocks.delegateWithOpts.msg: {
-                    return makeAckEvent(
-                      obj,
-                      protoMsgMocks.delegateWithOpts.ack,
-                    );
+                    return ackLater(obj, protoMsgMocks.delegateWithOpts.ack);
                   }
                   case protoMsgMocks.queryBalance.msg: {
-                    return makeAckEvent(obj, protoMsgMocks.queryBalance.ack);
+                    return ackLater(obj, protoMsgMocks.queryBalance.ack);
                   }
                   case protoMsgMocks.queryUnknownPath.msg: {
-                    return makeAckEvent(
-                      obj,
-                      protoMsgMocks.queryUnknownPath.ack,
-                    );
+                    return ackLater(obj, protoMsgMocks.queryUnknownPath.ack);
                   }
                   case protoMsgMocks.queryBalanceMulti.msg: {
-                    return makeAckEvent(
-                      obj,
-                      protoMsgMocks.queryBalanceMulti.ack,
-                    );
+                    return ackLater(obj, protoMsgMocks.queryBalanceMulti.ack);
                   }
                   case protoMsgMocks.queryBalanceUnknownDenom.msg: {
-                    return makeAckEvent(
+                    return ackLater(
                       obj,
                       protoMsgMocks.queryBalanceUnknownDenom.ack,
                     );
                   }
                   default: {
-                    return makeAckEvent(obj, protoMsgMocks.error.ack);
+                    // An error that would be triggered before reception on another chain
+                    return ackImmediately(obj, protoMsgMocks.error.ack);
                   }
                 }
               default:
@@ -521,7 +537,6 @@ export const makeSwingsetTestKit = async (
       debugVats,
     },
   );
-  inbound = bridgeInbound;
 
   console.timeLog('makeBaseSwingsetTestKit', 'buildSwingset');
 
@@ -604,12 +619,30 @@ export const makeSwingsetTestKit = async (
   const getOutboundMessages = (bridgeId: string) =>
     harden([...outboundMessages.get(bridgeId)]);
 
+  /**
+   * @param {number} max the max number of messages to flush
+   * @returns {Promise<number>} the number of messages flushed
+   */
+  const flushInboundQueue = async (max: number = Number.POSITIVE_INFINITY) => {
+    console.log('🚽');
+    let i = 0;
+    for (i = 0; i < max; i += 1) {
+      const args = inboundQueue.shift();
+      if (!args) break;
+
+      await runUtils.queueAndRun(() => inbound(...args), true);
+    }
+    console.log('🧻');
+    return i;
+  };
+
   return {
     advanceTimeBy,
     advanceTimeTo,
     buildProposal,
     bridgeInbound,
     controller,
+    flushInboundQueue,
     evalProposal,
     getCrankNumber,
     getOutboundMessages,
