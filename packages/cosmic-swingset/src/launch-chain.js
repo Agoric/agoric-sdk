@@ -96,7 +96,7 @@ const getHostKey = path => `host.${path}`;
 
 /**
  * @param {Map<*, *>} mailboxStorage
- * @param {undefined | ((dstID: string, obj: any) => any)} bridgeOutbound
+ * @param {((dstID: string, obj: any) => any)} bridgeOutbound
  * @param {SwingStoreKernelStorage} kernelStorage
  * @param {string | (() => string | Promise<string>)} vatconfig absolute path or thunk
  * @param {unknown} bootstrapArgs JSON-serializable data
@@ -123,17 +123,15 @@ export async function buildSwingset(
   const debugPrefix = debugName === undefined ? '' : `${debugName}:`;
   const mbs = buildMailboxStateMap(mailboxStorage);
 
-  const bridgeDevice = bridgeOutbound && buildBridge(bridgeOutbound);
+  const bridgeDevice = buildBridge(bridgeOutbound);
   const mailboxDevice = buildMailbox(mbs);
   const timerDevice = buildTimer();
 
   const deviceEndowments = {
     mailbox: { ...mailboxDevice.endowments },
     timer: { ...timerDevice.endowments },
+    bridge: { ...bridgeDevice.endowments },
   };
-  if (bridgeDevice) {
-    deviceEndowments.bridge = { ...bridgeDevice.endowments };
-  }
 
   async function ensureSwingsetInitialized() {
     if (swingsetIsInitialized(kernelStorage)) {
@@ -175,18 +173,16 @@ export async function buildSwingset(
     const bootVat =
       swingsetConfig.vats[swingsetConfig.bootstrap || 'bootstrap'];
 
-    if (bridgeOutbound) {
-      const batchChainStorage = (method, args) =>
-        bridgeOutbound(BRIDGE_ID.STORAGE, { method, args });
+    const batchChainStorage = (method, args) =>
+      bridgeOutbound(BRIDGE_ID.STORAGE, { method, args });
 
-      // Extract data from chain storage as [path, value?] pairs.
-      const chainStorageEntries = exportStorage(
-        batchChainStorage,
-        exportStorageSubtrees,
-        clearStorageSubtrees,
-      );
-      bootVat.parameters = { ...bootVat.parameters, chainStorageEntries };
-    }
+    // Extract data from chain storage as [path, value?] pairs.
+    const chainStorageEntries = exportStorage(
+      batchChainStorage,
+      exportStorageSubtrees,
+      clearStorageSubtrees,
+    );
+    bootVat.parameters = { ...bootVat.parameters, chainStorageEntries };
 
     // Since only on-chain swingsets like `agd` have a bridge (and thereby
     // `CORE_EVAL` support), things like `ag-solo` will need to do the
@@ -238,7 +234,7 @@ export async function buildSwingset(
     coreProposals,
     controller,
     mb: mailboxDevice,
-    bridgeInbound: bridgeDevice && bridgeDevice.deliverInbound,
+    bridgeInbound: bridgeDevice.deliverInbound,
     timer: timerDevice,
   };
 }
