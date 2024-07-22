@@ -32,7 +32,8 @@ export const upgradeProvisionPool = async (
   const { adminFacet, instance } = provisionPoolStartResult;
 
   const [originalPrivateArgs, poserInvitation] = await Promise.all([
-    // @ts-expect-error
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore Local tsc sees this as an error but typedoc does not
     deeplyFulfilled(instancePrivateArgs.get(instance)),
     E(electorateCreatorFacet).getPoserInvitation(),
   ]);
