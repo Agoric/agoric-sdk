@@ -10,7 +10,7 @@ import { commonSetup, provideDurableZone } from './supports.js';
 
 const test = anyTest;
 
-export const mockChainInfo: CosmosChainInfo = harden({
+const mockChainInfo: CosmosChainInfo = harden({
   chainId: 'mock-1',
   icaEnabled: false,
   icqEnabled: false,
@@ -18,7 +18,7 @@ export const mockChainInfo: CosmosChainInfo = harden({
   ibcHooksEnabled: false,
   stakingTokens: [{ denom: 'umock' }],
 });
-export const mockChainConnection: IBCConnectionInfo = {
+const mockChainConnection: IBCConnectionInfo = {
   id: 'connection-0',
   client_id: '07-tendermint-2',
   counterparty: {
