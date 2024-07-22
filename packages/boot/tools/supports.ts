@@ -334,7 +334,7 @@ export const makeSwingsetTestKit = async (
    */
   const makeAckEvent = (obj: IBCMethod<'sendPacket'>, ack: string) => {
     ibcSequenceNonce += 1;
-    const msg = icaMocks.ackPacket(obj, ibcSequenceNonce, ack);
+    const msg = icaMocks.ackPacketEvent(obj, ibcSequenceNonce, ack);
     setTimeout(() => {
       /**
        * Mock when Agoric receives the ack from another chain over DIBC. Always
