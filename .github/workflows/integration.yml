@@ -99,6 +99,7 @@ jobs:
           # won't increase the time for this workflow to complete.
           timeout_minutes: 20
           command: scripts/registry.sh test ${{ matrix.cli }} ${{steps.get-branch.outputs.result}}
+          on_retry_command: rm $HOME/bin/agoric
 
       - name: notify on failure
         if: >
