@@ -32,6 +32,7 @@ export const upgradeProvisionPool = async (
   const { adminFacet, instance } = provisionPoolStartResult;
 
   const [originalPrivateArgs, poserInvitation] = await Promise.all([
+    // @ts-expect-error
     deeplyFulfilled(instancePrivateArgs.get(instance)),
     E(electorateCreatorFacet).getPoserInvitation(),
   ]);
