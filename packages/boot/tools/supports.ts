@@ -327,12 +327,24 @@ export const makeSwingsetTestKit = async (
   let inbound;
   let ibcSequenceNonce = 0;
 
+  /**
+   * Adds the sequence so the bridge knows what response to connect it to.
+   * Then queue it send it over the bridge over this returns.
+   * Finally return the packet that will be sent.
+   */
   const makeAckEvent = (obj: IBCMethod<'sendPacket'>, ack: string) => {
     ibcSequenceNonce += 1;
     const msg = icaMocks.ackPacket(obj, ibcSequenceNonce, ack);
-    inbound(BridgeId.DIBC, msg);
+    setTimeout(() => {
+      /**
+       * Mock when Agoric receives the ack from another chain over DIBC. Always
+       * happens after the packet is returned.
+       */
+      inbound(BridgeId.DIBC, msg);
+    });
     return msg.packet;
   };
+
   /**
    * Mock the bridge outbound handler. The real one is implemented in Golang so
    * changes there will sometimes require changes here.
