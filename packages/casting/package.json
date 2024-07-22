@@ -35,6 +35,7 @@
     "@endo/lockdown": "^1.0.7",
     "@endo/marshal": "^1.5.0",
     "@endo/promise-kit": "^1.1.2",
+    "global-agent": "^3.0.0",
     "node-fetch": "^2.6.0"
   },
   "devDependencies": {
