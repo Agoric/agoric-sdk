@@ -323,7 +323,7 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
             );
           }
 
-          trace('settle', {
+          trace('settled', {
             collateralTarget,
             proceedsTarget,
             remainingProceedsGoal: this.state.remainingProceedsGoal,
@@ -599,11 +599,14 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
           const pricedOffers = priceBook.offersAbove(curAuctionPrice);
           const scaledBidOffers = scaledBidBook.offersAbove(reduction);
 
-          trace(`settling`, pricedOffers.length, scaledBidOffers.length);
           // requested price or BidScaling gives no priority beyond specifying which
           // round the order will be serviced in.
           const prioritizedOffers = [...pricedOffers, ...scaledBidOffers].sort(
             (a, b) => Number(a[1].seqNum - b[1].seqNum),
+          );
+
+          trace(
+            `settling ${prioritizedOffers.length} offers at ${curAuctionPrice} (priced ${pricedOffers.length}, scaled ${scaledBidOffers.length}) `,
           );
 
           const { remainingProceedsGoal } = state;
