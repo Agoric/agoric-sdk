@@ -45,5 +45,23 @@ harden(makeUpgradeDisconnection);
  * @returns {reason is UpgradeDisconnection}
  */
 export const isUpgradeDisconnection = reason =>
-  isFrozen(reason) && matches(reason, UpgradeDisconnectionShape);
+  reason != null && // eslint-disable-line eqeqeq
+  isFrozen(reason) &&
+  matches(reason, UpgradeDisconnectionShape);
 harden(isUpgradeDisconnection);
+
+/**
+ * Returns whether a reason is a 'vat terminated' error generated when an object
+ * is abandoned by a vat during an upgrade.
+ *
+ * @param {any} reason
+ * @returns {reason is Error}
+ */
+export const isAbandonedError = reason =>
+  reason != null && // eslint-disable-line eqeqeq
+  isFrozen(reason) &&
+  matches(reason, M.error()) &&
+  // We're not using a constant here since this special value is already
+  // sprinkled throughout the SDK
+  reason.message === 'vat terminated';
+harden(isAbandonedError);
