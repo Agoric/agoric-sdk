@@ -42,7 +42,7 @@ export const amountsToSettle = ({
     curAuctionPrice,
   );
   if (AmountMath.isEmpty(proceedsExpected)) {
-    return { proceedsNeeded: null };
+    return { proceedsExpected: null };
   }
 
   const targetByProceeds = proceedsLimit =>
@@ -73,6 +73,6 @@ export const amountsToSettle = ({
     'target cannot exceed available',
   );
 
-  return { proceedsNeeded: proceedsExpected, proceedsTarget, collateralTarget };
+  return { proceedsExpected, proceedsTarget, collateralTarget };
 };
 harden(amountsToSettle);

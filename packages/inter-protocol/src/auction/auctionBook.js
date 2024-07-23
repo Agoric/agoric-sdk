@@ -288,7 +288,7 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
             Fail`auctionPrice must be set before each round`;
           assert(curAuctionPrice);
 
-          const { proceedsNeeded, proceedsTarget, collateralTarget } =
+          const { proceedsExpected, proceedsTarget, collateralTarget } =
             amountsToSettle({
               bidAlloc,
               collateralWanted,
@@ -297,7 +297,7 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
               remainingProceedsGoal,
             });
 
-          if (proceedsNeeded === null) {
+          if (proceedsExpected === null) {
             seat.fail(Error('price fell to zero'));
             return makeEmpty(collateralBrand);
           }
