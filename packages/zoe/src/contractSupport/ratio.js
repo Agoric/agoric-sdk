@@ -158,17 +158,26 @@ const divideHelper = (amount, ratio, divideOp) => {
   );
 };
 
-/** @type {ScaleAmount} */
+/**
+ * Divide the amount by the ratio, truncating the remainder.
+ * @type {ScaleAmount}
+ */
 export const floorDivideBy = (amount, ratio) => {
   return divideHelper(amount, ratio, floorDivide);
 };
 
-/** @type {ScaleAmount} */
+/**
+ * Divide the amount by the ratio, rounding up the remainder.
+ * @type {ScaleAmount}
+ */
 export const ceilDivideBy = (amount, ratio) => {
   return divideHelper(amount, ratio, ceilDivide);
 };
 
-/** @type {ScaleAmount} */
+/**
+ * Divide the amount by the ratio, rounding using half-to-even (aka Banker's Rounding) as in IEEE 774 default rounding.
+ * @type {ScaleAmount}
+ */
 export const divideBy = (amount, ratio) => {
   return divideHelper(amount, ratio, bankersDivide);
 };
