@@ -62,8 +62,19 @@ export const amountsToSettle = (
     remainingProceedsGoal || !AmountMath.isGTE(proceedsLimit, proceedsNeeded);
 
   const [proceedsTarget, collateralTarget] = isRaiseLimited
-    ? [proceedsLimit, floorDivideBy(proceedsLimit, curAuctionPrice)]
+    ? [
+        proceedsLimit,
+        AmountMath.min(
+          collateralAvailable,
+          floorDivideBy(proceedsLimit, curAuctionPrice),
+        ),
+      ]
     : [minProceedsTarget, initialCollateralTarget];
+
+  assert(
+    AmountMath.isGTE(collateralAvailable, collateralTarget),
+    'target cannot exceed available',
+  );
 
   return { proceedsNeeded, proceedsTarget, collateralTarget };
 };

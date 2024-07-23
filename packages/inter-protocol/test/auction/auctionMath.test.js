@@ -185,21 +185,20 @@ test(
     collTarget: 1,
   },
 );
-// "currentPriceLevel": "0.4914 IST/stOSMO",
-// "remainingProceedsGoal": "1254.886835 IST",
+
 test(
   'observed in production',
   testAmounts,
   {
-    bid: 1999,
+    bid: 3000,
     want: 2000,
     avail: 1000,
-    price: [4914, 10000],
-    goal: 1254_886835,
+    price: [4914, 10000], // "currentPriceLevel": "0.4914 IST/stOSMO",
+    goal: 1254_886835, // "remainingProceedsGoal": "1254.886835 IST",
   },
   {
     procNeeded: 492,
     procTarget: 492,
-    collTarget: 1001,
+    collTarget: 1000,
   },
 );
