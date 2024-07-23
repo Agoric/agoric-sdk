@@ -3,7 +3,6 @@ import { E } from '@endo/far';
 import { M } from '@endo/patterns';
 
 import { VowShape } from '@agoric/vow';
-import { makeHeapZone } from '@agoric/zone';
 import { CosmosChainInfoShape, IBCConnectionInfoShape } from '../typeGuards.js';
 
 /**
@@ -149,18 +148,18 @@ const ChainHubI = M.interface('ChainHub', {
 });
 
 /**
- * Make a new ChainHub in the zone (or in the heap if no zone is provided).
+ * Make a new ChainHub in the zone.
  *
  * The resulting object is an Exo singleton. It has no precious state. It's only
  * state is a cache of queries to agoricNames and whatever info was provided in
  * registration calls. When you need a newer version you can simply make a hub
  * hub and repeat the registrations.
  *
+ * @param {Zone} zone
  * @param {Remote<NameHub>} agoricNames
  * @param {VowTools} vowTools
  */
-export const makeChainHub = (agoricNames, vowTools) => {
-  const zone = makeHeapZone();
+export const makeChainHub = (zone, agoricNames, vowTools) => {
   /** @type {MapStore<string, CosmosChainInfo>} */
   const chainInfos = zone.mapStore('chainInfos', {
     keyShape: M.string(),
