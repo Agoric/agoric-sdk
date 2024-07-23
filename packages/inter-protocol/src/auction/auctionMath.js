@@ -40,42 +40,42 @@ export const amountsToSettle = (
     collateralAvailable,
   );
 
-  const proceedsNeeded = ceilMultiplyBy(
+  const proceedsExpected = ceilMultiplyBy(
     initialCollateralTarget,
     curAuctionPrice,
   );
-  if (AmountMath.isEmpty(proceedsNeeded)) {
+  if (AmountMath.isEmpty(proceedsExpected)) {
     return { proceedsNeeded: null };
   }
 
-  // proceeds cannot exceed what is needed or being offered
-  const minProceedsTarget = AmountMath.min(proceedsNeeded, bidAlloc);
-  // if there is a proceeds goal from the auction, lower to that
-  const proceedsLimit = remainingProceedsGoal
-    ? AmountMath.min(remainingProceedsGoal, minProceedsTarget)
-    : minProceedsTarget;
-  /**
-   * Whether the volume of the transaction is limited by the proceeds
-   * goal/needs/wants
-   */
-  const isRaiseLimited =
-    remainingProceedsGoal || !AmountMath.isGTE(proceedsLimit, proceedsNeeded);
+  const targetByProceeds = proceedsLimit =>
+    AmountMath.min(
+      collateralAvailable,
+      floorDivideBy(proceedsLimit, curAuctionPrice),
+    );
 
-  const [proceedsTarget, collateralTarget] = isRaiseLimited
-    ? [
-        proceedsLimit,
-        AmountMath.min(
-          collateralAvailable,
-          floorDivideBy(proceedsLimit, curAuctionPrice),
-        ),
-      ]
-    : [minProceedsTarget, initialCollateralTarget];
+  const [proceedsTarget, collateralTarget] = (() => {
+    // proceeds cannot exceed what is needed or being offered
+    const proceedsBidded = AmountMath.min(proceedsExpected, bidAlloc);
+    if (remainingProceedsGoal) {
+      const goalProceeds = AmountMath.min(
+        remainingProceedsGoal,
+        proceedsBidded,
+      );
+      return [goalProceeds, targetByProceeds(goalProceeds)];
+    } else if (AmountMath.isGTE(proceedsBidded, proceedsExpected)) {
+      // initial collateral suffices
+      return [proceedsBidded, initialCollateralTarget];
+    } else {
+      return [proceedsBidded, targetByProceeds(proceedsBidded)];
+    }
+  })();
 
   assert(
     AmountMath.isGTE(collateralAvailable, collateralTarget),
     'target cannot exceed available',
   );
 
-  return { proceedsNeeded, proceedsTarget, collateralTarget };
+  return { proceedsNeeded: proceedsExpected, proceedsTarget, collateralTarget };
 };
 harden(amountsToSettle);
