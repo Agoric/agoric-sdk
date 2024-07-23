@@ -163,9 +163,6 @@ export type VowTools = {
     fn: (...args: any[]) => Vow<Awaited<T>> | Awaited<T> | PromiseVow<T>,
   ) => Vow<Awaited<T>>;
   makeVowKit: <T>() => VowKit<T>;
-  /**
-   * @alpha Not yet implemented
-   */
   retryable: RetryableTool;
   /**
    * @deprecated use `retryable`

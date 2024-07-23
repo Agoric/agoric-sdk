@@ -3,6 +3,7 @@ import { makeAsVow } from './vow-utils.js';
 import { prepareVowKit } from './vow.js';
 import { prepareWatchUtils } from './watch-utils.js';
 import { prepareWatch } from './watch.js';
+import { prepareRetryableTools } from './retryable.js';
 import { makeWhen } from './when.js';
 
 /**
@@ -35,14 +36,10 @@ export const prepareBasicVowTools = (zone, powers = {}) => {
   const watchUtils = makeWatchUtils();
   const asVow = makeAsVow(makeVowKit);
 
-  // FIXME in https://github.com/Agoric/agoric-sdk/pull/9785
-  /** @type {VowTools['retryable']} */
-  const retryable =
-    (fnZone, name, fn) =>
-    // @ts-expect-error cast
-    (...args) => {
-      return watch(fn(...args));
-    };
+  const { retryable } = prepareRetryableTools(zone, {
+    makeVowKit,
+    isRetryableReason,
+  });
 
   /**
    * Vow-tolerant implementation of Promise.all that takes an iterable of vows
