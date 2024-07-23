@@ -752,32 +752,43 @@ function build(
       if (facet !== undefined) {
         result = vrm.getFacet(id, val, facet);
       }
-    } else {
+    } else if (type === 'object') {
+      // Note: an abandonned (e.g. by an upgrade) exported ephemeral or virtual
+      // object would appear as an import if re-introduced. In the future we
+      // may need to change that if we want to keep recognizing such references
+      // In that case we'd need to create an imported presence for these
+      // unknown vrefs allocated by the vat.
+      // See https://github.com/Agoric/agoric-sdk/issues/9746
       !allocatedByVat || Fail`I don't remember allocating ${slot}`;
-      if (type === 'object') {
-        // this is a new import value
-        val = makeImportedPresence(slot, iface);
-      } else if (type === 'promise') {
-        const pRec = makePipelinablePromise(slot);
-        importedVPIDs.set(slot, pRec);
-        val = pRec.promise;
-        // ideally we'd wait until .then is called on p before subscribing,
-        // but the current Promise API doesn't give us a way to discover
-        // this, so we must subscribe right away. If we were using Vows or
-        // some other then-able, we could just hook then() to notify us.
-        if (importedPromises) {
-          // leave the subscribe() up to dispatch.notify()
-          importedPromises.add(slot);
-        } else {
-          // probably in dispatch.deliver(), so subscribe now
-          syscall.subscribe(slot);
-        }
-      } else if (type === 'device') {
-        val = makeDeviceNode(slot, iface);
-        importedDevices.add(val);
+      // this is a new import value
+      val = makeImportedPresence(slot, iface);
+    } else if (type === 'promise') {
+      // We unconditionally create a promise record, even if the promise looks
+      // like it was allocated by us. This can happen when re-importing a
+      // promise created by the previous incarnation. We may or may not have
+      // been the decider of the promise. If we were, the kernel will be
+      // rejecting the promise on our behalf. We may have previously been
+      // subscribed to that promise, but subscription is idempotent.
+      const pRec = makePipelinablePromise(slot);
+      importedVPIDs.set(slot, pRec);
+      val = pRec.promise;
+      // ideally we'd wait until .then is called on p before subscribing,
+      // but the current Promise API doesn't give us a way to discover
+      // this, so we must subscribe right away. If we were using Vows or
+      // some other then-able, we could just hook then() to notify us.
+      if (importedPromises) {
+        // leave the subscribe() up to dispatch.notify()
+        importedPromises.add(slot);
       } else {
-        Fail`unrecognized slot type '${type}'`;
+        // probably in dispatch.deliver(), so subscribe now
+        syscall.subscribe(slot);
       }
+    } else if (type === 'device') {
+      !allocatedByVat || Fail`unexpected device ${slot} allocated by vat`;
+      val = makeDeviceNode(slot, iface);
+      importedDevices.add(val);
+    } else {
+      Fail`unrecognized slot type '${type}'`;
     }
     registerValue(baseRef, val, facet !== undefined);
     if (!result) {
@@ -790,7 +801,25 @@ function build(
     meterControl.assertNotMetered();
     const { type } = parseVatSlot(slot);
     type === 'promise' || Fail`revivePromise called on non-promise ${slot}`;
-    !getValForSlot(slot) || Fail`revivePromise called on pre-existing ${slot}`;
+    const val = getValForSlot(slot);
+    if (val) {
+      // revivePromise is only called by loadWatchedPromiseTable, which runs
+      // after buildRootObject(), which is given the deserialized vatParameters.
+      // The only way revivePromise() might encounter a pre-existing vpid is if
+      // these vatParameters include a promise that the previous incarnation
+      // watched, but that `buildRootObject` in the new incarnation didn't
+      // explicitly watch again. This can be either a previously imported
+      // promise, or a promise the previous incarnation exported, regardless of
+      // who the decider now is.
+      //
+      // In that case convertSlotToVal() has already deserialized the vpid, but
+      // since `buildRootObject` didn't explicitely call watchPromise on it, no
+      // registration exists so loadWatchedPromiseTable attempts to revive the
+      // promise.
+      return val;
+    }
+    // NOTE: it is important that this code not do anything *more*
+    // than what convertSlotToVal(vpid) would do
     const pRec = makePipelinablePromise(slot);
     importedVPIDs.set(slot, pRec);
     const p = pRec.promise;
@@ -1593,12 +1622,10 @@ function build(
     } else if (delivery[0] === 'stopVat') {
       return meterControl.runWithoutMeteringAsync(() => stopVat(delivery[1]));
     } else {
-      let complete = false;
       // Start user code running, record any internal liveslots errors. We do
       // *not* directly wait for the userspace function to complete, nor for
       // any promise it returns to fire.
       const p = Promise.resolve(delivery).then(unmeteredDispatch);
-      void p.finally(() => (complete = true));
 
       // Instead, we wait for userspace to become idle by draining the
       // promise queue. We clean up and then examine/return 'p' so any
@@ -1609,10 +1636,11 @@ function build(
       return gcTools.waitUntilQuiescent().then(() => {
         afterDispatchActions();
         // eslint-disable-next-line prefer-promise-reject-errors
-        return complete ? p : Promise.reject('buildRootObject unresolved');
+        return Promise.race([p, Promise.reject('buildRootObject unresolved')]);
         // the only delivery that pays attention to a user-provided
         // Promise is startVat, so the error message is specialized to
-        // the only user problem that could cause complete===false
+        // the only user problem that could cause the promise to not be
+        // settled.
       });
     }
   }
