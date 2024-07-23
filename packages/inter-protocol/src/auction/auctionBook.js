@@ -288,16 +288,19 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
             Fail`auctionPrice must be set before each round`;
           assert(curAuctionPrice);
 
-          const { proceedsNeeded, proceedsTarget, collateralTarget } =
-            amountsToSettle({
-              bidAlloc,
-              collateralWanted,
-              collateralAvailable,
-              curAuctionPrice,
-              remainingProceedsGoal,
-            });
+          const { proceedsExpected, proceedsTarget, collateralTarget } =
+            amountsToSettle(
+              {
+                bidAlloc,
+                collateralWanted,
+                collateralAvailable,
+                curAuctionPrice,
+                remainingProceedsGoal,
+              },
+              trace,
+            );
 
-          if (proceedsNeeded === null) {
+          if (proceedsExpected === null) {
             seat.fail(Error('price fell to zero'));
             return makeEmpty(collateralBrand);
           }
