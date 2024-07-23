@@ -59,6 +59,8 @@ export const provideOrchestration = (
     return {
       /** system names for async flow */
       asyncFlow: zone.subZone('asyncFlow'),
+      /** system zone for chain hub */
+      chainHub: zone.subZone('chainHub'),
       /** system names for orchestration implementation */
       orchestration: zone.subZone('orchestration'),
       /** system names for vows */
@@ -72,7 +74,7 @@ export const provideOrchestration = (
 
   const vowTools = prepareVowTools(zones.vows);
 
-  const chainHub = makeChainHub(agoricNames, vowTools);
+  const chainHub = makeChainHub(zones.chainHub, agoricNames, vowTools);
 
   const zoeTools = makeZoeTools(zcf, vowTools);
 

@@ -229,6 +229,13 @@ const makeScenario = () => {
     eventLoopIteration,
   });
   const { nameHub: agoricNames } = makeNameHubKit();
+
+  const chainHub = makeChainHub(
+    zone.subZone('chainHub'),
+    agoricNames,
+    vowTools,
+  );
+
   return {
     baggage,
     zone,
@@ -238,6 +245,7 @@ const makeScenario = () => {
     timer,
     icqConnection,
     vowTools,
+    chainHub,
     ...mockZCF(),
     agoricNames,
   };
@@ -247,16 +255,16 @@ test('makeAccount() writes to storage', async t => {
   const s = makeScenario();
   const { account, timer } = s;
   const {
-    agoricNames,
     makeRecorderKit,
     storageNode,
     zcf,
     icqConnection,
     vowTools,
+    chainHub,
     zone,
   } = s;
   const make = prepareCosmosOrchestrationAccountKit(zone, {
-    chainHub: makeChainHub(agoricNames, vowTools),
+    chainHub,
     makeRecorderKit,
     timerService: timer,
     vowTools,
@@ -295,16 +303,16 @@ test('withdrawRewards() on StakingAccountHolder formats message correctly', asyn
   const s = makeScenario();
   const { account, calls, timer } = s;
   const {
-    agoricNames,
     makeRecorderKit,
     storageNode,
     zcf,
     icqConnection,
     vowTools,
+    chainHub,
     zone,
   } = s;
   const make = prepareCosmosOrchestrationAccountKit(zone, {
-    chainHub: makeChainHub(agoricNames, vowTools),
+    chainHub,
     makeRecorderKit,
     timerService: timer,
     vowTools,
@@ -339,17 +347,17 @@ test(`delegate; redelegate using invitationMakers`, async t => {
   const s = makeScenario();
   const { account, calls, timer } = s;
   const {
-    agoricNames,
     makeRecorderKit,
     storageNode,
     zcf,
     zoe,
     icqConnection,
     vowTools,
+    chainHub,
     zone,
   } = s;
   const makeAccountKit = prepareCosmosOrchestrationAccountKit(zone, {
-    chainHub: makeChainHub(agoricNames, vowTools),
+    chainHub,
     makeRecorderKit,
     timerService: timer,
     vowTools,
@@ -429,17 +437,17 @@ test(`withdraw rewards using invitationMakers`, async t => {
   const s = makeScenario();
   const { account, calls, timer } = s;
   const {
-    agoricNames,
     makeRecorderKit,
     storageNode,
     zcf,
     zoe,
     icqConnection,
     vowTools,
+    chainHub,
     zone,
   } = s;
   const makeAccountKit = prepareCosmosOrchestrationAccountKit(zone, {
-    chainHub: makeChainHub(agoricNames, vowTools),
+    chainHub,
     makeRecorderKit,
     timerService: timer,
     vowTools,
@@ -477,17 +485,17 @@ test(`undelegate waits for unbonding period`, async t => {
   const s = makeScenario();
   const { account, calls, timer } = s;
   const {
-    agoricNames,
     makeRecorderKit,
     storageNode,
     zcf,
     zoe,
     icqConnection,
     vowTools,
+    chainHub,
     zone,
   } = s;
   const makeAccountKit = prepareCosmosOrchestrationAccountKit(zone, {
-    chainHub: makeChainHub(agoricNames, vowTools),
+    chainHub,
     makeRecorderKit,
     timerService: timer,
     vowTools,
