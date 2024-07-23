@@ -46,8 +46,13 @@ export const startStakeAtom = async ({
   const storageNode = await makeStorageNodeChild(chainStorage, VSTORAGE_PATH);
   const marshaller = await E(board).getPublishingMarshaller();
 
-  const vt = prepareVowTools(makeHeapZone());
-  const chainHub = makeChainHub(await agoricNames, vt);
+  const zone = makeHeapZone();
+  const vt = prepareVowTools(zone.subZone('vows'));
+  const chainHub = makeChainHub(
+    zone.subZone('chainHub'),
+    await agoricNames,
+    vt,
+  );
 
   const [_, cosmoshub, connectionInfo] = await vt.when(
     chainHub.getChainsAndConnection('agoric', 'cosmoshub'),

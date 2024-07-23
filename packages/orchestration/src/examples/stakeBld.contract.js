@@ -42,7 +42,11 @@ export const start = async (zcf, privateArgs, baggage) => {
   );
   const vowTools = prepareVowTools(zone.subZone('vows'));
 
-  const chainHub = makeChainHub(privateArgs.agoricNames, vowTools);
+  const chainHub = makeChainHub(
+    zone.subZone('chainHub'),
+    privateArgs.agoricNames,
+    vowTools,
+  );
 
   const { localchain, timerService } = privateArgs;
   const makeLocalOrchestrationAccountKit = prepareLocalOrchestrationAccountKit(

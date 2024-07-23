@@ -45,9 +45,9 @@ const connection = {
 // fresh state for each test
 const setup = () => {
   const zone = provideDurableZone('root');
-  const vt = prepareSwingsetVowTools(zone);
+  const vt = prepareSwingsetVowTools(zone.subZone('vows'));
   const { nameHub, nameAdmin } = makeNameHubKit();
-  const chainHub = makeChainHub(nameHub, vt);
+  const chainHub = makeChainHub(zone.subZone('chainHub'), nameHub, vt);
 
   return { chainHub, nameAdmin, vt };
 };
