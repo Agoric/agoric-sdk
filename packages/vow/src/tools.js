@@ -3,6 +3,7 @@ import { makeAsVow } from './vow-utils.js';
 import { prepareVowKit } from './vow.js';
 import { prepareWatchUtils } from './watch-utils.js';
 import { prepareWatch } from './watch.js';
+import { prepareRetriableTools } from './retriable.js';
 import { makeWhen } from './when.js';
 
 /**
@@ -33,23 +34,10 @@ export const prepareBasicVowTools = (zone, powers = {}) => {
   const watchUtils = makeWatchUtils();
   const asVow = makeAsVow(makeVowKit);
 
-  /**
-   * TODO FIXME make this real
-   * Create a function that retries the given function if the underlying
-   * functions rejects due to upgrade disconnection.
-   *
-   * @template {(...args: any[]) => Promise<any>} F
-   * @param {Zone} fnZone - the zone for the named function
-   * @param {string} name
-   * @param {F} fn
-   * @returns {F extends (...args: infer Args) => Promise<infer R> ? (...args: Args) => Vow<R> : never}
-   */
-  const retriable =
-    (fnZone, name, fn) =>
-    // @ts-expect-error cast
-    (...args) => {
-      return watch(fn(...args));
-    };
+  const { retriable } = prepareRetriableTools(zone, {
+    makeVowKit,
+    isRetryableReason,
+  });
 
   /**
    * Vow-tolerant implementation of Promise.all.
