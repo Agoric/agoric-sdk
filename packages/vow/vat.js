@@ -5,7 +5,10 @@
 
 /* global globalThis */
 // @ts-check
-import { isUpgradeDisconnection } from '@agoric/internal/src/upgrade-api.js';
+import {
+  isUpgradeDisconnection,
+  isAbandonedError,
+} from '@agoric/internal/src/upgrade-api.js';
 import { makeHeapZone } from '@agoric/base-zone/heap.js';
 
 import { prepareBasicVowTools } from './src/tools.js';
@@ -15,9 +18,14 @@ import makeE from './src/E.js';
 const isRetryableReason = (reason, priorRetryValue) => {
   if (
     isUpgradeDisconnection(reason) &&
-    (!priorRetryValue ||
+    (!isUpgradeDisconnection(priorRetryValue) ||
       reason.incarnationNumber > priorRetryValue.incarnationNumber)
   ) {
+    return reason;
+  }
+  // For abandoned errors there is no way to differentiate errors from
+  // consecutive upgrades
+  if (isAbandonedError(reason) && !isAbandonedError(priorRetryValue)) {
     return reason;
   }
   return undefined;
