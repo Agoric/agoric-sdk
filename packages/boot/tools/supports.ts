@@ -35,6 +35,8 @@ import {
 
 import type { ExecutionContext as AvaT } from 'ava';
 
+import type { JsonSafe } from '@agoric/cosmic-proto';
+import type { MsgDelegateResponse } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/tx.js';
 import type { CoreEvalSDKType } from '@agoric/cosmic-proto/swingset/swingset.js';
 import type { EconomyBootstrapPowers } from '@agoric/inter-protocol/src/proposals/econ-behaviors.js';
 import type { SwingsetController } from '@agoric/swingset-vat/src/controller/controller.js';
@@ -464,7 +466,7 @@ export const makeSwingsetTestKit = async (
                     // this results in `syscall.callNow failed: device.invoke failed, see logs for details`
                     throw Error('simulated packet timeout');
                   }
-                  return /** @type {JsonSafe<MsgDelegateResponse>} */ {};
+                  return {} as JsonSafe<MsgDelegateResponse>;
                 }
                 // returns one empty object per message unless specified
                 default:
