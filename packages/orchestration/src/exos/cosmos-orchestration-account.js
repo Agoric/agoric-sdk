@@ -9,6 +9,10 @@ import {
   MsgWithdrawDelegatorRewardResponse,
 } from '@agoric/cosmic-proto/cosmos/distribution/v1beta1/tx.js';
 import {
+  QueryDelegatorDelegationsRequest,
+  QueryDelegatorDelegationsResponse,
+} from '@agoric/cosmic-proto/cosmos/staking/v1beta1/query.js';
+import {
   MsgBeginRedelegate,
   MsgDelegate,
   MsgUndelegate,
@@ -33,7 +37,7 @@ import { orchestrationAccountMethods } from '../utils/orchestrationAccount.js';
 
 /**
  * @import {HostOf} from '@agoric/async-flow';
- * @import {AmountArg, IcaAccount, ChainAddress, CosmosValidatorAddress, ICQConnection, StakingAccountActions, DenomAmount, OrchestrationAccountI, DenomArg} from '../types.js';
+ * @import {AmountArg, IcaAccount, ChainAddress, CosmosValidatorAddress, ICQConnection, StakingAccountActions, StakingAccountQueries, DenomAmount, OrchestrationAccountI, DenomArg} from '../types.js';
  * @import {RecorderKit, MakeRecorderKit} from '@agoric/zoe/src/contractSupport/recorder.js';
  * @import {Coin} from '@agoric/cosmic-proto/cosmos/base/v1beta1/coin.js';
  * @import {Delegation} from '@agoric/cosmic-proto/cosmos/staking/v1beta1/staking.js';
@@ -70,6 +74,7 @@ const { Vow$ } = NetworkShape; // TODO #9611
 /** @see {OrchestrationAccountI} */
 export const IcaAccountHolderI = M.interface('IcaAccountHolder', {
   ...orchestrationAccountMethods,
+  getDelegations: M.callWhen().returns(M.arrayOf(DelegationShape)),
   delegate: M.call(ChainAddressShape, AmountArgShape).returns(VowShape),
   redelegate: M.call(
     ChainAddressShape,
@@ -117,6 +122,11 @@ export const prepareCosmosOrchestrationAccountKit = (
           .returns(M.undefined()),
       }),
       balanceQueryWatcher: M.interface('balanceQueryWatcher', {
+        onFulfilled: M.call(M.arrayOf(M.record()))
+          .optional(M.arrayOf(M.undefined())) // empty context
+          .returns(M.or(M.record(), M.undefined())),
+      }),
+      delegationsQueryWatcher: M.interface('delegationsQueryWatcher', {
         onFulfilled: M.call(M.arrayOf(M.record()))
           .optional(M.arrayOf(M.undefined())) // empty context
           .returns(M.or(M.record(), M.undefined())),
@@ -239,6 +249,18 @@ export const prepareCosmosOrchestrationAccountKit = (
           return undefined;
         },
       },
+      delegationsQueryWatcher: {
+        onFulfilled(results) {
+          const { delegationResponses, pagination } =
+            QueryDelegatorDelegationsResponse.decode(
+              decodeBase64(results[0].key),
+            );
+          if (pagination) {
+            console.error('pagination not implemented', pagination);
+          }
+          return delegationResponses.map(d => d.delegation);
+        },
+      },
       withdrawRewardWatcher: {
         /** @param {string} result */
         onFulfilled(result) {
@@ -351,6 +373,24 @@ export const prepareCosmosOrchestrationAccountKit = (
         /** @type {HostOf<OrchestrationAccountI['getAddress']>} */
         getAddress() {
           return this.state.chainAddress;
+        },
+        /**
+         * @type {StakingAccountQueries['getDelegations']}
+         *
+         *   TODO: move queries to a read-only facet?
+         */
+        getDelegations() {
+          return asVow(() => {
+            const { chainAddress, icqConnection } = this.state;
+            const results = E(icqConnection).query([
+              toRequestQueryJson(
+                QueryDelegatorDelegationsRequest.toProtoMsg({
+                  delegatorAddr: chainAddress.value,
+                }),
+              ),
+            ]);
+            return watch(results, this.facets.delegationsQueryWatcher);
+          });
         },
         /** @type {HostOf<StakingAccountActions['delegate']>} */
         delegate(validator, amount) {
