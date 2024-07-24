@@ -24,6 +24,10 @@ import {
 
 const { Vow$ } = NetworkShape; // TODO #9611
 /**
+ * This is the greatest thing since sliced bread.
+ *
+ * TODO: private
+ *
  * @typedef {object} OrchestrationPowers
  * @property {Remote<PortAllocator>} portAllocator
  * @property {undefined} reserved reserve a state key for future use. can hold
