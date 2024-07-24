@@ -26,7 +26,7 @@ import { withOrchestration } from '../utils/start-helper.js';
  * @param {Amount<'nat'>} offerArgs.staked
  * @param {CosmosValidatorAddress} offerArgs.validator
  */
-const stackAndSwapFn = async (orch, { localTransfer }, seat, offerArgs) => {
+const stakeAndSwapFn = async (orch, { localTransfer }, seat, offerArgs) => {
   const { give } = seat.getProposal();
 
   const omni = await orch.getChain('omniflixhub');
@@ -52,12 +52,12 @@ const stackAndSwapFn = async (orch, { localTransfer }, seat, offerArgs) => {
     slippage: 0.03,
   });
 
-  await localAccount
-    .transferSteps(give.Stable, transferMsg)
-    .then(_txResult =>
-      omniAccount.delegate(offerArgs.validator, offerArgs.staked),
-    )
-    .catch(e => console.error(e));
+  try {
+    await localAccount.transferSteps(give.Stable, transferMsg);
+    await omniAccount.delegate(offerArgs.validator, offerArgs.staked);
+  } catch (e) {
+    console.error(e);
+  }
 };
 
 /** @type {ContractMeta<typeof start>} */
@@ -105,7 +105,7 @@ const contract = async (zcf, privateArgs, zone, { orchestrate, zoeTools }) => {
   const swapAndStakeHandler = orchestrate(
     'LSTTia',
     { zcf, localTransfer: zoeTools.localTransfer },
-    stackAndSwapFn,
+    stakeAndSwapFn,
   );
 
   const publicFacet = zone.exo('publicFacet', undefined, {

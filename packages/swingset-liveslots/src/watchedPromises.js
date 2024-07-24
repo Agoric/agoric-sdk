@@ -139,6 +139,12 @@ export function makeWatchedPromiseManager({
    */
   function loadWatchedPromiseTable(revivePromise) {
     for (const vpid of watchedPromiseTable.keys()) {
+      if (promiseRegistrations.has(vpid)) {
+        // We're only interested in reconnecting the promises from the previous
+        // incarnation. Any promise watched during buildRootObject would have
+        // already created a registration.
+        continue;
+      }
       const p = revivePromise(vpid);
       promiseRegistrations.init(vpid, p);
       pseudoThen(p, vpid);
