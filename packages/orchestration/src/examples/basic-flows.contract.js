@@ -42,13 +42,14 @@ const makeOrchAccountHandler = async (orch, _ctx, seat, { chainName }) => {
  *
  * @satisfies {OrchestrationFlow}
  * @param {Orchestrator} orch
- * @param {MakePortfolioHolder} makePortfolioHolder
+ * @param {object} ctx
+ * @param {MakePortfolioHolder} ctx.makePortfolioHolder
  * @param {ZCFSeat} seat
  * @param {{ chainNames: string[] }} offerArgs
  */
 const makePortfolioAcctHandler = async (
   orch,
-  makePortfolioHolder,
+  { makePortfolioHolder },
   seat,
   { chainNames },
 ) => {
@@ -102,7 +103,7 @@ const contract = async (zcf, _privateArgs, zone, { orchestrate, vowTools }) => {
 
   const makePortfolioAccount = orchestrate(
     'makePortfolioAccount',
-    makePortfolioHolder,
+    { makePortfolioHolder },
     makePortfolioAcctHandler,
   );
 
