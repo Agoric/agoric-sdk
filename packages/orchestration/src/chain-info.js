@@ -9,10 +9,14 @@ import {
 import fetchedChainInfo from './fetched-chain-info.js'; // Refresh with scripts/refresh-chain-info.ts
 import { CosmosAssetInfoShape, CosmosChainInfoShape } from './typeGuards.js';
 
-/** @import {CosmosAssetInfo, CosmosChainInfo, EthChainInfo, IBCConnectionInfo} from './types.js'; */
+/** @import {Chain, CosmosAssetInfo, CosmosChainInfo, EthChainInfo, IBCConnectionInfo} from './types.js'; */
 /** @import {NameAdmin} from '@agoric/vats'; */
 
-/** @typedef {CosmosChainInfo | EthChainInfo} ChainInfo */
+/**
+ * Info used to build a {@link Chain} object - naming, connections, etc.
+ *
+ * @typedef {CosmosChainInfo | EthChainInfo} ChainInfo
+ */
 
 const knownChains = /** @satisfies {Record<string, ChainInfo>} */ (
   harden({
