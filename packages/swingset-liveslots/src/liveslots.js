@@ -1320,7 +1320,7 @@ function build(
     syscall.dropImports([slot]);
   }
 
-  const vatGlobals = {
+  const vatGlobals = harden({
     VatData: {
       defineKind: vom.defineKind,
       defineKindMulti: vom.defineKindMulti,
@@ -1336,8 +1336,7 @@ function build(
       makeScalarBigWeakSetStore: collectionManager.makeScalarBigWeakSetStore,
     },
     [PassStyleOfEndowmentSymbol]: passStyleOf,
-  };
-  harden(vatGlobals);
+  });
 
   const inescapableGlobalProperties = harden({
     WeakMap: vom.VirtualObjectAwareWeakMap,
