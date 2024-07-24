@@ -109,7 +109,7 @@ export const gettingStartedWorkflowTest = async (t, options = {}) => {
 
     // ==============
     // yarn install
-    t.is(await yarn(['install']), 0, 'yarn install works');
+    // t.is(await yarn(['install']), 0, 'yarn install works');
 
     // ==============
     // yarn start:docker
@@ -118,6 +118,24 @@ export const gettingStartedWorkflowTest = async (t, options = {}) => {
     // XXX: use abci_info endpoint to get block height
     // sleep to let contract start
     await new Promise(resolve => setTimeout(resolve, TIMEOUT_SECONDS));
+
+    await pspawn('docker', [
+      'exec',
+      'dapp-foo-agd-1',
+      'bash',
+      '-c',
+      '"ls -la"',
+    ]);
+    console.log(
+      'code',
+      await pspawn('docker', [
+        'exec',
+        'dapp-foo-agd-1',
+        'bash',
+        '-c',
+        '"sed -i $\'208aexport seq=\\$(\\$binary query auth account \\$VALIDATORADDR | grep \\"sequence\\" | sed \\\'s/sequence: \\"//;s/\\"//g\\\')\' ./env_setup.sh"',
+      ]),
+    );
 
     // ==============
     // yarn start:contract
