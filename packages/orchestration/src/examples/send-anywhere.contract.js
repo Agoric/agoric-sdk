@@ -13,7 +13,7 @@ import { prepareChainHubAdmin } from '../exos/chain-hub-admin.js';
  * @import {Remote, Vow} from '@agoric/vow';
  * @import {Zone} from '@agoric/zone';
  * @import {VBankAssetDetail} from '@agoric/vats/tools/board-utils.js';
- * @import {CosmosInterchainService} from '../exos/cosmos-interchain-service.js';
+ * @import {CosmosInterchainService} from '../exos/exo-interfaces.js';
  * @import {OrchestrationTools} from '../utils/start-helper.js';
  */
 

@@ -20,7 +20,7 @@ import {
  * @import {Remote} from '@agoric/internal';
  * @import {Vow, VowTools} from '@agoric/vow';
  * @import {LocalIbcAddress, RemoteIbcAddress} from '@agoric/vats/tools/ibc-utils.js';
- * @import {CosmosInterchainService} from './cosmos-interchain-service.js';
+ * @import {CosmosInterchainService} from './exo-interfaces.js';
  * @import {prepareCosmosOrchestrationAccount} from './cosmos-orchestration-account.js';
  * @import {CosmosChainInfo, IBCConnectionInfo, ChainAddress, IcaAccount, Chain, ICQConnection} from '../types.js';
  */

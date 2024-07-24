@@ -1,15 +1,16 @@
 /** @file Orchestration service */
 
+import { Shape as NetworkShape } from '@agoric/network';
+import { pickFacet } from '@agoric/vat-data';
 import { E } from '@endo/far';
 import { M, mustMatch } from '@endo/patterns';
-import { Shape as NetworkShape } from '@agoric/network';
-import { prepareIcaAccountKit } from './ica-account-kit.js';
-import { prepareICQConnectionKit } from './icq-connection-kit.js';
 import {
   DEFAULT_ICQ_VERSION,
   makeICAChannelAddress,
   makeICQChannelAddress,
 } from '../utils/address.js';
+import { prepareIcaAccountKit } from './ica-account-kit.js';
+import { prepareICQConnectionKit } from './icq-connection-kit.js';
 
 /**
  * @import {Zone} from '@agoric/base-zone';
@@ -20,6 +21,7 @@ import {
  * @import {Vow, VowTools} from '@agoric/vow';
  * @import {ICQConnection, IcaAccount, ICQConnectionKit, IcaAccountKit} from '../types.js';
  * @import {ICAChannelAddressOpts} from '../utils/address.js';
+ * @import {CosmosInterchainService} from './exo-interfaces.js';
  */
 
 const { Vow$ } = NetworkShape; // TODO #9611
@@ -183,6 +185,7 @@ const prepareCosmosOrchestrationServiceKit = (
       },
       public: {
         /**
+         * @satisfies {CosmosInterchainService['makeAccount']}
          * @param {string} chainId
          * @param {IBCConnectionID} hostConnectionId the counterparty
          *   connection_id
@@ -208,6 +211,7 @@ const prepareCosmosOrchestrationServiceKit = (
           );
         },
         /**
+         * @satisfies {CosmosInterchainService['provideICQConnection']}
          * @param {IBCConnectionID} controllerConnectionId
          * @param {string} [version]
          * @returns {Vow<ICQConnection> | ICQConnection}
@@ -262,12 +266,13 @@ export const prepareCosmosInterchainService = (zone, vowTools) => {
       makeICQConnectionKit,
     );
 
-  const makeCosmosInterchainService = initialPowers =>
-    makeCosmosOrchestrationServiceKit(initialPowers).public;
+  const makeCosmosInterchainService = pickFacet(
+    makeCosmosOrchestrationServiceKit,
+    'public',
+  );
 
   return makeCosmosInterchainService;
 };
 harden(prepareCosmosInterchainService);
 
 /** @typedef {ReturnType<typeof prepareCosmosInterchainService>} MakeCosmosInterchainService */
-/** @typedef {ReturnType<MakeCosmosInterchainService>} CosmosInterchainService */

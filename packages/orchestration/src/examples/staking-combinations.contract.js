@@ -22,7 +22,7 @@ import * as flows from './staking-combinations.flows.js';
  * @import {Vow} from '@agoric/vow';
  * @import {Remote} from '@agoric/internal';
  * @import {Zone} from '@agoric/zone';
- * @import {CosmosInterchainService} from '../exos/cosmos-interchain-service.js';
+ * @import {CosmosInterchainService} from '../exos/exo-interfaces.js';
  * @import {OrchestrationTools} from '../utils/start-helper.js';
  * @import {CosmosOrchestrationAccount} from '../exos/cosmos-orchestration-account.js';
  */

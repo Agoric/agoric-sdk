@@ -5,7 +5,7 @@
  * @import {NameHub} from '@agoric/vats';
  * @import {Remote} from '@agoric/internal';
  * @import {Zone} from '@agoric/zone';
- * @import {CosmosInterchainService} from '../exos/cosmos-interchain-service.js';
+ * @import {CosmosInterchainService} from '../exos/exo-interfaces.js';
  * @import {OrchestrationTools} from '../utils/start-helper.js';
  */
 

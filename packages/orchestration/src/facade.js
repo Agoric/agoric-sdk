@@ -9,7 +9,7 @@ import { assertAllDefined, deepMapObject } from '@agoric/internal';
  * @import {RecorderKit, MakeRecorderKit} from '@agoric/zoe/src/contractSupport/recorder.js'.
  * @import {HostOrchestrator} from './exos/orchestrator.js';
  * @import {Remote} from '@agoric/internal';
- * @import {CosmosInterchainService} from './exos/cosmos-interchain-service.js';
+ * @import {CosmosInterchainService} from './exos/exo-interfaces.js';
  * @import {Chain, ChainInfo, CosmosChainInfo, IBCConnectionInfo, OrchestrationAccount, OrchestrationFlow, Orchestrator} from './types.js';
  */
 
