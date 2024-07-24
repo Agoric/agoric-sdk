@@ -27,7 +27,7 @@ function makeVatRootObjectSlot() {
   return makeVatSlot('object', true, 0);
 }
 
-/*
+/**
  * @param {SwingSetKernelConfig} config
  * @param {SwingStoreKernelStorage} kernelStorage
  * @param {*} [options]
@@ -78,7 +78,7 @@ export async function initializeKernel(config, kernelStorage, options = {}) {
 
   for (const id of Object.keys(config.idToBundle || {})) {
     const bundle = config.idToBundle[id];
-    assert.equal(bundle.moduleFormat, 'endoZipBase64');
+    assert(bundle.moduleFormat === 'endoZipBase64');
     if (!kernelKeeper.hasBundle(id)) {
       kernelKeeper.addBundle(id, bundle);
     }

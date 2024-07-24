@@ -3,8 +3,8 @@
 export {};
 
 /**
- * @import {Guarded} from '@endo/exo')
- * @import {Passable, RemotableObject} from '@endo/pass-style')
+ * @import {Guarded} from '@endo/exo';
+ * @import {Passable, RemotableObject} from '@endo/pass-style';
  */
 
 /* This file defines types that part of the external API of swingset. That
@@ -167,6 +167,7 @@ export {};
  *   bundleName: string
  * }} BundleName
  * @typedef {(SourceSpec | BundleSpec | BundleRef | BundleName ) & {
+ *   bundleID?: BundleID,
  *   creationOptions?: Record<string, any>,
  *   parameters?: Record<string, any>,
  * }} SwingSetConfigProperties
