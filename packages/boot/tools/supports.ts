@@ -7,13 +7,13 @@ import { resolve as importMetaResolve } from 'import-meta-resolve';
 import { basename, join } from 'path';
 import { inspect } from 'util';
 
-import { Fail } from '@endo/errors';
 import { buildSwingset } from '@agoric/cosmic-swingset/src/launch-chain.js';
 import {
   BridgeId,
   NonNullish,
   VBankAccount,
   makeTracer,
+  type Remote,
 } from '@agoric/internal';
 import { unmarshalFromVstorage } from '@agoric/internal/src/marshal.js';
 import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
@@ -22,20 +22,54 @@ import { initSwingStore } from '@agoric/swing-store';
 import { loadSwingsetConfigFile } from '@agoric/swingset-vat';
 import { makeSlogSender } from '@agoric/telemetry';
 import { TimeMath, Timestamp } from '@agoric/time';
+import { Fail } from '@endo/errors';
 
+import {
+  makeRunUtils,
+  type RunUtils,
+} from '@agoric/swingset-vat/tools/run-utils.js';
 import {
   boardSlottingMarshaller,
   slotToBoardRemote,
 } from '@agoric/vats/tools/board-utils.js';
-import { makeRunUtils } from '@agoric/swingset-vat/tools/run-utils.js';
 
 import type { ExecutionContext as AvaT } from 'ava';
 
 import type { CoreEvalSDKType } from '@agoric/cosmic-proto/swingset/swingset.js';
+import type { EconomyBootstrapPowers } from '@agoric/inter-protocol/src/proposals/econ-behaviors.js';
+import type { SwingsetController } from '@agoric/swingset-vat/src/controller/controller.js';
 import type { BridgeHandler, IBCMethod } from '@agoric/vats';
+import type { BootstrapRootObject } from '@agoric/vats/src/core/lib-boot.js';
+import type { EProxy } from '@endo/eventual-send';
 import { icaMocks, protoMsgMocks } from './ibc/mocks.js';
 
 const trace = makeTracer('BSTSupport', false);
+
+type ConsumeBootrapItem = <N extends string>(
+  name: N,
+) => N extends keyof EconomyBootstrapPowers['consume']
+  ? EconomyBootstrapPowers['consume'][N]
+  : unknown;
+
+// XXX should satisfy EVProxy from run-utils.js but that's failing to import
+/**
+ * Elaboration of EVProxy with knowledge of bootstrap space in these tests.
+ */
+type BootstrapEV = EProxy & {
+  sendOnly: (presence: unknown) => Record<string, (...args: any) => void>;
+  vat: <N extends string>(
+    name: N,
+  ) => N extends 'bootstrap'
+    ? Omit<BootstrapRootObject, 'consumeItem'> & {
+        // XXX not really local
+        consumeItem: ConsumeBootrapItem;
+      } & Remote<{ consumeItem: ConsumeBootrapItem }>
+    : Record<string, (...args: any) => Promise<any>>;
+};
+
+const makeBootstrapRunUtils = makeRunUtils as (
+  controller: SwingsetController,
+) => Omit<RunUtils, 'EV'> & { EV: BootstrapEV };
 
 const keysToObject = <K extends PropertyKey, V>(
   keys: K[],
@@ -477,7 +511,7 @@ export const makeSwingsetTestKit = async (
 
   console.timeLog('makeBaseSwingsetTestKit', 'buildSwingset');
 
-  const runUtils = makeRunUtils(controller);
+  const runUtils = makeBootstrapRunUtils(controller);
 
   const buildProposal = makeProposalExtractor({
     childProcess: childProcessAmbient,
