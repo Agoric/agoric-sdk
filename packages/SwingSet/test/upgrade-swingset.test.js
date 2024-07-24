@@ -35,7 +35,7 @@ test('kernel refuses to run with out-of-date DB', async t => {
 
   // Now build a controller around this modified state, which should fail.
   await t.throwsAsync(() => makeSwingsetController(kernelStorage), {
-    message: /kernel DB has version .* but expected/,
+    message: /kernel DB is too old/,
   });
 });
 
@@ -106,7 +106,7 @@ test('upgrade kernel state', async t => {
 
   // confirm that this state is too old for the kernel to use
   await t.throwsAsync(() => makeSwingsetController(kernelStorage), {
-    message: /kernel DB has version .* but expected/,
+    message: /kernel DB is too old/,
   });
 
   // upgrade it
@@ -188,7 +188,7 @@ test('upgrade non-reaping kernel state', async t => {
 
   // confirm that this state is too old for the kernel to use
   await t.throwsAsync(() => makeSwingsetController(kernelStorage), {
-    message: /kernel DB has version .* but expected/,
+    message: /kernel DB is too old/,
   });
 
   // upgrade it

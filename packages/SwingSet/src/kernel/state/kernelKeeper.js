@@ -238,17 +238,18 @@ export default function makeKernelKeeper(
 
   insistStorageAPI(kvStore);
 
-  const version = kvStore.get('version');
+  const versionString = kvStore.get('version');
+  const version = Number(versionString || '0');
   if (expectedVersion === 'uninitialized') {
     if (kvStore.has('initialized')) {
       throw Error(`kernel DB already initialized (v0)`);
     }
-    if (version) {
-      throw Error(`kernel DB already initialized (v${version})`);
+    if (versionString) {
+      throw Error(`kernel DB already initialized (v${versionString})`);
     }
-  } else if (expectedVersion !== Number(version)) {
+  } else if (expectedVersion !== version) {
     throw Error(
-      `kernel DB has version v${version}, but expected v${expectedVersion}`,
+      `kernel DB is too old: has version v${version}, but expected v${expectedVersion}`,
     );
   }
 
