@@ -1,8 +1,8 @@
 import { M } from '@endo/patterns';
 import { withOrchestration } from '../utils/start-helper.js';
+import * as flows from './unbondExample.flows.js';
 
 /**
- * @import {Orchestrator, OrchestrationFlow} from '../types.js'
  * @import {TimerService} from '@agoric/time';
  * @import {LocalChain} from '@agoric/vats/src/localchain.js';
  * @import {NameHub} from '@agoric/vats';
@@ -13,38 +13,7 @@ import { withOrchestration } from '../utils/start-helper.js';
  */
 
 /**
- * @satisfies {OrchestrationFlow}
- * @param {Orchestrator} orch
- * @param {object} ctx
- * @param {ZCF} ctx.zcf
- * @param {ZCFSeat} _seat
- * @param {undefined} _offerArgs
- */
-const unbondAndLiquidStakeFn = async (orch, { zcf }, _seat, _offerArgs) => {
-  console.log('zcf within the membrane', zcf);
-  // We would actually alreaady have the account from the orchestrator
-  // ??? could these be passed in? It would reduce the size of this handler,
-  // keeping it focused on long-running operations.
-  const omni = await orch.getChain('omniflixhub');
-  const omniAccount = await omni.makeAccount();
-
-  // TODO implement these
-  // const delegations = await celestiaAccount.getDelegations();
-  // // wait for the undelegations to be complete (may take weeks)
-  // await celestiaAccount.undelegate(delegations);
-  // ??? should this be synchronous? depends on how names are resolved.
-  const stride = await orch.getChain('stride');
-  const strideAccount = await stride.makeAccount();
-
-  // TODO the `TIA` string actually needs to be the Brand from AgoricNames
-  // const tiaAmt = await celestiaAccount.getBalance('TIA');
-  // await celestiaAccount.transfer(tiaAmt, strideAccount.getAddress());
-  // await strideAccount.liquidStake(tiaAmt);
-  console.log(omniAccount, strideAccount);
-};
-
-/**
- * Orchestration contract to be wrapped by withOrchestration for Zoe
+ * Example: unbond, liquid-stake
  *
  * @param {ZCF} zcf
  * @param {{
@@ -62,8 +31,15 @@ const contract = async (zcf, privateArgs, zone, { orchestrate }) => {
   const unbondAndLiquidStake = orchestrate(
     'LSTTia',
     { zcf },
-    unbondAndLiquidStakeFn,
+    flows.unbondAndLiquidStake,
   );
+
+  const proposalShape = harden({
+    // Nothing to give; the funds come from undelegating
+    give: {},
+    want: {}, // XXX ChainAccount Ownable?
+    exit: M.any(),
+  });
 
   const publicFacet = zone.exo('publicFacet', undefined, {
     makeUnbondAndLiquidStakeInvitation() {
@@ -71,12 +47,7 @@ const contract = async (zcf, privateArgs, zone, { orchestrate }) => {
         unbondAndLiquidStake,
         'Unbond and liquid stake',
         undefined,
-        harden({
-          // Nothing to give; the funds come from undelegating
-          give: {},
-          want: {}, // XXX ChainAccount Ownable?
-          exit: M.any(),
-        }),
+        proposalShape,
       );
     },
   });
