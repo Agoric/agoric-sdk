@@ -10,7 +10,9 @@ import { foreverPolicy } from '../lib/runPolicies.js';
 import { makeVatManagerFactory } from './vat-loader/manager-factory.js';
 import { makeVatWarehouse } from './vat-warehouse.js';
 import makeDeviceManager from './deviceManager.js';
-import makeKernelKeeper from './state/kernelKeeper.js';
+import makeKernelKeeper, {
+  CURRENT_SCHEMA_VERSION,
+} from './state/kernelKeeper.js';
 import {
   kdebug,
   kdebugEnable,
@@ -112,7 +114,11 @@ export default function buildKernel(
     ? makeSlogger(slogCallbacks, writeSlogObject)
     : makeDummySlogger(slogCallbacks, makeConsole('disabled slogger'));
 
-  const kernelKeeper = makeKernelKeeper(kernelStorage, kernelSlog);
+  const kernelKeeper = makeKernelKeeper(
+    kernelStorage,
+    CURRENT_SCHEMA_VERSION,
+    kernelSlog,
+  );
 
   /** @type {ReturnType<makeVatWarehouse>} */
   let vatWarehouse;
@@ -1662,7 +1668,6 @@ export default function buildKernel(
       throw Error('kernel.start already called');
     }
     started = true;
-    kernelKeeper.getInitialized() || Fail`kernel not initialized`;
 
     kernelKeeper.loadStats();
 

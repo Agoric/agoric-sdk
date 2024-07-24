@@ -4,17 +4,22 @@ import { test } from '../tools/prepare-test-env-ava.js';
 // eslint-disable-next-line import/order
 import { initSwingStore } from '@agoric/swing-store';
 import { makeDummySlogger } from '../src/kernel/slogger.js';
-import makeKernelKeeper from '../src/kernel/state/kernelKeeper.js';
-
-const CURRENT_VERSION = 1;
+import makeKernelKeeper, {
+  CURRENT_SCHEMA_VERSION,
+} from '../src/kernel/state/kernelKeeper.js';
 
 test(`clist reachability`, async t => {
   const slog = makeDummySlogger({});
   const kernelStorage = initSwingStore(null).kernelStorage;
-  kernelStorage.kvStore.set('version', `${CURRENT_VERSION}`);
-  const kk = makeKernelKeeper(kernelStorage, slog);
+  const k0 = makeKernelKeeper(kernelStorage, 'uninitialized');
+  k0.createStartingKernelState({ defaultManagerType: 'local' });
+  k0.setInitialized();
+  k0.saveStats();
+
+  const kk = makeKernelKeeper(kernelStorage, CURRENT_SCHEMA_VERSION, slog);
+  kk.loadStats();
+
   const s = kk.kvStore;
-  kk.createStartingKernelState({ defaultManagerType: 'local' });
   const vatID = kk.allocateUnusedVatID();
   const source = { bundleID: 'foo' };
   const options = { workerOptions: {}, reapDirtThreshold: {} };
@@ -100,8 +105,13 @@ test(`clist reachability`, async t => {
 test('getImporters', async t => {
   const slog = makeDummySlogger({});
   const kernelStorage = initSwingStore(null).kernelStorage;
-  kernelStorage.kvStore.set('version', `${CURRENT_VERSION}`);
-  const kk = makeKernelKeeper(kernelStorage, slog);
+  const k0 = makeKernelKeeper(kernelStorage, 'uninitialized');
+  k0.createStartingKernelState({ defaultManagerType: 'local' });
+  k0.setInitialized();
+  k0.saveStats();
+
+  const kk = makeKernelKeeper(kernelStorage, CURRENT_SCHEMA_VERSION, slog);
+  kk.loadStats();
 
   kk.createStartingKernelState({ defaultManagerType: 'local' });
   const vatID1 = kk.allocateUnusedVatID();

@@ -49,6 +49,9 @@ const enableKernelGC = true;
 
 export { DEFAULT_REAP_DIRT_THRESHOLD_KEY };
 
+// most recent DB schema version
+export const CURRENT_SCHEMA_VERSION = 1;
+
 // Kernel state lives in a key-value store supporting key retrieval by
 // lexicographic range. All keys and values are strings.
 // We simulate a tree by concatenating path-name components with ".". When we
@@ -60,7 +63,13 @@ export { DEFAULT_REAP_DIRT_THRESHOLD_KEY };
 // allowed to vary between instances in a consensus machine. Everything else
 // is required to be deterministic.
 //
-// The current ("v1") schema is:
+//
+// The schema is indicated by the value of the "version" key, which
+// was added for version 1 (i.e., version 0 had no such key), and is
+// only modified by a call to upgradeSwingset(). See below for
+// deltas/upgrades from one version to the next.
+//
+// The current ("v1") schema keys/values are:
 //
 // version = '1'
 // vat.names = JSON([names..])
@@ -152,12 +161,16 @@ export { DEFAULT_REAP_DIRT_THRESHOLD_KEY };
 // Prefix reserved for host written data:
 // host.
 
-// Kernel state schemas. The 'version' key records the state of the
-// database, and is only modified by a call to upgradeSwingset().
+// Kernel state schema changes:
 //
 // v0: the original
-// v1: replace `kernel.defaultReapInterval` with `kernel.defaultReapDirtThreshold`
-//     replace vat's `vNN.reapInterval`/`vNN.reapCountdown` with `vNN.reapDirt`
+//   * no `version`
+//   * uses `initialized = 'true'`
+// v1:
+//   * add `version = '1'`
+//   * remove `initialized`
+//   * replace `kernel.defaultReapInterval` with `kernel.defaultReapDirtThreshold`
+//   * replace vat's `vNN.reapInterval`/`vNN.reapCountdown` with `vNN.reapDirt`
 //             and a `vNN.reapDirtThreshold` in `vNN.options`
 
 export function commaSplit(s) {
@@ -221,16 +234,34 @@ export const DEFAULT_DELIVERIES_PER_BOYD = 1;
 
 export const DEFAULT_GC_KREFS_PER_BOYD = 20;
 
-const EXPECTED_VERSION = 1;
-
 /**
  * @param {SwingStoreKernelStorage} kernelStorage
- * @param {KernelSlog|null} kernelSlog
+ * @param {number | 'uninitialized'} expectedVersion
+ * @param {KernelSlog} [kernelSlog]
  */
-export default function makeKernelKeeper(kernelStorage, kernelSlog) {
+export default function makeKernelKeeper(
+  kernelStorage,
+  expectedVersion,
+  kernelSlog,
+) {
   const { kvStore, transcriptStore, snapStore, bundleStore } = kernelStorage;
 
   insistStorageAPI(kvStore);
+
+  const versionString = kvStore.get('version');
+  const version = Number(versionString || '0');
+  if (expectedVersion === 'uninitialized') {
+    if (kvStore.has('initialized')) {
+      throw Error(`kernel DB already initialized (v0)`);
+    }
+    if (versionString) {
+      throw Error(`kernel DB already initialized (v${versionString})`);
+    }
+  } else if (expectedVersion !== version) {
+    throw Error(
+      `kernel DB is too old: has version v${version}, but expected v${expectedVersion}`,
+    );
+  }
 
   /**
    * @param {string} key
@@ -240,16 +271,6 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
     kvStore.has(key) || Fail`storage lacks required key ${key}`;
     // @ts-expect-error already checked .has()
     return kvStore.get(key);
-  }
-
-  if (
-    !kvStore.has('version') ||
-    Number(getRequired('version')) !== EXPECTED_VERSION
-  ) {
-    const have = kvStore.get('version') || 'undefined';
-    throw Error(
-      `kernelStorage is too old (have ${have}, need ${EXPECTED_VERSION}), please upgradeSwingset()`,
-    );
   }
 
   const {
@@ -303,12 +324,10 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
     deviceKeepers: new Map(), // deviceID -> deviceKeeper
   });
 
-  function getInitialized() {
-    return !!kvStore.get('initialized');
-  }
-
   function setInitialized() {
-    kvStore.set('initialized', 'true');
+    assert(!kvStore.has('initialized'));
+    assert(!kvStore.has('version'));
+    kvStore.set('version', `${CURRENT_SCHEMA_VERSION}`);
   }
 
   function getCrankNumber() {
@@ -430,14 +449,14 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
 
   /**
    *
-   * @returns { ReapDirtThreshold }
+   * @returns {ReapDirtThreshold}
    */
   function getDefaultReapDirtThreshold() {
     return JSON.parse(getRequired(DEFAULT_REAP_DIRT_THRESHOLD_KEY));
   }
 
   /**
-   * @param { ReapDirtThreshold } threshold
+   * @param {ReapDirtThreshold} threshold
    */
   function setDefaultReapDirtThreshold(threshold) {
     assert.typeof(threshold, 'object');
@@ -1602,7 +1621,6 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
   }
 
   return harden({
-    getInitialized,
     setInitialized,
     createStartingKernelState,
     getDefaultManagerType,

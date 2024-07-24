@@ -25,15 +25,17 @@ test('kernel refuses to run with out-of-date DB', async t => {
   await commit();
 
   // now doctor the initial state to make it look like the
-  // kernelkeeper v0 schema, just deleting the version key
+  // kernelkeeper v0 schema, just deleting the version key and adding
+  // 'initialized'
 
   t.is(kvStore.get('version'), '1');
   kvStore.delete(`version`);
+  kvStore.set('initialized', 'true');
   await commit();
 
   // Now build a controller around this modified state, which should fail.
   await t.throwsAsync(() => makeSwingsetController(kernelStorage), {
-    message: /kernelStorage is too old/,
+    message: /kernel DB is too old/,
   });
 });
 
@@ -73,6 +75,7 @@ test('upgrade kernel state', async t => {
 
   t.is(kvStore.get('version'), '1');
   kvStore.delete('version'); // i.e. revert to v0
+  kvStore.set('initialized', 'true');
   kvStore.delete(`kernel.defaultReapDirtThreshold`);
   kvStore.set(`kernel.defaultReapInterval`, '300');
 
@@ -103,7 +106,7 @@ test('upgrade kernel state', async t => {
 
   // confirm that this state is too old for the kernel to use
   await t.throwsAsync(() => makeSwingsetController(kernelStorage), {
-    message: /kernelStorage is too old/,
+    message: /kernel DB is too old/,
   });
 
   // upgrade it
@@ -161,6 +164,7 @@ test('upgrade non-reaping kernel state', async t => {
 
   t.is(kvStore.get('version'), '1');
   kvStore.delete('version'); // i.e. revert to v0
+  kvStore.set('initialized', 'true');
   kvStore.delete(`kernel.defaultReapDirtThreshold`);
   kvStore.set(`kernel.defaultReapInterval`, 'never');
 
@@ -184,7 +188,7 @@ test('upgrade non-reaping kernel state', async t => {
 
   // confirm that this state is too old for the kernel to use
   await t.throwsAsync(() => makeSwingsetController(kernelStorage), {
-    message: /kernelStorage is too old/,
+    message: /kernel DB is too old/,
   });
 
   // upgrade it

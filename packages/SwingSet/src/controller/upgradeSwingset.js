@@ -30,23 +30,29 @@ const upgradeVatV0toV1 = (kvStore, defaultReapDirtThreshold, vatID) => {
   assert(kvStore.has(oldReapCountdownKey), oldReapCountdownKey);
   assert(!kvStore.has(reapDirtKey), reapDirtKey);
 
+  const reapIntervalString = kvStore.get(oldReapIntervalKey);
+  const reapCountdownString = kvStore.get(oldReapCountdownKey);
+  assert(reapIntervalString !== undefined);
+  assert(reapCountdownString !== undefined);
+
+  const intervalIsNever = reapIntervalString === 'never';
+  const countdownIsNever = reapCountdownString === 'never';
+  // these were supposed to be the same
+  assert(
+    intervalIsNever === countdownIsNever,
+    `reapInterval=${reapIntervalString}, reapCountdown=${reapCountdownString}`,
+  );
+
   // initialize or upgrade state
   const reapDirt = {}; // all missing keys are treated as zero
   const threshold = {};
 
-  const reapIntervalString = kvStore.get(oldReapIntervalKey);
-  assert(reapIntervalString !== undefined);
-  const reapCountdownString = kvStore.get(oldReapCountdownKey);
-  assert(reapCountdownString !== undefined);
-  const intervalIsNever = reapIntervalString === 'never';
-  const countdownIsNever = reapCountdownString === 'never';
-  assert(
-    (intervalIsNever && countdownIsNever) ||
-      (!intervalIsNever && !countdownIsNever),
-    `reapInterval=${reapIntervalString}, reapCountdown=${reapCountdownString}`,
-  );
-
-  if (!intervalIsNever && !countdownIsNever) {
+  if (intervalIsNever) {
+    // old vats that were never reaped (eg comms) used
+    // reapInterval='never', so respect that and set the other
+    // threshold values to never as well
+    threshold.never = true;
+  } else {
     // deduce delivery count from old countdown values
     const reapInterval = Number.parseInt(reapIntervalString, 10);
     const reapCountdown = Number.parseInt(reapCountdownString, 10);
@@ -57,17 +63,11 @@ const upgradeVatV0toV1 = (kvStore, defaultReapDirtThreshold, vatID) => {
     }
   }
 
-  // old vats that were never reaped (eg comms) used
-  // reapInterval='never', so respect that and set the other
-  // threshold values to never as well
-  if (intervalIsNever) {
-    threshold.never = true;
-  }
   kvStore.delete(oldReapIntervalKey);
   kvStore.delete(oldReapCountdownKey);
   kvStore.set(reapDirtKey, JSON.stringify(reapDirt));
 
-  // remove .reapInterval from options, replace with .reapDirtThreshold
+  // Update options to use the new schema.
   const options = JSON.parse(kvStore.get(vatOptionsKey));
   delete options.reapInterval;
   options.reapDirtThreshold = threshold;
@@ -91,8 +91,8 @@ const upgradeVatV0toV1 = (kvStore, defaultReapDirtThreshold, vatID) => {
  * called during the upgrade, and it is responsible for doing a
  * `hostStorage.commit()` afterwards.
  *
- * @param { SwingStoreKernelStorage } kernelStorage
- * @returns { boolean } true if any changes were made
+ * @param {SwingStoreKernelStorage} kernelStorage
+ * @returns {boolean} true if any changes were made
  */
 export const upgradeSwingset = kernelStorage => {
   const { kvStore } = kernelStorage;
@@ -120,7 +120,10 @@ export const upgradeSwingset = kernelStorage => {
   // steps applied here must match.
 
   // schema v0:
-  // The kernel overall has `kernel.defaultReapInterval`.
+  //
+  // The kernel overall has `kernel.defaultReapInterval` and
+  // `kernel.initialized = 'true'`.
+  //
   // Each vat has a `vNN.reapInterval` and `vNN.reapCountdown`.
   // vNN.options has a `.reapInterval` property (however it was not
   // updated by processChangeVatOptions, so do not rely upon its
@@ -128,16 +131,24 @@ export const upgradeSwingset = kernelStorage => {
 
   if (version < 1) {
     // schema v1:
-    // The kernel overall has `kernel.defaultReapDirtThreshold`.
+    //
+    // The kernel overall has `kernel.defaultReapDirtThreshold` and
+    // `kernel.version = '1'` (instead of .initialized).
+    //
     // Each vat has a `vNN.reapDirt`, and vNN.options has a
     // `.reapDirtThreshold` property
 
     // So:
+    // * replace `kernel.initialized` with `kernel.version`
     // * replace `kernel.defaultReapInterval` with
     //   `kernel.defaultReapDirtThreshold`
     // * replace vat's `vNN.reapInterval`/`vNN.reapCountdown` with
     //   `vNN.reapDirt` and a `vNN.reapDirtThreshold` in `vNN.options`
     // * then do per-vat upgrades with upgradeVatV0toV1
+
+    assert(kvStore.has('initialized'));
+    kvStore.delete('initialized');
+    // 'version' will be set at the end
 
     // upgrade from old kernel.defaultReapInterval
 
