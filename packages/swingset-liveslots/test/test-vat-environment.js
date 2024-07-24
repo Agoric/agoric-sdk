@@ -31,7 +31,8 @@ test('vat globals', async t => {
   t.is(called, 1);
   t.truthy(vatGlobals);
 
-  // 'harden' is provided by SES (installed by the supervisor), not liveslots
+  // 'harden' is provided by SES (installed by the lockdown bundle),
+  // not liveslots
   t.is(typeof vatGlobals.harden, 'undefined');
 
   // but liveslots provides VatData
