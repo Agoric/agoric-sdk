@@ -106,10 +106,18 @@ export const gettingStartedWorkflowTest = async (t, options = {}) => {
       'init dapp-foo works',
     );
     process.chdir('dapp-foo');
+    await pspawn('git', [
+      'remote',
+      'add',
+      'origin',
+      'https://github.com/Agoric/dapp-offer-up',
+    ]);
+    await pspawn('git', ['fetch', 'origin', 'fraz/test-account-seq']);
+    await pspawn('git', ['checkout', 'origin/fraz/test-account-seq']);
 
     // ==============
     // yarn install
-    // t.is(await yarn(['install']), 0, 'yarn install works');
+    t.is(await yarn(['install']), 0, 'yarn install works');
 
     // ==============
     // yarn start:docker
@@ -119,23 +127,9 @@ export const gettingStartedWorkflowTest = async (t, options = {}) => {
     // sleep to let contract start
     await new Promise(resolve => setTimeout(resolve, TIMEOUT_SECONDS));
 
-    await pspawn('docker', [
-      'exec',
-      'dapp-foo-agd-1',
-      'bash',
-      '-c',
-      '"ls -la"',
-    ]);
-    console.log(
-      'code',
-      await pspawn('docker', [
-        'exec',
-        'dapp-foo-agd-1',
-        'bash',
-        '-c',
-        '"sed -i $\'208aexport seq=\\$(\\$binary query auth account \\$VALIDATORADDR | grep \\"sequence\\" | sed \\\'s/sequence: \\"//;s/\\"//g\\\')\' ./env_setup.sh"',
-      ]),
-    );
+    await yarn(['docker:ls']);
+    await yarn(['docker:modify']);
+    await yarn(['docker:cat']);
 
     // ==============
     // yarn start:contract
