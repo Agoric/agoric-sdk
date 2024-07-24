@@ -54,7 +54,7 @@ const contract = async (
 ) => {
   const contractState = makeStateRecord(
     /** @type {{ account: OrchestrationAccount<any> | undefined }} */ {
-      account: undefined,
+      localAccount: undefined,
     },
   );
 
