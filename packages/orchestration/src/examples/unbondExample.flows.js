@@ -23,23 +23,23 @@ export const unbondAndLiquidStake = async (
 
   await null;
   if (!contractState.account) {
-    const omni = await orch.getChain('omniflixhub');
-    const omniAccount = await omni.makeAccount();
-    contractState.account = omniAccount;
+    const osmo = await orch.getChain('osmosis');
+    const osmoAccount = await osmo.makeAccount();
+    contractState.account = osmoAccount;
   }
 
-  const omniAccount = NonNullish(contractState.account);
-  const delegations = await omniAccount.getDelegations();
+  const osmoAccount = NonNullish(contractState.account);
+  const delegations = await osmoAccount.getDelegations();
 
   // wait for the undelegations to be complete (may take weeks)
-  await omniAccount.undelegate(delegations);
+  await osmoAccount.undelegate(delegations);
 
   const stride = await orch.getChain('stride');
   const strideAccount = await stride.makeAccount();
 
-  const denom = 'uflix';
-  const flixAmt = await omniAccount.getBalance(denom);
-  await omniAccount.transfer(flixAmt, strideAccount.getAddress());
-  await strideAccount.liquidStake(flixAmt);
-  console.log(omniAccount, strideAccount);
+  const denom = 'uosmo';
+  const osmoAmt = await osmoAccount.getBalance(denom);
+  await osmoAccount.transfer(osmoAmt, strideAccount.getAddress());
+  await strideAccount.liquidStake(osmoAmt);
+  console.log(osmoAccount, strideAccount);
 };
