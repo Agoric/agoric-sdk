@@ -210,8 +210,21 @@ export type TransferMsg = {
   data?: object;
 };
 
+/**
+ * TODO: document how Osmosis ibc hooks work
+ */
 export type AfterAction = { destChain: string; destAddress: ChainAddress };
+/**
+ * Detail for an exact swap on Osmosis.
+ *
+ * @see {@link https://docs.osmosis.zone/osmosis-core/modules/pool-manager/ Osmosis pool-manager module}
+ */
 export type SwapExact = { amountIn: Amount; amountOut: Amount };
+/**
+ * Detail for a max-slippage swap on Osmosis.
+ *
+ * @see {@link https://docs.osmosis.zone/osmosis-core/modules/pool-manager/ Osmosis pool-manager module}
+ */
 export type SwapMaxSlippage = {
   amountIn: Amount;
   brandOut: Brand;
