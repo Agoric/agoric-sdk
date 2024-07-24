@@ -371,8 +371,10 @@ type ChainBootstrapSpaceT = {
   namesByAddress: import('../types.js').NameHub;
   namesByAddressAdmin: import('../types.js').NamesByAddressAdmin;
   networkVat: NetworkVat;
+  orchestration?: CosmosInterchainService;
   pegasusConnections: import('@agoric/vats').NameHubKit;
   pegasusConnectionsAdmin: import('@agoric/vats').NameAdmin;
+  powerStore: MapStore;
   priceAuthorityVat: Awaited<PriceAuthorityVat>;
   priceAuthority: import('@agoric/zoe/tools/types.js').PriceAuthority;
   priceAuthorityAdmin: import('@agoric/vats/src/priceAuthorityRegistry').PriceAuthorityRegistryAdmin;

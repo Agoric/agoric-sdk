@@ -187,6 +187,7 @@ export const makeBootstrap = (
         throw e;
       });
     },
+    /** @param {string} name } */
     consumeItem: name => {
       assert.typeof(name, 'string');
       return consume[name];
@@ -195,6 +196,7 @@ export const makeBootstrap = (
       assert.typeof(name, 'string');
       produce[name].resolve(resolution);
     },
+    /** @param {string} name } */
     resetItem: name => {
       assert.typeof(name, 'string');
       produce[name].reset();
