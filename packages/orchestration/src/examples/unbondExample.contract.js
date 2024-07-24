@@ -1,4 +1,5 @@
 import { M } from '@endo/patterns';
+import { makeStateRecord } from '@agoric/async-flow';
 import { withOrchestration } from '../utils/start-helper.js';
 import * as flows from './unbondExample.flows.js';
 
@@ -28,9 +29,14 @@ import * as flows from './unbondExample.flows.js';
  * @param {OrchestrationTools} tools
  */
 const contract = async (zcf, privateArgs, zone, { orchestrate }) => {
+  const contractState = makeStateRecord(
+    /** @type {{ account: OrchestrationAccount<any> | undefined }} */ {
+      account: undefined,
+    },
+  );
   const unbondAndLiquidStake = orchestrate(
     'LSTTia',
-    { zcf },
+    { zcf, contractState },
     flows.unbondAndLiquidStake,
   );
 

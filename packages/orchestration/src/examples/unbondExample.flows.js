@@ -1,39 +1,45 @@
 /**
- * @import {Orchestrator, OrchestrationFlow} from '../types.js'
+ * @import {Orchestrator, OrchestrationFlow, OrchestrationAccountI, LocalAccountMethods, StakingAccountQueries} from '../types.js'
  */
+
+import { NonNullish } from '@agoric/internal';
 
 /**
  * @satisfies {OrchestrationFlow}
  * @param {Orchestrator} orch
  * @param {object} ctx
  * @param {ZCF} ctx.zcf
+ * @param {{ account?: OrchestrationAccountI & StakingAccountQueries }} ctx.contractState
  * @param {ZCFSeat} _seat
  * @param {undefined} _offerArgs
  */
 export const unbondAndLiquidStake = async (
   orch,
-  { zcf },
+  { zcf, contractState },
   _seat,
   _offerArgs,
 ) => {
   console.log('zcf within the membrane', zcf);
-  // We would actually alreaady have the account from the orchestrator
-  // ??? could these be passed in? It would reduce the size of this handler,
-  // keeping it focused on long-running operations.
-  const omni = await orch.getChain('omniflixhub');
-  const omniAccount = await omni.makeAccount();
 
-  // TODO implement these
-  // const delegations = await celestiaAccount.getDelegations();
-  // // wait for the undelegations to be complete (may take weeks)
-  // await celestiaAccount.undelegate(delegations);
-  // ??? should this be synchronous? depends on how names are resolved.
+  await null;
+  if (!contractState.account) {
+    const omni = await orch.getChain('omniflixhub');
+    const omniAccount = await omni.makeAccount();
+    contractState.account = omniAccount;
+  }
+
+  const omniAccount = NonNullish(contractState.account);
+  const delegations = await omniAccount.getDelegations();
+
+  // wait for the undelegations to be complete (may take weeks)
+  await omniAccount.undelegate(delegations);
+
   const stride = await orch.getChain('stride');
   const strideAccount = await stride.makeAccount();
 
-  // TODO the `TIA` string actually needs to be the Brand from AgoricNames
-  // const tiaAmt = await celestiaAccount.getBalance('TIA');
-  // await celestiaAccount.transfer(tiaAmt, strideAccount.getAddress());
-  // await strideAccount.liquidStake(tiaAmt);
+  const denom = 'uflix';
+  const flixAmt = await omniAccount.getBalance(denom);
+  await omniAccount.transfer(flixAmt, strideAccount.getAddress());
+  await strideAccount.liquidStake(flixAmt);
   console.log(omniAccount, strideAccount);
 };
