@@ -49,6 +49,9 @@ const enableKernelGC = true;
 
 export { DEFAULT_REAP_DIRT_THRESHOLD_KEY };
 
+// most recent DB schema version
+export const CURRENT_SCHEMA_VERSION = 1;
+
 // Kernel state lives in a key-value store supporting key retrieval by
 // lexicographic range. All keys and values are strings.
 // We simulate a tree by concatenating path-name components with ".". When we
@@ -220,16 +223,33 @@ export const DEFAULT_DELIVERIES_PER_BOYD = 1;
 
 export const DEFAULT_GC_KREFS_PER_BOYD = 20;
 
-const EXPECTED_VERSION = 1;
-
 /**
  * @param {SwingStoreKernelStorage} kernelStorage
- * @param {KernelSlog|null} kernelSlog
+ * @param {number | 'uninitialized'} expectedVersion
+ * @param {KernelSlog} [kernelSlog]
  */
-export default function makeKernelKeeper(kernelStorage, kernelSlog) {
+export default function makeKernelKeeper(
+  kernelStorage,
+  expectedVersion,
+  kernelSlog,
+) {
   const { kvStore, transcriptStore, snapStore, bundleStore } = kernelStorage;
 
   insistStorageAPI(kvStore);
+
+  const version = kvStore.get('version');
+  if (expectedVersion === 'uninitialized') {
+    if (kvStore.has('initialized')) {
+      throw Error(`kernel DB already initialized (v0)`);
+    }
+    if (version) {
+      throw Error(`kernel DB already initialized (v${version})`);
+    }
+  } else if (expectedVersion !== Number(version)) {
+    throw Error(
+      `kernel DB has version v${version}, but expected v${expectedVersion}`,
+    );
+  }
 
   /**
    * @param {string} key
@@ -239,16 +259,6 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
     kvStore.has(key) || Fail`storage lacks required key ${key}`;
     // @ts-expect-error already checked .has()
     return kvStore.get(key);
-  }
-
-  if (
-    !kvStore.has('version') ||
-    Number(getRequired('version')) !== EXPECTED_VERSION
-  ) {
-    const have = kvStore.get('version') || 'undefined';
-    throw Error(
-      `kernelStorage is too old (have ${have}, need ${EXPECTED_VERSION}), please upgradeSwingset()`,
-    );
   }
 
   const {
@@ -302,12 +312,10 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
     deviceKeepers: new Map(), // deviceID -> deviceKeeper
   });
 
-  function getInitialized() {
-    return !!kvStore.get('initialized');
-  }
-
   function setInitialized() {
-    kvStore.set('initialized', 'true');
+    assert(!kvStore.has('initialized'));
+    assert(!kvStore.has('version'));
+    kvStore.set('version', `${CURRENT_SCHEMA_VERSION}`);
   }
 
   function getCrankNumber() {
@@ -1602,7 +1610,6 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
   }
 
   return harden({
-    getInitialized,
     setInitialized,
     createStartingKernelState,
     getDefaultManagerType,

@@ -120,7 +120,10 @@ export const upgradeSwingset = kernelStorage => {
   // steps applied here must match.
 
   // schema v0:
-  // The kernel overall has `kernel.defaultReapInterval`.
+  //
+  // The kernel overall has `kernel.defaultReapInterval` and
+  // `kernel.initialized = 'true'`.
+  //
   // Each vat has a `vNN.reapInterval` and `vNN.reapCountdown`.
   // vNN.options has a `.reapInterval` property (however it was not
   // updated by processChangeVatOptions, so do not rely upon its
@@ -128,16 +131,24 @@ export const upgradeSwingset = kernelStorage => {
 
   if (version < 1) {
     // schema v1:
-    // The kernel overall has `kernel.defaultReapDirtThreshold`.
+    //
+    // The kernel overall has `kernel.defaultReapDirtThreshold` and
+    // `kernel.version = '1'` (instead of .initialized).
+    //
     // Each vat has a `vNN.reapDirt`, and vNN.options has a
     // `.reapDirtThreshold` property
 
     // So:
+    // * replace `kernel.initialized` with `kernel.version`
     // * replace `kernel.defaultReapInterval` with
     //   `kernel.defaultReapDirtThreshold`
     // * replace vat's `vNN.reapInterval`/`vNN.reapCountdown` with
     //   `vNN.reapDirt` and a `vNN.reapDirtThreshold` in `vNN.options`
     // * then do per-vat upgrades with upgradeVatV0toV1
+
+    assert(kvStore.has('initialized'));
+    kvStore.delete('initialized');
+    // 'version' will be set at the end
 
     // upgrade from old kernel.defaultReapInterval
 

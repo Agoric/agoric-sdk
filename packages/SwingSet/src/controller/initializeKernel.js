@@ -43,15 +43,9 @@ export async function initializeKernel(config, kernelStorage, options = {}) {
   const logStartup = verbose ? console.debug : () => 0;
   insistStorageAPI(kernelStorage.kvStore);
 
-  const CURRENT_VERSION = 1;
-  kernelStorage.kvStore.set('version', `${CURRENT_VERSION}`);
-
-  const kernelSlog = null;
-  const kernelKeeper = makeKernelKeeper(kernelStorage, kernelSlog);
+  const kernelKeeper = makeKernelKeeper(kernelStorage, 'uninitialized');
   const optionRecorder = makeVatOptionRecorder(kernelKeeper, bundleHandler);
 
-  const wasInitialized = kernelKeeper.getInitialized();
-  assert(!wasInitialized);
   const {
     defaultManagerType,
     defaultReapInterval = DEFAULT_DELIVERIES_PER_BOYD,
@@ -93,7 +87,7 @@ export async function initializeKernel(config, kernelStorage, options = {}) {
 
   // generate the genesis vats
   await null;
-  if (config.vats) {
+  if (config.vats && Object.keys(config.vats).length) {
     for (const name of Object.keys(config.vats)) {
       const {
         bundleID,
