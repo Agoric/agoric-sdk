@@ -437,7 +437,10 @@ export const makeSwingsetTestKit = async (
           case 'IBC_METHOD':
             switch (obj.method) {
               case 'startChannelOpenInit':
-                inbound!(BridgeId.DIBC, icaMocks.channelOpenAck(obj));
+                inboundQueue.push([
+                  BridgeId.DIBC,
+                  icaMocks.channelOpenAck(obj),
+                ]);
                 return undefined;
               case 'sendPacket':
                 switch (obj.packet.data) {

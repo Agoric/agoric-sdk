@@ -148,7 +148,7 @@ test.serial('stakeAtom - smart wallet', async t => {
     'agoric1testStakAtom',
   );
 
-  await wd.executeOffer({
+  await wd.sendOffer({
     id: 'request-account',
     invitationSpec: {
       source: 'agoricContract',
@@ -157,6 +157,7 @@ test.serial('stakeAtom - smart wallet', async t => {
     },
     proposal: {},
   });
+  await flushInboundQueue();
   t.like(wd.getCurrentWalletRecord(), {
     offerToPublicSubscriberPaths: [
       [
@@ -254,8 +255,13 @@ test.serial('revise chain info', async t => {
 });
 
 test('basic-flows', async t => {
-  const { buildProposal, evalProposal, agoricNamesRemotes, readLatest } =
-    t.context;
+  const {
+    buildProposal,
+    evalProposal,
+    agoricNamesRemotes,
+    readLatest,
+    flushInboundQueue,
+  } = t.context;
 
   await evalProposal(
     buildProposal('@agoric/builders/scripts/orchestration/init-basic-flows.js'),
@@ -265,7 +271,7 @@ test('basic-flows', async t => {
     await t.context.walletFactoryDriver.provideSmartWallet('agoric1test');
 
   // create a cosmos orchestration account
-  await wd.executeOffer({
+  await wd.sendOffer({
     id: 'request-coa',
     invitationSpec: {
       source: 'agoricContract',
@@ -277,6 +283,7 @@ test('basic-flows', async t => {
     },
     proposal: {},
   });
+  await flushInboundQueue();
   t.like(wd.getCurrentWalletRecord(), {
     offerToPublicSubscriberPaths: [
       [
@@ -329,8 +336,13 @@ test.serial('auto-stake-it - proposal', async t => {
 });
 
 test.serial('basic-flows - portfolio holder', async t => {
-  const { buildProposal, evalProposal, readLatest, agoricNamesRemotes } =
-    t.context;
+  const {
+    buildProposal,
+    evalProposal,
+    readLatest,
+    agoricNamesRemotes,
+    flushInboundQueue,
+  } = t.context;
 
   await evalProposal(
     buildProposal('@agoric/builders/scripts/orchestration/init-basic-flows.js'),
@@ -352,6 +364,14 @@ test.serial('basic-flows - portfolio holder', async t => {
     },
     proposal: {},
   });
+  t.like(
+    wd.getLatestUpdateRecord(),
+    {
+      status: { id: 'request-portfolio-acct', numWantsSatisfied: 1 },
+    },
+    'trivially satisfied',
+  );
+  await flushInboundQueue();
   t.like(wd.getCurrentWalletRecord(), {
     offerToPublicSubscriberPaths: [
       [
