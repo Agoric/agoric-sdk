@@ -389,7 +389,7 @@ export default function buildKernel(
    *    didDelivery?: VatID, // we made a delivery to a vat, for run policy and save-snapshot
    *    computrons?: BigInt, // computron count for run policy
    *    meterID?: string, // deduct those computrons from a meter
-   *    measureDirt?: { vatID: VatID, dirt: Dirt }, // the dirt counter should increment
+   *    measureDirt?: { vatID: VatID, dirt: Dirt }, // dirt counters should increment
    *    terminate?: { vatID: VatID, reject: boolean, info: SwingSetCapData }, // terminate vat, notify vat-admin
    *    vatAdminMethargs?: RawMethargs, // methargs to notify vat-admin about create/upgrade results
    * } } CrankResults
@@ -1794,11 +1794,10 @@ export default function buildKernel(
         const value = options[option];
         switch (option) {
           case 'defaultReapInterval': {
-            if (typeof value === 'number') {
-              assert(value > 0, `defaultReapInterval = ${value}`);
-            } else {
-              assert.equal(value, 'never', `defaultReapInterval = ${value}`);
-            }
+            assert(
+              (typeof value === 'number' && value > 0) || value === 'never',
+              `defaultReapInterval ${value} must be a positive number or "never"`,
+            );
             kernelKeeper.setDefaultReapDirtThreshold({
               ...kernelKeeper.getDefaultReapDirtThreshold(),
               deliveries: value,
@@ -1806,11 +1805,10 @@ export default function buildKernel(
             break;
           }
           case 'defaultReapGCKrefs': {
-            if (typeof value === 'number') {
-              assert(value > 0, `defaultReapGCKrefs = ${value}`);
-            } else {
-              assert.equal(value, 'never', `defaultReapGCKrefs = ${value}`);
-            }
+            assert(
+              (typeof value === 'number' && value > 0) || value === 'never',
+              `defaultReapGCKrefs ${value} must be a positive number or "never"`,
+            );
             kernelKeeper.setDefaultReapDirtThreshold({
               ...kernelKeeper.getDefaultReapDirtThreshold(),
               gcKrefs: value,

@@ -178,9 +178,10 @@ function insistMeterID(m) {
 
 export const getAllStaticVats = kvStore => {
   const result = [];
-  for (const k of enumeratePrefixedKeys(kvStore, 'vat.name.')) {
-    const name = k.slice(9);
+  const prefix = 'vat.name.';
+  for (const k of enumeratePrefixedKeys(kvStore, prefix)) {
     const vatID = kvStore.get(k) || Fail`getNextKey ensures get`;
+    const name = k.slice(prefix.length);
     result.push([name, vatID]);
   }
   return result;
