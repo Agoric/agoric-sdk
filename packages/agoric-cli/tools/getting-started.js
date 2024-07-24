@@ -113,6 +113,7 @@ export const gettingStartedWorkflowTest = async (t, options = {}) => {
       'https://github.com/Agoric/dapp-offer-up',
     ]);
     await pspawn('git', ['fetch', 'origin', 'fraz/test-account-seq']);
+    await pspawn('git', ['stash']);
     await pspawn('git', ['checkout', 'origin/fraz/test-account-seq']);
 
     // ==============
