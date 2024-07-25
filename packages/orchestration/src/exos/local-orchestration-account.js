@@ -468,6 +468,9 @@ export const prepareLocalOrchestrationAccountKit = (
               this.facets.transferWatcher,
               { opts, amount, destination },
             );
+            // FIXME https://github.com/Agoric/agoric-sdk/issues/9783
+            // don't resolve the vow until the transfer is confirmed on remote
+            // and reject vow if the transfer fails
             return watch(transferV, this.facets.returnVoidWatcher);
           });
         },
