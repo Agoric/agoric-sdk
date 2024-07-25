@@ -4,12 +4,14 @@ import test from '@endo/ses-ava/prepare-endo.js';
 
 import { makeNameHubKit } from '@agoric/vats';
 import { prepareSwingsetVowTools } from '@agoric/vow/vat.js';
-import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { makeChainHub } from '../../src/exos/chain-hub.js';
 import { provideDurableZone } from '../supports.js';
 import { registerKnownChains } from '../../src/chain-info.js';
 import knownChains from '../../src/fetched-chain-info.js';
-import type { IBCConnectionInfo } from '../../src/cosmos-api.js';
+import type {
+  CosmosChainInfo,
+  IBCConnectionInfo,
+} from '../../src/cosmos-api.js';
 
 const connection = {
   id: 'connection-1',
@@ -86,4 +88,25 @@ test.serial('getConnectionInfo', async t => {
 
   // Look up the opposite direction
   t.deepEqual(await vt.when(chainHub.getConnectionInfo(b, a)), ba);
+});
+
+test('getBrandInfo support', async t => {
+  const { chainHub, vt } = setup();
+
+  const denom = 'utok1';
+  const info1: CosmosChainInfo = {
+    chainId: 'chain1',
+    stakingTokens: [{ denom }],
+  };
+
+  chainHub.registerChain('chain1', info1);
+  const info = {
+    chainName: 'chain1',
+    baseName: 'chain1',
+    baseDenom: denom,
+  };
+  chainHub.registerAsset('utok1', info);
+
+  const actual = chainHub.lookupAsset('utok1');
+  t.deepEqual(actual, info);
 });

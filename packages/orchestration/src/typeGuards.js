@@ -4,7 +4,7 @@ import { M } from '@endo/patterns';
 
 /**
  * @import {TypedPattern} from '@agoric/internal';
- * @import {ChainAddress, ChainInfo, CosmosChainInfo, DenomAmount} from './types.js';
+ * @import {ChainAddress, ChainInfo, CosmosChainInfo, DenomAmount, DenomDetail} from './types.js';
  * @import {Delegation} from '@agoric/cosmic-proto/cosmos/staking/v1beta1/staking.js';
  */
 

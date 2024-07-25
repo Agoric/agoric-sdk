@@ -1,6 +1,7 @@
-import { Fail, makeError } from '@endo/errors';
+import { Fail, makeError, q } from '@endo/errors';
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
+import { BrandShape } from '@agoric/ertp/src/typeGuards.js';
 
 import { VowShape } from '@agoric/vow';
 import { makeHeapZone } from '@agoric/zone';
@@ -11,8 +12,9 @@ import { CosmosChainInfoShape, IBCConnectionInfoShape } from '../typeGuards.js';
  * @import {Vow, VowTools} from '@agoric/vow';
  * @import {CosmosChainInfo, IBCConnectionInfo} from '../cosmos-api.js';
  * @import {ChainInfo, KnownChains} from '../chain-info.js';
+ * @import {Denom} from '../orchestration-api.js';
  * @import {Remote} from '@agoric/internal';
- * @import {Zone} from '@agoric/zone';
+ * @import {TypedPattern} from '@agoric/internal';
  */
 
 /**
@@ -21,6 +23,20 @@ import { CosmosChainInfoShape, IBCConnectionInfoShape } from '../typeGuards.js';
  *   ? Omit<KnownChains[K], 'connections'>
  *   : ChainInfo} ActualChainInfo
  */
+
+/**
+ * @typedef {object} DenomDetail
+ * @property {string} baseName - name of issuing chain; e.g. cosmoshub
+ * @property {Denom} baseDenom - e.g. uatom
+ * @property {string} chainName - name of holding chain; e.g. agoric
+ * @property {Brand} [brand] - vbank brand, if registered
+ * @see {ChainHub} `registerAsset` method
+ */
+/** @type {TypedPattern<DenomDetail>} */
+export const DenomDetailShape = M.splitRecord(
+  { chainName: M.string(), baseName: M.string(), baseDenom: M.string() },
+  { brand: BrandShape },
+);
 
 /** agoricNames key for ChainInfo hub */
 export const CHAIN_KEY = 'chain';
@@ -146,6 +162,8 @@ const ChainHubI = M.interface('ChainHub', {
   ).returns(),
   getConnectionInfo: M.call(ChainIdArgShape, ChainIdArgShape).returns(VowShape),
   getChainsAndConnection: M.call(M.string(), M.string()).returns(VowShape),
+  registerAsset: M.call(M.string(), DenomDetailShape).returns(),
+  lookupAsset: M.call(M.string()).returns(DenomDetailShape),
 });
 
 /**
@@ -170,6 +188,12 @@ export const makeChainHub = (agoricNames, vowTools) => {
   const connectionInfos = zone.mapStore('connectionInfos', {
     keyShape: M.string(),
     valueShape: IBCConnectionInfoShape,
+  });
+
+  /** @type {MapStore<string, DenomDetail>} */
+  const denomDetails = zone.mapStore('denom', {
+    keyShape: M.string(),
+    valueShape: DenomDetailShape,
   });
 
   const lookupChainInfo = vowTools.retriable(
@@ -335,6 +359,31 @@ export const makeChainHub = (agoricNames, vowTools) => {
     getChainsAndConnection(primaryName, counterName) {
       // @ts-expect-error XXX generic parameter propagation
       return lookupChainsAndConnection(primaryName, counterName);
+    },
+
+    /**
+     * Register an asset that may be held on a chain other than the issuing
+     * chain.
+     *
+     * @param {Denom} denom - on the holding chain, whose name is given in
+     *   `detail.chainName`
+     * @param {DenomDetail} detail - chainName and baseName must be registered
+     */
+    registerAsset(denom, detail) {
+      const { chainName, baseName } = detail;
+      chainInfos.has(chainName) ||
+        Fail`must register chain ${q(chainName)} first`;
+      chainInfos.has(baseName) ||
+        Fail`must register chain ${q(baseName)} first`;
+      denomDetails.init(denom, detail);
+    },
+    /**
+     * Retrieve holding, issuing chain names etc. for a denom.
+     *
+     * @param {Denom} denom
+     */
+    lookupAsset(denom) {
+      return denomDetails.get(denom);
     },
   });
 
