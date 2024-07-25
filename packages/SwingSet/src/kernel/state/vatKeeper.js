@@ -3,6 +3,7 @@
  */
 import { Nat } from '@endo/nat';
 import { assert, q, Fail } from '@endo/errors';
+import { isObject } from '@endo/marshal';
 import { parseKernelSlot } from '../parseKernelSlots.js';
 import { makeVatSlot, parseVatSlot } from '../../lib/parseVatSlots.js';
 import { insistVatID } from '../../lib/id.js';
@@ -41,13 +42,21 @@ const FIRST_DEVICE_ID = 70n;
 export const DEFAULT_REAP_DIRT_THRESHOLD_KEY =
   'kernel.defaultReapDirtThreshold';
 
+const isBundleSource = source => {
+  return (
+    isObject(source) &&
+    (isObject(source.bundle) ||
+      typeof source.bundleName === 'string' ||
+      typeof source.bundleID === 'string')
+  );
+};
+
 /**
  * Establish a vat's state.
  *
  * @param {*} kvStore  The key-value store in which the persistent state will be kept
  * @param {*} transcriptStore  Accompanying transcript store
  * @param {string} vatID The vat ID string of the vat in question
- * TODO: consider making this part of makeVatKeeper
  * @param {SourceOfBundle} source
  * @param {RecordedVatOptions} options
  */
@@ -58,11 +67,11 @@ export function initializeVatState(
   source,
   options,
 ) {
-  assert(source);
-  assert('bundle' in source || 'bundleName' in source || 'bundleID' in source);
-  assert(options);
-  assert.typeof(options, 'object');
-  assert(options.workerOptions, `vat ${vatID} options missing workerOptions`);
+  assert(isBundleSource(source), `vat ${vatID} source has wrong shape`);
+  assert(
+    isObject(options) && isObject(options.workerOptions),
+    `vat ${vatID} options is missing workerOptions`,
+  );
 
   kvStore.set(`${vatID}.o.nextID`, `${FIRST_OBJECT_ID}`);
   kvStore.set(`${vatID}.p.nextID`, `${FIRST_PROMISE_ID}`);
@@ -175,12 +184,12 @@ export function makeVatKeeper(
    * @param {Dirt} moreDirt
    */
   function addDirt(moreDirt) {
+    assert.typeof(moreDirt, 'object');
     const reapDirt = JSON.parse(getRequired(reapDirtKey));
     const thresholds = {
       ...JSON.parse(getRequired(DEFAULT_REAP_DIRT_THRESHOLD_KEY)),
       ...JSON.parse(getRequired(`${vatID}.options`)).reapDirtThreshold,
     };
-    assert.typeof(moreDirt, 'object');
     let reap = false;
     for (const key of Object.keys(moreDirt)) {
       const threshold = thresholds[key];

@@ -44,7 +44,7 @@ async function testChangeParameters(t) {
     computrons: 'never',
   });
   t.throws(() => c.changeKernelOptions({ defaultReapInterval: 'banana' }), {
-    message: 'defaultReapInterval = banana',
+    message: 'defaultReapInterval banana must be a positive number or "never"',
   });
   t.throws(() => c.changeKernelOptions({ snapshotInterval: 'elephant' }), {
     message: 'invalid heap snapshotInterval value',

@@ -537,7 +537,7 @@ test('vatKeeper', async t => {
   k.setInitialized();
   const v1 = k.allocateVatIDForNameIfNeeded('name1');
   const source = { bundleID: 'foo' };
-  const options = { workerOptions: 'foo', reapDirtThreshold: {} };
+  const options = { workerOptions: {}, reapDirtThreshold: {} };
   k.createVatState(v1, source, options);
 
   const vk = k.provideVatKeeper(v1);
@@ -977,16 +977,16 @@ test('vatKeeper dirt counters', async t => {
   // a new DB will have empty dirt entries for each vat created
   const source = { bundleID: 'foo' };
   const v1 = k.allocateVatIDForNameIfNeeded('name1');
-  k.createVatState(v1, source, { workerOptions: 'foo', reapDirtThreshold });
+  k.createVatState(v1, source, { workerOptions: {}, reapDirtThreshold });
   const vk1 = k.provideVatKeeper(v1);
 
   const v2 = k.allocateVatIDForNameIfNeeded('name2');
-  k.createVatState(v2, source, { workerOptions: 'foo', reapDirtThreshold });
+  k.createVatState(v2, source, { workerOptions: {}, reapDirtThreshold });
   const vk2 = k.provideVatKeeper(v2);
 
   const v3 = k.allocateVatIDForNameIfNeeded('name3');
   k.createVatState(v3, source, {
-    workerOptions: 'foo',
+    workerOptions: {},
     reapDirtThreshold: never,
   });
   const vk3 = k.provideVatKeeper(v3);
@@ -1049,7 +1049,7 @@ test('dirt upgrade', async t => {
   // options.reapInterval to simulate the old version, and we use
   // nonsense values because .reapInterval was not updated by
   // changeVatOptions so the upgrade process should ignore it
-  const options = { workerOptions: 'foo', reapInterval: 666 };
+  const options = { workerOptions: {}, reapInterval: 666 };
   k.createVatState(v1, source, options);
   // "v2" is like v1 but with the default reapInterval
   const v2 = k.allocateVatIDForNameIfNeeded('name2');

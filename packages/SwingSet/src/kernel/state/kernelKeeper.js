@@ -452,11 +452,10 @@ export default function makeKernelKeeper(
     assert.typeof(threshold, 'object');
     assert(threshold);
     for (const [key, value] of Object.entries(threshold)) {
-      if (typeof value === 'number') {
-        assert(value > 0, `threshold[${key}] = ${value}`);
-      } else {
-        assert.equal(value, 'never', `threshold[${key}] = ${value}`);
-      }
+      assert(
+        (typeof value === 'number' && value > 0) || value === 'never',
+        `threshold[${key}] ${value} must be a positive number or "never"`,
+      );
     }
     kvStore.set(DEFAULT_REAP_DIRT_THRESHOLD_KEY, JSON.stringify(threshold));
   }

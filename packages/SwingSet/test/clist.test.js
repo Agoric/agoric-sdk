@@ -22,7 +22,7 @@ test(`clist reachability`, async t => {
   const s = kk.kvStore;
   const vatID = kk.allocateUnusedVatID();
   const source = { bundleID: 'foo' };
-  const options = { workerOptions: 'foo', reapDirtThreshold: {} };
+  const options = { workerOptions: {}, reapDirtThreshold: {} };
   kk.createVatState(vatID, source, options);
   const vk = kk.provideVatKeeper(vatID);
 
@@ -116,7 +116,7 @@ test('getImporters', async t => {
   kk.createStartingKernelState({ defaultManagerType: 'local' });
   const vatID1 = kk.allocateUnusedVatID();
   const source = { bundleID: 'foo' };
-  const options = { workerOptions: 'foo', reapDirtThreshold: {} };
+  const options = { workerOptions: {}, reapDirtThreshold: {} };
   kk.createVatState(vatID1, source, options);
   kk.addDynamicVatID(vatID1);
   const vk1 = kk.provideVatKeeper(vatID1);
