@@ -614,36 +614,36 @@ export const makeSwingsetTestKit = async (
 
   const getCrankNumber = () => Number(kernelStorage.kvStore.get('crankNumber'));
 
-  const getOutboundMessages = (bridgeId: string) =>
-    harden([...outboundMessages.get(bridgeId)]);
+  const bridgeUtils = {
+    bridgeInbound,
+    getOutboundMessages: (bridgeId: string) =>
+      harden([...outboundMessages.get(bridgeId)]),
+    /**
+     * @param {number} max the max number of messages to flush
+     * @returns {Promise<number>} the number of messages flushed
+     */
+    async flushInboundQueue(max: number = Number.POSITIVE_INFINITY) {
+      console.log('🚽');
+      let i = 0;
+      for (i = 0; i < max; i += 1) {
+        const args = inboundQueue.shift();
+        if (!args) break;
 
-  /**
-   * @param {number} max the max number of messages to flush
-   * @returns {Promise<number>} the number of messages flushed
-   */
-  const flushInboundQueue = async (max: number = Number.POSITIVE_INFINITY) => {
-    console.log('🚽');
-    let i = 0;
-    for (i = 0; i < max; i += 1) {
-      const args = inboundQueue.shift();
-      if (!args) break;
-
-      await runUtils.queueAndRun(() => inbound(...args), true);
-    }
-    console.log('🧻');
-    return i;
+        await runUtils.queueAndRun(() => inbound(...args), true);
+      }
+      console.log('🧻');
+      return i;
+    },
   };
 
   return {
     advanceTimeBy,
     advanceTimeTo,
+    bridgeUtils,
     buildProposal,
-    bridgeInbound,
     controller,
-    flushInboundQueue,
     evalProposal,
     getCrankNumber,
-    getOutboundMessages,
     jumpTimeTo,
     readLatest,
     runUtils,

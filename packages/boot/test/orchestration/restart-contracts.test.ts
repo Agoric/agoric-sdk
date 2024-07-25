@@ -24,7 +24,7 @@ test.serial('sendAnywhere', async t => {
     walletFactoryDriver,
     buildProposal,
     evalProposal,
-    flushInboundQueue,
+    bridgeUtils: { flushInboundQueue },
   } = t.context;
 
   const { IST } = t.context.agoricNamesRemotes.brand;
@@ -114,7 +114,7 @@ test('stakeAtom', async t => {
     buildProposal,
     evalProposal,
     agoricNamesRemotes,
-    flushInboundQueue,
+    bridgeUtils: { flushInboundQueue },
     readLatest,
   } = t.context;
 
