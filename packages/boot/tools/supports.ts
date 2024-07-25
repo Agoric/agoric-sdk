@@ -618,6 +618,7 @@ export const makeSwingsetTestKit = async (
     bridgeInbound,
     getOutboundMessages: (bridgeId: string) =>
       harden([...outboundMessages.get(bridgeId)]),
+    getInboundQueueLength: () => inboundQueue.length,
     /**
      * @param {number} max the max number of messages to flush
      * @returns {Promise<number>} the number of messages flushed
