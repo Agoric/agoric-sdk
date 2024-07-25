@@ -14,8 +14,8 @@ import { M, mustMatch } from '@endo/patterns';
  */
 
 /**
- * Create an account on a Cosmos chain and return a continuing offer with
- * invitations makers for Delegate, WithdrawRewards, Transfer, etc.
+ * Create an OrchestrationAccount for a specific chain and return a continuing
+ * offer with invitations makers for Delegate, WithdrawRewards, Transfer, etc.
  *
  * @satisfies {OrchestrationFlow}
  * @param {Orchestrator} orch
@@ -27,8 +27,8 @@ export const makeOrchAccount = async (orch, _ctx, seat, { chainName }) => {
   seat.exit(); // no funds exchanged
   mustMatch(chainName, M.string());
   const remoteChain = await orch.getChain(chainName);
-  const cosmosAccount = await remoteChain.makeAccount();
-  return cosmosAccount.asContinuingOffer();
+  const orchAccount = await remoteChain.makeAccount();
+  return orchAccount.asContinuingOffer();
 };
 
 /**
