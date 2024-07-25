@@ -10,7 +10,7 @@ import { CosmosChainInfoShape, IBCConnectionInfoShape } from '../typeGuards.js';
 /**
  * @import {NameHub} from '@agoric/vats';
  * @import {Vow, VowTools} from '@agoric/vow';
- * @import {CosmosChainInfo, IBCConnectionInfo} from '../cosmos-api.js';
+ * @import {CosmosAssetInfo, CosmosChainInfo, IBCConnectionInfo} from '../cosmos-api.js';
  * @import {ChainInfo, KnownChains} from '../chain-info.js';
  * @import {Denom} from '../orchestration-api.js';
  * @import {Remote} from '@agoric/internal';
@@ -42,6 +42,8 @@ export const DenomDetailShape = M.splitRecord(
 export const CHAIN_KEY = 'chain';
 /** namehub for connection info */
 export const CONNECTIONS_KEY = 'chainConnection';
+/** namehub for assets info */
+export const ASSETS_KEY = 'chainAssets';
 
 /**
  * Character used in a connection tuple key to separate the two chain ids. Valid
@@ -390,3 +392,23 @@ export const makeChainHub = (agoricNames, vowTools) => {
   return chainHub;
 };
 /** @typedef {ReturnType<typeof makeChainHub>} ChainHub */
+
+/**
+ * @param {ChainHub} chainHub
+ * @param {string} name
+ * @param {CosmosAssetInfo[]} assets
+ */
+export const registerAssets = (chainHub, name, assets) => {
+  for (const { base, traces } of assets) {
+    const native = !traces;
+    native || traces.length === 1 || Fail`unexpected ${traces.length} traces`;
+    const [chainName, baseName, baseDenom] = native
+      ? [name, name, base]
+      : [
+          name,
+          traces[0].counterparty.chain_name,
+          traces[0].counterparty.base_denom,
+        ];
+    chainHub.registerAsset(base, { chainName, baseName, baseDenom });
+  }
+};

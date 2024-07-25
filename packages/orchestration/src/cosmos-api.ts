@@ -22,7 +22,7 @@ import type {
   LocalIbcAddress,
   RemoteIbcAddress,
 } from '@agoric/vats/tools/ibc-utils.js';
-import type { AmountArg, ChainAddress, DenomAmount } from './types.js';
+import type { AmountArg, ChainAddress, Denom, DenomAmount } from './types.js';
 
 /** An address for a validator on some blockchain, e.g., cosmos, eth, etc. */
 export type CosmosValidatorAddress = ChainAddress & {
@@ -53,6 +53,29 @@ export type IBCConnectionInfo = {
     version: string; // e.eg. 'ics20-1'
   };
 };
+
+/**
+ * https://github.com/cosmos/chain-registry/blob/master/assetlist.schema.json
+ */
+export type CosmosAssetInfo = {
+  base: Denom;
+  name: string;
+  display: string;
+  symbol: string;
+  denom_units: Array<{ denom: Denom; exponent: number }>;
+  traces?: Array<{
+    type: 'ibc';
+    counterparty: {
+      chain_name: string;
+      base_denom: Denom;
+      channel_id: IBCChannelID;
+    };
+    chain: {
+      channel_id: IBCChannelID;
+      path: string;
+    };
+  }>;
+} & Record<string, unknown>;
 
 /**
  * Info for a Cosmos-based chain.
