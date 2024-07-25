@@ -130,7 +130,7 @@ export const startAgoricEvaluator = async (
   await null;
 
   const storageNode = await makeStorageNodeChild(chainStorage, contractName);
-  const marshaller = await E(board).getPublishingMarshaller();
+  const marshaller = await E(board).getReadonlyMarshaller();
 
   const privateArgs = {
     evaluator: makeEvaluator(powers),
@@ -162,7 +162,7 @@ export const startAgoricEvaluator = async (
   };
   const invitationPs = Object.keys(invitedOwners).map(name => {
     console.log('creating invitation for', name);
-    return E(creatorFacet).makeEvaluatorInvitation();
+    return E(creatorFacet).makeEvaluatorInvitation(name);
   });
   void distributeInvitations(zip(Object.values(invitedOwners), invitationPs));
 };

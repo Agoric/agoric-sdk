@@ -34,15 +34,56 @@ export const start = async (zcf, privateArgs, baggage) => {
     M.interface('Evaluator Continuing Invitations', {
       Eval: M.callWhen(M.string()).returns(InvitationShape),
     }),
-    evaluator => ({ evaluator }),
+    /**
+     * @param {string} name
+     * @param {object} powers
+     * @param {ERef<import('@agoric/internal/src/lib-chainStorage').StorageNode>} powers.storageNode
+     * @param {ERef<import('@endo/marshal').Marshal<any>['toCapData']>} powers.marshaller
+     * @param {any} powers.evaluator
+     */
+    (name, { storageNode, evaluator, marshaller }) => ({
+      marshaller,
+      name,
+      storageNode,
+      evaluator,
+      lastSequence: 0n,
+    }),
     {
       async Eval(stringToEval) {
         return zcf.makeInvitation(async zcfSeat => {
-          const { evaluator } = this.state;
-          console.info('evaluating', stringToEval);
-          const result = await when(E(evaluator).evaluate(stringToEval));
-          console.info('evaluator replied with', result);
+          const {
+            name,
+            evaluator,
+            marshaller,
+            storageNode,
+            lastSequence: seq,
+          } = this.state;
+          this.state.lastSequence += 1n;
+          console.info(name, `is evaluating ${seq}:`, stringToEval);
+          const subStorage = await E(storageNode).makeChildNode(`eval${seq}`);
+
+          const updateSubStorage = async obj => {
+            harden(obj);
+            const jsonableObj = await E(marshaller).toCapData(obj);
+            await E(subStorage).setValue(JSON.stringify(jsonableObj));
+          };
+
+          const request = { seq, command: stringToEval };
+          await updateSubStorage(request);
+
+          let reply;
+          try {
+            const result = await when(E(evaluator).evaluate(stringToEval));
+            reply = { ...request, result };
+            console.info('evaluator returned', result);
+          } catch (e) {
+            reply = { ...request, error: e };
+            console.info('evaluator failed with', e);
+          }
+
           zcfSeat.exit();
+          await updateSubStorage(reply);
+          return reply;
         }, 'evaluate string');
       },
     },
@@ -51,11 +92,18 @@ export const start = async (zcf, privateArgs, baggage) => {
   const creatorFacet = zone.exo(
     'Evaluator Creator Facet',
     M.interface('Evaluator Creator Facet', {
-      makeEvaluatorInvitation: M.callWhen().returns(InvitationShape),
+      makeEvaluatorInvitation: M.callWhen(M.string()).returns(InvitationShape),
     }),
     {
-      makeEvaluatorInvitation() {
-        const invitationMakers = makeInvitationMakers(privateArgs.evaluator);
+      async makeEvaluatorInvitation(name) {
+        const storageNode = await E(privateArgs.storageNode).makeChildNode(
+          name,
+        );
+        const invitationMakers = makeInvitationMakers(name, {
+          storageNode,
+          marshaller: privateArgs.marshaller,
+          evaluator: privateArgs.evaluator,
+        });
         return zcf.makeInvitation(
           /** @type {OfferHandler} */
           _zcfSeat => {
