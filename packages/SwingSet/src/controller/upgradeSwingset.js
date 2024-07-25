@@ -30,23 +30,29 @@ const upgradeVatV0toV1 = (kvStore, defaultReapDirtThreshold, vatID) => {
   assert(kvStore.has(oldReapCountdownKey), oldReapCountdownKey);
   assert(!kvStore.has(reapDirtKey), reapDirtKey);
 
+  const reapIntervalString = kvStore.get(oldReapIntervalKey);
+  const reapCountdownString = kvStore.get(oldReapCountdownKey);
+  assert(reapIntervalString !== undefined);
+  assert(reapCountdownString !== undefined);
+
+  const intervalIsNever = reapIntervalString === 'never';
+  const countdownIsNever = reapCountdownString === 'never';
+  // these were supposed to be the same
+  assert(
+    intervalIsNever === countdownIsNever,
+    `reapInterval=${reapIntervalString}, reapCountdown=${reapCountdownString}`,
+  );
+
   // initialize or upgrade state
   const reapDirt = {}; // all missing keys are treated as zero
   const threshold = {};
 
-  const reapIntervalString = kvStore.get(oldReapIntervalKey);
-  assert(reapIntervalString !== undefined);
-  const reapCountdownString = kvStore.get(oldReapCountdownKey);
-  assert(reapCountdownString !== undefined);
-  const intervalIsNever = reapIntervalString === 'never';
-  const countdownIsNever = reapCountdownString === 'never';
-  assert(
-    (intervalIsNever && countdownIsNever) ||
-      (!intervalIsNever && !countdownIsNever),
-    `reapInterval=${reapIntervalString}, reapCountdown=${reapCountdownString}`,
-  );
-
-  if (!intervalIsNever && !countdownIsNever) {
+  if (intervalIsNever) {
+    // old vats that were never reaped (eg comms) used
+    // reapInterval='never', so respect that and set the other
+    // threshold values to never as well
+    threshold.never = true;
+  } else {
     // deduce delivery count from old countdown values
     const reapInterval = Number.parseInt(reapIntervalString, 10);
     const reapCountdown = Number.parseInt(reapCountdownString, 10);
@@ -57,17 +63,11 @@ const upgradeVatV0toV1 = (kvStore, defaultReapDirtThreshold, vatID) => {
     }
   }
 
-  // old vats that were never reaped (eg comms) used
-  // reapInterval='never', so respect that and set the other
-  // threshold values to never as well
-  if (intervalIsNever) {
-    threshold.never = true;
-  }
   kvStore.delete(oldReapIntervalKey);
   kvStore.delete(oldReapCountdownKey);
   kvStore.set(reapDirtKey, JSON.stringify(reapDirt));
 
-  // remove .reapInterval from options, replace with .reapDirtThreshold
+  // Update options to use the new schema.
   const options = JSON.parse(kvStore.get(vatOptionsKey));
   delete options.reapInterval;
   options.reapDirtThreshold = threshold;
