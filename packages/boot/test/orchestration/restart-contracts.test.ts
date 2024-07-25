@@ -167,3 +167,107 @@ test('stakeAtom', async t => {
   t.is(await flushInboundQueue(), 1);
   t.true(hasResult(wd.getLatestUpdateRecord()));
 });
+
+// Tests restart of an orchestration() flow while an IBC response is pending.
+//
+// TODO consider testing this pausing during any pending IBC message. It'll need
+// to fresh contract state on each iteration, and since this is a bootstrap test
+// that means either restarting bootstrap or starting a new contract and
+// restarting that one. For them to share bootstrap they'll each need a unique
+// instance name, which will require paramatizing the the two builders scripts
+// and the two core-eval functions.
+test.serial('basicFlows', async t => {
+  const {
+    walletFactoryDriver,
+    buildProposal,
+    evalProposal,
+    bridgeUtils: { getInboundQueueLength, flushInboundQueue },
+  } = t.context;
+
+  t.log('start basicFlows');
+  await evalProposal(
+    buildProposal('@agoric/builders/scripts/orchestration/init-basic-flows.js'),
+  );
+
+  t.log('making offer');
+  const wallet = await walletFactoryDriver.provideSmartWallet('agoric1test');
+  const id1 = 'make-orch-account';
+  // send because it won't resolve
+  await wallet.sendOffer({
+    id: id1,
+    invitationSpec: {
+      source: 'agoricContract',
+      instancePath: ['basicFlows'],
+      callPipe: [['makeOrchAccountInvitation']],
+    },
+    proposal: {},
+    offerArgs: {
+      chainName: 'cosmoshub',
+    },
+  });
+  // no errors and no result yet
+  t.like(wallet.getLatestUpdateRecord(), {
+    status: {
+      id: id1,
+      error: undefined,
+      numWantsSatisfied: 1,
+      payouts: {},
+      result: undefined, // no property
+    },
+  });
+  t.is(getInboundQueueLength(), 1);
+
+  const id2 = 'makePortfolio';
+  await wallet.sendOffer({
+    id: id2,
+    invitationSpec: {
+      source: 'agoricContract',
+      instancePath: ['basicFlows'],
+      callPipe: [['makePortfolioAccountInvitation']],
+    },
+    proposal: {},
+    offerArgs: {
+      chainNames: ['agoric', 'cosmoshub'],
+    },
+  });
+  // no errors and no result yet
+  t.like(wallet.getLatestUpdateRecord(), {
+    status: {
+      id: id2,
+      error: undefined,
+      numWantsSatisfied: 1,
+      payouts: {},
+      result: undefined, // no property
+    },
+  });
+  t.is(getInboundQueueLength(), 2);
+
+  t.log('restart basicFlows');
+  await evalProposal(
+    buildProposal('@agoric/builders/scripts/testing/restart-basic-flows.js'),
+  );
+
+  t.log('flush and verify results');
+  const beforeFlush = wallet.getLatestUpdateRecord();
+  t.like(beforeFlush, {
+    status: {
+      result: undefined,
+    },
+  });
+  t.is(await flushInboundQueue(1), 1);
+  t.like(wallet.getLatestUpdateRecord(), {
+    status: {
+      id: id1,
+      error: undefined,
+      result: 'UNPUBLISHED',
+    },
+  });
+  t.is(await flushInboundQueue(1), 1);
+  t.like(wallet.getLatestUpdateRecord(), {
+    status: {
+      id: id2,
+      error: undefined,
+      result: 'UNPUBLISHED',
+    },
+  });
+});
