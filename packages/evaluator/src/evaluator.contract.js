@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * @file Primarily a testing fixture, but also serves as an example of how to
  *   leverage basic functionality of the Orchestration API with async-flow.
@@ -7,6 +8,7 @@ import { M } from '@endo/patterns';
 import { E } from '@endo/far';
 import { prepareSwingsetVowTools } from '@agoric/vow/vat.js';
 import { makeDurableZone } from '@agoric/zone/durable.js';
+import { makeStorageNodeChild } from '@agoric/internal/src/lib-chainStorage';
 
 /**
  * @import {Baggage} from '@agoric/vat-data';
@@ -38,7 +40,7 @@ export const start = async (zcf, privateArgs, baggage) => {
      * @param {string} name
      * @param {object} powers
      * @param {ERef<import('@agoric/internal/src/lib-chainStorage').StorageNode>} powers.storageNode
-     * @param {ERef<import('@endo/marshal').Marshal<any>['toCapData']>} powers.marshaller
+     * @param {ERef<ReturnType<typeof import('@endo/marshal').makeMarshal>>} powers.marshaller
      * @param {any} powers.evaluator
      */
     (name, { storageNode, evaluator, marshaller }) => ({
@@ -59,8 +61,11 @@ export const start = async (zcf, privateArgs, baggage) => {
             lastSequence: seq,
           } = this.state;
           this.state.lastSequence += 1n;
-          console.info(name, `is evaluating ${seq}:`, stringToEval);
-          const subStorage = await E(storageNode).makeChildNode(`eval${seq}`);
+          console.info('@@@', name, `is evaluating ${seq}:`, stringToEval);
+          const subStorage = await makeStorageNodeChild(
+            storageNode,
+            `eval${seq}`,
+          );
 
           const updateSubStorage = async obj => {
             harden(obj);
@@ -75,15 +80,15 @@ export const start = async (zcf, privateArgs, baggage) => {
           try {
             const result = await when(E(evaluator).evaluate(stringToEval));
             reply = { ...request, result };
-            console.info('evaluator returned', result);
+            console.info('@@@ evaluator returned', result);
           } catch (e) {
             reply = { ...request, error: e };
-            console.info('evaluator failed with', e);
+            console.info('@@@ evaluator failed with', e);
           }
 
           zcfSeat.exit();
           await updateSubStorage(reply);
-          return reply;
+          return harden({ reply });
         }, 'evaluate string');
       },
     },
@@ -96,14 +101,18 @@ export const start = async (zcf, privateArgs, baggage) => {
     }),
     {
       async makeEvaluatorInvitation(name) {
-        const storageNode = await E(privateArgs.storageNode).makeChildNode(
+        console.log('@@@ making evaluator invitation for', name);
+        const storageNode = await makeStorageNodeChild(
+          privateArgs.storageNode,
           name,
         );
+        console.log('@@@ making invitation makers for', name);
         const invitationMakers = makeInvitationMakers(name, {
           storageNode,
           marshaller: privateArgs.marshaller,
           evaluator: privateArgs.evaluator,
         });
+        console.log('@@@ returning invitation');
         return zcf.makeInvitation(
           /** @type {OfferHandler} */
           _zcfSeat => {
