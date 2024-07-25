@@ -56,6 +56,9 @@ const prepareStakingTapKit = (zone, { watch }) => {
           M.or(VowShape, M.undefined()),
         ),
       }),
+      holder: M.interface('Holder', {
+        updateValidator: M.call(ChainAddressShape).returns(),
+      }),
       transferWatcher: M.interface('TransferWatcher', {
         onFulfilled: M.call(M.undefined())
           .optional(M.bigint())
@@ -113,6 +116,15 @@ const prepareStakingTapKit = (zone, { watch }) => {
           );
         },
       },
+      holder: {
+        /**
+         * @param {CosmosValidatorAddress} validator
+         */
+        updateValidator(validator) {
+          mustMatch(validator, ChainAddressShape);
+          this.state.validator = validator;
+        },
+      },
       transferWatcher: {
         /**
          * @param {void} _result
@@ -146,11 +158,17 @@ const prepareStakingTapKit = (zone, { watch }) => {
  * @param {VowTools} vowTools
  * @returns {(
  *   ...args: Parameters<ReturnType<typeof prepareStakingTapKit>>
- * ) => ReturnType<ReturnType<typeof prepareStakingTapKit>>['tap']}
+ * ) => {
+ *   holder: ReturnType<ReturnType<typeof prepareStakingTapKit>>['holder'];
+ *   tap: ReturnType<ReturnType<typeof prepareStakingTapKit>>['tap'];
+ * }}
  */
 export const prepareStakingTap = (zone, vowTools) => {
   const makeKit = prepareStakingTapKit(zone, vowTools);
-  return (...args) => makeKit(...args).tap;
+  return (...args) => {
+    const { tap, holder } = makeKit(...args);
+    return harden({ tap, holder });
+  };
 };
 
 /** @typedef {ReturnType<typeof prepareStakingTap>} MakeStakingTap */

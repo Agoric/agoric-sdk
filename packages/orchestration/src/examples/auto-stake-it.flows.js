@@ -66,7 +66,7 @@ export const makeAccounts = async (
   assert(transferChannel.counterPartyChannelId, 'unable to find sourceChannel');
 
   // Every time the `localAccount` receives `remoteDenom` over IBC, delegate it.
-  const tap = makeStakingTap({
+  const { tap } = makeStakingTap({
     localAccount,
     stakingAccount,
     validator,
