@@ -16,6 +16,7 @@ export default async function deployWallet(
   // console.log('have home', home);
   const {
     agoric: {
+      DISCONNECTED,
       agoricNames,
       bank,
       namesByAddress,
@@ -26,6 +27,11 @@ export default async function deployWallet(
     },
     local: { http, localTimerService, spawner, wallet: oldWallet, scratch },
   } = home;
+
+  if (DISCONNECTED) {
+    console.warn(DISCONNECTED);
+    return;
+  }
 
   let walletVat = await E(scratch).get('wallet/api');
   if (!walletVat) {

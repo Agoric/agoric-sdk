@@ -40,7 +40,7 @@ import {
 } from '@agoric/cosmic-swingset/src/kernel-stats.js';
 
 import { deliver, addDeliveryTarget } from './outbound.js';
-import { connectToPipe } from './pipe.js';
+// import { connectToPipe } from './pipe.js';
 import { makeHTTPListener } from './web.js';
 
 import { connectToChain } from './chain-cosmos-sdk.js';
@@ -518,16 +518,6 @@ const start = async (basedir, argv) => {
             addDeliveryTarget(c.GCI, deliverator);
           }
           break;
-        case 'fake-chain': {
-          log(`adding follower/sender for fake chain ${c.GCI}`);
-          const deliverator = await connectToPipe({
-            method: 'connectToFakeChain',
-            args: [basedir, c.GCI, c.fakeDelay],
-            deliverInboundToMbx,
-          });
-          addDeliveryTarget(c.GCI, deliverator);
-          break;
-        }
         case 'http': {
           log(`adding HTTP/WS listener on ${c.host}:${c.port}`);
           !broadcastJSON || Fail`duplicate type=http in connections.json`;
