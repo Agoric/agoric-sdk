@@ -334,11 +334,6 @@ export const makeSwingsetTestKit = async (
   };
   let ibcSequenceNonce = 0;
 
-  const addSequenceNonce = ({ packet }: IBCMethod<'sendPacket'>): IBCPacket => {
-    ibcSequenceNonce += 1;
-    return { ...packet, sequence: ibcSequenceNonce };
-  };
-
   /**
    * Adds the sequence so the bridge knows what response to connect it to.
    * Then queue it send it over the bridge over this returns.
