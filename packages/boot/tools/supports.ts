@@ -353,6 +353,10 @@ export const makeSwingsetTestKit = async (
   };
 
   const inboundQueue: [bridgeId: BridgeIdValue, arg1: unknown][] = [];
+  /** Add a message that will be sent to the bridge by flushInboundQueue. */
+  const pushInbound = (bridgeId: BridgeIdValue, arg1: unknown) => {
+    inboundQueue.push([bridgeId, arg1]);
+  };
   /**
    * Like ackImmediately but defers in the inbound receiverAck
    * until `bridgeQueue()` is awaited.
@@ -360,7 +364,7 @@ export const makeSwingsetTestKit = async (
   const ackLater = (obj: IBCMethod<'sendPacket'>, ack: string) => {
     ibcSequenceNonce += 1;
     const msg = icaMocks.ackPacketEvent(obj, ibcSequenceNonce, ack);
-    inboundQueue.push([BridgeId.DIBC, msg]);
+    pushInbound(BridgeId.DIBC, msg);
     return msg.packet;
   };
 
@@ -432,10 +436,7 @@ export const makeSwingsetTestKit = async (
           case 'IBC_METHOD':
             switch (obj.method) {
               case 'startChannelOpenInit':
-                inboundQueue.push([
-                  BridgeId.DIBC,
-                  icaMocks.channelOpenAck(obj),
-                ]);
+                pushInbound(BridgeId.DIBC, icaMocks.channelOpenAck(obj));
                 return undefined;
               case 'sendPacket':
                 switch (obj.packet.data) {
@@ -615,7 +616,8 @@ export const makeSwingsetTestKit = async (
   const getCrankNumber = () => Number(kernelStorage.kvStore.get('crankNumber'));
 
   const bridgeUtils = {
-    bridgeInbound,
+    /** Immediately handle the inbound message */
+    inbound: bridgeInbound,
     getOutboundMessages: (bridgeId: string) =>
       harden([...outboundMessages.get(bridgeId)]),
     getInboundQueueLength: () => inboundQueue.length,
