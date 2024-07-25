@@ -16,7 +16,7 @@ const { entries } = Object;
  * @satisfies {OrchestrationFlow}
  * @param {Orchestrator} orch
  * @param {object} ctx
- * @param {{ account?: OrchestrationAccountI & LocalAccountMethods }} ctx.contractState
+ * @param {{ localAccount?: OrchestrationAccountI & LocalAccountMethods }} ctx.contractState
  * @param {GuestOf<ZoeTools['localTransfer']>} ctx.localTransfer
  * @param {(brand: Brand) => Promise<VBankAssetDetail>} ctx.findBrandInVBank
  * @param {ZCFSeat} seat
@@ -36,18 +36,18 @@ export async function sendIt(
   const { denom } = await findBrandInVBank(amt.brand);
   const chain = await orch.getChain(chainName);
 
-  if (!contractState.account) {
+  if (!contractState.localAccount) {
     const agoricChain = await orch.getChain('agoric');
-    contractState.account = await agoricChain.makeAccount();
+    contractState.localAccount = await agoricChain.makeAccount();
   }
 
   const info = await chain.getChainInfo();
   const { chainId } = info;
   assert(typeof chainId === 'string', 'bad chainId');
 
-  await localTransfer(seat, contractState.account, give);
+  await localTransfer(seat, contractState.localAccount, give);
 
-  await contractState.account.transfer(
+  await contractState.localAccount.transfer(
     { denom, value: amt.value },
     {
       value: destAddr,

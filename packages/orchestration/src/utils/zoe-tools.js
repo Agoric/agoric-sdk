@@ -1,5 +1,6 @@
 import { Fail } from '@endo/errors';
 import { atomicTransfer } from '@agoric/zoe/src/contractSupport/index.js';
+import { E } from '@endo/far';
 
 /**
  * @import {InvitationMakers} from '@agoric/smart-wallet/src/types.js';
@@ -64,7 +65,7 @@ export const makeZoeTools = (zone, { zcf, vowTools }) => {
       // Now all the `give` are accessible, so we can move them to the localAccount`
 
       const promises = Object.entries(give).map(async ([kw, _amount]) => {
-        const pmt = await userSeat.getPayout(kw);
+        const pmt = await E(userSeat).getPayout(kw);
         // TODO arrange recovery on upgrade of pmt?
         return localAccount.deposit(pmt);
       });
