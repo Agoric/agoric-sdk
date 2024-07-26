@@ -1,8 +1,4 @@
 // @ts-check
-/**
- * @file Primarily a testing fixture, but also serves as an example of how to
- *   leverage basic functionality of the Orchestration API with async-flow.
- */
 import { InvitationShape } from '@agoric/zoe/src/typeGuards.js';
 import { M } from '@endo/patterns';
 import { E } from '@endo/far';

@@ -21,6 +21,7 @@
   "author": "Agoric",
   "license": "Apache-2.0",
   "dependencies": {
+    "@agoric/deploy-script-support": "^0.10.3",
     "@agoric/internal": "^0.3.2",
     "@agoric/vow": "^0.1.0",
     "@agoric/zoe": "^0.26.2",

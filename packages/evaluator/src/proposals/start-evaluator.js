@@ -1,5 +1,5 @@
 /**
- * @file A proposal to start the basic flows contract.
+ * @file A proposal to start the evaluator contract.
  */
 import { makeTracer, WalletName } from '@agoric/internal';
 import { makeStorageNodeChild } from '@agoric/internal/src/lib-chainStorage.js';
@@ -18,21 +18,131 @@ const zip = (xs, ys) => xs.map((x, i) => [x, ys[i]]);
 const trace = makeTracer('StartAgoricEvaluator', true);
 const contractName = 'agoricEvaluator';
 
+const createAsyncFunction = (ev, body) => {
+  try {
+    // Try an expression first.
+    return ev(`async () => (${body}\n)`);
+  } catch (e) {
+    if (e instanceof SyntaxError) {
+      try {
+        // Evaluate statements instead.
+        return ev(`async () => { ${body}\n}`);
+      } catch (e2) {
+        if (e2 instanceof SyntaxError) {
+          throw e;
+        }
+        throw e2;
+      }
+    } else {
+      throw e;
+    }
+  }
+};
+
 const makeEvaluator = powers => {
-  let compartment;
+  let ev;
   return Far('evaluator', {
     async evaluate(code) {
-      if (!compartment)
-        compartment = new Compartment({
+      assert.typeof(code, 'string');
+      if (!ev) {
+        const compartment = new Compartment({
           powers,
           console,
           E,
           Far,
           vowTools,
         });
-      return compartment.evaluate(code, { sloppyGlobalsMode: true });
+
+        ev = cmd => compartment.evaluate(cmd, { sloppyGlobalsMode: true });
+      }
+
+      const afn = createAsyncFunction(ev, code);
+      return afn();
     },
   });
+};
+
+/**
+ * See `../evaluator.build.js` for the accompanying proposal builder. Run
+ * `agoric run ../evaluator.build.js` to build the contract and proposal files.
+ *
+ * @param {BootstrapPowers} powers
+ * @param {object} root0
+ * @param {object} root0.options
+ * @param {Record<string, string>} root0.options.invitedOwners
+ */
+export const startAgoricEvaluator = async (
+  powers,
+  { options: { invitedOwners } },
+) => {
+  console.error('@@@@ startAgoricEvaluator!!!');
+  const {
+    consume: { board, chainStorage, startUpgradable, namesByAddressAdmin },
+    installation: {
+      // @ts-expect-error not a WellKnownName
+      consume: { [contractName]: installation },
+    },
+    instance: {
+      // @ts-expect-error not a WellKnownName
+      produce: { [contractName]: produceInstance },
+    },
+  } = powers;
+  trace(`start ${contractName}`);
+  await null;
+
+  const storageNode = await makeStorageNodeChild(chainStorage, contractName);
+  const marshaller = await E(board).getReadonlyMarshaller();
+
+  const privateArgs = {
+    evaluator: makeEvaluator(powers),
+    storageNode,
+    marshaller,
+  };
+
+  /** @type {StartUpgradableOpts<AgoricEvaluatorSF>} */
+  const startOpts = {
+    label: contractName,
+    installation,
+    terms: undefined,
+    privateArgs,
+  };
+
+  const { instance, creatorFacet } = await E(startUpgradable)(startOpts);
+  produceInstance.reset();
+  produceInstance.resolve(instance);
+  /** @param {[string, Promise<Invitation>][]} addrInvitations */
+  const distributeInvitations = async addrInvitations => {
+    await Promise.all(
+      addrInvitations.map(async ([addr, invitationP]) => {
+        const debugName = `audit member ${addr}`;
+        // eslint-disable-next-line no-use-before-define
+        await reserveThenDeposit(debugName, namesByAddressAdmin, addr, [
+          invitationP,
+        ]).catch(err => console.error(`failed deposit to ${debugName}`, err));
+      }),
+    );
+  };
+  const invitationPs = Object.keys(invitedOwners).map(name => {
+    console.log('creating invitation for', name);
+    return E(creatorFacet).makeEvaluatorInvitation(name);
+  });
+  void distributeInvitations(zip(Object.values(invitedOwners), invitationPs));
+};
+harden(startAgoricEvaluator);
+
+export const getManifestForContract = (
+  { restoreRef },
+  { installKeys, ...options },
+) => {
+  return {
+    manifest: {
+      [startAgoricEvaluator.name]: true,
+    },
+    installations: {
+      [contractName]: restoreRef(installKeys[contractName]),
+    },
+    options,
+  };
 };
 
 /**
@@ -97,88 +207,4 @@ const reserveThenDeposit = async (
       );
     }),
   );
-};
-
-/**
- * See `@agoric/builders/builders/scripts/orchestration/init-basic-flows.js` for
- * the accompanying proposal builder. Run `agoric run
- * packages/builders/scripts/orchestration/init-basic-flows.js` to build the
- * contract and proposal files.
- *
- * @param {BootstrapPowers} powers
- * @param {object} root0
- * @param {object} root0.options
- * @param {Record<string, string>} root0.options.invitedOwners
- */
-export const startAgoricEvaluator = async (
-  powers,
-  { options: { invitedOwners } },
-) => {
-  console.error('@@@@ startAgoricEvaluator!!!');
-  const {
-    consume: { board, chainStorage, startUpgradable, namesByAddressAdmin },
-    installation: {
-      // @ts-expect-error not a WellKnownName
-      consume: { [contractName]: installation },
-    },
-    instance: {
-      // @ts-expect-error not a WellKnownName
-      produce: { [contractName]: produceInstance },
-    },
-  } = powers;
-  trace(`start ${contractName}`);
-  await null;
-
-  const storageNode = await makeStorageNodeChild(chainStorage, contractName);
-  const marshaller = await E(board).getReadonlyMarshaller();
-
-  const privateArgs = {
-    evaluator: makeEvaluator(powers),
-    storageNode,
-    marshaller,
-  };
-
-  /** @type {StartUpgradableOpts<AgoricEvaluatorSF>} */
-  const startOpts = {
-    label: contractName,
-    installation,
-    terms: undefined,
-    privateArgs,
-  };
-
-  const { instance, creatorFacet } = await E(startUpgradable)(startOpts);
-  produceInstance.reset();
-  produceInstance.resolve(instance);
-  /** @param {[string, Promise<Invitation>][]} addrInvitations */
-  const distributeInvitations = async addrInvitations => {
-    await Promise.all(
-      addrInvitations.map(async ([addr, invitationP]) => {
-        const debugName = `audit member ${addr}`;
-        await reserveThenDeposit(debugName, namesByAddressAdmin, addr, [
-          invitationP,
-        ]).catch(err => console.error(`failed deposit to ${debugName}`, err));
-      }),
-    );
-  };
-  const invitationPs = Object.keys(invitedOwners).map(name => {
-    console.log('creating invitation for', name);
-    return E(creatorFacet).makeEvaluatorInvitation(name);
-  });
-  void distributeInvitations(zip(Object.values(invitedOwners), invitationPs));
-};
-harden(startAgoricEvaluator);
-
-export const getManifestForContract = (
-  { restoreRef },
-  { installKeys, ...options },
-) => {
-  return {
-    manifest: {
-      [startAgoricEvaluator.name]: true,
-    },
-    installations: {
-      [contractName]: restoreRef(installKeys[contractName]),
-    },
-    options,
-  };
 };
