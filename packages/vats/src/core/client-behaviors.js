@@ -1,4 +1,3 @@
-import { Fail } from '@endo/errors';
 import { E, Far } from '@endo/far';
 import { makePluginManager } from '@agoric/swingset-vat/src/vats/plugin-manager.js';
 import { observeNotifier } from '@agoric/notifier';
@@ -136,7 +135,13 @@ export const startClient = async ({
   }
 
   const addChainPresences = async () => {
-    FIXME_GCI || Fail`client must be given GCI`;
+    if (!FIXME_GCI) {
+      chainBundle = {
+        DISCONNECTED: `Chain is disconnected: no GCI provided`,
+      };
+      void updatePresences();
+      return;
+    }
     await addRemote(FIXME_GCI);
     // addEgress(..., index, ...) is called in vat-provisioning.
     const chainProvider = E(vats.comms).addIngress(
