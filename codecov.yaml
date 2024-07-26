@@ -1,7 +1,7 @@
 codecov:
   require_ci_to_pass: true
 comment:
-  layout: " diff, flags, files"
+  layout: "flags, components, files"
   behavior: default
   hide_project_coverage: false
 coverage:
@@ -19,3 +19,37 @@ parsers:
     enable_partials: yes
 ignore:
   - '**/*.json'
+component_management:
+  individual_components:
+    - component_id: module_swingset_kernel  
+      name: SwingSet/kernel
+      paths:
+        - packages/SwingSet/src/kernel/**
+      statuses:
+        - type: project
+          target: auto
+          threshold: 0.05%
+    - component_id: module_ertp
+      name: ERTP
+      paths:
+        - packages/ERTP/**
+      statuses:
+        - type: project
+          target: auto
+          threshold: 0.05%
+    - component_id: module_orchestration
+      name: Orchestration
+      paths:
+        - packages/orchestration/**
+      statuses:
+        - type: project
+          target: auto
+          threshold: 0.05%
+    - component_id: module_swing_store
+      name: swing-store
+      paths:
+        - packages/swing-store/**
+      statuses:
+        - type: project
+          target: auto
+          threshold: 0.05%

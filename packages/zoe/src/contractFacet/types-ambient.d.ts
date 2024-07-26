@@ -209,7 +209,7 @@ type ZCFSeat = import('@endo/pass-style').RemotableObject & {
 };
 type ZcfSeatKit = {
   zcfSeat: ZCFSeat;
-  userSeat: ERef<UserSeat>;
+  userSeat: Promise<UserSeat>;
 };
 type HandleOffer<OR extends unknown, OA> = (seat: ZCFSeat, offerArgs: OA) => OR;
 type OfferHandler<OR extends unknown = unknown, OA = never> =

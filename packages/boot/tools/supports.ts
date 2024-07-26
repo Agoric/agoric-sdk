@@ -7,13 +7,14 @@ import { resolve as importMetaResolve } from 'import-meta-resolve';
 import { basename, join } from 'path';
 import { inspect } from 'util';
 
-import { Fail } from '@endo/errors';
 import { buildSwingset } from '@agoric/cosmic-swingset/src/launch-chain.js';
 import {
   BridgeId,
   NonNullish,
   VBankAccount,
   makeTracer,
+  type BridgeIdValue,
+  type Remote,
 } from '@agoric/internal';
 import { unmarshalFromVstorage } from '@agoric/internal/src/marshal.js';
 import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
@@ -22,20 +23,56 @@ import { initSwingStore } from '@agoric/swing-store';
 import { loadSwingsetConfigFile } from '@agoric/swingset-vat';
 import { makeSlogSender } from '@agoric/telemetry';
 import { TimeMath, Timestamp } from '@agoric/time';
+import { Fail } from '@endo/errors';
 
+import {
+  makeRunUtils,
+  type RunUtils,
+} from '@agoric/swingset-vat/tools/run-utils.js';
 import {
   boardSlottingMarshaller,
   slotToBoardRemote,
 } from '@agoric/vats/tools/board-utils.js';
-import { makeRunUtils } from '@agoric/swingset-vat/tools/run-utils.js';
 
 import type { ExecutionContext as AvaT } from 'ava';
 
+import type { JsonSafe } from '@agoric/cosmic-proto';
+import type { MsgDelegateResponse } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/tx.js';
 import type { CoreEvalSDKType } from '@agoric/cosmic-proto/swingset/swingset.js';
-import type { BridgeHandler, IBCMethod } from '@agoric/vats';
+import type { EconomyBootstrapPowers } from '@agoric/inter-protocol/src/proposals/econ-behaviors.js';
+import type { SwingsetController } from '@agoric/swingset-vat/src/controller/controller.js';
+import type { BridgeHandler, IBCMethod, IBCPacket } from '@agoric/vats';
+import type { BootstrapRootObject } from '@agoric/vats/src/core/lib-boot.js';
+import type { EProxy } from '@endo/eventual-send';
 import { icaMocks, protoMsgMocks } from './ibc/mocks.js';
 
 const trace = makeTracer('BSTSupport', false);
+
+type ConsumeBootrapItem = <N extends string>(
+  name: N,
+) => N extends keyof EconomyBootstrapPowers['consume']
+  ? EconomyBootstrapPowers['consume'][N]
+  : unknown;
+
+// XXX should satisfy EVProxy from run-utils.js but that's failing to import
+/**
+ * Elaboration of EVProxy with knowledge of bootstrap space in these tests.
+ */
+type BootstrapEV = EProxy & {
+  sendOnly: (presence: unknown) => Record<string, (...args: any) => void>;
+  vat: <N extends string>(
+    name: N,
+  ) => N extends 'bootstrap'
+    ? Omit<BootstrapRootObject, 'consumeItem'> & {
+        // XXX not really local
+        consumeItem: ConsumeBootrapItem;
+      } & Remote<{ consumeItem: ConsumeBootrapItem }>
+    : Record<string, (...args: any) => Promise<any>>;
+};
+
+const makeBootstrapRunUtils = makeRunUtils as (
+  controller: SwingsetController,
+) => Omit<RunUtils, 'EV'> & { EV: BootstrapEV };
 
 const keysToObject = <K extends PropertyKey, V>(
   keys: K[],
@@ -288,15 +325,50 @@ export const makeSwingsetTestKit = async (
 
   const outboundMessages = new Map();
 
-  let inbound;
+  const inbound: Awaited<ReturnType<typeof buildSwingset>>['bridgeInbound'] = (
+    ...args
+  ) => {
+    console.log('inbound', ...args);
+    // eslint-disable-next-line no-use-before-define
+    bridgeInbound!(...args);
+  };
   let ibcSequenceNonce = 0;
 
-  const makeAckEvent = (obj: IBCMethod<'sendPacket'>, ack: string) => {
+  const addSequenceNonce = ({ packet }: IBCMethod<'sendPacket'>): IBCPacket => {
     ibcSequenceNonce += 1;
-    const msg = icaMocks.ackPacket(obj, ibcSequenceNonce, ack);
-    inbound(BridgeId.DIBC, msg);
+    return { ...packet, sequence: ibcSequenceNonce };
+  };
+
+  /**
+   * Adds the sequence so the bridge knows what response to connect it to.
+   * Then queue it send it over the bridge over this returns.
+   * Finally return the packet that will be sent.
+   */
+  const ackImmediately = (obj: IBCMethod<'sendPacket'>, ack: string) => {
+    ibcSequenceNonce += 1;
+    const msg = icaMocks.ackPacketEvent(obj, ibcSequenceNonce, ack);
+    setTimeout(() => {
+      /**
+       * Mock when Agoric receives the ack from another chain over DIBC. Always
+       * happens after the packet is returned.
+       */
+      inbound(BridgeId.DIBC, msg);
+    });
     return msg.packet;
   };
+
+  const inboundQueue: [bridgeId: BridgeIdValue, arg1: unknown][] = [];
+  /**
+   * Like ackImmediately but defers in the inbound receiverAck
+   * until `bridgeQueue()` is awaited.
+   */
+  const ackLater = (obj: IBCMethod<'sendPacket'>, ack: string) => {
+    ibcSequenceNonce += 1;
+    const msg = icaMocks.ackPacketEvent(obj, ibcSequenceNonce, ack);
+    inboundQueue.push([BridgeId.DIBC, msg]);
+    return msg.packet;
+  };
+
   /**
    * Mock the bridge outbound handler. The real one is implemented in Golang so
    * changes there will sometimes require changes here.
@@ -365,42 +437,37 @@ export const makeSwingsetTestKit = async (
           case 'IBC_METHOD':
             switch (obj.method) {
               case 'startChannelOpenInit':
-                inbound(BridgeId.DIBC, icaMocks.channelOpenAck(obj));
+                inboundQueue.push([
+                  BridgeId.DIBC,
+                  icaMocks.channelOpenAck(obj),
+                ]);
                 return undefined;
               case 'sendPacket':
                 switch (obj.packet.data) {
                   case protoMsgMocks.delegate.msg: {
-                    return makeAckEvent(obj, protoMsgMocks.delegate.ack);
+                    return ackLater(obj, protoMsgMocks.delegate.ack);
                   }
                   case protoMsgMocks.delegateWithOpts.msg: {
-                    return makeAckEvent(
-                      obj,
-                      protoMsgMocks.delegateWithOpts.ack,
-                    );
+                    return ackLater(obj, protoMsgMocks.delegateWithOpts.ack);
                   }
                   case protoMsgMocks.queryBalance.msg: {
-                    return makeAckEvent(obj, protoMsgMocks.queryBalance.ack);
+                    return ackLater(obj, protoMsgMocks.queryBalance.ack);
                   }
                   case protoMsgMocks.queryUnknownPath.msg: {
-                    return makeAckEvent(
-                      obj,
-                      protoMsgMocks.queryUnknownPath.ack,
-                    );
+                    return ackLater(obj, protoMsgMocks.queryUnknownPath.ack);
                   }
                   case protoMsgMocks.queryBalanceMulti.msg: {
-                    return makeAckEvent(
-                      obj,
-                      protoMsgMocks.queryBalanceMulti.ack,
-                    );
+                    return ackLater(obj, protoMsgMocks.queryBalanceMulti.ack);
                   }
                   case protoMsgMocks.queryBalanceUnknownDenom.msg: {
-                    return makeAckEvent(
+                    return ackLater(
                       obj,
                       protoMsgMocks.queryBalanceUnknownDenom.ack,
                     );
                   }
                   default: {
-                    return makeAckEvent(obj, protoMsgMocks.error.ack);
+                    // An error that would be triggered before reception on another chain
+                    return ackImmediately(obj, protoMsgMocks.error.ack);
                   }
                 }
               default:
@@ -430,7 +497,7 @@ export const makeSwingsetTestKit = async (
                     // this results in `syscall.callNow failed: device.invoke failed, see logs for details`
                     throw Error('simulated packet timeout');
                   }
-                  return /** @type {JsonSafe<MsgDelegateResponse>} */ {};
+                  return {} as JsonSafe<MsgDelegateResponse>;
                 }
                 // returns one empty object per message unless specified
                 default:
@@ -473,11 +540,10 @@ export const makeSwingsetTestKit = async (
       debugVats,
     },
   );
-  inbound = bridgeInbound;
 
   console.timeLog('makeBaseSwingsetTestKit', 'buildSwingset');
 
-  const runUtils = makeRunUtils(controller);
+  const runUtils = makeBootstrapRunUtils(controller);
 
   const buildProposal = makeProposalExtractor({
     childProcess: childProcessAmbient,
@@ -556,12 +622,30 @@ export const makeSwingsetTestKit = async (
   const getOutboundMessages = (bridgeId: string) =>
     harden([...outboundMessages.get(bridgeId)]);
 
+  /**
+   * @param {number} max the max number of messages to flush
+   * @returns {Promise<number>} the number of messages flushed
+   */
+  const flushInboundQueue = async (max: number = Number.POSITIVE_INFINITY) => {
+    console.log('🚽');
+    let i = 0;
+    for (i = 0; i < max; i += 1) {
+      const args = inboundQueue.shift();
+      if (!args) break;
+
+      await runUtils.queueAndRun(() => inbound(...args), true);
+    }
+    console.log('🧻');
+    return i;
+  };
+
   return {
     advanceTimeBy,
     advanceTimeTo,
     buildProposal,
     bridgeInbound,
     controller,
+    flushInboundQueue,
     evalProposal,
     getCrankNumber,
     getOutboundMessages,
