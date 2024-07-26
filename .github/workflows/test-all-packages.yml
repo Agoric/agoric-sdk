@@ -2,7 +2,7 @@ name: Test all Packages
 
 # run on all PRs (even the ones that target other branches)
 
-on:
+ondd:
   pull_request:
   merge_group:
   push:
