@@ -1,11 +1,12 @@
 import { Fail } from '@endo/errors';
+import { asContinuingOffer } from '../exos/portfolio-holder-kit.js';
 
 /**
  * @import {ResolvedPublicTopic} from '@agoric/zoe/src/contractSupport/topics.js';
  * @import {GuestInterface} from '@agoric/async-flow';
  * @import {CosmosValidatorAddress, Orchestrator, CosmosInterchainService, Denom, OrchestrationAccount, StakingAccountActions, OrchestrationFlow} from '@agoric/orchestration';
  * @import {MakeStakingTap} from './auto-stake-it-tap-kit.js';
- * @import {MakePortfolioHolder} from '../exos/portfolio-holder-kit.js';
+ * @import {MakePortfolioHolderKit} from '../exos/portfolio-holder-kit.js';
  * @import {ChainHub} from '../exos/chain-hub.js';
  */
 
@@ -14,7 +15,7 @@ import { Fail } from '@endo/errors';
  * @param {Orchestrator} orch
  * @param {{
  *   makeStakingTap: MakeStakingTap;
- *   makePortfolioHolder: MakePortfolioHolder;
+ *   makePortfolioHolderKit: MakePortfolioHolderKit;
  *   chainHub: GuestInterface<ChainHub>;
  * }} ctx
  * @param {ZCFSeat} seat
@@ -26,7 +27,7 @@ import { Fail } from '@endo/errors';
  */
 export const makeAccounts = async (
   orch,
-  { makeStakingTap, makePortfolioHolder, chainHub },
+  { makeStakingTap, makePortfolioHolderKit, chainHub },
   seat,
   {
     chainName,
@@ -96,9 +97,9 @@ export const makeAccounts = async (
       )
     ),
   );
-  const portfolioHolder = makePortfolioHolder(
+  const portfolioHolderKit = makePortfolioHolderKit(
     accountEntries,
     publicTopicEntries,
   );
-  return portfolioHolder.asContinuingOffer();
+  return asContinuingOffer(portfolioHolderKit);
 };

@@ -2,7 +2,7 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { Far } from '@endo/far';
 import { heapVowE as E } from '@agoric/vow/vat.js';
 import { commonSetup } from '../supports.js';
-import { preparePortfolioHolder } from '../../src/exos/portfolio-holder-kit.js';
+import { preparePortfolioHolderKit } from '../../src/exos/portfolio-holder-kit.js';
 import { prepareMakeTestLOAKit } from './make-test-loa-kit.js';
 import { prepareMakeTestCOAKit } from './make-test-coa-kit.js';
 
@@ -52,7 +52,7 @@ test('portfolio holder kit behaviors', async t => {
   };
   const accountEntries = harden(Object.entries(accounts));
 
-  const makePortfolioHolder = preparePortfolioHolder(
+  const makePortfolioHolderKit = preparePortfolioHolderKit(
     rootZone.subZone('portfolio'),
     vowTools,
   );
@@ -64,8 +64,11 @@ test('portfolio holder kit behaviors', async t => {
       }),
     ),
   );
-  // @ts-expect-error type mismatch between kit and OrchestrationAccountI
-  const holder = makePortfolioHolder(accountEntries, publicTopicEntries);
+  const { holder, invitationMakers } = makePortfolioHolderKit(
+    // @ts-expect-error XXX HostOf or HostInterface
+    accountEntries,
+    publicTopicEntries,
+  );
 
   const cosmosAccount = await E(holder).getAccount('cosmoshub');
   t.is(
@@ -74,8 +77,6 @@ test('portfolio holder kit behaviors', async t => {
     accounts.cosmoshub,
     'same account holder kit provided is returned',
   );
-
-  const { invitationMakers } = await E(holder).asContinuingOffer();
 
   const delegateInv = await E(invitationMakers).MakeInvitation(
     'cosmoshub',
