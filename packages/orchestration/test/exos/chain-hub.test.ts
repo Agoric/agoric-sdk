@@ -4,12 +4,19 @@ import test from '@endo/ses-ava/prepare-endo.js';
 
 import { makeNameHubKit } from '@agoric/vats';
 import { prepareSwingsetVowTools } from '@agoric/vow/vat.js';
-import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
-import { makeChainHub } from '../../src/exos/chain-hub.js';
+import { E } from '@endo/far';
+import { makeChainHub, registerAssets } from '../../src/exos/chain-hub.js';
 import { provideDurableZone } from '../supports.js';
-import { registerKnownChains } from '../../src/chain-info.js';
+import {
+  registerChainAssets,
+  registerKnownChains,
+} from '../../src/chain-info.js';
 import knownChains from '../../src/fetched-chain-info.js';
-import type { IBCConnectionInfo } from '../../src/cosmos-api.js';
+import type {
+  CosmosChainInfo,
+  IBCConnectionInfo,
+} from '../../src/cosmos-api.js';
+import { assets as assetFixture } from '../assets.fixture.js';
 
 const connection = {
   id: 'connection-1',
@@ -86,4 +93,64 @@ test.serial('getConnectionInfo', async t => {
 
   // Look up the opposite direction
   t.deepEqual(await vt.when(chainHub.getConnectionInfo(b, a)), ba);
+});
+
+test('getBrandInfo support', async t => {
+  const { chainHub } = setup();
+
+  const denom = 'utok1';
+  const info1: CosmosChainInfo = {
+    chainId: 'chain1',
+    stakingTokens: [{ denom }],
+  };
+
+  chainHub.registerChain('chain1', info1);
+  const info = {
+    chainName: 'chain1',
+    baseName: 'chain1',
+    baseDenom: denom,
+  };
+  chainHub.registerAsset('utok1', info);
+
+  const actual = chainHub.lookupAsset('utok1');
+  t.deepEqual(actual, info);
+});
+
+test('toward asset info in agoricNames (#9572)', async t => {
+  const { chainHub, nameAdmin, vt } = setup();
+  // use fetched chain info
+  await registerKnownChains(nameAdmin);
+
+  await vt.when(chainHub.getChainInfo('cosmoshub'));
+
+  for (const name of ['kava', 'fxcore']) {
+    chainHub.registerChain(name, { chainId: name });
+  }
+
+  await registerChainAssets(nameAdmin, 'cosmoshub', assetFixture.cosmoshub);
+  const details = await E(E(nameAdmin).readonly()).lookup(
+    'chainAssets',
+    'cosmoshub',
+  );
+  registerAssets(chainHub, 'cosmoshub', details);
+
+  {
+    const actual = chainHub.lookupAsset('uatom');
+    t.deepEqual(actual, {
+      chainName: 'cosmoshub',
+      baseName: 'cosmoshub',
+      baseDenom: 'uatom',
+    });
+  }
+
+  {
+    const actual = chainHub.lookupAsset(
+      'ibc/F04D72CF9B5D9C849BB278B691CDFA2241813327430EC9CDC83F8F4CA4CDC2B0',
+    );
+    t.deepEqual(actual, {
+      chainName: 'cosmoshub',
+      baseName: 'kava',
+      baseDenom: 'erc20/tether/usdt',
+    });
+  }
 });

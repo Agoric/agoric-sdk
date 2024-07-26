@@ -2,6 +2,7 @@
 import { AmountShape } from '@agoric/ertp';
 import { makeTracer } from '@agoric/internal';
 import { Shape as NetworkShape } from '@agoric/network';
+import { Fail, q } from '@endo/errors';
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
 import {
@@ -15,7 +16,7 @@ import {
 /**
  * @import {Zone} from '@agoric/base-zone';
  * @import {ChainHub} from './chain-hub.js';
- * @import {AsyncFlowTools, HostOf} from '@agoric/async-flow';
+ * @import {AsyncFlowTools, HostInterface, HostOf} from '@agoric/async-flow';
  * @import {Vow, VowTools} from '@agoric/vow';
  * @import {TimerService} from '@agoric/time';
  * @import {LocalChain} from '@agoric/vats/src/localchain.js';
@@ -29,7 +30,6 @@ import {
  * @import {Chain, ChainInfo, IBCConnectionInfo, Orchestrator} from '../types.js';
  */
 
-const { Fail } = assert;
 const { Vow$ } = NetworkShape; // TODO #9611
 const trace = makeTracer('Orchestrator');
 
@@ -47,6 +47,7 @@ export const OrchestratorI = M.interface('Orchestrator', {
  *   asyncFlowTools: AsyncFlowTools;
  *   chainHub: ChainHub;
  *   localchain: Remote<LocalChain>;
+ *   chainByName: MapStore<string, HostInterface<Chain>>;
  *   makeRecorderKit: MakeRecorderKit;
  *   makeLocalChainFacade: MakeLocalChainFacade;
  *   makeRemoteChainFacade: MakeRemoteChainFacade;
@@ -62,9 +63,10 @@ export const prepareOrchestratorKit = (
   {
     chainHub,
     localchain,
+    chainByName,
     makeLocalChainFacade,
     makeRemoteChainFacade,
-    vowTools: { watch },
+    vowTools: { watch, asVow },
   },
 ) =>
   zone.exoClassKit(
@@ -72,15 +74,13 @@ export const prepareOrchestratorKit = (
     {
       orchestrator: OrchestratorI,
       makeLocalChainFacadeWatcher: M.interface('makeLocalChainFacadeWatcher', {
-        onFulfilled: M.call(M.record())
-          .optional(M.arrayOf(M.undefined()))
-          .returns(M.any()), // FIXME narrow
+        onFulfilled: M.call(M.record(), M.string()).returns(M.any()), // FIXME narrow
       }),
       makeRemoteChainFacadeWatcher: M.interface(
         'makeRemoteChainFacadeWatcher',
         {
-          onFulfilled: M.call(M.any())
-            .optional(M.arrayOf(M.undefined()))
+          onFulfilled: M.call(M.any(), M.string())
+            .optional(M.arrayOf(M.undefined())) // XXX needed?
             .returns(M.any()), // FIXME narrow
         },
       ),
@@ -92,9 +92,14 @@ export const prepareOrchestratorKit = (
     {
       /** Waits for `chainInfo` and returns a LocalChainFacade */
       makeLocalChainFacadeWatcher: {
-        /** @param {ChainInfo} agoricChainInfo */
-        onFulfilled(agoricChainInfo) {
-          return makeLocalChainFacade(agoricChainInfo);
+        /**
+         * @param {ChainInfo} agoricChainInfo
+         * @param {string} name
+         */
+        onFulfilled(agoricChainInfo, name) {
+          const it = makeLocalChainFacade(agoricChainInfo);
+          chainByName.init(name, it);
+          return it;
         },
       },
       /**
@@ -107,29 +112,50 @@ export const prepareOrchestratorKit = (
          * RemoteChainFacade
          *
          * @param {[ChainInfo, ChainInfo, IBCConnectionInfo]} chainsAndConnection
+         * @param {string} name
          */
-        onFulfilled([_agoricChainInfo, remoteChainInfo, connectionInfo]) {
-          return makeRemoteChainFacade(remoteChainInfo, connectionInfo);
+        onFulfilled([_agoricChainInfo, remoteChainInfo, connectionInfo], name) {
+          const it = makeRemoteChainFacade(remoteChainInfo, connectionInfo);
+          chainByName.init(name, it);
+          return it;
         },
       },
       orchestrator: {
         /** @type {HostOf<Orchestrator['getChain']>} */
         getChain(name) {
+          if (chainByName.has(name)) {
+            return asVow(() => chainByName.get(name));
+          }
           if (name === 'agoric') {
             return watch(
               chainHub.getChainInfo('agoric'),
               this.facets.makeLocalChainFacadeWatcher,
+              name,
             );
           }
           return watch(
             chainHub.getChainsAndConnection('agoric', name),
             this.facets.makeRemoteChainFacadeWatcher,
+            name,
           );
         },
         makeLocalAccount() {
           return watch(E(localchain).makeAccount());
         },
-        getBrandInfo: () => Fail`not yet implemented`,
+        /** @type {HostOf<Orchestrator['getBrandInfo']>} */
+        getBrandInfo(denom) {
+          const { chainName, baseName, baseDenom, brand } =
+            chainHub.lookupAsset(denom);
+          chainByName.has(chainName) ||
+            Fail`use getChain(${q(chainName)}) before getBrandInfo(${q(denom)})`;
+          const chain = chainByName.get(chainName);
+          chainByName.has(baseName) ||
+            Fail`use getChain(${q(baseName)}) before getBrandInfo(${q(denom)})`;
+          const base = chainByName.get(baseName);
+          // @ts-expect-error XXX HostOf<> not quite right?
+          return harden({ chain, base, brand, baseDenom });
+        },
+        /** @type {HostOf<Orchestrator['asAmount']>} */
         asAmount: () => Fail`not yet implemented`,
       },
     },

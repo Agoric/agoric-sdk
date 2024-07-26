@@ -4,7 +4,7 @@ import { M } from '@endo/patterns';
 
 /**
  * @import {TypedPattern} from '@agoric/internal';
- * @import {ChainAddress, ChainInfo, CosmosChainInfo, DenomAmount} from './types.js';
+ * @import {ChainAddress, CosmosAssetInfo, ChainInfo, CosmosChainInfo, DenomAmount, DenomDetail} from './types.js';
  * @import {Delegation} from '@agoric/cosmic-proto/cosmos/staking/v1beta1/staking.js';
  */
 
@@ -77,6 +77,17 @@ export const IBCConnectionInfoShape = M.splitRecord({
     },
   },
   transferChannel: IBCChannelInfoShape,
+});
+
+/** @type {TypedPattern<CosmosAssetInfo>} */
+export const CosmosAssetInfoShape = M.splitRecord({
+  base: M.string(),
+  name: M.string(),
+  display: M.string(),
+  symbol: M.string(),
+  denom_units: M.arrayOf(
+    M.splitRecord({ denom: M.string(), exponent: M.number() }),
+  ),
 });
 
 /** @type {TypedPattern<CosmosChainInfo>} */

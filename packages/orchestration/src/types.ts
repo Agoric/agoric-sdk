@@ -7,4 +7,5 @@ export type * from './exos/chain-account-kit.js';
 export type * from './exos/icq-connection-kit.js';
 export type * from './orchestration-api.js';
 export type * from './exos/cosmos-interchain-service.js';
+export type * from './exos/chain-hub.js';
 export type * from './vat-orchestration.js';
