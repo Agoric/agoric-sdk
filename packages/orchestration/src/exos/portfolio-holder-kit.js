@@ -14,22 +14,36 @@ const { fromEntries } = Object;
  * @import {ResolvedPublicTopic} from '@agoric/zoe/src/contractSupport/topics.js';
  * @import {Zone} from '@agoric/zone';
  * @import {OrchestrationAccount, OrchestrationAccountI} from '@agoric/orchestration';
+ * @import {Pattern, Method, MethodGuard} from '@endo/patterns';
  */
 
 /**
  * @typedef {{
  *   accounts: MapStore<string, OrchestrationAccount<any>>;
  *   publicTopics: MapStore<string, ResolvedPublicTopic<unknown>>;
- * }} PortfolioHolderState
+ * }} PortfolioHolderKitState
  */
 
 const ChainNameShape = M.string();
 
 const AccountEntriesShape = M.arrayOf([
-  M.string(),
+  ChainNameShape,
   M.remotable('OrchestrationAccount'),
 ]);
-const PublicTopicEntriesShape = M.arrayOf([M.string(), PublicTopicShape]);
+const PublicTopicEntriesShape = M.arrayOf([ChainNameShape, PublicTopicShape]);
+
+const PortfolioHolderKitStateShape = {
+  accounts: M.remotable('accounts mapStore'),
+  publicTopics: M.remotable('publicTopics mapStore'),
+};
+
+/**
+ * @typedef {{
+ *   extraInvitationMakerGuards?: Record<PropertyKey, MethodGuard>;
+ *   extraInvitationMakerMethods?: Record<PropertyKey, Method>;
+ *   extraStateShape?: Record<PropertyKey, Pattern>;
+ * }} PortfolioHolderKitOpts
+ */
 
 /**
  * Kit that holds several OrchestrationAccountKits and returns a invitation
@@ -37,8 +51,18 @@ const PublicTopicEntriesShape = M.arrayOf([M.string(), PublicTopicShape]);
  *
  * @param {Zone} zone
  * @param {VowTools} vowTools
+ * @param {PortfolioHolderKitOpts} [opts] extend the default kit with extra
+ *   invitationMakers
  */
-const preparePortfolioHolderKit = (zone, { asVow, when }) => {
+export const preparePortfolioHolderKit = (
+  zone,
+  { asVow, when },
+  {
+    extraInvitationMakerGuards = {},
+    extraInvitationMakerMethods = {},
+    extraStateShape = {},
+  } = {},
+) => {
   return zone.exoClassKit(
     'PortfolioHolderKit',
     {
@@ -48,6 +72,8 @@ const preparePortfolioHolderKit = (zone, { asVow, when }) => {
           M.string(),
           M.arrayOf(M.any()),
         ).returns(M.promise()),
+        // allow preparer to add extra invitation maker guards
+        ...extraInvitationMakerGuards,
       }),
       holder: M.interface('Holder', {
         asContinuingOffer: M.call().returns(VowShape),
@@ -63,8 +89,10 @@ const preparePortfolioHolderKit = (zone, { asVow, when }) => {
     /**
      * @param {Iterable<[string, OrchestrationAccount<any>]>} accountEntries
      * @param {Iterable<[string, ResolvedPublicTopic<unknown>]>} publicTopicEntries
+     * @param {Record<PropertyKey, unknown>} [extraState] custom extra state
+     *   entries. Can be guarded via `opts.extraStateShape`
      */
-    (accountEntries, publicTopicEntries) => {
+    (accountEntries, publicTopicEntries, extraState) => {
       mustMatch(accountEntries, AccountEntriesShape, 'must provide accounts');
       mustMatch(
         publicTopicEntries,
@@ -79,10 +107,11 @@ const preparePortfolioHolderKit = (zone, { asVow, when }) => {
       );
       accounts.addAll(accountEntries);
       publicTopics.addAll(publicTopicEntries);
-      return /** @type {PortfolioHolderState} */ (
+      return /** @type {PortfolioHolderKitState} } */ (
         harden({
           accounts,
           publicTopics,
+          ...extraState,
         })
       );
     },
@@ -103,6 +132,9 @@ const preparePortfolioHolderKit = (zone, { asVow, when }) => {
             E(invitationMakers)[action](...invitationArgs),
           );
         },
+        // allow preparer to add extra methods and intentionally override
+        // built-in methods
+        ...extraInvitationMakerMethods,
       },
       holder: {
         // FIXME /** @type {HostOf<OrchestrationAccountI['asContinuingOffer']>} */
@@ -150,6 +182,12 @@ const preparePortfolioHolderKit = (zone, { asVow, when }) => {
         },
       },
     },
+    {
+      stateShape: {
+        ...PortfolioHolderKitStateShape,
+        ...extraStateShape,
+      },
+    },
   );
 };
 
@@ -157,17 +195,17 @@ const preparePortfolioHolderKit = (zone, { asVow, when }) => {
  * A portfolio holder stores two or more OrchestrationAccounts and combines
  * ContinuingOfferResult's from each into a single result.
  *
- * XXX consider an interface for extending the exo maker with additional
- * invitation makers.
+ * XXX generic type needed for extra invitationMakers?
  *
  * @param {Zone} zone
  * @param {VowTools} vowTools
+ * @param {PortfolioHolderKitOpts} [opts]
  * @returns {(
  *   ...args: Parameters<ReturnType<typeof preparePortfolioHolderKit>>
  * ) => ReturnType<ReturnType<typeof preparePortfolioHolderKit>>['holder']}
  */
-export const preparePortfolioHolder = (zone, vowTools) => {
-  const makeKit = preparePortfolioHolderKit(zone, vowTools);
+export const preparePortfolioHolder = (zone, vowTools, opts) => {
+  const makeKit = preparePortfolioHolderKit(zone, vowTools, opts);
   return (...args) => makeKit(...args).holder;
 };
 /** @typedef {ReturnType<typeof preparePortfolioHolder>} MakePortfolioHolder */
