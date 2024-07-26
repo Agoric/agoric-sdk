@@ -4,11 +4,12 @@ import {
   RequestQuery,
   ResponseQuery,
 } from '@agoric/cosmic-proto/tendermint/abci/types.js';
-import { encodeBase64, btoa } from '@endo/base64';
+import { encodeBase64, btoa, atob, decodeBase64 } from '@endo/base64';
 import { toRequestQueryJson } from '@agoric/cosmic-proto';
 import { IBCChannelID, VTransferIBCEvent } from '@agoric/vats';
 import { VTRANSFER_IBC_EVENT } from '@agoric/internal/src/action-types.js';
 import { FungibleTokenPacketData } from '@agoric/cosmic-proto/ibc/applications/transfer/v2/packet.js';
+import { TxBody } from '@agoric/cosmic-proto/cosmos/tx/v1beta1/tx.js';
 import { makeQueryPacket, makeTxPacket } from '../src/utils/packet.js';
 import { ChainAddress } from '../src/orchestration-api.js';
 
@@ -116,6 +117,16 @@ export function buildTxPacketString(
 ): string {
   return btoa(makeTxPacket(msgs.map(Any.toJSON)));
 }
+
+/**
+ * Parse an outgoing ica tx packet. Useful for testing when inspecting
+ * outgoing dibc bridge messages.
+ *
+ * @param b64 base64 encoded string
+ */
+export const parseOutgoingTxPacket = (b64: string) => {
+  return TxBody.decode(decodeBase64(JSON.parse(atob(b64)).data));
+};
 
 /**
  * Build a query packet string for the mocked dibc bridge handler
