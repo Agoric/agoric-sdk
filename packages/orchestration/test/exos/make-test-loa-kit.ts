@@ -39,7 +39,7 @@ export const prepareMakeTestLOAKit = (
     zcf,
     timer,
     vowTools,
-    makeChainHub(agoricNames, vowTools),
+    makeChainHub(rootZone.subZone('chainHub'), agoricNames, vowTools),
   );
 
   return async ({
