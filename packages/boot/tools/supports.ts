@@ -334,11 +334,6 @@ export const makeSwingsetTestKit = async (
   };
   let ibcSequenceNonce = 0;
 
-  const addSequenceNonce = ({ packet }: IBCMethod<'sendPacket'>): IBCPacket => {
-    ibcSequenceNonce += 1;
-    return { ...packet, sequence: ibcSequenceNonce };
-  };
-
   /**
    * Adds the sequence so the bridge knows what response to connect it to.
    * Then queue it send it over the bridge over this returns.
@@ -358,6 +353,10 @@ export const makeSwingsetTestKit = async (
   };
 
   const inboundQueue: [bridgeId: BridgeIdValue, arg1: unknown][] = [];
+  /** Add a message that will be sent to the bridge by flushInboundQueue. */
+  const pushInbound = (bridgeId: BridgeIdValue, arg1: unknown) => {
+    inboundQueue.push([bridgeId, arg1]);
+  };
   /**
    * Like ackImmediately but defers in the inbound receiverAck
    * until `bridgeQueue()` is awaited.
@@ -365,7 +364,7 @@ export const makeSwingsetTestKit = async (
   const ackLater = (obj: IBCMethod<'sendPacket'>, ack: string) => {
     ibcSequenceNonce += 1;
     const msg = icaMocks.ackPacketEvent(obj, ibcSequenceNonce, ack);
-    inboundQueue.push([BridgeId.DIBC, msg]);
+    pushInbound(BridgeId.DIBC, msg);
     return msg.packet;
   };
 
@@ -437,10 +436,7 @@ export const makeSwingsetTestKit = async (
           case 'IBC_METHOD':
             switch (obj.method) {
               case 'startChannelOpenInit':
-                inboundQueue.push([
-                  BridgeId.DIBC,
-                  icaMocks.channelOpenAck(obj),
-                ]);
+                pushInbound(BridgeId.DIBC, icaMocks.channelOpenAck(obj));
                 return undefined;
               case 'sendPacket':
                 switch (obj.packet.data) {
@@ -619,36 +615,38 @@ export const makeSwingsetTestKit = async (
 
   const getCrankNumber = () => Number(kernelStorage.kvStore.get('crankNumber'));
 
-  const getOutboundMessages = (bridgeId: string) =>
-    harden([...outboundMessages.get(bridgeId)]);
+  const bridgeUtils = {
+    /** Immediately handle the inbound message */
+    inbound: bridgeInbound,
+    getOutboundMessages: (bridgeId: string) =>
+      harden([...outboundMessages.get(bridgeId)]),
+    getInboundQueueLength: () => inboundQueue.length,
+    /**
+     * @param {number} max the max number of messages to flush
+     * @returns {Promise<number>} the number of messages flushed
+     */
+    async flushInboundQueue(max: number = Number.POSITIVE_INFINITY) {
+      console.log('🚽');
+      let i = 0;
+      for (i = 0; i < max; i += 1) {
+        const args = inboundQueue.shift();
+        if (!args) break;
 
-  /**
-   * @param {number} max the max number of messages to flush
-   * @returns {Promise<number>} the number of messages flushed
-   */
-  const flushInboundQueue = async (max: number = Number.POSITIVE_INFINITY) => {
-    console.log('🚽');
-    let i = 0;
-    for (i = 0; i < max; i += 1) {
-      const args = inboundQueue.shift();
-      if (!args) break;
-
-      await runUtils.queueAndRun(() => inbound(...args), true);
-    }
-    console.log('🧻');
-    return i;
+        await runUtils.queueAndRun(() => inbound(...args), true);
+      }
+      console.log('🧻');
+      return i;
+    },
   };
 
   return {
     advanceTimeBy,
     advanceTimeTo,
+    bridgeUtils,
     buildProposal,
-    bridgeInbound,
     controller,
-    flushInboundQueue,
     evalProposal,
     getCrankNumber,
-    getOutboundMessages,
     jumpTimeTo,
     readLatest,
     runUtils,

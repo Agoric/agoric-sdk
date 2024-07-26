@@ -24,8 +24,12 @@ test.before(async t => (t.context = await makeDefaultTestContext(t)));
 test.after.always(t => t.context.shutdown?.());
 
 test('vtransfer', async t => {
-  const { buildProposal, evalProposal, getOutboundMessages, runUtils } =
-    t.context;
+  const {
+    buildProposal,
+    evalProposal,
+    bridgeUtils: { getOutboundMessages },
+    runUtils,
+  } = t.context;
   const { EV } = runUtils;
 
   // Pull what transfer-proposal produced into local scope

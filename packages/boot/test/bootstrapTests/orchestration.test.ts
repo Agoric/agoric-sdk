@@ -136,7 +136,7 @@ test.serial('stakeAtom - smart wallet', async t => {
     buildProposal,
     evalProposal,
     agoricNamesRemotes,
-    flushInboundQueue,
+    bridgeUtils: { flushInboundQueue },
     readLatest,
   } = t.context;
 
@@ -260,7 +260,7 @@ test('basic-flows', async t => {
     evalProposal,
     agoricNamesRemotes,
     readLatest,
-    flushInboundQueue,
+    bridgeUtils: { flushInboundQueue },
   } = t.context;
 
   await evalProposal(
@@ -341,7 +341,7 @@ test.serial('basic-flows - portfolio holder', async t => {
     evalProposal,
     readLatest,
     agoricNamesRemotes,
-    flushInboundQueue,
+    bridgeUtils: { flushInboundQueue },
   } = t.context;
 
   await evalProposal(
