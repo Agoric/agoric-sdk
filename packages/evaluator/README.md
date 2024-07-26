@@ -26,6 +26,8 @@ agoric wallet provision --spend --account=$(agd keys show -a agoricsec1)
 
 7. Submit strings to evaluate with `agops eval offer --from=agoricsec1 'console.log("@@@ here we are!")' | agoric wallet send --from=agoricsec1 --offer=/dev/stdin`
 
+8. You can see the last result with: `agops eval result --from=agoricsec1`
+
 You can grep for unique patterns in the code (e.g., "@@@") or contract output like "evaluating" or "evaluator replied with" in the agd logs, see [multichain-testing/README.md#logs](../../multichain-testing/README.md#logs):
 
 ```

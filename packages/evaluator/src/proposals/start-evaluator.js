@@ -47,6 +47,7 @@ const makeEvaluator = powers => {
       if (!ev) {
         const compartment = new Compartment({
           powers,
+          // TODO: wire the console output into the final result.
           console,
           E,
           Far,
@@ -122,9 +123,9 @@ export const startAgoricEvaluator = async (
       }),
     );
   };
-  const invitationPs = Object.keys(invitedOwners).map(name => {
-    console.log('creating invitation for', name);
-    return E(creatorFacet).makeEvaluatorInvitation(name);
+  const invitationPs = Object.entries(invitedOwners).map(([name, addr]) => {
+    console.log('creating invitation for', name, addr);
+    return E(creatorFacet).makeEvaluatorInvitation(addr);
   });
   void distributeInvitations(zip(Object.values(invitedOwners), invitationPs));
 };
