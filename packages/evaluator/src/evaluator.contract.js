@@ -49,15 +49,22 @@ export const start = async (zcf, privateArgs, baggage) => {
     {
       async Eval(stringToEval) {
         return zcf.makeInvitation(async zcfSeat => {
-          const {
-            name,
-            evaluator,
-            marshaller,
-            storageNode,
-            lastSequence: seq,
-          } = this.state;
+          const { name, evaluator, marshaller, storageNode } = this.state;
           this.state.lastSequence += 1n;
-          console.info('@@@', name, `is evaluating ${seq}:`, stringToEval);
+          const seq = this.state.lastSequence;
+          await E(storageNode).setValue(
+            JSON.stringify({ lastSequence: Number(seq) }),
+          );
+          let shortenedStringToEval = stringToEval.slice(0, 100);
+          if (shortenedStringToEval !== stringToEval) {
+            shortenedStringToEval += '...';
+          }
+          console.info(
+            '@@@',
+            name,
+            `is evaluating ${seq}:`,
+            shortenedStringToEval,
+          );
           const subStorage = await makeStorageNodeChild(
             storageNode,
             `eval${seq}`,
@@ -69,7 +76,7 @@ export const start = async (zcf, privateArgs, baggage) => {
             await E(subStorage).setValue(JSON.stringify(jsonableObj));
           };
 
-          const request = { seq, command: stringToEval };
+          const request = { seq, command: shortenedStringToEval };
           await updateSubStorage(request);
 
           let reply;
@@ -102,6 +109,7 @@ export const start = async (zcf, privateArgs, baggage) => {
           privateArgs.storageNode,
           name,
         );
+        await E(storageNode).setValue(JSON.stringify({ lastSequence: 0 }));
         console.log('@@@ making invitation makers for', name);
         const invitationMakers = makeInvitationMakers(name, {
           storageNode,
