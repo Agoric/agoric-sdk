@@ -1,9 +1,14 @@
-(use-modules (goblins) ;; <-
-             (goblins actor-lib joiners) ; all
-             (goblins ghash)
-             )
+(define-module (escrow2013)
+  #:use-module (goblins) ;; <-
+  #:use-module (goblins actor-lib joiners) ; all
+  #:use-module (race)
+  #:use-module (endo)
+  #:use-module (ertp)
+  #:export (escrowExchange)
+  )
 
 (define (transfer decisionP issuer srcPurseP dstPurseP amount)
+  (peek "@@transfer:" decisionP issuer amount)
   ;; TODO: check srcPurseP and dstPurseP come from the same issuer
   (define escrowPurseP (<- issuer 'makeEmptyPurse))
 
@@ -20,14 +25,13 @@
               (<- srcPurseP 'deposit pmt)))))
 
   ;; phase 1
-  (<- escrowPurseP 'deposit amount srcPurseP)
+  (on (<- srcPurseP 'withdraw amount)
+      (lambda (pmt)
+        (<- escrowPurseP 'deposit pmt)))
 )
 
 (define (failOnly cancellationP)
   (on cancellationP (lambda (cancellation) (error cancellation))))
-
-
-(define @ ghash-ref)
 
 ;; a from Alice, b from Bob
 (define (escrowExchange a b moneyIssuer stockIssuer)
@@ -38,13 +42,13 @@
     [
      (all-of
       [
-       (transfer decisionP moneyIssuer
-                 (@ a 'moneySrcP) (@ b 'moneyDstP) (@ b 'moneyNeeded))
+       (peek "txfr" (transfer decisionP moneyIssuer
+                 (get a 'moneySrcP) (get b 'moneyDstP) (get b 'moneyNeeded)))
        (transfer decisionP stockIssuer
-                 (@ b 'stockSrcP) (@ a 'stockDstP) (@ a 'stockNeeded))
+                 (get b 'stockSrcP) (get a 'stockDstP) (get a 'stockNeeded))
        ])
-     (failOnly (@ a 'cancellationP))
-     (failOnly (@ b 'cancellationP))
+     (failOnly (get a 'cancellationP))
+     (failOnly (get b 'cancellationP))
      ])
    )
   decisionP

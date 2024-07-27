@@ -1,6 +1,9 @@
 ;; cf https://gitlab.com/spritely/guile-goblins/-/blob/main/goblins/actor-lib/joiners.scm?ref_type=heads
 ;; 203d710a8af13af2b894a9bac711df8e800af708
 
+(define-module (race)
+  #:export (race))
+
 (define (race . promises)
   "Return a promise which resolves when the first promise in @var{promises}
 settles.  If that promise is broken then so is the returned promise.

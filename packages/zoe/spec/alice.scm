@@ -8,6 +8,7 @@
              (srfi srfi-64) ;; test
              (endo)
              (ertp)
+             (escrow2013)
              )
 
 ;; see also ggspec
@@ -27,7 +28,7 @@
 (with-vat
  a-vat
 
- (display "in vat a") (newline)
+ (peek "in vat a" a-vat)
 
  (define money (make-issuer-kit 'money))
  (test-equal (map car money) '(mint issuer brand))
@@ -40,24 +41,56 @@
        'stock (get stock 'issuer))
       )
 
+ (define (alice purse1)
+   (let* ((cancel #f)
+          (a (%r
+              'moneySrcP purse1
+              'stockDstP (<- (get stock 'issuer) 'makeEmptyPurse)
+              'stockNeeded 7
+              'cancellationP ((lambda ()
+                                (define-values (p r) (spawn-promise-values))
+                                (set! cancel r)
+                                (peek "@@cxl" cancel)
+                                p))
+              )) )
+     (peek "alice:" a)
+     a
+     ))
+
+  (define (bob purse2)
+   
+   (let* ((cancel #f)
+          (b (%r
+              'stockSrcP purse2
+              'moneyDstP (<- (get stock 'issuer) 'makeEmptyPurse)
+              'moneyNeeded 5
+              'cancellationP ((lambda ()
+                                (define-values (p r) (spawn-promise-values))
+                                (set! cancel r)
+                                (peek "@@cxl b" cancel)
+                                p))
+              )) )
+     (peek "bob:" b)
+     b))
+
  (define purse1 ($ (get money 'issuer) 'makeEmptyPurse))
  (test-equal 0 ($ purse1 'getCurrentAmount))
-
+ 
  (define pmt1 ($ (get money 'mint) 'mint-payment 20))
  ($ purse1 'deposit pmt1)
  (test-equal 20 ($ purse1 'getCurrentAmount))
- 
- (let* ((cancel #f)
-        (a (%r
-            'moneySrcP (<- (get money 'issuer) 'makeEmptyPurse)
-            'stockDstP (<- (get stock 'issuer) 'makeEmptyPurse)
-            'stockNeeded 7
-            'cancellationP (lambda ()
-                             (define-values (p _r) (spawn-promise-values))
-                             (on p (lambda (r) (set! cancel r)))
-                             p)
-            )) )
-   (on (<- purse1 'withdraw 10)
-       (lambda (pmt) (<- (get a 'moneySrcP) 'deposit pmt)))
+
+ (define purse2 ($ (get stock 'issuer) 'makeEmptyPurse))
+ (define pmt2 ($ (get stock 'mint) 'mint-payment 20))
+ ($ purse2 'deposit pmt2)
+
+ (let ((d (escrowExchange (alice purse1)
+                          (bob purse2)
+                          (get money 'issuer)
+                          (get stock 'issuer))))
+   (peek "escrowExchange returned:" d)
+   (on d (lambda (dd)
+           (peek "decision" dd)
+           (test-equal #t dd)))
    )
  )
