@@ -63,7 +63,13 @@ export const CURRENT_SCHEMA_VERSION = 1;
 // allowed to vary between instances in a consensus machine. Everything else
 // is required to be deterministic.
 //
-// The current ("v1") schema is:
+//
+// The schema is indicated by the value of the "version" key, which
+// was added for version 1 (i.e., version 0 had no such key), and is
+// only modified by a call to upgradeSwingset(). See below for
+// deltas/upgrades from one version to the next.
+//
+// The current ("v1") schema keys/values are:
 //
 // version = '1'
 // vat.names = JSON([names..])
@@ -155,12 +161,16 @@ export const CURRENT_SCHEMA_VERSION = 1;
 // Prefix reserved for host written data:
 // host.
 
-// Kernel state schemas. The 'version' key records the state of the
-// database, and is only modified by a call to upgradeSwingset().
+// Kernel state schema changes:
 //
 // v0: the original
-// v1: replace `kernel.defaultReapInterval` with `kernel.defaultReapDirtThreshold`
-//     replace vat's `vNN.reapInterval`/`vNN.reapCountdown` with `vNN.reapDirt`
+//   * no `version`
+//   * uses `initialized = 'true'`
+// v1:
+//   * add `version = '1'`
+//   * remove `initialized`
+//   * replace `kernel.defaultReapInterval` with `kernel.defaultReapDirtThreshold`
+//   * replace vat's `vNN.reapInterval`/`vNN.reapCountdown` with `vNN.reapDirt`
 //             and a `vNN.reapDirtThreshold` in `vNN.options`
 
 export function commaSplit(s) {
