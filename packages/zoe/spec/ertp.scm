@@ -5,44 +5,43 @@
   #:use-module (goblins actor-lib methods)
   #:use-module (goblins actor-lib selfish-spawn)
   #:use-module (store)
-  #:export (nat? nat-amount-math make-issuer-kit)
+  #:use-module (endo)
+  #:export (nat-amount-math make-issuer-kit)
   )
-
-(define (nat? x)
-  (and (exact-integer? x) (>= x 0)))
 
 (define nat-amount-math
   (methods
    [(coerce x)
     (assert (nat? x))
     x]
-   [(make-empty) 0]
-   [(is-empty x) (eq? x 0)]
-   [(is-gte x y) (>= x y)]
-   [(s-equal x y) (= x y)]
+   [(makeEmpty) 0]
+   [(isEmpty x) (eq? x 0)]
+   [(isGTE x y) (>= x y)]
+   [(isEqual x y) (= x y)]
    [(add x y) (+ x y)]
    [(subtract x y) (- x y)]))
 
 (define-actor (^payment _bcom brand)
   (methods
-   [(get-alleged-brand) brand]))
+   [(getAllegedBrand) brand]))
 
 (define-actor (^purse bcom self brand value amtMath ledger)
   (amtMath 'coerce value) ;; guard idiom?
   (methods
-   [(get-alleged-brand) brand]
-   [(get-current-amount) value] ;; TODO: value -> amount
+   [(getAllegedBrand) brand]
+   [(getCurrentAmount) value] ;; TODO: value -> amount
    [(deposit pmt)
     (define pmt-value ($ ledger 'get pmt)) ;; throw if pmt not recognized
     ($ ledger 'delete pmt)
-    (bcom ledger brand (amtMath 'add value pmt-value))
-    pmt-value]
+    (let ((updated (amtMath 'add value pmt-value)))
+      (bcom (^purse bcom self brand updated amtMath ledger) pmt-value))
+    ]
    [(withdraw amt)
-    (assert (amtMath 'is-gte value amt))
+    (assert (amtMath 'isGTE value amt))
     (define pmt (spawn ^payment brand))
     ($ ledger 'init pmt amt)
-    (bcom ledger brand (amtMath 'subtract value amt))
-    pmt]
+    (let ((updated (amtMath 'subtract value amt)))
+      (bcom (^purse bcom self brand updated amtMath ledger) pmt))]
    ))
 
 (define* (make-issuer-kit name #:optional (amtMath nat-amount-math))
@@ -53,9 +52,9 @@
   (define ledger (spawn ^weak-scalar-map-store))
   (define-actor (^issuer _bcom)
     (methods
-     [(get-brand) brand]
-     [(make-empty-purse)
-      (define value (amtMath 'make-empty))
+     [(getBrand) brand]
+     [(makeEmptyPurse)
+      (define value (amtMath 'makeEmpty))
       (selfish-spawn ^purse brand value amtMath ledger)]))
   (define issuer (spawn ^issuer))
   (define-actor (^mint _bcom)
@@ -67,4 +66,4 @@
       pmt)
      ((get-issuer) issuer)))
   (define mint (spawn ^mint))
-  (make-ghash 'mint mint 'issuer issuer 'brand brand))
+  (%r 'mint mint 'issuer issuer 'brand brand))

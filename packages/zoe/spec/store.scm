@@ -2,9 +2,10 @@
   #:use-module (rnrs base)
   #:use-module (goblins)
   #:use-module (goblins actor-lib methods)
+  #:export (^weak-scalar-map-store)
   )
 
-(define* (^weak-scalar-map-store)
+(define-actor (^weak-scalar-map-store _bcom)
   (define wm (make-weak-key-hash-table))
   (define fresh (list))
   (define (has k) (not (eq? (hashq-ref wm k fresh) fresh)))
