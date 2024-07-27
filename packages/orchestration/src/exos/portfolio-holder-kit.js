@@ -14,6 +14,7 @@ const { fromEntries } = Object;
  * @import {ResolvedPublicTopic} from '@agoric/zoe/src/contractSupport/topics.js';
  * @import {Zone} from '@agoric/zone';
  * @import {OrchestrationAccount, OrchestrationAccountI} from '@agoric/orchestration';
+ * @import {ContinuingOfferResult} from '@agoric/smart-wallet/src/types.js';
  */
 
 /**
@@ -154,4 +155,3 @@ export const asContinuingOffer = kit =>
     publicSubscribers: kit.holder.getPublicTopics(),
     invitationMakers: kit.invitationMakers,
   });
-harden(asContinuingOffer);
