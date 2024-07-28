@@ -2,7 +2,7 @@
 ;; %r
 ;; (add-to-load-path (dirname (current-filename)))
 
-(use-modules ((goblins)) ;; <-
+(use-modules (goblins) ;; <-
              (goblins actor-lib joiners)
              (goblins ghash)
              (srfi srfi-64) ;; test
@@ -15,6 +15,7 @@
 ;; https://stackoverflow.com/questions/72057/how-to-build-unit-tests-in-guile-which-output-to-the-tap-standard
 (test-begin "alice")
 
+(test-assert (procedure? spawn-promise-values))
 (test-assert (procedure? make-issuer-kit))
 
 (test-equal (nat? 0) #t)
@@ -88,9 +89,10 @@
                           (bob purse2)
                           (get money 'issuer)
                           (get stock 'issuer))))
-   (peek "escrowExchange returned:" d)
-   (on d (lambda (dd)
+   (on (peek "escExch d" d) (lambda (dd)
            (peek "decision" dd)
-           (test-equal #t dd)))
+           (test-equal '(5 7) dd)))
    )
  )
+
+(test-end "alice")

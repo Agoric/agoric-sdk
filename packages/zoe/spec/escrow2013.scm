@@ -1,5 +1,5 @@
 (define-module (escrow2013)
-  #:use-module (goblins) ;; <-
+  #:use-module (goblins) ;; <- spawn-promise-values
   #:use-module (goblins actor-lib joiners) ; all
   #:use-module (race)
   #:use-module (endo)
@@ -27,29 +27,28 @@
   ;; phase 1
   (on (<- srcPurseP 'withdraw amount)
       (lambda (pmt)
-        (<- escrowPurseP 'deposit pmt)))
+        (<- escrowPurseP 'deposit pmt))
+      #:promise? #t)
 )
 
 (define (failOnly cancellationP)
-  (on cancellationP (lambda (cancellation) (error cancellation))))
+  (on cancellationP (lambda (cancellation) (error cancellation)) #:promise? #t))
 
 ;; a from Alice, b from Bob
 (define (escrowExchange a b moneyIssuer stockIssuer)
   (define-values (decisionP decide) (spawn-promise-values))
 
-  (decide
+  ($ decide 'fulfill
    (race
-    [
-     (all-of
-      [
-       (peek "txfr" (transfer decisionP moneyIssuer
-                 (get a 'moneySrcP) (get b 'moneyDstP) (get b 'moneyNeeded)))
-       (transfer decisionP stockIssuer
-                 (get b 'stockSrcP) (get a 'stockDstP) (get a 'stockNeeded))
-       ])
-     (failOnly (get a 'cancellationP))
-     (failOnly (get b 'cancellationP))
-     ])
+    (all-of
+     (peek "txfr" (transfer decisionP moneyIssuer
+                            (get a 'moneySrcP) (get b 'moneyDstP) (get b 'moneyNeeded)))
+     (peek "tx2" (transfer decisionP stockIssuer
+                           (get b 'stockSrcP) (get a 'stockDstP) (get a 'stockNeeded)))
+     )
+    (failOnly (get a 'cancellationP))
+    (failOnly (get b 'cancellationP))
+    )
    )
   decisionP
   )
