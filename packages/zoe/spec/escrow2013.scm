@@ -14,12 +14,12 @@
 
   ;; setup phase 2
   (on decisionP
-      (lambda ()
+      (lambda (_y)
         (on (<- escrowPurseP 'withdraw amount)
             (lambda (pmt)
               (<- dstPurseP 'deposit pmt))))
       #:catch
-      (lambda ()
+      (lambda (_n)
         (on (<- escrowPurseP 'withdraw amount)
             (lambda (pmt)
               (<- srcPurseP 'deposit pmt)))))
