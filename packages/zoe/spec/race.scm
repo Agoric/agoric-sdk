@@ -2,6 +2,7 @@
 ;; 203d710a8af13af2b894a9bac711df8e800af708
 
 (define-module (race)
+  #:use-module (goblins)
   #:export (race))
 
 (define (race . promises)
