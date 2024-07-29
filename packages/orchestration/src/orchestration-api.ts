@@ -11,6 +11,7 @@ import type { LocalChainAccount } from '@agoric/vats/src/localchain.js';
 import type { ResolvedPublicTopic } from '@agoric/zoe/src/contractSupport/topics.js';
 import type { Passable } from '@endo/marshal';
 import type {
+  AgoricChainMethods,
   ChainInfo,
   CosmosChainAccountMethods,
   CosmosChainInfo,
@@ -96,7 +97,10 @@ export interface Chain<CI extends ChainInfo> {
 export interface Orchestrator {
   getChain: <C extends string>(
     chainName: C,
-  ) => Promise<Chain<C extends keyof KnownChains ? KnownChains[C] : any>>;
+  ) => Promise<
+    Chain<C extends keyof KnownChains ? KnownChains[C] : any> &
+      (C extends 'agoric' ? AgoricChainMethods : {})
+  >;
 
   makeLocalAccount: () => Promise<LocalChainAccount>;
   /**
