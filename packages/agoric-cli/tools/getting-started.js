@@ -1,4 +1,4 @@
-/* global process setTimeout setInterval clearInterval */
+/* global process setTimeout setInterval clearInterval Buffer */
 
 import fs from 'fs';
 import path from 'path';
@@ -10,7 +10,8 @@ import { spawn } from 'child_process';
 
 import { makePspawn } from '../src/helpers.js';
 
-const TIMEOUT_SECONDS = 3 * 60;
+const RETRY_BLOCKHEIGHT_SECONDS = 3;
+const SOCKET_TIMEOUT_SECONDS = 2;
 
 const dirname = new URL('./', import.meta.url).pathname;
 
@@ -22,6 +23,38 @@ const dirname = new URL('./', import.meta.url).pathname;
 // yarn start:docker
 // yarn start:contract
 // yarn start:ui
+
+/**
+ * @param {string} url
+ * @returns {Promise<bigint>}
+ */
+const getLatestBlockHeight = url =>
+  new Promise((resolve, reject) => {
+    const req = request(url, res => {
+      if (!res) {
+        reject(Error('no result'));
+        return;
+      }
+      const bodyChunks = [];
+      res
+        .on('data', chunk => bodyChunks.push(chunk))
+        .on('end', () => {
+          const body = Buffer.concat(bodyChunks).toString('utf8');
+          const { statusCode = 0 } = res;
+          if (statusCode >= 200 && statusCode < 300) {
+            const { result: { sync_info: sync = {} } = {} } = JSON.parse(body);
+            if (sync.catching_up === false) {
+              resolve(BigInt(sync.latest_block_height));
+              return;
+            }
+          }
+          reject(Error(`Cannot get block height: ${statusCode} ${body}`));
+        });
+    });
+    req.setTimeout(SOCKET_TIMEOUT_SECONDS * 1_000);
+    req.on('error', reject);
+    req.end();
+  });
 
 export const gettingStartedWorkflowTest = async (t, options = {}) => {
   const { init: initOptions = [] } = options;
@@ -115,9 +148,31 @@ export const gettingStartedWorkflowTest = async (t, options = {}) => {
     // yarn start:docker
     t.is(await yarn(['start:docker']), 0, 'yarn start:docker works');
 
-    // XXX: use abci_info endpoint to get block height
-    // sleep to let contract start
-    await new Promise(resolve => setTimeout(resolve, TIMEOUT_SECONDS));
+    // ==============
+    // wait for the chain to start
+    let lastKnownBlockHeight = 0n;
+    for (;;) {
+      try {
+        const currentHeight = await getLatestBlockHeight(
+          'http://localhost:26657/status',
+        );
+        if (currentHeight > lastKnownBlockHeight) {
+          const earlierHeight = lastKnownBlockHeight;
+          lastKnownBlockHeight = currentHeight;
+          if (earlierHeight > 0n && currentHeight > earlierHeight) {
+            // We've had at least one block produced.
+            break;
+          }
+        }
+      } catch (e) {
+        console.error((e && e.message) || e);
+      }
+
+      // Wait a bit and try again.
+      await new Promise(resolve =>
+        setTimeout(resolve, RETRY_BLOCKHEIGHT_SECONDS * 1_000),
+      );
+    }
 
     // ==============
     // yarn start:contract
@@ -145,7 +200,7 @@ export const gettingStartedWorkflowTest = async (t, options = {}) => {
         const req = request('http://localhost:5173/', _res => {
           resolve('listening');
         });
-        req.setTimeout(2000);
+        req.setTimeout(SOCKET_TIMEOUT_SECONDS * 1_000);
         req.on('error', err => {
           if (err.code !== 'ECONNREFUSED') {
             resolve(`Cannot connect to UI server: ${err}`);
