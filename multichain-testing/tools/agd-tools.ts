@@ -7,6 +7,9 @@ export const makeAgdTools = async (
     execFile,
     execFileSync,
   }: Pick<typeof import('child_process'), 'execFile' | 'execFileSync'>,
+  agoricChainId: string,
+  rpcAddress: string,
+  apiAddress: string,
 ) => {
   const bundleCache = await unsafeMakeBundleCache('bundles');
   const tools = await makeE2ETools(log, bundleCache, {
@@ -14,7 +17,9 @@ export const makeAgdTools = async (
     execFile,
     fetch,
     setTimeout,
-  });
+    rpcAddress,
+    apiAddress,
+  }, agoricChainId);
   return tools;
 };
 
