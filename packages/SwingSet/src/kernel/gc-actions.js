@@ -34,7 +34,7 @@ function parseAction(s) {
 }
 
 /**
- * @param {*} kernelKeeper
+ * @param {KernelKeeper} kernelKeeper
  * @returns {import('../types-internal.js').RunQueueEvent | undefined}
  */
 export function processGCActionSet(kernelKeeper) {
@@ -66,11 +66,18 @@ export function processGCActionSet(kernelKeeper) {
   // whether the current state of the c-lsits and reference counts warrants
   // permits the action to run, or if it should be negated/bypassed.
 
+  /**
+   *
+   * @param {VatKeeper} vatKeeper
+   * @param {unknown} action
+   * @param {string} type
+   * @param {string} kref
+   */
+  // FIXME does nothing with the 'action' argument
   function filterAction(vatKeeper, action, type, kref) {
     const hasCList = vatKeeper.hasCListEntry(kref);
     const isReachable = hasCList ? vatKeeper.getReachableFlag(kref) : undefined;
     const exists = kernelKeeper.kernelObjectExists(kref);
-    // @ts-expect-error xxx
     const { reachable, recognizable } = exists
       ? kernelKeeper.getObjectRefCount(kref)
       : {};

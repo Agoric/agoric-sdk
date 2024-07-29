@@ -124,7 +124,7 @@ export {};
  *
  * @typedef { { transcriptCount: number } } VatStats
  * @typedef { ReturnType<typeof import('./kernel/state/vatKeeper.js').makeVatKeeper> } VatKeeper
- * @typedef { ReturnType<typeof import('./kernel/state/kernelKeeper.js').default> } KernelKeeper
+ * @typedef { import('./kernel/state/kernelKeeper.js').KernelKeeper } KernelKeeper
  * @typedef { Awaited<ReturnType<typeof import('@agoric/xsnap').xsnap>> } XSnap
  * @typedef { (dr: VatDeliveryResult) => void } SlogFinishDelivery
  * @typedef { (ksr: KernelSyscallResult, vsr: VatSyscallResult) => void } SlogFinishSyscall

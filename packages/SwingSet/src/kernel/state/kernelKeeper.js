@@ -132,6 +132,7 @@ const enableKernelGC = true;
 // Prefix reserved for host written data:
 // host.
 
+/** @type {(s: string) => string[]} s */
 export function commaSplit(s) {
   if (s === '') {
     return [];
@@ -500,7 +501,9 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
 
   function getObjectRefCount(kernelSlot) {
     const data = kvStore.get(`${kernelSlot}.refCount`);
-    data || Fail`getObjectRefCount(${kernelSlot}) was missing`;
+    if (!data) {
+      throw Fail`getObjectRefCount(${kernelSlot}) was missing`;
+    }
     const [reachable, recognizable] = commaSplit(data).map(Number);
     reachable <= recognizable ||
       Fail`refmismatch(get) ${kernelSlot} ${reachable},${recognizable}`;
@@ -1635,3 +1638,4 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
     dump,
   });
 }
+/** @typedef {ReturnType<typeof makeKernelKeeper>} KernelKeeper */

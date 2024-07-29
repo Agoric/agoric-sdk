@@ -69,7 +69,7 @@ function makeDRTranslator(deviceID, kernelKeeper) {
  *
  * @param {string} deviceID
  * @param {string} deviceName
- * @param {*} kernelKeeper
+ * @param {KernelKeeper} kernelKeeper
  * @returns {(dsc: DeviceSyscallObject) => KernelSyscallObject}
  */
 export function makeDSTranslator(deviceID, deviceName, kernelKeeper) {
