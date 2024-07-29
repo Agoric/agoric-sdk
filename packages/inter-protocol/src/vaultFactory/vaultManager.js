@@ -39,7 +39,6 @@ import {
 } from '@agoric/vat-data';
 import { TransferPartShape } from '@agoric/zoe/src/contractSupport/atomicTransfer.js';
 import {
-  atomicRearrange,
   ceilMultiplyBy,
   floorDivideBy,
   getAmountIn,
@@ -756,7 +755,7 @@ export const prepareVaultManagerKit = (
                   amounts,
                 ]),
             );
-            atomicRearrange(zcf, harden(transfers));
+            zcf.atomicRearrange(harden(transfers));
           }
 
           const { prioritizedVaults } = collateralEphemera(
