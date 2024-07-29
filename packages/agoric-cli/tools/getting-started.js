@@ -14,13 +14,18 @@ import { makePspawn } from '../src/helpers.js';
 const RETRY_BLOCKHEIGHT_SECONDS = 3;
 const SOCKET_TIMEOUT_SECONDS = 2;
 
+// TODO: Set this to `true` when `agoric install $DISTTAG` properly updates the
+// getting-started workflow's dependencies to current `@endo/*` and Agoric SDK
+// from the local registry.
+const AGORIC_INSTALL_DISTTAG = false;
+
 const dirname = new URL('./', import.meta.url).pathname;
 
 // To keep in sync with https://docs.agoric.com/guides/getting-started/
 
 // Note that we currently only test:
 // agoric init dapp-foo
-// yarn install
+// yarn install (or agoric install $DISTTAG)
 // yarn start:docker
 // yarn start:contract
 // yarn start:ui
@@ -58,7 +63,7 @@ const getLatestBlockHeight = url =>
   });
 
 export const gettingStartedWorkflowTest = async (t, options = {}) => {
-  const { init: initOptions = [] } = options;
+  const { init: initOptions = [], install: installOptions = [] } = options;
   const pspawn = makePspawn({ spawn });
 
   // Kill an entire process group.
@@ -145,9 +150,21 @@ export const gettingStartedWorkflowTest = async (t, options = {}) => {
     );
     process.chdir('dapp-foo');
 
-    // ==============
-    // yarn install
-    t.is(await yarn(['install']), 0, 'yarn install works');
+    if (AGORIC_INSTALL_DISTTAG && process.env.AGORIC_INSTALL_OPTIONS) {
+      // ==============
+      // agoric install $DISTTAG
+      const opts = JSON.parse(process.env.AGORIC_INSTALL_OPTIONS);
+      installOptions.push(...opts);
+      t.is(
+        await myMain(['install', ...installOptions]),
+        0,
+        'agoric install works',
+      );
+    } else {
+      // ==============
+      // yarn install
+      t.is(await yarn(['install', ...installOptions]), 0, 'yarn install works');
+    }
 
     // ==============
     // yarn start:docker
