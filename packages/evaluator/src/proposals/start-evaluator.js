@@ -18,15 +18,29 @@ const zip = (xs, ys) => xs.map((x, i) => [x, ys[i]]);
 const trace = makeTracer('StartAgoricEvaluator', true);
 const contractName = 'agoricEvaluator';
 
-const createAsyncFunction = (ev, body) => {
+/**
+ * @param {string} body
+ * @param {(code: string) => void} checkSyntax
+ * @returns
+ */
+const createAsyncFunctionCode = (body, checkSyntax) => {
+  assert.typeof(body, 'string');
   try {
-    // Try an expression first.
-    return ev(`async () => (${body}\n)`);
+    // See if the body is an expression first.
+    const naiveExprCode = `async () => { return (${body}\n); }`;
+    const verifiedExprCode = `async () => { return ((${body}\n)); }`;
+    checkSyntax(naiveExprCode);
+    checkSyntax(verifiedExprCode);
+    return verifiedExprCode;
   } catch (e) {
     if (e instanceof SyntaxError) {
       try {
         // Evaluate statements instead.
-        return ev(`async () => { ${body}\n}`);
+        const naiveStmtCode = `async () => {${body}\n}`;
+        const verifiedStmtCode = `async () => {{${body}\n}}`;
+        checkSyntax(naiveStmtCode);
+        checkSyntax(verifiedStmtCode);
+        return verifiedStmtCode;
       } catch (e2) {
         if (e2 instanceof SyntaxError) {
           throw e;
@@ -40,12 +54,19 @@ const createAsyncFunction = (ev, body) => {
 };
 
 const makeEvaluator = powers => {
-  let ev;
+  /** @type {Compartment} */
+  let compartment;
+
+  /** @type {Parameters<typeof createAsyncFunctionCode>[1]} */
+  let checkSyntax;
   return Far('evaluator', {
+    /**
+     * @param {string} code
+     * @returns {Promise<any>}
+     */
     async evaluate(code) {
-      assert.typeof(code, 'string');
-      if (!ev) {
-        const compartment = new Compartment({
+      if (!compartment) {
+        compartment = new Compartment({
           powers,
           // TODO: wire the console output into the final result.
           console,
@@ -53,11 +74,16 @@ const makeEvaluator = powers => {
           Far,
           vowTools,
         });
-
-        ev = cmd => compartment.evaluate(cmd, { sloppyGlobalsMode: true });
+        const { Function: compartmentFunction } = compartment.globalThis;
+        checkSyntax = jsCode => {
+          // Check that the jsCode is well-formed Javascript source code.
+          assert.typeof(jsCode, 'string');
+          compartmentFunction(jsCode);
+        };
       }
 
-      const afn = createAsyncFunction(ev, code);
+      const afnCode = createAsyncFunctionCode(checkSyntax, code);
+      const afn = compartment.evaluate(afnCode, { sloppyGlobalsMode: true });
       return afn();
     },
   });
