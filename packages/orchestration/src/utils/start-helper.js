@@ -112,6 +112,7 @@ export const provideOrchestration = (
     localchain: remotePowers.localchain,
     // FIXME what path?
     storageNode: remotePowers.storageNode,
+    agoricNames,
     orchestration: remotePowers.orchestrationService,
     timer: remotePowers.timerService,
     vowTools,
