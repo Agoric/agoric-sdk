@@ -62,6 +62,7 @@ export const provideOrchestration = (
       /** for contract-provided names */
       contract: zone.subZone('contract'),
       orchestration: zone.subZone('orchestration'),
+      chainHub: zone.subZone('chainHub'),
       vows: zone.subZone('vows'),
       zoe: zone.subZone('zoe'),
     };
@@ -71,7 +72,7 @@ export const provideOrchestration = (
 
   const vowTools = prepareVowTools(zones.vows);
 
-  const chainHub = makeChainHub(agoricNames, vowTools);
+  const chainHub = makeChainHub(zones.chainHub, agoricNames, vowTools);
 
   const zoeTools = makeZoeTools(zones.zoe, { zcf, vowTools });
 
