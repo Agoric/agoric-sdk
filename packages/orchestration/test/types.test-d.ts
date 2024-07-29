@@ -1,18 +1,22 @@
 /**
  * @file pure types types, no runtime, ignored by Ava
  */
+
 import { expectNotType, expectType } from 'tsd';
 import { typedJson } from '@agoric/cosmic-proto';
 import type { MsgDelegateResponse } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/tx.js';
 import type { QueryAllBalancesResponse } from '@agoric/cosmic-proto/cosmos/bank/v1beta1/query.js';
 import type { Vow, VowTools } from '@agoric/vow';
 import type { GuestAsyncFunc, HostInterface, HostOf } from '@agoric/async-flow';
+import type { ResolvedPublicTopic } from '@agoric/zoe/src/contractSupport/topics.js';
 import type {
   ChainAddress,
   CosmosValidatorAddress,
   StakingAccountActions,
   OrchestrationAccount,
   Orchestrator,
+  Chain,
+  ChainInfo,
 } from '../src/types.js';
 import type { LocalOrchestrationAccountKit } from '../src/exos/local-orchestration-account.js';
 import { prepareCosmosOrchestrationAccount } from '../src/exos/cosmos-orchestration-account.js';
@@ -94,6 +98,30 @@ expectNotType<CosmosValidatorAddress>(chainAddr);
 
   // Negative test
   expectNotType<() => Promise<number>>(vowFn);
+
+  const getBrandInfo: HostOf<Orchestrator['getBrandInfo']> = null as any;
+  const chainHostOf = getBrandInfo('uatom').chain;
+  expectType<Vow<any>>(chainHostOf.getChainInfo());
+}
+
+{
+  // HostInterface
+
+  const chain: Chain<ChainInfo> = null as any;
+  expectType<Promise<ChainInfo>>(chain.getChainInfo());
+  const chainHostInterface: HostInterface<Chain<ChainInfo>> = null as any;
+  expectType<Vow<ChainInfo>>(chainHostInterface.getChainInfo());
+
+  const publicTopicRecord: HostInterface<
+    Record<string, ResolvedPublicTopic<unknown>>
+  > = {
+    someTopic: {
+      subscriber: null as any,
+      storagePath: 'published.somewhere',
+    },
+  };
+  // @ts-expect-error the promise from `subscriber.getUpdateSince` can't be used in a flow
+  expectType<Record<string, ResolvedPublicTopic<unknown>>>(publicTopicRecord);
 }
 
 // HostOf with TransferSteps

@@ -151,7 +151,6 @@ const prepareOrchestratorKit = (
           chainByName.has(baseName) ||
             Fail`use getChain(${q(baseName)}) before getBrandInfo(${q(denom)})`;
           const base = chainByName.get(baseName);
-          // @ts-expect-error XXX HostOf<> not quite right?
           return harden({ chain, base, brand, baseDenom });
         },
         /** @type {HostOf<Orchestrator['asAmount']>} */
