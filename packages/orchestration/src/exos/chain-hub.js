@@ -18,9 +18,11 @@ import { CosmosChainInfoShape, IBCConnectionInfoShape } from '../typeGuards.js';
  */
 
 /**
+ * If K matches a known chain, narrow the type from generic ChainInfo
+ *
  * @template {string} K
  * @typedef {K extends keyof KnownChains
- *   ? Omit<KnownChains[K], 'connections'>
+ *   ? ChainInfo & Omit<KnownChains[K], 'connections'>
  *   : ChainInfo} ActualChainInfo
  */
 
