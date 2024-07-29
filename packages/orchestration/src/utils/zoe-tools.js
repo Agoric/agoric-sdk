@@ -42,7 +42,6 @@ export const makeZoeTools = (zone, { zcf, vowTools }) => {
     /**
      * @type {LocalTransfer}
      */
-    // @ts-expect-error XXX typedefs
     async (srcSeat, localAccount, give) => {
       !srcSeat.hasExited() || Fail`The seat cannot have exited.`;
       const { zcfSeat: tempSeat, userSeat: userSeatP } = zcf.makeEmptySeatKit();

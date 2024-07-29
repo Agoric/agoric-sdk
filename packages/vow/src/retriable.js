@@ -17,7 +17,7 @@ import { toPassableCap, VowShape } from './vow-utils.js';
  */
 
 /**
- * @template {Passable[]} [TArgs=Passable[]]
+ * @template {Passable[]} [TArgs=any[]]
  * @template {any} [TRet=any]
  * @typedef {(...args: TArgs) => Promise<TRet>} RetriableFunc
  */
