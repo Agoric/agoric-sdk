@@ -65,6 +65,9 @@ pull_request_rules:
     conditions:
       - base=master
       - label=automerge:rebase
+      - or:
+          - '#commits-behind>0'
+          - linear-history
     actions:
       queue:
         merge_method: merge
@@ -76,3 +79,15 @@ pull_request_rules:
     actions:
       queue:
         merge_method: squash
+  - name: rebase and autosquash
+    conditions:
+      - base=master
+      - label=automerge:rebase
+      - '#commits-behind=0'
+      - or:
+        - -linear-history
+        - check-failure=no-fixup-commits
+      - -draft
+    actions:
+      rebase:
+        autosquash: true
