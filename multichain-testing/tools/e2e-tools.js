@@ -396,7 +396,7 @@ const runCoreEval = async (
   // assert(result.code, 0);
 
   console.log('await voteLatestProposalAndWait', evalPaths);
-  const detail = await voteLatestProposalAndWait({ agd, blockTool });
+  const detail = await voteLatestProposalAndWait({ agd, blockTool, chainId });
   log(detail.id, detail.voting_end_time, detail.status);
 
   // TODO: how long is long enough? poll?
@@ -432,8 +432,14 @@ export const makeE2ETools = async (
     rpcAddress = 'http://localhost:26657',
     apiAddress = 'http://localhost:1317',
   },
+  agoricChainId = 'agoriclocal',
 ) => {
-  const agd = makeAgd({ execFileSync }).withOpts({ keyringBackend: 'test' });
+  const agd = makeAgd({ execFileSync }, agoricChainId).withOpts({
+    keyringBackend: 'test',
+    chainId: agoricChainId,
+    rpcAddress,
+    apiAddress,
+  });
   const rpc = makeHttpClient(rpcAddress, fetch);
   const lcd = makeAPI(apiAddress, { fetch });
   const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
@@ -470,6 +476,7 @@ export const makeE2ETools = async (
         delay,
         // bundleId: getBundleId(bundle),
         bundleId: undefined,
+        chainId: agoricChainId,
       });
       progress({
         // name,
@@ -504,11 +511,18 @@ export const makeE2ETools = async (
 
     const detail = { evals: [eval0], title, description };
     // await runPackageScript('build:deployer', entryFile);
-    const proposal = await runCoreEval(log, detail, { agd, blockTool });
+    const proposal = await runCoreEval(log, detail, {
+      agd,
+      blockTool,
+      chainId: agoricChainId,
+    });
     return proposal;
   };
 
-  const copyFiles = makeCopyFiles({ execFileSync, log });
+  const copyFiles = makeCopyFiles(
+    { execFileSync, log },
+    { podName: `${agoricChainId}-genesis-0` },
+  );
 
   const vstorageClient = makeQueryKit(vstorage).query;
 
@@ -524,6 +538,7 @@ export const makeE2ETools = async (
       provisionSmartWallet(address, amount, {
         agd,
         blockTool,
+        chainId: agoricChainId,
         lcd,
         delay,
         q: vstorageClient,

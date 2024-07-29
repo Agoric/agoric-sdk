@@ -4,7 +4,7 @@ import { commonSetup, SetupContextWithWallets } from './support.js';
 import { makeDoOffer } from '../tools/e2e-tools.js';
 import { chainConfig, chainNames } from './support.js';
 
-const test = anyTest as TestFn<SetupContextWithWallets>;
+const test = anyTest as TestFn<Record<string, SetupContextWithWallets>>;
 
 const accounts = ['user1', 'user2', 'user3']; // one account for each scenario
 
@@ -15,19 +15,22 @@ const contractBuilder = new URL(
 ).pathname;
 
 test.before(async t => {
-  const { deleteTestKeys, setupTestKeys, ...rest } = await commonSetup(t);
-  deleteTestKeys(accounts).catch();
-  const wallets = await setupTestKeys(accounts);
-  t.context = { ...rest, wallets, deleteTestKeys };
+  for (const agoricChainName of ['agoric', 'agoricdriver']) {
+    t.log('setting up in', agoricChainName);
+    const { deleteTestKeys, setupTestKeys, ...rest } = await commonSetup(t, agoricChainName);
+    deleteTestKeys(accounts).catch();
+    const wallets = await setupTestKeys(accounts);
+    t.context[agoricChainName] = { ...rest, wallets, deleteTestKeys };
 
-  t.log('bundle and install contract', contractName);
-  await t.context.deployBuilder(contractBuilder);
-  const vstorageClient = t.context.makeQueryTool();
-  await t.context.retryUntilCondition(
-    () => vstorageClient.queryData(`published.agoricNames.instance`),
-    res => contractName in Object.fromEntries(res),
-    `${contractName} instance is available`,
-  );
+    t.log('bundle and install contract', contractName);
+    await t.context[agoricChainName].deployBuilder(contractBuilder);
+    const vstorageClient = t.context[agoricChainName].makeQueryTool();
+    await t.context[agoricChainName].retryUntilCondition(
+      () => vstorageClient.queryData(`published.agoricNames.instance`),
+      res => contractName in Object.fromEntries(res),
+      `${contractName} instance is available`,
+    );
+  }
 });
 
 test.after(async t => {

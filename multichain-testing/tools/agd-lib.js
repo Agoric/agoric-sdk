@@ -4,7 +4,7 @@ import assert from 'node:assert';
 const { freeze } = Object;
 
 const kubectlBinary = 'kubectl';
-const binaryArgs = [
+let binaryArgs = [
   'exec',
   '-i',
   'agoriclocal-genesis-0',
@@ -39,7 +39,7 @@ export const flags = record => {
 /**
  * @param {{ execFileSync: ExecSync }} io
  */
-export const makeAgd = ({ execFileSync }) => {
+export const makeAgd = ({ execFileSync }, agoricChainId = 'agoriclocal') => {
   /**
    * @param { {
    *       home?: string;
@@ -48,6 +48,7 @@ export const makeAgd = ({ execFileSync }) => {
    *     }} opts
    */
   const make = ({ home, keyringBackend, rpcAddrs } = {}) => {
+    binaryArgs[2] = `${agoricChainId}-genesis-0`;
     const keyringArgs = flags({ home, 'keyring-backend': keyringBackend });
     if (rpcAddrs) {
       assert.equal(

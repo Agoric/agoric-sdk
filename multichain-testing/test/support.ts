@@ -55,9 +55,10 @@ const makeKeyring = async (
   return { setupTestKeys, deleteTestKeys };
 };
 
-export const commonSetup = async (t: ExecutionContext) => {
+export const commonSetup = async (t: ExecutionContext, agoricChainName = 'agoric') => {
   const { useChain } = await setupRegistry();
-  const tools = await makeAgdTools(t.log, childProcess);
+  const agoricChain = useChain(agoricChainName);
+  const tools = await makeAgdTools(t.log, childProcess, agoricChain.chain.chain_id, agoricChain.getRpcEndpoint(), agoricChain.getRestEndpoint());
   const keyring = await makeKeyring(tools);
   const deployBuilder = makeDeployBuilder(tools, fse.readJSON, execa);
   const retryUntilCondition = makeRetryUntilCondition({

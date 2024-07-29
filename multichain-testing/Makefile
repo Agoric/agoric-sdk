@@ -67,13 +67,14 @@ clean-kind:
 ###                          Agoric Setup                                   ###
 ###############################################################################
 PROVISION_POOL_ADDR=agoric1megzytg65cyrgzs6fvzxgrcqvwwl7ugpt62346
+AGORIC_CHAINID=agoriclocal
 
 # add address
 add-address:
-	kubectl exec -i agoriclocal-genesis-0 -c validator -- agd keys add user1
+	kubectl exec -i $(AGORIC_CHAINID)-genesis-0 -c validator -- agd keys add user1
 
 fund-provision-pool:
-	kubectl exec -i agoriclocal-genesis-0 -c validator -- agd tx bank send faucet $(PROVISION_POOL_ADDR) 1000000000uist -y -b block
+	kubectl exec -i $(AGORIC_CHAINID)-genesis-0 -c validator -- agd tx bank send faucet $(PROVISION_POOL_ADDR) 1000000000uist -y -b block
 
 override-chain-registry:
 	node_modules/.bin/tsx scripts/fetch-starship-chain-info.ts && \
@@ -83,11 +84,11 @@ ADDR=agoric1ldmtatp24qlllgxmrsjzcpe20fvlkp448zcuce
 COIN=1000000000uist
 
 fund-wallet:
-	kubectl exec -i agoriclocal-genesis-0 -c validator -- agd tx bank send faucet $(ADDR) $(COIN) -y -b block
+	kubectl exec -i $(AGORIC_CHAINID)-genesis-0 -c validator -- agd tx bank send faucet $(ADDR) $(COIN) -y -b block
 
 provision-smart-wallet:
-	kubectl exec -i agoriclocal-genesis-0 -c validator -- agd tx swingset provision-one wallet $(ADDR) SMART_WALLET --from $(ADDR) -y -b block
+	kubectl exec -i $(AGORIC_CHAINID)-genesis-0 -c validator -- agd tx swingset provision-one wallet $(ADDR) SMART_WALLET --from $(ADDR) -y -b block
 
 # view agoric swingset logs from slog file, until we can set `DEBUG=SwingSet:vat,SwingSet:ls`
 tail-slog:
-	kubectl exec -i agoriclocal-genesis-0 -c validator -- tail -f slog.slog
+	kubectl exec -i $(AGORIC_CHAINID)-genesis-0 -c validator -- tail -f slog.slog
