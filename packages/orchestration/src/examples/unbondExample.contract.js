@@ -85,3 +85,4 @@ const contract = async (zcf, privateArgs, zone, { orchestrate }) => {
 };
 
 export const start = withOrchestration(contract);
+harden(start);
