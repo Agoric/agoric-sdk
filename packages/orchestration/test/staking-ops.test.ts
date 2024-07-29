@@ -256,7 +256,7 @@ test('makeAccount() writes to storage', async t => {
     zone,
   } = s;
   const make = prepareCosmosOrchestrationAccountKit(zone, {
-    chainHub: makeChainHub(agoricNames, vowTools),
+    chainHub: makeChainHub(zone.subZone('chainHub'), agoricNames, vowTools),
     makeRecorderKit,
     timerService: timer,
     vowTools,
@@ -304,7 +304,7 @@ test('withdrawRewards() on StakingAccountHolder formats message correctly', asyn
     zone,
   } = s;
   const make = prepareCosmosOrchestrationAccountKit(zone, {
-    chainHub: makeChainHub(agoricNames, vowTools),
+    chainHub: makeChainHub(zone.subZone('chainHub'), agoricNames, vowTools),
     makeRecorderKit,
     timerService: timer,
     vowTools,
@@ -349,7 +349,7 @@ test(`delegate; redelegate using invitationMakers`, async t => {
     zone,
   } = s;
   const makeAccountKit = prepareCosmosOrchestrationAccountKit(zone, {
-    chainHub: makeChainHub(agoricNames, vowTools),
+    chainHub: makeChainHub(zone.subZone('chainHub'), agoricNames, vowTools),
     makeRecorderKit,
     timerService: timer,
     vowTools,
@@ -439,7 +439,7 @@ test(`withdraw rewards using invitationMakers`, async t => {
     zone,
   } = s;
   const makeAccountKit = prepareCosmosOrchestrationAccountKit(zone, {
-    chainHub: makeChainHub(agoricNames, vowTools),
+    chainHub: makeChainHub(zone.subZone('chainHub'), agoricNames, vowTools),
     makeRecorderKit,
     timerService: timer,
     vowTools,
@@ -487,7 +487,7 @@ test(`undelegate waits for unbonding period`, async t => {
     zone,
   } = s;
   const makeAccountKit = prepareCosmosOrchestrationAccountKit(zone, {
-    chainHub: makeChainHub(agoricNames, vowTools),
+    chainHub: makeChainHub(zone.subZone('chainHub'), agoricNames, vowTools),
     makeRecorderKit,
     timerService: timer,
     vowTools,
