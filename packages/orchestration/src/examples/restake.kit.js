@@ -5,11 +5,7 @@ import { TimestampRecordShape } from '@agoric/time';
 import { VowShape } from '@agoric/vow';
 import { makeTracer } from '@agoric/internal';
 import { EmptyProposalShape } from '@agoric/zoe/src/typeGuards.js';
-import {
-  AmountArgShape,
-  ChainAddressShape,
-  DenomAmountShape,
-} from '../typeGuards.js';
+import { ChainAddressShape, DenomAmountShape } from '../typeGuards.js';
 
 const trace = makeTracer('RestakeKit');
 
@@ -129,6 +125,11 @@ const RepeaterOptsShape = {
  * }} RestakeParams
  */
 
+export const restakeInvitaitonGuardShape = {
+  Restake: M.call(ChainAddressShape, RepeaterOptsShape).returns(M.promise()),
+  CancelRestake: M.call().returns(M.promise()),
+};
+
 /**
  * @param {Zone} zone
  * @param {object} opts
@@ -141,7 +142,7 @@ const RepeaterOptsShape = {
 export const prepareRestakeHolderKit = (
   zone,
   {
-    vowTools: { watch, asVow, when },
+    vowTools: { watch, asVow },
     zcf,
     timer,
     makeRestakeWaker,
@@ -152,19 +153,11 @@ export const prepareRestakeHolderKit = (
     'RestakeHolderKit',
     {
       invitationMakers: M.interface('InvitationMakers', {
-        // XXX FIXME, we shouldn't have to re-define this
-        Delegate: M.call(ChainAddressShape, AmountArgShape).returns(
-          M.promise(),
-        ),
-        Restake: M.call(ChainAddressShape, RepeaterOptsShape).returns(
-          M.promise(),
-        ),
-        CancelRestake: M.call().returns(M.promise()),
+        ...restakeInvitaitonGuardShape,
       }),
       holder: M.interface('Holder', {
         restake: M.call(ChainAddressShape, RepeaterOptsShape).returns(VowShape),
         cancelRestake: M.call().returns(VowShape),
-        asContinuingOffer: M.call().returns(VowShape),
       }),
     },
     /**
@@ -180,17 +173,6 @@ export const prepareRestakeHolderKit = (
     },
     {
       invitationMakers: {
-        // XXX FIXME, we shouldn't have to re-define this
-        Delegate(...args) {
-          return when(
-            E.when(
-              when(E(this.state.orchAccount).asContinuingOffer()),
-              ({ invitationMakers }) => {
-                return when(E(invitationMakers).Delegate(...args));
-              },
-            ),
-          );
-        },
         /**
          * @param {CosmosValidatorAddress} validator
          * @param {RepeaterOpts} opts
@@ -266,24 +248,6 @@ export const prepareRestakeHolderKit = (
             throw Fail`Restake not active.`;
           }
           return watch(E(this.state.restakeRepeater).disable());
-        },
-        asContinuingOffer() {
-          return watch(
-            E.when(
-              // FIXME, this use of w.when doesn't work
-              when(E(this.state.orchAccount).asContinuingOffer()),
-              ({ publicSubscribers }) =>
-                harden({
-                  // XXX returns empty objet?
-                  // invitationMakers: harden({
-                  //   ...invitationMakers,
-                  //   ...this.facets.invitationMakers,
-                  // }),
-                  invitationMakers: this.facets.invitationMakers,
-                  publicSubscribers,
-                }),
-            ),
-          );
         },
       },
     },

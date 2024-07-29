@@ -121,7 +121,8 @@ test('restake contract schedules claimRewards() and delegate() on an interval', 
     delay: 10n,
     interval: 20n,
   });
-  await E(zoe).offer(restakeInv);
+  const restakeSeat = await E(zoe).offer(restakeInv);
+  await vt.when(E(restakeSeat).getOfferResult());
 
   timer.advanceTo(32n);
 

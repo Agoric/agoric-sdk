@@ -6,6 +6,7 @@ import { M, mustMatch } from '@endo/patterns';
 /**
  * @import {OrchestrationAccount, OrchestrationFlow, Orchestrator, StakingAccountActions} from '@agoric/orchestration';
  * @import {MakeRestakeHolderKit} from './restake.kit.js';
+ * @import {MakeCombineInvitationMakers} from '../exos/combine-invitation-makers.js';
  */
 
 /**
@@ -16,13 +17,14 @@ import { M, mustMatch } from '@endo/patterns';
  * @param {Orchestrator} orch
  * @param {{
  *   makeRestakeHolderKit: MakeRestakeHolderKit;
+ *   makeCombineInvitationMakers: MakeCombineInvitationMakers;
  * }} ctx
  * @param {ZCFSeat} seat
  * @param {{ chainName: string }} offerArgs
  */
 export const makeRestakeAccount = async (
   orch,
-  { makeRestakeHolderKit },
+  { makeRestakeHolderKit, makeCombineInvitationMakers },
   seat,
   { chainName },
 ) => {
@@ -34,16 +36,18 @@ export const makeRestakeAccount = async (
       await remoteChain.makeAccount()
     );
   const restakeHolderKit = makeRestakeHolderKit(orchAccount);
-  // const { invitationMakers, publicSubscribers } =
-  //   await orchAccount.asContinuingOffer();
+  const { invitationMakers: orchInvitationMakers, publicSubscribers } =
+    await orchAccount.asContinuingOffer();
 
-  return restakeHolderKit.holder.asContinuingOffer();
-  // XXX Remotables must be explicitly declared
-  // return harden({
-  //   invitationMakers: harden({
-  //     ...invitationMakers,
-  //     ...restakeHolderKit.invitationMakers,
-  //   }),
-  //   publicSubscribers,
-  // });
+  const combinedInvitationMakers = makeCombineInvitationMakers(
+    // `orchInvitationMakers` currently lying about its type
+    orchInvitationMakers,
+    // @ts-expect-error update `makeCombineInvitationMakers` to accept Guarded...
+    restakeHolderKit.invitationMakers,
+  );
+
+  return harden({
+    invitationMakers: combinedInvitationMakers,
+    publicSubscribers,
+  });
 };

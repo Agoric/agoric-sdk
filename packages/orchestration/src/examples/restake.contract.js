@@ -2,7 +2,12 @@ import { InvitationShape } from '@agoric/zoe/src/typeGuards.js';
 import { M } from '@endo/patterns';
 import { withOrchestration } from '../utils/start-helper.js';
 import * as flows from './restake.flows.js';
-import { prepareRestakeHolderKit, prepareRestakeWaker } from './restake.kit.js';
+import {
+  prepareRestakeHolderKit,
+  prepareRestakeWaker,
+  restakeInvitaitonGuardShape,
+} from './restake.kit.js';
+import { prepareCombineInvitationMakers } from '../exos/combine-invitation-makers.js';
 
 /**
  * @import {Zone} from '@agoric/zone';
@@ -37,6 +42,11 @@ const contract = async (
     zone.subZone('restakeWaker'),
     vowTools,
   );
+  const makeCombineInvitationMakers = prepareCombineInvitationMakers(
+    zone,
+    restakeInvitaitonGuardShape,
+  );
+
   const { minimumDelay, minimumInterval } = zcf.getTerms();
 
   const makeRestakeHolderKit = prepareRestakeHolderKit(
@@ -50,7 +60,10 @@ const contract = async (
     },
   );
 
-  const orchFns = orchestrateAll(flows, { makeRestakeHolderKit });
+  const orchFns = orchestrateAll(flows, {
+    makeRestakeHolderKit,
+    makeCombineInvitationMakers,
+  });
 
   const publicFacet = zone.exo(
     'Restake Public Facet',
