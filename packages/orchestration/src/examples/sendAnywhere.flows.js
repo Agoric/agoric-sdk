@@ -22,12 +22,12 @@ const { entries } = Object;
  * @param {ZCFSeat} seat
  * @param {{ chainName: string; destAddr: string }} offerArgs
  */
-export async function sendIt(
+export const sendIt = async (
   orch,
   { contractState, localTransfer, findBrandInVBank },
   seat,
   offerArgs,
-) {
+) => {
   mustMatch(offerArgs, harden({ chainName: M.scalar(), destAddr: M.string() }));
   const { chainName, destAddr } = offerArgs;
   // NOTE the proposal shape ensures that the `give` is a single asset
@@ -55,5 +55,5 @@ export async function sendIt(
       chainId,
     },
   );
-}
+};
 harden(sendIt);

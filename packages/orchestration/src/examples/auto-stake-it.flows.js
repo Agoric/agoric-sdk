@@ -102,3 +102,4 @@ export const makeAccounts = async (
   );
   return portfolioHolder.asContinuingOffer();
 };
+harden(makeAccounts);
