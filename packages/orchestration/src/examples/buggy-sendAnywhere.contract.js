@@ -10,6 +10,7 @@ import { Fail } from '@endo/errors';
 import { M } from '@endo/patterns';
 import { withOrchestration } from '../utils/start-helper.js';
 import * as orchestrationFns from './sendAnywhere.flows.js';
+import { prepareChainHubAdmin } from '../exos/chain-hub-admin.js';
 
 /**
  * @import {TimerService} from '@agoric/time';
@@ -54,13 +55,15 @@ const contract = async (
   zcf,
   privateArgs,
   zone,
-  { orchestrateAll, vowTools, zoeTools },
+  { chainHub, orchestrateAll, vowTools, zoeTools },
 ) => {
   const contractState = makeStateRecord(
     /** @type {{ localAccount: OrchestrationAccount<any> | undefined }} */ {
       localAccount: undefined,
     },
   );
+
+  const creatorFacet = prepareChainHubAdmin(zone, chainHub);
 
   /** @type {(brand: Brand) => Vow<VBankAssetDetail>} */
   const findBrandInVBank = vowTools.retriable(
@@ -100,7 +103,7 @@ const contract = async (
       },
     },
   );
-  return { publicFacet };
+  return { creatorFacet, publicFacet };
 };
 
 export const start = withOrchestration(contract);
