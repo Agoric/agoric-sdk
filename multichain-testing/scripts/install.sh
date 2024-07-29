@@ -24,7 +24,7 @@ NAMESPACE=""
 HELM_REPO="starship"
 HELM_CHART="starship/devnet"
 HELM_REPO_URL="https://cosmology-tech.github.io/starship/"
-HELM_CHART_VERSION="0.2.2"
+HELM_CHART_VERSION="0.2.8"
 HELM_NAME="agoric-multichain-testing"
 
 # check_helm function verifies the helm binary is installed
@@ -62,7 +62,6 @@ function set_helm_args() {
     return 0
   fi
   for i in $(seq 0 $num_chains); do
-    chain=$(yq -r ".chains[$i].name" ${CONFIGFILE})
     scripts=$(yq -r ".chains[$i].scripts" ${CONFIGFILE})
     if [[ "$scripts" == "null" ]]; then
       return 0
@@ -114,7 +113,7 @@ while [ $# -gt 0 ]; do
       DRY_RUN=1
       shift # past argument
       ;;
-    -* | --*)
+    -)
       echo "Unknown option $1"
       exit 1
       ;;
