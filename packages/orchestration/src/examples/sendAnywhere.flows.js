@@ -1,8 +1,8 @@
+import { NonNullish } from '@agoric/internal';
 import { M, mustMatch } from '@endo/patterns';
 
 /**
  * @import {GuestOf} from '@agoric/async-flow';
- * @import {VBankAssetDetail} from '@agoric/vats/tools/board-utils.js';
  * @import {ZoeTools} from '../utils/zoe-tools.js';
  * @import {Orchestrator, LocalAccountMethods, OrchestrationAccountI, OrchestrationFlow} from '../types.js';
  */
@@ -18,13 +18,12 @@ const { entries } = Object;
  * @param {object} ctx
  * @param {{ localAccount?: OrchestrationAccountI & LocalAccountMethods }} ctx.contractState
  * @param {GuestOf<ZoeTools['localTransfer']>} ctx.localTransfer
- * @param {(brand: Brand) => Promise<VBankAssetDetail>} ctx.findBrandInVBank
  * @param {ZCFSeat} seat
  * @param {{ chainName: string; destAddr: string }} offerArgs
  */
 export async function sendIt(
   orch,
-  { contractState, localTransfer, findBrandInVBank },
+  { contractState, localTransfer },
   seat,
   offerArgs,
 ) {
@@ -33,7 +32,12 @@ export async function sendIt(
   // NOTE the proposal shape ensures that the `give` is a single asset
   const { give } = seat.getProposal();
   const [[_kw, amt]] = entries(give);
-  const { denom } = await findBrandInVBank(amt.brand);
+  const agoric = await orch.getChain('agoric');
+  const assets = await agoric.getVBankAssetInfo();
+  const { denom } = NonNullish(
+    assets.find(a => a.brand === amt.brand),
+    `${amt.brand} not registered in vbank`,
+  );
   const chain = await orch.getChain(chainName);
 
   if (!contractState.localAccount) {
