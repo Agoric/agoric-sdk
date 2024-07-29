@@ -94,6 +94,8 @@ export const prepareRestakeWaker = (zone, vowTools) => {
   return (...args) => makeKit(...args).waker;
 };
 
+/** @typedef {ReturnType<typeof prepareRestakeWaker>} MakeRestakeWaker */
+
 /**
  * @typedef {{
  *   orchAccount: OrchestrationAccount<any> & StakingAccountActions;
@@ -113,7 +115,7 @@ const RepeaterStateShape = {
  * }} RepeaterOpts
  */
 
-const RepeaterOptsShape = {
+export const RepeaterOptsShape = {
   delay: M.nat(),
   interval: M.nat(),
 };
@@ -131,6 +133,8 @@ export const restakeInvitaitonGuardShape = {
 };
 
 /**
+ * XXX no longer used
+ *
  * @param {Zone} zone
  * @param {object} opts
  * @param {VowTools} opts.vowTools

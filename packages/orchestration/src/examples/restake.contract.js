@@ -1,11 +1,14 @@
 import { InvitationShape } from '@agoric/zoe/src/typeGuards.js';
 import { M } from '@endo/patterns';
 import { withOrchestration } from '../utils/start-helper.js';
-import * as flows from './restake.flows.js';
 import {
-  prepareRestakeHolderKit,
-  prepareRestakeWaker,
+  makeAccountHandler,
+  prepareRestakeHandler,
+  // prepareCancelRestakeHandler,
+} from './restake.flows.js';
+import {
   restakeInvitaitonGuardShape,
+  prepareRestakeWaker,
 } from './restake.kit.js';
 import { prepareCombineInvitationMakers } from '../exos/combine-invitation-makers.js';
 
@@ -36,7 +39,7 @@ const contract = async (
   zcf,
   { timerService },
   zone,
-  { orchestrateAll, vowTools },
+  { orchestrate, vowTools },
 ) => {
   const makeRestakeWaker = prepareRestakeWaker(
     zone.subZone('restakeWaker'),
@@ -44,26 +47,37 @@ const contract = async (
   );
   const makeCombineInvitationMakers = prepareCombineInvitationMakers(
     zone,
-    restakeInvitaitonGuardShape,
+    // restakeInvitaitonGuardShape,
+    { Restake: restakeInvitaitonGuardShape.Restake },
   );
 
   const { minimumDelay, minimumInterval } = zcf.getTerms();
 
-  const makeRestakeHolderKit = prepareRestakeHolderKit(
-    zone.subZone('restakeHolder'),
+  const makeRestakeHandler = orchestrate(
+    'prepareRestakeHandler',
     {
-      vowTools,
-      zcf,
-      timer: timerService,
       makeRestakeWaker,
-      params: harden({ minimumDelay, minimumInterval }),
+      timerService,
+      opts: { minimumDelay, minimumInterval },
     },
+    prepareRestakeHandler,
   );
 
-  const orchFns = orchestrateAll(flows, {
-    makeRestakeHolderKit,
-    makeCombineInvitationMakers,
-  });
+  // const makeCancelRestakeHandler = orchestrate(
+  //   'prepareCancelRestakeHandler',
+  //   undefined,
+  //   prepareCancelRestakeHandler,
+  // );
+
+  const makeAccount = orchestrate(
+    'makeAccountHandler',
+    {
+      makeRestakeHandler,
+      makeCombineInvitationMakers,
+      // makeCancelRestakeHandler,
+    },
+    makeAccountHandler,
+  );
 
   const publicFacet = zone.exo(
     'Restake Public Facet',
@@ -72,10 +86,7 @@ const contract = async (
     }),
     {
       makeRestakeAccountInvitation() {
-        return zcf.makeInvitation(
-          orchFns.makeRestakeAccount,
-          'Make a Restake Account',
-        );
+        return zcf.makeInvitation(makeAccount, 'Make a Restake Account');
       },
     },
   );
