@@ -9,6 +9,7 @@ import { CosmosChainInfoShape, IBCConnectionInfoShape } from '../typeGuards.js';
 /**
  * @import {NameHub} from '@agoric/vats';
  * @import {Vow, VowTools} from '@agoric/vow';
+ * @import {Zone} from '@agoric/zone';
  * @import {CosmosAssetInfo, CosmosChainInfo, IBCConnectionInfo} from '../cosmos-api.js';
  * @import {ChainInfo, KnownChains} from '../chain-info.js';
  * @import {Denom} from '../orchestration-api.js';
@@ -358,7 +359,6 @@ export const makeChainHub = (zone, agoricNames, vowTools) => {
      * >}
      */
     getChainsAndConnection(primaryName, counterName) {
-      // @ts-expect-error XXX generic parameter propagation
       return lookupChainsAndConnection(primaryName, counterName);
     },
 

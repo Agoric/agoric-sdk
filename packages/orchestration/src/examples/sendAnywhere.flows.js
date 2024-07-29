@@ -45,7 +45,12 @@ export async function sendIt(
   const { chainId } = info;
   assert(typeof chainId === 'string', 'bad chainId');
 
-  await localTransfer(seat, contractState.localAccount, give);
+  await localTransfer(
+    seat,
+    // @ts-expect-error Index signature for type 'string' is missing in type 'OrchestrationAccountI & LocalAccountMethods'
+    contractState.localAccount,
+    give,
+  );
 
   await contractState.localAccount.transfer(
     { denom, value: amt.value },

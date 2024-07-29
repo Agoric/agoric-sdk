@@ -9,7 +9,7 @@ import { InvitationShape } from '@agoric/zoe/src/typeGuards.js';
 import { Fail } from '@endo/errors';
 import { M } from '@endo/patterns';
 import { withOrchestration } from '../utils/start-helper.js';
-import { orchestrationFns } from './sendAnywhereFlows.js';
+import * as orchestrationFns from './sendAnywhere.flows.js';
 
 /**
  * @import {TimerService} from '@agoric/time';
@@ -57,8 +57,8 @@ const contract = async (
   { orchestrateAll, vowTools, zoeTools },
 ) => {
   const contractState = makeStateRecord(
-    /** @type {{ account: OrchestrationAccount<any> | undefined }} */ {
-      account: undefined,
+    /** @type {{ localAccount: OrchestrationAccount<any> | undefined }} */ {
+      localAccount: undefined,
     },
   );
 

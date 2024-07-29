@@ -105,6 +105,7 @@ const contract = async (zcf, privateArgs, zone, { orchestrate, zoeTools }) => {
   const swapAndStakeHandler = orchestrate(
     'LSTTia',
     { zcf, localTransfer: zoeTools.localTransfer },
+    // @ts-expect-error (payment: Payment<"nat">) => Promise<void>' is not assignable to type 'Passable<PassableCap, Error>'.
     stakeAndSwapFn,
   );
 
