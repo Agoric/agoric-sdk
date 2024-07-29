@@ -1,3 +1,4 @@
+// @ts-check
 /* global process setTimeout setInterval clearInterval Buffer */
 
 import fs from 'fs';
@@ -63,11 +64,15 @@ export const gettingStartedWorkflowTest = async (t, options = {}) => {
   // Kill an entire process group.
   const pkill = (cp, signal = 'SIGINT') => process.kill(-cp.pid, signal);
 
+  /** @param {Parameters<typeof pspawn>} args */
   function pspawnStdout(...args) {
     const ps = pspawn(...args);
-    ps.childProcess.stdout.on('data', chunk => {
-      process.stdout.write(chunk);
-    });
+    const { stdout } = ps.childProcess;
+    if (stdout) {
+      stdout.on('data', chunk => {
+        process.stdout.write(chunk);
+      });
+    }
     // ps.childProcess.unref();
     return ps;
   }
@@ -202,7 +207,7 @@ export const gettingStartedWorkflowTest = async (t, options = {}) => {
         });
         req.setTimeout(SOCKET_TIMEOUT_SECONDS * 1_000);
         req.on('error', err => {
-          if (err.code !== 'ECONNREFUSED') {
+          if (!('code' in err) || err.code !== 'ECONNREFUSED') {
             resolve(`Cannot connect to UI server: ${err}`);
           }
         });
