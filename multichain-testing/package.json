@@ -39,7 +39,7 @@
     "starshipjs": "2.4.0",
     "tsimp": "^2.0.10",
     "tsx": "^4.15.6",
-    "typescript": "^5.3.3"
+    "typescript": "~5.6.0-beta"
   },
   "resolutions": {
     "node-fetch": "2.6.12",

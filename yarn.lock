@@ -11611,10 +11611,15 @@ typescript-eslint@^7.15.0, typescript-eslint@^7.3.1:
   resolved "https://registry.yarnpkg.com/typescript/-/typescript-4.9.5.tgz#095979f9bcc0d09da324d58d03ce8f8374cbe65a"
   integrity sha512-1FXk9E2Hm+QzZQ7z+McJiHL4NW1F2EzMu9Nq9i3zAaGqibafqYwCVU6WyWAuyQRRzOlxou8xZSyXLEN8oKj24g==
 
-typescript@^5.5.3, typescript@~5.5.0-dev.20240327:
+typescript@~5.5.0-dev.20240327:
   version "5.5.3"
   resolved "https://registry.yarnpkg.com/typescript/-/typescript-5.5.3.tgz#e1b0a3c394190838a0b168e771b0ad56a0af0faa"
   integrity sha512-/hreyEujaB0w76zKo6717l3L0o/qEUtRgdvUBvlkhoWeOVMjMuHNHk0BRBzikzuGDqNmPQbg5ifMEqsHLiIUcQ==
+
+typescript@~5.6.0-beta:
+  version "5.6.0-dev.20240729"
+  resolved "https://registry.yarnpkg.com/typescript/-/typescript-5.6.0-dev.20240729.tgz#ef2ea4fe3ffc6796843e15edd432d14991c4ffff"
+  integrity sha512-gkoeeiVub1uQcqWMcSlQWFJnbDkF1Hm316iUdGatuIo7O8q0Vis7zM1G3orXxjmoxJSWjuq0ENPM8GdYJAVikQ==
 
 uglify-js@^3.1.4:
   version "3.17.4"
