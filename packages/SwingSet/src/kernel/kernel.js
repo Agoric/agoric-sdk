@@ -56,7 +56,7 @@ function abbreviateReplacer(_, arg) {
 /**
  * Provide the kref of a vat's root object, as if it had been exported.
  *
- * @param {*} kernelKeeper  Kernel keeper managing persistent kernel state.
+ * @param {KernelKeeper} kernelKeeper  Kernel keeper managing persistent kernel state.
  * @param {string} vatID  Vat ID of the vat whose root kref is sought.
  *
  * @returns {string} the kref of the root object of the given vat.
