@@ -1,6 +1,6 @@
 # BundleStore
 
-The `kernelStorage.bundleStore` sub-store manages code bundles. These can be used to hold vat-worker supervisor code (eg `@endo/lockdown` bundle, or the `@agoric/swingset-xsnap-supervisor` package, which incorporates liveslots), or the initial vat code bundles (for both kernel-defined bundles like vat-comms or vat-timer, or for application-defined bundles like vat-zoe or the ZCF code). They can also hold bundles that will be loaded by userspace vat code later, like contract bundles.
+The `kernelStorage.bundleStore` sub-store manages code bundles. These can be used to hold vat-worker supervisor code (e.g. the [`@endo/lockdown`](https://github.com/endojs/endo/tree/master/packages/lockdown) bundle, or the [`@agoric/swingset-xsnap-supervisor` package](../../swingset-xsnap-supervisor), which incorporates liveslots), or the initial vat code bundles (for both kernel-defined bundles like vat-comms or vat-timer, or for application-defined bundles like vat-zoe or the ZCF code). It can also hold bundles that will be loaded later by userspace vat code, such as contract bundles.
 
 Each bundle is defined by a secure BundleID, which contains a version integer and a hash, with a format like `b0-123abc456def` or `b1-789ghi012` (but longer). This contains enough information to securely define the behavior of the code inside the bundle, and to identify the tools needed to load/evaluate it.
 
