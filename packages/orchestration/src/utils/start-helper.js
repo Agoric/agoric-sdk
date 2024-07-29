@@ -133,19 +133,24 @@ export const provideOrchestration = (
 
   const makeOrchestrator = pickFacet(makeOrchestratorKit, 'orchestrator');
 
-  const facade = makeOrchestrationFacade({
-    zcf,
-    zone: zones.orchestration,
-    makeRecorderKit,
-    makeOrchestrator,
-    asyncFlowTools,
-    vowTools,
-    ...remotePowers,
-  });
+  const makeOrchestratorTools = zone =>
+    makeOrchestrationFacade({
+      zone,
+      zcf,
+      makeRecorderKit,
+      makeOrchestrator,
+      asyncFlowTools,
+      vowTools,
+      ...remotePowers,
+    });
+
+  const facade = makeOrchestratorTools(zones.contract.subZone('orchestration'));
   return {
     ...facade,
+    makeOrchestratorTools,
     chainHub,
     vowTools,
+    asyncFlowTools,
     zoeTools,
     zone: zones.contract,
   };
@@ -180,6 +185,9 @@ export const withOrchestration =
       privateArgs,
       privateArgs.marshaller,
     );
-    return contractFn(zcf, privateArgs, zone, tools);
+    // all prepares happen, then we wake up asyncFlow
+    const result = await contractFn(zcf, privateArgs, zone, tools);
+    tools.asyncFlowTools.adminAsyncFlow.wakeAll();
+    return result;
   };
 harden(withOrchestration);

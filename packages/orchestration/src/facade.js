@@ -63,7 +63,7 @@ export const makeOrchestrationFacade = ({
     asyncFlowTools,
   });
 
-  const { prepareEndowment, asyncFlow, adminAsyncFlow } = asyncFlowTools;
+  const { prepareEndowment, asyncFlow } = asyncFlowTools;
 
   /**
    * @template HC - host context
@@ -76,21 +76,19 @@ export const makeOrchestrationFacade = ({
    */
   const orchestrate = (durableName, hostCtx, guestFn) => {
     const subZone = zone.subZone(durableName);
-
-    const hostOrc = makeOrchestrator();
-
-    const [wrappedOrc, wrappedCtx] = prepareEndowment(subZone, 'endowments', [
-      hostOrc,
-      hostCtx,
-    ]);
-
+    const [wrappedCtx] = prepareEndowment(subZone, 'endowments', [hostCtx]);
     const hostFn = asyncFlow(subZone, 'asyncFlow', guestFn);
 
     // cast because return could be arbitrary subtype
     const orcFn = /** @type {HostForGuest<GF>} */ (
-      (...args) => hostFn(wrappedOrc, wrappedCtx, ...args)
+      (...args) => {
+        // each invocation gets a new orchestrator
+        const hostOrc = makeOrchestrator();
+        // TODO: why are the types showing the guest types for arguments?
+        // @ts-expect-error XXX fix broken types
+        return hostFn(hostOrc, wrappedCtx, ...args);
+      }
     );
-
     return harden(orcFn);
   };
 
@@ -119,7 +117,6 @@ export const makeOrchestrationFacade = ({
     );
 
   return harden({
-    adminAsyncFlow,
     orchestrate,
     orchestrateAll,
   });

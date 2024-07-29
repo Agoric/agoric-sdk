@@ -484,13 +484,12 @@ export const prepareAsyncFlowTools = (outerZone, outerOptions = {}) => {
   // allowed anytime in the first crank. But there's currently no pleasant
   // way to postpone to a later crank.)
   // See https://github.com/Agoric/agoric-sdk/issues/9377
-  const allWokenP = E.when(null, () => adminAsyncFlow.wakeAll());
+  // const allWokenP = E.when(null, () => adminAsyncFlow.wakeAll());
 
   return harden({
     prepareAsyncFlowKit,
     asyncFlow,
     adminAsyncFlow,
-    allWokenP,
     prepareEndowment,
   });
 };

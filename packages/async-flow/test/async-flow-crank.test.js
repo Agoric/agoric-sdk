@@ -63,7 +63,7 @@ const testPlay2 = async (t, zone) => {
  */
 const testPlay3 = async (t, zone) => {
   const vowTools = prepareVowTools(zone);
-  const { asyncFlow, allWokenP } = prepareAsyncFlowTools(zone, {
+  const { asyncFlow, adminAsyncFlow } = prepareAsyncFlowTools(zone, {
     vowTools,
   });
 
@@ -71,10 +71,7 @@ const testPlay3 = async (t, zone) => {
 
   const guestFunc = async () => neverSettlesP;
   t.notThrows(() => asyncFlow(zone, 'guestFunc', guestFunc));
-  t.notThrowsAsync(
-    () => allWokenP,
-    'will actually throw due to crank bug #9377',
-  );
+  adminAsyncFlow.wakeAll();
 };
 
 test.serial('test durable first-crank hazard 1', async t => {
