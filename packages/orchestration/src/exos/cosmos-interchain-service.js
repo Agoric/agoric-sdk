@@ -1,8 +1,7 @@
 /** @file Orchestration service */
 
-import { Fail, b } from '@endo/errors';
 import { E } from '@endo/far';
-import { M } from '@endo/patterns';
+import { M, mustMatch } from '@endo/patterns';
 import { Shape as NetworkShape } from '@agoric/network';
 import { prepareChainAccountKit } from './chain-account-kit.js';
 import { prepareICQConnectionKit } from './icq-connection-kit.js';
@@ -26,17 +25,8 @@ const { Vow$ } = NetworkShape; // TODO #9611
 /**
  * @typedef {object} OrchestrationPowers
  * @property {Remote<PortAllocator>} portAllocator
- */
-
-/**
- * PowerStore is used so additional powers can be added on upgrade. See
- * [#7337](https://github.com/Agoric/agoric-sdk/issues/7337) for tracking on Exo
- * state migrations.
- *
- * @typedef {MapStore<
- *   keyof OrchestrationPowers,
- *   OrchestrationPowers[keyof OrchestrationPowers]
- * >} PowerStore
+ * @property {undefined} reserved reserve a state key for future use. can hold
+ *   an additional power or a record of powers
  */
 
 /** @typedef {MapStore<IBCConnectionID, ICQConnectionKit>} ICQConnectionStore */
@@ -44,16 +34,10 @@ const { Vow$ } = NetworkShape; // TODO #9611
 /** @typedef {ChainAccountKit | ICQConnectionKit} ConnectionKit */
 
 /**
- * @template {keyof OrchestrationPowers} K
- * @param {PowerStore} powers
- * @param {K} name
+ * @typedef {{
+ *   icqConnections: ICQConnectionStore;
+ * } & OrchestrationPowers} OrchestrationState
  */
-const getPower = (powers, name) => {
-  powers.has(name) || Fail`need powers.${b(name)} for this method`;
-  return /** @type {OrchestrationPowers[K]} */ (powers.get(name));
-};
-
-/** @typedef {{ powers: PowerStore; icqConnections: ICQConnectionStore }} OrchestrationState */
 
 /**
  * @param {Zone} zone
@@ -102,17 +86,17 @@ const prepareCosmosOrchestrationServiceKit = (
         ),
       }),
     },
-    /** @param {Partial<OrchestrationPowers>} [initialPowers] */
-    initialPowers => {
-      /** @type {PowerStore} */
-      const powers = zone.detached().mapStore('PowerStore');
-      if (initialPowers) {
-        for (const [name, power] of Object.entries(initialPowers)) {
-          powers.init(/** @type {keyof OrchestrationPowers} */ (name), power);
-        }
-      }
+    /** @param {Partial<OrchestrationPowers>} powers */
+    powers => {
+      mustMatch(powers?.portAllocator, M.remotable('PortAllocator'));
       const icqConnections = zone.detached().mapStore('ICQConnections');
-      return /** @type {OrchestrationState} */ ({ powers, icqConnections });
+      return harden(
+        /** @type {OrchestrationState} */ ({
+          icqConnections,
+          reserved: undefined,
+          ...powers,
+        }),
+      );
     },
     {
       requestICAChannelWatcher: {
@@ -203,7 +187,7 @@ const prepareCosmosOrchestrationServiceKit = (
             controllerConnectionId,
             opts,
           );
-          const portAllocator = getPower(this.state.powers, 'portAllocator');
+          const { portAllocator } = this.state;
           return watch(
             E(portAllocator).allocateICAControllerPort(),
             this.facets.requestICAChannelWatcher,
@@ -224,7 +208,7 @@ const prepareCosmosOrchestrationServiceKit = (
               .connection;
           }
           const remoteConnAddr = makeICQChannelAddress(controllerConnectionId);
-          const portAllocator = getPower(this.state.powers, 'portAllocator');
+          const { portAllocator } = this.state;
           return watch(
             // allocate a new Port for every Connection
             // TODO #9317 optimize ICQ port allocation
@@ -236,6 +220,13 @@ const prepareCosmosOrchestrationServiceKit = (
             },
           );
         },
+      },
+    },
+    {
+      stateShape: {
+        icqConnections: M.remotable('icqConnections mapStore'),
+        portAllocator: M.remotable('PortAllocator'),
+        reserved: M.any(),
       },
     },
   );
