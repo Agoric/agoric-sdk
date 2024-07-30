@@ -494,6 +494,8 @@ export const preparePacketTools = (zone, vowTools) => {
           }
           this.state.pending = 0;
           this.state.upcallQueue = null;
+          // FIXME when it returns undefined this causes an error:
+          // In "unsubscribeFromTransfers" method of (PacketToolsKit utils): result: undefined "[undefined]" - Must be a promise
           return watch(this.facets.utils.unsubscribeFromTransfers());
         },
         subscribeToTransfers() {
@@ -503,6 +505,8 @@ export const preparePacketTools = (zone, vowTools) => {
             return when(reg);
           }
           const { tap } = this.facets;
+          // XXX racy; fails if subscribeToTransfers is called while this promise is in flight
+          // e.g. 'Target "agoric1fakeLCAAddress" already registered'
           return when(E(lca).monitorTransfers(tap), r => {
             this.state.reg = r;
             return r;

@@ -21,9 +21,11 @@ import { makeHeapZone, type Zone } from '@agoric/zone';
 import { makeDurableZone } from '@agoric/zone/durable.js';
 import { E } from '@endo/far';
 import type { ExecutionContext } from 'ava';
+import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { registerKnownChains } from '../src/chain-info.js';
 import { prepareCosmosInterchainService } from '../src/exos/cosmos-interchain-service.js';
 import { setupFakeNetwork } from './network-fakes.js';
+import { buildVTransferEvent } from '../tools/ibc-mocks.js';
 
 export {
   makeFakeLocalchainBridge,
@@ -124,6 +126,27 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
 
   await registerKnownChains(agoricNamesAdmin, () => {});
 
+  let ibcSequenceNonce = 0n;
+  /** simulate incoming message as if the transfer completed over IBC */
+  const transmitTransferAck = async () => {
+    // assume this is called after each outgoing IBC transfer
+    ibcSequenceNonce += 1n;
+    // let the promise for the transfer start
+    await eventLoopIteration();
+    const lastMsgTransfer = localBridgeMessages.at(-1).messages[0];
+    await E(transferBridge).fromBridge(
+      buildVTransferEvent({
+        receiver: lastMsgTransfer.receiver,
+        sender: lastMsgTransfer.sender,
+        target: lastMsgTransfer.sender,
+        sourceChannel: lastMsgTransfer.sourceChannel,
+        sequence: ibcSequenceNonce,
+      }),
+    );
+    // let the bridge handler finish
+    await eventLoopIteration();
+  };
+
   return {
     bootstrap: {
       agoricNames,
@@ -164,6 +187,7 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
       pourPayment,
       inspectLocalBridge: () => harden([...localBridgeMessages]),
       inspectDibcBridge: () => E(ibcBridge).inspectDibcBridge(),
+      transmitTransferAck,
     },
   };
 };

@@ -474,10 +474,11 @@ export const makeSwingsetTestKit = async (
         }
       case BridgeId.PROVISION:
       case BridgeId.PROVISION_SMART_WALLET:
-      case BridgeId.VTRANSFER:
       case BridgeId.WALLET:
         console.warn('Bridge returning undefined for', bridgeId, ':', obj);
         return undefined;
+      case BridgeId.VTRANSFER:
+        throw Error('FIXME bridge support for vtransfer');
       case BridgeId.STORAGE:
         return storage.toStorage(obj);
       case BridgeId.VLOCALCHAIN:

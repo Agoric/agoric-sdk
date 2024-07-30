@@ -6,6 +6,7 @@ import { Shape as NetworkShape } from '@agoric/network';
 import { M } from '@agoric/vat-data';
 import { VowShape } from '@agoric/vow';
 import { E } from '@endo/far';
+
 import {
   ChainAddressShape,
   DenomAmountShape,
@@ -16,6 +17,10 @@ import {
 import { maxClockSkew } from '../utils/cosmos.js';
 import { orchestrationAccountMethods } from '../utils/orchestrationAccount.js';
 import { makeTimestampHelper } from '../utils/time.js';
+import {
+  preparePacketTools,
+  ICS20_TRANSFER_SUCCESS_RESULT,
+} from './packet-tools.js';
 
 /**
  * @import {HostOf} from '@agoric/async-flow';
@@ -24,18 +29,22 @@ import { makeTimestampHelper } from '../utils/time.js';
  * @import {RecorderKit, MakeRecorderKit} from '@agoric/zoe/src/contractSupport/recorder.js'.
  * @import {Zone} from '@agoric/zone';
  * @import {Remote} from '@agoric/internal';
+ * @import {Bytes} from '@agoric/network';
  * @import {InvitationMakers} from '@agoric/smart-wallet/src/types.js';
  * @import {TimerService, TimestampRecord} from '@agoric/time';
- * @import {Vow, VowTools} from '@agoric/vow';
- * @import {TypedJson, JsonSafe} from '@agoric/cosmic-proto';
- * @import {Matcher} from '@endo/patterns';
+ * @import {PromiseVow, EVow, Vow, VowTools} from '@agoric/vow';
+ * @import {TypedJson, JsonSafe, ResponseTo} from '@agoric/cosmic-proto';
+ * @import {Matcher, Pattern} from '@endo/patterns';
  * @import {ChainHub} from './chain-hub.js';
+ * @import {PacketTools} from './packet-tools.js';
  */
 
 const trace = makeTracer('LOA');
 
 const { Fail } = assert;
 const { Vow$ } = NetworkShape; // TODO #9611
+
+const EVow$ = shape => M.or(Vow$(shape), M.promise(/* shape */));
 
 /**
  * @typedef {object} LocalChainAccountNotification
@@ -45,6 +54,7 @@ const { Vow$ } = NetworkShape; // TODO #9611
 /**
  * @typedef {{
  *   topicKit: RecorderKit<LocalChainAccountNotification>;
+ *   packetTools: PacketTools;
  *   account: LocalChainAccount;
  *   address: ChainAddress;
  * }} State
@@ -57,9 +67,11 @@ const HolderI = M.interface('holder', {
   deposit: M.call(PaymentShape).returns(VowShape),
   withdraw: M.call(AmountShape).returns(Vow$(PaymentShape)),
   executeTx: M.call(M.arrayOf(M.record())).returns(Vow$(M.record())),
-  monitorTransfers: M.call(M.remotable('TransferTap')).returns(
-    Vow$(M.remotable('TargetRegistration')),
-  ),
+  waitForIBCAck: M.call(EVow$(M.remotable('PacketSender')))
+    .optional(M.any())
+    .returns(EVow$(M.string())),
+  matchFirstPacket: M.call(M.any()).returns(EVow$(M.any())),
+  monitorTransfers: M.call(M.remotable('TargetApp')).returns(EVow$(M.any())),
 });
 
 /** @type {{ [name: string]: [description: string, valueShape: Matcher] }} */
@@ -80,9 +92,14 @@ export const prepareLocalOrchestrationAccountKit = (
   makeRecorderKit,
   zcf,
   timerService,
-  { watch, allVows, asVow, when },
+  vowTools,
   chainHub,
 ) => {
+  const { watch, allVows, asVow, when } = vowTools;
+  const { makeTransferSender, makePacketTools } = preparePacketTools(
+    zone.subZone('packetTools'),
+    vowTools,
+  );
   const timestampHelper = makeTimestampHelper(timerService);
 
   /** Make an object wrapping an LCA with Zoe interfaces. */
@@ -116,15 +133,16 @@ export const prepareLocalOrchestrationAccountKit = (
           .optional(M.arrayOf(M.undefined()))
           .returns(M.any()),
       }),
-      returnVoidWatcher: M.interface('returnVoidWatcher', {
-        onFulfilled: M.call(M.any())
-          .optional(M.arrayOf(M.undefined()))
-          .returns(M.undefined()),
+      returnVoidWatcher: M.interface('transferResponseWatcher', {
+        onFulfilled: M.call(M.any()).returns(M.undefined()),
       }),
       getBalanceWatcher: M.interface('getBalanceWatcher', {
         onFulfilled: M.call(AmountShape)
           .optional(DenomShape)
           .returns(DenomAmountShape),
+      }),
+      verifyTransferSuccess: M.interface('verifyTransferSuccess', {
+        onFulfilled: M.call(M.any()).returns(),
       }),
       invitationMakers: M.interface('invitationMakers', {
         Delegate: M.call(M.string(), AmountShape).returns(M.promise()),
@@ -144,8 +162,9 @@ export const prepareLocalOrchestrationAccountKit = (
       const topicKit = makeRecorderKit(storageNode, PUBLIC_TOPICS.account[1]);
       // TODO determine what goes in vstorage https://github.com/Agoric/agoric-sdk/issues/9066
       void E(topicKit.recorder).write('');
+      const packetTools = makePacketTools(account);
 
-      return { account, address, topicKit };
+      return { account, address, topicKit, packetTools };
     },
     {
       invitationMakers: {
@@ -228,26 +247,34 @@ export const prepareLocalOrchestrationAccountKit = (
           [{ transferChannel }, timeoutTimestamp],
           { opts, amount, destination },
         ) {
-          return watch(
-            E(this.state.account).executeTx([
-              typedJson('/ibc.applications.transfer.v1.MsgTransfer', {
-                sourcePort: transferChannel.portId,
-                sourceChannel: transferChannel.channelId,
-                token: {
-                  amount: String(amount.value),
-                  denom: amount.denom,
-                },
-                sender: this.state.address.value,
-                receiver: destination.value,
-                timeoutHeight: opts?.timeoutHeight ?? {
-                  revisionHeight: 0n,
-                  revisionNumber: 0n,
-                },
-                timeoutTimestamp,
-                memo: opts?.memo ?? '',
-              }),
-            ]),
+          const transferMsg = typedJson(
+            '/ibc.applications.transfer.v1.MsgTransfer',
+            {
+              sourcePort: transferChannel.portId,
+              sourceChannel: transferChannel.channelId,
+              token: {
+                amount: String(amount.value),
+                denom: amount.denom,
+              },
+              sender: this.state.address.value,
+              receiver: destination.value,
+              timeoutHeight: opts?.timeoutHeight ?? {
+                revisionHeight: 0n,
+                revisionNumber: 0n,
+              },
+              timeoutTimestamp,
+              memo: opts?.memo ?? '',
+            },
           );
+
+          // Begin capturing packets, send the transfer packet, then return a
+          // vow for the acknowledgement data.
+          const { holder } = this.facets;
+          const sender = makeTransferSender(
+            /** @type {any} */ (holder),
+            transferMsg,
+          );
+          return holder.waitForIBCAck(sender);
         },
       },
       /**
@@ -264,15 +291,8 @@ export const prepareLocalOrchestrationAccountKit = (
           return results[0];
         },
       },
-      /**
-       * takes an array of results (from `executeEncodedTx`) and returns void
-       * since we are not interested in the result
-       */
       returnVoidWatcher: {
-        /**
-         * @param {unknown} _result
-         */
-        onFulfilled(_result) {
+        onFulfilled() {
           return undefined;
         },
       },
@@ -290,7 +310,27 @@ export const prepareLocalOrchestrationAccountKit = (
           return harden({ denom, value: natAmount.value });
         },
       },
+      verifyTransferSuccess: {
+        onFulfilled(ackData) {
+          const { result, error } = JSON.parse(ackData);
+          error === undefined || Fail`ICS20-1 transfer error ${error}`;
+          result === ICS20_TRANSFER_SUCCESS_RESULT ||
+            Fail`ICS20-1 transfer unsuccessful with ack result ${result}`;
+        },
+      },
       holder: {
+        /** @type {HostOf<PacketTools['waitForIBCAck']>} */
+        waitForIBCAck(sender, opts) {
+          return watch(E(this.state.packetTools).waitForIBCAck(sender, opts));
+        },
+        /** @type {HostOf<PacketTools['matchFirstPacket']>} */
+        matchFirstPacket(patternV) {
+          return watch(E(this.state.packetTools).matchFirstPacket(patternV));
+        },
+        /** @type {HostOf<LocalChainAccount['monitorTransfers']>} */
+        monitorTransfers(tap) {
+          return watch(E(this.state.packetTools).monitorTransfers(tap));
+        },
         /** @type {HostOf<OrchestrationAccountI['asContinuingOffer']>} */
         asContinuingOffer() {
           // @ts-expect-error XXX invitationMakers
@@ -464,15 +504,13 @@ export const prepareLocalOrchestrationAccountKit = (
                 ? 0n
                 : E(timestampHelper).getTimeoutTimestampNS());
 
+            // vow for the message response
             const transferV = watch(
               allVows([connectionInfoV, timeoutTimestampVowOrValue]),
               this.facets.transferWatcher,
               { opts, amount, destination },
             );
-            // FIXME https://github.com/Agoric/agoric-sdk/issues/9783
-            // don't resolve the vow until the transfer is confirmed on remote
-            // and reject vow if the transfer fails
-            return watch(transferV, this.facets.returnVoidWatcher);
+            return watch(transferV, this.facets.verifyTransferSuccess);
           });
         },
         /** @type {HostOf<OrchestrationAccountI['transferSteps']>} */
@@ -482,14 +520,11 @@ export const prepareLocalOrchestrationAccountKit = (
             throw Fail`not yet implemented`;
           });
         },
-        /** @type {HostOf<LocalChainAccount['monitorTransfers']>} */
-        monitorTransfers(tap) {
-          return watch(E(this.state.account).monitorTransfers(tap));
-        },
       },
     },
   );
   return makeLocalOrchestrationAccountKit;
 };
+
 /** @typedef {ReturnType<typeof prepareLocalOrchestrationAccountKit>} MakeLocalOrchestrationAccountKit */
 /** @typedef {ReturnType<MakeLocalOrchestrationAccountKit>} LocalOrchestrationAccountKit */

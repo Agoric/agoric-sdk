@@ -5,11 +5,16 @@ import { E } from '@endo/far';
 import path from 'path';
 import { mustMatch } from '@endo/patterns';
 import { makeIssuerKit } from '@agoric/ertp';
-import { inspectMapStore } from '@agoric/internal/src/testing-utils.js';
+import {
+  eventLoopIteration,
+  inspectMapStore,
+} from '@agoric/internal/src/testing-utils.js';
+import { inspect } from 'util';
 import { CosmosChainInfo, IBCConnectionInfo } from '../../src/cosmos-api.js';
 import { commonSetup } from '../supports.js';
 import { SingleAmountRecord } from '../../src/examples/sendAnywhere.contract.js';
 import { registerChain } from '../../src/chain-info.js';
+import { buildVTransferEvent } from '../../tools/ibc-mocks.js';
 
 const dirname = path.dirname(new URL(import.meta.url).pathname);
 
@@ -58,7 +63,7 @@ test('send using arbitrary chain info', async t => {
     bootstrap,
     commonPrivateArgs,
     brands: { ist },
-    utils: { inspectLocalBridge, pourPayment },
+    utils: { inspectLocalBridge, pourPayment, transmitTransferAck },
   } = await commonSetup(t);
   const vt = bootstrap.vowTools;
 
@@ -124,6 +129,7 @@ test('send using arbitrary chain info', async t => {
       { Send },
       { destAddr: 'hot1destAddr', chainName },
     );
+    await transmitTransferAck();
     await vt.when(E(userSeat).getOfferResult());
 
     const history = inspectLocalBridge();
@@ -157,6 +163,7 @@ test('send using arbitrary chain info', async t => {
       { Send },
       { destAddr: 'cosmos1destAddr', chainName: 'cosmoshub' },
     );
+    await transmitTransferAck();
     await vt.when(E(userSeat).getOfferResult());
     const history = inspectLocalBridge();
     const { messages, address: execAddr } = history.at(-1);
@@ -203,6 +210,7 @@ test('send using arbitrary chain info', async t => {
       { Send },
       { destAddr: 'hot1destAddr', chainName: 'hot' },
     );
+    await transmitTransferAck();
     await vt.when(E(userSeat).getOfferResult());
     const history = inspectLocalBridge();
     const { messages, address: execAddr } = history.at(-1);
