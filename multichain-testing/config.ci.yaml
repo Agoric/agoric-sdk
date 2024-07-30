@@ -110,5 +110,3 @@ registry:
   enabled: true
   ports:
     rest: 8081
-
-commit_sha: &commit_sha ${commit_sha}
