@@ -259,4 +259,3 @@ export const prepareCosmosInterchainService = (zone, vowTools) => {
 harden(prepareCosmosInterchainService);
 
 /** @typedef {ReturnType<typeof prepareCosmosInterchainService>} MakeCosmosInterchainService */
-/** @typedef {ReturnType<MakeCosmosInterchainService>} CosmosInterchainService */
