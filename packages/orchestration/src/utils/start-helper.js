@@ -42,6 +42,7 @@ import { makeZoeTools } from './zoe-tools.js';
  * @param {Baggage} baggage
  * @param {OrchestrationPowers} remotePowers
  * @param {Marshaller} marshaller
+ * @internal
  */
 export const provideOrchestration = (
   zcf,
