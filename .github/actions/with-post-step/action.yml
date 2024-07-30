@@ -1,0 +1,21 @@
+name: With Post Step
+
+description: >
+  JavaScript Action to run a main command and a subsequent post command.
+
+inputs:
+  main:
+    description: 'Primary command or script to execute.'
+    required: true
+  post:
+    description: 'Command or script to run after the main command.'
+    required: true
+  key:
+    description: 'State variable name to identify the post step.'
+    required: false
+    default: POST
+
+runs:
+  using: 'node20'
+  main: 'main.cjs'
+  post: 'main.cjs'

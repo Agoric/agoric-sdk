@@ -181,18 +181,29 @@ runs:
         mkdir -p node_modules/.cache/agoric
         date > node_modules/.cache/agoric/yarn-built
 
-    - name: git dirty check
-      working-directory: ${{ inputs.path }}
-      shell: bash
-      run: |-
-        set -x
-        # Fail if `git status` reports anything other than the following:
-        # * an untracked endo-sha.txt from above
-        # * work tree files that have been staged without further changes
-        #   (e.g., package.json or yarn.lock) as indicated by the Y position
-        #   in "XY PATH" being a space
-        if [ -n "$(git status --porcelain | grep -vE '^[?][?] endo-sha.txt$|^. '; true)" ]; then
-          git status
-          echo "Unexpected dirty git status" 1>&2
-          exit 1
-        fi
+    # Refs: https://github.com/orgs/community/discussions/45342
+    - name: Validate Git Tree in Root Directory
+      if: inputs.path == '.'
+      uses: ./.github/actions/with-post-step
+      with:
+        main: echo "Checking Git tree for changes in the root directory..."
+        post: |
+          set -x
+          if [ -n "$(git status --porcelain | grep -vE 'junit.xml$' | grep -vE '^[?][?] endo-sha.txt$|^.'; true)" ]; then
+            git status
+            echo "Unexpected dirty git status in default path" 1>&2
+            exit 1
+          fi
+
+    - name: Validate Git Tree in Agoric SDK Directory
+      if: inputs.path == './agoric-sdk'
+      uses: ./agoric-sdk/.github/actions/with-post-step
+      with:
+        main: echo "Checking Git tree for changes in the root directory..."
+        post: |
+          set -x
+          if [ -n "$(git status --porcelain | grep -vE 'junit.xml$' | grep -vE '^[?][?] endo-sha.txt$|^.'; true)" ]; then
+            git status
+            echo "Unexpected dirty git status in Agoric SDK path" 1>&2
+            exit 1
+          fi
