@@ -1,7 +1,9 @@
 chains:
   - id: agoriclocal
     name: agoric
-    image: ghcr.io/agoric/agoric-sdk:dev
+    build:
+      enabled: true
+      source: ${AGORIC_IMAGE_TAG}
     numValidators: 1
     env:
       - name: DEBUG
@@ -108,3 +110,5 @@ registry:
   enabled: true
   ports:
     rest: 8081
+
+commit_sha: &commit_sha ${commit_sha}
