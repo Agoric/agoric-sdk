@@ -23,7 +23,7 @@ import {
 
 const { Vow$ } = NetworkShape; // TODO #9611
 /**
- * @typedef {object} OrchestrationPowers
+ * @typedef {object} CosmosInterchainPowers
  * @property {Remote<PortAllocator>} portAllocator
  */
 
@@ -33,8 +33,8 @@ const { Vow$ } = NetworkShape; // TODO #9611
  * state migrations.
  *
  * @typedef {MapStore<
- *   keyof OrchestrationPowers,
- *   OrchestrationPowers[keyof OrchestrationPowers]
+ *   keyof CosmosInterchainPowers,
+ *   CosmosInterchainPowers[keyof CosmosInterchainPowers]
  * >} PowerStore
  */
 
@@ -43,13 +43,13 @@ const { Vow$ } = NetworkShape; // TODO #9611
 /** @typedef {ChainAccountKit | ICQConnectionKit} ConnectionKit */
 
 /**
- * @template {keyof OrchestrationPowers} K
+ * @template {keyof CosmosInterchainPowers} K
  * @param {PowerStore} powers
  * @param {K} name
  */
 const getPower = (powers, name) => {
   powers.has(name) || Fail`need powers.${b(name)} for this method`;
-  return /** @type {OrchestrationPowers[K]} */ (powers.get(name));
+  return /** @type {CosmosInterchainPowers[K]} */ (powers.get(name));
 };
 
 /** @typedef {{ powers: PowerStore; icqConnections: ICQConnectionStore }} OrchestrationState */
@@ -101,13 +101,16 @@ const prepareCosmosOrchestrationServiceKit = (
         ),
       }),
     },
-    /** @param {Partial<OrchestrationPowers>} [initialPowers] */
+    /** @param {Partial<CosmosInterchainPowers>} [initialPowers] */
     initialPowers => {
       /** @type {PowerStore} */
       const powers = zone.detached().mapStore('PowerStore');
       if (initialPowers) {
         for (const [name, power] of Object.entries(initialPowers)) {
-          powers.init(/** @type {keyof OrchestrationPowers} */ (name), power);
+          powers.init(
+            /** @type {keyof CosmosInterchainPowers} */ (name),
+            power,
+          );
         }
       }
       const icqConnections = zone.detached().mapStore('ICQConnections');

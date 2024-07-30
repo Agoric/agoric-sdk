@@ -16,17 +16,7 @@ import { prepareChainHubAdmin } from '../exos/chain-hub-admin.js';
  * @import {Zone} from '@agoric/zone';
  * @import {VBankAssetDetail} from '@agoric/vats/tools/board-utils.js';
  * @import {CosmosInterchainService} from '../types.js';
- * @import {OrchestrationTools} from '../utils/start-helper.js';
- */
-
-/**
- * @typedef {{
- *   localchain: Remote<LocalChain>;
- *   orchestrationService: Remote<CosmosInterchainService>;
- *   storageNode: Remote<StorageNode>;
- *   timerService: Remote<TimerService>;
- *   agoricNames: Remote<NameHub>;
- * }} OrchestrationPowers
+ * @import {OrchestrationPowers, OrchestrationTools} from '../utils/start-helper.js';
  */
 
 export const SingleAmountRecord = M.and(

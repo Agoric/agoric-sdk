@@ -3,7 +3,7 @@ import { prepareSwingsetVowTools } from '@agoric/vow/vat.js';
 import { makeDurableZone } from '@agoric/zone/durable.js';
 import { prepareCosmosInterchainService } from './exos/cosmos-interchain-service.js';
 
-/** @import {OrchestrationPowers} from './exos/cosmos-interchain-service.js' */
+/** @import {CosmosInterchainPowers} from './exos/cosmos-interchain-service.js' */
 
 export const buildRootObject = (_vatPowers, _args, baggage) => {
   const zone = makeDurableZone(baggage);
@@ -14,7 +14,7 @@ export const buildRootObject = (_vatPowers, _args, baggage) => {
   );
 
   return Far('OrchestrationVat', {
-    /** @param {Partial<OrchestrationPowers>} [initialPowers] */
+    /** @param {Partial<CosmosInterchainPowers>} [initialPowers] */
     makeCosmosInterchainService(initialPowers = {}) {
       return makeCosmosInterchainService(initialPowers);
     },
