@@ -6,6 +6,7 @@ import { Shape as NetworkShape } from '@agoric/network';
 import { prepareChainAccountKit } from './chain-account-kit.js';
 import { prepareICQConnectionKit } from './icq-connection-kit.js';
 import {
+  DEFAULT_ICQ_VERSION,
   makeICAChannelAddress,
   makeICQChannelAddress,
 } from '../utils/address.js';
@@ -29,7 +30,7 @@ const { Vow$ } = NetworkShape; // TODO #9611
  *   an additional power or a record of powers
  */
 
-/** @typedef {MapStore<IBCConnectionID, ICQConnectionKit>} ICQConnectionStore */
+/** @typedef {MapStore<string, ICQConnectionKit>} ICQConnectionStore */
 
 /** @typedef {ChainAccountKit | ICQConnectionKit} ConnectionKit */
 
@@ -38,6 +39,18 @@ const { Vow$ } = NetworkShape; // TODO #9611
  *   icqConnections: ICQConnectionStore;
  * } & OrchestrationPowers} OrchestrationState
  */
+
+/**
+ * Creates a key for the icqConnections mapStore based on connectionId and
+ * version
+ *
+ * @param {IBCConnectionID} controllerConnectionId
+ * @param {string} [version]
+ * @returns {string}
+ */
+const getICQConnectionKey = (controllerConnectionId, version) => {
+  return `${controllerConnectionId}:${version || DEFAULT_ICQ_VERSION}`;
+};
 
 /**
  * @param {Zone} zone
@@ -63,7 +76,7 @@ const prepareCosmosOrchestrationServiceKit = (
         onFulfilled: M.call(M.remotable('Port'))
           .optional({
             remoteConnAddr: M.string(),
-            controllerConnectionId: M.string(),
+            icqLookupKey: M.string(),
           })
           .returns(Vow$(NetworkShape.Connection)),
       }),
@@ -72,7 +85,7 @@ const prepareCosmosOrchestrationServiceKit = (
           .optional(
             M.splitRecord(
               { connectionKit: M.record(), returnFacet: M.string() },
-              { saveICQConnection: M.string() },
+              { icqLookupKey: M.string() },
             ),
           )
           .returns(M.remotable('ConnectionKit Holder facet')),
@@ -81,9 +94,9 @@ const prepareCosmosOrchestrationServiceKit = (
         makeAccount: M.call(M.string(), M.string(), M.string())
           .optional(M.record())
           .returns(Vow$(M.remotable('ChainAccountKit'))),
-        provideICQConnection: M.call(M.string()).returns(
-          Vow$(M.remotable('ICQConnection')),
-        ),
+        provideICQConnection: M.call(M.string())
+          .optional(M.string())
+          .returns(Vow$(M.remotable('ICQConnection'))),
       }),
     },
     /** @param {Partial<OrchestrationPowers>} powers */
@@ -125,10 +138,10 @@ const prepareCosmosOrchestrationServiceKit = (
          * @param {Port} port
          * @param {{
          *   remoteConnAddr: RemoteIbcAddress;
-         *   controllerConnectionId: IBCConnectionID;
+         *   icqLookupKey: string;
          * }} watchContext
          */
-        onFulfilled(port, { remoteConnAddr, controllerConnectionId }) {
+        onFulfilled(port, { remoteConnAddr, icqLookupKey }) {
           const connectionKit = makeICQConnectionKit(port);
           /** @param {ICQConnectionKit} kit */
           return watch(
@@ -137,7 +150,7 @@ const prepareCosmosOrchestrationServiceKit = (
             {
               connectionKit,
               returnFacet: 'connection',
-              saveICQConnection: controllerConnectionId,
+              icqLookupKey,
             },
           );
         },
@@ -153,16 +166,13 @@ const prepareCosmosOrchestrationServiceKit = (
          * @param {{
          *   connectionKit: ConnectionKit;
          *   returnFacet: string;
-         *   saveICQConnection?: IBCConnectionID;
+         *   icqLookupKey?: string;
          * }} watchContext
          */
-        onFulfilled(
-          _connection,
-          { connectionKit, returnFacet, saveICQConnection },
-        ) {
-          if (saveICQConnection) {
+        onFulfilled(_connection, { connectionKit, returnFacet, icqLookupKey }) {
+          if (icqLookupKey) {
             this.state.icqConnections.init(
-              saveICQConnection,
+              icqLookupKey,
               /** @type {ICQConnectionKit} */ (connectionKit),
             );
           }
@@ -199,15 +209,22 @@ const prepareCosmosOrchestrationServiceKit = (
         },
         /**
          * @param {IBCConnectionID} controllerConnectionId
+         * @param {string} [version]
          * @returns {Vow<ICQConnection> | ICQConnection}
          */
-        provideICQConnection(controllerConnectionId) {
-          if (this.state.icqConnections.has(controllerConnectionId)) {
+        provideICQConnection(controllerConnectionId, version) {
+          const icqLookupKey = getICQConnectionKey(
+            controllerConnectionId,
+            version,
+          );
+          if (this.state.icqConnections.has(icqLookupKey)) {
             // TODO #9281 do not return synchronously. see https://github.com/Agoric/agoric-sdk/pull/9454#discussion_r1626898694
-            return this.state.icqConnections.get(controllerConnectionId)
-              .connection;
+            return this.state.icqConnections.get(icqLookupKey).connection;
           }
-          const remoteConnAddr = makeICQChannelAddress(controllerConnectionId);
+          const remoteConnAddr = makeICQChannelAddress(
+            controllerConnectionId,
+            version,
+          );
           const { portAllocator } = this.state;
           return watch(
             // allocate a new Port for every Connection
@@ -216,7 +233,7 @@ const prepareCosmosOrchestrationServiceKit = (
             this.facets.requestICQChannelWatcher,
             {
               remoteConnAddr,
-              controllerConnectionId,
+              icqLookupKey,
             },
           );
         },

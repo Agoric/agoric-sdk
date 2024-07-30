@@ -46,14 +46,16 @@ export const makeICAChannelAddress = (
 };
 harden(makeICAChannelAddress);
 
+export const DEFAULT_ICQ_VERSION = 'icq-1';
+
 /**
  * @param {IBCConnectionID} controllerConnectionId
- * @param {{ version?: string }} [opts]
+ * @param {string} version defaults to icq-1
  * @returns {RemoteIbcAddress}
  */
 export const makeICQChannelAddress = (
   controllerConnectionId,
-  { version = 'icq-1' } = {},
+  version = DEFAULT_ICQ_VERSION,
 ) => {
   controllerConnectionId || Fail`controllerConnectionId is required`;
   return `/ibc-hop/${controllerConnectionId}/ibc-port/icqhost/unordered/${version}`;

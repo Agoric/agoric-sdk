@@ -16,12 +16,14 @@ import { commonSetup } from './supports.js';
 import { ChainAddressShape } from '../src/typeGuards.js';
 import { tryDecodeResponse } from '../src/utils/cosmos.js';
 
+const CHAIN_ID = 'cosmoshub-99';
+const HOST_CONNECTION_ID = 'connection-0';
+const CONTROLLER_CONNECTION_ID = 'connection-1';
+
 test('makeICQConnection returns an ICQConnection', async t => {
   const {
     bootstrap: { cosmosInterchainService },
   } = await commonSetup(t);
-
-  const CONTROLLER_CONNECTION_ID = 'connection-0';
 
   const icqConnection = await E(cosmosInterchainService).provideICQConnection(
     CONTROLLER_CONNECTION_ID,
@@ -64,11 +66,25 @@ test('makeICQConnection returns an ICQConnection', async t => {
   t.like(QueryBalanceResponse.decode(decodeBase64(result.key)), {
     balance: { amount: '0', denom: 'uatom' },
   });
-});
 
-const CHAIN_ID = 'cosmoshub-99';
-const HOST_CONNECTION_ID = 'connection-0';
-const CONTROLLER_CONNECTION_ID = 'connection-1';
+  const icqConnection3 = await E(cosmosInterchainService).provideICQConnection(
+    CONTROLLER_CONNECTION_ID,
+    'icq-2',
+  );
+  const localAddr3 = await E(icqConnection3).getLocalAddress();
+  t.not(
+    localAddr3,
+    localAddr2,
+    'non default version results in a new connection',
+  );
+
+  const icqConnection4 = await E(cosmosInterchainService).provideICQConnection(
+    CONTROLLER_CONNECTION_ID,
+    'icq-2',
+  );
+  const localAddr4 = await E(icqConnection4).getLocalAddress();
+  t.is(localAddr3, localAddr4, 'custom version is idempotent');
+});
 
 test('makeAccount returns a ChainAccount', async t => {
   const {
