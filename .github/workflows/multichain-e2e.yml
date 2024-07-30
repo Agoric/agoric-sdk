@@ -7,8 +7,6 @@ on:
 jobs:
   multichain-e2e:
     runs-on: ubuntu-latest-16core
-    env:
-      AGORIC_IMAGE_TAG: ${{ github.sha }}
 
     steps:
       - uses: actions/checkout@v4
@@ -37,6 +35,9 @@ jobs:
       - name: Lint @agoric/multichain-testing
         run: yarn lint
         working-directory: ./agoric-sdk/multichain-testing
+
+      - name: Update config.ci.yaml with commit SHA
+        run: sed -i 's|${AGORIC_IMAGE_TAG}|${{ github.sha }}|' ./agoric-sdk/multichain-testing/config.ci.yaml
 
       - name: Setup Starship Infrastructure
         id: starship-infra
