@@ -60,7 +60,7 @@ const getICQConnectionKey = (controllerConnectionId, version) => {
  */
 const prepareCosmosOrchestrationServiceKit = (
   zone,
-  { watch },
+  { watch, asVow },
   makeChainAccountKit,
   makeICQConnectionKit,
 ) =>
@@ -218,8 +218,9 @@ const prepareCosmosOrchestrationServiceKit = (
             version,
           );
           if (this.state.icqConnections.has(icqLookupKey)) {
-            // TODO #9281 do not return synchronously. see https://github.com/Agoric/agoric-sdk/pull/9454#discussion_r1626898694
-            return this.state.icqConnections.get(icqLookupKey).connection;
+            return asVow(
+              () => this.state.icqConnections.get(icqLookupKey).connection,
+            );
           }
           const remoteConnAddr = makeICQChannelAddress(
             controllerConnectionId,
