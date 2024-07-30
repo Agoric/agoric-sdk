@@ -13,7 +13,7 @@ import {
   makeFakeLocalchainBridge,
   makeFakeTransferBridge,
 } from '@agoric/vats/tools/fake-bridge.js';
-import { prepareVowTools } from '@agoric/vow';
+import { prepareSwingsetVowTools } from '@agoric/vow/vat.js';
 import type { Installation } from '@agoric/zoe/src/zoeService/utils.js';
 import { buildZoeManualTimer } from '@agoric/zoe/tools/manualTimer.js';
 import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
@@ -69,7 +69,7 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
     }),
   );
 
-  const vowTools = prepareVowTools(rootZone.subZone('vows'));
+  const vowTools = prepareSwingsetVowTools(rootZone.subZone('vows'));
 
   const transferBridge = makeFakeTransferBridge(rootZone);
   const { makeBridgeTargetKit } = prepareBridgeTargetModule(
@@ -90,9 +90,9 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
   finisher.useRegistry(bridgeTargetKit.targetRegistry);
   await E(transferBridge).initHandler(bridgeTargetKit.bridgeHandler);
 
-  const localBrigeMessages = [] as any[];
+  const localBridgeMessages = [] as any[];
   const localchainBridge = makeFakeLocalchainBridge(rootZone, obj =>
-    localBrigeMessages.push(obj),
+    localBridgeMessages.push(obj),
   );
   const localchain = prepareLocalChainTools(
     rootZone.subZone('localchain'),
@@ -162,7 +162,7 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
     },
     utils: {
       pourPayment,
-      inspectLocalBridge: () => harden([...localBrigeMessages]),
+      inspectLocalBridge: () => harden([...localBridgeMessages]),
       inspectDibcBridge: () => E(ibcBridge).inspectDibcBridge(),
     },
   };

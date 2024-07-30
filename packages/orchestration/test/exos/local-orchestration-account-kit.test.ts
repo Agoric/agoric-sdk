@@ -2,7 +2,7 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { AmountMath } from '@agoric/ertp';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
-import { heapVowE as E } from '@agoric/vow/vat.js';
+import { heapVowE as VE } from '@agoric/vow/vat.js';
 import { TargetApp } from '@agoric/vats/src/bridge-target.js';
 import { ChainAddress } from '../../src/orchestration-api.js';
 import { NANOSECONDS_PER_SECOND } from '../../src/utils/time.js';
@@ -25,13 +25,13 @@ test('deposit, withdraw', async t => {
   const oneHundredStakePmt = await utils.pourPayment(stake.units(100));
 
   t.log('deposit 100 bld to account');
-  await E(account).deposit(oneHundredStakePmt);
+  await VE(account).deposit(oneHundredStakePmt);
   // FIXME #9211
   // t.deepEqual(await E(account).getBalance('ubld'), stake.units(100));
 
   // XXX races in the bridge
   await eventLoopIteration();
-  const withdrawal1 = await E(account).withdraw(stake.units(50));
+  const withdrawal1 = await VE(account).withdraw(stake.units(50));
   t.true(
     AmountMath.isEqual(
       await stake.issuer.getAmountOf(withdrawal1),
@@ -40,16 +40,16 @@ test('deposit, withdraw', async t => {
   );
 
   await t.throwsAsync(
-    E(account).withdraw(stake.units(51)),
+    VE(account).withdraw(stake.units(51)),
     undefined,
     'fails to overwithdraw',
   );
   await t.notThrowsAsync(
-    E(account).withdraw(stake.units(50)),
+    VE(account).withdraw(stake.units(50)),
     'succeeeds at exactly empty',
   );
   await t.throwsAsync(
-    E(account).withdraw(stake.make(1n)),
+    VE(account).withdraw(stake.make(1n)),
     undefined,
     'fails to overwithdraw',
   );
@@ -66,7 +66,7 @@ test('delegate, undelegate', async t => {
     utils,
   } = common;
 
-  await E(account).deposit(await utils.pourPayment(bld.units(100)));
+  await VE(account).deposit(await utils.pourPayment(bld.units(100)));
 
   const validatorAddress = 'agoric1validator1';
 
@@ -74,8 +74,8 @@ test('delegate, undelegate', async t => {
   // 1. these succeed even if funds aren't available
   // 2. there are no return values
   // 3. there are no side-effects such as assets being locked
-  await E(account).delegate(validatorAddress, bld.units(999));
-  const undelegateP = E(account).undelegate(validatorAddress, bld.units(999));
+  await VE(account).delegate(validatorAddress, bld.units(999));
+  const undelegateP = VE(account).undelegate(validatorAddress, bld.units(999));
   const completionTime = UNBOND_PERIOD_SECONDS + maxClockSkew;
 
   const notTooSoon = Promise.race([
@@ -106,7 +106,7 @@ test('transfer', async t => {
   const oneHundredStakePmt = await utils.pourPayment(stake.units(100));
 
   t.log('deposit 100 bld to account');
-  await E(account).deposit(oneHundredStakePmt);
+  await VE(account).deposit(oneHundredStakePmt);
   // FIXME #9211
   // t.deepEqual(await E(account).getBalance('ubld'), stake.units(100));
 
@@ -118,19 +118,19 @@ test('transfer', async t => {
 
   // TODO #9211, support ERTP amounts
   t.log('ERTP Amounts not yet supported for AmountArg');
-  await t.throwsAsync(() => E(account).transfer(stake.units(1), destination), {
+  await t.throwsAsync(() => VE(account).transfer(stake.units(1), destination), {
     message: 'ERTP Amounts not yet supported',
   });
 
   t.log('.transfer() 1 bld to cosmos using DenomAmount');
-  const transferResp = await E(account).transfer(
+  const transferResp = await VE(account).transfer(
     { denom: 'ubld', value: 1_000_000n },
     destination,
   );
   t.is(transferResp, undefined, 'Successful transfer returns Promise<void>.');
 
   await t.throwsAsync(
-    () => E(account).transfer({ denom: 'ubld', value: 504n }, destination),
+    () => VE(account).transfer({ denom: 'ubld', value: 504n }, destination),
     {
       message: 'simulated unexpected MsgTransfer packet timeout',
     },
@@ -142,14 +142,15 @@ test('transfer', async t => {
     encoding: 'bech32',
   };
   await t.throwsAsync(
-    () => E(account).transfer({ denom: 'ubld', value: 1n }, unknownDestination),
+    () =>
+      VE(account).transfer({ denom: 'ubld', value: 1n }, unknownDestination),
     { message: /connection not found: agoric-3<->fakenet/ },
     'cannot create transfer msg with unknown chainId',
   );
 
   await t.notThrowsAsync(
     () =>
-      E(account).transfer({ denom: 'ubld', value: 10n }, destination, {
+      VE(account).transfer({ denom: 'ubld', value: 10n }, destination, {
         memo: 'hello',
       }),
     'can create transfer msg with memo',
@@ -158,7 +159,7 @@ test('transfer', async t => {
 
   await t.notThrowsAsync(
     () =>
-      E(account).transfer({ denom: 'ubld', value: 10n }, destination, {
+      VE(account).transfer({ denom: 'ubld', value: 10n }, destination, {
         // sets to current time, which shouldn't work in a real env
         timeoutTimestamp: BigInt(new Date().getTime()) * NANOSECONDS_PER_SECOND,
       }),
@@ -167,7 +168,7 @@ test('transfer', async t => {
 
   await t.notThrowsAsync(
     () =>
-      E(account).transfer({ denom: 'ubld', value: 10n }, destination, {
+      VE(account).transfer({ denom: 'ubld', value: 10n }, destination, {
         timeoutHeight: { revisionHeight: 100n, revisionNumber: 1n },
       }),
     'accepts custom timeoutHeight',
@@ -193,12 +194,12 @@ test('monitor transfers', async t => {
     },
   });
 
-  const { value: target } = await E(account).getAddress();
-  const appRegistration = await E(account).monitorTransfers(tap);
+  const { value: target } = await VE(account).getAddress();
+  const appRegistration = await VE(account).monitorTransfers(tap);
 
   // simulate upcall from golang to VM
   const simulateIncomingTransfer = async () =>
-    E(transferBridge).fromBridge(
+    VE(transferBridge).fromBridge(
       buildVTransferEvent({
         receiver: target,
       }),
