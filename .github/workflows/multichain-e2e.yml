@@ -37,7 +37,8 @@ jobs:
         working-directory: ./agoric-sdk/multichain-testing
 
       - name: Update config.ci.yaml with commit SHA
-        run: sed -i 's|${AGORIC_IMAGE_TAG}|'"$(git rev-parse HEAD)"'|' ./agoric-sdk/multichain-testing/config.ci.yaml
+        run: sed -i 's|${AGORIC_IMAGE_TAG}|'"$(git rev-parse HEAD)"'|' ./multichain-testing/config.ci.yaml
+        working-directory: ./agoric-sdk
 
       - name: Setup Starship Infrastructure
         id: starship-infra
