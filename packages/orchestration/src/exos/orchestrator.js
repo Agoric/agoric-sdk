@@ -23,7 +23,7 @@ import {
  * @import {RecorderKit, MakeRecorderKit} from '@agoric/zoe/src/contractSupport/recorder.js'.
  * @import {Remote} from '@agoric/internal';
  * @import {PickFacet} from '@agoric/swingset-liveslots';
- * @import {CosmosInterchainService} from './cosmos-interchain-service.js';
+ * @import {CosmosInterchainService} from '../types.js';
  * @import {MakeLocalOrchestrationAccountKit} from './local-orchestration-account.js';
  * @import {MakeLocalChainFacade} from './local-chain-facade.js';
  * @import {MakeRemoteChainFacade} from './remote-chain-facade.js';

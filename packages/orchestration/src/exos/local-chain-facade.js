@@ -14,7 +14,7 @@ import { ChainFacadeI } from '../typeGuards.js';
  * @import {Remote} from '@agoric/internal';
  * @import {LocalChain, LocalChainAccount} from '@agoric/vats/src/localchain.js';
  * @import {Vow, VowTools} from '@agoric/vow';
- * @import {CosmosInterchainService} from './cosmos-interchain-service.js';
+ * @import {CosmosInterchainService} from '../types.js';
  * @import {LocalOrchestrationAccountKit, MakeLocalOrchestrationAccountKit} from './local-orchestration-account.js';
  * @import {ChainAddress, ChainInfo, CosmosChainInfo, IBCConnectionInfo, OrchestrationAccount} from '../types.js';
  */

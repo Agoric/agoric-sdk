@@ -20,7 +20,7 @@ import { makeZoeTools } from './zoe-tools.js';
  * @import {NameHub} from '@agoric/vats';
  * @import {Remote} from '@agoric/vow';
  * @import {Zone} from '@agoric/zone';
- * @import {CosmosInterchainService} from '../exos/cosmos-interchain-service.js';
+ * @import {CosmosInterchainService} from '../types.js';
  */
 
 /**

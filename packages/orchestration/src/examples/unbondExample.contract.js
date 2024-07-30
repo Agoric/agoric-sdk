@@ -8,7 +8,7 @@ import { withOrchestration } from '../utils/start-helper.js';
  * @import {NameHub} from '@agoric/vats';
  * @import {Remote} from '@agoric/internal';
  * @import {Zone} from '@agoric/zone';
- * @import {CosmosInterchainService} from '../exos/cosmos-interchain-service.js';
+ * @import {CosmosInterchainService} from '../types.js';
  * @import {OrchestrationTools} from '../utils/start-helper.js';
  */
 
