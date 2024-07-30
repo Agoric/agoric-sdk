@@ -7,15 +7,19 @@ import { Fail } from '@endo/errors';
  */
 
 /**
+ * @typedef {object} ICAChannelAddressOpts
+ * @property {string} [encoding='proto3'] message encoding format for the
+ *   channel
+ * @property {'ordered' | 'unordered'} [ordering='ordered'] channel ordering.
+ *   currently only `ordered` is supported for ics27-1
+ * @property {string} [txType='sdk_multi_msg'] default is `sdk_multi_msg`
+ * @property {string} [version='ics27-1'] default is `ics27-1`
+ */
+
+/**
  * @param {IBCConnectionID} hostConnectionId Counterparty Connection ID
  * @param {IBCConnectionID} controllerConnectionId Self Connection ID
- * @param {object} [opts]
- * @param {string} [opts.encoding] - message encoding format for the channel.
- *   default is `proto3`
- * @param {'ordered' | 'unordered'} [opts.ordering] - channel ordering.
- *   currently only `ordered` is supported for ics27-1
- * @param {string} [opts.txType] - default is `sdk_multi_msg`
- * @param {string} [opts.version] - default is `ics27-1`
+ * @param {ICAChannelAddressOpts} [opts]
  * @returns {RemoteIbcAddress}
  */
 export const makeICAChannelAddress = (

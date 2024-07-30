@@ -66,14 +66,14 @@ test('makeICQConnection returns an ICQConnection', async t => {
   });
 });
 
+const CHAIN_ID = 'cosmoshub-99';
+const HOST_CONNECTION_ID = 'connection-0';
+const CONTROLLER_CONNECTION_ID = 'connection-1';
+
 test('makeAccount returns a ChainAccount', async t => {
   const {
     bootstrap: { cosmosInterchainService },
   } = await commonSetup(t);
-
-  const CHAIN_ID = 'cosmoshub-99';
-  const HOST_CONNECTION_ID = 'connection-0';
-  const CONTROLLER_CONNECTION_ID = 'connection-1';
 
   const account = await E(cosmosInterchainService).makeAccount(
     CHAIN_ID,
@@ -132,4 +132,33 @@ test('makeAccount returns a ChainAccount', async t => {
     },
     'cannot execute transaction if connection is closed',
   );
+});
+
+test('makeAccount accepts opts (version, ordering, encoding)', async t => {
+  const {
+    bootstrap: { cosmosInterchainService },
+  } = await commonSetup(t);
+
+  const account = await E(cosmosInterchainService).makeAccount(
+    CHAIN_ID,
+    HOST_CONNECTION_ID,
+    CONTROLLER_CONNECTION_ID,
+    { version: 'ics27-2', ordering: 'unordered', encoding: 'json' },
+  );
+  const [localAddr, remoteAddr] = await Promise.all([
+    E(account).getLocalAddress(),
+    E(account).getRemoteAddress(),
+  ]);
+  t.log({
+    localAddr,
+    remoteAddr,
+  });
+  for (const addr of [localAddr, remoteAddr]) {
+    t.regex(addr, /unordered/, 'remote address contains unordered ordering');
+    t.regex(
+      addr,
+      /"version":"ics27-2"(.*)"encoding":"json"/,
+      'remote address contains version and encoding in version string',
+    );
+  }
 });

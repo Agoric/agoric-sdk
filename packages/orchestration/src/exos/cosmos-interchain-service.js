@@ -19,6 +19,7 @@ import {
  * @import {RemoteIbcAddress} from '@agoric/vats/tools/ibc-utils.js';
  * @import {Vow, VowTools} from '@agoric/vow';
  * @import {ICQConnection, IcaAccount, ICQConnectionKit, ChainAccountKit} from '../types.js';
+ * @import {ICAChannelAddressOpts} from '../utils/address.js';
  */
 
 const { Vow$ } = NetworkShape; // TODO #9611
@@ -93,9 +94,9 @@ const prepareCosmosOrchestrationServiceKit = (
           .returns(M.remotable('ConnectionKit Holder facet')),
       }),
       public: M.interface('CosmosInterchainService', {
-        makeAccount: M.call(M.string(), M.string(), M.string()).returns(
-          Vow$(M.remotable('ChainAccountKit')),
-        ),
+        makeAccount: M.call(M.string(), M.string(), M.string())
+          .optional(M.record())
+          .returns(Vow$(M.remotable('ChainAccountKit'))),
         provideICQConnection: M.call(M.string()).returns(
           Vow$(M.remotable('ICQConnection')),
         ),
@@ -192,12 +193,15 @@ const prepareCosmosOrchestrationServiceKit = (
          * @param {IBCConnectionID} hostConnectionId the counterparty
          *   connection_id
          * @param {IBCConnectionID} controllerConnectionId self connection_id
+         * @param {ICAChannelAddressOpts} [opts] optional to configure the
+         *   channel address, such as version and ordering
          * @returns {Vow<IcaAccount>}
          */
-        makeAccount(chainId, hostConnectionId, controllerConnectionId) {
+        makeAccount(chainId, hostConnectionId, controllerConnectionId, opts) {
           const remoteConnAddr = makeICAChannelAddress(
             hostConnectionId,
             controllerConnectionId,
+            opts,
           );
           const portAllocator = getPower(this.state.powers, 'portAllocator');
           return watch(
