@@ -13,7 +13,7 @@ import { withOrchestration } from '../utils/start-helper.js';
  * @import {CosmosInterchainService} from '../types.js';
  * @import {NameHub} from '@agoric/vats';
  * @import {Zone} from '@agoric/zone';
- * @import {OrchestrationTools} from '../utils/start-helper.js';
+ * @import {OrchestrationPowers, OrchestrationTools} from '@agoric/orchestration';
  */
 
 /**

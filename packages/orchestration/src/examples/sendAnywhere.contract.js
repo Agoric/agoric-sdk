@@ -15,8 +15,7 @@ import { prepareChainHubAdmin } from '../exos/chain-hub-admin.js';
  * @import {Remote, Vow} from '@agoric/vow';
  * @import {Zone} from '@agoric/zone';
  * @import {VBankAssetDetail} from '@agoric/vats/tools/board-utils.js';
- * @import {CosmosInterchainService} from '../types.js';
- * @import {OrchestrationPowers, OrchestrationTools} from '../utils/start-helper.js';
+ * @import {OrchestrationPowers, OrchestrationTools} from '@agoric/orchestration';
  */
 
 export const SingleAmountRecord = M.and(

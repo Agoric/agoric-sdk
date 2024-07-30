@@ -15,8 +15,7 @@ import * as flows from './auto-stake-it.flows.js';
  * @import {NameHub} from '@agoric/vats';
  * @import {Remote} from '@agoric/vow';
  * @import {Zone} from '@agoric/zone';
- * @import {CosmosInterchainService} from '@agoric/orchestration';
- * @import {OrchestrationPowers, OrchestrationTools} from '../utils/start-helper.js';
+ * @import {OrchestrationPowers, OrchestrationTools} from '@agoric/orchestration';
  */
 
 /**

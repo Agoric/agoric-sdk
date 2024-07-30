@@ -10,8 +10,7 @@ import * as flows from './basic-flows.flows.js';
 
 /**
  * @import {Zone} from '@agoric/zone';
- * @import {OrchestrationPowers} from '../utils/start-helper.js';
- * @import {OrchestrationTools} from '../utils/start-helper.js';
+ * @import {OrchestrationPowers, OrchestrationTools} from '@agoric/orchestration';
  */
 
 /**

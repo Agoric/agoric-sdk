@@ -2,6 +2,7 @@ import { M } from '@endo/patterns';
 import { withOrchestration } from '../utils/start-helper.js';
 
 /**
+ * @import {OrchestrationPowers, OrchestrationTools} from '@agoric/orchestration';
  * @import {Orchestrator, OrchestrationFlow} from '../types.js'
  * @import {TimerService} from '@agoric/time';
  * @import {LocalChain} from '@agoric/vats/src/localchain.js';
@@ -9,7 +10,6 @@ import { withOrchestration } from '../utils/start-helper.js';
  * @import {Remote} from '@agoric/internal';
  * @import {Zone} from '@agoric/zone';
  * @import {CosmosInterchainService} from '../types.js';
- * @import {OrchestrationTools} from '../utils/start-helper.js';
  */
 
 /**
