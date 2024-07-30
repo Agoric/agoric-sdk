@@ -43,6 +43,8 @@ import { makeZoeTools } from './zoe-tools.js';
  * @param {Baggage} baggage
  * @param {OrchestrationPowers} remotePowers
  * @param {Marshaller} marshaller
+ * @returns {(facade: OrchestrationFacade, chainHub: ChainHub, vowTools: VowTools, zoeTools: ZoeTools, zone: Zone} ochestration 
+ * tools including facade, chainHub, vowTools, zoeTools, and contract subzone.
  */
 export const provideOrchestration = (
   zcf,
