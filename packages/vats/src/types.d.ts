@@ -142,9 +142,9 @@ export type IBCPacket = {
   source_port: IBCPortID;
   destination_channel: IBCChannelID;
   destination_port: IBCPortID;
-  sequence?: number;
-  timeout_height?: number;
-  timeout_timestamp?: number;
+  sequence?: PacketSDKType['sequence'];
+  timeout_height?: PacketSDKType['timeout_height'];
+  timeout_timestamp?: PacketSDKType['timeout_timestamp'];
 };
 
 export type IBCCounterParty = {
