@@ -1,56 +1,123 @@
 # Exo structure
 
-As of 2024-05-29…
+Last verified 2024-07-31
 
 ```mermaid
 classDiagram
 
 %% Orchestration vat business logic (Zoe)
-    LCAKit --* LocalchainAccount
-    ICQConnectionKit --* Port
-    ICQConnectionKit --* Connection
-    IcaAccountKit --* Port
-    IcaAccountKit --* Connection
-    StakingAccountKit --* IcaAccount
+    ICQConnection --* Port
+    ICQConnection --* Connection
+    IcaAccount --* Port
+    IcaAccount --* Connection
+    IcaAccount --* CosmosInterchainService
+    ICQConnection --* CosmosInterchainService
+    CosmosInterchainService --* PortAllocator
+    PortAllocator --* NetworkVat
+    LocalChainAccount --* LocalChainVat
 
-    class IcaAccountKit {
+    class IcaAccount {
       port: Port
       connection: Connection
       localAddress: LocalIbcAddress
       requestedRemoteAddress: string
       remoteAddress: RemoteIbcAddress
       chainAddress: ChainAddress
+      getAddress()
+      getLocalAddress()
+      getRemoteAddress()
+      getPort()
+      executeTx()
+      executeEncodedTx()
+      close()
     }
-    class ICQConnectionKit {
+    class ICQConnection {
       port: Port
       connection: Connection
       localAddress: LocalIbcAddress
       remoteAddress: RemoteIbcAddress
+      getLocalAddress()
+      getRemoteAddress()
+      query()
     }
-    class StakingAccountKit {
-      chainAddress: ChainAddress 
-      bondDenom: string 
-      account: ICAAccount 
-      timer: Timer
-      topicKit: TopicKit
-      makeTransferInvitation()
+
+    class CosmosInterchainService {
+      portAllocator: PortAllocator
+      icqConnections: MapStore<ConnectionVersionKey, ICQConnection>
+      sharedICQPort: Port
+      makeAccount()
+      provideICQConnection()
     }
 
 %% In other vats
-    class LCAKit {
-        account: LocalChainAccount
-        address: ChainAddress
-        topicKit: RecorderKit<LocalChainAccountNotification>
+    class Port {
+      getLocalAddress()
+      addListener()
+      connect()
+      removeListener()
+      revoke()
     }
-    class LocalchainAccount {
-        executeTx()
-        deposit()
-        withdraw()
+
+    class Connection {
+      getLocalAddress()
+      getRemoteAddress()
+      send()
+      close()
     }
-    class IcaAccount {
-        executeTx()
-        deposit()
-        getPurse()
-        close()
+
+    class PortAllocator {
+      allocateCustomIBCPort()
+      allocateICAControllerPort()
+      allocateICQControllerPort()
+    }
+
+    class LocalChainAccount {
+      deposit()
+      executeTx()
+      getBalance()
+      withdraw()
+      executeTx()
+      monitorTransfers()
+    }
+
+%% In api consumer vats
+  
+    LocalOrchestrationAccount --* LocalChainAccount
+    CosmosOrchestrationAccount --* IcaAccount
+    
+    class LocalOrchestrationAccount {
+      account: LocalChainAccount
+      address: ChainAddress
+      topicKit: RecorderKit<OrchestrationAccountNotification>
+      asContinuingOffer()
+      delegate()
+      deposit()
+      executeTx()
+      getAddress()
+      getBalance()
+      getPublicTopics()
+      monitorTransfers()
+      send()
+      transfer()
+      undelegate()
+      withdraw()
+    }
+
+    class CosmosOrchestrationAccount {
+      account: LocalChainAccount
+      bondDenom: string
+      chainAddress: ChainAddress
+      icqConnection: ICQConnection | undefined
+      timer: Timer
+      topicKit: RecorderKit<OrchestrationAccountNotification>
+      asContinuingOffer()
+      delegate()
+      executeEncodedTx()
+      getAddress()
+      getBalance()
+      getPublicTopics()
+      redelegate()
+      undelegate()
+      withdrawReward()
     }
 ```
