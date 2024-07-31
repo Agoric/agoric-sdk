@@ -2,13 +2,12 @@ import anyTest from '@endo/ses-ava/prepare-endo.js';
 import type { TestFn } from 'ava';
 import { makeQueryClient } from '../../tools/query.js';
 import { createWallet } from '../../tools/wallet.js';
-import { sleep } from '../../tools/sleep.js';
 import { commonSetup } from '../support.js';
 
 const test = anyTest as TestFn<Record<string, never>>;
 
 const walletScenario = test.macro(async (t, scenario: string) => {
-  const { useChain } = await commonSetup(t);
+  const { useChain, retryUntilCondition } = await commonSetup(t);
 
   const prefix = useChain(scenario).chain.bech32_prefix;
   const wallet = await createWallet(prefix);
@@ -30,9 +29,12 @@ const walletScenario = test.macro(async (t, scenario: string) => {
   await creditFromFaucet(addr);
   // XXX needed to avoid race condition between faucet POST and LCD Query
   // see https://github.com/cosmology-tech/starship/issues/417
-  await sleep(1000, { log: t.log });
+  const { balances: updatedBalances } = await retryUntilCondition(
+    () => queryClient.queryBalances(addr),
+    ({ balances }) => !!balances.length,
+    `${scenario} balance available from faucet`,
+  );
 
-  const { balances: updatedBalances } = await queryClient.queryBalances(addr);
   const expectedDenom = scenario === 'osmosis' ? 'uosmo' : 'uatom';
   t.like(updatedBalances, [{ denom: expectedDenom, amount: '10000000000' }]);
   t.log('Updated balances:', updatedBalances);
