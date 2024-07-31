@@ -1,7 +1,7 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import type { TestFn } from 'ava';
-import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
+import { scheduler } from 'node:timers/promises';
 import {
   makeWalletFactoryContext,
   type WalletFactoryTestContext,
@@ -40,9 +40,7 @@ test('resolves', async t => {
   });
   // Ensure the offer has executed. Without this there's work in the
   // crank when the contract is restarted below.
-  await new Promise(resolve => {
-    setTimeout(resolve, 1000);
-  });
+  await scheduler.wait(1000);
 
   t.log('confirm the value is not in offer results');
   {
@@ -87,9 +85,7 @@ test('resolves', async t => {
 
   t.log('confirm the value is now in offer results');
   // Ensure the getter vow has had time to resolved.
-  await new Promise(resolve => {
-    setTimeout(resolve, 1000);
-  });
+  await scheduler.wait(1000);
   {
     const statusRecord = getter.getLatestUpdateRecord();
     // narrow the type

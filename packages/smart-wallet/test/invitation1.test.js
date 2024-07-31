@@ -1,5 +1,5 @@
 // @ts-check
-/* global setTimeout */
+import { scheduler } from 'node:timers/promises';
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { createRequire } from 'module';
 import { E, Far } from '@endo/far';
@@ -20,7 +20,7 @@ import { prepareSmartWallet } from '../src/smartWallet.js';
 /** @type {import('ava').TestFn<Awaited<ReturnType<makeTestContext>>>} */
 const test = anyTest;
 
-const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+const delay = ms => scheduler.wait(ms);
 
 const nodeRequire = createRequire(import.meta.url);
 const asset = {

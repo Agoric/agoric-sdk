@@ -1,10 +1,6 @@
-type Log = (...values: unknown[]) => void;
+import { scheduler } from 'node:timers/promises';
 
-export const sleep = (ms: number, log: Log = () => {}) =>
-  new Promise(resolve => {
-    log(`Sleeping for ${ms}ms...`);
-    setTimeout(resolve, ms);
-  });
+type Log = (...values: unknown[]) => void;
 
 const retryUntilCondition = async <T>(
   operation: () => Promise<T>,
@@ -35,7 +31,7 @@ const retryUntilCondition = async <T>(
     console.log(
       `Retry ${retries}/${maxRetries} - Waiting for ${retryIntervalMs}ms for ${message}...`,
     );
-    await sleep(retryIntervalMs, log);
+    await scheduler.wait(retryIntervalMs);
   }
 
   throw new Error(`${message} condition failed after ${maxRetries} retries.`);

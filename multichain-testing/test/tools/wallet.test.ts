@@ -2,7 +2,7 @@ import anyTest from '@endo/ses-ava/prepare-endo.js';
 import type { TestFn } from 'ava';
 import { makeQueryClient } from '../../tools/query.js';
 import { createWallet } from '../../tools/wallet.js';
-import { sleep } from '../../tools/sleep.js';
+import { scheduler } from 'node:timers/promises';
 import { commonSetup } from '../support.js';
 
 const test = anyTest as TestFn<Record<string, never>>;
@@ -30,7 +30,7 @@ const walletScenario = test.macro(async (t, scenario: string) => {
   await creditFromFaucet(addr);
   // XXX needed to avoid race condition between faucet POST and LCD Query
   // see https://github.com/cosmology-tech/starship/issues/417
-  await sleep(1000, t.log);
+  await scheduler.wait(1000);
 
   const { balances: updatedBalances } = await queryClient.queryBalances(addr);
   const expectedDenom = scenario === 'osmosis' ? 'uosmo' : 'uatom';

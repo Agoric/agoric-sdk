@@ -1,8 +1,9 @@
-/* global process setTimeout setInterval clearInterval */
+/* global process setInterval clearInterval */
 
 import fs from 'fs';
 import path from 'path';
 import tmp from 'tmp';
+import { scheduler } from 'node:timers/promises';
 import { makePromiseKit } from '@endo/promise-kit';
 import { request } from 'http';
 
@@ -117,7 +118,7 @@ export const gettingStartedWorkflowTest = async (t, options = {}) => {
 
     // XXX: use abci_info endpoint to get block height
     // sleep to let contract start
-    await new Promise(resolve => setTimeout(resolve, TIMEOUT_SECONDS));
+    await scheduler.wait(TIMEOUT_SECONDS);
 
     // ==============
     // yarn start:contract

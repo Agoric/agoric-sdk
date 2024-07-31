@@ -1,5 +1,4 @@
 #! /usr/bin/env node
-/* global setTimeout */
 import '@endo/init';
 
 import fs from 'fs';
@@ -7,6 +6,7 @@ import zlib from 'zlib';
 import readline from 'readline';
 import process from 'process';
 
+import { scheduler } from 'timers/promises';
 import { makeSlogSender } from './make-slog-sender.js';
 
 const LINE_COUNT_TO_FLUSH = 10000;
@@ -110,7 +110,7 @@ async function run() {
     let maybeWait;
     if (linesProcessedThisPeriod >= MAX_LINE_COUNT_PER_PERIOD) {
       const delayMS = PROCESSING_PERIOD - (now - startOfLastPeriod);
-      maybeWait = new Promise(resolve => setTimeout(resolve, delayMS));
+      maybeWait = scheduler.wait(delayMS);
     }
     await maybeWait;
     now = Date.now();

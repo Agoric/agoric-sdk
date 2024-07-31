@@ -4,6 +4,7 @@ import fs from 'fs';
 import url from 'url';
 import { execFile } from 'child_process';
 import { open as tempOpen } from 'temp';
+import { scheduler } from 'node:timers/promises';
 
 import WebSocket from 'ws';
 
@@ -185,7 +186,7 @@ export async function connectToChain(
       }
 
       // It was undefined, so wait, then retry.
-      await new Promise(resolve => setTimeout(resolve, 5000));
+      await scheduler.wait(5000);
       rpcHrefIndex = (rpcHrefIndex + 1) % rpcHrefs.length;
     }
     throw Error(`Unreachable, but the tools don't know that`);

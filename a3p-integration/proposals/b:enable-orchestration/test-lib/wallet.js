@@ -4,7 +4,6 @@
  */
 // TODO DRY in https://github.com/Agoric/agoric-sdk/issues/9109
 // @ts-check
-/* global */
 
 import { E, Far } from '@endo/far';
 import { inspect } from 'util';

@@ -1,11 +1,12 @@
 // @ts-check
 /* eslint-disable func-names */
-/* global fetch, setTimeout, process */
+/* global fetch, process */
 import { Fail } from '@endo/errors';
 import { Nat } from '@endo/nat';
 import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
 import { Command } from 'commander';
 import * as cp from 'child_process';
+import { scheduler } from 'node:timers/promises';
 import { inspect } from 'util';
 import { oracleBrandFeedName } from '@agoric/inter-protocol/src/proposals/utils.js';
 import { normalizeAddressWithOptions } from '../lib/chain.js';
@@ -36,7 +37,7 @@ const scaleDecimals = num => BigInt(num * Number(COSMOS_UNIT));
  */
 export const makeOracleCommand = (logger, io = {}) => {
   const {
-    delay = ms => new Promise(resolve => setTimeout(resolve, ms)),
+    delay = scheduler.wait,
     execFileSync = cp.execFileSync,
     env = process.env,
     stdout = process.stdout,
