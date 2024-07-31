@@ -27,7 +27,7 @@
     "@endo/ses-ava": "^1.2.2",
     "@types/eslint": "^8",
     "@types/fs-extra": "^11",
-    "@types/node": "^20.11.13",
+    "@types/node": "^22.0.0",
     "@typescript-eslint/eslint-plugin": "^6.20.0",
     "@typescript-eslint/parser": "^6.20.0",
     "ava": "^6.1.3",
@@ -39,7 +39,7 @@
     "starshipjs": "2.4.0",
     "tsimp": "^2.0.10",
     "tsx": "^4.15.6",
-    "typescript": "^5.3.3"
+    "typescript": "~5.6.0-beta"
   },
   "resolutions": {
     "node-fetch": "2.6.12",
