@@ -30,7 +30,7 @@ const walletScenario = test.macro(async (t, scenario: string) => {
   await creditFromFaucet(addr);
   // XXX needed to avoid race condition between faucet POST and LCD Query
   // see https://github.com/cosmology-tech/starship/issues/417
-  await sleep(1000, t.log);
+  await sleep(1000, { log: t.log });
 
   const { balances: updatedBalances } = await queryClient.queryBalances(addr);
   const expectedDenom = scenario === 'osmosis' ? 'uosmo' : 'uatom';

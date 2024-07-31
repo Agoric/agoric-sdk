@@ -55,7 +55,10 @@ export const commonSetup = async (t: ExecutionContext) => {
   const tools = await makeAgdTools(t.log, childProcess);
   const keyring = await makeKeyring(tools);
   const deployBuilder = makeDeployBuilder(tools, fse.readJSON, execa);
-  const retryUntilCondition = makeRetryUntilCondition(t.log);
+  const retryUntilCondition = makeRetryUntilCondition({
+    log: t.log,
+    setTimeout: globalThis.setTimeout,
+  });
 
   return { useChain, ...tools, ...keyring, retryUntilCondition, deployBuilder };
 };
