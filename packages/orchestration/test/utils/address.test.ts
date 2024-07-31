@@ -54,8 +54,8 @@ test('findAddressField', t => {
     findAddressField(
       '/ibc-hop/connection-0/ibc-port/icahost/ordered/{"version":"ics27-1","controllerConnectionId":"connection-0","hostConnectionId":"connection-1","address":"","encoding":"proto3","txType":"sdk_multi_msg"}',
     ),
-    '',
-    'returns empty string if address is an empty string',
+    undefined,
+    'returns undefined if address is an empty string',
   );
   t.is(
     findAddressField(
@@ -70,6 +70,13 @@ test('findAddressField', t => {
     ),
     'osmo1m30khedzqy9msu4502u74ugmep30v69pzee370jkas57xhmjfgjqe67ayq',
     'returns address when localAddrr is appended to version string',
+  );
+  t.is(
+    findAddressField(
+      '/ibc-hop/connection-0/ibc-port/icahost/ordered/{not valid JSON}',
+    ),
+    undefined,
+    'returns undefined when JSON is malformed',
   );
 });
 

@@ -77,7 +77,8 @@ export const findAddressField = remoteAddressString => {
     // Extract JSON version string assuming it's always surrounded by {}
     const jsonStr = remoteAddressString?.match(/{.*?}/)?.[0];
     const jsonObj = jsonStr ? JSON.parse(jsonStr) : undefined;
-    return jsonObj?.address ?? undefined;
+    if (!jsonObj?.address?.length) return undefined;
+    return jsonObj.address;
   } catch (error) {
     return undefined;
   }
