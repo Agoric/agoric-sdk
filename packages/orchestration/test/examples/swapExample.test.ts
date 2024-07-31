@@ -4,7 +4,8 @@ import { LOCALCHAIN_DEFAULT_ADDRESS } from '@agoric/vats/tools/fake-bridge.js';
 import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { E } from '@endo/far';
 import path from 'path';
-import { commonSetup } from '../supports.js';
+import { addInterchainAsset, commonSetup } from '../supports.js';
+import { assets } from '../assets.fixture.js';
 
 const dirname = path.dirname(new URL(import.meta.url).pathname);
 
@@ -20,7 +21,7 @@ Error#20: {"type":1,"data":"CmgKIy9jb3Ntb3Muc3Rha2luZy52MWJldGExLk1zZ0RlbGVnYXRl
   at parseTxPacket (file:///Users/markmiller/src/ongithub/agoric/agoric-sdk/packages/orchestration/src/utils/packet.js:87:14)
 ```
 */
-test.skip('start', async t => {
+test('start', async t => {
   const {
     bootstrap,
     brands: { ist },
@@ -32,10 +33,16 @@ test.skip('start', async t => {
   const installation: Installation<StartFn> =
     await bundleAndInstall(contractFile);
 
+  const { agoricNamesAdmin } = bootstrap;
+  const omniflixInfo = await addInterchainAsset(
+    E(agoricNamesAdmin).lookupAdmin('vbankAsset'),
+    assets.omniflixhub.find(a => a.base === 'uflix')!,
+    'omniflixhub',
+  );
   const { publicFacet } = await E(zoe).startInstance(
     installation,
-    { Stable: ist.issuer },
-    {},
+    { Stable: ist.issuer, Out: omniflixInfo.issuer },
+    { baseDenom: 'uflix', baseName: 'omniflixhub' },
     commonPrivateArgs,
   );
 

@@ -117,11 +117,13 @@ export const DenomAmountShape = { denom: DenomShape, value: M.bigint() };
 
 export const AmountArgShape = M.or(AmountShape, DenomAmountShape);
 
-/** @see {Chain} */
-export const ChainFacadeI = M.interface('ChainFacade', {
+export const chainFacadeMethods = harden({
   getChainInfo: M.call().returns(VowShape),
   makeAccount: M.call().returns(VowShape),
 });
+
+/** @see {Chain} */
+export const ChainFacadeI = M.interface('ChainFacade', chainFacadeMethods);
 
 /**
  * for google/protobuf/timestamp.proto, not to be confused with TimestampShape

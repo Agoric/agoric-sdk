@@ -62,19 +62,22 @@ export type CosmosAssetInfo = {
   name: string;
   display: string;
   symbol: string;
-  denom_units: Array<{ denom: Denom; exponent: number }>;
-  traces?: Array<{
-    type: 'ibc';
-    counterparty: {
-      chain_name: string;
-      base_denom: Denom;
-      channel_id: IBCChannelID;
-    };
-    chain: {
-      channel_id: IBCChannelID;
-      path: string;
-    };
-  }>;
+  denom_units: Array<{ denom: Denom; exponent: number; aliases?: string[] }>;
+  traces?: Array<
+    | {
+        type: 'ibc';
+        counterparty: {
+          chain_name: string;
+          base_denom: Denom;
+          channel_id: IBCChannelID;
+        };
+        chain: {
+          channel_id: IBCChannelID;
+          path: string;
+        };
+      }
+    | ({ type: 'additional-mintage' } & Record<string, unknown>)
+  >;
 } & Record<string, unknown>;
 
 /**

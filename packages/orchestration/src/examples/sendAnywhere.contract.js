@@ -1,8 +1,6 @@
 import { makeStateRecord } from '@agoric/async-flow';
 import { AmountShape } from '@agoric/ertp';
 import { InvitationShape } from '@agoric/zoe/src/typeGuards.js';
-import { Fail } from '@endo/errors';
-import { E } from '@endo/far';
 import { M } from '@endo/patterns';
 import { withOrchestration } from '../utils/start-helper.js';
 import * as flows from './sendAnywhere.flows.js';
@@ -50,7 +48,7 @@ const contract = async (
   zcf,
   privateArgs,
   zone,
-  { chainHub, orchestrateAll, vowTools, zoeTools },
+  { chainHub, orchestrateAll, zoeTools },
 ) => {
   const contractState = makeStateRecord(
     /** @type {{ account: OrchestrationAccount<any> | undefined }} */ {
@@ -60,27 +58,11 @@ const contract = async (
 
   const creatorFacet = prepareChainHubAdmin(zone, chainHub);
 
-  // TODO should be a provided helper
-  /** @type {(brand: Brand) => Vow<VBankAssetDetail>} */
-  const findBrandInVBank = vowTools.retriable(
-    zone,
-    'findBrandInVBank',
-    /** @param {Brand} brand */
-    async brand => {
-      const { agoricNames } = privateArgs;
-      const assets = await E(E(agoricNames).lookup('vbankAsset')).values();
-      const it = assets.find(a => a.brand === brand);
-      it || Fail`brand ${brand} not in agoricNames.vbankAsset`;
-      return it;
-    },
-  );
-
   // orchestrate uses the names on orchestrationFns to do a "prepare" of the associated behavior
   const orchFns = orchestrateAll(flows, {
     zcf,
     contractState,
     localTransfer: zoeTools.localTransfer,
-    findBrandInVBank,
   });
 
   const publicFacet = zone.exo(

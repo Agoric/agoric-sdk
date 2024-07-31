@@ -1,4 +1,4 @@
-import { makeIssuerKit } from '@agoric/ertp';
+import { AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { VTRANSFER_IBC_EVENT } from '@agoric/internal/src/action-types.js';
 import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
 import { reincarnate } from '@agoric/swingset-liveslots/tools/setup-vat-data.js';
@@ -21,9 +21,38 @@ import { makeHeapZone, type Zone } from '@agoric/zone';
 import { makeDurableZone } from '@agoric/zone/durable.js';
 import { E } from '@endo/far';
 import type { ExecutionContext } from 'ava';
+import type { AssetInfo } from '@agoric/vats/src/vat-bank.js';
 import { registerKnownChains } from '../src/chain-info.js';
 import { prepareCosmosInterchainService } from '../src/exos/cosmos-interchain-service.js';
 import { setupFakeNetwork } from './network-fakes.js';
+import type { CosmosAssetInfo } from '../src/cosmos-api.js';
+import fetchedChainInfo from '../src/fetched-chain-info.js';
+import { denomHash } from '../src/utils/denomHash.js';
+
+export const addInterchainAsset = async (
+  nameAdmin,
+  assetInfo: CosmosAssetInfo,
+  chainName: string,
+) => {
+  const { symbol, name } = assetInfo;
+  const { brand, issuer } = makeIssuerKit(symbol);
+  const { chainId } = fetchedChainInfo[chainName];
+  const fromAgoric = fetchedChainInfo.agoric.connections[chainId];
+  const { channelId } = fromAgoric.transferChannel;
+  const denom = `ibc/${denomHash({ channelId, denom: assetInfo.base })}`;
+  const info: AssetInfo = {
+    brand,
+    issuer,
+    denom,
+    displayInfo: {
+      assetKind: AssetKind.NAT,
+    },
+    issuerName: symbol,
+    proposedName: name,
+  };
+  await E(nameAdmin).update(denom, info);
+  return info;
+};
 
 export {
   makeFakeLocalchainBridge,

@@ -11,6 +11,7 @@ import type { LocalChainAccount } from '@agoric/vats/src/localchain.js';
 import type { ResolvedPublicTopic } from '@agoric/zoe/src/contractSupport/topics.js';
 import type { Passable } from '@endo/marshal';
 import type {
+  AgoricChainMethods,
   ChainInfo,
   CosmosChainAccountMethods,
   CosmosChainInfo,
@@ -86,8 +87,6 @@ export interface Chain<CI extends ChainInfo> {
    */
   makeAccount: () => Promise<OrchestrationAccount<CI>>;
   // FUTURE supply optional port object; also fetch port object
-
-  // TODO provide a way to get the local denom/brand/whatever for this chain
 }
 
 /**
@@ -96,7 +95,10 @@ export interface Chain<CI extends ChainInfo> {
 export interface Orchestrator {
   getChain: <C extends string>(
     chainName: C,
-  ) => Promise<Chain<C extends keyof KnownChains ? KnownChains[C] : any>>;
+  ) => Promise<
+    Chain<C extends keyof KnownChains ? KnownChains[C] : any> &
+      (C extends 'agoric' ? AgoricChainMethods : {})
+  >;
 
   makeLocalAccount: () => Promise<LocalChainAccount>;
   /**
@@ -120,6 +122,24 @@ export interface Orchestrator {
     /** the Denom for the underlying asset on its issuer chain */
     baseDenom: Denom;
   };
+
+  /**
+   * Get denom on a holding chain.
+   *
+   * @param baseDenom denom on issuing chain
+   * @param base issuing chain
+   * @param chain holding chain - connection to base chain must be regitered in chainHub
+   * @returns denom on holding chain
+   */
+  getDenomOn: <
+    HoldingChain extends keyof KnownChains,
+    IssuingChain extends keyof KnownChains,
+  >(
+    baseDenom: Denom,
+    base: Chain<KnownChains[IssuingChain]>,
+    chain: Chain<KnownChains[HoldingChain]>,
+  ) => Promise<Denom>;
+
   // TODO preload the mapping so this can be synchronous
   /**
    * Convert an amount described in native data to a local, structured Amount.
