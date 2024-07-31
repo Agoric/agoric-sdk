@@ -6,13 +6,17 @@ export const sleep = (ms: number, log: Log = () => {}) =>
     setTimeout(resolve, ms);
   });
 
+type RetryOptions = {
+  maxRetries?: number;
+  retryIntervalMs?: number;
+};
+
 const retryUntilCondition = async <T>(
   operation: () => Promise<T>,
   condition: (result: T) => boolean,
   message: string,
-  maxRetries: number,
-  retryIntervalMs: number,
   log: Log,
+  { maxRetries = 6, retryIntervalMs = 3500 }: RetryOptions = {},
 ): Promise<T> => {
   console.log({ maxRetries, retryIntervalMs, message });
   let retries = 0;
@@ -41,22 +45,15 @@ const retryUntilCondition = async <T>(
   throw new Error(`${message} condition failed after ${maxRetries} retries.`);
 };
 
-export const makeRetryUntilCondition =
-  (
-    log: Log = () => {},
-    maxRetries: number = 6,
-    retryIntervalMs: number = 3500,
-  ) =>
-  <T>(
+export const makeRetryUntilCondition = (log: Log = () => {}) => {
+  /**
+   * Retry an asynchronous operation until a condition is met.
+   * Defaults to maxRetries = 6, retryIntervalMs = 3500
+   */
+  return <T>(
     operation: () => Promise<T>,
     condition: (result: T) => boolean,
     message: string,
-  ) =>
-    retryUntilCondition(
-      operation,
-      condition,
-      message,
-      maxRetries,
-      retryIntervalMs,
-      log,
-    );
+    opts?: RetryOptions,
+  ) => retryUntilCondition(operation, condition, message, log, opts);
+};
