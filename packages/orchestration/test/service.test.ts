@@ -13,6 +13,8 @@ import { matches } from '@endo/patterns';
 import { heapVowE as E } from '@agoric/vow/vat.js';
 import { decodeBase64 } from '@endo/base64';
 import type { LocalIbcAddress } from '@agoric/vats/tools/ibc-utils.js';
+import { getMethodNames } from '@agoric/internal';
+import { Port } from '@agoric/network';
 import { commonSetup } from './supports.js';
 import { ChainAddressShape } from '../src/typeGuards.js';
 import { tryDecodeResponse } from '../src/utils/cosmos.js';
@@ -97,6 +99,13 @@ test('makeICQConnection returns an ICQConnection', async t => {
   );
   t.regex([...uniquePortIds][0], /icqcontroller-\d+/);
   t.is(uniquePortIds.size, 1, 'all connections share same port');
+
+  await t.throwsAsync(
+    // @ts-expect-error icqConnectionKit doesn't have a port method
+    () => E(icqConnection).getPort(),
+    undefined,
+    'ICQConnection Kit does not expose its port',
+  );
 });
 
 test('makeAccount returns an IcaAccountKit', async t => {
@@ -109,10 +118,11 @@ test('makeAccount returns an IcaAccountKit', async t => {
     HOST_CONNECTION_ID,
     CONTROLLER_CONNECTION_ID,
   );
-  const [localAddr, remoteAddr, chainAddr] = await Promise.all([
+  const [localAddr, remoteAddr, chainAddr, port] = await Promise.all([
     E(account).getLocalAddress(),
     E(account).getRemoteAddress(),
     E(account).getAddress(),
+    E(account).getPort(),
   ]);
   t.log(account, {
     localAddr,
@@ -134,6 +144,12 @@ test('makeAccount returns an IcaAccountKit', async t => {
     remoteAddr,
     /"version":"ics27-1"(.*)"encoding":"proto3"/,
     'remote address contains version and encoding in version string',
+  );
+  t.true(
+    (
+      ['addListener', 'removeListener', 'connect', 'revoke'] as (keyof Port)[]
+    ).every(method => getMethodNames(port).includes(method)),
+    'IcaAccountKit returns a Port remotable',
   );
 
   t.true(matches(chainAddr, ChainAddressShape));
