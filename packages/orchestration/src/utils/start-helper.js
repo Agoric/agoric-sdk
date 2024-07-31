@@ -137,7 +137,7 @@ export const provideOrchestration = (
   /**
    * Create orchestrate functions in a specific zone, instead of the default
    * `contract.orchestration` zone. This is used for modules that add their own
-   * orchestration functionsd (e.g., a Portfolio with orchestration flows for
+   * orchestration functions (e.g., a Portfolio with orchestration flows for
    * continuing offers)
    *
    * @param {Zone} zone
