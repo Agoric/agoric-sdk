@@ -71,13 +71,21 @@ const prepareLocalChainFacadeKit = (
           .returns(VowShape),
       }),
       makeAccountWatcher: M.interface('makeAccountWatcher', {
-        onFulfilled: M.call([M.remotable('LCA Account'), M.string()])
+        onFulfilled: M.call([
+          M.remotable('LCA Account'),
+          M.string(),
+          M.arrayOf(M.record()),
+        ])
           .optional(M.arrayOf(M.undefined())) // empty context
           .returns(VowShape),
       }),
       makeChildNodeWatcher: M.interface('makeChildNodeWatcher', {
         onFulfilled: M.call(M.remotable())
-          .optional({ account: M.remotable(), address: M.string() }) // empty context
+          .optional({
+            account: M.remotable(),
+            address: M.string(),
+            assets: M.arrayOf(M.record()),
+          }) // empty context
           .returns(M.remotable()),
       }),
     },
@@ -99,11 +107,12 @@ const prepareLocalChainFacadeKit = (
         /** @returns {Vow<LocalOrchestrationAccountKit['holder']>} */
         makeAccount() {
           const lcaP = E(localchain).makeAccount();
+          const assetsP = this.facets.public.getVBankAssetInfo();
           return watch(
             // XXX makeAccount returns a Promise for an exo but reserves being able to return a vow
             // so we use heapVowE to shorten the promise path
             // eslint-disable-next-line no-restricted-syntax -- will run in one turn
-            allVows([lcaP, heapVowE(lcaP).getAddress()]),
+            allVows([lcaP, heapVowE(lcaP).getAddress(), assetsP]),
             this.facets.makeAccountWatcher,
           );
         },
@@ -135,13 +144,13 @@ const prepareLocalChainFacadeKit = (
       },
       makeAccountWatcher: {
         /**
-         * @param {[LocalChainAccount, ChainAddress['value']]} results
+         * @param {[LocalChainAccount, ChainAddress['value'], AssetInfo[]]} results
          */
-        onFulfilled([account, address]) {
+        onFulfilled([account, address, assets]) {
           return watch(
             E(storageNode).makeChildNode(address),
             this.facets.makeChildNodeWatcher,
-            { account, address },
+            { account, address, assets },
           );
         },
       },
@@ -151,9 +160,10 @@ const prepareLocalChainFacadeKit = (
          * @param {{
          *   account: LocalChainAccount;
          *   address: ChainAddress['value'];
+         *   assets: AssetInfo[];
          * }} ctx
          */
-        onFulfilled(childNode, { account, address }) {
+        onFulfilled(childNode, { account, address, assets }) {
           const { localChainInfo } = this.state;
           const { holder } = makeLocalOrchestrationAccountKit({
             account,
@@ -164,6 +174,7 @@ const prepareLocalChainFacadeKit = (
             }),
             // FIXME storage path https://github.com/Agoric/agoric-sdk/issues/9066
             storageNode: childNode,
+            assets,
           });
           return holder;
         },

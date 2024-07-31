@@ -6,6 +6,7 @@ import { Shape as NetworkShape } from '@agoric/network';
 import { M } from '@agoric/vat-data';
 import { VowShape } from '@agoric/vow';
 import { E } from '@endo/far';
+import { q } from '@endo/errors';
 import {
   ChainAddressShape,
   DenomAmountShape,
@@ -27,6 +28,7 @@ import { makeTimestampHelper } from '../utils/time.js';
  * @import {InvitationMakers} from '@agoric/smart-wallet/src/types.js';
  * @import {TimerService, TimestampRecord} from '@agoric/time';
  * @import {Vow, VowTools} from '@agoric/vow';
+ * @import {AssetInfo} from '@agoric/vats/src/vat-bank.js';
  * @import {TypedJson, JsonSafe} from '@agoric/cosmic-proto';
  * @import {Matcher} from '@endo/patterns';
  * @import {ChainHub} from './chain-hub.js';
@@ -47,6 +49,7 @@ const { Vow$ } = NetworkShape; // TODO #9611
  *   topicKit: RecorderKit<LocalChainAccountNotification>;
  *   account: LocalChainAccount;
  *   address: ChainAddress;
+ *   assets: AssetInfo[];
  * }} State
  */
 
@@ -137,15 +140,16 @@ export const prepareLocalOrchestrationAccountKit = (
      * @param {LocalChainAccount} initState.account
      * @param {ChainAddress} initState.address
      * @param {Remote<StorageNode>} initState.storageNode
+     * @param {AssetInfo[]} initState.assets
      * @returns {State}
      */
-    ({ account, address, storageNode }) => {
+    ({ account, address, storageNode, assets }) => {
       // must be the fully synchronous maker because the kit is held in durable state
       const topicKit = makeRecorderKit(storageNode, PUBLIC_TOPICS.account[1]);
       // TODO determine what goes in vstorage https://github.com/Agoric/agoric-sdk/issues/9066
       void E(topicKit.recorder).write('');
 
-      return { account, address, topicKit };
+      return { account, address, topicKit, assets };
     },
     {
       invitationMakers: {
@@ -318,12 +322,16 @@ export const prepareLocalOrchestrationAccountKit = (
          * @type {HostOf<OrchestrationAccountI['getBalance']>}
          */
         getBalance(denomArg) {
-          // FIXME look up real values
-          // UNTIL https://github.com/Agoric/agoric-sdk/issues/9211
+          const findDenom = brand => {
+            const { assets } = this.state;
+            const asset = assets.find(a => a.brand === brand);
+            if (!asset) throw Fail`${q(brand)} not in vbankAssets`;
+            return asset.denom;
+          };
           const [brand, denom] =
             typeof denomArg === 'string'
               ? [/** @type {any} */ (null), denomArg]
-              : [denomArg, 'FIXME'];
+              : [denomArg, findDenom(denomArg)];
 
           return watch(
             E(this.state.account).getBalance(brand),
