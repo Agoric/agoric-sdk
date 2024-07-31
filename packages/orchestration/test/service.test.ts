@@ -12,6 +12,7 @@ import { Any } from '@agoric/cosmic-proto/google/protobuf/any.js';
 import { matches } from '@endo/patterns';
 import { heapVowE as E } from '@agoric/vow/vat.js';
 import { decodeBase64 } from '@endo/base64';
+import type { LocalIbcAddress } from '@agoric/vats/tools/ibc-utils.js';
 import { commonSetup } from './supports.js';
 import { ChainAddressShape } from '../src/typeGuards.js';
 import { tryDecodeResponse } from '../src/utils/cosmos.js';
@@ -84,6 +85,18 @@ test('makeICQConnection returns an ICQConnection', async t => {
   );
   const localAddr4 = await E(icqConnection4).getLocalAddress();
   t.is(localAddr3, localAddr4, 'custom version is idempotent');
+
+  const icqConnection5 = await E(cosmosInterchainService).provideICQConnection(
+    'connection-99',
+  );
+  const localAddr5 = await E(icqConnection5).getLocalAddress();
+
+  const getPortId = (lAddr: LocalIbcAddress) => lAddr.split('/')[2];
+  const uniquePortIds = new Set(
+    [localAddr, localAddr2, localAddr3, localAddr4, localAddr5].map(getPortId),
+  );
+  t.regex([...uniquePortIds][0], /icqcontroller-\d+/);
+  t.is(uniquePortIds.size, 1, 'all connections share same port');
 });
 
 test('makeAccount returns a ChainAccount', async t => {

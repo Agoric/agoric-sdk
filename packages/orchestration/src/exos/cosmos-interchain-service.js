@@ -37,6 +37,7 @@ const { Vow$ } = NetworkShape; // TODO #9611
 /**
  * @typedef {{
  *   icqConnections: ICQConnectionStore;
+ *   sharedICQPort: Remote<Port> | undefined;
  * } & OrchestrationPowers} OrchestrationState
  */
 
@@ -103,13 +104,12 @@ const prepareCosmosOrchestrationServiceKit = (
     powers => {
       mustMatch(powers?.portAllocator, M.remotable('PortAllocator'));
       const icqConnections = zone.detached().mapStore('ICQConnections');
-      return harden(
-        /** @type {OrchestrationState} */ ({
-          icqConnections,
-          reserved: undefined,
-          ...powers,
-        }),
-      );
+      return /** @type {OrchestrationState} */ ({
+        icqConnections,
+        sharedICQPort: undefined,
+        reserved: undefined,
+        ...powers,
+      });
     },
     {
       requestICAChannelWatcher: {
@@ -142,8 +142,10 @@ const prepareCosmosOrchestrationServiceKit = (
          * }} watchContext
          */
         onFulfilled(port, { remoteConnAddr, icqLookupKey }) {
+          if (!this.state.sharedICQPort) {
+            this.state.sharedICQPort = port;
+          }
           const connectionKit = makeICQConnectionKit(port);
-          /** @param {ICQConnectionKit} kit */
           return watch(
             E(port).connect(remoteConnAddr, connectionKit.connectionHandler),
             this.facets.channelOpenWatcher,
@@ -178,8 +180,6 @@ const prepareCosmosOrchestrationServiceKit = (
           }
           return connectionKit[returnFacet];
         },
-        // TODO #9317 if we fail, should we revoke the port (if it was created in this flow)?
-        // onRejected() {}
       },
       public: {
         /**
@@ -226,23 +226,21 @@ const prepareCosmosOrchestrationServiceKit = (
             controllerConnectionId,
             version,
           );
-          const { portAllocator } = this.state;
-          return watch(
-            // allocate a new Port for every Connection
-            // TODO #9317 optimize ICQ port allocation
-            E(portAllocator).allocateICQControllerPort(),
-            this.facets.requestICQChannelWatcher,
-            {
-              remoteConnAddr,
-              icqLookupKey,
-            },
-          );
+          const { portAllocator, sharedICQPort } = this.state;
+          const portOrPortVow =
+            sharedICQPort || E(portAllocator).allocateICQControllerPort();
+
+          return watch(portOrPortVow, this.facets.requestICQChannelWatcher, {
+            remoteConnAddr,
+            icqLookupKey,
+          });
         },
       },
     },
     {
       stateShape: {
         icqConnections: M.remotable('icqConnections mapStore'),
+        sharedICQPort: M.or(M.remotable('Port'), M.undefined()),
         portAllocator: M.remotable('PortAllocator'),
         reserved: M.any(),
       },
