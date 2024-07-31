@@ -1,4 +1,4 @@
-/** @file ChainAccount exo */
+/** @file Localchain Facade exo */
 import { E } from '@endo/far';
 // eslint-disable-next-line no-restricted-syntax -- just the import
 import { heapVowE } from '@agoric/vow/vat.js';

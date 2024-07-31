@@ -1,4 +1,4 @@
-/** @file ChainAccount exo */
+/** @file Orchestrator exo */
 import { AmountShape } from '@agoric/ertp';
 import { pickFacet } from '@agoric/vat-data';
 import { makeTracer } from '@agoric/internal';

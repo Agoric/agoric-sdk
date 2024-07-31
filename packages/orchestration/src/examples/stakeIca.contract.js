@@ -119,7 +119,7 @@ export const start = async (zcf, privateArgs, baggage) => {
   const publicFacet = zone.exo(
     'StakeAtom',
     M.interface('StakeAtomI', {
-      makeAccount: M.callWhen().returns(M.remotable('ChainAccount')),
+      makeAccount: M.callWhen().returns(M.remotable('OrchestrationAccountKit')),
       makeAccountInvitationMaker: M.callWhen().returns(InvitationShape),
     }),
     {
