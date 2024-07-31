@@ -139,27 +139,27 @@ export function processGCActionSet(kernelKeeper) {
   }
 
   /** @type {Map<VatID, Map<GCActionType, GCActionString[]>>} */
-  const grouped = new Map(); // grouped.get(vatID).get(type) = krefs to process
+  const actionsByVat = new Map();
   for (const action of allActionsSet) {
     const { vatID, type } = parseAction(action);
-    if (!grouped.has(vatID)) {
-      grouped.set(vatID, new Map());
+    if (!actionsByVat.has(vatID)) {
+      actionsByVat.set(vatID, new Map());
     }
-    const forVat = grouped.get(vatID);
-    if (!forVat.has(type)) {
-      forVat.set(type, []);
+    const actionsForVatByType = actionsByVat.get(vatID);
+    if (!actionsForVatByType.has(type)) {
+      actionsForVatByType.set(type, []);
     }
-    forVat.get(type).push(action);
+    actionsForVatByType.get(type).push(action);
   }
 
-  const vatIDs = Array.from(grouped.keys());
+  const vatIDs = Array.from(actionsByVat.keys());
   vatIDs.sort();
   for (const vatID of vatIDs) {
-    const forVat = grouped.get(vatID);
+    const actionsForVatByType = actionsByVat.get(vatID);
     // find the highest-priority type of work to do within this vat
     for (const type of actionTypePriorities) {
-      if (forVat.has(type)) {
-        const actions = forVat.get(type);
+      if (actionsForVatByType.has(type)) {
+        const actions = actionsForVatByType.get(type);
         const krefs = krefsToProcess(vatID, actions);
         if (krefs.length) {
           // at last, we act
