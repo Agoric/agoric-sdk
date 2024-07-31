@@ -84,18 +84,14 @@ test('makeICQChannelAddress', t => {
     'returns connection string when controllerConnectionId is provided',
   );
   t.is(
-    makeICQChannelAddress('connection-0', {
-      version: 'icq-2',
-    }),
+    makeICQChannelAddress('connection-0', 'icq-2'),
     '/ibc-hop/connection-0/ibc-port/icqhost/unordered/icq-2',
     'accepts custom version',
   );
   t.throws(
     () =>
       validateRemoteIbcAddress(
-        makeICQChannelAddress('connection-0', {
-          version: 'ic/q-/2',
-        }),
+        makeICQChannelAddress('connection-0', 'ic/q-/2'),
       ),
     {
       message:
