@@ -163,10 +163,12 @@ export const prepareChainAccountKit = (zone, { watch, asVow }) =>
           this.state.connection = connection;
           this.state.remoteAddress = remoteAddr;
           this.state.localAddress = localAddr;
+          const address = findAddressField(remoteAddr);
+          if (!address) {
+            console.error('⚠️ failed to parse chain address', remoteAddr);
+          }
           this.state.chainAddress = harden({
-            // FIXME need a fallback value like icacontroller-1-connection-1 if this fails
-            // https://github.com/Agoric/agoric-sdk/issues/9066
-            value: findAddressField(remoteAddr) || UNPARSABLE_CHAIN_ADDRESS,
+            value: address || UNPARSABLE_CHAIN_ADDRESS,
             chainId: this.state.chainId,
             encoding: 'bech32',
           });
