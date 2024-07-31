@@ -3,7 +3,7 @@
 import { E } from '@endo/far';
 import { M, mustMatch } from '@endo/patterns';
 import { Shape as NetworkShape } from '@agoric/network';
-import { prepareChainAccountKit } from './chain-account-kit.js';
+import { prepareIcaAccountKit } from './ica-account-kit.js';
 import { prepareICQConnectionKit } from './icq-connection-kit.js';
 import {
   DEFAULT_ICQ_VERSION,
@@ -18,7 +18,7 @@ import {
  * @import {IBCConnectionID} from '@agoric/vats';
  * @import {RemoteIbcAddress} from '@agoric/vats/tools/ibc-utils.js';
  * @import {Vow, VowTools} from '@agoric/vow';
- * @import {ICQConnection, IcaAccount, ICQConnectionKit, ChainAccountKit} from '../types.js';
+ * @import {ICQConnection, IcaAccount, ICQConnectionKit, IcaAccountKit} from '../types.js';
  * @import {ICAChannelAddressOpts} from '../utils/address.js';
  */
 
@@ -32,7 +32,7 @@ const { Vow$ } = NetworkShape; // TODO #9611
 
 /** @typedef {MapStore<string, ICQConnectionKit>} ICQConnectionStore */
 
-/** @typedef {ChainAccountKit | ICQConnectionKit} ConnectionKit */
+/** @typedef {IcaAccountKit | ICQConnectionKit} ConnectionKit */
 
 /**
  * @typedef {{
@@ -56,13 +56,13 @@ const getICQConnectionKey = (controllerConnectionId, version) => {
 /**
  * @param {Zone} zone
  * @param {VowTools} vowTools
- * @param {ReturnType<typeof prepareChainAccountKit>} makeChainAccountKit
+ * @param {ReturnType<typeof prepareIcaAccountKit>} makeIcaAccountKit
  * @param {ReturnType<typeof prepareICQConnectionKit>} makeICQConnectionKit
  */
 const prepareCosmosOrchestrationServiceKit = (
   zone,
   { watch, asVow },
-  makeChainAccountKit,
+  makeIcaAccountKit,
   makeICQConnectionKit,
 ) =>
   zone.exoClassKit(
@@ -94,7 +94,7 @@ const prepareCosmosOrchestrationServiceKit = (
       public: M.interface('CosmosInterchainService', {
         makeAccount: M.call(M.string(), M.string(), M.string())
           .optional(M.record())
-          .returns(Vow$(M.remotable('ChainAccountKit'))),
+          .returns(Vow$(M.remotable('IcaAccountKit'))),
         provideICQConnection: M.call(M.string())
           .optional(M.string())
           .returns(Vow$(M.remotable('ICQConnection'))),
@@ -121,15 +121,15 @@ const prepareCosmosOrchestrationServiceKit = (
          * }} watchContext
          */
         onFulfilled(port, { chainId, remoteConnAddr }) {
-          const chainAccountKit = makeChainAccountKit(
+          const connectionKit = makeIcaAccountKit(
             chainId,
             port,
             remoteConnAddr,
           );
           return watch(
-            E(port).connect(remoteConnAddr, chainAccountKit.connectionHandler),
+            E(port).connect(remoteConnAddr, connectionKit.connectionHandler),
             this.facets.channelOpenWatcher,
-            { returnFacet: 'account', connectionKit: chainAccountKit },
+            { returnFacet: 'account', connectionKit },
           );
         },
       },
@@ -252,13 +252,13 @@ const prepareCosmosOrchestrationServiceKit = (
  * @param {VowTools} vowTools
  */
 export const prepareCosmosInterchainService = (zone, vowTools) => {
-  const makeChainAccountKit = prepareChainAccountKit(zone, vowTools);
+  const makeIcaAccountKit = prepareIcaAccountKit(zone, vowTools);
   const makeICQConnectionKit = prepareICQConnectionKit(zone, vowTools);
   const makeCosmosOrchestrationServiceKit =
     prepareCosmosOrchestrationServiceKit(
       zone,
       vowTools,
-      makeChainAccountKit,
+      makeIcaAccountKit,
       makeICQConnectionKit,
     );
 

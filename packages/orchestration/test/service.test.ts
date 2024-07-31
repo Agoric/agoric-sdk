@@ -99,7 +99,7 @@ test('makeICQConnection returns an ICQConnection', async t => {
   t.is(uniquePortIds.size, 1, 'all connections share same port');
 });
 
-test('makeAccount returns a ChainAccount', async t => {
+test('makeAccount returns an IcaAccountKit', async t => {
   const {
     bootstrap: { cosmosInterchainService },
   } = await commonSetup(t);

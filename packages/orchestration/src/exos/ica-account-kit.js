@@ -1,4 +1,4 @@
-/** @file ChainAccount exo */
+/** @file IcaAccount exo */
 import { Fail } from '@endo/errors';
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
@@ -22,12 +22,12 @@ import { makeTxPacket, parseTxPacket } from '../utils/packet.js';
  * @import {ChainAddress} from '../types.js';
  */
 
-const trace = makeTracer('ChainAccountKit');
+const trace = makeTracer('IcaAccountKit');
 
 /** @typedef {'UNPARSABLE_CHAIN_ADDRESS'} UnparsableChainAddress */
 const UNPARSABLE_CHAIN_ADDRESS = 'UNPARSABLE_CHAIN_ADDRESS';
 
-export const ChainAccountI = M.interface('ChainAccount', {
+export const IcaAccountI = M.interface('IcaAccount', {
   getAddress: M.call().returns(ChainAddressShape),
   getLocalAddress: M.call().returns(M.string()),
   getRemoteAddress: M.call().returns(M.string()),
@@ -55,11 +55,11 @@ export const ChainAccountI = M.interface('ChainAccount', {
  * @param {Zone} zone
  * @param {VowTools} vowTools
  */
-export const prepareChainAccountKit = (zone, { watch, asVow }) =>
+export const prepareIcaAccountKit = (zone, { watch, asVow }) =>
   zone.exoClassKit(
-    'ChainAccountKit',
+    'IcaAccountKit',
     {
-      account: ChainAccountI,
+      account: IcaAccountI,
       connectionHandler: OutboundConnectionHandlerI,
       parseTxPacketWatcher: M.interface('ParseTxPacketWatcher', {
         onFulfilled: M.call(M.string())
@@ -186,4 +186,4 @@ export const prepareChainAccountKit = (zone, { watch, asVow }) =>
     },
   );
 
-/** @typedef {ReturnType<ReturnType<typeof prepareChainAccountKit>>} ChainAccountKit */
+/** @typedef {ReturnType<ReturnType<typeof prepareIcaAccountKit>>} IcaAccountKit */

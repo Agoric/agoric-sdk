@@ -9,11 +9,11 @@ classDiagram
     LCAKit --* LocalchainAccount
     ICQConnectionKit --* Port
     ICQConnectionKit --* Connection
-    ChainAccountKit --* Port
-    ChainAccountKit --* Connection
+    IcaAccountKit --* Port
+    IcaAccountKit --* Connection
     StakingAccountKit --* IcaAccount
 
-    class ChainAccountKit {
+    class IcaAccountKit {
       port: Port
       connection: Connection
       localAddress: LocalIbcAddress
