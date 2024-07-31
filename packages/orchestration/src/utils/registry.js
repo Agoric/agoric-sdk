@@ -84,7 +84,10 @@ function toConnectionEntry(ibcInfo, name, chainInfo) {
 /**
  * Converts the given chain info to our local config format
  *
- * @param {Pick<ChainRegistryClient, 'chains' | 'ibcData'>} registry
+ * @param {Pick<
+ *   ChainRegistryClient,
+ *   'chains' | 'ibcData' | 'getChainAssetList'
+ * >} registry
  */
 export const convertChainInfo = async registry => {
   /** @type {Record<string, CosmosChainInfo>} */
@@ -123,7 +126,8 @@ export const convertChainInfo = async registry => {
         // sort alphabetically for consistency
         .sort(([a], [b]) => (a && b ? a.localeCompare(b) : 0)),
     );
-    chainInfo[name] = { ...chainInfo[name], connections };
+    const assetList = registry.getChainAssetList(name);
+    chainInfo[name] = { ...chainInfo[name], connections, assetList };
   }
 
   // return object with insertion in alphabetical order of chain name
