@@ -2,6 +2,8 @@ import { Fail } from '@endo/errors';
 import { insistKernelType } from './parseKernelSlots.js';
 import { insistVatID } from '../lib/id.js';
 
+/** @import {TotalMap} from '@agoric/internal'; */
+
 /**
  * @typedef {`v${number}`} VatID
  * @typedef {`ko${number}`} KOID
@@ -19,14 +21,15 @@ const actionTypePriorities = ['dropExport', 'retireExport', 'retireImport'];
 
 /**
  * A mapping of GC action type to queue event type.
- *
- * @type {Map<GCActionType, GCQueueEventType>}
  */
-const queueTypeFromActionType = new Map([
-  ['dropExport', 'dropExports'],
-  ['retireExport', 'retireExports'],
-  ['retireImport', 'retireImports'],
-]);
+const queueTypeFromActionType =
+  /** @type {TotalMap<GCActionType, GCQueueEventType>} */ (
+    new Map([
+      ['dropExport', 'dropExports'],
+      ['retireExport', 'retireExports'],
+      ['retireImport', 'retireImports'],
+    ])
+  );
 
 /**
  * @param {GCActionString} s
@@ -138,7 +141,7 @@ export function processGCActionSet(kernelKeeper) {
     return krefs;
   }
 
-  /** @type {Map<VatID, Map<GCActionType, GCActionString[]>>} */
+  /** @type {TotalMap<VatID, TotalMap<GCActionType, GCActionString[]>>} */
   const actionsByVat = new Map();
   for (const action of allActionsSet) {
     const { vatID, type } = parseAction(action);
