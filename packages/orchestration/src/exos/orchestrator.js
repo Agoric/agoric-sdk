@@ -1,5 +1,6 @@
 /** @file ChainAccount exo */
 import { AmountShape } from '@agoric/ertp';
+import { pickFacet } from '@agoric/vat-data';
 import { makeTracer } from '@agoric/internal';
 import { Shape as NetworkShape } from '@agoric/network';
 import { Fail, q } from '@endo/errors';
@@ -58,7 +59,7 @@ export const OrchestratorI = M.interface('Orchestrator', {
  *   zcf: ZCF;
  * }} powers
  */
-export const prepareOrchestratorKit = (
+const prepareOrchestratorKit = (
   zone,
   {
     chainHub,
@@ -161,6 +162,29 @@ export const prepareOrchestratorKit = (
     },
   );
 harden(prepareOrchestratorKit);
+
+/**
+ * @param {Zone} zone
+ * @param {{
+ *   asyncFlowTools: AsyncFlowTools;
+ *   chainHub: ChainHub;
+ *   localchain: Remote<LocalChain>;
+ *   chainByName: MapStore<string, HostInterface<Chain>>;
+ *   makeRecorderKit: MakeRecorderKit;
+ *   makeLocalChainFacade: MakeLocalChainFacade;
+ *   makeRemoteChainFacade: MakeRemoteChainFacade;
+ *   orchestrationService: Remote<CosmosInterchainService>;
+ *   storageNode: Remote<StorageNode>;
+ *   timerService: Remote<TimerService>;
+ *   vowTools: VowTools;
+ *   zcf: ZCF;
+ * }} powers
+ */
+export const prepareOrchestrator = (zone, powers) => {
+  const makeOrchestratorKit = prepareOrchestratorKit(zone, powers);
+  return pickFacet(makeOrchestratorKit, 'orchestrator');
+};
+
 /**
  * Host side of the Orchestrator interface. (Methods return vows instead of
  * promises as the interface within the guest function.)
