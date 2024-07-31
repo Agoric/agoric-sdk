@@ -9,8 +9,9 @@ import {
 import fetchedChainInfo from './fetched-chain-info.js'; // Refresh with scripts/refresh-chain-info.ts
 import { CosmosAssetInfoShape, CosmosChainInfoShape } from './typeGuards.js';
 
-/** @import {CosmosAssetInfo, CosmosChainInfo, EthChainInfo, IBCConnectionInfo} from './types.js'; */
+/** @import {CosmosChainInfo, EthChainInfo, IBCConnectionInfo} from './types.js'; */
 /** @import {NameAdmin} from '@agoric/vats'; */
+/** @import {Asset as CosmosAssetInfo} from '@chain-registry/types'; */
 
 /** @typedef {CosmosChainInfo | EthChainInfo} ChainInfo */
 

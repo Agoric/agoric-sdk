@@ -1,4 +1,4 @@
-import type { CosmosAssetInfo } from '../src/cosmos-api.js';
+import type { Asset as CosmosAssetInfo } from '@chain-registry/types';
 
 // https://github.com/cosmos/chain-registry/blob/master/cosmoshub/assetlist.json
 export const assets = {
