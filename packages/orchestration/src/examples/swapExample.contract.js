@@ -82,6 +82,7 @@ harden(meta);
  */
 export const makeNatAmountShape = (brand, min) =>
   harden({ brand, value: min ? M.gte(min) : M.nat() });
+harden(makeNatAmountShape);
 
 /**
  * Orchestration contract to be wrapped by withOrchestration for Zoe
@@ -127,3 +128,4 @@ const contract = async (zcf, privateArgs, zone, { orchestrate, zoeTools }) => {
 };
 
 export const start = withOrchestration(contract);
+harden(start);

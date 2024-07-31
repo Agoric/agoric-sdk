@@ -36,7 +36,9 @@ export const meta = harden({
     timer: TimerServiceShape,
   },
 });
+harden(meta);
 export const privateArgsShape = meta.privateArgsShape;
+harden(privateArgsShape);
 
 /**
  * @typedef {{
@@ -144,5 +146,6 @@ export const start = async (zcf, privateArgs, baggage) => {
 
   return { publicFacet };
 };
+harden(start);
 
 /** @typedef {typeof start} StakeIcaSF */

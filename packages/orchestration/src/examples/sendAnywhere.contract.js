@@ -35,6 +35,7 @@ export const SingleAmountRecord = M.and(
   }),
   M.not(harden({})),
 );
+harden(SingleAmountRecord);
 
 /**
  * Orchestration contract to be wrapped by withOrchestration for Zoe
@@ -104,3 +105,4 @@ const contract = async (
 };
 
 export const start = withOrchestration(contract);
+harden(start);

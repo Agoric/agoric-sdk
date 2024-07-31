@@ -108,10 +108,18 @@ module.exports = {
       },
     },
     {
+      // Zoe contract module
+      files: ['**/*.contract.js'],
+      rules: {
+        '@endo/harden-exports': 'error',
+      },
+    },
+    {
       // Orchestration flows
       files: ['**/*.flows.js'],
       rules: {
         'no-restricted-syntax': ['error', ...orchestrationFlowRestrictions],
+        '@endo/harden-exports': 'error',
       },
     },
   ],
