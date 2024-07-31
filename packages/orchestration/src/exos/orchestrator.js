@@ -166,24 +166,24 @@ harden(prepareOrchestratorKit);
 /**
  * @param {Zone} zone
  * @param {{
-*   asyncFlowTools: AsyncFlowTools;
-*   chainHub: ChainHub;
-*   localchain: Remote<LocalChain>;
-*   chainByName: MapStore<string, HostInterface<Chain>>;
-*   makeRecorderKit: MakeRecorderKit;
-*   makeLocalChainFacade: MakeLocalChainFacade;
-*   makeRemoteChainFacade: MakeRemoteChainFacade;
-*   orchestrationService: Remote<CosmosInterchainService>;
-*   storageNode: Remote<StorageNode>;
-*   timerService: Remote<TimerService>;
-*   vowTools: VowTools;
-*   zcf: ZCF;
-* }} powers
-*/
+ *   asyncFlowTools: AsyncFlowTools;
+ *   chainHub: ChainHub;
+ *   localchain: Remote<LocalChain>;
+ *   chainByName: MapStore<string, HostInterface<Chain>>;
+ *   makeRecorderKit: MakeRecorderKit;
+ *   makeLocalChainFacade: MakeLocalChainFacade;
+ *   makeRemoteChainFacade: MakeRemoteChainFacade;
+ *   orchestrationService: Remote<CosmosInterchainService>;
+ *   storageNode: Remote<StorageNode>;
+ *   timerService: Remote<TimerService>;
+ *   vowTools: VowTools;
+ *   zcf: ZCF;
+ * }} powers
+ */
 export const prepareOrchestrator = (zone, powers) => {
   const makeOrchestratorKit = prepareOrchestratorKit(zone, powers);
   return pickFacet(makeOrchestratorKit, 'orchestrator');
-}
+};
 
 /**
  * Host side of the Orchestrator interface. (Methods return vows instead of

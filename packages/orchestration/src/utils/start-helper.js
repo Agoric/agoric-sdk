@@ -67,7 +67,7 @@ export const provideOrchestration = (
       zoe: zone.subZone('zoe'),
       /** contract-provided names, and subzones */
       contract: zone.subZone('contract'),
-   };
+    };
   })();
 
   const { agoricNames, timerService } = remotePowers;
@@ -135,11 +135,12 @@ export const provideOrchestration = (
   });
 
   /**
-   * Create orchestrate functions in a specific zone, instead of the default 
+   * Create orchestrate functions in a specific zone, instead of the default
    * `contract.orchestration` zone. This is used for modules that add their own
    * orchestration functionsd (e.g., a Portfolio with orchestration flows for
    * continuing offers)
-   * @param {Zone} zone 
+   *
+   * @param {Zone} zone
    */
   const makeOrchestrateKit = zone =>
     makeOrchestrationFacade({
@@ -153,7 +154,9 @@ export const provideOrchestration = (
     });
 
   // Create orchestrate functions for the default `contract.orchestration` zone
-  const defaultOrchestrateKit = makeOrchestrateKit(zones.contract.subZone('orchestration'));
+  const defaultOrchestrateKit = makeOrchestrateKit(
+    zones.contract.subZone('orchestration'),
+  );
   return {
     ...defaultOrchestrateKit,
     makeOrchestrateKit,
