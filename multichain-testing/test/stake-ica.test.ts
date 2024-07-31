@@ -179,6 +179,10 @@ const stakeScenario = test.macro(async (t, scenario: StakeIcaScenario) => {
       return Number(total?.[0]?.amount) > 0;
     },
     `rewards available on ${scenario.chain}`,
+    {
+      retryIntervalMs: 5000,
+      maxRetries: 8,
+    },
   );
   t.log('reward:', total[0]);
   t.log('WithrawReward offer from continuing inv');
@@ -242,6 +246,7 @@ const stakeScenario = test.macro(async (t, scenario: StakeIcaScenario) => {
   t.log('Current Balance:', currentBalances[0]);
 
   console.log('waiting for unbonding period');
+  // XXX reference `120000` from chain state + `maxClockSkew`
   await sleep(120000);
   const { balances: rewardsWithUndelegations } = await retryUntilCondition(
     () => queryClient.queryBalances(address),
