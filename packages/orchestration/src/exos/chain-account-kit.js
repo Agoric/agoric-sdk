@@ -29,8 +29,6 @@ const UNPARSABLE_CHAIN_ADDRESS = 'UNPARSABLE_CHAIN_ADDRESS';
 
 export const ChainAccountI = M.interface('ChainAccount', {
   getAddress: M.call().returns(ChainAddressShape),
-  getBalance: M.call(M.string()).returns(VowShape),
-  getBalances: M.call().returns(VowShape),
   getLocalAddress: M.call().returns(M.string()),
   getRemoteAddress: M.call().returns(M.string()),
   getPort: M.call().returns(M.remotable('Port')),
@@ -39,7 +37,6 @@ export const ChainAccountI = M.interface('ChainAccount', {
     .optional(M.record())
     .returns(VowShape),
   close: M.call().returns(VowShape),
-  getPurse: M.call().returns(VowShape),
 });
 
 /**
@@ -100,16 +97,6 @@ export const prepareChainAccountKit = (zone, { watch, asVow }) =>
             'ICA channel creation acknowledgement not yet received.',
           );
         },
-        getBalance(_denom) {
-          // TODO https://github.com/Agoric/agoric-sdk/issues/9610
-          // UNTIL https://github.com/Agoric/agoric-sdk/issues/9326
-          return asVow(() => Fail`not yet implemented`);
-        },
-        getBalances() {
-          // TODO https://github.com/Agoric/agoric-sdk/issues/9610
-          // UNTIL https://github.com/Agoric/agoric-sdk/issues/9326
-          return asVow(() => Fail`not yet implemented`);
-        },
         getLocalAddress() {
           return NonNullish(
             this.state.localAddress,
@@ -163,15 +150,6 @@ export const prepareChainAccountKit = (zone, { watch, asVow }) =>
             if (!connection) throw Fail`connection not available`;
             return E(connection).close();
           });
-        },
-        /**
-         * get Purse for a brand to .withdraw() a Payment from the account
-         *
-         * @param {Brand} brand
-         */
-        getPurse(brand) {
-          console.log('getPurse got', brand);
-          return asVow(() => Fail`not yet implemented`);
         },
       },
       connectionHandler: {
