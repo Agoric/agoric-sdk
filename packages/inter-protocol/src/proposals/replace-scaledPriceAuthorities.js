@@ -1,129 +1,29 @@
-import { makeTracer, deeplyFulfilledObject } from '@agoric/internal';
+import { makeTracer } from '@agoric/internal';
 import { E } from '@endo/far';
-import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
-import { parseRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
+import { startScaledPriceAuthority } from './addAssetToVault.js';
 
-import { reserveThenGetNames, scaledPriceFeedName } from './utils.js';
+import { scaledPriceFeedName } from './utils.js';
 
 const trace = makeTracer('replaceScaledPA', true);
 
 /**
- * Copied with minor modification from addAssetToVault.js because a previous
- * scaledPriceAuthority is being replaced.
- *
  * @param {BootstrapPowers} powers
  * @param {object} config
  * @param {object} config.options
- * @param {import('./addAssetToVault.js').InterchainAssetOptions} config.options.interchainAssetOptions
  */
-export const replaceScaledPriceAuthority = async (
-  {
-    consume: {
-      agoricNamesAdmin,
-      startUpgradable,
-      priceAuthorityAdmin,
-      priceAuthority,
-    },
-    instance: { produce: produceInstance },
-  },
-  { options: { interchainAssetOptions } },
-) => {
+export const replaceScaledPriceAuthority = async (powers, { options }) => {
   const {
-    keyword,
-    issuerName = keyword,
-    oracleBrand = issuerName,
-    initialPrice: initialPriceRaw,
-  } = interchainAssetOptions;
-  assert.typeof(issuerName, 'string');
-  assert.typeof(oracleBrand, 'string');
+    instance: { produce: produceInstance },
+  } = powers;
+  const { keyword, issuerName = keyword } = options.interchainAssetOptions;
 
-  const [
-    sourcePriceAuthority,
-    [interchainBrand, stableBrand],
-    [interchainOracleBrand, usdBrand],
-    [scaledPriceAuthority],
-  ] = await Promise.all([
-    priceAuthority,
-    reserveThenGetNames(E(agoricNamesAdmin).lookupAdmin('brand'), [
-      issuerName,
-      'IST',
-    ]),
-    reserveThenGetNames(E(agoricNamesAdmin).lookupAdmin('oracleBrand'), [
-      oracleBrand,
-      'USD',
-    ]),
-    reserveThenGetNames(E(agoricNamesAdmin).lookupAdmin('installation'), [
-      'scaledPriceAuthority',
-    ]),
-  ]);
-
-  // We need "unit amounts" of each brand in order to get the ratios right.  You
-  // can ignore decimalPlaces when adding and subtracting a brand with itself,
-  // but not when creating ratios.
-  const getDecimalP = async brand => {
-    const displayInfo = E(brand).getDisplayInfo();
-    return E.get(displayInfo).decimalPlaces;
-  };
-  const [
-    decimalPlacesInterchainOracle = 0,
-    decimalPlacesInterchain = 0,
-    decimalPlacesUsd = 0,
-    decimalPlacesRun = 0,
-  ] = await Promise.all([
-    getDecimalP(interchainOracleBrand),
-    getDecimalP(interchainBrand),
-    getDecimalP(usdBrand),
-    getDecimalP(stableBrand),
-  ]);
-
-  const scaleIn = makeRatio(
-    10n ** BigInt(decimalPlacesInterchainOracle),
-    interchainOracleBrand,
-    10n ** BigInt(decimalPlacesInterchain),
-    interchainBrand,
-  );
-  const scaleOut = makeRatio(
-    10n ** BigInt(decimalPlacesUsd),
-    usdBrand,
-    10n ** BigInt(decimalPlacesRun),
-    stableBrand,
-  );
-  const initialPrice = initialPriceRaw
-    ? parseRatio(initialPriceRaw, stableBrand, interchainBrand)
-    : undefined;
-
-  const terms = await deeplyFulfilledObject(
-    harden({
-      sourcePriceAuthority,
-      scaleIn,
-      scaleOut,
-      initialPrice,
-    }),
-  );
+  const spaKit = await startScaledPriceAuthority(powers, { options });
 
   const label = scaledPriceFeedName(issuerName);
-
-  const spaKit = await E(startUpgradable)({
-    installation: scaledPriceAuthority,
-    label,
-    terms,
-  });
-
-  // @ts-expect-error The public facet should have getPriceAuthority
-  const pa = await E(spaKit.publicFacet).getPriceAuthority();
-  trace(pa);
-
-  await E(priceAuthorityAdmin).registerPriceAuthority(
-    pa,
-    interchainBrand,
-    stableBrand,
-    true, // force
-  );
-
   produceInstance[label].reset();
+
   // publish into agoricNames so that others can await its presence.
   // This must stay after registerPriceAuthority above so it's evidence of registration.
-
   produceInstance[label].resolve(spaKit.instance);
 };
 
