@@ -5,12 +5,9 @@
 import { M, mustMatch } from '@endo/patterns';
 
 /**
- * @import {Zone} from '@agoric/zone';
  * @import {OrchestrationAccount, OrchestrationFlow, Orchestrator} from '@agoric/orchestration';
  * @import {ResolvedPublicTopic} from '@agoric/zoe/src/contractSupport/topics.js';
- * @import {OrchestrationPowers} from '../utils/start-helper.js';
  * @import {MakePortfolioHolder} from '../exos/portfolio-holder-kit.js';
- * @import {OrchestrationTools} from '../utils/start-helper.js';
  */
 
 /**

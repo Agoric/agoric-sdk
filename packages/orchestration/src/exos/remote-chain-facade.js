@@ -12,7 +12,7 @@ import { ChainAddressShape, ChainFacadeI } from '../typeGuards.js';
  * @import {TimerService} from '@agoric/time';
  * @import {Remote} from '@agoric/internal';
  * @import {Vow, VowTools} from '@agoric/vow';
- * @import {CosmosInterchainService} from './cosmos-interchain-service.js';
+ * @import {CosmosInterchainService} from '../types.js';
  * @import {prepareCosmosOrchestrationAccount} from './cosmos-orchestration-account.js';
  * @import {ChainInfo, CosmosChainInfo, IBCConnectionInfo, OrchestrationAccount, ChainAddress, IcaAccount, Denom, Chain} from '../types.js';
  */

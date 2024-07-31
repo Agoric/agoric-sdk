@@ -15,18 +15,7 @@ import * as flows from './auto-stake-it.flows.js';
  * @import {NameHub} from '@agoric/vats';
  * @import {Remote} from '@agoric/vow';
  * @import {Zone} from '@agoric/zone';
- * @import {CosmosInterchainService} from '@agoric/orchestration';
- * @import {OrchestrationTools} from '../utils/start-helper.js';
- */
-
-/**
- * @typedef {{
- *   localchain: Remote<LocalChain>;
- *   orchestrationService: Remote<CosmosInterchainService>;
- *   storageNode: Remote<StorageNode>;
- *   timerService: Remote<TimerService>;
- *   agoricNames: Remote<NameHub>;
- * }} OrchestrationPowers
+ * @import {OrchestrationPowers, OrchestrationTools} from '@agoric/orchestration';
  */
 
 /**

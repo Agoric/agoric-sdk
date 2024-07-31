@@ -9,7 +9,6 @@ const trace = makeTracer('CoreEvalOrchestration', true);
 
 /**
  * @import {PortAllocator} from '@agoric/network';
- * @import {CosmosInterchainService} from '../exos/cosmos-interchain-service.js'
  */
 
 /**
