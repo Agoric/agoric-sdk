@@ -51,7 +51,7 @@ runs:
       with:
         result-encoding: string
         script: |-
-          let branch = 'NOPE';
+          let branch = 'master';
           if (${{ inputs.ignore-endo-branch }}) {
             // Skip endo branch
           } else  if (context.eventName === 'schedule') {
@@ -79,7 +79,8 @@ runs:
         git config user.name github-actions
         git config user.email github-actions@github.com
         git merge --commit --no-edit origin/integration-endo-${{ steps.endo-branch.outputs.result }}
-
+        echo "TESTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTttttttttttttttt"
+        git status
     - name: check out Endo if necessary
       id: endo-checkout
       if: steps.endo-branch.outputs.result != 'NOPE'
@@ -140,6 +141,8 @@ runs:
       shell: bash
       run: |-
         set -ex
+        echo "fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+        git status
         if test "${{ inputs.xsnap-random-init }}" != 0 && test -d /etc/apt; then
           # Need libbsd-dev, as it's referenced in xsnapPlatform.h
           sudo apt-get update
@@ -168,6 +171,9 @@ runs:
           git add package.json yarn.lock
           ${{ inputs.keep-endo }} || rm -rf ~/endo
         fi
+
+        echo "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"
+        git status
 
     - name: yarn build
       if: steps.built.outputs.cache-hit != 'true'
