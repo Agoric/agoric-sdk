@@ -6,6 +6,7 @@ import { BrandShape } from '@agoric/ertp/src/typeGuards.js';
 import { VowShape } from '@agoric/vow';
 import { makeHeapZone } from '@agoric/zone';
 import { CosmosChainInfoShape, IBCConnectionInfoShape } from '../typeGuards.js';
+import { denomHash } from '../utils/denomHash.js';
 
 /**
  * @import {NameHub} from '@agoric/vats';
@@ -166,6 +167,7 @@ const ChainHubI = M.interface('ChainHub', {
   getChainsAndConnection: M.call(M.string(), M.string()).returns(VowShape),
   registerAsset: M.call(M.string(), DenomDetailShape).returns(),
   lookupAsset: M.call(M.string()).returns(DenomDetailShape),
+  getHoldingDenom: M.call(M.string(), M.string()).returns(VowShape),
 });
 
 /**
@@ -386,6 +388,25 @@ export const makeChainHub = (agoricNames, vowTools) => {
      */
     lookupAsset(denom) {
       return denomDetails.get(denom);
+    },
+
+    /**
+     * @param {Denom} denom
+     * @param {string} holdingChainId
+     */
+    getHoldingDenom(denom, holdingChainId) {
+      // TODO when -> watch
+      // eslint-disable-next-line no-restricted-syntax
+      return vowTools.asVow(async () => {
+        const { baseName, baseDenom } = denomDetails.get(denom);
+        const issuing = chainInfos.get(baseName);
+        const { transferChannel } = await vowTools.when(
+          lookupConnectionInfo(holdingChainId, issuing.chainId),
+        );
+        const { channelId, portId } = transferChannel;
+        const hash = denomHash({ portId, channelId, denom: baseDenom });
+        return `ibc/${hash}`;
+      });
     },
   });
 
