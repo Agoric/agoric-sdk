@@ -5,6 +5,7 @@ import { M } from '@endo/patterns';
 import { pickFacet } from '@agoric/vat-data';
 import { VowShape } from '@agoric/vow';
 import { ChainAddressShape, ChainFacadeI } from '../typeGuards.js';
+import { denomHash } from '../utils/denomHash.js';
 
 /**
  * @import {HostInterface, HostOf} from '@agoric/async-flow';
@@ -14,7 +15,7 @@ import { ChainAddressShape, ChainFacadeI } from '../typeGuards.js';
  * @import {Vow, VowTools} from '@agoric/vow';
  * @import {CosmosInterchainService} from './cosmos-interchain-service.js';
  * @import {prepareCosmosOrchestrationAccount} from './cosmos-orchestration-account.js';
- * @import {ChainInfo, CosmosChainInfo, IBCConnectionInfo, OrchestrationAccount, ChainAddress, IcaAccount, Denom, Chain} from '../types.js';
+ * @import {ChainInfo, CosmosChainInfo, IBCConnectionInfo, OrchestrationAccount, ChainAddress, IcaAccount, Denom, Chain, ChainHub} from '../types.js';
  */
 
 const { Fail } = assert;
@@ -29,6 +30,7 @@ const anyVal = null;
  *     typeof prepareCosmosOrchestrationAccount
  *   >;
  *   orchestration: Remote<CosmosInterchainService>;
+ *   chainHub: ChainHub;
  *   storageNode: Remote<StorageNode>;
  *   timer: Remote<TimerService>;
  *   vowTools: VowTools;
@@ -44,11 +46,12 @@ const prepareRemoteChainFacadeKit = (
   {
     makeCosmosOrchestrationAccount,
     orchestration,
+    chainHub,
     // TODO vstorage design https://github.com/Agoric/agoric-sdk/issues/9066
     // consider making an `accounts` childNode
     storageNode,
     timer,
-    vowTools: { asVow, watch },
+    vowTools: { asVow, watch, when },
   },
 ) =>
   zone.exoClassKit(
@@ -106,6 +109,16 @@ const prepareRemoteChainFacadeKit = (
               ),
               this.facets.makeAccountWatcher,
             );
+          });
+        },
+        /** @type {HostOf<Chain['getLocalDenom']>} */
+        getLocalDenom(denom) {
+          // TODO when -> watch
+          // eslint-disable-next-line no-restricted-syntax
+          return asVow(async () => {
+            assert.typeof(denom, 'string', 'Brand case is TODO');
+            const { remoteChainInfo } = this.state;
+            return chainHub.getHoldingDenom(denom, remoteChainInfo.chainId);
           });
         },
       },
