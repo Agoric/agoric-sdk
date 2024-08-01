@@ -9,14 +9,9 @@
  */
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-import type { ExecutionContext, TestFn } from 'ava';
-import type { FakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
-import { makeAgoricNamesRemotesFromFakeStorage } from '@agoric/vats/tools/board-utils.js';
-import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
+import type { TestFn } from 'ava';
 import { ScheduleNotification } from '@agoric/inter-protocol/src/auction/scheduler.js';
 import { NonNullish } from '@agoric/internal';
-import { makeSwingsetTestKit } from '../../tools/supports.ts';
-import { makeWalletFactoryDriver } from '../../tools/drivers.ts';
 import {
   LiquidationTestContext,
   likePayouts,
@@ -33,14 +28,14 @@ const collateralBrandKey = 'ATOM';
 const managerIndex = 0;
 
 const setup: LiquidationSetup = {
-  vaults: [{ atom: 9, ist: 5, debt: 5.025 }],
-  bids: [{ give: '2IST', discount: 0.1 }],
+  vaults: [{ atom: 15, ist: 100, debt: 100.5 }],
+  bids: [{ give: '20IST', discount: 0.1 }],
   price: {
     starting: 12.34,
     trigger: 9.99,
   },
   auction: {
-    start: { collateral: 45, debt: 309.54 },
+    start: { collateral: 15, debt: 100.5 },
     end: { collateral: 9.659301, debt: 0 },
   },
 };
@@ -50,32 +45,44 @@ const outcome = {
 };
 
 test.serial('1. setupVaults; placeBids', async t => {
-  const { setupVaults, placeBids } = t.context;
+  const { placeBids, readLatest, setupVaults } = t.context;
   await setupVaults(collateralBrandKey, managerIndex, setup);
-  await placeBids(collateralBrandKey, 'agoric1bidder', setup);
+  await placeBids(collateralBrandKey, 'agoric1buyer', setup);
+
+  t.like(readLatest('published.wallet.agoric1buyer.current'), {
+    liveOffers: [['ATOM-bid1', { id: 'ATOM-bid1' }]],
+  });
 });
 
 test.serial('run replace-price-feeds proposals', async t => {
-  const { controller, buildProposal, evalProposal } = t.context;
+  const { agoricNamesRemotes, controller, buildProposal, evalProposal } =
+    t.context;
 
-  t.log('@@@@@TODO: what other proposals do we need here?');
+  const perFeedBuilders = [
+    // close enough to @agoric/builders/scripts/vats/priceFeedSupport.js"
+    '@agoric/builders/scripts/vats/updateAtomPriceFeed.js',
+  ];
 
   const builders = [
+    ...perFeedBuilders,
     '@agoric/builders/scripts/vats/replaceScaledPriceAuthorities.js',
     '@agoric/builders/scripts/vats/add-auction.js',
     '@agoric/builders/scripts/vats/upgradeVaults.js',
   ];
 
+  const instancePre = agoricNamesRemotes.instance['ATOM-USD price feed'];
   await null;
   for (const builder of builders) {
     t.log('building', builder);
     const p = buildProposal(builder);
     await evalProposal(p);
   }
+  const instancePost = agoricNamesRemotes.instance['ATOM-USD price feed'];
+  t.not(instancePre, instancePost);
 });
 
 test.serial('2. trigger liquidation by changing price', async t => {
-  const { advanceTimeTo, priceFeedDrivers, readLatest } = t.context;
+  const { priceFeedDrivers, readLatest } = t.context;
 
   await priceFeedDrivers[collateralBrandKey].setPrice(9.99);
 
@@ -90,6 +97,15 @@ test.serial('2. trigger liquidation by changing price', async t => {
     numActiveVaults: setup.vaults.length,
     numLiquidatingVaults: 0,
   });
+});
+
+test.serial('3. verify liquidation', async t => {
+  const { advanceTimeBy, advanceTimeTo, readLatest } = t.context;
+
+  const liveSchedule: ScheduleNotification = readLatest(
+    'published.auction.schedule',
+  );
+  const metricsPath = `published.vaultFactory.managers.manager${managerIndex}.metrics`;
 
   // advance time to start an auction
   console.log(collateralBrandKey, 'step 1 of 10');
@@ -103,10 +119,6 @@ test.serial('2. trigger liquidation by changing price', async t => {
     liquidatingDebt: { value: scale6(setup.auction.start.debt) },
     lockedQuote: null,
   });
-});
-
-test.serial('3. verify liquidation', async t => {
-  const { advanceTimeBy, readLatest } = t.context;
 
   console.log(collateralBrandKey, 'step 2 of 10');
   await advanceTimeBy(3, 'minutes');
