@@ -50,6 +50,8 @@ export const swapAndStake = async (
   );
 
   try {
+    // if give is USDC, which is not native to Agorc,
+    // this sends to the issuing chain, noble, 1st
     await localAccount.transferSteps(give.Stable, transferMsg);
     await omniAccount.delegate(offerArgs.validator, offerArgs.staked);
   } catch (e) {
