@@ -423,6 +423,7 @@ export const registerAssets = (chainHub, name, assets) => {
   for (const { base, traces } of assets) {
     const native = !traces;
     native || traces.length === 1 || Fail`unexpected ${traces.length} traces`;
+    // @@@ always traces[0]???
     const [chainName, baseName, baseDenom] = native
       ? [name, name, base]
       : [
