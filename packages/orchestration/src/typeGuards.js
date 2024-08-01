@@ -120,6 +120,7 @@ export const AmountArgShape = M.or(AmountShape, DenomAmountShape);
 export const chainFacadeMethods = harden({
   getChainInfo: M.call().returns(VowShape),
   makeAccount: M.call().returns(VowShape),
+  getLocalDenom: M.call(M.string()).returns(VowShape),
 });
 
 /** @see {Chain} */
