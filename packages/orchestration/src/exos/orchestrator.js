@@ -13,7 +13,6 @@ import {
   DenomShape,
   LocalChainAccountShape,
 } from '../typeGuards.js';
-import { denomHash } from '../utils/denomHash.js';
 
 /**
  * @import {Zone} from '@agoric/base-zone';
@@ -40,11 +39,6 @@ export const OrchestratorI = M.interface('Orchestrator', {
   getChain: M.call(M.string()).returns(Vow$(ChainInfoShape)),
   makeLocalAccount: M.call().returns(Vow$(LocalChainAccountShape)),
   getBrandInfo: M.call(DenomShape).returns(BrandInfoShape),
-  getDenomOn: M.call(
-    DenomShape,
-    M.remotable('Chain'),
-    M.remotable('Chain'),
-  ).returns(Vow$(DenomShape)),
   asAmount: M.call(DenomAmountShape).returns(AmountShape),
 });
 
@@ -161,21 +155,6 @@ const prepareOrchestratorKit = (
           const base = chainByName.get(baseName);
           // @ts-expect-error XXX HostOf<> not quite right?
           return harden({ chain, base, brand, baseDenom });
-        },
-
-        /** @type {HostOf<Orchestrator['getDenomOn']>} */
-        getDenomOn(baseDenom, base, chain) {
-          // TODO: when -> watch
-          return asVow(async () => {
-            const baseInfo = await when(base.getChainInfo()); // XXX when
-            const chainInfo = await when(chain.getChainInfo());
-            const { transferChannel } = await when(
-              chainHub.getConnectionInfo(chainInfo.chainId, baseInfo.chainId),
-            );
-            const { channelId, portId } = transferChannel;
-            const hash = denomHash({ portId, channelId, denom: baseDenom });
-            return `ibc/${hash}`;
-          });
         },
 
         /** @type {HostOf<Orchestrator['asAmount']>} */
