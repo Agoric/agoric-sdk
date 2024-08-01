@@ -37,11 +37,7 @@ const makeDefaultTestContext = async (
     agoricNamesRemotes,
   );
 
-  const readCollateralMetrics = vaultManagerIndex =>
-    readLatest(
-      `published.vaultFactory.managers.manager${vaultManagerIndex}.metrics`,
-    );
-  return { ...swingsetTestKit, readCollateralMetrics, walletFactoryDriver };
+  return { ...swingsetTestKit, readLatest, walletFactoryDriver };
 };
 
 const test = anyTest as TestFn<
@@ -52,10 +48,13 @@ test.after.always(t => t.context.shutdown());
 
 const collateralBrandKey = 'ATOM';
 
-test.serial('open vault', async t => {
+const collateralMetricsPath = vaultManagerIndex =>
+  `published.vaultFactory.managers.manager${vaultManagerIndex}.metrics`;
+
+test.serial('open vault: mint 5 IST', async t => {
   console.time('open vault');
-  const { readCollateralMetrics, walletFactoryDriver } = t.context;
-  const wd = await walletFactoryDriver.provideSmartWallet('agoric1a');
+  const { readLatest, walletFactoryDriver } = t.context;
+  const wd = await walletFactoryDriver.provideSmartWallet('agoric1minter');
   await wd.executeOfferMaker(Offers.vaults.OpenVault, {
     offerId: 'open1',
     collateralBrandKey,
@@ -68,9 +67,43 @@ test.serial('open vault', async t => {
     status: { id: 'open1', numWantsSatisfied: 1 },
   });
 
-  t.like(readCollateralMetrics(0), {
+  t.like(readLatest(collateralMetricsPath(0)), {
     numActiveVaults: 1,
     totalDebt: { value: 5025000n },
   });
   console.timeEnd('open vault');
+});
+
+test.serial('open 10% discount bid on ATOM', async t => {
+  const { readLatest, walletFactoryDriver } = t.context;
+  const wd = await walletFactoryDriver.provideSmartWallet('agoric1minter');
+  await wd.sendOfferMaker(Offers.auction.Bid, {
+    offerId: 'bid1',
+    discount: 0.1,
+    give: '0.5IST',
+    maxBuy: '10_000ATOM',
+  });
+
+  t.like(wd.getLatestUpdateRecord(), {
+    status: { result: 'Your bid has been accepted' },
+  });
+});
+
+test.serial('run replace-price-feeds proposals', async t => {
+  const { controller, buildProposal, evalProposal } = t.context;
+
+  const builders = [
+    '@agoric/builders/scripts/vats/replaceScaledPriceAuthorities.js',
+    '@agoric/builders/scripts/vats/add-auction.js',
+    '@agoric/builders/scripts/vats/upgradeVaults.js',
+  ];
+
+  await null;
+  for (const builder of builders) {
+    t.log('building', builder);
+    const p = buildProposal(builder);
+    await evalProposal(p);
+  }
+
+  t.fail('TODO');
 });
