@@ -86,12 +86,13 @@ export const orcUtils = {
 
     const agoric = await orch.getChain('agoric');
     const osmosis = await orch.getChain('osmosis');
+
     const assets = await agoric.getVBankAssetInfo();
     const asset = assets.find(a => a.brand === opts.brandOut);
     if (!asset) throw Fail`${opts.brandOut} not registered in Agoric vbank`;
 
-    const { base, baseDenom } = orch.getBrandInfo(asset.denom);
-    const outputDenom = await orch.getDenomOn(baseDenom, base, osmosis);
+    // TODO: pass opts.brandOut straight to getLocalDenom()
+    const outputDenom = await osmosis.getLocalDenom(asset.denom);
 
     /** @type {XCSv2Msg<null>} */
     const it = {
