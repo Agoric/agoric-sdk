@@ -1,25 +1,26 @@
 # Linear queue for the main branch.
-queue_rules:
-  - name: high_priority_main
-    commit_message_template: |-
+shared:
+    commit_message_template: &commit-message-template |-
       {{ title }} (#{{ number }})
 
       {{ body | trim }}
-    queue_conditions:
+    queue_conditions: &queue-conditions
       - base=master
+      - or:
+          - check-pending=integration-test-result
+          - check-success=integration-test-result
+          - label=bypass:integration
+      - or:
+          - and: # breakage succeeds like we thought
+              - check-success=breakage
+              - -label=proto:expect-breakage
+          - and: # breakage fails like we thought
+              - check-failure=breakage
+              - label=proto:expect-breakage
+    high_priority_queue_conditions: &high-priority-queue-conditions
+      - and: *queue-conditions
       - label=priority:high
-      - or:
-          - check-pending=integration-test-result
-          - check-success=integration-test-result
-          - label=bypass:integration
-      - or:
-          - and: # breakage succeeds like we thought
-              - check-success=breakage
-              - -label=proto:expect-breakage
-          - and: # breakage fails like we thought
-              - check-failure=breakage
-              - label=proto:expect-breakage
-    merge_conditions:
+    merge_conditions: &merge-conditions
       - base=master
       # Rebase PRs with fixup commits are allowed to enter the merge queue but 
       # should not be allowed to merge if there are leftover fixup commits after rebase
@@ -31,66 +32,108 @@ queue_rules:
       - or:
           - label=bypass:integration
           - check-success=integration-test-result
-  - name: main
-    commit_message_template: |-
-      {{ title }} (#{{ number }})
-
-      {{ body | trim }}
-    queue_conditions:
-      - base=master
-      - or:
-          - check-pending=integration-test-result
-          - check-success=integration-test-result
-          - label=bypass:integration
-      - or:
-          - and: # breakage succeeds like we thought
-              - check-success=breakage
-              - -label=proto:expect-breakage
-          - and: # breakage fails like we thought
-              - check-failure=breakage
-              - label=proto:expect-breakage
-    merge_conditions:
-      - base=master
-      # Rebase PRs with fixup commits are allowed to enter the merge queue but 
-      # should not be allowed to merge if there are leftover fixup commits after rebase
-      - or:
-          - label=bypass:linear-history
-          - check-success=no-fixup-commits
-          - check-skipped=no-fixup-commits
-      # Require integration tests before merging only
-      - or:
-          - label=bypass:integration
-          - check-success=integration-test-result
-
-pull_request_rules:
-  - name: merge to master
-    conditions:
+    pr_queue_merge_conditions: &pr-queue-merge-conditions
       - base=master
       - label=automerge:no-update
       - or:
           - '#commits-behind=0'
           - label=bypass:linear-history
-    actions:
-      queue:
-        merge_method: merge
-  - name: rebase updates then merge to master
-    conditions:
+    pr_queue_rebase_conditions: &pr-queue-rebase-conditions
       - base=master
       - label=automerge:rebase
       - or:
           - '#commits-behind>0'
           - linear-history
-    actions:
-      queue:
-        merge_method: merge
-        update_method: rebase
-  - name: squash to master
-    conditions:
+    pr_queue_squash_conditions: &pr-queue-squash-conditions
       - base=master
       - label=automerge:squash
+
+queue_rules:
+  - name: high_priority_rebase
+    commit_message_template: *commit-message-template
+    queue_conditions: *high-priority-queue-conditions
+    merge_conditions: *merge-conditions
+    merge_method: merge
+    update_method: rebase
+
+  - name: high_priority_merge
+    commit_message_template: *commit-message-template
+    queue_conditions: *high-priority-queue-conditions
+    merge_conditions: *merge-conditions
+    disallow_checks_interruption_from_queues:
+      - high_priority_rebase
+    merge_method: merge
+
+  - name: high_priority_squash
+    commit_message_template: *commit-message-template
+    queue_conditions: *high-priority-queue-conditions
+    merge_conditions: *merge-conditions
+    disallow_checks_interruption_from_queues:
+      - high_priority_rebase
+      - high_priority_merge
+    merge_method: squash
+
+  - name: rebase
+    commit_message_template: *commit-message-template
+    queue_conditions: *queue-conditions
+    merge_conditions: *merge-conditions
+    merge_method: merge
+    update_method: rebase
+
+  - name: merge
+    commit_message_template: *commit-message-template
+    queue_conditions: *queue-conditions
+    merge_conditions: *merge-conditions
+    disallow_checks_interruption_from_queues:
+      - rebase
+    merge_method: merge
+
+  - name: squash
+    commit_message_template: *commit-message-template
+    queue_conditions: *queue-conditions
+    merge_conditions: *merge-conditions
+    disallow_checks_interruption_from_queues:
+      - rebase
+      - merge
+    merge_method: squash
+
+pull_request_rules:
+  - name:  high priority - merge to master
+    conditions:
+      - and: *pr-queue-merge-conditions
+      - label=priority:high
     actions:
       queue:
-        merge_method: squash
+        name: high_priority_merge
+  - name: high priority - rebase updates then merge to master
+    conditions:
+      - and: *pr-queue-rebase-conditions
+      - label=priority:high
+    actions:
+      queue:
+        name: high_priority_rebase
+  - name: high priority - squash to master
+    conditions:
+      - and: *pr-queue-squash-conditions
+      - label=priority:high
+    actions:
+      queue:
+        name: high_priority_squash
+  - name: merge to master
+    conditions: *pr-queue-merge-conditions
+    actions:
+      queue:
+        name: merge
+  - name: rebase updates then merge to master
+    conditions: *pr-queue-rebase-conditions
+    actions:
+      queue:
+        name: rebase
+  - name: squash to master
+    conditions: *pr-queue-squash-conditions
+    actions:
+      queue:
+        name: squash
   - name: rebase and autosquash
     conditions:
       - base=master
