@@ -2,11 +2,18 @@
  * @file Example contract that allows users to do different things with rewards
  */
 import { M, mustMatch } from '@endo/patterns';
+import { Fail } from '@endo/errors';
+import { makeTracer } from '@agoric/internal';
+
+const trace = makeTracer('RestakeFlows');
 
 /**
- * @import {OrchestrationAccount, OrchestrationFlow, Orchestrator, StakingAccountActions} from '@agoric/orchestration';
- * @import {MakeRestakeHolderKit} from './restake.kit.js';
+ * @import {CosmosValidatorAddress, OrchestrationAccount, OrchestrationFlow, Orchestrator, StakingAccountActions} from '@agoric/orchestration';
+ * @import {TimestampRecord} from '@agoric/time';
+ * @import {GuestInterface} from '@agoric/async-flow';
+ * @import {InvitationMakers} from '@agoric/smart-wallet/src/types.js';
  * @import {MakeCombineInvitationMakers} from '../exos/combine-invitation-makers.js';
+ * @import {CosmosOrchestrationAccount} from '../exos/cosmos-orchestration-account.js';
  */
 
 /**
@@ -16,38 +23,69 @@ import { M, mustMatch } from '@endo/patterns';
  * @satisfies {OrchestrationFlow}
  * @param {Orchestrator} orch
  * @param {{
- *   makeRestakeHolderKit: MakeRestakeHolderKit;
  *   makeCombineInvitationMakers: MakeCombineInvitationMakers;
+ *   makeRestakeKit: (
+ *     account: OrchestrationAccount<any> & StakingAccountActions,
+ *   ) => unknown;
  * }} ctx
  * @param {ZCFSeat} seat
  * @param {{ chainName: string }} offerArgs
  */
 export const makeRestakeAccount = async (
   orch,
-  { makeRestakeHolderKit, makeCombineInvitationMakers },
+  { makeRestakeKit, makeCombineInvitationMakers },
   seat,
   { chainName },
 ) => {
-  seat.exit(); // no funds exchanged
+  trace('MakeRestakeAccount', chainName);
+  seat.exit();
   mustMatch(chainName, M.string());
   const remoteChain = await orch.getChain(chainName);
-  const orchAccount =
+  const account =
     /** @type {OrchestrationAccount<any> & StakingAccountActions} */ (
       await remoteChain.makeAccount()
     );
-  const restakeHolderKit = makeRestakeHolderKit(orchAccount);
-  const { invitationMakers: orchInvitationMakers, publicSubscribers } =
-    await orchAccount.asContinuingOffer();
-
-  const combinedInvitationMakers = makeCombineInvitationMakers(
-    // `orchInvitationMakers` currently lying about its type
-    orchInvitationMakers,
-    // @ts-expect-error update `makeCombineInvitationMakers` to accept Guarded...
-    restakeHolderKit.invitationMakers,
+  const restakeKit = /** @type {{ invitationMakers: InvitationMakers }} */ (
+    makeRestakeKit(account)
   );
+  const result = await account.asContinuingOffer();
 
-  return harden({
-    invitationMakers: combinedInvitationMakers,
-    publicSubscribers,
-  });
+  return {
+    ...result,
+    invitationMakers: makeCombineInvitationMakers(
+      restakeKit.invitationMakers,
+      result.invitationMakers,
+    ),
+  };
 };
+harden(makeRestakeAccount);
+
+/**
+ * A flow that can be provided to `makeFlowWaker` to act as the handler for a
+ * `TimerWaker`. This handler withdraws rewards from a validator and delegates
+ * to them.
+ *
+ * @satisfies {OrchestrationFlow}
+ * @param {Orchestrator} _orch
+ * @param {object} _ctx
+ * @param {GuestInterface<CosmosOrchestrationAccount>} account
+ * @param {CosmosValidatorAddress} validator
+ * @param {TimestampRecord} timestampRecord
+ */
+export const wakerHandler = async (
+  _orch,
+  _ctx,
+  account,
+  validator,
+  timestampRecord,
+) => {
+  trace('Restake Waker Fired', timestampRecord);
+  const amounts = await account.withdrawReward(validator);
+  if (amounts.length !== 1) {
+    throw Fail`Received ${amounts.length} amounts, only expected one.`;
+  }
+  if (!amounts[0].value) return;
+
+  return account.delegate(validator, amounts[0]);
+};
+harden(wakerHandler);

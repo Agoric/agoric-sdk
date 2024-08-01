@@ -1,3 +1,4 @@
+/* eslint-disable jsdoc/require-param */
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import type { TestFn } from 'ava';
 import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
@@ -11,6 +12,7 @@ import {
 import { IBCEvent } from '@agoric/vats';
 import { MsgDelegateResponse } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/tx.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
+import { ContinuingOfferResult } from '@agoric/smart-wallet/src/types.js';
 import { commonSetup } from '../supports.js';
 import {
   buildMsgResponseString,
@@ -50,8 +52,8 @@ test.before(async t => {
     installation,
     undefined,
     {
-      minimumDelay: 1n,
-      minimumInterval: 5n, // for testing only
+      minimumDelay: 10n,
+      minimumInterval: 20n, // for testing only
     },
     { ...commonPrivateArgs, storageNode },
   );
@@ -80,11 +82,6 @@ test.before(async t => {
   };
 });
 
-const chainConfigs = {
-  agoric: { addressPrefix: 'agoric1fakeLCAAddress' },
-  cosmoshub: { addressPrefix: 'cosmos1test' },
-};
-
 const defaultValidator: CosmosValidatorAddress = {
   value: 'cosmosvaloper1test',
   chainId: 'cosmoshub-test',
@@ -101,10 +98,12 @@ test('restake contract schedules claimRewards() and delegate() on an interval', 
   const publicFacet = await E(zoe).getPublicFacet(instance);
   const inv = E(publicFacet).makeRestakeAccountInvitation();
 
-  const userSeat = E(zoe).offer(inv, {}, undefined, { chainName: 'cosmoshub' });
-  const { invitationMakers, publicSubscribers } = await vt.when(
+  const userSeat = E(zoe).offer(inv, {}, undefined, {
+    chainName: 'cosmoshub',
+  });
+  const { invitationMakers, publicSubscribers } = (await vt.when(
     E(userSeat).getOfferResult(),
-  );
+  )) as ContinuingOfferResult;
   t.is(
     publicSubscribers.account.storagePath,
     'mockChainStorageRoot.restake.cosmos1test',
@@ -125,16 +124,15 @@ test('restake contract schedules claimRewards() and delegate() on an interval', 
   const restakeSeat = await E(zoe).offer(restakeInv);
   await vt.when(E(restakeSeat).getOfferResult());
 
-  timer.advanceTo(32n);
-
-  await eventLoopIteration();
-  const messages = await inspectDibcBridge();
-
-  // ChannelOpen, Delegate, WithdrawReward, Delegate
-  t.is(messages.length, 4);
-
-  const verifyWithdrawAndDelegate = (msgs, label) => {
-    const withdrawRewardAck = msgs.at(-2) as IBCEvent<'acknowledgementPacket'>;
+  /** verify WithdrawReward and Delegate acknowledgements */
+  const verifyWithdrawAndDelegate = (
+    events: IBCEvent<any>[],
+    label: string,
+  ) => {
+    const withdrawRewardAck = events.at(
+      -2,
+    ) as IBCEvent<'acknowledgementPacket'>;
+    console.log('withdrawRewardAck', withdrawRewardAck);
     t.is(
       withdrawRewardAck.acknowledgement,
       buildMsgResponseString(MsgWithdrawDelegatorRewardResponse, {
@@ -143,7 +141,7 @@ test('restake contract schedules claimRewards() and delegate() on an interval', 
       `Account withdrew rewards - ${label}`,
     );
 
-    const delegateAck = msgs.at(-1) as IBCEvent<'acknowledgementPacket'>;
+    const delegateAck = events.at(-1) as IBCEvent<'acknowledgementPacket'>;
     t.is(
       delegateAck.acknowledgement,
       buildMsgResponseString(MsgDelegateResponse, {}),
@@ -151,20 +149,53 @@ test('restake contract schedules claimRewards() and delegate() on an interval', 
     );
   };
 
-  verifyWithdrawAndDelegate(messages, 'first iteration');
+  {
+    t.log('Advance timer past first wake');
+    timer.advanceTo(32n);
+    await eventLoopIteration();
+    const { bridgeEvents } = await inspectDibcBridge();
+    // ChannelOpen, Delegate, WithdrawReward, Delegate
+    t.is(bridgeEvents.length, 4);
+    verifyWithdrawAndDelegate(bridgeEvents, 'first iteration');
+  }
 
-  // repeater continues to fire
-  timer.advanceTo(64n);
-  await eventLoopIteration();
-  const newMessages = await inspectDibcBridge();
-  t.is(newMessages.length, 6);
-  verifyWithdrawAndDelegate(newMessages, 'second iteration');
+  {
+    // repeater continues to fire
+    timer.advanceTo(64n);
+    await eventLoopIteration();
+    const { bridgeEvents } = await inspectDibcBridge();
+    t.is(bridgeEvents.length, 6);
+    verifyWithdrawAndDelegate(bridgeEvents, 'second iteration');
+  }
+
+  t.log('Cancel the restake repeater');
+  const cancelInv = await E(invitationMakers).CancelRestake();
+  const cancelSeat = await E(zoe).offer(cancelInv);
+  await vt.when(E(cancelSeat).getOfferResult());
+
+  {
+    timer.advanceTo(96n);
+    await eventLoopIteration();
+    const { bridgeEvents } = await inspectDibcBridge();
+    t.is(bridgeEvents.length, 6, 'no more events after cancel');
+  }
+
+  t.log('contract enforces minimum intervals');
+  await t.throwsAsync(
+    E(invitationMakers).Restake(defaultValidator, {
+      delay: 1n,
+      interval: 2n,
+    }),
+    { message: 'delay must be at least "[10n]"' },
+  );
+  await t.throwsAsync(
+    E(invitationMakers).Restake(defaultValidator, {
+      delay: 10n,
+      interval: 2n,
+    }),
+    { message: 'interval must be at least "[20n]"' },
+  );
 });
 
-test.todo('CancelRestake stops the repeater');
-test.todo(
-  'Restake with an active repeater stops the old one and starts a new one',
-);
-test.todo(
-  'interval interval and delay need to be greater than minimumDelay and minimumInterval',
-);
+test.todo('if wake handler fails, repeater still continues');
+test.todo('contract restart behavior');

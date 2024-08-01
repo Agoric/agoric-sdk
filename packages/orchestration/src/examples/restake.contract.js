@@ -1,19 +1,29 @@
-import { InvitationShape } from '@agoric/zoe/src/typeGuards.js';
+import {
+  EmptyProposalShape,
+  InvitationShape,
+} from '@agoric/zoe/src/typeGuards.js';
 import { M } from '@endo/patterns';
+import { E } from '@endo/far';
+import { makeTracer } from '@agoric/internal';
+import { TimestampRecordShape } from '@agoric/time';
+import { Fail } from '@endo/errors';
 import { withOrchestration } from '../utils/start-helper.js';
 import * as flows from './restake.flows.js';
-import {
-  prepareRestakeHolderKit,
-  prepareRestakeWaker,
-  restakeInvitaitonGuardShape,
-} from './restake.kit.js';
 import { prepareCombineInvitationMakers } from '../exos/combine-invitation-makers.js';
+import { CosmosOrchestrationInvitationMakersInterface } from '../exos/cosmos-orchestration-account.js';
+import { ChainAddressShape } from '../typeGuards.js';
 
 /**
+ * @import {GuestInterface} from '@agoric/async-flow';
+ * @import {TimerRepeater, TimestampRecord} from '@agoric/time';
  * @import {Zone} from '@agoric/zone';
  * @import {OrchestrationPowers} from '../utils/start-helper.js';
  * @import {OrchestrationTools} from '../utils/start-helper.js';
+ * @import {CosmosOrchestrationAccount} from '../exos/cosmos-orchestration-account.js';
+ * @import {CosmosValidatorAddress} from '../types.js';
  */
+
+const trace = makeTracer('RestakeContract');
 
 /**
  * XXX consider moving to privateArgs / creatorFacet, as terms are immutable
@@ -25,6 +35,21 @@ import { prepareCombineInvitationMakers } from '../exos/combine-invitation-maker
  */
 
 /**
+ * TODO use RelativeTimeRecord
+ *
+ * @typedef {{
+ *   delay: bigint;
+ *   interval: bigint;
+ * }} RepeaterOpts
+ */
+
+const RepeaterOptsShape = {
+  delay: M.nat(),
+  interval: M.nat(),
+};
+harden(RepeaterOptsShape);
+
+/**
  * A contract that allows calls to make an OrchestrationAccount, and
  * subsequently schedule a restake (claim and stake rewards) on an interval.
  *
@@ -34,41 +59,114 @@ import { prepareCombineInvitationMakers } from '../exos/combine-invitation-maker
  * @param {ZCF<RestakeContractTerms>} zcf
  * @param {OrchestrationPowers & {
  *   marshaller: Marshaller;
- * }} privateArgs
+ * }} _privateArgs
  * @param {Zone} zone
  * @param {OrchestrationTools} tools
  */
-const contract = async (
-  zcf,
-  { timerService },
-  zone,
-  { orchestrateAll, vowTools },
-) => {
-  const makeRestakeWaker = prepareRestakeWaker(
-    zone.subZone('restakeWaker'),
-    vowTools,
-  );
-  const makeCombineInvitationMakers = prepareCombineInvitationMakers(
-    zone,
-    restakeInvitaitonGuardShape,
-  );
+const contract = async (zcf, { timerService }, zone, { orchestrateAll }) => {
+  const RestakeInvitationMakersI = M.interface('RestakeInvitationMakers', {
+    Restake: M.call(ChainAddressShape, RepeaterOptsShape).returns(M.promise()),
+    CancelRestake: M.call().returns(M.promise()),
+  });
 
-  const { minimumDelay, minimumInterval } = zcf.getTerms();
-
-  const makeRestakeHolderKit = prepareRestakeHolderKit(
-    zone.subZone('restakeHolder'),
+  const makeRestakeKit = zone.exoClassKit(
+    'RestakeExtraInvitationMaker',
     {
-      vowTools,
-      zcf,
-      timer: timerService,
-      makeRestakeWaker,
-      params: harden({ minimumDelay, minimumInterval }),
+      invitationMakers: RestakeInvitationMakersI,
+      waker: M.interface('Waker', {
+        wake: M.call(TimestampRecordShape).returns(M.any()),
+      }),
+    },
+    /**
+     * @param {GuestInterface<CosmosOrchestrationAccount>} account
+     */
+    account =>
+      /**
+       * @type {{
+       *   account: GuestInterface<CosmosOrchestrationAccount>;
+       *   repeater: TimerRepeater | undefined;
+       *   validator: CosmosValidatorAddress | undefined;
+       * }}
+       */ ({ account, repeater: undefined, validator: undefined }),
+    {
+      invitationMakers: {
+        /**
+         * @param {CosmosValidatorAddress} validator
+         * @param {RepeaterOpts} opts
+         * @returns {Promise<Invitation>}
+         */
+        Restake(validator, opts) {
+          trace('Restake', validator);
+          const { delay, interval } = opts;
+          const { minimumDelay, minimumInterval } = zcf.getTerms();
+          // TODO use AmounthMath
+          delay >= minimumDelay || Fail`delay must be at least ${minimumDelay}`;
+          interval >= minimumInterval ||
+            Fail`interval must be at least ${minimumInterval}`;
+
+          return zcf.makeInvitation(
+            async () => {
+              await null;
+              this.state.validator = validator;
+              if (this.state.repeater) {
+                await E(this.state.repeater).disable();
+                this.state.repeater = undefined;
+              }
+              const repeater = await E(timerService).makeRepeater(
+                delay,
+                interval,
+              );
+              this.state.repeater = repeater;
+              await E(repeater).schedule(this.facets.waker);
+            },
+            'Restake',
+            undefined,
+            EmptyProposalShape,
+          );
+        },
+        CancelRestake() {
+          trace('Cancel Restake');
+          return zcf.makeInvitation(
+            async () => {
+              const { repeater } = this.state;
+              if (!repeater) throw Fail`No active repeater.`;
+              await E(repeater).disable();
+              this.state.repeater = undefined;
+            },
+            'Cancel Restake',
+            undefined,
+            EmptyProposalShape,
+          );
+        },
+      },
+      waker: {
+        /** @param {TimestampRecord} timestampRecord */
+        wake(timestampRecord) {
+          trace('Waker Fired', timestampRecord);
+          const { account, validator } = this.state;
+          try {
+            if (!account) throw Fail`No account`;
+            if (!validator) throw Fail`No validator`;
+            // eslint-disable-next-line no-use-before-define -- defined by orchestrateAll, necessarily after this
+            orchFns.wakerHandler(account, validator, timestampRecord);
+          } catch (e) {
+            trace('Wake handler failed', e);
+          }
+        },
+      },
     },
   );
 
+  /** @type {any} XXX async membrane */
+  const makeCombineInvitationMakers = prepareCombineInvitationMakers(
+    zone,
+    CosmosOrchestrationInvitationMakersInterface,
+    RestakeInvitationMakersI,
+  );
+
   const orchFns = orchestrateAll(flows, {
-    makeRestakeHolderKit,
     makeCombineInvitationMakers,
+    makeRestakeKit,
   });
 
   const publicFacet = zone.exo(
