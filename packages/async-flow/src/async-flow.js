@@ -13,7 +13,7 @@ import { LogEntryShape, FlowStateShape } from './type-guards.js';
 /**
  * @import {WeakMapStore} from '@agoric/store'
  * @import {Zone} from '@agoric/base-zone'
- * @import {FlowState, GuestAsyncFunc, HostAsyncFuncWrapper, HostFn, PreparationOptions} from '../src/types.js'
+ * @import {FlowState, GuestAsyncFunc, HostAsyncFuncWrapper, HostFn, HostOf, PreparationOptions} from '../src/types.js'
  * @import {ReplayMembrane} from '../src/replay-membrane.js'
  */
 
