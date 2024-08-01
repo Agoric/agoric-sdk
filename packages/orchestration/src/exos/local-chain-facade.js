@@ -116,6 +116,16 @@ const prepareLocalChainFacadeKit = (
             this.facets.makeAccountWatcher,
           );
         },
+        /** @type {HostOf<Chain['getLocalDenom']>} */
+        getLocalDenom(denom) {
+          // TODO when -> watch
+          // eslint-disable-next-line no-restricted-syntax
+          return asVow(async () => {
+            assert.typeof(denom, 'string', 'Brand case is TODO');
+            const { remoteChainInfo } = this.state;
+            return chainHub.getHoldingDenom(denom, remoteChainInfo.chainId);
+          });
+        },
         /** @type {HostOf<AgoricChainMethods['getVBankAssetInfo']>} */
         getVBankAssetInfo() {
           return asVow(() => {
