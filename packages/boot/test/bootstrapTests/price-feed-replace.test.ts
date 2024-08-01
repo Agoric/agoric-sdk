@@ -3,9 +3,9 @@
  * upgrade scripts re-wire all the contracts so new auctions and
  * price feeds are connected to vaults correctly.
  *
- * - enter a bid
- * - force prices to drop so a vault liquidates
- * - verify that the bidder gets the liquidated assets.
+ * 1. enter a bid
+ * 2. force prices to drop so a vault liquidates
+ * 3. verify that the bidder gets the liquidated assets.
  */
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
@@ -13,84 +13,52 @@ import type { ExecutionContext, TestFn } from 'ava';
 import type { FakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
 import { makeAgoricNamesRemotesFromFakeStorage } from '@agoric/vats/tools/board-utils.js';
 import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
+import { ScheduleNotification } from '@agoric/inter-protocol/src/auction/scheduler.js';
+import { NonNullish } from '@agoric/internal';
 import { makeSwingsetTestKit } from '../../tools/supports.ts';
 import { makeWalletFactoryDriver } from '../../tools/drivers.ts';
+import {
+  LiquidationTestContext,
+  likePayouts,
+  makeLiquidationTestContext,
+  scale6,
+  LiquidationSetup,
+} from '../../tools/liquidation.ts';
 
-const makeDefaultTestContext = async (
-  t: ExecutionContext,
-  { storage = undefined as FakeStorageKit | undefined } = {},
-) => {
-  const swingsetTestKit = await makeSwingsetTestKit(t.log, undefined, {
-    storage,
-  });
-  const { readLatest, runUtils } = swingsetTestKit;
-  ({ storage } = swingsetTestKit);
-  const { EV } = runUtils;
-  await EV.vat('bootstrap').consumeItem('vaultFactoryKit');
-
-  // XXX grumble... .boardId() hack should go away
-  const agoricNamesRemotes = makeAgoricNamesRemotesFromFakeStorage(storage);
-
-  const walletFactoryDriver = await makeWalletFactoryDriver(
-    runUtils,
-    storage,
-    agoricNamesRemotes,
-  );
-
-  return { ...swingsetTestKit, readLatest, walletFactoryDriver };
-};
-
-const test = anyTest as TestFn<
-  Awaited<ReturnType<typeof makeDefaultTestContext>>
->;
-test.before(async t => (t.context = await makeDefaultTestContext(t)));
+const test = anyTest as TestFn<LiquidationTestContext>;
+test.before(async t => (t.context = await makeLiquidationTestContext(t)));
 test.after.always(t => t.context.shutdown());
 
 const collateralBrandKey = 'ATOM';
+const managerIndex = 0;
 
-const collateralMetricsPath = vaultManagerIndex =>
-  `published.vaultFactory.managers.manager${vaultManagerIndex}.metrics`;
+const setup: LiquidationSetup = {
+  vaults: [{ atom: 9, ist: 5, debt: 5.025 }],
+  bids: [{ give: '2IST', discount: 0.1 }],
+  price: {
+    starting: 12.34,
+    trigger: 9.99,
+  },
+  auction: {
+    start: { collateral: 45, debt: 309.54 },
+    end: { collateral: 9.659301, debt: 0 },
+  },
+};
 
-test.serial('open vault: mint 5 IST', async t => {
-  console.time('open vault');
-  const { readLatest, walletFactoryDriver } = t.context;
-  const wd = await walletFactoryDriver.provideSmartWallet('agoric1minter');
-  await wd.executeOfferMaker(Offers.vaults.OpenVault, {
-    offerId: 'open1',
-    collateralBrandKey,
-    wantMinted: 5.0,
-    giveCollateral: 9.0,
-  });
+const outcome = {
+  bids: [{ payouts: { Bid: 0, Collateral: 8.897786 } }],
+};
 
-  t.like(wd.getLatestUpdateRecord(), {
-    updated: 'offerStatus',
-    status: { id: 'open1', numWantsSatisfied: 1 },
-  });
-
-  t.like(readLatest(collateralMetricsPath(0)), {
-    numActiveVaults: 1,
-    totalDebt: { value: 5025000n },
-  });
-  console.timeEnd('open vault');
-});
-
-test.serial('open 10% discount bid on ATOM', async t => {
-  const { readLatest, walletFactoryDriver } = t.context;
-  const wd = await walletFactoryDriver.provideSmartWallet('agoric1minter');
-  await wd.sendOfferMaker(Offers.auction.Bid, {
-    offerId: 'bid1',
-    discount: 0.1,
-    give: '0.5IST',
-    maxBuy: '10_000ATOM',
-  });
-
-  t.like(wd.getLatestUpdateRecord(), {
-    status: { result: 'Your bid has been accepted' },
-  });
+test.serial('1. setupVaults; placeBids', async t => {
+  const { setupVaults, placeBids } = t.context;
+  await setupVaults(collateralBrandKey, managerIndex, setup);
+  await placeBids(collateralBrandKey, 'agoric1bidder', setup);
 });
 
 test.serial('run replace-price-feeds proposals', async t => {
   const { controller, buildProposal, evalProposal } = t.context;
+
+  t.log('@@@@@TODO: what other proposals do we need here?');
 
   const builders = [
     '@agoric/builders/scripts/vats/replaceScaledPriceAuthorities.js',
@@ -104,6 +72,60 @@ test.serial('run replace-price-feeds proposals', async t => {
     const p = buildProposal(builder);
     await evalProposal(p);
   }
+});
 
-  t.fail('TODO');
+test.serial('2. trigger liquidation by changing price', async t => {
+  const { advanceTimeTo, priceFeedDrivers, readLatest } = t.context;
+
+  await priceFeedDrivers[collateralBrandKey].setPrice(9.99);
+
+  // check nothing liquidating yet
+  const liveSchedule: ScheduleNotification = readLatest(
+    'published.auction.schedule',
+  );
+  t.is(liveSchedule.activeStartTime, null);
+  const metricsPath = `published.vaultFactory.managers.manager${managerIndex}.metrics`;
+
+  t.like(readLatest(metricsPath), {
+    numActiveVaults: setup.vaults.length,
+    numLiquidatingVaults: 0,
+  });
+
+  // advance time to start an auction
+  console.log(collateralBrandKey, 'step 1 of 10');
+  await advanceTimeTo(NonNullish(liveSchedule.nextDescendingStepTime));
+  t.like(readLatest(metricsPath), {
+    numActiveVaults: 0,
+    numLiquidatingVaults: setup.vaults.length,
+    liquidatingCollateral: {
+      value: scale6(setup.auction.start.collateral),
+    },
+    liquidatingDebt: { value: scale6(setup.auction.start.debt) },
+    lockedQuote: null,
+  });
+});
+
+test.serial('3. verify liquidation', async t => {
+  const { advanceTimeBy, readLatest } = t.context;
+
+  console.log(collateralBrandKey, 'step 2 of 10');
+  await advanceTimeBy(3, 'minutes');
+  t.like(readLatest(`published.auction.book${managerIndex}`), {
+    collateralAvailable: { value: scale6(setup.auction.start.collateral) },
+    startCollateral: { value: scale6(setup.auction.start.collateral) },
+    startProceedsGoal: { value: scale6(setup.auction.start.debt) },
+  });
+
+  console.log(collateralBrandKey, 'step 3 of 10');
+  await advanceTimeBy(3, 'minutes');
+
+  console.log(collateralBrandKey, 'step 4 of 10');
+  await advanceTimeBy(3, 'minutes');
+
+  t.like(readLatest('published.wallet.agoric1buyer'), {
+    status: {
+      id: `${collateralBrandKey}-bid2`,
+      payouts: likePayouts(outcome.bids[1].payouts),
+    },
+  });
 });
