@@ -7,6 +7,7 @@ import { makePublishKit } from './publish-kit.js';
 import { subscribeLatest } from './subscribe.js';
 
 /**
+ * @import {Remote} from '@agoric/internal';
  * @import {LatestTopic, Notifier, NotifierRecord, PublishKit, Subscriber, UpdateRecord} from './types.js';
  */
 
@@ -41,7 +42,7 @@ export const makeNotifier = sharableInternalsP => {
 
 /**
  * @template T
- * @param {ERef<Subscriber<T>>} subscriber
+ * @param {ERef<Subscriber<T>> | Remote<Subscriber<T>>} subscriber
  * @returns {Notifier<T>}
  */
 export const makeNotifierFromSubscriber = subscriber => {

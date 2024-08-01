@@ -12,16 +12,21 @@ import { Any } from '@agoric/cosmic-proto/google/protobuf/any.js';
 import { matches } from '@endo/patterns';
 import { heapVowE as E } from '@agoric/vow/vat.js';
 import { decodeBase64 } from '@endo/base64';
+import type { LocalIbcAddress } from '@agoric/vats/tools/ibc-utils.js';
+import { getMethodNames } from '@agoric/internal';
+import { Port } from '@agoric/network';
 import { commonSetup } from './supports.js';
 import { ChainAddressShape } from '../src/typeGuards.js';
 import { tryDecodeResponse } from '../src/utils/cosmos.js';
+
+const CHAIN_ID = 'cosmoshub-99';
+const HOST_CONNECTION_ID = 'connection-0';
+const CONTROLLER_CONNECTION_ID = 'connection-1';
 
 test('makeICQConnection returns an ICQConnection', async t => {
   const {
     bootstrap: { cosmosInterchainService },
   } = await commonSetup(t);
-
-  const CONTROLLER_CONNECTION_ID = 'connection-0';
 
   const icqConnection = await E(cosmosInterchainService).provideICQConnection(
     CONTROLLER_CONNECTION_ID,
@@ -64,26 +69,60 @@ test('makeICQConnection returns an ICQConnection', async t => {
   t.like(QueryBalanceResponse.decode(decodeBase64(result.key)), {
     balance: { amount: '0', denom: 'uatom' },
   });
+
+  const icqConnection3 = await E(cosmosInterchainService).provideICQConnection(
+    CONTROLLER_CONNECTION_ID,
+    'icq-2',
+  );
+  const localAddr3 = await E(icqConnection3).getLocalAddress();
+  t.not(
+    localAddr3,
+    localAddr2,
+    'non default version results in a new connection',
+  );
+
+  const icqConnection4 = await E(cosmosInterchainService).provideICQConnection(
+    CONTROLLER_CONNECTION_ID,
+    'icq-2',
+  );
+  const localAddr4 = await E(icqConnection4).getLocalAddress();
+  t.is(localAddr3, localAddr4, 'custom version is idempotent');
+
+  const icqConnection5 = await E(cosmosInterchainService).provideICQConnection(
+    'connection-99',
+  );
+  const localAddr5 = await E(icqConnection5).getLocalAddress();
+
+  const getPortId = (lAddr: LocalIbcAddress) => lAddr.split('/')[2];
+  const uniquePortIds = new Set(
+    [localAddr, localAddr2, localAddr3, localAddr4, localAddr5].map(getPortId),
+  );
+  t.regex([...uniquePortIds][0], /icqcontroller-\d+/);
+  t.is(uniquePortIds.size, 1, 'all connections share same port');
+
+  await t.throwsAsync(
+    // @ts-expect-error icqConnectionKit doesn't have a port method
+    () => E(icqConnection).getPort(),
+    undefined,
+    'ICQConnection Kit does not expose its port',
+  );
 });
 
-test('makeAccount returns a ChainAccount', async t => {
+test('makeAccount returns an IcaAccountKit', async t => {
   const {
     bootstrap: { cosmosInterchainService },
   } = await commonSetup(t);
-
-  const CHAIN_ID = 'cosmoshub-99';
-  const HOST_CONNECTION_ID = 'connection-0';
-  const CONTROLLER_CONNECTION_ID = 'connection-1';
 
   const account = await E(cosmosInterchainService).makeAccount(
     CHAIN_ID,
     HOST_CONNECTION_ID,
     CONTROLLER_CONNECTION_ID,
   );
-  const [localAddr, remoteAddr, chainAddr] = await Promise.all([
+  const [localAddr, remoteAddr, chainAddr, port] = await Promise.all([
     E(account).getLocalAddress(),
     E(account).getRemoteAddress(),
     E(account).getAddress(),
+    E(account).getPort(),
   ]);
   t.log(account, {
     localAddr,
@@ -105,6 +144,12 @@ test('makeAccount returns a ChainAccount', async t => {
     remoteAddr,
     /"version":"ics27-1"(.*)"encoding":"proto3"/,
     'remote address contains version and encoding in version string',
+  );
+  t.true(
+    (
+      ['addListener', 'removeListener', 'connect', 'revoke'] as (keyof Port)[]
+    ).every(method => getMethodNames(port).includes(method)),
+    'IcaAccountKit returns a Port remotable',
   );
 
   t.true(matches(chainAddr, ChainAddressShape));
@@ -132,4 +177,33 @@ test('makeAccount returns a ChainAccount', async t => {
     },
     'cannot execute transaction if connection is closed',
   );
+});
+
+test('makeAccount accepts opts (version, ordering, encoding)', async t => {
+  const {
+    bootstrap: { cosmosInterchainService },
+  } = await commonSetup(t);
+
+  const account = await E(cosmosInterchainService).makeAccount(
+    CHAIN_ID,
+    HOST_CONNECTION_ID,
+    CONTROLLER_CONNECTION_ID,
+    { version: 'ics27-2', ordering: 'unordered', encoding: 'json' },
+  );
+  const [localAddr, remoteAddr] = await Promise.all([
+    E(account).getLocalAddress(),
+    E(account).getRemoteAddress(),
+  ]);
+  t.log({
+    localAddr,
+    remoteAddr,
+  });
+  for (const addr of [localAddr, remoteAddr]) {
+    t.regex(addr, /unordered/, 'remote address contains unordered ordering');
+    t.regex(
+      addr,
+      /"version":"ics27-2"(.*)"encoding":"json"/,
+      'remote address contains version and encoding in version string',
+    );
+  }
 });

@@ -1,4 +1,4 @@
-/** @file ChainAccount exo */
+/** @file Remote Chain Facade exo */
 import { makeTracer } from '@agoric/internal';
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';

@@ -293,6 +293,7 @@ export const prepareLocalOrchestrationAccountKit = (
       holder: {
         /** @type {HostOf<OrchestrationAccountI['asContinuingOffer']>} */
         asContinuingOffer() {
+          // @ts-expect-error XXX invitationMakers
           // getPublicTopics resolves promptly (same run), so we don't need a watcher
           // eslint-disable-next-line no-restricted-syntax
           return asVow(async () => {

@@ -11,6 +11,7 @@ import type {
   IBCMethod,
   IBCEvent,
   ScopedBridgeManagerMethods,
+  IBCConnectionID,
 } from '@agoric/vats';
 import {
   prepareCallbacks as prepareIBCCallbacks,
@@ -53,7 +54,12 @@ export const ibcBridgeMocks: {
   [T in ImplementedIBCEvents]: T extends 'channelOpenAck'
     ? (
         obj: IBCMethod<'startChannelOpenInit'>,
-        opts: { bech32Prefix: string; sequence: number },
+        opts: {
+          bech32Prefix: string;
+          sequence: number;
+          channelID: IBCChannelID;
+          counterpartyChannelID: IBCChannelID;
+        },
       ) => IBCEvent<'channelOpenAck'>
     : T extends 'acknowledgementPacket'
       ? (
@@ -64,11 +70,18 @@ export const ibcBridgeMocks: {
 } = {
   channelOpenAck: (
     obj: IBCMethod<'startChannelOpenInit'>,
-    { bech32Prefix, sequence }: { bech32Prefix: string; sequence: number },
+    {
+      bech32Prefix,
+      sequence,
+      channelID,
+      counterpartyChannelID,
+    }: {
+      bech32Prefix: string;
+      sequence: number;
+      channelID: IBCChannelID;
+      counterpartyChannelID: IBCChannelID;
+    },
   ): IBCEvent<'channelOpenAck'> => {
-    const mocklID = Number(obj.packet.source_port.split('-').at(-1));
-    const mockLocalChannelID: IBCChannelID = `channel-${mocklID}`;
-    const mockRemoteChannelID: IBCChannelID = `channel-${mocklID}`;
     const mockChainAddress =
       sequence > 0 ? `${bech32Prefix}1test${sequence}` : `${bech32Prefix}1test`;
 
@@ -78,10 +91,10 @@ export const ibcBridgeMocks: {
       blockTime: 1711571357,
       event: 'channelOpenAck',
       portID: obj.packet.source_port,
-      channelID: mockLocalChannelID,
+      channelID,
       counterparty: {
         port_id: obj.packet.destination_port,
-        channel_id: mockRemoteChannelID,
+        channel_id: counterpartyChannelID,
       },
       counterpartyVersion: addParamsIfJsonVersion(obj.version, {
         address: mockChainAddress,
@@ -149,11 +162,17 @@ export const makeFakeIBCBridge = (
   let ibcSequenceNonce = 0;
   /**
    * The number of channels created. Currently used as a proxy to increment
-   * fake account addresses.
+   * fake account addresses and channels.
    * @type {nubmer}
    */
   let channelCount = 0;
   let bech32Prefix = 'cosmos';
+
+  /**
+   * Keep track channels requested by remote chain. Used as a proxy for
+   * counterpaty channel ids
+   */
+  const remoteChannelMap: Record<IBCConnectionID, number> = {};
 
   /**
    * Packet byte string map of requests to responses
@@ -168,13 +187,17 @@ export const makeFakeIBCBridge = (
       if (obj.type === 'IBC_METHOD') {
         switch (obj.method) {
           case 'startChannelOpenInit': {
+            const connectionChannelCount = remoteChannelMap[obj.hops[0]] || 0;
             const ackEvent = ibcBridgeMocks.channelOpenAck(obj, {
               bech32Prefix,
               sequence: channelCount,
+              channelID: `channel-${channelCount}`,
+              counterpartyChannelID: `channel-${connectionChannelCount}`,
             });
             bridgeHandler?.fromBridge(ackEvent);
             bridgeEvents = bridgeEvents.concat(ackEvent);
             channelCount += 1;
+            remoteChannelMap[obj.hops[0]] = connectionChannelCount + 1;
             return undefined;
           }
           case 'sendPacket': {

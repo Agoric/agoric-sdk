@@ -1,5 +1,6 @@
-/** @file ChainAccount exo */
+/** @file Orchestrator exo */
 import { AmountShape } from '@agoric/ertp';
+import { pickFacet } from '@agoric/vat-data';
 import { makeTracer } from '@agoric/internal';
 import { Shape as NetworkShape } from '@agoric/network';
 import { Fail, q } from '@endo/errors';
@@ -15,7 +16,7 @@ import {
 
 /**
  * @import {Zone} from '@agoric/base-zone';
- * @import {ChainHub} from './chain-hub.js';
+ * @import {ActualChainInfo, ChainHub} from './chain-hub.js';
  * @import {AsyncFlowTools, HostInterface, HostOf} from '@agoric/async-flow';
  * @import {Vow, VowTools} from '@agoric/vow';
  * @import {TimerService} from '@agoric/time';
@@ -58,7 +59,7 @@ export const OrchestratorI = M.interface('Orchestrator', {
  *   zcf: ZCF;
  * }} powers
  */
-export const prepareOrchestratorKit = (
+const prepareOrchestratorKit = (
   zone,
   {
     chainHub,
@@ -74,14 +75,14 @@ export const prepareOrchestratorKit = (
     {
       orchestrator: OrchestratorI,
       makeLocalChainFacadeWatcher: M.interface('makeLocalChainFacadeWatcher', {
-        onFulfilled: M.call(M.record(), M.string()).returns(M.any()), // FIXME narrow
+        onFulfilled: M.call(M.record()).returns(M.remotable()),
       }),
       makeRemoteChainFacadeWatcher: M.interface(
         'makeRemoteChainFacadeWatcher',
         {
           onFulfilled: M.call(M.any(), M.string())
             .optional(M.arrayOf(M.undefined())) // XXX needed?
-            .returns(M.any()), // FIXME narrow
+            .returns(M.remotable()),
         },
       ),
     },
@@ -93,12 +94,11 @@ export const prepareOrchestratorKit = (
       /** Waits for `chainInfo` and returns a LocalChainFacade */
       makeLocalChainFacadeWatcher: {
         /**
-         * @param {ChainInfo} agoricChainInfo
-         * @param {string} name
+         * @param {ActualChainInfo<'agoric'>} agoricChainInfo
          */
-        onFulfilled(agoricChainInfo, name) {
+        onFulfilled(agoricChainInfo) {
           const it = makeLocalChainFacade(agoricChainInfo);
-          chainByName.init(name, it);
+          chainByName.init('agoric', it);
           return it;
         },
       },
@@ -130,7 +130,6 @@ export const prepareOrchestratorKit = (
             return watch(
               chainHub.getChainInfo('agoric'),
               this.facets.makeLocalChainFacadeWatcher,
-              name,
             );
           }
           return watch(
@@ -152,7 +151,6 @@ export const prepareOrchestratorKit = (
           chainByName.has(baseName) ||
             Fail`use getChain(${q(baseName)}) before getBrandInfo(${q(denom)})`;
           const base = chainByName.get(baseName);
-          // @ts-expect-error XXX HostOf<> not quite right?
           return harden({ chain, base, brand, baseDenom });
         },
         /** @type {HostOf<Orchestrator['asAmount']>} */
@@ -161,6 +159,29 @@ export const prepareOrchestratorKit = (
     },
   );
 harden(prepareOrchestratorKit);
+
+/**
+ * @param {Zone} zone
+ * @param {{
+ *   asyncFlowTools: AsyncFlowTools;
+ *   chainHub: ChainHub;
+ *   localchain: Remote<LocalChain>;
+ *   chainByName: MapStore<string, HostInterface<Chain>>;
+ *   makeRecorderKit: MakeRecorderKit;
+ *   makeLocalChainFacade: MakeLocalChainFacade;
+ *   makeRemoteChainFacade: MakeRemoteChainFacade;
+ *   orchestrationService: Remote<CosmosInterchainService>;
+ *   storageNode: Remote<StorageNode>;
+ *   timerService: Remote<TimerService>;
+ *   vowTools: VowTools;
+ *   zcf: ZCF;
+ * }} powers
+ */
+export const prepareOrchestrator = (zone, powers) => {
+  const makeOrchestratorKit = prepareOrchestratorKit(zone, powers);
+  return pickFacet(makeOrchestratorKit, 'orchestrator');
+};
+
 /**
  * Host side of the Orchestrator interface. (Methods return vows instead of
  * promises as the interface within the guest function.)
