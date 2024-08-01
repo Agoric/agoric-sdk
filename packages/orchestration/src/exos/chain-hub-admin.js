@@ -33,9 +33,11 @@ export const prepareChainHubAdmin = (zone, chainHub) => {
     }),
     {
       /**
-       * @param {string} chainName
+       * Register information for a chain
+       *
+       * @param {string} chainName - must not exist in chainHub
        * @param {CosmosChainInfo} chainInfo
-       * @param {IBCConnectionInfo} connectionInfo
+       * @param {IBCConnectionInfo} connectionInfo - from Agoric chain
        */
       async initChain(chainName, chainInfo, connectionInfo) {
         // when() because chainHub methods return vows. If this were inside
