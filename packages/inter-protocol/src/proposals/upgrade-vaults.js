@@ -85,6 +85,32 @@ export const upgradeVaults = async (powers, { options }) => {
     }
   }
 
+  const restoreDirectorParams = async () => {
+    const { publicFacet: directorPF } = kit;
+
+    await null;
+
+    const subscription = E(directorPF).getElectorateSubscription();
+    const notifier = makeNotifierFromAsyncIterable(subscription);
+    let { value, updateCount } = await notifier.getUpdateSince(0n);
+    // @ts-expect-error It's an amount.
+    while (AmountMath.isEmpty(value.current.MinInitialDebt.value)) {
+      ({ value, updateCount } = await notifier.getUpdateSince(updateCount));
+      trace(
+        `minInitialDebt was empty, retried`,
+        value.current.MinInitialDebt.value,
+      );
+    }
+
+    return harden({
+      MinInitialDebt: value.current.MinInitialDebt.value,
+      ReferencedUI: value.current.ReferencedUI.value,
+      RecordingPeriod: value.current.RecordingPeriod.value,
+      ChargingPeriod: value.current.ChargingPeriod.value,
+    });
+  };
+  const directorParamOverrides = await restoreDirectorParams();
+
   const readManagerParams = async () => {
     const { publicFacet: directorPF } = kit;
 
@@ -138,6 +164,7 @@ export const upgradeVaults = async (powers, { options }) => {
       initialPoserInvitation: poserInvitation,
       initialShortfallInvitation: shortfallInvitation,
       managerParams: managerParamValues,
+      directorParamOverrides,
     });
 
     const upgradeResult = await E(kit.adminFacet).upgradeContract(
