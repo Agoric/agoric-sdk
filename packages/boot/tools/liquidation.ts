@@ -207,7 +207,7 @@ export const makeLiquidationTestKit = async ({
       const notification = readLatest(
         `published.vaultFactory.managers.manager${managerIndex}.vaults.vault${vaultIndex}`,
       );
-      t.like(notification, partial);
+      t.like(notification, partial, 'vault notification did not match');
     },
   };
 
