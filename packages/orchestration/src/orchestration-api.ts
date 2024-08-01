@@ -87,6 +87,14 @@ export interface Chain<CI extends ChainInfo> {
    */
   makeAccount: () => Promise<OrchestrationAccount<CI>>;
   // FUTURE supply optional port object; also fetch port object
+
+  /**
+   * Get the Denom on this Chain corresponding to the denom or Brand on
+   * this or another Chain.
+   * @param denom
+   * @returns
+   */
+  getLocalDenom: (denom: DenomArg) => Promise<Denom>;
 }
 
 /**
@@ -122,23 +130,6 @@ export interface Orchestrator {
     /** the Denom for the underlying asset on its issuer chain */
     baseDenom: Denom;
   };
-
-  /**
-   * Get denom on a holding chain.
-   *
-   * @param baseDenom denom on issuing chain
-   * @param base issuing chain
-   * @param chain holding chain - connection to base chain must be regitered in chainHub
-   * @returns denom on holding chain
-   */
-  getDenomOn: <
-    HoldingChain extends keyof KnownChains,
-    IssuingChain extends keyof KnownChains,
-  >(
-    baseDenom: Denom,
-    base: Chain<KnownChains[IssuingChain]>,
-    chain: Chain<KnownChains[HoldingChain]>,
-  ) => Promise<Denom>;
 
   // TODO preload the mapping so this can be synchronous
   /**
