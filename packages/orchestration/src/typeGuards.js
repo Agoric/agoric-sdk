@@ -4,8 +4,9 @@ import { M } from '@endo/patterns';
 
 /**
  * @import {TypedPattern} from '@agoric/internal';
- * @import {ChainAddress, CosmosAssetInfo, ChainInfo, CosmosChainInfo, DenomAmount, DenomDetail} from './types.js';
+ * @import {ChainAddress, CosmosAssetInfo, ChainInfo, CosmosChainInfo, DenomAmount} from './types.js';
  * @import {Delegation} from '@agoric/cosmic-proto/cosmos/staking/v1beta1/staking.js';
+ * @import {TxBody} from '@agoric/cosmic-proto/cosmos/tx/v1beta1/tx.js';
  */
 
 /**
@@ -130,3 +131,14 @@ export const ChainFacadeI = M.interface('ChainFacade', chainFacadeMethods);
  * from `@agoric/time`
  */
 export const TimestampProtoShape = { seconds: M.nat(), nanos: M.number() };
+
+/** see {@link TxBody} for more details */
+export const TxBodyOptsShape = M.splitRecord(
+  {},
+  {
+    memo: M.string(),
+    timeoutHeight: M.bigint(),
+    extensionOptions: M.arrayOf(M.any()),
+    nonCriticalExtensionOptions: M.arrayOf(M.any()),
+  },
+);
