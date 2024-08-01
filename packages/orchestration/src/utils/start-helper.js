@@ -104,6 +104,7 @@ export const provideOrchestration = (
     orchestration: remotePowers.orchestrationService,
     storageNode: remotePowers.storageNode,
     timer: remotePowers.timerService,
+    chainHub,
     vowTools,
   });
 
