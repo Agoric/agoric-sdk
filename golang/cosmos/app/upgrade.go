@@ -93,7 +93,12 @@ func upgradePriceFeedCoreProposalSteps(upgradeName string) ([]vm.CoreProposalSte
 
 	var inBrandNames []string
 	switch {
-	case isThisUpgrade("UNRELEASED_A3P_INTEGRATION"), isThisUpgrade("UNRELEASED_main"):
+	case isThisUpgrade("UNRELEASED_A3P_INTEGRATION"):
+		inBrandNames = []string{
+			"ATOM",
+			"stATOM",
+		}
+	case isThisUpgrade("UNRELEASED_main"):
 		inBrandNames = []string{
 			"ATOM",
 			"stATOM",

@@ -23,39 +23,21 @@ import {
 import { getDetailsMatchingVats } from './vatDetails.js';
 
 const checkPriceFeedVatsUpdated = async t => {
-  const atomDetails = await getVatDetails('ATOM-USD_price_feed');
+  const atomDetails = await getVatDetails('-ATOM-USD_price_feed');
   // both the original and the new ATOM vault are incarnation 0
   t.is(atomDetails.incarnation, 0);
   const stAtomDetails = await getVatDetails('stATOM');
   t.is(stAtomDetails.incarnation, 0);
-  const stOsmoDetails = await getVatDetails('stOSMO');
-  t.is(stOsmoDetails.incarnation, 0);
-  const stTiaDetails = await getVatDetails('stTIA');
-  t.is(stTiaDetails.incarnation, 0);
-  await Promise.all([
-    checkForOracle(t, 'ATOM'),
-    checkForOracle(t, 'stATOM'),
-    checkForOracle(t, 'stTIA'),
-    checkForOracle(t, 'stOSMO'),
-    checkForOracle(t, 'stkATOM'),
-  ]);
+  await Promise.all([checkForOracle(t, 'ATOM'), checkForOracle(t, 'stATOM')]);
 };
 
-const BRANDNAMES = ['ATOM', 'stATOM', 'stTIA', 'stOSMO', 'stkATOM'];
+const BRANDNAMES = ['ATOM', 'stATOM'];
 const oraclesByBrand = generateOracleMap('u16', BRANDNAMES);
 
 const checkNewQuotes = async t => {
   t.log('awaiting new quotes');
   const atomOut = await getPriceQuote('ATOM');
   t.is(atomOut, '+11200000');
-  const tiaOut = await getPriceQuote('stTIA');
-  t.is(tiaOut, '+11300000');
-  const stAtomOut = await getPriceQuote('stATOM');
-  t.is(stAtomOut, '+11400000');
-  const osmoOut = await getPriceQuote('stOSMO');
-  t.is(osmoOut, '+11500000');
-  const stkAtomOut = await getPriceQuote('stkATOM');
-  t.is(stkAtomOut, '+11600000');
 };
 
 const createNewBid = async t => {
