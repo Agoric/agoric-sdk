@@ -8,6 +8,7 @@ import {
   ChainAddressShape,
   OutboundConnectionHandlerI,
   Proto3Shape,
+  TxBodyOptsShape,
 } from '../typeGuards.js';
 import { findAddressField } from '../utils/address.js';
 import { makeTxPacket, parseTxPacket } from '../utils/packet.js';
@@ -34,7 +35,7 @@ export const IcaAccountI = M.interface('IcaAccount', {
   getPort: M.call().returns(M.remotable('Port')),
   executeTx: M.call(M.arrayOf(M.record())).returns(VowShape),
   executeEncodedTx: M.call(M.arrayOf(Proto3Shape))
-    .optional(M.record())
+    .optional(TxBodyOptsShape)
     .returns(VowShape),
   close: M.call().returns(VowShape),
 });
