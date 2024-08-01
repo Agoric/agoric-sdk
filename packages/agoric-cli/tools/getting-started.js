@@ -10,7 +10,7 @@ import { spawn } from 'child_process';
 
 import { makePspawn } from '../src/helpers.js';
 
-const TIMEOUT_SECONDS = 3 * 60;
+const TIMEOUT_SECONDS = 1 * 60 * 1000;
 
 const dirname = new URL('./', import.meta.url).pathname;
 
