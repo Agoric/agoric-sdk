@@ -106,7 +106,7 @@ test.serial('ATOM denom agoric -> cosmos hub -> osmosis', async t => {
       t.is(baseDenom, 'uatom');
 
       const osmosis = await orch.getChain('osmosis');
-      const remoteAtom = await orch.getDenomOn(baseDenom, cosmoshub, osmosis);
+      const remoteAtom = await osmosis.getLocalDenom(baseDenom);
       t.log('getDenomOn', { baseDenom, remoteAtom });
       t.is(remoteAtom, atomOn.osmosis);
     },
