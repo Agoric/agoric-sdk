@@ -55,8 +55,13 @@ test.serial('1. setupVaults; placeBids', async t => {
 });
 
 test.serial('run replace-price-feeds proposals', async t => {
-  const { agoricNamesRemotes, controller, buildProposal, evalProposal } =
-    t.context;
+  const {
+    agoricNamesRemotes,
+    controller,
+    buildProposal,
+    evalProposal,
+    refreshAgoricNamesRemotes,
+  } = t.context;
 
   const perFeedBuilders = [
     // close enough to @agoric/builders/scripts/vats/priceFeedSupport.js"
@@ -77,6 +82,7 @@ test.serial('run replace-price-feeds proposals', async t => {
     const p = buildProposal(builder);
     await evalProposal(p);
   }
+  refreshAgoricNamesRemotes();
   const instancePost = agoricNamesRemotes.instance['ATOM-USD price feed'];
   t.not(instancePre, instancePost);
 });
