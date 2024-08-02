@@ -41,7 +41,6 @@ export const replaceScaledPriceAuthorities = async (powers, { options }) => {
     consume: {
       agoricNamesAdmin,
       contractKits: contractKitsP,
-      instancePrivateArgs: instancePrivateArgsP,
       priceAuthority,
       zoe,
     },
@@ -68,10 +67,7 @@ export const replaceScaledPriceAuthorities = async (powers, { options }) => {
     trace('installed scaledPriceAuthority bundle', bundleID);
   }
 
-  const [contractKits] = await Promise.all([
-    contractKitsP,
-    instancePrivateArgsP,
-  ]);
+  const contractKits = await contractKitsP;
   /** @type {StartedInstanceKit<any>[]} */
   const scaledPAKitEntries = Array.from(contractKits.values()).filter(
     kit => kit.label && kit.label.match(/scaledPriceAuthority/),
@@ -101,7 +97,6 @@ export const getManifestForReplaceScaledPriceAuthorities = async (
       consume: {
         agoricNamesAdmin: t,
         contractKits: t,
-        instancePrivateArgs: t,
         priceAuthority: t,
         priceAuthorityAdmin: t,
         zoe: t,
