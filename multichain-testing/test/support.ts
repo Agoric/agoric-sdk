@@ -38,9 +38,11 @@ const makeKeyring = async (
     _keys = keys;
     const wallets: Record<string, string> = {};
     for (const name of keys) {
-      const res = await e2eTools.addKey(name, generateMnemonic());
+      const walletMnemonic = generateMnemonic();
+      const res = await e2eTools.addKey(name, walletMnemonic);
       const { address } = JSON.parse(res);
       wallets[name] = address;
+      wallets[`seed.${name}`] = walletMnemonic;
     }
     return wallets;
   };

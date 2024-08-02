@@ -3,10 +3,13 @@ import type { TestFn } from 'ava';
 import { commonSetup, SetupContextWithWallets } from './support.js';
 import { makeDoOffer } from '../tools/e2e-tools.js';
 import { chainConfig, chainNames } from './support.js';
+import * as fs from 'fs/promises';
+import {execa, execaNode} from 'execa';
 
 const test = anyTest as TestFn<Record<string, SetupContextWithWallets>>;
 
-const accounts = ['user1', 'user2', 'user3']; // one account for each scenario
+const accounts = ['agorictest1'];
+const agoricChains = ['agoric'];
 
 const contractName = 'agoricEvaluator';
 const contractBuilder = new URL(
@@ -15,12 +18,21 @@ const contractBuilder = new URL(
 ).pathname;
 
 test.before(async t => {
-  for (const agoricChainName of ['agoric', 'agoricdriver']) {
+  for (const agoricChainName of agoricChains) {
     t.log('setting up in', agoricChainName);
     const { deleteTestKeys, setupTestKeys, ...rest } = await commonSetup(t, agoricChainName);
     deleteTestKeys(accounts).catch();
     const wallets = await setupTestKeys(accounts);
     t.context[agoricChainName] = { ...rest, wallets, deleteTestKeys };
+
+    t.log(`'patching ${wallets[accounts[0]]} as ${accounts[0]} in contract builder`);
+    if (!process.env.AGORIC_EVALUATOR_INVITED_OWNERS) {
+      process.env.AGORIC_EVALUATOR_INVITED_OWNERS = JSON.stringify({agorictest1: wallets[accounts[0]]});
+    }
+    t.log('Add agorictest1 to host agd');
+    const seedArray = new Uint8Array(Buffer.from(wallets[`seed.${accounts[0]}`] + '\n'));
+    await execa`agd keys delete -y ${accounts[0]}`.catch(() => {});
+    await execa({stdin:seedArray })`agd keys add --recover ${accounts[0]}`;
 
     t.log('bundle and install contract', contractName);
     await t.context[agoricChainName].deployBuilder(contractBuilder);
@@ -33,13 +45,15 @@ test.before(async t => {
   }
 });
 
-test.after(async t => {
-  const { deleteTestKeys } = t.context;
-  deleteTestKeys(accounts);
-});
+// test.after(async t => {
+//   for (const agoricChainName of agoricChains) {
+//     const { deleteTestKeys } = t.context[agoricChainName];
+//     deleteTestKeys(accounts);
+//   }
+// });
 
 const makeEvalScenario = test.macro({
-  title: (_, chainName: string) => `Create account on ${chainName}`,
+  title: (_, chainName: string) => `Eval code on ${chainName}`,
   exec: async (t, chainName: string) => {
     const config = chainConfig[chainName];
     if (!config) return t.fail(`Unknown chain: ${chainName}`);
@@ -49,11 +63,11 @@ const makeEvalScenario = test.macro({
       provisionSmartWallet,
       makeQueryTool,
       retryUntilCondition,
-    } = t.context;
+    } = t.context[chainName];
 
     const vstorageClient = makeQueryTool();
 
-    const wallet = accounts[chainNames.indexOf(chainName)];
+    const wallet = accounts[0];
     const wdUser1 = await provisionSmartWallet(wallets[wallet], {
       BLD: 100n,
       IST: 100n,
@@ -62,28 +76,62 @@ const makeEvalScenario = test.macro({
 
     const doOffer = makeDoOffer(wdUser1);
     t.log(`${chainName} eval offer`);
-    const offerId = `${chainName}-eval-${Date.now()}`;
+    const evalOfferId = `eval-${chainName}-${Date.now()}`;
+    const claimOfferId = `claimEval-${chainName}-${Date.now()}`;
 
-    // FIXME we get payouts but not an offer result; it times out
-    // https://github.com/Agoric/agoric-sdk/issues/9643
-    // chain logs shows an UNPUBLISHED result
-    const stringToEval = 'console.log("hello world")';
-    const _offerResult = await doOffer({
-      id: offerId,
-      invitationSpec: {
-        source: 'agoricContract',
-        instancePath: [contractName],
-        callPipe: [['makeMirrorInvitation'], [stringToEval]],
-      },
-      offerArgs: { chainName },
-      proposal: {},
-    });
-    t.true(_offerResult);
-    t.is(
-      await _offerResult,
-      'UNPUBLISHED',
-      'representation of continuing offer',
+    t.log('claim invitation for', wallet, wallets[wallet]);
+
+    const claimResult = await execa`agops eval claim --from=${wallet} --offerId`.pipe`agoric wallet send --from=${wallet} --offer=/dev/stdin`;
+    // const _claimResult = await doOffer({
+    //   id: claimOfferId,
+    //   invitationSpec: {
+    //     source: 'purse',
+    //     instancePath: [contractName],
+    //     description: 'evaluator',
+    //   },
+    //   offerArgs: {
+    //   },
+    //   proposal: {},
+    // });
+    // t.true(_claimResult);
+
+    const currentWalletRecord = await retryUntilCondition(
+      () =>
+        vstorageClient.queryData(`published.wallet.${wallets[wallet]}.current`),
+      ({ offerToUsedInvitation }) =>
+        Object.fromEntries(offerToUsedInvitation)[claimOfferId],
+      `${claimOfferId} continuing invitation is in vstorage`,
     );
+
+    const stringToEval = 'console.log("hello world")';
+    const evalResult = await execa`agops eval offer --from=${wallet} --offerId=${evalOfferId} '${stringToEval}'`
+    // const _offerResult = await doOffer({
+    //   id: offerId,
+    //   invitationSpec: {
+    //     invitationArgs: [stringToEval],
+    //     invitationMakerName: 'Eval',
+    //     previousOffer: claimOfferId,
+    //     source: 'continuing'
+    //   },
+    //   offerArgs: {},
+    //   proposal: {},
+    // });
+    // t.true(_offerResult);
+
+    //const lastEval = await vstorageClient.(`published.${contractName}.${wallets[wallet]}`);
+
+    const currentEvalRecord = await retryUntilCondition(
+      () =>
+        vstorageClient.queryData(`published.${contractName}.${wallets[wallet]}`),
+      ({ offerToPublicSubscriberPaths }) =>
+        Object.fromEntries(offerToPublicSubscriberPaths)['lastSequence'] === true,
+      `${evalOfferId} eval is in vstorage`,
+    );
+    // t.is(
+    //   await _offerResult,
+    //   'UNPUBLISHED',
+    //   'representation of continuing offer',
+    // );
 
     // TODO fix above so we don't have to poll for the offer result to be published
     // https://github.com/Agoric/agoric-sdk/issues/9643
@@ -121,5 +169,5 @@ test.serial('noop', async t => {
   console.log(contractName, 'contract installed');
   t.pass(`${contractName} contract installed`);
 });
-// test.serial(makeEvalScenario, 'agoric');
+test.serial(makeEvalScenario, 'agoric');
 // test.serial(makeEvalScenario, 'agoric2');
