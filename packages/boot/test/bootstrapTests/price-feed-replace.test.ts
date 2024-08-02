@@ -36,7 +36,7 @@ const setup: LiquidationSetup = {
   },
   auction: {
     start: { collateral: 15, debt: 100.5 },
-    end: { collateral: 9.659301, debt: 0 },
+    end: { collateral: 9.659301, debt: 0 }, // TODO: fix/adjust
   },
 };
 
@@ -57,9 +57,9 @@ test.serial('1. setupVaults; placeBids', async t => {
 test.serial('run replace-price-feeds proposals', async t => {
   const {
     agoricNamesRemotes,
-    controller,
     buildProposal,
     evalProposal,
+    priceFeedDrivers,
     refreshAgoricNamesRemotes,
   } = t.context;
 
@@ -85,12 +85,20 @@ test.serial('run replace-price-feeds proposals', async t => {
   refreshAgoricNamesRemotes();
   const instancePost = agoricNamesRemotes.instance['ATOM-USD price feed'];
   t.not(instancePre, instancePost);
+
+  await priceFeedDrivers[collateralBrandKey].refreshInvitations();
 });
 
 test.serial('2. trigger liquidation by changing price', async t => {
-  const { priceFeedDrivers, readLatest } = t.context;
+  const { priceFeedDrivers, readLatest, refreshAgoricNamesRemotes } = t.context;
 
   await priceFeedDrivers[collateralBrandKey].setPrice(9.99);
+
+  t.log(readLatest('published.priceFeed.ATOM-USD_price_feed'), {
+    // aka 9.99
+    amountIn: { value: 1000000n },
+    amountOut: { value: 9990000n },
+  });
 
   // check nothing liquidating yet
   const liveSchedule: ScheduleNotification = readLatest(
@@ -116,6 +124,7 @@ test.serial('3. verify liquidation', async t => {
   // advance time to start an auction
   console.log(collateralBrandKey, 'step 1 of 10');
   await advanceTimeTo(NonNullish(liveSchedule.nextDescendingStepTime));
+  // vaultFactory sent collateral for liquidation
   t.like(readLatest(metricsPath), {
     numActiveVaults: 0,
     numLiquidatingVaults: setup.vaults.length,
@@ -138,6 +147,24 @@ test.serial('3. verify liquidation', async t => {
   await advanceTimeBy(3, 'minutes');
 
   console.log(collateralBrandKey, 'step 4 of 10');
+  await advanceTimeBy(3, 'minutes');
+
+  console.log(collateralBrandKey, 'step 5 of 10');
+  await advanceTimeBy(3, 'minutes');
+
+  console.log(collateralBrandKey, 'step 6 of 10');
+  await advanceTimeBy(3, 'minutes');
+  t.like(readLatest(`published.auction.book${managerIndex}`), {
+    collateralAvailable: { value: 9659301n },
+  });
+
+  console.log(collateralBrandKey, 'step 7 of 10');
+  await advanceTimeBy(3, 'minutes');
+
+  console.log(collateralBrandKey, 'step 8 of 10');
+  await advanceTimeBy(3, 'minutes');
+
+  console.log(collateralBrandKey, 'step 9 of 10');
   await advanceTimeBy(3, 'minutes');
 
   t.like(readLatest('published.wallet.agoric1buyer'), {
