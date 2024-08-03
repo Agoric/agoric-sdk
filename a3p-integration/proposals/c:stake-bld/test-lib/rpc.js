@@ -3,11 +3,11 @@
 // @ts-check
 /* global Buffer */
 
+import { Fail } from '@endo/errors';
 import {
   boardSlottingMarshaller,
   makeBoardRemote,
 } from '@agoric/internal/src/marshal.js';
-import { Fail } from '@endo/errors';
 
 export { boardSlottingMarshaller };
 

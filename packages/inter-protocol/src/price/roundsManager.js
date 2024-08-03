@@ -1,4 +1,4 @@
-import { Fail, q } from '@agoric/assert';
+import { Fail, q } from '@endo/errors';
 import { AmountMath } from '@agoric/ertp';
 import { makeTracer } from '@agoric/internal';
 import { TimeMath, TimestampShape } from '@agoric/time';

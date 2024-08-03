@@ -1,4 +1,5 @@
 // @ts-check
+import { Fail } from '@endo/errors';
 import { deeplyFulfilledObject } from '@agoric/internal';
 import fs from 'fs';
 import { createRequire } from 'module';
@@ -18,8 +19,6 @@ import {
  * @typedef {{steps: ConfigProposal[][]}} SequentialCoreProposals
  * @typedef {ConfigProposal[] | SequentialCoreProposals} CoreProposals
  */
-
-const { Fail } = assert;
 
 const req = createRequire(import.meta.url);
 

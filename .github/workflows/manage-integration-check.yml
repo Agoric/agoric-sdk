@@ -16,7 +16,7 @@ jobs:
         if: ${{ github.event.action == 'requested' || github.event.action == 'in_progress' }}
         with:
           script: |
-            const external_id = context.payload.workflow_run.html_url;
+            const external_id = context.payload.workflow_run.html_url + "-" + context.payload.workflow_run.run_attempt;
             const head_sha = context.payload.workflow_run.head_sha;
             const runs = await github.paginate(github.rest.checks.listForRef, {
               ...context.repo,
@@ -25,7 +25,7 @@ jobs:
               external_id,
             })
             core.debug(`integration-test-result check runs: ${JSON.stringify(runs, null, 2)}`);
-            const filtRuns = runs.filter(run => run.status !== 'completed');
+            const filtRuns = runs.filter(run => run.external_id === external_id);
             const descRuns = filtRuns.sort((a, b) => Date.parse(b.started_at) - Date.parse(a.started_at));
             const run = descRuns[0];
 
@@ -42,7 +42,7 @@ jobs:
               external_id,
               output: {
                 title: "Integration Test Aggregate Result",
-                summary: `Synthetic check capturing the result of the <a href="${context.payload.workflow_run.html_url}">integration-test workflow run</a>`,
+                summary: `Synthetic check capturing the result of the <a href="${context.payload.workflow_run.html_url}">integration-test workflow run</a> (attempt ${context.payload.workflow_run.run_attempt})`,
               }
             });
             return check.data.id;
@@ -56,7 +56,7 @@ jobs:
           result-encoding: string
           script: |
             // Update the check run
-            const external_id = context.payload.workflow_run.html_url;
+            const external_id = context.payload.workflow_run.html_url + "-" + context.payload.workflow_run.run_attempt;
             const head_sha = context.payload.workflow_run.head_sha;
             const runs = await github.paginate(github.rest.checks.listForRef, {
               ...context.repo,
@@ -65,12 +65,23 @@ jobs:
               external_id,
             })
             core.debug(`integration-test-result check runs: ${JSON.stringify(runs, null, 2)}`);
-            const filtRuns = runs.filter(run => run.status !== 'completed');
+            const filtRuns = runs.filter(run => run.status !== 'completed' && run.external_id === external_id);
             const descRuns = filtRuns.sort((a, b) => Date.parse(b.started_at) - Date.parse(a.started_at));
             const run = descRuns[0];
 
             if (!run) {
-              core.setFailed(`No integration-test-result check found for commit ${head_sha} ${external_id}`);
+              const check = await github.rest.checks.create({
+                ...context.repo,
+                head_sha,
+                name: "integration-test-result",
+                status: "completed",
+                conclusion: context.payload.workflow_run.conclusion,
+                external_id,
+                output: {
+                  title: "Integration Test Aggregate Result",
+                  summary: `Synthetic check capturing the result of the <a href="${context.payload.workflow_run.html_url}">integration-test workflow run</a> (attempt ${context.payload.workflow_run.run_attempt})`,
+                }
+              });
               return;
             }
 

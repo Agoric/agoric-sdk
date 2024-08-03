@@ -242,7 +242,7 @@ const testGoodReplay = async (t, zone) => {
       // same question. different answer
       t.is(prod2, 42);
       t.log('about to await p3');
-      await p3;
+      t.is(await p3.catch(r => r), 'done');
       t.log('p3 settled');
     },
   };
@@ -294,7 +294,7 @@ const testGoodReplay = async (t, zone) => {
   ]);
 
   // @ts-expect-error TS doesn't know it is a resolver
-  r3.resolve('done');
+  r3.reject('done');
   await eventLoopIteration();
 
   t.is(await when(outcomeV), undefined);

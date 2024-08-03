@@ -1,6 +1,8 @@
 import { makeTracer } from '@agoric/internal';
 import { makeStorageNodeChild } from '@agoric/internal/src/lib-chainStorage.js';
-import { heapVowE as E } from '@agoric/vow/vat.js';
+import { prepareVowTools } from '@agoric/vow';
+import { makeHeapZone } from '@agoric/zone';
+import { E } from '@endo/far';
 import { makeChainHub } from '../exos/chain-hub.js';
 
 /**
@@ -19,6 +21,11 @@ const trace = makeTracer('StartStakeOsmo', true);
  *       >;
  *     };
  *   };
+ *   instance: {
+ *     produce: {
+ *       stakeOsmo: any;
+ *     };
+ *   };
  * }} powers
  */
 export const startStakeOsmo = async ({
@@ -27,14 +34,13 @@ export const startStakeOsmo = async ({
     board,
     chainStorage,
     chainTimerService,
-    orchestration,
+    cosmosInterchainService,
     startUpgradable,
   },
   installation: {
     consume: { stakeIca },
   },
   instance: {
-    // @ts-expect-error stakeOsmo not typed
     produce: { stakeOsmo: produceInstance },
   },
 }) => {
@@ -45,9 +51,10 @@ export const startStakeOsmo = async ({
   const storageNode = await makeStorageNodeChild(chainStorage, VSTORAGE_PATH);
   const marshaller = await E(board).getPublishingMarshaller();
 
-  const chainHub = makeChainHub(await agoricNames);
+  const vt = prepareVowTools(makeHeapZone());
+  const chainHub = makeChainHub(await agoricNames, vt);
 
-  const [_, osmosis, connectionInfo] = await E.when(
+  const [_, osmosis, connectionInfo] = await vt.when(
     chainHub.getChainsAndConnection('agoric', 'osmosis'),
   );
 
@@ -57,13 +64,13 @@ export const startStakeOsmo = async ({
     installation: stakeIca,
     terms: {
       chainId: osmosis.chainId,
-      hostConnectionId: connectionInfo.id,
-      controllerConnectionId: connectionInfo.counterparty.connection_id,
+      hostConnectionId: connectionInfo.counterparty.connection_id,
+      controllerConnectionId: connectionInfo.id,
       bondDenom: osmosis.stakingTokens[0].denom,
       icqEnabled: osmosis.icqEnabled,
     },
     privateArgs: {
-      orchestration: await orchestration,
+      cosmosInterchainService: await cosmosInterchainService,
       storageNode,
       marshaller,
       timer: await chainTimerService,
@@ -87,7 +94,7 @@ export const getManifestForStakeOsmo = (
           board: true,
           chainStorage: true,
           chainTimerService: true,
-          orchestration: true,
+          cosmosInterchainService: true,
           startUpgradable: true,
         },
         installation: {

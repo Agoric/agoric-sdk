@@ -5,11 +5,10 @@ import './set-debug-label-instances.js';
 import { passStyleOf } from '@endo/far';
 
 // this samples it
+import { q } from '@endo/errors';
 import { makeFakeVirtualStuff } from '../../tools/fakeVirtualSupport.js';
 // all tests in this file will be run with DEBUG='label-instances'
 import { parseVatSlot } from '../../src/parseVatSlots.js';
-
-const { quote: q } = assert;
 
 const init = () => ({});
 const behavior = {};

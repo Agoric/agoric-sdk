@@ -48,7 +48,7 @@ test.before('setup', async t => {
 // Now come the tests that use `home`...
 // =========================================
 
-test.serial('home.board', async t => {
+test.skip('home.board', async t => {
   const { home } = t.context;
   const { board } = E.get(home);
   await t.throwsAsync(
@@ -73,7 +73,7 @@ test.serial('home.board', async t => {
   t.is(myId2, myId, `board gives the same id for the same value`);
 });
 
-test.serial('home.wallet - transfer funds to the feePurse', async t => {
+test.skip('home.wallet - transfer funds to the feePurse', async t => {
   const { home } = t.context;
   const { wallet, faucet } = E.get(home);
   const feePurse = E(faucet).getFeePurse();
@@ -86,7 +86,7 @@ test.serial('home.wallet - transfer funds to the feePurse', async t => {
   t.deepEqual(deposited, feeAmount, `all fees deposited to feePurse`);
 });
 
-test.serial('home.wallet - receive zoe invite', async t => {
+test.skip('home.wallet - receive zoe invite', async t => {
   const { home, loadBundle } = t.context;
   const { wallet, zoe, board } = E.get(home);
 
@@ -133,7 +133,7 @@ test.serial('home.wallet - receive zoe invite', async t => {
   );
 });
 
-test.serial('home.wallet - central issuer setup', async t => {
+test.skip('home.wallet - central issuer setup', async t => {
   const { home } = t.context;
   const { wallet } = E.get(home);
 

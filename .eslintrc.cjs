@@ -81,7 +81,15 @@ module.exports = {
   reportUnusedDisableDirectives: true,
 
   rules: {
-    '@typescript-eslint/prefer-ts-expect-error': 'error',
+    '@typescript-eslint/ban-ts-comment': [
+      'error',
+      {
+        // TODO tighten to 'allow-with-description' (42 unexplained atm)
+        'ts-expect-error': false,
+        // TODO make this error (start with `src` sans codegen)
+        'ts-nocheck': false,
+      },
+    ],
     '@typescript-eslint/no-floating-promises': 'error',
     // so that floating-promises can be explicitly permitted with void operator
     'no-void': ['error', { allowAsStatement: true }],
@@ -105,6 +113,27 @@ module.exports = {
     //
     // The default is 'warn', but we want to enforce 'error'.
     '@jessie.js/safe-await-separator': 'error',
+
+    'jsdoc/check-tag-names': [
+      'error',
+      {
+        // TypeDoc adds tags not otherwise known to JSDoc
+        // https://typedoc.org/guides/tags/
+        definedTags: [
+          'alpha',
+          'beta',
+          'category',
+          'categoryDescription',
+          'defaultValue',
+          'document',
+          'group',
+          'groupDescription',
+          'internal',
+          'privateRemarks',
+          'remarks',
+        ],
+      },
+    ],
 
     // CI has a separate format check but keep this warn to maintain that "eslint --fix" prettifies
     // UNTIL https://github.com/Agoric/agoric-sdk/issues/4339

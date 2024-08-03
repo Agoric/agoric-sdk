@@ -1,14 +1,12 @@
 //@ts-nocheck
 import { Vote, VoteSDKType, LightBlock, LightBlockSDKType } from './types.js';
-import { Timestamp } from '../../google/protobuf/timestamp.js';
+import {
+  Timestamp,
+  TimestampSDKType,
+} from '../../google/protobuf/timestamp.js';
 import { Validator, ValidatorSDKType } from './validator.js';
 import { BinaryReader, BinaryWriter } from '../../binary.js';
-import {
-  isSet,
-  toTimestamp,
-  fromTimestamp,
-  fromJsonTimestamp,
-} from '../../helpers.js';
+import { isSet, fromJsonTimestamp, fromTimestamp } from '../../helpers.js';
 import { JsonSafe } from '../../json-safe.js';
 export interface Evidence {
   duplicateVoteEvidence?: DuplicateVoteEvidence;
@@ -28,7 +26,7 @@ export interface DuplicateVoteEvidence {
   voteB?: Vote;
   totalVotingPower: bigint;
   validatorPower: bigint;
-  timestamp: Date;
+  timestamp: Timestamp;
 }
 export interface DuplicateVoteEvidenceProtoMsg {
   typeUrl: '/tendermint.types.DuplicateVoteEvidence';
@@ -40,7 +38,7 @@ export interface DuplicateVoteEvidenceSDKType {
   vote_b?: VoteSDKType;
   total_voting_power: bigint;
   validator_power: bigint;
-  timestamp: Date;
+  timestamp: TimestampSDKType;
 }
 /** LightClientAttackEvidence contains evidence of a set of validators attempting to mislead a light client. */
 export interface LightClientAttackEvidence {
@@ -48,7 +46,7 @@ export interface LightClientAttackEvidence {
   commonHeight: bigint;
   byzantineValidators: Validator[];
   totalVotingPower: bigint;
-  timestamp: Date;
+  timestamp: Timestamp;
 }
 export interface LightClientAttackEvidenceProtoMsg {
   typeUrl: '/tendermint.types.LightClientAttackEvidence';
@@ -60,7 +58,7 @@ export interface LightClientAttackEvidenceSDKType {
   common_height: bigint;
   byzantine_validators: ValidatorSDKType[];
   total_voting_power: bigint;
-  timestamp: Date;
+  timestamp: TimestampSDKType;
 }
 export interface EvidenceList {
   evidence: Evidence[];
@@ -182,7 +180,7 @@ function createBaseDuplicateVoteEvidence(): DuplicateVoteEvidence {
     voteB: undefined,
     totalVotingPower: BigInt(0),
     validatorPower: BigInt(0),
-    timestamp: new Date(),
+    timestamp: Timestamp.fromPartial({}),
   };
 }
 export const DuplicateVoteEvidence = {
@@ -204,10 +202,7 @@ export const DuplicateVoteEvidence = {
       writer.uint32(32).int64(message.validatorPower);
     }
     if (message.timestamp !== undefined) {
-      Timestamp.encode(
-        toTimestamp(message.timestamp),
-        writer.uint32(42).fork(),
-      ).ldelim();
+      Timestamp.encode(message.timestamp, writer.uint32(42).fork()).ldelim();
     }
     return writer;
   },
@@ -235,9 +230,7 @@ export const DuplicateVoteEvidence = {
           message.validatorPower = reader.int64();
           break;
         case 5:
-          message.timestamp = fromTimestamp(
-            Timestamp.decode(reader, reader.uint32()),
-          );
+          message.timestamp = Timestamp.decode(reader, reader.uint32());
           break;
         default:
           reader.skipType(tag & 7);
@@ -274,7 +267,7 @@ export const DuplicateVoteEvidence = {
     message.validatorPower !== undefined &&
       (obj.validatorPower = (message.validatorPower || BigInt(0)).toString());
     message.timestamp !== undefined &&
-      (obj.timestamp = message.timestamp.toISOString());
+      (obj.timestamp = fromTimestamp(message.timestamp).toISOString());
     return obj;
   },
   fromPartial(object: Partial<DuplicateVoteEvidence>): DuplicateVoteEvidence {
@@ -295,7 +288,10 @@ export const DuplicateVoteEvidence = {
       object.validatorPower !== undefined && object.validatorPower !== null
         ? BigInt(object.validatorPower.toString())
         : BigInt(0);
-    message.timestamp = object.timestamp ?? undefined;
+    message.timestamp =
+      object.timestamp !== undefined && object.timestamp !== null
+        ? Timestamp.fromPartial(object.timestamp)
+        : undefined;
     return message;
   },
   fromProtoMsg(message: DuplicateVoteEvidenceProtoMsg): DuplicateVoteEvidence {
@@ -317,7 +313,7 @@ function createBaseLightClientAttackEvidence(): LightClientAttackEvidence {
     commonHeight: BigInt(0),
     byzantineValidators: [],
     totalVotingPower: BigInt(0),
-    timestamp: new Date(),
+    timestamp: Timestamp.fromPartial({}),
   };
 }
 export const LightClientAttackEvidence = {
@@ -342,10 +338,7 @@ export const LightClientAttackEvidence = {
       writer.uint32(32).int64(message.totalVotingPower);
     }
     if (message.timestamp !== undefined) {
-      Timestamp.encode(
-        toTimestamp(message.timestamp),
-        writer.uint32(42).fork(),
-      ).ldelim();
+      Timestamp.encode(message.timestamp, writer.uint32(42).fork()).ldelim();
     }
     return writer;
   },
@@ -375,9 +368,7 @@ export const LightClientAttackEvidence = {
           message.totalVotingPower = reader.int64();
           break;
         case 5:
-          message.timestamp = fromTimestamp(
-            Timestamp.decode(reader, reader.uint32()),
-          );
+          message.timestamp = Timestamp.decode(reader, reader.uint32());
           break;
         default:
           reader.skipType(tag & 7);
@@ -427,7 +418,7 @@ export const LightClientAttackEvidence = {
         message.totalVotingPower || BigInt(0)
       ).toString());
     message.timestamp !== undefined &&
-      (obj.timestamp = message.timestamp.toISOString());
+      (obj.timestamp = fromTimestamp(message.timestamp).toISOString());
     return obj;
   },
   fromPartial(
@@ -448,7 +439,10 @@ export const LightClientAttackEvidence = {
       object.totalVotingPower !== undefined && object.totalVotingPower !== null
         ? BigInt(object.totalVotingPower.toString())
         : BigInt(0);
-    message.timestamp = object.timestamp ?? undefined;
+    message.timestamp =
+      object.timestamp !== undefined && object.timestamp !== null
+        ? Timestamp.fromPartial(object.timestamp)
+        : undefined;
     return message;
   },
   fromProtoMsg(

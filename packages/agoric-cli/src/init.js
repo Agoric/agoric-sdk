@@ -1,8 +1,6 @@
 import chalk from 'chalk';
 import { makePspawn } from './helpers.js';
 
-/// <reference types="@endo/captp/src/types.js" />
-
 // Use either an absolute template URL, or find it relative to DAPP_URL_BASE.
 const gitURL = (relativeOrAbsoluteURL, base) => {
   const url = new URL(relativeOrAbsoluteURL, base);

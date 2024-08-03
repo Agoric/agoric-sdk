@@ -1,8 +1,9 @@
+import { q } from '@endo/errors';
+import { E } from '@endo/eventual-send';
+import { Far } from '@endo/marshal';
 import { makeMockChainStorageRoot } from '@agoric/internal/src/storage-test-utils.js';
 import { observeIteration, subscribeEach } from '@agoric/notifier';
 import { buildZoeManualTimer } from '@agoric/zoe/tools/manualTimer.js';
-import { E } from '@endo/eventual-send';
-import { Far } from '@endo/marshal';
 
 import {
   assertContractElectorate,
@@ -14,8 +15,6 @@ import { makeTerms, MALLEABLE_NUMBER } from './governedContract.js';
 /**
  * @import {ContractGovernanceVoteResult, GovernedPublicFacetMethods, GovernorCreatorFacet, ParamChangesSpec, QuestionDetails, SimpleIssue, StandardParamPath} from '../../../src/types.js';
  */
-
-const { quote: q } = assert;
 
 /**
  * @param {ERef<ZoeService>} zoe

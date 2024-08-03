@@ -1,6 +1,6 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-import { Fail } from '@agoric/assert';
+import { Fail } from '@endo/errors';
 import { documentStorageSchema } from '@agoric/internal/src/storage-test-utils.js';
 import type { CosmosValidatorAddress } from '@agoric/orchestration';
 import type { start as startStakeIca } from '@agoric/orchestration/src/examples/stakeIca.contract.js';
@@ -12,6 +12,12 @@ import {
 } from './walletFactory.ts';
 
 const test: TestFn<WalletFactoryTestContext> = anyTest;
+
+const validatorAddress: CosmosValidatorAddress = {
+  value: 'cosmosvaloper1test',
+  chainId: 'gaiatest',
+  encoding: 'bech32',
+};
 
 test.before(async t => {
   t.context = await makeWalletFactoryContext(
@@ -69,6 +75,24 @@ test.serial('config', async t => {
       node: 'agoricNames.chainConnection',
     });
   }
+  {
+    const connection = await EV(agoricNames).lookup(
+      'chainConnection',
+      'agoric-3_osmosis-1',
+    );
+    t.like(connection, {
+      id: 'connection-1',
+      client_id: '07-tendermint-1',
+      counterparty: {
+        client_id: '07-tendermint-2109',
+        connection_id: 'connection-1649',
+      },
+      transferChannel: {
+        counterPartyChannelId: 'channel-320',
+        channelId: 'channel-1',
+      },
+    });
+  }
 });
 
 test.skip('stakeOsmo - queries', async t => {
@@ -108,8 +132,13 @@ test.skip('stakeOsmo - queries', async t => {
 });
 
 test.serial('stakeAtom - smart wallet', async t => {
-  const { buildProposal, evalProposal, agoricNamesRemotes, readLatest } =
-    t.context;
+  const {
+    buildProposal,
+    evalProposal,
+    agoricNamesRemotes,
+    bridgeUtils: { flushInboundQueue },
+    readLatest,
+  } = t.context;
 
   await evalProposal(
     buildProposal('@agoric/builders/scripts/orchestration/init-stakeAtom.js'),
@@ -119,7 +148,7 @@ test.serial('stakeAtom - smart wallet', async t => {
     'agoric1testStakAtom',
   );
 
-  await wd.executeOffer({
+  await wd.sendOffer({
     id: 'request-account',
     invitationSpec: {
       source: 'agoricContract',
@@ -128,6 +157,7 @@ test.serial('stakeAtom - smart wallet', async t => {
     },
     proposal: {},
   });
+  await flushInboundQueue();
   t.like(wd.getCurrentWalletRecord(), {
     offerToPublicSubscriberPaths: [
       [
@@ -145,34 +175,30 @@ test.serial('stakeAtom - smart wallet', async t => {
 
   const { ATOM } = agoricNamesRemotes.brand;
   ATOM || Fail`ATOM missing from agoricNames`;
-  const validatorAddress: CosmosValidatorAddress = {
-    address: 'cosmosvaloper1test',
-    chainId: 'gaiatest',
-    addressEncoding: 'bech32',
-  };
 
-  await t.notThrowsAsync(
-    wd.executeOffer({
-      id: 'request-delegate-success',
-      invitationSpec: {
-        source: 'continuing',
-        previousOffer: 'request-account',
-        invitationMakerName: 'Delegate',
-        invitationArgs: [validatorAddress, { brand: ATOM, value: 10n }],
-      },
-      proposal: {},
-    }),
-  );
+  // Cannot await executeOffer because the offer won't resolve until after the bridge's inbound queue is flushed.
+  // But this test doesn't require that.
+  await wd.sendOffer({
+    id: 'request-delegate-success',
+    invitationSpec: {
+      source: 'continuing',
+      previousOffer: 'request-account',
+      invitationMakerName: 'Delegate',
+      invitationArgs: [validatorAddress, { brand: ATOM, value: 10n }],
+    },
+    proposal: {},
+  });
   t.like(wd.getLatestUpdateRecord(), {
     status: { id: 'request-delegate-success', numWantsSatisfied: 1 },
   });
 
   const validatorAddressFail: CosmosValidatorAddress = {
-    address: 'cosmosvaloper1fail',
+    value: 'cosmosvaloper1fail',
     chainId: 'gaiatest',
-    addressEncoding: 'bech32',
+    encoding: 'bech32',
   };
 
+  // This will trigger the immediate ack of the mock bridge
   await t.throwsAsync(
     wd.executeOffer({
       id: 'request-delegate-fail',
@@ -190,6 +216,11 @@ test.serial('stakeAtom - smart wallet', async t => {
     'delegate fails with invalid validator',
   );
 });
+
+test.todo('undelegate wallet offer');
+test.todo('undelegate with multiple undelegations wallet offer');
+test.todo('redelegate wallet offer');
+test.todo('withdraw reward wallet offer');
 
 // XXX rely on .serial to be in sequence, and keep this one last
 test.serial('revise chain info', async t => {
@@ -218,7 +249,222 @@ test.serial('revise chain info', async t => {
     'cosmoshub-4_hot-1',
   );
   t.like(connection, {
-    id: 'connection-99',
-    client_id: '07-tendermint-3',
+    id: 'connection-1',
+    client_id: '07-tendermint-2',
   });
+});
+
+test('basic-flows', async t => {
+  const {
+    buildProposal,
+    evalProposal,
+    agoricNamesRemotes,
+    readLatest,
+    bridgeUtils: { flushInboundQueue },
+  } = t.context;
+
+  await evalProposal(
+    buildProposal('@agoric/builders/scripts/orchestration/init-basic-flows.js'),
+  );
+
+  const wd =
+    await t.context.walletFactoryDriver.provideSmartWallet('agoric1test');
+
+  // create a cosmos orchestration account
+  await wd.sendOffer({
+    id: 'request-coa',
+    invitationSpec: {
+      source: 'agoricContract',
+      instancePath: ['basicFlows'],
+      callPipe: [['makeOrchAccountInvitation']],
+    },
+    offerArgs: {
+      chainName: 'cosmoshub',
+    },
+    proposal: {},
+  });
+  await flushInboundQueue();
+  t.like(wd.getCurrentWalletRecord(), {
+    offerToPublicSubscriberPaths: [
+      [
+        'request-coa',
+        {
+          account: 'published.basicFlows.cosmos1test',
+        },
+      ],
+    ],
+  });
+  t.like(wd.getLatestUpdateRecord(), {
+    status: { id: 'request-coa', numWantsSatisfied: 1 },
+  });
+  t.is(readLatest('published.basicFlows.cosmos1test'), '');
+
+  // create a local orchestration account
+  await wd.executeOffer({
+    id: 'request-loa',
+    invitationSpec: {
+      source: 'agoricContract',
+      instancePath: ['basicFlows'],
+      callPipe: [['makeOrchAccountInvitation']],
+    },
+    offerArgs: {
+      chainName: 'agoric',
+    },
+    proposal: {},
+  });
+
+  const publicSubscriberPaths = Object.fromEntries(
+    wd.getCurrentWalletRecord().offerToPublicSubscriberPaths,
+  );
+  t.deepEqual(publicSubscriberPaths['request-loa'], {
+    account: 'published.basicFlows.agoric1mockVlocalchainAddress',
+  });
+  t.like(wd.getLatestUpdateRecord(), {
+    status: { id: 'request-loa', numWantsSatisfied: 1 },
+  });
+  t.is(readLatest('published.basicFlows.agoric1mockVlocalchainAddress'), '');
+});
+
+test.serial('auto-stake-it - proposal', async t => {
+  const { buildProposal, evalProposal } = t.context;
+
+  await t.notThrowsAsync(
+    evalProposal(
+      buildProposal('@agoric/builders/scripts/testing/start-auto-stake-it.js'),
+    ),
+  );
+});
+
+test.serial('basic-flows - portfolio holder', async t => {
+  const {
+    buildProposal,
+    evalProposal,
+    readLatest,
+    agoricNamesRemotes,
+    bridgeUtils: { flushInboundQueue },
+  } = t.context;
+
+  await evalProposal(
+    buildProposal('@agoric/builders/scripts/orchestration/init-basic-flows.js'),
+  );
+
+  const wd =
+    await t.context.walletFactoryDriver.provideSmartWallet('agoric1test2');
+
+  // create a cosmos orchestration account
+  await wd.sendOffer({
+    id: 'request-portfolio-acct',
+    invitationSpec: {
+      source: 'agoricContract',
+      instancePath: ['basicFlows'],
+      callPipe: [['makePortfolioAccountInvitation']],
+    },
+    offerArgs: {
+      chainNames: ['agoric', 'cosmoshub', 'osmosis'],
+    },
+    proposal: {},
+  });
+  t.like(
+    wd.getLatestUpdateRecord(),
+    {
+      status: { id: 'request-portfolio-acct', numWantsSatisfied: 1 },
+    },
+    'trivially satisfied',
+  );
+  await flushInboundQueue();
+  t.like(wd.getCurrentWalletRecord(), {
+    offerToPublicSubscriberPaths: [
+      [
+        'request-portfolio-acct',
+        {
+          agoric: 'published.basicFlows.agoric1mockVlocalchainAddress',
+          cosmoshub: 'published.basicFlows.cosmos1test',
+          // XXX support multiple chain addresses in ibc mocks
+          osmosis: 'published.basicFlows.cosmos1test',
+        },
+      ],
+    ],
+  });
+  t.like(wd.getLatestUpdateRecord(), {
+    status: { id: 'request-portfolio-acct', numWantsSatisfied: 1 },
+  });
+  // XXX this overrides a previous account, since mocks only provide one address
+  t.is(readLatest('published.basicFlows.cosmos1test'), '');
+  // XXX this overrides a previous account, since mocks only provide one address
+  t.is(readLatest('published.basicFlows.agoric1mockVlocalchainAddress'), '');
+
+  const { ATOM, BLD } = agoricNamesRemotes.brand;
+  ATOM || Fail`ATOM missing from agoricNames`;
+  BLD || Fail`BLD missing from agoricNames`;
+
+  await wd.sendOffer({
+    id: 'delegate-cosmoshub',
+    invitationSpec: {
+      source: 'continuing',
+      previousOffer: 'request-portfolio-acct',
+      invitationMakerName: 'MakeInvitation',
+      invitationArgs: [
+        'cosmoshub',
+        'Delegate',
+        [validatorAddress, { brand: ATOM, value: 10n }],
+      ],
+    },
+    proposal: {},
+  });
+  t.like(wd.getLatestUpdateRecord(), {
+    status: { id: 'delegate-cosmoshub', numWantsSatisfied: 1 },
+  });
+
+  await wd.sendOffer({
+    id: 'delegate-agoric',
+    invitationSpec: {
+      source: 'continuing',
+      previousOffer: 'request-portfolio-acct',
+      invitationMakerName: 'MakeInvitation',
+      invitationArgs: [
+        'agoric',
+        'Delegate',
+        // XXX use ChainAddress for LocalOrchAccount
+        ['agoric1validator1', { brand: BLD, value: 10n }],
+      ],
+    },
+    proposal: {},
+  });
+  t.like(wd.getLatestUpdateRecord(), {
+    status: { id: 'delegate-agoric', numWantsSatisfied: 1 },
+  });
+
+  await t.throwsAsync(
+    wd.executeOffer({
+      id: 'delegate-2-cosmoshub',
+      invitationSpec: {
+        source: 'continuing',
+        previousOffer: 'request-portfolio-acct',
+        invitationMakerName: 'MakeInvitation',
+        invitationArgs: [
+          'cosmoshub',
+          'Delegate',
+          [validatorAddress, { brand: ATOM, value: 504n }],
+        ],
+      },
+      proposal: {},
+    }),
+  );
+
+  await t.throwsAsync(
+    wd.executeOffer({
+      id: 'delegate-2-agoric',
+      invitationSpec: {
+        source: 'continuing',
+        previousOffer: 'request-portfolio-acct',
+        invitationMakerName: 'MakeInvitation',
+        invitationArgs: [
+          'agoric',
+          'Delegate',
+          ['agoric1validator1', { brand: BLD, value: 504n }],
+        ],
+      },
+      proposal: {},
+    }),
+  );
 });

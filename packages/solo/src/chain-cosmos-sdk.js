@@ -8,10 +8,10 @@ import { open as tempOpen } from 'temp';
 import WebSocket from 'ws';
 
 import anylogger from 'anylogger';
-import { makeNotifierKit } from '@agoric/notifier';
+import { Fail, makeError } from '@endo/errors';
 import { makePromiseKit } from '@endo/promise-kit';
 
-import { assert, Fail } from '@agoric/assert';
+import { makeNotifierKit } from '@agoric/notifier';
 import {
   DEFAULT_BATCH_TIMEOUT_MS,
   makeBatchedDeliver,
@@ -442,6 +442,7 @@ export async function connectToChain(
 
           // Find only the latest value in the events.
           let storageValue;
+          // eslint-disable-next-line github/array-foreach
           paths.forEach((key, i) => {
             if (key === storagePath) {
               storageValue = values[i];
@@ -697,13 +698,13 @@ ${chainID} chain does not yet know of address ${clientAddr}${adviseEgress(
               if (txResult.code) {
                 // eslint-disable-next-line no-use-before-define
                 failedSend(
-                  assert.error(`Error in tx processing: ${txResult.log}`),
+                  makeError(`Error in tx processing: ${txResult.log}`),
                 );
               }
             })
             .catch(err =>
               // eslint-disable-next-line no-use-before-define
-              failedSend(assert.error(`Error in tx processing: ${err}`)),
+              failedSend(makeError(`Error in tx processing: ${err}`)),
             );
 
           // We submitted the transaction to the mempool successfully.

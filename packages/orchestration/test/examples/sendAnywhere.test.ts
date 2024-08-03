@@ -5,6 +5,7 @@ import { E } from '@endo/far';
 import path from 'path';
 import { mustMatch } from '@endo/patterns';
 import { makeIssuerKit } from '@agoric/ertp';
+import { inspectMapStore } from '@agoric/internal/src/testing-utils.js';
 import { CosmosChainInfo, IBCConnectionInfo } from '../../src/cosmos-api.js';
 import { commonSetup } from '../supports.js';
 import { SingleAmountRecord } from '../../src/examples/sendAnywhere.contract.js';
@@ -59,6 +60,7 @@ test('send using arbitrary chain info', async t => {
     brands: { ist },
     utils: { inspectLocalBridge, pourPayment },
   } = await commonSetup(t);
+  const vt = bootstrap.vowTools;
 
   const { zoe, bundleAndInstall } = await setUpZoeForTest();
 
@@ -100,7 +102,9 @@ test('send using arbitrary chain info', async t => {
       ...txChannelDefaults,
     },
   } as IBCConnectionInfo;
-  const chainName = await E(sendKit.creatorFacet).addChain(
+  const chainName = 'hot';
+  await E(sendKit.creatorFacet).initChain(
+    chainName,
     hotChainInfo,
     agoricToHotConnection,
   );
@@ -120,7 +124,7 @@ test('send using arbitrary chain info', async t => {
       { Send },
       { destAddr: 'hot1destAddr', chainName },
     );
-    await E(userSeat).getOfferResult();
+    await vt.when(E(userSeat).getOfferResult());
 
     const history = inspectLocalBridge();
     t.like(history, [
@@ -153,7 +157,7 @@ test('send using arbitrary chain info', async t => {
       { Send },
       { destAddr: 'cosmos1destAddr', chainName: 'cosmoshub' },
     );
-    await E(userSeat).getOfferResult();
+    await vt.when(E(userSeat).getOfferResult());
     const history = inspectLocalBridge();
     const { messages, address: execAddr } = history.at(-1);
     t.is(messages.length, 1);
@@ -199,7 +203,7 @@ test('send using arbitrary chain info', async t => {
       { Send },
       { destAddr: 'hot1destAddr', chainName: 'hot' },
     );
-    await E(userSeat).getOfferResult();
+    await vt.when(E(userSeat).getOfferResult());
     const history = inspectLocalBridge();
     const { messages, address: execAddr } = history.at(-1);
     t.is(messages.length, 1);
@@ -209,8 +213,35 @@ test('send using arbitrary chain info', async t => {
       '@type': '/ibc.applications.transfer.v1.MsgTransfer',
       receiver: 'hot1destAddr',
       sender: execAddr,
-      sourceChannel: 'channel-0',
+      sourceChannel: 'channel-1',
       token: { amount: '4250000', denom: 'uist' },
     });
   }
+});
+
+test('baggage', async t => {
+  const {
+    bootstrap,
+    commonPrivateArgs,
+    brands: { ist },
+    utils: { inspectLocalBridge, pourPayment },
+  } = await commonSetup(t);
+
+  let contractBaggage;
+  const setJig = ({ baggage }) => {
+    contractBaggage = baggage;
+  };
+  const { bundleAndInstall, zoe } = await setUpZoeForTest({
+    setJig,
+  });
+
+  await E(zoe).startInstance(
+    await bundleAndInstall(contractFile),
+    { Stable: ist.issuer },
+    {},
+    commonPrivateArgs,
+  );
+
+  const tree = inspectMapStore(contractBaggage);
+  t.snapshot(tree, 'contract baggage after start');
 });

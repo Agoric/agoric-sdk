@@ -1,8 +1,11 @@
 import { makeIssuerKit } from '@agoric/ertp';
-import { VTRANSFER_IBC_EVENT } from '@agoric/internal';
+import { VTRANSFER_IBC_EVENT } from '@agoric/internal/src/action-types.js';
 import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
-import { prepareLocalChainTools } from '@agoric/vats/src/localchain.js';
+import { reincarnate } from '@agoric/swingset-liveslots/tools/setup-vat-data.js';
+import { makeNameHubKit } from '@agoric/vats';
 import { prepareBridgeTargetModule } from '@agoric/vats/src/bridge-target.js';
+import { makeWellKnownSpaces } from '@agoric/vats/src/core/utils.js';
+import { prepareLocalChainTools } from '@agoric/vats/src/localchain.js';
 import { prepareTransferTools } from '@agoric/vats/src/transfer.js';
 import { makeFakeBankManagerKit } from '@agoric/vats/tools/bank-utils.js';
 import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
@@ -14,20 +17,20 @@ import { prepareVowTools } from '@agoric/vow';
 import type { Installation } from '@agoric/zoe/src/zoeService/utils.js';
 import { buildZoeManualTimer } from '@agoric/zoe/tools/manualTimer.js';
 import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
-import { makeHeapZone } from '@agoric/zone';
+import { makeHeapZone, type Zone } from '@agoric/zone';
+import { makeDurableZone } from '@agoric/zone/durable.js';
 import { E } from '@endo/far';
-import { makeNameHubKit } from '@agoric/vats';
-import { makeWellKnownSpaces } from '@agoric/vats/src/core/utils.js';
+import type { ExecutionContext } from 'ava';
+import { registerKnownChains } from '../src/chain-info.js';
+import { prepareCosmosInterchainService } from '../src/exos/cosmos-interchain-service.js';
 import { setupFakeNetwork } from './network-fakes.js';
-import { prepareOrchestrationTools } from '../src/service.js';
-import { registerChainNamespace } from '../src/chain-info.js';
 
 export {
   makeFakeLocalchainBridge,
   makeFakeTransferBridge,
 } from '@agoric/vats/tools/fake-bridge.js';
 
-export const commonSetup = async t => {
+export const commonSetup = async (t: ExecutionContext<any>) => {
   t.log('bootstrap vat dependencies');
   // The common setup cannot support a durable zone because many of the fakes are not durable.
   // They were made before we had durable kinds (and thus don't take a zone or baggage).
@@ -85,6 +88,7 @@ export const commonSetup = async t => {
     interceptorFactory,
   );
   finisher.useRegistry(bridgeTargetKit.targetRegistry);
+  await E(transferBridge).initHandler(bridgeTargetKit.bridgeHandler);
 
   const localBrigeMessages = [] as any[];
   const localchainBridge = makeFakeLocalchainBridge(rootZone, obj =>
@@ -110,13 +114,15 @@ export const commonSetup = async t => {
   );
   await setupIBCProtocol();
 
-  const { makeOrchestrationKit } = prepareOrchestrationTools(
+  const makeCosmosInterchainService = prepareCosmosInterchainService(
     rootZone.subZone('orchestration'),
     vowTools,
   );
-  const { public: orchestration } = makeOrchestrationKit({ portAllocator });
+  const cosmosInterchainService = makeCosmosInterchainService({
+    portAllocator,
+  });
 
-  await registerChainNamespace(agoricNamesAdmin, () => {});
+  await registerKnownChains(agoricNamesAdmin, () => {});
 
   return {
     bootstrap: {
@@ -126,21 +132,24 @@ export const commonSetup = async t => {
       timer,
       localchain,
       marshaller,
-      orchestration,
+      cosmosInterchainService,
       // TODO remove; bootstrap doesn't have a zone
       rootZone: rootZone.subZone('contract'),
       storage,
       vowTools,
-      ibcBridge,
     },
     brands: {
       bld: bldSansMint,
       ist: istSansMint,
     },
+    mocks: {
+      ibcBridge,
+      transferBridge,
+    },
     commonPrivateArgs: {
       agoricNames,
       localchain,
-      orchestrationService: orchestration,
+      orchestrationService: cosmosInterchainService,
       storageNode: storage.rootNode,
       marshaller,
       timerService: timer,
@@ -148,14 +157,26 @@ export const commonSetup = async t => {
     facadeServices: {
       agoricNames,
       localchain,
-      orchestrationService: orchestration,
+      orchestrationService: cosmosInterchainService,
       timerService: timer,
     },
     utils: {
       pourPayment,
       inspectLocalBridge: () => harden([...localBrigeMessages]),
+      inspectDibcBridge: () => E(ibcBridge).inspectDibcBridge(),
     },
   };
 };
 
 export const makeDefaultContext = <SF>(contract: Installation<SF>) => {};
+
+/**
+ * Reincarnate without relaxDurabilityRules and provide a durable zone in the incarnation.
+ * @param key
+ */
+export const provideDurableZone = (key: string): Zone => {
+  const { fakeVomKit } = reincarnate({ relaxDurabilityRules: false });
+  const root = fakeVomKit.cm.provideBaggage();
+  const zone = makeDurableZone(root);
+  return zone.subZone(key);
+};

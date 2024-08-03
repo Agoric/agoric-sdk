@@ -1,6 +1,7 @@
 // @ts-check
 import { test as anyTest } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
+import { Fail } from '@endo/errors';
 import { makeTagged } from '@endo/marshal';
 import { BridgeId } from '@agoric/internal';
 import { buildVatController } from '@agoric/swingset-vat';
@@ -12,8 +13,6 @@ import { matchAmount, matchIter, matchRef } from '../../tools/supports.ts';
  * @type {import('ava').TestFn<{}>}
  */
 const test = anyTest;
-
-const { Fail } = assert;
 
 const bfile = name => new URL(name, import.meta.url).pathname;
 const importSpec = spec =>

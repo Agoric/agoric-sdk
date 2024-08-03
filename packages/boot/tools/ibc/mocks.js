@@ -130,7 +130,7 @@ export const icaMocks = {
    * @param {string} acknowledgement acknowledgement response as base64 encoded bytes
    * @returns {IBCEvent<'acknowledgementPacket'>}
    */
-  ackPacket: (obj, sequence = 1, acknowledgement) => {
+  ackPacketEvent: (obj, sequence = 1, acknowledgement) => {
     return {
       acknowledgement,
       blockHeight: 289,

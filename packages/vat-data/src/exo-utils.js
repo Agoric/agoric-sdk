@@ -20,10 +20,12 @@ import { provide, VatData as globalVatData } from './vat-data-bindings.js';
  */
 
 /**
- * Make a version of the argument function that takes a kind context but
- * ignores it.
+ * Make a version of the argument function that takes a kind context but ignores
+ * it.
  *
- * @type {<T extends (...args: any) => any>(fn: T) => import('@agoric/swingset-liveslots').PlusContext<never, T>}
+ * @type {<T extends (...args: any) => any>(
+ *   fn: T,
+ * ) => import('@agoric/swingset-liveslots').PlusContext<never, T>}
  */
 export const ignoreContext =
   fn =>
@@ -96,13 +98,14 @@ export const makeExoUtils = VatData => {
    * @param {string} tag
    * @param {InterfaceGuard | undefined} interfaceGuard
    * @param {I} init
-   * @param {T & ThisType<{
-   *   self: T,
-   *   state: StateResult<I>
-   * }>} methods
+   * @param {T &
+   *   ThisType<{
+   *     self: T;
+   *     state: StateResult<I>;
+   *   }>} methods
    * @param {DefineKindOptions<{
-   *   self: T,
-   *   state: StateResult<I>
+   *   self: T;
+   *   state: StateResult<I>;
    * }>} [options]
    * @returns {(...args: Parameters<I>) => import('@endo/exo').Guarded<T>}
    */
@@ -121,13 +124,14 @@ export const makeExoUtils = VatData => {
    * @param {string} tag
    * @param {InterfaceGuardKit | undefined} interfaceGuardKit
    * @param {I} init
-   * @param {T & ThisType<{
-   *   facets: import('@endo/exo').GuardedKit<T>,
-   *   state: StateResult<I>
-   * }> } facets
+   * @param {T &
+   *   ThisType<{
+   *     facets: import('@endo/exo').GuardedKit<T>;
+   *     state: StateResult<I>;
+   *   }>} facets
    * @param {DefineKindOptions<{
-   *   facets: T,
-   *   state: StateResult<I>
+   *   facets: T;
+   *   state: StateResult<I>;
    * }>} [options]
    * @returns {(...args: Parameters<I>) => import('@endo/exo').GuardedKit<T>}
    */
@@ -152,13 +156,14 @@ export const makeExoUtils = VatData => {
    * @param {DurableKindHandle} kindHandle
    * @param {InterfaceGuard | undefined} interfaceGuard
    * @param {I} init
-   * @param {T & ThisType<{
-   *   self: T,
-   *   state: StateResult<I>
-   * }>} methods
+   * @param {T &
+   *   ThisType<{
+   *     self: T;
+   *     state: StateResult<I>;
+   *   }>} methods
    * @param {DefineKindOptions<{
-   *   self: T,
-   *   state: StateResult<I>
+   *   self: T;
+   *   state: StateResult<I>;
    * }>} [options]
    * @returns {(...args: Parameters<I>) => import('@endo/exo').Guarded<T>}
    */
@@ -183,13 +188,14 @@ export const makeExoUtils = VatData => {
    * @param {DurableKindHandle} kindHandle
    * @param {InterfaceGuardKit | undefined} interfaceGuardKit
    * @param {I} init
-   * @param {T & ThisType<{
-   *   facets: import('@endo/exo').GuardedKit<T>,
-   *   state: StateResult<I>
-   * }> } facets
+   * @param {T &
+   *   ThisType<{
+   *     facets: import('@endo/exo').GuardedKit<T>;
+   *     state: StateResult<I>;
+   *   }>} facets
    * @param {DefineKindOptions<{
-   *   facets: T,
-   *   state: StateResult<I>
+   *   facets: T;
+   *   state: StateResult<I>;
    * }>} [options]
    * @returns {(...args: Parameters<I>) => import('@endo/exo').GuardedKit<T>}
    */
@@ -215,13 +221,14 @@ export const makeExoUtils = VatData => {
    * @param {string} kindName
    * @param {InterfaceGuard | undefined} interfaceGuard
    * @param {I} init
-   * @param {T & ThisType<{
-   *   self: RemotableObject & T,
-   *   state: StateResult<I>
-   * }>} methods
+   * @param {T &
+   *   ThisType<{
+   *     self: RemotableObject & T;
+   *     state: StateResult<I>;
+   *   }>} methods
    * @param {DefineKindOptions<{
-   *   self: T,
-   *   state: StateResult<I>
+   *   self: T;
+   *   state: StateResult<I>;
    * }>} [options]
    * @returns {(...args: Parameters<I>) => import('@endo/exo').Guarded<T>}
    */
@@ -249,13 +256,14 @@ export const makeExoUtils = VatData => {
    * @param {string} kindName
    * @param {InterfaceGuardKit | undefined} interfaceGuardKit
    * @param {I} init
-   * @param {T & ThisType<{
-   *   facets: import('@endo/exo').GuardedKit<T>,
-   *   state: StateResult<I>
-   * }> } facets
+   * @param {T &
+   *   ThisType<{
+   *     facets: import('@endo/exo').GuardedKit<T>;
+   *     state: StateResult<I>;
+   *   }>} facets
    * @param {DefineKindOptions<{
-   *   facets: T,
-   *   state: StateResult<I>
+   *   facets: T;
+   *   state: StateResult<I>;
    * }>} [options]
    * @returns {(...args: Parameters<I>) => import('@endo/exo').GuardedKit<T>}
    */
@@ -306,8 +314,8 @@ export const makeExoUtils = VatData => {
   harden(prepareExo);
 
   /**
-   * @template {Record<PropertyKey, CallableFunction>} M methods
    * @deprecated Use prepareExo instead.
+   * @template {Record<PropertyKey, CallableFunction>} M methods
    * @param {Baggage} baggage
    * @param {string} kindName
    * @param {M} methods

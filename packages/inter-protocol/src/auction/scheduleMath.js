@@ -1,5 +1,6 @@
 // @jessie-check
 
+import { Fail } from '@endo/errors';
 import { TimeMath } from '@agoric/time';
 import { natSafeMath } from '@agoric/zoe/src/contractSupport/index.js';
 import { assertAllDefined, makeTracer } from '@agoric/internal';
@@ -7,7 +8,6 @@ import { assertAllDefined, makeTracer } from '@agoric/internal';
 /** @import {TimestampRecord} from '@agoric/time'; */
 
 const { subtract, multiply, floorDivide } = natSafeMath;
-const { Fail } = assert;
 
 const trace = makeTracer('SMath', true);
 

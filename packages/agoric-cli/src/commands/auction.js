@@ -1,10 +1,9 @@
 // @ts-check
 
 import { InvalidArgumentError } from 'commander';
+import { Fail } from '@endo/errors';
 import { makeRpcUtils } from '../lib/rpc.js';
 import { outputActionAndHint } from '../lib/wallet.js';
-
-const { Fail } = assert;
 
 /**
  * @import {ParamTypesMap, ParamTypesMapFromRecord} from '@agoric/governance/src/contractGovernance/typedParamManager.js'

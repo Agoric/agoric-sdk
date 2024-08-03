@@ -1,6 +1,6 @@
 import { AmountMath } from '@agoric/ertp';
 import { E } from '@endo/eventual-send';
-import { q, Fail } from '@agoric/assert';
+import { q, Fail } from '@endo/errors';
 import { deeplyFulfilledObject, objectMap } from '@agoric/internal';
 import { provideDurableWeakMapStore } from '@agoric/vat-data';
 
@@ -80,14 +80,14 @@ export const provideEscrowStorage = baggage => {
     // Assert that all of the payment keywords are present in the give
     // keywords. Proposal.give keywords that do not have matching payments will
     // be caught in the deposit step.
-    paymentKeywords.forEach(keyword => {
+    for (const keyword of paymentKeywords) {
       giveKeywords.includes(keyword) ||
         Fail`The ${q(
           keyword,
         )} keyword in the paymentKeywordRecord was not a keyword in proposal.give, which had keywords: ${q(
           giveKeywords,
         )}`;
-    });
+    }
 
     // If any of these deposits hang or fail, then this `await` also
     // hangs or fails, the offer does not succeed, and any funds that

@@ -1,6 +1,6 @@
 /* global globalThis */
 
-import { assert, Fail } from '@agoric/assert';
+import { assert, Fail } from '@endo/errors';
 import { isNat } from '@endo/nat';
 import { importBundle } from '@endo/import-bundle';
 import { makeUpgradeDisconnection } from '@agoric/internal/src/upgrade-api.js';

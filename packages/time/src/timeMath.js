@@ -1,10 +1,11 @@
 import { Nat } from '@endo/nat';
-import { mustMatch } from '@endo/patterns';
+import { Fail, q } from '@endo/errors';
+import { mustMatch } from '@agoric/store';
 import { RelativeTimeRecordShape, TimestampRecordShape } from './typeGuards.js';
 
-/** @import {RelativeTime, RelativeTimeValue, TimerBrand, TimeMathType, Timestamp, TimestampRecord, TimestampValue} from './types.js' */
-
-const { Fail, quote: q } = assert;
+/**
+ * @import {RelativeTime, RelativeTimeValue, TimerBrand, TimeMathType, Timestamp, TimestampRecord, TimestampValue} from './types.js';
+ */
 
 /**
  * `agreedTimerBrand` is internal to this module.

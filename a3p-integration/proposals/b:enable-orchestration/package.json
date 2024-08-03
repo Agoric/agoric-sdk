@@ -3,14 +3,26 @@
     "type": "/agoric.swingset.CoreEvalProposal",
     "source": "subdir",
     "sdk-generate": [
+      "smart-wallet/build-wallet-factory2-upgrade.js",
+      "testing/start-valueVow.js start-valueVow",
+      "testing/restart-valueVow.js restart-valueVow",
       "vats/init-orchestration.js"
     ]
   },
   "type": "module",
   "license": "Apache-2.0",
   "dependencies": {
+    "@agoric/internal": "0.3.3-dev-5676146.0",
     "@agoric/synthetic-chain": "^0.1.0",
-    "ava": "^5.3.1"
+    "@cosmjs/stargate": "^0.32.3",
+    "@cosmjs/tendermint-rpc": "^0.32.3",
+    "@endo/errors": "^1.2.2",
+    "@endo/far": "^1.0.4",
+    "@endo/init": "^1.0.4",
+    "agoric": "0.21.2-dev-5676146.0",
+    "ava": "^5.3.1",
+    "execa": "^8.0.1",
+    "node-fetch": "^3.3.2"
   },
   "ava": {
     "concurrency": 1,

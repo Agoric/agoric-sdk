@@ -1,10 +1,10 @@
 /** @file Mock IBC Server */
 // @ts-check
+import { q, Fail } from '@endo/errors';
 import { Far } from '@endo/far';
 import { makePromiseKit } from '@endo/promise-kit';
 import { heapVowE as E } from '@agoric/vow/vat.js';
 
-const { quote: q, Fail } = assert;
 const { log } = console;
 
 /**

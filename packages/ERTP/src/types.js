@@ -5,9 +5,9 @@ export {};
 
 /// <reference types="ses" />
 /**
- * @import {Passable, RemotableObject} from '@endo/pass-style')
- * @import {CopyBag, CopySet, Key} from '@endo/patterns')
- * @import {LatestTopic, NotifierRecord} from '@agoric/notifier');
+ * @import {Passable, RemotableObject} from '@endo/pass-style';
+ * @import {CopyBag, CopySet, Key} from '@endo/patterns';
+ * @import {LatestTopic, NotifierRecord} from '@agoric/notifier';
  */
 
 /** @typedef {{ brand: Brand<'nat'>; value: bigint }} NatAmount */

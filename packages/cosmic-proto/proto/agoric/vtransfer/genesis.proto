@@ -1,0 +1,18 @@
+syntax = "proto3";
+package agoric.vtransfer;
+
+import "gogoproto/gogo.proto";
+
+option go_package = "github.com/Agoric/agoric-sdk/golang/cosmos/x/vtransfer/types";
+
+// The initial and exported module state.
+message GenesisState {
+    option (gogoproto.equal) = false;
+
+    // The list of account addresses that are being watched by the VM.
+    repeated bytes watched_addresses = 1 [
+      (gogoproto.casttype)  = "github.com/cosmos/cosmos-sdk/types.AccAddress",
+      (gogoproto.jsontag)   = "watched_addresses",
+      (gogoproto.moretags)  = "yaml:\"watched_addresses\""
+    ];
+}

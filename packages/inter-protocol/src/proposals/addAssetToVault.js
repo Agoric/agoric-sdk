@@ -1,6 +1,7 @@
 // @jessie-check
 // @ts-check
 
+import { q } from '@endo/errors';
 import { ToFarFunction } from '@endo/captp';
 import { Far } from '@endo/marshal';
 import { AmountMath, AssetKind } from '@agoric/ertp';
@@ -19,8 +20,6 @@ import {
 } from './utils.js';
 
 export * from './startPSM.js';
-
-const { quote: q } = assert;
 
 /**
  * @typedef {object} InterchainAssetOptions

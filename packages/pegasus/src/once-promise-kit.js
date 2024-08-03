@@ -1,6 +1,16 @@
 // @ts-check
-import { assert } from '@agoric/assert';
+import { assert } from '@endo/errors';
 import { makePromiseKit } from '@endo/promise-kit';
+
+/**
+ * Should be
+ * at-import {DetailsToken} from '@endo/errors'
+ * but somehow @endo/errors is not exporting that type.
+ * See https://github.com/endojs/endo/issues/2339
+ * In the meantime...
+ *
+ * @typedef {{}} DetailsToken
+ */
 
 /**
  * Create a promise kit that will throw an exception if it is resolved or

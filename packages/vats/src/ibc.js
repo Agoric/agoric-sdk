@@ -1,16 +1,19 @@
 // @ts-check
 
-import { assert, details as X, Fail } from '@agoric/assert';
+import { assert, X, Fail } from '@endo/errors';
 import { E } from '@endo/far';
 
 import { byteSourceToBase64, base64ToBytes } from '@agoric/network';
 
+import { makeTracer } from '@agoric/internal';
 import {
   localAddrToPortID,
   decodeRemoteIbcAddress,
   encodeLocalIbcAddress,
   encodeRemoteIbcAddress,
 } from '../tools/ibc-utils.js';
+
+const trace = makeTracer('IBC', false);
 
 /**
  * @import {LocalIbcAddress, RemoteIbcAddress} from '../tools/ibc-utils.js';
@@ -105,7 +108,7 @@ export const prepareIBCConnectionHandler = zone => {
       async onOpen(conn, localAddr, remoteAddr, _handler) {
         const { channelID, portID, channelKeyToConnP } = this.state;
 
-        console.debug(
+        trace(
           'onOpen Remote IBC Connection',
           channelID,
           portID,
@@ -236,7 +239,7 @@ export const prepareIBCProtocol = (zone, powers) => {
       protocolHandler: {
         /** @type {Required<ProtocolHandler>['onCreate']} */
         async onCreate(impl) {
-          console.debug('IBC onCreate');
+          trace('onCreate');
           this.state.protocolImpl = impl;
         },
         /** @type {Required<ProtocolHandler>['onInstantiate']} */
@@ -267,7 +270,7 @@ export const prepareIBCProtocol = (zone, powers) => {
           const { util } = this.facets;
           const { portToPendingConns, srcPortToOutbounds } = this.state;
 
-          console.debug('IBC onConnect', localAddr, remoteAddr);
+          trace('onConnect', localAddr, remoteAddr);
           // @ts-expect-error may not be LocalIbcAddress
           const portID = localAddrToPortID(localAddr);
           const pendingConns = portToPendingConns.get(portID);
@@ -313,16 +316,16 @@ export const prepareIBCProtocol = (zone, powers) => {
         },
         /** @type {Required<ProtocolHandler>['onListen']} */
         async onListen(_port, localAddr) {
-          console.debug('IBC onListen', localAddr);
+          trace('onListen', localAddr);
         },
         /** @type {Required<ProtocolHandler>['onListenRemove']} */
         async onListenRemove(_port, localAddr) {
-          console.debug('IBC onListenRemove', localAddr);
+          trace('onListenRemove', localAddr);
         },
         /** @type {Required<ProtocolHandler>['onRevoke']} */
         async onRevoke(_port, localAddr) {
           const { portToPendingConns } = this.state;
-          console.debug('IBC onRevoke', localAddr);
+          trace('onRevoke', localAddr);
           // @ts-expect-error may not be LocalIbcAddress
           const portID = localAddrToPortID(localAddr);
 

@@ -1,3 +1,4 @@
+import { q, Fail } from '@endo/errors';
 import { passStyleOf, assertRemotable, assertRecord } from '@endo/marshal';
 
 import { M, matches } from '@agoric/store';
@@ -10,8 +11,6 @@ import { copyBagMathHelpers } from './mathHelpers/copyBagMathHelpers.js';
  * @import {CopyBag, CopySet} from '@endo/patterns';
  * @import {Amount, AssetKind, AmountValue, AssetKindForValue, AssetValueForKind, Brand, CopyBagAmount, CopySetAmount, MathHelpers, NatAmount, NatValue, SetAmount, SetValue} from './types.js';
  */
-
-const { quote: q, Fail } = assert;
 
 /**
  * Constants for the kinds of assets we support.

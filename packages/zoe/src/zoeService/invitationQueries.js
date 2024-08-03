@@ -1,16 +1,16 @@
 // @jessie-check
 
-import { assert, details as X, Fail, quote as q } from '@agoric/assert';
+import { X, Fail, q, makeError, annotateError } from '@endo/errors';
 import { E } from '@endo/eventual-send';
 
 export const makeInvitationQueryFns = invitationIssuer => {
   /** @type {GetInvitationDetails} */
   const getInvitationDetails = async invitationP => {
     const onRejected = reason => {
-      const err = assert.error(
+      const err = makeError(
         X`A Zoe invitation is required, not ${invitationP}`,
       );
-      assert.note(err, X`Due to ${reason}`);
+      annotateError(err, X`Due to ${reason}`);
       throw err;
     };
     const invAmount = await E(invitationIssuer)

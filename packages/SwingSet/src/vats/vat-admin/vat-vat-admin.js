@@ -5,10 +5,11 @@
  * must ensure that only data goes in and out. It's also responsible for turning
  * device affordances into objects that can be used by code in other vats.
  */
+import { Nat, isNat } from '@endo/nat';
+import { q, Fail } from '@endo/errors';
 import { makePromiseKit } from '@endo/promise-kit';
 // import { makeNotifierKit } from '@agoric/notifier'; // XXX RESTORE
 import { Far, E, passStyleOf } from '@endo/far';
-import { Nat, isNat } from '@endo/nat';
 import {
   provide,
   makeScalarBigMapStore,
@@ -16,8 +17,6 @@ import {
   prepareKind,
   prepareSingleton,
 } from '@agoric/vat-data';
-
-const { quote: q, Fail } = assert;
 
 const managerTypes = ['local', 'node-subprocess', 'xsnap', 'xs-worker']; // xs-worker is alias
 

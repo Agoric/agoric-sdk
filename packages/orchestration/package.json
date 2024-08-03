@@ -34,7 +34,6 @@
   "homepage": "https://github.com/Agoric/agoric-sdk#readme",
   "dependencies": {
     "@agoric/async-flow": "^0.1.0",
-    "@agoric/assert": "^0.6.0",
     "@agoric/cosmic-proto": "^0.4.0",
     "@agoric/ertp": "^0.16.2",
     "@agoric/internal": "^0.3.2",
@@ -47,17 +46,21 @@
     "@agoric/vow": "^0.1.0",
     "@agoric/zoe": "^0.26.2",
     "@agoric/zone": "^0.2.2",
-    "@endo/base64": "^1.0.5",
-    "@endo/errors": "^1.2.2",
-    "@endo/far": "^1.1.2",
-    "@endo/marshal": "^1.5.0",
-    "@endo/patterns": "^1.4.0"
+    "@endo/base64": "^1.0.6",
+    "@endo/errors": "^1.2.4",
+    "@endo/far": "^1.1.4",
+    "@endo/marshal": "^1.5.2",
+    "@endo/patterns": "^1.4.2",
+    "@noble/hashes": "github:paulmillr/noble-hashes#ae060da"
   },
   "devDependencies": {
+    "@agoric/swingset-liveslots": "^0.10.2",
     "@chain-registry/client": "^1.47.4",
     "@cosmjs/amino": "^0.32.3",
     "@cosmjs/proto-signing": "^0.32.3",
-    "@endo/ses-ava": "^1.2.2",
+    "@endo/bundle-source": "^3.3.0",
+    "@endo/import-bundle": "^1.2.1",
+    "@endo/ses-ava": "^1.2.4",
     "ava": "^5.3.1",
     "c8": "^9.1.0",
     "prettier": "^3.3.2"
@@ -89,6 +92,6 @@
     "access": "public"
   },
   "typeCoverage": {
-    "atLeast": 97.1
+    "atLeast": 98.1
   }
 }

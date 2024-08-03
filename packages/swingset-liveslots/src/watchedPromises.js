@@ -2,9 +2,8 @@
 // no-lonely-if is a stupid rule that really should be disabled globally
 /* eslint-disable no-lonely-if */
 
-import { Fail } from '@endo/errors';
+import { Fail, assert } from '@endo/errors';
 import { E } from '@endo/eventual-send';
-import { assert } from '@agoric/assert';
 import { initEmpty, M } from '@agoric/store';
 import { parseVatSlot } from './parseVatSlots.js';
 
@@ -140,6 +139,12 @@ export function makeWatchedPromiseManager({
    */
   function loadWatchedPromiseTable(revivePromise) {
     for (const vpid of watchedPromiseTable.keys()) {
+      if (promiseRegistrations.has(vpid)) {
+        // We're only interested in reconnecting the promises from the previous
+        // incarnation. Any promise watched during buildRootObject would have
+        // already created a registration.
+        continue;
+      }
       const p = revivePromise(vpid);
       promiseRegistrations.init(vpid, p);
       pseudoThen(p, vpid);

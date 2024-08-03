@@ -1,4 +1,4 @@
-import { assert } from '@agoric/assert';
+import { assert } from '@endo/errors';
 import { kser, kunser } from '@agoric/kmarshal';
 import { insistVatID } from '../lib/id.js';
 

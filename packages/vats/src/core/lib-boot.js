@@ -1,3 +1,4 @@
+import { Fail, q } from '@endo/errors';
 import { E, Far } from '@endo/far';
 import { makeHeapZone } from '@agoric/zone';
 import {
@@ -6,8 +7,6 @@ import {
   runModuleBehaviors,
 } from './utils.js';
 import { makePromiseSpace } from './promise-space.js';
-
-const { Fail, quote: q } = assert;
 
 /**
  * @typedef {true
@@ -188,6 +187,7 @@ export const makeBootstrap = (
         throw e;
       });
     },
+    /** @param {string} name } */
     consumeItem: name => {
       assert.typeof(name, 'string');
       return consume[name];
@@ -196,6 +196,7 @@ export const makeBootstrap = (
       assert.typeof(name, 'string');
       produce[name].resolve(resolution);
     },
+    /** @param {string} name } */
     resetItem: name => {
       assert.typeof(name, 'string');
       produce[name].reset();

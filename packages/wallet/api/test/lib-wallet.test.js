@@ -1,16 +1,15 @@
 // @ts-check
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
+import { assert } from '@endo/errors';
+import { E } from '@endo/eventual-send';
 import bundleSource from '@endo/bundle-source';
-import { makeCache } from '@agoric/cache';
-import { makeIssuerKit, AmountMath, AssetKind } from '@agoric/ertp';
 
 import { M } from '@agoric/store';
-
+import { makeCache } from '@agoric/cache';
+import { makeIssuerKit, AmountMath, AssetKind } from '@agoric/ertp';
 import { makeZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
-import { E } from '@endo/eventual-send';
 
-import { assert } from '@agoric/assert';
 import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
 import {
   makeNameHubKit,

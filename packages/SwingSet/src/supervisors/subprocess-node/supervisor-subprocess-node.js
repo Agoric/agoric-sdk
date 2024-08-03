@@ -8,7 +8,7 @@ import fs from 'fs';
 import { Buffer } from 'buffer';
 import process from 'node:process';
 
-import { assert, details as X, Fail } from '@agoric/assert';
+import { assert, X, Fail } from '@endo/errors';
 import { importBundle } from '@endo/import-bundle';
 import { makeMarshal } from '@endo/marshal';
 import {

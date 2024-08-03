@@ -12,15 +12,15 @@ export const makeWhen = (
   /**
    * Shorten `specimenP` until we achieve a final result.
    *
+   * Does not survive upgrade (even if specimenP is a durable Vow).
+   *
+   * @see {@link ../../README.md}
+   *
    * @template T
-   * @template [TResult1=EUnwrap<T>]
-   * @template [TResult2=never]
    * @param {T} specimenP value to unwrap
-   * @param {(value: EUnwrap<T>) => TResult1 | PromiseLike<TResult1>} [onFulfilled]
-   * @param {(reason: any) => TResult2 | PromiseLike<TResult2>} [onRejected]
-   * @returns {Promise<TResult1 | TResult2>}
+   * @returns {Promise<EUnwrap<T>>}
    */
-  const when = async (specimenP, onFulfilled, onRejected) => {
+  const unwrap = async specimenP => {
     // Ensure we don't run until a subsequent turn.
     await null;
 
@@ -36,33 +36,55 @@ export const makeWhen = (
       if (seenPayloads.has(vowV0)) {
         throw Error('Vow resolution cycle detected');
       }
-      result = await basicE(vowV0)
-        .shorten()
-        .then(
-          res => {
-            seenPayloads.add(vowV0);
-            priorRetryValue = undefined;
-            return res;
-          },
-          e => {
-            const nextValue = isRetryableReason(e, priorRetryValue);
-            if (nextValue) {
-              // Shorten the same specimen to try again.
-              priorRetryValue = nextValue;
-              return result;
-            }
-            throw e;
-          },
-        );
+
+      try {
+        // Shorten the vow to the "next step", whether another vow or a final
+        // result.
+        const res = await basicE(vowV0).shorten();
+
+        // Prevent cycles in the resolution graph.
+        seenPayloads.add(vowV0);
+        priorRetryValue = undefined;
+        result = res;
+      } catch (e) {
+        const nextRetryValue = isRetryableReason(e, priorRetryValue);
+        if (!nextRetryValue) {
+          // Not a retry, so just reject with the reason.
+          throw e;
+        }
+
+        // Shorten the same specimen to try again.
+        priorRetryValue = nextRetryValue;
+      }
       // Advance to the next vow.
       payload = getVowPayload(result);
     }
 
     const unwrapped = /** @type {EUnwrap<T>} */ (result);
+    return unwrapped;
+  };
+
+  /**
+   * Shorten `specimenP` until we achieve a final result.
+   *
+   * Does not survive upgrade (even if specimenP is a durable Vow).
+   *
+   * @see {@link ../../README.md}
+   *
+   * @template T
+   * @template [TResult1=EUnwrap<T>]
+   * @template [TResult2=never]
+   * @param {T} specimenP value to unwrap
+   * @param {(value: EUnwrap<T>) => TResult1 | PromiseLike<TResult1>} [onFulfilled]
+   * @param {(reason: any) => TResult2 | PromiseLike<TResult2>} [onRejected]
+   * @returns {Promise<TResult1 | TResult2>}
+   */
+  const when = (specimenP, onFulfilled, onRejected) => {
+    const unwrapped = unwrap(specimenP);
 
     // We've extracted the final result.
     if (onFulfilled == null && onRejected == null) {
-      return /** @type {TResult1} */ (unwrapped);
+      return /** @type {Promise<TResult1>} */ (unwrapped);
     }
     return basicE.resolve(unwrapped).then(onFulfilled, onRejected);
   };

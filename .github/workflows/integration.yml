@@ -61,7 +61,7 @@ jobs:
           keep-endo: 'true'
 
       # Select a branch on dapp to test against by adding text to the body of the
-      # pull request. For example: #dapp-encouragement-branch: zoe-release-0.7.0
+      # pull request. For example: #getting-started-branch: zoe-release-0.7.0
       # The default is 'main'
       - name: Get the appropriate dapp branch
         id: get-branch
@@ -78,7 +78,7 @@ jobs:
                 branch = result[1];
               }
             }
-            console.log(branch);
+            console.log('getting-started dapp branch: ' + branch);
             return branch;
 
       - name: Start local NPM registry
@@ -86,6 +86,7 @@ jobs:
         run: |
           set -xe
           git reset --hard HEAD
+          git clean -f
           git config user.email "noreply@agoric.com"
           REGISTRY_PUBLISH_WORKSPACES="$HOME/endo" scripts/registry.sh bg-publish ${{ matrix.cli }}
 
@@ -98,6 +99,7 @@ jobs:
           # won't increase the time for this workflow to complete.
           timeout_minutes: 20
           command: scripts/registry.sh test ${{ matrix.cli }} ${{steps.get-branch.outputs.result}}
+          on_retry_command: rm $HOME/bin/agoric
 
       - name: notify on failure
         if: >
@@ -153,7 +155,7 @@ jobs:
                 branch = result[1];
               }
             }
-            console.log(branch);
+            console.log('loadgen branch: ' + branch);
             return branch;
 
       - name: Check out loadgen
@@ -285,6 +287,11 @@ jobs:
         timeout-minutes: 4
         with:
           datadog-token: ${{ secrets.DATADOG_API_KEY }}
+
+  test-multichain-e2e:
+    needs: pre_check
+    if: needs.pre_check.outputs.should_run == 'true'
+    uses: ./.github/workflows/multichain-e2e.yml
 
   finalize-integration-result:
     needs:

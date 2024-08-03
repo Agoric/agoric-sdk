@@ -3,7 +3,7 @@
  * @see prepareBoardKit()
  */
 
-import { assert, Fail, q } from '@agoric/assert';
+import { assert, Fail, q } from '@endo/errors';
 import { prepareDurablePublishKit } from '@agoric/notifier';
 import { M, makeScalarBigMapStore, prepareExoClassKit } from '@agoric/vat-data';
 import {
@@ -17,7 +17,7 @@ import { crc6 } from './crc.js';
 
 /**
  * @import {RemotableObject} from '@endo/pass-style';
- * @import {Key} from '@endo/patterns');
+ * @import {Key} from '@endo/patterns';
  */
 
 export const DEFAULT_CRC_DIGITS = 2;
@@ -80,9 +80,6 @@ const calcCrc = (data, crcDigits) => {
 /**
  * @typedef {ReturnType<typeof initDurableBoardState>} BoardState // TODO: use
  *   Key from @agoric/store when available
- * @import {Passable} from '@endo/marshal'
- * @see {prepareExoClassKit}
- * @see {@link ../../SwingSet/docs/virtual-objects.md|SwingSet Virtual Objects} Hoisting this function makes defining the state type concise.
  */
 
 // TODO consider tightening initSequence to bigint only

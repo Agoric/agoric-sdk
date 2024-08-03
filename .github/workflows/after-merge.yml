@@ -75,13 +75,13 @@ jobs:
               ;;
           esac
           # Prevent `lerna publish` from failing due to uncommitted changes.
-          git stash
+          git stash || true
           # without concurrency until https://github.com/Agoric/agoric-sdk/issues/8091
           yarn lerna publish --concurrency 1 --conventional-prerelease --canary --exact \
             --dist-tag=$TAG --preid=$TAG-$(git rev-parse --short=7 HEAD) \
             --no-push --no-verify-access --yes
-          # restore the stashed changes for caching
-          git stash apply
+          # restore any stashed changes for caching
+          git stash pop || true
       - name: notify on failure
         if: failure()
         uses: ./.github/actions/notify-status

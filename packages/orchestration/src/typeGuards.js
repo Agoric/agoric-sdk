@@ -3,6 +3,12 @@ import { VowShape } from '@agoric/vow';
 import { M } from '@endo/patterns';
 
 /**
+ * @import {TypedPattern} from '@agoric/internal';
+ * @import {ChainAddress, CosmosAssetInfo, ChainInfo, CosmosChainInfo, DenomAmount, DenomDetail} from './types.js';
+ * @import {Delegation} from '@agoric/cosmic-proto/cosmos/staking/v1beta1/staking.js';
+ */
+
+/**
  * Used for IBC Channel Connections that only send outgoing transactions. If
  * your channel expects incoming transactions, please extend this interface to
  * include the `onReceive` handler.
@@ -17,10 +23,11 @@ export const OutboundConnectionHandlerI = M.interface(
   },
 );
 
+/** @type {TypedPattern<ChainAddress>} */
 export const ChainAddressShape = {
-  address: M.string(),
   chainId: M.string(),
-  addressEncoding: M.string(),
+  encoding: M.string(),
+  value: M.string(),
 };
 
 export const Proto3Shape = {
@@ -28,12 +35,8 @@ export const Proto3Shape = {
   value: M.string(),
 };
 
-export const CoinShape = { value: M.bigint(), denom: M.string() };
-
-export const ChainAmountShape = harden({ denom: M.string(), value: M.nat() });
-
-export const AmountArgShape = M.or(AmountShape, ChainAmountShape);
-
+// FIXME missing `delegatorAddress` from the type
+/** @type {TypedPattern<Delegation>} */
 export const DelegationShape = harden({
   validatorAddress: M.string(),
   shares: M.string(), // TODO: bigint?
@@ -76,6 +79,18 @@ export const IBCConnectionInfoShape = M.splitRecord({
   transferChannel: IBCChannelInfoShape,
 });
 
+/** @type {TypedPattern<CosmosAssetInfo>} */
+export const CosmosAssetInfoShape = M.splitRecord({
+  base: M.string(),
+  name: M.string(),
+  display: M.string(),
+  symbol: M.string(),
+  denom_units: M.arrayOf(
+    M.splitRecord({ denom: M.string(), exponent: M.number() }),
+  ),
+});
+
+/** @type {TypedPattern<CosmosChainInfo>} */
 export const CosmosChainInfoShape = M.splitRecord(
   {
     chainId: M.string(),
@@ -88,17 +103,30 @@ export const CosmosChainInfoShape = M.splitRecord(
   },
 );
 
-// FIXME more validation
-export const ChainInfoShape = M.any();
+/** @type {TypedPattern<ChainInfo>} */
+export const ChainInfoShape = M.splitRecord({
+  chainId: M.string(),
+});
 export const LocalChainAccountShape = M.remotable('LocalChainAccount');
 export const DenomShape = M.string();
-// FIXME more validation
+// TODO define for #9211
 export const BrandInfoShape = M.any();
 
+/** @type {TypedPattern<DenomAmount>} */
 export const DenomAmountShape = { denom: DenomShape, value: M.bigint() };
 
-/** @see {Chain} */
-export const ChainFacadeI = M.interface('ChainFacade', {
+export const AmountArgShape = M.or(AmountShape, DenomAmountShape);
+
+export const chainFacadeMethods = harden({
   getChainInfo: M.call().returns(VowShape),
   makeAccount: M.call().returns(VowShape),
 });
+
+/** @see {Chain} */
+export const ChainFacadeI = M.interface('ChainFacade', chainFacadeMethods);
+
+/**
+ * for google/protobuf/timestamp.proto, not to be confused with TimestampShape
+ * from `@agoric/time`
+ */
+export const TimestampProtoShape = { seconds: M.nat(), nanos: M.number() };

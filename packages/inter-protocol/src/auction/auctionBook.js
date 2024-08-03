@@ -2,6 +2,8 @@
 /// <reference types="@agoric/governance/exported" />
 /// <reference types="@agoric/zoe/exported" />
 
+import { Fail } from '@endo/errors';
+import { E } from '@endo/captp';
 import { AmountMath, RatioShape } from '@agoric/ertp';
 import { mustMatch } from '@agoric/store';
 import { M, prepareExoClassKit } from '@agoric/vat-data';
@@ -16,7 +18,6 @@ import {
   multiplyRatios,
   ratioGTE,
 } from '@agoric/zoe/src/contractSupport/index.js';
-import { E } from '@endo/captp';
 import { observeNotifier } from '@agoric/notifier';
 
 import { makeNatAmountShape } from '../contractSupport.js';
@@ -30,9 +31,9 @@ import {
 /**
  * @import {Baggage} from '@agoric/vat-data';
  * @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js';
+ * @import {TypedPattern} from '@agoric/internal';
  */
 
-const { Fail } = assert;
 const { makeEmpty } = AmountMath;
 
 const DEFAULT_DECIMALS = 9;
@@ -172,9 +173,7 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
 
       const bookDataKit = makeRecorderKit(
         node,
-        /** @type {import('@agoric/zoe/src/contractSupport/recorder.js').TypedMatcher<BookDataNotification>} */ (
-          M.any()
-        ),
+        /** @type {TypedPattern<BookDataNotification>} */ (M.any()),
       );
 
       return {

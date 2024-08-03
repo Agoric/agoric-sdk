@@ -14,7 +14,7 @@ set -euo pipefail
 # read config file from args into variable
 CONFIGFILE="config.yaml"
 
-SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &> /dev/null && pwd)
 echo "Script dir: ${SCRIPT_DIR}"
 
 # default values
@@ -24,13 +24,12 @@ NAMESPACE=""
 HELM_REPO="starship"
 HELM_CHART="starship/devnet"
 HELM_REPO_URL="https://cosmology-tech.github.io/starship/"
-HELM_CHART_VERSION="0.2.2"
-HELM_NAME="starship-getting-started"
+HELM_CHART_VERSION="0.2.8"
+HELM_NAME="agoric-multichain-testing"
 
 # check_helm function verifies the helm binary is installed
 function check_helm() {
-  if ! command -v helm &> /dev/null
-  then
+  if ! command -v helm &> /dev/null; then
     echo "helm could not be found; please install it first!!!"
     exit
   fi
@@ -63,12 +62,14 @@ function set_helm_args() {
     return 0
   fi
   for i in $(seq 0 $num_chains); do
-    chain=$(yq -r ".chains[$i].name" ${CONFIGFILE})
     scripts=$(yq -r ".chains[$i].scripts" ${CONFIGFILE})
     if [[ "$scripts" == "null" ]]; then
       return 0
     fi
-    datadir="$(cd "$(dirname -- "${CONFIGFILE}")" >/dev/null; pwd -P)"
+    datadir="$(
+      cd "$(dirname -- "${CONFIGFILE}")" > /dev/null
+      pwd -P
+    )"
     for script in $(yq -r ".chains[$i].scripts | keys | .[]" ${CONFIGFILE}); do
       args="$args --set-file chains[$i].scripts.$script.data=$datadir/$(yq -r ".chains[$i].scripts.$script.file" ${CONFIGFILE})"
     done
@@ -84,19 +85,19 @@ function install_chart() {
 
 while [ $# -gt 0 ]; do
   case "$1" in
-    -c|--config)
+    -c | --config)
       CONFIGFILE="$2"
       shift 2 # past argument=value
       ;;
-    -v|--version)
+    -v | --version)
       HELM_CHART_VERSION="$2"
       shift 2 # past argument
       ;;
-    -t|--timeout)
+    -t | --timeout)
       TIMEOUT="$2"
       shift 2 # past argument
       ;;
-    -n|--name)
+    -n | --name)
       HELM_NAME="$2"
       shift 2 # past argument
       ;;
@@ -112,16 +113,15 @@ while [ $# -gt 0 ]; do
       DRY_RUN=1
       shift # past argument
       ;;
-    -*|--*)
+    -)
       echo "Unknown option $1"
       exit 1
       ;;
-    *)
-      ;;
+    *) ;;
+
   esac
 done
 
 check_helm
 setup_helm
 install_chart
-

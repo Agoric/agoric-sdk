@@ -1,3 +1,4 @@
+import { q } from '@endo/errors';
 import { Far, filterIterable } from '@endo/pass-style';
 import { compareRank } from '@endo/marshal';
 import {
@@ -11,11 +12,9 @@ import { makeWeakSetStoreMethods } from './scalarWeakSetStore.js';
 import { makeCurrentKeysKit } from './store-utils.js';
 
 /**
- * @import {Key, Pattern} from '@endo/patterns');
+ * @import {Key, Pattern} from '@endo/patterns';
  * @import {SetStore, SetStoreMethods, StoreOptions} from '../types.js';
  */
-
-const { quote: q } = assert;
 
 /**
  * @template {Key} K

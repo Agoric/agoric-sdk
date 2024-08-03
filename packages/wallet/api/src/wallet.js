@@ -58,7 +58,7 @@ export function buildRootObject(vatPowers) {
 
   const pushOfferSubscriptions = (channelHandle, offers) => {
     const subs = offerSubscriptions.get(channelHandle);
-    (subs || []).forEach(({ origin, status }) => {
+    for (const { origin, status } of subs || []) {
       // Filter by optional status and origin.
       const result = harden(
         offers.filter(
@@ -75,7 +75,7 @@ export function buildRootObject(vatPowers) {
         },
         [channelHandle],
       );
-    });
+    }
   };
 
   const subscribeToOffers = (channelHandle, { origin, status = null }) => {

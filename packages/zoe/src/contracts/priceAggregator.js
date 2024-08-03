@@ -1,5 +1,5 @@
 /* eslint @typescript-eslint/no-floating-promises: "warn" */
-import { Fail, q } from '@agoric/assert';
+import { Fail, q } from '@endo/errors';
 import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { assertAllDefined } from '@agoric/internal';
 import {
@@ -146,11 +146,11 @@ const start = async (zcf, privateArgs) => {
     async wake(timestamp) {
       // Run all the queriers.
       const querierPs = [];
-      oracleRecords.forEach(({ querier }) => {
+      for (const { querier } of oracleRecords) {
         if (querier) {
           querierPs.push(querier(timestamp));
         }
-      });
+      }
       if (!querierPs.length) {
         // Only have push results, so publish them.
         // eslint-disable-next-line no-use-before-define

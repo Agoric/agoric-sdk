@@ -6,7 +6,8 @@ import type { TestFn } from 'ava';
 import type { ScopedBridgeManager } from '@agoric/vats';
 import type { TransferMiddleware } from '@agoric/vats/src/transfer.js';
 import type { TransferVat } from '@agoric/vats/src/vat-transfer.js';
-import { BridgeId, VTRANSFER_IBC_EVENT } from '@agoric/internal';
+import { BridgeId } from '@agoric/internal';
+import { VTRANSFER_IBC_EVENT } from '@agoric/internal/src/action-types.js';
 import { makeSwingsetTestKit } from '../../tools/supports.ts';
 
 const makeDefaultTestContext = async t => {
@@ -23,8 +24,12 @@ test.before(async t => (t.context = await makeDefaultTestContext(t)));
 test.after.always(t => t.context.shutdown?.());
 
 test('vtransfer', async t => {
-  const { buildProposal, evalProposal, getOutboundMessages, runUtils } =
-    t.context;
+  const {
+    buildProposal,
+    evalProposal,
+    bridgeUtils: { getOutboundMessages },
+    runUtils,
+  } = t.context;
   const { EV } = runUtils;
 
   // Pull what transfer-proposal produced into local scope

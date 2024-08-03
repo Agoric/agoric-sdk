@@ -1,3 +1,4 @@
+import { q, Fail } from '@endo/errors';
 import { Far, assertPassable, passStyleOf } from '@endo/pass-style';
 import {
   getCopyMapEntries,
@@ -11,8 +12,6 @@ import {
  * @import {Passable, RemotableObject} from '@endo/pass-style';
  * @import {WeakMapStore, StoreOptions} from '../types.js';
  */
-
-const { quote: q, Fail } = assert;
 
 /**
  * @template {Key} K

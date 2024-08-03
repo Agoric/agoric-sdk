@@ -1,5 +1,5 @@
+import { assert } from '@endo/errors';
 import { Far } from '@endo/marshal';
-import { assert } from '@agoric/assert';
 import { AmountMath, isNatValue } from '@agoric/ertp';
 
 // Eventually will be importable from '@agoric/zoe-contract-support'
@@ -64,7 +64,9 @@ const start = async zcf => {
   // In order to get all the brands, we must call zcf.getTerms() after
   // we create the liquidityIssuer
   const { brands } = zcf.getTerms();
-  Object.values(brands).forEach(brand => assertNatAssetKind(zcf, brand));
+  for (const brand of Object.values(brands)) {
+    assertNatAssetKind(zcf, brand);
+  }
   /** @type {Map<Brand,Keyword>} */
   const brandToKeyword = new Map(
     Object.entries(brands).map(([keyword, brand]) => [brand, keyword]),

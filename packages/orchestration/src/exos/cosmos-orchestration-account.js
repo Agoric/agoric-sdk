@@ -19,36 +19,36 @@ import { makeTracer } from '@agoric/internal';
 import { Shape as NetworkShape } from '@agoric/network';
 import { M } from '@agoric/vat-data';
 import { VowShape } from '@agoric/vow';
-import { TopicsRecordShape } from '@agoric/zoe/src/contractSupport/index.js';
 import { decodeBase64 } from '@endo/base64';
+import { Fail } from '@endo/errors';
 import { E } from '@endo/far';
 import {
   AmountArgShape,
   ChainAddressShape,
-  ChainAmountShape,
-  CoinShape,
   DelegationShape,
+  DenomAmountShape,
 } from '../typeGuards.js';
 import { maxClockSkew, tryDecodeResponse } from '../utils/cosmos.js';
 import { orchestrationAccountMethods } from '../utils/orchestrationAccount.js';
-import { dateInSeconds } from '../utils/time.js';
 
 /**
+ * @import {HostOf} from '@agoric/async-flow';
  * @import {AmountArg, IcaAccount, ChainAddress, CosmosValidatorAddress, ICQConnection, StakingAccountActions, DenomAmount, OrchestrationAccountI, DenomArg} from '../types.js';
  * @import {RecorderKit, MakeRecorderKit} from '@agoric/zoe/src/contractSupport/recorder.js';
  * @import {Coin} from '@agoric/cosmic-proto/cosmos/base/v1beta1/coin.js';
  * @import {Delegation} from '@agoric/cosmic-proto/cosmos/staking/v1beta1/staking.js';
  * @import {Remote} from '@agoric/internal';
+ * @import {InvitationMakers} from '@agoric/smart-wallet/src/types.js';
  * @import {TimerService} from '@agoric/time';
  * @import {Vow, VowTools} from '@agoric/vow';
  * @import {Zone} from '@agoric/zone';
  * @import {ResponseQuery} from '@agoric/cosmic-proto/tendermint/abci/types.js';
  * @import {JsonSafe} from '@agoric/cosmic-proto';
+ * @import {Matcher} from '@endo/patterns';
  */
 
 const trace = makeTracer('ComosOrchestrationAccountHolder');
 
-const { Fail } = assert;
 const { Vow$ } = NetworkShape; // TODO #9611
 
 /**
@@ -70,12 +70,6 @@ const { Vow$ } = NetworkShape; // TODO #9611
 /** @see {OrchestrationAccountI} */
 export const IcaAccountHolderI = M.interface('IcaAccountHolder', {
   ...orchestrationAccountMethods,
-  asContinuingOffer: M.call().returns({
-    publicSubscribers: M.any(),
-    invitationMakers: M.any(),
-    holder: M.any(),
-  }),
-  getPublicTopics: M.call().returns(TopicsRecordShape),
   delegate: M.call(ChainAddressShape, AmountArgShape).returns(VowShape),
   redelegate: M.call(
     ChainAddressShape,
@@ -83,13 +77,13 @@ export const IcaAccountHolderI = M.interface('IcaAccountHolder', {
     AmountArgShape,
   ).returns(VowShape),
   withdrawReward: M.call(ChainAddressShape).returns(
-    Vow$(M.arrayOf(ChainAmountShape)),
+    Vow$(M.arrayOf(DenomAmountShape)),
   ),
-  withdrawRewards: M.call().returns(Vow$(M.arrayOf(ChainAmountShape))),
+  withdrawRewards: M.call().returns(Vow$(M.arrayOf(DenomAmountShape))),
   undelegate: M.call(M.arrayOf(DelegationShape)).returns(VowShape),
 });
 
-/** @type {{ [name: string]: [description: string, valueShape: Pattern] }} */
+/** @type {{ [name: string]: [description: string, valueShape: Matcher] }} */
 const PUBLIC_TOPICS = {
   account: ['Staking Account holder status', M.any()],
 };
@@ -106,11 +100,11 @@ const toDenomAmount = c => ({ denom: c.denom, value: BigInt(c.amount) });
 export const prepareCosmosOrchestrationAccountKit = (
   zone,
   makeRecorderKit,
-  { watch, asVow },
+  { watch, asVow, when },
   zcf,
 ) => {
   const makeCosmosOrchestrationAccountKit = zone.exoClassKit(
-    'Staking Account Holder',
+    'Cosmos Orchestration Account Holder',
     {
       helper: M.interface('helper', {
         owned: M.call().returns(M.remotable()),
@@ -135,7 +129,7 @@ export const prepareCosmosOrchestrationAccountKit = (
       withdrawRewardWatcher: M.interface('withdrawRewardWatcher', {
         onFulfilled: M.call(M.string())
           .optional(M.arrayOf(M.undefined())) // empty context
-          .returns(M.arrayOf(CoinShape)),
+          .returns(M.arrayOf(DenomAmountShape)),
       }),
       holder: IcaAccountHolderI,
       invitationMakers: M.interface('invitationMakers', {
@@ -166,7 +160,6 @@ export const prepareCosmosOrchestrationAccountKit = (
     (chainAddress, bondDenom, io) => {
       const { storageNode, ...rest } = io;
       // must be the fully synchronous maker because the kit is held in durable state
-      // @ts-expect-error XXX Patterns
       const topicKit = makeRecorderKit(storageNode, PUBLIC_TOPICS.account[1]);
       // TODO determine what goes in vstorage https://github.com/Agoric/agoric-sdk/issues/9066
       void E(topicKit.recorder).write('');
@@ -230,9 +223,8 @@ export const prepareCosmosOrchestrationAccountKit = (
           const { completionTime } = response;
           completionTime || Fail`No completion time result ${result}`;
           return watch(
-            E(this.state.timer).wakeAt(
-              dateInSeconds(completionTime) + maxClockSkew,
-            ),
+            // ignore nanoseconds and just use seconds from Timestamp
+            E(this.state.timer).wakeAt(completionTime.seconds + maxClockSkew),
           );
         },
       },
@@ -318,37 +310,50 @@ export const prepareCosmosOrchestrationAccountKit = (
         },
       },
       holder: {
+        /** @type {HostOf<OrchestrationAccountI['asContinuingOffer']>} */
         asContinuingOffer() {
-          const { holder, invitationMakers } = this.facets;
-          return harden({
-            publicSubscribers: holder.getPublicTopics(),
-            invitationMakers,
-            holder,
+          // @ts-expect-error XXX invitationMakers
+          // getPublicTopics resolves promptly (same run), so we don't need a watcher
+          // eslint-disable-next-line no-restricted-syntax
+          return asVow(async () => {
+            await null;
+            const { holder, invitationMakers: im } = this.facets;
+            // XXX cast to a type that has string index signature
+            const invitationMakers = /** @type {InvitationMakers} */ (
+              /** @type {unknown} */ (im)
+            );
+
+            return harden({
+              // getPublicTopics returns a vow, for membrane compatibility.
+              // it's safe to unwrap to a promise and get the result as we
+              // expect this complete in the same run
+              publicSubscribers: await when(holder.getPublicTopics()),
+              invitationMakers,
+            });
           });
         },
+        /** @type {HostOf<OrchestrationAccountI['getPublicTopics']>} */
         getPublicTopics() {
-          const { topicKit } = this.state;
-          return harden({
-            account: {
-              description: PUBLIC_TOPICS.account[0],
-              subscriber: topicKit.subscriber,
-              storagePath: topicKit.recorder.getStoragePath(),
-            },
+          // getStoragePath resolves promptly (same run), so we don't need a watcher
+          // eslint-disable-next-line no-restricted-syntax
+          return asVow(async () => {
+            await null;
+            const { topicKit } = this.state;
+            return harden({
+              account: {
+                description: PUBLIC_TOPICS.account[0],
+                subscriber: topicKit.subscriber,
+                storagePath: await topicKit.recorder.getStoragePath(),
+              },
+            });
           });
         },
 
-        // TODO move this beneath the Orchestration abstraction,
-        // to the OrchestrationAccount provided by makeAccount()
-        /** @returns {ChainAddress} */
+        /** @type {HostOf<OrchestrationAccountI['getAddress']>} */
         getAddress() {
           return this.state.chainAddress;
         },
-        /**
-         * _Assumes users has already sent funds to their ICA, until #9193
-         *
-         * @param {CosmosValidatorAddress} validator
-         * @param {AmountArg} amount
-         */
+        /** @type {HostOf<StakingAccountActions['delegate']>} */
         delegate(validator, amount) {
           return asVow(() => {
             trace('delegate', validator, amount);
@@ -358,8 +363,8 @@ export const prepareCosmosOrchestrationAccountKit = (
             const results = E(helper.owned()).executeEncodedTx([
               Any.toJSON(
                 MsgDelegate.toProtoMsg({
-                  delegatorAddress: chainAddress.address,
-                  validatorAddress: validator.address,
+                  delegatorAddress: chainAddress.value,
+                  validatorAddress: validator.value,
                   amount: helper.amountToCoin(amount),
                 }),
               ),
@@ -367,23 +372,12 @@ export const prepareCosmosOrchestrationAccountKit = (
             return watch(results, this.facets.returnVoidWatcher);
           });
         },
-        deposit(payment) {
-          trace('deposit', payment);
-          console.error(
-            'FIXME deposit noop until https://github.com/Agoric/agoric-sdk/issues/9193',
-          );
-        },
+        /** @type {HostOf<OrchestrationAccountI['getBalances']>} */
         getBalances() {
           // TODO https://github.com/Agoric/agoric-sdk/issues/9610
           return asVow(() => Fail`not yet implemented`);
         },
-        /**
-         * _Assumes users has already sent funds to their ICA, until #9193
-         *
-         * @param {CosmosValidatorAddress} srcValidator
-         * @param {CosmosValidatorAddress} dstValidator
-         * @param {AmountArg} amount
-         */
+        /** @type {HostOf<StakingAccountActions['redelegate']>} */
         redelegate(srcValidator, dstValidator, amount) {
           return asVow(() => {
             trace('redelegate', srcValidator, dstValidator, amount);
@@ -393,9 +387,9 @@ export const prepareCosmosOrchestrationAccountKit = (
             const results = E(helper.owned()).executeEncodedTx([
               Any.toJSON(
                 MsgBeginRedelegate.toProtoMsg({
-                  delegatorAddress: chainAddress.address,
-                  validatorSrcAddress: srcValidator.address,
-                  validatorDstAddress: dstValidator.address,
+                  delegatorAddress: chainAddress.value,
+                  validatorSrcAddress: srcValidator.value,
+                  validatorDstAddress: dstValidator.value,
                   amount: helper.amountToCoin(amount),
                 }),
               ),
@@ -408,18 +402,15 @@ export const prepareCosmosOrchestrationAccountKit = (
             );
           });
         },
-        /**
-         * @param {CosmosValidatorAddress} validator
-         * @returns {Vow<DenomAmount[]>}
-         */
+        /** @type {HostOf<StakingAccountActions['withdrawReward']>} */
         withdrawReward(validator) {
           return asVow(() => {
             trace('withdrawReward', validator);
             const { helper } = this.facets;
             const { chainAddress } = this.state;
             const msg = MsgWithdrawDelegatorReward.toProtoMsg({
-              delegatorAddress: chainAddress.address,
-              validatorAddress: validator.address,
+              delegatorAddress: chainAddress.value,
+              validatorAddress: validator.value,
             });
             const account = helper.owned();
 
@@ -427,10 +418,7 @@ export const prepareCosmosOrchestrationAccountKit = (
             return watch(results, this.facets.withdrawRewardWatcher);
           });
         },
-        /**
-         * @param {DenomArg} denom
-         * @returns {Vow<DenomAmount>}
-         */
+        /** @type {HostOf<OrchestrationAccountI['getBalance']>} */
         getBalance(denom) {
           return asVow(() => {
             const { chainAddress, icqConnection } = this.state;
@@ -443,7 +431,7 @@ export const prepareCosmosOrchestrationAccountKit = (
             const results = E(icqConnection).query([
               toRequestQueryJson(
                 QueryBalanceRequest.toProtoMsg({
-                  address: chainAddress.address,
+                  address: chainAddress.value,
                   denom,
                 }),
               ),
@@ -452,26 +440,30 @@ export const prepareCosmosOrchestrationAccountKit = (
           });
         },
 
+        /** @type {HostOf<OrchestrationAccountI['send']>} */
         send(toAccount, amount) {
           console.log('send got', toAccount, amount);
           return asVow(() => Fail`not yet implemented`);
         },
 
+        /** @type {HostOf<OrchestrationAccountI['transfer']>} */
         transfer(amount, msg) {
           console.log('transferSteps got', amount, msg);
           return asVow(() => Fail`not yet implemented`);
         },
 
+        /** @type {HostOf<OrchestrationAccountI['transferSteps']>} */
         transferSteps(amount, msg) {
           console.log('transferSteps got', amount, msg);
           return asVow(() => Fail`not yet implemented`);
         },
 
+        /** @type {HostOf<StakingAccountActions['withdrawRewards']>} */
         withdrawRewards() {
           return asVow(() => Fail`Not Implemented. Try using withdrawReward.`);
         },
 
-        /** @param {Omit<Delegation, 'delegatorAddress'>[]} delegations */
+        /** @type {HostOf<StakingAccountActions['undelegate']>} */
         undelegate(delegations) {
           return asVow(() => {
             trace('undelegate', delegations);
@@ -483,7 +475,7 @@ export const prepareCosmosOrchestrationAccountKit = (
                 delegations.map(d =>
                   Any.toJSON(
                     MsgUndelegate.toProtoMsg({
-                      delegatorAddress: chainAddress.address,
+                      delegatorAddress: chainAddress.value,
                       validatorAddress: d.validatorAddress,
                       amount: { denom: bondDenom, amount: d.shares },
                     }),

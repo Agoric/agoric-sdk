@@ -306,14 +306,14 @@ export async function makeHTTPListener(
   server.listen(port, host, () => log.info('Listening on', `${host}:${port}`));
 
   const pingInterval = setInterval(function ping() {
-    wss.clients.forEach(ws => {
+    for (const ws of wss.clients) {
       if (!ws.isAlive) {
         ws.terminate();
         return;
       }
       ws.isAlive = false;
       ws.ping(() => {});
-    });
+    }
   }, 30000);
 
   wss.on('close', () => clearInterval(pingInterval));

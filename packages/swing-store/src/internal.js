@@ -1,4 +1,4 @@
-import { Fail, q } from '@agoric/assert';
+import { Fail, q } from '@endo/errors';
 
 /**
  * @typedef { import('./snapStore.js').SnapStoreInternal } SnapStoreInternal

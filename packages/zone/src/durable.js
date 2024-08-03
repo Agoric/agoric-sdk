@@ -1,7 +1,9 @@
 // @ts-check
 // @jessie-check
 
+import { Fail } from '@endo/errors';
 import { Far, isPassable } from '@endo/pass-style';
+
 import {
   canBeDurable,
   makeScalarMapStore,
@@ -16,8 +18,6 @@ import {
 } from '@agoric/vat-data';
 
 import { agoricVatDataKeys as keys, makeOnceKit } from '@agoric/base-zone';
-
-const { Fail } = assert;
 
 /**
  * A variant of `canBeDurable` that returns `false` instead of ever throwing.
@@ -86,7 +86,7 @@ export const makeDurableZone = (baggage, baseLabel = 'durableZone') => {
   /** @type {import('.').Zone['exoClass']} */
   const exoClass = (...args) => prepareExoClass(baggage, ...args);
   /** @type {import('.').Zone['exoClassKit']} */
-  // eslint-disable-next-line @typescript-eslint/prefer-ts-expect-error -- happens only integrating with Endo master
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment -- happens only integrating with Endo master
   // @ts-ignore FIXME in Endo
   const exoClassKit = (...args) => prepareExoClassKit(baggage, ...args);
   /** @type {import('.').Zone['exo']} */

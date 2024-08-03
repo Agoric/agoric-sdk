@@ -17,7 +17,8 @@ const trace = makeTracer('StakeIca');
  * @import {Baggage} from '@agoric/vat-data';
  * @import {IBCConnectionID} from '@agoric/vats';
  * @import {TimerService} from '@agoric/time';
- * @import {ICQConnection, OrchestrationService} from '../types.js';
+ * @import {ResolvedContinuingOfferResult} from '../utils/zoe-tools.js';
+ * @import {ICQConnection, CosmosInterchainService} from '../types.js';
  */
 
 /** @type {ContractMeta<typeof start>} */
@@ -30,7 +31,7 @@ export const meta = harden({
     icqEnabled: M.boolean(),
   },
   privateArgsShape: {
-    orchestration: M.remotable('orchestration'),
+    cosmosInterchainService: M.remotable('cosmosInterchainService'),
     storageNode: StorageNodeShape,
     marshaller: M.remotable('marshaller'),
     timer: TimerServiceShape,
@@ -51,7 +52,7 @@ export const privateArgsShape = meta.privateArgsShape;
 /**
  * @param {ZCF<StakeIcaTerms>} zcf
  * @param {{
- *   orchestration: OrchestrationService;
+ *   cosmosInterchainService: CosmosInterchainService;
  *   storageNode: StorageNode;
  *   marshaller: Marshaller;
  *   timer: TimerService;
@@ -66,7 +67,12 @@ export const start = async (zcf, privateArgs, baggage) => {
     bondDenom,
     icqEnabled,
   } = zcf.getTerms();
-  const { orchestration, marshaller, storageNode, timer } = privateArgs;
+  const {
+    cosmosInterchainService: orchestration,
+    marshaller,
+    storageNode,
+    timer,
+  } = privateArgs;
 
   const zone = makeDurableZone(baggage);
 
@@ -99,7 +105,7 @@ export const start = async (zcf, privateArgs, baggage) => {
     const accountAddress = await E(account).getAddress();
     trace('account address', accountAddress);
     const accountNode = await E(accountsStorageNode).makeChildNode(
-      accountAddress.address,
+      accountAddress.value,
     );
     const holder = makeCosmosOrchestrationAccount(accountAddress, bondDenom, {
       account,
@@ -113,7 +119,7 @@ export const start = async (zcf, privateArgs, baggage) => {
   const publicFacet = zone.exo(
     'StakeAtom',
     M.interface('StakeAtomI', {
-      makeAccount: M.callWhen().returns(M.remotable('ChainAccount')),
+      makeAccount: M.callWhen().returns(M.remotable('OrchestrationAccountKit')),
       makeAccountInvitationMaker: M.callWhen().returns(InvitationShape),
     }),
     {
@@ -124,10 +130,15 @@ export const start = async (zcf, privateArgs, baggage) => {
       makeAccountInvitationMaker() {
         trace('makeCreateAccountInvitation');
         return zcf.makeInvitation(
+          // XXX use `orchestrate` membrane for vow?
+          /**
+           * @param {ZCFSeat} seat
+           * @returns {Promise<ResolvedContinuingOfferResult>}
+           */
           async seat => {
             seat.exit();
             const holder = await makeAccountKit();
-            return holder.asContinuingOffer();
+            return vowTools.when(holder.asContinuingOffer());
           },
           'wantStakingAccount',
           undefined,

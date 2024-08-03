@@ -1,22 +1,14 @@
 /** @file Bootstrap test of restarting (almost) all vats */
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
+import { TestFn } from 'ava';
+
+import { Fail } from '@endo/errors';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
-
-import processAmbient from 'child_process';
-import { promises as fsAmbientPromises } from 'fs';
-
 import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
 import { makeAgoricNamesRemotesFromFakeStorage } from '@agoric/vats/tools/board-utils.js';
-import { TestFn } from 'ava';
 import { BridgeHandler, ScopedBridgeManager } from '@agoric/vats';
-import type { EconomyBootstrapSpace } from '@agoric/inter-protocol/src/proposals/econ-behaviors.js';
-import {
-  makeProposalExtractor,
-  makeSwingsetTestKit,
-} from '../../tools/supports.ts';
+import { makeSwingsetTestKit } from '../../tools/supports.ts';
 import { makeWalletFactoryDriver } from '../../tools/drivers.ts';
-
-const { Fail } = assert;
 
 // main/production config doesn't have initialPrice, upon which 'open vaults' depends
 const PLATFORM_CONFIG = '@agoric/vm-config/decentral-itest-vaults-config.json';
@@ -133,9 +125,8 @@ test.serial('use IBC callbacks after upgrade', async t => {
 test.serial('read metrics', async t => {
   const { EV } = t.context.runUtils;
 
-  const vaultFactoryKit: Awaited<
-    EconomyBootstrapSpace['consume']['vaultFactoryKit']
-  > = await EV.vat('bootstrap').consumeItem('vaultFactoryKit');
+  const vaultFactoryKit =
+    await EV.vat('bootstrap').consumeItem('vaultFactoryKit');
 
   const vfTopics = await EV(vaultFactoryKit.publicFacet).getPublicTopics();
 

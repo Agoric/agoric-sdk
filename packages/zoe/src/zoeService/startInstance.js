@@ -3,7 +3,6 @@ import { E } from '@endo/eventual-send';
 import { passStyleOf } from '@endo/marshal';
 import {
   M,
-  makeScalarBigMapStore,
   provideDurableWeakMapStore,
   prepareExoClass,
   prepareExo,
@@ -12,6 +11,7 @@ import {
 import { initEmpty } from '@agoric/store';
 import { isUpgradeDisconnection } from '@agoric/internal/src/upgrade-api.js';
 
+import { Fail, q } from '@endo/errors';
 import { defineDurableHandle } from '../makeHandle.js';
 import { makeInstanceAdminMaker } from './instanceAdminStorage.js';
 import {
@@ -24,8 +24,6 @@ import {
 
 /** @import {Baggage} from '@agoric/vat-data' */
 /** @typedef { import('@agoric/swingset-vat').BundleCap} BundleCap */
-
-const { Fail, quote: q } = assert;
 
 /**
  * @param {Pick<ZoeStorageManager, 'makeZoeInstanceStorageManager' | 'unwrapInstallation'>} startInstanceAccess
@@ -302,14 +300,9 @@ export const makeStartInstance = (
 
     const instanceHandle = makeInstanceHandle();
 
-    const instanceBaggage = makeScalarBigMapStore('instanceBaggage', {
-      durable: true,
-    });
-
     const zoeInstanceStorageManager = await E(
       startInstanceAccess,
     ).makeZoeInstanceStorageManager(
-      instanceBaggage,
       installation,
       customTerms,
       uncleanIssuerKeywordRecord,

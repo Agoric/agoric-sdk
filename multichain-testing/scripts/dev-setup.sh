@@ -14,48 +14,46 @@ function color() {
 
 # Define a function to install a binary on macOS
 install_macos() {
-    case $1 in
-        kubectl) brew install kubectl ;;
-        helm) brew install helm ;;
-        yq) brew install yq ;;
-        kind) brew install kind ;;
-    esac
+  case $1 in
+    kubectl) brew install kubectl ;;
+    helm) brew install helm ;;
+    yq) brew install yq ;;
+    kind) brew install kind ;;
+  esac
 }
 
 # Define a function to install a binary on Linux
 install_linux() {
-    color green "Installing $1 at ~/.local/bin, please add it to PATH"
-    mkdir -p ~/.local/bin
-    case $1 in
-        kubectl) curl -Lks "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl" > ~/.local/bin/kubectl && chmod +x ~/.local/bin/kubectl ;;
-        helm) curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash ;;
-        yq) curl -Lks "https://github.com/mikefarah/yq/releases/download/v4.33.3/yq_linux_amd64" > ~/.local/bin/yq && chmod +x ~/.local/bin/yq ;;
-        kind) curl -Lks https://kind.sigs.k8s.io/dl/v0.18.1/kind-linux-amd64 > ~/.local/bin/kind && chmod +x ~/.local/bin/kind ;;
-    esac
+  color green "Installing $1 at ~/.local/bin, please add it to PATH"
+  mkdir -p ~/.local/bin
+  case $1 in
+    kubectl) curl -Lks "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl" > ~/.local/bin/kubectl && chmod +x ~/.local/bin/kubectl ;;
+    helm) curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash ;;
+    yq) curl -Lks "https://github.com/mikefarah/yq/releases/download/v4.33.3/yq_linux_amd64" > ~/.local/bin/yq && chmod +x ~/.local/bin/yq ;;
+    kind) curl -Lks https://kind.sigs.k8s.io/dl/v0.18.1/kind-linux-amd64 > ~/.local/bin/kind && chmod +x ~/.local/bin/kind ;;
+  esac
 }
 
 # Define a function to install a binary
 install_binary() {
-    if [[ $(uname -s) == "Darwin" ]]; then
-        install_macos $1
-    else
-        install_linux $1
-    fi
+  if [[ $(uname -s) == "Darwin" ]]; then
+    install_macos $1
+  else
+    install_linux $1
+  fi
 }
 
 # Define a function to check for the presence of a binary
 check_binary() {
-    if ! command -v $1 &> /dev/null
-    then
-        echo "$1 is not installed"
-        install_binary $1
-        if ! command -v $1 &> /dev/null
-        then
-            color red "Installation of $1 failed, exiting..."
-            color red "Please install $1 manually, then run me again to verify the installation"
-            exit 1
-        fi
+  if ! command -v $1 &> /dev/null; then
+    echo "$1 is not installed"
+    install_binary $1
+    if ! command -v $1 &> /dev/null; then
+      color red "Installation of $1 failed, exiting..."
+      color red "Please install $1 manually, then run me again to verify the installation"
+      exit 1
     fi
+  fi
 }
 
 # Check the binaries

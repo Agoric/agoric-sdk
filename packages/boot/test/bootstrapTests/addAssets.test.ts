@@ -61,7 +61,7 @@ test('addAsset to quiescent auction', async t => {
   const { liveAuctionSchedule, nextAuctionSchedule } = schedules;
   const nextEndTime = liveAuctionSchedule
     ? liveAuctionSchedule.endTime
-    : nextAuctionSchedule.endTime;
+    : nextAuctionSchedule!.endTime;
   const fiveMinutes = harden({
     relValue: 5n * 60n,
     timerBrand: nextEndTime.timerBrand,
@@ -83,7 +83,7 @@ test('addAsset to active auction', async t => {
   const auctioneerKit = await EV.vat('bootstrap').consumeItem('auctioneerKit');
   const schedules = await EV(auctioneerKit.creatorFacet).getSchedule();
   const { nextAuctionSchedule } = schedules;
-  t.truthy(nextAuctionSchedule);
+  assert(nextAuctionSchedule);
   const nextStartTime = nextAuctionSchedule.startTime;
   const fiveMinutes = harden({
     relValue: 5n * 60n,
@@ -105,9 +105,10 @@ test('addAsset to active auction', async t => {
   const coreEvalBridgeHandler = await EV.vat('bootstrap').consumeItem(
     'coreEvalBridgeHandler',
   );
-  EV(coreEvalBridgeHandler).fromBridge(bridgeMessage);
+  // XXX races with the following lines
+  void EV(coreEvalBridgeHandler).fromBridge(bridgeMessage);
 
-  const nextEndTime = nextAuctionSchedule.endTime;
+  const nextEndTime = nextAuctionSchedule!.endTime;
   const afterEndTime = TimeMath.addAbsRel(nextEndTime, fiveMinutes);
   await advanceTimeTo(afterEndTime);
   t.log('proposal executed');
@@ -115,8 +116,8 @@ test('addAsset to active auction', async t => {
   const schedulesAfter = await EV(auctioneerKit.creatorFacet).getSchedule();
   // TimeMath.compareAbs() can't handle brands processed by kmarshall
   t.truthy(
-    schedules.nextAuctionSchedule.endTime.absValue <
-      schedulesAfter.nextAuctionSchedule.endTime.absValue,
+    schedules.nextAuctionSchedule!.endTime.absValue <
+      schedulesAfter.nextAuctionSchedule!.endTime.absValue,
   );
 
   t.like(readLatest(`${auctioneerPath}.book1`), { currentPriceLevel: null });
@@ -129,7 +130,7 @@ test('addAsset to auction starting soon', async t => {
   const auctioneerKit = await EV.vat('bootstrap').consumeItem('auctioneerKit');
   const schedules = await EV(auctioneerKit.creatorFacet).getSchedule();
   const { nextAuctionSchedule } = schedules;
-  t.truthy(nextAuctionSchedule);
+  assert(nextAuctionSchedule);
   const nextStartTime = nextAuctionSchedule.startTime;
   const fiveMinutes = harden({
     relValue: 5n * 60n,
@@ -150,7 +151,8 @@ test('addAsset to auction starting soon', async t => {
   const coreEvalBridgeHandler = await EV.vat('bootstrap').consumeItem(
     'coreEvalBridgeHandler',
   );
-  EV(coreEvalBridgeHandler).fromBridge(bridgeMessage);
+  // XXX races with the following lines
+  void EV(coreEvalBridgeHandler).fromBridge(bridgeMessage);
 
   const nextEndTime = nextAuctionSchedule.endTime;
   const afterEndTime = TimeMath.addAbsRel(nextEndTime, fiveMinutes);
@@ -160,8 +162,8 @@ test('addAsset to auction starting soon', async t => {
 
   const schedulesAfter = await EV(auctioneerKit.creatorFacet).getSchedule();
   t.truthy(
-    schedules.nextAuctionSchedule.endTime.absValue <
-      schedulesAfter.nextAuctionSchedule.endTime.absValue,
+    schedules.nextAuctionSchedule!.endTime.absValue <
+      schedulesAfter.nextAuctionSchedule!.endTime.absValue,
   );
   t.like(readLatest(`${auctioneerPath}.book1`), { currentPriceLevel: null });
 });

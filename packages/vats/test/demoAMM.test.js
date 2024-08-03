@@ -82,7 +82,7 @@ test('poolRates: spot check WETH', t => {
     interestRate: '0.025',
     mintFee: '0.0001',
   };
-  Object.entries(expected).forEach(([prop, val]) =>
-    t.is(showRatio(rates[prop]), val),
-  );
+  for (const [prop, val] of Object.entries(expected)) {
+    t.is(showRatio(rates[prop]), val);
+  }
 });

@@ -1,32 +1,34 @@
 /** @file Use-object for the owner of a localchain account */
-import { typedJson } from '@agoric/cosmic-proto/vatsafe';
+import { typedJson } from '@agoric/cosmic-proto';
 import { AmountShape, PaymentShape } from '@agoric/ertp';
 import { makeTracer } from '@agoric/internal';
 import { Shape as NetworkShape } from '@agoric/network';
 import { M } from '@agoric/vat-data';
 import { VowShape } from '@agoric/vow';
-import { TopicsRecordShape } from '@agoric/zoe/src/contractSupport/index.js';
 import { E } from '@endo/far';
 import {
   ChainAddressShape,
-  ChainAmountShape,
   DenomAmountShape,
   DenomShape,
   IBCTransferOptionsShape,
+  TimestampProtoShape,
 } from '../typeGuards.js';
 import { maxClockSkew } from '../utils/cosmos.js';
 import { orchestrationAccountMethods } from '../utils/orchestrationAccount.js';
-import { dateInSeconds, makeTimestampHelper } from '../utils/time.js';
+import { makeTimestampHelper } from '../utils/time.js';
 
 /**
+ * @import {HostOf} from '@agoric/async-flow';
  * @import {LocalChainAccount} from '@agoric/vats/src/localchain.js';
- * @import {AmountArg, ChainAddress, DenomAmount, IBCMsgTransferOptions, OrchestrationAccount, ChainInfo, IBCConnectionInfo, PromiseToVow} from '@agoric/orchestration';
+ * @import {AmountArg, ChainAddress, DenomAmount, IBCMsgTransferOptions, ChainInfo, IBCConnectionInfo, OrchestrationAccountI} from '@agoric/orchestration';
  * @import {RecorderKit, MakeRecorderKit} from '@agoric/zoe/src/contractSupport/recorder.js'.
  * @import {Zone} from '@agoric/zone';
  * @import {Remote} from '@agoric/internal';
- * @import {TimerService, TimerBrand, TimestampRecord} from '@agoric/time';
- * @import {PromiseVow, Vow, VowTools} from '@agoric/vow';
+ * @import {InvitationMakers} from '@agoric/smart-wallet/src/types.js';
+ * @import {TimerService, TimestampRecord} from '@agoric/time';
+ * @import {Vow, VowTools} from '@agoric/vow';
  * @import {TypedJson, JsonSafe} from '@agoric/cosmic-proto';
+ * @import {Matcher} from '@endo/patterns';
  * @import {ChainHub} from './chain-hub.js';
  */
 
@@ -50,14 +52,17 @@ const { Vow$ } = NetworkShape; // TODO #9611
 
 const HolderI = M.interface('holder', {
   ...orchestrationAccountMethods,
-  getPublicTopics: M.call().returns(TopicsRecordShape),
   delegate: M.call(M.string(), AmountShape).returns(VowShape),
   undelegate: M.call(M.string(), AmountShape).returns(VowShape),
+  deposit: M.call(PaymentShape).returns(VowShape),
   withdraw: M.call(AmountShape).returns(Vow$(PaymentShape)),
   executeTx: M.call(M.arrayOf(M.record())).returns(Vow$(M.record())),
+  monitorTransfers: M.call(M.remotable('TransferTap')).returns(
+    Vow$(M.remotable('TargetRegistration')),
+  ),
 });
 
-/** @type {{ [name: string]: [description: string, valueShape: Pattern] }} */
+/** @type {{ [name: string]: [description: string, valueShape: Matcher] }} */
 const PUBLIC_TOPICS = {
   account: ['Account holder status', M.any()],
 };
@@ -75,7 +80,7 @@ export const prepareLocalOrchestrationAccountKit = (
   makeRecorderKit,
   zcf,
   timerService,
-  { watch, allVows, asVow },
+  { watch, allVows, asVow, when },
   chainHub,
 ) => {
   const timestampHelper = makeTimestampHelper(timerService);
@@ -86,7 +91,9 @@ export const prepareLocalOrchestrationAccountKit = (
     {
       holder: HolderI,
       undelegateWatcher: M.interface('undelegateWatcher', {
-        onFulfilled: M.call([M.splitRecord({ completionTime: M.string() })])
+        onFulfilled: M.call([
+          M.splitRecord({ completionTime: TimestampProtoShape }),
+        ])
           .optional(M.arrayOf(M.undefined())) // empty context
           .returns(VowShape),
       }),
@@ -100,7 +107,7 @@ export const prepareLocalOrchestrationAccountKit = (
           .optional({
             destination: ChainAddressShape,
             opts: M.or(M.undefined(), IBCTransferOptionsShape),
-            amount: ChainAmountShape,
+            amount: DenomAmountShape,
           })
           .returns(Vow$(M.record())),
       }),
@@ -134,8 +141,9 @@ export const prepareLocalOrchestrationAccountKit = (
      */
     ({ account, address, storageNode }) => {
       // must be the fully synchronous maker because the kit is held in durable state
-      // @ts-expect-error XXX Patterns
       const topicKit = makeRecorderKit(storageNode, PUBLIC_TOPICS.account[1]);
+      // TODO determine what goes in vstorage https://github.com/Agoric/agoric-sdk/issues/9066
+      void E(topicKit.recorder).write('');
 
       return { account, address, topicKit };
     },
@@ -185,9 +193,10 @@ export const prepareLocalOrchestrationAccountKit = (
           const { completionTime } = response[0];
           return watch(
             E(timerService).wakeAt(
-              // TODO clean up date handling once we have real data
-              dateInSeconds(new Date(completionTime)) + maxClockSkew,
+              // ignore nanoseconds and just use seconds from Timestamp
+              BigInt(completionTime.seconds) + maxClockSkew,
             ),
+            this.facets.returnVoidWatcher,
           );
         },
       },
@@ -228,8 +237,8 @@ export const prepareLocalOrchestrationAccountKit = (
                   amount: String(amount.value),
                   denom: amount.denom,
                 },
-                sender: this.state.address.address,
-                receiver: destination.address,
+                sender: this.state.address.value,
+                receiver: destination.value,
                 timeoutHeight: opts?.timeoutHeight ?? {
                   revisionHeight: 0n,
                   revisionNumber: 0n,
@@ -282,10 +291,32 @@ export const prepareLocalOrchestrationAccountKit = (
         },
       },
       holder: {
+        /** @type {HostOf<OrchestrationAccountI['asContinuingOffer']>} */
+        asContinuingOffer() {
+          // @ts-expect-error XXX invitationMakers
+          // getPublicTopics resolves promptly (same run), so we don't need a watcher
+          // eslint-disable-next-line no-restricted-syntax
+          return asVow(async () => {
+            await null;
+            const { holder, invitationMakers: im } = this.facets;
+            // XXX cast to a type that has string index signature
+            const invitationMakers = /** @type {InvitationMakers} */ (
+              /** @type {unknown} */ (im)
+            );
+
+            return harden({
+              // getPublicTopics returns a vow, for membrane compatibility.
+              // it's safe to unwrap to a promise and get the result as we
+              // expect this complete in the same run
+              publicSubscribers: await when(holder.getPublicTopics()),
+              invitationMakers,
+            });
+          });
+        },
         /**
          * TODO: balance lookups for non-vbank assets
          *
-         * @type {PromiseToVow<OrchestrationAccount<any>['getBalance']>}
+         * @type {HostOf<OrchestrationAccountI['getBalance']>}
          */
         getBalance(denomArg) {
           // FIXME look up real values
@@ -301,21 +332,31 @@ export const prepareLocalOrchestrationAccountKit = (
             denom,
           );
         },
+        /** @type {HostOf<OrchestrationAccountI['getBalances']>} */
         getBalances() {
           // TODO https://github.com/Agoric/agoric-sdk/issues/9610
           return asVow(() => Fail`not yet implemented`);
         },
 
+        /**
+         * @type {HostOf<OrchestrationAccountI['getPublicTopics']>}
+         */
         getPublicTopics() {
-          const { topicKit } = this.state;
-          return harden({
-            account: {
-              description: PUBLIC_TOPICS.account[0],
-              subscriber: topicKit.subscriber,
-              storagePath: topicKit.recorder.getStoragePath(),
-            },
+          // getStoragePath resolves promptly (same run), so we don't need a watcher
+          // eslint-disable-next-line no-restricted-syntax
+          return asVow(async () => {
+            await null;
+            const { topicKit } = this.state;
+            return harden({
+              account: {
+                description: PUBLIC_TOPICS.account[0],
+                subscriber: topicKit.subscriber,
+                storagePath: await topicKit.recorder.getStoragePath(),
+              },
+            });
           });
         },
+        // FIXME take ChainAddress to match OrchestrationAccountI
         /**
          * @param {string} validatorAddress
          * @param {Amount<'nat'>} ertpAmount
@@ -333,12 +374,13 @@ export const prepareLocalOrchestrationAccountKit = (
               typedJson('/cosmos.staking.v1beta1.MsgDelegate', {
                 amount,
                 validatorAddress,
-                delegatorAddress: this.state.address.address,
+                delegatorAddress: this.state.address.value,
               }),
             ]),
             this.facets.extractFirstResultWatcher,
           );
         },
+        // FIXME take ChainAddress to match OrchestrationAccountI
         /**
          * @param {string} validatorAddress
          * @param {Amount<'nat'>} ertpAmount
@@ -356,7 +398,7 @@ export const prepareLocalOrchestrationAccountKit = (
               typedJson('/cosmos.staking.v1beta1.MsgUndelegate', {
                 amount,
                 validatorAddress,
-                delegatorAddress: this.state.address.address,
+                delegatorAddress: this.state.address.value,
               }),
             ]),
             this.facets.undelegateWatcher,
@@ -367,22 +409,22 @@ export const prepareLocalOrchestrationAccountKit = (
          * updater will get a special notification that the account is being
          * transferred.
          */
-        /** @type {PromiseToVow<OrchestrationAccount<any>['deposit']>} */
+        /** @type {HostOf<LocalChainAccount['deposit']>} */
         deposit(payment) {
           return watch(
             E(this.state.account).deposit(payment),
             this.facets.returnVoidWatcher,
           );
         },
-        /** @type {PromiseToVow<LocalChainAccount['withdraw']>} */
+        /** @type {HostOf<LocalChainAccount['withdraw']>} */
         withdraw(amount) {
           return watch(E(this.state.account).withdraw(amount));
         },
-        /** @type {PromiseToVow<LocalChainAccount['executeTx']>} */
+        /** @type {HostOf<LocalChainAccount['executeTx']>} */
         executeTx(messages) {
           return watch(E(this.state.account).executeTx(messages));
         },
-        /** @type {OrchestrationAccount<any>['getAddress']} */
+        /** @type {OrchestrationAccountI['getAddress']} */
         getAddress() {
           return this.state.address;
         },
@@ -427,15 +469,22 @@ export const prepareLocalOrchestrationAccountKit = (
               this.facets.transferWatcher,
               { opts, amount, destination },
             );
+            // FIXME https://github.com/Agoric/agoric-sdk/issues/9783
+            // don't resolve the vow until the transfer is confirmed on remote
+            // and reject vow if the transfer fails
             return watch(transferV, this.facets.returnVoidWatcher);
           });
         },
-        /** @type {PromiseToVow<OrchestrationAccount<any>['transferSteps']>} */
+        /** @type {HostOf<OrchestrationAccountI['transferSteps']>} */
         transferSteps(amount, msg) {
           return asVow(() => {
             console.log('transferSteps got', amount, msg);
             throw Fail`not yet implemented`;
           });
+        },
+        /** @type {HostOf<LocalChainAccount['monitorTransfers']>} */
+        monitorTransfers(tap) {
+          return watch(E(this.state.account).monitorTransfers(tap));
         },
       },
     },

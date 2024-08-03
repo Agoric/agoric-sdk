@@ -1,16 +1,15 @@
 /// <reference types="ses" />
 
-import { canBeDurable, prepareExoClassKit } from '@agoric/vat-data';
+import { Fail, q } from '@endo/errors';
 import { E, Far } from '@endo/far';
-import { M, getInterfaceGuardPayload } from '@endo/patterns';
 import { makePromiseKit } from '@endo/promise-kit';
+import { M, getInterfaceGuardPayload } from '@endo/patterns';
+import { canBeDurable, prepareExoClassKit } from '@agoric/vat-data';
 
 /**
  * @import {ERef} from '@endo/far';
  * @import {DurablePublishKitState, DurablePublishKitValueDurability, LatestTopic, Notifier, NotifierRecord, PublicationRecord, Publisher, PublishKit, Subscriber, UpdateRecord} from '../src/types.js';
  */
-
-const { Fail, quote: q } = assert;
 
 const sink = () => {};
 const makeQuietRejection = reason => {

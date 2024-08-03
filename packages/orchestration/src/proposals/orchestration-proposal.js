@@ -1,16 +1,14 @@
-import { makeTracer } from '@agoric/internal';
+import { Fail } from '@endo/errors';
 import { E, Far } from '@endo/far';
 import { makeMarshal } from '@endo/marshal';
-import { Fail } from '@agoric/assert';
-import { registerChainNamespace } from '../chain-info.js';
+import { makeTracer } from '@agoric/internal';
+import { registerKnownChains } from '../chain-info.js';
 import { CHAIN_KEY, CONNECTIONS_KEY } from '../exos/chain-hub.js';
 
 const trace = makeTracer('CoreEvalOrchestration', true);
 
 /**
  * @import {PortAllocator} from '@agoric/network';
- * @import {OrchestrationService} from '../service.js'
- * @import {OrchestrationVat} from '../vat-orchestration.js'
  */
 
 /**
@@ -19,8 +17,6 @@ const trace = makeTracer('CoreEvalOrchestration', true);
  *     portAllocator: PortAllocator;
  *   };
  *   produce: {
- *     orchestration: Producer<any>;
- *     orchestrationKit: Producer<any>;
  *     orchestrationVat: Producer<any>;
  *   };
  * }} powers
@@ -29,11 +25,7 @@ const trace = makeTracer('CoreEvalOrchestration', true);
 export const setupOrchestrationVat = async (
   {
     consume: { loadCriticalVat, portAllocator: portAllocatorP },
-    produce: {
-      orchestrationVat,
-      orchestration,
-      orchestrationKit: orchestrationKitP,
-    },
+    produce: { orchestrationVat, ...produce },
   },
   options,
 ) => {
@@ -49,14 +41,14 @@ export const setupOrchestrationVat = async (
 
   const portAllocator = await portAllocatorP;
 
-  const newOrchestrationKit = await E(vats.orchestration).makeOrchestrationKit({
+  const cosmosInterchainService = await E(
+    vats.orchestration,
+  ).makeCosmosInterchainService({
     portAllocator,
   });
 
-  orchestration.reset();
-  orchestration.resolve(newOrchestrationKit.public);
-  orchestrationKitP.reset();
-  orchestrationKitP.resolve(newOrchestrationKit);
+  produce.cosmosInterchainService.reset();
+  produce.cosmosInterchainService.resolve(cosmosInterchainService);
 };
 
 /**
@@ -134,24 +126,9 @@ export const initChainInfo = async ({
   await publishChainInfoToChainStorage(agoricNamesAdmin, chainStorageP);
 
   // Now register the names
-  await registerChainNamespace(agoricNamesAdmin, trace);
+  await registerKnownChains(agoricNamesAdmin, trace);
 };
 harden(initChainInfo);
-
-/**
- * @param {BootstrapPowers & {
- *   consume: {
- *     orchestration: OrchestrationService;
- *   };
- * }} powers
- * @param {object} _options
- */
-export const addOrchestrationToClient = async (
-  { consume: { client, orchestration } },
-  _options,
-) => {
-  return E(client).assignBundle([_a => ({ orchestration })]);
-};
 
 export const getManifestForOrchestration = (_powers, { orchestrationRef }) => ({
   manifest: {
@@ -161,8 +138,7 @@ export const getManifestForOrchestration = (_powers, { orchestrationRef }) => ({
         portAllocator: 'portAllocator',
       },
       produce: {
-        orchestration: 'orchestration',
-        orchestrationKit: 'orchestrationKit',
+        cosmosInterchainService: 'cosmosInterchainService',
         orchestrationVat: 'orchestrationVat',
       },
     },

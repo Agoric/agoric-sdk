@@ -1,6 +1,6 @@
 // @jessie-check
 
-import { Fail, assert, details as X } from '@agoric/assert';
+import { Fail, assert, X, makeError, annotateError } from '@endo/errors';
 import { E } from '@endo/eventual-send';
 
 /**
@@ -16,10 +16,8 @@ import { E } from '@endo/eventual-send';
  */
 export const burnInvitation = (invitationIssuer, invitation) => {
   const handleRejected = reason => {
-    const err = assert.error(
-      X`A Zoe invitation is required, not ${invitation}`,
-    );
-    assert.note(err, X`Due to ${reason}`);
+    const err = makeError(X`A Zoe invitation is required, not ${invitation}`);
+    annotateError(err, X`Due to ${reason}`);
     throw err;
   };
   const handleFulfilled = invitationAmount => {

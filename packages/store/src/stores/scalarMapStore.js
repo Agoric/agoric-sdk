@@ -1,3 +1,4 @@
+import { q } from '@endo/errors';
 import {
   Far,
   assertPassable,
@@ -16,12 +17,10 @@ import { makeWeakMapStoreMethods } from './scalarWeakMapStore.js';
 import { makeCurrentKeysKit } from './store-utils.js';
 
 /**
- * @import {Passable} from '@endo/pass-style');
- * @import {Key, Pattern} from '@endo/patterns');
+ * @import {Passable} from '@endo/pass-style';
+ * @import {Key, Pattern} from '@endo/patterns';
  * @import {MapStore, MapStoreMethods, StoreOptions} from '../types.js';
  */
-
-const { quote: q } = assert;
 
 /**
  * @template {Key} K

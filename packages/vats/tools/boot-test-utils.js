@@ -1,9 +1,12 @@
+import { Fail } from '@endo/errors';
+import { E } from '@endo/far';
+import { Far } from '@endo/marshal';
+
 import {
   makeFakeVatAdmin,
   zcfBundleCap,
 } from '@agoric/zoe/tools/fakeVatAdmin.js';
 import { buildZoeManualTimer } from '@agoric/zoe/tools/manualTimer.js';
-import { Far } from '@endo/marshal';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
 import { bundles, devices } from '../test/devices.js';
 
@@ -16,8 +19,6 @@ import { buildRootObject as networkRoot } from '../src/vat-network.js';
 import { buildRootObject as priceAuthorityRoot } from '../src/vat-priceAuthority.js';
 import { buildRootObject as provisioningRoot } from '../src/vat-provisioning.js';
 import { buildRootObject as zoeRoot } from '../src/vat-zoe.js';
-
-const { Fail } = assert;
 
 export const vatRoots = {
   agoricNames: agoricNamesRoot,
@@ -126,7 +127,8 @@ export const makePopulatedFakeVatAdmin = () => {
     const baggage = makeScalarBigMapStore('baggage');
     const adminNode =
       /** @type {import('@agoric/swingset-vat').VatAdminFacet} */ ({});
-    return { root: buildRoot({}, vatParameters, baggage), adminNode };
+    const rootP = buildRoot({}, vatParameters, baggage);
+    return E.when(rootP, root => harden({ root, adminNode }));
   };
   const createVatByName = async name => {
     return createVat(fakeNameToCap.get(name) || Fail`unknown vat ${name}`);

@@ -8,6 +8,7 @@ export interface GenesisState {
   params: Params;
   state: State;
   swingStoreExportData: SwingStoreExportDataEntry[];
+  swingStoreExportDataHash: string;
 }
 export interface GenesisStateProtoMsg {
   typeUrl: '/agoric.swingset.GenesisState';
@@ -18,6 +19,7 @@ export interface GenesisStateSDKType {
   params: ParamsSDKType;
   state: StateSDKType;
   swing_store_export_data: SwingStoreExportDataEntrySDKType[];
+  swing_store_export_data_hash: string;
 }
 /** A SwingStore "export data" entry. */
 export interface SwingStoreExportDataEntry {
@@ -38,6 +40,7 @@ function createBaseGenesisState(): GenesisState {
     params: Params.fromPartial({}),
     state: State.fromPartial({}),
     swingStoreExportData: [],
+    swingStoreExportDataHash: '',
   };
 }
 export const GenesisState = {
@@ -54,6 +57,9 @@ export const GenesisState = {
     }
     for (const v of message.swingStoreExportData) {
       SwingStoreExportDataEntry.encode(v!, writer.uint32(34).fork()).ldelim();
+    }
+    if (message.swingStoreExportDataHash !== '') {
+      writer.uint32(42).string(message.swingStoreExportDataHash);
     }
     return writer;
   },
@@ -76,6 +82,9 @@ export const GenesisState = {
             SwingStoreExportDataEntry.decode(reader, reader.uint32()),
           );
           break;
+        case 5:
+          message.swingStoreExportDataHash = reader.string();
+          break;
         default:
           reader.skipType(tag & 7);
           break;
@@ -92,6 +101,9 @@ export const GenesisState = {
             SwingStoreExportDataEntry.fromJSON(e),
           )
         : [],
+      swingStoreExportDataHash: isSet(object.swingStoreExportDataHash)
+        ? String(object.swingStoreExportDataHash)
+        : '',
     };
   },
   toJSON(message: GenesisState): JsonSafe<GenesisState> {
@@ -107,6 +119,8 @@ export const GenesisState = {
     } else {
       obj.swingStoreExportData = [];
     }
+    message.swingStoreExportDataHash !== undefined &&
+      (obj.swingStoreExportDataHash = message.swingStoreExportDataHash);
     return obj;
   },
   fromPartial(object: Partial<GenesisState>): GenesisState {
@@ -123,6 +137,7 @@ export const GenesisState = {
       object.swingStoreExportData?.map(e =>
         SwingStoreExportDataEntry.fromPartial(e),
       ) || [];
+    message.swingStoreExportDataHash = object.swingStoreExportDataHash ?? '';
     return message;
   },
   fromProtoMsg(message: GenesisStateProtoMsg): GenesisState {

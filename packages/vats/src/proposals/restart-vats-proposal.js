@@ -1,4 +1,4 @@
-import { Fail } from '@agoric/assert';
+import { Fail } from '@endo/errors';
 import { deeplyFulfilledObject, makeTracer } from '@agoric/internal';
 import { M, mustMatch } from '@agoric/store';
 import { E, getInterfaceOf } from '@endo/far';

@@ -1,7 +1,7 @@
 /* global process */
 import anylogger from 'anylogger';
 
-import { Fail } from '@agoric/assert';
+import { Fail } from '@endo/errors';
 
 // Limit the debug log length.
 const SOLO_MAX_DEBUG_LENGTH =
@@ -33,7 +33,7 @@ export function deliver(mbs) {
     }
     const t = knownTargets.get(target);
     const newMessages = [];
-    data[target].outbox.forEach(m => {
+    for (const m of data[target].outbox) {
       const [msgnum, body] = m;
       if (msgnum > t.highestSent) {
         log.debug(
@@ -44,7 +44,7 @@ export function deliver(mbs) {
         );
         newMessages.push(m);
       }
-    });
+    }
     newMessages.sort((a, b) => a[0] - b[0]);
     // console.debug(` ${newMessages.length} new messages`);
     const acknum = data[target].inboundAck;

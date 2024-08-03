@@ -117,7 +117,7 @@ For each set of changes to include:
 
 These are the steps for a Release Manager to create and publish a
 new release of the Agoric SDK. This combines the process of
-GitHub-based release managment and publication together with NPM-based
+GitHub-based release management and publication together with NPM-based
 publication of the SDK and its individual packages.
 
 ### Prerequisites

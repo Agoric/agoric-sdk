@@ -1,6 +1,9 @@
 //@ts-nocheck
 import { Any, AnySDKType } from '../../../google/protobuf/any.js';
-import { Timestamp } from '../../../google/protobuf/timestamp.js';
+import {
+  Timestamp,
+  TimestampSDKType,
+} from '../../../google/protobuf/timestamp.js';
 import {
   SendAuthorization,
   SendAuthorizationSDKType,
@@ -14,12 +17,7 @@ import {
   TransferAuthorizationSDKType,
 } from '../../../ibc/applications/transfer/v1/authz.js';
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
-import {
-  isSet,
-  toTimestamp,
-  fromTimestamp,
-  fromJsonTimestamp,
-} from '../../../helpers.js';
+import { isSet, fromJsonTimestamp, fromTimestamp } from '../../../helpers.js';
 import { JsonSafe } from '../../../json-safe.js';
 /**
  * GenericAuthorization gives the grantee unrestricted permissions to execute
@@ -59,7 +57,7 @@ export interface Grant {
    * doesn't have a time expiration (other conditions  in `authorization`
    * may apply to invalidate the grant)
    */
-  expiration?: Date;
+  expiration?: Timestamp;
 }
 export interface GrantProtoMsg {
   typeUrl: '/cosmos.authz.v1beta1.Grant';
@@ -77,7 +75,7 @@ export interface GrantSDKType {
     | TransferAuthorizationSDKType
     | AnySDKType
     | undefined;
-  expiration?: Date;
+  expiration?: TimestampSDKType;
 }
 /**
  * GrantAuthorization extends a grant with both the addresses of the grantee and granter.
@@ -93,7 +91,7 @@ export interface GrantAuthorization {
         TransferAuthorization &
         Any)
     | undefined;
-  expiration?: Date;
+  expiration?: Timestamp;
 }
 export interface GrantAuthorizationProtoMsg {
   typeUrl: '/cosmos.authz.v1beta1.GrantAuthorization';
@@ -113,7 +111,7 @@ export interface GrantAuthorizationSDKType {
     | TransferAuthorizationSDKType
     | AnySDKType
     | undefined;
-  expiration?: Date;
+  expiration?: TimestampSDKType;
 }
 /** GrantQueueItem contains the list of TypeURL of a sdk.Msg. */
 export interface GrantQueueItem {
@@ -213,10 +211,7 @@ export const Grant = {
       ).ldelim();
     }
     if (message.expiration !== undefined) {
-      Timestamp.encode(
-        toTimestamp(message.expiration),
-        writer.uint32(18).fork(),
-      ).ldelim();
+      Timestamp.encode(message.expiration, writer.uint32(18).fork()).ldelim();
     }
     return writer;
   },
@@ -232,9 +227,7 @@ export const Grant = {
           message.authorization = Authorization_InterfaceDecoder(reader) as Any;
           break;
         case 2:
-          message.expiration = fromTimestamp(
-            Timestamp.decode(reader, reader.uint32()),
-          );
+          message.expiration = Timestamp.decode(reader, reader.uint32());
           break;
         default:
           reader.skipType(tag & 7);
@@ -260,7 +253,7 @@ export const Grant = {
         ? Any.toJSON(message.authorization)
         : undefined);
     message.expiration !== undefined &&
-      (obj.expiration = message.expiration.toISOString());
+      (obj.expiration = fromTimestamp(message.expiration).toISOString());
     return obj;
   },
   fromPartial(object: Partial<Grant>): Grant {
@@ -269,7 +262,10 @@ export const Grant = {
       object.authorization !== undefined && object.authorization !== null
         ? Any.fromPartial(object.authorization)
         : undefined;
-    message.expiration = object.expiration ?? undefined;
+    message.expiration =
+      object.expiration !== undefined && object.expiration !== null
+        ? Timestamp.fromPartial(object.expiration)
+        : undefined;
     return message;
   },
   fromProtoMsg(message: GrantProtoMsg): Grant {
@@ -312,10 +308,7 @@ export const GrantAuthorization = {
       ).ldelim();
     }
     if (message.expiration !== undefined) {
-      Timestamp.encode(
-        toTimestamp(message.expiration),
-        writer.uint32(34).fork(),
-      ).ldelim();
+      Timestamp.encode(message.expiration, writer.uint32(34).fork()).ldelim();
     }
     return writer;
   },
@@ -340,9 +333,7 @@ export const GrantAuthorization = {
           message.authorization = Authorization_InterfaceDecoder(reader) as Any;
           break;
         case 4:
-          message.expiration = fromTimestamp(
-            Timestamp.decode(reader, reader.uint32()),
-          );
+          message.expiration = Timestamp.decode(reader, reader.uint32());
           break;
         default:
           reader.skipType(tag & 7);
@@ -372,7 +363,7 @@ export const GrantAuthorization = {
         ? Any.toJSON(message.authorization)
         : undefined);
     message.expiration !== undefined &&
-      (obj.expiration = message.expiration.toISOString());
+      (obj.expiration = fromTimestamp(message.expiration).toISOString());
     return obj;
   },
   fromPartial(object: Partial<GrantAuthorization>): GrantAuthorization {
@@ -383,7 +374,10 @@ export const GrantAuthorization = {
       object.authorization !== undefined && object.authorization !== null
         ? Any.fromPartial(object.authorization)
         : undefined;
-    message.expiration = object.expiration ?? undefined;
+    message.expiration =
+      object.expiration !== undefined && object.expiration !== null
+        ? Timestamp.fromPartial(object.expiration)
+        : undefined;
     return message;
   },
   fromProtoMsg(message: GrantAuthorizationProtoMsg): GrantAuthorization {

@@ -1,8 +1,8 @@
 /* eslint-disable no-use-before-define */
 
+import { assert, Fail } from '@endo/errors';
 import { makeMarshal } from '@endo/marshal';
 import { Far } from '@endo/far';
-import { assert, Fail } from '@agoric/assert';
 import { kser, kunser } from '@agoric/kmarshal';
 import { assertKnownOptions } from '../lib/assertOptions.js';
 import { insistVatID } from '../lib/id.js';

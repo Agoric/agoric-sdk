@@ -1,15 +1,14 @@
 // @jessie-check
 
-import { mustMatch } from '@agoric/store';
+import { Fail } from '@endo/errors';
 import { E } from '@endo/far';
+import { mustMatch } from '@agoric/store';
 import { AmountMath } from './amountMath.js';
 
 /**
- * @import {ERef} from '@endo/far');
- * @import {Amount, AssetKind, AmountValue, AssetKindForValue, Payment, Brand, Purse} from './types.js'
+ * @import {ERef} from '@endo/far';
+ * @import {Amount, AssetKind, AmountValue, AssetKindForValue, Payment, Brand, Purse} from './types.js';
  */
-
-const { Fail } = assert;
 
 /**
  * @file This file contains safer helper function alternatives to the similarly

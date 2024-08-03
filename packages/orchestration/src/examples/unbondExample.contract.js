@@ -1,18 +1,19 @@
-import { Far } from '@endo/far';
 import { M } from '@endo/patterns';
-import { provideOrchestration } from '../utils/start-helper.js';
+import { withOrchestration } from '../utils/start-helper.js';
 
 /**
- * @import {Orchestrator, IcaAccount, CosmosValidatorAddress} from '../types.js'
+ * @import {Orchestrator, OrchestrationFlow} from '../types.js'
  * @import {TimerService} from '@agoric/time';
- * @import {Baggage} from '@agoric/vat-data';
  * @import {LocalChain} from '@agoric/vats/src/localchain.js';
  * @import {NameHub} from '@agoric/vats';
  * @import {Remote} from '@agoric/internal';
- * @import {OrchestrationService} from '../service.js';
+ * @import {Zone} from '@agoric/zone';
+ * @import {CosmosInterchainService} from '../exos/cosmos-interchain-service.js';
+ * @import {OrchestrationTools} from '../utils/start-helper.js';
  */
 
 /**
+ * @satisfies {OrchestrationFlow}
  * @param {Orchestrator} orch
  * @param {object} ctx
  * @param {ZCF} ctx.zcf
@@ -43,63 +44,44 @@ const unbondAndLiquidStakeFn = async (orch, { zcf }, _seat, _offerArgs) => {
 };
 
 /**
+ * Orchestration contract to be wrapped by withOrchestration for Zoe
+ *
  * @param {ZCF} zcf
  * @param {{
  *   agoricNames: Remote<NameHub>;
  *   localchain: Remote<LocalChain>;
- *   orchestrationService: Remote<OrchestrationService>;
+ *   orchestrationService: Remote<CosmosInterchainService>;
  *   storageNode: Remote<StorageNode>;
  *   marshaller: Marshaller;
  *   timerService: Remote<TimerService>;
  * }} privateArgs
- * @param {Baggage} baggage
+ * @param {Zone} zone
+ * @param {OrchestrationTools} tools
  */
-export const start = async (zcf, privateArgs, baggage) => {
-  const {
-    agoricNames,
-    localchain,
-    orchestrationService,
-    storageNode,
-    marshaller,
-    timerService,
-  } = privateArgs;
-
-  const { orchestrate } = provideOrchestration(
-    zcf,
-    baggage,
-    {
-      agoricNames,
-      localchain,
-      orchestrationService,
-      storageNode,
-      timerService,
-    },
-    marshaller,
-  );
-
-  /** @type {OfferHandler} */
+const contract = async (zcf, privateArgs, zone, { orchestrate }) => {
   const unbondAndLiquidStake = orchestrate(
     'LSTTia',
     { zcf },
     unbondAndLiquidStakeFn,
   );
 
-  const makeUnbondAndLiquidStakeInvitation = () =>
-    zcf.makeInvitation(
-      unbondAndLiquidStake,
-      'Unbond and liquid stake',
-      undefined,
-      harden({
-        // Nothing to give; the funds come from undelegating
-        give: {},
-        want: {}, // XXX ChainAccount Ownable?
-        exit: M.any(),
-      }),
-    );
-
-  const publicFacet = Far('SwapAndStake Public Facet', {
-    makeUnbondAndLiquidStakeInvitation,
+  const publicFacet = zone.exo('publicFacet', undefined, {
+    makeUnbondAndLiquidStakeInvitation() {
+      return zcf.makeInvitation(
+        unbondAndLiquidStake,
+        'Unbond and liquid stake',
+        undefined,
+        harden({
+          // Nothing to give; the funds come from undelegating
+          give: {},
+          want: {}, // XXX ChainAccount Ownable?
+          exit: M.any(),
+        }),
+      );
+    },
   });
 
   return harden({ publicFacet });
 };
+
+export const start = withOrchestration(contract);

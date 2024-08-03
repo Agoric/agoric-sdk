@@ -11,7 +11,7 @@ import {
   MsgDelegate,
   MsgDelegateResponse,
 } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/tx.js';
-import type { OrchestrationService } from '@agoric/orchestration';
+import type { CosmosInterchainService } from '@agoric/orchestration';
 import { decodeBase64 } from '@endo/base64';
 import { M, matches } from '@endo/patterns';
 import {
@@ -187,7 +187,7 @@ test.skip('Query connection can be created', async t => {
     runUtils: { EV },
   } = t.context;
 
-  type Powers = { orchestration: OrchestrationService };
+  type Powers = { orchestration: CosmosInterchainService };
   const contract = async ({ orchestration }) => {
     const connection =
       await EV(orchestration).provideICQConnection('connection-0');
@@ -201,7 +201,7 @@ test.skip('Query connection can be created', async t => {
 
   // core eval context
   {
-    const orchestration: OrchestrationService =
+    const orchestration: CosmosInterchainService =
       await EV.vat('bootstrap').consumeItem('orchestration');
     await contract({ orchestration });
   }
@@ -213,7 +213,7 @@ test.skip('Query connection can send a query', async t => {
     runUtils: { EV },
   } = t.context;
 
-  type Powers = { orchestration: OrchestrationService };
+  type Powers = { orchestration: CosmosInterchainService };
   const contract = async ({ orchestration }) => {
     const queryConnection =
       await EV(orchestration).provideICQConnection('connection-0');
@@ -255,7 +255,7 @@ test.skip('Query connection can send a query', async t => {
 
   // core eval context
   {
-    const orchestration: OrchestrationService =
+    const orchestration: CosmosInterchainService =
       await EV.vat('bootstrap').consumeItem('orchestration');
     await contract({ orchestration });
   }

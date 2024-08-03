@@ -1,7 +1,7 @@
 // Copyright (C) 2019 Agoric, under Apache License 2.0
 
+import { assert } from '@endo/errors';
 import { E } from '@endo/eventual-send';
-import { assert } from '@agoric/assert';
 import { Far } from '@endo/marshal';
 
 // spawnBundle is built with 'yarn build'

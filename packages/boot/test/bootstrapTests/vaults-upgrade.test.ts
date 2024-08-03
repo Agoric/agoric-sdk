@@ -7,14 +7,14 @@
  */
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-import { Fail, NonNullish } from '@agoric/assert';
+import { Fail } from '@endo/errors';
+import { NonNullish } from '@agoric/internal';
 import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
 import { Far, makeMarshal } from '@endo/marshal';
 import { SECONDS_PER_YEAR } from '@agoric/inter-protocol/src/interest.js';
 import { makeAgoricNamesRemotesFromFakeStorage } from '@agoric/vats/tools/board-utils.js';
 import { ExecutionContext, TestFn } from 'ava';
 import { FakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
-import { EconomyBootstrapSpace } from '@agoric/inter-protocol/src/proposals/econ-behaviors.js';
 import { makeSwingsetTestKit } from '../../tools/supports.ts';
 import { makeWalletFactoryDriver } from '../../tools/drivers.ts';
 
@@ -283,17 +283,14 @@ test.serial('open vault', async t => {
 test.serial('restart vaultFactory', async t => {
   const { runUtils, readCollateralMetrics } = t.context.shared;
   const { EV } = runUtils;
-  const vaultFactoryKit = await (EV.vat('bootstrap').consumeItem(
-    'vaultFactoryKit',
-  ) as EconomyBootstrapSpace['consume']['vaultFactoryKit']);
+  const vaultFactoryKit =
+    await EV.vat('bootstrap').consumeItem('vaultFactoryKit');
 
-  const reserveKit = await (EV.vat('bootstrap').consumeItem(
-    'reserveKit',
-  ) as EconomyBootstrapSpace['consume']['reserveKit']);
+  const reserveKit = await EV.vat('bootstrap').consumeItem('reserveKit');
   const bootstrapVat = EV.vat('bootstrap');
-  const electorateCreatorFacet = await (bootstrapVat.consumeItem(
+  const electorateCreatorFacet = await bootstrapVat.consumeItem(
     'economicCommitteeCreatorFacet',
-  ) as EconomyBootstrapSpace['consume']['economicCommitteeCreatorFacet']);
+  );
 
   const poserInvitation = await EV(electorateCreatorFacet).getPoserInvitation();
   const creatorFacet1 = await EV.get(reserveKit).creatorFacet;
@@ -326,9 +323,8 @@ test.serial('restart vaultFactory', async t => {
 
 test.serial('restart contractGovernor', async t => {
   const { EV } = t.context.shared.runUtils;
-  const vaultFactoryKit = await (EV.vat('bootstrap').consumeItem(
-    'vaultFactoryKit',
-  ) as EconomyBootstrapSpace['consume']['vaultFactoryKit']);
+  const vaultFactoryKit =
+    await EV.vat('bootstrap').consumeItem('vaultFactoryKit');
 
   const { governorAdminFacet } = vaultFactoryKit;
   // has no privateArgs of its own. the privateArgs.governed is only for the
@@ -497,9 +493,10 @@ test.serial(
       await EV.vat('bootstrap').consumeItem('powerStore');
 
     const getStoreSnapshot = async (name: string) =>
-      EV.vat('bootstrap').snapshotStore(
-        await EV(powerStore).get(name),
-      ) as Promise<[any, any][]>;
+      EV.vat('bootstrap').snapshotStore(await EV(powerStore).get(name)) as [
+        any,
+        any,
+      ][];
 
     const contractKits = await getStoreSnapshot('contractKits');
     // TODO refactor the entries to go into governedContractKits too (so the latter is sufficient to test)

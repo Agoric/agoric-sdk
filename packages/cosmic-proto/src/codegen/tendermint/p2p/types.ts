@@ -1,13 +1,15 @@
 //@ts-nocheck
-import { Timestamp } from '../../google/protobuf/timestamp.js';
+import {
+  Timestamp,
+  TimestampSDKType,
+} from '../../google/protobuf/timestamp.js';
 import { BinaryReader, BinaryWriter } from '../../binary.js';
 import {
   isSet,
   bytesFromBase64,
   base64FromBytes,
-  toTimestamp,
-  fromTimestamp,
   fromJsonTimestamp,
+  fromTimestamp,
 } from '../../helpers.js';
 import { JsonSafe } from '../../json-safe.js';
 export interface ProtocolVersion {
@@ -63,7 +65,7 @@ export interface NodeInfoOtherSDKType {
 export interface PeerInfo {
   id: string;
   addressInfo: PeerAddressInfo[];
-  lastConnected?: Date;
+  lastConnected?: Timestamp;
 }
 export interface PeerInfoProtoMsg {
   typeUrl: '/tendermint.p2p.PeerInfo';
@@ -72,12 +74,12 @@ export interface PeerInfoProtoMsg {
 export interface PeerInfoSDKType {
   id: string;
   address_info: PeerAddressInfoSDKType[];
-  last_connected?: Date;
+  last_connected?: TimestampSDKType;
 }
 export interface PeerAddressInfo {
   address: string;
-  lastDialSuccess?: Date;
-  lastDialFailure?: Date;
+  lastDialSuccess?: Timestamp;
+  lastDialFailure?: Timestamp;
   dialFailures: number;
 }
 export interface PeerAddressInfoProtoMsg {
@@ -86,8 +88,8 @@ export interface PeerAddressInfoProtoMsg {
 }
 export interface PeerAddressInfoSDKType {
   address: string;
-  last_dial_success?: Date;
-  last_dial_failure?: Date;
+  last_dial_success?: TimestampSDKType;
+  last_dial_failure?: TimestampSDKType;
   dial_failures: number;
 }
 function createBaseProtocolVersion(): ProtocolVersion {
@@ -436,7 +438,7 @@ export const PeerInfo = {
     }
     if (message.lastConnected !== undefined) {
       Timestamp.encode(
-        toTimestamp(message.lastConnected),
+        message.lastConnected,
         writer.uint32(26).fork(),
       ).ldelim();
     }
@@ -459,9 +461,7 @@ export const PeerInfo = {
           );
           break;
         case 3:
-          message.lastConnected = fromTimestamp(
-            Timestamp.decode(reader, reader.uint32()),
-          );
+          message.lastConnected = Timestamp.decode(reader, reader.uint32());
           break;
         default:
           reader.skipType(tag & 7);
@@ -492,7 +492,7 @@ export const PeerInfo = {
       obj.addressInfo = [];
     }
     message.lastConnected !== undefined &&
-      (obj.lastConnected = message.lastConnected.toISOString());
+      (obj.lastConnected = fromTimestamp(message.lastConnected).toISOString());
     return obj;
   },
   fromPartial(object: Partial<PeerInfo>): PeerInfo {
@@ -500,7 +500,10 @@ export const PeerInfo = {
     message.id = object.id ?? '';
     message.addressInfo =
       object.addressInfo?.map(e => PeerAddressInfo.fromPartial(e)) || [];
-    message.lastConnected = object.lastConnected ?? undefined;
+    message.lastConnected =
+      object.lastConnected !== undefined && object.lastConnected !== null
+        ? Timestamp.fromPartial(object.lastConnected)
+        : undefined;
     return message;
   },
   fromProtoMsg(message: PeerInfoProtoMsg): PeerInfo {
@@ -535,13 +538,13 @@ export const PeerAddressInfo = {
     }
     if (message.lastDialSuccess !== undefined) {
       Timestamp.encode(
-        toTimestamp(message.lastDialSuccess),
+        message.lastDialSuccess,
         writer.uint32(18).fork(),
       ).ldelim();
     }
     if (message.lastDialFailure !== undefined) {
       Timestamp.encode(
-        toTimestamp(message.lastDialFailure),
+        message.lastDialFailure,
         writer.uint32(26).fork(),
       ).ldelim();
     }
@@ -562,14 +565,10 @@ export const PeerAddressInfo = {
           message.address = reader.string();
           break;
         case 2:
-          message.lastDialSuccess = fromTimestamp(
-            Timestamp.decode(reader, reader.uint32()),
-          );
+          message.lastDialSuccess = Timestamp.decode(reader, reader.uint32());
           break;
         case 3:
-          message.lastDialFailure = fromTimestamp(
-            Timestamp.decode(reader, reader.uint32()),
-          );
+          message.lastDialFailure = Timestamp.decode(reader, reader.uint32());
           break;
         case 4:
           message.dialFailures = reader.uint32();
@@ -599,9 +598,13 @@ export const PeerAddressInfo = {
     const obj: any = {};
     message.address !== undefined && (obj.address = message.address);
     message.lastDialSuccess !== undefined &&
-      (obj.lastDialSuccess = message.lastDialSuccess.toISOString());
+      (obj.lastDialSuccess = fromTimestamp(
+        message.lastDialSuccess,
+      ).toISOString());
     message.lastDialFailure !== undefined &&
-      (obj.lastDialFailure = message.lastDialFailure.toISOString());
+      (obj.lastDialFailure = fromTimestamp(
+        message.lastDialFailure,
+      ).toISOString());
     message.dialFailures !== undefined &&
       (obj.dialFailures = Math.round(message.dialFailures));
     return obj;
@@ -609,8 +612,14 @@ export const PeerAddressInfo = {
   fromPartial(object: Partial<PeerAddressInfo>): PeerAddressInfo {
     const message = createBasePeerAddressInfo();
     message.address = object.address ?? '';
-    message.lastDialSuccess = object.lastDialSuccess ?? undefined;
-    message.lastDialFailure = object.lastDialFailure ?? undefined;
+    message.lastDialSuccess =
+      object.lastDialSuccess !== undefined && object.lastDialSuccess !== null
+        ? Timestamp.fromPartial(object.lastDialSuccess)
+        : undefined;
+    message.lastDialFailure =
+      object.lastDialFailure !== undefined && object.lastDialFailure !== null
+        ? Timestamp.fromPartial(object.lastDialFailure)
+        : undefined;
     message.dialFailures = object.dialFailures ?? 0;
     return message;
   },

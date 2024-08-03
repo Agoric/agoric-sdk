@@ -16,16 +16,12 @@ The `agoric` software revision includes the vats necessary for building and test
 
 ## Initial Setup
 
-Ensure you have `kubectl`, `kind`, `helm`, and `yq` installed on your machine. For convenience, the following command will install dependencies:
+First, ensure you have Kubernetes available. See https://docs.cosmology.zone/starship/get-started/step-2.
+
+The following will install `kubectl`, `kind`, `helm`, and `yq` as needed.
 
 ```sh
-make setup-deps
-```
-
-You will need a `kind` cluster:
-
-```sh
-make setup-kind
+make clean setup
 ```
 
 ## Getting Started
@@ -34,20 +30,33 @@ make setup-kind
 # install helm chart and start starship service
 make install
 
-# NOTE: it takes about 10-12 minutes for the above to finish setting up. Use `watch kubectl get pods` to confirm all pods are up and running before running the next command.
+# wait for all pods to spin up
+watch kubectl get pods
+```
 
+**Wait 10-12** minutes. It takes some time for the above to finish setting up. The watch command should show a table in which the STATUS of every pod is Running.
+
+
+```bash
 # expose ports on your local machine. useful for testing dapps
 make port-forward
 
+# set up Agoric testing environment
+make fund-provision-pool override-chain-registry
+```
+
+If you get an error like "connection refused", you need to wait longer, until all the pods are Running.
+
+# Cleanup
+
+```sh
 # stop the containers and port-forwarding
 make stop
+
+# delete the clusters
+make clean
 ```
 
-To setup finish setting up Agoric, also run:
-
-```bash
-make fund-provision-pool
-```
 
 ## Logs
 
@@ -61,8 +70,8 @@ make tail-slog
 kubectl logs agoriclocal-genesis-0 --container=validator --follow
 
 # relayer logs
-kubectl logs hermes-agoric-gaia-0 --container=validator --follow
-kubectl logs hermes-agoric-gaia-0 --container=validator --follow
+kubectl logs hermes-agoric-gaia-0 --container=relayer --follow
+kubectl logs hermes-osmosis-gaia-0 --container=relayer --follow
 ```
 
 ## Agoric Smart Wallet
@@ -82,3 +91,13 @@ make fund-wallet COIN=20000000ubld ADDR=$ADDR
 # provision the smart wallet
 make provision-smart-wallet ADDR=$ADDR
 ```
+
+# Chain Registry
+
+These only work if you've done `make port-forward`.
+
+http://localhost:8081/chains/agoriclocal
+http://localhost:8081/chains/osmosislocal
+http://localhost:8081/chains/gaialocal
+http://localhost:8081/chains/agoriclocal/keys
+http://localhost:8081/ibc

@@ -1,4 +1,4 @@
-import { Fail } from '@agoric/assert';
+import { Fail } from '@endo/errors';
 import { StorageNodeShape } from '@agoric/internal';
 import { prepareDurablePublishKit } from '@agoric/notifier';
 import {
@@ -8,6 +8,10 @@ import {
 import { mustMatch } from '@agoric/store';
 import { M, makeScalarBigMapStore, prepareExoClass } from '@agoric/vat-data';
 import { E } from '@endo/eventual-send';
+
+/**
+ * @import {TypedPattern} from '@agoric/internal';
+ */
 
 /**
  * Recorders support publishing data to vstorage.
@@ -56,12 +60,12 @@ export const prepareRecorder = (baggage, marshaller) => {
      * @template T
      * @param {PublishKit<T>['publisher']} publisher
      * @param {Awaited<import('@endo/far').FarRef<StorageNode>>} storageNode
-     * @param {TypedMatcher<T>} [valueShape]
+     * @param {TypedPattern<any>} [valueShape]
      */
     (
       publisher,
       storageNode,
-      valueShape = /** @type {TypedMatcher<any>} */ (M.any()),
+      valueShape = /** @type {TypedPattern<any>} */ (M.any()),
     ) => {
       return {
         closed: false,
@@ -145,7 +149,7 @@ export const defineRecorderKit = ({ makeRecorder, makeDurablePublishKit }) => {
   /**
    * @template T
    * @param {StorageNode | Awaited<import('@endo/far').FarRef<StorageNode>>} storageNode
-   * @param {TypedMatcher<T>} [valueShape]
+   * @param {TypedPattern<T>} [valueShape]
    * @returns {RecorderKit<T>}
    */
   const makeRecorderKit = (storageNode, valueShape) => {
@@ -174,7 +178,7 @@ export const defineERecorderKit = ({ makeRecorder, makeDurablePublishKit }) => {
   /**
    * @template T
    * @param {ERef<StorageNode>} storageNodeP
-   * @param {TypedMatcher<T>} [valueShape]
+   * @param {TypedPattern<T>} [valueShape]
    * @returns {EventualRecorderKit<T>}
    */
   const makeERecorderKit = (storageNodeP, valueShape) => {
@@ -258,19 +262,3 @@ export const prepareMockRecorderKitMakers = () => {
     storageNode: makeFakeStorage('mock recorder storage'),
   };
 };
-
-/**
- * Stop-gap until https://github.com/Agoric/agoric-sdk/issues/6160
- * explictly specify the type that the Pattern will verify through a match.
- *
- * This is a Pattern but since that's `any`, including in the typedef turns the
- * whole thing to `any`.
- *
- * @template T
- * @typedef {import('@endo/patterns').Matcher & { validatedType?: T }} TypedMatcher
- */
-
-/**
- * @template {TypedMatcher<any>} TM
- * @typedef {TM extends TypedMatcher<infer T> ? T : never} MatchedType
- */

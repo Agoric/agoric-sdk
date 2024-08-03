@@ -1,18 +1,16 @@
 //@ts-nocheck
 import { Coin, CoinSDKType } from '../../base/v1beta1/coin.js';
 import { Any, AnySDKType } from '../../../google/protobuf/any.js';
-import { Timestamp } from '../../../google/protobuf/timestamp.js';
+import {
+  Timestamp,
+  TimestampSDKType,
+} from '../../../google/protobuf/timestamp.js';
 import {
   Duration,
   DurationSDKType,
 } from '../../../google/protobuf/duration.js';
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
-import {
-  isSet,
-  toTimestamp,
-  fromTimestamp,
-  fromJsonTimestamp,
-} from '../../../helpers.js';
+import { isSet, fromJsonTimestamp, fromTimestamp } from '../../../helpers.js';
 import { JsonSafe } from '../../../json-safe.js';
 /** VoteOption enumerates the valid vote options for a given governance proposal. */
 export enum VoteOption {
@@ -193,11 +191,11 @@ export interface Proposal {
    * proposal's voting period has ended.
    */
   finalTallyResult?: TallyResult;
-  submitTime?: Date;
-  depositEndTime?: Date;
+  submitTime?: Timestamp;
+  depositEndTime?: Timestamp;
   totalDeposit: Coin[];
-  votingStartTime?: Date;
-  votingEndTime?: Date;
+  votingStartTime?: Timestamp;
+  votingEndTime?: Timestamp;
   /** metadata is any arbitrary metadata attached to the proposal. */
   metadata: string;
 }
@@ -211,11 +209,11 @@ export interface ProposalSDKType {
   messages: AnySDKType[];
   status: ProposalStatus;
   final_tally_result?: TallyResultSDKType;
-  submit_time?: Date;
-  deposit_end_time?: Date;
+  submit_time?: TimestampSDKType;
+  deposit_end_time?: TimestampSDKType;
   total_deposit: CoinSDKType[];
-  voting_start_time?: Date;
-  voting_end_time?: Date;
+  voting_start_time?: TimestampSDKType;
+  voting_end_time?: TimestampSDKType;
   metadata: string;
 }
 /** TallyResult defines a standard tally for a governance proposal. */
@@ -524,14 +522,11 @@ export const Proposal = {
       ).ldelim();
     }
     if (message.submitTime !== undefined) {
-      Timestamp.encode(
-        toTimestamp(message.submitTime),
-        writer.uint32(42).fork(),
-      ).ldelim();
+      Timestamp.encode(message.submitTime, writer.uint32(42).fork()).ldelim();
     }
     if (message.depositEndTime !== undefined) {
       Timestamp.encode(
-        toTimestamp(message.depositEndTime),
+        message.depositEndTime,
         writer.uint32(50).fork(),
       ).ldelim();
     }
@@ -540,13 +535,13 @@ export const Proposal = {
     }
     if (message.votingStartTime !== undefined) {
       Timestamp.encode(
-        toTimestamp(message.votingStartTime),
+        message.votingStartTime,
         writer.uint32(66).fork(),
       ).ldelim();
     }
     if (message.votingEndTime !== undefined) {
       Timestamp.encode(
-        toTimestamp(message.votingEndTime),
+        message.votingEndTime,
         writer.uint32(74).fork(),
       ).ldelim();
     }
@@ -579,27 +574,19 @@ export const Proposal = {
           );
           break;
         case 5:
-          message.submitTime = fromTimestamp(
-            Timestamp.decode(reader, reader.uint32()),
-          );
+          message.submitTime = Timestamp.decode(reader, reader.uint32());
           break;
         case 6:
-          message.depositEndTime = fromTimestamp(
-            Timestamp.decode(reader, reader.uint32()),
-          );
+          message.depositEndTime = Timestamp.decode(reader, reader.uint32());
           break;
         case 7:
           message.totalDeposit.push(Coin.decode(reader, reader.uint32()));
           break;
         case 8:
-          message.votingStartTime = fromTimestamp(
-            Timestamp.decode(reader, reader.uint32()),
-          );
+          message.votingStartTime = Timestamp.decode(reader, reader.uint32());
           break;
         case 9:
-          message.votingEndTime = fromTimestamp(
-            Timestamp.decode(reader, reader.uint32()),
-          );
+          message.votingEndTime = Timestamp.decode(reader, reader.uint32());
           break;
         case 10:
           message.metadata = reader.string();
@@ -654,9 +641,11 @@ export const Proposal = {
         ? TallyResult.toJSON(message.finalTallyResult)
         : undefined);
     message.submitTime !== undefined &&
-      (obj.submitTime = message.submitTime.toISOString());
+      (obj.submitTime = fromTimestamp(message.submitTime).toISOString());
     message.depositEndTime !== undefined &&
-      (obj.depositEndTime = message.depositEndTime.toISOString());
+      (obj.depositEndTime = fromTimestamp(
+        message.depositEndTime,
+      ).toISOString());
     if (message.totalDeposit) {
       obj.totalDeposit = message.totalDeposit.map(e =>
         e ? Coin.toJSON(e) : undefined,
@@ -665,9 +654,11 @@ export const Proposal = {
       obj.totalDeposit = [];
     }
     message.votingStartTime !== undefined &&
-      (obj.votingStartTime = message.votingStartTime.toISOString());
+      (obj.votingStartTime = fromTimestamp(
+        message.votingStartTime,
+      ).toISOString());
     message.votingEndTime !== undefined &&
-      (obj.votingEndTime = message.votingEndTime.toISOString());
+      (obj.votingEndTime = fromTimestamp(message.votingEndTime).toISOString());
     message.metadata !== undefined && (obj.metadata = message.metadata);
     return obj;
   },
@@ -683,12 +674,24 @@ export const Proposal = {
       object.finalTallyResult !== undefined && object.finalTallyResult !== null
         ? TallyResult.fromPartial(object.finalTallyResult)
         : undefined;
-    message.submitTime = object.submitTime ?? undefined;
-    message.depositEndTime = object.depositEndTime ?? undefined;
+    message.submitTime =
+      object.submitTime !== undefined && object.submitTime !== null
+        ? Timestamp.fromPartial(object.submitTime)
+        : undefined;
+    message.depositEndTime =
+      object.depositEndTime !== undefined && object.depositEndTime !== null
+        ? Timestamp.fromPartial(object.depositEndTime)
+        : undefined;
     message.totalDeposit =
       object.totalDeposit?.map(e => Coin.fromPartial(e)) || [];
-    message.votingStartTime = object.votingStartTime ?? undefined;
-    message.votingEndTime = object.votingEndTime ?? undefined;
+    message.votingStartTime =
+      object.votingStartTime !== undefined && object.votingStartTime !== null
+        ? Timestamp.fromPartial(object.votingStartTime)
+        : undefined;
+    message.votingEndTime =
+      object.votingEndTime !== undefined && object.votingEndTime !== null
+        ? Timestamp.fromPartial(object.votingEndTime)
+        : undefined;
     message.metadata = object.metadata ?? '';
     return message;
   },

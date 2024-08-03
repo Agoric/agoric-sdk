@@ -1,11 +1,10 @@
 // @ts-check
+import { Fail } from '@endo/errors';
 import { E } from '@endo/far';
 import { makeMarshal } from '@endo/marshal';
 import { allValues } from '@agoric/internal';
 
 console.warn('upgrade-walletFactory-proposal.js module evaluating');
-
-const { Fail } = assert;
 
 // vstorage paths under published.*
 const WALLET_STORAGE_PATH_SEGMENT = 'wallet';

@@ -1,5 +1,5 @@
 import { E } from '@endo/eventual-send';
-import { assert, details as X } from '@agoric/assert';
+import { assert, X } from '@endo/errors';
 import { Far } from '@endo/marshal';
 import { makeIssuerKit, AmountMath } from '../../../src/index.js';
 

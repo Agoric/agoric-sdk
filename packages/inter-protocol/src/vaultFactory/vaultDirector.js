@@ -1,6 +1,9 @@
 /// <reference types="@agoric/governance/exported" />
 /// <reference types="@agoric/zoe/exported" />
 
+import { Fail, q } from '@endo/errors';
+import { E } from '@endo/eventual-send';
+import { Far } from '@endo/marshal';
 import { AmountMath, AmountShape, BrandShape, IssuerShape } from '@agoric/ertp';
 import {
   GovernorFacetShape,
@@ -22,8 +25,6 @@ import {
   TopicsRecordShape,
   unitAmount,
 } from '@agoric/zoe/src/contractSupport/index.js';
-import { E } from '@endo/eventual-send';
-import { Far } from '@endo/marshal';
 import { makeCollectFeesInvitation } from '../collectFees.js';
 import {
   setWakeupsForNextAuction,
@@ -39,7 +40,9 @@ import {
   provideAndStartVaultManagerKits,
 } from './vaultManager.js';
 
-const { Fail, quote: q } = assert;
+/**
+ * @import {TypedPattern} from '@agoric/internal';
+ */
 
 const trace = makeTracer('VD', true);
 
@@ -132,9 +135,7 @@ const prepareVaultDirector = (
 
   const metricsKit = makeERecorderKit(
     metricsNode,
-    /** @type {import('@agoric/zoe/src/contractSupport/recorder.js').TypedMatcher<MetricsNotification>} */ (
-      M.any()
-    ),
+    /** @type {TypedPattern<MetricsNotification>} */ (M.any()),
   );
 
   const managersNode = E(storageNode).makeChildNode('managers');

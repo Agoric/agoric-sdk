@@ -1,3 +1,4 @@
+import { E } from '@endo/far';
 import type { StartedInstanceKit } from './utils';
 
 const someContractStartFn = (
@@ -10,24 +11,24 @@ type PsmInstanceKit = StartedInstanceKit<typeof someContractStartFn>;
 const psmInstanceKit: PsmInstanceKit = null as any;
 
 // @ts-expect-error missing privateArgs argument
-void psmInstanceKit.adminFacet.restartContract();
+void E(psmInstanceKit.adminFacet).restartContract();
 
 const partial = {
   someNumber: 1,
 };
 // @ts-expect-error missing member of privateArgs argument
-void psmInstanceKit.adminFacet.restartContract(partial);
+void E(psmInstanceKit.adminFacet).restartContract(partial);
 
 // valid privateArgs now with 'marshaller'
-void psmInstanceKit.adminFacet.restartContract({
+void E(psmInstanceKit.adminFacet).restartContract({
   ...partial,
   someString: 'str',
 });
 
 // @ts-expect-error missing member of privateArgs argument
-void psmInstanceKit.adminFacet.upgradeContract('whatever', partial);
+void E(psmInstanceKit.adminFacet).upgradeContract('whatever', partial);
 // valid privateArgs now with 'marshaller'
-void psmInstanceKit.adminFacet.upgradeContract('whatever', {
+void E(psmInstanceKit.adminFacet).upgradeContract('whatever', {
   ...partial,
   someString: 'str',
 });

@@ -2,6 +2,8 @@
 
 import '@agoric/swingset-liveslots/tools/prepare-test-env.js';
 import test from 'ava';
+
+import { q } from '@endo/errors';
 import { E } from '@endo/far';
 import {
   buildKernelBundles,
@@ -25,7 +27,6 @@ import { invertPromiseSettlement } from './iterable-testing-tools.js';
  */
 
 const { ownKeys } = Reflect;
-const { quote: q } = assert;
 
 const bfile = name => new URL(name, import.meta.url).pathname;
 
@@ -81,6 +82,8 @@ const assertCells = (t, label, cells, publishCount, expected, options = {}) => {
     }
   } else {
     const { tail: _tail, ...props } = firstCell;
+    // We need an element and an index here, which for..of does not give us in one go
+    // eslint-disable-next-line github/array-foreach
     cells.slice(1).forEach((cell, i) => {
       t.like(cell, props, `${label} cell ${i + 1} must match cell 0`);
     });

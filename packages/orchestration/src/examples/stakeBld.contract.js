@@ -47,7 +47,7 @@ export const start = async (zcf, privateArgs, baggage) => {
     zcf,
     privateArgs.timerService,
     vowTools,
-    makeChainHub(privateArgs.agoricNames),
+    makeChainHub(privateArgs.agoricNames, vowTools),
   );
 
   // ----------------
@@ -63,8 +63,8 @@ export const start = async (zcf, privateArgs, baggage) => {
     return makeLocalOrchestrationAccountKit({
       account,
       address: harden({
-        address,
-        addressEncoding: 'bech32',
+        value: address,
+        encoding: 'bech32',
         chainId: 'local',
       }),
       storageNode: privateArgs.storageNode,
@@ -87,17 +87,13 @@ export const start = async (zcf, privateArgs, baggage) => {
           async seat => {
             const { give } = seat.getProposal();
             trace('makeStakeBldInvitation', give);
-            const { holder, invitationMakers } = await makeLocalAccountKit();
+            const { holder } = await makeLocalAccountKit();
             const { In } = await deeplyFulfilled(
               withdrawFromSeat(zcf, seat, give),
             );
             await E(holder).deposit(In);
             seat.exit();
-            return harden({
-              publicSubscribers: holder.getPublicTopics(),
-              invitationMakers,
-              account: holder,
-            });
+            return holder.asContinuingOffer();
           },
           'wantStake',
           undefined,
@@ -118,12 +114,8 @@ export const start = async (zcf, privateArgs, baggage) => {
         trace('makeCreateAccountInvitation');
         return zcf.makeInvitation(async seat => {
           seat.exit();
-          const { holder, invitationMakers } = await makeLocalAccountKit();
-          return harden({
-            publicSubscribers: holder.getPublicTopics(),
-            invitationMakers,
-            account: holder,
-          });
+          const { holder } = await makeLocalAccountKit();
+          return holder.asContinuingOffer();
         }, 'wantLocalChainAccount');
       },
     },

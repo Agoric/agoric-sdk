@@ -29,7 +29,9 @@ export default function setFakeChain(basedir, GCI, fakeDelay) {
     }
   };
 
-  JSON.parse(fs.readFileSync(fn)).forEach(add);
+  for (const conn of JSON.parse(fs.readFileSync(fn))) {
+    add(conn);
+  }
   const newconn = {
     type: 'fake-chain',
     GCI,
@@ -37,8 +39,8 @@ export default function setFakeChain(basedir, GCI, fakeDelay) {
   };
   add(newconn);
   const connections = [];
-  Object.entries(connsByType).forEach(([_type, conns]) =>
-    connections.push(...conns),
-  );
+  for (const conns of Object.values(connsByType)) {
+    connections.push(...conns);
+  }
   fs.writeFileSync(fn, `${JSON.stringify(connections, undefined, 2)}\n`);
 }

@@ -109,7 +109,9 @@ type Producer<T> = {
 };
 
 type VatSourceRef = { bundleName?: string; bundleID?: string };
-type VatLoader<Names extends string = keyof WellKnownVats> = <N extends Names>(
+type VatLoader<Names extends keyof WellKnownVats = keyof WellKnownVats> = <
+  N extends Names,
+>(
   name: N,
   sourceRef?: VatSourceRef,
 ) => Promise<Awaited<WellKnownVats[N]>>;
@@ -342,6 +344,7 @@ type ChainBootstrapSpaceT = {
   client: ClientManager;
   clientCreator: any;
   coreEvalBridgeHandler: import('../types.js').BridgeHandler;
+  cosmosInterchainService: import('@agoric/orchestration').CosmosInterchainService;
   /** Utilities to support debugging */
   diagnostics: {
     /**
@@ -368,9 +371,10 @@ type ChainBootstrapSpaceT = {
   namesByAddress: import('../types.js').NameHub;
   namesByAddressAdmin: import('../types.js').NamesByAddressAdmin;
   networkVat: NetworkVat;
-  orchestration: import('@agoric/orchestration/src/service.js').OrchestrationService;
+  orchestration?: CosmosInterchainService;
   pegasusConnections: import('@agoric/vats').NameHubKit;
   pegasusConnectionsAdmin: import('@agoric/vats').NameAdmin;
+  powerStore: MapStore;
   priceAuthorityVat: Awaited<PriceAuthorityVat>;
   priceAuthority: import('@agoric/zoe/tools/types.js').PriceAuthority;
   priceAuthorityAdmin: import('@agoric/vats/src/priceAuthorityRegistry').PriceAuthorityRegistryAdmin;

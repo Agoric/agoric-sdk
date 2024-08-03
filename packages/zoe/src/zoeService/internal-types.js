@@ -99,7 +99,6 @@
  * instance-specific terms
  *
  * @callback MakeZoeInstanceStorageManager
- * @param {import('@agoric/vat-data').Baggage} instanceBaggage
  * @param {Installation} installation
  * @param {object} customTerms
  * @param {IssuerKeywordRecord} uncleanIssuerKeywordRecord

@@ -1,3 +1,7 @@
+import { Fail } from '@endo/errors';
+import { E, Far } from '@endo/far';
+import { M, getInterfaceGuardPayload } from '@endo/patterns';
+
 import { AmountMath, AssetKind, BrandShape } from '@agoric/ertp';
 import { deeplyFulfilledObject } from '@agoric/internal';
 import { prepareGuardedAttenuator } from '@agoric/internal/src/callback.js';
@@ -8,10 +12,8 @@ import {
   prepareDurablePublishKit,
   subscribeEach,
 } from '@agoric/notifier';
-import { M, getInterfaceGuardPayload } from '@endo/patterns';
 import { provideLazy } from '@agoric/store';
 import { makeDurableZone } from '@agoric/zone/durable.js';
-import { E, Far } from '@endo/far';
 import { makeAtomicProvider } from '@agoric/store/src/stores/store-utils.js';
 import { BridgeHandlerI, BridgeScopedManagerI } from './bridge.js';
 import {
@@ -20,11 +22,10 @@ import {
 } from './virtual-purse.js';
 
 /**
- * @import {Guarded} from '@endo/exo')
- * @import {Passable, RemotableObject} from '@endo/pass-style')
+ * @import {Guarded} from '@endo/exo';
+ * @import {Passable, RemotableObject} from '@endo/pass-style';
+ * @import {VirtualPurseController} from './virtual-purse.js';
  */
-
-const { Fail } = assert;
 
 const { VirtualPurseControllerI } = makeVirtualPurseKitIKit();
 
@@ -37,7 +38,6 @@ const BridgeChannelI = M.interface('BridgeChannel', {
 
 /**
  * @typedef {Awaited<ReturnType<ReturnType<typeof prepareVirtualPurse>>>} VirtualPurse
- * @import {VirtualPurseController} from './virtual-purse.js'
  */
 
 /**
@@ -200,7 +200,7 @@ const prepareBankChannelHandler = zone =>
                   updater = addressToUpdater.get(address);
                 }
               } catch (e) {
-                console.error('Unregistered denom in', update, e);
+                console.debug('Unregistered denom in', update, e);
               }
               if (updater) {
                 try {

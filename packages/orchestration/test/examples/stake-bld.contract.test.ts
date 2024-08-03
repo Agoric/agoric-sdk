@@ -142,6 +142,11 @@ test('makeAccountInvitationMaker', async t => {
 
   const userSeat = await E(zoe).offer(inv);
   const offerResult = await E(userSeat).getOfferResult();
-  t.true('account' in offerResult, 'received account');
   t.truthy('invitationMakers' in offerResult, 'received continuing invitation');
+  t.like(offerResult.publicSubscribers, {
+    account: {
+      description: 'Account holder status',
+      storagePath: 'mockChainStorageRoot',
+    },
+  });
 });

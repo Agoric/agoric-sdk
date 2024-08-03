@@ -1,9 +1,9 @@
 /* eslint-disable no-use-before-define */
 
+import { assert } from '@endo/errors';
 import { Far, E, passStyleOf } from '@endo/far';
 import { makePromiseKit } from '@endo/promise-kit';
 import { Nat } from '@endo/nat';
-import { assert } from '@agoric/assert';
 import {
   provideKindHandle,
   provideDurableMapStore,
@@ -16,8 +16,8 @@ import { makeScalarWeakMapStore } from '@agoric/store';
 import { TimeMath } from '@agoric/time';
 
 /**
- * @import {Passable, RemotableObject} from '@endo/pass-style')
- * @import {Key} from '@endo/patterns')
+ * @import {Passable, RemotableObject} from '@endo/pass-style';
+ * @import {Key} from '@endo/patterns';
  */
 
 // This consumes O(N) RAM only for outstanding promises, via wakeAt(),
@@ -25,12 +25,12 @@ import { TimeMath } from '@agoric/time';
 // client). Everything else should remain in the DB.
 
 /**
- * @import {Timestamp} from '@agoric/time'
- * @import {TimestampRecord} from '@agoric/time'
- * @import {TimestampValue} from '@agoric/time'
- * @import {RelativeTime} from '@agoric/time'
- * @import {RelativeTimeValue} from '@agoric/time'
- * @import {TimerService} from '@agoric/time'
+ * @import {Timestamp} from '@agoric/time';
+ * @import {TimestampRecord} from '@agoric/time';
+ * @import {TimestampValue} from '@agoric/time';
+ * @import {RelativeTime} from '@agoric/time';
+ * @import {RelativeTimeValue} from '@agoric/time';
+ * @import {TimerService} from '@agoric/time';
  *
  * @typedef {object} Handler
  * Handler is a user-provided Far object with .wake(time) used for callbacks

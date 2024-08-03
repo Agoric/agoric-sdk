@@ -13,7 +13,7 @@ import { LogEntryShape, FlowStateShape } from './type-guards.js';
 /**
  * @import {WeakMapStore} from '@agoric/store'
  * @import {Zone} from '@agoric/base-zone'
- * @import {FlowState, GuestAsyncFunc, HostAsyncFuncWrapper, PreparationOptions} from '../src/types.js'
+ * @import {FlowState, GuestAsyncFunc, HostAsyncFuncWrapper, HostOf, PreparationOptions} from '../src/types.js'
  * @import {ReplayMembrane} from '../src/replay-membrane.js'
  */
 
@@ -434,21 +434,25 @@ export const prepareAsyncFlowTools = (outerZone, outerOptions = {}) => {
   };
 
   /**
+   * @template {GuestAsyncFunc} F
    * @param {Zone} zone
    * @param {string} tag
-   * @param {GuestAsyncFunc} guestFunc
+   * @param {F} guestFunc
    * @param {{ startEager?: boolean }} [options]
-   * @returns {HostAsyncFuncWrapper}
+   * @returns {HostOf<F>}
    */
   const asyncFlow = (zone, tag, guestFunc, options = undefined) => {
     const makeAsyncFlowKit = prepareAsyncFlowKit(zone, tag, guestFunc, options);
     const hostFuncName = `${tag}_hostFlow`;
-    const wrapperFunc = {
-      [hostFuncName](...args) {
-        const { flow } = makeAsyncFlowKit(args);
-        return flow.getOutcome();
-      },
-    }[hostFuncName];
+
+    const wrapperFunc = /** @type {HostOf<F>} */ (
+      {
+        [hostFuncName](...args) {
+          const { flow } = makeAsyncFlowKit(args);
+          return flow.getOutcome();
+        },
+      }[hostFuncName]
+    );
     defineProperties(wrapperFunc, {
       length: { value: guestFunc.length },
     });

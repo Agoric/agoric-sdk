@@ -1,6 +1,6 @@
 import * as STORAGE_PATH from '@agoric/internal/src/chain-storage-paths.js';
 
-const { Fail, quote: q } = assert;
+import { Fail, q } from '@endo/errors';
 
 /**
  * Export any specified storage subtrees, then delete the ones marked to clear.

@@ -1,4 +1,4 @@
-import { assert } from '@agoric/assert';
+import { assert } from '@endo/errors';
 import { Far } from '@endo/far';
 
 const { freeze } = Object;

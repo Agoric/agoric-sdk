@@ -89,7 +89,7 @@ test.skip('property name space exhaustion: orderly fail-stop', async t => {
         const vat = await xsnap({ ...opts, parserBufferSize });
         t.teardown(() => vat.terminate());
         const expected = failure ? [failure] : [qty * 4 + 2];
-        await t.notThrowsAsync(vat.evaluate(grow(qty)));
+        await vat.evaluate(grow(qty));
         t.deepEqual(
           expected,
           opts.messages.map(txt => JSON.parse(txt)),

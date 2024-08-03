@@ -1,16 +1,18 @@
 //@ts-nocheck
 import { Proof, ProofSDKType } from '../crypto/proof.js';
 import { Consensus, ConsensusSDKType } from '../version/types.js';
-import { Timestamp } from '../../google/protobuf/timestamp.js';
+import {
+  Timestamp,
+  TimestampSDKType,
+} from '../../google/protobuf/timestamp.js';
 import { ValidatorSet, ValidatorSetSDKType } from './validator.js';
 import { BinaryReader, BinaryWriter } from '../../binary.js';
 import {
   isSet,
   bytesFromBase64,
   base64FromBytes,
-  toTimestamp,
-  fromTimestamp,
   fromJsonTimestamp,
+  fromTimestamp,
 } from '../../helpers.js';
 import { JsonSafe } from '../../json-safe.js';
 /** BlockIdFlag indicates which BlcokID the signature is for */
@@ -151,7 +153,7 @@ export interface Header {
   version: Consensus;
   chainId: string;
   height: bigint;
-  time: Date;
+  time: Timestamp;
   /** prev block info */
   lastBlockId: BlockID;
   /** hashes of block data */
@@ -180,7 +182,7 @@ export interface HeaderSDKType {
   version: ConsensusSDKType;
   chain_id: string;
   height: bigint;
-  time: Date;
+  time: TimestampSDKType;
   last_block_id: BlockIDSDKType;
   last_commit_hash: Uint8Array;
   data_hash: Uint8Array;
@@ -219,7 +221,7 @@ export interface Vote {
   round: number;
   /** zero if vote is nil. */
   blockId: BlockID;
-  timestamp: Date;
+  timestamp: Timestamp;
   validatorAddress: Uint8Array;
   validatorIndex: number;
   signature: Uint8Array;
@@ -237,7 +239,7 @@ export interface VoteSDKType {
   height: bigint;
   round: number;
   block_id: BlockIDSDKType;
-  timestamp: Date;
+  timestamp: TimestampSDKType;
   validator_address: Uint8Array;
   validator_index: number;
   signature: Uint8Array;
@@ -264,7 +266,7 @@ export interface CommitSDKType {
 export interface CommitSig {
   blockIdFlag: BlockIDFlag;
   validatorAddress: Uint8Array;
-  timestamp: Date;
+  timestamp: Timestamp;
   signature: Uint8Array;
 }
 export interface CommitSigProtoMsg {
@@ -275,7 +277,7 @@ export interface CommitSigProtoMsg {
 export interface CommitSigSDKType {
   block_id_flag: BlockIDFlag;
   validator_address: Uint8Array;
-  timestamp: Date;
+  timestamp: TimestampSDKType;
   signature: Uint8Array;
 }
 export interface Proposal {
@@ -284,7 +286,7 @@ export interface Proposal {
   round: number;
   polRound: number;
   blockId: BlockID;
-  timestamp: Date;
+  timestamp: Timestamp;
   signature: Uint8Array;
 }
 export interface ProposalProtoMsg {
@@ -297,7 +299,7 @@ export interface ProposalSDKType {
   round: number;
   pol_round: number;
   block_id: BlockIDSDKType;
-  timestamp: Date;
+  timestamp: TimestampSDKType;
   signature: Uint8Array;
 }
 export interface SignedHeader {
@@ -617,7 +619,7 @@ function createBaseHeader(): Header {
     version: Consensus.fromPartial({}),
     chainId: '',
     height: BigInt(0),
-    time: new Date(),
+    time: Timestamp.fromPartial({}),
     lastBlockId: BlockID.fromPartial({}),
     lastCommitHash: new Uint8Array(),
     dataHash: new Uint8Array(),
@@ -646,10 +648,7 @@ export const Header = {
       writer.uint32(24).int64(message.height);
     }
     if (message.time !== undefined) {
-      Timestamp.encode(
-        toTimestamp(message.time),
-        writer.uint32(34).fork(),
-      ).ldelim();
+      Timestamp.encode(message.time, writer.uint32(34).fork()).ldelim();
     }
     if (message.lastBlockId !== undefined) {
       BlockID.encode(message.lastBlockId, writer.uint32(42).fork()).ldelim();
@@ -701,9 +700,7 @@ export const Header = {
           message.height = reader.int64();
           break;
         case 4:
-          message.time = fromTimestamp(
-            Timestamp.decode(reader, reader.uint32()),
-          );
+          message.time = Timestamp.decode(reader, reader.uint32());
           break;
         case 5:
           message.lastBlockId = BlockID.decode(reader, reader.uint32());
@@ -793,7 +790,8 @@ export const Header = {
     message.chainId !== undefined && (obj.chainId = message.chainId);
     message.height !== undefined &&
       (obj.height = (message.height || BigInt(0)).toString());
-    message.time !== undefined && (obj.time = message.time.toISOString());
+    message.time !== undefined &&
+      (obj.time = fromTimestamp(message.time).toISOString());
     message.lastBlockId !== undefined &&
       (obj.lastBlockId = message.lastBlockId
         ? BlockID.toJSON(message.lastBlockId)
@@ -861,7 +859,10 @@ export const Header = {
       object.height !== undefined && object.height !== null
         ? BigInt(object.height.toString())
         : BigInt(0);
-    message.time = object.time ?? undefined;
+    message.time =
+      object.time !== undefined && object.time !== null
+        ? Timestamp.fromPartial(object.time)
+        : undefined;
     message.lastBlockId =
       object.lastBlockId !== undefined && object.lastBlockId !== null
         ? BlockID.fromPartial(object.lastBlockId)
@@ -966,7 +967,7 @@ function createBaseVote(): Vote {
     height: BigInt(0),
     round: 0,
     blockId: BlockID.fromPartial({}),
-    timestamp: new Date(),
+    timestamp: Timestamp.fromPartial({}),
     validatorAddress: new Uint8Array(),
     validatorIndex: 0,
     signature: new Uint8Array(),
@@ -991,10 +992,7 @@ export const Vote = {
       BlockID.encode(message.blockId, writer.uint32(34).fork()).ldelim();
     }
     if (message.timestamp !== undefined) {
-      Timestamp.encode(
-        toTimestamp(message.timestamp),
-        writer.uint32(42).fork(),
-      ).ldelim();
+      Timestamp.encode(message.timestamp, writer.uint32(42).fork()).ldelim();
     }
     if (message.validatorAddress.length !== 0) {
       writer.uint32(50).bytes(message.validatorAddress);
@@ -1028,9 +1026,7 @@ export const Vote = {
           message.blockId = BlockID.decode(reader, reader.uint32());
           break;
         case 5:
-          message.timestamp = fromTimestamp(
-            Timestamp.decode(reader, reader.uint32()),
-          );
+          message.timestamp = Timestamp.decode(reader, reader.uint32());
           break;
         case 6:
           message.validatorAddress = reader.bytes();
@@ -1084,7 +1080,7 @@ export const Vote = {
         ? BlockID.toJSON(message.blockId)
         : undefined);
     message.timestamp !== undefined &&
-      (obj.timestamp = message.timestamp.toISOString());
+      (obj.timestamp = fromTimestamp(message.timestamp).toISOString());
     message.validatorAddress !== undefined &&
       (obj.validatorAddress = base64FromBytes(
         message.validatorAddress !== undefined
@@ -1111,7 +1107,10 @@ export const Vote = {
       object.blockId !== undefined && object.blockId !== null
         ? BlockID.fromPartial(object.blockId)
         : undefined;
-    message.timestamp = object.timestamp ?? undefined;
+    message.timestamp =
+      object.timestamp !== undefined && object.timestamp !== null
+        ? Timestamp.fromPartial(object.timestamp)
+        : undefined;
     message.validatorAddress = object.validatorAddress ?? new Uint8Array();
     message.validatorIndex = object.validatorIndex ?? 0;
     message.signature = object.signature ?? new Uint8Array();
@@ -1249,7 +1248,7 @@ function createBaseCommitSig(): CommitSig {
   return {
     blockIdFlag: 0,
     validatorAddress: new Uint8Array(),
-    timestamp: new Date(),
+    timestamp: Timestamp.fromPartial({}),
     signature: new Uint8Array(),
   };
 }
@@ -1266,10 +1265,7 @@ export const CommitSig = {
       writer.uint32(18).bytes(message.validatorAddress);
     }
     if (message.timestamp !== undefined) {
-      Timestamp.encode(
-        toTimestamp(message.timestamp),
-        writer.uint32(26).fork(),
-      ).ldelim();
+      Timestamp.encode(message.timestamp, writer.uint32(26).fork()).ldelim();
     }
     if (message.signature.length !== 0) {
       writer.uint32(34).bytes(message.signature);
@@ -1291,9 +1287,7 @@ export const CommitSig = {
           message.validatorAddress = reader.bytes();
           break;
         case 3:
-          message.timestamp = fromTimestamp(
-            Timestamp.decode(reader, reader.uint32()),
-          );
+          message.timestamp = Timestamp.decode(reader, reader.uint32());
           break;
         case 4:
           message.signature = reader.bytes();
@@ -1332,7 +1326,7 @@ export const CommitSig = {
           : new Uint8Array(),
       ));
     message.timestamp !== undefined &&
-      (obj.timestamp = message.timestamp.toISOString());
+      (obj.timestamp = fromTimestamp(message.timestamp).toISOString());
     message.signature !== undefined &&
       (obj.signature = base64FromBytes(
         message.signature !== undefined ? message.signature : new Uint8Array(),
@@ -1343,7 +1337,10 @@ export const CommitSig = {
     const message = createBaseCommitSig();
     message.blockIdFlag = object.blockIdFlag ?? 0;
     message.validatorAddress = object.validatorAddress ?? new Uint8Array();
-    message.timestamp = object.timestamp ?? undefined;
+    message.timestamp =
+      object.timestamp !== undefined && object.timestamp !== null
+        ? Timestamp.fromPartial(object.timestamp)
+        : undefined;
     message.signature = object.signature ?? new Uint8Array();
     return message;
   },
@@ -1367,7 +1364,7 @@ function createBaseProposal(): Proposal {
     round: 0,
     polRound: 0,
     blockId: BlockID.fromPartial({}),
-    timestamp: new Date(),
+    timestamp: Timestamp.fromPartial({}),
     signature: new Uint8Array(),
   };
 }
@@ -1393,10 +1390,7 @@ export const Proposal = {
       BlockID.encode(message.blockId, writer.uint32(42).fork()).ldelim();
     }
     if (message.timestamp !== undefined) {
-      Timestamp.encode(
-        toTimestamp(message.timestamp),
-        writer.uint32(50).fork(),
-      ).ldelim();
+      Timestamp.encode(message.timestamp, writer.uint32(50).fork()).ldelim();
     }
     if (message.signature.length !== 0) {
       writer.uint32(58).bytes(message.signature);
@@ -1427,9 +1421,7 @@ export const Proposal = {
           message.blockId = BlockID.decode(reader, reader.uint32());
           break;
         case 6:
-          message.timestamp = fromTimestamp(
-            Timestamp.decode(reader, reader.uint32()),
-          );
+          message.timestamp = Timestamp.decode(reader, reader.uint32());
           break;
         case 7:
           message.signature = reader.bytes();
@@ -1474,7 +1466,7 @@ export const Proposal = {
         ? BlockID.toJSON(message.blockId)
         : undefined);
     message.timestamp !== undefined &&
-      (obj.timestamp = message.timestamp.toISOString());
+      (obj.timestamp = fromTimestamp(message.timestamp).toISOString());
     message.signature !== undefined &&
       (obj.signature = base64FromBytes(
         message.signature !== undefined ? message.signature : new Uint8Array(),
@@ -1494,7 +1486,10 @@ export const Proposal = {
       object.blockId !== undefined && object.blockId !== null
         ? BlockID.fromPartial(object.blockId)
         : undefined;
-    message.timestamp = object.timestamp ?? undefined;
+    message.timestamp =
+      object.timestamp !== undefined && object.timestamp !== null
+        ? Timestamp.fromPartial(object.timestamp)
+        : undefined;
     message.signature = object.signature ?? new Uint8Array();
     return message;
   },

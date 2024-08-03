@@ -2,6 +2,8 @@
 /// <reference types="@agoric/governance/exported" />
 /// <reference types="@agoric/zoe/exported" />
 
+import { Fail } from '@endo/errors';
+import { E } from '@endo/eventual-send';
 import { AmountMath, AmountShape, BrandShape, RatioShape } from '@agoric/ertp';
 import {
   CONTRACT_ELECTORATE,
@@ -29,13 +31,10 @@ import {
   InstanceHandleShape,
   InvitationShape,
 } from '@agoric/zoe/src/typeGuards.js';
-import { E } from '@endo/eventual-send';
 
 import { mustMatch } from '@agoric/store';
 import { makeCollectFeesInvitation } from '../collectFees.js';
 import { makeNatAmountShape } from '../contractSupport.js';
-
-const { Fail } = assert;
 
 /**
  * @file The Parity Stability Module supports efficiently minting/burning a
@@ -60,7 +59,10 @@ const { Fail } = assert;
  *   given by this contract
  */
 
-/** @import {Baggage} from '@agoric/vat-data' */
+/**
+ * @import {TypedPattern} from '@agoric/internal';
+ * @import {Baggage} from '@agoric/vat-data'
+ */
 
 /** @type {ContractMeta} */
 export const meta = {
@@ -175,9 +177,7 @@ export const start = async (zcf, privateArgs, baggage) => {
       E.when(E(privateArgs.storageNode).makeChildNode('metrics'), node =>
         makeRecorderKit(
           node,
-          /** @type {import('@agoric/zoe/src/contractSupport/recorder.js').TypedMatcher<MetricsNotification>} */ (
-            M.any()
-          ),
+          /** @type {TypedPattern<MetricsNotification>} */ (M.any()),
         ),
       ),
   });

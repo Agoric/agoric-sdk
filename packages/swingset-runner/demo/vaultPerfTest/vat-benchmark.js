@@ -10,9 +10,9 @@
 // vat-benchmark.js driver and the JSON config file (and possibly the runner
 // itself, if it's not on your $PATH) accordingly.
 
+import { assert } from '@endo/errors';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
-import { assert } from '@agoric/assert';
 
 import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
 

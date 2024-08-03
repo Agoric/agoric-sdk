@@ -1,11 +1,12 @@
 // @jessie-check
 
 import { makeMap } from 'jessie.js';
+import { X } from '@endo/errors';
+import { E } from '@endo/far';
 import { AmountMath, AssetKind } from '@agoric/ertp';
 import { CONTRACT_ELECTORATE, ParamTypes } from '@agoric/governance';
 import { makeStorageNodeChild } from '@agoric/internal/src/lib-chainStorage.js';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
-import { E } from '@endo/far';
 import {
   makeHistoryReviver,
   makeBoardRemote,
@@ -28,7 +29,6 @@ import {
 /** @import {EconomyBootstrapPowers} from './econ-behaviors.js' */
 
 const BASIS_POINTS = 10000n;
-const { details: X } = assert;
 
 export { inviteCommitteeMembers, startEconCharter, inviteToEconCharter };
 

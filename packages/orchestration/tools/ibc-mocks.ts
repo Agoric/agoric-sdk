@@ -6,7 +6,11 @@ import {
 } from '@agoric/cosmic-proto/tendermint/abci/types.js';
 import { encodeBase64, btoa } from '@endo/base64';
 import { toRequestQueryJson } from '@agoric/cosmic-proto';
+import { IBCChannelID, VTransferIBCEvent } from '@agoric/vats';
+import { VTRANSFER_IBC_EVENT } from '@agoric/internal/src/action-types.js';
+import { FungibleTokenPacketData } from '@agoric/cosmic-proto/ibc/applications/transfer/v2/packet.js';
 import { makeQueryPacket, makeTxPacket } from '../src/utils/packet.js';
+import { ChainAddress } from '../src/orchestration-api.js';
 
 interface EncoderI<T> {
   encode: (message: T) => {
@@ -125,3 +129,74 @@ export function buildQueryPacketString(
 ): string {
   return btoa(makeQueryPacket(msgs.map(msg => toRequestQueryJson(msg, opts))));
 }
+
+type BuildVTransferEventParams = {
+  event?: VTransferIBCEvent['event'];
+  /* defaults to cosmos1AccAddress. set to `agoric1fakeLCAAddress` to simulate an outgoing transfer event */
+  sender?: ChainAddress['value'];
+  /**  defaults to agoric1fakeLCAAddress. set to a different value to simulate an outgoing transfer event */
+  receiver?: ChainAddress['value'];
+  amount?: bigint;
+  denom?: string;
+  destinationChannel?: IBCChannelID;
+  sourceChannel?: IBCChannelID;
+};
+
+/**
+ * `buildVTransferEvent` can be used with `transferBridge` to simulate incoming
+ * and outgoing IBC fungible tokens transfers to a LocalChain account.
+ *
+ * It defaults to simulating incoming transfers. To simulate an outgoing one,
+ * ensure `sender=agoric1fakeLCAAddress` and  this after LocalChainBridge
+ * receives the outgoing MsgTransfer,
+ *
+ * @example
+ * ```js
+ * const { mocks: { transferBridge } = await commonSetup(t);
+ * await E(transferBridge).fromBridge(
+ *  buildVTransferEvent({
+ *    receiver: 'agoric1fakeLCAAddress',
+ *    amount: 10n,
+ *    denom: 'uatom',
+ *  }),
+ * );
+ * ```
+ *
+ * XXX integrate vlocalchain and vtransfer ScopedBridgeManagers
+ * in test supports.
+ *
+ * @param {{BuildVTransferEventParams}} args
+ */
+export const buildVTransferEvent = ({
+  event = 'acknowledgementPacket' as const,
+  sender = 'cosmos1AccAddress',
+  receiver = 'agoric1fakeLCAAddress',
+  amount = 10n,
+  denom = 'uatom',
+  destinationChannel = 'channel-0' as IBCChannelID,
+  sourceChannel = 'channel-405' as IBCChannelID,
+}: BuildVTransferEventParams = {}): VTransferIBCEvent => ({
+  type: VTRANSFER_IBC_EVENT,
+  blockHeight: 0,
+  blockTime: 0,
+  event,
+  acknowledgement: btoa(JSON.stringify({ result: 'AQ==' })),
+  relayer: 'agoric123',
+  target: receiver,
+  packet: {
+    data: btoa(
+      JSON.stringify(
+        FungibleTokenPacketData.fromPartial({
+          amount: String(amount),
+          denom,
+          sender,
+          receiver,
+        }),
+      ),
+    ),
+    destination_channel: destinationChannel,
+    source_channel: sourceChannel,
+    destination_port: 'transfer',
+    source_port: 'transfer',
+  },
+});

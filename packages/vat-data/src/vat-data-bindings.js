@@ -1,6 +1,6 @@
 /* global globalThis */
 
-import { Fail } from '@agoric/assert';
+import { Fail } from '@endo/errors';
 import { provideLazy } from '@agoric/store';
 
 /** @import {Baggage, PickFacet, VatData} from '@agoric/swingset-liveslots' */
@@ -57,7 +57,8 @@ export const {
 } = VatDataGlobal;
 
 /**
- * When making a multi-facet kind, it's common to pick one facet to expose. E.g.,
+ * When making a multi-facet kind, it's common to pick one facet to expose.
+ * E.g.,
  *
  *     const makeFoo = (a, b, c, d) => makeFooBase(a, b, c, d).self;
  *
@@ -89,36 +90,39 @@ harden(partialAssign);
 /** @import {StoreOptions} from '@agoric/store' */
 
 /**
- * Unlike `provideLazy`, `provide` should be called at most once
- * within any vat incarnation with a given `baggage`,`key` pair.
+ * Unlike `provideLazy`, `provide` should be called at most once within any vat
+ * incarnation with a given `baggage`,`key` pair.
  *
- * `provide` should only be used to populate baggage,
- * where the total number of calls to `provide` must be
- * low cardinality, since we keep the bookkeeping to detect collisions
- * in normal language-heap memory. All the other baggage-oriented
- * `provide*` and `prepare*` functions call `provide`,
- * and so impose the same constraints. This is consistent with
- * our expected durability patterns: What we store in baggage are
- *    * kindHandles, which are per kind, which must be low cardinality
- *    * data "variables" for reestablishing the lexical scope, especially
- *      of singletons
- *    * named non-baggage collections at the leaves of the baggage tree.
+ * `provide` should only be used to populate baggage, where the total number of
+ * calls to `provide` must be low cardinality, since we keep the bookkeeping to
+ * detect collisions in normal language-heap memory. All the other
+ * baggage-oriented `provide*` and `prepare*` functions call `provide`, and so
+ * impose the same constraints. This is consistent with our expected durability
+ * patterns: What we store in baggage are
  *
- * What is expected to be high cardinality are the instances of the kinds,
- * and the members of the non-bagggage collections.
+ * - kindHandles, which are per kind, which must be low cardinality
+ * - data "variables" for reestablishing the lexical scope, especially of
+ *   singletons
+ * - named non-baggage collections at the leaves of the baggage tree.
  *
- * TODO https://github.com/Agoric/agoric-sdk/pull/5875 :
- * Implement development-time instrumentation to detect when
- * `provide` violates the above prescription, and is called more
- * than once in the same vat incarnation with the same
- * baggage,key pair.
+ * What is expected to be high cardinality are the instances of the kinds, and
+ * the members of the non-bagggage collections.
+ *
+ * TODO https://github.com/Agoric/agoric-sdk/pull/5875 : Implement
+ * development-time instrumentation to detect when `provide` violates the above
+ * prescription, and is called more than once in the same vat incarnation with
+ * the same baggage,key pair.
  */
 
 export const provide =
   // XXX cast because provideLazy is `any` due to broken type import
-  /** @type {<K, V>(baggage: Baggage, key: K, makeValue: (key: K) => V) => V} */ (
-    provideLazy
-  );
+  /**
+   * @type {<K, V>(
+   *   baggage: Baggage,
+   *   key: K,
+   *   makeValue: (key: K) => V,
+   * ) => V}
+   */ (provideLazy);
 
 // TODO: Find a good home for this function used by @agoric/vat-data and testing code
 /** @param {VatData} VatData */

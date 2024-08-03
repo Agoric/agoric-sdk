@@ -131,6 +131,7 @@ export async function makeDispatch(
   build,
   vatID = 'vatA',
   liveSlotsOptions = {},
+  vatParameters = undefined,
 ) {
   const gcTools = harden({
     WeakRef,
@@ -150,7 +151,7 @@ export async function makeDispatch(
       return { buildRootObject: build };
     },
   );
-  await dispatch(['startVat', kser()]);
+  await dispatch(['startVat', kser(vatParameters)]);
   return { dispatch, testHooks };
 }
 
@@ -171,6 +172,7 @@ function makeRPMaker(nextNumber = 1) {
  * @param {Map<string, string>} [options.kvStore]
  * @param {number} [options.nextPromiseImportNumber]
  * @param {boolean} [options.skipLogging]
+ * @param {any} [options.vatParameters]
  */
 export async function setupTestLiveslots(
   t,
@@ -183,6 +185,7 @@ export async function setupTestLiveslots(
     kvStore = new Map(),
     nextPromiseImportNumber,
     skipLogging = false,
+    vatParameters,
   } = options;
   const { log, syscall, fakestore } = buildSyscall({ skipLogging, kvStore });
   const nextRP = makeRPMaker(nextPromiseImportNumber);
@@ -190,6 +193,8 @@ export async function setupTestLiveslots(
     syscall,
     buildRootObject,
     vatName,
+    {},
+    vatParameters,
   );
 
   async function dispatchMessage(message, ...args) {

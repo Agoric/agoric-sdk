@@ -1,7 +1,7 @@
 // this file is loaded by the controller, in the start compartment
 import { spawn } from 'child_process';
 import { makePromiseKit } from '@endo/promise-kit';
-import { NonNullish } from '@agoric/assert';
+import { NonNullish } from '../errors.js';
 import { arrayEncoderStream, arrayDecoderStream } from './worker-protocol.js';
 import {
   netstringEncoderStream,

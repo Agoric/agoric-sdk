@@ -7,6 +7,7 @@ import type { TagContainer } from '@agoric/internal/src/tagged.js';
 import type { Baggage } from '@agoric/swingset-liveslots';
 import type { VatUpgradeResults } from '@agoric/swingset-vat';
 import type { RemotableObject } from '@endo/marshal';
+import type { FarRef } from '@endo/far';
 
 // XXX https://github.com/Agoric/agoric-sdk/issues/4565
 type SourceBundle = Record<string, any>;
@@ -33,7 +34,7 @@ export type ContractStartFunction = (
   baggage?: Baggage,
 ) => ERef<{ creatorFacet?: {}; publicFacet?: {} }>;
 
-export type AdminFacet<SF extends ContractStartFunction> = RemotableObject & {
+export type AdminFacet<SF extends ContractStartFunction> = FarRef<{
   // Completion, which is currently any
   getVatShutdownPromise: () => Promise<any>;
   upgradeContract: Parameters<SF>[1] extends undefined
@@ -45,7 +46,7 @@ export type AdminFacet<SF extends ContractStartFunction> = RemotableObject & {
   restartContract: Parameters<SF>[1] extends undefined
     ? () => Promise<VatUpgradeResults>
     : (newPrivateArgs: Parameters<SF>[1]) => Promise<VatUpgradeResults>;
-};
+}>;
 
 export type StartParams<SF> = SF extends ContractStartFunction
   ? Parameters<SF>[1] extends undefined

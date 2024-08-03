@@ -11,7 +11,8 @@ import { ZipReader } from '@endo/zip';
 /** @import {Bundle} from '@agoric/swingset-vat'; */
 /** @import {CoreEvalPlan} from '@agoric/deploy-script-support/src/writeCoreEvalParts.js' */
 
-const PACKAGE_NAME_RE = /(?<packageName>.*-v[\d.]+)\//;
+// exported for testing
+export const PACKAGE_NAME_RE = /^(?:@[^/]+\/)?[^/]+/;
 
 /**
  * @typedef {{ name: string, label: string, location: string, modules: Record<string, {compartment: string, module: string}>}} Compartment
@@ -70,7 +71,7 @@ export const statBundle = async bundleFilename => {
     if (filename === 'compartment-map.json') {
       continue;
     }
-    const { packageName } = filename.match(PACKAGE_NAME_RE)?.groups ?? {};
+    const packageName = filename.match(PACKAGE_NAME_RE)?.[0];
     assert(packageName, `invalid filename ${filename}`);
     byPackage[packageName] ||= 0;
     byPackage[packageName] += size;

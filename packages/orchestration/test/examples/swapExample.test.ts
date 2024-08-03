@@ -63,12 +63,13 @@ test.skip('start', async t => {
       staked: ten,
       validator: {
         chainId: 'agoric-3',
-        address: 'agoric1valoperfufu',
-        addressEncoding: 'bech32',
+        value: 'agoric1valoperfufu',
+        encoding: 'bech32',
       } as const,
     },
   );
-  const result = await E(userSeat).getOfferResult();
+  const vt = bootstrap.vowTools;
+  const result = await vt.when(E(userSeat).getOfferResult());
   t.is(result, undefined);
 
   // bank purse now has the 10 IST

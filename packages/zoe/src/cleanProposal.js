@@ -1,4 +1,4 @@
-import { assert, q, Fail } from '@agoric/assert';
+import { assert, q, Fail } from '@endo/errors';
 import { AmountMath, getAssetKind } from '@agoric/ertp';
 import { objectMap } from '@agoric/internal';
 import { assertRecord } from '@endo/marshal';
@@ -47,7 +47,9 @@ export const cleanKeywords = uncleanKeywordRecord => {
 
   // Assert all names are ascii identifiers starting with
   // an upper case letter.
-  keywords.forEach(assertKeywordName);
+  for (const keyword of keywords) {
+    assertKeywordName(keyword);
+  }
 
   return /** @type {string[]} */ (keywords);
 };

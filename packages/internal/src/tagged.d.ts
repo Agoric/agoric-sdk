@@ -21,13 +21,13 @@ A tag's name is usually a string (and must be a string, number, or symbol), but 
  
 A type `A` returned by `Tagged` is assignable to another type `B` returned by `Tagged` if and only if:
   - the underlying (untagged) type of `A` is assignable to the underlying type of `B`;
-	- `A` contains at least all the tags `B` has;
-	- and the metadata type for each of `A`'s tags is assignable to the metadata type of `B`'s corresponding tag.
+  - `A` contains at least all the tags `B` has;
+  - and the metadata type for each of `A`'s tags is assignable to the metadata type of `B`'s corresponding tag.
  
 There have been several discussions about adding similar features to TypeScript. Unfortunately, nothing has (yet) moved forward:
-	- [Microsoft/TypeScript#202](https://github.com/microsoft/TypeScript/issues/202)
-	- [Microsoft/TypeScript#4895](https://github.com/microsoft/TypeScript/issues/4895)
-	- [Microsoft/TypeScript#33290](https://github.com/microsoft/TypeScript/pull/33290)
+  - [Microsoft/TypeScript#202](https://github.com/microsoft/TypeScript/issues/202)
+  - [Microsoft/TypeScript#4895](https://github.com/microsoft/TypeScript/issues/4895)
+  - [Microsoft/TypeScript#33290](https://github.com/microsoft/TypeScript/pull/33290)
  
 @example
 ```
@@ -37,12 +37,12 @@ type AccountNumber = Tagged<number, 'AccountNumber'>;
 type AccountBalance = Tagged<number, 'AccountBalance'>;
  
 function createAccountNumber(): AccountNumber {
-	// As you can see, casting from a `number` (the underlying type being tagged) is allowed.
-	return 2 as AccountNumber;
+  // As you can see, casting from a `number` (the underlying type being tagged) is allowed.
+  return 2 as AccountNumber;
 }
  
 function getMoneyForAccount(accountNumber: AccountNumber): AccountBalance {
-	return 4 as AccountBalance;
+  return 4 as AccountBalance;
 }
  
 // This will compile successfully.
@@ -69,8 +69,6 @@ type SpecialCacheKey = Tagged<Url, 'SpecialCacheKey'>;
 // You can also pass a union of tag names, so this is equivalent to the above, although it doesn't give you the ability to assign distinct metadata to each tag.
 type SpecialCacheKey2 = Tagged<string, 'URL' | 'SpecialCacheKey'>;
 ```
- 
-@category Type
  */
 export type Tagged<
   Type,
@@ -102,8 +100,6 @@ function parse<T extends JsonOf<unknown>>(it: T) {
 const x = stringify({ hello: 'world' });
 const parsed = parse(x); // The type of `parsed` is { hello: string }
 ```
- 
-@category Type
  */
 export type GetTagMetadata<
   Type extends Tag<TagName, unknown>,
@@ -125,8 +121,8 @@ import type {Tagged, UnwrapTagged} from 'type-fest';
 type AccountType = Tagged<'SAVINGS' | 'CHECKING', 'AccountType'>;
  
 const moneyByAccountType: Record<UnwrapTagged<AccountType>, number> = {
-	SAVINGS: 99,
-	CHECKING: 0.1
+  SAVINGS: 99,
+  CHECKING: 0.1
 };
  
 // Without UnwrapTagged, the following expression would throw a type error.
@@ -135,8 +131,6 @@ const money = moneyByAccountType.SAVINGS; // TS error: Property 'SAVINGS' does n
 // Attempting to pass an non-Tagged type to UnwrapTagged will raise a type error.
 type WontWork = UnwrapTagged<string>;
 ```
- 
-@category Type
  */
 export type UnwrapTagged<TaggedType extends Tag<PropertyKey, any>> =
   RemoveAllTags<TaggedType>;

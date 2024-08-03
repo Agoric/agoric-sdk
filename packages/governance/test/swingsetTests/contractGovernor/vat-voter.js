@@ -1,3 +1,4 @@
+import { q } from '@endo/errors';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 
@@ -9,8 +10,6 @@ import {
   assertBallotConcernsParam,
 } from '../../../src/index.js';
 import { MALLEABLE_NUMBER } from './governedContract.js';
-
-const { quote: q } = assert;
 
 const build = async (log, zoe) => {
   return Far('voter', {

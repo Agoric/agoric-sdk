@@ -2,9 +2,9 @@
 
 /// <reference types="@agoric/store/exported.js" />
 
+import { Fail } from '@endo/errors';
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
-import { Fail } from '@agoric/assert';
 import { toBytes } from './bytes.js';
 import { Shape } from './shapes.js';
 

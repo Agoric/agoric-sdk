@@ -20,9 +20,7 @@ test('excessive loan', async t => {
   const md = await makeManagerDriver(t);
 
   const threshold = 453n;
-  await t.notThrowsAsync(
-    md.makeVaultDriver(aeth.make(100n), run.make(threshold)),
-  );
+  await md.makeVaultDriver(aeth.make(100n), run.make(threshold));
 
   await t.throwsAsync(
     md.makeVaultDriver(aeth.make(100n), run.make(threshold + 1n)),

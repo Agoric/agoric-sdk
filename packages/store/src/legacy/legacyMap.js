@@ -1,7 +1,7 @@
 /** @import {LegacyMap, LegacyWeakMap} from '../types.js'; */
 
 // TODO, once migrated to endo, import from @endo/errors instead
-const { Fail, quote: q } = assert;
+import { Fail, q } from '@endo/errors';
 
 /**
  * This module and its fraternal sibling legacyWeakMap exist only to ease a

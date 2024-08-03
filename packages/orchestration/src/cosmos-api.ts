@@ -1,39 +1,34 @@
-import type { AnyJson } from '@agoric/cosmic-proto';
+import type { AnyJson, TypedJson } from '@agoric/cosmic-proto';
 import type {
   Delegation,
   Redelegation,
   UnbondingDelegation,
 } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/staking.js';
 import type { TxBody } from '@agoric/cosmic-proto/cosmos/tx/v1beta1/tx.js';
-import { MsgTransfer } from '@agoric/cosmic-proto/ibc/applications/transfer/v1/tx.js';
+import type { MsgTransfer } from '@agoric/cosmic-proto/ibc/applications/transfer/v1/tx.js';
 import type {
   State as IBCChannelState,
   Order,
 } from '@agoric/cosmic-proto/ibc/core/channel/v1/channel.js';
 import type { State as IBCConnectionState } from '@agoric/cosmic-proto/ibc/core/connection/v1/connection.js';
-import type { Brand, Purse } from '@agoric/ertp/src/types.js';
+import type { Brand, Purse, Payment, Amount } from '@agoric/ertp/src/types.js';
 import type { Port } from '@agoric/network';
-import { IBCChannelID, type IBCConnectionID } from '@agoric/vats';
+import type { IBCChannelID, IBCConnectionID } from '@agoric/vats';
+import type {
+  TargetApp,
+  TargetRegistration,
+} from '@agoric/vats/src/bridge-target.js';
 import type {
   LocalIbcAddress,
   RemoteIbcAddress,
 } from '@agoric/vats/tools/ibc-utils.js';
-import type { AmountArg, ChainAddress, DenomAmount } from './types.js';
-
-/** A helper type for type extensions. */
-export type TypeUrl = string;
-
-// TODO move into cosmic-proto
-export type Proto3JSONMsg = {
-  '@type': TypeUrl;
-  value: Record<string, unknown>;
-};
+import type { AmountArg, ChainAddress, Denom, DenomAmount } from './types.js';
 
 /** An address for a validator on some blockchain, e.g., cosmos, eth, etc. */
 export type CosmosValidatorAddress = ChainAddress & {
-  // TODO document why this is the format
-  address: `${string}valoper${string}`;
-  addressEncoding: 'bech32';
+  // infix for Validator Operator https://docs.cosmos.network/main/learn/beginner/accounts#addresses
+  value: `${string}valoper${string}`;
+  encoding: 'bech32';
 };
 
 /** Represents an IBC Connection between two chains, which can contain multiple Channels. */
@@ -58,6 +53,29 @@ export type IBCConnectionInfo = {
     version: string; // e.eg. 'ics20-1'
   };
 };
+
+/**
+ * https://github.com/cosmos/chain-registry/blob/master/assetlist.schema.json
+ */
+export type CosmosAssetInfo = {
+  base: Denom;
+  name: string;
+  display: string;
+  symbol: string;
+  denom_units: Array<{ denom: Denom; exponent: number }>;
+  traces?: Array<{
+    type: 'ibc';
+    counterparty: {
+      chain_name: string;
+      base_denom: Denom;
+      channel_id: IBCChannelID;
+    };
+    chain: {
+      channel_id: IBCChannelID;
+      path: string;
+    };
+  }>;
+} & Record<string, unknown>;
 
 /**
  * Info for a Cosmos-based chain.
@@ -183,7 +201,7 @@ export interface IcaAccount {
    * @param msgs - records for the transaction
    * @returns acknowledgement string
    */
-  executeTx: (msgs: Proto3JSONMsg[]) => Promise<string>;
+  executeTx: (msgs: TypedJson[]) => Promise<string>;
   /**
    * Submit a transaction on behalf of the remote account for execution on the remote chain.
    * @param msgs - records for the transaction
@@ -210,6 +228,24 @@ export interface IcaAccount {
 
 export type LiquidStakingMethods = {
   liquidStake: (amount: AmountArg) => Promise<void>;
+};
+
+export type LocalAccountMethods = {
+  /** deposit payment (from zoe, for example) to the account */
+  deposit: (payment: Payment<'nat'>) => Promise<void>;
+  /** withdraw a Payment from the account */
+  withdraw: (amount: Amount<'nat'>) => Promise<Payment<'nat'>>;
+  /**
+   * Register a handler that receives an event each time ICS-20 transfers are
+   * sent or received by the underlying account. Each account may be associated
+   * with at most one handler at a given time.
+   * Does not grant the handler the ability to intercept a transfer. For a
+   * blocking handler, aka 'IBC Hooks', leverage `registerActiveTap` from
+   * `transferMiddleware` directly.
+   *
+   * @param tap
+   */
+  monitorTransfers: (tap: TargetApp) => Promise<TargetRegistration>;
 };
 
 export type IBCMsgTransferOptions = {

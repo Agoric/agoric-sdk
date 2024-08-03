@@ -4,21 +4,22 @@
  * - must not have chain-specific types without runtime narrowing by chain id
  * - should remain relatively stable.
  */
-import type {
-  Amount,
-  Brand,
-  NatAmount,
-  Payment,
-} from '@agoric/ertp/src/types.js';
-import type { LocalChainAccount } from '@agoric/vats/src/localchain.js';
+import type { Amount, Brand, NatAmount } from '@agoric/ertp/src/types.js';
+import type { CurrentWalletRecord } from '@agoric/smart-wallet/src/smartWallet.js';
 import type { Timestamp } from '@agoric/time';
+import type { LocalChainAccount } from '@agoric/vats/src/localchain.js';
+import type { ResolvedPublicTopic } from '@agoric/zoe/src/contractSupport/topics.js';
+import type { Passable } from '@endo/marshal';
 import type {
+  AgoricChainMethods,
   ChainInfo,
   CosmosChainAccountMethods,
   CosmosChainInfo,
   IBCMsgTransferOptions,
   KnownChains,
+  LocalAccountMethods,
 } from './types.js';
+import type { ResolvedContinuingOfferResult } from './utils/zoe-tools.js';
 
 /**
  * A denom that designates a path to a token type on some blockchain.
@@ -58,13 +59,17 @@ export type AmountArg = DenomAmount | Amount;
 export type ChainAddress = {
   /** e.g. 1 for Ethereum, agoric-3 for Agoric, cosmoshub-4 for Cosmos */
   chainId: string;
-  address: string;
-  // TODO what's the right way to scope the address? it's not chainId
-  addressEncoding: 'bech32' | 'ethereum';
+  /** The address value used on-chain */
+  value: string;
+  encoding: 'bech32' | 'ethereum';
 };
 
 export type OrchestrationAccount<CI extends ChainInfo> = OrchestrationAccountI &
-  (CI extends CosmosChainInfo ? CosmosChainAccountMethods<CI> : never);
+  (CI extends CosmosChainInfo
+    ? CI['chainId'] extends `agoric${string}`
+      ? CosmosChainAccountMethods<CI> & LocalAccountMethods
+      : CosmosChainAccountMethods<CI>
+    : {});
 
 /**
  * An object for access the core functions of a remote chain.
@@ -92,7 +97,10 @@ export interface Chain<CI extends ChainInfo> {
 export interface Orchestrator {
   getChain: <C extends string>(
     chainName: C,
-  ) => Promise<Chain<C extends keyof KnownChains ? KnownChains[C] : any>>;
+  ) => Promise<
+    Chain<C extends keyof KnownChains ? KnownChains[C] : any> &
+      (C extends 'agoric' ? AgoricChainMethods : {})
+  >;
 
   makeLocalAccount: () => Promise<LocalChainAccount>;
   /**
@@ -172,11 +180,25 @@ export interface OrchestrationAccountI {
    * @returns void
    */
   transferSteps: (amount: AmountArg, msg: TransferMsg) => Promise<void>;
+
   /**
-   * deposit payment from zoe to the account. For remote accounts,
-   * an IBC Transfer will be executed to transfer funds there.
+   * Returns `invitationMakers` and `publicSubscribers` to the account
+   * holder's smart wallet so they can continue interacting with the account
+   * and read account state in vstorage if published.
    */
-  deposit: (payment: Payment<'nat'>) => Promise<void>;
+  asContinuingOffer: () => Promise<ResolvedContinuingOfferResult>;
+
+  /**
+   * Public topics are a map to different vstorage paths and subscribers that
+   * can be shared with on or offchain clients.
+   * When returned as part of a continuing invitation, it will appear
+   * in the {@link CurrentWalletRecord} in vstorage.
+   */
+  getPublicTopics: () => Promise<Record<string, ResolvedPublicTopic<unknown>>>;
+}
+
+export interface OrchestrationFlow<CT = unknown> {
+  (orc: Orchestrator, ctx: CT, ...args: Passable[]): Promise<unknown>;
 }
 
 /**

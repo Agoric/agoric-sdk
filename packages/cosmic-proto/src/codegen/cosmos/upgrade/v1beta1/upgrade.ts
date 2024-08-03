@@ -1,13 +1,11 @@
 //@ts-nocheck
-import { Timestamp } from '../../../google/protobuf/timestamp.js';
+import {
+  Timestamp,
+  TimestampSDKType,
+} from '../../../google/protobuf/timestamp.js';
 import { Any, AnySDKType } from '../../../google/protobuf/any.js';
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
-import {
-  toTimestamp,
-  fromTimestamp,
-  isSet,
-  fromJsonTimestamp,
-} from '../../../helpers.js';
+import { isSet, fromJsonTimestamp, fromTimestamp } from '../../../helpers.js';
 import { JsonSafe } from '../../../json-safe.js';
 /** Plan specifies information about a planned upgrade and when it should occur. */
 export interface Plan {
@@ -27,7 +25,7 @@ export interface Plan {
    * If this field is not empty, an error will be thrown.
    */
   /** @deprecated */
-  time: Date;
+  time: Timestamp;
   /**
    * The height at which the upgrade must be performed.
    * Only used if Time is not set.
@@ -54,7 +52,7 @@ export interface PlanProtoMsg {
 export interface PlanSDKType {
   name: string;
   /** @deprecated */
-  time: Date;
+  time: TimestampSDKType;
   height: bigint;
   info: string;
   /** @deprecated */
@@ -145,7 +143,7 @@ export interface ModuleVersionSDKType {
 function createBasePlan(): Plan {
   return {
     name: '',
-    time: new Date(),
+    time: Timestamp.fromPartial({}),
     height: BigInt(0),
     info: '',
     upgradedClientState: undefined,
@@ -161,10 +159,7 @@ export const Plan = {
       writer.uint32(10).string(message.name);
     }
     if (message.time !== undefined) {
-      Timestamp.encode(
-        toTimestamp(message.time),
-        writer.uint32(18).fork(),
-      ).ldelim();
+      Timestamp.encode(message.time, writer.uint32(18).fork()).ldelim();
     }
     if (message.height !== BigInt(0)) {
       writer.uint32(24).int64(message.height);
@@ -192,9 +187,7 @@ export const Plan = {
           message.name = reader.string();
           break;
         case 2:
-          message.time = fromTimestamp(
-            Timestamp.decode(reader, reader.uint32()),
-          );
+          message.time = Timestamp.decode(reader, reader.uint32());
           break;
         case 3:
           message.height = reader.int64();
@@ -228,7 +221,8 @@ export const Plan = {
   toJSON(message: Plan): JsonSafe<Plan> {
     const obj: any = {};
     message.name !== undefined && (obj.name = message.name);
-    message.time !== undefined && (obj.time = message.time.toISOString());
+    message.time !== undefined &&
+      (obj.time = fromTimestamp(message.time).toISOString());
     message.height !== undefined &&
       (obj.height = (message.height || BigInt(0)).toString());
     message.info !== undefined && (obj.info = message.info);
@@ -241,7 +235,10 @@ export const Plan = {
   fromPartial(object: Partial<Plan>): Plan {
     const message = createBasePlan();
     message.name = object.name ?? '';
-    message.time = object.time ?? undefined;
+    message.time =
+      object.time !== undefined && object.time !== null
+        ? Timestamp.fromPartial(object.time)
+        : undefined;
     message.height =
       object.height !== undefined && object.height !== null
         ? BigInt(object.height.toString())

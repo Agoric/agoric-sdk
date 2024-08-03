@@ -54,7 +54,12 @@ test('retry on disconnection', async t => {
     [2, 'disco', 'disco', 'sad'],
   ];
 
-  for await (const pattern of ['when', 'watch']) {
+  for await (const pattern of [
+    'when',
+    'when-with-handlers',
+    'watch',
+    'watch-with-handler',
+  ]) {
     t.log('testing', pattern);
     for await (const [final, ...plan] of PLANS) {
       t.log(`testing (plan=${plan}, ${pattern})`);
@@ -66,7 +71,7 @@ test('retry on disconnection', async t => {
 
       let resultP;
       switch (pattern) {
-        case 'watch': {
+        case 'watch-with-handler': {
           const resultW = watch(vow, {
             onFulfilled(value) {
               t.is(plan[final], 'happy');
@@ -83,8 +88,22 @@ test('retry on disconnection', async t => {
           resultP = when(resultW);
           break;
         }
+        case 'watch': {
+          const resultW = watch(vow);
+          t.is('then' in resultW, false, 'watch resultW.then is undefined');
+          resultP = when(resultW).catch(e => ['rejected', e]);
+          break;
+        }
         case 'when': {
           resultP = when(vow).catch(e => ['rejected', e]);
+          break;
+        }
+        case 'when-with-handlers': {
+          resultP = when(
+            vow,
+            v => v,
+            e => ['rejected', e],
+          );
           break;
         }
         default: {

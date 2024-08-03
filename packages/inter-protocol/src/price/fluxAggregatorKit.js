@@ -18,7 +18,10 @@ import { Far } from '@endo/marshal';
 import { prepareOracleAdminKit } from './priceOracleKit.js';
 import { prepareRoundsManagerKit } from './roundsManager.js';
 
-/** @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js'; */
+/**
+ * @import {TypedPattern} from '@agoric/internal';
+ * @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js';
+ */
 
 const trace = makeTracer('FlxAgg', true);
 
@@ -144,18 +147,14 @@ export const prepareFluxAggregatorKit = async (
     priceKit: () =>
       makeRecorderKit(
         storageNode,
-        /** @type {import('@agoric/zoe/src/contractSupport/recorder.js').TypedMatcher<PriceDescription>} */ (
-          M.any()
-        ),
+        /** @type {TypedPattern<PriceDescription>} */ (M.any()),
       ),
     latestRoundKit: () =>
       E.when(E(storageNode).makeChildNode('latestRound'), node =>
         makeRecorderKit(
           node,
           /**
-           * @type {import('@agoric/zoe/src/contractSupport/recorder.js').TypedMatcher<
-           *     import('./roundsManager.js').LatestRound
-           *   >}
+           * @type {TypedPattern<import('./roundsManager.js').LatestRound>}
            */ (M.any()),
         ),
       ),

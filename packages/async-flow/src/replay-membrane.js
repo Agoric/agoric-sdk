@@ -1,21 +1,13 @@
 /* eslint-disable no-use-before-define */
-import { Fail, X, b, makeError, q } from '@endo/errors';
-import {
-  Far,
-  Remotable,
-  getInterfaceOf,
-  getTag,
-  makeTagged,
-  passStyleOf,
-} from '@endo/pass-style';
-import { E } from '@endo/eventual-send';
-import { throwLabeled } from '@endo/common/throw-labeled.js';
-import { heapVowE } from '@agoric/vow/vat.js';
-import { getMethodNames } from '@endo/eventual-send/utils.js';
-import { objectMap } from '@endo/common/object-map.js';
 import { isVow } from '@agoric/vow/src/vow-utils.js';
-import { makeEquate } from './equate.js';
+import { heapVowE } from '@agoric/vow/vat.js';
+import { throwLabeled } from '@endo/common/throw-labeled.js';
+import { Fail, X, b, makeError, q } from '@endo/errors';
+import { E } from '@endo/eventual-send';
+import { getMethodNames } from '@endo/eventual-send/utils.js';
+import { Far, Remotable, getInterfaceOf } from '@endo/pass-style';
 import { makeConvertKit } from './convert.js';
+import { makeEquate } from './equate.js';
 
 /**
  * @import {PromiseKit} from '@endo/promise-kit'
@@ -43,7 +35,7 @@ export const makeReplayMembrane = ({
   watchWake,
   panic,
 }) => {
-  const { when, watch, makeVowKit } = vowTools;
+  const { when, makeVowKit } = vowTools;
 
   const equate = makeEquate(bijection);
 
@@ -137,63 +129,12 @@ export const makeReplayMembrane = ({
 
   // ///////////// Guest to Host or consume log ////////////////////////////////
 
-  /**
-   * The host is not supposed to expose host-side promises to the membrane,
-   * since they cannot be stored durably or survive upgrade. We cannot just
-   * automatically wrap any such host promises with host vows, because that
-   * would mask upgrade hazards if an upgrade happens before the vow settles.
-   * However, during the transition, the current host APIs called by
-   * orchestration still return many promises. We want to generate diagnostics
-   * when we encounter them, but for now, automatically convert them to
-   * host vow anyway, just so integration testing can proceed to reveal
-   * additional problems beyond these.
-   *
-   * @param {Passable} h
-   */
-  const tolerateHostPromiseToVow = h => {
-    const passStyle = passStyleOf(h);
-    switch (passStyle) {
-      case 'promise': {
-        const e = Error('where warning happened');
-        console.log('Warning for now: vow expected, not promise', h, e);
-        // TODO remove this stopgap. Here for now because host-side
-        // promises are everywhere!
-        // Note: A good place to set a breakpoint, or to uncomment the
-        // `debugger;` line, to work around bundling.
-        // debugger;
-        return watch(h);
-      }
-      case 'copyRecord': {
-        const o = /** @type {object} */ (h);
-        return objectMap(o, tolerateHostPromiseToVow);
-      }
-      case 'copyArray': {
-        const a = /** @type {Array} */ (h);
-        return harden(a.map(tolerateHostPromiseToVow));
-      }
-      case 'tagged': {
-        const t = /** @type {CopyTagged} */ (h);
-        if (isVow(t)) {
-          return h;
-        }
-        return makeTagged(getTag(t), tolerateHostPromiseToVow(t.payload));
-      }
-      default: {
-        return h;
-      }
-    }
-  };
-
   const performCall = (hostTarget, optVerb, hostArgs, callIndex) => {
     let hostResult;
     try {
       hostResult = optVerb
         ? hostTarget[optVerb](...hostArgs)
         : hostTarget(...hostArgs);
-      // This is a temporary kludge anyway. But note that it only
-      // catches the case where the promise is at the top of hostResult.
-      harden(hostResult);
-      hostResult = tolerateHostPromiseToVow(hostResult);
       // Try converting here just to route the error correctly
       hostToGuest(hostResult, `converting ${optVerb || 'host'} result`);
     } catch (hostProblem) {
@@ -285,7 +226,7 @@ export const makeReplayMembrane = ({
     try {
       optVerb
         ? heapVowE.sendOnly(hostTarget)[optVerb](...hostArgs)
-        : // eslint-disable-next-line @typescript-eslint/prefer-ts-expect-error
+        : // eslint-disable-next-line @typescript-eslint/ban-ts-comment
           // @ts-ignore once we changed this from E to heapVowE,
           // typescript started complaining that heapVowE(hostTarget)
           // is not callable. I'm not sure if this is a just a typing bug
@@ -320,7 +261,7 @@ export const makeReplayMembrane = ({
     try {
       const hostPromise = optVerb
         ? heapVowE(hostTarget)[optVerb](...hostArgs)
-        : // eslint-disable-next-line @typescript-eslint/prefer-ts-expect-error
+        : // eslint-disable-next-line @typescript-eslint/ban-ts-comment
           // @ts-ignore once we changed this from E to heapVowE,
           // typescript started complaining that heapVowE(hostTarget)
           // is not callable. I'm not sure if this is a just a typing bug
@@ -575,7 +516,6 @@ export const makeReplayMembrane = ({
    * @returns {Promise}
    */
   const makeGuestForHostVow = (hVow, promiseKey = undefined) => {
-    hVow = tolerateHostPromiseToVow(hVow);
     isVow(hVow) || Fail`vow expected ${hVow}`;
     const { promise, resolve, reject } = makeGuestPromiseKit();
     promiseKey ??= promise;

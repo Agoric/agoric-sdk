@@ -1,6 +1,8 @@
 name: Protobuf
-# Protobuf runs buf (https://buf.build/) lint and check-breakage
-# This workflow is only run when a .proto file has been changed
+# Protobuf runs protobuf related CI checks:
+# - buf (https://buf.build/) lint
+# - buf check-breakage
+# - check protobuf definitions are up-to-date
 on:
   pull_request:
   merge_group:
@@ -9,6 +11,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # This job is only run when a .proto file has been changed
   lint:
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -25,6 +28,7 @@ jobs:
         run: make proto-lint
         working-directory: golang/cosmos
         if: env.GIT_DIFF
+  # This job is only run when a .proto file has been changed
   breakage:
     runs-on: ubuntu-latest
     steps:
@@ -40,3 +44,23 @@ jobs:
         run: make proto-check-breaking PR_TARGET_REPO=https://github.com/${{ github.repository }}.git PR_TARGET_BRANCH=${{ github.base_ref }}
         working-directory: golang/cosmos
         if: env.GIT_DIFF
+  up-to-date:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: 'true'
+      - uses: ./.github/actions/restore-golang
+        with:
+          go-version: '1.20'
+      - name: check protobuf definitions are up-to-date
+        run: |
+          cd packages/cosmic-proto
+          ./update-protos.sh
+          out=$(git status --porcelain)
+          test -n "$out" || exit 0
+          echo "Unexpected git status output:"
+          echo "$out"
+          echo "Please run (cd packages/cosmic-proto && ./update-protos.sh)"
+          echo "and commit the result."
+          exit 1
