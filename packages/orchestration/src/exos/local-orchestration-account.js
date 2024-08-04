@@ -17,10 +17,8 @@ import {
 import { maxClockSkew } from '../utils/cosmos.js';
 import { orchestrationAccountMethods } from '../utils/orchestrationAccount.js';
 import { makeTimestampHelper } from '../utils/time.js';
-import {
-  preparePacketTools,
-  ICS20_TRANSFER_SUCCESS_RESULT,
-} from './packet-tools.js';
+import { preparePacketTools } from './packet-tools.js';
+import { prepareIBCTools } from './ibc-packet.js';
 
 /**
  * @import {HostOf} from '@agoric/async-flow';
@@ -67,7 +65,7 @@ const HolderI = M.interface('holder', {
   deposit: M.call(PaymentShape).returns(VowShape),
   withdraw: M.call(AmountShape).returns(Vow$(PaymentShape)),
   executeTx: M.call(M.arrayOf(M.record())).returns(Vow$(M.record())),
-  waitForIBCAck: M.call(EVow$(M.remotable('PacketSender')))
+  sendThenWaitForAck: M.call(EVow$(M.remotable('PacketSender')))
     .optional(M.any())
     .returns(EVow$(M.string())),
   matchFirstPacket: M.call(M.any()).returns(EVow$(M.any())),
@@ -96,7 +94,11 @@ export const prepareLocalOrchestrationAccountKit = (
   chainHub,
 ) => {
   const { watch, allVows, asVow, when } = vowTools;
-  const { makeTransferSender, makePacketTools } = preparePacketTools(
+  const { makeIBCTransferSender } = prepareIBCTools(
+    zone.subZone('ibcTools'),
+    vowTools,
+  );
+  const makePacketTools = preparePacketTools(
     zone.subZone('packetTools'),
     vowTools,
   );
@@ -133,16 +135,13 @@ export const prepareLocalOrchestrationAccountKit = (
           .optional(M.arrayOf(M.undefined()))
           .returns(M.any()),
       }),
-      returnVoidWatcher: M.interface('transferResponseWatcher', {
-        onFulfilled: M.call(M.any()).returns(M.undefined()),
+      returnVoidWatcher: M.interface('returnVoidWatcher', {
+        onFulfilled: M.call(M.any()).optional(M.any()).returns(M.undefined()),
       }),
       getBalanceWatcher: M.interface('getBalanceWatcher', {
         onFulfilled: M.call(AmountShape)
           .optional(DenomShape)
           .returns(DenomAmountShape),
-      }),
-      verifyTransferSuccess: M.interface('verifyTransferSuccess', {
-        onFulfilled: M.call(M.any()).returns(),
       }),
       invitationMakers: M.interface('invitationMakers', {
         Delegate: M.call(M.string(), AmountShape).returns(M.promise()),
@@ -267,14 +266,15 @@ export const prepareLocalOrchestrationAccountKit = (
             },
           );
 
-          // Begin capturing packets, send the transfer packet, then return a
-          // vow for the acknowledgement data.
           const { holder } = this.facets;
-          const sender = makeTransferSender(
+          const sender = makeIBCTransferSender(
             /** @type {any} */ (holder),
             transferMsg,
           );
-          return holder.waitForIBCAck(sender);
+          // Begin capturing packets, send the transfer packet, then return a
+          // vow that rejects unless the packet acknowledgment comes back and is
+          // verified.
+          return holder.sendThenWaitForAck(sender);
         },
       },
       /**
@@ -310,27 +310,7 @@ export const prepareLocalOrchestrationAccountKit = (
           return harden({ denom, value: natAmount.value });
         },
       },
-      verifyTransferSuccess: {
-        onFulfilled(ackData) {
-          const { result, error } = JSON.parse(ackData);
-          error === undefined || Fail`ICS20-1 transfer error ${error}`;
-          result === ICS20_TRANSFER_SUCCESS_RESULT ||
-            Fail`ICS20-1 transfer unsuccessful with ack result ${result}`;
-        },
-      },
       holder: {
-        /** @type {HostOf<PacketTools['waitForIBCAck']>} */
-        waitForIBCAck(sender, opts) {
-          return watch(E(this.state.packetTools).waitForIBCAck(sender, opts));
-        },
-        /** @type {HostOf<PacketTools['matchFirstPacket']>} */
-        matchFirstPacket(patternV) {
-          return watch(E(this.state.packetTools).matchFirstPacket(patternV));
-        },
-        /** @type {HostOf<LocalChainAccount['monitorTransfers']>} */
-        monitorTransfers(tap) {
-          return watch(E(this.state.packetTools).monitorTransfers(tap));
-        },
         /** @type {HostOf<OrchestrationAccountI['asContinuingOffer']>} */
         asContinuingOffer() {
           // @ts-expect-error XXX invitationMakers
@@ -482,7 +462,7 @@ export const prepareLocalOrchestrationAccountKit = (
          * @param {IBCMsgTransferOptions} [opts] if either timeoutHeight or
          *   timeoutTimestamp are not supplied, a default timeoutTimestamp will
          *   be set for 5 minutes in the future
-         * @returns {Vow<void>}
+         * @returns {Vow<any>}
          */
         transfer(amount, destination, opts) {
           return asVow(() => {
@@ -504,13 +484,14 @@ export const prepareLocalOrchestrationAccountKit = (
                 ? 0n
                 : E(timestampHelper).getTimeoutTimestampNS());
 
-            // vow for the message response
-            const transferV = watch(
+            // don't resolve the vow until the transfer is confirmed on remote
+            // and reject vow if the transfer fails for any reason
+            const resultV = watch(
               allVows([connectionInfoV, timeoutTimestampVowOrValue]),
               this.facets.transferWatcher,
               { opts, amount, destination },
             );
-            return watch(transferV, this.facets.verifyTransferSuccess);
+            return resultV;
           });
         },
         /** @type {HostOf<OrchestrationAccountI['transferSteps']>} */
@@ -519,6 +500,20 @@ export const prepareLocalOrchestrationAccountKit = (
             console.log('transferSteps got', amount, msg);
             throw Fail`not yet implemented`;
           });
+        },
+        /** @type {HostOf<PacketTools['sendThenWaitForAck']>} */
+        sendThenWaitForAck(sender, opts) {
+          return watch(
+            E(this.state.packetTools).sendThenWaitForAck(sender, opts),
+          );
+        },
+        /** @type {HostOf<PacketTools['matchFirstPacket']>} */
+        matchFirstPacket(patternV) {
+          return watch(E(this.state.packetTools).matchFirstPacket(patternV));
+        },
+        /** @type {HostOf<LocalChainAccount['monitorTransfers']>} */
+        monitorTransfers(tap) {
+          return watch(E(this.state.packetTools).monitorTransfers(tap));
         },
       },
     },

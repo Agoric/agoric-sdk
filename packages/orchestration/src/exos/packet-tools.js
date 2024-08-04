@@ -1,16 +1,8 @@
-import { assertAllDefined } from '@agoric/internal';
 import { makeMarshal, decodeToJustin } from '@endo/marshal';
-import {
-  base64ToBytes,
-  byteSourceToBase64,
-  Shape as NetworkShape,
-} from '@agoric/network';
+import { Shape as NetworkShape } from '@agoric/network';
 import { M, matches } from '@endo/patterns';
 import { E } from '@endo/far';
 import { pickFacet } from '@agoric/vat-data';
-
-// As specified in ICS20, the success result is a base64-encoded '\0x1' byte.
-export const ICS20_TRANSFER_SUCCESS_RESULT = 'AQ==';
 
 const { toCapData } = makeMarshal(undefined, undefined, {
   marshalName: 'JustEncoder',
@@ -22,9 +14,8 @@ const just = obj => {
 };
 
 /**
- * @import {Bytes} from '@agoric/network';
+ * @import {Pattern} from '@endo/patterns';
  * @import {EVow, Remote, Vow, VowResolver, VowTools} from '@agoric/vow';
- * @import {JsonSafe, TypedJson, ResponseTo} from '@agoric/cosmic-proto';
  * @import {LocalChainAccount} from '@agoric/vats/src/localchain.js';
  * @import {TargetApp, TargetRegistration} from '@agoric/vats/src/bridge-target.js';
  */
@@ -37,7 +28,9 @@ const just = obj => {
 
 /**
  * @typedef {object} PacketSender
- * @property {(opts: PacketOptions) => Vow<Pattern>} sendPacket
+ * @property {(
+ *   opts: PacketOptions,
+ * ) => Vow<{ eventPattern: Pattern; resultV: Vow<any> }>} sendPacket
  */
 
 /**
@@ -53,7 +46,6 @@ const just = obj => {
  * >} PacketTimeout
  */
 
-const { Fail, bare } = assert;
 const { Vow$ } = NetworkShape; // TODO #9611
 
 const EVow$ = shape => M.or(Vow$(shape), M.promise(/* shape */));
@@ -62,126 +54,19 @@ const sink = () => {};
 harden(sink);
 
 /**
- * Create a pattern for alterative representations of a sequence number.
- *
- * @param {any} sequence
- * @returns {import('@endo/patterns').Pattern}
- */
-const createSequencePattern = sequence => {
-  const sequencePatterns = [];
-
-  try {
-    const bintSequence = BigInt(sequence);
-    bintSequence > 0n && sequencePatterns.push(bintSequence);
-  } catch (e) {
-    // ignore
-  }
-
-  const numSequence = Number(sequence);
-  numSequence > 0 &&
-    Number.isSafeInteger(numSequence) &&
-    sequencePatterns.push(numSequence);
-
-  const strSequence = String(sequence);
-  strSequence && sequencePatterns.push(strSequence);
-
-  if (!sequencePatterns.find(seq => seq === sequence)) {
-    sequencePatterns.push(sequence);
-  }
-
-  switch (sequencePatterns.length) {
-    case 0:
-      throw Fail`sequence ${sequence} is not valid`;
-    case 1:
-      return sequencePatterns[0];
-    default:
-      return M.or(...sequencePatterns);
-  }
-};
-harden(createSequencePattern);
-
-/**
- * @param {import('@agoric/base-zone').Zone} zone
- * @param {VowTools} vowTools
- */
-export const prepareTransferSender = (zone, { watch }) => {
-  const makeTransferSenderKit = zone.exoClassKit(
-    'TransferSenderKit',
-    {
-      public: M.interface('TransferSender', {
-        sendPacket: M.call(M.any()).returns(Vow$(M.record())),
-      }),
-      responseWatcher: M.interface('responseWatcher', {
-        onFulfilled: M.call([M.record()]).returns(M.any()),
-      }),
-    },
-    /**
-     * @param {{
-     *   executeTx: LocalChainAccount['executeTx'];
-     * }} txExecutor
-     * @param {TypedJson<'/ibc.applications.transfer.v1.MsgTransfer'>} transferMsg
-     */
-    (txExecutor, transferMsg) => ({
-      txExecutor,
-      transferMsg: harden(transferMsg),
-    }),
-    {
-      public: {
-        sendPacket() {
-          const { txExecutor, transferMsg } = this.state;
-          return watch(
-            E(txExecutor).executeTx([transferMsg]),
-            this.facets.responseWatcher,
-          );
-        },
-      },
-      responseWatcher: {
-        /**
-         * Wait for successfully sending the transfer packet.
-         *
-         * @param {[
-         *   JsonSafe<
-         *     ResponseTo<
-         *       TypedJson<'/ibc.applications.transfer.v1.MsgTransfer'>
-         *     >
-         *   >,
-         * ]} response
-         */
-        onFulfilled([{ sequence }]) {
-          const { transferMsg } = this.state;
-
-          // Match the port/channel and sequence number.
-          return M.splitRecord({
-            source_port: transferMsg.sourcePort,
-            source_channel: transferMsg.sourceChannel,
-            sequence: createSequencePattern(sequence),
-          });
-        },
-      },
-    },
-  );
-
-  /**
-   * @param {Parameters<typeof makeTransferSenderKit>} args
-   */
-  return (...args) => makeTransferSenderKit(...args).public;
-};
-harden(prepareTransferSender);
-
-/**
  * @param {import('@agoric/base-zone').Zone} zone
  * @param {VowTools} vowTools
  */
 export const preparePacketTools = (zone, vowTools) => {
   const { allVows, makeVowKit, watch, when } = vowTools;
-  const makeTransferSender = prepareTransferSender(zone, vowTools);
+
   const makePacketToolsKit = zone.exoClassKit(
     'PacketToolsKit',
     {
       public: M.interface('PacketTools', {
-        waitForIBCAck: M.call(EVow$(M.remotable('PacketSender')))
+        sendThenWaitForAck: M.call(EVow$(M.remotable('PacketSender')))
           .optional(M.any())
-          .returns(EVow$(M.string())),
+          .returns(EVow$(M.any())),
         matchFirstPacket: M.call(M.any()).returns(EVow$(M.any())),
         monitorTransfers: M.call(M.remotable('TargetApp')).returns(
           EVow$(M.any()),
@@ -216,20 +101,17 @@ export const preparePacketTools = (zone, vowTools) => {
           M.record(),
         ).returns(M.any()),
       }),
+      packetWasSentWatcher: M.interface('packetWasSentWatcher', {
+        onFulfilled: M.call(
+          { eventPattern: M.pattern(), resultV: Vow$(M.any()) },
+          M.record(),
+        ).returns(M.any()),
+      }),
       utils: M.interface('utils', {
         subscribeToTransfers: M.call().returns(M.promise()),
         unsubscribeFromTransfers: M.call().returns(M.promise()),
         incrPendingPatterns: M.call().returns(Vow$(M.undefined())),
         decrPendingPatterns: M.call().returns(Vow$(M.undefined())),
-      }),
-      packetWasSentWatcher: M.interface('packetWasSentWatcher', {
-        onFulfilled: M.call(M.pattern(), M.record()).returns(M.any()),
-      }),
-      processIBCReplyWatcher: M.interface('processIBCReplyWatcher', {
-        onFulfilled: M.call(M.record(), M.record()).returns(Vow$(M.string())),
-      }),
-      subscribeToPatternWatcher: M.interface('subscribeToPatternWatcher', {
-        onFulfilled: M.call(M.pattern()).returns(Vow$(M.any())),
       }),
       rejectResolverAndRethrowWatcher: M.interface('rejectResolverWatcher', {
         onRejected: M.call(M.any(), {
@@ -278,11 +160,9 @@ export const preparePacketTools = (zone, vowTools) => {
         /**
          * @param {Remote<PacketSender>} packetSender
          * @param {PacketOptions} [opts]
-         * @returns {Vow<Bytes>}
+         * @returns {Vow<any>}
          */
-        waitForIBCAck(packetSender, opts) {
-          const { opName = 'Unknown' } = opts || {};
-
+        sendThenWaitForAck(packetSender, opts = {}) {
           /** @type {import('@agoric/vow').VowKit<Pattern>} */
           const pattern = makeVowKit();
 
@@ -294,22 +174,19 @@ export const preparePacketTools = (zone, vowTools) => {
               packetSender,
             ]),
             this.facets.sendPacketWatcher,
-            { opts, patternResolver: pattern.resolver },
+            { opts },
           );
 
-          // If the pattern is fulfilled, process it.
-          const processedV = watch(matchV, this.facets.processIBCReplyWatcher, {
-            opName,
+          // When the packet is sent, resolve the resultV for the reply.
+          const resultV = watch(matchV, this.facets.packetWasSentWatcher, {
+            opts,
+            patternResolver: pattern.resolver,
           });
 
           // If anything fails, try to reject the packet sender.
-          return watch(
-            processedV,
-            this.facets.rejectResolverAndRethrowWatcher,
-            {
-              resolver: pattern.resolver,
-            },
-          );
+          return watch(resultV, this.facets.rejectResolverAndRethrowWatcher, {
+            resolver: pattern.resolver,
+          });
         },
       },
       monitorRegistration: {
@@ -359,58 +236,14 @@ export const preparePacketTools = (zone, vowTools) => {
       },
       sendPacketWatcher: {
         onFulfilled([{ match }, sender], ctx) {
-          return watch(
-            E(sender).sendPacket(ctx.opts),
-            this.facets.packetWasSentWatcher,
-            {
-              ...ctx,
-              match,
-            },
-          );
+          return watch(E(sender).sendPacket(match, ctx.opts));
         },
       },
       packetWasSentWatcher: {
-        onFulfilled(packetPattern, ctx) {
-          const { patternResolver, match } = ctx;
-          // Match an acknowledgement or timeout packet.
-          const ackOrTimeoutPacket = M.or(
-            M.splitRecord({
-              event: 'acknowledgementPacket',
-              packet: packetPattern,
-              acknowledgement: M.string(),
-            }),
-            M.splitRecord({
-              event: 'timeoutPacket',
-              packet: packetPattern,
-            }),
-          );
-          patternResolver.resolve(ackOrTimeoutPacket);
-          return match;
-        },
-      },
-      subscribeToPatternWatcher: {
-        onFulfilled(_pattern) {
-          // FIXME: Implement this!
-          return watch({
-            type: 'VTRANSFER_IBC_EVENT',
-            event: 'acknowledgementPacket',
-            acknowledgement: byteSourceToBase64(
-              JSON.stringify({ result: 'AQ==' }),
-            ),
-          });
-        },
-      },
-      processIBCReplyWatcher: {
-        onFulfilled({ event, acknowledgement }, { opName }) {
-          assertAllDefined({ event, acknowledgement });
-          switch (event) {
-            case 'acknowledgementPacket':
-              return base64ToBytes(acknowledgement);
-            case 'timeoutPacket':
-              throw Fail`${bare(opName)} operation received timeout packet`;
-            default:
-              throw Fail`Unexpected event: ${event}`;
-          }
+        onFulfilled({ eventPattern, resultV }, ctx) {
+          const { patternResolver } = ctx;
+          patternResolver.resolve(eventPattern);
+          return resultV;
         },
       },
       rejectResolverAndRethrowWatcher: {
@@ -530,13 +363,10 @@ export const preparePacketTools = (zone, vowTools) => {
   );
 
   const makePacketTools = pickFacet(makePacketToolsKit, 'public');
-
-  return harden({ makePacketTools, makeTransferSender });
+  return makePacketTools;
 };
 harden(preparePacketTools);
 
 /**
- * @typedef {Awaited<
- *   ReturnType<ReturnType<typeof preparePacketTools>['makePacketTools']>
- * >} PacketTools
+ * @typedef {Awaited<ReturnType<ReturnType<typeof preparePacketTools>>>} PacketTools
  */
