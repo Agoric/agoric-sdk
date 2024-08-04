@@ -167,7 +167,10 @@ test('transfer', async t => {
   );
 
   const transferRes = await transferP;
-  t.is(transferRes, undefined, 'Successful transfer returns Promise<void>.');
+  t.true(
+    transferRes === undefined,
+    'Successful transfer returns Promise<void>.',
+  );
 
   await t.throwsAsync(
     // XXX the bridge fakes the timeout response automatically for 504n
