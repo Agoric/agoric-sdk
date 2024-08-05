@@ -16,6 +16,17 @@ import { DenomDetailShape } from './chain-hub.js';
  * developers to add new chain configurations to a local chainHub, in the event
  * the information is not available widely in `agoricNames`.
  *
+ * @example
+ *
+ * ```js
+ * const chainHubAdmin = prepareChainHubAdmin(zone, chainHub);
+ * chainHubAdmin.initChain(
+ *   'hotNewChain',
+ *   hotNewChainInfo,
+ *   agoricTohotNewChainConnectionInfo,
+ * );
+ * ```
+ *
  * @param {Zone} zone
  * @param {ChainHub} chainHub
  */
