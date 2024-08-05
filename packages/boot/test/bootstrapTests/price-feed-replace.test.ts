@@ -27,6 +27,13 @@ test.after.always(t => t.context.shutdown());
 const collateralBrandKey = 'ATOM';
 const managerIndex = 0;
 
+// TODO: read from config file? sync with liquidation.ts
+const ORACLE_ADDRESSES = [
+  'agoric1ldmtatp24qlllgxmrsjzcpe20fvlkp448zcuce',
+  'agoric140dmkrz2e42ergjj7gyvejhzmjzurvqeq82ang',
+  'agoric1w8wktaur4zf8qmmtn3n7x3r0jhsjkjntcm3u6h',
+];
+
 const setup: LiquidationSetup = {
   vaults: [{ atom: 15, ist: 100, debt: 100.5 }],
   bids: [{ give: '20IST', discount: 0.1 }],
@@ -63,24 +70,28 @@ test.serial('run replace-price-feeds proposals', async t => {
     refreshAgoricNamesRemotes,
   } = t.context;
 
-  const perFeedBuilders = [
-    // close enough to @agoric/builders/scripts/vats/priceFeedSupport.js"
-    '@agoric/builders/scripts/vats/updateAtomPriceFeed.js',
-  ];
+  const instancePre = agoricNamesRemotes.instance['ATOM-USD price feed'];
 
-  const builders = [
-    ...perFeedBuilders,
+  const perFeedBuilder = '@agoric/builders/scripts/vats/priceFeedSupport.js';
+  t.log('building', perFeedBuilder);
+  const brandName = collateralBrandKey;
+  const opts = {
+    AGORIC_INSTANCE_NAME: `${brandName}-USD price feed`,
+    ORACLE_ADDRESSES,
+    IN_BRAND_LOOKUP: ['agoricNames', 'oracleBrand', brandName],
+    IN_BRAND_DECIMALS: 6,
+    OUT_BRAND_LOOKUP: ['agoricNames', 'oracleBrand', 'USD'],
+    OUT_BRAND_DECIMALS: 4,
+  };
+  await evalProposal(buildProposal(perFeedBuilder, opts));
+
+  for (const builder of [
     '@agoric/builders/scripts/vats/replaceScaledPriceAuthorities.js',
     '@agoric/builders/scripts/vats/add-auction.js',
     '@agoric/builders/scripts/vats/upgradeVaults.js',
-  ];
-
-  const instancePre = agoricNamesRemotes.instance['ATOM-USD price feed'];
-  await null;
-  for (const builder of builders) {
+  ]) {
     t.log('building', builder);
-    const p = buildProposal(builder);
-    await evalProposal(p);
+    await evalProposal(buildProposal(builder));
   }
   refreshAgoricNamesRemotes();
   const instancePost = agoricNamesRemotes.instance['ATOM-USD price feed'];

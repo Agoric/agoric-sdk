@@ -1,5 +1,6 @@
 /* global process */
 
+import { makeHelpers } from '@agoric/deploy-script-support';
 import { DEFAULT_CONTRACT_TERMS } from '../inter-protocol/price-feed-core.js';
 
 const { Fail } = assert;
@@ -88,3 +89,17 @@ export const deprecatedPriceFeedProposalBuilder = async (powers, options) => {
  * @type {import('@agoric/deploy-script-support/src/externalTypes.js').CoreEvalBuilder}
  */
 export const priceFeedProposalBuilder = deprecatedPriceFeedProposalBuilder;
+
+export default async (homeP, endowments) => {
+  const { writeCoreEval } = await makeHelpers(homeP, endowments);
+
+  const { scriptArgs } = endowments;
+  if (scriptArgs.length !== 1) throw RangeError('arg 0 must be JSON opts');
+  console.log('@@@@', { scriptArgs });
+  const opts = JSON.parse(scriptArgs[0]);
+  console.log('@@@@', { scriptArgs, opts });
+
+  await writeCoreEval('atomPriceFeed', powers =>
+    strictPriceFeedProposalBuilder(powers, opts),
+  );
+};
