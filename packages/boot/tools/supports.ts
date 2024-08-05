@@ -382,130 +382,134 @@ export const makeSwingsetTestKit = async (
     switch (bridgeId) {
       case BridgeId.BANK: {
         trace(
-          'bridgeOutbound BANK',
+          'bridgeOutbound bank',
           obj.type,
           obj.recipient,
           obj.amount,
           obj.denom,
         );
+        break;
+      }
+      case BridgeId.STORAGE:
+        return storage.toStorage(obj);
+      case BridgeId.PROVISION:
+      case BridgeId.PROVISION_SMART_WALLET:
+      case BridgeId.WALLET:
+        console.warn('Bridge returning undefined for', bridgeId, ':', obj);
+        return undefined;
+      default:
+        break;
+    }
+
+    const bridgeTargetRegistered = new Set();
+    const bridgeType = `${bridgeId}:${obj.type}`;
+    switch (bridgeType) {
+      case `${BridgeId.BANK}:VBANK_GET_MODULE_ACCOUNT_ADDRESS`: {
         // bridgeOutbound bank : {
         //   moduleName: 'vbank/reserve',
         //   type: 'VBANK_GET_MODULE_ACCOUNT_ADDRESS'
         // }
-        switch (obj.type) {
-          case 'VBANK_GET_MODULE_ACCOUNT_ADDRESS': {
-            const { moduleName } = obj;
-            const moduleDescriptor = Object.values(VBankAccount).find(
-              ({ module }) => module === moduleName,
-            );
-            if (!moduleDescriptor) {
-              return 'undefined';
-            }
-            return moduleDescriptor.address;
-          }
-
-          // Observed message:
-          // address: 'agoric1megzytg65cyrgzs6fvzxgrcqvwwl7ugpt62346',
-          // denom: 'ibc/toyatom',
-          // type: 'VBANK_GET_BALANCE'
-          case 'VBANK_GET_BALANCE': {
-            // TODO consider letting config specify vbank assets
-            // empty balances for test.
-            return '0';
-          }
-
-          case 'VBANK_GRAB':
-          case 'VBANK_GIVE': {
-            lastNonce += 1n;
-            // Also empty balances.
-            return harden({
-              type: 'VBANK_BALANCE_UPDATE',
-              nonce: `${lastNonce}`,
-              updated: [],
-            });
-          }
-
-          default: {
-            return 'undefined';
-          }
+        const { moduleName } = obj;
+        const moduleDescriptor = Object.values(VBankAccount).find(
+          ({ module }) => module === moduleName,
+        );
+        if (!moduleDescriptor) {
+          return 'undefined';
         }
+        return moduleDescriptor.address;
       }
-      case BridgeId.CORE:
-      case BridgeId.DIBC:
-        switch (obj.type) {
-          case 'IBC_METHOD':
-            switch (obj.method) {
-              case 'startChannelOpenInit':
-                pushInbound(BridgeId.DIBC, icaMocks.channelOpenAck(obj));
-                return undefined;
-              case 'sendPacket':
-                switch (obj.packet.data) {
-                  case protoMsgMocks.delegate.msg: {
-                    return ackLater(obj, protoMsgMocks.delegate.ack);
-                  }
-                  case protoMsgMocks.delegateWithOpts.msg: {
-                    return ackLater(obj, protoMsgMocks.delegateWithOpts.ack);
-                  }
-                  case protoMsgMocks.queryBalance.msg: {
-                    return ackLater(obj, protoMsgMocks.queryBalance.ack);
-                  }
-                  case protoMsgMocks.queryUnknownPath.msg: {
-                    return ackLater(obj, protoMsgMocks.queryUnknownPath.ack);
-                  }
-                  case protoMsgMocks.queryBalanceMulti.msg: {
-                    return ackLater(obj, protoMsgMocks.queryBalanceMulti.ack);
-                  }
-                  case protoMsgMocks.queryBalanceUnknownDenom.msg: {
-                    return ackLater(
-                      obj,
-                      protoMsgMocks.queryBalanceUnknownDenom.ack,
-                    );
-                  }
-                  default: {
-                    // An error that would be triggered before reception on another chain
-                    return ackImmediately(obj, protoMsgMocks.error.ack);
-                  }
-                }
-              default:
-                return undefined;
+
+      // Observed message:
+      // address: 'agoric1megzytg65cyrgzs6fvzxgrcqvwwl7ugpt62346',
+      // denom: 'ibc/toyatom',
+      // type: 'VBANK_GET_BALANCE'
+      case `${BridgeId.BANK}:VBANK_GET_BALANCE`: {
+        // TODO consider letting config specify vbank assets
+        // empty balances for test.
+        return '0';
+      }
+
+      case `${BridgeId.BANK}:VBANK_GRAB`:
+      case `${BridgeId.BANK}:VBANK_GIVE`: {
+        lastNonce += 1n;
+        // Also empty balances.
+        return harden({
+          type: 'VBANK_BALANCE_UPDATE',
+          nonce: `${lastNonce}`,
+          updated: [],
+        });
+      }
+
+      case `${BridgeId.CORE}:IBC_METHOD`:
+      case `${BridgeId.DIBC}:IBC_METHOD`:
+      case `${BridgeId.VTRANSFER}:IBC_METHOD`: {
+        switch (obj.method) {
+          case 'startChannelOpenInit':
+            pushInbound(BridgeId.DIBC, icaMocks.channelOpenAck(obj));
+            return undefined;
+          case 'sendPacket':
+            switch (obj.packet.data) {
+              case protoMsgMocks.delegate.msg: {
+                return ackLater(obj, protoMsgMocks.delegate.ack);
+              }
+              case protoMsgMocks.delegateWithOpts.msg: {
+                return ackLater(obj, protoMsgMocks.delegateWithOpts.ack);
+              }
+              case protoMsgMocks.queryBalance.msg: {
+                return ackLater(obj, protoMsgMocks.queryBalance.ack);
+              }
+              case protoMsgMocks.queryUnknownPath.msg: {
+                return ackLater(obj, protoMsgMocks.queryUnknownPath.ack);
+              }
+              case protoMsgMocks.queryBalanceMulti.msg: {
+                return ackLater(obj, protoMsgMocks.queryBalanceMulti.ack);
+              }
+              case protoMsgMocks.queryBalanceUnknownDenom.msg: {
+                return ackLater(
+                  obj,
+                  protoMsgMocks.queryBalanceUnknownDenom.ack,
+                );
+              }
+              default: {
+                // An error that would be triggered before reception on another chain
+                return ackImmediately(obj, protoMsgMocks.error.ack);
+              }
             }
           default:
             return undefined;
         }
-      case BridgeId.PROVISION:
-      case BridgeId.PROVISION_SMART_WALLET:
-      case BridgeId.VTRANSFER:
-      case BridgeId.WALLET:
-        console.warn('Bridge returning undefined for', bridgeId, ':', obj);
+      }
+      case `${BridgeId.VTRANSFER}:BRIDGE_TARGET_REGISTER`: {
+        bridgeTargetRegistered.add(obj.target);
         return undefined;
-      case BridgeId.STORAGE:
-        return storage.toStorage(obj);
-      case BridgeId.VLOCALCHAIN:
-        switch (obj.type) {
-          case 'VLOCALCHAIN_ALLOCATE_ADDRESS':
-            return 'agoric1mockVlocalchainAddress';
-          case 'VLOCALCHAIN_EXECUTE_TX': {
-            return obj.messages.map(message => {
-              switch (message['@type']) {
-                case '/cosmos.staking.v1beta1.MsgDelegate': {
-                  if (message.amount.amount === '504') {
-                    // FIXME - how can we propagate the error?
-                    // this results in `syscall.callNow failed: device.invoke failed, see logs for details`
-                    throw Error('simulated packet timeout');
-                  }
-                  return {} as JsonSafe<MsgDelegateResponse>;
-                }
-                // returns one empty object per message unless specified
-                default:
-                  return {};
+      }
+      case `${BridgeId.VTRANSFER}:BRIDGE_TARGET_UNREGISTER`: {
+        bridgeTargetRegistered.delete(obj.target);
+        return undefined;
+      }
+      case `${BridgeId.VLOCALCHAIN}:VLOCALCHAIN_ALLOCATE_ADDRESS`: {
+        return 'agoric1mockVlocalchainAddress';
+      }
+      case `${BridgeId.VLOCALCHAIN}:VLOCALCHAIN_EXECUTE_TX`: {
+        return obj.messages.map(message => {
+          switch (message['@type']) {
+            case '/cosmos.staking.v1beta1.MsgDelegate': {
+              if (message.amount.amount === '504') {
+                // FIXME - how can we propagate the error?
+                // this results in `syscall.callNow failed: device.invoke failed, see logs for details`
+                throw Error('simulated packet timeout');
               }
-            });
+              return {} as JsonSafe<MsgDelegateResponse>;
+            }
+            // returns one empty object per message unless specified
+            default:
+              return {};
           }
-          default:
-            throw Error(`VLOCALCHAIN message of unknown type ${obj.type}`);
-        }
-      default:
-        throw Error(`unknown bridgeId ${bridgeId}`);
+        });
+      }
+      default: {
+        throw Error(`FIXME missing support for ${bridgeId}: ${obj.type}`);
+      }
     }
   };
 
