@@ -66,7 +66,7 @@ export const makeAccounts = async (
   assert(transferChannel.counterPartyChannelId, 'unable to find sourceChannel');
 
   // Every time the `localAccount` receives `remoteDenom` over IBC, delegate it.
-  const tap = makeStakingTap({
+  const { tap, holder: tapHolder } = makeStakingTap({
     localAccount,
     stakingAccount,
     validator,
@@ -76,9 +76,8 @@ export const makeAccounts = async (
     remoteDenom,
     localDenom,
   });
-  // XXX consider storing appRegistration, so we can .revoke() or .updateTargetApp()
   // @ts-expect-error tap.receiveUpcall: 'Vow<void> | undefined' not assignable to 'Promise<any>'
-  await localAccount.monitorTransfers(tap);
+  const appRegistration = await localAccount.monitorTransfers(tap);
 
   const accountEntries = harden(
     /** @type {[string, OrchestrationAccount<any>][]} */ ([
@@ -99,6 +98,7 @@ export const makeAccounts = async (
   const portfolioHolder = makePortfolioHolder(
     accountEntries,
     publicTopicEntries,
+    harden({ appRegistration, tapHolder }),
   );
   return portfolioHolder.asContinuingOffer();
 };

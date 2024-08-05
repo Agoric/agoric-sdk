@@ -2,10 +2,12 @@ import {
   EmptyProposalShape,
   InvitationShape,
 } from '@agoric/zoe/src/typeGuards.js';
+import { E } from '@endo/far';
 import { M } from '@endo/patterns';
 import { prepareChainHubAdmin } from '../exos/chain-hub-admin.js';
 import { preparePortfolioHolder } from '../exos/portfolio-holder-kit.js';
 import { withOrchestration } from '../utils/start-helper.js';
+import { ChainAddressShape } from '../typeGuards.js';
 import { prepareStakingTap } from './auto-stake-it-tap-kit.js';
 import * as flows from './auto-stake-it.flows.js';
 
@@ -15,7 +17,7 @@ import * as flows from './auto-stake-it.flows.js';
  * @import {NameHub} from '@agoric/vats';
  * @import {Remote} from '@agoric/vow';
  * @import {Zone} from '@agoric/zone';
- * @import {CosmosInterchainService} from '@agoric/orchestration';
+ * @import {CosmosInterchainService, CosmosValidatorAddress} from '@agoric/orchestration';
  * @import {OrchestrationTools} from '../utils/start-helper.js';
  */
 
@@ -55,6 +57,43 @@ const contract = async (
   const makePortfolioHolder = preparePortfolioHolder(
     zone.subZone('portfolio'),
     vowTools,
+    {
+      extraStateShape: {
+        tapHolder: M.remotable('Staking Tap Kit Holder'),
+        appRegistration: M.remotable('Target Registration'),
+      },
+      extraInvitationMakerGuards: {
+        UpdateValidator: M.call(ChainAddressShape).returns(M.promise()),
+        CancelAutoStake: M.call().returns(M.promise()),
+      },
+      extraInvitationMakerMethods: {
+        /** @param {CosmosValidatorAddress} validator */
+        UpdateValidator(validator) {
+          return zcf.makeInvitation(
+            seat => {
+              seat.exit();
+              // @ts-expect-error Property 'tapHolder' does not exist on type 'Method'.ts(2339)
+              return E(this.state.tapHolder).updateValidator(validator);
+            },
+            'UpdateValidator',
+            undefined,
+            EmptyProposalShape,
+          );
+        },
+        CancelAutoStake() {
+          return zcf.makeInvitation(
+            seat => {
+              seat.exit();
+              // @ts-expect-error Property 'appRegistration' does not exist on type 'Method'.ts(2339)
+              return E(this.state.appRegistration).revoke();
+            },
+            'CancelAutoStake',
+            undefined,
+            EmptyProposalShape,
+          );
+        },
+      },
+    },
   );
 
   const { makeAccounts } = orchestrateAll(flows, {

@@ -1,15 +1,20 @@
-import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
+import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { E } from '@endo/far';
 import { heapVowE } from '@agoric/vow/vat.js';
 import path from 'path';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
-import { MsgDelegateResponse } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/tx.js';
-import { IBCEvent } from '@agoric/vats';
+import {
+  MsgDelegate,
+  MsgDelegateResponse,
+} from '@agoric/cosmic-proto/cosmos/staking/v1beta1/tx.js';
+import type { IBCEvent } from '@agoric/vats';
+import type { TestFn } from 'ava';
 import { commonSetup } from '../supports.js';
 import {
   buildMsgResponseString,
   buildVTransferEvent,
+  parseOutgoingTxPacket,
 } from '../../tools/ibc-mocks.js';
 
 const dirname = path.dirname(new URL(import.meta.url).pathname);
@@ -19,14 +24,19 @@ const contractFile = `${dirname}/../../src/examples/${contractName}.contract.js`
 type StartFn =
   typeof import('../../src/examples/auto-stake-it.contract.js').start;
 
-test('auto-stake-it - make accounts, register tap, return invitationMakers', async t => {
-  t.log('bootstrap, orchestration core-eval');
+type TestContext = Awaited<ReturnType<typeof commonSetup>> & {
+  zoe: ZoeService;
+  instanceKit: StartedInstanceKit<StartFn>;
+};
+
+const test = anyTest as TestFn<TestContext>;
+
+test.beforeEach(async t => {
+  const common = await commonSetup(t);
   const {
     bootstrap: { storage },
     commonPrivateArgs,
-    mocks: { transferBridge },
-    utils: { inspectLocalBridge, inspectDibcBridge },
-  } = await commonSetup(t);
+  } = common;
 
   const { zoe, bundleAndInstall } = await setUpZoeForTest();
 
@@ -40,17 +50,34 @@ test('auto-stake-it - make accounts, register tap, return invitationMakers', asy
     {},
     { ...commonPrivateArgs, storageNode },
   );
-  const publicFacet = await E(zoe).getPublicFacet(autoAutoStakeItKit.instance);
+  t.context = {
+    ...common,
+    zoe,
+    instanceKit: autoAutoStakeItKit,
+  };
+});
+
+const defaultValidator = {
+  chainId: 'cosmoshub-4',
+  value: 'cosmosvaloper1test',
+  encoding: 'bech32',
+};
+
+test('auto-stake-it - make accounts, register tap, return invitationMakers', async t => {
+  t.log('bootstrap, orchestration core-eval');
+
+  const {
+    mocks: { transferBridge },
+    utils: { inspectLocalBridge, inspectDibcBridge },
+    zoe,
+    instanceKit: { publicFacet },
+  } = t.context;
 
   // make an offer to create an LocalOrchAcct and a CosmosOrchAccount
   const inv = E(publicFacet).makeAccountsInvitation();
   const userSeat = E(zoe).offer(inv, {}, undefined, {
     chainName: 'cosmoshub',
-    validator: {
-      chainId: 'cosmoshub-4',
-      value: 'cosmosvaloper1test',
-      encoding: 'bech32',
-    },
+    validator: defaultValidator,
     // TODO user supplied until #9211
     localDenom: 'ibc/fakeuatomhash',
   });
@@ -69,7 +96,7 @@ test('auto-stake-it - make accounts, register tap, return invitationMakers', asy
   // incoming transfer Tap
   await E(transferBridge).fromBridge(
     buildVTransferEvent({
-      receiver: 'agoric1fakeLCAAddress',
+      receiver: loaAddress,
       amount: 10n,
       denom: 'unknown-token',
     }),
@@ -83,7 +110,7 @@ test('auto-stake-it - make accounts, register tap, return invitationMakers', asy
 
   await E(transferBridge).fromBridge(
     buildVTransferEvent({
-      receiver: 'agoric1fakeLCAAddress',
+      receiver: loaAddress,
       amount: 10n,
       denom: 'unknown-token',
       sourceChannel: 'channel-0',
@@ -98,7 +125,7 @@ test('auto-stake-it - make accounts, register tap, return invitationMakers', asy
 
   await E(transferBridge).fromBridge(
     buildVTransferEvent({
-      receiver: 'agoric1fakeLCAAddress',
+      receiver: loaAddress,
       amount: 10n,
       denom: 'uatom',
     }),
@@ -133,11 +160,7 @@ test('auto-stake-it - make accounts, register tap, return invitationMakers', asy
   const inv2 = E(publicFacet).makeAccountsInvitation();
   const userSeat2 = E(zoe).offer(inv2, {}, undefined, {
     chainName: 'cosmoshub',
-    validator: {
-      chainId: 'cosmoshub-4',
-      value: 'cosmosvaloper1test',
-      encoding: 'bech32',
-    },
+    validator: defaultValidator,
     // TODO user supplied until #9211
     localDenom: 'ibc/fakeuatomhash',
   });
@@ -146,4 +169,99 @@ test('auto-stake-it - make accounts, register tap, return invitationMakers', asy
 
   t.regex(pubSubs2.agoric.storagePath.split('.').pop()!, /^agoric/);
   t.regex(pubSubs2.cosmoshub.storagePath.split('.').pop()!, /^cosmos/);
+});
+
+test('holder can update delegator in staking tap', async t => {
+  const {
+    zoe,
+    instanceKit: { publicFacet },
+    mocks: { transferBridge },
+    utils: { inspectDibcBridge },
+  } = t.context;
+  const inv = E(publicFacet).makeAccountsInvitation();
+  const makeAccountSeat = E(zoe).offer(inv, {}, undefined, {
+    chainName: 'cosmoshub',
+    validator: {
+      ...defaultValidator,
+      value: 'cosmosvaloper1testinitial',
+    },
+    // TODO user supplied until #9211
+    localDenom: 'ibc/fakeuatomhash',
+  });
+  const { publicSubscribers, invitationMakers } =
+    await heapVowE(makeAccountSeat).getOfferResult();
+
+  const loaAddress = publicSubscribers.agoric.storagePath.split('.').pop();
+  const coaAddress = publicSubscribers.cosmoshub.storagePath.split('.').pop();
+
+  // use custom invitation makers provided to portfolio-holder-kit
+  const newValidator = defaultValidator;
+  const updateValidatorInv =
+    // @ts-expect-error how can we tell GuardedKit about this method?
+    await E(invitationMakers).UpdateValidator(newValidator);
+
+  t.is(
+    await heapVowE(E(zoe).offer(updateValidatorInv)).getOfferResult(),
+    undefined,
+  );
+
+  await E(transferBridge).fromBridge(
+    buildVTransferEvent({
+      receiver: loaAddress,
+    }),
+  );
+  await eventLoopIteration();
+  const { packet } = (await inspectDibcBridge()).at(
+    -1,
+  ) as IBCEvent<'acknowledgementPacket'>;
+  const { messages } = parseOutgoingTxPacket(packet.data);
+  const { delegatorAddress, validatorAddress } = MsgDelegate.decode(
+    messages[0].value,
+  );
+  t.is(delegatorAddress, coaAddress!);
+  t.is(validatorAddress, newValidator.value);
+});
+
+test('holder can cancel autostake tap', async t => {
+  const {
+    zoe,
+    instanceKit: { publicFacet },
+    mocks: { transferBridge },
+    utils: { inspectDibcBridge, inspectLocalBridge },
+  } = t.context;
+  const inv = E(publicFacet).makeAccountsInvitation();
+  const makeAccountSeat = E(zoe).offer(inv, {}, undefined, {
+    chainName: 'cosmoshub',
+    validator: defaultValidator,
+    // TODO user supplied until #9211
+    localDenom: 'ibc/fakeuatomhash',
+  });
+  const { publicSubscribers, invitationMakers } =
+    await heapVowE(makeAccountSeat).getOfferResult();
+  const loaAddress = publicSubscribers.agoric.storagePath.split('.').pop();
+
+  await E(transferBridge).fromBridge(
+    buildVTransferEvent({
+      receiver: loaAddress,
+    }),
+  );
+
+  const cancelAutoStakeInv =
+    // @ts-expect-error how can we tell GuardedKit about this method?
+    await E(invitationMakers).CancelAutoStake();
+
+  t.is(
+    await heapVowE(E(zoe).offer(cancelAutoStakeInv)).getOfferResult(),
+    undefined,
+  );
+  // a normal application flow wouldn't throw, but this is seems to be the best
+  // we can do wrt to mocking for now
+  await t.throwsAsync(
+    E(transferBridge).fromBridge(
+      buildVTransferEvent({
+        receiver: loaAddress,
+      }),
+    ),
+    { message: `"targetToApp" not found: "${loaAddress}"` },
+  );
 });
