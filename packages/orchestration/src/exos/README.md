@@ -10,11 +10,31 @@ classDiagram
     ICQConnection --* Connection
     IcaAccount --* Port
     IcaAccount --* Connection
-    IcaAccount --* CosmosInterchainService
-    ICQConnection --* CosmosInterchainService
     CosmosInterchainService --* PortAllocator
     PortAllocator --* NetworkVat
     LocalChainAccount --* LocalChainVat
+
+    CosmosInterchainService --> IcaAccount : makeAccount
+    CosmosInterchainService --> ICQConnection : provideICQConnection
+
+    class Orchestrator {
+        makeLocalAccount()
+        getChain()
+    }
+    Orchestrator --> LocalOrchestrationAccount: makeLocalAccount
+    Orchestrator --> LocalChain: getChain
+    Orchestrator --> CosmosChain: getChain
+
+    class CosmosChain {
+
+    }
+    CosmosChain --> CosmosOrchestrationAccount: makeAccount
+
+    class LocalChain {
+
+    }
+    LocalChain --> LocalOrchestrationAccount: makeAccount
+
 
     class IcaAccount {
       port: Port
