@@ -361,3 +361,27 @@ test('Unknown', async t => {
   await paramManager.updateParams({ Surprise: ['gift', 'party'] });
   t.deepEqual(paramManager.getSurprise(), ['gift', 'party']);
 });
+
+test('makeParamManagerFromTerms overrides', async t => {
+  const terms = harden({
+    governedParams: {
+      Mmr: { type: 'nat', value: makeRatio(150n, drachmaKit.brand) },
+    },
+  });
+  const issuerKeywordRecord = harden({
+    Ignore: drachmaKit.issuer,
+  });
+  const { zcf } = await setupZCFTest(issuerKeywordRecord, terms);
+
+  const paramManager = await makeParamManagerFromTerms(
+    makeStoredPublisherKit(),
+    // @ts-expect-error missing governance terms
+    zcf,
+    { Electorate: zcf.makeInvitation(() => null, 'mock poser invitation') },
+    {
+      Mmr: 'ratio',
+    },
+    { Mmr: makeRatio(100n, drachmaKit.brand) },
+  );
+  t.deepEqual(paramManager.getMmr().numerator.value, 100n);
+});

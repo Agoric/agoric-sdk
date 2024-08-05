@@ -82,6 +82,9 @@ const trace = makeTracer('VD', true);
 
 const shortfallInvitationKey = 'shortfallInvitation';
 
+// duplicative of params.js, but eslint objects to using import('./params.js').VaultManagerParamOverrides
+/** @typedef {VaultManagerParamValues & { brand: Brand }} VaultManagerParamOverrides */
+
 /**
  * @param {import('@agoric/swingset-liveslots').Baggage} baggage
  * @param {import('./vaultFactory.js').VaultFactoryZCF} zcf
@@ -93,7 +96,7 @@ const shortfallInvitationKey = 'shortfallInvitation';
  * @param {ERef<Marshaller>} marshaller
  * @param {import('@agoric/zoe/src/contractSupport/recorder.js').MakeRecorderKit} makeRecorderKit
  * @param {import('@agoric/zoe/src/contractSupport/recorder.js').MakeERecorderKit} makeERecorderKit
- * @param managerParams
+ * @param {Record<string, VaultManagerParamOverrides>} managerParams
  */
 const prepareVaultDirector = (
   baggage,

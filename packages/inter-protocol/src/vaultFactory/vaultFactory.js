@@ -74,6 +74,7 @@ harden(meta);
  *     string,
  *     import('./params.js').VaultManagerParamOverrides
  *   >;
+ *   directorParamOverrides: [object];
  * }} privateArgs
  * @param {import('@agoric/swingset-liveslots').Baggage} baggage
  */
@@ -86,6 +87,7 @@ export const start = async (zcf, privateArgs, baggage) => {
     storageNode,
     auctioneerInstance,
     managerParams,
+    directorParamOverrides,
   } = privateArgs;
 
   trace('awaiting debtMint');
@@ -117,7 +119,6 @@ export const start = async (zcf, privateArgs, baggage) => {
     marshaller,
   );
   /** a powerful object; can modify the invitation */
-  trace('awaiting makeParamManagerFromTerms');
   const vaultDirectorParamManager = await makeParamManagerFromTerms(
     {
       publisher: governanceSubscriptionKit.publication,
@@ -129,6 +130,7 @@ export const start = async (zcf, privateArgs, baggage) => {
       [SHORTFALL_INVITATION_KEY]: initialShortfallInvitation,
     },
     vaultDirectorParamTypes,
+    directorParamOverrides,
   );
 
   const director = provideDirector(
