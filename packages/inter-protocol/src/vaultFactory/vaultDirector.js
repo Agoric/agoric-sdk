@@ -82,6 +82,9 @@ const trace = makeTracer('VD', true);
 
 const shortfallInvitationKey = 'shortfallInvitation';
 
+// If one manager/token fails, we don't want that to block possible success for
+// others, so we .catch() and log separately.
+//
 // exported for testing
 export const makeAllManagersDo = (collateralManagers, vaultManagers) => {
   /** @param {(vm: VaultManager) => void} fn */
@@ -89,7 +92,7 @@ export const makeAllManagersDo = (collateralManagers, vaultManagers) => {
     for (const managerIndex of collateralManagers.values()) {
       Promise.resolve(vaultManagers.get(managerIndex).self)
         .then(vm => fn(vm))
-        .catch(e => trace('ERROR: allManagersDo', e));
+        .catch(e => trace('🚨ERROR: allManagersDo', e));
     }
   };
 };
