@@ -30,6 +30,28 @@ test('excessive loan', async t => {
   );
 });
 
+test('repay works regardless of debtLimit', async t => {
+  const { aeth, run } = t.context;
+  const md = await makeManagerDriver(t);
+
+  // take debt that comes just shy of max
+  const vd = await md.makeVaultDriver(aeth.make(1000n), run.make(4500n));
+  t.deepEqual(await E(vd.vault()).getCurrentDebt(), run.make(4725n));
+
+  const MARGIN_HOP = 20n;
+
+  // we can take a loan and pay it back
+  await vd.giveCollateral(100n, aeth, MARGIN_HOP);
+  await vd.giveMinted(MARGIN_HOP, aeth, 100n);
+
+  // EC lowers mint limit
+  await md.setGovernedParam('DebtLimit', run.make(1000n), {
+    key: { collateralBrand: aeth.brand },
+  });
+  // we can still repay debt
+  await vd.giveMinted(MARGIN_HOP, aeth);
+});
+
 test('add debt to vault under LiquidationMarging + LiquidationPadding', async t => {
   const { aeth, run } = t.context;
   const md = await makeManagerDriver(t);
