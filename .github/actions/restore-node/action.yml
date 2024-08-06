@@ -51,7 +51,7 @@ runs:
       with:
         result-encoding: string
         script: |-
-          let branch = 'NOPE';
+          let branch = 'master';
           if (${{ inputs.ignore-endo-branch }}) {
             // Skip endo branch
           } else  if (context.eventName === 'schedule') {
