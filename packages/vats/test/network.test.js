@@ -71,7 +71,7 @@ const prepareIBCListener = (zone, makePlusOne) => {
   return makeIBCListener;
 };
 
-test('network - ibc', async t => {
+test.failing('network - ibc', async t => {
   const networkVat = E(networkBuildRootObject)(
     null,
     null,

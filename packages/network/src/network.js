@@ -123,17 +123,18 @@ const prepareHalfConnection = (zone, { watch }) => {
           return watch(innerVow, this.facets.rethrowUnlessMissingWatcher);
         },
         async close() {
-          const { closed, current, conns, l, handlers } = this.state;
+          const { closed, current, conns, r, handlers } = this.state;
           if (closed) {
             throw Error(closed);
           }
+          console.debug('Connection closed fired', handlers[r]);
           this.state.closed = 'Connection closed';
-          current.delete(conns.get(l));
+          current.delete(conns.get(r));
           const innerVow = watch(
-            E(this.state.handlers[l]).onClose(
-              conns.get(l),
+            E(this.state.handlers[r]).onClose(
+              conns.get(r),
               undefined,
-              handlers[l],
+              handlers[r],
             ),
             this.facets.sinkWatcher,
           );
