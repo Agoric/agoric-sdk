@@ -181,18 +181,12 @@ runs:
         mkdir -p node_modules/.cache/agoric
         date > node_modules/.cache/agoric/yarn-built
 
-    - name: git dirty check
-      working-directory: ${{ inputs.path }}
-      shell: bash
-      run: |-
-        set -x
-        # Fail if `git status` reports anything other than the following:
-        # * an untracked endo-sha.txt from above
-        # * work tree files that have been staged without further changes
-        #   (e.g., package.json or yarn.lock) as indicated by the Y position
-        #   in "XY PATH" being a space
-        if [ -n "$(git status --porcelain | grep -vE '^[?][?] endo-sha.txt$|^. '; true)" ]; then
-          git status
-          echo "Unexpected dirty git status" 1>&2
-          exit 1
-        fi
+    - name: Validate Git Tree Cleanliness
+      uses: pyTooling/Actions/with-post-step@v0.4.5
+      with:
+        main: |
+          bash "$SRC/.github/actions/restore-node/check-git-status.sh" "$SRC"
+        post: |
+          bash "$SRC/.github/actions/restore-node/check-git-status.sh" "$SRC"
+      env:
+        SRC: ${{ inputs.path }}
