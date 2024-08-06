@@ -15,7 +15,10 @@ upgrade-test-scripts
 # same for each proposal, an independent project
 proposals/*/.pnp.*
 proposals/*/.yarn/*
-proposals/a:upgrade-next/*
+proposals/a:upgrade-next/add-LEMONS/
+proposals/a:upgrade-next/add-OLIVES/
+proposals/a:upgrade-next/upgrade-bank/
+proposals/a:upgrade-next/upgrade-provisionPool/
 !proposals/*/.yarn/patches
 !proposals/*/.yarn/plugins
 !proposals/*/.yarn/releases
