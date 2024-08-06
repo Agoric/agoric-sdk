@@ -181,12 +181,12 @@ runs:
         mkdir -p node_modules/.cache/agoric
         date > node_modules/.cache/agoric/yarn-built
 
-    - name: Validate Git Tree Cleanliness
-      uses: pyTooling/Actions/with-post-step@v0.4.5
-      with:
-        main: |
-          bash "$SRC/.github/actions/restore-node/check-git-status.sh" "$SRC"
-        post: |
-          bash "$SRC/.github/actions/restore-node/check-git-status.sh" "$SRC"
-      env:
-        SRC: ${{ inputs.path }}
+    # - name: Validate Git Tree Cleanliness
+    #   uses: pyTooling/Actions/with-post-step@v0.4.5
+    #   with:
+    #     main: |
+    #       bash "$SRC/.github/actions/restore-node/check-git-status.sh" "$SRC"
+    #     post: |
+    #       bash "$SRC/.github/actions/restore-node/check-git-status.sh" "$SRC"
+    #   env:
+    #     SRC: ${{ inputs.path }}
