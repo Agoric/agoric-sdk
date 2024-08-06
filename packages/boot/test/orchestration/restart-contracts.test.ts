@@ -18,8 +18,9 @@ test.before(async t => {
 });
 test.after.always(t => t.context.shutdown?.());
 
-// Not interesting because it doesn't wait on other chains. Leaving here because maybe it will before it's done.
-test.serial('sendAnywhere', async t => {
+// FIXME the test needs to be able to send the acknowledgementPacket ack
+// so that the transfer vow resolves.
+test.serial.failing('sendAnywhere', async t => {
   const {
     walletFactoryDriver,
     buildProposal,
@@ -109,7 +110,7 @@ const hasResult = (r: UpdateRecord) => {
 };
 
 // Tests restart but not of an orchestration() flow
-test('stakeAtom', async t => {
+test.serial('stakeAtom', async t => {
   const {
     buildProposal,
     evalProposal,

@@ -142,7 +142,10 @@ export const makeDriverContext = async ({
     aethInitialLiquidity: AmountMath.make(aeth.brand, 900_000_000n),
   };
   const frozenCtx = await deeplyFulfilled(harden(contextPs));
+  /* eslint-disable @typescript-eslint/ban-ts-comment */
+  // @ts-ignore Local tsc sees this as an error but typedoc does not
   return { ...frozenCtx, bundleCache, run, aeth };
+  /* eslint-enable @typescript-eslint/ban-ts-comment */
 };
 
 /** @param {import('ava').ExecutionContext<DriverContext>} t */

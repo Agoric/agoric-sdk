@@ -115,12 +115,15 @@ export const prepareLocalChainAccountKit = (zone, { watch }) =>
           const purse = E(bank).getPurse(brand);
           return E(purse).getCurrentAmount();
         },
+
+        // TODO The payment parameter type below should be Payment<'nat'>.
+        // https://github.com/Agoric/agoric-sdk/issues/9828
         /**
          * Deposit a payment into the bank purse that matches the alleged brand.
          * This is safe, since even if the payment lies about its brand, ERTP
          * will reject spoofed payment objects when depositing into a purse.
          *
-         * @param {Payment<'nat'>} payment
+         * @param {ERef<Payment<'nat'>>} payment
          * @param {Pattern} [optAmountShape] throws if the Amount of the Payment
          *   does not match the provided Pattern
          * @returns {PromiseVow<Amount<'nat'>>}
@@ -148,10 +151,14 @@ export const prepareLocalChainAccountKit = (zone, { watch }) =>
           return E(purse).withdraw(amount);
         },
         /**
-         * Execute a batch of messages in order as a single atomic transaction
-         * and return the responses. If any of the messages fails, the entire
-         * batch will be rolled back. Use `typedJson()` on the arguments to get
-         * typed return values.
+         * Execute a batch of messages on the local chain. Note in particular,
+         * that for IBC `MsgTransfer`, execution only queues a packet for the
+         * local chain's IBC stack, and returns a `MsgTransferResponse`
+         * immediately, not waiting for the confirmation on the other chain.
+         *
+         * Messages are executed in order as a single atomic transaction and
+         * returns the responses. If any of the messages fails, the entire batch
+         * will be rolled back on the local chain.
          *
          * @template {TypedJson[]} MT messages tuple (use const with multiple
          *   elements or it will be a mixed array)
@@ -159,6 +166,8 @@ export const prepareLocalChainAccountKit = (zone, { watch }) =>
          * @returns {PromiseVowOfTupleMappedToGenerics<{
          *   [K in keyof MT]: JsonSafe<ResponseTo<MT[K]>>;
          * }>}
+         * @see {typedJson} which can be used on arguments to get typed return
+         * values.
          */
         async executeTx(messages) {
           const { address, system } = this.state;

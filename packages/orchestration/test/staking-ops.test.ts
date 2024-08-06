@@ -239,6 +239,7 @@ test('makeAccount() writes to storage', async t => {
   });
   const { publicSubscribers } = await E.when(holder.asContinuingOffer());
   const accountNotifier = makeNotifierFromSubscriber(
+    // @ts-expect-error the promise from `subscriber.getUpdateSince` can't be used in a flow
     publicSubscribers.account.subscriber,
   );
   const storageUpdate = await E(accountNotifier).getUpdateSince();

@@ -25,7 +25,7 @@ test('auto-stake-it - make accounts, register tap, return invitationMakers', asy
     bootstrap: { storage },
     commonPrivateArgs,
     mocks: { transferBridge },
-    utils: { inspectLocalBridge, inspectDibcBridge },
+    utils: { inspectLocalBridge, inspectDibcBridge, transmitTransferAck },
   } = await commonSetup(t);
 
   const { zoe, bundleAndInstall } = await setUpZoeForTest();
@@ -118,6 +118,7 @@ test('auto-stake-it - make accounts, register tap, return invitationMakers', asy
     },
     'tokens transferred from LOA to COA',
   );
+  await transmitTransferAck();
   const { acknowledgement } = (await inspectDibcBridge()).at(
     -1,
   ) as IBCEvent<'acknowledgementPacket'>;

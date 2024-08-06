@@ -39,21 +39,21 @@
   },
   "homepage": "https://github.com/Agoric/agoric-sdk#readme",
   "dependencies": {
-    "@endo/errors": "^1.2.2",
+    "@endo/errors": "^1.2.4",
     "@agoric/notifier": "^0.6.2",
     "@agoric/store": "^0.9.2",
     "@agoric/vat-data": "^0.5.2",
     "@agoric/zone": "^0.2.2",
-    "@endo/eventual-send": "^1.2.2",
-    "@endo/far": "^1.1.2",
-    "@endo/marshal": "^1.5.0",
-    "@endo/nat": "^5.0.7",
-    "@endo/patterns": "^1.4.0",
-    "@endo/promise-kit": "^1.1.2"
+    "@endo/eventual-send": "^1.2.4",
+    "@endo/far": "^1.1.4",
+    "@endo/marshal": "^1.5.2",
+    "@endo/nat": "^5.0.9",
+    "@endo/patterns": "^1.4.2",
+    "@endo/promise-kit": "^1.1.4"
   },
   "devDependencies": {
     "@agoric/swingset-vat": "^0.32.2",
-    "@endo/bundle-source": "^3.2.3",
+    "@endo/bundle-source": "^3.3.0",
     "@fast-check/ava": "^1.1.5",
     "ava": "^5.3.0",
     "tsd": "^0.31.1"

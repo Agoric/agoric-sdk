@@ -9,24 +9,11 @@ import { bindAllMethods } from './method-tools.js';
 import { eventLoopIteration } from './testing-utils.js';
 
 /**
+ * @import {TotalMap} from './types.js';
  * @import {Marshaller, StorageEntry, StorageMessage, StorageNode} from './lib-chainStorage.js';
  */
 
 const trace = makeTracer('StorTU', false);
-
-/**
- * A map corresponding with a total function such that `get(key)` is assumed to
- * always succeed.
- *
- * @template K, V
- * @typedef {{ [k in Exclude<keyof Map<K, V>, 'get'>]: Map<K, V>[k] } & {
- *   get: (key: K) => V;
- * }} TotalMap
- */
-/**
- * @template T
- * @typedef {T extends Map<infer K, infer V> ? TotalMap<K, V> : never} TotalMapFrom
- */
 
 /**
  * A convertSlotToVal function that produces basic Remotables. Assumes that all

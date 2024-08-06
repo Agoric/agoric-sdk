@@ -1,5 +1,30 @@
 # Linear queue for the main branch.
 queue_rules:
+  - name: high_priority_main
+    commit_message_template: |-
+      {{ title }} (#{{ number }})
+
+      {{ body | trim }}
+    queue_conditions:
+      - base=master
+      - label=priority:high
+      - or:
+          - check-pending=integration-test-result
+          - check-success=integration-test-result
+          - label=bypass:integration
+      - or:
+          - and: # breakage succeeds like we thought
+              - check-success=breakage
+              - -label=proto:expect-breakage
+          - and: # breakage fails like we thought
+              - check-failure=breakage
+              - label=proto:expect-breakage
+    merge_conditions:
+      - base=master
+      # Require integration tests before merging only
+      - or:
+          - label=bypass:integration
+          - check-success=integration-test-result
   - name: main
     commit_message_template: |-
       {{ title }} (#{{ number }})
@@ -35,7 +60,6 @@ pull_request_rules:
           - label=bypass:linear-history
     actions:
       queue:
-        name: main
         merge_method: merge
   - name: rebase updates then merge to master
     conditions:
@@ -43,7 +67,6 @@ pull_request_rules:
       - label=automerge:rebase
     actions:
       queue:
-        name: main
         merge_method: merge
         update_method: rebase
   - name: squash to master
@@ -52,5 +75,4 @@ pull_request_rules:
       - label=automerge:squash
     actions:
       queue:
-        name: main
         merge_method: squash

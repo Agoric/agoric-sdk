@@ -119,7 +119,7 @@ integrationTest() {
       ;;
     *)
       yarn global add "agoric@$DISTTAG"
-      persistVar AGORIC_CMD '["agoric"]'
+      persistVar AGORIC_CMD "[\"$(yarn global bin)/agoric\"]"
       ;;
   esac
 

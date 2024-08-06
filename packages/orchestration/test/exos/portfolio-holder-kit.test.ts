@@ -70,7 +70,6 @@ test('portfolio holder kit behaviors', async t => {
   const cosmosAccount = await E(holder).getAccount('cosmoshub');
   t.is(
     cosmosAccount,
-    // @ts-expect-error type mismatch between kit and OrchestrationAccountI
     accounts.cosmoshub,
     'same account holder kit provided is returned',
   );
@@ -109,12 +108,15 @@ test('portfolio holder kit behaviors', async t => {
 
   const osmosisTopic = (await E(osmosisAccount).getPublicTopics()).account;
 
-  // @ts-expect-error type mismatch between kit and OrchestrationAccountI
-  await E(holder).addAccount('osmosis', osmosisAccount, osmosisTopic);
+  await E(holder).addAccount(
+    'osmosis',
+    osmosisAccount,
+    // @ts-expect-error the promise from `subscriber.getUpdateSince` can't be used in a flow
+    osmosisTopic,
+  );
 
   t.is(
     await E(holder).getAccount('osmosis'),
-    // @ts-expect-error type mismatch between kit and OrchestrationAccountI
     osmosisAccount,
     'new accounts can be added',
   );
