@@ -237,6 +237,17 @@ jobs:
           echo "=== After cleanup:"
           df -h
       - uses: actions/checkout@v4
+      - uses: ./.github/actions/post-test
+        if: (success() || failure())
+        continue-on-error: true
+        timeout-minutes: 4
+        with:
+          datadog-token: ${{ secrets.DATADOG_API_KEY }}
+      - uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: logsss
+          path: /home/runner/.npm/_logs/
       - name: docker build (sdk)
         # Produces ghcr.io/agoric/agoric-sdk:unreleased used in the following upgrade test.
         # run: cd packages/deployment && ./scripts/test-docker-build.sh | $TEST_COLLECT
@@ -281,17 +292,6 @@ jobs:
           from: ${{ secrets.NOTIFY_EMAIL_FROM }}
           to: ${{ secrets.NOTIFY_EMAIL_TO }}
           password: ${{ secrets.NOTIFY_EMAIL_PASSWORD }}
-      - uses: ./.github/actions/post-test
-        if: (success() || failure())
-        continue-on-error: true
-        timeout-minutes: 4
-        with:
-          datadog-token: ${{ secrets.DATADOG_API_KEY }}
-      - uses: actions/upload-artifact@v3
-        if: always()
-        with:
-          name: logsss
-          path: /home/runner/.npm/_logs/
 
   test-multichain-e2e:
     needs: pre_check
