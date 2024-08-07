@@ -154,6 +154,7 @@ const makeScenario = () => {
       getLocalAddress: () => Fail`mock`,
       getRemoteAddress: () => Fail`mock`,
       getPort: () => Fail`mock`,
+      reopen: () => Fail`mock`,
     });
     return { account, calls };
   };

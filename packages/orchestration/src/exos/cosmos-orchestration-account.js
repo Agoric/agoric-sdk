@@ -81,6 +81,8 @@ export const IcaAccountHolderI = M.interface('IcaAccountHolder', {
   ),
   withdrawRewards: M.call().returns(Vow$(M.arrayOf(DenomAmountShape))),
   undelegate: M.call(M.arrayOf(DelegationShape)).returns(VowShape),
+  close: M.call().returns(VowShape),
+  reopen: M.call().returns(VowShape),
 });
 
 /** @type {{ [name: string]: [description: string, valueShape: Matcher] }} */
@@ -144,6 +146,7 @@ export const prepareCosmosOrchestrationAccountKit = (
         WithdrawReward: M.call(ChainAddressShape).returns(M.promise()),
         Undelegate: M.call(M.arrayOf(DelegationShape)).returns(M.promise()),
         CloseAccount: M.call().returns(M.promise()),
+        ReopenAccount: M.call().returns(M.promise()),
         TransferAccount: M.call().returns(M.promise()),
       }),
     },
@@ -298,7 +301,16 @@ export const prepareCosmosOrchestrationAccountKit = (
           }, 'Undelegate');
         },
         CloseAccount() {
-          throw Error('not yet implemented');
+          return zcf.makeInvitation(seat => {
+            seat.exit();
+            return watch(this.facets.holder.close());
+          }, 'CloseAccount');
+        },
+        ReopenAccount() {
+          return zcf.makeInvitation(seat => {
+            seat.exit();
+            return watch(this.facets.holder.reopen());
+          }, 'ReopenAccount');
         },
         /**
          * Starting a transfer revokes the account holder. The associated
@@ -486,6 +498,14 @@ export const prepareCosmosOrchestrationAccountKit = (
             );
             return watch(undelegateV, this.facets.returnVoidWatcher);
           });
+        },
+        /** @type {HostOf<IcaAccount['close']>} */
+        close() {
+          return watch(E(this.facets.helper.owned()).close());
+        },
+        /** @type {HostOf<IcaAccount['reopen']>} */
+        reopen() {
+          return watch(E(this.facets.helper.owned()).reopen());
         },
       },
     },

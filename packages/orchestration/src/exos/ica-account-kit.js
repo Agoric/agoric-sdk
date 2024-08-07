@@ -38,6 +38,7 @@ export const IcaAccountI = M.interface('IcaAccount', {
     .optional(TxBodyOptsShape)
     .returns(VowShape),
   close: M.call().returns(VowShape),
+  reopen: M.call().returns(VowShape),
 });
 
 /**
@@ -98,6 +99,15 @@ export const prepareIcaAccountKit = (zone, { watch, asVow }) =>
             'ICA channel creation acknowledgement not yet received.',
           );
         },
+        reopen() {
+          const { port, requestedRemoteAddress } = this.state;
+          return watch(
+            E(port).connect(
+              requestedRemoteAddress,
+              this.facets.connectionHandler,
+            ),
+          );
+        },
         getLocalAddress() {
           return NonNullish(
             this.state.localAddress,
@@ -129,7 +139,7 @@ export const prepareIcaAccountKit = (zone, { watch, asVow }) =>
         executeEncodedTx(msgs, opts) {
           return asVow(() => {
             const { connection } = this.state;
-            if (!connection) throw Fail`connection not available`;
+            if (!connection) throw Fail`Connection not available or closed.`;
             return watch(
               E(connection).send(makeTxPacket(msgs, opts)),
               this.facets.parseTxPacketWatcher,
@@ -137,18 +147,20 @@ export const prepareIcaAccountKit = (zone, { watch, asVow }) =>
           });
         },
         /**
-         * Close the remote account
+         * Close the remote account. Does not retrieve assets, so warn the
+         * caller to retrieve them first. However, the Port is persisted and
+         * holders can always call .reopen() to re-establish a connection.
          *
          * @returns {Vow<void>}
          * @throws {Error} if connection is not available or already closed
          */
         close() {
           return asVow(() => {
-            /// TODO #9192 what should the behavior be here? and `onClose`?
-            // - retrieve assets?
-            // - revoke the port?
             const { connection } = this.state;
             if (!connection) throw Fail`connection not available`;
+            this.state.connection = undefined;
+            this.state.localAddress = undefined;
+            this.state.remoteAddress = undefined;
             return E(connection).close();
           });
         },
@@ -175,13 +187,23 @@ export const prepareIcaAccountKit = (zone, { watch, asVow }) =>
           });
         },
         /**
+         * This handler fires if the connection is closed due to external
+         * factors (e.g. a packet timeout). It will not fire if a holder calls
+         * `.close()`.
+         *
+         * Here, we clear the connection and addresses from state as we expect
+         * them to change and call reopen() to re-establish the connection.
+         *
          * @param {Remote<Connection>} _connection
          * @param {unknown} reason
+         * @see {@link https://docs.cosmos.network/v0.45/ibc/overview.html#:~:text=In%20ORDERED%20channels%2C%20a%20timeout%20of%20a%20single%20packet%20in%20the%20channel%20closes%20the%20channel.}
          */
         async onClose(_connection, reason) {
           trace(`ICA Channel closed. Reason: ${reason}`);
-          // FIXME handle connection closing https://github.com/Agoric/agoric-sdk/issues/9192
-          // XXX is there a scenario where a connection will unexpectedly close? _I think yes_
+          this.state.connection = undefined;
+          this.state.localAddress = undefined;
+          this.state.remoteAddress = undefined;
+          void watch(this.facets.account.reopen());
         },
       },
     },

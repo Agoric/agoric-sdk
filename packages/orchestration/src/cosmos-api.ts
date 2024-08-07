@@ -213,9 +213,17 @@ export interface IcaAccount {
     opts?: Partial<Omit<TxBody, 'messages'>>,
   ) => Promise<string>;
   /**
-   * Close the remote account
+   * Closes the ICA channel (account). Does not retrieve assets, so warn the
+   * caller to retrieve them first. However, the Port is persisted and
+   * holders can always call .reopen() to re-establish a connection.
    */
   close: () => Promise<void>;
+  /**
+   * Reopens teh ICA channel (account) that was previously closed by the holder.
+   * If a channel is closed for an unexpected reason, it should automatically
+   * reopen and the holder should not need to call .reopen().
+   */
+  reopen: () => Promise<void>;
   /** @returns the address of the remote channel */
   getRemoteAddress: () => RemoteIbcAddress;
   /** @returns the address of the local channel */

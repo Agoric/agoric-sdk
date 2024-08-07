@@ -14,8 +14,9 @@ import { heapVowE as E } from '@agoric/vow/vat.js';
 import { decodeBase64 } from '@endo/base64';
 import type { LocalIbcAddress } from '@agoric/vats/tools/ibc-utils.js';
 import { getMethodNames } from '@agoric/internal';
-import { Port } from '@agoric/network';
+import type { Port } from '@agoric/network';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
+import type { IBCMethod } from '@agoric/vats';
 import { commonSetup } from './supports.js';
 import { ChainAddressShape } from '../src/typeGuards.js';
 import { tryDecodeResponse } from '../src/utils/cosmos.js';
@@ -175,7 +176,7 @@ test('makeAccount returns an IcaAccountKit', async t => {
   await t.throwsAsync(
     E(account).executeEncodedTx([delegateMsg]),
     {
-      message: 'Connection closed',
+      message: 'Connection not available or closed.',
     },
     'cannot execute transaction if connection is closed',
   );
@@ -220,7 +221,6 @@ test('.close() sends a downcall to the ibc bridge handler', async t => {
     CHAIN_ID,
     HOST_CONNECTION_ID,
     CONTROLLER_CONNECTION_ID,
-    { version: 'ics27-2', ordering: 'unordered', encoding: 'json' },
   );
   await eventLoopIteration(); // ensure there's an account to close
   await E(account).close();
@@ -294,14 +294,94 @@ test('onClose handler is called when channelCloseConfirm event is received', asy
 
   const { bridgeEvents: bridgeEvents1, bridgeDowncalls: bridgeDowncalls1 } =
     await inspectDibcBridge();
-  t.is(bridgeEvents1.length, 2, 'bridge received an additional event');
+  t.is(bridgeEvents1.length, 3, 'bridge received an additional 2 events');
   t.is(
-    bridgeEvents1[bridgeEvents1.length - 1].event,
+    bridgeEvents1[bridgeEvents1.length - 2].event,
     'channelCloseConfirm',
     'bridged received channelCloseInit event',
   );
-  t.is(bridgeDowncalls1.length, 2, "bridge did not receive add'l downcalls");
+  t.is(
+    bridgeEvents1[bridgeEvents1.length - 1].event,
+    'channelOpenAck',
+    'onCloe handler automatically reopens the channel',
+  );
+});
 
-  // XXX how can we verify that the onClose handler was called?
-  // for now, we can observe in the logs: ----- IcaAccountKit.4  3 ICA Channel closed. Reason: undefined
+test('reopen a close account(channel) after choosing to close it', async t => {
+  const {
+    bootstrap: { cosmosInterchainService },
+    utils: { inspectDibcBridge },
+  } = await commonSetup(t);
+
+  const account = await E(cosmosInterchainService).makeAccount(
+    CHAIN_ID,
+    HOST_CONNECTION_ID,
+    CONTROLLER_CONNECTION_ID,
+  );
+
+  const [chainAddress0, remoteAddress0, localAddress0] = await Promise.all([
+    E(account).getAddress(),
+    E(account).getRemoteAddress(),
+    E(account).getLocalAddress(),
+  ]);
+
+  await eventLoopIteration(); // ensure there's an account to close
+  // close the account
+  await E(account).close();
+  await eventLoopIteration();
+
+  const { bridgeDowncalls: bridgeDowncalls0 } = await inspectDibcBridge();
+  t.is(
+    bridgeDowncalls0[2].method,
+    'startChannelCloseInit',
+    'bridge received startChannelCloseInit downcall',
+  );
+
+  // reopen the account
+  await E(account).reopen();
+  await eventLoopIteration();
+
+  const { bridgeDowncalls } = await inspectDibcBridge();
+  t.is(
+    bridgeDowncalls[3].method,
+    'startChannelOpenInit',
+    'bridge received startChannelOpenInit to re-establish the channel',
+  );
+
+  const getPortAndConnectionIDs = (obj: IBCMethod<'startChannelOpenInit'>) => {
+    const { hops, packet } = obj;
+    const { source_port: sourcePort } = packet;
+    return { hops, sourcePort };
+  };
+
+  t.deepEqual(
+    getPortAndConnectionIDs(
+      bridgeDowncalls[3] as IBCMethod<'startChannelOpenInit'>,
+    ),
+    getPortAndConnectionIDs(
+      bridgeDowncalls[1] as IBCMethod<'startChannelOpenInit'>,
+    ),
+    'same port and connection id are used to re-stablish the channel',
+  );
+
+  const [chainAddress, remoteAddress, localAddress] = await Promise.all([
+    E(account).getAddress(),
+    E(account).getRemoteAddress(),
+    E(account).getLocalAddress(),
+  ]);
+
+  t.deepEqual(chainAddress, chainAddress0, 'chain address is unchanged');
+  t.notDeepEqual(
+    remoteAddress,
+    remoteAddress0,
+    'remote ibc address is changed',
+  );
+  t.notDeepEqual(localAddress, localAddress0, 'local ibc address is changed');
+  const getChannelID = (lAddr: LocalIbcAddress) =>
+    lAddr.split('/ibc-channel/')[1];
+  t.not(
+    getChannelID(localAddress),
+    getChannelID(localAddress0),
+    'channel id is changed',
+  );
 });
