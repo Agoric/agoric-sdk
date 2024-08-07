@@ -45,6 +45,10 @@ test('MsgDelegateResponse trivial response', t => {
 const configStaking = {
   acct1: {
     value: 'agoric1spy36ltduehs5dmszfrp792f0k2emcntrql3nx',
+    localAddress:
+      '/ibc-port/icacontroller-1/ordered/{"version":"ics27-1","controllerConnectionId":"connection-8","hostConnectionId":"connection-649","address":"cosmos1test","encoding":"proto3","txType":"sdk_multi_msg"}/ibc-channel/channel-0',
+    remoteAddress:
+      '/ibc-hop/connection-8/ibc-port/icahost/ordered/{"version":"ics27-1","controllerConnectionId":"connection-8","hostConnectionId":"connection-649","address":"cosmos1test","encoding":"proto3","txType":"sdk_multi_msg"}/ibc-channel/channel-0',
   },
   validator: {
     value: 'agoric1valoper234',
@@ -153,8 +157,8 @@ const makeScenario = () => {
       },
       executeTx: () => Fail`mock`,
       deactivate: () => Fail`mock`,
-      getLocalAddress: () => Fail`mock`,
-      getRemoteAddress: () => Fail`mock`,
+      getLocalAddress: () => configStaking.acct1.localAddress,
+      getRemoteAddress: () => configStaking.acct1.remoteAddress,
       getPort: () => Fail`mock`,
       reactivate: () => Fail`mock`,
     });
@@ -241,12 +245,20 @@ test('makeAccount() writes to storage', async t => {
     zcf,
   });
 
-  const { holder } = make(account.getAddress(), 'uatom', {
-    account,
-    storageNode,
-    icqConnection,
-    timer,
-  });
+  const { holder } = make(
+    {
+      chainAddress: account.getAddress(),
+      localAddress: account.getLocalAddress(),
+      remoteAddress: account.getRemoteAddress(),
+      bondDenom: 'uatom',
+    },
+    {
+      account,
+      storageNode,
+      icqConnection,
+      timer,
+    },
+  );
   const { publicSubscribers } = await E.when(holder.asContinuingOffer());
   const accountNotifier = makeNotifierFromSubscriber(
     // @ts-expect-error the promise from `subscriber.getUpdateSince` can't be used in a flow
@@ -255,7 +267,10 @@ test('makeAccount() writes to storage', async t => {
   const storageUpdate = await E(accountNotifier).getUpdateSince();
   t.deepEqual(storageUpdate, {
     updateCount: 1n,
-    value: '',
+    value: {
+      localAddress: configStaking.acct1.localAddress,
+      remoteAddress: configStaking.acct1.remoteAddress,
+    },
   });
 });
 
@@ -280,12 +295,20 @@ test('withdrawRewards() on StakingAccountHolder formats message correctly', asyn
   });
 
   // Higher fidelity tests below use invitationMakers.
-  const { holder } = make(account.getAddress(), 'uatom', {
-    account,
-    storageNode,
-    icqConnection,
-    timer,
-  });
+  const { holder } = make(
+    {
+      chainAddress: account.getAddress(),
+      localAddress: account.getLocalAddress(),
+      remoteAddress: account.getRemoteAddress(),
+      bondDenom: 'uatom',
+    },
+    {
+      account,
+      storageNode,
+      icqConnection,
+      timer,
+    },
+  );
   const { validator } = configStaking;
   const actual = await E(holder).withdrawReward(validator);
   t.deepEqual(actual, [{ denom: 'uatom', value: 2n }]);
@@ -318,12 +341,20 @@ test(`delegate; redelegate using invitationMakers`, async t => {
     zcf,
   });
 
-  const { invitationMakers } = makeAccountKit(account.getAddress(), 'uatom', {
-    account,
-    storageNode,
-    icqConnection,
-    timer,
-  });
+  const { invitationMakers } = makeAccountKit(
+    {
+      chainAddress: account.getAddress(),
+      localAddress: account.getLocalAddress(),
+      remoteAddress: account.getRemoteAddress(),
+      bondDenom: 'uatom',
+    },
+    {
+      account,
+      storageNode,
+      icqConnection,
+      timer,
+    },
+  );
 
   const { validator, delegations } = configStaking;
   {
@@ -401,12 +432,20 @@ test(`withdraw rewards using invitationMakers`, async t => {
     zcf,
   });
 
-  const { invitationMakers } = makeAccountKit(account.getAddress(), 'uatom', {
-    account,
-    storageNode,
-    icqConnection,
-    timer,
-  });
+  const { invitationMakers } = makeAccountKit(
+    {
+      chainAddress: account.getAddress(),
+      localAddress: account.getLocalAddress(),
+      remoteAddress: account.getRemoteAddress(),
+      bondDenom: 'uatom',
+    },
+    {
+      account,
+      storageNode,
+      icqConnection,
+      timer,
+    },
+  );
 
   const { validator } = configStaking;
   const toWithdraw = await E(invitationMakers).WithdrawReward(validator);
@@ -442,12 +481,20 @@ test(`undelegate waits for unbonding period`, async t => {
     zcf,
   });
 
-  const { invitationMakers } = makeAccountKit(account.getAddress(), 'uatom', {
-    account,
-    storageNode,
-    icqConnection,
-    timer,
-  });
+  const { invitationMakers } = makeAccountKit(
+    {
+      chainAddress: account.getAddress(),
+      localAddress: account.getLocalAddress(),
+      remoteAddress: account.getRemoteAddress(),
+      bondDenom: 'uatom',
+    },
+    {
+      account,
+      storageNode,
+      icqConnection,
+      timer,
+    },
+  );
 
   const { validator, delegations } = configStaking;
 

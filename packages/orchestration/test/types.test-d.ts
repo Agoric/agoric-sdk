@@ -75,7 +75,6 @@ expectNotType<CosmosValidatorAddress>(chainAddr);
   makeCosmosOrchestrationAccount(
     anyVal,
     anyVal,
-    anyVal,
   ) satisfies HostInterface<StakingAccountActions>;
 }
 

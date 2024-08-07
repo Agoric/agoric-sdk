@@ -66,15 +66,22 @@ export const prepareMakeTestCOAKit = (
       controllerConnectionId,
     );
 
-    const accountAddress = await E(cosmosOrchAccount).getAddress();
+    const [chainAddress, localAddress, remoteAddress] = await Promise.all([
+      E(cosmosOrchAccount).getAddress(),
+      E(cosmosOrchAccount).getLocalAddress(),
+      E(cosmosOrchAccount).getRemoteAddress(),
+    ]);
 
     t.log('make a CosmosOrchestrationAccount');
-    const holder = makeCosmosOrchestrationAccount(accountAddress, bondDenom, {
-      account: cosmosOrchAccount,
-      storageNode: storageNode.makeChildNode(accountAddress.value),
-      icqConnection: undefined,
-      timer,
-    });
+    const holder = makeCosmosOrchestrationAccount(
+      { chainAddress, bondDenom, localAddress, remoteAddress },
+      {
+        account: cosmosOrchAccount,
+        storageNode: storageNode.makeChildNode(chainAddress.value),
+        icqConnection: undefined,
+        timer,
+      },
+    );
 
     return holder;
   };

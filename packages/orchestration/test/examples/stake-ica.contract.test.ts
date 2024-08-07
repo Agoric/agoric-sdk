@@ -219,14 +219,24 @@ test('makeAccountInvitationMaker', async t => {
     offerResult.publicSubscribers.account.subscriber,
   );
   const storageUpdate = await E(accountNotifier).getUpdateSince();
+  const expectedStorageValue = {
+    localAddress:
+      '/ibc-port/icacontroller-1/ordered/{"version":"ics27-1","controllerConnectionId":"connection-8","hostConnectionId":"connection-649","address":"cosmos1test","encoding":"proto3","txType":"sdk_multi_msg"}/ibc-channel/channel-0',
+    remoteAddress:
+      '/ibc-hop/connection-8/ibc-port/icahost/ordered/{"version":"ics27-1","controllerConnectionId":"connection-8","hostConnectionId":"connection-649","address":"cosmos1test","encoding":"proto3","txType":"sdk_multi_msg"}/ibc-channel/channel-0',
+  };
+
   t.deepEqual(storageUpdate, {
     updateCount: 1n,
-    value: '',
+    value: expectedStorageValue,
   });
 
   const vstorageEntry = bootstrap.storage.data.get(
     'mockChainStorageRoot.stakeAtom.accounts.cosmos1test',
   );
   t.truthy(vstorageEntry, 'vstorage account entry created');
-  t.is(bootstrap.marshaller.fromCapData(JSON.parse(vstorageEntry!)), '');
+  t.deepEqual(
+    bootstrap.marshaller.fromCapData(JSON.parse(vstorageEntry!)),
+    expectedStorageValue,
+  );
 });

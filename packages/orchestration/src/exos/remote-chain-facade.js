@@ -14,6 +14,7 @@ import { ChainAddressShape, ChainFacadeI, ICQMsgShape } from '../typeGuards.js';
  * @import {TimerService} from '@agoric/time';
  * @import {Remote} from '@agoric/internal';
  * @import {Vow, VowTools} from '@agoric/vow';
+ * @import {LocalIbcAddress, RemoteIbcAddress} from '@agoric/vats/tools/ibc-utils.js';
  * @import {CosmosInterchainService} from './cosmos-interchain-service.js';
  * @import {prepareCosmosOrchestrationAccount} from './cosmos-orchestration-account.js';
  * @import {CosmosChainInfo, IBCConnectionInfo, ChainAddress, IcaAccount, Chain, ICQConnection} from '../types.js';
@@ -79,13 +80,18 @@ const prepareRemoteChainFacadeKit = (
           ]).returns(VowShape),
         },
       ),
-      getAddressWatcher: M.interface('getAddressWatcher', {
-        onFulfilled: M.call(ChainAddressShape, M.remotable()).returns(VowShape),
+      getAddressesWatcher: M.interface('getAddressWatcher', {
+        onFulfilled: M.call(
+          [ChainAddressShape, M.string(), M.string()],
+          M.remotable(),
+        ).returns(VowShape),
       }),
       makeChildNodeWatcher: M.interface('makeChildNodeWatcher', {
         onFulfilled: M.call(M.remotable(), {
           account: M.remotable(),
           chainAddress: ChainAddressShape,
+          localAddress: M.string(),
+          remoteAddress: M.string(),
         }).returns(M.remotable()),
       }),
     },
@@ -170,8 +176,12 @@ const prepareRemoteChainFacadeKit = (
             // no need to pass icqConnection in ctx; we can get it from state
           }
           return watch(
-            E(account).getAddress(),
-            this.facets.getAddressWatcher,
+            allVows([
+              E(account).getAddress(),
+              E(account).getLocalAddress(),
+              E(account).getRemoteAddress(),
+            ]),
+            this.facets.getAddressesWatcher,
             account,
           );
         },
@@ -189,16 +199,16 @@ const prepareRemoteChainFacadeKit = (
           return watch(E(icqConnection).query(msgs));
         },
       },
-      getAddressWatcher: {
+      getAddressesWatcher: {
         /**
-         * @param {ChainAddress} chainAddress
+         * @param {[ChainAddress, LocalIbcAddress, RemoteIbcAddress]} chainAddresses
          * @param {IcaAccount} account
          */
-        onFulfilled(chainAddress, account) {
+        onFulfilled([chainAddress, localAddress, remoteAddress], account) {
           return watch(
             E(storageNode).makeChildNode(chainAddress.value),
             this.facets.makeChildNodeWatcher,
-            { account, chainAddress },
+            { account, chainAddress, localAddress, remoteAddress },
           );
         },
       },
@@ -208,20 +218,33 @@ const prepareRemoteChainFacadeKit = (
          * @param {{
          *   account: IcaAccount;
          *   chainAddress: ChainAddress;
+         *   localAddress: LocalIbcAddress;
+         *   remoteAddress: RemoteIbcAddress;
          * }} ctx
          */
-        onFulfilled(childNode, { account, chainAddress }) {
+        onFulfilled(
+          childNode,
+          { account, chainAddress, localAddress, remoteAddress },
+        ) {
           const { remoteChainInfo, icqConnection } = this.state;
           const stakingDenom = remoteChainInfo.stakingTokens?.[0]?.denom;
           if (!stakingDenom) throw Fail`chain info lacks staking denom`;
 
-          return makeCosmosOrchestrationAccount(chainAddress, stakingDenom, {
-            account,
-            // FIXME storage path https://github.com/Agoric/agoric-sdk/issues/9066
-            storageNode: childNode,
-            icqConnection,
-            timer,
-          });
+          return makeCosmosOrchestrationAccount(
+            {
+              chainAddress,
+              bondDenom: stakingDenom,
+              localAddress,
+              remoteAddress,
+            },
+            {
+              account,
+              // FIXME storage path https://github.com/Agoric/agoric-sdk/issues/9066
+              storageNode: childNode,
+              icqConnection,
+              timer,
+            },
+          );
         },
       },
     },
