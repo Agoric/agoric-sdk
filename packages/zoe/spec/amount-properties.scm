@@ -63,10 +63,27 @@
     (if (m 'isGTE y x) (m 'isEqual (m 'add (m 'subtract y x) x) y) #t)
     )))
 
+(define (minmax-ok m)
+  (property
+   ((x $natural) (y $natural))
+   (and
+    (if (m 'isGTE x y)
+        (m 'isEqual (m 'max x y) x)
+        (m 'isEqual (m 'min x y) x))
+    (if (and (not (m 'isGTE x y)) (not (m 'isGTE y x)))
+        (and (eq?
+	      (with-exception-handler (lambda (exc) 'incomparable) (m 'min x y))
+	      'incomparable)
+             (eq?
+	      (with-exception-handler (lambda (exc) 'incomparable) (m 'max x y))
+	      'incomparable))
+	#t))))
+
 (quickcheck (ensure-equivalence nat-amount-math))
 (quickcheck (partial-order nat-amount-math))
 (quickcheck (add-ok nat-amount-math))
 (quickcheck (subtract-ok nat-amount-math))
+(quickcheck (minmax-ok nat-amount-math))
 
 
   
