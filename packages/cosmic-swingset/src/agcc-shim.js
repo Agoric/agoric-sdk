@@ -1,5 +1,5 @@
 /* global process */
-import { Fail } from '@agoric/assert';
+const { Fail } = assert;
 
 let agccP;
 const { AGVM_FROM_AGD, AGVM_TO_AGD } = process.env;
