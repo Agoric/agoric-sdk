@@ -33,8 +33,31 @@
     (if (and (m 'isGTE x y) (m 'isGTE y x)) (m 'isEqual x y) #t)
     )))
 
+(define (add-ok m) ;; closed, commutative, associative, monotonic, with empty identity
+  (define empty (m 'makeEmpty))
+  (property
+   ((x $natural) (y $natural) (z $natural))
+   (and
+    ;; note: + for SET is not total.
+    (m 'coerce (m 'add x y))  ;; TODO: coerce / brands
+    ;; Identity (right)
+    (m 'isEqual (m 'add x empty) x)
+    ;; Identity (left)
+    (m 'isEqual (m 'add empty x) x)
+    ;; Commutative
+    (m 'isEqual (m 'add x y) (m 'add y x))
+    ;; Associative
+    (m 'isEqual (m 'add (m 'add x y) z) (m 'add x (m 'add y z)))
+    ;; Monotonic (left)
+    (m 'isGTE (m 'add x y) x)
+    ;; Monotonic (right)
+    (m 'isGTE (m 'add x y) y)
+    )
+   ))
+
 (quickcheck (ensure-equivalence nat-amount-math))
 (quickcheck (partial-order nat-amount-math))
+(quickcheck (add-ok nat-amount-math))
 
 
   
