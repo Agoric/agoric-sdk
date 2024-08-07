@@ -287,6 +287,11 @@ jobs:
         timeout-minutes: 4
         with:
           datadog-token: ${{ secrets.DATADOG_API_KEY }}
+      - uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: logsss
+          path: /home/runner/.npm/_logs/
 
   test-multichain-e2e:
     needs: pre_check
