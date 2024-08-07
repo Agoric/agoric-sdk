@@ -19,7 +19,22 @@
     )
    ))
 
+(define (partial-order m)
+  (define empty (m 'makeEmpty))
+  (property
+   ((x $natural) (y $natural) (z $natural))
+   (and
+    (m 'isGTE x empty)
+    ;; Total
+    (memq (m 'isGTE x y) '(#t #f))
+    ;; Reflexive
+    (m 'isGTE x x)
+    ;; Antisymmetric
+    (if (and (m 'isGTE x y) (m 'isGTE y x)) (m 'isEqual x y) #t)
+    )))
+
 (quickcheck (ensure-equivalence nat-amount-math))
+(quickcheck (partial-order nat-amount-math))
 
 
   
