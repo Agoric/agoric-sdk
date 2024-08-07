@@ -6,7 +6,7 @@
              (goblins actor-lib joiners)
              (goblins ghash)
              (srfi srfi-64) ;; test
-             (endo)
+             (endo) ;; (add-to-load-path (getcwd))
              (ertp)
              (escrow2013)
              )
