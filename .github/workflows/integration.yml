@@ -99,7 +99,7 @@ jobs:
           # won't increase the time for this workflow to complete.
           timeout_minutes: 20
           command: scripts/registry.sh test ${{ matrix.cli }} ${{steps.get-branch.outputs.result}}
-          on_retry_command: rm -f $HOME/bin/agoric
+          on_retry_command: rm $HOME/bin/agoric
 
       - name: notify on failure
         if: >
@@ -237,6 +237,12 @@ jobs:
           echo "=== After cleanup:"
           df -h
       - uses: actions/checkout@v4
+      - name: docker build (sdk)
+        # Produces ghcr.io/agoric/agoric-sdk:unreleased used in the following upgrade test.
+        # run: cd packages/deployment && ./scripts/test-docker-build.sh | $TEST_COLLECT
+        # XXX skip TAP test output and collection for now; it hides the output from the logs
+        run: make docker-build-sdk
+        working-directory: packages/deployment
       - uses: ./.github/actions/restore-node
         with:
           node-version: '18.x'
@@ -245,23 +251,6 @@ jobs:
           # simply ignore any endo branch integration (this means we don't have full coverage)
           ignore-endo-branch: 'true'
         id: restore-node
-      - uses: ./.github/actions/post-test
-        if: (success() || failure())
-        continue-on-error: true
-        timeout-minutes: 4
-        with:
-          datadog-token: ${{ secrets.DATADOG_API_KEY }}
-      - uses: actions/upload-artifact@v3
-        if: always()
-        with:
-          name: logsss
-          path: /home/runner/.npm/_logs/
-      - name: docker build (sdk)
-        # Produces ghcr.io/agoric/agoric-sdk:unreleased used in the following upgrade test.
-        # run: cd packages/deployment && ./scripts/test-docker-build.sh | $TEST_COLLECT
-        # XXX skip TAP test output and collection for now; it hides the output from the logs
-        run: make docker-build-sdk
-        working-directory: packages/deployment
       - name: setup a3p-integration
         run: yarn install
         working-directory: a3p-integration
@@ -292,6 +281,12 @@ jobs:
           from: ${{ secrets.NOTIFY_EMAIL_FROM }}
           to: ${{ secrets.NOTIFY_EMAIL_TO }}
           password: ${{ secrets.NOTIFY_EMAIL_PASSWORD }}
+      - uses: ./.github/actions/post-test
+        if: (success() || failure())
+        continue-on-error: true
+        timeout-minutes: 4
+        with:
+          datadog-token: ${{ secrets.DATADOG_API_KEY }}
 
   test-multichain-e2e:
     needs: pre_check
