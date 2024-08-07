@@ -16,7 +16,7 @@ repositories: instead you should
 [follow our instructions for getting started](https://docs.agoric.com/guides/getting-started/)
 with the Agoric SDK.
 
-But if you are improving the platform itself, these are the repositories
+But if you are improving the platform itself, these are the repositoriess
 to use.
 
 ## Prerequisites
