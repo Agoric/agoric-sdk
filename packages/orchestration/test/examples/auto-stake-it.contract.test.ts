@@ -119,7 +119,7 @@ test('auto-stake-it - make accounts, register tap, return invitationMakers', asy
     'tokens transferred from LOA to COA',
   );
   await transmitTransferAck();
-  const { acknowledgement } = (await inspectDibcBridge()).at(
+  const { acknowledgement } = (await inspectDibcBridge()).bridgeEvents.at(
     -1,
   ) as IBCEvent<'acknowledgementPacket'>;
   // XXX consider checking ICA (dest|source)_channel, to verify the sender of

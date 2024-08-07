@@ -15,9 +15,11 @@ import { decodeBase64 } from '@endo/base64';
 import type { LocalIbcAddress } from '@agoric/vats/tools/ibc-utils.js';
 import { getMethodNames } from '@agoric/internal';
 import { Port } from '@agoric/network';
+import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { commonSetup } from './supports.js';
 import { ChainAddressShape } from '../src/typeGuards.js';
 import { tryDecodeResponse } from '../src/utils/cosmos.js';
+import { buildChannelCloseConfirmEvent } from '../tools/ibc-mocks.js';
 
 const CHAIN_ID = 'cosmoshub-99';
 const HOST_CONNECTION_ID = 'connection-0';
@@ -207,3 +209,102 @@ test('makeAccount accepts opts (version, ordering, encoding)', async t => {
     );
   }
 });
+
+test.failing('.close() sends a downcall to the ibc bridge handler', async t => {
+  const {
+    bootstrap: { cosmosInterchainService },
+    utils: { inspectDibcBridge },
+  } = await commonSetup(t);
+
+  const account = await E(cosmosInterchainService).makeAccount(
+    CHAIN_ID,
+    HOST_CONNECTION_ID,
+    CONTROLLER_CONNECTION_ID,
+    { version: 'ics27-2', ordering: 'unordered', encoding: 'json' },
+  );
+  await eventLoopIteration(); // ensure there's an account to close
+  await E(account).close();
+  await eventLoopIteration();
+
+  const { bridgeEvents, bridgeDowncalls } = await inspectDibcBridge();
+  t.is(bridgeEvents.length, 1, 'bridge received 1 event');
+  t.is(
+    bridgeEvents[0].event,
+    'channelOpenAck',
+    'bridged received channelOpenAck event',
+  );
+
+  t.is(bridgeDowncalls.length, 3, 'bridge received 3 downcalls');
+  t.is(
+    bridgeDowncalls[0].method,
+    'bindPort',
+    'bridge received bindPort downcall',
+  );
+  t.is(
+    bridgeDowncalls[1].method,
+    'startChannelOpenInit',
+    'bridge received startChannelOpenInit downcall',
+  );
+  t.is(
+    bridgeDowncalls[2].method,
+    'startChannelCloseInit',
+    'bridge received startChannelCloseInit downcall',
+  );
+});
+
+test.failing(
+  'onClose handler is called when channelCloseConfirm event is received',
+  async t => {
+    const {
+      bootstrap: { cosmosInterchainService },
+      mocks: { ibcBridge },
+      utils: { inspectDibcBridge },
+    } = await commonSetup(t);
+
+    await E(cosmosInterchainService).makeAccount(
+      CHAIN_ID,
+      HOST_CONNECTION_ID,
+      CONTROLLER_CONNECTION_ID,
+      { version: 'ics27-2', ordering: 'unordered', encoding: 'json' },
+    );
+
+    const { bridgeEvents: bridgeEvents0, bridgeDowncalls: bridgeDowncalls0 } =
+      await inspectDibcBridge();
+    t.is(bridgeEvents0.length, 1, 'bridge received 1 event');
+    t.is(
+      bridgeEvents0[0].event,
+      'channelOpenAck',
+      'bridged received channelOpenAck event',
+    );
+    t.is(bridgeDowncalls0.length, 2, 'bridge received 2 downcalls');
+    t.is(
+      bridgeDowncalls0[0].method,
+      'bindPort',
+      'bridge received bindPort downcall',
+    );
+    t.is(
+      bridgeDowncalls0[1].method,
+      'startChannelOpenInit',
+      'bridge received startChannelOpenInit downcall',
+    );
+
+    // get channelInfo from `channelOpenAck` event
+    const { event, ...channelInfo } = bridgeEvents0[0];
+    // simulate channel closing from remote chain
+    await E(ibcBridge).fromBridge(buildChannelCloseConfirmEvent(channelInfo));
+    await eventLoopIteration();
+
+    const { bridgeEvents: bridgeEvents1, bridgeDowncalls: bridgeDowncalls1 } =
+      await inspectDibcBridge();
+    t.is(bridgeEvents1.length, 2, 'bridge received an additional event');
+    t.is(
+      bridgeEvents1[bridgeEvents1.length - 1].event,
+      'channelCloseConfirm',
+      'bridged received channelCloseInit event',
+    );
+    t.is(bridgeDowncalls1.length, 2, "bridge did not receive add'l downcalls");
+
+    // XXX how can we verify that the onClose handler was called?
+    // for now, we can observe in the logs: ----- IcaAccountKit.4  3 ICA Channel closed. Reason: undefined
+  },
+);

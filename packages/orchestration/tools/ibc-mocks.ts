@@ -6,8 +6,16 @@ import {
 } from '@agoric/cosmic-proto/tendermint/abci/types.js';
 import { encodeBase64, btoa } from '@endo/base64';
 import { toRequestQueryJson } from '@agoric/cosmic-proto';
-import { IBCChannelID, VTransferIBCEvent, type IBCPacket } from '@agoric/vats';
-import { VTRANSFER_IBC_EVENT } from '@agoric/internal/src/action-types.js';
+import {
+  IBCChannelID,
+  IBCEvent,
+  VTransferIBCEvent,
+  type IBCPacket,
+} from '@agoric/vats';
+import {
+  IBC_EVENT,
+  VTRANSFER_IBC_EVENT,
+} from '@agoric/internal/src/action-types.js';
 import { FungibleTokenPacketData } from '@agoric/cosmic-proto/ibc/applications/transfer/v2/packet.js';
 import type { PacketSDKType } from '@agoric/cosmic-proto/ibc/core/channel/v1/channel.js';
 import { LOCALCHAIN_DEFAULT_ADDRESS } from '@agoric/vats/tools/fake-bridge.js';
@@ -206,4 +214,27 @@ export const buildVTransferEvent = ({
     source_port: 'transfer',
     sequence,
   } as IBCPacket,
+});
+
+/**
+ * Simulate an IBC Channel Close Init event. This can be used to simulate an
+ * ICA account closing for an unexpected reason from a remote chain, _or
+ * anything besides the holder calling `.close()`_. If `close()` is called,
+ * we'd instead expect to see a Downcall for channelCloseInit and the
+ * corresponding event.
+ *
+ * @param {Pick<IBCEvent<'channelCloseConfirm'>, 'portID' | 'channelID'>} event
+ */
+export const buildChannelCloseConfirmEvent = ({
+  channelID = 'channel-0',
+  portID = 'icacontroller-1',
+}: Partial<IBCEvent<'channelCloseConfirm'>> = {}): Partial<
+  IBCEvent<'channelCloseConfirm'>
+> => ({
+  blockHeight: 0,
+  blockTime: 0,
+  channelID,
+  event: 'channelCloseConfirm',
+  portID,
+  type: IBC_EVENT,
 });
