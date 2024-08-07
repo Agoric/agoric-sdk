@@ -40,8 +40,9 @@ vbank_addresses = defaultdict(int)
 # * cosmic-swingset-after-commit-stats
 #
 # we classify each run by looking at any bridge-inbound or at the first
-# delivery, and save all the slog lines from cosmic-swingset-bridge-inbound to
-# cosmic-swingset-run-finish in a single file, named bNNN-rNN-TYPE.slog
+# delivery, with additional details from later deliveries, and save all the
+# slog lines from cosmic-swingset-bridge-inbound to cosmic-swingset-run-finish
+# in a single file, named bNNN-rNN-TYPE.slog
 
 def classify(run_num, bridge_inbound, first_delivery):
     #print("-classify", run_num, bool(bridge_inbound))
@@ -183,6 +184,39 @@ def classify(run_num, bridge_inbound, first_delivery):
 
     return source
 
+# mainnet price-feed vats, as of 30-jul-2024
+pf_vats = {
+    "v29": "ATOM-USD",
+    "v68": "stATOM-USD",
+    "v98": "stOSMO-USD",
+    "v104": "stTIA-USD",
+    "v111": "stkATOM-USD",
+    }
+
+def add_details(run_type, d, details):
+    if run_type == "push-price":
+        # look for the E().PushPrice message, and note which vat received it
+        if d["type"] == "deliver" and d["kd"][0] == "message":
+            meth, args = json.loads(d["kd"][2]["methargs"]["body"][1:])
+            if meth == "PushPrice":
+                vatID = d["vatID"]
+                details["denom"] = pf_vats.get(vatID, vatID)
+                details["status"] = "none"
+                print("  - details.denom=", details["denom"])
+        if d["type"] == "console":
+            args = d["args"]
+            print(" console:", args)
+            if "invalid round to report" in args[0]:
+                details["status"] = "invalid-round-1"
+                print("  - details.status=", details["status"])
+            if "cannot report on previous rounds" in args[0]:
+                details["status"] = "invalid-round-2"
+                print("  - details.status=", details["status"])
+            if len(args) > 2 and args[2] == "new quote":
+                details["status"] = "new-quote"
+                print("  - details.status=", details["status"])
+
+
 block_num = None
 block_time = None
 bridge_inbound = None
@@ -191,6 +225,7 @@ run_num = None
 run_start = None
 run_buffer = None
 run_type = None
+details = {}
 continued_run_type = None
 continued_runids = []
 continued_computrons = None
@@ -231,9 +266,9 @@ for line in sys.stdin:
         run_num = d["runNum"]
         first_delivery = None
         deliveries = 0
-        #print("- run-start b%d-r%d" % (block_num, run_num))
+        print("- run-start b%d-r%d" % (block_num, run_num))
     elif stype == "cosmic-swingset-run-finish":
-        #print("- run-finish b%d-r%d" % (block_num, run_num))
+        print("- run-finish b%d-r%d" % (block_num, run_num))
         if run_buffer is not None: run_buffer.append(line)
         run_id = "b%d-r%d" % (block_num, run_num)
         # the bootstrap block has a -run-finish without .usedBeans
@@ -264,12 +299,14 @@ for line in sys.stdin:
             continued_buffers.append(run_buffer)
         if ending:
             # previous run of runs has finished, write it out
+            print(" recording details", continued_runids)
             data = {
                 "classification": continued_run_type,
                 "runids": continued_runids,
                 "computrons": continued_computrons,
                 "deliveries": continued_deliveries,
                 "elapsed": continued_elapsed,
+                "details": details,
                 }
             runs_continued_f.write(json.dumps(data))
             runs_continued_f.write("\n")
@@ -285,6 +322,8 @@ for line in sys.stdin:
             continued_deliveries = None
             continued_elapsed = None
             continued_buffers = None
+            print(" details={}")
+            details = {}
         if starting:
             # start watching for change in run_type
             continued_run_type = run_type
@@ -322,6 +361,12 @@ for line in sys.stdin:
                 except Exception as e:
                     print(first_delivery)
                     raise e
+                print(" details={} (dd)")
+                details = {}
+            add_details(run_type, d, details)
+        if stype == "console":
+            print("XX console", run_type, d)
+            add_details(run_type, d, details)
 
 #for addr in sorted(vbank_addresses):
 #    print(addr, vbank_addresses[addr])
