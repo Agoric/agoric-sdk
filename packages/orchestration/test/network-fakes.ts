@@ -13,6 +13,7 @@ import type {
   IBCEvent,
   ScopedBridgeManagerMethods,
   IBCConnectionID,
+  IBCPortID,
 } from '@agoric/vats';
 import {
   prepareCallbacks as prepareIBCCallbacks,
@@ -56,10 +57,9 @@ export const ibcBridgeMocks: {
     ? (
         obj: IBCMethod<'startChannelOpenInit'>,
         opts: {
-          bech32Prefix: string;
-          sequence: number;
           channelID: IBCChannelID;
           counterpartyChannelID: IBCChannelID;
+          mockChainAddress: string;
         },
       ) => IBCEvent<'channelOpenAck'>
     : T extends 'acknowledgementPacket'
@@ -72,20 +72,15 @@ export const ibcBridgeMocks: {
   channelOpenAck: (
     obj: IBCMethod<'startChannelOpenInit'>,
     {
-      bech32Prefix,
-      sequence,
       channelID,
       counterpartyChannelID,
+      mockChainAddress,
     }: {
-      bech32Prefix: string;
-      sequence: number;
       channelID: IBCChannelID;
       counterpartyChannelID: IBCChannelID;
+      mockChainAddress: string;
     },
   ): IBCEvent<'channelOpenAck'> => {
-    const mockChainAddress =
-      sequence > 0 ? `${bech32Prefix}1test${sequence}` : `${bech32Prefix}1test`;
-
     return {
       type: 'IBC_EVENT',
       blockHeight: 99,
@@ -197,6 +192,20 @@ export const makeFakeIBCBridge = (
   let bridgeEvents: BridgeEvents = [];
   let bridgeDowncalls: BridgeDowncalls = [];
 
+  /**
+   * Store remote mock addresses that have been distributed.
+   * If there's a `channelOpenInit` request for a PortId:ConnnectionId
+   * pair that's been previously established, let's reuse it to mimic
+   * the behavior of the ICS-27 protocol.
+   */
+  type AddressKey = `${IBCPortID}:${IBCConnectionID}`;
+  const getAddressKey = (
+    obj: IBCMethod<'startChannelOpenInit'>,
+  ): AddressKey => {
+    return `${obj.packet.source_port as IBCPortID}:${obj.hops[0] as IBCConnectionID}`;
+  };
+  const addressMap = new Map<AddressKey, string>();
+
   return zone.exo('Fake IBC Bridge Manager', undefined, {
     getBridgeId: () => BridgeId.DIBC,
     toBridge: async obj => {
@@ -205,9 +214,19 @@ export const makeFakeIBCBridge = (
         switch (obj.method) {
           case 'startChannelOpenInit': {
             const connectionChannelCount = remoteChannelMap[obj.hops[0]] || 0;
+            const addressKey = getAddressKey(obj);
+            let mockChainAddress;
+            if (addressMap.has(addressKey)) {
+              mockChainAddress = addressMap.get(addressKey);
+            } else {
+              mockChainAddress =
+                icaAccountCount > 0
+                  ? `${bech32Prefix}1test${icaAccountCount}`
+                  : `${bech32Prefix}1test`;
+              addressMap.set(addressKey, mockChainAddress);
+            }
             const ackEvent = ibcBridgeMocks.channelOpenAck(obj, {
-              bech32Prefix,
-              sequence: icaAccountCount,
+              mockChainAddress,
               channelID: `channel-${channelCount}`,
               counterpartyChannelID: `channel-${connectionChannelCount}`,
             });

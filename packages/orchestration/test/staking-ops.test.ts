@@ -152,10 +152,11 @@ const makeScenario = () => {
         return doMessage(msgs[0]);
       },
       executeTx: () => Fail`mock`,
-      close: () => Fail`mock`,
+      deactivate: () => Fail`mock`,
       getLocalAddress: () => Fail`mock`,
       getRemoteAddress: () => Fail`mock`,
       getPort: () => Fail`mock`,
+      reactivate: () => Fail`mock`,
     });
     return { account, calls };
   };

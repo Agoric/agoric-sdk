@@ -29,7 +29,8 @@ classDiagram
       getPort()
       executeTx()
       executeEncodedTx()
-      close()
+      deactivate()
+      reactivate()
     }
     class ICQConnection {
       port: Port

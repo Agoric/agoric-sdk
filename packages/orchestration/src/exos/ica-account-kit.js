@@ -14,13 +14,14 @@ import { findAddressField } from '../utils/address.js';
 import { makeTxPacket, parseTxPacket } from '../utils/packet.js';
 
 /**
+ * @import {HostOf} from '@agoric/async-flow';
  * @import {Zone} from '@agoric/base-zone';
  * @import {Connection, Port} from '@agoric/network';
  * @import {Remote, Vow, VowTools} from '@agoric/vow';
  * @import {AnyJson} from '@agoric/cosmic-proto';
  * @import {TxBody} from '@agoric/cosmic-proto/cosmos/tx/v1beta1/tx.js';
  * @import {LocalIbcAddress, RemoteIbcAddress} from '@agoric/vats/tools/ibc-utils.js';
- * @import {ChainAddress} from '../types.js';
+ * @import {ChainAddress, IcaAccount} from '../types.js';
  */
 
 const trace = makeTracer('IcaAccountKit');
@@ -37,7 +38,8 @@ export const IcaAccountI = M.interface('IcaAccount', {
   executeEncodedTx: M.call(M.arrayOf(Proto3Shape))
     .optional(TxBodyOptsShape)
     .returns(VowShape),
-  close: M.call().returns(VowShape),
+  deactivate: M.call().returns(VowShape),
+  reactivate: M.call().returns(VowShape),
 });
 
 /**
@@ -49,6 +51,7 @@ export const IcaAccountI = M.interface('IcaAccount', {
  *   requestedRemoteAddress: string;
  *   remoteAddress: RemoteIbcAddress | undefined;
  *   chainAddress: ChainAddress | undefined;
+ *   isInitiatingClose: boolean;
  * }} State
  */
 
@@ -82,6 +85,7 @@ export const prepareIcaAccountKit = (zone, { watch, asVow }) =>
         remoteAddress: undefined,
         chainAddress: undefined,
         localAddress: undefined,
+        isInitiatingClose: false,
       }),
     {
       parseTxPacketWatcher: {
@@ -129,27 +133,37 @@ export const prepareIcaAccountKit = (zone, { watch, asVow }) =>
         executeEncodedTx(msgs, opts) {
           return asVow(() => {
             const { connection } = this.state;
-            if (!connection) throw Fail`connection not available`;
+            if (!connection) {
+              throw Fail`Account not available or deactivated.`;
+            }
             return watch(
               E(connection).send(makeTxPacket(msgs, opts)),
               this.facets.parseTxPacketWatcher,
             );
           });
         },
-        /**
-         * Close the remote account
-         *
-         * @returns {Vow<void>}
-         * @throws {Error} if connection is not available or already closed
-         */
-        close() {
+        /** @type {HostOf<IcaAccount['deactivate']>} */
+        deactivate() {
           return asVow(() => {
-            /// TODO #9192 what should the behavior be here? and `onClose`?
-            // - retrieve assets?
-            // - revoke the port?
             const { connection } = this.state;
-            if (!connection) throw Fail`connection not available`;
+            if (!connection) throw Fail`Account not available or deactivated.`;
+            this.state.isInitiatingClose = true;
             return E(connection).close();
+          });
+        },
+        /** @type {HostOf<IcaAccount['reactivate']>} */
+        reactivate() {
+          return asVow(() => {
+            const { connection, port, requestedRemoteAddress } = this.state;
+            if (connection) {
+              throw Fail`Account is already active.`;
+            }
+            return watch(
+              E(port).connect(
+                requestedRemoteAddress,
+                this.facets.connectionHandler,
+              ),
+            );
           });
         },
       },
@@ -175,13 +189,34 @@ export const prepareIcaAccountKit = (zone, { watch, asVow }) =>
           });
         },
         /**
+         * This handler fires any time the connection (channel) closes. This
+         * could be due to external factors (e.g. a packet timeout), or a holder
+         * initiated action (`.deactivate()`).
+         *
+         * Here, if a connection is opened again, we clear the connection and
+         * addresses from state as they will change - a new channel will be
+         * established if the connection is reopened.
+         *
+         * If the holder did not initiate the closure, a new connection is
+         * established using the original requested remote address. This will
+         * result in a new channelID but the ChainAddress will be preserved.
+         *
          * @param {Remote<Connection>} _connection
          * @param {unknown} reason
+         * @see {@link https://docs.cosmos.network/v0.45/ibc/overview.html#:~:text=In%20ORDERED%20channels%2C%20a%20timeout%20of%20a%20single%20packet%20in%20the%20channel%20closes%20the%20channel.}
          */
         async onClose(_connection, reason) {
           trace(`ICA Channel closed. Reason: ${reason}`);
-          // FIXME handle connection closing https://github.com/Agoric/agoric-sdk/issues/9192
-          // XXX is there a scenario where a connection will unexpectedly close? _I think yes_
+          this.state.connection = undefined;
+          this.state.localAddress = undefined;
+          this.state.remoteAddress = undefined;
+          if (this.state.isInitiatingClose === true) {
+            trace('Account deactivated by holder. Skipping reactivation.');
+            this.state.isInitiatingClose = false;
+          } else {
+            trace('Account closed unexpectedly. Automatically reactivating.');
+            void watch(this.facets.account.reactivate());
+          }
         },
       },
     },
