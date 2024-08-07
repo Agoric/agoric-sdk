@@ -32,6 +32,7 @@ runs:
           export DD_ENV="ci"
           export DD_SITE="${{ inputs.datadog-site }}"
 
+          ls ./packages/*/junit.xml
           timeout 15 npx @datadog/datadog-ci junit upload --service agoric-sdk ./packages/*/junit.xml
         fi
     - name: upload coverage prepare
