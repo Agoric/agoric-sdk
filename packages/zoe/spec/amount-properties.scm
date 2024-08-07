@@ -19,7 +19,7 @@
     )
    ))
 
-(define (partial-order m)
+(define (partial-order m) ;; isGTE is a partial order with empty as minimum
   (define empty (m 'makeEmpty))
   (property
    ((x $natural) (y $natural) (z $natural))
