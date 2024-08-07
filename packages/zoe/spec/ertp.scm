@@ -19,7 +19,10 @@
    [(isGTE x y) (>= x y)]
    [(isEqual x y) (= x y)]
    [(add x y) (+ x y)]
-   [(subtract x y) (- x y)]))
+   [(subtract x y) (- x y)]
+   [(min x y) (if (< x y) x y)]
+   [(max x y) (if (> x y) x y)]
+   ))
 
 (define-actor (^payment _bcom brand)
   (methods
