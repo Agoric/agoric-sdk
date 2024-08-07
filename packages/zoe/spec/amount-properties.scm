@@ -55,9 +55,18 @@
     )
    ))
 
+(define (subtract-ok m) ;; (x + y) - y = x; (y - x) + x = y if y >= x'
+  (property
+   ((x $natural) (y $natural))
+   (and
+    (m 'isEqual (m 'subtract (m 'add x y) y) x)
+    (if (m 'isGTE y x) (m 'isEqual (m 'add (m 'subtract y x) x) y) #t)
+    )))
+
 (quickcheck (ensure-equivalence nat-amount-math))
 (quickcheck (partial-order nat-amount-math))
 (quickcheck (add-ok nat-amount-math))
+(quickcheck (subtract-ok nat-amount-math))
 
 
   
