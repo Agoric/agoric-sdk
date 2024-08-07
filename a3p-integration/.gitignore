@@ -15,7 +15,6 @@ upgrade-test-scripts
 # same for each proposal, an independent project
 proposals/*/.pnp.*
 proposals/*/.yarn/*
-proposals/a:upgrade-next/*
 !proposals/*/.yarn/patches
 !proposals/*/.yarn/plugins
 !proposals/*/.yarn/releases

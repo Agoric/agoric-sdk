@@ -82,6 +82,21 @@ const trace = makeTracer('VD', true);
 
 const shortfallInvitationKey = 'shortfallInvitation';
 
+// If one manager/token fails, we don't want that to block possible success for
+// others, so we .catch() and log separately.
+//
+// exported for testing
+export const makeAllManagersDo = (collateralManagers, vaultManagers) => {
+  /** @param {(vm: VaultManager) => void} fn */
+  return fn => {
+    for (const managerIndex of collateralManagers.values()) {
+      Promise.resolve(vaultManagers.get(managerIndex).self)
+        .then(vm => fn(vm))
+        .catch(e => trace('🚨ERROR: allManagersDo', e));
+    }
+  };
+};
+
 /**
  * @param {import('@agoric/swingset-liveslots').Baggage} baggage
  * @param {import('./vaultFactory.js').VaultFactoryZCF} zcf
@@ -263,13 +278,7 @@ const prepareVaultDirector = (
     metrics: makeRecorderTopic('Vault Factory metrics', metricsKit),
   });
 
-  /** @param {(vm: VaultManager) => void} fn */
-  const allManagersDo = fn => {
-    for (const managerIndex of collateralManagers.values()) {
-      const vm = vaultManagers.get(managerIndex).self;
-      fn(vm);
-    }
-  };
+  const allManagersDo = makeAllManagersDo(collateralManagers, vaultManagers);
 
   const makeWaker = (name, func) => {
     return Far(name, {
