@@ -10,7 +10,9 @@ export const makeVatOptionRecorder = (kernelKeeper, bundleHandler) => {
       enablePipelining = false,
       enableDisavow = false,
       useTranscript = true,
-      reapInterval = kernelKeeper.getDefaultReapInterval(),
+      reapInterval,
+      reapGCKrefs,
+      neverReap = false,
       critical = false,
       meterID = undefined,
       managerType = kernelKeeper.getDefaultManagerType(),
@@ -21,6 +23,17 @@ export const makeVatOptionRecorder = (kernelKeeper, bundleHandler) => {
     if (unused.length) {
       Fail`OptionRecorder: ${vatID} unused options ${unused.join(',')}`;
     }
+    const reapDirtThreshold = {};
+    if (reapInterval !== undefined) {
+      reapDirtThreshold.deliveries = reapInterval;
+    }
+    if (reapGCKrefs !== undefined) {
+      reapDirtThreshold.gcKrefs = reapGCKrefs;
+    }
+    if (neverReap) {
+      reapDirtThreshold.never = true;
+    }
+    // TODO no computrons knob?
     const workerOptions = await makeWorkerOptions(
       managerType,
       bundleHandler,
@@ -35,13 +48,12 @@ export const makeVatOptionRecorder = (kernelKeeper, bundleHandler) => {
       enablePipelining,
       enableDisavow,
       useTranscript,
-      reapInterval,
+      reapDirtThreshold,
       critical,
       meterID,
     });
-    const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
-    vatKeeper.setSourceAndOptions(source, vatOptions);
-    vatKeeper.initializeReapCountdown(vatOptions.reapInterval);
+    // want vNN.options to be in place before provideVatKeeper, so it can cache reapDirtThreshold in RAM, so:
+    kernelKeeper.createVatState(vatID, source, vatOptions);
   };
 
   /**

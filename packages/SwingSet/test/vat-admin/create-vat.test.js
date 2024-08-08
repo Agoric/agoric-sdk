@@ -444,3 +444,40 @@ test('createVat holds refcount', async t => {
   await stepUntil(() => false);
   t.deepEqual(kunser(c.kpResolution(kpid)), 0);
 });
+
+test('createVat without options', async t => {
+  const printSlog = false;
+  const { c, kernelStorage } = await doTestSetup(t, false, printSlog);
+  const { kvStore } = kernelStorage;
+  const threshold = JSON.parse(kvStore.get('kernel.defaultReapDirtThreshold'));
+  t.deepEqual(threshold, { deliveries: 1, gcKrefs: 20, computrons: 'never' });
+
+  const kpid = c.queueToVatRoot('bootstrap', 'byNameWithOptions', [
+    'new13',
+    {},
+  ]);
+  await c.run();
+  const kref = kunser(c.kpResolution(kpid)).getKref();
+  const vatID = kvStore.get(`${kref}.owner`);
+  const options = JSON.parse(kvStore.get(`${vatID}.options`));
+  t.deepEqual(options.reapDirtThreshold, {});
+});
+
+test('createVat with options', async t => {
+  const printSlog = false;
+  const { c, kernelStorage } = await doTestSetup(t, false, printSlog);
+  const { kvStore } = kernelStorage;
+  const threshold = JSON.parse(kvStore.get('kernel.defaultReapDirtThreshold'));
+  t.deepEqual(threshold, { deliveries: 1, gcKrefs: 20, computrons: 'never' });
+
+  const opts = { reapInterval: 123 };
+  const kpid = c.queueToVatRoot('bootstrap', 'byNameWithOptions', [
+    'new13',
+    opts,
+  ]);
+  await c.run();
+  const kref = kunser(c.kpResolution(kpid)).getKref();
+  const vatID = kvStore.get(`${kref}.owner`);
+  const options = JSON.parse(kvStore.get(`${vatID}.options`));
+  t.deepEqual(options.reapDirtThreshold, { deliveries: 123 });
+});

@@ -1,8 +1,9 @@
 /**
  * Kernel's keeper of persistent state for a vat.
  */
-import { Nat, isNat } from '@endo/nat';
+import { Nat } from '@endo/nat';
 import { assert, q, Fail } from '@endo/errors';
+import { isObject } from '@endo/marshal';
 import { parseKernelSlot } from '../parseKernelSlots.js';
 import { makeVatSlot, parseVatSlot } from '../../lib/parseVatSlots.js';
 import { insistVatID } from '../../lib/id.js';
@@ -18,7 +19,9 @@ import { enumeratePrefixedKeys } from './storageHelper.js';
  * @typedef { import('../../types-external.js').SnapStore } SnapStore
  * @typedef { import('../../types-external.js').SourceOfBundle } SourceOfBundle
  * @typedef { import('../../types-external.js').TranscriptStore } TranscriptStore
+ * @typedef { import('../../types-internal.js').Dirt } Dirt
  * @typedef { import('../../types-internal.js').VatManager } VatManager
+ * @typedef { import('../../types-internal.js').ReapDirtThreshold } ReapDirtThreshold
  * @typedef { import('../../types-internal.js').RecordedVatOptions } RecordedVatOptions
  * @typedef { import('../../types-internal.js').TranscriptEntry } TranscriptEntry
  * @import {TranscriptDeliverySaveSnapshot} from '../../types-internal.js'
@@ -32,18 +35,50 @@ const FIRST_OBJECT_ID = 50n;
 const FIRST_PROMISE_ID = 60n;
 const FIRST_DEVICE_ID = 70n;
 
+// TODO: we export this from vatKeeper.js, and import it from
+// kernelKeeper.js, because both files need it, and we want to avoid
+// an import cycle (kernelKeeper imports other things from vatKeeper),
+// but it really wants to live in kernelKeeper not vatKeeper
+export const DEFAULT_REAP_DIRT_THRESHOLD_KEY =
+  'kernel.defaultReapDirtThreshold';
+
+const isBundleSource = source => {
+  return (
+    isObject(source) &&
+    (isObject(source.bundle) ||
+      typeof source.bundleName === 'string' ||
+      typeof source.bundleID === 'string')
+  );
+};
+
 /**
  * Establish a vat's state.
  *
  * @param {*} kvStore  The key-value store in which the persistent state will be kept
  * @param {*} transcriptStore  Accompanying transcript store
  * @param {string} vatID The vat ID string of the vat in question
- * TODO: consider making this part of makeVatKeeper
+ * @param {SourceOfBundle} source
+ * @param {RecordedVatOptions} options
  */
-export function initializeVatState(kvStore, transcriptStore, vatID) {
+export function initializeVatState(
+  kvStore,
+  transcriptStore,
+  vatID,
+  source,
+  options,
+) {
+  assert(isBundleSource(source), `vat ${vatID} source has wrong shape`);
+  assert(
+    isObject(options) && isObject(options.workerOptions),
+    `vat ${vatID} options is missing workerOptions`,
+  );
+
   kvStore.set(`${vatID}.o.nextID`, `${FIRST_OBJECT_ID}`);
   kvStore.set(`${vatID}.p.nextID`, `${FIRST_PROMISE_ID}`);
   kvStore.set(`${vatID}.d.nextID`, `${FIRST_DEVICE_ID}`);
+  kvStore.set(`${vatID}.reapDirt`, JSON.stringify({}));
+  kvStore.set(`${vatID}.source`, JSON.stringify(source));
+  kvStore.set(`${vatID}.options`, JSON.stringify(options));
   transcriptStore.initTranscript(vatID);
 }
 
@@ -68,6 +103,7 @@ export function initializeVatState(kvStore, transcriptStore, vatID) {
  * @param {*} incStat
  * @param {*} decStat
  * @param {*} getCrankNumber
+ * @param {*} scheduleReap
  * @param {SnapStore} [snapStore]
  * returns an object to hold and access the kernel's state for the given vat
  */
@@ -88,9 +124,15 @@ export function makeVatKeeper(
   incStat,
   decStat,
   getCrankNumber,
+  scheduleReap,
   snapStore = undefined,
 ) {
   insistVatID(vatID);
+
+  // note: calling makeVatKeeper() does not change the DB. Any
+  // initialization or upgrade must be complete before it is
+  // called. Only the methods returned by makeVatKeeper() will change
+  // the DB.
 
   function getRequired(key) {
     const value = kvStore.get(key);
@@ -99,6 +141,8 @@ export function makeVatKeeper(
     }
     return value;
   }
+
+  const reapDirtKey = `${vatID}.reapDirt`;
 
   /**
    * @param {SourceOfBundle} source
@@ -125,43 +169,78 @@ export function makeVatKeeper(
 
   function getOptions() {
     /** @type { RecordedVatOptions } */
-    const options = JSON.parse(kvStore.get(`${vatID}.options`) || '{}');
+    const options = JSON.parse(getRequired(`${vatID}.options`));
     return harden(options);
   }
 
-  function initializeReapCountdown(count) {
-    count === 'never' || isNat(count) || Fail`bad reapCountdown ${count}`;
-    kvStore.set(`${vatID}.reapInterval`, `${count}`);
-    kvStore.set(`${vatID}.reapCountdown`, `${count}`);
-  }
+  // This is named "addDirt" because it should increment all dirt
+  // counters (both for reap/BOYD and for heap snapshotting). We don't
+  // have `heapSnapshotDirt` yet, but when we do, it should get
+  // incremented here.
 
-  function updateReapInterval(reapInterval) {
-    reapInterval === 'never' ||
-      isNat(reapInterval) ||
-      Fail`bad reapInterval ${reapInterval}`;
-    kvStore.set(`${vatID}.reapInterval`, `${reapInterval}`);
-    if (reapInterval === 'never') {
-      kvStore.set(`${vatID}.reapCountdown`, 'never');
-    }
-  }
-
-  function countdownToReap() {
-    const rawCount = getRequired(`${vatID}.reapCountdown`);
-    if (rawCount === 'never') {
-      return false;
-    } else {
-      const count = Number.parseInt(rawCount, 10);
-      if (count === 1) {
-        kvStore.set(
-          `${vatID}.reapCountdown`,
-          getRequired(`${vatID}.reapInterval`),
-        );
-        return true;
-      } else {
-        kvStore.set(`${vatID}.reapCountdown`, `${count - 1}`);
-        return false;
+  /**
+   * Add some "dirt" to the vat, possibly triggering a reap/BOYD.
+   *
+   * @param {Dirt} moreDirt
+   */
+  function addDirt(moreDirt) {
+    assert.typeof(moreDirt, 'object');
+    const reapDirt = JSON.parse(getRequired(reapDirtKey));
+    const thresholds = {
+      ...JSON.parse(getRequired(DEFAULT_REAP_DIRT_THRESHOLD_KEY)),
+      ...JSON.parse(getRequired(`${vatID}.options`)).reapDirtThreshold,
+    };
+    let reap = false;
+    for (const key of Object.keys(moreDirt)) {
+      const threshold = thresholds[key];
+      // Don't accumulate dirt if it can't eventually trigger a
+      // BOYD. This is mainly to keep comms from counting upwards
+      // forever. TODO revisit this when we add heapSnapshotDirt,
+      // maybe check both thresholds and accumulate the dirt if either
+      // one is non-'never'.
+      if (threshold && threshold !== 'never') {
+        const oldDirt = reapDirt[key] || 0;
+        // The 'moreDirt' value might be Number or BigInt (eg
+        // .computrons). We coerce to Number so we can JSON-stringify.
+        const newDirt = oldDirt + Number(moreDirt[key]);
+        reapDirt[key] = newDirt;
+        if (newDirt >= threshold) {
+          reap = true;
+        }
       }
     }
+    if (!thresholds.never) {
+      kvStore.set(reapDirtKey, JSON.stringify(reapDirt));
+      if (reap) {
+        scheduleReap(vatID);
+      }
+    }
+  }
+
+  function getReapDirt() {
+    return JSON.parse(getRequired(reapDirtKey));
+  }
+
+  function clearReapDirt() {
+    // This is only called after a BOYD, so it should only clear the
+    // reap/BOYD counters. If/when we add heap-snapshot counters,
+    // those should get cleared in a separate clearHeapSnapshotDirt()
+    // function.
+    const reapDirt = {};
+    kvStore.set(reapDirtKey, JSON.stringify(reapDirt));
+  }
+
+  function getReapDirtThreshold() {
+    return getOptions().reapDirtThreshold;
+  }
+
+  /**
+   * @param {ReapDirtThreshold} reapDirtThreshold
+   */
+  function setReapDirtThreshold(reapDirtThreshold) {
+    assert.typeof(reapDirtThreshold, 'object');
+    const options = { ...getOptions(), reapDirtThreshold };
+    kvStore.set(`${vatID}.options`, JSON.stringify(options));
   }
 
   function nextDeliveryNum() {
@@ -656,9 +735,11 @@ export function makeVatKeeper(
     setSourceAndOptions,
     getSourceAndOptions,
     getOptions,
-    initializeReapCountdown,
-    countdownToReap,
-    updateReapInterval,
+    addDirt,
+    getReapDirt,
+    clearReapDirt,
+    getReapDirtThreshold,
+    setReapDirtThreshold,
     nextDeliveryNum,
     getIncarnationNumber,
     importsKernelSlot,

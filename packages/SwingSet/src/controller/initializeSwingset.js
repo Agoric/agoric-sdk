@@ -256,7 +256,10 @@ export async function loadSwingsetConfigFile(configPath) {
 }
 
 export function swingsetIsInitialized(kernelStorage) {
-  return !!kernelStorage.kvStore.get('initialized');
+  return !!(
+    kernelStorage.kvStore.get('version') ||
+    kernelStorage.kvStore.get('initialized')
+  );
 }
 
 /**
@@ -397,7 +400,7 @@ export async function initializeSwingset(
         enableSetup: true,
         managerType: 'local',
         useTranscript: false,
-        reapInterval: 'never',
+        neverReap: true,
       },
     };
   }
