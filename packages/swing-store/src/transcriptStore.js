@@ -215,7 +215,7 @@ export function makeTranscriptStore(
     ensureTxn();
     const initialIncarnation = 0;
     sqlWriteSpan.run(vatID, 0, 0, initialHash, 1, initialIncarnation);
-    const newRec = spanRec(vatID, 0, 0, initialHash, 1, 0);
+    const newRec = spanRec(vatID, 0, 0, initialHash, true, 0);
     noteExport(spanMetadataKey(newRec), JSON.stringify(newRec));
   }
 
@@ -252,7 +252,7 @@ export function makeTranscriptStore(
   function doSpanRollover(vatID, isNewIncarnation) {
     ensureTxn();
     const { hash, startPos, endPos, incarnation } = getCurrentSpanBounds(vatID);
-    const rec = spanRec(vatID, startPos, endPos, hash, 0, incarnation);
+    const rec = spanRec(vatID, startPos, endPos, hash, false, incarnation);
 
     // add a new record for the now-old span
     noteExport(spanMetadataKey(rec), JSON.stringify(rec));
@@ -270,7 +270,7 @@ export function makeTranscriptStore(
       endPos,
       endPos,
       initialHash,
-      1,
+      true,
       incarnationToUse,
     );
     noteExport(spanMetadataKey(newRec), JSON.stringify(newRec));
@@ -369,14 +369,12 @@ export function makeTranscriptStore(
   }
 
   /**
-   *
    * @param {string} vatID
    * @returns {boolean}
    */
   function hasSpans(vatID) {
-    // note the LIMIT 1: we aren't really fetching all spans
-    const spans = sqlGetSomeVatSpans.all(vatID, 1);
-    return !!spans.length;
+    // the LIMIT 1 means we aren't really getting all spans
+    return sqlGetSomeVatSpans.all(vatID, 1).length > 0;
   }
 
   /**
@@ -703,7 +701,7 @@ export function makeTranscriptStore(
     const newEndPos = endPos + 1;
     const newHash = updateSpanHash(hash, item);
     sqlUpdateSpan.run(newEndPos, newHash, vatID);
-    const rec = spanRec(vatID, startPos, newEndPos, newHash, 1, incarnation);
+    const rec = spanRec(vatID, startPos, newEndPos, newHash, true, incarnation);
     noteExport(spanMetadataKey(rec), JSON.stringify(rec));
   };
 

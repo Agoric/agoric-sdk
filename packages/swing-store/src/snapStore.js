@@ -383,11 +383,10 @@ export function makeSnapStore(
    */
   function hasSnapshots(vatID) {
     // the LIMIT 1 means we aren't really getting all entries
-    return !!sqlGetSnapshotListLimited.all(vatID, 1).length;
+    return sqlGetSnapshotListLimited.all(vatID, 1).length > 0;
   }
 
   /**
-   *
    * @param {string} vatID
    * @param {number} budget
    * @returns {{ done: boolean, cleanups: number }}
@@ -422,7 +421,6 @@ export function makeSnapStore(
   }
 
   /**
-   *
    * @param {string} vatID
    */
   function deleteAllVatSnapshots(vatID) {
