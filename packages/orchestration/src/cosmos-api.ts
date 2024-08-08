@@ -216,8 +216,6 @@ export interface IcaAccount {
     msgs: AnyJson[],
     opts?: Partial<Omit<TxBody, 'messages'>>,
   ) => Promise<string>;
-  /** get Purse for a brand to .withdraw() a Payment from the account */
-  getPurse: (brand: Brand) => Promise<Purse>;
   /**
    * Close the remote account
    */
