@@ -367,7 +367,6 @@ export function makeSnapStore(
     WHERE vatID = ?
     ORDER BY snapPos
   `);
-  sqlGetSnapshotList.pluck(true);
 
   const sqlGetSnapshotListLimited = db.prepare(`
     SELECT snapPos, inUse
@@ -387,55 +386,6 @@ export function makeSnapStore(
   }
 
   /**
-   * @param {string} vatID
-   * @param {number} budget
-   * @returns {{ done: boolean, cleanups: number }}
-   */
-  function deleteSomeVatSnapshots(vatID, budget) {
-    ensureTxn();
-    assert(budget >= 1);
-    let cleanups = 0;
-    // we can't use .iterate here because noteExport writes to the DB,
-    // and we can't have overlapping queries
-    const deletions = sqlGetSnapshotListLimited.all(vatID, budget);
-    if (!deletions.length) {
-      return { done: true, cleanups };
-    }
-    for (const { snapPos, inUse } of deletions) {
-      const exportRec = snapshotRec(vatID, snapPos, undefined);
-      if (inUse) {
-        // stopUsingLastSnapshot() wasn't called, remove .current
-        noteExport(currentSnapshotMetadataKey(exportRec), undefined);
-        // we don't need the rest of stopUsingLastSnapshot() because
-        // we're about to delete everything it would have changed or
-        // created
-      }
-      noteExport(snapshotMetadataKey(exportRec), undefined);
-      sqlDeleteOneVatSnapshot.run(vatID, snapPos);
-      cleanups += 1;
-    }
-    if (hasSnapshots(vatID)) {
-      return { done: false, cleanups };
-    }
-    return { done: true, cleanups };
-  }
-
-  /**
-   * @param {string} vatID
-   */
-  function deleteAllVatSnapshots(vatID) {
-    ensureTxn();
-    const deletions = sqlGetSnapshotList.all(vatID);
-    for (const snapPos of deletions) {
-      const exportRec = snapshotRec(vatID, snapPos, undefined);
-      noteExport(snapshotMetadataKey(exportRec), undefined);
-    }
-    // fastest to delete them all in a single DB statement
-    sqlDeleteVatSnapshots.run(vatID);
-    noteExport(currentSnapshotMetadataKey({ vatID }), undefined);
-  }
-
-  /**
    * Delete some or all snapshots for a given vat (for use when, e.g.,
    * a vat is terminated)
    *
@@ -444,13 +394,36 @@ export function makeSnapStore(
    * @returns {{ done: boolean, cleanups: number }}
    */
   function deleteVatSnapshots(vatID, budget = undefined) {
-    if (budget) {
-      return deleteSomeVatSnapshots(vatID, budget);
-    } else {
-      deleteAllVatSnapshots(vatID);
-      // if you didn't set a budget, you won't be counting deletions
-      return { done: true, cleanups: 0 };
+    ensureTxn();
+    const deleteAll = budget === undefined;
+    assert(deleteAll || budget >= 1, 'budget must be undefined or positive');
+    // We can't use .iterate because noteExport can write to the DB,
+    // and overlapping queries are not supported.
+    const deletions = deleteAll
+      ? sqlGetSnapshotList.all(vatID)
+      : sqlGetSnapshotListLimited.all(vatID, budget);
+    let clearCurrent = deleteAll;
+    for (const deletion of deletions) {
+      clearCurrent ||= deletion.inUse;
+      const { snapPos } = deletion;
+      const exportRec = snapshotRec(vatID, snapPos, undefined);
+      noteExport(snapshotMetadataKey(exportRec), undefined);
+      // Budgeted deletion must delete rows one by one,
+      // but full deletion is handled all at once after this loop.
+      if (!deleteAll) {
+        sqlDeleteOneVatSnapshot.run(vatID, snapPos);
+      }
     }
+    if (deleteAll) {
+      sqlDeleteVatSnapshots.run(vatID);
+    }
+    if (clearCurrent) {
+      noteExport(currentSnapshotMetadataKey({ vatID }), undefined);
+    }
+    return {
+      done: deleteAll || deletions.length === 0 || !hasSnapshots(vatID),
+      cleanups: deletions.length,
+    };
   }
 
   const sqlGetSnapshotInfo = db.prepare(`
