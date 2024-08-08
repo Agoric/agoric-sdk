@@ -77,6 +77,19 @@ export const AmountShape = harden({
   value: AmountValueShape,
 });
 
+/**
+ * To be used to guard an amount pattern argument, i.e., an argument which is a
+ * pattern that can be used to test amounts. Since amounts are keys, anywhere an
+ * amount pattern is expected, an amount can be provided and will match only
+ * that concrete amount, i.e., amounts that are `keyEQ` to that amount.
+ *
+ * The `AmountShape` guard above is an amount pattern. But not all amount
+ * patterns are like `AmountShape`. For example, `M.any()` is a valid amount
+ * pattern that will admit any amount, but is does not resemble the
+ * `AmountShape` pattern above.
+ */
+export const AmountPatternShape = M.pattern();
+
 export const RatioShape = harden({
   numerator: AmountShape,
   denominator: AmountShape,
@@ -178,7 +191,7 @@ export const makeIssuerInterfaces = (
     isLive: M.callWhen(M.await(PaymentShape)).returns(M.boolean()),
     getAmountOf: M.callWhen(M.await(PaymentShape)).returns(amountShape),
     burn: M.callWhen(M.await(PaymentShape))
-      .optional(M.pattern())
+      .optional(AmountPatternShape)
       .returns(amountShape),
   });
 
@@ -205,7 +218,9 @@ export const makeIssuerInterfaces = (
     // `srcPayment` is a remotable, leaving it
     // to this raw method to validate that this remotable is actually
     // a live payment of the correct brand with sufficient funds.
-    deposit: M.call(PaymentShape).optional(M.pattern()).returns(amountShape),
+    deposit: M.call(PaymentShape)
+      .optional(AmountPatternShape)
+      .returns(amountShape),
     getDepositFacet: M.call().returns(DepositFacetShape),
     withdraw: M.call(amountShape).returns(PaymentShape),
     getRecoverySet: M.call().returns(M.setOf(PaymentShape)),

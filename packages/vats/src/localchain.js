@@ -2,7 +2,12 @@
 import { Fail } from '@endo/errors';
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
-import { AmountShape, BrandShape, PaymentShape } from '@agoric/ertp';
+import {
+  AmountPatternShape,
+  AmountShape,
+  BrandShape,
+  PaymentShape,
+} from '@agoric/ertp';
 import { Shape as NetworkShape } from '@agoric/network';
 
 const { Vow$ } = NetworkShape;
@@ -49,7 +54,7 @@ export const LocalChainAccountI = M.interface('LocalChainAccount', {
   getAddress: M.callWhen().returns(Vow$(M.string())),
   getBalance: M.callWhen(BrandShape).returns(Vow$(AmountShape)),
   deposit: M.callWhen(PaymentShape)
-    .optional(M.pattern())
+    .optional(AmountPatternShape)
     .returns(Vow$(AmountShape)),
   withdraw: M.callWhen(AmountShape).returns(Vow$(PaymentShape)),
   executeTx: M.callWhen(M.arrayOf(M.record())).returns(
