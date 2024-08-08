@@ -57,24 +57,24 @@ const testEquate = (t, zone, showOnConsole = false) => {
   bij.unwrapInit(g1, h1);
   t.notThrows(() => equate(g1, h1));
   t.throws(() => equate(g1, h2), {
-    message: 'internal: g->h "[Alleged: g1]" -> "[Vow]" vs "[Alleged: h1]"',
+    message: 'unequal passStyles "remotable" vs "tagged"',
   });
   t.throws(() => equate(g2, h1), {
-    message: 'internal: unexpected h->g "[Alleged: h1]" -> "[Alleged: g1]"',
+    message: 'unequal passStyles "promise" vs "remotable"',
   });
   bij.unwrapInit(g2, h2);
   equate(g2, h2);
 
   t.throws(() => equate(g1, h2), {
-    message: 'internal: g->h "[Alleged: g1]" -> "[Vow]" vs "[Alleged: h1]"',
+    message: 'unequal passStyles "remotable" vs "tagged"',
   });
   t.throws(() => equate(g2, h1), {
-    message: 'internal: g->h "[Promise]" -> "[Alleged: h1]" vs "[Vow]"',
+    message: 'unequal passStyles "promise" vs "remotable"',
   });
 
   equate(harden([g1, g2]), harden([h1, h2]));
   t.throws(() => equate(harden([g1, g2]), harden([h1, h1])), {
-    message: '[1]: internal: g->h "[Promise]" -> "[Alleged: h1]" vs "[Vow]"',
+    message: '[1]: unequal passStyles "promise" vs "remotable"',
   });
 
   const gErr1 = harden(makeError(X`error ${'redacted message'}`, URIError));

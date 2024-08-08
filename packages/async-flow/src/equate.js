@@ -31,7 +31,14 @@ export const makeEquate = bijection => {
         Fail`unequal ${g} vs ${h}`;
       return;
     }
-    if (bijection.has(g, h)) {
+    if (bijection.hasGuest(g) && bijection.guestToHost(g) === h) {
+      // Note that this can be true even when
+      // `bijection.hostToGuest(h) !== g`
+      // but only when the two guests represent the same host, as
+      // happens with unwrapping. That why we do this one-way test
+      // rather than the two way `bijection.has` test.
+      // Even in this one-way case, we have still satisfied
+      // the equate, so return.
       return;
     }
     const gPassStyle = passStyleOf(g);
@@ -41,7 +48,8 @@ export const makeEquate = bijection => {
       // TODO when we do, delete the `throw Fail` line and uncomment
       // the two lines below it.
       // We *do* support passing a guest wrapper of a hostVow back
-      // to the host, but that would be cause by `bijection.has` above.
+      // to the host, but that would be caught by `bijection.guestToHost`
+      // test above.
       throw Fail`guest promises not yet passable`;
       // `init` does not yet do enough checking anyway. For this case,
       // we should ensure that h is a host wrapper of a guest promise,
@@ -92,10 +100,10 @@ export const makeEquate = bijection => {
       case 'remotable': {
         // Note that we can send a guest wrapping of a host remotable
         // back to the host,
-        // but that should have already been taken care of by the
-        // `bijection.has` above.
+        // but that should have already been caught by the
+        // `bijection.guestToHost` above.
         throw Fail`cannot yet send guest remotables to host ${g} vs ${h}`;
-        // `init` does not yet do enough checking anyway. For this case,
+        // `unwrapInit` does not yet do enough checking anyway. For this case,
         // we should ensure that h is a host wrapper of a guest remotable,
         // which is a wrapping we don't yet support.
         // bijection.unwrapInit(g, h);
@@ -104,10 +112,10 @@ export const makeEquate = bijection => {
       case 'promise': {
         // Note that we can send a guest wrapping of a host promise
         // (or vow) back to the host,
-        // but that should have already been taken care of by the
-        // `bijection.has` above.
+        // but that should have already been caught by the
+        // `bijection.guestToHost` above.
         throw Fail`cannot yet send guest promises to host ${g} vs ${h}`;
-        // `init` does not yet do enough checking anyway. For this case,
+        // `unwrapInit` does not yet do enough checking anyway. For this case,
         // we should ensure that h is a host wrapper of a guest promise,
         // which is a wrapping we don't yet support.
         // bijection.unwrapInit(g, h);
