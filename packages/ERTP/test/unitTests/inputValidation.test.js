@@ -162,7 +162,7 @@ test('assertLivePayment', async t => {
   // payment is of the wrong brand
   await t.throwsAsync(() => claim(E(issuer).makeEmptyPurse(), paymentB), {
     message:
-      '"[Alleged: fungibleB payment]" was not a live payment for brand "[Alleged: fungible brand]". It could be a used-up payment, a payment for another brand, or it might not be a payment at all.',
+      '"[Alleged: fungibleB payment_caretaker revocable]" was not a live payment for brand "[Alleged: fungible brand]". It could be a used-up payment, a payment for another brand, or it might not be a payment at all.',
   });
 
   // payment is used up
@@ -172,7 +172,7 @@ test('assertLivePayment', async t => {
 
   await t.throwsAsync(() => claim(E(issuer).makeEmptyPurse(), payment), {
     message:
-      '"[Alleged: fungible payment]" was not a live payment for brand "[Alleged: fungible brand]". It could be a used-up payment, a payment for another brand, or it might not be a payment at all.',
+      '"[Alleged: fungible payment_caretaker revocable]" was not a live payment for brand "[Alleged: fungible brand]". It could be a used-up payment, a payment for another brand, or it might not be a payment at all.',
   });
 });
 
