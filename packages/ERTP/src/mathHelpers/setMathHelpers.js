@@ -37,4 +37,5 @@ export const setMathHelpers = harden({
   doIsEqual: (x, y) => elementsCompare(x, y) === 0,
   doAdd: elementsDisjointUnion,
   doSubtract: elementsDisjointSubtract,
+  doFrugalSplit: (_totalValue, _valuePattern) => undefined,
 });
