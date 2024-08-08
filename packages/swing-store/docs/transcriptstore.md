@@ -6,7 +6,7 @@ Each vat is a JavaScript runtime environment, initialized by evaluating some sta
 
 For each delivery, this data (delivery, syscall/response pairs, delivery-result) is serialized and stored in a single "transcript item". Each item is indexed by an incrementing "delivery number" (`deliveryNum`).
 
-When a vat worker is brought online, the kernel retrieves these transcript items from the transcriptStore and replays them, by performing the delivery and responding to the syscalls, even though the syscall responses are pulled from the transcript instead of causing actual execution. The kernel asserts that the new worker behaves exactly like the original one did. For xsnap workers, the kernel doesn't actually have to replay the *entire* transcript, because it can start from a heap snapshot (stored in the adjoining `snapStore`). So generally it only needs to replay a single span.
+When a vat worker is brought online, the kernel retrieves these transcript items from the transcriptStore and replays them, by performing the delivery and responding to the syscalls, even though the syscall responses are pulled from the transcript instead of causing actual execution. The kernel asserts that the new worker behaves exactly like the original one did. For xsnap workers, the kernel doesn't actually have to replay the *entire* transcript, because it can start from a heap snapshot (stored in the adjoining [`snapStore`](./snapstore.md)). So generally it only needs to replay a single span.
 
 ## Data Model
 
@@ -14,9 +14,9 @@ Vat lifetimes are broken up into "incarnations", separated by upgrade events. Wi
 
 This results in a single open or "current" span for each active vat, and a series of historical spans. For operational purposes, we only care about the current span. But to support some potential deep-replay needs, the transcriptStore can retain data about earlier spans.
 
-The SQLite database has one table that tracks transcript spans. All vatIDs and incarnations are stored in the same table, whose schema is `(vatID, startPos, endPos, hash, isCurrent, incarnation)`.
+The SQLite database has one table that tracks transcript spans, named `transcriptSpans`. All vatIDs and incarnations are stored in the same table, whose schema is `(vatID TEXT, startPos INTEGER, endPos INTEGER, hash TEXT, isCurrent INTEGER, incarnation INTEGER)`. `startPos` and `endPos` define a zero-based range over the sequence of all deliveries into a vat (the former inclusive and the latter exclusive, such that e.g. `startPos=0` and `endPos=3` would encompass the first three deliveries, with positions 0, 1, and 2).
 
-A separate table tracks the items themselves, with a schema of `(vatID, position, item, incarnation)`. This table has one row per transcript item, each of which is "owned" by a single span. Each span owns multiple items (typically 200, but it depends upon how frequently the kernel rolls over new spans).
+A separate table named `transcriptItems` tracks the items themselves, with a schema of `(vatID TEXT, position INTEGER, item TEXT, incarnation INTEGER)`. This table has one row per transcript item, each of which is "owned" by a single span with matching values for `vatID` and `incarnation` and having `startPos <= position` and `endPos > position`. Each span owns multiple items (typically 200, but it depends upon how frequently the kernel rolls over new spans).
 
 In the future, historical spans may be compressed, and their item rows replaced with a single compressed blob in the span record. This would reduce the space needed without actually pruning the data.
 
@@ -39,7 +39,7 @@ The current span, if any, uses a record name of `transcript.${vatID}.current`, a
 
 The available export *artifacts* will depend upon the export mode, and upon the swingstore's `keepTranscripts` setting. Each export artifact corresponds to a single span, and the artifact names are always `transcript.${vatID}.${startPos}.${endPos}` (for both historical and current spans).
 
-In the most-minimal `operational` mode, the export include one artifact for each active (non-terminated) vat: just the current span. If `keepTranscripts` is true, these will be the only available artifacts anyways.
+In the most-minimal `operational` mode, the export includes one artifact for each active (non-terminated) vat: just the current span. If `keepTranscripts` is true, these will be the only available artifacts anyways.
 
 The `replay` mode includes all spans for each vat's current incarnation, but omits spans from earlier incarnations. The `archival` mode includes all spans from all incarnations.
 
@@ -47,11 +47,11 @@ The `debug` mode includes all available spans, even for terminated vats. For the
 
 ## Slow Deletion
 
-As soon as a vat is terminated, the kernel will call `transcriptStore.stopUsingTranscript()`, after which the vat becomes invisible to non-debug exports, and non-loadable by the kernel. The DB is updated to clear the `isCurrent` flag of the latest span, leaving no rows with `isCurrent = 1`.
+As soon as a vat is terminated, the kernel will call `transcriptStore.stopUsingTranscript()`.  The DB is updated to clear the `isCurrent` flag of the latest span, leaving no rows with `isCurrent = 1`. This immediately makes the vat non-loadable by the kernel.
 
-It also replaces the `transcript.${vatID}.current` export-data record with a `transcript.$[vatID}.${startPos}` one, just like the historical spans' records. This change (one deletion, one addition) is added to the export-data callback queue, so the host-app can learn about it after the next commit, and any subsequent `getExportData()` calls will see the replacement record, instead of a `.current` record.
+This also removes the `transcript.${vatID}.current` export-data record, and replaces it with a `transcript.${vatID}.${startPos}` one, effectively making the span historical. This change (one deletion, one addition) is added to the export-data callback queue, so the host-app can learn about it after the next commit, and any subsequent `getExportData()` calls will see the replacement record, instead of a `.current` record.
 
-At this point, all non-`debug` export modes will omit any artifacts for the vat, however the export-data will continue to include records for all spans (all of which look historical).
+At this point, all non-`debug` swing-store exports after this point will omit any artifacts for the vat, but they will still include export-data records (hashes) for all spans, all of which look historical. (Deleting all the span records, and their corresponding export-data records, is too much work to do in a single step).
 
 Later, as the kernel performs cleanup work for this vatID, the `transcriptStore.deleteVatTranscripts(budget)` cleanup call will delete one span row per `budget`, along with all related item rows (typically 200). Each span deleted will also remove one export-data record (which feeds the callback queue, as well as affecting the full `getExportData()` results).
 
@@ -59,12 +59,12 @@ Eventually, the transcriptStore runs out of rows to delete, and `deleteVatTransc
 
 ### TranscriptStore Vat Lifetime
 
-Unlike the SnapStore, the TranscriptStore *does* have an explicit call to be made when a vat is first created: `transcriptStore.initTranscript(vatID)`. Also unlike SnapStore, TranscriptStore (normally) always has an `isCurrent = 1` span for each vat (it might just be empty of items).
+Unlike the [SnapStore](./snapstore.md), the TranscriptStore *does* have an explicit call to be made when a vat is first created: `transcriptStore.initTranscript(vatID)`. Also unlike SnapStore, TranscriptStore (normally) always has an `isCurrent = 1` span for each vat (it might just be empty of items, immediately after the span rolls over).
 
-When a vat is terminated, the kernel should first call `transcriptStore.stopUsingTranscript(vatID)`. This will mark the single current span as `isCurrent = 0`. The kernel must not attempt to read, add, or rollover spans or items while in this state. While in this state, exports (export for `mode = debug`) will ignore this VatID entirely. Note that export-data records will still exist for all spans, as these must be deleted slowly, however there will be no associated artifacts or artifact names.
+When a vat is terminated, the kernel should first call `transcriptStore.stopUsingTranscript(vatID)`. This will mark the single current span as `isCurrent = 0`. The kernel must not attempt to read, add, or rollover spans or items while in this state. While in this state, exports (export for `mode = debug`) will not emit artifacts for this VatID: export-data records will still exist for all spans, as these must be deleted slowly, however there will be no associated artifacts or artifact names.
 
 Then, the kernel should either call `transcriptStore.deleteVatTranscripts(vatID, undefined)` exactly once, or it should call `transcriptStore.deleteVatTranscripts(vatID, budget)` until it returns `{ done: true }`.
 
-As with snapshots, the `stopUsingTranscript()` is a non-mandatory performance improvement. If omitted, exports will continue to include span artifacts for this vat until the first call to `deleteVatTranscripts()` removes the one `isCurrent = 1` span (since spans are deleted most-recent-first). After that point, exports will stop including any artifacts for the vatID. `stopUsingTranscript()` is idempotent, and extra calls will leave the DB unchanged.
+As with snapshots, the `stopUsingTranscript()` is a non-mandatory performance improvement. If omitted, exports will continue to include (many) span artifacts for this vat until the first call to `deleteVatTranscripts()` removes the one `isCurrent = 1` span (since spans are deleted most-recent-first). After that point, exports will stop including any artifacts for the vatID. `stopUsingTranscript()` is idempotent, and extra calls will leave the DB unchanged.
 
 The kernel must keep calling `deleteVatTranscripts(vatID, budget)` until the `{ done }` return value is `true`.  As with the SnapStore, it is safe to call it again after that point; the function will keep returning `true`.
