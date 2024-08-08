@@ -213,7 +213,7 @@ const getRunFromFaucet = async (t, amt) => {
  * @param {Amount} priceBase
  */
 const setupServices = async (t, initialPrice, priceBase) => {
-  const timer = buildZoeManualTimer(t.log);
+  const timer = buildZoeManualTimer(t.log, 0n, { timeStep: 60n * 60n });
   const { zoe, run, aeth, interestTiming, minInitialDebt, rates } = t.context;
   t.context.timer = timer;
 
