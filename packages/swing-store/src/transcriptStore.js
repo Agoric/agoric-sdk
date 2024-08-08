@@ -329,6 +329,11 @@ export function makeTranscriptStore(
     ORDER BY startPos
   `);
 
+  // This query is ORDER BY startPos DESC, so deleteVatTranscripts
+  // will delete the newest spans first. If the kernel failed to call
+  // stopUsingTranscript, that will delete the isCurrent=1 span first,
+  // which lets us stop including span artifacts in exports sooner.
+
   const sqlGetSomeVatSpans = db.prepare(`
     SELECT vatID, startPos, endPos, isCurrent
     FROM transcriptSpans
@@ -382,56 +387,6 @@ export function makeTranscriptStore(
   }
 
   /**
-   * Delete at most 'budget' transcript spans, and their items.
-   *
-   * @param {string} vatID
-   * @param {number} budget
-   * @returns {{ done: boolean, cleanups: number }}
-   */
-  function deleteSomeVatTranscripts(vatID, budget) {
-    ensureTxn();
-    assert(budget >= 1);
-    let cleanups = 0;
-
-    // This query is ORDER BY startPos DESC, so we delete the newest
-    // spans first. If the kernel failed to call stopUsingTranscript,
-    // we might encounter an isCurrent=1 span, but we can delete those
-    // too.
-    const deletions = sqlGetSomeVatSpans.all(vatID, budget);
-
-    if (!deletions.length) {
-      return { done: true, cleanups };
-    }
-    for (const rec of deletions) {
-      // If rec.isCurrent is true, this will remove the
-      // transcript.$vatID.current export-data record. If false, it
-      // will remove the transcript.$vatID.$startPos record.
-      noteExport(spanMetadataKey(rec), undefined);
-      sqlDeleteVatSpan.run(vatID, rec.startPos);
-      sqlDeleteSomeItems.run(vatID, rec.startPos, rec.endPos);
-      cleanups += 1;
-    }
-    if (hasSpans(vatID)) {
-      return { done: false, cleanups };
-    }
-    return { done: true, cleanups };
-  }
-
-  function deleteAllVatTranscripts(vatID) {
-    ensureTxn();
-    // we can't use .iterate here because noteExport writes to the DB,
-    // and we can't have overlapping queries
-    const deletions = sqlGetVatSpans.all(vatID);
-    for (const rec of deletions) {
-      noteExport(spanMetadataKey(rec), undefined);
-    }
-    // might need to delete the .current record, if the caller failed
-    // to call stopUsingTranscript()
-    sqlDeleteVatItems.run(vatID);
-    sqlDeleteVatSpans.run(vatID);
-  }
-
-  /**
    * Delete some or all transcript data for a given vat (for use when,
    * e.g., a vat is terminated)
    *
@@ -440,13 +395,35 @@ export function makeTranscriptStore(
    * @returns {{ done: boolean, cleanups: number }}
    */
   function deleteVatTranscripts(vatID, budget = undefined) {
-    if (budget) {
-      return deleteSomeVatTranscripts(vatID, budget);
-    } else {
-      deleteAllVatTranscripts(vatID);
-      // no budget? no accounting.
-      return { done: true, cleanups: 0 };
+    ensureTxn();
+    const deleteAll = budget === undefined;
+    assert(deleteAll || budget >= 1, 'budget must be undefined or positive');
+    // We can't use .iterate because noteExport can write to the DB,
+    // and overlapping queries are not supported.
+    const deletions = deleteAll
+      ? sqlGetVatSpans.all(vatID)
+      : sqlGetSomeVatSpans.all(vatID, budget);
+    for (const rec of deletions) {
+      // If rec.isCurrent is true, this will remove the
+      // transcript.$vatID.current export-data record. If false, it
+      // will remove the transcript.$vatID.$startPos record.
+      noteExport(spanMetadataKey(rec), undefined);
+
+      // Budgeted deletion must delete rows one by one,
+      // but full deletion is handled all at once after this loop.
+      if (!deleteAll) {
+        sqlDeleteVatSpan.run(vatID, rec.startPos);
+        sqlDeleteSomeItems.run(vatID, rec.startPos, rec.endPos);
+      }
     }
+    if (deleteAll) {
+      sqlDeleteVatItems.run(vatID);
+      sqlDeleteVatSpans.run(vatID);
+    }
+    return {
+      done: deleteAll || deletions.length === 0 || !hasSpans(vatID),
+      cleanups: deletions.length,
+    };
   }
 
   const sqlGetAllSpanMetadata = db.prepare(`
