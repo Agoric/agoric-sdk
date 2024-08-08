@@ -52,6 +52,7 @@ import {
   TopicsRecordShape,
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { PriceQuoteShape, SeatShape } from '@agoric/zoe/src/typeGuards.js';
+import { multiplyBy } from '@agoric/zoe/src/contractSupport/ratio.js';
 import {
   checkDebtLimit,
   makeNatAmountShape,
@@ -991,10 +992,17 @@ export const prepareVaultManagerKit = (
             AmountMath.add(state.totalCollateral, vault.getCollateralAmount()),
             oldCollateral,
           );
+
+          // add in new debt; subtract old debt
+          const debtPre = multiplyBy(
+            oldDebtNormalized,
+            state.compoundedInterest,
+          );
           state.totalDebt = AmountMath.subtract(
             AmountMath.add(state.totalDebt, vault.getCurrentDebt()),
-            oldDebtNormalized,
+            debtPre,
           );
+
           void facets.helper.writeMetrics();
         },
       },
