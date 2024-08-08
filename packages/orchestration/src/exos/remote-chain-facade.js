@@ -12,6 +12,7 @@ import { ChainAddressShape, ChainFacadeI } from '../typeGuards.js';
  * @import {TimerService} from '@agoric/time';
  * @import {Remote} from '@agoric/internal';
  * @import {Vow, VowTools} from '@agoric/vow';
+ * @import {LocalIbcAddress, RemoteIbcAddress} from '@agoric/vats/tools/ibc-utils.js';
  * @import {CosmosInterchainService} from './cosmos-interchain-service.js';
  * @import {prepareCosmosOrchestrationAccount} from './cosmos-orchestration-account.js';
  * @import {ChainInfo, CosmosChainInfo, IBCConnectionInfo, OrchestrationAccount, ChainAddress, IcaAccount, Denom, Chain} from '../types.js';
@@ -48,7 +49,7 @@ const prepareRemoteChainFacadeKit = (
     // consider making an `accounts` childNode
     storageNode,
     timer,
-    vowTools: { asVow, watch },
+    vowTools: { asVow, watch, allVows },
   },
 ) =>
   zone.exoClassKit(
@@ -60,18 +61,19 @@ const prepareRemoteChainFacadeKit = (
           .optional(M.arrayOf(M.undefined())) // empty context
           .returns(VowShape),
       }),
-      getAddressWatcher: M.interface('getAddressWatcher', {
-        onFulfilled: M.call(M.record())
-          .optional(M.remotable())
-          .returns(VowShape),
+      getAddressesWatcher: M.interface('getAddressesWatcher', {
+        onFulfilled: M.call(
+          [ChainAddressShape, M.string(), M.string()],
+          M.remotable(),
+        ).returns(VowShape),
       }),
       makeChildNodeWatcher: M.interface('makeChildNodeWatcher', {
-        onFulfilled: M.call(M.remotable())
-          .optional({
-            account: M.remotable(),
-            chainAddress: ChainAddressShape,
-          })
-          .returns(M.remotable()),
+        onFulfilled: M.call(M.remotable(), {
+          account: M.remotable(),
+          chainAddress: ChainAddressShape,
+          localAddress: M.string(),
+          remoteAddress: M.string(),
+        }).returns(M.remotable()),
       }),
     },
     /**
@@ -117,22 +119,26 @@ const prepareRemoteChainFacadeKit = (
          */
         onFulfilled(account) {
           return watch(
-            E(account).getAddress(),
-            this.facets.getAddressWatcher,
+            allVows([
+              E(account).getAddress(),
+              E(account).getLocalAddress(),
+              E(account).getRemoteAddress(),
+            ]),
+            this.facets.getAddressesWatcher,
             account,
           );
         },
       },
-      getAddressWatcher: {
+      getAddressesWatcher: {
         /**
-         * @param {ChainAddress} chainAddress
+         * @param {[ChainAddress, LocalIbcAddress, RemoteIbcAddress]} chainAddresses
          * @param {IcaAccount} account
          */
-        onFulfilled(chainAddress, account) {
+        onFulfilled([chainAddress, localAddress, remoteAddress], account) {
           return watch(
             E(storageNode).makeChildNode(chainAddress.value),
             this.facets.makeChildNodeWatcher,
-            { account, chainAddress },
+            { account, chainAddress, localAddress, remoteAddress },
           );
         },
       },
@@ -142,23 +148,36 @@ const prepareRemoteChainFacadeKit = (
          * @param {{
          *   account: IcaAccount;
          *   chainAddress: ChainAddress;
+         *   localAddress: LocalIbcAddress;
+         *   remoteAddress: RemoteIbcAddress;
          * }} ctx
          */
-        onFulfilled(childNode, { account, chainAddress }) {
+        onFulfilled(
+          childNode,
+          { account, chainAddress, localAddress, remoteAddress },
+        ) {
           const { remoteChainInfo } = this.state;
           const stakingDenom = remoteChainInfo.stakingTokens?.[0]?.denom;
           if (!stakingDenom) {
             throw Fail`chain info lacks staking denom`;
           }
-          return makeCosmosOrchestrationAccount(chainAddress, stakingDenom, {
-            account,
-            // FIXME storage path https://github.com/Agoric/agoric-sdk/issues/9066
-            storageNode: childNode,
-            // FIXME provide real ICQ connection
-            // FIXME make Query Connection available via chain, not orchestrationAccount
-            icqConnection: anyVal,
-            timer,
-          });
+          return makeCosmosOrchestrationAccount(
+            {
+              chainAddress,
+              bondDenom: stakingDenom,
+              localAddress,
+              remoteAddress,
+            },
+            {
+              account,
+              // FIXME storage path https://github.com/Agoric/agoric-sdk/issues/9066
+              storageNode: childNode,
+              // FIXME provide real ICQ connection
+              // FIXME make Query Connection available via chain, not orchestrationAccount
+              icqConnection: anyVal,
+              timer,
+            },
+          );
         },
       },
     },

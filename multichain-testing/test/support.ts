@@ -9,6 +9,7 @@ import { makeGetFile, makeSetupRegistry } from '../tools/registry.js';
 import { generateMnemonic } from '../tools/wallet.js';
 import { makeRetryUntilCondition } from '../tools/sleep.js';
 import { makeDeployBuilder } from '../tools/deploy.js';
+import { makeHermes } from '../tools/hermes-tools.js';
 
 const setupRegistry = makeSetupRegistry(makeGetFile({ dirname, join }));
 
@@ -59,8 +60,16 @@ export const commonSetup = async (t: ExecutionContext) => {
     log: t.log,
     setTimeout: globalThis.setTimeout,
   });
+  const hermes = makeHermes(childProcess);
 
-  return { useChain, ...tools, ...keyring, retryUntilCondition, deployBuilder };
+  return {
+    useChain,
+    ...tools,
+    ...keyring,
+    retryUntilCondition,
+    deployBuilder,
+    hermes,
+  };
 };
 
 export type SetupContext = Awaited<ReturnType<typeof commonSetup>>;
