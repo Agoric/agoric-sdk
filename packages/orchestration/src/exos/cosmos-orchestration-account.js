@@ -28,7 +28,7 @@ import {
   DelegationShape,
   DenomAmountShape,
   Proto3Shape,
-  TxBodyOpts,
+  TxBodyOptsShape,
 } from '../typeGuards.js';
 import { maxClockSkew, tryDecodeResponse } from '../utils/cosmos.js';
 import { orchestrationAccountMethods } from '../utils/orchestrationAccount.js';
@@ -85,7 +85,7 @@ export const IcaAccountHolderI = M.interface('IcaAccountHolder', {
   withdrawRewards: M.call().returns(Vow$(M.arrayOf(DenomAmountShape))),
   undelegate: M.call(M.arrayOf(DelegationShape)).returns(VowShape),
   executeEncodedTx: M.call(M.arrayOf(Proto3Shape))
-    .optional(TxBodyOpts)
+    .optional(TxBodyOptsShape)
     .returns(VowShape),
 });
 
