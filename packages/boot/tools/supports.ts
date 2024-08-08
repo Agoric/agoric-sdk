@@ -524,13 +524,16 @@ export const makeSwingsetTestKit = async (
       },
     });
   }
+  const swingsetEnv = {
+    DEBUG: 'label-instances',
+  };
   const { controller, timer, bridgeInbound } = await buildSwingset(
     new Map(),
     bridgeOutbound,
     kernelStorage,
     configPath,
     [],
-    {},
+    swingsetEnv,
     {
       callerWillEvaluateCoreProposals: false,
       debugName: 'TESTBOOT',
