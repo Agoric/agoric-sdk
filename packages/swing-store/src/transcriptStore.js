@@ -356,15 +356,19 @@ export function makeTranscriptStore(
   function stopUsingTranscript(vatID) {
     ensureTxn();
     // this transforms the current span into a (short) historical one
+    // (basically doSpanRollover without adding replacement data)
     const bounds = sqlGetCurrentSpanBounds.get(vatID);
     if (bounds) {
+      // add a new record for the now-old span
       const { startPos, endPos, hash, incarnation } = bounds;
+      const rec = spanRec(vatID, startPos, endPos, hash, false, incarnation);
+      noteExport(spanMetadataKey(rec), JSON.stringify(rec));
+
+      // and change its DB row to isCurrent=0
       sqlEndCurrentSpan.run(vatID);
-      // so we delete the transcript.${vatID}.current record, and add a
-      // .startPos one to replace it
+
+      // remove the transcript.${vatID}.current record
       noteExport(spanMetadataKey({ vatID, isCurrent: true }), undefined);
-      const newRec = spanRec(vatID, startPos, endPos, hash, false, incarnation);
-      noteExport(spanMetadataKey(newRec), JSON.stringify(newRec));
     }
   }
 
