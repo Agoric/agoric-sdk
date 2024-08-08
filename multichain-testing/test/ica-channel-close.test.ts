@@ -187,7 +187,6 @@ const intentionalCloseAccountScenario = test.macro({
 
     const { channels } = await retryUntilCondition(
       () => remoteQueryClient.queryChannels(),
-      // @ts-expect-error ChannelSDKType.state is a string not a number
       ({ channels }) => findNewChannel(channels, { rPortID, lPortID }),
       `ICA channel is reopened on ${chainName} Host`,
     );
