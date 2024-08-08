@@ -19,9 +19,10 @@ console.log('UPGV: adding oracle for each brand');
 await registerOraclesForBrand('ATOM', oraclesByBrand);
 await registerOraclesForBrand('stATOM', oraclesByBrand);
 
+const round = 1;
 console.log('UPGV: pushing new prices');
-await pushPrices(11.2, 'ATOM', oraclesByBrand);
-await pushPrices(11.4, 'stATOM', oraclesByBrand);
+await pushPrices(11.2, 'ATOM', oraclesByBrand, round);
+await pushPrices(11.4, 'stATOM', oraclesByBrand, round);
 
 // price_feed and governor, old and new for two tokens
 const priceFeedDetails = await getDetailsMatchingVats('price_feed');

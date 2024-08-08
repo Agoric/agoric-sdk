@@ -99,3 +99,16 @@ export const getDetailsMatchingVats = async vatName => {
 
   return infos;
 };
+
+export const getDetailsByVatId = async vatId => {
+  const kStore = makeSwingstore(
+    dbOpenAmbient(swingstorePath, { readonly: true }),
+  );
+
+  const vatInfo = kStore.lookupVat(vatId);
+  const source = vatInfo.source();
+  // @ts-expect-error cast
+  const { incarnation } = vatInfo.currentSpan();
+  const options = vatInfo.options();
+  return { name: options.name, vatId, incarnation, options, ...source };
+};

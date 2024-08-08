@@ -10,6 +10,7 @@ import {
   GOV3ADDR,
   newOfferId,
   VALIDATORADDR,
+  waitForBlock,
 } from '@agoric/synthetic-chain';
 
 const ORACLE_ADDRESSES = [GOV1ADDR, GOV2ADDR, GOV3ADDR];
@@ -105,25 +106,26 @@ export const generateOracleMap = (baseId, brandNames) => {
   return oraclesByBrand;
 };
 
-export const pushPrices = (price, brandIn, oraclesByBrand) => {
-  const promiseArray = [];
-
-  for (const oracle of oraclesByBrand.get(brandIn)) {
-    promiseArray.push(
-      executeOffer(
-        oracle.address,
-        agops.oracle(
-          'pushPriceRound',
-          '--price',
-          price,
-          '--oracleAdminAcceptOfferId',
-          oracle.offerId,
-        ),
-      ),
+export const pushPrices = async (price, brandIn, oraclesByBrand, round) => {
+  await waitForBlock(1);
+  // rotate which oracle is first. Use the round number
+  const oracles = oraclesByBrand.get(brandIn);
+  for (let i = 0; i < oracles.length; i += 1) {
+    const offset = (i + round) % oracles.length;
+    debugger;
+    console.log('AGDTool', offset, brandIn, oraclesByBrand.get(brandIn));
+    const oracle = oraclesByBrand.get(brandIn)[offset];
+    const oracleCmd = await agops.oracle(
+      'pushPriceRound',
+      '--price',
+      price,
+      '--oracleAdminAcceptOfferId',
+      oracle.offerId,
+      '--roundId',
+      round,
     );
+    await executeOffer(oracle.address, oracleCmd);
   }
-
-  return Promise.all(promiseArray);
 };
 
 export const getPriceQuote = async price => {
