@@ -2,6 +2,8 @@ import { test as unknownTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { makeTracer } from '@agoric/internal';
 import { E } from '@endo/eventual-send';
+import { makeNotifierFromSubscriber } from '@agoric/notifier';
+import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { makeDriverContext, makeManagerDriver } from './driver.js';
 
 /** @typedef {import('./driver.js').DriverContext & {}} Context */
@@ -13,6 +15,78 @@ const trace = makeTracer('TestVC');
 test.before(async t => {
   t.context = await makeDriverContext();
   trace(t, 'CONTEXT');
+});
+
+test('totalDebt does not include compoundedInterest', async t => {
+  const { aeth, run } = t.context;
+  const md = await makeManagerDriver(t); // TODO: thread timer step
+  const timer = md.timer();
+  const vfactory = md.getVaultDirectorPublic();
+
+  t.log(
+    '1. Have a large vault with some debt in a system in which the VaultManager.compoundedInterest is large',
+  );
+
+  // TODO: think about interest rate a bit... trying 720%
+  // so 1 day is 2%
+  await md.setGovernedParam('InterestRate', run.makeRatio(720n, 100n), {
+    key: { collateralBrand: aeth.brand },
+  });
+  // plausible debt limit: $500k
+  await md.setGovernedParam('DebtLimit', run.units(500000), {
+    key: { collateralBrand: aeth.brand },
+  });
+
+  const vd = await md.makeVaultDriver(aeth.units(25), run.units(100));
+  t.deepEqual(await E(vd.vault()).getCurrentDebt(), run.make(105_000_000n));
+
+  await E(timer).tickN(40, 'interest accumulates over 40hrs');
+  await eventLoopIteration(); /// ????
+  t.deepEqual(await E(vd.vault()).getCurrentDebt(), run.make(106008000n));
+
+  // check total debt
+  const aethMgr = await E(vfactory).getCollateralManager(aeth.brand);
+  t.log({ aethMgr });
+  const topics = await E(aethMgr).getPublicTopics();
+  t.log({ topics });
+
+  const metricsNotifier = await makeNotifierFromSubscriber(
+    topics.metrics.subscriber,
+  );
+  let updateCount;
+  const managerNotification1 =
+    await E(metricsNotifier).getUpdateSince(updateCount);
+  t.like(managerNotification1.value.totalDebt, { value: 105000000n }, 'XXX');
+  ({ updateCount } = managerNotification1);
+  // const managerNotification2 =
+  //   await E(metricsNotifier).getUpdateSince(updateCount);
+  // t.like(managerNotification2.value.totalDebt, { value: 105_000_000n });
+  // ({ updateCount } = managerNotification2);
+
+  await md.managerNotified({
+    compoundedInterest: {
+      denominator: {
+        value: 100000000000000000000n,
+      },
+      numerator: {
+        value: 100960000000000000000n,
+      },
+    },
+  });
+
+  t.log('change the collateral of the vault with adjustBalance');
+  await E(vd).giveCollateral(50n, aeth);
+
+  t.log('vault debt now', await E(vd.vault()).getCurrentDebt());
+  t.deepEqual(await E(vd.vault()).getCurrentDebt(), run.make(106008000n));
+
+  const managerNotification3 =
+    await E(metricsNotifier).getUpdateSince(updateCount);
+  t.like(
+    managerNotification3.value.totalDebt,
+    { value: 105_000_000n },
+    'total debt stays the same',
+  );
 });
 
 test('excessive loan', async t => {
