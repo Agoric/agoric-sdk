@@ -19,6 +19,13 @@ const trace = makeTracer('LIQ');
 /** @import {RelativeTimeRecord} from '@agoric/time' */
 /** @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js'; */
 
+/**
+ * @typedef {MapStore<
+ *   Vault,
+ *   { collateralAmount: Amount<'nat'>; debtAmount: Amount<'nat'> }
+ * >} VaultData
+ */
+
 const makeCancelToken = makeCancelTokenMaker('liq');
 
 /**
@@ -270,12 +277,7 @@ export const getLiquidatableVaults = (
   const vaultsToLiquidate = prioritizedVaults.removeVaultsBelow(
     collateralizationDetails,
   );
-  /**
-   * @type {MapStore<
-   *   Vault,
-   *   { collateralAmount: Amount<'nat'>; debtAmount: Amount<'nat'> }
-   * >}
-   */
+  /** @type {VaultData} */
   const vaultData = makeScalarMapStore();
 
   const { zcfSeat: liqSeat } = zcf.makeEmptySeatKit();

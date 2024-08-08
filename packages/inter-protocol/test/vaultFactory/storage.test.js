@@ -144,7 +144,11 @@ test('quotes storage', async t => {
     quoteValue.amountIn.value,
     quoteValue.amountOut.value / quoteValue.amountIn.value,
   );
-  t.is(quoteValue.amountOut.value / quoteValue.amountIn.value, highPrice);
+  t.is(
+    /** @type bigint */ (quoteValue.amountOut.value) /
+      /** @type bigint */ (quoteValue.amountIn.value),
+    highPrice,
+  );
 });
 
 test('governance params', async t => {
