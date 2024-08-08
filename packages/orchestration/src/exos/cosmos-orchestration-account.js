@@ -27,13 +27,15 @@ import {
   ChainAddressShape,
   DelegationShape,
   DenomAmountShape,
+  Proto3Shape,
+  TxBodyOpts,
 } from '../typeGuards.js';
 import { maxClockSkew, tryDecodeResponse } from '../utils/cosmos.js';
 import { orchestrationAccountMethods } from '../utils/orchestrationAccount.js';
 
 /**
  * @import {HostOf} from '@agoric/async-flow';
- * @import {AmountArg, IcaAccount, ChainAddress, CosmosValidatorAddress, ICQConnection, StakingAccountActions, DenomAmount, OrchestrationAccountI, DenomArg} from '../types.js';
+ * @import {AmountArg, IcaAccount, ChainAddress, CosmosValidatorAddress, ICQConnection, StakingAccountActions, DenomAmount, OrchestrationAccountI} from '../types.js';
  * @import {RecorderKit, MakeRecorderKit} from '@agoric/zoe/src/contractSupport/recorder.js';
  * @import {Coin} from '@agoric/cosmic-proto/cosmos/base/v1beta1/coin.js';
  * @import {Delegation} from '@agoric/cosmic-proto/cosmos/staking/v1beta1/staking.js';
@@ -43,8 +45,9 @@ import { orchestrationAccountMethods } from '../utils/orchestrationAccount.js';
  * @import {Vow, VowTools} from '@agoric/vow';
  * @import {Zone} from '@agoric/zone';
  * @import {ResponseQuery} from '@agoric/cosmic-proto/tendermint/abci/types.js';
- * @import {JsonSafe} from '@agoric/cosmic-proto';
+ * @import {JsonSafe, AnyJson} from '@agoric/cosmic-proto';
  * @import {Matcher} from '@endo/patterns';
+ * @import {TxBody} from '@agoric/cosmic-proto/cosmos/tx/v1beta1/tx.js';
  */
 
 const trace = makeTracer('ComosOrchestrationAccountHolder');
@@ -81,6 +84,9 @@ export const IcaAccountHolderI = M.interface('IcaAccountHolder', {
   ),
   withdrawRewards: M.call().returns(Vow$(M.arrayOf(DenomAmountShape))),
   undelegate: M.call(M.arrayOf(DelegationShape)).returns(VowShape),
+  executeEncodedTx: M.call(M.arrayOf(Proto3Shape))
+    .optional(TxBodyOpts)
+    .returns(VowShape),
 });
 
 /** @type {{ [name: string]: [description: string, valueShape: Matcher] }} */
@@ -145,6 +151,7 @@ export const prepareCosmosOrchestrationAccountKit = (
         Undelegate: M.call(M.arrayOf(DelegationShape)).returns(M.promise()),
         CloseAccount: M.call().returns(M.promise()),
         TransferAccount: M.call().returns(M.promise()),
+        ExecuteEncodedTx: M.call().returns(M.promise()),
       }),
     },
     /**
@@ -307,6 +314,19 @@ export const prepareCosmosOrchestrationAccountKit = (
          */
         TransferAccount() {
           throw Error('not yet implemented');
+        },
+        ExecuteEncodedTx() {
+          /**
+           * @type {OfferHandler<
+           *   Vow<string>,
+           *   { msgs: AnyJson[]; opts?: Omit<TxBody, 'messages'> }
+           * >}
+           */
+          const offerHandler = (seat, { msgs, opts }) => {
+            seat.exit();
+            return watch(this.facets.holder.executeEncodedTx(msgs, opts));
+          };
+          return zcf.makeInvitation(offerHandler, 'ExecuteEncodedTx');
         },
       },
       holder: {
@@ -486,6 +506,12 @@ export const prepareCosmosOrchestrationAccountKit = (
             );
             return watch(undelegateV, this.facets.returnVoidWatcher);
           });
+        },
+        /** @type {HostOf<IcaAccount['executeEncodedTx']>} */
+        executeEncodedTx(msgs, opts) {
+          return watch(
+            E(this.facets.helper.owned()).executeEncodedTx(msgs, opts),
+          );
         },
       },
     },
