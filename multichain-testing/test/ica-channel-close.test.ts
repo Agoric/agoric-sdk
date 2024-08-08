@@ -10,6 +10,8 @@ import {
 import { makeQueryClient } from '../tools/query.js';
 import { parseLocalAddress, parseRemoteAddress } from '../tools/address.js';
 import chainInfo from '../starship-chain-info.js';
+import type { IdentifiedChannelSDKType } from '@agoric/cosmic-proto/ibc/core/channel/v1/channel.js';
+import type { IBCPortID } from '@agoric/vats';
 
 const test = anyTest as TestFn<SetupContextWithWallets>;
 
@@ -39,6 +41,20 @@ test.after(async t => {
   const { deleteTestKeys } = t.context;
   deleteTestKeys(accounts);
 });
+
+// XXX until new localAddr + remoteAddr are published to vstorage, use
+// original port to determine new channelID
+const findNewChannel = (
+  channels: IdentifiedChannelSDKType[],
+  { rPortID, lPortID }: { rPortID: IBCPortID; lPortID: IBCPortID },
+) =>
+  channels.find(
+    c =>
+      c.port_id === rPortID &&
+      c.counterparty.port_id === lPortID &&
+      // @ts-expect-error ChannelSDKType.state is a string not a number
+      c.state === 'STATE_OPEN',
+  );
 
 /** The account holder chooses to close their ICA account (channel) */
 const intentionalCloseAccountScenario = test.macro({
@@ -169,18 +185,28 @@ const intentionalCloseAccountScenario = test.macro({
       proposal: {},
     });
 
-    const { channel: rChannelAfterCloseReopen } = await retryUntilCondition(
-      () => remoteQueryClient.queryChannel(rPortID, rChannelID),
+    const { channels } = await retryUntilCondition(
+      () => remoteQueryClient.queryChannels(),
       // @ts-expect-error ChannelSDKType.state is a string not a number
-      ({ channel }) => channel?.state === 'STATE_OPEN',
+      ({ channels }) => findNewChannel(channels, { rPortID, lPortID }),
       `ICA channel is reopened on ${chainName} Host`,
     );
-    t.log('Remote Channel State After Reopening', rChannelAfterCloseReopen);
+    const newChannel = findNewChannel(channels, { rPortID, lPortID });
+    t.log('New Channel after Reopen', newChannel);
+    if (!newChannel) throw new Error('Channel not found');
+    const newAddress = JSON.parse(newChannel.version).address;
+    t.is(newAddress, address, `same chain address is returned - ${chainName}`);
     t.is(
-      rChannelAfterCloseReopen?.state,
+      newChannel.state,
       // @ts-expect-error ChannelSDKType.state is a string not a number
       'STATE_OPEN',
-      `ICA channel is reopened on ${chainName} Host`,
+      `channel is open on ${chainName} Host`,
+    );
+    t.not(newChannel.channel_id, rChannelID, 'remote channel id changed');
+    t.not(
+      newChannel.counterparty.channel_id,
+      lChannelID,
+      'local channel id changed',
     );
   },
 });
@@ -260,7 +286,9 @@ const unintentionalCloseAccountScenario = test.macro({
       channelID: rChannelID,
       portID: rPortID,
     };
-    console.log(`Initiating channelCloseInit for dst: ${dst} src: ${src}`);
+    console.log(
+      `Initiating channelCloseInit for dst: ${JSON.stringify(dst)} src: ${JSON.stringify(src)}`,
+    );
     const closeChannelTx = hermes.channelCloseInit(chainName, dst, src);
     console.log('closeChannelExec', closeChannelTx);
 
@@ -284,17 +312,28 @@ const unintentionalCloseAccountScenario = test.macro({
       'closed state is observed',
     );
 
-    const { channel: channel2 } = await retryUntilCondition(
-      () => remoteQueryClient.queryChannel(rPortID, rChannelID),
+    const { channels } = await retryUntilCondition(
+      () => remoteQueryClient.queryChannels(),
       // @ts-expect-error ChannelSDKType.state is a string not a number
-      ({ channel }) => channel?.state === 'STATE_CLOSED',
-      `ICA channel closed from Hermes closeChannelInit on ${chainName}`,
+      ({ channels }) => findNewChannel(channels, { rPortID, lPortID }),
+      `ICA channel is reopened on ${chainName} Host`,
     );
+    const newChannel = findNewChannel(channels, { rPortID, lPortID });
+    t.log('New Channel after Reopen', newChannel);
+    if (!newChannel) throw new Error('Channel not found');
+    const newAddress = JSON.parse(newChannel.version).address;
+    t.is(newAddress, address, `same chain address is returned - ${chainName}`);
     t.is(
-      channel2?.state,
+      newChannel.state,
       // @ts-expect-error ChannelSDKType.state is a string not a number
       'STATE_OPEN',
-      `channel is automatically reopened on ${chainName}`,
+      `channel is open on ${chainName} Host`,
+    );
+    t.not(newChannel.channel_id, rChannelID, 'remote channel id changed');
+    t.not(
+      newChannel.counterparty.channel_id,
+      lChannelID,
+      'local channel id changed',
     );
   },
 });
