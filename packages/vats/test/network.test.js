@@ -10,6 +10,7 @@ import { prepareVowTools } from '@agoric/vow/vat.js';
 import { makeDurableZone } from '@agoric/zone/durable.js';
 import { E } from '@endo/far';
 
+import { prepareNetworkPowers } from '@agoric/network';
 import { buildRootObject as ibcBuildRootObject } from '../src/vat-ibc.js';
 import { buildRootObject as networkBuildRootObject } from '../src/vat-network.js';
 import { makeFakeIbcBridge } from '../tools/fake-bridge.js';
@@ -80,7 +81,8 @@ test('network - ibc', async t => {
   const ibcVat = E(ibcBuildRootObject)(null, null, provideBaggage('ibc'));
   const baggage = provideBaggage('network - ibc');
   const zone = makeDurableZone(baggage);
-  const powers = prepareVowTools(zone);
+  const vowTools = prepareVowTools(zone);
+  const powers = prepareNetworkPowers(zone, vowTools);
   const { when } = powers;
 
   const makeDurablePublishKit = prepareDurablePublishKit(
@@ -215,7 +217,7 @@ test('network - ibc', async t => {
 
     t.is(await when(ack), 'a-transfer-reply');
 
-    await E(c).close();
+    await when(E(c).close());
   };
 
   await testIBCOutbound();

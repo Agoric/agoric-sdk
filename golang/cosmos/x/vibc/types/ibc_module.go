@@ -1,6 +1,8 @@
 package types
 
 import (
+	fmt "fmt"
+
 	sdkioerrors "cosmossdk.io/errors"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	capability "github.com/cosmos/cosmos-sdk/x/capability/types"
@@ -221,7 +223,10 @@ func (im IBCModule) OnChanCloseInit(
 	}
 
 	err := im.impl.PushAction(ctx, event)
-	return err
+	if err != nil {
+		return err
+	}
+	return fmt.Errorf("OnChanCloseInit can only be sent by the VM")
 }
 
 type ChannelCloseConfirmEvent struct {
