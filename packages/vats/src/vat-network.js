@@ -3,6 +3,7 @@ import { makeDurableZone } from '@agoric/zone/durable.js';
 import {
   prepareEchoConnectionKit,
   prepareLoopbackProtocolHandler,
+  prepareNetworkPowers,
   preparePortAllocator,
   prepareRouterProtocol,
 } from '@agoric/network';
@@ -11,7 +12,8 @@ import { Far } from '@endo/far';
 
 export function buildRootObject(_vatPowers, _args, baggage) {
   const zone = makeDurableZone(baggage);
-  const powers = prepareVowTools(zone.subZone('vow'));
+  const vowTools = prepareVowTools(zone.subZone('vow'));
+  const powers = prepareNetworkPowers(zone, vowTools);
 
   const makeRouterProtocol = prepareRouterProtocol(
     zone.subZone('network'),
