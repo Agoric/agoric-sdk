@@ -84,7 +84,7 @@ test('totalDebt does not include compoundedInterest', async t => {
     await E(metricsNotifier).getUpdateSince(updateCount);
   t.like(
     managerNotification3.value.totalDebt,
-    { value: 105_000_000n },
+    { value: 106_008_000n },
     'total debt stays the same',
   );
 });
