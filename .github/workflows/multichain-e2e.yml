@@ -36,12 +36,15 @@ jobs:
         run: yarn lint
         working-directory: ./agoric-sdk/multichain-testing
 
+      - name: Update config.ci.yaml with commit SHA
+        run: sed -i 's|${AGORIC_IMAGE_TAG}|'"$(git rev-parse HEAD)"'|' ./multichain-testing/config.ci.yaml
+        working-directory: ./agoric-sdk
+
       - name: Setup Starship Infrastructure
         id: starship-infra
         uses: cosmology-tech/starship-action@0.3.0
         with:
-          # uses ghcr.io/agoric/agoric-sdk:dev image (latest master)
-          values: ./agoric-sdk/multichain-testing/config.yaml
+          values: ./agoric-sdk/multichain-testing/config.ci.yaml
           port-forward: true
           version: 0.2.10
           timeout: 30m
