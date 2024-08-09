@@ -158,6 +158,48 @@ export const makeFakeIbcBridge = (zone, onToBridge) => {
 export const LOCALCHAIN_DEFAULT_ADDRESS = 'agoric1fakeLCAAddress';
 
 /**
+ * Used to mock responses from Cosmos Golang back to SwingSet for for
+ * E(lca).executeTx().
+ *
+ * Returns an empty object per message unless specified.
+ *
+ * @param {object} message
+ * @param {number} sequence
+ * @returns {unknown}
+ * @throws {Error} to simulate failures in certain cases
+ */
+export const fakeLocalChainBridgeTxMsgHandler = (message, sequence) => {
+  switch (message['@type']) {
+    // TODO #9402 reference bank to ensure caller has tokens they are transferring
+    case '/ibc.applications.transfer.v1.MsgTransfer': {
+      if (message.token.amount === '504') {
+        throw Error('simulated unexpected MsgTransfer packet timeout');
+      }
+      // like `JsonSafe<MsgTransferResponse>`, but bigints are converted to numbers
+      // FIXME should vlocalchain return a string instead of number for bigint?
+      return {
+        sequence,
+      };
+    }
+    case '/cosmos.staking.v1beta1.MsgDelegate': {
+      if (message.amount.amount === '504') {
+        throw Error('simulated packet timeout');
+      }
+      return /** @type {JsonSafe<MsgDelegateResponse>} */ ({});
+    }
+    case '/cosmos.staking.v1beta1.MsgUndelegate': {
+      return /** @type {JsonSafe<MsgUndelegateResponse>} */ ({
+        // 5 seconds from unix epoch
+        completionTime: { seconds: 5n, nanos: 0 },
+      });
+    }
+    // returns one empty object per message unless specified
+    default:
+      return {};
+  }
+};
+
+/**
  * @param {import('@agoric/zone').Zone} zone
  * @param {(obj) => void} [onToBridge]
  * @returns {ScopedBridgeManager<'vlocalchain'>}
@@ -181,38 +223,9 @@ export const makeFakeLocalchainBridge = (zone, onToBridge = () => {}) => {
         }
         case 'VLOCALCHAIN_EXECUTE_TX': {
           lcaExecuteTxSequence += 1;
-          return obj.messages.map(message => {
-            switch (message['@type']) {
-              // TODO #9402 reference bank to ensure caller has tokens they are transferring
-              case '/ibc.applications.transfer.v1.MsgTransfer': {
-                if (message.token.amount === '504') {
-                  throw Error(
-                    'simulated unexpected MsgTransfer packet timeout',
-                  );
-                }
-                // like `JsonSafe<MsgTransferResponse>`, but bigints are converted to numbers
-                // XXX should vlocalchain return a string instead of number for bigint?
-                return {
-                  sequence: lcaExecuteTxSequence,
-                };
-              }
-              case '/cosmos.staking.v1beta1.MsgDelegate': {
-                if (message.amount.amount === '504') {
-                  throw Error('simulated packet timeout');
-                }
-                return /** @type {JsonSafe<MsgDelegateResponse>} */ ({});
-              }
-              case '/cosmos.staking.v1beta1.MsgUndelegate': {
-                return /** @type {JsonSafe<MsgUndelegateResponse>} */ ({
-                  // 5 seconds from unix epoch
-                  completionTime: { seconds: 5n, nanos: 0 },
-                });
-              }
-              // returns one empty object per message unless specified
-              default:
-                return {};
-            }
-          });
+          return obj.messages.map(message =>
+            fakeLocalChainBridgeTxMsgHandler(message, lcaExecuteTxSequence),
+          );
         }
         default:
           Fail`unknown type ${type}`;
