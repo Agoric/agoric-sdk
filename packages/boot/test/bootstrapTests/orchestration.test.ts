@@ -174,9 +174,6 @@ test.serial('stakeAtom - smart wallet', async t => {
   });
   t.is(readLatest('published.stakeAtom.accounts.cosmos1test'), '');
 
-  const { ATOM } = agoricNamesRemotes.brand;
-  ATOM || Fail`ATOM missing from agoricNames`;
-
   // Cannot await executeOffer because the offer won't resolve until after the bridge's inbound queue is flushed.
   // But this test doesn't require that.
   await wd.sendOffer({
@@ -185,7 +182,7 @@ test.serial('stakeAtom - smart wallet', async t => {
       source: 'continuing',
       previousOffer: 'request-account',
       invitationMakerName: 'Delegate',
-      invitationArgs: [validatorAddress, { brand: ATOM, value: 10n }],
+      invitationArgs: [validatorAddress, { denom: 'uatom', value: 10n }],
     },
     proposal: {},
   });
@@ -207,7 +204,7 @@ test.serial('stakeAtom - smart wallet', async t => {
         source: 'continuing',
         previousOffer: 'request-account',
         invitationMakerName: 'Delegate',
-        invitationArgs: [validatorAddressFail, { brand: ATOM, value: 10n }],
+        invitationArgs: [validatorAddressFail, { denom: 'uatom', value: 10n }],
       },
       proposal: {},
     }),
@@ -394,8 +391,7 @@ test.serial('basic-flows - portfolio holder', async t => {
   // XXX this overrides a previous account, since mocks only provide one address
   t.is(readLatest('published.basicFlows.agoric1mockVlocalchainAddress'), '');
 
-  const { ATOM, BLD } = agoricNamesRemotes.brand;
-  ATOM || Fail`ATOM missing from agoricNames`;
+  const { BLD } = agoricNamesRemotes.brand;
   BLD || Fail`BLD missing from agoricNames`;
 
   await wd.sendOffer({
@@ -407,7 +403,7 @@ test.serial('basic-flows - portfolio holder', async t => {
       invitationArgs: [
         'cosmoshub',
         'Delegate',
-        [validatorAddress, { brand: ATOM, value: 10n }],
+        [validatorAddress, { denom: 'uatom', value: 10n }],
       ],
     },
     proposal: {},
@@ -447,7 +443,7 @@ test.serial('basic-flows - portfolio holder', async t => {
           'Delegate',
           [
             validatorAddress,
-            { brand: ATOM, value: SIMULATED_ERROR_VALUES.TIMEOUT },
+            { denom: 'uatom', value: SIMULATED_ERROR_VALUES.TIMEOUT },
           ],
         ],
       },
