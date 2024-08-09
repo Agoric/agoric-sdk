@@ -4,6 +4,7 @@ import { AmountMath } from '@agoric/ertp';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { heapVowE as VE } from '@agoric/vow/vat.js';
 import { TargetApp } from '@agoric/vats/src/bridge-target.js';
+import { SIMULATED_ERRORS } from '@agoric/vats/tools/fake-bridge.js';
 import { ChainAddress, type AmountArg } from '../../src/orchestration-api.js';
 import { NANOSECONDS_PER_SECOND } from '../../src/utils/time.js';
 import { commonSetup } from '../supports.js';
@@ -173,9 +174,12 @@ test('transfer', async t => {
   );
 
   await t.throwsAsync(
-    // XXX the bridge fakes the timeout response automatically for 504n
-    (await startTransfer({ denom: 'ubld', value: 504n }, destination))
-      .transferP,
+    (
+      await startTransfer(
+        { denom: 'ubld', value: SIMULATED_ERRORS.TIMEOUT },
+        destination,
+      )
+    ).transferP,
     {
       message: 'simulated unexpected MsgTransfer packet timeout',
     },
@@ -322,7 +326,7 @@ test('send', async t => {
   await t.throwsAsync(
     VE(account).send(toAddress, {
       denom: 'ibc/400',
-      value: 400n,
+      value: SIMULATED_ERRORS.BAD_REQUEST,
     }),
     {
       message: 'simulated error',
