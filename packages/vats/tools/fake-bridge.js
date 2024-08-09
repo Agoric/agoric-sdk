@@ -188,7 +188,7 @@ export const fakeLocalChainBridgeTxHandler = (message, sequence) => {
         throw Error('simulated unexpected MsgTransfer packet timeout');
       }
       // like `JsonSafe<MsgTransferResponse>`, but bigints are converted to numbers
-      // XXX should vlocalchain return a string instead of number for bigint?
+      // FIXME should vlocalchain return a string instead of number for bigint?
       return {
         sequence,
       };
