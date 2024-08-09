@@ -53,7 +53,7 @@ type Simplify<T> = { [KeyType in keyof T]: T[KeyType] } & {};
 /**
  * Convert an entire Guest interface into what the host will implement.
  */
-type HostInterface<T> = {
+export type HostInterface<T> = {
   [K in keyof T]: T[K] extends CallableFunction
     ? HostOf<T[K]>
     : T[K] extends Record<string, any>
