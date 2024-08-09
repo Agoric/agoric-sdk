@@ -284,3 +284,66 @@ test('monitor transfers', async t => {
   await simulateIncomingTransfer();
   t.is(upcallCount, 2, 'no more events after app is revoked');
 });
+
+test('send', async t => {
+  const {
+    bootstrap,
+    brands: { bld: stake, ist: stable },
+    utils: { pourPayment, inspectLocalBridge },
+  } = await commonSetup(t);
+  const makeTestLOAKit = prepareMakeTestLOAKit(t, bootstrap);
+  const account = await makeTestLOAKit();
+  t.truthy(account, 'account is returned');
+
+  const oneHundredStakePmt = await pourPayment(stake.units(100));
+  const oneHundredStablePmt = await pourPayment(stable.units(100));
+  t.log('deposit 100 bld to account');
+  await VE(account).deposit(oneHundredStakePmt);
+  t.log('deposit 100 ist to account');
+  await VE(account).deposit(oneHundredStablePmt);
+
+  const toAddress = {
+    value: 'agoric1EOAAccAddress',
+    chainId: 'agoriclocal',
+    encoding: 'bech32' as const,
+  };
+
+  t.log(`send 10 bld to ${toAddress.value}`);
+  await t.throwsAsync(VE(account).send(toAddress, stake.units(10)), {
+    message: 'Brands not currently supported.',
+  });
+  await VE(account).send(toAddress, { denom: 'ubld', value: 10_000_000n });
+
+  // this would normally fail since we do not have ibc/1234 in our wallet,
+  // but the mocked localchain bridge doesn't currently know about balances
+  t.log(`send 10 ibc/1234 (not in vbank) to ${toAddress.value}`);
+  await VE(account).send(toAddress, { denom: 'ibc/1234', value: 10n });
+
+  await t.throwsAsync(
+    VE(account).send(toAddress, {
+      denom: 'ibc/400',
+      value: 400n,
+    }),
+    {
+      message: 'simulated error',
+    },
+  );
+
+  t.log(`send 10 bld and 10 ist to ${toAddress.value} via sendAll`);
+  await VE(account).sendAll(toAddress, [
+    { denom: 'ubld', value: 10_000_000n },
+    { denom: 'uist', value: 10_000_000n },
+  ]);
+
+  const messages = await inspectLocalBridge();
+  const executedBankSends = messages.filter(
+    m =>
+      m.type === 'VLOCALCHAIN_EXECUTE_TX' &&
+      m.messages?.[0]?.['@type'] === '/cosmos.bank.v1beta1.MsgSend',
+  );
+  t.is(
+    executedBankSends.length,
+    4,
+    'sent 2 successful txs and 1 failed. 1 rejected before sending',
+  );
+});

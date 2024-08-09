@@ -113,4 +113,72 @@ test.serial('stakeBld', async t => {
     // FIXME should receive "simulated packet timeout" error
     // { message: 'simulated packet timeout' },
   );
+
+  await wd.executeOffer({
+    id: 'bank-send',
+    invitationSpec: {
+      source: 'continuing',
+      previousOffer: 'request-stake',
+      invitationMakerName: 'Send',
+    },
+    proposal: {},
+    offerArgs: {
+      toAccount: {
+        value: 'agoric1EOAAccAddress',
+        chainId: 'agoriclocal',
+        encoding: 'bech32',
+      },
+      amount: { denom: 'ibc/1234', value: 10n },
+    },
+  });
+  t.like(wd.getLatestUpdateRecord(), {
+    status: { id: 'bank-send', numWantsSatisfied: 1 },
+  });
+
+  await wd.executeOffer({
+    id: 'bank-sendAll',
+    invitationSpec: {
+      source: 'continuing',
+      previousOffer: 'request-stake',
+      invitationMakerName: 'SendAll',
+    },
+    proposal: {},
+    offerArgs: {
+      toAccount: {
+        value: 'agoric1EOAAccAddress',
+        chainId: 'agoriclocal',
+        encoding: 'bech32',
+      },
+      amounts: [
+        { denom: 'uatom', value: 10n },
+        { denom: 'ibc/1234', value: 10n },
+      ],
+    },
+  });
+  t.like(wd.getLatestUpdateRecord(), {
+    status: { id: 'bank-sendAll', numWantsSatisfied: 1 },
+  });
+
+  await t.throwsAsync(
+    wd.executeOffer({
+      id: 'bank-send-fail',
+      invitationSpec: {
+        source: 'continuing',
+        previousOffer: 'request-stake',
+        invitationMakerName: 'Send',
+      },
+      proposal: {},
+      offerArgs: {
+        toAccount: {
+          value: 'agoric1EOAAccAddress',
+          chainId: 'agoriclocal',
+          encoding: 'bech32',
+        },
+        amount: {
+          denom: 'ibc/1234',
+          value: 400n,
+        },
+      },
+    }),
+  );
 });
