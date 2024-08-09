@@ -1,7 +1,7 @@
 import { expectType } from 'tsd';
 import type { Zone } from '@agoric/base-zone';
 import type { Vow, VowTools } from '@agoric/vow';
-import type { HostOf, GuestOf } from '../src/types.js';
+import type { HostFn, GuestOf } from '../src/types.js';
 
 const vt: VowTools = null as any;
 
@@ -14,9 +14,9 @@ expectType<(p1: number, p2: number) => Promise<number>>(
 );
 
 expectType<(p1: number, p2: number) => Vow<number>>(
-  null as unknown as HostOf<typeof sumPromise>,
+  null as unknown as HostFn<typeof sumPromise>,
 );
 expectType<(p1: number, p2: number) => Vow<void>>(
   // @ts-expect-error incompatible return type
-  null as unknown as HostOf<typeof sumPromise>,
+  null as unknown as HostFn<typeof sumPromise>,
 );

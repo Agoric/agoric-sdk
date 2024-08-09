@@ -7,7 +7,7 @@ import { VowShape } from '@agoric/vow';
 import { ChainAddressShape, ChainFacadeI } from '../typeGuards.js';
 
 /**
- * @import {HostInterface, HostOf} from '@agoric/async-flow';
+ * @import {HostInterface, HostFn} from '@agoric/async-flow';
  * @import {Zone} from '@agoric/base-zone';
  * @import {TimerService} from '@agoric/time';
  * @import {Remote} from '@agoric/internal';
@@ -84,12 +84,12 @@ const prepareRemoteChainFacadeKit = (
     },
     {
       public: {
-        /** @type {HostOf<Chain['getChainInfo']>} */
+        /** @type {HostFn<Chain['getChainInfo']>} */
         getChainInfo() {
           return watch(this.state.remoteChainInfo);
         },
 
-        /** @type {HostOf<Chain['makeAccount']>} */
+        /** @type {HostFn<Chain['makeAccount']>} */
         makeAccount() {
           return asVow(() => {
             const { remoteChainInfo, connectionInfo } = this.state;

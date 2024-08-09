@@ -8,7 +8,7 @@ import { VowShape } from '@agoric/vow';
 const { fromEntries } = Object;
 
 /**
- * @import {HostInterface, HostOf} from '@agoric/async-flow';
+ * @import {HostInterface, HostFn} from '@agoric/async-flow';
  * @import {MapStore} from '@agoric/store';
  * @import {VowTools} from '@agoric/vow';
  * @import {ResolvedPublicTopic} from '@agoric/zoe/src/contractSupport/topics.js';
@@ -106,7 +106,7 @@ const preparePortfolioHolderKit = (zone, { asVow, when }) => {
         },
       },
       holder: {
-        // FIXME /** @type {HostOf<OrchestrationAccountI['asContinuingOffer']>} */
+        // FIXME /** @type {HostFn<OrchestrationAccountI['asContinuingOffer']>} */
         asContinuingOffer() {
           return asVow(() => {
             const { invitationMakers } = this.facets;
@@ -117,7 +117,7 @@ const preparePortfolioHolderKit = (zone, { asVow, when }) => {
             });
           });
         },
-        // FIXME /** @type {HostOf<OrchestrationAccountI['getPublicTopics']>} */
+        // FIXME /** @type {HostFn<OrchestrationAccountI['getPublicTopics']>} */
         getPublicTopics() {
           return asVow(() => {
             const { publicTopics } = this.state;
