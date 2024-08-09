@@ -8,6 +8,7 @@ import { Nat } from '@endo/nat';
 /**
  * @import {JsonSafe} from '@agoric/cosmic-proto';
  * @import {MsgDelegateResponse, MsgUndelegateResponse} from '@agoric/cosmic-proto/cosmos/staking/v1beta1/tx.js';
+ * @import {MsgSendResponse} from '@agoric/cosmic-proto/cosmos/bank/v1beta1/tx.js';
  * @import {BridgeHandler, ScopedBridgeManager} from '../src/types.js';
  * @import {Remote} from '@agoric/vow';
  */
@@ -180,6 +181,12 @@ export const fakeLocalChainBridgeTxMsgHandler = (message, sequence) => {
       return {
         sequence,
       };
+    }
+    case '/cosmos.bank.v1beta1.MsgSend': {
+      if (message.amount[0].amount === '400') {
+        throw Error('simulated error');
+      }
+      return /** @type {JsonSafe<MsgSendResponse>} */ ({});
     }
     case '/cosmos.staking.v1beta1.MsgDelegate': {
       if (message.amount.amount === '504') {
