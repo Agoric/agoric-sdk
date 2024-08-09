@@ -182,7 +182,7 @@ export const makePriceAuthorityTransform = async ({
   };
 
   /** @type {PriceAuthority} */
-  const priceAuthority = Far('PriceAuthority', {
+  const priceAuthority = Far('ScaledPriceAuthority', {
     getQuoteIssuer(brandIn, brandOut) {
       assertBrands(brandIn, brandOut);
       return quoteIssuer;

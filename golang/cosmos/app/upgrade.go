@@ -93,7 +93,12 @@ func upgradePriceFeedCoreProposalSteps(upgradeName string) ([]vm.CoreProposalSte
 
 	var inBrandNames []string
 	switch {
-	case isThisUpgrade("UNRELEASED_A3P_INTEGRATION"), isThisUpgrade("UNRELEASED_main"):
+	case isThisUpgrade("UNRELEASED_A3P_INTEGRATION"):
+		inBrandNames = []string{
+			"ATOM",
+			"stATOM",
+		}
+	case isThisUpgrade("UNRELEASED_main"):
 		inBrandNames = []string{
 			"ATOM",
 			"stATOM",
@@ -148,6 +153,8 @@ func upgradePriceFeedCoreProposalSteps(upgradeName string) ([]vm.CoreProposalSte
 	return []vm.CoreProposalStep{
 		// Add new vats for price feeds. The existing ones will be retired shortly.
 		vm.CoreProposalStepForModules(proposals...),
+		// add new scaledPriceAuthorities. The existing ones will be retired shortly.
+		vm.CoreProposalStepForModules("@agoric/builders/scripts/vats/replaceScaledPriceAuthorities.js"),
 		// Add new auction contract. The old one will be retired shortly.
 		vm.CoreProposalStepForModules("@agoric/builders/scripts/vats/add-auction.js"),
 		// upgrade vaultFactory.

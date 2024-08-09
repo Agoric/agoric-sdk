@@ -3,7 +3,6 @@ import { q, Fail } from '@endo/errors';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import { makePromiseKit } from '@endo/promise-kit';
-
 import { AmountMath, AmountShape, BrandShape } from '@agoric/ertp';
 import { makeNotifier } from '@agoric/notifier';
 import { makeTracer } from '@agoric/internal';
@@ -259,7 +258,7 @@ export const makeOnewayPriceAuthorityKit = opts => {
   };
 
   /** @type {PriceAuthority} */
-  const priceAuthority = Far('PriceAuthority', {
+  const priceAuthority = Far('PriceAggregator', {
     getQuoteIssuer(brandIn, brandOut) {
       assertBrands(brandIn, brandOut);
       return quoteIssuer;

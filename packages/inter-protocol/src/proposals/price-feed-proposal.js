@@ -227,7 +227,8 @@ export const createPriceFeed = async (
 
   // being after the above awaits means that when this resolves, the consumer
   // gets notified that the authority is in the registry and its instance is in
-  // agoricNames.
+  // agoricNames. reset() in case we're replacing an existing feed.
+  produceInstance[AGORIC_INSTANCE_NAME].reset();
   produceInstance[AGORIC_INSTANCE_NAME].resolve(faKit.instance);
 
   E(E.get(econCharterKit).creatorFacet).addInstance(

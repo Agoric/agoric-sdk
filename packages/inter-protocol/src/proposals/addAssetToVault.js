@@ -129,7 +129,7 @@ export const publishInterchainAssetFromBank = async (
  * @param {object} config.options
  * @param {InterchainAssetOptions} config.options.interchainAssetOptions
  */
-export const registerScaledPriceAuthority = async (
+export const startScaledPriceAuthority = async (
   {
     consume: {
       agoricNamesAdmin,
@@ -137,7 +137,6 @@ export const registerScaledPriceAuthority = async (
       priceAuthorityAdmin,
       priceAuthority,
     },
-    instance: { produce: produceInstance },
   },
   { options: { interchainAssetOptions } },
 ) => {
@@ -229,6 +228,25 @@ export const registerScaledPriceAuthority = async (
     stableBrand,
     true, // force
   );
+
+  return spaKit;
+};
+
+/**
+ * @param {BootstrapPowers} powers
+ * @param {object} config
+ * @param {object} config.options
+ */
+export const registerScaledPriceAuthority = async (powers, { options }) => {
+  const {
+    instance: { produce: produceInstance },
+  } = powers;
+
+  const { keyword, issuerName = keyword } = options.interchainAssetOptions;
+
+  const spaKit = await startScaledPriceAuthority(powers, { options });
+
+  const label = scaledPriceFeedName(issuerName);
 
   // publish into agoricNames so that others can await its presence.
   // This must stay after registerPriceAuthority above so it's evidence of registration.

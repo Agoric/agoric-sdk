@@ -90,10 +90,11 @@ export const getDetailsMatchingVats = async vatName => {
   const infos = [];
   for (const vatID of vatIDs) {
     const vatInfo = kStore.lookupVat(vatID);
+    const name = vatInfo.options().name;
     const source = vatInfo.source();
     // @ts-expect-error cast
     const { incarnation } = vatInfo.currentSpan();
-    infos.push({ vatName, vatID, incarnation, ...source });
+    infos.push({ vatName: name, vatID, incarnation, ...source });
   }
 
   return infos;
