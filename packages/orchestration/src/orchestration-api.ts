@@ -151,10 +151,10 @@ export interface OrchestrationAccountI {
   /**
    * Transfer amount to another account on the same chain. The promise settles when the transfer is complete.
    * @param toAccount - the account to send the amount to. MUST be on the same chain
-   * @param amount - the amount to send
+   * @param amounts - the amounts to send
    * @returns void
    */
-  send: (toAccount: ChainAddress, amount: AmountArg) => Promise<void>;
+  send: (toAccount: ChainAddress, amounts: AmountArg[]) => Promise<void>;
 
   /**
    * Transfer an amount to another account, typically on another chain.
