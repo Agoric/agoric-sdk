@@ -42,7 +42,7 @@ The following methods are optional (for backwards compatibility with policy obje
 * `policy.allowCleanup()` : may return budget, see "Terminated-Vat Cleanup" below
 * `policy.didCleanup({ cleanups })` (if missing, kernel pretends it returned `true` to keep running)
 
-The `computrons` argument may be `undefined` (e.g. if the crank was delivered to a non-`xs worker`-based vat, such as the comms vat). The policy should probably treat this as equivalent to some "typical" number of computrons.
+The `computrons` value may be `undefined` (e.g. if the crank was delivered to a non-`xs worker`-based vat, such as the comms vat). The policy should probably treat this as equivalent to some "typical" number of computrons.
 
 `crankFailed` indicates the vat suffered an error during crank delivery, such as a metering fault, memory allocation fault, or fatal syscall. We do not currently have a way to measure the computron usage of failed cranks (many of the error cases are signaled by the worker process exiting with a distinctive status code, which does not give it an opportunity to report back detailed metering data). The run policy should assume the worst.
 
@@ -64,17 +64,17 @@ Some vats may grow very large (i.e. large c-lists with lots of imported/exported
 
 To protect the system against these bursts, the run policy can be configured to terminate vats slowly. Instead of doing all the cleanup work immediately, the policy allows the kernel to do a little bit of work each time `controller.run()` is called (e.g. once per block, for kernels hosted inside a blockchain).
 
-There are two RunPolicy methods which control this. The first is `runPolicy.allowCleanup()`. This will be invoked many times during `controller.run()`, each time the kernel tries to decide what to do next (once per step). The return value will enable (or not) a fixed amount of cleanup work. The second is `runPolicy.didCleanup({ cleanups })`, which is called later, to inform the policy of how much cleanup work was actually done. The policy can count the cleanups and switch `allowCleanup()` to return `false` when it reaches a threshold. (We need the pre-check `allowCleanup` method because the simple act of looking for cleanup work is itself a cost that we might be able to afford).
+There are two RunPolicy methods which control this. The first is `runPolicy.allowCleanup()`. This will be invoked many times during `controller.run()`, each time the kernel tries to decide what to do next (once per step). The return value will enable (or not) a fixed amount of cleanup work. The second is `runPolicy.didCleanup({ cleanups })`, which is called later, to inform the policy of how much cleanup work was actually done. The policy can count the cleanups and switch `allowCleanup()` to return `false` when it reaches a threshold. (We need the pre-check `allowCleanup` method because the simple act of looking for cleanup work is itself a cost that we might not be willing to pay).
 
-If `allowCleanup()` exists, it must either return a falsy value, or an object. This object may have a `budget` property, which must be a number.
+If `allowCleanup()` exists, it must either return a falsy value or a `{ budget?: number }` object.
 
 A falsy return value (eg `allowCleanup: () => false`) prohibits cleanup work. This can be useful in a "only clean up during idle blocks" approach (see below), but should not be the only policy used, otherwise vat cleanup would never happen.
 
-A numeric `budget` limits how many cleanups are allowed to happen (if any are needed). One "cleanup" will delete one vatstore row, or one c-list entry (note that c-list deletion may trigger GC work), or one heap snapshot record, or one transcript span (and its populated transcript items). Using `{ budget: 5 }` seems to be a reasonable limit on each call, balancing overhead against doing sufficiently small units of work that we can limit the total work performed.
+A numeric `budget` limits how many cleanups are allowed to happen (if any are needed). One "cleanup" will delete one vatstore row, or one c-list entry (note that c-list deletion may trigger GC work), or one heap snapshot record, or one transcript span (including its populated transcript items). Using `{ budget: 5 }` seems to be a reasonable limit on each call, balancing overhead against doing sufficiently small units of work that we can limit the total work performed.
 
-If `budget` is missing or `undefined`, the kernel will perform unlimited cleanup work. This also happens if `allowCleanup()` is missing entirely, which maintains the old behavior for host applications that haven't been updated to make new policy objects. Note that cleanup is higher priority than anything else, followed by GC work, then BringOutYourDead, then message delivery.
+If `budget` is missing or `undefined`, the kernel will perform unlimited cleanup work. This also happens if `allowCleanup()` is missing entirely, which maintains the old behavior for host applications that haven't been updated to make new policy objects. Note that cleanup is higher priority than any delivery, and is second only to acceptance queue routing.
 
-`didCleanup({ cleanups })` is called when the kernel actually performed some vat-termination cleanup, and the `cleanups` property is a number with the count of cleanups that took place. Each query to `allowCleanup()` might (or might not) be followed by a call to `didCleanup`, with a `cleanups` value that does not exceed the specified budget.
+`didCleanup({ cleanups })` is called when the kernel actually performed some vat-termination cleanup, and the `cleanups` property is a number with the count of cleanups that took place. Each query to `allowCleanup()` might (or might not) be followed by a call to `didCleanup`, with a `cleanups` value that does not exceed the specified budget. Like other policy methods, `didCleanup` should return `true` if the kernel should keep running or `false` if it should stop.
 
 To limit the work done per block (for blockchain-based applications) the host's RunPolicy objects must keep track of how many cleanups were reported, and change the behavior of `allowCleanup()` when it reaches a per-block threshold. See below for examples.
 
@@ -122,7 +122,7 @@ while(1) {
 
 Note that a new policy object should be provided for each call to `run()`.
 
-A more sophisticated one would count computrons. Suppose that experiments suggest that sixty-five million computrons take about 5 seconds to execute. The policy would look like:
+A more sophisticated policy would count computrons, for example based on experimental observations that a 5-second budget is filled by about sixty-five million computrons. The policy would look like:
 
 
 ```js
@@ -130,7 +130,7 @@ function makeComputronCounterPolicy(limit) {
   let total = 0n;
   const policy = harden({
     vatCreated() {
-      total += 1_000_000n; // pretend vat creation takes 1M computrons
+      total += 100_000n; // pretend vat creation takes 100k computrons
       return (total < limit);
     },
     crankComplete(details) {
@@ -139,7 +139,7 @@ function makeComputronCounterPolicy(limit) {
       return (total < limit);
     },
     crankFailed() {
-      total += 65_000_000n; // who knows, 65M is as good as anything
+      total += 1_000_000n; // who knows, 1M is as good as anything
       return (total < limit);
     },
     emptyCrank() {
@@ -150,7 +150,7 @@ function makeComputronCounterPolicy(limit) {
 }
 ```
 
-See `src/runPolicies.js` for examples.
+See [runPolicies.js](../src/lib/runPolicies.js) for examples.
 
 To slowly terminate vats, limiting each block to 5 cleanups, the policy should start with a budget of 5, return the remaining `{ budget }` from `allowCleanup()`, and decrement it as `didCleanup` reports that budget being consumed:
 
