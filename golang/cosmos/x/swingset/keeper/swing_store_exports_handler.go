@@ -11,6 +11,7 @@ import (
 
 	sdkioerrors "cosmossdk.io/errors"
 	agoric "github.com/Agoric/agoric-sdk/golang/cosmos/types"
+	"github.com/Agoric/agoric-sdk/golang/cosmos/types/conv"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/types"
 	"github.com/tendermint/tendermint/libs/log"
@@ -631,7 +632,7 @@ func (exportsHandler SwingStoreExportsHandler) retrieveExport(onExportRetrieved 
 	operationDetails.exportRetrieved = true
 
 	var exportDir swingStoreRetrieveResult
-	err = json.Unmarshal([]byte(out), &exportDir)
+	err = conv.UnmarshalJSONString(out, &exportDir)
 	if err != nil {
 		return err
 	}

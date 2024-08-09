@@ -1,10 +1,10 @@
 package types
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 
+	"github.com/Agoric/agoric-sdk/golang/cosmos/types/conv"
 	vstoragetypes "github.com/Agoric/agoric-sdk/golang/cosmos/x/vstorage/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
@@ -50,7 +50,7 @@ type Messages struct {
 // an "Ack" integer.
 func UnmarshalMessagesJSON(jsonString string) (ret *Messages, err error) {
 	packet := [2]interface{}{}
-	err = json.Unmarshal([]byte(jsonString), &packet)
+	err = conv.UnmarshalJSONString(jsonString, &packet)
 	if err != nil {
 		return nil, err
 	}

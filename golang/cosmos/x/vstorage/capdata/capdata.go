@@ -7,6 +7,8 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+
+	"github.com/Agoric/agoric-sdk/golang/cosmos/types/conv"
 )
 
 // JsonMarshal returns JSON text representing its input,
@@ -270,7 +272,7 @@ func DecodeSerializedCapdata(
 	transformations CapdataValueTransformations,
 ) (interface{}, error) {
 	var capdata Capdata
-	if err := json.Unmarshal([]byte(serializedCapdata), &capdata); err != nil {
+	if err := conv.UnmarshalJSONString(serializedCapdata, &capdata); err != nil {
 		return nil, err
 	}
 	if capdata.Body == "" || capdata.Slots == nil {
@@ -281,7 +283,7 @@ func DecodeSerializedCapdata(
 		serializedBody, decodeValue = serializedBody[1:], decodeCapdataSmallcapsValue
 	}
 	var encoded interface{}
-	if err := json.Unmarshal([]byte(serializedBody), &encoded); err != nil {
+	if err := conv.UnmarshalJSONString(serializedBody, &encoded); err != nil {
 		return nil, err
 	}
 	remotables := map[uint64]*CapdataRemotable{}

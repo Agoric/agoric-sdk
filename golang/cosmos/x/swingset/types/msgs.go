@@ -3,11 +3,11 @@ package types
 import (
 	"bytes"
 	"compress/gzip"
-	"encoding/json"
 	"io"
 	"strings"
 
 	sdkioerrors "cosmossdk.io/errors"
+	"github.com/Agoric/agoric-sdk/golang/cosmos/types/conv"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
@@ -236,7 +236,7 @@ func (msg MsgWalletAction) ValidateBasic() error {
 	if len(strings.TrimSpace(msg.Action)) == 0 {
 		return sdkioerrors.Wrap(sdkerrors.ErrUnknownRequest, "Action cannot be empty")
 	}
-	if !json.Valid([]byte(msg.Action)) {
+	if !conv.ValidJSONString(msg.Action) {
 		return sdkioerrors.Wrap(sdkerrors.ErrJSONUnmarshal, "Wallet action must be valid JSON")
 	}
 	return nil
@@ -291,7 +291,7 @@ func (msg MsgWalletSpendAction) ValidateBasic() error {
 	if len(strings.TrimSpace(msg.SpendAction)) == 0 {
 		return sdkioerrors.Wrap(sdkerrors.ErrUnknownRequest, "Spend action cannot be empty")
 	}
-	if !json.Valid([]byte(msg.SpendAction)) {
+	if !conv.ValidJSONString(msg.SpendAction) {
 		return sdkioerrors.Wrap(sdkerrors.ErrJSONUnmarshal, "Wallet spend action must be valid JSON")
 	}
 	return nil

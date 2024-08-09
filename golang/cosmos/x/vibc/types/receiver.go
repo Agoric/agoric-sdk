@@ -2,9 +2,9 @@ package types
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 
+	"github.com/Agoric/agoric-sdk/golang/cosmos/types/conv"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	channeltypes "github.com/cosmos/ibc-go/v6/modules/core/04-channel/types"
 
@@ -95,7 +95,7 @@ func (ir Receiver) Receive(cctx context.Context, jsonRequest string) (jsonReply 
 	impl := ir.impl
 
 	msg := new(portMessage)
-	err = json.Unmarshal([]byte(jsonRequest), &msg)
+	err = conv.UnmarshalJSONString(jsonRequest, &msg)
 	if err != nil {
 		return "", err
 	}
@@ -124,9 +124,9 @@ func (ir Receiver) Receive(cctx context.Context, jsonRequest string) (jsonReply 
 		seq, err := impl.ReceiveSendPacket(ctx, packet)
 		if err == nil {
 			packet.Sequence = seq
-			bytes, err := json.Marshal(&packet)
+			str, err := conv.MarshalToJSONString(&packet)
 			if err == nil {
-				jsonReply = string(bytes)
+				jsonReply = str
 			}
 		}
 
