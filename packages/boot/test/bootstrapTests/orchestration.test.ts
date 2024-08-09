@@ -447,7 +447,7 @@ test.serial('basic-flows - portfolio holder', async t => {
           'Delegate',
           [
             validatorAddress,
-            { brand: ATOM, value: BigInt(SIMULATED_ERROR_VALUES.TIMEOUT) },
+            { brand: ATOM, value: SIMULATED_ERROR_VALUES.TIMEOUT },
           ],
         ],
       },
@@ -467,7 +467,7 @@ test.serial('basic-flows - portfolio holder', async t => {
           'Delegate',
           [
             'agoric1validator1',
-            { brand: BLD, value: BigInt(SIMULATED_ERROR_VALUES.TIMEOUT) },
+            { brand: BLD, value: SIMULATED_ERROR_VALUES.TIMEOUT },
           ],
         ],
       },

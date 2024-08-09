@@ -165,8 +165,8 @@ export const LOCALCHAIN_DEFAULT_ADDRESS = 'agoric1fakeLCAAddress';
  * messages unless specified otherwise.
  */
 export const SIMULATED_ERROR_VALUES = {
-  TIMEOUT: '504',
-  BAD_REQUEST: '400',
+  TIMEOUT: 504n,
+  BAD_REQUEST: 400n,
 };
 
 /**
@@ -184,7 +184,7 @@ export const fakeLocalChainBridgeTxHandler = (message, sequence) => {
   switch (message['@type']) {
     // TODO #9402 reference bank to ensure caller has tokens they are transferring
     case '/ibc.applications.transfer.v1.MsgTransfer': {
-      if (message.token.amount === SIMULATED_ERROR_VALUES.TIMEOUT) {
+      if (message.token.amount === String(SIMULATED_ERROR_VALUES.TIMEOUT)) {
         throw Error('simulated unexpected MsgTransfer packet timeout');
       }
       // like `JsonSafe<MsgTransferResponse>`, but bigints are converted to numbers
@@ -194,13 +194,15 @@ export const fakeLocalChainBridgeTxHandler = (message, sequence) => {
       };
     }
     case '/cosmos.bank.v1beta1.MsgSend': {
-      if (message.amount[0].amount === SIMULATED_ERROR_VALUES.BAD_REQUEST) {
+      if (
+        message.amount[0].amount === String(SIMULATED_ERROR_VALUES.BAD_REQUEST)
+      ) {
         throw Error('simulated error');
       }
       return /** @type {JsonSafe<MsgSendResponse>} */ ({});
     }
     case '/cosmos.staking.v1beta1.MsgDelegate': {
-      if (message.amount.amount === SIMULATED_ERROR_VALUES.TIMEOUT) {
+      if (message.amount.amount === String(SIMULATED_ERROR_VALUES.TIMEOUT)) {
         throw Error('simulated packet timeout');
       }
       return /** @type {JsonSafe<MsgDelegateResponse>} */ ({});

@@ -176,7 +176,7 @@ test('transfer', async t => {
   await t.throwsAsync(
     (
       await startTransfer(
-        { denom: 'ubld', value: BigInt(SIMULATED_ERROR_VALUES.TIMEOUT) },
+        { denom: 'ubld', value: SIMULATED_ERROR_VALUES.TIMEOUT },
         destination,
       )
     ).transferP,
@@ -331,7 +331,7 @@ test('send', async t => {
 
   await t.throwsAsync(
     VE(account).send(toAddress, [
-      { denom: 'ibc/400', value: BigInt(SIMULATED_ERROR_VALUES.BAD_REQUEST) },
+      { denom: 'ibc/400', value: SIMULATED_ERROR_VALUES.BAD_REQUEST },
     ]),
     {
       message: 'simulated error',

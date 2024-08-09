@@ -103,13 +103,13 @@ test.serial('stakeBld', async t => {
         invitationMakerName: 'Delegate',
         invitationArgs: [
           'agoric1validator1',
-          { brand: BLD, value: BigInt(SIMULATED_ERROR_VALUES.TIMEOUT) },
+          { brand: BLD, value: SIMULATED_ERROR_VALUES.TIMEOUT },
         ],
       },
       proposal: {
         give: {
           // @ts-expect-error XXX BoardRemote
-          In: { brand: BLD, value: BigInt(SIMULATED_ERROR_VALUES.TIMEOUT) },
+          In: { brand: BLD, value: SIMULATED_ERROR_VALUES.TIMEOUT },
         },
       },
     }),
@@ -157,7 +157,7 @@ test.serial('stakeBld', async t => {
         amounts: [
           {
             denom: 'ibc/1234',
-            value: BigInt(SIMULATED_ERROR_VALUES.BAD_REQUEST),
+            value: SIMULATED_ERROR_VALUES.BAD_REQUEST,
           },
         ],
       },
