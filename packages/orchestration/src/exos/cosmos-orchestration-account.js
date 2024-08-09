@@ -184,15 +184,13 @@ export const prepareCosmosOrchestrationAccountKit = (
          * @returns {Coin}
          */
         amountToCoin(amount) {
-          const { bondDenom } = this.state;
-          if ('denom' in amount) {
-            assert.equal(amount.denom, bondDenom);
-          } else {
-            trace('TODO: handle brand', amount);
-            // FIXME(#9211) brand handling
+          if (!('denom' in amount)) {
+            // FIXME(#9211) look up values from brands
+            trace('TODO #9211: handle brand', amount);
+            throw Fail`Brands not currently supported.`;
           }
           return harden({
-            denom: bondDenom,
+            denom: amount.denom,
             amount: String(amount.value),
           });
         },
@@ -358,14 +356,17 @@ export const prepareCosmosOrchestrationAccountKit = (
           return asVow(() => {
             trace('delegate', validator, amount);
             const { helper } = this.facets;
-            const { chainAddress } = this.state;
+            const { chainAddress, bondDenom } = this.state;
+
+            const amountAsCoin = helper.amountToCoin(amount);
+            assert.equal(amountAsCoin.denom, bondDenom);
 
             const results = E(helper.owned()).executeEncodedTx([
               Any.toJSON(
                 MsgDelegate.toProtoMsg({
                   delegatorAddress: chainAddress.value,
                   validatorAddress: validator.value,
-                  amount: helper.amountToCoin(amount),
+                  amount: amountAsCoin,
                 }),
               ),
             ]);
