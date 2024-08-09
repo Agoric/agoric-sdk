@@ -10,8 +10,8 @@ import { ENDPOINT_SEPARATOR, prepareNetworkProtocol } from './network.js';
 import { Shape } from './shapes.js';
 
 /**
- * @import {AttemptDescription, Bytes, Closable, CloseReason, Connection, ConnectionHandler, Endpoint, ListenHandler, Port, Protocol, ProtocolHandler, ProtocolImpl} from './types.js';
- * @import {PromiseVow, Remote, VowKit, VowResolver, VowTools} from '@agoric/vow';
+ * @import {Endpoint, Port, Protocol, ProtocolHandler} from './types.js';
+ * @import {PromiseVow, Remote, VowTools} from '@agoric/vow';
  */
 
 /**
@@ -108,7 +108,7 @@ export const prepareRouter = zone => {
  * Create a router that behaves like a Protocol.
  *
  * @param {import('@agoric/base-zone').Zone} zone
- * @param {ReturnType<import('@agoric/vow').prepareVowTools>} powers
+ * @param {import('./network.js').Powers} powers
  * @param {typeof defaultE} [E] Eventual sender
  */
 export const prepareRouterProtocol = (zone, powers, E = defaultE) => {

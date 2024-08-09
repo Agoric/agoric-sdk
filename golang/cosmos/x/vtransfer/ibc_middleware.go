@@ -50,7 +50,7 @@ func NewIBCMiddleware(ibcModule porttypes.IBCModule, vtransferKeeper keeper.Keep
 // wrapped IBCModule.  They are not performed in the context of a packet, and so
 // do not need to be intercepted.
 
-// OnChanCloseInit implements the IBCModule interface.
+// OnChanOpenInit implements the IBCModule interface.
 func (im IBCMiddleware) OnChanOpenInit(
 	ctx sdk.Context,
 	order channeltypes.Order,

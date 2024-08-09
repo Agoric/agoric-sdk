@@ -158,18 +158,18 @@ export const Shape = /** @type {const} */ harden({
       ).returns(Shape2.Vow$(M.undefined())),
     }),
     protocolHandlerAcceptWatcher: M.interface('ProtocolHandlerAcceptWatcher', {
-      onFulfilled: M.call(M.any()).rest(M.any()).returns(),
+      onFulfilled: M.call(M.any()).rest(M.any()).returns(M.any()),
     }),
     protocolHandlerInstantiateWatcher: M.interface(
       'ProtocolHandlerInstantiateWatcher',
       {
-        onFulfilled: M.call(M.any()).rest(M.any()).returns(),
+        onFulfilled: M.call(M.any()).rest(M.any()).returns(M.any()),
       },
     ),
     protocolHandlerConnectWatcher: M.interface(
       'ProtocolHandlerConnectWatcher',
       {
-        onFulfilled: M.call(M.any()).rest(M.any()).returns(),
+        onFulfilled: M.call(M.any()).rest(M.any()).returns(M.any()),
       },
     ),
     rethrowUnlessMissingWatcher: M.interface('RethrowUnlessMissingWatcher', {

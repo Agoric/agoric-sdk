@@ -3,7 +3,11 @@
 import { assert, X, Fail } from '@endo/errors';
 import { E } from '@endo/far';
 
-import { byteSourceToBase64, base64ToBytes } from '@agoric/network';
+import {
+  CLOSE_REASON_FINALIZER,
+  byteSourceToBase64,
+  base64ToBytes,
+} from '@agoric/network';
 
 import { makeTracer } from '@agoric/internal';
 import {
@@ -140,7 +144,7 @@ export const prepareIBCConnectionHandler = zone => {
         return protocolUtils.ibcSendPacket(packet, relativeTimeoutNs);
       },
       /** @type {Required<ConnectionHandler>['onClose']} */
-      async onClose() {
+      onClose(_conn, reason) {
         const { portID, channelID } = this.state;
         const { protocolUtils, channelKeyToSeqAck } = this.state;
 
@@ -148,18 +152,22 @@ export const prepareIBCConnectionHandler = zone => {
           source_port: portID,
           source_channel: channelID,
         };
-        await protocolUtils.downcall('startChannelCloseInit', {
-          packet,
-        });
-        const rejectReason = Error('Connection closed');
         const channelKey = `${channelID}:${portID}`;
-
+        const rejectReason = Error('Connection closed');
         const seqToAck = channelKeyToSeqAck.get(channelKey);
 
         for (const ackKit of seqToAck.values()) {
           ackKit.resolver.reject(rejectReason);
         }
         channelKeyToSeqAck.delete(channelKey);
+
+        if (reason !== CLOSE_REASON_FINALIZER) {
+          return Promise.resolve();
+        }
+        // This Connection object is initiating the close event
+        return protocolUtils.downcall('startChannelCloseInit', {
+          packet,
+        });
       },
     },
   );
@@ -351,7 +359,7 @@ export const prepareIBCProtocol = (zone, powers) => {
 
           const { util } = this.facets;
 
-          console.info('IBC fromBridge', obj);
+          // console.info('IBC fromBridge', obj);
           await null;
           switch (obj.event) {
             case 'channelOpenInit': {
@@ -586,7 +594,12 @@ export const prepareIBCProtocol = (zone, powers) => {
               break;
             }
 
-            case 'channelCloseInit':
+            case 'channelCloseInit': {
+              // We ignore the close tx message, since any decision to close
+              // should be left to the VM.
+              break;
+            }
+
             case 'channelCloseConfirm': {
               const { portID, channelID } =
                 // could be either but that complicates line wrapping

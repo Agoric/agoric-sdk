@@ -3,6 +3,7 @@ import { prepareVowTools } from '@agoric/vow';
 import assert from 'node:assert/strict';
 import {
   prepareEchoConnectionKit,
+  prepareNetworkPowers,
   prepareNetworkProtocol,
   preparePortAllocator,
 } from '../src/index.js';
@@ -104,9 +105,10 @@ export const prepareProtocolHandler = (
  * @param {Zone} zone
  */
 export const fakeNetworkEchoStuff = zone => {
-  const powers = prepareVowTools(zone);
-  const { makeVowKit, when } = powers;
+  const vowTools = prepareVowTools(zone);
+  const powers = prepareNetworkPowers(zone, vowTools);
 
+  const { makeVowKit, when } = powers;
   const makeNetworkProtocol = prepareNetworkProtocol(zone, powers);
   const makeEchoConnectionHandler = prepareEchoConnectionKit(zone);
   const makeProtocolHandler = prepareProtocolHandler(
