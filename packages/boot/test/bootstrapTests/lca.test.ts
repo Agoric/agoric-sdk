@@ -113,4 +113,45 @@ test.serial('stakeBld', async t => {
     // FIXME should receive "simulated packet timeout" error
     // { message: 'simulated packet timeout' },
   );
+
+  await wd.executeOffer({
+    id: 'bank-send',
+    invitationSpec: {
+      source: 'continuing',
+      previousOffer: 'request-stake',
+      invitationMakerName: 'Send',
+    },
+    proposal: {},
+    offerArgs: {
+      toAccount: {
+        value: 'agoric1EOAAccAddress',
+        chainId: 'agoriclocal',
+        encoding: 'bech32',
+      },
+      amounts: [{ denom: 'ibc/1234', value: 10n }],
+    },
+  });
+  t.like(wd.getLatestUpdateRecord(), {
+    status: { id: 'bank-send', numWantsSatisfied: 1 },
+  });
+
+  await t.throwsAsync(
+    wd.executeOffer({
+      id: 'bank-send-fail',
+      invitationSpec: {
+        source: 'continuing',
+        previousOffer: 'request-stake',
+        invitationMakerName: 'Send',
+      },
+      proposal: {},
+      offerArgs: {
+        toAccount: {
+          value: 'agoric1EOAAccAddress',
+          chainId: 'agoriclocal',
+          encoding: 'bech32',
+        },
+        amounts: [{ denom: 'ibc/1234', value: 400n }],
+      },
+    }),
+  );
 });

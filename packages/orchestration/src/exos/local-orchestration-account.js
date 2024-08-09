@@ -152,6 +152,7 @@ export const prepareLocalOrchestrationAccountKit = (
         Delegate: M.call(M.string(), AmountShape).returns(M.promise()),
         Undelegate: M.call(M.string(), AmountShape).returns(M.promise()),
         CloseAccount: M.call().returns(M.promise()),
+        Send: M.call().returns(M.promise()),
       }),
     },
     /**
@@ -219,6 +220,19 @@ export const prepareLocalOrchestrationAccountKit = (
         },
         CloseAccount() {
           throw Error('not yet implemented');
+        },
+        Send() {
+          /**
+           * @type {OfferHandler<
+           *   Vow<void>,
+           *   { toAccount: ChainAddress; amounts: AmountArg[] }
+           * >}
+           */
+          const offerHandler = (seat, { toAccount, amounts }) => {
+            seat.exit();
+            return watch(this.facets.holder.send(toAccount, amounts));
+          };
+          return zcf.makeInvitation(offerHandler, 'Send');
         },
       },
       undelegateWatcher: {
@@ -470,11 +484,25 @@ export const prepareLocalOrchestrationAccountKit = (
         getAddress() {
           return this.state.address;
         },
-        send(toAccount, amount) {
+        /**
+         * XXX consider using ERTP to send if it's vbank asset
+         *
+         * @type {HostOf<OrchestrationAccountI['send']>}
+         */
+        send(toAccount, amounts) {
           return asVow(() => {
-            // FIXME implement
-            console.log('send got', toAccount, amount);
-            throw Fail`send not yet implemented`;
+            trace('send', toAccount, amounts);
+            const { helper } = this.facets;
+            return watch(
+              E(this.state.account).executeTx([
+                typedJson('/cosmos.bank.v1beta1.MsgSend', {
+                  amount: amounts.map(a => helper.amountToCoin(a)),
+                  toAddress: toAccount.value,
+                  fromAddress: this.state.address.value,
+                }),
+              ]),
+              this.facets.returnVoidWatcher,
+            );
           });
         },
         /**
