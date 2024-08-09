@@ -5,6 +5,7 @@ import type { TestFn } from 'ava';
 import { Fail } from '@endo/errors';
 import type { start as stakeBldStart } from '@agoric/orchestration/src/examples/stakeBld.contract.js';
 import type { Instance } from '@agoric/zoe/src/zoeService/utils.js';
+import { SIMULATED_ERROR_VALUES } from '@agoric/vats/tools/fake-bridge.js';
 import {
   makeWalletFactoryContext,
   type WalletFactoryTestContext,
@@ -100,17 +101,66 @@ test.serial('stakeBld', async t => {
         source: 'continuing',
         previousOffer: 'request-stake',
         invitationMakerName: 'Delegate',
-        invitationArgs: ['agoric1validator1', { brand: BLD, value: 504n }],
+        invitationArgs: [
+          'agoric1validator1',
+          { brand: BLD, value: SIMULATED_ERROR_VALUES.TIMEOUT },
+        ],
       },
       proposal: {
         give: {
           // @ts-expect-error XXX BoardRemote
-          In: { brand: BLD, value: 504n },
+          In: { brand: BLD, value: SIMULATED_ERROR_VALUES.TIMEOUT },
         },
       },
     }),
     // TODO propagate error message through bridge
     // FIXME should receive "simulated packet timeout" error
     // { message: 'simulated packet timeout' },
+  );
+
+  await wd.executeOffer({
+    id: 'bank-send',
+    invitationSpec: {
+      source: 'continuing',
+      previousOffer: 'request-stake',
+      invitationMakerName: 'Send',
+    },
+    proposal: {},
+    offerArgs: {
+      toAccount: {
+        value: 'agoric1EOAAccAddress',
+        chainId: 'agoriclocal',
+        encoding: 'bech32',
+      },
+      amounts: [{ denom: 'ibc/1234', value: 10n }],
+    },
+  });
+  t.like(wd.getLatestUpdateRecord(), {
+    status: { id: 'bank-send', numWantsSatisfied: 1 },
+  });
+
+  await t.throwsAsync(
+    wd.executeOffer({
+      id: 'bank-send-fail',
+      invitationSpec: {
+        source: 'continuing',
+        previousOffer: 'request-stake',
+        invitationMakerName: 'Send',
+      },
+      proposal: {},
+      offerArgs: {
+        toAccount: {
+          value: 'agoric1EOAAccAddress',
+          chainId: 'agoriclocal',
+          encoding: 'bech32',
+        },
+        amounts: [
+          {
+            denom: 'ibc/1234',
+            value: SIMULATED_ERROR_VALUES.BAD_REQUEST,
+          },
+        ],
+      },
+    }),
   );
 });

@@ -152,7 +152,7 @@ test.serial('stakeAtom', async t => {
       source: 'continuing',
       previousOffer: 'request-account',
       invitationMakerName: 'Delegate',
-      invitationArgs: [validatorAddress, { brand: ATOM, value: 10n }],
+      invitationArgs: [validatorAddress, { denom: 'uatom', value: 10n }],
     },
     proposal: {},
   });

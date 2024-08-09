@@ -6,6 +6,7 @@ import type { CosmosValidatorAddress } from '@agoric/orchestration';
 import type { start as startStakeIca } from '@agoric/orchestration/src/examples/stakeIca.contract.js';
 import type { Instance } from '@agoric/zoe/src/zoeService/utils.js';
 import type { TestFn } from 'ava';
+import { SIMULATED_ERROR_VALUES } from '@agoric/vats/tools/fake-bridge.js';
 import {
   makeWalletFactoryContext,
   type WalletFactoryTestContext,
@@ -184,7 +185,7 @@ test.serial('stakeAtom - smart wallet', async t => {
       source: 'continuing',
       previousOffer: 'request-account',
       invitationMakerName: 'Delegate',
-      invitationArgs: [validatorAddress, { brand: ATOM, value: 10n }],
+      invitationArgs: [validatorAddress, { denom: 'uatom', value: 10n }],
     },
     proposal: {},
   });
@@ -206,7 +207,7 @@ test.serial('stakeAtom - smart wallet', async t => {
         source: 'continuing',
         previousOffer: 'request-account',
         invitationMakerName: 'Delegate',
-        invitationArgs: [validatorAddressFail, { brand: ATOM, value: 10n }],
+        invitationArgs: [validatorAddressFail, { denom: 'uatom', value: 10n }],
       },
       proposal: {},
     }),
@@ -214,6 +215,24 @@ test.serial('stakeAtom - smart wallet', async t => {
       message: 'ABCI code: 5: error handling packet: see events for details',
     },
     'delegate fails with invalid validator',
+  );
+
+  // This will trigger the immediate ack of the mock bridge
+  await t.throwsAsync(
+    wd.executeOffer({
+      id: 'request-delegate-brand',
+      invitationSpec: {
+        source: 'continuing',
+        previousOffer: 'request-account',
+        invitationMakerName: 'Delegate',
+        invitationArgs: [validatorAddress, { brand: ATOM, value: 10n }],
+      },
+      proposal: {},
+    }),
+    {
+      message: 'Brands not currently supported.',
+    },
+    'brands not currently supported',
   );
 });
 
@@ -393,8 +412,7 @@ test.serial('basic-flows - portfolio holder', async t => {
   // XXX this overrides a previous account, since mocks only provide one address
   t.is(readLatest('published.basicFlows.agoric1mockVlocalchainAddress'), '');
 
-  const { ATOM, BLD } = agoricNamesRemotes.brand;
-  ATOM || Fail`ATOM missing from agoricNames`;
+  const { BLD } = agoricNamesRemotes.brand;
   BLD || Fail`BLD missing from agoricNames`;
 
   await wd.sendOffer({
@@ -406,7 +424,7 @@ test.serial('basic-flows - portfolio holder', async t => {
       invitationArgs: [
         'cosmoshub',
         'Delegate',
-        [validatorAddress, { brand: ATOM, value: 10n }],
+        [validatorAddress, { denom: 'uatom', value: 10n }],
       ],
     },
     proposal: {},
@@ -444,7 +462,10 @@ test.serial('basic-flows - portfolio holder', async t => {
         invitationArgs: [
           'cosmoshub',
           'Delegate',
-          [validatorAddress, { brand: ATOM, value: 504n }],
+          [
+            validatorAddress,
+            { denom: 'uatom', value: SIMULATED_ERROR_VALUES.TIMEOUT },
+          ],
         ],
       },
       proposal: {},
@@ -461,7 +482,10 @@ test.serial('basic-flows - portfolio holder', async t => {
         invitationArgs: [
           'agoric',
           'Delegate',
-          ['agoric1validator1', { brand: BLD, value: 504n }],
+          [
+            'agoric1validator1',
+            { brand: BLD, value: SIMULATED_ERROR_VALUES.TIMEOUT },
+          ],
         ],
       },
       proposal: {},
