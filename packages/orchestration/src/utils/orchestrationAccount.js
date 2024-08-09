@@ -18,6 +18,9 @@ export const orchestrationAccountMethods = {
   getBalance: M.call(M.any()).returns(Vow$(DenomAmountShape)),
   getBalances: M.call().returns(Vow$(M.arrayOf(DenomAmountShape))),
   send: M.call(ChainAddressShape, AmountArgShape).returns(VowShape),
+  sendAll: M.call(ChainAddressShape, M.arrayOf(AmountArgShape)).returns(
+    VowShape,
+  ),
   transfer: M.call(AmountArgShape, ChainAddressShape)
     .optional(M.record())
     .returns(VowShape),
