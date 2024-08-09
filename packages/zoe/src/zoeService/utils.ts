@@ -1,3 +1,4 @@
+/* eslint-disable no-use-before-define */
 // Ambient types
 import '../types-ambient.js';
 import '../contractFacet/types-ambient.js';

@@ -7,5 +7,4 @@ export { makeSnapStore } from './snapStore.js';
 // and less temporary, for SwingSet/test/vat-warehouse/test-reload-snapshot.js
 export { makeSnapStoreIO } from './snapStoreIO.js';
 
-// eslint-disable-next-line import/export
 export * from './types.js';

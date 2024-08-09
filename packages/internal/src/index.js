@@ -10,7 +10,6 @@ export * from './method-tools.js';
 export * from './typeCheck.js';
 export * from './typeGuards.js';
 
-// eslint-disable-next-line import/export -- just types
 export * from './types.js';
 
 export { objectMap } from '@endo/common/object-map.js';
