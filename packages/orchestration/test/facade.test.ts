@@ -1,11 +1,13 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
+import { expectType } from 'tsd';
 import { prepareSwingsetVowTools } from '@agoric/vow/vat.js';
 import { setupZCFTest } from '@agoric/zoe/test/unitTests/zcf/setupZcfTest.js';
 import { reincarnate } from '@agoric/swingset-liveslots/tools/setup-vat-data.js';
 import { makeIssuerKit } from '@agoric/ertp';
+import type { Vow } from '@agoric/vow';
 import type { CosmosChainInfo, IBCConnectionInfo } from '../src/cosmos-api.js';
-import type { Chain } from '../src/orchestration-api.js';
+import { OrchestrationAccount, type Chain } from '../src/orchestration-api.js';
 import { provideOrchestration } from '../src/utils/start-helper.js';
 import { commonSetup, provideDurableZone } from './supports.js';
 import { denomHash } from '../src/utils/denomHash.js';
@@ -124,6 +126,7 @@ test.serial('faulty chain info', async t => {
     const account = await chain.makeAccount();
     return account;
   });
+  expectType<() => Vow<OrchestrationAccount<any>>>(handle);
 
   await t.throwsAsync(vt.when(handle()), {
     message: 'chain info lacks staking denom',
@@ -210,6 +213,7 @@ test.serial('asset / denom info', async t => {
       }
     },
   );
+  expectType<() => Vow<void>>(handle);
 
   await vt.when(handle());
 

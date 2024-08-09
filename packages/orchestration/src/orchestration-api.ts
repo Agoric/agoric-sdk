@@ -205,8 +205,12 @@ export interface OrchestrationAccountI {
   getPublicTopics: () => Promise<Record<string, ResolvedPublicTopic<unknown>>>;
 }
 
-export interface OrchestrationFlow<CT = unknown> {
-  (orc: Orchestrator, ctx: CT, ...args: Passable[]): Promise<unknown>;
+export interface OrchestrationFlow<
+  Context = unknown,
+  Args extends Passable[] = Passable[],
+  Return = unknown,
+> {
+  (orc: Orchestrator, ctx: Context, ...args: Args): Promise<Return>;
 }
 
 /**
