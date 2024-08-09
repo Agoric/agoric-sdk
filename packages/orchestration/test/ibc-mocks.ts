@@ -16,6 +16,10 @@ import {
 } from '@agoric/cosmic-proto/cosmos/distribution/v1beta1/tx.js';
 import type { Timestamp } from '@agoric/cosmic-proto/google/protobuf/timestamp.js';
 import {
+  MsgSend,
+  MsgSendResponse,
+} from '@agoric/cosmic-proto/cosmos/bank/v1beta1/tx.js';
+import {
   buildMsgResponseString,
   buildQueryResponseString,
   buildMsgErrorString,
@@ -50,6 +54,19 @@ const redelegation = {
     denom: 'uatom',
     amount: '10',
   },
+};
+const bankSend = {
+  fromAddress: 'cosmos1test',
+  toAddress: 'cosmos99test',
+  amount: [{ denom: 'uatom', amount: '10' }],
+};
+const bankSendMulti = {
+  fromAddress: 'cosmos1test',
+  toAddress: 'cosmos99test',
+  amount: [
+    { denom: 'uatom', amount: '10' },
+    { denom: 'ibc/1234', amount: '10' },
+  ],
 };
 
 export const UNBOND_PERIOD_SECONDS = 5n;
@@ -94,6 +111,14 @@ export const protoMsgMocks = {
     ack: buildQueryResponseString(QueryBalanceResponse, {
       balance: { amount: '0', denom: 'uatom' },
     }),
+  },
+  bankSend: {
+    msg: buildTxPacketString([MsgSend.toProtoMsg(bankSend)]),
+    ack: buildMsgResponseString(MsgSendResponse, {}),
+  },
+  bankSendMulti: {
+    msg: buildTxPacketString([MsgSend.toProtoMsg(bankSendMulti)]),
+    ack: buildMsgResponseString(MsgSendResponse, {}),
   },
 };
 
