@@ -19,6 +19,8 @@ const validatorAddress: CosmosValidatorAddress = {
   encoding: 'bech32',
 };
 
+const ATOM_DENOM = 'uatom';
+
 test.before(async t => {
   t.context = await makeWalletFactoryContext(
     t,
@@ -43,7 +45,7 @@ test.serial('config', async t => {
     const cosmosChainInfo = await EV(agoricNames).lookup('chain', 'cosmoshub');
     t.like(cosmosChainInfo, {
       chainId: 'cosmoshub-4',
-      stakingTokens: [{ denom: 'uatom' }],
+      stakingTokens: [{ denom: ATOM_DENOM }],
     });
     t.deepEqual(
       readLatest(`published.agoricNames.chain.cosmoshub`),
@@ -120,8 +122,8 @@ test.skip('stakeOsmo - queries', async t => {
   t.log('account', account);
   t.truthy(account, 'makeAccount returns an account on OSMO connection');
 
-  const queryRes = await EV(account).getBalance('uatom');
-  t.deepEqual(queryRes, { value: 0n, denom: 'uatom' });
+  const queryRes = await EV(account).getBalance(ATOM_DENOM);
+  t.deepEqual(queryRes, { value: 0n, denom: ATOM_DENOM });
 
   const queryUnknownDenom = await EV(account).getBalance('some-invalid-denom');
   t.deepEqual(
@@ -184,7 +186,7 @@ test.serial('stakeAtom - smart wallet', async t => {
       source: 'continuing',
       previousOffer: 'request-account',
       invitationMakerName: 'Delegate',
-      invitationArgs: [validatorAddress, { brand: ATOM, value: 10n }],
+      invitationArgs: [validatorAddress, { denom: ATOM_DENOM, value: 10n }],
     },
     proposal: {},
   });
@@ -206,7 +208,10 @@ test.serial('stakeAtom - smart wallet', async t => {
         source: 'continuing',
         previousOffer: 'request-account',
         invitationMakerName: 'Delegate',
-        invitationArgs: [validatorAddressFail, { brand: ATOM, value: 10n }],
+        invitationArgs: [
+          validatorAddressFail,
+          { denom: ATOM_DENOM, value: 10n },
+        ],
       },
       proposal: {},
     }),
@@ -214,6 +219,24 @@ test.serial('stakeAtom - smart wallet', async t => {
       message: 'ABCI code: 5: error handling packet: see events for details',
     },
     'delegate fails with invalid validator',
+  );
+
+  // This will trigger the immediate ack of the mock bridge
+  await t.throwsAsync(
+    wd.executeOffer({
+      id: 'request-delegate-brand',
+      invitationSpec: {
+        source: 'continuing',
+        previousOffer: 'request-account',
+        invitationMakerName: 'Delegate',
+        invitationArgs: [validatorAddress, { brand: ATOM, value: 10n }],
+      },
+      proposal: {},
+    }),
+    {
+      message: 'Brands not currently supported.',
+    },
+    'brands not currently supported',
   );
 });
 
@@ -393,8 +416,7 @@ test.serial('basic-flows - portfolio holder', async t => {
   // XXX this overrides a previous account, since mocks only provide one address
   t.is(readLatest('published.basicFlows.agoric1mockVlocalchainAddress'), '');
 
-  const { ATOM, BLD } = agoricNamesRemotes.brand;
-  ATOM || Fail`ATOM missing from agoricNames`;
+  const { BLD } = agoricNamesRemotes.brand;
   BLD || Fail`BLD missing from agoricNames`;
 
   await wd.sendOffer({
@@ -406,7 +428,7 @@ test.serial('basic-flows - portfolio holder', async t => {
       invitationArgs: [
         'cosmoshub',
         'Delegate',
-        [validatorAddress, { brand: ATOM, value: 10n }],
+        [validatorAddress, { denom: ATOM_DENOM, value: 10n }],
       ],
     },
     proposal: {},
@@ -444,7 +466,7 @@ test.serial('basic-flows - portfolio holder', async t => {
         invitationArgs: [
           'cosmoshub',
           'Delegate',
-          [validatorAddress, { brand: ATOM, value: 504n }],
+          [validatorAddress, { denom: ATOM_DENOM, value: 504n }],
         ],
       },
       proposal: {},

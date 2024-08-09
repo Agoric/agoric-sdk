@@ -101,6 +101,7 @@ const validatorAddress: CosmosValidatorAddress = {
   chainId: 'gaiatest',
   encoding: 'bech32',
 };
+const ATOM_DENOM = 'uatom';
 
 // check for key because the value will be 'undefined' when the result is provided
 // TODO should it be something truthy?
@@ -152,7 +153,7 @@ test.serial('stakeAtom', async t => {
       source: 'continuing',
       previousOffer: 'request-account',
       invitationMakerName: 'Delegate',
-      invitationArgs: [validatorAddress, { brand: ATOM, value: 10n }],
+      invitationArgs: [validatorAddress, { denom: ATOM_DENOM, value: 10n }],
     },
     proposal: {},
   });

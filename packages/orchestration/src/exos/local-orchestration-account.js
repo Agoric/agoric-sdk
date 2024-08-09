@@ -8,6 +8,7 @@ import { VowShape } from '@agoric/vow';
 import { E } from '@endo/far';
 
 import {
+  AmountArgShape,
   ChainAddressShape,
   DenomAmountShape,
   DenomShape,
@@ -32,6 +33,7 @@ import { prepareIBCTools } from './ibc-packet.js';
  * @import {TimerService, TimestampRecord} from '@agoric/time';
  * @import {PromiseVow, EVow, Vow, VowTools} from '@agoric/vow';
  * @import {TypedJson, JsonSafe, ResponseTo} from '@agoric/cosmic-proto';
+ * @import {Coin} from '@agoric/cosmic-proto/cosmos/base/v1beta1/coin.js';
  * @import {Matcher, Pattern} from '@endo/patterns';
  * @import {ChainHub} from './chain-hub.js';
  * @import {PacketTools} from './packet-tools.js';
@@ -108,6 +110,9 @@ export const prepareLocalOrchestrationAccountKit = (
   const makeLocalOrchestrationAccountKit = zone.exoClassKit(
     'Local Orchestration Account Kit',
     {
+      helper: M.interface('helper', {
+        amountToCoin: M.call(AmountArgShape).returns(M.record()),
+      }),
       holder: HolderI,
       undelegateWatcher: M.interface('undelegateWatcher', {
         onFulfilled: M.call([
@@ -166,6 +171,23 @@ export const prepareLocalOrchestrationAccountKit = (
       return { account, address, topicKit, packetTools };
     },
     {
+      helper: {
+        /**
+         * @param {AmountArg} amount
+         * @returns {Coin}
+         */
+        amountToCoin(amount) {
+          if (!('denom' in amount)) {
+            // FIXME(#9211) look up values from brands
+            trace('TODO #9211: handle brand', amount);
+            throw Fail`Brands not currently supported.`;
+          }
+          return harden({
+            denom: amount.denom,
+            amount: String(amount.value),
+          });
+        },
+      },
       invitationMakers: {
         /**
          * @param {string} validatorAddress
