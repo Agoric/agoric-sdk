@@ -15,6 +15,7 @@ import {
   MsgUndelegateResponse,
 } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/tx.js';
 import { Any } from '@agoric/cosmic-proto/google/protobuf/any.js';
+import { MsgSend } from '@agoric/cosmic-proto/cosmos/bank/v1beta1/tx.js';
 import { makeTracer } from '@agoric/internal';
 import { Shape as NetworkShape } from '@agoric/network';
 import { M } from '@agoric/vat-data';
@@ -145,6 +146,8 @@ export const prepareCosmosOrchestrationAccountKit = (
         Undelegate: M.call(M.arrayOf(DelegationShape)).returns(M.promise()),
         CloseAccount: M.call().returns(M.promise()),
         TransferAccount: M.call().returns(M.promise()),
+        Send: M.call().returns(M.promise()),
+        SendAll: M.call().returns(M.promise()),
       }),
     },
     /**
@@ -184,15 +187,13 @@ export const prepareCosmosOrchestrationAccountKit = (
          * @returns {Coin}
          */
         amountToCoin(amount) {
-          const { bondDenom } = this.state;
-          if ('denom' in amount) {
-            assert.equal(amount.denom, bondDenom);
-          } else {
-            trace('TODO: handle brand', amount);
-            // FIXME(#9211) brand handling
+          if (!('denom' in amount)) {
+            // FIXME(#9211) look up values from brands
+            trace('TODO #9211: handle brand', amount);
+            throw Fail`Brands not currently supported.`;
           }
           return harden({
-            denom: bondDenom,
+            denom: amount.denom,
             amount: String(amount.value),
           });
         },
@@ -300,6 +301,32 @@ export const prepareCosmosOrchestrationAccountKit = (
         CloseAccount() {
           throw Error('not yet implemented');
         },
+        Send() {
+          /**
+           * @type {OfferHandler<
+           *   Vow<void>,
+           *   { toAccount: ChainAddress; amount: AmountArg }
+           * >}
+           */
+          const offerHandler = (seat, { toAccount, amount }) => {
+            seat.exit();
+            return watch(this.facets.holder.send(toAccount, amount));
+          };
+          return zcf.makeInvitation(offerHandler, 'Send');
+        },
+        SendAll() {
+          /**
+           * @type {OfferHandler<
+           *   Vow<void>,
+           *   { toAccount: ChainAddress; amounts: AmountArg[] }
+           * >}
+           */
+          const offerHandler = (seat, { toAccount, amounts }) => {
+            seat.exit();
+            return watch(this.facets.holder.sendAll(toAccount, amounts));
+          };
+          return zcf.makeInvitation(offerHandler, 'SendAll');
+        },
         /**
          * Starting a transfer revokes the account holder. The associated
          * updater will get a special notification that the account is being
@@ -358,14 +385,17 @@ export const prepareCosmosOrchestrationAccountKit = (
           return asVow(() => {
             trace('delegate', validator, amount);
             const { helper } = this.facets;
-            const { chainAddress } = this.state;
+            const { chainAddress, bondDenom } = this.state;
+
+            const amountAsCoin = helper.amountToCoin(amount);
+            assert.equal(amountAsCoin.denom, bondDenom);
 
             const results = E(helper.owned()).executeEncodedTx([
               Any.toJSON(
                 MsgDelegate.toProtoMsg({
                   delegatorAddress: chainAddress.value,
                   validatorAddress: validator.value,
-                  amount: helper.amountToCoin(amount),
+                  amount: amountAsCoin,
                 }),
               ),
             ]);
@@ -442,8 +472,44 @@ export const prepareCosmosOrchestrationAccountKit = (
 
         /** @type {HostOf<OrchestrationAccountI['send']>} */
         send(toAccount, amount) {
-          console.log('send got', toAccount, amount);
-          return asVow(() => Fail`not yet implemented`);
+          return asVow(() => {
+            trace('send', toAccount, amount);
+            const { helper } = this.facets;
+            const { chainAddress } = this.state;
+            return watch(
+              E(helper.owned()).executeEncodedTx([
+                Any.toJSON(
+                  MsgSend.toProtoMsg({
+                    fromAddress: chainAddress.value,
+                    toAddress: toAccount.value,
+                    amount: [helper.amountToCoin(amount)],
+                  }),
+                ),
+              ]),
+              this.facets.returnVoidWatcher,
+            );
+          });
+        },
+
+        /** @type {HostOf<OrchestrationAccountI['sendAll']>} */
+        sendAll(toAccount, amounts) {
+          return asVow(() => {
+            trace('sendAll', toAccount, amounts);
+            const { helper } = this.facets;
+            const { chainAddress } = this.state;
+            return watch(
+              E(helper.owned()).executeEncodedTx([
+                Any.toJSON(
+                  MsgSend.toProtoMsg({
+                    fromAddress: chainAddress.value,
+                    toAddress: toAccount.value,
+                    amount: amounts.map(x => helper.amountToCoin(x)),
+                  }),
+                ),
+              ]),
+              this.facets.returnVoidWatcher,
+            );
+          });
         },
 
         /** @type {HostOf<OrchestrationAccountI['transfer']>} */

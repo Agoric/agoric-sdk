@@ -341,7 +341,7 @@ test(`delegate; redelegate using invitationMakers`, async t => {
   {
     const { validator: dst } = configRedelegate;
     const value = BigInt(Object.values(configRedelegate.delegations)[0].amount);
-    const anAmount = { brand: aBrand, value };
+    const anAmount = { denom: 'uatom', value };
     const toRedelegate = await E(invitationMakers).Redelegate(
       validator,
       dst,
