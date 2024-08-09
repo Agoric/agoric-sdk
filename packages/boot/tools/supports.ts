@@ -24,6 +24,7 @@ import { loadSwingsetConfigFile } from '@agoric/swingset-vat';
 import { makeSlogSender } from '@agoric/telemetry';
 import { TimeMath, Timestamp } from '@agoric/time';
 import { Fail } from '@endo/errors';
+import { fakeLocalChainBridgeTxMsgHandler } from '@agoric/vats/tools/fake-bridge.js';
 
 import {
   makeRunUtils,
@@ -321,7 +322,9 @@ export const makeSwingsetTestKit = async (
     return data;
   };
 
-  let lastNonce = 0n;
+  let lastBankNonce = 0n;
+  let ibcSequenceNonce = 0;
+  let lcaSequenceNonce = 0;
 
   const outboundMessages = new Map();
 
@@ -332,7 +335,6 @@ export const makeSwingsetTestKit = async (
     // eslint-disable-next-line no-use-before-define
     bridgeInbound!(...args);
   };
-  let ibcSequenceNonce = 0;
 
   /**
    * Adds the sequence so the bridge knows what response to connect it to.
@@ -431,11 +433,11 @@ export const makeSwingsetTestKit = async (
 
       case `${BridgeId.BANK}:VBANK_GRAB`:
       case `${BridgeId.BANK}:VBANK_GIVE`: {
-        lastNonce += 1n;
+        lastBankNonce += 1n;
         // Also empty balances.
         return harden({
           type: 'VBANK_BALANCE_UPDATE',
-          nonce: `${lastNonce}`,
+          nonce: `${lastBankNonce}`,
           updated: [],
         });
       }
@@ -491,21 +493,10 @@ export const makeSwingsetTestKit = async (
         return 'agoric1mockVlocalchainAddress';
       }
       case `${BridgeId.VLOCALCHAIN}:VLOCALCHAIN_EXECUTE_TX`: {
-        return obj.messages.map(message => {
-          switch (message['@type']) {
-            case '/cosmos.staking.v1beta1.MsgDelegate': {
-              if (message.amount.amount === '504') {
-                // FIXME - how can we propagate the error?
-                // this results in `syscall.callNow failed: device.invoke failed, see logs for details`
-                throw Error('simulated packet timeout');
-              }
-              return {} as JsonSafe<MsgDelegateResponse>;
-            }
-            // returns one empty object per message unless specified
-            default:
-              return {};
-          }
-        });
+        lcaSequenceNonce += 1;
+        return obj.messages.map(message =>
+          fakeLocalChainBridgeTxMsgHandler(message, lcaSequenceNonce),
+        );
       }
       default: {
         throw Error(`FIXME missing support for ${bridgeId}: ${obj.type}`);
