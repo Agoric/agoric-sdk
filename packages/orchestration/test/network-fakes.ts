@@ -132,7 +132,16 @@ export const ibcBridgeMocks: {
 };
 
 type BridgeEvents = Array<
-  IBCEvent<'channelOpenAck'> | IBCEvent<'acknowledgementPacket'>
+  | IBCEvent<'channelOpenAck'>
+  | IBCEvent<'acknowledgementPacket'>
+  | IBCEvent<'channelCloseConfirm'>
+  | IBCEvent<'sendPacket'>
+>;
+
+type BridgeDowncalls = Array<
+  | IBCMethod<'startChannelOpenInit'>
+  | IBCMethod<'startChannelCloseInit'>
+  | IBCMethod<'bindPort'>
 >;
 
 /**
@@ -148,7 +157,10 @@ export const makeFakeIBCBridge = (
   ScopedBridgeManagerMethods<'dibc'> & {
     setMockAck: (mockAckMap: Record<string, string>) => void;
     setAddressPrefix: (addressPrefix: string) => void;
-    inspectDibcBridge: () => BridgeEvents;
+    inspectDibcBridge: () => {
+      bridgeEvents: BridgeEvents;
+      bridgeDowncalls: BridgeDowncalls;
+    };
   }
 > => {
   let bridgeHandler: any;
@@ -180,11 +192,13 @@ export const makeFakeIBCBridge = (
    */
   let mockAckMap = defaultMockAckMap;
   let bridgeEvents: BridgeEvents = [];
+  let bridgeDowncalls: BridgeDowncalls = [];
 
   return zone.exo('Fake IBC Bridge Manager', undefined, {
     getBridgeId: () => BridgeId.DIBC,
     toBridge: async obj => {
       if (obj.type === 'IBC_METHOD') {
+        bridgeDowncalls = bridgeDowncalls.concat(obj);
         switch (obj.method) {
           case 'startChannelOpenInit': {
             const connectionChannelCount = remoteChannelMap[obj.hops[0]] || 0;
@@ -218,6 +232,7 @@ export const makeFakeIBCBridge = (
       return undefined;
     },
     fromBridge: async obj => {
+      bridgeEvents = bridgeEvents.concat(obj);
       if (!bridgeHandler) throw Error('no handler!');
       return bridgeHandler.fromBridge(obj);
     },
@@ -250,7 +265,7 @@ export const makeFakeIBCBridge = (
      * for debugging and testing
      */
     inspectDibcBridge() {
-      return bridgeEvents;
+      return { bridgeEvents, bridgeDowncalls };
     },
   });
 };
