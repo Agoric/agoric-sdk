@@ -13,15 +13,61 @@ import (
 	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
 )
 
-var upgradeNamesOfThisVersion = map[string]bool{
-	"UNRELEASED_BASIC":           true, // no-frills
-	"UNRELEASED_A3P_INTEGRATION": true,
-	"UNRELEASED_main":            true,
-	"UNRELEASED_devnet":          true,
+var upgradeNamesOfThisVersion = []string{
+	"UNRELEASED_BASIC", // no-frills
+	"UNRELEASED_A3P_INTEGRATION",
+	"UNRELEASED_main",
+	"UNRELEASED_devnet",
+	"UNRELEASED_REAPPLY",
 }
 
+// isUpgradeNameOfThisVersion returns whether the provided plan name is a
+// known upgrade name of this software version
+func isUpgradeNameOfThisVersion(name string) bool {
+	for _, upgradeName := range upgradeNamesOfThisVersion {
+		if upgradeName == name {
+			return true
+		}
+	}
+	return false
+}
+
+// validUpgradeName is an identity function that asserts the provided name
+// is an upgrade name of this software version. It can be used as a sort of
+// dynamic enum check.
+func validUpgradeName(name string) string {
+	if !isUpgradeNameOfThisVersion(name) {
+		panic(fmt.Errorf("invalid upgrade name: %s", name))
+	}
+	return name
+}
+
+// isPrimaryUpgradeName returns wether the provided plan name is considered a
+// primary for the purpose of applying store migrations for the first upgrade
+// of this version.
+// It is expected that only primary plan names are used for non testing chains.
+func isPrimaryUpgradeName(name string) bool {
+	if name == "" {
+		// An empty upgrade name can happen if there are no upgrade in progress
+		return false
+	}
+	switch name {
+	case validUpgradeName("UNRELEASED_BASIC"),
+		validUpgradeName("UNRELEASED_A3P_INTEGRATION"),
+		validUpgradeName("UNRELEASED_main"),
+		validUpgradeName("UNRELEASED_devnet"):
+		return true
+	case validUpgradeName("UNRELEASED_REAPPLY"):
+		return false
+	default:
+		panic(fmt.Errorf("unexpected upgrade name %s", validUpgradeName(name)))
+	}
+}
+
+// isFirstTimeUpgradeOfThisVersion looks up in the upgrade store whether no
+// upgrade plan name of this version have previously been applied.
 func isFirstTimeUpgradeOfThisVersion(app *GaiaApp, ctx sdk.Context) bool {
-	for name := range upgradeNamesOfThisVersion {
+	for _, name := range upgradeNamesOfThisVersion {
 		if app.UpgradeKeeper.GetDoneHeight(ctx, name) != 0 {
 			return false
 		}
@@ -34,10 +80,7 @@ func isFirstTimeUpgradeOfThisVersion(app *GaiaApp, ctx sdk.Context) bool {
 // vaultManager.
 func upgradePriceFeedCoreProposalSteps(upgradeName string) ([]vm.CoreProposalStep, error) {
 	isThisUpgrade := func(expectedUpgradeName string) bool {
-		if !upgradeNamesOfThisVersion[expectedUpgradeName] {
-			panic(fmt.Errorf("invalid upgrade name: %s", expectedUpgradeName))
-		}
-		return upgradeName == expectedUpgradeName
+		return upgradeName == validUpgradeName(expectedUpgradeName)
 	}
 
 	t := template.Must(template.New("").Parse(`{
@@ -165,6 +208,13 @@ func unreleasedUpgradeHandler(app *GaiaApp, targetUpgrade string) func(sdk.Conte
 		// These CoreProposalSteps are not idempotent and should only be executed
 		// as part of the first upgrade using this handler on any given chain.
 		if isFirstTimeUpgradeOfThisVersion(app, ctx) {
+			// The storeUpgrades defined in app.go only execute for the primary upgrade name
+			// If we got here and this first upgrade of this version does not use the
+			// primary upgrade name, stores have not been initialized correctly.
+			if !isPrimaryUpgradeName(plan.Name) {
+				return module.VersionMap{}, fmt.Errorf("cannot run %s as first upgrade", plan.Name)
+			}
+
 			// Each CoreProposalStep runs sequentially, and can be constructed from
 			// one or more modules executing in parallel within the step.
 			CoreProposalSteps = []vm.CoreProposalStep{

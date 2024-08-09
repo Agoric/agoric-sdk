@@ -862,18 +862,23 @@ func NewAgoricApp(
 	app.SetBeginBlocker(app.BeginBlocker)
 	app.SetEndBlocker(app.EndBlocker)
 
-	for name := range upgradeNamesOfThisVersion {
+	for _, name := range upgradeNamesOfThisVersion {
 		app.UpgradeKeeper.SetUpgradeHandler(
 			name,
 			unreleasedUpgradeHandler(app, name),
 		)
 	}
 
+	// At this point we don't have a way to read from the store, so we have to
+	// rely on data saved by the x/upgrade module in the previous software.
 	upgradeInfo, err := app.UpgradeKeeper.ReadUpgradeInfoFromDisk()
 	if err != nil {
 		panic(err)
 	}
-	if upgradeNamesOfThisVersion[upgradeInfo.Name] && !app.UpgradeKeeper.IsSkipHeight(upgradeInfo.Height) {
+	// Store migrations can only run once, so we use a notion of "primary upgrade
+	// name" to trigger them. Testnets may end up upgrading from one rc to
+	// another, which shouldn't re-run store upgrades.
+	if isPrimaryUpgradeName(upgradeInfo.Name) && !app.UpgradeKeeper.IsSkipHeight(upgradeInfo.Height) {
 		storeUpgrades := storetypes.StoreUpgrades{
 			Added: []string{
 				packetforwardtypes.ModuleName, // Added PFM

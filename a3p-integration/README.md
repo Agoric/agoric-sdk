@@ -66,7 +66,7 @@ For a chain software upgrade proposal, the `type` is `"Software Upgrade Proposal
    particular, it can have a `coreProposals` field which instructs the chain
    software to run other core proposals in addition to the one configured in the
    chain software's upgrade handler (see `CoreProposalSteps` in
-   `/golang/cosmos/app/app.go`).
+   `/golang/cosmos/app/upgrade.go`).
   - See **Generating core-eval submissions** below for details.
 
 For an (evolving) example, see `a:upgrade-next` in master.

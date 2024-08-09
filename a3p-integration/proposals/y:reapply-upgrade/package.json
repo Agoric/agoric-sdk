@@ -1,0 +1,24 @@
+{
+  "agoricProposal": {
+    "releaseNotes": false,
+    "sdkImageTag": "unreleased",
+    "planName": "UNRELEASED_REAPPLY",
+    "upgradeInfo": {
+      "coreProposals": []
+    },
+    "type": "Software Upgrade Proposal"
+  },
+  "type": "module",
+  "license": "Apache-2.0",
+  "ava": {
+    "concurrency": 1,
+    "timeout": "2m",
+    "files": [
+      "!submission"
+    ]
+  },
+  "scripts": {
+    "agops": "yarn --cwd /usr/src/agoric-sdk/ --silent agops"
+  },
+  "packageManager": "yarn@4.2.2"
+}
