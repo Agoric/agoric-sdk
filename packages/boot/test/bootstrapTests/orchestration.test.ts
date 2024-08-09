@@ -174,6 +174,9 @@ test.serial('stakeAtom - smart wallet', async t => {
   });
   t.is(readLatest('published.stakeAtom.accounts.cosmos1test'), '');
 
+  const { ATOM } = agoricNamesRemotes.brand;
+  ATOM || Fail`ATOM missing from agoricNames`;
+
   // Cannot await executeOffer because the offer won't resolve until after the bridge's inbound queue is flushed.
   // But this test doesn't require that.
   await wd.sendOffer({
@@ -212,6 +215,24 @@ test.serial('stakeAtom - smart wallet', async t => {
       message: 'ABCI code: 5: error handling packet: see events for details',
     },
     'delegate fails with invalid validator',
+  );
+
+  // This will trigger the immediate ack of the mock bridge
+  await t.throwsAsync(
+    wd.executeOffer({
+      id: 'request-delegate-brand',
+      invitationSpec: {
+        source: 'continuing',
+        previousOffer: 'request-account',
+        invitationMakerName: 'Delegate',
+        invitationArgs: [validatorAddress, { brand: ATOM, value: 10n }],
+      },
+      proposal: {},
+    }),
+    {
+      message: 'Brands not currently supported.',
+    },
+    'brands not currently supported',
   );
 });
 
