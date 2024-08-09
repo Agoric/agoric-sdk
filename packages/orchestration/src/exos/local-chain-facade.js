@@ -9,7 +9,7 @@ import { VowShape } from '@agoric/vow';
 import { chainFacadeMethods } from '../typeGuards.js';
 
 /**
- * @import {HostOf} from '@agoric/async-flow';
+ * @import {HostFn} from '@agoric/async-flow';
  * @import {Zone} from '@agoric/base-zone';
  * @import {TimerService} from '@agoric/time';
  * @import {Remote} from '@agoric/internal';
@@ -107,7 +107,7 @@ const prepareLocalChainFacadeKit = (
             this.facets.makeAccountWatcher,
           );
         },
-        /** @type {HostOf<AgoricChainMethods['getVBankAssetInfo']>} */
+        /** @type {HostFn<AgoricChainMethods['getVBankAssetInfo']>} */
         getVBankAssetInfo() {
           return asVow(() => {
             const { vbankAssets } = this.state;
