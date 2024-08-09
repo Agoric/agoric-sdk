@@ -32,6 +32,10 @@
       "types": "./dist/codegen/cosmos/bank/v1beta1/query.d.ts",
       "default": "./dist/codegen/cosmos/bank/v1beta1/query.js"
     },
+    "./cosmos/bank/v1beta1/tx.js": {
+      "types": "./dist/codegen/cosmos/bank/v1beta1/tx.d.ts",
+      "default": "./dist/codegen/cosmos/bank/v1beta1/tx.js"
+    },
     "./cosmos/distribution/v1beta1/tx.js": {
       "types": "./dist/codegen/cosmos/distribution/v1beta1/tx.d.ts",
       "default": "./dist/codegen/cosmos/distribution/v1beta1/tx.js"
