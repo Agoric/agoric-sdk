@@ -1,3 +1,4 @@
+/* eslint-disable no-use-before-define */
 import type { ERef, RemotableBrand } from '@endo/eventual-send';
 
 import type { RankComparison, RemotableObject } from '@endo/marshal';
