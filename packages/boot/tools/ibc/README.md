@@ -73,6 +73,42 @@ sequenceDiagram
 Mock Testing: 
  - on `SendPacket`, return `onAcknowledgePacket`
 
+### ICA Channel Closing (from Controller)
+
+```mermaid
+sequenceDiagram
+    participant CC as Controller Chain
+    participant R as Relayer
+    participant HC as Host Chain
+
+    CC->>R: ChanCloseInit(PortID, ChannelID)
+    R->>HC: ChanCloseConfirm(PortID, ChannelID)
+    HC->>HC: OnChanCloseConfirm(portID, channelID)
+    HC-->>R: Success
+    R->>CC: ChanCloseConfirm
+    CC->>CC: CloseChannel(PortID, ChannelID)
+```
+Mock Testing: 
+ - on `ChanCloseInit`, return `ChanCloseConfirm`
+
+### ICA Channel Closing (from Host - Unexpected closure)
+
+```mermaid
+sequenceDiagram
+    participant CC as Controller Chain
+    participant R as Relayer
+    participant HC as Host Chain
+    
+    HC-->>R: Channel closed unexpectedly
+    R->>CC: ChanCloseConfirm(PortID, ChannelID)
+    CC->>CC: OnChanCloseConfirm
+    CC-->>R: Acknowledge closure
+
+    Note over CC: Handle unexpected closure
+    Note over HC: Unexpected channel closure (e.g., timeout in ORDERED channel)
+```
+Mock Testing: 
+ - `ChanCloseConfirm` event is emitted
 
 ### ICA Channel Reactivation
 

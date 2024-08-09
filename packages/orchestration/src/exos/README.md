@@ -30,6 +30,7 @@ classDiagram
       executeTx()
       executeEncodedTx()
       close()
+      reopen()
     }
     class ICQConnection {
       port: Port

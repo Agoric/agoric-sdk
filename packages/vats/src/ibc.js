@@ -141,19 +141,27 @@ export const prepareIBCConnectionHandler = zone => {
       },
       /** @type {Required<ConnectionHandler>['onClose']} */
       async onClose() {
-        const { portID, channelID } = this.state;
+        const { portID, channelID, channelKeyToConnP } = this.state;
+        console.debug('@@@ IBCConnectionHandler onClose', {
+          portID,
+          channelID,
+        });
         const { protocolUtils, channelKeyToSeqAck } = this.state;
 
         const packet = {
           source_port: portID,
           source_channel: channelID,
         };
-        await protocolUtils.downcall('startChannelCloseInit', {
-          packet,
-        });
-        const rejectReason = Error('Connection closed');
         const channelKey = `${channelID}:${portID}`;
-
+        await null;
+        if (channelKeyToConnP.has(channelKey)) {
+          console.debug('@@@Downcall initiated');
+          // This Connection object is initiating the close event
+          await protocolUtils.downcall('startChannelCloseInit', {
+            packet,
+          });
+        }
+        const rejectReason = Error('Connection closed');
         const seqToAck = channelKeyToSeqAck.get(channelKey);
 
         for (const ackKit of seqToAck.values()) {

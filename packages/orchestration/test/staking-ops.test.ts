@@ -151,12 +151,10 @@ const makeScenario = () => {
       },
       executeTx: () => Fail`mock`,
       close: () => Fail`mock`,
-      deposit: () => Fail`mock`,
-      getPurse: () => Fail`mock`,
-      prepareTransfer: () => Fail`mock`,
       getLocalAddress: () => Fail`mock`,
       getRemoteAddress: () => Fail`mock`,
       getPort: () => Fail`mock`,
+      reopen: () => Fail`mock`,
     });
     return { account, calls };
   };

@@ -12,6 +12,7 @@ import type {
   IBCEvent,
   ScopedBridgeManagerMethods,
   IBCConnectionID,
+  IBCPortID,
 } from '@agoric/vats';
 import {
   prepareCallbacks as prepareIBCCallbacks,
@@ -55,10 +56,9 @@ export const ibcBridgeMocks: {
     ? (
         obj: IBCMethod<'startChannelOpenInit'>,
         opts: {
-          bech32Prefix: string;
-          sequence: number;
           channelID: IBCChannelID;
           counterpartyChannelID: IBCChannelID;
+          mockChainAddress: string;
         },
       ) => IBCEvent<'channelOpenAck'>
     : T extends 'acknowledgementPacket'
@@ -71,20 +71,15 @@ export const ibcBridgeMocks: {
   channelOpenAck: (
     obj: IBCMethod<'startChannelOpenInit'>,
     {
-      bech32Prefix,
-      sequence,
       channelID,
       counterpartyChannelID,
+      mockChainAddress,
     }: {
-      bech32Prefix: string;
-      sequence: number;
       channelID: IBCChannelID;
       counterpartyChannelID: IBCChannelID;
+      mockChainAddress: string;
     },
   ): IBCEvent<'channelOpenAck'> => {
-    const mockChainAddress =
-      sequence > 0 ? `${bech32Prefix}1test${sequence}` : `${bech32Prefix}1test`;
-
     return {
       type: 'IBC_EVENT',
       blockHeight: 99,
@@ -132,7 +127,15 @@ export const ibcBridgeMocks: {
 };
 
 type BridgeEvents = Array<
-  IBCEvent<'channelOpenAck'> | IBCEvent<'acknowledgementPacket'>
+  | IBCEvent<'channelOpenAck'>
+  | IBCEvent<'acknowledgementPacket'>
+  | IBCEvent<'channelCloseConfirm'>
+>;
+
+type BridgeDowncalls = Array<
+  | IBCMethod<'startChannelOpenInit'>
+  | IBCMethod<'startChannelCloseInit'>
+  | IBCMethod<'bindPort'>
 >;
 
 /**
@@ -148,7 +151,10 @@ export const makeFakeIBCBridge = (
   ScopedBridgeManagerMethods<'dibc'> & {
     setMockAck: (mockAckMap: Record<string, string>) => void;
     setAddressPrefix: (addressPrefix: string) => void;
-    inspectDibcBridge: () => BridgeEvents;
+    inspectDibcBridge: () => {
+      bridgeEvents: BridgeEvents;
+      bridgeDowncalls: BridgeDowncalls;
+    };
   }
 > => {
   let bridgeHandler: any;
@@ -180,17 +186,43 @@ export const makeFakeIBCBridge = (
    */
   let mockAckMap = defaultMockAckMap;
   let bridgeEvents: BridgeEvents = [];
+  let bridgeDowncalls: BridgeDowncalls = [];
+
+  /**
+   * Store remote mock addresses that have been distributed.
+   * If there's a `channelOpenInit` request for a PortId:ConnnectionId
+   * pair that's been previously established, let's reuse it to mimic
+   * the behavior of the ICS-27 protocol.
+   */
+  type AddressKey = `${IBCPortID}:${IBCConnectionID}`;
+  const getAddressKey = (
+    obj: IBCMethod<'startChannelOpenInit'>,
+  ): AddressKey => {
+    return `${obj.packet.source_port as IBCPortID}:${obj.hops[0] as IBCConnectionID}`;
+  };
+  const addressMap = new Map<AddressKey, string>();
 
   return zone.exo('Fake IBC Bridge Manager', undefined, {
     getBridgeId: () => BridgeId.DIBC,
     toBridge: async obj => {
       if (obj.type === 'IBC_METHOD') {
+        bridgeDowncalls = bridgeDowncalls.concat(obj);
         switch (obj.method) {
           case 'startChannelOpenInit': {
             const connectionChannelCount = remoteChannelMap[obj.hops[0]] || 0;
+            const addressKey = getAddressKey(obj);
+            let mockChainAddress;
+            if (addressMap.has(addressKey)) {
+              mockChainAddress = addressMap.get(addressKey);
+            } else {
+              mockChainAddress =
+                channelCount > 0
+                  ? `${bech32Prefix}1test${channelCount}`
+                  : `${bech32Prefix}1test`;
+              addressMap.set(addressKey, mockChainAddress);
+            }
             const ackEvent = ibcBridgeMocks.channelOpenAck(obj, {
-              bech32Prefix,
-              sequence: channelCount,
+              mockChainAddress,
               channelID: `channel-${channelCount}`,
               counterpartyChannelID: `channel-${connectionChannelCount}`,
             });
@@ -218,6 +250,7 @@ export const makeFakeIBCBridge = (
       return undefined;
     },
     fromBridge: async obj => {
+      bridgeEvents = bridgeEvents.concat(obj);
       if (!bridgeHandler) throw Error('no handler!');
       return bridgeHandler.fromBridge(obj);
     },
@@ -250,7 +283,7 @@ export const makeFakeIBCBridge = (
      * for debugging and testing
      */
     inspectDibcBridge() {
-      return bridgeEvents;
+      return { bridgeEvents, bridgeDowncalls };
     },
   });
 };
