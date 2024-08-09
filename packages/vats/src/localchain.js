@@ -98,7 +98,7 @@ export const prepareLocalChainAccountKit = (zone, { watch }) =>
          * @param {Brand<'nat'>} brand
          * @param {{
          *   payment: Payment<'nat'>;
-         *   optAmountShape: Amount<'nat'>;
+         *   optAmountShape?: typeof AmountShape;
          * }} ctx
          */
         onFulfilled(brand, { payment, optAmountShape }) {
@@ -128,9 +128,9 @@ export const prepareLocalChainAccountKit = (zone, { watch }) =>
          * This is safe, since even if the payment lies about its brand, ERTP
          * will reject spoofed payment objects when depositing into a purse.
          *
-         * @param {ERef<Payment<'nat'>>} payment
-         * @param {Pattern} [optAmountShape] throws if the Amount of the Payment
-         *   does not match the provided Pattern
+         * @param {Payment<'nat'>} payment
+         * @param {typeof AmountShape} [optAmountShape] throws if the Amount of
+         *   the Payment does not match the provided Pattern
          * @returns {PromiseVow<Amount<'nat'>>}
          */
         async deposit(payment, optAmountShape) {

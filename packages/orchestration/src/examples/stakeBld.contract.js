@@ -91,7 +91,8 @@ export const start = async (zcf, privateArgs, baggage) => {
             const { In } = await deeplyFulfilled(
               withdrawFromSeat(zcf, seat, give),
             );
-            await E(holder).deposit(In);
+            // XXX deeplyFulfilled type not resolving ERef
+            await E(holder).deposit(/** @type {Payment<any>} */ (In));
             seat.exit();
             return holder.asContinuingOffer();
           },
