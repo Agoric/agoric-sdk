@@ -666,11 +666,49 @@ export function makeVatKeeper(
     });
   }
 
-  function deleteSnapshotsAndTranscript() {
-    if (snapStore) {
-      snapStore.deleteVatSnapshots(vatID);
+  /**
+   * Perform some (possibly-limited) cleanup work for a vat. Returns
+   * 'done' (where false means "please call me again", and true means
+   * "you can delete the vatID now"), and a count of how much work was
+   * done (so the runPolicy can decide when to stop).
+   *
+   * @param {number} [budget]
+   * @returns {{ done: boolean, cleanups: number }}
+   *
+   */
+  function deleteSnapshots(budget = undefined) {
+    // Each budget=1 allows us to delete one snapshot entry.
+    let cleanups = 0;
+    if (!snapStore) {
+      return { done: true, cleanups };
     }
-    transcriptStore.deleteVatTranscripts(vatID);
+    // initially uses 2+2*budget DB statements, then just 1 when done
+    const dc = snapStore.deleteVatSnapshots(vatID, budget);
+    cleanups = dc.cleanups;
+    return { done: dc.done, cleanups };
+  }
+
+  /**
+   * Perform some (possibly-limited) cleanup work for a vat. Returns
+   * 'done' (where false means "please call me again", and true means
+   * "you can delete the vatID now"), and a count of how much work was
+   * done (so the runPolicy can decide when to stop).
+   *
+   * @param {number} [budget]
+   * @returns {{ done: boolean, cleanups: number }}
+   *
+   */
+  function deleteTranscripts(budget = undefined) {
+    // Each budget=1 allows us to delete one transcript span and any
+    // transcript items associated with that span. Some nodes will
+    // have historical transcript items, some will not. Using budget=5
+    // and snapshotInterval=200 means we delete 5 span records and
+    // maybe 1000 span items.
+    let cleanups = 0;
+    // initially uses 2+3*budget DB statements, then just 1 when done
+    const dc = transcriptStore.deleteVatTranscripts(vatID, budget);
+    cleanups = dc.cleanups;
+    return { done: dc.done, cleanups };
   }
 
   function beginNewIncarnation() {
@@ -752,7 +790,8 @@ export function makeVatKeeper(
     dumpState,
     saveSnapshot,
     getSnapshotInfo,
-    deleteSnapshotsAndTranscript,
+    deleteSnapshots,
+    deleteTranscripts,
     beginNewIncarnation,
   });
 }
