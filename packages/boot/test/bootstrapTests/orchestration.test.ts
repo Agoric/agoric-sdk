@@ -6,6 +6,7 @@ import type { CosmosValidatorAddress } from '@agoric/orchestration';
 import type { start as startStakeIca } from '@agoric/orchestration/src/examples/stakeIca.contract.js';
 import type { Instance } from '@agoric/zoe/src/zoeService/utils.js';
 import type { TestFn } from 'ava';
+import { SIMULATED_ERROR_VALUES } from '@agoric/vats/tools/fake-bridge.js';
 import {
   makeWalletFactoryContext,
   type WalletFactoryTestContext,
@@ -444,7 +445,10 @@ test.serial('basic-flows - portfolio holder', async t => {
         invitationArgs: [
           'cosmoshub',
           'Delegate',
-          [validatorAddress, { brand: ATOM, value: 504n }],
+          [
+            validatorAddress,
+            { brand: ATOM, value: BigInt(SIMULATED_ERROR_VALUES.TIMEOUT) },
+          ],
         ],
       },
       proposal: {},
@@ -461,7 +465,10 @@ test.serial('basic-flows - portfolio holder', async t => {
         invitationArgs: [
           'agoric',
           'Delegate',
-          ['agoric1validator1', { brand: BLD, value: 504n }],
+          [
+            'agoric1validator1',
+            { brand: BLD, value: BigInt(SIMULATED_ERROR_VALUES.TIMEOUT) },
+          ],
         ],
       },
       proposal: {},

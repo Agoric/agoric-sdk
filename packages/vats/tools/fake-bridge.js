@@ -159,6 +159,17 @@ export const makeFakeIbcBridge = (zone, onToBridge) => {
 export const LOCALCHAIN_DEFAULT_ADDRESS = 'agoric1fakeLCAAddress';
 
 /**
+ * Constants that can be used to force an error state in a bridge transaction.
+ * Typically used for the LocalChainBridge which currently accepts all messages
+ * unless specified otherwise. Less useful for the DibcBridge which rejects all
+ * messages unless specified otherwise.
+ */
+export const SIMULATED_ERROR_VALUES = {
+  TIMEOUT: '504',
+  BAD_REQUEST: '400',
+};
+
+/**
  * Used to mock responses from Cosmos Golang back to SwingSet for for
  * E(lca).executeTx().
  *
@@ -173,7 +184,7 @@ export const fakeLocalChainBridgeTxHandler = (message, sequence) => {
   switch (message['@type']) {
     // TODO #9402 reference bank to ensure caller has tokens they are transferring
     case '/ibc.applications.transfer.v1.MsgTransfer': {
-      if (message.token.amount === '504') {
+      if (message.token.amount === SIMULATED_ERROR_VALUES.TIMEOUT) {
         throw Error('simulated unexpected MsgTransfer packet timeout');
       }
       // like `JsonSafe<MsgTransferResponse>`, but bigints are converted to numbers
@@ -183,13 +194,13 @@ export const fakeLocalChainBridgeTxHandler = (message, sequence) => {
       };
     }
     case '/cosmos.bank.v1beta1.MsgSend': {
-      if (message.amount[0].amount === '400') {
+      if (message.amount[0].amount === SIMULATED_ERROR_VALUES.BAD_REQUEST) {
         throw Error('simulated error');
       }
       return /** @type {JsonSafe<MsgSendResponse>} */ ({});
     }
     case '/cosmos.staking.v1beta1.MsgDelegate': {
-      if (message.amount.amount === '504') {
+      if (message.amount.amount === SIMULATED_ERROR_VALUES.TIMEOUT) {
         throw Error('simulated packet timeout');
       }
       return /** @type {JsonSafe<MsgDelegateResponse>} */ ({});

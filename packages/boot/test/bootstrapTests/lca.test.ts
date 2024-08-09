@@ -5,6 +5,7 @@ import type { TestFn } from 'ava';
 import { Fail } from '@endo/errors';
 import type { start as stakeBldStart } from '@agoric/orchestration/src/examples/stakeBld.contract.js';
 import type { Instance } from '@agoric/zoe/src/zoeService/utils.js';
+import { SIMULATED_ERROR_VALUES } from '@agoric/vats/tools/fake-bridge.js';
 import {
   makeWalletFactoryContext,
   type WalletFactoryTestContext,
@@ -100,12 +101,15 @@ test.serial('stakeBld', async t => {
         source: 'continuing',
         previousOffer: 'request-stake',
         invitationMakerName: 'Delegate',
-        invitationArgs: ['agoric1validator1', { brand: BLD, value: 504n }],
+        invitationArgs: [
+          'agoric1validator1',
+          { brand: BLD, value: BigInt(SIMULATED_ERROR_VALUES.TIMEOUT) },
+        ],
       },
       proposal: {
         give: {
           // @ts-expect-error XXX BoardRemote
-          In: { brand: BLD, value: 504n },
+          In: { brand: BLD, value: BigInt(SIMULATED_ERROR_VALUES.TIMEOUT) },
         },
       },
     }),
@@ -150,7 +154,12 @@ test.serial('stakeBld', async t => {
           chainId: 'agoriclocal',
           encoding: 'bech32',
         },
-        amounts: [{ denom: 'ibc/1234', value: 400n }],
+        amounts: [
+          {
+            denom: 'ibc/1234',
+            value: BigInt(SIMULATED_ERROR_VALUES.BAD_REQUEST),
+          },
+        ],
       },
     }),
   );
