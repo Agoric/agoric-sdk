@@ -21,6 +21,12 @@ queue_rules:
               - label=proto:expect-breakage
     merge_conditions:
       - base=master
+      # Rebase PRs with fixup commits are allowed to enter the merge queue but 
+      # should not be allowed to merge if there are leftover fixup commits after rebase
+      - or:
+          - label=bypass:linear-history
+          - check-success=no-fixup-commits
+          - check-skipped=no-fixup-commits
       # Require integration tests before merging only
       - or:
           - label=bypass:integration
@@ -45,6 +51,12 @@ queue_rules:
               - label=proto:expect-breakage
     merge_conditions:
       - base=master
+      # Rebase PRs with fixup commits are allowed to enter the merge queue but 
+      # should not be allowed to merge if there are leftover fixup commits after rebase
+      - or:
+          - label=bypass:linear-history
+          - check-success=no-fixup-commits
+          - check-skipped=no-fixup-commits
       # Require integration tests before merging only
       - or:
           - label=bypass:integration
@@ -65,6 +77,9 @@ pull_request_rules:
     conditions:
       - base=master
       - label=automerge:rebase
+      - or:
+          - '#commits-behind>0'
+          - linear-history
     actions:
       queue:
         merge_method: merge
@@ -76,3 +91,15 @@ pull_request_rules:
     actions:
       queue:
         merge_method: squash
+  - name: rebase and autosquash
+    conditions:
+      - base=master
+      - label=automerge:rebase
+      - '#commits-behind=0'
+      - or:
+        - -linear-history
+        - check-failure=no-fixup-commits
+      - -draft
+    actions:
+      rebase:
+        autosquash: true
