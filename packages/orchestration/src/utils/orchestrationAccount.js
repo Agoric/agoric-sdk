@@ -5,6 +5,7 @@ import { TopicsRecordShape } from '@agoric/zoe/src/contractSupport/topics.js';
 import {
   AmountArgShape,
   ChainAddressShape,
+  DelegationShape,
   DenomAmountShape,
 } from '../typeGuards.js';
 
@@ -30,4 +31,17 @@ export const orchestrationAccountMethods = {
     }),
   ),
   getPublicTopics: M.call().returns(Vow$(TopicsRecordShape)),
+};
+
+export const orchestrationAccountInvitationMakers = {
+  Delegate: M.call(ChainAddressShape, AmountArgShape).returns(M.promise()),
+  Redelegate: M.call(
+    ChainAddressShape,
+    ChainAddressShape,
+    AmountArgShape,
+  ).returns(M.promise()),
+  WithdrawReward: M.call(ChainAddressShape).returns(M.promise()),
+  Undelegate: M.call(M.arrayOf(DelegationShape)).returns(M.promise()),
+  CloseAccount: M.call().returns(M.promise()),
+  TransferAccount: M.call().returns(M.promise()),
 };

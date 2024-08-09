@@ -29,7 +29,10 @@ import {
   DenomAmountShape,
 } from '../typeGuards.js';
 import { maxClockSkew, tryDecodeResponse } from '../utils/cosmos.js';
-import { orchestrationAccountMethods } from '../utils/orchestrationAccount.js';
+import {
+  orchestrationAccountInvitationMakers,
+  orchestrationAccountMethods,
+} from '../utils/orchestrationAccount.js';
 
 /**
  * @import {HostOf} from '@agoric/async-flow';
@@ -132,20 +135,10 @@ export const prepareCosmosOrchestrationAccountKit = (
           .returns(M.arrayOf(DenomAmountShape)),
       }),
       holder: IcaAccountHolderI,
-      invitationMakers: M.interface('invitationMakers', {
-        Delegate: M.call(ChainAddressShape, AmountArgShape).returns(
-          M.promise(),
-        ),
-        Redelegate: M.call(
-          ChainAddressShape,
-          ChainAddressShape,
-          AmountArgShape,
-        ).returns(M.promise()),
-        WithdrawReward: M.call(ChainAddressShape).returns(M.promise()),
-        Undelegate: M.call(M.arrayOf(DelegationShape)).returns(M.promise()),
-        CloseAccount: M.call().returns(M.promise()),
-        TransferAccount: M.call().returns(M.promise()),
-      }),
+      invitationMakers: M.interface(
+        'invitationMakers',
+        orchestrationAccountInvitationMakers,
+      ),
     },
     /**
      * @param {ChainAddress} chainAddress
