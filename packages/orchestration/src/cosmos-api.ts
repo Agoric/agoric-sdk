@@ -22,6 +22,7 @@ import type {
   LocalIbcAddress,
   RemoteIbcAddress,
 } from '@agoric/vats/tools/ibc-utils.js';
+import type { AssetList } from '@chain-registry/types';
 import type { AmountArg, ChainAddress, Denom, DenomAmount } from './types.js';
 
 /** An address for a validator on some blockchain, e.g., cosmos, eth, etc. */
@@ -91,6 +92,8 @@ export type CosmosChainInfo = Readonly<{
    * cf https://github.com/cosmos/chain-registry/blob/master/chain.schema.json#L117
    */
   stakingTokens?: Readonly<Array<{ denom: string }>>;
+
+  assetList?: Readonly<AssetList>;
 }>;
 
 export interface StakingAccountQueries {
