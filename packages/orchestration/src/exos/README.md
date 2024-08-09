@@ -98,6 +98,7 @@ classDiagram
       getPublicTopics()
       monitorTransfers()
       send()
+      sendAll()
       transfer()
       undelegate()
       withdraw()
@@ -117,6 +118,8 @@ classDiagram
       getBalance()
       getPublicTopics()
       redelegate()
+      send()
+      sendAll()
       undelegate()
       withdrawReward()
     }
