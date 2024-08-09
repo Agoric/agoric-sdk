@@ -13,7 +13,7 @@ import { LogEntryShape, FlowStateShape } from './type-guards.js';
 /**
  * @import {WeakMapStore} from '@agoric/store'
  * @import {Zone} from '@agoric/base-zone'
- * @import {FlowState, GuestAsyncFunc, HostAsyncFuncWrapper, HostOf, PreparationOptions} from '../src/types.js'
+ * @import {FlowState, GuestAsyncFunc, HostAsyncFuncWrapper, HostFn, PreparationOptions} from '../src/types.js'
  * @import {ReplayMembrane} from '../src/replay-membrane.js'
  */
 
@@ -439,13 +439,13 @@ export const prepareAsyncFlowTools = (outerZone, outerOptions = {}) => {
    * @param {string} tag
    * @param {F} guestFunc
    * @param {{ startEager?: boolean }} [options]
-   * @returns {HostOf<F>}
+   * @returns {HostFn<F>}
    */
   const asyncFlow = (zone, tag, guestFunc, options = undefined) => {
     const makeAsyncFlowKit = prepareAsyncFlowKit(zone, tag, guestFunc, options);
     const hostFuncName = `${tag}_hostFlow`;
 
-    const wrapperFunc = /** @type {HostOf<F>} */ (
+    const wrapperFunc = /** @type {HostFn<F>} */ (
       {
         [hostFuncName](...args) {
           const { flow } = makeAsyncFlowKit(args);

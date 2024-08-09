@@ -3,7 +3,7 @@
 import { assertAllDefined } from '@agoric/internal';
 
 /**
- * @import {AsyncFlowTools, GuestInterface, HostArgs, HostOf} from '@agoric/async-flow';
+ * @import {AsyncFlowTools, GuestInterface, HostArgs, HostFn} from '@agoric/async-flow';
  * @import {Zone} from '@agoric/zone';
  * @import {Vow, VowTools} from '@agoric/vow';
  * @import {TimerService} from '@agoric/time';

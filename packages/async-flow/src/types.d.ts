@@ -54,7 +54,7 @@ type Simplify<T> = { [KeyType in keyof T]: T[KeyType] } & {};
  */
 type HostInterface<T> = {
   [K in keyof T]: T[K] extends CallableFunction
-    ? HostOf<T[K]>
+    ? HostFn<T[K]>
     : T[K] extends Record<string, any>
       ? Simplify<HostInterface<T[K]>>
       : T[K];
@@ -78,7 +78,7 @@ export type GuestInterface<T> = {
  *
  * Specifically, Promise return values are converted to Vows.
  */
-export type HostOf<F extends CallableFunction> = F extends (
+export type HostFn<F extends CallableFunction> = F extends (
   ...args: infer A
 ) => infer R
   ? R extends Promise<infer T>
@@ -86,7 +86,7 @@ export type HostOf<F extends CallableFunction> = F extends (
     : (...args: A) => HostInterface<R>
   : F;
 
-export type HostArgs<GA extends any[]> = { [K in keyof GA]: HostOf<GA[K]> };
+export type HostArgs<GA extends any[]> = { [K in keyof GA]: HostFn<GA[K]> };
 
 export type PreparationOptions = {
   vowTools?: VowTools;

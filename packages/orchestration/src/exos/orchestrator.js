@@ -17,7 +17,7 @@ import {
 /**
  * @import {Zone} from '@agoric/base-zone';
  * @import {ActualChainInfo, ChainHub} from './chain-hub.js';
- * @import {AsyncFlowTools, HostInterface, HostOf} from '@agoric/async-flow';
+ * @import {AsyncFlowTools, HostInterface, HostFn} from '@agoric/async-flow';
  * @import {Vow, VowTools} from '@agoric/vow';
  * @import {TimerService} from '@agoric/time';
  * @import {LocalChain} from '@agoric/vats/src/localchain.js';
@@ -121,7 +121,7 @@ const prepareOrchestratorKit = (
         },
       },
       orchestrator: {
-        /** @type {HostOf<Orchestrator['getChain']>} */
+        /** @type {HostFn<Orchestrator['getChain']>} */
         getChain(name) {
           if (chainByName.has(name)) {
             return asVow(() => chainByName.get(name));
@@ -141,7 +141,7 @@ const prepareOrchestratorKit = (
         makeLocalAccount() {
           return watch(E(localchain).makeAccount());
         },
-        /** @type {HostOf<Orchestrator['getBrandInfo']>} */
+        /** @type {HostFn<Orchestrator['getBrandInfo']>} */
         getBrandInfo(denom) {
           const { chainName, baseName, baseDenom, brand } =
             chainHub.lookupAsset(denom);
@@ -153,7 +153,7 @@ const prepareOrchestratorKit = (
           const base = chainByName.get(baseName);
           return harden({ chain, base, brand, baseDenom });
         },
-        /** @type {HostOf<Orchestrator['asAmount']>} */
+        /** @type {HostFn<Orchestrator['asAmount']>} */
         asAmount: () => Fail`not yet implemented`,
       },
     },
