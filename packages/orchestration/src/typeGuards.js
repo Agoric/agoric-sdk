@@ -3,9 +3,19 @@ import { VowShape } from '@agoric/vow';
 import { M } from '@endo/patterns';
 
 /**
- * @import {TypedPattern} from '@agoric/internal';
+ * @import {TypedPattern as TPInternal} from '@agoric/internal';
  * @import {ChainAddress, CosmosAssetInfo, ChainInfo, CosmosChainInfo, DenomAmount, DenomDetail} from './types.js';
  * @import {Delegation} from '@agoric/cosmic-proto/cosmos/staking/v1beta1/staking.js';
+ */
+
+/**
+ * @template T
+ * @typedef {TPInternal<T>} TypedPattern a pattern that recognizes an object
+ *   with the static type T
+ * @see {M}
+ *
+ * TODO: caveat about static types that express more than patterns can.
+ * TODO: push TypedPattern down into @endo/patterns
  */
 
 /**

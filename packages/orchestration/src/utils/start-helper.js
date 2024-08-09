@@ -176,6 +176,13 @@ harden(provideOrchestration);
  * Simplifies contract functions for Orchestration by wrapping a simpler
  * function with all the tools it needs in order to use Orchestration.
  *
+ * @example
+ *
+ * ```js
+ * const contract = (zcf, privateArgs, zone, tools) => { ... };
+ * export const start = withOrchestration(contract);
+ * ```
+ *
  * @template {Record<string, unknown>} CT
  * @template {OrchestrationPowers & {
  *   marshaller: Marshaller;
