@@ -142,6 +142,7 @@ type BridgeDowncalls = Array<
   | IBCMethod<'startChannelOpenInit'>
   | IBCMethod<'startChannelCloseInit'>
   | IBCMethod<'bindPort'>
+  | IBCMethod<'sendPacket'>
 >;
 
 /**
