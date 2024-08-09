@@ -64,7 +64,7 @@ export const forwardingMethods = rem => {
  * @param {R} dataRecord
  * @returns {R}
  */
-export const makeStateRecord = dataRecord =>
+export const makeSharedStateRecord = dataRecord =>
   harden(
     create(
       objectPrototype,

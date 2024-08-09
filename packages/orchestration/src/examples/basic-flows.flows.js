@@ -3,13 +3,14 @@
  *   leverage basic functionality of the Orchestration API with async-flow.
  */
 import { M, mustMatch } from '@endo/patterns';
+import { asContinuingOffer } from '../exos/portfolio-holder-kit.js';
 
 /**
  * @import {Zone} from '@agoric/zone';
  * @import {OrchestrationAccount, OrchestrationFlow, Orchestrator} from '@agoric/orchestration';
  * @import {ResolvedPublicTopic} from '@agoric/zoe/src/contractSupport/topics.js';
  * @import {OrchestrationPowers} from '../utils/start-helper.js';
- * @import {MakePortfolioHolder} from '../exos/portfolio-holder-kit.js';
+ * @import {MakePortfolioHolderKit} from '../exos/portfolio-holder-kit.js';
  * @import {OrchestrationTools} from '../utils/start-helper.js';
  */
 
@@ -40,13 +41,13 @@ export const makeOrchAccount = async (orch, _ctx, seat, { chainName }) => {
  * @satisfies {OrchestrationFlow}
  * @param {Orchestrator} orch
  * @param {object} ctx
- * @param {MakePortfolioHolder} ctx.makePortfolioHolder
+ * @param {MakePortfolioHolderKit} ctx.makePortfolioHolderKit
  * @param {ZCFSeat} seat
  * @param {{ chainNames: string[] }} offerArgs
  */
 export const makePortfolioAccount = async (
   orch,
-  { makePortfolioHolder },
+  { makePortfolioHolderKit },
   seat,
   { chainNames },
 ) => {
@@ -70,10 +71,10 @@ export const makePortfolioAccount = async (
       )
     ),
   );
-  const portfolioHolder = makePortfolioHolder(
+  const portfolioHolderKit = makePortfolioHolderKit(
     accountEntries,
     publicTopicEntries,
   );
 
-  return portfolioHolder.asContinuingOffer();
+  return asContinuingOffer(portfolioHolderKit);
 };

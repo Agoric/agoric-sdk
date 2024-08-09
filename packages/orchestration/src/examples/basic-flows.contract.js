@@ -4,7 +4,7 @@
  */
 import { InvitationShape } from '@agoric/zoe/src/typeGuards.js';
 import { M } from '@endo/patterns';
-import { preparePortfolioHolder } from '../exos/portfolio-holder-kit.js';
+import { preparePortfolioHolderKit } from '../exos/portfolio-holder-kit.js';
 import { withOrchestration } from '../utils/start-helper.js';
 import * as flows from './basic-flows.flows.js';
 
@@ -28,12 +28,12 @@ const contract = async (
   zone,
   { orchestrateAll, vowTools },
 ) => {
-  const makePortfolioHolder = preparePortfolioHolder(
+  const makePortfolioHolderKit = preparePortfolioHolderKit(
     zone.subZone('portfolio'),
     vowTools,
   );
 
-  const orchFns = orchestrateAll(flows, { makePortfolioHolder });
+  const orchFns = orchestrateAll(flows, { makePortfolioHolderKit });
 
   const publicFacet = zone.exo(
     'Basic Flows Public Facet',

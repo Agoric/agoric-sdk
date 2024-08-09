@@ -1,4 +1,4 @@
-import { makeStateRecord } from '@agoric/async-flow';
+import { makeSharedStateRecord } from '@agoric/async-flow';
 import { AmountShape } from '@agoric/ertp';
 import { InvitationShape } from '@agoric/zoe/src/typeGuards.js';
 import { M } from '@endo/patterns';
@@ -50,7 +50,7 @@ const contract = async (
   zone,
   { chainHub, orchestrateAll, zoeTools },
 ) => {
-  const contractState = makeStateRecord(
+  const contractState = makeSharedStateRecord(
     /** @type {{ account: OrchestrationAccount<any> | undefined }} */ {
       localAccount: undefined,
     },

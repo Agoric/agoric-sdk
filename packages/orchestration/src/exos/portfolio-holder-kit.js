@@ -38,7 +38,7 @@ const PublicTopicEntriesShape = M.arrayOf([M.string(), PublicTopicShape]);
  * @param {Zone} zone
  * @param {VowTools} vowTools
  */
-const preparePortfolioHolderKit = (zone, { asVow, when }) => {
+export const preparePortfolioHolderKit = (zone, { asVow, when }) => {
   return zone.exoClassKit(
     'PortfolioHolderKit',
     {
@@ -50,8 +50,7 @@ const preparePortfolioHolderKit = (zone, { asVow, when }) => {
         ).returns(M.promise()),
       }),
       holder: M.interface('Holder', {
-        asContinuingOffer: M.call().returns(VowShape),
-        getPublicTopics: M.call().returns(VowShape),
+        getPublicTopics: M.call().returns(M.any()),
         getAccount: M.call(ChainNameShape).returns(VowShape),
         addAccount: M.call(
           ChainNameShape,
@@ -105,24 +104,15 @@ const preparePortfolioHolderKit = (zone, { asVow, when }) => {
           );
         },
       },
+      /**
+       * A portfolio holder stores two or more OrchestrationAccounts and
+       * combines ContinuingOfferResult's from each into a single result.
+       */
       holder: {
-        // FIXME /** @type {HostOf<OrchestrationAccountI['asContinuingOffer']>} */
-        asContinuingOffer() {
-          return asVow(() => {
-            const { invitationMakers } = this.facets;
-            const { publicTopics } = this.state;
-            return harden({
-              publicSubscribers: fromEntries(publicTopics.entries()),
-              invitationMakers,
-            });
-          });
-        },
         // FIXME /** @type {HostOf<OrchestrationAccountI['getPublicTopics']>} */
         getPublicTopics() {
-          return asVow(() => {
-            const { publicTopics } = this.state;
-            return harden(fromEntries(publicTopics.entries()));
-          });
+          const { publicTopics } = this.state;
+          return harden(fromEntries(publicTopics.entries()));
         },
         /**
          * @param {string} chainName key where the account is stored
@@ -154,22 +144,15 @@ const preparePortfolioHolderKit = (zone, { asVow, when }) => {
   );
 };
 
+/** @typedef {ReturnType<typeof preparePortfolioHolderKit>} MakePortfolioHolderKit */
+/** @typedef {ReturnType<MakePortfolioHolderKit>} PortfolioHolderKit */
+
 /**
- * A portfolio holder stores two or more OrchestrationAccounts and combines
- * ContinuingOfferResult's from each into a single result.
- *
- * XXX consider an interface for extending the exo maker with additional
- * invitation makers.
- *
- * @param {Zone} zone
- * @param {VowTools} vowTools
- * @returns {(
- *   ...args: Parameters<ReturnType<typeof preparePortfolioHolderKit>>
- * ) => ReturnType<ReturnType<typeof preparePortfolioHolderKit>>['holder']}
+ * @param {PortfolioHolderKit} kit
  */
-export const preparePortfolioHolder = (zone, vowTools) => {
-  const makeKit = preparePortfolioHolderKit(zone, vowTools);
-  return (...args) => makeKit(...args).holder;
-};
-/** @typedef {ReturnType<typeof preparePortfolioHolder>} MakePortfolioHolder */
-/** @typedef {ReturnType<MakePortfolioHolder>} PortfolioHolder */
+export const asContinuingOffer = kit =>
+  harden({
+    publicSubscribers: kit.holder.getPublicTopics(),
+    invitationMakers: kit.invitationMakers,
+  });
+harden(asContinuingOffer);
