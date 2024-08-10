@@ -1,5 +1,6 @@
 #! /usr/bin/env node
-/* eslint @typescript-eslint/no-floating-promises: "warn" */
+/* global globalThis */
+
 import '@endo/init/debug.js';
 import * as farExports from '@endo/far';
 import { isEntrypoint } from '../src/helpers/is-entrypoint.js';
@@ -13,7 +14,8 @@ export const compartmentEvaluate = code => {
   const globals = harden({
     ...modules,
     ...farExports,
-    assert,
+    // See https://github.com/Agoric/agoric-sdk/issues/9515
+    assert: globalThis.assert,
     console: {
       // Ensure we don't pollute stdout.
       debug: console.warn,

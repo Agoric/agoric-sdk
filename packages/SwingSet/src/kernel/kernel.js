@@ -1,4 +1,6 @@
-import { assert, Fail } from '@agoric/assert';
+/* global globalThis */
+
+import { assert, Fail } from '@endo/errors';
 import { isNat } from '@endo/nat';
 import { importBundle } from '@endo/import-bundle';
 import { makeUpgradeDisconnection } from '@agoric/internal/src/upgrade-api.js';
@@ -33,12 +35,7 @@ import { makeDeviceTranslators } from './deviceTranslator.js';
 import { notifyTermination } from './notifyTermination.js';
 import { makeVatAdminHooks } from './vat-admin-hooks.js';
 
-/**
- * @typedef {import('@agoric/swingset-liveslots').VatDeliveryObject} VatDeliveryObject
- * @typedef {import('@agoric/swingset-liveslots').VatDeliveryResult} VatDeliveryResult
- * @typedef {import('@agoric/swingset-liveslots').VatSyscallObject} VatSyscallObject
- * @typedef {import('@agoric/swingset-liveslots').VatSyscallResult} VatSyscallResult
- */
+/** @import * as liveslots from '@agoric/swingset-liveslots' */
 
 function abbreviateReplacer(_, arg) {
   if (typeof arg === 'bigint') {
@@ -254,6 +251,7 @@ export default function buildKernel(
    * @param {SwingSetCapData} info
    */
   async function terminateVat(vatID, shouldReject, info) {
+    console.log(`kernel terminating vat ${vatID} (failure=${shouldReject})`);
     const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
     const critical = vatKeeper.getOptions().critical;
     insistCapData(info);
@@ -390,7 +388,7 @@ export default function buildKernel(
    *
    * @param {VatID} vatID
    * @param {KernelDeliveryObject} kd
-   * @param {VatDeliveryObject} vd
+   * @param {liveslots.VatDeliveryObject} vd
    */
   async function deliverAndLogToVat(vatID, kd, vd) {
     vatRequestedTermination = undefined;
@@ -400,7 +398,7 @@ export default function buildKernel(
     const vs = kernelSlog.provideVatSlogger(vatID).vatSlog;
     await null;
     try {
-      /** @type { VatDeliveryResult } */
+      /** @type { liveslots.VatDeliveryResult } */
       const deliveryResult = await vatWarehouse.deliverToVat(vatID, kd, vd, vs);
       insistVatDeliveryResult(deliveryResult);
       // const [ ok, problem, usage ] = deliveryResult;
@@ -822,6 +820,10 @@ export default function buildKernel(
     );
     const disconnectionCapData = kser(disconnectionObject);
 
+    console.log(
+      `attempting to upgrade vat ${vatID} from incarnation ${oldIncarnation} to source ${bundleID}`,
+    );
+
     /**
      * Terminate the vat and translate internal-delivery results into
      * abort-without-termination results for the upgrade delivery.
@@ -863,7 +865,7 @@ export default function buildKernel(
     // basically reverting 1cfbeaa3c925d0f8502edfb313ecb12a1cab5eac
     // and then ultimately moved to the kernel in a MUCH diminished form
     // (see #5342 and #6650, and testUpgrade in
-    // {@link ../../test/upgrade/test-upgrade.js}).
+    // {@link ../../test/upgrade/upgrade.test.js}).
     // We hope to eventually add back correct sophisticated logic
     // by e.g. having liveslots sweep the database when restoring a vat.
 
@@ -1447,8 +1449,8 @@ export default function buildKernel(
     // not
     /**
      *
-     * @param {VatSyscallObject} vatSyscallObject
-     * @returns {VatSyscallResult}
+     * @param {liveslots.VatSyscallObject} vatSyscallObject
+     * @returns {liveslots.VatSyscallResult}
      */
     function vatSyscallHandler(vatSyscallObject) {
       if (!vatWarehouse.lookup(vatID)) {
@@ -1463,7 +1465,7 @@ export default function buildKernel(
       let ksc;
       /** @type { KernelSyscallResult } */
       let kres = harden(['error', 'incomplete']);
-      /** @type { VatSyscallResult } */
+      /** @type { liveslots.VatSyscallResult } */
       let vres = harden(['error', 'incomplete']);
 
       try {
@@ -1649,7 +1651,12 @@ export default function buildKernel(
       assert(bundle);
       const NS = await importBundle(bundle, {
         filePrefix: `dev-${name}/...`,
-        endowments: harden({ ...vatEndowments, console: devConsole, assert }),
+        endowments: harden({
+          ...vatEndowments,
+          console: devConsole,
+          // See https://github.com/Agoric/agoric-sdk/issues/9515
+          assert: globalThis.assert,
+        }),
       });
 
       if (deviceEndowments[name] || unendowed) {
@@ -1872,7 +1879,7 @@ export default function buildKernel(
           );
         } else {
           // this should only happen during unit tests that are too lazy to
-          // build a complete kernel: test/bundles/test-bundles-kernel.js
+          // build a complete kernel: test/bundles/bundles-kernel.test.js
           console.log(`installBundle cannot notify, missing vatAdminRootKref`);
         }
       } finally {

@@ -1,5 +1,4 @@
 /* global globalThis, WeakRef, FinalizationRegistry */
-/* eslint-disable @typescript-eslint/prefer-ts-expect-error -- https://github.com/Agoric/agoric-sdk/issues/4620 */
 
 import process from 'process';
 import crypto from 'crypto';
@@ -10,7 +9,7 @@ import { tmpName } from 'tmp';
 import anylogger from 'anylogger';
 import microtime from 'microtime';
 
-import { assert, Fail } from '@agoric/assert';
+import { assert, Fail } from '@endo/errors';
 import { importBundle } from '@endo/import-bundle';
 import { initSwingStore } from '@agoric/swing-store';
 
@@ -177,7 +176,6 @@ export async function makeSwingsetController(
     slogSender(timedObj);
   }
 
-  // eslint-disable-next-line no-shadow
   const console = makeConsole(`${debugPrefix}SwingSet:controller`);
   // We can harden this 'console' because it's new, but if we were using the
   // original 'console' object (which has a unique prototype), we'd have to
@@ -213,7 +211,8 @@ export async function makeSwingsetController(
     filePrefix: 'kernel/...',
     endowments: {
       console: makeConsole(`${debugPrefix}SwingSet:kernel`),
-      assert,
+      // See https://github.com/Agoric/agoric-sdk/issues/9515
+      assert: globalThis.assert,
       require: kernelRequire,
       URL: globalThis.Base64, // Unavailable only on XSnap
       Base64: globalThis.Base64, // Available only on XSnap

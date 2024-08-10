@@ -1,6 +1,9 @@
 // @ts-check
-// eslint-disable-next-line spaced-comment
-/// <reference types="ses"/>
+
+/// <reference types="ses" />
+/**
+ * @import {Bytes, ConnectionHandler} from '@agoric/network';
+ */
 
 /**
  * @typedef {string} Denom
@@ -9,7 +12,7 @@
 
 /**
  * @typedef {object} PacketParts
- * @property {AmountValue} value
+ * @property {import('@agoric/ertp/src/types.js').AmountValue} value
  * @property {Denom} remoteDenom
  * @property {DepositAddress} depositAddress
  * @property {string} memo

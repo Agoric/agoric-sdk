@@ -1,13 +1,10 @@
 // This file can contain .js-specific Typescript compiler config.
 {
   "extends": "../../tsconfig.json",
-  "compilerOptions": {
-    "allowSyntheticDefaultImports": true,
-    "maxNodeModuleJsDepth": 2,
-  },
+  "compilerOptions": {},
   "include": [
     "src/**/*.js",
-    "*.js",
+    // exclude exported.js so that stub doesn't overwrite exportd.d.ts
     "test/**/*.js",
     "tools/**/*.js",
   ],

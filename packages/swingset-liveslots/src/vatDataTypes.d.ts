@@ -5,7 +5,6 @@
  * Behavior is a description when defining a kind of what facets it will have.
  * For the non-multi defineKind, there is just one facet so it doesn't have a key.
  */
-import type { InterfaceGuard, Pattern } from '@endo/patterns';
 import type {
   MapStore,
   SetStore,
@@ -13,7 +12,10 @@ import type {
   WeakMapStore,
   WeakSetStore,
 } from '@agoric/store';
-import type { StateShape } from '@endo/exo';
+import type { Amplify, IsInstance, ReceivePower, StateShape } from '@endo/exo';
+import type { RemotableObject } from '@endo/pass-style';
+import type { RemotableBrand } from '@endo/eventual-send';
+import type { InterfaceGuard, Pattern } from '@endo/patterns';
 import type { makeWatchedPromiseManager } from './watchedPromises.js';
 
 // TODO should be moved into @endo/patterns and eventually imported here
@@ -37,9 +39,13 @@ type OmitFirstArg<F> = F extends (x: any, ...args: infer P) => infer R
   ? (...args: P) => R
   : never;
 
-export type KindFacet<O> = {
+// The type of a passable local object with methods.
+// An internal helper to avoid having to repeat `O`.
+type PrimaryRemotable<O> = O & RemotableObject & RemotableBrand<{}, O>;
+
+export type KindFacet<O> = PrimaryRemotable<{
   [K in keyof O]: OmitFirstArg<O[K]>; // omit the 'context' parameter
-};
+}>;
 
 export type KindFacets<B> = {
   [FacetKey in keyof B]: KindFacet<B[FacetKey]>;
@@ -48,8 +54,15 @@ export type KindFacets<B> = {
 export type KindContext<S, F> = { state: S; self: KindFacet<F> };
 export type MultiKindContext<S, B> = { state: S; facets: KindFacets<B> };
 
-export type PlusContext<C, M> = (c: C, ...args: Parameters<M>) => ReturnType<M>;
-export type FunctionsPlusContext<C, O> = {
+export type PlusContext<C, M extends (...args: any[]) => any> = (
+  c: C,
+  ...args: Parameters<M>
+) => ReturnType<M>;
+
+export type FunctionsPlusContext<
+  C,
+  O extends Record<string, (...args: any[]) => any>,
+> = {
   [K in keyof O]: PlusContext<C, O[K]>;
 };
 
@@ -73,6 +86,41 @@ export type DefineKindOptions<C> = {
   finish?: (context: C) => void;
 
   /**
+   * If provided, it describes the shape of all state records of instances
+   * of this kind.
+   */
+  stateShape?: StateShape;
+
+  /**
+   * If a `receiveAmplifier` function is provided to an exo class kit definition,
+   * it will be called with an `Amplify` function. If provided to the definition
+   * of a normal exo or exo class, the definition will throw, since only
+   * exo kits can be amplified.
+   * An `Amplify` function is a function that takes a facet instance of
+   * this class kit as an argument, in which case it will return the facets
+   * record, giving access to all the facet instances of the same cohort.
+   */
+  receiveAmplifier?: ReceivePower<Amplify>;
+
+  /**
+   * If a `receiveInstanceTester` function is provided, it will be called
+   * during the definition of the exo class or exo class kit with an
+   * `IsInstance` function. The first argument of `IsInstance`
+   * is the value to be tested. When it may be a facet instance of an
+   * exo class kit, the optional second argument, if provided, is
+   * a `facetName`. In that case, the function tests only if the first
+   * argument is an instance of that facet of the associated exo class kit.
+   */
+  receiveInstanceTester?: ReceivePower<IsInstance>;
+
+  // TODO properties above are identical to those in FarClassOptions.
+  // These are the only options that should be exposed by
+  // vat-data's public virtual/durable exo APIs. This DefineKindOptions
+  // should explicitly be a subtype, where the methods below are only for
+  // internal use, i.e., below the exo level.
+
+  /**
+   * As a kind option, intended for internal use only.
    * Meaningful to `makeScalarBigMapStore` and its siblings. These maker
    * fuctions will make either virtual or durable stores, depending on
    * this flag. Defaults to off, making virtual but not durable collections.
@@ -83,12 +131,6 @@ export type DefineKindOptions<C> = {
    * intended for internal use only.
    */
   durable?: boolean;
-
-  /**
-   * If provided, it describes the shape of all state records of instances
-   * of this kind.
-   */
-  stateShape?: StateShape;
 
   /**
    * Intended for internal use only.
@@ -139,7 +181,7 @@ export type DefineKindOptions<C> = {
 export type VatData = {
   // virtual kinds
   /** @deprecated Use defineVirtualExoClass instead */
-  defineKind: <P, S, F>(
+  defineKind: <P extends Array<any>, S, F>(
     tag: string,
     init: (...args: P) => S,
     facet: F,
@@ -147,7 +189,7 @@ export type VatData = {
   ) => (...args: P) => KindFacet<F>;
 
   /** @deprecated Use defineVirtualExoClassKit instead */
-  defineKindMulti: <P, S, B>(
+  defineKindMulti: <P extends Array<any>, S, B>(
     tag: string,
     init: (...args: P) => S,
     behavior: B,
@@ -158,7 +200,7 @@ export type VatData = {
   makeKindHandle: (descriptionTag: string) => DurableKindHandle;
 
   /** @deprecated Use defineDurableExoClass instead */
-  defineDurableKind: <P, S, F>(
+  defineDurableKind: <P extends Array<any>, S, F>(
     kindHandle: DurableKindHandle,
     init: (...args: P) => S,
     facet: F,
@@ -166,7 +208,7 @@ export type VatData = {
   ) => (...args: P) => KindFacet<F>;
 
   /** @deprecated Use defineDurableExoClassKit instead */
-  defineDurableKindMulti: <P, S, B>(
+  defineDurableKindMulti: <P extends Array<any>, S, B>(
     kindHandle: DurableKindHandle,
     init: (...args: P) => S,
     behavior: B,
@@ -216,7 +258,7 @@ export interface PickFacet {
 }
 
 /** @deprecated Use prepareExoClass instead */
-export type PrepareKind = <P, S, F>(
+export type PrepareKind = <P extends Array<any>, S, F>(
   baggage: Baggage,
   tag: string,
   init: (...args: P) => S,
@@ -225,7 +267,7 @@ export type PrepareKind = <P, S, F>(
 ) => (...args: P) => KindFacet<F>;
 
 /** @deprecated Use prepareExoClassKit instead */
-export type PrepareKindMulti = <P, S, B>(
+export type PrepareKindMulti = <P extends Array<any>, S, B>(
   baggage: Baggage,
   tag: string,
   init: (...args: P) => S,

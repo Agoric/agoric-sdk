@@ -1,4 +1,3 @@
-/* eslint-disable no-use-before-define, import/no-extraneous-dependencies */
 import { expectNotType, expectType } from 'tsd';
 
 import { M } from '@endo/patterns';

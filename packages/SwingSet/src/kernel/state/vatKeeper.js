@@ -2,7 +2,7 @@
  * Kernel's keeper of persistent state for a vat.
  */
 import { Nat, isNat } from '@endo/nat';
-import { assert, q, Fail } from '@agoric/assert';
+import { assert, q, Fail } from '@endo/errors';
 import { parseKernelSlot } from '../parseKernelSlots.js';
 import { makeVatSlot, parseVatSlot } from '../../lib/parseVatSlots.js';
 import { insistVatID } from '../../lib/id.js';
@@ -21,8 +21,8 @@ import { enumeratePrefixedKeys } from './storageHelper.js';
  * @typedef { import('../../types-internal.js').VatManager } VatManager
  * @typedef { import('../../types-internal.js').RecordedVatOptions } RecordedVatOptions
  * @typedef { import('../../types-internal.js').TranscriptEntry } TranscriptEntry
- * @typedef {import('../../types-internal.js').TranscriptDeliverySaveSnapshot} TDSaveSnapshot
- * @typedef {import('../../types-internal.js').TranscriptDeliveryLoadSnapshot} TDLoadSnapshot
+ * @import {TranscriptDeliverySaveSnapshot} from '../../types-internal.js'
+ * @import {TranscriptDeliveryLoadSnapshot} from '../../types-internal.js'
  */
 
 // makeVatKeeper is a pure function: all state is kept in the argument object

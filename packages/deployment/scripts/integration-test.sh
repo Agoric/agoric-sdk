@@ -42,12 +42,10 @@ popd
 mkdir -p "$NETWORK_NAME/setup"
 cd "$NETWORK_NAME/setup"
 
-
 export AG_SETUP_COSMOS_HOME=${AG_SETUP_COSMOS_HOME-$PWD}
-export AG_SETUP_COSMOS_STATE_SYNC_INTERVAL=20 
+export AG_SETUP_COSMOS_STATE_SYNC_INTERVAL=20
 
-if [ -n "$LOADGEN" ]
-then
+if [ -n "$LOADGEN" ]; then
   solodir="$LOADGEN"/_agstate/agoric-servers/testnet-8000
   "$thisdir/../../solo/bin/ag-solo" init "$solodir" --webport=8000
   SOLO_ADDR=$(cat "$solodir/ag-cosmos-helper-address")
@@ -61,12 +59,11 @@ fi
 
 # Go ahead and bootstrap with detailed debug logging.
 AG_COSMOS_START_ARGS="--log_level=info" \
-VAULT_FACTORY_CONTROLLER_ADDR="$SOLO_ADDR" \
-CHAIN_BOOTSTRAP_VAT_CONFIG="$VAT_CONFIG" \
+  VAULT_FACTORY_CONTROLLER_ADDR="$SOLO_ADDR" \
+  CHAIN_BOOTSTRAP_VAT_CONFIG="$VAT_CONFIG" \
   "$thisdir/setup.sh" bootstrap ${1+"$@"}
 
-if [ -n "$LOADGEN" ]
-then
+if [ -n "$LOADGEN" ]; then
   "$SDK_SRC/packages/deployment/scripts/setup.sh" show-config > "$RESULTSDIR/network-config"
   cp ag-chain-cosmos/data/genesis.json "$RESULTSDIR/genesis.json"
   cp "$AG_SETUP_COSMOS_HOME/ag-chain-cosmos/data/genesis.json" "$RESULTSDIR/genesis.json"
@@ -74,9 +71,9 @@ then
   SOLO_COINS=40000000000uist PATH="$thisdir/../bin:$SDK_SRC/bin:$PATH" \
     "$AG_SETUP_COSMOS_HOME/faucet-helper.sh" add-egress loadgen "$SOLO_ADDR"
   SLOGSENDER=@agoric/telemetry/src/otel-trace.js SOLO_SLOGSENDER="" \
-  SLOGSENDER_FAIL_ON_ERROR=1 SLOGSENDER_AGENT=process \
-  AG_CHAIN_COSMOS_HOME=$HOME/.agoric \
-  SDK_BUILD=0 MUST_USE_PUBLISH_BUNDLE=1 SDK_SRC=$SDK_SRC OUTPUT_DIR="$RESULTSDIR" ./start.sh \
+    SLOGSENDER_FAIL_ON_ERROR=1 SLOGSENDER_AGENT=process \
+    AG_CHAIN_COSMOS_HOME=$HOME/.agoric \
+    SDK_BUILD=0 MUST_USE_PUBLISH_BUNDLE=1 SDK_SRC=$SDK_SRC OUTPUT_DIR="$RESULTSDIR" ./start.sh \
     --no-stage.save-storage \
     --stages=3 --stage.duration=10 --stage.loadgen.cycles=4 \
     --stage.loadgen.faucet.interval=6 --stage.loadgen.faucet.limit=4 \

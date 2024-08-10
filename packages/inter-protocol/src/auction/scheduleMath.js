@@ -1,11 +1,13 @@
 // @jessie-check
 
+import { Fail } from '@endo/errors';
 import { TimeMath } from '@agoric/time';
 import { natSafeMath } from '@agoric/zoe/src/contractSupport/index.js';
 import { assertAllDefined, makeTracer } from '@agoric/internal';
 
+/** @import {TimestampRecord} from '@agoric/time'; */
+
 const { subtract, multiply, floorDivide } = natSafeMath;
-const { Fail } = assert;
 
 const trace = makeTracer('SMath', true);
 
@@ -35,7 +37,7 @@ const subtract1 = relTime =>
  * their collateral).
  *
  * @param {Awaited<import('./params.js').AuctionParamManager>} params
- * @param {Timestamp} baseTime
+ * @param {TimestampRecord} baseTime
  * @returns {import('./scheduler.js').Schedule}
  */
 export const computeRoundTiming = (params, baseTime) => {
@@ -83,7 +85,7 @@ export const computeRoundTiming = (params, baseTime) => {
   // computed start is `startDelay + baseTime + freq - (baseTime mod freq)`.
   // That is, if there are hourly starts, we add an hour to the time, and
   // subtract baseTime mod freq. Then we add the delay.
-  /** @type {import('@agoric/time').TimestampRecord} */
+  /** @type {TimestampRecord} */
   const startTime = TimeMath.addAbsRel(
     TimeMath.addAbsRel(
       baseTime,

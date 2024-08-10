@@ -1,7 +1,7 @@
 /* global process */
 // @ts-check
 
-/** @typedef {import('child_process').ChildProcess} ChildProcess */
+/** @import { ChildProcess } from 'child_process' */
 
 export const getSDKBinaries = ({
   jsPfx = '../..',
@@ -45,6 +45,7 @@ export const makePspawn = ({
    * @param {string | [string, string, string]} [param2.stdio] standard IO
    * specification
    * @param {Record<string, string | undefined>} [param2.env] environment
+   * @param {boolean} [param2.detached] whether the child process should be detached
    * @returns {Promise<number> & { childProcess: ChildProcess }}} promise for
    * exit status. The return result has a `childProcess` property to obtain
    * control over the running process

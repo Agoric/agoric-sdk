@@ -1,4 +1,4 @@
-import { Fail } from '@agoric/assert';
+import { Fail } from '@endo/errors';
 import { deeplyFulfilledObject, makeTracer } from '@agoric/internal';
 import { M, mustMatch } from '@agoric/store';
 import { E, getInterfaceOf } from '@endo/far';
@@ -16,8 +16,12 @@ const vatUpgradeStatus = {
   bank: 'covered by test-upgrade-vats: upgrade vat-bank',
   board: 'covered by test-upgrade-vats: upgrade vat-board',
   bridge: 'covered by test-upgrade-vats: upgrade vat-bridge',
+  ibc: 'upgradeable',
+  localchain: 'UNTESTED',
+  network: 'upgradeable',
   priceAuthority: 'covered by test-upgrade-vats: upgrade vat-priceAuthority',
   provisioning: 'UNTESTED',
+  transfer: 'UNTESTED',
   zoe: 'tested in @agoric/zoe',
 };
 
@@ -117,10 +121,20 @@ export const restartVats = async ({ consume }, { options }) => {
   }
 
   trace('iterating over vatStore');
-  for (const [name] of vatStore.entries()) {
+  for (const [name, { adminNode }] of vatStore.entries()) {
     const status = vatUpgradeStatus[name];
     if (!status) {
       Fail`unaudited vat ${name}`;
+    }
+    if (status === 'upgradeable') {
+      console.log('upgrading vat', name);
+      const { vatAdminSvc } = consume;
+      const info = await consume.vatUpgradeInfo;
+      const { bundleID, bundleName } = info.get(name);
+      const bcap = await (bundleID
+        ? E(vatAdminSvc).getBundleCap(bundleID)
+        : E(vatAdminSvc).getNamedBundleCap(bundleName));
+      await E(adminNode).upgrade(bcap);
     }
     console.log('VAT', name, status);
   }
@@ -144,6 +158,8 @@ export const getManifestForRestart = (_powers, options) => ({
         loadCriticalVat: true,
         psmKit: true,
         vatStore: true,
+        vatAdminSvc: true,
+        vatUpgradeInfo: true,
         zoe: 'zoe',
         provisioning: 'provisioning',
         vaultFactoryKit: true,

@@ -9,13 +9,13 @@ SCOPE=$1
 PRIMARY_PACKAGES="@agoric/{cosmos,ertp,governance,inter-protocol,swing-store,swingset-vat,vats,wallet,zoe}"
 
 case $SCOPE in
-primary)
+  primary)
     yarn lerna run --scope=$PRIMARY_PACKAGES --no-bail lint
     ;;
-rest)
+  rest)
     yarn lerna run --ignore=$PRIMARY_PACKAGES --no-bail lint
     ;;
-*)
+  *)
     echo "The regular lint command now lints with types. Just use that."
     exit 0
     ;;

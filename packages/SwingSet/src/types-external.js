@@ -1,4 +1,11 @@
+/** @import { ERef } from '@endo/far'; */
+
 export {};
+
+/**
+ * @import {Guarded} from '@endo/exo';
+ * @import {Passable, RemotableObject} from '@endo/pass-style';
+ */
 
 /* This file defines types that part of the external API of swingset. That
  * includes standard services which user-provided vat code might interact
@@ -348,15 +355,13 @@ export {};
  * incarnation.
  *
  *
- * @typedef {object} CreateVatResults
- * @property {object} root
- * @property {VatAdminFacet} adminNode
+ * @typedef {{ adminNode: Guarded<VatAdminFacet>, root: object }} CreateVatResults
  *
  * @typedef {object} VatAdminSvc
- * @property {(id: BundleID) => import('@endo/far').ERef<BundleCap>} waitForBundleCap
- * @property {(id: BundleID) => import('@endo/far').ERef<BundleCap>} getBundleCap
- * @property {(name: string) => import('@endo/far').ERef<BundleCap>} getNamedBundleCap
- * @property {(name: string) => import('@endo/far').ERef<BundleID>} getBundleIDByName
- * @property {(bundleCap: BundleCap, options?: DynamicVatOptions) => import('@endo/far').ERef<CreateVatResults>} createVat
+ * @property {(id: BundleID) => ERef<BundleCap>} waitForBundleCap
+ * @property {(id: BundleID) => ERef<BundleCap>} getBundleCap
+ * @property {(name: string) => ERef<BundleCap>} getNamedBundleCap
+ * @property {(name: string) => ERef<BundleID>} getBundleIDByName
+ * @property {(bundleCap: BundleCap, options?: DynamicVatOptions) => ERef<CreateVatResults>} createVat
  *
  */

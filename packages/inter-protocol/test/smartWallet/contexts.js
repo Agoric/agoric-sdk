@@ -10,6 +10,7 @@ import {
 import { makeHeapZone } from '@agoric/zone';
 import { E } from '@endo/far';
 import path from 'path';
+import { makeScopedBridge } from '@agoric/vats';
 import { oracleBrandFeedName } from '../../src/proposals/utils.js';
 import { createPriceFeed } from '../../src/proposals/price-feed-proposal.js';
 import { withAmountUtils } from '../supports.js';
@@ -104,16 +105,25 @@ export const makeDefaultTestContext = async (t, makeSpace) => {
     'anyAddress',
   );
   const bridgeManager = await consume.bridgeManager;
+  /**
+   * @type {undefined
+   *   | import('@agoric/vats').ScopedBridgeManager<'wallet'>}
+   */
   const walletBridgeManager = await (bridgeManager &&
-    E(bridgeManager).register(BridgeId.WALLET));
+    makeScopedBridge(bridgeManager, BridgeId.WALLET));
+
+  const customTerms = await deeplyFulfilledObject(
+    harden({
+      agoricNames, // may be a promise
+      board: consume.board, // may be a promise
+      assetPublisher,
+    }),
+  );
+
   const walletFactory = await E(zoe).startInstance(
     installation,
     {},
-    {
-      agoricNames,
-      board: consume.board,
-      assetPublisher,
-    },
+    customTerms,
     { storageNode, walletBridgeManager },
   );
 

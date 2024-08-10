@@ -1,4 +1,5 @@
-import { provide, prepareExoClass, M } from '@agoric/vat-data';
+import { q, Fail } from '@endo/errors';
+import { prepareExoClass, M } from '@agoric/vat-data';
 import { assertKeywordName } from './cleanProposal.js';
 import {
   BrandKeywordRecordShape,
@@ -11,8 +12,6 @@ import {
 } from './typeGuards.js';
 
 const { ownKeys } = Reflect;
-
-const { quote: q, Fail } = assert;
 
 /**
  * The InstanceRecord stores the installation, customTerms, issuers,
@@ -29,8 +28,6 @@ const { quote: q, Fail } = assert;
  * @returns {(ir: InstanceRecord) => InstanceState}
  */
 export const makeInstanceRecordStorage = baggage => {
-  provide(baggage, 'instanceRecord', () => undefined);
-
   const assertInstantiated = instanceRecord => {
     instanceRecord !== 'undefined' ||
       Fail`instanceRecord has not been instantiated`;

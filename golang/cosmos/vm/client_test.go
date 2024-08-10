@@ -11,30 +11,28 @@ import (
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 )
 
-type Sender func(ctx context.Context, needReply bool, str string) (string, error)
-
 type errorWrapper struct {
 	Error string `json:"error"`
 }
 
 // ConnectVMClientCodec creates an RPC client codec and a sender to the
 // in-process implementation of the VM.
-func ConnectVMClientCodec(ctx context.Context, nodePort int, sendFunc func(int, int, string)) (*vm.ClientCodec, Sender) {
-	vmClientCodec := vm.NewClientCodec(context.Background(), sendFunc)
+func ConnectVMClientCodec(ctx context.Context, nodePort int, sendFunc func(int, int, string)) (*vm.ClientCodec, vm.Sender) {
+	vmClientCodec := vm.NewClientCodec(ctx, sendFunc)
 	vmClient := rpc.NewClientWithCodec(vmClientCodec)
 
-	sendToNode := func(ctx context.Context, needReply bool, str string) (string, error) {
-		if str == "shutdown" {
+	sendToNode := func(ctx context.Context, needReply bool, jsonRequest string) (jsonReply string, err error) {
+		if jsonRequest == "shutdown" {
 			return "", vmClientCodec.Close()
 		}
 
 		msg := vm.Message{
-			Port: nodePort,
+			Port:       nodePort,
 			NeedsReply: needReply,
-			Data: str,
+			Data:       jsonRequest,
 		}
 		var reply string
-		err := vmClient.Call(vm.ReceiveMessageMethod, msg, &reply)
+		err = vmClient.Call(vm.ReceiveMessageMethod, msg, &reply)
 		return reply, err
 	}
 
@@ -42,34 +40,35 @@ func ConnectVMClientCodec(ctx context.Context, nodePort int, sendFunc func(int, 
 }
 
 type Fixture struct {
-	SendToNode Sender
-	SendToGo func (port int, msgStr string) string
-	ReplyToGo func (replyPort int, isError bool, respStr string) int
+	SendToNode vm.Sender
+	SendToGo   func(port int, msgStr string) string
+	ReplyToGo  func(replyPort int, isError bool, respStr string) int
 }
 
-func NewFixture(t *testing.T) (*Fixture) {
+func NewFixture(t *testing.T) *Fixture {
 	nodePort := 42
 
 	f := &Fixture{}
+	agdServer := vm.NewAgdServer()
 
 	sendFunc := func(port int, reply int, str string) {
 		switch str {
-			case "ping":
-				time.AfterFunc(100*time.Millisecond, func() {
-					fmt.Printf("sendFunc: port=%d, reply=%d, str=%s\n", port, reply, str)
-					if reply != 0 {
-						f.ReplyToGo(reply, false, "pong")
-					}
-				})
-			case "wait":
-				time.AfterFunc(300*time.Millisecond, func() {
-					fmt.Printf("sendFunc: port=%d, reply=%d, str=%s\n", port, reply, str)
-					if reply != 0 {
-						f.ReplyToGo(reply, false, "done-waiting")
-					}
-				})
-			default:
-				t.Errorf("Unexpected message %s", str)
+		case "ping":
+			time.AfterFunc(100*time.Millisecond, func() {
+				fmt.Printf("sendFunc: port=%d, reply=%d, str=%s\n", port, reply, str)
+				if reply != 0 {
+					f.ReplyToGo(reply, false, "pong")
+				}
+			})
+		case "wait":
+			time.AfterFunc(300*time.Millisecond, func() {
+				fmt.Printf("sendFunc: port=%d, reply=%d, str=%s\n", port, reply, str)
+				if reply != 0 {
+					f.ReplyToGo(reply, false, "done-waiting")
+				}
+			})
+		default:
+			t.Errorf("Unexpected message %s", str)
 		}
 	}
 
@@ -78,23 +77,22 @@ func NewFixture(t *testing.T) (*Fixture) {
 		int(nodePort),
 		sendFunc,
 	)
-	agdServer := vm.NewAgdServer()
 
 	f.SendToNode = sendToNode
-	f.SendToGo = func (port int, msgStr string) string {
+	f.SendToGo = func(port int, msgStr string) string {
 		fmt.Println("Send to Go", msgStr)
 		var respStr string
 		message := &vm.Message{
-			Port: int(port),
+			Port:       int(port),
 			NeedsReply: true,
-			Data: msgStr,
+			Data:       msgStr,
 		}
-		
+
 		err := agdServer.ReceiveMessage(message, &respStr)
 		if err == nil {
 			return respStr
 		}
-	
+
 		// fmt.Fprintln(os.Stderr, "Cannot receive from controller", err)
 		errResp := errorWrapper{
 			Error: err.Error(),
@@ -106,7 +104,7 @@ func NewFixture(t *testing.T) (*Fixture) {
 		return string(respBytes)
 	}
 
-	f.ReplyToGo = func (replyPort int, isError bool, respStr string) int {
+	f.ReplyToGo = func(replyPort int, isError bool, respStr string) int {
 		if err := vmClientCodec.Receive(replyPort, isError, respStr); err != nil {
 			return 1
 		}

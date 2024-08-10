@@ -1,3 +1,7 @@
+import { Fail } from '@endo/errors';
+import { E, Far } from '@endo/far';
+import { M, getInterfaceGuardPayload } from '@endo/patterns';
+
 import { AmountMath, AssetKind, BrandShape } from '@agoric/ertp';
 import { deeplyFulfilledObject } from '@agoric/internal';
 import { prepareGuardedAttenuator } from '@agoric/internal/src/callback.js';
@@ -8,10 +12,8 @@ import {
   prepareDurablePublishKit,
   subscribeEach,
 } from '@agoric/notifier';
-import { M, getInterfaceGuardPayload } from '@endo/patterns';
 import { provideLazy } from '@agoric/store';
 import { makeDurableZone } from '@agoric/zone/durable.js';
-import { E, Far } from '@endo/far';
 import { makeAtomicProvider } from '@agoric/store/src/stores/store-utils.js';
 import { BridgeHandlerI, BridgeScopedManagerI } from './bridge.js';
 import {
@@ -19,9 +21,11 @@ import {
   prepareVirtualPurse,
 } from './virtual-purse.js';
 
-import '@agoric/notifier/exported.js';
-
-const { Fail } = assert;
+/**
+ * @import {Guarded} from '@endo/exo';
+ * @import {Passable, RemotableObject} from '@endo/pass-style';
+ * @import {VirtualPurseController} from './virtual-purse.js';
+ */
 
 const { VirtualPurseControllerI } = makeVirtualPurseKitIKit();
 
@@ -33,14 +37,13 @@ const BridgeChannelI = M.interface('BridgeChannel', {
 });
 
 /**
- * @typedef {import('./virtual-purse.js').VirtualPurseController} VirtualPurseController
- *
  * @typedef {Awaited<ReturnType<ReturnType<typeof prepareVirtualPurse>>>} VirtualPurse
  */
 
 /**
- * @typedef {object} BalanceUpdater
- * @property {(value: string, nonce?: string) => void} update
+ * @typedef {Guarded<{
+ *   update: (value: string, nonce?: string) => void;
+ * }>} BalanceUpdater
  */
 
 const BalanceUpdaterI = M.interface('BalanceUpdater', {
@@ -49,8 +52,8 @@ const BalanceUpdaterI = M.interface('BalanceUpdater', {
 
 /**
  * @typedef {Pick<
- *   import('./types.js').ScopedBridgeManager,
- *   'fromBridge' | 'toBridge'
+ *   import('./types.js').ScopedBridgeManager<'bank'>,
+ *   'getBridgeId' | 'fromBridge' | 'toBridge'
  * >} BridgeChannel
  */
 
@@ -196,14 +199,17 @@ const prepareBankChannelHandler = zone =>
                 if (addressToUpdater.has(address)) {
                   updater = addressToUpdater.get(address);
                 }
-                // console.info('bank balance update', update);
               } catch (e) {
-                console.error('Unregistered denom in', update, e);
+                console.debug('Unregistered denom in', update, e);
               }
               if (updater) {
                 try {
                   updater.update(value, nonce);
                 } catch (e) {
+                  // ??? Is this an invariant that should complain louder?
+
+                  // NB: this failure does not propagate. The update() method is
+                  // responsible for propagating the errow without side-effects.
                   console.error('Error updating balance', update, e);
                 }
               }
@@ -347,11 +353,10 @@ const prepareAssetSubscription = zone => {
 };
 
 /**
- * @template {AssetKind} [K=AssetKind]
  * @typedef {object} AssetIssuerKit
- * @property {ERef<Mint<K>>} [mint]
- * @property {ERef<Issuer<K>>} issuer
- * @property {Brand<K>} brand
+ * @property {Mint<'nat'>} [mint]
+ * @property {Issuer<'nat'>} issuer
+ * @property {Brand<'nat'>} brand
  */
 
 const BaseIssuerKitShape = harden({
@@ -363,12 +368,17 @@ const AssetIssuerKitShape = M.splitRecord(BaseIssuerKitShape, {
   mint: M.remotable('Mint'),
 });
 
-/** @typedef {AssetIssuerKit & { denom: string; escrowPurse?: ERef<Purse> }} AssetRecord */
+/**
+ * @typedef {AssetIssuerKit & {
+ *   denom: string;
+ *   escrowPurse?: RemotableObject & ERef<Purse<'nat'>>;
+ * }} AssetRecord
+ */
 
 /**
  * @typedef {object} AssetDescriptor
  * @property {Brand} brand
- * @property {ERef<Issuer>} issuer
+ * @property {RemotableObject & ERef<Issuer>} issuer
  * @property {string} issuerName
  * @property {string} denom
  * @property {string} proposedName
@@ -412,6 +422,7 @@ const prepareBank = (
   // (which we emulate, since we know both address and denom are JSONable).  If
   // we decide to partition the provider and use `brandToVPurse` directly, we'd
   // need ephemera for each `makeBank` call.
+  /** @type {MapStore<string, VirtualPurse>} */
   const addressDenomToPurse = zone.mapStore('addressDenomToPurse');
   /**
    * @type {import('@agoric/store/src/stores/store-utils.js').AtomicProvider<
@@ -585,7 +596,7 @@ const prepareBankManager = (
       /**
        * @type {MapStore<
        *   string,
-       *   { bank: Bank; brandToVPurse: MapStore<Brand, VirtualPurse> }
+       *   { bank: Guarded<Bank>; brandToVPurse: MapStore<Brand, VirtualPurse> }
        * >}
        */
       const addressToBank = detachedZone.mapStore('addressToBank');
@@ -627,7 +638,11 @@ const prepareBankManager = (
       /**
        * @param {string} denom
        * @param {AssetIssuerKit} feeKit
-       * @returns {ERef<import('@endo/far').EOnly<DepositFacet>>}
+       * @returns {ERef<
+       *   import('@endo/far').EOnly<
+       *     import('@agoric/ertp/src/types.js').DepositFacet
+       *   >
+       * >}
        */
       getRewardDistributorDepositFacet(denom, feeKit) {
         const { bankChannel } = this.state;
@@ -674,8 +689,8 @@ const prepareBankManager = (
        * @param {string} denom lower-level denomination string
        * @param {string} issuerName
        * @param {string} proposedName
-       * @param {AssetIssuerKit & { payment?: ERef<Payment> }} kit ERTP issuer
-       *   kit (mint, brand, issuer)
+       * @param {AssetIssuerKit & { payment?: ERef<Payment<'nat'>> }} kit ERTP
+       *   issuer kit (mint, brand, issuer)
        */
       async addAsset(denom, issuerName, proposedName, kit) {
         const {
@@ -787,6 +802,7 @@ const prepareBankManager = (
   );
   return makeBankManager;
 };
+/** @typedef {ReturnType<ReturnType<typeof prepareBankManager>>} BankManager */
 
 /** @param {MapStore<string, any>} baggage */
 const prepareFromBaggage = baggage => {
@@ -849,7 +865,9 @@ export function buildRootObject(_vatPowers, _args, baggage) {
 
   return Far('bankMaker', {
     /**
-     * @param {ERef<import('./types.js').ScopedBridgeManager | undefined>} [bankBridgeManagerP]
+     * @param {ERef<
+     *   import('./types.js').ScopedBridgeManager<'bank'> | undefined
+     * >} [bankBridgeManagerP]
      *   a bridge manager for the "remote" bank (such as on cosmos-sdk). If not
      *   supplied (such as on sim-chain), we just use local purses.
      * @param {ERef<{ update: import('./types.js').NameAdmin['update'] }>} [nameAdminP]
@@ -866,25 +884,27 @@ export function buildRootObject(_vatPowers, _args, baggage) {
         'denomToAddressUpdater',
       );
 
-      /** @param {ERef<import('./types.js').ScopedBridgeManager>} [bankBridgeMgr] */
-      async function getBankChannel(bankBridgeMgr) {
+      async function getBankChannel() {
         // We do the logic here if the bridge manager is available.  Otherwise,
         // the bank is not "remote" (such as on sim-chain), so we just use
         // immediate purses instead of virtual ones.
-        if (!bankBridgeMgr) {
+        if (!bankBridgeManager) {
+          console.warn(
+            'no bank bridge manager, using immediate purses instead of virtual ones',
+          );
           return undefined;
         }
 
         // We need to synchronise with the remote bank.
         const handler = makeBankChannelHandler(denomToAddressUpdater);
-        await E(bankBridgeMgr).initHandler(handler);
+        await E(bankBridgeManager).initHandler(handler);
 
         // We can only downcall to the bank if there exists a bridge manager.
-        return makeBridgeChannelAttenuator({ target: bankBridgeMgr });
+        return makeBridgeChannelAttenuator({ target: bankBridgeManager });
       }
 
       const [bankChannel, nameAdmin] = await Promise.all([
-        getBankChannel(bankBridgeManager),
+        getBankChannel(),
         nameAdminP,
       ]);
       return makeBankManager({

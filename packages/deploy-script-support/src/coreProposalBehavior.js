@@ -2,6 +2,10 @@
 const t = 'makeCoreProposalBehavior';
 
 /**
+ * @import {Installation} from '@agoric/zoe/src/zoeService/utils.js';
+ */
+
+/**
  * TODO import these from @agoric/vats when the types are better managed
  *
  * @typedef {*} ChainBootstrapSpace
@@ -9,7 +13,7 @@ const t = 'makeCoreProposalBehavior';
  */
 
 /**
- * @typedef {import('./externalTypes.js').ManifestBundleRef} ManifestBundleRef
+ * @import {ManifestBundleRef} from './externalTypes.js'
  * @typedef {[methodName: string, ...args: unknown[]]} FlatMethargs
  * @typedef {Record<string, Record<string, unknown>>} Manifest
  */
@@ -20,7 +24,7 @@ const t = 'makeCoreProposalBehavior';
  * They are merged with all of the manifest getter's permits to produce the
  * total permits needed by the resulting core proposal (such as might be---and
  * generally are---written into a *-permit.json file).
- * @see {@link ./writeCoreProposal.js}
+ * @see {@link ./writeCoreEvalParts.js}
  */
 export const permits = {
   consume: { agoricNamesAdmin: t, vatAdminSvc: t, zoe: t },
@@ -102,7 +106,7 @@ export const makeCoreProposalBehavior = ({
     // HOWEVER, do note that this function is invoked with at least the *union* of powers
     // required by individual moduleBehaviors declared by the manifest getter, which is
     // necessary so it can use `runModuleBehaviors` to provide the appropriate subset to
-    // each one (see ./writeCoreProposal.js).
+    // each one (see ./writeCoreEvalParts.js).
     // Handle `powers` with the requisite care.
     const {
       consume: { vatAdminSvc, zoe, agoricNamesAdmin },

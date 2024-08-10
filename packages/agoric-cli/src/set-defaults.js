@@ -1,5 +1,5 @@
 import { basename } from 'path';
-import { Fail } from '@agoric/assert';
+import { Fail } from '@endo/errors';
 import {
   finishCosmosApp,
   finishTendermintConfig,

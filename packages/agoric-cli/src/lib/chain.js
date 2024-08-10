@@ -92,9 +92,13 @@ export const execSwingsetTransaction = (swingsetArgs, opts) => {
 };
 harden(execSwingsetTransaction);
 
-// xxx rpc should be able to query this by HTTP without shelling out
+/**
+ *
+ * @param {import('./rpc.js').MinimalNetworkConfig} net
+ */
+// TODO fetch by HTTP instead of shelling out https://github.com/Agoric/agoric-sdk/issues/9200
 export const fetchSwingsetParams = net => {
-  const { chainName, rpcAddrs, execFileSync = execFileSyncAmbient } = net;
+  const { chainName, rpcAddrs } = net;
   const cmd = [
     `--node=${rpcAddrs[0]}`,
     `--chain-id=${chainName}`,
@@ -102,9 +106,9 @@ export const fetchSwingsetParams = net => {
     'swingset',
     'params',
     '--output',
-    '--json',
+    'json',
   ];
-  const buffer = execFileSync(agdBinary, cmd);
+  const buffer = execFileSyncAmbient(agdBinary, cmd);
   return JSON.parse(buffer.toString());
 };
 harden(fetchSwingsetParams);

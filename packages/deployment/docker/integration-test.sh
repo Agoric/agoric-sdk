@@ -6,16 +6,16 @@ TTY=-i
 test -t 0 && test -t 1 && TTY=-it
 FLAGS=--entrypoint=/bin/bash
 case "$1" in
---pull)
-  shift
-  docker pull "$IMAGE"
-  ;;
+  --pull)
+    shift
+    docker pull "$IMAGE"
+    ;;
 esac
 case "$1" in
-shell) shift ;;
-*)
-  set /usr/src/agoric-sdk/packages/deployment/scripts/integration-test.sh ${1+"$@"}
-  ;;
+  shell) shift ;;
+  *)
+    set /usr/src/agoric-sdk/packages/deployment/scripts/integration-test.sh ${1+"$@"}
+    ;;
 esac
 
 setup_volume=

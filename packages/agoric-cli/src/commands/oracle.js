@@ -1,9 +1,9 @@
 // @ts-check
 /* eslint-disable func-names */
 /* global fetch, setTimeout, process */
-import { Fail } from '@agoric/assert';
-import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
+import { Fail } from '@endo/errors';
 import { Nat } from '@endo/nat';
+import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
 import { Command } from 'commander';
 import * as cp from 'child_process';
 import { inspect } from 'util';
@@ -18,6 +18,8 @@ import {
   sendHint,
 } from '../lib/wallet.js';
 import { bigintReplacer } from '../lib/format.js';
+
+/** @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js'; */
 
 // XXX support other decimal places
 const COSMOS_UNIT = 1_000_000n;

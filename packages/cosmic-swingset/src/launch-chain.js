@@ -7,6 +7,7 @@ import '@agoric/builders';
 
 import anylogger from 'anylogger';
 
+import { assert, Fail } from '@endo/errors';
 import { E } from '@endo/far';
 import bundleSource from '@endo/bundle-source';
 
@@ -22,7 +23,6 @@ import {
   loadSwingsetConfigFile,
 } from '@agoric/swingset-vat';
 import { waitUntilQuiescent } from '@agoric/internal/src/lib-nodejs/waitUntilQuiescent.js';
-import { assert, Fail } from '@agoric/assert';
 import { openSwingStore } from '@agoric/swing-store';
 import { BridgeId as BRIDGE_ID } from '@agoric/internal';
 import { makeWithQueue } from '@agoric/internal/src/queue.js';
@@ -51,6 +51,8 @@ import { makeQueue, makeQueueStorageMock } from './helpers/make-queue.js';
 import { exportStorage } from './export-storage.js';
 import { parseLocatedJson } from './helpers/json.js';
 
+/** @import {RunPolicy} from '@agoric/swingset-vat' */
+
 const console = anylogger('launch-chain');
 const blockManagerConsole = anylogger('block-manager');
 
@@ -71,7 +73,7 @@ const parseUpgradePlanInfo = (upgradePlan, prefix = '') => {
   return harden(upgradePlanInfo || {});
 };
 
-/** @typedef {import('@agoric/swingset-vat').SwingSetConfig} SwingSetConfig */
+/** @import {SwingSetConfig} from '@agoric/swingset-vat' */
 
 /**
  * @typedef {object} CosmicSwingsetConfig
@@ -94,7 +96,7 @@ const getHostKey = path => `host.${path}`;
 
 /**
  * @param {Map<*, *>} mailboxStorage
- * @param {undefined | ((dstID: string, obj: any) => any)} bridgeOutbound
+ * @param {((dstID: string, obj: any) => any)} bridgeOutbound
  * @param {SwingStoreKernelStorage} kernelStorage
  * @param {string | (() => string | Promise<string>)} vatconfig absolute path or thunk
  * @param {unknown} bootstrapArgs JSON-serializable data
@@ -121,17 +123,15 @@ export async function buildSwingset(
   const debugPrefix = debugName === undefined ? '' : `${debugName}:`;
   const mbs = buildMailboxStateMap(mailboxStorage);
 
-  const bridgeDevice = bridgeOutbound && buildBridge(bridgeOutbound);
+  const bridgeDevice = buildBridge(bridgeOutbound);
   const mailboxDevice = buildMailbox(mbs);
   const timerDevice = buildTimer();
 
   const deviceEndowments = {
     mailbox: { ...mailboxDevice.endowments },
     timer: { ...timerDevice.endowments },
+    bridge: { ...bridgeDevice.endowments },
   };
-  if (bridgeDevice) {
-    deviceEndowments.bridge = { ...bridgeDevice.endowments };
-  }
 
   async function ensureSwingsetInitialized() {
     if (swingsetIsInitialized(kernelStorage)) {
@@ -173,18 +173,16 @@ export async function buildSwingset(
     const bootVat =
       swingsetConfig.vats[swingsetConfig.bootstrap || 'bootstrap'];
 
-    if (bridgeOutbound) {
-      const batchChainStorage = (method, args) =>
-        bridgeOutbound(BRIDGE_ID.STORAGE, { method, args });
+    const batchChainStorage = (method, args) =>
+      bridgeOutbound(BRIDGE_ID.STORAGE, { method, args });
 
-      // Extract data from chain storage as [path, value?] pairs.
-      const chainStorageEntries = exportStorage(
-        batchChainStorage,
-        exportStorageSubtrees,
-        clearStorageSubtrees,
-      );
-      bootVat.parameters = { ...bootVat.parameters, chainStorageEntries };
-    }
+    // Extract data from chain storage as [path, value?] pairs.
+    const chainStorageEntries = exportStorage(
+      batchChainStorage,
+      exportStorageSubtrees,
+      clearStorageSubtrees,
+    );
+    bootVat.parameters = { ...bootVat.parameters, chainStorageEntries };
 
     // Since only on-chain swingsets like `agd` have a bridge (and thereby
     // `CORE_EVAL` support), things like `ag-solo` will need to do the
@@ -236,13 +234,13 @@ export async function buildSwingset(
     coreProposals,
     controller,
     mb: mailboxDevice,
-    bridgeInbound: bridgeDevice && bridgeDevice.deliverInbound,
+    bridgeInbound: bridgeDevice.deliverInbound,
     timer: timerDevice,
   };
 }
 
 /**
- * @typedef {import('@agoric/swingset-vat').RunPolicy & {
+ * @typedef {RunPolicy & {
  *   shouldRun(): boolean;
  *   remainingBeans(): bigint | undefined;
  *   totalBeans(): bigint;
@@ -576,6 +574,11 @@ export async function launch({
 
       case ActionType.IBC_EVENT: {
         p = doBridgeInbound(BRIDGE_ID.DIBC, action, inboundNum);
+        break;
+      }
+
+      case ActionType.VTRANSFER_IBC_EVENT: {
+        p = doBridgeInbound(BRIDGE_ID.VTRANSFER, action, inboundNum);
         break;
       }
 

@@ -1,3 +1,4 @@
+import { q, Fail } from '@endo/errors';
 import { Far, assertPassable, passStyleOf } from '@endo/pass-style';
 import {
   getCopyMapEntries,
@@ -6,10 +7,15 @@ import {
   isCopyMap,
 } from '@endo/patterns';
 
-const { quote: q, Fail } = assert;
+/**
+ * @import {Key} from '@endo/patterns';
+ * @import {Passable, RemotableObject} from '@endo/pass-style';
+ * @import {WeakMapStore, StoreOptions} from '../types.js';
+ */
 
 /**
- * @template K,V
+ * @template {Key} K
+ * @template {Passable} V
  * @param {WeakMap<K & object, V>} jsmap
  * @param {(k: K, v: V) => void} assertKVOkToAdd
  * @param {(k: K, v: V) => void} assertKVOkToSet
@@ -64,6 +70,7 @@ export const makeWeakMapStoreMethods = (
     addAll: entries => {
       if (typeof entries[Symbol.iterator] !== 'function') {
         if (Object.isFrozen(entries) && isCopyMap(entries)) {
+          // @ts-expect-error XXX
           entries = getCopyMapEntries(entries);
         } else {
           Fail`provided data source is not iterable: ${entries}`;
@@ -94,7 +101,7 @@ export const makeWeakMapStoreMethods = (
  * @template K,V
  * @param {string} [tag] - tag for debugging
  * @param {StoreOptions} [options]
- * @returns {WeakMapStore<K, V>}
+ * @returns {RemotableObject & WeakMapStore<K, V>}
  */
 export const makeScalarWeakMapStore = (
   tag = 'key',

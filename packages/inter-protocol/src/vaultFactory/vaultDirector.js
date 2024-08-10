@@ -1,10 +1,14 @@
-import '@agoric/zoe/exported.js';
-import '@agoric/zoe/src/contracts/exported.js';
+/// <reference types="@agoric/governance/exported" />
+/// <reference types="@agoric/zoe/exported" />
 
-import '@agoric/governance/exported.js';
-
+import { Fail, q } from '@endo/errors';
+import { E } from '@endo/eventual-send';
+import { Far } from '@endo/marshal';
 import { AmountMath, AmountShape, BrandShape, IssuerShape } from '@agoric/ertp';
-import { GovernorFacetShape } from '@agoric/governance/src/typeGuards.js';
+import {
+  GovernorFacetShape,
+  InvitationShape,
+} from '@agoric/governance/src/typeGuards.js';
 import { makeTracer } from '@agoric/internal';
 import { M, mustMatch } from '@agoric/store';
 import {
@@ -21,8 +25,6 @@ import {
   TopicsRecordShape,
   unitAmount,
 } from '@agoric/zoe/src/contractSupport/index.js';
-import { E } from '@endo/eventual-send';
-import { Far } from '@endo/marshal';
 import { makeCollectFeesInvitation } from '../collectFees.js';
 import {
   setWakeupsForNextAuction,
@@ -38,7 +40,9 @@ import {
   provideAndStartVaultManagerKits,
 } from './vaultManager.js';
 
-const { Fail, quote: q } = assert;
+/**
+ * @import {TypedPattern} from '@agoric/internal';
+ */
 
 const trace = makeTracer('VD', true);
 
@@ -47,6 +51,7 @@ const trace = makeTracer('VD', true);
  *   collaterals: Brand[];
  *   rewardPoolAllocation: AmountKeywordRecord;
  * }} MetricsNotification
+ *
  *
  * @typedef {Readonly<{}>} ImmutableState
  *
@@ -65,6 +70,7 @@ const trace = makeTracer('VD', true);
  *   >;
  * }} FactoryPowersFacet
  *
+ *
  * @typedef {Readonly<{
  *   state: State;
  * }>} MethodContext
@@ -76,8 +82,23 @@ const trace = makeTracer('VD', true);
 
 const shortfallInvitationKey = 'shortfallInvitation';
 
+// If one manager/token fails, we don't want that to block possible success for
+// others, so we .catch() and log separately.
+//
+// exported for testing
+export const makeAllManagersDo = (collateralManagers, vaultManagers) => {
+  /** @param {(vm: VaultManager) => void} fn */
+  return fn => {
+    for (const managerIndex of collateralManagers.values()) {
+      Promise.resolve(vaultManagers.get(managerIndex).self)
+        .then(vm => fn(vm))
+        .catch(e => trace('🚨ERROR: allManagersDo', e));
+    }
+  };
+};
+
 /**
- * @param {import('@agoric/ertp').Baggage} baggage
+ * @param {import('@agoric/swingset-liveslots').Baggage} baggage
  * @param {import('./vaultFactory.js').VaultFactoryZCF} zcf
  * @param {VaultDirectorParamManager} directorParamManager
  * @param {ZCFMint<'nat'>} debtMint
@@ -87,6 +108,7 @@ const shortfallInvitationKey = 'shortfallInvitation';
  * @param {ERef<Marshaller>} marshaller
  * @param {import('@agoric/zoe/src/contractSupport/recorder.js').MakeRecorderKit} makeRecorderKit
  * @param {import('@agoric/zoe/src/contractSupport/recorder.js').MakeERecorderKit} makeERecorderKit
+ * @param managerParams
  */
 const prepareVaultDirector = (
   baggage,
@@ -99,6 +121,7 @@ const prepareVaultDirector = (
   marshaller,
   makeRecorderKit,
   makeERecorderKit,
+  managerParams,
 ) => {
   /** @type {import('../reserve/assetReserve.js').ShortfallReporter} */
   let shortfallReporter;
@@ -117,15 +140,17 @@ const prepareVaultDirector = (
   // Non-durable map because param managers aren't durable.
   // In the event they're needed they can be reconstructed from contract terms and off-chain data.
   /** a powerful object; can modify parameters */
-  const vaultParamManagers = provideVaultParamManagers(baggage, marshaller);
+  const vaultParamManagers = provideVaultParamManagers(
+    baggage,
+    marshaller,
+    managerParams,
+  );
 
   const metricsNode = E(storageNode).makeChildNode('metrics');
 
   const metricsKit = makeERecorderKit(
     metricsNode,
-    /** @type {import('@agoric/zoe/src/contractSupport/recorder.js').TypedMatcher<MetricsNotification>} */ (
-      M.any()
-    ),
+    /** @type {TypedPattern<MetricsNotification>} */ (M.any()),
   );
 
   const managersNode = E(storageNode).makeChildNode('managers');
@@ -143,6 +168,7 @@ const prepareVaultDirector = (
     const oldInvitation = baggage.has(shortfallInvitationKey)
       ? baggage.get(shortfallInvitationKey)
       : undefined;
+
     const newInvitation = await directorParamManager.getInternalParamValue(
       SHORTFALL_INVITATION_KEY,
     );
@@ -252,13 +278,7 @@ const prepareVaultDirector = (
     metrics: makeRecorderTopic('Vault Factory metrics', metricsKit),
   });
 
-  /** @param {(vm: VaultManager) => void} fn */
-  const allManagersDo = fn => {
-    for (const managerIndex of collateralManagers.values()) {
-      const vm = vaultManagers.get(managerIndex).self;
-      fn(vm);
-    }
-  };
+  const allManagersDo = makeAllManagersDo(collateralManagers, vaultManagers);
 
   const makeWaker = (name, func) => {
     return Far(name, {
@@ -294,6 +314,7 @@ const prepareVaultDirector = (
         makePriceLockWaker: M.call().returns(M.remotable('TimerWaker')),
         makeLiquidationWaker: M.call().returns(M.remotable('TimerWaker')),
         makeReschedulerWaker: M.call().returns(M.remotable('TimerWaker')),
+        setShortfallReporter: M.call(InvitationShape).returns(M.promise()),
       }),
       public: M.interface('public', {
         getCollateralManager: M.call(BrandShape).returns(M.remotable()),
@@ -302,7 +323,7 @@ const prepareVaultDirector = (
           SubscriberShape,
         ),
         getElectorateSubscription: M.call().returns(SubscriberShape),
-        getGovernedParams: M.call({ collateralBrand: BrandShape }).returns(
+        getGovernedParams: M.callWhen({ collateralBrand: BrandShape }).returns(
           M.record(),
         ),
         getInvitationAmount: M.call(M.string()).returns(AmountShape),
@@ -437,6 +458,12 @@ const prepareVaultDirector = (
             allManagersDo(vm => vm.lockOraclePrices());
           });
         },
+        async setShortfallReporter(newInvitation) {
+          const zoe = zcf.getZoeService();
+          shortfallReporter = await E(
+            E(zoe).offer(newInvitation),
+          ).getOfferResult();
+        },
       },
       public: {
         /** @param {Brand} brandIn */
@@ -464,7 +491,12 @@ const prepareVaultDirector = (
         getElectorateSubscription() {
           return directorParamManager.getSubscription();
         },
-        /** @param {{ collateralBrand: Brand }} selector */
+        /**
+         * Note this works only for a collateral manager. For the director use,
+         * `getElectorateSubscription`
+         *
+         * @param {{ collateralBrand: Brand }} selector
+         */
         getGovernedParams({ collateralBrand }) {
           // TODO use named getters of TypedParamManager
           return vaultParamManagers.get(collateralBrand).getParams();

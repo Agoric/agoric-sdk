@@ -22,10 +22,10 @@ set -x
 # NOTE: USDC_axl = ibc/usdt1234
 # perf test wantMinted
 OFFER=$(mktemp -t agops.XXX)
-bin/agops psm swap --wantMinted 0.01 --feePct 0.01 --pair IST.USDC_axl >|"$OFFER"
+bin/agops psm swap --wantMinted 0.01 --feePct 0.01 --pair IST.USDC_axl >| "$OFFER"
 time bin/agops perf satisfaction --executeOffer "$OFFER" --from gov1 --keyring-backend="test"
 
 # perf test giveMinted
 OFFER=$(mktemp -t agops.XXX)
-bin/agops psm swap --giveMinted 0.01 --feePct 0.03 --pair IST.USDC_axl >|"$OFFER"
+bin/agops psm swap --giveMinted 0.01 --feePct 0.03 --pair IST.USDC_axl >| "$OFFER"
 time bin/agops perf satisfaction --executeOffer "$OFFER" --from gov1 --keyring-backend="test"

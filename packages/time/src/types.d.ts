@@ -1,22 +1,21 @@
-/* eslint-disable no-use-before-define, no-undef */
-import type { ERef } from '@endo/eventual-send';
+import type { ERef, RemotableBrand } from '@endo/eventual-send';
 
-import type { RankComparison } from '@endo/marshal';
+import type { RankComparison, RemotableObject } from '@endo/marshal';
 
-/// <reference types="@agoric/notifier/src/types.js"/>
+/// <reference types="@agoric/notifier/src/types.js" />
 
 // These aren't in the global runtime environment. They are just types that are
 // meant to be globally accessible as a side-effect of importing this module.
 /**
  * The TimerBrand is a unique object that represents the kind of Time
- * used in Timestamp/RelativeTime records. Time from different sources
- * is not comparable.
+ * used in Timestamp/RelativeTime records. Times from different sources
+ * are not comparable.
  *
  * Do not call `isMyTimerService(myTimerService)` on an untrusted
  * brand, because that will leak your closely-held timer authority. If
  * the goal is to check the suitability of a client-provided
  * Timestamp, use coerceTimestampRecord() or add/subtract it to a
- * known-good Timestamp, or extact its brand and === against
+ * known-good Timestamp, or extract its brand and === against
  * `timerService.getTimerBrand()`.
  *
  * TODO Not all Timestamps are labeled with the TimerBrand (in much
@@ -29,7 +28,7 @@ import type { RankComparison } from '@endo/marshal';
  * See https://github.com/Agoric/agoric-sdk/issues/5798
  * and https://github.com/Agoric/agoric-sdk/pull/5821
  */
-export type TimerBrand = {
+export type TimerBrand = RemotableObject & {
   isMyTimerService: (timer: TimerService) => ERef<boolean>;
   isMyClock: (clock: Clock) => ERef<boolean>;
 };
@@ -53,11 +52,21 @@ export type TimestampValue = bigint;
  */
 export type RelativeTimeValue = bigint;
 
+/**
+ * The canonical representation of a typed absolute time. It bundles the brand
+ * with the time, as represented by a TimerService, which might represent time
+ * since the epoch, or blockheight on a particular chain.
+ */
 export type TimestampRecord = {
   timerBrand: TimerBrand;
   absValue: bigint;
 };
 
+/**
+ * The canonical representation of a typed relative time. It bundles the brand
+ * with an elapsed time, as represented by a TimerService, which might represent
+ * time since the epoch, or blockheight on a particular chain.
+ */
 export type RelativeTimeRecord = {
   timerBrand: TimerBrand;
   relValue: bigint;
@@ -88,7 +97,8 @@ export type RelativeTime = RelativeTimeRecord | RelativeTimeValue;
 /**
  * A CancelToken is an arbitrary marker object, passed in with
  * each API call that creates a wakeup or repeater, and passed to
- * cancel() to cancel them all.
+ * cancel() to cancel them all. Multiple wakeups can rely on the same
+ * CancelToken so they can be cancelled collectively.
  */
 export type CancelToken = object;
 
@@ -97,7 +107,7 @@ export type CancelToken = object;
  * schedule a single wake() call, create a repeater that will allow scheduling
  * of events at regular intervals, or remove scheduled calls.
  */
-export interface TimerService {
+export interface TimerServiceI {
   /**
    * Retrieve the latest timestamp
    */
@@ -111,7 +121,7 @@ export interface TimerService {
     cancelToken?: CancelToken,
   ) => TimestampRecord;
   /**
-   * Create and return a promise that will resolve after the absolte
+   * Create and return a promise that will resolve after the absolute
    * time has passed.
    */
   wakeAt: (
@@ -157,7 +167,7 @@ export interface TimerService {
     delay: RelativeTime,
     interval: RelativeTime,
     cancelToken?: CancelToken,
-  ) => Notifier<TimestampRecord>;
+  ) => import('@agoric/notifier').Notifier<TimestampRecord>;
   /**
    * Cancel a previously-established wakeup or repeater.
    */
@@ -171,7 +181,16 @@ export interface TimerService {
    */
   getTimerBrand: () => TimerBrand;
 }
+// XXX copied from Remotable helper return type
+export type TimerService = TimerServiceI &
+  RemotableObject<'TimerService'> &
+  RemotableBrand<{}, TimerServiceI>;
 
+/**
+ * Read-only access to a TimeService's current time. This allows reading the
+ * current time (e.g. to see if a deadline has passed) without the ability to
+ * schedule events.
+ */
 export interface Clock {
   /**
    * Retrieve the latest timestamp
@@ -183,6 +202,11 @@ export interface Clock {
   getTimerBrand: () => TimerBrand;
 }
 
+/**
+ * The interface that must be implemented by objects which are to be invoked at
+ * scheduled times. Used by `TimerService.repeatAfter()`,
+ * `TimerService.setWakeup()`, and `TimerRepeater.schedule()`.
+ */
 export interface TimerWaker {
   /**
    * The timestamp passed to `wake()` is the time that the call was scheduled
@@ -191,6 +215,12 @@ export interface TimerWaker {
   wake: (timestamp: TimestampRecord) => void;
 }
 
+/**
+ * Provides the ability to schedule wake() calls repeatedly at a regular
+ * interval, or to disable all future use of this TimerRepeater. Created by the
+ * deprecated makeRepeater(), new code should use repeatAfter(), which doesn't
+ * have a control object and doesn't require a second schedule step
+ */
 export interface TimerRepeater {
   /**
    * Returns the time scheduled for
@@ -206,6 +236,26 @@ export interface TimerRepeater {
   disable: () => void;
 }
 
+/**
+ * TimeMath supports simple arithmetic on typed Time values, enforcing that
+ * values are combined in type-compatible ways. You can add 3 minutes to 3pm,
+ * or 5 minutes to a half hour, but it makes no sense to add 3pm and 5pm.
+ * Subtracting two Timestamps does produce a useful difference.
+ *
+ * The brands prevent you from accidentally combining time values from different
+ * TimerServices. Some chains track time in blocks, others follow wall clock
+ * time, some do both. Every local computer has its own unique notion of wall
+ * clock time. Even when these clocks are talking about the same thing (UTC),
+ * they can all drift in different ways. Using the correct brands lets you be
+ * precise about which particular source of time you mean, preventing confusion
+ * or attacks when the clocks diverge. Thus it is an error to e.g. use a time
+ * you got from chain A to schedule an event on chain B.
+ *
+ * The basic types are `RelativeTimeRecord` (durations) and `TimestampRecord`. The numeric
+ * values can be extracted from the typed values, but it's usually better to
+ * maintain values as their canonical typed form so these operations can be
+ * applied.
+ */
 export type TimeMathType = {
   /**
    * Validates that the operand represents a `Timestamp` and returns the bigint
@@ -240,17 +290,19 @@ export type TimeMathType = {
   ) => RelativeTimeRecord;
   /**
    * An absolute time + a relative time gives a new absolute time.
-   *
-   * @template {Timestamp} T
    */
-  addAbsRel: (abs: T, rel: RelativeTime) => T;
+  addAbsRel: <T extends Timestamp>(
+    abs: T,
+    rel: RelativeTime,
+  ) => T extends TimestampRecord ? TimestampRecord : TimestampValue;
   /**
    * A relative time (i.e., a duration) + another relative time
    * gives a new relative time.
-   *
-   * @template {RelativeTime} T
    */
-  addRelRel: (rel1: T, rel2: T) => T;
+  addRelRel: <T extends RelativeTime>(
+    rel1: T,
+    rel2: T,
+  ) => T extends RelativeTimeRecord ? RelativeTimeRecord : RelativeTimeValue;
   /**
    * The difference between two absolute times is a relative time. If abs1 > abs2
    * the difference would be negative, so this method throws instead.

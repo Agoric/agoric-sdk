@@ -10,10 +10,10 @@ import fsPower from 'fs/promises';
 import pathPower from 'path';
 import { fileURLToPath } from 'url';
 
+import { Fail, q } from '@endo/errors';
 import { makePromiseKit } from '@endo/promise-kit';
-import { Fail, q } from '@agoric/assert';
-import { makeAggregateError } from '@agoric/internal';
 import { makeShutdown } from '@agoric/internal/src/node/shutdown.js';
+import { waitUntilQuiescent } from '@agoric/internal/src/lib-nodejs/waitUntilQuiescent.js';
 import { makeSwingStoreExporter } from '@agoric/swing-store';
 
 import { isEntrypoint } from './helpers/is-entrypoint.js';
@@ -38,14 +38,14 @@ export const ExportManifestFileName = 'export-manifest.json';
 
 /**
  * @param {SwingStoreArtifactMode | undefined} artifactMode
- * @returns {import("@agoric/swing-store").ArtifactMode}
+ * @returns {import('@agoric/swing-store').ArtifactMode}
  */
 export const getEffectiveArtifactMode = artifactMode => {
   switch (artifactMode) {
+    case undefined:
     case 'none':
     case 'operational':
       return 'operational';
-    case undefined:
     case 'replay':
       return 'replay';
     case 'archival':
@@ -193,6 +193,9 @@ export const initiateSwingStoreExport = (
     abortIfStopped();
     startedKit.resolve();
     log?.(`Starting DB export at block height ${savedBlockHeight}`);
+    // Let the `started` event be sent before proceeding with blocking processing:
+    // `getArtifactNames` may block the agent for a while.
+    await waitUntilQuiescent();
 
     /** @type {StateSyncManifest} */
     const manifest = {
@@ -239,7 +242,7 @@ export const initiateSwingStoreExport = (
         .catch(err => errors.push(err));
     }
     if (errors.length) {
-      const error = makeAggregateError(errors, 'Errors while cleaning up');
+      const error = AggregateError(errors, 'Errors while cleaning up');
       if (opErr) {
         Object.defineProperty(error, 'cause', { value: opErr });
       }
@@ -293,11 +296,8 @@ export const main = async (
 
   const stateDir =
     processValue.getFlag('state-dir') ||
-    // We try to find the actual cosmos state directory (default=~/.ag-chain-cosmos)
-    `${processValue.getFlag(
-      'home',
-      `${homedir}/.ag-chain-cosmos`,
-    )}/data/agoric`;
+    // We try to find the actual cosmos state directory (default=~/.agoric)
+    `${processValue.getFlag('home', `${homedir}/.agoric`)}/data/agoric`;
 
   const stateDirStat = await fs.stat(stateDir);
   if (!stateDirStat.isDirectory()) {

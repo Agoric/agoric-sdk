@@ -16,7 +16,7 @@ runs:
   steps:
     - name: Attach integration-test-result check
       id: attach-check
-      uses: actions/github-script@v6
+      uses: actions/github-script@v7
       env:
         CREATE_IF_NEEDED: '${{ inputs.create-if-needed }}'
       with:

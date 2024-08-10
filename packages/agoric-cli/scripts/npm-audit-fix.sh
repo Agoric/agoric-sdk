@@ -10,21 +10,21 @@ git config user.name "AgoricBot"
 git config --global hub.protocol https
 hub push origin master
 
-if git ls-remote --heads --exit-code origin npm-audit-fix ; then
+if git ls-remote --heads --exit-code origin npm-audit-fix; then
   git push --delete origin npm-audit-fix
 fi
 
 git checkout -b npm-audit-fix
 
-if npm audit ; then
-    echo "Nothing to fix"
+if npm audit; then
+  echo "Nothing to fix"
 else
   npm audit fix
   files_changed=true
 fi
 
-if [ "$files_changed" = true ] ; then
-  git add . 
+if [ "$files_changed" = true ]; then
+  git add .
   git commit -m "results of running npm audit fix"
   git push origin npm-audit-fix
   hub pull-request --no-edit --base Agoric/???:master

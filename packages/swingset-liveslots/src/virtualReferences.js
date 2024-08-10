@@ -1,6 +1,6 @@
 /* eslint-disable no-use-before-define, jsdoc/require-returns-type */
 
-import { assert, Fail } from '@agoric/assert';
+import { assert, Fail } from '@endo/errors';
 import { Nat } from '@endo/nat';
 import { parseVatSlot } from './parseVatSlots.js';
 import {
@@ -290,7 +290,10 @@ export function makeVirtualReferenceManager(
    */
   function isDurable(vref) {
     const { type, id, virtual, durable, allocatedByVat } = parseVatSlot(vref);
-    if (relaxDurabilityRules) {
+    if (type === 'promise') {
+      // promises are not durable even if `relaxDurabilityRules === true`
+      return false;
+    } else if (relaxDurabilityRules) {
       // we'll pretend an object is durable if running with relaxed rules
       return true;
     } else if (type === 'device') {

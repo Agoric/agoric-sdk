@@ -9,8 +9,7 @@ const REQUIRED_AGORIC_START_PACKAGES = [
   '@agoric/cosmic-swingset',
 ];
 
-const filename = new URL(import.meta.url).pathname;
-const dirname = path.dirname(filename);
+const dirname = path.dirname(new URL(import.meta.url).pathname);
 
 export default async function installMain(progname, rawArgs, powers, opts) {
   const { anylogger, fs, spawn } = powers;
@@ -41,9 +40,9 @@ export default async function installMain(progname, rawArgs, powers, opts) {
     p.childProcess.stdout.on('data', out => stdout.push(out));
     await p;
     const d = JSON.parse(Buffer.concat(stdout).toString('utf-8'));
-    Object.entries(d).forEach(([name, { location }]) =>
-      map.set(name, path.resolve(cwd, location)),
-    );
+    for (const [name, { location }] of Object.entries(d)) {
+      map.set(name, path.resolve(cwd, location));
+    }
     return map;
   }
 
@@ -174,9 +173,6 @@ export default async function installMain(progname, rawArgs, powers, opts) {
             ({ status }) => status !== 'fulfilled',
           );
           if (failures.length) {
-            if (typeof AggregateError !== 'function') {
-              throw failures[0].reason;
-            }
             throw AggregateError(
               failures.map(({ reason }) => reason),
               'Failed to prune',
@@ -268,7 +264,9 @@ export default async function installMain(progname, rawArgs, powers, opts) {
     };
     await Promise.all(subdirs.map(removeNodeModulesSymlinks));
   } else {
-    DEFAULT_SDK_PACKAGE_NAMES.forEach(name => sdkPackageToPath.set(name, null));
+    for (const name of DEFAULT_SDK_PACKAGE_NAMES) {
+      sdkPackageToPath.set(name, null);
+    }
   }
 
   if (forceSdkVersion !== undefined) {

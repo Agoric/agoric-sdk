@@ -21,10 +21,10 @@ func NewMsgServerImpl(keeper Keeper) types.MsgServer {
 var _ types.MsgServer = msgServer{}
 
 type deliverInboundAction struct {
-	vm.ActionHeader `actionType:"DELIVER_INBOUND"`
-	Peer            string          `json:"peer"`
-	Messages        [][]interface{} `json:"messages"`
-	Ack             uint64          `json:"ack"`
+	*vm.ActionHeader `actionType:"DELIVER_INBOUND"`
+	Peer             string          `json:"peer"`
+	Messages         [][]interface{} `json:"messages"`
+	Ack              uint64          `json:"ack"`
 }
 
 func (keeper msgServer) routeAction(ctx sdk.Context, msg vm.ControllerAdmissionMsg, action vm.Action) error {
@@ -48,7 +48,7 @@ func (keeper msgServer) DeliverInbound(goCtx context.Context, msg *types.MsgDeli
 	for i, message := range msg.Messages {
 		messages[i] = []interface{}{msg.Nums[i], message}
 	}
-	action := &deliverInboundAction{
+	action := deliverInboundAction{
 		Peer:     msg.Submitter.String(),
 		Messages: messages,
 		Ack:      msg.Ack,
@@ -63,9 +63,9 @@ func (keeper msgServer) DeliverInbound(goCtx context.Context, msg *types.MsgDeli
 }
 
 type walletAction struct {
-	vm.ActionHeader `actionType:"WALLET_ACTION"`
-	Owner           string `json:"owner"`
-	Action          string `json:"action"`
+	*vm.ActionHeader `actionType:"WALLET_ACTION"`
+	Owner            string `json:"owner"`
+	Action           string `json:"action"`
 }
 
 func (keeper msgServer) WalletAction(goCtx context.Context, msg *types.MsgWalletAction) (*types.MsgWalletActionResponse, error) {
@@ -76,7 +76,7 @@ func (keeper msgServer) WalletAction(goCtx context.Context, msg *types.MsgWallet
 		return nil, err
 	}
 
-	action := &walletAction{
+	action := walletAction{
 		Owner:  msg.Owner.String(),
 		Action: msg.Action,
 	}
@@ -91,9 +91,9 @@ func (keeper msgServer) WalletAction(goCtx context.Context, msg *types.MsgWallet
 }
 
 type walletSpendAction struct {
-	vm.ActionHeader `actionType:"WALLET_SPEND_ACTION"`
-	Owner           string `json:"owner"`
-	SpendAction     string `json:"spendAction"`
+	*vm.ActionHeader `actionType:"WALLET_SPEND_ACTION"`
+	Owner            string `json:"owner"`
+	SpendAction      string `json:"spendAction"`
 }
 
 func (keeper msgServer) WalletSpendAction(goCtx context.Context, msg *types.MsgWalletSpendAction) (*types.MsgWalletSpendActionResponse, error) {
@@ -104,7 +104,7 @@ func (keeper msgServer) WalletSpendAction(goCtx context.Context, msg *types.MsgW
 		return nil, err
 	}
 
-	action := &walletSpendAction{
+	action := walletSpendAction{
 		Owner:       msg.Owner.String(),
 		SpendAction: msg.SpendAction,
 	}
@@ -117,7 +117,7 @@ func (keeper msgServer) WalletSpendAction(goCtx context.Context, msg *types.MsgW
 }
 
 type provisionAction struct {
-	vm.ActionHeader `actionType:"PLEASE_PROVISION"`
+	*vm.ActionHeader `actionType:"PLEASE_PROVISION"`
 	*types.MsgProvision
 	AutoProvision bool `json:"autoProvision"`
 }
@@ -141,7 +141,7 @@ func (keeper msgServer) provisionIfNeeded(ctx sdk.Context, owner sdk.AccAddress)
 		PowerFlags: []string{types.PowerFlagSmartWallet},
 	}
 
-	action := &provisionAction{
+	action := provisionAction{
 		MsgProvision:  msg,
 		AutoProvision: true,
 	}
@@ -163,7 +163,7 @@ func (keeper msgServer) Provision(goCtx context.Context, msg *types.MsgProvision
 		return nil, err
 	}
 
-	action := &provisionAction{
+	action := provisionAction{
 		MsgProvision: msg,
 	}
 
@@ -184,7 +184,7 @@ func (keeper msgServer) Provision(goCtx context.Context, msg *types.MsgProvision
 }
 
 type installBundleAction struct {
-	vm.ActionHeader `actionType:"INSTALL_BUNDLE"`
+	*vm.ActionHeader `actionType:"INSTALL_BUNDLE"`
 	*types.MsgInstallBundle
 }
 
@@ -195,7 +195,7 @@ func (keeper msgServer) InstallBundle(goCtx context.Context, msg *types.MsgInsta
 	if err != nil {
 		return nil, err
 	}
-	action := &installBundleAction{
+	action := installBundleAction{
 		MsgInstallBundle: msg,
 	}
 

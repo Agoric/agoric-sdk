@@ -1,5 +1,5 @@
 /* global globalThis WeakRef FinalizationRegistry */
-import { assert, Fail } from '@agoric/assert';
+import { assert, Fail } from '@endo/errors';
 import { importBundle } from '@endo/import-bundle';
 import {
   makeLiveSlots,
@@ -18,13 +18,13 @@ import {
 } from './supervisor-helper.js';
 
 /**
- * @typedef {import('@agoric/swingset-liveslots').VatDeliveryObject} VatDeliveryObject
- * @typedef {import('@agoric/swingset-liveslots').VatDeliveryResult} VatDeliveryResult
- * @typedef {import('@agoric/swingset-liveslots').VatSyscallObject} VatSyscallObject
- * @typedef {import('@agoric/swingset-liveslots').VatSyscallResult} VatSyscallResult
- * @typedef {import('@agoric/swingset-liveslots').VatSyscallHandler} VatSyscallHandler
- * @typedef {import('@agoric/swingset-liveslots').LiveSlotsOptions} LiveSlotsOptions
- * @typedef {import('@agoric/swingset-liveslots').MeterControl} MeterControl
+ * @import {VatDeliveryObject} from '@agoric/swingset-liveslots'
+ * @import {VatDeliveryResult} from '@agoric/swingset-liveslots'
+ * @import {VatSyscallObject} from '@agoric/swingset-liveslots'
+ * @import {VatSyscallResult} from '@agoric/swingset-liveslots'
+ * @import {VatSyscallHandler} from '@agoric/swingset-liveslots'
+ * @import {LiveSlotsOptions} from '@agoric/swingset-liveslots'
+ * @import {MeterControl} from '@agoric/swingset-liveslots'
  */
 
 const encoder = new TextEncoder();
@@ -32,7 +32,6 @@ const decoder = new TextDecoder();
 
 // eslint-disable-next-line no-unused-vars
 function workerLog(first, ...args) {
-  // eslint-disable-next-line
   // console.log(`---worker: ${first}`, ...args);
 }
 
@@ -256,7 +255,8 @@ function makeWorker(port) {
 
     const workerEndowments = {
       console: makeVatConsole(makeLogMaker('vat')),
-      assert,
+      // See https://github.com/Agoric/agoric-sdk/issues/9515
+      assert: globalThis.assert,
       // bootstrap provides HandledPromise
       HandledPromise: globalThis.HandledPromise,
       TextEncoder,

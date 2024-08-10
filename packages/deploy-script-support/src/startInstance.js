@@ -1,8 +1,8 @@
 // @ts-check
-import { assert } from '@agoric/assert';
+import { assert } from '@endo/errors';
 import { E, passStyleOf } from '@endo/far';
 
-/** @typedef {import('@agoric/deploy-script-support/src/externalTypes.js').Petname} Petname */
+/** @import {Petname} from '@agoric/deploy-script-support/src/externalTypes.js' */
 
 /**
  * @template T

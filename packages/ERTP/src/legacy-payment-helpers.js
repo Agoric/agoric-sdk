@@ -1,10 +1,14 @@
 // @jessie-check
 
-import { mustMatch } from '@agoric/store';
+import { Fail } from '@endo/errors';
 import { E } from '@endo/far';
+import { mustMatch } from '@agoric/store';
 import { AmountMath } from './amountMath.js';
 
-const { Fail } = assert;
+/**
+ * @import {ERef} from '@endo/far';
+ * @import {Amount, AssetKind, AmountValue, AssetKindForValue, Payment, Brand, Purse} from './types.js';
+ */
 
 /**
  * @file This file contains safer helper function alternatives to the similarly
@@ -21,11 +25,11 @@ const { Fail } = assert;
  */
 
 /**
- * @template {AssetKind} K
- * @param {ERef<Purse<K>>} recoveryPurse
- * @param {ERef<Payment<K>>} srcPaymentP
+ * @template {Payment} P
+ * @param {ERef<Purse>} recoveryPurse
+ * @param {ERef<P>} srcPaymentP
  * @param {Pattern} [optAmountShape]
- * @returns {Promise<Payment<K>>}
+ * @returns {Promise<P>}
  */
 export const claim = async (
   recoveryPurse,
@@ -33,6 +37,7 @@ export const claim = async (
   optAmountShape = undefined,
 ) => {
   const srcPayment = await srcPaymentP;
+  // @ts-expect-error XXX could be instantiated with a different subtype
   return E.when(E(recoveryPurse).deposit(srcPayment, optAmountShape), amount =>
     E(recoveryPurse).withdraw(amount),
   );

@@ -1,4 +1,4 @@
-import { assert } from '@agoric/assert';
+import { assert } from '@endo/errors';
 import { kser } from '@agoric/kmarshal';
 
 export default function setup(syscall, _state, _helpers, _vatPowers) {

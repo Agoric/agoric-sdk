@@ -1,6 +1,6 @@
 import path from 'path';
 import tmp from 'tmp';
-import { PromiseAllOrErrors } from '@agoric/internal';
+import { PromiseAllOrErrors } from '@agoric/internal/src/node/utils.js';
 import { serializeSlogObj } from './serialize-slog-obj.js';
 
 export const DEFAULT_SLOGSENDER_MODULE =
@@ -9,7 +9,7 @@ export const SLOGFILE_SENDER_MODULE = '@agoric/telemetry/src/slog-file.js';
 
 export const DEFAULT_SLOGSENDER_AGENT = 'self';
 
-/** @typedef {import('./index.js').SlogSender} SlogSender */
+/** @import {SlogSender} from './index.js' */
 
 /**
  * @template T

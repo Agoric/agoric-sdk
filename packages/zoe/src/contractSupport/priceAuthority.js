@@ -1,14 +1,18 @@
 /* eslint @typescript-eslint/no-floating-promises: "warn" */
+import { q, Fail } from '@endo/errors';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import { makePromiseKit } from '@endo/promise-kit';
+
 import { AmountMath, AmountShape, BrandShape } from '@agoric/ertp';
 import { makeNotifier } from '@agoric/notifier';
 import { makeTracer } from '@agoric/internal';
 import { TimestampShape } from '@agoric/time';
 import { M } from '@agoric/store';
 
-const { quote: q, Fail } = assert;
+/**
+ * @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery, PriceQuoteCreate, PriceAuthorityKit, PriceQuoteTrigger, MutableQuote,} from '@agoric/zoe/tools/types.js';
+ */
 
 const trace = makeTracer('PA', false);
 
@@ -61,7 +65,7 @@ export const PriceAuthorityI = M.interface('PriceAuthority', {
 
 /**
  * @param {object} opts
- * @param {Issuer<'set'>} opts.quoteIssuer
+ * @param {Issuer<'set', PriceDescription>} opts.quoteIssuer
  * @param {ERef<Notifier<unknown>>} opts.notifier
  * @param {ERef<import('@agoric/time').TimerService>} opts.timer
  * @param {PriceQuoteCreate} opts.createQuote
@@ -195,7 +199,7 @@ export const makeOnewayPriceAuthorityKit = opts => {
           );
           amountIn = coercedAmountIn;
           amountOutLimit = coercedAmountOutLimit;
-          fireTriggers(createQuote);
+          void fireTriggers(createQuote);
         },
         getPromise: () => triggerPK.promise,
       });
@@ -277,7 +281,7 @@ export const makeOnewayPriceAuthorityKit = opts => {
           // We create a quote inline.
           let quote;
           // createQuote can throw if priceAuthority is replaced.
-          // eslint-disable-next-line no-useless-catch
+
           try {
             quote = createQuote(calcAmountOut => ({
               amountIn,

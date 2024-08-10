@@ -1,14 +1,12 @@
 // @jessie-check
 
-import { assert } from '@agoric/assert';
+import { Fail } from '@endo/errors';
 import { initEmpty, makeExo } from '@agoric/store';
 import { prepareExoClass } from '@agoric/vat-data';
 
 import { HandleI } from './typeGuards.js';
 
-const { Fail } = assert;
-
-/** @typedef {import('@agoric/vat-data').Baggage} Baggage */
+/** @import {Baggage} from '@agoric/vat-data' */
 
 /**
  * @template {string} H

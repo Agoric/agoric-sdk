@@ -1,6 +1,6 @@
 // @jessie-check
 
-import '@agoric/zoe/exported.js';
+/// <reference types="@agoric/zoe/exported" />
 
 import { E } from '@endo/eventual-send';
 

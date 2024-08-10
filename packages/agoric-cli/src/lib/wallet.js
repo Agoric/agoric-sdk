@@ -1,15 +1,15 @@
 // @ts-check
 /* global process */
 
+import { Fail } from '@endo/errors';
 import { iterateReverse } from '@agoric/casting';
 import { makeWalletStateCoalescer } from '@agoric/smart-wallet/src/utils.js';
 import { execSwingsetTransaction, pollBlocks, pollTx } from './chain.js';
 import { boardSlottingMarshaller, makeRpcUtils } from './rpc.js';
 
-/** @typedef {import('@agoric/smart-wallet/src/smartWallet.js').CurrentWalletRecord} CurrentWalletRecord  */
-/** @typedef {import('@agoric/vats/tools/board-utils.js').AgoricNamesRemotes} AgoricNamesRemotes  */
+/** @import {CurrentWalletRecord} from '@agoric/smart-wallet/src/smartWallet.js' */
+/** @import {AgoricNamesRemotes} from '@agoric/vats/tools/board-utils.js' */
 
-const { Fail } = assert;
 const marshaller = boardSlottingMarshaller();
 
 /** @type {CurrentWalletRecord} */
@@ -187,7 +187,7 @@ export const sendAction = async (bridgeAction, opts) => {
  */
 export const findContinuingIds = (current, agoricNames) => {
   // XXX should runtime type-check
-  /** @type {{ offerToUsedInvitation: [string, Amount<'set'>][]}} */
+  /** @type {{ offerToUsedInvitation: [string, InvitationAmount][]}} */
   const { offerToUsedInvitation: entries } = /** @type {any} */ (current);
 
   Array.isArray(entries) || Fail`entries must be an array: ${entries}`;

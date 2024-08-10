@@ -25,13 +25,13 @@ const replaceTemplateValuesInFile = async (fileName, replacements) => {
   await writeFile(`${fileName}.js`, script);
 };
 
-test(`provisioning vat was upgraded`, async t => {
+test.serial(`provisioning vat was upgraded`, async t => {
   const incarnation = await getIncarnation('provisioning');
 
   t.is(incarnation, 1);
 });
 
-test(`send invitation via namesByAddress`, async t => {
+test.serial(`send invitation via namesByAddress`, async t => {
   const addr = await getUser('gov1');
 
   await replaceTemplateValuesInFile(`${SUBMISSION_DIR}/send-script`, {

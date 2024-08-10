@@ -18,8 +18,8 @@ if [[ ! -s "$PROGRESS" ]]; then
   fi
   if [[ -n "$INGEST_START" ]]; then
     case "$1" in
-    *.Z | *.gz) firstline=$(zcat "$1" | head -1) ;;
-    *) firstline=$(head -1 "$1") ;;
+      *.Z | *.gz) firstline=$(zcat "$1" | head -1) ;;
+      *) firstline=$(head -1 "$1") ;;
     esac
     echo "$firstline" | jq --arg targetStart "$INGEST_START" \
       '{virtualTimeOffset: (($targetStart | fromdate) - .time), lastSlogTime: 0}' \

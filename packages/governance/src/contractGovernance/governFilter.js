@@ -11,6 +11,10 @@ import {
 } from '../question.js';
 
 /**
+ * @import {Position, ApiGovernor, ApiInvocationIssue, PoserFacet, VoteOnApiInvocation, FilterGovernor, GovernedCreatorFacet, OfferFilterIssue, VoteOnOfferFilter} from '../types.js';
+ */
+
+/**
  * Make a pair of positions for a question about whether to update the offer
  * filter. If the vote passes, the list of blocked invitation strings will be
  * updated.

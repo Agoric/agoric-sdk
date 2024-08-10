@@ -1,4 +1,6 @@
 // @ts-check
+/// <reference types="@agoric/vats/src/core/types-ambient" />
+
 import { E } from '@endo/far';
 import { makeStorageNodeChild } from '@agoric/internal/src/lib-chainStorage.js';
 

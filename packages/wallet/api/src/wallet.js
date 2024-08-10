@@ -1,5 +1,4 @@
 // @ts-check
-/* eslint @typescript-eslint/no-floating-promises: "warn" */
 
 /**
  * This file defines the vat launched by the spawner in the ../deploy.js script.
@@ -34,7 +33,7 @@ import './internal-types.js';
  * zoe: ERef<ZoeService>,
  * }} StartupTerms
  *
- * @typedef {import('@agoric/vats').NameHub} NameHub
+ * @import {NameHub} from '@agoric/vats'
  */
 
 export function buildRootObject(vatPowers) {
@@ -59,7 +58,7 @@ export function buildRootObject(vatPowers) {
 
   const pushOfferSubscriptions = (channelHandle, offers) => {
     const subs = offerSubscriptions.get(channelHandle);
-    (subs || []).forEach(({ origin, status }) => {
+    for (const { origin, status } of subs || []) {
       // Filter by optional status and origin.
       const result = harden(
         offers.filter(
@@ -76,7 +75,7 @@ export function buildRootObject(vatPowers) {
         },
         [channelHandle],
       );
-    });
+    }
   };
 
   const subscribeToOffers = (channelHandle, { origin, status = null }) => {
@@ -173,7 +172,7 @@ export function buildRootObject(vatPowers) {
         await approve();
         const pursesNotifier = walletAdmin.getAttenuatedPursesNotifier();
         const { notifier, updater } = makeNotifierKit();
-        observeIteration(makeApprovedNotifier(pursesNotifier), updater);
+        void observeIteration(makeApprovedNotifier(pursesNotifier), updater);
         return notifier;
       },
       async getCacheCoordinator() {
@@ -202,7 +201,7 @@ export function buildRootObject(vatPowers) {
           }));
         };
 
-        observeIteration(makeApprovedNotifier(offerNotifier), {
+        void observeIteration(makeApprovedNotifier(offerNotifier), {
           updateState(offers) {
             updater.updateState(filteredOffers(offers));
           },
@@ -441,7 +440,7 @@ export function buildRootObject(vatPowers) {
             },
           );
           if (notYetEnabled) {
-            E(otherSide).dappApproved(dappOrigin);
+            await E(otherSide).dappApproved(dappOrigin);
           }
         };
 

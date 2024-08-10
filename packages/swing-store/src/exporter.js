@@ -1,6 +1,6 @@
 import sqlite3 from 'better-sqlite3';
 
-import { Fail, q } from '@agoric/assert';
+import { Fail, q } from '@endo/errors';
 
 import { dbFileInDirectory } from './util.js';
 import { getKeyType } from './kvStore.js';
@@ -13,11 +13,11 @@ import { validateArtifactMode } from './internal.js';
 
 /**
  * @template T
- *  @typedef  { Iterable<T> | AsyncIterable<T> } AnyIterable<T>
+ * @typedef  { Iterable<T> | AsyncIterable<T> } AnyIterable
  */
 /**
  * @template T
- *  @typedef  { IterableIterator<T> | AsyncIterableIterator<T> } AnyIterableIterator<T>
+ * @typedef  { IterableIterator<T> | AsyncIterableIterator<T> } AnyIterableIterator
  */
 
 /**
@@ -111,12 +111,6 @@ export function makeSwingStoreExporter(dirPath, options = {}) {
   const bundleStore = makeBundleStore(db, ensureTxn);
   const transcriptStore = makeTranscriptStore(db, ensureTxn, () => {});
 
-  if (artifactMode !== 'debug') {
-    // throw early if this DB will not be able to create all the desired artifacts
-    const internal = { snapStore, bundleStore, transcriptStore };
-    assertComplete(internal, artifactMode);
-  }
-
   const sqlKVGet = db.prepare(`
     SELECT value
     FROM kvStore
@@ -141,9 +135,11 @@ export function makeSwingStoreExporter(dirPath, options = {}) {
   function getHostKV(key) {
     typeof key === 'string' || Fail`key must be a string`;
     getKeyType(key) === 'host' || Fail`getHostKV requires host keys`;
+    // @ts-expect-error unknown
     return sqlKVGet.get(key);
   }
 
+  /** @type {any} */
   const sqlGetAllKVData = db.prepare(`
     SELECT key, value
     FROM kvStore
@@ -166,16 +162,25 @@ export function makeSwingStoreExporter(dirPath, options = {}) {
   }
   harden(getExportData);
 
-  /**
-   * @returns {AsyncIterableIterator<string>}
-   * @yields {string}
-   */
-  async function* getArtifactNames() {
+  /** @yields {string} */
+  async function* generateArtifactNames() {
     yield* snapStore.getArtifactNames(artifactMode);
     yield* transcriptStore.getArtifactNames(artifactMode);
     yield* bundleStore.getArtifactNames();
   }
-  harden(getArtifactNames);
+  harden(generateArtifactNames);
+
+  /**
+   * @returns {AsyncIterableIterator<string>}
+   */
+  function getArtifactNames() {
+    if (artifactMode !== 'debug') {
+      // synchronously throw if this DB will not be able to yield all the desired artifacts
+      const internal = { snapStore, bundleStore, transcriptStore };
+      assertComplete(internal, artifactMode);
+    }
+    return generateArtifactNames();
+  }
 
   /**
    * @param {string} name

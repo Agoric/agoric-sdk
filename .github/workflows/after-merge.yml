@@ -16,9 +16,9 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node-version: ['16.x', '18.x']
+        node-version: ['18.x', '20.x']
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           submodules: 'true'
       - uses: ./.github/actions/restore-node
@@ -41,7 +41,7 @@ jobs:
         # note: only use one node-version
         node-version: ['18.x']
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: ./.github/actions/restore-node
         with:
           node-version: ${{ matrix.node-version }}
@@ -74,10 +74,14 @@ jobs:
               TAG=other-dev
               ;;
           esac
+          # Prevent `lerna publish` from failing due to uncommitted changes.
+          git stash || true
           # without concurrency until https://github.com/Agoric/agoric-sdk/issues/8091
           yarn lerna publish --concurrency 1 --conventional-prerelease --canary --exact \
             --dist-tag=$TAG --preid=$TAG-$(git rev-parse --short=7 HEAD) \
             --no-push --no-verify-access --yes
+          # restore any stashed changes for caching
+          git stash pop || true
       - name: notify on failure
         if: failure()
         uses: ./.github/actions/notify-status
@@ -85,6 +89,7 @@ jobs:
           from: ${{ secrets.NOTIFY_EMAIL_FROM }}
           to: ${{ secrets.NOTIFY_EMAIL_TO }}
           password: ${{ secrets.NOTIFY_EMAIL_PASSWORD }}
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
 
   coverage:
     needs: build
@@ -95,7 +100,7 @@ jobs:
         node-version: ['18.x']
     if: ${{github.event_name == 'push' }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: ./.github/actions/restore-node
         with:
           node-version: ${{ matrix.node-version }}
@@ -139,7 +144,7 @@ jobs:
         node-version: ['18.x']
     if: ${{github.event_name == 'push'}}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: ./.github/actions/restore-node
         with:
           node-version: ${{ matrix.node-version }}

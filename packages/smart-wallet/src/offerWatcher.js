@@ -13,35 +13,40 @@ import { deeplyFulfilledObject, objectMap } from '@agoric/internal';
 import { UNPUBLISHED_RESULT } from './offers.js';
 
 /**
- * @typedef {import('./offers.js').OfferSpec & {
- *   error?: string,
- *   numWantsSatisfied?: number
- *   result?: unknown | typeof import('./offers.js').UNPUBLISHED_RESULT,
- *   payouts?: AmountKeywordRecord,
- * }} OfferStatus
+ * @import {OfferSpec} from './offers.js';
+ * @import {ContinuingOfferResult} from './types.js';
+ * @import {Passable} from '@endo/pass-style';
+ * @import {PromiseWatcher} from '@agoric/swingset-liveslots';
+ * @import {Baggage} from '@agoric/vat-data';
+ * @import {Vow, VowTools} from '@agoric/vow';
  */
 
 /**
  * @template {any} T
- * @typedef {import('@agoric/swingset-liveslots').PromiseWatcher<T, [UserSeat]>} OfferPromiseWatcher<T, [UserSeat]
+ * @typedef {PromiseWatcher<T, [UserSeat]>} OfferPromiseWatcher<T, [UserSeat]
  */
 
 /**
  * @typedef {{
- * resultWatcher: OfferPromiseWatcher<unknown>,
- * numWantsWatcher: OfferPromiseWatcher<number>,
- * paymentWatcher: OfferPromiseWatcher<PaymentPKeywordRecord>,
+ *   resultWatcher: OfferPromiseWatcher<Passable>;
+ *   numWantsWatcher: OfferPromiseWatcher<number>;
+ *   paymentWatcher: OfferPromiseWatcher<PaymentPKeywordRecord>;
  * }} OutcomeWatchers
  */
 
-/**
- * @param {OutcomeWatchers} watchers
- * @param {UserSeat} seat
- */
-const watchForOfferResult = ({ resultWatcher }, seat) => {
-  const p = E(seat).getOfferResult();
-  watchPromise(p, resultWatcher, seat);
-  return p;
+/** @param {VowTools} vowTools */
+const makeWatchForOfferResult = ({ watch }) => {
+  /**
+   * @param {OutcomeWatchers} watchers
+   * @param {UserSeat} seat
+   * @returns {Vow<void>} Vow that resolves when offer result has been processed
+   *   by the resultWatcher
+   */
+  const watchForOfferResult = ({ resultWatcher }, seat) => {
+    // Offer result may be anything, including a Vow, so watch it durably.
+    return watch(E(seat).getOfferResult(), resultWatcher, seat);
+  };
+  return watchForOfferResult;
 };
 
 /**
@@ -64,16 +69,24 @@ const watchForPayout = ({ paymentWatcher }, seat) => {
   return p;
 };
 
-/**
- * @param {OutcomeWatchers} watchers
- * @param {UserSeat} seat
- */
-export const watchOfferOutcomes = (watchers, seat) => {
-  return Promise.all([
-    watchForOfferResult(watchers, seat),
-    watchForNumWants(watchers, seat),
-    watchForPayout(watchers, seat),
-  ]);
+/** @param {VowTools} vowTools */
+export const makeWatchOfferOutcomes = vowTools => {
+  const watchForOfferResult = makeWatchForOfferResult(vowTools);
+  const { asPromise, allVows } = vowTools;
+  /**
+   * @param {OutcomeWatchers} watchers
+   * @param {UserSeat} seat
+   */
+  const watchOfferOutcomes = (watchers, seat) => {
+    return asPromise(
+      allVows([
+        watchForOfferResult(watchers, seat),
+        watchForNumWants(watchers, seat),
+        watchForPayout(watchers, seat),
+      ]),
+    );
+  };
+  return watchOfferOutcomes;
 };
 
 const offerWatcherGuard = harden({
@@ -87,6 +100,7 @@ const offerWatcherGuard = harden({
       .optional(M.record())
       .returns(),
     publishResult: M.call(M.any()).returns(),
+    handleError: M.call(M.error()).returns(),
   }),
   paymentWatcher: M.interface('paymentWatcher', {
     onFulfilled: M.call(PaymentPKeywordRecordShape, SeatShape).returns(
@@ -105,18 +119,20 @@ const offerWatcherGuard = harden({
 });
 
 /**
- * @param {import('@agoric/vat-data').Baggage} baggage
+ * @param {Baggage} baggage
+ * @param {VowTools} vowTools
  */
-export const prepareOfferWatcher = baggage => {
+export const prepareOfferWatcher = (baggage, vowTools) => {
+  const watchForOfferResult = makeWatchForOfferResult(vowTools);
   return prepareExoClassKit(
     baggage,
     'OfferWatcher',
     offerWatcherGuard,
+    // XXX walletHelper is `any` because the helper facet is too nested to export its type
     /**
-     *
-     * @param {*} walletHelper
-     * @param {*} deposit
-     * @param {import('./offers.js').OfferSpec} offerSpec
+     * @param {any} walletHelper
+     * @param {{ receive: (payment: Payment) => Promise<Amount> }} deposit
+     * @param {OfferSpec} offerSpec
      * @param {string} address
      * @param {Amount<'set'>} invitationAmount
      * @param {UserSeat} seatRef
@@ -131,12 +147,21 @@ export const prepareOfferWatcher = baggage => {
     }),
     {
       helper: {
+        /**
+         * @param {Record<string, unknown>} offerStatusUpdates
+         */
         updateStatus(offerStatusUpdates) {
           const { state } = this;
           state.status = harden({ ...state.status, ...offerStatusUpdates });
 
           state.walletHelper.updateStatus(state.status);
         },
+        /**
+         * @param {string} offerId
+         * @param {Amount<'set'>} invitationAmount
+         * @param {import('./types.js').InvitationMakers} invitationMakers
+         * @param {import('./types.js').PublicSubscribers} publicSubscribers
+         */
         onNewContinuingOffer(
           offerId,
           invitationAmount,
@@ -153,6 +178,7 @@ export const prepareOfferWatcher = baggage => {
           );
         },
 
+        /** @param {Passable | ContinuingOfferResult} result */
         publishResult(result) {
           const { state, facets } = this;
 
@@ -169,12 +195,14 @@ export const prepareOfferWatcher = baggage => {
               facets.helper.updateStatus({ result });
               break;
             case 'copyRecord':
+              // @ts-expect-error narrowed by passStyle
               if ('invitationMakers' in result) {
                 // save for continuing invitation offer
 
                 void facets.helper.onNewContinuingOffer(
                   String(state.status.id),
                   state.invitationAmount,
+                  // @ts-expect-error narrowed by passStyle
                   result.invitationMakers,
                   result.publicSubscribers,
                 );
@@ -185,6 +213,23 @@ export const prepareOfferWatcher = baggage => {
               // drop the result
               facets.helper.updateStatus({ result: UNPUBLISHED_RESULT });
           }
+        },
+        /**
+         * Called when the offer result promise rejects. The other two watchers
+         * are waiting for particular values out of Zoe but they settle at the
+         * same time and don't need their own error handling.
+         *
+         * @param {Error} err
+         */
+        handleError(err) {
+          const { facets } = this;
+          facets.helper.updateStatus({ error: err.toString() });
+          const { seatRef } = this.state;
+          void E.when(E(seatRef).hasExited(), hasExited => {
+            if (!hasExited) {
+              void E(seatRef).tryExit();
+            }
+          });
         },
       },
 
@@ -202,13 +247,19 @@ export const prepareOfferWatcher = baggage => {
           facets.helper.updateStatus({ payouts: amounts });
         },
         /**
-         * @param {Error} err
+         * If promise disconnected, watch again. Or if there's an Error, handle
+         * it.
+         *
+         * @param {Error
+         *   | import('@agoric/internal/src/upgrade-api.js').UpgradeDisconnection} reason
          * @param {UserSeat} seat
          */
-        onRejected(err, seat) {
+        onRejected(reason, seat) {
           const { facets } = this;
-          if (isUpgradeDisconnection(err)) {
+          if (isUpgradeDisconnection(reason)) {
             void watchForPayout(facets, seat);
+          } else {
+            facets.helper.handleError(reason);
           }
         },
       },
@@ -220,14 +271,22 @@ export const prepareOfferWatcher = baggage => {
           facets.helper.publishResult(result);
         },
         /**
-         * @param {Error} err
+         * If promise disconnected, watch again. Or if there's an Error, handle
+         * it.
+         *
+         * @param {Error
+         *   | import('@agoric/internal/src/upgrade-api.js').UpgradeDisconnection} reason
          * @param {UserSeat} seat
          */
-        onRejected(err, seat) {
+        onRejected(reason, seat) {
           const { facets } = this;
-          if (isUpgradeDisconnection(err)) {
+          if (isUpgradeDisconnection(reason)) {
             void watchForOfferResult(facets, seat);
+          } else {
+            facets.helper.handleError(reason);
           }
+          // throw so the vow watcher propagates the rejection
+          throw reason;
         },
       },
 
@@ -239,12 +298,19 @@ export const prepareOfferWatcher = baggage => {
           facets.helper.updateStatus({ numWantsSatisfied: numSatisfied });
         },
         /**
-         * @param {Error} err
+         * If promise disconnected, watch again.
+         *
+         * Errors are handled by the paymentWatcher because numWantsSatisfied()
+         * and getPayouts() settle the same (they await the same promise and
+         * then synchronously return a local value).
+         *
+         * @param {Error
+         *   | import('@agoric/internal/src/upgrade-api.js').UpgradeDisconnection} reason
          * @param {UserSeat} seat
          */
-        onRejected(err, seat) {
+        onRejected(reason, seat) {
           const { facets } = this;
-          if (isUpgradeDisconnection(err)) {
+          if (isUpgradeDisconnection(reason)) {
             void watchForNumWants(facets, seat);
           }
         },
@@ -255,3 +321,4 @@ export const prepareOfferWatcher = baggage => {
 harden(prepareOfferWatcher);
 
 /** @typedef {ReturnType<typeof prepareOfferWatcher>} MakeOfferWatcher */
+/** @typedef {ReturnType<MakeOfferWatcher>} OfferWatcher */

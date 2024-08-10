@@ -1,5 +1,3 @@
-/* eslint-disable no-use-before-define */
-
 // Ambient type defs. Cannot use top-level import() because that would turn it into a module.
 
 /** This type conflicts with packages/SwingSet/src/vats/plugin-manager.js */
@@ -111,7 +109,12 @@ type Producer<T> = {
 };
 
 type VatSourceRef = { bundleName?: string; bundleID?: string };
-type VatLoader<T> = (name: string, sourceRef?: VatSourceRef) => T;
+type VatLoader<Names extends keyof WellKnownVats = keyof WellKnownVats> = <
+  N extends Names,
+>(
+  name: N,
+  sourceRef?: VatSourceRef,
+) => Promise<Awaited<WellKnownVats[N]>>;
 
 /** callback to assign a property onto the `home` object of the client */
 type PropertyMaker = (addr: string, flags: string[]) => Record<string, unknown>;
@@ -181,6 +184,8 @@ type WellKnownName = {
     | 'reserve'
     | 'psm'
     | 'scaledPriceAuthority'
+    | 'stakeAtom' // test contract
+    | 'stakeBld' // test contract
     | 'econCommitteeCharter'
     | 'priceAggregator';
   instance:
@@ -194,13 +199,41 @@ type WellKnownName = {
     | 'provisionPool'
     | 'reserve'
     | 'reserveGovernor'
+    | 'stakeAtom' // test contract
+    | 'stakeBld' // test contract
     | 'Pegasus';
   oracleBrand: 'USD';
   uiConfig: 'VaultFactory';
 };
 
-type ContractInstallationPromises<StartFns> = {
+type ContractInstallationPromises<
+  StartFns extends Record<WellKnownName['installation'], ContractStartFn>,
+> = {
   [Property in keyof StartFns]: Promise<Installation<StartFns[Property]>>;
+};
+
+type ContractInstancePromises<
+  StartFns extends Record<WellKnownName['instance'], ContractStartFn>,
+> = {
+  [Property in keyof StartFns]: Promise<
+    import('@agoric/zoe/src/zoeService/utils.js').Instance<StartFns[Property]>
+  >;
+};
+
+type WellKnownContracts = {
+  auctioneer: typeof import('@agoric/inter-protocol/src/auction/auctioneer.js').start;
+  centralSupply: typeof import('@agoric/vats/src/centralSupply.js').start;
+  committee: typeof import('@agoric/governance/src/committee.js').start;
+  contractGovernor: typeof import('@agoric/governance/src/contractGovernor.js').start;
+  econCommitteeCharter: typeof import('@agoric/inter-protocol/src/econCommitteeCharter.js').start;
+  feeDistributor: typeof import('@agoric/inter-protocol/src/feeDistributor.js').start;
+  mintHolder: typeof import('@agoric/vats/src/mintHolder.js').start;
+  psm: typeof import('@agoric/inter-protocol/src/psm/psm.js').start;
+  provisionPool: typeof import('@agoric/inter-protocol/src/provisionPool.js').start;
+  reserve: typeof import('@agoric/inter-protocol/src/reserve/assetReserve.js').start;
+  VaultFactory: typeof import('@agoric/inter-protocol/src/vaultFactory/vaultFactory.js').start;
+  // no typeof because walletFactory is exporting `start` as a type
+  walletFactory: import('@agoric/smart-wallet/src/walletFactory.js').start;
 };
 
 type WellKnownSpaces = {
@@ -231,25 +264,14 @@ type WellKnownSpaces = {
       WellKnownName['installation'],
       Promise<Installation<unknown>>
     > &
-      ContractInstallationPromises<{
-        auctioneer: typeof import('@agoric/inter-protocol/src/auction/auctioneer.js').start;
-        centralSupply: typeof import('@agoric/vats/src/centralSupply.js').start;
-        committee: typeof import('@agoric/governance/src/committee.js').start;
-        contractGovernor: typeof import('@agoric/governance/src/contractGovernor.js').start;
-        econCommitteeCharter: typeof import('@agoric/inter-protocol/src/econCommitteeCharter.js').start;
-        feeDistributor: typeof import('@agoric/inter-protocol/src/feeDistributor.js').start;
-        mintHolder: typeof import('@agoric/vats/src/mintHolder.js').start;
-        psm: typeof import('@agoric/inter-protocol/src/psm/psm.js').start;
-        provisionPool: typeof import('@agoric/inter-protocol/src/provisionPool.js').start;
-        reserve: typeof import('@agoric/inter-protocol/src/reserve/assetReserve.js').start;
-        VaultFactory: typeof import('@agoric/inter-protocol/src/vaultFactory/vaultFactory.js').start;
-        // no typeof because walletFactory is exporting `start` as a type
-        walletFactory: import('@agoric/smart-wallet/src/walletFactory.js').start;
-      }>;
+      // @ts-expect-error XXX
+      ContractInstallationPromises<WellKnownContracts>;
   };
   instance: {
     produce: Record<WellKnownName['instance'], Producer<Instance>>;
-    consume: Record<WellKnownName['instance'], Promise<Instance>>;
+    consume: Record<WellKnownName['instance'], Promise<Instance>> &
+      // @ts-expect-error XXX
+      ContractInstancePromises<WellKnownContracts>;
   };
   uiConfig: {
     produce: Record<WellKnownName['uiConfig'], Producer<Record<string, any>>>;
@@ -266,6 +288,7 @@ type StartGovernedUpgradableOpts<SF extends GovernableStartFn> = {
     'brands' | 'issuers' | 'governedParams' | 'electionManager'
   >;
   privateArgs: Omit<
+    // @ts-expect-error XXX
     import('@agoric/zoe/src/zoeService/utils').StartParams<SF>['privateArgs'],
     'initialPoserInvitation'
   >;
@@ -285,7 +308,7 @@ type StartUpgradableOpts<
     import('@agoric/zoe/src/zoeService/utils').StartParams<SF>['terms'],
     'brands' | 'issuers'
   >;
-  privateArgs?: import('@agoric/zoe/src/zoeService/utils').StartParams<SF>['privateArgs'];
+  privateArgs?: Parameters<SF>[1];
   label: string;
 };
 
@@ -299,8 +322,9 @@ type StartUpgradable = <
   }
 >;
 
-type StartedInstanceKit<T> =
-  import('@agoric/zoe/src/zoeService/utils').StartedInstanceKit<T>;
+type StartedInstanceKit<
+  T extends import('@agoric/zoe/src/zoeService/utils').ContractStartFunction,
+> = import('@agoric/zoe/src/zoeService/utils').StartedInstanceKit<T>;
 
 type StartedInstanceKitWithLabel = {
   label: string;
@@ -320,6 +344,7 @@ type ChainBootstrapSpaceT = {
   client: ClientManager;
   clientCreator: any;
   coreEvalBridgeHandler: import('../types.js').BridgeHandler;
+  cosmosInterchainService: import('@agoric/orchestration').CosmosInterchainService;
   /** Utilities to support debugging */
   diagnostics: {
     /**
@@ -341,28 +366,37 @@ type ChainBootstrapSpaceT = {
    * Vault Factory. ONLY FOR DISASTER RECOVERY
    */
   instancePrivateArgs: Map<Instance, unknown>;
+  localchain: import('@agoric/vats/src/localchain.js').LocalChain;
   mints?: MintsVat;
   namesByAddress: import('../types.js').NameHub;
   namesByAddressAdmin: import('../types.js').NamesByAddressAdmin;
+  networkVat: NetworkVat;
+  orchestration?: CosmosInterchainService;
   pegasusConnections: import('@agoric/vats').NameHubKit;
   pegasusConnectionsAdmin: import('@agoric/vats').NameAdmin;
+  powerStore: MapStore;
   priceAuthorityVat: Awaited<PriceAuthorityVat>;
-  priceAuthority: PriceAuthority;
+  priceAuthority: import('@agoric/zoe/tools/types.js').PriceAuthority;
   priceAuthorityAdmin: import('@agoric/vats/src/priceAuthorityRegistry').PriceAuthorityRegistryAdmin;
   provisioning: Awaited<ProvisioningVat> | undefined;
-  provisionBridgeManager: import('../types.js').ScopedBridgeManager | undefined;
-  provisionWalletBridgeManager:
-    | import('../types.js').ScopedBridgeManager
+  provisionBridgeManager:
+    | import('../types.js').ScopedBridgeManager<'provision'>
     | undefined;
-  storageBridgeManager: import('../types.js').ScopedBridgeManager | undefined;
+  provisionWalletBridgeManager:
+    | import('../types.js').ScopedBridgeManager<'provisionWallet'>
+    | undefined;
+  storageBridgeManager:
+    | import('../types.js').ScopedBridgeManager<'storage'>
+    | undefined;
+  transferMiddleware: import('../transfer.js').TransferMiddleware;
   /**
-   * Convienence function for starting a contract (ungoverned) and saving its
+   * Convenience function for starting a contract (ungoverned) and saving its
    * facets (including adminFacet)
    */
   startUpgradable: StartUpgradable;
   /** kits stored by startUpgradable */
   contractKits: MapStore<Instance, StartedInstanceKitWithLabel>;
-  /** Convience function for starting contracts governed by the Econ Committee */
+  /** Convenience function for starting contracts governed by the Econ Committee */
   startGovernedUpgradable: StartGovernedUpgradable;
   /** kits stored by startGovernedUpgradable */
   governedContractKits: MapStore<
@@ -370,13 +404,16 @@ type ChainBootstrapSpaceT = {
     GovernanceFacetKit<any> & { label: string }
   >;
   /** Used only for testing. Should not appear in any production proposals. */
-  testFirstAnchorKit: import('../vat-bank.js').AssetIssuerKit<'nat'>;
-  walletBridgeManager: import('../types.js').ScopedBridgeManager | undefined;
+  testFirstAnchorKit: import('../vat-bank.js').AssetIssuerKit;
+  walletBridgeManager:
+    | import('../types.js').ScopedBridgeManager<'wallet'>
+    | undefined;
   walletFactoryStartResult: import('./startWalletFactory.js').WalletFactoryStartResult;
   provisionPoolStartResult: GovernanceFacetKit<
     typeof import('@agoric/inter-protocol/src/provisionPool.js').start
   >;
   vatStore: import('./utils.js').VatStore;
+  vatUpgradeInfo: MapStore;
   zoe: ZoeService;
 };
 
@@ -405,12 +442,20 @@ type BootstrapSpace = WellKnownSpaces &
     ChainBootstrapSpaceT & {
       vatAdminSvc: VatAdminSvc;
     },
-    {},
     {
-      loadVat: VatLoader<unknown>;
-      loadCriticalVat: VatLoader<unknown>;
-    }
+      loadVat: VatLoader;
+      loadCriticalVat: VatLoader;
+    },
+    {}
   >;
+
+type LocalChainVat = ERef<
+  ReturnType<typeof import('../vat-localchain.js').buildRootObject>
+>;
+
+type TransferVat = ERef<
+  ReturnType<typeof import('../vat-transfer.js').buildRootObject>
+>;
 
 type ProvisioningVat = ERef<
   ReturnType<typeof import('../vat-provisioning.js').buildRootObject>
@@ -434,6 +479,9 @@ type NamedVatPowers = {
     board: Awaited<BoardVat>;
   }>;
 };
+
+type OrchestrationVat = ERef<import('@agoric/orchestration').OrchestrationVat>;
+type ZoeVat = ERef<import('../vat-zoe.js').ZoeVat>;
 
 type RemoteIssuerKit = {
   mint: ERef<Mint>;
@@ -477,3 +525,18 @@ type HttpVat = ERef<
 type UploadsVat = ERef<
   ReturnType<typeof import('@agoric/solo/src/vat-uploads.js').buildRootObject>
 >;
+
+type WellKnownVats = SwingsetVats & {
+  bank: BankVat;
+  board: BoardVat;
+  bridge: ChainStorageVat;
+  ibc: IBCVat;
+  localchain: LocalChainVat;
+  mints: MintsVat;
+  network: NetworkVat;
+  orchestration: OrchestrationVat;
+  priceAuthority: PriceAuthorityVat;
+  provisioning: ProvisioningVat;
+  transfer: TransferVat;
+  zoe: ZoeVat;
+};

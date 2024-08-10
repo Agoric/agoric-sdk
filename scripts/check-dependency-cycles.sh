@@ -14,8 +14,7 @@ fi
 
 echo CYCLIC_EDGE_COUNT "$CYCLIC_EDGE_COUNT"
 
-if [[ $CYCLIC_EDGE_COUNT -gt $MAX_EDGES ]];
-then
+if [[ $CYCLIC_EDGE_COUNT -gt $MAX_EDGES ]]; then
   echo Greater than MAX_EDGES "$MAX_EDGES"
   exit 1
 fi

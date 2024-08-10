@@ -1,4 +1,4 @@
-import { assert, Fail } from '@agoric/assert';
+import { assert, Fail } from '@endo/errors';
 import { assertKnownOptions } from '../../lib/assertOptions.js';
 import { makeVatSlot } from '../../lib/parseVatSlots.js';
 
@@ -15,7 +15,7 @@ export function makeVatLoader(stuff) {
     kernelKeeper,
   } = stuff;
 
-  /** @typedef {import('../../types-internal.js').VatManager} VatManager */
+  /** @import {VatManager} from '../../types-internal.js' */
 
   const allowedOptions = [
     'name',

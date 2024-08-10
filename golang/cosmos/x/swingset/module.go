@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/gorilla/mux"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/spf13/cobra"
 
@@ -60,10 +59,6 @@ func (AppModuleBasic) ValidateGenesis(cdc codec.JSONCodec, config client.TxEncod
 	return ValidateGenesis(&data)
 }
 
-// Register rest routes
-func (AppModuleBasic) RegisterRESTRoutes(ctx client.Context, rtr *mux.Router) {
-}
-
 func (AppModuleBasic) RegisterGRPCGatewayRoutes(clientCtx client.Context, mux *runtime.ServeMux) {
 	_ = types.RegisterQueryHandlerClient(context.Background(), mux, types.NewQueryClient(clientCtx))
 }
@@ -102,6 +97,11 @@ func NewAppModule(k Keeper, swingStoreExportsHandler *SwingStoreExportsHandler, 
 
 func (AppModule) Name() string {
 	return ModuleName
+}
+
+// For testing purposes
+func (am *AppModule) SetSwingStoreExportDir(dir string) {
+	am.swingStoreExportDir = dir
 }
 
 func (am AppModule) RegisterInvariants(ir sdk.InvariantRegistry) {}
@@ -154,9 +154,9 @@ func (am AppModule) EndBlock(ctx sdk.Context, req abci.RequestEndBlock) []abci.V
 	return []abci.ValidatorUpdate{}
 }
 
-func (am AppModule) checkSwingStoreExportSetup() {
+func (am *AppModule) checkSwingStoreExportSetup() {
 	if am.swingStoreExportDir == "" {
-		panic(fmt.Errorf("SwingStore export dir not set"))
+		am.swingStoreExportDir = "/tmp/swingset_export"
 	}
 }
 

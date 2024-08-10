@@ -3,7 +3,6 @@ import { E } from '@endo/eventual-send';
 import { passStyleOf } from '@endo/marshal';
 import {
   M,
-  makeScalarBigMapStore,
   provideDurableWeakMapStore,
   prepareExoClass,
   prepareExo,
@@ -12,6 +11,7 @@ import {
 import { initEmpty } from '@agoric/store';
 import { isUpgradeDisconnection } from '@agoric/internal/src/upgrade-api.js';
 
+import { Fail, q } from '@endo/errors';
 import { defineDurableHandle } from '../makeHandle.js';
 import { makeInstanceAdminMaker } from './instanceAdminStorage.js';
 import {
@@ -22,10 +22,8 @@ import {
 
 // import '../internal-types.js';
 
-/** @typedef {import('@agoric/vat-data').Baggage} Baggage */
+/** @import {Baggage} from '@agoric/vat-data' */
 /** @typedef { import('@agoric/swingset-vat').BundleCap} BundleCap */
-
-const { Fail, quote: q } = assert;
 
 /**
  * @param {Pick<ZoeStorageManager, 'makeZoeInstanceStorageManager' | 'unwrapInstallation'>} startInstanceAccess
@@ -66,7 +64,7 @@ export const makeStartInstance = (
     adminNode: M.remotable('adminNode'),
   });
 
-  /** @type {import('@agoric/swingset-liveslots').PromiseWatcher<unknown, [InstanceAdmin, Handle<'adminNode'>]>} */
+  /** @type {import('@agoric/swingset-liveslots').PromiseWatcher<Completion, [InstanceAdmin, Handle<'adminNode'>]>} */
   const watcher = prepareExo(
     zoeBaggage,
     'InstanceCompletionWatcher',
@@ -266,6 +264,7 @@ export const makeStartInstance = (
           contractBundleCap: newContractBundleCap,
           privateArgs: newPrivateArgs,
         };
+        state.contractBundleCap = newContractBundleCap;
         return E.when(getFreshZcfBundleCap(), bCap =>
           E(state.adminNode).upgrade(bCap, { vatParameters }),
         );
@@ -273,9 +272,13 @@ export const makeStartInstance = (
     },
   );
 
+  /**
+   * @type {import('./utils.js').StartInstance}
+   */
   const startInstance = async (
     installationP,
     uncleanIssuerKeywordRecord = harden({}),
+    // @ts-expect-error FIXME may not match the expected terms of SF
     customTerms = harden({}),
     privateArgs = undefined,
     instanceLabel = '',
@@ -297,14 +300,9 @@ export const makeStartInstance = (
 
     const instanceHandle = makeInstanceHandle();
 
-    const instanceBaggage = makeScalarBigMapStore('instanceBaggage', {
-      durable: true,
-    });
-
     const zoeInstanceStorageManager = await E(
       startInstanceAccess,
     ).makeZoeInstanceStorageManager(
-      instanceBaggage,
       installation,
       customTerms,
       uncleanIssuerKeywordRecord,
@@ -329,6 +327,7 @@ export const makeStartInstance = (
     void watchForAdminNodeDone(adminNode, instanceAdmin);
 
     /** @type {ZoeInstanceAdmin} */
+    // @ts-expect-error XXX saveIssuer
     const zoeInstanceAdminForZcf = makeZoeInstanceAdmin(
       zoeInstanceStorageManager,
       instanceAdmin,
@@ -354,6 +353,7 @@ export const makeStartInstance = (
 
     // creatorInvitation can be undefined, but if it is defined,
     // let's make sure it is an invitation.
+    // @ts-expect-error cast
     return E.when(
       Promise.all([
         creatorInvitationP,
@@ -382,6 +382,5 @@ export const makeStartInstance = (
       },
     );
   };
-  // @ts-expect-error cast
   return harden(startInstance);
 };

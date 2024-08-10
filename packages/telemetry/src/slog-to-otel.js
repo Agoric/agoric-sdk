@@ -1,7 +1,7 @@
 import otel, { SpanStatusCode } from '@opentelemetry/api';
 
+import { Fail, q } from '@endo/errors';
 import { makeMarshal, Remotable } from '@endo/marshal';
-import { Fail, q } from '@agoric/assert';
 
 import { makeLegacyMap } from '@agoric/store';
 import {
@@ -14,11 +14,8 @@ import {
 
 // diag.setLogger(new DiagConsoleLogger(), DiagLogLevel.VERBOSE);
 
-/** @typedef {import('@opentelemetry/api').Span} Span */
-/** @typedef {import('@opentelemetry/api').Link} SpanLink */
-/** @typedef {import('@opentelemetry/api').SpanContext} SpanContext */
-/** @typedef {import('@opentelemetry/api').SpanOptions} SpanOptions */
-/** @typedef {import('@opentelemetry/api').SpanAttributes} SpanAttributes */
+/** @import {Span, Link as SpanLink} from '@opentelemetry/api' */
+/** @import {SpanContext, SpanOptions} from '@opentelemetry/api' */
 
 const { assign } = Object;
 
@@ -142,7 +139,10 @@ export const makeSlogToOtelKit = (tracer, overrideAttrs = {}) => {
     serializeBodyFormat: 'smallcaps',
   });
 
-  /** @param {import('@agoric/swingset-vat').SwingSetCapData} data */
+  /**
+   * @param {import('@agoric/swingset-vat').SwingSetCapData} data
+   * @returns {any}
+   */
   const unserialize = data => {
     try {
       const body = rawUnserialize(data);

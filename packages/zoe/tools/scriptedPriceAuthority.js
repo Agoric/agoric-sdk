@@ -9,6 +9,10 @@ import {
   makeOnewayPriceAuthorityKit,
 } from '../src/contractSupport/index.js';
 
+/**
+ * @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js';
+ */
+
 export function makeScriptedPriceAuthority(options) {
   const {
     actualBrandIn,
@@ -87,10 +91,10 @@ export function makeScriptedPriceAuthority(options) {
       currentPrice =
         priceList[Number(Number(t / quoteInterval) % priceList.length)];
 
-      fireTriggers(createQuote);
+      void fireTriggers(createQuote);
     },
   });
-  observeNotifier(notifier, priceObserver);
+  void observeNotifier(notifier, priceObserver);
 
   return priceAuthority;
 }

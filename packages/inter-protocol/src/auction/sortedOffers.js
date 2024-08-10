@@ -1,5 +1,6 @@
 // @jessie-check
 
+import { Fail } from '@endo/errors';
 import {
   makeRatio,
   ratioToNumber,
@@ -8,8 +9,6 @@ import { M, mustMatch } from '@agoric/store';
 import { RatioShape } from '@agoric/ertp';
 
 import { decodeData, encodeData } from '../vaultFactory/storeUtils.js';
-
-const { Fail } = assert;
 
 /**
  * @file we use a floating point representation of the price or rate as the
@@ -88,6 +87,7 @@ const bidScalingRatioFromKey = (bidScaleFloat, numBrand, useDecimals) => {
  * @returns {[normalizedPrice: Ratio, sequenceNumber: bigint]}
  */
 export const fromPriceOfferKey = (key, numBrand, denomBrand, useDecimals) => {
+  // @ts-expect-error XXX
   const [pricePart, sequenceNumberPart] = decodeData(key);
   return [
     priceRatioFromFloat(pricePart, numBrand, denomBrand, useDecimals),

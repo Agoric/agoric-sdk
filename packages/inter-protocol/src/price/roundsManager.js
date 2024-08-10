@@ -1,4 +1,4 @@
-import { Fail, q } from '@agoric/assert';
+import { Fail, q } from '@endo/errors';
 import { AmountMath } from '@agoric/ertp';
 import { makeTracer } from '@agoric/internal';
 import { TimeMath, TimestampShape } from '@agoric/time';
@@ -14,11 +14,10 @@ import { UnguardedHelperI } from '@agoric/internal/src/typeGuards.js';
 
 const { add, subtract, multiply, floorDivide, ceilDivide, isGTE } = natSafeMath;
 
-/** @typedef {import('./priceOracleKit.js').OracleStatus} OracleStatus */
 /**
- * @typedef {import('@agoric/time').Timestamp} Timestamp
- *
- * @typedef {import('@agoric/time').TimerService} TimerService
+ * @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js';
+ * @import {Timestamp, TimerService} from '@agoric/time'
+ * @import {OracleStatus} from './priceOracleKit.js'
  */
 
 /** @type {string} */
@@ -63,7 +62,7 @@ const validRoundId = roundId => {
  * @property {number} roundTimeout
  */
 
-/** @typedef {IssuerKit<'set'>} QuoteKit */
+/** @typedef {IssuerKit<'set', PriceDescription>} QuoteKit */
 
 /**
  * @typedef {Readonly<
@@ -77,6 +76,7 @@ const validRoundId = roundId => {
  *   }
  * >} HeldParams
  *
+ *
  * @typedef {Readonly<
  *   HeldParams & {
  *     details: MapStore<bigint, RoundDetails>;
@@ -84,6 +84,7 @@ const validRoundId = roundId => {
  *     unitIn: bigint;
  *   }
  * >} ImmutableState
+ *
  *
  * @typedef {{
  *   lastValueOutForUnitIn: bigint?;

@@ -3,8 +3,11 @@ import { createHash } from 'crypto';
 import { finished as finishedCallback, PassThrough, Readable } from 'stream';
 import { promisify } from 'util';
 import { createGzip, createGunzip } from 'zlib';
-import { Fail, q } from '@agoric/assert';
-import { aggregateTryFinally, PromiseAllOrErrors } from '@agoric/internal';
+import { Fail, q } from '@endo/errors';
+import {
+  aggregateTryFinally,
+  PromiseAllOrErrors,
+} from '@agoric/internal/src/node/utils.js';
 import { buffer } from './util.js';
 
 /**
@@ -25,8 +28,7 @@ import { buffer } from './util.js';
  */
 
 /**
- * @template T
- *  @typedef { import('./exporter.js').AnyIterableIterator<T> } AnyIterableIterator<T>
+ * @import {AnyIterableIterator} from './exporter.js'
  */
 
 /**

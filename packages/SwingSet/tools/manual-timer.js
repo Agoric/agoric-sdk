@@ -1,14 +1,14 @@
+import { Fail } from '@endo/errors';
 import { Far } from '@endo/far';
-import { Fail } from '@agoric/assert';
 import { makeScalarMapStore } from '@agoric/store';
 import { bindAllMethods } from '@agoric/internal';
 import { TimeMath } from '@agoric/time';
 import { buildRootObject } from '../src/vats/timer/vat-timer.js';
 
 /**
- * @typedef {import('@agoric/time').Timestamp} Timestamp
- * @typedef {import('@agoric/time').TimerService} TimerService
- * @typedef {import('../src/devices/timer/device-timer.js').Waker} Waker
+ * @import {Timestamp} from '@agoric/time'
+ * @import {TimerService} from '@agoric/time'
+ * @import {Waker} from '../src/devices/timer/device-timer.js'
  *
  * @typedef {object} ManualTimerCallbacks
  * @property {(newTime: bigint, msg?: string) => void} [advanceTo]

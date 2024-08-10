@@ -1,4 +1,4 @@
-import { assert, q, Fail } from '@agoric/assert';
+import { assert, q, Fail } from '@endo/errors';
 import { Far, passStyleOf } from '@endo/far';
 import {
   zeroPad,
@@ -25,6 +25,10 @@ import {
   enumerateKeysWithPrefix,
 } from './vatstore-iterators.js';
 import { makeCache } from './cache.js';
+
+/**
+ * @import {ToCapData, FromCapData} from '@endo/marshal';
+ */
 
 // XXX TODO: The following key length limit was put in place due to limitations
 // in LMDB.  With the move away from LMDB, it is no longer relevant, but I'm
@@ -112,8 +116,8 @@ function makeSchemaCache(syscall, unserialize) {
  * @param {(val: any) => string | undefined} convertValToSlot
  * @param {*} convertSlotToVal
  * @param {*} registerValue
- * @param {import('@endo/marshal').ToCapData<string>} serialize
- * @param {import('@endo/marshal').FromCapData<string>} unserialize
+ * @param {ToCapData<string>} serialize
+ * @param {FromCapData<string>} unserialize
  * @param {(capDatas: any) => void} assertAcceptableSyscallCapdataSize
  */
 export function makeCollectionManager(
@@ -613,7 +617,7 @@ export function makeCollectionManager(
 
     function countEntries(keyPatt, valuePatt) {
       let count = 0;
-      // eslint-disable-next-line no-use-before-define, no-unused-vars
+      // eslint-disable-next-line no-unused-vars
       for (const k of keys(keyPatt, valuePatt)) {
         count += 1;
       }

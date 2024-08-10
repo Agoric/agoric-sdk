@@ -10,6 +10,7 @@ import { resolve as importMetaResolve } from 'import-meta-resolve';
 import tmpfs from 'tmp';
 import { fork } from 'node:child_process';
 
+import { Fail, q } from '@endo/errors';
 import { E } from '@endo/far';
 import engineGC from '@agoric/internal/src/lib-nodejs/engine-gc.js';
 import { waitUntilQuiescent } from '@agoric/internal/src/lib-nodejs/waitUntilQuiescent.js';
@@ -18,7 +19,6 @@ import {
   exportMailbox,
 } from '@agoric/swingset-vat/src/devices/mailbox/mailbox.js';
 
-import { Fail, q } from '@agoric/assert';
 import { makeSlogSender, tryFlushSlogSender } from '@agoric/telemetry';
 
 import {
@@ -30,7 +30,7 @@ import { makeShutdown } from '@agoric/internal/src/node/shutdown.js';
 
 import * as STORAGE_PATH from '@agoric/internal/src/chain-storage-paths.js';
 import * as ActionType from '@agoric/internal/src/action-types.js';
-import { BridgeId as BRIDGE_ID } from '@agoric/internal';
+import { BridgeId, CosmosInitKeyToBridgeId } from '@agoric/internal';
 import {
   makeBufferedStorage,
   makeReadCachingStorage,
@@ -53,6 +53,8 @@ let whenHellFreezesOver = null;
 
 const TELEMETRY_SERVICE_NAME = 'agd-cosmos';
 
+const PORT_SUFFIX = 'Port';
+
 const toNumber = specimen => {
   const number = parseInt(specimen, 10);
   String(number) === String(specimen) ||
@@ -67,7 +69,7 @@ const toNumber = specimen => {
  * @param {"set" | "legacySet" | "setWithoutNotify"} setterMethod
  * @param {(value: string) => T} fromBridgeStringValue
  * @param {(value: T) => string} toBridgeStringValue
- * @returns {import("./helpers/bufferedStorage.js").KVStore<T>}
+ * @returns {import('./helpers/bufferedStorage.js').KVStore<T>}
  */
 const makePrefixedBridgeStorage = (
   call,
@@ -319,12 +321,16 @@ export default async function main(progname, args, { env, homedir, agcc }) {
     function doOutboundBridge(dstID, msg) {
       const portNum = portNums[dstID];
       if (portNum === undefined) {
+        const portKey =
+          Object.keys(CosmosInitKeyToBridgeId).find(
+            key => CosmosInitKeyToBridgeId[key] === dstID,
+          ) || `${dstID}${PORT_SUFFIX}`;
         console.error(
-          `warning: doOutboundBridge called before AG_COSMOS_INIT gave us ${dstID}`,
+          `warning: doOutboundBridge called before AG_COSMOS_INIT gave us ${portKey}`,
         );
         // it is dark, and your exception is likely to be eaten by a vat
         throw Error(
-          `warning: doOutboundBridge called before AG_COSMOS_INIT gave us ${dstID}`,
+          `warning: doOutboundBridge called before AG_COSMOS_INIT gave us ${portKey}`,
         );
       }
       const respStr = chainSend(portNum, stringify(msg));
@@ -336,7 +342,7 @@ export default async function main(progname, args, { env, homedir, agcc }) {
     }
 
     const toStorage = message => {
-      return doOutboundBridge(BRIDGE_ID.STORAGE, message);
+      return doOutboundBridge(BridgeId.STORAGE, message);
     };
 
     const makeInstallationPublisher = () => {
@@ -652,24 +658,17 @@ export default async function main(progname, args, { env, homedir, agcc }) {
 
         !blockingSend || Fail`Swingset already initialized`;
 
-        if (action.swingsetPort) {
-          portNums.swingset = action.swingsetPort;
-        }
-
-        if (action.vibcPort) {
-          portNums.dibc = action.vibcPort;
-        }
-
-        if (action.storagePort) {
-          portNums.storage = action.storagePort;
-        }
-
-        if (action.vbankPort) {
-          portNums.bank = action.vbankPort;
-        }
-
-        if (action.lienPort) {
-          portNums.lien = action.lienPort;
+        for (const [key, value] of Object.entries(action)) {
+          const portAlias = CosmosInitKeyToBridgeId[key];
+          if (portAlias) {
+            // Use the alias if it exists.
+            portNums[portAlias] = value;
+          } else if (key.endsWith(PORT_SUFFIX)) {
+            // Anything else that ends in the suffix is assumed to be a port
+            // number, as described in app.go/cosmosInitAction.
+            const portName = key.slice(0, key.length - PORT_SUFFIX.length);
+            portNums[portName] = value;
+          }
         }
         harden(portNums);
 

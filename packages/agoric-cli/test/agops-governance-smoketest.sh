@@ -1,18 +1,18 @@
 #!/bin/sh
 
 if [ -z "$AGORIC_NET" ]; then
-    echo "AGORIC_NET env not set"
-    echo
-    echo "e.g. AGORIC_NET=ollinet (or export to save typing it each time)"
-    echo
-    echo "To test locally, AGORIC_NET=local and have the following running:
+  echo "AGORIC_NET env not set"
+  echo
+  echo "e.g. AGORIC_NET=ollinet (or export to save typing it each time)"
+  echo
+  echo "To test locally, AGORIC_NET=local and have the following running:
 # freshen sdk
 yarn install && yarn build
 
 # local chain running with wallet provisioned
 packages/agoric-cli/test/start-local-chain.sh
 "
-    exit 1
+  exit 1
 fi
 
 set -x
@@ -29,7 +29,7 @@ bin/agops ec charter --send-from gov1
 
 # Use invitation result, with continuing invitationMakers to propose a vote
 PROPOSAL_OFFER=$(mktemp -t agops.XXX)
-bin/agops psm proposePauseOffers --substring wantMinted --charterAcceptOfferId "$CHARTER_OFFER_ID" >|"$PROPOSAL_OFFER"
+bin/agops psm proposePauseOffers --substring wantMinted --charterAcceptOfferId "$CHARTER_OFFER_ID" >| "$PROPOSAL_OFFER"
 agoric wallet print --file "$PROPOSAL_OFFER"
 agoric wallet send --offer "$PROPOSAL_OFFER" --from gov1 --keyring-backend="test"
 
@@ -41,7 +41,7 @@ bin/agops ec vote --forPosition 0 --send-from gov1 --keyring-backend="test" "$CO
 # check that the dictatorial vote was executed
 # TODO use vote outcome data https://github.com/Agoric/agoric-sdk/pull/6204/
 SWAP_OFFER=$(mktemp -t agops.XXX)
-bin/agops psm swap --wantMinted 0.01 --feePct 0.01 >|"$SWAP_OFFER"
+bin/agops psm swap --wantMinted 0.01 --feePct 0.01 >| "$SWAP_OFFER"
 agoric wallet send --offer "$SWAP_OFFER" --from gov1 --keyring-backend="test"
 
 # chain logs should read like:
@@ -54,7 +54,7 @@ agoric wallet send --offer "$SWAP_OFFER" --from gov1 --keyring-backend="test"
 
 # Propose a vote to raise the mint limit
 PROPOSAL_OFFER=$(mktemp -t agops.XXX)
-bin/agops psm proposeChangeMintLimit --limit 10000 --previousOfferId "$CHARTER_OFFER_ID" >|"$PROPOSAL_OFFER"
+bin/agops psm proposeChangeMintLimit --limit 10000 --previousOfferId "$CHARTER_OFFER_ID" >| "$PROPOSAL_OFFER"
 agoric wallet print --file "$PROPOSAL_OFFER"
 agoric wallet send --offer "$PROPOSAL_OFFER" --from gov1 --keyring-backend="test"
 
@@ -72,7 +72,7 @@ bin/agops psm info
 
 # Propose to burn fees
 PROPOSAL_OFFER=$(mktemp -t agops.XXX)
-bin/agops reserve proposeBurn --value 1000 --charterAcceptOfferId "$CHARTER_OFFER_ID" >|"$PROPOSAL_OFFER"
+bin/agops reserve proposeBurn --value 1000 --charterAcceptOfferId "$CHARTER_OFFER_ID" >| "$PROPOSAL_OFFER"
 agoric wallet print --file "$PROPOSAL_OFFER"
 agoric wallet send --offer "$PROPOSAL_OFFER" --from gov1 --keyring-backend="test"
 

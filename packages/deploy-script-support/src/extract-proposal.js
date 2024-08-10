@@ -1,4 +1,5 @@
 // @ts-check
+import { Fail } from '@endo/errors';
 import { deeplyFulfilledObject } from '@agoric/internal';
 import fs from 'fs';
 import { createRequire } from 'module';
@@ -18,8 +19,6 @@ import {
  * @typedef {{steps: ConfigProposal[][]}} SequentialCoreProposals
  * @typedef {ConfigProposal[] | SequentialCoreProposals} CoreProposals
  */
-
-const { Fail } = assert;
 
 const req = createRequire(import.meta.url);
 
@@ -156,7 +155,7 @@ export const extractCoreProposalBundles = async (
           const thisProposalSequence = getSequenceForProposal(key);
           const initPath = findModule(dirname, module);
           const initDir = path.dirname(initPath);
-          /** @type {Record<string, import('./externalTypes.js').ProposalBuilder>} */
+          /** @type {Record<string, import('./externalTypes.js').CoreEvalBuilder>} */
           const ns = await import(initPath);
           const install = (srcSpec, bundlePath) => {
             const absoluteSrc = findModule(initDir, srcSpec);
@@ -185,8 +184,6 @@ export const extractCoreProposalBundles = async (
           /** @type {import('./externalTypes.js').PublishBundleRef} */
           const publishRef = async handleP => {
             const handle = await handleP;
-            // eslint-disable-next-line @typescript-eslint/prefer-ts-expect-error -- https://github.com/Agoric/agoric-sdk/issues/4620 */
-            // @ts-ignore xxx types
             bundleHandleToAbsolutePaths.has(handle) ||
               Fail`${handle} not in installed bundles`;
             return handle;

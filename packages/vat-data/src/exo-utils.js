@@ -1,28 +1,31 @@
 // @jessie-check
-/* eslint-disable @typescript-eslint/prefer-ts-expect-error -- for casting from deprecated types that aren't worth fixing */
+
 import { initEmpty } from '@agoric/store';
 
 import { provide, VatData as globalVatData } from './vat-data-bindings.js';
 
-/** @typedef {import('@endo/patterns').MethodGuard} MethodGuard */
 /**
- * @template {Record<PropertyKey, MethodGuard>} [T=Record<PropertyKey, MethodGuard>]
- * @typedef {import('@endo/patterns').InterfaceGuard<T>} InterfaceGuard
+ * @import {InterfaceGuard} from '@endo/patterns';
+ * @import {RemotableObject} from '@endo/pass-style';
+ * @import {Baggage, DefineKindOptions, DurableKindHandle, InterfaceGuardKit} from '@agoric/swingset-liveslots';
  */
-/** @template L,R @typedef {import('@endo/eventual-send').RemotableBrand<L, R>} RemotableBrand */
-/** @template T @typedef {import('@endo/far').ERef<T>} ERef */
-/** @typedef {import('@agoric/swingset-liveslots').Baggage} Baggage */
-/** @template T @typedef {import('@agoric/swingset-liveslots').DefineKindOptions<T>} DefineKindOptions */
-/** @template T @typedef {import('@agoric/swingset-liveslots').KindFacet<T>} KindFacet */
-/** @template T @typedef {import('@agoric/swingset-liveslots').KindFacets<T>} KindFacets */
-/** @typedef {import('@agoric/swingset-liveslots').DurableKindHandle} DurableKindHandle */
-/** @typedef {import('@agoric/swingset-liveslots').InterfaceGuardKit} InterfaceGuardKit */
+
+// Some feedback if the init function is async
+/**
+ * @typedef {(...args: any[]) => any} InitState
+ */
+/**
+ * @template {InitState} I
+ * @typedef {ReturnType<I> extends Promise<any> ? never : ReturnType<I>} StateResult
+ */
 
 /**
- * Make a version of the argument function that takes a kind context but
- * ignores it.
+ * Make a version of the argument function that takes a kind context but ignores
+ * it.
  *
- * @type {<T extends Function>(fn: T) => import('@agoric/swingset-liveslots').PlusContext<never, T>}
+ * @type {<T extends (...args: any) => any>(
+ *   fn: T,
+ * ) => import('@agoric/swingset-liveslots').PlusContext<never, T>}
  */
 export const ignoreContext =
   fn =>
@@ -90,24 +93,24 @@ export const makeExoUtils = VatData => {
   harden(prepareKindMulti);
 
   /**
-   * @template {(...args: any) => any} I init state function
+   * @template {InitState} I init state function
    * @template T behavior
    * @param {string} tag
    * @param {InterfaceGuard | undefined} interfaceGuard
    * @param {I} init
-   * @param {T & ThisType<{
-   *   self: T,
-   *   state: ReturnType<I>
-   * }>} methods
+   * @param {T &
+   *   ThisType<{
+   *     self: T;
+   *     state: StateResult<I>;
+   *   }>} methods
    * @param {DefineKindOptions<{
-   *   self: T,
-   *   state: ReturnType<I>
+   *   self: T;
+   *   state: StateResult<I>;
    * }>} [options]
-   * @returns {(...args: Parameters<I>) => import('@endo/exo/src/exo-makers.js').Guarded<T>}
+   * @returns {(...args: Parameters<I>) => import('@endo/exo').Guarded<T>}
    */
   const defineVirtualExoClass = (tag, interfaceGuard, init, methods, options) =>
-    // eslint-disable-next-line @typescript-eslint/prefer-ts-expect-error
-    // @ts-ignore cast
+    // @ts-expect-error cast
     defineKind(tag, init, methods, {
       ...options,
       thisfulMethods: true,
@@ -116,20 +119,21 @@ export const makeExoUtils = VatData => {
   harden(defineVirtualExoClass);
 
   /**
-   * @template {(...args: any) => any} I init state function
+   * @template {InitState} I init state function
    * @template {Record<string, Record<PropertyKey, CallableFunction>>} T facets
    * @param {string} tag
    * @param {InterfaceGuardKit | undefined} interfaceGuardKit
    * @param {I} init
-   * @param {T & ThisType<{
-   *   facets: import('@endo/exo/src/exo-makers.js').GuardedKit<T>,
-   *   state: ReturnType<I>
-   * }> } facets
+   * @param {T &
+   *   ThisType<{
+   *     facets: import('@endo/exo').GuardedKit<T>;
+   *     state: StateResult<I>;
+   *   }>} facets
    * @param {DefineKindOptions<{
-   *   facets: T,
-   *   state: ReturnType<I>
+   *   facets: T;
+   *   state: StateResult<I>;
    * }>} [options]
-   * @returns {(...args: Parameters<I>) => import('@endo/exo/src/exo-makers.js').GuardedKit<T>}
+   * @returns {(...args: Parameters<I>) => import('@endo/exo').GuardedKit<T>}
    */
   const defineVirtualExoClassKit = (
     tag,
@@ -138,7 +142,7 @@ export const makeExoUtils = VatData => {
     facets,
     options,
   ) =>
-    // @ts-ignore cast
+    // @ts-expect-error cast
     defineKindMulti(tag, init, facets, {
       ...options,
       thisfulMethods: true,
@@ -147,20 +151,21 @@ export const makeExoUtils = VatData => {
   harden(defineVirtualExoClassKit);
 
   /**
-   * @template {(...args: any) => any} I init state function
+   * @template {InitState} I init state function
    * @template {Record<PropertyKey, CallableFunction>} T methods
    * @param {DurableKindHandle} kindHandle
    * @param {InterfaceGuard | undefined} interfaceGuard
    * @param {I} init
-   * @param {T & ThisType<{
-   *   self: T,
-   *   state: ReturnType<I>
-   * }>} methods
+   * @param {T &
+   *   ThisType<{
+   *     self: T;
+   *     state: StateResult<I>;
+   *   }>} methods
    * @param {DefineKindOptions<{
-   *   self: T,
-   *   state: ReturnType<I>
+   *   self: T;
+   *   state: StateResult<I>;
    * }>} [options]
-   * @returns {(...args: Parameters<I>) => import('@endo/exo/src/exo-makers.js').Guarded<T>}
+   * @returns {(...args: Parameters<I>) => import('@endo/exo').Guarded<T>}
    */
   const defineDurableExoClass = (
     kindHandle,
@@ -169,7 +174,7 @@ export const makeExoUtils = VatData => {
     methods,
     options,
   ) =>
-    // @ts-ignore cast
+    // @ts-expect-error cast
     defineDurableKind(kindHandle, init, methods, {
       ...options,
       thisfulMethods: true,
@@ -178,20 +183,21 @@ export const makeExoUtils = VatData => {
   harden(defineDurableExoClass);
 
   /**
-   * @template {(...args: any) => any} I init state function
+   * @template {InitState} I init state function
    * @template {Record<string, Record<PropertyKey, CallableFunction>>} T facets
    * @param {DurableKindHandle} kindHandle
    * @param {InterfaceGuardKit | undefined} interfaceGuardKit
    * @param {I} init
-   * @param {T & ThisType<{
-   *   facets: import('@endo/exo/src/exo-makers.js').GuardedKit<T>,
-   *   state: ReturnType<I>
-   * }> } facets
+   * @param {T &
+   *   ThisType<{
+   *     facets: import('@endo/exo').GuardedKit<T>;
+   *     state: StateResult<I>;
+   *   }>} facets
    * @param {DefineKindOptions<{
-   *   facets: T,
-   *   state: ReturnType<I>
+   *   facets: T;
+   *   state: StateResult<I>;
    * }>} [options]
-   * @returns {(...args: Parameters<I>) => import('@endo/exo/src/exo-makers.js').GuardedKit<T>}
+   * @returns {(...args: Parameters<I>) => import('@endo/exo').GuardedKit<T>}
    */
   const defineDurableExoClassKit = (
     kindHandle,
@@ -200,7 +206,7 @@ export const makeExoUtils = VatData => {
     facets,
     options,
   ) =>
-    // @ts-ignore cast
+    // @ts-expect-error cast
     defineDurableKindMulti(kindHandle, init, facets, {
       ...options,
       thisfulMethods: true,
@@ -209,21 +215,22 @@ export const makeExoUtils = VatData => {
   harden(defineDurableExoClassKit);
 
   /**
-   * @template {(...args: any) => any} I init state function
+   * @template {InitState} I init state function
    * @template {Record<PropertyKey, CallableFunction>} T methods
    * @param {Baggage} baggage
    * @param {string} kindName
    * @param {InterfaceGuard | undefined} interfaceGuard
    * @param {I} init
-   * @param {T & ThisType<{
-   *   self: T,
-   *   state: ReturnType<I>
-   * }>} methods
+   * @param {T &
+   *   ThisType<{
+   *     self: RemotableObject & T;
+   *     state: StateResult<I>;
+   *   }>} methods
    * @param {DefineKindOptions<{
-   *   self: T,
-   *   state: ReturnType<I>
+   *   self: T;
+   *   state: StateResult<I>;
    * }>} [options]
-   * @returns {(...args: Parameters<I>) => import('@endo/exo/src/exo-makers.js').Guarded<T>}
+   * @returns {(...args: Parameters<I>) => import('@endo/exo').Guarded<T>}
    */
   const prepareExoClass = (
     baggage,
@@ -243,21 +250,22 @@ export const makeExoUtils = VatData => {
   harden(prepareExoClass);
 
   /**
-   * @template {(...args: any) => any} I init state function
+   * @template {InitState} I init state function
    * @template {Record<string, Record<PropertyKey, CallableFunction>>} T facets
    * @param {Baggage} baggage
    * @param {string} kindName
    * @param {InterfaceGuardKit | undefined} interfaceGuardKit
    * @param {I} init
-   * @param {T & ThisType<{
-   *   facets: import('@endo/exo/src/exo-makers.js').GuardedKit<T>,
-   *   state: ReturnType<I>
-   * }> } facets
+   * @param {T &
+   *   ThisType<{
+   *     facets: import('@endo/exo').GuardedKit<T>;
+   *     state: StateResult<I>;
+   *   }>} facets
    * @param {DefineKindOptions<{
-   *   facets: T,
-   *   state: ReturnType<I>
+   *   facets: T;
+   *   state: StateResult<I>;
    * }>} [options]
-   * @returns {(...args: Parameters<I>) => import('@endo/exo/src/exo-makers.js').GuardedKit<T>}
+   * @returns {(...args: Parameters<I>) => import('@endo/exo').GuardedKit<T>}
    */
   const prepareExoClassKit = (
     baggage,
@@ -283,7 +291,7 @@ export const makeExoUtils = VatData => {
    * @param {InterfaceGuard | undefined} interfaceGuard
    * @param {M} methods
    * @param {DefineKindOptions<{ self: M }>} [options]
-   * @returns {import('@endo/exo/src/exo-makers.js').Guarded<M>}
+   * @returns {import('@endo/exo').Guarded<M>}
    */
   const prepareExo = (
     baggage,
@@ -306,13 +314,13 @@ export const makeExoUtils = VatData => {
   harden(prepareExo);
 
   /**
-   * @template {Record<PropertyKey, CallableFunction>} M methods
    * @deprecated Use prepareExo instead.
+   * @template {Record<PropertyKey, CallableFunction>} M methods
    * @param {Baggage} baggage
    * @param {string} kindName
    * @param {M} methods
    * @param {DefineKindOptions<{ self: M }>} [options]
-   * @returns {import('@endo/exo/src/exo-makers.js').Guarded<M>}
+   * @returns {import('@endo/exo').Guarded<M>}
    */
   const prepareSingleton = (baggage, kindName, methods, options = undefined) =>
     prepareExo(baggage, kindName, undefined, methods, options);

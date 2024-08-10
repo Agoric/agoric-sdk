@@ -52,7 +52,7 @@ import {
   startEconCharter,
 } from '../../src/proposals/committee-proposal.js';
 
-/** @typedef {import('@agoric/inter-protocol/src/proposals/econ-behaviors.js').EconomyBootstrapSpace} EconomyBootstrapSpace */
+/** @import {EconomyBootstrapSpace} from '@agoric/inter-protocol/src/proposals/econ-behaviors.js' */
 
 /** @param {BootstrapSpace & EconomyBootstrapSpace} powers */
 export const installGovAndPSMContracts = async ({

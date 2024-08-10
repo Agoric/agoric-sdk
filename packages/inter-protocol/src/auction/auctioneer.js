@@ -1,7 +1,9 @@
-import '@agoric/governance/exported.js';
-import '@agoric/zoe/exported.js';
-import '@agoric/zoe/src/contracts/exported.js';
+/// <reference types="@agoric/governance/exported" />
+/// <reference types="@agoric/zoe/exported" />
 
+import { Fail, q } from '@endo/errors';
+import { E } from '@endo/eventual-send';
+import { Far } from '@endo/marshal';
 import { AmountMath, AmountShape, BrandShape } from '@agoric/ertp';
 import { handleParamGovernance } from '@agoric/governance';
 import { BASIS_POINTS, makeTracer } from '@agoric/internal';
@@ -26,8 +28,6 @@ import {
   offerTo,
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { FullProposalShape } from '@agoric/zoe/src/typeGuards.js';
-import { E } from '@endo/eventual-send';
-import { Far } from '@endo/marshal';
 
 import { makeNatAmountShape } from '../contractSupport.js';
 import { makeOfferSpecShape, prepareAuctionBook } from './auctionBook.js';
@@ -35,9 +35,12 @@ import { auctioneerParamTypes } from './params.js';
 import { makeScheduler } from './scheduler.js';
 import { AuctionState } from './util.js';
 
-/** @typedef {import('@agoric/vat-data').Baggage} Baggage */
+/**
+ * @import {TypedPattern} from '@agoric/internal';
+ * @import {Baggage} from '@agoric/vat-data';
+ * @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js';
+ */
 
-const { Fail, quote: q } = assert;
 const { add, multiply } = natSafeMath;
 
 const trace = makeTracer('Auction', true);
@@ -438,9 +441,7 @@ export const start = async (zcf, privateArgs, baggage) => {
   const scheduleKit = makeERecorderKit(
     E(privateArgs.storageNode).makeChildNode('schedule'),
     /**
-     * @type {import('@agoric/zoe/src/contractSupport/recorder.js').TypedMatcher<
-     *     import('./scheduler.js').ScheduleNotification
-     *   >}
+     * @type {TypedPattern<import('./scheduler.js').ScheduleNotification>}
      */ (M.any()),
   );
 
@@ -690,7 +691,7 @@ export const start = async (zcf, privateArgs, baggage) => {
   const creatorFacet = makeFarGovernorFacet(
     Far('Auctioneer creatorFacet', {
       /**
-       * @param {Issuer} issuer
+       * @param {Issuer<'nat'>} issuer
        * @param {Keyword} kwd
        */
       async addBrand(issuer, kwd) {

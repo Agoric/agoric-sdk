@@ -11,8 +11,7 @@ import toml from '@iarna/toml';
 
 const configString = fs.readFileSync(process.argv[2]).toString();
 const config = toml.parse(configString);
-// eslint-disable-next-line @typescript-eslint/prefer-ts-expect-error
-// @ts-ignore Property 'laddr' does not exist on type 'AnyJson'
+// @ts-expect-error Property 'laddr' does not exist on type 'AnyJson'
 const { laddr } = config.rpc; // like tcp://0.0.0.0:26657
 // eslint-disable-next-line no-useless-escape
 const m = laddr.match(/^tcp:\/\/([\d\.]+):(\d+)$/);

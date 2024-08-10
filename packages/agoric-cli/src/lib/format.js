@@ -1,8 +1,10 @@
 // @ts-check
 
+import { Fail, q } from '@endo/errors';
 import { makeBoardRemote } from '@agoric/vats/tools/board-utils.js';
 
-/** @typedef {import('@agoric/vats/tools/board-utils.js').BoardRemote} BoardRemote */
+/** @import {BoardRemote} from '@agoric/vats/tools/board-utils.js' */
+/** @import {VBankAssetDetail} from '@agoric/vats/tools/board-utils.js'; */
 
 /**
  * Like @endo/nat but coerces
@@ -26,7 +28,7 @@ export const Natural = str => {
  */
 export const bigintReplacer = (k, v) => (typeof v === 'bigint' ? `${v}` : v);
 
-/** @type {Partial<import('@agoric/vats/tools/board-utils.js').VBankAssetDetail>} */
+/** @type {Partial<VBankAssetDetail>} */
 // eslint-disable-next-line no-unused-vars
 const exampleAsset = {
   brand: makeBoardRemote({ boardId: 'board0425', iface: 'Alleged: BLD brand' }),
@@ -35,11 +37,9 @@ const exampleAsset = {
   proposedName: 'Agoric staking token',
 };
 
-/** @typedef {import('@agoric/vats/tools/board-utils.js').VBankAssetDetail } AssetDescriptor */
-
 /**
- * @param {AssetDescriptor[]} assets
- * @returns {(a: Amount & { brand: BoardRemote }) => [string, number | any[]]}
+ * @param {VBankAssetDetail[]} assets
+ * @returns {(a: Amount & { brand: BoardRemote }) => [string | null, number | any[]]}
  */
 export const makeAmountFormatter = assets => amt => {
   const { brand, value } = amt;
@@ -55,7 +55,9 @@ export const makeAmountFormatter = assets => amt => {
       return [issuerName, Number(value) / 10 ** decimalPlaces];
     case 'set':
       assert(Array.isArray(value));
+      // @ts-expect-error narrowed
       if (value[0]?.handle?.iface?.includes('InvitationHandle')) {
+        // @ts-expect-error narrowed
         return [issuerName, value.map(v => v.description)];
       }
       return [issuerName, value];
@@ -69,8 +71,6 @@ export const asPercent = ratio => {
   assert(numerator.brand === denominator.brand);
   return (100 * Number(numerator.value)) / Number(denominator.value);
 };
-
-const { Fail, quote: q } = assert;
 
 const isObject = x => typeof x === 'object' && x !== null;
 
@@ -90,7 +90,7 @@ export const asBoardRemote = x => {
  * Summarize the balances array as user-facing informative tuples
  *
  * @param {import('@agoric/smart-wallet/src/smartWallet.js').CurrentWalletRecord['purses']} purses
- * @param {AssetDescriptor[]} assets
+ * @param {VBankAssetDetail[]} assets
  */
 export const purseBalanceTuples = (purses, assets) => {
   const fmt = makeAmountFormatter(assets);
@@ -117,7 +117,7 @@ export const fmtRecordOfLines = record => {
  * Summarize the offerStatuses of the state as user-facing informative tuples
  *
  * @param {import('@agoric/smart-wallet/src/utils.js').CoalescedWalletState} state
- * @param {import('./wallet.js').AgoricNamesRemotes} agoricNames
+ * @param {import('@agoric/vats/tools/board-utils.js').AgoricNamesRemotes} agoricNames
  */
 export const offerStatusTuples = (state, agoricNames) => {
   const { offerStatuses } = state;
@@ -174,7 +174,7 @@ export const offerStatusTuples = (state, agoricNames) => {
 /**
  * @param {import('@agoric/smart-wallet/src/smartWallet.js').CurrentWalletRecord} current
  * @param {ReturnType<import('@agoric/smart-wallet/src/utils.js').makeWalletStateCoalescer>['state']} coalesced
- * @param {import('./wallet.js').AgoricNamesRemotes} agoricNames
+ * @param {import('@agoric/vats/tools/board-utils.js').AgoricNamesRemotes} agoricNames
  */
 export const summarize = (current, coalesced, agoricNames) => {
   return {

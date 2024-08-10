@@ -3,7 +3,6 @@ package vibc
 import (
 	"encoding/json"
 
-	"github.com/gorilla/mux"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/spf13/cobra"
 
@@ -51,10 +50,6 @@ func (AppModuleBasic) ValidateGenesis(cdc codec.JSONCodec, config client.TxEncod
 	return nil
 }
 
-// Register rest routes
-func (AppModuleBasic) RegisterRESTRoutes(ctx client.Context, rtr *mux.Router) {
-}
-
 func (AppModuleBasic) RegisterGRPCGatewayRoutes(_ client.Context, _ *runtime.ServeMux) {
 }
 
@@ -70,14 +65,16 @@ func (AppModuleBasic) GetQueryCmd() *cobra.Command {
 
 type AppModule struct {
 	AppModuleBasic
-	keeper Keeper
+	keeper     Keeper
+	bankKeeper types.BankKeeper
 }
 
 // NewAppModule creates a new AppModule Object
-func NewAppModule(k Keeper) AppModule {
+func NewAppModule(k Keeper, bankKeeper types.BankKeeper) AppModule {
 	am := AppModule{
 		AppModuleBasic: AppModuleBasic{},
 		keeper:         k,
+		bankKeeper:     bankKeeper,
 	}
 	return am
 }
@@ -104,7 +101,7 @@ func (AppModule) RegisterInvariants(ir sdk.InvariantRegistry) {
 
 // Route implements the AppModule interface
 func (am AppModule) Route() sdk.Route {
-	return sdk.NewRoute(RouterKey, NewHandler(am.keeper))
+	return sdk.NewRoute(RouterKey, NewHandler(am.keeper, am.bankKeeper))
 }
 
 // QuerierRoute implements the AppModule interface

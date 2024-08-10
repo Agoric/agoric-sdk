@@ -5,8 +5,6 @@ import { HandledPromise } from '@endo/eventual-send';
 import { Remotable } from '@endo/marshal';
 import { Far, E } from '@endo/far';
 
-import '@agoric/store/exported.js';
-
 /**
  * @template T
  * @typedef {T | PromiseLike<T>} ERef
@@ -178,7 +176,7 @@ export function makePluginManager(pluginDevice, { D, ...vatPowers }) {
          */
         makeStableForwarder(walker = DEFAULT_WALKER) {
           let pr;
-          // eslint-disable-next-line no-new
+
           void new HandledPromise((_resolve, _reject, resolveWithPresence) => {
             // Use Remotable rather than Far to make a remote from a presence
             pr = Remotable(

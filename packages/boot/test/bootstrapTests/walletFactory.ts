@@ -1,3 +1,4 @@
+import { Fail } from '@endo/errors';
 import {
   AgoricNamesRemotes,
   makeAgoricNamesRemotesFromFakeStorage,
@@ -5,11 +6,12 @@ import {
 import { makeSwingsetTestKit } from '../../tools/supports.ts';
 import { makeWalletFactoryDriver } from '../../tools/drivers.ts';
 
-const { Fail } = assert;
-
-export const makeWalletFactoryContext = async t => {
-  const swingsetTestKit = await makeSwingsetTestKit(t.log, 'bundles/vaults', {
-    configSpecifier: '@agoric/vm-config/decentral-main-vaults-config.json',
+export const makeWalletFactoryContext = async (
+  t,
+  configSpecifier = '@agoric/vm-config/decentral-main-vaults-config.json',
+) => {
+  const swingsetTestKit = await makeSwingsetTestKit(t.log, undefined, {
+    configSpecifier,
   });
 
   const { runUtils, storage } = swingsetTestKit;

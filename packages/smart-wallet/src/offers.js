@@ -4,10 +4,10 @@
 
 /**
  * @typedef {{
- *   id: OfferId,
- *   invitationSpec: import('./invitations.js').InvitationSpec,
- *   proposal: Proposal,
- *   offerArgs?: unknown
+ *   id: OfferId;
+ *   invitationSpec: import('./invitations.js').InvitationSpec;
+ *   proposal: Proposal;
+ *   offerArgs?: any;
  * }} OfferSpec
  */
 
@@ -15,10 +15,10 @@
 export const UNPUBLISHED_RESULT = 'UNPUBLISHED';
 
 /**
- * @typedef {import('./offers.js').OfferSpec & {
- * error?: string,
- * numWantsSatisfied?: number
- * result?: unknown | typeof UNPUBLISHED_RESULT,
- * payouts?: AmountKeywordRecord,
+ * @typedef {OfferSpec & {
+ *   error?: string;
+ *   numWantsSatisfied?: number;
+ *   result?: unknown | typeof UNPUBLISHED_RESULT;
+ *   payouts?: AmountKeywordRecord;
  * }} OfferStatus
  */

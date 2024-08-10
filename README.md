@@ -2,6 +2,11 @@
 
 # Agoric Platform SDK
 
+![unit tests status](https://github.com/Agoric/agoric-sdk/actions/workflows/test-all-packages.yml/badge.svg)
+![integration tests status](https://github.com/Agoric/agoric-sdk/actions/workflows/integration.yml/badge.svg)
+[![license](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](./LICENSE)
+[![Mutable.ai Auto Wiki](https://img.shields.io/badge/Auto_Wiki-Mutable.ai-blue)](https://wiki.mutable.ai/Agoric/agoric-sdk)
+
 This repository contains most of the packages that make up the upper
 layers of the Agoric platform, with
 [the endo repository](https://github.com/endojs/endo)
@@ -16,11 +21,14 @@ to use.
 
 ## Prerequisites
 
+Prerequisites are enforced in various places that should be kept synchronized with this section (e.g., [repoconfig.sh](./repoconfig.sh) defines `golang_version_check` and `nodejs_version_check` shell functions).
+
 * Git
-* Node.js LTS (version 16.13.0 or higher)
+* Go ^1.20.2
+* Node.js ^18.12 or ^20.9
   * we generally support the latest LTS release: use [nvm](https://github.com/nvm-sh/nvm) to keep your local system up-to-date
 * Yarn (`npm install -g yarn`)
-* gcc-10 or newer, or a compiler with `__has_builtin()`
+* gcc >=10, clang >=10, or another compiler with `__has_builtin()`
 
 Any version of Yarn will do: the `.yarnrc` file should ensure that all
 commands use the specific checked-in version of Yarn (stored in

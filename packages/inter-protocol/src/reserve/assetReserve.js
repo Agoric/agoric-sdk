@@ -10,7 +10,7 @@ import { prepareAssetReserveKit } from './assetReserveKit.js';
 
 const trace = makeTracer('AR', true);
 
-/** @type {ContractMeta} */
+/** @type {ContractMeta<typeof start>} */
 export const meta = {
   upgradability: 'canUpgrade',
 };
@@ -23,7 +23,7 @@ harden(meta);
  * }} ShortfallReportingFacet
  */
 
-/** @typedef {import('@agoric/vat-data').Baggage} Baggage */
+/** @import {Baggage} from '@agoric/vat-data' */
 
 /**
  * Asset Reserve holds onto assets for the Inter Protocol, and can dispense it

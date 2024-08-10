@@ -2,22 +2,48 @@
 export {};
 
 /**
- * @template T
- * @typedef {PromiseLike<T | Vow<T>>} PromiseVow
+ * @import {CopyTagged} from '@endo/pass-style'
+ * @import {RemotableObject} from '@endo/pass-style';
+ * @import {Remote} from '@agoric/internal';
+ * @import {prepareVowTools} from './tools.js'
+ */
+
+/**
+ * @callback IsRetryableReason
+ * Return truthy if a rejection reason should result in a retry.
+ * @param {any} reason
+ * @param {any} priorRetryValue the previous value returned by this function
+ * when deciding whether to retry the same logical operation
+ * @returns {any} If falsy, the reason is not retryable. If truthy, the
+ * priorRetryValue for the next call.
  */
 
 /**
  * @template T
- * @typedef {import('./E').ERef<T>} ERef
+ * @typedef {Promise<T | Vow<T>>} PromiseVow Return type of a function that may
+ * return a promise or a vow.
  */
 
 /**
- * Creates a type that accepts both near and marshalled references that were
- * returned from `Remotable` or `Far`, and also promises for such references.
- *
- * @template Primary The type of the primary reference.
- * @template [Local=import('./E').DataOnly<Primary>] The local properties of the object.
- * @typedef {ERef<Local & import('@endo/eventual-send').RemotableBrand<Local, Primary>>} FarRef
+ * @template T
+ * @typedef {T | PromiseLike<T>} ERef
+ */
+
+/**
+ * Eventually a value T or Vow for it.
+ * @template T
+ * @typedef {ERef<T | Vow<T>>} EVow
+ */
+
+/**
+ * Follow the chain of vow shortening to the end, returning the final value.
+ * This is used within E, so we must narrow the type to its remote form.
+ * @template T
+ * @typedef {(
+ *   T extends Vow<infer U> ? EUnwrap<U> :
+ *   T extends PromiseLike<infer U> ? EUnwrap<U> :
+ *   T
+ * )} EUnwrap
  */
 
 /**
@@ -36,14 +62,12 @@ export {};
 /**
  * @template [T=any]
  * @typedef {object} VowPayload
- * @property {import('@endo/eventual-send').FarRef<VowV0<T>>} vowV0
+ * @property {RemotableObject & Remote<VowV0<T>>} vowV0
  */
 
 /**
  * @template [T=any]
- * @typedef {import('@endo/pass-style').CopyTagged<
- *   'Vow', VowPayload<T>
- * >} Vow
+ * @typedef {CopyTagged<'Vow', VowPayload<T>>} Vow
  */
 
 /**
@@ -56,23 +80,29 @@ export {};
 
 /**
  * @template [T=any]
- * @typedef {{
- *   vow: Vow<T>,
- *   resolver: VowResolver<T>,
- *   promise: Promise<T>
- * }} VowPromiseKit
- */
-
-/**
- * @template [T=any]
  * @typedef {{ resolve(value?: T | PromiseVow<T>): void, reject(reason?: any): void }} VowResolver
  */
 
 /**
  * @template [T=any]
  * @template [TResult1=T]
- * @template [TResult2=T]
+ * @template [TResult2=never]
+ * @template {any[]} [C=any[]] watcher args
  * @typedef {object} Watcher
- * @property {(value: T) => Vow<TResult1> | PromiseVow<TResult1> | TResult1} [onFulfilled]
- * @property {(reason: any) => Vow<TResult2> | PromiseVow<TResult2> | TResult2} [onRejected]
+ * @property {(value: T, ...args: C) => Vow<TResult1> | PromiseVow<TResult1> | TResult1} [onFulfilled]
+ * @property {(reason: any, ...args: C) => Vow<TResult2> | PromiseVow<TResult2> | TResult2} [onRejected]
+ */
+
+/**
+ * Converts a vow or promise to a promise, ensuring proper handling of ephemeral promises.
+ *
+ * @template [T=any]
+ * @template [TResult1=T]
+ * @template [TResult2=never]
+ * @template {any[]} [C=any[]]
+ * @callback AsPromiseFunction
+ * @param {ERef<T | Vow<T>>} specimenP
+ * @param {Watcher<T, TResult1, TResult2, C>} [watcher]
+ * @param {C} [watcherArgs]
+ * @returns {Promise<TResult1 | TResult2>}
  */

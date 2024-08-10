@@ -1,58 +1,103 @@
 // @ts-check
 import { E as basicE } from '@endo/eventual-send';
-import { getTag, passStyleOf } from '@endo/pass-style';
+import { isPassable } from '@endo/pass-style';
+import { M, matches } from '@endo/patterns';
 
-// TODO: `isPassable` should come from @endo/pass-style
-import { isPassable } from '@agoric/base-zone';
+/**
+ * @import {PassableCap} from '@endo/pass-style';
+ * @import {VowPayload, Vow, PromiseVow} from './types.js';
+ * @import {MakeVowKit} from './vow.js';
+ */
 
 export { basicE };
 
+export const VowShape = M.tagged(
+  'Vow',
+  M.splitRecord({
+    vowV0: M.remotable('VowV0'),
+  }),
+);
+
 /**
+ * @param {unknown} specimen
+ * @returns {specimen is Vow}
+ */
+export const isVow = specimen =>
+  isPassable(specimen) && matches(specimen, VowShape);
+harden(isVow);
+
+/**
+ * A vow is a passable tagged as 'Vow'.  Its payload is a record with
+ * API-versioned remotables.  payload.vowV0 is the API for the `watch` and
+ * `when` operators to use for retriable shortening of the vow chain.
+ *
+ * If the specimen is a Vow, return its payload, otherwise undefined.
+ *
  * @template T
- * @param {any} specimen
- * @returns {import('./types').VowPayload<T> | undefined}
+ * @param {any} specimen any value to verify as a vow
+ * @returns {VowPayload<T> | undefined} undefined if specimen is not a vow, otherwise the vow's payload.
  */
 export const getVowPayload = specimen => {
-  const isVow =
-    isPassable(specimen) &&
-    passStyleOf(specimen) === 'tagged' &&
-    getTag(specimen) === 'Vow';
-  if (!isVow) {
+  if (!isVow(specimen)) {
     return undefined;
   }
 
-  const vow = /** @type {import('./types').Vow<T>} */ (
-    /** @type {unknown} */ (specimen)
-  );
+  const vow = /** @type {Vow<T>} */ (/** @type {unknown} */ (specimen));
   return vow.payload;
 };
-
-/** A unique object identity just for internal use. */
-const ALREADY_VOW = harden({});
+harden(getVowPayload);
 
 /**
- * @template T
- * @template U
- * @param {T} specimenP
- * @param {(unwrapped: Awaited<T>, payload?: import('./types').VowPayload<any>) => U} cb
- * @returns {Promise<U>}
+ * For when you have a Vow or a `PassableCap` (`RemotableObject` or
+ * passable `Promise`) and you need `PassableCap`,
+ * typically to serve as a key in a `Map`, `WeakMap`, `Store`, or `WeakStore`.
+ *
+ * Relies on, and encapsulates, the current "V0" representation of a vow
+ * as containing a unique remotable shortener.
+ *
+ * Note: if `k` is not a `Vow`, `toPassableCap` does no enforcement that `k`
+ * is already a `PassableCap`. Rather, it just acts as an identity function
+ * returning `k` without further checking. The types only describe the
+ * intended use. (If warranted, we may later add such enforcement, so please
+ * do not rely on either the presence or absence of such enforcement.)
+ *
+ * @param {PassableCap | Vow} k
+ * @returns {PassableCap}
  */
-export const unwrapPromise = async (specimenP, cb) => {
-  let payload = getVowPayload(specimenP);
-
-  // Take exactly 1 turn to find the first vow, if any.
-  const awaited = await (payload ? ALREADY_VOW : specimenP);
-  /** @type {unknown} */
-  let unwrapped;
-  if (awaited === ALREADY_VOW) {
-    // The fact that we have a vow payload means it's not actually a
-    // promise.
-    unwrapped = specimenP;
-  } else {
-    // Check if the awaited specimen is a vow.
-    unwrapped = awaited;
-    payload = getVowPayload(unwrapped);
+export const toPassableCap = k => {
+  const payload = getVowPayload(k);
+  if (payload === undefined) {
+    return /** @type {PassableCap} */ (k);
   }
-
-  return cb(/** @type {Awaited<T>} */ (unwrapped), payload);
+  const { vowV0 } = payload;
+  // vowMap.set(vowV0, h);
+  return vowV0;
 };
+harden(toPassableCap);
+
+/** @param {MakeVowKit} makeVowKit */
+export const makeAsVow = makeVowKit => {
+  /**
+   * Helper function that coerces the result of a function to a Vow. Helpful
+   * for scenarios like a synchronously thrown error.
+   * @template {any} T
+   * @param {(...args: any[]) => Vow<Awaited<T>> | Awaited<T> | PromiseVow<T>} fn
+   * @returns {Vow<Awaited<T>>}
+   */
+  const asVow = fn => {
+    let result;
+    try {
+      result = fn();
+    } catch (e) {
+      result = Promise.reject(e);
+    }
+    if (isVow(result)) {
+      return result;
+    }
+    const { vow, resolver } = makeVowKit();
+    resolver.resolve(result);
+    return vow;
+  };
+  return harden(asVow);
+};
+harden(makeAsVow);

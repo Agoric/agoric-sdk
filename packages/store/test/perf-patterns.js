@@ -16,7 +16,10 @@ import {
   PaymentShape,
   ProposalShape,
 } from './borrow-guards.js';
-import '../src/types.js';
+/**
+ * @import {Passable} from '@endo/pass-style';
+ * @import {Pattern} from '@endo/patterns';
+ */
 
 const gcAndFinalize = makeGcAndFinalize(engineGC);
 

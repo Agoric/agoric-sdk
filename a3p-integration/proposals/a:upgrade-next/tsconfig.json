@@ -2,11 +2,11 @@
   "compilerOptions": {
     "target": "esnext",
     "module": "esnext",
-    "moduleResolution": "node",
     "allowJs": true,
     "checkJs": true,
     "strict": false,
     "strictNullChecks": true,
+    "noEmit": true,
     "noImplicitThis": true
   }
 }

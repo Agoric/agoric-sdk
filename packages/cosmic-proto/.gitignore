@@ -1,2 +1,2 @@
-dist/gogoproto
-dist/google
+# cache
+.tsimp

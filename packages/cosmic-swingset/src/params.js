@@ -1,7 +1,7 @@
 // @ts-check
 // @jessie-check
 
-import { Fail } from '@agoric/assert';
+import { Fail } from '@endo/errors';
 import { Nat, isNat } from '@endo/nat';
 
 export const stringToNat = s => {
@@ -29,7 +29,10 @@ export const encodeQueueSizes = queueSizes =>
     return { key, size };
   });
 
-// Map the SwingSet parameters to a deterministic data structure.
+/**
+ * Map the SwingSet parameters to a deterministic data structure.
+ * @param {import('@agoric/cosmic-proto/swingset/swingset.js').ParamsSDKType} params
+ */
 export const parseParams = params => {
   const {
     beans_per_unit: rawBeansPerUnit,

@@ -44,7 +44,7 @@ export const scheduleLiquidation = (zcf, configWithBorrower) => {
       const currentCollateral = collateralSeat.getAmountAllocated('Collateral');
       if (AmountMath.isEqual(amountIn, currentCollateral)) {
         liquidationPromiseKit.resolve(priceQuote);
-        liquidate(zcf, configWithBorrower);
+        void liquidate(zcf, configWithBorrower);
       }
     })
     .catch(err => {

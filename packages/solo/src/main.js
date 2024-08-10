@@ -3,7 +3,7 @@ import path from 'path';
 import parseArgs from 'minimist';
 import process from 'process';
 import { spawnSync } from 'child_process';
-import { assert } from '@agoric/assert';
+import { assert } from '@endo/errors';
 
 import anylogger from 'anylogger';
 
@@ -12,7 +12,6 @@ import addChain from './add-chain.js';
 import initBasedir from './init-basedir.js';
 import resetState from './reset-state.js';
 import setGCIIngress from './set-gci-ingress.js';
-import setFakeChain from './set-fake-chain.js';
 import start from './start.js';
 
 const log = anylogger('ag-solo');
@@ -118,13 +117,6 @@ start
       const chainID = subOpts.chainID || 'agoric';
       const rpcAddresses = subArgs.slice(1);
       setGCIIngress(basedir, GCI, rpcAddresses, chainID);
-      break;
-    }
-    case 'set-fake-chain': {
-      const basedir = insistIsBasedir();
-      const { _: subArgs, delay } = parseArgs(argv.slice(1), {});
-      const GCI = subArgs[0];
-      setFakeChain(basedir, GCI, delay);
       break;
     }
     case 'start': {

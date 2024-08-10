@@ -8,7 +8,7 @@ import { E } from '@endo/eventual-send';
  * representative also remains.
  *
  * @template {{}} E Ephemeral state
- * @template {{}} [K=any] key on which to provision
+ * @template {WeakKey} K key on which to provision
  * @param {(key: K) => E} init
  */
 export const makeEphemeraProvider = init => {
@@ -36,7 +36,7 @@ harden(makeEphemeraProvider);
  * Provide an empty ZCF seat.
  *
  * @param {ZCF} zcf
- * @param {import('@agoric/ertp').Baggage} baggage
+ * @param {import('@agoric/swingset-liveslots').Baggage} baggage
  * @param {string} name
  * @returns {ZCFSeat}
  */

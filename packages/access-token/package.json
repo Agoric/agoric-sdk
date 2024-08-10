@@ -26,14 +26,14 @@
     "@types/n-readlines": "^1.0.3",
     "@types/proper-lockfile": "^4.1.2",
     "ava": "^5.3.0",
-    "c8": "^7.13.0"
+    "c8": "^9.1.0"
   },
   "publishConfig": {
     "access": "public"
   },
   "ava": {
     "files": [
-      "test/**/test-*.js"
+      "test/**/*.test.*"
     ],
     "require": [
       "@endo/init/debug.js"

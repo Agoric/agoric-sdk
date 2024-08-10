@@ -1,5 +1,5 @@
 import { M } from '@endo/patterns';
-import { prepareRevocableKit } from '@agoric/base-zone/zone-helpers.js';
+import { prepareRevocableMakerKit } from '@agoric/base-zone/zone-helpers.js';
 import { OfferHandlerI } from '../typeGuards.js';
 
 const TransferProposalShape = M.splitRecord({
@@ -18,9 +18,13 @@ const TransferProposalShape = M.splitRecord({
  */
 
 /**
- * @template {any} [U=any]
+ * Prepare a kind that wraps an 'ownable' object with a `makeTransferInvitation`
+ * ability and delegates to the underlying object methods specified in an
+ * allowlist of method names.
+ *
+ * @template {(string | symbol)[]} MN Method names
  * @param {import('@agoric/base-zone').Zone} zone
- * @param {MakeInvitation} makeInvitation
+ * @param {ZCF['makeInvitation']} makeInvitation
  *   A function with the same behavior as `zcf.makeInvitation`.
  *   A contract will normally just extract it from its own zcf using the
  *   argument expression
@@ -30,11 +34,11 @@ const TransferProposalShape = M.splitRecord({
  *   See ownable-counter.js for the canonical example.
  * @param {string} uKindName
  *   The `kindName` of the underlying exo class
- * @param {(string|symbol)[]} uMethodNames
+ * @param {MN} uMethodNames
  *   The method names of the underlying exo class that should be represented
  *   by transparently-forwarding methods of the wrapping ownable object.
  * @param {OwnableOptions} [options]
- * @returns {(underlying: U) => U}
+ * @returns {<U>(underlying: U) => Pick<U, MN[number]> & {makeTransferInvitation: () => Invitation<U>}}
  */
 export const prepareOwnable = (
   zone,
@@ -44,30 +48,35 @@ export const prepareOwnable = (
   options = {},
 ) => {
   const { uInterfaceName = uKindName } = options;
-  const makeRevocableKit = prepareRevocableKit(zone, uKindName, uMethodNames, {
-    uInterfaceName,
-    extraMethodGuards: {
-      makeTransferInvitation: M.call().returns(M.promise()),
-    },
-    extraMethods: {
-      makeTransferInvitation() {
-        const { underlying } = this.state;
-        const { revoker } = this.facets;
-        const customDetails = underlying.getInvitationCustomDetails();
-        // eslint-disable-next-line no-use-before-define
-        const transferHandler = makeTransferHandler(underlying);
+  const { revoke, makeRevocable } = prepareRevocableMakerKit(
+    zone,
+    uKindName,
+    uMethodNames,
+    {
+      uInterfaceName,
+      extraMethodGuards: {
+        makeTransferInvitation: M.call().returns(M.promise()),
+      },
+      extraMethods: {
+        makeTransferInvitation() {
+          const { underlying } = this.state;
+          const { revocable } = this.facets;
+          const customDetails = underlying.getInvitationCustomDetails();
+          // eslint-disable-next-line no-use-before-define
+          const transferHandler = makeTransferHandler(underlying);
 
-        const invitation = makeInvitation(
-          transferHandler,
-          'transfer',
-          customDetails,
-          TransferProposalShape,
-        );
-        revoker.revoke();
-        return invitation;
+          const invitation = makeInvitation(
+            transferHandler,
+            'transfer',
+            customDetails,
+            TransferProposalShape,
+          );
+          revoke(revocable);
+          return invitation;
+        },
       },
     },
-  });
+  );
 
   const makeTransferHandler = zone.exoClass(
     'TransferHandler',
@@ -78,17 +87,14 @@ export const prepareOwnable = (
     {
       handle(seat) {
         const { underlying } = this.state;
-        const { revocable } = makeRevocableKit(underlying);
+        const revocable = makeRevocable(underlying);
         seat.exit();
         return revocable;
       },
     },
   );
 
-  const makeOwnable = underlying => {
-    const { revocable } = makeRevocableKit(underlying);
-    return revocable;
-  };
+  const makeOwnable = underlying => makeRevocable(underlying);
   return harden(makeOwnable);
 };
 harden(prepareOwnable);

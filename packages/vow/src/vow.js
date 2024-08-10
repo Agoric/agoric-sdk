@@ -2,28 +2,39 @@
 import { makePromiseKit } from '@endo/promise-kit';
 import { M } from '@endo/patterns';
 import { makeTagged } from '@endo/pass-style';
-import { PromiseWatcherI, watchPromiseShim } from './watch-promise.js';
+import { PromiseWatcherI } from '@agoric/base-zone';
+
+const { details: X } = assert;
+
+/**
+ * @import {PromiseKit} from '@endo/promise-kit';
+ * @import {Zone} from '@agoric/base-zone';
+ * @import {MapStore} from '@agoric/store';
+ * @import {VowResolver, VowKit} from './types.js';
+ */
 
 const sink = () => {};
 harden(sink);
 
 /**
- * @typedef {Partial<import('@endo/promise-kit').PromiseKit<any>> &
- *   Pick<import('@endo/promise-kit').PromiseKit<any>, 'promise'>} VowEphemera
+ * @typedef {Partial<PromiseKit<any>> &
+ *   Pick<PromiseKit<any>, 'promise'>} VowEphemera
  */
 
 /**
- * @param {import('@agoric/base-zone').Zone} zone
- * @param {typeof watchPromiseShim} [watchPromise]
+ * @param {Zone} zone
  */
-export const prepareVowKits = (zone, watchPromise = watchPromiseShim) => {
-  /** @type {WeakMap<import('./types.js').VowResolver, VowEphemera>} */
+export const prepareVowKit = zone => {
+  /** @type {WeakMap<VowResolver, VowEphemera>} */
   const resolverToEphemera = new WeakMap();
+
+  /** @type {WeakMap<VowResolver, any>} */
+  const resolverToNonStoredValue = new WeakMap();
 
   /**
    * Get the current incarnation's promise kit associated with a vowV0.
    *
-   * @param {import('./types.js').VowResolver} resolver
+   * @param {VowResolver} resolver
    */
   const provideCurrentKit = resolver => {
     let pk = resolverToEphemera.get(resolver);
@@ -38,7 +49,7 @@ export const prepareVowKits = (zone, watchPromise = watchPromiseShim) => {
   };
 
   /**
-   * @param {import('./types.js').VowResolver} resolver
+   * @param {VowResolver} resolver
    */
   const getPromiseKitForResolution = resolver => {
     const kit = provideCurrentKit(resolver);
@@ -56,15 +67,24 @@ export const prepareVowKits = (zone, watchPromise = watchPromiseShim) => {
         shorten: M.call().returns(M.promise()),
       }),
       resolver: M.interface('VowResolver', {
-        resolve: M.call().optional(M.any()).returns(),
-        reject: M.call().optional(M.any()).returns(),
+        resolve: M.call().optional(M.raw()).returns(),
+        reject: M.call().optional(M.raw()).returns(),
       }),
       watchNextStep: PromiseWatcherI,
     },
     () => ({
-      value: undefined,
+      value: /** @type {any} */ (undefined),
       // The stepStatus is null if the promise step hasn't settled yet.
-      stepStatus: /** @type {null | 'fulfilled' | 'rejected'} */ (null),
+      stepStatus: /** @type {null | 'pending' | 'fulfilled' | 'rejected'} */ (
+        null
+      ),
+      isStoredValue: /** @type {boolean} */ (false),
+      /**
+       * Map for future properties that aren't in the schema.
+       * UNTIL https://github.com/Agoric/agoric-sdk/issues/7407
+       * @type {MapStore<any, any> | undefined}
+       */
+      extra: undefined,
     }),
     {
       vowV0: {
@@ -72,13 +92,32 @@ export const prepareVowKits = (zone, watchPromise = watchPromiseShim) => {
          * @returns {Promise<any>}
          */
         async shorten() {
-          const { stepStatus, value } = this.state;
+          const { stepStatus, isStoredValue, value } = this.state;
+          const { resolver } = this.facets;
+
           switch (stepStatus) {
-            case 'fulfilled':
-              return value;
-            case 'rejected':
+            case 'fulfilled': {
+              if (isStoredValue) {
+                // Always return a stored fulfilled value.
+                return value;
+              } else if (resolverToNonStoredValue.has(resolver)) {
+                // Non-stored value is available.
+                return resolverToNonStoredValue.get(resolver);
+              }
+              // We can't recover the non-stored value, so throw the
+              // explanation.
               throw value;
+            }
+            case 'rejected': {
+              if (!isStoredValue && resolverToNonStoredValue.has(resolver)) {
+                // Non-stored reason is available.
+                throw resolverToNonStoredValue.get(resolver);
+              }
+              // Always throw a stored rejection reason.
+              throw value;
+            }
             case null:
+            case 'pending':
               return provideCurrentKit(this.facets.resolver).promise;
             default:
               throw new TypeError(`unexpected stepStatus ${stepStatus}`);
@@ -91,10 +130,17 @@ export const prepareVowKits = (zone, watchPromise = watchPromiseShim) => {
          */
         resolve(value) {
           const { resolver } = this.facets;
-          const { promise, resolve } = getPromiseKitForResolution(resolver);
+          const { stepStatus } = this.state;
+          const { resolve } = getPromiseKitForResolution(resolver);
           if (resolve) {
             resolve(value);
-            watchPromise(promise, this.facets.watchNextStep);
+          }
+          if (stepStatus === null) {
+            this.state.stepStatus = 'pending';
+            zone.watchPromise(
+              HandledPromise.resolve(value),
+              this.facets.watchNextStep,
+            );
           }
         },
         /**
@@ -102,21 +148,52 @@ export const prepareVowKits = (zone, watchPromise = watchPromiseShim) => {
          */
         reject(reason) {
           const { resolver, watchNextStep } = this.facets;
+          const { stepStatus } = this.state;
           const { reject } = getPromiseKitForResolution(resolver);
           if (reject) {
             reject(reason);
+          }
+          if (stepStatus === null) {
             watchNextStep.onRejected(reason);
           }
         },
       },
       watchNextStep: {
         onFulfilled(value) {
+          const { resolver } = this.facets;
+          const { resolve } = getPromiseKitForResolution(resolver);
+          harden(value);
+          if (resolve) {
+            resolve(value);
+          }
           this.state.stepStatus = 'fulfilled';
-          this.state.value = value;
+          this.state.isStoredValue = zone.isStorable(value);
+          if (this.state.isStoredValue) {
+            this.state.value = value;
+          } else {
+            resolverToNonStoredValue.set(resolver, value);
+            this.state.value = assert.error(
+              X`Vow fulfillment value was not stored: ${value}`,
+            );
+          }
         },
         onRejected(reason) {
+          const { resolver } = this.facets;
+          const { reject } = getPromiseKitForResolution(resolver);
+          harden(reason);
+          if (reject) {
+            reject(reason);
+          }
           this.state.stepStatus = 'rejected';
-          this.state.value = reason;
+          this.state.isStoredValue = zone.isStorable(reason);
+          if (this.state.isStoredValue) {
+            this.state.value = reason;
+          } else {
+            resolverToNonStoredValue.set(resolver, reason);
+            this.state.value = assert.error(
+              X`Vow rejection reason was not stored: ${reason}`,
+            );
+          }
         },
       },
     },
@@ -124,7 +201,7 @@ export const prepareVowKits = (zone, watchPromise = watchPromiseShim) => {
 
   /**
    * @template T
-   * @returns {import('./types.js').VowKit<T>}
+   * @returns {VowKit<T>}
    */
   const makeVowKit = () => {
     const { resolver, vowV0 } = makeVowInternalsKit();
@@ -132,12 +209,8 @@ export const prepareVowKits = (zone, watchPromise = watchPromiseShim) => {
     return harden({ resolver, vow });
   };
 
-  /**
-   * @param {import('./types').VowResolver} resolver
-   */
-  const providePromiseForVowResolver = resolver =>
-    provideCurrentKit(resolver).promise;
-  return { makeVowKit, providePromiseForVowResolver };
+  return makeVowKit;
 };
+/** @typedef {ReturnType<typeof prepareVowKit>} MakeVowKit */
 
-harden(prepareVowKits);
+harden(prepareVowKit);

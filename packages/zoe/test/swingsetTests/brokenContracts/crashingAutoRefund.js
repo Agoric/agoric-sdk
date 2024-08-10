@@ -58,7 +58,7 @@ const start = zcf => {
   };
 
   const zcfShutdown = completion => zcf.shutdown(completion);
-  /** @type {ShutdownWithFailure} */
+  /** @type {import('@agoric/swingset-vat').ShutdownWithFailure} */
   const zcfShutdownWithFailure = reason => zcf.shutdownWithFailure(reason);
 
   const makeSwapInvitation = () =>
@@ -83,7 +83,6 @@ const start = zcf => {
 
   const creatorInvitation = makeSafeInvitation();
 
-  // @ts-expect-error missing creatorFacet of ContractStartFn
   return harden({ creatorInvitation, publicFacet });
 };
 

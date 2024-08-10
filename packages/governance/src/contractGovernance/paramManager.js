@@ -1,4 +1,4 @@
-/* eslint @typescript-eslint/no-floating-promises: "warn" */
+import { Fail, q } from '@endo/errors';
 import { Far, passStyleOf } from '@endo/marshal';
 import { AmountMath } from '@agoric/ertp';
 import { assertKeywordName } from '@agoric/zoe/src/cleanProposal.js';
@@ -18,7 +18,9 @@ import {
 } from './assertions.js';
 import { CONTRACT_ELECTORATE } from './governParam.js';
 
-const { Fail, quote: q } = assert;
+/**
+ * @import {AnyParamManager, GovernanceSubscriptionState, ParamManagerBase, ParamStateRecord, ParamValueTyped, UpdateParams} from '../types.js';
+ */
 
 /**
  * @param {ParamManagerBase} paramManager
@@ -45,7 +47,7 @@ const assertElectorateMatches = (paramManager, governedParams) => {
  * @property {(name: string, value: Invitation) => ParamManagerBuilder} addInvitation
  * @property {(name: string, value: bigint) => ParamManagerBuilder} addNat
  * @property {(name: string, value: Ratio) => ParamManagerBuilder} addRatio
- * @property {(name: string, value: import('@endo/marshal').CopyRecord<unknown>) => ParamManagerBuilder} addRecord
+ * @property {(name: string, value: import('@endo/marshal').CopyRecord<any>) => ParamManagerBuilder} addRecord
  * @property {(name: string, value: string) => ParamManagerBuilder} addString
  * @property {(name: string, value: import('@agoric/time').Timestamp) => ParamManagerBuilder} addTimestamp
  * @property {(name: string, value: import('@agoric/time').RelativeTime) => ParamManagerBuilder} addRelativeTime
@@ -90,7 +92,7 @@ const makeParamManagerBuilder = (publisherKit, zoe) => {
    * @param {Keyword} name
    * @param {unknown} value
    * @param {(val) => void} assertion
-   * @param {ParamType} type
+   * @param {import('../constants.js').ParamType} type
    */
   const buildCopyParam = (name, value, assertion, type) => {
     let current;
@@ -180,7 +182,7 @@ const makeParamManagerBuilder = (publisherKit, zoe) => {
     return builder;
   };
 
-  /** @type {(name: string, value: import('@endo/marshal').CopyRecord<unknown>, builder: ParamManagerBuilder) => ParamManagerBuilder} */
+  /** @type {(name: string, value: import('@endo/marshal').CopyRecord, builder: ParamManagerBuilder) => ParamManagerBuilder} */
   const addRecord = (name, value, builder) => {
     const assertRecord = v => {
       passStyleOf(v);
@@ -220,10 +222,10 @@ const makeParamManagerBuilder = (publisherKit, zoe) => {
     if (!zoe) {
       throw Fail`zoe must be provided for governed Invitations ${zoe}`;
     }
-    const { instance, installation } = await E(zoe).getInvitationDetails(i);
-    // eslint-disable-next-line @typescript-eslint/prefer-ts-expect-error -- the build config doesn't expect an error here
-    // @ts-ignore typedefs say they're guaranteed truthy but just to be safe
-    assert(instance && installation, 'must be an invitation');
+
+    // local check on isLive() gives better report than .getInvitationDetails()
+    const isLive = await E(E(zoe).getInvitationIssuer()).isLive(i);
+    isLive || Fail`Invitation passed to paramManager is not live ${i}`;
   };
 
   /**
@@ -378,7 +380,7 @@ const makeParamManagerBuilder = (publisherKit, zoe) => {
   const build = () => {
     // XXX let params be finished async. A concession to upgradability
     // UNTIL https://github.com/Agoric/agoric-sdk/issues/4343
-    E.when(finishBuilding(), () => publish());
+    void E.when(finishBuilding(), () => publish());
 
     // CRUCIAL: Contracts that call buildParamManager should only export the
     // resulting paramManager to their creatorFacet, where it will be picked up by

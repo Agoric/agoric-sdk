@@ -18,7 +18,7 @@ var (
 type Jsonable interface{}
 
 type Action interface {
-	GetActionHeader() ActionHeader
+	GetActionHeader() *ActionHeader
 }
 
 // ActionPusher enqueues data for later consumption by the controller.
@@ -27,14 +27,14 @@ type ActionPusher func(ctx sdk.Context, action Action) error
 // ActionHeader should be embedded in all actions.  It is populated by PopulateAction.
 type ActionHeader struct {
 	// Type defaults to the `actionType:"..."` tag of the embedder's ActionHeader field.
-	Type string `json:"type"`
+	Type string `json:"type,omitempty"`
 	// BlockHeight defaults to sdk.Context.BlockHeight().
 	BlockHeight int64 `json:"blockHeight,omitempty"`
 	// BlockTime defaults to sdk.Context.BlockTime().Unix().
 	BlockTime int64 `json:"blockTime,omitempty"`
 }
 
-func (ah ActionHeader) GetActionHeader() ActionHeader {
+func (ah *ActionHeader) GetActionHeader() *ActionHeader {
 	return ah
 }
 
@@ -129,5 +129,6 @@ func PopulateAction(ctx sdk.Context, action Action) Action {
 			}
 		}
 	}
-	return newActionDesc.Interface().(Action)
+
+	return newActionDescPtr.Interface().(Action)
 }

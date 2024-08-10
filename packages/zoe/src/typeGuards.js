@@ -13,12 +13,19 @@ import { SubscriberShape } from '@agoric/notifier';
 import { M } from '@agoric/store';
 import { TimestampShape } from '@agoric/time';
 
+/**
+ * @import {TypedPattern} from '@agoric/internal';
+ */
+
 // keywords have an initial cap
 export const KeywordShape = M.string();
 
+/** @type {TypedPattern<InvitationHandle>} */
 export const InvitationHandleShape = M.remotable('InvitationHandle');
+/** @type {TypedPattern<Invitation>} */
 export const InvitationShape = M.remotable('Invitation');
 export const InstanceHandleShape = M.remotable('InstanceHandle');
+/** @type {TypedPattern<Installation>} */
 export const InstallationShape = M.remotable('Installation');
 export const SeatShape = M.remotable('Seat');
 
@@ -142,17 +149,6 @@ export const ZoeMintI = M.interface('ZoeMint', {
   getIssuerRecord: M.call().returns(IssuerRecordShape),
   mintAndEscrow: M.call(AmountShape).returns(),
   withdrawAndBurn: M.call(AmountShape).returns(),
-});
-
-export const ZcfMintI = M.interface('ZcfMint', {
-  getIssuerRecord: M.call().returns(IssuerRecordShape),
-  mintGains: M.call(AmountKeywordRecordShape)
-    .optional(M.remotable('zcfSeat'))
-    .returns(M.remotable('zcfSeat')),
-  burnLosses: M.call(
-    AmountKeywordRecordShape,
-    M.remotable('zcfSeat'),
-  ).returns(),
 });
 
 export const FeeMintAccessShape = M.remotable('FeeMintAccess');
@@ -307,7 +303,6 @@ export const ZoeStorageManagerIKit = harden({
   }),
   startInstanceAccess: M.interface('ZoeStorage startInstance access', {
     makeZoeInstanceStorageManager: M.call(
-      M.any(),
       InstallationShape,
       M.any(),
       IssuerPKeywordRecordShape,

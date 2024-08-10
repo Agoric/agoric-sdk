@@ -1,6 +1,6 @@
 import { AmountMath } from '@agoric/ertp';
 import { E } from '@endo/eventual-send';
-import { q, Fail } from '@agoric/assert';
+import { q, Fail } from '@endo/errors';
 import { deeplyFulfilledObject, objectMap } from '@agoric/internal';
 import { provideDurableWeakMapStore } from '@agoric/vat-data';
 
@@ -16,7 +16,7 @@ import { cleanKeywords } from '../cleanProposal.js';
  * @param {import('@agoric/vat-data').Baggage} baggage
  */
 export const provideEscrowStorage = baggage => {
-  /** @type {WeakMapStore<Brand, ERef<Purse>>} */
+  /** @type {WeakMapStore<Brand, Purse>} */
   const brandToPurse = provideDurableWeakMapStore(baggage, 'brandToPurse');
 
   /** @type {CreatePurse} */
@@ -80,14 +80,14 @@ export const provideEscrowStorage = baggage => {
     // Assert that all of the payment keywords are present in the give
     // keywords. Proposal.give keywords that do not have matching payments will
     // be caught in the deposit step.
-    paymentKeywords.forEach(keyword => {
+    for (const keyword of paymentKeywords) {
       giveKeywords.includes(keyword) ||
         Fail`The ${q(
           keyword,
         )} keyword in the paymentKeywordRecord was not a keyword in proposal.give, which had keywords: ${q(
           giveKeywords,
         )}`;
-    });
+    }
 
     // If any of these deposits hang or fail, then this `await` also
     // hangs or fails, the offer does not succeed, and any funds that

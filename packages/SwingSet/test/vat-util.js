@@ -1,7 +1,7 @@
 // this file is imported by some test vats, so don't import any non-pure
 // modules
 
-import { assert } from '@agoric/assert';
+import { assert } from '@endo/errors';
 import { kser, kunser } from '@agoric/kmarshal';
 
 export function extractMessage(vatDeliverObject) {

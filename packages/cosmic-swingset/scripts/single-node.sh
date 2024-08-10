@@ -28,24 +28,26 @@ $DAEMON add-genesis-account $GENACCT $coins --keyring-backend="test"
 $DAEMON gentx --name validator $STAKE --keyring-backend="test"
 $DAEMON collect-gentxs
 
-# Silly old Darwin 
-case `sed --help 2>&1 | sed -n 2p` in
-"usage: sed script"*"[-i extension]"*) sedi () {
-    sed -i '' ${1+"$@"}
-  }
-  ;;
-*) sedi () {
-    sed -i ${1+"$@"}
-  }
-  ;;
+# Silly old Darwin
+case $(sed --help 2>&1 | sed -n 2p) in
+  "usage: sed script"*"[-i extension]"*)
+    sedi() {
+      sed -i '' ${1+"$@"}
+    }
+    ;;
+  *)
+    sedi() {
+      sed -i ${1+"$@"}
+    }
+    ;;
 esac
 
 case $DAEMON in
-ag-chain-cosmos)
-  # For Agoric
-  DIR=$(dirname -- "${BASH_SOURCE[0]}")
-  "$DIR/../../agoric-cli/bin/agoric" set-defaults --bootstrap-address=$GENACCT ag-chain-cosmos ~/.$DAEMON/config
-  ;;
+  ag-chain-cosmos)
+    # For Agoric
+    DIR=$(dirname -- "${BASH_SOURCE[0]}")
+    "$DIR/../../agoric-cli/bin/agoric" set-defaults --bootstrap-address=$GENACCT ag-chain-cosmos ~/.$DAEMON/config
+    ;;
 esac
 
 # Set proper defaults and change ports

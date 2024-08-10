@@ -1,0 +1,129 @@
+{
+    "$comment": "This SwingSet config file (see loadSwingsetConfigFile) is designed to bring up vats to test Orchestration. Comapre with decentral-itest-vaults-config.json.",
+    "bootstrap": "bootstrap",
+    "defaultReapInterval": 1000,
+    "coreProposals": [
+        "@agoric/builders/scripts/vats/init-core.js",
+        "@agoric/builders/scripts/vats/init-network.js",
+        "@agoric/builders/scripts/vats/init-localchain.js",
+        "@agoric/builders/scripts/vats/init-transfer.js",
+        "@agoric/builders/scripts/vats/init-orchestration.js",
+        {
+            "module": "@agoric/builders/scripts/inter-protocol/init-core.js",
+            "entrypoint": "defaultProposalBuilder",
+            "args": [
+                {
+                    "econCommitteeOptions": {
+                        "committeeSize": 3
+                    },
+                    "referencedUi": "bafybeidvpbtlgefi3ptuqzr2fwfyfjqfj6onmye63ij7qkrb4yjxekdh3e",
+                    "minInitialPoolLiquidity": "0"
+                }
+            ]
+        },
+        {
+            "module": "@agoric/builders/scripts/inter-protocol/add-collateral-core.js",
+            "entrypoint": "defaultProposalBuilder",
+            "args": [
+                {
+                    "interestRateValue": 1000,
+                    "interchainAssetOptions": {
+                        "denom": "ibc/toyatom",
+                        "decimalPlaces": 6,
+                        "initialPrice": 12.34,
+                        "keyword": "ATOM",
+                        "oracleBrand": "ATOM",
+                        "proposedName": "ATOM"
+                    }
+                }
+            ]
+        },
+        {
+            "module": "@agoric/builders/scripts/inter-protocol/add-collateral-core.js",
+            "entrypoint": "psmProposalBuilder",
+            "args": [
+                {
+                    "anchorOptions": {
+                        "denom": "ibc/toyusdc",
+                        "decimalPlaces": 6,
+                        "keyword": "USDC_axl",
+                        "proposedName": "USD Coin"
+                    }
+                }
+            ]
+        },
+        {
+            "$comment": "XXX orchesration works without oracles but some test setup dependency fails to resolve without this",
+            "module": "@agoric/builders/scripts/inter-protocol/price-feed-core.js",
+            "entrypoint": "defaultProposalBuilder",
+            "args": [
+                {
+                    "AGORIC_INSTANCE_NAME": "ATOM-USD price feed",
+                    "oracleAddresses": [
+                        "@PRIMARY_ADDRESS@",
+                        "agoric1dy0yegdsev4xvce3dx7zrz2ad9pesf5svzud6y"
+                    ],
+                    "IN_BRAND_LOOKUP": [
+                        "agoricNames",
+                        "oracleBrand",
+                        "ATOM"
+                    ],
+                    "IN_BRAND_DECIMALS": 6,
+                    "OUT_BRAND_LOOKUP": [
+                        "agoricNames",
+                        "oracleBrand",
+                        "USD"
+                    ],
+                    "OUT_BRAND_DECIMALS": 4
+                }
+            ]
+        }
+    ],
+    "vats": {
+        "bootstrap": {
+            "sourceSpec": "@agoric/vats/src/core/boot-chain.js",
+            "creationOptions": {
+                "critical": true
+            }
+        }
+    },
+    "bundles": {
+        "agoricNames": {
+            "sourceSpec": "@agoric/vats/src/vat-agoricNames.js"
+        },
+        "bank": {
+            "sourceSpec": "@agoric/vats/src/vat-bank.js"
+        },
+        "board": {
+            "sourceSpec": "@agoric/vats/src/vat-board.js"
+        },
+        "bridge": {
+            "sourceSpec": "@agoric/vats/src/vat-bridge.js"
+        },
+        "centralSupply": {
+            "sourceSpec": "@agoric/vats/src/centralSupply.js"
+        },
+        "mintHolder": {
+            "sourceSpec": "@agoric/vats/src/mintHolder.js"
+        },
+        "priceAuthority": {
+            "sourceSpec": "@agoric/vats/src/vat-priceAuthority.js"
+        },
+        "provisionPool": {
+            "sourceSpec": "@agoric/inter-protocol/src/provisionPool.js"
+        },
+        "provisioning": {
+            "sourceSpec": "@agoric/vats/src/vat-provisioning.js"
+        },
+        "walletFactory": {
+            "sourceSpec": "@agoric/smart-wallet/src/walletFactory.js"
+        },
+        "zcf": {
+            "sourceSpec": "@agoric/zoe/contractFacet.js"
+        },
+        "zoe": {
+            "sourceSpec": "@agoric/vats/src/vat-zoe.js"
+        }
+    },
+    "defaultManagerType": "xs-worker"
+}

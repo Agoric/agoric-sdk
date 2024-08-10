@@ -1,4 +1,4 @@
-import { assert, q, Fail } from '@agoric/assert';
+import { assert, q, Fail } from '@endo/errors';
 import { AmountMath, getAssetKind } from '@agoric/ertp';
 import { objectMap } from '@agoric/internal';
 import { assertRecord } from '@endo/marshal';
@@ -47,7 +47,9 @@ export const cleanKeywords = uncleanKeywordRecord => {
 
   // Assert all names are ascii identifiers starting with
   // an upper case letter.
-  keywords.forEach(assertKeywordName);
+  for (const keyword of keywords) {
+    assertKeywordName(keyword);
+  }
 
   return /** @type {string[]} */ (keywords);
 };
@@ -57,6 +59,7 @@ export const coerceAmountPatternKeywordRecord = (
   getAssetKindByBrand,
 ) => {
   cleanKeywords(allegedAmountKeywordRecord);
+  // FIXME objectMap should constrain the mapping function by the record's type
   return objectMap(allegedAmountKeywordRecord, amount => {
     // Check that each value can be coerced using the AmountMath
     // indicated by brand. `AmountMath.coerce` throws if coercion fails.
@@ -75,6 +78,12 @@ export const coerceAmountPatternKeywordRecord = (
   });
 };
 
+/**
+ *
+ * @param {unknown} allegedAmountKeywordRecord
+ * @param {*} getAssetKindByBrand
+ * @returns {AmountKeywordRecord}
+ */
 export const coerceAmountKeywordRecord = (
   allegedAmountKeywordRecord,
   getAssetKindByBrand,
@@ -84,6 +93,7 @@ export const coerceAmountKeywordRecord = (
     getAssetKindByBrand,
   );
   assertKey(result);
+  // @ts-expect-error checked cast
   return result;
 };
 

@@ -29,6 +29,25 @@ var (
 	_ vm.ControllerAdmissionMsg = &MsgWalletSpendAction{}
 )
 
+// Contextual information about the message source of an action on an inbound queue.
+// This context should be unique per inboundQueueRecord.
+type ActionContext struct {
+	// The block height in which the corresponding action was enqueued
+	BlockHeight int64 `json:"blockHeight"`
+	// The hash of the cosmos transaction that included the message
+	// If the action didn't result from a transaction message, a substitute value
+	// may be used. For example the VBANK_BALANCE_UPDATE actions use `x/vbank`.
+	TxHash string `json:"txHash"`
+	// The index of the message within the transaction. If the action didn't
+	// result from a cosmos transaction, a number should be chosen to make the
+	// actionContext unique. (for example a counter per block and source module).
+	MsgIdx int `json:"msgIdx"`
+}
+type InboundQueueRecord struct {
+	Action  vm.Jsonable   `json:"action"`
+	Context ActionContext `json:"context"`
+}
+
 const (
 	// bundleUncompressedSizeLimit is the (exclusive) limit on uncompressed bundle size.
 	// We must ensure there is an exclusive int64 limit in order to detect an underflow.

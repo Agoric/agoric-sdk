@@ -1,4 +1,3 @@
-/* eslint-disable consistent-return */
 /**
  * @file Vault Manager object manages vault-based debts for a collateral type.
  *
@@ -17,8 +16,10 @@
  *   liquidated. If the auction is unsuccessful, the liquidation may be
  *   reverted.
  */
-import '@agoric/zoe/exported.js';
+/// <reference types="@agoric/zoe/exported" />
 
+import { X, Fail, q, makeError } from '@endo/errors';
+import { E } from '@endo/eventual-send';
 import {
   AmountMath,
   AmountShape,
@@ -51,8 +52,6 @@ import {
   TopicsRecordShape,
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { PriceQuoteShape, SeatShape } from '@agoric/zoe/src/typeGuards.js';
-import { E } from '@endo/eventual-send';
-import { AuctionPFShape } from '../auction/auctioneer.js';
 import {
   checkDebtLimit,
   makeNatAmountShape,
@@ -64,8 +63,12 @@ import { calculateMinimumCollateralization, minimumPrice } from './math.js';
 import { makePrioritizedVaults } from './prioritizedVaults.js';
 import { Phase, prepareVault } from './vault.js';
 import { calculateDistributionPlan } from './proceeds.js';
+import { AuctionPFShape } from '../auction/auctioneer.js';
 
-const { details: X, Fail, quote: q } = assert;
+/**
+ * @import {Baggage} from '@agoric/vat-data';
+ * @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js';
+ */
 
 const trace = makeTracer('VM');
 
@@ -101,8 +104,8 @@ export const watchQuoteNotifier = async (notifierP, watcher, ...args) => {
   }
 };
 
-/** @typedef {import('./storeUtils.js').NormalizedDebt} NormalizedDebt */
-/** @typedef {import('@agoric/time').RelativeTime} RelativeTime */
+/** @import {NormalizedDebt} from './storeUtils.js' */
+/** @import {RelativeTime} from '@agoric/time' */
 
 // Metrics naming scheme: nouns are present values; past-participles are accumulative.
 /**
@@ -142,6 +145,7 @@ export const watchQuoteNotifier = async (notifierP, watcher, ...args) => {
  *   interestRate: Ratio;
  *   latestInterestUpdate: Timestamp;
  * }} AssetState
+ *
  *
  * @typedef {{
  *   getChargingPeriod: () => RelativeTime;
@@ -209,7 +213,7 @@ export const watchQuoteNotifier = async (notifierP, watcher, ...args) => {
 const collateralEphemera = makeEphemeraProvider(() => /** @type {any} */ ({}));
 
 /**
- * @param {import('@agoric/ertp').Baggage} baggage
+ * @param {import('@agoric/swingset-liveslots').Baggage} baggage
  * @param {{
  *   zcf: import('./vaultFactory.js').VaultFactoryZCF;
  *   marshaller: ERef<Marshaller>;
@@ -336,7 +340,7 @@ export const prepareVaultManagerKit = (
         getCollateralQuote: M.call().returns(PriceQuoteShape),
         getPublicFacet: M.call().returns(M.remotable('publicFacet')),
         lockOraclePrices: M.call().returns(PriceQuoteShape),
-        liquidateVaults: M.call(AuctionPFShape).returns(M.promise()),
+        liquidateVaults: M.call(M.eref(AuctionPFShape)).returns(M.promise()),
       }),
     },
     initState,
@@ -410,12 +414,12 @@ export const prepareVaultManagerKit = (
                 ),
             fail: reason => {
               zcf.shutdownWithFailure(
-                assert.error(X`Unable to continue without a timer: ${reason}`),
+                makeError(X`Unable to continue without a timer: ${reason}`),
               );
             },
             finish: done => {
               zcf.shutdownWithFailure(
-                assert.error(X`Unable to continue without a timer: ${done}`),
+                makeError(X`Unable to continue without a timer: ${done}`),
               );
             },
           });
@@ -435,7 +439,9 @@ export const prepareVaultManagerKit = (
             collateralUnit,
             debtBrand,
           );
+          // @ts-expect-error XXX quotes
           ephemera.storedQuotesNotifier = makeStoredNotifier(
+            // @ts-expect-error XXX quotes
             quoteNotifier,
             E(storageNode).makeChildNode('quotes'),
             marshaller,

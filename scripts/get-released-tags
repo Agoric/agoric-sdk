@@ -1,24 +1,27 @@
 #! /bin/sh
-cmd=${1+"$@"}
+# Usage: $0 [<command> [<initial argument>...]]
+# Invokes `echo` or a specified other command with a list of "...@<version>" and
+# "v<version>" tags associated with the HEAD commit, specifically handling
+# "@agoric/sdk@<version>" tags in a dedicated invocation for CI convenience.
+# Fails if either expected tag category is empty.
+cmd=${1:-echo}
+[ $# -gt 0 ] && shift
 sdkTags=
 otherTags=
-if test -z "$cmd"; then
-  cmd=echo
-fi
-for tag in $(git tag -l --contains HEAD | grep -E '@[0-9.]+(-[^.]*\.[0-9.]+)?$'); do
-  case $tag in
-  @agoric/sdk@*) sdkTags="$sdkTags $tag" ;;
-  @agoric/cosmos@*)
-    # This logic publishes the golang tag needed for go get downloads.
-    # Format needs to be vNN.MM.PP
-    goTag=v$(echo "$tag" | sed -e 's/.*@//')
-    git tag -f "$goTag" "$tag"
-    otherTags="$otherTags $tag $goTag"
-    ;;
-  *) otherTags="$otherTags $tag" ;;
-  esac
+for tag in $(git tag -l --contains HEAD | grep -E '(@|^v)[0-9.]+(-[^.]*\.[0-9.]+)?$'); do
+	case $tag in
+	@agoric/sdk@*) sdkTags="$sdkTags $tag" ;;
+	*) otherTags="$otherTags $tag" ;;
+	esac
 done
 
+errors=
+[ -z "$sdkTags" ] && errors="$(printf '%s%s\n' "$errors" 'No @agoric/sdk tags!')"
+[ -z "$otherTags" ] && errors="$(printf '%s%s\n' "$errors" 'No non-@agoric/sdk tags!')"
+if [ -n "$errors" ]; then
+	echo 1>&2 "$errors"
+	exit 1
+fi
+
 # Push the SDK tag separately so that it can trigger CI.
-eval "\$cmd\$otherTags && \$cmd\$sdkTags"
-exit $?
+"$cmd" "$@" $otherTags && "$cmd" "$@" $sdkTags

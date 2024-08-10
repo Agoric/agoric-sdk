@@ -1,7 +1,7 @@
 // @jessie-check
 
 export default {
-  files: ['integration-tests/test-workflow.js'],
+  files: ['integration-tests/*.test.*'],
   timeout: '10m',
   workerThreads: false,
 };

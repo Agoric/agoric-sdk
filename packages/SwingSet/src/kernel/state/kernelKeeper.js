@@ -1,6 +1,5 @@
-/* eslint-disable @typescript-eslint/prefer-ts-expect-error -- https://github.com/Agoric/agoric-sdk/issues/4620 */
 import { Nat, isNat } from '@endo/nat';
-import { assert, Fail } from '@agoric/assert';
+import { assert, Fail } from '@endo/errors';
 import { initializeVatState, makeVatKeeper } from './vatKeeper.js';
 import { initializeDeviceState, makeDeviceKeeper } from './deviceKeeper.js';
 import { parseReachableAndVatSlot } from './reachable.js';
@@ -179,7 +178,7 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
    */
   function getRequired(key) {
     kvStore.has(key) || Fail`storage lacks required key ${key}`;
-    // @ts-ignore already checked .has()
+    // @ts-expect-error already checked .has()
     return kvStore.get(key);
   }
 

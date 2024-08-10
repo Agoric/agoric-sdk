@@ -1,4 +1,4 @@
-import { Fail } from '@agoric/assert';
+import { Fail } from '@endo/errors';
 import { UnguardedHelperI, makeTracer } from '@agoric/internal';
 import { M, prepareExoClassKit } from '@agoric/vat-data';
 import { E } from '@endo/eventual-send';
@@ -15,6 +15,10 @@ import {
   setupParamGovernance,
 } from './contractGovernance/governParam.js';
 import { ClosingRuleShape, ParamChangesSpecShape } from './typeGuards.js';
+
+/**
+ * @import {VoteCounterCreatorFacet, VoteCounterPublicFacet, QuestionSpec, OutcomeRecord, AddQuestion, AddQuestionReturn, ClosingRule, GovernableStartFn, LimitedCF, PoserFacet, VoteOnApiInvocation, VoteOnOfferFilter, VoteOnParamChanges} from './types.js';
+ */
 
 const trace = makeTracer('CGK', false);
 
@@ -125,7 +129,8 @@ export const prepareContractGovernorKit = (baggage, powers) => {
             ]);
             trace('setupApiGovernance');
             apiGovernance = governedNames.length
-              ? setupApiGovernance(governedApis, governedNames, timer, () =>
+              ? // @ts-expect-error FIXME
+                setupApiGovernance(governedApis, governedNames, timer, () =>
                   this.facets.helper.getUpdatedPoserFacet(),
                 )
               : {
@@ -172,8 +177,8 @@ export const prepareContractGovernorKit = (baggage, powers) => {
         replaceElectorate(poserInvitation) {
           const { creatorFacet } = this.state;
           /** @type {Promise<import('./contractGovernance/typedParamManager.js').TypedParamManager<{'Electorate': 'invitation'}>>} */
-          // eslint-disable-next-line @typescript-eslint/prefer-ts-expect-error -- the build config doesn't expect an error here
-          // @ts-ignore cast
+
+          // @ts-expect-error cast
           const paramMgr = E(E(creatorFacet).getParamMgrRetriever()).get({
             key: 'governedParams',
           });

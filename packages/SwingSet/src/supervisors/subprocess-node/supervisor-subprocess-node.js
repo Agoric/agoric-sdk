@@ -1,4 +1,4 @@
-/* global WeakRef, FinalizationRegistry */
+/* global globalThis, WeakRef, FinalizationRegistry */
 
 // this file is loaded at the start of a new subprocess
 import '@endo/init';
@@ -8,7 +8,7 @@ import fs from 'fs';
 import { Buffer } from 'buffer';
 import process from 'node:process';
 
-import { assert, details as X, Fail } from '@agoric/assert';
+import { assert, X, Fail } from '@endo/errors';
 import { importBundle } from '@endo/import-bundle';
 import { makeMarshal } from '@endo/marshal';
 import {
@@ -139,7 +139,8 @@ function handleSetBundle(margs) {
   // Enable or disable the console accordingly.
   const workerEndowments = {
     console: makeVatConsole(makeLogMaker(`SwingSet:vat:${vatID}`)),
-    assert,
+    // See https://github.com/Agoric/agoric-sdk/issues/9515
+    assert: globalThis.assert,
   };
 
   async function buildVatNamespace(lsEndowments, inescapableGlobalProperties) {

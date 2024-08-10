@@ -232,3 +232,45 @@ func EncodeKVEntryReaderToJsonl(reader KVEntryReader, bytesWriter io.Writer) (er
 		}
 	}
 }
+
+var _ KVEntryReader = &kvHookingReader{}
+
+// kvHookingReader is a KVEntryReader backed by another KVEntryReader which
+// provides callbacks for read and close
+type kvHookingReader struct {
+	reader  KVEntryReader
+	onRead  func(entry KVEntry) error
+	onClose func() error
+}
+
+// NewKVHookingReader returns a KVEntryReader backed by another KVEntryReader
+func NewKVHookingReader(reader KVEntryReader, onRead func(entry KVEntry) error, onClose func() error) KVEntryReader {
+	return &kvHookingReader{
+		reader,
+		onRead,
+		onClose,
+	}
+}
+
+// Read yields the next KVEntry from the source reader
+// Implements KVEntryReader
+func (hr kvHookingReader) Read() (next KVEntry, err error) {
+	next, err = hr.reader.Read()
+
+	if err == nil {
+		err = hr.onRead(next)
+	}
+
+	return next, err
+}
+
+// Close releases the underlying source reader
+// Implements KVEntryReader
+func (hr kvHookingReader) Close() error {
+	err := hr.reader.Close()
+	if err == nil {
+		err = hr.onClose()
+	}
+
+	return err
+}

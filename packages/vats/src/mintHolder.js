@@ -2,7 +2,7 @@
 
 import { prepareIssuerKit } from '@agoric/ertp';
 
-/** @typedef {import('@agoric/vat-data').Baggage} Baggage */
+/** @import {Baggage} from '@agoric/vat-data' */
 
 /**
  * NOTE: "keyword" connotes initial caps constraint, which doesn't apply here.
@@ -25,7 +25,7 @@ function provideIssuerKit(zcf, baggage) {
   return prepareIssuerKit(baggage, keyword, assetKind, displayInfo);
 }
 
-/** @type {ContractMeta} */
+/** @type {ContractMeta<typeof start>} */
 export const meta = {
   upgradability: 'canUpgrade',
 };

@@ -6,6 +6,10 @@ import { EmptyProposalShape } from '@agoric/zoe/src/typeGuards.js';
 import { ElectoratePublicI, ElectorateCreatorI } from './typeGuards.js';
 
 /**
+ * @import {ElectoratePublic, ElectorateCreatorFacet} from './types.js';
+ */
+
+/**
  * This Electorate visibly has no members, takes no votes, and approves no
  * changes.
  *

@@ -1,6 +1,6 @@
 // @jessie-check
 
-import { Fail, q } from '@agoric/assert';
+import { Fail, q } from '@endo/errors';
 import { provideDurableMapStore } from '@agoric/vat-data';
 import { AssetKind, hasIssuer, prepareIssuerKit } from '@agoric/ertp';
 import { InvitationElementShape } from '../typeGuards.js';
@@ -12,7 +12,7 @@ const ZOE_INVITATION_KIT = 'ZoeInvitationKit';
 
 /**
  * @param {import('@agoric/vat-data').Baggage} baggage
- * @param {ShutdownWithFailure | undefined} shutdownZoeVat
+ * @param {import('@agoric/swingset-vat').ShutdownWithFailure | undefined} shutdownZoeVat
  */
 export const prepareInvitationKit = (baggage, shutdownZoeVat = undefined) => {
   const invitationKitBaggage = provideDurableMapStore(
@@ -28,6 +28,9 @@ export const prepareInvitationKit = (baggage, shutdownZoeVat = undefined) => {
     // Upgrade this legacy state by simply deleting it.
     invitationKitBaggage.delete(ZOE_INVITATION_KIT);
   }
+
+  /** @type {IssuerKit<'set', InvitationDetails>} */
+  // @ts-expect-error cast
   const invitationKit = prepareIssuerKit(
     invitationKitBaggage,
     'Zoe Invitation',

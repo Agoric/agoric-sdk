@@ -1,19 +1,14 @@
-/* eslint-disable no-use-before-define */
+/// <reference types="@agoric/ertp/exported" />
+/// <reference types="@endo/pass-style" />
+/// <reference path="../zoeService/utils.d.ts" />
 
-type CopyRecord<T> = import('@endo/pass-style').CopyRecord<T>;
-type IssuerOptionsRecord = import('@agoric/ertp').IssuerOptionsRecord;
 /**
  * Any passable non-thenable. Often an explanatory string.
  */
-type Completion = any;
+type Completion = import('@endo/pass-style').Passable;
 type ZCFMakeEmptySeatKit = (exit?: ExitRule | undefined) => ZcfSeatKit;
 
-type MakeInvitation = <Result>(
-  offerHandler: OfferHandler<Result>,
-  description: string,
-  customDetails?: object,
-  proposalShape?: Pattern,
-) => Promise<Invitation<R, A>>;
+type InvitationAmount = Amount<'set', InvitationDetails>;
 
 /**
  * Zoe Contract Facet
@@ -47,10 +42,10 @@ type ZCF<CT extends unknown = Record<string, unknown>> = {
    * @returns the AmountMath and brand synchronously accessible after
    * saving
    */
-  saveIssuer: (
-    issuerP: ERef<Issuer>,
+  saveIssuer: <I extends Issuer>(
+    issuerP: ERef<I>,
     keyword: Keyword,
-  ) => Promise<IssuerRecord<any>>;
+  ) => Promise<I extends Issuer<infer K, infer M> ? IssuerRecord<K, M> : never>;
 
   /**
    * Make a credible Zoe invitation for a particular smart contract
@@ -62,9 +57,14 @@ type ZCF<CT extends unknown = Record<string, unknown>> = {
    * getting in the `customDetails`. `customDetails` will be
    * placed in the details of the invitation.
    */
-  makeInvitation: MakeInvitation;
+  makeInvitation: <R, A = undefined>(
+    offerHandler: OfferHandler<ERef<R>, A>,
+    description: string,
+    customDetails?: object,
+    proposalShape?: Pattern,
+  ) => Promise<Invitation<R, A>>;
   shutdown: (completion: Completion) => void;
-  shutdownWithFailure: ShutdownWithFailure;
+  shutdownWithFailure: import('@agoric/swingset-vat').ShutdownWithFailure;
   getZoeService: () => ERef<ZoeService>;
   getInvitationIssuer: () => Issuer<'set'>;
   getTerms: () => StandardTerms & CT;
@@ -75,7 +75,7 @@ type ZCF<CT extends unknown = Record<string, unknown>> = {
     keyword: Keyword,
     assetKind?: K_2 | undefined,
     displayInfo?: AdditionalDisplayInfo,
-    options?: IssuerOptionsRecord,
+    options?: import('@agoric/ertp').IssuerOptionsRecord,
   ) => Promise<ZCFMint<K_2>>;
   registerFeeMint: ZCFRegisterFeeMint;
   makeEmptySeatKit: ZCFMakeEmptySeatKit;
@@ -131,12 +131,12 @@ type ZCFRegisterFeeMint = (
  * never in production; i.e., it is only called if `testJigSetter`
  * was supplied.
  *
- * If no, `testFn` is supplied, then an empty jig will be used.
+ * If no `testFn` is supplied, then an empty jig will be used.
  * An additional `zcf` property set to the current ContractFacet
  * will be appended to the returned jig object (overriding any
  * provided by the `testFn`).
  */
-type SetTestJig = (testFn: () => Record<string, unknown>) => void;
+type SetTestJig = (testFn?: () => Record<string, unknown>) => void;
 type ZCFMint<K extends AssetKind = AssetKind> = {
   getIssuerRecord: () => IssuerRecord<K>;
   /**
@@ -166,21 +166,20 @@ type ZCFMint<K extends AssetKind = AssetKind> = {
  * normally an instanceof Error.
  */
 type ZCFSeatFail = (reason: unknown) => Error;
-/**
- * The brand is used for filling in an empty amount if the `keyword`
- * is not present in the allocation
- */
-type ZCFGetAmountAllocated = (
-  keyword: Keyword,
-  brand?: Brand<AssetKind> | undefined,
-) => Amount<any>;
-type ZCFSeat = {
+type ZCFSeat = import('@endo/pass-style').RemotableObject & {
   exit: (completion?: Completion) => void;
   fail: ZCFSeatFail;
   getSubscriber: () => Promise<Subscriber<Allocation>>;
   hasExited: () => boolean;
   getProposal: () => ProposalRecord;
-  getAmountAllocated: ZCFGetAmountAllocated;
+  /**
+   * @param brand used for filling in an empty amount if the `keyword`
+   * is not present in the allocation
+   */
+  getAmountAllocated: <B extends Brand>(
+    keyword: Keyword,
+    brand?: B,
+  ) => B extends Brand<infer K> ? Amount<K> : Amount;
   getCurrentAllocation: () => Allocation;
   /**
    * @deprecated Use atomicRearrange instead
@@ -210,20 +209,28 @@ type ZCFSeat = {
 };
 type ZcfSeatKit = {
   zcfSeat: ZCFSeat;
-  userSeat: ERef<UserSeat>;
+  userSeat: Promise<UserSeat>;
 };
-type HandleOffer<OR extends unknown> = (
-  seat: ZCFSeat,
-  offerArgs?: object,
-) => OR;
-type OfferHandler<OR extends unknown = unknown> =
-  | HandleOffer<OR>
+type HandleOffer<OR extends unknown, OA> = (seat: ZCFSeat, offerArgs: OA) => OR;
+type OfferHandler<OR extends unknown = unknown, OA = never> =
+  | HandleOffer<OR, OA>
   | {
-      handle: HandleOffer<OR>;
+      handle: HandleOffer<OR, OA>;
     };
-type ContractMeta = {
-  customTermsShape?: CopyRecord<any> | undefined;
-  privateArgsShape?: CopyRecord<any> | undefined;
+type ContractMeta<
+  SF extends // import inline to maintain ambient mode
+    import('../zoeService/utils').ContractStartFunction = import('../zoeService/utils').ContractStartFunction,
+> = {
+  customTermsShape?: Record<
+    Parameters<SF>[0] extends ZCF<infer CT> ? keyof CT : never,
+    Pattern
+  >;
+  privateArgsShape?: { [K in keyof Parameters<SF>[1]]: Pattern };
+  /**
+   * - `none` means that the contract is not upgradable.
+   * - `canUpgrade` means this code can perform an upgrade
+   * - `canBeUpgraded` means that the contract stores kinds durably such that the next version can upgrade
+   */
   upgradability?: 'none' | 'canBeUpgraded' | 'canUpgrade' | undefined;
 };
 /**
@@ -239,12 +246,26 @@ type ContractStartFn<
 > = (
   zcf: ZCF<CT>,
   privateArgs: PA,
-  baggage?: MapStore<any, any> | undefined,
+  baggage: import('@agoric/vat-data').Baggage,
 ) => ContractStartFnResult<PF, CF>;
 type ContractStartFnResult<PF, CF> = {
-  publicFacet: PF;
-  creatorFacet: CF;
-  creatorInvitation?: Promise<Invitation<R, A>> | undefined;
+  publicFacet?: PF;
+  creatorFacet?: CF;
+  creatorInvitation?: Promise<Invitation<any, any>> | undefined;
 };
-type ContractOf<S> = import('../zoeService/utils').ContractOf<S>;
+
+// XXX redef, losing documentation
+type ContractOf<S extends (...args: any) => any> =
+  import('../zoeService/utils').ContractOf<S>;
 type AdminFacet = import('../zoeService/utils').AdminFacet<any>;
+
+declare const OfferReturn: unique symbol;
+declare const OfferArgs: unique symbol;
+type Invitation<R = unknown, A = undefined> = Payment<
+  'set',
+  InvitationDetails
+> & {
+  // because TS is structural, without this the generic is ignored
+  [OfferReturn]?: R;
+  [OfferArgs]?: A;
+};

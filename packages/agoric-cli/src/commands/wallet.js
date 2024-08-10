@@ -8,7 +8,6 @@ import {
   makeLeader,
   makeLeaderFromRpcAddresses,
 } from '@agoric/casting';
-import { Command } from 'commander';
 import fs from 'fs';
 import util from 'util';
 import { execFileSync } from 'child_process';
@@ -25,20 +24,31 @@ import { coalesceWalletState, getCurrent } from '../lib/wallet.js';
 
 const SLEEP_SECONDS = 3;
 
-export const makeWalletCommand = async () => {
-  const wallet = new Command('wallet')
-    .description('wallet commands')
-    .option('--home <dir>', 'agd application home directory')
-    .option(
-      '--keyring-backend <os|file|test>',
-      'keyring\'s backend (os|file|test) (default "os")',
-    );
+/**
+ * @param {import('commander').Command['command']} command
+ * @returns {Promise<import('commander').Command>}
+ */
+export const makeWalletCommand = async command => {
+  /**
+   * @param {import('commander').Command} baseCmd
+   */
+  const withSharedTxOptions = baseCmd =>
+    baseCmd
+      .option('--home <dir>', 'agd application home directory')
+      .option(
+        '--keyring-backend <os|file|test>',
+        'keyring\'s backend (os|file|test) (default "os")',
+      );
+  /** @typedef {{home?: string, keyringBackend: 'os' | 'file' | 'test'}} SharedTxOptions */
+
+  const wallet = withSharedTxOptions(command('wallet')).description(
+    'wallet commands',
+  );
 
   const normalizeAddress = literalOrName =>
     normalizeAddressWithOptions(literalOrName, wallet.opts());
 
-  wallet
-    .command('provision')
+  withSharedTxOptions(wallet.command('provision'))
     .description('provision a Smart Wallet')
     .requiredOption(
       '--account [address]',
@@ -48,8 +58,14 @@ export const makeWalletCommand = async () => {
     .option('--spend', 'confirm you want to spend')
     .option('--nickname <string>', 'nickname to use', 'my-wallet')
     .action(function (opts) {
-      const { account, nickname, spend } = opts;
-      const { home, keyringBackend: backend } = wallet.opts();
+      /** @typedef {{account: string, spend?: boolean, nickname: 'my-wallet' | string }} Opts */
+      const {
+        account,
+        nickname,
+        spend,
+        home,
+        keyringBackend: backend,
+      } = /** @type {SharedTxOptions & Opts} */ ({ ...wallet.opts(), ...opts });
       const tx = ['provision-one', nickname, account, 'SMART_WALLET'];
       if (spend) {
         execSwingsetTransaction(tx, {
@@ -107,8 +123,7 @@ export const makeWalletCommand = async () => {
       console.log(offerObj.offer.id);
     });
 
-  wallet
-    .command('send')
+  withSharedTxOptions(wallet.command('send'))
     .description('send a prepared offer')
     .requiredOption(
       '--from [address]',
@@ -118,8 +133,14 @@ export const makeWalletCommand = async () => {
     .requiredOption('--offer [filename]', 'path to file with prepared offer')
     .option('--dry-run', 'spit out the command instead of running it')
     .action(function (opts) {
-      const { dryRun, from, offer } = opts;
-      const { home, keyringBackend: backend } = wallet.opts();
+      /** @typedef {{ from: string, offer: string, dryRun: boolean }} Opts */
+      const {
+        dryRun,
+        from,
+        offer,
+        home,
+        keyringBackend: backend,
+      } = /** @type {SharedTxOptions & Opts} */ ({ ...wallet.opts(), ...opts });
 
       const offerBody = fs.readFileSync(offer).toString();
       execSwingsetTransaction(['wallet-action', '--allow-spend', offerBody], {

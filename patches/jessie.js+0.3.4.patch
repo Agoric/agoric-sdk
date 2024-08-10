@@ -1,0 +1,15 @@
+diff --git a/node_modules/jessie.js/package.json b/node_modules/jessie.js/package.json
+index 24f0881..da02cf8 100644
+--- a/node_modules/jessie.js/package.json
++++ b/node_modules/jessie.js/package.json
+@@ -16,10 +16,6 @@
+   },
+   "main": "./src/main.js",
+   "types": "./types/main.d.ts",
+-  "exports": {
+-    "./package.json": "./package.json",
+-    ".": "./src/main.js"
+-  },
+   "scripts": {
+     "build": "yarn build:types",
+     "build:types": "tsc -p jsconfig.build.json --outDir types",

@@ -1,13 +1,33 @@
 // @ts-check
+/**
+ * @file provides a `makeE` that can be parameterized with an `unwrap` function
+ * and corresponding `import('./types').EUnwrap<T>`.  These will be used to
+ * extract the final settlement from a chain of PromiseLikes and PromiseSteps or
+ * similar non-thenable pseudo-promises.
+ *
+ * `@agoric/vow/vat.js` uses this mechanism to export a `V` function with
+ * similar behaviour as the default `E`, augmented with automatic unwrapping of
+ * recipient Vows as if they were PromiseLikes.
+ */
+
+/*
+ * TODO: Once this implementation has been polished and well-tested, it is
+ * designed to be a drop-in replacement for the version in
+ * `@endo/eventual-send/src/E.js` which contained no concept of "unwrap",
+ */
+import { X, q, Fail, makeError } from '@endo/errors';
 import { trackTurns } from './track-turns.js';
 import { makeMessageBreakpointTester } from './message-breakpoints.js';
 
-const { details: X, quote: q, Fail } = assert;
 const { assign, create } = Object;
 
 const onSend = makeMessageBreakpointTester('ENDO_SEND_BREAKPOINTS');
 
-/** @typedef {(...args: any[]) => any} Callable */
+/**
+ * @import { HandledPromiseConstructor, RemotableBrand } from '@endo/eventual-send'
+ * @import { EUnwrap } from './types.js'
+ */
+/** @typedef {(...args: unknown[]) => any} Callable */
 
 /** @type {ProxyHandler<any>} */
 const baseFreezableProxyHandler = {
@@ -38,8 +58,8 @@ const baseFreezableProxyHandler = {
  * A Proxy handler for E(x).
  *
  * @param {any} recipient Any value passed to E(x)
- * @param {import('@endo/eventual-send').HandledPromiseConstructor} HandledPromise
- * @param {(x: any) => Promise<any>} unwrap
+ * @param {HandledPromiseConstructor} HandledPromise
+ * @param {<T>(x: T) => Promise<EUnwrap<T>>} unwrap
  * @returns {ProxyHandler<any>} the Proxy handler
  */
 const makeEProxyHandler = (recipient, HandledPromise, unwrap) =>
@@ -59,7 +79,7 @@ const makeEProxyHandler = (recipient, HandledPromise, unwrap) =>
             if (this !== receiver) {
               // Reject the async function call
               return HandledPromise.reject(
-                assert.error(
+                makeError(
                   X`Unexpected receiver for "${q(propertyKey)}" method of E(${q(
                     recipient,
                   )})`,
@@ -103,8 +123,8 @@ const makeEProxyHandler = (recipient, HandledPromise, unwrap) =>
  * It is a variant on the E(x) Proxy handler.
  *
  * @param {any} recipient Any value passed to E.sendOnly(x)
- * @param {import('@endo/eventual-send').HandledPromiseConstructor} HandledPromise
- * @param {(x: any) => Promise<any>} unwrap
+ * @param {HandledPromiseConstructor} HandledPromise
+ * @param {<T>(x: T) => Promise<EUnwrap<T>>} unwrap
  * @returns {ProxyHandler<any>} the Proxy handler
  */
 const makeESendOnlyProxyHandler = (recipient, HandledPromise, unwrap) =>
@@ -166,8 +186,8 @@ const makeESendOnlyProxyHandler = (recipient, HandledPromise, unwrap) =>
  * It is a variant on the E(x) Proxy handler.
  *
  * @param {any} x Any value passed to E.get(x)
- * @param {import('@endo/eventual-send').HandledPromiseConstructor} HandledPromise
- * @param {(x: any) => Promise<any>} unwrap
+ * @param {HandledPromiseConstructor} HandledPromise
+ * @param {<T>(x: T) => Promise<EUnwrap<T>>} unwrap
  * @returns {ProxyHandler<any>} the Proxy handler
  */
 const makeEGetProxyHandler = (x, HandledPromise, unwrap) =>
@@ -182,19 +202,17 @@ const resolve = x => HandledPromise.resolve(x);
 
 /**
  * @template [A={}]
- * @template {(x: any) => Promise<any>} [U=(x: any) => Promise<any>]
- * @param {import('@endo/eventual-send').HandledPromiseConstructor} HandledPromise
+ * @param {HandledPromiseConstructor} HandledPromise
  * @param {object} [powers]
- * @param {U} [powers.unwrap]
+ * @param {<T>(x: T) => Promise<EUnwrap<T>>} [powers.unwrap]
  * @param {A} [powers.additional]
  */
-const makeE = (
-  HandledPromise,
-  {
+const makeE = (HandledPromise, powers = {}) => {
+  const {
     additional = /** @type {A} */ ({}),
-    unwrap = /** @type {U} */ (resolve),
-  } = {},
-) => {
+    unwrap = /** @type {NonNullable<typeof powers.unwrap>} */ (resolve),
+  } = powers;
+
   return harden(
     assign(
       /**
@@ -260,13 +278,13 @@ const makeE = (
 
         /**
          * E.when(x, res, rej) is equivalent to
-         * unwrapped(x).then(onfulfilled, onrejected)
+         * unwrap(x).then(onfulfilled, onrejected)
          *
          * @template T
-         * @template [TResult1=Unwrap<T>]
+         * @template [TResult1=EUnwrap<T>]
          * @template [TResult2=never]
          * @param {ERef<T>} x value to convert to a handled promise
-         * @param {(value: Unwrap<T>) => ERef<TResult1>} [onfulfilled]
+         * @param {(value: EUnwrap<T>) => ERef<TResult1>} [onfulfilled]
          * @param {(reason: any) => ERef<TResult2>} [onrejected]
          * @returns {Promise<TResult1 | TResult2>}
          * @readonly
@@ -306,11 +324,11 @@ export default makeE;
 
 /**
  * @template {Callable} T
- * @typedef {(
- *   ReturnType<T> extends PromiseLike<infer U>                       // if function returns a promise
- *     ? T                                                            // return the function
- *     : (...args: Parameters<T>) => Promise<Awaited<ReturnType<T>>>  // make it return a promise
- * )} ECallable
+ * @typedef {ReturnType<T> extends EUnwrap<ReturnType<T>>
+ *     ? (...args: Parameters<T>) => Promise<ReturnType<T>>
+ *     : ReturnType<T> extends Promise<EUnwrap<ReturnType<T>>>
+ *       ? T
+ *       : (...args: Parameters<T>) => Promise<EUnwrap<ReturnType<T>>>} ECallable
  */
 
 /**
@@ -325,7 +343,7 @@ export default makeE;
 /**
  * @template T
  * @typedef {{
- *   readonly [P in keyof T]: T[P] extends PromiseLike<infer U>
+ *   readonly [P in keyof T]: T[P] extends PromiseLike<any>
  *     ? T[P]
  *     : Promise<Awaited<T[P]>>;
  * }} EGetters
@@ -385,7 +403,9 @@ export default makeE;
  * @template T
  * @typedef {(
  *   T extends Callable
- *     ? (...args: Parameters<T>) => ReturnType<T>                     // a root callable, no methods
+ *     ? (...args: Parameters<T>) => ReturnType<T>   // a root callable, no methods
+ *     : FilteredKeys<T, Callable> extends never
+ *     ? never
  *     : Pick<T, FilteredKeys<T, Callable>>          // any callable methods
  * )} PickCallable
  */
@@ -395,35 +415,18 @@ export default makeE;
  *
  * @template T
  * @typedef {(
- *   T extends import('@endo/eventual-send').RemotableBrand<infer L, infer R>     // if a given T is some remote interface R
- *     ? PickCallable<R>                                              // then return the callable properties of R
- *     : Awaited<T> extends import('@endo/eventual-send').RemotableBrand<infer L, infer R> // otherwise, if the final resolution of T is some remote interface R
- *     ? PickCallable<R>                                              // then return the callable properties of R
- *     : Awaited<T> extends import('./types').Vow<infer U>
- *     ? RemoteFunctions<U>                                           // then extract the remotable functions of U
- *     : T extends PromiseLike<infer U>                               // otherwise, if T is a promise
- *     ? Awaited<T>                                                   // then return resolved value T
- *     : T                                                            // otherwise, return T
+ *   EUnwrap<T> extends RemotableBrand<any, infer R>  // if a given T will settle to some remote interface R
+ *     ? PickCallable<R>                         // then return the callable properties of R
+ *     : PickCallable<EUnwrap<T>>                 // otherwise return the callable properties of the settled T
  * )} RemoteFunctions
  */
 
 /**
  * @template T
- * @typedef {Awaited<T> extends import('./types').Vow<infer U> ? Unwrap<U> : Awaited<T>} Unwrap
- */
-
-/**
- * @template T
  * @typedef {(
- *   T extends import('@endo/eventual-send').RemotableBrand<infer L, infer R>
+ *   T extends RemotableBrand<infer L, any>
  *     ? L
- *     : Awaited<T> extends import('@endo/eventual-send').RemotableBrand<infer L, infer R>
- *     ? L
- *     : Awaited<T> extends import('./types').Vow<infer U>
- *     ? LocalRecord<U>
- *     : T extends PromiseLike<infer U>
- *     ? Awaited<T>
- *     : T
+ *     : EUnwrap<T>
  * )} LocalRecord
  */
 

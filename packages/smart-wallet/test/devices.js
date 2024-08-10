@@ -1,4 +1,4 @@
-import { Fail } from '@agoric/assert';
+import { Fail } from '@endo/errors';
 import centralSupply from '@agoric/vats/bundles/bundle-centralSupply.js';
 import mintHolder from '@agoric/vats/bundles/bundle-mintHolder.js';
 import provisionPool from '@agoric/vats/bundles/bundle-provisionPool.js';

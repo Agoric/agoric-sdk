@@ -10,12 +10,6 @@ export {};
  */
 
 /**
- * @typedef ProposalResult
- * @property {string} sourceSpec
- * @property {[exportedGetManifest: string, ...manifestArgs: any[]]} getManifestCall
- */
-
-/**
  * @typedef {{fileName?: string} & ({ bundleName: string } | { bundleID: string}) } ManifestBundleRef
  */
 
@@ -34,12 +28,22 @@ export {};
  */
 
 /**
- * @callback ProposalBuilder
+ * @typedef CoreEvalDescriptor
+ * @property {string} sourceSpec import specifier for a module
+ * @property {[manifestGetterName: string, ...manifestGetterArgs: any[]]} getManifestCall
+ *   the name of a function exported by the module and arguments to invoke it
+ *   with in order to get a manifest (a Record that associates functions to be
+ *   invoked and permits defining bootstrap-space powers they will have access
+ *   to, see {@link ../README.md} and {@link runModuleBehaviors})
+ */
+
+/**
+ * @callback CoreEvalBuilder
  * @param {{
  *   publishRef: PublishBundleRef,
  *   install: InstallEntrypoint,
  *   wrapInstall?: <T extends InstallEntrypoint>(f: T) => T }
  * } powers
  * @param {...any} args
- * @returns {Promise<ProposalResult>}
+ * @returns {Promise<CoreEvalDescriptor>}
  */

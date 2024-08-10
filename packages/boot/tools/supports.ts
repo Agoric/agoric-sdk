@@ -1,4 +1,4 @@
-/* eslint-disable jsdoc/require-param-type, jsdoc/require-param, @jessie.js/safe-await-separator */
+/* eslint-disable jsdoc/require-param, @jessie.js/safe-await-separator */
 /* global process */
 
 import childProcessAmbient from 'child_process';
@@ -7,17 +7,29 @@ import { resolve as importMetaResolve } from 'import-meta-resolve';
 import { basename, join } from 'path';
 import { inspect } from 'util';
 
-import { Fail, NonNullish } from '@agoric/assert';
 import { buildSwingset } from '@agoric/cosmic-swingset/src/launch-chain.js';
-import { BridgeId, VBankAccount, makeTracer } from '@agoric/internal';
+import {
+  BridgeId,
+  NonNullish,
+  VBankAccount,
+  makeTracer,
+  type BridgeIdValue,
+  type Remote,
+} from '@agoric/internal';
 import { unmarshalFromVstorage } from '@agoric/internal/src/marshal.js';
 import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
+import { krefOf } from '@agoric/kmarshal';
 import { initSwingStore } from '@agoric/swing-store';
 import { loadSwingsetConfigFile } from '@agoric/swingset-vat';
-import { krefOf } from '@agoric/kmarshal';
 import { makeSlogSender } from '@agoric/telemetry';
 import { TimeMath, Timestamp } from '@agoric/time';
-import '@agoric/vats/exported.js';
+import { Fail } from '@endo/errors';
+import { fakeLocalChainBridgeTxMsgHandler } from '@agoric/vats/tools/fake-bridge.js';
+
+import {
+  makeRunUtils,
+  type RunUtils,
+} from '@agoric/swingset-vat/tools/run-utils.js';
 import {
   boardSlottingMarshaller,
   slotToBoardRemote,
@@ -25,9 +37,43 @@ import {
 
 import type { ExecutionContext as AvaT } from 'ava';
 
-import { makeRunUtils } from '@agoric/swingset-vat/tools/run-utils.js';
+import type { JsonSafe } from '@agoric/cosmic-proto';
+import type { MsgDelegateResponse } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/tx.js';
+import type { CoreEvalSDKType } from '@agoric/cosmic-proto/swingset/swingset.js';
+import type { EconomyBootstrapPowers } from '@agoric/inter-protocol/src/proposals/econ-behaviors.js';
+import type { SwingsetController } from '@agoric/swingset-vat/src/controller/controller.js';
+import type { BridgeHandler, IBCMethod, IBCPacket } from '@agoric/vats';
+import type { BootstrapRootObject } from '@agoric/vats/src/core/lib-boot.js';
+import type { EProxy } from '@endo/eventual-send';
+import { icaMocks, protoMsgMocks } from './ibc/mocks.js';
 
 const trace = makeTracer('BSTSupport', false);
+
+type ConsumeBootrapItem = <N extends string>(
+  name: N,
+) => N extends keyof EconomyBootstrapPowers['consume']
+  ? EconomyBootstrapPowers['consume'][N]
+  : unknown;
+
+// XXX should satisfy EVProxy from run-utils.js but that's failing to import
+/**
+ * Elaboration of EVProxy with knowledge of bootstrap space in these tests.
+ */
+type BootstrapEV = EProxy & {
+  sendOnly: (presence: unknown) => Record<string, (...args: any) => void>;
+  vat: <N extends string>(
+    name: N,
+  ) => N extends 'bootstrap'
+    ? Omit<BootstrapRootObject, 'consumeItem'> & {
+        // XXX not really local
+        consumeItem: ConsumeBootrapItem;
+      } & Remote<{ consumeItem: ConsumeBootrapItem }>
+    : Record<string, (...args: any) => Promise<any>>;
+};
+
+const makeBootstrapRunUtils = makeRunUtils as (
+  controller: SwingsetController,
+) => Omit<RunUtils, 'EV'> & { EV: BootstrapEV };
 
 const keysToObject = <K extends PropertyKey, V>(
   keys: K[],
@@ -51,15 +97,10 @@ export const keyArrayEqual = (
   return t.deepEqual(aobj, bobj, message);
 };
 
-/**
- * @param {string} bundleDir
- * @param {string} specifier
- * @param {ManagerType} [defaultManagerType]
- */
 export const getNodeTestVaultsConfig = async (
   bundleDir = 'bundles',
   specifier = '@agoric/vm-config/decentral-itest-vaults-config.json',
-  defaultManagerType = 'local',
+  defaultManagerType = 'local' as ManagerType,
 ) => {
   const fullPath = await importMetaResolve(specifier, import.meta.url).then(
     u => new URL(u).pathname,
@@ -75,7 +116,7 @@ export const getNodeTestVaultsConfig = async (
   //     - exhibits inconsistent GC behavior from run to run
   //   'xs-worker'
   //     - timing results more accurately reflect production
-  config.defaultManagerType = defaultManagerType as ManagerType;
+  config.defaultManagerType = defaultManagerType;
   // speed up build (60s down to 10s in testing)
   config.bundleCachePath = bundleDir;
   await fsAmbientPromises.mkdir(bundleDir, { recursive: true });
@@ -108,9 +149,13 @@ export const makeProposalExtractor = ({ childProcess, fs }: Powers) => {
   const importSpec = spec =>
     importMetaResolve(spec, import.meta.url).then(u => new URL(u).pathname);
 
-  const runPackageScript = async (outputDir, scriptPath, env) => {
+  const runPackageScript = (
+    outputDir: string,
+    scriptPath: string,
+    env: NodeJS.ProcessEnv,
+  ) => {
     console.info('running package script:', scriptPath);
-    const out = await childProcess.execFileSync('yarn', ['bin', 'agoric'], {
+    const out = childProcess.execFileSync('yarn', ['bin', 'agoric'], {
       cwd: outputDir,
       env,
     });
@@ -148,31 +193,31 @@ export const makeProposalExtractor = ({ childProcess, fs }: Powers) => {
   };
 
   const buildAndExtract = async (builderPath: string) => {
-    const scriptEnv = Object.assign(Object.create(process.env));
+    const tmpDir = await fsAmbientPromises.mkdtemp(
+      join(getPkgPath('builders'), 'proposal-'),
+    );
 
-    const pkgPath = getPkgPath('builders');
-    const tmpDir = await fsAmbientPromises.mkdtemp(join(pkgPath, 'proposal-'));
+    const built = parseProposalParts(
+      runPackageScript(
+        tmpDir,
+        await importSpec(builderPath),
+        process.env,
+      ).toString(),
+    );
 
-    const scriptPath = await importSpec(builderPath);
-
-    // XXX use '@agoric/inter-protocol'?
-    const out = await runPackageScript(tmpDir, scriptPath, scriptEnv);
-    const built = parseProposalParts(out.toString());
-
-    const loadAndRmPkgFile = async fileName => {
-      const filePath = join(tmpDir, fileName);
-      const content = await fs.readFile(filePath, 'utf8');
-      await fs.rm(filePath);
-      return content;
-    };
+    const loadPkgFile = fileName => fs.readFile(join(tmpDir, fileName), 'utf8');
 
     const evalsP = Promise.all(
       built.evals.map(async ({ permit, script }) => {
         const [permits, code] = await Promise.all([
-          loadAndRmPkgFile(permit),
-          loadAndRmPkgFile(script),
+          loadPkgFile(permit),
+          loadPkgFile(script),
         ]);
-        return { json_permits: permits, js_code: code };
+        // Fire and forget. There's a chance the Node process could terminate
+        // before the deletion completes. This is a minor inconvenience to clean
+        // up manually and not worth slowing down the test execution to prevent.
+        void fsAmbientPromises.rm(tmpDir, { recursive: true, force: true });
+        return { json_permits: permits, js_code: code } as CoreEvalSDKType;
       }),
     );
 
@@ -271,81 +316,191 @@ export const makeSwingsetTestKit = async (
   const { kernelStorage, hostStorage } = swingStore;
   const { fromCapData } = boardSlottingMarshaller(slotToBoardRemote);
 
-  const readLatest = path => {
+  const readLatest = (path: string): any => {
     const data = unmarshalFromVstorage(storage.data, path, fromCapData, -1);
     trace('readLatest', path, 'returning', inspect(data, false, 20, true));
     return data;
   };
 
-  let lastNonce = 0n;
+  let lastBankNonce = 0n;
+  let ibcSequenceNonce = 0;
+  let lcaSequenceNonce = 0;
+
+  const outboundMessages = new Map();
+
+  const inbound: Awaited<ReturnType<typeof buildSwingset>>['bridgeInbound'] = (
+    ...args
+  ) => {
+    console.log('inbound', ...args);
+    // eslint-disable-next-line no-use-before-define
+    bridgeInbound!(...args);
+  };
+
+  /**
+   * Adds the sequence so the bridge knows what response to connect it to.
+   * Then queue it send it over the bridge over this returns.
+   * Finally return the packet that will be sent.
+   */
+  const ackImmediately = (obj: IBCMethod<'sendPacket'>, ack: string) => {
+    ibcSequenceNonce += 1;
+    const msg = icaMocks.ackPacketEvent(obj, ibcSequenceNonce, ack);
+    setTimeout(() => {
+      /**
+       * Mock when Agoric receives the ack from another chain over DIBC. Always
+       * happens after the packet is returned.
+       */
+      inbound(BridgeId.DIBC, msg);
+    });
+    return msg.packet;
+  };
+
+  const inboundQueue: [bridgeId: BridgeIdValue, arg1: unknown][] = [];
+  /** Add a message that will be sent to the bridge by flushInboundQueue. */
+  const pushInbound = (bridgeId: BridgeIdValue, arg1: unknown) => {
+    inboundQueue.push([bridgeId, arg1]);
+  };
+  /**
+   * Like ackImmediately but defers in the inbound receiverAck
+   * until `bridgeQueue()` is awaited.
+   */
+  const ackLater = (obj: IBCMethod<'sendPacket'>, ack: string) => {
+    ibcSequenceNonce += 1;
+    const msg = icaMocks.ackPacketEvent(obj, ibcSequenceNonce, ack);
+    pushInbound(BridgeId.DIBC, msg);
+    return msg.packet;
+  };
 
   /**
    * Mock the bridge outbound handler. The real one is implemented in Golang so
    * changes there will sometimes require changes here.
    */
   const bridgeOutbound = (bridgeId: string, obj: any) => {
+    // store all messages for querying by tests
+    if (!outboundMessages.has(bridgeId)) {
+      outboundMessages.set(bridgeId, []);
+    }
+    outboundMessages.get(bridgeId).push(obj);
+
     switch (bridgeId) {
       case BridgeId.BANK: {
         trace(
-          'bridgeOutbound BANK',
+          'bridgeOutbound bank',
           obj.type,
           obj.recipient,
           obj.amount,
           obj.denom,
         );
-        // bridgeOutbound bank : {
-        //   moduleName: 'vbank/reserve',
-        //   type: 'VBANK_GET_MODULE_ACCOUNT_ADDRESS'
-        // }
-        switch (obj.type) {
-          case 'VBANK_GET_MODULE_ACCOUNT_ADDRESS': {
-            const { moduleName } = obj;
-            const moduleDescriptor = Object.values(VBankAccount).find(
-              ({ module }) => module === moduleName,
-            );
-            if (!moduleDescriptor) {
-              return 'undefined';
-            }
-            return moduleDescriptor.address;
-          }
-
-          // Observed message:
-          // address: 'agoric1megzytg65cyrgzs6fvzxgrcqvwwl7ugpt62346',
-          // denom: 'ibc/toyatom',
-          // type: 'VBANK_GET_BALANCE'
-          case 'VBANK_GET_BALANCE': {
-            // TODO consider letting config specify vbank assets
-            // empty balances for test.
-            return '0';
-          }
-
-          case 'VBANK_GRAB':
-          case 'VBANK_GIVE': {
-            lastNonce += 1n;
-            // Also empty balances.
-            return harden({
-              type: 'VBANK_BALANCE_UPDATE',
-              nonce: `${lastNonce}`,
-              updated: [],
-            });
-          }
-
-          default: {
-            return 'undefined';
-          }
-        }
+        break;
       }
-      case BridgeId.CORE:
-      case BridgeId.DIBC:
+      case BridgeId.STORAGE:
+        return storage.toStorage(obj);
       case BridgeId.PROVISION:
       case BridgeId.PROVISION_SMART_WALLET:
       case BridgeId.WALLET:
         console.warn('Bridge returning undefined for', bridgeId, ':', obj);
         return undefined;
-      case BridgeId.STORAGE:
-        return storage.toStorage(obj);
       default:
-        throw Error(`unknown bridgeId ${bridgeId}`);
+        break;
+    }
+
+    const bridgeTargetRegistered = new Set();
+    const bridgeType = `${bridgeId}:${obj.type}`;
+    switch (bridgeType) {
+      case `${BridgeId.BANK}:VBANK_GET_MODULE_ACCOUNT_ADDRESS`: {
+        // bridgeOutbound bank : {
+        //   moduleName: 'vbank/reserve',
+        //   type: 'VBANK_GET_MODULE_ACCOUNT_ADDRESS'
+        // }
+        const { moduleName } = obj;
+        const moduleDescriptor = Object.values(VBankAccount).find(
+          ({ module }) => module === moduleName,
+        );
+        if (!moduleDescriptor) {
+          return 'undefined';
+        }
+        return moduleDescriptor.address;
+      }
+
+      // Observed message:
+      // address: 'agoric1megzytg65cyrgzs6fvzxgrcqvwwl7ugpt62346',
+      // denom: 'ibc/toyatom',
+      // type: 'VBANK_GET_BALANCE'
+      case `${BridgeId.BANK}:VBANK_GET_BALANCE`: {
+        // TODO consider letting config specify vbank assets
+        // empty balances for test.
+        return '0';
+      }
+
+      case `${BridgeId.BANK}:VBANK_GRAB`:
+      case `${BridgeId.BANK}:VBANK_GIVE`: {
+        lastBankNonce += 1n;
+        // Also empty balances.
+        return harden({
+          type: 'VBANK_BALANCE_UPDATE',
+          nonce: `${lastBankNonce}`,
+          updated: [],
+        });
+      }
+
+      case `${BridgeId.CORE}:IBC_METHOD`:
+      case `${BridgeId.DIBC}:IBC_METHOD`:
+      case `${BridgeId.VTRANSFER}:IBC_METHOD`: {
+        switch (obj.method) {
+          case 'startChannelOpenInit':
+            pushInbound(BridgeId.DIBC, icaMocks.channelOpenAck(obj));
+            return undefined;
+          case 'sendPacket':
+            switch (obj.packet.data) {
+              case protoMsgMocks.delegate.msg: {
+                return ackLater(obj, protoMsgMocks.delegate.ack);
+              }
+              case protoMsgMocks.delegateWithOpts.msg: {
+                return ackLater(obj, protoMsgMocks.delegateWithOpts.ack);
+              }
+              case protoMsgMocks.queryBalance.msg: {
+                return ackLater(obj, protoMsgMocks.queryBalance.ack);
+              }
+              case protoMsgMocks.queryUnknownPath.msg: {
+                return ackLater(obj, protoMsgMocks.queryUnknownPath.ack);
+              }
+              case protoMsgMocks.queryBalanceMulti.msg: {
+                return ackLater(obj, protoMsgMocks.queryBalanceMulti.ack);
+              }
+              case protoMsgMocks.queryBalanceUnknownDenom.msg: {
+                return ackLater(
+                  obj,
+                  protoMsgMocks.queryBalanceUnknownDenom.ack,
+                );
+              }
+              default: {
+                // An error that would be triggered before reception on another chain
+                return ackImmediately(obj, protoMsgMocks.error.ack);
+              }
+            }
+          default:
+            return undefined;
+        }
+      }
+      case `${BridgeId.VTRANSFER}:BRIDGE_TARGET_REGISTER`: {
+        bridgeTargetRegistered.add(obj.target);
+        return undefined;
+      }
+      case `${BridgeId.VTRANSFER}:BRIDGE_TARGET_UNREGISTER`: {
+        bridgeTargetRegistered.delete(obj.target);
+        return undefined;
+      }
+      case `${BridgeId.VLOCALCHAIN}:VLOCALCHAIN_ALLOCATE_ADDRESS`: {
+        return 'agoric1mockVlocalchainAddress';
+      }
+      case `${BridgeId.VLOCALCHAIN}:VLOCALCHAIN_EXECUTE_TX`: {
+        lcaSequenceNonce += 1;
+        return obj.messages.map(message =>
+          fakeLocalChainBridgeTxMsgHandler(message, lcaSequenceNonce),
+        );
+      }
+      default: {
+        throw Error(`FIXME missing support for ${bridgeId}: ${obj.type}`);
+      }
     }
   };
 
@@ -360,7 +515,7 @@ export const makeSwingsetTestKit = async (
       },
     });
   }
-  const { controller, timer } = await buildSwingset(
+  const { controller, timer, bridgeInbound } = await buildSwingset(
     new Map(),
     bridgeOutbound,
     kernelStorage,
@@ -376,25 +531,54 @@ export const makeSwingsetTestKit = async (
       debugVats,
     },
   );
+
   console.timeLog('makeBaseSwingsetTestKit', 'buildSwingset');
 
-  const runUtils = makeRunUtils(controller);
+  const runUtils = makeBootstrapRunUtils(controller);
 
   const buildProposal = makeProposalExtractor({
     childProcess: childProcessAmbient,
     fs: fsAmbientPromises,
   });
 
+  const evalProposal = async (
+    proposalP: ERef<Awaited<ReturnType<typeof buildProposal>>>,
+  ) => {
+    const { EV } = runUtils;
+
+    const proposal = harden(await proposalP);
+
+    for await (const bundle of proposal.bundles) {
+      await controller.validateAndInstallBundle(bundle);
+    }
+    log('installed', proposal.bundles.length, 'bundles');
+
+    log('executing proposal');
+    const bridgeMessage = {
+      type: 'CORE_EVAL',
+      evals: proposal.evals,
+    };
+    log({ bridgeMessage });
+    const coreEvalBridgeHandler: BridgeHandler = await EV.vat(
+      'bootstrap',
+    ).consumeItem('coreEvalBridgeHandler');
+    await EV(coreEvalBridgeHandler).fromBridge(bridgeMessage);
+    log(`proposal executed`);
+  };
+
   console.timeEnd('makeBaseSwingsetTestKit');
 
   let currentTime = 0n;
+  const updateTimer = async time => {
+    await timer.poll(time);
+  };
   const jumpTimeTo = (targetTime: Timestamp) => {
     targetTime = TimeMath.absValue(targetTime);
     targetTime >= currentTime ||
       Fail`cannot reverse time :-(  (${targetTime} < ${currentTime})`;
     currentTime = targetTime;
     trace('jumpTimeTo', currentTime);
-    return runUtils.runThunk(() => timer.poll(currentTime));
+    return runUtils.queueAndRun(() => updateTimer(currentTime), true);
   };
   const advanceTimeTo = async (targetTime: Timestamp) => {
     targetTime = TimeMath.absValue(targetTime);
@@ -403,7 +587,7 @@ export const makeSwingsetTestKit = async (
     while (currentTime < targetTime) {
       trace('stepping time from', currentTime, 'towards', targetTime);
       currentTime += 1n;
-      await runUtils.runThunk(() => timer.poll(currentTime));
+      await runUtils.queueAndRun(() => updateTimer(currentTime), true);
     }
   };
   const advanceTimeBy = (
@@ -426,11 +610,37 @@ export const makeSwingsetTestKit = async (
 
   const getCrankNumber = () => Number(kernelStorage.kvStore.get('crankNumber'));
 
+  const bridgeUtils = {
+    /** Immediately handle the inbound message */
+    inbound: bridgeInbound,
+    getOutboundMessages: (bridgeId: string) =>
+      harden([...outboundMessages.get(bridgeId)]),
+    getInboundQueueLength: () => inboundQueue.length,
+    /**
+     * @param {number} max the max number of messages to flush
+     * @returns {Promise<number>} the number of messages flushed
+     */
+    async flushInboundQueue(max: number = Number.POSITIVE_INFINITY) {
+      console.log('🚽');
+      let i = 0;
+      for (i = 0; i < max; i += 1) {
+        const args = inboundQueue.shift();
+        if (!args) break;
+
+        await runUtils.queueAndRun(() => inbound(...args), true);
+      }
+      console.log('🧻');
+      return i;
+    },
+  };
+
   return {
     advanceTimeBy,
     advanceTimeTo,
+    bridgeUtils,
     buildProposal,
     controller,
+    evalProposal,
     getCrankNumber,
     jumpTimeTo,
     readLatest,

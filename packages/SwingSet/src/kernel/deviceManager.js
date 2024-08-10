@@ -1,4 +1,4 @@
-import { assert, Fail } from '@agoric/assert';
+import { assert, Fail } from '@endo/errors';
 import { makeDeviceSlots } from './deviceSlots.js';
 import { insistCapData } from '../lib/capdata.js';
 
@@ -93,7 +93,7 @@ export default function makeDeviceManager(
       /** @type { DeviceInvocationResult } */
       const deviceResults = dispatch.invoke(target, method, args);
       // common error: raw devices returning capdata instead of ['ok', capdata]
-      assert.equal(deviceResults.length, 2, deviceResults);
+      assert.equal(deviceResults.length, 2, JSON.stringify(deviceResults));
       if (deviceResults[0] === 'ok') {
         insistCapData(deviceResults[1]);
       } else {

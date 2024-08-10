@@ -1,7 +1,9 @@
 // @ts-check
 // @jessie-check
 
-import { Far } from '@endo/far';
+import { Fail } from '@endo/errors';
+import { Far, isPassable } from '@endo/pass-style';
+
 import {
   canBeDurable,
   makeScalarMapStore,
@@ -12,15 +14,10 @@ import {
   provideDurableSetStore,
   provideDurableWeakMapStore,
   provideDurableWeakSetStore,
+  watchPromise,
 } from '@agoric/vat-data';
 
-import {
-  agoricVatDataKeys as keys,
-  isPassable,
-  makeOnceKit,
-} from '@agoric/base-zone';
-
-const { Fail } = assert;
+import { agoricVatDataKeys as keys, makeOnceKit } from '@agoric/base-zone';
 
 /**
  * A variant of `canBeDurable` that returns `false` instead of ever throwing.
@@ -89,6 +86,8 @@ export const makeDurableZone = (baggage, baseLabel = 'durableZone') => {
   /** @type {import('.').Zone['exoClass']} */
   const exoClass = (...args) => prepareExoClass(baggage, ...args);
   /** @type {import('.').Zone['exoClassKit']} */
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment -- happens only integrating with Endo master
+  // @ts-ignore FIXME in Endo
   const exoClassKit = (...args) => prepareExoClassKit(baggage, ...args);
   /** @type {import('.').Zone['exo']} */
   const exo = (...args) => prepareExo(baggage, ...args);
@@ -97,6 +96,7 @@ export const makeDurableZone = (baggage, baseLabel = 'durableZone') => {
 
   /** @type {import('.').Zone['subZone']} */
   const subZone = (label, options = {}) => {
+    /** @type {import('@agoric/swingset-liveslots').Baggage} */
     const subBaggage = subZoneStore(label, options);
     return makeDurableZone(subBaggage, `${baseLabel}.${label}`);
   };
@@ -108,6 +108,7 @@ export const makeDurableZone = (baggage, baseLabel = 'durableZone') => {
     subZone,
 
     makeOnce,
+    watchPromise,
     detached: attachedStores.detached,
     isStorable: attachedStores.isStorable,
 

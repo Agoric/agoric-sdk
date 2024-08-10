@@ -11,13 +11,13 @@ import (
 )
 
 type coreEvalAction struct {
-	vm.ActionHeader `actionType:"CORE_EVAL"`
-	Evals           []types.CoreEval `json:"evals"`
+	*vm.ActionHeader `actionType:"CORE_EVAL"`
+	Evals            []types.CoreEval `json:"evals"`
 }
 
 // CoreEvalProposal tells SwingSet to evaluate the given JS code.
 func (k Keeper) CoreEvalProposal(ctx sdk.Context, p *types.CoreEvalProposal) error {
-	action := &coreEvalAction{
+	action := coreEvalAction{
 		Evals: p.Evals,
 	}
 

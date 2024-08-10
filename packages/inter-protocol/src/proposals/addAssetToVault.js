@@ -1,6 +1,7 @@
 // @jessie-check
 // @ts-check
 
+import { q } from '@endo/errors';
 import { ToFarFunction } from '@endo/captp';
 import { Far } from '@endo/marshal';
 import { AmountMath, AssetKind } from '@agoric/ertp';
@@ -20,8 +21,6 @@ import {
 
 export * from './startPSM.js';
 
-const { quote: q } = assert;
-
 /**
  * @typedef {object} InterchainAssetOptions
  * @property {string} [issuerBoardId]
@@ -35,7 +34,7 @@ const { quote: q } = assert;
  * @property {number} [initialPrice]
  */
 
-/** @typedef {import('./econ-behaviors.js').EconomyBootstrapPowers} EconomyBootstrapPowers */
+/** @import {EconomyBootstrapPowers} from './econ-behaviors.js' */
 
 /**
  * @param {BootstrapPowers} powers
@@ -57,7 +56,7 @@ export const publishInterchainAssetFromBoardId = async (
   assert.typeof(issuerBoardId, 'string');
   assert.typeof(issuerName, 'string');
 
-  const issuer = await E(board).getValue(issuerBoardId);
+  const issuer = /** @type {Issuer} */ (await E(board).getValue(issuerBoardId));
   const brand = await E(issuer).getBrand();
 
   return Promise.all([
@@ -113,7 +112,7 @@ export const publishInterchainAssetFromBank = async (
   });
 
   const brand = await E(issuer).getBrand();
-  const kit = { mint, issuer, brand };
+  const kit = /** @type {IssuerKit<'nat'>} */ ({ mint, issuer, brand });
 
   await E(E.get(reserveKit).creatorFacet).addIssuer(issuer, keyword);
 

@@ -1,15 +1,14 @@
 /* eslint @typescript-eslint/no-floating-promises: "warn" */
-import { mustMatch, keyEQ } from '@agoric/store';
+import { Fail } from '@endo/errors';
 import { E } from '@endo/eventual-send';
 import { makePromiseKit } from '@endo/promise-kit';
+import { mustMatch, keyEQ } from '@agoric/store';
 import { AssetKind } from '@agoric/ertp';
 import { fromUniqueEntries } from '@agoric/internal';
 import { satisfiesWant } from '../contractFacet/offerSafety.js';
 import { atomicTransfer, fromOnly, toOnly } from './atomicTransfer.js';
 
 export const defaultAcceptanceMsg = `The offer has been accepted. Once the contract has been completed, please check your payout`;
-
-const { Fail } = assert;
 
 const getKeysSorted = obj => harden(Reflect.ownKeys(obj || {}).sort());
 
@@ -137,11 +136,10 @@ export const assertProposalShape = (seat, expected) => {
   !Array.isArray(expected) || Fail`Expected must be an non-array object`;
   const assertValuesNull = e => {
     if (e !== undefined) {
-      Object.values(e).forEach(
-        value =>
-          value === null ||
-          Fail`The value of the expected record must be null but was ${value}`,
-      );
+      for (const value of Object.values(e)) {
+        value === null ||
+          Fail`The value of the expected record must be null but was ${value}`;
+      }
     }
   };
 
@@ -176,12 +174,11 @@ export const depositToSeatSuccessMsg = `Deposit and reallocation successful.`;
  * The `amounts` and `payments` records must have corresponding
  * keywords.
  *
- * @template {object} [OR=unknown]
  * @param {ZCF} zcf
  * @param {ZCFSeat} recipientSeat
  * @param {AmountKeywordRecord} amounts
  * @param {PaymentPKeywordRecord} payments
- * @returns {Promise<OR>} `Deposit and reallocation successful.`
+ * @returns {Promise<string>} `Deposit and reallocation successful.`
  */
 export const depositToSeat = async (zcf, recipientSeat, amounts, payments) => {
   !recipientSeat.hasExited() || Fail`The recipientSeat cannot have exited.`;
@@ -366,7 +363,7 @@ export const offerTo = async (
     depositedPromiseKit.resolve(mappedAmounts);
   };
 
-  E(userSeatPromise).getPayouts().then(doDeposit);
+  void E(userSeatPromise).getPayouts().then(doDeposit);
 
   // TODO rename return key; userSeatPromise is a remote UserSeat
   return harden({ userSeatPromise, deposited: depositedPromiseKit.promise });

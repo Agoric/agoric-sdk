@@ -15,7 +15,7 @@ const trace = makeTracer('TestMetrics', false);
 
 /**
  * @template {object} N
- * @param {| AsyncIterable<N, N>
+ * @param {AsyncIterable<N, N>
  *   | import('@agoric/zoe/src/contractSupport/topics.js').PublicTopic<N>} mixed
  */
 const asNotifier = mixed => {
@@ -28,7 +28,7 @@ const asNotifier = mixed => {
 /**
  * @template {object} N
  * @param {import('ava').ExecutionContext} t
- * @param {| AsyncIterable<N, N>
+ * @param {AsyncIterable<N, N>
  *   | import('@agoric/zoe/src/contractSupport/topics.js').PublicTopic<N>} subscription
  */
 export const subscriptionTracker = async (t, subscription) => {

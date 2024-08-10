@@ -1,8 +1,6 @@
 package vbank
 
 import (
-	// "fmt"
-
 	"fmt"
 
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vbank/types"

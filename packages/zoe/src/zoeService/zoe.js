@@ -11,8 +11,8 @@
  * validate that.
  */
 
-/// <reference path="../../../ERTP/exported.js" />
-/// <reference path="../../../store/exported.js" />
+/// <reference types="@agoric/internal/exported" />
+/// <reference types="@agoric/notifier/exported.js" />
 /// <reference path="../internal-types.js" />
 
 import { E } from '@endo/eventual-send';
@@ -20,6 +20,7 @@ import { Far } from '@endo/marshal';
 import { makeScalarBigMapStore, prepareExo } from '@agoric/vat-data';
 import { M } from '@agoric/store';
 
+import { Fail } from '@endo/errors';
 import { makeZoeStorageManager } from './zoeStorageManager.js';
 import { makeStartInstance } from './startInstance.js';
 import { makeOfferMethod } from './offer/offer.js';
@@ -28,9 +29,7 @@ import { getZcfBundleCap } from './createZCFVat.js';
 import { defaultFeeIssuerConfig, prepareFeeMint } from './feeMint.js';
 import { ZoeServiceI } from '../typeGuards.js';
 
-/** @typedef {import('@agoric/vat-data').Baggage} Baggage */
-
-const { Fail } = assert;
+/** @import {Baggage} from '@agoric/vat-data' */
 
 /**
  * Create a durable instance of Zoe.
@@ -40,7 +39,7 @@ const { Fail } = assert;
  * @param {Promise<VatAdminSvc> | VatAdminSvc} [options.vatAdminSvc] - The vatAdmin Service, which carries the
  * power to create a new vat. If it's not available when makeZoe() is called, it
  * must be provided later using setVatAdminService().
- * @param {ShutdownWithFailure} [options.shutdownZoeVat] - a function to
+ * @param {import('@agoric/swingset-vat').ShutdownWithFailure} [options.shutdownZoeVat] - a function to
  * shutdown the Zoe Vat. This function needs to use the vatPowers
  * available to a vat.
  * @param {FeeIssuerConfig} [options.feeIssuerConfig]
@@ -195,58 +194,62 @@ const makeDurableZoeKit = ({
     },
   });
 
-  /** @type {ZoeService} */
-  const zoeService = prepareExo(zoeBaggage, 'ZoeService', ZoeServiceI, {
-    install(bundleId, bundleLabel) {
-      return dataAccess.installBundle(bundleId, bundleLabel);
-    },
-    installBundleID(bundleId, bundleLabel) {
-      return dataAccess.installBundleID(bundleId, bundleLabel);
-    },
-    startInstance,
-    offer,
+  const zoeService = prepareExo(
+    zoeBaggage,
+    'ZoeService',
+    ZoeServiceI,
+    /** @type {ZoeService} */ ({
+      install(bundleId, bundleLabel) {
+        return dataAccess.installBundle(bundleId, bundleLabel);
+      },
+      installBundleID(bundleId, bundleLabel) {
+        return dataAccess.installBundleID(bundleId, bundleLabel);
+      },
+      startInstance,
+      offer,
 
-    // The functions below are getters only and have no impact on
-    // state within Zoe
-    getOfferFilter(instance) {
-      return dataAccess.getOfferFilter(instance);
-    },
-    async getInvitationIssuer() {
-      return dataAccess.getInvitationIssuer();
-    },
-    async getFeeIssuer() {
-      return feeMintKit.feeMint.getFeeIssuer();
-    },
+      // The functions below are getters only and have no impact on
+      // state within Zoe
+      getOfferFilter(instance) {
+        return dataAccess.getOfferFilter(instance);
+      },
+      async getInvitationIssuer() {
+        return dataAccess.getInvitationIssuer();
+      },
+      async getFeeIssuer() {
+        return feeMintKit.feeMint.getFeeIssuer();
+      },
 
-    getBrands(instance) {
-      return dataAccess.getBrands(instance);
-    },
-    getIssuers(instance) {
-      return dataAccess.getIssuers(instance);
-    },
-    getPublicFacet(instance) {
-      return dataAccess.getPublicFacet(instance);
-    },
-    getTerms(instance) {
-      return dataAccess.getTerms(instance);
-    },
-    getInstallationForInstance(instance) {
-      return dataAccess.getInstallation(instance);
-    },
-    getBundleIDFromInstallation(installation) {
-      return dataAccess.getBundleIDFromInstallation(installation);
-    },
-    getInstallation,
+      getBrands(instance) {
+        return dataAccess.getBrands(instance);
+      },
+      getIssuers(instance) {
+        return dataAccess.getIssuers(instance);
+      },
+      getPublicFacet(instance) {
+        return dataAccess.getPublicFacet(instance);
+      },
+      getTerms(instance) {
+        return dataAccess.getTerms(instance);
+      },
+      getInstallationForInstance(instance) {
+        return dataAccess.getInstallation(instance);
+      },
+      getBundleIDFromInstallation(installation) {
+        return dataAccess.getBundleIDFromInstallation(installation);
+      },
+      getInstallation,
 
-    getInstance(invitation) {
-      return getInstance(invitation);
-    },
-    getConfiguration,
-    getInvitationDetails,
-    getProposalShapeForInvitation(invitation) {
-      return dataAccess.getProposalShapeForInvitation(invitation);
-    },
-  });
+      getInstance(invitation) {
+        return getInstance(invitation);
+      },
+      getConfiguration,
+      getInvitationDetails,
+      getProposalShapeForInvitation(invitation) {
+        return dataAccess.getProposalShapeForInvitation(invitation);
+      },
+    }),
+  );
 
   return harden({
     zoeService,
@@ -268,7 +271,7 @@ const makeDurableZoeKit = ({
  * @param {Promise<VatAdminSvc> | VatAdminSvc} [vatAdminSvc] - The vatAdmin Service, which carries the
  * power to create a new vat. If it's not available when makeZoe() is called, it
  * must be provided later using setVatAdminService().
- * @param {ShutdownWithFailure} [shutdownZoeVat] - a function to
+ * @param {import('@agoric/swingset-vat').ShutdownWithFailure} [shutdownZoeVat] - a function to
  * shutdown the Zoe Vat. This function needs to use the vatPowers
  * available to a vat.
  * @param {FeeIssuerConfig} [feeIssuerConfig]

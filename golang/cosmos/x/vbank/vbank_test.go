@@ -71,7 +71,7 @@ func newBalances(opts ...balancesOption) balances {
 	return bal
 }
 
-func validateBalanceUpdate(vbu vbankBalanceUpdate) error {
+func validateBalanceUpdate(vbu VbankBalanceUpdate) error {
 	if vbu.Type != "VBANK_BALANCE_UPDATE" {
 		return fmt.Errorf("bad balance update type: %s", vbu.Type)
 	}
@@ -89,7 +89,7 @@ func decodeBalances(encoded []byte) (balances, uint64, error) {
 	if encoded == nil {
 		return nil, 0, nil
 	}
-	balanceUpdate := vbankBalanceUpdate{}
+	balanceUpdate := VbankBalanceUpdate{}
 	err := json.Unmarshal(encoded, &balanceUpdate)
 	if err != nil {
 		return nil, 0, err

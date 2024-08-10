@@ -2,7 +2,7 @@ import { promisify } from 'util';
 import { Readable } from 'stream';
 import chalk from 'chalk';
 
-import { Fail } from '@agoric/assert';
+import { Fail } from '@endo/errors';
 
 const { freeze } = Object;
 

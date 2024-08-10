@@ -1,7 +1,7 @@
 // @ts-check
 // @jessie-check
 
-import { Far } from '@endo/far';
+import { Far, isPassable } from '@endo/pass-style';
 import {
   defineVirtualExoClass,
   defineVirtualExoClassKit,
@@ -13,8 +13,8 @@ import {
 
 import {
   agoricVatDataKeys as keys,
-  isPassable,
   makeOnceKit,
+  watchPromise,
 } from '@agoric/base-zone';
 
 const emptyRecord = harden({});
@@ -83,6 +83,7 @@ export const makeVirtualZone = (baseLabel = 'virtualZone') => {
     subZone: wrapProvider(makeSubZone),
 
     makeOnce,
+    watchPromise,
     detached: detachedVirtualStores.detached,
     isStorable: detachedVirtualStores.isStorable,
 

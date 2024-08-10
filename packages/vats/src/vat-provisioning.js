@@ -57,8 +57,8 @@ const prepareSpecializedNameAdmin = zone => {
         // TODO: enforce?
 
         /** @type {import('./types.js').MyAddressNameAdmin} */
-        // eslint-disable-next-line @typescript-eslint/prefer-ts-expect-error
-        // @ts-ignore cast
+
+        // @ts-expect-error cast
         const myAdmin = nameAdmin.lookupAdmin(address);
         return myAdmin;
       },

@@ -3,11 +3,12 @@ module github.com/Agoric/agoric-sdk/golang/cosmos
 go 1.20
 
 require (
+	cosmossdk.io/errors v1.0.0-beta.7
 	cosmossdk.io/math v1.0.0-rc.0
 	github.com/armon/go-metrics v0.4.1
 	github.com/cosmos/cosmos-sdk v0.46.16
-	github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v6 v6.1.1
-	github.com/cosmos/ibc-go/v6 v6.2.1
+	github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v6 v6.1.2
+	github.com/cosmos/ibc-go/v6 v6.3.1
 	github.com/gogo/protobuf v1.3.3
 	github.com/golang/protobuf v1.5.3
 	github.com/gorilla/mux v1.8.0
@@ -15,9 +16,9 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/rakyll/statik v0.1.7
 	github.com/spf13/cast v1.5.0
-	github.com/spf13/cobra v1.6.1
+	github.com/spf13/cobra v1.7.0
 	github.com/spf13/viper v1.14.0
-	github.com/stretchr/testify v1.8.2
+	github.com/stretchr/testify v1.8.4
 	github.com/tendermint/tendermint v0.34.29
 	github.com/tendermint/tm-db v0.6.7
 	google.golang.org/genproto/googleapis/api v0.0.0-20230711160842-782d3b101e98
@@ -31,7 +32,6 @@ require (
 	cloud.google.com/go/compute/metadata v0.2.3 // indirect
 	cloud.google.com/go/iam v1.1.1 // indirect
 	cloud.google.com/go/storage v1.30.1 // indirect
-	cosmossdk.io/errors v1.0.0-beta.7 // indirect
 	filippo.io/edwards25519 v1.0.0-rc.1 // indirect
 	github.com/99designs/go-keychain v0.0.0-20191008050251-8e49817e8af4 // indirect
 	github.com/99designs/keyring v1.2.1 // indirect
@@ -101,7 +101,7 @@ require (
 	github.com/hdevalence/ed25519consensus v0.0.0-20220222234857-c00d1f31bab3 // indirect
 	github.com/iancoleman/orderedmap v0.2.0 // indirect
 	github.com/improbable-eng/grpc-web v0.15.0 // indirect
-	github.com/inconshreveable/mousetrap v1.0.1 // indirect
+	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/jmhodges/levigo v1.0.0 // indirect
 	github.com/klauspost/compress v1.16.0 // indirect
@@ -169,9 +169,6 @@ replace (
 
 	github.com/confio/ics23/go => github.com/agoric-labs/cosmos-sdk/ics23/go v0.8.0-alpha.agoric.1
 
-	// We need a fork of cosmos-sdk until all of the differences are merged.
-	github.com/cosmos/cosmos-sdk => github.com/agoric-labs/cosmos-sdk v0.46.16-alpha.agoric.2
-
 	// https://pkg.go.dev/vuln/GO-2023-2409
 	github.com/dvsekhvalnov/jose2go => github.com/dvsekhvalnov/jose2go v1.5.1-0.20231206184617-48ba0b76bc88
 
@@ -185,13 +182,26 @@ replace (
 
 	// replace broken goleveldb.
 	github.com/syndtr/goleveldb => github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7
+)
+
+// Agoric-specific replacements:
+replace (
+	// We need a fork of cosmos-sdk until all of the differences are merged.
+	github.com/cosmos/cosmos-sdk => github.com/agoric-labs/cosmos-sdk v0.46.16-alpha.agoric.2.4
+
+	// Pick up an IAVL race fix.
+	github.com/cosmos/iavl => github.com/cosmos/iavl v0.19.7
+
+	// Use a version of ibc-go that is compatible with the above forks.
+	github.com/cosmos/ibc-go/v6 => github.com/agoric-labs/ibc-go/v6 v6.3.1-alpha.agoric.2
 
 	// use cometbft
 	// Use our fork at least until post-v0.34.14 is released with
 	// https://github.com/tendermint/tendermint/issue/6899 resolved.
 	github.com/tendermint/tendermint => github.com/agoric-labs/cometbft v0.34.30-alpha.agoric.1
 
-// For testing against a local cosmos-sdk or tendermint
+// For testing against a local cosmos-sdk, ibc-go, or cometbft
 // github.com/cosmos/cosmos-sdk => ../../../forks/cosmos-sdk
-// github.com/tendermint/tendermint => ../../../forks/tendermint
+// github.com/cosmos/ibc-go/v6 => ../../../forks/ibc-go/v6
+// github.com/tendermint/tendermint => ../../../forks/cometbft
 )

@@ -1,3 +1,4 @@
+import { Fail } from '@endo/errors';
 import { E } from '@endo/eventual-send';
 import { deeplyFulfilled, Far } from '@endo/marshal';
 import { mustMatch, keyEQ } from '@agoric/store';
@@ -10,7 +11,9 @@ import {
 } from '../question.js';
 import { ParamChangesQuestionDetailsShape } from '../typeGuards.js';
 
-const { Fail } = assert;
+/**
+ * @import {ParamValue, ParamChangePositions, QuestionSpec, ChangeParamsPosition, ParamChangeIssue, ParamGovernor, ParamManagerRetriever, PoserFacet, VoteOnParamChanges} from '../types.js';
+ */
 
 /**
  * The electorate that governs changes to the contract's parameters. It must be
@@ -74,6 +77,7 @@ const setupParamGovernance = (
     paramSpec,
   ) => {
     const paramMgr = await E(paramManagerRetriever).get(paramSpec.paramPath);
+    /** @type {import('@endo/marshal').Passable} */
     const changePs = {};
     for (const name of Object.keys(paramSpec.changes)) {
       const proposedValue = E(paramMgr).getVisibleValue(

@@ -4,13 +4,9 @@ import fs from 'node:fs';
 import '@endo/init/pre-bundle-source.js';
 import '@endo/init';
 
-// XXX The following four imports are present only to make `tsc` shut up.  They do no actual work.
-import '@agoric/vats/exported.js';
-import '@agoric/inter-protocol/exported.js';
-import '@agoric/zoe/exported.js';
 import '@agoric/cosmic-swingset/src/launch-chain.js';
 
-import { Fail } from '@agoric/assert';
+import { Fail } from '@endo/errors';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { makeAgoricNamesRemotesFromFakeStorage } from '@agoric/vats/tools/board-utils.js';
 import { makeSwingsetTestKit } from '@agoric/boot/tools/supports.ts';

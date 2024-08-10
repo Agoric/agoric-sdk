@@ -3,6 +3,8 @@
 import '@endo/init';
 import process from 'process';
 
+import { Fail, q } from '@endo/errors';
+
 const { entries, keys, values } = Object;
 
 const logged = label => x => {
@@ -36,7 +38,7 @@ const styles = {
  * }} GraphNode
  */
 function* fmtGraph(nodes, neighbors) {
-  const q = txt => JSON.stringify(txt.replace(/\./g, '_'));
+  const quote = txt => JSON.stringify(txt.replace(/\./g, '_'));
   yield 'digraph G {\n';
   yield 'rankdir = LR;\n';
   const clusters = new Set(
@@ -50,7 +52,7 @@ function* fmtGraph(nodes, neighbors) {
     }
     for (const { id, cluster, label, style } of nodes) {
       if (subgraph && cluster !== subgraph) continue;
-      yield `${q(id)} [label=${q(label)}${style ? `, ${style}` : ''}];\n`;
+      yield `${quote(id)} [label=${quote(label)}${style ? `, ${style}` : ''}];\n`;
     }
     if (subgraph) {
       yield `}\n`;
@@ -58,7 +60,7 @@ function* fmtGraph(nodes, neighbors) {
   }
   for (const [src, arcs] of neighbors.entries()) {
     for (const { id, style } of arcs) {
-      yield `${q(src)} -> ${q(id)} [${style}]\n`;
+      yield `${quote(src)} -> ${quote(id)} [${style}]\n`;
     }
   }
   yield '}\n';
@@ -198,8 +200,6 @@ const manifest2graph = manifest => {
   }
   return { nodes, neighbors };
 };
-
-const { Fail, quote: q } = assert;
 
 /**
  * @param {string} specifier

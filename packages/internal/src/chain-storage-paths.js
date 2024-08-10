@@ -1,9 +1,8 @@
 // @jessie-check
 
 /**
- * These identify top-level paths for SwingSet chain storage
- * (and serve as prefixes).
- * To avoid collisions, they should remain synchronized with
+ * These identify top-level paths for SwingSet chain storage (and serve as
+ * prefixes). To avoid collisions, they should remain synchronized with
  * golang/cosmos/x/swingset/keeper/keeper.go
  */
 export const ACTION_QUEUE = 'actionQueue';

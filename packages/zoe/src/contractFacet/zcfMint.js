@@ -1,24 +1,22 @@
 /* eslint @typescript-eslint/no-floating-promises: "warn" */
+import { Fail } from '@endo/errors';
+import { E } from '@endo/eventual-send';
 import { AmountMath } from '@agoric/ertp';
 import { prepareExoClass } from '@agoric/vat-data';
-import { E } from '@endo/eventual-send';
 
 import { coerceAmountKeywordRecord } from '../cleanProposal.js';
 import { assertFullIssuerRecord, makeIssuerRecord } from '../issuerRecord.js';
 import { addToAllocation, subtractFromAllocation } from './allocationMath.js';
 
 import '../internal-types.js';
-import { ZcfMintI } from '../typeGuards.js';
+import { ZcfMintI } from './typeGuards.js';
 import './internal-types.js';
 import './types-ambient.js';
 
-const { Fail } = assert;
-
 /**
- * @template {AssetKind} K
  * @param {AmountKeywordRecord} amr
- * @param {IssuerRecord<K>} issuerRecord
- * @returns {Amount<K>}
+ * @param {IssuerRecord} issuerRecord
+ * @returns {Amount}
  */
 export const sumAmountKeywordRecord = (amr, issuerRecord) => {
   const empty = AmountMath.makeEmpty(
@@ -107,7 +105,7 @@ export const prepareZcMint = (
         // committed atomically, but it is not a disaster if they are
         // not. If we minted only, no one would ever get those
         // invisibly-minted assets.
-        E(zoeMint).mintAndEscrow(totalToMint);
+        void E(zoeMint).mintAndEscrow(totalToMint);
         reallocator.reallocate(zcfSeat, allocationPlusGains);
         return zcfSeat;
       },
@@ -144,7 +142,7 @@ export const prepareZcMint = (
         // not. If we only commit the allocationMinusLosses no one would
         // ever get the unburned assets.
         reallocator.reallocate(zcfSeat, allocationMinusLosses);
-        E(zoeMint).withdrawAndBurn(totalToBurn);
+        void E(zoeMint).withdrawAndBurn(totalToBurn);
       },
     },
   );

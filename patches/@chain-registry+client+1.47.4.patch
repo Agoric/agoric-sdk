@@ -1,0 +1,21 @@
+diff --git a/node_modules/@chain-registry/client/fetcher.js b/node_modules/@chain-registry/client/fetcher.js
+index 92177df..d4d9883 100644
+--- a/node_modules/@chain-registry/client/fetcher.js
++++ b/node_modules/@chain-registry/client/fetcher.js
+@@ -8,6 +8,7 @@ const utils_1 = require("@chain-registry/utils");
+ const bfs_path_1 = require("bfs-path");
+ const cross_fetch_1 = __importDefault(require("cross-fetch"));
+ const chain_info_1 = require("./chain-info");
++const { error } = require("console");
+ const fetchUrl = (url) => {
+     return (0, cross_fetch_1.default)(url).then((res) => {
+         if (res.status >= 400) {
+@@ -152,7 +153,7 @@ class ChainRegistryFetcher {
+         this.update(data);
+     }
+     async fetchUrls() {
+-        return Promise.all(this.urls.map((url) => this.fetch(url)));
++        return Promise.all(this.urls.map((url) => this.fetch(url).catch(reason => console.error("Failed to fetch", url))));
+     }
+ }
+ exports.ChainRegistryFetcher = ChainRegistryFetcher;

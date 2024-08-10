@@ -1,4 +1,6 @@
 /* eslint @typescript-eslint/no-floating-promises: "warn" */
+import { annotateError, Fail } from '@endo/errors';
+import { E } from '@endo/eventual-send';
 import {
   makeScalarBigWeakMapStore,
   prepareExoClass,
@@ -7,7 +9,6 @@ import {
   provideDurableMapStore,
   provideDurableWeakMapStore,
 } from '@agoric/vat-data';
-import { E } from '@endo/eventual-send';
 import { AmountMath } from '@agoric/ertp';
 import { initEmpty, M } from '@agoric/store';
 
@@ -23,9 +24,16 @@ import {
 import { makeAllocationMap } from './reallocate.js';
 import { TransferPartShape } from '../contractSupport/atomicTransfer.js';
 
-const { Fail } = assert;
-
-/** @type {CreateSeatManager} */
+/**
+ * The SeatManager holds the active zcfSeats and can reallocate and
+ * make new zcfSeats.
+ *
+ * @param {ERef<ZoeInstanceAdmin>} zoeInstanceAdmin
+ * @param {GetAssetKindByBrand} getAssetKindByBrand
+ * @param {import('@agoric/swingset-vat').ShutdownWithFailure} shutdownWithFailure
+ * @param {import('@agoric/vat-data').Baggage} zcfBaggage
+ * @returns {{ seatManager: ZcfSeatManager, zcfMintReallocator: ZcfMintReallocator }}
+ */
 export const createSeatManager = (
   zoeInstanceAdmin,
   getAssetKindByBrand,
@@ -158,7 +166,11 @@ export const createSeatManager = (
         assertActive(self);
         assertNoStagedAllocation(self);
         doExitSeat(self);
-        E(zoeInstanceAdmin).exitSeat(zcfSeatToSeatHandle.get(self), completion);
+        void E(zoeInstanceAdmin).exitSeat(
+          zcfSeatToSeatHandle.get(self),
+          completion,
+        );
+        zcfSeatToSeatHandle.delete(self);
       },
       fail(
         reason = Error(
@@ -168,17 +180,18 @@ export const createSeatManager = (
         const { self } = this;
         if (typeof reason === 'string') {
           reason = Error(reason);
-          assert.note(
+          annotateError(
             reason,
             'ZCFSeat.fail was called with a string reason, but requires an Error argument.',
           );
         }
         if (!hasExited(self)) {
           doExitSeat(self);
-          E(zoeInstanceAdmin).failSeat(
+          void E(zoeInstanceAdmin).failSeat(
             zcfSeatToSeatHandle.get(self),
             harden(reason),
           );
+          zcfSeatToSeatHandle.delete(self);
         }
         return reason;
       },
@@ -187,15 +200,22 @@ export const createSeatManager = (
         return hasExited(self);
       },
 
+      /**
+       * @type {ZCFSeat['getAmountAllocated']}
+       */
       getAmountAllocated(keyword, brand) {
         const { self } = this;
         assertActive(self);
         const currentAllocation = getCurrentAllocation(self);
         if (currentAllocation[keyword] !== undefined) {
+          // @ts-expect-error never checks brand
           return currentAllocation[keyword];
         }
-        brand || Fail`A brand must be supplied when the keyword is not defined`;
+        if (!brand) {
+          throw Fail`A brand must be supplied when the keyword is not defined`;
+        }
         const assetKind = getAssetKindByBrand(brand);
+        // @ts-expect-error cast
         return AmountMath.makeEmpty(brand, assetKind);
       },
       getCurrentAllocation() {
@@ -392,8 +412,10 @@ export const createSeatManager = (
           }
         },
         reallocate(/** @type {ZCFSeat[]} */ ...seats) {
-          seats.forEach(assertActive);
-          seats.forEach(assertStagedAllocation);
+          for (const seat of seats) {
+            assertActive(seat);
+            assertStagedAllocation(seat);
+          }
 
           // Ensure that rights are conserved overall.
           const flattenAllocations = allocations =>
@@ -438,8 +460,9 @@ export const createSeatManager = (
             // for each of the seats) and inform Zoe of the
             // newAllocation.
 
-            seats.forEach(commitStagedAllocation);
-
+            for (const seat of seats) {
+              commitStagedAllocation(seat);
+            }
             const seatHandleAllocations = seats.map(seat => {
               const seatHandle = zcfSeatToSeatHandle.get(seat);
               return { seatHandle, allocation: seat.getCurrentAllocation() };

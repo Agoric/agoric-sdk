@@ -20,6 +20,7 @@ const trace = makeTracer('StartWF');
  *   import('@agoric/smart-wallet/src/walletFactory.js').start
  * >} inst
  *
+ *
  * @typedef {Awaited<ReturnType<typeof startFactoryInstance>>} WalletFactoryStartResult
  */
 // eslint-disable-next-line no-unused-vars
@@ -70,8 +71,8 @@ const publishRevivableWalletState = async (
  *       >['creatorFacet'];
  *       adminFacet: AdminFacet;
  *     };
- *     walletBridgeManager: import('../types.js').ScopedBridgeManager;
- *     provisionWalletBridgeManager: import('../types.js').ScopedBridgeManager;
+ *     walletBridgeManager: import('../types.js').ScopedBridgeManager<'wallet'>;
+ *     provisionWalletBridgeManager: import('../types.js').ScopedBridgeManager<'provisionWallet'>;
  *   }>} powers
  * @param {{
  *   options?: {
@@ -154,10 +155,12 @@ export const startWalletFactory = async (
     slotToBoardRemote,
   );
 
+  /** @type {() => any} */
   const reviveOldMetrics = () => {
     if (!dataReviver.has(OLD_POOL_METRICS_STORAGE_PATH)) {
       return undefined;
     }
+    /** @type {any} */
     const oldPoolMetrics = dataReviver.getItem(OLD_POOL_METRICS_STORAGE_PATH);
     const newBrandFromOldSlotID = makeMap([
       [oldPoolMetrics.totalMintedProvided.brand.getBoardId(), feeBrand],

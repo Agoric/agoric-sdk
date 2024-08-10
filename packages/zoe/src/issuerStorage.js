@@ -1,11 +1,10 @@
+import { Fail } from '@endo/errors';
+import { E } from '@endo/eventual-send';
 import { deeplyFulfilledObject, objectMap } from '@agoric/internal';
 import { provideDurableWeakMapStore } from '@agoric/vat-data';
-import { E } from '@endo/eventual-send';
 
 import { cleanKeywords } from './cleanProposal.js';
 import { makeIssuerRecord } from './issuerRecord.js';
-
-const { Fail } = assert;
 
 const STORAGE_INSTANTIATED_KEY = 'IssuerStorageInstantiated';
 
@@ -170,7 +169,10 @@ export const provideIssuerStorage = zcfBaggage => {
     return brandToIssuerRecord.get(brand).issuer;
   };
 
-  /** @type {IssuerStorageGetIssuerRecords} */
+  /**
+   * @param {Issuer[]} issuers
+   * @returns {IssuerRecords}
+   */
   const getIssuerRecords = issuers => {
     assertInstantiated();
     return issuers.map(issuerToIssuerRecord.get);
@@ -180,7 +182,9 @@ export const provideIssuerStorage = zcfBaggage => {
     if (!zcfBaggage.has(STORAGE_INSTANTIATED_KEY)) {
       zcfBaggage.init(STORAGE_INSTANTIATED_KEY, true);
       instantiated = true;
-      issuerRecords.forEach(storeIssuerRecord);
+      for (const record of issuerRecords) {
+        storeIssuerRecord(record);
+      }
     }
   };
 

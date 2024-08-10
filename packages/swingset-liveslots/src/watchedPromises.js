@@ -2,9 +2,9 @@
 // no-lonely-if is a stupid rule that really should be disabled globally
 /* eslint-disable no-lonely-if */
 
-import { assert } from '@agoric/assert';
-import { initEmpty, M } from '@agoric/store';
+import { Fail, assert } from '@endo/errors';
 import { E } from '@endo/eventual-send';
+import { initEmpty, M } from '@agoric/store';
 import { parseVatSlot } from './parseVatSlots.js';
 
 /**
@@ -139,6 +139,12 @@ export function makeWatchedPromiseManager({
    */
   function loadWatchedPromiseTable(revivePromise) {
     for (const vpid of watchedPromiseTable.keys()) {
+      if (promiseRegistrations.has(vpid)) {
+        // We're only interested in reconnecting the promises from the previous
+        // incarnation. Any promise watched during buildRootObject would have
+        // already created a registration.
+        continue;
+      }
       const p = revivePromise(vpid);
       promiseRegistrations.init(vpid, p);
       pseudoThen(p, vpid);
@@ -156,9 +162,15 @@ export function makeWatchedPromiseManager({
   function providePromiseWatcher(
     kindHandle,
     // @ts-expect-error xxx rest params in typedef
-    fulfillHandler = _value => {},
+    fulfillHandler = _value => {
+      // It's fine to not pass the value through since promise watchers are not chainable
+    },
     // @ts-expect-error xxx rest params in typedef
-    rejectHandler = _reason => {},
+    rejectHandler = reason => {
+      // Replicate the unhandled rejection that would have happened if the
+      // watcher had not implemented an `onRejected` method. See `settle` above
+      throw reason;
+    },
   ) {
     assert.typeof(fulfillHandler, 'function');
     assert.typeof(rejectHandler, 'function');
@@ -198,7 +210,10 @@ export function makeWatchedPromiseManager({
       const watcherVref = convertValToSlot(watcher);
       assert(watcherVref, 'invalid watcher');
       const { virtual, durable } = parseVatSlot(watcherVref);
-      assert(virtual || durable, 'promise watcher must be a virtual object');
+      virtual ||
+        durable ||
+        // separate line so easy to breakpoint on
+        Fail`promise watcher must be a virtual object`;
       if (watcher.onFulfilled) {
         assert.typeof(watcher.onFulfilled, 'function');
       }

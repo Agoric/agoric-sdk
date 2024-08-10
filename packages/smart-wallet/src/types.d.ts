@@ -7,8 +7,10 @@
 
 import type { ERef } from '@endo/far';
 import type { CapData } from '@endo/marshal';
-import type { MsgWalletSpendAction } from '@agoric/cosmic-proto/swingset/msgs';
+import type { agoric } from '@agoric/cosmic-proto';
 import type { AgoricNamesRemotes } from '@agoric/vats/tools/board-utils.js';
+import type { StoredFacet } from '@agoric/internal/src/lib-chainStorage.js';
+import type { PublicTopic } from '@agoric/zoe/src/contractSupport/topics.js';
 import type { OfferSpec } from './offers.js';
 
 declare const CapDataShape: unique symbol;
@@ -26,27 +28,28 @@ export type InvitationMakers = Record<
   (...args: any[]) => Promise<Invitation>
 >;
 
-export type PublicSubscribers = Record<string, ERef<StoredFacet>>;
+export type PublicSubscribers = Record<string, PublicTopic>;
+
+export interface ContinuingOfferResult {
+  invitationMakers: InvitationMakers;
+  publicSubscribers: PublicSubscribers;
+}
 
 export type Cell<T> = {
   get: () => T;
   set(val: T): void;
 };
 
-export type BridgeActionCapData = WalletCapData<
-  import('./smartWallet.js').BridgeAction
->;
-
 /**
  * Defined by walletAction struct in msg_server.go
  *
- * @see {MsgWalletSpendAction} and walletSpendAction in msg_server.go
+ * @see {agoric.swingset.MsgWalletAction} and walletSpendAction in msg_server.go
  */
 export type WalletActionMsg = {
   type: 'WALLET_ACTION';
   /** base64 of Uint8Array of bech32 data  */
   owner: string;
-  /** JSON of BridgeActionCapData */
+  /** JSON of marshalled BridgeAction */
   action: string;
   blockHeight: unknown; // int64
   blockTime: unknown; // int64
@@ -55,7 +58,7 @@ export type WalletActionMsg = {
 /**
  * Defined by walletSpendAction struct in msg_server.go
  *
- * @see {MsgWalletSpendAction} and walletSpendAction in msg_server.go
+ * @see {agoric.swingset.MsgWalletSpendAction} and walletSpendAction in msg_server.go
  */
 export type WalletSpendActionMsg = {
   type: 'WALLET_SPEND_ACTION';

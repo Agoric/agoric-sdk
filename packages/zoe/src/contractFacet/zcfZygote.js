@@ -1,4 +1,9 @@
 /* eslint @typescript-eslint/no-floating-promises: "warn" */
+import { Fail } from '@endo/errors';
+import { E } from '@endo/eventual-send';
+import { passStyleOf } from '@endo/pass-style';
+import { makePromiseKit } from '@endo/promise-kit';
+
 import { AssetKind } from '@agoric/ertp';
 import { assertPattern, mustMatch } from '@agoric/store';
 import {
@@ -9,11 +14,8 @@ import {
   prepareExoClass,
   provideDurableMapStore,
 } from '@agoric/vat-data';
-import { E } from '@endo/eventual-send';
-import { passStyleOf, Remotable } from '@endo/marshal';
-import { makePromiseKit } from '@endo/promise-kit';
-
 import { objectMap } from '@agoric/internal';
+
 import { cleanProposal } from '../cleanProposal.js';
 import { handlePKitWarning } from '../handleWarning.js';
 import { makeInstanceRecordStorage } from '../instanceRecordStorage.js';
@@ -26,13 +28,12 @@ import { createSeatManager } from './zcfSeat.js';
 
 import { HandleOfferI, InvitationHandleShape } from '../typeGuards.js';
 import { prepareZcMint } from './zcfMint.js';
+import { ZcfI } from './typeGuards.js';
 
 /// <reference path="../internal-types.js" />
 /// <reference path="./internal-types.js" />
 
-/** @typedef {import('@agoric/ertp').IssuerOptionsRecord} IssuerOptionsRecord */
-
-const { Fail } = assert;
+/** @import {IssuerOptionsRecord} from '@agoric/ertp' */
 
 /**
  * Make the ZCF vat in zygote-usable form. First, a generic ZCF is
@@ -76,9 +77,9 @@ export const makeZCFZygote = async (
     instantiate: instantiateIssuerStorage,
   } = provideIssuerStorage(zcfBaggage);
 
-  /** @type {ShutdownWithFailure} */
+  /** @type {import('@agoric/swingset-vat').ShutdownWithFailure} */
   const shutdownWithFailure = reason => {
-    E(zoeInstanceAdmin).failAllSeats(reason);
+    void E(zoeInstanceAdmin).failAllSeats(reason);
     seatManager.dropAllReferences();
     // https://github.com/Agoric/agoric-sdk/issues/3239
     powers.exitVatWithFailure(reason);
@@ -114,7 +115,7 @@ export const makeZCFZygote = async (
     const zcfSeat = seatManager.makeZCFSeat(seatData);
 
     const exiter = makeExiter(seatData.proposal, zcfSeat);
-    E(zoeInstanceAdmin)
+    void E(zoeInstanceAdmin)
       .makeNoEscrowSeat(initialAllocation, proposal, exiter, seatHandle)
       .then(userSeat => userSeatPromiseKit.resolve(userSeat));
 
@@ -281,11 +282,7 @@ export const makeZCFZygote = async (
     ['canBeUpgraded', 'canUpgrade'].includes(meta.upgradability);
 
   /** @type {ZCF} */
-  // Using Remotable rather than Far because there are too many complications
-  // imposing checking wrappers: makeInvitation() and setJig() want to
-  // accept raw functions. assert cannot be a valid passable! (It's a function
-  // and has members.)
-  const zcf = Remotable('Alleged: zcf', undefined, {
+  const zcf = prepareExo(zcfBaggage, 'zcf', ZcfI, {
     atomicRearrange: transfers => seatManager.atomicRearrange(transfers),
     reallocate: (...seats) => seatManager.reallocate(...seats),
     assertUniqueKeyword: kwd => getInstanceRecHolder().assertUniqueKeyword(kwd),
@@ -321,11 +318,12 @@ export const makeZCFZygote = async (
         customDetails,
         proposalShape,
       );
-      return invitationP;
+      // rely on the ZCF type signature
+      return /** @type {any} */ (invitationP);
     },
     // Shutdown the entire vat and give payouts
     shutdown: completion => {
-      E(zoeInstanceAdmin).exitAllSeats(completion);
+      void E(zoeInstanceAdmin).exitAllSeats(completion);
       seatManager.dropAllReferences();
       powers.exitVat(completion);
     },
@@ -469,8 +467,12 @@ export const makeZCFZygote = async (
 
       await null;
       if (!zcfBaggage.has('repairedContractCompletionWatcher')) {
-        await E(zoeInstanceAdmin).repairContractCompletionWatcher();
-        console.log(`Repaired contract completion watcher`);
+        // We don't wait because it's a cross-vat call (to Zoe) that can't be
+        // completed during this vat's start-up
+        E(zoeInstanceAdmin)
+          .repairContractCompletionWatcher()
+          .catch(() => {});
+
         zcfBaggage.init('repairedContractCompletionWatcher', true);
       }
 

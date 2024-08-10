@@ -1,5 +1,4 @@
-/* eslint-disable @typescript-eslint/prefer-ts-expect-error -- accomodate different type search depths */
-import { assert } from '@agoric/assert';
+import { Fail, q } from '@endo/errors';
 import {
   M,
   prepareExo,
@@ -12,11 +11,9 @@ import {
   UnwrappedInstallationShape,
 } from '../typeGuards.js';
 
-const { Fail, quote: q } = assert;
-
 /** @typedef { import('@agoric/swingset-vat').BundleCap} BundleCap */
 /** @typedef { import('@agoric/swingset-vat').BundleID} BundleID */
-/** @typedef {import('@agoric/vat-data').Baggage} Baggage */
+/** @import {Baggage} from '@agoric/vat-data' */
 
 /**
  * @param {GetBundleCapForID} getBundleCapForID
@@ -39,7 +36,7 @@ export const makeInstallationStorage = (getBundleCapForID, zoeBaggage) => {
     zoeBaggage,
     'BundleIDInstallation',
     bundleLabel => ({ bundleLabel }),
-    // @ts-ignore cast without StartFunction property
+    // @ts-expect-error cast without StartFunction property
     {
       getBundle: _context => Fail`bundleID-based Installation`,
       getBundleLabel: ({ state: { bundleLabel } }) => bundleLabel,
@@ -51,7 +48,7 @@ export const makeInstallationStorage = (getBundleCapForID, zoeBaggage) => {
     zoeBaggage,
     'BundleInstallation',
     (bundle, bundleLabel) => ({ bundle, bundleLabel }),
-    // @ts-ignore cast without StartFunction property
+    // @ts-expect-error cast without StartFunction property
     {
       getBundle: ({ state: { bundle } }) => bundle,
       getBundleLabel: ({ state: { bundleLabel } }) => bundleLabel,

@@ -12,7 +12,6 @@ HandledPromise is defined by eventual send shim.
 /// <reference types="ses" />
 /// <reference types="@endo/eventual-send" />
 
-// @ts-expect-error cannot redeclare encoder
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
 
@@ -20,7 +19,7 @@ const decoder = new TextDecoder();
  * @param {{ testNames: string[]} |
  *          { bundleSource: [string, ...unknown[]] } |
  *          TapMessage | Summary } item
- * @typedef {import('./avaXS').Summary} Summary
+ * @import {Summary} from './avaXS'
  */
 function send(item) {
   const msg = encoder.encode(JSON.stringify(item)).buffer;
@@ -33,7 +32,6 @@ function send(item) {
  */
 const bundleSource = async (startFilename, ...args) => {
   const msg = await send({ bundleSource: [startFilename, ...args] });
-  // @ts-expect-error send() returns void
   return JSON.parse(decoder.decode(msg));
 };
 
@@ -79,7 +77,7 @@ function handler(rawMessage) {
       const { source } = msg;
       const virtualObjectGlobals =
         // @ts-expect-error
-        // eslint-disable-next-line no-undef
+
         typeof VatData !== 'undefined' ? { VatData } : {};
       const c = new Compartment({
         require: testRequire,
@@ -87,7 +85,6 @@ function handler(rawMessage) {
         __filename,
         console,
         assert,
-        // @ts-expect-error
         HandledPromise,
         URL: class URLStub {
           constructor(url, base) {

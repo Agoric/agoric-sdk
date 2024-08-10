@@ -1,8 +1,9 @@
 // @ts-check
 /* global process setTimeout setInterval clearInterval */
 
-import { E, makeCapTP } from '@endo/captp';
+import { X } from '@endo/errors';
 import { makePromiseKit } from '@endo/promise-kit';
+import { E, makeCapTP } from '@endo/captp';
 import { makeLeaderFromRpcAddresses } from '@agoric/casting';
 import path from 'path';
 import http from 'http';
@@ -19,8 +20,6 @@ import {
 } from './publish.js';
 import { makeJsonHttpClient } from './json-http-client-node.js';
 import { makeScriptLoader } from './scripts.js';
-
-const { details: X } = assert;
 
 // note: CapTP has its own HandledPromise instantiation, and the contract
 // must use the same one that CapTP uses. We achieve this by not bundling

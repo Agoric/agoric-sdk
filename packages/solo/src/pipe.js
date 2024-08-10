@@ -7,8 +7,7 @@ import { parse, stringify } from '@endo/marshal';
 
 import { makeShutdown } from '@agoric/internal/src/node/shutdown.js';
 
-const filename = new URL(import.meta.url).pathname;
-const dirname = path.dirname(filename);
+const dirname = path.dirname(new URL(import.meta.url).pathname);
 
 export const connectToPipe = async ({ method, args, deliverInboundToMbx }) => {
   // console.log('connectToPipe', method, args);
@@ -31,6 +30,7 @@ export const connectToPipe = async ({ method, args, deliverInboundToMbx }) => {
       return;
     }
     // console.log('pipe.js', msg);
+    /** @type {any} */
     const as = parse(`${msg}`);
     deliverInboundToMbx(...as).then(() => cp.send('go'));
   });

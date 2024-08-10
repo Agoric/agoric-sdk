@@ -1,8 +1,9 @@
-import { makeMockChainStorageRoot } from '@agoric/internal/src/storage-test-utils.js';
-import { observeIteration, subscribeEach } from '@agoric/notifier';
-import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
+import { q } from '@endo/errors';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
+import { makeMockChainStorageRoot } from '@agoric/internal/src/storage-test-utils.js';
+import { observeIteration, subscribeEach } from '@agoric/notifier';
+import { buildZoeManualTimer } from '@agoric/zoe/tools/manualTimer.js';
 
 import {
   assertContractElectorate,
@@ -11,7 +12,9 @@ import {
 import { remoteNullMarshaller } from '../utils.js';
 import { makeTerms, MALLEABLE_NUMBER } from './governedContract.js';
 
-const { quote: q } = assert;
+/**
+ * @import {ContractGovernanceVoteResult, GovernedPublicFacetMethods, GovernorCreatorFacet, ParamChangesSpec, QuestionDetails, SimpleIssue, StandardParamPath} from '../../../src/types.js';
+ */
 
 /**
  * @param {ERef<ZoeService>} zoe
@@ -276,7 +279,7 @@ const makeBootstrap = (argv, cb, vatPowers) => async (vats, devices) => {
     'zcf',
   );
   const installations = await installContracts(zoe, cb);
-  const timer = buildManualTimer(log);
+  const timer = buildZoeManualTimer(log);
   const voterCreator = E(vats.voter).build(zoe);
   const firstElectorateTerms = {
     committeeName: 'TwentyCommittee',

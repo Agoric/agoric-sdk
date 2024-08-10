@@ -9,6 +9,8 @@ compiled
 dist
 lcov-report
 public
+/packages/cosmic-swingset/t[0-9]/
+/packages/cosmic-swingset/t[0-9].*/
 
 # Opt out of these file types for now
 *.html
@@ -26,4 +28,3 @@ public
 
 # copied from upstream
 /packages/xsnap/lib/object-inspect.js
-

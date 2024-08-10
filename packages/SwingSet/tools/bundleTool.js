@@ -1,6 +1,7 @@
 import { makeNodeBundleCache as wrappedMaker } from '@endo/bundle-source/cache.js';
 import styles from 'ansi-styles'; // less authority than 'chalk'
 
+/** @type {typeof wrappedMaker} */
 export const makeNodeBundleCache = async (dest, options, loadModule, pid) => {
   const log = (...args) => {
     const flattened = args.map(arg =>
@@ -16,8 +17,9 @@ export const makeNodeBundleCache = async (dest, options, loadModule, pid) => {
   };
   return wrappedMaker(dest, { log, ...options }, loadModule, pid);
 };
+/** @typedef {Awaited<ReturnType<typeof makeNodeBundleCache>>} BundleCache */
 
-/** @type {Map<string, ReturnType<typeof makeNodeBundleCache>>} */
+/** @type {Map<string, Promise<BundleCache>>} */
 const providedCaches = new Map();
 
 /**
@@ -28,9 +30,11 @@ const providedCaches = new Map();
  * @param {{ format?: string, dev?: boolean }} options
  * @param {(id: string) => Promise<any>} loadModule
  * @param {number} [pid]
+ * @returns {Promise<BundleCache>}
  */
 export const provideBundleCache = (dest, options, loadModule, pid) => {
   const uniqueDest = [dest, options.format, options.dev].join('-');
+  // store the promise instead of awaiting to prevent a race
   let bundleCache = providedCaches.get(uniqueDest);
   if (!bundleCache) {
     bundleCache = makeNodeBundleCache(dest, options, loadModule, pid);
@@ -40,5 +44,9 @@ export const provideBundleCache = (dest, options, loadModule, pid) => {
 };
 harden(provideBundleCache);
 
+/**
+ * @param {string} dest
+ * @returns {Promise<BundleCache>}
+ */
 export const unsafeMakeBundleCache = dest =>
   makeNodeBundleCache(dest, {}, s => import(s));

@@ -1,4 +1,3 @@
-/* eslint-disable no-restricted-syntax */
 /* eslint-env node */
 
 const deprecatedForLoanContract = [
@@ -28,6 +27,37 @@ const deprecatedTerminology = Object.fromEntries(
   ]),
 );
 
+/**
+ * Rules for code that crosses an asyncFlow membrane.
+ */
+const resumable = [
+  {
+    // all async function expressions, except `onOpen` and `onClose` when they are properties of `connectionHandler`
+    selector:
+      'FunctionExpression[async=true]:not(Property[key.name="connectionHandler"] > ObjectExpression > Property[key.name=/^(onOpen|onClose)$/] > FunctionExpression[async=true])',
+    message: 'Non-immediate functions must return vows, not promises',
+  },
+  {
+    selector: 'ArrowFunctionExpression[async=true]',
+    message: 'Non-immediate functions must return vows, not promises',
+  },
+  {
+    selector: "Identifier[name='callWhen']",
+    message:
+      'callWhen wraps the function in a promise; instead immediately return a vow',
+  },
+  {
+    selector: "Identifier[name='heapVowE']",
+    message:
+      'heapVowE shortens vows to promises; instead use `E` from `@endo/far` with `watch` from durable vowTools',
+  },
+  {
+    selector: "Identifier[name='heapVowTools']",
+    message:
+      'heapVowTools are not durable; instead use `prepareVowTools` with a durable zone',
+  },
+];
+
 module.exports = {
   root: true,
   parser: '@typescript-eslint/parser',
@@ -39,6 +69,7 @@ module.exports = {
       './packages/*/tsconfig.json',
       './packages/*/tsconfig.json',
       './packages/wallet/*/tsconfig.json',
+      './a3p-integration/proposals/*/tsconfig.json',
       './tsconfig.json',
     ],
     tsconfigRootDir: __dirname,
@@ -46,11 +77,19 @@ module.exports = {
   },
   plugins: ['@typescript-eslint', 'prettier'],
   extends: ['@agoric', 'plugin:ava/recommended'],
-  rules: {
-    // UNTIL on Endo with https://github.com/endojs/endo/pull/2032
-    '@endo/no-nullish-coalescing': 'off',
+  // XXX false positive: Unused eslint-disable directive (no problems were reported from 'max-len')
+  reportUnusedDisableDirectives: true,
 
-    '@typescript-eslint/prefer-ts-expect-error': 'warn',
+  rules: {
+    '@typescript-eslint/ban-ts-comment': [
+      'error',
+      {
+        // TODO tighten to 'allow-with-description' (42 unexplained atm)
+        'ts-expect-error': false,
+        // TODO make this error (start with `src` sans codegen)
+        'ts-nocheck': false,
+      },
+    ],
     '@typescript-eslint/no-floating-promises': 'error',
     // so that floating-promises can be explicitly permitted with void operator
     'no-void': ['error', { allowAsStatement: true }],
@@ -74,6 +113,27 @@ module.exports = {
     //
     // The default is 'warn', but we want to enforce 'error'.
     '@jessie.js/safe-await-separator': 'error',
+
+    'jsdoc/check-tag-names': [
+      'error',
+      {
+        // TypeDoc adds tags not otherwise known to JSDoc
+        // https://typedoc.org/guides/tags/
+        definedTags: [
+          'alpha',
+          'beta',
+          'category',
+          'categoryDescription',
+          'defaultValue',
+          'document',
+          'group',
+          'groupDescription',
+          'internal',
+          'privateRemarks',
+          'remarks',
+        ],
+      },
+    ],
 
     // CI has a separate format check but keep this warn to maintain that "eslint --fix" prettifies
     // UNTIL https://github.com/Agoric/agoric-sdk/issues/4339
@@ -127,12 +187,19 @@ module.exports = {
     {
       // These tests use EV() instead of E(), which are easy to confuse.
       // Help by erroring when E() packages are imported.
-      files: ['packages/boot/test/**/test-*'],
+      files: ['packages/boot/test/**/*.test.*'],
       rules: {
         'no-restricted-imports': [
           'error',
           { paths: ['@endo/eventual-send', '@endo/far'] },
         ],
+      },
+    },
+    {
+      // Modules with exports that must be resumable
+      files: ['packages/orchestration/src/exos/**'],
+      rules: {
+        'no-restricted-syntax': ['error', ...resumable],
       },
     },
     {
@@ -151,6 +218,15 @@ module.exports = {
         'jsdoc/require-param-type': 'off',
         // TS has this covered and eslint gets it wrong
         'no-undef': 'off',
+      },
+    },
+    {
+      files: ['*.d.ts'],
+      rules: {
+        // Irrelevant in a typedef
+        'no-use-before-define': 'off',
+        // Linter confuses the type declaration with value declaration
+        'no-redeclare': 'off',
       },
     },
     {

@@ -11,7 +11,9 @@ import { AmountMath } from '@agoric/ertp';
 import { multiplyBy } from './ratio.js';
 import { mintQuote } from './priceAuthorityTransform.js';
 
-/** @template T @typedef {import('@endo/eventual-send').EOnly<T>} EOnly */
+/**
+ * @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js';
+ */
 
 /**
  * Override `makeQuoteNotifier`, `quoteGiven` to provide an initial price
@@ -21,7 +23,7 @@ import { mintQuote } from './priceAuthorityTransform.js';
  *
  * @param {Ratio} priceOutPerIn
  * @param {PriceAuthority} priceAuthority
- * @param {ERef<Mint<'set'>>} quoteMint
+ * @param {ERef<Mint<'set', PriceDescription>>} quoteMint
  * @param {Brand<'nat'>} brandIn
  * @param {Brand<'nat'>} brandOut
  * @returns {PriceAuthority}
@@ -102,7 +104,7 @@ export const makeInitialTransform = (
     assert.equal(bOut, brandOut);
 
     const quoteP = E(priceAuthority).quoteGiven(amountIn, brandOut);
-    quoteP.then(() => (initialMode = false));
+    void quoteP.then(() => (initialMode = false));
     return initialMode
       ? mintCurrentQuote(amountIn, multiplyBy(amountIn, priceOutPerIn))
       : quoteP;

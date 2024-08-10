@@ -1,4 +1,4 @@
-import { assert, Fail } from '@agoric/assert';
+import { assert, Fail } from '@endo/errors';
 import { makeMarshal } from '@endo/marshal';
 import { Far } from '@endo/far';
 import { parseVatSlot } from '../../lib/parseVatSlots.js';
@@ -78,7 +78,7 @@ export function buildSerializationTools(syscall, deviceName) {
     serializeBodyFormat: 'smallcaps',
     // TODO Temporary hack.
     // See https://github.com/Agoric/agoric-sdk/issues/2780
-    errorIdNum: 60000,
+    errorIdNum: 60_000,
   });
 
   // for invoke(), these will unserialize the arguments, and serialize the

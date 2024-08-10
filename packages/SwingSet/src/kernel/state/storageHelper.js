@@ -1,6 +1,6 @@
 // @ts-check
 
-import { Fail } from '@agoric/assert';
+import { Fail } from '@endo/errors';
 
 /**
  * Iterate over keys with a given prefix, in lexicographic order,

@@ -1,3 +1,7 @@
+import { Nat } from '@endo/nat';
+import { Fail, X } from '@endo/errors';
+import { E, getInterfaceOf } from '@endo/far';
+
 import { AssetKind } from '@agoric/ertp';
 import { CONTRACT_ELECTORATE, ParamTypes } from '@agoric/governance';
 import { Stable, Stake } from '@agoric/internal/src/tokens.js';
@@ -6,18 +10,16 @@ import {
   deeplyFulfilledObject,
   VBankAccount,
   WalletName,
+  NonNullish,
 } from '@agoric/internal';
 import { keyEQ, makeScalarMapStore } from '@agoric/store';
 import { provideLazy } from '@agoric/store/src/stores/store-utils.js';
-import { E, getInterfaceOf } from '@endo/far';
-import { Nat } from '@endo/nat';
-
-import { Fail, NonNullish } from '@agoric/assert';
 import { makeNameHubKit } from '../nameHub.js';
 import { PowerFlags } from '../walletFlags.js';
 import { feeIssuerConfig, makeMyAddressNameAdminKit } from './utils.js';
+import { makeScopedBridge } from '../bridge.js';
 
-const { details: X } = assert;
+/** @import {GovernableStartFn, GovernanceFacetKit} from '@agoric/governance/src/types.js'; */
 
 /**
  * In golang/cosmos/app/app.go, we define cosmosInitAction with type
@@ -47,13 +49,17 @@ const bootMsgEx = {
  * may want/need them later.
  */
 
+/** @typedef {MapStore<string, CreateVatResults>} VatStore */
+
 /**
- * @param {BootstrapPowers & {}} powers
- *
- * @typedef {import('@agoric/swingset-vat').CreateVatResults} CreateVatResults
+ * @param {BootstrapPowers & {
+ *   produce: {
+ *     loadVat: Producer<VatLoader>;
+ *     loadCriticalVat: Producer<VatLoader>;
+ *   };
+ * }} powers
+ * @import {CreateVatResults} from '@agoric/swingset-vat'
  *   as from createVatByName
- *
- * @typedef {MapStore<string, CreateVatResults>} VatStore
  */
 export const makeVatsFromBundles = async ({
   vats,
@@ -324,11 +330,7 @@ export const produceStartGovernedUpgradable = async ({
 harden(produceStartGovernedUpgradable);
 
 /**
- * @param {BootstrapPowers & {
- *   consume: { loadCriticalVat: ERef<VatLoader<ZoeVat>> };
- * }} powers
- *
- * @typedef {ERef<ReturnType<import('../vat-zoe.js').buildRootObject>>} ZoeVat
+ * @param {BootstrapPowers} powers
  */
 export const buildZoe = async ({
   consume: { vatAdminSvc, loadCriticalVat, client },
@@ -357,13 +359,7 @@ export const buildZoe = async ({
 harden(buildZoe);
 
 /**
- * @param {BootstrapPowers & {
- *   consume: { loadCriticalVat: ERef<VatLoader<PriceAuthorityVat>> };
- * }} powers
- *
- * @typedef {ERef<
- *   ReturnType<import('../vat-priceAuthority.js').buildRootObject>
- * >} PriceAuthorityVat
+ * @param {BootstrapPowers} powers
  */
 export const startPriceAuthorityRegistry = async ({
   consume: { loadCriticalVat, client },
@@ -419,9 +415,7 @@ harden(produceBoard);
 
 /**
  * @deprecated use produceBoard
- * @param {BootstrapPowers & {
- *   consume: { loadCriticalVat: ERef<VatLoader<BoardVat>> };
- * }} powers
+ * @param {BootstrapPowers} powers
  */
 export const makeBoard = async ({
   consume: { loadCriticalVat, client },
@@ -608,9 +602,7 @@ harden(mintInitialSupply);
 /**
  * Add IST (with initialSupply payment), BLD (with mint) to BankManager.
  *
- * @param {BootstrapSpace & {
- *   consume: { loadCriticalVat: ERef<VatLoader<BankVat>> };
- * }} powers
+ * @param {BootstrapSpace} powers
  */
 export const addBankAssets = async ({
   consume: {
@@ -649,14 +641,16 @@ export const addBankAssets = async ({
   });
 
   const bldBrand = await E(bldIssuer).getBrand();
-  const bldKit = harden({ mint: bldMint, issuer: bldIssuer, brand: bldBrand });
+  const bldKit = /** @type {IssuerKit<'nat'>} */ (
+    harden({ mint: bldMint, issuer: bldIssuer, brand: bldBrand })
+  );
   bldIssuerKit.resolve(bldKit);
 
   const assetAdmin = E(agoricNamesAdmin).lookupAdmin('vbankAsset');
 
   const bridgeManager = await bridgeManagerP;
   const bankBridgeManager =
-    bridgeManager && E(bridgeManager).register(BridgeId.BANK);
+    bridgeManager && makeScopedBridge(bridgeManager, BridgeId.BANK);
   const bankMgr = await E(E(loadCriticalVat)('bank')).makeBankManager(
     bankBridgeManager,
     assetAdmin,

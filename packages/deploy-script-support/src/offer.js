@@ -1,10 +1,10 @@
 // @ts-check
+import { assert } from '@endo/errors';
 import { E } from '@endo/far';
-import { assert } from '@agoric/assert';
 // Avoid pulling in too many dependencies like notifiers
 import { AmountMath } from '@agoric/ertp/src/amountMath.js';
 
-/** @typedef {import('@agoric/deploy-script-support/src/externalTypes.js').Petname} Petname */
+/** @import {Petname} from '@agoric/deploy-script-support/src/externalTypes.js' */
 
 /**
  * @typedef {object} OfferHelperConfig
@@ -19,7 +19,7 @@ import { AmountMath } from '@agoric/ertp/src/amountMath.js';
  * @param {ERef<any>} walletAdmin - an internal type of the
  * wallet, not defined here
  * @param {ERef<ZoeService>} zoe
- * @param {ERef<Purse<'set'>>} zoeInvitationPurse
+ * @param {ERef<Purse<'set', InvitationDetails>>} zoeInvitationPurse
  */
 export const makeOfferAndFindInvitationAmount = (
   walletAdmin,
@@ -28,7 +28,7 @@ export const makeOfferAndFindInvitationAmount = (
 ) => {
   /**
    * @param {Record<string, any>} invitationDetailsCriteria
-   * @returns {Promise<Amount<'set'>>} invitationAmount
+   * @returns {Promise<InvitationAmount>} invitationAmount
    */
   const findInvitationAmount = async invitationDetailsCriteria => {
     const invitationAmount = await E(zoeInvitationPurse).getCurrentAmount();

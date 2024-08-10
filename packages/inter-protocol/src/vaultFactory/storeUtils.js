@@ -5,6 +5,8 @@
  * API supports them.
  */
 
+/** @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js'; */
+
 // XXX importing these that are declared to be used only for testing
 // until @agoric/store supports composite keys
 import { makeDecodePassable, makeEncodePassable } from '@endo/marshal';
@@ -19,7 +21,7 @@ const { multiply } = natSafeMath;
 
 const trace = makeTracer('Store', true);
 
-/** @typedef {import('@endo/marshal').PureData} PureData */
+/** @import {PureData} from '@endo/marshal' */
 
 /** @typedef {[normalizedCollateralization: number, vaultId: VaultId]} CompositeKey */
 

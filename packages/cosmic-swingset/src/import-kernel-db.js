@@ -11,8 +11,8 @@ import fsPower from 'fs';
 import fsPromisesPower from 'fs/promises';
 import pathPower from 'path';
 
+import { Fail, q } from '@endo/errors';
 import BufferLineTransform from '@agoric/internal/src/node/buffer-line-transform.js';
-import { Fail, q } from '@agoric/assert';
 import { importSwingStore, openSwingStore } from '@agoric/swing-store';
 
 import { isEntrypoint } from './helpers/is-entrypoint.js';
@@ -62,7 +62,7 @@ const checkAndGetImportSwingStoreOptions = (options, manifest) => {
 
   manifest.data || Fail`State-sync manifest missing export data`;
 
-  const { artifactMode = manifest.artifactMode || 'replay' } = options;
+  const { artifactMode = manifest.artifactMode || 'operational' } = options;
 
   if (artifactMode === 'none') {
     throw Fail`Cannot import "export data" without at least "operational" artifacts`;
@@ -247,11 +247,8 @@ export const main = async (
 
   const stateDir =
     processValue.getFlag('state-dir') ||
-    // We try to find the actual cosmos state directory (default=~/.ag-chain-cosmos)
-    `${processValue.getFlag(
-      'home',
-      `${homedir}/.ag-chain-cosmos`,
-    )}/data/agoric`;
+    // We try to find the actual cosmos state directory (default=~/.agoric)
+    `${processValue.getFlag('home', `${homedir}/.agoric`)}/data/agoric`;
 
   const stateDirStat = await fs.stat(stateDir);
   if (!stateDirStat.isDirectory()) {

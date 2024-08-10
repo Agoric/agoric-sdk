@@ -1,9 +1,6 @@
 // @jessie-check
 
-import '../../exported.js';
-
 import { AmountMath } from '@agoric/ertp';
-import '@agoric/governance/exported.js';
 import { deeplyFulfilledObject, makeTracer } from '@agoric/internal';
 import { makeStorageNodeChild } from '@agoric/internal/src/lib-chainStorage.js';
 import { E } from '@endo/far';
@@ -13,6 +10,8 @@ import { makeGovernedTerms as makeGovernedATerms } from '../auction/params.js';
 import { makeReserveTerms } from '../reserve/params.js';
 import { makeGovernedTerms as makeGovernedVFTerms } from '../vaultFactory/params.js';
 
+/** @import {StartedInstanceKit} from '@agoric/zoe/src/zoeService/utils.js' */
+
 const trace = makeTracer('RunEconBehaviors', true);
 
 export const SECONDS_PER_MINUTE = 60n;
@@ -20,13 +19,8 @@ export const SECONDS_PER_HOUR = 60n * 60n;
 export const SECONDS_PER_DAY = 24n * SECONDS_PER_HOUR;
 export const SECONDS_PER_WEEK = 7n * SECONDS_PER_DAY;
 
-/**
- * @typedef {import('../vaultFactory/vaultFactory.js').VaultFactoryContract['publicFacet']} VaultFactoryPublicFacet
- *
- * @typedef {import('../auction/auctioneer.js').AuctioneerPublicFacet} AuctioneerPublicFacet
- *
- * @typedef {import('../auction/auctioneer.js').AuctioneerCreatorFacet} AuctioneerCreatorFacet
- */
+/** @import {start as VFStart} from '../vaultFactory/vaultFactory.js' */
+/** @typedef {Awaited<ReturnType<VFStart>>['publicFacet']} VaultFactoryPublicFacet */
 
 /**
  * @typedef {object} PSMKit
@@ -49,6 +43,7 @@ export const SECONDS_PER_WEEK = 7n * SECONDS_PER_DAY;
 /**
  * @typedef {WellKnownSpaces & ChainBootstrapSpace & EconomyBootstrapSpace} EconomyBootstrapPowers
  *
+ *
  * @typedef {PromiseSpaceOf<{
  *   economicCommitteeKit: CommitteeStartResult;
  *   economicCommitteeCreatorFacet: import('@agoric/governance/src/committee.js').CommitteeElectorateCreatorFacet;
@@ -65,21 +60,20 @@ export const SECONDS_PER_WEEK = 7n * SECONDS_PER_DAY;
  *   reserveKit: GovernanceFacetKit<
  *     import('../reserve/assetReserve.js')['start']
  *   >;
- *   vaultFactoryKit: GovernanceFacetKit<
- *     import('../vaultFactory/vaultFactory.js')['start']
- *   >;
+ *   vaultFactoryKit: GovernanceFacetKit<VFStart>;
  *   auctioneerKit: AuctioneerKit;
+ *   newAuctioneerKit: AuctioneerKit | undefined;
  *   minInitialDebt: NatValue;
  * }>} EconomyBootstrapSpace
  */
 
 /**
- * @typedef {import('@agoric/zoe/src/zoeService/utils.js').StartedInstanceKit<
+ * @typedef {StartedInstanceKit<
  *   import('../econCommitteeCharter.js')['start']
  * >} EconCharterStartResult
  */
 /**
- * @typedef {import('@agoric/zoe/src/zoeService/utils.js').StartedInstanceKit<
+ * @typedef {StartedInstanceKit<
  *   import('@agoric/governance/src/committee.js')['start']
  * >} CommitteeStartResult
  */
@@ -236,14 +230,14 @@ export const setupVaultFactoryArguments = async (
     initialShortfallInvitation,
     shortfallInvitationAmount,
     feeMintAccess,
-    auctioneerPublicFacet,
+    auctioneerInstance,
   ] = await Promise.all([
     poserInvitationP,
     E(E(zoe).getInvitationIssuer()).getAmountOf(poserInvitationP),
     shortfallInvitationP,
     E(E(zoe).getInvitationIssuer()).getAmountOf(shortfallInvitationP),
     feeMintAccessP,
-    E.get(auctioneerKit).publicFacet,
+    E.get(auctioneerKit).instance,
   ]);
 
   const reservePublicFacet = await E.get(reserveKit).publicFacet;
@@ -252,7 +246,6 @@ export const setupVaultFactoryArguments = async (
 
   const vaultFactoryTerms = makeGovernedVFTerms({
     priceAuthority,
-    auctioneerPublicFacet,
     reservePublicFacet,
     interestTiming,
     timer: chainTimerService,
@@ -264,6 +257,7 @@ export const setupVaultFactoryArguments = async (
   });
 
   const vaultFactoryPrivateArgs = {
+    auctioneerInstance,
     feeMintAccess,
     initialPoserInvitation,
     initialShortfallInvitation,
@@ -469,6 +463,7 @@ export const startRewardDistributor = async ({
   const instanceKit = await E(zoe).startInstance(
     feeDistributor,
     { Fee: centralIssuer },
+    // @ts-expect-error XXX
     feeDistributorTerms,
     undefined,
     'feeDistributor',

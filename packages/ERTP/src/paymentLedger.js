@@ -1,21 +1,29 @@
 // @jessie-check
 
+/// <reference types="@agoric/store/exported.js" />
+
 /* eslint-disable no-use-before-define */
+import { X, q, Fail, annotateError } from '@endo/errors';
 import { isPromise } from '@endo/promise-kit';
 import { mustMatch, M, keyEQ } from '@agoric/store';
 import { AmountMath } from './amountMath.js';
 import { preparePaymentKind } from './payment.js';
 import { preparePurseKind } from './purse.js';
 
-import '@agoric/store/exported.js';
 import { BrandI, makeIssuerInterfaces } from './typeGuards.js';
 
-const { details: X, quote: q, Fail } = assert;
+/**
+ * @import {Amount, AssetKind, DisplayInfo, PaymentLedger, Payment, Brand, RecoverySetsOption, Purse, Issuer, Mint} from './types.js'
+ * @import {ShutdownWithFailure} from '@agoric/swingset-vat'
+ * @import {TypedPattern} from '@agoric/internal';
+ */
 
 /**
+ * @template {AssetKind} K
  * @param {Brand} brand
- * @param {AssetKind} assetKind
+ * @param {K} assetKind
  * @param {Pattern} elementShape
+ * @returns {TypedPattern<Amount<K>>}
  */
 const amountShapeFromElementShape = (brand, assetKind, elementShape) => {
   let valueShape;
@@ -72,6 +80,7 @@ const amountShapeFromElementShape = (brand, assetKind, elementShape) => {
  * @param {K} assetKind
  * @param {DisplayInfo<K>} displayInfo
  * @param {Pattern} elementShape
+ * @param {RecoverySetsOption} recoverySetsState
  * @param {ShutdownWithFailure} [optShutdownWithFailure]
  * @returns {PaymentLedger<K>}
  */
@@ -81,14 +90,11 @@ export const preparePaymentLedger = (
   assetKind,
   displayInfo,
   elementShape,
+  recoverySetsState,
   optShutdownWithFailure = undefined,
 ) => {
   /** @type {Brand<K>} */
-  // Should be
-  // at-ts-expect-error XXX callWhen
-  // but ran into the usual disagreement between local lint and CI
-  // eslint-disable-next-line @typescript-eslint/prefer-ts-expect-error
-  // @ts-ignore
+  // @ts-expect-error XXX callWhen
   const brand = issuerZone.exo(`${name} brand`, BrandI, {
     isMyIssuer(allegedIssuer) {
       // BrandI delays calling this method until `allegedIssuer` is a Remotable
@@ -128,7 +134,7 @@ export const preparePaymentLedger = (
       try {
         optShutdownWithFailure(reason);
       } catch (errInShutdown) {
-        assert.note(errInShutdown, X`Caused by: ${reason}`);
+        annotateError(errInShutdown, X`Caused by: ${reason}`);
         throw errInShutdown;
       }
     }
@@ -141,11 +147,11 @@ export const preparePaymentLedger = (
   });
 
   /**
-   * A withdrawn live payment is associated with the recovery set of the purse
-   * it was withdrawn from. Let's call these "recoverable" payments. All
-   * recoverable payments are live, but not all live payments are recoverable.
-   * We do the bookkeeping for payment recovery with this weakmap from
-   * recoverable payments to the recovery set they are in. A bunch of
+   * A (non-empty) withdrawn live payment is associated with the recovery set of
+   * the purse it was withdrawn from. Let's call these "recoverable" payments.
+   * All recoverable payments are live, but not all live payments are
+   * recoverable. We do the bookkeeping for payment recovery with this weakmap
+   * from recoverable payments to the recovery set they are in. A bunch of
    * interesting invariants here:
    *
    * - Every payment that is a key in the outer `paymentRecoverySets` weakMap is
@@ -156,6 +162,9 @@ export const preparePaymentLedger = (
    * - Every purse is associated with exactly one recovery set unique to it.
    * - A purse's recovery set only contains payments withdrawn from that purse and
    *   not yet consumed.
+   *
+   * If `recoverySetsState === 'noRecoverySets'`, then nothing should ever be
+   * added to this WeakStore.
    *
    * @type {WeakMapStore<Payment, SetStore<Payment>>}
    */
@@ -170,7 +179,11 @@ export const preparePaymentLedger = (
    * @param {SetStore<Payment>} [optRecoverySet]
    */
   const initPayment = (payment, amount, optRecoverySet = undefined) => {
-    if (optRecoverySet !== undefined) {
+    if (recoverySetsState === 'noRecoverySets') {
+      optRecoverySet === undefined ||
+        Fail`when recoverSetsState === 'noRecoverySets', optRecoverySet must be empty`;
+    }
+    if (optRecoverySet !== undefined && !AmountMath.isEmpty(amount)) {
       optRecoverySet.add(payment);
       paymentRecoverySets.init(payment, optRecoverySet);
     }
@@ -263,10 +276,10 @@ export const preparePaymentLedger = (
    *
    * @param {import('./amountStore.js').AmountStore} balanceStore
    * @param {Amount} amount - the amount to be withdrawn
-   * @param {SetStore<Payment>} recoverySet
+   * @param {SetStore<Payment>} [recoverySet]
    * @returns {Payment}
    */
-  const withdrawInternal = (balanceStore, amount, recoverySet) => {
+  const withdrawInternal = (balanceStore, amount, recoverySet = undefined) => {
     amount = coerce(amount);
     const payment = makePayment();
     // COMMIT POINT Move the withdrawn assets from this purse into
@@ -283,7 +296,7 @@ export const preparePaymentLedger = (
   };
 
   /** @type {() => Purse<K>} */
-  // @ts-expect-error type parameter confusion
+  // @ts-expect-error XXX amount kinds
   const makeEmptyPurse = preparePurseKind(
     issuerZone,
     name,
@@ -294,14 +307,12 @@ export const preparePaymentLedger = (
       depositInternal,
       withdrawInternal,
     }),
+    recoverySetsState,
+    paymentRecoverySets,
   );
 
   /** @type {Issuer<K>} */
-  // Should be
-  // at-ts-expect-error cast due to callWhen discrepancy
-  // but ran into the usual disagreement between local lint and CI
-  // eslint-disable-next-line @typescript-eslint/prefer-ts-expect-error
-  // @ts-ignore
+  // @ts-expect-error XXX callWhen
   const issuer = issuerZone.exo(`${name} issuer`, IssuerI, {
     getBrand() {
       return brand;
@@ -356,12 +367,6 @@ export const preparePaymentLedger = (
    * `makeIssuerKit` drops it on the floor, it can still be recovered in an
    * emergency upgrade.
    */
-  // Should be
-  // at-ts-expect-error checked cast
-  // but ran into the usual disagreement between local lint and IDE lint.
-  // Don't know yet about lint under CI.
-  // eslint-disable-next-line @typescript-eslint/prefer-ts-expect-error
-  // @ts-ignore
   const mintRecoveryPurse = /** @type {Purse<K>} */ (
     issuerZone.makeOnce('mintRecoveryPurse', () => makeEmptyPurse())
   );
@@ -372,11 +377,6 @@ export const preparePaymentLedger = (
       return issuer;
     },
     mintPayment(newAmount) {
-      // Should be
-      // at-ts-expect-error checked cast
-      // but ran into the usual disagreement between local lint and CI
-      // eslint-disable-next-line @typescript-eslint/prefer-ts-expect-error
-      // @ts-ignore
       newAmount = coerce(newAmount);
       mustMatch(newAmount, amountShape, 'minted amount');
       // `rawPayment` is not associated with any recovery set, and

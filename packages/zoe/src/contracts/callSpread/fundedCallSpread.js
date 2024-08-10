@@ -1,4 +1,4 @@
-/// <reference path="./types.js" />
+/// <reference path="./types-ambient.js" />
 
 import { makePromiseKit } from '@endo/promise-kit';
 import { E } from '@endo/eventual-send';
@@ -10,6 +10,10 @@ import {
 } from '../../contractSupport/index.js';
 import { makePayoffHandler } from './payoffHandler.js';
 import { Position } from './position.js';
+
+/**
+ * @import {PriceAuthority} from '@agoric/zoe/tools/types.js';
+ */
 
 /**
  * This contract implements a fully collateralized call spread. This is a

@@ -11,9 +11,8 @@ import {
   provide,
   prepareExoClassKit,
 } from '@agoric/vat-data';
+import { Fail, q } from '@endo/errors';
 import { FeeMintAccessShape } from '../typeGuards.js';
-
-const { Fail, quote: q } = assert;
 
 /** @deprecated Redundant. Just omit it. */
 const FEE_MINT_KIT = 'FeeMintKit';
@@ -29,7 +28,7 @@ export const defaultFeeIssuerConfig = harden(
 /**
  * @param {import('@agoric/vat-data').Baggage} zoeBaggage
  * @param {FeeIssuerConfig} feeIssuerConfig
- * @param {ShutdownWithFailure} shutdownZoeVat
+ * @param {import('@agoric/swingset-vat').ShutdownWithFailure} shutdownZoeVat
  */
 const prepareFeeMint = (zoeBaggage, feeIssuerConfig, shutdownZoeVat) => {
   const mintBaggage = provideDurableMapStore(zoeBaggage, 'mintBaggage');

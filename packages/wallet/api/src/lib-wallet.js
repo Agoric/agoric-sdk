@@ -1,5 +1,4 @@
 // @ts-check
-/* eslint @typescript-eslint/no-floating-promises: "warn" */
 
 /**
  * This file defines the wallet internals without dependency on the ag-solo on
@@ -12,7 +11,7 @@
  * and dapps.
  */
 
-import { assert, q, Fail } from '@agoric/assert';
+import { assert, q, Fail } from '@endo/errors';
 import { makeScalarStoreCoordinator } from '@agoric/cache';
 import { objectMap, WalletName } from '@agoric/internal';
 import { slotStringUnserialize } from '@agoric/internal/src/storage-test-utils.js';
@@ -43,11 +42,7 @@ import { makeId, findOrMakeInvitation } from './findOrMakeInvitation.js';
 import { bigintStringify } from './bigintStringify.js';
 import { makePaymentActions } from './actions.js';
 
-import '@agoric/store/exported.js';
-import '@agoric/zoe/exported.js';
-
 import './internal-types.js';
-/// <reference path="./types.js" />
 
 // does nothing
 const noActionStateChangeHandler = _newState => {};
@@ -74,7 +69,7 @@ const cmp = (a, b) => {
  * zoe: ERef<ZoeService>,
  * }} opt
  *
- * @typedef {import('@agoric/vats').NameHub} NameHub
+ * @import {NameHub} from '@agoric/vats'
  */
 export function makeWalletRoot({
   zoe,
@@ -583,7 +578,7 @@ export function makeWalletRoot({
       status: 'complete',
     });
     idToOffer.set(id, completedOffer);
-    updateInboxState(id, completedOffer);
+    void updateInboxState(id, completedOffer);
   }
 
   /**
@@ -592,8 +587,8 @@ export function makeWalletRoot({
    * @param {string} id
    * @param {ERef<UserSeat>} seat
    */
-  async function subscribeToUpdates(id, seat) {
-    E(E(seat).getExitSubscriber())
+  function subscribeToUpdates(id, seat) {
+    return E(E(seat).getExitSubscriber())
       .subscribeAfter()
       .then(update => updateOrResubscribe(id, seat, update));
   }
@@ -680,7 +675,7 @@ export function makeWalletRoot({
     );
     // By the time Zoe settles the seat promise, the escrow should be complete.
     // Reclaim if it is somehow not.
-    seat.finally(tryReclaimingWithdrawnPayments);
+    void seat.finally(tryReclaimingWithdrawnPayments);
 
     // Even if the seat doesn't settle, we can still pipeline our request for
     // payouts.
@@ -702,7 +697,7 @@ export function makeWalletRoot({
     // Regardless of the status of the offer, we try to clean up any of our
     // unclaimed payments.  Defensively, we want to do this as soon as possible
     // even if the seat doesn't settle.
-    depositedP.finally(tryReclaimingWithdrawnPayments);
+    void depositedP.finally(tryReclaimingWithdrawnPayments);
 
     // Return a promise that will resolve after successful deposit, as well as
     // the promise for the seat.
@@ -754,7 +749,9 @@ export function makeWalletRoot({
    * @param {string} [address]
    */
   const addContact = async (petname, actions, address = undefined) => {
+    // @ts-expect-error XXX ERef
     const already = await E(board).has(actions);
+    /** @type {any} */
     let depositFacet;
     if (already) {
       depositFacet = actions;
@@ -793,7 +790,7 @@ export function makeWalletRoot({
     // possible display in the wallet.
     petname = instanceMapping.suggestPetname(petname, instanceHandle);
     // We don't wait for the update before returning.
-    updateAllState();
+    void updateAllState();
     return `instance ${q(petname)} successfully added to wallet`;
   };
 
@@ -831,7 +828,7 @@ export function makeWalletRoot({
     await updatePursesState(petnameForPurse, purse);
 
     // Just notice the balance updates for the purse.
-    observeNotifier(E(purse).getCurrentAmountNotifier(), {
+    void observeNotifier(E(purse).getCurrentAmountNotifier(), {
       updateState(_balance) {
         updatePursesState(purseMapping.valToPetname.get(purse), purse).catch(
           e => console.error('cannot updateState', e),
@@ -1031,7 +1028,7 @@ export function makeWalletRoot({
               petname,
             });
             updateDapp(dappRecord);
-            updateAllState();
+            void updateAllState();
             return dappRecord.actions;
           },
           enable() {
@@ -1153,7 +1150,7 @@ export function makeWalletRoot({
       status: 'decline',
     });
     idToOffer.set(id, declinedOffer);
-    updateInboxState(id, declinedOffer);
+    void updateInboxState(id, declinedOffer);
 
     // Try to reclaim the invitation.
     const compiledOfferP = idToCompiledOfferP.get(id);
@@ -1180,7 +1177,7 @@ export function makeWalletRoot({
           status: 'cancel',
         });
         idToOffer.set(id, cancelledOffer);
-        updateInboxState(id, cancelledOffer);
+        return updateInboxState(id, cancelledOffer);
       })
       .catch(e => console.error(`Cannot cancel offer ${id}:`, e));
 
@@ -1206,7 +1203,7 @@ export function makeWalletRoot({
         error: `${e}`,
       });
       idToOffer.set(id, rejectOffer);
-      updateInboxState(id, rejectOffer);
+      void updateInboxState(id, rejectOffer);
     };
 
     await null;
@@ -1216,7 +1213,7 @@ export function makeWalletRoot({
         status: 'pending',
       });
       idToOffer.set(id, pendingOffer);
-      updateInboxState(id, pendingOffer);
+      void updateInboxState(id, pendingOffer);
       const compiledOffer = await idToCompiledOfferP.get(id);
 
       const { depositedP, seat } = await executeOffer(compiledOffer);
@@ -1228,11 +1225,11 @@ export function makeWalletRoot({
       idToSeat.set(id, seat);
       // The offer might have been postponed, or it might have been immediately
       // consummated. Only subscribe if it was postponed.
-      E(seat)
+      void E(seat)
         .hasExited()
         .then(exited => {
           if (!exited) {
-            subscribeToUpdates(id, seat);
+            return subscribeToUpdates(id, seat);
           }
         });
 
@@ -1255,7 +1252,7 @@ export function makeWalletRoot({
               status: 'accept',
             });
             idToOffer.set(id, acceptedOffer);
-            updateInboxState(id, acceptedOffer);
+            void updateInboxState(id, acceptedOffer);
           }
         })
         .catch(rejected);
@@ -1408,11 +1405,13 @@ export function makeWalletRoot({
     boardId,
     dappOrigin = undefined,
   ) {
+    /** @type {Petname} */
     let petname;
     if (dappOrigin === undefined) {
       petname = suggestedPetname;
     } else {
       const edgename = edgeMapping.valToPetname.get(dappOrigin);
+      // @ts-expect-error if suggestedPetname is itself an array, this nests
       petname = [edgename, suggestedPetname];
     }
 
@@ -1683,7 +1682,7 @@ export function makeWalletRoot({
       (kind, lookup) =>
       (...path) => {
         path.length === 1 ||
-          Fail`${assert.quote(
+          Fail`${q(
             kind,
           )} lookup must be called with a single offer ID, not ${path}`;
         return lookup(path[0]);
@@ -1895,7 +1894,7 @@ export function makeWalletRoot({
   // don't really trust.
   // The param is{import('@agoric/vats/src/vat-bank.js').Bank} but that here triggers https://github.com/Agoric/agoric-sdk/issues/4620
   const importBankAssets = async bank => {
-    observeIteration(
+    void observeIteration(
       subscribeEach(E(bank).getAssetSubscription()),
       harden({
         async updateState({ proposedName, issuerName, issuer, brand }) {

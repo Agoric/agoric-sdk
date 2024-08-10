@@ -94,7 +94,6 @@ var capDataRemotableValueFormats = map[string]string{
 //	}
 //
 // ```
-// cf. https://github.com/Agoric/agoric-sdk/blob/6e5b422b80e47c4dac151404f43faea5ab41e9b0/scripts/get-flattened-publication.sh
 func flatten(input interface{}, output map[string]interface{}, key string, top bool) error {
 	// Act on the raw representation of a Remotable.
 	if remotable, ok := input.(*capdata.CapdataRemotable); ok {

@@ -1,4 +1,4 @@
-import { Fail } from '@agoric/assert';
+import { Fail } from '@endo/errors';
 import { makeTracer } from '@agoric/internal';
 import { M, prepareExoClassKit } from '@agoric/vat-data';
 

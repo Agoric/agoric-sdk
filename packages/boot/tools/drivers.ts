@@ -1,5 +1,6 @@
 /* eslint-disable jsdoc/require-param */
-import { Fail, NonNullish } from '@agoric/assert';
+import { Fail } from '@endo/errors';
+import { NonNullish } from '@agoric/internal';
 import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
 import { SECONDS_PER_MINUTE } from '@agoric/inter-protocol/src/proposals/econ-behaviors.js';
 import { unmarshalFromVstorage } from '@agoric/internal/src/marshal.js';
@@ -96,25 +97,21 @@ export const makeWalletFactoryDriver = async (
     },
 
     getCurrentWalletRecord(): CurrentWalletRecord {
-      const fromCapData = (...args) =>
-        Reflect.apply(marshaller.fromCapData, marshaller, args);
       return unmarshalFromVstorage(
         storage.data,
         `published.wallet.${walletAddress}.current`,
-        fromCapData,
+        (...args) => Reflect.apply(marshaller.fromCapData, marshaller, args),
         -1,
-      );
+      ) as any;
     },
 
     getLatestUpdateRecord(): UpdateRecord {
-      const fromCapData = (...args) =>
-        Reflect.apply(marshaller.fromCapData, marshaller, args);
       return unmarshalFromVstorage(
         storage.data,
         `published.wallet.${walletAddress}`,
-        fromCapData,
+        (...args) => Reflect.apply(marshaller.fromCapData, marshaller, args),
         -1,
-      );
+      ) as any;
     },
   });
 
@@ -286,7 +283,7 @@ export const makeGovernanceDriver = async (
   const enactLatestProposal = async () => {
     const latestQuestionRecord = testKit.readLatest(
       'published.committees.Economic_Committee.latestQuestion',
-    );
+    ) as any;
 
     const chosenPositions = [latestQuestionRecord.positions[0]];
 
@@ -327,7 +324,7 @@ export const makeZoeDriver = async (testKit: SwingsetTestKit) => {
   const { EV } = testKit.runUtils;
   const zoe = await EV.vat('bootstrap').consumeItem('zoe');
   const chainStorage = await EV.vat('bootstrap').consumeItem('chainStorage');
-  const storageNode = await EV(chainStorage).makeChildNode('prober-asid9a');
+  const storageNode = await EV(chainStorage!).makeChildNode('prober-asid9a');
   let creatorFacet;
   let adminFacet;
   let brand;

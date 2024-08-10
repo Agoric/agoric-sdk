@@ -1,0 +1,97 @@
+{
+  "name": "@agoric/orchestration",
+  "version": "0.1.0",
+  "description": "Chain abstraction for Agoric's orchestration clients",
+  "type": "module",
+  "main": "index.js",
+  "types": "index.js",
+  "engines": {
+    "node": ">=14.15.0"
+  },
+  "scripts": {
+    "build": "exit 0",
+    "codegen": "scripts/fetch-chain-info.ts",
+    "prepack": "tsc --build tsconfig.build.json",
+    "postpack": "git clean -f '*.d.ts*'",
+    "test": "ava",
+    "test:c8": "c8 $C8_OPTIONS ava --config=ava-nesm.config.js",
+    "test:xs": "exit 0",
+    "lint": "run-s --continue-on-error lint:*",
+    "lint:types": "tsc",
+    "lint:eslint": "eslint .",
+    "lint-fix": "yarn lint:eslint --fix"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Agoric/agoric-sdk.git"
+  },
+  "keywords": [],
+  "author": "Agoric",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/Agoric/agoric-sdk/issues"
+  },
+  "homepage": "https://github.com/Agoric/agoric-sdk#readme",
+  "dependencies": {
+    "@agoric/async-flow": "^0.1.0",
+    "@agoric/cosmic-proto": "^0.4.0",
+    "@agoric/ertp": "^0.16.2",
+    "@agoric/internal": "^0.3.2",
+    "@agoric/network": "^0.1.0",
+    "@agoric/notifier": "^0.6.2",
+    "@agoric/store": "^0.9.2",
+    "@agoric/time": "^0.3.2",
+    "@agoric/vat-data": "^0.5.2",
+    "@agoric/vats": "^0.15.1",
+    "@agoric/vow": "^0.1.0",
+    "@agoric/zoe": "^0.26.2",
+    "@agoric/zone": "^0.2.2",
+    "@endo/base64": "^1.0.6",
+    "@endo/errors": "^1.2.4",
+    "@endo/far": "^1.1.4",
+    "@endo/marshal": "^1.5.2",
+    "@endo/patterns": "^1.4.2",
+    "@noble/hashes": "github:paulmillr/noble-hashes#ae060da"
+  },
+  "devDependencies": {
+    "@agoric/swingset-liveslots": "^0.10.2",
+    "@chain-registry/client": "^1.47.4",
+    "@cosmjs/amino": "^0.32.3",
+    "@cosmjs/proto-signing": "^0.32.3",
+    "@endo/bundle-source": "^3.3.0",
+    "@endo/import-bundle": "^1.2.1",
+    "@endo/ses-ava": "^1.2.4",
+    "ava": "^5.3.1",
+    "c8": "^9.1.0",
+    "prettier": "^3.3.2"
+  },
+  "ava": {
+    "extensions": {
+      "js": true,
+      "ts": "module"
+    },
+    "files": [
+      "test/**/*.test.*"
+    ],
+    "nodeArguments": [
+      "--loader=tsx",
+      "--no-warnings"
+    ],
+    "require": [
+      "@endo/init/debug.js"
+    ],
+    "timeout": "20m",
+    "workerThreads": false
+  },
+  "files": [
+    "*.js",
+    "*.ts",
+    "src"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "typeCoverage": {
+    "atLeast": 98.1
+  }
+}

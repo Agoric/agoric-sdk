@@ -1,4 +1,16 @@
 /* eslint-env node */
+
+const orchestrationFlowRestrictions = [
+  {
+    selector: "Identifier[name='heapVowE']",
+    message: 'Eventual send is not yet supported within an orchestration flow',
+  },
+  {
+    selector: "Identifier[name='E']",
+    message: 'Eventual send is not yet supported within an orchestration flow',
+  },
+];
+
 module.exports = {
   extends: [
     'airbnb-base',
@@ -51,8 +63,9 @@ module.exports = {
 
     'github/array-foreach': 'warn',
 
-    // Work around https://github.com/import-js/eslint-plugin-import/issues/1810
-    'import/no-unresolved': ['error', { ignore: ['ava'] }],
+    // it doesn't support exports maps https://github.com/import-js/eslint-plugin-import/issues/1810
+    // and most of our code is covered by tsc which does
+    'import/no-unresolved': 'off',
     'import/prefer-default-export': 'off',
 
     'jsdoc/no-multi-asterisks': ['warn', { allowWhitespace: true }],
@@ -79,8 +92,8 @@ module.exports = {
           '**/*.config.*.js',
           // leading wildcard to work in CLI (package path) and IDE (repo path)
           '**/test/**',
-          '**/demo*/**/*js',
-          '**/scripts/**/*js',
+          '**/demo*/**',
+          '**/scripts/**',
         ],
       },
     ],
@@ -92,6 +105,13 @@ module.exports = {
         // Handled better by tsc
         'import/no-unresolved': 'off',
         'no-unused-vars': 'off',
+      },
+    },
+    {
+      // Orchestration flows
+      files: ['**/*.flows.js'],
+      rules: {
+        'no-restricted-syntax': ['error', ...orchestrationFlowRestrictions],
       },
     },
   ],
