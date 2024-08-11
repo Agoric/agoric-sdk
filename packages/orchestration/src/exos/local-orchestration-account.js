@@ -364,18 +364,13 @@ export const prepareLocalOrchestrationAccountKit = (
         },
       },
       holder: {
-        /** @type {HostFn<OrchestrationAccountI['asContinuingOffer']>} */
+        /** @satisfies {HostFn<OrchestrationAccountI['asContinuingOffer']>} */
         asContinuingOffer() {
-          // @ts-expect-error XXX invitationMakers
           // getPublicTopics resolves promptly (same run), so we don't need a watcher
           // eslint-disable-next-line no-restricted-syntax
           return asVow(async () => {
             await null;
-            const { holder, invitationMakers: im } = this.facets;
-            // XXX cast to a type that has string index signature
-            const invitationMakers = /** @type {InvitationMakers} */ (
-              /** @type {unknown} */ (im)
-            );
+            const { holder, invitationMakers } = this.facets;
 
             return harden({
               // getPublicTopics returns a vow, for membrane compatibility.

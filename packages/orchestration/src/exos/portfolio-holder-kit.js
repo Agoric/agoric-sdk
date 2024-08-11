@@ -99,7 +99,6 @@ const preparePortfolioHolderKit = (zone, { asVow, when }) => {
           const { accounts } = this.state;
           accounts.has(chainName) || Fail`no account found for ${chainName}`;
           const account = accounts.get(chainName);
-          // @ts-expect-error XXX invitationMakers
           return when(E(account).asContinuingOffer(), ({ invitationMakers }) =>
             E(invitationMakers)[action](...invitationArgs),
           );

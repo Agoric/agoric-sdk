@@ -32,7 +32,7 @@ import { E } from '@endo/eventual-send';
 
 /**
  * @template T
- * @typedef {Pick<PublishKit<T>, 'subscriber'> & { recorder: Recorder<T> }} RecorderKit
+ * @typedef { { recorder: Recorder<T>, subscriber: import('@endo/pass-style').RemotableObject & import('@agoric/internal').Remote<PublishKit<T>['subscriber']> }} RecorderKit
  */
 
 /**

@@ -85,8 +85,12 @@ export type HostFn<F extends CallableFunction> = F extends (
   ...args: infer A
 ) => infer R
   ? R extends Promise<infer T>
-    ? (...args: HostArgs<A>) => Vow<T extends Passable ? T : HostInterface<T>>
-    : (...args: HostArgs<A>) => HostInterface<R>
+    ? (
+        ...args: HostArgs<A>
+      ) => T extends Passable | void ? Vow<HostOf<T>> : never
+    : (
+        ...args: HostArgs<A>
+      ) => R extends Passable | void ? HostInterface<R> : never
   : never;
 
 export type HostOf<T extends Passable> = T extends CallableFunction

@@ -33,7 +33,7 @@ export const PublicTopicShape = M.splitRecord(
  * @template {object} T topic value
  * @typedef {{
  *   description?: string,
- *   subscriber: Remote<Subscriber<T>>,
+ *   subscriber: import('@endo/pass-style').RemotableObject & Remote<Subscriber<T>>,
  *   storagePath: string,
  * }} ResolvedPublicTopic
  */

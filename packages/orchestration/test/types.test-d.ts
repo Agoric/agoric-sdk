@@ -2,13 +2,16 @@
  * @file pure types types, no runtime, ignored by Ava
  */
 
-import { expectNotType, expectType } from 'tsd';
+import { expectAssignable, expectNotType, expectType } from 'tsd';
 import { typedJson } from '@agoric/cosmic-proto';
 import type { MsgDelegateResponse } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/tx.js';
 import type { QueryAllBalancesResponse } from '@agoric/cosmic-proto/cosmos/bank/v1beta1/query.js';
 import type { Vow, VowTools } from '@agoric/vow';
 import type { GuestAsyncFunc, HostInterface, HostFn } from '@agoric/async-flow';
 import type { ResolvedPublicTopic } from '@agoric/zoe/src/contractSupport/topics.js';
+import type { CopyRecordI, Passable } from '@endo/pass-style';
+import type { InvitationMakers } from '@agoric/smart-wallet/src/types.js';
+import type { CopyRecord, PassableCap, RemotableObject } from '@endo/marshal';
 import type {
   ChainAddress,
   CosmosValidatorAddress,
@@ -17,6 +20,7 @@ import type {
   Orchestrator,
   Chain,
   ChainInfo,
+  OrchestrationAccountI,
 } from '../src/types.js';
 import type { LocalOrchestrationAccountKit } from '../src/exos/local-orchestration-account.js';
 import { prepareCosmosOrchestrationAccount } from '../src/exos/cosmos-orchestration-account.js';
@@ -79,6 +83,17 @@ expectNotType<CosmosValidatorAddress>(chainAddr);
   ) satisfies HostInterface<StakingAccountActions>;
 }
 
+// Zoe tools
+{
+  const r: ResolvedContinuingOfferResult = null as any;
+  expectAssignable<Passable>(r.invitationMakers);
+  expectAssignable<CopyRecord<CopyRecord>>(r.publicSubscribers);
+  expectAssignable<CopyRecord<CopyRecord>>(r);
+  expectAssignable<Passable>(r.publicSubscribers.vault);
+  expectAssignable<Passable>(r.publicSubscribers);
+  expectAssignable<Passable>(r);
+}
+
 // HostFn
 {
   type PromiseFn = () => Promise<number>;
@@ -129,6 +144,9 @@ expectNotType<CosmosValidatorAddress>(chainAddr);
   const transferStepsVow: TransferStepsVow = (...args: any[]): Vow<any> =>
     ({}) as any;
   expectType<(...args: any[]) => Vow<any>>(transferStepsVow);
+
+  const aco: HostFn<OrchestrationAccountI['asContinuingOffer']> = null as any;
+  expectType<Vow>(aco());
 }
 
 // VowifyAll
