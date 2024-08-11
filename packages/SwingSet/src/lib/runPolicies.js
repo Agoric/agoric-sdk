@@ -4,7 +4,7 @@ export function foreverPolicy() {
   /** @type { RunPolicy } */
   return harden({
     allowCleanup() {
-      return {}; // unlimited budget
+      return true; // unlimited budget
     },
     vatCreated(_details) {
       return true;
@@ -31,7 +31,7 @@ export function crankCounter(
   /** @type { RunPolicy } */
   const policy = harden({
     allowCleanup() {
-      return { budget: 100 }; // limited budget
+      return { default: 100 }; // limited budget
     },
     vatCreated() {
       vats += 1;
@@ -64,7 +64,7 @@ export function computronCounter(limit, options = {}) {
   /** @type { RunPolicy } */
   const policy = harden({
     allowCleanup() {
-      return { budget: cleanupBudget }; // limited budget
+      return { default: cleanupBudget }; // limited budget
     },
     vatCreated() {
       total += vatCreatedComputrons;
@@ -93,7 +93,7 @@ export function wallClockWaiter(seconds) {
   const timeout = Date.now() + 1000 * seconds;
   /** @type { RunPolicy } */
   const policy = harden({
-    allowCleanup: () => ({}), // unlimited budget
+    allowCleanup: () => true, // unlimited budget
     vatCreated: () => Date.now() < timeout,
     crankComplete: () => Date.now() < timeout,
     crankFailed: () => Date.now() < timeout,
@@ -121,7 +121,7 @@ export function someCleanup(budget) {
     allowCleanup: () => {
       if (once) {
         once = false;
-        return { budget };
+        return { default: budget };
       }
       return false;
     },

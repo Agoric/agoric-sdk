@@ -4,6 +4,7 @@ import { assert, Fail } from '@endo/errors';
 import { isNat } from '@endo/nat';
 import { mustMatch, M } from '@endo/patterns';
 import { importBundle } from '@endo/import-bundle';
+import { objectMetaMap } from '@agoric/internal';
 import { makeUpgradeDisconnection } from '@agoric/internal/src/upgrade-api.js';
 import { kser, kslot, makeError } from '@agoric/kmarshal';
 import { assertKnownOptions } from '../lib/assertOptions.js';
@@ -39,6 +40,7 @@ import { notifyTermination } from './notifyTermination.js';
 import { makeVatAdminHooks } from './vat-admin-hooks.js';
 
 /** @import * as liveslots from '@agoric/swingset-liveslots' */
+/** @import {PolicyInputCleanupCounts} from '../types-external.js' */
 
 function abbreviateReplacer(_, arg) {
   if (typeof arg === 'bigint') {
@@ -388,12 +390,13 @@ export default function buildKernel(
    *    illegalSyscall: { vatID: VatID, info: SwingSetCapData } | undefined,
    *    vatRequestedTermination: { reject: boolean, info: SwingSetCapData } | undefined,
    *  } } DeliveryStatus
+   * @import {PolicyInputCleanupCounts} from '../types-external.js';
    * @typedef { {
    *    abort?: boolean, // changes should be discarded, not committed
    *    consumeMessage?: boolean, // discard the aborted delivery
    *    didDelivery?: VatID, // we made a delivery to a vat, for run policy and save-snapshot
    *    computrons?: bigint, // computron count for run policy
-   *    cleanups?: number, // cleanup budget spent
+   *    cleanups?: PolicyInputCleanupCounts, // cleanup budget spent
    *    meterID?: string, // deduct those computrons from a meter
    *    measureDirt?: { vatID: VatID, dirt: Dirt }, // dirt counters should increment
    *    terminate?: { vatID: VatID, reject: boolean, info: SwingSetCapData }, // terminate vat, notify vat-admin
@@ -669,17 +672,34 @@ export default function buildKernel(
    * Perform a small (budget-limited) amount of dead-vat cleanup work.
    *
    * @param {RunQueueEventCleanupTerminatedVat} message
-   *     'message' is the run-queue cleanup action, which includes a vatID and budget.
-   *     A budget of 'undefined' allows unlimited work. Otherwise, the budget is a Number,
-   *     and cleanup should not touch more than maybe 5*budget DB rows.
+   *     'message' is the run-queue cleanup action, which includes a
+   *     vatID and budget.  The budget contains work limits for each
+   *     phase of cleanup (perhaps Infinity to allow unlimited
+   *     work). Cleanup should not touch more than maybe 5*limit DB
+   *     rows.
    * @returns {Promise<CrankResults>}
    */
   async function processCleanupTerminatedVat(message) {
     const { vatID, budget } = message;
-    const { done, cleanups } = kernelKeeper.cleanupAfterTerminatedVat(
+    const { done, work } = kernelKeeper.cleanupAfterTerminatedVat(
       vatID,
       budget,
     );
+    const zeroFreeWorkCounts = objectMetaMap(work, desc =>
+      desc.value ? desc : undefined,
+    );
+    kernelSlog.write({ type: 'vat-cleanup', vatID, work: zeroFreeWorkCounts });
+
+    /** @type {PolicyInputCleanupCounts} */
+    const cleanups = {
+      total:
+        work.exports +
+        work.imports +
+        work.kv +
+        work.snapshots +
+        work.transcripts,
+      ...work,
+    };
     if (done) {
       kernelKeeper.forgetTerminatedVat(vatID);
       kernelSlog.write({ type: 'vat-cleanup-complete', vatID });
@@ -687,8 +707,7 @@ export default function buildKernel(
     // We don't perform any deliveries here, so there are no computrons to
     // report, but we do tell the runPolicy know how much kernel-side DB
     // work we did, so it can decide how much was too much.
-    const computrons = 0n;
-    return harden({ computrons, cleanups });
+    return harden({ computrons: 0n, cleanups });
   }
 
   /**
@@ -1782,11 +1801,25 @@ export default function buildKernel(
     }
   }
 
+  // match return value of runPolicy.allowCleanup, which is
+  // PolicyOutputCleanupBudget | true | false
   const allowCleanupShape = M.or(
     // 'false' will prohibit cleanup
     false,
+    // 'true' will allow unlimited cleanup
+    true,
     // otherwise allow cleanup, optionally with a limiting budget
-    M.splitRecord({}, { budget: M.number() }, M.record()),
+    M.splitRecord(
+      { default: M.number() },
+      {
+        exports: M.number(),
+        imports: M.number(),
+        kv: M.number(),
+        snapshots: M.number(),
+        transcripts: M.number(),
+      },
+      M.record(),
+    ),
   );
 
   /**
@@ -1808,7 +1841,7 @@ export default function buildKernel(
       };
     }
     // Absent specific configuration, allow unlimited cleanup.
-    const allowCleanup = policy?.allowCleanup?.() ?? {};
+    const allowCleanup = policy?.allowCleanup?.() ?? true;
     mustMatch(harden(allowCleanup), allowCleanupShape);
 
     const message =

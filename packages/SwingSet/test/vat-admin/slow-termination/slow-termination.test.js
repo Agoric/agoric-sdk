@@ -42,14 +42,14 @@ const makeCleanupPolicy = budget => {
     emptyCrank: stop,
     allowCleanup() {
       if (budget > 0) {
-        return { budget };
+        return { default: budget };
       } else {
         return false;
       }
     },
     didCleanup(spent) {
-      budget -= spent.cleanups;
-      cleanups += spent.cleanups;
+      budget -= spent.cleanups.total;
+      cleanups += spent.cleanups.total;
     },
   });
   const getCleanups = () => cleanups;
@@ -85,7 +85,7 @@ async function doSlowTerminate(t, mode) {
     crankFailed: () => true,
     emptyCrank: () => true,
     didCleanup: ({ cleanups }) => {
-      countCleanups += cleanups;
+      countCleanups += cleanups.total;
       return true;
     },
   };
@@ -148,8 +148,10 @@ async function doSlowTerminate(t, mode) {
       .pluck()
       .get(vatID);
 
-  // 20*2 for imports, 21*2 for exports, 20*1 for vatstore = 102
-  // plus 27 for usual liveslots stuff
+  // 20*2 for imports, 21*2 for exports, 20*1 for vatstore = 102.
+  // Plus 21 for the usual liveslots stuff, and 6 for kernel stuff
+  // like vNN.source/options
+
   t.is(remainingKV().length, 129);
   t.false(JSON.parse(kvStore.get('vats.terminated')).includes(vatID));
   // we get one span for snapshotInitial (=2), then a span every
@@ -179,7 +181,7 @@ async function doSlowTerminate(t, mode) {
 
   t.true(JSON.parse(kvStore.get('vats.terminated')).includes(vatID));
   // no cleanups were allowed, so nothing should be removed yet
-  t.truthy(kernelStorage.kvStore.get(`${vatID}.options`, undefined));
+  t.truthy(kernelStorage.kvStore.get(`${vatID}.options`));
   t.is(remainingKV().length, 129);
 
   // now do a series of cleanup runs, each with budget=5
@@ -190,8 +192,8 @@ async function doSlowTerminate(t, mode) {
     return getCleanups();
   };
 
-  // cleanup currently deletes c-list exports, then c-list imports,
-  // then all other kvStore entries, then snapshots, then transcripts
+  // cleanup deletes c-list exports, then c-list imports, then all
+  // other kvStore entries, then snapshots, then transcripts
 
   let leftKV = remainingKV().length;
   const cleanKV = async (expectedKV, expectedCleanups) => {
@@ -209,77 +211,77 @@ async function doSlowTerminate(t, mode) {
   await cleanKV(10, 5); // 5 c-list exports
   await cleanKV(10, 5); // 5 c-list exports
 
-  // we have one export left, so this clean(budget=5) will delete the
-  // two kv for the export, then the first four of our 20 c-list
-  // imports, each of which also has 2 kv)
+  // now we have one export left, so this clean(budget.default=5) will
+  // delete the one export (= two kv), then the first five of our 20
+  // c-list imports (each of which also has 2 kv, so 12 kv total)
 
-  await cleanKV(10, 5); // 1 c-list exports, 4 c-list imports
+  await cleanKV(12, 6); // 1 c-list exports, 5 c-list imports
   await cleanKV(10, 5); // 5 c-list imports
   await cleanKV(10, 5); // 5 c-list imports
-  await cleanKV(10, 5); // 5 c-list imports
+  await cleanKV(10, 5); // 5 c-list imports, leaving none
 
-  // we have one import left, so this clean(budget=5) will delete its
-  // two kv, then the first four of our 47 other kv entries (20
-  // vatstore plus 27 liveslots overhead
-  await cleanKV(6, 5); // 1 c-list import, 4 other kv
-  // now there are 45 other kv entries left
-  t.is(remainingKV().length, 43);
+  // the non-clist kvstore keys should still be present
+  t.truthy(kernelStorage.kvStore.get(`${vatID}.options`));
+
+  // there are no imports, so this clean(budget.default=5) will delete
+  // the first five of our 47 other kv entries (20 vatstore plus 27
+  // liveslots overhead
 
   await cleanKV(5, 5); // 5 other kv
+  // now there are 42 other kv entries left
+  t.is(remainingKV().length, 42);
+
   await cleanKV(5, 5); // 5 other kv
+  t.is(remainingKV().length, 37);
   await cleanKV(5, 5); // 5 other kv
+  t.is(remainingKV().length, 32);
   await cleanKV(5, 5); // 5 other kv
+  t.is(remainingKV().length, 27);
   await cleanKV(5, 5); // 5 other kv
+  t.is(remainingKV().length, 22);
+  await cleanKV(5, 5); // 5 other kv
+  t.is(remainingKV().length, 17);
   t.is(remainingSnapshots(), 5);
   await cleanKV(5, 5); // 5 other kv
+  t.is(remainingKV().length, 12);
   await cleanKV(5, 5); // 5 other kv
+  t.is(remainingKV().length, 7);
   await cleanKV(5, 5); // 5 other kv
-
-  // we have 3 kv entries left, so budget=5 will delete those three,
-  // then two snapshots
+  t.is(remainingKV().length, 2);
   t.is(remainingSnapshots(), 5);
-  let cleanups = await clean();
+
+  // there are two kv left, so this clean will delete those, then all 5 snapshots
+  await cleanKV(2, 7); // 2 final kv, and 5 snapshots
   t.deepEqual(remainingKV(), []);
-  t.is(kernelStorage.kvStore.get(`${vatID}.options`, undefined));
-  t.is(remainingSnapshots(), 3);
+  t.is(kernelStorage.kvStore.get(`${vatID}.options`), undefined);
+  t.is(remainingSnapshots(), 0);
+
   t.is(remainingTranscriptSpans(), 6);
   let ts = 59;
   if (mode === 'dieHappy') {
     ts = 60;
   }
   t.is(remainingTranscriptItems(), ts);
-  t.is(cleanups, 5);
-
-  // there are three snapshots remaining. do a clean with budget=3, to
-  // exercise the bugfix where we'd call deleteVatTranscripts() with
-  // budget=0 by mistake
-
-  cleanups = await clean(3);
-  t.is(cleanups, 3);
-  t.is(remainingSnapshots(), 0);
-  t.is(remainingTranscriptSpans(), 6);
-  t.is(remainingTranscriptItems(), ts);
 
   // the next clean (with the default budget of 5) will delete the
   // five most recent transcript spans, starting with the isCurrent=1
   // one (which had 9 or 10 items), leaving just the earliest (which
   // had 4, due to `snapshotInitial`)
-
-  cleanups = await clean();
+  let cleanups = await clean();
   t.is(cleanups, 5);
   t.is(remainingTranscriptSpans(), 1);
   t.is(remainingTranscriptItems(), 4);
+  // not quite done
   t.true(JSON.parse(kvStore.get('vats.terminated')).includes(vatID));
 
   // the final clean deletes the remaining span, and finishes by
   // removing the "still being deleted" bookkeeping, and the .options
 
   cleanups = await clean();
+  t.is(cleanups, 1);
   t.is(remainingTranscriptSpans(), 0);
   t.is(remainingTranscriptItems(), 0);
   t.is(remaining(), 0);
-  t.is(cleanups, 1);
-
   t.false(JSON.parse(kvStore.get('vats.terminated')).includes(vatID));
 }
 
