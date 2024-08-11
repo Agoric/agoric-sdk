@@ -3,9 +3,12 @@
 (use-modules (quickcheck)
              (quickcheck arbitrary)
              (quickcheck property)
+             (quickcheck generator)
              (ice-9 match)
              (srfi srfi-26) ;; 26: Notation for Specializing Parameters without Currying
              (ertp)
+	     ((endo) #:select (get %r))
+	     ((goblins) #:select (spawn-vat with-vat))
              )
 
 (define (ensure-equivalence m $gen)
@@ -19,8 +22,8 @@
     )
    ))
 
-(define (partial-order m $gen) ;; isGTE is a partial order with empty as minimum
-  (define empty (m 'makeEmpty))
+(define* (partial-order m $gen brand) ;; isGTE is a partial order with empty as minimum
+  (define empty (m 'makeEmpty brand))
   (property
    ((x $gen) (y $gen) (z $gen))
    (and
@@ -33,13 +36,13 @@
     (if (and (m 'isGTE x y) (m 'isGTE y x)) (m 'isEqual x y) #t)
     )))
 
-(define (add-ok m $gen) ;; closed, commutative, associative, monotonic, with empty identity
-  (define empty (m 'makeEmpty))
+(define (add-ok m $gen brand) ;; closed, commutative, associative, monotonic, with empty identity
+  (define empty (m 'makeEmpty brand))
   (property
    ((x $gen) (y $gen) (z $gen))
    (and
     ;; note: + for SET is not total.
-    (m 'coerce (m 'add x y))  ;; TODO: coerce / brands
+    (m 'coerce brand (m 'add x y))
     ;; Identity (right)
     (m 'isEqual (m 'add x empty) x)
     ;; Identity (left)
@@ -79,13 +82,27 @@
 	      'incomparable))
 	#t))))
 
-(define (check-amount-math m $gen)
+(define* (check-amount-math m $gen brand)
   (quickcheck (ensure-equivalence m $gen))
-  (quickcheck (partial-order m $gen))
-  (quickcheck (add-ok m $gen))
+  (quickcheck (partial-order m $gen brand))
+  (quickcheck (add-ok m $gen brand))
   (quickcheck (subtract-ok m $gen))
   (quickcheck (minmax-ok m $gen))
   )
 
-(check-amount-math nat-amount-math $natural)
-  
+(define a-vat (spawn-vat))
+(define aBrand
+  (with-vat a-vat
+	    (define anIssuerKit (makeIssuerKit "A"))
+	    (get anIssuerKit 'brand)))
+
+(define ($amountOf $value)
+  (let ((v-gen (arbitrary-gen $value))
+	(v-xform (arbitrary-xform $value)))
+    (arbitrary
+     (gen (generator-lift (lambda (value) (%r "brand" aBrand "value" value)) v-gen))
+     (xform (lambda (p gen)
+	      (v-xform (get p 'value) v-gen))))))
+
+(check-amount-math nat-value-math $natural aBrand)
+(check-amount-math nat-amount-math ($amountOf $natural) aBrand)
