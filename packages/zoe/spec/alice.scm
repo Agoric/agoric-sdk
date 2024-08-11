@@ -16,7 +16,7 @@
 (test-begin "alice")
 
 (test-assert (procedure? spawn-promise-values))
-(test-assert (procedure? make-issuer-kit))
+(test-assert (procedure? makeIssuerKit))
 
 (test-equal (nat? 0) #t)
 (test-equal (nat? -1) #f)
@@ -31,10 +31,10 @@
 
  (peek "in vat a" a-vat)
 
- (define money (make-issuer-kit 'money))
+ (define money (makeIssuerKit 'money))
  (test-equal (map car money) '(mint issuer brand))
 
- (define stock (make-issuer-kit 'stock))
+ (define stock (makeIssuerKit 'stock))
 
  (define the-issuers
       (%r
