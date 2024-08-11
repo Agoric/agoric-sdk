@@ -8,9 +8,9 @@
              (ertp)
              )
 
-(define (ensure-equivalence m)
+(define (ensure-equivalence m $gen)
   (property
-   ((x $natural) (y $natural) (z $natural))
+   ((x $gen) (y $gen) (z $gen))
    (and
     (memq (m 'isEqual x y) '(#t #f))  ;; total
     (m 'isEqual x x) ;; Reflexive
@@ -19,10 +19,10 @@
     )
    ))
 
-(define (partial-order m) ;; isGTE is a partial order with empty as minimum
+(define (partial-order m $gen) ;; isGTE is a partial order with empty as minimum
   (define empty (m 'makeEmpty))
   (property
-   ((x $natural) (y $natural) (z $natural))
+   ((x $gen) (y $gen) (z $gen))
    (and
     (m 'isGTE x empty)
     ;; Total
@@ -33,10 +33,10 @@
     (if (and (m 'isGTE x y) (m 'isGTE y x)) (m 'isEqual x y) #t)
     )))
 
-(define (add-ok m) ;; closed, commutative, associative, monotonic, with empty identity
+(define (add-ok m $gen) ;; closed, commutative, associative, monotonic, with empty identity
   (define empty (m 'makeEmpty))
   (property
-   ((x $natural) (y $natural) (z $natural))
+   ((x $gen) (y $gen) (z $gen))
    (and
     ;; note: + for SET is not total.
     (m 'coerce (m 'add x y))  ;; TODO: coerce / brands
@@ -55,17 +55,17 @@
     )
    ))
 
-(define (subtract-ok m) ;; (x + y) - y = x; (y - x) + x = y if y >= x'
+(define (subtract-ok m $gen) ;; (x + y) - y = x; (y - x) + x = y if y >= x'
   (property
-   ((x $natural) (y $natural))
+   ((x $gen) (y $gen))
    (and
     (m 'isEqual (m 'subtract (m 'add x y) y) x)
     (if (m 'isGTE y x) (m 'isEqual (m 'add (m 'subtract y x) x) y) #t)
     )))
 
-(define (minmax-ok m)
+(define (minmax-ok m $gen)
   (property
-   ((x $natural) (y $natural))
+   ((x $gen) (y $gen))
    (and
     (if (m 'isGTE x y)
         (m 'isEqual (m 'max x y) x)
@@ -79,11 +79,13 @@
 	      'incomparable))
 	#t))))
 
-(quickcheck (ensure-equivalence nat-amount-math))
-(quickcheck (partial-order nat-amount-math))
-(quickcheck (add-ok nat-amount-math))
-(quickcheck (subtract-ok nat-amount-math))
-(quickcheck (minmax-ok nat-amount-math))
+(define (check-amount-math m $gen)
+  (quickcheck (ensure-equivalence m $gen))
+  (quickcheck (partial-order m $gen))
+  (quickcheck (add-ok m $gen))
+  (quickcheck (subtract-ok m $gen))
+  (quickcheck (minmax-ok m $gen))
+  )
 
-
+(check-amount-math nat-amount-math $natural)
   
