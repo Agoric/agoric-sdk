@@ -17,14 +17,6 @@ export const NANOSECONDS_PER_SECOND = 1_000_000_000n;
  * @param {Remote<TimerService>} timer
  */
 export function makeTimestampHelper(timer) {
-  /** @type {TimerBrand | undefined} */
-  let brandCache;
-  const getBrand = async () => {
-    if (brandCache) return brandCache;
-    brandCache = await E(timer).getTimerBrand();
-    return brandCache;
-  };
-
   return harden({
     /**
      * XXX do this need to be resumable / use Vows?
@@ -43,7 +35,7 @@ export function makeTimestampHelper(timer) {
         relativeTime ||
         TimeMath.coerceRelativeTimeRecord(
           SECONDS_PER_MINUTE * 5n,
-          await getBrand(),
+          currentTime.timerBrand,
         );
       return (
         TimeMath.addAbsRel(currentTime, timeout).absValue *
