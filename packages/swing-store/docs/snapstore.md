@@ -42,7 +42,7 @@ The SnapStore doesn't provide an explicit API to call when a vat is first create
 
 When terminating a vat, the kernel should first call `snapStore.stopUsingLastSnapshot(vatID)`, the same call it would make at the end of an incarnation, to indicate that we're no longer using the last snapshot. This results in zero in-use snapshots.
 
-Then, the kernel must either call `snapStore.deleteVatSnapshots(vatID, undefined)` to delete everything at once, or make a series of calls (spread out over time/blocks) to `snapStore.deleteVatSnapshots(vatID, budget)`. Each will return `{ done, cleanups }`, which can be used to manage the rate-limiting and know when the process is finished.
+Then, the kernel must either call `snapStore.deleteVatSnapshots(vatID)` or `deleteVatSnapshots(vatID, Infinity)` to delete everything at once, or make a series of calls (spread out over time/blocks) to `snapStore.deleteVatSnapshots(vatID, budget)`. Each will return `{ done, cleanups }`, which can be used to manage the rate-limiting and know when the process is finished.
 
 The `stopUsingLastSnapshot()` is a performance improvement, but is not mandatory. If omitted, exports will continue to include the vat's snapshot artifacts until the first call to `deleteVatSnapshots()`, after which they will go away. Snapshots are deleted in descending `snapPos` order, so the first call will delete the only `inUse = 1` snapshot, after which exports will omit all artifacts for the vatID. `stopUsingLastSnapshot()` is idempotent, and extra calls will leave the DB unchanged.
 

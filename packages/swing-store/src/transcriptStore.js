@@ -394,9 +394,9 @@ export function makeTranscriptStore(
    * @param {number} [budget]
    * @returns {{ done: boolean, cleanups: number }}
    */
-  function deleteVatTranscripts(vatID, budget = undefined) {
+  function deleteVatTranscripts(vatID, budget = Infinity) {
     ensureTxn();
-    const deleteAll = budget === undefined;
+    const deleteAll = budget === Infinity;
     assert(deleteAll || budget >= 1, 'budget must be undefined or positive');
     // We can't use .iterate because noteExport can write to the DB,
     // and overlapping queries are not supported.
