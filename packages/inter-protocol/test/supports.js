@@ -59,11 +59,8 @@ harden(setUpZoeForTest);
  */
 export const setupBootstrap = async (t, optTimer) => {
   const trace = makeTracer('PromiseSpace', false);
-  const space = /** @type {any} */ (makePromiseSpace(trace));
-  const { produce, consume } = /**
-   * @type {import('../src/proposals/econ-behaviors.js').EconomyBootstrapPowers &
-   *     BootstrapPowers}
-   */ (space);
+  const space = /** @type {Space} */ (makePromiseSpace(trace));
+  const { produce, consume } = space;
 
   await produceDiagnostics(space);
 
