@@ -121,11 +121,6 @@ export const prepareLocalOrchestrationAccountKit = (
           .optional(M.arrayOf(M.undefined())) // empty context
           .returns(VowShape),
       }),
-      getChainInfoWatcher: M.interface('getChainInfoWatcher', {
-        onFulfilled: M.call(M.record()) // agoric chain info
-          .optional(ChainAddressShape)
-          .returns(Vow$(M.record())), // connection info
-      }),
       transferWatcher: M.interface('transferWatcher', {
         onFulfilled: M.call([M.record(), M.nat()])
           .optional({
@@ -265,18 +260,6 @@ export const prepareLocalOrchestrationAccountKit = (
               BigInt(completionTime.seconds) + maxClockSkew,
             ),
             this.facets.returnVoidWatcher,
-          );
-        },
-      },
-      getChainInfoWatcher: {
-        /**
-         * @param {ChainInfo} agoricChainInfo
-         * @param {ChainAddress} destination
-         */
-        onFulfilled(agoricChainInfo, destination) {
-          return chainHub.getConnectionInfo(
-            agoricChainInfo.chainId,
-            destination.chainId,
           );
         },
       },
@@ -556,9 +539,10 @@ export const prepareLocalOrchestrationAccountKit = (
             if ('brand' in amount) throw Fail`ERTP Amounts not yet supported`;
 
             const connectionInfoV = watch(
-              chainHub.getChainInfo('agoric'),
-              this.facets.getChainInfoWatcher,
-              destination,
+              chainHub.getConnectionInfo(
+                this.state.address.chainId,
+                destination.chainId,
+              ),
             );
 
             // set a `timeoutTimestamp` if caller does not supply either `timeoutHeight` or `timeoutTimestamp`
