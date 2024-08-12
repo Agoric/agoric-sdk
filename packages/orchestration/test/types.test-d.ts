@@ -92,6 +92,10 @@ expectNotType<CosmosValidatorAddress>(chainAddr);
   expectAssignable<Passable>(r.publicSubscribers.vault);
   expectAssignable<Passable>(r.publicSubscribers);
   expectAssignable<Passable>(r);
+
+  const f = () => {};
+  expectAssignable<Passable>(undefined);
+  expectAssignable<Passable>(f());
 }
 
 // HostFn

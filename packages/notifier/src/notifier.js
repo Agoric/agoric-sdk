@@ -42,7 +42,7 @@ export const makeNotifier = sharableInternalsP => {
 
 /**
  * @template T
- * @param {ERef<Subscriber<T>> | Remote<Subscriber<T>>} subscriber
+ * @param {ERef<Remote<Subscriber<T>>>} subscriber
  * @returns {Notifier<T>}
  */
 export const makeNotifierFromSubscriber = subscriber => {
