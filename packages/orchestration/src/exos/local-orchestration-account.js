@@ -149,6 +149,7 @@ export const prepareLocalOrchestrationAccountKit = (
         CloseAccount: M.call().returns(M.promise()),
         Send: M.call().returns(M.promise()),
         SendAll: M.call().returns(M.promise()),
+        Transfer: M.call().returns(M.promise()),
       }),
     },
     /**
@@ -242,6 +243,25 @@ export const prepareLocalOrchestrationAccountKit = (
             return watch(this.facets.holder.sendAll(toAccount, amounts));
           };
           return zcf.makeInvitation(offerHandler, 'SendAll');
+        },
+        Transfer() {
+          /**
+           * @type {OfferHandler<
+           *   Vow<void>,
+           *   {
+           *     amount: AmountArg;
+           *     destination: ChainAddress;
+           *     opts: IBCMsgTransferOptions;
+           *   }
+           * >}
+           */
+          const offerHandler = (seat, { amount, destination, opts }) => {
+            seat.exit();
+            return watch(
+              this.facets.holder.transfer(amount, destination, opts),
+            );
+          };
+          return zcf.makeInvitation(offerHandler, 'Transfer');
         },
       },
       undelegateWatcher: {

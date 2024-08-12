@@ -396,6 +396,50 @@ test('basic-flows', async t => {
         'Error: ABCI code: 5: error handling packet: see events for details',
     },
   });
+
+  await wd.sendOffer({
+    id: 'transfer-to-noble-from-agoric',
+    invitationSpec: {
+      source: 'continuing',
+      previousOffer: 'request-loa',
+      invitationMakerName: 'Transfer',
+    },
+    proposal: {},
+    offerArgs: {
+      amount: { denom: 'ibc/uusdchash', value: 10n },
+      destination: {
+        chainId: 'noble-1',
+        value: 'noble1test',
+        encoding: 'bech32,',
+      },
+    },
+  });
+  t.like(wd.getLatestUpdateRecord(), {
+    status: {
+      id: 'transfer-to-noble-from-agoric',
+      error: undefined,
+    },
+  });
+
+  await t.throwsAsync(
+    wd.executeOffer({
+      id: 'transfer-to-noble-from-agoric-timeout',
+      invitationSpec: {
+        source: 'continuing',
+        previousOffer: 'request-loa',
+        invitationMakerName: 'Transfer',
+      },
+      proposal: {},
+      offerArgs: {
+        amount: { denom: 'ibc/uusdchash', value: SIMULATED_ERRORS.TIMEOUT },
+        destination: {
+          chainId: 'noble-1',
+          value: 'noble1test',
+          encoding: 'bech32,',
+        },
+      },
+    }),
+  );
 });
 
 test.serial('auto-stake-it - proposal', async t => {
