@@ -12,7 +12,8 @@ import { initializeKernel } from '../../src/controller/initializeKernel.js';
 test('install bundle', async t => {
   const endowments = makeKernelEndowments();
   const { bundleStore } = endowments.kernelStorage;
-  await initializeKernel({}, endowments.kernelStorage);
+  const kconfig = { vats: {}, namedBundleIDs: {}, idToBundle: {} };
+  await initializeKernel(kconfig, endowments.kernelStorage);
   const kernel = buildKernel(endowments, {}, {});
   await kernel.start(); // empty queue
 

@@ -1,6 +1,11 @@
+/* eslint-disable no-use-before-define */
 import { Nat, isNat } from '@endo/nat';
 import { assert, Fail } from '@endo/errors';
-import { initializeVatState, makeVatKeeper } from './vatKeeper.js';
+import {
+  initializeVatState,
+  makeVatKeeper,
+  DEFAULT_REAP_DIRT_THRESHOLD_KEY,
+} from './vatKeeper.js';
 import { initializeDeviceState, makeDeviceKeeper } from './deviceKeeper.js';
 import { parseReachableAndVatSlot } from './reachable.js';
 import { insistStorageAPI } from '../../lib/storageAPI.js';
@@ -33,13 +38,19 @@ const enableKernelGC = true;
  * @typedef { import('../../types-external.js').BundleCap } BundleCap
  * @typedef { import('../../types-external.js').BundleID } BundleID
  * @typedef { import('../../types-external.js').EndoZipBase64Bundle } EndoZipBase64Bundle
- * @typedef { import('../../types-external.js').KernelOptions } KernelOptions
  * @typedef { import('../../types-external.js').KernelSlog } KernelSlog
  * @typedef { import('../../types-external.js').ManagerType } ManagerType
  * @typedef { import('../../types-external.js').SnapStore } SnapStore
  * @typedef { import('../../types-external.js').TranscriptStore } TranscriptStore
  * @typedef { import('../../types-external.js').VatKeeper } VatKeeper
+ * @typedef { import('../../types-internal.js').InternalKernelOptions } InternalKernelOptions
+ * @typedef { import('../../types-internal.js').ReapDirtThreshold } ReapDirtThreshold
  */
+
+export { DEFAULT_REAP_DIRT_THRESHOLD_KEY };
+
+// most recent DB schema version
+export const CURRENT_SCHEMA_VERSION = 1;
 
 // Kernel state lives in a key-value store supporting key retrieval by
 // lexicographic range. All keys and values are strings.
@@ -52,8 +63,15 @@ const enableKernelGC = true;
 // allowed to vary between instances in a consensus machine. Everything else
 // is required to be deterministic.
 //
-// The schema is:
 //
+// The schema is indicated by the value of the "version" key, which
+// was added for version 1 (i.e., version 0 had no such key), and is
+// only modified by a call to upgradeSwingset(). See below for
+// deltas/upgrades from one version to the next.
+//
+// The current ("v1") schema keys/values are:
+//
+// version = '1'
 // vat.names = JSON([names..])
 // vat.dynamicIDs = JSON([vatIDs..])
 // vat.name.$NAME = $vatID = v$NN
@@ -68,13 +86,22 @@ const enableKernelGC = true;
 // bundle.$BUNDLEID = JSON(bundle)
 //
 // kernel.defaultManagerType = managerType
-// kernel.defaultReapInterval = $NN
+// (old) kernel.defaultReapInterval = $NN
+// kernel.defaultReapDirtThreshold = JSON({ thresholds })
+//         thresholds (all optional)
+//          deliveries: number or 'never' (default)
+//          gcKrefs: number or 'never' (default)
+//          computrons:  number or 'never' (default)
+//          never: boolean (default false)
 // kernel.relaxDurabilityRules = missing | 'true'
 // kernel.snapshotInitial = $NN
 // kernel.snapshotInterval = $NN
 
 // v$NN.source = JSON({ bundle }) or JSON({ bundleName })
-// v$NN.options = JSON
+// v$NN.options = JSON , options include:
+//       .reapDirtThreshold = JSON({ thresholds })
+//         thresholds (all optional, default to kernel-wide defaultReapDirtThreshold)
+//       (leave room for .snapshotDirtThreshold for #6786)
 // v$NN.o.nextID = $NN
 // v$NN.p.nextID = $NN
 // v$NN.d.nextID = $NN
@@ -84,8 +111,10 @@ const enableKernelGC = true;
 // v$NN.c.$vatSlot = $kernelSlot = ko$NN/kp$NN/kd$NN
 // v$NN.vs.$key = string
 // v$NN.meter = m$NN // XXX does this exist?
-// v$NN.reapInterval = $NN or 'never'
-// v$NN.reapCountdown = $NN or 'never'
+// old (v0): v$NN.reapInterval = $NN or 'never'
+// old (v0): v$NN.reapCountdown = $NN or 'never'
+// v$NN.reapDirt = JSON({ deliveries, gcKrefs, computrons }) // missing keys treated as zero
+// (leave room for v$NN.snapshotDirt and options.snapshotDirtThreshold for #6786)
 // exclude from consensus
 // local.*
 
@@ -132,6 +161,18 @@ const enableKernelGC = true;
 // Prefix reserved for host written data:
 // host.
 
+// Kernel state schema changes:
+//
+// v0: the original
+//   * no `version`
+//   * uses `initialized = 'true'`
+// v1:
+//   * add `version = '1'`
+//   * remove `initialized`
+//   * replace `kernel.defaultReapInterval` with `kernel.defaultReapDirtThreshold`
+//   * replace vat's `vNN.reapInterval`/`vNN.reapCountdown` with `vNN.reapDirt`
+//             and a `vNN.reapDirtThreshold` in `vNN.options`
+
 export function commaSplit(s) {
   if (s === '') {
     return [];
@@ -144,6 +185,21 @@ function insistMeterID(m) {
   assert.equal(m[0], 'm');
   Nat(BigInt(m.slice(1)));
 }
+
+export const getAllStaticVats = kvStore => {
+  const result = [];
+  const prefix = 'vat.name.';
+  for (const k of enumeratePrefixedKeys(kvStore, prefix)) {
+    const vatID = kvStore.get(k) || Fail`getNextKey ensures get`;
+    const name = k.slice(prefix.length);
+    result.push([name, vatID]);
+  }
+  return result;
+};
+
+export const getAllDynamicVats = getRequired => {
+  return JSON.parse(getRequired('vat.dynamicIDs'));
+};
 
 // we use different starting index values for the various vNN/koNN/kdNN/kpNN
 // slots, to reduce confusing overlap when looking at debug messages (e.g.
@@ -163,14 +219,49 @@ const FIRST_PROMISE_ID = 40n;
 const FIRST_CRANK_NUMBER = 0n;
 const FIRST_METER_ID = 1n;
 
+// this default "reap interval" is low for the benefit of tests:
+// applications should set it to something higher (perhaps 200) based
+// on their expected usage
+
+export const DEFAULT_DELIVERIES_PER_BOYD = 1;
+
+// "20" will trigger a BOYD after 10 krefs are dropped and retired
+// (drops and retires are delivered in separate messages, so
+// 10+10=20). The worst case work-expansion we've seen is in #8401,
+// where one drop breaks one cycle, and each cycle's cleanup causes 50
+// syscalls in the next v9-zoe BOYD. So this should limit each BOYD
+// to cleaning 10 cycles, in 500 syscalls.
+
+export const DEFAULT_GC_KREFS_PER_BOYD = 20;
+
 /**
  * @param {SwingStoreKernelStorage} kernelStorage
- * @param {KernelSlog|null} kernelSlog
+ * @param {number | 'uninitialized'} expectedVersion
+ * @param {KernelSlog} [kernelSlog]
  */
-export default function makeKernelKeeper(kernelStorage, kernelSlog) {
+export default function makeKernelKeeper(
+  kernelStorage,
+  expectedVersion,
+  kernelSlog,
+) {
   const { kvStore, transcriptStore, snapStore, bundleStore } = kernelStorage;
 
   insistStorageAPI(kvStore);
+
+  const versionString = kvStore.get('version');
+  const version = Number(versionString || '0');
+  if (expectedVersion === 'uninitialized') {
+    if (kvStore.has('initialized')) {
+      throw Error(`kernel DB already initialized (v0)`);
+    }
+    if (versionString) {
+      throw Error(`kernel DB already initialized (v${versionString})`);
+    }
+  } else if (expectedVersion !== version) {
+    throw Error(
+      `kernel DB is too old: has version v${version}, but expected v${expectedVersion}`,
+    );
+  }
 
   /**
    * @param {string} key
@@ -233,12 +324,10 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
     deviceKeepers: new Map(), // deviceID -> deviceKeeper
   });
 
-  function getInitialized() {
-    return !!kvStore.get('initialized');
-  }
-
   function setInitialized() {
-    kvStore.set('initialized', 'true');
+    assert(!kvStore.has('initialized'));
+    assert(!kvStore.has('version'));
+    kvStore.set('version', `${CURRENT_SCHEMA_VERSION}`);
   }
 
   function getCrankNumber() {
@@ -290,12 +379,17 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
   }
 
   /**
-   * @param {KernelOptions} kernelOptions
+   * @param {InternalKernelOptions} kernelOptions
    */
   function createStartingKernelState(kernelOptions) {
+    // this should probably be a standalone function, not a method
     const {
       defaultManagerType = 'local',
-      defaultReapInterval = 1,
+      defaultReapDirtThreshold = {
+        deliveries: DEFAULT_DELIVERIES_PER_BOYD,
+        gcKrefs: DEFAULT_GC_KREFS_PER_BOYD,
+        computrons: 'never',
+      },
       relaxDurabilityRules = false,
       snapshotInitial = 3,
       snapshotInterval = 200,
@@ -317,7 +411,10 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
     initQueue('acceptanceQueue');
     kvStore.set('crankNumber', `${FIRST_CRANK_NUMBER}`);
     kvStore.set('kernel.defaultManagerType', defaultManagerType);
-    kvStore.set('kernel.defaultReapInterval', `${defaultReapInterval}`);
+    kvStore.set(
+      DEFAULT_REAP_DIRT_THRESHOLD_KEY,
+      JSON.stringify(defaultReapDirtThreshold),
+    );
     kvStore.set('kernel.snapshotInitial', `${snapshotInitial}`);
     kvStore.set('kernel.snapshotInterval', `${snapshotInterval}`);
     if (relaxDurabilityRules) {
@@ -352,21 +449,25 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
 
   /**
    *
-   * @returns {number | 'never'}
+   * @returns {ReapDirtThreshold}
    */
-  function getDefaultReapInterval() {
-    const r = getRequired('kernel.defaultReapInterval');
-    const ri = r === 'never' ? r : Number.parseInt(r, 10);
-    assert(ri === 'never' || typeof ri === 'number', `k.dri is '${ri}'`);
-    return ri;
+  function getDefaultReapDirtThreshold() {
+    return JSON.parse(getRequired(DEFAULT_REAP_DIRT_THRESHOLD_KEY));
   }
 
-  function setDefaultReapInterval(interval) {
-    assert(
-      interval === 'never' || isNat(interval),
-      'invalid defaultReapInterval value',
-    );
-    kvStore.set('kernel.defaultReapInterval', `${interval}`);
+  /**
+   * @param {ReapDirtThreshold} threshold
+   */
+  function setDefaultReapDirtThreshold(threshold) {
+    assert.typeof(threshold, 'object');
+    assert(threshold);
+    for (const [key, value] of Object.entries(threshold)) {
+      assert(
+        (typeof value === 'number' && value > 0) || value === 'never',
+        `threshold[${key}] ${value} must be a positive number or "never"`,
+      );
+    }
+    kvStore.set(DEFAULT_REAP_DIRT_THRESHOLD_KEY, JSON.stringify(threshold));
   }
 
   function getNat(key) {
@@ -764,7 +865,6 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
 
     let idx = 0;
     for (const dataSlot of capdata.slots) {
-      // eslint-disable-next-line no-use-before-define
       incrementRefCount(dataSlot, `resolve|${kernelSlot}|s${idx}`);
       idx += 1;
     }
@@ -787,7 +887,6 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
 
   function cleanupAfterTerminatedVat(vatID) {
     insistVatID(vatID);
-    // eslint-disable-next-line no-use-before-define
     const vatKeeper = provideVatKeeper(vatID);
     const exportPrefix = `${vatID}.c.o+`;
     const importPrefix = `${vatID}.c.o-`;
@@ -1102,15 +1201,7 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
     kvStore.set(KEY, JSON.stringify(dynamicVatIDs));
   }
 
-  function getStaticVats() {
-    const result = [];
-    for (const k of enumeratePrefixedKeys(kvStore, 'vat.name.')) {
-      const name = k.slice(9);
-      const vatID = kvStore.get(k) || Fail`getNextKey ensures get`;
-      result.push([name, vatID]);
-    }
-    return result;
-  }
+  const getStaticVats = () => getAllStaticVats(kvStore);
 
   function getDevices() {
     const result = [];
@@ -1122,9 +1213,7 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
     return result;
   }
 
-  function getDynamicVats() {
-    return JSON.parse(getRequired('vat.dynamicIDs'));
-  }
+  const getDynamicVats = () => getAllDynamicVats(getRequired);
 
   function allocateUpgradeID() {
     const nextID = Nat(BigInt(getRequired(`vat.nextUpgradeID`)));
@@ -1262,7 +1351,6 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
           if (reachable === 0) {
             const ownerVatID = ownerOfKernelObject(kref);
             if (ownerVatID) {
-              // eslint-disable-next-line no-use-before-define
               const vatKeeper = provideVatKeeper(ownerVatID);
               const isReachable = vatKeeper.getReachableFlag(kref);
               if (isReachable) {
@@ -1288,15 +1376,17 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
     maybeFreeKrefs.clear();
   }
 
+  function createVatState(vatID, source, options) {
+    initializeVatState(kvStore, transcriptStore, vatID, source, options);
+  }
+
   function provideVatKeeper(vatID) {
     insistVatID(vatID);
     const found = ephemeral.vatKeepers.get(vatID);
     if (found !== undefined) {
       return found;
     }
-    if (!kvStore.has(`${vatID}.o.nextID`)) {
-      initializeVatState(kvStore, transcriptStore, vatID);
-    }
+    assert(kvStore.has(`${vatID}.o.nextID`), `${vatID} was not initialized`);
     const vk = makeVatKeeper(
       kvStore,
       transcriptStore,
@@ -1314,6 +1404,7 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
       incStat,
       decStat,
       getCrankNumber,
+      scheduleReap,
       snapStore,
     );
     ephemeral.vatKeepers.set(vatID, vk);
@@ -1530,13 +1621,13 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
   }
 
   return harden({
-    getInitialized,
     setInitialized,
     createStartingKernelState,
     getDefaultManagerType,
-    getDefaultReapInterval,
     getRelaxDurabilityRules,
-    setDefaultReapInterval,
+    getDefaultReapDirtThreshold,
+    setDefaultReapDirtThreshold,
+
     getSnapshotInitial,
     getSnapshotInterval,
     setSnapshotInterval,
@@ -1610,6 +1701,7 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
     getVatIDForName,
     allocateVatIDForNameIfNeeded,
     allocateUnusedVatID,
+    createVatState,
     provideVatKeeper,
     vatIsAlive,
     evictVatKeeper,
