@@ -17,6 +17,9 @@ const responses = {
   // eyJkYXRhIjoiQ2hzeUdRb1hDaEp6YjIxbExXbHVkbUZzYVdRdFpHVnViMjBTQVRBPSJ9
   queryBalanceUnknownDenom:
     'eyJyZXN1bHQiOiJleUprWVhSaElqb2lRMmh6ZVVkUmIxaERhRXA2WWpJeGJFeFhiSFZrYlVaellWZFJkRnBIVm5WaU1qQlRRVlJCUFNKOSJ9',
+  // /ibc.applications.transfer.v1.MsgTransferResponse - sequence 0n
+  ibcTransfer:
+    'eyJyZXN1bHQiOiJFak1LTVM5cFltTXVZWEJ3YkdsallYUnBiMjV6TG5SeVlXNXpabVZ5TG5ZeExrMXpaMVJ5WVc1elptVnlVbVZ6Y0c5dWMyVT0ifQ==',
   // {"error":"ABCI code: 4: error handling packet: see events for details"}
   error4:
     'eyJlcnJvciI6IkFCQ0kgY29kZTogNDogZXJyb3IgaGFuZGxpbmcgcGFja2V0OiBzZWUgZXZlbnRzIGZvciBkZXRhaWxzIn0=',
@@ -56,6 +59,11 @@ export const protoMsgMocks = {
   delegateWithOpts: {
     msg: 'eyJ0eXBlIjoxLCJkYXRhIjoiQ2xVS0l5OWpiM050YjNNdWMzUmhhMmx1Wnk1Mk1XSmxkR0V4TGsxelowUmxiR1ZuWVhSbEVpNEtDMk52YzIxdmN6RjBaWE4wRWhKamIzTnRiM04yWVd4dmNHVnlNWFJsYzNRYUN3b0ZkV0YwYjIwU0FqRXdFZ2RVUlZOVVNVNUhHSUNVNjl3RCIsIm1lbW8iOiIifQ==',
     ack: responses.delegate,
+  },
+  // MsgTransfer 10 ibc/uusdchash from cosmos1test to noble1test through channel-536
+  ibcTransfer: {
+    msg: 'eyJ0eXBlIjoxLCJkYXRhIjoiQ25zS0tTOXBZbU11WVhCd2JHbGpZWFJwYjI1ekxuUnlZVzV6Wm1WeUxuWXhMazF6WjFSeVlXNXpabVZ5RWs0S0NIUnlZVzV6Wm1WeUVndGphR0Z1Ym1Wc0xUVXpOaG9UQ2cxcFltTXZkWFZ6WkdOb1lYTm9FZ0l4TUNJTFkyOXpiVzl6TVhSbGMzUXFDbTV2WW14bE1YUmxjM1F5QURpQThKTEwzUWc9IiwibWVtbyI6IiJ9',
+    ack: responses.ibcTransfer,
   },
   error: {
     msg: '',

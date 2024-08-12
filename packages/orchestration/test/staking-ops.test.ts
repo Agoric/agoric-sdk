@@ -23,10 +23,12 @@ import { makeDurableZone } from '@agoric/zone/durable.js';
 import { decodeBase64 } from '@endo/base64';
 import { Far } from '@endo/far';
 import { Timestamp } from '@agoric/cosmic-proto/google/protobuf/timestamp.js';
+import { makeNameHubKit } from '@agoric/vats';
 import { prepareCosmosOrchestrationAccountKit } from '../src/exos/cosmos-orchestration-account.js';
 import type { ChainAddress, IcaAccount, ICQConnection } from '../src/types.js';
 import { encodeTxResponse } from '../src/utils/cosmos.js';
 import { MILLISECONDS_PER_SECOND } from '../src/utils/time.js';
+import { makeChainHub } from '../src/exos/chain-hub.js';
 
 const trivialDelegateResponse = encodeTxResponse(
   {},
@@ -206,6 +208,7 @@ const makeScenario = () => {
     timeStep: TICK,
     eventLoopIteration,
   });
+  const { nameHub: agoricNames } = makeNameHubKit();
   return {
     baggage,
     zone,
@@ -216,20 +219,29 @@ const makeScenario = () => {
     icqConnection,
     vowTools,
     ...mockZCF(),
+    agoricNames,
   };
 };
 
 test('makeAccount() writes to storage', async t => {
   const s = makeScenario();
   const { account, timer } = s;
-  const { makeRecorderKit, storageNode, zcf, icqConnection, vowTools, zone } =
-    s;
-  const make = prepareCosmosOrchestrationAccountKit(
-    zone,
+  const {
+    agoricNames,
     makeRecorderKit,
+    storageNode,
+    zcf,
+    icqConnection,
+    vowTools,
+    zone,
+  } = s;
+  const make = prepareCosmosOrchestrationAccountKit(zone, {
+    chainHub: makeChainHub(agoricNames, vowTools),
+    makeRecorderKit,
+    timerService: timer,
     vowTools,
     zcf,
-  );
+  });
 
   const { holder } = make(account.getAddress(), 'uatom', {
     account,
@@ -252,14 +264,22 @@ test('makeAccount() writes to storage', async t => {
 test('withdrawRewards() on StakingAccountHolder formats message correctly', async t => {
   const s = makeScenario();
   const { account, calls, timer } = s;
-  const { makeRecorderKit, storageNode, zcf, icqConnection, vowTools, zone } =
-    s;
-  const make = prepareCosmosOrchestrationAccountKit(
-    zone,
+  const {
+    agoricNames,
     makeRecorderKit,
+    storageNode,
+    zcf,
+    icqConnection,
+    vowTools,
+    zone,
+  } = s;
+  const make = prepareCosmosOrchestrationAccountKit(zone, {
+    chainHub: makeChainHub(agoricNames, vowTools),
+    makeRecorderKit,
+    timerService: timer,
     vowTools,
     zcf,
-  );
+  });
 
   // Higher fidelity tests below use invitationMakers.
   const { holder } = make(account.getAddress(), 'uatom', {
@@ -282,6 +302,7 @@ test(`delegate; redelegate using invitationMakers`, async t => {
   const s = makeScenario();
   const { account, calls, timer } = s;
   const {
+    agoricNames,
     makeRecorderKit,
     storageNode,
     zcf,
@@ -291,12 +312,13 @@ test(`delegate; redelegate using invitationMakers`, async t => {
     zone,
   } = s;
   const aBrand = Far('Token') as Brand<'nat'>;
-  const makeAccountKit = prepareCosmosOrchestrationAccountKit(
-    zone,
+  const makeAccountKit = prepareCosmosOrchestrationAccountKit(zone, {
+    chainHub: makeChainHub(agoricNames, vowTools),
     makeRecorderKit,
+    timerService: timer,
     vowTools,
     zcf,
-  );
+  });
 
   const { invitationMakers } = makeAccountKit(account.getAddress(), 'uatom', {
     account,
@@ -364,6 +386,7 @@ test(`withdraw rewards using invitationMakers`, async t => {
   const s = makeScenario();
   const { account, calls, timer } = s;
   const {
+    agoricNames,
     makeRecorderKit,
     storageNode,
     zcf,
@@ -372,12 +395,13 @@ test(`withdraw rewards using invitationMakers`, async t => {
     vowTools,
     zone,
   } = s;
-  const makeAccountKit = prepareCosmosOrchestrationAccountKit(
-    zone,
+  const makeAccountKit = prepareCosmosOrchestrationAccountKit(zone, {
+    chainHub: makeChainHub(agoricNames, vowTools),
     makeRecorderKit,
+    timerService: timer,
     vowTools,
     zcf,
-  );
+  });
 
   const { invitationMakers } = makeAccountKit(account.getAddress(), 'uatom', {
     account,
@@ -403,6 +427,7 @@ test(`undelegate waits for unbonding period`, async t => {
   const s = makeScenario();
   const { account, calls, timer } = s;
   const {
+    agoricNames,
     makeRecorderKit,
     storageNode,
     zcf,
@@ -411,12 +436,13 @@ test(`undelegate waits for unbonding period`, async t => {
     vowTools,
     zone,
   } = s;
-  const makeAccountKit = prepareCosmosOrchestrationAccountKit(
-    zone,
+  const makeAccountKit = prepareCosmosOrchestrationAccountKit(zone, {
+    chainHub: makeChainHub(agoricNames, vowTools),
     makeRecorderKit,
+    timerService: timer,
     vowTools,
     zcf,
-  );
+  });
 
   const { invitationMakers } = makeAccountKit(account.getAddress(), 'uatom', {
     account,

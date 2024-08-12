@@ -347,6 +347,55 @@ test('basic-flows', async t => {
     status: { id: 'request-loa', numWantsSatisfied: 1 },
   });
   t.is(readLatest('published.basicFlows.agoric1mockVlocalchainAddress'), '');
+
+  await wd.sendOffer({
+    id: 'transfer-to-noble-from-cosmos',
+    invitationSpec: {
+      source: 'continuing',
+      previousOffer: 'request-coa',
+      invitationMakerName: 'Transfer',
+    },
+    proposal: {},
+    offerArgs: {
+      amount: { denom: 'ibc/uusdchash', value: 10n },
+      destination: {
+        chainId: 'noble-1',
+        value: 'noble1test',
+        encoding: 'bech32,',
+      },
+    },
+  });
+  t.like(wd.getLatestUpdateRecord(), {
+    status: {
+      id: 'transfer-to-noble-from-cosmos',
+      error: undefined,
+    },
+  });
+
+  await wd.sendOffer({
+    id: 'transfer-to-noble-from-cosmos-timeout',
+    invitationSpec: {
+      source: 'continuing',
+      previousOffer: 'request-coa',
+      invitationMakerName: 'Transfer',
+    },
+    proposal: {},
+    offerArgs: {
+      amount: { denom: 'ibc/uusdchash', value: SIMULATED_ERRORS.TIMEOUT },
+      destination: {
+        chainId: 'noble-1',
+        value: 'noble1test',
+        encoding: 'bech32,',
+      },
+    },
+  });
+  t.like(wd.getLatestUpdateRecord(), {
+    status: {
+      id: 'transfer-to-noble-from-cosmos-timeout',
+      error:
+        'Error: ABCI code: 5: error handling packet: see events for details',
+    },
+  });
 });
 
 test.serial('auto-stake-it - proposal', async t => {

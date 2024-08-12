@@ -70,6 +70,7 @@ export const startStakeOsmo = async ({
       icqEnabled: osmosis.icqEnabled,
     },
     privateArgs: {
+      agoricNames: await agoricNames,
       cosmosInterchainService: await cosmosInterchainService,
       storageNode,
       marshaller,

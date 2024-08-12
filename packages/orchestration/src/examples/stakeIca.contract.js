@@ -11,14 +11,16 @@ import { InvitationShape } from '@agoric/zoe/src/typeGuards.js';
 import { makeDurableZone } from '@agoric/zone/durable.js';
 import { M } from '@endo/patterns';
 import { prepareCosmosOrchestrationAccount } from '../exos/cosmos-orchestration-account.js';
+import { makeChainHub } from '../exos/chain-hub.js';
 
 const trace = makeTracer('StakeIca');
 /**
  * @import {Baggage} from '@agoric/vat-data';
- * @import {IBCConnectionID} from '@agoric/vats';
+ * @import {Remote} from '@agoric/internal';
+ * @import {IBCConnectionID, NameHub} from '@agoric/vats';
  * @import {TimerService} from '@agoric/time';
  * @import {ResolvedContinuingOfferResult} from '../utils/zoe-tools.js';
- * @import {ICQConnection, CosmosInterchainService} from '../types.js';
+ * @import {ICQConnection, CosmosInterchainService, ChainHub} from '../types.js';
  */
 
 /** @type {ContractMeta<typeof start>} */
@@ -31,6 +33,7 @@ export const meta = harden({
     icqEnabled: M.boolean(),
   },
   privateArgsShape: {
+    agoricNames: M.remotable('agoricNames NameHub'),
     cosmosInterchainService: M.remotable('cosmosInterchainService'),
     storageNode: StorageNodeShape,
     marshaller: M.remotable('marshaller'),
@@ -54,6 +57,7 @@ harden(privateArgsShape);
 /**
  * @param {ZCF<StakeIcaTerms>} zcf
  * @param {{
+ *   agoricNames: Remote<NameHub>;
  *   cosmosInterchainService: CosmosInterchainService;
  *   storageNode: StorageNode;
  *   marshaller: Marshaller;
@@ -70,6 +74,7 @@ export const start = async (zcf, privateArgs, baggage) => {
     icqEnabled,
   } = zcf.getTerms();
   const {
+    agoricNames,
     cosmosInterchainService: orchestration,
     marshaller,
     storageNode,
@@ -86,11 +91,17 @@ export const start = async (zcf, privateArgs, baggage) => {
 
   const vowTools = prepareVowTools(zone.subZone('vows'));
 
+  const chainHub = makeChainHub(agoricNames, vowTools);
+
   const makeCosmosOrchestrationAccount = prepareCosmosOrchestrationAccount(
     zone,
-    makeRecorderKit,
-    vowTools,
-    zcf,
+    {
+      chainHub,
+      makeRecorderKit,
+      timerService: timer,
+      vowTools,
+      zcf,
+    },
   );
 
   async function makeAccountKit() {

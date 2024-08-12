@@ -19,11 +19,11 @@ const trace = makeTracer('RestartSA', true);
  */
 export const restartStakeAtom = async ({
   consume: {
+    agoricNames,
     board,
     chainStorage,
     chainTimerService,
     cosmosInterchainService,
-
     contractKits,
   },
   instance: instances,
@@ -40,6 +40,7 @@ export const restartStakeAtom = async ({
 
   const privateArgs = await deeplyFulfilledObject(
     harden({
+      agoricNames,
       cosmosInterchainService,
       storageNode: makeStorageNodeChild(chainStorage, 'stakeAtom'),
       marshaller,
@@ -57,11 +58,11 @@ export const getManifest = () => {
     manifest: {
       [restartStakeAtom.name]: {
         consume: {
+          agoricNames: true,
           board: true,
           chainStorage: true,
           chainTimerService: true,
           cosmosInterchainService: true,
-
           contractKits: true,
         },
         instance: {

@@ -4,6 +4,7 @@ import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/record
 import type { ExecutionContext } from 'ava';
 import { commonSetup } from '../supports.js';
 import { prepareCosmosOrchestrationAccount } from '../../src/exos/cosmos-orchestration-account.js';
+import { makeChainHub } from '../../src/exos/chain-hub.js';
 
 /**
  * A testing utility that creates a (Cosmos)ChainAccount and makes a
@@ -23,8 +24,14 @@ export const prepareMakeTestCOAKit = (
   bootstrap: Awaited<ReturnType<typeof commonSetup>>['bootstrap'],
   { zcf = Far('MockZCF', {}) } = {},
 ) => {
-  const { cosmosInterchainService, marshaller, rootZone, timer, vowTools } =
-    bootstrap;
+  const {
+    cosmosInterchainService,
+    marshaller,
+    rootZone,
+    timer,
+    vowTools,
+    agoricNames,
+  } = bootstrap;
 
   const { makeRecorderKit } = prepareRecorderKitMakers(
     rootZone.mapStore('CosmosOrchAccountRecorder'),
@@ -33,15 +40,19 @@ export const prepareMakeTestCOAKit = (
 
   const makeCosmosOrchestrationAccount = prepareCosmosOrchestrationAccount(
     rootZone.subZone('CosmosOrchAccount'),
-    makeRecorderKit,
-    vowTools,
-    // @ts-expect-error mocked zcf
-    zcf,
+    {
+      chainHub: makeChainHub(agoricNames, vowTools),
+      makeRecorderKit,
+      timerService: timer,
+      vowTools,
+      // @ts-expect-error mocked zcf
+      zcf,
+    },
   );
 
   return async ({
     storageNode = bootstrap.storage.rootNode.makeChildNode('accounts'),
-    chainId = 'cosmoshub-99',
+    chainId = 'cosmoshub-4',
     hostConnectionId = 'connection-0' as const,
     controllerConnectionId = 'connection-1' as const,
     bondDenom = 'uatom',
