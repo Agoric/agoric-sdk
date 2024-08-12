@@ -86,5 +86,6 @@ const contract = async (
 };
 
 export const start = withOrchestration(contract);
+harden(start);
 
 /** @typedef {typeof start} AutoStakeItSF */

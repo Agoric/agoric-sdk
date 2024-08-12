@@ -30,6 +30,7 @@ export const makeOrchAccount = async (orch, _ctx, seat, { chainName }) => {
   const orchAccount = await remoteChain.makeAccount();
   return orchAccount.asContinuingOffer();
 };
+harden(makeOrchAccount);
 
 /**
  * Create accounts on multiple chains and return them in a single continuing
@@ -77,3 +78,4 @@ export const makePortfolioAccount = async (
 
   return portfolioHolder.asContinuingOffer();
 };
+harden(makePortfolioAccount);
