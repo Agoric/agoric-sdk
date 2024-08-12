@@ -1,4 +1,5 @@
 // @ts-check
+import { createMockAckMap } from '@agoric/orchestration/tools/ibc-mocks.js';
 
 /** @import { IBCChannelID, IBCMethod, IBCEvent } from '@agoric/vats'; */
 
@@ -57,9 +58,12 @@ export const protoMsgMocks = {
     ack: responses.delegate,
   },
   error: {
+    msg: '',
     ack: responses.error5,
   },
 };
+
+export const protoMsgMockMap = createMockAckMap(protoMsgMocks);
 
 /**
  * Adds parameters to IBC version string if it's JSON

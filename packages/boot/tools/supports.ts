@@ -37,15 +37,13 @@ import {
 
 import type { ExecutionContext as AvaT } from 'ava';
 
-import type { JsonSafe } from '@agoric/cosmic-proto';
-import type { MsgDelegateResponse } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/tx.js';
 import type { CoreEvalSDKType } from '@agoric/cosmic-proto/swingset/swingset.js';
 import type { EconomyBootstrapPowers } from '@agoric/inter-protocol/src/proposals/econ-behaviors.js';
 import type { SwingsetController } from '@agoric/swingset-vat/src/controller/controller.js';
 import type { BridgeHandler, IBCMethod, IBCPacket } from '@agoric/vats';
 import type { BootstrapRootObject } from '@agoric/vats/src/core/lib-boot.js';
 import type { EProxy } from '@endo/eventual-send';
-import { icaMocks, protoMsgMocks } from './ibc/mocks.js';
+import { icaMocks, protoMsgMockMap, protoMsgMocks } from './ibc/mocks.js';
 
 const trace = makeTracer('BSTSupport', false);
 
@@ -449,34 +447,13 @@ export const makeSwingsetTestKit = async (
           case 'startChannelOpenInit':
             pushInbound(BridgeId.DIBC, icaMocks.channelOpenAck(obj));
             return undefined;
-          case 'sendPacket':
-            switch (obj.packet.data) {
-              case protoMsgMocks.delegate.msg: {
-                return ackLater(obj, protoMsgMocks.delegate.ack);
-              }
-              case protoMsgMocks.delegateWithOpts.msg: {
-                return ackLater(obj, protoMsgMocks.delegateWithOpts.ack);
-              }
-              case protoMsgMocks.queryBalance.msg: {
-                return ackLater(obj, protoMsgMocks.queryBalance.ack);
-              }
-              case protoMsgMocks.queryUnknownPath.msg: {
-                return ackLater(obj, protoMsgMocks.queryUnknownPath.ack);
-              }
-              case protoMsgMocks.queryBalanceMulti.msg: {
-                return ackLater(obj, protoMsgMocks.queryBalanceMulti.ack);
-              }
-              case protoMsgMocks.queryBalanceUnknownDenom.msg: {
-                return ackLater(
-                  obj,
-                  protoMsgMocks.queryBalanceUnknownDenom.ack,
-                );
-              }
-              default: {
-                // An error that would be triggered before reception on another chain
-                return ackImmediately(obj, protoMsgMocks.error.ack);
-              }
+          case 'sendPacket': {
+            if (protoMsgMockMap[obj.packet.data]) {
+              return ackLater(obj, protoMsgMockMap[obj.packet.data]);
             }
+            // An error that would be triggered before reception on another chain
+            return ackImmediately(obj, protoMsgMocks.error.ack);
+          }
           default:
             return undefined;
         }
