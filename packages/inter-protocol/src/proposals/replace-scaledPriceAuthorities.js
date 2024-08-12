@@ -1,7 +1,8 @@
 import { makeTracer } from '@agoric/internal';
 import { E } from '@endo/far';
-import { startScaledPriceAuthority } from './addAssetToVault.js';
+import { deeplyFulfilled } from '@endo/marshal';
 
+import { startScaledPriceAuthority } from './addAssetToVault.js';
 import { scaledPriceFeedName } from './utils.js';
 
 const trace = makeTracer('replaceScaledPA', true);
@@ -38,26 +39,23 @@ export const replaceScaledPriceAuthority = async (powers, { options }) => {
 export const replaceScaledPriceAuthorities = async (powers, { options }) => {
   trace('start');
   const {
-    consume: {
-      agoricNamesAdmin,
-      contractKits: contractKitsP,
-      priceAuthority,
-      zoe,
-    },
+    consume: { agoricNamesAdmin, contractKits: contractKitsP, zoe },
   } = powers;
 
   const { scaledPARef } = options;
-  await null;
+
+  const installationsAdmin = E(agoricNamesAdmin).lookupAdmin('installation');
+  const [spaInstallation, contractKits] = await Promise.all([
+    E(E(installationsAdmin).readonly()).lookup('scaledPriceAuthority'),
+    contractKitsP,
+  ]);
 
   const bundleID = scaledPARef.bundleID;
   if (scaledPARef && bundleID) {
     await E.when(
       E(zoe).installBundleID(bundleID),
       installation =>
-        E(E(agoricNamesAdmin).lookupAdmin('installation')).update(
-          'scaledPriceAuthority',
-          installation,
-        ),
+        E(installationsAdmin).update('scaledPriceAuthority', installation),
       err =>
         console.error(
           `🚨 failed to update scaledPriceAuthority installation`,
@@ -67,14 +65,24 @@ export const replaceScaledPriceAuthorities = async (powers, { options }) => {
     trace('installed scaledPriceAuthority bundle', bundleID);
   }
 
-  const contractKits = await contractKitsP;
-  /** @type {StartedInstanceKit<any>[]} */
-  const scaledPAKitEntries = Array.from(contractKits.values()).filter(
-    kit => kit.label && kit.label.match(/scaledPriceAuthority/),
-  );
-
-  const pa = await priceAuthority;
-  trace('priceAuthority', pa);
+  // Ask Zoe for the installation for each kit's instance, and return all the
+  // kits where that matches the given installation.
+  async function selectKitsWithInstallation(kits) {
+    /** @type {StartedInstanceKit<any>[]} */
+    const scaledPAKitMapP = Array.from(kits.values()).map(kit => [
+      kit,
+      E(zoe).getInstallationForInstance(kit.instance),
+    ]);
+    const scaledPAKitMap = await deeplyFulfilled(harden(scaledPAKitMapP));
+    const scaledPAKitEntries = [];
+    for (const [instance, installation] of scaledPAKitMap) {
+      if (spaInstallation === installation) {
+        scaledPAKitEntries.push(instance);
+      }
+    }
+    return scaledPAKitEntries;
+  }
+  const scaledPAKitEntries = await selectKitsWithInstallation(contractKits);
 
   for (const kitEntry of scaledPAKitEntries) {
     trace({ kitEntry });
