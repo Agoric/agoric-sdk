@@ -151,3 +151,4 @@ export const start = async (zcf, privateArgs, baggage) => {
     creatorFacet: probe,
   });
 };
+harden(start);
