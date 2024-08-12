@@ -218,3 +218,13 @@ export const buildVTransferEvent = ({
     sequence,
   } as IBCPacket,
 });
+
+export function createMockAckMap(
+  mockMap: Record<string, { msg: string; ack: string }>,
+) {
+  const res = Object.values(mockMap).reduce((acc, { msg, ack }) => {
+    acc[msg] = ack;
+    return acc;
+  }, {});
+  return res;
+}
