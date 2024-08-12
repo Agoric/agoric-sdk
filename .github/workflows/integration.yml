@@ -237,12 +237,6 @@ jobs:
           echo "=== After cleanup:"
           df -h
       - uses: actions/checkout@v4
-      - name: docker build (sdk)
-        # Produces ghcr.io/agoric/agoric-sdk:unreleased used in the following upgrade test.
-        # run: cd packages/deployment && ./scripts/test-docker-build.sh | $TEST_COLLECT
-        # XXX skip TAP test output and collection for now; it hides the output from the logs
-        run: make docker-build-sdk
-        working-directory: packages/deployment
       - uses: ./.github/actions/restore-node
         with:
           node-version: '18.x'
@@ -250,6 +244,12 @@ jobs:
           # and since we can't build core eval submissions form the SDK using a newer endo,
           # simply ignore any endo branch integration (this means we don't have full coverage)
         id: restore-node
+      - name: docker build (sdk)
+        # Produces ghcr.io/agoric/agoric-sdk:unreleased used in the following upgrade test.
+        # run: cd packages/deployment && ./scripts/test-docker-build.sh | $TEST_COLLECT
+        # XXX skip TAP test output and collection for now; it hides the output from the logs
+        run: make docker-build-sdk
+        working-directory: packages/deployment
       - name: setup a3p-integration
         run: yarn install
         working-directory: a3p-integration
