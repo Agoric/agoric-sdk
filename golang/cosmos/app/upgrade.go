@@ -173,8 +173,6 @@ func unreleasedUpgradeHandler(app *GaiaApp, targetUpgrade string) func(sdk.Conte
 				// Revive KREAd characters
 				vm.CoreProposalStepForModules("@agoric/builders/scripts/vats/revive-kread.js"),
 
-				// upgrade the provisioning vat
-				vm.CoreProposalStepForModules("@agoric/builders/scripts/vats/replace-provisioning.js"),
 				// Enable low-level Orchestration.
 				vm.CoreProposalStepForModules(
 					"@agoric/builders/scripts/vats/init-network.js",
