@@ -2,6 +2,7 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { AmountMath } from '@agoric/ertp';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
+import { SIMULATED_ERRORS } from '@agoric/vats/tools/fake-bridge.js';
 import { heapVowE as E } from '@agoric/vow/vat.js';
 import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import path from 'path';
@@ -117,7 +118,7 @@ test('makeStakeBldInvitation', async t => {
       'agoric1validator1',
       {
         brand: bld.brand,
-        value: 504n,
+        value: SIMULATED_ERRORS.TIMEOUT,
       },
     );
     const delegateOffer = await E(zoe).offer(delegateInv);
