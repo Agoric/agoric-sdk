@@ -108,7 +108,7 @@ export const makeAllManagersDo = (collateralManagers, vaultManagers) => {
  * @param {ERef<Marshaller>} marshaller
  * @param {import('@agoric/zoe/src/contractSupport/recorder.js').MakeRecorderKit} makeRecorderKit
  * @param {import('@agoric/zoe/src/contractSupport/recorder.js').MakeERecorderKit} makeERecorderKit
- * @param managerParams
+ * @param {Record<string, import('./params.js').VaultManagerParamOverrides>} managerParams
  */
 const prepareVaultDirector = (
   baggage,

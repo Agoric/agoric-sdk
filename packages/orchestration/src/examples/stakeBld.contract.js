@@ -123,3 +123,4 @@ export const start = async (zcf, privateArgs, baggage) => {
 
   return { publicFacet };
 };
+harden(start);
