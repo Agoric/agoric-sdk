@@ -24,7 +24,10 @@ import { loadSwingsetConfigFile } from '@agoric/swingset-vat';
 import { makeSlogSender } from '@agoric/telemetry';
 import { TimeMath, Timestamp } from '@agoric/time';
 import { Fail } from '@endo/errors';
-import { fakeLocalChainBridgeTxMsgHandler } from '@agoric/vats/tools/fake-bridge.js';
+import {
+  fakeLocalChainBridgeTxMsgHandler,
+  LOCALCHAIN_DEFAULT_ADDRESS,
+} from '@agoric/vats/tools/fake-bridge.js';
 
 import {
   makeRunUtils,
@@ -323,6 +326,7 @@ export const makeSwingsetTestKit = async (
   let lastBankNonce = 0n;
   let ibcSequenceNonce = 0;
   let lcaSequenceNonce = 0;
+  let lcaAccountsCreated = 0;
 
   const outboundMessages = new Map();
 
@@ -467,7 +471,9 @@ export const makeSwingsetTestKit = async (
         return undefined;
       }
       case `${BridgeId.VLOCALCHAIN}:VLOCALCHAIN_ALLOCATE_ADDRESS`: {
-        return 'agoric1mockVlocalchainAddress';
+        const address = `${LOCALCHAIN_DEFAULT_ADDRESS}${lcaAccountsCreated || ''}`;
+        lcaAccountsCreated += 1;
+        return address;
       }
       case `${BridgeId.VLOCALCHAIN}:VLOCALCHAIN_EXECUTE_TX`: {
         lcaSequenceNonce += 1;

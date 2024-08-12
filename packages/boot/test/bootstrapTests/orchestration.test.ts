@@ -341,12 +341,12 @@ test('basic-flows', async t => {
     wd.getCurrentWalletRecord().offerToPublicSubscriberPaths,
   );
   t.deepEqual(publicSubscriberPaths['request-loa'], {
-    account: 'published.basicFlows.agoric1mockVlocalchainAddress',
+    account: 'published.basicFlows.agoric1fakeLCAAddress1',
   });
   t.like(wd.getLatestUpdateRecord(), {
     status: { id: 'request-loa', numWantsSatisfied: 1 },
   });
-  t.is(readLatest('published.basicFlows.agoric1mockVlocalchainAddress'), '');
+  t.is(readLatest('published.basicFlows.agoric1fakeLCAAddress'), '');
 
   await wd.sendOffer({
     id: 'transfer-to-noble-from-cosmos',
@@ -450,7 +450,7 @@ test.serial('basic-flows - portfolio holder', async t => {
       [
         'request-portfolio-acct',
         {
-          agoric: 'published.basicFlows.agoric1mockVlocalchainAddress',
+          agoric: 'published.basicFlows.agoric1fakeLCAAddress',
           cosmoshub: 'published.basicFlows.cosmos1test',
           // XXX support multiple chain addresses in ibc mocks
           osmosis: 'published.basicFlows.cosmos1test',
@@ -464,7 +464,7 @@ test.serial('basic-flows - portfolio holder', async t => {
   // XXX this overrides a previous account, since mocks only provide one address
   t.is(readLatest('published.basicFlows.cosmos1test'), '');
   // XXX this overrides a previous account, since mocks only provide one address
-  t.is(readLatest('published.basicFlows.agoric1mockVlocalchainAddress'), '');
+  t.is(readLatest('published.basicFlows.agoric1fakeLCAAddress'), '');
 
   const { BLD } = agoricNamesRemotes.brand;
   BLD || Fail`BLD missing from agoricNames`;
