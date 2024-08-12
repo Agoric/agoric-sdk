@@ -109,7 +109,7 @@ export const preparePacketTools = (zone, vowTools) => {
       }),
       utils: M.interface('utils', {
         subscribeToTransfers: M.call().returns(M.promise()),
-        unsubscribeFromTransfers: M.call().returns(M.promise()),
+        unsubscribeFromTransfers: M.call().returns(M.undefined()),
         incrPendingPatterns: M.call().returns(Vow$(M.undefined())),
         decrPendingPatterns: M.call().returns(Vow$(M.undefined())),
       }),
