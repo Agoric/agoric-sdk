@@ -2,6 +2,7 @@
 
 import { assert, Fail } from '@endo/errors';
 import { isNat } from '@endo/nat';
+import { mustMatch, M } from '@endo/patterns';
 import { importBundle } from '@endo/import-bundle';
 import { makeUpgradeDisconnection } from '@agoric/internal/src/upgrade-api.js';
 import { kser, kslot, makeError } from '@agoric/kmarshal';
@@ -275,12 +276,16 @@ export default function buildKernel(
       // (#9157). The fix will add .critical to CrankResults, populated by a
       // getOptions query in deliveryCrankResults() or copied from
       // dynamicOptions in processCreateVat.
-      critical = kernelKeeper.provideVatKeeper(vatID).getOptions().critical;
+      const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
+      critical = vatKeeper.getOptions().critical;
 
       // Reject all promises decided by the vat, making sure to capture the list
       // of kpids before that data is deleted.
       const deadPromises = [...kernelKeeper.enumeratePromisesByDecider(vatID)];
-      kernelKeeper.cleanupAfterTerminatedVat(vatID);
+      // remove vatID from the list of live vats, and mark for deletion
+      kernelKeeper.deleteVatID(vatID);
+      kernelKeeper.markVatAsTerminated(vatID);
+      kernelKeeper.removeVatFromSwingStoreExports(vatID);
       for (const kpid of deadPromises) {
         resolveToError(kpid, makeError('vat terminated'), vatID);
       }
@@ -387,7 +392,8 @@ export default function buildKernel(
    *    abort?: boolean, // changes should be discarded, not committed
    *    consumeMessage?: boolean, // discard the aborted delivery
    *    didDelivery?: VatID, // we made a delivery to a vat, for run policy and save-snapshot
-   *    computrons?: BigInt, // computron count for run policy
+   *    computrons?: bigint, // computron count for run policy
+   *    cleanups?: number, // cleanup budget spent
    *    meterID?: string, // deduct those computrons from a meter
    *    measureDirt?: { vatID: VatID, dirt: Dirt }, // dirt counters should increment
    *    terminate?: { vatID: VatID, reject: boolean, info: SwingSetCapData }, // terminate vat, notify vat-admin
@@ -651,14 +657,38 @@ export default function buildKernel(
     if (!vatWarehouse.lookup(vatID)) {
       return NO_DELIVERY_CRANK_RESULTS; // can't collect from the dead
     }
-    const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
     /** @type { KernelDeliveryBringOutYourDead } */
     const kd = harden([type]);
     const vd = vatWarehouse.kernelDeliveryToVatDelivery(vatID, kd);
     const status = await deliverAndLogToVat(vatID, kd, vd);
-    vatKeeper.clearReapDirt(); // BOYD zeros out the when-to-BOYD counters
     // no gcKrefs, BOYD clears them anyways
     return deliveryCrankResults(vatID, status, false); // no meter, BOYD clears dirt
+  }
+
+  /**
+   * Perform a small (budget-limited) amount of dead-vat cleanup work.
+   *
+   * @param {RunQueueEventCleanupTerminatedVat} message
+   *     'message' is the run-queue cleanup action, which includes a vatID and budget.
+   *     A budget of 'undefined' allows unlimited work. Otherwise, the budget is a Number,
+   *     and cleanup should not touch more than maybe 5*budget DB rows.
+   * @returns {Promise<CrankResults>}
+   */
+  async function processCleanupTerminatedVat(message) {
+    const { vatID, budget } = message;
+    const { done, cleanups } = kernelKeeper.cleanupAfterTerminatedVat(
+      vatID,
+      budget,
+    );
+    if (done) {
+      kernelKeeper.forgetTerminatedVat(vatID);
+      kernelSlog.write({ type: 'vat-cleanup-complete', vatID });
+    }
+    // We don't perform any deliveries here, so there are no computrons to
+    // report, but we do tell the runPolicy know how much kernel-side DB
+    // work we did, so it can decide how much was too much.
+    const computrons = 0n;
+    return harden({ computrons, cleanups });
   }
 
   /**
@@ -916,7 +946,6 @@ export default function buildKernel(
     const boydVD = vatWarehouse.kernelDeliveryToVatDelivery(vatID, boydKD);
     const boydStatus = await deliverAndLogToVat(vatID, boydKD, boydVD);
     const boydResults = deliveryCrankResults(vatID, boydStatus, false);
-    vatKeeper.clearReapDirt();
 
     // we don't meter bringOutYourDead since no user code is running, but we
     // still report computrons to the runPolicy
@@ -1172,6 +1201,7 @@ export default function buildKernel(
    * @typedef { import('../types-internal.js').RunQueueEventRetireImports } RunQueueEventRetireImports
    * @typedef { import('../types-internal.js').RunQueueEventNegatedGCAction } RunQueueEventNegatedGCAction
    * @typedef { import('../types-internal.js').RunQueueEventBringOutYourDead } RunQueueEventBringOutYourDead
+   * @typedef { import('../types-internal.js').RunQueueEventCleanupTerminatedVat } RunQueueEventCleanupTerminatedVat
    * @typedef { import('../types-internal.js').RunQueueEvent } RunQueueEvent
    */
 
@@ -1239,6 +1269,8 @@ export default function buildKernel(
     } else if (message.type === 'negated-gc-action') {
       // processGCActionSet pruned some negated actions, but had no GC
       // action to perform. Record the DB changes in their own crank.
+    } else if (message.type === 'cleanup-terminated-vat') {
+      deliverP = processCleanupTerminatedVat(message);
     } else if (gcMessages.includes(message.type)) {
       deliverP = processGCMessage(message);
     } else {
@@ -1289,18 +1321,13 @@ export default function buildKernel(
     const crankResults = await deliverRunQueueEvent(message);
     // { abort/commit, deduct, terminate+notify, consumeMessage }
 
-    if (crankResults.didDelivery) {
-      if (message.type === 'create-vat') {
-        // TODO: create-vat now gets metering, at least for the
-        // dispatch.startVat . We should probably tell the policy about
-        // the creation too since there's extra overhead (we're
-        // launching a new child process, at least, although that
-        // sometimes happens randomly because of vat eviction policy
-        // which should not affect the in-consensus policyInput)
-        policyInput = ['create-vat', {}];
-      } else {
-        policyInput = ['crank', {}];
-      }
+    if (message.type === 'cleanup-terminated-vat') {
+      const { cleanups } = crankResults;
+      assert(cleanups !== undefined);
+      policyInput = ['cleanup', { cleanups }];
+    } else if (crankResults.didDelivery) {
+      const tag = message.type === 'create-vat' ? 'create-vat' : 'crank';
+      policyInput = [tag, {}];
     }
 
     // Deliveries cause syscalls, syscalls might cause errors
@@ -1758,16 +1785,24 @@ export default function buildKernel(
     }
   }
 
+  const allowCleanupShape = M.or(
+    // 'false' will prohibit cleanup
+    false,
+    // otherwise allow cleanup, optionally with a limiting budget
+    M.splitRecord({}, { budget: M.number() }, M.record()),
+  );
+
   /**
    * Pulls the next message from the highest-priority queue and returns it
    * along with a corresponding processor.
    *
+   * @param {RunPolicy} [policy] - a RunPolicy to limit the work being done
    * @returns {{
    *   message: RunQueueEvent | undefined,
    *   processor: (message: RunQueueEvent) => Promise<PolicyInput>,
    * }}
    */
-  function getNextMessageAndProcessor() {
+  function getNextMessageAndProcessor(policy) {
     const acceptanceMessage = kernelKeeper.getNextAcceptanceQueueMsg();
     if (acceptanceMessage) {
       return {
@@ -1775,7 +1810,12 @@ export default function buildKernel(
         processor: processAcceptanceMessage,
       };
     }
+    // Absent specific configuration, allow unlimited cleanup.
+    const allowCleanup = policy?.allowCleanup?.() ?? {};
+    mustMatch(harden(allowCleanup), allowCleanupShape);
+
     const message =
+      kernelKeeper.nextCleanupTerminatedVatAction(allowCleanup) ||
       processGCActionSet(kernelKeeper) ||
       kernelKeeper.nextReapAction() ||
       kernelKeeper.getNextRunQueueMsg();
@@ -1885,7 +1925,7 @@ export default function buildKernel(
       kernelKeeper.startCrank();
       try {
         kernelKeeper.establishCrankSavepoint('start');
-        const { processor, message } = getNextMessageAndProcessor();
+        const { processor, message } = getNextMessageAndProcessor(policy);
         if (!message) {
           break;
         }
@@ -1907,6 +1947,13 @@ export default function buildKernel(
           case 'crank-failed':
             policyOutput = policy.crankFailed(policyInput[1]);
             break;
+          case 'cleanup': {
+            // Give the policy a chance to interrupt kernel execution,
+            // but default to continuing.
+            const { didCleanup } = policy;
+            policyOutput = didCleanup ? didCleanup(policyInput[1]) : true;
+            break;
+          }
           case 'none':
             policyOutput = policy.emptyCrank();
             break;
