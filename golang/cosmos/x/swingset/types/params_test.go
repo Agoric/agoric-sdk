@@ -98,6 +98,7 @@ func TestUpdateParams(t *testing.T) {
 		FeeUnitPrice:       sdk.NewCoins(sdk.NewInt64Coin("denom", 789)),
 		PowerFlagFees:      []PowerFlagFee{},
 		QueueMax:           []QueueSize{},
+		SlowDeletionBudget: []StringBudget{},
 	}
 	want := Params{
 		BeansPerUnit:       DefaultBeansPerUnit(),
@@ -105,6 +106,7 @@ func TestUpdateParams(t *testing.T) {
 		FeeUnitPrice:       sdk.NewCoins(sdk.NewInt64Coin("denom", 789)),
 		PowerFlagFees:      DefaultPowerFlagFees,
 		QueueMax:           DefaultQueueMax,
+		SlowDeletionBudget: DefaultSlowDeletionBudget,
 	}
 	got, err := UpdateParams(in)
 	if err != nil {

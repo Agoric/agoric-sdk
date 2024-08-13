@@ -82,6 +82,20 @@ message Params {
     repeated QueueSize queue_max = 5 [
       (gogoproto.nullable) = false
     ];
+
+    // Map from phase name to a slow-deletion budget limit.
+    // Must not be negative.
+    //
+    // These values are used by SwingSet to rate-limit the deletion of
+    // previously-terminated vats. Each empty block is allowed to
+    // delete a few DB entries
+    //
+    // There is no required order to this list of entries, but all the chain
+    // nodes must all serialize and deserialize the existing order without
+    // permuting it.
+    repeated StringBudget slow_deletion_budget = 6 [
+      (gogoproto.nullable) = false
+    ];
 }
 
 // The current state of the module.
@@ -127,6 +141,20 @@ message QueueSize {
 
   // The actual size value.
   int32 size = 2;
+}
+
+// Map element of a string key to a Nat budget count.
+message StringBudget {
+  option (gogoproto.equal) = true;
+
+  // Which phase of slow vat cleanup the budget is for
+  string key = 1;
+
+  // The budget value.
+  string budget = 2 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Uint",
+    (gogoproto.nullable) = false
+  ];
 }
 
 // Egress is the format for a swingset egress.

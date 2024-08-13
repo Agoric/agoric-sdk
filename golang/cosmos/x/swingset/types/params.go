@@ -17,6 +17,7 @@ var (
 	ParamStoreKeyFeeUnitPrice       = []byte("fee_unit_price")
 	ParamStoreKeyPowerFlagFees      = []byte("power_flag_fees")
 	ParamStoreKeyQueueMax           = []byte("queue_max")
+	ParamStoreKeySlowDeletionBudget = []byte("slow_deletion_budget")
 )
 
 func NewStringBeans(key string, beans sdkmath.Uint) StringBeans {
@@ -40,6 +41,13 @@ func NewQueueSize(key string, sz int32) QueueSize {
 	}
 }
 
+func NewStringBudget(key string, budget sdkmath.Uint) StringBudget {
+	return StringBudget{
+		Key:    key,
+		Budget: budget,
+	}
+}
+
 // ParamKeyTable returns the parameter key table.
 func ParamKeyTable() paramtypes.KeyTable {
 	return paramtypes.NewKeyTable().RegisterParamSet(&Params{})
@@ -53,6 +61,7 @@ func DefaultParams() Params {
 		FeeUnitPrice:       DefaultFeeUnitPrice,
 		PowerFlagFees:      DefaultPowerFlagFees,
 		QueueMax:           DefaultQueueMax,
+		SlowDeletionBudget: DefaultSlowDeletionBudget,
 	}
 }
 
@@ -69,6 +78,7 @@ func (p *Params) ParamSetPairs() paramtypes.ParamSetPairs {
 		paramtypes.NewParamSetPair(ParamStoreKeyBootstrapVatConfig, &p.BootstrapVatConfig, validateBootstrapVatConfig),
 		paramtypes.NewParamSetPair(ParamStoreKeyPowerFlagFees, &p.PowerFlagFees, validatePowerFlagFees),
 		paramtypes.NewParamSetPair(ParamStoreKeyQueueMax, &p.QueueMax, validateQueueMax),
+		paramtypes.NewParamSetPair(ParamStoreKeySlowDeletionBudget, &p.SlowDeletionBudget, validateSlowDeletionBudget),
 	}
 }
 
@@ -87,6 +97,9 @@ func (p Params) ValidateBasic() error {
 		return err
 	}
 	if err := validateQueueMax(p.QueueMax); err != nil {
+		return err
+	}
+	if err := validateSlowDeletionBudget(p.SlowDeletionBudget); err != nil {
 		return err
 	}
 
@@ -165,6 +178,21 @@ func validateQueueMax(i interface{}) error {
 	return nil
 }
 
+func validateSlowDeletionBudget(i interface{}) error {
+	v, ok := i.([]StringBudget)
+	if !ok {
+		return fmt.Errorf("invalid parameter type: %T", i)
+	}
+
+	for _, sb := range v {
+		if sb.Key == "" {
+			return fmt.Errorf("key must not be empty")
+		}
+	}
+
+	return nil
+}
+
 // UpdateParams appends any missing params, configuring them to their defaults,
 // then returning the updated params or an error. Existing params are not
 // modified, regardless of their value, and they are not removed if they no
@@ -182,10 +210,15 @@ func UpdateParams(params Params) (Params, error) {
 	if err != nil {
 		return params, err
 	}
+	newSDB, err := appendMissingDefaultSlowDeletionBudget(params.SlowDeletionBudget, DefaultSlowDeletionBudget)
+	if err != nil {
+		return params, err
+	}
 
 	params.BeansPerUnit = newBpu
 	params.PowerFlagFees = newPff
 	params.QueueMax = newQm
+	params.SlowDeletionBudget = newSDB
 	return params, nil
 }
 
@@ -237,4 +270,21 @@ func appendMissingDefaultQueueSize(qs []QueueSize, defaultQs []QueueSize) ([]Que
 		}
 	}
 	return qs, nil
+}
+
+// appendMissingDefaultSlowDeletionBudget appends the default beans per unit entries
+// not in the list of bean costs already, returning the possibly-updated list,
+// or an error.
+func appendMissingDefaultSlowDeletionBudget(sdb []StringBudget, defaultSdb []StringBudget) ([]StringBudget, error) {
+	existingSdb := make(map[string]struct{}, len(sdb))
+	for _, ob := range sdb {
+		existingSdb[ob.Key] = struct{}{}
+	}
+
+	for _, b := range defaultSdb {
+		if _, exists := existingSdb[b.Key]; !exists {
+			sdb = append(sdb, b)
+		}
+	}
+	return sdb, nil
 }

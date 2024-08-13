@@ -66,6 +66,11 @@ var (
 	DefaultQueueMax = []QueueSize{
 		NewQueueSize(QueueInbound, DefaultInboundQueueMax),
 	}
+
+	DefaultSlowDeletionBudget = []StringBudget{
+		NewStringBudget("default", sdk.NewUint(5)),
+		NewStringBudget("kv", sdk.NewUint(50)),
+	}
 )
 
 // move DefaultBeansPerUnit to a function to allow for boot overriding of the Default params
