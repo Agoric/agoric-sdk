@@ -12,7 +12,6 @@ import { assertAllDefined, makeTracer } from '@agoric/internal';
 import {
   atomicRearrange,
   ceilMultiplyBy,
-  floorDivideBy,
   makeRatioFromAmounts,
   makeRecorderTopic,
   multiplyRatios,
@@ -21,6 +20,7 @@ import {
 import { observeNotifier } from '@agoric/notifier';
 
 import { makeNatAmountShape } from '../contractSupport.js';
+import { amountsToSettle } from './auctionMath.js';
 import { preparePriceBook, prepareScaledBidBook } from './offerBook.js';
 import {
   isScaledBidPriceHigher,
@@ -282,39 +282,30 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
             return makeEmpty(collateralBrand);
           }
 
-          /** @type {Amount<'nat'>} */
-          const initialCollateralTarget = AmountMath.min(
-            collateralWanted,
-            collateralAvailable,
-          );
-
           const { curAuctionPrice, bidHoldingSeat, remainingProceedsGoal } =
             this.state;
           curAuctionPrice !== null ||
             Fail`auctionPrice must be set before each round`;
           assert(curAuctionPrice);
 
-          const proceedsNeeded = ceilMultiplyBy(
-            initialCollateralTarget,
-            curAuctionPrice,
-          );
-          if (AmountMath.isEmpty(proceedsNeeded)) {
+          const { proceedsExpected, proceedsTarget, collateralTarget } =
+            amountsToSettle(
+              {
+                bidAlloc,
+                collateralWanted,
+                collateralAvailable,
+                curAuctionPrice,
+                remainingProceedsGoal,
+              },
+              trace,
+            );
+
+          if (proceedsExpected === null) {
             seat.fail(Error('price fell to zero'));
             return makeEmpty(collateralBrand);
           }
 
-          const minProceedsTarget = AmountMath.min(proceedsNeeded, bidAlloc);
-          const proceedsLimit = remainingProceedsGoal
-            ? AmountMath.min(remainingProceedsGoal, minProceedsTarget)
-            : minProceedsTarget;
-          const isRaiseLimited =
-            remainingProceedsGoal ||
-            !AmountMath.isGTE(proceedsLimit, proceedsNeeded);
-
-          const [proceedsTarget, collateralTarget] = isRaiseLimited
-            ? [proceedsLimit, floorDivideBy(proceedsLimit, curAuctionPrice)]
-            : [minProceedsTarget, initialCollateralTarget];
-
+          // check that the requested amount could be satisfied
           const { Collateral } = seat.getProposal().want;
           if (Collateral && AmountMath.isGTE(Collateral, collateralTarget)) {
             seat.exit('unable to satisfy want');
@@ -335,7 +326,7 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
             );
           }
 
-          trace('settle', {
+          trace('settled', {
             collateralTarget,
             proceedsTarget,
             remainingProceedsGoal: this.state.remainingProceedsGoal,
@@ -611,20 +602,14 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
           const pricedOffers = priceBook.offersAbove(curAuctionPrice);
           const scaledBidOffers = scaledBidBook.offersAbove(reduction);
 
-          const compareValues = (v1, v2) => {
-            if (v1 < v2) {
-              return -1;
-            } else if (v1 === v2) {
-              return 0;
-            } else {
-              return 1;
-            }
-          };
-          trace(`settling`, pricedOffers.length, scaledBidOffers.length);
           // requested price or BidScaling gives no priority beyond specifying which
           // round the order will be serviced in.
           const prioritizedOffers = [...pricedOffers, ...scaledBidOffers].sort(
-            (a, b) => compareValues(a[1].seqNum, b[1].seqNum),
+            (a, b) => Number(a[1].seqNum - b[1].seqNum),
+          );
+
+          trace(
+            `settling ${prioritizedOffers.length} offers at ${curAuctionPrice} (priced ${pricedOffers.length}, scaled ${scaledBidOffers.length}) `,
           );
 
           const { remainingProceedsGoal } = state;

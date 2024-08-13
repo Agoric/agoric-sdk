@@ -16,6 +16,7 @@ import {
   multiplyBy,
   subtractRatios,
   parseRatio,
+  divideBy,
 } from '../../../src/contractSupport/ratio.js';
 
 /**
@@ -461,6 +462,20 @@ test('ratio - rounding', t => {
   assertRounding(25n, 2n, 12n, floorMultiplyBy);
   assertRounding(25n, 2n, 12n, multiplyBy);
   assertRounding(25n, 2n, 13n, ceilMultiplyBy);
+
+  // 23 / 12 = 1.9
+  const twelve = makeRatioFromAmounts(moe(12n), moe(1n));
+  amountsEqual(t, floorDivideBy(moe(23n), twelve), moe(1n), brand);
+  amountsEqual(t, ceilDivideBy(moe(23n), twelve), moe(2n), brand);
+  amountsEqual(t, divideBy(moe(23n), twelve), moe(2n), brand);
+
+  // banker's rounding
+  const divideByTen = n =>
+    divideBy(moe(n), makeRatioFromAmounts(moe(10n), moe(1n)));
+  amountsEqual(t, divideByTen(114n), moe(11n), brand); // 11.4 -> 11
+  amountsEqual(t, divideByTen(115n), moe(12n), brand); // 11.5 -> 12
+  amountsEqual(t, divideByTen(125n), moe(12n), brand); // 12.5 -> 12
+  amountsEqual(t, divideByTen(126n), moe(13n), brand); // 12.6 -> 13
 });
 
 test('ratio - oneMinus', t => {
