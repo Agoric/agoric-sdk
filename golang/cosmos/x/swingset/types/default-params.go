@@ -67,9 +67,20 @@ var (
 		NewQueueSize(QueueInbound, DefaultInboundQueueMax),
 	}
 
+	// the budget must always have 'default', and it is used to set any omitted values
+	//
+	// I want the initial budget to be { default: 5, kv: 50 }.
+	//
+	// I don't really want to prevent governance from deleting the
+	// 'kv' value.. not sure how to achieve both goals. I guess it'd
+	// be ok to include 'kv: 50' in the default here, governance could
+	// override it (with some other number, even 5), but I think
+	// including kv in DefaultSlowDeletionBudget means that any
+	// proposal which is missing "kv" will have a 50 jammed in.
+
 	DefaultSlowDeletionBudget = []StringBudget{
 		NewStringBudget("default", sdk.NewUint(5)),
-		NewStringBudget("kv", sdk.NewUint(50)),
+		// NewStringBudget("kv", sdk.NewUint(50)),
 	}
 )
 
