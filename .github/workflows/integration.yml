@@ -252,10 +252,10 @@ jobs:
         working-directory: packages/deployment
       - name: my test
         run: |
-        docker ps
-        docker exec $(docker ps -q) bash -c "ls"
-        docker exec $(docker ps -q) bash -c "git branch"
-        docker exec $(docker ps -q) bash -c "git log -n 1"
+          docker ps
+          docker exec $(docker ps -q) bash -c "ls"
+          docker exec $(docker ps -q) bash -c "git branch"
+          docker exec $(docker ps -q) bash -c "git log -n 1"
       - name: setup a3p-integration
         run: yarn install
         working-directory: a3p-integration
