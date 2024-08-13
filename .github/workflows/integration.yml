@@ -250,6 +250,12 @@ jobs:
         # XXX skip TAP test output and collection for now; it hides the output from the logs
         run: make docker-build-sdk
         working-directory: packages/deployment
+      - name: my test
+        run: |
+        docker ps
+        docker exec $(docker ps -q) bash -c "ls"
+        docker exec $(docker ps -q) bash -c "git branch"
+        docker exec $(docker ps -q) bash -c "git log -n 1"
       - name: setup a3p-integration
         run: yarn install
         working-directory: a3p-integration
