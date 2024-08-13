@@ -6,8 +6,8 @@ import path from 'path';
 
 import { makeAgoricNamesRemotesFromFakeStorage } from '@agoric/vats/tools/board-utils.js';
 import { TestFn } from 'ava';
-import { matchAmount, makeSwingsetTestKit } from '../../tools/supports.ts';
-import { makeZoeDriver } from '../../tools/drivers.ts';
+import { matchAmount, makeSwingsetTestKit } from '../../tools/supports.js';
+import { makeZoeDriver } from '../../tools/drivers.js';
 
 const dirname = path.dirname(new URL(import.meta.url).pathname);
 
