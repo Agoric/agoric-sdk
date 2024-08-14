@@ -46,6 +46,9 @@ export const startSendAnywhere = async ({
     // @ts-expect-error unknown instance
     produce: { sendAnywhere: produceInstance },
   },
+  issuer: {
+    consume: { IST },
+  },
 }) => {
   trace(startSendAnywhere.name);
 
@@ -67,6 +70,7 @@ export const startSendAnywhere = async ({
   const { instance } = await E(startUpgradable)({
     label: 'sendAnywhere',
     installation: sendAnywhere,
+    issuerKeywordRecord: { Stable: await IST },
     privateArgs,
   });
   produceInstance.resolve(instance);
@@ -93,6 +97,9 @@ export const getManifest = ({ restoreRef }, { installationRef }) => {
         },
         instance: {
           produce: { sendAnywhere: true },
+        },
+        issuer: {
+          consume: { IST: true },
         },
       },
     },
