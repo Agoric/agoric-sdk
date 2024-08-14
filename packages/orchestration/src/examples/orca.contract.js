@@ -58,11 +58,16 @@ const createAccountsFn = async (orch, _ctx, seat, { chainName }) => {
  *
  * @param {Orchestrator} orch
  * @param {object} ctx
- * @param {GuestInterface<ZoeTools>} ctx.zoeTools
+ * @param {GuestInterface<ZoeTools>['localTransfer']} ctx.localTransfer
  * @param {ZCFSeat} seat
  * @param {{ chainName: string }} offerArgs
  */
-const createAndFundFn = async (orch, { zoeTools }, seat, { chainName }) => {
+const createAndFundFn = async (
+  orch,
+  { localTransfer },
+  seat,
+  { chainName },
+) => {
   const { give } = seat.getProposal();
   const [[_kw, amt]] = entries(give);
   trace('orch', orch);
@@ -100,9 +105,8 @@ const createAndFundFn = async (orch, { zoeTools }, seat, { chainName }) => {
   trace('remoteAddress', remoteAddress);
   trace('fund new orch account');
 
-  await zoeTools.localTransfer(seat, localAccount, give);
+  await localTransfer(seat, localAccount, give);
 
-  // await E(localAccount).deposit(pmt);
   await localAccount.transfer(
     {
       denom: 'ubld',
@@ -166,7 +170,7 @@ export const start = async (zcf, privateArgs, baggage) => {
   const makeCreateAndFund = orchestrate(
     'makeCreateAndFund',
     {
-      zoeTools,
+      localTransfer: zoeTools.localTransfer,
     },
     createAndFundFn,
   );
