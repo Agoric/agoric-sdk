@@ -8,7 +8,7 @@ import {
   waitForBlock,
 } from '@agoric/synthetic-chain';
 
-import { bankSend, getProvisionPoolMetrics } from './agd-tools.js';
+import { bankSend, getProvisionPoolMetrics } from '../../scripts/agd-tools.js';
 
 const NULL_UPGRADE_BANK_DIR = 'upgrade-bank';
 const UPGRADE_PP_DIR = 'upgrade-provisionPool';

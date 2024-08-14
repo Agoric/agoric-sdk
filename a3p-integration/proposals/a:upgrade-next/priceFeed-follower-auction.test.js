@@ -1,5 +1,5 @@
 import test from 'ava';
-import { getDetailsMatchingVats } from './vatDetails.js';
+import { getDetailsMatchingVats } from '../../scripts/vatDetails.js';
 
 test('new auction vat', async t => {
   const details = await getDetailsMatchingVats('auctioneer');

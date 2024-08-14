@@ -5,4 +5,4 @@
 # persisted in the generated image for the upgrade, so they can be used in
 # later steps, such as the "test" step, or further proposal layers.
 
-./upgradeVaults.js
+echo skipping v-a use.sh

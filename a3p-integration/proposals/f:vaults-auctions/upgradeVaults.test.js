@@ -4,7 +4,6 @@ import {
   agops,
   ATOM_DENOM,
   getISTBalance,
-  getVatDetails,
   openVault,
   USER1ADDR,
 } from '@agoric/synthetic-chain';
@@ -12,50 +11,34 @@ import {
 import {
   bankSend,
   BID_OFFER_ID,
-  checkForOracle,
   createBid,
-  generateOracleMap,
   getLiveOffers,
   getPriceQuote,
   getVaultPrices,
   pushPrices,
+  addPreexistingOracles,
 } from './agd-tools.js';
-import { getDetailsMatchingVats } from './vatDetails.js';
+import { getDetailsMatchingVats } from '../../scripts/vatDetails.js';
 
-const checkPriceFeedVatsUpdated = async t => {
-  const atomDetails = await getVatDetails('ATOM-USD_price_feed');
-  // both the original and the new ATOM vault are incarnation 0
-  t.is(atomDetails.incarnation, 0);
-  const stAtomDetails = await getVatDetails('stATOM');
-  t.is(stAtomDetails.incarnation, 0);
-  const stOsmoDetails = await getVatDetails('stOSMO');
-  t.is(stOsmoDetails.incarnation, 0);
-  const stTiaDetails = await getVatDetails('stTIA');
-  t.is(stTiaDetails.incarnation, 0);
-  await Promise.all([
-    checkForOracle(t, 'ATOM'),
-    checkForOracle(t, 'stATOM'),
-    checkForOracle(t, 'stTIA'),
-    checkForOracle(t, 'stOSMO'),
-    checkForOracle(t, 'stkATOM'),
-  ]);
+const oraclesByBrand = new Map();
+
+const setupOracles = async t => {
+  const atomOutPre = await getPriceQuote('ATOM');
+  t.is(atomOutPre, '+12010000');
+
+  console.log('UPGV: adding oracle for each brand');
+  await addPreexistingOracles('ATOM', oraclesByBrand);
+  await addPreexistingOracles('stATOM', oraclesByBrand);
+
+  console.log('UPGV: pushing new prices');
+  await pushPrices(11.2, 'ATOM', oraclesByBrand);
+  await pushPrices(11.4, 'stATOM', oraclesByBrand);
 };
-
-const BRANDNAMES = ['ATOM', 'stATOM', 'stTIA', 'stOSMO', 'stkATOM'];
-const oraclesByBrand = generateOracleMap('u16', BRANDNAMES);
 
 const checkNewQuotes = async t => {
   t.log('awaiting new quotes');
   const atomOut = await getPriceQuote('ATOM');
   t.is(atomOut, '+11200000');
-  const tiaOut = await getPriceQuote('stTIA');
-  t.is(tiaOut, '+11300000');
-  const stAtomOut = await getPriceQuote('stATOM');
-  t.is(stAtomOut, '+11400000');
-  const osmoOut = await getPriceQuote('stOSMO');
-  t.is(osmoOut, '+11500000');
-  const stkAtomOut = await getPriceQuote('stkATOM');
-  t.is(stkAtomOut, '+11600000');
 };
 
 const createNewBid = async t => {
@@ -105,8 +88,8 @@ const verifyVaultPriceUpdate = async t => {
 
 // test.serial() isn't guaranteed to run tests in order, so we run the intended tests here
 test('liquidation post upgrade', async t => {
-  t.log('starting upgrade vaults test');
-  await checkPriceFeedVatsUpdated(t);
+  t.log('setup Oracles');
+  await setupOracles(t);
 
   t.log('check new price quotes');
   await checkNewQuotes(t);

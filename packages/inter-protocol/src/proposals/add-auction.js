@@ -6,7 +6,16 @@ import { makeGovernedTerms as makeGovernedATerms } from '../auction/params.js';
 
 const trace = makeTracer('NewAuction', true);
 
-/** @param {import('./econ-behaviors.js').EconomyBootstrapPowers} powers */
+/**
+ * @typedef {PromiseSpaceOf<{
+ *   auctionsDone: boolean;
+ * }>} interlockPowers
+ */
+
+/**
+ * @param {import('./econ-behaviors.js').EconomyBootstrapPowers &
+ *   interlockPowers} powers
+ */
 export const addAuction = async ({
   consume: {
     zoe,
@@ -17,7 +26,7 @@ export const addAuction = async ({
     economicCommitteeCreatorFacet: electorateCreatorFacet,
     auctioneerKit: legacyKitP,
   },
-  produce: { newAuctioneerKit },
+  produce: { newAuctioneerKit, auctionsDone },
   instance: {
     consume: { reserve: reserveInstance },
   },
@@ -143,6 +152,8 @@ export const addAuction = async ({
   );
   // don't overwrite auctioneerKit or auction instance yet. Wait until
   // upgrade-vault.js
+
+  auctionsDone.resolve(true);
 };
 
 export const ADD_AUCTION_MANIFEST = harden({
