@@ -167,14 +167,7 @@ func unreleasedUpgradeHandler(app *GaiaApp, targetUpgrade string) func(sdk.Conte
 		if isFirstTimeUpgradeOfThisVersion(app, ctx) {
 			// Each CoreProposalStep runs sequentially, and can be constructed from
 			// one or more modules executing in parallel within the step.
-			CoreProposalSteps = []vm.CoreProposalStep{
-				// Enable low-level Orchestration.
-				vm.CoreProposalStepForModules(
-					"@agoric/builders/scripts/vats/init-network.js",
-					"@agoric/builders/scripts/vats/init-localchain.js",
-					"@agoric/builders/scripts/vats/init-transfer.js",
-				),
-			}
+			CoreProposalSteps = []vm.CoreProposalStep{}
 			priceFeedSteps, err := upgradePriceFeedCoreProposalSteps(targetUpgrade)
 			if err != nil {
 				return nil, err
