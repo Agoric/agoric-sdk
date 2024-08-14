@@ -5,7 +5,7 @@ import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import {
   makeWalletFactoryContext,
   type WalletFactoryTestContext,
-} from './walletFactory.ts';
+} from './walletFactory.js';
 
 const test: TestFn<WalletFactoryTestContext> = anyTest;
 
