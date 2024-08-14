@@ -59,5 +59,6 @@ export const sendIt = async (
       chainId,
     },
   );
+  seat.exit();
 };
 harden(sendIt);
