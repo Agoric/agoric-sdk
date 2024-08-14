@@ -1934,7 +1934,7 @@ test('manager notifiers, with snapshot', async t => {
   });
 
   totalCollateral += given.value;
-  totalDebt += WANT_EXTRA + 29n; // magic number is fees
+  totalDebt += WANT_EXTRA + 20n; // magic number is fees
 
   await m.assertChange({
     totalCollateral: { value: totalCollateral },
@@ -1955,7 +1955,7 @@ test('manager notifiers, with snapshot', async t => {
   await E(vaultOpSeat).getOfferResult();
 
   totalCollateral -= AMPLE + given.value;
-  totalDebt -= DEBT1_EXTRA - 17n; // magic number is fees
+  totalDebt -= DEBT1_EXTRA;
   await m.assertChange({
     numActiveVaults: 6,
     totalCollateral: { value: totalCollateral },
