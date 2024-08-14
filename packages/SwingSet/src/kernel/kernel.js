@@ -980,10 +980,7 @@ export default function buildKernel(
     const abandonedObjects = [
       ...kernelKeeper.enumerateNonDurableObjectExports(vatID),
     ];
-    for (const { kref, vref } of abandonedObjects) {
-      /** @see translateAbandonExports in {@link ./vatTranslator.js} */
-      vatKeeper.deleteCListEntry(kref, vref);
-      /** @see abandonExports in {@link ./kernelSyscall.js} */
+    for (const { kref } of abandonedObjects) {
       kernelKeeper.orphanKernelObject(kref, vatID);
     }
 
