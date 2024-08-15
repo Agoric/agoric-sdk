@@ -47,7 +47,10 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
 
   const bld = withAmountUtils(makeIssuerKit('BLD'));
   const ist = withAmountUtils(makeIssuerKit('IST'));
-  const { bankManager, pourPayment } = await makeFakeBankManagerKit();
+  const bankBridgeMessages = [] as any[];
+  const { bankManager, pourPayment } = await makeFakeBankManagerKit({
+    onToBridge: obj => bankBridgeMessages.push(obj),
+  });
   await E(bankManager).addAsset('ubld', 'BLD', 'Staking Token', bld.issuerKit);
   await E(bankManager).addAsset(
     'uist',
@@ -211,6 +214,7 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
       pourPayment,
       inspectLocalBridge: () => harden([...localBridgeMessages]),
       inspectDibcBridge: () => E(ibcBridge).inspectDibcBridge(),
+      inspectBankBridge: () => harden([...bankBridgeMessages]),
       registerAgoricBld,
       transmitTransferAck,
     },

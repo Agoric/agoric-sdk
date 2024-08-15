@@ -27,14 +27,16 @@ const INFINITE_AMOUNT = 99999999999n;
  * transaction outside the Agoric VM. (Similarly for deposits.)
  *
  * @param {import('@agoric/zone').Zone} zone
- * @param {object} opts
- * @param {Balances} opts.balances initial balances
+ * @param {object} [opts]
+ * @param {Balances} [opts.balances] initial balances
+ * @param {(obj) => void} [opts.onToBridge]
  * @returns {ScopedBridgeManager<'bank'>}
  * @see {makeFakeBankManagerKit} and its `pourPayment` for a helper
  */
-export const makeFakeBankBridge = (zone, opts = { balances: {} }) => {
-  const { balances } = opts;
-
+export const makeFakeBankBridge = (
+  zone,
+  { balances = {}, onToBridge = () => {} } = {},
+) => {
   const currentBalance = ({ address, denom }) =>
     address === FAUCET_ADDRESS
       ? INFINITE_AMOUNT
@@ -46,6 +48,7 @@ export const makeFakeBankBridge = (zone, opts = { balances: {} }) => {
   return zone.exo('Fake Bank Bridge Manager', undefined, {
     getBridgeId: () => 'bank',
     toBridge: async obj => {
+      onToBridge(obj);
       const { method, type, ...params } = obj;
       trace('toBridge', type, method, params);
       switch (obj.type) {
