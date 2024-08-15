@@ -291,7 +291,7 @@ export const prepareLocalOrchestrationAccountKit = (
          * ]} results
          * @param {{
          *   destination: ChainAddress;
-         *   opts: IBCMsgTransferOptions;
+         *   opts?: IBCMsgTransferOptions;
          *   amount: DenomAmount;
          * }} ctx
          */
