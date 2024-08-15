@@ -63,6 +63,7 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
   const { mint: _b, ...bldSansMint } = bld;
   const { mint: _i, ...istSansMint } = ist;
   // XXX real bankManager does this. fake should too?
+  // TODO https://github.com/Agoric/agoric-sdk/issues/9966
   await makeWellKnownSpaces(agoricNamesAdmin, t.log, ['vbankAsset']);
   await E(E(agoricNamesAdmin).lookupAdmin('vbankAsset')).update(
     'uist',
@@ -72,6 +73,17 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
       issuerName: 'IST',
       denom: 'uist',
       proposedName: 'IST',
+      displayInfo: { IOU: true },
+    }),
+  );
+  await E(E(agoricNamesAdmin).lookupAdmin('vbankAsset')).update(
+    'ubld',
+    /** @type {AssetInfo} */ harden({
+      brand: bld.brand,
+      issuer: bld.issuer,
+      issuerName: 'BLD',
+      denom: 'ubld',
+      proposedName: 'BLD',
       displayInfo: { IOU: true },
     }),
   );
