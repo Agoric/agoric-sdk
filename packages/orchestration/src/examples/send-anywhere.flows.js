@@ -1,8 +1,9 @@
 import { NonNullish } from '@agoric/internal';
+import { makeError, q } from '@endo/errors';
 import { M, mustMatch } from '@endo/patterns';
 
 /**
- * @import {GuestOf} from '@agoric/async-flow';
+ * @import {GuestInterface} from '@agoric/async-flow';
  * @import {ZoeTools} from '../utils/zoe-tools.js';
  * @import {Orchestrator, LocalAccountMethods, OrchestrationAccountI, OrchestrationFlow} from '../types.js';
  */
@@ -17,13 +18,13 @@ const { entries } = Object;
  * @param {Orchestrator} orch
  * @param {object} ctx
  * @param {{ localAccount?: OrchestrationAccountI & LocalAccountMethods }} ctx.contractState
- * @param {GuestOf<ZoeTools['localTransfer']>} ctx.localTransfer
+ * @param {GuestInterface<ZoeTools>} ctx.zoeTools
  * @param {ZCFSeat} seat
  * @param {{ chainName: string; destAddr: string }} offerArgs
  */
 export const sendIt = async (
   orch,
-  { contractState, localTransfer },
+  { contractState, zoeTools: { localTransfer, withdrawToSeat } },
   seat,
   offerArgs,
 ) => {
@@ -51,14 +52,20 @@ export const sendIt = async (
 
   await localTransfer(seat, contractState.localAccount, give);
 
-  await contractState.localAccount.transfer(
-    { denom, value: amt.value },
-    {
-      value: destAddr,
-      encoding: 'bech32',
-      chainId,
-    },
-  );
+  try {
+    await contractState.localAccount.transfer(
+      { denom, value: amt.value },
+      {
+        value: destAddr,
+        encoding: 'bech32',
+        chainId,
+      },
+    );
+  } catch (e) {
+    await withdrawToSeat(contractState.localAccount, seat, give);
+    throw seat.fail(makeError(`IBC Transfer failed ${q(e)}`));
+  }
+
   seat.exit();
 };
 harden(sendIt);

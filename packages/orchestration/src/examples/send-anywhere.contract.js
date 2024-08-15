@@ -47,7 +47,7 @@ const contract = async (
   const orchFns = orchestrateAll(flows, {
     zcf,
     contractState,
-    localTransfer: zoeTools.localTransfer,
+    zoeTools,
   });
 
   const publicFacet = zone.exo(
