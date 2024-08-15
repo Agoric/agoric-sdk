@@ -150,8 +150,12 @@ async function doTerminateCritical(
     t.is(thrown.message, mode);
   }
   t.is(controller.kpStatus(kpid), dynamic ? 'unresolved' : 'fulfilled');
+  // the kernel is supposed to crash before deleting vNN.options,
+  // although strictly speaking it doesn't matter because the host is
+  // supposed to crash too, abandoning the uncommitted swingstore
+  // changes
   const postProbe = kernelStorage.kvStore.get(`${deadVatID}.options`);
-  t.is(postProbe, undefined);
+  t.truthy(postProbe);
 }
 
 test.serial('terminate (dynamic, non-critical)', async t => {

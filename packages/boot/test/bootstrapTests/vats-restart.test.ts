@@ -7,8 +7,8 @@ import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
 import { makeAgoricNamesRemotesFromFakeStorage } from '@agoric/vats/tools/board-utils.js';
 import { BridgeHandler, ScopedBridgeManager } from '@agoric/vats';
-import { makeSwingsetTestKit } from '../../tools/supports.ts';
-import { makeWalletFactoryDriver } from '../../tools/drivers.ts';
+import { makeSwingsetTestKit } from '../../tools/supports.js';
+import { makeWalletFactoryDriver } from '../../tools/drivers.js';
 
 // main/production config doesn't have initialPrice, upon which 'open vaults' depends
 const PLATFORM_CONFIG = '@agoric/vm-config/decentral-itest-vaults-config.json';

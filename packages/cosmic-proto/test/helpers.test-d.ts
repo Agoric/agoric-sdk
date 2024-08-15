@@ -1,6 +1,6 @@
 import { expectType } from 'tsd';
 import { typedJson } from '../src/helpers.js';
-import type { ResponseTo, TypedJson } from '../src/helpers.ts';
+import type { ResponseTo, TypedJson } from '../src/helpers.js';
 import type { JsonSafe } from '../src/codegen/json-safe.js';
 import type { Timestamp } from '../src/codegen/google/protobuf/timestamp.js';
 

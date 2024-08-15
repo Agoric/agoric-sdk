@@ -1,18 +1,16 @@
-// @ts-check
-import { test as anyTest } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
+/* eslint-disable @jessie.js/safe-await-separator -- test */
+import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
-import { Fail } from '@endo/errors';
-import { makeTagged } from '@endo/marshal';
 import { BridgeId } from '@agoric/internal';
 import { buildVatController } from '@agoric/swingset-vat';
 import { makeRunUtils } from '@agoric/swingset-vat/tools/run-utils.js';
+import { Fail } from '@endo/errors';
+import { makeTagged } from '@endo/marshal';
 import { resolve as importMetaResolve } from 'import-meta-resolve';
-import { matchAmount, matchIter, matchRef } from '../../tools/supports.ts';
+import type { IssuerKit } from '@agoric/ertp/src/types.js';
+import { matchAmount, matchIter, matchRef } from '../../tools/supports.js';
 
-/**
- * @type {import('ava').TestFn<{}>}
- */
-const test = anyTest;
+import type { buildRootObject as buildTestMintVat } from './vat-mint.js';
 
 const bfile = name => new URL(name, import.meta.url).pathname;
 const importSpec = spec =>
@@ -23,19 +21,12 @@ const makeCallOutbound = t => (srcID, obj) => {
   return obj;
 };
 
-/**
- * @param {any} t
- * @param {Partial<SwingSetConfig>} [kernelConfigOverrides]
- * @param {Record<string, unknown>} [deviceEndowments]
- * @returns {Promise<ReturnType<typeof makeRunUtils>>}
- */
 const makeScenario = async (
-  t,
-  kernelConfigOverrides = {},
-  deviceEndowments,
+  t: any,
+  kernelConfigOverrides: Partial<SwingSetConfig> = {},
+  deviceEndowments: Record<string, unknown> = {},
 ) => {
-  /** @type {SwingSetConfig} */
-  const config = {
+  const config: SwingSetConfig = {
     includeDevDependencies: true, // for vat-data
     bootstrap: 'bootstrap',
     defaultReapInterval: 'never',
@@ -274,18 +265,17 @@ test('upgrade vat-bank', async t => {
     bundleCapName: 'mint',
   };
   const bridgeRoot = await EV.vat('bootstrap').createVat(bridgeVatConfig);
-  const bankRoot = await EV.vat('bootstrap').createVat(bankVatConfig);
-  const mintRoot = await EV.vat('bootstrap').createVat(mintVatConfig);
+  const bankRoot: BankVat = await EV.vat('bootstrap').createVat(bankVatConfig);
+  const mintRoot: ReturnType<typeof buildTestMintVat> =
+    await EV.vat('bootstrap').createVat(mintVatConfig);
 
   t.log(`create a non-bridged bank manager`);
-  /** @type {ERef<BankManager>} */
   const noBridgeMgr = await EV(bankRoot).makeBankManager();
 
   t.log(`create a bridged bank manager`);
   const dev = await EV.vat('bootstrap').getDevice('bridge');
   const bridge1 = await EV(bridgeRoot).provideManagerForBridge(dev);
   const bankBridge = await EV(bridge1).register(BridgeId.BANK);
-  /** @type {ERef<BankManager>} */
   const bridgedMgr = await EV(bankRoot).makeBankManager(bankBridge);
 
   t.log('subscribe to no bridge asset lists');
@@ -293,8 +283,8 @@ test('upgrade vat-bank', async t => {
   const noBridgeIterator = await EV(noBridgeAssetSub1)[Symbol.asyncIterator]();
 
   t.log('add an asset to both');
-  const abcKit = await EV(mintRoot).makeIssuerKit('ABC');
-  const defKit = await EV(mintRoot).makeIssuerKit('DEF');
+  const abcKit = (await EV(mintRoot).makeIssuerKit('ABC')) as IssuerKit<'nat'>;
+  const defKit = (await EV(mintRoot).makeIssuerKit('DEF')) as IssuerKit<'nat'>;
   await EV(noBridgeMgr).addAsset('uabc', 'ABC', 'A Bank Coin', abcKit);
   await EV(bridgedMgr).addAsset('uabc', 'ABC', 'A Bank Coin', abcKit);
   await EV(bridgedMgr).addAsset('udef', 'DEF', 'Definitely a coin', defKit);
@@ -420,11 +410,10 @@ test('upgrade vat-priceAuthority', async t => {
     name: 'priceAuthority',
     bundleCapName: 'priceAuthority',
   };
-  const priceAuthorityRoot = await EV.vat('bootstrap').createVat(
-    priceAuthorityVatConfig,
-  );
+  const priceAuthorityRoot: PriceAuthorityVat = await EV.vat(
+    'bootstrap',
+  ).createVat(priceAuthorityVatConfig);
 
-  /** @type {import('@agoric/vats/src/priceAuthorityRegistry.js').PriceAuthorityRegistry} */
   const registry = await EV(priceAuthorityRoot).getRegistry();
 
   // Ideally we'd also test registering a PA and verifying the same one comes out the def end.
@@ -476,12 +465,11 @@ test('upgrade vat-vow', async t => {
   };
 
   t.log('test incarnation 0');
-  /** @type {Record<string, [settlementValue?: unknown, isRejection?: boolean]>} */
   const localPromises = {
     promiseForever: [],
     promiseFulfilled: ['hello'],
     promiseRejected: ['goodbye', true],
-  };
+  } as Record<string, [settlementValue?: unknown, isRejection?: boolean]>;
   const promiseKit = await EV.vat('bootstrap').makePromiseKit();
   const fakeVowKit = await makeFakeVowKit();
   const localVows = {

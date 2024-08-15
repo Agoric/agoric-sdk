@@ -183,7 +183,7 @@ test('kernel state', async t => {
   k.emitCrankHashes();
 
   checkState(t, store.dump, [
-    ['version', '1'],
+    ['version', '2'],
     ['crankNumber', '0'],
     ['gcActions', '[]'],
     ['runQueue', '[1,1]'],
@@ -206,6 +206,7 @@ test('kernel state', async t => {
     ['kernel.snapshotInitial', '3'],
     ['kernel.snapshotInterval', '200'],
     ['meter.nextID', '1'],
+    ['vats.terminated', '[]'],
   ]);
 });
 
@@ -222,7 +223,7 @@ test('kernelKeeper vat names', async t => {
 
   k.emitCrankHashes();
   checkState(t, store.dump, [
-    ['version', '1'],
+    ['version', '2'],
     ['crankNumber', '0'],
     ['gcActions', '[]'],
     ['runQueue', '[1,1]'],
@@ -247,6 +248,7 @@ test('kernelKeeper vat names', async t => {
     ['kernel.snapshotInitial', '3'],
     ['kernel.snapshotInterval', '200'],
     ['meter.nextID', '1'],
+    ['vats.terminated', '[]'],
   ]);
   t.deepEqual(k.getStaticVats(), [
     ['Frank', 'v2'],
@@ -277,7 +279,7 @@ test('kernelKeeper device names', async t => {
 
   k.emitCrankHashes();
   checkState(t, store.dump, [
-    ['version', '1'],
+    ['version', '2'],
     ['crankNumber', '0'],
     ['gcActions', '[]'],
     ['runQueue', '[1,1]'],
@@ -302,6 +304,7 @@ test('kernelKeeper device names', async t => {
     ['kernel.snapshotInitial', '3'],
     ['kernel.snapshotInterval', '200'],
     ['meter.nextID', '1'],
+    ['vats.terminated', '[]'],
   ]);
   t.deepEqual(k.getDevices(), [
     ['Frank', 'd8'],
@@ -459,7 +462,7 @@ test('kernelKeeper promises', async t => {
   k.emitCrankHashes();
 
   checkState(t, store.dump, [
-    ['version', '1'],
+    ['version', '2'],
     ['crankNumber', '0'],
     ['device.nextID', '7'],
     ['vat.nextID', '1'],
@@ -490,6 +493,7 @@ test('kernelKeeper promises', async t => {
     ['kernel.snapshotInitial', '3'],
     ['kernel.snapshotInterval', '200'],
     ['meter.nextID', '1'],
+    ['vats.terminated', '[]'],
   ]);
 
   k.deleteKernelObject(ko);
@@ -1074,7 +1078,7 @@ test('dirt upgrade', async t => {
   // * v3.reapCountdown: 'never'
   // * v3.reapInterval: 'never'
 
-  t.is(k.kvStore.get('version'), '1');
+  t.is(k.kvStore.get('version'), '2');
   k.kvStore.delete(`kernel.defaultReapDirtThreshold`);
   k.kvStore.set(`kernel.defaultReapInterval`, '1000');
 
@@ -1098,6 +1102,7 @@ test('dirt upgrade', async t => {
 
   k.kvStore.delete(`version`);
   k.kvStore.set('initialized', 'true');
+  k.kvStore.delete(`vats.terminated`);
 
   // kernelKeeper refuses to work with an old state
   t.throws(() => duplicateKeeper(store.serialize));
@@ -1152,4 +1157,35 @@ test('dirt upgrade', async t => {
   t.deepEqual(JSON.parse(k2.kvStore.get(`${v3}.options`)).reapDirtThreshold, {
     never: true,
   });
+});
+
+test('v2 upgrade', async t => {
+  // this should add vats.terminated
+  const store = buildKeeperStorageInMemory();
+  const k = makeKernelKeeper(store, 'uninitialized');
+  k.createStartingKernelState({ defaultManagerType: 'local' });
+  k.setInitialized();
+  k.saveStats();
+
+  // roll back to v1
+  t.is(k.kvStore.get('version'), '2');
+  k.kvStore.delete(`vats.terminated`);
+  k.kvStore.set('version', '1');
+
+  // kernelKeeper refuses to work with an old state
+  t.throws(() => duplicateKeeper(store.serialize));
+
+  // it requires a manual upgrade
+  let k2;
+  {
+    const serialized = store.serialize();
+    const { kernelStorage } = initSwingStore(null, { serialized });
+    upgradeSwingset(kernelStorage);
+    k2 = makeKernelKeeper(kernelStorage, CURRENT_SCHEMA_VERSION); // works this time
+    k2.loadStats();
+  }
+
+  t.true(k2.kvStore.has(`vats.terminated`));
+  t.deepEqual(JSON.parse(k2.kvStore.get(`vats.terminated`)), []);
+  t.is(k2.kvStore.get(`version`), '2');
 });

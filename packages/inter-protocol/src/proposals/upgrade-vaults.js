@@ -85,6 +85,32 @@ export const upgradeVaults = async (powers, { options }) => {
     }
   }
 
+  const readCurrentDirectorParams = async () => {
+    const { publicFacet: directorPF } = kit;
+
+    await null;
+
+    const subscription = E(directorPF).getElectorateSubscription();
+    const notifier = makeNotifierFromAsyncIterable(subscription);
+    let { value, updateCount } = await notifier.getUpdateSince(0n);
+    // @ts-expect-error It's an amount.
+    while (AmountMath.isEmpty(value.current.MinInitialDebt.value)) {
+      ({ value, updateCount } = await notifier.getUpdateSince(updateCount));
+      trace(
+        `minInitialDebt was empty, retried`,
+        value.current.MinInitialDebt.value,
+      );
+    }
+
+    return harden({
+      MinInitialDebt: value.current.MinInitialDebt.value,
+      ReferencedUI: value.current.ReferencedUI.value,
+      RecordingPeriod: value.current.RecordingPeriod.value,
+      ChargingPeriod: value.current.ChargingPeriod.value,
+    });
+  };
+  const directorParamOverrides = await readCurrentDirectorParams();
+
   const readManagerParams = async () => {
     const { publicFacet: directorPF } = kit;
 
@@ -99,9 +125,17 @@ export const upgradeVaults = async (powers, { options }) => {
       const notifier = makeNotifierFromAsyncIterable(subscription);
       let { value, updateCount } = await notifier.getUpdateSince(0n);
       // @ts-expect-error It's an amount.
-      while (AmountMath.isEmpty(value.current.DebtLimit.value)) {
+      if (AmountMath.isEmpty(value.current.DebtLimit.value)) {
+        // The parameters might have been empty at start, and the notifier might
+        // give the first state before the current state.
+        trace(`debtLimit was empty, retrying`, value.current.DebtLimit.value);
         ({ value, updateCount } = await notifier.getUpdateSince(updateCount));
-        trace(`debtLimit was empty, retried`, value.current.DebtLimit.value);
+
+        // @ts-expect-error It's an amount.
+        if (AmountMath.isEmpty(value.current.DebtLimit.value)) {
+          trace('debtLimit was empty after retrying');
+          throw Error('🚨Governed parameters empty after retry, Giving up');
+        }
       }
       trace(kwd, 'params at', updateCount, 'are', value.current);
       params[kwd] = harden({
@@ -138,6 +172,7 @@ export const upgradeVaults = async (powers, { options }) => {
       initialPoserInvitation: poserInvitation,
       initialShortfallInvitation: shortfallInvitation,
       managerParams: managerParamValues,
+      directorParamOverrides,
     });
 
     const upgradeResult = await E(kit.adminFacet).upgradeContract(

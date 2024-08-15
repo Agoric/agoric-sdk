@@ -196,6 +196,14 @@ export const upgradeSwingset = kernelStorage => {
     version = 1;
   }
 
+  if (version < 2) {
+    // schema v2: add vats.terminated = []
+    assert(!kvStore.has('vats.terminated'));
+    kvStore.set('vats.terminated', JSON.stringify([]));
+    modified = true;
+    version = 2;
+  }
+
   if (modified) {
     kvStore.set('version', `${version}`);
   }

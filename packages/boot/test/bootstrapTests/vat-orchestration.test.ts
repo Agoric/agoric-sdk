@@ -17,7 +17,7 @@ import { M, matches } from '@endo/patterns';
 import {
   makeWalletFactoryContext,
   type WalletFactoryTestContext,
-} from './walletFactory.ts';
+} from './walletFactory.js';
 
 const test: TestFn<WalletFactoryTestContext> = anyTest;
 

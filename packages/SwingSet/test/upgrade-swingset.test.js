@@ -16,7 +16,7 @@ test.before(async t => {
   t.context.data = { kernelBundles };
 });
 
-test('kernel refuses to run with out-of-date DB', async t => {
+test('kernel refuses to run with out-of-date DB - v0', async t => {
   const { hostStorage, kernelStorage } = initSwingStore();
   const { commit } = hostStorage;
   const { kvStore } = kernelStorage;
@@ -28,9 +28,32 @@ test('kernel refuses to run with out-of-date DB', async t => {
   // kernelkeeper v0 schema, just deleting the version key and adding
   // 'initialized'
 
-  t.is(kvStore.get('version'), '1');
+  t.is(kvStore.get('version'), '2');
   kvStore.delete(`version`);
   kvStore.set('initialized', 'true');
+  await commit();
+
+  // Now build a controller around this modified state, which should fail.
+  await t.throwsAsync(() => makeSwingsetController(kernelStorage), {
+    message: /kernel DB is too old/,
+  });
+});
+
+test('kernel refuses to run with out-of-date DB - v1', async t => {
+  const { hostStorage, kernelStorage } = initSwingStore();
+  const { commit } = hostStorage;
+  const { kvStore } = kernelStorage;
+  const config = {};
+  await initializeSwingset(config, [], kernelStorage, t.context.data);
+  await commit();
+
+  // now doctor the initial state to make it look like the
+  // kernelkeeper v1 schema, by reducing the version key and removing
+  // vats.terminated
+
+  t.is(kvStore.get('version'), '2');
+  kvStore.set(`version`, '1');
+  kvStore.delete('vats.terminated');
   await commit();
 
   // Now build a controller around this modified state, which should fail.
@@ -73,9 +96,10 @@ test('upgrade kernel state', async t => {
 
   t.true(kvStore.has('kernel.defaultReapDirtThreshold'));
 
-  t.is(kvStore.get('version'), '1');
+  t.is(kvStore.get('version'), '2');
   kvStore.delete('version'); // i.e. revert to v0
   kvStore.set('initialized', 'true');
+  kvStore.delete('vats.terminated');
   kvStore.delete(`kernel.defaultReapDirtThreshold`);
   kvStore.set(`kernel.defaultReapInterval`, '300');
 
@@ -162,9 +186,10 @@ test('upgrade non-reaping kernel state', async t => {
 
   t.true(kvStore.has('kernel.defaultReapDirtThreshold'));
 
-  t.is(kvStore.get('version'), '1');
+  t.is(kvStore.get('version'), '2');
   kvStore.delete('version'); // i.e. revert to v0
   kvStore.set('initialized', 'true');
+  kvStore.delete('vats.terminated');
   kvStore.delete(`kernel.defaultReapDirtThreshold`);
   kvStore.set(`kernel.defaultReapInterval`, 'never');
 

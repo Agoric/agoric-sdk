@@ -14,8 +14,8 @@ import {
 import type { TestFn } from 'ava';
 import { ParamChangesOfferArgs } from '@agoric/inter-protocol/src/econCommitteeCharter.js';
 
-import { makeSwingsetTestKit } from '../../tools/supports.ts';
-import { makeWalletFactoryDriver } from '../../tools/drivers.ts';
+import { makeSwingsetTestKit } from '../../tools/supports.js';
+import { makeWalletFactoryDriver } from '../../tools/drivers.js';
 
 // presently all these tests use one collateral manager
 const collateralBrandKey = 'ATOM';

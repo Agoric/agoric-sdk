@@ -7,7 +7,7 @@ import { createRequire } from 'module';
 import type { Baggage } from '@agoric/swingset-liveslots';
 import { M, makeScalarBigMapStore } from '@agoric/vat-data';
 import { makeDurableZone } from '@agoric/zone/durable.js';
-import { makeSwingsetTestKit } from '../../tools/supports.ts';
+import { makeSwingsetTestKit } from '../../tools/supports.js';
 
 const { entries, assign } = Object;
 

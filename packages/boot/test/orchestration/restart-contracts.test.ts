@@ -7,7 +7,7 @@ import type { UpdateRecord } from '@agoric/smart-wallet/src/smartWallet.js';
 import {
   makeWalletFactoryContext,
   type WalletFactoryTestContext,
-} from '../bootstrapTests/walletFactory.ts';
+} from '../bootstrapTests/walletFactory.js';
 
 const test: TestFn<WalletFactoryTestContext> = anyTest;
 test.before(async t => {
