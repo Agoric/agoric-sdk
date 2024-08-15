@@ -64,7 +64,8 @@ export const makeFakeBankKit = issuerKits => {
 
 /**
  * @param {object} [opts]
- * @param {import('./fake-bridge.js').Balances} opts.balances initial balances
+ * @param {import('./fake-bridge.js').Balances} [opts.balances] initial balances
+ * @param {(obj) => unknown} [opts.onToBridge] handler for toBridge messages
  */
 export const makeFakeBankManagerKit = async opts => {
   const baggage = makeScalarBigMapStore('baggage');
