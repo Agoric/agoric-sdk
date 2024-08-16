@@ -1838,6 +1838,13 @@ test('manager notifiers, with snapshot', async t => {
     }),
   );
   ({ vault } = await E(vaultSeat).getOfferResult());
+  totalCollateral += ENOUGH;
+  totalDebt += DEBT2;
+  await m.assertChange({
+    numActiveVaults: 4,
+    totalCollateral: { value: totalCollateral },
+    totalDebt: { value: totalDebt },
+  });
 
   trace('6. Loan interest');
   vaultSeat = await E(services.zoe).offer(
@@ -1851,18 +1858,21 @@ test('manager notifiers, with snapshot', async t => {
     }),
   );
   ({ vault } = await E(vaultSeat).getOfferResult());
-  totalCollateral += ENOUGH;
-  totalDebt += DEBT2;
+  totalCollateral += AMPLE;
+  totalDebt += DEBT1;
   await m.assertChange({
-    numActiveVaults: 4,
+    numActiveVaults: 5,
     totalCollateral: { value: totalCollateral },
     totalDebt: { value: totalDebt },
   });
-  m.addDebt(DEBT2);
+
   await manualTimer.tickN(5);
+  // This is interest for a single vault.
   const interestAccrued = (await E(vault).getCurrentDebt()).value - DEBT1;
   m.addDebt(interestAccrued);
-  t.is(interestAccrued, 9n);
+
+  t.is(interestAccrued, 9n); // interest on OPEN1 for 5 periods
+  totalDebt += 30n; // interest on 270_000 for 5 periods
 
   trace('7. make another loan to trigger a publish');
   vaultSeat = await E(services.zoe).offer(
@@ -1876,10 +1886,10 @@ test('manager notifiers, with snapshot', async t => {
     }),
   );
   ({ vault } = await E(vaultSeat).getOfferResult());
-  totalCollateral += AMPLE;
-  totalDebt += DEBT1;
+  totalCollateral += ENOUGH;
+  totalDebt += DEBT2;
   await m.assertChange({
-    numActiveVaults: 5,
+    numActiveVaults: 6,
     totalCollateral: { value: totalCollateral },
     totalDebt: { value: totalDebt },
   });
@@ -1898,11 +1908,10 @@ test('manager notifiers, with snapshot', async t => {
     }),
   );
   ({ vault } = await E(vaultSeat).getOfferResult());
-  totalCollateral += ENOUGH;
-  totalDebt += DEBT2 + 30n; // XXX ??
-  m.addDebt(DEBT2);
+  totalCollateral += AMPLE;
+  totalDebt += DEBT1;
   await m.assertChange({
-    numActiveVaults: 6,
+    numActiveVaults: 7,
     totalCollateral: { value: totalCollateral },
     totalDebt: { value: totalDebt },
   });
@@ -1925,20 +1934,11 @@ test('manager notifiers, with snapshot', async t => {
     }),
   );
   await E(vaultOpSeat).getOfferResult();
-  totalCollateral += AMPLE;
-  totalDebt += DEBT1;
-  await m.assertChange({
-    numActiveVaults: 7,
-    totalDebt: { value: totalDebt },
-    totalCollateral: { value: totalCollateral },
-  });
-
   totalCollateral += given.value;
-  totalDebt += WANT_EXTRA + 20n; // magic number is fees
-
+  totalDebt += WANT_EXTRA + 20n;
   await m.assertChange({
-    totalCollateral: { value: totalCollateral },
     totalDebt: { value: totalDebt },
+    totalCollateral: { value: totalCollateral },
   });
 
   trace('10. Close vault');
