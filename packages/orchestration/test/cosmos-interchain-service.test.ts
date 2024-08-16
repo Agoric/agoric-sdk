@@ -23,7 +23,7 @@ const CHAIN_ID = 'cosmoshub-99';
 const HOST_CONNECTION_ID = 'connection-0';
 const CONTROLLER_CONNECTION_ID = 'connection-1';
 
-test('makeICQConnection returns an ICQConnection', async t => {
+test.serial('makeICQConnection returns an ICQConnection', async t => {
   const {
     bootstrap: { cosmosInterchainService },
   } = await commonSetup(t);
@@ -108,7 +108,7 @@ test('makeICQConnection returns an ICQConnection', async t => {
   );
 });
 
-test('makeAccount returns an IcaAccountKit', async t => {
+test.serial('makeAccount returns an IcaAccountKit', async t => {
   const {
     bootstrap: { cosmosInterchainService },
   } = await commonSetup(t);
@@ -179,31 +179,34 @@ test('makeAccount returns an IcaAccountKit', async t => {
   );
 });
 
-test('makeAccount accepts opts (version, ordering, encoding)', async t => {
-  const {
-    bootstrap: { cosmosInterchainService },
-  } = await commonSetup(t);
+test.serial(
+  'makeAccount accepts opts (version, ordering, encoding)',
+  async t => {
+    const {
+      bootstrap: { cosmosInterchainService },
+    } = await commonSetup(t);
 
-  const account = await E(cosmosInterchainService).makeAccount(
-    CHAIN_ID,
-    HOST_CONNECTION_ID,
-    CONTROLLER_CONNECTION_ID,
-    { version: 'ics27-2', ordering: 'unordered', encoding: 'json' },
-  );
-  const [localAddr, remoteAddr] = await Promise.all([
-    E(account).getLocalAddress(),
-    E(account).getRemoteAddress(),
-  ]);
-  t.log({
-    localAddr,
-    remoteAddr,
-  });
-  for (const addr of [localAddr, remoteAddr]) {
-    t.regex(addr, /unordered/, 'remote address contains unordered ordering');
-    t.regex(
-      addr,
-      /"version":"ics27-2"(.*)"encoding":"json"/,
-      'remote address contains version and encoding in version string',
+    const account = await E(cosmosInterchainService).makeAccount(
+      CHAIN_ID,
+      HOST_CONNECTION_ID,
+      CONTROLLER_CONNECTION_ID,
+      { version: 'ics27-2', ordering: 'unordered', encoding: 'json' },
     );
-  }
-});
+    const [localAddr, remoteAddr] = await Promise.all([
+      E(account).getLocalAddress(),
+      E(account).getRemoteAddress(),
+    ]);
+    t.log({
+      localAddr,
+      remoteAddr,
+    });
+    for (const addr of [localAddr, remoteAddr]) {
+      t.regex(addr, /unordered/, 'remote address contains unordered ordering');
+      t.regex(
+        addr,
+        /"version":"ics27-2"(.*)"encoding":"json"/,
+        'remote address contains version and encoding in version string',
+      );
+    }
+  },
+);
