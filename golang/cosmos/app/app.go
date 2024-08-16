@@ -875,14 +875,8 @@ func NewAgoricApp(
 	}
 	if upgradeNamesOfThisVersion[upgradeInfo.Name] && !app.UpgradeKeeper.IsSkipHeight(upgradeInfo.Height) {
 		storeUpgrades := storetypes.StoreUpgrades{
-			Added: []string{
-				packetforwardtypes.ModuleName, // Added PFM
-				vlocalchain.ModuleName,        // Agoric added vlocalchain
-				vtransfer.ModuleName,          // Agoric added vtransfer
-			},
-			Deleted: []string{
-				"lien", // Agoric removed the lien module
-			},
+			Added:   []string{},
+			Deleted: []string{},
 		}
 
 		// configure store loader that checks if version == upgradeHeight and applies store upgrades

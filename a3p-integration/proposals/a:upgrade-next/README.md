@@ -1,6 +1,6 @@
 # Proposal to upgrade the chain software
 
-The `UNRELEASED_UPGRADE` software upgrade may include core proposals defined in
+The `UNRELEASED_A3P_INTEGRATION` software upgrade may include core proposals defined in
 its upgrade handler. See `CoreProposalSteps` in the `unreleasedUpgradeHandler`
 in [golang/cosmos/app/app.go](../../../golang/cosmos/app/app.go).
 
