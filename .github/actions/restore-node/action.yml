@@ -89,7 +89,7 @@ runs:
       with:
         repository: agoric/endo
         path: ./replacement-endo
-        ref: ${{ steps.endo-branch.outputs.result }}
+        ref: master
         clean: 'false'
         submodules: 'true'
         persist-credentials: false
