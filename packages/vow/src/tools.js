@@ -58,6 +58,13 @@ export const prepareBasicVowTools = (zone, powers = {}) => {
    */
   const allVows = maybeVows => watchUtils.all(maybeVows);
 
+  /**
+   * Vow-tolerant implementation of Promise.allSettled.
+   *
+   * @param {EVow<unknown>[]} maybeVows
+   */
+  const allVowsSettled = maybeVows => watchUtils.allSettled(maybeVows);
+
   /** @type {AsPromiseFunction} */
   const asPromise = (specimenP, ...watcherArgs) =>
     watchUtils.asPromise(specimenP, ...watcherArgs);
@@ -67,6 +74,7 @@ export const prepareBasicVowTools = (zone, powers = {}) => {
     watch,
     makeVowKit,
     allVows,
+    allVowsSettled,
     asVow,
     asPromise,
     retriable,

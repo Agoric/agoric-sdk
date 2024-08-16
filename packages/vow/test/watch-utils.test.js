@@ -1,4 +1,5 @@
 // @ts-check
+/* global setTimeout */
 import test from 'ava';
 
 import { makeHeapZone } from '@agoric/base-zone/heap.js';
@@ -251,4 +252,44 @@ test('asPromise handles watcher arguments', async t => {
   const result = await asPromise(vow, watcher, ['ctx']);
   t.is(result, 'watcher test');
   t.true(watcherCalled);
+});
+
+test('allVowsSettled handles mixed fulfilled and rejected vows', async t => {
+  const zone = makeHeapZone();
+  const { watch, when, allVowsSettled } = prepareBasicVowTools(zone);
+
+  const vowA = watch(Promise.resolve('a'));
+  const vowB = watch(Promise.reject(new Error('b')));
+  const vowC = watch(Promise.resolve('c'));
+
+  const result = await when(allVowsSettled([vowA, vowB, vowC]));
+  t.is(result.length, 3);
+  t.deepEqual(result[0], { status: 'fulfilled', value: 'a' });
+  t.deepEqual(result[1], {
+    status: 'rejected',
+    reason: new Error('b'),
+  });
+  t.deepEqual(result[2], { status: 'fulfilled', value: 'c' });
+});
+
+test('allVowsSettled returns vows in order', async t => {
+  const zone = makeHeapZone();
+  const { watch, when, allVowsSettled, makeVowKit } =
+    prepareBasicVowTools(zone);
+  const kit = makeVowKit();
+
+  const vowA = watch(kit.vow);
+  const vowB = watch(Promise.resolve('b'));
+  const vowC = watch(Promise.reject(new Error('c')));
+  const allSettledV = allVowsSettled([vowA, vowB, vowC]);
+  setTimeout(() => kit.resolver.resolve('a'), 250);
+
+  const result = await when(allSettledV);
+  t.is(result.length, 3);
+  t.deepEqual(result[0], { status: 'fulfilled', value: 'a' });
+  t.deepEqual(result[1], { status: 'fulfilled', value: 'b' });
+  t.deepEqual(result[2], {
+    status: 'rejected',
+    reason: new Error('c'),
+  });
 });

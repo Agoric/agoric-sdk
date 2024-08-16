@@ -54,11 +54,16 @@ export const prepareWatchUtils = (
     {
       utils: M.interface('Utils', {
         all: M.call(M.arrayOf(M.any())).returns(VowShape),
+        allSettled: M.call(M.arrayOf(M.any())).returns(VowShape),
         asPromise: M.call(M.raw()).rest(M.raw()).returns(M.promise()),
       }),
       watcher: M.interface('Watcher', {
         onFulfilled: M.call(M.any()).rest(M.any()).returns(M.any()),
         onRejected: M.call(M.any()).rest(M.any()).returns(M.any()),
+      }),
+      helper: M.interface('Helper', {
+        createVow: M.call(M.arrayOf(M.any()), M.boolean()).returns(VowShape),
+        processResult: M.call(M.any()).rest(M.any()).returns(M.undefined()),
       }),
       retryRejectionPromiseWatcher: PromiseWatcherI,
     },
@@ -68,6 +73,7 @@ export const prepareWatchUtils = (
        * @property {number} remaining
        * @property {MapStore<number, any>} resultsMap
        * @property {VowKit['resolver']} resolver
+       * @property {boolean} [isAllSettled]
        */
       /** @type {MapStore<bigint, VowState>} */
       const idToVowState = detached.mapStore('idToVowState');
@@ -79,45 +85,13 @@ export const prepareWatchUtils = (
     },
     {
       utils: {
-        /**
-         * @param {EVow<unknown>[]} vows
-         */
+        /** @param {EVow<unknown>[]} vows */
         all(vows) {
-          const { nextId: id, idToVowState } = this.state;
-          /** @type {VowKit<any[]>} */
-          const kit = makeVowKit();
-
-          // Preserve the order of the vow results.
-          for (let index = 0; index < vows.length; index += 1) {
-            watch(vows[index], this.facets.watcher, {
-              id,
-              index,
-              numResults: vows.length,
-            });
-          }
-
-          if (vows.length > 0) {
-            // Save the state until rejection or all fulfilled.
-            this.state.nextId += 1n;
-            idToVowState.init(
-              id,
-              harden({
-                resolver: kit.resolver,
-                remaining: vows.length,
-                resultsMap: detached.mapStore('resultsMap'),
-              }),
-            );
-            const idToNonStorableResults = provideLazyMap(
-              utilsToNonStorableResults,
-              this.facets.utils,
-              () => new Map(),
-            );
-            idToNonStorableResults.set(id, new Map());
-          } else {
-            // Base case: nothing to wait for.
-            kit.resolver.resolve(harden([]));
-          }
-          return kit.vow;
+          return this.facets.helper.createVow(vows, false);
+        },
+        /** @param {EVow<unknown>[]} vows */
+        allSettled(vows) {
+          return this.facets.helper.createVow(vows, true);
         },
         /** @type {AsPromiseFunction} */
         asPromise(specimenP, ...watcherArgs) {
@@ -133,13 +107,102 @@ export const prepareWatchUtils = (
         },
       },
       watcher: {
-        onFulfilled(value, { id, index, numResults }) {
+        /**
+         * @param {unknown} value
+         * @param {object} ctx
+         * @param {bigint} ctx.id
+         * @param {number} ctx.index
+         * @param {number} ctx.numResults
+         * @param {boolean} ctx.isAllSettled
+         */
+        onFulfilled(value, ctx) {
+          this.facets.helper.processResult(value, ctx, 'fulfilled');
+        },
+        /**
+         * @param {unknown} reason
+         * @param {object} ctx
+         * @param {bigint} ctx.id
+         * @param {number} ctx.index
+         * @param {number} ctx.numResults
+         * @param {boolean} ctx.isAllSettled
+         */
+        onRejected(reason, ctx) {
+          this.facets.helper.processResult(reason, ctx, 'rejected');
+        },
+      },
+      helper: {
+        /**
+         * @param {EVow<unknown>[]} vows
+         * @param {boolean} isAllSettled
+         */
+        createVow(vows, isAllSettled) {
+          const { nextId: id, idToVowState } = this.state;
+          /** @type {VowKit<any[]>} */
+          const kit = makeVowKit();
+
+          for (let index = 0; index < vows.length; index += 1) {
+            watch(vows[index], this.facets.watcher, {
+              id,
+              index,
+              numResults: vows.length,
+              isAllSettled,
+            });
+          }
+
+          if (vows.length > 0) {
+            // Save the state until rejection or all fulfilled.
+            this.state.nextId += 1n;
+            idToVowState.init(
+              id,
+              harden({
+                resolver: kit.resolver,
+                remaining: vows.length,
+                resultsMap: detached.mapStore('resultsMap'),
+                isAllSettled,
+              }),
+            );
+            const idToNonStorableResults = provideLazyMap(
+              utilsToNonStorableResults,
+              this.facets.utils,
+              () => new Map(),
+            );
+            idToNonStorableResults.set(id, new Map());
+          } else {
+            // Base case: nothing to wait for.
+            kit.resolver.resolve(harden([]));
+          }
+          return kit.vow;
+        },
+        /**
+         * @param {unknown} result
+         * @param {object} ctx
+         * @param {bigint} ctx.id
+         * @param {number} ctx.index
+         * @param {number} ctx.numResults
+         * @param {boolean} ctx.isAllSettled
+         * @param {'fulfilled' | 'rejected'} status
+         */
+        processResult(result, { id, index, numResults, isAllSettled }, status) {
           const { idToVowState } = this.state;
           if (!idToVowState.has(id)) {
             // Resolution of the returned vow happened already.
             return;
           }
           const { remaining, resultsMap, resolver } = idToVowState.get(id);
+          if (!isAllSettled && status === 'rejected') {
+            // For 'all', we reject immediately on the first rejection
+            idToVowState.delete(id);
+            resolver.reject(result);
+            return;
+          }
+
+          const possiblyWrappedResult = isAllSettled
+            ? harden({
+                status,
+                [status === 'fulfilled' ? 'value' : 'reason']: result,
+              })
+            : result;
+
           const idToNonStorableResults = provideLazyMap(
             utilsToNonStorableResults,
             this.facets.utils,
@@ -152,15 +215,16 @@ export const prepareWatchUtils = (
           );
 
           // Capture the fulfilled value.
-          if (zone.isStorable(value)) {
-            resultsMap.init(index, value);
+          if (zone.isStorable(possiblyWrappedResult)) {
+            resultsMap.init(index, possiblyWrappedResult);
           } else {
-            nonStorableResults.set(index, value);
+            nonStorableResults.set(index, possiblyWrappedResult);
           }
           const vowState = harden({
             remaining: remaining - 1,
             resultsMap,
             resolver,
+            isAllSettled,
           });
           if (vowState.remaining > 0) {
             idToVowState.set(id, vowState);
@@ -177,25 +241,18 @@ export const prepareWatchUtils = (
               results[i] = resultsMap.get(i);
             } else {
               numLost += 1;
+              results[i] = isAllSettled
+                ? { status: 'rejected', reason: 'Unstorable result was lost' }
+                : undefined;
             }
           }
-          if (numLost > 0) {
+          if (numLost > 0 && !isAllSettled) {
             resolver.reject(
               assert.error(X`${numLost} unstorable results were lost`),
             );
           } else {
             resolver.resolve(harden(results));
           }
-        },
-        onRejected(value, { id, index: _index, numResults: _numResults }) {
-          const { idToVowState } = this.state;
-          if (!idToVowState.has(id)) {
-            // First rejection wins.
-            return;
-          }
-          const { resolver } = idToVowState.get(id);
-          idToVowState.delete(id);
-          resolver.reject(value);
         },
       },
       retryRejectionPromiseWatcher: {
