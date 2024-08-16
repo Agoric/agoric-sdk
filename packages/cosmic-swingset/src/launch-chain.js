@@ -52,7 +52,7 @@ import { makeQueue, makeQueueStorageMock } from './helpers/make-queue.js';
 import { exportStorage } from './export-storage.js';
 import { parseLocatedJson } from './helpers/json.js';
 
-/** @import {RunPolicy} from '@agoric/swingset-vat' */
+/** @import {RunPolicy, PolicyOutputCleanupBudget} from '@agoric/swingset-vat' */
 
 const console = anylogger('launch-chain');
 const blockManagerConsole = anylogger('block-manager');
@@ -259,6 +259,7 @@ export async function buildSwingset(
 /**
  * @param {BeansPerUnit} beansPerUnit
  * @param {boolean} [ignoreBlockLimit]
+ * @param {PolicyOutputCleanupBudget} [slowDeletionBudget]
  * @returns {{ runPolicy: ChainRunPolicy, cleanupPolicy: ChainRunPolicy }}
  */
 function makeRunPolicies(
@@ -268,6 +269,7 @@ function makeRunPolicies(
     [BeansPerXsnapComputron]: xsnapComputron,
   },
   ignoreBlockLimit = false,
+  slowDeletionBudget = { default: 5, kv: 50 },
 ) {
   assert.typeof(blockComputeLimit, 'bigint');
   assert.typeof(vatCreation, 'bigint');
@@ -277,9 +279,10 @@ function makeRunPolicies(
   const shouldRun = () => ignoreBlockLimit || totalBeans < blockComputeLimit;
   const remainingBeans = () =>
     ignoreBlockLimit ? undefined : blockComputeLimit - totalBeans;
+  const allowCleanupDuringNormalRun = ignoreBlockLimit;
 
   const runPolicy = harden({
-    allowCleanup: () => false,
+    allowCleanup: () => allowCleanupDuringNormalRun,
     didCleanup: () => true, // ignore and keep going
     vatCreated() {
       didWork = true;
@@ -324,21 +327,19 @@ function makeRunPolicies(
   // We allow one budget-limited cleanup crank, plus any deliveries it
   // triggers (e.g. dropExports or BOYD), which are limited by the
   // same computron counter as the main runPolicy.
-
-  // TODO: control budget with governance parameter
-  let budget = harden({ default: 5, kv : 50 });
   let didAnyCleanup = false;
-  const stop: () => false;
 
   const cleanupPolicy = harden({
     ...runPolicy,
-    allowCleanup: () => didAnyCleanup ? false : budget,
-    didCleanup: () => { didAnyCleanup = true; return true; },
+    allowCleanup: () => (didAnyCleanup ? false : slowDeletionBudget),
+    didCleanup: () => {
+      didAnyCleanup = true;
+      return true;
+    },
   });
 
   return { runPolicy, cleanupPolicy };
 }
-
 
 export async function launch({
   actionQueueStorage,
@@ -465,7 +466,6 @@ export async function launch({
 
   /**
    * @param {number} blockHeight
-   * @param {ChainRunPolicy} runPolicy
    */
   function makeRunSwingset(blockHeight) {
     let runNum = 0;
@@ -674,6 +674,7 @@ export async function launch({
    *
    * @param {InboundQueue} inboundQueue
    * @param {ReturnType<typeof makeRunSwingset>} runSwingset
+   * @param {ChainRunPolicy} runPolicy
    */
   async function processActions(inboundQueue, runSwingset, runPolicy) {
     let keepGoing = true;
@@ -691,8 +692,13 @@ export async function launch({
     return keepGoing;
   }
 
-  async function runKernel(runSwingset, runPolicy, cleanupPolicy,
-                           blockHeight, blockTime) {
+  async function runKernel(
+    runSwingset,
+    runPolicy,
+    cleanupPolicy,
+    blockHeight,
+    blockTime,
+  ) {
     // First, complete leftover work, if any
     let keepGoing = await runSwingset(runPolicy);
     if (!keepGoing) return;
@@ -749,11 +755,27 @@ export async function launch({
     const neverStop = runThisBlock.size() > 0;
 
     // make a runPolicy that will be shared across all runs
-    const { runPolicy, cleanupPolicy } = makeRunPolicies(params.beansPerUnit, neverStop);
+    const { runPolicy, cleanupPolicy } = makeRunPolicies(
+      params.beansPerUnit,
+      neverStop,
+      params.slowDeletionBudget,
+    );
+    /*
+    if (params.xx) {
+      // control defaultReapInterval, defaultReapGCKrefs,
+      // snapshotInterval, defaultReapDirtThreshold
+      controller.changeKernelOptions({ xx: params.xx });
+    }
+    */
     const runSwingset = makeRunSwingset(blockHeight);
 
-    await runKernel(runSwingset, runPolicy, cleanupPolicy,
-                    blockHeight, blockTime);
+    await runKernel(
+      runSwingset,
+      runPolicy,
+      cleanupPolicy,
+      blockHeight,
+      blockTime,
+    );
 
     if (END_BLOCK_SPIN_MS) {
       // Introduce a busy-wait to artificially put load on the chain.
