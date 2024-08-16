@@ -1,10 +1,13 @@
 // @ts-check
+/* global setTimeout */
 import test from 'ava';
 
 import { makeHeapZone } from '@agoric/base-zone/heap.js';
 import { E, getInterfaceOf } from '@endo/far';
 
 import { prepareBasicVowTools } from '../src/tools.js';
+
+const setTimeoutAmbient = setTimeout;
 
 test('vowTools.all waits for a single vow to complete', async t => {
   const zone = makeHeapZone();
@@ -116,14 +119,29 @@ test('vowTools.all - watch promises mixed with vows', async t => {
 
 test('vowTools.all can accept passable data (PureData)', async t => {
   const zone = makeHeapZone();
-  const { watch, when, all } = prepareBasicVowTools(zone);
+  const { when, all } = prepareBasicVowTools(zone);
 
-  const testPromiseP = Promise.resolve('vow');
-  const vowA = watch(testPromiseP);
-
-  const result = await when(all([vowA, 'string', 1n, { obj: true }]));
+  const result = await when(
+    all([Promise.resolve('promise'), 'string', 1n, { obj: true }]),
+  );
   t.is(result.length, 4);
-  t.deepEqual(result, ['vow', 'string', 1n, { obj: true }]);
+  t.deepEqual(result, ['promise', 'string', 1n, { obj: true }]);
+});
+
+test('vowTools.all rejects on the first settled rejection', async t => {
+  const zone = makeHeapZone();
+  const { when, all } = prepareBasicVowTools(zone);
+
+  await t.throwsAsync(
+    when(
+      all([
+        Promise.resolve('yes'),
+        Promise.reject(new Error('no')),
+        Promise.reject(new Error('no again')),
+      ]),
+    ),
+    { message: 'no' },
+  );
 });
 
 const prepareAccount = zone =>
@@ -267,4 +285,94 @@ test('vowTools.all handles unstorable results', async t => {
   t.is(result[0], 'i am a promise');
   t.is(result[1], nonPassable);
   t.is(result[1](), 'i am a function');
+});
+
+test('vowTools.allSettled handles mixed fulfilled and rejected vows', async t => {
+  const zone = makeHeapZone();
+  const { watch, when, allSettled } = prepareBasicVowTools(zone);
+
+  const vowA = watch(Promise.resolve('a'));
+  const vowB = watch(Promise.reject(new Error('b')));
+  const vowC = watch(Promise.resolve('c'));
+
+  const result = await when(allSettled([vowA, vowB, vowC]));
+  t.is(result.length, 3);
+  t.deepEqual(result[0], { status: 'fulfilled', value: 'a' });
+  t.deepEqual(result[1], {
+    status: 'rejected',
+    reason: new Error('b'),
+  });
+  t.deepEqual(result[2], { status: 'fulfilled', value: 'c' });
+});
+
+test('vowTools.allSettled accepts any passables', async t => {
+  const zone = makeHeapZone();
+  const { watch, when, allSettled } = prepareBasicVowTools(zone);
+
+  const result = await when(
+    allSettled([
+      watch(Promise.resolve('a')),
+      watch(Promise.reject(new Error('b'))),
+      Promise.resolve('c'),
+      1n,
+      { foo: 'e' },
+      new Error('f'),
+      'g',
+      undefined,
+    ]),
+  );
+  t.is(result.length, 8);
+  t.deepEqual(result[0], { status: 'fulfilled', value: 'a' });
+  t.deepEqual(result[1], {
+    status: 'rejected',
+    reason: Error('b'),
+  });
+  t.deepEqual(result[2], { status: 'fulfilled', value: 'c' });
+  t.deepEqual(result[3], { status: 'fulfilled', value: 1n });
+  t.deepEqual(result[4], { status: 'fulfilled', value: { foo: 'e' } });
+  t.deepEqual(result[5], { status: 'fulfilled', value: Error('f') });
+  t.deepEqual(result[6], { status: 'fulfilled', value: 'g' });
+  t.deepEqual(result[7], { status: 'fulfilled', value: undefined });
+});
+
+test('vowTools.allSettled returns vows in order', async t => {
+  const zone = makeHeapZone();
+  const { watch, when, allSettled, makeVowKit } = prepareBasicVowTools(zone);
+  const kit = makeVowKit();
+
+  const vowA = watch(kit.vow);
+  const vowB = watch(Promise.resolve('b'));
+  const vowC = watch(Promise.reject(new Error('c')));
+  const allSettledV = allSettled([vowA, vowB, vowC]);
+  setTimeoutAmbient(() => kit.resolver.resolve('a'), 250);
+
+  const result = await when(allSettledV);
+  t.is(result.length, 3);
+  t.deepEqual(result[0], { status: 'fulfilled', value: 'a' });
+  t.deepEqual(result[1], { status: 'fulfilled', value: 'b' });
+  t.deepEqual(result[2], {
+    status: 'rejected',
+    reason: new Error('c'),
+  });
+});
+
+test('vowTools.allSettled handles unstorable results', async t => {
+  const zone = makeHeapZone();
+  const { watch, when, allSettled } = prepareBasicVowTools(zone);
+
+  // it's not recommended to use non-passables with allVows or allSettled,
+  // but an attempt will be made to store the value
+  const nonPassable = () => 'im a function';
+  t.is(zone.isStorable(nonPassable), false);
+
+  const vowA = watch(Promise.resolve('a'));
+  const vowB = watch(nonPassable);
+
+  const result = await when(allSettled([vowA, vowB]));
+
+  t.is(result.length, 2);
+  t.deepEqual(result[0], { status: 'fulfilled', value: 'a' });
+  t.deepEqual(result[1], { status: 'fulfilled', value: nonPassable });
+  // @ts-expect-error narrowed in line above
+  t.is(result[1].value(), 'im a function');
 });

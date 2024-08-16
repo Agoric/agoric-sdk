@@ -7,6 +7,7 @@ import { makeWhen } from './when.js';
 
 /**
  * @import {Zone} from '@agoric/base-zone';
+ * @import {Passable} from '@endo/pass-style';
  * @import {IsRetryableReason, AsPromiseFunction, EVow, Vow, ERef} from './types.js';
  */
 
@@ -68,6 +69,16 @@ export const prepareBasicVowTools = (zone, powers = {}) => {
    */
   const allVows = all;
 
+  /**
+   * Vow-tolerant implementation of Promise.allSettled that takes an iterable
+   * of vows and other {@link Passable}s and returns a single {@link Vow}. It
+   * resolves when all of the input's promises or vows are settled with an
+   * array of settled outcome objects.
+   *
+   * @param {unknown[]} maybeVows
+   */
+  const allSettled = maybeVows => watchUtils.allSettled(maybeVows);
+
   /** @type {AsPromiseFunction} */
   const asPromise = (specimenP, ...watcherArgs) =>
     watchUtils.asPromise(specimenP, ...watcherArgs);
@@ -78,6 +89,7 @@ export const prepareBasicVowTools = (zone, powers = {}) => {
     makeVowKit,
     all,
     allVows,
+    allSettled,
     asVow,
     asPromise,
     retriable,
