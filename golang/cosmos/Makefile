@@ -167,6 +167,8 @@ endif
 
 proto-tools: proto-tools-stamp buf grpc-gateway-stamp
 
+fraz: ls -la
+
 proto-tools-stamp:
 	echo "Installing protoc compiler..."
 	mkdir -p "${BIN}"
