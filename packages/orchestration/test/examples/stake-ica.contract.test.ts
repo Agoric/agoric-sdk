@@ -17,13 +17,10 @@ import {
   buildQueryResponseString,
 } from '../../tools/ibc-mocks.js';
 import type { CosmosChainInfo } from '../../src/cosmos-api.js';
-import {
-  AmountArg,
-  ChainAddress,
-  DenomAmount,
-} from '../../src/orchestration-api.js';
+import { DenomAmount } from '../../src/orchestration-api.js';
 import { maxClockSkew } from '../../src/utils/cosmos.js';
 import { UNBOND_PERIOD_SECONDS } from '../ibc-mocks.js';
+import { makeChainHub } from '../../src/exos/chain-hub.js';
 
 const dirname = path.dirname(new URL(import.meta.url).pathname);
 
@@ -50,10 +47,12 @@ const getChainTerms = (
 };
 
 const startContract = async ({
+  agoricNames,
   cosmosInterchainService,
   timer,
   marshaller,
   storage,
+  vowTools,
   issuerKeywordRecord = undefined,
   terms = getChainTerms('cosmoshub'),
   storagePath = 'stakeAtom',
@@ -67,6 +66,7 @@ const startContract = async ({
     issuerKeywordRecord,
     terms,
     {
+      agoricNames,
       marshaller,
       cosmosInterchainService,
       storageNode: storage.rootNode.makeChildNode(storagePath),

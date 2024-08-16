@@ -219,24 +219,65 @@ export {};
  */
 
 /**
+ * PolicyInput is used internally within kernel.js, returned by each
+ * message processor, and used to decide which of the host's runPolicy
+ * methods to invoke. The 'details' portion of PolicyInput is passed
+ * as an argument to those methods, so those types are
+ * externally-visible.
+ *
+ * @typedef { { exports: number,
+ *              imports: number,
+ *              kv: number,
+ *              snapshots: number,
+ *              transcripts: number,
+ *            } } CleanupWork
+ *
+ * @typedef { { total: number } & CleanupWork } PolicyInputCleanupCounts
+ * @typedef { { cleanups: PolicyInputCleanupCounts, computrons?: bigint } } PolicyInputCleanupDetails
  * @typedef { { computrons?: bigint } } PolicyInputDetails
+ *
  * @typedef { [tag: 'none', details: PolicyInputDetails ] } PolicyInputNone
  * @typedef { [tag: 'create-vat', details: PolicyInputDetails  ]} PolicyInputCreateVat
  * @typedef { [tag: 'crank', details: PolicyInputDetails ] } PolicyInputCrankComplete
  * @typedef { [tag: 'crank-failed', details: PolicyInputDetails ]} PolicyInputCrankFailed
- * @typedef { [tag: 'cleanup', details: { cleanups: number, computrons?: number }] } PolicyInputCleanup
+ * @typedef { [tag: 'cleanup', details: PolicyInputCleanupDetails] } PolicyInputCleanup
+ *
  * @typedef { PolicyInputNone | PolicyInputCreateVat | PolicyInputCrankComplete |
  *            PolicyInputCrankFailed | PolicyInputCleanup } PolicyInput
- * @typedef { boolean } PolicyOutput
+ *
+ * CleanupBudget is the internal record used to limit the slow
+ * deletion of terminated vats. Each property limits the number of
+ * deletions per 'cleanup-terminated-vat' run-queue event, for a
+ * specific phase (imports, exports, snapshots, etc). It must always
+ * have a 'default' property, which is used for phases that aren't
+ * otherwise specified.
+ *
+ * @typedef { { default: number } & Partial<CleanupWork> } CleanupBudget
+ *
+ * PolicyOutputCleanupBudget is the return value of
+ * runPolicy.allowCleanup(), and tells the kernel how much it is
+ * allowed to clean up. It is either a CleanupBudget, or 'true' to
+ * allow unlimited cleanup, or 'false' to forbid any cleanup.
+ *
+ * @typedef {CleanupBudget | true | false} PolicyOutputCleanupBudget
+ *
+ * PolicyOutput is the boolean returned by all the other runPolicy
+ * methods, where 'true' means "keep going", and 'false' means "stop
+ * now".
+ *
+ * @typedef {boolean} PolicyOutput
+ *
  * @typedef { {
- *              allowCleanup?: () => false | { budget?: number },
+ *              allowCleanup?: () => boolean | PolicyOutputCleanupBudget,
  *              vatCreated: (details: {}) => PolicyOutput,
  *              crankComplete: (details: { computrons?: bigint }) => PolicyOutput,
  *              crankFailed: (details: {}) => PolicyOutput,
  *              emptyCrank: () => PolicyOutput,
- *              didCleanup?: (details: { cleanups: number }) => PolicyOutput,
+ *              didCleanup?: (details: PolicyInputCleanupDetails) => PolicyOutput,
  *             } } RunPolicy
- *
+ */
+
+/**
  * @typedef {object} VatWarehousePolicy
  * @property { number } [maxVatsOnline]     Limit the number of simultaneous workers
  * @property { boolean } [restartWorkerOnSnapshot]     Reload worker immediately upon snapshot creation

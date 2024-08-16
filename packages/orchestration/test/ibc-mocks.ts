@@ -25,6 +25,7 @@ import {
   buildMsgErrorString,
   buildTxPacketString,
   buildQueryPacketString,
+  createMockAckMap,
 } from '../tools/ibc-mocks.js';
 
 /**
@@ -121,14 +122,6 @@ export const protoMsgMocks = {
     ack: buildMsgResponseString(MsgSendResponse, {}),
   },
 };
-
-export function createMockAckMap(mockMap: typeof protoMsgMocks) {
-  const res = Object.values(mockMap).reduce((acc, { msg, ack }) => {
-    acc[msg] = ack;
-    return acc;
-  }, {});
-  return res;
-}
 
 export const defaultMockAckMap: Record<string, string> =
   createMockAckMap(protoMsgMocks);

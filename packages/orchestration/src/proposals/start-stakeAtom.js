@@ -1,4 +1,4 @@
-import { makeTracer } from '@agoric/internal';
+import { deeplyFulfilledObject, makeTracer } from '@agoric/internal';
 import { makeStorageNodeChild } from '@agoric/internal/src/lib-chainStorage.js';
 import { prepareVowTools } from '@agoric/vow';
 import { makeHeapZone } from '@agoric/zone';
@@ -28,7 +28,7 @@ export const startStakeAtom = async ({
     agoricNames,
     board,
     chainStorage,
-    chainTimerService,
+    chainTimerService: timer,
     cosmosInterchainService,
     startUpgradable,
   },
@@ -64,12 +64,15 @@ export const startStakeAtom = async ({
       bondDenom: cosmoshub.stakingTokens[0].denom,
       icqEnabled: cosmoshub.icqEnabled,
     },
-    privateArgs: {
-      cosmosInterchainService: await cosmosInterchainService,
-      storageNode,
-      marshaller,
-      timer: await chainTimerService,
-    },
+    privateArgs: await deeplyFulfilledObject(
+      harden({
+        agoricNames,
+        cosmosInterchainService,
+        storageNode,
+        marshaller,
+        timer,
+      }),
+    ),
   };
 
   const { instance } = await E(startUpgradable)(startOpts);

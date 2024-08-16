@@ -143,8 +143,9 @@ export {};
  * @typedef { { type: 'retireImports', vatID: VatID, krefs: string[] } } RunQueueEventRetireImports
  * @typedef { { type: 'negated-gc-action', vatID?: VatID } } RunQueueEventNegatedGCAction
  * @typedef { { type: 'bringOutYourDead', vatID: VatID } } RunQueueEventBringOutYourDead
+ * @import {CleanupBudget} from './types-external.js';
  * @typedef { { type: 'cleanup-terminated-vat', vatID: VatID,
- *              budget: number | undefined } } RunQueueEventCleanupTerminatedVat
+ *              budget: CleanupBudget } } RunQueueEventCleanupTerminatedVat
  * @typedef { RunQueueEventNotify | RunQueueEventSend | RunQueueEventCreateVat |
  *            RunQueueEventUpgradeVat | RunQueueEventChangeVatOptions | RunQueueEventStartVat |
  *            RunQueueEventDropExports | RunQueueEventRetireExports | RunQueueEventRetireImports |

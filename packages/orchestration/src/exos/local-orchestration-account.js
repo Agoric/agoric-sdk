@@ -121,11 +121,6 @@ export const prepareLocalOrchestrationAccountKit = (
           .optional(M.arrayOf(M.undefined())) // empty context
           .returns(VowShape),
       }),
-      getChainInfoWatcher: M.interface('getChainInfoWatcher', {
-        onFulfilled: M.call(M.record()) // agoric chain info
-          .optional(ChainAddressShape)
-          .returns(Vow$(M.record())), // connection info
-      }),
       transferWatcher: M.interface('transferWatcher', {
         onFulfilled: M.call([M.record(), M.nat()])
           .optional({
@@ -154,6 +149,7 @@ export const prepareLocalOrchestrationAccountKit = (
         CloseAccount: M.call().returns(M.promise()),
         Send: M.call().returns(M.promise()),
         SendAll: M.call().returns(M.promise()),
+        Transfer: M.call().returns(M.promise()),
       }),
     },
     /**
@@ -248,6 +244,25 @@ export const prepareLocalOrchestrationAccountKit = (
           };
           return zcf.makeInvitation(offerHandler, 'SendAll');
         },
+        Transfer() {
+          /**
+           * @type {OfferHandler<
+           *   Vow<void>,
+           *   {
+           *     amount: AmountArg;
+           *     destination: ChainAddress;
+           *     opts: IBCMsgTransferOptions;
+           *   }
+           * >}
+           */
+          const offerHandler = (seat, { amount, destination, opts }) => {
+            seat.exit();
+            return watch(
+              this.facets.holder.transfer(amount, destination, opts),
+            );
+          };
+          return zcf.makeInvitation(offerHandler, 'Transfer');
+        },
       },
       undelegateWatcher: {
         /**
@@ -268,18 +283,6 @@ export const prepareLocalOrchestrationAccountKit = (
           );
         },
       },
-      getChainInfoWatcher: {
-        /**
-         * @param {ChainInfo} agoricChainInfo
-         * @param {ChainAddress} destination
-         */
-        onFulfilled(agoricChainInfo, destination) {
-          return chainHub.getConnectionInfo(
-            agoricChainInfo.chainId,
-            destination.chainId,
-          );
-        },
-      },
       transferWatcher: {
         /**
          * @param {[
@@ -288,7 +291,7 @@ export const prepareLocalOrchestrationAccountKit = (
          * ]} results
          * @param {{
          *   destination: ChainAddress;
-         *   opts: IBCMsgTransferOptions;
+         *   opts?: IBCMsgTransferOptions;
          *   amount: DenomAmount;
          * }} ctx
          */
@@ -556,9 +559,10 @@ export const prepareLocalOrchestrationAccountKit = (
             if ('brand' in amount) throw Fail`ERTP Amounts not yet supported`;
 
             const connectionInfoV = watch(
-              chainHub.getChainInfo('agoric'),
-              this.facets.getChainInfoWatcher,
-              destination,
+              chainHub.getConnectionInfo(
+                this.state.address.chainId,
+                destination.chainId,
+              ),
             );
 
             // set a `timeoutTimestamp` if caller does not supply either `timeoutHeight` or `timeoutTimestamp`

@@ -66,26 +66,46 @@ The run policy should be provided as the first argument to `controller.run()`. I
 
 Some vats may grow very large (i.e. large c-lists with lots of imported/exported objects, or lots of vatstore entries). If/when these are terminated, the burst of cleanup work might overwhelm the kernel, especially when processing all the dropped imports (which trigger GC messages to other vats).
 
-To protect the system against these bursts, the run policy can be configured to terminate vats slowly. Instead of doing all the cleanup work immediately, the policy allows the kernel to do a little bit of work each time `controller.run()` is called (e.g. once per block, for kernels hosted inside a blockchain).
+To protect the system against these bursts, the run policy can be configured to terminate vats slowly. Instead of doing all the cleanup work immediately, the policy allows the kernel to do a little bit of work each time `controller.run()` is called (e.g. once per block, for kernels hosted inside a blockchain). Internally, before servicing the run-queue, the kernel checks to see if any vats are in the "terminated but not fully deleted" state, and executes a "vat-cleanup crank", to delete some state. Depending upon what the run-policy allows, it may do multiple vat-cleanup cranks in a single `controller.run()`, or just one, or none at all. And depending upon the budget provided to each one, it may only take one vat-cleanup crank to finish the job, or millions. If the policy limits the number of cranks in a single block, and limits the budget of the crank, then the cleanup process will be spread over multiple blocks.
+
+For each terminated vat, cleanup proceeds through five phases:
+
+* `exports`: delete c-list entries for objects/promises *exported* by the vat
+* `imports`: same but for objects/promises *imported* by the vat
+* `kv`: delete all other kv entries for this vat, mostly vatstore records
+* `snapshots`: delete xsnap heap snapshots, typically one per 200 deliveries (`snapshotInterval`)
+* `transcripts`: delete transcript spans, and their associated transcript items
+
+The first two phases, `exports` and `imports`, cause the most activity in other vats. Deleting `exports` can cause objects to be retired, which will deliver `dispatch.retireImports` GC messages to other vats which have imported those objects and used them as keys in a WeakMapStore. Deleting `imports` can cause refcounts to drop to zero, delivering `dispatch.dropImports` into vats which were exporting those objects. Both of these will add `gcKref` "dirt" to the other vat, eventually triggering a BringOutYourDead, which will cause more DB activity. These are generally the phases we must rate-limit to avoid overwhelming the system.
+
+The other phases cause DB activity (deleting rows), but do not interact with other vats, so it is easier to accomodate more cleanup steps. The budget can be tuned to allow more kv/snapshots/transcripts than exports/imports in a single cleanup run.
 
 There are two RunPolicy methods which control this. The first is `runPolicy.allowCleanup()`. This will be invoked many times during `controller.run()`, each time the kernel tries to decide what to do next (once per step). The return value will enable (or not) a fixed amount of cleanup work. The second is `runPolicy.didCleanup({ cleanups })`, which is called later, to inform the policy of how much cleanup work was actually done. The policy can count the cleanups and switch `allowCleanup()` to return `false` when it reaches a threshold. (We need the pre-check `allowCleanup` method because the simple act of looking for cleanup work is itself a cost that we might not be willing to pay).
 
-If `allowCleanup()` exists, it must either return a falsy value or a `{ budget?: number }` object.
+If `allowCleanup()` exists, it must either return `false`, `true`, or a budget record.
 
-A falsy return value (eg `allowCleanup: () => false`) prohibits cleanup work. This can be useful in a "only clean up during idle blocks" approach (see below), but should not be the only policy used, otherwise vat cleanup would never happen.
+A `false` return value (eg `allowCleanup: () => false`) prohibits all cleanup work. This can be useful in a "only clean up during idle blocks" approach (see below), but should not be the only policy used, otherwise vat cleanup would never happen.
 
-A numeric `budget` limits how many cleanups are allowed to happen (if any are needed). One "cleanup" will delete one vatstore row, or one c-list entry (note that c-list deletion may trigger GC work), or one heap snapshot record, or one transcript span (including its populated transcript items). Using `{ budget: 5 }` seems to be a reasonable limit on each call, balancing overhead against doing sufficiently small units of work that we can limit the total work performed.
+A budget record defines properties to set limits on each phase of cleanup. For example, if `budget.exports = 5`, then each cleanup crank is limited to deleting 5 c-list export records (each of which uses two kv records, one for the kref->vref direction, and another for the vref->kref direction). `budget.transcripts = 10` would allow 10 transcript spans to be deleted, along with all transcript items they referenced (typically 10*200=2000, depending upon `snapshotInterval`).
 
-If `budget` is missing or `undefined`, the kernel will perform unlimited cleanup work. This also happens if `allowCleanup()` is missing entirely, which maintains the old behavior for host applications that haven't been updated to make new policy objects. Note that cleanup is higher priority than any delivery, and is second only to acceptance queue routing.
+The limit can be set to `Infinity` to allow unlimited deletion of that particular phase.
 
-`didCleanup({ cleanups })` is called when the kernel actually performed some vat-termination cleanup, and the `cleanups` property is a number with the count of cleanups that took place. Each query to `allowCleanup()` might (or might not) be followed by a call to `didCleanup`, with a `cleanups` value that does not exceed the specified budget. Like other policy methods, `didCleanup` should return `true` if the kernel should keep running or `false` if it should stop.
+Each budget record must include a `{ default }` property, which is used as the default for any phase that is not explicitly mentioned in the budget. This also provides forwards-compatibility for any phases that might be added in the future. So `budget = { default: 5 }` would provide a conservative budget for cleanup, `budget = { default: 5, kv: 50 }` would enable faster deletion of the non-c-list kvstore entries, and `budget = { default: Infinity }` allows unlimited cleanup for all phases.
+
+Note that the cleanup crank ends when no more work is left to be done (which finally allows the vat to be forgotten entirely), or when an individual phase's budget is exceeded. That means multiple phases might see deletion work in a single crank, if the earlier phase finishes its work without exhausting its budget. For example, if the budget is `{ default: 5 }`, but the vat had 4 exports, 4 imports, 4 other kv entries, 4 snapshots, and 4 transcript spans, then all that work would be done in a single crank, because no individual phase would exhaust its budget. The only case that is even worth mentioning is when the end of the `exports` phase overlaps with the start of the `imports` phase, where we might do four more cleanups than usual.
+
+A `true` return value from `allowCleanup()` is equivalent to `{ default: Infinity }`, which allows unlimited cleanup work. This also happens if `allowCleanup()` is missing entirely, which maintains the old behavior for host applications that haven't been updated to make new policy objects. Note that cleanup is higher priority than any delivery, and is second only to acceptance queue routing.
+
+`didCleanup({ cleanups })` is called when the kernel actually performed some vat-termination cleanup, and the `cleanups` property is a "work record" that counts how much cleanup was performed. It contains one number for each phase that did work, plus a `total` property that is the sum of all phases. A cleanup crank which deleted two `exports` and five `imports` would yield a work record of `{ total: 7, exports: 2, imports: 5 }`. The work reported for each phase will not exceed the budget granted to it by `allowCleanup`.
+
+Like other post-run policy methods, `didCleanup` should return `true` if the kernel should keep running or `false` if it should stop.
 
 To limit the work done per block (for blockchain-based applications) the host's RunPolicy objects must keep track of how many cleanups were reported, and change the behavior of `allowCleanup()` when it reaches a per-block threshold. See below for examples.
 
 
 ## Typical Run Policies
 
-A basic policy might simply limit the block to 100 cranks with deliveries and two vat creations:
+A basic policy might simply limit the run/block to 100 cranks with deliveries and two vat creations, and not restrict cleanup at all (so terminated vats are completely deleted in a single step):
 
 ```js
 function make100CrankPolicy() {
@@ -181,13 +201,13 @@ function makeSlowTerminationPolicy() {
     },
     allowCleanup() {
       if (cleanups > 0) {
-        return { budget: cleanups };
+        return { default: cleanups };
       } else {
         return false;
       }
     },
-    didCleanup(spent) {
-      cleanups -= spent.cleanups;
+    didCleanup(details) {
+      cleanups -= details.cleanups.total;
     },
   });
   return policy;
@@ -212,26 +232,26 @@ function makeDeliveryOnlyPolicy() {
 }
 ```
 
-The second only performs cleanup, with a limited budget, stopping the run after any deliveries occur (such as GC actions):
+The second performs a limited number of cleanups, along with any deliveries (like BOYD) that are caused by the cleanups:
 
 ```js
 function makeCleanupOnlyPolicy() {
   let cleanups = 5;
-  const stop: () => false;
+  const keepGoing: () => true;
   const policy = harden({
-    vatCreated: stop,
-    crankComplete: stop,
-    crankFailed: stop,
-    emptyCrank: stop,
+    vatCreated: keepGoing,
+    crankComplete: keepGoing,
+    crankFailed: keepGoing,
+    emptyCrank: keepGoing,
     allowCleanup() {
       if (cleanups > 0) {
-        return { budget: cleanups };
+        return { default: cleanups };
       } else {
         return false;
       }
     },
-    didCleanup(spent) {
-      cleanups -= spent.cleanups;
+    didCleanup(details) {
+      cleanups -= details.cleanups.total;
     },
   });
   return policy;
@@ -251,9 +271,9 @@ async function doBlock() {
 }
 ```
 
-Note that regardless of whatever computron/delivery budget is imposed by the first policy, the second policy will allow one additional delivery to be made (we do not yet have an `allowDelivery()` pre-check method that might inhibit this). The cleanup work, which may or may not happen, will sometimes trigger a GC delivery like `dispatch.dropExports`, but at most one such delivery will be made before the second policy returns `false` and stops `controller.run()`. If cleanup does not trigger such a delivery, or if no cleanup work needs to be done, then one normal run-queue delivery will be performed before the policy has a chance to say "stop". All other cleanup-triggered GC work will be deferred until the first run of the next block.
+The second run, if performed, will both delete some vat records, and deliver any GC actions that result, which may trigger a BringOutYourDead delivery for one or more vats.
 
-Also note that `budget` and `cleanups` are plain `Number`s, whereas `comptrons` is a `BigInt`.
+Also note that the budget record and cleanups work record property values are plain `Number`s, whereas `comptrons` is a `BigInt`.
 
 
 ## Non-Consensus Wallclock Limits

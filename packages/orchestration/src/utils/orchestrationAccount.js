@@ -6,6 +6,7 @@ import {
   AmountArgShape,
   ChainAddressShape,
   DenomAmountShape,
+  IBCTransferOptionsShape,
 } from '../typeGuards.js';
 
 /** @import {OrchestrationAccountI} from '../orchestration-api.js'; */
@@ -22,7 +23,7 @@ export const orchestrationAccountMethods = {
     VowShape,
   ),
   transfer: M.call(AmountArgShape, ChainAddressShape)
-    .optional(M.record())
+    .optional(IBCTransferOptionsShape)
     .returns(VowShape),
   transferSteps: M.call(AmountArgShape, M.any()).returns(VowShape),
   asContinuingOffer: M.call().returns(

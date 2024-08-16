@@ -16,6 +16,7 @@ import {
 } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/tx.js';
 import { Any } from '@agoric/cosmic-proto/google/protobuf/any.js';
 import { MsgSend } from '@agoric/cosmic-proto/cosmos/bank/v1beta1/tx.js';
+import { MsgTransfer } from '@agoric/cosmic-proto/ibc/applications/transfer/v1/tx.js';
 import { makeTracer } from '@agoric/internal';
 import { Shape as NetworkShape } from '@agoric/network';
 import { M } from '@agoric/vat-data';
@@ -28,13 +29,15 @@ import {
   ChainAddressShape,
   DelegationShape,
   DenomAmountShape,
+  IBCTransferOptionsShape,
 } from '../typeGuards.js';
 import { maxClockSkew, tryDecodeResponse } from '../utils/cosmos.js';
 import { orchestrationAccountMethods } from '../utils/orchestrationAccount.js';
+import { makeTimestampHelper } from '../utils/time.js';
 
 /**
  * @import {HostOf} from '@agoric/async-flow';
- * @import {AmountArg, IcaAccount, ChainAddress, CosmosValidatorAddress, ICQConnection, StakingAccountActions, DenomAmount, OrchestrationAccountI, DenomArg} from '../types.js';
+ * @import {AmountArg, IcaAccount, ChainAddress, CosmosValidatorAddress, ICQConnection, StakingAccountActions, DenomAmount, OrchestrationAccountI, IBCConnectionInfo, IBCMsgTransferOptions, ChainHub} from '../types.js';
  * @import {RecorderKit, MakeRecorderKit} from '@agoric/zoe/src/contractSupport/recorder.js';
  * @import {Coin} from '@agoric/cosmic-proto/cosmos/base/v1beta1/coin.js';
  * @import {Delegation} from '@agoric/cosmic-proto/cosmos/staking/v1beta1/staking.js';
@@ -94,16 +97,24 @@ const toDenomAmount = c => ({ denom: c.denom, value: BigInt(c.amount) });
 
 /**
  * @param {Zone} zone
- * @param {MakeRecorderKit} makeRecorderKit
- * @param {VowTools} vowTools
- * @param {ZCF} zcf
+ * @param {object} powers
+ * @param {ChainHub} powers.chainHub
+ * @param {MakeRecorderKit} powers.makeRecorderKit
+ * @param {Remote<TimerService>} powers.timerService
+ * @param {VowTools} powers.vowTools
+ * @param {ZCF} powers.zcf
  */
 export const prepareCosmosOrchestrationAccountKit = (
   zone,
-  makeRecorderKit,
-  { watch, asVow, when },
-  zcf,
+  {
+    chainHub,
+    makeRecorderKit,
+    timerService,
+    vowTools: { watch, asVow, when, allVows },
+    zcf,
+  },
 ) => {
+  const timestampHelper = makeTimestampHelper(timerService);
   const makeCosmosOrchestrationAccountKit = zone.exoClassKit(
     'Cosmos Orchestration Account Holder',
     {
@@ -132,6 +143,18 @@ export const prepareCosmosOrchestrationAccountKit = (
           .optional(M.arrayOf(M.undefined())) // empty context
           .returns(M.arrayOf(DenomAmountShape)),
       }),
+      transferWatcher: M.interface('transferWatcher', {
+        onFulfilled: M.call([M.record(), M.nat()])
+          .optional({
+            destination: ChainAddressShape,
+            opts: M.or(M.undefined(), IBCTransferOptionsShape),
+            token: {
+              denom: M.string(),
+              amount: M.string(),
+            },
+          })
+          .returns(Vow$(M.record())),
+      }),
       holder: IcaAccountHolderI,
       invitationMakers: M.interface('invitationMakers', {
         Delegate: M.call(ChainAddressShape, AmountArgShape).returns(
@@ -148,6 +171,7 @@ export const prepareCosmosOrchestrationAccountKit = (
         TransferAccount: M.call().returns(M.promise()),
         Send: M.call().returns(M.promise()),
         SendAll: M.call().returns(M.promise()),
+        Transfer: M.call().returns(M.promise()),
       }),
     },
     /**
@@ -252,6 +276,42 @@ export const prepareCosmosOrchestrationAccountKit = (
           return harden(coins.map(toDenomAmount));
         },
       },
+      transferWatcher: {
+        /**
+         * @param {[
+         *   { transferChannel: IBCConnectionInfo['transferChannel'] },
+         *   bigint,
+         * ]} results
+         * @param {{
+         *   destination: ChainAddress;
+         *   opts?: IBCMsgTransferOptions;
+         *   token: Coin;
+         * }} ctx
+         */
+        onFulfilled(
+          [{ transferChannel }, timeoutTimestamp],
+          { opts, token, destination },
+        ) {
+          const results = E(this.facets.helper.owned()).executeEncodedTx([
+            Any.toJSON(
+              MsgTransfer.toProtoMsg({
+                sourcePort: transferChannel.portId,
+                sourceChannel: transferChannel.channelId,
+                token,
+                sender: this.state.chainAddress.value,
+                receiver: destination.value,
+                timeoutHeight: opts?.timeoutHeight ?? {
+                  revisionHeight: 0n,
+                  revisionNumber: 0n,
+                },
+                timeoutTimestamp,
+                memo: opts?.memo ?? '',
+              }),
+            ),
+          ]);
+          return watch(results, this.facets.returnVoidWatcher);
+        },
+      },
       invitationMakers: {
         /**
          * @param {CosmosValidatorAddress} validator
@@ -334,6 +394,25 @@ export const prepareCosmosOrchestrationAccountKit = (
          */
         TransferAccount() {
           throw Error('not yet implemented');
+        },
+        Transfer() {
+          /**
+           * @type {OfferHandler<
+           *   Vow<void>,
+           *   {
+           *     amount: AmountArg;
+           *     destination: ChainAddress;
+           *     opts: IBCMsgTransferOptions;
+           *   }
+           * >}
+           */
+          const offerHandler = (seat, { amount, destination, opts }) => {
+            seat.exit();
+            return watch(
+              this.facets.holder.transfer(amount, destination, opts),
+            );
+          };
+          return zcf.makeInvitation(offerHandler, 'Transfer');
         },
       },
       holder: {
@@ -513,9 +592,37 @@ export const prepareCosmosOrchestrationAccountKit = (
         },
 
         /** @type {HostOf<OrchestrationAccountI['transfer']>} */
-        transfer(amount, msg) {
-          console.log('transferSteps got', amount, msg);
-          return asVow(() => Fail`not yet implemented`);
+        transfer(amount, destination, opts) {
+          trace('transfer', amount, destination, opts);
+          return asVow(() => {
+            const { helper } = this.facets;
+            const token = helper.amountToCoin(amount);
+
+            const connectionInfoV = watch(
+              chainHub.getConnectionInfo(
+                this.state.chainAddress.chainId,
+                destination.chainId,
+              ),
+            );
+
+            // set a `timeoutTimestamp` if caller does not supply either `timeoutHeight` or `timeoutTimestamp`
+            // TODO #9324 what's a reasonable default? currently 5 minutes
+            const timeoutTimestampVowOrValue =
+              opts?.timeoutTimestamp ??
+              (opts?.timeoutHeight
+                ? 0n
+                : E(timestampHelper).getTimeoutTimestampNS());
+
+            // Resolves when host chain successfully submits, but not when
+            // the receiving chain acknowledges.
+            // See https://github.com/Agoric/agoric-sdk/issues/9784 for a
+            // solution that tracks the acknowledgement on the receiving chain.
+            return watch(
+              allVows([connectionInfoV, timeoutTimestampVowOrValue]),
+              this.facets.transferWatcher,
+              { opts, token, destination },
+            );
+          });
         },
 
         /** @type {HostOf<OrchestrationAccountI['transferSteps']>} */
@@ -568,9 +675,12 @@ export const prepareCosmosOrchestrationAccountKit = (
 
 /**
  * @param {Zone} zone
- * @param {MakeRecorderKit} makeRecorderKit
- * @param {VowTools} vowTools
- * @param {ZCF} zcf
+ * @param {object} powers
+ * @param {ChainHub} powers.chainHub
+ * @param {MakeRecorderKit} powers.makeRecorderKit
+ * @param {Remote<TimerService>} powers.timerService
+ * @param {VowTools} powers.vowTools
+ * @param {ZCF} powers.zcf
  * @returns {(
  *   ...args: Parameters<
  *     ReturnType<typeof prepareCosmosOrchestrationAccountKit>
@@ -579,16 +689,15 @@ export const prepareCosmosOrchestrationAccountKit = (
  */
 export const prepareCosmosOrchestrationAccount = (
   zone,
-  makeRecorderKit,
-  vowTools,
-  zcf,
+  { chainHub, makeRecorderKit, timerService, vowTools, zcf },
 ) => {
-  const makeKit = prepareCosmosOrchestrationAccountKit(
-    zone,
+  const makeKit = prepareCosmosOrchestrationAccountKit(zone, {
+    chainHub,
     makeRecorderKit,
+    timerService,
     vowTools,
     zcf,
-  );
+  });
   return (...args) => makeKit(...args).holder;
 };
 /** @typedef {CosmosOrchestrationAccountKit['holder']} CosmosOrchestrationAccount */
