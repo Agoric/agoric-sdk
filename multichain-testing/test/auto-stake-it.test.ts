@@ -28,7 +28,7 @@ test.before(async t => {
 
   t.log('bundle and install contract', contractName);
   await t.context.deployBuilder(contractBuilder);
-  const vstorageClient = t.context.makeQueryTool();
+  const { vstorageClient } = t.context;
   await t.context.retryUntilCondition(
     () => vstorageClient.queryData(`published.agoricNames.instance`),
     res => contractName in Object.fromEntries(res),
@@ -91,7 +91,7 @@ const autoStakeItScenario = test.macro({
   exec: async (t, chainName: string) => {
     const {
       wallets,
-      makeQueryTool,
+      vstorageClient,
       provisionSmartWallet,
       retryUntilCondition,
     } = t.context;
@@ -174,7 +174,6 @@ const autoStakeItScenario = test.macro({
     });
 
     // FIXME https://github.com/Agoric/agoric-sdk/issues/9643
-    const vstorageClient = makeQueryTool();
     const currentWalletRecord = await retryUntilCondition(
       () =>
         vstorageClient.queryData(`published.wallet.${agoricUserAddr}.current`),

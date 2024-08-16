@@ -40,7 +40,7 @@ const stakeScenario = test.macro(async (t, scenario: StakeIcaScenario) => {
   const {
     wallets,
     provisionSmartWallet,
-    makeQueryTool,
+    vstorageClient,
     retryUntilCondition,
     useChain,
     deployBuilder,
@@ -48,7 +48,6 @@ const stakeScenario = test.macro(async (t, scenario: StakeIcaScenario) => {
 
   t.log('bundle and install contract', scenario);
   await deployBuilder(scenario.builder);
-  const vstorageClient = makeQueryTool();
   await retryUntilCondition(
     () => vstorageClient.queryData(`published.agoricNames.instance`),
     res => scenario.contractName in Object.fromEntries(res),

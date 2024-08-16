@@ -23,7 +23,7 @@ test.before(async t => {
 
   t.log('bundle and install contract', contractName);
   await t.context.deployBuilder(contractBuilder);
-  const vstorageClient = t.context.makeQueryTool();
+  const { vstorageClient } = t.context;
   await t.context.retryUntilCondition(
     () => vstorageClient.queryData(`published.agoricNames.instance`),
     res => contractName in Object.fromEntries(res),
@@ -45,11 +45,9 @@ const makeAccountScenario = test.macro({
     const {
       wallets,
       provisionSmartWallet,
-      makeQueryTool,
+      vstorageClient,
       retryUntilCondition,
     } = t.context;
-
-    const vstorageClient = makeQueryTool();
 
     const agoricAddr = wallets[chainName];
     const wdUser1 = await provisionSmartWallet(agoricAddr, {
