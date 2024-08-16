@@ -341,12 +341,105 @@ test('basic-flows', async t => {
     wd.getCurrentWalletRecord().offerToPublicSubscriberPaths,
   );
   t.deepEqual(publicSubscriberPaths['request-loa'], {
-    account: 'published.basicFlows.agoric1mockVlocalchainAddress',
+    account: 'published.basicFlows.agoric1fakeLCAAddress1',
   });
   t.like(wd.getLatestUpdateRecord(), {
     status: { id: 'request-loa', numWantsSatisfied: 1 },
   });
-  t.is(readLatest('published.basicFlows.agoric1mockVlocalchainAddress'), '');
+  t.is(readLatest('published.basicFlows.agoric1fakeLCAAddress'), '');
+
+  await wd.sendOffer({
+    id: 'transfer-to-noble-from-cosmos',
+    invitationSpec: {
+      source: 'continuing',
+      previousOffer: 'request-coa',
+      invitationMakerName: 'Transfer',
+    },
+    proposal: {},
+    offerArgs: {
+      amount: { denom: 'ibc/uusdchash', value: 10n },
+      destination: {
+        chainId: 'noble-1',
+        value: 'noble1test',
+        encoding: 'bech32,',
+      },
+    },
+  });
+  t.like(wd.getLatestUpdateRecord(), {
+    status: {
+      id: 'transfer-to-noble-from-cosmos',
+      error: undefined,
+    },
+  });
+
+  await wd.sendOffer({
+    id: 'transfer-to-noble-from-cosmos-timeout',
+    invitationSpec: {
+      source: 'continuing',
+      previousOffer: 'request-coa',
+      invitationMakerName: 'Transfer',
+    },
+    proposal: {},
+    offerArgs: {
+      amount: { denom: 'ibc/uusdchash', value: SIMULATED_ERRORS.TIMEOUT },
+      destination: {
+        chainId: 'noble-1',
+        value: 'noble1test',
+        encoding: 'bech32,',
+      },
+    },
+  });
+  t.like(wd.getLatestUpdateRecord(), {
+    status: {
+      id: 'transfer-to-noble-from-cosmos-timeout',
+      error:
+        'Error: ABCI code: 5: error handling packet: see events for details',
+    },
+  });
+
+  await wd.sendOffer({
+    id: 'transfer-to-noble-from-agoric',
+    invitationSpec: {
+      source: 'continuing',
+      previousOffer: 'request-loa',
+      invitationMakerName: 'Transfer',
+    },
+    proposal: {},
+    offerArgs: {
+      amount: { denom: 'ibc/uusdchash', value: 10n },
+      destination: {
+        chainId: 'noble-1',
+        value: 'noble1test',
+        encoding: 'bech32,',
+      },
+    },
+  });
+  t.like(wd.getLatestUpdateRecord(), {
+    status: {
+      id: 'transfer-to-noble-from-agoric',
+      error: undefined,
+    },
+  });
+
+  await t.throwsAsync(
+    wd.executeOffer({
+      id: 'transfer-to-noble-from-agoric-timeout',
+      invitationSpec: {
+        source: 'continuing',
+        previousOffer: 'request-loa',
+        invitationMakerName: 'Transfer',
+      },
+      proposal: {},
+      offerArgs: {
+        amount: { denom: 'ibc/uusdchash', value: SIMULATED_ERRORS.TIMEOUT },
+        destination: {
+          chainId: 'noble-1',
+          value: 'noble1test',
+          encoding: 'bech32,',
+        },
+      },
+    }),
+  );
 });
 
 test.serial('auto-stake-it - proposal', async t => {
@@ -401,7 +494,7 @@ test.serial('basic-flows - portfolio holder', async t => {
       [
         'request-portfolio-acct',
         {
-          agoric: 'published.basicFlows.agoric1mockVlocalchainAddress',
+          agoric: 'published.basicFlows.agoric1fakeLCAAddress',
           cosmoshub: 'published.basicFlows.cosmos1test',
           // XXX support multiple chain addresses in ibc mocks
           osmosis: 'published.basicFlows.cosmos1test',
@@ -415,7 +508,7 @@ test.serial('basic-flows - portfolio holder', async t => {
   // XXX this overrides a previous account, since mocks only provide one address
   t.is(readLatest('published.basicFlows.cosmos1test'), '');
   // XXX this overrides a previous account, since mocks only provide one address
-  t.is(readLatest('published.basicFlows.agoric1mockVlocalchainAddress'), '');
+  t.is(readLatest('published.basicFlows.agoric1fakeLCAAddress'), '');
 
   const { BLD } = agoricNamesRemotes.brand;
   BLD || Fail`BLD missing from agoricNames`;

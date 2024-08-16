@@ -120,6 +120,7 @@ classDiagram
       redelegate()
       send()
       sendAll()
+      transfer()
       undelegate()
       withdrawReward()
     }

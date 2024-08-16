@@ -71,8 +71,6 @@ expectNotType<CosmosValidatorAddress>(chainAddr);
   const makeCosmosOrchestrationAccount = prepareCosmosOrchestrationAccount(
     anyVal,
     anyVal,
-    anyVal,
-    anyVal,
   );
   makeCosmosOrchestrationAccount(
     anyVal,

@@ -94,9 +94,13 @@ export const provideOrchestration = (
 
   const makeCosmosOrchestrationAccount = prepareCosmosOrchestrationAccount(
     zones.orchestration,
-    makeRecorderKit,
-    vowTools,
-    zcf,
+    {
+      chainHub,
+      makeRecorderKit,
+      timerService,
+      vowTools,
+      zcf,
+    },
   );
 
   const makeRemoteChainFacade = prepareRemoteChainFacade(zones.orchestration, {
