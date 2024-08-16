@@ -214,6 +214,18 @@ export const watchQuoteNotifier = async (notifierP, watcher, ...args) => {
 const collateralEphemera = makeEphemeraProvider(() => /** @type {any} */ ({}));
 
 /**
+ * @param {ImmutableState['unsettledVaults']} vaults
+ * @param {Brand<'nat'>} debtBrand
+ */
+const totalDebtForVaults = (vaults, debtBrand) => {
+  let totalDebt = AmountMath.makeEmpty(debtBrand);
+  for (const vault of vaults.values()) {
+    totalDebt = AmountMath.add(totalDebt, vault.getCurrentDebt());
+  }
+  return totalDebt;
+};
+
+/**
  * @param {import('@agoric/swingset-liveslots').Baggage} baggage
  * @param {{
  *   zcf: import('./vaultFactory.js').VaultFactoryZCF;
