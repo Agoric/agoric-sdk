@@ -63,7 +63,7 @@ Unlike the [SnapStore](./snapstore.md), the TranscriptStore *does* have an expli
 
 When a vat is terminated, the kernel should first call `transcriptStore.stopUsingTranscript(vatID)`. This will mark the single current span as `isCurrent = 0`. The kernel must not attempt to read, add, or rollover spans or items while in this state. While in this state, exports (export for `mode = debug`) will not emit artifacts for this VatID: export-data records will still exist for all spans, as these must be deleted slowly, however there will be no associated artifacts or artifact names.
 
-Then, the kernel should either call `transcriptStore.deleteVatTranscripts(vatID, undefined)` exactly once, or it should call `transcriptStore.deleteVatTranscripts(vatID, budget)` until it returns `{ done: true }`.
+Then, the kernel should either call `transcriptStore.deleteVatTranscripts(vatID)` exactly once, or it should call `transcriptStore.deleteVatTranscripts(vatID, budget)` until it returns `{ done: true }`.
 
 As with snapshots, the `stopUsingTranscript()` is a non-mandatory performance improvement. If omitted, exports will continue to include (many) span artifacts for this vat until the first call to `deleteVatTranscripts()` removes the one `isCurrent = 1` span (since spans are deleted most-recent-first). After that point, exports will stop including any artifacts for the vatID. `stopUsingTranscript()` is idempotent, and extra calls will leave the DB unchanged.
 

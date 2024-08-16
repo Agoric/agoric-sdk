@@ -1,7 +1,6 @@
 /* eslint-disable no-use-before-define */
 import { Nat, isNat } from '@endo/nat';
 import { assert, Fail } from '@endo/errors';
-import { objectMetaMap } from '@agoric/internal';
 import {
   initializeVatState,
   makeVatKeeper,
@@ -46,6 +45,8 @@ const enableKernelGC = true;
  * @typedef { import('../../types-external.js').VatKeeper } VatKeeper
  * @typedef { import('../../types-internal.js').InternalKernelOptions } InternalKernelOptions
  * @typedef { import('../../types-internal.js').ReapDirtThreshold } ReapDirtThreshold
+ * @import {CleanupBudget, CleanupWork, PolicyOutputCleanupBudget} from '../../types-external.js';
+ * @import {RunQueueEventCleanupTerminatedVat} from '../../types-internal.js';
  */
 
 export { DEFAULT_REAP_DIRT_THRESHOLD_KEY };
@@ -946,11 +947,11 @@ export default function makeKernelKeeper(
    * (so the runPolicy can decide when to stop).
    *
    * @param {string} vatID
-   * @param {number} [budget]
-   * @returns {{ done: boolean, cleanups: number }}
+   * @param {CleanupBudget} budget
+   * @returns {{ done: boolean, work: CleanupWork }}
    *
    */
-  function cleanupAfterTerminatedVat(vatID, budget = undefined) {
+  function cleanupAfterTerminatedVat(vatID, budget) {
     // this is called from terminateVat, which is called from either:
     // * end of processDeliveryMessage, if crankResults.terminate
     // * device-vat-admin (when vat-v-a does adminNode.terminateVat)
@@ -960,7 +961,6 @@ export default function makeKernelKeeper(
     // crankResults.terminate
 
     insistVatID(vatID);
-    let cleanups = 0;
     const work = {
       exports: 0,
       imports: 0,
@@ -968,20 +968,7 @@ export default function makeKernelKeeper(
       snapshots: 0,
       transcripts: 0,
     };
-    let spend = _did => false; // returns "stop now"
-    if (budget !== undefined) {
-      assert.typeof(budget, 'number');
-      spend = (did = 1) => {
-        assert(budget !== undefined); // hush TSC
-        cleanups += did;
-        budget -= did;
-        return budget <= 0;
-      };
-    }
-    const logWork = () => {
-      const w = objectMetaMap(work, desc => (desc.value ? desc : undefined));
-      kernelSlog?.write({ type: 'vat-cleanup', vatID, work: w });
-    };
+    let remaining = 0;
 
     // TODO: it would be slightly cheaper to walk all kvStore keys in
     // order, and act on each one according to its category (c-list
@@ -1016,6 +1003,7 @@ export default function makeKernelKeeper(
     // used.
 
     // first, scan for exported objects, which must be orphaned
+    remaining = budget.exports ?? budget.default;
     for (const k of enumeratePrefixedKeys(kvStore, exportPrefix)) {
       // The void for an object exported by a vat will always be of the form
       // `o+NN`.  The '+' means that the vat exported the object (rather than
@@ -1030,13 +1018,14 @@ export default function makeKernelKeeper(
       // note: adds to maybeFreeKrefs, deletes c-list and .owner
       orphanKernelObject(kref, vatID);
       work.exports += 1;
-      if (spend()) {
-        logWork();
-        return { done: false, cleanups };
+      remaining -= 1;
+      if (remaining <= 0) {
+        return { done: false, work };
       }
     }
 
     // then scan for imported objects, which must be decrefed
+    remaining = budget.imports ?? budget.default;
     for (const k of enumeratePrefixedKeys(kvStore, importPrefix)) {
       // abandoned imports: delete the clist entry as if the vat did a
       // drop+retire
@@ -1045,9 +1034,9 @@ export default function makeKernelKeeper(
       vatKeeper.deleteCListEntry(kref, vref);
       // that will also delete both db keys
       work.imports += 1;
-      if (spend()) {
-        logWork();
-        return { done: false, cleanups };
+      remaining -= 1;
+      if (remaining <= 0) {
+        return { done: false, work };
       }
     }
 
@@ -1055,30 +1044,32 @@ export default function makeKernelKeeper(
     // so they already know the orphaned promises to reject
 
     // now loop back through everything and delete it all
+    remaining = budget.kv ?? budget.default;
     for (const k of enumeratePrefixedKeys(kvStore, `${vatID}.`)) {
       kvStore.delete(k);
       work.kv += 1;
-      if (spend()) {
-        logWork();
-        return { done: false, cleanups };
+      remaining -= 1;
+      if (remaining <= 0) {
+        return { done: false, work };
       }
     }
 
     // this will internally loop through 'budget' deletions
-    const dsc = vatKeeper.deleteSnapshots(budget);
+    remaining = budget.snapshots ?? budget.default;
+    const dsc = vatKeeper.deleteSnapshots(remaining);
     work.snapshots += dsc.cleanups;
-    if (spend(dsc.cleanups)) {
-      logWork();
-      return { done: false, cleanups };
+    remaining -= dsc.cleanups;
+    if (remaining <= 0) {
+      return { done: false, work };
     }
 
     // same
-    const dts = vatKeeper.deleteTranscripts(budget);
+    remaining = budget.transcripts ?? budget.default;
+    const dts = vatKeeper.deleteTranscripts(remaining);
     work.transcripts += dts.cleanups;
+    remaining -= dts.cleanups;
     // last task, so increment cleanups, but dc.done is authoritative
-    spend(dts.cleanups);
-    logWork();
-    return { done: dts.done, cleanups };
+    return { done: dts.done, work };
   }
 
   function deleteVatID(vatID) {
@@ -1385,20 +1376,23 @@ export default function makeKernelKeeper(
     kvStore.set(`vats.terminated`, JSON.stringify(terminatedVats));
   }
 
+  /**
+   * @param {PolicyOutputCleanupBudget} allowCleanup
+   * @returns {RunQueueEventCleanupTerminatedVat | undefined}
+   */
   function nextCleanupTerminatedVatAction(allowCleanup) {
-    if (!allowCleanup) {
+    if (allowCleanup === false) {
+      return undefined;
+    } else {
+      const unlimited = { default: Infinity };
+      /** @type {CleanupBudget} */
+      const budget = allowCleanup === true ? unlimited : allowCleanup;
+      const vatID = getFirstTerminatedVat();
+      if (vatID) {
+        return { type: 'cleanup-terminated-vat', vatID, budget };
+      }
       return undefined;
     }
-    // budget === undefined means "unlimited"
-    const { budget } = allowCleanup;
-    // if (getGCActions().size) {
-    //  return undefined;
-    // }
-    const vatID = getFirstTerminatedVat();
-    if (vatID) {
-      return { type: 'cleanup-terminated-vat', vatID, budget };
-    }
-    return undefined;
   }
 
   // As refcounts are decremented, we accumulate a set of krefs for which
