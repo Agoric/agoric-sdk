@@ -14,7 +14,7 @@ export type TotalMap<K, V> = Omit<Map<K, V>, 'get'> & {
 export type TotalMapFrom<M extends Map> =
   M extends Map<infer K, infer V> ? TotalMap<K, V> : never;
 
-export declare class Callback<I extends (...args: unknown[]) => any> {
+export declare class Callback<I extends (...args: any[]) => any> {
   private iface: I;
 
   public target: any;

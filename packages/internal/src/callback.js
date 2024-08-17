@@ -41,7 +41,7 @@ const isPropertyKey = key => {
 /**
  * Synchronously call a callback.
  *
- * @template {(...args: unknown[]) => any} I
+ * @template {(...args: any[]) => any} I
  * @param {SyncCallback<I>} callback
  * @param {Parameters<I>} args
  * @returns {ReturnType<I>}
@@ -58,7 +58,7 @@ harden(callSync);
 /**
  * Eventual send to a callback.
  *
- * @template {(...args: unknown[]) => any} I
+ * @template {(...args: any[]) => any} I
  * @param {Callback<I>} callback
  * @param {Parameters<I>} args
  * @returns {Promise<Awaited<ReturnType<I>>>}
@@ -75,9 +75,9 @@ harden(callE);
 /**
  * Create a callback from a near function.
  *
- * @template {(...args: unknown[]) => any} I
+ * @template {(...args: any[]) => any} I
  * @template {(...args: [...B, ...Parameters<I>]) => ReturnType<I>} [T=I]
- * @template {unknown[]} [B=[]]
+ * @template {any[]} [B=[]]
  * @param {T} target
  * @param {B} bound
  * @returns {SyncCallback<I>}
@@ -94,9 +94,9 @@ harden(makeSyncFunctionCallback);
 /**
  * Create a callback from a potentially far function.
  *
- * @template {(...args: unknown[]) => any} I
+ * @template {(...args: any[]) => any} I
  * @template {ERef<(...args: [...B, ...Parameters<I>]) => ReturnType<I>>} [T=ERef<I>]
- * @template {unknown[]} [B=[]]
+ * @template {any[]} [B=[]]
  * @param {T} target
  * @param {B} bound
  * @returns {Callback<I>}
@@ -113,12 +113,12 @@ harden(makeFunctionCallback);
 /**
  * Create a callback from a near method.
  *
- * @template {(...args: unknown[]) => any} I
+ * @template {(...args: any[]) => any} I
  * @template {PropertyKey} P
  * @template {{
  *   [x in P]: (...args: [...B, ...Parameters<I>]) => ReturnType<I>;
  * }} [T={ [x in P]: I }]
- * @template {unknown[]} [B=[]]
+ * @template {any[]} [B=[]]
  * @param {T} target
  * @param {P} methodName
  * @param {B} bound
@@ -139,12 +139,12 @@ harden(makeSyncMethodCallback);
 /**
  * Create a callback from a potentially far method.
  *
- * @template {(...args: unknown[]) => any} I
+ * @template {(...args: any[]) => any} I
  * @template {PropertyKey} P
  * @template {ERef<{
  *   [x in P]: (...args: [...B, ...Parameters<I>]) => ReturnType<I>;
  * }>} [T=ERef<{ [x in P]: I }>]
- * @template {unknown[]} [B=[]]
+ * @template {any[]} [B=[]]
  * @param {T} target
  * @param {P} methodName
  * @param {B} bound
@@ -200,11 +200,11 @@ export const prepareAttenuator = (
   { interfaceGuard, tag = 'Attenuator' } = {},
 ) => {
   /**
-   * @typedef {(this: any, ...args: unknown[]) => any} Method
+   * @typedef {(this: any, ...args: any[]) => any} Method
    *
    * @typedef {{ [K in M]?: Callback<any> | null }} Overrides
    *
-   * @typedef {{ [K in M]: (this: any, ...args: unknown[]) => any }} Methods
+   * @typedef {{ [K in M]: (this: any, ...args: any[]) => any }} Methods
    */
   const methods = /** @type {Methods} */ (
     fromEntries(
