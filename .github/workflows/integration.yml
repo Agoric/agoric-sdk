@@ -299,6 +299,7 @@ jobs:
       - getting-started
       - deployment-test
       - test-docker-build
+      - test-multichain-e2e
     if: >-
       always() &&
       needs.pre_check.result == 'success' &&
