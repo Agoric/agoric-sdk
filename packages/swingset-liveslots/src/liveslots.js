@@ -1,10 +1,7 @@
 import { annotateError, assert, Fail, makeError, X } from '@endo/errors';
-import {
-  Remotable,
-  passStyleOf,
-  getInterfaceOf,
-  makeMarshal,
-} from '@endo/marshal';
+import { passStyleOf } from '@endo/pass-style';
+import { PassStyleOfEndowmentSymbol } from '@endo/pass-style/endow.js';
+import { Remotable, getInterfaceOf, makeMarshal } from '@endo/marshal';
 import { isPromise } from '@endo/promise-kit';
 import { E, HandledPromise } from '@endo/eventual-send';
 import { insistVatType, makeVatSlot, parseVatSlot } from './parseVatSlots.js';
@@ -1363,6 +1360,7 @@ function build(
       makeScalarBigSetStore: collectionManager.makeScalarBigSetStore,
       makeScalarBigWeakSetStore: collectionManager.makeScalarBigWeakSetStore,
     },
+    [PassStyleOfEndowmentSymbol]: passStyleOf,
   });
 
   const inescapableGlobalProperties = harden({
