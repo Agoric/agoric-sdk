@@ -3,7 +3,12 @@ import { Fail } from '@endo/errors';
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
 import { NonNullish, makeTracer } from '@agoric/internal';
-import { makeQueryPacket, parseQueryPacket } from '../utils/packet.js';
+import { VowShape } from '@agoric/vow';
+import {
+  makeQueryPacket,
+  parseTxPacket,
+  decodeQueryPacketResponse,
+} from '../utils/packet.js';
 import { OutboundConnectionHandlerI } from '../typeGuards.js';
 
 /**
@@ -59,10 +64,15 @@ export const prepareICQConnectionKit = (zone, { watch, when }) =>
     {
       connection: ICQConnectionI,
       connectionHandler: OutboundConnectionHandlerI,
-      parseQueryPacketWatcher: M.interface('ParseQueryPacketWatcher', {
+      sendPacketWatcher: M.interface('SendPacketWatcher', {
         onFulfilled: M.call(M.string())
           .optional(M.arrayOf(M.undefined())) // does not need watcherContext
-          .returns(M.arrayOf(M.record())),
+          .returns(VowShape),
+      }),
+      parseTxPacketWatcher: M.interface('ParseTxPacketWatcher', {
+        onFulfilled: M.call(M.string())
+          .optional(M.arrayOf(M.undefined())) // does not need watcherContext
+          .returns(VowShape),
       }),
     },
     /** @param {Port} port */
@@ -100,15 +110,21 @@ export const prepareICQConnectionKit = (zone, { watch, when }) =>
           return when(
             watch(
               E(connection).send(makeQueryPacket(msgs)),
-              this.facets.parseQueryPacketWatcher,
+              this.facets.sendPacketWatcher,
             ),
           );
         },
       },
-      parseQueryPacketWatcher: {
+      sendPacketWatcher: {
         /** @param {string} ack packet acknowledgement string */
         onFulfilled(ack) {
-          return parseQueryPacket(ack);
+          return watch(parseTxPacket(ack), this.facets.parseTxPacketWatcher);
+        },
+      },
+      parseTxPacketWatcher: {
+        /** @param {string} response packet acknowledgement response key */
+        onFulfilled(response) {
+          return watch(decodeQueryPacketResponse(response));
         },
       },
       connectionHandler: {

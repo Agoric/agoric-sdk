@@ -9,7 +9,7 @@ import { decodeBase64 } from '@endo/base64';
 import {
   makeTxPacket,
   parseTxPacket,
-  parseQueryPacket,
+  decodeQueryPacketResponse,
   makeQueryPacket,
 } from '../../src/utils/packet.js';
 
@@ -66,14 +66,15 @@ test('txToBase64', t => {
   );
 });
 
-test('parseTxPacket', t => {
+test('parseTxPacket', async t => {
+  await null;
   t.is(
-    parseTxPacket(
+    await parseTxPacket(
       `{"result":"Ei0KKy9jb3Ntb3Muc3Rha2luZy52MWJldGExLk1zZ0RlbGVnYXRlUmVzcG9uc2U="}`,
     ),
     'Ei0KKy9jb3Ntb3Muc3Rha2luZy52MWJldGExLk1zZ0RlbGVnYXRlUmVzcG9uc2U=',
   );
-  t.throws(
+  await t.throwsAsync(
     () =>
       parseTxPacket(
         `{"error":"ABCI code: 5: error handling packet: see events for details"}`,
@@ -82,10 +83,10 @@ test('parseTxPacket', t => {
       message: 'ABCI code: 5: error handling packet: see events for details',
     },
   );
-  t.throws(
+  await t.throwsAsync(
     () => parseTxPacket('{"foo":"bar"}'),
     {
-      message: 'expected either result or error: "{\\"foo\\":\\"bar\\"}"',
+      message: 'Expected either result or error: "{\\"foo\\":\\"bar\\"}"',
     },
     'returns original string as error if `result` is not found',
   );
@@ -140,7 +141,8 @@ test('queryToBase64', t => {
   );
 });
 
-test('parseQueryPacket', t => {
+test('decodeQueryPacketResponse', async t => {
+  await null;
   const response = `{"result":"eyJkYXRhIjoiQ2c0eURBb0tDZ1YxWVhSdmJSSUJNQT09In0="}`;
   const expectedOutput = [
     {
@@ -156,13 +158,14 @@ test('parseQueryPacket', t => {
   ];
 
   t.deepEqual(
-    parseQueryPacket(response),
+    await parseTxPacket(response).then(decodeQueryPacketResponse),
     expectedOutput,
     'parses a query response packet',
   );
 
-  const multiResponse = `{"result":"eyJkYXRhIjoiQ2c0eURBb0tDZ1YxWVhSdmJSSUJNQW9PTWd3S0Nnb0ZkV0YwYjIwU0FUQT0ifQ=="}`;
-  const multiParsed = parseQueryPacket(multiResponse);
+  const multiResponseString = `{"result":"eyJkYXRhIjoiQ2c0eURBb0tDZ1YxWVhSdmJSSUJNQW9PTWd3S0Nnb0ZkV0YwYjIwU0FUQT0ifQ=="}`;
+  const multiResponse = await parseTxPacket(multiResponseString);
+  const multiParsed = await decodeQueryPacketResponse(multiResponse);
   t.is(multiParsed.length, 2);
   for (const { key } of multiParsed) {
     t.deepEqual(QueryBalanceResponse.decode(decodeBase64(key)), {
@@ -173,20 +176,20 @@ test('parseQueryPacket', t => {
     });
   }
 
-  t.throws(
+  await t.throwsAsync(
     () =>
-      parseQueryPacket(
+      parseTxPacket(
         `{"error":"ABCI code: 4: error handling packet: see events for details"}`,
-      ),
+      ).then(decodeQueryPacketResponse),
     {
       message: 'ABCI code: 4: error handling packet: see events for details',
     },
   );
 
-  t.throws(
-    () => parseQueryPacket('{"foo":"bar"}'),
+  await t.throwsAsync(
+    () => parseTxPacket('{"foo":"bar"}').then(decodeQueryPacketResponse),
     {
-      message: 'expected either result or error: "{\\"foo\\":\\"bar\\"}"',
+      message: 'Expected either result or error: "{\\"foo\\":\\"bar\\"}"',
     },
     'throws an error if `result` is not found',
   );

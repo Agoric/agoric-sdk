@@ -61,10 +61,10 @@ export const prepareIcaAccountKit = (zone, { watch, asVow }) =>
     {
       account: IcaAccountI,
       connectionHandler: OutboundConnectionHandlerI,
-      parseTxPacketWatcher: M.interface('ParseTxPacketWatcher', {
+      sendPacketWatcher: M.interface('SendPacketWatcher', {
         onFulfilled: M.call(M.string())
           .optional(M.arrayOf(M.undefined())) // does not need watcherContext
-          .returns(M.string()),
+          .returns(VowShape),
       }),
     },
     /**
@@ -83,10 +83,10 @@ export const prepareIcaAccountKit = (zone, { watch, asVow }) =>
         localAddress: undefined,
       }),
     {
-      parseTxPacketWatcher: {
+      sendPacketWatcher: {
         /** @param {string} ack */
         onFulfilled(ack) {
-          return parseTxPacket(ack);
+          return watch(parseTxPacket(ack));
         },
       },
       account: {
@@ -131,7 +131,7 @@ export const prepareIcaAccountKit = (zone, { watch, asVow }) =>
             if (!connection) throw Fail`connection not available`;
             return watch(
               E(connection).send(makeTxPacket(msgs, opts)),
-              this.facets.parseTxPacketWatcher,
+              this.facets.sendPacketWatcher,
             );
           });
         },

@@ -1,4 +1,4 @@
-import { Fail } from '@endo/errors';
+import { Fail, q } from '@endo/errors';
 import { TxBody } from '@agoric/cosmic-proto/cosmos/tx/v1beta1/tx.js';
 import { Any } from '@agoric/cosmic-proto/google/protobuf/any.js';
 import {
@@ -79,16 +79,23 @@ harden(makeQueryPacket);
  * decoding.
  *
  * @param {string} response
- * @returns {string} - base64 encoded bytes string
- * @throws {Error} if error key is detected in response string, or result key is
- *   not found
+ * @returns {Promise<string>} - base64 encoded bytes string
  */
-export function parseTxPacket(response) {
-  const { result, error } = JSON.parse(response);
-  if (result) return result;
-  else if (error) throw Error(error);
-  else throw Fail`expected either result or error: ${response}`;
-}
+export const parseTxPacket = response =>
+  new Promise((resolve, reject) => {
+    try {
+      const { result, error } = JSON.parse(response);
+      if (result) {
+        resolve(result);
+      } else if (error) {
+        reject(Error(error));
+      } else {
+        reject(Fail`Expected either result or error: ${q(response)}`);
+      }
+    } catch (_err) {
+      reject(Fail`Expected either result or error: ${q(response)}`);
+    }
+  });
 harden(parseTxPacket);
 
 /**
@@ -98,15 +105,17 @@ harden(parseTxPacket);
  * can be decoded using the corresponding Query*Response objects. Error strings
  * seem to be plain text and do not need decoding.
  *
- * @param {string} response
- * @returns {JsonSafe<ResponseQuery>[]}
- * @throws {Error} if error key is detected in response string, or result key is
- *   not found
+ * @param {string} resultString
+ * @returns {Promise<JsonSafe<ResponseQuery>[]>}
  */
-export function parseQueryPacket(response) {
-  const result = parseTxPacket(response);
-  const { data } = JSON.parse(atob(result));
-  const { responses = [] } = CosmosResponse.decode(decodeBase64(data));
-  return harden(responses.map(ResponseQuery.toJSON));
-}
-harden(parseQueryPacket);
+export const decodeQueryPacketResponse = resultString =>
+  new Promise((resolve, reject) => {
+    try {
+      const { data } = JSON.parse(atob(resultString));
+      const { responses = [] } = CosmosResponse.decode(decodeBase64(data));
+      resolve(harden(responses.map(ResponseQuery.toJSON)));
+    } catch (err) {
+      reject(Fail`Error decoding query response: ${q(resultString)}`);
+    }
+  });
+harden(decodeQueryPacketResponse);
