@@ -343,7 +343,8 @@ export const ratiosSame = (left, right) => {
 };
 
 /**
- * Make an equivalant ratio with a new denominator
+ * Make a new ratio with a smaller denominator that approximates the ratio. If
+ * the proposed denominator is larger than the current one, return the original.
  *
  * @param {Ratio} ratio
  * @param {bigint} newDen
@@ -352,6 +353,10 @@ export const ratiosSame = (left, right) => {
 export const quantize = (ratio, newDen) => {
   const oldDen = ratio.denominator.value;
   const oldNum = ratio.numerator.value;
+  if (newDen > oldDen) {
+    return ratio;
+  }
+
   const newNum =
     newDen === oldDen ? oldNum : bankersDivide(oldNum * newDen, oldDen);
   return makeRatio(
