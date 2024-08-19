@@ -197,7 +197,7 @@ export const chargeInterest = (powers, params, prior, accruedUntil) => {
   }
 
   // NB: This method of inferring the compounded rate from the ratio of debts
-  // acrrued suffers slightly from the integer nature of debts. However in
+  // accrued suffers slightly from the integer nature of debts. However in
   // testing with small numbers there's 5 digits of precision, and with large
   // numbers the ratios tend towards ample precision.
   // TODO adopt banker's rounding https://github.com/Agoric/agoric-sdk/issues/4573
