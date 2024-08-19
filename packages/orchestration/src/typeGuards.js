@@ -117,9 +117,15 @@ export const DenomAmountShape = { denom: DenomShape, value: M.bigint() };
 
 export const AmountArgShape = M.or(AmountShape, DenomAmountShape);
 
+export const ICQMsgShape = M.splitRecord(
+  { path: M.string(), data: M.string() },
+  { height: M.string(), prove: M.boolean() },
+);
+
 export const chainFacadeMethods = harden({
   getChainInfo: M.call().returns(VowShape),
   makeAccount: M.call().returns(VowShape),
+  query: M.call(M.arrayOf(ICQMsgShape)).returns(VowShape),
 });
 
 /** @see {Chain} */

@@ -5,7 +5,7 @@ import { M } from '@endo/patterns';
 import { VowShape } from '@agoric/vow';
 import { NonNullish, makeTracer } from '@agoric/internal';
 import { makeQueryPacket, parseQueryPacket } from '../utils/packet.js';
-import { OutboundConnectionHandlerI } from '../typeGuards.js';
+import { ICQMsgShape, OutboundConnectionHandlerI } from '../typeGuards.js';
 
 /**
  * @import {Zone} from '@agoric/base-zone';
@@ -17,11 +17,6 @@ import { OutboundConnectionHandlerI } from '../typeGuards.js';
  */
 
 const trace = makeTracer('Orchestration:ICQConnection');
-
-export const ICQMsgShape = M.splitRecord(
-  { path: M.string(), data: M.string() },
-  { height: M.string(), prove: M.boolean() },
-);
 
 export const ICQConnectionI = M.interface('ICQConnection', {
   getLocalAddress: M.call().returns(M.string()),
@@ -89,6 +84,8 @@ export const prepareICQConnectionKit = (zone, { watch, asVow }) =>
           );
         },
         /**
+         * Vow rejects if packet fails to send or an error is returned
+         *
          * @param {JsonSafe<RequestQuery>[]} msgs
          * @returns {Vow<JsonSafe<ResponseQuery>[]>}
          */
