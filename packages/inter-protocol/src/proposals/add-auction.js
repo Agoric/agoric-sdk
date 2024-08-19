@@ -8,7 +8,7 @@ const trace = makeTracer('NewAuction', true);
 
 /**
  * @typedef {PromiseSpaceOf<{
- *   auctionsDone: boolean;
+ *   auctionsUpgradeComplete: boolean;
  * }>} interlockPowers
  */
 
@@ -26,7 +26,7 @@ export const addAuction = async ({
     economicCommitteeCreatorFacet: electorateCreatorFacet,
     auctioneerKit: legacyKitP,
   },
-  produce: { newAuctioneerKit, auctionsDone },
+  produce: { newAuctioneerKit, auctionsUpgradeComplete },
   instance: {
     consume: { reserve: reserveInstance },
   },
@@ -153,7 +153,7 @@ export const addAuction = async ({
   // don't overwrite auctioneerKit or auction instance yet. Wait until
   // upgrade-vault.js
 
-  auctionsDone.resolve(true);
+  auctionsUpgradeComplete.resolve(true);
 };
 
 export const ADD_AUCTION_MANIFEST = harden({
@@ -169,7 +169,7 @@ export const ADD_AUCTION_MANIFEST = harden({
     },
     produce: {
       newAuctioneerKit: true,
-      auctionsDone: true,
+      auctionsUpgradeComplete: true,
     },
     instance: {
       consume: { reserve: true },

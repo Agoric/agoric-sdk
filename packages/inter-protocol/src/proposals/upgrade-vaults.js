@@ -32,7 +32,7 @@ const any = promises =>
 
 /**
  * @typedef {PromiseSpaceOf<{
- *   auctionsDone: boolean;
+ *   auctionsUpgradeComplete: boolean;
  * }>} interlockPowers
  */
 
@@ -51,11 +51,12 @@ export const upgradeVaults = async (powers, { options }) => {
       zoe,
       economicCommitteeCreatorFacet: electorateCreatorFacet,
       reserveKit,
-      auctionsDone,
+      auctionsUpgradeComplete,
     },
     produce: {
       auctioneerKit: auctioneerKitProducer,
       newAuctioneerKit: tempAuctioneerKit,
+      auctionsUpgradeComplete: auctionsUpgradeCompleteProducer,
     },
     instance: {
       produce: { auctioneer: auctioneerProducer },
@@ -77,7 +78,8 @@ export const upgradeVaults = async (powers, { options }) => {
    */
   let installationP;
 
-  await auctionsDone;
+  await auctionsUpgradeComplete;
+  auctionsUpgradeCompleteProducer.reset();
 
   if (vaultsRef) {
     if (bundleID) {
@@ -271,9 +273,13 @@ export const getManifestForUpgradeVaults = async (
         vaultFactoryKit: uV,
         board: uV,
         zoe: uV,
-        auctionsDone: uV,
+        auctionsUpgradeComplete: uV,
       },
-      produce: { auctioneerKit: uV, newAuctioneerKit: uV },
+      produce: {
+        auctioneerKit: uV,
+        newAuctioneerKit: uV,
+        auctionsUpgradeComplete: uV,
+      },
       instance: { produce: { auctioneer: uV, newAuctioneerKit: uV } },
     },
   },
