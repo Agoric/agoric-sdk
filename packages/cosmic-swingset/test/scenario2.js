@@ -43,9 +43,10 @@ export const pspawn = (bin, { spawn, cwd }) => {
  * @param {object} io
  * @param {*} io.pspawnMake promise-style spawn of 'make' with cwd set
  * @param {*} io.pspawnAgd promise-style spawn of 'agd' with cwd set
+ * @param {import('node:fs/promises')['rm']} io.rm the file remover
  * @param {typeof console.log} io.log
  */
-export const makeScenario2 = ({ pspawnMake, pspawnAgd, log }) => {
+export const makeScenario2 = ({ pspawnMake, pspawnAgd, rm, log }) => {
   const runMake = (args, opts = { stdio: onlyStderr }) => {
     // console.debug('make', ...args);
     log('make', ...args);
@@ -80,11 +81,14 @@ export const makeScenario2 = ({ pspawnMake, pspawnAgd, log }) => {
     runRosettaCI: async () => {
       return runMake(['scenario2-run-rosetta-ci'], { stdio: onlyStderr });
     },
-    export: () =>
-      pspawnAgd(
-        ['export', '--home=t1/n0', '--export-dir=t1/n0/genesis-export'],
+    export: async () => {
+      const exportDir = 't1/n0/genesis-export';
+      await rm(exportDir, { recursive: true, force: true });
+      return pspawnAgd(
+        ['export', '--home=t1/n0', `--export-dir=${exportDir}`],
         { stdio: onlyStderr },
       ).exit,
+    },
   });
 };
 

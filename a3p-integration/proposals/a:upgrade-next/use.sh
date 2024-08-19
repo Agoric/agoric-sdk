@@ -6,3 +6,10 @@
 # later steps, such as the "test" step, or further proposal layers.
 
 ./upgradeVaults.js
+
+source /usr/src/upgrade-test-scripts/env_setup.sh
+AGVM=/usr/src/agoric-sdk/packages/cosmic-swingset/bin/ag-chain-cosmos
+
+waitForBlock 2
+killAgd
+startAgd --split-vm="$AGVM"
