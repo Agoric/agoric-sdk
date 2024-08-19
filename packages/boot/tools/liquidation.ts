@@ -301,6 +301,7 @@ export const makeLiquidationTestKit = async ({
     priceFeedDrivers,
     setupVaults,
     placeBids,
+    setupStartingState,
   };
 };
 
