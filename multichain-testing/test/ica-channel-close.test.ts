@@ -2,7 +2,7 @@ import anyTest from '@endo/ses-ava/prepare-endo.js';
 import type { TestFn } from 'ava';
 import type { CosmosOrchestrationAccountStorageState } from '@agoric/orchestration/src/exos/cosmos-orchestration-account.js';
 import type { IdentifiedChannelSDKType } from '@agoric/cosmic-proto/ibc/core/channel/v1/channel.js';
-import type { IBCPortID } from '@agoric/vats';
+import type { IBCChannelID, IBCPortID } from '@agoric/vats';
 import { makeDoOffer } from '../tools/e2e-tools.js';
 import {
   commonSetup,
@@ -11,6 +11,7 @@ import {
 } from './support.js';
 import { makeQueryClient } from '../tools/query.js';
 import { parseLocalAddress, parseRemoteAddress } from '../tools/address.js';
+import chainInfo from '../starship-chain-info.js';
 
 const test = anyTest as TestFn<SetupContextWithWallets>;
 
@@ -202,5 +203,174 @@ const intentionalCloseAccountScenario = test.macro({
   },
 });
 
+/** Only application logic should be able to close an ICA channel; not channelCloseInit. */
+const channelCloseInitScenario = test.macro({
+  title: (_, chainName: string) =>
+    `Clients cannot initiate channelCloseInit on ${chainName}`,
+  exec: async (t, chainName: string) => {
+    const config = chainConfig[chainName];
+    if (!config) return t.fail(`Unknown chain: ${chainName}`);
+
+    const {
+      wallets,
+      provisionSmartWallet,
+      vstorageClient,
+      retryUntilCondition,
+      useChain,
+      hermes,
+    } = t.context;
+
+    // make an account so there's an ICA channel we can attempt to close
+    const agoricAddr = wallets[chainName];
+    const wdUser1 = await provisionSmartWallet(agoricAddr, {
+      BLD: 100n,
+      IST: 100n,
+    });
+    t.log(`provisioning agoric smart wallet for ${agoricAddr}`);
+    const doOffer = makeDoOffer(wdUser1);
+    t.log(`${chainName} makeAccount offer`);
+    const offerId = `${chainName}-makeAccount-${Date.now()}`;
+    await doOffer({
+      id: offerId,
+      invitationSpec: {
+        source: 'agoricContract',
+        instancePath: [contractName],
+        callPipe: [['makeOrchAccountInvitation']],
+      },
+      offerArgs: { chainName },
+      proposal: {},
+    });
+    const currentWalletRecord = await retryUntilCondition(
+      () => vstorageClient.queryData(`published.wallet.${agoricAddr}.current`),
+      ({ offerToPublicSubscriberPaths }) =>
+        Object.fromEntries(offerToPublicSubscriberPaths)[offerId],
+      `${offerId} continuing invitation is in vstorage`,
+    );
+    const offerToPublicSubscriberMap = Object.fromEntries(
+      currentWalletRecord.offerToPublicSubscriberPaths,
+    );
+
+    const accountStoragePath = offerToPublicSubscriberMap[offerId]?.account;
+    t.assert(accountStoragePath, 'account storage path returned');
+    const address = accountStoragePath.split('.').pop();
+    t.log('Got address:', address);
+
+    const {
+      remoteAddress,
+      localAddress,
+    }: CosmosOrchestrationAccountStorageState =
+      await vstorageClient.queryData(accountStoragePath);
+    const { rPortID, rChannelID, rConnectionID } =
+      parseRemoteAddress(remoteAddress);
+    const { lPortID, lChannelID, lConnectionID } =
+      parseLocalAddress(localAddress);
+
+    const dst = {
+      chainId: chainInfo['agoric'].chainId,
+      channelID: lChannelID,
+      portID: lPortID,
+      connectionID: lConnectionID,
+    };
+    const src = {
+      chainId: useChain(chainName).chainInfo.chain.chain_id,
+      channelID: rChannelID,
+      portID: rPortID,
+      connectionID: rConnectionID,
+    };
+    console.log(
+      `Initiating channelCloseInit for dst: ${JSON.stringify(dst)} src: ${JSON.stringify(src)}`,
+    );
+    t.throws(
+      () => hermes.channelCloseInit(chainName, dst, src),
+      { message: /Command failed/ },
+      'hermes channelCloseInit failed from agoric side for ICA',
+    );
+    t.throws(
+      () => hermes.channelCloseInit(chainName, src, dst),
+      { message: /Command failed/ },
+      `hermes channelCloseInit failed from ${chainName} side for ICA`,
+    );
+
+    const remoteQueryClient = makeQueryClient(
+      await useChain(chainName).getRestEndpoint(),
+    );
+    const { channel } = await retryUntilCondition(
+      () => remoteQueryClient.queryChannel(rPortID, rChannelID),
+      // @ts-expect-error ChannelSDKType.state is a string not a number
+      ({ channel }) => channel?.state === 'STATE_OPEN',
+      'Hermes closeChannelInit failed so ICA channel is still open',
+    );
+    t.log(channel);
+    t.is(
+      channel?.state,
+      // @ts-expect-error ChannelSDKType.state is a string not a number
+      'STATE_OPEN',
+      'ICA channel is still open',
+    );
+
+    {
+      const transferChannel = (
+        await remoteQueryClient.queryChannels()
+      ).channels.find(
+        x => x.port_id === 'transfer' && x.connection_hops[0] === rConnectionID,
+      );
+      if (!transferChannel) throw new Error('Transfer channel not found.');
+
+      const dstTransferChannel = {
+        chainId: chainInfo['agoric'].chainId,
+        channelID: transferChannel.counterparty.channel_id as IBCChannelID,
+        portID: 'transfer',
+        connectionID: lConnectionID,
+      };
+      const srcTransferChannel = {
+        chainId: useChain(chainName).chainInfo.chain.chain_id,
+        channelID: transferChannel.channel_id as IBCChannelID,
+        portID: 'transfer',
+        connectionID: rConnectionID,
+      };
+      t.throws(
+        () =>
+          hermes.channelCloseInit(
+            chainName,
+            dstTransferChannel,
+            srcTransferChannel,
+          ),
+        { message: /Command failed/ },
+        'hermes channelCloseInit failed from agoric side for transfer',
+      );
+      t.throws(
+        () =>
+          hermes.channelCloseInit(
+            chainName,
+            srcTransferChannel,
+            dstTransferChannel,
+          ),
+        { message: /Command failed/ },
+        `hermes channelCloseInit failed from ${chainName} side for transfer`,
+      );
+
+      const { channel } = await retryUntilCondition(
+        () =>
+          remoteQueryClient.queryChannel(
+            'transfer',
+            transferChannel.channel_id,
+          ),
+        // @ts-expect-error ChannelSDKType.state is a string not a number
+        ({ channel }) => channel?.state === 'STATE_OPEN',
+        'Hermes closeChannelInit failed so transfer channel is still open',
+      );
+      t.log(channel);
+      t.is(
+        channel?.state,
+        // @ts-expect-error ChannelSDKType.state is a string not a number
+        'STATE_OPEN',
+        'Transfer channel is still open',
+      );
+    }
+  },
+});
+
 test.serial(intentionalCloseAccountScenario, 'cosmoshub');
 test.serial(intentionalCloseAccountScenario, 'osmosis');
+test.serial(channelCloseInitScenario, 'cosmoshub');
+test.serial(channelCloseInitScenario, 'osmosis');
