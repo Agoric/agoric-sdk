@@ -40,7 +40,8 @@
   "resolutions": {
     "**/protobufjs": "^7.2.6",
     "**/@types/estree": "^1.0.0",
-    "**/@typescript-eslint/typescript-estree": "^7.15.0"
+    "**/@typescript-eslint/typescript-estree": "^7.15.0",
+    "**/@noble/hashes": "github:paulmillr/noble-hashes#ae060daa6252f3ff2aa2f84e887de0aab491281d"
   },
   "engines": {
     "node": "^18.12 || ^20.9"

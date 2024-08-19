@@ -87,6 +87,31 @@ const addOraclesForBrand = (baseId, brandName) => {
   return oraclesWithID;
 };
 
+export const addPreexistingOracles = async (brandIn, oraclesByBrand) => {
+  await null;
+
+  const oraclesWithID = [];
+  for (let i = 0; i < ORACLE_ADDRESSES.length; i += 1) {
+    const oracleAddress = ORACLE_ADDRESSES[i];
+
+    const path = `published.wallet.${oracleAddress}.current`;
+    const wallet = await getQuoteBody(path);
+    const idToInvitation = wallet.offerToUsedInvitation.find(([k]) => {
+      return !isNaN(k[0]);
+    });
+    if (idToInvitation) {
+      oraclesWithID.push({
+        address: oracleAddress,
+        offerId: idToInvitation[0],
+      });
+    } else {
+      console.log('AGD addO skip', oraclesWithID);
+    }
+  }
+
+  oraclesByBrand.set(brandIn, oraclesWithID);
+};
+
 /**
  * Generate a consistent map of oracleIDs and brands that can be used to
  * register oracles or to push prices. The baseID changes each time new

@@ -31,7 +31,14 @@ const any = promises =>
   });
 
 /**
- * @param {import('../../src/proposals/econ-behaviors').EconomyBootstrapPowers} powers
+ * @typedef {PromiseSpaceOf<{
+ *   auctionsUpgradeComplete: boolean;
+ * }>} interlockPowers
+ */
+
+/**
+ * @param {import('../../src/proposals/econ-behaviors').EconomyBootstrapPowers &
+ *     interlockPowers} powers
  * @param {{ options: { vaultsRef: { bundleID: string } } }} options
  */
 export const upgradeVaults = async (powers, { options }) => {
@@ -44,10 +51,12 @@ export const upgradeVaults = async (powers, { options }) => {
       zoe,
       economicCommitteeCreatorFacet: electorateCreatorFacet,
       reserveKit,
+      auctionsUpgradeComplete,
     },
     produce: {
       auctioneerKit: auctioneerKitProducer,
       newAuctioneerKit: tempAuctioneerKit,
+      auctionsUpgradeComplete: auctionsUpgradeCompleteProducer,
     },
     instance: {
       produce: { auctioneer: auctioneerProducer },
@@ -68,7 +77,10 @@ export const upgradeVaults = async (powers, { options }) => {
    * >}
    */
   let installationP;
-  await null;
+
+  await auctionsUpgradeComplete;
+  auctionsUpgradeCompleteProducer.reset();
+
   if (vaultsRef) {
     if (bundleID) {
       installationP = E(zoe).installBundleID(bundleID);
@@ -261,8 +273,13 @@ export const getManifestForUpgradeVaults = async (
         vaultFactoryKit: uV,
         board: uV,
         zoe: uV,
+        auctionsUpgradeComplete: uV,
       },
-      produce: { auctioneerKit: uV, newAuctioneerKit: uV },
+      produce: {
+        auctioneerKit: uV,
+        newAuctioneerKit: uV,
+        auctionsUpgradeComplete: uV,
+      },
       instance: { produce: { auctioneer: uV, newAuctioneerKit: uV } },
     },
   },
