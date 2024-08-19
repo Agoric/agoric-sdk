@@ -10,7 +10,6 @@ import {
 
 import {
   bankSend,
-  BID_OFFER_ID,
   createBid,
   getLiveOffers,
   getPriceQuote,
@@ -40,6 +39,7 @@ const checkNewQuotes = async t => {
   t.is(atomOut, '+11200000');
 };
 
+export const BID_OFFER_ID = 'bid-vaultUpgrade-test3';
 const createNewBid = async t => {
   await createBid('20', USER1ADDR, BID_OFFER_ID);
   const liveOffer = await getLiveOffers(USER1ADDR);

@@ -14,8 +14,6 @@ import {
 
 const ORACLE_ADDRESSES = [GOV1ADDR, GOV2ADDR, GOV3ADDR];
 
-export const BID_OFFER_ID = 'bid-vaultUpgrade-test3';
-
 const queryVstorage = path =>
   agd.query('vstorage', 'data', '--output', 'json', path);
 
