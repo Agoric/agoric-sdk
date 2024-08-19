@@ -20,3 +20,8 @@ test('checkDebtLimit allows at limit', t => {
 test('checkDebtLimit throws above', t => {
   t.throws(() => checkDebtLimit(limit, prior, debt.make(3n)));
 });
+
+test('checkDebtLimit always succeeds if there is nothing to mint', t => {
+  const bigPrior = debt.make(5n);
+  t.notThrows(() => checkDebtLimit(limit, bigPrior, debt.make(0n)));
+});

@@ -67,8 +67,13 @@ export const allEmpty = amounts => {
  * @param {Amount<'nat'>} totalDebt
  * @param {Amount<'nat'>} toMint
  * @throws if minting would exceed total debt
+ *
+ *   Note: Succeeds regardless of debtLimit if toMint is empty.
  */
 export const checkDebtLimit = (debtLimit, totalDebt, toMint) => {
+  if (AmountMath.isEmpty(toMint)) {
+    return;
+  }
   const debtPost = AmountMath.add(totalDebt, toMint);
   AmountMath.isGTE(debtLimit, debtPost) ||
     Fail`Minting ${q(toMint)} past ${q(
