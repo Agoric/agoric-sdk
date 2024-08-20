@@ -179,6 +179,7 @@ export const makeFakeIBCBridge = (
    * @type {nubmer}
    */
   let channelCount = 0;
+  let icaAccountCount = 0;
   let bech32Prefix = 'cosmos';
 
   /**
@@ -205,13 +206,16 @@ export const makeFakeIBCBridge = (
             const connectionChannelCount = remoteChannelMap[obj.hops[0]] || 0;
             const ackEvent = ibcBridgeMocks.channelOpenAck(obj, {
               bech32Prefix,
-              sequence: channelCount,
+              sequence: icaAccountCount,
               channelID: `channel-${channelCount}`,
               counterpartyChannelID: `channel-${connectionChannelCount}`,
             });
             bridgeHandler?.fromBridge(ackEvent);
             bridgeEvents = bridgeEvents.concat(ackEvent);
             channelCount += 1;
+            if (obj.packet.source_port.includes('icacontroller')) {
+              icaAccountCount += 1;
+            }
             remoteChannelMap[obj.hops[0]] = connectionChannelCount + 1;
             return undefined;
           }
