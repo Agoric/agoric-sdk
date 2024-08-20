@@ -271,11 +271,24 @@ jobs:
       - name: build proposals tests
         run: yarn build
         working-directory: a3p-integration
-      - name: Archive core proposals
+      - name: zip up all core proposals
+        run: |
+          find . -type d -path "./a3p-integration/proposals/*/submission" | while read -r dir; do
+            parent_dir=$(basename "$(dirname "$dir")")
+
+            sanitized_parent_dir=${parent_dir//:/-}
+
+            zip_file="${sanitized_parent_dir}.zip"
+
+            zip -r "$zip_file" "$dir"
+
+            echo "Zipped $dir into $zip_file"
+          done
+      - name: archive core proposals
         uses: actions/upload-artifact@v4
         with:
           name: core-proposals
-          path: a3p-integration/**/submission
+          path: ./*.zip
       - name: run proposals tests
         run: yarn test
         working-directory: a3p-integration
