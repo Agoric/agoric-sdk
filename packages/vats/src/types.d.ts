@@ -223,7 +223,7 @@ type IBCMethodEvents = {
   receiveExecuted: {}; // TODO update
   startChannelOpenInit: ChannelOpenInitDowncall;
   startChannelCloseInit: {}; // TODO update
-  bindPort: {}; // TODO update
+  bindPort: { packet: { source_port: IBCPortID } };
   timeoutExecuted: {}; // TODO update
   // XXX why isn't this in receiver.go?
   initOpenExecuted: ChannelOpenAckDowncall;
