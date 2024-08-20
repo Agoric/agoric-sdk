@@ -1,9 +1,8 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import type { TestFn } from 'ava';
-import { heapVowE as E } from '@agoric/vow/vat.js';
+import { heapVowE as E, prepareSwingsetVowTools } from '@agoric/vow/vat.js';
 import { makeHeapZone } from '@agoric/zone';
 import { getInterfaceOf } from '@endo/far';
-import { prepareVowTools } from '@agoric/vow';
 import { setupFakeNetwork } from './network-fakes.js';
 import { makeICAChannelAddress } from '../src/utils/address.js';
 
@@ -11,7 +10,7 @@ const test = anyTest as TestFn<ReturnType<typeof setupFakeNetwork>>;
 
 test.before(async t => {
   const zone = makeHeapZone();
-  const vowTools = prepareVowTools(zone.subZone('vow'));
+  const vowTools = prepareSwingsetVowTools(zone.subZone('vow'));
   t.context = setupFakeNetwork(zone, { vowTools });
   await t.context.setupIBCProtocol();
 });

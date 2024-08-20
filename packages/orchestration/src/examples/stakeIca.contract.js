@@ -2,7 +2,7 @@
 
 import { makeTracer, StorageNodeShape } from '@agoric/internal';
 import { TimerServiceShape } from '@agoric/time';
-import { heapVowE as E, prepareVowTools } from '@agoric/vow/vat.js';
+import { heapVowE as E, prepareSwingsetVowTools } from '@agoric/vow/vat.js';
 import {
   prepareRecorderKitMakers,
   provideAll,
@@ -89,7 +89,7 @@ export const start = async (zcf, privateArgs, baggage) => {
 
   const { makeRecorderKit } = prepareRecorderKitMakers(baggage, marshaller);
 
-  const vowTools = prepareVowTools(zone.subZone('vows'));
+  const vowTools = prepareSwingsetVowTools(zone.subZone('vows'));
 
   const chainHub = makeChainHub(agoricNames, vowTools);
 

@@ -16,7 +16,7 @@ import { makeNotifierFromSubscriber } from '@agoric/notifier';
 import type { TimestampRecord, TimestampValue } from '@agoric/time';
 import { makeScalarBigMapStore, type Baggage } from '@agoric/vat-data';
 import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
-import { prepareVowTools, heapVowE as E } from '@agoric/vow/vat.js';
+import { prepareSwingsetVowTools, heapVowE as E } from '@agoric/vow/vat.js';
 import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/recorder.js';
 import { buildZoeManualTimer } from '@agoric/zoe/tools/manualTimer.js';
 import { makeDurableZone } from '@agoric/zone/durable.js';
@@ -200,7 +200,7 @@ const makeScenario = () => {
     sequence: false,
   });
 
-  const vowTools = prepareVowTools(zone.subZone('VowTools'));
+  const vowTools = prepareSwingsetVowTools(zone.subZone('VowTools'));
 
   const icqConnection = Far('ICQConnection', {}) as ICQConnection;
 

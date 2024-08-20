@@ -1,5 +1,5 @@
 import { prepareAsyncFlowTools } from '@agoric/async-flow';
-import { prepareVowTools } from '@agoric/vow';
+import { prepareSwingsetVowTools } from '@agoric/vow/vat.js';
 import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/recorder.js';
 import { makeDurableZone } from '@agoric/zone/durable.js';
 import { makeChainHub } from '../exos/chain-hub.js';
@@ -72,7 +72,7 @@ export const provideOrchestration = (
 
   const { agoricNames, timerService } = remotePowers;
 
-  const vowTools = prepareVowTools(zones.vows);
+  const vowTools = prepareSwingsetVowTools(zones.vows);
 
   const chainHub = makeChainHub(agoricNames, vowTools);
 
