@@ -88,7 +88,8 @@ jobs:
           git reset --hard HEAD
           git clean -f
           git config user.email "noreply@agoric.com"
-          REGISTRY_PUBLISH_WORKSPACES="$HOME/endo" scripts/registry.sh bg-publish ${{ matrix.cli }}
+          REGISTRY_PUBLISH_WORKSPACES="$HOME/endo"
+          timeout 900 scripts/registry.sh bg-publish ${{ matrix.cli }}
 
       - name: run agoric-cli integration-test
         # These integration tests can be flaky so retry automatically
