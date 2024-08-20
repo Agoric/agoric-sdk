@@ -99,7 +99,6 @@ export const sendQuery = async (orch, _ctx, seat, { chainName, msgs }) => {
   mustMatch(chainName, M.string());
   if (chainName === 'agoric') throw Fail`ICQ not supported on local chain`;
   const remoteChain = await orch.getChain(chainName);
-  // @ts-expect-error FIXME implement Chain.query
   const queryResponse = await remoteChain.query(msgs);
   console.debug('sendQuery response:', queryResponse);
   return queryResponse;

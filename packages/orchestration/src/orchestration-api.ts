@@ -18,6 +18,7 @@ import type {
   IBCMsgTransferOptions,
   KnownChains,
   LocalAccountMethods,
+  ICQQueryFunction,
 } from './types.js';
 import type { ResolvedContinuingOfferResult } from './utils/zoe-tools.js';
 
@@ -87,6 +88,8 @@ export interface Chain<CI extends ChainInfo> {
    */
   makeAccount: () => Promise<OrchestrationAccount<CI>>;
   // FUTURE supply optional port object; also fetch port object
+
+  query: CI extends { icqEnabled: true } ? ICQQueryFunction : never;
 
   // TODO provide a way to get the local denom/brand/whatever for this chain
 }
