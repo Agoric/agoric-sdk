@@ -208,6 +208,7 @@ function makeSlowTerminationPolicy() {
     },
     didCleanup(details) {
       cleanups -= details.cleanups.total;
+      return true;
     },
   });
   return policy;
@@ -252,6 +253,7 @@ function makeCleanupOnlyPolicy() {
     },
     didCleanup(details) {
       cleanups -= details.cleanups.total;
+      return true;
     },
   });
   return policy;
