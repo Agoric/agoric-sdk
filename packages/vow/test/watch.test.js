@@ -3,7 +3,7 @@ import test from 'ava';
 
 import { makeHeapZone } from '@agoric/base-zone/heap.js';
 
-import { prepareVowTools } from '../src/tools.js';
+import { prepareBasicVowTools } from '../src/tools.js';
 
 /**
  * @import {ExecutionContext} from 'ava'
@@ -59,7 +59,7 @@ const prepareArityCheckWatcher = (zone, t) => {
  */
 test('ack watcher - shim', async t => {
   const zone = makeHeapZone();
-  const { watch, when, makeVowKit } = prepareVowTools(zone);
+  const { watch, when, makeVowKit } = prepareBasicVowTools(zone);
   const makeAckWatcher = prepareAckWatcher(zone, t);
 
   const packet = harden({ portId: 'port-1', channelId: 'channel-1' });
@@ -112,7 +112,7 @@ test('ack watcher - shim', async t => {
  */
 test('watcher args arity - shim', async t => {
   const zone = makeHeapZone();
-  const { watch, when, makeVowKit } = prepareVowTools(zone);
+  const { watch, when, makeVowKit } = prepareBasicVowTools(zone);
   const makeArityCheckWatcher = prepareArityCheckWatcher(zone, t);
 
   const testCases = /** @type {const} */ ({
@@ -173,7 +173,7 @@ test('watcher args arity - shim', async t => {
 
 test('vow self resolution', async t => {
   const zone = makeHeapZone();
-  const { watch, when, makeVowKit } = prepareVowTools(zone);
+  const { watch, when, makeVowKit } = prepareBasicVowTools(zone);
 
   // A direct self vow resolution
   const { vow: vow1, resolver: resolver1 } = makeVowKit();
@@ -226,7 +226,7 @@ test('vow self resolution', async t => {
 
 test('disconnection of non-vow informs watcher', async t => {
   const zone = makeHeapZone();
-  const { watch, when } = prepareVowTools(zone, {
+  const { watch, when } = prepareBasicVowTools(zone, {
     isRetryableReason: reason => reason === 'disconnected',
   });
 

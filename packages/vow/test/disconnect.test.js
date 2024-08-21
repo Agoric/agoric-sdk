@@ -3,7 +3,7 @@ import test from 'ava';
 
 import { makeHeapZone } from '@agoric/base-zone/heap.js';
 import { makeTagged } from '@endo/pass-style';
-import { prepareVowTools } from '../src/tools.js';
+import { prepareBasicVowTools } from '../src/tools.js';
 
 /** @import {Vow} from '../src/types.js' */
 
@@ -11,7 +11,7 @@ test('retry on disconnection', async t => {
   const zone = makeHeapZone();
   const isRetryableReason = e => e && e.message === 'disconnected';
 
-  const { watch, when } = prepareVowTools(zone, {
+  const { watch, when } = prepareBasicVowTools(zone, {
     isRetryableReason,
   });
   const makeTestVowV0 = zone.exoClass(
