@@ -289,6 +289,8 @@ jobs:
         with:
           name: core-proposals
           path: ./*.zip
+      - name: remove all zip files after they're archived
+        run: rm -f *.zip
       - name: run proposals tests
         run: yarn test
         working-directory: a3p-integration
