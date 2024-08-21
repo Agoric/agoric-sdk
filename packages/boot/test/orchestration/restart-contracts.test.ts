@@ -229,7 +229,7 @@ test.serial('basicFlows', async t => {
     },
     proposal: {},
     offerArgs: {
-      chainNames: ['agoric', 'cosmoshub'],
+      chainNames: ['agoric', 'cosmoshub', 'osmosis'],
     },
   });
   // no errors and no result yet
@@ -242,7 +242,8 @@ test.serial('basicFlows', async t => {
       result: undefined, // no property
     },
   });
-  t.is(getInboundQueueLength(), 2);
+  // 3x ICA Channel Opens, 1x ICQ Channel Open
+  t.is(getInboundQueueLength(), 4);
 
   t.log('restart basicFlows');
   await evalProposal(
@@ -264,7 +265,7 @@ test.serial('basicFlows', async t => {
       result: 'UNPUBLISHED',
     },
   });
-  t.is(await flushInboundQueue(1), 1);
+  t.is(await flushInboundQueue(3), 3);
   t.like(wallet.getLatestUpdateRecord(), {
     status: {
       id: id2,
