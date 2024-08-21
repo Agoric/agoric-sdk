@@ -41,8 +41,8 @@ const any = promises =>
  *     interlockPowers} powers
  * @param {{ options: { vaultsRef: { bundleID: string } } }} options
  */
-export const upgradeVaults = async (powers, { options }) => {
-  const {
+export const upgradeVaults = async (
+  {
     consume: {
       agoricNamesAdmin,
       newAuctioneerKit: auctioneerKitP,
@@ -61,7 +61,9 @@ export const upgradeVaults = async (powers, { options }) => {
     instance: {
       produce: { auctioneer: auctioneerProducer },
     },
-  } = powers;
+  },
+  { options },
+) => {
   const { vaultsRef } = options;
   const kit = await vaultFactoryKit;
   const auctioneerKit = await auctioneerKitP;

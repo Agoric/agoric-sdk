@@ -15,35 +15,45 @@ const trace = makeTracer('NewAuction', true);
 /**
  * @param {import('./econ-behaviors.js').EconomyBootstrapPowers &
  *   interlockPowers} powers
+ * @param {{ options: { auctionsRef: { bundleID: string } } }} options
  */
-export const addAuction = async ({
-  consume: {
-    zoe,
-    board,
-    chainTimerService,
-    priceAuthority,
-    chainStorage,
-    economicCommitteeCreatorFacet: electorateCreatorFacet,
-    auctioneerKit: legacyKitP,
-  },
-  produce: { newAuctioneerKit, auctionsUpgradeComplete },
-  instance: {
-    consume: { reserve: reserveInstance },
-  },
-  installation: {
+export const addAuction = async (
+  {
     consume: {
-      auctioneer: auctionInstallation,
-      contractGovernor: contractGovernorInstallation,
+      zoe,
+      board,
+      chainTimerService,
+      priceAuthority,
+      chainStorage,
+      economicCommitteeCreatorFacet: electorateCreatorFacet,
+      agoricNamesAdmin,
+      auctioneerKit: legacyKitP,
+    },
+    produce: { newAuctioneerKit, auctionsUpgradeComplete },
+    instance: {
+      consume: { reserve: reserveInstance },
+    },
+    installation: {
+      consume: { contractGovernor: contractGovernorInstallation },
+    },
+    issuer: {
+      consume: { [Stable.symbol]: stableIssuerP },
     },
   },
-  issuer: {
-    consume: { [Stable.symbol]: stableIssuerP },
-  },
-}) => {
-  trace('addAuction start');
+  { options },
+) => {
+  trace('addAuction start', options);
   const STORAGE_PATH = 'auction';
+  const { auctionsRef } = options;
 
   const poserInvitationP = E(electorateCreatorFacet).getPoserInvitation();
+  const bundleID = auctionsRef.bundleID;
+  /**
+   * @type {Promise<
+   *   Installation<import('../../src/auction/auctioneer.js')['start']>
+   * >}
+   */
+  const installationP = E(zoe).installBundleID(bundleID);
 
   const [
     initialPoserInvitation,
@@ -56,6 +66,16 @@ export const addAuction = async ({
     stableIssuerP,
     legacyKitP,
   ]);
+
+  await E.when(
+    installationP,
+    installation =>
+      E(E(agoricNamesAdmin).lookupAdmin('installation')).update(
+        'auctioneer',
+        installation,
+      ),
+    err => console.error(`🚨 failed to update vaultFactory installation`, err),
+  );
 
   // Each field has an extra layer of type +  value:
   // AuctionStartDelay: { type: 'relativeTime', value: { relValue: 2n, timerBrand: Object [Alleged: timerBrand] {} } }
@@ -89,10 +109,12 @@ export const addAuction = async ({
     },
   );
 
+  const installation = await installationP;
+
   const governorTerms = await deeplyFulfilledObject(
     harden({
       timer: chainTimerService,
-      governedContractInstallation: auctionInstallation,
+      governedContractInstallation: installation,
       governed: {
         terms: auctionTerms,
         issuerKeywordRecord: { Bid: stableIssuer },
@@ -103,7 +125,7 @@ export const addAuction = async ({
     }),
   );
 
-  /** @type {GovernorStartedInstallationKit<typeof auctionInstallation>} */
+  /** @type {GovernorStartedInstallationKit<typeof installationP>} */
   const governorStartResult = await E(zoe).startInstance(
     contractGovernorInstallation,
     undefined,
@@ -165,6 +187,7 @@ export const ADD_AUCTION_MANIFEST = harden({
       priceAuthority: true,
       chainStorage: true,
       economicCommitteeCreatorFacet: true,
+      agoricNamesAdmin: true,
       auctioneerKit: true,
     },
     produce: {
@@ -186,7 +209,15 @@ export const ADD_AUCTION_MANIFEST = harden({
   },
 });
 
-/* Add a new auction to a chain that already has one. */
-export const getManifestForAddAuction = async () => {
-  return { manifest: ADD_AUCTION_MANIFEST };
+/**
+ * Add a new auction to a chain that already has one.
+ *
+ * @param {object} _ign
+ * @param {any} addAuctionOptions
+ */
+export const getManifestForAddAuction = async (_ign, addAuctionOptions) => {
+  return {
+    manifest: ADD_AUCTION_MANIFEST,
+    options: addAuctionOptions,
+  };
 };

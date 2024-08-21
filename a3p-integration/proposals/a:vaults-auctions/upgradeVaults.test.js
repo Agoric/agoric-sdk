@@ -73,9 +73,24 @@ const triggerAuction = async t => {
   t.is(atomOut, '+5200000');
 };
 
+function newAuctioneerFromNewBundle(details) {
+  for (const detail of details) {
+    // contract vat names are based on bundleID
+    const originalAuctionVatName = 'zcf-b1-a5683-auctioneer';
+    if (
+      !detail.vatName.includes('governor') &&
+      detail.vatName !== originalAuctionVatName
+    ) {
+      return true;
+    }
+  }
+  return false;
+}
+
 const checkAuctionVat = async t => {
   const details = await getDetailsMatchingVats('auctioneer');
 
+  t.true(newAuctioneerFromNewBundle(details));
   // This query matches both the auction and its governor, so double the count
   t.true(Object.keys(details).length > 2);
 };
