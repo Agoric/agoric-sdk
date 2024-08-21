@@ -25,6 +25,7 @@ export const upgradeVaults = async (
       reserveKit,
       auctionsUpgradeComplete,
     },
+    produce: { auctionsUpgradeComplete: auctionsUpgradeCompleteProducer },
     installation: {
       produce: { VaultFactory: produceVaultInstallation },
     },
