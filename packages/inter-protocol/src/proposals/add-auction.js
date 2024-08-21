@@ -28,7 +28,7 @@ export const addAuction = async (
       economicCommitteeCreatorFacet: electorateCreatorFacet,
       auctioneerKit: legacyKitP,
     },
-    produce: { newAuctioneerKit, auctionsUpgradeComplete },
+    produce: { auctioneerKit: produceAuctioneerKit, auctionsUpgradeComplete },
     instance: {
       consume: { reserve: reserveInstance },
     },
@@ -151,7 +151,8 @@ export const addAuction = async (
     ),
   );
 
-  newAuctioneerKit.resolve(
+  produceAuctioneerKit.reset();
+  produceAuctioneerKit.resolve(
     harden({
       label: 'auctioneer',
       creatorFacet: governedCreatorFacet,
@@ -182,7 +183,7 @@ export const ADD_AUCTION_MANIFEST = harden({
       auctioneerKit: true,
     },
     produce: {
-      newAuctioneerKit: true,
+      auctioneerKit: true,
       auctionsUpgradeComplete: true,
     },
     instance: {
@@ -190,7 +191,6 @@ export const ADD_AUCTION_MANIFEST = harden({
     },
     installation: {
       consume: {
-        auctioneer: true,
         contractGovernor: true,
       },
       produce: { auctioneer: true },

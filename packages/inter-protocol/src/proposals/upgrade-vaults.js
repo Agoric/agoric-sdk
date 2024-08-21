@@ -2,33 +2,8 @@ import { E } from '@endo/far';
 import { makeNotifierFromAsyncIterable } from '@agoric/notifier';
 import { AmountMath } from '@agoric/ertp/src/index.js';
 import { makeTracer } from '@agoric/internal/src/index.js';
-import { isUpgradeDisconnection } from '@agoric/internal/src/upgrade-api.js';
 
 const trace = makeTracer('upgrade Vaults proposal');
-
-// stand-in for Promise.any() which isn't available at this point.
-/** @param {Promise<any>[]} promises */
-const any = promises =>
-  new Promise((resolve, reject) => {
-    for (const promise of promises) {
-      void promise.then(resolve, () => {});
-    }
-    void Promise.allSettled(promises).then(results => {
-      const rejects = /** @type {PromiseRejectedResult[]} */ (
-        results.filter(({ status }) => status === 'rejected')
-      );
-      if (rejects.length === results.length) {
-        const messages = rejects.map(
-          ({ reason: { message } }) => message || 'no error message',
-        );
-        const aggregate = new Error(messages.join(';'));
-        /** @type {any} */ (aggregate).errors = rejects.map(
-          ({ reason }) => reason,
-        );
-        reject(aggregate);
-      }
-    });
-  });
 
 /**
  * @typedef {PromiseSpaceOf<{
@@ -44,35 +19,26 @@ const any = promises =>
 export const upgradeVaults = async (
   {
     consume: {
-      agoricNamesAdmin,
-      newAuctioneerKit: auctioneerKitP,
-      priceAuthority,
       vaultFactoryKit,
       zoe,
       economicCommitteeCreatorFacet: electorateCreatorFacet,
       reserveKit,
       auctionsUpgradeComplete,
     },
-    produce: {
-      auctioneerKit: auctioneerKitProducer,
-      newAuctioneerKit: tempAuctioneerKit,
-      auctionsUpgradeComplete: auctionsUpgradeCompleteProducer,
-    },
     installation: {
       produce: { VaultFactory: produceVaultInstallation },
     },
     instance: {
-      produce: { auctioneer: auctioneerProducer },
+      consume: { auctioneer: auctioneerInstanceP },
     },
   },
   { options },
 ) => {
   const { vaultsRef } = options;
   const kit = await vaultFactoryKit;
-  const auctioneerKit = await auctioneerKitP;
   const { instance: directorInstance } = kit;
   const allBrands = await E(zoe).getBrands(directorInstance);
-  const { Minted: istBrand, ...vaultBrands } = allBrands;
+  const { Minted: _istBrand, ...vaultBrands } = allBrands;
 
   const bundleID = vaultsRef.bundleID;
   console.log(`upgradeVaults: bundleId`, bundleID);
@@ -164,14 +130,15 @@ export const upgradeVaults = async (
       E.get(reserveKit).creatorFacet,
     ).makeShortfallReportingInvitation();
 
-    const poserInvitation = await E(
-      electorateCreatorFacet,
-    ).getPoserInvitation();
+    const [poserInvitation, auctioneerInstance] = await Promise.all([
+      E(electorateCreatorFacet).getPoserInvitation(),
+      auctioneerInstanceP,
+    ]);
+
     /** @type {import('../../src/vaultFactory/vaultFactory').VaultFactoryContract['privateArgs']} */
     const newPrivateArgs = harden({
       ...privateArgs,
-      // @ts-expect-error It has a value until reset after the upgrade
-      auctioneerInstance: auctioneerKit.instance,
+      auctioneerInstance,
       initialPoserInvitation: poserInvitation,
       initialShortfallInvitation: shortfallInvitation,
       managerParams: managerParamValues,
@@ -186,60 +153,7 @@ export const upgradeVaults = async (
     trace('upgraded vaultFactory.', upgradeResult);
   };
 
-  // Wait for at least one new price feed to be ready before upgrading Vaults
-  void E.when(
-    any(
-      Object.values(vaultBrands).map(async brand => {
-        const getQuote = async lastRejectionReason => {
-          await null;
-          try {
-            return await E(priceAuthority).quoteGiven(
-              AmountMath.make(brand, 10n),
-              istBrand,
-            );
-          } catch (reason) {
-            if (
-              isUpgradeDisconnection(reason) &&
-              (!lastRejectionReason ||
-                reason.incarnationNumber >
-                  lastRejectionReason.incarnationNumber)
-            ) {
-              return getQuote(reason);
-            }
-            throw reason;
-          }
-        };
-        return getQuote(null);
-      }),
-    ),
-    async price => {
-      trace(`upgrading after delay`, price);
-      await upgradeVaultFactory();
-      auctioneerKitProducer.reset();
-      // @ts-expect-error auctioneerKit is non-null except between auctioneerKitProducer.reset() and auctioneerKitProducer.resolve()
-      auctioneerKitProducer.resolve(auctioneerKit);
-      auctioneerProducer.reset();
-      // @ts-expect-error auctioneerKit is non-null except between auctioneerKitProducer.reset() and auctioneerKitProducer.resolve()
-      auctioneerProducer.resolve(auctioneerKit.instance);
-      // We wanted it to be valid for only a short while.
-      tempAuctioneerKit.reset();
-      await E(E(agoricNamesAdmin).lookupAdmin('instance')).update(
-        'auctioneer',
-        // @ts-expect-error auctioneerKit is non-null except between auctioneerKitProducer.reset() and auctioneerKitProducer.resolve()
-        auctioneerKit.instance,
-      );
-      trace(`upgrading complete`, price);
-    },
-    error => {
-      console.error(
-        'Failed to upgrade vaultFactory',
-        error.message,
-        ...(error.errors || []),
-      );
-    },
-  );
-
-  console.log(`upgradeVaults scheduled; waiting for priceFeeds`);
+  await upgradeVaultFactory();
 };
 
 const uV = 'upgradeVaults';
@@ -256,25 +170,17 @@ export const getManifestForUpgradeVaults = async (
   manifest: {
     [upgradeVaults.name]: {
       consume: {
-        agoricNamesAdmin: uV,
-        newAuctioneerKit: uV,
         economicCommitteeCreatorFacet: uV,
-        priceAuthority: uV,
         reserveKit: uV,
         vaultFactoryKit: uV,
-        board: uV,
         zoe: uV,
         auctionsUpgradeComplete: uV,
       },
-      produce: {
-        auctioneerKit: uV,
-        newAuctioneerKit: uV,
-        auctionsUpgradeComplete: uV,
-      },
+      produce: { auctionsUpgradeComplete: uV },
       installation: {
         produce: { VaultFactory: true },
       },
-      instance: { produce: { auctioneer: uV, newAuctioneerKit: uV } },
+      instance: { consume: { auctioneer: uV } },
     },
   },
   options: { ...vaultUpgradeOptions },
