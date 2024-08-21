@@ -18,7 +18,7 @@ import { makeWhen } from './when.js';
  * @param {object} [powers]
  * @param {IsRetryableReason} [powers.isRetryableReason]
  */
-export const prepareVowTools = (zone, powers = {}) => {
+export const prepareBasicVowTools = (zone, powers = {}) => {
   const { isRetryableReason = /** @type {IsRetryableReason} */ (() => false) } =
     powers;
   const makeVowKit = prepareVowKit(zone);
@@ -72,6 +72,6 @@ export const prepareVowTools = (zone, powers = {}) => {
     retriable,
   });
 };
-harden(prepareVowTools);
+harden(prepareBasicVowTools);
 
-/** @typedef {ReturnType<typeof prepareVowTools>} VowTools */
+/** @typedef {ReturnType<typeof prepareBasicVowTools>} VowTools */

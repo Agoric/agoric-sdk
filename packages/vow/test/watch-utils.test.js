@@ -4,11 +4,11 @@ import test from 'ava';
 import { makeHeapZone } from '@agoric/base-zone/heap.js';
 import { E, getInterfaceOf } from '@endo/far';
 
-import { prepareVowTools } from '../src/tools.js';
+import { prepareBasicVowTools } from '../src/tools.js';
 
 test('allVows waits for a single vow to complete', async t => {
   const zone = makeHeapZone();
-  const { watch, when, allVows } = prepareVowTools(zone);
+  const { watch, when, allVows } = prepareBasicVowTools(zone);
 
   const testPromiseP = Promise.resolve('promise');
   const vowA = watch(testPromiseP);
@@ -20,7 +20,7 @@ test('allVows waits for a single vow to complete', async t => {
 
 test('allVows waits for an array of vows to complete', async t => {
   const zone = makeHeapZone();
-  const { watch, when, allVows } = prepareVowTools(zone);
+  const { watch, when, allVows } = prepareBasicVowTools(zone);
 
   const testPromiseAP = Promise.resolve('promiseA');
   const testPromiseBP = Promise.resolve('promiseB');
@@ -36,7 +36,7 @@ test('allVows waits for an array of vows to complete', async t => {
 
 test('allVows returns vows in order', async t => {
   const zone = makeHeapZone();
-  const { watch, when, allVows, makeVowKit } = prepareVowTools(zone);
+  const { watch, when, allVows, makeVowKit } = prepareBasicVowTools(zone);
   const kit = makeVowKit();
 
   const testPromiseAP = Promise.resolve('promiseA');
@@ -55,7 +55,7 @@ test('allVows returns vows in order', async t => {
 
 test('allVows rejects upon first rejection', async t => {
   const zone = makeHeapZone();
-  const { watch, when, allVows } = prepareVowTools(zone);
+  const { watch, when, allVows } = prepareBasicVowTools(zone);
 
   const testPromiseAP = Promise.resolve('promiseA');
   const testPromiseBP = Promise.reject(Error('rejectedA'));
@@ -75,7 +75,7 @@ test('allVows rejects upon first rejection', async t => {
 
 test('allVows can accept vows awaiting other vows', async t => {
   const zone = makeHeapZone();
-  const { watch, when, allVows } = prepareVowTools(zone);
+  const { watch, when, allVows } = prepareBasicVowTools(zone);
 
   const testPromiseAP = Promise.resolve('promiseA');
   const testPromiseBP = Promise.resolve('promiseB');
@@ -93,7 +93,7 @@ test('allVows can accept vows awaiting other vows', async t => {
 
 test('allVows - works with just promises', async t => {
   const zone = makeHeapZone();
-  const { when, allVows } = prepareVowTools(zone);
+  const { when, allVows } = prepareBasicVowTools(zone);
 
   const result = await when(
     allVows([Promise.resolve('promiseA'), Promise.resolve('promiseB')]),
@@ -104,7 +104,7 @@ test('allVows - works with just promises', async t => {
 
 test('allVows - watch promises mixed with vows', async t => {
   const zone = makeHeapZone();
-  const { watch, when, allVows } = prepareVowTools(zone);
+  const { watch, when, allVows } = prepareBasicVowTools(zone);
 
   const testPromiseP = Promise.resolve('vow');
   const vowA = watch(testPromiseP);
@@ -116,7 +116,7 @@ test('allVows - watch promises mixed with vows', async t => {
 
 test('allVows can accept passable data (PureData)', async t => {
   const zone = makeHeapZone();
-  const { watch, when, allVows } = prepareVowTools(zone);
+  const { watch, when, allVows } = prepareBasicVowTools(zone);
 
   const testPromiseP = Promise.resolve('vow');
   const vowA = watch(testPromiseP);
@@ -135,7 +135,7 @@ const prepareAccount = zone =>
 
 test('allVows supports Promise pipelining', async t => {
   const zone = makeHeapZone();
-  const { watch, when, allVows } = prepareVowTools(zone);
+  const { watch, when, allVows } = prepareBasicVowTools(zone);
 
   // makeAccount returns a Promise
   const prepareLocalChain = makeAccount => {
@@ -170,7 +170,7 @@ test('allVows supports Promise pipelining', async t => {
 
 test('allVows does NOT support Vow pipelining', async t => {
   const zone = makeHeapZone();
-  const { watch, when, allVows } = prepareVowTools(zone);
+  const { watch, when, allVows } = prepareBasicVowTools(zone);
 
   // makeAccount returns a Vow
   const prepareLocalChainVowish = makeAccount => {
@@ -202,7 +202,7 @@ test('allVows does NOT support Vow pipelining', async t => {
 
 test('asPromise converts a vow to a promise', async t => {
   const zone = makeHeapZone();
-  const { watch, asPromise } = prepareVowTools(zone);
+  const { watch, asPromise } = prepareBasicVowTools(zone);
 
   const testPromiseP = Promise.resolve('test value');
   const vow = watch(testPromiseP);
@@ -213,7 +213,7 @@ test('asPromise converts a vow to a promise', async t => {
 
 test('asPromise handles vow rejection', async t => {
   const zone = makeHeapZone();
-  const { watch, asPromise } = prepareVowTools(zone);
+  const { watch, asPromise } = prepareBasicVowTools(zone);
 
   const testPromiseP = Promise.reject(new Error('test error'));
   const vow = watch(testPromiseP);
@@ -223,7 +223,7 @@ test('asPromise handles vow rejection', async t => {
 
 test('asPromise accepts and resolves promises', async t => {
   const zone = makeHeapZone();
-  const { asPromise } = prepareVowTools(zone);
+  const { asPromise } = prepareBasicVowTools(zone);
 
   const p = Promise.resolve('a promise');
   const result = await asPromise(p);
@@ -232,7 +232,7 @@ test('asPromise accepts and resolves promises', async t => {
 
 test('asPromise handles watcher arguments', async t => {
   const zone = makeHeapZone();
-  const { watch, asPromise } = prepareVowTools(zone);
+  const { watch, asPromise } = prepareBasicVowTools(zone);
 
   const testPromiseP = Promise.resolve('watcher test');
   const vow = watch(testPromiseP);
