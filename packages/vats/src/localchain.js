@@ -35,6 +35,21 @@ const { Vow$ } = NetworkShape;
  */
 
 /**
+ * Send a batch of query requests to the local chain. Unless there is a system
+ * error, will return all results to indicate their success or failure.
+ *
+ * @template {TypedJson[]} [RT=TypedJson[]]
+ * @callback QueryManyFn
+ * @param {RT} requests
+ * @returns {PromiseVowOfTupleMappedToGenerics<{
+ *   [K in keyof RT]: JsonSafe<{
+ *     error?: string;
+ *     reply: ResponseTo<RT[K]>;
+ *   }>;
+ * }>}
+ */
+
+/**
  * @typedef {{
  *   system: ScopedBridgeManager<'vlocalchain'>;
  *   bank: Bank;
@@ -171,6 +186,7 @@ export const prepareLocalChainAccountKit = (zone, { watch }) =>
          * @returns {PromiseVowOfTupleMappedToGenerics<{
          *   [K in keyof MT]: JsonSafe<ResponseTo<MT[K]>>;
          * }>}
+         *
          * @see {typedJson} which can be used on arguments to get typed return
          * values.
          */
@@ -271,20 +287,7 @@ const prepareLocalChain = (zone, makeAccountKit, { watch }) => {
             this.facets.extractFirstQueryResultWatcher,
           );
         },
-        /**
-         * Send a batch of query requests to the local chain. Unless there is a
-         * system error, will return all results to indicate their success or
-         * failure.
-         *
-         * @template {import('@agoric/cosmic-proto').TypedJson[]} RT
-         * @param {RT} requests
-         * @returns {PromiseVowOfTupleMappedToGenerics<{
-         *   [K in keyof RT]: JsonSafe<{
-         *     error?: string;
-         *     reply: ResponseTo<RT[K]>;
-         *   }>;
-         * }>}
-         */
+        /** @type {QueryManyFn} */
         async queryMany(requests) {
           const { system } = this.state;
           return E(system).toBridge({
