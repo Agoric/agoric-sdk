@@ -148,10 +148,17 @@ test.serial('makeAccount returns an IcaAccountKit', async t => {
     /"version":"ics27-1"(.*)"encoding":"proto3"/,
     'remote address contains version and encoding in version string',
   );
-  t.true(
-    (
-      ['addListener', 'removeListener', 'connect', 'revoke'] as (keyof Port)[]
-    ).every(method => getMethodNames(port).includes(method)),
+  t.deepEqual(
+    getMethodNames(port),
+    [
+      '__getInterfaceGuard__',
+      '__getMethodNames__',
+      'addListener',
+      'connect',
+      'getLocalAddress',
+      'removeListener',
+      'revoke',
+    ],
     'IcaAccountKit returns a Port remotable',
   );
 
