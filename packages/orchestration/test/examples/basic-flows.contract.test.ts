@@ -4,13 +4,14 @@ import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import type { Instance } from '@agoric/zoe/src/zoeService/utils.js';
 import { E, getInterfaceOf } from '@endo/far';
 import path from 'path';
-import { JsonSafe, toRequestQueryJson } from '@agoric/cosmic-proto';
+import { JsonSafe, toRequestQueryJson, typedJson } from '@agoric/cosmic-proto';
 import {
   QueryBalanceRequest,
   QueryBalanceResponse,
 } from '@agoric/cosmic-proto/cosmos/bank/v1beta1/query.js';
 import type { ResponseQuery } from '@agoric/cosmic-proto/tendermint/abci/types.js';
 import { decodeBase64 } from '@endo/base64';
+import { LOCALCHAIN_DEFAULT_ADDRESS } from '@agoric/vats/tools/fake-bridge.js';
 import { commonSetup } from '../supports.js';
 
 const dirname = path.dirname(new URL(import.meta.url).pathname);
@@ -167,6 +168,54 @@ test('send query from chain object', async t => {
     );
     t.is(sendPacketCalls.length, 2, 'sent two queries');
   }
+  const proto3JsonQuery = typedJson(
+    '/cosmos.bank.v1beta1.QueryAllBalancesRequest',
+    {
+      address: LOCALCHAIN_DEFAULT_ADDRESS,
+    },
+  );
+  {
+    t.log('send a query from the localchain');
+    const inv = E(publicFacet).makeSendLocalQueryInvitation();
+    const userSeat = E(zoe).offer(inv, {}, undefined, {
+      msgs: [proto3JsonQuery],
+    });
+    const offerResult = await vt.when(E(userSeat).getOfferResult());
+    t.log(offerResult);
+    t.deepEqual(
+      offerResult,
+      [
+        {
+          error: '',
+          height: '1',
+          reply: {
+            '@type': '/cosmos.bank.v1beta1.QueryAllBalancesResponse',
+            balances: [
+              { denom: 'ubld', amount: '10' },
+              { denom: 'uist', amount: '10' },
+            ],
+            pagination: {
+              nextKey: null,
+              total: '2',
+            },
+          },
+        },
+      ],
+      'balances returned',
+    );
+  }
+  {
+    t.log('remote chain facade guards offer with M.arrayOf(ICQMsgShape)');
+    const inv = E(publicFacet).makeSendICQQueryInvitation();
+    const userSeat = E(zoe).offer(inv, {}, undefined, {
+      chainName: 'osmosis',
+      // @ts-expect-error intentional error
+      msgs: [proto3JsonQuery],
+    });
+    await t.throwsAsync(vt.when(E(userSeat).getOfferResult()), {
+      message: /.*Must have missing properties \["path","data"\]/,
+    });
+  }
 });
 
 test('send query from orch account in an async-flow', async t => {
@@ -226,6 +275,3 @@ test('send query from orch account in an async-flow', async t => {
   );
   t.is(icqChannelInits.length, 1, 'only one ICQ channel opened');
 });
-
-// needs design?
-test.todo('send query LocalChainFacade');

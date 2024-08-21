@@ -4,7 +4,11 @@ import { E } from '@endo/far';
 import { M } from '@endo/patterns';
 import { pickFacet } from '@agoric/vat-data';
 import { VowShape } from '@agoric/vow';
-import { ChainAddressShape, ChainFacadeI, ICQMsgShape } from '../typeGuards.js';
+import {
+  ChainAddressShape,
+  chainFacadeMethods,
+  ICQMsgShape,
+} from '../typeGuards.js';
 
 /**
  * @import {HostOf} from '@agoric/async-flow';
@@ -62,7 +66,10 @@ const prepareRemoteChainFacadeKit = (
   zone.exoClassKit(
     'RemoteChainFacade',
     {
-      public: ChainFacadeI,
+      public: M.interface('RemoteChainFacade', {
+        ...chainFacadeMethods,
+        query: M.call(M.arrayOf(ICQMsgShape)).returns(VowShape),
+      }),
       makeICQConnectionQueryWatcher: M.interface(
         'makeICQConnectionQueryWatcher',
         {
@@ -140,7 +147,11 @@ const prepareRemoteChainFacadeKit = (
             );
           });
         },
-        /** @type {ICQConnection['query']} */
+        /**
+         * @type {HostOf<
+         *   Chain<CosmosChainInfo & { icqEnabled: true }>['query']
+         * >}
+         */
         query(msgs) {
           return asVow(() => {
             const {

@@ -7,6 +7,7 @@ import { M } from '@endo/patterns';
  * @import {ChainAddress, CosmosAssetInfo, ChainInfo, CosmosChainInfo, DenomAmount} from './types.js';
  * @import {Delegation} from '@agoric/cosmic-proto/cosmos/staking/v1beta1/staking.js';
  * @import {TxBody} from '@agoric/cosmic-proto/cosmos/tx/v1beta1/tx.js';
+ * @import {TypedJson} from '@agoric/cosmic-proto';
  */
 
 /**
@@ -123,14 +124,14 @@ export const ICQMsgShape = M.splitRecord(
   { height: M.string(), prove: M.boolean() },
 );
 
+/** @type {TypedPattern<TypedJson>} */
+export const TypedJsonShape = M.splitRecord({ '@type': M.string() });
+
+/** @see {Chain} */
 export const chainFacadeMethods = harden({
   getChainInfo: M.call().returns(VowShape),
   makeAccount: M.call().returns(VowShape),
-  query: M.call(M.arrayOf(ICQMsgShape)).returns(VowShape),
 });
-
-/** @see {Chain} */
-export const ChainFacadeI = M.interface('ChainFacade', chainFacadeMethods);
 
 /**
  * for google/protobuf/timestamp.proto, not to be confused with TimestampShape

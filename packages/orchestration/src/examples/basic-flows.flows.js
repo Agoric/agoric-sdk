@@ -6,9 +6,10 @@ import { Fail } from '@endo/errors';
 import { M, mustMatch } from '@endo/patterns';
 
 /**
- * @import {DenomArg, OrchestrationAccount, OrchestrationFlow, Orchestrator} from '@agoric/orchestration';
+ * @import {Chain, DenomArg, OrchestrationAccount, OrchestrationFlow, Orchestrator, KnownChains, OrchestrationAccountI, ICQQueryFunction, CosmosChainInfo} from '@agoric/orchestration';
  * @import {ResolvedPublicTopic} from '@agoric/zoe/src/contractSupport/topics.js';
  * @import {JsonSafe} from '@agoric/cosmic-proto';
+ * @import {QueryManyFn} from '@agoric/vats/src/localchain.js';
  * @import {RequestQuery} from '@agoric/cosmic-proto/tendermint/abci/types.js';
  * @import {OrchestrationPowers} from '../utils/start-helper.js';
  * @import {MakePortfolioHolder} from '../exos/portfolio-holder-kit.js';
@@ -83,27 +84,30 @@ export const makePortfolioAccount = async (
 harden(makePortfolioAccount);
 
 /**
- * Send a query and get the response back in an offer result. This invitation is
- * for testing only. In a real scenario it's better to use an RPC or API client
- * and vstorage to retrieve data for a frontend. Queries should only be
- * leveraged if contract logic requires it.
+ * Send a query to a remote chain and get the response back in an offer result.
+ * This invitation is for testing only. In a real scenario it's better to use an
+ * RPC or API client and vstorage to retrieve data for a frontend. Queries
+ * should only be leveraged if contract logic requires it.
  *
  * @satisfies {OrchestrationFlow}
  * @param {Orchestrator} orch
  * @param {any} _ctx
  * @param {ZCFSeat} seat
- * @param {{ chainName: string; msgs: JsonSafe<RequestQuery>[] }} offerArgs
+ * @param {{ chainName: string; msgs: Parameters<ICQQueryFunction>[0] }} offerArgs
  */
-export const sendQuery = async (orch, _ctx, seat, { chainName, msgs }) => {
+export const sendICQQuery = async (orch, _ctx, seat, { chainName, msgs }) => {
   seat.exit(); // no funds exchanged
   mustMatch(chainName, M.string());
   if (chainName === 'agoric') throw Fail`ICQ not supported on local chain`;
-  const remoteChain = await orch.getChain(chainName);
+  const remoteChain =
+    /** @type {Chain<CosmosChainInfo & { icqEnabled: true }>} */ (
+      await orch.getChain(chainName)
+    );
   const queryResponse = await remoteChain.query(msgs);
-  console.debug('sendQuery response:', queryResponse);
+  console.debug('sendICQQuery response:', queryResponse);
   return queryResponse;
 };
-harden(sendQuery);
+harden(sendICQQuery);
 
 /**
  * Create an account and send a query and get the response back in an offer
@@ -133,3 +137,25 @@ export const makeAccountAndSendBalanceQuery = async (
   return queryResponse;
 };
 harden(makeAccountAndSendBalanceQuery);
+
+/**
+ * Send a query to the local chain and get the response back in an offer result.
+ * This invitation is for testing only. In a real scenario it's better to use an
+ * RPC or API client and vstorage to retrieve data for a frontend. Queries
+ * should only be leveraged if contract logic requires it.
+ *
+ * @satisfies {OrchestrationFlow}
+ * @param {Orchestrator} orch
+ * @param {any} _ctx
+ * @param {ZCFSeat} seat
+ * @param {{
+ *   msgs: Parameters<QueryManyFn>[0];
+ * }} offerArgs
+ */
+export const sendLocalQuery = async (orch, _ctx, seat, { msgs }) => {
+  seat.exit(); // no funds exchanged
+  const remoteChain = await orch.getChain('agoric');
+  const queryResponse = await remoteChain.query(msgs);
+  return queryResponse;
+};
+harden(sendLocalQuery);

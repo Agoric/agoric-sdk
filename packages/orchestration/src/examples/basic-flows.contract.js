@@ -43,6 +43,7 @@ const contract = async (
       makeSendICQQueryInvitation: M.callWhen().returns(InvitationShape),
       makeAccountAndSendBalanceQueryInvitation:
         M.callWhen().returns(InvitationShape),
+      makeSendLocalQueryInvitation: M.callWhen().returns(InvitationShape),
     }),
     {
       makeOrchAccountInvitation() {
@@ -59,7 +60,7 @@ const contract = async (
       },
       makeSendICQQueryInvitation() {
         return zcf.makeInvitation(
-          orchFns.sendQuery,
+          orchFns.sendICQQuery,
           'Submit a query to a remote chain',
         );
       },
@@ -67,6 +68,12 @@ const contract = async (
         return zcf.makeInvitation(
           orchFns.makeAccountAndSendBalanceQuery,
           'Make an account and submit a balance query',
+        );
+      },
+      makeSendLocalQueryInvitation() {
+        return zcf.makeInvitation(
+          orchFns.sendLocalQuery,
+          'Submit a query to the local chain',
         );
       },
     },
