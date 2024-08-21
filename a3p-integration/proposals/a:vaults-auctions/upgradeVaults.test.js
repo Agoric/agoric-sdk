@@ -73,19 +73,20 @@ const triggerAuction = async t => {
   t.is(atomOut, '+5200000');
 };
 
-function newAuctioneerFromNewBundle(details) {
+// contract vat names are based on bundleID
+const ORIGINAL_AUCTION_VAT_NAME = 'zcf-b1-a5683-auctioneer';
+
+const newAuctioneerFromNewBundle = details => {
   for (const detail of details) {
-    // contract vat names are based on bundleID
-    const originalAuctionVatName = 'zcf-b1-a5683-auctioneer';
     if (
       !detail.vatName.includes('governor') &&
-      detail.vatName !== originalAuctionVatName
+      detail.vatName !== ORIGINAL_AUCTION_VAT_NAME
     ) {
       return true;
     }
   }
   return false;
-}
+};
 
 const checkAuctionVat = async t => {
   const details = await getDetailsMatchingVats('auctioneer');

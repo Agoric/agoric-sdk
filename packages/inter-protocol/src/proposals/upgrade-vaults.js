@@ -58,6 +58,9 @@ export const upgradeVaults = async (
       newAuctioneerKit: tempAuctioneerKit,
       auctionsUpgradeComplete: auctionsUpgradeCompleteProducer,
     },
+    installation: {
+      produce: { VaultFactory: produceVaultInstallation },
+    },
     instance: {
       produce: { auctioneer: auctioneerProducer },
     },
@@ -78,26 +81,12 @@ export const upgradeVaults = async (
    *   Installation<import('../../src/vaultFactory/vaultFactory.js')['start']>
    * >}
    */
-  let installationP;
+  const installationP = E(zoe).installBundleID(bundleID);
+  produceVaultInstallation.reset();
+  produceVaultInstallation.resolve(installationP);
 
   await auctionsUpgradeComplete;
   auctionsUpgradeCompleteProducer.reset();
-
-  if (vaultsRef) {
-    if (bundleID) {
-      installationP = E(zoe).installBundleID(bundleID);
-      await E.when(
-        installationP,
-        installation =>
-          E(E(agoricNamesAdmin).lookupAdmin('installation')).update(
-            'vaultFactory',
-            installation,
-          ),
-        err =>
-          console.error(`🚨 failed to update vaultFactory installation`, err),
-      );
-    }
-  }
 
   const readCurrentDirectorParams = async () => {
     const { publicFacet: directorPF } = kit;
@@ -281,6 +270,9 @@ export const getManifestForUpgradeVaults = async (
         auctioneerKit: uV,
         newAuctioneerKit: uV,
         auctionsUpgradeComplete: uV,
+      },
+      installation: {
+        produce: { VaultFactory: true },
       },
       instance: { produce: { auctioneer: uV, newAuctioneerKit: uV } },
     },

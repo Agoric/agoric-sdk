@@ -26,7 +26,6 @@ export const addAuction = async (
       priceAuthority,
       chainStorage,
       economicCommitteeCreatorFacet: electorateCreatorFacet,
-      agoricNamesAdmin,
       auctioneerKit: legacyKitP,
     },
     produce: { newAuctioneerKit, auctionsUpgradeComplete },
@@ -35,6 +34,7 @@ export const addAuction = async (
     },
     installation: {
       consume: { contractGovernor: contractGovernorInstallation },
+      produce: { auctioneer: produceInstallation },
     },
     issuer: {
       consume: { [Stable.symbol]: stableIssuerP },
@@ -54,6 +54,8 @@ export const addAuction = async (
    * >}
    */
   const installationP = E(zoe).installBundleID(bundleID);
+  produceInstallation.reset();
+  produceInstallation.resolve(installationP);
 
   const [
     initialPoserInvitation,
@@ -66,16 +68,6 @@ export const addAuction = async (
     stableIssuerP,
     legacyKitP,
   ]);
-
-  await E.when(
-    installationP,
-    installation =>
-      E(E(agoricNamesAdmin).lookupAdmin('installation')).update(
-        'auctioneer',
-        installation,
-      ),
-    err => console.error(`🚨 failed to update vaultFactory installation`, err),
-  );
 
   // Each field has an extra layer of type +  value:
   // AuctionStartDelay: { type: 'relativeTime', value: { relValue: 2n, timerBrand: Object [Alleged: timerBrand] {} } }
@@ -187,7 +179,6 @@ export const ADD_AUCTION_MANIFEST = harden({
       priceAuthority: true,
       chainStorage: true,
       economicCommitteeCreatorFacet: true,
-      agoricNamesAdmin: true,
       auctioneerKit: true,
     },
     produce: {
@@ -202,6 +193,7 @@ export const ADD_AUCTION_MANIFEST = harden({
         auctioneer: true,
         contractGovernor: true,
       },
+      produce: { auctioneer: true },
     },
     issuer: {
       consume: { [Stable.symbol]: true },
