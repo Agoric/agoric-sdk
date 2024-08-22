@@ -65,6 +65,7 @@
     "lint:packages": "yarn lerna run --no-bail lint",
     "lint:package-names": "./scripts/verify-package-names.js",
     "lint:types": "tsc",
+    "lint:scripts": "yarn eslint scripts/*js",
     "test": "yarn lerna run --no-bail test",
     "test:xs": "yarn workspaces run test:xs",
     "build": "yarn workspaces run build && scripts/agd-builder.sh stamp yarn-built",
