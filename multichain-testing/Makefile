@@ -61,7 +61,7 @@ setup-kind:
 
 .PHONY: clean-kind
 clean-kind:
-	kind delete cluster --name $(KIND_CLUSTER)
+	-kind delete cluster --name $(KIND_CLUSTER)
 
 ###############################################################################
 ###                          Agoric Setup                                   ###
