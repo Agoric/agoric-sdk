@@ -2,12 +2,14 @@
  * @file Primarily a testing fixture, but also serves as an example of how to
  *   leverage basic functionality of the Orchestration API with async-flow.
  */
+import { Fail } from '@endo/errors';
 import { M, mustMatch } from '@endo/patterns';
 
 /**
- * @import {Zone} from '@agoric/zone';
- * @import {OrchestrationAccount, OrchestrationFlow, Orchestrator} from '@agoric/orchestration';
+ * @import {DenomArg, OrchestrationAccount, OrchestrationFlow, Orchestrator} from '@agoric/orchestration';
  * @import {ResolvedPublicTopic} from '@agoric/zoe/src/contractSupport/topics.js';
+ * @import {JsonSafe} from '@agoric/cosmic-proto';
+ * @import {RequestQuery} from '@agoric/cosmic-proto/tendermint/abci/types.js';
  * @import {OrchestrationPowers} from '../utils/start-helper.js';
  * @import {MakePortfolioHolder} from '../exos/portfolio-holder-kit.js';
  * @import {OrchestrationTools} from '../utils/start-helper.js';
@@ -79,3 +81,55 @@ export const makePortfolioAccount = async (
   return portfolioHolder.asContinuingOffer();
 };
 harden(makePortfolioAccount);
+
+/**
+ * Send a query and get the response back in an offer result. This invitation is
+ * for testing only. In a real scenario it's better to use an RPC or API client
+ * and vstorage to retrieve data for a frontend. Queries should only be
+ * leveraged if contract logic requires it.
+ *
+ * @satisfies {OrchestrationFlow}
+ * @param {Orchestrator} orch
+ * @param {any} _ctx
+ * @param {ZCFSeat} seat
+ * @param {{ chainName: string; msgs: JsonSafe<RequestQuery>[] }} offerArgs
+ */
+export const sendQuery = async (orch, _ctx, seat, { chainName, msgs }) => {
+  seat.exit(); // no funds exchanged
+  mustMatch(chainName, M.string());
+  if (chainName === 'agoric') throw Fail`ICQ not supported on local chain`;
+  const remoteChain = await orch.getChain(chainName);
+  const queryResponse = await remoteChain.query(msgs);
+  console.debug('sendQuery response:', queryResponse);
+  return queryResponse;
+};
+harden(sendQuery);
+
+/**
+ * Create an account and send a query and get the response back in an offer
+ * result. Like `sendQuery`, this invitation is for testing only. In a real
+ * scenario it doesn't make much sense to send a query immediately after the
+ * account is created - it won't have any funds.
+ *
+ * @satisfies {OrchestrationFlow}
+ * @param {Orchestrator} orch
+ * @param {any} _ctx
+ * @param {ZCFSeat} seat
+ * @param {{ chainName: string; denom: DenomArg }} offerArgs
+ */
+export const makeAccountAndSendBalanceQuery = async (
+  orch,
+  _ctx,
+  seat,
+  { chainName, denom },
+) => {
+  seat.exit(); // no funds exchanged
+  mustMatch(chainName, M.string());
+  if (chainName === 'agoric') throw Fail`ICQ not supported on local chain`;
+  const remoteChain = await orch.getChain(chainName);
+  const orchAccount = await remoteChain.makeAccount();
+  const queryResponse = await orchAccount.getBalance(denom);
+  console.debug('getBalance response:', queryResponse);
+  return queryResponse;
+};
+harden(makeAccountAndSendBalanceQuery);

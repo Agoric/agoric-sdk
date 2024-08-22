@@ -40,6 +40,9 @@ const contract = async (
     M.interface('Basic Flows PF', {
       makeOrchAccountInvitation: M.callWhen().returns(InvitationShape),
       makePortfolioAccountInvitation: M.callWhen().returns(InvitationShape),
+      makeSendICQQueryInvitation: M.callWhen().returns(InvitationShape),
+      makeAccountAndSendBalanceQueryInvitation:
+        M.callWhen().returns(InvitationShape),
     }),
     {
       makeOrchAccountInvitation() {
@@ -52,6 +55,18 @@ const contract = async (
         return zcf.makeInvitation(
           orchFns.makePortfolioAccount,
           'Make an Orchestration Account',
+        );
+      },
+      makeSendICQQueryInvitation() {
+        return zcf.makeInvitation(
+          orchFns.sendQuery,
+          'Submit a query to a remote chain',
+        );
+      },
+      makeAccountAndSendBalanceQueryInvitation() {
+        return zcf.makeInvitation(
+          orchFns.makeAccountAndSendBalanceQuery,
+          'Make an account and submit a balance query',
         );
       },
     },

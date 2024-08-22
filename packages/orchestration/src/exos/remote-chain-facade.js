@@ -4,24 +4,23 @@ import { E } from '@endo/far';
 import { M } from '@endo/patterns';
 import { pickFacet } from '@agoric/vat-data';
 import { VowShape } from '@agoric/vow';
-import { ChainAddressShape, ChainFacadeI } from '../typeGuards.js';
+import { ChainAddressShape, ChainFacadeI, ICQMsgShape } from '../typeGuards.js';
 
 /**
- * @import {HostInterface, HostOf} from '@agoric/async-flow';
+ * @import {HostOf} from '@agoric/async-flow';
  * @import {Zone} from '@agoric/base-zone';
+ * @import {JsonSafe} from '@agoric/cosmic-proto';
+ * @import {RequestQuery, ResponseQuery} from '@agoric/cosmic-proto/tendermint/abci/types.js';
  * @import {TimerService} from '@agoric/time';
  * @import {Remote} from '@agoric/internal';
  * @import {Vow, VowTools} from '@agoric/vow';
  * @import {CosmosInterchainService} from './cosmos-interchain-service.js';
  * @import {prepareCosmosOrchestrationAccount} from './cosmos-orchestration-account.js';
- * @import {ChainInfo, CosmosChainInfo, IBCConnectionInfo, OrchestrationAccount, ChainAddress, IcaAccount, Denom, Chain} from '../types.js';
+ * @import {CosmosChainInfo, IBCConnectionInfo, ChainAddress, IcaAccount, Chain, ICQConnection} from '../types.js';
  */
 
 const { Fail } = assert;
 const trace = makeTracer('RemoteChainFacade');
-
-/** @type {any} */
-const anyVal = null;
 
 /**
  * @typedef {{
@@ -33,6 +32,14 @@ const anyVal = null;
  *   timer: Remote<TimerService>;
  *   vowTools: VowTools;
  * }} RemoteChainFacadePowers
+ */
+
+/**
+ * @typedef {{
+ *   remoteChainInfo: CosmosChainInfo;
+ *   connectionInfo: IBCConnectionInfo;
+ *   icqConnection: ICQConnection | undefined;
+ * }} RemoteChainFacadeState
  */
 
 /**
@@ -48,30 +55,38 @@ const prepareRemoteChainFacadeKit = (
     // consider making an `accounts` childNode
     storageNode,
     timer,
-    vowTools: { asVow, watch },
+    vowTools: { allVows, asVow, watch },
   },
 ) =>
   zone.exoClassKit(
     'RemoteChainFacade',
     {
       public: ChainFacadeI,
-      makeAccountWatcher: M.interface('makeAccountWatcher', {
-        onFulfilled: M.call(M.remotable())
-          .optional(M.arrayOf(M.undefined())) // empty context
-          .returns(VowShape),
-      }),
+      makeICQConnectionQueryWatcher: M.interface(
+        'makeICQConnectionQueryWatcher',
+        {
+          onFulfilled: M.call(M.remotable(), M.arrayOf(ICQMsgShape)).returns(
+            VowShape,
+          ),
+        },
+      ),
+      makeAccountAndProvideQueryConnWatcher: M.interface(
+        'makeAccountAndProvideQueryConnWatcher',
+        {
+          onFulfilled: M.call([
+            M.remotable(),
+            M.or(M.remotable(), M.undefined()),
+          ]).returns(VowShape),
+        },
+      ),
       getAddressWatcher: M.interface('getAddressWatcher', {
-        onFulfilled: M.call(M.record())
-          .optional(M.remotable())
-          .returns(VowShape),
+        onFulfilled: M.call(ChainAddressShape, M.remotable()).returns(VowShape),
       }),
       makeChildNodeWatcher: M.interface('makeChildNodeWatcher', {
-        onFulfilled: M.call(M.remotable())
-          .optional({
-            account: M.remotable(),
-            chainAddress: ChainAddressShape,
-          })
-          .returns(M.remotable()),
+        onFulfilled: M.call(M.remotable(), {
+          account: M.remotable(),
+          chainAddress: ChainAddressShape,
+        }).returns(M.remotable()),
       }),
     },
     /**
@@ -80,7 +95,11 @@ const prepareRemoteChainFacadeKit = (
      */
     (remoteChainInfo, connectionInfo) => {
       trace('making a RemoteChainFacade');
-      return { remoteChainInfo, connectionInfo };
+      return /** @type {RemoteChainFacadeState} */ ({
+        remoteChainInfo,
+        connectionInfo,
+        icqConnection: undefined,
+      });
     },
     {
       public: {
@@ -94,33 +113,80 @@ const prepareRemoteChainFacadeKit = (
           return asVow(() => {
             const { remoteChainInfo, connectionInfo } = this.state;
             const stakingDenom = remoteChainInfo.stakingTokens?.[0]?.denom;
-            if (!stakingDenom) {
-              throw Fail`chain info lacks staking denom`;
-            }
+            if (!stakingDenom) throw Fail`chain info lacks staking denom`;
+
+            // icqConnection is ultimately retrieved from state, but let's
+            // create a connection if it doesn't exist
+            const icqConnOrUndefinedV =
+              remoteChainInfo.icqEnabled && !this.state.icqConnection
+                ? E(orchestration).provideICQConnection(
+                    connectionInfo.counterparty.connection_id,
+                  )
+                : undefined;
+
+            const makeAccountV = E(orchestration).makeAccount(
+              remoteChainInfo.chainId,
+              connectionInfo.counterparty.connection_id,
+              connectionInfo.id,
+            );
 
             return watch(
-              E(orchestration).makeAccount(
-                remoteChainInfo.chainId,
-                connectionInfo.counterparty.connection_id,
-                connectionInfo.id,
-              ),
-              this.facets.makeAccountWatcher,
+              allVows([makeAccountV, icqConnOrUndefinedV]),
+              this.facets.makeAccountAndProvideQueryConnWatcher,
             );
           });
         },
+        /** @type {ICQConnection['query']} */
+        query(msgs) {
+          return asVow(() => {
+            const {
+              remoteChainInfo: { icqEnabled, chainId },
+              connectionInfo,
+            } = this.state;
+            if (!icqEnabled) {
+              throw Fail`Queries not available for chain ${chainId}`;
+            }
+            // if none exists, make one and still send the query in the handler
+            if (!this.state.icqConnection) {
+              return watch(
+                E(orchestration).provideICQConnection(
+                  connectionInfo.counterparty.connection_id,
+                ),
+                this.facets.makeICQConnectionQueryWatcher,
+                msgs,
+              );
+            }
+            return watch(E(this.state.icqConnection).query(msgs));
+          });
+        },
       },
-      makeAccountWatcher: {
+      makeAccountAndProvideQueryConnWatcher: {
         /**
-         * XXX Pipeline vows allVows and E
-         *
-         * @param {IcaAccount} account
+         * @param {[IcaAccount, ICQConnection | undefined]} account
          */
-        onFulfilled(account) {
+        onFulfilled([account, icqConnection]) {
+          if (icqConnection && !this.state.icqConnection) {
+            this.state.icqConnection = icqConnection;
+            // no need to pass icqConnection in ctx; we can get it from state
+          }
           return watch(
             E(account).getAddress(),
             this.facets.getAddressWatcher,
             account,
           );
+        },
+      },
+      makeICQConnectionQueryWatcher: {
+        /**
+         * @param {ICQConnection} icqConnection
+         * @param {JsonSafe<RequestQuery>[]} msgs
+         * @returns {Vow<JsonSafe<ResponseQuery>[]>}
+         */
+        onFulfilled(icqConnection, msgs) {
+          if (!this.state.icqConnection) {
+            this.state.icqConnection = icqConnection;
+          }
+          return watch(E(icqConnection).query(msgs));
         },
       },
       getAddressWatcher: {
@@ -145,18 +211,15 @@ const prepareRemoteChainFacadeKit = (
          * }} ctx
          */
         onFulfilled(childNode, { account, chainAddress }) {
-          const { remoteChainInfo } = this.state;
+          const { remoteChainInfo, icqConnection } = this.state;
           const stakingDenom = remoteChainInfo.stakingTokens?.[0]?.denom;
-          if (!stakingDenom) {
-            throw Fail`chain info lacks staking denom`;
-          }
+          if (!stakingDenom) throw Fail`chain info lacks staking denom`;
+
           return makeCosmosOrchestrationAccount(chainAddress, stakingDenom, {
             account,
             // FIXME storage path https://github.com/Agoric/agoric-sdk/issues/9066
             storageNode: childNode,
-            // FIXME provide real ICQ connection
-            // FIXME make Query Connection available via chain, not orchestrationAccount
-            icqConnection: anyVal,
+            icqConnection,
             timer,
           });
         },

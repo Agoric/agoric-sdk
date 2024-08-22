@@ -1,4 +1,4 @@
-import type { AnyJson, TypedJson } from '@agoric/cosmic-proto';
+import type { AnyJson, TypedJson, JsonSafe } from '@agoric/cosmic-proto';
 import type {
   Delegation,
   Redelegation,
@@ -11,6 +11,10 @@ import type {
   Order,
 } from '@agoric/cosmic-proto/ibc/core/channel/v1/channel.js';
 import type { State as IBCConnectionState } from '@agoric/cosmic-proto/ibc/core/connection/v1/connection.js';
+import type {
+  RequestQuery,
+  ResponseQuery,
+} from '@agoric/cosmic-proto/tendermint/abci/types.js';
 import type { Brand, Purse, Payment, Amount } from '@agoric/ertp/src/types.js';
 import type { Port } from '@agoric/network';
 import type { IBCChannelID, IBCConnectionID } from '@agoric/vats';
@@ -265,3 +269,7 @@ export type CosmosChainAccountMethods<CCI extends CosmosChainInfo> =
   }
     ? StakingAccountActions
     : {};
+
+export type ICQQueryFunction = (
+  msgs: JsonSafe<RequestQuery>[],
+) => Promise<JsonSafe<ResponseQuery>[]>;
