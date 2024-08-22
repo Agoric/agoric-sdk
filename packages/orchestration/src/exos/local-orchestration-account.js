@@ -22,7 +22,7 @@ import { preparePacketTools } from './packet-tools.js';
 import { prepareIBCTools } from './ibc-packet.js';
 
 /**
- * @import {HostOf} from '@agoric/async-flow';
+ * @import {HostFn} from '@agoric/async-flow';
  * @import {LocalChainAccount} from '@agoric/vats/src/localchain.js';
  * @import {AmountArg, ChainAddress, DenomAmount, IBCMsgTransferOptions, ChainInfo, IBCConnectionInfo, OrchestrationAccountI} from '@agoric/orchestration';
  * @import {RecorderKit, MakeRecorderKit} from '@agoric/zoe/src/contractSupport/recorder.js'.
@@ -364,18 +364,13 @@ export const prepareLocalOrchestrationAccountKit = (
         },
       },
       holder: {
-        /** @type {HostOf<OrchestrationAccountI['asContinuingOffer']>} */
+        /** @satisfies {HostFn<OrchestrationAccountI['asContinuingOffer']>} */
         asContinuingOffer() {
-          // @ts-expect-error XXX invitationMakers
           // getPublicTopics resolves promptly (same run), so we don't need a watcher
           // eslint-disable-next-line no-restricted-syntax
           return asVow(async () => {
             await null;
-            const { holder, invitationMakers: im } = this.facets;
-            // XXX cast to a type that has string index signature
-            const invitationMakers = /** @type {InvitationMakers} */ (
-              /** @type {unknown} */ (im)
-            );
+            const { holder, invitationMakers } = this.facets;
 
             return harden({
               // getPublicTopics returns a vow, for membrane compatibility.
@@ -389,7 +384,7 @@ export const prepareLocalOrchestrationAccountKit = (
         /**
          * TODO: balance lookups for non-vbank assets
          *
-         * @type {HostOf<OrchestrationAccountI['getBalance']>}
+         * @type {HostFn<OrchestrationAccountI['getBalance']>}
          */
         getBalance(denomArg) {
           // FIXME look up real values
@@ -405,14 +400,14 @@ export const prepareLocalOrchestrationAccountKit = (
             denom,
           );
         },
-        /** @type {HostOf<OrchestrationAccountI['getBalances']>} */
+        /** @type {HostFn<OrchestrationAccountI['getBalances']>} */
         getBalances() {
           // TODO https://github.com/Agoric/agoric-sdk/issues/9610
           return asVow(() => Fail`not yet implemented`);
         },
 
         /**
-         * @type {HostOf<OrchestrationAccountI['getPublicTopics']>}
+         * @type {HostFn<OrchestrationAccountI['getPublicTopics']>}
          */
         getPublicTopics() {
           // getStoragePath resolves promptly (same run), so we don't need a watcher
@@ -482,18 +477,18 @@ export const prepareLocalOrchestrationAccountKit = (
          * updater will get a special notification that the account is being
          * transferred.
          */
-        /** @type {HostOf<LocalChainAccount['deposit']>} */
+        /** @type {HostFn<LocalChainAccount['deposit']>} */
         deposit(payment) {
           return watch(
             E(this.state.account).deposit(payment),
             this.facets.returnVoidWatcher,
           );
         },
-        /** @type {HostOf<LocalChainAccount['withdraw']>} */
+        /** @type {HostFn<LocalChainAccount['withdraw']>} */
         withdraw(amount) {
           return watch(E(this.state.account).withdraw(amount));
         },
-        /** @type {HostOf<LocalChainAccount['executeTx']>} */
+        /** @type {HostFn<LocalChainAccount['executeTx']>} */
         executeTx(messages) {
           return watch(E(this.state.account).executeTx(messages));
         },
@@ -504,7 +499,7 @@ export const prepareLocalOrchestrationAccountKit = (
         /**
          * XXX consider using ERTP to send if it's vbank asset
          *
-         * @type {HostOf<OrchestrationAccountI['send']>}
+         * @type {HostFn<OrchestrationAccountI['send']>}
          */
         send(toAccount, amount) {
           return asVow(() => {
@@ -525,7 +520,7 @@ export const prepareLocalOrchestrationAccountKit = (
         /**
          * XXX consider using ERTP to send if it's vbank asset
          *
-         * @type {HostOf<OrchestrationAccountI['sendAll']>}
+         * @type {HostFn<OrchestrationAccountI['sendAll']>}
          */
         sendAll(toAccount, amounts) {
           return asVow(() => {
@@ -583,24 +578,24 @@ export const prepareLocalOrchestrationAccountKit = (
             return resultV;
           });
         },
-        /** @type {HostOf<OrchestrationAccountI['transferSteps']>} */
+        /** @type {HostFn<OrchestrationAccountI['transferSteps']>} */
         transferSteps(amount, msg) {
           return asVow(() => {
             console.log('transferSteps got', amount, msg);
             throw Fail`not yet implemented`;
           });
         },
-        /** @type {HostOf<PacketTools['sendThenWaitForAck']>} */
+        /** @type {HostFn<PacketTools['sendThenWaitForAck']>} */
         sendThenWaitForAck(sender, opts) {
           return watch(
             E(this.state.packetTools).sendThenWaitForAck(sender, opts),
           );
         },
-        /** @type {HostOf<PacketTools['matchFirstPacket']>} */
+        /** @type {HostFn<PacketTools['matchFirstPacket']>} */
         matchFirstPacket(patternV) {
           return watch(E(this.state.packetTools).matchFirstPacket(patternV));
         },
-        /** @type {HostOf<LocalChainAccount['monitorTransfers']>} */
+        /** @type {HostFn<LocalChainAccount['monitorTransfers']>} */
         monitorTransfers(tap) {
           return watch(E(this.state.packetTools).monitorTransfers(tap));
         },

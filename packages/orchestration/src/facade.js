@@ -3,7 +3,7 @@
 import { assertAllDefined } from '@agoric/internal';
 
 /**
- * @import {AsyncFlowTools, GuestInterface, HostArgs, HostOf} from '@agoric/async-flow';
+ * @import {AsyncFlowTools, GuestInterface, HostArgs, HostFn} from '@agoric/async-flow';
  * @import {Zone} from '@agoric/zone';
  * @import {Vow, VowTools} from '@agoric/vow';
  * @import {TimerService} from '@agoric/time';
@@ -18,13 +18,9 @@ import { assertAllDefined } from '@agoric/internal';
  * For a given guest passed to orchestrate(), return the host-side form.
  *
  * @template {OrchestrationFlow} GF
- * @typedef {GF extends (
- *   orc: Orchestrator,
- *   ctx: any,
- *   ...args: infer GA
- * ) => Promise<infer GR>
- *   ? (...args: HostArgs<GA>) => Vow<GR>
- *   : never} HostForGuest
+ * @typedef {GF extends OrchestrationFlow<any, infer Args, infer Return>
+ *     ? (...args: HostArgs<Args>) => Vow<Return>
+ *     : never} HostForGuest
  */
 
 /**

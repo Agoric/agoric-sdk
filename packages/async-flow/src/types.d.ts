@@ -1,4 +1,4 @@
-import type { Passable } from '@endo/pass-style';
+import type { CopyRecord, Passable } from '@endo/pass-style';
 import type { Vow, VowTools } from '@agoric/vow';
 import type { LogStore } from './log-store.js';
 import type { Bijection } from './bijection.js';
@@ -43,8 +43,9 @@ export type HostAsyncFuncWrapper = (
 export type GuestOf<F extends HostAsyncFuncWrapper> = F extends (
   ...args: infer A
 ) => Vow<infer R>
-  ? (...args: A) => Promise<R>
+  ? (...args: GuestArgs<A>) => Promise<R>
   : F;
+export type GuestArgs<GA extends any[]> = { [K in keyof GA]: GuestOf<GA[K]> };
 
 // from https://github.com/sindresorhus/type-fest/blob/main/source/simplify.d.ts
 type Simplify<T> = { [KeyType in keyof T]: T[KeyType] } & {};
@@ -54,10 +55,12 @@ type Simplify<T> = { [KeyType in keyof T]: T[KeyType] } & {};
  */
 type HostInterface<T> = {
   [K in keyof T]: T[K] extends CallableFunction
-    ? HostOf<T[K]>
+    ? HostFn<T[K]>
     : T[K] extends Record<string, any>
       ? Simplify<HostInterface<T[K]>>
-      : T[K];
+      : T[K] extends Passable
+        ? T[K]
+        : never;
 };
 
 /**
@@ -78,15 +81,27 @@ export type GuestInterface<T> = {
  *
  * Specifically, Promise return values are converted to Vows.
  */
-export type HostOf<F extends CallableFunction> = F extends (
+export type HostFn<F extends CallableFunction> = F extends (
   ...args: infer A
 ) => infer R
   ? R extends Promise<infer T>
-    ? (...args: A) => Vow<T extends Passable ? T : HostInterface<T>>
-    : (...args: A) => HostInterface<R>
-  : F;
+    ? (
+        ...args: HostArgs<A>
+      ) => T extends Passable | void ? Vow<HostOf<T>> : never
+    : (
+        ...args: HostArgs<A>
+      ) => R extends Passable | void ? HostInterface<R> : never
+  : never;
 
-export type HostArgs<GA extends any[]> = { [K in keyof GA]: HostOf<GA[K]> };
+export type HostOf<T extends Passable> = T extends CallableFunction
+  ? HostFn<T>
+  : T extends CopyRecord
+    ? T
+    : HostInterface<T>;
+
+export type HostArgs<GA extends Passable[]> = {
+  [K in keyof GA]: HostOf<GA[K]>;
+};
 
 export type PreparationOptions = {
   vowTools?: VowTools;

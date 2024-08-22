@@ -64,14 +64,14 @@ make scenario3-setup
 make scenario3-run-client
 ```
 
-Objects added to `home` are created by the [vats](vats) package.
+Objects added to `home` are created by the [vats](../vats) package.
 
-The REPL handler is in [`repl.js`](vats/src/repl.js).
+The REPL handler is in [`repl.js`](../vats/src/repl.js).
 
 The HTML frontend code is pure JS/DOM (no additional libraries yet) in the
-[solo](solo) package, at
-[`solo/public/index.html`](solo/public/index.html) and
-[`solo/public/main.js`](solo/public/main.js).
+[solo](../solo) package, at
+[`solo/public/index.html`](../solo/public/index.html) and
+[`solo/public/main.js`](../solo/public/main.js).
 
 
 #### Scenario 2: a single local testnet node (develop on-chain demo)

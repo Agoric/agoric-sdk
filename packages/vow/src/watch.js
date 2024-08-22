@@ -169,7 +169,7 @@ export const prepareWatch = (
    * @template [T=any]
    * @template [TResult1=T]
    * @template [TResult2=never]
-   * @template {any[]} [C=any[]] watcher args
+   * @template {unknown[]} [C=unknown[]] watcher args
    * @param {EVow<T>} specimenP
    * @param {Watcher<T, TResult1, TResult2, C>} [watcher]
    * @param {C} watcherArgs

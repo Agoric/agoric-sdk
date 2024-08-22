@@ -6,6 +6,7 @@
  */
 
 import type { ERef } from '@endo/far';
+import type { RemotableObject } from '@endo/pass-style';
 import type { CapData } from '@endo/marshal';
 import type { agoric } from '@agoric/cosmic-proto';
 import type { AgoricNamesRemotes } from '@agoric/vats/tools/board-utils.js';
@@ -23,9 +24,8 @@ declare const CapDataShape: unique symbol;
  */
 export type Petname = string | string[];
 
-export type InvitationMakers = Record<
-  string,
-  (...args: any[]) => Promise<Invitation>
+export type InvitationMakers = RemotableObject<
+  Record<string, (...args: any[]) => Promise<Invitation>>
 >;
 
 export type PublicSubscribers = Record<string, PublicTopic>;
