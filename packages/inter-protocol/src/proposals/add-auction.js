@@ -8,7 +8,7 @@ const trace = makeTracer('NewAuction', true);
 
 /**
  * @typedef {PromiseSpaceOf<{
- *   auctionsUpgradeComplete: boolean;
+ *   auctionUpgradeNewInstance: Instance;
  * }>} interlockPowers
  */
 
@@ -20,15 +20,15 @@ const trace = makeTracer('NewAuction', true);
 export const addAuction = async (
   {
     consume: {
-      zoe,
-      board,
-      chainTimerService,
-      priceAuthority,
-      chainStorage,
-      economicCommitteeCreatorFacet: electorateCreatorFacet,
       auctioneerKit: legacyKitP,
+      board,
+      chainStorage,
+      chainTimerService,
+      economicCommitteeCreatorFacet: electorateCreatorFacet,
+      priceAuthority,
+      zoe,
     },
-    produce: { auctioneerKit: produceAuctioneerKit, auctionsUpgradeComplete },
+    produce: { auctioneerKit: produceAuctioneerKit, auctionUpgradeNewInstance },
     instance: {
       consume: { reserve: reserveInstance },
     },
@@ -165,26 +165,24 @@ export const addAuction = async (
       governorAdminFacet: governorStartResult.adminFacet,
     }),
   );
-  // don't overwrite auctioneerKit or auction instance yet. Wait until
-  // upgrade-vault.js
 
-  auctionsUpgradeComplete.resolve(true);
+  auctionUpgradeNewInstance.resolve(governedInstance);
 };
 
 export const ADD_AUCTION_MANIFEST = harden({
   [addAuction.name]: {
     consume: {
-      zoe: true,
-      board: true,
-      chainTimerService: true,
-      priceAuthority: true,
-      chainStorage: true,
-      economicCommitteeCreatorFacet: true,
       auctioneerKit: true,
+      board: true,
+      chainStorage: true,
+      chainTimerService: true,
+      economicCommitteeCreatorFacet: true,
+      priceAuthority: true,
+      zoe: true,
     },
     produce: {
       auctioneerKit: true,
-      auctionsUpgradeComplete: true,
+      auctionUpgradeNewInstance: true,
     },
     instance: {
       consume: { reserve: true },

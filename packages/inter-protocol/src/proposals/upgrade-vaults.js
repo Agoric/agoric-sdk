@@ -2,12 +2,14 @@ import { E } from '@endo/far';
 import { makeNotifierFromAsyncIterable } from '@agoric/notifier';
 import { AmountMath } from '@agoric/ertp/src/index.js';
 import { makeTracer } from '@agoric/internal/src/index.js';
+import { Fail } from '@endo/errors';
+import { TimeMath } from '@agoric/time';
 
 const trace = makeTracer('upgrade Vaults proposal');
 
 /**
  * @typedef {PromiseSpaceOf<{
- *   auctionsUpgradeComplete: boolean;
+ *   auctionUpgradeNewInstance: Instance;
  * }>} interlockPowers
  */
 
@@ -19,13 +21,14 @@ const trace = makeTracer('upgrade Vaults proposal');
 export const upgradeVaults = async (
   {
     consume: {
-      vaultFactoryKit,
-      zoe,
+      auctionUpgradeNewInstance,
+      chainTimerService,
       economicCommitteeCreatorFacet: electorateCreatorFacet,
       reserveKit,
-      auctionsUpgradeComplete,
+      vaultFactoryKit,
+      zoe,
     },
-    produce: { auctionsUpgradeComplete: auctionsUpgradeCompleteProducer },
+    produce: { auctionUpgradeNewInstance: auctionUpgradeNewInstanceProducer },
     installation: {
       produce: { VaultFactory: produceVaultInstallation },
     },
@@ -52,8 +55,20 @@ export const upgradeVaults = async (
   produceVaultInstallation.reset();
   produceVaultInstallation.resolve(installationP);
 
-  await auctionsUpgradeComplete;
-  auctionsUpgradeCompleteProducer.reset();
+  const [auctionOldInstance, auctionNewInstance] = await Promise.all([
+    auctioneerInstanceP,
+    auctionUpgradeNewInstance,
+  ]);
+  auctionOldInstance !== auctionNewInstance ||
+    Fail`Auction instance didn't change`;
+  auctionUpgradeNewInstanceProducer.reset();
+  const publicFacet = E(zoe).getPublicFacet(auctionNewInstance);
+  /** @type {import('@agoric/inter-protocol/src/auction/scheduler.js').FullSchedule} */
+  const schedules = await E(publicFacet).getSchedules();
+  const now = await E(chainTimerService).getCurrentTimestamp();
+  (schedules.nextAuctionSchedule &&
+    TimeMath.compareAbs(schedules.nextAuctionSchedule.startTime, now) > 0) ||
+    Fail`Expected next start time in the future ${schedules.nextAuctionSchedule?.startTime}`;
 
   const readCurrentDirectorParams = async () => {
     const { publicFacet: directorPF } = kit;
@@ -131,15 +146,14 @@ export const upgradeVaults = async (
       E.get(reserveKit).creatorFacet,
     ).makeShortfallReportingInvitation();
 
-    const [poserInvitation, auctioneerInstance] = await Promise.all([
-      E(electorateCreatorFacet).getPoserInvitation(),
-      auctioneerInstanceP,
-    ]);
+    const poserInvitation = await E(
+      electorateCreatorFacet,
+    ).getPoserInvitation();
 
     /** @type {import('../../src/vaultFactory/vaultFactory').VaultFactoryContract['privateArgs']} */
     const newPrivateArgs = harden({
       ...privateArgs,
-      auctioneerInstance,
+      auctioneerInstance: auctionNewInstance,
       initialPoserInvitation: poserInvitation,
       initialShortfallInvitation: shortfallInvitation,
       managerParams: managerParamValues,
@@ -171,17 +185,18 @@ export const getManifestForUpgradeVaults = async (
   manifest: {
     [upgradeVaults.name]: {
       consume: {
+        auctionUpgradeNewInstance: uV,
+        chainTimerService: uV,
         economicCommitteeCreatorFacet: uV,
         reserveKit: uV,
         vaultFactoryKit: uV,
         zoe: uV,
-        auctionsUpgradeComplete: uV,
       },
-      produce: { auctionsUpgradeComplete: uV },
+      produce: { auctionUpgradeNewInstance: uV },
       installation: {
         produce: { VaultFactory: true },
       },
-      instance: { consume: { auctioneer: uV } },
+      instance: { consume: { auctioneer: true } },
     },
   },
   options: { ...vaultUpgradeOptions },
