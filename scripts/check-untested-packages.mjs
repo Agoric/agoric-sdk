@@ -3,8 +3,10 @@
 import fs from 'fs';
 import path from 'path';
 import { execFileSync } from 'child_process';
+// eslint-disable-next-line import/no-relative-packages -- allow for this one-off script
 import { listWorkspaces } from '../packages/agoric-cli/src/lib/yarn.js';
 
+// @ts-expect-error not built
 const parent = new URL('..', import.meta.url).pathname;
 
 const testYaml = path.resolve(
