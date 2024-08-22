@@ -14,6 +14,9 @@ import {
 
 const trace = makeTracer('StartWF');
 
+/** @import {Bank} from '../vat-bank.js' */
+/** @import {RemotableObject} from '@endo/pass-style' */
+
 /**
  * @param {ERef<ZoeService>} zoe
  * @param {Installation<
@@ -179,7 +182,10 @@ export const startWalletFactory = async (
   const oldAddresses = dataReviver.children(`${OLD_WALLET_STORAGE_PATH}.`);
 
   const marshaller = await E(board).getPublishingMarshaller();
-  const poolBank = E(bankManager).getBankForAddress(poolAddr);
+
+  const poolBank = /** @type {Promise<Bank & RemotableObject>} */ (
+    E(bankManager).getBankForAddress(poolAddr)
+  );
   const ppFacets = await E(startGovernedUpgradable)({
     installation: provisionPool,
     terms: {},

@@ -1698,7 +1698,7 @@ export function makeWalletRoot({
 
   const firstPathToLookup = createRootLookups();
 
-  /** @type {ReturnType<typeof import('@endo/marshal').makeMarshal>} */
+  /** @type {ReturnType<typeof import('@endo/marshal').makeMarshal<string>>} */
   const marshaller = harden({
     fromCapData: context.fromCapData,
     toCapData: context.toCapData,

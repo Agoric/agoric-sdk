@@ -11,7 +11,7 @@ import { PropertyKeyShape } from './type-guards.js';
 /**
  * @import {RemotableObject} from '@endo/pass-style'
  * @import {Zone} from '@agoric/base-zone'
- * @import {Callable} from '@agoric/internal'
+ * @import {Callable} from '@endo/eventual-send'
  * @import {PreparationOptions} from '../src/types.js'
  */
 

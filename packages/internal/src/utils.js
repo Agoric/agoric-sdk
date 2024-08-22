@@ -12,40 +12,16 @@ const { fromEntries, keys, values } = Object;
 export const BASIS_POINTS = 10_000n;
 
 /** @import {ERef} from '@endo/far' */
-
-/**
- * @template T
- * @typedef {{ [KeyType in keyof T]: T[KeyType] } & {}} Simplify flatten the
- *   type output to improve type hints shown in editors
- *   https://github.com/sindresorhus/type-fest/blob/main/source/simplify.d.ts
- */
-
-/**
- * @typedef {(...args: any[]) => any} Callable
- */
-
-/**
- * @template {{}} T
- * @typedef {{
- *   [K in keyof T]: T[K] extends Callable ? T[K] : DeeplyAwaited<T[K]>;
- * }} DeeplyAwaitedObject
- */
-
-/**
- * @template T
- * @typedef {T extends PromiseLike<any>
- *     ? Awaited<T>
- *     : T extends {}
- *       ? Simplify<DeeplyAwaitedObject<T>>
- *       : Awaited<T>} DeeplyAwaited
- */
+/** @import {DeeplyAwaited} from '@endo/pass-style' */
 
 /**
  * A more constrained version of {deeplyFulfilled} for type safety until
  * https://github.com/endojs/endo/issues/1257 Useful in starting contracts that
  * need all terms to be fulfilled in order to be durable.
  *
- * @type {<T extends {}>(unfulfilledTerms: T) => Promise<DeeplyAwaited<T>>}
+ * @template {Record<string, any>} T
+ * @param {T} obj
+ * @returns {Promise<DeeplyAwaited<T>>}
  */
 export const deeplyFulfilledObject = async obj => {
   isObject(obj) || Fail`param must be an object`;

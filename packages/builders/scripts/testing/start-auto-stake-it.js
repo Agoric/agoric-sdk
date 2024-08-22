@@ -50,7 +50,6 @@ export const startAutoStakeIt = async ({
     installation,
     terms: undefined,
     privateArgs: await deeplyFulfilled(
-      // @ts-expect-error
       harden({
         agoricNames,
         orchestrationService: cosmosInterchainService,

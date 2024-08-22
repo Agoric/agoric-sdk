@@ -8,10 +8,14 @@ import * as cb from './callback.js';
 
 /**
  * @import {ERef} from '@endo/far';
- * @import {PassableCap} from '@endo/marshal';
+ * @import {PassableCap, RemotableObject} from '@endo/marshal';
  */
 
-/** @typedef {ReturnType<typeof import('@endo/marshal').makeMarshal>} Marshaller */
+/**
+ * @typedef {ReturnType<
+ *   typeof import('@endo/marshal').makeMarshal<string | null>
+ * >} Marshaller
+ */
 /** @typedef {Pick<Marshaller, 'fromCapData'>} Unserializer */
 
 /**
@@ -32,16 +36,7 @@ import * as cb from './callback.js';
  */
 
 /**
- * This represents a node in an IAVL tree.
- *
- * The active implementation is x/vstorage, an Agoric extension of the Cosmos
- * SDK.
- *
- * Vstorage is a hierarchical externally-reachable storage structure that
- * identifies children by restricted ASCII name and is associated with arbitrary
- * string-valued data for each node, defaulting to the empty string.
- *
- * @typedef {object} StorageNode
+ * @typedef {object} StorageNodeMethods
  * @property {(data: string) => Promise<void>} setValue publishes some data
  * @property {() => string} getPath the chain storage path at which the node was
  *   constructed
@@ -50,6 +45,20 @@ import * as cb from './callback.js';
  *   subPath: string,
  *   options?: { sequence?: boolean },
  * ) => StorageNode} makeChildNode
+ */
+
+/**
+ * @typedef {RemotableObject & StorageNodeMethods} StorageNode
+ *
+ *   This represents a node in an IAVL tree.
+ *
+ *   The active implementation is x/vstorage, an Agoric extension of the Cosmos
+ *   SDK.
+ *
+ *   Vstorage is a hierarchical externally-reachable storage structure that
+ *   identifies children by restricted ASCII name and is associated with
+ *   arbitrary string-valued data for each node, defaulting to the empty
+ *   string.
  */
 
 const ChainStorageNodeI = M.interface('StorageNode', {

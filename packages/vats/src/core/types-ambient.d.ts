@@ -333,7 +333,8 @@ type StartedInstanceKitWithLabel = {
 >;
 
 type ChainBootstrapSpaceT = {
-  agoricNames: import('../types.js').NameHub;
+  agoricNames: import('@endo/pass-style').RemotableObject &
+    import('../types.js').NameHub;
   agoricNamesAdmin: import('@agoric/vats').NameAdmin;
   bankManager: BankManager;
   bldIssuerKit: RemoteIssuerKit;
