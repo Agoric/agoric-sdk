@@ -29,9 +29,8 @@ export const upgradeVaults = async (
     installation: {
       produce: { VaultFactory: produceVaultInstallation },
     },
-    instance: {
-      consume: { auctioneer: auctioneerInstanceP },
-    },
+    // We want the auction instance after auctionsUpgradeComplete resolves
+    instance: { consume: consumeInstance },
   },
   { options },
 ) => {
@@ -131,9 +130,10 @@ export const upgradeVaults = async (
       E.get(reserveKit).creatorFacet,
     ).makeShortfallReportingInvitation();
 
+    // we want the auctioneer instance after auctionsUpgradeComplete settles
     const [poserInvitation, auctioneerInstance] = await Promise.all([
       E(electorateCreatorFacet).getPoserInvitation(),
-      auctioneerInstanceP,
+      E.get(consumeInstance).auctioneer,
     ]);
 
     /** @type {import('../../src/vaultFactory/vaultFactory').VaultFactoryContract['privateArgs']} */
@@ -181,7 +181,7 @@ export const getManifestForUpgradeVaults = async (
       installation: {
         produce: { VaultFactory: true },
       },
-      instance: { consume: { auctioneer: uV } },
+      instance: { consume: true },
     },
   },
   options: { ...vaultUpgradeOptions },
