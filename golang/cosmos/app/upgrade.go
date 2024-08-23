@@ -1,7 +1,6 @@
 package gaia
 
 import (
-
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	swingsetkeeper "github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/keeper"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -37,7 +36,10 @@ func unreleasedUpgradeHandler(app *GaiaApp, targetUpgrade string) func(sdk.Conte
 		if isFirstTimeUpgradeOfThisVersion(app, ctx) {
 			// Each CoreProposalStep runs sequentially, and can be constructed from
 			// one or more modules executing in parallel within the step.
-			CoreProposalSteps = []vm.CoreProposalStep{}
+			CoreProposalSteps = []vm.CoreProposalStep{
+				// Upgrade orch-core to the latest version.
+				vm.CoreProposalStepForModules("@agoric/builders/scripts/vats/upgrade-orch-core.js"),
+			}
 		}
 
 		app.upgradeDetails = &upgradeDetails{
