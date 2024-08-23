@@ -287,7 +287,7 @@ export {};
  * Vat Creation and Management
  *
  * @typedef { string } BundleID
- * @typedef {any} BundleCap
+ * @typedef {import('./vats/plugin-manager.js').Device<'BundleCap'>} BundleCap
  * @typedef { { moduleFormat: 'endoZipBase64', endoZipBase64: string, endoZipBase64Sha512: string } } EndoZipBase64Bundle
  *
  * @typedef { unknown } Meter

@@ -18,8 +18,7 @@ import zcfBundle from '../bundles/bundle-contractFacet.js';
 // this simulates a bundlecap, which is normally a swingset "device node"
 /** @typedef { import('@agoric/swingset-vat').BundleCap } BundleCap */
 /** @type {() => BundleCap} */
-const fakeBundleCap = () => makeHandle('FakeBundleCap');
-const bogusBundleCap = () => makeHandle('BogusBundleCap');
+const fakeBundleCap = () => /** @type {any} */ (makeHandle('BundleCap'));
 export const zcfBundleCap = fakeBundleCap();
 
 /**
@@ -56,13 +55,13 @@ function makeFakeVatAdmin(testContextSetter = undefined, makeRemote = x => x) {
   const admin = Far('vatAdmin', {
     getBundleCap: bundleID => {
       if (!idToBundleCap.has(bundleID)) {
-        idToBundleCap.init(bundleID, bogusBundleCap());
+        idToBundleCap.init(bundleID, fakeBundleCap());
       }
       return Promise.resolve(idToBundleCap.get(bundleID));
     },
     waitForBundleCap: bundleID => {
       if (!idToBundleCap.has(bundleID)) {
-        idToBundleCap.init(bundleID, bogusBundleCap());
+        idToBundleCap.init(bundleID, fakeBundleCap());
       }
       return Promise.resolve(idToBundleCap.get(bundleID));
     },
