@@ -6,7 +6,8 @@
   "license": "Apache-2.0",
   "dependencies": {
     "@agoric/synthetic-chain": "^0.1.0",
-    "ava": "^6.1.2"
+    "ava": "^6.1.2",
+    "tsx": "^4.17.0"
   },
   "ava": {
     "concurrency": 1,
