@@ -21,7 +21,7 @@ runs:
         path: ${{ inputs.path }}
         clean: 'false'
         submodules: 'true'
-    - uses: actions/setup-go@v4
+    - uses: actions/setup-go@v5
       with:
         cache-dependency-path: ${{ inputs.path }}/golang/cosmos/go.sum
         go-version: ${{ inputs.go-version }}
