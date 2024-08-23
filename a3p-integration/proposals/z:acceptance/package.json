@@ -1,6 +1,6 @@
 {
   "agoricProposal": {
-    "type": "/cosmos.params.v1beta1.ParameterChangeProposal"
+    "type": "/agoric.swingset.CoreEvalProposal"
   },
   "type": "module",
   "license": "Apache-2.0",
