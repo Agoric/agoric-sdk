@@ -183,7 +183,7 @@ runs:
         date > node_modules/.cache/agoric/yarn-built
 
     - name: Validate Git Tree Cleanliness
-      uses: pyTooling/Actions/with-post-step@v0.4.5
+      uses: pyTooling/Actions/with-post-step@v1.0.7
       with:
         main: |
           bash "$SRC/.github/actions/restore-node/check-git-status.sh" "$SRC" "$IGNORE_DIRTY_YARN_LOCK"

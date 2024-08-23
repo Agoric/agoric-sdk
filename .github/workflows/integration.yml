@@ -203,7 +203,7 @@ jobs:
           echo yes | ../agoric-sdk/packages/deployment/scripts/setup.sh destroy || true
         env:
           NETWORK_NAME: chaintest
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: deployment-test-results-${{ env.NOW }}
