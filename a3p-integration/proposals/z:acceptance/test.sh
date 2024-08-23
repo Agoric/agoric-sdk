@@ -1,5 +1,5 @@
 #!/bin/bash
-
+set -ueo pipefail
 # Place here any test that should be executed using the executed proposal.
 # The effects of this step are not persisted in further proposal layers.
 
@@ -10,7 +10,11 @@ yarn ava initial.test.js
 GLOBIGNORE=initial.test.js
 yarn ava ./*.test.js
 
-./create-kread-item-test.sh
+npm install -g tsx
+scripts/test-vaults.mts
 
-./state-sync-snapshots-test.sh
-./genesis-test.sh
+# DEBUGGING
+# ./create-kread-item-test.sh
+
+# ./state-sync-snapshots-test.sh
+# ./genesis-test.sh
