@@ -169,6 +169,21 @@ export const upgradeVaults = async (
   };
 
   await upgradeVaultFactory();
+
+  // @ts-expect-error It's saved in econ-behaviors.js:startVaultFactory()
+  const vaultFactoryPrivateArgs = kit.privateArgs;
+  console.log('UPGV upgraded vaults, restarting governor');
+
+  const ecf = await electorateCreatorFacet;
+  // restart vaultFactory governor
+  await E(kit.governorAdminFacet).restartContract(
+    harden({
+      electorateCreatorFacet: ecf,
+      governed: vaultFactoryPrivateArgs,
+    }),
+  );
+
+  console.log('UPGV restarted governor');
 };
 
 const uV = 'upgradeVaults';
