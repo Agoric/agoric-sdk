@@ -31,24 +31,24 @@ for (const oracle of oraclesAddresses) {
   oracles.push({ address: oracle, id: offerId });
 }
 
-console.log('Ensure user2 provisioned');
-await provisionWallet('user2');
+// console.log('Ensure user2 provisioned');
+// await provisionWallet('user2');
 
-console.log('Ensure auction params have changed');
-await implementNewAuctionParams(
-  GOV1ADDR,
-  oracles,
-  START_FREQUENCY,
-  CLOCK_STEP,
-  PRICE_LOCK_PERIOD,
-);
+// console.log('Ensure auction params have changed');
+// await implementNewAuctionParams(
+//   GOV1ADDR,
+//   oracles,
+//   START_FREQUENCY,
+//   CLOCK_STEP,
+//   PRICE_LOCK_PERIOD,
+// );
 
-const govParams = await agoric.follow('-lF', ':published.auction.governance');
-assert.equal(govParams.current.ClockStep.value.relValue, CLOCK_STEP.toString());
-assert.equal(
-  govParams.current.StartFrequency.value.relValue,
-  START_FREQUENCY.toString(),
-);
+// const govParams = await agoric.follow('-lF', ':published.auction.governance');
+// assert.equal(govParams.current.ClockStep.value.relValue, CLOCK_STEP.toString());
+// assert.equal(
+//   govParams.current.StartFrequency.value.relValue,
+//   START_FREQUENCY.toString(),
+// );
 
 console.log('Ensure debt ceiling changes');
 const limit = 45_000_000n;

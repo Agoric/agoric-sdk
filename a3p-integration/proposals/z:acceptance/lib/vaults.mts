@@ -188,7 +188,11 @@ export const proposeNewDebtCeiling = async (
     address,
   );
 
-  const offer = paramChangeOfferGeneration(charterAcceptOfferId, 30, debtLimit);
+  const offer = await paramChangeOfferGeneration(
+    charterAcceptOfferId,
+    30,
+    debtLimit,
+  );
 
   console.log('ACTIONS proposing new debt ceiling', offer);
 
