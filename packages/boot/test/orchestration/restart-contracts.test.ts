@@ -178,7 +178,9 @@ test.serial('stakeAtom', async t => {
 // restarting that one. For them to share bootstrap they'll each need a unique
 // instance name, which will require paramatizing the the two builders scripts
 // and the two core-eval functions.
-test.serial('basicFlows', async t => {
+//
+// TODO(#9939): Flaky under Node.js until liveslots problem exposed by vows is fixed.
+test.serial.skip('basicFlows', async t => {
   const {
     walletFactoryDriver,
     buildProposal,
