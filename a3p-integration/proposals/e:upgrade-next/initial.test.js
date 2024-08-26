@@ -3,17 +3,18 @@ import test from 'ava';
 import { getVatDetails } from '@agoric/synthetic-chain';
 
 const vats = {
-  network: { incarnation: 0 },
-  ibc: { incarnation: 0 },
-  localchain: { incarnation: 0 },
+  network: { incarnation: 1 },
+  ibc: { incarnation: 1 },
+  localchain: { incarnation: 1 },
+  transfer: { incarnation: 1 },
   walletFactory: { incarnation: 4 },
   zoe: { incarnation: 2 },
 };
 
 test(`vat details`, async t => {
-  await null;
-  for (const [vatName, expected] of Object.entries(vats)) {
-    const actual = await getVatDetails(vatName);
-    t.like(actual, expected, `${vatName} details mismatch`);
+  const actual = {};
+  for await (const vatName of Object.keys(vats)) {
+    actual[vatName] = await getVatDetails(vatName);
   }
+  t.like(actual, vats, `vat details are alike`);
 });
