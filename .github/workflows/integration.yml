@@ -23,7 +23,6 @@ on:
       - unlabeled
       - auto_merge_enabled
       - auto_merge_disabled
-      - edited
   merge_group:
   schedule:
     - cron: '17 6 * * *'
