@@ -18,5 +18,5 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               issue_number: context.payload.pull_request.number,
-              body: "Base branch is changed to master. Please re-run the integration tests by adding "force:integration" label."
+              body: "Base branch is changed to master. Please re-run the integration tests by adding 'force:integration' label."
             })
