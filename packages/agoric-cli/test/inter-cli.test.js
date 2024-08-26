@@ -252,7 +252,7 @@ test('amount parsing', t => {
   });
 });
 
-test.todo('want as max collateral wanted');
+// test.todo('want as max collateral wanted');  see https://github.com/Agoric/agoric-sdk/issues/9965
 
 /**
  * @type {import('@agoric/smart-wallet/src/offers.js').OfferStatus &
@@ -358,7 +358,7 @@ test('diagnostic for agd ENOENT', async t => {
   t.is(out.join('').trim(), '');
 });
 
-test.todo('agd ENOENT clue outside normalizeAddress');
+// test.todo('agd ENOENT clue outside normalizeAddress'); see https://github.com/Agoric/agoric-sdk/issues/9965
 
 const usageTest = (words, blurb = 'Command usage:') => {
   test(`Usage: ${words}`, async t => {
@@ -416,7 +416,7 @@ test('formatBid', t => {
   }
 });
 
-test.todo('fmtBid with error does not show result');
+// test.todo('fmtBid with error does not show result'); see https://github.com/Agoric/agoric-sdk/issues/9965
 /*
 _not_ like this:
 
@@ -607,7 +607,7 @@ test('README ex1: inter bid place by-price: printed offer is correct', async t =
   t.deepEqual(txt, expected);
 });
 
-test.todo('inter bid by-price shows tx, wallet status');
+// test.todo('inter bid by-price shows tx, wallet status'); see https://github.com/Agoric/agoric-sdk/issues/9965
 /*
 $ agops inter bid by-price --price 0.81 --give 0.5 --maxBuy 3 --from gov2
 2023-03-30T21:48:14.479332418Z not in block 49618 retrying...
@@ -617,12 +617,12 @@ first bid update:
 {"id":"bid-1680212903989","price":"0.81 IST/ATOM","give":{"Bid":"0.5IST"},"want":"3ATOM","result":"Your bid has been accepted"}
 */
 
-test.todo('execSwingsetTransaction returns non-0 code');
+// test.todo('execSwingsetTransaction returns non-0 code'); see https://github.com/Agoric/agoric-sdk/issues/9965
 
-test.todo('already cancelled bid');
+// test.todo('already cancelled bid'); see https://github.com/Agoric/agoric-sdk/issues/9965
 /*
 $ agops inter bid cancel --from gov2 bid-1680211556497
 bid-1680211556497 not in live offer ids: bid-1680211593489,bid-1680212903989,bid-1680213097499,bid-1680220217218,bid-1680220368714,bid-1680220406939
 */
 
-test.todo('--give without number');
+// test.todo('--give without number');  see https://github.com/Agoric/agoric-sdk/issues/9965
