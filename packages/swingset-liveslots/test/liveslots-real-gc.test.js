@@ -253,7 +253,7 @@ test.serial('GC dispatch.retireExports', async t => {
   t.deepEqual(log, []);
 });
 
-test.serial('GC dispatch.dropExports', async t => {
+test.serial.failing('GC dispatch.dropExports', async t => {
   const { log, syscall } = buildSyscall();
   let collected;
   function build(_vatPowers) {
@@ -308,6 +308,14 @@ test.serial('GC dispatch.dropExports', async t => {
   // that should allow ex1 to be collected
   t.true(collected.result);
 
+  // upon collection, the vat should scan for local recognizers (weak
+  // collection keys) in case any need to be dropped, and find none
+  t.deepEqual(log.shift(), {
+    type: 'vatstoreGetNextKey',
+    priorKey: `vom.ir.${ex1}|`,
+    result: 'vom.rc.o+d6/1',
+  });
+
   // and once it's collected, the vat should emit `syscall.retireExport`
   // because nobody else will be able to recognize it again
   const l2 = log.shift();
@@ -318,7 +326,7 @@ test.serial('GC dispatch.dropExports', async t => {
   t.deepEqual(log, []);
 });
 
-test.serial(
+test.serial.failing(
   'GC dispatch.retireExports inhibits syscall.retireExports',
   async t => {
     const { log, syscall } = buildSyscall();
@@ -394,8 +402,16 @@ test.serial(
     // which should let the export be collected
     t.true(collected.result);
 
-    // the vat should *not* emit `syscall.retireExport`, because it already
-    // received a dispatch.retireExport
+    // the vat should scan for local recognizers (weak collection
+    // keys) in case any need to be dropped, and find none
+    t.deepEqual(log.shift(), {
+      type: 'vatstoreGetNextKey',
+      priorKey: 'vom.ir.o+10|',
+      result: 'vom.rc.o+d6/1',
+    });
+
+    // the vat should *not* emit `syscall.retireExport`, because it
+    // already received a dispatch.retireExport
     t.deepEqual(log, []);
   },
 );

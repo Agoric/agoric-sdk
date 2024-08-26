@@ -158,3 +158,84 @@ test('forward to fake zoe', async t => {
   // 'makeInvitationTarget' result promise with it, then dropped it
   t.is(findClist(c, targetID, invitation), undefined);
 });
+
+// see #9939
+test.failing('drop without retire', async t => {
+  let targetID;
+  let didBOYD = false;
+  // const msgs = ['deliver', 'deliver-result', 'syscall', 'syscall-result'];
+
+  function slogSender(slogObj) {
+    const {
+      time: _1,
+      replay: _2,
+      crankNum: _3,
+      deliveryNum: _4,
+      monotime: _5,
+      ...o
+    } = slogObj;
+    if (o.vatID !== targetID) return;
+    if (o.type === 'deliver' && o.kd[0] === 'bringOutYourDead') {
+      didBOYD = true;
+    }
+    // if (msgs.includes(o.type)) console.log(JSON.stringify(o));
+  }
+  const config = {
+    bootstrap: 'bootstrap', // v6
+    vats: {
+      bootstrap: {
+        // v6
+        sourceSpec: new URL('bootstrap.js', import.meta.url).pathname,
+      },
+      target: {
+        // v1
+        sourceSpec: new URL('vat-target.js', import.meta.url).pathname,
+        // avoid V8's GC nondeterminism, only needed on the target vat
+        creationOptions: { managerType: 'xs-worker' },
+      },
+    },
+  };
+  const kernelStorage = initSwingStore().kernelStorage;
+  await initializeSwingset(config, [], kernelStorage);
+  const c = await makeSwingsetController(kernelStorage, {}, { slogSender });
+  t.teardown(c.shutdown);
+
+  c.pinVatRoot('bootstrap');
+  targetID = c.vatNameToID('target');
+  c.pinVatRoot('target');
+
+  await c.run();
+
+  c.queueToVatRoot('bootstrap', 'storePresenceInWeakSet', []);
+  await c.run();
+
+  // now do enough dummy messages to trigger a new BOYD
+  didBOYD = false;
+  while (!didBOYD) {
+    c.queueToVatRoot('target', 'dummy', []);
+    await c.run();
+  }
+
+  // now tell vat-target to drop its WeakSet
+  c.queueToVatRoot('target', 'drop', []);
+  await c.run();
+
+  // and trigger a second BOYD
+  didBOYD = false;
+  while (!didBOYD) {
+    // this will fail once the vat is terminated
+    try {
+      c.queueToVatRoot('target', 'dummy', []);
+    } catch (e) {
+      if (/vat name "target" must exist/.test(e.message)) {
+        t.fail('vat terminated, bug is present');
+        break;
+      }
+    }
+    await c.run();
+  }
+  t.true(didBOYD);
+
+  // the test passes if the vat survived
+  return t.pass();
+});
