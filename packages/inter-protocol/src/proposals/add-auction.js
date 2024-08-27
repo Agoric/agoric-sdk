@@ -26,6 +26,7 @@ export const addAuction = async (
       chainStorage,
       chainTimerService,
       economicCommitteeCreatorFacet: electorateCreatorFacet,
+      econCharterKit,
       priceAuthority,
       zoe,
     },
@@ -153,19 +154,26 @@ export const addAuction = async (
     ),
   );
 
-  produceAuctioneerKit.reset();
-  produceAuctioneerKit.resolve(
-    harden({
-      label: 'auctioneer',
-      creatorFacet: governedCreatorFacet,
-      adminFacet: governorStartResult.adminFacet,
-      publicFacet: governedPublicFacet,
-      instance: governedInstance,
+  const kit = harden({
+    label: 'auctioneer',
+    creatorFacet: governedCreatorFacet,
+    adminFacet: governorStartResult.adminFacet,
+    publicFacet: governedPublicFacet,
+    instance: governedInstance,
 
-      governor: governorStartResult.instance,
-      governorCreatorFacet: governorStartResult.creatorFacet,
-      governorAdminFacet: governorStartResult.adminFacet,
-    }),
+    governor: governorStartResult.instance,
+    governorCreatorFacet: governorStartResult.creatorFacet,
+    governorAdminFacet: governorStartResult.adminFacet,
+  });
+  produceAuctioneerKit.reset();
+  produceAuctioneerKit.resolve(kit);
+
+  // introduce economic committee charter to new auctioneer
+  // cf addGovernorsToEconCharter() in committee-proposal.js
+  await E(E.get(econCharterKit).creatorFacet).addInstance(
+    kit.instance,
+    kit.governorCreatorFacet,
+    kit.label,
   );
 
   auctionInstance.reset();
@@ -187,6 +195,7 @@ export const ADD_AUCTION_MANIFEST = harden({
       board: true,
       chainStorage: true,
       chainTimerService: true,
+      econCharterKit: true,
       economicCommitteeCreatorFacet: true,
       priceAuthority: true,
       zoe: true,
