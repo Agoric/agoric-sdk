@@ -20,6 +20,7 @@ const trace = makeTracer('NewAuction', true);
 export const addAuction = async (
   {
     consume: {
+      agoricNamesAdmin,
       auctioneerKit: legacyKitP,
       board,
       chainStorage,
@@ -31,6 +32,7 @@ export const addAuction = async (
     produce: { auctioneerKit: produceAuctioneerKit, auctionUpgradeNewInstance },
     instance: {
       consume: { reserve: reserveInstance },
+      produce: { auctioneer: auctionInstance },
     },
     installation: {
       consume: { contractGovernor: contractGovernorInstallation },
@@ -166,12 +168,21 @@ export const addAuction = async (
     }),
   );
 
+  auctionInstance.reset();
+  await auctionInstance.resolve(governedInstance);
+  // belt and suspenders; the above is supposed to also do this
+  await E(E(agoricNamesAdmin).lookupAdmin('instance')).update(
+    'auctioneer',
+    governedInstance,
+  );
+
   auctionUpgradeNewInstance.resolve(governedInstance);
 };
 
 export const ADD_AUCTION_MANIFEST = harden({
   [addAuction.name]: {
     consume: {
+      agoricNamesAdmin: true,
       auctioneerKit: true,
       board: true,
       chainStorage: true,
@@ -186,6 +197,7 @@ export const ADD_AUCTION_MANIFEST = harden({
     },
     instance: {
       consume: { reserve: true },
+      produce: { auctioneer: true },
     },
     installation: {
       consume: {

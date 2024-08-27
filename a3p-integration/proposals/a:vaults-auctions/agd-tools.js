@@ -201,3 +201,18 @@ export const getProvisionPoolMetrics = async () => {
   const path = `published.provisionPool.metrics`;
   return getQuoteBody(path);
 };
+
+export const getAuctionInstance = async price => {
+  const instanceRec = await queryVstorage(`published.agoricNames.instance`);
+
+  const value = JSON.parse(instanceRec.value);
+  const body = JSON.parse(value.values.at(-1));
+
+  const feeds = JSON.parse(body.body.substring(1));
+
+  const key = Object.keys(feeds).find(k => feeds[k][0] === 'auctioneer');
+  if (key) {
+    return body.slots[key];
+  }
+  return null;
+};
