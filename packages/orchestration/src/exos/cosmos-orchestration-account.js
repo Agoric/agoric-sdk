@@ -85,6 +85,8 @@ export const IcaAccountHolderI = M.interface('IcaAccountHolder', {
   ),
   withdrawRewards: M.call().returns(Vow$(M.arrayOf(DenomAmountShape))),
   undelegate: M.call(M.arrayOf(DelegationShape)).returns(VowShape),
+  deactivate: M.call().returns(VowShape),
+  reactivate: M.call().returns(VowShape),
 });
 
 /** @type {{ [name: string]: [description: string, valueShape: Matcher] }} */
@@ -167,7 +169,8 @@ export const prepareCosmosOrchestrationAccountKit = (
         ).returns(M.promise()),
         WithdrawReward: M.call(ChainAddressShape).returns(M.promise()),
         Undelegate: M.call(M.arrayOf(DelegationShape)).returns(M.promise()),
-        CloseAccount: M.call().returns(M.promise()),
+        DeactivateAccount: M.call().returns(M.promise()),
+        ReactivateAccount: M.call().returns(M.promise()),
         TransferAccount: M.call().returns(M.promise()),
         Send: M.call().returns(M.promise()),
         SendAll: M.call().returns(M.promise()),
@@ -358,8 +361,17 @@ export const prepareCosmosOrchestrationAccountKit = (
             return watch(this.facets.holder.undelegate(delegations));
           }, 'Undelegate');
         },
-        CloseAccount() {
-          throw Error('not yet implemented');
+        DeactivateAccount() {
+          return zcf.makeInvitation(seat => {
+            seat.exit();
+            return watch(this.facets.holder.deactivate());
+          }, 'DeactivateAccount');
+        },
+        ReactivateAccount() {
+          return zcf.makeInvitation(seat => {
+            seat.exit();
+            return watch(this.facets.holder.reactivate());
+          }, 'ReactivateAccount');
         },
         Send() {
           /**
@@ -659,6 +671,14 @@ export const prepareCosmosOrchestrationAccountKit = (
             );
             return watch(undelegateV, this.facets.returnVoidWatcher);
           });
+        },
+        /** @type {HostOf<IcaAccount['deactivate']>} */
+        deactivate() {
+          return watch(E(this.facets.helper.owned()).deactivate());
+        },
+        /** @type {HostOf<IcaAccount['reactivate']>} */
+        reactivate() {
+          return watch(E(this.facets.helper.owned()).reactivate());
         },
       },
     },

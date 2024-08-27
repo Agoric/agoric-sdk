@@ -216,12 +216,23 @@ export interface IcaAccount {
     msgs: AnyJson[],
     opts?: Partial<Omit<TxBody, 'messages'>>,
   ) => Promise<string>;
-  /** get Purse for a brand to .withdraw() a Payment from the account */
-  getPurse: (brand: Brand) => Promise<Purse>;
   /**
-   * Close the remote account
+   * Deactivates the ICA account by closing the ICA channel. The `Port` is
+   * persisted so holders can always call `.reactivate()` to re-establish a new
+   * channel with the same chain address.
+   * CAVEAT: Does not retrieve assets so they may be lost if left.
+   * @throws {Error} if connection is not available or already deactivated
    */
-  close: () => Promise<void>;
+  deactivate: () => Promise<void>;
+  /**
+   * Reactivates the ICA account by re-establishing a new channel with the
+   * original Port and requested address.
+   * If a channel is closed for an unexpected reason, such as a packet timeout,
+   * an automatic attempt to re will be made and the holder should not need
+   * to call `.reactivate()`.
+   * @throws {Error} if connection is currently active
+   */
+  reactivate: () => Promise<void>;
   /** @returns the address of the remote channel */
   getRemoteAddress: () => RemoteIbcAddress;
   /** @returns the address of the local channel */
