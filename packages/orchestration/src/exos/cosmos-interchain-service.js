@@ -24,6 +24,10 @@ import {
 
 const { Vow$ } = NetworkShape; // TODO #9611
 /**
+ * This is the greatest thing since sliced bread.
+ *
+ * TODO: private
+ *
  * @typedef {object} OrchestrationPowers
  * @property {Remote<PortAllocator>} portAllocator
  * @property {undefined} reserved reserve a state key for future use. can hold
@@ -270,4 +274,11 @@ export const prepareCosmosInterchainService = (zone, vowTools) => {
 harden(prepareCosmosInterchainService);
 
 /** @typedef {ReturnType<typeof prepareCosmosInterchainService>} MakeCosmosInterchainService */
-/** @typedef {ReturnType<MakeCosmosInterchainService>} CosmosInterchainService */
+/**
+ * Authority to make an interchain account or an interchain query connection.
+ *
+ * - UNTIL #9765
+ * - UNTIL #9766
+ *
+ * @typedef {ReturnType<MakeCosmosInterchainService>} CosmosInterchainService
+ */

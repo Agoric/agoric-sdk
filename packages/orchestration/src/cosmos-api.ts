@@ -97,6 +97,12 @@ export type CosmosChainInfo = Readonly<{
   stakingTokens?: Readonly<Array<{ denom: string }>>;
 }>;
 
+/**
+ * Queries for the staking properties of an account.
+ *
+ * @see {@link https://docs.cosmos.network/main/build/modules/staking#messages x/staking messages}
+ * {@link https://cosmos.github.io/cosmjs/latest/stargate/interfaces/StakingExtension.html StakingExtension} in cosmjs
+ */
 export interface StakingAccountQueries {
   /**
    * @returns all active delegations from the account to any validator (or [] if none)
@@ -141,6 +147,13 @@ export interface StakingAccountQueries {
    */
   getReward: (validator: CosmosValidatorAddress) => Promise<DenomAmount[]>;
 }
+
+/**
+ * Transactions for doing staking operations on an individual account.
+ *
+ * @see {@link https://docs.cosmos.network/main/build/modules/staking#messages x/staking messages}
+ * {@link https://cosmos.github.io/cosmjs/latest/stargate/interfaces/StakingExtension.html StakingExtension} in cosmjs
+ */
 export interface StakingAccountActions {
   /**
    * Delegate an amount to a validator. The promise settles when the delegation is complete.
@@ -252,12 +265,26 @@ export type LocalAccountMethods = {
   monitorTransfers: (tap: TargetApp) => Promise<TargetRegistration>;
 };
 
+/**
+ * Options for {@link OrchestrationAccountI} `transfer` method.
+ *
+ * @see {@link https://github.com/cosmos/ibc/tree/master/spec/app/ics-020-fungible-token-transfer#data-structures ICS 20 Data Structures}
+ */
 export type IBCMsgTransferOptions = {
   timeoutHeight?: MsgTransfer['timeoutHeight'];
   timeoutTimestamp?: MsgTransfer['timeoutTimestamp'];
   memo?: string;
 };
 
+/**
+ * Cosmos-specific methods to extend `OrchestrationAccountI`, parameterized
+ * by `CosmosChainInfo`.
+ *
+ * In particular, if the chain info includes a staking token, `StakingAccountActions`
+ * are available.
+ *
+ * @see {OrchestrationAccountI}
+ */
 export type CosmosChainAccountMethods<CCI extends CosmosChainInfo> =
   (CCI extends {
     icaEnabled: true;

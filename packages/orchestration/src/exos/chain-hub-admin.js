@@ -11,10 +11,15 @@ import { CosmosChainInfoShape } from '../typeGuards.js';
  */
 
 /**
+ * 
  * For use with async-flow contracts: can be used as a creator facet that allows
  * developers to add new chain configurations to a local chainHub, in the event
  * the information is not available widely in `agoricNames`.
  *
+ * @example 
+ * const chainHubAdmin = prepareChainHubAdmin(zone, chainHub);
+ * chainHubAdmin.initChain('hotNewChain', hotNewChainInfo, agoricTohotNewChainConnectionInfo);
+ * 
  * @param {Zone} zone
  * @param {ChainHub} chainHub
  */
@@ -31,9 +36,11 @@ export const prepareChainHubAdmin = (zone, chainHub) => {
     }),
     {
       /**
-       * @param {string} chainName
+       * Register information for a chain
+       *
+       * @param {string} chainName - must not exist in chainHub
        * @param {CosmosChainInfo} chainInfo
-       * @param {IBCConnectionInfo} connectionInfo
+       * @param {IBCConnectionInfo} connectionInfo - from Agoric chain
        */
       async initChain(chainName, chainInfo, connectionInfo) {
         // when() because chainHub methods return vows. If this were inside
@@ -52,5 +59,3 @@ export const prepareChainHubAdmin = (zone, chainHub) => {
   );
   return makeCreatorFacet;
 };
-
-/** @typedef {ReturnType<prepareChainHubAdmin>} ChainHubAdmin */
