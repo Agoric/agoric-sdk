@@ -202,7 +202,7 @@ export const getProvisionPoolMetrics = async () => {
   return getQuoteBody(path);
 };
 
-export const getAuctionInstance = async price => {
+export const getInstanceBoardId = async instanceName => {
   const instanceRec = await queryVstorage(`published.agoricNames.instance`);
 
   const value = JSON.parse(instanceRec.value);
@@ -210,7 +210,7 @@ export const getAuctionInstance = async price => {
 
   const feeds = JSON.parse(body.body.substring(1));
 
-  const key = Object.keys(feeds).find(k => feeds[k][0] === 'auctioneer');
+  const key = Object.keys(feeds).find(k => feeds[k][0] === instanceName);
   if (key) {
     return body.slots[key];
   }

@@ -7,7 +7,7 @@ import {
   openVault,
   USER1ADDR,
 } from '@agoric/synthetic-chain';
-import { readFile } from 'fs/promises';
+import { readFile, unlink } from 'fs/promises';
 
 import {
   bankSend,
@@ -17,7 +17,7 @@ import {
   getVaultPrices,
   pushPrices,
   addPreexistingOracles,
-  getAuctionInstance,
+  getInstanceBoardId,
 } from './agd-tools.js';
 import { getDetailsMatchingVats } from './vatDetails.js';
 
@@ -108,19 +108,15 @@ const verifyVaultPriceUpdate = async t => {
 };
 
 const verifyAuctionInstance = async t => {
-  const newAuctionInstance = await getAuctionInstance();
-  const oldInstance = await readFile(
-    `${env.HOME}/.agoric/previousInstance.json`,
-    'utf-8',
-  );
+  const newAuctionInstance = await getInstanceBoardId('auctioneer');
+  const filePath = `${env.HOME}/.agoric/tmp/auctionPreviousInstance.json`;
+  const oldInstance = await readFile(filePath, 'utf-8');
 
   console.log(
     `new: ${newAuctionInstance} should be different from ${oldInstance}`,
   );
-  t.true(
-    newAuctionInstance !== oldInstance,
-    `new: ${newAuctionInstance} should be different from ${oldInstance}`,
-  );
+  t.not(newAuctionInstance, oldInstance);
+  await unlink();
 };
 
 // test.serial() isn't guaranteed to run tests in order, so we run the intended tests here

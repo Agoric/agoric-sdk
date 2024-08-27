@@ -1,14 +1,13 @@
 #!/usr/bin/env node
 
 import { writeFile } from 'fs/promises';
-import { getAuctionInstance } from './agd-tools.js';
+import { getInstanceBoardId } from './agd-tools.js';
 
 const { env } = process;
 
-const oldAuctionInstance = await getAuctionInstance();
+const oldAuctionInstance = await getInstanceBoardId('auctioneer');
 console.log('old auction instance ', oldAuctionInstance, env.HOME);
 
-await writeFile(
-  `${env.HOME}/.agoric/previousInstance.json`,
-  oldAuctionInstance,
-);
+const filePath = `${env.HOME}/.agoric/tmp/auctionPreviousInstance.json`;
+
+await writeFile(filePath, oldAuctionInstance);
