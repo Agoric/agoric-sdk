@@ -44,7 +44,7 @@ export type Denom = string; // ibc/... or uist
  * In many cases, either a denom string or a local Brand can be used to
  * designate a remote token type.
  */
-export type DenomArg = Denom | Brand;
+export type DenomArg = Denom | Brand<'nat'>;
 
 /**
  * Count of some fungible token on some blockchain.
@@ -57,7 +57,7 @@ export type DenomAmount = {
 };
 
 /** Amounts can be provided as pure data using denoms or as ERTP Amounts */
-export type AmountArg = DenomAmount | Amount;
+export type AmountArg = DenomAmount | Amount<'nat'>;
 
 /** An address on some blockchain, e.g., cosmos, eth, etc. */
 export type ChainAddress = {

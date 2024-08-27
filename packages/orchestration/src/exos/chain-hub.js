@@ -31,7 +31,7 @@ import { CosmosChainInfoShape, IBCConnectionInfoShape } from '../typeGuards.js';
  * @property {string} baseName - name of issuing chain; e.g. cosmoshub
  * @property {Denom} baseDenom - e.g. uatom
  * @property {string} chainName - name of holding chain; e.g. agoric
- * @property {Brand} [brand] - vbank brand, if registered
+ * @property {Brand<'nat'>} [brand] - vbank brand, if registered
  * @see {ChainHub} `registerAsset` method
  */
 /** @type {TypedPattern<DenomDetail>} */
