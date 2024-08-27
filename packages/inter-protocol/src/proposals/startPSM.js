@@ -347,18 +347,22 @@ export const makeAnchorAsset = async (
     }),
   );
 
-  const { creatorFacet: mint, publicFacet: issuer } = /**
-   * @type {{
+  /**
+   * @typedef {{
    *   creatorFacet: ERef<Mint<'nat'>>;
    *   publicFacet: ERef<Issuer<'nat'>>;
-   * }}
-   */ (
-    await E(startUpgradable)({
-      installation: mintHolder,
-      label: keyword,
-      terms,
-    })
-  );
+   * }} PsmKit
+   */
+
+  const { creatorFacet: mint, publicFacet: issuer } =
+    /** @type {PsmKit} */
+    (
+      await E(startUpgradable)({
+        installation: mintHolder,
+        label: keyword,
+        terms,
+      })
+    );
 
   const brand = await E(issuer).getBrand();
   const kit = harden({ mint, issuer, brand });
