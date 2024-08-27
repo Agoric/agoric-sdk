@@ -144,7 +144,7 @@ func initRootCmd(sender vm.Sender, rootCmd *cobra.Command, encodingConfig params
 		snapshot.Cmd(ac.newSnapshotsApp),
 	)
 
-	server.AddCommands(rootCmd, gaia.DefaultNodeHome, ac.newApp, ac.appExport, addModuleInitFlags)
+	server.AddCommands(rootCmd, gaia.DefaultNodeHome, ac.newApp, ac.appExport, addStartFlags)
 
 	for _, command := range rootCmd.Commands() {
 		switch command.Name() {
@@ -197,7 +197,7 @@ func addAgoricVMFlags(cmd *cobra.Command) {
 	)
 }
 
-func addModuleInitFlags(startCmd *cobra.Command) {
+func addStartFlags(startCmd *cobra.Command) {
 	addAgoricVMFlags(startCmd)
 }
 
@@ -282,11 +282,12 @@ func (ac appCreator) newApp(
 
 	homePath := cast.ToString(appOpts.Get(flags.FlagHome))
 
-	// Set a default value for FlagSwingStoreExportDir based on the homePath
+	// Set a default value for FlagSwingStoreExportDir based on homePath
 	// in case we need to InitGenesis with swing-store data
 	viper, ok := appOpts.(*viper.Viper)
-	if ok && cast.ToString(appOpts.Get(gaia.FlagSwingStoreExportDir)) == "" {
-		viper.Set(gaia.FlagSwingStoreExportDir, filepath.Join(homePath, "config", ExportedSwingStoreDirectoryName))
+	if ok && viper.GetString(gaia.FlagSwingStoreExportDir) == "" {
+		exportDir := filepath.Join(homePath, "config", ExportedSwingStoreDirectoryName)
+		viper.Set(gaia.FlagSwingStoreExportDir, exportDir)
 	}
 
 	return gaia.NewAgoricApp(

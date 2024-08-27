@@ -314,9 +314,18 @@ func NewGaiaApp(
 }
 
 func NewAgoricApp(
-	sendToController vm.Sender, agdServer *vm.AgdServer,
-	logger log.Logger, db dbm.DB, traceStore io.Writer, loadLatest bool, skipUpgradeHeights map[int64]bool,
-	homePath string, invCheckPeriod uint, encodingConfig gaiaappparams.EncodingConfig, appOpts servertypes.AppOptions, baseAppOptions ...func(*baseapp.BaseApp),
+	sendToController vm.Sender,
+	agdServer *vm.AgdServer,
+	logger log.Logger,
+	db dbm.DB,
+	traceStore io.Writer,
+	loadLatest bool,
+	skipUpgradeHeights map[int64]bool,
+	homePath string,
+	invCheckPeriod uint,
+	encodingConfig gaiaappparams.EncodingConfig,
+	appOpts servertypes.AppOptions,
+	baseAppOptions ...func(*baseapp.BaseApp),
 ) *GaiaApp {
 	appCodec := encodingConfig.Marshaler
 	legacyAmino := encodingConfig.Amino
@@ -929,9 +938,9 @@ type cosmosInitAction struct {
 	vm.ActionHeader `actionType:"AG_COSMOS_INIT"`
 	ChainID         string          `json:"chainID"`
 	IsBootstrap     bool            `json:"isBootstrap"`
-	UpgradeDetails  *upgradeDetails `json:"upgradeDetails,omitempty"`
 	Params          swingset.Params `json:"params"`
 	SupplyCoins     sdk.Coins       `json:"supplyCoins"`
+	UpgradeDetails  *upgradeDetails `json:"upgradeDetails,omitempty"`
 	// CAVEAT: Every property ending in "Port" is saved in chain-main.js/portNums
 	// with a key consisting of this name with the "Port" stripped.
 	StoragePort     int `json:"storagePort"`

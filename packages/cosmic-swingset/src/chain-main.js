@@ -48,6 +48,8 @@ import {
   validateImporterOptions,
 } from './import-kernel-db.js';
 
+const ignore = () => {};
+
 // eslint-disable-next-line no-unused-vars
 let whenHellFreezesOver = null;
 
@@ -214,7 +216,7 @@ export default async function main(progname, args, { env, homedir, agcc }) {
 
   const clearChainSends = async () => {
     // Cosmos should have blocked before calling commit, but wait just in case
-    await stateSyncExport?.exporter?.onStarted().catch(() => {});
+    await stateSyncExport?.exporter?.onStarted().catch(ignore);
 
     const chainSends = savedChainSends;
     savedChainSends = [];
@@ -246,10 +248,10 @@ export default async function main(progname, args, { env, homedir, agcc }) {
   /** @type {((obj: object) => void) | undefined} */
   let writeSlogObject;
 
-  // the storagePort used to change for every single message. It's defined out
+  // In the past, storagePort could change with every message. It's defined out
   // here so 'sendToChainStorage' can close over the single mutable instance,
   // when we updated the 'portNums.storage' value each time toSwingSet was called.
-  async function launchAndInitializeSwingSet(bootMsg) {
+  async function launchAndInitializeSwingSet(initAction) {
     const sendToChainStorage = msg => chainSend(portNums.storage, msg);
     // this object is used to store the mailbox state.
     const fromBridgeMailbox = data => {
@@ -363,7 +365,7 @@ export default async function main(progname, args, { env, homedir, agcc }) {
     };
 
     const argv = {
-      bootMsg,
+      bootMsg: initAction,
     };
     const getVatConfig = async () => {
       const vatHref = await importMetaResolve(
@@ -489,21 +491,19 @@ export default async function main(progname, args, { env, homedir, agcc }) {
 
     let pendingBlockingSend = Promise.resolve();
 
-    registerShutdown(async interrupted =>
-      Promise.all([
+    registerShutdown(async interrupted => {
+      await Promise.all([
         interrupted && pendingBlockingSend.then(shutdown),
         discardStateSyncExport(),
-      ]).then(() => {}),
-    );
+      ]);
+    });
 
-    return async action => {
+    const blockingSendSpy = async action => {
       const result = blockingSend(action);
-      pendingBlockingSend = Promise.resolve(result).then(
-        () => {},
-        () => {},
-      );
+      pendingBlockingSend = Promise.resolve(result).then(ignore, ignore);
       return result;
     };
+    return blockingSendSpy;
   }
 
   /** @type {Awaited<ReturnType<typeof launch>>['blockingSend'] | undefined} */
@@ -658,6 +658,7 @@ export default async function main(progname, args, { env, homedir, agcc }) {
 
         !blockingSend || Fail`Swingset already initialized`;
 
+        // Capture "port numbers" for communicating with cosmos modules.
         for (const [key, value] of Object.entries(action)) {
           const portAlias = CosmosInitKeyToBridgeId[key];
           if (portAlias) {

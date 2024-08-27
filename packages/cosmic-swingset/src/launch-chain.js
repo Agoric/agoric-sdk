@@ -214,7 +214,7 @@ export async function buildSwingset(
     return bridgedCoreProposals;
   }
 
-  const coreProposals = await ensureSwingsetInitialized();
+  const pendingCoreProposals = await ensureSwingsetInitialized();
   upgradeSwingset(kernelStorage);
   const controller = await makeSwingsetController(
     kernelStorage,
@@ -233,7 +233,7 @@ export async function buildSwingset(
   // (either on bootstrap block (0) or in endBlock).
 
   return {
-    coreProposals,
+    coreProposals: pendingCoreProposals,
     controller,
     mb: mailboxDevice,
     bridgeInbound: bridgeDevice.deliverInbound,
@@ -568,8 +568,15 @@ export async function launch({
   let savedBeginHeight = Number(
     kvStore.get(getHostKey('beginHeight')) || savedHeight,
   );
+  /**
+   * duration of the latest swingset execution in either END_BLOCK or
+   * once-per-chain bootstrap (the latter excluding "bridged" core proposals
+   * that run outside the bootstrap vat)
+   */
   let runTime = 0;
+  /** duration of the latest saveChainState(), which commits mailbox data to chain storage */
   let chainTime;
+  /** duration of the latest saveOutsideState(), which commits to swing-store host storage */
   let saveTime = 0;
   let endBlockFinish = 0;
   let blockParams;
@@ -724,33 +731,16 @@ export async function launch({
 
   /**
    * @template T
-   * @param {string} type
+   * @param {string} label
    * @param {() => Promise<T>} fn
+   * @param {() => void} onSettled
    */
-  async function processAction(type, fn) {
-    const start = Date.now();
-    const finish = res => {
-      // blockManagerConsole.error(
-      //   'Action',
-      //   action.type,
-      //   action.blockHeight,
-      //   'is done!',
-      // );
-      runTime += Date.now() - start;
-      return res;
-    };
-
+  function withErrorLogging(label, fn, onSettled) {
     const p = fn();
-    // Just attach some callbacks, but don't use the resulting neutered result
-    // promise.
-    void E.when(p, finish, e => {
-      // None of these must fail, and if they do, log them verbosely before
-      // returning to the chain.
-      blockManagerConsole.error(type, 'error:', e);
-      finish();
+    void E.when(p, onSettled, err => {
+      blockManagerConsole.error(label, 'error:', err);
+      onSettled();
     });
-    // Return the original promise so that the caller gets the original
-    // resolution or rejection.
     return p;
   }
 
@@ -821,8 +811,13 @@ export async function launch({
       // Start a block transaction, but without changing state
       // for the upcoming begin block check
       saveBeginHeight(savedBeginHeight);
-      await processAction(action.type, async () =>
-        bootstrapBlock(blockHeight, blockTime, bootstrapBlockParams),
+      const start = Date.now();
+      await withErrorLogging(
+        action.type,
+        () => bootstrapBlock(blockHeight, blockTime, bootstrapBlockParams),
+        () => {
+          runTime += Date.now() - start;
+        },
       );
     } finally {
       controller.writeSlogObject({
@@ -927,17 +922,16 @@ export async function launch({
           await doBootstrap(action);
         }
 
-        // Merge the core proposals from the bootstrap block with the
-        // ones from the upgrade.
+        // Concatenate together any pending core proposals from chain bootstrap
+        // with any from this inbound init action, then execute them all.
         const coreProposals = mergeCoreProposals(
           bootstrapCoreProposals,
           softwareUpgradeCoreProposals,
           upgradeInfoCoreProposals,
         );
-
         if (coreProposals.steps.length) {
-          upgradeDetails ||
-            isBootstrap ||
+          isBootstrap ||
+            upgradeDetails ||
             Fail`Unexpected core proposals outside of consensus start`;
           await doCoreProposals(action, coreProposals);
         }
@@ -964,9 +958,9 @@ export async function launch({
         });
 
         // Save the kernel's computed state just before the chain commits.
-        const start2 = Date.now();
+        const start = Date.now();
         await saveOutsideState(savedHeight);
-        saveTime = Date.now() - start2;
+        saveTime = Date.now() - start;
 
         blockParams = undefined;
 
@@ -1064,14 +1058,19 @@ export async function launch({
 
           provideInstallationPublisher();
 
-          await processAction(action.type, async () =>
-            endBlock(blockHeight, blockTime, blockParams),
+          const start = Date.now();
+          await withErrorLogging(
+            action.type,
+            () => endBlock(blockHeight, blockTime, blockParams),
+            () => {
+              runTime += Date.now() - start;
+            },
           );
 
           // We write out our on-chain state as a number of chainSends.
-          const start = Date.now();
+          const start2 = Date.now();
           await saveChainState();
-          chainTime = Date.now() - start;
+          chainTime = Date.now() - start2;
 
           // Advance our saved state variables.
           savedHeight = blockHeight;
