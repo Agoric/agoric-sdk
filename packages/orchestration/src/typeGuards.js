@@ -4,7 +4,7 @@ import { M } from '@endo/patterns';
 
 /**
  * @import {TypedPattern} from '@agoric/internal';
- * @import {ChainAddress, CosmosAssetInfo, ChainInfo, CosmosChainInfo, DenomAmount} from './types.js';
+ * @import {ChainAddress, CosmosAssetInfo, Chain, ChainInfo, CosmosChainInfo, DenomAmount, DenomDetail, BrandInfo} from './types.js';
  * @import {Delegation} from '@agoric/cosmic-proto/cosmos/staking/v1beta1/staking.js';
  * @import {TxBody} from '@agoric/cosmic-proto/cosmos/tx/v1beta1/tx.js';
  * @import {TypedJson} from '@agoric/cosmic-proto';
@@ -111,8 +111,14 @@ export const ChainInfoShape = M.splitRecord({
 });
 export const LocalChainAccountShape = M.remotable('LocalChainAccount');
 export const DenomShape = M.string();
-// TODO define for #9211
-export const BrandInfoShape = M.any();
+
+/** @type {TypedPattern<BrandInfo<any, any>>} */
+export const BrandInfoShape = {
+  chain: M.remotable('Chain'),
+  base: M.remotable('Chain'),
+  brand: M.or(M.remotable('Brand'), M.undefined()),
+  baseDenom: M.string(),
+};
 
 /** @type {TypedPattern<DenomAmount>} */
 export const DenomAmountShape = { denom: DenomShape, value: M.bigint() };

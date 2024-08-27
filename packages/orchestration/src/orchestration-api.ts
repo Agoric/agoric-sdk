@@ -101,6 +101,20 @@ export interface Chain<CI extends ChainInfo> {
   // TODO provide a way to get the local denom/brand/whatever for this chain
 }
 
+export interface BrandInfo<
+  HoldingChain extends keyof KnownChains,
+  IssuingChain extends keyof KnownChains,
+> {
+  /** The well-known Brand on Agoric for the direct asset */
+  brand?: Brand;
+  /** The Chain at which the argument `denom` exists (where the asset is currently held) */
+  chain: Chain<KnownChains[HoldingChain]>;
+  /** The Chain that is the issuer of the underlying asset */
+  base: Chain<KnownChains[IssuingChain]>;
+  /** the Denom for the underlying asset on its issuer chain */
+  baseDenom: Denom;
+}
+
 /**
  * Provided in the callback to `orchestrate()`.
  */
@@ -124,16 +138,7 @@ export interface Orchestrator {
     IssuingChain extends keyof KnownChains,
   >(
     denom: Denom,
-  ) => {
-    /** The well-known Brand on Agoric for the direct asset */
-    brand?: Brand;
-    /** The Chain at which the argument `denom` exists (where the asset is currently held) */
-    chain: Chain<KnownChains[HoldingChain]>;
-    /** The Chain that is the issuer of the underlying asset */
-    base: Chain<KnownChains[IssuingChain]>;
-    /** the Denom for the underlying asset on its issuer chain */
-    baseDenom: Denom;
-  };
+  ) => BrandInfo<HoldingChain, IssuingChain>;
   // TODO preload the mapping so this can be synchronous
   /**
    * Convert an amount described in native data to a local, structured Amount.

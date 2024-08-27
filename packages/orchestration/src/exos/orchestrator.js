@@ -25,7 +25,6 @@ import {
  * @import {Remote} from '@agoric/internal';
  * @import {PickFacet} from '@agoric/swingset-liveslots';
  * @import {CosmosInterchainService} from './cosmos-interchain-service.js';
- * @import {MakeLocalOrchestrationAccountKit} from './local-orchestration-account.js';
  * @import {MakeLocalChainFacade} from './local-chain-facade.js';
  * @import {MakeRemoteChainFacade} from './remote-chain-facade.js';
  * @import {Chain, ChainInfo, IBCConnectionInfo, Orchestrator} from '../types.js';

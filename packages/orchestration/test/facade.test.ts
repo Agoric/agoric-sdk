@@ -186,6 +186,7 @@ test.serial('asset / denom info', async t => {
 
       {
         const actual = orc.getBrandInfo('utoken1');
+        console.log('actual', actual);
         const info = await actual.chain.getChainInfo();
         t.deepEqual(info, mockChainInfo);
 
