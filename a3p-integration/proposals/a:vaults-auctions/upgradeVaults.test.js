@@ -115,10 +115,7 @@ const verifyAuctionInstance = async t => {
   console.log(
     `new: ${newAuctionInstance} should be different from ${oldInstance}`,
   );
-  t.true(
-    newAuctionInstance !== oldInstance,
-    `new: ${newAuctionInstance} should be different from ${oldInstance}`,
-  );
+  t.not(newAuctionInstance, oldInstance);
 };
 
 // test.serial() isn't guaranteed to run tests in order, so we run the intended tests here
