@@ -1,4 +1,10 @@
+/* eslint-env node */
+import { getInstanceBoardId } from '@agoric/synthetic-chain';
 import dbOpenAmbient from 'better-sqlite3';
+import { writeFile } from 'fs/promises';
+import assert from 'node:assert/strict';
+
+const { env } = process;
 
 const HOME = process.env.HOME;
 
@@ -98,4 +104,14 @@ export const getDetailsMatchingVats = async vatName => {
   }
 
   return infos;
+};
+
+export const lastAuctionInstancePathname = `${env.HOME}/.agoric/lastAuctioneerInstance.json`;
+
+export const recordAuctioneerInstance = async () => {
+  const oldAuctionInstance = await getInstanceBoardId('auctioneer');
+  assert(oldAuctionInstance, 'no auction instance found');
+  console.log('old auction instance ', oldAuctionInstance, env.HOME);
+
+  await writeFile(lastAuctionInstancePathname, oldAuctionInstance);
 };

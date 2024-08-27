@@ -16,10 +16,11 @@ import {
   pushPrices,
   USER1ADDR,
 } from '@agoric/synthetic-chain';
-import { readFile } from 'node:fs/promises';
-import { getDetailsMatchingVats } from './vatDetails.js';
-
-const { env } = process;
+import { readFile, rm } from 'node:fs/promises';
+import {
+  getDetailsMatchingVats,
+  lastAuctionInstancePathname,
+} from './vatDetails.js';
 
 const oraclesByBrand = new Map();
 
@@ -107,10 +108,8 @@ const verifyVaultPriceUpdate = async t => {
 
 const verifyAuctionInstance = async t => {
   const newAuctionInstance = await getInstanceBoardId('auctioneer');
-  const oldInstance = await readFile(
-    `${env.HOME}/.agoric/previousInstance.json`,
-    'utf-8',
-  );
+  const oldInstance = await readFile(lastAuctionInstancePathname, 'utf-8');
+  await rm(lastAuctionInstancePathname);
 
   console.log(
     `new: ${newAuctionInstance} should be different from ${oldInstance}`,
