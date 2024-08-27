@@ -15,4 +15,5 @@ test('sanity', async t => {
   t.is(await myMain(['--help']), 0, '--help exits zero');
   t.is(await myMain(['--version']), 0, '--version exits zero');
   t.is(await myMain(['--zorgar']), 1, 'unknown flag fails');
+  t.is(await myMain(['demo']), 0, 'create-dapp demo exits 0');
 });
