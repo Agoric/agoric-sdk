@@ -2,15 +2,16 @@
  * @file Stake BLD contract
  */
 import { makeTracer } from '@agoric/internal';
+import { heapVowE as E, prepareVowTools } from '@agoric/vow/vat.js';
 import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/recorder.js';
 import { withdrawFromSeat } from '@agoric/zoe/src/contractSupport/zoeHelpers.js';
 import { InvitationShape } from '@agoric/zoe/src/typeGuards.js';
 import { makeDurableZone } from '@agoric/zone/durable.js';
-import { prepareVowTools, heapVowE as E } from '@agoric/vow/vat.js';
 import { deeplyFulfilled } from '@endo/marshal';
 import { M } from '@endo/patterns';
-import { prepareLocalOrchestrationAccountKit } from '../exos/local-orchestration-account.js';
 import { makeChainHub } from '../exos/chain-hub.js';
+import { prepareLocalOrchestrationAccountKit } from '../exos/local-orchestration-account.js';
+import fetchedChainInfo from '../fetched-chain-info.js';
 
 /**
  * @import {NameHub} from '@agoric/vats';
@@ -41,13 +42,15 @@ export const start = async (zcf, privateArgs, baggage) => {
   );
   const vowTools = prepareVowTools(zone.subZone('vows'));
 
+  const chainHub = makeChainHub(privateArgs.agoricNames, vowTools);
+
   const makeLocalOrchestrationAccountKit = prepareLocalOrchestrationAccountKit(
     zone,
     makeRecorderKit,
     zcf,
     privateArgs.timerService,
     vowTools,
-    makeChainHub(privateArgs.agoricNames, vowTools),
+    chainHub,
   );
 
   // ----------------
@@ -55,6 +58,15 @@ export const start = async (zcf, privateArgs, baggage) => {
 
   const BLD = zcf.getTerms().brands.In;
   const bldAmountShape = await E(BLD).getAmountShape();
+
+  // XXX big dependency (59KB) but in production will probably already be registered in agoricNames
+  chainHub.registerChain('agoric', fetchedChainInfo.agoric);
+  chainHub.registerAsset('ubld', {
+    baseName: 'agoric',
+    baseDenom: 'ubld',
+    brand: BLD,
+    chainName: 'agoric',
+  });
 
   async function makeLocalAccountKit() {
     const account = await E(privateArgs.localchain).makeAccount();

@@ -392,12 +392,17 @@ export const prepareLocalOrchestrationAccountKit = (
          * @type {HostOf<OrchestrationAccountI['getBalance']>}
          */
         getBalance(denomArg) {
-          // FIXME look up real values
-          // UNTIL https://github.com/Agoric/agoric-sdk/issues/9211
           const [brand, denom] =
             typeof denomArg === 'string'
-              ? [/** @type {any} */ (null), denomArg]
-              : [denomArg, 'FIXME'];
+              ? [chainHub.lookupAsset(denomArg).brand, denomArg]
+              : [denomArg, chainHub.lookupDenom(denomArg)];
+
+          if (!brand) {
+            throw Fail`No brand for ${denomArg}`;
+          }
+          if (!denom) {
+            throw Fail`No denom for ${denomArg}`;
+          }
 
           return watch(
             E(this.state.account).getBalance(brand),
