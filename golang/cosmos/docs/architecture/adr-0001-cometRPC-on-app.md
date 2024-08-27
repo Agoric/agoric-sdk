@@ -58,10 +58,6 @@ type Application interface {
 
 Then, committingClient adds a RWInitMutex to manage concurrent access to the ABCI application. To allow concurrent reads, it acquires read-init locks for state-reading operations (CheckTx, DeliverTx, Query). It obtains exclusive write locks for state-mutating operations (SetOption, InitChain, Commit, ApplySnapshotChunk) to ensure atomic execution. [view implementation](https://github.com/agoric-labs/cometbft/blob/e8404cda81adebf6f5e7a87abc84e626cd2051a5/abci/client/committing_client.go#L15-L340)
 
-
-
-
-
 ## Alternatives
 
 > This section describes alternative designs to the chosen design. This section
@@ -70,9 +66,105 @@ Then, committingClient adds a RWInitMutex to manage concurrent access to the ABC
 
 ## Decision
 
-> This section describes our response to these forces. It is stated in full
-> sentences, with active voice. "We will ..."
-> {decision body}
+We propose to remove the `committingClient` and instead integrate its synchronization functionality in our own implementation of `cometABCIWrapper`, that we will call `syncCometABCIWrapper`. 
+The new `syncCometABCIWrapper` will look something like this:
+
+```go
+package server
+
+import (
+	"context"
+
+	abci "github.com/cometbft/cometbft/abci/types"
+	abciproto "github.com/cometbft/cometbft/api/cometbft/abci/v1"
+
+	servertypes "github.com/cosmos/cosmos-sdk/server/types"
+)
+
+#TODO: add mutexer logic 
+type syncCometABCIWrapper struct {
+	app servertypes.ABCI
+}
+
+func NewSyncCometABCIWrapper(app servertypes.ABCI) abci.Application {
+	return cometABCIWrapper{app: app}
+}
+
+func (w cometABCIWrapper) Info(_ context.Context, req *abciproto.InfoRequest) (*abciproto.InfoResponse, error) {
+	return w.app.Info(req)
+}
+
+func (w cometABCIWrapper) Query(ctx context.Context, req *abciproto.QueryRequest) (*abciproto.QueryResponse, error) {
+	return w.app.Query(ctx, req)
+}
+
+func (w cometABCIWrapper) CheckTx(_ context.Context, req *abciproto.CheckTxRequest) (*abciproto.CheckTxResponse, error) {
+	return w.app.CheckTx(req)
+}
+
+func (w cometABCIWrapper) InitChain(_ context.Context, req *abciproto.InitChainRequest) (*abciproto.InitChainResponse, error) {
+	return w.app.InitChain(req)
+}
+
+func (w cometABCIWrapper) PrepareProposal(_ context.Context, req *abciproto.PrepareProposalRequest) (*abciproto.PrepareProposalResponse, error) {
+	return w.app.PrepareProposal(req)
+}
+
+func (w cometABCIWrapper) ProcessProposal(_ context.Context, req *abciproto.ProcessProposalRequest) (*abciproto.ProcessProposalResponse, error) {
+	return w.app.ProcessProposal(req)
+}
+
+func (w cometABCIWrapper) FinalizeBlock(_ context.Context, req *abciproto.FinalizeBlockRequest) (*abciproto.FinalizeBlockResponse, error) {
+	return w.app.FinalizeBlock(req)
+}
+
+func (w cometABCIWrapper) ExtendVote(ctx context.Context, req *abciproto.ExtendVoteRequest) (*abciproto.ExtendVoteResponse, error) {
+	return w.app.ExtendVote(ctx, req)
+}
+
+func (w cometABCIWrapper) VerifyVoteExtension(_ context.Context, req *abciproto.VerifyVoteExtensionRequest) (*abciproto.VerifyVoteExtensionResponse, error) {
+	return w.app.VerifyVoteExtension(req)
+}
+
+func (w cometABCIWrapper) Commit(_ context.Context, _ *abciproto.CommitRequest) (*abciproto.CommitResponse, error) {
+	return w.app.Commit()
+}
+
+func (w cometABCIWrapper) ListSnapshots(_ context.Context, req *abciproto.ListSnapshotsRequest) (*abciproto.ListSnapshotsResponse, error) {
+	return w.app.ListSnapshots(req)
+}
+
+func (w cometABCIWrapper) OfferSnapshot(_ context.Context, req *abciproto.OfferSnapshotRequest) (*abciproto.OfferSnapshotResponse, error) {
+	return w.app.OfferSnapshot(req)
+}
+
+func (w cometABCIWrapper) LoadSnapshotChunk(_ context.Context, req *abciproto.LoadSnapshotChunkRequest) (*abciproto.LoadSnapshotChunkResponse, error) {
+	return w.app.LoadSnapshotChunk(req)
+}
+
+func (w cometABCIWrapper) ApplySnapshotChunk(_ context.Context, req *abciproto.ApplySnapshotChunkRequest) (*abciproto.ApplySnapshotChunkResponse, error) {
+	return w.app.ApplySnapshotChunk(req)
+}
+```
+
+And then following the comsmos SDK simapp example will inject it in 
+
+```go
+// agoric-sdk/golang/cosmos/app/app.go
+// RegisterTendermintService implements the Application.RegisterTendermintService method.
+func (app *SimApp) RegisterTendermintService(clientCtx client.Context) {
+	cmtApp := server.NewSyncCometABCIWrapper(app)
+	cmtservice.RegisterTendermintService(
+		clientCtx,
+		app.BaseApp.GRPCQueryRouter(),
+		app.interfaceRegistry,
+		cmtApp.Query,
+	)
+}
+```
+
+#TODO add configuration for using unsyc local client
+
 
 ## Consequences
 
