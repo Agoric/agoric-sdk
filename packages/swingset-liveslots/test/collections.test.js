@@ -145,6 +145,14 @@ function exerciseMapOperations(t, collectionName, testStore) {
       `key "[Alleged: something missing]" not found in collection "${collectionName}"`,
     ),
   );
+  if (collectionName === 'map') {
+    // strong map, so we can .clear
+    testStore.clear();
+    for (const [key, _value] of stuff) {
+      t.false(testStore.has(key));
+    }
+    fillBasicMapStore(testStore);
+  }
 }
 
 function exerciseSetOperations(t, collectionName, testStore) {
@@ -172,9 +180,17 @@ function exerciseSetOperations(t, collectionName, testStore) {
       `key "[Alleged: something missing]" not found in collection "${collectionName}"`,
     ),
   );
+  if (collectionName === 'set') {
+    // strong set, so we can .clear
+    testStore.clear();
+    for (const [key, _value] of stuff) {
+      t.false(testStore.has(key));
+    }
+    fillBasicSetStore(testStore);
+  }
 }
 
-test('basic map operations', t => {
+test.failing('basic map operations', t => {
   exerciseMapOperations(
     t,
     'map',
@@ -190,7 +206,7 @@ test('basic weak map operations', t => {
   );
 });
 
-test('basic set operations', t => {
+test.failing('basic set operations', t => {
   exerciseSetOperations(
     t,
     'set',
