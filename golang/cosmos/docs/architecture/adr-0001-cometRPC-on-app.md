@@ -56,7 +56,11 @@ type Application interface {
 }
 ```
 
-Then, committingClient adds a RWInitMutex to manage concurrent access to the ABCI application. To allow concurrent reads, it acquires read-init locks for state-reading operations (CheckTx, DeliverTx, Query). It obtains exclusive write locks for state-mutating operations (SetOption, InitChain, Commit, ApplySnapshotChunk) to ensure atomic execution.
+Then, committingClient adds a RWInitMutex to manage concurrent access to the ABCI application. To allow concurrent reads, it acquires read-init locks for state-reading operations (CheckTx, DeliverTx, Query). It obtains exclusive write locks for state-mutating operations (SetOption, InitChain, Commit, ApplySnapshotChunk) to ensure atomic execution. [here](https://github.com/agoric-labs/cometbft/commit/e8404cda81adebf6f5e7a87abc84e626cd2051a5/abci/client/committing_client.go#L15-340)
+
+
+
+
 
 ## Alternatives
 
