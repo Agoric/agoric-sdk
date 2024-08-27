@@ -7,6 +7,7 @@ import {
   openVault,
   USER1ADDR,
 } from '@agoric/synthetic-chain';
+import { readFile } from 'fs/promises';
 
 import {
   bankSend,
@@ -16,8 +17,11 @@ import {
   getVaultPrices,
   pushPrices,
   addPreexistingOracles,
+  getAuctionInstance,
 } from './agd-tools.js';
 import { getDetailsMatchingVats } from './vatDetails.js';
+
+const { env } = process;
 
 const oraclesByBrand = new Map();
 
@@ -103,6 +107,22 @@ const verifyVaultPriceUpdate = async t => {
   t.is(quote.value[0].amountOut.value, '+5200000');
 };
 
+const verifyAuctionInstance = async t => {
+  const newAuctionInstance = await getAuctionInstance();
+  const oldInstance = await readFile(
+    `${env.HOME}/.agoric/previousInstance.json`,
+    'utf-8',
+  );
+
+  console.log(
+    `new: ${newAuctionInstance} should be different from ${oldInstance}`,
+  );
+  t.true(
+    newAuctionInstance !== oldInstance,
+    `new: ${newAuctionInstance} should be different from ${oldInstance}`,
+  );
+};
+
 // test.serial() isn't guaranteed to run tests in order, so we run the intended tests here
 test('liquidation post upgrade', async t => {
   t.log('setup Oracles');
@@ -125,4 +145,7 @@ test('liquidation post upgrade', async t => {
 
   t.log('vault price updated');
   await verifyVaultPriceUpdate(t);
+
+  t.log('auction instance changed in agoricNames');
+  await verifyAuctionInstance(t);
 });

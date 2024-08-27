@@ -20,17 +20,20 @@ const trace = makeTracer('NewAuction', true);
 export const addAuction = async (
   {
     consume: {
+      agoricNamesAdmin,
       auctioneerKit: legacyKitP,
       board,
       chainStorage,
       chainTimerService,
       economicCommitteeCreatorFacet: electorateCreatorFacet,
+      econCharterKit,
       priceAuthority,
       zoe,
     },
     produce: { auctioneerKit: produceAuctioneerKit, auctionUpgradeNewInstance },
     instance: {
       consume: { reserve: reserveInstance },
+      produce: { auctioneer: auctionInstance },
     },
     installation: {
       consume: { contractGovernor: contractGovernorInstallation },
@@ -151,19 +154,34 @@ export const addAuction = async (
     ),
   );
 
-  produceAuctioneerKit.reset();
-  produceAuctioneerKit.resolve(
-    harden({
-      label: 'auctioneer',
-      creatorFacet: governedCreatorFacet,
-      adminFacet: governorStartResult.adminFacet,
-      publicFacet: governedPublicFacet,
-      instance: governedInstance,
+  const kit = harden({
+    label: 'auctioneer',
+    creatorFacet: governedCreatorFacet,
+    adminFacet: governorStartResult.adminFacet,
+    publicFacet: governedPublicFacet,
+    instance: governedInstance,
 
-      governor: governorStartResult.instance,
-      governorCreatorFacet: governorStartResult.creatorFacet,
-      governorAdminFacet: governorStartResult.adminFacet,
-    }),
+    governor: governorStartResult.instance,
+    governorCreatorFacet: governorStartResult.creatorFacet,
+    governorAdminFacet: governorStartResult.adminFacet,
+  });
+  produceAuctioneerKit.reset();
+  produceAuctioneerKit.resolve(kit);
+
+  // introduce economic committee charter to new auctioneer
+  // cf addGovernorsToEconCharter() in committee-proposal.js
+  await E(E.get(econCharterKit).creatorFacet).addInstance(
+    kit.instance,
+    kit.governorCreatorFacet,
+    kit.label,
+  );
+
+  auctionInstance.reset();
+  await auctionInstance.resolve(governedInstance);
+  // belt and suspenders; the above is supposed to also do this
+  await E(E(agoricNamesAdmin).lookupAdmin('instance')).update(
+    'auctioneer',
+    governedInstance,
   );
 
   auctionUpgradeNewInstance.resolve(governedInstance);
@@ -172,10 +190,12 @@ export const addAuction = async (
 export const ADD_AUCTION_MANIFEST = harden({
   [addAuction.name]: {
     consume: {
+      agoricNamesAdmin: true,
       auctioneerKit: true,
       board: true,
       chainStorage: true,
       chainTimerService: true,
+      econCharterKit: true,
       economicCommitteeCreatorFacet: true,
       priceAuthority: true,
       zoe: true,
@@ -186,6 +206,7 @@ export const ADD_AUCTION_MANIFEST = harden({
     },
     instance: {
       consume: { reserve: true },
+      produce: { auctioneer: true },
     },
     installation: {
       consume: {
