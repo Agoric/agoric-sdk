@@ -1,24 +1,22 @@
+/* eslint-env node */
 import test from 'ava';
 
 import {
+  addPreexistingOracles,
   agops,
   ATOM_DENOM,
-  getISTBalance,
-  openVault,
-  USER1ADDR,
-} from '@agoric/synthetic-chain';
-import { readFile } from 'fs/promises';
-
-import {
   bankSend,
   createBid,
+  getInstanceBoardId,
+  getISTBalance,
   getLiveOffers,
   getPriceQuote,
   getVaultPrices,
+  openVault,
   pushPrices,
-  addPreexistingOracles,
-  getAuctionInstance,
-} from './agd-tools.js';
+  USER1ADDR,
+} from '@agoric/synthetic-chain';
+import { readFile } from 'node:fs/promises';
 import { getDetailsMatchingVats } from './vatDetails.js';
 
 const { env } = process;
@@ -108,7 +106,7 @@ const verifyVaultPriceUpdate = async t => {
 };
 
 const verifyAuctionInstance = async t => {
-  const newAuctionInstance = await getAuctionInstance();
+  const newAuctionInstance = await getInstanceBoardId('auctioneer');
   const oldInstance = await readFile(
     `${env.HOME}/.agoric/previousInstance.json`,
     'utf-8',

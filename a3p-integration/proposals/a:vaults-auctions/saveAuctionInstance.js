@@ -1,11 +1,13 @@
 #!/usr/bin/env node
-
+/* eslint-env node */
 import { writeFile } from 'fs/promises';
-import { getAuctionInstance } from './agd-tools.js';
+import { getInstanceBoardId } from '@agoric/synthetic-chain';
+import assert from 'node:assert/strict';
 
 const { env } = process;
 
-const oldAuctionInstance = await getAuctionInstance();
+const oldAuctionInstance = await getInstanceBoardId('auctioneer');
+assert(oldAuctionInstance, 'no auction instance found');
 console.log('old auction instance ', oldAuctionInstance, env.HOME);
 
 await writeFile(
