@@ -2,6 +2,7 @@ import { VowTools } from '@agoric/vow';
 import {
   prepareEchoConnectionKit,
   prepareLoopbackProtocolHandler,
+  prepareNetworkPowers,
   preparePortAllocator,
   prepareRouterProtocol,
 } from '@agoric/network';
@@ -279,8 +280,9 @@ export const setupFakeNetwork = (
   zone: Zone,
   { vowTools }: { vowTools: VowTools },
 ) => {
-  const makeRouterProtocol = prepareRouterProtocol(zone, vowTools);
-  const makePortAllocator = preparePortAllocator(zone, vowTools);
+  const powers = prepareNetworkPowers(zone, vowTools);
+  const makeRouterProtocol = prepareRouterProtocol(zone, powers);
+  const makePortAllocator = preparePortAllocator(zone, powers);
   const makeLoopbackProtocolHandler = prepareLoopbackProtocolHandler(
     zone,
     vowTools,

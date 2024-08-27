@@ -138,6 +138,16 @@ export const makeFakeIbcBridge = (zone, onToBridge) => {
       if (method === 'sendPacket') {
         const { packet } = params;
         return { ...packet, sequence: '39' };
+      } else if (method === 'startChannelCloseInit') {
+        const { packet } = params;
+        if (hndlr)
+          E(hndlr)
+            .fromBridge({
+              type: 'IBC_EVENT',
+              event: 'channelCloseConfirm',
+              packet,
+            })
+            .catch(e => console.error(e));
       }
       return undefined;
     },
