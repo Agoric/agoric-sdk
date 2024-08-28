@@ -6,7 +6,7 @@ import {
   QueryAllBalancesRequest,
   QueryAllBalancesResponse,
 } from '@agoric/cosmic-proto/cosmos/bank/v1beta1/query.js';
-import { toRequestQueryJson } from '@agoric/cosmic-proto';
+import { toRequestQueryJson, typedJson } from '@agoric/cosmic-proto';
 import { decodeBase64 } from '@endo/base64';
 import {
   commonSetup,
@@ -20,7 +20,7 @@ import { makeQueryClient } from '../tools/query.js';
 
 const test = anyTest as TestFn<SetupContextWithWallets>;
 
-const accounts = ['osmosis', 'cosmoshub'];
+const accounts = ['osmosis', 'cosmoshub', 'agoric'];
 
 const contractName = 'basicFlows';
 const contractBuilder =
@@ -112,7 +112,7 @@ const queryICQChain = test.macro({
       ({ status }) => status.id === offerId && (status.result || status.error),
       `${offerId} continuing invitation is in vstorage`,
       {
-        maxRetries: 10,
+        maxRetries: 15,
       },
     );
     t.log('ICQ Query Offer Result', offerResult);
@@ -213,6 +213,87 @@ const queryChainWithoutICQ = test.macro({
       'Queries not available error returned',
     );
   },
+});
+
+test.serial('Send Local Query from chain object', async t => {
+  const { wallets, provisionSmartWallet, vstorageClient, retryUntilCondition } =
+    t.context;
+
+  const agoricAddr = wallets['agoric'];
+  const wdUser1 = await provisionSmartWallet(agoricAddr, {
+    BLD: 100n,
+    IST: 100n,
+  });
+  const expectedBalances = [
+    {
+      denom: 'ubld',
+      amount: '90000000', // 100n * (10n ** 6n) - smart wallet provision
+    },
+    {
+      denom: 'uist',
+      amount: '100250000', // 100n * (10n ** 6n) + smart wallet credit
+    },
+  ];
+  t.log(`provisioning agoric smart wallet for ${agoricAddr}`);
+
+  const doOffer = makeDoOffer(wdUser1);
+  t.log('sendLocalQuery offer');
+  const offerId = `agoric-sendLocalQuery-${Date.now()}`;
+
+  const allBalancesProto3JsonQuery = typedJson(
+    '/cosmos.bank.v1beta1.QueryAllBalancesRequest',
+    {
+      address: agoricAddr,
+    },
+  );
+  const balanceProto3JsonQuery = typedJson(
+    '/cosmos.bank.v1beta1.QueryBalanceRequest',
+    {
+      address: agoricAddr,
+      denom: 'ubld',
+    },
+  );
+
+  await doOffer({
+    id: offerId,
+    invitationSpec: {
+      source: 'agoricContract',
+      instancePath: [contractName],
+      callPipe: [['makeSendLocalQueryInvitation']],
+    },
+    offerArgs: {
+      msgs: [allBalancesProto3JsonQuery, balanceProto3JsonQuery],
+    },
+    proposal: {},
+  });
+
+  const offerResult = await retryUntilCondition(
+    () => vstorageClient.queryData(`published.wallet.${agoricAddr}`),
+    ({ status }) => status.id === offerId && (status.result || status.error),
+    `${offerId} continuing invitation is in vstorage`,
+    {
+      maxRetries: 10,
+    },
+  );
+
+  const parsedResults = JSON.parse(offerResult.status.result);
+  t.truthy(parsedResults[0].height, 'query height is returned');
+  t.is(parsedResults[0].error, '', 'error is empty');
+  t.like(
+    parsedResults[0].reply,
+    {
+      balances: expectedBalances,
+    },
+    'QueryAllBalances result is returned',
+  );
+  t.deepEqual(
+    parsedResults[1].reply,
+    {
+      '@type': '/cosmos.bank.v1beta1.QueryBalanceResponse',
+      balance: expectedBalances[0],
+    },
+    'QueryBalance result is returned',
+  );
 });
 
 test.serial(queryICQChain, 'osmosis');
