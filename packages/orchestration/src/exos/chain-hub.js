@@ -168,6 +168,7 @@ const ChainHubI = M.interface('ChainHub', {
   getChainsAndConnection: M.call(M.string(), M.string()).returns(VowShape),
   registerAsset: M.call(M.string(), DenomDetailShape).returns(),
   lookupAsset: M.call(M.string()).returns(DenomDetailShape),
+  lookupDenom: M.call(BrandShape).returns(M.or(M.string(), M.undefined())),
 });
 
 /**
@@ -198,6 +199,11 @@ export const makeChainHub = (agoricNames, vowTools) => {
   const denomDetails = zone.mapStore('denom', {
     keyShape: M.string(),
     valueShape: DenomDetailShape,
+  });
+  /** @type {MapStore<Brand, string>} */
+  const brandDenoms = zone.mapStore('brandDenom', {
+    keyShape: BrandShape,
+    valueShape: M.string(),
   });
 
   const lookupChainInfo = vowTools.retriable(
@@ -380,14 +386,30 @@ export const makeChainHub = (agoricNames, vowTools) => {
       chainInfos.has(baseName) ||
         Fail`must register chain ${q(baseName)} first`;
       denomDetails.init(denom, detail);
+      if (detail.brand) {
+        brandDenoms.init(detail.brand, denom);
+      }
     },
     /**
      * Retrieve holding, issuing chain names etc. for a denom.
      *
      * @param {Denom} denom
+     * @returns {DenomDetail}
      */
     lookupAsset(denom) {
       return denomDetails.get(denom);
+    },
+    /**
+     * Retrieve holding, issuing chain names etc. for a denom.
+     *
+     * @param {Brand} brand
+     * @returns {string | undefined}
+     */
+    lookupDenom(brand) {
+      if (brandDenoms.has(brand)) {
+        return brandDenoms.get(brand);
+      }
+      return undefined;
     },
   });
 
