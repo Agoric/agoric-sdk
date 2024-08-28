@@ -1,16 +1,16 @@
+import type { CosmosChainInfo } from '@agoric/orchestration';
 import anyTest from '@endo/ses-ava/prepare-endo.js';
 import type { ExecutionContext, TestFn } from 'ava';
 import { useChain } from 'starshipjs';
-import type { CosmosChainInfo, IBCConnectionInfo } from '@agoric/orchestration';
-import type { SetupContextWithWallets } from './support.js';
-import { chainConfig, commonSetup } from './support.js';
-import { makeQueryClient } from '../tools/query.js';
-import { makeDoOffer } from '../tools/e2e-tools.js';
 import chainInfo from '../starship-chain-info.js';
+import { makeDoOffer } from '../tools/e2e-tools.js';
 import {
   createFundedWalletAndClient,
   makeIBCTransferMsg,
 } from '../tools/ibc-transfer.js';
+import { makeQueryClient } from '../tools/query.js';
+import type { SetupContextWithWallets } from './support.js';
+import { chainConfig, commonSetup } from './support.js';
 
 const test = anyTest as TestFn<SetupContextWithWallets>;
 
@@ -82,6 +82,7 @@ const makeFundAndTransfer = (t: ExecutionContext<SetupContextWithWallets>) => {
 const autoStakeItScenario = test.macro({
   title: (_, chainName: string) => `auto-stake-it on ${chainName}`,
   exec: async (t, chainName: string) => {
+    // 1. setup
     const {
       wallets,
       vstorageClient,
@@ -91,36 +92,12 @@ const autoStakeItScenario = test.macro({
 
     const fundAndTransfer = makeFundAndTransfer(t);
 
-    // 1. Send initial tokens so denom is available (debatably necessary, but
-    // allows us to trace the denom until we have ibc denoms in chainInfo)
-    const agAdminAddr = wallets['agoricAdmin'];
-    console.log('Sending tokens to', agAdminAddr, `from ${chainName}`);
-    await fundAndTransfer(chainName, agAdminAddr);
-
     // 2. Find 'stakingDenom' denom on agoric
-    const agoricConns = chainInfo['agoric'].connections as Record<
-      string,
-      IBCConnectionInfo
-    >;
     const remoteChainInfo = (chainInfo as Record<string, CosmosChainInfo>)[
       chainName
     ];
-    // const remoteChainId = remoteChainInfo.chain.chain_id;
-    // const agoricToRemoteConn = agoricConns[remoteChainId];
-    const { portId, channelId } =
-      agoricConns[remoteChainInfo.chainId].transferChannel;
-    const agoricQueryClient = makeQueryClient(
-      await useChain('agoric').getRestEndpoint(),
-    );
     const stakingDenom = remoteChainInfo?.stakingTokens?.[0].denom;
     if (!stakingDenom) throw Error(`staking denom found for ${chainName}`);
-    const { hash } = await retryUntilCondition(
-      () =>
-        agoricQueryClient.queryDenom(`/${portId}/${channelId}`, stakingDenom),
-      denomTrace => !!denomTrace.hash,
-      `local denom hash for ${stakingDenom} found`,
-    );
-    t.log(`found ibc denom hash for ${stakingDenom}:`, hash);
 
     // 3. Find a remoteChain validator to delegate to
     const remoteQueryClient = makeQueryClient(
@@ -161,7 +138,6 @@ const autoStakeItScenario = test.macro({
           encoding: 'bech32',
           chainId: remoteChainInfo.chainId,
         },
-        localDenom: `ibc/${hash}`,
       },
       proposal: {},
     });
