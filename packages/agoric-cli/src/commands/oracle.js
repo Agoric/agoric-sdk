@@ -26,6 +26,8 @@ const COSMOS_UNIT = 1_000_000n;
 const scaleDecimals = num => BigInt(num * Number(COSMOS_UNIT));
 
 /**
+ * Prints JSON output to stdout and diagnostic info (like logs) to stderr
+ *
  * @param {import('anylogger').Logger} logger
  * @param {{
  *   delay?: (ms: number) => Promise<void>,
@@ -327,17 +329,30 @@ export const makeOracleCommand = (logger, io = {}) => {
         }
 
         const instance = lookupPriceAggregatorInstance(pair);
-
-        console.error('pushPrice from each:', keyOrder);
+        const adminOfferIds = {};
         for await (const from of keyOrder) {
-          const oracleAdminAcceptOfferId = await findOracleCap(
+          adminOfferIds[from] = await findOracleCap(
             instance,
             from,
             readLatestHead,
           );
-          if (!oracleAdminAcceptOfferId) {
-            throw Error(`no oracle invitation found: ${from}`);
+          if (!adminOfferIds[from]) {
+            console.error(
+              `Failed to find an offer accepting oracle invitation for ${from}. Accept and try again:`,
+            );
+            console.error(
+              `    agops oracle accept > accept.json; agoric wallet send --from ${from} --offer accept.json`,
+            );
           }
+        }
+        assert(
+          Object.values(adminOfferIds).every(x => x),
+          'Missing oracle admin offer ids',
+        );
+
+        console.error('pushPrice from each:', keyOrder);
+        for await (const from of keyOrder) {
+          const oracleAdminAcceptOfferId = adminOfferIds[from];
           show({ from, oracleAdminAcceptOfferId });
           const offerId = `pushPrice-${Date.now()}`;
           const offer = Offers.fluxAggregator.PushPrice(
