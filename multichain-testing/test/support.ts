@@ -62,6 +62,33 @@ export const commonSetup = async (t: ExecutionContext) => {
   });
   const hermes = makeHermes(childProcess);
 
+  /**
+   * Starts a contract if instance not found. Takes care of installing
+   * bundles and voting on the CoreEval proposal.
+   *
+   * @param contractName name of the contract in agoricNames
+   * @param contractBuilder path to proposal builder
+   */
+  const startContract = async (
+    contractName: string,
+    contractBuilder: string,
+  ) => {
+    const { vstorageClient } = tools;
+    const instances = Object.fromEntries(
+      await vstorageClient.queryData(`published.agoricNames.instance`),
+    );
+    if (contractName in instances) {
+      return t.log('Contract found. Skipping installation...');
+    }
+    t.log('bundle and install contract', contractName);
+    await deployBuilder(contractBuilder);
+    await retryUntilCondition(
+      () => vstorageClient.queryData(`published.agoricNames.instance`),
+      res => contractName in Object.fromEntries(res),
+      `${contractName} instance is available`,
+    );
+  };
+
   return {
     useChain,
     ...tools,
@@ -69,6 +96,7 @@ export const commonSetup = async (t: ExecutionContext) => {
     retryUntilCondition,
     deployBuilder,
     hermes,
+    startContract,
   };
 };
 
