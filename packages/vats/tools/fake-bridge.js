@@ -228,6 +228,56 @@ export const fakeLocalChainBridgeTxMsgHandler = (message, sequence) => {
 };
 
 /**
+ * Used to mock responses from Cosmos Golang back to SwingSet for for
+ * E(lca).query() and E(lca).queryMany().
+ *
+ * Returns an empty object per query message unless specified.
+ *
+ * @param {object} message
+ * @returns {unknown}
+ */
+export const fakeLocalChainBridgeQueryHandler = message => {
+  switch (message['@type']) {
+    case '/cosmos.bank.v1beta1.QueryAllBalancesRequest': {
+      return {
+        error: '',
+        height: '1',
+        reply: {
+          '@type': '/cosmos.bank.v1beta1.QueryAllBalancesResponse',
+          balances: [
+            {
+              amount: '10',
+              denom: 'ubld',
+            },
+            {
+              amount: '10',
+              denom: 'uist',
+            },
+          ],
+          pagination: { nextKey: null, total: '2' },
+        },
+      };
+    }
+    case '/cosmos.bank.v1beta1.QueryBalanceRequest': {
+      return {
+        error: '',
+        height: '1',
+        reply: {
+          '@type': '/cosmos.bank.v1beta1.QueryBalanceResponse',
+          balance: {
+            amount: '10',
+            denom: 'ubld',
+          },
+        },
+      };
+    }
+    // returns one empty object per message unless specified
+    default:
+      return {};
+  }
+};
+
+/**
  * @param {import('@agoric/zone').Zone} zone
  * @param {(obj) => void} [onToBridge]
  * @returns {ScopedBridgeManager<'vlocalchain'>}
@@ -253,6 +303,11 @@ export const makeFakeLocalchainBridge = (zone, onToBridge = () => {}) => {
           lcaExecuteTxSequence += 1;
           return obj.messages.map(message =>
             fakeLocalChainBridgeTxMsgHandler(message, lcaExecuteTxSequence),
+          );
+        }
+        case 'VLOCALCHAIN_QUERY_MANY': {
+          return obj.messages.map(message =>
+            fakeLocalChainBridgeQueryHandler(message),
           );
         }
         default:
