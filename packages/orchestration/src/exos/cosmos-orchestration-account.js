@@ -4,6 +4,7 @@ import {
   QueryBalanceRequest,
   QueryBalanceResponse,
 } from '@agoric/cosmic-proto/cosmos/bank/v1beta1/query.js';
+import { MsgSend } from '@agoric/cosmic-proto/cosmos/bank/v1beta1/tx.js';
 import {
   MsgWithdrawDelegatorReward,
   MsgWithdrawDelegatorRewardResponse,
@@ -15,7 +16,6 @@ import {
   MsgUndelegateResponse,
 } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/tx.js';
 import { Any } from '@agoric/cosmic-proto/google/protobuf/any.js';
-import { MsgSend } from '@agoric/cosmic-proto/cosmos/bank/v1beta1/tx.js';
 import { MsgTransfer } from '@agoric/cosmic-proto/ibc/applications/transfer/v1/tx.js';
 import { makeTracer, NonNullish } from '@agoric/internal';
 import { Shape as NetworkShape } from '@agoric/network';
@@ -31,6 +31,7 @@ import {
   DenomAmountShape,
   IBCTransferOptionsShape,
 } from '../typeGuards.js';
+import { coerceDenom } from '../utils/amounts.js';
 import { maxClockSkew, tryDecodeResponse } from '../utils/cosmos.js';
 import { orchestrationAccountMethods } from '../utils/orchestrationAccount.js';
 import { makeTimestampHelper } from '../utils/time.js';
@@ -576,14 +577,11 @@ export const prepareCosmosOrchestrationAccountKit = (
             if (!icqConnection) {
               throw Fail`Queries not available for chain ${chainAddress.chainId}`;
             }
-            // TODO #9211 lookup denom from brand
-            assert.typeof(denom, 'string');
-
             const results = E(icqConnection).query([
               toRequestQueryJson(
                 QueryBalanceRequest.toProtoMsg({
                   address: chainAddress.value,
-                  denom,
+                  denom: coerceDenom(chainHub, denom),
                 }),
               ),
             ]);
