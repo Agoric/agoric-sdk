@@ -92,6 +92,21 @@ const makeBootMsg = initAction => {
 };
 
 /**
+ * Extract local Swingset-specific configuration which is
+ * not part of the consensus.
+ *
+ * @param {any} initAction
+ */
+const makeSwingsetConfig = initAction => {
+  const {
+    maxVatsOnline = 50,
+  } = initAction;
+  return {
+    maxVatsOnline,
+  };
+};
+
+/**
  * @template {unknown} [T=unknown]
  * @param {(req: string) => string} call
  * @param {string} prefix
@@ -497,6 +512,8 @@ export default async function main(progname, args, { env, homedir, agcc }) {
       }
     };
 
+    const swingsetConfig = makeSwingsetConfig(initAction);
+
     const s = await launch({
       actionQueueStorage,
       highPriorityQueueStorage,
@@ -516,6 +533,7 @@ export default async function main(progname, args, { env, homedir, agcc }) {
       swingStoreTraceFile,
       keepSnapshots,
       afterCommitCallback,
+      swingsetConfig,
     });
 
     const { blockingSend, shutdown } = s;

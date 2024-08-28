@@ -119,6 +119,7 @@ export async function buildSwingset(
     verbose,
     profileVats,
     debugVats,
+    warehousePolicy,
   },
 ) {
   const debugPrefix = debugName === undefined ? '' : `${debugName}:`;
@@ -226,6 +227,7 @@ export async function buildSwingset(
       verbose,
       profileVats,
       debugVats,
+      warehousePolicy,
     },
   );
 
@@ -330,6 +332,7 @@ export async function launch({
   swingStoreExportCallback,
   keepSnapshots,
   afterCommitCallback = async () => ({}),
+  swingsetConfig,
 }) {
   console.info('Launching SwingSet kernel');
 
@@ -394,6 +397,9 @@ export async function launch({
   });
 
   console.debug(`buildSwingset`);
+  const warehousePolicy = {
+    maxVatsOnline: swingsetConfig.maxVatsOnline,
+  };
   const {
     coreProposals: bootstrapCoreProposals,
     controller,
@@ -411,6 +417,7 @@ export async function launch({
       debugName,
       slogCallbacks,
       slogSender,
+      warehousePolicy,
     },
   );
 
