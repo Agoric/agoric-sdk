@@ -77,6 +77,7 @@ const makeBootMsg = initAction => {
     blockHeight,
     chainID,
     params,
+    // NB: resolvedConfig is independent of consensus and MUST NOT be included
     supplyCoins,
   } = initAction;
   return {

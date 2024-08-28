@@ -99,6 +99,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/rakyll/statik/fs"
 	"github.com/spf13/cast"
+	"github.com/spf13/viper"
 	abci "github.com/tendermint/tendermint/abci/types"
 	tmjson "github.com/tendermint/tendermint/libs/json"
 	"github.com/tendermint/tendermint/libs/log"
@@ -214,6 +215,7 @@ var (
 // capabilities aren't needed for testing.
 type GaiaApp struct { // nolint: golint
 	*baseapp.BaseApp
+	resolvedConfig    map[string]any
 	legacyAmino       *codec.LegacyAmino
 	appCodec          codec.Codec
 	interfaceRegistry types.InterfaceRegistry
@@ -358,6 +360,10 @@ func NewAgoricApp(
 		keys:              keys,
 		tkeys:             tkeys,
 		memKeys:           memKeys,
+	}
+	// The VM is entitled to full awareness of runtime configuration.
+	if resolvedConfig, ok := appOpts.(*viper.Viper); ok {
+		app.resolvedConfig = resolvedConfig.AllSettings()
 	}
 
 	app.ParamsKeeper = initParamsKeeper(
@@ -939,6 +945,7 @@ type cosmosInitAction struct {
 	ChainID         string          `json:"chainID"`
 	IsBootstrap     bool            `json:"isBootstrap"`
 	Params          swingset.Params `json:"params"`
+	ResolvedConfig  map[string]any  `json:"resolvedConfig"`
 	SupplyCoins     sdk.Coins       `json:"supplyCoins"`
 	UpgradeDetails  *upgradeDetails `json:"upgradeDetails,omitempty"`
 	// CAVEAT: Every property ending in "Port" is saved in chain-main.js/portNums
@@ -976,6 +983,7 @@ func (app *GaiaApp) initController(ctx sdk.Context, bootstrap bool) {
 		ChainID:        ctx.ChainID(),
 		IsBootstrap:    bootstrap,
 		Params:         app.SwingSetKeeper.GetParams(ctx),
+		ResolvedConfig: app.resolvedConfig,
 		SupplyCoins:    sdk.NewCoins(app.BankKeeper.GetSupply(ctx, "uist")),
 		UpgradeDetails: app.upgradeDetails,
 		// See CAVEAT in cosmosInitAction.
