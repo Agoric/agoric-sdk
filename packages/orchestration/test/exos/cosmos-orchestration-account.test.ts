@@ -60,8 +60,8 @@ test('CosmosOrchestrationAccount - send (to addr on same chain)', async t => {
   // ertp amounts not supported
   await t.throwsAsync(
     E(account).send(toAddress, ist.make(10n) as AmountArg),
-    // TODO #9211 lookup denom from brand
-    { message: 'Brands not currently supported.' },
+    // TODO #9211 register asset before sending
+    { message: 'No denomination for brand [object Alleged: IST brand]' },
   );
 
   // multi-send (sendAll)
@@ -260,7 +260,8 @@ test('CosmosOrchestrationAccount - transfer', async t => {
 
   t.log("transfer doesn't support ERTP brands yet. see #9211");
   await t.throwsAsync(E(account).transfer(ist.make(10n), mockDestination), {
-    message: 'Brands not currently supported.',
+    // TODO #9211 register asset before transfer
+    message: 'No denomination for brand [object Alleged: IST brand]',
   });
 
   t.log('transfer timeout error recieved and handled from the bridge');

@@ -17,7 +17,7 @@ import {
 import { Any } from '@agoric/cosmic-proto/google/protobuf/any.js';
 import { MsgSend } from '@agoric/cosmic-proto/cosmos/bank/v1beta1/tx.js';
 import { MsgTransfer } from '@agoric/cosmic-proto/ibc/applications/transfer/v1/tx.js';
-import { makeTracer } from '@agoric/internal';
+import { makeTracer, NonNullish } from '@agoric/internal';
 import { Shape as NetworkShape } from '@agoric/network';
 import { M } from '@agoric/vat-data';
 import { VowShape } from '@agoric/vow';
@@ -242,13 +242,15 @@ export const prepareCosmosOrchestrationAccountKit = (
          * @returns {Coin}
          */
         amountToCoin(amount) {
-          if (!('denom' in amount)) {
-            // FIXME(#9211) look up values from brands
-            trace('TODO #9211: handle brand', amount);
-            throw Fail`Brands not currently supported.`;
-          }
+          const denom =
+            'denom' in amount
+              ? amount.denom
+              : NonNullish(
+                  chainHub.lookupDenom(amount.brand),
+                  `No denomination for brand ${amount.brand}`,
+                );
           return harden({
-            denom: amount.denom,
+            denom,
             amount: String(amount.value),
           });
         },
