@@ -86,6 +86,7 @@ const makeBootMsg = initAction => {
     blockHeight,
     chainID,
     params,
+    resolvedConfig,
     supplyCoins,
   };
 };

@@ -361,6 +361,10 @@ func NewAgoricApp(
 		tkeys:             tkeys,
 		memKeys:           memKeys,
 	}
+	// The VM is entitled to full awareness of runtime configuration.
+	if resolvedConfig, ok := appOpts.(*viper.Viper); ok {
+		app.resolvedConfig = resolvedConfig.AllSettings()
+	}
 
 	app.ParamsKeeper = initParamsKeeper(
 		appCodec,
