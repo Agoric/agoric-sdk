@@ -1,6 +1,7 @@
 /** @file Remote Chain Facade exo */
 import { makeTracer } from '@agoric/internal';
 import { E } from '@endo/far';
+import { Fail, q } from '@endo/errors';
 import { M } from '@endo/patterns';
 import { pickFacet } from '@agoric/vat-data';
 import { VowShape } from '@agoric/vow';
@@ -24,7 +25,6 @@ import {
  * @import {CosmosChainInfo, IBCConnectionInfo, ChainAddress, IcaAccount, Chain, ICQConnection} from '../types.js';
  */
 
-const { Fail } = assert;
 const trace = makeTracer('RemoteChainFacade');
 
 /**
@@ -159,7 +159,7 @@ const prepareRemoteChainFacadeKit = (
               connectionInfo,
             } = this.state;
             if (!icqEnabled) {
-              throw Fail`Queries not available for chain ${chainId}`;
+              throw Fail`Queries not available for chain ${q(chainId)}`;
             }
             // if none exists, make one and still send the query in the handler
             if (!this.state.icqConnection) {
