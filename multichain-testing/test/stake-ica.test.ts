@@ -1,6 +1,10 @@
 import anyTest from '@endo/ses-ava/prepare-endo.js';
 import type { TestFn } from 'ava';
-import { commonSetup, SetupContextWithWallets } from './support.js';
+import {
+  commonSetup,
+  SetupContextWithWallets,
+  FAUCET_POUR,
+} from './support.js';
 import { makeDoOffer } from '../tools/e2e-tools.js';
 import { makeQueryClient } from '../tools/query.js';
 import { sleep, type RetryOptions } from '../tools/sleep.js';
@@ -34,8 +38,6 @@ test.before(async t => {
   const wallets = await setupTestKeys(accounts);
   t.context = { ...rest, wallets, deleteTestKeys };
 });
-
-const FAUCET_POUR = 10000000000n;
 
 test.after(async t => {
   const { deleteTestKeys } = t.context;

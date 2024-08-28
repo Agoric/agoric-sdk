@@ -11,6 +11,8 @@ import { makeRetryUntilCondition } from '../tools/sleep.js';
 import { makeDeployBuilder } from '../tools/deploy.js';
 import { makeHermes } from '../tools/hermes-tools.js';
 
+export const FAUCET_POUR = 10_000n * 1_000_000n;
+
 const setupRegistry = makeSetupRegistry(makeGetFile({ dirname, join }));
 
 // XXX consider including bech32Prefix in `ChainInfo`
