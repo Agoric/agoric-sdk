@@ -65,6 +65,31 @@ const toNumber = specimen => {
 };
 
 /**
+ * A boot message consists of cosmosInitAction fields that are subject to
+ * consensus. See cosmosInitAction in {@link ../../../golang/cosmos/app/app.go}.
+ *
+ * @param {any} initAction
+ */
+const makeBootMsg = initAction => {
+  const {
+    type,
+    blockTime,
+    blockHeight,
+    chainID,
+    params,
+    supplyCoins,
+  } = initAction;
+  return {
+    type,
+    blockTime,
+    blockHeight,
+    chainID,
+    params,
+    supplyCoins,
+  };
+};
+
+/**
  * @template {unknown} [T=unknown]
  * @param {(req: string) => string} call
  * @param {string} prefix
@@ -365,7 +390,7 @@ export default async function main(progname, args, { env, homedir, agcc }) {
     };
 
     const argv = {
-      bootMsg: initAction,
+      bootMsg: makeBootMsg(initAction),
     };
     const getVatConfig = async () => {
       const vatHref = await importMetaResolve(
