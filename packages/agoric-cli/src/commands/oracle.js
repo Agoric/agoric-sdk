@@ -271,14 +271,13 @@ export const makeOracleCommand = (logger, io = {}) => {
         );
         const unitPrice = scaleDecimals(price);
 
-        console.error(`${pair[0]}-${pair[1]}_price_feed: before setPrice`);
+        const feedPath = `published.priceFeed.${pair[0]}-${pair[1]}_price_feed`;
 
         const readPrice = () =>
           /** @type {Promise<PriceDescription>} */ (
-            readLatestHead(
-              `published.priceFeed.${pair[0]}-${pair[1]}_price_feed`,
-            ).catch(err => {
-              console.warn(`cannot get ${pair[0]}-${pair[1]}_price_feed`, err);
+            readLatestHead(feedPath).catch(() => {
+              const viewer = `https://vstorage.agoric.net/#${networkConfig.rpcAddrs[0]}|published,published.priceFeed|${feedPath}`;
+              console.warn(`no existing price data; see ${viewer}`);
               return undefined;
             })
           );
@@ -297,30 +296,35 @@ export const makeOracleCommand = (logger, io = {}) => {
           show(fmtFeed(before));
         }
 
-        console.error(
-          'Choose lead oracle operator order based on latestRound...',
-        );
         const keyOrder = keys.map(normalizeAddress);
-        const latestRoundP = readLatestHead(
-          `published.priceFeed.${pair[0]}-${pair[1]}_price_feed.latestRound`,
-        );
-        await Promise.race([
-          delay(5000),
-          latestRoundP.then(round => {
-            // @ts-expect-error XXX get type from contract
-            const { roundId, startedAt, startedBy } = round;
-            show({
-              startedAt: fmtSecs(startedAt.absValue),
-              roundId,
-              startedBy,
-            });
-            if (startedBy === keyOrder[0]) {
-              keyOrder.reverse();
-            }
-          }),
-        ]).catch(err => {
-          console.warn(err);
-        });
+        if (before) {
+          console.error(
+            'Choose lead oracle operator order based on latestRound...',
+          );
+
+          const latestRoundP =
+            /** @type {Promise<{roundId: number, startedAt: import('@agoric/time').TimestampRecord, startedBy: string}>} */ (
+              readLatestHead(
+                `published.priceFeed.${pair[0]}-${pair[1]}_price_feed.latestRound`,
+              )
+            );
+          await Promise.race([
+            delay(5000),
+            latestRoundP.then(round => {
+              const { roundId, startedAt, startedBy } = round;
+              show({
+                startedAt: fmtSecs(startedAt.absValue),
+                roundId,
+                startedBy,
+              });
+              if (startedBy === keyOrder[0]) {
+                keyOrder.reverse();
+              }
+            }),
+          ]).catch(err => {
+            console.warn(err);
+          });
+        }
 
         const instance = lookupPriceAggregatorInstance(pair);
 
