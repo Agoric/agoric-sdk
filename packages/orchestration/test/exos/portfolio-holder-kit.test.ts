@@ -7,8 +7,8 @@ import { prepareMakeTestLOAKit } from './make-test-loa-kit.js';
 import { prepareMakeTestCOAKit } from './make-test-coa-kit.js';
 
 test('portfolio holder kit behaviors', async t => {
-  const { bootstrap } = await commonSetup(t);
-  const { rootZone, storage, vowTools } = bootstrap;
+  const common = await commonSetup(t);
+  const { rootZone, storage, vowTools } = common.bootstrap;
   const storageNode = storage.rootNode.makeChildNode('accounts');
 
   /**
@@ -23,8 +23,10 @@ test('portfolio holder kit behaviors', async t => {
     },
   });
 
-  const makeTestCOAKit = prepareMakeTestCOAKit(t, bootstrap, { zcf: mockZcf });
-  const makeTestLOAKit = prepareMakeTestLOAKit(t, bootstrap, { zcf: mockZcf });
+  const makeTestCOAKit = prepareMakeTestCOAKit(t, common.bootstrap, {
+    zcf: mockZcf,
+  });
+  const makeTestLOAKit = prepareMakeTestLOAKit(t, common, { zcf: mockZcf });
   const makeCosmosAccount = async ({
     chainId,
     hostConnectionId,

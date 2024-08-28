@@ -17,7 +17,7 @@ import {
 } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/tx.js';
 import { Any } from '@agoric/cosmic-proto/google/protobuf/any.js';
 import { MsgTransfer } from '@agoric/cosmic-proto/ibc/applications/transfer/v1/tx.js';
-import { makeTracer, NonNullish } from '@agoric/internal';
+import { makeTracer } from '@agoric/internal';
 import { Shape as NetworkShape } from '@agoric/network';
 import { M } from '@agoric/vat-data';
 import { VowShape } from '@agoric/vow';
@@ -31,7 +31,7 @@ import {
   DenomAmountShape,
   IBCTransferOptionsShape,
 } from '../typeGuards.js';
-import { coerceDenom } from '../utils/amounts.js';
+import { coerceCoin, coerceDenom } from '../utils/amounts.js';
 import { maxClockSkew, tryDecodeResponse } from '../utils/cosmos.js';
 import { orchestrationAccountMethods } from '../utils/orchestrationAccount.js';
 import { makeTimestampHelper } from '../utils/time.js';
@@ -243,17 +243,7 @@ export const prepareCosmosOrchestrationAccountKit = (
          * @returns {Coin}
          */
         amountToCoin(amount) {
-          const denom =
-            'denom' in amount
-              ? amount.denom
-              : NonNullish(
-                  chainHub.lookupDenom(amount.brand),
-                  `No denomination for brand ${amount.brand}`,
-                );
-          return harden({
-            denom,
-            amount: String(amount.value),
-          });
+          return coerceCoin(chainHub, amount);
         },
       },
       balanceQueryWatcher: {

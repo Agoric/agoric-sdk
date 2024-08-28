@@ -240,9 +240,8 @@ test.serial('stakeAtom - smart wallet', async t => {
       proposal: {},
     }),
     {
-      message: 'Brands not currently supported.',
+      message: 'No denomination for brand [object Alleged: ATOM brand]',
     },
-    'brands not currently supported',
   );
 });
 

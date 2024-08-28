@@ -26,6 +26,8 @@ import { registerKnownChains } from '../src/chain-info.js';
 import { prepareCosmosInterchainService } from '../src/exos/cosmos-interchain-service.js';
 import { setupFakeNetwork } from './network-fakes.js';
 import { buildVTransferEvent } from '../tools/ibc-mocks.js';
+import { makeChainHub } from '../src/exos/chain-hub.js';
+import fetchedChainInfo from '../src/fetched-chain-info.js';
 
 export {
   makeFakeLocalchainBridge,
@@ -147,6 +149,25 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
     await eventLoopIteration();
   };
 
+  const chainHub = makeChainHub(agoricNames, vowTools);
+
+  /**
+   * Register BLD if it's not already registered
+   */
+  const registerAgoricBld = () => {
+    try {
+      chainHub.lookupAsset('ubld');
+    } catch {
+      chainHub.registerChain('agoric', fetchedChainInfo.agoric);
+      chainHub.registerAsset('ubld', {
+        chainName: 'agoric',
+        baseName: 'agoric',
+        baseDenom: 'ubld',
+        brand: bld.brand,
+      });
+    }
+  };
+
   return {
     bootstrap: {
       agoricNames,
@@ -154,11 +175,13 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
       bankManager,
       timer,
       localchain,
+      // TODO remove; bootstrap doesn't havemarshaller
       marshaller,
       cosmosInterchainService,
       // TODO remove; bootstrap doesn't have a zone
       rootZone: rootZone.subZone('contract'),
       storage,
+      // TODO remove; bootstrap doesn't have vowTools
       vowTools,
     },
     brands: {
@@ -179,6 +202,7 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
     },
     facadeServices: {
       agoricNames,
+      chainHub,
       localchain,
       orchestrationService: cosmosInterchainService,
       timerService: timer,
@@ -187,6 +211,7 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
       pourPayment,
       inspectLocalBridge: () => harden([...localBridgeMessages]),
       inspectDibcBridge: () => E(ibcBridge).inspectDibcBridge(),
+      registerAgoricBld,
       transmitTransferAck,
     },
   };
