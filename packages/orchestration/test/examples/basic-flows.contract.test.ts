@@ -121,7 +121,8 @@ test('send query from chain object', async t => {
       chainName: 'osmosis',
       msgs: [balanceQuery],
     });
-    const offerResult = await vt.when(E(userSeat).getOfferResult());
+    const offerResultString = await vt.when(E(userSeat).getOfferResult());
+    const offerResult = JSON.parse(offerResultString);
     t.log(offerResult);
     t.assert(offerResult[0].key, 'base64 encoded response returned');
     const decodedResponse = decodeBalanceQueryResponse(offerResult);
@@ -180,7 +181,8 @@ test('send query from chain object', async t => {
     const userSeat = E(zoe).offer(inv, {}, undefined, {
       msgs: [proto3JsonQuery],
     });
-    const offerResult = await vt.when(E(userSeat).getOfferResult());
+    const offerResultString = await vt.when(E(userSeat).getOfferResult());
+    const offerResult = JSON.parse(offerResultString);
     t.log(offerResult);
     t.deepEqual(
       offerResult,
@@ -234,9 +236,10 @@ test('send query from orch account in an async-flow', async t => {
       chainName: 'osmosis',
       denom: 'uatom',
     });
-    const offerResult = await vt.when(E(userSeat).getOfferResult());
+    const offerResultString = await vt.when(E(userSeat).getOfferResult());
+    const offerResult = JSON.parse(offerResultString);
     t.deepEqual(offerResult, {
-      value: 0n,
+      value: '[0n]',
       denom: 'uatom',
     });
   }

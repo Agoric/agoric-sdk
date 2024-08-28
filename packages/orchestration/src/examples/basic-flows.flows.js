@@ -2,8 +2,11 @@
  * @file Primarily a testing fixture, but also serves as an example of how to
  *   leverage basic functionality of the Orchestration API with async-flow.
  */
-import { Fail } from '@endo/errors';
+import { makeTracer } from '@agoric/internal';
+import { Fail, q } from '@endo/errors';
 import { M, mustMatch } from '@endo/patterns';
+
+const trace = makeTracer('BasicFlows');
 
 /**
  * @import {Chain, DenomArg, OrchestrationAccount, OrchestrationFlow, Orchestrator, KnownChains, OrchestrationAccountI, ICQQueryFunction, CosmosChainInfo} from '@agoric/orchestration';
@@ -104,8 +107,9 @@ export const sendICQQuery = async (orch, _ctx, seat, { chainName, msgs }) => {
       await orch.getChain(chainName)
     );
   const queryResponse = await remoteChain.query(msgs);
-  console.debug('sendICQQuery response:', queryResponse);
-  return queryResponse;
+  trace('SendICQQuery response:', queryResponse);
+  // `quote` to ensure offerResult (array) is visible in smart-wallet
+  return q(queryResponse).toString();
 };
 harden(sendICQQuery);
 
@@ -133,8 +137,9 @@ export const makeAccountAndSendBalanceQuery = async (
   const remoteChain = await orch.getChain(chainName);
   const orchAccount = await remoteChain.makeAccount();
   const queryResponse = await orchAccount.getBalance(denom);
-  console.debug('getBalance response:', queryResponse);
-  return queryResponse;
+  trace('ICQ Balance Query response:', queryResponse);
+  // `quote` to ensure offerResult (record) is visible in smart-wallet
+  return q(queryResponse).toString();
 };
 harden(makeAccountAndSendBalanceQuery);
 
@@ -156,6 +161,8 @@ export const sendLocalQuery = async (orch, _ctx, seat, { msgs }) => {
   seat.exit(); // no funds exchanged
   const remoteChain = await orch.getChain('agoric');
   const queryResponse = await remoteChain.query(msgs);
-  return queryResponse;
+  trace('Local Query response:', queryResponse);
+  // `quote` to ensure offerResult (array) is visible in smart-wallet
+  return q(queryResponse).toString();
 };
 harden(sendLocalQuery);
