@@ -25,7 +25,7 @@ export const INVITATION_MAKERS_DESC = 'charter member invitation';
  * @property {bigint} deadline
  * @property {Instance} instance
  * @property {Record<string, unknown>} params
- * @property {{ paramPath: { key: string } }} [path]
+ * @property {{ paramPath: unknown }} [path] paramPath is determined by contract
  */
 const ParamChangesOfferArgsShape = M.splitRecord(
   {

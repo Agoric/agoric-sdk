@@ -1,6 +1,5 @@
 import { E } from '@endo/far';
 import { makeNotifierFromAsyncIterable } from '@agoric/notifier';
-import { AmountMath } from '@agoric/ertp/src/index.js';
 import { makeTracer } from '@agoric/internal/src/index.js';
 import { Fail } from '@endo/errors';
 import { TimeMath } from '@agoric/time';
@@ -9,6 +8,7 @@ const trace = makeTracer('upgrade Vaults proposal');
 
 /**
  * @typedef {PromiseSpaceOf<{
+ *   priceAuthority8400: Instance;
  *   auctionUpgradeNewInstance: Instance;
  * }>} interlockPowers
  */
@@ -27,6 +27,7 @@ export const upgradeVaults = async (
       reserveKit,
       vaultFactoryKit,
       zoe,
+      priceAuthority8400,
     },
     produce: { auctionUpgradeNewInstance: auctionUpgradeNewInstanceProducer },
     installation: {
@@ -43,6 +44,8 @@ export const upgradeVaults = async (
   const { instance: directorInstance } = kit;
   const allBrands = await E(zoe).getBrands(directorInstance);
   const { Minted: _istBrand, ...vaultBrands } = allBrands;
+
+  await priceAuthority8400;
 
   const bundleID = vaultsRef.bundleID;
   console.log(`upgradeVaults: bundleId`, bundleID);
@@ -77,24 +80,21 @@ export const upgradeVaults = async (
 
     const subscription = E(directorPF).getElectorateSubscription();
     const notifier = makeNotifierFromAsyncIterable(subscription);
-    let { value, updateCount } = await notifier.getUpdateSince(0n);
-    // @ts-expect-error It's an amount.
-    while (AmountMath.isEmpty(value.current.MinInitialDebt.value)) {
-      ({ value, updateCount } = await notifier.getUpdateSince(updateCount));
-      trace(
-        `minInitialDebt was empty, retried`,
-        value.current.MinInitialDebt.value,
-      );
-    }
+    const { updateCount } = await notifier.getUpdateSince();
+
+    // subscribeAfter(<some known state>) retrieves the latest value.
+    const after = await E(subscription).subscribeAfter(updateCount);
+    const { current } = after.head.value;
 
     return harden({
-      MinInitialDebt: value.current.MinInitialDebt.value,
-      ReferencedUI: value.current.ReferencedUI.value,
-      RecordingPeriod: value.current.RecordingPeriod.value,
-      ChargingPeriod: value.current.ChargingPeriod.value,
+      MinInitialDebt: current.MinInitialDebt.value,
+      ReferencedUI: current.ReferencedUI.value,
+      RecordingPeriod: current.RecordingPeriod.value,
+      ChargingPeriod: current.ChargingPeriod.value,
     });
   };
   const directorParamOverrides = await readCurrentDirectorParams();
+  trace({ directorParamOverrides });
 
   const readManagerParams = async () => {
     const { publicFacet: directorPF } = kit;
@@ -104,34 +104,22 @@ export const upgradeVaults = async (
     const params = {};
     for (const kwd of Object.keys(vaultBrands)) {
       const collateralBrand = vaultBrands[kwd];
-      const subscription = E(directorPF).getSubscription({
+
+      /** @type {any} */
+      const governedParams = await E(directorPF).getGovernedParams({
         collateralBrand,
       });
-      const notifier = makeNotifierFromAsyncIterable(subscription);
-      let { value, updateCount } = await notifier.getUpdateSince(0n);
-      // @ts-expect-error It's an amount.
-      if (AmountMath.isEmpty(value.current.DebtLimit.value)) {
-        // The parameters might have been empty at start, and the notifier might
-        // give the first state before the current state.
-        trace(`debtLimit was empty, retrying`, value.current.DebtLimit.value);
-        ({ value, updateCount } = await notifier.getUpdateSince(updateCount));
-
-        // @ts-expect-error It's an amount.
-        if (AmountMath.isEmpty(value.current.DebtLimit.value)) {
-          trace('debtLimit was empty after retrying');
-          throw Error('🚨Governed parameters empty after retry, Giving up');
-        }
-      }
-      trace(kwd, 'params at', updateCount, 'are', value.current);
+      trace({ kwd, governedParams });
       params[kwd] = harden({
         brand: collateralBrand,
-        debtLimit: value.current.DebtLimit.value,
-        interestRate: value.current.InterestRate.value,
-        liquidationMargin: value.current.LiquidationMargin.value,
-        liquidationPadding: value.current.LiquidationPadding.value,
-        liquidationPenalty: value.current.LiquidationPenalty.value,
-        mintFee: value.current.MintFee.value,
+        debtLimit: governedParams.DebtLimit.value,
+        interestRate: governedParams.InterestRate.value,
+        liquidationMargin: governedParams.LiquidationMargin.value,
+        liquidationPadding: governedParams.LiquidationPadding.value,
+        liquidationPenalty: governedParams.LiquidationPenalty.value,
+        mintFee: governedParams.MintFee.value,
       });
+      trace(kwd, params[kwd]);
     }
     return params;
   };
@@ -167,12 +155,11 @@ export const upgradeVaults = async (
 
     trace('upgraded vaultFactory.', upgradeResult);
   };
-
   await upgradeVaultFactory();
 
   // @ts-expect-error It's saved in econ-behaviors.js:startVaultFactory()
   const vaultFactoryPrivateArgs = kit.privateArgs;
-  console.log('UPGV upgraded vaults, restarting governor');
+  trace('restarting governor');
 
   const ecf = await electorateCreatorFacet;
   // restart vaultFactory governor
@@ -183,7 +170,7 @@ export const upgradeVaults = async (
     }),
   );
 
-  console.log('UPGV restarted governor');
+  trace('restarted governor');
 };
 
 const uV = 'upgradeVaults';
@@ -200,6 +187,7 @@ export const getManifestForUpgradeVaults = async (
   manifest: {
     [upgradeVaults.name]: {
       consume: {
+        priceAuthority8400: uV,
         auctionUpgradeNewInstance: uV,
         chainTimerService: uV,
         economicCommitteeCreatorFacet: uV,
