@@ -278,6 +278,11 @@ export default async function main(progname, args, { env, homedir, agcc }) {
   // here so 'sendToChainStorage' can close over the single mutable instance,
   // when we updated the 'portNums.storage' value each time toSwingSet was called.
   async function launchAndInitializeSwingSet(initAction) {
+    // As a kludge, back-propagate selected configuration into environment variables.
+    const { slogfile } = initAction.resolvedConfig || {};
+    // eslint-disable-next-line dot-notation
+    if (slogfile) env['SLOGFILE'] = slogfile;
+
     const sendToChainStorage = msg => chainSend(portNums.storage, msg);
     // this object is used to store the mailbox state.
     const fromBridgeMailbox = data => {
