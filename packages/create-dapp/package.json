@@ -24,7 +24,7 @@
     "c8": "^9.1.0"
   },
   "dependencies": {
-    "agoric": "^0.22.0-u16.2"
+    "agoric": "^0.21.1"
   },
   "keywords": [],
   "repository": {
