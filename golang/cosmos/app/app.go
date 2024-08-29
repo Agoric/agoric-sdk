@@ -215,7 +215,7 @@ var (
 // capabilities aren't needed for testing.
 type GaiaApp struct { // nolint: golint
 	*baseapp.BaseApp
-	resolvedConfig    map[string]any
+	resolvedConfig    servertypes.AppOptions
 	legacyAmino       *codec.LegacyAmino
 	appCodec          codec.Codec
 	interfaceRegistry types.InterfaceRegistry
@@ -353,6 +353,7 @@ func NewAgoricApp(
 	app := &GaiaApp{
 		BaseApp:           bApp,
 		AgdServer:         agdServer,
+		resolvedConfig:    appOpts,
 		legacyAmino:       legacyAmino,
 		appCodec:          appCodec,
 		interfaceRegistry: interfaceRegistry,
@@ -360,10 +361,6 @@ func NewAgoricApp(
 		keys:              keys,
 		tkeys:             tkeys,
 		memKeys:           memKeys,
-	}
-	// The VM is entitled to full awareness of runtime configuration.
-	if resolvedConfig, ok := appOpts.(*viper.Viper); ok {
-		app.resolvedConfig = resolvedConfig.AllSettings()
 	}
 
 	app.ParamsKeeper = initParamsKeeper(
@@ -945,9 +942,11 @@ type cosmosInitAction struct {
 	ChainID         string          `json:"chainID"`
 	IsBootstrap     bool            `json:"isBootstrap"`
 	Params          swingset.Params `json:"params"`
-	ResolvedConfig  map[string]any  `json:"resolvedConfig"`
-	SupplyCoins     sdk.Coins       `json:"supplyCoins"`
-	UpgradeDetails  *upgradeDetails `json:"upgradeDetails,omitempty"`
+	// ResolvedConfig is the subset of complete config that is relevant to the VM.
+	// It is a superset of swingset.SwingsetConfig.
+	ResolvedConfig map[string]any  `json:"resolvedConfig"`
+	SupplyCoins    sdk.Coins       `json:"supplyCoins"`
+	UpgradeDetails *upgradeDetails `json:"upgradeDetails,omitempty"`
 	// CAVEAT: Every property ending in "Port" is saved in chain-main.js/portNums
 	// with a key consisting of this name with the "Port" stripped.
 	StoragePort     int `json:"storagePort"`
@@ -979,11 +978,16 @@ func (app *GaiaApp) initController(ctx sdk.Context, bootstrap bool) {
 	app.controllerInited = true
 
 	// Begin initializing the controller here.
+	var swingsetConfig map[string]any
+	if resolvedConfig, ok := app.resolvedConfig.(*viper.Viper); ok {
+		swingsetSection := resolvedConfig.AllSettings()[swingset.ConfigPrefix]
+		swingsetConfig, _ = swingsetSection.(map[string]any)
+	}
 	action := &cosmosInitAction{
 		ChainID:        ctx.ChainID(),
 		IsBootstrap:    bootstrap,
 		Params:         app.SwingSetKeeper.GetParams(ctx),
-		ResolvedConfig: app.resolvedConfig,
+		ResolvedConfig: swingsetConfig,
 		SupplyCoins:    sdk.NewCoins(app.BankKeeper.GetSupply(ctx, "uist")),
 		UpgradeDetails: app.upgradeDetails,
 		// See CAVEAT in cosmosInitAction.
