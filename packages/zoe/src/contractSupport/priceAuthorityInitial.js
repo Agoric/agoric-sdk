@@ -110,7 +110,7 @@ export const makeInitialTransform = (
       : quoteP;
   };
 
-  return Far('PriceAuthority', {
+  return Far('ScaledPriceAuthorityWithInitialValue', {
     ...priceAuthority,
     makeQuoteNotifier,
     quoteGiven,
