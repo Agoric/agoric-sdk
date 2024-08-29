@@ -7,7 +7,7 @@ AG_SDK=$(readlink -f "$(dirname -- "$(readlink -f -- "$0")")/../..")
 
 # go ensure fresh build
 cd "$AG_SDK"/golang/cosmos
-make go-mod-cache
+SKIP_MOD_VERIFY=1 make go.sum
 COSMOS_SDK=$(go list -m -f '{{ .Dir }}' github.com/cosmos/cosmos-sdk)
 IBC_GO=$(go list -m -f '{{ .Dir }}' github.com/cosmos/ibc-go/v6)
 cd -
