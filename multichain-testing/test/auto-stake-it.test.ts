@@ -11,6 +11,7 @@ import {
 import { makeQueryClient } from '../tools/query.js';
 import type { SetupContextWithWallets } from './support.js';
 import { chainConfig, commonSetup } from './support.js';
+import { AUTO_STAKE_IT_DELEGATIONS_TIMEOUT } from './config.js';
 
 const test = anyTest as TestFn<SetupContextWithWallets>;
 
@@ -179,7 +180,8 @@ const autoStakeItScenario = test.macro({
     const { delegation_responses } = await retryUntilCondition(
       () => remoteQueryClient.queryDelegations(icaAddress),
       ({ delegation_responses }) => !!delegation_responses.length,
-      `delegations visible on ${chainName}`,
+      `auto-stake-it delegations visible on ${chainName}`,
+      AUTO_STAKE_IT_DELEGATIONS_TIMEOUT,
     );
     t.log('delegation balance', delegation_responses[0]?.balance);
     t.like(

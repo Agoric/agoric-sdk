@@ -1,0 +1,32 @@
+import type { RetryOptions } from '../tools/sleep.js';
+
+/**
+ * Wait 90 seconds to ensure staking rewards are available.
+ *
+ * While we expect staking rewards to be available after a
+ * single block (~5-12 seconds for most chains), this provides additional
+ * padding after observed failures in CI
+ * (https://github.com/Agoric/agoric-sdk/issues/9934).
+ *
+ * A more robust approach might consider Distribution params and the
+ * {@link FAUCET_POUR} constant to determine how many blocks it should take for
+ * rewards to be available.
+ */
+export const STAKING_REWARDS_TIMEOUT: RetryOptions = {
+  retryIntervalMs: 5000,
+  maxRetries: 18,
+};
+
+/**
+ * Wait 2 minutes to ensure:
+ * - IBC Transfer from LocalAccount -> ICA Account Completes
+ * - Delegation from ICA Account (initiated from SwingSet) Completes
+ * - Delegations are visible via LCD (API Endpoint)
+ *
+ * Most of the time this finishes in <7 seconds, but other times it
+ * appears to take much longer.
+ */
+export const AUTO_STAKE_IT_DELEGATIONS_TIMEOUT: RetryOptions = {
+  retryIntervalMs: 5000,
+  maxRetries: 24,
+};
