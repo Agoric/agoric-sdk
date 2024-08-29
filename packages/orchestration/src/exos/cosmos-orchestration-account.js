@@ -49,6 +49,7 @@ import { makeTimestampHelper } from '../utils/time.js';
  * @import {ResponseQuery} from '@agoric/cosmic-proto/tendermint/abci/types.js';
  * @import {JsonSafe} from '@agoric/cosmic-proto';
  * @import {Matcher} from '@endo/patterns';
+ * @import {LocalIbcAddress, RemoteIbcAddress} from '@agoric/vats/tools/ibc-utils.js';
  */
 
 const trace = makeTracer('ComosOrchestrationAccountHolder');
@@ -65,10 +66,19 @@ const { Vow$ } = NetworkShape; // TODO #9611
  *   topicKit: RecorderKit<ComosOrchestrationAccountNotification>;
  *   account: IcaAccount;
  *   chainAddress: ChainAddress;
+ *   localAddress: LocalIbcAddress;
+ *   remoteAddress: RemoteIbcAddress;
  *   icqConnection: ICQConnection | undefined;
  *   bondDenom: string;
  *   timer: Remote<TimerService>;
  * }} State
+ */
+
+/**
+ * @typedef {{
+ *   localAddress: LocalIbcAddress;
+ *   remoteAddress: RemoteIbcAddress;
+ * }} CosmosOrchestrationAccountStorageState
  */
 
 /** @see {OrchestrationAccountI} */
@@ -178,8 +188,11 @@ export const prepareCosmosOrchestrationAccountKit = (
       }),
     },
     /**
-     * @param {ChainAddress} chainAddress
-     * @param {string} bondDenom e.g. 'uatom'
+     * @param {object} info
+     * @param {ChainAddress} info.chainAddress
+     * @param {string} info.bondDenom e.g. 'uatom'
+     * @param {LocalIbcAddress} info.localAddress
+     * @param {RemoteIbcAddress} info.remoteAddress
      * @param {object} io
      * @param {IcaAccount} io.account
      * @param {Remote<StorageNode>} io.storageNode
@@ -187,14 +200,29 @@ export const prepareCosmosOrchestrationAccountKit = (
      * @param {Remote<TimerService>} io.timer
      * @returns {State}
      */
-    (chainAddress, bondDenom, io) => {
+    ({ chainAddress, bondDenom, localAddress, remoteAddress }, io) => {
       const { storageNode, ...rest } = io;
       // must be the fully synchronous maker because the kit is held in durable state
       const topicKit = makeRecorderKit(storageNode, PUBLIC_TOPICS.account[1]);
       // TODO determine what goes in vstorage https://github.com/Agoric/agoric-sdk/issues/9066
-      void E(topicKit.recorder).write('');
+      // XXX consider parsing local/remoteAddr to portId, channelId, counterpartyPortId, counterpartyChannelId, connectionId, counterpartyConnectionId
+      // FIXME these values will not update if IcaAccount gets new values after reopening.
+      // consider having IcaAccount responsible for the owning the writer. It might choose to share it with COA.
+      void E(topicKit.recorder).write(
+        /** @type {CosmosOrchestrationAccountStorageState} */ ({
+          localAddress,
+          remoteAddress,
+        }),
+      );
 
-      return { chainAddress, bondDenom, topicKit, ...rest };
+      return {
+        chainAddress,
+        bondDenom,
+        localAddress,
+        remoteAddress,
+        topicKit,
+        ...rest,
+      };
     },
     {
       helper: {

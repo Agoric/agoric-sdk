@@ -141,7 +141,12 @@ test.serial('stakeAtom', async t => {
   const accountPath = 'published.stakeAtom.accounts.cosmos1test';
   t.throws(() => readLatest(accountPath));
   t.is(await flushInboundQueue(), 1);
-  t.is(readLatest(accountPath), '');
+  t.deepEqual(readLatest(accountPath), {
+    localAddress:
+      '/ibc-port/icacontroller-1/ordered/{"version":"ics27-1","controllerConnectionId":"connection-8","hostConnectionId":"connection-649","address":"cosmos1test","encoding":"proto3","txType":"sdk_multi_msg"}/ibc-channel/channel-1',
+    remoteAddress:
+      '/ibc-hop/connection-8/ibc-port/icahost/ordered/{"version":"ics27-1","controllerConnectionId":"connection-8","hostConnectionId":"connection-649","address":"cosmos1test","encoding":"proto3","txType":"sdk_multi_msg"}/ibc-channel/channel-1',
+  });
   // request-account is complete
 
   const { ATOM } = agoricNamesRemotes.brand;

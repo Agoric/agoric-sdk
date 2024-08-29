@@ -24,15 +24,8 @@ test.before(async t => {
   deleteTestKeys(accounts).catch();
   const wallets = await setupTestKeys(accounts);
   t.context = { ...rest, wallets, deleteTestKeys };
-
-  t.log('bundle and install contract', contractName);
-  await t.context.deployBuilder(contractBuilder);
-  const { vstorageClient } = t.context;
-  await t.context.retryUntilCondition(
-    () => vstorageClient.queryData(`published.agoricNames.instance`),
-    res => contractName in Object.fromEntries(res),
-    `${contractName} instance is available`,
-  );
+  const { startContract } = rest;
+  await startContract(contractName, contractBuilder);
 });
 
 test.after(async t => {

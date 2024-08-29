@@ -115,17 +115,24 @@ export const start = async (zcf, privateArgs, baggage) => {
       ? await E(orchestration).provideICQConnection(controllerConnectionId)
       : undefined;
 
-    const accountAddress = await E(account).getAddress();
-    trace('account address', accountAddress);
+    const [chainAddress, localAddress, remoteAddress] = await Promise.all([
+      E(account).getAddress(),
+      E(account).getLocalAddress(),
+      E(account).getRemoteAddress(),
+    ]);
+    trace('account address', chainAddress);
     const accountNode = await E(accountsStorageNode).makeChildNode(
-      accountAddress.value,
+      chainAddress.value,
     );
-    const holder = makeCosmosOrchestrationAccount(accountAddress, bondDenom, {
-      account,
-      storageNode: accountNode,
-      icqConnection,
-      timer,
-    });
+    const holder = makeCosmosOrchestrationAccount(
+      { chainAddress, bondDenom, localAddress, remoteAddress },
+      {
+        account,
+        storageNode: accountNode,
+        icqConnection,
+        timer,
+      },
+    );
     return holder;
   }
 

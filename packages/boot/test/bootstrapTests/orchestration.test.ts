@@ -174,7 +174,12 @@ test.serial('stakeAtom - smart wallet', async t => {
   t.like(wd.getLatestUpdateRecord(), {
     status: { id: 'request-account', numWantsSatisfied: 1 },
   });
-  t.is(readLatest('published.stakeAtom.accounts.cosmos1test'), '');
+  t.deepEqual(readLatest('published.stakeAtom.accounts.cosmos1test'), {
+    localAddress:
+      '/ibc-port/icacontroller-1/ordered/{"version":"ics27-1","controllerConnectionId":"connection-8","hostConnectionId":"connection-649","address":"cosmos1test","encoding":"proto3","txType":"sdk_multi_msg"}/ibc-channel/channel-1',
+    remoteAddress:
+      '/ibc-hop/connection-8/ibc-port/icahost/ordered/{"version":"ics27-1","controllerConnectionId":"connection-8","hostConnectionId":"connection-649","address":"cosmos1test","encoding":"proto3","txType":"sdk_multi_msg"}/ibc-channel/channel-1',
+  });
 
   const { ATOM } = agoricNamesRemotes.brand;
   ATOM || Fail`ATOM missing from agoricNames`;
@@ -321,7 +326,12 @@ test('basic-flows', async t => {
   t.like(wd.getLatestUpdateRecord(), {
     status: { id: 'request-coa', numWantsSatisfied: 1 },
   });
-  t.is(readLatest('published.basicFlows.cosmos1test'), '');
+  t.deepEqual(readLatest('published.basicFlows.cosmos1test'), {
+    localAddress:
+      '/ibc-port/icacontroller-4/ordered/{"version":"ics27-1","controllerConnectionId":"connection-8","hostConnectionId":"connection-649","address":"cosmos1test","encoding":"proto3","txType":"sdk_multi_msg"}/ibc-channel/channel-4',
+    remoteAddress:
+      '/ibc-hop/connection-8/ibc-port/icahost/ordered/{"version":"ics27-1","controllerConnectionId":"connection-8","hostConnectionId":"connection-649","address":"cosmos1test","encoding":"proto3","txType":"sdk_multi_msg"}/ibc-channel/channel-4',
+  });
 
   // create a local orchestration account
   await wd.executeOffer({
@@ -506,7 +516,12 @@ test.serial('basic-flows - portfolio holder', async t => {
     status: { id: 'request-portfolio-acct', numWantsSatisfied: 1 },
   });
   // XXX this overrides a previous account, since mocks only provide one address
-  t.is(readLatest('published.basicFlows.cosmos1test'), '');
+  t.deepEqual(readLatest('published.basicFlows.cosmos1test'), {
+    localAddress:
+      '/ibc-port/icacontroller-3/ordered/{"version":"ics27-1","controllerConnectionId":"connection-1","hostConnectionId":"connection-1649","address":"cosmos1test","encoding":"proto3","txType":"sdk_multi_msg"}/ibc-channel/channel-3',
+    remoteAddress:
+      '/ibc-hop/connection-1/ibc-port/icahost/ordered/{"version":"ics27-1","controllerConnectionId":"connection-1","hostConnectionId":"connection-1649","address":"cosmos1test","encoding":"proto3","txType":"sdk_multi_msg"}/ibc-channel/channel-3',
+  });
   // XXX this overrides a previous account, since mocks only provide one address
   t.is(readLatest('published.basicFlows.agoric1fakeLCAAddress'), '');
 
