@@ -125,9 +125,7 @@ const prepareRemoteChainFacadeKit = (
             // create a connection if it doesn't exist
             const icqConnOrUndefinedV =
               remoteChainInfo.icqEnabled && !this.state.icqConnection
-                ? E(orchestration).provideICQConnection(
-                    connectionInfo.counterparty.connection_id,
-                  )
+                ? E(orchestration).provideICQConnection(connectionInfo.id)
                 : undefined;
 
             const makeAccountV = E(orchestration).makeAccount(
@@ -155,9 +153,7 @@ const prepareRemoteChainFacadeKit = (
             // if none exists, make one and still send the query in the handler
             if (!this.state.icqConnection) {
               return watch(
-                E(orchestration).provideICQConnection(
-                  connectionInfo.counterparty.connection_id,
-                ),
+                E(orchestration).provideICQConnection(connectionInfo.id),
                 this.facets.makeICQConnectionQueryWatcher,
                 msgs,
               );
