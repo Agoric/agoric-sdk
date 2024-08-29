@@ -82,6 +82,7 @@ bundleID before submitting to the kernel), or (temporarily) a full bundle.
  * @typedef { string } VatID
  * @typedef { string } UpgradeID
  * @typedef {{
+ *  changeOptions: (vatID: string, options: {}) => void;
  *  createMeter: (remaining: bigint, threshold: bigint) => MeterID
  *  createUnlimitedMeter: () => MeterID
  *  addMeterRemaining: (meterID: MeterID, delta: bigint) => void
@@ -89,7 +90,8 @@ bundleID before submitting to the kernel), or (temporarily) a full bundle.
  *  getMeter: (meterID: MeterID) => { remaining: bigint, threshold: bigint }
  *  createByBundle: (bundle: Bundle, options: {}) => VatID
  *  createByBundleID: (bundleID: BundleID, options: {}) => VatID
- *  upgradeVat: (bundleID: BundleID, vatParameters: {}) => UpgradeID
+ *  getBundleIDByName: (name: string) => string;
+ *  upgradeVat: (vatID: string, bundleID: BundleID, _vatParameters: unknown, upgradeMessage: string) => UpgradeID;
  *  terminateWithFailure: (vatID: VatID, reason: {}) => void
  *  getBundleCap: (bundleID: BundleID) => BundleCap
  *  getNamedBundleCap: (name: string) => BundleCap
