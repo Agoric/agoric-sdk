@@ -185,7 +185,7 @@ test.serial('asset / denom info', async t => {
       const c1 = await orc.getChain(mockChainInfo.chainId);
 
       {
-        const actual = orc.getBrandInfo('utoken1');
+        const actual = orc.getDenomInfo('utoken1');
         console.log('actual', actual);
         const info = await actual.chain.getChainInfo();
         t.deepEqual(info, mockChainInfo);
@@ -200,7 +200,7 @@ test.serial('asset / denom info', async t => {
 
       const ag = await orc.getChain('agoric');
       {
-        const actual = orc.getBrandInfo(agDenom);
+        const actual = orc.getDenomInfo(agDenom);
 
         t.deepEqual(actual, {
           chain: ag,
@@ -223,11 +223,11 @@ test.serial('asset / denom info', async t => {
   });
 
   const missingGetChain = orchestrate('missing getChain', {}, async orc => {
-    const actual = orc.getBrandInfo('utoken2');
+    const actual = orc.getDenomInfo('utoken2');
   });
 
   await t.throwsAsync(vt.when(missingGetChain()), {
-    message: 'use getChain("anotherChain") before getBrandInfo("utoken2")',
+    message: 'use getChain("anotherChain") before getDenomInfo("utoken2")',
   });
 });
 

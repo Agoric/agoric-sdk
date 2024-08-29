@@ -101,8 +101,8 @@ expectNotType<CosmosValidatorAddress>(chainAddr);
   // Negative test
   expectNotType<() => Promise<number>>(vowFn);
 
-  const getBrandInfo: HostOf<Orchestrator['getBrandInfo']> = null as any;
-  const chainHostOf = getBrandInfo('uatom').chain;
+  const getDenomInfo: HostOf<Orchestrator['getDenomInfo']> = null as any;
+  const chainHostOf = getDenomInfo('uatom').chain;
   expectType<Vow<any>>(chainHostOf.getChainInfo());
 }
 

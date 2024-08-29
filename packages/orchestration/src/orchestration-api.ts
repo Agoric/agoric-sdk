@@ -101,7 +101,7 @@ export interface Chain<CI extends ChainInfo> {
   // TODO provide a way to get the local denom/brand/whatever for this chain
 }
 
-export interface BrandInfo<
+export interface DenomInfo<
   HoldingChain extends keyof KnownChains,
   IssuingChain extends keyof KnownChains,
 > {
@@ -133,12 +133,12 @@ export interface Orchestrator {
    * issues the corresponding asset.
    * @param denom
    */
-  getBrandInfo: <
+  getDenomInfo: <
     HoldingChain extends keyof KnownChains,
     IssuingChain extends keyof KnownChains,
   >(
     denom: Denom,
-  ) => BrandInfo<HoldingChain, IssuingChain>;
+  ) => DenomInfo<HoldingChain, IssuingChain>;
   // TODO preload the mapping so this can be synchronous
   /**
    * Convert an amount described in native data to a local, structured Amount.

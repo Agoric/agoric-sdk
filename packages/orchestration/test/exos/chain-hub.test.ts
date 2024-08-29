@@ -95,7 +95,7 @@ test.serial('getConnectionInfo', async t => {
   t.deepEqual(await vt.when(chainHub.getConnectionInfo(b, a)), ba);
 });
 
-test('getBrandInfo support', async t => {
+test('getDenomInfo support', async t => {
   const { chainHub } = setup();
 
   const denom = 'utok1';
