@@ -6,21 +6,20 @@ import { M } from '@endo/patterns';
 import { pickFacet } from '@agoric/vat-data';
 import { VowShape } from '@agoric/vow';
 
-import { Fail } from '@endo/errors';
-import { chainFacadeMethods } from '../typeGuards.js';
+import { chainFacadeMethods, TypedJsonShape } from '../typeGuards.js';
 
 /**
  * @import {HostOf} from '@agoric/async-flow';
  * @import {Zone} from '@agoric/base-zone';
  * @import {TimerService} from '@agoric/time';
  * @import {Remote} from '@agoric/internal';
- * @import {LocalChain, LocalChainAccount} from '@agoric/vats/src/localchain.js';
+ * @import {LocalChain, LocalChainAccount, QueryManyFn} from '@agoric/vats/src/localchain.js';
  * @import {AssetInfo} from '@agoric/vats/src/vat-bank.js';
  * @import {NameHub} from '@agoric/vats';
  * @import {Vow, VowTools} from '@agoric/vow';
  * @import {CosmosInterchainService} from './cosmos-interchain-service.js';
  * @import {LocalOrchestrationAccountKit, MakeLocalOrchestrationAccountKit} from './local-orchestration-account.js';
- * @import {ChainAddress, ChainInfo, CosmosChainInfo, IBCConnectionInfo, OrchestrationAccount} from '../types.js';
+ * @import {Chain, ChainAddress, ChainInfo, CosmosChainInfo, IBCConnectionInfo, OrchestrationAccount} from '../types.js';
  */
 
 /**
@@ -64,6 +63,7 @@ const prepareLocalChainFacadeKit = (
     {
       public: M.interface('LocalChainFacade', {
         ...chainFacadeMethods,
+        query: M.call(M.arrayOf(TypedJsonShape)).returns(VowShape),
         getVBankAssetInfo: M.call().optional(M.boolean()).returns(VowShape),
       }),
       vbankAssetValuesWatcher: M.interface('vbankAssetValuesWatcher', {
@@ -108,9 +108,9 @@ const prepareLocalChainFacadeKit = (
             this.facets.makeAccountWatcher,
           );
         },
-        query() {
-          // TODO https://github.com/Agoric/agoric-sdk/pull/9935
-          return asVow(() => Fail`not yet implemented`);
+        /** @type {HostOf<Chain<{ chainId: 'agoriclocal' }>['query']>} */
+        query(requests) {
+          return watch(E(localchain).queryMany(requests));
         },
         /** @type {HostOf<AgoricChainMethods['getVBankAssetInfo']>} */
         getVBankAssetInfo() {

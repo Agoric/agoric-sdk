@@ -1,10 +1,15 @@
 /** @file Remote Chain Facade exo */
 import { makeTracer } from '@agoric/internal';
 import { E } from '@endo/far';
+import { Fail, q } from '@endo/errors';
 import { M } from '@endo/patterns';
 import { pickFacet } from '@agoric/vat-data';
 import { VowShape } from '@agoric/vow';
-import { ChainAddressShape, ChainFacadeI, ICQMsgShape } from '../typeGuards.js';
+import {
+  ChainAddressShape,
+  chainFacadeMethods,
+  ICQMsgShape,
+} from '../typeGuards.js';
 
 /**
  * @import {HostOf} from '@agoric/async-flow';
@@ -20,7 +25,6 @@ import { ChainAddressShape, ChainFacadeI, ICQMsgShape } from '../typeGuards.js';
  * @import {CosmosChainInfo, IBCConnectionInfo, ChainAddress, IcaAccount, Chain, ICQConnection} from '../types.js';
  */
 
-const { Fail } = assert;
 const trace = makeTracer('RemoteChainFacade');
 
 /**
@@ -62,7 +66,10 @@ const prepareRemoteChainFacadeKit = (
   zone.exoClassKit(
     'RemoteChainFacade',
     {
-      public: ChainFacadeI,
+      public: M.interface('RemoteChainFacade', {
+        ...chainFacadeMethods,
+        query: M.call(M.arrayOf(ICQMsgShape)).returns(VowShape),
+      }),
       makeICQConnectionQueryWatcher: M.interface(
         'makeICQConnectionQueryWatcher',
         {
@@ -140,7 +147,11 @@ const prepareRemoteChainFacadeKit = (
             );
           });
         },
-        /** @type {ICQConnection['query']} */
+        /**
+         * @type {HostOf<
+         *   Chain<CosmosChainInfo & { icqEnabled: true }>['query']
+         * >}
+         */
         query(msgs) {
           return asVow(() => {
             const {
@@ -148,7 +159,7 @@ const prepareRemoteChainFacadeKit = (
               connectionInfo,
             } = this.state;
             if (!icqEnabled) {
-              throw Fail`Queries not available for chain ${chainId}`;
+              throw Fail`Queries not available for chain ${q(chainId)}`;
             }
             // if none exists, make one and still send the query in the handler
             if (!this.state.icqConnection) {

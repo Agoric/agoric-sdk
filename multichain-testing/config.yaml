@@ -44,7 +44,9 @@ chains:
           host_port: 'icqhost'
           params:
             host_enabled: true
-            allow_queries: ['*']
+            allow_queries:
+              - /cosmos.bank.v1beta1.Query/Balance
+              - /cosmos.bank.v1beta1.Query/AllBalances
     faucet:
       enabled: true
       type: starship

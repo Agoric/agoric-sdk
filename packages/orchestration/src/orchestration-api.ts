@@ -7,7 +7,10 @@
 import type { Amount, Brand, NatAmount } from '@agoric/ertp/src/types.js';
 import type { CurrentWalletRecord } from '@agoric/smart-wallet/src/smartWallet.js';
 import type { Timestamp } from '@agoric/time';
-import type { LocalChainAccount } from '@agoric/vats/src/localchain.js';
+import type {
+  LocalChainAccount,
+  QueryManyFn,
+} from '@agoric/vats/src/localchain.js';
 import type { ResolvedPublicTopic } from '@agoric/zoe/src/contractSupport/topics.js';
 import type { Passable } from '@endo/marshal';
 import type {
@@ -89,7 +92,11 @@ export interface Chain<CI extends ChainInfo> {
   makeAccount: () => Promise<OrchestrationAccount<CI>>;
   // FUTURE supply optional port object; also fetch port object
 
-  query: CI extends { icqEnabled: true } ? ICQQueryFunction : never;
+  query: CI extends { icqEnabled: true }
+    ? ICQQueryFunction
+    : CI['chainId'] extends `agoric${string}`
+      ? QueryManyFn
+      : never;
 
   // TODO provide a way to get the local denom/brand/whatever for this chain
 }
