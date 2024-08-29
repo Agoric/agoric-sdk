@@ -1,0 +1,34 @@
+{
+  "agoricProposal": {
+    "releaseNotes": false,
+    "sdkImageTag": "unreleased",
+    "planName": "UNRELEASED_A3P_INTEGRATION",
+    "upgradeInfo": {
+      "coreProposals": []
+    },
+    "sdk-generate": [
+      "vats/replacePriceFeeds.js",
+      "vats/replace-scaledPriceAuthorities.js",
+      "vats/add-auction.js",
+      "vats/upgradeVaults.js"
+    ],
+    "type": "Software Upgrade Proposal"
+  },
+  "type": "module",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "@agoric/synthetic-chain": "^0.1.0",
+    "ava": "^5.3.1"
+  },
+  "ava": {
+    "concurrency": 1,
+    "timeout": "2m",
+    "files": [
+      "!submission"
+    ]
+  },
+  "scripts": {
+    "agops": "yarn --cwd /usr/src/agoric-sdk/ --silent agops"
+  },
+  "packageManager": "yarn@4.2.2"
+}
