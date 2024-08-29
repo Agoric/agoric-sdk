@@ -19,7 +19,7 @@ const contractFile = `${dirname}/../../src/examples/${contractName}.contract.js`
 type StartFn =
   typeof import('../../src/examples/auto-stake-it.contract.js').start;
 
-test('auto-stake-it - make accounts, register tap, return invitationMakers', async t => {
+test('make accounts, register tap, return invitationMakers', async t => {
   t.log('bootstrap, orchestration core-eval');
   const {
     bootstrap: { storage },

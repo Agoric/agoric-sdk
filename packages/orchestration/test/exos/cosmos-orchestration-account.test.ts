@@ -25,7 +25,7 @@ test.beforeEach(async t => {
   t.context = await commonSetup(t);
 });
 
-test('CosmosOrchestrationAccount - send (to addr on same chain)', async t => {
+test('send (to addr on same chain)', async t => {
   const {
     bootstrap,
     brands: { ist },
@@ -82,7 +82,7 @@ test('CosmosOrchestrationAccount - send (to addr on same chain)', async t => {
   );
 });
 
-test('CosmosOrchestrationAccount - transfer', async t => {
+test('transfer', async t => {
   const {
     brands: { ist },
     bootstrap,
@@ -285,7 +285,7 @@ test('CosmosOrchestrationAccount - transfer', async t => {
   );
 });
 
-test('CosmosOrchestrationAccount - not yet implemented', async t => {
+test('not yet implemented', async t => {
   const { bootstrap } = await commonSetup(t);
   const makeTestCOAKit = prepareMakeTestCOAKit(t, bootstrap);
   const account = await makeTestCOAKit();

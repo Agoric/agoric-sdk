@@ -15,14 +15,14 @@ import {
   buildQueryPacketString,
 } from '../tools/ibc-mocks.js';
 
-test('ibc-mocks - buildMsgResponseString matches observed values in e2e testing', t => {
+test('buildMsgResponseString matches observed values in e2e testing', t => {
   t.is(
     buildMsgResponseString(MsgDelegateResponse, {}),
     'eyJyZXN1bHQiOiJFaTBLS3k5amIzTnRiM011YzNSaGEybHVaeTUyTVdKbGRHRXhMazF6WjBSbGJHVm5ZWFJsVW1WemNHOXVjMlU9In0=',
   );
 });
 
-test('ibc-mocks - buildMsgErrorString matches observed values in e2e testing', t => {
+test('buildMsgErrorString matches observed values in e2e testing', t => {
   t.is(
     buildMsgErrorString(),
     'eyJlcnJvciI6IkFCQ0kgY29kZTogNTogZXJyb3IgaGFuZGxpbmcgcGFja2V0OiBzZWUgZXZlbnRzIGZvciBkZXRhaWxzIn0=',
@@ -37,7 +37,7 @@ test('ibc-mocks - buildMsgErrorString matches observed values in e2e testing', t
   );
 });
 
-test('ibcMocks - buildQueryResponseString matches observed values in e2e testing', t => {
+test('buildQueryResponseString matches observed values in e2e testing', t => {
   t.is(
     buildQueryResponseString(QueryBalanceResponse, {
       balance: { amount: '0', denom: 'uatom' },
@@ -47,7 +47,7 @@ test('ibcMocks - buildQueryResponseString matches observed values in e2e testing
   );
 });
 
-test('ibcMocks - build Tx Packet', t => {
+test('build Tx Packet', t => {
   t.is(
     buildTxPacketString([
       MsgDelegate.toProtoMsg({
@@ -63,7 +63,7 @@ test('ibcMocks - build Tx Packet', t => {
   );
 });
 
-test('ibcMocks - build Query Packet', t => {
+test('build Query Packet', t => {
   t.is(
     buildQueryPacketString([
       QueryBalanceRequest.toProtoMsg({
