@@ -32,7 +32,7 @@
     "@agoric/swingset-vat": "^0.32.2",
     "@agoric/telemetry": "^0.6.2",
     "@agoric/vm-config": "^0.1.0",
-    "@endo/bundle-source": "^3.3.0",
+    "@endo/bundle-source": "^3.4.0",
     "@endo/env-options": "^1.1.5",
     "@endo/far": "^1.1.4",
     "@endo/import-bundle": "^1.2.1",

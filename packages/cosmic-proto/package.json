@@ -137,7 +137,7 @@
     "@agoric/cosmos": "^0.34.1",
     "@ava/typescript": "^4.1.0",
     "@cosmology/telescope": "^1.7.1",
-    "@endo/bundle-source": "^3.3.0",
+    "@endo/bundle-source": "^3.4.0",
     "@endo/import-bundle": "^1.2.1",
     "ava": "^5.3.1",
     "rimraf": "^5.0.0",
