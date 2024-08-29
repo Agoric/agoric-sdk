@@ -1395,7 +1395,6 @@ function build(
 
   const { scanForDeadObjects } = makeBOYDKit({
     gcTools,
-    getValForSlot,
     slotToVal,
     vrm,
     kernelRecognizableRemotables,

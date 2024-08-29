@@ -160,7 +160,7 @@ test('forward to fake zoe', async t => {
 });
 
 // see #9939
-test.failing('drop without retire', async t => {
+test('drop without retire', async t => {
   let targetID;
   let didBOYD = false;
   // const msgs = ['deliver', 'deliver-result', 'syscall', 'syscall-result'];

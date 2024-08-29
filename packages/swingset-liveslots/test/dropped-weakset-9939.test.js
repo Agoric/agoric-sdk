@@ -8,7 +8,7 @@ import { makeMockGC } from './mock-gc.js';
 
 // Test for https://github.com/Agoric/agoric-sdk/issues/9939
 
-test.failing('weakset deletion vs retire', async t => {
+test('weakset deletion vs retire', async t => {
   const { syscall, log } = buildSyscall();
   const gcTools = makeMockGC();
 

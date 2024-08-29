@@ -253,7 +253,7 @@ test.serial('GC dispatch.retireExports', async t => {
   t.deepEqual(log, []);
 });
 
-test.serial.failing('GC dispatch.dropExports', async t => {
+test.serial('GC dispatch.dropExports', async t => {
   const { log, syscall } = buildSyscall();
   let collected;
   function build(_vatPowers) {
@@ -326,7 +326,7 @@ test.serial.failing('GC dispatch.dropExports', async t => {
   t.deepEqual(log, []);
 });
 
-test.serial.failing(
+test.serial(
   'GC dispatch.retireExports inhibits syscall.retireExports',
   async t => {
     const { log, syscall } = buildSyscall();

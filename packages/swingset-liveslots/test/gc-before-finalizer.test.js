@@ -14,7 +14,7 @@ const justGC = log =>
       l.type === 'retireExports',
   );
 
-test.failing('presence in COLLECTED state is not dropped yet', async t => {
+test('presence in COLLECTED state is not dropped yet', async t => {
   const { syscall, log } = buildSyscall();
   const gcTools = makeMockGC();
 
