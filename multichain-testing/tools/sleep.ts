@@ -16,7 +16,7 @@ export const sleep = (
     setTimeout(resolve, ms);
   });
 
-type RetryOptions = {
+export type RetryOptions = {
   maxRetries?: number;
   retryIntervalMs?: number;
 } & SleepOptions;
