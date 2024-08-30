@@ -5,6 +5,7 @@
 import { makeTracer } from '@agoric/internal';
 import { Fail, q } from '@endo/errors';
 import { M, mustMatch } from '@endo/patterns';
+import { asContinuingOffer } from '../exos/portfolio-holder-kit.js';
 
 const trace = makeTracer('BasicFlows');
 
@@ -15,7 +16,7 @@ const trace = makeTracer('BasicFlows');
  * @import {QueryManyFn} from '@agoric/vats/src/localchain.js';
  * @import {RequestQuery} from '@agoric/cosmic-proto/tendermint/abci/types.js';
  * @import {OrchestrationPowers} from '../utils/start-helper.js';
- * @import {MakePortfolioHolder} from '../exos/portfolio-holder-kit.js';
+ * @import {MakePortfolioHolderKit} from '../exos/portfolio-holder-kit.js';
  * @import {OrchestrationTools} from '../utils/start-helper.js';
  */
 
@@ -47,13 +48,13 @@ harden(makeOrchAccount);
  * @satisfies {OrchestrationFlow}
  * @param {Orchestrator} orch
  * @param {object} ctx
- * @param {MakePortfolioHolder} ctx.makePortfolioHolder
+ * @param {MakePortfolioHolderKit} ctx.makePortfolioHolderKit
  * @param {ZCFSeat} seat
  * @param {{ chainNames: string[] }} offerArgs
  */
 export const makePortfolioAccount = async (
   orch,
-  { makePortfolioHolder },
+  { makePortfolioHolderKit },
   seat,
   { chainNames },
 ) => {
@@ -77,12 +78,12 @@ export const makePortfolioAccount = async (
       )
     ),
   );
-  const portfolioHolder = makePortfolioHolder(
+  const portfolioHolderKit = makePortfolioHolderKit(
     accountEntries,
     publicTopicEntries,
   );
 
-  return portfolioHolder.asContinuingOffer();
+  return asContinuingOffer(portfolioHolderKit);
 };
 harden(makePortfolioAccount);
 
