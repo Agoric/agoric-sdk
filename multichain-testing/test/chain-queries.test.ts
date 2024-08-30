@@ -22,9 +22,9 @@ const test = anyTest as TestFn<SetupContextWithWallets>;
 
 const accounts = ['osmosis', 'cosmoshub', 'agoric'];
 
-const contractName = 'basicFlows';
+const contractName = 'queryFlows';
 const contractBuilder =
-  '../packages/builders/scripts/orchestration/init-basic-flows.js';
+  '../packages/builders/scripts/testing/start-query-flows.js';
 
 test.before(async t => {
   const { deleteTestKeys, setupTestKeys, ...rest } = await commonSetup(t);
