@@ -94,10 +94,10 @@ const makeBootMsg = initAction => {
  * Extract local Swingset-specific configuration which is
  * not part of the consensus.
  *
- * @param {any} initAction
+ * @param {any} resolvedConfig
  */
-const makeSwingsetConfig = initAction => {
-  const { maxVatsOnline = 50 } = initAction.resolvedConfig || {};
+const makeSwingsetConfig = resolvedConfig => {
+  const { maxVatsOnline } = resolvedConfig || {};
   return {
     maxVatsOnline,
   };
@@ -295,6 +295,8 @@ export default async function main(progname, args, { env, homedir, agcc }) {
     const { slogfile } = initAction.resolvedConfig || {};
     // eslint-disable-next-line dot-notation
     if (slogfile) env['SLOGFILE'] = slogfile;
+
+    const swingsetConfig = makeSwingsetConfig(initAction.resolvedConfig);
 
     const sendToChainStorage = msg => chainSend(portNums.storage, msg);
     // this object is used to store the mailbox state.
@@ -508,8 +510,6 @@ export default async function main(progname, args, { env, homedir, agcc }) {
         return {};
       }
     };
-
-    const swingsetConfig = makeSwingsetConfig(initAction);
 
     const s = await launch({
       actionQueueStorage,

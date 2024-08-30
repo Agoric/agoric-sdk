@@ -33,7 +33,7 @@ const DefaultConfigTemplate = `
 slogfile = "{{ .Swingset.SlogFile }}"
 
 # maxVatsOnline is the maximum number of vats that SwingSet kernel will bring online
-maxVatsOnline = 50
+maxVatsOnline = {{ .Swingset.MaxVatsOnline }}
 `
 
 // SwingsetConfig defines configuration for the SwingSet VM.
@@ -41,10 +41,14 @@ maxVatsOnline = 50
 type SwingsetConfig struct {
 	// SlogFile is the absolute path at which a SwingSet log "slog" file should be written.
 	SlogFile string `mapstructure:"slogfile" json:"slogfile,omitempty"`
+	// MaxVatsOnline is the maximum number of vats that the SwingSet kernel will have online
+	// at any given time.
+	MaxVatsOnline int `mapstructure:"maxVatsOnline" json:"maxVatsOnline,omitempty"`
 }
 
 var DefaultSwingsetConfig = SwingsetConfig{
-	SlogFile: "",
+	SlogFile:      "",
+	MaxVatsOnline: 50,
 }
 
 func SwingsetConfigFromViper(resolvedConfig servertypes.AppOptions) (*SwingsetConfig, error) {
