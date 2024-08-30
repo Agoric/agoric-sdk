@@ -7,6 +7,7 @@ import (
 	"github.com/spf13/viper"
 
 	"github.com/cosmos/cosmos-sdk/client/flags"
+	servertypes "github.com/cosmos/cosmos-sdk/server/types"
 
 	"github.com/Agoric/agoric-sdk/golang/cosmos/util"
 )
@@ -43,10 +44,14 @@ var DefaultSwingsetConfig = SwingsetConfig{
 	SlogFile: "",
 }
 
-func SwingsetConfigFromViper(resolvedConfig any) (*SwingsetConfig, error) {
+func SwingsetConfigFromViper(resolvedConfig servertypes.AppOptions) (*SwingsetConfig, error) {
 	v, ok := resolvedConfig.(*viper.Viper)
 	if !ok {
-		return nil, fmt.Errorf("expected an instance of viper!")
+		// Tolerate an apparently empty configuration such as
+		// cosmos/cosmos-sdk/simapp EmptyAppOptions, but otherwise require viper.
+		if resolvedConfig.Get(flags.FlagHome) != nil {
+			return nil, fmt.Errorf("expected an instance of viper!")
+		}
 	}
 	if v == nil {
 		return nil, nil
