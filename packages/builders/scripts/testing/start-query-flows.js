@@ -7,7 +7,6 @@
 import { deeplyFulfilledObject, makeTracer } from '@agoric/internal';
 import { makeStorageNodeChild } from '@agoric/internal/src/lib-chainStorage.js';
 import { E } from '@endo/far';
-import { deeplyFulfilled } from '@endo/marshal';
 
 /**
  * @import {QueryFlowsSF as StartFn} from '@agoric/orchestration/src/fixtures/query-flows.contract.js';

@@ -27,7 +27,9 @@ const contract = async (zcf, _privateArgs, zone, { orchestrateAll }) => {
     'Query Flows Public Facet',
     M.interface('Query Flows PF', {
       makeSendICQQueryInvitation: M.callWhen().returns(InvitationShape),
-      makeAccountAndSendBalanceQueryInvitation:
+      makeAccountAndGetBalanceQueryInvitation:
+        M.callWhen().returns(InvitationShape),
+      makeAccountAndGetBalancesQueryInvitation:
         M.callWhen().returns(InvitationShape),
       makeSendLocalQueryInvitation: M.callWhen().returns(InvitationShape),
     }),
@@ -38,9 +40,15 @@ const contract = async (zcf, _privateArgs, zone, { orchestrateAll }) => {
           'Submit a query to a remote chain',
         );
       },
-      makeAccountAndSendBalanceQueryInvitation() {
+      makeAccountAndGetBalanceQueryInvitation() {
         return zcf.makeInvitation(
-          orchFns.makeAccountAndSendBalanceQuery,
+          orchFns.makeAccountAndGetBalanceQuery,
+          'Make an account and submit a balance query',
+        );
+      },
+      makeAccountAndGetBalancesQueryInvitation() {
+        return zcf.makeInvitation(
+          orchFns.makeAccountAndGetBalancesQuery,
           'Make an account and submit a balance query',
         );
       },

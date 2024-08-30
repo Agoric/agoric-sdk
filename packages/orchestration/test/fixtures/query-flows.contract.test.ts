@@ -189,7 +189,7 @@ test('send query from orch account in an async-flow', async t => {
 
   {
     t.log('send query from orchAccount on chain with icqEnabled: true');
-    const inv = E(publicFacet).makeAccountAndSendBalanceQueryInvitation();
+    const inv = E(publicFacet).makeAccountAndGetBalanceQueryInvitation();
     const userSeat = E(zoe).offer(inv, {}, undefined, {
       chainName: 'osmosis',
       denom: 'uatom',
@@ -203,7 +203,7 @@ test('send query from orch account in an async-flow', async t => {
   }
   {
     t.log('send query from orchAccount that times out');
-    const inv = E(publicFacet).makeAccountAndSendBalanceQueryInvitation();
+    const inv = E(publicFacet).makeAccountAndGetBalanceQueryInvitation();
     const userSeat = E(zoe).offer(inv, {}, undefined, {
       chainName: 'osmosis',
       denom: 'notarealdenom',
@@ -214,7 +214,7 @@ test('send query from orch account in an async-flow', async t => {
   }
   {
     t.log('send query from orchAccount on chain with icqEnabled: false');
-    const inv = E(publicFacet).makeAccountAndSendBalanceQueryInvitation();
+    const inv = E(publicFacet).makeAccountAndGetBalanceQueryInvitation();
     const userSeat = E(zoe).offer(inv, {}, undefined, {
       chainName: 'cosmoshub',
       denom: 'uatom,',

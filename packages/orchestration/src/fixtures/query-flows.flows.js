@@ -40,10 +40,10 @@ export const sendICQQuery = async (orch, _ctx, seat, { chainName, msgs }) => {
 harden(sendICQQuery);
 
 /**
- * Create an account and send a query and get the response back in an offer
- * result. Like `sendQuery`, this invitation is for testing only. In a real
- * scenario it doesn't make much sense to send a query immediately after the
- * account is created - it won't have any funds.
+ * Create an account, send a balance query, and get the response back in an
+ * offer result. Like `sendQuery`, this invitation is for testing only. In a
+ * real scenario it doesn't make much sense to send a query immediately after
+ * the account is created - it won't have any funds.
  *
  * @satisfies {OrchestrationFlow}
  * @param {Orchestrator} orch
@@ -51,7 +51,7 @@ harden(sendICQQuery);
  * @param {ZCFSeat} seat
  * @param {{ chainName: string; denom: DenomArg }} offerArgs
  */
-export const makeAccountAndSendBalanceQuery = async (
+export const makeAccountAndGetBalanceQuery = async (
   orch,
   _ctx,
   seat,
@@ -67,7 +67,37 @@ export const makeAccountAndSendBalanceQuery = async (
   // `quote` to ensure offerResult (record) is visible in smart-wallet
   return q(queryResponse).toString();
 };
-harden(makeAccountAndSendBalanceQuery);
+harden(makeAccountAndGetBalanceQuery);
+
+/**
+ * Create an account, send an all balances query, and get the response back in
+ * an offer result. Like `sendQuery`, this invitation is for testing only. In a
+ * real scenario it doesn't make much sense to send a query immediately after
+ * the account is created - it won't have any funds.
+ *
+ * @satisfies {OrchestrationFlow}
+ * @param {Orchestrator} orch
+ * @param {any} _ctx
+ * @param {ZCFSeat} seat
+ * @param {{ chainName: string; denom: DenomArg }} offerArgs
+ */
+export const makeAccountAndGetBalancesQuery = async (
+  orch,
+  _ctx,
+  seat,
+  { chainName },
+) => {
+  seat.exit(); // no funds exchanged
+  mustMatch(chainName, M.string());
+  if (chainName === 'agoric') throw Fail`ICQ not supported on local chain`;
+  const remoteChain = await orch.getChain(chainName);
+  const orchAccount = await remoteChain.makeAccount();
+  const queryResponse = await orchAccount.getBalances();
+  trace('ICQ All Balances Query response:', queryResponse);
+  // `quote` to ensure offerResult (record) is visible in smart-wallet
+  return q(queryResponse).toString();
+};
+harden(makeAccountAndGetBalancesQuery);
 
 /**
  * Send a query to the local chain and get the response back in an offer result.
