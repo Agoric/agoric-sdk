@@ -20,6 +20,7 @@ import { orchestrationAccountMethods } from '../utils/orchestrationAccount.js';
 import { makeTimestampHelper } from '../utils/time.js';
 import { preparePacketTools } from './packet-tools.js';
 import { prepareIBCTools } from './ibc-packet.js';
+import { coerceCoin, coerceDenomAmount } from '../utils/amounts.js';
 
 /**
  * @import {HostOf} from '@agoric/async-flow';
@@ -175,15 +176,7 @@ export const prepareLocalOrchestrationAccountKit = (
          * @returns {Coin}
          */
         amountToCoin(amount) {
-          if (!('denom' in amount)) {
-            // FIXME(#9211) look up values from brands
-            trace('TODO #9211: handle brand', amount);
-            throw Fail`Brands not currently supported.`;
-          }
-          return harden({
-            denom: amount.denom,
-            amount: String(amount.value),
-          });
+          return coerceCoin(chainHub, amount);
         },
       },
       invitationMakers: {
@@ -392,12 +385,17 @@ export const prepareLocalOrchestrationAccountKit = (
          * @type {HostOf<OrchestrationAccountI['getBalance']>}
          */
         getBalance(denomArg) {
-          // FIXME look up real values
-          // UNTIL https://github.com/Agoric/agoric-sdk/issues/9211
           const [brand, denom] =
             typeof denomArg === 'string'
-              ? [/** @type {any} */ (null), denomArg]
-              : [denomArg, 'FIXME'];
+              ? [chainHub.lookupAsset(denomArg).brand, denomArg]
+              : [denomArg, chainHub.lookupDenom(denomArg)];
+
+          if (!brand) {
+            throw Fail`No brand for ${denomArg}`;
+          }
+          if (!denom) {
+            throw Fail`No denom for ${denomArg}`;
+          }
 
           return watch(
             E(this.state.account).getBalance(brand),
@@ -435,12 +433,9 @@ export const prepareLocalOrchestrationAccountKit = (
          * @param {Amount<'nat'>} ertpAmount
          */
         delegate(validatorAddress, ertpAmount) {
-          // TODO #9211 lookup denom from brand
-          const amount = {
-            amount: String(ertpAmount.value),
-            denom: 'ubld',
-          };
           const { account: lca } = this.state;
+
+          const amount = coerceCoin(chainHub, ertpAmount);
 
           return watch(
             E(lca).executeTx([
@@ -460,11 +455,7 @@ export const prepareLocalOrchestrationAccountKit = (
          * @returns {Vow<void | TimestampRecord>}
          */
         undelegate(validatorAddress, ertpAmount) {
-          // TODO #9211 lookup denom from brand
-          const amount = {
-            amount: String(ertpAmount.value),
-            denom: 'ubld',
-          };
+          const amount = coerceCoin(chainHub, ertpAmount);
           const { account: lca } = this.state;
           return watch(
             E(lca).executeTx([
@@ -555,8 +546,6 @@ export const prepareLocalOrchestrationAccountKit = (
         transfer(amount, destination, opts) {
           return asVow(() => {
             trace('Transferring funds from LCA over IBC');
-            // TODO #9211 lookup denom from brand
-            if ('brand' in amount) throw Fail`ERTP Amounts not yet supported`;
 
             const connectionInfoV = watch(
               chainHub.getConnectionInfo(
@@ -578,7 +567,11 @@ export const prepareLocalOrchestrationAccountKit = (
             const resultV = watch(
               allVows([connectionInfoV, timeoutTimestampVowOrValue]),
               this.facets.transferWatcher,
-              { opts, amount, destination },
+              {
+                opts,
+                amount: coerceDenomAmount(chainHub, amount),
+                destination,
+              },
             );
             return resultV;
           });

@@ -1,13 +1,14 @@
 /* we expect promises to resolved promptly,  */
 /* eslint-disable no-restricted-syntax */
-import { M } from '@endo/patterns';
 import { heapVowE } from '@agoric/vow/vat.js';
+import { M } from '@endo/patterns';
 import { CosmosChainInfoShape } from '../typeGuards.js';
+import { DenomDetailShape } from './chain-hub.js';
 
 /**
  * @import {Zone} from '@agoric/zone';
- * @import {CosmosChainInfo, IBCConnectionInfo} from '@agoric/orchestration';
- * @import {ChainHub} from './chain-hub.js';
+ * @import {CosmosChainInfo, Denom, IBCConnectionInfo} from '@agoric/orchestration';
+ * @import {ChainHub, DenomDetail} from './chain-hub.js';
  */
 
 /**
@@ -28,6 +29,7 @@ export const prepareChainHubAdmin = (zone, chainHub) => {
         CosmosChainInfoShape,
         ConnectionInfoShape,
       ).returns(M.undefined()),
+      registerAsset: M.call(M.string(), DenomDetailShape).returns(M.promise()),
     }),
     {
       /**
@@ -47,6 +49,19 @@ export const prepareChainHubAdmin = (zone, chainHub) => {
           chainInfo.chainId,
           connectionInfo,
         );
+      },
+      /**
+       * Register an asset that may be held on a chain other than the issuing
+       * chain.
+       *
+       * @param {Denom} denom - on the holding chain, whose name is given in
+       *   `detail.chainName`
+       * @param {DenomDetail} detail - chainName and baseName must be registered
+       */
+      async registerAsset(denom, detail) {
+        // XXX async work necessary before the synchronous call
+        await heapVowE.when(chainHub.getChainInfo('agoric'));
+        chainHub.registerAsset(denom, detail);
       },
     },
   );

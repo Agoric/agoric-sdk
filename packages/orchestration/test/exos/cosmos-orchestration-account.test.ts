@@ -16,6 +16,7 @@ import {
   buildTxPacketString,
   parseOutgoingTxPacket,
 } from '../../tools/ibc-mocks.js';
+import { defaultMockAckMap } from '../ibc-mocks.js';
 
 type TestContext = Awaited<ReturnType<typeof commonSetup>>;
 
@@ -25,13 +26,13 @@ test.beforeEach(async t => {
   t.context = await commonSetup(t);
 });
 
-test('CosmosOrchestrationAccount - send (to addr on same chain)', async t => {
+test('send (to addr on same chain)', async t => {
   const {
-    bootstrap,
     brands: { ist },
+    facadeServices: { chainHub },
     utils: { inspectDibcBridge },
   } = t.context;
-  const makeTestCOAKit = prepareMakeTestCOAKit(t, bootstrap);
+  const makeTestCOAKit = prepareMakeTestCOAKit(t, t.context);
   const account = await makeTestCOAKit();
   t.assert(account, 'account is returned');
 
@@ -46,7 +47,7 @@ test('CosmosOrchestrationAccount - send (to addr on same chain)', async t => {
     await E(account).send(toAddress, {
       value: 10n,
       denom: 'uatom',
-    } as AmountArg),
+    }),
     undefined,
   );
 
@@ -57,12 +58,10 @@ test('CosmosOrchestrationAccount - send (to addr on same chain)', async t => {
     { message: 'ABCI code: 5: error handling packet: see events for details' },
   );
 
-  // ertp amounts not supported
-  await t.throwsAsync(
-    E(account).send(toAddress, ist.make(10n) as AmountArg),
-    // TODO #9211 lookup denom from brand
-    { message: 'Brands not currently supported.' },
-  );
+  // IST not registered
+  await t.throwsAsync(E(account).send(toAddress, ist.make(10n) as AmountArg), {
+    message: 'No denomination for brand [object Alleged: IST brand]',
+  });
 
   // multi-send (sendAll)
   t.is(
@@ -82,10 +81,10 @@ test('CosmosOrchestrationAccount - send (to addr on same chain)', async t => {
   );
 });
 
-test('CosmosOrchestrationAccount - transfer', async t => {
+test('transfer', async t => {
   const {
     brands: { ist },
-    bootstrap,
+    facadeServices: { chainHub },
     utils: { inspectDibcBridge },
     mocks: { ibcBridge },
   } = t.context;
@@ -139,12 +138,22 @@ test('CosmosOrchestrationAccount - transfer', async t => {
     const transferResp = buildMsgResponseString(MsgTransferResponse, {
       sequence: 0n,
     });
+
+    const uistTransfer = toTransferTxPacket({
+      ...mockIbcTransfer,
+      token: {
+        denom: 'uist',
+        amount: '10',
+      },
+    });
+
     return {
       [defaultTransfer]: transferResp,
       [customTimeoutHeight]: transferResp,
       [customTimeoutTimestamp]: transferResp,
       [customTimeout]: transferResp,
       [customMemo]: transferResp,
+      [uistTransfer]: transferResp,
     };
   };
   ibcBridge.setMockAck(buildMocks());
@@ -160,7 +169,7 @@ test('CosmosOrchestrationAccount - transfer', async t => {
   };
 
   t.log('Make account on cosmoshub');
-  const makeTestCOAKit = prepareMakeTestCOAKit(t, bootstrap);
+  const makeTestCOAKit = prepareMakeTestCOAKit(t, t.context);
   const account = await makeTestCOAKit();
 
   t.log('Send tokens from cosmoshub to noble');
@@ -258,10 +267,18 @@ test('CosmosOrchestrationAccount - transfer', async t => {
     },
   );
 
-  t.log("transfer doesn't support ERTP brands yet. see #9211");
+  t.log('transfer throws if asset is not in its chainHub');
   await t.throwsAsync(E(account).transfer(ist.make(10n), mockDestination), {
-    message: 'Brands not currently supported.',
+    message: 'No denomination for brand [object Alleged: IST brand]',
   });
+  chainHub.registerAsset('uist', {
+    baseDenom: 'uist',
+    baseName: 'agoric',
+    brand: ist.brand,
+    chainName: 'agoric',
+  });
+  // uses uistTransfer mock above
+  await E(account).transfer(ist.make(10n), mockDestination);
 
   t.log('transfer timeout error recieved and handled from the bridge');
   await t.throwsAsync(
@@ -284,9 +301,8 @@ test('CosmosOrchestrationAccount - transfer', async t => {
   );
 });
 
-test('CosmosOrchestrationAccount - not yet implemented', async t => {
-  const { bootstrap } = await commonSetup(t);
-  const makeTestCOAKit = prepareMakeTestCOAKit(t, bootstrap);
+test('not yet implemented', async t => {
+  const makeTestCOAKit = prepareMakeTestCOAKit(t, t.context);
   const account = await makeTestCOAKit();
   const mockAmountArg: AmountArg = { value: 10n, denom: 'uatom' };
 

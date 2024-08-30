@@ -19,7 +19,7 @@ const contractFile = `${dirname}/../../src/examples/${contractName}.contract.js`
 type StartFn =
   typeof import('../../src/examples/auto-stake-it.contract.js').start;
 
-test('auto-stake-it - make accounts, register tap, return invitationMakers', async t => {
+test('make accounts, register tap, return invitationMakers', async t => {
   t.log('bootstrap, orchestration core-eval');
   const {
     bootstrap: { storage },
@@ -51,8 +51,6 @@ test('auto-stake-it - make accounts, register tap, return invitationMakers', asy
       value: 'cosmosvaloper1test',
       encoding: 'bech32',
     },
-    // TODO user supplied until #9211
-    localDenom: 'ibc/fakeuatomhash',
   });
   const result = await heapVowE(userSeat).getOfferResult();
 
@@ -114,7 +112,9 @@ test('auto-stake-it - make accounts, register tap, return invitationMakers', asy
       receiver: 'cosmos1test',
       sender: execAddr,
       sourceChannel: 'channel-5',
-      token: { amount: '10', denom: 'ibc/fakeuatomhash' },
+      token: {
+        amount: '10',
+      },
     },
     'tokens transferred from LOA to COA',
   );
@@ -139,8 +139,6 @@ test('auto-stake-it - make accounts, register tap, return invitationMakers', asy
       value: 'cosmosvaloper1test',
       encoding: 'bech32',
     },
-    // TODO user supplied until #9211
-    localDenom: 'ibc/fakeuatomhash',
   });
   const { publicSubscribers: pubSubs2 } =
     await heapVowE(userSeat2).getOfferResult();

@@ -7,7 +7,7 @@ import { Fail, q } from '@endo/errors';
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
 import {
-  BrandInfoShape,
+  DenomInfoShape,
   ChainInfoShape,
   DenomAmountShape,
   DenomShape,
@@ -25,7 +25,6 @@ import {
  * @import {Remote} from '@agoric/internal';
  * @import {PickFacet} from '@agoric/swingset-liveslots';
  * @import {CosmosInterchainService} from './cosmos-interchain-service.js';
- * @import {MakeLocalOrchestrationAccountKit} from './local-orchestration-account.js';
  * @import {MakeLocalChainFacade} from './local-chain-facade.js';
  * @import {MakeRemoteChainFacade} from './remote-chain-facade.js';
  * @import {Chain, ChainInfo, IBCConnectionInfo, Orchestrator} from '../types.js';
@@ -38,7 +37,7 @@ const trace = makeTracer('Orchestrator');
 export const OrchestratorI = M.interface('Orchestrator', {
   getChain: M.call(M.string()).returns(Vow$(ChainInfoShape)),
   makeLocalAccount: M.call().returns(Vow$(LocalChainAccountShape)),
-  getBrandInfo: M.call(DenomShape).returns(BrandInfoShape),
+  getDenomInfo: M.call(DenomShape).returns(DenomInfoShape),
   asAmount: M.call(DenomAmountShape).returns(AmountShape),
 });
 
@@ -141,15 +140,15 @@ const prepareOrchestratorKit = (
         makeLocalAccount() {
           return watch(E(localchain).makeAccount());
         },
-        /** @type {HostOf<Orchestrator['getBrandInfo']>} */
-        getBrandInfo(denom) {
+        /** @type {HostOf<Orchestrator['getDenomInfo']>} */
+        getDenomInfo(denom) {
           const { chainName, baseName, baseDenom, brand } =
             chainHub.lookupAsset(denom);
           chainByName.has(chainName) ||
-            Fail`use getChain(${q(chainName)}) before getBrandInfo(${q(denom)})`;
+            Fail`use getChain(${q(chainName)}) before getDenomInfo(${q(denom)})`;
           const chain = chainByName.get(chainName);
           chainByName.has(baseName) ||
-            Fail`use getChain(${q(baseName)}) before getBrandInfo(${q(denom)})`;
+            Fail`use getChain(${q(baseName)}) before getDenomInfo(${q(denom)})`;
           const base = chainByName.get(baseName);
           return harden({ chain, base, brand, baseDenom });
         },

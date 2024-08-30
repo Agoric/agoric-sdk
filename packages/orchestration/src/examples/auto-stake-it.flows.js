@@ -1,4 +1,5 @@
 import { Fail } from '@endo/errors';
+import { denomHash } from '../utils/denomHash.js';
 
 /**
  * @import {ResolvedPublicTopic} from '@agoric/zoe/src/contractSupport/topics.js';
@@ -21,19 +22,13 @@ import { Fail } from '@endo/errors';
  * @param {{
  *   chainName: string;
  *   validator: CosmosValidatorAddress;
- *   localDenom: Denom;
  * }} offerArgs
  */
 export const makeAccounts = async (
   orch,
   { makeStakingTap, makePortfolioHolder, chainHub },
   seat,
-  {
-    chainName,
-    validator,
-    // TODO localDenom is user supplied, until #9211
-    localDenom,
-  },
+  { chainName, validator },
 ) => {
   seat.exit(); // no funds exchanged
   const [agoric, remoteChain] = await Promise.all([
@@ -64,6 +59,8 @@ export const makeAccounts = async (
     chainId,
   );
   assert(transferChannel.counterPartyChannelId, 'unable to find sourceChannel');
+
+  const localDenom = `ibc/${denomHash({ denom: remoteDenom, channelId: transferChannel.channelId })}`;
 
   // Every time the `localAccount` receives `remoteDenom` over IBC, delegate it.
   const tap = makeStakingTap({

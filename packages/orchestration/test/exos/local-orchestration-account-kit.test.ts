@@ -2,20 +2,20 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { AmountMath } from '@agoric/ertp';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
-import { heapVowE as VE } from '@agoric/vow/vat.js';
 import { TargetApp } from '@agoric/vats/src/bridge-target.js';
 import { SIMULATED_ERRORS } from '@agoric/vats/tools/fake-bridge.js';
+import { heapVowE as VE } from '@agoric/vow/vat.js';
 import { ChainAddress, type AmountArg } from '../../src/orchestration-api.js';
-import { NANOSECONDS_PER_SECOND } from '../../src/utils/time.js';
-import { commonSetup } from '../supports.js';
-import { UNBOND_PERIOD_SECONDS } from '../ibc-mocks.js';
 import { maxClockSkew } from '../../src/utils/cosmos.js';
-import { prepareMakeTestLOAKit } from './make-test-loa-kit.js';
+import { NANOSECONDS_PER_SECOND } from '../../src/utils/time.js';
 import { buildVTransferEvent } from '../../tools/ibc-mocks.js';
+import { UNBOND_PERIOD_SECONDS } from '../ibc-mocks.js';
+import { commonSetup } from '../supports.js';
+import { prepareMakeTestLOAKit } from './make-test-loa-kit.js';
 
 test('deposit, withdraw', async t => {
   const common = await commonSetup(t);
-  const makeTestLOAKit = prepareMakeTestLOAKit(t, common.bootstrap);
+  const makeTestLOAKit = prepareMakeTestLOAKit(t, common);
   const account = await makeTestLOAKit();
 
   const {
@@ -27,8 +27,10 @@ test('deposit, withdraw', async t => {
 
   t.log('deposit 100 bld to account');
   await VE(account).deposit(oneHundredStakePmt);
-  // FIXME #9211
-  // t.deepEqual(await E(account).getBalance('ubld'), stake.units(100));
+  t.deepEqual(await VE(account).getBalance('ubld'), {
+    denom: 'ubld',
+    value: stake.units(100).value,
+  });
 
   // XXX races in the bridge
   await eventLoopIteration();
@@ -58,7 +60,7 @@ test('deposit, withdraw', async t => {
 
 test('delegate, undelegate', async t => {
   const common = await commonSetup(t);
-  const makeTestLOAKit = prepareMakeTestLOAKit(t, common.bootstrap);
+  const makeTestLOAKit = prepareMakeTestLOAKit(t, common);
   const account = await makeTestLOAKit();
 
   const {
@@ -94,7 +96,7 @@ test('delegate, undelegate', async t => {
 
 test('transfer', async t => {
   const common = await commonSetup(t);
-  const makeTestLOAKit = prepareMakeTestLOAKit(t, common.bootstrap);
+  const makeTestLOAKit = prepareMakeTestLOAKit(t, common);
   const account = await makeTestLOAKit();
 
   const { value: sender } = await VE(account).getAddress();
@@ -111,8 +113,10 @@ test('transfer', async t => {
 
   t.log('deposit 100 bld to account');
   await VE(account).deposit(oneHundredStakePmt);
-  // FIXME #9211
-  // t.deepEqual(await E(account).getBalance('ubld'), stake.units(100));
+  t.deepEqual(await VE(account).getBalance('ubld'), {
+    denom: 'ubld',
+    value: stake.units(100).value,
+  });
 
   const destination: ChainAddress = {
     chainId: 'cosmoshub-4',
@@ -143,12 +147,6 @@ test('transfer', async t => {
     await eventLoopIteration();
     return { transferP };
   };
-
-  // TODO #9211, support ERTP amounts
-  t.log('ERTP Amounts not yet supported for AmountArg');
-  await t.throwsAsync(() => VE(account).transfer(stake.units(1), destination), {
-    message: 'ERTP Amounts not yet supported',
-  });
 
   t.log('.transfer() 1 bld to cosmos using DenomAmount');
   const { transferP } = await startTransfer(
@@ -247,7 +245,7 @@ test('transfer', async t => {
 
 test('monitor transfers', async t => {
   const common = await commonSetup(t);
-  const makeTestLOAKit = prepareMakeTestLOAKit(t, common.bootstrap);
+  const makeTestLOAKit = prepareMakeTestLOAKit(t, common);
   const account = await makeTestLOAKit();
   const {
     mocks: { transferBridge },
@@ -290,15 +288,15 @@ test('monitor transfers', async t => {
 });
 
 test('send', async t => {
-  const {
-    bootstrap,
-    brands: { bld: stake, ist: stable },
-    utils: { pourPayment, inspectLocalBridge },
-  } = await commonSetup(t);
-  const makeTestLOAKit = prepareMakeTestLOAKit(t, bootstrap);
+  const common = await commonSetup(t);
+  const makeTestLOAKit = prepareMakeTestLOAKit(t, common);
   const account = await makeTestLOAKit();
   t.truthy(account, 'account is returned');
 
+  const {
+    brands: { bld: stake, ist: stable },
+    utils: { pourPayment, inspectLocalBridge },
+  } = common;
   const oneHundredStakePmt = await pourPayment(stake.units(100));
   const oneHundredStablePmt = await pourPayment(stable.units(100));
   t.log('deposit 100 bld to account');
@@ -313,10 +311,7 @@ test('send', async t => {
   };
 
   t.log(`send 10 bld to ${toAddress.value}`);
-  await t.throwsAsync(VE(account).send(toAddress, stake.units(10)), {
-    message: 'Brands not currently supported.',
-  });
-  await VE(account).send(toAddress, { denom: 'ubld', value: 10_000_000n });
+  await VE(account).send(toAddress, stake.units(10));
 
   // this would normally fail since we do not have ibc/1234 in our wallet,
   // but the mocked localchain bridge doesn't currently know about balances

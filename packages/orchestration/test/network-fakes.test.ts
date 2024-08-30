@@ -16,7 +16,7 @@ test.before(async t => {
   await t.context.setupIBCProtocol();
 });
 
-test('network fakes - echo connection', async t => {
+test('echo connection', async t => {
   const { portAllocator, networkVat } = t.context;
 
   // Allocate an echo port
@@ -36,13 +36,13 @@ test('network fakes - echo connection', async t => {
   t.is(response, message, 'Echo returns the same message');
 });
 
-test('network fakes - port allocator', async t => {
+test('port allocator', async t => {
   const { portAllocator } = t.context;
   const customPort = await E(portAllocator).allocateCustomIBCPort('test-port');
   t.is(await E(customPort).getLocalAddress(), '/ibc-port/custom-test-port');
 });
 
-test('network fakes - ibc connection', async t => {
+test('ibc connection', async t => {
   const { portAllocator } = t.context;
 
   // allocate ICA controller port and connect to remote chain

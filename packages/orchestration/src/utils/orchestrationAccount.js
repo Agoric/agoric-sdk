@@ -1,7 +1,8 @@
-import { M } from '@endo/patterns';
+import { BrandShape } from '@agoric/ertp';
 import { Shape as NetworkShape } from '@agoric/network';
 import { VowShape } from '@agoric/vow';
 import { TopicsRecordShape } from '@agoric/zoe/src/contractSupport/topics.js';
+import { M } from '@endo/patterns';
 import {
   AmountArgShape,
   ChainAddressShape,
@@ -16,7 +17,9 @@ const { Vow$ } = NetworkShape; // TODO #9611
 /** @see {OrchestrationAccountI} */
 export const orchestrationAccountMethods = {
   getAddress: M.call().returns(ChainAddressShape),
-  getBalance: M.call(M.any()).returns(Vow$(DenomAmountShape)),
+  getBalance: M.call(M.or(BrandShape, M.string())).returns(
+    Vow$(DenomAmountShape),
+  ),
   getBalances: M.call().returns(Vow$(M.arrayOf(DenomAmountShape))),
   send: M.call(ChainAddressShape, AmountArgShape).returns(VowShape),
   sendAll: M.call(ChainAddressShape, M.arrayOf(AmountArgShape)).returns(

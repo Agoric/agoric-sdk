@@ -1,3 +1,4 @@
+/** @file The mocks used in these tests */
 import {
   QueryBalanceRequest,
   QueryBalanceResponse,

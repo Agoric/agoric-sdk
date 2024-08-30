@@ -57,8 +57,11 @@ test('makeAccount, deposit, withdraw', async t => {
   const depositResp = await E(account).deposit(
     await utils.pourPayment(bld.units(100)),
   );
-  // FIXME #9211
-  // t.deepEqual(await E(account).getBalance('ubld'), bld.units(100));
+  t.deepEqual(await E(account).getBalance('ubld'), {
+    denom: 'ubld',
+    value: bld.units(100).value,
+  });
+
   // XXX races in the bridge
   await eventLoopIteration();
 

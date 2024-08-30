@@ -44,7 +44,7 @@ export type Denom = string; // ibc/... or uist
  * In many cases, either a denom string or a local Brand can be used to
  * designate a remote token type.
  */
-export type DenomArg = Denom | Brand;
+export type DenomArg = Denom | Brand<'nat'>;
 
 /**
  * Count of some fungible token on some blockchain.
@@ -57,7 +57,7 @@ export type DenomAmount = {
 };
 
 /** Amounts can be provided as pure data using denoms or as ERTP Amounts */
-export type AmountArg = DenomAmount | Amount;
+export type AmountArg = DenomAmount | Amount<'nat'>;
 
 /** An address on some blockchain, e.g., cosmos, eth, etc. */
 export type ChainAddress = {
@@ -101,6 +101,20 @@ export interface Chain<CI extends ChainInfo> {
   // TODO provide a way to get the local denom/brand/whatever for this chain
 }
 
+export interface DenomInfo<
+  HoldingChain extends keyof KnownChains,
+  IssuingChain extends keyof KnownChains,
+> {
+  /** The well-known Brand on Agoric for the direct asset */
+  brand?: Brand;
+  /** The Chain at which the argument `denom` exists (where the asset is currently held) */
+  chain: Chain<KnownChains[HoldingChain]>;
+  /** The Chain that is the issuer of the underlying asset */
+  base: Chain<KnownChains[IssuingChain]>;
+  /** the Denom for the underlying asset on its issuer chain */
+  baseDenom: Denom;
+}
+
 /**
  * Provided in the callback to `orchestrate()`.
  */
@@ -119,21 +133,12 @@ export interface Orchestrator {
    * issues the corresponding asset.
    * @param denom
    */
-  getBrandInfo: <
+  getDenomInfo: <
     HoldingChain extends keyof KnownChains,
     IssuingChain extends keyof KnownChains,
   >(
     denom: Denom,
-  ) => {
-    /** The well-known Brand on Agoric for the direct asset */
-    brand?: Brand;
-    /** The Chain at which the argument `denom` exists (where the asset is currently held) */
-    chain: Chain<KnownChains[HoldingChain]>;
-    /** The Chain that is the issuer of the underlying asset */
-    base: Chain<KnownChains[IssuingChain]>;
-    /** the Denom for the underlying asset on its issuer chain */
-    baseDenom: Denom;
-  };
+  ) => DenomInfo<HoldingChain, IssuingChain>;
   // TODO preload the mapping so this can be synchronous
   /**
    * Convert an amount described in native data to a local, structured Amount.
