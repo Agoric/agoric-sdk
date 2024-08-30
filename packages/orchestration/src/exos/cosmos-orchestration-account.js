@@ -3,6 +3,8 @@ import { toRequestQueryJson } from '@agoric/cosmic-proto';
 import {
   QueryBalanceRequest,
   QueryBalanceResponse,
+  QueryAllBalancesRequest,
+  QueryAllBalancesResponse,
 } from '@agoric/cosmic-proto/cosmos/bank/v1beta1/query.js';
 import { MsgSend } from '@agoric/cosmic-proto/cosmos/bank/v1beta1/tx.js';
 import {
@@ -22,7 +24,7 @@ import { Shape as NetworkShape } from '@agoric/network';
 import { M } from '@agoric/vat-data';
 import { VowShape } from '@agoric/vow';
 import { decodeBase64 } from '@endo/base64';
-import { Fail } from '@endo/errors';
+import { Fail, makeError, q } from '@endo/errors';
 import { E } from '@endo/far';
 import {
   AmountArgShape,
@@ -146,6 +148,11 @@ export const prepareCosmosOrchestrationAccountKit = (
           .optional(M.arrayOf(M.undefined())) // empty context
           .returns(M.or(M.record(), M.undefined())),
       }),
+      allBalancesQueryWatcher: M.interface('allBalancesQueryWatcher', {
+        onFulfilled: M.call(M.arrayOf(M.record())).returns(
+          M.arrayOf(M.record()),
+        ),
+      }),
       undelegateWatcher: M.interface('undelegateWatcher', {
         onFulfilled: M.call(M.string())
           .optional(M.arrayOf(M.undefined())) // empty context
@@ -257,6 +264,29 @@ export const prepareCosmosOrchestrationAccountKit = (
           );
           if (!balance) throw Fail`Result lacked balance key: ${result}`;
           return harden(toDenomAmount(balance));
+        },
+      },
+      allBalancesQueryWatcher: {
+        /**
+         * @param {JsonSafe<ResponseQuery>[]} results
+         */
+        onFulfilled([result]) {
+          let response;
+          try {
+            response = QueryAllBalancesResponse.decode(
+              // note: an empty string for result.key is a valid result
+              decodeBase64(result.key),
+            );
+          } catch (cause) {
+            throw makeError(
+              `Error parsing QueryAllBalances result ${q(result)}`,
+              undefined,
+              { cause },
+            );
+          }
+          const { balances } = response;
+          if (!balances) throw Fail`Result lacked balances key: ${q(result)}`;
+          return harden(balances.map(coin => toDenomAmount(coin)));
         },
       },
       undelegateWatcher: {
@@ -514,11 +544,7 @@ export const prepareCosmosOrchestrationAccountKit = (
             return watch(results, this.facets.returnVoidWatcher);
           });
         },
-        /** @type {HostOf<OrchestrationAccountI['getBalances']>} */
-        getBalances() {
-          // TODO https://github.com/Agoric/agoric-sdk/issues/9610
-          return asVow(() => Fail`not yet implemented`);
-        },
+
         /** @type {HostOf<StakingAccountActions['redelegate']>} */
         redelegate(srcValidator, dstValidator, amount) {
           return asVow(() => {
@@ -565,7 +591,7 @@ export const prepareCosmosOrchestrationAccountKit = (
           return asVow(() => {
             const { chainAddress, icqConnection } = this.state;
             if (!icqConnection) {
-              throw Fail`Queries not available for chain ${chainAddress.chainId}`;
+              throw Fail`Queries not available for chain ${q(chainAddress.chainId)}`;
             }
             const results = E(icqConnection).query([
               toRequestQueryJson(
@@ -576,6 +602,24 @@ export const prepareCosmosOrchestrationAccountKit = (
               ),
             ]);
             return watch(results, this.facets.balanceQueryWatcher);
+          });
+        },
+
+        /** @type {HostOf<OrchestrationAccountI['getBalances']>} */
+        getBalances() {
+          return asVow(() => {
+            const { chainAddress, icqConnection } = this.state;
+            if (!icqConnection) {
+              throw Fail`Queries not available for chain ${q(chainAddress.chainId)}`;
+            }
+            const results = E(icqConnection).query([
+              toRequestQueryJson(
+                QueryAllBalancesRequest.toProtoMsg({
+                  address: chainAddress.value,
+                }),
+              ),
+            ]);
+            return watch(results, this.facets.allBalancesQueryWatcher);
           });
         },
 

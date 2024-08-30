@@ -8,15 +8,27 @@ import {
   MsgTransferResponse,
 } from '@agoric/cosmic-proto/ibc/applications/transfer/v1/tx.js';
 import { SIMULATED_ERRORS } from '@agoric/vats/tools/fake-bridge.js';
+import {
+  QueryAllBalancesRequest,
+  QueryAllBalancesResponse,
+  QueryBalanceRequest,
+  QueryBalanceResponse,
+} from '@agoric/cosmic-proto/cosmos/bank/v1beta1/query.js';
+import { Coin } from '@agoric/cosmic-proto/cosmos/base/v1beta1/coin.js';
 import { commonSetup } from '../supports.js';
-import type { AmountArg, ChainAddress } from '../../src/orchestration-api.js';
+import type {
+  AmountArg,
+  ChainAddress,
+  Denom,
+} from '../../src/orchestration-api.js';
 import { prepareMakeTestCOAKit } from './make-test-coa-kit.js';
 import {
   buildMsgResponseString,
+  buildQueryPacketString,
+  buildQueryResponseString,
   buildTxPacketString,
   parseOutgoingTxPacket,
 } from '../../tools/ibc-mocks.js';
-import { defaultMockAckMap } from '../ibc-mocks.js';
 
 type TestContext = Awaited<ReturnType<typeof commonSetup>>;
 
@@ -29,7 +41,6 @@ test.beforeEach(async t => {
 test('send (to addr on same chain)', async t => {
   const {
     brands: { ist },
-    facadeServices: { chainHub },
     utils: { inspectDibcBridge },
   } = t.context;
   const makeTestCOAKit = prepareMakeTestCOAKit(t, t.context);
@@ -301,14 +312,115 @@ test('transfer', async t => {
   );
 });
 
+test('getBalance and getBalances', async t => {
+  const {
+    mocks: { ibcBridge },
+  } = t.context;
+  const makeTestCOAKit = prepareMakeTestCOAKit(t, t.context);
+
+  const buildMocks = () => {
+    const makeBalanceReq = (
+      address: ChainAddress['value'] = 'osmo1test',
+      denom: Denom = 'uosmo',
+    ) =>
+      buildQueryPacketString([
+        QueryBalanceRequest.toProtoMsg({
+          address,
+          denom,
+        }),
+      ]);
+    const makeAllBalanceReq = (address: ChainAddress['value'] = 'osmo1test') =>
+      buildQueryPacketString([
+        QueryAllBalancesRequest.toProtoMsg({
+          address,
+        }),
+      ]);
+    const makeBalanceResp = (
+      balance: Coin = { denom: 'usomo', amount: '10' },
+    ) =>
+      buildQueryResponseString(QueryBalanceResponse, {
+        balance,
+      });
+    const makeAllBalanceResp = (balances: Coin[] = []) =>
+      buildQueryResponseString(QueryAllBalancesResponse, {
+        balances,
+      });
+
+    return {
+      [makeBalanceReq()]: makeBalanceResp({
+        denom: 'uosmo',
+        amount: '10',
+      }),
+      [makeAllBalanceReq()]: makeAllBalanceResp([
+        {
+          denom: 'uosmo',
+          amount: '10',
+        },
+      ]),
+      [makeBalanceReq('osmo1test1')]: makeBalanceResp({
+        denom: 'uosmo',
+        amount: '0',
+      }),
+      [makeAllBalanceReq('osmo1test1')]: makeAllBalanceResp(),
+    };
+  };
+  t.log('setting mockAckMap for osmosis balance queries');
+  ibcBridge.setMockAck(buildMocks());
+  t.log('set address prefix to osmo');
+  ibcBridge.setAddressPrefix('osmo');
+
+  {
+    t.log('osmo1test mocked to have a 10 uosmo balance');
+    const account = await makeTestCOAKit({
+      bondDenom: 'uosmo',
+      chainId: 'osmosis-1',
+      icqEnabled: true,
+    });
+    t.assert(account, 'account is returned');
+
+    t.deepEqual(await E(account).getBalance('uosmo'), {
+      denom: 'uosmo',
+      value: 10n,
+    });
+    t.deepEqual(await E(account).getBalances(), [
+      { denom: 'uosmo', value: 10n },
+    ]);
+  }
+
+  {
+    t.log('osmo1test1 mocked to have no balances');
+    const account = await makeTestCOAKit({
+      bondDenom: 'uosmo',
+      chainId: 'osmosis-1',
+      icqEnabled: true,
+    });
+    t.assert(account, 'account is returned');
+    t.deepEqual(await E(account).getBalance('uosmo'), {
+      denom: 'uosmo',
+      value: 0n,
+    });
+    t.deepEqual(await E(account).getBalances(), []);
+  }
+
+  {
+    t.log('cosmoshub does not support balance queries');
+    t.log('set address prefix to cosmos');
+    ibcBridge.setAddressPrefix('cosmos');
+    const account = await makeTestCOAKit();
+    await t.throwsAsync(E(account).getBalance('uatom'), {
+      message: 'Queries not available for chain "cosmoshub-4"',
+    });
+    await t.throwsAsync(E(account).getBalances(), {
+      message: 'Queries not available for chain "cosmoshub-4"',
+    });
+  }
+});
+
 test('not yet implemented', async t => {
   const makeTestCOAKit = prepareMakeTestCOAKit(t, t.context);
   const account = await makeTestCOAKit();
   const mockAmountArg: AmountArg = { value: 10n, denom: 'uatom' };
 
-  await t.throwsAsync(E(account).getBalances(), {
-    message: 'not yet implemented',
-  });
   await t.throwsAsync(E(account).transferSteps(mockAmountArg, null as any), {
     message: 'not yet implemented',
   });

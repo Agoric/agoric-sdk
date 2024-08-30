@@ -52,7 +52,6 @@ const startContract = async ({
   timer,
   marshaller,
   storage,
-  vowTools,
   issuerKeywordRecord = undefined,
   terms = getChainTerms('cosmoshub'),
   storagePath = 'stakeAtom',
@@ -76,7 +75,7 @@ const startContract = async ({
   return { publicFacet, zoe };
 };
 
-test('makeAccount, getAddress, getBalances, getBalance', async t => {
+test('makeAccount, getAddress', async t => {
   const { bootstrap, mocks } = await commonSetup(t);
   {
     // stakeAtom
@@ -88,14 +87,6 @@ test('makeAccount, getAddress, getBalances, getBalance', async t => {
     const chainAddress = await E(account).getAddress();
     t.regex(chainAddress.value, /cosmos1/);
     t.like(chainAddress, { chainId: 'cosmoshub-4', encoding: 'bech32' });
-
-    await t.throwsAsync(E(account).getBalances(), {
-      message: 'not yet implemented',
-    });
-
-    await t.throwsAsync(E(account).getBalance('uatom'), {
-      message: 'Queries not available for chain "cosmoshub-4"',
-    });
 
     const accountP = E(publicFacet).makeAccount();
     const { value: address2 } = await E(accountP).getAddress();
@@ -117,23 +108,6 @@ test('makeAccount, getAddress, getBalances, getBalance', async t => {
     const chainAddress = await E(account).getAddress();
     t.regex(chainAddress.value, /osmo1/);
     t.like(chainAddress, { chainId: 'osmosis-1' });
-
-    const buildMocks = () => {
-      const balanceReq = buildQueryPacketString([
-        QueryBalanceRequest.toProtoMsg({
-          address: chainAddress.value,
-          denom: 'uosmo',
-        }),
-      ]);
-      const balanceResp = buildQueryResponseString(QueryBalanceResponse, {
-        balance: { amount: '0', denom: 'uosmo' },
-      });
-      return { [balanceReq]: balanceResp };
-    };
-    await E(ibcBridge).setMockAck(buildMocks());
-
-    const balance = await E(account).getBalance('uosmo');
-    t.deepEqual(balance, { denom: 'uosmo', value: 0n });
   }
 
   t.snapshot(bootstrap.storage.data.entries(), 'accounts in vstorage');

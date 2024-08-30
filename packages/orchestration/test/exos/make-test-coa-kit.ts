@@ -5,6 +5,7 @@ import { Far } from '@endo/far';
 import type { ExecutionContext } from 'ava';
 import { prepareCosmosOrchestrationAccount } from '../../src/exos/cosmos-orchestration-account.js';
 import { commonSetup } from '../supports.js';
+import type { ICQConnection } from '../../src/exos/icq-connection-kit.js';
 
 /**
  * A testing utility that creates a (Cosmos)ChainAccount and makes a
@@ -19,6 +20,7 @@ export const prepareMakeTestCOAKit = (
   { bootstrap, facadeServices, utils }: Awaited<ReturnType<typeof commonSetup>>,
   { zcf = Far('MockZCF', {}) } = {},
 ) => {
+  t.log('exo setup - prepareCosmosOrchestrationAccount');
   const { cosmosInterchainService, marshaller, rootZone, timer, vowTools } =
     bootstrap;
 
@@ -45,15 +47,22 @@ export const prepareMakeTestCOAKit = (
     hostConnectionId = 'connection-0' as const,
     controllerConnectionId = 'connection-1' as const,
     bondDenom = 'uatom',
+    icqEnabled = false,
   } = {}) => {
-    t.log('exo setup - prepareCosmosOrchestrationAccount');
-
     t.log('request account from orchestration service');
     const cosmosOrchAccount = await E(cosmosInterchainService).makeAccount(
       chainId,
       hostConnectionId,
       controllerConnectionId,
     );
+
+    let icqConnection: ICQConnection | undefined;
+    if (icqEnabled) {
+      t.log('requesting icq connection from orchestration service');
+      icqConnection = await E(cosmosInterchainService).provideICQConnection(
+        controllerConnectionId,
+      );
+    }
 
     const [chainAddress, localAddress, remoteAddress] = await Promise.all([
       E(cosmosOrchAccount).getAddress(),
@@ -67,7 +76,7 @@ export const prepareMakeTestCOAKit = (
       {
         account: cosmosOrchAccount,
         storageNode: storageNode.makeChildNode(chainAddress.value),
-        icqConnection: undefined,
+        icqConnection,
         timer,
       },
     );
