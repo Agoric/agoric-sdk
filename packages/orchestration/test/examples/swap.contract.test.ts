@@ -8,9 +8,9 @@ import { commonSetup } from '../supports.js';
 
 const dirname = path.dirname(new URL(import.meta.url).pathname);
 
-const contractFile = `${dirname}/../../src/examples/swapExample.contract.js`;
+const contractFile = `${dirname}/../../src/examples/swap.contract.js`;
 type StartFn =
-  typeof import('@agoric/orchestration/src/examples/swapExample.contract.js').start;
+  typeof import('@agoric/orchestration/src/examples/swap.contract.js').start;
 
 test('start', async t => {
   const {

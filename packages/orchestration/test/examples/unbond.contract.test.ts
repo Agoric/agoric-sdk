@@ -8,9 +8,9 @@ import { commonSetup } from '../supports.js';
 
 const dirname = path.dirname(new URL(import.meta.url).pathname);
 
-const contractFile = `${dirname}/../../src/examples/unbondExample.contract.js`;
+const contractFile = `${dirname}/../../src/examples/unbond.contract.js`;
 type StartFn =
-  typeof import('@agoric/orchestration/src/examples/unbondExample.contract.js').start;
+  typeof import('@agoric/orchestration/src/examples/unbond.contract.js').start;
 
 test('start', async t => {
   const {
