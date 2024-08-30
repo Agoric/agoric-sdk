@@ -12,12 +12,17 @@ const (
 )
 
 // DefaultConfigTemplate defines a default TOML configuration section for the SwingSet VM.
+// Values are pulled from a "Swingset" property, in accord with CustomAppConfig from
+// ../../daemon/cmd/root.go.
 // See https://github.com/cosmos/cosmos-sdk/issues/20097 for auto-synchronization ideas.
 const DefaultConfigTemplate = `
+###############################################################################
+###                         SwingSet Configuration                          ###
+###############################################################################
 
 [swingset]
 # slogfile is the absolute path at which a SwingSet log "slog" file should be written.
-slogfile = ""
+slogfile = "{{ .Swingset.SlogFile }}"
 `
 
 // SwingsetConfig defines configuration for the SwingSet VM.
