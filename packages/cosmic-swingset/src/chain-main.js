@@ -86,7 +86,6 @@ const makeBootMsg = initAction => {
     blockHeight,
     chainID,
     params,
-    resolvedConfig,
     supplyCoins,
   };
 };
@@ -100,7 +99,7 @@ const makeBootMsg = initAction => {
 const makeSwingsetConfig = initAction => {
   const {
     maxVatsOnline = 50,
-  } = initAction;
+  } = initAction.resolvedConfig || {};
   return {
     maxVatsOnline,
   };

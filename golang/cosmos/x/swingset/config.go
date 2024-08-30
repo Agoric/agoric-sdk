@@ -31,6 +31,9 @@ const DefaultConfigTemplate = `
 # If relative, it is interpreted against the application home directory
 # (e.g., ~/.agoric).
 slogfile = "{{ .Swingset.SlogFile }}"
+
+# maxVatsOnline is the maximum number of vats that SwingSet kernel will bring online
+maxVatsOnline = 50
 `
 
 // SwingsetConfig defines configuration for the SwingSet VM.
