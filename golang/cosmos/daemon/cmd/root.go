@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 
 	serverconfig "github.com/cosmos/cosmos-sdk/server/config"
 
@@ -36,12 +37,38 @@ import (
 	gaia "github.com/Agoric/agoric-sdk/golang/cosmos/app"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/app/params"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
+	swingset "github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset"
 	swingsetkeeper "github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/keeper"
 )
 
 var AppName = "agd"
 var OnStartHook func(*vm.AgdServer, log.Logger, servertypes.AppOptions) error
 var OnExportHook func(*vm.AgdServer, log.Logger, servertypes.AppOptions) error
+
+// CustomAppConfig extends the base config struct.
+type CustomAppConfig struct {
+	serverconfig.Config `mapstructure:",squash"`
+	// Swingset must be named as expected by swingset.DefaultConfigTemplate
+	// and must use a mapstructure key matching swingset.ConfigPrefix.
+	Swingset swingset.SwingsetConfig `mapstructure:"swingset"`
+}
+
+type cobraRunE func(cmd *cobra.Command, args []string) error
+
+func appendToPreRunE(cmd *cobra.Command, fn cobraRunE) {
+	preRunE := cmd.PreRunE
+	if preRunE == nil {
+		cmd.PreRunE = fn
+		return
+	}
+	composite := func(cmd *cobra.Command, args []string) error {
+		if err := preRunE(cmd, args); err != nil {
+			return err
+		}
+		return fn(cmd, args)
+	}
+	cmd.PreRunE = composite
+}
 
 // NewRootCmd creates a new root command for simd. It is called once in the
 // main function.
@@ -99,24 +126,25 @@ func initTendermintConfig() *tmcfg.Config {
 // initAppConfig helps to override default appConfig template and configs.
 // return "", nil if no custom configuration is required for the application.
 func initAppConfig() (string, interface{}) {
-	// Allow us to overwrite the SDK's default server config.
 	srvCfg := serverconfig.DefaultConfig()
-	// The SDK's default minimum gas price is set to "" (empty value) inside
-	// app.toml. If left empty by validators, the node will halt on startup.
-	// However, the chain developer can set a default app.toml value for their
-	// validators here.
-	//
-	// In summary:
-	// - if you leave srvCfg.MinGasPrices = "", all validators MUST tweak their
-	//   own app.toml config,
-	// - if you set srvCfg.MinGasPrices non-empty, validators CAN tweak their
-	//   own app.toml to override, or use this default value.
-	//
-	// FIXME: We may want to have Agoric set a min gas price in uist.
-	// For now, we set it to zero so that validators don't have to worry about it.
+
+	// FIXME: We may want a non-zero min gas price.
+	// For now, we set it to zero to reduce friction (the default "" fails
+	// startup, forcing each validator to set their own value).
 	srvCfg.MinGasPrices = "0uist"
 
-	return serverconfig.DefaultConfigTemplate, *srvCfg
+	customAppConfig := CustomAppConfig{
+		Config:   *srvCfg,
+		Swingset: swingset.DefaultSwingsetConfig,
+	}
+
+	// Config TOML.
+	customAppTemplate := strings.Join([]string{
+		serverconfig.DefaultConfigTemplate,
+		swingset.DefaultConfigTemplate,
+	}, "")
+
+	return customAppTemplate, customAppConfig
 }
 
 func initRootCmd(sender vm.Sender, rootCmd *cobra.Command, encodingConfig params.EncodingConfig) {
@@ -144,10 +172,27 @@ func initRootCmd(sender vm.Sender, rootCmd *cobra.Command, encodingConfig params
 		snapshot.Cmd(ac.newSnapshotsApp),
 	)
 
-	server.AddCommands(rootCmd, gaia.DefaultNodeHome, ac.newApp, ac.appExport, addModuleInitFlags)
+	server.AddCommands(rootCmd, gaia.DefaultNodeHome, ac.newApp, ac.appExport, addStartFlags)
 
 	for _, command := range rootCmd.Commands() {
 		switch command.Name() {
+		case "start":
+			var preRunE cobraRunE = func(cmd *cobra.Command, _ []string) error {
+				// Consume and validate config.
+				viper := server.GetServerContextFromCmd(cmd).Viper
+				baseConfig, err := serverconfig.GetConfig(viper)
+				if err != nil {
+					return err
+				}
+				if err = baseConfig.ValidateBasic(); err != nil {
+					return err
+				}
+				if _, err = swingset.SwingsetConfigFromViper(viper); err != nil {
+					return err
+				}
+				return nil
+			}
+			appendToPreRunE(command, preRunE)
 		case "export":
 			addAgoricVMFlags(command)
 			extendCosmosExportCommand(command)
@@ -197,7 +242,7 @@ func addAgoricVMFlags(cmd *cobra.Command) {
 	)
 }
 
-func addModuleInitFlags(startCmd *cobra.Command) {
+func addStartFlags(startCmd *cobra.Command) {
 	addAgoricVMFlags(startCmd)
 }
 
@@ -282,11 +327,12 @@ func (ac appCreator) newApp(
 
 	homePath := cast.ToString(appOpts.Get(flags.FlagHome))
 
-	// Set a default value for FlagSwingStoreExportDir based on the homePath
+	// Set a default value for FlagSwingStoreExportDir based on homePath
 	// in case we need to InitGenesis with swing-store data
 	viper, ok := appOpts.(*viper.Viper)
-	if ok && cast.ToString(appOpts.Get(gaia.FlagSwingStoreExportDir)) == "" {
-		viper.Set(gaia.FlagSwingStoreExportDir, filepath.Join(homePath, "config", ExportedSwingStoreDirectoryName))
+	if ok && viper.GetString(gaia.FlagSwingStoreExportDir) == "" {
+		exportDir := filepath.Join(homePath, "config", ExportedSwingStoreDirectoryName)
+		viper.Set(gaia.FlagSwingStoreExportDir, exportDir)
 	}
 
 	return gaia.NewAgoricApp(

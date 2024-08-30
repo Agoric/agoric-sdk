@@ -214,6 +214,7 @@ var (
 // capabilities aren't needed for testing.
 type GaiaApp struct { // nolint: golint
 	*baseapp.BaseApp
+	resolvedConfig    servertypes.AppOptions
 	legacyAmino       *codec.LegacyAmino
 	appCodec          codec.Codec
 	interfaceRegistry types.InterfaceRegistry
@@ -314,9 +315,18 @@ func NewGaiaApp(
 }
 
 func NewAgoricApp(
-	sendToController vm.Sender, agdServer *vm.AgdServer,
-	logger log.Logger, db dbm.DB, traceStore io.Writer, loadLatest bool, skipUpgradeHeights map[int64]bool,
-	homePath string, invCheckPeriod uint, encodingConfig gaiaappparams.EncodingConfig, appOpts servertypes.AppOptions, baseAppOptions ...func(*baseapp.BaseApp),
+	sendToController vm.Sender,
+	agdServer *vm.AgdServer,
+	logger log.Logger,
+	db dbm.DB,
+	traceStore io.Writer,
+	loadLatest bool,
+	skipUpgradeHeights map[int64]bool,
+	homePath string,
+	invCheckPeriod uint,
+	encodingConfig gaiaappparams.EncodingConfig,
+	appOpts servertypes.AppOptions,
+	baseAppOptions ...func(*baseapp.BaseApp),
 ) *GaiaApp {
 	appCodec := encodingConfig.Marshaler
 	legacyAmino := encodingConfig.Amino
@@ -342,6 +352,7 @@ func NewAgoricApp(
 	app := &GaiaApp{
 		BaseApp:           bApp,
 		AgdServer:         agdServer,
+		resolvedConfig:    appOpts,
 		legacyAmino:       legacyAmino,
 		appCodec:          appCodec,
 		interfaceRegistry: interfaceRegistry,
@@ -927,11 +938,12 @@ type upgradeDetails struct {
 
 type cosmosInitAction struct {
 	vm.ActionHeader `actionType:"AG_COSMOS_INIT"`
-	ChainID         string          `json:"chainID"`
-	IsBootstrap     bool            `json:"isBootstrap"`
-	UpgradeDetails  *upgradeDetails `json:"upgradeDetails,omitempty"`
-	Params          swingset.Params `json:"params"`
-	SupplyCoins     sdk.Coins       `json:"supplyCoins"`
+	ChainID         string                   `json:"chainID"`
+	IsBootstrap     bool                     `json:"isBootstrap"`
+	Params          swingset.Params          `json:"params"`
+	ResolvedConfig  *swingset.SwingsetConfig `json:"resolvedConfig"`
+	SupplyCoins     sdk.Coins                `json:"supplyCoins"`
+	UpgradeDetails  *upgradeDetails          `json:"upgradeDetails,omitempty"`
 	// CAVEAT: Every property ending in "Port" is saved in chain-main.js/portNums
 	// with a key consisting of this name with the "Port" stripped.
 	StoragePort     int `json:"storagePort"`
@@ -963,10 +975,15 @@ func (app *GaiaApp) initController(ctx sdk.Context, bootstrap bool) {
 	app.controllerInited = true
 
 	// Begin initializing the controller here.
+	swingsetConfig, err := swingset.SwingsetConfigFromViper(app.resolvedConfig)
+	if err != nil {
+		panic(err)
+	}
 	action := &cosmosInitAction{
 		ChainID:        ctx.ChainID(),
 		IsBootstrap:    bootstrap,
 		Params:         app.SwingSetKeeper.GetParams(ctx),
+		ResolvedConfig: swingsetConfig,
 		SupplyCoins:    sdk.NewCoins(app.BankKeeper.GetSupply(ctx, "uist")),
 		UpgradeDetails: app.upgradeDetails,
 		// See CAVEAT in cosmosInitAction.
