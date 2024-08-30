@@ -45,7 +45,14 @@ var AppName = "agd"
 var OnStartHook func(*vm.AgdServer, log.Logger, servertypes.AppOptions) error
 var OnExportHook func(*vm.AgdServer, log.Logger, servertypes.AppOptions) error
 
-type cobraRun func(cmd *cobra.Command, args []string)
+// CustomAppConfig extends the base config struct.
+type CustomAppConfig struct {
+	serverconfig.Config `mapstructure:",squash"`
+	// Swingset must be named as expected by swingset.DefaultConfigTemplate
+	// and must use a mapstructure key matching swingset.ConfigPrefix.
+	Swingset swingset.SwingsetConfig `mapstructure:"swingset"`
+}
+
 type cobraRunE func(cmd *cobra.Command, args []string) error
 
 func appendToPreRunE(cmd *cobra.Command, fn cobraRunE) {
@@ -126,15 +133,9 @@ func initAppConfig() (string, interface{}) {
 	// startup, forcing each validator to set their own value).
 	srvCfg.MinGasPrices = "0uist"
 
-	// CustomAppConfig extends the base config struct.
-	type CustomAppConfig struct {
-		serverconfig.Config `mapstructure:",squash"`
-		// Swingset must use a mapstructure key matching swingset.ConfigPrefix.
-		Swingset            *swingset.SwingsetConfig `mapstructure:"swingset"`
-	}
 	customAppConfig := CustomAppConfig{
 		Config:   *srvCfg,
-		Swingset: &swingset.DefaultSwingsetConfig,
+		Swingset: swingset.DefaultSwingsetConfig,
 	}
 
 	// Config TOML.

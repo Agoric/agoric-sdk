@@ -8,7 +8,7 @@ import (
 
 const (
 	ConfigPrefix = "swingset"
-	FlagSlogfile = "swingset.slogfile"
+	FlagSlogfile = ConfigPrefix + ".slogfile"
 )
 
 // DefaultConfigTemplate defines a default TOML configuration section for the SwingSet VM.
@@ -24,22 +24,28 @@ slogfile = ""
 // TODO: Consider extensions from docs/env.md.
 type SwingsetConfig struct {
 	// SlogFile is the absolute path at which a SwingSet log "slog" file should be written.
-	SlogFile string `mapstructure:"slogfile"`
+	SlogFile string `mapstructure:"slogfile" json:"slogfile,omitempty"`
 }
 
 var DefaultSwingsetConfig = SwingsetConfig{
 	SlogFile: "",
 }
 
-func SwingsetConfigFromViper(viper *viper.Viper) (*SwingsetConfig, error) {
-	if err := viper.BindEnv(FlagSlogfile, "SLOGFILE"); err != nil {
-		return nil, err
+func SwingsetConfigFromViper(resolvedConfig any) (*SwingsetConfig, error) {
+	viper, ok := resolvedConfig.(*viper.Viper)
+	if !ok {
+		return nil, fmt.Errorf("expected an instance of viper!")
 	}
-	slogfile := viper.GetString(FlagSlogfile)
-	if slogfile != "" && !filepath.IsAbs(slogfile) {
+	if viper == nil {
+		return nil, nil
+	}
+	viper.MustBindEnv(FlagSlogfile, "SLOGFILE")
+	wrapper := struct{ Swingset SwingsetConfig }{}
+	viper.Unmarshal(&wrapper)
+	config := &wrapper.Swingset
+	slogPath := config.SlogFile
+	if slogPath != "" && !filepath.IsAbs(slogPath) {
 		return nil, fmt.Errorf("slogfile must be an absolute path")
 	}
-	return &SwingsetConfig{
-		SlogFile: slogfile,
-	}, nil
+	return config, nil
 }
