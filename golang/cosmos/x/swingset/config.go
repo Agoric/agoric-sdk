@@ -2,8 +2,11 @@ package swingset
 
 import (
 	"fmt"
-	"github.com/spf13/viper"
 	"path/filepath"
+
+	"github.com/spf13/viper"
+
+	"github.com/Agoric/agoric-sdk/golang/cosmos/util"
 )
 
 const (
@@ -37,20 +40,35 @@ var DefaultSwingsetConfig = SwingsetConfig{
 }
 
 func SwingsetConfigFromViper(resolvedConfig any) (*SwingsetConfig, error) {
-	viper, ok := resolvedConfig.(*viper.Viper)
+	v, ok := resolvedConfig.(*viper.Viper)
 	if !ok {
 		return nil, fmt.Errorf("expected an instance of viper!")
 	}
-	if viper == nil {
+	if v == nil {
 		return nil, nil
 	}
-	viper.MustBindEnv(FlagSlogfile, "SLOGFILE")
+	v.MustBindEnv(FlagSlogfile, "SLOGFILE")
 	wrapper := struct{ Swingset SwingsetConfig }{}
-	viper.Unmarshal(&wrapper)
+	v.Unmarshal(&wrapper)
 	config := &wrapper.Swingset
-	slogPath := config.SlogFile
-	if slogPath != "" && !filepath.IsAbs(slogPath) {
-		return nil, fmt.Errorf("slogfile must be an absolute path")
+
+	var fileOnlyViper *viper.Viper
+	stringFromFile := func(key string) string {
+		if fileOnlyViper == nil {
+			fileOnlyViper = util.NewFileOnlyViper(v)
+		}
+		return fileOnlyViper.GetString(key)
 	}
+
+	// Require absolute slogfile paths in configuration files
+	// while still allowing them to be relative [to working dir] in e.g. env vars.
+	slogPath := config.SlogFile
+	if slogPath != "" && !filepath.IsAbs(slogPath) && v.InConfig(FlagSlogfile) {
+		slogPathFromFile := stringFromFile(FlagSlogfile)
+		if slogPathFromFile != "" && !filepath.IsAbs(slogPathFromFile) {
+			return nil, fmt.Errorf("configured slogfile must use an absolute path")
+		}
+	}
+
 	return config, nil
 }
