@@ -97,9 +97,7 @@ const makeBootMsg = initAction => {
  * @param {any} initAction
  */
 const makeSwingsetConfig = initAction => {
-  const {
-    maxVatsOnline = 50,
-  } = initAction.resolvedConfig || {};
+  const { maxVatsOnline = 50 } = initAction.resolvedConfig || {};
   return {
     maxVatsOnline,
   };
