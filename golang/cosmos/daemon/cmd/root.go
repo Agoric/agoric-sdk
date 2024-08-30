@@ -129,6 +129,7 @@ func initAppConfig() (string, interface{}) {
 	// CustomAppConfig extends the base config struct.
 	type CustomAppConfig struct {
 		serverconfig.Config `mapstructure:",squash"`
+		// Swingset must use a mapstructure key matching swingset.ConfigPrefix.
 		Swingset            *swingset.SwingsetConfig `mapstructure:"swingset"`
 	}
 	customAppConfig := CustomAppConfig{
