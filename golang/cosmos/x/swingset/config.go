@@ -53,7 +53,9 @@ func SwingsetConfigFromViper(resolvedConfig any) (*SwingsetConfig, error) {
 	}
 	v.MustBindEnv(FlagSlogfile, "SLOGFILE")
 	wrapper := struct{ Swingset SwingsetConfig }{}
-	v.Unmarshal(&wrapper)
+	if err := v.Unmarshal(&wrapper); err != nil {
+		return nil, err
+	}
 	config := &wrapper.Swingset
 
 	// Interpret relative paths from config files against the application home
@@ -66,7 +68,11 @@ func SwingsetConfigFromViper(resolvedConfig any) (*SwingsetConfig, error) {
 		}
 		if v.InConfig(configKey) {
 			if fileOnlyViper == nil {
-				fileOnlyViper = util.NewFileOnlyViper(v)
+				var err error
+				fileOnlyViper, err = util.NewFileOnlyViper(v)
+				if err != nil {
+					return "", err
+				}
 			}
 			pathFromFile := fileOnlyViper.GetString(configKey)
 			if path == pathFromFile {
