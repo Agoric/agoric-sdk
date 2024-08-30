@@ -15,9 +15,9 @@ const (
 // See https://github.com/cosmos/cosmos-sdk/issues/20097 for auto-synchronization ideas.
 const DefaultConfigTemplate = `
 
-	[swingset]
-	# slogfile is the absolute path at which a SwingSet log "slog" file should be written.
-	slogfile = ""
+[swingset]
+# slogfile is the absolute path at which a SwingSet log "slog" file should be written.
+slogfile = ""
 `
 
 // SwingsetConfig defines configuration for the SwingSet VM.
