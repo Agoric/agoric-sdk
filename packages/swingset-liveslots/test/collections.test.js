@@ -145,6 +145,14 @@ function exerciseMapOperations(t, collectionName, testStore) {
       `key "[Alleged: something missing]" not found in collection "${collectionName}"`,
     ),
   );
+  if (collectionName === 'map') {
+    // strong map, so we can .clear
+    testStore.clear();
+    for (const [key, _value] of stuff) {
+      t.false(testStore.has(key));
+    }
+    fillBasicMapStore(testStore);
+  }
 }
 
 function exerciseSetOperations(t, collectionName, testStore) {
@@ -172,6 +180,14 @@ function exerciseSetOperations(t, collectionName, testStore) {
       `key "[Alleged: something missing]" not found in collection "${collectionName}"`,
     ),
   );
+  if (collectionName === 'set') {
+    // strong set, so we can .clear
+    testStore.clear();
+    for (const [key, _value] of stuff) {
+      t.false(testStore.has(key));
+    }
+    fillBasicSetStore(testStore);
+  }
 }
 
 test('basic map operations', t => {
@@ -487,6 +503,20 @@ test('map clear', t => {
   t.is(testStore.getSize(), 0);
 });
 
+// see #10007
+test.failing('map clear with pattern', t => {
+  const testStore = makeScalarBigMapStore('cmap', { keyShape: M.any() });
+  testStore.init('a', 'ax');
+  testStore.init('b', 'bx');
+  testStore.init('c', 'cx');
+  console.log(`M is`, M);
+  testStore.clear(M.eq('c'));
+  t.true(testStore.has('a'));
+  t.true(testStore.has('b'));
+  t.false(testStore.has('c'));
+  t.is(testStore.getSize(), 2);
+});
+
 test('set clear', t => {
   const testStore = makeScalarBigSetStore('cset', { keyShape: M.any() });
   testStore.add('a');
@@ -497,6 +527,19 @@ test('set clear', t => {
   testStore.clear();
   t.deepEqual(Array.from(testStore.values()), []);
   t.is(testStore.getSize(), 0);
+});
+
+// see #10007
+test.failing('set clear with pattern', t => {
+  const testStore = makeScalarBigSetStore('cset', { keyShape: M.any() });
+  testStore.add('a');
+  testStore.add('b');
+  testStore.add('c');
+  testStore.clear(M.eq('c'));
+  t.true(testStore.has('a'));
+  t.true(testStore.has('b'));
+  t.false(testStore.has('c'));
+  t.is(testStore.getSize(), 2);
 });
 
 test('map fail on concurrent modification', t => {

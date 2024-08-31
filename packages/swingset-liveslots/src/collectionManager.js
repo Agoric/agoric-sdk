@@ -4,7 +4,6 @@ import {
   zeroPad,
   makeEncodePassable,
   makeDecodePassable,
-  isEncodedRemotable,
   compareRank,
 } from '@endo/marshal';
 import {
@@ -65,6 +64,12 @@ function failNotIterable(value) {
 function prefixc(collectionID, dbEntryKey) {
   return `vc.${collectionID}.${dbEntryKey}`;
 }
+
+export const collectionMetaKeys = new Set([
+  '|entryCount',
+  '|nextOrdinal',
+  '|schemata',
+]);
 
 /**
  * @typedef {object} SchemaCacheValue
@@ -293,6 +298,20 @@ export function makeCollectionManager(
       return `${dbKeyPrefix}${dbEntryKey}`;
     }
 
+    // A "vref" is a string like "o-4" or "o+d44/2:0"
+    // An "EncodedKey" is the output of encode-passable:
+    // * strings become `s${string}`, like "foo" -> "sfoo"
+    // * small positive BigInts become `p${len}:${digits}`, like 47n -> "p2:47"
+    // * refs are assigned an "ordinal" and use `r${fixedLengthOrdinal}:${vref}`
+    //   * e.g. vref(o-4) becomes "r0000000001:o-4"
+    // A "DBKey" is used to index the vatstore. DBKeys for collection
+    // entries join a collection prefix and an EncodedKey. Some
+    // possible DBKeys for entries of collection "5", using collection
+    // prefix "vc.5.", are:
+    // * "foo" -> "vc.5.sfoo"
+    // * 47n -> "vc.5.p2:47"
+    // * vref(o-4) -> "vc.5.r0000000001:o-4"
+
     const encodeRemotable = remotable => {
       // eslint-disable-next-line no-use-before-define
       const ordinal = getOrdinal(remotable);
@@ -308,10 +327,11 @@ export function makeCollectionManager(
     // the resulting function will encode only `Key` arguments.
     const encodeKey = makeEncodePassable({ encodeRemotable });
 
-    const vrefFromDBKey = dbKey => dbKey.substring(BIGINT_TAG_LEN + 2);
+    const vrefFromEncodedKey = encodedKey =>
+      encodedKey.substring(1 + BIGINT_TAG_LEN + 1);
 
     const decodeRemotable = encodedKey =>
-      convertSlotToVal(vrefFromDBKey(encodedKey));
+      convertSlotToVal(vrefFromEncodedKey(encodedKey));
 
     // `makeDecodePassable` has three named options:
     // `decodeRemotable`, `decodeError`, and `decodePromise`.
@@ -347,8 +367,14 @@ export function makeCollectionManager(
     }
 
     function dbKeyToKey(dbKey) {
+      // convert e.g. vc.5.r0000000001:o+v10/1 to r0000000001:o+v10/1
       const dbEntryKey = dbKey.substring(dbKeyPrefix.length);
       return decodeKey(dbEntryKey);
+    }
+
+    function dbKeyToEncodedKey(dbKey) {
+      assert(dbKey.startsWith(dbKeyPrefix), dbKey);
+      return dbKey.substring(dbKeyPrefix.length);
     }
 
     function has(key) {
@@ -553,26 +579,38 @@ export function makeCollectionManager(
      */
     function clearInternalFull() {
       let doMoreGC = false;
-      const [coverStart, coverEnd] = getRankCover(M.any(), encodeKey);
-      const start = prefix(coverStart);
-      const end = prefix(coverEnd);
 
-      // this yields all keys for which (start <= key < end)
-      for (const dbKey of enumerateKeysStartEnd(syscall, start, end)) {
-        const value = JSON.parse(syscall.vatstoreGet(dbKey));
-        doMoreGC =
-          value.slots.map(vrm.removeReachableVref).some(b => b) || doMoreGC;
-        syscall.vatstoreDelete(dbKey);
-        if (isEncodedRemotable(dbKey)) {
-          const keyVref = vrefFromDBKey(dbKey);
+      // visit every DB entry associated with the collection, which
+      // (due to sorting) will be collection entries first, and then a
+      // mixture of ordinal-assignment mappings and size-independent
+      // metadata (both of which start with "|").
+      for (const dbKey of enumerateKeysWithPrefix(syscall, dbKeyPrefix)) {
+        const encodedKey = dbKeyToEncodedKey(dbKey);
+
+        // preserve general metadata ("|entryCount" and friends are
+        // cleared by our caller)
+        if (collectionMetaKeys.has(encodedKey)) continue;
+
+        if (encodedKey.startsWith('|')) {
+          // ordinal assignment; decref or de-recognize its vref
+          const keyVref = encodedKey.substring(1);
+          parseVatSlot(keyVref);
           if (hasWeakKeys) {
             vrm.removeRecognizableVref(keyVref, `${collectionID}`, true);
           } else {
             doMoreGC = vrm.removeReachableVref(keyVref) || doMoreGC;
           }
-          syscall.vatstoreDelete(prefix(`|${keyVref}`));
+        } else {
+          // a collection entry; decref slots from its value
+          const value = JSON.parse(syscall.vatstoreGet(dbKey));
+          doMoreGC =
+            value.slots.map(vrm.removeReachableVref).some(b => b) || doMoreGC;
         }
+
+        // in either case, delete the DB entry
+        syscall.vatstoreDelete(dbKey);
       }
+
       return doMoreGC;
     }
 
@@ -586,6 +624,7 @@ export function makeCollectionManager(
         }
       }
       if (!hasWeakKeys && !isDeleting) {
+        // TODO: broken, see #10007
         syscall.vatstoreSet(prefix('|entryCount'), '0');
       }
       return doMoreGC;
