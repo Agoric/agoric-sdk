@@ -1208,12 +1208,12 @@ function build(
       makeScalarBigSetStore: collectionManager.makeScalarBigSetStore,
       makeScalarBigWeakSetStore: collectionManager.makeScalarBigWeakSetStore,
     },
-    [PassStyleOfEndowmentSymbol]: passStyleOf,
   });
 
   const inescapableGlobalProperties = harden({
     WeakMap: vom.VirtualObjectAwareWeakMap,
     WeakSet: vom.VirtualObjectAwareWeakSet,
+    [PassStyleOfEndowmentSymbol]: passStyleOf,
   });
 
   function getRetentionStats() {

@@ -51,12 +51,15 @@ test('vat globals', async t => {
   t.is(typeof vatGlobals.VatData.makeScalarBigWeakMapStore, 'function');
   t.is(typeof vatGlobals.VatData.makeScalarBigSetStore, 'function');
   t.is(typeof vatGlobals.VatData.makeScalarBigWeakSetStore, 'function');
-  t.is(typeof vatGlobals[PassStyleOfEndowmentSymbol], 'function');
-  // this is the passStyleOf created by liveslots, with a real WeakMap
-  t.is(vatGlobals[PassStyleOfEndowmentSymbol], passStyleOf);
 
   t.is(typeof inescapableGlobalProperties.WeakMap, 'function');
   t.not(inescapableGlobalProperties.WeakMap, WeakMap);
   t.is(typeof inescapableGlobalProperties.WeakSet, 'function');
   t.not(inescapableGlobalProperties.WeakSet, WeakSet);
+  t.is(
+    typeof inescapableGlobalProperties[PassStyleOfEndowmentSymbol],
+    'function',
+  );
+  // this is the passStyleOf created by liveslots, with a real WeakMap
+  t.is(inescapableGlobalProperties[PassStyleOfEndowmentSymbol], passStyleOf);
 });

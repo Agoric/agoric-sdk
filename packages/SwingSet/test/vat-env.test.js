@@ -1,7 +1,8 @@
 // @ts-nocheck
+// eslint-disable-next-line import/order
 import { test, VatData } from '../tools/prepare-test-env-ava.js';
 
-// eslint-disable-next-line import/order
+import bundleSource from '@endo/bundle-source';
 import { initSwingStore } from '@agoric/swing-store';
 import { buildVatController } from '../src/index.js';
 
@@ -75,8 +76,9 @@ async function testForExpectedGlobals(t, workerType) {
     },
     defaultManagerType: workerType,
   };
+  const bundle = await bundleSource(config.vats.bootstrap.sourceSpec);
   const kernelStorage = initSwingStore().kernelStorage;
-  const c = await buildVatController(config, [], {
+  const c = await buildVatController(config, [bundle], {
     kernelStorage,
   });
   t.teardown(c.shutdown);
@@ -98,7 +100,9 @@ async function testForExpectedGlobals(t, workerType) {
     'VatData.makeScalarBigSetStore: function',
     'VatData.makeScalarBigWeakSetStore: function',
     'global has passStyleOf: true',
-    'global passStyleOf is special: false',
+    'passStyleOf delegates to global: true',
+    'child compartment has matching passStyleOf: true',
+    'grandchild compartment has matching passStyleOf: true',
   ]);
 }
 
