@@ -31,6 +31,11 @@ const DefaultConfigTemplate = `
 # If relative, it is interpreted against the application home directory
 # (e.g., ~/.agoric).
 slogfile = "{{ .Swingset.SlogFile }}"
+
+# The maximum number of vats that the SwingSet kernel will bring online. A lower number
+# requires less memory but may have a negative performance impact if vats need to
+# be frequently paged out to remain under this limit.
+max_vats_online = {{ .Swingset.MaxVatsOnline }}
 `
 
 // SwingsetConfig defines configuration for the SwingSet VM.
@@ -38,10 +43,14 @@ slogfile = "{{ .Swingset.SlogFile }}"
 type SwingsetConfig struct {
 	// SlogFile is the absolute path at which a SwingSet log "slog" file should be written.
 	SlogFile string `mapstructure:"slogfile" json:"slogfile,omitempty"`
+	// MaxVatsOnline is the maximum number of vats that the SwingSet kernel will have online
+	// at any given time.
+	MaxVatsOnline int `mapstructure:"max_vats_online" json:"maxVatsOnline,omitempty"`
 }
 
 var DefaultSwingsetConfig = SwingsetConfig{
-	SlogFile: "",
+	SlogFile:      "",
+	MaxVatsOnline: 50,
 }
 
 func SwingsetConfigFromViper(resolvedConfig servertypes.AppOptions) (*SwingsetConfig, error) {

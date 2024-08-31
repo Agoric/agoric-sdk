@@ -65,6 +65,16 @@ const toNumber = specimen => {
 };
 
 /**
+ * The swingset config object parsed and resolved by cosmos in
+ * `golang/cosmos/x/swingset/config.go`. The shape should be kept in sync
+ * with `SwingsetConfig` defined there.
+ *
+ * @typedef {object} CosmosSwingsetConfig
+ * @property {string} [slogfile]
+ * @property {number} [maxVatsOnline]
+ */
+
+/**
  * A boot message consists of cosmosInitAction fields that are subject to
  * consensus. See cosmosInitAction in {@link ../../../golang/cosmos/app/app.go}.
  *
@@ -87,6 +97,19 @@ const makeBootMsg = initAction => {
     chainID,
     params,
     supplyCoins,
+  };
+};
+
+/**
+ * Extract local Swingset-specific configuration which is
+ * not part of the consensus.
+ *
+ * @param {CosmosSwingsetConfig} [resolvedConfig]
+ */
+const makeSwingsetConfig = resolvedConfig => {
+  const { maxVatsOnline } = resolvedConfig || {};
+  return {
+    maxVatsOnline,
   };
 };
 
@@ -282,6 +305,8 @@ export default async function main(progname, args, { env, homedir, agcc }) {
     const { slogfile } = initAction.resolvedConfig || {};
     // eslint-disable-next-line dot-notation
     if (slogfile) env['SLOGFILE'] = slogfile;
+
+    const swingsetConfig = makeSwingsetConfig(initAction.resolvedConfig);
 
     const sendToChainStorage = msg => chainSend(portNums.storage, msg);
     // this object is used to store the mailbox state.
@@ -515,6 +540,7 @@ export default async function main(progname, args, { env, homedir, agcc }) {
       swingStoreTraceFile,
       keepSnapshots,
       afterCommitCallback,
+      swingsetConfig,
     });
 
     const { blockingSend, shutdown } = s;
