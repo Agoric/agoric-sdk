@@ -70,8 +70,7 @@ objects.
 
 The script describes how to build the core proposal. For
 `agoric-3-proposals` and uploading to the chain, the script must be named in the
-`CoreProposalSteps` section in
-[`app.go`](https://github.com/Agoric/agoric-sdk/blob/b13743a2cccf0cb63a412b54384435596d4e81ea/golang/cosmos/app/app.go#L881),
+`CoreProposalSteps` section in [`upgrade.go`](../../golang/cosmos/app/upgrade.go),
 and its `defaultProposalBuilder` will be invoked directly.
 
 Script files should export `defaultProposalBuilder` and a `default` function

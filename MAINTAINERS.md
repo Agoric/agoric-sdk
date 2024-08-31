@@ -46,7 +46,7 @@ The Release Owner and other appropriate stakeholders must agree on:
 
 - [ ] When a new release is planned, create a new branch from branch `release-mainnet1B` with a name like `dev-$releaseShortLabel` (example: `dev-upgrade-8`). This can be done from the command line or the [GitHub Branches UI](https://github.com/Agoric/agoric-sdk/branches).
 - [ ] Initialize the new branch for the planned upgrade:
-  - [ ] In **golang/cosmos/app/app.go**, update the `upgradeName` constants and the associated upgrade handler function name to correspond with the [_**upgrade name**_](#assign-release-parameters).
+  - [ ] In **golang/cosmos/app/upgrade.go**, update the `upgradeName` constants and the associated upgrade handler function name to correspond with the [_**upgrade name**_](#assign-release-parameters).
     Remove from the function any logic specific to the previous upgrade (e.g., core proposals).
   - [ ] Ensure that **a3p-integration/package.json** has an object-valued `agoricSyntheticChain` property with `fromTag` set to the [agoric-3-proposals Docker images](https://github.com/Agoric/agoric-3-proposals/pkgs/container/agoric-3-proposals) tag associated with the previous release
     (example: `use-upgrade-7`).
