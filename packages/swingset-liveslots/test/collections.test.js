@@ -503,8 +503,7 @@ test('map clear', t => {
   t.is(testStore.getSize(), 0);
 });
 
-// see #10007
-test.failing('map clear with pattern', t => {
+test('map clear with pattern', t => {
   const testStore = makeScalarBigMapStore('cmap', { keyShape: M.any() });
   testStore.init('a', 'ax');
   testStore.init('b', 'bx');
@@ -529,8 +528,7 @@ test('set clear', t => {
   t.is(testStore.getSize(), 0);
 });
 
-// see #10007
-test.failing('set clear with pattern', t => {
+test('set clear with pattern', t => {
   const testStore = makeScalarBigSetStore('cset', { keyShape: M.any() });
   testStore.add('a');
   testStore.add('b');

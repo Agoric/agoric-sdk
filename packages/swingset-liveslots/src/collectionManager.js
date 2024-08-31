@@ -616,16 +616,21 @@ export function makeCollectionManager(
 
     function clearInternal(isDeleting, keyPatt, valuePatt) {
       let doMoreGC = false;
-      if (isDeleting || (matchAny(keyPatt) && matchAny(valuePatt))) {
+      if (isDeleting) {
         doMoreGC = clearInternalFull();
+        // |entryCount will be deleted along with metadata keys
+      } else if (matchAny(keyPatt) && matchAny(valuePatt)) {
+        doMoreGC = clearInternalFull();
+        if (!hasWeakKeys) {
+          syscall.vatstoreSet(prefix('|entryCount'), '0');
+        }
       } else {
+        let numDeleted = 0;
         for (const k of keys(keyPatt, valuePatt)) {
+          numDeleted += 1;
           doMoreGC = deleteInternal(k) || doMoreGC;
         }
-      }
-      if (!hasWeakKeys && !isDeleting) {
-        // TODO: broken, see #10007
-        syscall.vatstoreSet(prefix('|entryCount'), '0');
+        updateEntryCount(-numDeleted);
       }
       return doMoreGC;
     }
