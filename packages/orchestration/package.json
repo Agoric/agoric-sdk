@@ -58,7 +58,7 @@
     "@chain-registry/client": "^1.47.4",
     "@cosmjs/amino": "^0.32.3",
     "@cosmjs/proto-signing": "^0.32.3",
-    "@endo/bundle-source": "^3.3.0",
+    "@endo/bundle-source": "^3.4.0",
     "@endo/import-bundle": "^1.2.1",
     "@endo/ses-ava": "^1.2.4",
     "ava": "^5.3.1",

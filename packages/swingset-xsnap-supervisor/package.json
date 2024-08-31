@@ -25,7 +25,7 @@
   "devDependencies": {
     "@endo/errors": "^1.2.4",
     "@agoric/swingset-liveslots": "^0.10.2",
-    "@endo/bundle-source": "^3.3.0",
+    "@endo/bundle-source": "^3.4.0",
     "@endo/import-bundle": "^1.2.1",
     "@endo/init": "^1.1.3",
     "@endo/marshal": "^1.5.2",
