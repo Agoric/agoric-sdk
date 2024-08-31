@@ -624,6 +624,7 @@ export function makeCollectionManager(
         }
       }
       if (!hasWeakKeys && !isDeleting) {
+        // TODO: broken, see #10007
         syscall.vatstoreSet(prefix('|entryCount'), '0');
       }
       return doMoreGC;
