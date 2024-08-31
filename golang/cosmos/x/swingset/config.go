@@ -32,8 +32,10 @@ const DefaultConfigTemplate = `
 # (e.g., ~/.agoric).
 slogfile = "{{ .Swingset.SlogFile }}"
 
-# maxVatsOnline is the maximum number of vats that SwingSet kernel will bring online
-maxVatsOnline = {{ .Swingset.MaxVatsOnline }}
+# The maximum number of vats that the SwingSet kernel will bring online. A lower number
+# requires less memory but may have a negative performance impact if vats need to
+# be frequently paged out to remain under this limit.
+max_vats_online = {{ .Swingset.MaxVatsOnline }}
 `
 
 // SwingsetConfig defines configuration for the SwingSet VM.
@@ -43,7 +45,7 @@ type SwingsetConfig struct {
 	SlogFile string `mapstructure:"slogfile" json:"slogfile,omitempty"`
 	// MaxVatsOnline is the maximum number of vats that the SwingSet kernel will have online
 	// at any given time.
-	MaxVatsOnline int `mapstructure:"maxVatsOnline" json:"maxVatsOnline,omitempty"`
+	MaxVatsOnline int `mapstructure:"max_vats_online" json:"maxVatsOnline,omitempty"`
 }
 
 var DefaultSwingsetConfig = SwingsetConfig{

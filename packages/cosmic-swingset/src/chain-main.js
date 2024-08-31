@@ -94,7 +94,7 @@ const makeBootMsg = initAction => {
  * Extract local Swingset-specific configuration which is
  * not part of the consensus.
  *
- * @param {any} resolvedConfig
+ * @param {CosmosSwingsetConfig} [resolvedConfig]
  */
 const makeSwingsetConfig = resolvedConfig => {
   const { maxVatsOnline } = resolvedConfig || {};
