@@ -65,6 +65,16 @@ const toNumber = specimen => {
 };
 
 /**
+ * The swingset config object parsed and resolved by cosmos in
+ * `golang/cosmos/x/swingset/config.go`. The shape should be kept in sync
+ * with `SwingsetConfig` defined there.
+ *
+ * @typedef {object} CosmosSwingsetConfig
+ * @property {string} [slogfile]
+ * @property {number} [maxVatsOnline]
+ */
+
+/**
  * A boot message consists of cosmosInitAction fields that are subject to
  * consensus. See cosmosInitAction in {@link ../../../golang/cosmos/app/app.go}.
  *
