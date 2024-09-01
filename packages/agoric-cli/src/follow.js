@@ -114,7 +114,6 @@ export default async function followerMain(progname, rawArgs, powers, opts) {
   }
 
   if (proof !== 'none') {
-    // @ts-expect-error
     followerOptions.crasher = Far('follower crasher', {
       crash: (...args) => {
         console.error(...args);
