@@ -24,13 +24,12 @@ export const unbondAndLiquidStake = async (
   _offerArgs,
 ) => {
   console.log('zcf within the membrane', zcf);
-  // We would actually alreaady have the account from the orchestrator
-  // ??? could these be passed in? It would reduce the size of this handler,
-  // keeping it focused on long-running operations.
-  const omni = await orch.getChain('omniflixhub');
-  const omniAccount = await omni.makeAccount();
+  // Osmosis is one of the few chains with icqEnabled
+  const osmosis = await orch.getChain('osmosis');
+  // In a real world scenario, accounts would be re-used across invokations of the handler
+  const osmoAccount = await osmosis.makeAccount();
 
-  // TODO implement these
+  // TODO https://github.com/Agoric/agoric-sdk/issues/10016
   // const delegations = await celestiaAccount.getDelegations();
   // // wait for the undelegations to be complete (may take weeks)
   // await celestiaAccount.undelegate(delegations);
@@ -41,7 +40,8 @@ export const unbondAndLiquidStake = async (
   // TODO the `TIA` string actually needs to be the Brand from AgoricNames
   // const tiaAmt = await celestiaAccount.getBalance('TIA');
   // await celestiaAccount.transfer(tiaAmt, strideAccount.getAddress());
+  // TODO https://github.com/Agoric/agoric-sdk/issues/10017
   // await strideAccount.liquidStake(tiaAmt);
-  console.log(omniAccount, strideAccount);
+  console.log(osmoAccount, strideAccount);
 };
 harden(unbondAndLiquidStake);
