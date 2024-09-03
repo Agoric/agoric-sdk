@@ -78,7 +78,7 @@ test('portfolio holder kit behaviors', async t => {
 
   const { invitationMakers } = await E(holder).asContinuingOffer();
 
-  const delegateInv = await E(invitationMakers).MakeInvitation(
+  const delegateInv = await E(invitationMakers).Proxying(
     'cosmoshub',
     'Delegate',
     [
@@ -99,7 +99,7 @@ test('portfolio holder kit behaviors', async t => {
     // note: mocked zcf (we are not in a contract) returns inv description
     // @ts-expect-error Argument of type 'string' is not assignable to parameter of type 'Vow<any>'
     'Delegate',
-    'any invitation maker accessible via MakeInvitation',
+    'any invitation maker accessible via Proxying',
   );
 
   const osmosisAccount = await makeCosmosAccount({

@@ -43,7 +43,7 @@ const preparePortfolioHolderKit = (zone, { asVow, when }) => {
     'PortfolioHolderKit',
     {
       invitationMakers: M.interface('InvitationMakers', {
-        MakeInvitation: M.call(
+        Proxying: M.call(
           ChainNameShape,
           M.string(),
           M.arrayOf(M.any()),
@@ -95,7 +95,7 @@ const preparePortfolioHolderKit = (zone, { asVow, when }) => {
          * @param {IA} invitationArgs
          * @returns {Promise<Invitation<unknown, IA>>}
          */
-        MakeInvitation(chainName, action, invitationArgs) {
+        Proxying(chainName, action, invitationArgs) {
           const { accounts } = this.state;
           accounts.has(chainName) || Fail`no account found for ${chainName}`;
           const account = accounts.get(chainName);
