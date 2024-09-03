@@ -110,7 +110,7 @@ const queryICQChain = test.macro({
     const offerResult = await retryUntilCondition(
       () => vstorageClient.queryData(`published.wallet.${agoricAddr}`),
       ({ status }) => status.id === offerId && (status.result || status.error),
-      `${offerId} continuing invitation is in vstorage`,
+      `${offerId} offer result is in vstorage`,
       {
         maxRetries: 15,
       },

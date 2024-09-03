@@ -30,3 +30,13 @@ export const AUTO_STAKE_IT_DELEGATIONS_TIMEOUT: RetryOptions = {
   retryIntervalMs: 5000,
   maxRetries: 24,
 };
+
+/**
+ * Wait about 90s to ensure:
+ * - ICA Account is created
+ * - ICQ Connection is established (in some instances)
+ * - Query is executed (sometimes local, sometimes via ICQ)
+ */
+export const MAKE_ACCOUNT_AND_QUERY_BALANCE_TIMEOUT: RetryOptions = {
+  maxRetries: 25,
+};
