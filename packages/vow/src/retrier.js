@@ -60,9 +60,10 @@ export const prepareRetrierTools = (zone, vowTools = prepareVowTools(zone)) => {
             return;
           }
           // TODO `heapVowE` is likely too fragile under upgrade.
-          const p = optVerb
-            ? heapVowE(target)[optVerb](...args)
-            : heapVowE(target)(...args);
+          const p =
+            optVerb === undefined
+              ? heapVowE(target)(...args)
+              : heapVowE(target)[optVerb](...args);
           watch(p, watcher);
         },
         getVow() {
@@ -72,11 +73,13 @@ export const prepareRetrierTools = (zone, vowTools = prepareVowTools(zone)) => {
         },
         cancel(reason) {
           const { state } = this;
+          const { vow } = state;
           if (state.optResolver === undefined) {
             return;
           }
-          state.optResolver.resolve(reason);
+          state.optResolver.reject(reason);
           state.optResolver = undefined;
+          retrierForOutcomeVowKey.delete(toPassableCap(vow));
         },
       },
       watcher: {
