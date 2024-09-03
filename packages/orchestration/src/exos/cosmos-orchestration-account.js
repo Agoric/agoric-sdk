@@ -209,7 +209,7 @@ export const prepareCosmosOrchestrationAccountKit = (
      * @returns {State}
      */
     ({ chainAddress, bondDenom, localAddress, remoteAddress }, io) => {
-      const { storageNode, ...rest } = io;
+      const { storageNode } = io;
       // must be the fully synchronous maker because the kit is held in durable state
       const topicKit = makeRecorderKit(storageNode, PUBLIC_TOPICS.account[1]);
       // TODO determine what goes in vstorage https://github.com/Agoric/agoric-sdk/issues/9066
@@ -223,13 +223,16 @@ export const prepareCosmosOrchestrationAccountKit = (
         }),
       );
 
+      const { account, icqConnection, timer } = io;
       return {
-        chainAddress,
+        account,
         bondDenom,
+        chainAddress,
+        icqConnection,
         localAddress,
         remoteAddress,
+        timer,
         topicKit,
-        ...rest,
       };
     },
     {
