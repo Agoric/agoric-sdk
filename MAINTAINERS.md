@@ -447,3 +447,35 @@ Push this branch and create a pull request.
 ```sh
 git push origin "$USER-sync-endo-$NOW"
 ```
+
+At this time, syncing Endo versions will break the optional `documentation`
+`test-dapp` test, and that cannot be fixed until after the Endo sync merges.
+When the above steps lead to changes merged into this repository,
+in `agoric-sdk/documentation`:
+
+```sh
+# in agoric/documentation
+git checkout --branch "$USER-sync-endo-$NOW"
+$ENDO/scripts/sync-verions.sh ~/endo
+git commit -am 'chore: Sync Endo versions'
+yarn
+git commit -am 'chore: Update yarn.lock'
+git push origin "$USER-sync-endo-$NOW"
+```
+
+Create a pull request from that branch.
+
+To verify that the changes to `documentation` are sufficient to settle CI for
+this repository, return to `agoric-sdk`, create a branch off of the current
+head, create an empty commit, push that change to Github, and create a draft
+pull request with `#documentation-branch: $USER-sync-docs-$NOW` in the
+description.
+
+```sh
+# in agoric/agoric-sdk
+git checkout origin/master
+git commit --allow-empty -m 'Poke CI for documentation integration testing'
+git checkout -b "$USER-sync-docs-$NOW"
+# Capture description in clipboard (Mac) for reference on Github.
+echo "#documentation-branch: $USER-sync-docs-$NOW" | pbcopy # Linux: xclip -i
+```
