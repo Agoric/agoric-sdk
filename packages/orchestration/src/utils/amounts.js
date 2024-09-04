@@ -15,7 +15,7 @@ export const coerceDenom = (chainHub, denomArg) => {
   if (typeof denomArg === 'string') {
     return denomArg;
   }
-  const denom = chainHub.lookupDenom(denomArg);
+  const denom = chainHub.getDenom(denomArg);
   if (!denom) {
     throw makeError(`No denomination for brand ${denomArg}`);
   }

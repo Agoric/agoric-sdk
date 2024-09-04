@@ -95,7 +95,7 @@ test.serial('getConnectionInfo', async t => {
   t.deepEqual(await vt.when(chainHub.getConnectionInfo(b, a)), ba);
 });
 
-test('getDenomInfo support', async t => {
+test('getAsset denom info support', async t => {
   const { chainHub } = setup();
 
   const denom = 'utok1';
@@ -112,7 +112,7 @@ test('getDenomInfo support', async t => {
   };
   chainHub.registerAsset('utok1', info);
 
-  const actual = chainHub.lookupAsset('utok1');
+  const actual = chainHub.getAsset('utok1');
   t.deepEqual(actual, info);
 });
 
@@ -135,7 +135,7 @@ test('toward asset info in agoricNames (#9572)', async t => {
   registerAssets(chainHub, 'cosmoshub', details);
 
   {
-    const actual = chainHub.lookupAsset('uatom');
+    const actual = chainHub.getAsset('uatom');
     t.deepEqual(actual, {
       chainName: 'cosmoshub',
       baseName: 'cosmoshub',
@@ -144,7 +144,7 @@ test('toward asset info in agoricNames (#9572)', async t => {
   }
 
   {
-    const actual = chainHub.lookupAsset(
+    const actual = chainHub.getAsset(
       'ibc/F04D72CF9B5D9C849BB278B691CDFA2241813327430EC9CDC83F8F4CA4CDC2B0',
     );
     t.deepEqual(actual, {

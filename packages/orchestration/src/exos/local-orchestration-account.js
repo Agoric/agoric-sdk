@@ -387,8 +387,8 @@ export const prepareLocalOrchestrationAccountKit = (
         getBalance(denomArg) {
           const [brand, denom] =
             typeof denomArg === 'string'
-              ? [chainHub.lookupAsset(denomArg).brand, denomArg]
-              : [denomArg, chainHub.lookupDenom(denomArg)];
+              ? [chainHub.getAsset(denomArg).brand, denomArg]
+              : [denomArg, chainHub.getDenom(denomArg)];
 
           if (!brand) {
             throw Fail`No brand for ${denomArg}`;

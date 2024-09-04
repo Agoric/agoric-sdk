@@ -143,7 +143,7 @@ const prepareOrchestratorKit = (
         /** @type {HostOf<Orchestrator['getDenomInfo']>} */
         getDenomInfo(denom) {
           const { chainName, baseName, baseDenom, brand } =
-            chainHub.lookupAsset(denom);
+            chainHub.getAsset(denom);
           chainByName.has(chainName) ||
             Fail`use getChain(${q(chainName)}) before getDenomInfo(${q(denom)})`;
           const chain = chainByName.get(chainName);

@@ -156,7 +156,7 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
    */
   const registerAgoricBld = () => {
     try {
-      chainHub.lookupAsset('ubld');
+      chainHub.getAsset('ubld');
     } catch {
       chainHub.registerChain('agoric', fetchedChainInfo.agoric);
       chainHub.registerAsset('ubld', {

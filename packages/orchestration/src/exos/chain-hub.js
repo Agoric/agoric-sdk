@@ -167,8 +167,8 @@ const ChainHubI = M.interface('ChainHub', {
   getConnectionInfo: M.call(ChainIdArgShape, ChainIdArgShape).returns(VowShape),
   getChainsAndConnection: M.call(M.string(), M.string()).returns(VowShape),
   registerAsset: M.call(M.string(), DenomDetailShape).returns(),
-  lookupAsset: M.call(M.string()).returns(DenomDetailShape),
-  lookupDenom: M.call(BrandShape).returns(M.or(M.string(), M.undefined())),
+  getAsset: M.call(M.string()).returns(DenomDetailShape),
+  getDenom: M.call(BrandShape).returns(M.or(M.string(), M.undefined())),
 });
 
 /**
@@ -396,7 +396,7 @@ export const makeChainHub = (agoricNames, vowTools) => {
      * @param {Denom} denom
      * @returns {DenomDetail}
      */
-    lookupAsset(denom) {
+    getAsset(denom) {
       return denomDetails.get(denom);
     },
     /**
@@ -405,7 +405,7 @@ export const makeChainHub = (agoricNames, vowTools) => {
      * @param {Brand} brand
      * @returns {string | undefined}
      */
-    lookupDenom(brand) {
+    getDenom(brand) {
       if (brandDenoms.has(brand)) {
         return brandDenoms.get(brand);
       }
