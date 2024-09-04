@@ -1,6 +1,6 @@
 # Exo structure
 
-Last verified 2024-07-31
+Last verified 2024-08-30
 
 ```mermaid
 classDiagram
@@ -117,6 +117,7 @@ classDiagram
       executeEncodedTx()
       getAddress()
       getBalance()
+      getBalances()
       getPublicTopics()
       redelegate()
       send()

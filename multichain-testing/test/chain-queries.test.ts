@@ -22,9 +22,9 @@ const test = anyTest as TestFn<SetupContextWithWallets>;
 
 const accounts = ['osmosis', 'cosmoshub', 'agoric'];
 
-const contractName = 'basicFlows';
+const contractName = 'queryFlows';
 const contractBuilder =
-  '../packages/builders/scripts/orchestration/init-basic-flows.js';
+  '../packages/builders/scripts/testing/start-query-flows.js';
 
 test.before(async t => {
   const { deleteTestKeys, setupTestKeys, ...rest } = await commonSetup(t);
@@ -110,7 +110,7 @@ const queryICQChain = test.macro({
     const offerResult = await retryUntilCondition(
       () => vstorageClient.queryData(`published.wallet.${agoricAddr}`),
       ({ status }) => status.id === offerId && (status.result || status.error),
-      `${offerId} continuing invitation is in vstorage`,
+      `${offerId} offer result is in vstorage`,
       {
         maxRetries: 15,
       },
