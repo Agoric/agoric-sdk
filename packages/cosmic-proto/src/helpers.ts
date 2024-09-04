@@ -97,9 +97,7 @@ const QUERY_REQ_TYPEURL_RE =
 export const typeUrlToGrpcPath = (typeUrl: Any['typeUrl']) => {
   const match = typeUrl.match(QUERY_REQ_TYPEURL_RE);
   if (!(match && match.groups)) {
-    throw TypeError(
-      `Invalid typeUrl: ${typeUrl}. Must be a Query Request.`,
-    );
+    throw TypeError(`Invalid typeUrl: ${typeUrl}. Must be a Query Request.`);
   }
   const { serviceName, methodName } = match.groups;
   return `/${serviceName}.Query/${methodName}`;

@@ -218,9 +218,7 @@ export const makeInterCommand = (
     try {
       return rawExec(file, args, ...opts);
     } catch (err) {
-      throw InvalidArgumentError(
-        `${err.message}: is ${file} in your $PATH?`,
-      );
+      throw InvalidArgumentError(`${err.message}: is ${file} in your $PATH?`);
     }
   };
 
@@ -498,9 +496,7 @@ inter auction status
         const current = await getCurrent(from, { readLatestHead });
         const liveIds = current.liveOffers.map(([i, _s]) => i);
         if (!liveIds.includes(id)) {
-          throw InvalidArgumentError(
-            `${id} not in live offer ids: ${liveIds}`,
-          );
+          throw InvalidArgumentError(`${id} not in live offer ids: ${liveIds}`);
         }
 
         const io = { ...networkConfig, execFileSync, delay, stdout };

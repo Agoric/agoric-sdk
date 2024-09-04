@@ -241,9 +241,7 @@ export class Decimal {
     const badCharacter = input.match(/[^0-9.]/);
     if (badCharacter) {
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      throw Error(
-        `Invalid character at position ${badCharacter.index! + 1}`,
-      );
+      throw Error(`Invalid character at position ${badCharacter.index! + 1}`);
     }
 
     let whole: string;
@@ -297,9 +295,7 @@ export class Decimal {
     if (fractionalDigits < 0)
       throw Error('Fractional digits must not be negative');
     if (fractionalDigits > maxFractionalDigits) {
-      throw Error(
-        `Fractional digits must not exceed ${maxFractionalDigits}`,
-      );
+      throw Error(`Fractional digits must not exceed ${maxFractionalDigits}`);
     }
   }
 }
