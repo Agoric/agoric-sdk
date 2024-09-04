@@ -41,7 +41,9 @@ export const makeTestCommand = (
       const networkConfig = await getNetworkConfig(env);
       return makeWalletUtils({ fetch, execFileSync, delay }, networkConfig);
     } catch (err) {
-      throw CommanderError(1, 'RPC_FAIL', err.message);
+      // CommanderError is a class constructor, and so
+      // must be invoked with `new`.
+      throw new CommanderError(1, 'RPC_FAIL', err.message);
     }
   };
 

@@ -366,7 +366,9 @@ const usageTest = (words, blurb = 'Command usage:') => {
     program.addCommand(cmd);
     for (const c of subCommands(program)) {
       c.exitOverride(() => {
-        throw CommanderError(1, 'usage', '');
+        // CommanderError is a class constructor, and so
+        // must be invoked with `new`.
+        throw new CommanderError(1, 'usage', '');
       });
     }
     cmd.configureOutput({
