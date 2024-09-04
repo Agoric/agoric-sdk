@@ -73,7 +73,7 @@ export const makeGovCommand = (_logger, io = {}) => {
     const done = found.filter(it => it.instanceName === instanceName);
     if (done.length > 0) {
       console.warn(`invitation to ${instanceName} already accepted`, done);
-      throw new CommanderError(1, 'EALREADY', `already accepted`);
+      throw CommanderError(1, 'EALREADY', `already accepted`);
     }
   };
 
@@ -330,7 +330,7 @@ export const makeGovCommand = (_logger, io = {}) => {
       const info = await readLatestHead(
         `published.committees.${opts.pathname}.latestQuestion`,
       ).catch(err => {
-        throw new CommanderError(1, 'VSTORAGE_FAILURE', err.message);
+        throw CommanderError(1, 'VSTORAGE_FAILURE', err.message);
       });
 
       // XXX runtime shape-check
@@ -346,7 +346,7 @@ export const makeGovCommand = (_logger, io = {}) => {
         const votingRight = cont.find(it => it.instanceName === opts.instance);
         if (!votingRight) {
           console.debug('continuing ids', cont, 'for', current);
-          throw new CommanderError(
+          throw CommanderError(
             1,
             'NO_INVITATION',
             'first, try: agops ec committee ...',

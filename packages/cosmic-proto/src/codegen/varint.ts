@@ -86,7 +86,7 @@ export function varint64read(this: ReaderLike): [number, number] {
     }
   }
 
-  throw new Error('invalid varint');
+  throw Error('invalid varint');
 }
 
 /**
@@ -353,7 +353,7 @@ export function varint32read(this: ReaderLike): number {
   for (let readBytes = 5; (b & 0x80) !== 0 && readBytes < 10; readBytes++)
     b = this.buf[this.pos++];
 
-  if ((b & 0x80) != 0) throw new Error('invalid varint');
+  if ((b & 0x80) != 0) throw Error('invalid varint');
 
   this.assertBounds();
 

@@ -341,7 +341,7 @@ async function main(args, { env, stdout, spawn, fs, os }) {
 
   if (isWorkingCopy || showEnv) {
     if (showEnv && !isWorkingCopy) {
-      throw new Error('XSnap requires a working copy and git to --show-env');
+      throw Error('XSnap requires a working copy and git to --show-env');
     }
     await updateSubmodules(showEnv, { env, stdout, spawn, fs });
     hasSource = true;
@@ -362,7 +362,7 @@ async function main(args, { env, stdout, spawn, fs, os }) {
       }
       await makeXsnap({ spawn, fs, os }, { forceBuild });
     } else if (!hasBin) {
-      throw new Error(
+      throw Error(
         'XSnap has neither sources nor a pre-built binary. Docker? .dockerignore? npm files?',
       );
     }

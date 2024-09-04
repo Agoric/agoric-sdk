@@ -366,7 +366,7 @@ const usageTest = (words, blurb = 'Command usage:') => {
     program.addCommand(cmd);
     for (const c of subCommands(program)) {
       c.exitOverride(() => {
-        throw new CommanderError(1, 'usage', '');
+        throw CommanderError(1, 'usage', '');
       });
     }
     cmd.configureOutput({

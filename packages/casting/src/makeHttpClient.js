@@ -4,7 +4,7 @@ const { freeze } = Object;
 
 const filterBadStatus = res => {
   if (res.status >= 400) {
-    throw new Error(`Bad status on response: ${res.status}`);
+    throw Error(`Bad status on response: ${res.status}`);
   }
   return res;
 };

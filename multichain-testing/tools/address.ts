@@ -20,7 +20,7 @@ export const parseRemoteAddress = (
 } => {
   const match = address.match(REMOTE_ADDR_RE);
   if (!match || !match.groups) {
-    throw new Error('Invalid remote address format');
+    throw Error('Invalid remote address format');
   }
 
   const { portID, version, channelID } = match.groups;
@@ -42,7 +42,7 @@ export const parseLocalAddress = (
 } => {
   const match = address.match(LOCAL_ADDR_RE);
   if (!match || !match.groups) {
-    throw new Error('Invalid local address format');
+    throw Error('Invalid local address format');
   }
 
   const { portID, version, channelID } = match.groups;

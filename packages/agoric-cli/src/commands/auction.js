@@ -130,7 +130,7 @@ export const makeAuctionCommand = (
         };
 
         if (Object.keys(params).length === 0) {
-          throw new InvalidArgumentError(`no parameters given`);
+          throw InvalidArgumentError(`no parameters given`);
         }
 
         const instance = agoricNames.instance.auctioneer;

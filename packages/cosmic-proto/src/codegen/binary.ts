@@ -100,7 +100,7 @@ export class BinaryReader implements IBinaryReader {
   len: number;
 
   assertBounds(): void {
-    if (this.pos > this.len) throw new RangeError('premature EOF');
+    if (this.pos > this.len) throw RangeError('premature EOF');
   }
 
   constructor(buf?: ArrayLike<number>) {
@@ -115,7 +115,7 @@ export class BinaryReader implements IBinaryReader {
       fieldNo = tag >>> 3,
       wireType = tag & 7;
     if (fieldNo <= 0 || wireType < 0 || wireType > 5)
-      throw new Error(
+      throw Error(
         'illegal tag: field no ' + fieldNo + ' wire type ' + wireType,
       );
     return [fieldNo, wireType, tag];
@@ -214,11 +214,11 @@ export class BinaryReader implements IBinaryReader {
   }
 
   float(): number {
-    throw new Error('float not supported');
+    throw Error('float not supported');
   }
 
   double(): number {
-    throw new Error('double not supported');
+    throw Error('double not supported');
   }
 
   bool(): boolean {
@@ -466,11 +466,11 @@ export class BinaryWriter implements IBinaryWriter {
   sfixed32 = BinaryWriter.prototype.fixed32;
 
   float(value: number): BinaryWriter {
-    throw new Error('float not supported' + value);
+    throw Error('float not supported' + value);
   }
 
   double(value: number): BinaryWriter {
-    throw new Error('double not supported' + value);
+    throw Error('double not supported' + value);
   }
 
   bytes(value: Uint8Array): BinaryWriter {

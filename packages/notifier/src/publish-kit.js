@@ -18,7 +18,7 @@ const makeQuietRejection = reason => {
   return rejection;
 };
 const tooFarRejection = makeQuietRejection(
-  harden(new Error('Cannot read past end of iteration.')),
+  harden(Error('Cannot read past end of iteration.')),
 );
 
 export const PublisherI = M.interface('Publisher', {
