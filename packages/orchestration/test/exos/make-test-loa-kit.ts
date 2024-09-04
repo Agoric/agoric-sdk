@@ -32,12 +32,15 @@ export const prepareMakeTestLOAKit = (
 
   const makeLocalOrchestrationAccountKit = prepareLocalOrchestrationAccountKit(
     rootZone,
-    makeRecorderKit,
-    // @ts-expect-error mocked zcf. use `stake-bld.contract.test.ts` to test LCA with offer
-    zcf,
-    timer,
-    vowTools,
-    chainHub,
+    {
+      makeRecorderKit,
+      // @ts-expect-error mocked zcf. use `stake-bld.contract.test.ts` to test LCA with offer
+      zcf,
+      timerService: timer,
+      vowTools,
+      chainHub,
+      localchain,
+    },
   );
 
   return async ({

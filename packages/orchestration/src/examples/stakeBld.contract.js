@@ -44,13 +44,17 @@ export const start = async (zcf, privateArgs, baggage) => {
 
   const chainHub = makeChainHub(privateArgs.agoricNames, vowTools);
 
+  const { localchain, timerService } = privateArgs;
   const makeLocalOrchestrationAccountKit = prepareLocalOrchestrationAccountKit(
     zone,
-    makeRecorderKit,
-    zcf,
-    privateArgs.timerService,
-    vowTools,
-    chainHub,
+    {
+      makeRecorderKit,
+      zcf,
+      timerService,
+      vowTools,
+      chainHub,
+      localchain,
+    },
   );
 
   // ----------------

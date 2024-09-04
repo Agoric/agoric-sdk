@@ -265,8 +265,11 @@ export const fakeLocalChainBridgeQueryHandler = message => {
         reply: {
           '@type': '/cosmos.bank.v1beta1.QueryBalanceResponse',
           balance: {
+            denom: message.denom,
+            // return 10 for all denoms, somewhat arbitrarily.
+            // if a denom is not known to cosmos bank, we'd expect to see
+            // `{denom, amount: '0'}` returned
             amount: '10',
-            denom: 'ubld',
           },
         },
       };

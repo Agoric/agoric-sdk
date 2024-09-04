@@ -6,6 +6,7 @@ import { Shape as NetworkShape } from '@agoric/network';
 import { M } from '@agoric/vat-data';
 import { VowShape } from '@agoric/vow';
 import { E } from '@endo/far';
+import { Fail, q } from '@endo/errors';
 
 import {
   AmountArgShape,
@@ -14,8 +15,9 @@ import {
   DenomShape,
   IBCTransferOptionsShape,
   TimestampProtoShape,
+  TypedJsonShape,
 } from '../typeGuards.js';
-import { maxClockSkew } from '../utils/cosmos.js';
+import { maxClockSkew, toDenomAmount } from '../utils/cosmos.js';
 import { orchestrationAccountMethods } from '../utils/orchestrationAccount.js';
 import { makeTimestampHelper } from '../utils/time.js';
 import { preparePacketTools } from './packet-tools.js';
@@ -24,25 +26,23 @@ import { coerceCoin, coerceDenomAmount } from '../utils/amounts.js';
 
 /**
  * @import {HostOf} from '@agoric/async-flow';
- * @import {LocalChainAccount} from '@agoric/vats/src/localchain.js';
- * @import {AmountArg, ChainAddress, DenomAmount, IBCMsgTransferOptions, ChainInfo, IBCConnectionInfo, OrchestrationAccountI} from '@agoric/orchestration';
+ * @import {LocalChain, LocalChainAccount} from '@agoric/vats/src/localchain.js';
+ * @import {AmountArg, ChainAddress, DenomAmount, IBCMsgTransferOptions, IBCConnectionInfo, OrchestrationAccountI} from '@agoric/orchestration';
  * @import {RecorderKit, MakeRecorderKit} from '@agoric/zoe/src/contractSupport/recorder.js'.
  * @import {Zone} from '@agoric/zone';
  * @import {Remote} from '@agoric/internal';
- * @import {Bytes} from '@agoric/network';
  * @import {InvitationMakers} from '@agoric/smart-wallet/src/types.js';
  * @import {TimerService, TimestampRecord} from '@agoric/time';
- * @import {PromiseVow, EVow, Vow, VowTools} from '@agoric/vow';
+ * @import {Vow, VowTools} from '@agoric/vow';
  * @import {TypedJson, JsonSafe, ResponseTo} from '@agoric/cosmic-proto';
  * @import {Coin} from '@agoric/cosmic-proto/cosmos/base/v1beta1/coin.js';
- * @import {Matcher, Pattern} from '@endo/patterns';
+ * @import {Matcher} from '@endo/patterns';
  * @import {ChainHub} from './chain-hub.js';
  * @import {PacketTools} from './packet-tools.js';
  */
 
 const trace = makeTracer('LOA');
 
-const { Fail } = assert;
 const { Vow$ } = NetworkShape; // TODO #9611
 
 const EVow$ = shape => M.or(Vow$(shape), M.promise(/* shape */));
@@ -82,19 +82,17 @@ const PUBLIC_TOPICS = {
 
 /**
  * @param {Zone} zone
- * @param {MakeRecorderKit} makeRecorderKit
- * @param {ZCF} zcf
- * @param {Remote<TimerService>} timerService
- * @param {VowTools} vowTools
- * @param {ChainHub} chainHub
+ * @param {object} powers
+ * @param {MakeRecorderKit} powers.makeRecorderKit
+ * @param {ZCF} powers.zcf
+ * @param {Remote<TimerService>} powers.timerService
+ * @param {VowTools} powers.vowTools
+ * @param {ChainHub} powers.chainHub
+ * @param {Remote<LocalChain>} powers.localchain
  */
 export const prepareLocalOrchestrationAccountKit = (
   zone,
-  makeRecorderKit,
-  zcf,
-  timerService,
-  vowTools,
-  chainHub,
+  { makeRecorderKit, zcf, timerService, vowTools, chainHub, localchain },
 ) => {
   const { watch, allVows, asVow, when } = vowTools;
   const { makeIBCTransferSender } = prepareIBCTools(
@@ -140,9 +138,10 @@ export const prepareLocalOrchestrationAccountKit = (
         onFulfilled: M.call(M.any()).optional(M.any()).returns(M.undefined()),
       }),
       getBalanceWatcher: M.interface('getBalanceWatcher', {
-        onFulfilled: M.call(AmountShape)
-          .optional(DenomShape)
-          .returns(DenomAmountShape),
+        onFulfilled: M.call(AmountShape, DenomShape).returns(DenomAmountShape),
+      }),
+      queryBalanceWatcher: M.interface('queryBalanceWatcher', {
+        onFulfilled: M.call(TypedJsonShape).returns(DenomAmountShape),
       }),
       invitationMakers: M.interface('invitationMakers', {
         Delegate: M.call(M.string(), AmountShape).returns(M.promise()),
@@ -356,6 +355,25 @@ export const prepareLocalOrchestrationAccountKit = (
           return harden({ denom, value: natAmount.value });
         },
       },
+      /**
+       * handles a QueryBalanceRequest from localchain.query and returns the
+       * balance as a DenomAmount
+       */
+      queryBalanceWatcher: {
+        /**
+         * @param {ResponseTo<
+         *   TypedJson<'/cosmos.bank.v1beta1.QueryBalanceRequest'>
+         * >} result
+         * @returns {DenomAmount}
+         */
+        onFulfilled(result) {
+          const { balance } = result;
+          if (!balance || !balance?.denom) {
+            throw Fail`Expected balance ${q(result)};`;
+          }
+          return harden(toDenomAmount(balance));
+        },
+      },
       holder: {
         /** @type {HostOf<OrchestrationAccountI['asContinuingOffer']>} */
         asContinuingOffer() {
@@ -380,8 +398,6 @@ export const prepareLocalOrchestrationAccountKit = (
           });
         },
         /**
-         * TODO: balance lookups for non-vbank assets
-         *
          * @type {HostOf<OrchestrationAccountI['getBalance']>}
          */
         getBalance(denomArg) {
@@ -391,17 +407,26 @@ export const prepareLocalOrchestrationAccountKit = (
                 ? [chainHub.getAsset(denomArg)?.brand, denomArg]
                 : [denomArg, chainHub.getDenom(denomArg)];
 
-            if (!brand) {
-              throw Fail`No brand for ${denomArg}`;
-            }
             if (!denom) {
-              throw Fail`No denom for ${denomArg}`;
+              throw Fail`No denom for brand: ${denomArg}`;
+            }
+
+            if (brand) {
+              return watch(
+                E(this.state.account).getBalance(brand),
+                this.facets.getBalanceWatcher,
+                denom,
+              );
             }
 
             return watch(
-              E(this.state.account).getBalance(brand),
-              this.facets.getBalanceWatcher,
-              denom,
+              E(localchain).query(
+                typedJson('/cosmos.bank.v1beta1.QueryBalanceRequest', {
+                  address: this.state.address.value,
+                  denom,
+                }),
+              ),
+              this.facets.queryBalanceWatcher,
             );
           });
         },

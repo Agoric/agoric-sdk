@@ -1,10 +1,11 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-import { AmountMath } from '@agoric/ertp';
+import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { TargetApp } from '@agoric/vats/src/bridge-target.js';
 import { SIMULATED_ERRORS } from '@agoric/vats/tools/fake-bridge.js';
 import { heapVowE as VE } from '@agoric/vow/vat.js';
+import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
 import { ChainAddress, type AmountArg } from '../../src/orchestration-api.js';
 import { maxClockSkew } from '../../src/utils/cosmos.js';
 import { NANOSECONDS_PER_SECOND } from '../../src/utils/time.js';
@@ -344,5 +345,59 @@ test('send', async t => {
     executedBankSends.length,
     4,
     'sent 2 successful txs and 1 failed. 1 rejected before sending',
+  );
+});
+
+test('getBalance', async t => {
+  const common = await commonSetup(t);
+  const makeTestLOAKit = prepareMakeTestLOAKit(t, common);
+  const account = await makeTestLOAKit();
+  t.truthy(account, 'account is returned');
+
+  const {
+    brands: { bld: stake },
+    utils: { pourPayment, inspectLocalBridge },
+  } = common;
+  const oneHundredStakePmt = await pourPayment(stake.make(100n));
+  const expectedBalance = { denom: 'ubld', value: 100n };
+  t.log('deposit 100 ubld to account');
+  await VE(account).deposit(oneHundredStakePmt);
+
+  t.deepEqual(
+    await VE(account).getBalance(stake.brand),
+    expectedBalance,
+    'getBalance from brand',
+  );
+  t.deepEqual(
+    await VE(account).getBalance('ubld'),
+    expectedBalance,
+    'getBalance from denom',
+  );
+
+  const ibcBalance = await VE(account).getBalance('ibc/1234');
+  t.deepEqual(
+    ibcBalance,
+    { denom: 'ibc/1234', value: 10n },
+    'getBalance returns balance of non-vbank denom',
+  );
+
+  const moolah = withAmountUtils(makeIssuerKit('MOOLAH'));
+  await t.throwsAsync(
+    VE(account).getBalance(moolah.brand),
+    {
+      message: 'No denom for brand: "[Alleged: MOOLAH brand]"',
+    },
+    'getBalance throws when presented non-vbank brand',
+  );
+
+  const localBridgeMessages = inspectLocalBridge();
+  const queryMessages = localBridgeMessages.filter(
+    x => x.type === 'VLOCALCHAIN_QUERY_MANY',
+  );
+  t.is(queryMessages.length, 1, 'only sent query for non-vbank DenomArg');
+  t.is(
+    queryMessages[0].messages[0].denom,
+    'ibc/1234',
+    'only sent query for ibc/1234',
   );
 });
