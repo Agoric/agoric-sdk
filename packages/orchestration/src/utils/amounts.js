@@ -19,7 +19,7 @@ export const coerceDenom = (chainHub, denomArg) => {
   }
   const denom = chainHub.getDenom(denomArg);
   if (!denom) {
-    throw makeError(`No denomination for brand ${denomArg}`);
+    throw makeError(`No denom for brand ${denomArg}`);
   }
   return denom;
 };
