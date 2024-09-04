@@ -1,15 +1,15 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
+import { makeIssuerKit } from '@agoric/ertp';
+import { reincarnate } from '@agoric/swingset-liveslots/tools/setup-vat-data.js';
 import { prepareSwingsetVowTools } from '@agoric/vow/vat.js';
 import { setupZCFTest } from '@agoric/zoe/test/unitTests/zcf/setupZcfTest.js';
-import { reincarnate } from '@agoric/swingset-liveslots/tools/setup-vat-data.js';
-import { makeIssuerKit } from '@agoric/ertp';
 import type { CosmosChainInfo, IBCConnectionInfo } from '../src/cosmos-api.js';
+import fetchedChainInfo from '../src/fetched-chain-info.js'; // Refresh with scripts/refresh-chain-info.ts
 import type { Chain } from '../src/orchestration-api.js';
+import { denomHash } from '../src/utils/denomHash.js';
 import { provideOrchestration } from '../src/utils/start-helper.js';
 import { commonSetup, provideDurableZone } from './supports.js';
-import { denomHash } from '../src/utils/denomHash.js';
-import fetchedChainInfo from '../src/fetched-chain-info.js'; // Refresh with scripts/refresh-chain-info.ts
 
 const test = anyTest;
 
