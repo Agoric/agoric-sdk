@@ -385,23 +385,25 @@ export const prepareLocalOrchestrationAccountKit = (
          * @type {HostOf<OrchestrationAccountI['getBalance']>}
          */
         getBalance(denomArg) {
-          const [brand, denom] =
-            typeof denomArg === 'string'
-              ? [chainHub.getAsset(denomArg)?.brand, denomArg]
-              : [denomArg, chainHub.getDenom(denomArg)];
+          return asVow(() => {
+            const [brand, denom] =
+              typeof denomArg === 'string'
+                ? [chainHub.getAsset(denomArg)?.brand, denomArg]
+                : [denomArg, chainHub.getDenom(denomArg)];
 
-          if (!brand) {
-            throw Fail`No brand for ${denomArg}`;
-          }
-          if (!denom) {
-            throw Fail`No denom for ${denomArg}`;
-          }
+            if (!brand) {
+              throw Fail`No brand for ${denomArg}`;
+            }
+            if (!denom) {
+              throw Fail`No denom for ${denomArg}`;
+            }
 
-          return watch(
-            E(this.state.account).getBalance(brand),
-            this.facets.getBalanceWatcher,
-            denom,
-          );
+            return watch(
+              E(this.state.account).getBalance(brand),
+              this.facets.getBalanceWatcher,
+              denom,
+            );
+          });
         },
         /** @type {HostOf<OrchestrationAccountI['getBalances']>} */
         getBalances() {
