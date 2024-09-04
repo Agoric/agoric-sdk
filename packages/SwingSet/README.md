@@ -204,7 +204,7 @@ If wavy dot syntax is used on a Promise which rejects, the method is not invoked
 the return promise's `rejection` function is called instead:
 
 ```js
-const badP = Promise.reject(new Error());
+const badP = Promise.reject(Error());
 const p2 = badP~.foo();
 p2.then(undefined, rej => console.log('rejected', rej));
 // prints 'rejected'
