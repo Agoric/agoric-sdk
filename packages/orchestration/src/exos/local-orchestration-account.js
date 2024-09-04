@@ -143,6 +143,11 @@ export const prepareLocalOrchestrationAccountKit = (
       queryBalanceWatcher: M.interface('queryBalanceWatcher', {
         onFulfilled: M.call(TypedJsonShape).returns(DenomAmountShape),
       }),
+      queryBalancesWatcher: M.interface('queryBalancesWatcher', {
+        onFulfilled: M.call(TypedJsonShape).returns(
+          M.arrayOf(DenomAmountShape),
+        ),
+      }),
       invitationMakers: M.interface('invitationMakers', {
         Delegate: M.call(M.string(), AmountShape).returns(M.promise()),
         Undelegate: M.call(M.string(), AmountShape).returns(M.promise()),
@@ -374,6 +379,25 @@ export const prepareLocalOrchestrationAccountKit = (
           return harden(toDenomAmount(balance));
         },
       },
+      /**
+       * handles a QueryAllBalancesRequest from localchain.query and returns the
+       * balances as a DenomAmounts
+       */
+      queryBalancesWatcher: {
+        /**
+         * @param {ResponseTo<
+         *   TypedJson<'/cosmos.bank.v1beta1.QueryAllBalancesRequest'>
+         * >} result
+         * @returns {DenomAmount[]}
+         */
+        onFulfilled(result) {
+          const { balances } = result;
+          if (!balances || !Array.isArray(balances)) {
+            throw Fail`Expected balances ${q(result)};`;
+          }
+          return harden(balances.map(toDenomAmount));
+        },
+      },
       holder: {
         /** @type {HostOf<OrchestrationAccountI['asContinuingOffer']>} */
         asContinuingOffer() {
@@ -432,8 +456,14 @@ export const prepareLocalOrchestrationAccountKit = (
         },
         /** @type {HostOf<OrchestrationAccountI['getBalances']>} */
         getBalances() {
-          // TODO https://github.com/Agoric/agoric-sdk/issues/9610
-          return asVow(() => Fail`not yet implemented`);
+          return watch(
+            E(localchain).query(
+              typedJson('/cosmos.bank.v1beta1.QueryAllBalancesRequest', {
+                address: this.state.address.value,
+              }),
+            ),
+            this.facets.queryBalancesWatcher,
+          );
         },
 
         /**

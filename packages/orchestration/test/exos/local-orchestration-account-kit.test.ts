@@ -3,7 +3,10 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { TargetApp } from '@agoric/vats/src/bridge-target.js';
-import { SIMULATED_ERRORS } from '@agoric/vats/tools/fake-bridge.js';
+import {
+  LOCALCHAIN_QUERY_ALL_BALANCES_RESPONSE,
+  SIMULATED_ERRORS,
+} from '@agoric/vats/tools/fake-bridge.js';
 import { heapVowE as VE } from '@agoric/vow/vat.js';
 import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
 import { ChainAddress, type AmountArg } from '../../src/orchestration-api.js';
@@ -400,4 +403,26 @@ test('getBalance', async t => {
     'ibc/1234',
     'only sent query for ibc/1234',
   );
+});
+
+test('getBalances', async t => {
+  const common = await commonSetup(t);
+  const makeTestLOAKit = prepareMakeTestLOAKit(t, common);
+  const account = await makeTestLOAKit();
+  t.truthy(account, 'account is returned');
+
+  const {
+    utils: { inspectLocalBridge },
+  } = common;
+
+  t.deepEqual(
+    await VE(account).getBalances(),
+    LOCALCHAIN_QUERY_ALL_BALANCES_RESPONSE,
+  );
+
+  const localBridgeMessages = inspectLocalBridge();
+  const queryMessages = localBridgeMessages.filter(
+    x => x.type === 'VLOCALCHAIN_QUERY_MANY',
+  );
+  t.is(queryMessages.length, 1, 'getBalances sends query to cosmos golang');
 });
