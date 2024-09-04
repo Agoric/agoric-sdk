@@ -10,6 +10,7 @@ import {
   MsgDelegateResponse,
   MsgUndelegateResponse,
 } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/tx.js';
+import { Any } from '@agoric/cosmic-proto/google/protobuf/any.js';
 import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { makeNotifierFromSubscriber } from '@agoric/notifier';
@@ -20,15 +21,27 @@ import { prepareVowTools, heapVowE as E } from '@agoric/vow/vat.js';
 import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/recorder.js';
 import { buildZoeManualTimer } from '@agoric/zoe/tools/manualTimer.js';
 import { makeDurableZone } from '@agoric/zone/durable.js';
-import { decodeBase64 } from '@endo/base64';
+import { decodeBase64, encodeBase64 } from '@endo/base64';
 import { Far } from '@endo/far';
 import { Timestamp } from '@agoric/cosmic-proto/google/protobuf/timestamp.js';
 import { makeNameHubKit } from '@agoric/vats';
 import { prepareCosmosOrchestrationAccountKit } from '../src/exos/cosmos-orchestration-account.js';
 import type { ChainAddress, IcaAccount, ICQConnection } from '../src/types.js';
-import { encodeTxResponse } from '../src/utils/cosmos.js';
 import { MILLISECONDS_PER_SECOND } from '../src/utils/time.js';
 import { makeChainHub } from '../src/exos/chain-hub.js';
+
+/**
+ * @param {unknown} response
+ * @param {(msg: any) => Any} toProtoMsg
+ * @returns {string}
+ */
+const encodeTxResponse = (response, toProtoMsg) => {
+  const protoMsg = toProtoMsg(response);
+  const any1 = Any.fromPartial(protoMsg);
+  const any2 = Any.fromPartial({ value: Any.encode(any1).finish() });
+  const ackStr = encodeBase64(Any.encode(any2).finish());
+  return ackStr;
+};
 
 const trivialDelegateResponse = encodeTxResponse(
   {},
