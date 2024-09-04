@@ -5,21 +5,22 @@ __metadata:
   version: 8
   cacheKey: 10c0
 
-"@agoric/synthetic-chain@npm:^0.1.0":
-  version: 0.1.0
-  resolution: "@agoric/synthetic-chain@npm:0.1.0"
+"@agoric/synthetic-chain@npm:^0.2.0":
+  version: 0.2.0
+  resolution: "@agoric/synthetic-chain@npm:0.2.0"
   dependencies:
-    "@endo/zip": "npm:^1.0.1"
-    better-sqlite3: "npm:^9.4.0"
+    "@endo/zip": "npm:^1.0.6"
+    better-sqlite3: "npm:^9.6.0"
     chalk: "npm:^5.3.0"
+    cosmjs-types: "npm:^0.9.0"
     execa: "npm:^8.0.1"
   bin:
     synthetic-chain: dist/cli/cli.js
-  checksum: 10c0/8305293d085cde9cbf94670134216e06337c5624c45faf5dfebb86762042abe7b4340cf3205e671dfce54e888bd4e9b3428400756833fa06f2bbb21b44668c44
+  checksum: 10c0/cc30befe632a3bbb9225a7aa9abeececb421721c552bb409dc5a6140833444daf8fe5459a9cd5beb672fc55052ba6dbff2d829f22887a8e9cb74e85885f4f5b1
   languageName: node
   linkType: hard
 
-"@endo/zip@npm:^1.0.1":
+"@endo/zip@npm:^1.0.6":
   version: 1.0.6
   resolution: "@endo/zip@npm:1.0.6"
   checksum: 10c0/70549f380db9b2454875416359348ffabc6eeecd550c8b63016d26e384335e498eb7ebfafb45cd69a0c64d093d89d399dedb37408ca6764f13ebaf0d720d8ad2
@@ -292,7 +293,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"better-sqlite3@npm:^9.4.0":
+"better-sqlite3@npm:^9.6.0":
   version: 9.6.0
   resolution: "better-sqlite3@npm:9.6.0"
   dependencies:
@@ -558,6 +559,13 @@ __metadata:
   version: 2.0.1
   resolution: "convert-to-spaces@npm:2.0.1"
   checksum: 10c0/d90aa0e3b6a27f9d5265a8d32def3c5c855b3e823a9db1f26d772f8146d6b91020a2fdfd905ce8048a73fad3aaf836fef8188c67602c374405e2ae8396c4ac46
+  languageName: node
+  linkType: hard
+
+"cosmjs-types@npm:^0.9.0":
+  version: 0.9.0
+  resolution: "cosmjs-types@npm:0.9.0"
+  checksum: 10c0/bc20f4293fb34629d7c5f96bafe533987f753df957ff68eb078d0128ae5a418320cb945024441769a07bb9bc5dde9d22b972fd40d485933e5706ea191c43727b
   languageName: node
   linkType: hard
 
@@ -1832,7 +1840,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "root-workspace-0b6124@workspace:."
   dependencies:
-    "@agoric/synthetic-chain": "npm:^0.1.0"
+    "@agoric/synthetic-chain": "npm:^0.2.0"
     ava: "npm:^5.3.1"
   languageName: unknown
   linkType: soft
