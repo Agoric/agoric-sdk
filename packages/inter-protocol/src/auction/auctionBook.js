@@ -10,7 +10,6 @@ import { M, prepareExoClassKit } from '@agoric/vat-data';
 
 import { assertAllDefined, makeTracer } from '@agoric/internal';
 import {
-  atomicRearrange,
   ceilMultiplyBy,
   makeRatioFromAmounts,
   makeRecorderTopic,
@@ -311,8 +310,7 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
             seat.exit('unable to satisfy want');
           }
 
-          atomicRearrange(
-            zcf,
+          zcf.atomicRearrange(
             harden([
               [collateralSeat, seat, { Collateral: collateralTarget }],
               [seat, bidHoldingSeat, { Bid: proceedsTarget }],
@@ -569,8 +567,7 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
             state.startProceedsGoal = nextProceedsGoal;
           }
 
-          atomicRearrange(
-            zcf,
+          zcf.atomicRearrange(
             harden([[sourceSeat, collateralSeat, { Collateral: assetAmount }]]),
           );
 

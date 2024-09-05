@@ -5,7 +5,6 @@ import { makeTracer } from '@agoric/internal';
 import { observeIteration, subscribeEach } from '@agoric/notifier';
 import { makeScalarMapStore } from '@agoric/store';
 import { TimeMath } from '@agoric/time';
-import { atomicRearrange } from '@agoric/zoe/src/contractSupport/index.js';
 import { E } from '@endo/eventual-send';
 
 import { AUCTION_START_DELAY, PRICE_LOCK_PERIOD } from '../auction/params.js';
@@ -302,7 +301,7 @@ export const getLiquidatableVaults = (
   }
 
   if (transfers.length > 0) {
-    atomicRearrange(zcf, harden(transfers));
+    zcf.atomicRearrange(harden(transfers));
   }
 
   return { vaultData, totalDebt, totalCollateral, liqSeat };
