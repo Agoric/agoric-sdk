@@ -120,7 +120,7 @@ export const prepareVowKit = zone => {
             case 'pending':
               return provideCurrentKit(this.facets.resolver).promise;
             default:
-              throw new TypeError(`unexpected stepStatus ${stepStatus}`);
+              throw TypeError(`unexpected stepStatus ${stepStatus}`);
           }
         },
       },

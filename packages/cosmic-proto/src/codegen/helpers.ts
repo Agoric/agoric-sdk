@@ -35,7 +35,7 @@ export function omitDefault<T extends string | number | bigint | boolean>(
     return input === BigInt(0) ? undefined : input;
   }
 
-  throw new Error(`Got unsupported type ${typeof input}`);
+  throw Error(`Got unsupported type ${typeof input}`);
 }
 
 interface Duration {
@@ -241,9 +241,7 @@ export class Decimal {
     const badCharacter = input.match(/[^0-9.]/);
     if (badCharacter) {
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      throw new Error(
-        `Invalid character at position ${badCharacter.index! + 1}`,
-      );
+      throw Error(`Invalid character at position ${badCharacter.index! + 1}`);
     }
 
     let whole: string;
@@ -261,21 +259,21 @@ export class Decimal {
       switch (parts.length) {
         case 0:
         case 1:
-          throw new Error(
+          throw Error(
             'Fewer than two elements in split result. This must not happen here.',
           );
         case 2:
-          if (!parts[1]) throw new Error('Fractional part missing');
+          if (!parts[1]) throw Error('Fractional part missing');
           whole = parts[0];
           fractional = parts[1].replace(/0+$/, '');
           break;
         default:
-          throw new Error('More than one separator found');
+          throw Error('More than one separator found');
       }
     }
 
     if (fractional.length > fractionalDigits) {
-      throw new Error('Got more fractional digits than supported');
+      throw Error('Got more fractional digits than supported');
     }
 
     const quantity = `${whole}${fractional.padEnd(fractionalDigits, '0')}`;
@@ -293,13 +291,11 @@ export class Decimal {
 
   private static verifyFractionalDigits(fractionalDigits: number): void {
     if (!Number.isInteger(fractionalDigits))
-      throw new Error('Fractional digits is not an integer');
+      throw Error('Fractional digits is not an integer');
     if (fractionalDigits < 0)
-      throw new Error('Fractional digits must not be negative');
+      throw Error('Fractional digits must not be negative');
     if (fractionalDigits > maxFractionalDigits) {
-      throw new Error(
-        `Fractional digits must not exceed ${maxFractionalDigits}`,
-      );
+      throw Error(`Fractional digits must not exceed ${maxFractionalDigits}`);
     }
   }
 }

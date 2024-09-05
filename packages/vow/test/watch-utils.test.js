@@ -215,7 +215,7 @@ test('asPromise handles vow rejection', async t => {
   const zone = makeHeapZone();
   const { watch, asPromise } = prepareBasicVowTools(zone);
 
-  const testPromiseP = Promise.reject(new Error('test error'));
+  const testPromiseP = Promise.reject(Error('test error'));
   const vow = watch(testPromiseP);
 
   await t.throwsAsync(asPromise(vow), { message: 'test error' });

@@ -193,7 +193,7 @@ test.serial('handle failure to create invitation', async t => {
         return slowWithdrawPurse;
       },
       getAssetSubscription: () => {
-        throw new Error('TODO');
+        throw Error('TODO');
       },
     });
 

@@ -69,7 +69,7 @@ function throwIfInvalidPortName(specifiedName) {
   // Valid symbols: ., ,, _, +, -, #, [, ], <, >
   const portNameRegex = new RegExp('^[a-zA-Z0-9.,_+\\-#<>\\[\\]]{2,128}$');
   if (!portNameRegex.test(specifiedName)) {
-    throw new Error(`Invalid IBC port name: ${specifiedName}`);
+    throw Error(`Invalid IBC port name: ${specifiedName}`);
   }
 }
 

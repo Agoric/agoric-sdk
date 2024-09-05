@@ -56,7 +56,7 @@ const retryUntilCondition = async <T>(
     await sleep(retryIntervalMs, { log, setTimeout });
   }
 
-  throw new Error(`${message} condition failed after ${maxRetries} retries.`);
+  throw Error(`${message} condition failed after ${maxRetries} retries.`);
 };
 
 export const makeRetryUntilCondition = (defaultOptions: RetryOptions = {}) => {

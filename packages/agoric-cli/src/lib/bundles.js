@@ -28,7 +28,7 @@ export const PACKAGE_NAME_RE = /^(?:@[^/]+\/)?[^/]+/;
 /** @param {Bundle} bundleObj*/
 export const extractBundleInfo = async bundleObj => {
   if (bundleObj.moduleFormat !== 'endoZipBase64') {
-    throw new Error('only endoZipBase64 is supported');
+    throw Error('only endoZipBase64 is supported');
   }
 
   const contents = Buffer.from(bundleObj.endoZipBase64, 'base64');

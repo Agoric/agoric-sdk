@@ -33,7 +33,7 @@ export const getCurrent = async (addr, { readLatestHead }) => {
       await readLatestHead(`published.wallet.${addr}.current`)
     );
   if (current === undefined) {
-    throw new Error(`undefined current node for ${addr}`);
+    throw Error(`undefined current node for ${addr}`);
   }
 
   // Repair a type misunderstanding seen in the wild.

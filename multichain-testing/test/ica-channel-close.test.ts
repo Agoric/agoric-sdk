@@ -185,7 +185,7 @@ const intentionalCloseAccountScenario = test.macro({
     );
     const newChannel = findNewChannel(channels, { rPortID, lPortID });
     t.log('New Channel after Reactivate', newChannel);
-    if (!newChannel) throw new Error('Channel not found');
+    if (!newChannel) throw Error('Channel not found');
     const newAddress = JSON.parse(newChannel.version).address;
     t.is(newAddress, address, `same chain address is returned - ${chainName}`);
     t.is(
@@ -314,7 +314,7 @@ const channelCloseInitScenario = test.macro({
       ).channels.find(
         x => x.port_id === 'transfer' && x.connection_hops[0] === rConnectionID,
       );
-      if (!transferChannel) throw new Error('Transfer channel not found.');
+      if (!transferChannel) throw Error('Transfer channel not found.');
 
       const dstTransferChannel = {
         chainId: chainInfo['agoric'].chainId,

@@ -75,7 +75,7 @@ const synthesizeRemotable = (slot, iface) => {
  */
 export const makeClientMarshaller = valToSlot => {
   const noNewSlots = val => {
-    throw new Error(`unknown value: ${val}`);
+    throw Error(`unknown value: ${val}`);
   };
   const { convertValToSlot, convertSlotToVal } = makeTranslationTable(
     valToSlot || noNewSlots,

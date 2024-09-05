@@ -130,6 +130,8 @@ export const makeAuctionCommand = (
         };
 
         if (Object.keys(params).length === 0) {
+          // InvalidArgumentError is a class constructor, and so
+          // must be invoked with `new`.
           throw new InvalidArgumentError(`no parameters given`);
         }
 
