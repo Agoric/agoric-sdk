@@ -1,6 +1,5 @@
 /** @file Orchestration facade */
-
-import { assertAllDefined } from '@agoric/internal';
+import { assertAllDefined, deepMapObject } from '@agoric/internal';
 
 /**
  * @import {AsyncFlowTools, GuestInterface, HostArgs, HostOf} from '@agoric/async-flow';
@@ -95,9 +94,12 @@ export const makeOrchestrationFacade = ({
   /**
    * Orchestrate all the guest functions.
    *
+   * If the `guestFns` object is provided as a property of `hostCtx` the
+   * functions will be available within the other guests.
+   *
    * NOTE multiple calls to this with the same guestFn name will fail
    *
-   * @template HC - host context
+   * @template {Record<string, any>} HC - host context
    * @template {{
    *   [durableName: string]: OrchestrationFlow<GuestInterface<HC>>;
    * }} GFM
@@ -106,15 +108,31 @@ export const makeOrchestrationFacade = ({
    * @param {HC} hostCtx
    * @returns {{ [N in keyof GFM]: HostForGuest<GFM[N]> }}
    */
-  const orchestrateAll = (guestFns, hostCtx) =>
-    /** @type {{ [N in keyof GFM]: HostForGuest<GFM[N]> }} */ (
+  const orchestrateAll = (guestFns, hostCtx) => {
+    const mappedFlows = new Map(
+      Object.entries(guestFns).map(([name, guestFn]) => [
+        guestFn,
+        // eslint-disable-next-line no-use-before-define
+        (...args) => orcFns[name](...args),
+      ]),
+    );
+
+    const mappedContext = deepMapObject(
+      hostCtx,
+      val => mappedFlows.get(val) || val,
+    );
+
+    const orcFns = /** @type {{ [N in keyof GFM]: HostForGuest<GFM[N]> }} */ (
       Object.fromEntries(
         Object.entries(guestFns).map(([name, guestFn]) => [
           name,
-          orchestrate(name, hostCtx, guestFn),
+          orchestrate(name, mappedContext, guestFn),
         ]),
       )
     );
+
+    return { ...orcFns };
+  };
 
   return harden({
     orchestrate,

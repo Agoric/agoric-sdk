@@ -532,7 +532,7 @@ test.serial('basic-flows - portfolio holder', async t => {
     invitationSpec: {
       source: 'continuing',
       previousOffer: 'request-portfolio-acct',
-      invitationMakerName: 'MakeInvitation',
+      invitationMakerName: 'Proxying',
       invitationArgs: [
         'cosmoshub',
         'Delegate',
@@ -550,7 +550,7 @@ test.serial('basic-flows - portfolio holder', async t => {
     invitationSpec: {
       source: 'continuing',
       previousOffer: 'request-portfolio-acct',
-      invitationMakerName: 'MakeInvitation',
+      invitationMakerName: 'Proxying',
       invitationArgs: [
         'agoric',
         'Delegate',
@@ -570,7 +570,7 @@ test.serial('basic-flows - portfolio holder', async t => {
       invitationSpec: {
         source: 'continuing',
         previousOffer: 'request-portfolio-acct',
-        invitationMakerName: 'MakeInvitation',
+        invitationMakerName: 'Proxying',
         invitationArgs: [
           'cosmoshub',
           'Delegate',
@@ -590,7 +590,7 @@ test.serial('basic-flows - portfolio holder', async t => {
       invitationSpec: {
         source: 'continuing',
         previousOffer: 'request-portfolio-acct',
-        invitationMakerName: 'MakeInvitation',
+        invitationMakerName: 'Proxying',
         invitationArgs: [
           'agoric',
           'Delegate',

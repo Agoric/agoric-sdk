@@ -37,8 +37,8 @@ harden(makeOrchAccount);
 /**
  * Create accounts on multiple chains and return them in a single continuing
  * offer with invitations makers for Delegate, WithdrawRewards, Transfer, etc.
- * Calls to the underlying invitationMakers are proxied through the
- * `MakeInvitation` invitation maker.
+ * Calls to the underlying invitationMakers are proxied through the `Proxying`
+ * invitation maker.
  *
  * @satisfies {OrchestrationFlow}
  * @param {Orchestrator} orch

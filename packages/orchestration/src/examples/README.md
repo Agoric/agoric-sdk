@@ -11,7 +11,7 @@ This directory contains sample contracts showcasing the Orchestration API. Each 
 The following contracts are a work in progress as they contain bindings that need to be promptly updated. 
 
 - **stakeIca.contract.js**: Interchain account creation for remote staking
-- **unbondExample.contract.js**: Cross-chain unbonding and liquid staking
-- **swapExample.contract.js**: Token swapping and remote staking
+- **unbond.contract.js**: Cross-chain unbonding and liquid staking
+- **swap.contract.js**: Token swapping and remote staking
 - **stakeBld.contract.js**: BLD token staking on Agoric
 

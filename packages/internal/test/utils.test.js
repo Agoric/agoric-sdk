@@ -9,6 +9,7 @@ import {
   untilTrue,
   forever,
   deeplyFulfilledObject,
+  deepMapObject,
   synchronizedTee,
 } from '../src/utils.js';
 
@@ -28,6 +29,98 @@ test('deeplyFulfilledObject', async t => {
   t.deepEqual(fulfilled, {
     obj1: { obj2a: { stringP: 'foo' }, obj2b: someFar },
   });
+});
+
+/**
+ * @typedef {object} DeepMapObjectTestParams
+ * @property {any} input
+ * @property {[any, any][]} replacements
+ * @property {string[][]} unchangedPaths
+ * @property {any} [expectedOutput]
+ */
+
+/** @type {import('ava').Macro<[DeepMapObjectTestParams]>} */
+const deepMapObjectTest = test.macro({
+  title(providedTitle, { input }) {
+    return `deepMapObject - ${providedTitle || JSON.stringify(input)}`;
+  },
+  exec(t, { input, replacements, unchangedPaths, expectedOutput }) {
+    const replacementMap = new Map(replacements);
+    const output = deepMapObject(input, val =>
+      replacementMap.has(val) ? replacementMap.get(val) : val,
+    );
+
+    for (const unchangedPath of unchangedPaths) {
+      /** @type {any} */
+      let inputVal = input;
+      /** @type {any} */
+      let outputVal = output;
+      for (const pathPart of unchangedPath) {
+        inputVal = inputVal[pathPart];
+        outputVal = outputVal[pathPart];
+      }
+      t.is(
+        outputVal,
+        inputVal,
+        `${['obj', ...unchangedPath].join('.')} is unchanged`,
+      );
+    }
+
+    if (expectedOutput) {
+      t.deepEqual(output, expectedOutput);
+    }
+  },
+});
+
+test('identity', deepMapObjectTest, {
+  input: { foo: 42 },
+  replacements: [],
+  unchangedPaths: [[]],
+});
+test('non object', deepMapObjectTest, {
+  input: 'not an object',
+  replacements: [['not an object', 'not replaced']],
+  unchangedPaths: [[]],
+  expectedOutput: 'not an object',
+});
+test('one level deep', deepMapObjectTest, {
+  input: { replace: 'replace me', notChanged: {} },
+  replacements: [['replace me', 'replaced']],
+  unchangedPaths: [['notChanged']],
+  expectedOutput: { replace: 'replaced', notChanged: {} },
+});
+
+const testRecord = { maybeReplace: 'replace me' };
+test('replace first before deep map', deepMapObjectTest, {
+  input: { replace: testRecord, notChanged: {} },
+  replacements: [
+    [testRecord, { different: 'something new' }],
+    ['replace me', 'should not be replaced'],
+  ],
+  unchangedPaths: [['notChanged']],
+  expectedOutput: { replace: { different: 'something new' }, notChanged: {} },
+});
+
+test('not mapping top level container', deepMapObjectTest, {
+  input: testRecord,
+  replacements: [
+    [testRecord, { different: 'should not be different' }],
+    ['replace me', 'replaced'],
+  ],
+  unchangedPaths: [],
+  expectedOutput: { maybeReplace: 'replaced' },
+});
+test('deep mapping', deepMapObjectTest, {
+  input: {
+    one: { two: { three: 'replace me' }, notChanged: {} },
+    another: 'replace me',
+  },
+  replacements: [['replace me', 'replaced']],
+  unchangedPaths: [['one', 'notChanged']],
+  expectedOutput: {
+    one: { two: { three: 'replaced' }, notChanged: {} },
+    another: 'replaced',
+  },
 });
 
 test('makeMeasureSeconds', async t => {
