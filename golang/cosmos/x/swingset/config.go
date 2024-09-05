@@ -39,6 +39,10 @@ max_vats_online = {{ .Swingset.MaxVatsOnline }}
 `
 
 // SwingsetConfig defines configuration for the SwingSet VM.
+// "mapstructure" tag data is used to direct reads from app.toml;
+// "json" tag data is used to populate init messages for the VM.
+// This should be kept in sync with SwingsetConfigShape in
+// ../../../../packages/cosmic-swingset/src/chain-main.js.
 // TODO: Consider extensions from docs/env.md.
 type SwingsetConfig struct {
 	// SlogFile is the absolute path at which a SwingSet log "slog" file should be written.
