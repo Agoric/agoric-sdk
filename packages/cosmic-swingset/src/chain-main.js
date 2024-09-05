@@ -74,6 +74,7 @@ const toNumber = specimen => {
  * @typedef {object} CosmosSwingsetConfig
  * @property {string} [slogfile]
  * @property {number} [maxVatsOnline]
+ * @property {'archival' | 'operational'} [vatTranscriptRetention]
  */
 const SwingsetConfigShape = M.splitRecord(
   // All known properties are optional, but unknown properties are not allowed.
@@ -81,6 +82,7 @@ const SwingsetConfigShape = M.splitRecord(
   {
     slogfile: M.string(),
     maxVatsOnline: M.number(),
+    vatTranscriptRetention: M.or('archival', 'operational'),
   },
   {},
 );
@@ -309,7 +311,8 @@ export default async function main(progname, args, { env, homedir, agcc }) {
     /** @type {CosmosSwingsetConfig} */
     const swingsetConfig = harden(initAction.resolvedConfig || {});
     validateSwingsetConfig(swingsetConfig);
-    const { slogfile } = swingsetConfig;
+    const { slogfile, vatTranscriptRetention } = swingsetConfig;
+    const keepTranscripts = vatTranscriptRetention === 'archival';
 
     // As a kludge, back-propagate selected configuration into environment variables.
     // eslint-disable-next-line dot-notation
@@ -462,6 +465,7 @@ export default async function main(progname, args, { env, homedir, agcc }) {
       trueValue: pathResolve(stateDBDir, 'store-trace.log'),
     });
 
+    // TODO: Add to SwingsetConfig (#9386)
     const keepSnapshots =
       XSNAP_KEEP_SNAPSHOTS === '1' || XSNAP_KEEP_SNAPSHOTS === 'true';
 
@@ -546,6 +550,7 @@ export default async function main(progname, args, { env, homedir, agcc }) {
       swingStoreExportCallback,
       swingStoreTraceFile,
       keepSnapshots,
+      keepTranscripts,
       afterCommitCallback,
       swingsetConfig,
     });

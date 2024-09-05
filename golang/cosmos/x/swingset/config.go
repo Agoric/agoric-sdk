@@ -7,6 +7,8 @@ import (
 	"github.com/spf13/viper"
 
 	"github.com/cosmos/cosmos-sdk/client/flags"
+	pruningtypes "github.com/cosmos/cosmos-sdk/pruning/types"
+	serverconfig "github.com/cosmos/cosmos-sdk/server/config"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
 
 	"github.com/Agoric/agoric-sdk/golang/cosmos/util"
@@ -15,7 +17,15 @@ import (
 const (
 	ConfigPrefix = "swingset"
 	FlagSlogfile = ConfigPrefix + ".slogfile"
+
+	TranscriptRetentionOptionArchival    = "archival"
+	TranscriptRetentionOptionOperational = "operational"
 )
+
+var transcriptRetentionValues []string = []string{
+	TranscriptRetentionOptionArchival,
+	TranscriptRetentionOptionOperational,
+}
 
 // DefaultConfigTemplate defines a default TOML configuration section for the SwingSet VM.
 // Values are pulled from a "Swingset" property, in accord with CustomAppConfig from
@@ -38,6 +48,16 @@ slogfile = "{{ .Swingset.SlogFile }}"
 # requires less memory but may have a negative performance impact if vats need to
 # be frequently paged out to remain under this limit.
 max-vats-online = {{ .Swingset.MaxVatsOnline }}
+
+# Retention of vat transcript spans, with values analogous to those of export
+# ` + "`artifactMode`" + ` (cf.
+# https://github.com/Agoric/agoric-sdk/blob/master/packages/swing-store/docs/data-export.md#optional--historical-data
+# * "archival": keep all transcript spans
+# * "operational": keep only necessary transcript spans (i.e., since the
+#   last snapshot of their vat)
+# * "default": determined by 'pruning' ("archival" if 'pruning' is "nothing",
+#   otherwise "operational")
+vat-transcript-retention = "{{ .Swingset.VatTranscriptRetention }}"
 `
 
 // SwingsetConfig defines configuration for the SwingSet VM.
@@ -53,11 +73,21 @@ type SwingsetConfig struct {
 	// MaxVatsOnline is the maximum number of vats that the SwingSet kernel will have online
 	// at any given time.
 	MaxVatsOnline int `mapstructure:"max-vats-online" json:"maxVatsOnline,omitempty"`
+	// VatTranscriptRetention controls retention of vat transcript spans,
+	// and has values analogous to those of export `artifactMode` (cf.
+	// ../../../../packages/swing-store/docs/data-export.md#optional--historical-data ).
+	// * "archival": keep all transcript spans
+	// * "operational": keep only necessary transcript spans (i.e., since the
+	//   last snapshot of their vat)
+	// * "default": determined by `pruning` ("archival" if `pruning` is
+	//   "nothing", otherwise "operational")
+	VatTranscriptRetention string `mapstructure:"vat-transcript-retention" json:"vatTranscriptRetention,omitempty"`
 }
 
 var DefaultSwingsetConfig = SwingsetConfig{
-	SlogFile:      "",
-	MaxVatsOnline: 50,
+	SlogFile:               "",
+	MaxVatsOnline:          50,
+	VatTranscriptRetention: "default",
 }
 
 func SwingsetConfigFromViper(resolvedConfig servertypes.AppOptions) (*SwingsetConfig, error) {
@@ -73,11 +103,32 @@ func SwingsetConfigFromViper(resolvedConfig servertypes.AppOptions) (*SwingsetCo
 		return nil, nil
 	}
 	v.MustBindEnv(FlagSlogfile, "SLOGFILE")
-	wrapper := struct{ Swingset SwingsetConfig }{}
-	if err := v.Unmarshal(&wrapper); err != nil {
+	// See CustomAppConfig in ../../daemon/cmd/root.go.
+	type ExtendedConfig struct {
+		serverconfig.Config `mapstructure:",squash"`
+		Swingset            SwingsetConfig `mapstructure:"swingset"`
+	}
+	extendedConfig := ExtendedConfig{}
+	if err := v.Unmarshal(&extendedConfig); err != nil {
 		return nil, err
 	}
-	config := &wrapper.Swingset
+	ssConfig := &extendedConfig.Swingset
+
+	// Default/validate transcript retention.
+	if ssConfig.VatTranscriptRetention == "" || ssConfig.VatTranscriptRetention == "default" {
+		if extendedConfig.Pruning == pruningtypes.PruningOptionNothing {
+			ssConfig.VatTranscriptRetention = TranscriptRetentionOptionArchival
+		} else {
+			ssConfig.VatTranscriptRetention = TranscriptRetentionOptionOperational
+		}
+	}
+	if util.IndexOf(transcriptRetentionValues, ssConfig.VatTranscriptRetention) == -1 {
+		err := fmt.Errorf(
+			"value for vat-transcript-retention must be in %q",
+			transcriptRetentionValues,
+		)
+		return nil, err
+	}
 
 	// Interpret relative paths from config files against the application home
 	// directory and from other sources (e.g. env vars) against the current
@@ -108,11 +159,11 @@ func SwingsetConfigFromViper(resolvedConfig servertypes.AppOptions) (*SwingsetCo
 		return filepath.Abs(path)
 	}
 
-	resolvedSlogFile, err := resolvePath(config.SlogFile, FlagSlogfile)
+	resolvedSlogFile, err := resolvePath(ssConfig.SlogFile, FlagSlogfile)
 	if err != nil {
 		return nil, err
 	}
-	config.SlogFile = resolvedSlogFile
+	ssConfig.SlogFile = resolvedSlogFile
 
-	return config, nil
+	return ssConfig, nil
 }
