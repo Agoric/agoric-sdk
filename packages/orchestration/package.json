@@ -51,7 +51,7 @@
     "@endo/far": "^1.1.5",
     "@endo/marshal": "^1.5.3",
     "@endo/patterns": "^1.4.3",
-    "@noble/hashes": "github:paulmillr/noble-hashes#ae060daa6252f3ff2aa2f84e887de0aab491281d"
+    "@noble/hashes": "^1.5.0"
   },
   "devDependencies": {
     "@agoric/swingset-liveslots": "^0.10.2",
