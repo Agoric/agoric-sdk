@@ -18,9 +18,17 @@ const (
 	ConfigPrefix = "swingset"
 	FlagSlogfile = ConfigPrefix + ".slogfile"
 
+	SnapshotRetentionOptionDebug       = "debug"
+	SnapshotRetentionOptionOperational = "operational"
+
 	TranscriptRetentionOptionArchival    = "archival"
 	TranscriptRetentionOptionOperational = "operational"
 )
+
+var snapshotRetentionValues []string = []string{
+	SnapshotRetentionOptionDebug,
+	SnapshotRetentionOptionOperational,
+}
 
 var transcriptRetentionValues []string = []string{
 	TranscriptRetentionOptionArchival,
@@ -49,9 +57,16 @@ slogfile = "{{ .Swingset.SlogFile }}"
 # be frequently paged out to remain under this limit.
 max-vats-online = {{ .Swingset.MaxVatsOnline }}
 
+# Retention of vat snapshots, with values analogous to those of export
+# 'artifactMode' (cf.
+# https://github.com/Agoric/agoric-sdk/blob/master/packages/swing-store/docs/data-export.md#optional--historical-data ).
+# * "debug": keep all snapshots
+# * "operational": keep only the last snapshot
+vat-snapshot-retention = "{{ .Swingset.VatSnapshotRetention }}"
+
 # Retention of vat transcript spans, with values analogous to those of export
-# ` + "`artifactMode`" + ` (cf.
-# https://github.com/Agoric/agoric-sdk/blob/master/packages/swing-store/docs/data-export.md#optional--historical-data
+# 'artifactMode' (cf.
+# https://github.com/Agoric/agoric-sdk/blob/master/packages/swing-store/docs/data-export.md#optional--historical-data ).
 # * "archival": keep all transcript spans
 # * "operational": keep only necessary transcript spans (i.e., since the
 #   last snapshot of their vat)
@@ -70,9 +85,18 @@ type SwingsetConfig struct {
 	// SlogFile is the path at which a SwingSet log "slog" file should be written.
 	// If relative, it is interpreted against the application home directory
 	SlogFile string `mapstructure:"slogfile" json:"slogfile,omitempty"`
+
 	// MaxVatsOnline is the maximum number of vats that the SwingSet kernel will have online
 	// at any given time.
 	MaxVatsOnline int `mapstructure:"max-vats-online" json:"maxVatsOnline,omitempty"`
+
+	// VatSnapshotRetention controls retention of vat snapshots,
+	// and has values analogous to those of export `artifactMode` (cf.
+	// ../../../../packages/swing-store/docs/data-export.md#optional--historical-data ).
+	// * "debug": keep all snapshots
+	// * "operational": keep only the last snapshot
+	VatSnapshotRetention string `mapstructure:"vat-snapshot-retention" json:"vatSnapshotRetention,omitempty"`
+
 	// VatTranscriptRetention controls retention of vat transcript spans,
 	// and has values analogous to those of export `artifactMode` (cf.
 	// ../../../../packages/swing-store/docs/data-export.md#optional--historical-data ).
@@ -87,6 +111,7 @@ type SwingsetConfig struct {
 var DefaultSwingsetConfig = SwingsetConfig{
 	SlogFile:               "",
 	MaxVatsOnline:          50,
+	VatSnapshotRetention:   "operational",
 	VatTranscriptRetention: "default",
 }
 
@@ -114,7 +139,19 @@ func SwingsetConfigFromViper(resolvedConfig servertypes.AppOptions) (*SwingsetCo
 	}
 	ssConfig := &extendedConfig.Swingset
 
-	// Default/validate transcript retention.
+	// Validate vat snapshot retention only if non-empty (because otherwise it
+	// it will be omitted, leaving the VM to apply its own defaults).
+	if ssConfig.VatSnapshotRetention != "" {
+		if util.IndexOf(snapshotRetentionValues, ssConfig.VatSnapshotRetention) == -1 {
+			err := fmt.Errorf(
+				"value for vat-snapshot-retention must be in %q",
+				snapshotRetentionValues,
+			)
+			return nil, err
+		}
+	}
+
+	// Default/validate vat transcript retention.
 	if ssConfig.VatTranscriptRetention == "" || ssConfig.VatTranscriptRetention == "default" {
 		if extendedConfig.Pruning == pruningtypes.PruningOptionNothing {
 			ssConfig.VatTranscriptRetention = TranscriptRetentionOptionArchival

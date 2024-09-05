@@ -74,6 +74,7 @@ const toNumber = specimen => {
  * @typedef {object} CosmosSwingsetConfig
  * @property {string} [slogfile]
  * @property {number} [maxVatsOnline]
+ * @property {'debug' | 'operational'} [vatSnapshotRetention]
  * @property {'archival' | 'operational'} [vatTranscriptRetention]
  */
 const SwingsetConfigShape = M.splitRecord(
@@ -82,6 +83,7 @@ const SwingsetConfigShape = M.splitRecord(
   {
     slogfile: M.string(),
     maxVatsOnline: M.number(),
+    vatSnapshotRetention: M.or('debug', 'operational'),
     vatTranscriptRetention: M.or('archival', 'operational'),
   },
   {},
@@ -308,10 +310,16 @@ export default async function main(progname, args, { env, homedir, agcc }) {
   // here so 'sendToChainStorage' can close over the single mutable instance,
   // when we updated the 'portNums.storage' value each time toSwingSet was called.
   async function launchAndInitializeSwingSet(initAction) {
+    const { XSNAP_KEEP_SNAPSHOTS, NODE_HEAP_SNAPSHOTS = -1 } = env;
+
     /** @type {CosmosSwingsetConfig} */
     const swingsetConfig = harden(initAction.resolvedConfig || {});
     validateSwingsetConfig(swingsetConfig);
-    const { slogfile, vatTranscriptRetention } = swingsetConfig;
+    const { slogfile, vatSnapshotRetention, vatTranscriptRetention } =
+      swingsetConfig;
+    const keepSnapshots =
+      vatSnapshotRetention === 'debug' ||
+      (!vatSnapshotRetention && ['1', 'true'].includes(XSNAP_KEEP_SNAPSHOTS));
     const keepTranscripts = vatTranscriptRetention === 'archival';
 
     // As a kludge, back-propagate selected configuration into environment variables.
@@ -452,7 +460,6 @@ export default async function main(progname, args, { env, homedir, agcc }) {
       serviceName: TELEMETRY_SERVICE_NAME,
     });
 
-    const { XSNAP_KEEP_SNAPSHOTS, NODE_HEAP_SNAPSHOTS = -1 } = env;
     const slogSender = await makeSlogSender({
       stateDir: stateDBDir,
       env,
@@ -464,10 +471,6 @@ export default async function main(progname, args, { env, homedir, agcc }) {
       flagName: 'trace-store',
       trueValue: pathResolve(stateDBDir, 'store-trace.log'),
     });
-
-    // TODO: Add to SwingsetConfig (#9386)
-    const keepSnapshots =
-      XSNAP_KEEP_SNAPSHOTS === '1' || XSNAP_KEEP_SNAPSHOTS === 'true';
 
     const nodeHeapSnapshots = Number.parseInt(NODE_HEAP_SNAPSHOTS, 10);
 
