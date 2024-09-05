@@ -56,8 +56,7 @@ test('calls between flows', async t => {
   t.deepEqual(await vt.when(outer('a', 'b', 'c')), 'Hello a b c');
 });
 
-// UNTIL https://github.com/Agoric/agoric-sdk/issues/9823
-test('context mapping limits', async t => {
+test('context mapping individual flows', async t => {
   const { vt, orchestrateAll, zcf } = t.context;
 
   const flows = {
@@ -70,12 +69,9 @@ test('context mapping limits', async t => {
   } as Record<string, OrchestrationFlow<any>>;
 
   const { outer } = orchestrateAll(flows, {
-    peerFlows: { ...flows },
+    peerFlows: { inner: flows.inner },
     zcf,
   });
 
-  // `peerFlows` did not have the same identity as `guestFns`
-  await t.throwsAsync(vt.when(outer('a', 'b', 'c')), {
-    message: 'converting apply result: vow expected "[Promise]"',
-  });
+  t.deepEqual(await vt.when(outer('a', 'b', 'c')), 'Hello a b c');
 });

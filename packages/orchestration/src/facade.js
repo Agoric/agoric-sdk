@@ -1,5 +1,5 @@
 /** @file Orchestration facade */
-import { assertAllDefined } from '@agoric/internal';
+import { assertAllDefined, deepMapObject } from '@agoric/internal';
 
 /**
  * @import {AsyncFlowTools, GuestInterface, HostArgs, HostOf} from '@agoric/async-flow';
@@ -109,24 +109,17 @@ export const makeOrchestrationFacade = ({
    * @returns {{ [N in keyof GFM]: HostForGuest<GFM[N]> }}
    */
   const orchestrateAll = (guestFns, hostCtx) => {
-    const getMappedFlows = () => {
-      return Object.fromEntries(
-        Object.keys(guestFns).map(name => [
-          name,
-          // eslint-disable-next-line no-use-before-define
-          (...args) => orcFns[name](...args),
-        ]),
-      );
-    };
-
-    const mappedContext = Object.fromEntries(
-      Object.entries(hostCtx).map(([key, value]) => [
-        key,
-        // TODO: support matching individual guest functions anywhere in the context
-        // instead of matching the record as a whole
-        // https://github.com/Agoric/agoric-sdk/issues/9823
-        value === guestFns ? getMappedFlows() : value,
+    const mappedFlows = new Map(
+      Object.entries(guestFns).map(([name, guestFn]) => [
+        guestFn,
+        // eslint-disable-next-line no-use-before-define
+        (...args) => orcFns[name](...args),
       ]),
+    );
+
+    const mappedContext = deepMapObject(
+      hostCtx,
+      val => mappedFlows.get(val) || val,
     );
 
     const orcFns = /** @type {{ [N in keyof GFM]: HostForGuest<GFM[N]> }} */ (
