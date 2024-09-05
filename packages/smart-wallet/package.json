@@ -7,7 +7,7 @@
     "build": "yarn build:bundles",
     "build:bundles": "node ./scripts/build-bundles.js",
     "prepack": "tsc --build tsconfig.build.json",
-    "postpack": "git clean -f '*.d.ts*'",
+    "postpack": "git clean -f '*.d.ts*' '*.tsbuildinfo'",
     "test": "ava",
     "test:xs": "exit 0",
     "lint": "run-s --continue-on-error lint:*",
