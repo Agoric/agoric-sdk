@@ -401,6 +401,10 @@ export const synchronizedTee = (sourceStream, readerCount) => {
       [Symbol.asyncIterator]() {
         return reader;
       },
+      // eslint-disable-next-line no-restricted-globals
+      async [Symbol.asyncDispose]() {
+        await reader.return();
+      },
     });
     return reader;
   });
