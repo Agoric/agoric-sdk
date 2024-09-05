@@ -1,12 +1,12 @@
 /** @file Use-object for the owner of a staking account */
-import { Fail } from '@endo/errors';
-import { decodeBase64 } from '@endo/base64';
-import { E } from '@endo/far';
 import { toRequestQueryJson } from '@agoric/cosmic-proto';
 import {
   QueryBalanceRequest,
   QueryBalanceResponse,
+  QueryAllBalancesRequest,
+  QueryAllBalancesResponse,
 } from '@agoric/cosmic-proto/cosmos/bank/v1beta1/query.js';
+import { MsgSend } from '@agoric/cosmic-proto/cosmos/bank/v1beta1/tx.js';
 import {
   MsgWithdrawDelegatorReward,
   MsgWithdrawDelegatorRewardResponse,
@@ -18,23 +18,29 @@ import {
   MsgUndelegateResponse,
 } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/tx.js';
 import { Any } from '@agoric/cosmic-proto/google/protobuf/any.js';
+import { MsgTransfer } from '@agoric/cosmic-proto/ibc/applications/transfer/v1/tx.js';
 import { makeTracer } from '@agoric/internal';
 import { Shape as NetworkShape } from '@agoric/network';
 import { M } from '@agoric/vat-data';
 import { VowShape } from '@agoric/vow';
+import { decodeBase64 } from '@endo/base64';
+import { Fail, makeError, q } from '@endo/errors';
+import { E } from '@endo/far';
 import {
   AmountArgShape,
   ChainAddressShape,
-  ChainAmountShape,
-  CoinShape,
   DelegationShape,
+  DenomAmountShape,
+  IBCTransferOptionsShape,
 } from '../typeGuards.js';
+import { coerceCoin, coerceDenom } from '../utils/amounts.js';
 import { maxClockSkew, tryDecodeResponse } from '../utils/cosmos.js';
 import { orchestrationAccountMethods } from '../utils/orchestrationAccount.js';
+import { makeTimestampHelper } from '../utils/time.js';
 
 /**
  * @import {HostOf} from '@agoric/async-flow';
- * @import {AmountArg, IcaAccount, ChainAddress, CosmosValidatorAddress, ICQConnection, StakingAccountActions, DenomAmount, OrchestrationAccountI, DenomArg} from '../types.js';
+ * @import {AmountArg, IcaAccount, ChainAddress, CosmosValidatorAddress, ICQConnection, StakingAccountActions, DenomAmount, OrchestrationAccountI, IBCConnectionInfo, IBCMsgTransferOptions, ChainHub} from '../types.js';
  * @import {RecorderKit, MakeRecorderKit} from '@agoric/zoe/src/contractSupport/recorder.js';
  * @import {Coin} from '@agoric/cosmic-proto/cosmos/base/v1beta1/coin.js';
  * @import {Delegation} from '@agoric/cosmic-proto/cosmos/staking/v1beta1/staking.js';
@@ -46,6 +52,7 @@ import { orchestrationAccountMethods } from '../utils/orchestrationAccount.js';
  * @import {ResponseQuery} from '@agoric/cosmic-proto/tendermint/abci/types.js';
  * @import {JsonSafe} from '@agoric/cosmic-proto';
  * @import {Matcher} from '@endo/patterns';
+ * @import {LocalIbcAddress, RemoteIbcAddress} from '@agoric/vats/tools/ibc-utils.js';
  */
 
 const trace = makeTracer('ComosOrchestrationAccountHolder');
@@ -62,10 +69,19 @@ const { Vow$ } = NetworkShape; // TODO #9611
  *   topicKit: RecorderKit<ComosOrchestrationAccountNotification>;
  *   account: IcaAccount;
  *   chainAddress: ChainAddress;
+ *   localAddress: LocalIbcAddress;
+ *   remoteAddress: RemoteIbcAddress;
  *   icqConnection: ICQConnection | undefined;
  *   bondDenom: string;
  *   timer: Remote<TimerService>;
  * }} State
+ */
+
+/**
+ * @typedef {{
+ *   localAddress: LocalIbcAddress;
+ *   remoteAddress: RemoteIbcAddress;
+ * }} CosmosOrchestrationAccountStorageState
  */
 
 /** @see {OrchestrationAccountI} */
@@ -78,10 +94,12 @@ export const IcaAccountHolderI = M.interface('IcaAccountHolder', {
     AmountArgShape,
   ).returns(VowShape),
   withdrawReward: M.call(ChainAddressShape).returns(
-    Vow$(M.arrayOf(ChainAmountShape)),
+    Vow$(M.arrayOf(DenomAmountShape)),
   ),
-  withdrawRewards: M.call().returns(Vow$(M.arrayOf(ChainAmountShape))),
+  withdrawRewards: M.call().returns(Vow$(M.arrayOf(DenomAmountShape))),
   undelegate: M.call(M.arrayOf(DelegationShape)).returns(VowShape),
+  deactivate: M.call().returns(VowShape),
+  reactivate: M.call().returns(VowShape),
 });
 
 /** @type {{ [name: string]: [description: string, valueShape: Matcher] }} */
@@ -94,16 +112,24 @@ const toDenomAmount = c => ({ denom: c.denom, value: BigInt(c.amount) });
 
 /**
  * @param {Zone} zone
- * @param {MakeRecorderKit} makeRecorderKit
- * @param {VowTools} vowTools
- * @param {ZCF} zcf
+ * @param {object} powers
+ * @param {ChainHub} powers.chainHub
+ * @param {MakeRecorderKit} powers.makeRecorderKit
+ * @param {Remote<TimerService>} powers.timerService
+ * @param {VowTools} powers.vowTools
+ * @param {ZCF} powers.zcf
  */
 export const prepareCosmosOrchestrationAccountKit = (
   zone,
-  makeRecorderKit,
-  { watch, asVow, when },
-  zcf,
+  {
+    chainHub,
+    makeRecorderKit,
+    timerService,
+    vowTools: { watch, asVow, when, allVows },
+    zcf,
+  },
 ) => {
+  const timestampHelper = makeTimestampHelper(timerService);
   const makeCosmosOrchestrationAccountKit = zone.exoClassKit(
     'Cosmos Orchestration Account Holder',
     {
@@ -122,6 +148,11 @@ export const prepareCosmosOrchestrationAccountKit = (
           .optional(M.arrayOf(M.undefined())) // empty context
           .returns(M.or(M.record(), M.undefined())),
       }),
+      allBalancesQueryWatcher: M.interface('allBalancesQueryWatcher', {
+        onFulfilled: M.call(M.arrayOf(M.record())).returns(
+          M.arrayOf(M.record()),
+        ),
+      }),
       undelegateWatcher: M.interface('undelegateWatcher', {
         onFulfilled: M.call(M.string())
           .optional(M.arrayOf(M.undefined())) // empty context
@@ -130,7 +161,19 @@ export const prepareCosmosOrchestrationAccountKit = (
       withdrawRewardWatcher: M.interface('withdrawRewardWatcher', {
         onFulfilled: M.call(M.string())
           .optional(M.arrayOf(M.undefined())) // empty context
-          .returns(M.arrayOf(CoinShape)),
+          .returns(M.arrayOf(DenomAmountShape)),
+      }),
+      transferWatcher: M.interface('transferWatcher', {
+        onFulfilled: M.call([M.record(), M.nat()])
+          .optional({
+            destination: ChainAddressShape,
+            opts: M.or(M.undefined(), IBCTransferOptionsShape),
+            token: {
+              denom: M.string(),
+              amount: M.string(),
+            },
+          })
+          .returns(Vow$(M.record())),
       }),
       holder: IcaAccountHolderI,
       invitationMakers: M.interface('invitationMakers', {
@@ -144,13 +187,20 @@ export const prepareCosmosOrchestrationAccountKit = (
         ).returns(M.promise()),
         WithdrawReward: M.call(ChainAddressShape).returns(M.promise()),
         Undelegate: M.call(M.arrayOf(DelegationShape)).returns(M.promise()),
-        CloseAccount: M.call().returns(M.promise()),
+        DeactivateAccount: M.call().returns(M.promise()),
+        ReactivateAccount: M.call().returns(M.promise()),
         TransferAccount: M.call().returns(M.promise()),
+        Send: M.call().returns(M.promise()),
+        SendAll: M.call().returns(M.promise()),
+        Transfer: M.call().returns(M.promise()),
       }),
     },
     /**
-     * @param {ChainAddress} chainAddress
-     * @param {string} bondDenom e.g. 'uatom'
+     * @param {object} info
+     * @param {ChainAddress} info.chainAddress
+     * @param {string} info.bondDenom e.g. 'uatom'
+     * @param {LocalIbcAddress} info.localAddress
+     * @param {RemoteIbcAddress} info.remoteAddress
      * @param {object} io
      * @param {IcaAccount} io.account
      * @param {Remote<StorageNode>} io.storageNode
@@ -158,14 +208,29 @@ export const prepareCosmosOrchestrationAccountKit = (
      * @param {Remote<TimerService>} io.timer
      * @returns {State}
      */
-    (chainAddress, bondDenom, io) => {
+    ({ chainAddress, bondDenom, localAddress, remoteAddress }, io) => {
       const { storageNode, ...rest } = io;
       // must be the fully synchronous maker because the kit is held in durable state
       const topicKit = makeRecorderKit(storageNode, PUBLIC_TOPICS.account[1]);
       // TODO determine what goes in vstorage https://github.com/Agoric/agoric-sdk/issues/9066
-      void E(topicKit.recorder).write('');
+      // XXX consider parsing local/remoteAddr to portId, channelId, counterpartyPortId, counterpartyChannelId, connectionId, counterpartyConnectionId
+      // FIXME these values will not update if IcaAccount gets new values after reopening.
+      // consider having IcaAccount responsible for the owning the writer. It might choose to share it with COA.
+      void E(topicKit.recorder).write(
+        /** @type {CosmosOrchestrationAccountStorageState} */ ({
+          localAddress,
+          remoteAddress,
+        }),
+      );
 
-      return { chainAddress, bondDenom, topicKit, ...rest };
+      return {
+        chainAddress,
+        bondDenom,
+        localAddress,
+        remoteAddress,
+        topicKit,
+        ...rest,
+      };
     },
     {
       helper: {
@@ -185,17 +250,7 @@ export const prepareCosmosOrchestrationAccountKit = (
          * @returns {Coin}
          */
         amountToCoin(amount) {
-          const { bondDenom } = this.state;
-          if ('denom' in amount) {
-            assert.equal(amount.denom, bondDenom);
-          } else {
-            trace('TODO: handle brand', amount);
-            // FIXME(#9211) brand handling
-          }
-          return harden({
-            denom: bondDenom,
-            amount: String(amount.value),
-          });
+          return coerceCoin(chainHub, amount);
         },
       },
       balanceQueryWatcher: {
@@ -209,6 +264,29 @@ export const prepareCosmosOrchestrationAccountKit = (
           );
           if (!balance) throw Fail`Result lacked balance key: ${result}`;
           return harden(toDenomAmount(balance));
+        },
+      },
+      allBalancesQueryWatcher: {
+        /**
+         * @param {JsonSafe<ResponseQuery>[]} results
+         */
+        onFulfilled([result]) {
+          let response;
+          try {
+            response = QueryAllBalancesResponse.decode(
+              // note: an empty string for result.key is a valid result
+              decodeBase64(result.key),
+            );
+          } catch (cause) {
+            throw makeError(
+              `Error parsing QueryAllBalances result ${q(result)}`,
+              undefined,
+              { cause },
+            );
+          }
+          const { balances } = response;
+          if (!balances) throw Fail`Result lacked balances key: ${q(result)}`;
+          return harden(balances.map(coin => toDenomAmount(coin)));
         },
       },
       undelegateWatcher: {
@@ -250,6 +328,42 @@ export const prepareCosmosOrchestrationAccountKit = (
           trace('withdrawReward response', response);
           const { amount: coins } = response;
           return harden(coins.map(toDenomAmount));
+        },
+      },
+      transferWatcher: {
+        /**
+         * @param {[
+         *   { transferChannel: IBCConnectionInfo['transferChannel'] },
+         *   bigint,
+         * ]} results
+         * @param {{
+         *   destination: ChainAddress;
+         *   opts?: IBCMsgTransferOptions;
+         *   token: Coin;
+         * }} ctx
+         */
+        onFulfilled(
+          [{ transferChannel }, timeoutTimestamp],
+          { opts, token, destination },
+        ) {
+          const results = E(this.facets.helper.owned()).executeEncodedTx([
+            Any.toJSON(
+              MsgTransfer.toProtoMsg({
+                sourcePort: transferChannel.portId,
+                sourceChannel: transferChannel.channelId,
+                token,
+                sender: this.state.chainAddress.value,
+                receiver: destination.value,
+                timeoutHeight: opts?.timeoutHeight ?? {
+                  revisionHeight: 0n,
+                  revisionNumber: 0n,
+                },
+                timeoutTimestamp,
+                memo: opts?.memo ?? '',
+              }),
+            ),
+          ]);
+          return watch(results, this.facets.returnVoidWatcher);
         },
       },
       invitationMakers: {
@@ -298,8 +412,43 @@ export const prepareCosmosOrchestrationAccountKit = (
             return watch(this.facets.holder.undelegate(delegations));
           }, 'Undelegate');
         },
-        CloseAccount() {
-          throw Error('not yet implemented');
+        DeactivateAccount() {
+          return zcf.makeInvitation(seat => {
+            seat.exit();
+            return watch(this.facets.holder.deactivate());
+          }, 'DeactivateAccount');
+        },
+        ReactivateAccount() {
+          return zcf.makeInvitation(seat => {
+            seat.exit();
+            return watch(this.facets.holder.reactivate());
+          }, 'ReactivateAccount');
+        },
+        Send() {
+          /**
+           * @type {OfferHandler<
+           *   Vow<void>,
+           *   { toAccount: ChainAddress; amount: AmountArg }
+           * >}
+           */
+          const offerHandler = (seat, { toAccount, amount }) => {
+            seat.exit();
+            return watch(this.facets.holder.send(toAccount, amount));
+          };
+          return zcf.makeInvitation(offerHandler, 'Send');
+        },
+        SendAll() {
+          /**
+           * @type {OfferHandler<
+           *   Vow<void>,
+           *   { toAccount: ChainAddress; amounts: AmountArg[] }
+           * >}
+           */
+          const offerHandler = (seat, { toAccount, amounts }) => {
+            seat.exit();
+            return watch(this.facets.holder.sendAll(toAccount, amounts));
+          };
+          return zcf.makeInvitation(offerHandler, 'SendAll');
         },
         /**
          * Starting a transfer revokes the account holder. The associated
@@ -309,10 +458,30 @@ export const prepareCosmosOrchestrationAccountKit = (
         TransferAccount() {
           throw Error('not yet implemented');
         },
+        Transfer() {
+          /**
+           * @type {OfferHandler<
+           *   Vow<void>,
+           *   {
+           *     amount: AmountArg;
+           *     destination: ChainAddress;
+           *     opts: IBCMsgTransferOptions;
+           *   }
+           * >}
+           */
+          const offerHandler = (seat, { amount, destination, opts }) => {
+            seat.exit();
+            return watch(
+              this.facets.holder.transfer(amount, destination, opts),
+            );
+          };
+          return zcf.makeInvitation(offerHandler, 'Transfer');
+        },
       },
       holder: {
         /** @type {HostOf<OrchestrationAccountI['asContinuingOffer']>} */
         asContinuingOffer() {
+          // @ts-expect-error XXX invitationMakers
           // getPublicTopics resolves promptly (same run), so we don't need a watcher
           // eslint-disable-next-line no-restricted-syntax
           return asVow(async () => {
@@ -329,7 +498,6 @@ export const prepareCosmosOrchestrationAccountKit = (
               // expect this complete in the same run
               publicSubscribers: await when(holder.getPublicTopics()),
               invitationMakers,
-              holder,
             });
           });
         },
@@ -359,25 +527,24 @@ export const prepareCosmosOrchestrationAccountKit = (
           return asVow(() => {
             trace('delegate', validator, amount);
             const { helper } = this.facets;
-            const { chainAddress } = this.state;
+            const { chainAddress, bondDenom } = this.state;
+
+            const amountAsCoin = helper.amountToCoin(amount);
+            assert.equal(amountAsCoin.denom, bondDenom);
 
             const results = E(helper.owned()).executeEncodedTx([
               Any.toJSON(
                 MsgDelegate.toProtoMsg({
                   delegatorAddress: chainAddress.value,
                   validatorAddress: validator.value,
-                  amount: helper.amountToCoin(amount),
+                  amount: amountAsCoin,
                 }),
               ),
             ]);
             return watch(results, this.facets.returnVoidWatcher);
           });
         },
-        /** @type {HostOf<OrchestrationAccountI['getBalances']>} */
-        getBalances() {
-          // TODO https://github.com/Agoric/agoric-sdk/issues/9610
-          return asVow(() => Fail`not yet implemented`);
-        },
+
         /** @type {HostOf<StakingAccountActions['redelegate']>} */
         redelegate(srcValidator, dstValidator, amount) {
           return asVow(() => {
@@ -424,16 +591,13 @@ export const prepareCosmosOrchestrationAccountKit = (
           return asVow(() => {
             const { chainAddress, icqConnection } = this.state;
             if (!icqConnection) {
-              throw Fail`Queries not available for chain ${chainAddress.chainId}`;
+              throw Fail`Queries not available for chain ${q(chainAddress.chainId)}`;
             }
-            // TODO #9211 lookup denom from brand
-            assert.typeof(denom, 'string');
-
             const results = E(icqConnection).query([
               toRequestQueryJson(
                 QueryBalanceRequest.toProtoMsg({
                   address: chainAddress.value,
-                  denom,
+                  denom: coerceDenom(chainHub, denom),
                 }),
               ),
             ]);
@@ -441,16 +605,98 @@ export const prepareCosmosOrchestrationAccountKit = (
           });
         },
 
+        /** @type {HostOf<OrchestrationAccountI['getBalances']>} */
+        getBalances() {
+          return asVow(() => {
+            const { chainAddress, icqConnection } = this.state;
+            if (!icqConnection) {
+              throw Fail`Queries not available for chain ${q(chainAddress.chainId)}`;
+            }
+            const results = E(icqConnection).query([
+              toRequestQueryJson(
+                QueryAllBalancesRequest.toProtoMsg({
+                  address: chainAddress.value,
+                }),
+              ),
+            ]);
+            return watch(results, this.facets.allBalancesQueryWatcher);
+          });
+        },
+
         /** @type {HostOf<OrchestrationAccountI['send']>} */
         send(toAccount, amount) {
-          console.log('send got', toAccount, amount);
-          return asVow(() => Fail`not yet implemented`);
+          return asVow(() => {
+            trace('send', toAccount, amount);
+            const { helper } = this.facets;
+            const { chainAddress } = this.state;
+            return watch(
+              E(helper.owned()).executeEncodedTx([
+                Any.toJSON(
+                  MsgSend.toProtoMsg({
+                    fromAddress: chainAddress.value,
+                    toAddress: toAccount.value,
+                    amount: [helper.amountToCoin(amount)],
+                  }),
+                ),
+              ]),
+              this.facets.returnVoidWatcher,
+            );
+          });
+        },
+
+        /** @type {HostOf<OrchestrationAccountI['sendAll']>} */
+        sendAll(toAccount, amounts) {
+          return asVow(() => {
+            trace('sendAll', toAccount, amounts);
+            const { helper } = this.facets;
+            const { chainAddress } = this.state;
+            return watch(
+              E(helper.owned()).executeEncodedTx([
+                Any.toJSON(
+                  MsgSend.toProtoMsg({
+                    fromAddress: chainAddress.value,
+                    toAddress: toAccount.value,
+                    amount: amounts.map(x => helper.amountToCoin(x)),
+                  }),
+                ),
+              ]),
+              this.facets.returnVoidWatcher,
+            );
+          });
         },
 
         /** @type {HostOf<OrchestrationAccountI['transfer']>} */
-        transfer(amount, msg) {
-          console.log('transferSteps got', amount, msg);
-          return asVow(() => Fail`not yet implemented`);
+        transfer(amount, destination, opts) {
+          trace('transfer', amount, destination, opts);
+          return asVow(() => {
+            const { helper } = this.facets;
+            const token = helper.amountToCoin(amount);
+
+            const connectionInfoV = watch(
+              chainHub.getConnectionInfo(
+                this.state.chainAddress.chainId,
+                destination.chainId,
+              ),
+            );
+
+            // set a `timeoutTimestamp` if caller does not supply either `timeoutHeight` or `timeoutTimestamp`
+            // TODO #9324 what's a reasonable default? currently 5 minutes
+            const timeoutTimestampVowOrValue =
+              opts?.timeoutTimestamp ??
+              (opts?.timeoutHeight
+                ? 0n
+                : E(timestampHelper).getTimeoutTimestampNS());
+
+            // Resolves when host chain successfully submits, but not when
+            // the receiving chain acknowledges.
+            // See https://github.com/Agoric/agoric-sdk/issues/9784 for a
+            // solution that tracks the acknowledgement on the receiving chain.
+            return watch(
+              allVows([connectionInfoV, timeoutTimestampVowOrValue]),
+              this.facets.transferWatcher,
+              { opts, token, destination },
+            );
+          });
         },
 
         /** @type {HostOf<OrchestrationAccountI['transferSteps']>} */
@@ -488,6 +734,14 @@ export const prepareCosmosOrchestrationAccountKit = (
             return watch(undelegateV, this.facets.returnVoidWatcher);
           });
         },
+        /** @type {HostOf<IcaAccount['deactivate']>} */
+        deactivate() {
+          return watch(E(this.facets.helper.owned()).deactivate());
+        },
+        /** @type {HostOf<IcaAccount['reactivate']>} */
+        reactivate() {
+          return watch(E(this.facets.helper.owned()).reactivate());
+        },
       },
     },
   );
@@ -503,9 +757,12 @@ export const prepareCosmosOrchestrationAccountKit = (
 
 /**
  * @param {Zone} zone
- * @param {MakeRecorderKit} makeRecorderKit
- * @param {VowTools} vowTools
- * @param {ZCF} zcf
+ * @param {object} powers
+ * @param {ChainHub} powers.chainHub
+ * @param {MakeRecorderKit} powers.makeRecorderKit
+ * @param {Remote<TimerService>} powers.timerService
+ * @param {VowTools} powers.vowTools
+ * @param {ZCF} powers.zcf
  * @returns {(
  *   ...args: Parameters<
  *     ReturnType<typeof prepareCosmosOrchestrationAccountKit>
@@ -514,16 +771,15 @@ export const prepareCosmosOrchestrationAccountKit = (
  */
 export const prepareCosmosOrchestrationAccount = (
   zone,
-  makeRecorderKit,
-  vowTools,
-  zcf,
+  { chainHub, makeRecorderKit, timerService, vowTools, zcf },
 ) => {
-  const makeKit = prepareCosmosOrchestrationAccountKit(
-    zone,
+  const makeKit = prepareCosmosOrchestrationAccountKit(zone, {
+    chainHub,
     makeRecorderKit,
+    timerService,
     vowTools,
     zcf,
-  );
+  });
   return (...args) => makeKit(...args).holder;
 };
 /** @typedef {CosmosOrchestrationAccountKit['holder']} CosmosOrchestrationAccount */

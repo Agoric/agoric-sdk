@@ -138,15 +138,15 @@ const makeInstanceAdminBehavior = (zoeBaggage, makeZoeSeatAdminKit) => {
     },
     exitAllSeats: ({ state }, completion) => {
       state.acceptingOffers = false;
-      Array.from(state.zoeSeatAdmins.keys()).forEach(zoeSeatAdmin =>
-        zoeSeatAdmin.exit(completion),
-      );
+      for (const zoeSeatAdmin of state.zoeSeatAdmins.keys()) {
+        zoeSeatAdmin.exit(completion);
+      }
     },
     failAllSeats: ({ state }, reason) => {
       state.acceptingOffers = false;
-      Array.from(state.zoeSeatAdmins.keys()).forEach(zoeSeatAdmin =>
-        zoeSeatAdmin.fail(reason),
-      );
+      for (const zoeSeatAdmin of state.zoeSeatAdmins.keys()) {
+        zoeSeatAdmin.fail(reason);
+      }
     },
     stopAcceptingOffers: ({ state }) => {
       state.acceptingOffers = false;

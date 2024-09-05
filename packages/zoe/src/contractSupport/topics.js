@@ -2,6 +2,10 @@ import { SubscriberShape } from '@agoric/notifier';
 import { M } from '@agoric/store';
 import { E } from '@endo/far';
 
+/**
+ * @import {Remote} from '@agoric/internal';
+ */
+
 export { SubscriberShape };
 
 export const PublicTopicShape = M.splitRecord(
@@ -22,14 +26,14 @@ export const PublicTopicShape = M.splitRecord(
  */
 
 /**
- * A {PublicTopic} in which the `storagePath` is always a resolved string.
+ * A {PublicTopic} in which the `storagePath` is always a resolved string and the `subscriber is remote.
  *
  * Useful when working with Vows and async-flow.
  *
  * @template {object} T topic value
  * @typedef {{
  *   description?: string,
- *   subscriber: Subscriber<T>,
+ *   subscriber: Remote<Subscriber<T>>,
  *   storagePath: string,
  * }} ResolvedPublicTopic
  */
@@ -40,6 +44,12 @@ export const TopicsRecordShape = M.recordOf(M.string(), PublicTopicShape);
  * @typedef {{
  *   [topicName: string]: PublicTopic<unknown>,
  * }} TopicsRecord
+ */
+
+/**
+ * @typedef {{
+ *   [topicName: string]: ResolvedPublicTopic<unknown>,
+ * }} ResolvedTopicsRecord
  */
 
 /**

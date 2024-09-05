@@ -3,7 +3,18 @@ import type { ERef, RemotableBrand } from '@endo/eventual-send';
 import type { Primitive } from '@endo/pass-style';
 import type { Callable } from './utils.js';
 
-export declare class Callback<I extends (...args: unknown[]) => any> {
+/**
+ * A map corresponding with a total function such that `get(key)` is assumed to
+ * always succeed.
+ */
+export type TotalMap<K, V> = Omit<Map<K, V>, 'get'> & {
+  /** Returns the element associated with the specified key in the TotalMap. */
+  get: (key: K) => V;
+};
+export type TotalMapFrom<M extends Map> =
+  M extends Map<infer K, infer V> ? TotalMap<K, V> : never;
+
+export declare class Callback<I extends (...args: any[]) => any> {
   private iface: I;
 
   public target: any;

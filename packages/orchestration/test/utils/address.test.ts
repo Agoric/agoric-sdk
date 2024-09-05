@@ -54,8 +54,8 @@ test('findAddressField', t => {
     findAddressField(
       '/ibc-hop/connection-0/ibc-port/icahost/ordered/{"version":"ics27-1","controllerConnectionId":"connection-0","hostConnectionId":"connection-1","address":"","encoding":"proto3","txType":"sdk_multi_msg"}',
     ),
-    '',
-    'returns empty string if address is an empty string',
+    undefined,
+    'returns undefined if address is an empty string',
   );
   t.is(
     findAddressField(
@@ -71,6 +71,13 @@ test('findAddressField', t => {
     'osmo1m30khedzqy9msu4502u74ugmep30v69pzee370jkas57xhmjfgjqe67ayq',
     'returns address when localAddrr is appended to version string',
   );
+  t.is(
+    findAddressField(
+      '/ibc-hop/connection-0/ibc-port/icahost/ordered/{not valid JSON}',
+    ),
+    undefined,
+    'returns undefined when JSON is malformed',
+  );
 });
 
 test('makeICQChannelAddress', t => {
@@ -84,18 +91,14 @@ test('makeICQChannelAddress', t => {
     'returns connection string when controllerConnectionId is provided',
   );
   t.is(
-    makeICQChannelAddress('connection-0', {
-      version: 'icq-2',
-    }),
+    makeICQChannelAddress('connection-0', 'icq-2'),
     '/ibc-hop/connection-0/ibc-port/icqhost/unordered/icq-2',
     'accepts custom version',
   );
   t.throws(
     () =>
       validateRemoteIbcAddress(
-        makeICQChannelAddress('connection-0', {
-          version: 'ic/q-/2',
-        }),
+        makeICQChannelAddress('connection-0', 'ic/q-/2'),
       ),
     {
       message:

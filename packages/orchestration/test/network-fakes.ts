@@ -2,6 +2,7 @@ import { VowTools } from '@agoric/vow';
 import {
   prepareEchoConnectionKit,
   prepareLoopbackProtocolHandler,
+  prepareNetworkPowers,
   preparePortAllocator,
   prepareRouterProtocol,
 } from '@agoric/network';
@@ -11,6 +12,8 @@ import type {
   IBCMethod,
   IBCEvent,
   ScopedBridgeManagerMethods,
+  IBCConnectionID,
+  IBCPortID,
 } from '@agoric/vats';
 import {
   prepareCallbacks as prepareIBCCallbacks,
@@ -53,7 +56,11 @@ export const ibcBridgeMocks: {
   [T in ImplementedIBCEvents]: T extends 'channelOpenAck'
     ? (
         obj: IBCMethod<'startChannelOpenInit'>,
-        opts: { bech32Prefix: string; sequence: number },
+        opts: {
+          channelID: IBCChannelID;
+          counterpartyChannelID: IBCChannelID;
+          mockChainAddress: string;
+        },
       ) => IBCEvent<'channelOpenAck'>
     : T extends 'acknowledgementPacket'
       ? (
@@ -64,24 +71,26 @@ export const ibcBridgeMocks: {
 } = {
   channelOpenAck: (
     obj: IBCMethod<'startChannelOpenInit'>,
-    { bech32Prefix, sequence }: { bech32Prefix: string; sequence: number },
+    {
+      channelID,
+      counterpartyChannelID,
+      mockChainAddress,
+    }: {
+      channelID: IBCChannelID;
+      counterpartyChannelID: IBCChannelID;
+      mockChainAddress: string;
+    },
   ): IBCEvent<'channelOpenAck'> => {
-    const mocklID = Number(obj.packet.source_port.split('-').at(-1));
-    const mockLocalChannelID: IBCChannelID = `channel-${mocklID}`;
-    const mockRemoteChannelID: IBCChannelID = `channel-${mocklID}`;
-    const mockChainAddress =
-      sequence > 0 ? `${bech32Prefix}1test${sequence}` : `${bech32Prefix}1test`;
-
     return {
       type: 'IBC_EVENT',
       blockHeight: 99,
       blockTime: 1711571357,
       event: 'channelOpenAck',
       portID: obj.packet.source_port,
-      channelID: mockLocalChannelID,
+      channelID,
       counterparty: {
         port_id: obj.packet.destination_port,
-        channel_id: mockRemoteChannelID,
+        channel_id: counterpartyChannelID,
       },
       counterpartyVersion: addParamsIfJsonVersion(obj.version, {
         address: mockChainAddress,
@@ -118,6 +127,20 @@ export const ibcBridgeMocks: {
   },
 };
 
+type BridgeEvents = Array<
+  | IBCEvent<'channelOpenAck'>
+  | IBCEvent<'acknowledgementPacket'>
+  | IBCEvent<'channelCloseConfirm'>
+  | IBCEvent<'sendPacket'>
+>;
+
+type BridgeDowncalls = Array<
+  | IBCMethod<'startChannelOpenInit'>
+  | IBCMethod<'startChannelCloseInit'>
+  | IBCMethod<'bindPort'>
+  | IBCMethod<'sendPacket'>
+>;
+
 /**
  * Make a fake IBC Bridge, extended from the dibc ScopedBridgeManager.
  *
@@ -131,6 +154,10 @@ export const makeFakeIBCBridge = (
   ScopedBridgeManagerMethods<'dibc'> & {
     setMockAck: (mockAckMap: Record<string, string>) => void;
     setAddressPrefix: (addressPrefix: string) => void;
+    inspectDibcBridge: () => {
+      bridgeEvents: BridgeEvents;
+      bridgeDowncalls: BridgeDowncalls;
+    };
   }
 > => {
   let bridgeHandler: any;
@@ -144,38 +171,81 @@ export const makeFakeIBCBridge = (
   let ibcSequenceNonce = 0;
   /**
    * The number of channels created. Currently used as a proxy to increment
-   * fake account addresses.
+   * fake account addresses and channels.
    * @type {nubmer}
    */
   let channelCount = 0;
+  let icaAccountCount = 0;
   let bech32Prefix = 'cosmos';
+
+  /**
+   * Keep track channels requested by remote chain. Used as a proxy for
+   * counterpaty channel ids
+   */
+  const remoteChannelMap: Record<IBCConnectionID, number> = {};
 
   /**
    * Packet byte string map of requests to responses
    * @type {Record<string, string>}
    */
   let mockAckMap = defaultMockAckMap;
+  let bridgeEvents: BridgeEvents = [];
+  let bridgeDowncalls: BridgeDowncalls = [];
+
+  /**
+   * Store remote mock addresses that have been distributed.
+   * If there's a `channelOpenInit` request for a PortId:ConnnectionId
+   * pair that's been previously established, let's reuse it to mimic
+   * the behavior of the ICS-27 protocol.
+   */
+  type AddressKey = `${IBCPortID}:${IBCConnectionID}`;
+  const getAddressKey = (
+    obj: IBCMethod<'startChannelOpenInit'>,
+  ): AddressKey => {
+    return `${obj.packet.source_port as IBCPortID}:${obj.hops[0] as IBCConnectionID}`;
+  };
+  const addressMap = new Map<AddressKey, string>();
 
   return zone.exo('Fake IBC Bridge Manager', undefined, {
     getBridgeId: () => BridgeId.DIBC,
     toBridge: async obj => {
       if (obj.type === 'IBC_METHOD') {
+        bridgeDowncalls = bridgeDowncalls.concat(obj);
         switch (obj.method) {
-          case 'startChannelOpenInit':
-            bridgeHandler?.fromBridge(
-              ibcBridgeMocks.channelOpenAck(obj, {
-                bech32Prefix,
-                sequence: channelCount,
-              }),
-            );
+          case 'startChannelOpenInit': {
+            const connectionChannelCount = remoteChannelMap[obj.hops[0]] || 0;
+            const addressKey = getAddressKey(obj);
+            let mockChainAddress;
+            if (addressMap.has(addressKey)) {
+              mockChainAddress = addressMap.get(addressKey);
+            } else {
+              mockChainAddress =
+                icaAccountCount > 0
+                  ? `${bech32Prefix}1test${icaAccountCount}`
+                  : `${bech32Prefix}1test`;
+              addressMap.set(addressKey, mockChainAddress);
+            }
+            const ackEvent = ibcBridgeMocks.channelOpenAck(obj, {
+              mockChainAddress,
+              channelID: `channel-${channelCount}`,
+              counterpartyChannelID: `channel-${connectionChannelCount}`,
+            });
+            bridgeHandler?.fromBridge(ackEvent);
+            bridgeEvents = bridgeEvents.concat(ackEvent);
             channelCount += 1;
+            if (obj.packet.source_port.includes('icacontroller')) {
+              icaAccountCount += 1;
+            }
+            remoteChannelMap[obj.hops[0]] = connectionChannelCount + 1;
             return undefined;
+          }
           case 'sendPacket': {
             const ackEvent = ibcBridgeMocks.acknowledgementPacket(obj, {
               sequence: ibcSequenceNonce,
               acknowledgement:
                 mockAckMap?.[obj.packet.data] || errorAcknowledgments.error5,
             });
+            bridgeEvents = bridgeEvents.concat(ackEvent);
             ibcSequenceNonce += 1;
             bridgeHandler?.fromBridge(ackEvent);
             return ackEvent.packet;
@@ -187,6 +257,7 @@ export const makeFakeIBCBridge = (
       return undefined;
     },
     fromBridge: async obj => {
+      bridgeEvents = bridgeEvents.concat(obj);
       if (!bridgeHandler) throw Error('no handler!');
       return bridgeHandler.fromBridge(obj);
     },
@@ -215,6 +286,12 @@ export const makeFakeIBCBridge = (
     setAddressPrefix: (newPrefix: typeof bech32Prefix) => {
       bech32Prefix = newPrefix;
     },
+    /**
+     * for debugging and testing
+     */
+    inspectDibcBridge() {
+      return { bridgeEvents, bridgeDowncalls };
+    },
   });
 };
 
@@ -222,8 +299,9 @@ export const setupFakeNetwork = (
   zone: Zone,
   { vowTools }: { vowTools: VowTools },
 ) => {
-  const makeRouterProtocol = prepareRouterProtocol(zone, vowTools);
-  const makePortAllocator = preparePortAllocator(zone, vowTools);
+  const powers = prepareNetworkPowers(zone, vowTools);
+  const makeRouterProtocol = prepareRouterProtocol(zone, powers);
+  const makePortAllocator = preparePortAllocator(zone, powers);
   const makeLoopbackProtocolHandler = prepareLoopbackProtocolHandler(
     zone,
     vowTools,

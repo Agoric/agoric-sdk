@@ -7,15 +7,19 @@ import { Fail } from '@endo/errors';
  */
 
 /**
- * @param {IBCConnectionID} hostConnectionId Counterpart Connection ID
- * @param {IBCConnectionID} controllerConnectionId Self Connection ID
- * @param {object} [opts]
- * @param {string} [opts.encoding] - message encoding format for the channel.
- *   default is `proto3`
- * @param {'ordered' | 'unordered'} [opts.ordering] - channel ordering.
+ * @typedef {object} ICAChannelAddressOpts
+ * @property {string} [encoding='proto3'] message encoding format for the
+ *   channel
+ * @property {'ordered' | 'unordered'} [ordering='ordered'] channel ordering.
  *   currently only `ordered` is supported for ics27-1
- * @param {string} [opts.txType] - default is `sdk_multi_msg`
- * @param {string} [opts.version] - default is `ics27-1`
+ * @property {string} [txType='sdk_multi_msg'] default is `sdk_multi_msg`
+ * @property {string} [version='ics27-1'] default is `ics27-1`
+ */
+
+/**
+ * @param {IBCConnectionID} hostConnectionId Counterparty Connection ID
+ * @param {IBCConnectionID} controllerConnectionId Self Connection ID
+ * @param {ICAChannelAddressOpts} [opts]
  * @returns {RemoteIbcAddress}
  */
 export const makeICAChannelAddress = (
@@ -42,14 +46,16 @@ export const makeICAChannelAddress = (
 };
 harden(makeICAChannelAddress);
 
+export const DEFAULT_ICQ_VERSION = 'icq-1';
+
 /**
  * @param {IBCConnectionID} controllerConnectionId
- * @param {{ version?: string }} [opts]
+ * @param {string} version defaults to icq-1
  * @returns {RemoteIbcAddress}
  */
 export const makeICQChannelAddress = (
   controllerConnectionId,
-  { version = 'icq-1' } = {},
+  version = DEFAULT_ICQ_VERSION,
 ) => {
   controllerConnectionId || Fail`controllerConnectionId is required`;
   return `/ibc-hop/${controllerConnectionId}/ibc-port/icqhost/unordered/${version}`;
@@ -71,7 +77,8 @@ export const findAddressField = remoteAddressString => {
     // Extract JSON version string assuming it's always surrounded by {}
     const jsonStr = remoteAddressString?.match(/{.*?}/)?.[0];
     const jsonObj = jsonStr ? JSON.parse(jsonStr) : undefined;
-    return jsonObj?.address ?? undefined;
+    if (!jsonObj?.address?.length) return undefined;
+    return jsonObj.address;
   } catch (error) {
     return undefined;
   }

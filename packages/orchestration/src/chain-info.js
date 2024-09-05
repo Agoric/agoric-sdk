@@ -1,10 +1,16 @@
 import { E } from '@endo/far';
-import { mustMatch } from '@endo/patterns';
-import { connectionKey } from './exos/chain-hub.js';
+import { M, mustMatch } from '@endo/patterns';
+import {
+  ASSETS_KEY,
+  CHAIN_KEY,
+  CONNECTIONS_KEY,
+  normalizeConnectionInfo,
+} from './exos/chain-hub.js';
 import fetchedChainInfo from './fetched-chain-info.js'; // Refresh with scripts/refresh-chain-info.ts
-import { CosmosChainInfoShape } from './typeGuards.js';
+import { CosmosAssetInfoShape, CosmosChainInfoShape } from './typeGuards.js';
 
-/** @import {CosmosChainInfo, EthChainInfo} from './types.js'; */
+/** @import {CosmosAssetInfo, CosmosChainInfo, EthChainInfo, IBCConnectionInfo} from './types.js'; */
+/** @import {NameAdmin} from '@agoric/vats'; */
 
 /** @typedef {CosmosChainInfo | EthChainInfo} ChainInfo */
 
@@ -66,20 +72,37 @@ const knownChains = /** @satisfies {Record<string, ChainInfo>} */ (
 /** @typedef {typeof knownChains} KnownChains */
 
 /**
- * @param {ERef<import('@agoric/vats').NameHubKit['nameAdmin']>} agoricNamesAdmin
+ * TODO(#9572): include this in registerChain
+ *
+ * @param {ERef<NameAdmin>} agoricNamesAdmin
+ * @param {string} name
+ * @param {CosmosAssetInfo[]} assets
+ */
+export const registerChainAssets = async (agoricNamesAdmin, name, assets) => {
+  mustMatch(assets, M.arrayOf(CosmosAssetInfoShape));
+  const { nameAdmin: assetAdmin } =
+    await E(agoricNamesAdmin).provideChild(ASSETS_KEY);
+  return E(assetAdmin).update(name, assets);
+};
+
+/**
+ * @param {ERef<NameAdmin>} agoricNamesAdmin
  * @param {string} name
  * @param {CosmosChainInfo} chainInfo
  * @param {(...messages: string[]) => void} [log]
+ * @param {Set<string>} [handledConnections] connection keys that need not be
+ *   updated
  */
 export const registerChain = async (
   agoricNamesAdmin,
   name,
   chainInfo,
   log = () => {},
+  handledConnections = new Set(),
 ) => {
-  const { nameAdmin } = await E(agoricNamesAdmin).provideChild('chain');
+  const { nameAdmin } = await E(agoricNamesAdmin).provideChild(CHAIN_KEY);
   const { nameAdmin: connAdmin } =
-    await E(agoricNamesAdmin).provideChild('chainConnection');
+    await E(agoricNamesAdmin).provideChild(CONNECTIONS_KEY);
 
   mustMatch(chainInfo, CosmosChainInfoShape);
   const { connections = {}, ...vertex } = chainInfo;
@@ -90,25 +113,38 @@ export const registerChain = async (
       .then(() => log(`registered agoricNames chain.${name}`)),
   ];
 
-  // FIXME updates redundantly, twice per edge
+  const { chainId } = chainInfo;
   for (const [counterChainId, connInfo] of Object.entries(connections)) {
-    const key = connectionKey(chainInfo.chainId, counterChainId);
+    const [key, connectionInfo] = normalizeConnectionInfo(
+      chainId,
+      counterChainId,
+      connInfo,
+    );
+    if (handledConnections.has(key)) {
+      continue;
+    }
+
     promises.push(
       E(connAdmin)
-        .update(key, connInfo)
+        .update(key, connectionInfo)
         .then(() => log(`registering agoricNames chainConnection.${key}`)),
     );
+
+    handledConnections.add(key);
   }
   // Bundle to pipeline IO
   await Promise.all(promises);
 };
 
 /**
+ * Register all the chains that are known statically.
+ *
  * @param {ERef<import('@agoric/vats').NameHubKit['nameAdmin']>} agoricNamesAdmin
  * @param {(...messages: string[]) => void} [log]
  */
-export const registerChainNamespace = async (agoricNamesAdmin, log) => {
+export const registerKnownChains = async (agoricNamesAdmin, log) => {
+  const handledConnections = new Set();
   for await (const [name, info] of Object.entries(knownChains)) {
-    await registerChain(agoricNamesAdmin, name, info, log);
+    await registerChain(agoricNamesAdmin, name, info, log, handledConnections);
   }
 };

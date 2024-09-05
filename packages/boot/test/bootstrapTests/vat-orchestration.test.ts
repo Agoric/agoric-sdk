@@ -17,14 +17,14 @@ import { M, matches } from '@endo/patterns';
 import {
   makeWalletFactoryContext,
   type WalletFactoryTestContext,
-} from './walletFactory.ts';
+} from './walletFactory.js';
 
 const test: TestFn<WalletFactoryTestContext> = anyTest;
 
 /**
  * To update, pass the message into `makeTxPacket` or `makeQueryPacket` from
  * `@agoric/orchestration`, and paste the resulting `data` key into `protoMsgMocks`
- * in [mocks.js](../../tools/ibc/mocks.js).
+ * in [mocks.ts](../../tools/ibc/mocks.ts).
  * If adding a new msg, reference the mock in the `sendPacket` switch statement
  * in [supports.ts](../../tools/supports.ts).
  */

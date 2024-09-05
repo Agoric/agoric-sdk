@@ -79,6 +79,8 @@ We've also squashed follow-up commits manually (through an interactive rebase)
 after a PR had been approved and tests were passing, then landed the stack with
 "Rebase and merge" or "Create merge commit".
 
+For details on authoring, merging, and reviewing PRs, see [Pull Requests Guidelines](https://github.com/Agoric/agoric-sdk/wiki/GitHub-Pull-Requests).
+
 [CC]: https://www.conventionalcommits.org/en/v1.0.0/
 
 ### Integration tests

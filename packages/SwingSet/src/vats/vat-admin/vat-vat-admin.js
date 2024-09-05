@@ -18,6 +18,12 @@ import {
   prepareSingleton,
 } from '@agoric/vat-data';
 
+/**
+ * @import {VatAdminRootDeviceNode} from '../../devices/vat-admin/device-vat-admin.js';
+ * @import {DProxy} from'../plugin-manager.js';
+ * @import {Baggage} from '@agoric/vat-data';
+ */
+
 const managerTypes = ['local', 'node-subprocess', 'xsnap', 'xs-worker']; // xs-worker is alias
 
 function producePRR() {
@@ -25,14 +31,25 @@ function producePRR() {
   return /** @type {const} */ ([promise, { resolve, reject }]);
 }
 
+/**
+ * Build root object of the bootstrap vat.
+ *
+ * @param {VatPowers & {
+ *   D: DProxy;
+ * }} vatPowers
+ * @param {never} _vatParameters
+ * @param {Baggage} baggage
+ */
 export function buildRootObject(vatPowers, _vatParameters, baggage) {
   const criticalVatKey = prepareSingleton(baggage, 'criticalVatKey', {});
 
   const { D } = vatPowers;
   const pendingVatCreations = new Map(); // vatID -> { resolve, reject } for promise
-  const pendingBundles = new Map(); // bundleID -> Promise<BundleCap>
+  /** @type {Map<BundleID, PromiseKit<BundleCap>>} */
+  const pendingBundles = new Map();
   const pendingUpgrades = new Map(); // upgradeID -> Promise<UpgradeResults>
 
+  /** @type {import('../plugin-manager.js').Device<VatAdminRootDeviceNode>} */
   let vatAdminDev;
 
   const runningVats = new Map(); // vatID -> [doneP, { resolve, reject }]
@@ -200,7 +217,7 @@ export function buildRootObject(vatPowers, _vatParameters, baggage) {
         console.log(`bundle ${bundleID} missing, hoping for reinstall`);
         return;
       }
-      pendingBundles.get(bundleID).resolve(bundlecap);
+      pendingBundles.get(bundleID)?.resolve(bundlecap);
       pendingBundles.delete(bundleID);
       checkForQuiescence();
     }
@@ -418,8 +435,9 @@ export function buildRootObject(vatPowers, _vatParameters, baggage) {
       if (!pendingBundles.has(bundleID)) {
         pendingBundles.set(bundleID, makePromiseKit());
       }
-      return pendingBundles.get(bundleID).promise;
+      return pendingBundles.get(bundleID)?.promise;
     },
+    /** @type {(bundleID: BundleID) => BundleCap} */
     getBundleCap(bundleID) {
       const bundlecap = D(vatAdminDev).getBundleCap(bundleID);
       if (bundlecap) {

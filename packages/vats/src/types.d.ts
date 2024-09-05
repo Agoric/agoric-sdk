@@ -1,6 +1,9 @@
+import type { FungibleTokenPacketData } from '@agoric/cosmic-proto/ibc/applications/transfer/v2/packet.js';
 import type { BridgeIdValue, Remote } from '@agoric/internal';
 import type { Bytes } from '@agoric/network';
 import type { Guarded } from '@endo/exo';
+import type { LocalChainAccount } from './localchain.js';
+import type { TargetApp } from './bridge-target.js';
 
 export type Board = ReturnType<
   ReturnType<typeof import('./lib-board.js').prepareBoardKit>
@@ -59,10 +62,16 @@ export type NameAdmin = {
   delete: (key: string) => void;
   /** get the NameHub corresponding to the current NameAdmin */
   readonly: () => NameHub;
+  /**
+   * Set a function to be called whenever an update or deletion is made, with all the entries as of that point.
+   *
+   * Note: can be called at most once.
+   */
   onUpdate: (fn: undefined | NameHubUpdateHandler) => void;
 };
 
 export type NameHubUpdateHandler = {
+  /** Called when an update or deletion is made, with all entries as of that point. */
   write: (entries: [string, any][]) => void;
 };
 
@@ -133,9 +142,9 @@ export type IBCPacket = {
   source_port: IBCPortID;
   destination_channel: IBCChannelID;
   destination_port: IBCPortID;
-  sequence?: number;
-  timeout_height?: number;
-  timeout_timestamp?: number;
+  sequence?: PacketSDKType['sequence'];
+  timeout_height?: PacketSDKType['timeout_height'];
+  timeout_timestamp?: PacketSDKType['timeout_timestamp'];
 };
 
 export type IBCCounterParty = {
@@ -183,8 +192,8 @@ type IBCPacketEvents = {
   timeoutPacket: {
     packet: IBCPacket;
   };
-  channelCloseInit: ConnectingInfo; // TODO update
-  channelCloseConfirm: ConnectingInfo; // TODO update
+  channelCloseInit: { channelID: IBCChannelID; portID: IBCPortID };
+  channelCloseConfirm: { channelID: IBCChannelID; portID: IBCPortID };
   sendPacket: { relativeTimeoutNs: bigint; packet: IBCPacket };
 };
 
@@ -214,7 +223,7 @@ type IBCMethodEvents = {
   receiveExecuted: {}; // TODO update
   startChannelOpenInit: ChannelOpenInitDowncall;
   startChannelCloseInit: {}; // TODO update
-  bindPort: {}; // TODO update
+  bindPort: { packet: { source_port: IBCPortID } };
   timeoutExecuted: {}; // TODO update
   // XXX why isn't this in receiver.go?
   initOpenExecuted: ChannelOpenAckDowncall;
@@ -257,4 +266,30 @@ type ChannelOpenAckDowncall = ChannelOpenDowncallBase & {
 type SendPacketDownCall = {
   packet: IBCPacket;
   relativeTimeoutNs: bigint;
+};
+
+/**
+ * This event is emitted when a FungibleTokenPacket is sent or received
+ * by a target (e.g. a {@link LocalChainAccount}) that has a registered
+ * {@link TargetApp}. It is passed through the `receiveUpcall` handler.
+ */
+export type VTransferIBCEvent = {
+  type: 'VTRANSFER_IBC_EVENT';
+  blockHeight: number;
+  blockTime: number;
+  /**
+   * Indicates the type of IBC packet event:
+   * - 'acknowledgementPacket': passive tap that communicates the result of an acknowledged packet
+   * - 'writeAcknowledgement': active tap where the receiver can return a write acknowledgement
+   */
+  event: 'acknowledgementPacket' | 'writeAcknowledgement';
+  acknowledgement: Bytes;
+  /**
+   * Use `JSON.parse(atob(packet.data))` to get a
+   * {@link FungibleTokenPacketData} object.
+   */
+  packet: IBCPacket;
+  relayer: string;
+  /** e.g. the chain address of the LocalChainAccount */
+  target: string;
 };

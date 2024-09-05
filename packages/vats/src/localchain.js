@@ -2,7 +2,12 @@
 import { Fail } from '@endo/errors';
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
-import { AmountShape, BrandShape, PaymentShape } from '@agoric/ertp';
+import {
+  AmountPatternShape,
+  AmountShape,
+  BrandShape,
+  PaymentShape,
+} from '@agoric/ertp';
 import { Shape as NetworkShape } from '@agoric/network';
 
 const { Vow$ } = NetworkShape;
@@ -30,6 +35,21 @@ const { Vow$ } = NetworkShape;
  */
 
 /**
+ * Send a batch of query requests to the local chain. Unless there is a system
+ * error, will return all results to indicate their success or failure.
+ *
+ * @template {TypedJson[]} [RT=TypedJson[]]
+ * @callback QueryManyFn
+ * @param {RT} requests
+ * @returns {PromiseVowOfTupleMappedToGenerics<{
+ *   [K in keyof RT]: JsonSafe<{
+ *     error?: string;
+ *     reply: ResponseTo<RT[K]>;
+ *   }>;
+ * }>}
+ */
+
+/**
  * @typedef {{
  *   system: ScopedBridgeManager<'vlocalchain'>;
  *   bank: Bank;
@@ -49,7 +69,7 @@ export const LocalChainAccountI = M.interface('LocalChainAccount', {
   getAddress: M.callWhen().returns(Vow$(M.string())),
   getBalance: M.callWhen(BrandShape).returns(Vow$(AmountShape)),
   deposit: M.callWhen(PaymentShape)
-    .optional(M.pattern())
+    .optional(AmountPatternShape)
     .returns(Vow$(AmountShape)),
   withdraw: M.callWhen(AmountShape).returns(Vow$(PaymentShape)),
   executeTx: M.callWhen(M.arrayOf(M.record())).returns(
@@ -115,12 +135,15 @@ export const prepareLocalChainAccountKit = (zone, { watch }) =>
           const purse = E(bank).getPurse(brand);
           return E(purse).getCurrentAmount();
         },
+
+        // TODO The payment parameter type below should be Payment<'nat'>.
+        // https://github.com/Agoric/agoric-sdk/issues/9828
         /**
          * Deposit a payment into the bank purse that matches the alleged brand.
          * This is safe, since even if the payment lies about its brand, ERTP
          * will reject spoofed payment objects when depositing into a purse.
          *
-         * @param {Payment<'nat'>} payment
+         * @param {ERef<Payment<'nat'>>} payment
          * @param {Pattern} [optAmountShape] throws if the Amount of the Payment
          *   does not match the provided Pattern
          * @returns {PromiseVow<Amount<'nat'>>}
@@ -148,10 +171,14 @@ export const prepareLocalChainAccountKit = (zone, { watch }) =>
           return E(purse).withdraw(amount);
         },
         /**
-         * Execute a batch of messages in order as a single atomic transaction
-         * and return the responses. If any of the messages fails, the entire
-         * batch will be rolled back. Use `typedJson()` on the arguments to get
-         * typed return values.
+         * Execute a batch of messages on the local chain. Note in particular,
+         * that for IBC `MsgTransfer`, execution only queues a packet for the
+         * local chain's IBC stack, and returns a `MsgTransferResponse`
+         * immediately, not waiting for the confirmation on the other chain.
+         *
+         * Messages are executed in order as a single atomic transaction and
+         * returns the responses. If any of the messages fails, the entire batch
+         * will be rolled back on the local chain.
          *
          * @template {TypedJson[]} MT messages tuple (use const with multiple
          *   elements or it will be a mixed array)
@@ -159,6 +186,9 @@ export const prepareLocalChainAccountKit = (zone, { watch }) =>
          * @returns {PromiseVowOfTupleMappedToGenerics<{
          *   [K in keyof MT]: JsonSafe<ResponseTo<MT[K]>>;
          * }>}
+         *
+         * @see {typedJson} which can be used on arguments to get typed return
+         * values.
          */
         async executeTx(messages) {
           const { address, system } = this.state;
@@ -257,20 +287,7 @@ const prepareLocalChain = (zone, makeAccountKit, { watch }) => {
             this.facets.extractFirstQueryResultWatcher,
           );
         },
-        /**
-         * Send a batch of query requests to the local chain. Unless there is a
-         * system error, will return all results to indicate their success or
-         * failure.
-         *
-         * @template {import('@agoric/cosmic-proto').TypedJson[]} RT
-         * @param {RT} requests
-         * @returns {PromiseVowOfTupleMappedToGenerics<{
-         *   [K in keyof RT]: JsonSafe<{
-         *     error?: string;
-         *     reply: ResponseTo<RT[K]>;
-         *   }>;
-         * }>}
-         */
+        /** @type {QueryManyFn} */
         async queryMany(requests) {
           const { system } = this.state;
           return E(system).toBridge({

@@ -9,7 +9,6 @@ import {
   QueryBalanceRequest,
   QueryBalanceResponse,
 } from '@agoric/cosmic-proto/cosmos/bank/v1beta1/query.js';
-import { TimeMath } from '@agoric/time';
 import { commonSetup } from '../supports.js';
 import { type StakeIcaTerms } from '../../src/examples/stakeIca.contract.js';
 import fetchedChainInfo from '../../src/fetched-chain-info.js';
@@ -18,13 +17,10 @@ import {
   buildQueryResponseString,
 } from '../../tools/ibc-mocks.js';
 import type { CosmosChainInfo } from '../../src/cosmos-api.js';
-import {
-  AmountArg,
-  ChainAddress,
-  DenomAmount,
-} from '../../src/orchestration-api.js';
+import { DenomAmount } from '../../src/orchestration-api.js';
 import { maxClockSkew } from '../../src/utils/cosmos.js';
 import { UNBOND_PERIOD_SECONDS } from '../ibc-mocks.js';
+import { makeChainHub } from '../../src/exos/chain-hub.js';
 
 const dirname = path.dirname(new URL(import.meta.url).pathname);
 
@@ -51,6 +47,7 @@ const getChainTerms = (
 };
 
 const startContract = async ({
+  agoricNames,
   cosmosInterchainService,
   timer,
   marshaller,
@@ -68,6 +65,7 @@ const startContract = async ({
     issuerKeywordRecord,
     terms,
     {
+      agoricNames,
       marshaller,
       cosmosInterchainService,
       storageNode: storage.rootNode.makeChildNode(storagePath),
@@ -77,8 +75,8 @@ const startContract = async ({
   return { publicFacet, zoe };
 };
 
-test('makeAccount, getAddress, getBalances, getBalance', async t => {
-  const { bootstrap } = await commonSetup(t);
+test('makeAccount, getAddress', async t => {
+  const { bootstrap, mocks } = await commonSetup(t);
   {
     // stakeAtom
     const { publicFacet } = await startContract(bootstrap);
@@ -90,14 +88,6 @@ test('makeAccount, getAddress, getBalances, getBalance', async t => {
     t.regex(chainAddress.value, /cosmos1/);
     t.like(chainAddress, { chainId: 'cosmoshub-4', encoding: 'bech32' });
 
-    await t.throwsAsync(E(account).getBalances(), {
-      message: 'not yet implemented',
-    });
-
-    await t.throwsAsync(E(account).getBalance('uatom'), {
-      message: 'Queries not available for chain "cosmoshub-4"',
-    });
-
     const accountP = E(publicFacet).makeAccount();
     const { value: address2 } = await E(accountP).getAddress();
     t.regex(address2, /cosmos1/);
@@ -105,7 +95,7 @@ test('makeAccount, getAddress, getBalances, getBalance', async t => {
   }
   {
     // stakeOsmo
-    const { ibcBridge } = bootstrap;
+    const { ibcBridge } = mocks;
     await E(ibcBridge).setAddressPrefix('osmo');
     const { publicFacet } = await startContract({
       ...bootstrap,
@@ -118,23 +108,6 @@ test('makeAccount, getAddress, getBalances, getBalance', async t => {
     const chainAddress = await E(account).getAddress();
     t.regex(chainAddress.value, /osmo1/);
     t.like(chainAddress, { chainId: 'osmosis-1' });
-
-    const buildMocks = () => {
-      const balanceReq = buildQueryPacketString([
-        QueryBalanceRequest.toProtoMsg({
-          address: chainAddress.value,
-          denom: 'uosmo',
-        }),
-      ]);
-      const balanceResp = buildQueryResponseString(QueryBalanceResponse, {
-        balance: { amount: '0', denom: 'uosmo' },
-      });
-      return { [balanceReq]: balanceResp };
-    };
-    await E(ibcBridge).setMockAck(buildMocks());
-
-    const balance = await E(account).getBalance('uosmo');
-    t.deepEqual(balance, { denom: 'uosmo', value: 0n });
   }
 
   t.snapshot(bootstrap.storage.data.entries(), 'accounts in vstorage');
@@ -220,43 +193,24 @@ test('makeAccountInvitationMaker', async t => {
     offerResult.publicSubscribers.account.subscriber,
   );
   const storageUpdate = await E(accountNotifier).getUpdateSince();
+  const expectedStorageValue = {
+    localAddress:
+      '/ibc-port/icacontroller-1/ordered/{"version":"ics27-1","controllerConnectionId":"connection-8","hostConnectionId":"connection-649","address":"cosmos1test","encoding":"proto3","txType":"sdk_multi_msg"}/ibc-channel/channel-0',
+    remoteAddress:
+      '/ibc-hop/connection-8/ibc-port/icahost/ordered/{"version":"ics27-1","controllerConnectionId":"connection-8","hostConnectionId":"connection-649","address":"cosmos1test","encoding":"proto3","txType":"sdk_multi_msg"}/ibc-channel/channel-0',
+  };
+
   t.deepEqual(storageUpdate, {
     updateCount: 1n,
-    value: '',
+    value: expectedStorageValue,
   });
 
   const vstorageEntry = bootstrap.storage.data.get(
     'mockChainStorageRoot.stakeAtom.accounts.cosmos1test',
   );
   t.truthy(vstorageEntry, 'vstorage account entry created');
-  t.is(bootstrap.marshaller.fromCapData(JSON.parse(vstorageEntry!)), '');
-});
-
-test('CosmosOrchestrationAccount - not yet implemented', async t => {
-  const { bootstrap } = await commonSetup(t);
-  const { publicFacet } = await startContract(bootstrap);
-  const account = await E(publicFacet).makeAccount();
-  const mockChainAddress: ChainAddress = {
-    value: 'cosmos1test',
-    chainId: 'cosmoshub-4',
-    encoding: 'bech32',
-  };
-  const mockAmountArg: AmountArg = { value: 10n, denom: 'uatom' };
-
-  await t.throwsAsync(E(account).getBalances(), {
-    message: 'not yet implemented',
-  });
-  await t.throwsAsync(E(account).send(mockChainAddress, mockAmountArg), {
-    message: 'not yet implemented',
-  });
-  // XXX consider, positioning amount + address args the same for .send and .transfer
-  await t.throwsAsync(E(account).transfer(mockAmountArg, mockChainAddress), {
-    message: 'not yet implemented',
-  });
-  await t.throwsAsync(E(account).transferSteps(mockAmountArg, null as any), {
-    message: 'not yet implemented',
-  });
-  await t.throwsAsync(E(account).withdrawRewards(), {
-    message: 'Not Implemented. Try using withdrawReward.',
-  });
+  t.deepEqual(
+    bootstrap.marshaller.fromCapData(JSON.parse(vstorageEntry!)),
+    expectedStorageValue,
+  );
 });

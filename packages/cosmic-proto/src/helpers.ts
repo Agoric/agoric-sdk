@@ -7,7 +7,9 @@ import type {
 import type {
   QueryAllBalancesRequest,
   QueryAllBalancesResponse,
+  QueryBalanceRequest,
   QueryBalanceRequestProtoMsg,
+  QueryBalanceResponse,
 } from './codegen/cosmos/bank/v1beta1/query.js';
 import type {
   MsgSend,
@@ -38,6 +40,8 @@ export type Proto3Shape = {
   '/cosmos.bank.v1beta1.MsgSendResponse': MsgSendResponse;
   '/cosmos.bank.v1beta1.QueryAllBalancesRequest': QueryAllBalancesRequest;
   '/cosmos.bank.v1beta1.QueryAllBalancesResponse': QueryAllBalancesResponse;
+  '/cosmos.bank.v1beta1.QueryBalanceRequest': QueryBalanceRequest;
+  '/cosmos.bank.v1beta1.QueryBalanceResponse': QueryBalanceResponse;
   '/cosmos.staking.v1beta1.MsgDelegate': MsgDelegate;
   '/cosmos.staking.v1beta1.MsgDelegateResponse': MsgDelegateResponse;
   '/cosmos.staking.v1beta1.MsgUndelegate': MsgUndelegate;

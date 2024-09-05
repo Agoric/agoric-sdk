@@ -1,4 +1,4 @@
-import { makeTracer } from '@agoric/internal';
+import { deeplyFulfilledObject, makeTracer } from '@agoric/internal';
 import { makeStorageNodeChild } from '@agoric/internal/src/lib-chainStorage.js';
 import { prepareVowTools } from '@agoric/vow';
 import { makeHeapZone } from '@agoric/zone';
@@ -33,7 +33,7 @@ export const startStakeOsmo = async ({
     agoricNames,
     board,
     chainStorage,
-    chainTimerService,
+    chainTimerService: timer,
     cosmosInterchainService,
     startUpgradable,
   },
@@ -64,17 +64,20 @@ export const startStakeOsmo = async ({
     installation: stakeIca,
     terms: {
       chainId: osmosis.chainId,
-      hostConnectionId: connectionInfo.id,
-      controllerConnectionId: connectionInfo.counterparty.connection_id,
+      hostConnectionId: connectionInfo.counterparty.connection_id,
+      controllerConnectionId: connectionInfo.id,
       bondDenom: osmosis.stakingTokens[0].denom,
       icqEnabled: osmosis.icqEnabled,
     },
-    privateArgs: {
-      cosmosInterchainService: await cosmosInterchainService,
-      storageNode,
-      marshaller,
-      timer: await chainTimerService,
-    },
+    privateArgs: await deeplyFulfilledObject(
+      harden({
+        agoricNames,
+        cosmosInterchainService,
+        storageNode,
+        marshaller,
+        timer,
+      }),
+    ),
   };
 
   const { instance } = await E(startUpgradable)(startOpts);

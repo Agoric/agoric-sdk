@@ -11,6 +11,7 @@ import {
   makeStartVat,
   makeBringOutYourDead,
   makeResolve,
+  makeRetireImports,
 } from './util.js';
 import { makeMockGC } from './mock-gc.js';
 
@@ -465,3 +466,101 @@ for (const firstType of ['object', 'collection']) {
 }
 
 // test('double-free', doublefreetest, { firstType: 'object', lastType: 'collection', order: 'first->last' });
+
+test('retirement', async t => {
+  const { syscall, fakestore, log } = buildSyscall();
+  const gcTools = makeMockGC();
+
+  // A is a weak collection, with one entry, whose key is B (a
+  // Presence). We drop the RAM pillar for B and do a BOYD, which
+  // should provoke a syscall.dropImports. Then, when we delete A (by
+  // dropping the RAM pillar), the next BOYD should see a
+  // `syscall.retireImports`.
+
+  let weakmapA;
+  let presenceB;
+
+  function buildRootObject(vatPowers) {
+    const { VatData } = vatPowers;
+    const { makeScalarBigWeakMapStore } = VatData;
+
+    weakmapA = makeScalarBigWeakMapStore();
+
+    return Far('root', {
+      add: p => {
+        presenceB = p;
+        weakmapA.init(presenceB, 'value');
+      },
+    });
+  }
+
+  const makeNS = () => ({ buildRootObject });
+  const ls = makeLiveSlots(syscall, 'vatA', {}, {}, gcTools, undefined, makeNS);
+  const { dispatch, testHooks } = ls;
+  const { valToSlot } = testHooks;
+
+  await dispatch(makeStartVat(kser()));
+  log.length = 0;
+  const weakmapAvref = valToSlot.get(weakmapA);
+  const { subid } = parseVatSlot(weakmapAvref);
+  const collectionID = String(subid);
+
+  const rootA = 'o+0';
+  const presenceBvref = 'o-1';
+  await dispatch(makeMessage(rootA, 'add', [kslot(presenceBvref)]));
+  log.length = 0;
+
+  // the fact that weakmapA can recognize presenceA is recorded in a
+  // vatstore key
+  const recognizerKey = `vom.ir.${presenceBvref}|${collectionID}`;
+  t.is(fakestore.get(recognizerKey), '1');
+
+  // tell mockGC that userspace has dropped presenceB
+  gcTools.kill(presenceB);
+  gcTools.flushAllFRs();
+
+  await dispatch(makeBringOutYourDead());
+  const priorKey = `vom.ir.${presenceBvref}|`;
+
+  t.deepEqual(log.splice(0), [
+    // when a Presence is dropped, scanForDeadObjects can't drop the
+    // underlying vref import until it knows that virtual data isn't
+    // holding a reference, so we expect a refcount check
+    { type: 'vatstoreGet', key: `vom.rc.${presenceBvref}`, result: undefined },
+
+    // the vref is now in importsToDrop, but since this commonly means
+    // it can be retired too, scanForDeadObjects goes ahead and checks
+    // for recognizers
+    { type: 'vatstoreGetNextKey', priorKey, result: recognizerKey },
+
+    // it found a recognizer, so the vref cannot be retired
+    // yet. scanForDeadObjects finishes the BOYD by emitting the
+    // dropImports, but should keep watching for an opportunity to
+    // retire it too
+    { type: 'dropImports', slots: [presenceBvref] },
+  ]);
+
+  // now tell mockGC that we're dropping the weakmap too
+  gcTools.kill(weakmapA);
+  gcTools.flushAllFRs();
+
+  // this will provoke the deletion of the collection and all its
+  // data. It should *also* trigger a syscall.retireImports of the
+  // no-longer-recognizable key
+  await dispatch(makeBringOutYourDead());
+  const retires = log.filter(e => e.type === 'retireImports');
+
+  t.deepEqual(retires, [{ type: 'retireImports', slots: [presenceBvref] }]);
+
+  // If the bug is present, the vat won't send `syscall.retireImports`
+  // to the kernel. In a full system, that means the kernel can
+  // eventually send a `dispatch.retireImports` into the vat, if/when
+  // the object's hosting vat decides to drop it. Make sure that won't
+  // cause a crash.
+
+  if (!retires.length) {
+    console.log(`testing kernel's dispatch.retireImports`);
+    await dispatch(makeRetireImports(presenceBvref));
+    console.log(`dispatch.retireImports did not crash`);
+  }
+});

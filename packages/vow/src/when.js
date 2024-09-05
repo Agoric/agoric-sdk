@@ -36,24 +36,26 @@ export const makeWhen = (
       if (seenPayloads.has(vowV0)) {
         throw Error('Vow resolution cycle detected');
       }
-      result = await basicE(vowV0)
-        .shorten()
-        .then(
-          res => {
-            seenPayloads.add(vowV0);
-            priorRetryValue = undefined;
-            return res;
-          },
-          e => {
-            const nextValue = isRetryableReason(e, priorRetryValue);
-            if (nextValue) {
-              // Shorten the same specimen to try again.
-              priorRetryValue = nextValue;
-              return result;
-            }
-            throw e;
-          },
-        );
+
+      try {
+        // Shorten the vow to the "next step", whether another vow or a final
+        // result.
+        const res = await basicE(vowV0).shorten();
+
+        // Prevent cycles in the resolution graph.
+        seenPayloads.add(vowV0);
+        priorRetryValue = undefined;
+        result = res;
+      } catch (e) {
+        const nextRetryValue = isRetryableReason(e, priorRetryValue);
+        if (!nextRetryValue) {
+          // Not a retry, so just reject with the reason.
+          throw e;
+        }
+
+        // Shorten the same specimen to try again.
+        priorRetryValue = nextRetryValue;
+      }
       // Advance to the next vow.
       payload = getVowPayload(result);
     }

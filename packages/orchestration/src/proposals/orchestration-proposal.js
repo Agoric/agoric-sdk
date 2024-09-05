@@ -2,14 +2,13 @@ import { Fail } from '@endo/errors';
 import { E, Far } from '@endo/far';
 import { makeMarshal } from '@endo/marshal';
 import { makeTracer } from '@agoric/internal';
-import { registerChainNamespace } from '../chain-info.js';
+import { registerKnownChains } from '../chain-info.js';
 import { CHAIN_KEY, CONNECTIONS_KEY } from '../exos/chain-hub.js';
 
 const trace = makeTracer('CoreEvalOrchestration', true);
 
 /**
  * @import {PortAllocator} from '@agoric/network';
- * @import {CosmosInterchainService} from '../exos/cosmos-interchain-service.js'
  */
 
 /**
@@ -127,7 +126,7 @@ export const initChainInfo = async ({
   await publishChainInfoToChainStorage(agoricNamesAdmin, chainStorageP);
 
   // Now register the names
-  await registerChainNamespace(agoricNamesAdmin, trace);
+  await registerKnownChains(agoricNamesAdmin, trace);
 };
 harden(initChainInfo);
 

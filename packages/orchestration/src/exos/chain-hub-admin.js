@@ -1,0 +1,71 @@
+/* we expect promises to resolved promptly,  */
+/* eslint-disable no-restricted-syntax */
+import { heapVowE } from '@agoric/vow/vat.js';
+import { M } from '@endo/patterns';
+import { CosmosChainInfoShape } from '../typeGuards.js';
+import { DenomDetailShape } from './chain-hub.js';
+
+/**
+ * @import {Zone} from '@agoric/zone';
+ * @import {CosmosChainInfo, Denom, IBCConnectionInfo} from '@agoric/orchestration';
+ * @import {ChainHub, DenomDetail} from './chain-hub.js';
+ */
+
+/**
+ * For use with async-flow contracts: can be used as a creator facet that allows
+ * developers to add new chain configurations to a local chainHub, in the event
+ * the information is not available widely in `agoricNames`.
+ *
+ * @param {Zone} zone
+ * @param {ChainHub} chainHub
+ */
+export const prepareChainHubAdmin = (zone, chainHub) => {
+  const ConnectionInfoShape = M.record(); // TODO
+  const makeCreatorFacet = zone.exo(
+    'ChainHub Admin',
+    M.interface('ChainHub Admin', {
+      initChain: M.callWhen(
+        M.string(),
+        CosmosChainInfoShape,
+        ConnectionInfoShape,
+      ).returns(M.undefined()),
+      registerAsset: M.call(M.string(), DenomDetailShape).returns(M.promise()),
+    }),
+    {
+      /**
+       * @param {string} chainName
+       * @param {CosmosChainInfo} chainInfo
+       * @param {IBCConnectionInfo} connectionInfo
+       */
+      async initChain(chainName, chainInfo, connectionInfo) {
+        // when() because chainHub methods return vows. If this were inside
+        // orchestrate() the membrane would wrap/unwrap automatically.
+        const agoricChainInfo = await heapVowE.when(
+          chainHub.getChainInfo('agoric'),
+        );
+        chainHub.registerChain(chainName, chainInfo);
+        chainHub.registerConnection(
+          agoricChainInfo.chainId,
+          chainInfo.chainId,
+          connectionInfo,
+        );
+      },
+      /**
+       * Register an asset that may be held on a chain other than the issuing
+       * chain.
+       *
+       * @param {Denom} denom - on the holding chain, whose name is given in
+       *   `detail.chainName`
+       * @param {DenomDetail} detail - chainName and baseName must be registered
+       */
+      async registerAsset(denom, detail) {
+        // XXX async work necessary before the synchronous call
+        await heapVowE.when(chainHub.getChainInfo('agoric'));
+        chainHub.registerAsset(denom, detail);
+      },
+    },
+  );
+  return makeCreatorFacet;
+};
+
+/** @typedef {ReturnType<prepareChainHubAdmin>} ChainHubAdmin */

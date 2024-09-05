@@ -5,6 +5,7 @@ import { E, Far } from '@endo/far';
 import {
   prepareNetworkProtocol,
   prepareLoopbackProtocolHandler,
+  prepareNetworkPowers,
 } from '@agoric/network';
 
 import bundleSource from '@endo/bundle-source';
@@ -43,8 +44,9 @@ async function testRemotePeg(t) {
   t.plan(24);
 
   // const zone = makeHeapZone();
-  const zone = makeDurableZone(provideBaggage('peagsus'));
-  const powers = prepareVowTools(zone);
+  const zone = makeDurableZone(provideBaggage('pegasus'));
+  const vowTools = prepareVowTools(zone);
+  const powers = prepareNetworkPowers(zone, vowTools);
   const { makeVowKit, when } = powers;
 
   /**

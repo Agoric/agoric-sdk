@@ -46,7 +46,7 @@ The Release Owner and other appropriate stakeholders must agree on:
 
 - [ ] When a new release is planned, create a new branch from branch `release-mainnet1B` with a name like `dev-$releaseShortLabel` (example: `dev-upgrade-8`). This can be done from the command line or the [GitHub Branches UI](https://github.com/Agoric/agoric-sdk/branches).
 - [ ] Initialize the new branch for the planned upgrade:
-  - [ ] In **golang/cosmos/app/app.go**, update the `upgradeName` constants and the associated upgrade handler function name to correspond with the [_**upgrade name**_](#assign-release-parameters).
+  - [ ] In **golang/cosmos/app/upgrade.go**, update the `upgradeName` constants and the associated upgrade handler function name to correspond with the [_**upgrade name**_](#assign-release-parameters).
     Remove from the function any logic specific to the previous upgrade (e.g., core proposals).
   - [ ] Ensure that **a3p-integration/package.json** has an object-valued `agoricSyntheticChain` property with `fromTag` set to the [agoric-3-proposals Docker images](https://github.com/Agoric/agoric-3-proposals/pkgs/container/agoric-3-proposals) tag associated with the previous release
     (example: `use-upgrade-7`).
@@ -117,7 +117,7 @@ For each set of changes to include:
 
 These are the steps for a Release Manager to create and publish a
 new release of the Agoric SDK. This combines the process of
-GitHub-based release managment and publication together with NPM-based
+GitHub-based release management and publication together with NPM-based
 publication of the SDK and its individual packages.
 
 ### Prerequisites
@@ -446,4 +446,36 @@ Push this branch and create a pull request.
 
 ```sh
 git push origin "$USER-sync-endo-$NOW"
+```
+
+At this time, syncing Endo versions will break the optional `documentation`
+`test-dapp` test, and that cannot be fixed until after the Endo sync merges.
+When the above steps lead to changes merged into this repository,
+in `agoric-sdk/documentation`:
+
+```sh
+# in agoric/documentation
+git checkout --branch "$USER-sync-endo-$NOW"
+$ENDO/scripts/sync-verions.sh ~/endo
+git commit -am 'chore: Sync Endo versions'
+yarn
+git commit -am 'chore: Update yarn.lock'
+git push origin "$USER-sync-endo-$NOW"
+```
+
+Create a pull request from that branch.
+
+To verify that the changes to `documentation` are sufficient to settle CI for
+this repository, return to `agoric-sdk`, create a branch off of the current
+head, create an empty commit, push that change to Github, and create a draft
+pull request with `#documentation-branch: $USER-sync-docs-$NOW` in the
+description.
+
+```sh
+# in agoric/agoric-sdk
+git checkout origin/master
+git commit --allow-empty -m 'Poke CI for documentation integration testing'
+git checkout -b "$USER-sync-docs-$NOW"
+# Capture description in clipboard (Mac) for reference on Github.
+echo "#documentation-branch: $USER-sync-docs-$NOW" | pbcopy # Linux: xclip -i
 ```

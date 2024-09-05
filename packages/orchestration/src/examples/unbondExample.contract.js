@@ -2,9 +2,8 @@ import { M } from '@endo/patterns';
 import { withOrchestration } from '../utils/start-helper.js';
 
 /**
- * @import {Orchestrator, IcaAccount, CosmosValidatorAddress} from '../types.js'
+ * @import {Orchestrator, OrchestrationFlow} from '../types.js'
  * @import {TimerService} from '@agoric/time';
- * @import {Baggage} from '@agoric/vat-data';
  * @import {LocalChain} from '@agoric/vats/src/localchain.js';
  * @import {NameHub} from '@agoric/vats';
  * @import {Remote} from '@agoric/internal';
@@ -14,6 +13,7 @@ import { withOrchestration } from '../utils/start-helper.js';
  */
 
 /**
+ * @satisfies {OrchestrationFlow}
  * @param {Orchestrator} orch
  * @param {object} ctx
  * @param {ZCF} ctx.zcf
@@ -59,7 +59,6 @@ const unbondAndLiquidStakeFn = async (orch, { zcf }, _seat, _offerArgs) => {
  * @param {OrchestrationTools} tools
  */
 const contract = async (zcf, privateArgs, zone, { orchestrate }) => {
-  /** @type {OfferHandler} */
   const unbondAndLiquidStake = orchestrate(
     'LSTTia',
     { zcf },
@@ -86,3 +85,4 @@ const contract = async (zcf, privateArgs, zone, { orchestrate }) => {
 };
 
 export const start = withOrchestration(contract);
+harden(start);

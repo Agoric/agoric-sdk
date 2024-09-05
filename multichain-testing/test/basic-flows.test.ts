@@ -1,12 +1,15 @@
 import anyTest from '@endo/ses-ava/prepare-endo.js';
 import type { TestFn } from 'ava';
-import { commonSetup, SetupContextWithWallets } from './support.js';
 import { makeDoOffer } from '../tools/e2e-tools.js';
-import { chainConfig, chainNames } from './support.js';
+import {
+  commonSetup,
+  SetupContextWithWallets,
+  chainConfig,
+} from './support.js';
 
 const test = anyTest as TestFn<SetupContextWithWallets>;
 
-const accounts = ['user1', 'user2', 'user3']; // one account for each scenario
+const accounts = ['agoric', 'cosmoshub', 'osmosis']; // one account for each scenario
 
 const contractName = 'basicFlows';
 const contractBuilder =
@@ -17,15 +20,8 @@ test.before(async t => {
   deleteTestKeys(accounts).catch();
   const wallets = await setupTestKeys(accounts);
   t.context = { ...rest, wallets, deleteTestKeys };
-
-  t.log('bundle and install contract', contractName);
-  await t.context.deployBuilder(contractBuilder);
-  const vstorageClient = t.context.makeQueryTool();
-  await t.context.retryUntilCondition(
-    () => vstorageClient.queryData(`published.agoricNames.instance`),
-    res => contractName in Object.fromEntries(res),
-    `${contractName} instance is available`,
-  );
+  const { startContract } = rest;
+  await startContract(contractName, contractBuilder);
 });
 
 test.after(async t => {
@@ -42,27 +38,22 @@ const makeAccountScenario = test.macro({
     const {
       wallets,
       provisionSmartWallet,
-      makeQueryTool,
+      vstorageClient,
       retryUntilCondition,
     } = t.context;
 
-    const vstorageClient = makeQueryTool();
-
-    const wallet = accounts[chainNames.indexOf(chainName)];
-    const wdUser1 = await provisionSmartWallet(wallets[wallet], {
+    const agoricAddr = wallets[chainName];
+    const wdUser1 = await provisionSmartWallet(agoricAddr, {
       BLD: 100n,
       IST: 100n,
     });
-    t.log(`provisioning agoric smart wallet for ${wallets[wallet]}`);
+    t.log(`provisioning agoric smart wallet for ${agoricAddr}`);
 
     const doOffer = makeDoOffer(wdUser1);
     t.log(`${chainName} makeAccount offer`);
     const offerId = `${chainName}-makeAccount-${Date.now()}`;
 
-    // FIXME we get payouts but not an offer result; it times out
-    // https://github.com/Agoric/agoric-sdk/issues/9643
-    // chain logs shows an UNPUBLISHED result
-    const _offerResult = await doOffer({
+    await doOffer({
       id: offerId,
       invitationSpec: {
         source: 'agoricContract',
@@ -72,14 +63,10 @@ const makeAccountScenario = test.macro({
       offerArgs: { chainName },
       proposal: {},
     });
-    t.true(_offerResult);
-    // t.is(await _offerResult, 'UNPUBLISHED', 'representation of continuing offer');
-
     // TODO fix above so we don't have to poll for the offer result to be published
     // https://github.com/Agoric/agoric-sdk/issues/9643
     const currentWalletRecord = await retryUntilCondition(
-      () =>
-        vstorageClient.queryData(`published.wallet.${wallets[wallet]}.current`),
+      () => vstorageClient.queryData(`published.wallet.${agoricAddr}.current`),
       ({ offerToPublicSubscriberPaths }) =>
         Object.fromEntries(offerToPublicSubscriberPaths)[offerId],
       `${offerId} continuing invitation is in vstorage`,
@@ -100,7 +87,7 @@ const makeAccountScenario = test.macro({
     );
 
     const latestWalletUpdate = await vstorageClient.queryData(
-      `published.wallet.${wallets[wallet]}`,
+      `published.wallet.${agoricAddr}`,
     );
     t.log('latest wallet update', latestWalletUpdate);
     t.like(

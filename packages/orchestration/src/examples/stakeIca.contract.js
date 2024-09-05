@@ -11,13 +11,16 @@ import { InvitationShape } from '@agoric/zoe/src/typeGuards.js';
 import { makeDurableZone } from '@agoric/zone/durable.js';
 import { M } from '@endo/patterns';
 import { prepareCosmosOrchestrationAccount } from '../exos/cosmos-orchestration-account.js';
+import { makeChainHub } from '../exos/chain-hub.js';
 
 const trace = makeTracer('StakeIca');
 /**
  * @import {Baggage} from '@agoric/vat-data';
- * @import {IBCConnectionID} from '@agoric/vats';
+ * @import {Remote} from '@agoric/internal';
+ * @import {IBCConnectionID, NameHub} from '@agoric/vats';
  * @import {TimerService} from '@agoric/time';
- * @import {ICQConnection, CosmosInterchainService} from '../types.js';
+ * @import {ResolvedContinuingOfferResult} from '../utils/zoe-tools.js';
+ * @import {ICQConnection, CosmosInterchainService, ChainHub} from '../types.js';
  */
 
 /** @type {ContractMeta<typeof start>} */
@@ -30,13 +33,16 @@ export const meta = harden({
     icqEnabled: M.boolean(),
   },
   privateArgsShape: {
+    agoricNames: M.remotable('agoricNames NameHub'),
     cosmosInterchainService: M.remotable('cosmosInterchainService'),
     storageNode: StorageNodeShape,
     marshaller: M.remotable('marshaller'),
     timer: TimerServiceShape,
   },
 });
+harden(meta);
 export const privateArgsShape = meta.privateArgsShape;
+harden(privateArgsShape);
 
 /**
  * @typedef {{
@@ -51,6 +57,7 @@ export const privateArgsShape = meta.privateArgsShape;
 /**
  * @param {ZCF<StakeIcaTerms>} zcf
  * @param {{
+ *   agoricNames: Remote<NameHub>;
  *   cosmosInterchainService: CosmosInterchainService;
  *   storageNode: StorageNode;
  *   marshaller: Marshaller;
@@ -67,6 +74,7 @@ export const start = async (zcf, privateArgs, baggage) => {
     icqEnabled,
   } = zcf.getTerms();
   const {
+    agoricNames,
     cosmosInterchainService: orchestration,
     marshaller,
     storageNode,
@@ -83,11 +91,17 @@ export const start = async (zcf, privateArgs, baggage) => {
 
   const vowTools = prepareVowTools(zone.subZone('vows'));
 
+  const chainHub = makeChainHub(agoricNames, vowTools);
+
   const makeCosmosOrchestrationAccount = prepareCosmosOrchestrationAccount(
     zone,
-    makeRecorderKit,
-    vowTools,
-    zcf,
+    {
+      chainHub,
+      makeRecorderKit,
+      timerService: timer,
+      vowTools,
+      zcf,
+    },
   );
 
   async function makeAccountKit() {
@@ -101,24 +115,31 @@ export const start = async (zcf, privateArgs, baggage) => {
       ? await E(orchestration).provideICQConnection(controllerConnectionId)
       : undefined;
 
-    const accountAddress = await E(account).getAddress();
-    trace('account address', accountAddress);
+    const [chainAddress, localAddress, remoteAddress] = await Promise.all([
+      E(account).getAddress(),
+      E(account).getLocalAddress(),
+      E(account).getRemoteAddress(),
+    ]);
+    trace('account address', chainAddress);
     const accountNode = await E(accountsStorageNode).makeChildNode(
-      accountAddress.value,
+      chainAddress.value,
     );
-    const holder = makeCosmosOrchestrationAccount(accountAddress, bondDenom, {
-      account,
-      storageNode: accountNode,
-      icqConnection,
-      timer,
-    });
+    const holder = makeCosmosOrchestrationAccount(
+      { chainAddress, bondDenom, localAddress, remoteAddress },
+      {
+        account,
+        storageNode: accountNode,
+        icqConnection,
+        timer,
+      },
+    );
     return holder;
   }
 
   const publicFacet = zone.exo(
     'StakeAtom',
     M.interface('StakeAtomI', {
-      makeAccount: M.callWhen().returns(M.remotable('ChainAccount')),
+      makeAccount: M.callWhen().returns(M.remotable('OrchestrationAccountKit')),
       makeAccountInvitationMaker: M.callWhen().returns(InvitationShape),
     }),
     {
@@ -129,10 +150,15 @@ export const start = async (zcf, privateArgs, baggage) => {
       makeAccountInvitationMaker() {
         trace('makeCreateAccountInvitation');
         return zcf.makeInvitation(
+          // XXX use `orchestrate` membrane for vow?
+          /**
+           * @param {ZCFSeat} seat
+           * @returns {Promise<ResolvedContinuingOfferResult>}
+           */
           async seat => {
             seat.exit();
             const holder = await makeAccountKit();
-            return holder.asContinuingOffer();
+            return vowTools.when(holder.asContinuingOffer());
           },
           'wantStakingAccount',
           undefined,
@@ -144,5 +170,6 @@ export const start = async (zcf, privateArgs, baggage) => {
 
   return { publicFacet };
 };
+harden(start);
 
 /** @typedef {typeof start} StakeIcaSF */

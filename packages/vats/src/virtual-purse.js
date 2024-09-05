@@ -1,16 +1,17 @@
 import { Fail } from '@endo/errors';
 import { E } from '@endo/far';
 import { isPromise } from '@endo/promise-kit';
-import { getInterfaceGuardPayload } from '@endo/patterns';
+import { getInterfaceGuardPayload, matches } from '@endo/patterns';
 
 import { M } from '@agoric/store';
 import {
+  AmountPatternShape,
   AmountShape,
   BrandShape,
   DepositFacetShape,
   NotifierShape,
   PaymentShape,
-} from '@agoric/ertp/src/typeGuards.js';
+} from '@agoric/ertp';
 
 /**
  * @param {Pattern} [brandShape]
@@ -35,7 +36,7 @@ export const makeVirtualPurseKitIKit = (
     // to this raw method to validate that this remotable is actually
     // a live payment of the correct brand with sufficient funds.
     deposit: M.callWhen(PaymentShape)
-      .optional(M.pattern())
+      .optional(AmountPatternShape)
       .returns(amountShape),
     getDepositFacet: M.callWhen().returns(DepositFacetShape),
     withdraw: M.callWhen(amountShape).returns(PaymentShape),
@@ -48,7 +49,9 @@ export const makeVirtualPurseKitIKit = (
   });
 
   const RetainRedeemI = M.interface('RetainRedeem', {
-    retain: M.callWhen(PaymentShape).optional(amountShape).returns(amountShape),
+    retain: M.callWhen(PaymentShape)
+      .optional(AmountPatternShape)
+      .returns(amountShape),
     redeem: M.callWhen(amountShape).returns(PaymentShape),
   });
 
@@ -56,7 +59,7 @@ export const makeVirtualPurseKitIKit = (
     retain: getInterfaceGuardPayload(RetainRedeemI).methodGuards.retain,
     redeem: getInterfaceGuardPayload(RetainRedeemI).methodGuards.redeem,
     recoverableClaim: M.callWhen(M.await(PaymentShape))
-      .optional(amountShape)
+      .optional(AmountPatternShape)
       .returns(PaymentShape),
   });
 
@@ -102,6 +105,22 @@ export const makeVirtualPurseKitIKit = (
  *   current balance iterable for a given brand.
  */
 
+/**
+ * Until https://github.com/Agoric/agoric-sdk/issues/9407 is fixed, this
+ * function restricts the `optAmountShape`, if provided, to be a concrete
+ * `Amount` rather than a `Pattern` as it is supposed to be.
+ *
+ * TODO: Once https://github.com/Agoric/agoric-sdk/issues/9407 is fixed, remove
+ * this function and all calls to it.
+ *
+ * @param {Pattern} [optAmountShape]
+ */
+const legacyRestrictAmountShapeArg = optAmountShape => {
+  if (optAmountShape && !matches(optAmountShape, AmountShape)) {
+    throw Fail`optAmountShape if provided, must still be a concrete Amount due to https://github.com/Agoric/agoric-sdk/issues/9407`;
+  }
+};
+
 /** @param {import('@agoric/zone').Zone} zone */
 const prepareVirtualPurseKit = zone =>
   zone.exoClassKit(
@@ -139,6 +158,7 @@ const prepareVirtualPurseKit = zone =>
          * @returns {Promise<Payment<'nat'>>}
          */
         async recoverableClaim(payment, optAmountShape) {
+          legacyRestrictAmountShapeArg(optAmountShape);
           const {
             state: { recoveryPurse },
           } = this;
@@ -166,6 +186,7 @@ const prepareVirtualPurseKit = zone =>
       minter: {
         /** @type {Retain} */
         async retain(payment, optAmountShape) {
+          legacyRestrictAmountShapeArg(optAmountShape);
           !!this.state.mint || Fail`minter cannot retain without a mint.`;
           return E(this.state.issuer).burn(payment, optAmountShape);
         },

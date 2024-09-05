@@ -146,11 +146,11 @@ const start = async (zcf, privateArgs) => {
     async wake(timestamp) {
       // Run all the queriers.
       const querierPs = [];
-      oracleRecords.forEach(({ querier }) => {
+      for (const { querier } of oracleRecords) {
         if (querier) {
           querierPs.push(querier(timestamp));
         }
-      });
+      }
       if (!querierPs.length) {
         // Only have push results, so publish them.
         // eslint-disable-next-line no-use-before-define

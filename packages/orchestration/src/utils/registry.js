@@ -53,8 +53,8 @@ function toConnectionEntry(ibcInfo, name, chainInfo) {
   }
   const [channel] = transferChannels;
   const [channelFrom, channelTo] = fromChain1
-    ? [channel.chain_2, channel.chain_1]
-    : [channel.chain_1, channel.chain_2];
+    ? [channel.chain_1, channel.chain_2]
+    : [channel.chain_2, channel.chain_1];
   const record = {
     id: /** @type {IBCConnectionID} */ (from.connection_id),
     client_id: from.client_id,

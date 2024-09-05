@@ -60,13 +60,13 @@ For a chain software upgrade proposal, the `type` is `"Software Upgrade Proposal
 
 - `sdkImageTag` is the docker image tag to use that contains the upgraded chain software. It has a value of `unreleased`, which is the tag for the image that is built from the enclosing `agoric-sdk` repository.
 
-- `planName` is the "upgrade name" included in the proposal which must match the value in the upgraded chain software. In the `master` branch its value is `UNRELEASED_UPGRADE`. In the release branches, it's `agoric-upgrade-NN`.
+- `planName` is the "upgrade name" included in the proposal which must match the value in the upgraded chain software. In the `master` branch its value is `UNRELEASED_A3P_INTEGRATION`. In the release branches, it's `agoric-upgrade-NN`.
 
 - `upgradeInfo` contains other details passed to the governance proposal. In
    particular, it can have a `coreProposals` field which instructs the chain
    software to run other core proposals in addition to the one configured in the
    chain software's upgrade handler (see `CoreProposalSteps` in
-   `/golang/cosmos/app/app.go`).
+   `/golang/cosmos/app/upgrade.go`).
   - See **Generating core-eval submissions** below for details.
 
 For an (evolving) example, see `a:upgrade-next` in master.
@@ -115,7 +115,7 @@ The `yarn build` script automates 3 steps:
 
 ## Generate a docker image with the `agoric-sdk` chain software
 
-The chain software upgrade proposal contained in this end-to-end integration test performs an upgrade of the agoric-3 synthetic chain to an `UNRELEASED_UPGRADE` plan name (or the corresponding upgrade plan name for release branches). It loads the docker image `ghcr.io/agoric/agoric-sdk:unreleased` for the software implementing that upgrade (both in the `master` branch or in release branches).
+The chain software upgrade proposal contained in this end-to-end integration test performs an upgrade of the agoric-3 synthetic chain to an `UNRELEASED_A3P_INTEGRATION` plan name (or the corresponding upgrade plan name for release branches). It loads the docker image `ghcr.io/agoric/agoric-sdk:unreleased` for the software implementing that upgrade (both in the `master` branch or in release branches).
 
 The upgrade handler is implemented by the code in the enclosing `agoric-sdk` repository. After any change to the chain software or vat code upgraded through core proposals, the image must be regenerated. This is automatically done by the `build:sdk` script, but can also be performed manually using:
 
@@ -202,7 +202,7 @@ That's because you didn't create an image from the local `agoric-sdk`. Run `yarn
 
 If you get an error like,
 ```
-panic: UPGRADE "UNRELEASED_UPGRADE" NEEDED at height: 1101: {"coreProposals":["@agoric/builders/scripts/vats/init-network.js"]}
+panic: UPGRADE "UNRELEASED_A3P_INTEGRATION" NEEDED at height: 1101: {"coreProposals":["@agoric/builders/scripts/vats/init-network.js"]}
 ```
 
 Means your SDK image is different than the one expected by the upgrade proposal. To build the correct image, run `yarn build:sdk`.

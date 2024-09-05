@@ -5,9 +5,8 @@ import { orcUtils } from '../utils/orc.js';
 import { withOrchestration } from '../utils/start-helper.js';
 
 /**
- * @import {GuestInterface, GuestOf} from '@agoric/async-flow';
  * @import {LocalTransfer} from '../utils/zoe-tools.js';
- * @import {Orchestrator, CosmosValidatorAddress} from '../types.js'
+ * @import {Orchestrator, CosmosValidatorAddress, OrchestrationFlow} from '../types.js'
  * @import {TimerService} from '@agoric/time';
  * @import {LocalChain} from '@agoric/vats/src/localchain.js';
  * @import {Remote} from '@agoric/internal';
@@ -18,6 +17,7 @@ import { withOrchestration } from '../utils/start-helper.js';
  */
 
 /**
+ * @satisfies {OrchestrationFlow}
  * @param {Orchestrator} orch
  * @param {object} ctx
  * @param {LocalTransfer} ctx.localTransfer
@@ -26,7 +26,7 @@ import { withOrchestration } from '../utils/start-helper.js';
  * @param {Amount<'nat'>} offerArgs.staked
  * @param {CosmosValidatorAddress} offerArgs.validator
  */
-const stackAndSwapFn = async (orch, { localTransfer }, seat, offerArgs) => {
+const stakeAndSwapFn = async (orch, { localTransfer }, seat, offerArgs) => {
   const { give } = seat.getProposal();
 
   const omni = await orch.getChain('omniflixhub');
@@ -52,12 +52,12 @@ const stackAndSwapFn = async (orch, { localTransfer }, seat, offerArgs) => {
     slippage: 0.03,
   });
 
-  await localAccount
-    .transferSteps(give.Stable, transferMsg)
-    .then(_txResult =>
-      omniAccount.delegate(offerArgs.validator, offerArgs.staked),
-    )
-    .catch(e => console.error(e));
+  try {
+    await localAccount.transferSteps(give.Stable, transferMsg);
+    await omniAccount.delegate(offerArgs.validator, offerArgs.staked);
+  } catch (e) {
+    console.error(e);
+  }
 };
 
 /** @type {ContractMeta<typeof start>} */
@@ -82,6 +82,7 @@ harden(meta);
  */
 export const makeNatAmountShape = (brand, min) =>
   harden({ brand, value: min ? M.gte(min) : M.nat() });
+harden(makeNatAmountShape);
 
 /**
  * Orchestration contract to be wrapped by withOrchestration for Zoe
@@ -102,16 +103,10 @@ const contract = async (zcf, privateArgs, zone, { orchestrate, zoeTools }) => {
   const { brands } = zcf.getTerms();
 
   /** deprecated historical example */
-  /**
-   * @type {OfferHandler<
-   *   unknown,
-   *   { staked: Amount<'nat'>; validator: CosmosValidatorAddress }
-   * >}
-   */
   const swapAndStakeHandler = orchestrate(
     'LSTTia',
     { zcf, localTransfer: zoeTools.localTransfer },
-    stackAndSwapFn,
+    stakeAndSwapFn,
   );
 
   const publicFacet = zone.exo('publicFacet', undefined, {
@@ -133,3 +128,4 @@ const contract = async (zcf, privateArgs, zone, { orchestrate, zoeTools }) => {
 };
 
 export const start = withOrchestration(contract);
+harden(start);

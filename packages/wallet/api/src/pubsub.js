@@ -11,9 +11,9 @@ export default function makePubsub(E) {
     },
     publish(m) {
       lastPublished = m;
-      subscribers.forEach(s => {
+      for (const s of subscribers) {
         E(s).notify(m);
-      });
+      }
     },
   });
 }

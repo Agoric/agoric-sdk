@@ -39,7 +39,7 @@ import { buffer } from './util.js';
  *   loadSnapshot: (vatID: string) => AsyncIterableIterator<Uint8Array>,
  *   saveSnapshot: (vatID: string, snapPos: number, snapshotStream: AsyncIterable<Uint8Array>) => Promise<SnapshotResult>,
  *   deleteAllUnusedSnapshots: () => void,
- *   deleteVatSnapshots: (vatID: string) => void,
+ *   deleteVatSnapshots: (vatID: string, budget?: number) => { done: boolean, cleanups: number },
  *   stopUsingLastSnapshot: (vatID: string) => void,
  *   getSnapshotInfo: (vatID: string) => SnapshotInfo,
  * }} SnapStore
@@ -173,11 +173,13 @@ export function makeSnapStore(
   `);
 
   function stopUsingLastSnapshot(vatID) {
+    // idempotent
     ensureTxn();
     const oldInfo = sqlGetPriorSnapshotInfo.get(vatID);
     if (oldInfo) {
       const rec = snapshotRec(vatID, oldInfo.snapPos, oldInfo.hash, 0);
       noteExport(snapshotMetadataKey(rec), JSON.stringify(rec));
+      noteExport(currentSnapshotMetadataKey(rec), undefined);
       if (keepSnapshots) {
         sqlStopUsingLastSnapshot.run(vatID);
       } else {
@@ -354,28 +356,74 @@ export function makeSnapStore(
     WHERE vatID = ?
   `);
 
+  const sqlDeleteOneVatSnapshot = db.prepare(`
+    DELETE FROM snapshots
+    WHERE vatID = ? AND snapPos = ?
+  `);
+
   const sqlGetSnapshotList = db.prepare(`
     SELECT snapPos
     FROM snapshots
     WHERE vatID = ?
     ORDER BY snapPos
   `);
-  sqlGetSnapshotList.pluck(true);
+
+  const sqlGetSnapshotListLimited = db.prepare(`
+    SELECT snapPos, inUse
+    FROM snapshots
+    WHERE vatID = ?
+    ORDER BY snapPos DESC
+    LIMIT ?
+  `);
 
   /**
-   * Delete all snapshots for a given vat (for use when, e.g., a vat is terminated)
+   * @param {string} vatID
+   * @returns {boolean}
+   */
+  function hasSnapshots(vatID) {
+    // the LIMIT 1 means we aren't really getting all entries
+    return sqlGetSnapshotListLimited.all(vatID, 1).length > 0;
+  }
+
+  /**
+   * Delete some or all snapshots for a given vat (for use when, e.g.,
+   * a vat is terminated)
    *
    * @param {string} vatID
+   * @param {number} [budget]
+   * @returns {{ done: boolean, cleanups: number }}
    */
-  function deleteVatSnapshots(vatID) {
+  function deleteVatSnapshots(vatID, budget = Infinity) {
     ensureTxn();
-    const deletions = sqlGetSnapshotList.all(vatID);
-    for (const snapPos of deletions) {
+    const deleteAll = budget === Infinity;
+    assert(deleteAll || budget >= 1, 'budget must be undefined or positive');
+    // We can't use .iterate because noteExport can write to the DB,
+    // and overlapping queries are not supported.
+    const deletions = deleteAll
+      ? sqlGetSnapshotList.all(vatID)
+      : sqlGetSnapshotListLimited.all(vatID, budget);
+    let clearCurrent = deleteAll;
+    for (const deletion of deletions) {
+      clearCurrent ||= deletion.inUse;
+      const { snapPos } = deletion;
       const exportRec = snapshotRec(vatID, snapPos, undefined);
       noteExport(snapshotMetadataKey(exportRec), undefined);
+      // Budgeted deletion must delete rows one by one,
+      // but full deletion is handled all at once after this loop.
+      if (!deleteAll) {
+        sqlDeleteOneVatSnapshot.run(vatID, snapPos);
+      }
     }
-    noteExport(currentSnapshotMetadataKey({ vatID }), undefined);
-    sqlDeleteVatSnapshots.run(vatID);
+    if (deleteAll) {
+      sqlDeleteVatSnapshots.run(vatID);
+    }
+    if (clearCurrent) {
+      noteExport(currentSnapshotMetadataKey({ vatID }), undefined);
+    }
+    return {
+      done: deleteAll || deletions.length === 0 || !hasSnapshots(vatID),
+      cleanups: deletions.length,
+    };
   }
 
   const sqlGetSnapshotInfo = db.prepare(`
@@ -452,7 +500,7 @@ export function makeSnapStore(
   `);
 
   /**
-   * Obtain artifact metadata records for spanshots contained in this store.
+   * Obtain artifact metadata records for snapshots contained in this store.
    *
    * @param {boolean} includeHistorical  If true, include all metadata that is
    *   present in the store regardless of its currency; if false, only include

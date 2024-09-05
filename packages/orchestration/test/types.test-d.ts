@@ -1,22 +1,36 @@
 /**
  * @file pure types types, no runtime, ignored by Ava
  */
+
 import { expectNotType, expectType } from 'tsd';
-import { typedJson } from '@agoric/cosmic-proto';
+import { JsonSafe, typedJson } from '@agoric/cosmic-proto';
 import type { MsgDelegateResponse } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/tx.js';
-import type { QueryAllBalancesResponse } from '@agoric/cosmic-proto/cosmos/bank/v1beta1/query.js';
-import type { Vow } from '@agoric/vow';
+import type {
+  QueryAllBalancesResponse,
+  QueryBalanceResponse,
+} from '@agoric/cosmic-proto/cosmos/bank/v1beta1/query.js';
+import type { Vow, VowTools } from '@agoric/vow';
 import type { GuestAsyncFunc, HostInterface, HostOf } from '@agoric/async-flow';
+import type { ResolvedPublicTopic } from '@agoric/zoe/src/contractSupport/topics.js';
+import type { ResponseQuery } from '@agoric/cosmic-proto/tendermint/abci/types.js';
 import type {
   ChainAddress,
   CosmosValidatorAddress,
   StakingAccountActions,
   OrchestrationAccount,
+  Orchestrator,
+  Chain,
+  ChainInfo,
+  CosmosChainInfo,
 } from '../src/types.js';
 import type { LocalOrchestrationAccountKit } from '../src/exos/local-orchestration-account.js';
 import { prepareCosmosOrchestrationAccount } from '../src/exos/cosmos-orchestration-account.js';
+import type { OrchestrationFacade } from '../src/facade.js';
+import type { ResolvedContinuingOfferResult } from '../src/utils/zoe-tools.js';
 
 const anyVal = null as any;
+
+const vt: VowTools = null as any;
 
 const validatorAddr = {
   chainId: 'agoric3',
@@ -62,11 +76,8 @@ expectNotType<CosmosValidatorAddress>(chainAddr);
   const makeCosmosOrchestrationAccount = prepareCosmosOrchestrationAccount(
     anyVal,
     anyVal,
-    anyVal,
-    anyVal,
   );
   makeCosmosOrchestrationAccount(
-    anyVal,
     anyVal,
     anyVal,
   ) satisfies HostInterface<StakingAccountActions>;
@@ -89,9 +100,33 @@ expectNotType<CosmosValidatorAddress>(chainAddr);
 
   // Negative test
   expectNotType<() => Promise<number>>(vowFn);
+
+  const getDenomInfo: HostOf<Orchestrator['getDenomInfo']> = null as any;
+  const chainHostOf = getDenomInfo('uatom').chain;
+  expectType<Vow<any>>(chainHostOf.getChainInfo());
 }
 
-// PromiseToVow with TransferSteps
+{
+  // HostInterface
+
+  const chain: Chain<ChainInfo> = null as any;
+  expectType<Promise<ChainInfo>>(chain.getChainInfo());
+  const chainHostInterface: HostInterface<Chain<ChainInfo>> = null as any;
+  expectType<Vow<ChainInfo>>(chainHostInterface.getChainInfo());
+
+  const publicTopicRecord: HostInterface<
+    Record<string, ResolvedPublicTopic<unknown>>
+  > = {
+    someTopic: {
+      subscriber: null as any,
+      storagePath: 'published.somewhere',
+    },
+  };
+  // @ts-expect-error the promise from `subscriber.getUpdateSince` can't be used in a flow
+  expectType<Record<string, ResolvedPublicTopic<unknown>>>(publicTopicRecord);
+}
+
+// HostOf with TransferSteps
 {
   type TransferStepsVow = HostOf<OrchestrationAccount<any>['transferSteps']>;
 
@@ -121,4 +156,96 @@ expectNotType<CosmosValidatorAddress>(chainAddr);
     bar: (x: string) => Vow<boolean>;
     bizz: () => Record<string, number>;
   }>(vowObject);
+}
+
+{
+  // orchestrate()
+
+  const facade: OrchestrationFacade = null as any;
+  const echo = <T extends number>(orc: Orchestrator, ctx: undefined, num: T) =>
+    num;
+  // @ts-expect-error requires an async function
+  facade.orchestrate('name', undefined, echo);
+
+  const slowEcho = <T extends number>(
+    orc: Orchestrator,
+    ctx: undefined,
+    num: T,
+  ) => Promise.resolve(num);
+  {
+    const h = facade.orchestrate('name', undefined, slowEcho);
+    // TODO keep the return type as Vow<T>
+    expectType<(num: number) => Vow<number>>(h);
+    expectType<Vow<number>>(h(42));
+    // @ts-expect-error literal not carried, widened to number
+    expectType<Vow<42>>(h(42));
+  }
+
+  const makeOfferResult = () =>
+    Promise.resolve({} as ResolvedContinuingOfferResult);
+  {
+    const h = facade.orchestrate('name', undefined, makeOfferResult);
+    expectType<Vow<ResolvedContinuingOfferResult>>(h());
+  }
+}
+
+// Test LocalChain.query()
+{
+  type ChainFacade = Chain<{ chainId: 'agoriclocal' }>;
+  const localChain: ChainFacade = null as any;
+  const results = localChain.query([
+    typedJson('/cosmos.bank.v1beta1.QueryBalanceRequest', {
+      address: 'agoric1pleab',
+      denom: 'ubld',
+    }),
+    typedJson('/cosmos.bank.v1beta1.QueryAllBalancesRequest', {
+      address: 'agoric1pleab',
+    }),
+  ] as const);
+
+  expectType<ReturnType<ChainFacade['query']>>(results);
+  expectType<{ reply: JsonSafe<QueryBalanceResponse> }>(results[0]);
+  expectType<{ reply: JsonSafe<QueryAllBalancesResponse> }>(results[1]);
+}
+
+// Test RemoteCosmosChain.query() (icqEnabled: true)
+{
+  type ChainFacade = Chain<CosmosChainInfo & { icqEnabled: true }>;
+  const remoteChain: ChainFacade = null as any;
+  const results = remoteChain.query([
+    {
+      path: '/cosmos.staking.v1beta1.Query/Delegation',
+      data: 'base64bytes=',
+      height: '1',
+      prove: true,
+    },
+    {
+      path: '/cosmos.bank.v1beta1.Query/Balance',
+      data: 'base64bytes=',
+      height: '1',
+      prove: true,
+    },
+  ] as const);
+
+  expectType<ReturnType<ChainFacade['query']>>(results);
+  expectType<JsonSafe<ResponseQuery>>(results[0]);
+  expectType<JsonSafe<ResponseQuery>>(results[1]);
+}
+
+// Test RemoteCosmosChain.query() (icqEnabled: false)
+{
+  type ChainFacade = Chain<CosmosChainInfo>;
+  const remoteChain: ChainFacade = null as any;
+
+  expectType<never>(remoteChain.query);
+
+  // @ts-expect-error query will throw an error
+  const results = remoteChain.query([
+    {
+      path: '/cosmos.bank.v1beta1.Query/Balance',
+      data: 'base64bytes=',
+      height: '1',
+      prove: true,
+    },
+  ] as const);
 }

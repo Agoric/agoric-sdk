@@ -18,7 +18,8 @@ import { createSHA256 } from './hasher.js';
  *   rolloverSpan: (vatID: string) => number,
  *   rolloverIncarnation: (vatID: string) => number,
  *   getCurrentSpanBounds: (vatID: string) => { startPos: number, endPos: number, hash: string, incarnation: number },
- *   deleteVatTranscripts: (vatID: string) => void,
+ *   stopUsingTranscript: (vatID: string) => void,
+ *   deleteVatTranscripts: (vatID: string, budget?: number) => { done: boolean, cleanups: number },
  *   addItem: (vatID: string, item: string) => void,
  *   readSpan: (vatID: string, startPos?: number) => IterableIterator<string>,
  * }} TranscriptStore
@@ -214,7 +215,7 @@ export function makeTranscriptStore(
     ensureTxn();
     const initialIncarnation = 0;
     sqlWriteSpan.run(vatID, 0, 0, initialHash, 1, initialIncarnation);
-    const newRec = spanRec(vatID, 0, 0, initialHash, 1, 0);
+    const newRec = spanRec(vatID, 0, 0, initialHash, true, 0);
     noteExport(spanMetadataKey(newRec), JSON.stringify(newRec));
   }
 
@@ -251,21 +252,35 @@ export function makeTranscriptStore(
   function doSpanRollover(vatID, isNewIncarnation) {
     ensureTxn();
     const { hash, startPos, endPos, incarnation } = getCurrentSpanBounds(vatID);
-    const rec = spanRec(vatID, startPos, endPos, hash, 0, incarnation);
+    const rec = spanRec(vatID, startPos, endPos, hash, false, incarnation);
+
+    // add a new record for the now-old span
     noteExport(spanMetadataKey(rec), JSON.stringify(rec));
+
+    // and change its DB row to isCurrent=0
     sqlEndCurrentSpan.run(vatID);
+
+    // create a new (empty) row, with isCurrent=1
     const incarnationToUse = isNewIncarnation ? incarnation + 1 : incarnation;
     sqlWriteSpan.run(vatID, endPos, endPos, initialHash, 1, incarnationToUse);
+
+    // overwrite the transcript.${vatID}.current record with new span
     const newRec = spanRec(
       vatID,
       endPos,
       endPos,
       initialHash,
-      1,
+      true,
       incarnationToUse,
     );
     noteExport(spanMetadataKey(newRec), JSON.stringify(newRec));
+
     if (!keepTranscripts) {
+      // TODO: for #9174 (delete historical transcript spans), we need
+      // this DB statement to only delete the items of the old span
+      // (startPos..endPos), not all previous items, otherwise the
+      // first rollover after switching to keepTranscripts=false will
+      // do a huge DB commit and probably explode
       sqlDeleteOldItems.run(vatID, endPos);
     }
     return incarnationToUse;
@@ -314,19 +329,101 @@ export function makeTranscriptStore(
     ORDER BY startPos
   `);
 
+  // This query is ORDER BY startPos DESC, so deleteVatTranscripts
+  // will delete the newest spans first. If the kernel failed to call
+  // stopUsingTranscript, that will delete the isCurrent=1 span first,
+  // which lets us stop including span artifacts in exports sooner.
+
+  const sqlGetSomeVatSpans = db.prepare(`
+    SELECT vatID, startPos, endPos, isCurrent
+    FROM transcriptSpans
+    WHERE vatID = ?
+    ORDER BY startPos DESC
+    LIMIT ?
+  `);
+
+  const sqlDeleteVatSpan = db.prepare(`
+    DELETE FROM transcriptSpans
+    WHERE vatID = ? AND startPos = ?
+  `);
+
+  const sqlDeleteSomeItems = db.prepare(`
+    DELETE FROM transcriptItems
+    WHERE vatID = ? AND position >= ? AND position < ?
+  `);
+
   /**
-   * Delete all transcript data for a given vat (for use when, e.g., a vat is terminated)
+   * Prepare for vat deletion by marking the isCurrent span as not
+   * current. Idempotent.
+   *
+   * @param {string} vatID  The vat being terminated/deleted.
+   */
+  function stopUsingTranscript(vatID) {
+    ensureTxn();
+    // this transforms the current span into a (short) historical one
+    // (basically doSpanRollover without adding replacement data)
+    const bounds = sqlGetCurrentSpanBounds.get(vatID);
+    if (bounds) {
+      // add a new record for the now-old span
+      const { startPos, endPos, hash, incarnation } = bounds;
+      const rec = spanRec(vatID, startPos, endPos, hash, false, incarnation);
+      noteExport(spanMetadataKey(rec), JSON.stringify(rec));
+
+      // and change its DB row to isCurrent=0
+      sqlEndCurrentSpan.run(vatID);
+
+      // remove the transcript.${vatID}.current record
+      noteExport(spanMetadataKey({ vatID, isCurrent: true }), undefined);
+    }
+  }
+
+  /**
+   * @param {string} vatID
+   * @returns {boolean}
+   */
+  function hasSpans(vatID) {
+    // the LIMIT 1 means we aren't really getting all spans
+    return sqlGetSomeVatSpans.all(vatID, 1).length > 0;
+  }
+
+  /**
+   * Delete some or all transcript data for a given vat (for use when,
+   * e.g., a vat is terminated)
    *
    * @param {string} vatID
+   * @param {number} [budget]
+   * @returns {{ done: boolean, cleanups: number }}
    */
-  function deleteVatTranscripts(vatID) {
+  function deleteVatTranscripts(vatID, budget = Infinity) {
     ensureTxn();
-    const deletions = sqlGetVatSpans.all(vatID);
+    const deleteAll = budget === Infinity;
+    assert(deleteAll || budget >= 1, 'budget must be undefined or positive');
+    // We can't use .iterate because noteExport can write to the DB,
+    // and overlapping queries are not supported.
+    const deletions = deleteAll
+      ? sqlGetVatSpans.all(vatID)
+      : sqlGetSomeVatSpans.all(vatID, budget);
     for (const rec of deletions) {
+      // If rec.isCurrent is true, this will remove the
+      // transcript.$vatID.current export-data record. If false, it
+      // will remove the transcript.$vatID.$startPos record.
       noteExport(spanMetadataKey(rec), undefined);
+
+      // Budgeted deletion must delete rows one by one,
+      // but full deletion is handled all at once after this loop.
+      if (!deleteAll) {
+        sqlDeleteVatSpan.run(vatID, rec.startPos);
+        sqlDeleteSomeItems.run(vatID, rec.startPos, rec.endPos);
+      }
     }
-    sqlDeleteVatItems.run(vatID);
-    sqlDeleteVatSpans.run(vatID);
+    if (deleteAll) {
+      sqlDeleteVatItems.run(vatID);
+      sqlDeleteVatSpans.run(vatID);
+    }
+    return {
+      done: deleteAll || deletions.length === 0 || !hasSpans(vatID),
+      cleanups: deletions.length,
+    };
   }
 
   const sqlGetAllSpanMetadata = db.prepare(`
@@ -378,6 +475,12 @@ export function makeTranscriptStore(
    *
    * The only code path which could use 'false' would be `swingstore.dump()`,
    * which takes the same flag.
+   *
+   * Note that when a vat is terminated and has been partially
+   * deleted, we will retain (and return) a subset of the metadata
+   * records, because they must be deleted in-consensus and with
+   * updates to the noteExport hook. But we don't create any artifacts
+   * for the terminated vats, even for the spans that remain,
    *
    * @yields {readonly [key: string, value: string]}
    * @returns {IterableIterator<readonly [key: string, value: string]>}
@@ -432,9 +535,16 @@ export function makeTranscriptStore(
         }
       }
     } else if (artifactMode === 'archival') {
-      // everything
+      // every span for all vatIDs that have an isCurrent span (to
+      // ignore terminated/partially-deleted vats)
+      const vatIDs = new Set();
+      for (const { vatID } of sqlGetCurrentSpanMetadata.iterate()) {
+        vatIDs.add(vatID);
+      }
       for (const rec of sqlGetAllSpanMetadata.iterate()) {
-        yield spanArtifactName(rec);
+        if (vatIDs.has(rec.vatID)) {
+          yield spanArtifactName(rec);
+        }
       }
     } else if (artifactMode === 'debug') {
       // everything that is a complete span
@@ -572,7 +682,7 @@ export function makeTranscriptStore(
     const newEndPos = endPos + 1;
     const newHash = updateSpanHash(hash, item);
     sqlUpdateSpan.run(newEndPos, newHash, vatID);
-    const rec = spanRec(vatID, startPos, newEndPos, newHash, 1, incarnation);
+    const rec = spanRec(vatID, startPos, newEndPos, newHash, true, incarnation);
     noteExport(spanMetadataKey(rec), JSON.stringify(rec));
   };
 
@@ -774,6 +884,7 @@ export function makeTranscriptStore(
     getCurrentSpanBounds,
     addItem,
     readSpan,
+    stopUsingTranscript,
     deleteVatTranscripts,
 
     exportSpan,

@@ -4,8 +4,10 @@ import {
   ratiosSame,
   makeRatioFromAmounts,
   quantize,
+  subtractRatios,
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { setup } from '@agoric/zoe/test/unitTests/setupBasicMints.js';
+import { AmountMath } from '@agoric/ertp';
 import {
   fromPriceOfferKey,
   toPriceOfferKey,
@@ -65,6 +67,10 @@ test('toKey discount', t => {
   t.true(keyD26 > keyD25);
 });
 
+const ratiosEqual = (t, left, right) => {
+  t.true(AmountMath.isEmpty(subtractRatios(left, right).numerator));
+};
+
 test('fromKey Price', t => {
   const { moola, moolaKit, simoleans, simoleanKit } = setup();
   const { brand: moolaBrand } = moolaKit;
@@ -81,12 +87,7 @@ test('fromKey Price', t => {
   t.true(
     ratiosSame(priceAOut, makeRatioFromAmounts(moola(40n * N), simoleans(N))),
   );
-  t.true(
-    ratiosSame(
-      priceBOut,
-      quantize(makeRatioFromAmounts(moola(40n), simoleans(1000n)), N),
-    ),
-  );
+  ratiosEqual(t, priceBOut, makeRatioFromAmounts(moola(40n), simoleans(1000n)));
   t.is(timeA, DEC25);
   t.is(timeB, DEC25);
 });
@@ -104,8 +105,9 @@ test('fromKey discount', t => {
 
   const [discountAOut, timeA] = fromScaledRateOfferKey(keyA25, moolaBrand, 9);
   const [discountBOut, timeB] = fromScaledRateOfferKey(keyB25, moolaBrand, 9);
-  t.deepEqual(quantize(discountAOut, 10000n), quantize(fivePercent, 10000n));
-  t.deepEqual(
+  ratiosEqual(t, discountAOut, fivePercent);
+  ratiosEqual(
+    t,
     quantize(discountBOut, 10000n),
     quantize(fivePointFivePercent, 10000n),
   );

@@ -3,7 +3,7 @@
 import { assertAllDefined } from '@agoric/internal';
 
 /**
- * @import {AsyncFlowTools} from '@agoric/async-flow';
+ * @import {AsyncFlowTools, GuestInterface, HostArgs, HostOf} from '@agoric/async-flow';
  * @import {Zone} from '@agoric/zone';
  * @import {Vow, VowTools} from '@agoric/vow';
  * @import {TimerService} from '@agoric/time';
@@ -11,7 +11,20 @@ import { assertAllDefined } from '@agoric/internal';
  * @import {HostOrchestrator} from './exos/orchestrator.js';
  * @import {Remote} from '@agoric/internal';
  * @import {CosmosInterchainService} from './exos/cosmos-interchain-service.js';
- * @import {Chain, ChainInfo, CosmosChainInfo, IBCConnectionInfo, OrchestrationAccount, Orchestrator} from './types.js';
+ * @import {Chain, ChainInfo, CosmosChainInfo, IBCConnectionInfo, OrchestrationAccount, OrchestrationFlow, Orchestrator} from './types.js';
+ */
+
+/**
+ * For a given guest passed to orchestrate(), return the host-side form.
+ *
+ * @template {OrchestrationFlow} GF
+ * @typedef {GF extends (
+ *   orc: Orchestrator,
+ *   ctx: any,
+ *   ...args: infer GA
+ * ) => Promise<infer GR>
+ *   ? (...args: HostArgs<GA>) => Vow<GR>
+ *   : never} HostForGuest
  */
 
 /**
@@ -50,46 +63,32 @@ export const makeOrchestrationFacade = ({
     asyncFlowTools,
   });
 
-  const { prepareEndowment, asyncFlow, adminAsyncFlow } = asyncFlowTools;
-
-  const { when } = vowTools;
+  const { prepareEndowment, asyncFlow } = asyncFlowTools;
 
   /**
-   * @template GuestReturn
-   * @template HostReturn
-   * @template GuestContext
-   * @template HostContext
-   * @template {any[]} GuestArgs
-   * @template {any[]} HostArgs
+   * @template HC - host context
+   * @template {OrchestrationFlow<GuestInterface<HC>>} GF guest fn
    * @param {string} durableName - the orchestration flow identity in the zone
    *   (to resume across upgrades)
-   * @param {HostContext} hostCtx - values to pass through the async flow
-   *   membrane
-   * @param {(
-   *   guestOrc: Orchestrator,
-   *   guestCtx: GuestContext,
-   *   ...args: GuestArgs
-   * ) => Promise<GuestReturn>} guestFn
-   * @returns {(...args: HostArgs) => Promise<HostReturn>} TODO returns a
-   *   Promise for now for compat before use of asyncFlow. But really should be
-   *   `Vow<HostReturn>`
+   * @param {HC} hostCtx - values to pass through the async flow membrane
+   * @param {GF} guestFn
+   * @returns {HostForGuest<GF>}
    */
   const orchestrate = (durableName, hostCtx, guestFn) => {
     const subZone = zone.subZone(durableName);
-
-    const hostOrc = makeOrchestrator();
-
-    const [wrappedOrc, wrappedCtx] = prepareEndowment(subZone, 'endowments', [
-      hostOrc,
-      hostCtx,
-    ]);
-
+    const [wrappedCtx] = prepareEndowment(subZone, 'endowments', [hostCtx]);
     const hostFn = asyncFlow(subZone, 'asyncFlow', guestFn);
 
-    const orcFn = (...args) =>
-      // TODO remove the `when` after fixing the return type
-      // to `Vow<HostReturn>`
-      when(hostFn(wrappedOrc, wrappedCtx, ...args));
+    // cast because return could be arbitrary subtype
+    const orcFn = /** @type {HostForGuest<GF>} */ (
+      (...args) => {
+        // each invocation gets a new orchestrator
+        const hostOrc = makeOrchestrator();
+        // TODO: why are the types showing the guest types for arguments?
+        // @ts-expect-error XXX fix broken types
+        return hostFn(hostOrc, wrappedCtx, ...args);
+      }
+    );
     return harden(orcFn);
   };
 
@@ -98,19 +97,26 @@ export const makeOrchestrationFacade = ({
    *
    * NOTE multiple calls to this with the same guestFn name will fail
    *
-   * @param {{ [durableName: string]: (...args: any[]) => any }} guestFns
-   * @param {any} hostCtx
+   * @template HC - host context
+   * @template {{
+   *   [durableName: string]: OrchestrationFlow<GuestInterface<HC>>;
+   * }} GFM
+   *   guest fn map
+   * @param {GFM} guestFns
+   * @param {HC} hostCtx
+   * @returns {{ [N in keyof GFM]: HostForGuest<GFM[N]> }}
    */
   const orchestrateAll = (guestFns, hostCtx) =>
-    Object.fromEntries(
-      Object.entries(guestFns).map(([name, guestFn]) => [
-        name,
-        orchestrate(name, hostCtx, guestFn),
-      ]),
+    /** @type {{ [N in keyof GFM]: HostForGuest<GFM[N]> }} */ (
+      Object.fromEntries(
+        Object.entries(guestFns).map(([name, guestFn]) => [
+          name,
+          orchestrate(name, hostCtx, guestFn),
+        ]),
+      )
     );
 
   return harden({
-    adminAsyncFlow,
     orchestrate,
     orchestrateAll,
   });

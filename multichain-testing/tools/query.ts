@@ -6,8 +6,12 @@ import type { QueryDelegationTotalRewardsResponseSDKType } from '@agoric/cosmic-
 import type { QueryValidatorsResponseSDKType } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/query.js';
 import type { QueryDelegatorDelegationsResponseSDKType } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/query.js';
 import type { QueryDelegatorUnbondingDelegationsResponseSDKType } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/query.js';
+import type { QueryDenomHashResponseSDKType } from '@agoric/cosmic-proto/ibc/applications/transfer/v1/query.js';
+import type { QueryChannelResponseSDKType } from '@agoric/cosmic-proto/ibc/core/channel/v1/query.js';
+import { QueryChannelsResponseSDKType } from '@agoric/cosmic-proto/ibc/core/channel/v1/query.js';
 
 // TODO use telescope generated query client from @agoric/cosmic-proto
+// https://github.com/Agoric/agoric-sdk/issues/9200
 export function makeQueryClient(apiUrl: string) {
   const query = async <T>(path: string): Promise<T> => {
     try {
@@ -46,5 +50,15 @@ export function makeQueryClient(apiUrl: string) {
       query<QueryDelegationTotalRewardsResponseSDKType>(
         `/cosmos/distribution/v1beta1/delegators/${delegatorAdddr}/rewards`,
       ),
+    queryDenom: (path: string, baseDenom: string) =>
+      query<QueryDenomHashResponseSDKType>(
+        `/ibc/apps/transfer/v1/denom_hashes/${path}/${baseDenom}`,
+      ),
+    queryChannel: (portID: string, channelID: string) =>
+      query<QueryChannelResponseSDKType>(
+        `/ibc/core/channel/v1/channels/${channelID}/ports/${portID}`,
+      ),
+    queryChannels: () =>
+      query<QueryChannelsResponseSDKType>(`/ibc/core/channel/v1/channels`),
   };
 }

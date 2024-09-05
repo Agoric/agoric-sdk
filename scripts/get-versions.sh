@@ -7,5 +7,5 @@ WORKDIR=${1:-.}
 cd -- "$WORKDIR"
 npm query .workspace \
   | jq -r '.[].location | "\(.)/package.json"' \
-  | xargs jq '{key: .name, value: "^\(.version)"}' \
+  | xargs jq 'select(.private | not) | {key: .name, value: "^\(.version)"}' \
   | jq --slurp from_entries

@@ -8,7 +8,7 @@ set -ueo pipefail
 
 DIR=$(dirname -- "${BASH_SOURCE[0]}")
 
-cd -- "$DIR/.."
+cd -- "${1-$DIR/..}"
 
 override=$(jq 'to_entries | map({ key: ("**/" + .key), value: .value }) | from_entries')
 

@@ -1,4 +1,4 @@
-/** @file ChainAccount exo */
+/** @file Localchain Facade exo */
 import { E } from '@endo/far';
 // eslint-disable-next-line no-restricted-syntax -- just the import
 import { heapVowE } from '@agoric/vow/vat.js';
@@ -6,17 +6,28 @@ import { M } from '@endo/patterns';
 import { pickFacet } from '@agoric/vat-data';
 import { VowShape } from '@agoric/vow';
 
-import { ChainFacadeI } from '../typeGuards.js';
+import { chainFacadeMethods, TypedJsonShape } from '../typeGuards.js';
 
 /**
+ * @import {HostOf} from '@agoric/async-flow';
  * @import {Zone} from '@agoric/base-zone';
  * @import {TimerService} from '@agoric/time';
  * @import {Remote} from '@agoric/internal';
- * @import {LocalChain, LocalChainAccount} from '@agoric/vats/src/localchain.js';
+ * @import {LocalChain, LocalChainAccount, QueryManyFn} from '@agoric/vats/src/localchain.js';
+ * @import {AssetInfo} from '@agoric/vats/src/vat-bank.js';
+ * @import {NameHub} from '@agoric/vats';
  * @import {Vow, VowTools} from '@agoric/vow';
  * @import {CosmosInterchainService} from './cosmos-interchain-service.js';
  * @import {LocalOrchestrationAccountKit, MakeLocalOrchestrationAccountKit} from './local-orchestration-account.js';
- * @import {ChainAddress, ChainInfo, CosmosChainInfo, IBCConnectionInfo, OrchestrationAccount} from '../types.js';
+ * @import {Chain, ChainAddress, ChainInfo, CosmosChainInfo, IBCConnectionInfo, OrchestrationAccount} from '../types.js';
+ */
+
+/**
+ * @typedef {object} AgoricChainMethods
+ * @property {() => Promise<AssetInfo[]>} getVBankAssetInfo Get asset info from
+ *   agoricNames.vbankAsset.
+ *
+ *   Caches the query to agoricNames in the first call.
  */
 
 /**
@@ -24,6 +35,7 @@ import { ChainFacadeI } from '../typeGuards.js';
  *   makeLocalOrchestrationAccountKit: MakeLocalOrchestrationAccountKit;
  *   orchestration: Remote<CosmosInterchainService>;
  *   storageNode: Remote<StorageNode>;
+ *   agoricNames: Remote<NameHub>;
  *   timer: Remote<TimerService>;
  *   localchain: Remote<LocalChain>;
  *   vowTools: VowTools;
@@ -38,17 +50,27 @@ const prepareLocalChainFacadeKit = (
   zone,
   {
     makeLocalOrchestrationAccountKit,
+    agoricNames,
     localchain,
     // TODO vstorage design https://github.com/Agoric/agoric-sdk/issues/9066
     // consider making an `accounts` childNode
     storageNode,
-    vowTools: { allVows, watch },
+    vowTools: { allVows, watch, asVow },
   },
 ) =>
   zone.exoClassKit(
     'LocalChainFacade',
     {
-      public: ChainFacadeI,
+      public: M.interface('LocalChainFacade', {
+        ...chainFacadeMethods,
+        query: M.call(M.arrayOf(TypedJsonShape)).returns(VowShape),
+        getVBankAssetInfo: M.call().optional(M.boolean()).returns(VowShape),
+      }),
+      vbankAssetValuesWatcher: M.interface('vbankAssetValuesWatcher', {
+        onFulfilled: M.call(M.arrayOf(M.record()))
+          .optional(M.arrayOf(M.undefined())) // empty context
+          .returns(VowShape),
+      }),
       makeAccountWatcher: M.interface('makeAccountWatcher', {
         onFulfilled: M.call([M.remotable('LCA Account'), M.string()])
           .optional(M.arrayOf(M.undefined())) // empty context
@@ -64,7 +86,10 @@ const prepareLocalChainFacadeKit = (
      * @param {CosmosChainInfo} localChainInfo
      */
     localChainInfo => {
-      return { localChainInfo };
+      return {
+        localChainInfo,
+        vbankAssets: /** @type {AssetInfo[] | undefined} */ (undefined),
+      };
     },
     {
       public: {
@@ -82,6 +107,35 @@ const prepareLocalChainFacadeKit = (
             allVows([lcaP, heapVowE(lcaP).getAddress()]),
             this.facets.makeAccountWatcher,
           );
+        },
+        /** @type {HostOf<Chain<{ chainId: 'agoriclocal' }>['query']>} */
+        query(requests) {
+          return watch(E(localchain).queryMany(requests));
+        },
+        /** @type {HostOf<AgoricChainMethods['getVBankAssetInfo']>} */
+        getVBankAssetInfo() {
+          return asVow(() => {
+            const { vbankAssets } = this.state;
+            if (vbankAssets) {
+              return vbankAssets;
+            }
+            const vbankAssetNameHubP = E(agoricNames).lookup('vbankAsset');
+            const vbankAssetValuesP = E(vbankAssetNameHubP).values();
+            const { vbankAssetValuesWatcher } = this.facets;
+            return watch(vbankAssetValuesP, vbankAssetValuesWatcher);
+          });
+        },
+      },
+      vbankAssetValuesWatcher: {
+        /**
+         * @param {AssetInfo[]} assets
+         */
+        onFulfilled(assets) {
+          const { state } = this;
+          return asVow(() => {
+            state.vbankAssets = assets;
+            return assets;
+          });
         },
       },
       makeAccountWatcher: {
@@ -134,3 +188,4 @@ export const prepareLocalChainFacade = (zone, powers) => {
 harden(prepareLocalChainFacade);
 
 /** @typedef {ReturnType<typeof prepareLocalChainFacade>} MakeLocalChainFacade */
+/** @typedef {ReturnType<MakeLocalChainFacade>} LocalChainFacade */

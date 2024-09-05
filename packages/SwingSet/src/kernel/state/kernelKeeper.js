@@ -1,6 +1,11 @@
+/* eslint-disable no-use-before-define */
 import { Nat, isNat } from '@endo/nat';
 import { assert, Fail } from '@endo/errors';
-import { initializeVatState, makeVatKeeper } from './vatKeeper.js';
+import {
+  initializeVatState,
+  makeVatKeeper,
+  DEFAULT_REAP_DIRT_THRESHOLD_KEY,
+} from './vatKeeper.js';
 import { initializeDeviceState, makeDeviceKeeper } from './deviceKeeper.js';
 import { parseReachableAndVatSlot } from './reachable.js';
 import { insistStorageAPI } from '../../lib/storageAPI.js';
@@ -33,13 +38,21 @@ const enableKernelGC = true;
  * @typedef { import('../../types-external.js').BundleCap } BundleCap
  * @typedef { import('../../types-external.js').BundleID } BundleID
  * @typedef { import('../../types-external.js').EndoZipBase64Bundle } EndoZipBase64Bundle
- * @typedef { import('../../types-external.js').KernelOptions } KernelOptions
  * @typedef { import('../../types-external.js').KernelSlog } KernelSlog
  * @typedef { import('../../types-external.js').ManagerType } ManagerType
  * @typedef { import('../../types-external.js').SnapStore } SnapStore
  * @typedef { import('../../types-external.js').TranscriptStore } TranscriptStore
  * @typedef { import('../../types-external.js').VatKeeper } VatKeeper
+ * @typedef { import('../../types-internal.js').InternalKernelOptions } InternalKernelOptions
+ * @typedef { import('../../types-internal.js').ReapDirtThreshold } ReapDirtThreshold
+ * @import {CleanupBudget, CleanupWork, PolicyOutputCleanupBudget} from '../../types-external.js';
+ * @import {RunQueueEventCleanupTerminatedVat} from '../../types-internal.js';
  */
+
+export { DEFAULT_REAP_DIRT_THRESHOLD_KEY };
+
+// most recent DB schema version
+export const CURRENT_SCHEMA_VERSION = 2;
 
 // Kernel state lives in a key-value store supporting key retrieval by
 // lexicographic range. All keys and values are strings.
@@ -52,13 +65,21 @@ const enableKernelGC = true;
 // allowed to vary between instances in a consensus machine. Everything else
 // is required to be deterministic.
 //
-// The schema is:
 //
+// The schema is indicated by the value of the "version" key, which
+// was added for version 1 (i.e., version 0 had no such key), and is
+// only modified by a call to upgradeSwingset(). See below for
+// deltas/upgrades from one version to the next.
+//
+// The current ("v2") schema keys/values are:
+//
+// version = '2'
 // vat.names = JSON([names..])
 // vat.dynamicIDs = JSON([vatIDs..])
 // vat.name.$NAME = $vatID = v$NN
 // vat.nextID = $NN
 // vat.nextUpgradeID = $NN
+// vats.terminated = JSON([vatIDs..])
 // device.names = JSON([names..])
 // device.name.$NAME = $deviceID = d$NN
 // device.nextID = $NN
@@ -68,13 +89,22 @@ const enableKernelGC = true;
 // bundle.$BUNDLEID = JSON(bundle)
 //
 // kernel.defaultManagerType = managerType
-// kernel.defaultReapInterval = $NN
+// (old) kernel.defaultReapInterval = $NN
+// kernel.defaultReapDirtThreshold = JSON({ thresholds })
+//         thresholds (all optional)
+//          deliveries: number or 'never' (default)
+//          gcKrefs: number or 'never' (default)
+//          computrons:  number or 'never' (default)
+//          never: boolean (default false)
 // kernel.relaxDurabilityRules = missing | 'true'
 // kernel.snapshotInitial = $NN
 // kernel.snapshotInterval = $NN
 
 // v$NN.source = JSON({ bundle }) or JSON({ bundleName })
-// v$NN.options = JSON
+// v$NN.options = JSON , options include:
+//       .reapDirtThreshold = JSON({ thresholds })
+//         thresholds (all optional, default to kernel-wide defaultReapDirtThreshold)
+//       (leave room for .snapshotDirtThreshold for #6786)
 // v$NN.o.nextID = $NN
 // v$NN.p.nextID = $NN
 // v$NN.d.nextID = $NN
@@ -83,9 +113,10 @@ const enableKernelGC = true;
 //   $vatSlot is one of: o+$NN/o-$NN/p+$NN/p-$NN/d+$NN/d-$NN
 // v$NN.c.$vatSlot = $kernelSlot = ko$NN/kp$NN/kd$NN
 // v$NN.vs.$key = string
-// v$NN.meter = m$NN // XXX does this exist?
-// v$NN.reapInterval = $NN or 'never'
-// v$NN.reapCountdown = $NN or 'never'
+// old (v0): v$NN.reapInterval = $NN or 'never'
+// old (v0): v$NN.reapCountdown = $NN or 'never'
+// v$NN.reapDirt = JSON({ deliveries, gcKrefs, computrons }) // missing keys treated as zero
+// (leave room for v$NN.snapshotDirt and options.snapshotDirtThreshold for #6786)
 // exclude from consensus
 // local.*
 
@@ -132,6 +163,21 @@ const enableKernelGC = true;
 // Prefix reserved for host written data:
 // host.
 
+// Kernel state schema changes:
+//
+// v0: the original
+//   * no `version`
+//   * uses `initialized = 'true'`
+// v1:
+//   * add `version = '1'`
+//   * remove `initialized`
+//   * replace `kernel.defaultReapInterval` with `kernel.defaultReapDirtThreshold`
+//   * replace vat's `vNN.reapInterval`/`vNN.reapCountdown` with `vNN.reapDirt`
+//             and a `vNN.reapDirtThreshold` in `vNN.options`
+// v2:
+//   * change `version` to `'2'`
+//   * add `vats.terminated` with `[]` as initial value
+
 export function commaSplit(s) {
   if (s === '') {
     return [];
@@ -139,11 +185,31 @@ export function commaSplit(s) {
   return s.split(',');
 }
 
+export function stripPrefix(prefix, str) {
+  assert(str.startsWith(prefix), str);
+  return str.slice(prefix.length);
+}
+
 function insistMeterID(m) {
   assert.typeof(m, 'string');
   assert.equal(m[0], 'm');
   Nat(BigInt(m.slice(1)));
 }
+
+export const getAllStaticVats = kvStore => {
+  const result = [];
+  const prefix = 'vat.name.';
+  for (const k of enumeratePrefixedKeys(kvStore, prefix)) {
+    const vatID = kvStore.get(k) || Fail`getNextKey ensures get`;
+    const name = k.slice(prefix.length);
+    result.push([name, vatID]);
+  }
+  return result;
+};
+
+export const getAllDynamicVats = getRequired => {
+  return JSON.parse(getRequired('vat.dynamicIDs'));
+};
 
 // we use different starting index values for the various vNN/koNN/kdNN/kpNN
 // slots, to reduce confusing overlap when looking at debug messages (e.g.
@@ -163,14 +229,58 @@ const FIRST_PROMISE_ID = 40n;
 const FIRST_CRANK_NUMBER = 0n;
 const FIRST_METER_ID = 1n;
 
+// this default "reap interval" is low for the benefit of tests:
+// applications should set it to something higher (perhaps 200) based
+// on their expected usage
+
+export const DEFAULT_DELIVERIES_PER_BOYD = 1;
+
+// "20" will trigger a BOYD after 10 krefs are dropped and retired
+// (drops and retires are delivered in separate messages, so
+// 10+10=20). The worst case work-expansion we've seen is in #8401,
+// where one drop breaks one cycle, and each cycle's cleanup causes 50
+// syscalls in the next v9-zoe BOYD. So this should limit each BOYD
+// to cleaning 10 cycles, in 500 syscalls.
+
+export const DEFAULT_GC_KREFS_PER_BOYD = 20;
+
 /**
  * @param {SwingStoreKernelStorage} kernelStorage
- * @param {KernelSlog|null} kernelSlog
+ * @param {number | 'uninitialized'} expectedVersion
+ * @param {KernelSlog} [kernelSlog]
  */
-export default function makeKernelKeeper(kernelStorage, kernelSlog) {
+export default function makeKernelKeeper(
+  kernelStorage,
+  expectedVersion,
+  kernelSlog,
+) {
   const { kvStore, transcriptStore, snapStore, bundleStore } = kernelStorage;
 
   insistStorageAPI(kvStore);
+
+  // the terminated-vats cache is normally populated from
+  // 'vats.terminated', but for initialization purposes we need give
+  // it a value here, and then populate it for real if we're dealing
+  // with an up-to-date DB
+  let terminatedVats = [];
+
+  const versionString = kvStore.get('version');
+  const version = Number(versionString || '0');
+  if (expectedVersion === 'uninitialized') {
+    if (kvStore.has('initialized')) {
+      throw Error(`kernel DB already initialized (v0)`);
+    }
+    if (versionString) {
+      throw Error(`kernel DB already initialized (v${versionString})`);
+    }
+  } else if (expectedVersion !== version) {
+    throw Error(
+      `kernel DB is too old: has version v${version}, but expected v${expectedVersion}`,
+    );
+  } else {
+    // DB is up-to-date, so populate any caches we use
+    terminatedVats = JSON.parse(getRequired('vats.terminated'));
+  }
 
   /**
    * @param {string} key
@@ -233,12 +343,10 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
     deviceKeepers: new Map(), // deviceID -> deviceKeeper
   });
 
-  function getInitialized() {
-    return !!kvStore.get('initialized');
-  }
-
   function setInitialized() {
-    kvStore.set('initialized', 'true');
+    assert(!kvStore.has('initialized'));
+    assert(!kvStore.has('version'));
+    kvStore.set('version', `${CURRENT_SCHEMA_VERSION}`);
   }
 
   function getCrankNumber() {
@@ -290,12 +398,17 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
   }
 
   /**
-   * @param {KernelOptions} kernelOptions
+   * @param {InternalKernelOptions} kernelOptions
    */
   function createStartingKernelState(kernelOptions) {
+    // this should probably be a standalone function, not a method
     const {
       defaultManagerType = 'local',
-      defaultReapInterval = 1,
+      defaultReapDirtThreshold = {
+        deliveries: DEFAULT_DELIVERIES_PER_BOYD,
+        gcKrefs: DEFAULT_GC_KREFS_PER_BOYD,
+        computrons: 'never',
+      },
       relaxDurabilityRules = false,
       snapshotInitial = 3,
       snapshotInterval = 200,
@@ -305,6 +418,7 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
     kvStore.set('vat.dynamicIDs', '[]');
     kvStore.set('vat.nextID', `${FIRST_VAT_ID}`);
     kvStore.set('vat.nextUpgradeID', `1`);
+    kvStore.set('vats.terminated', '[]');
     kvStore.set('device.names', '[]');
     kvStore.set('device.nextID', `${FIRST_DEVICE_ID}`);
     kvStore.set('ko.nextID', `${FIRST_OBJECT_ID}`);
@@ -317,7 +431,10 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
     initQueue('acceptanceQueue');
     kvStore.set('crankNumber', `${FIRST_CRANK_NUMBER}`);
     kvStore.set('kernel.defaultManagerType', defaultManagerType);
-    kvStore.set('kernel.defaultReapInterval', `${defaultReapInterval}`);
+    kvStore.set(
+      DEFAULT_REAP_DIRT_THRESHOLD_KEY,
+      JSON.stringify(defaultReapDirtThreshold),
+    );
     kvStore.set('kernel.snapshotInitial', `${snapshotInitial}`);
     kvStore.set('kernel.snapshotInterval', `${snapshotInterval}`);
     if (relaxDurabilityRules) {
@@ -352,21 +469,25 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
 
   /**
    *
-   * @returns {number | 'never'}
+   * @returns {ReapDirtThreshold}
    */
-  function getDefaultReapInterval() {
-    const r = getRequired('kernel.defaultReapInterval');
-    const ri = r === 'never' ? r : Number.parseInt(r, 10);
-    assert(ri === 'never' || typeof ri === 'number', `k.dri is '${ri}'`);
-    return ri;
+  function getDefaultReapDirtThreshold() {
+    return JSON.parse(getRequired(DEFAULT_REAP_DIRT_THRESHOLD_KEY));
   }
 
-  function setDefaultReapInterval(interval) {
-    assert(
-      interval === 'never' || isNat(interval),
-      'invalid defaultReapInterval value',
-    );
-    kvStore.set('kernel.defaultReapInterval', `${interval}`);
+  /**
+   * @param {ReapDirtThreshold} threshold
+   */
+  function setDefaultReapDirtThreshold(threshold) {
+    assert.typeof(threshold, 'object');
+    assert(threshold);
+    for (const [key, value] of Object.entries(threshold)) {
+      assert(
+        (typeof value === 'number' && value > 0) || value === 'never',
+        `threshold[${key}] ${value} must be a positive number or "never"`,
+      );
+    }
+    kvStore.set(DEFAULT_REAP_DIRT_THRESHOLD_KEY, JSON.stringify(threshold));
   }
 
   function getNat(key) {
@@ -500,7 +621,9 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
 
   function getObjectRefCount(kernelSlot) {
     const data = kvStore.get(`${kernelSlot}.refCount`);
-    data || Fail`getObjectRefCount(${kernelSlot}) was missing`;
+    if (!data) {
+      return { reachable: 0, recognizable: 0 };
+    }
     const [reachable, recognizable] = commaSplit(data).map(Number);
     reachable <= recognizable ||
       Fail`refmismatch(get) ${kernelSlot} ${reachable},${recognizable}`;
@@ -578,19 +701,42 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
   function ownerOfKernelObject(kernelSlot) {
     insistKernelType('object', kernelSlot);
     const owner = kvStore.get(`${kernelSlot}.owner`);
-    if (owner) {
-      insistVatID(owner);
+    if (!owner) {
+      return undefined;
+    }
+    insistVatID(owner);
+    if (terminatedVats.includes(owner)) {
+      return undefined;
     }
     return owner;
   }
 
+  function retireKernelObjects(koids) {
+    Array.isArray(koids) || Fail`retireExports given non-Array ${koids}`;
+    const newActions = [];
+    for (const koid of koids) {
+      const importers = getImporters(koid);
+      for (const vatID of importers) {
+        newActions.push(`${vatID} retireImport ${koid}`);
+      }
+      deleteKernelObject(koid);
+    }
+    addGCActions(newActions);
+  }
+
   function orphanKernelObject(kref, oldVat) {
+    // termination orphans all exports, upgrade orphans non-durable
+    // exports, and syscall.abandonExports orphans specific ones
     const ownerKey = `${kref}.owner`;
     const ownerVat = kvStore.get(ownerKey);
     ownerVat === oldVat || Fail`export ${kref} not owned by old vat`;
     kvStore.delete(ownerKey);
+    const { vatSlot: vref } = getReachableAndVatSlot(oldVat, kref);
+    kvStore.delete(`${oldVat}.c.${kref}`);
+    kvStore.delete(`${oldVat}.c.${vref}`);
+    addMaybeFreeKref(kref);
     // note that we do not delete the object here: it will be
-    // collected if/when all other references are dropped
+    // retired if/when all other references are dropped
   }
 
   function deleteKernelObject(koid) {
@@ -764,7 +910,6 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
 
     let idx = 0;
     for (const dataSlot of capdata.slots) {
-      // eslint-disable-next-line no-use-before-define
       incrementRefCount(dataSlot, `resolve|${kernelSlot}|s${idx}`);
       idx += 1;
     }
@@ -785,14 +930,64 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
     kvStore.set(`${kernelSlot}.data.slots`, capdata.slots.join(','));
   }
 
-  function cleanupAfterTerminatedVat(vatID) {
-    insistVatID(vatID);
-    // eslint-disable-next-line no-use-before-define
-    const vatKeeper = provideVatKeeper(vatID);
-    const exportPrefix = `${vatID}.c.o+`;
-    const importPrefix = `${vatID}.c.o-`;
+  function removeVatFromSwingStoreExports(vatID) {
+    // Delete primary swingstore records for this vat, in preparation
+    // for (slow) deletion. After this, swingstore exports will omit
+    // this vat. This is called from the kernel's terminateVat, which
+    // initiates (but does not complete) deletion.
+    snapStore.stopUsingLastSnapshot(vatID);
+    transcriptStore.stopUsingTranscript(vatID);
+  }
 
-    vatKeeper.deleteSnapshotsAndTranscript();
+  /**
+   * Perform some cleanup work for a specific (terminated but not
+   * fully-deleted) vat, possibly limited by a budget. Returns 'done'
+   * (where false means "please call me again", and true means "you
+   * can delete the vatID now"), and a count of how much work was done
+   * (so the runPolicy can decide when to stop).
+   *
+   * @param {string} vatID
+   * @param {CleanupBudget} budget
+   * @returns {{ done: boolean, work: CleanupWork }}
+   *
+   */
+  function cleanupAfterTerminatedVat(vatID, budget) {
+    // this is called from terminateVat, which is called from either:
+    // * end of processDeliveryMessage, if crankResults.terminate
+    // * device-vat-admin (when vat-v-a does adminNode.terminateVat)
+    //   (which always happens inside processDeliveryMessage)
+    // so we're always followed by a call to processRefcounts, at
+    // end-of-delivery in processDeliveryMessage, after checking
+    // crankResults.terminate
+
+    insistVatID(vatID);
+    const work = {
+      exports: 0,
+      imports: 0,
+      kv: 0,
+      snapshots: 0,
+      transcripts: 0,
+    };
+    let remaining = 0;
+
+    // TODO: it would be slightly cheaper to walk all kvStore keys in
+    // order, and act on each one according to its category (c-list
+    // export, c-list import, vatstore, other), so we use a single
+    // enumeratePrefixedKeys() call each time. Until we do that, the
+    // last phase of the cleanup (where we've deleted all the exports
+    // and imports, and are working on the remaining keys) will waste
+    // two DB queries on each call. OTOH, those queries will probably
+    // hit the same SQLite index page as the successful one, so it
+    // probably won't cause any extra disk IO. So we can defer this
+    // optimization for a while. Note: when we implement it, be
+    // prepared to encounter the clist entries in eiher order (kref
+    // first or vref first), and delete the other one in the same
+    // call, so we don't wind up with half an entry.
+
+    const vatKeeper = provideVatKeeper(vatID);
+    const clistPrefix = `${vatID}.c.`;
+    const exportPrefix = `${clistPrefix}o+`;
+    const importPrefix = `${clistPrefix}o-`;
 
     // Note: ASCII order is "+,-./", and we rely upon this to split the
     // keyspace into the various o+NN/o-NN/etc spaces. If we were using a
@@ -808,6 +1003,7 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
     // used.
 
     // first, scan for exported objects, which must be orphaned
+    remaining = budget.exports ?? budget.default;
     for (const k of enumeratePrefixedKeys(kvStore, exportPrefix)) {
       // The void for an object exported by a vat will always be of the form
       // `o+NN`.  The '+' means that the vat exported the object (rather than
@@ -816,28 +1012,67 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
       // begin with `vMM.c.o+`.  In addition to deleting the c-list entry, we
       // must also delete the corresponding kernel owner entry for the object,
       // since the object will no longer be accessible.
+      const vref = stripPrefix(clistPrefix, k);
+      assert(vref.startsWith('o+'), vref);
       const kref = kvStore.get(k);
+      // note: adds to maybeFreeKrefs, deletes c-list and .owner
       orphanKernelObject(kref, vatID);
+      work.exports += 1;
+      remaining -= 1;
+      if (remaining <= 0) {
+        return { done: false, work };
+      }
     }
 
     // then scan for imported objects, which must be decrefed
+    remaining = budget.imports ?? budget.default;
     for (const k of enumeratePrefixedKeys(kvStore, importPrefix)) {
       // abandoned imports: delete the clist entry as if the vat did a
       // drop+retire
       const kref = kvStore.get(k) || Fail`getNextKey ensures get`;
-      const vref = k.slice(`${vatID}.c.`.length);
+      const vref = stripPrefix(clistPrefix, k);
       vatKeeper.deleteCListEntry(kref, vref);
       // that will also delete both db keys
+      work.imports += 1;
+      remaining -= 1;
+      if (remaining <= 0) {
+        return { done: false, work };
+      }
     }
 
     // the caller used enumeratePromisesByDecider() before calling us,
     // so they already know the orphaned promises to reject
 
     // now loop back through everything and delete it all
+    remaining = budget.kv ?? budget.default;
     for (const k of enumeratePrefixedKeys(kvStore, `${vatID}.`)) {
       kvStore.delete(k);
+      work.kv += 1;
+      remaining -= 1;
+      if (remaining <= 0) {
+        return { done: false, work };
+      }
     }
 
+    // this will internally loop through 'budget' deletions
+    remaining = budget.snapshots ?? budget.default;
+    const dsc = vatKeeper.deleteSnapshots(remaining);
+    work.snapshots += dsc.cleanups;
+    remaining -= dsc.cleanups;
+    if (remaining <= 0) {
+      return { done: false, work };
+    }
+
+    // same
+    remaining = budget.transcripts ?? budget.default;
+    const dts = vatKeeper.deleteTranscripts(remaining);
+    work.transcripts += dts.cleanups;
+    remaining -= dts.cleanups;
+    // last task, so increment cleanups, but dc.done is authoritative
+    return { done: dts.done, work };
+  }
+
+  function deleteVatID(vatID) {
     // TODO: deleting entries from the dynamic vat IDs list requires a linear
     // scan of the list; arguably this collection ought to be represented in a
     // different way that makes it efficient to remove an entry from it, though
@@ -1102,15 +1337,7 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
     kvStore.set(KEY, JSON.stringify(dynamicVatIDs));
   }
 
-  function getStaticVats() {
-    const result = [];
-    for (const k of enumeratePrefixedKeys(kvStore, 'vat.name.')) {
-      const name = k.slice(9);
-      const vatID = kvStore.get(k) || Fail`getNextKey ensures get`;
-      result.push([name, vatID]);
-    }
-    return result;
-  }
+  const getStaticVats = () => getAllStaticVats(kvStore);
 
   function getDevices() {
     const result = [];
@@ -1122,14 +1349,50 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
     return result;
   }
 
-  function getDynamicVats() {
-    return JSON.parse(getRequired('vat.dynamicIDs'));
-  }
+  const getDynamicVats = () => getAllDynamicVats(getRequired);
 
   function allocateUpgradeID() {
     const nextID = Nat(BigInt(getRequired(`vat.nextUpgradeID`)));
     kvStore.set(`vat.nextUpgradeID`, `${nextID + 1n}`);
     return makeUpgradeID(nextID);
+  }
+
+  function markVatAsTerminated(vatID) {
+    if (!terminatedVats.includes(vatID)) {
+      terminatedVats.push(vatID);
+      kvStore.set(`vats.terminated`, JSON.stringify(terminatedVats));
+    }
+  }
+
+  function getFirstTerminatedVat() {
+    if (terminatedVats.length) {
+      return terminatedVats[0];
+    }
+    return undefined;
+  }
+
+  function forgetTerminatedVat(vatID) {
+    terminatedVats = terminatedVats.filter(id => id !== vatID);
+    kvStore.set(`vats.terminated`, JSON.stringify(terminatedVats));
+  }
+
+  /**
+   * @param {PolicyOutputCleanupBudget} allowCleanup
+   * @returns {RunQueueEventCleanupTerminatedVat | undefined}
+   */
+  function nextCleanupTerminatedVatAction(allowCleanup) {
+    if (allowCleanup === false) {
+      return undefined;
+    } else {
+      const unlimited = { default: Infinity };
+      /** @type {CleanupBudget} */
+      const budget = allowCleanup === true ? unlimited : allowCleanup;
+      const vatID = getFirstTerminatedVat();
+      if (vatID) {
+        return { type: 'cleanup-terminated-vat', vatID, budget };
+      }
+      return undefined;
+    }
   }
 
   // As refcounts are decremented, we accumulate a set of krefs for which
@@ -1232,14 +1495,43 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
     return false;
   }
 
+  // TODO (#9888): change the processRefcounts maybeFreeKrefs
+  // iteration to handle krefs that get added multiple times (while
+  // we're iterating), because we might do different work the second
+  // time around. The concerning scenario is:
+  //
+  // * kp2 has resolution data which references ko1
+  // * somehow both kp2 and ko1 end up on maybeFreeKrefs, but ko1.reachable=1
+  //   (via kp2)
+  // * our iterator visits ko1 first, sees it is still reachable, ignores it
+  // * then the iterator visits kp2, decrefs its kp.data.slots
+  //   * this pushes ko1 back onto maybeFreeKrefs
+  // * we need to examine ko1 again, so it can be released
+  //
+  // It could also happen if/when we implement #2069 auxdata:
+  //
+  // * ko2 has auxdata that references ko1
+  // * both ko1 and ko2 end up on maybeFreeKrefs, but ko1.reachable = 1
+  //   (via the ko2 auxdata)
+  // * our iterator visits ko1 first, sees it is still reachable, ignores it
+  // * then the iterator visits ko2, does deleteKernelObject
+  //   * this frees the auxdata, which pushes ko1 back onto maybeFreeKrefs
+  // * we need to examine ko1 again, so it can be released
+  //
+  // We should use something like an ordered Set, and a loop that does:
+  // * pop the first kref off
+  // * processes it (maybe adding more krefs)
+  // * repeats until the thing is empty
+  // Or maybe make a copy of maybeFreeKrefs at the start, clear the
+  // original, and wrap this in a loop that keeps going until
+  // maybeFreeKrefs is still empty at the end. Be sure to imagine a
+  // very deep linked list: don't just process it twice, keep
+  // processing until there's nothing left to do, otherwise we'll be
+  // leaving work for the next delivery.
+
   function processRefcounts() {
     if (enableKernelGC) {
-      const actions = getGCActions(); // local cache
-      // TODO (else buggy): change the iteration to handle krefs that get
-      // added multiple times (while we're iterating), because we might do
-      // different work the second time around. Something like an ordered
-      // Set, and a loop that: pops the first kref off, processes it (maybe
-      // adding more krefs), repeats until the thing is empty.
+      const actions = new Set();
       for (const kref of maybeFreeKrefs.values()) {
         const { type } = parseKernelSlot(kref);
         if (type === 'promise') {
@@ -1247,6 +1539,7 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
           const kp = getKernelPromise(kpid);
           if (kp.refCount === 0) {
             let idx = 0;
+            // TODO (#9889) don't assume promise is settled
             for (const slot of kp.data.slots) {
               // Note: the following decrement can result in an addition to the
               // maybeFreeKrefs set, which we are in the midst of iterating.
@@ -1257,35 +1550,80 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
             deleteKernelPromise(kpid);
           }
         }
+
         if (type === 'object') {
           const { reachable, recognizable } = getObjectRefCount(kref);
           if (reachable === 0) {
-            const ownerVatID = ownerOfKernelObject(kref);
-            if (ownerVatID) {
-              // eslint-disable-next-line no-use-before-define
+            // We avoid ownerOfKernelObject(), which will report
+            // 'undefined' if the owner is dead (and being slowly
+            // deleted). Message delivery should use that, but not us.
+            const ownerKey = `${kref}.owner`;
+            let ownerVatID = kvStore.get(ownerKey);
+            const terminated = terminatedVats.includes(ownerVatID);
+
+            // Some objects that are still owned, but the owning vat
+            // might still alive, or might be terminated and in the
+            // process of being deleted. These two clauses are
+            // mutually exclusive.
+
+            if (ownerVatID && !terminated) {
               const vatKeeper = provideVatKeeper(ownerVatID);
-              const isReachable = vatKeeper.getReachableFlag(kref);
-              if (isReachable) {
+              const vatConsidersReachable = vatKeeper.getReachableFlag(kref);
+              if (vatConsidersReachable) {
                 // the reachable count is zero, but the vat doesn't realize it
                 actions.add(`${ownerVatID} dropExport ${kref}`);
               }
               if (recognizable === 0) {
-                // TODO: rethink this
-                // assert.equal(isReachable, false, `${kref} is reachable but not recognizable`);
+                // TODO: rethink this assert
+                // assert.equal(vatConsidersReachable, false, `${kref} is reachable but not recognizable`);
                 actions.add(`${ownerVatID} retireExport ${kref}`);
               }
-            } else if (recognizable === 0) {
-              // unreachable, unrecognizable, orphaned: delete the
-              // empty refcount here, since we can't send a GC
-              // action without an ownerVatID
-              deleteKernelObject(kref);
+            } else if (ownerVatID && terminated) {
+              // When we're slowly deleting a vat, and one of its
+              // exports becomes unreferenced, we obviously must not
+              // send dropExports or retireExports into the dead vat.
+              // We fast-forward the abandonment that slow-deletion
+              // would have done, then treat the object as orphaned.
+
+              const { vatSlot } = getReachableAndVatSlot(ownerVatID, kref);
+              // delete directly, not orphanKernelObject(), which
+              // would re-submit to maybeFreeKrefs
+              kvStore.delete(ownerKey);
+              kvStore.delete(`${ownerVatID}.c.${kref}`);
+              kvStore.delete(`${ownerVatID}.c.${vatSlot}`);
+              // now fall through to the orphaned case
+              ownerVatID = undefined;
+            }
+
+            // Now handle objects which were orphaned. NOTE: this
+            // includes objects which were owned by a terminated (but
+            // not fully deleted) vat, where `ownerVatID` was cleared
+            // in the last line of that previous clause (the
+            // fall-through case). Don't try to change this `if
+            // (!ownerVatID)` into an `else if`: the two clauses are
+            // *not* mutually-exclusive.
+
+            if (!ownerVatID) {
+              // orphaned and unreachable, so retire it. If the kref
+              // is recognizable, then we need retireKernelObjects()
+              // to scan for importers and send retireImports (and
+              // delete), else we can call deleteKernelObject directly
+              if (recognizable) {
+                retireKernelObjects([kref]);
+              } else {
+                deleteKernelObject(kref);
+              }
             }
           }
         }
       }
-      setGCActions(actions);
+      addGCActions([...actions]);
     }
     maybeFreeKrefs.clear();
+  }
+
+  function createVatState(vatID, source, options) {
+    initializeVatState(kvStore, transcriptStore, vatID, source, options);
   }
 
   function provideVatKeeper(vatID) {
@@ -1294,9 +1632,7 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
     if (found !== undefined) {
       return found;
     }
-    if (!kvStore.has(`${vatID}.o.nextID`)) {
-      initializeVatState(kvStore, transcriptStore, vatID);
-    }
+    assert(kvStore.has(`${vatID}.o.nextID`), `${vatID} was not initialized`);
     const vk = makeVatKeeper(
       kvStore,
       transcriptStore,
@@ -1314,6 +1650,7 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
       incStat,
       decStat,
       getCrankNumber,
+      scheduleReap,
       snapStore,
     );
     ephemeral.vatKeepers.set(vatID, vk);
@@ -1322,7 +1659,7 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
 
   function vatIsAlive(vatID) {
     insistVatID(vatID);
-    return kvStore.has(`${vatID}.o.nextID`);
+    return kvStore.has(`${vatID}.o.nextID`) && !terminatedVats.includes(vatID);
   }
 
   /**
@@ -1530,13 +1867,13 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
   }
 
   return harden({
-    getInitialized,
     setInitialized,
     createStartingKernelState,
     getDefaultManagerType,
-    getDefaultReapInterval,
     getRelaxDurabilityRules,
-    setDefaultReapInterval,
+    getDefaultReapDirtThreshold,
+    setDefaultReapDirtThreshold,
+
     getSnapshotInitial,
     getSnapshotInterval,
     setSnapshotInterval,
@@ -1570,6 +1907,7 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
     kernelObjectExists,
     getImporters,
     orphanKernelObject,
+    retireKernelObjects,
     deleteKernelObject,
     pinObject,
 
@@ -1610,14 +1948,22 @@ export default function makeKernelKeeper(kernelStorage, kernelSlog) {
     getVatIDForName,
     allocateVatIDForNameIfNeeded,
     allocateUnusedVatID,
+    createVatState,
     provideVatKeeper,
     vatIsAlive,
     evictVatKeeper,
+    removeVatFromSwingStoreExports,
     cleanupAfterTerminatedVat,
     addDynamicVatID,
     getDynamicVats,
     getStaticVats,
     getDevices,
+    deleteVatID,
+
+    markVatAsTerminated,
+    getFirstTerminatedVat,
+    forgetTerminatedVat,
+    nextCleanupTerminatedVatAction,
 
     allocateUpgradeID,
 

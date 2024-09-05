@@ -23,7 +23,7 @@
   "license": "Apache-2.0",
   "dependencies": {
     "@agoric/access-token": "^0.4.21",
-    "@endo/errors": "^1.2.2",
+    "@endo/errors": "^1.2.5",
     "@agoric/cache": "^0.3.2",
     "@agoric/cosmic-swingset": "^0.41.3",
     "@agoric/internal": "^0.3.2",
@@ -36,12 +36,12 @@
     "@agoric/time": "^0.3.2",
     "@agoric/vats": "^0.15.1",
     "@agoric/wallet": "^0.18.3",
-    "@endo/captp": "^4.2.0",
-    "@endo/eventual-send": "^1.2.2",
-    "@endo/import-bundle": "^1.1.2",
-    "@endo/init": "^1.1.2",
-    "@endo/marshal": "^1.5.0",
-    "@endo/promise-kit": "^1.1.2",
+    "@endo/captp": "^4.3.0",
+    "@endo/eventual-send": "^1.2.5",
+    "@endo/import-bundle": "^1.2.2",
+    "@endo/init": "^1.1.4",
+    "@endo/marshal": "^1.5.3",
+    "@endo/promise-kit": "^1.1.5",
     "anylogger": "^0.21.0",
     "deterministic-json": "^1.0.5",
     "esm": "agoric-labs/esm#Agoric-built",
@@ -57,7 +57,7 @@
   },
   "devDependencies": {
     "@agoric/ertp": "^0.16.2",
-    "@endo/bundle-source": "^3.2.3",
+    "@endo/bundle-source": "^3.4.0",
     "ava": "^5.3.0",
     "c8": "^9.1.0"
   },
@@ -78,6 +78,6 @@
     "workerThreads": false
   },
   "typeCoverage": {
-    "atLeast": 73.21
+    "atLeast": 73.36
   }
 }

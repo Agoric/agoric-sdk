@@ -6,35 +6,59 @@ import { makeGovernedTerms as makeGovernedATerms } from '../auction/params.js';
 
 const trace = makeTracer('NewAuction', true);
 
-/** @param {import('./econ-behaviors.js').EconomyBootstrapPowers} powers */
-export const addAuction = async ({
-  consume: {
-    zoe,
-    board,
-    chainTimerService,
-    priceAuthority,
-    chainStorage,
-    economicCommitteeCreatorFacet: electorateCreatorFacet,
-    auctioneerKit: legacyKitP,
-  },
-  produce: { newAuctioneerKit },
-  instance: {
-    consume: { reserve: reserveInstance },
-  },
-  installation: {
+/**
+ * @typedef {PromiseSpaceOf<{
+ *   auctionUpgradeNewInstance: Instance;
+ * }>} interlockPowers
+ */
+
+/**
+ * @param {import('./econ-behaviors.js').EconomyBootstrapPowers &
+ *   interlockPowers} powers
+ * @param {{ options: { auctionsRef: { bundleID: string } } }} options
+ */
+export const addAuction = async (
+  {
     consume: {
-      auctioneer: auctionInstallation,
-      contractGovernor: contractGovernorInstallation,
+      agoricNamesAdmin,
+      auctioneerKit: legacyKitP,
+      board,
+      chainStorage,
+      chainTimerService,
+      economicCommitteeCreatorFacet: electorateCreatorFacet,
+      econCharterKit,
+      priceAuthority,
+      zoe,
+    },
+    produce: { auctioneerKit: produceAuctioneerKit, auctionUpgradeNewInstance },
+    instance: {
+      consume: { reserve: reserveInstance },
+      produce: { auctioneer: auctionInstance },
+    },
+    installation: {
+      consume: { contractGovernor: contractGovernorInstallation },
+      produce: { auctioneer: produceInstallation },
+    },
+    issuer: {
+      consume: { [Stable.symbol]: stableIssuerP },
     },
   },
-  issuer: {
-    consume: { [Stable.symbol]: stableIssuerP },
-  },
-}) => {
-  trace('addAuction start');
+  { options },
+) => {
+  trace('addAuction start', options);
   const STORAGE_PATH = 'auction';
+  const { auctionsRef } = options;
 
   const poserInvitationP = E(electorateCreatorFacet).getPoserInvitation();
+  const bundleID = auctionsRef.bundleID;
+  /**
+   * @type {Promise<
+   *   Installation<import('../../src/auction/auctioneer.js')['start']>
+   * >}
+   */
+  const installationP = E(zoe).installBundleID(bundleID);
+  produceInstallation.reset();
+  produceInstallation.resolve(installationP);
 
   const [
     initialPoserInvitation,
@@ -80,10 +104,12 @@ export const addAuction = async ({
     },
   );
 
+  const installation = await installationP;
+
   const governorTerms = await deeplyFulfilledObject(
     harden({
       timer: chainTimerService,
-      governedContractInstallation: auctionInstallation,
+      governedContractInstallation: installation,
       governed: {
         terms: auctionTerms,
         issuerKeywordRecord: { Bid: stableIssuer },
@@ -94,7 +120,7 @@ export const addAuction = async ({
     }),
   );
 
-  /** @type {GovernorStartedInstallationKit<typeof auctionInstallation>} */
+  /** @type {GovernorStartedInstallationKit<typeof installationP>} */
   const governorStartResult = await E(zoe).startInstance(
     contractGovernorInstallation,
     undefined,
@@ -128,45 +154,65 @@ export const addAuction = async ({
     ),
   );
 
-  newAuctioneerKit.resolve(
-    harden({
-      label: 'auctioneer',
-      creatorFacet: governedCreatorFacet,
-      adminFacet: governorStartResult.adminFacet,
-      publicFacet: governedPublicFacet,
-      instance: governedInstance,
+  const kit = harden({
+    label: 'auctioneer',
+    creatorFacet: governedCreatorFacet,
+    adminFacet: governorStartResult.adminFacet,
+    publicFacet: governedPublicFacet,
+    instance: governedInstance,
 
-      governor: governorStartResult.instance,
-      governorCreatorFacet: governorStartResult.creatorFacet,
-      governorAdminFacet: governorStartResult.adminFacet,
-    }),
+    governor: governorStartResult.instance,
+    governorCreatorFacet: governorStartResult.creatorFacet,
+    governorAdminFacet: governorStartResult.adminFacet,
+  });
+  produceAuctioneerKit.reset();
+  produceAuctioneerKit.resolve(kit);
+
+  // introduce economic committee charter to new auctioneer
+  // cf addGovernorsToEconCharter() in committee-proposal.js
+  await E(E.get(econCharterKit).creatorFacet).addInstance(
+    kit.instance,
+    kit.governorCreatorFacet,
+    kit.label,
   );
-  // don't overwrite auctioneerKit or auction instance yet. Wait until
-  // upgrade-vault.js
+
+  auctionInstance.reset();
+  await auctionInstance.resolve(governedInstance);
+  // belt and suspenders; the above is supposed to also do this
+  await E(E(agoricNamesAdmin).lookupAdmin('instance')).update(
+    'auctioneer',
+    governedInstance,
+  );
+
+  auctionUpgradeNewInstance.resolve(governedInstance);
 };
 
 export const ADD_AUCTION_MANIFEST = harden({
   [addAuction.name]: {
     consume: {
-      zoe: true,
-      board: true,
-      chainTimerService: true,
-      priceAuthority: true,
-      chainStorage: true,
-      economicCommitteeCreatorFacet: true,
+      agoricNamesAdmin: true,
       auctioneerKit: true,
+      board: true,
+      chainStorage: true,
+      chainTimerService: true,
+      econCharterKit: true,
+      economicCommitteeCreatorFacet: true,
+      priceAuthority: true,
+      zoe: true,
     },
     produce: {
-      newAuctioneerKit: true,
+      auctioneerKit: true,
+      auctionUpgradeNewInstance: true,
     },
     instance: {
       consume: { reserve: true },
+      produce: { auctioneer: true },
     },
     installation: {
       consume: {
-        auctioneer: true,
         contractGovernor: true,
       },
+      produce: { auctioneer: true },
     },
     issuer: {
       consume: { [Stable.symbol]: true },
@@ -174,7 +220,15 @@ export const ADD_AUCTION_MANIFEST = harden({
   },
 });
 
-/* Add a new auction to a chain that already has one. */
-export const getManifestForAddAuction = async () => {
-  return { manifest: ADD_AUCTION_MANIFEST };
+/**
+ * Add a new auction to a chain that already has one.
+ *
+ * @param {object} _ign
+ * @param {any} addAuctionOptions
+ */
+export const getManifestForAddAuction = async (_ign, addAuctionOptions) => {
+  return {
+    manifest: ADD_AUCTION_MANIFEST,
+    options: addAuctionOptions,
+  };
 };

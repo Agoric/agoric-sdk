@@ -17,19 +17,19 @@ test.after(async t => {
 });
 
 test('provision smart wallet', async t => {
-  const { wallets, provisionSmartWallet, makeQueryTool, useChain } = t.context;
+  const { wallets, provisionSmartWallet, vstorageClient, useChain } = t.context;
 
   const wallet = await provisionSmartWallet(wallets.user1, { BLD: 100n });
   t.log('wallet', wallet);
-
-  const vstorageClient = makeQueryTool();
 
   const walletCurrent = await vstorageClient.queryData(
     `published.wallet.${wallets.user1}.current`,
   );
   t.like(walletCurrent, { liveOffers: [], offerToPublicSubscriberPaths: [] });
 
-  const agQueryClient = makeQueryClient(useChain('agoric').getRestEndpoint());
+  const agQueryClient = makeQueryClient(
+    await useChain('agoric').getRestEndpoint(),
+  );
   const { balances } = await agQueryClient.queryBalances(wallets.user1);
   t.deepEqual(
     balances,

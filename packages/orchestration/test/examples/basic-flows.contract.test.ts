@@ -20,7 +20,7 @@ type TestContext = Awaited<ReturnType<typeof commonSetup>> & {
 
 const test = anyTest as TestFn<TestContext>;
 
-test.before(async t => {
+test.beforeEach(async t => {
   const setupContext = await commonSetup(t);
   const {
     bootstrap: { storage },
@@ -48,8 +48,9 @@ test.before(async t => {
 });
 
 const chainConfigs = {
-  agoric: { addressPrefix: 'agoric1fakeLCAAddress' },
-  cosmoshub: { addressPrefix: 'cosmos1test' },
+  agoric: { expectedAddress: 'agoric1fakeLCAAddress' },
+  cosmoshub: { expectedAddress: 'cosmos1test' },
+  osmosis: { expectedAddress: 'osmo1test' },
 };
 
 const orchestrationAccountScenario = test.macro({
@@ -61,21 +62,24 @@ const orchestrationAccountScenario = test.macro({
       return t.fail(`Unknown chain: ${chainName}`);
     }
 
-    const { zoe, instance } = t.context;
+    const {
+      bootstrap: { vowTools: vt },
+      zoe,
+      instance,
+    } = t.context;
     const publicFacet = await E(zoe).getPublicFacet(instance);
     const inv = E(publicFacet).makeOrchAccountInvitation();
     const userSeat = E(zoe).offer(inv, {}, undefined, { chainName });
-    // @ts-expect-error TODO: type expected offer result
-    const { holder, invitationMakers, publicSubscribers } =
-      await E(userSeat).getOfferResult();
+    const { invitationMakers, publicSubscribers } = await vt.when(
+      E(userSeat).getOfferResult(),
+    );
 
-    t.regex(getInterfaceOf(holder)!, /Orchestration (.*) holder/);
     t.regex(getInterfaceOf(invitationMakers)!, /invitationMakers/);
 
     const { description, storagePath, subscriber } = publicSubscribers.account;
-    t.regex(description, /Account holder/);
+    t.regex(description!, /Account holder/);
 
-    const expectedStoragePath = `mockChainStorageRoot.basic-flows.${config.addressPrefix}`;
+    const expectedStoragePath = `mockChainStorageRoot.basic-flows.${config.expectedAddress}`;
     t.is(storagePath, expectedStoragePath);
 
     t.regex(getInterfaceOf(subscriber)!, /Durable Publish Kit subscriber/);

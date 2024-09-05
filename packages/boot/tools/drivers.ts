@@ -24,7 +24,7 @@ import type { OfferSpec } from '@agoric/smart-wallet/src/offers.js';
 import type { TimerService } from '@agoric/time';
 import type { OfferMaker } from '@agoric/smart-wallet/src/types.js';
 import type { RunUtils } from '@agoric/swingset-vat/tools/run-utils.js';
-import type { SwingsetTestKit } from './supports.ts';
+import type { SwingsetTestKit } from './supports.js';
 
 export const makeWalletFactoryDriver = async (
   runUtils: RunUtils,
@@ -324,7 +324,7 @@ export const makeZoeDriver = async (testKit: SwingsetTestKit) => {
   const { EV } = testKit.runUtils;
   const zoe = await EV.vat('bootstrap').consumeItem('zoe');
   const chainStorage = await EV.vat('bootstrap').consumeItem('chainStorage');
-  const storageNode = await EV(chainStorage).makeChildNode('prober-asid9a');
+  const storageNode = await EV(chainStorage!).makeChildNode('prober-asid9a');
   let creatorFacet;
   let adminFacet;
   let brand;

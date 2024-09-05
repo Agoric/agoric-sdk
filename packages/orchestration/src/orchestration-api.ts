@@ -7,15 +7,21 @@
 import type { Amount, Brand, NatAmount } from '@agoric/ertp/src/types.js';
 import type { CurrentWalletRecord } from '@agoric/smart-wallet/src/smartWallet.js';
 import type { Timestamp } from '@agoric/time';
-import type { LocalChainAccount } from '@agoric/vats/src/localchain.js';
-import type { ResolvedPublicTopic } from '@agoric/zoe/src/contractSupport/topics.js';
 import type {
+  LocalChainAccount,
+  QueryManyFn,
+} from '@agoric/vats/src/localchain.js';
+import type { ResolvedPublicTopic } from '@agoric/zoe/src/contractSupport/topics.js';
+import type { Passable } from '@endo/marshal';
+import type {
+  AgoricChainMethods,
   ChainInfo,
   CosmosChainAccountMethods,
   CosmosChainInfo,
   IBCMsgTransferOptions,
   KnownChains,
   LocalAccountMethods,
+  ICQQueryFunction,
 } from './types.js';
 import type { ResolvedContinuingOfferResult } from './utils/zoe-tools.js';
 
@@ -38,7 +44,7 @@ export type Denom = string; // ibc/... or uist
  * In many cases, either a denom string or a local Brand can be used to
  * designate a remote token type.
  */
-export type DenomArg = Denom | Brand;
+export type DenomArg = Denom | Brand<'nat'>;
 
 /**
  * Count of some fungible token on some blockchain.
@@ -51,7 +57,7 @@ export type DenomAmount = {
 };
 
 /** Amounts can be provided as pure data using denoms or as ERTP Amounts */
-export type AmountArg = DenomAmount | Amount;
+export type AmountArg = DenomAmount | Amount<'nat'>;
 
 /** An address on some blockchain, e.g., cosmos, eth, etc. */
 export type ChainAddress = {
@@ -86,7 +92,27 @@ export interface Chain<CI extends ChainInfo> {
   makeAccount: () => Promise<OrchestrationAccount<CI>>;
   // FUTURE supply optional port object; also fetch port object
 
+  query: CI extends { icqEnabled: true }
+    ? ICQQueryFunction
+    : CI['chainId'] extends `agoric${string}`
+      ? QueryManyFn
+      : never;
+
   // TODO provide a way to get the local denom/brand/whatever for this chain
+}
+
+export interface DenomInfo<
+  HoldingChain extends keyof KnownChains,
+  IssuingChain extends keyof KnownChains,
+> {
+  /** The well-known Brand on Agoric for the direct asset */
+  brand?: Brand;
+  /** The Chain at which the argument `denom` exists (where the asset is currently held) */
+  chain: Chain<KnownChains[HoldingChain]>;
+  /** The Chain that is the issuer of the underlying asset */
+  base: Chain<KnownChains[IssuingChain]>;
+  /** the Denom for the underlying asset on its issuer chain */
+  baseDenom: Denom;
 }
 
 /**
@@ -95,7 +121,10 @@ export interface Chain<CI extends ChainInfo> {
 export interface Orchestrator {
   getChain: <C extends string>(
     chainName: C,
-  ) => Promise<Chain<C extends keyof KnownChains ? KnownChains[C] : any>>;
+  ) => Promise<
+    Chain<C extends keyof KnownChains ? KnownChains[C] : any> &
+      (C extends 'agoric' ? AgoricChainMethods : {})
+  >;
 
   makeLocalAccount: () => Promise<LocalChainAccount>;
   /**
@@ -104,21 +133,12 @@ export interface Orchestrator {
    * issues the corresponding asset.
    * @param denom
    */
-  getBrandInfo: <
+  getDenomInfo: <
     HoldingChain extends keyof KnownChains,
     IssuingChain extends keyof KnownChains,
   >(
     denom: Denom,
-  ) => {
-    /** The well-known Brand on Agoric for the direct asset */
-    brand?: Brand;
-    /** The Chain at which the argument `denom` exists (where the asset is currently held) */
-    chain: Chain<KnownChains[HoldingChain]>;
-    /** The Chain that is the issuer of the underlying asset */
-    base: Chain<KnownChains[IssuingChain]>;
-    /** the Denom for the underlying asset on its issuer chain */
-    baseDenom: Denom;
-  };
+  ) => DenomInfo<HoldingChain, IssuingChain>;
   // TODO preload the mapping so this can be synchronous
   /**
    * Convert an amount described in native data to a local, structured Amount.
@@ -149,7 +169,15 @@ export interface OrchestrationAccountI {
    * @param amount - the amount to send
    * @returns void
    */
-  send: (toAccount: ChainAddress, amount: AmountArg) => Promise<void>;
+  send: (toAccount: ChainAddress, amounts: AmountArg) => Promise<void>;
+
+  /**
+   * Transfer multiple amounts to another account on the same chain. The promise settles when the transfer is complete.
+   * @param toAccount - the account to send the amount to. MUST be on the same chain
+   * @param amounts - the amounts to send
+   * @returns void
+   */
+  sendAll: (toAccount: ChainAddress, amounts: AmountArg[]) => Promise<void>;
 
   /**
    * Transfer an amount to another account, typically on another chain.
@@ -190,6 +218,10 @@ export interface OrchestrationAccountI {
    * in the {@link CurrentWalletRecord} in vstorage.
    */
   getPublicTopics: () => Promise<Record<string, ResolvedPublicTopic<unknown>>>;
+}
+
+export interface OrchestrationFlow<CT = unknown> {
+  (orc: Orchestrator, ctx: CT, ...args: Passable[]): Promise<unknown>;
 }
 
 /**

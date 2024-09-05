@@ -1,6 +1,6 @@
 // @ts-check
 import { heapVowE as E } from '@agoric/vow/vat.js';
-import { typedJson } from '@agoric/cosmic-proto/vatsafe';
+import { typedJson } from '@agoric/cosmic-proto';
 
 /**
  * @param {BootstrapPowers & {

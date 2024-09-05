@@ -8,6 +8,7 @@ export const makeGetFile =
 type GetFilePathFn = ReturnType<typeof makeGetFile>;
 
 export const makeSetupRegistry = (getFile: GetFilePathFn) => {
+  let initialized = false;
   /**
    * @param {Object} opts
    * @param {string} [opts.config='../config.yaml'] - The path to the starship configuration file.
@@ -20,8 +21,11 @@ export const makeSetupRegistry = (getFile: GetFilePathFn) => {
    * ```
    */
   const setupRegistry = async ({ config = '../config.yaml' } = {}) => {
-    ConfigContext.setConfigFile(getFile(config));
-    ConfigContext.setRegistry(await useRegistry(ConfigContext.configFile!));
+    if (initialized) return { useChain };
+    const configFile = getFile(config);
+    const fetcher = await useRegistry(configFile);
+    await ConfigContext.init(configFile, fetcher);
+    initialized = true;
     return { useChain };
   };
 

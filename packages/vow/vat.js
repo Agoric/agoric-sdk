@@ -7,7 +7,9 @@
 // @ts-check
 import { isUpgradeDisconnection } from '@agoric/internal/src/upgrade-api.js';
 import { makeHeapZone } from '@agoric/base-zone/heap.js';
-import { makeE, prepareVowTools as rawPrepareVowTools } from './src/index.js';
+
+import { prepareBasicVowTools } from './src/tools.js';
+import makeE from './src/E.js';
 
 /** @type {import('./src/types.js').IsRetryableReason} */
 const isRetryableReason = (reason, priorRetryValue) => {
@@ -28,13 +30,17 @@ export const defaultPowers = harden({
 /**
  * Produce SwingSet-compatible vowTools, with an arbitrary Zone type
  *
- * @type {typeof rawPrepareVowTools}
+ * @type {typeof prepareBasicVowTools}
  */
 export const prepareSwingsetVowTools = (zone, powers = {}) =>
-  rawPrepareVowTools(zone, { ...defaultPowers, ...powers });
+  prepareBasicVowTools(zone, { ...defaultPowers, ...powers });
+harden(prepareSwingsetVowTools);
 
-/** @deprecated */
-export const prepareVowTools = prepareSwingsetVowTools;
+/**
+ * Reexport as prepareVowTools, since that's the thing that people find easiest
+ * to reach.
+ */
+export { prepareSwingsetVowTools as prepareVowTools };
 
 /**
  * `vowTools` that are not durable, but are useful in non-durable clients that

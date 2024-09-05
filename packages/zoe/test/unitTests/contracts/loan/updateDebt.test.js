@@ -19,6 +19,7 @@ test('test calculateInterest', async t => {
     t.is(interest.brand, brand);
   };
 
+  /** @type {Array<[oldDebt: bigint, interestRate: bigint, expected: bigint]>} */
   const expectations = [
     [40000n, 5n, 20n],
     [0n, 5n, 0n], // debt of 0 is 0 interest
@@ -27,5 +28,7 @@ test('test calculateInterest', async t => {
     [20392n, 1n, 3n],
   ];
 
-  expectations.forEach(testCalculateInterest);
+  for (const expectation of expectations) {
+    testCalculateInterest(expectation);
+  }
 });

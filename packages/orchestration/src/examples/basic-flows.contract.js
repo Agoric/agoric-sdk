@@ -3,63 +3,54 @@
  *   leverage basic functionality of the Orchestration API with async-flow.
  */
 import { InvitationShape } from '@agoric/zoe/src/typeGuards.js';
-import { M, mustMatch } from '@endo/patterns';
-import { provideOrchestration } from '../utils/start-helper.js';
+import { M } from '@endo/patterns';
+import { preparePortfolioHolder } from '../exos/portfolio-holder-kit.js';
+import { withOrchestration } from '../utils/start-helper.js';
+import * as flows from './basic-flows.flows.js';
 
 /**
- * @import {Baggage} from '@agoric/vat-data';
- * @import {Orchestrator} from '@agoric/orchestration';
+ * @import {Zone} from '@agoric/zone';
  * @import {OrchestrationPowers} from '../utils/start-helper.js';
+ * @import {OrchestrationTools} from '../utils/start-helper.js';
  */
-
-/**
- * Create an account on a Cosmos chain and return a continuing offer with
- * invitations makers for Delegate, WithdrawRewards, Transfer, etc.
- *
- * @param {Orchestrator} orch
- * @param {undefined} _ctx
- * @param {ZCFSeat} seat
- * @param {{ chainName: string }} offerArgs
- */
-const makeOrchAccountHandler = async (orch, _ctx, seat, { chainName }) => {
-  seat.exit(); // no funds exchanged
-  mustMatch(chainName, M.string());
-  const remoteChain = await orch.getChain(chainName);
-  const cosmosAccount = await remoteChain.makeAccount();
-  return cosmosAccount.asContinuingOffer();
-};
 
 /**
  * @param {ZCF} zcf
  * @param {OrchestrationPowers & {
  *   marshaller: Marshaller;
- * }} privateArgs
- * @param {Baggage} baggage
+ * }} _privateArgs
+ * @param {Zone} zone
+ * @param {OrchestrationTools} tools
  */
-export const start = async (zcf, privateArgs, baggage) => {
-  const { orchestrate, zone } = provideOrchestration(
-    zcf,
-    baggage,
-    privateArgs,
-    privateArgs.marshaller,
+const contract = async (
+  zcf,
+  _privateArgs,
+  zone,
+  { orchestrateAll, vowTools },
+) => {
+  const makePortfolioHolder = preparePortfolioHolder(
+    zone.subZone('portfolio'),
+    vowTools,
   );
 
-  /** @type {OfferHandler} */
-  const makeOrchAccount = orchestrate(
-    'makeOrchAccount',
-    undefined,
-    makeOrchAccountHandler,
-  );
+  const orchFns = orchestrateAll(flows, { makePortfolioHolder });
 
   const publicFacet = zone.exo(
     'Basic Flows Public Facet',
     M.interface('Basic Flows PF', {
       makeOrchAccountInvitation: M.callWhen().returns(InvitationShape),
+      makePortfolioAccountInvitation: M.callWhen().returns(InvitationShape),
     }),
     {
       makeOrchAccountInvitation() {
         return zcf.makeInvitation(
-          makeOrchAccount,
+          orchFns.makeOrchAccount,
+          'Make an Orchestration Account',
+        );
+      },
+      makePortfolioAccountInvitation() {
+        return zcf.makeInvitation(
+          orchFns.makePortfolioAccount,
           'Make an Orchestration Account',
         );
       },
@@ -68,5 +59,8 @@ export const start = async (zcf, privateArgs, baggage) => {
 
   return { publicFacet };
 };
+
+export const start = withOrchestration(contract);
+harden(start);
 
 /** @typedef {typeof start} BasicFlowsSF */

@@ -12,7 +12,9 @@ import {
   prepareLoopbackProtocolHandler,
   prepareNetworkProtocol,
   prepareRouter,
+  prepareNetworkPowers,
   unparse,
+  CLOSE_REASON_FINALIZER,
 } from '../src/index.js';
 import { fakeNetworkEchoStuff } from './fakes.js';
 
@@ -39,13 +41,11 @@ test('handled protocol', async t => {
 
   const port = await when(protocol.bindPort('/ibc/*/ordered'));
 
-  const { vow, resolver } = makeVowKit();
-
   const prepareTestProtocolHandler = () => {
     const makeTestProtocolHandler = zone.exoClass(
       'TestProtocolHandler',
       undefined,
-      () => ({ resolver }),
+      resolver => ({ resolver }),
       {
         async onOpen(connection, localAddr, remoteAddr) {
           t.is(localAddr, '/ibc/*/ordered');
@@ -53,11 +53,11 @@ test('handled protocol', async t => {
           const ack = await when(E(connection).send('ping'));
           // log(ack);
           t.is(`${ack}`, 'ping', 'received pong');
-          void connection.close();
+          await connection.close();
         },
         async onClose(_connection, reason) {
-          t.is(reason, undefined, 'no close reason');
-          this.state.resolver.resolve(null);
+          t.is(reason, CLOSE_REASON_FINALIZER, 'finalizer close reason');
+          this.state.resolver.resolve(reason);
         },
         async onReceive(_connection, bytes) {
           t.is(`${bytes}`, 'ping');
@@ -71,8 +71,9 @@ test('handled protocol', async t => {
 
   const makeTestProtocolHandler = prepareTestProtocolHandler();
 
-  await port.connect('/ibc/*/ordered/echo', makeTestProtocolHandler());
-  await when(vow);
+  const { vow, resolver } = makeVowKit();
+  await port.connect('/ibc/*/ordered/echo', makeTestProtocolHandler(resolver));
+  t.is(await when(vow), CLOSE_REASON_FINALIZER);
   await when(port.revoke());
 });
 
@@ -82,11 +83,28 @@ test('verify port allocation', async t => {
 
   const ibcPort = await when(portAllocator.allocateCustomIBCPort());
   t.is(ibcPort.getLocalAddress(), '/ibc-port/port-1');
+  const ibcPort2 = await when(portAllocator.allocateCustomIBCPort());
+  t.not(
+    ibcPort.getLocalAddress(),
+    ibcPort2.getLocalAddress(),
+    'unique ports must not collide',
+  );
+  t.is(ibcPort2.getLocalAddress(), '/ibc-port/port-2');
 
   const namedIbcPort = await when(
     portAllocator.allocateCustomIBCPort('test-1'),
   );
   t.is(namedIbcPort.getLocalAddress(), '/ibc-port/custom-test-1');
+
+  const ibcDuplicatePort = await when(
+    portAllocator.allocateCustomIBCPort('port-1'),
+  );
+  t.not(
+    ibcPort.getLocalAddress(),
+    ibcDuplicatePort.getLocalAddress(),
+    'named ports should not collide with unique ports',
+  );
+  t.is(ibcDuplicatePort.getLocalAddress(), '/ibc-port/custom-port-1');
 
   const icaControllerPort1 = await when(
     portAllocator.allocateICAControllerPort(),
@@ -99,12 +117,21 @@ test('verify port allocation', async t => {
   t.is(icaControllerPort2.getLocalAddress(), '/ibc-port/icacontroller-2');
 
   const localPort = await when(portAllocator.allocateCustomLocalPort());
-  t.is(localPort.getLocalAddress(), '/local/port-5');
+  t.is(localPort.getLocalAddress(), '/local/port-7');
 
   const namedLocalPort = await when(
     portAllocator.allocateCustomLocalPort('local-1'),
   );
   t.is(namedLocalPort.getLocalAddress(), '/local/custom-local-1');
+  const namedDuplicatePort = await when(
+    portAllocator.allocateCustomLocalPort('port-7'),
+  );
+  t.not(
+    namedLocalPort.getLocalAddress(),
+    namedDuplicatePort.getLocalAddress(),
+    'named ports should not collide with unique ports',
+  );
+  t.is(namedDuplicatePort.getLocalAddress(), '/local/custom-port-7');
 
   await t.throwsAsync(when(portAllocator.allocateCustomIBCPort('/test-1')), {
     message: 'Invalid IBC port name: /test-1',
@@ -133,16 +160,14 @@ test('protocol connection listen', async t => {
   const { vow, resolver } = makeVowKit();
 
   const prepareConnectionHandler = () => {
-    let handler;
-
     const makeConnectionHandler = zone.exoClass(
       'connectionHandler',
       undefined,
-      () => ({ resolver }),
+      () => ({ handler: undefined, resolver }),
       {
         async onOpen(connection, _localAddr, _remoteAddr, connectionHandler) {
           t.assert(connectionHandler, `connectionHandler is tracked in onOpen`);
-          handler = connectionHandler;
+          this.state.handler = connectionHandler;
           const ack = await when(connection.send('ping'));
           t.is(`${ack}`, 'ping', 'received pong');
           await when(connection.close());
@@ -150,18 +175,17 @@ test('protocol connection listen', async t => {
         async onClose(c, reason, connectionHandler) {
           t.is(
             connectionHandler,
-            handler,
+            this.state.handler,
             `connectionHandler is tracked in onClose`,
           );
-          handler = undefined;
+          this.state.handler = undefined;
           t.assert(c, 'connection is passed to onClose');
-          t.is(reason, undefined, 'no close reason');
-          this.state.resolver.resolve(null);
+          this.state.resolver.resolve(reason);
         },
         async onReceive(c, packet, connectionHandler) {
           t.is(
             connectionHandler,
-            handler,
+            this.state.handler,
             `connectionHandler is tracked in onReceive`,
           );
           t.assert(c, 'connection is passed to onReceive');
@@ -259,7 +283,8 @@ test('protocol connection listen', async t => {
 test('loopback protocol', async t => {
   const zone = provideDurableZone('network-loopback-protocol');
 
-  const powers = prepareVowTools(zone);
+  const vowTools = prepareVowTools(zone);
+  const powers = prepareNetworkPowers(zone, vowTools);
   const { makeVowKit, when } = powers;
   const makeLoopbackProtocolHandler = prepareLoopbackProtocolHandler(
     zone,
@@ -339,7 +364,7 @@ test('loopback protocol', async t => {
 });
 
 test('routing', async t => {
-  const zone = provideDurableZone('network-loopback-protocol');
+  const zone = provideDurableZone('routing-protocol');
   const makeRouter = prepareRouter(zone);
   const router = makeRouter();
   t.deepEqual(router.getRoutes('/if/local'), [], 'get routes matches none');

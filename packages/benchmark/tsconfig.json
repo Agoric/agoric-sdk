@@ -1,7 +1,6 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
-    "allowImportingTsExtensions": true,
     "checkJs": true,
   },
   "include": [
@@ -13,5 +12,6 @@
     "test/**/*.js",
     "test/**/*.ts",
     "tools/**/*.js",
+    "tools/**/*.ts",
   ],
 }

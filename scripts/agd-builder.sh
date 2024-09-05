@@ -80,6 +80,9 @@ else
 fi
 
 if $need_nodejs; then
+  export COREPACK_ENABLE_DOWNLOAD_PROMPT=0
+  export COREPACK_ENABLE_NETWORK=$($SKIP_DOWNLOAD && echo 0 || echo 1)
+
   # We need to get node at the script top level because it's used by the daemon
   # as well.
   case $(node --version 2> /dev/null) in

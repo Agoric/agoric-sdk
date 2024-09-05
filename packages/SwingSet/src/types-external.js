@@ -28,14 +28,14 @@ export {};
  */
 
 /**
- * @typedef {{
- *   defaultManagerType?: ManagerType,
- *   defaultReapInterval?: number | 'never',
- *   relaxDurabilityRules?: boolean,
- *   snapshotInitial?: number,
- *   snapshotInterval?: number,
- *   pinBootstrapRoot?: boolean,
- * }} KernelOptions
+ * @typedef {object} KernelOptions
+ * @property {ManagerType} [defaultManagerType]
+ * @property {number | 'never'} [defaultReapGCKrefs]
+ * @property {number | 'never'} [defaultReapInterval]
+ * @property {boolean} [relaxDurabilityRules]
+ * @property {number} [snapshotInitial]
+ * @property {number} [snapshotInterval]
+ * @property {boolean} [pinBootstrapRoot]
  */
 
 /**
@@ -167,6 +167,7 @@ export {};
  *   bundleName: string
  * }} BundleName
  * @typedef {(SourceSpec | BundleSpec | BundleRef | BundleName ) & {
+ *   bundleID?: BundleID,
  *   creationOptions?: Record<string, any>,
  *   parameters?: Record<string, any>,
  * }} SwingSetConfigProperties
@@ -218,19 +219,65 @@ export {};
  */
 
 /**
+ * PolicyInput is used internally within kernel.js, returned by each
+ * message processor, and used to decide which of the host's runPolicy
+ * methods to invoke. The 'details' portion of PolicyInput is passed
+ * as an argument to those methods, so those types are
+ * externally-visible.
+ *
+ * @typedef { { exports: number,
+ *              imports: number,
+ *              kv: number,
+ *              snapshots: number,
+ *              transcripts: number,
+ *            } } CleanupWork
+ *
+ * @typedef { { total: number } & CleanupWork } PolicyInputCleanupCounts
+ * @typedef { { cleanups: PolicyInputCleanupCounts, computrons?: bigint } } PolicyInputCleanupDetails
  * @typedef { { computrons?: bigint } } PolicyInputDetails
+ *
  * @typedef { [tag: 'none', details: PolicyInputDetails ] } PolicyInputNone
  * @typedef { [tag: 'create-vat', details: PolicyInputDetails  ]} PolicyInputCreateVat
  * @typedef { [tag: 'crank', details: PolicyInputDetails ] } PolicyInputCrankComplete
  * @typedef { [tag: 'crank-failed', details: PolicyInputDetails ]} PolicyInputCrankFailed
- * @typedef { PolicyInputNone | PolicyInputCreateVat | PolicyInputCrankComplete | PolicyInputCrankFailed } PolicyInput
- * @typedef { boolean } PolicyOutput
- * @typedef { { vatCreated: (details: {}) => PolicyOutput,
+ * @typedef { [tag: 'cleanup', details: PolicyInputCleanupDetails] } PolicyInputCleanup
+ *
+ * @typedef { PolicyInputNone | PolicyInputCreateVat | PolicyInputCrankComplete |
+ *            PolicyInputCrankFailed | PolicyInputCleanup } PolicyInput
+ *
+ * CleanupBudget is the internal record used to limit the slow
+ * deletion of terminated vats. Each property limits the number of
+ * deletions per 'cleanup-terminated-vat' run-queue event, for a
+ * specific phase (imports, exports, snapshots, etc). It must always
+ * have a 'default' property, which is used for phases that aren't
+ * otherwise specified.
+ *
+ * @typedef { { default: number } & Partial<CleanupWork> } CleanupBudget
+ *
+ * PolicyOutputCleanupBudget is the return value of
+ * runPolicy.allowCleanup(), and tells the kernel how much it is
+ * allowed to clean up. It is either a CleanupBudget, or 'true' to
+ * allow unlimited cleanup, or 'false' to forbid any cleanup.
+ *
+ * @typedef {CleanupBudget | true | false} PolicyOutputCleanupBudget
+ *
+ * PolicyOutput is the boolean returned by all the other runPolicy
+ * methods, where 'true' means "keep going", and 'false' means "stop
+ * now".
+ *
+ * @typedef {boolean} PolicyOutput
+ *
+ * @typedef { {
+ *              allowCleanup?: () => boolean | PolicyOutputCleanupBudget,
+ *              vatCreated: (details: {}) => PolicyOutput,
  *              crankComplete: (details: { computrons?: bigint }) => PolicyOutput,
  *              crankFailed: (details: {}) => PolicyOutput,
  *              emptyCrank: () => PolicyOutput,
+ *              didCleanup?: (details: PolicyInputCleanupDetails) => PolicyOutput,
  *             } } RunPolicy
- *
+ */
+
+/**
  * @typedef {object} VatWarehousePolicy
  * @property { number } [maxVatsOnline]     Limit the number of simultaneous workers
  * @property { boolean } [restartWorkerOnSnapshot]     Reload worker immediately upon snapshot creation
@@ -292,13 +339,15 @@ export {};
  *            reconstructed via replay.  If false, no such record is kept.
  *            Defaults to true.
  * @property { number | 'never' } [reapInterval]
- *            The interval (measured in number of deliveries to the vat)
- *            after which the kernel will deliver the 'bringOutYourDead'
- *            directive to the vat.  If the value is 'never',
- *            'bringOutYourDead' will never be delivered and the vat will
- *            be responsible for internally managing (in a deterministic
- *            manner) any visible effects of garbage collection.  Defaults
- *            to the kernel's configured 'defaultReapInterval' value.
+ *            Trigger a bringOutYourDead after the vat has received
+ *            this many deliveries. If the value is 'never',
+ *            'bringOutYourDead' will not be triggered by a delivery
+ *            count (but might be triggered for other reasons).
+ * @property { number | 'never' } [reapGCKrefs]
+ *            Trigger a bringOutYourDead when the vat has been given
+ *            this many krefs in GC deliveries (dropImports,
+ *            retireImports, retireExports). If the value is 'never',
+ *            GC deliveries and their krefs are not treated specially.
  * @property { boolean } [critical]
  */
 

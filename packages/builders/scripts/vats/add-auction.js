@@ -1,10 +1,20 @@
 import { makeHelpers } from '@agoric/deploy-script-support';
 
 /** @type {import('@agoric/deploy-script-support/src/externalTypes.js').CoreEvalBuilder} */
-export const defaultProposalBuilder = async () => {
+export const defaultProposalBuilder = async ({ publishRef, install }) => {
   return harden({
     sourceSpec: '@agoric/inter-protocol/src/proposals/add-auction.js',
-    getManifestCall: ['getManifestForAddAuction'],
+    getManifestCall: [
+      'getManifestForAddAuction',
+      {
+        auctionsRef: publishRef(
+          install(
+            '@agoric/inter-protocol/src/auction/auctioneer.js',
+            '../../inter-protocol/bundles/bundle-auctioneer.js',
+          ),
+        ),
+      },
+    ],
   });
 };
 

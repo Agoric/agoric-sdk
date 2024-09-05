@@ -13,7 +13,7 @@ import {
   makeFakeLocalchainBridge,
   makeFakeTransferBridge,
 } from '@agoric/vats/tools/fake-bridge.js';
-import { prepareVowTools } from '@agoric/vow';
+import { prepareSwingsetVowTools } from '@agoric/vow/vat.js';
 import type { Installation } from '@agoric/zoe/src/zoeService/utils.js';
 import { buildZoeManualTimer } from '@agoric/zoe/tools/manualTimer.js';
 import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
@@ -21,9 +21,13 @@ import { makeHeapZone, type Zone } from '@agoric/zone';
 import { makeDurableZone } from '@agoric/zone/durable.js';
 import { E } from '@endo/far';
 import type { ExecutionContext } from 'ava';
-import { registerChainNamespace } from '../src/chain-info.js';
+import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
+import { registerKnownChains } from '../src/chain-info.js';
 import { prepareCosmosInterchainService } from '../src/exos/cosmos-interchain-service.js';
 import { setupFakeNetwork } from './network-fakes.js';
+import { buildVTransferEvent } from '../tools/ibc-mocks.js';
+import { makeChainHub } from '../src/exos/chain-hub.js';
+import fetchedChainInfo from '../src/fetched-chain-info.js';
 
 export {
   makeFakeLocalchainBridge,
@@ -69,7 +73,7 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
     }),
   );
 
-  const vowTools = prepareVowTools(rootZone.subZone('vows'));
+  const vowTools = prepareSwingsetVowTools(rootZone.subZone('vows'));
 
   const transferBridge = makeFakeTransferBridge(rootZone);
   const { makeBridgeTargetKit } = prepareBridgeTargetModule(
@@ -88,10 +92,11 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
     interceptorFactory,
   );
   finisher.useRegistry(bridgeTargetKit.targetRegistry);
+  await E(transferBridge).initHandler(bridgeTargetKit.bridgeHandler);
 
-  const localBrigeMessages = [] as any[];
+  const localBridgeMessages = [] as any[];
   const localchainBridge = makeFakeLocalchainBridge(rootZone, obj =>
-    localBrigeMessages.push(obj),
+    localBridgeMessages.push(obj),
   );
   const localchain = prepareLocalChainTools(
     rootZone.subZone('localchain'),
@@ -121,7 +126,47 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
     portAllocator,
   });
 
-  await registerChainNamespace(agoricNamesAdmin, () => {});
+  await registerKnownChains(agoricNamesAdmin, () => {});
+
+  let ibcSequenceNonce = 0n;
+  /** simulate incoming message as if the transfer completed over IBC */
+  const transmitTransferAck = async () => {
+    // assume this is called after each outgoing IBC transfer
+    ibcSequenceNonce += 1n;
+    // let the promise for the transfer start
+    await eventLoopIteration();
+    const lastMsgTransfer = localBridgeMessages.at(-1).messages[0];
+    await E(transferBridge).fromBridge(
+      buildVTransferEvent({
+        receiver: lastMsgTransfer.receiver,
+        sender: lastMsgTransfer.sender,
+        target: lastMsgTransfer.sender,
+        sourceChannel: lastMsgTransfer.sourceChannel,
+        sequence: ibcSequenceNonce,
+      }),
+    );
+    // let the bridge handler finish
+    await eventLoopIteration();
+  };
+
+  const chainHub = makeChainHub(agoricNames, vowTools);
+
+  /**
+   * Register BLD if it's not already registered
+   */
+  const registerAgoricBld = () => {
+    try {
+      chainHub.lookupAsset('ubld');
+    } catch {
+      chainHub.registerChain('agoric', fetchedChainInfo.agoric);
+      chainHub.registerAsset('ubld', {
+        chainName: 'agoric',
+        baseName: 'agoric',
+        baseDenom: 'ubld',
+        brand: bld.brand,
+      });
+    }
+  };
 
   return {
     bootstrap: {
@@ -130,17 +175,22 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
       bankManager,
       timer,
       localchain,
+      // TODO remove; bootstrap doesn't havemarshaller
       marshaller,
       cosmosInterchainService,
       // TODO remove; bootstrap doesn't have a zone
       rootZone: rootZone.subZone('contract'),
       storage,
+      // TODO remove; bootstrap doesn't have vowTools
       vowTools,
-      ibcBridge,
     },
     brands: {
       bld: bldSansMint,
       ist: istSansMint,
+    },
+    mocks: {
+      ibcBridge,
+      transferBridge,
     },
     commonPrivateArgs: {
       agoricNames,
@@ -152,13 +202,17 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
     },
     facadeServices: {
       agoricNames,
+      chainHub,
       localchain,
       orchestrationService: cosmosInterchainService,
       timerService: timer,
     },
     utils: {
       pourPayment,
-      inspectLocalBridge: () => harden([...localBrigeMessages]),
+      inspectLocalBridge: () => harden([...localBridgeMessages]),
+      inspectDibcBridge: () => E(ibcBridge).inspectDibcBridge(),
+      registerAgoricBld,
+      transmitTransferAck,
     },
   };
 };

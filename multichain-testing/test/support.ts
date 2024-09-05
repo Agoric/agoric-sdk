@@ -9,28 +9,24 @@ import { makeGetFile, makeSetupRegistry } from '../tools/registry.js';
 import { generateMnemonic } from '../tools/wallet.js';
 import { makeRetryUntilCondition } from '../tools/sleep.js';
 import { makeDeployBuilder } from '../tools/deploy.js';
+import { makeHermes } from '../tools/hermes-tools.js';
+
+export const FAUCET_POUR = 10_000n * 1_000_000n;
 
 const setupRegistry = makeSetupRegistry(makeGetFile({ dirname, join }));
 
-export const chainConfig = {
+// XXX consider including bech32Prefix in `ChainInfo`
+export const chainConfig: Record<string, { expectedAddressPrefix: string }> = {
   cosmoshub: {
-    chainId: 'gaialocal',
-    denom: 'uatom',
     expectedAddressPrefix: 'cosmos',
   },
   osmosis: {
-    chainId: 'osmosislocal',
-    denom: 'uosmo',
     expectedAddressPrefix: 'osmo',
   },
   agoric: {
-    chainId: 'agoriclocal',
-    denom: 'ubld',
     expectedAddressPrefix: 'agoric',
   },
-};
-
-export const chainNames = Object.keys(chainConfig);
+} as const;
 
 const makeKeyring = async (
   e2eTools: Pick<E2ETools, 'addKey' | 'deleteKey'>,
@@ -62,9 +58,48 @@ export const commonSetup = async (t: ExecutionContext) => {
   const tools = await makeAgdTools(t.log, childProcess);
   const keyring = await makeKeyring(tools);
   const deployBuilder = makeDeployBuilder(tools, fse.readJSON, execa);
-  const retryUntilCondition = makeRetryUntilCondition(t.log);
+  const retryUntilCondition = makeRetryUntilCondition({
+    log: t.log,
+    setTimeout: globalThis.setTimeout,
+  });
+  const hermes = makeHermes(childProcess);
 
-  return { useChain, ...tools, ...keyring, retryUntilCondition, deployBuilder };
+  /**
+   * Starts a contract if instance not found. Takes care of installing
+   * bundles and voting on the CoreEval proposal.
+   *
+   * @param contractName name of the contract in agoricNames
+   * @param contractBuilder path to proposal builder
+   */
+  const startContract = async (
+    contractName: string,
+    contractBuilder: string,
+  ) => {
+    const { vstorageClient } = tools;
+    const instances = Object.fromEntries(
+      await vstorageClient.queryData(`published.agoricNames.instance`),
+    );
+    if (contractName in instances) {
+      return t.log('Contract found. Skipping installation...');
+    }
+    t.log('bundle and install contract', contractName);
+    await deployBuilder(contractBuilder);
+    await retryUntilCondition(
+      () => vstorageClient.queryData(`published.agoricNames.instance`),
+      res => contractName in Object.fromEntries(res),
+      `${contractName} instance is available`,
+    );
+  };
+
+  return {
+    useChain,
+    ...tools,
+    ...keyring,
+    retryUntilCondition,
+    deployBuilder,
+    hermes,
+    startContract,
+  };
 };
 
 export type SetupContext = Awaited<ReturnType<typeof commonSetup>>;

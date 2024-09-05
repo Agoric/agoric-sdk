@@ -158,17 +158,26 @@ const divideHelper = (amount, ratio, divideOp) => {
   );
 };
 
-/** @type {ScaleAmount} */
+/**
+ * Divide the amount by the ratio, truncating the remainder.
+ * @type {ScaleAmount}
+ */
 export const floorDivideBy = (amount, ratio) => {
   return divideHelper(amount, ratio, floorDivide);
 };
 
-/** @type {ScaleAmount} */
+/**
+ * Divide the amount by the ratio, rounding up the remainder.
+ * @type {ScaleAmount}
+ */
 export const ceilDivideBy = (amount, ratio) => {
   return divideHelper(amount, ratio, ceilDivide);
 };
 
-/** @type {ScaleAmount} */
+/**
+ * Divide the amount by the ratio, rounding to nearest with ties to even (aka Banker's Rounding) as in IEEE 754 default rounding.
+ * @type {ScaleAmount}
+ */
 export const divideBy = (amount, ratio) => {
   return divideHelper(amount, ratio, bankersDivide);
 };
@@ -334,7 +343,8 @@ export const ratiosSame = (left, right) => {
 };
 
 /**
- * Make an equivalant ratio with a new denominator
+ * Make a new ratio with a smaller denominator that approximates the ratio. If
+ * the proposed denominator is larger than the current one, return the original.
  *
  * @param {Ratio} ratio
  * @param {bigint} newDen
@@ -343,6 +353,10 @@ export const ratiosSame = (left, right) => {
 export const quantize = (ratio, newDen) => {
   const oldDen = ratio.denominator.value;
   const oldNum = ratio.numerator.value;
+  if (newDen > oldDen) {
+    return ratio;
+  }
+
   const newNum =
     newDen === oldDen ? oldNum : bankersDivide(oldNum * newDen, oldDen);
   return makeRatio(

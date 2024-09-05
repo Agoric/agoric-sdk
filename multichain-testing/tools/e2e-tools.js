@@ -136,10 +136,9 @@ export const provisionSmartWallet = async (
     chainId = 'agoriclocal',
     whale = 'faucet',
     progress = console.log,
+    q = makeQueryKit(makeVStorage(lcd)).query,
   },
 ) => {
-  const { query: q } = makeQueryKit(makeVStorage(lcd));
-
   // TODO: skip this query if balances is {}
   const vbankEntries = await q.queryData('published.agoricNames.vbankAsset');
   const byName = Object.fromEntries(
@@ -507,8 +506,10 @@ export const makeE2ETools = async (
 
   const copyFiles = makeCopyFiles({ execFileSync, log });
 
+  const vstorageClient = makeQueryKit(vstorage).query;
+
   return {
-    makeQueryTool: () => makeQueryKit(vstorage).query,
+    vstorageClient,
     installBundles,
     runCoreEval: buildAndRunCoreEval,
     /**
@@ -516,7 +517,13 @@ export const makeE2ETools = async (
      * @param {Record<string, bigint>} amount
      */
     provisionSmartWallet: (address, amount) =>
-      provisionSmartWallet(address, amount, { agd, blockTool, lcd, delay }),
+      provisionSmartWallet(address, amount, {
+        agd,
+        blockTool,
+        lcd,
+        delay,
+        q: vstorageClient,
+      }),
     /**
      * @param {string} name
      * @param {EnglishMnemonic | string} mnemonic
@@ -579,7 +586,6 @@ export const makeDoOffer = wallet => {
     // const result = await seat.getOfferResult();
     await seatLike(updates).getPayoutAmounts();
     // return result;
-    return true;
   };
 
   return doOffer;

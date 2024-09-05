@@ -47,7 +47,9 @@ export const cleanKeywords = uncleanKeywordRecord => {
 
   // Assert all names are ascii identifiers starting with
   // an upper case letter.
-  keywords.forEach(assertKeywordName);
+  for (const keyword of keywords) {
+    assertKeywordName(keyword);
+  }
 
   return /** @type {string[]} */ (keywords);
 };
