@@ -1,4 +1,4 @@
-import json, gzip, re, time
+import sys, json, gzip, re, time
 
 # Library for use by correlate_timestamps.py and friends, to extract
 # and correlate timestamps. Returns a list of Deliveries, each with
@@ -16,7 +16,7 @@ class Syscall:
             target = vsc[1]
             msg = vsc[2]
             methargsCD = msg["methargs"]
-            method = json.loads(methargsCD["body"])[0]
+            method = json.loads(methargsCD["body"].removeprefix("#"))[0]
             result = msg.get("result")
             self.description = "(%s).%s -> %s" % (target, method, result)
         elif vsc[0] == "callNow":
@@ -85,9 +85,12 @@ class Console:
         return 0
 
 class Delivery:
-    def __init__(self, vatID, cranknum, vd, when, monotime):
+    def __init__(self, vatID, cranknum, deliverynum, vd, when, monotime, blockheight, blocktime):
         self.vatID = vatID
         self.cranknum = cranknum
+        self.deliverynum = deliverynum
+        self.blockheight = blockheight
+        self.blocktime = blocktime
         self.syscalls = []
         self.consoles = []
         self.events = [] # includes both
@@ -96,12 +99,13 @@ class Delivery:
         self.rx_delivery = None
         self.tx_result = None
         self.rx_result = None
+        self.computrons = None
         self.vd = vd
         if vd[0] == "message":
             target = vd[1]
             msg = vd[2]
             methargsCD = msg["methargs"]
-            method = json.loads(methargsCD["body"])[0]
+            method = json.loads(methargsCD["body"].removeprefix("#"))[0]
             result = msg.get("result")
             self.description = "(%s).%s -> %s" % (target, method, result)
         elif vd[0] == "notify":
@@ -132,6 +136,48 @@ class Delivery:
         self.rx_delivery = when
     def set_tx_result(self, when):
         self.tx_result = when
+    def set_computrons(self, computrons):
+        self.computrons = computrons
+
+    def complete(self):
+        # figure out total_pipe, total_worker, total_kernel, total (k->k)
+        total_pipe = 0
+        total_worker = 0
+        total_kernel = 0
+        if self.rx_delivery:
+            # k -> w: sending the delivery
+            total_pipe += (self.rx_delivery - self.tx_delivery)
+            # else unknown
+        prev_event = None
+        for event in self.events:
+            if not prev_event and self.rx_delivery and event.tx_request:
+                # work done after receiving delivery, before first syscall
+                total_worker += (event.tx_request - self.rx_delivery)
+            if prev_event and prev_event.rx_result and event.tx_request:
+                # work done between syscalls
+                total_worker += (event.tx_request - prev_event.rx_result)
+            prev_event = event
+            if event.tx_request and event.rx_result:
+                # from sending a syscall to receiving the result, we
+                # have pipe send, kernel time, pipe receive
+                total_pipe += (event.rx_request - event.tx_request)
+                total_kernel += (event.tx_result - event.rx_request)
+                total_pipe += (event.rx_result - event.tx_result)
+                # else unknown
+        if prev_event and self.tx_result:
+            # work done after the last syscall, before sending results
+            total_worker += (self.tx_result - prev_event.rx_result)
+            # else unknown
+        if not prev_event and self.tx_result:
+            # no syscalls, just worker time
+            total_worker += (self.tx_result - self.rx_delivery)
+        if self.tx_result:
+            # sending results to kernel counts towards pipe time
+            total_pipe += (self.rx_result - self.tx_result)
+        self.total_pipe = total_pipe
+        self.total_worker = total_worker
+        self.total_kernel = total_kernel
+        self.k_to_k = self.rx_result - self.tx_delivery
 
     def firsttime(self):
         # time between receipt of delivery and (first syscall) or (results)
@@ -149,9 +195,12 @@ class Delivery:
                     +(self.rx_result - self.tx_result))
         return None
 
-def parse_file(fn, vatID):
+def stream_file(fn, vatID):
     deliveries = []
+    blockheight = None
+    blocktime = None
     opener = gzip.open if fn.endswith(".gz") else open
+    opener = (lambda fn: sys.stdin) if fn == "-" else opener
     with opener(fn) as f:
         for line in f:
             if isinstance(line, bytes):
@@ -163,22 +212,33 @@ def parse_file(fn, vatID):
             if vatID and data.get("vatID") != vatID:
                 continue
             type = data["type"]
+            if type == "cosmic-swingset-bootstrap-block-start":
+                blockheight = 0
+                blocktime = data["blockTime"]
+            if type == 'cosmic-swingset-begin-block':
+                blockheight = data["blockHeight"]
+                blocktime = data["blockTime"]
+            if type == 'cosmic-swingset-end-block-finish':
+                blockheight = None
+                blocktime = None
+            if data.get("replay") == True:
+                continue
             when = data["time"]
 
             if type == 'deliver':
                 cranknum = data["crankNum"]
                 deliverynum = data["deliveryNum"]
                 monotime = data["monotime"]
-                d = Delivery(data.get("vatID"), cranknum, data["vd"], when, monotime)
+                d = Delivery(data.get("vatID"), cranknum, deliverynum, data["vd"], when, monotime, blockheight, blocktime)
                 deliveries.append(d)
-            if type == "console":
+            if type == "console" and deliveries:
                 deliveries[-1].add_console(when)
-            if type == 'syscall':
+            if type == 'syscall' and deliveries:
                 syscallNum = data['syscallNum']
                 deliveries[-1].add_syscall(data['vsc'], syscallNum, when)
-            if type == 'syscall-result':
+            if type == 'syscall-result' and deliveries:
                 deliveries[-1].get_syscall(-1).got_result(when)
-            if type == 'deliver-result':
+            if type == 'deliver-result' and deliveries:
                 deliveries[-1].set_rx_result(when)
                 dr = data["dr"]
                 mr = dr[2]
@@ -196,4 +256,11 @@ def parse_file(fn, vatID):
                             event.set_rx_result(timestamps.pop(0))
                     if len(timestamps):
                         d.set_tx_result(timestamps.pop(0))
-    return deliveries
+                if mr and "compute" in dr[2]:
+                    deliveries[-1].set_computrons(dr[2]["compute"])
+                d.complete()
+                yield deliveries[-1]
+                deliveries.pop()
+
+def parse_file(fn, vatID):
+    return list(stream_file(fn, vatID))
