@@ -80,15 +80,21 @@ export function makeTranscriptStore(
     )
   `);
 
-  // Transcripts are broken up into "spans", delimited by heap snapshots.  If we
-  // take heap snapshots after deliveries 100 and 200, and have not yet
-  // performed delivery 201, we'll have two non-current (i.e., isCurrent=null)
-  // spans (one with startPos=0, endPos=100, the second with startPos=100,
-  // endPos=200), and a single empty isCurrent==1 span with startPos=200 and
-  // endPos=200.  After we perform delivery 201, the single isCurrent=1 span
-  // will will still have startPos=200 but will now have endPos=201.  For every
-  // vatID, there will be exactly one isCurrent=1 span, and zero or more
-  // non-current (historical) spans.
+  // Transcripts are broken up into "spans", delimited by heap snapshots.
+  // The items of each transcript consist of deliveries and pseudo-deliveries
+  // such as initialize-worker and load-snapshot.
+  // For every vatID, there will be exactly one current span (with isCurrent=1),
+  // and zero or more non-current (historical) spans (with isCurrent=null).
+  // If we take a heap snapshot after the first hundred items and again after
+  // the second hundred (i.e., after zero-indexed items 99 and 199),
+  // and have not yet extended the transcript after the second snapshot, we'll
+  // have two historical spans (one with startPos=0 and endPos=100, the second
+  // with startPos=100 and endPos=200) and a single empty current span with
+  // startPos=200 and endPos=200.  But this situation is transient, and will
+  // generally be followed by a load-snapshot pseudo-delivery before the next
+  // commit (at which point the single current span will still have startPos=200
+  // but will have endPos=201).  After we perform the next delivery, the single
+  // current span will still have startPos=200 but will now have endPos=202.
   //
   // The transcriptItems associated with historical spans may or may not exist,
   // depending on pruning.  However, the items associated with the current span
@@ -246,7 +252,7 @@ export function makeTranscriptStore(
 
   const sqlDeleteOldItems = db.prepare(`
     DELETE FROM transcriptItems
-    WHERE vatID = ? AND position < ?
+    WHERE vatID = ? AND position >= ? AND position < ?
   `);
 
   function doSpanRollover(vatID, isNewIncarnation) {
@@ -276,12 +282,13 @@ export function makeTranscriptStore(
     noteExport(spanMetadataKey(newRec), JSON.stringify(newRec));
 
     if (!keepTranscripts) {
-      // TODO: for #9174 (delete historical transcript spans), we need
-      // this DB statement to only delete the items of the old span
-      // (startPos..endPos), not all previous items, otherwise the
-      // first rollover after switching to keepTranscripts=false will
-      // do a huge DB commit and probably explode
-      sqlDeleteOldItems.run(vatID, endPos);
+      // Delete items of the previously-current span.
+      // There may still be items associated with even older spans, but we leave
+      // those, to avoid excessive DB churn (for details, see #9387 and #9174).
+      // Recovery of space claimed by such ancient items is expected to use an
+      // external mechanism such as restoration from an operational snapshot
+      // that doesn't include them.
+      sqlDeleteOldItems.run(vatID, startPos, endPos);
     }
     return incarnationToUse;
   }

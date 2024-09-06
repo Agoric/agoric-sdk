@@ -12,6 +12,9 @@ import { fork } from 'node:child_process';
 
 import { Fail, q } from '@endo/errors';
 import { E } from '@endo/far';
+import { makeMarshal } from '@endo/marshal';
+import { isNat } from '@endo/nat';
+import { M, mustMatch } from '@endo/patterns';
 import engineGC from '@agoric/internal/src/lib-nodejs/engine-gc.js';
 import { waitUntilQuiescent } from '@agoric/internal/src/lib-nodejs/waitUntilQuiescent.js';
 import {
@@ -25,7 +28,6 @@ import {
   makeChainStorageRoot,
   makeSerializeToStorage,
 } from '@agoric/internal/src/lib-chainStorage.js';
-import { makeMarshal } from '@endo/marshal';
 import { makeShutdown } from '@agoric/internal/src/node/shutdown.js';
 
 import * as STORAGE_PATH from '@agoric/internal/src/chain-storage-paths.js';
@@ -72,7 +74,27 @@ const toNumber = specimen => {
  * @typedef {object} CosmosSwingsetConfig
  * @property {string} [slogfile]
  * @property {number} [maxVatsOnline]
+ * @property {'debug' | 'operational'} [vatSnapshotRetention]
+ * @property {'archival' | 'operational'} [vatTranscriptRetention]
  */
+const SwingsetConfigShape = M.splitRecord(
+  // All known properties are optional, but unknown properties are not allowed.
+  {},
+  {
+    slogfile: M.string(),
+    maxVatsOnline: M.number(),
+    vatSnapshotRetention: M.or('debug', 'operational'),
+    vatTranscriptRetention: M.or('archival', 'operational'),
+  },
+  {},
+);
+const validateSwingsetConfig = swingsetConfig => {
+  mustMatch(swingsetConfig, SwingsetConfigShape);
+  const { maxVatsOnline } = swingsetConfig;
+  maxVatsOnline === undefined ||
+    (isNat(maxVatsOnline) && maxVatsOnline > 0) ||
+    Fail`maxVatsOnline must be a positive integer`;
+};
 
 /**
  * A boot message consists of cosmosInitAction fields that are subject to
@@ -97,19 +119,6 @@ const makeBootMsg = initAction => {
     chainID,
     params,
     supplyCoins,
-  };
-};
-
-/**
- * Extract local Swingset-specific configuration which is
- * not part of the consensus.
- *
- * @param {CosmosSwingsetConfig} [resolvedConfig]
- */
-const makeSwingsetConfig = resolvedConfig => {
-  const { maxVatsOnline } = resolvedConfig || {};
-  return {
-    maxVatsOnline,
   };
 };
 
@@ -301,12 +310,23 @@ export default async function main(progname, args, { env, homedir, agcc }) {
   // here so 'sendToChainStorage' can close over the single mutable instance,
   // when we updated the 'portNums.storage' value each time toSwingSet was called.
   async function launchAndInitializeSwingSet(initAction) {
+    const { XSNAP_KEEP_SNAPSHOTS, NODE_HEAP_SNAPSHOTS = -1 } = env;
+
+    /** @type {CosmosSwingsetConfig} */
+    const swingsetConfig = harden(initAction.resolvedConfig || {});
+    validateSwingsetConfig(swingsetConfig);
+    const { slogfile, vatSnapshotRetention, vatTranscriptRetention } =
+      swingsetConfig;
+    const keepSnapshots = vatSnapshotRetention
+      ? vatSnapshotRetention !== 'operational'
+      : ['1', 'true'].includes(XSNAP_KEEP_SNAPSHOTS);
+    const keepTranscripts = vatTranscriptRetention
+      ? vatTranscriptRetention !== 'operational'
+      : false;
+
     // As a kludge, back-propagate selected configuration into environment variables.
-    const { slogfile } = initAction.resolvedConfig || {};
     // eslint-disable-next-line dot-notation
     if (slogfile) env['SLOGFILE'] = slogfile;
-
-    const swingsetConfig = makeSwingsetConfig(initAction.resolvedConfig);
 
     const sendToChainStorage = msg => chainSend(portNums.storage, msg);
     // this object is used to store the mailbox state.
@@ -442,7 +462,6 @@ export default async function main(progname, args, { env, homedir, agcc }) {
       serviceName: TELEMETRY_SERVICE_NAME,
     });
 
-    const { XSNAP_KEEP_SNAPSHOTS, NODE_HEAP_SNAPSHOTS = -1 } = env;
     const slogSender = await makeSlogSender({
       stateDir: stateDBDir,
       env,
@@ -454,9 +473,6 @@ export default async function main(progname, args, { env, homedir, agcc }) {
       flagName: 'trace-store',
       trueValue: pathResolve(stateDBDir, 'store-trace.log'),
     });
-
-    const keepSnapshots =
-      XSNAP_KEEP_SNAPSHOTS === '1' || XSNAP_KEEP_SNAPSHOTS === 'true';
 
     const nodeHeapSnapshots = Number.parseInt(NODE_HEAP_SNAPSHOTS, 10);
 
@@ -539,6 +555,7 @@ export default async function main(progname, args, { env, homedir, agcc }) {
       swingStoreExportCallback,
       swingStoreTraceFile,
       keepSnapshots,
+      keepTranscripts,
       afterCommitCallback,
       swingsetConfig,
     });
