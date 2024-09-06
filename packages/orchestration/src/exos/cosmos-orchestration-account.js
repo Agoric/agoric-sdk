@@ -111,6 +111,27 @@ const PUBLIC_TOPICS = {
   account: ['Staking Account holder status', M.any()],
 };
 
+export const CosmosOrchestrationInvitationMakersInterface = M.interface(
+  'invitationMakers',
+  {
+    Delegate: M.call(ChainAddressShape, AmountArgShape).returns(M.promise()),
+    Redelegate: M.call(
+      ChainAddressShape,
+      ChainAddressShape,
+      AmountArgShape,
+    ).returns(M.promise()),
+    WithdrawReward: M.call(ChainAddressShape).returns(M.promise()),
+    Undelegate: M.call(M.arrayOf(DelegationShape)).returns(M.promise()),
+    DeactivateAccount: M.call().returns(M.promise()),
+    ReactivateAccount: M.call().returns(M.promise()),
+    TransferAccount: M.call().returns(M.promise()),
+    Send: M.call().returns(M.promise()),
+    SendAll: M.call().returns(M.promise()),
+    Transfer: M.call().returns(M.promise()),
+  },
+);
+harden(CosmosOrchestrationInvitationMakersInterface);
+
 /**
  * @param {Zone} zone
  * @param {object} powers
@@ -177,24 +198,7 @@ export const prepareCosmosOrchestrationAccountKit = (
           .returns(Vow$(M.record())),
       }),
       holder: IcaAccountHolderI,
-      invitationMakers: M.interface('invitationMakers', {
-        Delegate: M.call(ChainAddressShape, AmountArgShape).returns(
-          M.promise(),
-        ),
-        Redelegate: M.call(
-          ChainAddressShape,
-          ChainAddressShape,
-          AmountArgShape,
-        ).returns(M.promise()),
-        WithdrawReward: M.call(ChainAddressShape).returns(M.promise()),
-        Undelegate: M.call(M.arrayOf(DelegationShape)).returns(M.promise()),
-        DeactivateAccount: M.call().returns(M.promise()),
-        ReactivateAccount: M.call().returns(M.promise()),
-        TransferAccount: M.call().returns(M.promise()),
-        Send: M.call().returns(M.promise()),
-        SendAll: M.call().returns(M.promise()),
-        Transfer: M.call().returns(M.promise()),
-      }),
+      invitationMakers: CosmosOrchestrationInvitationMakersInterface,
     },
     /**
      * @param {object} info
