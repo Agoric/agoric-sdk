@@ -288,8 +288,8 @@ export function makeTranscriptStore(
     closeSpan(vatID, bounds);
 
     // create a new (empty) DB row, with isCurrent=1
-    const incarnationToUse = isNewIncarnation ? incarnation + 1 : incarnation;
-    sqlWriteSpan.run(vatID, endPos, endPos, initialHash, 1, incarnationToUse);
+    const newSpanIncarnation = isNewIncarnation ? incarnation + 1 : incarnation;
+    sqlWriteSpan.run(vatID, endPos, endPos, initialHash, 1, newSpanIncarnation);
 
     // overwrite the transcript.${vatID}.current record with new span
     const rec = spanRec(
@@ -298,7 +298,7 @@ export function makeTranscriptStore(
       endPos,
       initialHash,
       true,
-      incarnationToUse,
+      newSpanIncarnation,
     );
     noteExport(spanMetadataKey(rec), JSON.stringify(rec));
 
@@ -311,7 +311,7 @@ export function makeTranscriptStore(
       // that doesn't include them.
       sqlDeleteOldItems.run(vatID, startPos, endPos);
     }
-    return incarnationToUse;
+    return newSpanIncarnation;
   }
 
   /**
