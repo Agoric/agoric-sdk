@@ -317,10 +317,12 @@ export default async function main(progname, args, { env, homedir, agcc }) {
     validateSwingsetConfig(swingsetConfig);
     const { slogfile, vatSnapshotRetention, vatTranscriptRetention } =
       swingsetConfig;
-    const keepSnapshots =
-      vatSnapshotRetention === 'debug' ||
-      (!vatSnapshotRetention && ['1', 'true'].includes(XSNAP_KEEP_SNAPSHOTS));
-    const keepTranscripts = vatTranscriptRetention === 'archival';
+    const keepSnapshots = vatSnapshotRetention
+      ? vatSnapshotRetention !== 'operational'
+      : ['1', 'true'].includes(XSNAP_KEEP_SNAPSHOTS);
+    const keepTranscripts = vatTranscriptRetention
+      ? vatTranscriptRetention !== 'operational'
+      : false;
 
     // As a kludge, back-propagate selected configuration into environment variables.
     // eslint-disable-next-line dot-notation
