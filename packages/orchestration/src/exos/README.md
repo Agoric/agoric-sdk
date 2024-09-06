@@ -1,6 +1,6 @@
 # Exo structure
 
-Last verified 2024-08-30
+Last verified 2024-09-06
 
 ```mermaid
 classDiagram
