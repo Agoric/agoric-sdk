@@ -143,13 +143,17 @@ const reImport = async (t, dbDir, artifactMode) => {
   return sqlite3(path.join(dbDir2, 'swingstore.sqlite'));
 };
 
-const compareNoHash = (t, actual, expected, message) => {
+const stripHashes = exportData => {
   const stripped = {};
-  for (const [key, value] of Object.entries(actual)) {
+  const entries =
+    exportData instanceof Map
+      ? exportData.entries()
+      : Object.entries(exportData);
+  for (const [key, value] of entries) {
     const { hash: _, ...data } = JSON.parse(value);
     stripped[key] = data;
   }
-  return t.deepEqual(stripped, expected, message);
+  return stripped;
 };
 
 const setupTranscript = async t => {
@@ -240,7 +244,7 @@ test('slow deletion of transcripts', async t => {
     'transcript.v1.6.8',
   ];
 
-  compareNoHash(t, currentExportData, expectedLiveExportData);
+  t.deepEqual(stripHashes(currentExportData), expectedLiveExportData);
   t.is(db.prepare('SELECT COUNT(*) FROM transcriptItems').pluck().get(), 8);
   t.is(db.prepare('SELECT COUNT(*) FROM transcriptSpans').pluck().get(), 4);
 
@@ -249,7 +253,7 @@ test('slow deletion of transcripts', async t => {
   {
     const { exportData, artifactNames } = await getExport(dbDir, 'operational');
     t.deepEqual(currentExportData, mapToObj(exportData));
-    compareNoHash(t, mapToObj(exportData), expectedLiveExportData);
+    t.deepEqual(stripHashes(exportData), expectedLiveExportData);
     t.deepEqual(artifactNames, expectedArtifactNames.slice(-1));
     const db2 = await reImport(t, dbDir, 'operational');
     t.is(db2.prepare('SELECT COUNT(*) FROM transcriptItems').pluck().get(), 2);
@@ -260,7 +264,7 @@ test('slow deletion of transcripts', async t => {
   // artifacts for each
   {
     const { exportData, artifactNames } = await getExport(dbDir, 'archival');
-    compareNoHash(t, mapToObj(exportData), expectedLiveExportData);
+    t.deepEqual(stripHashes(exportData), expectedLiveExportData);
     t.deepEqual(artifactNames, expectedArtifactNames);
     const db2 = await reImport(t, dbDir, 'archival');
     t.is(db2.prepare('SELECT COUNT(*) FROM transcriptItems').pluck().get(), 8);
@@ -273,7 +277,7 @@ test('slow deletion of transcripts', async t => {
   {
     transcriptStore.stopUsingTranscript(vatID);
     await commit();
-    compareNoHash(t, currentExportData, expectedStoppedExportData);
+    t.deepEqual(stripHashes(currentExportData), expectedStoppedExportData);
     exportLog.length = 0;
     // stopUsingTranscript is idempotent
     transcriptStore.stopUsingTranscript(vatID);
@@ -286,9 +290,8 @@ test('slow deletion of transcripts', async t => {
   // debug-mode will have artifacts.
   for (const mode of ['operational', 'replay', 'archival', 'debug']) {
     const { exportData, artifactNames } = await getExport(dbDir, mode);
-    compareNoHash(
-      t,
-      mapToObj(exportData),
+    t.deepEqual(
+      stripHashes(exportData),
       expectedStoppedExportData,
       `${mode} stopped-vat export data`,
     );
@@ -312,7 +315,7 @@ test('slow deletion of transcripts', async t => {
     t.false(dc.done);
     t.is(dc.cleanups, 1);
     await commit();
-    compareNoHash(t, currentExportData, expectedTruncatedExportData1);
+    t.deepEqual(stripHashes(currentExportData), expectedTruncatedExportData1);
     t.is(db.prepare('SELECT COUNT(*) FROM transcriptItems').pluck().get(), 6);
     t.is(db.prepare('SELECT COUNT(*) FROM transcriptSpans').pluck().get(), 3);
   }
@@ -325,9 +328,8 @@ test('slow deletion of transcripts', async t => {
 
   for (const mode of ['operational', 'replay', 'archival', 'debug']) {
     const { exportData, artifactNames } = await getExport(dbDir, mode);
-    compareNoHash(
-      t,
-      mapToObj(exportData),
+    t.deepEqual(
+      stripHashes(exportData),
       expectedTruncatedExportData1,
       `${mode} first-deletion export data`,
     );
@@ -350,15 +352,14 @@ test('slow deletion of transcripts', async t => {
     t.false(dc.done);
     t.is(dc.cleanups, 1);
     await commit();
-    compareNoHash(t, currentExportData, expectedTruncatedExportData2);
+    t.deepEqual(stripHashes(currentExportData), expectedTruncatedExportData2);
     t.is(db.prepare('SELECT COUNT(*) FROM transcriptItems').pluck().get(), 4);
     t.is(db.prepare('SELECT COUNT(*) FROM transcriptSpans').pluck().get(), 2);
   }
   for (const mode of ['operational', 'replay', 'archival', 'debug']) {
     const { exportData, artifactNames } = await getExport(dbDir, mode);
-    compareNoHash(
-      t,
-      mapToObj(exportData),
+    t.deepEqual(
+      stripHashes(exportData),
       expectedTruncatedExportData2,
       `${mode} second-deletion export data`,
     );
@@ -378,15 +379,14 @@ test('slow deletion of transcripts', async t => {
     t.true(dc.done);
     t.is(dc.cleanups, 2);
     await commit();
-    compareNoHash(t, currentExportData, {});
+    t.deepEqual(stripHashes(currentExportData), {});
     t.is(db.prepare('SELECT COUNT(*) FROM transcriptItems').pluck().get(), 0);
     t.is(db.prepare('SELECT COUNT(*) FROM transcriptSpans').pluck().get(), 0);
   }
   for (const mode of ['operational', 'replay', 'archival', 'debug']) {
     const { exportData, artifactNames } = await getExport(dbDir, mode);
-    compareNoHash(
-      t,
-      mapToObj(exportData),
+    t.deepEqual(
+      stripHashes(exportData),
       {},
       `${mode} final-deletion export data`,
     );
@@ -424,7 +424,7 @@ test('slow deletion without stopUsingTranscript', async t => {
     const t0 = { vatID, startPos: 0, endPos: 2, isCurrent: 0, incarnation: 0 };
     const t2 = { vatID, startPos: 2, endPos: 4, isCurrent: 0, incarnation: 0 };
     const t4 = { vatID, startPos: 4, endPos: 6, isCurrent: 0, incarnation: 1 };
-    compareNoHash(t, currentExportData, {
+    t.deepEqual(stripHashes(currentExportData), {
       'transcript.v1.0': t0,
       'transcript.v1.2': t2,
       'transcript.v1.4': t4,
