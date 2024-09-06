@@ -277,12 +277,22 @@ export function makeTranscriptStore(
 
     // and change its DB row to isCurrent=null
     sqlEndCurrentSpan.run(vatID);
+
+    if (!keepTranscripts) {
+      // Delete items of the previously-current span.
+      // There may still be items associated with even older spans, but we leave
+      // those, to avoid excessive DB churn (for details, see #9387 and #9174).
+      // Recovery of space claimed by such ancient items is expected to use an
+      // external mechanism such as restoration from an operational snapshot
+      // that doesn't include them.
+      sqlDeleteOldItems.run(vatID, startPos, endPos);
+    }
   }
 
   function doSpanRollover(vatID, isNewIncarnation) {
     ensureTxn();
     const bounds = getCurrentSpanBounds(vatID);
-    const { startPos, endPos, incarnation } = bounds;
+    const { endPos, incarnation } = bounds;
 
     // deal with the now-old span
     closeSpan(vatID, bounds);
@@ -302,15 +312,6 @@ export function makeTranscriptStore(
     );
     noteExport(spanMetadataKey(rec), JSON.stringify(rec));
 
-    if (!keepTranscripts) {
-      // Delete items of the previously-current span.
-      // There may still be items associated with even older spans, but we leave
-      // those, to avoid excessive DB churn (for details, see #9387 and #9174).
-      // Recovery of space claimed by such ancient items is expected to use an
-      // external mechanism such as restoration from an operational snapshot
-      // that doesn't include them.
-      sqlDeleteOldItems.run(vatID, startPos, endPos);
-    }
     return newSpanIncarnation;
   }
 

@@ -433,7 +433,7 @@ const testSlowTranscriptDeletion = test.macro({
   exec: execSlowTranscriptDeletion,
 });
 test(testSlowTranscriptDeletion, { keepTranscripts: true });
-test.failing(testSlowTranscriptDeletion, { keepTranscripts: false });
+test(testSlowTranscriptDeletion, { keepTranscripts: false });
 
 test('slow deletion without stopUsingTranscript', async t => {
   // slow deletion should work even without stopUsingTranscript
