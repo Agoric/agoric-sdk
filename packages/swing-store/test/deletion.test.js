@@ -156,7 +156,7 @@ const stripHashes = exportData => {
   return stripped;
 };
 
-const setupTranscript = async t => {
+const setupTranscript = async (t, keepTranscripts) => {
   const vatID = 'v1';
   const exportLog = [];
   const currentExportData = {};
@@ -168,7 +168,7 @@ const setupTranscript = async t => {
   };
   const [dbDir, cleanup] = await tmpDir('testdb');
   t.teardown(cleanup);
-  const store = initSwingStore(dbDir, { exportCallback });
+  const store = initSwingStore(dbDir, { exportCallback, keepTranscripts });
   const { kernelStorage, hostStorage } = store;
   const { transcriptStore } = kernelStorage;
   const { commit } = hostStorage;
@@ -201,7 +201,11 @@ const setupTranscript = async t => {
   };
 };
 
-test('slow deletion of transcripts', async t => {
+/**
+ * @param {import('ava').ExecutionContext} t
+ * @param {{ keepTranscripts: boolean }} config
+ */
+const execSlowTranscriptDeletion = async (t, { keepTranscripts }) => {
   // slow transcript deletion should remove export-data as it removes
   // transcript spans and their items
 
@@ -213,7 +217,7 @@ test('slow deletion of transcripts', async t => {
     exportLog,
     currentExportData,
     vatID,
-  } = await setupTranscript(t);
+  } = await setupTranscript(t, keepTranscripts);
 
   arrayIsLike(t, exportLog.splice(0), [
     ['transcript.v1.0'],
@@ -245,7 +249,10 @@ test('slow deletion of transcripts', async t => {
   ];
 
   t.deepEqual(stripHashes(currentExportData), expectedLiveExportData);
-  t.is(db.prepare('SELECT COUNT(*) FROM transcriptItems').pluck().get(), 8);
+  t.is(
+    db.prepare('SELECT COUNT(*) FROM transcriptItems').pluck().get(),
+    keepTranscripts ? 8 : 2,
+  );
   t.is(db.prepare('SELECT COUNT(*) FROM transcriptSpans').pluck().get(), 4);
 
   // an "operational"-mode export should list all spans, but only have
@@ -260,9 +267,11 @@ test('slow deletion of transcripts', async t => {
     t.is(db2.prepare('SELECT COUNT(*) FROM transcriptSpans').pluck().get(), 4);
   }
 
-  // an "archival"-mode export should list all four spans, with
-  // artifacts for each
-  {
+  // an "archival"-mode export should list all four spans with
+  // artifacts for each, but is only available with keepTranscripts=true
+  if (!keepTranscripts) {
+    await t.throwsAsync(getExport(dbDir, 'archival'));
+  } else {
     const { exportData, artifactNames } = await getExport(dbDir, 'archival');
     t.deepEqual(stripHashes(exportData), expectedLiveExportData);
     t.deepEqual(artifactNames, expectedArtifactNames);
@@ -287,7 +296,7 @@ test('slow deletion of transcripts', async t => {
 
   // All exports (debug and non-debug) in this "terminated but not
   // deleted" state will still have the export-data keys. Only
-  // debug-mode will have artifacts.
+  // debug-mode will have artifacts (and only with keepTranscripts=true).
   for (const mode of ['operational', 'replay', 'archival', 'debug']) {
     const { exportData, artifactNames } = await getExport(dbDir, mode);
     t.deepEqual(
@@ -297,7 +306,7 @@ test('slow deletion of transcripts', async t => {
     );
     t.deepEqual(
       artifactNames,
-      mode === 'debug' ? expectedArtifactNames : [],
+      mode === 'debug' && keepTranscripts ? expectedArtifactNames : [],
       `${mode} stopped-vat export artifacts`,
     );
     const db2 = await reImport(t, dbDir, 'operational');
@@ -316,7 +325,10 @@ test('slow deletion of transcripts', async t => {
     t.is(dc.cleanups, 1);
     await commit();
     t.deepEqual(stripHashes(currentExportData), expectedTruncatedExportData1);
-    t.is(db.prepare('SELECT COUNT(*) FROM transcriptItems').pluck().get(), 6);
+    t.is(
+      db.prepare('SELECT COUNT(*) FROM transcriptItems').pluck().get(),
+      keepTranscripts ? 6 : 0,
+    );
     t.is(db.prepare('SELECT COUNT(*) FROM transcriptSpans').pluck().get(), 3);
   }
 
@@ -335,7 +347,9 @@ test('slow deletion of transcripts', async t => {
     );
     t.deepEqual(
       artifactNames,
-      mode === 'debug' ? expectedArtifactNames.slice(0, -1) : [],
+      mode === 'debug' && keepTranscripts
+        ? expectedArtifactNames.slice(0, -1)
+        : [],
       `${mode} first-deletion export artifacts`,
     );
     const db2 = await reImport(t, dbDir, 'operational');
@@ -353,7 +367,10 @@ test('slow deletion of transcripts', async t => {
     t.is(dc.cleanups, 1);
     await commit();
     t.deepEqual(stripHashes(currentExportData), expectedTruncatedExportData2);
-    t.is(db.prepare('SELECT COUNT(*) FROM transcriptItems').pluck().get(), 4);
+    t.is(
+      db.prepare('SELECT COUNT(*) FROM transcriptItems').pluck().get(),
+      keepTranscripts ? 4 : 0,
+    );
     t.is(db.prepare('SELECT COUNT(*) FROM transcriptSpans').pluck().get(), 2);
   }
   for (const mode of ['operational', 'replay', 'archival', 'debug']) {
@@ -365,7 +382,9 @@ test('slow deletion of transcripts', async t => {
     );
     t.deepEqual(
       artifactNames,
-      mode === 'debug' ? expectedArtifactNames.slice(0, -2) : [],
+      mode === 'debug' && keepTranscripts
+        ? expectedArtifactNames.slice(0, -2)
+        : [],
       `${mode} second-deletion export artifacts`,
     );
     const db2 = await reImport(t, dbDir, 'operational');
@@ -405,7 +424,16 @@ test('slow deletion of transcripts', async t => {
     await commit();
     t.deepEqual(exportLog, []);
   }
+};
+const testSlowTranscriptDeletion = test.macro({
+  title(extra = '', { keepTranscripts }) {
+    const detail = keepTranscripts ? 'with retention' : 'without retention';
+    return `slow deletion of transcripts ${detail}${extra.replace(/.$/, ' $&')}`;
+  },
+  exec: execSlowTranscriptDeletion,
 });
+test(testSlowTranscriptDeletion, { keepTranscripts: true });
+test.failing(testSlowTranscriptDeletion, { keepTranscripts: false });
 
 test('slow deletion without stopUsingTranscript', async t => {
   // slow deletion should work even without stopUsingTranscript
