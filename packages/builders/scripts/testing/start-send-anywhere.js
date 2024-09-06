@@ -17,7 +17,7 @@ import { E } from '@endo/far';
 const trace = makeTracer('StartSA', true);
 
 /**
- * @import {start as StartFn} from '@agoric/orchestration/src/examples/sendAnywhere.contract.js';
+ * @import {start as StartFn} from '@agoric/orchestration/src/examples/send-anywhere.contract.js';
  */
 
 /**
@@ -61,14 +61,14 @@ export const startSendAnywhere = async ({
       marshaller,
       orchestrationService: cosmosInterchainService,
       storageNode: E(NonNullish(await chainStorage)).makeChildNode(
-        'sendAnywhere',
+        'send-anywhere',
       ),
       timerService: chainTimerService,
     }),
   );
 
   const { instance } = await E(startUpgradable)({
-    label: 'sendAnywhere',
+    label: 'send-anywhere',
     installation: sendAnywhere,
     issuerKeywordRecord: { Stable: await IST },
     privateArgs,
@@ -113,13 +113,13 @@ export const getManifest = ({ restoreRef }, { installationRef }) => {
 export const defaultProposalBuilder = async ({ publishRef, install }) =>
   harden({
     // Somewhat unorthodox, source the exports from this builder module
-    sourceSpec: '@agoric/builders/scripts/testing/start-sendAnywhere.js',
+    sourceSpec: '@agoric/builders/scripts/testing/start-send-anywhere.js',
     getManifestCall: [
       getManifest.name,
       {
         installationRef: publishRef(
           install(
-            '@agoric/orchestration/src/examples/sendAnywhere.contract.js',
+            '@agoric/orchestration/src/examples/send-anywhere.contract.js',
           ),
         ),
       },

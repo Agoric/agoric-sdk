@@ -12,16 +12,16 @@ import {
 import { inspect } from 'util';
 import { CosmosChainInfo, IBCConnectionInfo } from '../../src/cosmos-api.js';
 import { commonSetup } from '../supports.js';
-import { SingleAmountRecord } from '../../src/examples/sendAnywhere.contract.js';
+import { SingleAmountRecord } from '../../src/examples/send-anywhere.contract.js';
 import { registerChain } from '../../src/chain-info.js';
 import { buildVTransferEvent } from '../../tools/ibc-mocks.js';
 
 const dirname = path.dirname(new URL(import.meta.url).pathname);
 
 const contractName = 'sendAnywhere';
-const contractFile = `${dirname}/../../src/examples/${contractName}.contract.js`;
+const contractFile = `${dirname}/../../src/examples/send-anywhere.contract.js`;
 type StartFn =
-  typeof import('../../src/examples/sendAnywhere.contract.js').start;
+  typeof import('../../src/examples/send-anywhere.contract.js').start;
 
 const chainInfoDefaults = {
   connections: {},
