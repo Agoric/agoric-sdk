@@ -240,7 +240,7 @@ test.serial('stakeAtom - smart wallet', async t => {
       proposal: {},
     }),
     {
-      message: 'No denomination for brand [object Alleged: ATOM brand]',
+      message: 'No denom for brand [object Alleged: ATOM brand]',
     },
   );
 });

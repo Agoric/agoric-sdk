@@ -34,7 +34,11 @@ import {
   IBCTransferOptionsShape,
 } from '../typeGuards.js';
 import { coerceCoin, coerceDenom } from '../utils/amounts.js';
-import { maxClockSkew, tryDecodeResponse } from '../utils/cosmos.js';
+import {
+  maxClockSkew,
+  tryDecodeResponse,
+  toDenomAmount,
+} from '../utils/cosmos.js';
 import { orchestrationAccountMethods } from '../utils/orchestrationAccount.js';
 import { makeTimestampHelper } from '../utils/time.js';
 
@@ -106,9 +110,6 @@ export const IcaAccountHolderI = M.interface('IcaAccountHolder', {
 const PUBLIC_TOPICS = {
   account: ['Staking Account holder status', M.any()],
 };
-
-/** @type {(c: { denom: string; amount: string }) => DenomAmount} */
-const toDenomAmount = c => ({ denom: c.denom, value: BigInt(c.amount) });
 
 /**
  * @param {Zone} zone

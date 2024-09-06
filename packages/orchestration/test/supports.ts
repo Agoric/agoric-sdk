@@ -155,9 +155,7 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
    * Register BLD if it's not already registered
    */
   const registerAgoricBld = () => {
-    try {
-      chainHub.lookupAsset('ubld');
-    } catch {
+    if (!chainHub.getAsset('ubld')) {
       chainHub.registerChain('agoric', fetchedChainInfo.agoric);
       chainHub.registerAsset('ubld', {
         chainName: 'agoric',

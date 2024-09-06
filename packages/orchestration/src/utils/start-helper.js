@@ -70,7 +70,7 @@ export const provideOrchestration = (
     };
   })();
 
-  const { agoricNames, timerService } = remotePowers;
+  const { agoricNames, timerService, localchain } = remotePowers;
 
   const vowTools = prepareVowTools(zones.vows);
 
@@ -81,11 +81,7 @@ export const provideOrchestration = (
   const { makeRecorderKit } = prepareRecorderKitMakers(baggage, marshaller);
   const makeLocalOrchestrationAccountKit = prepareLocalOrchestrationAccountKit(
     zones.orchestration,
-    makeRecorderKit,
-    zcf,
-    timerService,
-    vowTools,
-    chainHub,
+    { makeRecorderKit, zcf, timerService, vowTools, chainHub, localchain },
   );
 
   const asyncFlowTools = prepareAsyncFlowTools(zones.asyncFlow, {

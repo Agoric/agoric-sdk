@@ -6,13 +6,23 @@ import { E } from '@endo/far';
 import path from 'path';
 import { JsonSafe, toRequestQueryJson, typedJson } from '@agoric/cosmic-proto';
 import {
+  QueryAllBalancesRequest,
+  QueryAllBalancesResponse,
   QueryBalanceRequest,
   QueryBalanceResponse,
 } from '@agoric/cosmic-proto/cosmos/bank/v1beta1/query.js';
 import type { ResponseQuery } from '@agoric/cosmic-proto/tendermint/abci/types.js';
 import { decodeBase64 } from '@endo/base64';
-import { LOCALCHAIN_DEFAULT_ADDRESS } from '@agoric/vats/tools/fake-bridge.js';
+import {
+  LOCALCHAIN_DEFAULT_ADDRESS,
+  LOCALCHAIN_QUERY_ALL_BALANCES_RESPONSE,
+} from '@agoric/vats/tools/fake-bridge.js';
 import { commonSetup } from '../supports.js';
+import { defaultMockAckMap } from '../ibc-mocks.js';
+import {
+  buildQueryPacketString,
+  buildQueryResponseString,
+} from '../../tools/ibc-mocks.js';
 
 const dirname = path.dirname(new URL(import.meta.url).pathname);
 
@@ -183,6 +193,7 @@ test('send query from orch account in an async-flow', async t => {
     bootstrap: { vowTools: vt },
     zoe,
     instance,
+    mocks: { ibcBridge },
     utils: { inspectDibcBridge },
   } = t.context;
   const publicFacet = await E(zoe).getPublicFacet(instance);
@@ -235,4 +246,62 @@ test('send query from orch account in an async-flow', async t => {
     x => x.method === 'startChannelOpenInit' && x.version === 'icq-1',
   );
   t.is(icqChannelInits.length, 1, 'only one ICQ channel opened');
+
+  {
+    t.log(
+      'send allBalances query from orchAccount on chain with icqEnabled: true',
+    );
+    const [query, ack] = [
+      buildQueryPacketString([
+        QueryAllBalancesRequest.toProtoMsg({
+          address: 'osmo1test3',
+        }),
+      ]),
+      buildQueryResponseString(QueryAllBalancesResponse, {
+        balances: [],
+      }),
+    ];
+    ibcBridge.setAddressPrefix('osmo');
+    ibcBridge.setMockAck({
+      ...defaultMockAckMap,
+      [query]: ack,
+    });
+    const inv = E(publicFacet).makeAccountAndGetBalancesQueryInvitation();
+    const userSeat = E(zoe).offer(inv, {}, undefined, {
+      chainName: 'osmosis',
+    });
+    const offerResultString = await vt.when(E(userSeat).getOfferResult());
+    const offerResult = JSON.parse(offerResultString);
+    t.deepEqual(offerResult, []);
+  }
+
+  {
+    t.log('send balance query from localOrchAccount');
+    const inv = E(publicFacet).makeAccountAndGetBalanceQueryInvitation();
+    const userSeat = E(zoe).offer(inv, {}, undefined, {
+      chainName: 'agoric',
+      denom: 'ibc/idk',
+    });
+    const offerResultString = await vt.when(E(userSeat).getOfferResult());
+    const offerResult = JSON.parse(offerResultString);
+    t.deepEqual(offerResult, {
+      // fake bridge mocked to return 10n for all denoms
+      value: '[10n]',
+      denom: 'ibc/idk',
+    });
+  }
+  {
+    t.log('send allBalances query from localOrchAccount');
+    const inv = E(publicFacet).makeAccountAndGetBalancesQueryInvitation();
+    const userSeat = E(zoe).offer(inv, {}, undefined, {
+      chainName: 'agoric',
+    });
+    const offerResultString = await vt.when(E(userSeat).getOfferResult());
+    const offerResult = JSON.parse(offerResultString);
+    const expectedBalances = LOCALCHAIN_QUERY_ALL_BALANCES_RESPONSE.map(x => ({
+      ...x,
+      value: `[${x.value}n]`,
+    }));
+    t.deepEqual(offerResult, expectedBalances);
+  }
 });

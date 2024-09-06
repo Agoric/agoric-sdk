@@ -96,6 +96,7 @@ classDiagram
       executeTx()
       getAddress()
       getBalance()
+      getBalances()
       getPublicTopics()
       monitorTransfers()
       send()

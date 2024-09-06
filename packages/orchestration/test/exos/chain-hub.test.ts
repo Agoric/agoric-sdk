@@ -5,6 +5,8 @@ import test from '@endo/ses-ava/prepare-endo.js';
 import { makeNameHubKit } from '@agoric/vats';
 import { prepareSwingsetVowTools } from '@agoric/vow/vat.js';
 import { E } from '@endo/far';
+import { makeIssuerKit } from '@agoric/ertp';
+import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
 import { makeChainHub, registerAssets } from '../../src/exos/chain-hub.js';
 import { provideDurableZone } from '../supports.js';
 import {
@@ -95,7 +97,7 @@ test.serial('getConnectionInfo', async t => {
   t.deepEqual(await vt.when(chainHub.getConnectionInfo(b, a)), ba);
 });
 
-test('getDenomInfo support', async t => {
+test('denom info support via getAsset and getDenom', async t => {
   const { chainHub } = setup();
 
   const denom = 'utok1';
@@ -103,17 +105,41 @@ test('getDenomInfo support', async t => {
     chainId: 'chain1',
     stakingTokens: [{ denom }],
   };
+  const tok1 = withAmountUtils(makeIssuerKit('Tok1'));
 
   chainHub.registerChain('chain1', info1);
   const info = {
     chainName: 'chain1',
     baseName: 'chain1',
     baseDenom: denom,
+    brand: tok1.brand,
   };
   chainHub.registerAsset('utok1', info);
 
-  const actual = chainHub.lookupAsset('utok1');
-  t.deepEqual(actual, info);
+  t.deepEqual(
+    chainHub.getAsset('utok1'),
+    info,
+    'getAsset(denom) returns denom info',
+  );
+
+  t.is(
+    chainHub.getAsset('utok404'),
+    undefined,
+    'getAsset returns undefined when denom not registered',
+  );
+
+  t.deepEqual(
+    chainHub.getDenom(tok1.brand),
+    info.baseDenom,
+    'getDenom(brand) returns denom info',
+  );
+
+  const tok44 = withAmountUtils(makeIssuerKit('Tok404'));
+  t.is(
+    chainHub.getDenom(tok44.brand),
+    undefined,
+    'getDenom returns undefined when brand is not found',
+  );
 });
 
 test('toward asset info in agoricNames (#9572)', async t => {
@@ -135,7 +161,7 @@ test('toward asset info in agoricNames (#9572)', async t => {
   registerAssets(chainHub, 'cosmoshub', details);
 
   {
-    const actual = chainHub.lookupAsset('uatom');
+    const actual = chainHub.getAsset('uatom');
     t.deepEqual(actual, {
       chainName: 'cosmoshub',
       baseName: 'cosmoshub',
@@ -144,7 +170,7 @@ test('toward asset info in agoricNames (#9572)', async t => {
   }
 
   {
-    const actual = chainHub.lookupAsset(
+    const actual = chainHub.getAsset(
       'ibc/F04D72CF9B5D9C849BB278B691CDFA2241813327430EC9CDC83F8F4CA4CDC2B0',
     );
     t.deepEqual(actual, {

@@ -59,11 +59,10 @@ export const makeAccountAndGetBalanceQuery = async (
 ) => {
   seat.exit(); // no funds exchanged
   mustMatch(chainName, M.string());
-  if (chainName === 'agoric') throw Fail`ICQ not supported on local chain`;
-  const remoteChain = await orch.getChain(chainName);
-  const orchAccount = await remoteChain.makeAccount();
+  const chain = await orch.getChain(chainName);
+  const orchAccount = await chain.makeAccount();
   const queryResponse = await orchAccount.getBalance(denom);
-  trace('ICQ Balance Query response:', queryResponse);
+  trace('Balance Query response:', queryResponse);
   // `quote` to ensure offerResult (record) is visible in smart-wallet
   return q(queryResponse).toString();
 };
@@ -79,7 +78,7 @@ harden(makeAccountAndGetBalanceQuery);
  * @param {Orchestrator} orch
  * @param {any} _ctx
  * @param {ZCFSeat} seat
- * @param {{ chainName: string; denom: DenomArg }} offerArgs
+ * @param {{ chainName: string }} offerArgs
  */
 export const makeAccountAndGetBalancesQuery = async (
   orch,
@@ -89,11 +88,10 @@ export const makeAccountAndGetBalancesQuery = async (
 ) => {
   seat.exit(); // no funds exchanged
   mustMatch(chainName, M.string());
-  if (chainName === 'agoric') throw Fail`ICQ not supported on local chain`;
-  const remoteChain = await orch.getChain(chainName);
-  const orchAccount = await remoteChain.makeAccount();
+  const chain = await orch.getChain(chainName);
+  const orchAccount = await chain.makeAccount();
   const queryResponse = await orchAccount.getBalances();
-  trace('ICQ All Balances Query response:', queryResponse);
+  trace('All Balances Query response:', queryResponse);
   // `quote` to ensure offerResult (record) is visible in smart-wallet
   return q(queryResponse).toString();
 };

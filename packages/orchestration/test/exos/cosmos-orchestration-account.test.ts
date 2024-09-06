@@ -71,7 +71,7 @@ test('send (to addr on same chain)', async t => {
 
   // IST not registered
   await t.throwsAsync(E(account).send(toAddress, ist.make(10n) as AmountArg), {
-    message: 'No denomination for brand [object Alleged: IST brand]',
+    message: 'No denom for brand [object Alleged: IST brand]',
   });
 
   // multi-send (sendAll)
@@ -280,7 +280,7 @@ test('transfer', async t => {
 
   t.log('transfer throws if asset is not in its chainHub');
   await t.throwsAsync(E(account).transfer(ist.make(10n), mockDestination), {
-    message: 'No denomination for brand [object Alleged: IST brand]',
+    message: 'No denom for brand [object Alleged: IST brand]',
   });
   chainHub.registerAsset('uist', {
     baseDenom: 'uist',

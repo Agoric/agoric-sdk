@@ -77,16 +77,15 @@ const queryAccountBalances = test.macro({
     const { icqEnabled } = (chainInfo as Record<string, CosmosChainInfo>)[
       chainName
     ];
+    const expectValidResult = icqEnabled || chainName === 'agoric';
     t.log(
-      icqEnabled
-        ? 'ICQ Enabled expecting offer result.'
-        : 'ICQ Disabled expecting offer error',
+      `Expecting offer ${expectValidResult ? 'result' : 'error'} for ${chainName}`,
     );
 
     const {
       status: { result, error },
     } = offerResult;
-    if (icqEnabled) {
+    if (expectValidResult) {
       t.is(error, undefined, 'No error observed for supported chain');
       const balances = JSON.parse(result);
       t.truthy(balances, 'Result is parsed successfully');
@@ -156,16 +155,16 @@ const queryAccountBalance = test.macro({
     const { icqEnabled } = (chainInfo as Record<string, CosmosChainInfo>)[
       chainName
     ];
+
+    const expectValidResult = icqEnabled || chainName === 'agoric';
     t.log(
-      icqEnabled
-        ? 'ICQ Enabled, expecting offer result.'
-        : 'ICQ Disabled, expecting offer error',
+      `Expecting offer ${expectValidResult ? 'result' : 'error'} for ${chainName}`,
     );
 
     const {
       status: { result, error },
     } = offerResult;
-    if (icqEnabled) {
+    if (expectValidResult) {
       t.is(error, undefined, 'No error observed for supported chain');
       const parsedBalance = JSON.parse(result);
       t.truthy(parsedBalance, 'Result is parsed successfully');
@@ -186,5 +185,7 @@ const queryAccountBalance = test.macro({
 
 test.serial(queryAccountBalances, 'osmosis');
 test.serial(queryAccountBalances, 'cosmoshub');
+test.serial(queryAccountBalances, 'agoric');
 test.serial(queryAccountBalance, 'osmosis');
 test.serial(queryAccountBalance, 'cosmoshub');
+test.serial(queryAccountBalance, 'agoric');

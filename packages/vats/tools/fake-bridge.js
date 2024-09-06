@@ -227,6 +227,17 @@ export const fakeLocalChainBridgeTxMsgHandler = (message, sequence) => {
   }
 };
 
+export const LOCALCHAIN_QUERY_ALL_BALANCES_RESPONSE = [
+  {
+    value: 10n,
+    denom: 'ubld',
+  },
+  {
+    value: 10n,
+    denom: 'uist',
+  },
+];
+
 /**
  * Used to mock responses from Cosmos Golang back to SwingSet for for
  * E(lca).query() and E(lca).queryMany().
@@ -244,16 +255,10 @@ export const fakeLocalChainBridgeQueryHandler = message => {
         height: '1',
         reply: {
           '@type': '/cosmos.bank.v1beta1.QueryAllBalancesResponse',
-          balances: [
-            {
-              amount: '10',
-              denom: 'ubld',
-            },
-            {
-              amount: '10',
-              denom: 'uist',
-            },
-          ],
+          balances: LOCALCHAIN_QUERY_ALL_BALANCES_RESPONSE.map(x => ({
+            denom: x.denom,
+            amount: String(x.value),
+          })),
           pagination: { nextKey: null, total: '2' },
         },
       };
@@ -265,8 +270,11 @@ export const fakeLocalChainBridgeQueryHandler = message => {
         reply: {
           '@type': '/cosmos.bank.v1beta1.QueryBalanceResponse',
           balance: {
+            denom: message.denom,
+            // return 10 for all denoms, somewhat arbitrarily.
+            // if a denom is not known to cosmos bank, we'd expect to see
+            // `{denom, amount: '0'}` returned
             amount: '10',
-            denom: 'ubld',
           },
         },
       };
