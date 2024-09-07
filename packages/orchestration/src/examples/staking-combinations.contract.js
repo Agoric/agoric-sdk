@@ -6,7 +6,6 @@
  *   actions with an ICA account.
  */
 import { AmountShape } from '@agoric/ertp';
-import { VowShape } from '@agoric/vow';
 import { M } from '@endo/patterns';
 import { prepareCombineInvitationMakers } from '../exos/combine-invitation-makers.js';
 import { CosmosOrchestrationInvitationMakersInterface } from '../exos/cosmos-orchestration-account.js';
@@ -50,15 +49,10 @@ const emptyOfferShape = harden({
  * @param {Zone} zone
  * @param {OrchestrationTools} tools
  */
-const contract = async (
-  zcf,
-  privateArgs,
-  zone,
-  { orchestrateAll, vowTools },
-) => {
+const contract = async (zcf, privateArgs, zone, { orchestrateAll }) => {
   const ExtraInvitationMakerInterface = M.interface('', {
-    DepositAndDelegate: M.call(M.array()).returns(VowShape),
-    UndelegateAndTransfer: M.call(M.array()).returns(VowShape),
+    DepositAndDelegate: M.call(M.array()).returns(M.promise()),
+    UndelegateAndTransfer: M.call(M.array()).returns(M.promise()),
   });
   /** @type {any} XXX async membrane */
   const makeExtraInvitationMaker = zone.exoClass(
@@ -72,7 +66,7 @@ const contract = async (
       DepositAndDelegate() {
         const { account } = this.state;
 
-        const invP = zcf.makeInvitation(
+        return zcf.makeInvitation(
           (seat, validatorAddr, amountArg) =>
             // eslint-disable-next-line no-use-before-define -- defined by orchestrateAll, necessarily after this
             orchFns.depositAndDelegate(account, seat, validatorAddr, amountArg),
@@ -84,8 +78,6 @@ const contract = async (
             },
           },
         );
-
-        return vowTools.watch(invP);
       },
       /**
        * @param {Omit<Delegation, 'delegatorAddress'>[]} delegations
@@ -93,15 +85,13 @@ const contract = async (
       UndelegateAndTransfer(delegations) {
         const { account } = this.state;
 
-        const invP = zcf.makeInvitation(
+        return zcf.makeInvitation(
           // eslint-disable-next-line no-use-before-define -- defined by orchestrateAll, necessarily after this
           () => orchFns.undelegateAndTransfer(account, delegations),
           'Undelegate and transfer',
           undefined,
           emptyOfferShape,
         );
-
-        return vowTools.watch(invP);
       },
     },
   );
