@@ -17,7 +17,7 @@ See [`src/examples`](src/examples)
 | [send-anywhere](/packages/orchestration/src/examples/send-anywhere.contract.js) | Ready 🟢 | Allows sending payments (tokens) over IBC to another chain. | - `LocalOrchestrationAccoun`t<br>- `Vtransfer` (IBC Hooks) |
 | [stakeBld](/packages/orchestration/src/examples/stakeBld.contract.js) | Ready 🟢 | Returns a `LocalOrchestrationAccount` that can perform staking actions. | - `LocalOrchestrationAccount` | Ready 🟢 |
 | [stakeIca](/packages/orchestration/src/examples/stakeIca.contract.js) | Ready 🟢 | Returns a `CosmosOrchestrationAccount` that can perform staking actions. | - `CosmosOrchestrationAccount` | Ready 🟢 |
-| [staking-combinations](/packages/orchestration/src/examples/staking-combinations.contract.js) | Under Construction 🚧 | Combines actions into a single offer flow and demonstrates writing continuing offers. | - `CosmosOrchestrationAccount`<br>- `CombineInvitationMakers` <br>- Continuing Offers |
+| [staking-combinations](/packages/orchestration/src/examples/staking-combinations.contract.js) | Ready 🟢 | Combines actions into a single offer flow and demonstrates writing continuing offers. | - `CosmosOrchestrationAccount`<br>- `CombineInvitationMakers` <br>- Continuing Offers |
 | [swap](/packages/orchestration/src/examples/swap.contract.js) | Under Construction 🚧 | Demonstrates asset swapping on an external chain. | - `CosmosOrchestrationAccount`<br>- `ChainHub` |
 | [unbond](/packages/orchestration/src/examples/unbond.contract.js) | Under Construction 🚧 | Undelegates tokens for an ICA and liquid stakes them. | - `CosmosOrchestrationAccount` |
 
@@ -43,4 +43,4 @@ See [`src/examples`](src/examples)
 | [stakeBld](/packages/orchestration/src/examples/stakeBld.contract.js) | - Everything*, created before e2e test suite<br> - Consider folding under generic "stake" contract, once [interfaces are the same](https://github.com/Agoric/agoric-sdk/blob/1976c502bcaac2e7d21f42b30447671a61053236/packages/orchestration/src/exos/local-orchestration-account.js#L487)|
 | [swap](/packages/orchestration/src/examples/swap.contract.js) | - Everything - contract incomplete ([#8863](https://github.com/Agoric/agoric-sdk/issues/8863)) |
 | [unbond](/packages/orchestration/src/examples/unbond.contract.js) | - Everything - contract incomplete ([#9782](https://github.com/Agoric/agoric-sdk/issues/9782)) |
-| 
+| [staking-combinations](/packages/orchestration/src/examples/staking-combinations.contract.js) | Only tested via [unit tests](/packages/orchestration/src/examples/staking-combinations.contract.js) |
