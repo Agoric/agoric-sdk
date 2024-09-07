@@ -1,4 +1,3 @@
-import { AmountShape } from '@agoric/ertp';
 import { VowShape } from '@agoric/vow';
 import { M } from '@endo/patterns';
 
@@ -39,7 +38,6 @@ export const Proto3Shape = {
   value: M.string(),
 };
 
-// FIXME missing `delegatorAddress` from the type
 /** @type {TypedPattern<Delegation>} */
 export const DelegationShape = harden({
   validatorAddress: M.string(),
@@ -130,8 +128,14 @@ export const DenomInfoShape = {
 /** @type {TypedPattern<DenomAmount>} */
 export const DenomAmountShape = { denom: DenomShape, value: M.bigint() };
 
+/** @type {TypedPattern<Amount<'nat'>>} */
+export const AnyNatAmountShape = harden({
+  brand: M.remotable('Brand'),
+  value: M.nat(),
+});
+
 /** @type {TypedPattern<AmountArg>} */
-export const AmountArgShape = M.or(AmountShape, DenomAmountShape);
+export const AmountArgShape = M.or(AnyNatAmountShape, DenomAmountShape);
 
 /** Approximately @see RequestQuery */
 export const ICQMsgShape = M.splitRecord(
