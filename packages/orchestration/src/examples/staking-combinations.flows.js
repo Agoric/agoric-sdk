@@ -1,9 +1,8 @@
 /**
  * @import {GuestInterface} from '@agoric/async-flow';
- * @import {Orchestrator, OrchestrationFlow, OrchestrationAccount, OrchestrationAccountI, StakingAccountActions, AmountArg, CosmosValidatorAddress} from '../types.js'
+ * @import {Orchestrator, OrchestrationFlow, AmountArg, CosmosValidatorAddress} from '../types.js'
  * @import {ContinuingOfferResult, InvitationMakers} from '@agoric/smart-wallet/src/types.js';
  * @import {MakeCombineInvitationMakers} from '../exos/combine-invitation-makers.js';
- * @import {Delegation} from '@agoric/cosmic-proto/cosmos/staking/v1beta1/staking.js';
  * @import {CosmosOrchestrationAccount} from '../exos/cosmos-orchestration-account.js';
  */
 
@@ -67,7 +66,7 @@ harden(depositAndDelegate);
  * @param {Orchestrator} orch
  * @param {object} ctx
  * @param {GuestInterface<CosmosOrchestrationAccount>} account
- * @param {Omit<Delegation, 'delegatorAddress'>[]} delegations
+ * @param {{ amount: AmountArg; validator: CosmosValidatorAddress }[]} delegations
  * @returns {Promise<string>}
  */
 export const undelegateAndTransfer = async (

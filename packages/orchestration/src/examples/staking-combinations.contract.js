@@ -14,7 +14,6 @@ import * as flows from './staking-combinations.flows.js';
 
 /**
  * @import {GuestInterface} from '@agoric/async-flow';
- * @import {Delegation} from '@agoric/cosmic-proto/cosmos/staking/v1beta1/staking.js';
  * @import {ContinuingOfferResult} from '@agoric/smart-wallet/src/types.js';
  * @import {TimerService} from '@agoric/time';
  * @import {LocalChain} from '@agoric/vats/src/localchain.js';
@@ -25,6 +24,7 @@ import * as flows from './staking-combinations.flows.js';
  * @import {CosmosInterchainService} from '../exos/exo-interfaces.js';
  * @import {OrchestrationTools} from '../utils/start-helper.js';
  * @import {CosmosOrchestrationAccount} from '../exos/cosmos-orchestration-account.js';
+ * @import {AmountArg, CosmosValidatorAddress} from '../types.js';
  */
 
 const emptyOfferShape = harden({
@@ -80,7 +80,7 @@ const contract = async (zcf, privateArgs, zone, { orchestrateAll }) => {
         );
       },
       /**
-       * @param {Omit<Delegation, 'delegatorAddress'>[]} delegations
+       * @param {{ amount: AmountArg; validator: CosmosValidatorAddress }[]} delegations
        */
       UndelegateAndTransfer(delegations) {
         const { account } = this.state;

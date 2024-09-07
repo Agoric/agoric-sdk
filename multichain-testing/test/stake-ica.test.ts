@@ -46,16 +46,10 @@ const stakeScenario = test.macro(async (t, scenario: StakeIcaScenario) => {
     vstorageClient,
     retryUntilCondition,
     useChain,
-    deployBuilder,
+    startContract,
   } = t.context;
 
-  t.log('bundle and install contract', scenario);
-  await deployBuilder(scenario.builder);
-  await retryUntilCondition(
-    () => vstorageClient.queryData(`published.agoricNames.instance`),
-    res => scenario.contractName in Object.fromEntries(res),
-    `${scenario.contractName} instance is available`,
-  );
+  await startContract(scenario.contractName, scenario.builder);
   const wdUser1 = await provisionSmartWallet(wallets[scenario.wallet], {
     BLD: 100n,
     IST: 100n,
@@ -206,7 +200,7 @@ const stakeScenario = test.macro(async (t, scenario: StakeIcaScenario) => {
   );
   t.log('Balance after claiming rewards:', rewards);
 
-  const SHARES = 50;
+  const TOKENS_TO_UNDELEGATE = 50n;
   t.log('Undelegate offer from continuing inv');
   const undelegateOfferId = `undelegate-${Date.now()}`;
   await doOffer({
@@ -218,8 +212,11 @@ const stakeScenario = test.macro(async (t, scenario: StakeIcaScenario) => {
       invitationArgs: [
         [
           {
-            validatorAddress,
-            shares: String(SHARES),
+            validator: validatorChainAddress,
+            amount: {
+              denom: scenario.denom,
+              value: TOKENS_TO_UNDELEGATE,
+            },
           },
         ],
       ],
@@ -235,7 +232,7 @@ const stakeScenario = test.macro(async (t, scenario: StakeIcaScenario) => {
   t.log('unbonding_responses:', unbonding_responses[0].entries);
   t.is(
     unbonding_responses[0].entries[0].balance,
-    String(SHARES),
+    String(TOKENS_TO_UNDELEGATE),
     'undelegating 50 shares in progress',
   );
 
@@ -250,7 +247,8 @@ const stakeScenario = test.macro(async (t, scenario: StakeIcaScenario) => {
   const { balances: rewardsWithUndelegations } = await retryUntilCondition(
     () => queryClient.queryBalances(address),
     ({ balances }) => {
-      const expectedBalance = Number(currentBalances[0].amount) + SHARES;
+      const expectedBalance =
+        Number(currentBalances[0].amount) + Number(TOKENS_TO_UNDELEGATE);
       return Number(balances?.[0]?.amount) >= expectedBalance;
     },
     'claimed rewards available',

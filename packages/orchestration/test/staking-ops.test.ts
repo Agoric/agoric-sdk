@@ -26,7 +26,12 @@ import { Far } from '@endo/far';
 import { Timestamp } from '@agoric/cosmic-proto/google/protobuf/timestamp.js';
 import { makeNameHubKit } from '@agoric/vats';
 import { prepareCosmosOrchestrationAccountKit } from '../src/exos/cosmos-orchestration-account.js';
-import type { ChainAddress, IcaAccount, ICQConnection } from '../src/types.js';
+import type {
+  ChainAddress,
+  DenomAmount,
+  IcaAccount,
+  ICQConnection,
+} from '../src/types.js';
 import { MILLISECONDS_PER_SECOND } from '../src/utils/time.js';
 import { makeChainHub } from '../src/exos/chain-hub.js';
 
@@ -345,7 +350,6 @@ test(`delegate; redelegate using invitationMakers`, async t => {
     vowTools,
     zone,
   } = s;
-  const aBrand = Far('Token') as Brand<'nat'>;
   const makeAccountKit = prepareCosmosOrchestrationAccountKit(zone, {
     chainHub: makeChainHub(agoricNames, vowTools),
     makeRecorderKit,
@@ -511,15 +515,14 @@ test(`undelegate waits for unbonding period`, async t => {
 
   const { validator, delegations } = configStaking;
 
-  const value = BigInt(Object.values(delegations)[0].amount);
-  const anAmount = { brand: Far('Token'), value } as Amount<'nat'>;
+  const { denom, amount } = Object.values(delegations)[0];
   const delegation = {
-    shares: `${anAmount.value}`,
-    validatorAddress: validator.value,
+    amount: { denom, value: BigInt(amount) } as DenomAmount,
+    validator,
   };
   const toUndelegate = await E(invitationMakers).Undelegate([delegation]);
   const current = () => E(timer).getCurrentTimestamp().then(time.format);
-  t.log(await current(), 'undelegate', delegation.shares);
+  t.log(await current(), 'undelegate', delegation.amount.value);
   const seat = E(zoe).offer(toUndelegate);
 
   const beforeDone = E(timer)

@@ -81,13 +81,20 @@ test('start', async t => {
   // Undelegate the funds using the guest flow
   ibcBridge.addMockAck(
     // observed in console
-    'eyJ0eXBlIjoxLCJkYXRhIjoiQ2xnS0pTOWpiM050YjNNdWMzUmhhMmx1Wnk1Mk1XSmxkR0V4TGsxeloxVnVaR1ZzWldkaGRHVVNMd29MWTI5emJXOXpNWFJsYzNRU0VtTnZjMjF2YzNaaGJHOXdaWEl4ZEdWemRCb01DZ1YxYjNOdGJ4SURNVEF3IiwibWVtbyI6IiJ9',
+    'eyJ0eXBlIjoxLCJkYXRhIjoiQ2xZS0pTOWpiM050YjNNdWMzUmhhMmx1Wnk1Mk1XSmxkR0V4TGsxeloxVnVaR1ZzWldkaGRHVVNMUW9MWTI5emJXOXpNWFJsYzNRU0VHOXpiVzkyWVd4dmNHVnlNWFJsYzNRYURBb0ZkVzl6Ylc4U0F6RXdNQT09IiwibWVtbyI6IiJ9',
     protoMsgMocks.undelegate.ack,
   );
   const undelegateInvVow = await E(
     result.invitationMakers,
   ).UndelegateAndTransfer([
-    { validatorAddress: 'cosmosvaloper1test', shares: '100' },
+    {
+      validator: {
+        value: 'osmovaloper1test',
+        encoding: 'bech32',
+        chainId: 'osmosis',
+      },
+      amount: { denom: 'uosmo', value: 100n },
+    },
   ]);
   const undelegateInv = await vt.when(undelegateInvVow);
   t.like(await E(zoe).getInvitationDetails(undelegateInv), {

@@ -407,16 +407,19 @@ export const prepareCosmosOrchestrationAccountKit = (
         /** @param {CosmosValidatorAddress} validator */
         WithdrawReward(validator) {
           trace('WithdrawReward', validator);
-
           return zcf.makeInvitation(seat => {
             seat.exit();
             return watch(this.facets.holder.withdrawReward(validator));
           }, 'WithdrawReward');
         },
-        /** @param {Omit<Delegation, 'delegatorAddress'>[]} delegations */
+        /**
+         * @param {{
+         *   amount: AmountArg;
+         *   validator: CosmosValidatorAddress;
+         * }[]} delegations
+         */
         Undelegate(delegations) {
           trace('Undelegate', delegations);
-
           return zcf.makeInvitation(seat => {
             seat.exit();
             return watch(this.facets.holder.undelegate(delegations));
@@ -725,16 +728,16 @@ export const prepareCosmosOrchestrationAccountKit = (
           return asVow(() => {
             trace('undelegate', delegations);
             const { helper } = this.facets;
-            const { chainAddress, bondDenom } = this.state;
+            const { chainAddress } = this.state;
 
             const undelegateV = watch(
               E(helper.owned()).executeEncodedTx(
-                delegations.map(d =>
+                delegations.map(({ validator, amount }) =>
                   Any.toJSON(
                     MsgUndelegate.toProtoMsg({
                       delegatorAddress: chainAddress.value,
-                      validatorAddress: d.validatorAddress,
-                      amount: { denom: bondDenom, amount: d.shares },
+                      validatorAddress: validator.value,
+                      amount: coerceCoin(chainHub, amount),
                     }),
                   ),
                 ),

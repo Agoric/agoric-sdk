@@ -187,7 +187,7 @@ export interface StakingAccountActions {
    * @param delegations - the delegation to undelegate
    */
   undelegate: (
-    delegations: Omit<Delegation, 'delegatorAddress'>[],
+    delegations: { amount: AmountArg; validator: CosmosValidatorAddress }[],
   ) => Promise<void>;
 
   /**
