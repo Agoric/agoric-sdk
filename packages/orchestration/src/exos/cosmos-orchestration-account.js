@@ -112,7 +112,7 @@ const PUBLIC_TOPICS = {
   account: ['Staking Account holder status', M.any()],
 };
 
-export const CosmosOrchestrationInvitationMakersInterface = M.interface(
+export const CosmosOrchestrationInvitationMakersI = M.interface(
   'invitationMakers',
   {
     Delegate: M.call(ChainAddressShape, AmountArgShape).returns(M.promise()),
@@ -131,7 +131,7 @@ export const CosmosOrchestrationInvitationMakersInterface = M.interface(
     Transfer: M.call().returns(M.promise()),
   },
 );
-harden(CosmosOrchestrationInvitationMakersInterface);
+harden(CosmosOrchestrationInvitationMakersI);
 
 /**
  * @param {Zone} zone
@@ -199,7 +199,7 @@ export const prepareCosmosOrchestrationAccountKit = (
           .returns(Vow$(M.record())),
       }),
       holder: IcaAccountHolderI,
-      invitationMakers: CosmosOrchestrationInvitationMakersInterface,
+      invitationMakers: CosmosOrchestrationInvitationMakersI,
     },
     /**
      * @param {object} info
