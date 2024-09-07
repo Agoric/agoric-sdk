@@ -14,7 +14,7 @@ import { E } from '@endo/far';
 const trace = makeTracer('StartSA', true);
 
 /**
- * @import {start as StartFn} from '@agoric/orchestration/src/examples/sendAnywhere.contract.js';
+ * @import {start as StartFn} from '@agoric/orchestration/src/examples/send-anywhere.contract.js';
  */
 
 /**
@@ -87,7 +87,7 @@ export const getManifest = () => {
 export const defaultProposalBuilder = async () =>
   harden({
     // Somewhat unorthodox, source the exports from this builder module
-    sourceSpec: '@agoric/builders/scripts/testing/restart-sendAnywhere.js',
+    sourceSpec: '@agoric/builders/scripts/testing/restart-send-anywhere.js',
     getManifestCall: [getManifest.name],
   });
 

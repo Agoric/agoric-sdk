@@ -20,7 +20,7 @@ test.after.always(t => t.context.shutdown?.());
 
 // FIXME the test needs to be able to send the acknowledgementPacket ack
 // so that the transfer vow resolves.
-test.serial.failing('sendAnywhere', async t => {
+test.serial.failing('send-anywhere', async t => {
   const {
     walletFactoryDriver,
     buildProposal,
@@ -30,9 +30,9 @@ test.serial.failing('sendAnywhere', async t => {
 
   const { IST } = t.context.agoricNamesRemotes.brand;
 
-  t.log('start sendAnywhere');
+  t.log('start send-anywhere');
   await evalProposal(
-    buildProposal('@agoric/builders/scripts/testing/start-sendAnywhere.js'),
+    buildProposal('@agoric/builders/scripts/testing/start-send-anywhere.js'),
   );
 
   t.log('making offer');
@@ -73,9 +73,9 @@ test.serial.failing('sendAnywhere', async t => {
   t.is(await flushInboundQueue(), 0);
   t.deepEqual(wallet.getLatestUpdateRecord(), beforeFlush);
 
-  t.log('restart sendAnywhere');
+  t.log('restart send-anywhere');
   await evalProposal(
-    buildProposal('@agoric/builders/scripts/testing/restart-sendAnywhere.js'),
+    buildProposal('@agoric/builders/scripts/testing/restart-send-anywhere.js'),
   );
 
   const conclusion = wallet.getLatestUpdateRecord();

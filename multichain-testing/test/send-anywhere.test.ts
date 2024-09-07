@@ -17,7 +17,7 @@ const accounts = ['osmosis1', 'osmosis2', 'cosmoshub1', 'cosmoshub2'];
 
 const contractName = 'sendAnywhere';
 const contractBuilder =
-  '../packages/builders/scripts/testing/start-sendAnywhere.js';
+  '../packages/builders/scripts/testing/start-send-anywhere.js';
 
 test.before(async t => {
   const { deleteTestKeys, setupTestKeys, ...rest } = await commonSetup(t);
@@ -35,7 +35,7 @@ test.after(async t => {
 
 const sendAnywhereScenario = test.macro({
   title: (_, chainName: string, acctIdx: number) =>
-    `sendAnywhere ${chainName}${acctIdx}`,
+    `send-anywhere ${chainName}${acctIdx}`,
   exec: async (t, chainName: string, acctIdx: number) => {
     const config = chainConfig[chainName];
     if (!config) return t.fail(`Unknown chain: ${chainName}`);
@@ -48,10 +48,10 @@ const sendAnywhereScenario = test.macro({
       useChain,
     } = t.context;
 
-    t.log('Create a receiving wallet for the sendAnywhere transfer');
+    t.log('Create a receiving wallet for the send-anywhere transfer');
     const chain = useChain(chainName).chain;
 
-    t.log('Create an agoric smart wallet to initiate sendAnywhere transfer');
+    t.log('Create an agoric smart wallet to initiate send-anywhere transfer');
     const agoricAddr = wallets[`${chainName}${acctIdx}`];
     const wdUser1 = await provisionSmartWallet(agoricAddr, {
       BLD: 100_000n,
@@ -95,7 +95,7 @@ const sendAnywhereScenario = test.macro({
       const { balances } = await retryUntilCondition(
         () => queryClient.queryBalances(receiver.value),
         ({ balances }) => 'amount' in balances[0],
-        `${receiver.value} ${amount.value} balance available from sendAnywhere`,
+        `${receiver.value} ${amount.value} balance available from send-anywhere`,
       );
 
       t.log(`${receiver.value} Balances`, balances);
