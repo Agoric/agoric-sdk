@@ -10,10 +10,10 @@
     "postpack": "git clean -f '*.d.ts*'",
     "test": "ava",
     "test:xs": "exit 0",
-    "lint": "run-s --continue-on-error lint:*",
+    "lint": "yarn run -T run-s --continue-on-error 'lint:*'",
     "lint-fix": "yarn lint:eslint --fix",
-    "lint:types": "tsc",
-    "lint:eslint": "eslint ."
+    "lint:types": "yarn run -T tsc",
+    "lint:eslint": "yarn run -T eslint ."
   },
   "devDependencies": {
     "@agoric/cosmic-proto": "^0.4.0",
@@ -25,7 +25,6 @@
     "import-meta-resolve": "^2.2.1"
   },
   "dependencies": {
-    "@endo/errors": "^1.2.5",
     "@agoric/casting": "^0.4.2",
     "@agoric/ertp": "^0.16.2",
     "@agoric/internal": "^0.3.2",
@@ -36,6 +35,7 @@
     "@agoric/vow": "^0.1.0",
     "@agoric/zoe": "^0.26.2",
     "@agoric/zone": "^0.2.2",
+    "@endo/errors": "^1.2.5",
     "@endo/eventual-send": "^1.2.5",
     "@endo/far": "^1.1.5",
     "@endo/marshal": "^1.5.3",

@@ -29,7 +29,7 @@
     ]
   },
   "scripts": {
-    "agops": "yarn --cwd /usr/src/agoric-sdk/ --silent agops"
+    "agops": "yarn --cwd /usr/src/agoric-sdk/ agops"
   },
-  "packageManager": "yarn@4.2.2"
+  "packageManager": "yarn@4.4.0"
 }

@@ -1,8 +1,11 @@
 #! /usr/bin/env node
+/* eslint-env node */
+
 const fs = require('fs');
+
 const packageJson = fs.readFileSync('package.json', 'utf-8');
-const package = JSON.parse(packageJson);
-const { ava: avaConfig } = package;
+const packageInfo = JSON.parse(packageJson);
+const { ava: avaConfig } = packageInfo;
 if (avaConfig.require) {
   const newRequire = avaConfig.require.filter(m => m !== 'esm');
   if (newRequire.length) {

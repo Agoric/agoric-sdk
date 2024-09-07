@@ -50,6 +50,11 @@ import { icaMocks, protoMsgMockMap, protoMsgMocks } from './ibc/mocks.js';
 
 const trace = makeTracer('BSTSupport', false);
 
+const cliEntrypoint = await importMetaResolve(
+  'agoric/src/entrypoint.js',
+  import.meta.url,
+).then(u => new URL(u).pathname);
+
 type ConsumeBootrapItem = <N extends string>(
   name: N,
 ) => N extends keyof EconomyBootstrapPowers['consume']
@@ -156,18 +161,10 @@ export const makeProposalExtractor = ({ childProcess, fs }: Powers) => {
     env: NodeJS.ProcessEnv,
   ) => {
     console.info('running package script:', scriptPath);
-    const out = childProcess.execFileSync('yarn', ['bin', 'agoric'], {
+    return childProcess.execFileSync(cliEntrypoint, ['run', scriptPath], {
       cwd: outputDir,
       env,
     });
-    return childProcess.execFileSync(
-      out.toString().trim(),
-      ['run', scriptPath],
-      {
-        cwd: outputDir,
-        env,
-      },
-    );
   };
 
   const loadJSON = async filePath =>

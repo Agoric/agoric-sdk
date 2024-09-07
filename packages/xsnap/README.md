@@ -47,6 +47,7 @@ The parent and child communicate using "commands".
 
 ![state diagram](doc/xsnap-states.svg)
 
+<!-- FIXME this stopped working some time ago (was never in CI)
 # xsrepl
 
 With `xsnap` comes an `xsrepl` command line tool.
@@ -75,3 +76,4 @@ xs> x
 42
 xs> quit
 ```
+ -->
