@@ -233,14 +233,11 @@ const prepareRemoteChainFacadeKit = (
           childNode,
           { account, chainAddress, localAddress, remoteAddress },
         ) {
-          const { remoteChainInfo, icqConnection } = this.state;
-          const stakingDenom = remoteChainInfo.stakingTokens?.[0]?.denom;
-          if (!stakingDenom) throw Fail`chain info lacks staking denom`;
+          const { icqConnection } = this.state;
 
           return makeCosmosOrchestrationAccount(
             {
               chainAddress,
-              bondDenom: stakingDenom,
               localAddress,
               remoteAddress,
             },

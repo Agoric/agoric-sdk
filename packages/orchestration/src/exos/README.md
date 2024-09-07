@@ -108,7 +108,6 @@ classDiagram
 
     class CosmosOrchestrationAccount {
       account: LocalChainAccount
-      bondDenom: string
       chainAddress: ChainAddress
       icqConnection: ICQConnection | undefined
       timer: Timer

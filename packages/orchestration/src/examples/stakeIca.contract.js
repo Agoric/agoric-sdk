@@ -29,7 +29,6 @@ export const meta = harden({
     chainId: M.string(),
     hostConnectionId: M.string(),
     controllerConnectionId: M.string(),
-    bondDenom: M.string(),
     icqEnabled: M.boolean(),
   },
   privateArgsShape: {
@@ -49,7 +48,6 @@ harden(privateArgsShape);
  *   chainId: string;
  *   hostConnectionId: IBCConnectionID;
  *   controllerConnectionId: IBCConnectionID;
- *   bondDenom: string;
  *   icqEnabled: boolean;
  * }} StakeIcaTerms
  */
@@ -66,13 +64,8 @@ harden(privateArgsShape);
  * @param {Baggage} baggage
  */
 export const start = async (zcf, privateArgs, baggage) => {
-  const {
-    chainId,
-    hostConnectionId,
-    controllerConnectionId,
-    bondDenom,
-    icqEnabled,
-  } = zcf.getTerms();
+  const { chainId, hostConnectionId, controllerConnectionId, icqEnabled } =
+    zcf.getTerms();
   const {
     agoricNames,
     cosmosInterchainService: orchestration,
@@ -125,7 +118,7 @@ export const start = async (zcf, privateArgs, baggage) => {
       chainAddress.value,
     );
     const holder = makeCosmosOrchestrationAccount(
-      { chainAddress, bondDenom, localAddress, remoteAddress },
+      { chainAddress, localAddress, remoteAddress },
       {
         account,
         storageNode: accountNode,

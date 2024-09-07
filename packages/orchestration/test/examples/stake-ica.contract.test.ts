@@ -41,7 +41,6 @@ const getChainTerms = (
     chainId,
     hostConnectionId: agoricConns[chainId].counterparty.connection_id,
     controllerConnectionId: agoricConns[chainId].id,
-    bondDenom: stakingTokens[0].denom,
     icqEnabled: !!icqEnabled,
   };
 };

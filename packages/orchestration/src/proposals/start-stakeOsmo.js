@@ -66,7 +66,6 @@ export const startStakeOsmo = async ({
       chainId: osmosis.chainId,
       hostConnectionId: connectionInfo.counterparty.connection_id,
       controllerConnectionId: connectionInfo.id,
-      bondDenom: osmosis.stakingTokens[0].denom,
       icqEnabled: osmosis.icqEnabled,
     },
     privateArgs: await deeplyFulfilledObject(

@@ -77,7 +77,6 @@ const { Vow$ } = NetworkShape; // TODO #9611
  *   localAddress: LocalIbcAddress;
  *   remoteAddress: RemoteIbcAddress;
  *   icqConnection: ICQConnection | undefined;
- *   bondDenom: string;
  *   timer: Remote<TimerService>;
  * }} State
  *   Internal to the IcaAccountHolder exo
@@ -205,7 +204,6 @@ export const prepareCosmosOrchestrationAccountKit = (
     /**
      * @param {object} info
      * @param {ChainAddress} info.chainAddress
-     * @param {string} info.bondDenom e.g. 'uatom'
      * @param {LocalIbcAddress} info.localAddress
      * @param {RemoteIbcAddress} info.remoteAddress
      * @param {object} io
@@ -215,7 +213,7 @@ export const prepareCosmosOrchestrationAccountKit = (
      * @param {Remote<TimerService>} io.timer
      * @returns {State}
      */
-    ({ chainAddress, bondDenom, localAddress, remoteAddress }, io) => {
+    ({ chainAddress, localAddress, remoteAddress }, io) => {
       const { storageNode } = io;
       // must be the fully synchronous maker because the kit is held in durable state
       const topicKit = makeRecorderKit(storageNode, PUBLIC_TOPICS.account[1]);
@@ -233,7 +231,6 @@ export const prepareCosmosOrchestrationAccountKit = (
       const { account, icqConnection, timer } = io;
       return {
         account,
-        bondDenom,
         chainAddress,
         icqConnection,
         localAddress,
@@ -540,10 +537,9 @@ export const prepareCosmosOrchestrationAccountKit = (
           return asVow(() => {
             trace('delegate', validator, amount);
             const { helper } = this.facets;
-            const { chainAddress, bondDenom } = this.state;
+            const { chainAddress } = this.state;
 
             const amountAsCoin = helper.amountToCoin(amount);
-            assert.equal(amountAsCoin.denom, bondDenom);
 
             const results = E(helper.owned()).executeEncodedTx([
               Any.toJSON(

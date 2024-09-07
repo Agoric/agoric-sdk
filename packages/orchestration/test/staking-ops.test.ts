@@ -268,7 +268,6 @@ test('makeAccount() writes to storage', async t => {
       chainAddress: account.getAddress(),
       localAddress: account.getLocalAddress(),
       remoteAddress: account.getRemoteAddress(),
-      bondDenom: 'uatom',
     },
     {
       account,
@@ -318,7 +317,6 @@ test('withdrawRewards() on StakingAccountHolder formats message correctly', asyn
       chainAddress: account.getAddress(),
       localAddress: account.getLocalAddress(),
       remoteAddress: account.getRemoteAddress(),
-      bondDenom: 'uatom',
     },
     {
       account,
@@ -363,7 +361,6 @@ test(`delegate; redelegate using invitationMakers`, async t => {
       chainAddress: account.getAddress(),
       localAddress: account.getLocalAddress(),
       remoteAddress: account.getRemoteAddress(),
-      bondDenom: 'uatom',
     },
     {
       account,
@@ -454,7 +451,6 @@ test(`withdraw rewards using invitationMakers`, async t => {
       chainAddress: account.getAddress(),
       localAddress: account.getLocalAddress(),
       remoteAddress: account.getRemoteAddress(),
-      bondDenom: 'uatom',
     },
     {
       account,
@@ -503,7 +499,6 @@ test(`undelegate waits for unbonding period`, async t => {
       chainAddress: account.getAddress(),
       localAddress: account.getLocalAddress(),
       remoteAddress: account.getRemoteAddress(),
-      bondDenom: 'uatom',
     },
     {
       account,

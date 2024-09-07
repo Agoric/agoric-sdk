@@ -46,7 +46,6 @@ export const prepareMakeTestCOAKit = (
     chainId = 'cosmoshub-4',
     hostConnectionId = 'connection-0' as const,
     controllerConnectionId = 'connection-1' as const,
-    bondDenom = 'uatom',
     icqEnabled = false,
   } = {}) => {
     t.log('request account from orchestration service');
@@ -72,7 +71,7 @@ export const prepareMakeTestCOAKit = (
 
     t.log('make a CosmosOrchestrationAccount');
     const holder = makeCosmosOrchestrationAccount(
-      { chainAddress, bondDenom, localAddress, remoteAddress },
+      { chainAddress, localAddress, remoteAddress },
       {
         account: cosmosOrchAccount,
         storageNode: storageNode.makeChildNode(chainAddress.value),
