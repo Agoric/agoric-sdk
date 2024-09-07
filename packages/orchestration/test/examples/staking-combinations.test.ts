@@ -4,8 +4,17 @@ import { inspectMapStore } from '@agoric/internal/src/testing-utils.js';
 import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { E } from '@endo/far';
 import path from 'path';
+import {
+  MsgTransfer,
+  MsgTransferResponse,
+} from '@agoric/cosmic-proto/ibc/applications/transfer/v1/tx.js';
+import { IBCMethod } from '@agoric/vats';
 import { protoMsgMocks, UNBOND_PERIOD_SECONDS } from '../ibc-mocks.js';
 import { commonSetup } from '../supports.js';
+import {
+  buildMsgResponseString,
+  parseOutgoingTxPacket,
+} from '../../tools/ibc-mocks.js';
 
 const dirname = path.dirname(new URL(import.meta.url).pathname);
 
@@ -18,6 +27,7 @@ test('start', async t => {
     bootstrap: { timer, vowTools: vt },
     brands: { ist },
     mocks: { ibcBridge },
+    utils: { inspectDibcBridge },
     commonPrivateArgs,
   } = await commonSetup(t);
 
@@ -84,18 +94,31 @@ test('start', async t => {
     'eyJ0eXBlIjoxLCJkYXRhIjoiQ2xZS0pTOWpiM050YjNNdWMzUmhhMmx1Wnk1Mk1XSmxkR0V4TGsxeloxVnVaR1ZzWldkaGRHVVNMUW9MWTI5emJXOXpNWFJsYzNRU0VHOXpiVzkyWVd4dmNHVnlNWFJsYzNRYURBb0ZkVzl6Ylc4U0F6RXdNQT09IiwibWVtbyI6IiJ9',
     protoMsgMocks.undelegate.ack,
   );
+  ibcBridge.addMockAck(
+    // observed in console
+    'eyJ0eXBlIjoxLCJkYXRhIjoiQ25nS0tTOXBZbU11WVhCd2JHbGpZWFJwYjI1ekxuUnlZVzV6Wm1WeUxuWXhMazF6WjFSeVlXNXpabVZ5RWtzS0NIUnlZVzV6Wm1WeUVnbGphR0Z1Ym1Wc0xUQWFEQW9GZFc5emJXOFNBekV3TUNJTFkyOXpiVzl6TVhSbGMzUXFEMk52YzIxdmN6RnlaV05sYVhabGNqSUFPSUNRK0lTZ21nRT0iLCJtZW1vIjoiIn0=',
+    buildMsgResponseString(MsgTransferResponse, { sequence: 0n }),
+  );
+  const destination = {
+    chainId: 'cosmoshub-4',
+    value: 'cosmos1receiver',
+    encoding: 'bech32',
+  };
   const undelegateInvVow = await E(
     result.invitationMakers,
-  ).UndelegateAndTransfer([
-    {
-      validator: {
-        value: 'osmovaloper1test',
-        encoding: 'bech32',
-        chainId: 'osmosis',
+  ).UndelegateAndTransfer(
+    [
+      {
+        validator: {
+          value: 'osmovaloper1test',
+          encoding: 'bech32',
+          chainId: 'osmosis',
+        },
+        amount: { denom: 'uosmo', value: 100n },
       },
-      amount: { denom: 'uosmo', value: 100n },
-    },
-  ]);
+    ],
+    destination,
+  );
   const undelegateInv = await vt.when(undelegateInvVow);
   t.like(await E(zoe).getInvitationDetails(undelegateInv), {
     description: 'Undelegate and transfer',
@@ -110,6 +133,25 @@ test('start', async t => {
     E(undelegateUserSeat).getOfferResult(),
   );
   t.is(undelegateResult, 'guest undelegateAndTransfer complete');
+
+  const { bridgeDowncalls } = await inspectDibcBridge();
+  const { messages } = parseOutgoingTxPacket(
+    (bridgeDowncalls.at(-1) as IBCMethod<'sendPacket'>).packet.data,
+  );
+  const transferMsg = MsgTransfer.decode(messages[0].value);
+  t.like(
+    transferMsg,
+    {
+      receiver: 'cosmos1receiver',
+      sourcePort: 'transfer',
+      token: {
+        amount: '100',
+        denom: 'uosmo',
+      },
+      memo: '',
+    },
+    'undelegateAndTransfer sent MsgTransfer',
+  );
 
   // snapshot the resulting contract baggage
   const tree = inspectMapStore(contractBaggage);

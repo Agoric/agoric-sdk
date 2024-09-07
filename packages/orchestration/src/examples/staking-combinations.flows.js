@@ -1,6 +1,6 @@
 /**
  * @import {GuestInterface} from '@agoric/async-flow';
- * @import {Orchestrator, OrchestrationFlow, AmountArg, CosmosValidatorAddress} from '../types.js'
+ * @import {Orchestrator, OrchestrationFlow, AmountArg, CosmosValidatorAddress, ChainAddress} from '../types.js'
  * @import {ContinuingOfferResult, InvitationMakers} from '@agoric/smart-wallet/src/types.js';
  * @import {MakeCombineInvitationMakers} from '../exos/combine-invitation-makers.js';
  * @import {CosmosOrchestrationAccount} from '../exos/cosmos-orchestration-account.js';
@@ -38,8 +38,8 @@ harden(makeAccount);
 
 /**
  * @satisfies {OrchestrationFlow}
- * @param {Orchestrator} orch
- * @param {object} ctx
+ * @param {Orchestrator} _orch
+ * @param {object} _ctx
  * @param {GuestInterface<CosmosOrchestrationAccount>} account
  * @param {ZCFSeat} seat
  * @param {CosmosValidatorAddress} validator
@@ -47,8 +47,8 @@ harden(makeAccount);
  * @returns {Promise<string>}
  */
 export const depositAndDelegate = async (
-  orch,
-  ctx,
+  _orch,
+  _ctx,
   account,
   seat,
   validator,
@@ -63,20 +63,25 @@ harden(depositAndDelegate);
 
 /**
  * @satisfies {OrchestrationFlow}
- * @param {Orchestrator} orch
- * @param {object} ctx
+ * @param {Orchestrator} _orch
+ * @param {object} _ctx
  * @param {GuestInterface<CosmosOrchestrationAccount>} account
- * @param {{ amount: AmountArg; validator: CosmosValidatorAddress }[]} delegations
+ * @param {{
+ *   delegations: { amount: AmountArg; validator: CosmosValidatorAddress }[];
+ *   destination: ChainAddress;
+ * }} offerArgs
  * @returns {Promise<string>}
  */
 export const undelegateAndTransfer = async (
-  orch,
-  ctx,
+  _orch,
+  _ctx,
   account,
-  delegations,
+  { delegations, destination },
 ) => {
   await account.undelegate(delegations);
-  // TODO transfer something
+  for (const { amount } of delegations) {
+    await account.transfer(amount, destination);
+  }
   return 'guest undelegateAndTransfer complete';
 };
 harden(undelegateAndTransfer);

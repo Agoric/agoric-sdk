@@ -9,6 +9,7 @@ import { AmountShape } from '@agoric/ertp';
 import { M } from '@endo/patterns';
 import { prepareCombineInvitationMakers } from '../exos/combine-invitation-makers.js';
 import { CosmosOrchestrationInvitationMakersInterface } from '../exos/cosmos-orchestration-account.js';
+import { ChainAddressShape, DelegationShape } from '../typeGuards.js';
 import { withOrchestration } from '../utils/start-helper.js';
 import * as flows from './staking-combinations.flows.js';
 
@@ -24,7 +25,7 @@ import * as flows from './staking-combinations.flows.js';
  * @import {CosmosInterchainService} from '../exos/exo-interfaces.js';
  * @import {OrchestrationTools} from '../utils/start-helper.js';
  * @import {CosmosOrchestrationAccount} from '../exos/cosmos-orchestration-account.js';
- * @import {AmountArg, CosmosValidatorAddress} from '../types.js';
+ * @import {AmountArg, ChainAddress, CosmosValidatorAddress} from '../types.js';
  */
 
 const emptyOfferShape = harden({
@@ -52,7 +53,10 @@ const emptyOfferShape = harden({
 const contract = async (zcf, privateArgs, zone, { orchestrateAll }) => {
   const ExtraInvitationMakerInterface = M.interface('', {
     DepositAndDelegate: M.call(M.array()).returns(M.promise()),
-    UndelegateAndTransfer: M.call(M.array()).returns(M.promise()),
+    UndelegateAndTransfer: M.call(
+      M.arrayOf(DelegationShape),
+      ChainAddressShape,
+    ).returns(M.promise()),
   });
   /** @type {any} XXX async membrane */
   const makeExtraInvitationMaker = zone.exoClass(
@@ -81,13 +85,18 @@ const contract = async (zcf, privateArgs, zone, { orchestrateAll }) => {
       },
       /**
        * @param {{ amount: AmountArg; validator: CosmosValidatorAddress }[]} delegations
+       * @param {ChainAddress} destination
        */
-      UndelegateAndTransfer(delegations) {
+      UndelegateAndTransfer(delegations, destination) {
         const { account } = this.state;
 
         return zcf.makeInvitation(
-          // eslint-disable-next-line no-use-before-define -- defined by orchestrateAll, necessarily after this
-          () => orchFns.undelegateAndTransfer(account, delegations),
+          () =>
+            // eslint-disable-next-line no-use-before-define -- defined by orchestrateAll, necessarily after this
+            orchFns.undelegateAndTransfer(account, {
+              delegations,
+              destination,
+            }),
           'Undelegate and transfer',
           undefined,
           emptyOfferShape,
