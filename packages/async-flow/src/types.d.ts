@@ -68,9 +68,11 @@ export type GuestInterface<T> = {
     ? (...args: Parameters<T[K]>) => Promise<R>
     : T[K] extends HostAsyncFuncWrapper
       ? GuestOf<T[K]>
-      : T[K] extends object
-        ? GuestInterface<T[K]>
-        : T[K];
+      : T[K] extends (...args: any[]) => infer R
+        ? T[K]
+        : T[K] extends object
+          ? GuestInterface<T[K]>
+          : T[K];
 };
 
 /**

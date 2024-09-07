@@ -72,7 +72,6 @@ export const depositAndDelegate = async (
   const { give } = seat.getProposal();
   await zoeTools.localTransfer(seat, contractState.localAccount, give);
 
-  // @ts-expect-error Type 'GuestInterface<() => HostInterface<ChainAddress>>' has no call signatures.
   const address = account.getAddress();
   try {
     await contractState.localAccount.transfer(give.Stake, address);

@@ -1,8 +1,13 @@
 import { expectType } from 'tsd';
-import type { Zone } from '@agoric/base-zone';
 import type { Vow, VowTools } from '@agoric/vow';
-import type { HostOf, GuestOf } from '../src/types.js';
+import type {
+  HostOf,
+  GuestOf,
+  HostInterface,
+  GuestInterface,
+} from '../src/types.js';
 
+const castable: unknown = null;
 const vt: VowTools = null as any;
 
 const sumVow = (a: number, b: number) => vt.asVow(() => a + b);
@@ -10,13 +15,59 @@ const sumVow = (a: number, b: number) => vt.asVow(() => a + b);
 const sumPromise = (a: number, b: number) => Promise.resolve(a + b);
 
 expectType<(p1: number, p2: number) => Promise<number>>(
-  null as unknown as GuestOf<typeof sumVow>,
+  castable as GuestOf<typeof sumVow>,
 );
 
 expectType<(p1: number, p2: number) => Vow<number>>(
-  null as unknown as HostOf<typeof sumPromise>,
+  castable as HostOf<typeof sumPromise>,
 );
 expectType<(p1: number, p2: number) => Vow<void>>(
   // @ts-expect-error incompatible return type
-  null as unknown as HostOf<typeof sumPromise>,
+  castable as HostOf<typeof sumPromise>,
+);
+
+// Test HostInterface and GuestInterface with an exoClass object
+type ExoAPIBase = {
+  getValue: () => number;
+  setValue: (value: number) => void;
+  getCopyData: () => Record<string, number>[];
+  // TODO include `getRemote() => Guarded<...>`, since durable exos are passable
+};
+type ExoGuestAPI = ExoAPIBase & {
+  getValueAsync: () => Promise<number>;
+};
+
+type ExoHostAPI = ExoAPIBase & {
+  getValueAsync: () => Vow<number>;
+};
+
+expectType<
+  ExoAPIBase & {
+    getValueAsync: () => Vow<number>;
+  }
+>(castable as HostInterface<ExoGuestAPI>);
+expectType<
+  ExoAPIBase & {
+    getValueAsync: () => Promise<number>;
+  }
+>(castable as GuestInterface<ExoHostAPI>);
+
+// Test HostInterface and GuestInterface with classKit (nested) objects
+expectType<{
+  facet: ExoAPIBase & {
+    getValueAsync: () => Vow<number>;
+  };
+}>(
+  castable as HostInterface<{
+    facet: ExoGuestAPI;
+  }>,
+);
+expectType<{
+  facet: ExoAPIBase & {
+    getValueAsync: () => Promise<number>;
+  };
+}>(
+  castable as GuestInterface<{
+    facet: ExoHostAPI;
+  }>,
 );
