@@ -5,4 +5,4 @@
 scripts/build-submission.sh proposals/z:acceptance testing/start-valueVow.js start-valueVow
 scripts/build-submission.sh proposals/z:acceptance testing/restart-valueVow.js restart-valueVow
 
-yarn test -m vow --debug
+yarn test -m acceptance --debug

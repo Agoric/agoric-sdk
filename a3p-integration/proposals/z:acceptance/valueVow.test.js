@@ -1,7 +1,7 @@
 // @ts-check
 import test from 'ava';
 import { inspect } from 'node:util';
-import '@endo/init';
+import '@endo/init/debug.js';
 
 import {
   evalBundles,
