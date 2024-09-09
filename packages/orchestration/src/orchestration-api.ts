@@ -68,6 +68,11 @@ export type ChainAddress = {
   encoding: 'bech32' | 'ethereum';
 };
 
+/**
+ * Object that controls an account on a particular chain.
+ *
+ * The methods available depend on the chain and its capabilities.
+ */
 export type OrchestrationAccount<CI extends ChainInfo> = OrchestrationAccountI &
   (CI extends CosmosChainInfo
     ? CI['chainId'] extends `agoric${string}`
