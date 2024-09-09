@@ -308,8 +308,14 @@ export const makeLiquidationTestKit = async ({
   };
 };
 
-export const makeLiquidationTestContext = async t => {
-  const swingsetTestKit = await makeSwingsetTestKit(t.log);
+export const makeLiquidationTestContext = async (
+  t,
+  io: { env?: Record<string, string | undefined> } = {},
+) => {
+  const { env = {} } = io;
+  const swingsetTestKit = await makeSwingsetTestKit(t.log, undefined, {
+    slogFile: env.SLOGFILE,
+  });
   console.time('DefaultTestContext');
 
   const { runUtils, storage } = swingsetTestKit;
