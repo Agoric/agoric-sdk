@@ -263,6 +263,7 @@ export interface OrchestrationFlow<CT = unknown> {
  * The type must be able to express transfers across different chains and transports.
  *
  * NOTE Expected to change, so consider an opaque structure.
+ * @internal
  */
 export type TransferMsg = {
   toAccount: ChainAddress;
@@ -271,8 +272,11 @@ export type TransferMsg = {
   data?: object;
 };
 
+/** @alpha */
 export type AfterAction = { destChain: string; destAddress: ChainAddress };
+/** @alpha */
 export type SwapExact = { amountIn: Amount; amountOut: Amount };
+/** @alpha */
 export type SwapMaxSlippage = {
   amountIn: Amount;
   brandOut: Brand;
