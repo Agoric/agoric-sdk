@@ -24,6 +24,7 @@ import { CosmosChainInfoShape, IBCConnectionInfoShape } from '../typeGuards.js';
  * @typedef {K extends keyof KnownChains
  *   ? ChainInfo & Omit<KnownChains[K], 'connections'>
  *   : ChainInfo} ActualChainInfo
+ * @internal
  */
 
 /**
@@ -40,6 +41,7 @@ export const DenomDetailShape = M.splitRecord(
   { brand: BrandShape },
 );
 
+// TODO refactor into an enum-ish object
 /** agoricNames key for ChainInfo hub */
 export const CHAIN_KEY = 'chain';
 /** namehub for connection info */

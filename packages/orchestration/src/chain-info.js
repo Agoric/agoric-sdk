@@ -73,7 +73,10 @@ const knownChains = /** @satisfies {Record<string, ChainInfo>} */ (
   })
 );
 
-/** @typedef {typeof knownChains} KnownChains */
+/**
+ * @typedef {typeof knownChains} KnownChains
+ * @internal
+ */
 
 /**
  * TODO(#9572): include this in registerChain

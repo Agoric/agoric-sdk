@@ -53,12 +53,14 @@ const EVow$ = shape => M.or(Vow$(shape), M.promise(/* shape */));
  */
 
 /**
+ * @private
  * @typedef {{
  *   topicKit: RecorderKit<LocalChainAccountNotification>;
  *   packetTools: PacketTools;
  *   account: LocalChainAccount;
  *   address: ChainAddress;
  * }} State
+ *   Internal to the LocalOrchestrationAccount exo
  */
 
 const HolderI = M.interface('holder', {

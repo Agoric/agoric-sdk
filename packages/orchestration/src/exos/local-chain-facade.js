@@ -178,8 +178,11 @@ const prepareLocalChainFacadeKit = (
 harden(prepareLocalChainFacadeKit);
 
 /**
+ * Used only by `withOrchestration` helper
+ *
  * @param {Zone} zone
  * @param {LocalChainFacadePowers} powers
+ * @internal
  */
 export const prepareLocalChainFacade = (zone, powers) => {
   const makeLocalChainFacadeKit = prepareLocalChainFacadeKit(zone, powers);

@@ -46,6 +46,7 @@ export const DelegationShape = harden({
   shares: M.string(), // TODO: bigint?
 });
 
+/** @internal */
 export const IBCTransferOptionsShape = M.splitRecord(
   {},
   {
@@ -58,7 +59,9 @@ export const IBCTransferOptionsShape = M.splitRecord(
   },
 );
 
+/** @internal */
 export const IBCChannelIDShape = M.string();
+/** @internal */
 export const IBCChannelInfoShape = M.splitRecord({
   portId: M.string(),
   channelId: IBCChannelIDShape,
@@ -68,7 +71,9 @@ export const IBCChannelInfoShape = M.splitRecord({
   state: M.scalar(), // XXX
   version: M.string(),
 });
+/** @internal */
 export const IBCConnectionIDShape = M.string();
+/** @internal */
 export const IBCConnectionInfoShape = M.splitRecord({
   id: IBCConnectionIDShape,
   client_id: M.string(),
@@ -148,7 +153,11 @@ export const chainFacadeMethods = harden({
  */
 export const TimestampProtoShape = { seconds: M.nat(), nanos: M.number() };
 
-/** see {@link TxBody} for more details */
+/**
+ * see {@link TxBody} for more details
+ *
+ * @internal
+ */
 export const TxBodyOptsShape = M.splitRecord(
   {},
   {

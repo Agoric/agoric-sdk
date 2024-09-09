@@ -252,8 +252,11 @@ const prepareCosmosOrchestrationServiceKit = (
   );
 
 /**
+ * Used only by vat-orchestration and tests mocking it
+ *
  * @param {Zone} zone
  * @param {VowTools} vowTools
+ * @internal
  */
 export const prepareCosmosInterchainService = (zone, vowTools) => {
   const makeIcaAccountKit = prepareIcaAccountKit(zone, vowTools);
