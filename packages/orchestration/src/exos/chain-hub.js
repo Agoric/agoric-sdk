@@ -24,6 +24,7 @@ import { CosmosChainInfoShape, IBCConnectionInfoShape } from '../typeGuards.js';
  * @typedef {K extends keyof KnownChains
  *   ? ChainInfo & Omit<KnownChains[K], 'connections'>
  *   : ChainInfo} ActualChainInfo
+ * @internal
  */
 
 /**
@@ -40,6 +41,7 @@ export const DenomDetailShape = M.splitRecord(
   { brand: BrandShape },
 );
 
+// TODO refactor into an enum-ish object
 /** agoricNames key for ChainInfo hub */
 export const CHAIN_KEY = 'chain';
 /** namehub for connection info */
@@ -82,7 +84,7 @@ export const connectionKey = (chainId1, chainId2) => {
  * @param {IBCConnectionInfo} connInfo
  * @returns {IBCConnectionInfo}
  */
-export const reverseConnInfo = connInfo => {
+const reverseConnInfo = connInfo => {
   const { transferChannel } = connInfo;
   return {
     id: connInfo.counterparty.connection_id,
@@ -421,6 +423,8 @@ export const makeChainHub = (agoricNames, vowTools) => {
 /** @typedef {ReturnType<typeof makeChainHub>} ChainHub */
 
 /**
+ * Register assets with the given ChainHub so they are available for lookup
+ *
  * @param {ChainHub} chainHub
  * @param {string} name
  * @param {CosmosAssetInfo[]} assets

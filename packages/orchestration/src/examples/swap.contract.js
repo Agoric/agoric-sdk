@@ -8,7 +8,7 @@ import * as flows from './swap.flows.js';
  * @import {TimerService} from '@agoric/time';
  * @import {LocalChain} from '@agoric/vats/src/localchain.js';
  * @import {Remote} from '@agoric/internal';
- * @import {CosmosInterchainService} from '../exos/cosmos-interchain-service.js';
+ * @import {CosmosInterchainService} from '../exos/exo-interfaces.js';
  * @import {NameHub} from '@agoric/vats';
  * @import {Zone} from '@agoric/zone';
  * @import {OrchestrationTools} from '../utils/start-helper.js';

@@ -34,6 +34,8 @@ export const ICQConnectionI = M.interface('ICQConnection', {
  */
 
 /**
+ * Used only by CosmosInterchainService
+ *
  * Prepares an ICQ Connection Kit based on the
  * {@link https://github.com/cosmos/ibc-apps/blob/e9b46e4bf0ad0a66cf6bc53b5e5496f6e2b4b02b/modules/async-icq/README.md | `icq/v1` IBC application protocol}.
  *
@@ -48,6 +50,7 @@ export const ICQConnectionI = M.interface('ICQConnection', {
  *
  * @param {Zone} zone
  * @param {VowTools} vowTools
+ * @internal
  */
 export const prepareICQConnectionKit = (zone, { watch, asVow }) =>
   zone.exoClassKit(

@@ -26,7 +26,6 @@ import { makeTxPacket, parseTxPacket } from '../utils/packet.js';
 
 const trace = makeTracer('IcaAccountKit');
 
-/** @typedef {'UNPARSABLE_CHAIN_ADDRESS'} UnparsableChainAddress */
 const UNPARSABLE_CHAIN_ADDRESS = 'UNPARSABLE_CHAIN_ADDRESS';
 
 export const IcaAccountI = M.interface('IcaAccount', {
@@ -42,7 +41,9 @@ export const IcaAccountI = M.interface('IcaAccount', {
   reactivate: M.call().returns(VowShape),
 });
 
+// XXX none of these modifiers are working to exclude this type from api-docs
 /**
+ * @private
  * @typedef {{
  *   chainId: string;
  *   port: Port;
@@ -53,11 +54,16 @@ export const IcaAccountI = M.interface('IcaAccount', {
  *   chainAddress: ChainAddress | undefined;
  *   isInitiatingClose: boolean;
  * }} State
+ *   Internal to the IcaAccountKit exo
+ * @internal
  */
 
 /**
+ * Used only by CosmosInterchainService
+ *
  * @param {Zone} zone
  * @param {VowTools} vowTools
+ * @internal
  */
 export const prepareIcaAccountKit = (zone, { watch, asVow }) =>
   zone.exoClassKit(

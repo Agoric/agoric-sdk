@@ -17,12 +17,14 @@ import { chainFacadeMethods, TypedJsonShape } from '../typeGuards.js';
  * @import {AssetInfo} from '@agoric/vats/src/vat-bank.js';
  * @import {NameHub} from '@agoric/vats';
  * @import {Vow, VowTools} from '@agoric/vow';
- * @import {CosmosInterchainService} from './cosmos-interchain-service.js';
+ * @import {CosmosInterchainService} from './exo-interfaces.js';
  * @import {LocalOrchestrationAccountKit, MakeLocalOrchestrationAccountKit} from './local-orchestration-account.js';
  * @import {Chain, ChainAddress, ChainInfo, CosmosChainInfo, IBCConnectionInfo, OrchestrationAccount} from '../types.js';
  */
 
 /**
+ * Chain facade methods unique to the Agoric (local) chain.
+ *
  * @typedef {object} AgoricChainMethods
  * @property {() => Promise<AssetInfo[]>} getVBankAssetInfo Get asset info from
  *   agoricNames.vbankAsset.
@@ -178,8 +180,11 @@ const prepareLocalChainFacadeKit = (
 harden(prepareLocalChainFacadeKit);
 
 /**
+ * Used only by `withOrchestration` helper
+ *
  * @param {Zone} zone
  * @param {LocalChainFacadePowers} powers
+ * @internal
  */
 export const prepareLocalChainFacade = (zone, powers) => {
   const makeLocalChainFacadeKit = prepareLocalChainFacadeKit(zone, powers);

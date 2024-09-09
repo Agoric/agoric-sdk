@@ -12,14 +12,13 @@ import { makeOrchestrationFacade } from '../facade.js';
 import { makeZoeTools } from './zoe-tools.js';
 
 /**
- * @import {PromiseKit} from '@endo/promise-kit'
  * @import {LocalChain} from '@agoric/vats/src/localchain.js';
  * @import {TimerService, TimerBrand} from '@agoric/time';
  * @import {Baggage} from '@agoric/vat-data';
  * @import {NameHub} from '@agoric/vats';
  * @import {Remote} from '@agoric/vow';
  * @import {Zone} from '@agoric/zone';
- * @import {CosmosInterchainService} from '../exos/cosmos-interchain-service.js';
+ * @import {CosmosInterchainService} from '../exos/exo-interfaces.js';
  */
 
 /**
@@ -42,6 +41,7 @@ import { makeZoeTools } from './zoe-tools.js';
  * @param {Baggage} baggage
  * @param {OrchestrationPowers} remotePowers
  * @param {Marshaller} marshaller
+ * @internal
  */
 export const provideOrchestration = (
   zcf,
@@ -175,6 +175,13 @@ harden(provideOrchestration);
 /**
  * Simplifies contract functions for Orchestration by wrapping a simpler
  * function with all the tools it needs in order to use Orchestration.
+ *
+ * @example
+ *
+ * ```js
+ * const contract = (zcf, privateArgs, zone, tools) => { ... };
+ * export const start = withOrchestration(contract);
+ * ```
  *
  * @template {Record<string, unknown>} CT
  * @template {OrchestrationPowers & {

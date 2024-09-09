@@ -68,6 +68,11 @@ export type ChainAddress = {
   encoding: 'bech32' | 'ethereum';
 };
 
+/**
+ * Object that controls an account on a particular chain.
+ *
+ * The methods available depend on the chain and its capabilities.
+ */
 export type OrchestrationAccount<CI extends ChainInfo> = OrchestrationAccountI &
   (CI extends CosmosChainInfo
     ? CI['chainId'] extends `agoric${string}`
@@ -119,6 +124,11 @@ export interface DenomInfo<
  * Provided in the callback to `orchestrate()`.
  */
 export interface Orchestrator {
+  /**
+   * Get a Chain object for working with the given chain.
+   *
+   * @param {C} chainName name of the chain in KnownChains or the ChainHub backing the Orchestrator
+   */
   getChain: <C extends string>(
     chainName: C,
   ) => Promise<
@@ -126,7 +136,11 @@ export interface Orchestrator {
       (C extends 'agoric' ? AgoricChainMethods : {})
   >;
 
+  /**
+   * Make a new local (Agoric) ChainAccount
+   */
   makeLocalAccount: () => Promise<LocalChainAccount>;
+
   /**
    * For a denom, return information about a denom including the equivalent
    * local Brand, the Chain on which the denom is held, and the Chain that
@@ -139,7 +153,7 @@ export interface Orchestrator {
   >(
     denom: Denom,
   ) => DenomInfo<HoldingChain, IssuingChain>;
-  // TODO preload the mapping so this can be synchronous
+
   /**
    * Convert an amount described in native data to a local, structured Amount.
    * @param amount - the described amount
@@ -220,6 +234,26 @@ export interface OrchestrationAccountI {
   getPublicTopics: () => Promise<Record<string, ResolvedPublicTopic<unknown>>>;
 }
 
+/**
+ * Flows to orchestrate are regular Javascript functions but have some
+ * constraints to fulfill the requirements of resumability after termination of
+ * the enclosing vat. Some requirements for each orchestration flow:
+ * - must not close over any values that could change between invocations
+ * - must satisfy the `OrchestrationFlow` interface
+ * - must be hardened
+ * - must not use `E()` (eventual send)
+ *
+ * The call to `orchestrate` using a flow function in reincarnations of the vat
+ * must have the same `durableName` as before. To help enforce these
+ * constraints, we recommend:
+ *
+ * - keeping flows in a `.flows.js` module
+ * - importing them all with `import * as flows` to get a single object keyed by
+ *   the export name
+ * - using `orchestrateAll` to treat each export name as the `durableName` of
+ *   the flow
+ * - adopting `@agoric/eslint-config` that has rules to help detect problems
+ */
 export interface OrchestrationFlow<CT = unknown> {
   (orc: Orchestrator, ctx: CT, ...args: Passable[]): Promise<unknown>;
 }
@@ -229,18 +263,28 @@ export interface OrchestrationFlow<CT = unknown> {
  * The type must be able to express transfers across different chains and transports.
  *
  * NOTE Expected to change, so consider an opaque structure.
+ * @internal
  */
-export type TransferMsg = {
+export interface TransferMsg {
   toAccount: ChainAddress;
   timeout?: Timestamp;
   next?: TransferMsg;
   data?: object;
-};
+}
 
-export type AfterAction = { destChain: string; destAddress: ChainAddress };
-export type SwapExact = { amountIn: Amount; amountOut: Amount };
-export type SwapMaxSlippage = {
+/** @alpha */
+export interface AfterAction {
+  destChain: string;
+  destAddress: ChainAddress;
+}
+/** @alpha */
+export interface SwapExact {
+  amountIn: Amount;
+  amountOut: Amount;
+}
+/** @alpha */
+export interface SwapMaxSlippage {
   amountIn: Amount;
   brandOut: Brand;
   slippage: number;
-};
+}

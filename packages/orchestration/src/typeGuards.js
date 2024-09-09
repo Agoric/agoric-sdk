@@ -4,7 +4,8 @@ import { M } from '@endo/patterns';
 
 /**
  * @import {TypedPattern} from '@agoric/internal';
- * @import {ChainAddress, CosmosAssetInfo, Chain, ChainInfo, CosmosChainInfo, DenomAmount, DenomDetail, DenomInfo} from './types.js';
+ * @import {ChainAddress, CosmosAssetInfo, Chain, ChainInfo, CosmosChainInfo, DenomAmount, DenomDetail, DenomInfo, AmountArg} from './types.js';
+ * @import {Any as Proto3Msg} from '@agoric/cosmic-proto/google/protobuf/any.js';
  * @import {Delegation} from '@agoric/cosmic-proto/cosmos/staking/v1beta1/staking.js';
  * @import {TxBody} from '@agoric/cosmic-proto/cosmos/tx/v1beta1/tx.js';
  * @import {TypedJson} from '@agoric/cosmic-proto';
@@ -32,6 +33,7 @@ export const ChainAddressShape = {
   value: M.string(),
 };
 
+/** @type {TypedPattern<Proto3Msg>} */
 export const Proto3Shape = {
   typeUrl: M.string(),
   value: M.string(),
@@ -44,6 +46,7 @@ export const DelegationShape = harden({
   shares: M.string(), // TODO: bigint?
 });
 
+/** @internal */
 export const IBCTransferOptionsShape = M.splitRecord(
   {},
   {
@@ -56,7 +59,9 @@ export const IBCTransferOptionsShape = M.splitRecord(
   },
 );
 
+/** @internal */
 export const IBCChannelIDShape = M.string();
+/** @internal */
 export const IBCChannelInfoShape = M.splitRecord({
   portId: M.string(),
   channelId: IBCChannelIDShape,
@@ -66,7 +71,9 @@ export const IBCChannelInfoShape = M.splitRecord({
   state: M.scalar(), // XXX
   version: M.string(),
 });
+/** @internal */
 export const IBCConnectionIDShape = M.string();
+/** @internal */
 export const IBCConnectionInfoShape = M.splitRecord({
   id: IBCConnectionIDShape,
   client_id: M.string(),
@@ -123,8 +130,10 @@ export const DenomInfoShape = {
 /** @type {TypedPattern<DenomAmount>} */
 export const DenomAmountShape = { denom: DenomShape, value: M.bigint() };
 
+/** @type {TypedPattern<AmountArg>} */
 export const AmountArgShape = M.or(AmountShape, DenomAmountShape);
 
+/** Approximately @see RequestQuery */
 export const ICQMsgShape = M.splitRecord(
   { path: M.string(), data: M.string() },
   { height: M.string(), prove: M.boolean() },
@@ -145,7 +154,11 @@ export const chainFacadeMethods = harden({
  */
 export const TimestampProtoShape = { seconds: M.nat(), nanos: M.number() };
 
-/** see {@link TxBody} for more details */
+/**
+ * see {@link TxBody} for more details
+ *
+ * @internal
+ */
 export const TxBodyOptsShape = M.splitRecord(
   {},
   {

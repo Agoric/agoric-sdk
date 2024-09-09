@@ -9,10 +9,15 @@ import {
 import fetchedChainInfo from './fetched-chain-info.js'; // Refresh with scripts/refresh-chain-info.ts
 import { CosmosAssetInfoShape, CosmosChainInfoShape } from './typeGuards.js';
 
-/** @import {CosmosAssetInfo, CosmosChainInfo, EthChainInfo, IBCConnectionInfo} from './types.js'; */
+/** @import {Chain, CosmosAssetInfo, CosmosChainInfo, EthChainInfo, IBCConnectionInfo} from './types.js'; */
 /** @import {NameAdmin} from '@agoric/vats'; */
 
-/** @typedef {CosmosChainInfo | EthChainInfo} ChainInfo */
+/**
+ * Info used to build a {@link Chain} object - channel, connection, and denom
+ * info.
+ *
+ * @typedef {CosmosChainInfo | EthChainInfo} ChainInfo
+ */
 
 const knownChains = /** @satisfies {Record<string, ChainInfo>} */ (
   harden({
@@ -69,14 +74,19 @@ const knownChains = /** @satisfies {Record<string, ChainInfo>} */ (
   })
 );
 
-/** @typedef {typeof knownChains} KnownChains */
-
 /**
- * TODO(#9572): include this in registerChain
+ * @typedef {typeof knownChains} KnownChains
+ * @internal
+ */
+
+// TODO(#9572): include this in registerChain
+/**
+ * Register chain assets into agoricNames
  *
  * @param {ERef<NameAdmin>} agoricNamesAdmin
  * @param {string} name
  * @param {CosmosAssetInfo[]} assets
+ * @alpha
  */
 export const registerChainAssets = async (agoricNamesAdmin, name, assets) => {
   mustMatch(assets, M.arrayOf(CosmosAssetInfoShape));
@@ -86,6 +96,8 @@ export const registerChainAssets = async (agoricNamesAdmin, name, assets) => {
 };
 
 /**
+ * Register a chain into agoricNames
+ *
  * @param {ERef<NameAdmin>} agoricNamesAdmin
  * @param {string} name
  * @param {CosmosChainInfo} chainInfo

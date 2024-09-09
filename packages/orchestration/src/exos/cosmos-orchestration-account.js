@@ -69,6 +69,7 @@ const { Vow$ } = NetworkShape; // TODO #9611
  */
 
 /**
+ * @private
  * @typedef {{
  *   topicKit: RecorderKit<ComosOrchestrationAccountNotification>;
  *   account: IcaAccount;
@@ -79,6 +80,7 @@ const { Vow$ } = NetworkShape; // TODO #9611
  *   bondDenom: string;
  *   timer: Remote<TimerService>;
  * }} State
+ *   Internal to the IcaAccountHolder exo
  */
 
 /**
