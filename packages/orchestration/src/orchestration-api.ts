@@ -265,20 +265,26 @@ export interface OrchestrationFlow<CT = unknown> {
  * NOTE Expected to change, so consider an opaque structure.
  * @internal
  */
-export type TransferMsg = {
+export interface TransferMsg {
   toAccount: ChainAddress;
   timeout?: Timestamp;
   next?: TransferMsg;
   data?: object;
-};
+}
 
 /** @alpha */
-export type AfterAction = { destChain: string; destAddress: ChainAddress };
+export interface AfterAction {
+  destChain: string;
+  destAddress: ChainAddress;
+}
 /** @alpha */
-export type SwapExact = { amountIn: Amount; amountOut: Amount };
+export interface SwapExact {
+  amountIn: Amount;
+  amountOut: Amount;
+}
 /** @alpha */
-export type SwapMaxSlippage = {
+export interface SwapMaxSlippage {
   amountIn: Amount;
   brandOut: Brand;
   slippage: number;
-};
+}
