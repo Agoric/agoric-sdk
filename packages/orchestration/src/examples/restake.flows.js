@@ -41,7 +41,6 @@ export const makeRestakeAccount = async (
 ) => {
   trace('MakeRestakeAccount', chainName);
   seat.exit();
-  mustMatch(chainName, M.string());
   const remoteChain = await orch.getChain(chainName);
   const account =
     /** @type {OrchestrationAccount<any> & StakingAccountActions} */ (
