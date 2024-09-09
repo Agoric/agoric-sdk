@@ -151,24 +151,28 @@ export const makePriceFeedDriver = async (
     oracleAddresses.map(addr => walletFactoryDriver.provideSmartWallet(addr)),
   );
 
-  const priceFeedInstance = agoricNamesRemotes.instance[priceFeedName];
-  priceFeedInstance || Fail`no price feed ${priceFeedName}`;
-  const adminOfferId = `accept-${collateralBrandKey}-oracleInvitation`;
-
-  // accept invitations
-  await Promise.all(
-    oracleWallets.map(w =>
-      w.executeOffer({
-        id: adminOfferId,
-        invitationSpec: {
-          source: 'purse',
-          instance: priceFeedInstance,
-          description: 'oracle invitation',
-        },
-        proposal: {},
-      }),
-    ),
-  );
+  let nonce = 0;
+  let adminOfferId;
+  const acceptInvitations = async () => {
+    const priceFeedInstance = agoricNamesRemotes.instance[priceFeedName];
+    priceFeedInstance || Fail`no price feed ${priceFeedName}`;
+    nonce += 1;
+    adminOfferId = `accept-${collateralBrandKey}-oracleInvitation${nonce}`;
+    return Promise.all(
+      oracleWallets.map(w =>
+        w.executeOffer({
+          id: adminOfferId,
+          invitationSpec: {
+            source: 'purse',
+            instance: priceFeedInstance,
+            description: 'oracle invitation',
+          },
+          proposal: {},
+        }),
+      ),
+    );
+  };
+  await acceptInvitations();
 
   // zero is the initial lastReportedRoundId so causes an error: cannot report on previous rounds
   let roundId = 1n;
@@ -191,6 +195,10 @@ export const makePriceFeedDriver = async (
       oracleWallets.push(NonNullish(oracleWallets.shift()));
       roundId += 1n;
       // TODO confirm the new price is written to storage
+    },
+    async refreshInvitations() {
+      roundId = 1n;
+      await acceptInvitations();
     },
   };
 };
