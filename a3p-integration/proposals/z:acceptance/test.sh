@@ -6,10 +6,6 @@ set -ueo pipefail
 # test the state right after the previous proposals
 yarn ava initial.test.js
 
-# test more, in ways that change system state
-GLOBIGNORE=initial.test.js
-yarn ava ./*.test.js
-
 npm install -g tsx
 scripts/test-vaults.mts
 
@@ -17,3 +13,8 @@ scripts/test-vaults.mts
 
 ./state-sync-snapshots-test.sh
 ./genesis-test.sh
+
+# XXX the above tests expect certain block heights so the glob of tests that
+# might change state has to come last.
+GLOBIGNORE=initial.test.js
+yarn ava ./*.test.js
