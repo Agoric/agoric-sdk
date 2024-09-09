@@ -11,14 +11,16 @@ const trace = makeTracer('RestakeFlows');
  * @import {CosmosValidatorAddress, OrchestrationAccount, OrchestrationFlow, Orchestrator, StakingAccountActions} from '@agoric/orchestration';
  * @import {TimestampRecord} from '@agoric/time';
  * @import {GuestInterface} from '@agoric/async-flow';
- * @import {InvitationMakers} from '@agoric/smart-wallet/src/types.js';
+ * @import {ContinuingOfferResult, InvitationMakers} from '@agoric/smart-wallet/src/types.js';
  * @import {MakeCombineInvitationMakers} from '../exos/combine-invitation-makers.js';
  * @import {CosmosOrchestrationAccount} from '../exos/cosmos-orchestration-account.js';
  */
 
 /**
- * Create an OrchestrationAccount for a specific chain and return a continuing
- * offer with invitations makers for Delegate, WithdrawRewards, Transfer, etc.
+ * Create an OrchestrationAccount for a specific chain and return a
+ * {@link ContinuingOfferResult} that combines the invitationMakers from the orch
+ * account (`Delegate`, `WithdrawRewards`, `Transfer`, etc.) with our custom
+ * invitationMakers (`Restake`, `CancelRestake`) from `RestakeKit`.
  *
  * @satisfies {OrchestrationFlow}
  * @param {Orchestrator} orch
@@ -48,22 +50,22 @@ export const makeRestakeAccount = async (
   const restakeKit = /** @type {{ invitationMakers: InvitationMakers }} */ (
     makeRestakeKit(account)
   );
-  const result = await account.asContinuingOffer();
+  const { publicSubscribers, invitationMakers } =
+    await account.asContinuingOffer();
 
-  return {
-    ...result,
+  return /** @type {ContinuingOfferResult} */ ({
+    publicSubscribers,
     invitationMakers: makeCombineInvitationMakers(
       restakeKit.invitationMakers,
-      result.invitationMakers,
+      invitationMakers,
     ),
-  };
+  });
 };
 harden(makeRestakeAccount);
 
 /**
- * A flow that can be provided to `makeFlowWaker` to act as the handler for a
- * `TimerWaker`. This handler withdraws rewards from a validator and delegates
- * to them.
+ * A resumable async-flow that's provided to the `TimerWaker` waker handler in
+ * `RestakeKit`. It withdraws rewards from a validator and delegates them.
  *
  * @satisfies {OrchestrationFlow}
  * @param {Orchestrator} _orch

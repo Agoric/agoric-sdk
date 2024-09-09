@@ -69,6 +69,25 @@ const contract = async (zcf, { timerService }, zone, { orchestrateAll }) => {
     CancelRestake: M.call().returns(M.promise()),
   });
 
+  /**
+   * A durable-ready exo that's returned to callers of `makeRestakeAccount`.
+   * Each caller will have their own instance with isolated state.
+   *
+   * It serves three main purposes:
+   *
+   * - persist state for our custom invitationMakers
+   * - provide invitationMakers and offer handlers for our restaking actions
+   * - provide a TimerWaker handler for the repeater logic
+   *
+   * The invitationMaker offer handlers interface with `TimerService` using `E`
+   * and remote calls. Since calls to `chainTimerService` are not cross-chain,
+   * it's safe to write them using Promises.
+   *
+   * When we need to perform cross-chain actions, like in the `wake` handler, we
+   * should use resumable code. Since our restake logic performs cross-chain
+   * actions via `.withdrawReward()` and `delegate()`, `orchFns.wakerHandler()`
+   * is written as an async-flow in {@link file://./restake.flows.js}
+   */
   const makeRestakeKit = zone.exoClassKit(
     'RestakeExtraInvitationMaker',
     {
