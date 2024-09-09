@@ -4,7 +4,8 @@ import { M } from '@endo/patterns';
 
 /**
  * @import {TypedPattern} from '@agoric/internal';
- * @import {ChainAddress, CosmosAssetInfo, Chain, ChainInfo, CosmosChainInfo, DenomAmount, DenomDetail, DenomInfo} from './types.js';
+ * @import {ChainAddress, CosmosAssetInfo, Chain, ChainInfo, CosmosChainInfo, DenomAmount, DenomDetail, DenomInfo, AmountArg} from './types.js';
+ * @import {Any as Proto3Msg} from '@agoric/cosmic-proto/google/protobuf/any.js';
  * @import {Delegation} from '@agoric/cosmic-proto/cosmos/staking/v1beta1/staking.js';
  * @import {TxBody} from '@agoric/cosmic-proto/cosmos/tx/v1beta1/tx.js';
  * @import {TypedJson} from '@agoric/cosmic-proto';
@@ -32,6 +33,7 @@ export const ChainAddressShape = {
   value: M.string(),
 };
 
+/** @type {TypedPattern<Proto3Msg>} */
 export const Proto3Shape = {
   typeUrl: M.string(),
   value: M.string(),
@@ -123,6 +125,7 @@ export const DenomInfoShape = {
 /** @type {TypedPattern<DenomAmount>} */
 export const DenomAmountShape = { denom: DenomShape, value: M.bigint() };
 
+/** @type {TypedPattern<AmountArg>} */
 export const AmountArgShape = M.or(AmountShape, DenomAmountShape);
 
 export const ICQMsgShape = M.splitRecord(
