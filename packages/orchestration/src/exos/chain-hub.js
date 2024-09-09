@@ -82,7 +82,7 @@ export const connectionKey = (chainId1, chainId2) => {
  * @param {IBCConnectionInfo} connInfo
  * @returns {IBCConnectionInfo}
  */
-export const reverseConnInfo = connInfo => {
+const reverseConnInfo = connInfo => {
   const { transferChannel } = connInfo;
   return {
     id: connInfo.counterparty.connection_id,
