@@ -124,6 +124,11 @@ export interface DenomInfo<
  * Provided in the callback to `orchestrate()`.
  */
 export interface Orchestrator {
+  /**
+   * Get a Chain object for working with the given chain.
+   *
+   * @param {C} chainName name of the chain in KnownChains or the ChainHub backing the Orchestrator
+   */
   getChain: <C extends string>(
     chainName: C,
   ) => Promise<
@@ -131,7 +136,11 @@ export interface Orchestrator {
       (C extends 'agoric' ? AgoricChainMethods : {})
   >;
 
+  /**
+   * Make a new local (Agoric) ChainAccount
+   */
   makeLocalAccount: () => Promise<LocalChainAccount>;
+
   /**
    * For a denom, return information about a denom including the equivalent
    * local Brand, the Chain on which the denom is held, and the Chain that
@@ -144,7 +153,7 @@ export interface Orchestrator {
   >(
     denom: Denom,
   ) => DenomInfo<HoldingChain, IssuingChain>;
-  // TODO preload the mapping so this can be synchronous
+
   /**
    * Convert an amount described in native data to a local, structured Amount.
    * @param amount - the described amount
