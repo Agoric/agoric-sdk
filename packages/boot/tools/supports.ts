@@ -154,6 +154,7 @@ export const makeProposalExtractor = ({ childProcess, fs }: Powers) => {
     outputDir: string,
     scriptPath: string,
     env: NodeJS.ProcessEnv,
+    cliArgs: string[] = [],
   ) => {
     console.info('running package script:', scriptPath);
     const out = childProcess.execFileSync('yarn', ['bin', 'agoric'], {
@@ -162,7 +163,7 @@ export const makeProposalExtractor = ({ childProcess, fs }: Powers) => {
     });
     return childProcess.execFileSync(
       out.toString().trim(),
-      ['run', scriptPath],
+      ['run', scriptPath, ...cliArgs],
       {
         cwd: outputDir,
         env,
@@ -193,16 +194,21 @@ export const makeProposalExtractor = ({ childProcess, fs }: Powers) => {
     return { evals, bundles };
   };
 
-  const buildAndExtract = async (builderPath: string) => {
+  const buildAndExtract = async (
+    builderPath: string,
+    opts?: Record<string, unknown>,
+  ) => {
     const tmpDir = await fsAmbientPromises.mkdtemp(
       join(getPkgPath('builders'), 'proposal-'),
     );
 
+    const args = opts ? [JSON.stringify(opts)] : [];
     const built = parseProposalParts(
       runPackageScript(
         tmpDir,
         await importSpec(builderPath),
         process.env,
+        args,
       ).toString(),
     );
 
