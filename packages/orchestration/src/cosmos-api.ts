@@ -151,7 +151,7 @@ export interface StakingAccountQueries {
 /**
  * Transactions for doing staking operations on an individual account.
  *
- * @see {@link https://docs.cosmos.network/main/build/modules/staking#messages x/staking messages}
+ * @see {@link https://docs.cosmos.network/main/build/modules/staking#messages x/staking messages} and
  * {@link https://cosmos.github.io/cosmjs/latest/stargate/interfaces/StakingExtension.html StakingExtension} in cosmjs
  */
 export interface StakingAccountActions {
@@ -291,7 +291,7 @@ export type IBCMsgTransferOptions = {
  * Cosmos-specific methods to extend `OrchestrationAccountI`, parameterized
  * by `CosmosChainInfo`.
  *
- * In particular, if the chain info includes a staking token, `StakingAccountActions`
+ * In particular, if the chain info includes a staking token, {@link StakingAccountActions}
  * are available.
  *
  * @see {OrchestrationAccountI}

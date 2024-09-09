@@ -423,6 +423,8 @@ export const makeChainHub = (agoricNames, vowTools) => {
 /** @typedef {ReturnType<typeof makeChainHub>} ChainHub */
 
 /**
+ * Register assets with the given ChainHub so they are available for lookup
+ *
  * @param {ChainHub} chainHub
  * @param {string} name
  * @param {CosmosAssetInfo[]} assets

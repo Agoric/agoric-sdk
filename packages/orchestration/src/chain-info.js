@@ -13,7 +13,8 @@ import { CosmosAssetInfoShape, CosmosChainInfoShape } from './typeGuards.js';
 /** @import {NameAdmin} from '@agoric/vats'; */
 
 /**
- * Info used to build a {@link Chain} object - naming, connections, etc.
+ * Info used to build a {@link Chain} object - channel, connection, and denom
+ * info.
  *
  * @typedef {CosmosChainInfo | EthChainInfo} ChainInfo
  */
@@ -78,12 +79,14 @@ const knownChains = /** @satisfies {Record<string, ChainInfo>} */ (
  * @internal
  */
 
+// TODO(#9572): include this in registerChain
 /**
- * TODO(#9572): include this in registerChain
+ * Register chain assets into agoricNames
  *
  * @param {ERef<NameAdmin>} agoricNamesAdmin
  * @param {string} name
  * @param {CosmosAssetInfo[]} assets
+ * @alpha
  */
 export const registerChainAssets = async (agoricNamesAdmin, name, assets) => {
   mustMatch(assets, M.arrayOf(CosmosAssetInfoShape));
@@ -93,6 +96,8 @@ export const registerChainAssets = async (agoricNamesAdmin, name, assets) => {
 };
 
 /**
+ * Register a chain into agoricNames
+ *
  * @param {ERef<NameAdmin>} agoricNamesAdmin
  * @param {string} name
  * @param {CosmosChainInfo} chainInfo

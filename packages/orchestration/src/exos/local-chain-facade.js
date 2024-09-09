@@ -23,6 +23,8 @@ import { chainFacadeMethods, TypedJsonShape } from '../typeGuards.js';
  */
 
 /**
+ * Chain facade methods unique to the Agoric (local) chain.
+ *
  * @typedef {object} AgoricChainMethods
  * @property {() => Promise<AssetInfo[]>} getVBankAssetInfo Get asset info from
  *   agoricNames.vbankAsset.
