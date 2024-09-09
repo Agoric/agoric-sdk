@@ -21,7 +21,6 @@ import { prepareICQConnectionKit } from './icq-connection-kit.js';
  * @import {Vow, VowTools} from '@agoric/vow';
  * @import {ICQConnection, IcaAccount, ICQConnectionKit, IcaAccountKit} from '../types.js';
  * @import {ICAChannelAddressOpts} from '../utils/address.js';
- * @import {CosmosInterchainService} from './exo-interfaces.js';
  */
 
 const { Vow$ } = NetworkShape; // TODO #9611

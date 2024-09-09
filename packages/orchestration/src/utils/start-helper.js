@@ -12,7 +12,6 @@ import { makeOrchestrationFacade } from '../facade.js';
 import { makeZoeTools } from './zoe-tools.js';
 
 /**
- * @import {PromiseKit} from '@endo/promise-kit'
  * @import {LocalChain} from '@agoric/vats/src/localchain.js';
  * @import {TimerService, TimerBrand} from '@agoric/time';
  * @import {Baggage} from '@agoric/vat-data';
