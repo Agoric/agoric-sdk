@@ -133,6 +133,7 @@ export const DenomAmountShape = { denom: DenomShape, value: M.bigint() };
 /** @type {TypedPattern<AmountArg>} */
 export const AmountArgShape = M.or(AmountShape, DenomAmountShape);
 
+/** Approximately @see RequestQuery */
 export const ICQMsgShape = M.splitRecord(
   { path: M.string(), data: M.string() },
   { height: M.string(), prove: M.boolean() },
