@@ -108,7 +108,7 @@ test('send using arbitrary chain info', async t => {
     },
   } as IBCConnectionInfo;
   const chainName = 'hot';
-  await E(sendKit.creatorFacet).initChain(
+  await E(sendKit.creatorFacet).registerChain(
     chainName,
     hotChainInfo,
     agoricToHotConnection,

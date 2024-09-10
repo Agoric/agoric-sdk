@@ -5,26 +5,22 @@
  *   The primary offer result is a power for invitation makers that can perform
  *   actions with an ICA account.
  */
+import { makeSharedStateRecord } from '@agoric/async-flow';
 import { AmountShape } from '@agoric/ertp';
 import { M } from '@endo/patterns';
 import { prepareCombineInvitationMakers } from '../exos/combine-invitation-makers.js';
-import { CosmosOrchestrationInvitationMakersInterface } from '../exos/cosmos-orchestration-account.js';
+import { CosmosOrchestrationInvitationMakersI } from '../exos/cosmos-orchestration-account.js';
+import { ChainAddressShape, DelegationShape } from '../typeGuards.js';
 import { withOrchestration } from '../utils/start-helper.js';
 import * as flows from './staking-combinations.flows.js';
+import { prepareChainHubAdmin } from '../exos/chain-hub-admin.js';
 
 /**
  * @import {GuestInterface} from '@agoric/async-flow';
- * @import {Delegation} from '@agoric/cosmic-proto/cosmos/staking/v1beta1/staking.js';
- * @import {ContinuingOfferResult} from '@agoric/smart-wallet/src/types.js';
- * @import {TimerService} from '@agoric/time';
- * @import {LocalChain} from '@agoric/vats/src/localchain.js';
- * @import {NameHub} from '@agoric/vats';
- * @import {Vow} from '@agoric/vow';
- * @import {Remote} from '@agoric/internal';
  * @import {Zone} from '@agoric/zone';
- * @import {CosmosInterchainService} from '../exos/exo-interfaces.js';
- * @import {OrchestrationTools} from '../utils/start-helper.js';
+ * @import {OrchestrationTools, OrchestrationPowers} from '../utils/start-helper.js';
  * @import {CosmosOrchestrationAccount} from '../exos/cosmos-orchestration-account.js';
+ * @import {AmountArg, ChainAddress, CosmosValidatorAddress} from '../types.js';
  */
 
 const emptyOfferShape = harden({
@@ -38,26 +34,43 @@ const emptyOfferShape = harden({
  * Orchestration contract to be wrapped by withOrchestration for Zoe.
  *
  * @param {ZCF} zcf
- * @param {{
- *   agoricNames: Remote<NameHub>;
- *   localchain: Remote<LocalChain>;
- *   orchestrationService: Remote<CosmosInterchainService>;
- *   storageNode: Remote<StorageNode>;
+ * @param {OrchestrationPowers & {
  *   marshaller: Marshaller;
- *   timerService: Remote<TimerService>;
  * }} privateArgs
  * @param {Zone} zone
  * @param {OrchestrationTools} tools
  */
-const contract = async (zcf, privateArgs, zone, { orchestrateAll }) => {
-  const ExtraInvitationMakerInterface = M.interface('', {
-    DepositAndDelegate: M.call(M.array()).returns(M.promise()),
-    UndelegateAndTransfer: M.call(M.array()).returns(M.promise()),
-  });
+const contract = async (
+  zcf,
+  privateArgs,
+  zone,
+  { orchestrateAll, zoeTools, chainHub },
+) => {
+  const contractState = makeSharedStateRecord(
+    /**
+     * @type {{
+     *   account: (OrchestrationAccount<any> & LocalAccountMethods) | undefined;
+     * }}
+     */ {
+      localAccount: undefined,
+    },
+  );
+
+  const StakingCombinationsInvitationMakersI = M.interface(
+    'StakingCombinationsInvitationMakersI',
+    {
+      DepositAndDelegate: M.call().returns(M.promise()),
+      UndelegateAndTransfer: M.call(
+        M.arrayOf(DelegationShape),
+        ChainAddressShape,
+      ).returns(M.promise()),
+    },
+  );
+
   /** @type {any} XXX async membrane */
   const makeExtraInvitationMaker = zone.exoClass(
-    'ContinuingInvitationExampleInvitationMakers',
-    ExtraInvitationMakerInterface,
+    'StakingCombinationsInvitationMakers',
+    StakingCombinationsInvitationMakersI,
     /** @param {GuestInterface<CosmosOrchestrationAccount>} account */
     account => {
       return { account };
@@ -67,27 +80,39 @@ const contract = async (zcf, privateArgs, zone, { orchestrateAll }) => {
         const { account } = this.state;
 
         return zcf.makeInvitation(
-          (seat, validatorAddr, amountArg) =>
+          /**
+           * @param {ZCFSeat} seat
+           * @param {{ validator: CosmosValidatorAddress }} offerArgs
+           */
+          (seat, { validator }) =>
             // eslint-disable-next-line no-use-before-define -- defined by orchestrateAll, necessarily after this
-            orchFns.depositAndDelegate(account, seat, validatorAddr, amountArg),
+            orchFns.depositAndDelegate(account, seat, validator),
           'Deposit and delegate',
           undefined,
           {
             give: {
               Stake: AmountShape,
             },
+            want: {},
+            // user cannot exit their seat; contract must exit it.
+            exit: { waived: M.null() },
           },
         );
       },
       /**
-       * @param {Omit<Delegation, 'delegatorAddress'>[]} delegations
+       * @param {{ amount: AmountArg; validator: CosmosValidatorAddress }[]} delegations
+       * @param {ChainAddress} destination
        */
-      UndelegateAndTransfer(delegations) {
+      UndelegateAndTransfer(delegations, destination) {
         const { account } = this.state;
 
         return zcf.makeInvitation(
-          // eslint-disable-next-line no-use-before-define -- defined by orchestrateAll, necessarily after this
-          () => orchFns.undelegateAndTransfer(account, delegations),
+          () =>
+            // eslint-disable-next-line no-use-before-define -- defined by orchestrateAll, necessarily after this
+            orchFns.undelegateAndTransfer(account, {
+              delegations,
+              destination,
+            }),
           'Undelegate and transfer',
           undefined,
           emptyOfferShape,
@@ -99,16 +124,24 @@ const contract = async (zcf, privateArgs, zone, { orchestrateAll }) => {
   /** @type {any} XXX async membrane */
   const makeCombineInvitationMakers = prepareCombineInvitationMakers(
     zone,
-    CosmosOrchestrationInvitationMakersInterface,
-    ExtraInvitationMakerInterface,
+    CosmosOrchestrationInvitationMakersI,
+    StakingCombinationsInvitationMakersI,
   );
 
   const orchFns = orchestrateAll(flows, {
+    contractState,
     makeCombineInvitationMakers,
     makeExtraInvitationMaker,
     flows,
     zcf,
+    zoeTools,
   });
+
+  /**
+   * Provide invitations to contract deployer for registering assets and chains
+   * in the local ChainHub for this contract.
+   */
+  const creatorFacet = prepareChainHubAdmin(zone, chainHub);
 
   const publicFacet = zone.exo('publicFacet', undefined, {
     makeAccount() {
@@ -121,7 +154,7 @@ const contract = async (zcf, privateArgs, zone, { orchestrateAll }) => {
     },
   });
 
-  return harden({ publicFacet });
+  return harden({ publicFacet, creatorFacet });
 };
 
 export const start = withOrchestration(contract);

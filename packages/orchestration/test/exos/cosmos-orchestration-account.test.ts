@@ -372,7 +372,6 @@ test('getBalance and getBalances', async t => {
   {
     t.log('osmo1test mocked to have a 10 uosmo balance');
     const account = await makeTestCOAKit({
-      bondDenom: 'uosmo',
       chainId: 'osmosis-1',
       icqEnabled: true,
     });
@@ -390,7 +389,6 @@ test('getBalance and getBalances', async t => {
   {
     t.log('osmo1test1 mocked to have no balances');
     const account = await makeTestCOAKit({
-      bondDenom: 'uosmo',
       chainId: 'osmosis-1',
       icqEnabled: true,
     });

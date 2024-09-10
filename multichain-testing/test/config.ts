@@ -1,7 +1,7 @@
 import type { RetryOptions } from '../tools/sleep.js';
 
 /**
- * Wait 90 seconds to ensure staking rewards are available.
+ * Wait up to 90 seconds to ensure staking rewards are available.
  *
  * While we expect staking rewards to be available after a
  * single block (~5-12 seconds for most chains), this provides additional
@@ -18,7 +18,7 @@ export const STAKING_REWARDS_TIMEOUT: RetryOptions = {
 };
 
 /**
- * Wait 2 minutes to ensure:
+ * Wait up to 2 minutes to ensure:
  * - IBC Transfer from LocalAccount -> ICA Account Completes
  * - Delegation from ICA Account (initiated from SwingSet) Completes
  * - Delegations are visible via LCD (API Endpoint)
@@ -32,11 +32,12 @@ export const AUTO_STAKE_IT_DELEGATIONS_TIMEOUT: RetryOptions = {
 };
 
 /**
- * Wait about 90s to ensure:
+ * Wait up to 2 minutes to ensure:
  * - ICA Account is created
  * - ICQ Connection is established (in some instances)
  * - Query is executed (sometimes local, sometimes via ICQ)
  */
 export const MAKE_ACCOUNT_AND_QUERY_BALANCE_TIMEOUT: RetryOptions = {
-  maxRetries: 25,
+  retryIntervalMs: 5000,
+  maxRetries: 24,
 };

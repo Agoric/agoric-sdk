@@ -35,7 +35,7 @@ export const prepareChainHubAdmin = (zone, chainHub) => {
   const makeCreatorFacet = zone.exo(
     'ChainHub Admin',
     M.interface('ChainHub Admin', {
-      initChain: M.callWhen(
+      registerChain: M.callWhen(
         M.string(),
         CosmosChainInfoShape,
         ConnectionInfoShape,
@@ -50,7 +50,7 @@ export const prepareChainHubAdmin = (zone, chainHub) => {
        * @param {CosmosChainInfo} chainInfo
        * @param {IBCConnectionInfo} connectionInfo - from Agoric chain
        */
-      async initChain(chainName, chainInfo, connectionInfo) {
+      async registerChain(chainName, chainInfo, connectionInfo) {
         // when() because chainHub methods return vows. If this were inside
         // orchestrate() the membrane would wrap/unwrap automatically.
         const agoricChainInfo = await heapVowE.when(

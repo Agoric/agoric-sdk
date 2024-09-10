@@ -1,10 +1,9 @@
-import { AmountShape } from '@agoric/ertp';
 import { VowShape } from '@agoric/vow';
 import { M } from '@endo/patterns';
 
 /**
  * @import {TypedPattern} from '@agoric/internal';
- * @import {ChainAddress, CosmosAssetInfo, Chain, ChainInfo, CosmosChainInfo, DenomAmount, DenomDetail, DenomInfo, AmountArg} from './types.js';
+ * @import {ChainAddress, CosmosAssetInfo, Chain, ChainInfo, CosmosChainInfo, DenomAmount, DenomDetail, DenomInfo, AmountArg, CosmosValidatorAddress} from './types.js';
  * @import {Any as Proto3Msg} from '@agoric/cosmic-proto/google/protobuf/any.js';
  * @import {Delegation} from '@agoric/cosmic-proto/cosmos/staking/v1beta1/staking.js';
  * @import {TxBody} from '@agoric/cosmic-proto/cosmos/tx/v1beta1/tx.js';
@@ -38,13 +37,6 @@ export const Proto3Shape = {
   typeUrl: M.string(),
   value: M.string(),
 };
-
-// FIXME missing `delegatorAddress` from the type
-/** @type {TypedPattern<Delegation>} */
-export const DelegationShape = harden({
-  validatorAddress: M.string(),
-  shares: M.string(), // TODO: bigint?
-});
 
 /** @internal */
 export const IBCTransferOptionsShape = M.splitRecord(
@@ -130,8 +122,25 @@ export const DenomInfoShape = {
 /** @type {TypedPattern<DenomAmount>} */
 export const DenomAmountShape = { denom: DenomShape, value: M.bigint() };
 
+/** @type {TypedPattern<Amount<'nat'>>} */
+export const AnyNatAmountShape = harden({
+  brand: M.remotable('Brand'),
+  value: M.nat(),
+});
+
 /** @type {TypedPattern<AmountArg>} */
-export const AmountArgShape = M.or(AmountShape, DenomAmountShape);
+export const AmountArgShape = M.or(AnyNatAmountShape, DenomAmountShape);
+
+/**
+ * @type {TypedPattern<{
+ *   validator: CosmosValidatorAddress;
+ *   amount: AmountArg;
+ * }>}
+ */
+export const DelegationShape = harden({
+  validator: ChainAddressShape,
+  amount: AmountArgShape,
+});
 
 /** Approximately @see RequestQuery */
 export const ICQMsgShape = M.splitRecord(

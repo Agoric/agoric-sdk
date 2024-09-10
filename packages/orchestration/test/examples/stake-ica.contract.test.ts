@@ -41,7 +41,6 @@ const getChainTerms = (
     chainId,
     hostConnectionId: agoricConns[chainId].counterparty.connection_id,
     controllerConnectionId: agoricConns[chainId].id,
-    bondDenom: stakingTokens[0].denom,
     icqEnabled: !!icqEnabled,
   };
 };
@@ -126,16 +125,17 @@ test('delegate, undelegate, redelegate, withdrawReward', async t => {
     chainId: 'cosmoshub-4',
     encoding: 'bech32' as const,
   };
-  const delegation = await E(account).delegate(validatorAddr, {
+  const delegation = {
     denom: 'uatom',
     value: 10n,
-  });
-  t.is(delegation, undefined, 'delegation returns void');
+  };
+  const delegationResult = await E(account).delegate(validatorAddr, delegation);
+  t.is(delegationResult, undefined, 'delegation returns void');
 
   const undelegatationP = E(account).undelegate([
     {
-      shares: '10',
-      validatorAddress: validatorAddr.value,
+      amount: delegation,
+      validator: validatorAddr,
     },
   ]);
   const completionTime = UNBOND_PERIOD_SECONDS + maxClockSkew;

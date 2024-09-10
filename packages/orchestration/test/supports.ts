@@ -152,7 +152,9 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
   const chainHub = makeChainHub(agoricNames, vowTools);
 
   /**
-   * Register BLD if it's not already registered
+   * Register BLD if it's not already registered.
+   * Does not work with `withOrchestration` contracts, as these have their own
+   * ChainHub. Use `ChainHubAdmin` instead.
    */
   const registerAgoricBld = () => {
     if (!chainHub.getAsset('ubld')) {

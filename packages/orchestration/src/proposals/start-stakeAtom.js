@@ -61,7 +61,6 @@ export const startStakeAtom = async ({
       chainId: cosmoshub.chainId,
       hostConnectionId: connectionInfo.counterparty.connection_id,
       controllerConnectionId: connectionInfo.id,
-      bondDenom: cosmoshub.stakingTokens[0].denom,
       icqEnabled: cosmoshub.icqEnabled,
     },
     privateArgs: await deeplyFulfilledObject(
