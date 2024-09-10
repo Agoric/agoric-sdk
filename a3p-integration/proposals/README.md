@@ -18,7 +18,7 @@ Steps:
 We need the actual proposal that was sent to stakers. In the case of upgrades
 (chain-halting) it will be a dedicated release branch. (E.g.
 https://github.com/Agoric/agoric-sdk/tree/dev-upgrade-16/). If you're
-publishing an "upgrade" proposal and it's called `a:upgrade-next`, keep looking;
+publishing an "upgrade" proposal and it's called `n:upgrade-next`, keep looking;
 that is only a draft.
 
 ### Build the submissions
