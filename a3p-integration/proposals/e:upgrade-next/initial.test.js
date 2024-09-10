@@ -6,6 +6,7 @@ const vats = {
   network: { incarnation: 1 },
   ibc: { incarnation: 1 },
   localchain: { incarnation: 1 },
+  orchestration: { incarnation: 0 },
   transfer: { incarnation: 1 },
   walletFactory: { incarnation: 4 },
   zoe: { incarnation: 2 },
