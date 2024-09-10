@@ -32,14 +32,14 @@ Pruned spans are not available for export artifacts, of course, because the data
 
 Every transcript span, both current and historic, gets an export-data record. The record name is different for the two types of spans.
 
-Historical spans, which are "closed" and no longer growing, use a record name of
-`transcript.${vatID}.${startPos}`, where `startPos` is the delivery number of the first delivery included in the span. The value is a JSON-serialized record of `{ vatID, startPos, endPos, hash, isCurrent, incarnation }` (where `isCurrent = 0`).
+Historical spans, which are "closed" and no longer growing, use a record name of `transcript.${vatID}.${startPos}.${endPos}`, where `startPos` is the delivery number of the first delivery included in the span and `endPos` is the the delivery number of the first delivery included in the **next** span (i.e., the former is an inclusive lower bound and the latter is an exclusive upper bound).
+The value is a JSON-serialized record of `{ vatID, startPos, endPos, hash, isCurrent, incarnation }` (where `isCurrent = 0`).
 
 The current span, if any, uses a record name of `transcript.${vatID}.current`, and has the same value as historical spans (except `isCurrent = 1`). Current spans are growing: new transcript items are added as more deliveries are made, until the span is closed off (becomes historical) and replaced with a new current span. There is at most one current span per vatID.
 
 The available export *artifacts* will depend upon the export mode, and upon the swingstore's `keepTranscripts` setting. Each export artifact corresponds to a single span, and the artifact names are always `transcript.${vatID}.${startPos}.${endPos}` (for both historical and current spans).
 
-In the most-minimal `operational` mode, the export includes one artifact for each active (non-terminated) vat: just the current span. If `keepTranscripts` is true, these will be the only available artifacts anyways.
+In the most-minimal `operational` mode, the export includes one artifact for each active (non-terminated) vat: just the current span. If `keepTranscripts` is not true, these will be the only available artifacts anyways.
 
 The `replay` mode includes all spans for each vat's current incarnation, but omits spans from earlier incarnations. The `archival` mode includes all spans from all incarnations.
 
