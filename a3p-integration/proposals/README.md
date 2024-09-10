@@ -78,15 +78,21 @@ the repo. The PR's CI will test it and once the PR is merged it will update the
 
 ## How to revise this directory after 
 
-Once `latest` has changed, if it was a Software Upgrade Proposal then the
-upgrade handler in master will fail.  If that poses a problem, you can set
-a3p-integration `agoricSyntheticChain.fromTag` to a specific version instead
-of `latest`. See https://ghcr.io/agoric/agoric-3-proposals for the available
-tags.
+Once a new proposal is merged into agoric-3-proposals, take the proposal name
+(the part after the colon) and make it the fromTag value in a3p-integration's
+package.json.
 
-You need to revise `a:upgrade-next` to be able to apply on top of the last
-upgrade. In master it should already have these values, which should be
-maintained:
+The `agoricSyntheticChain.fromTag` should generally work with a value of 'latest',
+but that causes problems whenever agoric-3-proposals publishes a new image with changes
+that a3p-integration doesn't yet expect.
+
+So we specify a particular *use* image. E.g. `use-upgrade-16`.
+See https://ghcr.io/agoric/agoric-3-proposals for the available tags.
+
+If you're changing the fromTag to a a new SDK version (e.g. a new chain-halting
+upgrade) then you also need to revise the `upgrade-next` proposal to be able to
+apply on top of that upgrade. In master it should already have these values,
+which should be maintained:
 ```
     "releaseNotes": false,
     "sdkImageTag": "unreleased",
