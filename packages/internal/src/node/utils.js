@@ -28,10 +28,10 @@ export const PromiseAllOrErrors = async items => {
 };
 
 /**
- * @type {<T>(
- *   trier: () => Promise<T>,
- *   finalizer: (error?: unknown) => Promise<void>,
- * ) => Promise<T>}
+ * @template T
+ * @param {() => Promise<T>} trier
+ * @param {(error?: unknown) => Promise<unknown>} finalizer
+ * @returns {ReturnType<trier>}
  */
 export const aggregateTryFinally = async (trier, finalizer) =>
   trier().then(
@@ -44,3 +44,31 @@ export const aggregateTryFinally = async (trier, finalizer) =>
         )
         .then(error => Promise.reject(error)),
   );
+
+/**
+ * Run a function with the ability to defer last-in-first-out cleanup callbacks.
+ *
+ * @template T
+ * @param {(
+ *   addCleanup: (fn: (err?: unknown) => Promise<void>) => void,
+ * ) => Promise<T>} fn
+ * @returns {ReturnType<fn>}
+ */
+export const withDeferredCleanup = async fn => {
+  /** @type {((err?: unknown) => unknown)[]} */
+  const cleanupsLIFO = [];
+  /** @type {(cleanup: (err?: unknown) => unknown) => void} */
+  const addCleanup = cleanup => {
+    cleanupsLIFO.unshift(cleanup);
+  };
+  /** @type {(err?: unknown) => Promise<void>} */
+  const finalizer = async err => {
+    // Run each cleanup in its own isolated stack.
+    const cleanupResults = cleanupsLIFO.map(async cleanup => {
+      await null;
+      return cleanup(err);
+    });
+    await PromiseAllOrErrors(cleanupResults);
+  };
+  return aggregateTryFinally(() => fn(addCleanup), finalizer);
+};
