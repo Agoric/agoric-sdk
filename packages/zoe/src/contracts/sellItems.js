@@ -1,4 +1,3 @@
-/* eslint @typescript-eslint/no-floating-promises: "warn" */
 import { Fail } from '@endo/errors';
 import { Far } from '@endo/marshal';
 import { Nat } from '@endo/nat';

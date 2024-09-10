@@ -1,4 +1,3 @@
-/* eslint @typescript-eslint/no-floating-promises: "warn" */
 /// <reference path="./types-ambient.js" />
 
 import { Fail } from '@endo/errors';

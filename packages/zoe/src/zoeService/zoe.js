@@ -1,5 +1,4 @@
 // @jessie-check
-/* eslint @typescript-eslint/no-floating-promises: "warn" */
 
 /**
  * Zoe uses ERTP, the Electronic Rights Transfer Protocol
