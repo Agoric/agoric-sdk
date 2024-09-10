@@ -63,7 +63,8 @@ test.serial('setupVaults; run replace-price-feeds proposals', async t => {
 
   const instancePre = agoricNamesRemotes.instance['ATOM-USD price feed'];
 
-  const perFeedBuilder = '@agoric/builders/scripts/vats/priceFeedSupport.js';
+  const perFeedBuilder =
+    '@agoric/builders/scripts/inter-protocol/updatePriceFeeds.js';
   t.log('building', perFeedBuilder);
   const brandName = collateralBrandKey;
   const opts = {
