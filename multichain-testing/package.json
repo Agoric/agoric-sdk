@@ -42,7 +42,6 @@
     "typescript": "^5.3.3"
   },
   "resolutions": {
-    "node-fetch": "2.6.12",
     "axios": "1.6.7"
   },
   "ava": {
