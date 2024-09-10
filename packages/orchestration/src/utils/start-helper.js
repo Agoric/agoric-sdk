@@ -10,6 +10,7 @@ import { prepareOrchestrator } from '../exos/orchestrator.js';
 import { prepareRemoteChainFacade } from '../exos/remote-chain-facade.js';
 import { makeOrchestrationFacade } from '../facade.js';
 import { makeZoeTools } from './zoe-tools.js';
+import { makeZcfTools } from './zcf-tools.js';
 
 /**
  * @import {LocalChain} from '@agoric/vats/src/localchain.js';
@@ -75,6 +76,8 @@ export const provideOrchestration = (
   const chainHub = makeChainHub(agoricNames, vowTools);
 
   const zoeTools = makeZoeTools(zcf, vowTools);
+
+  const zcfTools = makeZcfTools(zcf, vowTools);
 
   const { makeRecorderKit } = prepareRecorderKitMakers(baggage, marshaller);
   const makeLocalOrchestrationAccountKit = prepareLocalOrchestrationAccountKit(
@@ -164,12 +167,14 @@ export const provideOrchestration = (
   const defaultOrchestrateKit = makeOrchestrateKit(
     zones.contract.subZone('orchestration'),
   );
+
   return {
     ...defaultOrchestrateKit,
     makeOrchestrateKit,
     chainHub,
     vowTools,
     asyncFlowTools,
+    zcfTools,
     zoeTools,
     zone: zones.contract,
   };
