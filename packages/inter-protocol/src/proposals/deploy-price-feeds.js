@@ -192,15 +192,13 @@ const distributeInvitations = async (
 /**
  * @param {EconomyBootstrapPowers & NamedVatPowers} powers
  * @param {{
- *   options: {
- *     priceFeedOptions: PriceFeedConfig & {
- *       priceAggregatorRef: { bundleID: string };
- *       scaledPARef: { bundleID: string };
- *       inBrandsDecimals?: number;
- *       contractTerms?: ChainlinkConfig;
- *       outBrandName?: string;
- *       outBrandDecimals?: number;
- *     };
+ *   options: PriceFeedConfig & {
+ *     priceAggregatorRef: { bundleID: string };
+ *     scaledPARef: { bundleID: string };
+ *     inBrandsDecimals?: number;
+ *     contractTerms?: ChainlinkConfig;
+ *     outBrandName?: string;
+ *     outBrandDecimals?: number;
  *   };
  * }} config
  */
@@ -214,7 +212,7 @@ export const deployPriceFeeds = async (powers, config) => {
     inBrandsDecimals = 6,
     outBrandName = 'USD',
     outBrandDecimals = 6,
-  } = config.options.priceFeedOptions;
+  } = config.options;
   await null;
 
   const installation = await installPriceAggregator(
@@ -269,8 +267,7 @@ export const deployPriceFeeds = async (powers, config) => {
 const t = 'priceFeed';
 
 /**
- * Add a price feed to a running chain, returning the manifest, installations,
- * and options.
+ * Thread price feed upgrade options through from builder to core-eval.
  *
  * @param {object} utils
  * @param {any} utils.restoreRef
@@ -282,33 +279,28 @@ export const getManifestForPriceFeeds = async (
 ) => ({
   manifest: {
     [deployPriceFeeds.name]: {
+      namedVat: t,
       consume: {
         agoricNamesAdmin: t,
         board: t,
         chainStorage: t,
         chainTimerService: t,
+        contractKits: t,
         econCharterKit: t,
         highPrioritySendersManager: t,
+        instancePrivateArgs: t,
         namesByAddressAdmin: t,
         priceAuthority: t,
         priceAuthorityAdmin: t,
         startGovernedUpgradable: t,
         zoe: t,
       },
+      installation: { produce: { priceAggregator: t } },
       instance: {
         produce: t,
       },
+      oracleBrand: { produce: t },
     },
   },
-  installations: {
-    // ??? will every eval of price-feed-proposal install priceAggregator ?
-    priceAggregator: restoreRef(priceFeedOptions.priceAggregatorRef),
-  },
-  options: {
-    priceFeedOptions: {
-      oracleAddresses: priceFeedOptions.oracleAddresses,
-      inBrandNames: priceFeedOptions.inBrandNames,
-      priceAggregatorRef: priceFeedOptions.priceAggregatorRef,
-    },
-  },
+  options: { ...priceFeedOptions },
 });
