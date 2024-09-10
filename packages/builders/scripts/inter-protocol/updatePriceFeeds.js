@@ -1,6 +1,9 @@
 import { makeHelpers } from '@agoric/deploy-script-support';
-import { strictPriceFeedProposalBuilder } from '../vats/priceFeedSupport.js';
+import { getManifestForPriceFeeds } from '@agoric/inter-protocol/src/proposals/deploy-price-feeds.js';
 
+/** @import {PriceFeedConfig} from '@agoric/inter-protocol/src/proposals/deploy-price-feeds.js'; */
+
+/** @type {Record<string, PriceFeedConfig>} */
 const configurations = {
   UNRELEASED_A3P_INTEGRATION: {
     oracleAddresses: [
@@ -18,7 +21,8 @@ const configurations = {
       'agoric1krunjcqfrf7la48zrvdfeeqtls5r00ep68mzkr', // Simply Staking
       'agoric1n4fcxsnkxe4gj6e24naec99hzmc4pjfdccy5nj', // P2P
     ],
-    inBrandName: ['ATOM', 'stATOM', 'stOSMO', 'stTIA', 'stkATOM'],
+    inBrandNames: ['ATOM', 'stATOM', 'stOSMO', 'stTIA', 'stkATOM'],
+    contractTerms: { minSubmissionCount: 3 },
   },
   UNRELEASED_devnet: {
     oracleAddresses: [
@@ -32,30 +36,46 @@ const configurations = {
   },
 };
 
+/** @type {import('@agoric/deploy-script-support/src/externalTypes.js').CoreEvalBuilder} */
+export const defaultProposalBuilder = async ({ publishRef, install }, opts) => {
+  return harden({
+    sourceSpec: '@agoric/inter-protocol/src/proposals/deploy-price-feeds.js',
+    getManifestCall: [
+      getManifestForPriceFeeds.name,
+      {
+        ...opts,
+        priceAggregatorRef: publishRef(
+          install(
+            '@agoric/inter-protocol/src/price/fluxAggregatorContract.js',
+            '../bundles/bundle-fluxAggregatorKit.js',
+          ),
+        ),
+        scaledPARef: publishRef(
+          install(
+            '@agoric/zoe/src/contracts/scaledPriceAuthority.js',
+            '../bundles/bundle-scaledPriceAuthority.js',
+          ),
+        ),
+      },
+    ],
+  });
+};
+
+const { keys } = Object;
+const Usage = `agoric run updatePriceFeed.js ${keys(configurations).join(' | ')}`;
+
 export default async (homeP, endowments) => {
-  const upgradeEnvironment = endowments.scriptArgs?.[0];
-  console.log('UPPrices', upgradeEnvironment);
+  const { scriptArgs } = endowments;
+  const config = configurations[scriptArgs?.[0]];
+  if (!config) {
+    console.error(Usage);
+    process.exit(1);
+  }
+  console.log('UPPrices', scriptArgs, config);
 
   const { writeCoreEval } = await makeHelpers(homeP, endowments);
 
-  const coreEvalSteps = [];
-  for (const config of configurations[upgradeEnvironment]) {
-    const { inBrandNames, oracleAddresses } = config;
-    for (const inBrandName of inBrandNames) {
-      const options = {
-        AGORIC_INSTANCE_NAME: `${inBrandName}-USD price feed`,
-        ORACLE_ADDRESSES: oracleAddresses,
-        IN_BRAND_LOOKUP: ['agoricNames', 'oracleBrand', inBrandName],
-      };
-      coreEvalSteps.push(
-        writeCoreEval(options.AGORIC_INSTANCE_NAME, opts =>
-          strictPriceFeedProposalBuilder({ ...opts, ...options }),
-        ),
-      );
-    }
-  }
-
-  // TODO(hibbert) leave a marker in promise space as a signal to vaults upgrade
-
-  await Promise.all(coreEvalSteps);
+  await writeCoreEval('gov-price-feeds', (utils, opts) =>
+    defaultProposalBuilder(utils, { ...opts, ...config }),
+  );
 };
