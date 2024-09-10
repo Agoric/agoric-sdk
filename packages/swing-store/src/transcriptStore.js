@@ -247,6 +247,102 @@ export function makeTranscriptStore(
     return bounds;
   }
 
+  const sqlGetSpanEndPos = db.prepare(`
+    SELECT endPos
+    FROM transcriptSpans
+    WHERE vatID = ? AND startPos = ?
+  `);
+  sqlGetSpanEndPos.pluck(true);
+
+  const sqlReadSpanItems = db.prepare(`
+    SELECT item
+    FROM transcriptItems
+    WHERE vatID = ? AND ? <= position AND position < ?
+    ORDER BY position
+  `);
+
+  /**
+   * Read the items in a transcript span
+   *
+   * @param {string} vatID  The vat whose transcript is being read
+   * @param {number} [startPos] A start position identifying the span to be
+   *    read; defaults to the current span, whatever it is
+   *
+   * @returns {IterableIterator<string>}  An iterator over the items in the indicated span
+   */
+  function readSpan(vatID, startPos) {
+    /** @type {number | undefined} */
+    let endPos;
+    if (startPos === undefined) {
+      ({ startPos, endPos } = getCurrentSpanBounds(vatID));
+    } else {
+      insistTranscriptPosition(startPos);
+      endPos = sqlGetSpanEndPos.get(vatID, startPos);
+      if (typeof endPos !== 'number') {
+        throw Fail`no transcript span for ${q(vatID)} at ${q(startPos)}`;
+      }
+    }
+    startPos <= endPos || Fail`${q(startPos)} <= ${q(endPos)}}`;
+    const expectedCount = endPos - startPos;
+
+    function* reader() {
+      let count = 0;
+      for (const { item } of sqlReadSpanItems.iterate(
+        vatID,
+        startPos,
+        endPos,
+      )) {
+        yield item;
+        count += 1;
+      }
+      count === expectedCount ||
+        Fail`read ${q(count)} transcript entries (expected ${q(
+          expectedCount,
+        )})`;
+    }
+    harden(reader);
+
+    if (startPos === endPos) {
+      return empty();
+    }
+
+    return reader();
+  }
+
+  const sqlGetSpanIsCurrent = db.prepare(`
+    SELECT isCurrent
+    FROM transcriptSpans
+    WHERE vatID = ? AND startPos = ?
+  `);
+  sqlGetSpanIsCurrent.pluck(true);
+
+  /**
+   * Read a transcript span and return it as a stream of data suitable for
+   * export to another store.  Transcript items are terminated by newlines.
+   *
+   * Transcript span artifact names should be strings of the form:
+   *   `transcript.${vatID}.${startPos}.${endPos}`
+   *
+   * @param {string} name  The name of the transcript artifact to be read
+   * @returns {AsyncIterableIterator<Uint8Array>}
+   * @yields {Uint8Array}
+   */
+  async function* exportSpan(name) {
+    typeof name === 'string' || Fail`artifact name must be a string`;
+    const parts = name.split('.');
+    const [type, vatID, pos] = parts;
+    // prettier-ignore
+    (parts.length === 4 && type === 'transcript') ||
+      Fail`expected artifact name of the form 'transcript.{vatID}.{startPos}.{endPos}', saw ${q(name)}`;
+    const isCurrent = sqlGetSpanIsCurrent.get(vatID, pos);
+    isCurrent !== undefined || Fail`transcript span ${q(name)} not available`;
+    const startPos = Number(pos);
+    for (const entry of readSpan(vatID, startPos)) {
+      yield Buffer.from(`${entry}\n`);
+    }
+  }
+  harden(exportSpan);
+
   const sqlEndCurrentSpan = db.prepare(`
     UPDATE transcriptSpans
     SET isCurrent = null
@@ -282,7 +378,6 @@ export function makeTranscriptStore(
     await null;
     if (archiveTranscript) {
       const spanName = spanArtifactName(rec);
-      // eslint-disable-next-line no-use-before-define
       const entries = exportSpan(spanName);
       await archiveTranscript(spanName, entries);
     }
@@ -591,102 +686,6 @@ export function makeTranscriptStore(
     }
   }
   harden(getArtifactNames);
-
-  const sqlGetSpanEndPos = db.prepare(`
-    SELECT endPos
-    FROM transcriptSpans
-    WHERE vatID = ? AND startPos = ?
-  `);
-  sqlGetSpanEndPos.pluck(true);
-
-  const sqlReadSpanItems = db.prepare(`
-    SELECT item
-    FROM transcriptItems
-    WHERE vatID = ? AND ? <= position AND position < ?
-    ORDER BY position
-  `);
-
-  /**
-   * Read the items in a transcript span
-   *
-   * @param {string} vatID  The vat whose transcript is being read
-   * @param {number} [startPos] A start position identifying the span to be
-   *    read; defaults to the current span, whatever it is
-   *
-   * @returns {IterableIterator<string>}  An iterator over the items in the indicated span
-   */
-  function readSpan(vatID, startPos) {
-    /** @type {number | undefined} */
-    let endPos;
-    if (startPos === undefined) {
-      ({ startPos, endPos } = getCurrentSpanBounds(vatID));
-    } else {
-      insistTranscriptPosition(startPos);
-      endPos = sqlGetSpanEndPos.get(vatID, startPos);
-      if (typeof endPos !== 'number') {
-        throw Fail`no transcript span for ${q(vatID)} at ${q(startPos)}`;
-      }
-    }
-    startPos <= endPos || Fail`${q(startPos)} <= ${q(endPos)}}`;
-    const expectedCount = endPos - startPos;
-
-    function* reader() {
-      let count = 0;
-      for (const { item } of sqlReadSpanItems.iterate(
-        vatID,
-        startPos,
-        endPos,
-      )) {
-        yield item;
-        count += 1;
-      }
-      count === expectedCount ||
-        Fail`read ${q(count)} transcript entries (expected ${q(
-          expectedCount,
-        )})`;
-    }
-    harden(reader);
-
-    if (startPos === endPos) {
-      return empty();
-    }
-
-    return reader();
-  }
-
-  const sqlGetSpanIsCurrent = db.prepare(`
-    SELECT isCurrent
-    FROM transcriptSpans
-    WHERE vatID = ? AND startPos = ?
-  `);
-  sqlGetSpanIsCurrent.pluck(true);
-
-  /**
-   * Read a transcript span and return it as a stream of data suitable for
-   * export to another store.  Transcript items are terminated by newlines.
-   *
-   * Transcript span artifact names should be strings of the form:
-   *   `transcript.${vatID}.${startPos}.${endPos}`
-   *
-   * @param {string} name  The name of the transcript artifact to be read
-   * @returns {AsyncIterableIterator<Uint8Array>}
-   * @yields {Uint8Array}
-   */
-  async function* exportSpan(name) {
-    typeof name === 'string' || Fail`artifact name must be a string`;
-    const parts = name.split('.');
-    const [type, vatID, pos] = parts;
-    // prettier-ignore
-    (parts.length === 4 && type === 'transcript') ||
-      Fail`expected artifact name of the form 'transcript.{vatID}.{startPos}.{endPos}', saw ${q(name)}`;
-    const isCurrent = sqlGetSpanIsCurrent.get(vatID, pos);
-    isCurrent !== undefined || Fail`transcript span ${q(name)} not available`;
-    const startPos = Number(pos);
-    for (const entry of readSpan(vatID, startPos)) {
-      yield Buffer.from(`${entry}\n`);
-    }
-  }
-  harden(exportSpan);
 
   const sqlAddItem = db.prepare(`
     INSERT INTO transcriptItems (vatID, item, position, incarnation)
