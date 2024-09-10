@@ -63,23 +63,14 @@ test.serial('setupVaults; run replace-price-feeds proposals', async t => {
 
   const instancePre = agoricNamesRemotes.instance['ATOM-USD price feed'];
 
-  const perFeedBuilder =
+  const priceFeedBuilder =
     '@agoric/builders/scripts/inter-protocol/updatePriceFeeds.js';
-  t.log('building', perFeedBuilder);
+  t.log('building', priceFeedBuilder);
   const brandName = collateralBrandKey;
-  const opts = {
-    AGORIC_INSTANCE_NAME: `${brandName}-USD price feed`,
-    ORACLE_ADDRESSES: atomConfig.oracleAddresses,
-    IN_BRAND_LOOKUP: ['agoricNames', 'oracleBrand', brandName],
-    IN_BRAND_DECIMALS: 6,
-    OUT_BRAND_LOOKUP: ['agoricNames', 'oracleBrand', 'USD'],
-    OUT_BRAND_DECIMALS: 4,
-  };
 
   t.log('building all relevant CoreEvals');
   const coreEvals = await Promise.all([
-    buildProposal(perFeedBuilder, opts),
-    // '@agoric/builders/scripts/vats/upgradeScaledPriceAuthorities.js',
+    buildProposal(priceFeedBuilder, ['UNRELEASED_A3P_INTEGRATION']),
     buildProposal('@agoric/builders/scripts/vats/upgradeVaults.js'),
     buildProposal('@agoric/builders/scripts/vats/add-auction.js'),
   ]);
