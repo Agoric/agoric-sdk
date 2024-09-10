@@ -220,9 +220,7 @@ export const deployPriceFeeds = async (powers, config) => {
     priceAggregatorRef.bundleID,
   );
 
-  const {
-    consume: { priceAuthorityAdmin },
-  } = powers;
+  const { priceAuthorityAdmin, priceAuthority } = powers.consume;
   for (const inBrandName of inBrandNames) {
     const AGORIC_INSTANCE_NAME = oracleBrandFeedName(inBrandName, outBrandName);
     const brandIn = await ensureOracleBrand(powers, {
@@ -262,6 +260,10 @@ export const deployPriceFeeds = async (powers, config) => {
   await upgradeScaledPriceAuthorities(powers, {
     options: { scaledPARef },
   });
+
+  // cf. #8400 QuotePayments storage leak
+  powers.produce.priceAuthority8400.resolve(priceAuthority);
+  powers.produce.priceAuthority.resolve(priceAuthority);
 };
 
 const t = 'priceFeed';
@@ -300,6 +302,10 @@ export const getManifestForPriceFeeds = async (
         produce: t,
       },
       oracleBrand: { produce: t },
+      produce: {
+        priceAuthority: t,
+        priceAuthority8400: t,
+      },
     },
   },
   options: { ...priceFeedOptions },
