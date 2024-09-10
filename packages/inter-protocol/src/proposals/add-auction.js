@@ -27,7 +27,7 @@ export const addAuction = async (
       chainTimerService,
       economicCommitteeCreatorFacet: electorateCreatorFacet,
       econCharterKit,
-      priceAuthority,
+      priceAuthority8400,
       zoe,
     },
     produce: { auctioneerKit: produceAuctioneerKit, auctionUpgradeNewInstance },
@@ -95,7 +95,7 @@ export const addAuction = async (
   const auctionTerms = makeGovernedATerms(
     { storageNode, marshaller },
     chainTimerService,
-    priceAuthority,
+    priceAuthority8400,
     reservePublicFacet,
     {
       ...params,
@@ -197,7 +197,7 @@ export const ADD_AUCTION_MANIFEST = harden({
       chainTimerService: true,
       econCharterKit: true,
       economicCommitteeCreatorFacet: true,
-      priceAuthority: true,
+      priceAuthority8400: true,
       zoe: true,
     },
     produce: {

@@ -27,6 +27,7 @@ export const upgradeVaults = async (
       reserveKit,
       vaultFactoryKit,
       zoe,
+      priceAuthority8400,
     },
     produce: { auctionUpgradeNewInstance: auctionUpgradeNewInstanceProducer },
     installation: {
@@ -43,6 +44,9 @@ export const upgradeVaults = async (
   const { instance: directorInstance } = kit;
   const allBrands = await E(zoe).getBrands(directorInstance);
   const { Minted: _istBrand, ...vaultBrands } = allBrands;
+
+  console.log('upgradeVaults awaiting priceAuthority8400');
+  await priceAuthority8400;
 
   const bundleID = vaultsRef.bundleID;
   console.log(`upgradeVaults: bundleId`, bundleID);
@@ -200,6 +204,7 @@ export const getManifestForUpgradeVaults = async (
   manifest: {
     [upgradeVaults.name]: {
       consume: {
+        priceAuthority8400: uV,
         auctionUpgradeNewInstance: uV,
         chainTimerService: uV,
         economicCommitteeCreatorFacet: uV,
