@@ -194,15 +194,11 @@ export const makeProposalExtractor = ({ childProcess, fs }: Powers) => {
     return { evals, bundles };
   };
 
-  const buildAndExtract = async (
-    builderPath: string,
-    opts?: Record<string, unknown>,
-  ) => {
+  const buildAndExtract = async (builderPath: string, args: string[] = []) => {
     const tmpDir = await fsAmbientPromises.mkdtemp(
       join(getPkgPath('builders'), 'proposal-'),
     );
 
-    const args = opts ? [JSON.stringify(opts)] : [];
     const built = parseProposalParts(
       runPackageScript(
         tmpDir,
