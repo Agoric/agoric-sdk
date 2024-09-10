@@ -2,7 +2,7 @@ export { initSwingStore, openSwingStore, isSwingStore } from './swingStore.js';
 export { makeSwingStoreExporter } from './exporter.js';
 export { importSwingStore } from './importer.js';
 
-export { makeArchiveTranscript } from './archiver.js';
+export { makeArchiveSnapshot, makeArchiveTranscript } from './archiver.js';
 
 // temporary, for the benefit of SwingSet/misc-tools/replay-transcript.js
 export { makeSnapStore } from './snapStore.js';

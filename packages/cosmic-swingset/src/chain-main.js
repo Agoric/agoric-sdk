@@ -33,7 +33,10 @@ import { makeShutdown } from '@agoric/internal/src/node/shutdown.js';
 import * as STORAGE_PATH from '@agoric/internal/src/chain-storage-paths.js';
 import * as ActionType from '@agoric/internal/src/action-types.js';
 import { BridgeId, CosmosInitKeyToBridgeId } from '@agoric/internal';
-import { makeArchiveTranscript } from '@agoric/swing-store';
+import {
+  makeArchiveSnapshot,
+  makeArchiveTranscript,
+} from '@agoric/swing-store';
 import {
   makeBufferedStorage,
   makeReadCachingStorage,
@@ -77,6 +80,7 @@ const toNumber = specimen => {
  * @property {number} [maxVatsOnline]
  * @property {'debug' | 'operational'} [vatSnapshotRetention]
  * @property {'archival' | 'operational'} [vatTranscriptRetention]
+ * @property {string} [vatSnapshotArchiveDir]
  * @property {string} [vatTranscriptArchiveDir]
  */
 const SwingsetConfigShape = M.splitRecord(
@@ -87,6 +91,7 @@ const SwingsetConfigShape = M.splitRecord(
     maxVatsOnline: M.number(),
     vatSnapshotRetention: M.or('debug', 'operational'),
     vatTranscriptRetention: M.or('archival', 'operational'),
+    vatSnapshotArchiveDir: M.string(),
     vatTranscriptArchiveDir: M.string(),
   },
   {},
@@ -322,6 +327,7 @@ export default async function main(progname, args, { env, homedir, agcc }) {
       slogfile,
       vatSnapshotRetention,
       vatTranscriptRetention,
+      vatSnapshotArchiveDir,
       vatTranscriptArchiveDir,
     } = swingsetConfig;
     const keepSnapshots = vatSnapshotRetention
@@ -544,12 +550,12 @@ export default async function main(progname, args, { env, homedir, agcc }) {
       }
     };
 
+    const fsPowers = { fs, path, tmp };
+    const archiveSnapshot = vatSnapshotArchiveDir
+      ? makeArchiveSnapshot(vatSnapshotArchiveDir, fsPowers)
+      : undefined;
     const archiveTranscript = vatTranscriptArchiveDir
-      ? makeArchiveTranscript(vatTranscriptArchiveDir, {
-          fs,
-          path,
-          tmp,
-        })
+      ? makeArchiveTranscript(vatTranscriptArchiveDir, fsPowers)
       : undefined;
 
     const s = await launch({
@@ -571,6 +577,7 @@ export default async function main(progname, args, { env, homedir, agcc }) {
       swingStoreTraceFile,
       keepSnapshots,
       keepTranscripts,
+      archiveSnapshot,
       archiveTranscript,
       afterCommitCallback,
       swingsetConfig,

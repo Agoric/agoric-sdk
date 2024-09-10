@@ -17,6 +17,7 @@ import { buffer } from './util.js';
  * @property {number} dbSaveSeconds time to write snapshot in DB
  * @property {number} compressedSize size of (compressed) snapshot
  * @property {number} compressSeconds time to generate and compress the snapshot
+ * @property {number} [archiveWriteSeconds] time to write an archive to disk (if applicable)
  */
 
 /**
@@ -73,6 +74,7 @@ const finished = promisify(finishedCallback);
  * @param {(key: string, value: string | undefined) => void} noteExport
  * @param {object} [options]
  * @param {boolean | undefined} [options.keepSnapshots]
+ * @param {(name: string, compressedData: Parameters<import('stream').Readable.from>[0]) => Promise<void>} [options.archiveSnapshot]
  * @returns {SnapStore & SnapStoreInternal & SnapStoreDebug}
  */
 export function makeSnapStore(
@@ -80,7 +82,7 @@ export function makeSnapStore(
   ensureTxn,
   { measureSeconds },
   noteExport = () => {},
-  { keepSnapshots = false } = {},
+  { keepSnapshots = false, archiveSnapshot } = {},
 ) {
   db.exec(`
     CREATE TABLE IF NOT EXISTS snapshots (
@@ -196,7 +198,8 @@ export function makeSnapStore(
 
   /**
    * Generates a new XS heap snapshot, stores a gzipped copy of it into the
-   * snapshots table, and reports information about the process, including
+   * snapshots table (and also to an archiveSnapshot callback if provided for
+   * e.g. disk archival), and reports information about the process, including
    * snapshot size and timing metrics.
    *
    * @param {string} vatID
@@ -236,6 +239,8 @@ export function makeSnapStore(
             return compressedSnapshotData;
           });
         const hash = hashStream.digest('hex');
+        const rec = snapshotRec(vatID, snapPos, hash, 1);
+        const exportKey = snapshotMetadataKey(rec);
 
         const { duration: dbSaveSeconds } = await measureSeconds(async () => {
           ensureTxn();
@@ -250,8 +255,6 @@ export function makeSnapStore(
             compressedSize,
             compressedSnapshot,
           );
-          const rec = snapshotRec(vatID, snapPos, hash, 1);
-          const exportKey = snapshotMetadataKey(rec);
           noteExport(exportKey, JSON.stringify(rec));
           noteExport(
             currentSnapshotMetadataKey(rec),
@@ -259,11 +262,21 @@ export function makeSnapStore(
           );
         });
 
+        let archiveWriteSeconds;
+        if (archiveSnapshot) {
+          ({ duration: archiveWriteSeconds } = await measureSeconds(
+            async () => {
+              await archiveSnapshot(exportKey, compressedSnapshot);
+            },
+          ));
+        }
+
         return harden({
           hash,
           uncompressedSize,
           compressSeconds,
           dbSaveSeconds,
+          archiveWriteSeconds,
           compressedSize,
         });
       },

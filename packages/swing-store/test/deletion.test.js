@@ -10,7 +10,7 @@ import tmp from 'tmp';
 import { arrayIsLike } from '@agoric/internal/tools/ava-assertions.js';
 import { tmpDir } from './util.js';
 import { initSwingStore } from '../src/swingStore.js';
-import { makeArchiveTranscript } from '../src/archiver.js';
+import { makeArchiveSnapshot, makeArchiveTranscript } from '../src/archiver.js';
 import { makeSwingStoreExporter } from '../src/exporter.js';
 import { importSwingStore } from '../src/importer.js';
 
@@ -174,14 +174,13 @@ const setupTranscript = async (t, keepTranscripts) => {
   t.teardown(cleanup);
   const [archiveDir, cleanupArchives] = await tmpDir('archives');
   t.teardown(cleanupArchives);
-  const archiveTranscript = makeArchiveTranscript(archiveDir, {
-    fs,
-    path,
-    tmp,
-  });
+  const fsPowers = { fs, path, tmp };
+  const archiveSnapshot = makeArchiveSnapshot(archiveDir, fsPowers);
+  const archiveTranscript = makeArchiveTranscript(archiveDir, fsPowers);
   const store = initSwingStore(dbDir, {
     exportCallback,
     keepTranscripts,
+    archiveSnapshot,
     archiveTranscript,
   });
   const { kernelStorage, hostStorage } = store;

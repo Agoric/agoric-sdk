@@ -17,6 +17,7 @@ import (
 const (
 	ConfigPrefix                = "swingset"
 	FlagSlogfile                = ConfigPrefix + ".slogfile"
+	FlagVatSnapshotArchiveDir   = ConfigPrefix + ".vat-snapshot-archive-dir"
 	FlagVatTranscriptArchiveDir = ConfigPrefix + ".vat-transcript-archive-dir"
 
 	SnapshotRetentionOptionDebug       = "debug"
@@ -75,6 +76,9 @@ vat-snapshot-retention = "{{ .Swingset.VatSnapshotRetention }}"
 #   otherwise "operational")
 vat-transcript-retention = "{{ .Swingset.VatTranscriptRetention }}"
 
+# Archival of gzipped vat snapshots.
+vat-snapshot-archive-dir = "{{ .Swingset.VatSnapshotArchiveDir }}"
+
 # Archival of historical (i.e., closed) vat transcript spans to gzipped files.
 vat-transcript-archive-dir = "{{ .Swingset.VatTranscriptArchiveDir }}"
 `
@@ -110,6 +114,9 @@ type SwingsetConfig struct {
 	// * "default": determined by `pruning` ("archival" if `pruning` is
 	//   "nothing", otherwise "operational")
 	VatTranscriptRetention string `mapstructure:"vat-transcript-retention" json:"vatTranscriptRetention,omitempty"`
+
+	// VatSnapshotArchiveDir controls archival of gzipped vat snapshots.
+	VatSnapshotArchiveDir string `mapstructure:"vat-snapshot-archive-dir" json:"vatSnapshotArchiveDir,omitempty"`
 
 	// VatTranscriptArchiveDir controls archival of historical (i.e., closed) vat
 	// transcript spans to gzipped files.
@@ -209,6 +216,12 @@ func SwingsetConfigFromViper(resolvedConfig servertypes.AppOptions) (*SwingsetCo
 		return nil, err
 	}
 	ssConfig.SlogFile = resolvedSlogFile
+
+	resolvedSnapshotDir, err := resolvePath(ssConfig.VatSnapshotArchiveDir, FlagVatSnapshotArchiveDir)
+	if err != nil {
+		return nil, err
+	}
+	ssConfig.VatSnapshotArchiveDir = resolvedSnapshotDir
 
 	resolvedTranscriptDir, err := resolvePath(ssConfig.VatTranscriptArchiveDir, FlagVatTranscriptArchiveDir)
 	if err != nil {
