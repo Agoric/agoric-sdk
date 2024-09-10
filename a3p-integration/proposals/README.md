@@ -79,8 +79,8 @@ the repo. The PR's CI will test it and once the PR is merged it will update the
 ## How to revise this directory after 
 
 Once a new proposal is merged into agoric-3-proposals, take the proposal name
-(the part after the colon) and make it the fromTag value in a3p-integration's
-package.json.
+(the part after the colon) and use it in the fromTag value in a3p-integration's
+package.json. For example, `a:my-proposal` becomes `"fromTag": "use-my-proposal"`.
 
 The `agoricSyntheticChain.fromTag` should generally work with a value of 'latest',
 but that causes problems whenever agoric-3-proposals publishes a new image with changes
@@ -99,4 +99,4 @@ which should be maintained:
     "planName": "UNRELEASED_A3P_INTEGRATION",
 ```
 
-But you will have to remove from `app.go` whatever proposals were already executed.
+But you will have to remove from [upgrade.go](/golang/cosmos/app/upgrade.go) whatever proposals were already executed.
