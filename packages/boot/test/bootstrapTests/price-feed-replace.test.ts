@@ -70,7 +70,7 @@ test.serial('setupVaults; run replace-price-feeds proposals', async t => {
 
   t.log('building all relevant CoreEvals');
   const coreEvals = await Promise.all([
-    buildProposal(priceFeedBuilder, ['UNRELEASED_A3P_INTEGRATION']),
+    buildProposal(priceFeedBuilder, ['UNRELEASED_main']),
     buildProposal('@agoric/builders/scripts/vats/upgradeVaults.js'),
     buildProposal('@agoric/builders/scripts/vats/add-auction.js'),
   ]);
