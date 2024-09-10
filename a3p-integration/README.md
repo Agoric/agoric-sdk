@@ -46,7 +46,7 @@ cannot access SDK code. Their names must be lower case.
 In the release branches, the end-to-end `a3p-integration` test usually only has
 a single proposal package named `a:upgrade-NN`, which performs a chain software
 upgrade proposal to the corresponding upgrade plan. In the `master` branch, the
-next release's changes are staged in `a:upgrade-next`. There may also be
+next release's changes are staged in `n:upgrade-next`. There may also be
 core-eval proposal packages, either before or after the chain software upgrade
 proposal.
 
@@ -69,7 +69,7 @@ For a chain software upgrade proposal, the `type` is `"Software Upgrade Proposal
    `/golang/cosmos/app/upgrade.go`).
   - See **Generating core-eval submissions** below for details.
 
-For an (evolving) example, see `a:upgrade-next` in master.
+For an (evolving) example, see `n:upgrade-next` in master.
 
 ### Core-eval proposal
 
