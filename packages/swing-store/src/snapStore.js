@@ -4,10 +4,7 @@ import { finished as finishedCallback, PassThrough, Readable } from 'stream';
 import { promisify } from 'util';
 import { createGzip, createGunzip } from 'zlib';
 import { Fail, q } from '@endo/errors';
-import {
-  aggregateTryFinally,
-  PromiseAllOrErrors,
-} from '@agoric/internal/src/node/utils.js';
+import { withDeferredCleanup } from '@agoric/internal/src/node/utils.js';
 import { buffer } from './util.js';
 
 /**
@@ -208,84 +205,62 @@ export function makeSnapStore(
    * @returns {Promise<SnapshotResult>}
    */
   async function saveSnapshot(vatID, snapPos, snapshotStream) {
-    const cleanup = [];
-    return aggregateTryFinally(
-      async () => {
-        const hashStream = createHash('sha256');
-        const gzip = createGzip();
-        let compressedSize = 0;
-        let uncompressedSize = 0;
+    return withDeferredCleanup(async addCleanup => {
+      const hashStream = createHash('sha256');
+      const gzip = createGzip();
+      let compressedSize = 0;
+      let uncompressedSize = 0;
 
-        const { duration: compressSeconds, result: compressedSnapshot } =
-          await measureSeconds(async () => {
-            const snapReader = Readable.from(snapshotStream);
-            cleanup.push(
-              () =>
-                new Promise((resolve, reject) =>
-                  snapReader.destroy(
-                    null,
-                    // @ts-expect-error incorrect types
-                    err => (err ? reject(err) : resolve()),
-                  ),
-                ),
-            );
-
-            snapReader.on('data', chunk => {
-              uncompressedSize += chunk.length;
-            });
-            snapReader.pipe(hashStream);
-            const compressedSnapshotData = await buffer(snapReader.pipe(gzip));
-            await finished(snapReader);
-            return compressedSnapshotData;
+      const { duration: compressSeconds, result: compressedSnapshot } =
+        await measureSeconds(async () => {
+          const snapReader = Readable.from(snapshotStream);
+          const destroyReader = promisify(snapReader.destroy.bind(snapReader));
+          addCleanup(() => destroyReader(null));
+          snapReader.on('data', chunk => {
+            uncompressedSize += chunk.length;
           });
-        const hash = hashStream.digest('hex');
-        const rec = snapshotRec(vatID, snapPos, hash, 1);
-        const exportKey = snapshotMetadataKey(rec);
-
-        const { duration: dbSaveSeconds } = await measureSeconds(async () => {
-          ensureTxn();
-          stopUsingLastSnapshot(vatID);
-          compressedSize = compressedSnapshot.length;
-          sqlSaveSnapshot.run(
-            vatID,
-            snapPos,
-            1,
-            hash,
-            uncompressedSize,
-            compressedSize,
-            compressedSnapshot,
-          );
-          noteExport(exportKey, JSON.stringify(rec));
-          noteExport(
-            currentSnapshotMetadataKey(rec),
-            snapshotArtifactName(rec),
-          );
+          snapReader.pipe(hashStream);
+          const compressedSnapshotData = await buffer(snapReader.pipe(gzip));
+          await finished(snapReader);
+          return compressedSnapshotData;
         });
+      const hash = hashStream.digest('hex');
+      const rec = snapshotRec(vatID, snapPos, hash, 1);
+      const exportKey = snapshotMetadataKey(rec);
 
-        let archiveWriteSeconds;
-        if (archiveSnapshot) {
-          ({ duration: archiveWriteSeconds } = await measureSeconds(
-            async () => {
-              await archiveSnapshot(exportKey, compressedSnapshot);
-            },
-          ));
-        }
-
-        return harden({
+      const { duration: dbSaveSeconds } = await measureSeconds(async () => {
+        ensureTxn();
+        stopUsingLastSnapshot(vatID);
+        compressedSize = compressedSnapshot.length;
+        sqlSaveSnapshot.run(
+          vatID,
+          snapPos,
+          1,
           hash,
           uncompressedSize,
-          compressSeconds,
-          dbSaveSeconds,
-          archiveWriteSeconds,
           compressedSize,
-        });
-      },
-      async () => {
-        await PromiseAllOrErrors(
-          cleanup.reverse().map(fn => Promise.resolve().then(() => fn())),
+          compressedSnapshot,
         );
-      },
-    );
+        noteExport(exportKey, JSON.stringify(rec));
+        noteExport(currentSnapshotMetadataKey(rec), snapshotArtifactName(rec));
+      });
+
+      let archiveWriteSeconds;
+      if (archiveSnapshot) {
+        ({ duration: archiveWriteSeconds } = await measureSeconds(async () => {
+          await archiveSnapshot(exportKey, compressedSnapshot);
+        }));
+      }
+
+      return harden({
+        hash,
+        uncompressedSize,
+        compressSeconds,
+        dbSaveSeconds,
+        archiveWriteSeconds,
+        compressedSize,
+      });
+    });
   }
 
   const sqlGetSnapshot = db.prepare(`
