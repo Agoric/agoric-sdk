@@ -85,7 +85,10 @@ type ZCF<CT extends unknown = Record<string, unknown>> = {
   getOfferFilter: () => Promise<Array<string>>;
   getInstance: () => Instance;
 };
+
 /**
+ * @deprecated Use atomicRearrange instead
+ *
  * The contract can reallocate over seats, which commits the staged
  * allocation for each seat. On commit, the staged allocation becomes
  * the current allocation and the staged allocation is deleted.
