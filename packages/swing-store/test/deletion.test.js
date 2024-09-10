@@ -6,9 +6,11 @@ import path from 'node:path';
 import fs from 'node:fs';
 import zlib from 'node:zlib';
 import sqlite3 from 'better-sqlite3';
+import tmp from 'tmp';
 import { arrayIsLike } from '@agoric/internal/tools/ava-assertions.js';
 import { tmpDir } from './util.js';
 import { initSwingStore } from '../src/swingStore.js';
+import { makeArchiveTranscript } from '../src/archiver.js';
 import { makeSwingStoreExporter } from '../src/exporter.js';
 import { importSwingStore } from '../src/importer.js';
 
@@ -97,7 +99,7 @@ test('delete transcripts with export callback', async t => {
   transcriptStore.addItem('v1', 'aaa');
   transcriptStore.addItem('v1', 'bbb');
   transcriptStore.addItem('v1', 'ccc');
-  transcriptStore.rolloverSpan('v1');
+  await transcriptStore.rolloverSpan('v1');
   transcriptStore.addItem('v1', 'ddd');
   transcriptStore.addItem('v1', 'eee');
   transcriptStore.addItem('v1', 'fff');
@@ -170,7 +172,18 @@ const setupTranscript = async (t, keepTranscripts) => {
   };
   const [dbDir, cleanup] = await tmpDir('testdb');
   t.teardown(cleanup);
-  const store = initSwingStore(dbDir, { exportCallback, keepTranscripts });
+  const [archiveDir, cleanupArchives] = await tmpDir('archives');
+  t.teardown(cleanupArchives);
+  const archiveTranscript = makeArchiveTranscript(archiveDir, {
+    fs,
+    path,
+    tmp,
+  });
+  const store = initSwingStore(dbDir, {
+    exportCallback,
+    keepTranscripts,
+    archiveTranscript,
+  });
   const { kernelStorage, hostStorage } = store;
   const { transcriptStore } = kernelStorage;
   const { commit } = hostStorage;
@@ -181,13 +194,13 @@ const setupTranscript = async (t, keepTranscripts) => {
   transcriptStore.initTranscript(vatID);
   transcriptStore.addItem(vatID, 'aaa');
   transcriptStore.addItem(vatID, 'bbb');
-  transcriptStore.rolloverSpan(vatID);
+  await transcriptStore.rolloverSpan(vatID);
   transcriptStore.addItem(vatID, 'ccc');
   transcriptStore.addItem(vatID, 'ddd');
-  transcriptStore.rolloverIncarnation(vatID);
+  await transcriptStore.rolloverIncarnation(vatID);
   transcriptStore.addItem(vatID, 'eee');
   transcriptStore.addItem(vatID, 'fff');
-  transcriptStore.rolloverSpan(vatID);
+  await transcriptStore.rolloverSpan(vatID);
   transcriptStore.addItem(vatID, 'ggg');
   transcriptStore.addItem(vatID, 'hhh');
   await commit();
@@ -195,7 +208,7 @@ const setupTranscript = async (t, keepTranscripts) => {
   return {
     db,
     dbDir,
-    archiveDir: '',
+    archiveDir,
     commit,
     transcriptStore,
     exportLog,
@@ -300,12 +313,12 @@ const execSlowTranscriptDeletion = async (t, { keepTranscripts }) => {
   // deletes the .current record (i.e. it transforms .current into a
   // closed record)
   {
-    transcriptStore.stopUsingTranscript(vatID);
+    await transcriptStore.stopUsingTranscript(vatID);
     await commit();
     t.deepEqual(stripHashes(currentExportData), expectedStoppedExportData);
     exportLog.length = 0;
     // stopUsingTranscript is idempotent
-    transcriptStore.stopUsingTranscript(vatID);
+    await transcriptStore.stopUsingTranscript(vatID);
     await commit();
     t.deepEqual(exportLog, []);
   }

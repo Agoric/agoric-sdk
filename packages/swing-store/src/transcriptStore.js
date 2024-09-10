@@ -15,10 +15,10 @@ import { createSHA256 } from './hasher.js';
  *
  * @typedef {{
  *   initTranscript: (vatID: string) => void,
- *   rolloverSpan: (vatID: string) => number,
- *   rolloverIncarnation: (vatID: string) => number,
+ *   rolloverSpan: (vatID: string) => Promise<number>,
+ *   rolloverIncarnation: (vatID: string) => Promise<number>,
  *   getCurrentSpanBounds: (vatID: string) => { startPos: number, endPos: number, hash: string, incarnation: number },
- *   stopUsingTranscript: (vatID: string) => void,
+ *   stopUsingTranscript: (vatID: string) => Promise<void>,
  *   deleteVatTranscripts: (vatID: string, budget?: number) => { done: boolean, cleanups: number },
  *   addItem: (vatID: string, item: string) => void,
  *   readSpan: (vatID: string, startPos?: number) => IterableIterator<string>,
@@ -61,14 +61,15 @@ function insistTranscriptPosition(position) {
  * @param {() => void} ensureTxn
  * @param {(key: string, value: string | undefined ) => void} noteExport
  * @param {object} [options]
- * @param {boolean | undefined} [options.keepTranscripts]
+ * @param {boolean} [options.keepTranscripts]
+ * @param {(spanName: string, entries: ReturnType<exportSpan>) => Promise<void>} [options.archiveTranscript]
  * @returns { TranscriptStore & TranscriptStoreInternal & TranscriptStoreDebug }
  */
 export function makeTranscriptStore(
   db,
   ensureTxn,
   noteExport = () => {},
-  { keepTranscripts = true } = {},
+  { keepTranscripts = true, archiveTranscript } = {},
 ) {
   db.exec(`
     CREATE TABLE IF NOT EXISTS transcriptItems (
@@ -267,7 +268,7 @@ export function makeTranscriptStore(
    * @param {string} vatID
    * @param {ReturnType<getCurrentSpanBounds>} bounds
    */
-  function closeSpan(vatID, bounds) {
+  async function closeSpan(vatID, bounds) {
     ensureTxn();
     const { startPos, endPos, hash, incarnation } = bounds;
     const rec = spanRec(vatID, startPos, endPos, hash, false, incarnation);
@@ -278,6 +279,13 @@ export function makeTranscriptStore(
     // and change its DB row to isCurrent=null
     sqlEndCurrentSpan.run(vatID);
 
+    await null;
+    if (archiveTranscript) {
+      const spanName = spanArtifactName(rec);
+      // eslint-disable-next-line no-use-before-define
+      const entries = exportSpan(spanName);
+      await archiveTranscript(spanName, entries);
+    }
     if (!keepTranscripts) {
       // Delete items of the previously-current span.
       // There may still be items associated with even older spans, but we leave
@@ -289,13 +297,13 @@ export function makeTranscriptStore(
     }
   }
 
-  function doSpanRollover(vatID, isNewIncarnation) {
+  async function doSpanRollover(vatID, isNewIncarnation) {
     ensureTxn();
     const bounds = getCurrentSpanBounds(vatID);
     const { endPos, incarnation } = bounds;
 
     // deal with the now-old span
-    closeSpan(vatID, bounds);
+    await closeSpan(vatID, bounds);
 
     // create a new (empty) DB row, with isCurrent=1
     const newSpanIncarnation = isNewIncarnation ? incarnation + 1 : incarnation;
@@ -322,9 +330,9 @@ export function makeTranscriptStore(
    * @param {string} vatID  The vat whose transcript is to rollover to a new
    *    span.
    *
-   * @returns {number} the new incarnation number
+   * @returns {Promise<number>} the new incarnation number
    */
-  function rolloverIncarnation(vatID) {
+  async function rolloverIncarnation(vatID) {
     return doSpanRollover(vatID, true);
   }
 
@@ -335,9 +343,9 @@ export function makeTranscriptStore(
    * @param {string} vatID  The vat whose transcript is to rollover to a new
    *    span.
    *
-   * @returns {number} the incarnation number
+   * @returns {Promise<number>} the incarnation number
    */
-  function rolloverSpan(vatID) {
+  async function rolloverSpan(vatID) {
     return doSpanRollover(vatID, false);
   }
 
@@ -387,13 +395,13 @@ export function makeTranscriptStore(
    *
    * @param {string} vatID  The vat being terminated/deleted.
    */
-  function stopUsingTranscript(vatID) {
+  async function stopUsingTranscript(vatID) {
     ensureTxn();
     const bounds = sqlGetCurrentSpanBounds.get(vatID);
     if (!bounds) return;
 
     // deal with the now-old span
-    closeSpan(vatID, bounds);
+    await closeSpan(vatID, bounds);
 
     // remove the transcript.${vatID}.current record
     noteExport(spanMetadataKey({ vatID, isCurrent: true }), undefined);

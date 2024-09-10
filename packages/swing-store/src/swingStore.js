@@ -169,7 +169,8 @@ export function makeSwingStore(dirPath, forceReset, options = {}) {
     filePath = ':memory:';
   }
 
-  const { traceFile, keepSnapshots, keepTranscripts } = options;
+  const { traceFile, keepSnapshots, keepTranscripts, archiveTranscript } =
+    options;
 
   let traceOutput = traceFile
     ? fs.createWriteStream(path.resolve(traceFile), {
@@ -297,6 +298,7 @@ export function makeSwingStore(dirPath, forceReset, options = {}) {
     noteExport,
     {
       keepTranscripts,
+      archiveTranscript,
     },
   );
   const { dumpSnapshots, ...snapStore } = makeSnapStore(

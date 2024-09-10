@@ -263,6 +263,7 @@ export default function buildKernel(
     console.log(`kernel terminating vat ${vatID} (failure=${shouldReject})`);
     let critical = false;
     insistCapData(info);
+    const deferred = [];
     // ISSUE: terminate stuff in its own crank like creation?
     // TODO: if a static vat terminates, panic the kernel?
     // TODO: guard against somebody telling vatAdmin to kill a vat twice
@@ -287,11 +288,12 @@ export default function buildKernel(
       // remove vatID from the list of live vats, and mark for deletion
       kernelKeeper.deleteVatID(vatID);
       kernelKeeper.markVatAsTerminated(vatID);
-      kernelKeeper.removeVatFromSwingStoreExports(vatID);
+      deferred.push(kernelKeeper.removeVatFromSwingStoreExports(vatID));
       for (const kpid of deadPromises) {
         resolveToError(kpid, makeError('vat terminated'), vatID);
       }
     }
+    await Promise.all(deferred);
     if (critical) {
       // The following error construction is a bit awkward, but (1) it saves us
       // from doing unmarshaling while in the kernel, while (2) it protects

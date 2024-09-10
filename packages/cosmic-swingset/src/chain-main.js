@@ -1,14 +1,14 @@
 // @ts-check
 
-import { resolve as pathResolve } from 'path';
+import path from 'node:path';
 import v8 from 'node:v8';
 import process from 'node:process';
 import fs from 'node:fs';
 import fsPromises from 'node:fs/promises';
-import { performance } from 'perf_hooks';
-import { resolve as importMetaResolve } from 'import-meta-resolve';
-import tmpfs from 'tmp';
+import { performance } from 'node:perf_hooks';
 import { fork } from 'node:child_process';
+import { resolve as importMetaResolve } from 'import-meta-resolve';
+import tmp from 'tmp';
 
 import { Fail, q } from '@endo/errors';
 import { E } from '@endo/far';
@@ -33,6 +33,7 @@ import { makeShutdown } from '@agoric/internal/src/node/shutdown.js';
 import * as STORAGE_PATH from '@agoric/internal/src/chain-storage-paths.js';
 import * as ActionType from '@agoric/internal/src/action-types.js';
 import { BridgeId, CosmosInitKeyToBridgeId } from '@agoric/internal';
+import { makeArchiveTranscript } from '@agoric/swing-store';
 import {
   makeBufferedStorage,
   makeReadCachingStorage,
@@ -76,6 +77,7 @@ const toNumber = specimen => {
  * @property {number} [maxVatsOnline]
  * @property {'debug' | 'operational'} [vatSnapshotRetention]
  * @property {'archival' | 'operational'} [vatTranscriptRetention]
+ * @property {string} [vatTranscriptArchiveDir]
  */
 const SwingsetConfigShape = M.splitRecord(
   // All known properties are optional, but unknown properties are not allowed.
@@ -85,6 +87,7 @@ const SwingsetConfigShape = M.splitRecord(
     maxVatsOnline: M.number(),
     vatSnapshotRetention: M.or('debug', 'operational'),
     vatTranscriptRetention: M.or('archival', 'operational'),
+    vatTranscriptArchiveDir: M.string(),
   },
   {},
 );
@@ -159,8 +162,8 @@ const makePrefixedBridgeStorage = (
       return fromBridgeStringValue(ret);
     },
     set: (key, value) => {
-      const path = `${prefix}${key}`;
-      const entry = [path, toBridgeStringValue(value)];
+      const fullPath = `${prefix}${key}`;
+      const entry = [fullPath, toBridgeStringValue(value)];
       call(
         stringify({
           method: setterMethod,
@@ -169,8 +172,8 @@ const makePrefixedBridgeStorage = (
       );
     },
     delete: key => {
-      const path = `${prefix}${key}`;
-      const entry = [path];
+      const fullPath = `${prefix}${key}`;
+      const entry = [fullPath];
       call(
         stringify({
           method: setterMethod,
@@ -315,8 +318,12 @@ export default async function main(progname, args, { env, homedir, agcc }) {
     /** @type {CosmosSwingsetConfig} */
     const swingsetConfig = harden(initAction.resolvedConfig || {});
     validateSwingsetConfig(swingsetConfig);
-    const { slogfile, vatSnapshotRetention, vatTranscriptRetention } =
-      swingsetConfig;
+    const {
+      slogfile,
+      vatSnapshotRetention,
+      vatTranscriptRetention,
+      vatTranscriptArchiveDir,
+    } = swingsetConfig;
     const keepSnapshots = vatSnapshotRetention
       ? vatSnapshotRetention !== 'operational'
       : ['1', 'true'].includes(XSNAP_KEEP_SNAPSHOTS);
@@ -471,14 +478,14 @@ export default async function main(progname, args, { env, homedir, agcc }) {
     const swingStoreTraceFile = processValue.getPath({
       envName: 'SWING_STORE_TRACE',
       flagName: 'trace-store',
-      trueValue: pathResolve(stateDBDir, 'store-trace.log'),
+      trueValue: path.resolve(stateDBDir, 'store-trace.log'),
     });
 
     const nodeHeapSnapshots = Number.parseInt(NODE_HEAP_SNAPSHOTS, 10);
 
     let lastCommitTime = 0;
     let commitCallsSinceLastSnapshot = NaN;
-    const snapshotBaseDir = pathResolve(stateDBDir, 'node-heap-snapshots');
+    const snapshotBaseDir = path.resolve(stateDBDir, 'node-heap-snapshots');
 
     if (nodeHeapSnapshots >= 0) {
       fs.mkdirSync(snapshotBaseDir, { recursive: true });
@@ -514,7 +521,7 @@ export default async function main(progname, args, { env, homedir, agcc }) {
         ) {
           commitCallsSinceLastSnapshot = 0;
           heapSnapshot = `Heap-${process.pid}-${Date.now()}.heapsnapshot`;
-          const snapshotPath = pathResolve(snapshotBaseDir, heapSnapshot);
+          const snapshotPath = path.resolve(snapshotBaseDir, heapSnapshot);
           v8.writeHeapSnapshot(snapshotPath);
           heapSnapshotTime = performance.now() - t3;
         }
@@ -537,6 +544,14 @@ export default async function main(progname, args, { env, homedir, agcc }) {
       }
     };
 
+    const archiveTranscript = vatTranscriptArchiveDir
+      ? makeArchiveTranscript(vatTranscriptArchiveDir, {
+          fs,
+          path,
+          tmp,
+        })
+      : undefined;
+
     const s = await launch({
       actionQueueStorage,
       highPriorityQueueStorage,
@@ -556,6 +571,7 @@ export default async function main(progname, args, { env, homedir, agcc }) {
       swingStoreTraceFile,
       keepSnapshots,
       keepTranscripts,
+      archiveTranscript,
       afterCommitCallback,
       swingsetConfig,
     });
@@ -608,7 +624,7 @@ export default async function main(progname, args, { env, homedir, agcc }) {
         );
         return performStateSyncImport(options, {
           fs: { ...fs, ...fsPromises },
-          pathResolve,
+          pathResolve: path.resolve,
           log: null,
         });
       }
@@ -632,7 +648,7 @@ export default async function main(progname, args, { env, homedir, agcc }) {
         stateSyncExport = exportData;
 
         await new Promise((resolve, reject) => {
-          tmpfs.dir(
+          tmp.dir(
             {
               prefix: `agd-state-sync-${blockHeight}-`,
               unsafeCleanup: true,
