@@ -1,7 +1,7 @@
 import { finished as streamFinishedCallback, Readable } from 'node:stream';
 import { promisify } from 'node:util';
 import { createGzip } from 'node:zlib';
-import { withDeferredCleanup } from '@agoric/internal/src/node/utils.js';
+import { withDeferredCleanup } from '@agoric/internal';
 
 const streamFinished = promisify(streamFinishedCallback);
 
