@@ -48,7 +48,6 @@ import { doRepairMetadata } from './repairMetadata.js';
  *   commit: () => Promise<void>,  // commit changes made since the last commit
  *   close: () => Promise<void>,   // shutdown the store, abandoning any uncommitted changes
  *   diskUsage?: () => number, // optional stats method
- *   setExportCallback: (cb: (updates: KVPair[]) => void) => void, // Set a callback invoked by swingStore when new serializable data is available for export
  *   repairMetadata: (exporter: import('./exporter.js').SwingStoreExporter) => Promise<void>,
  * }} SwingStoreHostStorage
  */
@@ -274,14 +273,10 @@ export function makeSwingStore(dirPath, forceReset, options = {}) {
     )
   `);
 
-  let exportCallback;
-  function setExportCallback(cb) {
-    typeof cb === 'function' || Fail`callback must be a function`;
-    exportCallback = cb;
-  }
-  if (options.exportCallback) {
-    setExportCallback(options.exportCallback);
-  }
+  const { exportCallback } = options;
+  exportCallback === undefined ||
+    typeof exportCallback === 'function' ||
+    Fail`export callback must be a function`;
 
   const sqlAddPendingExport = db.prepare(`
     INSERT INTO pendingExports (key, value)
@@ -600,7 +595,6 @@ export function makeSwingStore(dirPath, forceReset, options = {}) {
     commit,
     close,
     diskUsage,
-    setExportCallback,
   };
   const debug = {
     serialize,
