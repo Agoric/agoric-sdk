@@ -110,9 +110,10 @@ const makeAggregateError =
   typeof AggregateError === 'function'
     ? (errors, message, options) => AggregateError(errors, message, options)
     : (errors, message, options) => {
-        const err = makeError(message ?? 'multiple errors', undefined, options);
-        annotateError(err, X`${errors}`);
-        return err;
+        return makeError(message ?? 'multiple errors', undefined, {
+          ...options,
+          errors,
+        });
       };
 
 /**
