@@ -1,7 +1,7 @@
 chains:
   - id: agoriclocal
     name: agoric
-    image: ghcr.io/agoric/agoric-sdk:dev
+    image: ghcr.io/agoric/agoric-sdk:a3p-use-upgrade-next
     numValidators: 1
     env:
       - name: DEBUG
