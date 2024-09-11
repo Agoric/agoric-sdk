@@ -181,10 +181,10 @@ const testTranscriptStore = test.macro({
     transcriptStore.initTranscript('st1');
     transcriptStore.initTranscript('st2');
     transcriptStore.addItem('st1', 'zeroth');
-    transcriptStore.rolloverSpan('st1');
+    await transcriptStore.rolloverSpan('st1');
     transcriptStore.addItem('st1', 'first');
     transcriptStore.addItem('st1', 'second');
-    transcriptStore.rolloverSpan('st1');
+    await transcriptStore.rolloverSpan('st1');
     transcriptStore.addItem('st1', 'third');
     transcriptStore.addItem('st2', 'oneth');
     transcriptStore.addItem('st1', 'fourth');

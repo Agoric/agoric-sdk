@@ -1,12 +1,16 @@
 // @ts-check
 import test from 'ava';
-import path from 'path';
 
 import { Buffer } from 'node:buffer';
+import path from 'node:path';
+import fs from 'node:fs';
+import zlib from 'node:zlib';
 import sqlite3 from 'better-sqlite3';
+import tmp from 'tmp';
 import { arrayIsLike } from '@agoric/internal/tools/ava-assertions.js';
 import { tmpDir } from './util.js';
 import { initSwingStore } from '../src/swingStore.js';
+import { makeArchiveSnapshot, makeArchiveTranscript } from '../src/archiver.js';
 import { makeSwingStoreExporter } from '../src/exporter.js';
 import { importSwingStore } from '../src/importer.js';
 
@@ -95,7 +99,7 @@ test('delete transcripts with export callback', async t => {
   transcriptStore.addItem('v1', 'aaa');
   transcriptStore.addItem('v1', 'bbb');
   transcriptStore.addItem('v1', 'ccc');
-  transcriptStore.rolloverSpan('v1');
+  await transcriptStore.rolloverSpan('v1');
   transcriptStore.addItem('v1', 'ddd');
   transcriptStore.addItem('v1', 'eee');
   transcriptStore.addItem('v1', 'fff');
@@ -168,7 +172,17 @@ const setupTranscript = async (t, keepTranscripts) => {
   };
   const [dbDir, cleanup] = await tmpDir('testdb');
   t.teardown(cleanup);
-  const store = initSwingStore(dbDir, { exportCallback, keepTranscripts });
+  const [archiveDir, cleanupArchives] = await tmpDir('archives');
+  t.teardown(cleanupArchives);
+  const fsPowers = { fs, path, tmp };
+  const archiveSnapshot = makeArchiveSnapshot(archiveDir, fsPowers);
+  const archiveTranscript = makeArchiveTranscript(archiveDir, fsPowers);
+  const store = initSwingStore(dbDir, {
+    exportCallback,
+    keepTranscripts,
+    archiveSnapshot,
+    archiveTranscript,
+  });
   const { kernelStorage, hostStorage } = store;
   const { transcriptStore } = kernelStorage;
   const { commit } = hostStorage;
@@ -179,13 +193,13 @@ const setupTranscript = async (t, keepTranscripts) => {
   transcriptStore.initTranscript(vatID);
   transcriptStore.addItem(vatID, 'aaa');
   transcriptStore.addItem(vatID, 'bbb');
-  transcriptStore.rolloverSpan(vatID);
+  await transcriptStore.rolloverSpan(vatID);
   transcriptStore.addItem(vatID, 'ccc');
   transcriptStore.addItem(vatID, 'ddd');
-  transcriptStore.rolloverIncarnation(vatID);
+  await transcriptStore.rolloverIncarnation(vatID);
   transcriptStore.addItem(vatID, 'eee');
   transcriptStore.addItem(vatID, 'fff');
-  transcriptStore.rolloverSpan(vatID);
+  await transcriptStore.rolloverSpan(vatID);
   transcriptStore.addItem(vatID, 'ggg');
   transcriptStore.addItem(vatID, 'hhh');
   await commit();
@@ -193,6 +207,7 @@ const setupTranscript = async (t, keepTranscripts) => {
   return {
     db,
     dbDir,
+    archiveDir,
     commit,
     transcriptStore,
     exportLog,
@@ -212,6 +227,7 @@ const execSlowTranscriptDeletion = async (t, { keepTranscripts }) => {
   const {
     db,
     dbDir,
+    archiveDir,
     commit,
     transcriptStore,
     exportLog,
@@ -241,12 +257,13 @@ const execSlowTranscriptDeletion = async (t, { keepTranscripts }) => {
     'transcript.v1.4': t4,
     'transcript.v1.6': t6,
   };
-  const expectedArtifactNames = [
-    'transcript.v1.0.2',
-    'transcript.v1.2.4',
-    'transcript.v1.4.6',
-    'transcript.v1.6.8',
-  ];
+  const expectedArtifactContents = {
+    'transcript.v1.0.2': 'aaa\nbbb\n',
+    'transcript.v1.2.4': 'ccc\nddd\n',
+    'transcript.v1.4.6': 'eee\nfff\n',
+    'transcript.v1.6.8': 'ggg\nhhh\n',
+  };
+  const expectedArtifactNames = Object.keys(expectedArtifactContents);
 
   t.deepEqual(stripHashes(currentExportData), expectedLiveExportData);
   t.is(
@@ -254,6 +271,17 @@ const execSlowTranscriptDeletion = async (t, { keepTranscripts }) => {
     keepTranscripts ? 8 : 2,
   );
   t.is(db.prepare('SELECT COUNT(*) FROM transcriptSpans').pluck().get(), 4);
+
+  // verify archived transcripts
+  t.deepEqual(
+    fs.readdirSync(archiveDir),
+    expectedArtifactNames.slice(0, -1).map(name => `${name}.gz`),
+  );
+  for (const name of expectedArtifactNames.slice(0, -1)) {
+    const filePath = path.join(archiveDir, `${name}.gz`);
+    const contents = zlib.gunzipSync(fs.readFileSync(filePath)).toString();
+    t.is(contents, expectedArtifactContents[name], `${filePath} contents`);
+  }
 
   // an "operational"-mode export should list all spans, but only have
   // artifacts for the current one
@@ -284,14 +312,23 @@ const execSlowTranscriptDeletion = async (t, { keepTranscripts }) => {
   // deletes the .current record (i.e. it transforms .current into a
   // closed record)
   {
-    transcriptStore.stopUsingTranscript(vatID);
+    await transcriptStore.stopUsingTranscript(vatID);
     await commit();
     t.deepEqual(stripHashes(currentExportData), expectedStoppedExportData);
     exportLog.length = 0;
     // stopUsingTranscript is idempotent
-    transcriptStore.stopUsingTranscript(vatID);
+    await transcriptStore.stopUsingTranscript(vatID);
     await commit();
     t.deepEqual(exportLog, []);
+  }
+  t.deepEqual(
+    fs.readdirSync(archiveDir),
+    expectedArtifactNames.map(name => `${name}.gz`),
+  );
+  for (const name of expectedArtifactNames) {
+    const filePath = path.join(archiveDir, `${name}.gz`);
+    const contents = zlib.gunzipSync(fs.readFileSync(filePath)).toString();
+    t.is(contents, expectedArtifactContents[name], `${filePath} contents`);
   }
 
   // All exports (debug and non-debug) in this "terminated but not

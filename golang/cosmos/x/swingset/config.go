@@ -15,8 +15,10 @@ import (
 )
 
 const (
-	ConfigPrefix = "swingset"
-	FlagSlogfile = ConfigPrefix + ".slogfile"
+	ConfigPrefix                = "swingset"
+	FlagSlogfile                = ConfigPrefix + ".slogfile"
+	FlagVatSnapshotArchiveDir   = ConfigPrefix + ".vat-snapshot-archive-dir"
+	FlagVatTranscriptArchiveDir = ConfigPrefix + ".vat-transcript-archive-dir"
 
 	SnapshotRetentionOptionDebug       = "debug"
 	SnapshotRetentionOptionOperational = "operational"
@@ -73,6 +75,12 @@ vat-snapshot-retention = "{{ .Swingset.VatSnapshotRetention }}"
 # * "default": determined by 'pruning' ("archival" if 'pruning' is "nothing",
 #   otherwise "operational")
 vat-transcript-retention = "{{ .Swingset.VatTranscriptRetention }}"
+
+# Archival of gzipped vat snapshots.
+vat-snapshot-archive-dir = "{{ .Swingset.VatSnapshotArchiveDir }}"
+
+# Archival of historical (i.e., closed) vat transcript spans to gzipped files.
+vat-transcript-archive-dir = "{{ .Swingset.VatTranscriptArchiveDir }}"
 `
 
 // SwingsetConfig defines configuration for the SwingSet VM.
@@ -106,6 +114,13 @@ type SwingsetConfig struct {
 	// * "default": determined by `pruning` ("archival" if `pruning` is
 	//   "nothing", otherwise "operational")
 	VatTranscriptRetention string `mapstructure:"vat-transcript-retention" json:"vatTranscriptRetention,omitempty"`
+
+	// VatSnapshotArchiveDir controls archival of gzipped vat snapshots.
+	VatSnapshotArchiveDir string `mapstructure:"vat-snapshot-archive-dir" json:"vatSnapshotArchiveDir,omitempty"`
+
+	// VatTranscriptArchiveDir controls archival of historical (i.e., closed) vat
+	// transcript spans to gzipped files.
+	VatTranscriptArchiveDir string `mapstructure:"vat-transcript-archive-dir" json:"vatTranscriptArchiveDir,omitempty"`
 }
 
 var DefaultSwingsetConfig = SwingsetConfig{
@@ -201,6 +216,18 @@ func SwingsetConfigFromViper(resolvedConfig servertypes.AppOptions) (*SwingsetCo
 		return nil, err
 	}
 	ssConfig.SlogFile = resolvedSlogFile
+
+	resolvedSnapshotDir, err := resolvePath(ssConfig.VatSnapshotArchiveDir, FlagVatSnapshotArchiveDir)
+	if err != nil {
+		return nil, err
+	}
+	ssConfig.VatSnapshotArchiveDir = resolvedSnapshotDir
+
+	resolvedTranscriptDir, err := resolvePath(ssConfig.VatTranscriptArchiveDir, FlagVatTranscriptArchiveDir)
+	if err != nil {
+		return nil, err
+	}
+	ssConfig.VatTranscriptArchiveDir = resolvedTranscriptDir
 
 	return ssConfig, nil
 }

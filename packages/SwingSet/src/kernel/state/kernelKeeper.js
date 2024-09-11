@@ -930,13 +930,13 @@ export default function makeKernelKeeper(
     kvStore.set(`${kernelSlot}.data.slots`, capdata.slots.join(','));
   }
 
-  function removeVatFromSwingStoreExports(vatID) {
+  async function removeVatFromSwingStoreExports(vatID) {
     // Delete primary swingstore records for this vat, in preparation
     // for (slow) deletion. After this, swingstore exports will omit
     // this vat. This is called from the kernel's terminateVat, which
     // initiates (but does not complete) deletion.
     snapStore.stopUsingLastSnapshot(vatID);
-    transcriptStore.stopUsingTranscript(vatID);
+    await transcriptStore.stopUsingTranscript(vatID);
   }
 
   /**

@@ -47,7 +47,7 @@ const exportTest = test.macro(async (t, mode) => {
   // incarnation 0
   ks.transcriptStore.addItem('v1', 'start-worker'); // 0
   ks.transcriptStore.addItem('v1', 'shutdown-worker'); // 1
-  ks.transcriptStore.rolloverIncarnation('v1');
+  await ks.transcriptStore.rolloverIncarnation('v1');
   const spanHash0 =
     '5bee0f44eca02f23eab03703e84ed2647d5d117fed99e1c30a3b424b7f082ab9';
 
@@ -56,7 +56,7 @@ const exportTest = test.macro(async (t, mode) => {
   ks.transcriptStore.addItem('v1', 'delivery1'); // 3
   await ks.snapStore.saveSnapshot('v1', 4, getSnapshotStream(snapshotData));
   ks.transcriptStore.addItem('v1', 'save-snapshot'); // 4
-  ks.transcriptStore.rolloverSpan('v1'); // range= 2..5
+  await ks.transcriptStore.rolloverSpan('v1'); // range= 2..5
   const spanHash1 =
     '57152efdd7fdf75c03371d2b4f1088d5bf3eae7fe643babce527ff81df38998c';
 
@@ -64,7 +64,7 @@ const exportTest = test.macro(async (t, mode) => {
   ks.transcriptStore.addItem('v1', 'delivery2'); // 6
   await ks.snapStore.saveSnapshot('v1', 7, getSnapshotStream(snapshotData));
   ks.transcriptStore.addItem('v1', 'save-snapshot'); // 7
-  ks.transcriptStore.rolloverSpan('v1'); // range= 5..8
+  await ks.transcriptStore.rolloverSpan('v1'); // range= 5..8
   const spanHash2 =
     '1947001e78e01bd1e773feb22b4ffc530447373b9de9274d5d5fbda3f23dbf2b';
 
@@ -251,7 +251,7 @@ test('export omits pruned span artifacts', async t => {
   ks.transcriptStore.addItem('v1', 'delivery1'); // 1
   await ks.snapStore.saveSnapshot('v1', 2, getSnapshotStream(snapshotData));
   ks.transcriptStore.addItem('v1', 'save-snapshot'); // 2
-  ks.transcriptStore.rolloverSpan('v1'); // range= 0..3
+  await ks.transcriptStore.rolloverSpan('v1'); // range= 0..3
   const spanHash1 =
     '57152efdd7fdf75c03371d2b4f1088d5bf3eae7fe643babce527ff81df38998c';
   // rolloverSpan prunes the contents of the old span

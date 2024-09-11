@@ -4,7 +4,7 @@ import { assert, Fail } from '@endo/errors';
 import { isNat } from '@endo/nat';
 import { mustMatch, M } from '@endo/patterns';
 import { importBundle } from '@endo/import-bundle';
-import { objectMetaMap } from '@agoric/internal';
+import { objectMetaMap, PromiseAllOrErrors } from '@agoric/internal';
 import { makeUpgradeDisconnection } from '@agoric/internal/src/upgrade-api.js';
 import { kser, kslot, makeError } from '@agoric/kmarshal';
 import { assertKnownOptions } from '../lib/assertOptions.js';
@@ -261,8 +261,12 @@ export default function buildKernel(
    */
   async function terminateVat(vatID, shouldReject, info) {
     console.log(`kernel terminating vat ${vatID} (failure=${shouldReject})`);
-    let critical = false;
     insistCapData(info);
+    // Note that it's important for much of this work to happen within the
+    // synchronous prelude. For details, see
+    // https://github.com/Agoric/agoric-sdk/pull/10055#discussion_r1754918394
+    let critical = false;
+    const deferred = [];
     // ISSUE: terminate stuff in its own crank like creation?
     // TODO: if a static vat terminates, panic the kernel?
     // TODO: guard against somebody telling vatAdmin to kill a vat twice
@@ -287,7 +291,7 @@ export default function buildKernel(
       // remove vatID from the list of live vats, and mark for deletion
       kernelKeeper.deleteVatID(vatID);
       kernelKeeper.markVatAsTerminated(vatID);
-      kernelKeeper.removeVatFromSwingStoreExports(vatID);
+      deferred.push(kernelKeeper.removeVatFromSwingStoreExports(vatID));
       for (const kpid of deadPromises) {
         resolveToError(kpid, makeError('vat terminated'), vatID);
       }
@@ -302,9 +306,7 @@ export default function buildKernel(
       // it's going to be a small cost compared to the trouble you're probably
       // already in anyway if this happens.
       panic(`critical vat ${vatID} failed`, Error(info.body));
-      return;
-    }
-    if (vatAdminRootKref) {
+    } else if (vatAdminRootKref) {
       // static vat termination can happen before vat admin vat exists
       notifyTermination(
         vatID,
@@ -319,8 +321,11 @@ export default function buildKernel(
       );
     }
 
-    // worker needs to be stopped, if any
-    await vatWarehouse.stopWorker(vatID);
+    // worker, if present, needs to be stopped
+    // (note that this only applies to ephemeral vats)
+    deferred.push(vatWarehouse.stopWorker(vatID));
+
+    await PromiseAllOrErrors(deferred);
   }
 
   function notifyMeterThreshold(meterID) {

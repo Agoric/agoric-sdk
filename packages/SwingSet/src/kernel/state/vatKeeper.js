@@ -655,7 +655,7 @@ export function makeVatKeeper(
     addToTranscript(makeSaveSnapshotItem(snapshotID));
 
     // then start a new transcript span
-    transcriptStore.rolloverSpan(vatID);
+    await transcriptStore.rolloverSpan(vatID);
 
     // then push a load-snapshot entry, so that the current span
     // always starts with an initialize-worker or load-snapshot
@@ -715,7 +715,7 @@ export function makeVatKeeper(
     return transcriptStore.deleteVatTranscripts(vatID, budget);
   }
 
-  function beginNewIncarnation() {
+  async function beginNewIncarnation() {
     if (snapStore) {
       snapStore.stopUsingLastSnapshot(vatID);
     }

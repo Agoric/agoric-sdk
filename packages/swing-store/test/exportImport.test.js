@@ -87,7 +87,7 @@ async function fakeAVatSnapshot(vat, ks) {
   await ks.snapStore.saveSnapshot(vat.vatID, vat.endPos, getSnapshotStream());
   ks.transcriptStore.addItem(vat.vatID, 'save-snapshot');
   vat.endPos += 1;
-  ks.transcriptStore.rolloverSpan(vat.vatID);
+  await ks.transcriptStore.rolloverSpan(vat.vatID);
   ks.transcriptStore.addItem(vat.vatID, 'load-snapshot');
   vat.endPos += 1;
 }

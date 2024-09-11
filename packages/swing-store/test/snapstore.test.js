@@ -1,12 +1,17 @@
 // @ts-check
+import test from 'ava';
 
 import { Buffer } from 'node:buffer';
-import zlib from 'zlib';
+import fs from 'node:fs';
+import path from 'node:path';
+import zlib from 'node:zlib';
 import sqlite3 from 'better-sqlite3';
+import tmp from 'tmp';
 
-import test from 'ava';
 import { makeMeasureSeconds } from '@agoric/internal';
 import { makeSnapStore } from '../src/snapStore.js';
+import { makeArchiveSnapshot } from '../src/archiver.js';
+import { tmpDir } from './util.js';
 
 function makeExportLog() {
   const exportLog = [];
@@ -31,6 +36,10 @@ harden(getSnapshotStream);
 test('compress to cache file; closes snapshot stream', async t => {
   const db = sqlite3(':memory:');
   const exportLog = makeExportLog();
+  const [archiveDir, cleanupArchives] = await tmpDir('archives');
+  t.teardown(cleanupArchives);
+  const fsPowers = { fs, path, tmp };
+  const archiveSnapshot = makeArchiveSnapshot(archiveDir, fsPowers);
   const store = makeSnapStore(
     db,
     ensureTxn,
@@ -38,6 +47,7 @@ test('compress to cache file; closes snapshot stream', async t => {
       measureSeconds: makeMeasureSeconds(() => 0),
     },
     exportLog.noteExport,
+    { archiveSnapshot },
   );
 
   const snapshotStream = getSnapshotStream('abc');
@@ -50,6 +60,7 @@ test('compress to cache file; closes snapshot stream', async t => {
     uncompressedSize: 3,
     compressedSize: 23,
     dbSaveSeconds: 0,
+    archiveWriteSeconds: 0,
     compressSeconds: 0,
   });
   const snapshotInfo = store.getSnapshotInfo('fakeVatID');
@@ -89,6 +100,26 @@ test('compress to cache file; closes snapshot stream', async t => {
     ['snapshot.fakeVatID.47', JSON.stringify(logInfo)],
     ['snapshot.fakeVatID.current', `snapshot.fakeVatID.47`],
   ]);
+
+  // verify disk archive
+  t.deepEqual(
+    fs.readdirSync(archiveDir),
+    ['snapshot.fakeVatID.47.gz'],
+    'archive must be written to disk',
+  );
+  const fileContents = fs.readFileSync(
+    path.join(archiveDir, 'snapshot.fakeVatID.47.gz'),
+  );
+  t.is(
+    fileContents.length,
+    dbInfo.compressedSize,
+    'file size must match database compressedSize',
+  );
+  t.is(
+    zlib.gunzipSync(fileContents).toString(),
+    'abc',
+    'gunzip(fileContents) must match input data',
+  );
 });
 
 test('snapStore prepare / commit delete is robust', async t => {
@@ -96,11 +127,17 @@ test('snapStore prepare / commit delete is robust', async t => {
     measureSeconds: makeMeasureSeconds(() => 0),
   };
   const db = sqlite3(':memory:');
+  const [archiveDir, cleanupArchives] = await tmpDir('archives');
+  t.teardown(cleanupArchives);
+  const fsPowers = { fs, path, tmp };
+  const archiveSnapshot = makeArchiveSnapshot(archiveDir, fsPowers);
   const store = makeSnapStore(db, ensureTxn, io, () => {}, {
     keepSnapshots: true,
+    archiveSnapshot,
   });
 
   const hashes = [];
+  const expectedFiles = [];
   for (let i = 0; i < 5; i += 1) {
     const { hash } = await store.saveSnapshot(
       'fakeVatID2',
@@ -108,6 +145,7 @@ test('snapStore prepare / commit delete is robust', async t => {
       getSnapshotStream(`file ${i}`),
     );
     hashes.push(hash);
+    expectedFiles.push(`snapshot.fakeVatID2.${i}.gz`);
   }
   const sqlCountSnapshots = db.prepare(`
     SELECT COUNT(*)
@@ -116,19 +154,24 @@ test('snapStore prepare / commit delete is robust', async t => {
   sqlCountSnapshots.pluck(true);
 
   t.is(sqlCountSnapshots.get(), 5);
+  t.deepEqual(fs.readdirSync(archiveDir), expectedFiles);
 
   store.deleteSnapshotByHash('fakeVatID2', hashes[2]);
   t.is(sqlCountSnapshots.get(), 4);
+  t.deepEqual(fs.readdirSync(archiveDir), expectedFiles);
 
   // Restore (re-save) between prepare and commit.
   store.deleteSnapshotByHash('fakeVatID2', hashes[3]);
   await store.saveSnapshot('fakeVatID3', 29, getSnapshotStream(`file 3`));
+  expectedFiles.push(`snapshot.fakeVatID3.29.gz`);
   t.true(store.hasHash('fakeVatID3', hashes[3]));
+  t.deepEqual(fs.readdirSync(archiveDir), expectedFiles);
 
   store.deleteVatSnapshots('fakeVatID2');
   t.is(sqlCountSnapshots.get(), 1);
   store.deleteVatSnapshots('fakeVatID3');
   t.is(sqlCountSnapshots.get(), 0);
+  t.deepEqual(fs.readdirSync(archiveDir), expectedFiles);
 
   for (let i = 0; i < 5; i += 1) {
     const { hash } = await store.saveSnapshot(
@@ -137,8 +180,10 @@ test('snapStore prepare / commit delete is robust', async t => {
       getSnapshotStream(`file ${i}`),
     );
     hashes.push(hash);
+    expectedFiles.push(`snapshot.fakeVatID4.${i}.gz`);
   }
   t.is(sqlCountSnapshots.get(), 5);
   store.deleteAllUnusedSnapshots();
   t.is(sqlCountSnapshots.get(), 1);
+  t.deepEqual(fs.readdirSync(archiveDir), expectedFiles);
 });

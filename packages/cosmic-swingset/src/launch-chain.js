@@ -332,6 +332,8 @@ export async function launch({
   swingStoreExportCallback,
   keepSnapshots,
   keepTranscripts,
+  archiveSnapshot,
+  archiveTranscript,
   afterCommitCallback = async () => ({}),
   swingsetConfig,
 }) {
@@ -375,6 +377,8 @@ export async function launch({
     exportCallback: swingStoreExportSyncCallback,
     keepSnapshots,
     keepTranscripts,
+    archiveSnapshot,
+    archiveTranscript,
   });
   const { kvStore, commit } = hostStorage;
 
