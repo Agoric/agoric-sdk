@@ -219,10 +219,12 @@ export function makeTranscriptStore(
    */
   function initTranscript(vatID) {
     ensureTxn();
-    const initialIncarnation = 0;
-    sqlWriteSpan.run(vatID, 0, 0, initialHash, 1, initialIncarnation);
-    const newRec = spanRec(vatID, 0, 0, initialHash, true, 0);
-    noteExport(spanMetadataKey(newRec), JSON.stringify(newRec));
+    const pos = 0;
+    const isCurrent = 1;
+    const incarnation = 0;
+    sqlWriteSpan.run(vatID, pos, pos, initialHash, isCurrent, incarnation);
+    const rec = spanRec(vatID, pos, pos, initialHash, isCurrent, incarnation);
+    noteExport(spanMetadataKey(rec), JSON.stringify(rec));
   }
 
   const sqlGetCurrentSpanBounds = db.prepare(`
@@ -255,31 +257,26 @@ export function makeTranscriptStore(
     WHERE vatID = ? AND position >= ? AND position < ?
   `);
 
-  function doSpanRollover(vatID, isNewIncarnation) {
+  /**
+   * Finalize a span, setting isCurrent to null, marking the resulting record
+   * for export, and effecting disk archival and database cleanup as
+   * configured.
+   * Note that creation of a new DB row and removal/replacement of the
+   * transcript.${vatID}.current export record are responsibility of the caller.
+   *
+   * @param {string} vatID
+   * @param {ReturnType<getCurrentSpanBounds>} bounds
+   */
+  function closeSpan(vatID, bounds) {
     ensureTxn();
-    const { hash, startPos, endPos, incarnation } = getCurrentSpanBounds(vatID);
+    const { startPos, endPos, hash, incarnation } = bounds;
     const rec = spanRec(vatID, startPos, endPos, hash, false, incarnation);
 
-    // add a new record for the now-old span
+    // add a new export record for the now-old span
     noteExport(spanMetadataKey(rec), JSON.stringify(rec));
 
-    // and change its DB row to isCurrent=0
+    // and change its DB row to isCurrent=null
     sqlEndCurrentSpan.run(vatID);
-
-    // create a new (empty) row, with isCurrent=1
-    const incarnationToUse = isNewIncarnation ? incarnation + 1 : incarnation;
-    sqlWriteSpan.run(vatID, endPos, endPos, initialHash, 1, incarnationToUse);
-
-    // overwrite the transcript.${vatID}.current record with new span
-    const newRec = spanRec(
-      vatID,
-      endPos,
-      endPos,
-      initialHash,
-      true,
-      incarnationToUse,
-    );
-    noteExport(spanMetadataKey(newRec), JSON.stringify(newRec));
 
     if (!keepTranscripts) {
       // Delete items of the previously-current span.
@@ -290,7 +287,32 @@ export function makeTranscriptStore(
       // that doesn't include them.
       sqlDeleteOldItems.run(vatID, startPos, endPos);
     }
-    return incarnationToUse;
+  }
+
+  function doSpanRollover(vatID, isNewIncarnation) {
+    ensureTxn();
+    const bounds = getCurrentSpanBounds(vatID);
+    const { endPos, incarnation } = bounds;
+
+    // deal with the now-old span
+    closeSpan(vatID, bounds);
+
+    // create a new (empty) DB row, with isCurrent=1
+    const newSpanIncarnation = isNewIncarnation ? incarnation + 1 : incarnation;
+    sqlWriteSpan.run(vatID, endPos, endPos, initialHash, 1, newSpanIncarnation);
+
+    // overwrite the transcript.${vatID}.current record with new span
+    const rec = spanRec(
+      vatID,
+      endPos,
+      endPos,
+      initialHash,
+      true,
+      newSpanIncarnation,
+    );
+    noteExport(spanMetadataKey(rec), JSON.stringify(rec));
+
+    return newSpanIncarnation;
   }
 
   /**
@@ -360,28 +382,21 @@ export function makeTranscriptStore(
   `);
 
   /**
-   * Prepare for vat deletion by marking the isCurrent span as not
-   * current. Idempotent.
+   * Prepare for vat deletion by marking the isCurrent=1 span as not current.
+   * Idempotent.
    *
    * @param {string} vatID  The vat being terminated/deleted.
    */
   function stopUsingTranscript(vatID) {
     ensureTxn();
-    // this transforms the current span into a (short) historical one
-    // (basically doSpanRollover without adding replacement data)
     const bounds = sqlGetCurrentSpanBounds.get(vatID);
-    if (bounds) {
-      // add a new record for the now-old span
-      const { startPos, endPos, hash, incarnation } = bounds;
-      const rec = spanRec(vatID, startPos, endPos, hash, false, incarnation);
-      noteExport(spanMetadataKey(rec), JSON.stringify(rec));
+    if (!bounds) return;
 
-      // and change its DB row to isCurrent=0
-      sqlEndCurrentSpan.run(vatID);
+    // deal with the now-old span
+    closeSpan(vatID, bounds);
 
-      // remove the transcript.${vatID}.current record
-      noteExport(spanMetadataKey({ vatID, isCurrent: true }), undefined);
-    }
+    // remove the transcript.${vatID}.current record
+    noteExport(spanMetadataKey({ vatID, isCurrent: true }), undefined);
   }
 
   /**
@@ -542,7 +557,7 @@ export function makeTranscriptStore(
         }
       }
     } else if (artifactMode === 'archival') {
-      // every span for all vatIDs that have an isCurrent span (to
+      // every span for all vatIDs that have an isCurrent=1 span (to
       // ignore terminated/partially-deleted vats)
       const vatIDs = new Set();
       for (const { vatID } of sqlGetCurrentSpanMetadata.iterate()) {
