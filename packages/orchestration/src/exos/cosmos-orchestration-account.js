@@ -89,20 +89,25 @@ const { Vow$ } = NetworkShape; // TODO #9611
  * }} CosmosOrchestrationAccountStorageState
  */
 
-/** @see {OrchestrationAccountI} */
-export const IcaAccountHolderI = M.interface('IcaAccountHolder', {
-  ...orchestrationAccountMethods,
+/** @see {StakingAccountActions} */
+const stakingAccountActionsMethods = {
   delegate: M.call(ChainAddressShape, AmountArgShape).returns(VowShape),
   redelegate: M.call(
     ChainAddressShape,
     ChainAddressShape,
     AmountArgShape,
   ).returns(VowShape),
+  undelegate: M.call(M.arrayOf(DelegationShape)).returns(VowShape),
   withdrawReward: M.call(ChainAddressShape).returns(
     Vow$(M.arrayOf(DenomAmountShape)),
   ),
   withdrawRewards: M.call().returns(Vow$(M.arrayOf(DenomAmountShape))),
-  undelegate: M.call(M.arrayOf(DelegationShape)).returns(VowShape),
+};
+
+/** @see {OrchestrationAccountI} */
+export const IcaAccountHolderI = M.interface('IcaAccountHolder', {
+  ...orchestrationAccountMethods,
+  ...stakingAccountActionsMethods,
   deactivate: M.call().returns(VowShape),
   reactivate: M.call().returns(VowShape),
 });
