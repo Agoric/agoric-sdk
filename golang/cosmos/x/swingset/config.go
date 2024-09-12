@@ -175,9 +175,10 @@ func SwingsetConfigFromViper(resolvedConfig servertypes.AppOptions) (*SwingsetCo
 		}
 	}
 	if util.IndexOf(transcriptRetentionValues, ssConfig.VatTranscriptRetention) == -1 {
+		valuesCopy := append([]string{}, transcriptRetentionValues...)
 		err := fmt.Errorf(
 			"value for vat-transcript-retention must be in %q",
-			transcriptRetentionValues,
+			append(valuesCopy, "default"),
 		)
 		return nil, err
 	}
