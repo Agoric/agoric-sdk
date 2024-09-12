@@ -49,47 +49,51 @@ test('buildQueryResponseString matches observed values in e2e testing', t => {
 });
 
 test('build Tx Packet', t => {
-  t.is(
-    buildTxPacketString([
-      MsgDelegate.toProtoMsg({
-        amount: {
-          denom: 'uatom',
-          amount: '10',
-        },
-        delegatorAddress: 'cosmos1test',
-        validatorAddress: 'cosmosvaloper1test',
-      }),
-    ]),
-    'eyJ0eXBlIjoxLCJkYXRhIjoiQ2xVS0l5OWpiM050YjNNdWMzUmhhMmx1Wnk1Mk1XSmxkR0V4TGsxelowUmxiR1ZuWVhSbEVpNEtDMk52YzIxdmN6RjBaWE4wRWhKamIzTnRiM04yWVd4dmNHVnlNWFJsYzNRYUN3b0ZkV0YwYjIwU0FqRXciLCJtZW1vIjoiIn0=',
-  );
+  const obj = {
+    amount: {
+      denom: 'uatom',
+      amount: '10',
+    },
+    delegatorAddress: 'cosmos1test',
+    validatorAddress: 'cosmosvaloper1test',
+  };
+  const encoded = buildTxPacketString([MsgDelegate.toProtoMsg(obj)]);
+  t.snapshot(encoded);
+  const decoded = MsgDelegate.decode(encoded as unknown as Uint8Array);
+  t.deepEqual(decoded, obj);
 });
 
 test('build Query Packet', t => {
-  t.is(
-    buildQueryPacketString([
-      QueryBalanceRequest.toProtoMsg({
-        address: 'cosmos1test',
-        denom: 'uatom',
-      }),
-    ]),
-    'eyJkYXRhIjoiQ2pvS0ZBb0xZMjl6Ylc5ek1YUmxjM1FTQlhWaGRHOXRFaUl2WTI5emJXOXpMbUpoYm1zdWRqRmlaWFJoTVM1UmRXVnllUzlDWVd4aGJtTmwiLCJtZW1vIjoiIn0=',
-  );
+  const obj = {
+    address: 'cosmos1test',
+    denom: 'uatom',
+  };
+  const encoded = buildQueryPacketString([QueryBalanceRequest.toProtoMsg(obj)]);
+  t.snapshot(encoded);
+  const decoded = QueryBalanceRequest.decode(encoded as unknown as Uint8Array);
+  t.deepEqual(decoded, obj);
 });
 
-test('build QueryDelegatorDelegationsResponse', t => {
-  t.is(
-    buildQueryResponseString(QueryDelegatorDelegationsResponse, {
-      delegationResponses: [
-        {
-          delegation: {
-            delegatorAddress: 'cosmos1test',
-            validatorAddress: 'cosmosvaloper1test',
-            shares: '1000000',
-          },
-          balance: { denom: 'uatom', amount: '1000000' },
+test('build Query Response', t => {
+  const obj = {
+    delegationResponses: [
+      {
+        delegation: {
+          delegatorAddress: 'cosmos1test',
+          validatorAddress: 'cosmosvaloper1test',
+          shares: '1000000',
         },
-      ],
-    }),
-    'eyJyZXN1bHQiOiJleUprWVhSaElqb2lRMnhSZVZWbmNGRkRhbmRMUXpKT2RtTXlNWFpqZWtZd1dsaE9NRVZvU21waU0wNTBZak5PTWxsWGVIWmpSMVo1VFZoU2JHTXpVV0ZIVkVWM1RVUkJkMDFFUVhkTlJFRjNUVVJCZDAxRVFYZE5SRUYzVFVSQmQwMUVRVk5GUVc5R1pGZEdNR0l5TUZOQ2VrVjNUVVJCZDAxRVFUMGlmUT09In0=',
+        balance: { denom: 'uatom', amount: '1000000' },
+      },
+    ],
+  };
+  const encoded = buildQueryResponseString(
+    QueryDelegatorDelegationsResponse,
+    obj,
   );
+  t.snapshot(encoded);
+  const decoded = QueryDelegatorDelegationsResponse.decode(
+    encoded as unknown as Uint8Array,
+  );
+  t.deepEqual(decoded, obj);
 });
