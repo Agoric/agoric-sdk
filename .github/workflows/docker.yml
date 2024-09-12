@@ -157,61 +157,6 @@ jobs:
           to: ${{ secrets.NOTIFY_EMAIL_TO }}
           password: ${{ secrets.NOTIFY_EMAIL_PASSWORD }}
 
-  # This is currently needed for the relayer integration test framework.
-  # It just runs agoric/agoric-sdk with a "single-node" argument.
-  docker-ibc-alpha:
-    needs: [docker-sdk, snapshot]
-    runs-on: 'depot-ubuntu-22.04-16' # ubuntu-latest
-    permissions:
-      # allow issuing OIDC tokens for this workflow run
-      id-token: write
-      # allow at least reading the repo contents, add other permissions if necessary
-      contents: read
-      # to push the resulting images
-      packages: write
-    if: ${{ needs.docker-sdk.outputs.tag }} != dev
-    steps:
-      - uses: actions/checkout@v4
-      - name: Save SDK_TAG
-        run: echo "SDK_TAG=${{ needs.snapshot.outputs.tag }}" >> $GITHUB_ENV
-      - name: Prefix tags
-        id: prefix-tags
-        run: |
-          IMAGE="$REGISTRY/agoric/agoric-sdk"
-          for TAG in ibc-alpha; do
-            PREFIXED="$PREFIXED$sep$IMAGE:$TAG"
-            sep=,
-          done
-          echo "tags=$PREFIXED" >> $GITHUB_OUTPUT
-      - uses: depot/setup-action@v1
-        with:
-          oidc: true # to set DEPOT_TOKEN for later steps
-      - run: depot configure-docker
-      - name: Login to Docker Registry
-        uses: docker/login-action@v3
-        with:
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-          registry: ${{ env.REGISTRY }}
-      - name: Build and Push
-        uses: depot/build-push-action@v1
-        with:
-          file: packages/deployment/Dockerfile.ibc-alpha
-          context: packages/deployment/docker
-          platforms: ${{ env.DOCKER_PLATFORMS }}
-          push: true
-          tags: '${{ steps.prefix-tags.outputs.tags }}'
-          build-args: |
-            SDK_TAG=${{env.SDK_TAG}}
-      - name: notify on failure
-        if: failure()
-        uses: ./.github/actions/notify-status
-        with:
-          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
-          from: ${{ secrets.NOTIFY_EMAIL_FROM }}
-          to: ${{ secrets.NOTIFY_EMAIL_TO }}
-          password: ${{ secrets.NOTIFY_EMAIL_PASSWORD }}
-
   docker-solo:
     needs: [docker-sdk, snapshot]
     runs-on: 'depot-ubuntu-22.04-16' # ubuntu-latest
