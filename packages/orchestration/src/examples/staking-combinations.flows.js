@@ -76,9 +76,8 @@ export const depositAndDelegate = async (
   try {
     await contractState.localAccount.transfer(give.Stake, address);
   } catch (cause) {
-    // TODO, put funds back on user seat and exit
-    // https://github.com/Agoric/agoric-sdk/issues/9925
-    throw makeError('ibc transfer failed', undefined, { cause });
+    await zoeTools.withdrawToSeat(contractState.localAccount, seat, give);
+    throw seat.fail(makeError('ibc transfer failed', undefined, { cause }));
   }
   seat.exit();
   await account.delegate(validator, give.Stake);

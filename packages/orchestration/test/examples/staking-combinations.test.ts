@@ -12,6 +12,7 @@ import {
   MsgTransferResponse,
 } from '@agoric/cosmic-proto/ibc/applications/transfer/v1/tx.js';
 import { IBCMethod } from '@agoric/vats';
+import { SIMULATED_ERRORS } from '@agoric/vats/tools/fake-bridge.js';
 import { protoMsgMocks, UNBOND_PERIOD_SECONDS } from '../ibc-mocks.js';
 import { commonSetup } from '../supports.js';
 import {
@@ -205,4 +206,37 @@ test('start', async t => {
   // snapshot the resulting contract baggage
   const tree = inspectMapStore(contractBaggage);
   t.snapshot(tree, 'contract baggage after start');
+
+  {
+    t.log('payments from failed transfers are returned');
+    const bldAmt = bld.make(SIMULATED_ERRORS.TIMEOUT);
+
+    const seat = await E(zoe).offer(
+      await E(result.invitationMakers).DepositAndDelegate(),
+      {
+        give: { Stake: bldAmt },
+        exit: { waived: null },
+      },
+      {
+        Stake: await pourPayment(bldAmt),
+      },
+      {
+        validator: {
+          chainId: 'cosmoshub',
+          value: 'cosmosvaloper1test',
+          encoding: 'bech32',
+        },
+      },
+    );
+    await t.throwsAsync(vt.when(E(seat).getOfferResult()), {
+      message: 'ibc transfer failed',
+    });
+    await vt.when(E(seat).hasExited());
+    const payouts = await E(seat).getPayouts();
+    t.deepEqual(
+      await bld.issuer.getAmountOf(payouts.Stake),
+      bldAmt,
+      'Stake is returned',
+    );
+  }
 });

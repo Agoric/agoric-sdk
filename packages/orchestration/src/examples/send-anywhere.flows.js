@@ -63,7 +63,9 @@ export const sendIt = async (
     );
   } catch (e) {
     await withdrawToSeat(contractState.localAccount, seat, give);
-    throw seat.fail(makeError(`IBC Transfer failed ${q(e)}`));
+    const errorMsg = `IBC Transfer failed ${q(e)}`;
+    seat.exit(errorMsg);
+    throw makeError(errorMsg);
   }
 
   seat.exit();
