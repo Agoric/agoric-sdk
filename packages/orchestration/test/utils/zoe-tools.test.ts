@@ -200,7 +200,7 @@ test('zoeTool.localTransfer error paths', async t => {
     await t.throwsAsync(vt.when(E(userSeat).getOfferResult()), {
       message: 'SendAll failed "[Error: simulated error]"',
     });
-    await E(userSeat).tryExit();
+    await E(userSeat).hasExited();
     const payouts = await E(userSeat).getPayouts();
     const payoutEntries = Object.entries(payouts);
     t.is(payoutEntries.length, 2, 'expecting BLD, IST payouts');

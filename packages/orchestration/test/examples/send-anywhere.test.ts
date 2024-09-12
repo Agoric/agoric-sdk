@@ -296,7 +296,7 @@ test('failed ibc transfer returns give', async t => {
   );
 
   await eventLoopIteration();
-  await vt.when(E(userSeat).tryExit());
+  await vt.when(E(userSeat).hasExited());
   const payouts = await vt.when(E(userSeat).getPayouts());
   t.log('Failed offer payouts', payouts);
   const amountReturned = await ist.issuer.getAmountOf(payouts.Send);
