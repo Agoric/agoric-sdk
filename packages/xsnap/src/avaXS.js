@@ -9,6 +9,7 @@ Usage:
 import '@endo/init';
 
 import fs from 'fs';
+import { fileURLToPath } from 'url';
 import { tmpName } from 'tmp';
 
 import { assert, q, Fail } from '@endo/errors';
@@ -21,7 +22,7 @@ const avaHandler = `./avaHandler.cjs`;
 
 /** @type { (ref: string, readFile: typeof import('fs').promises.readFile ) => Promise<string> } */
 const asset = (ref, readFile) =>
-  readFile(new URL(ref, import.meta.url).pathname, 'utf8');
+  readFile(fileURLToPath(new URL(ref, import.meta.url)), 'utf8');
 
 /**
  * When we bundle test scripts, we leave these externals

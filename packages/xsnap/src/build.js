@@ -1,13 +1,14 @@
 #!/usr/bin/env node
 /* global process */
 import * as childProcessTop from 'child_process';
+import { fileURLToPath } from 'url';
 import fsTop from 'fs';
 import osTop from 'os';
 
 const { freeze } = Object;
 
 /** @param {string} path */
-const asset = path => new URL(path, import.meta.url).pathname;
+const asset = path => fileURLToPath(new URL(path, import.meta.url));
 
 const ModdableSDK = {
   MODDABLE: asset('../moddable'),
