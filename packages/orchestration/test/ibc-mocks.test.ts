@@ -7,6 +7,10 @@ import {
   MsgDelegate,
   MsgDelegateResponse,
 } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/tx.js';
+import {
+  CosmosQuery,
+  CosmosResponse,
+} from '@agoric/cosmic-proto/icq/v1/packet.js';
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import {
   buildMsgErrorString,
@@ -14,6 +18,7 @@ import {
   buildQueryPacketString,
   buildQueryResponseString,
   buildTxPacketString,
+  parseOutgoingTxPacket,
 } from '../tools/ibc-mocks.js';
 
 test('buildMsgResponseString matches observed values in e2e testing', t => {
@@ -49,47 +54,64 @@ test('buildQueryResponseString matches observed values in e2e testing', t => {
 });
 
 test('build Tx Packet', t => {
-  t.is(
-    buildTxPacketString([
-      MsgDelegate.toProtoMsg({
-        amount: {
-          denom: 'uatom',
-          amount: '10',
-        },
-        delegatorAddress: 'cosmos1test',
-        validatorAddress: 'cosmosvaloper1test',
-      }),
-    ]),
-    'eyJ0eXBlIjoxLCJkYXRhIjoiQ2xVS0l5OWpiM050YjNNdWMzUmhhMmx1Wnk1Mk1XSmxkR0V4TGsxelowUmxiR1ZuWVhSbEVpNEtDMk52YzIxdmN6RjBaWE4wRWhKamIzTnRiM04yWVd4dmNHVnlNWFJsYzNRYUN3b0ZkV0YwYjIwU0FqRXciLCJtZW1vIjoiIn0=',
-  );
+  const obj = {
+    amount: {
+      denom: 'uatom',
+      amount: '10',
+    },
+    delegatorAddress: 'cosmos1test',
+    validatorAddress: 'cosmosvaloper1test',
+  };
+  const encoded = buildTxPacketString([MsgDelegate.toProtoMsg(obj)]);
+  t.snapshot(encoded);
+
+  const parsed = parseOutgoingTxPacket(encoded);
+  const decoded = MsgDelegate.decode(parsed.messages[0].value);
+  t.deepEqual(decoded, obj);
 });
 
 test('build Query Packet', t => {
-  t.is(
-    buildQueryPacketString([
-      QueryBalanceRequest.toProtoMsg({
-        address: 'cosmos1test',
-        denom: 'uatom',
-      }),
-    ]),
-    'eyJkYXRhIjoiQ2pvS0ZBb0xZMjl6Ylc5ek1YUmxjM1FTQlhWaGRHOXRFaUl2WTI5emJXOXpMbUpoYm1zdWRqRmlaWFJoTVM1UmRXVnllUzlDWVd4aGJtTmwiLCJtZW1vIjoiIn0=',
+  const obj = {
+    address: 'cosmos1test',
+    denom: 'uatom',
+  };
+  const b64 = buildQueryPacketString([QueryBalanceRequest.toProtoMsg(obj)]);
+  t.snapshot(b64);
+
+  const { data } = JSON.parse(atob(b64));
+  const decodedQuery = CosmosQuery.decode(Buffer.from(data, 'base64'));
+  const decodedRequest = QueryBalanceRequest.decode(
+    decodedQuery.requests[0].data,
   );
+  t.deepEqual(decodedRequest, obj);
 });
 
-test('build QueryDelegatorDelegationsResponse', t => {
-  t.is(
-    buildQueryResponseString(QueryDelegatorDelegationsResponse, {
-      delegationResponses: [
-        {
-          delegation: {
-            delegatorAddress: 'cosmos1test',
-            validatorAddress: 'cosmosvaloper1test',
-            shares: '1000000',
-          },
-          balance: { denom: 'uatom', amount: '1000000' },
+test('build Query Response', t => {
+  const obj = {
+    delegationResponses: [
+      {
+        delegation: {
+          delegatorAddress: 'cosmos1test',
+          validatorAddress: 'cosmosvaloper1test',
+          shares: '1000000',
         },
-      ],
-    }),
-    'eyJyZXN1bHQiOiJleUprWVhSaElqb2lRMnhSZVZWbmNGRkRhbmRMUXpKT2RtTXlNWFpqZWtZd1dsaE9NRVZvU21waU0wNTBZak5PTWxsWGVIWmpSMVo1VFZoU2JHTXpVV0ZIVkVWM1RVUkJkMDFFUVhkTlJFRjNUVVJCZDAxRVFYZE5SRUYzVFVSQmQwMUVRVk5GUVc5R1pGZEdNR0l5TUZOQ2VrVjNUVVJCZDAxRVFUMGlmUT09In0=',
+        balance: { denom: 'uatom', amount: '1000000' },
+      },
+    ],
+  };
+  const encoded = buildQueryResponseString(
+    QueryDelegatorDelegationsResponse,
+    obj,
   );
+  t.snapshot(encoded);
+
+  const { result } = JSON.parse(atob(encoded));
+  const { data } = JSON.parse(atob(result));
+  const cosmosResponse = CosmosResponse.decode(Buffer.from(data, 'base64'));
+  const decodedResponseKey = cosmosResponse.responses[0].key;
+
+  t.deepEqual(QueryDelegatorDelegationsResponse.decode(decodedResponseKey), {
+    ...obj,
+    pagination: undefined,
+  });
 });
