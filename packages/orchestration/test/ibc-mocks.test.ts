@@ -14,6 +14,8 @@ import {
   buildQueryPacketString,
   buildQueryResponseString,
   buildTxPacketString,
+  parseOutgoingQueryPacket,
+  parseOutgoingTxPacket,
 } from '../tools/ibc-mocks.js';
 
 test('buildMsgResponseString matches observed values in e2e testing', t => {
@@ -57,9 +59,14 @@ test('build Tx Packet', t => {
     delegatorAddress: 'cosmos1test',
     validatorAddress: 'cosmosvaloper1test',
   };
-  const encoded = buildTxPacketString([MsgDelegate.toProtoMsg(obj)]);
-  t.snapshot(encoded);
-  const decoded = MsgDelegate.decode(encoded as unknown as Uint8Array);
+  const encodedPacket = buildTxPacketString([MsgDelegate.toProtoMsg(obj)]);
+  t.snapshot(encodedPacket);
+  const parsedPacket = parseOutgoingTxPacket(encodedPacket);
+  t.snapshot(parsedPacket);
+  t.is(parsedPacket.messages[0].typeUrl, '/cosmos.staking.v1beta1.MsgDelegate');
+  const decoded = MsgDelegate.decode(
+    parsedPacket.messages[0].value as unknown as Uint8Array,
+  );
   t.deepEqual(decoded, obj);
 });
 
@@ -68,9 +75,16 @@ test('build Query Packet', t => {
     address: 'cosmos1test',
     denom: 'uatom',
   };
-  const encoded = buildQueryPacketString([QueryBalanceRequest.toProtoMsg(obj)]);
-  t.snapshot(encoded);
-  const decoded = QueryBalanceRequest.decode(encoded as unknown as Uint8Array);
+  const encodedPacket = buildQueryPacketString([
+    QueryBalanceRequest.toProtoMsg(obj),
+  ]);
+  t.snapshot(encodedPacket);
+  const parsedPacket = parseOutgoingQueryPacket(encodedPacket);
+  t.snapshot(parsedPacket);
+  t.is(parsedPacket.requests[0].path, '/cosmos.bank.v1beta1.Query/Balance');
+  const decoded = QueryBalanceRequest.decode(
+    parsedPacket.requests[0].data as unknown as Uint8Array,
+  );
   t.deepEqual(decoded, obj);
 });
 

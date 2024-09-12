@@ -1,6 +1,9 @@
 /** @file Tools to support making IBC mocks */
 import { Any } from '@agoric/cosmic-proto/google/protobuf/any.js';
-import { CosmosResponse } from '@agoric/cosmic-proto/icq/v1/packet.js';
+import {
+  CosmosQuery,
+  CosmosResponse,
+} from '@agoric/cosmic-proto/icq/v1/packet.js';
 import {
   RequestQuery,
   ResponseQuery,
@@ -137,6 +140,16 @@ export function buildTxPacketString(
  */
 export const parseOutgoingTxPacket = (b64: string) => {
   return TxBody.decode(decodeBase64(JSON.parse(atob(b64)).data));
+};
+
+/**
+ * Parse an outgoing icq query packet. Useful for testing when inspecting
+ * outgoing dibc bridge messages.
+ *
+ * @param b64 base64 encoded string
+ */
+export const parseOutgoingQueryPacket = (b64: string) => {
+  return CosmosQuery.decode(decodeBase64(JSON.parse(atob(b64)).data));
 };
 
 /**
