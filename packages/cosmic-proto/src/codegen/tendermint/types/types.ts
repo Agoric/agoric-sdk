@@ -158,6 +158,7 @@ export interface Header {
   lastBlockId: BlockID;
   /** hashes of block data */
   lastCommitHash: Uint8Array;
+  /** transactions */
   dataHash: Uint8Array;
   /** hashes from the app output from the prev block */
   validatorsHash: Uint8Array;
@@ -167,6 +168,7 @@ export interface Header {
   consensusHash: Uint8Array;
   /** state after txs from the previous block */
   appHash: Uint8Array;
+  /** root hash of all results from the txs from the previous block */
   lastResultsHash: Uint8Array;
   /** consensus info */
   evidenceHash: Uint8Array;

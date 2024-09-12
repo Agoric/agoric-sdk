@@ -849,12 +849,9 @@ export interface TxResultSDKType {
 }
 /** Validator */
 export interface Validator {
-  /**
-   * The first 20 bytes of SHA256(public key)
-   * PubKey pub_key = 2 [(gogoproto.nullable)=false];
-   */
+  /** The first 20 bytes of SHA256(public key) */
   address: Uint8Array;
-  /** The voting power */
+  /** PubKey pub_key = 2 [(gogoproto.nullable)=false]; */
   power: bigint;
 }
 export interface ValidatorProtoMsg {
