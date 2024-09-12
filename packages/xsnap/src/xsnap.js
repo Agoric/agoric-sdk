@@ -4,6 +4,7 @@
 import { finished } from 'stream/promises';
 import { PassThrough, Readable } from 'stream';
 import { promisify } from 'util';
+import { fileURLToPath } from 'url';
 import { Fail, q } from '@endo/errors';
 import { makeNetstringReader, makeNetstringWriter } from '@endo/netstring';
 import { makeNodeReader, makeNodeWriter } from '@endo/stream-node';
@@ -174,12 +175,14 @@ export async function xsnap(options) {
     throw Error(`xsnap does not support platform ${os}`);
   }
 
-  let bin = new URL(
-    `../xsnap-native/xsnap/build/bin/${platform}/${
-      debug ? 'debug' : 'release'
-    }/xsnap-worker`,
-    import.meta.url,
-  ).pathname;
+  let bin = fileURLToPath(
+    new URL(
+      `../xsnap-native/xsnap/build/bin/${platform}/${
+        debug ? 'debug' : 'release'
+      }/xsnap-worker`,
+      import.meta.url,
+    ),
+  );
 
   /** @type {PromiseKit<void>} */
   const vatExit = makePromiseKit();
