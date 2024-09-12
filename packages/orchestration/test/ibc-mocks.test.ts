@@ -1,18 +1,19 @@
-import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import {
   QueryBalanceRequest,
   QueryBalanceResponse,
 } from '@agoric/cosmic-proto/cosmos/bank/v1beta1/query.js';
+import { QueryDelegatorDelegationsResponse } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/query.js';
 import {
   MsgDelegate,
   MsgDelegateResponse,
 } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/tx.js';
+import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import {
-  buildMsgResponseString,
-  buildQueryResponseString,
   buildMsgErrorString,
-  buildTxPacketString,
+  buildMsgResponseString,
   buildQueryPacketString,
+  buildQueryResponseString,
+  buildTxPacketString,
 } from '../tools/ibc-mocks.js';
 
 test('buildMsgResponseString matches observed values in e2e testing', t => {
@@ -72,5 +73,23 @@ test('build Query Packet', t => {
       }),
     ]),
     'eyJkYXRhIjoiQ2pvS0ZBb0xZMjl6Ylc5ek1YUmxjM1FTQlhWaGRHOXRFaUl2WTI5emJXOXpMbUpoYm1zdWRqRmlaWFJoTVM1UmRXVnllUzlDWVd4aGJtTmwiLCJtZW1vIjoiIn0=',
+  );
+});
+
+test('build QueryDelegatorDelegationsResponse', t => {
+  t.is(
+    buildQueryResponseString(QueryDelegatorDelegationsResponse, {
+      delegationResponses: [
+        {
+          delegation: {
+            delegatorAddress: 'cosmos1test',
+            validatorAddress: 'cosmosvaloper1test',
+            shares: '1000000',
+          },
+          balance: { denom: 'uatom', amount: '1000000' },
+        },
+      ],
+    }),
+    'eyJyZXN1bHQiOiJleUprWVhSaElqb2lRMnhSZVZWbmNGRkRhbmRMUXpKT2RtTXlNWFpqZWtZd1dsaE9NRVZvU21waU0wNTBZak5PTWxsWGVIWmpSMVo1VFZoU2JHTXpVV0ZIVkVWM1RVUkJkMDFFUVhkTlJFRjNUVVJCZDAxRVFYZE5SRUYzVFVSQmQwMUVRVk5GUVc5R1pGZEdNR0l5TUZOQ2VrVjNUVVJCZDAxRVFUMGlmUT09In0=',
   );
 });
