@@ -218,7 +218,7 @@ export const fakeLocalChainBridgeTxMsgHandler = (message, sequence) => {
     case '/cosmos.staking.v1beta1.MsgUndelegate': {
       return /** @type {JsonSafe<MsgUndelegateResponse>} */ ({
         // 5 seconds from unix epoch
-        completionTime: { seconds: 5n, nanos: 0 },
+        completionTime: { seconds: '5', nanos: 0 },
       });
     }
     // returns one empty object per message unless specified

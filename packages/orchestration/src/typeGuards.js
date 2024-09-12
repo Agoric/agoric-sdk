@@ -160,8 +160,11 @@ export const chainFacadeMethods = harden({
 /**
  * for google/protobuf/timestamp.proto, not to be confused with TimestampShape
  * from `@agoric/time`
+ *
+ * `seconds` should be a BigInt but since it goes through JSON it is encoded as
+ * a string
  */
-export const TimestampProtoShape = { seconds: M.nat(), nanos: M.number() };
+export const TimestampProtoShape = { seconds: M.string(), nanos: M.number() };
 
 /**
  * see {@link TxBody} for more details
