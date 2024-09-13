@@ -1031,7 +1031,7 @@ test('terminated vat', async t => {
       bootstrap: {
         sourceSpec: new URL('gc-dead-vat/bootstrap.js', import.meta.url)
           .pathname,
-        creationOptions: { managerType: 'local' },
+        creationOptions: { managerType: 'xs-worker' },
       },
     },
     bootstrap: 'bootstrap',
