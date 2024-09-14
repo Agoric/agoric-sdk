@@ -8,17 +8,18 @@
 
 We would like to have similar behavior regardless of whether a chain launched from a release upgrades a predecessor or starts clean. Since we are currently not in a position where we can upgrade all vats, our release must not include behavioral changes to code running in any vat that it is not explicitly upgrading. The easiest way to accomplish that is by avoiding any changes to code included in vats, however this is not always feasible.
 
-We maintain `release-*` branches which represent a fork of the `master` dev branch at a given point:
-- `release-pismo` is the previous/archived release branch used before the "bulldozer" upgrade which threw away all JavaScript state.
-- `release-mainnet1B` is our current release branch. Despite its name, it has lived beyond the "mainnet-1" phase of the agoric-3 chain.
+We previously maintained `release-*` branches which represented a fork of the `master` dev branch at a given point:
+- `release-pismo` is the original/archived release branch used before the "bulldozer" upgrade which threw away all JavaScript state.
+- `release-mainnet1B` was our previous release branch up until upgrade-15. Despite its name, it lived beyond the "mainnet-1" phase of the agoric-3 chain.
 
-Release branches should only ever be updated when publishing a new release.
+We don't expect these previous release branches to ever be updated again.
+
+Starting with `upgrade-16`, we try to release directly from `master` by creating a `dev-release-*` branch. These branches allow us to work on the release concurrently with other engineering efforts, and are not currently merged back once the release is complete.
 
 Releases are tagged commits from the above release branches, with a corresponding entry in https://github.com/Agoric/agoric-sdk/releases .
 
 To ease the maintenance process, we want to avoid any commit original to the release branch that has no direct equivalent on the `master` branch, except when needed to generate or test a specific release. To satisfy that, we usually directly cherry-pick commits and PRs from the `master` branch. We do not expect to merge the release branches back into `master`.
 
-To clearly delineate separate releases from each other on the release branch, we now use "dev release" branches to compile all changes going into a release before merging that branch into the release branch when the release is cut. It also allows us to re-scope a release if needed without having to revert commits on the release branch.
 
 ## Preparing for a Release
 
@@ -26,7 +27,7 @@ To clearly delineate separate releases from each other on the release branch, we
 
 The Release Owner and other appropriate stakeholders must agree on:
 
-- _**base branch**_: This should be `release-mainnet1B`, but might need to vary for a patch release.
+- _**base branch**_: This should be `master`, but might need to vary for a patch release.
 
 - _**release label**_: This is used for the git tags, and is currently expected to follow a
   sequential pattern (example: `agoric-upgrade-8`).
@@ -38,31 +39,34 @@ The Release Owner and other appropriate stakeholders must agree on:
   `upgrade-8-rc0`).
 
 - _**upgrade name**_: This is used to coordinate with the cosmos-sdk UpgradeKeeper.
-  The name used to upgrade mainnet is currently expected to match the _**release label**_, but
-  other networks should use distinct names that indicate their testing-oriented purpose
-  (examples: `agorictest-upgrade-8`, `agorictest-upgrade-8-2`).
+  The primary name is currently expected to match the _**release label**_, but test networks may require extra names if multiple rounds of upgrade validation are necessary to test a release.
+  (examples: `agoric-upgrade-8-2`).
 
 ### Create the "dev release" branch
 
-- [ ] When a new release is planned, create a new branch from branch `release-mainnet1B` with a name like `dev-$releaseShortLabel` (example: `dev-upgrade-8`). This can be done from the command line or the [GitHub Branches UI](https://github.com/Agoric/agoric-sdk/branches).
+- [ ] When a new release is planned, create a new branch from the [_**base branch**_](#assign-release-parameters) (`master`) with a name like `dev-$releaseShortLabel` (example: `dev-upgrade-8`). This can be done from the command line or the [GitHub Branches UI](https://github.com/Agoric/agoric-sdk/branches).
 - [ ] Initialize the new branch for the planned upgrade:
-  - [ ] In **golang/cosmos/app/upgrade.go**, update the `upgradeName` constants and the associated upgrade handler function name to correspond with the [_**upgrade name**_](#assign-release-parameters).
-    Remove from the function any logic specific to the previous upgrade (e.g., core proposals).
-  - [ ] Ensure that **a3p-integration/package.json** has an object-valued `agoricSyntheticChain` property with `fromTag` set to the [agoric-3-proposals Docker images](https://github.com/Agoric/agoric-3-proposals/pkgs/container/agoric-3-proposals) tag associated with the previous release
-    (example: `use-upgrade-7`).
-  - [ ] Ensure that **a3p-integration/proposals** contains a single subdirectory with the following characteristics
-    - named like "$prefix:[_**release short label**_](#assign-release-parameters)" per [agoric-3-proposals: Naming](https://github.com/Agoric/agoric-3-proposals#naming) (conventionally using "a" for the unreleased $prefix, e.g. `a:upgrade-8`)
+  - [ ] In **golang/cosmos/app/upgrade.go**
+    - [ ] Update the `upgradeNamesOfThisVersion` constant to list all the [_**upgrade name**_](#assign-release-parameters) used by this release.
+    - [ ] Update the `isPrimaryUpgradeName` function to reflect the updated [_**upgrade name**_](#assign-release-parameters) list.
+    - [ ] Rename the upgrade handler function to match the release, example: `upgrade8Handler`.
+    - [ ] Verify that the upgrade handler function has no logic specific to the previous upgrade (e.g., core proposals).
+  - [ ] In **golang/cosmos/app/app.go**, make sure that the call to `SetUpgradeHandler` uses the renamed upgrade handler function above.
+  - [ ] Verify that **a3p-integration/package.json** has an object-valued `agoricSyntheticChain` property with `fromTag` set to the [agoric-3-proposals Docker images](https://github.com/Agoric/agoric-3-proposals/pkgs/container/agoric-3-proposals) tag associated with the previous release
+    (example: `use-upgrade-7`) or latest core-eval passed on chain (example: `use-vaults-auction`).
+  - [ ] Ensure that the first subdirectory in **a3p-integration/proposals** has the following characteristics. This is commonly created by renaming the `n:upgrade-next` directory after verifying no other proposals exist before that, and updating the **package.json** file in it.
+    - named like "$prefix:[_**release short label**_](#assign-release-parameters)" per [agoric-3-proposals: Naming](https://github.com/Agoric/agoric-3-proposals#naming) (conventionally using "a" for the unreleased $prefix, e.g. `a:upgrade-8`).
     - containing a **package.json** having an object-valued `agoricProposal` property with `sdkImageTag` set to "unreleased" and `planName` set to the [_**upgrade name**_](#assign-release-parameters)
     - containing other files appropriate for the upgrade per [agoric-3-proposals: Files](https://github.com/Agoric/agoric-3-proposals#files)
 
-    For example, see the [upgrade-14 PR](https://github.com/Agoric/agoric-sdk/pull/8755).
+    For example, see the [upgrade-17 PR](https://github.com/Agoric/agoric-sdk/pull/10088).
 
 ### Populate the "dev release" branch
 
-For each set of changes to include:
+For each set of changes to include after the base branch point:
 - [ ] Create a work branch from the "dev release" branch.
-- [ ] Cherry-pick approved changes from `master` onto this work branch.
-  - Avoid any cherry-pick that has side-effects on code you do not wish to be upgraded. For example, a change impacting deployed vat code that is not meant to be part of the upgrade (comment/types only changes may be acceptable, but will still result in new bundles, so should be avoided if possible). Chain software code is usually safe to upgrade as long as integration with code running inside vats doesn't change. For example, the host side of any bridge and the set of swingset syscalls must remain backwards compatible.
+- [ ] Cherry-pick approved changes from `master` onto this work branch, or revert any changes that were included before the base branch point but that are not meant to be released.
+  - Avoid any changes that has side-effects on code you do not wish to be upgraded. For example, a change impacting deployed vat code that is not meant to be part of the upgrade (comment/types only changes are usually considered acceptable, even though they will result in new bundles that should be behaviorally equivalent). Chain software code is usually safe to upgrade as long as integration with code running inside vats doesn't change. For example, the host side of any bridge and the set of swingset syscalls must remain backwards compatible.
   - For integrating a single PR (best suited to vat code changes which often require manual adaptation):
     - [ ] Cherry-pick the commits of the `master` PR onto the work branch with minimal/mechanical conflict resolutions.
       It's acceptable to author the changes on the "dev release" based work branch and then rebase them to a master PR, as long as the PRs lands at "about the same time" (`master` PR **MUST** be merged before a release is cut).
