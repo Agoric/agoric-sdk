@@ -103,3 +103,37 @@ wait-for-pods:
 .PHONY: start
 start: install wait-for-pods port-forward fund-provision-pool override-chain-registry
 
+###############################################################################
+###                            Helpers                                      ###
+###############################################################################
+
+.PHONY: teardown
+teardown: stop-forward stop clean delete
+
+.PHONY: corepack-setup
+corepack-setup:
+	corepack prepare yarn@4 --activate
+
+.PHONY: corepack-enable
+corepack-enable:
+	corepack enable
+
+.PHONY: test
+test:
+	yarn test test/install-contracts.test.ts
+
+.PHONY: all
+all: setup install
+	sleep 3
+	make port-forward
+	sleep 120
+	make fund-provision-pool
+	sleep 10
+	make add-address
+	echo "done running"
+
+.PHONY: hermes-update
+hermes-update:
+	kubectl exec -i hermes-agoric-osmosis-0 -c relayer -- hermes update client --host-chain agoriclocal --client 07-tendermint-1
+	sleep 60
+	make hermes-update
