@@ -5,7 +5,6 @@
 
 import '@endo/init/pre.js';
 import 'esm';
-import '@agoric/casting/node-fetch-shim.js';
 import '@endo/init/legacy.js';
 
 import path from 'path';
