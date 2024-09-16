@@ -57,8 +57,8 @@ export const prepareWatchUtils = (
         asPromise: M.call(M.raw()).rest(M.raw()).returns(M.promise()),
       }),
       watcher: M.interface('Watcher', {
-        onFulfilled: M.call(M.any()).rest(M.any()).returns(M.any()),
-        onRejected: M.call(M.any()).rest(M.any()).returns(M.any()),
+        onFulfilled: M.call(M.raw()).rest(M.raw()).returns(M.raw()),
+        onRejected: M.call(M.raw()).rest(M.raw()).returns(M.raw()),
       }),
       retryRejectionPromiseWatcher: PromiseWatcherI,
     },

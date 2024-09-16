@@ -252,3 +252,19 @@ test('asPromise handles watcher arguments', async t => {
   t.is(result, 'watcher test');
   t.true(watcherCalled);
 });
+
+test('allVows handles unstorable results', async t => {
+  const zone = makeHeapZone();
+  const { watch, when, allVows } = prepareBasicVowTools(zone);
+
+  const nonPassable = () => 'i am a function';
+
+  const specimenA = Promise.resolve('i am a promise');
+  const specimenB = watch(nonPassable);
+
+  const result = await when(allVows([specimenA, specimenB]));
+  t.is(result.length, 2);
+  t.is(result[0], 'i am a promise');
+  t.is(result[1], nonPassable);
+  t.is(result[1](), 'i am a function');
+});
