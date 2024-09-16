@@ -6,21 +6,21 @@ import { E, getInterfaceOf } from '@endo/far';
 
 import { prepareBasicVowTools } from '../src/tools.js';
 
-test('allVows waits for a single vow to complete', async t => {
+test('vowTools.all waits for a single vow to complete', async t => {
   const zone = makeHeapZone();
-  const { watch, when, allVows } = prepareBasicVowTools(zone);
+  const { watch, when, all } = prepareBasicVowTools(zone);
 
   const testPromiseP = Promise.resolve('promise');
   const vowA = watch(testPromiseP);
 
-  const result = await when(allVows([vowA]));
+  const result = await when(all([vowA]));
   t.is(result.length, 1);
   t.is(result[0], 'promise');
 });
 
-test('allVows waits for an array of vows to complete', async t => {
+test('vowTools.all waits for an array of vows to complete', async t => {
   const zone = makeHeapZone();
-  const { watch, when, allVows } = prepareBasicVowTools(zone);
+  const { watch, when, all } = prepareBasicVowTools(zone);
 
   const testPromiseAP = Promise.resolve('promiseA');
   const testPromiseBP = Promise.resolve('promiseB');
@@ -29,14 +29,14 @@ test('allVows waits for an array of vows to complete', async t => {
   const vowB = watch(testPromiseBP);
   const vowC = watch(testPromiseCP);
 
-  const result = await when(allVows([vowA, vowB, vowC]));
+  const result = await when(all([vowA, vowB, vowC]));
   t.is(result.length, 3);
   t.like(result, ['promiseA', 'promiseB', 'promiseC']);
 });
 
-test('allVows returns vows in order', async t => {
+test('vowTools.all returns vows in order', async t => {
   const zone = makeHeapZone();
-  const { watch, when, allVows, makeVowKit } = prepareBasicVowTools(zone);
+  const { watch, when, all, makeVowKit } = prepareBasicVowTools(zone);
   const kit = makeVowKit();
 
   const testPromiseAP = Promise.resolve('promiseA');
@@ -48,14 +48,14 @@ test('allVows returns vows in order', async t => {
   // test promie A and B should already be resolved.
   kit.resolver.resolve('promiseC');
 
-  const result = await when(allVows([vowA, vowC, vowB]));
+  const result = await when(all([vowA, vowC, vowB]));
   t.is(result.length, 3);
   t.like(result, ['promiseA', 'promiseC', 'promiseB']);
 });
 
-test('allVows rejects upon first rejection', async t => {
+test('vowTools.all rejects upon first rejection', async t => {
   const zone = makeHeapZone();
-  const { watch, when, allVows } = prepareBasicVowTools(zone);
+  const { watch, when, all } = prepareBasicVowTools(zone);
 
   const testPromiseAP = Promise.resolve('promiseA');
   const testPromiseBP = Promise.reject(Error('rejectedA'));
@@ -70,58 +70,58 @@ test('allVows rejects upon first rejection', async t => {
     },
   });
 
-  await when(watch(allVows([vowA, vowB, vowC]), watcher));
+  await when(watch(all([vowA, vowB, vowC]), watcher));
 });
 
-test('allVows can accept vows awaiting other vows', async t => {
+test('vowTools.all can accept vows awaiting other vows', async t => {
   const zone = makeHeapZone();
-  const { watch, when, allVows } = prepareBasicVowTools(zone);
+  const { watch, when, all } = prepareBasicVowTools(zone);
 
   const testPromiseAP = Promise.resolve('promiseA');
   const testPromiseBP = Promise.resolve('promiseB');
   const vowA = watch(testPromiseAP);
   const vowB = watch(testPromiseBP);
-  const resultA = allVows([vowA, vowB]);
+  const resultA = all([vowA, vowB]);
 
   const testPromiseCP = Promise.resolve('promiseC');
   const vowC = when(watch(testPromiseCP));
-  const resultB = await when(allVows([resultA, vowC]));
+  const resultB = await when(all([resultA, vowC]));
 
   t.is(resultB.length, 2);
   t.like(resultB, [['promiseA', 'promiseB'], 'promiseC']);
 });
 
-test('allVows - works with just promises', async t => {
+test('vowTools.all - works with just promises', async t => {
   const zone = makeHeapZone();
-  const { when, allVows } = prepareBasicVowTools(zone);
+  const { when, all } = prepareBasicVowTools(zone);
 
   const result = await when(
-    allVows([Promise.resolve('promiseA'), Promise.resolve('promiseB')]),
+    all([Promise.resolve('promiseA'), Promise.resolve('promiseB')]),
   );
   t.is(result.length, 2);
   t.like(result, ['promiseA', 'promiseB']);
 });
 
-test('allVows - watch promises mixed with vows', async t => {
+test('vowTools.all - watch promises mixed with vows', async t => {
   const zone = makeHeapZone();
-  const { watch, when, allVows } = prepareBasicVowTools(zone);
+  const { watch, when, all } = prepareBasicVowTools(zone);
 
   const testPromiseP = Promise.resolve('vow');
   const vowA = watch(testPromiseP);
 
-  const result = await when(allVows([vowA, Promise.resolve('promise')]));
+  const result = await when(all([vowA, Promise.resolve('promise')]));
   t.is(result.length, 2);
   t.like(result, ['vow', 'promise']);
 });
 
-test('allVows can accept passable data (PureData)', async t => {
+test('vowTools.all can accept passable data (PureData)', async t => {
   const zone = makeHeapZone();
-  const { watch, when, allVows } = prepareBasicVowTools(zone);
+  const { watch, when, all } = prepareBasicVowTools(zone);
 
   const testPromiseP = Promise.resolve('vow');
   const vowA = watch(testPromiseP);
 
-  const result = await when(allVows([vowA, 'string', 1n, { obj: true }]));
+  const result = await when(all([vowA, 'string', 1n, { obj: true }]));
   t.is(result.length, 4);
   t.deepEqual(result, ['vow', 'string', 1n, { obj: true }]);
 });
@@ -133,9 +133,9 @@ const prepareAccount = zone =>
     },
   });
 
-test('allVows supports Promise pipelining', async t => {
+test('vowTools.all supports Promise pipelining', async t => {
   const zone = makeHeapZone();
-  const { watch, when, allVows } = prepareBasicVowTools(zone);
+  const { watch, when, all } = prepareBasicVowTools(zone);
 
   // makeAccount returns a Promise
   const prepareLocalChain = makeAccount => {
@@ -157,7 +157,7 @@ test('allVows supports Promise pipelining', async t => {
 
   const Localchain = prepareLocalChain(prepareAccount(zone));
   const lcaP = E(Localchain).makeAccount();
-  const results = await when(watch(allVows([lcaP, E(lcaP).getAddress()])));
+  const results = await when(watch(all([lcaP, E(lcaP).getAddress()])));
   t.is(results.length, 2);
   const [acct, address] = results;
   t.is(getInterfaceOf(acct), 'Alleged: Account');
@@ -168,9 +168,9 @@ test('allVows supports Promise pipelining', async t => {
   );
 });
 
-test('allVows does NOT support Vow pipelining', async t => {
+test('vowTools.all does NOT support Vow pipelining', async t => {
   const zone = makeHeapZone();
-  const { watch, when, allVows } = prepareBasicVowTools(zone);
+  const { watch, when, all } = prepareBasicVowTools(zone);
 
   // makeAccount returns a Vow
   const prepareLocalChainVowish = makeAccount => {
@@ -195,7 +195,7 @@ test('allVows does NOT support Vow pipelining', async t => {
   const lcaP = E(Localchain).makeAccount();
   // @ts-expect-error Property 'getAddress' does not exist on type
   // 'EMethods<Required<PassStyled<"tagged", "Vow"> & { payload: VowPayload<any>; }>>'.
-  await t.throwsAsync(when(watch(allVows([lcaP, E(lcaP).getAddress()]))), {
+  await t.throwsAsync(when(watch(all([lcaP, E(lcaP).getAddress()]))), {
     message: 'target has no method "getAddress", has []',
   });
 });
@@ -253,16 +253,16 @@ test('asPromise handles watcher arguments', async t => {
   t.true(watcherCalled);
 });
 
-test('allVows handles unstorable results', async t => {
+test('vowTools.all handles unstorable results', async t => {
   const zone = makeHeapZone();
-  const { watch, when, allVows } = prepareBasicVowTools(zone);
+  const { watch, when, all } = prepareBasicVowTools(zone);
 
   const nonPassable = () => 'i am a function';
 
   const specimenA = Promise.resolve('i am a promise');
   const specimenB = watch(nonPassable);
 
-  const result = await when(allVows([specimenA, specimenB]));
+  const result = await when(all([specimenA, specimenB]));
   t.is(result.length, 2);
   t.is(result[0], 'i am a promise');
   t.is(result[1], nonPassable);
