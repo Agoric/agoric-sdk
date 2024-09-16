@@ -129,11 +129,6 @@ export interface StakingAccountQueries {
 
   getRedelegations: () => Promise<Redelegation[]>;
 
-  getRedelegation: (
-    srcValidator: CosmosValidatorAddress,
-    dstValidator?: CosmosValidatorAddress,
-  ) => Promise<Redelegation>;
-
   /**
    * Get the pending rewards for the account.
    * @returns the amounts of the account's rewards pending from all validators
