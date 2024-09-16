@@ -27,7 +27,7 @@ Here they are: {
 ```
 
 You can use `heapVowE` exported from `@agoric/vow`, which converts a chain of
-promises and vows to a promise for its final fulfilment, by unwrapping any
+promises and vows to a promise for its final fulfillment, by unwrapping any
 intermediate vows:
 
 ```js
@@ -75,6 +75,67 @@ const { watch, makeVowKit } = prepareVowTools(vowZone);
 
 // Now the functions have been bound to the durable baggage.
 // Vows and resolvers you create can be saved in durable stores.
+```
+
+## VowTools
+
+VowTools are a set of utility functions for working with Vows in Agoric smart contracts and vats. These tools help manage asynchronous operations in a way that's resilient to vat upgrades, ensuring your smart contract can handle long-running processes reliably.
+
+### Usage
+
+VowTools are typically prepared in the start function of a smart contract or vat and passed in as a power to exos.
+
+
+```javascript
+import { prepareVowTools } from '@agoric/vow/vat.js';
+import { makeDurableZone } from '@agoric/zone/durable.js';
+
+export const start = async (zcf, privateArgs, baggage) => {
+  const zone = makeDurableZone(baggage);
+  const vowTools = prepareVowTools(zone.subZone('vows'));  
+
+  // Use vowTools here...
+}
+```
+
+### Available Tools
+
+#### `when(vowOrPromise)`
+Returns a Promise for the fulfillment of the very end of the `vowOrPromise` chain.  It can retry disconnections due to upgrades of other vats, but cannot survive the upgrade of the calling vat.
+
+#### `watch(promiseOrVow, [watcher], [context])`
+Watch a Vow and optionally provide a `watcher` with `onFulfilled`/`onRejected` handlers and a `context` value for the handlers. When handlers are not provided the fulfillment or rejection will simply pass through.
+
+It also registers pending Promises, so if the current vat is upgraded, the watcher is rejected because the Promise was lost when the heap was reset.
+
+#### `all(arrayOfPassables, [watcher], [context])`
+Vow-tolerant implementation of Promise.all that takes an iterable of vows and other Passables and returns a single Vow.  It resolves with an array of values when all of the input's promises or vows are fulfilled and rejects with the first rejection reason when any of the input's promises or vows are rejected.
+
+#### `allSettled(arrayOfPassables, [watcher], [context])`
+Vow-tolerant implementation of Promise.allSettled that takes an iterable of vows and other Passables and returns a single Vow.  It resolves when all of the input's promises or vows are settled with an array of settled outcome objects.
+
+#### `asVow(fn)`
+Takes a function that might return synchronously, throw an Error, or return a Promise or Vow and returns a Vow.
+
+#### `asPromise(vow)`
+Converts a Vow back into a Promise.
+
+### Example
+
+```javascript
+const { when, watch, all, allSettled } = vowTools;
+
+// Using watch to create a Vow
+const myVow = watch(someAsyncOperation());
+
+// Using when to resolve a Vow
+const result = await when(myVow);
+
+// Using all
+const results = await when(all([vow, vowForVow, promise]));
+
+// Using allSettled
+const outcomes = await when(allSettled([vow, vowForVow, promise]));
 ```
 
 ## Internals
