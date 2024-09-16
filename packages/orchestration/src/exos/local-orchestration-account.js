@@ -387,8 +387,10 @@ export const prepareLocalOrchestrationAccountKit = (
        */
       queryBalancesWatcher: {
         /**
-         * @param {ResponseTo<
-         *   TypedJson<'/cosmos.bank.v1beta1.QueryAllBalancesRequest'>
+         * @param {JsonSafe<
+         *   ResponseTo<
+         *     TypedJson<'/cosmos.bank.v1beta1.QueryAllBalancesRequest'>
+         *   >
          * >} result
          * @returns {DenomAmount[]}
          */
