@@ -252,3 +252,15 @@ test('asPromise handles watcher arguments', async t => {
   t.is(result, 'watcher test');
   t.true(watcherCalled);
 });
+
+test('allVows handles unstorable results', async t => {
+  const zone = makeHeapZone();
+  const { watch, when, allVows } = prepareBasicVowTools(zone);
+
+  const specimenA = Promise.resolve('promise');
+  const specimenB = watch(() => 'function');
+
+  await t.throwsAsync(when(allVows([specimenA, specimenB])), {
+    message: '1 unstorable results were lost ',
+  });
+});
