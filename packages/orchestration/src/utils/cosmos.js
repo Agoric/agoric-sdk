@@ -3,7 +3,7 @@ import { decodeBase64 } from '@endo/base64';
 import { Any } from '@agoric/cosmic-proto/google/protobuf/any.js';
 
 /**
- * @import {DenomAmount} from '../types.js';
+ * @import {CosmosValidatorAddress, DenomAmount} from '../types.js';
  * @import {Coin} from '@agoric/cosmic-proto/cosmos/base/v1beta1/coin.js'
  */
 
@@ -33,3 +33,18 @@ export const tryDecodeResponse = (ackStr, fromProtoMsg) => {
  * @type {(c: { denom: string; amount: string }) => DenomAmount}
  */
 export const toDenomAmount = c => ({ denom: c.denom, value: BigInt(c.amount) });
+
+/**
+ * Transform a cosmos-sdk `{validatorAddress}` object into an Orchestration
+ * {@link CosmosValidatorAddress}
+ *
+ * @type {(
+ *   r: { validatorAddress: string },
+ *   chainId: string,
+ * ) => CosmosValidatorAddress}
+ */
+export const toCosmosValidatorAddress = (r, chainId) => ({
+  encoding: 'bech32',
+  value: /** @type {CosmosValidatorAddress['value']} */ (r.validatorAddress),
+  chainId,
+});
