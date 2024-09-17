@@ -6,6 +6,8 @@ import path from 'path';
 import { inspectMapStore } from '@agoric/internal/src/testing-utils.js';
 import { QueryDelegatorDelegationsResponse } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/query.js';
 import { MsgUndelegateResponse } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/tx.js';
+import { MsgTransferResponse } from '@agoric/cosmic-proto/ibc/applications/transfer/v1/tx.js';
+import { QueryBalanceResponse } from '@agoric/cosmic-proto/cosmos/bank/v1beta1/query.js';
 import { commonSetup } from '../supports.js';
 import {
   buildMsgResponseString,
@@ -50,6 +52,12 @@ test('start', async t => {
         makeDelegationsResponse(),
       'eyJ0eXBlIjoxLCJkYXRhIjoiQ2xzS0pTOWpiM050YjNNdWMzUmhhMmx1Wnk1Mk1XSmxkR0V4TGsxeloxVnVaR1ZzWldkaGRHVVNNZ29MWTI5emJXOXpNWFJsYzNRU0VXTnZjMjF2YzNaaGJHOXdaWEl4ZUhsNkdoQUtCWFZ2YzIxdkVnY3hNREF3TURBdyIsIm1lbW8iOiIifQ==':
         makeUndelegateResponse(),
+      'eyJkYXRhIjoiQ2pvS0ZBb0xZMjl6Ylc5ek1YUmxjM1FTQlhWdmMyMXZFaUl2WTI5emJXOXpMbUpoYm1zdWRqRmlaWFJoTVM1UmRXVnllUzlDWVd4aGJtTmwiLCJtZW1vIjoiIn0=':
+        buildQueryResponseString(QueryBalanceResponse, {
+          balance: { denom: 'uosmo', amount: '1234' },
+        }),
+      'eyJ0eXBlIjoxLCJkYXRhIjoiQ25rS0tTOXBZbU11WVhCd2JHbGpZWFJwYjI1ekxuUnlZVzV6Wm1WeUxuWXhMazF6WjFSeVlXNXpabVZ5RWt3S0NIUnlZVzV6Wm1WeUVndGphR0Z1Ym1Wc0xUTXlOaG9OQ2dWMWIzTnRieElFTVRJek5DSUxZMjl6Ylc5ek1YUmxjM1FxREdOdmMyMXZjekYwWlhOME1USUFPSUR3MXRUQ3pySUciLCJtZW1vIjoiIn0=':
+        buildMsgResponseString(MsgTransferResponse, {}),
     };
   };
 
