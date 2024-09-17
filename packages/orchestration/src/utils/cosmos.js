@@ -31,8 +31,20 @@ export const tryDecodeResponse = (ackStr, fromProtoMsg) => {
  * Transform a cosmos-sdk {@link Coin} object into a {@link DenomAmount}
  *
  * @type {(c: { denom: string; amount: string }) => DenomAmount}
+ * @see {@link toTruncatedDenomAmount} for DecCoin
  */
 export const toDenomAmount = c => ({ denom: c.denom, value: BigInt(c.amount) });
+
+/**
+ * Transform a cosmos-sdk {@link DecCoin} object into a {@link DenomAmount}, by
+ * truncating the fractional portion.
+ *
+ * @type {(c: { denom: string; amount: string }) => DenomAmount}
+ */
+export const toTruncatedDenomAmount = c => ({
+  denom: c.denom,
+  value: BigInt(c.amount.split('.')[0]),
+});
 
 /**
  * Transform a cosmos-sdk `{validatorAddress}` object into an Orchestration
