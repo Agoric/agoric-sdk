@@ -15,6 +15,24 @@ import {
   QueryBalanceResponse,
 } from '@agoric/cosmic-proto/cosmos/bank/v1beta1/query.js';
 import { Coin } from '@agoric/cosmic-proto/cosmos/base/v1beta1/coin.js';
+import {
+  QueryDelegationRequest,
+  QueryDelegatorDelegationsRequest,
+  QueryUnbondingDelegationRequest,
+  QueryDelegatorUnbondingDelegationsRequest,
+  QueryRedelegationsRequest,
+  QueryDelegationResponse,
+  QueryDelegatorDelegationsResponse,
+  QueryUnbondingDelegationResponse,
+  QueryDelegatorUnbondingDelegationsResponse,
+  QueryRedelegationsResponse,
+} from '@agoric/cosmic-proto/cosmos/staking/v1beta1/query.js';
+import {
+  QueryDelegationRewardsRequest,
+  QueryDelegationTotalRewardsRequest,
+  QueryDelegationRewardsResponse,
+  QueryDelegationTotalRewardsResponse,
+} from '@agoric/cosmic-proto/cosmos/distribution/v1beta1/query.js';
 import { commonSetup } from '../supports.js';
 import type {
   AmountArg,
@@ -29,6 +47,7 @@ import {
   buildTxPacketString,
   parseOutgoingTxPacket,
 } from '../../tools/ibc-mocks.js';
+import type { CosmosValidatorAddress } from '../../src/cosmos-api.js';
 
 type TestContext = Awaited<ReturnType<typeof commonSetup>>;
 
@@ -412,6 +431,374 @@ test('getBalance and getBalances', async t => {
       message: 'Queries not available for chain "cosmoshub-4"',
     });
   }
+});
+
+test('StakingAccountQueries', async t => {
+  const {
+    mocks: { ibcBridge },
+  } = t.context;
+  const makeTestCOAKit = prepareMakeTestCOAKit(t, t.context);
+
+  const buildMocks = () => {
+    const mockValidator: CosmosValidatorAddress = {
+      value: 'cosmosvaloper1xyz',
+      chainId: 'cosmoshub-4',
+      encoding: 'bech32',
+    };
+
+    const makeDelegationReq = () =>
+      buildQueryPacketString([
+        QueryDelegationRequest.toProtoMsg({
+          delegatorAddr: 'cosmos1test',
+          validatorAddr: mockValidator.value,
+        }),
+      ]);
+
+    const makeDelegationsReq = () =>
+      buildQueryPacketString([
+        QueryDelegatorDelegationsRequest.toProtoMsg({
+          delegatorAddr: 'cosmos1test',
+        }),
+      ]);
+
+    const makeUnbondingDelegationReq = () =>
+      buildQueryPacketString([
+        QueryUnbondingDelegationRequest.toProtoMsg({
+          delegatorAddr: 'cosmos1test',
+          validatorAddr: mockValidator.value,
+        }),
+      ]);
+
+    const makeUnbondingDelegationsReq = () =>
+      buildQueryPacketString([
+        QueryDelegatorUnbondingDelegationsRequest.toProtoMsg({
+          delegatorAddr: 'cosmos1test',
+        }),
+      ]);
+
+    const makeRedelegationReq = () =>
+      buildQueryPacketString([
+        QueryRedelegationsRequest.toProtoMsg({
+          delegatorAddr: 'cosmos1test',
+          srcValidatorAddr: mockValidator.value,
+          // XXX need to provide dstValidatorAddr
+          dstValidatorAddr: mockValidator.value,
+        }),
+      ]);
+
+    const makeRedelegationsReq = () =>
+      buildQueryPacketString([
+        QueryRedelegationsRequest.toProtoMsg({
+          delegatorAddr: 'cosmos1test',
+          // Protobufs require these to be strings but they can be empty
+          srcValidatorAddr: '',
+          dstValidatorAddr: '',
+        }),
+      ]);
+
+    const makeRewardReq = () =>
+      buildQueryPacketString([
+        QueryDelegationRewardsRequest.toProtoMsg({
+          delegatorAddress: 'cosmos1test',
+          validatorAddress: mockValidator.value,
+        }),
+      ]);
+
+    const makeRewardsReq = () =>
+      buildQueryPacketString([
+        QueryDelegationTotalRewardsRequest.toProtoMsg({
+          delegatorAddress: 'cosmos1test',
+        }),
+      ]);
+
+    return {
+      [makeDelegationReq()]: buildQueryResponseString(QueryDelegationResponse, {
+        delegationResponse: {
+          delegation: {
+            delegatorAddress: 'cosmos1test',
+            validatorAddress: mockValidator.value,
+            shares: '1000000',
+          },
+          balance: { denom: 'uatom', amount: '1000000' },
+        },
+      }),
+      [makeDelegationsReq()]: buildQueryResponseString(
+        QueryDelegatorDelegationsResponse,
+        {
+          delegationResponses: [
+            {
+              delegation: {
+                delegatorAddress: 'cosmos1test',
+                validatorAddress: mockValidator.value,
+                shares: '1000000',
+              },
+              balance: { denom: 'uatom', amount: '1000000' },
+            },
+          ],
+        },
+      ),
+      [makeUnbondingDelegationReq()]: buildQueryResponseString(
+        QueryUnbondingDelegationResponse,
+        {
+          unbond: {
+            delegatorAddress: 'cosmos1test',
+            validatorAddress: mockValidator.value,
+            entries: [
+              {
+                creationHeight: 100n,
+                completionTime: { seconds: 1672531200n, nanos: 0 },
+                initialBalance: '2000000',
+                balance: '1900000',
+              },
+            ],
+          },
+        },
+      ),
+      [makeUnbondingDelegationsReq()]: buildQueryResponseString(
+        QueryDelegatorUnbondingDelegationsResponse,
+        {
+          unbondingResponses: [
+            {
+              delegatorAddress: 'cosmos1test',
+              validatorAddress: mockValidator.value,
+              entries: [
+                {
+                  creationHeight: 100n,
+                  completionTime: { seconds: 1672531200n, nanos: 0 },
+                  initialBalance: '2000000',
+                  balance: '1900000',
+                },
+              ],
+            },
+          ],
+        },
+      ),
+      [makeRedelegationReq()]: buildQueryResponseString(
+        QueryRedelegationsResponse,
+        {
+          redelegationResponses: [
+            {
+              redelegation: {
+                delegatorAddress: 'cosmos1test',
+                validatorSrcAddress: mockValidator.value,
+                validatorDstAddress: 'cosmosvaloper1abc',
+                entries: [
+                  {
+                    creationHeight: 200n,
+                    completionTime: { seconds: 1675209600n, nanos: 0 },
+                    initialBalance: '3000000',
+                    sharesDst: '2900000',
+                  },
+                ],
+              },
+              entries: [
+                {
+                  redelegationEntry: {
+                    creationHeight: 200n,
+                    completionTime: { seconds: 1675209600n, nanos: 0 },
+                    initialBalance: '3000000',
+                    sharesDst: '2900000',
+                  },
+                  balance: '2900000',
+                },
+              ],
+            },
+          ],
+        },
+      ),
+      [makeRedelegationsReq()]: buildQueryResponseString(
+        QueryRedelegationsResponse,
+        {
+          redelegationResponses: [
+            {
+              redelegation: {
+                delegatorAddress: 'cosmos1test',
+                validatorSrcAddress: '',
+                validatorDstAddress: '',
+                entries: [
+                  {
+                    creationHeight: 200n,
+                    completionTime: { seconds: 1675209600n, nanos: 0 },
+                    initialBalance: '3000000',
+                    sharesDst: '2900000',
+                  },
+                ],
+              },
+              entries: [
+                {
+                  redelegationEntry: {
+                    creationHeight: 200n,
+                    completionTime: { seconds: 1675209600n, nanos: 0 },
+                    initialBalance: '3000000',
+                    sharesDst: '2900000',
+                  },
+                  balance: '2900000',
+                },
+              ],
+            },
+          ],
+        },
+      ),
+      [makeRewardReq()]: buildQueryResponseString(
+        QueryDelegationRewardsResponse,
+        {
+          rewards: [
+            {
+              denom: 'uatom',
+              // Rewards may be fractional, from operations like inflation
+              amount: '500000.01',
+            },
+          ],
+        },
+      ),
+      [makeRewardsReq()]: buildQueryResponseString(
+        QueryDelegationTotalRewardsResponse,
+        {
+          rewards: [
+            {
+              validatorAddress: mockValidator.value,
+              reward: [{ denom: 'uatom', amount: '500000' }],
+            },
+          ],
+          total: [{ denom: 'uatom', amount: '500000' }],
+        },
+      ),
+    };
+  };
+
+  ibcBridge.setMockAck(buildMocks());
+  ibcBridge.setAddressPrefix('cosmos');
+
+  const account = await makeTestCOAKit({
+    chainId: 'cosmoshub-4',
+    icqEnabled: true,
+  });
+  t.assert(account, 'account is returned');
+
+  const mockValidator: CosmosValidatorAddress = {
+    value: 'cosmosvaloper1xyz',
+    chainId: 'cosmoshub-4',
+    encoding: 'bech32',
+  };
+
+  // Test getDelegation
+  const delegationResult = await E(account).getDelegation(mockValidator);
+  t.deepEqual(delegationResult, {
+    amount: { denom: 'uatom', value: 1000000n },
+    delegator: {
+      chainId: 'cosmoshub-4',
+      encoding: 'bech32',
+      value: 'cosmos1test',
+    },
+    validator: {
+      chainId: 'cosmoshub-4',
+      encoding: 'bech32',
+      value: mockValidator.value,
+    },
+  });
+
+  // Test getDelegations
+  const delegationsResult = await E(account).getDelegations();
+  t.deepEqual(delegationsResult, [
+    {
+      amount: { denom: 'uatom', value: 1000000n },
+
+      delegator: {
+        chainId: 'cosmoshub-4',
+        encoding: 'bech32',
+        value: 'cosmos1test',
+      },
+      validator: {
+        chainId: 'cosmoshub-4',
+        encoding: 'bech32',
+        value: mockValidator.value,
+      },
+    },
+  ]);
+
+  // Test getUnbondingDelegation
+  const unbondingDelegationResult =
+    await E(account).getUnbondingDelegation(mockValidator);
+  t.deepEqual(unbondingDelegationResult, {
+    delegatorAddress: 'cosmos1test',
+    validatorAddress: mockValidator.value,
+    entries: [
+      {
+        creationHeight: 100n,
+        completionTime: { seconds: 1672531200n, nanos: 0 },
+        initialBalance: '2000000',
+        balance: '1900000',
+      },
+    ],
+  });
+
+  // Test getUnbondingDelegations
+  const unbondingDelegationsResult = await E(account).getUnbondingDelegations();
+  t.deepEqual(unbondingDelegationsResult, [
+    {
+      delegatorAddress: 'cosmos1test',
+      validatorAddress: mockValidator.value,
+      entries: [
+        {
+          creationHeight: 100n,
+          completionTime: { seconds: 1672531200n, nanos: 0 },
+          initialBalance: '2000000',
+          balance: '1900000',
+        },
+      ],
+    },
+  ]);
+
+  // Test getRedelegations
+  const redelegationsResult = await E(account).getRedelegations();
+  t.deepEqual(redelegationsResult, [
+    {
+      redelegation: {
+        delegatorAddress: 'cosmos1test',
+        validatorSrcAddress: '',
+        validatorDstAddress: '',
+        entries: [
+          {
+            creationHeight: 200n,
+            completionTime: { seconds: 1675209600n, nanos: 0 },
+            initialBalance: '3000000',
+            sharesDst: '2900000',
+          },
+        ],
+      },
+      entries: [
+        {
+          redelegationEntry: {
+            creationHeight: 200n,
+            completionTime: { seconds: 1675209600n, nanos: 0 },
+            initialBalance: '3000000',
+            sharesDst: '2900000',
+          },
+          balance: '2900000',
+        },
+      ],
+    },
+  ]);
+
+  // Test getReward
+  const rewardResult = await E(account).getReward(mockValidator);
+  t.deepEqual(rewardResult, [{ denom: 'uatom', value: 500000n }]);
+
+  // Test getRewards
+  const rewardsResult = await E(account).getRewards();
+  t.deepEqual(rewardsResult, {
+    rewards: [
+      {
+        validator: {
+          encoding: 'bech32',
+          value: mockValidator.value,
+          chainId: 'cosmoshub-4',
+        },
+        reward: [{ denom: 'uatom', value: 500000n }],
+      },
+    ],
+    total: [{ denom: 'uatom', value: 500000n }],
+  });
 });
 
 test('not yet implemented', async t => {

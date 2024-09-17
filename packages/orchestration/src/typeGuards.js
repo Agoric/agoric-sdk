@@ -137,10 +137,13 @@ export const AmountArgShape = M.or(AnyNatAmountShape, DenomAmountShape);
  *   amount: AmountArg;
  * }>}
  */
-export const DelegationShape = harden({
-  validator: ChainAddressShape,
-  amount: AmountArgShape,
-});
+export const DelegationShape = M.splitRecord(
+  {
+    validator: ChainAddressShape,
+    amount: AmountArgShape,
+  },
+  { delegator: ChainAddressShape },
+);
 
 /** Approximately @see RequestQuery */
 export const ICQMsgShape = M.splitRecord(
