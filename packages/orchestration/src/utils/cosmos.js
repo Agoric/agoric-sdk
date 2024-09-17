@@ -3,8 +3,9 @@ import { decodeBase64 } from '@endo/base64';
 import { Any } from '@agoric/cosmic-proto/google/protobuf/any.js';
 
 /**
- * @import {CosmosValidatorAddress, DenomAmount} from '../types.js';
+ * @import {CosmosDelegationResponse, CosmosValidatorAddress, DenomAmount} from '../types.js';
  * @import {Coin} from '@agoric/cosmic-proto/cosmos/base/v1beta1/coin.js'
+ * @import {DelegationResponse} from '@agoric/cosmic-proto/cosmos/staking/v1beta1/staking.js';
  */
 
 /** maximum clock skew, in seconds, for unbonding time reported from other chain */
@@ -59,4 +60,23 @@ export const toCosmosValidatorAddress = (r, chainId) => ({
   encoding: 'bech32',
   value: /** @type {CosmosValidatorAddress['value']} */ (r.validatorAddress),
   chainId,
+});
+
+/**
+ * Transform a cosmos-sdk {@link DelegationResponse} object into an Orchestration
+ * {@link CosmosDelegationResponse}
+ *
+ * @type {(
+ *   chainInfo: { chainId: string },
+ *   r: DelegationResponse,
+ * ) => CosmosDelegationResponse}
+ */
+export const toCosmosDelegationResponse = ({ chainId }, r) => ({
+  delegator: {
+    chainId,
+    encoding: 'bech32',
+    value: r.delegation.delegatorAddress,
+  },
+  validator: toCosmosValidatorAddress(r.delegation, chainId),
+  amount: toDenomAmount(r.balance),
 });
