@@ -7,14 +7,14 @@ import {
   makeTracer,
   NonNullish,
 } from '@agoric/internal';
-import { E } from '@endo/far';
+import { E, Far } from '@endo/far';
 
 /// <reference types="@agoric/vats/src/core/types-ambient"/>
 /**
  * @import {Installation, Instance} from '@agoric/zoe/src/zoeService/utils.js';
  */
 
-const trace = makeTracer('StartBuggySA', true);
+const trace = makeTracer('FixBuggySA', true);
 
 /**
  * @import {start as StartFn} from '@agoric/orchestration/src/examples/send-anywhere.contract.js';
@@ -53,9 +53,17 @@ export const fixSendAnywhere = async (
 
   const marshaller = await E(board).getReadonlyMarshaller();
 
+  // This apparently pointless wrapper is to maintain structural parity
+  // with the buggy core-eval's wrapper to make lookup() hang.
+  const agoricNamesResolves = Far('agoricNames that resolves', {
+    lookup: async (...args) => {
+      return E(agoricNames).lookup(...args);
+    },
+  });
+
   const privateArgs = await deeplyFulfilledObject(
     harden({
-      agoricNames,
+      agoricNames: agoricNamesResolves,
       localchain,
       marshaller,
       orchestrationService: cosmosInterchainService,

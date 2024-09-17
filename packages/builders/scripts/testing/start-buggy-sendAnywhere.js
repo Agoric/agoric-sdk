@@ -65,7 +65,6 @@ export const startSendAnywhere = async ({
   );
 
   const agoricNamesHangs = Far('agoricNames that hangs', {
-    // ...privateArgs.agoricNames,
     lookup: async () => {
       trace('agoricNames.lookup being called that will never resolve');
       // BUG: this never resolves
