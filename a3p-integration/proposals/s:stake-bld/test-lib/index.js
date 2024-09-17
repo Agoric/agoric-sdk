@@ -1,5 +1,4 @@
-/* global setTimeout */
-import fetch from 'node-fetch';
+/* eslint-env node */
 import { execFileSync } from 'child_process';
 import { makeWalletUtils } from './wallet.js';
 

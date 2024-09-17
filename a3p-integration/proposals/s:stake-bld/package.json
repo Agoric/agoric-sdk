@@ -18,8 +18,7 @@
     "@endo/init": "^1.0.4",
     "agoric": "0.21.2-dev-5676146.0",
     "ava": "^5.3.1",
-    "execa": "^8.0.1",
-    "node-fetch": "^3.3.2"
+    "execa": "^8.0.1"
   },
   "ava": {
     "concurrency": 1

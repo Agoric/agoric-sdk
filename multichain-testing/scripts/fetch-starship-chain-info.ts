@@ -1,14 +1,12 @@
 #!/usr/bin/env tsx
+/* eslint-env node */
 
-import nodeFetch from 'node-fetch';
 import fsp from 'node:fs/promises';
 import prettier from 'prettier';
 
 import { convertChainInfo } from '@agoric/orchestration/src/utils/registry.js';
 
 import type { IBCInfo, Chains } from '@chain-registry/types';
-
-const fetch = nodeFetch.default;
 
 /**
  * Chain registry running in Starship

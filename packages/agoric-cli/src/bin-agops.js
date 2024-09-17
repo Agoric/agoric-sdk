@@ -6,7 +6,6 @@
 
 import '@endo/init/pre.js';
 
-import '@agoric/casting/node-fetch-shim.js';
 import '@endo/init';
 
 import { E } from '@endo/far';

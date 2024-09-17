@@ -155,7 +155,7 @@ test('missing rpc server', async t => {
         jitter: null,
       }),
     {
-      message: /^invalid json response body/,
+      message: /^Unexpected token/,
     },
   );
 });
