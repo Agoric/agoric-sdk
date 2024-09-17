@@ -1,7 +1,8 @@
-import { E } from '@endo/eventual-send';
 import { assert, X } from '@endo/errors';
+import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
-import { makeIssuerKit, AmountMath } from '../../../src/index.js';
+
+import { AmountMath, makeIssuerKit } from '../../../src/index.js';
 
 export function buildRootObject(vatPowers, vatParameters) {
   const arg0 = vatParameters.argv[0];

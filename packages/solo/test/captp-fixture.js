@@ -1,9 +1,8 @@
 /* global process setTimeout */
+import { getAccessToken } from '@agoric/access-token';
+import { E, makeCapTP } from '@endo/captp';
 import { spawn } from 'child_process';
 import WebSocket from 'ws';
-import { makeCapTP, E } from '@endo/captp';
-
-import { getAccessToken } from '@agoric/access-token';
 
 // Ensure we're all using the same HandledPromise.
 export { E };

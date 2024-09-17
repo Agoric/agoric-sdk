@@ -1,11 +1,12 @@
 // @ts-check
 import test from 'ava';
-import tmp from 'tmp';
 import { Buffer } from 'buffer';
-import { createSHA256 } from '../src/hasher.js';
-import { initSwingStore } from '../src/swingStore.js';
+import tmp from 'tmp';
+
 import { makeSwingStoreExporter } from '../src/exporter.js';
+import { createSHA256 } from '../src/hasher.js';
 import { importSwingStore } from '../src/importer.js';
+import { initSwingStore } from '../src/swingStore.js';
 import { buffer } from '../src/util.js';
 
 function makeB0ID(bundle) {

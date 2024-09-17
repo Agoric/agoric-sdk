@@ -1,11 +1,11 @@
 // @ts-nocheck
-import fs from 'fs';
-import zlib from 'zlib';
-import readline from 'readline';
-import process from 'process';
 import '@endo/init';
 
 import { decodeBase64 } from '@endo/base64';
+import fs from 'fs';
+import process from 'process';
+import readline from 'readline';
+import zlib from 'zlib';
 
 // Given a transcript (produced by
 // e.g. extract-transcript-from-slogfile.js), which is assumed to be a

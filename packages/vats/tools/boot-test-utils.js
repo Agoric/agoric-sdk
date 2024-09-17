@@ -1,14 +1,12 @@
-import { Fail } from '@endo/errors';
-import { E } from '@endo/far';
-import { Far } from '@endo/marshal';
-
+import { makeScalarBigMapStore } from '@agoric/vat-data';
 import {
   makeFakeVatAdmin,
   zcfBundleCap,
 } from '@agoric/zoe/tools/fakeVatAdmin.js';
 import { buildZoeManualTimer } from '@agoric/zoe/tools/manualTimer.js';
-import { makeScalarBigMapStore } from '@agoric/vat-data';
-import { bundles, devices } from '../test/devices.js';
+import { Fail } from '@endo/errors';
+import { E } from '@endo/far';
+import { Far } from '@endo/marshal';
 
 import { buildRootObject as agoricNamesRoot } from '../src/vat-agoricNames.js';
 import { buildRootObject as bankRoot } from '../src/vat-bank.js';
@@ -19,6 +17,7 @@ import { buildRootObject as networkRoot } from '../src/vat-network.js';
 import { buildRootObject as priceAuthorityRoot } from '../src/vat-priceAuthority.js';
 import { buildRootObject as provisioningRoot } from '../src/vat-provisioning.js';
 import { buildRootObject as zoeRoot } from '../src/vat-zoe.js';
+import { bundles, devices } from '../test/devices.js';
 
 export const vatRoots = {
   agoricNames: agoricNamesRoot,

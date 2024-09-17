@@ -1,7 +1,7 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
-import { Far } from '@endo/marshal';
 
-import { makeIssuerKit, AssetKind, AmountMath } from '@agoric/ertp';
+import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
+import { Far } from '@endo/marshal';
 
 import { burnInvitation } from '../../../src/zoeService/offer/burnInvitation.js';
 

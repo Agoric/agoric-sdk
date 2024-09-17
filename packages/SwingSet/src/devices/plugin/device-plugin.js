@@ -1,5 +1,5 @@
-import { Fail } from '@endo/errors';
 import { makeCapTP } from '@endo/captp';
+import { Fail } from '@endo/errors';
 import { Far } from '@endo/far';
 
 export function buildRootDeviceNode(tools) {

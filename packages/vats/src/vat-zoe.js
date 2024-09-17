@@ -1,5 +1,5 @@
-import { Far } from '@endo/far';
 import { makeDurableZoeKit } from '@agoric/zoe';
+import { Far } from '@endo/far';
 
 const BUILD_PARAMS_KEY = 'buildZoeParams';
 

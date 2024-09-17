@@ -1,4 +1,5 @@
 import './lockdown.js';
+
 import { wrapTest } from '@endo/ses-ava';
 import rawTest from 'ava';
 

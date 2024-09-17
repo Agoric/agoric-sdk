@@ -1,10 +1,11 @@
 // @ts-check
-import { Fail, b } from '@endo/errors';
+import { VTRANSFER_IBC_EVENT } from '@agoric/internal/src/action-types.js';
+import { byteSourceToBase64, coerceToByteSource } from '@agoric/network';
+import { b, Fail } from '@endo/errors';
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
-import { VTRANSFER_IBC_EVENT } from '@agoric/internal/src/action-types.js';
-import { coerceToByteSource, byteSourceToBase64 } from '@agoric/network';
-import { TargetAppI, AppTransformerI } from './bridge-target.js';
+
+import { AppTransformerI, TargetAppI } from './bridge-target.js';
 
 /**
  * @import {TargetApp, TargetHost} from './bridge-target.js'

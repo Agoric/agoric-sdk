@@ -1,5 +1,5 @@
 import { assert } from '@endo/errors';
-import { Far, E } from '@endo/far';
+import { E, Far } from '@endo/far';
 import { importBundle } from '@endo/import-bundle';
 
 export function buildRootObject(vatPowers) {

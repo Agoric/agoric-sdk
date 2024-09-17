@@ -1,4 +1,5 @@
 import { makeHelpers } from '@agoric/deploy-script-support';
+
 import { defaultProposalBuilder as vaultProposalBuilder } from '../inter-protocol/add-collateral-core.js';
 
 /** @file This is for use in tests in a3p-integration */

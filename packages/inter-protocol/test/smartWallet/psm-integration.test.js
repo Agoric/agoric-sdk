@@ -1,14 +1,15 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
-import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
-import { E } from '@endo/far';
 import { NonNullish } from '@agoric/internal';
-import { keyEQ } from '@agoric/store';
-
-import { coalesceUpdates } from '@agoric/smart-wallet/src/utils.js';
+import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { Stable } from '@agoric/internal/src/tokens.js';
+import { coalesceUpdates } from '@agoric/smart-wallet/src/utils.js';
+import { keyEQ } from '@agoric/store';
+import { E } from '@endo/far';
+
 import { INVITATION_MAKERS_DESC } from '../../src/econCommitteeCharter.js';
+import { headValue, sequenceCurrents, withAmountUtils } from '../supports.js';
 import { buildRootObject as buildPSMRootObject } from './boot-psm.js';
 import {
   currentPurseBalance,
@@ -16,7 +17,6 @@ import {
   makeDefaultTestContext,
   voteForOpenQuestion,
 } from './contexts.js';
-import { headValue, sequenceCurrents, withAmountUtils } from '../supports.js';
 
 /**
  * @type {import('ava').TestFn<

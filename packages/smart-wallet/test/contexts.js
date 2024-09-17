@@ -1,9 +1,10 @@
 import { BridgeId, deeplyFulfilledObject } from '@agoric/internal';
-import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
 import { makeStorageNodeChild } from '@agoric/internal/src/lib-chainStorage.js';
+import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
+import { makeScopedBridge } from '@agoric/vats';
 import { E } from '@endo/far';
 import path from 'path';
-import { makeScopedBridge } from '@agoric/vats';
+
 import { withAmountUtils } from './supports.js';
 
 /**

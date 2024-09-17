@@ -1,14 +1,14 @@
 // @ts-nocheck
-// eslint-disable-next-line import/order
+
 import { test } from '../../../tools/prepare-test-env-ava.js';
 
 import { kser, kunser } from '@agoric/kmarshal';
 import { initSwingStore } from '@agoric/swing-store';
 
 import {
+  buildKernelBundles,
   buildVatController,
   loadSwingsetConfigFile,
-  buildKernelBundles,
 } from '../../../src/index.js';
 import { enumeratePrefixedKeys } from '../../../src/kernel/state/storageHelper.js';
 import { restartVatAdminVat } from '../../util.js';

@@ -1,13 +1,12 @@
 // @ts-check
 /* global process setTimeout setInterval clearInterval Buffer */
 
+import { makePromiseKit } from '@endo/promise-kit';
+import { spawn } from 'child_process';
 import fs from 'fs';
+import { request } from 'http';
 import path from 'path';
 import tmp from 'tmp';
-import { makePromiseKit } from '@endo/promise-kit';
-import { request } from 'http';
-
-import { spawn } from 'child_process';
 
 import { makePspawn } from '../src/helpers.js';
 

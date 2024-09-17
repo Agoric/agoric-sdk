@@ -5,7 +5,9 @@
 import fs from 'node:fs';
 import fsp from 'node:fs/promises';
 import path from 'node:path';
+
 import { Fail } from '@endo/errors';
+
 import { serializeSlogObj } from './serialize-slog-obj.js';
 
 export const DEFAULT_CBUF_SIZE = 100 * 1024 * 1024;

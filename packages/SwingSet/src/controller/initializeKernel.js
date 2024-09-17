@@ -1,20 +1,21 @@
 /* eslint-disable no-use-before-define */
 
-import { assert, Fail } from '@endo/errors';
-import { makeMarshal } from '@endo/marshal';
-import { Far } from '@endo/far';
 import { kser, kunser } from '@agoric/kmarshal';
-import { assertKnownOptions } from '../lib/assertOptions.js';
-import { insistVatID } from '../lib/id.js';
-import { makeVatSlot } from '../lib/parseVatSlots.js';
-import { insistStorageAPI } from '../lib/storageAPI.js';
-import { makeVatOptionRecorder } from '../lib/recordVatOptions.js';
+import { assert, Fail } from '@endo/errors';
+import { Far } from '@endo/far';
+import { makeMarshal } from '@endo/marshal';
+
+import { exportRootObject } from '../kernel/kernel.js';
+import { makeKernelQueueHandler } from '../kernel/kernelQueue.js';
 import makeKernelKeeper, {
   DEFAULT_DELIVERIES_PER_BOYD,
   DEFAULT_GC_KREFS_PER_BOYD,
 } from '../kernel/state/kernelKeeper.js';
-import { exportRootObject } from '../kernel/kernel.js';
-import { makeKernelQueueHandler } from '../kernel/kernelQueue.js';
+import { assertKnownOptions } from '../lib/assertOptions.js';
+import { insistVatID } from '../lib/id.js';
+import { makeVatSlot } from '../lib/parseVatSlots.js';
+import { makeVatOptionRecorder } from '../lib/recordVatOptions.js';
+import { insistStorageAPI } from '../lib/storageAPI.js';
 
 /**
  * @typedef { import('../types-external.js').SwingSetKernelConfig } SwingSetKernelConfig

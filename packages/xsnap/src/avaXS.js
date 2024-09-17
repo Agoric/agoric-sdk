@@ -8,12 +8,12 @@ Usage:
 
 import '@endo/init';
 
-import fs from 'fs';
-import { fileURLToPath } from 'url';
-import { tmpName } from 'tmp';
-
-import { assert, q, Fail } from '@endo/errors';
 import { getDebugLockdownBundle } from '@agoric/xsnap-lockdown';
+import { assert, Fail, q } from '@endo/errors';
+import fs from 'fs';
+import { tmpName } from 'tmp';
+import { fileURLToPath } from 'url';
+
 import { xsnap } from './xsnap.js';
 
 // scripts for use in xsnap subprocesses

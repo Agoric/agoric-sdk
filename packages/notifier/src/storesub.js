@@ -1,11 +1,12 @@
-import { E, Far } from '@endo/far';
-import { makeMarshal } from '@endo/marshal';
 import { assertAllDefined } from '@agoric/internal';
 import { makeSerializeToStorage } from '@agoric/internal/src/lib-chainStorage.js';
+import { E, Far } from '@endo/far';
+import { makeMarshal } from '@endo/marshal';
+
 import { observeIteration } from './asyncIterableAdaptor.js';
 import { makePublishKit } from './publish-kit.js';
-import { makeSubscriptionKit } from './subscriber.js';
 import { subscribeEach } from './subscribe.js';
+import { makeSubscriptionKit } from './subscriber.js';
 
 /**
  * @import {ERef} from '@endo/far';

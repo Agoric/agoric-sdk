@@ -1,17 +1,14 @@
 /* global globalThis */
 
+import { getLockdownBundle } from '@agoric/xsnap-lockdown';
 import test from 'ava';
-
 import * as proc from 'child_process';
-import * as os from 'os';
 import * as fs from 'fs';
+import * as os from 'os';
 import { tmpName } from 'tmp';
 
-import { getLockdownBundle } from '@agoric/xsnap-lockdown';
-
 import { xsnap } from '../src/xsnap.js';
-
-import { options, loader } from './message-tools.js';
+import { loader, options } from './message-tools.js';
 
 const io = { spawn: proc.spawn, os: os.type(), fs, tmpName }; // WARNING: ambient
 const ld = loader(import.meta.url, fs.promises.readFile);

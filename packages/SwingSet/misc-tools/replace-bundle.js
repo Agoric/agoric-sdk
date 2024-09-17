@@ -2,9 +2,10 @@
 // @ts-nocheck
 
 import '@endo/init';
-import process from 'process';
+
 import { openSwingStore } from '@agoric/swing-store';
 import bundleSource from '@endo/bundle-source';
+import process from 'process';
 
 const log = console.log;
 

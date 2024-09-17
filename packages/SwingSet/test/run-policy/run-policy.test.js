@@ -1,13 +1,14 @@
 // @ts-nocheck
-// eslint-disable-next-line import/order
+
 import { test } from '../../tools/prepare-test-env-ava.js';
 
-import { kslot, kser } from '@agoric/kmarshal';
+import { kser, kslot } from '@agoric/kmarshal';
 import { initSwingStore } from '@agoric/swing-store';
+
 import { initializeSwingset, makeSwingsetController } from '../../src/index.js';
 import {
-  crankCounter,
   computronCounter,
+  crankCounter,
   wallClockWaiter,
 } from '../../src/lib/runPolicies.js';
 

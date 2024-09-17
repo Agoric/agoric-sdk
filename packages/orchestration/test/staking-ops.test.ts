@@ -1,6 +1,5 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-import { Fail } from '@endo/errors';
 import type { AnyJson } from '@agoric/cosmic-proto';
 import type { Coin } from '@agoric/cosmic-proto/cosmos/base/v1beta1/coin.js';
 import { MsgWithdrawDelegatorRewardResponse } from '@agoric/cosmic-proto/cosmos/distribution/v1beta1/tx.js';
@@ -11,20 +10,23 @@ import {
   MsgUndelegateResponse,
 } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/tx.js';
 import { Any } from '@agoric/cosmic-proto/google/protobuf/any.js';
+import { Timestamp } from '@agoric/cosmic-proto/google/protobuf/timestamp.js';
 import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { makeNotifierFromSubscriber } from '@agoric/notifier';
 import type { TimestampRecord, TimestampValue } from '@agoric/time';
-import { makeScalarBigMapStore, type Baggage } from '@agoric/vat-data';
+import { type Baggage, makeScalarBigMapStore } from '@agoric/vat-data';
+import { makeNameHubKit } from '@agoric/vats';
 import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
-import { prepareVowTools, heapVowE as E } from '@agoric/vow/vat.js';
+import { heapVowE as E, prepareVowTools } from '@agoric/vow/vat.js';
 import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/recorder.js';
 import { buildZoeManualTimer } from '@agoric/zoe/tools/manualTimer.js';
 import { makeDurableZone } from '@agoric/zone/durable.js';
 import { decodeBase64, encodeBase64 } from '@endo/base64';
+import { Fail } from '@endo/errors';
 import { Far } from '@endo/far';
-import { Timestamp } from '@agoric/cosmic-proto/google/protobuf/timestamp.js';
-import { makeNameHubKit } from '@agoric/vats';
+
+import { makeChainHub } from '../src/exos/chain-hub.js';
 import { prepareCosmosOrchestrationAccountKit } from '../src/exos/cosmos-orchestration-account.js';
 import type {
   ChainAddress,
@@ -33,7 +35,6 @@ import type {
   ICQConnection,
 } from '../src/types.js';
 import { MILLISECONDS_PER_SECOND } from '../src/utils/time.js';
-import { makeChainHub } from '../src/exos/chain-hub.js';
 
 /**
  * @param {unknown} response

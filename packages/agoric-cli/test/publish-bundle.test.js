@@ -3,8 +3,8 @@
 
 import '@endo/init/debug.js';
 
-import * as http from 'http';
 import test from 'ava';
+import * as http from 'http';
 
 import { makeJsonHttpClient } from '../src/json-http-client-node.js';
 import {

@@ -1,20 +1,19 @@
-import process from 'node:process';
-import fs from 'node:fs';
-
 import '@endo/init/pre-bundle-source.js';
 import '@endo/init';
-
 import '@agoric/cosmic-swingset/src/launch-chain.js';
 
-import { Fail } from '@endo/errors';
-import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
-import { makeAgoricNamesRemotesFromFakeStorage } from '@agoric/vats/tools/board-utils.js';
-import { makeSwingsetTestKit } from '@agoric/boot/tools/supports.js';
+import fs from 'node:fs';
+import process from 'node:process';
+
 import {
-  makeWalletFactoryDriver,
   makeGovernanceDriver,
+  makeWalletFactoryDriver,
 } from '@agoric/boot/tools/drivers.js';
 import { makeLiquidationTestKit } from '@agoric/boot/tools/liquidation.js';
+import { makeSwingsetTestKit } from '@agoric/boot/tools/supports.js';
+import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
+import { makeAgoricNamesRemotesFromFakeStorage } from '@agoric/vats/tools/board-utils.js';
+import { Fail } from '@endo/errors';
 
 // When I was a child my family took a lot of roadtrips around California to go
 // camping and backpacking and so on.  It was not uncommon in those days (nor is

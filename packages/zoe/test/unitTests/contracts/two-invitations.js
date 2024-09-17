@@ -1,5 +1,5 @@
-import { M } from '@endo/patterns';
 import { makeExo } from '@endo/exo';
+import { M } from '@endo/patterns';
 
 /**
  * This contract just provides two invitations to support the test in

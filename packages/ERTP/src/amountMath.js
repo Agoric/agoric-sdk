@@ -1,11 +1,11 @@
-import { q, Fail } from '@endo/errors';
-import { passStyleOf, assertRemotable, assertRecord } from '@endo/marshal';
-
 import { M, matches } from '@agoric/store';
+import { Fail, q } from '@endo/errors';
+import { assertRecord, assertRemotable, passStyleOf } from '@endo/marshal';
+
+import { copyBagMathHelpers } from './mathHelpers/copyBagMathHelpers.js';
+import { copySetMathHelpers } from './mathHelpers/copySetMathHelpers.js';
 import { natMathHelpers } from './mathHelpers/natMathHelpers.js';
 import { setMathHelpers } from './mathHelpers/setMathHelpers.js';
-import { copySetMathHelpers } from './mathHelpers/copySetMathHelpers.js';
-import { copyBagMathHelpers } from './mathHelpers/copyBagMathHelpers.js';
 
 /**
  * @import {CopyBag, CopySet} from '@endo/patterns';

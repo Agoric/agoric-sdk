@@ -1,21 +1,22 @@
 // @ts-nocheck
+
 import { test } from '../tools/prepare-test-env-ava.js';
 
-// eslint-disable-next-line import/order
 import { kser, kslot } from '@agoric/kmarshal';
+
+import { makeCListKit } from '../src/vats/comms/clist.js';
+import { debugState } from '../src/vats/comms/dispatch.js';
 import buildCommsDispatch from '../src/vats/comms/index.js';
 import { flipRemoteSlot } from '../src/vats/comms/parseRemoteSlot.js';
 import { makeState } from '../src/vats/comms/state.js';
-import { makeCListKit } from '../src/vats/comms/clist.js';
-import { debugState } from '../src/vats/comms/dispatch.js';
+import { commsVatDriver } from './commsVatDriver.js';
 import {
+  makeDropExports,
   makeMessage,
   makeResolve,
-  makeDropExports,
   makeRetireExports,
   makeRetireImports,
 } from './util.js';
-import { commsVatDriver } from './commsVatDriver.js';
 
 test('translation', t => {
   const s = makeState(null);

@@ -1,9 +1,9 @@
 import { makeScalarMapStore } from '@agoric/store';
 import { makeCapTP } from '@endo/captp';
-import { makePromiseKit } from '@endo/promise-kit';
 import { HandledPromise } from '@endo/eventual-send';
+import { E, Far } from '@endo/far';
 import { Remotable } from '@endo/marshal';
-import { Far, E } from '@endo/far';
+import { makePromiseKit } from '@endo/promise-kit';
 
 /**
  * @template T

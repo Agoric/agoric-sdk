@@ -4,6 +4,7 @@ import { makeIssuerKit } from '@agoric/ertp';
 import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
 import { makeHeapZone } from '@agoric/zone';
 import { E } from '@endo/far';
+
 import { buildRootObject as buildBankVatRoot } from '../src/vat-bank.js';
 import { makeFakeBankBridge } from '../tools/fake-bridge.js';
 

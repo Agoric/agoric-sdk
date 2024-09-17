@@ -1,16 +1,16 @@
 // @jessie-check
 // @ts-check
 
-import { q } from '@endo/errors';
-import { ToFarFunction } from '@endo/captp';
-import { Far } from '@endo/marshal';
 import { AmountMath, AssetKind } from '@agoric/ertp';
 import { deeplyFulfilledObject } from '@agoric/internal';
-import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
-import { parseRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
-import { E } from '@endo/far';
 import { Stable } from '@agoric/internal/src/tokens.js';
 import { TimeMath } from '@agoric/time/src/timeMath.js';
+import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
+import { parseRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
+import { ToFarFunction } from '@endo/captp';
+import { q } from '@endo/errors';
+import { E } from '@endo/far';
+import { Far } from '@endo/marshal';
 import { makePromiseKit } from '@endo/promise-kit';
 
 import {

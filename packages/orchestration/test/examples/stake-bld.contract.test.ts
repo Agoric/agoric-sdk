@@ -6,6 +6,7 @@ import { SIMULATED_ERRORS } from '@agoric/vats/tools/fake-bridge.js';
 import { heapVowE as E } from '@agoric/vow/vat.js';
 import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import path from 'path';
+
 import { commonSetup } from '../supports.js';
 
 const dirname = path.dirname(new URL(import.meta.url).pathname);

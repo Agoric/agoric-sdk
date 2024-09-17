@@ -1,8 +1,8 @@
 // @ts-check
+import { AmountMath } from '@agoric/ertp/src/amountMath.js';
 import { Fail } from '@endo/errors';
 import { E } from '@endo/far';
 import { makeMarshal } from '@endo/marshal';
-import { AmountMath } from '@agoric/ertp/src/amountMath.js';
 
 console.warn('start-game1-proposal.js module evaluating');
 

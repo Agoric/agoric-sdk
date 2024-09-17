@@ -7,16 +7,17 @@
  */
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-import { Fail } from '@endo/errors';
-import { NonNullish } from '@agoric/internal';
 import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
-import { Far, makeMarshal } from '@endo/marshal';
 import { SECONDS_PER_YEAR } from '@agoric/inter-protocol/src/interest.js';
-import { makeAgoricNamesRemotesFromFakeStorage } from '@agoric/vats/tools/board-utils.js';
-import { ExecutionContext, TestFn } from 'ava';
+import { NonNullish } from '@agoric/internal';
 import { FakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
-import { makeSwingsetTestKit } from '../../tools/supports.js';
+import { makeAgoricNamesRemotesFromFakeStorage } from '@agoric/vats/tools/board-utils.js';
+import { Fail } from '@endo/errors';
+import { Far, makeMarshal } from '@endo/marshal';
+import { ExecutionContext, TestFn } from 'ava';
+
 import { makeWalletFactoryDriver } from '../../tools/drivers.js';
+import { makeSwingsetTestKit } from '../../tools/supports.js';
 
 // presently all these tests use one collateral manager
 const collateralBrandKey = 'ATOM';

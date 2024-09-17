@@ -9,6 +9,7 @@
 
 // Now do lockdown.
 import '@endo/init';
+
 import { main } from './kerneldump.js';
 
 process.exitCode = 1;

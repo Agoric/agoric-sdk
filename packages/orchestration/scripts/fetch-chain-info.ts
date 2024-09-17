@@ -1,8 +1,10 @@
 #!/usr/bin/env tsx
 /** @file Fetch canonical chain info to generate the minimum needed for agoricNames */
-import { ChainRegistryClient } from '@chain-registry/client';
 import fsp from 'node:fs/promises';
+
+import { ChainRegistryClient } from '@chain-registry/client';
 import prettier from 'prettier';
+
 import { convertChainInfo } from '../src/utils/registry.js';
 
 // XXX script assumes it's run from the package path

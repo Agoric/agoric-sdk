@@ -1,13 +1,14 @@
 // @jessie-check
 
-import { AmountMath, makeIssuerKit, AssetKind } from '@agoric/ertp';
+import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
+import { makeNotifierKit } from '@agoric/notifier';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
-import { makeNotifierKit } from '@agoric/notifier';
+
 import {
-  makeOnewayPriceAuthorityKit,
-  floorMultiplyBy,
   floorDivideBy,
+  floorMultiplyBy,
+  makeOnewayPriceAuthorityKit,
 } from '../src/contractSupport/index.js';
 
 /**

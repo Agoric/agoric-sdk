@@ -1,33 +1,33 @@
-import { E } from '@endo/far';
+/// <reference path="./types.js" />
+import './internal-types.js';
+
 import {
+  AmountMath,
   AssetKind,
   makeDurableIssuerKit,
-  AmountMath,
   upgradeIssuerKit,
 } from '@agoric/ertp';
 import {
   makeScalarBigMapStore,
-  provideDurableWeakMapStore,
-  prepareExoClassKit,
   prepareExoClass,
+  prepareExoClassKit,
   provideDurableSetStore,
+  provideDurableWeakMapStore,
 } from '@agoric/vat-data';
+import { E } from '@endo/far';
 
-import { provideIssuerStorage } from '../issuerStorage.js';
 import { makeInstanceRecordStorage } from '../instanceRecordStorage.js';
 import { makeIssuerRecord } from '../issuerRecord.js';
-import { provideEscrowStorage } from './escrowStorage.js';
-import { prepareInvitationKit } from './makeInvitation.js';
-import { makeInstanceAdminStorage } from './instanceAdminStorage.js';
-import { makeInstallationStorage } from './installationStorage.js';
-
-/// <reference path="./types.js" />
-import './internal-types.js';
+import { provideIssuerStorage } from '../issuerStorage.js';
 import {
   InstanceStorageManagerIKit,
   ZoeMintI,
   ZoeStorageManagerIKit,
 } from '../typeGuards.js';
+import { provideEscrowStorage } from './escrowStorage.js';
+import { makeInstallationStorage } from './installationStorage.js';
+import { makeInstanceAdminStorage } from './instanceAdminStorage.js';
+import { prepareInvitationKit } from './makeInvitation.js';
 
 /** @import {Baggage} from '@agoric/vat-data' */
 

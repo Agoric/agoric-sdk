@@ -1,9 +1,9 @@
 import '@agoric/swingset-liveslots/tools/prepare-test-env.js';
+
+import { reincarnate } from '@agoric/swingset-liveslots/tools/setup-vat-data.js';
+import { environmentOptionsListHas } from '@endo/env-options';
 import { wrapTest } from '@endo/ses-ava';
 import rawTest from 'ava';
-
-import { environmentOptionsListHas } from '@endo/env-options';
-import { reincarnate } from '@agoric/swingset-liveslots/tools/setup-vat-data.js';
 
 export const test = wrapTest(rawTest);
 

@@ -2,14 +2,13 @@
  * @file CoreEval module to set up network, IBC vats.
  * @see {setupNetworkProtocols}
  */
-import { E } from '@endo/far';
 import { BridgeId as BRIDGE_ID } from '@agoric/internal';
-
 import { makeScalarBigMapStore } from '@agoric/vat-data';
-
 // Heap-based vow resolution is used for this module because the
 // bootstrap vat can't yet be upgraded.
 import { heapVowTools } from '@agoric/vow/vat.js';
+import { E } from '@endo/far';
+
 import { makeScopedBridge } from '../bridge.js';
 
 const { when } = heapVowTools;

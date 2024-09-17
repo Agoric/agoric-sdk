@@ -4,6 +4,7 @@
 /* global globalThis */
 
 import { importBundle } from '@endo/import-bundle';
+
 import { handlePWarning } from '../handleWarning.js';
 
 const evalContractBundle = (bundle, additionalEndowments = {}) => {

@@ -1,13 +1,14 @@
 import { assert, Fail } from '@endo/errors';
-import { insistMessage } from '../lib/message.js';
-import { insistKernelType, parseKernelSlot } from './parseKernelSlots.js';
-import { insistVatType, parseVatSlot } from '../lib/parseVatSlots.js';
+
 import { extractSingleSlot, insistCapData } from '../lib/capdata.js';
 import {
   kdebug,
   legibilizeMessageArgs,
   legibilizeValue,
 } from '../lib/kdebug.js';
+import { insistMessage } from '../lib/message.js';
+import { insistVatType, parseVatSlot } from '../lib/parseVatSlots.js';
+import { insistKernelType, parseKernelSlot } from './parseKernelSlots.js';
 
 export function assertValidVatstoreKey(key) {
   assert.typeof(key, 'string');

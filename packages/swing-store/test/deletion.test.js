@@ -1,18 +1,19 @@
 // @ts-check
-import test from 'ava';
-
 import { Buffer } from 'node:buffer';
-import path from 'node:path';
 import fs from 'node:fs';
+import path from 'node:path';
 import zlib from 'node:zlib';
+
+import { arrayIsLike } from '@agoric/internal/tools/ava-assertions.js';
+import test from 'ava';
 import sqlite3 from 'better-sqlite3';
 import tmp from 'tmp';
-import { arrayIsLike } from '@agoric/internal/tools/ava-assertions.js';
-import { tmpDir } from './util.js';
-import { initSwingStore } from '../src/swingStore.js';
+
 import { makeArchiveSnapshot, makeArchiveTranscript } from '../src/archiver.js';
 import { makeSwingStoreExporter } from '../src/exporter.js';
 import { importSwingStore } from '../src/importer.js';
+import { initSwingStore } from '../src/swingStore.js';
+import { tmpDir } from './util.js';
 
 async function* getSnapshotStream() {
   yield Buffer.from('abc');

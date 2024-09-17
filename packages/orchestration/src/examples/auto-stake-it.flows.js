@@ -1,4 +1,5 @@
 import { Fail } from '@endo/errors';
+
 import { denomHash } from '../utils/denomHash.js';
 
 /**

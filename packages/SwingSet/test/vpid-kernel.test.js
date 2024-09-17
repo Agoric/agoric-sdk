@@ -1,17 +1,16 @@
 // @ts-nocheck
 /* global WeakRef, FinalizationRegistry */
-// eslint-disable-next-line import/order
+
 import { test } from '../tools/prepare-test-env-ava.js';
 
-import anylogger from 'anylogger';
-import { Fail } from '@endo/errors';
+import { waitUntilQuiescent } from '@agoric/internal/src/lib-nodejs/waitUntilQuiescent.js';
 import { kser, kslot } from '@agoric/kmarshal';
 import { initSwingStore } from '@agoric/swing-store';
-import { waitUntilQuiescent } from '@agoric/internal/src/lib-nodejs/waitUntilQuiescent.js';
+import { Fail } from '@endo/errors';
+import anylogger from 'anylogger';
 
-import buildKernel from '../src/kernel/index.js';
 import { initializeKernel } from '../src/controller/initializeKernel.js';
-
+import buildKernel from '../src/kernel/index.js';
 import { buildDispatch } from './util.js';
 
 function oneResolution(promiseID, rejected, data) {

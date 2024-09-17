@@ -1,13 +1,15 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
+
+import { makeMockChainStorageRoot } from '@agoric/internal/src/storage-test-utils.js';
 import { makeStoredPublishKit } from '@agoric/notifier';
 import {
   eventLoopIteration,
   makeFakeMarshaller,
 } from '@agoric/notifier/tools/testSupports.js';
-import { makeMockChainStorageRoot } from '@agoric/internal/src/storage-test-utils.js';
 import { makeHandle } from '@agoric/zoe/src/makeHandle.js';
 import { buildZoeManualTimer } from '@agoric/zoe/tools/manualTimer.js';
 import { E } from '@endo/eventual-send';
+
 import {
   ChoiceMethod,
   coerceQuestionSpec,

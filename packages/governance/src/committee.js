@@ -1,11 +1,11 @@
+import { StorageNodeShape } from '@agoric/internal';
 import { makeStoredPublishKit } from '@agoric/notifier';
 import { M } from '@agoric/store';
+import { prepareExo, provideDurableMapStore } from '@agoric/vat-data';
 import { natSafeMath } from '@agoric/zoe/src/contractSupport/index.js';
+import { EmptyProposalShape } from '@agoric/zoe/src/typeGuards.js';
 import { E } from '@endo/eventual-send';
 
-import { StorageNodeShape } from '@agoric/internal';
-import { prepareExo, provideDurableMapStore } from '@agoric/vat-data';
-import { EmptyProposalShape } from '@agoric/zoe/src/typeGuards.js';
 import {
   getOpenQuestions,
   getPoserInvitation,

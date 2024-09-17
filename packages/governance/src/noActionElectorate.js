@@ -1,9 +1,9 @@
 import { makePublishKit } from '@agoric/notifier';
-import { makePromiseKit } from '@endo/promise-kit';
 import { makeExo } from '@agoric/store';
 import { EmptyProposalShape } from '@agoric/zoe/src/typeGuards.js';
+import { makePromiseKit } from '@endo/promise-kit';
 
-import { ElectoratePublicI, ElectorateCreatorI } from './typeGuards.js';
+import { ElectorateCreatorI, ElectoratePublicI } from './typeGuards.js';
 
 /**
  * @import {ElectoratePublic, ElectorateCreatorFacet} from './types.js';

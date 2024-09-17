@@ -1,12 +1,12 @@
 // @ts-nocheck
-import { Far } from '@endo/far';
 import { getCopyMapEntries, M } from '@agoric/store';
-import { makePromiseKit } from '@endo/promise-kit';
 import {
   prepareExo,
   provideDurableMapStore,
   watchPromise,
 } from '@agoric/vat-data';
+import { Far } from '@endo/far';
+import { makePromiseKit } from '@endo/promise-kit';
 
 export function buildRootObject(_vatPowers, vatParameters, baggage) {
   const settlements = provideDurableMapStore(baggage, 'settlements');

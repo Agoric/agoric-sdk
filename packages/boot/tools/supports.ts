@@ -1,51 +1,48 @@
 /* eslint-disable jsdoc/require-param, @jessie.js/safe-await-separator */
 /* global process */
 
-import childProcessAmbient from 'child_process';
-import { promises as fsAmbientPromises } from 'fs';
-import { resolve as importMetaResolve } from 'import-meta-resolve';
-import { basename, join } from 'path';
-import { inspect } from 'util';
-
+import type { CoreEvalSDKType } from '@agoric/cosmic-proto/swingset/swingset.js';
 import { buildSwingset } from '@agoric/cosmic-swingset/src/launch-chain.js';
+import type { EconomyBootstrapPowers } from '@agoric/inter-protocol/src/proposals/econ-behaviors.js';
 import {
   BridgeId,
-  NonNullish,
-  VBankAccount,
-  makeTracer,
   type BridgeIdValue,
+  makeTracer,
+  NonNullish,
   type Remote,
+  VBankAccount,
 } from '@agoric/internal';
 import { unmarshalFromVstorage } from '@agoric/internal/src/marshal.js';
 import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
 import { krefOf } from '@agoric/kmarshal';
 import { initSwingStore } from '@agoric/swing-store';
 import { loadSwingsetConfigFile } from '@agoric/swingset-vat';
-import { makeSlogSender } from '@agoric/telemetry';
-import { TimeMath, Timestamp } from '@agoric/time';
-import { Fail } from '@endo/errors';
-import {
-  fakeLocalChainBridgeTxMsgHandler,
-  LOCALCHAIN_DEFAULT_ADDRESS,
-} from '@agoric/vats/tools/fake-bridge.js';
-
+import type { SwingsetController } from '@agoric/swingset-vat/src/controller/controller.js';
 import {
   makeRunUtils,
   type RunUtils,
 } from '@agoric/swingset-vat/tools/run-utils.js';
+import { makeSlogSender } from '@agoric/telemetry';
+import { TimeMath, Timestamp } from '@agoric/time';
+import type { BridgeHandler, IBCMethod, IBCPacket } from '@agoric/vats';
+import type { BootstrapRootObject } from '@agoric/vats/src/core/lib-boot.js';
 import {
   boardSlottingMarshaller,
   slotToBoardRemote,
 } from '@agoric/vats/tools/board-utils.js';
-
-import type { ExecutionContext as AvaT } from 'ava';
-
-import type { CoreEvalSDKType } from '@agoric/cosmic-proto/swingset/swingset.js';
-import type { EconomyBootstrapPowers } from '@agoric/inter-protocol/src/proposals/econ-behaviors.js';
-import type { SwingsetController } from '@agoric/swingset-vat/src/controller/controller.js';
-import type { BridgeHandler, IBCMethod, IBCPacket } from '@agoric/vats';
-import type { BootstrapRootObject } from '@agoric/vats/src/core/lib-boot.js';
+import {
+  fakeLocalChainBridgeTxMsgHandler,
+  LOCALCHAIN_DEFAULT_ADDRESS,
+} from '@agoric/vats/tools/fake-bridge.js';
+import { Fail } from '@endo/errors';
 import type { EProxy } from '@endo/eventual-send';
+import type { ExecutionContext as AvaT } from 'ava';
+import childProcessAmbient from 'child_process';
+import { promises as fsAmbientPromises } from 'fs';
+import { resolve as importMetaResolve } from 'import-meta-resolve';
+import { basename, join } from 'path';
+import { inspect } from 'util';
+
 import { icaMocks, protoMsgMockMap, protoMsgMocks } from './ibc/mocks.js';
 
 const trace = makeTracer('BSTSupport', false);

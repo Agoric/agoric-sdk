@@ -1,8 +1,8 @@
 /* global process */
 import '@endo/init';
 
-import anylogger from 'anylogger';
 import { makeShutdown } from '@agoric/internal/src/node/shutdown.js';
+import anylogger from 'anylogger';
 
 import { makeSlogSender } from './make-slog-sender.js';
 

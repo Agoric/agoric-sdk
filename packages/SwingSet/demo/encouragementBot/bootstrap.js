@@ -1,4 +1,4 @@
-import { Far, E } from '@endo/far';
+import { E, Far } from '@endo/far';
 
 console.log(`=> loading bootstrap.js`);
 

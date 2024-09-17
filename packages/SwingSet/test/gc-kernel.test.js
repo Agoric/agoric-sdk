@@ -1,26 +1,26 @@
 // @ts-nocheck
 /* global WeakRef, FinalizationRegistry */
 
-import anylogger from 'anylogger';
-// eslint-disable-next-line import/order
 import { test } from '../tools/prepare-test-env-ava.js';
 
-import { assert } from '@endo/errors';
-import { kser, kunser, kslot } from '@agoric/kmarshal';
-import { initSwingStore } from '@agoric/swing-store';
 import { waitUntilQuiescent } from '@agoric/internal/src/lib-nodejs/waitUntilQuiescent.js';
-import { parseVatSlot } from '../src/lib/parseVatSlots.js';
-import buildKernel from '../src/kernel/index.js';
+import { kser, kslot, kunser } from '@agoric/kmarshal';
+import { initSwingStore } from '@agoric/swing-store';
+import { assert } from '@endo/errors';
+import anylogger from 'anylogger';
+
 import { initializeKernel } from '../src/controller/initializeKernel.js';
 import {
   buildVatController,
   initializeSwingset,
   makeSwingsetController,
 } from '../src/index.js';
+import buildKernel from '../src/kernel/index.js';
+import { parseVatSlot } from '../src/lib/parseVatSlots.js';
 import {
+  makeDropExports,
   makeMessage,
   makeResolutions,
-  makeDropExports,
   makeRetireExports,
   makeRetireImports,
 } from './util.js';

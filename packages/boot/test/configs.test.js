@@ -1,16 +1,15 @@
 // @ts-check
 import '@agoric/swingset-liveslots/tools/prepare-test-env.js';
 
+import { extractCoreProposalBundles } from '@agoric/deploy-script-support/src/extract-proposal.js';
+import { mustMatch } from '@agoric/store';
+import { loadSwingsetConfigFile, shape as ssShape } from '@agoric/swingset-vat';
+import { provideBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
 import anyTest from 'ava';
 import { spawn as ambientSpawn } from 'child_process';
 import { promises as fsPromises } from 'fs';
 import { resolve as importMetaResolve } from 'import-meta-resolve';
 import path from 'path';
-
-import { extractCoreProposalBundles } from '@agoric/deploy-script-support/src/extract-proposal.js';
-import { mustMatch } from '@agoric/store';
-import { loadSwingsetConfigFile, shape as ssShape } from '@agoric/swingset-vat';
-import { provideBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
 
 const importConfig = configName =>
   importMetaResolve(`@agoric/vm-config/${configName}`, import.meta.url).then(

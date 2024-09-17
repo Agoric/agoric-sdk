@@ -1,4 +1,5 @@
 import { assert, Fail } from '@endo/errors';
+
 import { assertKnownOptions } from '../../lib/assertOptions.js';
 import { makeLocalVatManagerFactory } from './manager-local.js';
 import { makeNodeSubprocessFactory } from './manager-subprocess-node.js';

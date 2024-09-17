@@ -1,16 +1,14 @@
 /* global performance */
 
 import test from 'ava';
-
 import * as proc from 'child_process';
 import fs from 'fs';
 import * as os from 'os';
 import { tmpName } from 'tmp';
 
-import { xsnap } from '../src/xsnap.js';
 import { METER_TYPE } from '../api.js';
-
-import { options, decode, encode } from './message-tools.js';
+import { xsnap } from '../src/xsnap.js';
+import { decode, encode, options } from './message-tools.js';
 
 const io = { spawn: proc.spawn, os: os.type(), fs, tmpName }; // WARNING: ambien
 

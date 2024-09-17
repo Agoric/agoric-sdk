@@ -1,17 +1,17 @@
+import { kslot } from '@agoric/kmarshal';
 import test from 'ava';
 
-import { kslot } from '@agoric/kmarshal';
 import {
-  findSyscallsByType,
-  setupTestLiveslots,
-} from '../liveslots-helpers.js';
-import {
+  assertCollectionDeleted,
   buildRootObject,
   deduceCollectionID,
   recognizersOf,
   refValString,
-  assertCollectionDeleted,
 } from '../gc-helpers.js';
+import {
+  findSyscallsByType,
+  setupTestLiveslots,
+} from '../liveslots-helpers.js';
 import { vstr } from '../util.js';
 
 // These tests follow the model described in

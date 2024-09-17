@@ -1,13 +1,14 @@
 import { q } from '@endo/errors';
-import { Far, filterIterable } from '@endo/pass-style';
 import { compareRank } from '@endo/marshal';
+import { Far, filterIterable } from '@endo/pass-style';
 import {
+  assertPattern,
   assertScalarKey,
   makeCopySet,
   matches,
   mustMatch,
-  assertPattern,
 } from '@endo/patterns';
+
 import { makeWeakSetStoreMethods } from './scalarWeakSetStore.js';
 import { makeCurrentKeysKit } from './store-utils.js';
 

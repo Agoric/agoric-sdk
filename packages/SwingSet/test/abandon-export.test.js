@@ -1,15 +1,16 @@
 // @ts-nocheck
-/* eslint-disable import/order */
+
 import { test } from '../tools/prepare-test-env-ava.js';
 
-import buildKernel from '../src/kernel/index.js';
+import { kser, kslot, kunser } from '@agoric/kmarshal';
+
 import { initializeKernel } from '../src/controller/initializeKernel.js';
-import { extractMethod } from '../src/lib/kdebug.js';
+import buildKernel from '../src/kernel/index.js';
 import makeKernelKeeper, {
   CURRENT_SCHEMA_VERSION,
 } from '../src/kernel/state/kernelKeeper.js';
-import { makeKernelEndowments, buildDispatch } from './util.js';
-import { kser, kunser, kslot } from '@agoric/kmarshal';
+import { extractMethod } from '../src/lib/kdebug.js';
+import { buildDispatch, makeKernelEndowments } from './util.js';
 
 const makeKernel = async () => {
   const endowments = makeKernelEndowments();

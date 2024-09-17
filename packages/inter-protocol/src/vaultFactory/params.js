@@ -7,12 +7,13 @@ import {
   makeParamManagerSync,
   ParamTypes,
 } from '@agoric/governance';
+import { makeTracer } from '@agoric/internal/src/index.js';
 import { makeStoredPublisherKit } from '@agoric/notifier';
 import { M, makeScalarMapStore } from '@agoric/store';
 import { TimeMath } from '@agoric/time';
 import { provideDurableMapStore } from '@agoric/vat-data';
 import { subtractRatios } from '@agoric/zoe/src/contractSupport/ratio.js';
-import { makeTracer } from '@agoric/internal/src/index.js';
+
 import { amountPattern, ratioPattern } from '../contractSupport.js';
 
 /** @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js'; */

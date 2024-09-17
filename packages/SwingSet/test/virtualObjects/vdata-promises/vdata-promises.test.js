@@ -1,13 +1,13 @@
-// eslint-disable-next-line import/order
 import { test } from '../../../tools/prepare-test-env-ava.js';
 
 import { kunser } from '@agoric/kmarshal';
 import { initSwingStore } from '@agoric/swing-store';
-import { parseReachableAndVatSlot } from '../../../src/kernel/state/reachable.js';
+
 import {
   initializeSwingset,
   makeSwingsetController,
 } from '../../../src/index.js';
+import { parseReachableAndVatSlot } from '../../../src/kernel/state/reachable.js';
 
 function bfile(name) {
   return new URL(name, import.meta.url).pathname;

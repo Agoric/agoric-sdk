@@ -1,19 +1,20 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
-import { makeIssuerKit, AmountMath } from '@agoric/ertp';
+
+import { AmountMath, makeIssuerKit } from '@agoric/ertp';
+import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { makeStoredPublisherKit } from '@agoric/notifier';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
+import { makeHandle } from '@agoric/zoe/src/makeHandle.js';
 import { setupZCFTest } from '@agoric/zoe/test/unitTests/zcf/setupZcfTest.js';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 
-import { makeHandle } from '@agoric/zoe/src/makeHandle.js';
-import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
-import { ParamTypes } from '../../src/index.js';
 import {
   makeParamManager,
   makeParamManagerFromTerms,
   makeParamManagerSync,
 } from '../../src/contractGovernance/typedParamManager.js';
+import { ParamTypes } from '../../src/index.js';
 
 const drachmaKit = makeIssuerKit('drachma');
 const drachmaBrand = drachmaKit.brand;

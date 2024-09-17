@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 
-import fs from 'fs';
-import djson from 'deterministic-json';
 import { createHash } from 'crypto';
+import djson from 'deterministic-json';
+import fs from 'fs';
 import process from 'process';
 
 const g = fs.readFileSync(process.argv[2]).toString();

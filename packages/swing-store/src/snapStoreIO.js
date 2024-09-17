@@ -1,5 +1,5 @@
-import { performance } from 'perf_hooks';
 import { makeMeasureSeconds } from '@agoric/internal';
+import { performance } from 'perf_hooks';
 
 export function makeSnapStoreIO() {
   return {

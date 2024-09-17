@@ -7,7 +7,8 @@
 // If this experiment works out, it or something like it may eventually move
 // from test/ to src/
 
-import { q, Fail } from '@endo/errors';
+import { Fail, q } from '@endo/errors';
+
 import {
   makeNotifierKit,
   makeSubscriptionKit,

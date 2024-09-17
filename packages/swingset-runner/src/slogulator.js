@@ -1,9 +1,8 @@
-import fs from 'fs';
-import process from 'process';
-import Readlines from 'n-readlines';
-import yargs from 'yargs';
-
 import { Fail } from '@endo/errors';
+import fs from 'fs';
+import Readlines from 'n-readlines';
+import process from 'process';
+import yargs from 'yargs';
 
 /* eslint-disable no-use-before-define */
 

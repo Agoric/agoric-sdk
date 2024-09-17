@@ -1,4 +1,5 @@
 import { E, Far } from '@endo/far';
+
 import { connectFaucet } from './demoIssuers.js';
 import { addRemote } from './utils.js';
 

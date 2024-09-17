@@ -1,10 +1,10 @@
 /** @file Localchain Facade exo */
-import { E } from '@endo/far';
-// eslint-disable-next-line no-restricted-syntax -- just the import
-import { heapVowE } from '@agoric/vow/vat.js';
-import { M } from '@endo/patterns';
 import { pickFacet } from '@agoric/vat-data';
 import { VowShape } from '@agoric/vow';
+// eslint-disable-next-line no-restricted-syntax -- just the import
+import { heapVowE } from '@agoric/vow/vat.js';
+import { E } from '@endo/far';
+import { M } from '@endo/patterns';
 
 import { chainFacadeMethods, TypedJsonShape } from '../typeGuards.js';
 

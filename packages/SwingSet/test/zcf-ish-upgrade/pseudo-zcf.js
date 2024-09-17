@@ -2,12 +2,13 @@
 /* global globalThis, VatData */
 /* eslint-disable no-unused-vars */
 
+import { defineDurableKind } from '@agoric/vat-data';
 import { Far } from '@endo/far';
 import { importBundle } from '@endo/import-bundle';
-import { defineDurableKind } from '@agoric/vat-data';
+
 import {
-  provideHandle,
   provideBaggageSubset as provideBaggageSubTree,
+  provideHandle,
 } from './util.js';
 
 export const buildRootObject = async (vatPowers, vatParameters, baggage) => {

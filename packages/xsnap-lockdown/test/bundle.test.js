@@ -1,11 +1,11 @@
 import test from 'ava';
-import fs from 'fs';
 import crypto from 'crypto';
+import fs from 'fs';
 
 import {
+  getDebugLockdownBundle,
   getLockdownBundle,
   getLockdownBundleSHA256,
-  getDebugLockdownBundle,
 } from '../src/index.js';
 import { bundlePaths } from '../src/paths.js';
 

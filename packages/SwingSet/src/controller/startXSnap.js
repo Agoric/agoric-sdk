@@ -1,7 +1,7 @@
-import path from 'path';
+import { recordXSnap, xsnap } from '@agoric/xsnap';
 import { Fail } from '@endo/errors';
 import { type as osType } from 'os';
-import { xsnap, recordXSnap } from '@agoric/xsnap';
+import path from 'path';
 
 const NETSTRING_MAX_CHUNK_SIZE = 12_000_000;
 

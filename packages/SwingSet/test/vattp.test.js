@@ -1,13 +1,13 @@
-// eslint-disable-next-line import/order
 import { test } from '../tools/prepare-test-env-ava.js';
 
-import bundleSource from '@endo/bundle-source';
 import { initSwingStore } from '@agoric/swing-store';
-import { initializeSwingset, makeSwingsetController } from '../src/index.js';
+import bundleSource from '@endo/bundle-source';
+
 import {
-  buildMailboxStateMap,
   buildMailbox,
+  buildMailboxStateMap,
 } from '../src/devices/mailbox/mailbox.js';
+import { initializeSwingset, makeSwingsetController } from '../src/index.js';
 
 async function restartVatTP(controller) {
   const vaBundle = await bundleSource(

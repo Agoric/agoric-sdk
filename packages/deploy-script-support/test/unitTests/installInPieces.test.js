@@ -3,7 +3,6 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import bundleSource from '@endo/bundle-source';
 import { E } from '@endo/far';
-
 import url from 'url';
 
 import { start } from '../../src/endo-pieces-contract.js';

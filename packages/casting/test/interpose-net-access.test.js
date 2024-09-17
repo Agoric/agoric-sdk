@@ -1,16 +1,16 @@
 // @ts-check
 /* global globalThis */
-import anyTest from 'ava';
+import {
+  QueryChildrenRequest,
+  QueryChildrenResponse,
+} from '@agoric/cosmic-proto/vstorage/query.js';
 import {
   createProtobufRpcClient,
   QueryClient,
   setupBankExtension,
 } from '@cosmjs/stargate';
 import { Tendermint34Client } from '@cosmjs/tendermint-rpc';
-import {
-  QueryChildrenRequest,
-  QueryChildrenResponse,
-} from '@agoric/cosmic-proto/vstorage/query.js';
+import anyTest from 'ava';
 
 import { makeHttpClient } from '../src/makeHttpClient.js';
 import { captureIO, replayIO, web1, web2 } from './net-access-fixture.js';

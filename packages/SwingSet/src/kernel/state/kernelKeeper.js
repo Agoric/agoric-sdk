@@ -1,36 +1,37 @@
 /* eslint-disable no-use-before-define */
-import { Nat, isNat } from '@endo/nat';
 import { assert, Fail } from '@endo/errors';
+import { isNat, Nat } from '@endo/nat';
+
+import { insistCapData } from '../../lib/capdata.js';
 import {
-  initializeVatState,
-  makeVatKeeper,
-  DEFAULT_REAP_DIRT_THRESHOLD_KEY,
-} from './vatKeeper.js';
-import { initializeDeviceState, makeDeviceKeeper } from './deviceKeeper.js';
-import { parseReachableAndVatSlot } from './reachable.js';
+  insistDeviceID,
+  insistVatID,
+  makeDeviceID,
+  makeUpgradeID,
+  makeVatID,
+} from '../../lib/id.js';
+import { kdebug } from '../../lib/kdebug.js';
+import { insistMessage } from '../../lib/message.js';
 import { insistStorageAPI } from '../../lib/storageAPI.js';
+import { KERNEL_STATS_METRICS } from '../metrics.js';
 import {
   insistKernelType,
   makeKernelSlot,
   parseKernelSlot,
 } from '../parseKernelSlots.js';
-import { insistCapData } from '../../lib/capdata.js';
-import { insistMessage } from '../../lib/message.js';
-import {
-  insistDeviceID,
-  insistVatID,
-  makeDeviceID,
-  makeVatID,
-  makeUpgradeID,
-} from '../../lib/id.js';
-import { kdebug } from '../../lib/kdebug.js';
-import { KERNEL_STATS_METRICS } from '../metrics.js';
+import { initializeDeviceState, makeDeviceKeeper } from './deviceKeeper.js';
+import { parseReachableAndVatSlot } from './reachable.js';
 import { makeKernelStats } from './stats.js';
 import {
+  deletePrefixedKeys,
   enumeratePrefixedKeys,
   getPrefixedValues,
-  deletePrefixedKeys,
 } from './storageHelper.js';
+import {
+  DEFAULT_REAP_DIRT_THRESHOLD_KEY,
+  initializeVatState,
+  makeVatKeeper,
+} from './vatKeeper.js';
 
 const enableKernelGC = true;
 

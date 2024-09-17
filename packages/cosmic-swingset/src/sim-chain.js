@@ -1,25 +1,23 @@
 /* global process setTimeout clearTimeout */
-import path from 'path';
-import fs from 'fs';
-import { Fail } from '@endo/errors';
-import {
-  importMailbox,
-  exportMailbox,
-} from '@agoric/swingset-vat/src/devices/mailbox/mailbox.js';
-
-import anylogger from 'anylogger';
-
-import { makeSlogSender } from '@agoric/telemetry';
-
-import { resolve as importMetaResolve } from 'import-meta-resolve';
-import { makeWithQueue } from '@agoric/internal/src/queue.js';
 import { makeBatchedDeliver } from '@agoric/internal/src/batched-deliver.js';
+import { makeWithQueue } from '@agoric/internal/src/queue.js';
+import {
+  exportMailbox,
+  importMailbox,
+} from '@agoric/swingset-vat/src/devices/mailbox/mailbox.js';
+import { makeSlogSender } from '@agoric/telemetry';
+import { Fail } from '@endo/errors';
+import anylogger from 'anylogger';
+import fs from 'fs';
+import { resolve as importMetaResolve } from 'import-meta-resolve';
+import path from 'path';
+
 import stringify from './helpers/json-stable-stringify.js';
-import { launch } from './launch-chain.js';
-import { getTelemetryProviders } from './kernel-stats.js';
-import { DEFAULT_SIM_SWINGSET_PARAMS, QueueInbound } from './sim-params.js';
-import { parseQueueSizes } from './params.js';
 import { makeQueue, makeQueueStorageMock } from './helpers/make-queue.js';
+import { getTelemetryProviders } from './kernel-stats.js';
+import { launch } from './launch-chain.js';
+import { parseQueueSizes } from './params.js';
+import { DEFAULT_SIM_SWINGSET_PARAMS, QueueInbound } from './sim-params.js';
 
 const console = anylogger('fake-chain');
 

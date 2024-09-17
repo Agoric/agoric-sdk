@@ -5,9 +5,9 @@
  */
 
 import { E, RemoteFunctions } from '@endo/eventual-send';
+import { type Key, M } from '@endo/patterns';
 import { expectNotType, expectType } from 'tsd';
 
-import { M, type Key } from '@endo/patterns';
 // 'prepare' is deprecated but still supported
 import type { prepare as scaledPriceAuthorityStart } from '../src/contracts/scaledPriceAuthority.js';
 import type { Instance } from '../src/zoeService/utils.js';

@@ -1,7 +1,7 @@
 // @ts-check
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-import { makeIssuerKit, AssetKind, AmountMath } from '@agoric/ertp';
+import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
 
 import { makeDepositInvitation } from '../../src/depositInvitation.js';
 

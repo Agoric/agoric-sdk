@@ -1,18 +1,19 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
+import { AmountMath } from '@agoric/ertp';
 import {
-  ratiosSame,
   makeRatioFromAmounts,
   quantize,
+  ratiosSame,
   subtractRatios,
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { setup } from '@agoric/zoe/test/unitTests/setupBasicMints.js';
-import { AmountMath } from '@agoric/ertp';
+
 import {
   fromPriceOfferKey,
+  fromScaledRateOfferKey,
   toPriceOfferKey,
   toScaledRateOfferKey,
-  fromScaledRateOfferKey,
 } from '../../src/auction/sortedOffers.js';
 
 // these used to be timestamps, but now they're bigInts

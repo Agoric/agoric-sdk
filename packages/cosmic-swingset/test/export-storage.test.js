@@ -1,5 +1,6 @@
 // @ts-check
 import test from 'ava';
+
 import { exportStorage } from '../src/export-storage.js';
 
 const makeBatchChainStorage = published => {

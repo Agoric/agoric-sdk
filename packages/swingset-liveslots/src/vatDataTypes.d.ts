@@ -12,10 +12,11 @@ import type {
   WeakMapStore,
   WeakSetStore,
 } from '@agoric/store';
+import type { RemotableBrand } from '@endo/eventual-send';
 import type { Amplify, IsInstance, ReceivePower, StateShape } from '@endo/exo';
 import type { RemotableObject } from '@endo/pass-style';
-import type { RemotableBrand } from '@endo/eventual-send';
 import type { InterfaceGuard, Pattern } from '@endo/patterns';
+
 import type { makeWatchedPromiseManager } from './watchedPromises.js';
 
 // TODO should be moved into @endo/patterns and eventually imported here

@@ -1,19 +1,20 @@
 // @ts-nocheck
-// eslint-disable-next-line import/order
+
 import { test } from '../../tools/prepare-test-env-ava.js';
 
-import bundleSource from '@endo/bundle-source';
 import { kunser } from '@agoric/kmarshal';
 import { initSwingStore } from '@agoric/swing-store';
+import bundleSource from '@endo/bundle-source';
+
 import {
+  buildMailbox,
+  buildMailboxStateMap,
+} from '../../src/devices/mailbox/mailbox.js';
+import {
+  buildKernelBundles,
   initializeSwingset,
   makeSwingsetController,
-  buildKernelBundles,
 } from '../../src/index.js';
-import {
-  buildMailboxStateMap,
-  buildMailbox,
-} from '../../src/devices/mailbox/mailbox.js';
 import { bundleOpts } from '../util.js';
 
 test.before(async t => {

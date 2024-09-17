@@ -1,9 +1,9 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
+import { buildVatController } from '@agoric/swingset-vat';
 import { assert } from '@endo/errors';
 import { resolve as importMetaResolve } from 'import-meta-resolve';
 
-import { buildVatController } from '@agoric/swingset-vat';
 import { faV1BundleName } from './bootstrap-fluxAggregator-service-upgrade.js';
 
 // so paths can be expresssed relative to this file and made absolute

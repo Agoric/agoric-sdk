@@ -1,8 +1,8 @@
-import test from 'ava';
-
-import { Far } from '@endo/far';
 import { kunser } from '@agoric/kmarshal';
 import { M } from '@agoric/store';
+import { Far } from '@endo/far';
+import test from 'ava';
+
 import { setupTestLiveslots } from './liveslots-helpers.js';
 
 function buildRootObject(vatPowers, vatParameters, baggage) {

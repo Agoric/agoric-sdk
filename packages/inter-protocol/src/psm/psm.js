@@ -2,8 +2,6 @@
 /// <reference types="@agoric/governance/exported" />
 /// <reference types="@agoric/zoe/exported" />
 
-import { Fail } from '@endo/errors';
-import { E } from '@endo/eventual-send';
 import { AmountMath, AmountShape, BrandShape, RatioShape } from '@agoric/ertp';
 import {
   CONTRACT_ELECTORATE,
@@ -12,6 +10,7 @@ import {
   publicMixinAPI,
 } from '@agoric/governance';
 import { StorageNodeShape } from '@agoric/internal';
+import { mustMatch } from '@agoric/store';
 import { M, prepareExo, provide } from '@agoric/vat-data';
 import {
   atomicRearrange,
@@ -31,8 +30,9 @@ import {
   InstanceHandleShape,
   InvitationShape,
 } from '@agoric/zoe/src/typeGuards.js';
+import { Fail } from '@endo/errors';
+import { E } from '@endo/eventual-send';
 
-import { mustMatch } from '@agoric/store';
 import { makeCollectFeesInvitation } from '../collectFees.js';
 import { makeNatAmountShape } from '../contractSupport.js';
 

@@ -1,7 +1,7 @@
+import { AmountMath } from '@agoric/ertp';
 import { assert, X } from '@endo/errors';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
-import { AmountMath } from '@agoric/ertp';
 
 /**
  * This contract lets a funder endow a bounty that will pay out if an Oracle

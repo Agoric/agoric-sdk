@@ -1,19 +1,20 @@
 /* global globalThis */
 /* eslint-disable no-use-before-define, jsdoc/require-returns-type */
 
-import { environmentOptionsListHas } from '@endo/env-options';
-import { assert, Fail, q, b } from '@endo/errors';
 import { assertPattern, mustMatch } from '@agoric/store';
+import { environmentOptionsListHas } from '@endo/env-options';
+import { assert, b, Fail, q } from '@endo/errors';
 import { defendPrototype, defendPrototypeKit } from '@endo/exo/tools.js';
 import { Far, passStyleOf } from '@endo/marshal';
 import { Nat } from '@endo/nat';
-import { parseVatSlot, makeBaseRef } from './parseVatSlots.js';
-import { enumerateKeysWithPrefix } from './vatstore-iterators.js';
+
 import { makeCache } from './cache.js';
 import {
   assessFacetiousness,
   checkAndUpdateFacetiousness,
 } from './facetiousness.js';
+import { makeBaseRef, parseVatSlot } from './parseVatSlots.js';
+import { enumerateKeysWithPrefix } from './vatstore-iterators.js';
 
 /**
  * @import {DurableKindHandle} from '@agoric/swingset-liveslots'

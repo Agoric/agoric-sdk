@@ -1,14 +1,14 @@
 // @jessie-check
 
-import { passStyleOf } from '@endo/marshal';
 import {
   assertKey,
-  elementsIsSuperset,
-  elementsDisjointUnion,
-  elementsDisjointSubtract,
   coerceToElements,
   elementsCompare,
+  elementsDisjointSubtract,
+  elementsDisjointUnion,
+  elementsIsSuperset,
 } from '@agoric/store';
+import { passStyleOf } from '@endo/marshal';
 
 /** @import {MathHelpers, SetValue} from '../types.js' */
 

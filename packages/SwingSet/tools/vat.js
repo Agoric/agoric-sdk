@@ -2,11 +2,13 @@
 
 import '@endo/init/pre-bundle-source.js';
 import '@endo/init';
+
 import process from 'process';
 import repl from 'repl';
 import util from 'util';
-import { loadBasedir, buildVatController } from '../src/index.js';
+
 import { buildLoopbox } from '../src/devices/loopbox/loopbox.js';
+import { buildVatController, loadBasedir } from '../src/index.js';
 
 function deepLog(item) {
   console.log(util.inspect(item, false, null, true));

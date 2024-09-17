@@ -1,5 +1,6 @@
-import test from 'ava';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
+import test from 'ava';
+
 import { getReplHandler } from '../src/repl.js';
 
 function make() {

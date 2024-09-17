@@ -1,12 +1,11 @@
-import path from 'path';
-import process from 'process';
-
 import {
-  initGraphSpec,
   addDataToGraphSpec,
   addGraphToGraphSpec,
+  initGraphSpec,
   renderGraph,
 } from '@agoric/stat-logger';
+import path from 'path';
+import process from 'process';
 
 // prettier-ignore
 const colors = [

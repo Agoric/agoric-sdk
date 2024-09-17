@@ -7,17 +7,26 @@ import {
   makeTracer,
   objectMap,
 } from '@agoric/internal';
-import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
-import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
-import { buildManualTimer } from '@agoric/swingset-vat/tools/manual-timer.js';
-import { E } from '@endo/eventual-send';
-import { TimeMath } from '@agoric/time';
-import { providePriceAuthorityRegistry } from '@agoric/vats/src/priceAuthorityRegistry.js';
-import { makeScalarMapStore } from '@agoric/vat-data/src/index.js';
-import { makeManualPriceAuthority } from '@agoric/zoe/tools/manualPriceAuthority.js';
 import { makeNotifierFromAsyncIterable, subscribeEach } from '@agoric/notifier';
+import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
+import { buildManualTimer } from '@agoric/swingset-vat/tools/manual-timer.js';
+import { TimeMath } from '@agoric/time';
+import { makeScalarMapStore } from '@agoric/vat-data/src/index.js';
+import { providePriceAuthorityRegistry } from '@agoric/vats/src/priceAuthorityRegistry.js';
+import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
+import { makeManualPriceAuthority } from '@agoric/zoe/tools/manualPriceAuthority.js';
+import { E } from '@endo/eventual-send';
 
+import {
+  SECONDS_PER_DAY as ONE_DAY,
+  SECONDS_PER_HOUR as ONE_HOUR,
+  SECONDS_PER_WEEK as ONE_WEEK,
+  setupReserve,
+  startAuctioneer,
+  startVaultFactory,
+} from '../../src/proposals/econ-behaviors.js';
+import { startEconomicCommittee } from '../../src/proposals/startEconCommittee.js';
 import {
   installPuppetGovernance,
   produceInstallations,
@@ -25,16 +34,6 @@ import {
   setUpZoeForTest,
   withAmountUtils,
 } from '../supports.js';
-import { startEconomicCommittee } from '../../src/proposals/startEconCommittee.js';
-import {
-  setupReserve,
-  startAuctioneer,
-  SECONDS_PER_DAY as ONE_DAY,
-  SECONDS_PER_HOUR as ONE_HOUR,
-  SECONDS_PER_WEEK as ONE_WEEK,
-  startVaultFactory,
-} from '../../src/proposals/econ-behaviors.js';
-
 import { defaultParamValues } from './vaultFactoryUtils.js';
 
 /**

@@ -1,7 +1,7 @@
 /* global process setInterval clearInterval */
-import opener from 'opener';
-import { assert, X } from '@endo/errors';
 import { getAccessToken } from '@agoric/access-token';
+import { assert, X } from '@endo/errors';
+import opener from 'opener';
 
 export default async function walletMain(_progname, _rawArgs, powers, opts) {
   const { anylogger } = powers;

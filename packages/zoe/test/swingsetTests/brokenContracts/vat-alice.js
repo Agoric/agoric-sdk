@@ -3,7 +3,8 @@
 import { assert, X } from '@endo/errors';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
-import { showPurseBalance, setupIssuers } from '../helpers.js';
+
+import { setupIssuers, showPurseBalance } from '../helpers.js';
 
 async function logCounter(log, publicAPI) {
   log(`counter: ${await E(publicAPI).getOffersCount()}`);

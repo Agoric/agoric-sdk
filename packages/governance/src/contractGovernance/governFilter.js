@@ -1,13 +1,13 @@
+import { keyEQ, mustMatch } from '@agoric/store';
+import { M } from '@agoric/vat-data';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
-import { mustMatch, keyEQ } from '@agoric/store';
-import { M } from '@agoric/vat-data';
 
 import {
   ChoiceMethod,
-  QuorumRule,
-  ElectionType,
   coerceQuestionSpec,
+  ElectionType,
+  QuorumRule,
 } from '../question.js';
 
 /**

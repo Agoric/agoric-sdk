@@ -1,9 +1,10 @@
 // @jessy-check
-import { E, Far } from '@endo/far';
 import { BrandI } from '@agoric/ertp';
+import { provideLazy } from '@agoric/store';
 import { provide } from '@agoric/vat-data';
 import { makeDurableZone } from '@agoric/zone/durable.js';
-import { provideLazy } from '@agoric/store';
+import { E, Far } from '@endo/far';
+
 import { prepareNameHubKit } from './nameHub.js';
 
 /** @param {import('@agoric/zone').Zone} zone */

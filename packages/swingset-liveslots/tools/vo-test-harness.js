@@ -1,4 +1,5 @@
 import { Far } from '@endo/marshal';
+
 import { setupTestLiveslots } from '../test/liveslots-helpers.js';
 
 // This file contains a test harness for virtual objects. runVOTest()

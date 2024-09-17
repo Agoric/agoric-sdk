@@ -1,4 +1,5 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
+
 import { makeScalarBigMapStore } from '@agoric/vat-data';
 import { makeFakeVatAdmin } from '@agoric/zoe/tools/fakeVatAdmin.js';
 import bundleSourceAmbient from '@endo/bundle-source';
@@ -9,7 +10,6 @@ import { buildRootObject as buildSimRootObject } from '../src/core/boot-sim.js';
 import { buildRootObject as buildSoloRootObject } from '../src/core/boot-solo.js';
 import { bridgeCoreEval } from '../src/core/chain-behaviors.js';
 import { makePromiseSpace } from '../src/core/promise-space.js';
-
 import {
   makeMock,
   mockDProxy,

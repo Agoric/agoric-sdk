@@ -1,12 +1,12 @@
+import { kser } from '@agoric/kmarshal';
+import { Far } from '@endo/marshal';
 import test from 'ava';
 
-import { Far } from '@endo/marshal';
-import { kser } from '@agoric/kmarshal';
 import { makeLiveSlots } from '../src/liveslots.js';
 import { parseVatSlot } from '../src/parseVatSlots.js';
 import { buildSyscall } from './liveslots-helpers.js';
-import { makeStartVat, makeBringOutYourDead } from './util.js';
 import { makeMockGC } from './mock-gc.js';
+import { makeBringOutYourDead, makeStartVat } from './util.js';
 
 // virtual/durable collections serialize their keyShape/valueShape,
 // any Remotables therein must be compatible, and we should have

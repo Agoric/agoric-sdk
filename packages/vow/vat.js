@@ -5,11 +5,11 @@
 
 /* global globalThis */
 // @ts-check
-import { isUpgradeDisconnection } from '@agoric/internal/src/upgrade-api.js';
 import { makeHeapZone } from '@agoric/base-zone/heap.js';
+import { isUpgradeDisconnection } from '@agoric/internal/src/upgrade-api.js';
 
-import { prepareBasicVowTools } from './src/tools.js';
 import makeE from './src/E.js';
+import { prepareBasicVowTools } from './src/tools.js';
 
 /** @type {import('./src/types.js').IsRetryableReason} */
 const isRetryableReason = (reason, priorRetryValue) => {

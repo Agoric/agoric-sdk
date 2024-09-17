@@ -1,14 +1,15 @@
-import { makeMap } from 'jessie.js';
-import { E, Far } from '@endo/far';
-import { deeplyFulfilled } from '@endo/marshal';
-import { makeTracer, VBankAccount } from '@agoric/internal';
 import { AmountMath } from '@agoric/ertp';
 import { ParamTypes } from '@agoric/governance';
+import { makeTracer, VBankAccount } from '@agoric/internal';
 import { makeStorageNodeChild } from '@agoric/internal/src/lib-chainStorage.js';
 import { Stable } from '@agoric/internal/src/tokens.js';
+import { E, Far } from '@endo/far';
+import { deeplyFulfilled } from '@endo/marshal';
+import { makeMap } from 'jessie.js';
+
 import {
-  makeHistoryReviver,
   makeBoardRemote,
+  makeHistoryReviver,
   slotToBoardRemote,
 } from '../../tools/board-utils.js';
 

@@ -1,12 +1,10 @@
-import { Buffer } from 'buffer';
 import './lockdown.js';
 
-import { makeMarshal } from '@endo/marshal';
-
-import express from 'express';
 // import morgan from 'morgan';
-
 import { toAscii, toBase64 } from '@cosmjs/encoding';
+import { makeMarshal } from '@endo/marshal';
+import { Buffer } from 'buffer';
+import express from 'express';
 
 const chainName = 'fakeChain';
 

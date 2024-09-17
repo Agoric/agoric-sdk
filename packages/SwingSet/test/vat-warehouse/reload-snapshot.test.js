@@ -1,13 +1,14 @@
 // @ts-nocheck
-// eslint-disable-next-line import/order
+
 import { test } from '../../tools/prepare-test-env-ava.js';
 
-import sqlite3 from 'better-sqlite3';
 import {
   initSwingStore,
   makeSnapStore,
   makeSnapStoreIO,
 } from '@agoric/swing-store';
+import sqlite3 from 'better-sqlite3';
+
 import { initializeSwingset, makeSwingsetController } from '../../src/index.js';
 
 const vatReloadFromSnapshot = async (t, restartWorkerOnSnapshot) => {

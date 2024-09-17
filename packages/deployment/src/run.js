@@ -1,6 +1,5 @@
-import { Writable } from 'stream';
-
 import { Fail } from '@endo/errors';
+import { Writable } from 'stream';
 
 const { freeze } = Object;
 

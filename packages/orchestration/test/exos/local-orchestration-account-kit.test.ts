@@ -9,7 +9,8 @@ import {
 } from '@agoric/vats/tools/fake-bridge.js';
 import { heapVowE as VE } from '@agoric/vow/vat.js';
 import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
-import { ChainAddress, type AmountArg } from '../../src/orchestration-api.js';
+
+import { type AmountArg, ChainAddress } from '../../src/orchestration-api.js';
 import { maxClockSkew } from '../../src/utils/cosmos.js';
 import { NANOSECONDS_PER_SECOND } from '../../src/utils/time.js';
 import { buildVTransferEvent } from '../../tools/ibc-mocks.js';

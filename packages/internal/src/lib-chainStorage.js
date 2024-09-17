@@ -1,9 +1,10 @@
 // @ts-check
 
+import { makeHeapZone } from '@agoric/base-zone/heap.js';
 import { Fail } from '@endo/errors';
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
-import { makeHeapZone } from '@agoric/base-zone/heap.js';
+
 import * as cb from './callback.js';
 
 /**

@@ -3,8 +3,8 @@ import {
   makeParamManager,
   ParamTypes,
 } from '@agoric/governance';
-import { TimeMath, RelativeTimeRecordShape } from '@agoric/time';
 import { M } from '@agoric/store';
+import { RelativeTimeRecordShape, TimeMath } from '@agoric/time';
 
 /**
  * @import {AsyncSpecTuple} from '@agoric/governance/src/contractGovernance/typedParamManager.js';

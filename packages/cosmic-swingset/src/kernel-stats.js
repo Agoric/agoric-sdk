@@ -1,28 +1,22 @@
 // @ts-check
+import process from 'node:process';
+import v8 from 'node:v8';
+
+import { makeLegacyMap } from '@agoric/store';
+import {
+  KERNEL_STATS_SUM_METRICS,
+  KERNEL_STATS_UPDOWN_METRICS,
+} from '@agoric/swingset-vat/src/kernel/metrics.js';
+// import { diag, DiagConsoleLogger, DiagLogLevel } from '@opentelemetry/api';
+// diag.setLogger(new DiagConsoleLogger(), DiagLogLevel.VERBOSE);
+/** @import {MetricAttributes as Attributes} from '@opentelemetry/api' */
+/** @import {Histogram} from '@opentelemetry/api' */
+import { getTelemetryProviders as getTelemetryProvidersOriginal } from '@agoric/telemetry';
 import {
   ExplicitBucketHistogramAggregation,
   MeterProvider,
   View,
 } from '@opentelemetry/sdk-metrics';
-
-import { makeLegacyMap } from '@agoric/store';
-
-import {
-  KERNEL_STATS_SUM_METRICS,
-  KERNEL_STATS_UPDOWN_METRICS,
-} from '@agoric/swingset-vat/src/kernel/metrics.js';
-
-// import { diag, DiagConsoleLogger, DiagLogLevel } from '@opentelemetry/api';
-
-// diag.setLogger(new DiagConsoleLogger(), DiagLogLevel.VERBOSE);
-
-/** @import {MetricAttributes as Attributes} from '@opentelemetry/api' */
-/** @import {Histogram} from '@opentelemetry/api' */
-
-import { getTelemetryProviders as getTelemetryProvidersOriginal } from '@agoric/telemetry';
-
-import v8 from 'node:v8';
-import process from 'node:process';
 
 /**
  * TODO Would be nice somehow to label the vats individually, but it's too

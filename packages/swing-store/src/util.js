@@ -1,5 +1,5 @@
-import path from 'path';
 import { Buffer } from 'buffer';
+import path from 'path';
 
 /**
  * This is a polyfill for the `buffer` function from Node's

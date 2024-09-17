@@ -1,14 +1,16 @@
 // @ts-check
 /* eslint-disable func-names */
 /* global fetch, setTimeout, process */
+import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
+import { oracleBrandFeedName } from '@agoric/inter-protocol/src/proposals/utils.js';
 import { Fail } from '@endo/errors';
 import { Nat } from '@endo/nat';
-import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
-import { Command } from 'commander';
 import * as cp from 'child_process';
+import { Command } from 'commander';
 import { inspect } from 'util';
-import { oracleBrandFeedName } from '@agoric/inter-protocol/src/proposals/utils.js';
+
 import { normalizeAddressWithOptions } from '../lib/chain.js';
+import { bigintReplacer } from '../lib/format.js';
 import { getNetworkConfig, makeRpcUtils, storageHelper } from '../lib/rpc.js';
 import {
   getCurrent,
@@ -17,7 +19,6 @@ import {
   sendAction,
   sendHint,
 } from '../lib/wallet.js';
-import { bigintReplacer } from '../lib/format.js';
 
 /** @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js'; */
 

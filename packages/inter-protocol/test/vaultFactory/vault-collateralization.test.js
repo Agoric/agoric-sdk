@@ -1,8 +1,9 @@
 import { test as unknownTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { makeTracer } from '@agoric/internal';
-import { E } from '@endo/eventual-send';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
+import { E } from '@endo/eventual-send';
+
 import { AT_NEXT, makeDriverContext, makeManagerDriver } from './driver.js';
 
 /** @typedef {import('./driver.js').DriverContext & {}} Context */

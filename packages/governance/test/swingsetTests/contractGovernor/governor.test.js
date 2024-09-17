@@ -1,9 +1,9 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
-import path from 'path';
 
-import { buildVatController, buildKernelBundles } from '@agoric/swingset-vat';
-import bundleSource from '@endo/bundle-source';
+import { buildKernelBundles, buildVatController } from '@agoric/swingset-vat';
 import zcfBundle from '@agoric/zoe/bundles/bundle-contractFacet.js';
+import bundleSource from '@endo/bundle-source';
+import path from 'path';
 
 const CONTRACT_FILES = [
   'committee',

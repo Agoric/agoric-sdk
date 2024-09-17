@@ -1,8 +1,9 @@
 // @ts-check
 /* eslint-disable func-names */
 /* global fetch, process */
-import { Command } from 'commander';
 import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
+import { Command } from 'commander';
+
 import { asPercent } from '../lib/format.js';
 import { makeRpcUtils, storageHelper } from '../lib/rpc.js';
 import { outputExecuteOfferAction } from '../lib/wallet.js';

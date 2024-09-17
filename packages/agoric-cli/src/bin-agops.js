@@ -5,25 +5,24 @@
 /* global fetch, setTimeout */
 
 import '@endo/init/pre.js';
-
 import '@endo/init';
 
 import { E } from '@endo/far';
-
+import anylogger from 'anylogger';
 import { execFileSync } from 'child_process';
+import { Command, CommanderError, createCommand } from 'commander';
 import path from 'path';
 import process from 'process';
-import anylogger from 'anylogger';
-import { Command, CommanderError, createCommand } from 'commander';
-import { makeOracleCommand } from './commands/oracle.js';
+
+import { makeAuctionCommand } from './commands/auction.js';
 import { makeGovCommand } from './commands/gov.js';
+import { makeInterCommand } from './commands/inter.js';
+import { makeOracleCommand } from './commands/oracle.js';
+import { makePerfCommand } from './commands/perf.js';
 import { makePsmCommand } from './commands/psm.js';
 import { makeReserveCommand } from './commands/reserve.js';
-import { makeVaultsCommand } from './commands/vaults.js';
-import { makePerfCommand } from './commands/perf.js';
-import { makeInterCommand } from './commands/inter.js';
-import { makeAuctionCommand } from './commands/auction.js';
 import { makeTestCommand } from './commands/test-upgrade.js';
+import { makeVaultsCommand } from './commands/vaults.js';
 
 const logger = anylogger('agops');
 const progname = path.basename(process.argv[1]);

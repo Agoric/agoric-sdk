@@ -1,12 +1,11 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
-import path from 'path';
-
+import { claim } from '@agoric/ertp/src/legacy-payment-helpers.js';
+import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import bundleSource from '@endo/bundle-source';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
-import { claim } from '@agoric/ertp/src/legacy-payment-helpers.js';
-import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
+import path from 'path';
 
 import buildManualTimer from '../../../tools/manualTimer.js';
 import { setup } from '../setupBasicMints.js';

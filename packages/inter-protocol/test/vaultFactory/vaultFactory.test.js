@@ -2,6 +2,7 @@ import { test as unknownTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { combine, split } from '@agoric/ertp/src/legacy-payment-helpers.js';
+import { documentStorageSchema } from '@agoric/governance/tools/storageDoc.js';
 import {
   allValues,
   deeplyFulfilledObject,
@@ -21,12 +22,11 @@ import {
   assertPayoutAmount,
 } from '@agoric/zoe/test/zoeTestHelpers.js';
 import { makeManualPriceAuthority } from '@agoric/zoe/tools/manualPriceAuthority.js';
-
-import { documentStorageSchema } from '@agoric/governance/tools/storageDoc.js';
 import { buildZoeManualTimer } from '@agoric/zoe/tools/manualTimer.js';
 import { E } from '@endo/eventual-send';
-import { calculateCurrentDebt } from '../../src/interest-math.js';
+
 import { SECONDS_PER_YEAR } from '../../src/interest.js';
+import { calculateCurrentDebt } from '../../src/interest-math.js';
 import { startVaultFactory } from '../../src/proposals/econ-behaviors.js';
 import {
   metricsTracker,

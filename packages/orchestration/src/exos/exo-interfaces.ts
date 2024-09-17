@@ -1,5 +1,6 @@
 import type { IBCConnectionID } from '@agoric/vats';
 import type { Vow } from '@agoric/vow';
+
 import type { IcaAccount } from '../cosmos-api.ts';
 import type { ICAChannelAddressOpts } from '../utils/address';
 import type { ICQConnection } from './icq-connection-kit';

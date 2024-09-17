@@ -1,6 +1,5 @@
 /** @file DEPRECATED use the vault test driver instead */
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
-
 import { makePublishKit, observeNotifier } from '@agoric/notifier';
 import {
   makeFakeMarshaller,

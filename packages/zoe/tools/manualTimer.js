@@ -1,8 +1,8 @@
-import { Fail } from '@endo/errors';
-import { Far } from '@endo/marshal';
 import { bindAllMethods } from '@agoric/internal';
 import { buildManualTimer } from '@agoric/swingset-vat/tools/manual-timer.js';
 import { TimeMath } from '@agoric/time';
+import { Fail } from '@endo/errors';
+import { Far } from '@endo/marshal';
 
 /**
  * @import {TimerServiceI} from '@agoric/time';

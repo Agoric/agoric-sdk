@@ -2,9 +2,10 @@
 import { Fail } from '@endo/errors';
 import { Far } from '@endo/far';
 import { makeMarshal, Remotable } from '@endo/marshal';
-import { unmarshalFromVstorage } from './marshal.js';
+
 import { makeTracer } from './debug.js';
 import { isStreamCell, makeChainStorageRoot } from './lib-chainStorage.js';
+import { unmarshalFromVstorage } from './marshal.js';
 import { bindAllMethods } from './method-tools.js';
 import { eventLoopIteration } from './testing-utils.js';
 

@@ -1,12 +1,11 @@
 /* global setTimeout */
+import { VBankAccount } from '@agoric/internal';
 import test from 'ava';
-
 // Use ambient authority only in test.before()
 import { spawn as ambientSpawn } from 'child_process';
-import * as ambientPath from 'path';
 import * as ambientFs from 'fs';
+import * as ambientPath from 'path';
 
-import { VBankAccount } from '@agoric/internal';
 import { makeScenario2, makeWalletTool, pspawn } from './scenario2.js';
 
 // module account address for 'vbank/provision'; aka "megz"

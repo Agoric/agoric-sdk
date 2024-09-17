@@ -1,22 +1,22 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
+import { observeIteration } from '@agoric/notifier';
 import { makeScalarMapStore } from '@agoric/vat-data';
-
+import { makeZoeKitForTest } from '@agoric/zoe/tools/setup-zoe.js';
+import { makeHeapZone } from '@agoric/zone';
 import { E } from '@endo/far';
 import { makePromiseKit } from '@endo/promise-kit';
-import { makeZoeKitForTest } from '@agoric/zoe/tools/setup-zoe.js';
-import { observeIteration } from '@agoric/notifier';
-import { makeHeapZone } from '@agoric/zone';
-import { buildRootObject } from '../src/vat-bank.js';
+
 import {
-  mintInitialSupply,
   addBankAssets,
   installBootContracts,
-  produceStartUpgradable,
+  mintInitialSupply,
   produceDiagnostics,
+  produceStartUpgradable,
 } from '../src/core/basic-behaviors.js';
-import { makeAgoricNamesAccess } from '../src/core/utils.js';
 import { makePromiseSpace } from '../src/core/promise-space.js';
+import { makeAgoricNamesAccess } from '../src/core/utils.js';
+import { buildRootObject } from '../src/vat-bank.js';
 import { makePopulatedFakeVatAdmin } from '../tools/boot-test-utils.js';
 
 test('mintInitialSupply, addBankAssets bootstrap actions', async t => {

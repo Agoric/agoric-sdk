@@ -2,6 +2,7 @@ import { prepareAsyncFlowTools } from '@agoric/async-flow';
 import { prepareVowTools } from '@agoric/vow';
 import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/recorder.js';
 import { makeDurableZone } from '@agoric/zone/durable.js';
+
 import { makeChainHub } from '../exos/chain-hub.js';
 import { prepareCosmosOrchestrationAccount } from '../exos/cosmos-orchestration-account.js';
 import { prepareLocalChainFacade } from '../exos/local-chain-facade.js';

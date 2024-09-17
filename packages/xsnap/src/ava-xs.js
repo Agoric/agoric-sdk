@@ -1,12 +1,13 @@
 #!/usr/bin/env node
 import '@endo/init';
-import process from 'process';
-import { spawn } from 'child_process';
-import { type as osType } from 'os';
-import { promises as fsp } from 'fs';
-import path from 'path';
-import glob from 'glob';
+
 import bundleSource from '@endo/bundle-source';
+import { spawn } from 'child_process';
+import { promises as fsp } from 'fs';
+import glob from 'glob';
+import { type as osType } from 'os';
+import path from 'path';
+import process from 'process';
 
 import { main, makeBundleResolve } from './avaXS.js';
 

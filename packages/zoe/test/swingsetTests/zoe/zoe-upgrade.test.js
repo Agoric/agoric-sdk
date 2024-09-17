@@ -1,9 +1,9 @@
 import '@agoric/swingset-liveslots/tools/prepare-test-env.js';
-import test from 'ava';
 
-import bundleSource from '@endo/bundle-source';
-import { buildVatController } from '@agoric/swingset-vat';
 import { kunser } from '@agoric/kmarshal';
+import { buildVatController } from '@agoric/swingset-vat';
+import bundleSource from '@endo/bundle-source';
+import test from 'ava';
 
 const bfile = name => new URL(name, import.meta.url).pathname;
 

@@ -1,8 +1,8 @@
 // @ts-check
-import test from 'ava';
-
 import { makeExo } from '@endo/exo';
 import { M } from '@endo/patterns';
+import test from 'ava';
+
 import { cast, mustMatch } from '../src/typeCheck.js';
 
 /**

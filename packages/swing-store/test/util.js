@@ -1,5 +1,7 @@
 import { Buffer } from 'node:buffer';
+
 import tmp from 'tmp';
+
 import { createSHA256 } from '../src/hasher.js';
 
 /**

@@ -1,6 +1,6 @@
+import { krefOf, kunser } from '@agoric/kmarshal';
 import { Fail } from '@endo/errors';
 import { passStyleOf } from '@endo/far';
-import { kunser, krefOf } from '@agoric/kmarshal';
 
 /**
  * Assert function to ensure that something expected to be a capdata object

@@ -1,6 +1,7 @@
-import { makeIssuerKit, AmountMath, AssetKind } from '@agoric/ertp';
-import { makeZoeForTest } from '../../tools/setup-zoe.js';
+import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
+
 import { makeFakeVatAdmin } from '../../tools/fakeVatAdmin.js';
+import { makeZoeForTest } from '../../tools/setup-zoe.js';
 
 const setupNonFungible = () => {
   const ccBundle = makeIssuerKit('CryptoCats', AssetKind.SET);

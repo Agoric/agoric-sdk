@@ -1,11 +1,10 @@
 /* global process */
 // Use modules not prefixed with `node:` since some deploy scripts may
 // still be running in esm emulation
-import path from 'path';
+import { Fail, q } from '@endo/errors';
 import { spawnSync } from 'child_process';
 import { createRequire } from 'module';
-
-import { Fail, q } from '@endo/errors';
+import path from 'path';
 
 const BUNDLE_SOURCE_PROGRAM = 'bundle-source';
 const req = createRequire(import.meta.url);

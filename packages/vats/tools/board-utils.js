@@ -26,6 +26,7 @@ import {
 } from '@agoric/internal/src/marshal.js';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
 import { makeMarshal } from '@endo/marshal';
+
 import { prepareBoardKit } from '../src/lib-board.js';
 
 export * from '@agoric/internal/src/marshal.js';

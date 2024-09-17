@@ -2,30 +2,28 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
 import { AmountMath } from '@agoric/ertp';
-import { E } from '@endo/eventual-send';
+import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { makeNotifierKit } from '@agoric/notifier';
 import { TimeMath } from '@agoric/time';
+import { E } from '@endo/eventual-send';
 
-import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
+import { makeAddCollateralInvitation } from '../../../../src/contracts/loan/addCollateral.js';
+import { makeBorrowInvitation } from '../../../../src/contracts/loan/borrow.js';
+import { makeCloseLoanInvitation } from '../../../../src/contracts/loan/close.js';
+import { makeRatio } from '../../../../src/contractSupport/index.js';
+import { makeFakePriceAuthority } from '../../../../tools/fakePriceAuthority.js';
+import buildManualTimer from '../../../../tools/manualTimer.js';
+import { assertAmountsEqual } from '../../../zoeTestHelpers.js';
 import {
-  setupLoanUnitTest,
-  makeSeatKit,
-  checkDetails,
-  performAddCollateral,
   checkDescription,
+  checkDetails,
   checkNoNewOffers,
   checkPayouts,
   makeAutoswapInstance,
+  makeSeatKit,
+  performAddCollateral,
+  setupLoanUnitTest,
 } from './helpers.js';
-
-import { makeFakePriceAuthority } from '../../../../tools/fakePriceAuthority.js';
-import buildManualTimer from '../../../../tools/manualTimer.js';
-
-import { makeBorrowInvitation } from '../../../../src/contracts/loan/borrow.js';
-import { makeAddCollateralInvitation } from '../../../../src/contracts/loan/addCollateral.js';
-import { makeCloseLoanInvitation } from '../../../../src/contracts/loan/close.js';
-import { makeRatio } from '../../../../src/contractSupport/index.js';
-import { assertAmountsEqual } from '../../../zoeTestHelpers.js';
 
 const BASIS_POINTS = 10000n;
 

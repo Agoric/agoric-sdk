@@ -1,12 +1,13 @@
 // this file is loaded by the controller, in the start compartment
-import { spawn } from 'child_process';
 import { makePromiseKit } from '@endo/promise-kit';
+import { spawn } from 'child_process';
+
 import { NonNullish } from '../errors.js';
-import { arrayEncoderStream, arrayDecoderStream } from './worker-protocol.js';
 import {
-  netstringEncoderStream,
   netstringDecoderStream,
+  netstringEncoderStream,
 } from '../netstring.js';
+import { arrayDecoderStream, arrayEncoderStream } from './worker-protocol.js';
 
 // Start a subprocess from a given executable, and arrange a bidirectional
 // message channel with a "supervisor" within that process. Return a {

@@ -1,8 +1,8 @@
 // @ts-check
 
+import { makeLegacyMap, makeScalarMapStore } from '@agoric/store';
 import { assert, Fail, q } from '@endo/errors';
 import { makeMarshal, mapIterable } from '@endo/marshal';
-import { makeLegacyMap, makeScalarMapStore } from '@agoric/store';
 
 /**
  * @typedef {string[]} Path

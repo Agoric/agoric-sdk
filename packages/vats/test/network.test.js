@@ -1,21 +1,20 @@
-import { reincarnate } from '@agoric/swingset-liveslots/tools/setup-vat-data.js';
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
+import { prepareNetworkPowers } from '@agoric/network';
 import {
   makePinnedHistoryTopic,
   prepareDurablePublishKit,
   subscribeEach,
 } from '@agoric/notifier';
+import { reincarnate } from '@agoric/swingset-liveslots/tools/setup-vat-data.js';
 import { prepareVowTools } from '@agoric/vow/vat.js';
 import { makeDurableZone } from '@agoric/zone/durable.js';
 import { E } from '@endo/far';
 
-import { prepareNetworkPowers } from '@agoric/network';
+import { registerNetworkProtocols } from '../src/proposals/network-proposal.js';
 import { buildRootObject as ibcBuildRootObject } from '../src/vat-ibc.js';
 import { buildRootObject as networkBuildRootObject } from '../src/vat-network.js';
 import { makeFakeIbcBridge } from '../tools/fake-bridge.js';
-
-import { registerNetworkProtocols } from '../src/proposals/network-proposal.js';
 
 const { fakeVomKit } = reincarnate({ relaxDurabilityRules: false });
 const provideBaggage = key => {

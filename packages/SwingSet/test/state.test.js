@@ -1,21 +1,22 @@
 // @ts-nocheck
 /* eslint-disable no-useless-concat */
-// eslint-disable-next-line import/order
+
 import { test } from '../tools/prepare-test-env-ava.js';
 
-import { createHash } from 'crypto';
 import { kser, kslot } from '@agoric/kmarshal';
 import { initSwingStore } from '@agoric/swing-store';
+import { createHash } from 'crypto';
+
+import { upgradeSwingset } from '../src/controller/upgradeSwingset.js';
+import { KERNEL_STATS_METRICS } from '../src/kernel/metrics.js';
 import makeKernelKeeper, {
   CURRENT_SCHEMA_VERSION,
 } from '../src/kernel/state/kernelKeeper.js';
-import { upgradeSwingset } from '../src/controller/upgradeSwingset.js';
 import { makeKernelStats } from '../src/kernel/state/stats.js';
-import { KERNEL_STATS_METRICS } from '../src/kernel/metrics.js';
 import {
+  deletePrefixedKeys,
   enumeratePrefixedKeys,
   getPrefixedValues,
-  deletePrefixedKeys,
 } from '../src/kernel/state/storageHelper.js';
 
 const ignoredStateKeys = ['activityhash', 'kernelStats', 'local.kernelStats'];

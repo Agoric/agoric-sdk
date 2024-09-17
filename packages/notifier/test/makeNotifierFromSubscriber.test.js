@@ -1,9 +1,9 @@
 import { test } from './prepare-test-env-ava.js';
 
 import {
-  makePublishKit,
   makeNotifierFromSubscriber,
   makeNotifierKit,
+  makePublishKit,
 } from '../src/index.js';
 import {
   delayByTurns,

@@ -1,11 +1,12 @@
 import { Fail } from '@endo/errors';
-import { parseLocalSlot, insistLocalType } from './parseLocalSlots.js';
+
+import { cdebug } from './cdebug.js';
+import { insistLocalType, parseLocalSlot } from './parseLocalSlots.js';
 import {
   flipRemoteSlot,
   insistRemoteType,
   parseRemoteSlot,
 } from './parseRemoteSlot.js';
-import { cdebug } from './cdebug.js';
 
 function rname(remote) {
   return `${remote.remoteID()} (${remote.name()})`;

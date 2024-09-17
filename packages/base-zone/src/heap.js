@@ -1,17 +1,17 @@
 // @ts-check
 // @jessie-check
 
-import { Far, isPassable } from '@endo/pass-style';
-import { makeExo, defineExoClass, defineExoClassKit } from '@endo/exo';
 import {
   makeScalarMapStore,
   makeScalarSetStore,
   makeScalarWeakMapStore,
   makeScalarWeakSetStore,
 } from '@agoric/store';
+import { defineExoClass, defineExoClassKit, makeExo } from '@endo/exo';
+import { Far, isPassable } from '@endo/pass-style';
 
-import { makeOnceKit } from './make-once.js';
 import { agoricVatDataKeys as keys } from './keys.js';
+import { makeOnceKit } from './make-once.js';
 import { watchPromise } from './watch-promise.js';
 
 /**

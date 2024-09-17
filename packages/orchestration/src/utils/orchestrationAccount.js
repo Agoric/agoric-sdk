@@ -3,6 +3,7 @@ import { Shape as NetworkShape } from '@agoric/network';
 import { VowShape } from '@agoric/vow';
 import { TopicsRecordShape } from '@agoric/zoe/src/contractSupport/topics.js';
 import { M } from '@endo/patterns';
+
 import {
   AmountArgShape,
   ChainAddressShape,

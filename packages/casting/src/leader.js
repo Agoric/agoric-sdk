@@ -1,7 +1,8 @@
 import { E, Far } from '@endo/far';
-import { DEFAULT_RETRY_CALLBACK, DEFAULT_JITTER } from './defaults.js';
-import { shuffle } from './shuffle.js';
+
 import { makePollingChangeFollower } from './change-follower.js';
+import { DEFAULT_JITTER, DEFAULT_RETRY_CALLBACK } from './defaults.js';
+import { shuffle } from './shuffle.js';
 
 /**
  * Create a chain leader that rotates through a list of endpoints.

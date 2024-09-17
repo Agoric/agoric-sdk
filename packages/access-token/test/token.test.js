@@ -1,7 +1,7 @@
 import test from 'ava';
-import { tmpDir } from './tmp.js';
 
 import { getAccessToken } from '../src/access-token.js';
+import { tmpDir } from './tmp.js';
 
 test('access tokens', async t => {
   const [sharedStateDir, removeCallback] = await tmpDir('access-token-test');

@@ -3,13 +3,14 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { NonNullish } from '@agoric/internal';
-import process from 'process';
 import { TestFn } from 'ava';
+import process from 'process';
+
 import {
-  LiquidationSetup,
-  LiquidationTestContext,
   ensureVaultCollateral,
   likePayouts,
+  LiquidationSetup,
+  LiquidationTestContext,
   makeLiquidationTestContext,
   scale6,
 } from '../../tools/liquidation.js';

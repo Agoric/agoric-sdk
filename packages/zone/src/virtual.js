@@ -1,7 +1,11 @@
 // @ts-check
 // @jessie-check
 
-import { Far, isPassable } from '@endo/pass-style';
+import {
+  agoricVatDataKeys as keys,
+  makeOnceKit,
+  watchPromise,
+} from '@agoric/base-zone';
 import {
   defineVirtualExoClass,
   defineVirtualExoClassKit,
@@ -10,12 +14,7 @@ import {
   makeScalarBigWeakMapStore,
   makeScalarBigWeakSetStore,
 } from '@agoric/vat-data';
-
-import {
-  agoricVatDataKeys as keys,
-  makeOnceKit,
-  watchPromise,
-} from '@agoric/base-zone';
+import { Far, isPassable } from '@endo/pass-style';
 
 const emptyRecord = harden({});
 const initEmpty = harden(() => emptyRecord);

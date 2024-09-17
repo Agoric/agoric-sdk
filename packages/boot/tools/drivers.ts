@@ -1,29 +1,29 @@
 /* eslint-disable jsdoc/require-param */
-import { Fail } from '@endo/errors';
-import { NonNullish } from '@agoric/internal';
 import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
 import { SECONDS_PER_MINUTE } from '@agoric/inter-protocol/src/proposals/econ-behaviors.js';
+import { oracleBrandFeedName } from '@agoric/inter-protocol/src/proposals/utils.js';
+import { NonNullish } from '@agoric/internal';
 import { unmarshalFromVstorage } from '@agoric/internal/src/marshal.js';
 import {
   FakeStorageKit,
   slotToRemotable,
 } from '@agoric/internal/src/storage-test-utils.js';
-import { oracleBrandFeedName } from '@agoric/inter-protocol/src/proposals/utils.js';
-
-import {
-  AgoricNamesRemotes,
-  boardSlottingMarshaller,
-} from '@agoric/vats/tools/board-utils.js';
+import type { OfferSpec } from '@agoric/smart-wallet/src/offers.js';
 import type {
   CurrentWalletRecord,
   SmartWallet,
   UpdateRecord,
 } from '@agoric/smart-wallet/src/smartWallet.js';
-import type { WalletFactoryStartResult } from '@agoric/vats/src/core/startWalletFactory.js';
-import type { OfferSpec } from '@agoric/smart-wallet/src/offers.js';
-import type { TimerService } from '@agoric/time';
 import type { OfferMaker } from '@agoric/smart-wallet/src/types.js';
 import type { RunUtils } from '@agoric/swingset-vat/tools/run-utils.js';
+import type { TimerService } from '@agoric/time';
+import type { WalletFactoryStartResult } from '@agoric/vats/src/core/startWalletFactory.js';
+import {
+  AgoricNamesRemotes,
+  boardSlottingMarshaller,
+} from '@agoric/vats/tools/board-utils.js';
+import { Fail } from '@endo/errors';
+
 import type { SwingsetTestKit } from './supports.js';
 
 export const makeWalletFactoryDriver = async (

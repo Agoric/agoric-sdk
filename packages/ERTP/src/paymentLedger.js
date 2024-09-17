@@ -3,13 +3,13 @@
 /// <reference types="@agoric/store/exported.js" />
 
 /* eslint-disable no-use-before-define */
-import { X, q, Fail, annotateError } from '@endo/errors';
+import { keyEQ, M, mustMatch } from '@agoric/store';
+import { annotateError, Fail, q, X } from '@endo/errors';
 import { isPromise } from '@endo/promise-kit';
-import { mustMatch, M, keyEQ } from '@agoric/store';
+
 import { AmountMath } from './amountMath.js';
 import { preparePaymentKind } from './payment.js';
 import { preparePurseKind } from './purse.js';
-
 import { BrandI, makeIssuerInterfaces } from './typeGuards.js';
 
 /**

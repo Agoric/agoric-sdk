@@ -1,9 +1,8 @@
+import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
+import { notForProductionUse } from '@agoric/internal/src/magic-cookie-test-only.js';
 import { assert } from '@endo/errors';
-import { makeIssuerKit, AssetKind, AmountMath } from '@agoric/ertp';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
-
-import { notForProductionUse } from '@agoric/internal/src/magic-cookie-test-only.js';
 
 /**
  * This contract mints non-fungible tokens and creates a selling contract

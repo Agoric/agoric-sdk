@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 // @ts-check
 import '@endo/init';
-import process from 'process';
 
 import { Fail, q } from '@endo/errors';
+import process from 'process';
 
 const { entries, keys, values } = Object;
 

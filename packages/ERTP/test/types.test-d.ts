@@ -1,6 +1,7 @@
 import { Far } from '@endo/marshal';
 import type { Key } from '@endo/patterns';
 import { expectType } from 'tsd';
+
 import { AmountMath, AssetKind } from '../src/index.js';
 import type {
   Amount,

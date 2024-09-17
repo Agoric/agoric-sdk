@@ -2,9 +2,10 @@
 import '@endo/init/pre.js';
 import 'esm';
 import '@endo/init/debug.js';
+
+import anylogger from 'anylogger';
 import test from 'ava';
 import fs from 'fs';
-import anylogger from 'anylogger';
 
 import main from '../src/main.js';
 

@@ -1,10 +1,11 @@
-import { Fail } from '@endo/errors';
 import {
   AgoricNamesRemotes,
   makeAgoricNamesRemotesFromFakeStorage,
 } from '@agoric/vats/tools/board-utils.js';
-import { makeSwingsetTestKit } from '../../tools/supports.js';
+import { Fail } from '@endo/errors';
+
 import { makeWalletFactoryDriver } from '../../tools/drivers.js';
+import { makeSwingsetTestKit } from '../../tools/supports.js';
 
 export const makeWalletFactoryContext = async (
   t,

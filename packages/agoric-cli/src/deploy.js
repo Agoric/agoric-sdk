@@ -1,24 +1,23 @@
 // @ts-check
 /* global process setTimeout setInterval clearInterval */
 
+import { getAccessToken } from '@agoric/access-token';
+import { makeLeaderFromRpcAddresses } from '@agoric/casting';
+import { whileTrue } from '@agoric/internal';
+import { SigningStargateClient } from '@cosmjs/stargate';
+import { E, makeCapTP } from '@endo/captp';
 import { X } from '@endo/errors';
 import { makePromiseKit } from '@endo/promise-kit';
-import { E, makeCapTP } from '@endo/captp';
-import { makeLeaderFromRpcAddresses } from '@agoric/casting';
-import path from 'path';
 import http from 'http';
 import inquirer from 'inquirer';
-import { SigningStargateClient } from '@cosmjs/stargate';
-import { whileTrue } from '@agoric/internal';
+import path from 'path';
 
-import { getAccessToken } from '@agoric/access-token';
-
+import { makeJsonHttpClient } from './json-http-client-node.js';
 import {
   makeBundlePublisher,
   makeCosmosBundlePublisher,
   makeHttpBundlePublisher,
 } from './publish.js';
-import { makeJsonHttpClient } from './json-http-client-node.js';
 import { makeScriptLoader } from './scripts.js';
 
 // note: CapTP has its own HandledPromise instantiation, and the contract

@@ -1,5 +1,5 @@
-import { E } from '@endo/eventual-send';
 import { observeNotifier } from '@agoric/notifier';
+import { E } from '@endo/eventual-send';
 import { makePromiseKit } from '@endo/promise-kit';
 
 export const DEFAULT_TIMER_SERVICE_POLL_INTERVAL = 60_000n;

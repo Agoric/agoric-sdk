@@ -1,6 +1,6 @@
 import test from 'ava';
-import fs from 'fs';
 import crypto from 'crypto';
+import fs from 'fs';
 
 import {
   getSupervisorBundle,

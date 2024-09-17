@@ -1,6 +1,6 @@
+import { AmountMath } from '@agoric/ertp';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
-import { AmountMath } from '@agoric/ertp';
 
 /**
  * @param {ZCF} zcf

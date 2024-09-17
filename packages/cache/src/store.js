@@ -1,9 +1,10 @@
+import { untilTrue } from '@agoric/internal';
+import { makeScalarMapStore, matches } from '@agoric/store';
+import { makeScalarBigMapStore } from '@agoric/vat-data';
 import { E, Far } from '@endo/far';
 import { deeplyFulfilled, makeMarshal } from '@endo/marshal';
-import { matches, makeScalarMapStore } from '@agoric/store';
-import { makeScalarBigMapStore } from '@agoric/vat-data';
-import { untilTrue } from '@agoric/internal';
-import { withGroundState, makeState } from './state.js';
+
+import { makeState, withGroundState } from './state.js';
 /** @import {Passable} from '@endo/pass-style' */
 
 /**

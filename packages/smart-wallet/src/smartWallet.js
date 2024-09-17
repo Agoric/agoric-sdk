@@ -1,5 +1,3 @@
-import { Fail, q } from '@endo/errors';
-import { E } from '@endo/far';
 import {
   AmountShape,
   BrandShape,
@@ -28,6 +26,7 @@ import {
   provide,
   watchPromise,
 } from '@agoric/vat-data';
+import { prepareVowTools } from '@agoric/vow';
 import {
   prepareRecorderKit,
   SubscriberShape,
@@ -37,13 +36,14 @@ import {
   AmountKeywordRecordShape,
   PaymentPKeywordRecordShape,
 } from '@agoric/zoe/src/typeGuards.js';
-import { prepareVowTools } from '@agoric/vow';
 import { makeDurableZone } from '@agoric/zone/durable.js';
+import { Fail, q } from '@endo/errors';
+import { E } from '@endo/far';
 
 import { makeInvitationsHelper } from './invitations.js';
+import { makeWatchOfferOutcomes, prepareOfferWatcher } from './offerWatcher.js';
 import { shape } from './typeGuards.js';
 import { objectMapStoragePath } from './utils.js';
-import { prepareOfferWatcher, makeWatchOfferOutcomes } from './offerWatcher.js';
 
 /** @import {OfferId, OfferStatus} from './offers.js'; */
 

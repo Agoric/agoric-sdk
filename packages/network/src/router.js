@@ -6,6 +6,7 @@
 import { Fail } from '@endo/errors';
 import { E as defaultE } from '@endo/far';
 import { M } from '@endo/patterns';
+
 import { ENDPOINT_SEPARATOR, prepareNetworkProtocol } from './network.js';
 import { Shape } from './shapes.js';
 

@@ -1,23 +1,23 @@
 /* global process */
-import fs from 'fs';
-import path from 'path';
+import '../types-ambient.js';
 
-import { assert, Fail } from '@endo/errors';
 import { makeTracer } from '@agoric/internal';
 import { mustMatch } from '@agoric/store';
 import bundleSource from '@endo/bundle-source';
+import { assert, Fail } from '@endo/errors';
+import fs from 'fs';
 import { resolve as resolveModuleSpecifier } from 'import-meta-resolve';
-import { ManagerType } from '../typeGuards.js';
+import path from 'path';
+
 import { provideBundleCache } from '../../tools/bundleTool.js';
 import { kdebugEnable } from '../lib/kdebug.js';
 import { insistStorageAPI } from '../lib/storageAPI.js';
-import { initializeKernel } from './initializeKernel.js';
+import { ManagerType } from '../typeGuards.js';
 import {
   makeWorkerBundleHandler,
   makeXsnapBundleData,
 } from './bundle-handler.js';
-
-import '../types-ambient.js';
+import { initializeKernel } from './initializeKernel.js';
 
 const trace = makeTracer('IniSwi', false);
 

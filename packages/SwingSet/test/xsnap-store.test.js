@@ -1,16 +1,16 @@
 // @ts-nocheck
 /* global globalThis */
 
-import { spawn } from 'child_process';
-import fs from 'fs';
-import { tmpName } from 'tmp';
-import { type as osType } from 'os';
-import sqlite3 from 'better-sqlite3';
-import test from 'ava';
 import { makeMeasureSeconds } from '@agoric/internal';
+import { makeSnapStore, makeSnapStoreIO } from '@agoric/swing-store';
 import { xsnap } from '@agoric/xsnap';
 import { getLockdownBundle } from '@agoric/xsnap-lockdown';
-import { makeSnapStore, makeSnapStoreIO } from '@agoric/swing-store';
+import test from 'ava';
+import sqlite3 from 'better-sqlite3';
+import { spawn } from 'child_process';
+import fs from 'fs';
+import { type as osType } from 'os';
+import { tmpName } from 'tmp';
 
 const makeMockSnapStoreIO = () => ({
   ...makeSnapStoreIO(),

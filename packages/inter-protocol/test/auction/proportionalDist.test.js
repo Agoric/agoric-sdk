@@ -3,8 +3,8 @@ import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { makeIssuerKit } from '@agoric/ertp';
 import { makeTracer } from '@agoric/internal';
 
-import { withAmountUtils } from '../supports.js';
 import { distributeProportionalSharesWithLimits } from '../../src/auction/auctioneer.js';
+import { withAmountUtils } from '../supports.js';
 
 /** @type {import('ava').TestFn<Awaited<ReturnType<makeTestContext>>>} */
 const test = anyTest;

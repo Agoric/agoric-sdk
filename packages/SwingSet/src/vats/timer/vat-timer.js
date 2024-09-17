@@ -1,19 +1,19 @@
 /* eslint-disable no-use-before-define */
 
-import { assert } from '@endo/errors';
-import { Far, E, passStyleOf } from '@endo/far';
-import { makePromiseKit } from '@endo/promise-kit';
-import { Nat } from '@endo/nat';
+import { makeScalarWeakMapStore } from '@agoric/store';
+import { TimeMath } from '@agoric/time';
 import {
-  provideKindHandle,
-  provideDurableMapStore,
-  provideDurableWeakMapStore,
   defineDurableKindMulti,
   prepareKind,
   prepareSingleton,
+  provideDurableMapStore,
+  provideDurableWeakMapStore,
+  provideKindHandle,
 } from '@agoric/vat-data';
-import { makeScalarWeakMapStore } from '@agoric/store';
-import { TimeMath } from '@agoric/time';
+import { assert } from '@endo/errors';
+import { E, Far, passStyleOf } from '@endo/far';
+import { Nat } from '@endo/nat';
+import { makePromiseKit } from '@endo/promise-kit';
 
 /**
  * @import {Passable, RemotableObject} from '@endo/pass-style';

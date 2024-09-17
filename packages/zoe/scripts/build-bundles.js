@@ -2,6 +2,7 @@
 // @jessie-check
 
 import '@endo/init';
+
 import { createBundles } from '@agoric/internal/src/node/createBundles.js';
 import url from 'url';
 

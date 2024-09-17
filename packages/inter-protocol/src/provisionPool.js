@@ -12,6 +12,7 @@ import { prepareExo } from '@agoric/vat-data';
 import { provideSingleton } from '@agoric/zoe/src/contractSupport/durability.js';
 import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/recorder.js';
 import { TopicsRecordShape } from '@agoric/zoe/src/contractSupport/topics.js';
+
 import { prepareProvisionPoolKit } from './provisionPoolKit.js';
 
 /** @import {Marshal} from '@endo/marshal'; */

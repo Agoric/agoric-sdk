@@ -2,7 +2,6 @@ import {
   assertProposalShape,
   atomicTransfer,
 } from '../../contractSupport/index.js';
-
 import { scheduleLiquidation } from './scheduleLiquidation.js';
 
 // Create an invitation to add collateral to the loan. Part of the

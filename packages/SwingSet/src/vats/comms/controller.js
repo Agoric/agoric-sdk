@@ -1,6 +1,6 @@
-import { Nat } from '@endo/nat';
+import { krefOf, kser, kslot, kunser } from '@agoric/kmarshal';
 import { assert, Fail } from '@endo/errors';
-import { kser, kunser, kslot, krefOf } from '@agoric/kmarshal';
+import { Nat } from '@endo/nat';
 
 // deliverToController() is used for local vats which want to talk to us as a
 // vat, rather than as a conduit to talk to remote vats. The bootstrap

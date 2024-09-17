@@ -1,9 +1,9 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
+import { buildVatController } from '@agoric/swingset-vat';
 import { assert } from '@endo/errors';
 import { resolve as importMetaResolve } from 'import-meta-resolve';
 
-import { buildVatController } from '@agoric/swingset-vat';
 import {
   wfV1BundleName,
   wfV2BundleName,

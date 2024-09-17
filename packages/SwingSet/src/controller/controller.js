@@ -1,38 +1,37 @@
 /* global globalThis, WeakRef, FinalizationRegistry */
 
-import process from 'process';
-import crypto from 'crypto';
-import { performance } from 'perf_hooks';
-import { spawn as ambientSpawn } from 'child_process';
-import fs from 'fs';
-import { tmpName } from 'tmp';
-import anylogger from 'anylogger';
-import microtime from 'microtime';
-
-import { assert, Fail } from '@endo/errors';
-import { importBundle } from '@endo/import-bundle';
-import { initSwingStore } from '@agoric/swing-store';
-
-import { mustMatch, M } from '@endo/patterns';
-import { checkBundle } from '@endo/check-bundle/lite.js';
 import engineGC from '@agoric/internal/src/lib-nodejs/engine-gc.js';
+import { makeGcAndFinalize } from '@agoric/internal/src/lib-nodejs/gc-and-finalize.js';
 import { startSubprocessWorker } from '@agoric/internal/src/lib-nodejs/spawnSubprocessWorker.js';
 import { waitUntilQuiescent } from '@agoric/internal/src/lib-nodejs/waitUntilQuiescent.js';
-import { makeGcAndFinalize } from '@agoric/internal/src/lib-nodejs/gc-and-finalize.js';
-import { kslot, krefOf } from '@agoric/kmarshal';
-import { insistStorageAPI } from '../lib/storageAPI.js';
+import { krefOf, kslot } from '@agoric/kmarshal';
+import { initSwingStore } from '@agoric/swing-store';
+import { checkBundle } from '@endo/check-bundle/lite.js';
+import { assert, Fail } from '@endo/errors';
+import { importBundle } from '@endo/import-bundle';
+import { M, mustMatch } from '@endo/patterns';
+import anylogger from 'anylogger';
+import { spawn as ambientSpawn } from 'child_process';
+import crypto from 'crypto';
+import fs from 'fs';
+import microtime from 'microtime';
+import { performance } from 'perf_hooks';
+import process from 'process';
+import { tmpName } from 'tmp';
+
 import { insistCapData } from '../lib/capdata.js';
-import {
-  buildKernelBundle,
-  swingsetIsInitialized,
-  initializeSwingset,
-} from './initializeSwingset.js';
+import { insistStorageAPI } from '../lib/storageAPI.js';
 import {
   makeWorkerBundleHandler,
   makeXsnapBundleData,
 } from './bundle-handler.js';
-import { makeStartXSnap } from './startXSnap.js';
+import {
+  buildKernelBundle,
+  initializeSwingset,
+  swingsetIsInitialized,
+} from './initializeSwingset.js';
 import { makeStartSubprocessWorkerNode } from './startNodeSubprocess.js';
+import { makeStartXSnap } from './startXSnap.js';
 
 /**
  * @typedef { import('../types-internal.js').VatID } VatID

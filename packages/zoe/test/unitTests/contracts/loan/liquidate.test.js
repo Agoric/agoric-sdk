@@ -3,12 +3,11 @@ import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 import { AmountMath } from '@agoric/ertp';
 
 import { doLiquidation } from '../../../../src/contracts/loan/liquidate.js';
-
 import {
-  setupLoanUnitTest,
-  makeSeatKit,
   checkNoNewOffers,
   checkPayouts,
+  makeSeatKit,
+  setupLoanUnitTest,
 } from './helpers.js';
 
 test('test doLiquidation with mocked autoswap', async t => {

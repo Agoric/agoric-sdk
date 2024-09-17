@@ -1,5 +1,5 @@
 // @ts-check
-import { getVowPayload, basicE } from './vow-utils.js';
+import { basicE, getVowPayload } from './vow-utils.js';
 
 /** @import { IsRetryableReason, EUnwrap } from './types.js' */
 

@@ -1,5 +1,5 @@
+import { E, Far } from '@endo/far';
 import { makePromiseKit } from '@endo/promise-kit';
-import { Far, E } from '@endo/far';
 
 export function buildRootObject() {
   const { promise: vatAdminSvc, resolve: gotVatAdminSvc } = makePromiseKit();

@@ -1,8 +1,9 @@
 // @ts-nocheck
 
 import { test } from '../tools/prepare-test-env-ava.js';
-// eslint-disable-next-line import/order
+
 import { initSwingStore } from '@agoric/swing-store';
+
 import { buildVatController, loadBasedir } from '../src/index.js';
 
 // this test wants to compare the swing-store state from one run to

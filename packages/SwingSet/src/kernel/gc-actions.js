@@ -1,6 +1,7 @@
 import { Fail } from '@endo/errors';
-import { insistKernelType } from './parseKernelSlots.js';
+
 import { insistVatID } from '../lib/id.js';
+import { insistKernelType } from './parseKernelSlots.js';
 
 /** @import {TotalMap} from '@agoric/internal'; */
 

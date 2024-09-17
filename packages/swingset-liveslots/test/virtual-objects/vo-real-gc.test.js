@@ -1,10 +1,10 @@
 // @ts-nocheck
+import { kser, kunser } from '@agoric/kmarshal';
+import { Far } from '@endo/marshal';
 import test from 'ava';
 
-import { Far } from '@endo/marshal';
-import { kser, kunser } from '@agoric/kmarshal';
-import { setupTestLiveslots } from '../liveslots-helpers.js';
 import { watchCollected } from '../gc-and-finalize.js';
+import { setupTestLiveslots } from '../liveslots-helpers.js';
 
 test('virtual object state writes', async t => {
   let collected;

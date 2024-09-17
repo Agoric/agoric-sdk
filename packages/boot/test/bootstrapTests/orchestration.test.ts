@@ -1,12 +1,13 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-import { Fail } from '@endo/errors';
 import { documentStorageSchema } from '@agoric/internal/src/storage-test-utils.js';
 import type { CosmosValidatorAddress } from '@agoric/orchestration';
 import type { start as startStakeIca } from '@agoric/orchestration/src/examples/stakeIca.contract.js';
-import type { Instance } from '@agoric/zoe/src/zoeService/utils.js';
-import type { TestFn } from 'ava';
 import { SIMULATED_ERRORS } from '@agoric/vats/tools/fake-bridge.js';
+import type { Instance } from '@agoric/zoe/src/zoeService/utils.js';
+import { Fail } from '@endo/errors';
+import type { TestFn } from 'ava';
+
 import {
   makeWalletFactoryContext,
   type WalletFactoryTestContext,

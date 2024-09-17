@@ -1,11 +1,12 @@
-import { AmountMath, makeIssuerKit, AssetKind } from '@agoric/ertp';
-import { E } from '@endo/eventual-send';
-import { Far } from '@endo/marshal';
+import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { observeNotifier } from '@agoric/notifier';
 import { TimeMath } from '@agoric/time';
+import { E } from '@endo/eventual-send';
+import { Far } from '@endo/marshal';
+
 import {
-  natSafeMath,
   makeOnewayPriceAuthorityKit,
+  natSafeMath,
 } from '../src/contractSupport/index.js';
 
 /**

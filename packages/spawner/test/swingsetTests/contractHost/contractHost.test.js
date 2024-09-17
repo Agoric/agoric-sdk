@@ -1,12 +1,12 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
-import path from 'path';
-import bundleSource from '@endo/bundle-source';
 import {
   buildKernelBundles,
   buildVatController,
   loadBasedir,
 } from '@agoric/swingset-vat';
+import bundleSource from '@endo/bundle-source';
+import path from 'path';
 
 const dirname = path.dirname(new URL(import.meta.url).pathname);
 

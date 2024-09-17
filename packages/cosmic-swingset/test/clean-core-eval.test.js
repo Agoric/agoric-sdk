@@ -1,7 +1,8 @@
 import test from 'ava';
+
 import {
-  defangEvaluableCode,
   compartmentEvaluate,
+  defangEvaluableCode,
 } from '../scripts/clean-core-eval.js';
 
 test('defangEvaluableCode is working', t => {

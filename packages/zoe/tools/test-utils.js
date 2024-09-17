@@ -1,4 +1,5 @@
 import { AmountMath } from '@agoric/ertp';
+
 import { makeRatio } from '../src/contractSupport/ratio.js';
 
 /** @param {Pick<IssuerKit<'nat'>, 'brand' | 'issuer' | 'mint'>} kit */

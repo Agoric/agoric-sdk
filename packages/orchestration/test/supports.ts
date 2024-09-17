@@ -1,6 +1,7 @@
 import { makeIssuerKit } from '@agoric/ertp';
 import { VTRANSFER_IBC_EVENT } from '@agoric/internal/src/action-types.js';
 import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
+import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { reincarnate } from '@agoric/swingset-liveslots/tools/setup-vat-data.js';
 import { makeNameHubKit } from '@agoric/vats';
 import { prepareBridgeTargetModule } from '@agoric/vats/src/bridge-target.js';
@@ -21,13 +22,13 @@ import { makeHeapZone, type Zone } from '@agoric/zone';
 import { makeDurableZone } from '@agoric/zone/durable.js';
 import { E } from '@endo/far';
 import type { ExecutionContext } from 'ava';
-import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
+
 import { registerKnownChains } from '../src/chain-info.js';
-import { prepareCosmosInterchainService } from '../src/exos/cosmos-interchain-service.js';
-import { setupFakeNetwork } from './network-fakes.js';
-import { buildVTransferEvent } from '../tools/ibc-mocks.js';
 import { makeChainHub } from '../src/exos/chain-hub.js';
+import { prepareCosmosInterchainService } from '../src/exos/cosmos-interchain-service.js';
 import fetchedChainInfo from '../src/fetched-chain-info.js';
+import { buildVTransferEvent } from '../tools/ibc-mocks.js';
+import { setupFakeNetwork } from './network-fakes.js';
 
 export {
   makeFakeLocalchainBridge,

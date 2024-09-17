@@ -1,8 +1,8 @@
-import { assert, Fail } from '@endo/errors';
-import { makeScalarMapStore } from '@agoric/store';
-import { AmountMath } from '@agoric/ertp';
-
 import '../internal-types.js';
+
+import { AmountMath } from '@agoric/ertp';
+import { makeScalarMapStore } from '@agoric/store';
+import { assert, Fail } from '@endo/errors';
 /**
  * @import {MapStore} from '@agoric/store';
  */

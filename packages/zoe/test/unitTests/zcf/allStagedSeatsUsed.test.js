@@ -1,10 +1,9 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
-import { AssetKind, AmountMath } from '@agoric/ertp';
+import { AmountMath, AssetKind } from '@agoric/ertp';
+
 import { makeOffer } from '../makeOffer.js';
-
 import { setup } from '../setupBasicMints.js';
-
 import { setupZCFTest } from './setupZcfTest.js';
 
 test(`allStagedSeatsUsed should not be asserted`, async t => {

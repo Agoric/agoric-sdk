@@ -1,9 +1,9 @@
 // @ts-check
 import fs from 'fs';
+import Readlines from 'n-readlines';
 import path from 'path';
 import process from 'process';
 import lockfile from 'proper-lockfile';
-import Readlines from 'n-readlines';
 
 // TODO: Update this when we make a breaking change.
 // const DATA_FILE = 'data.jsonlines';

@@ -1,20 +1,22 @@
 // @ts-check
 /* global setTimeout */
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
-import { createRequire } from 'module';
-import { E, Far } from '@endo/far';
+
+import { AmountMath, makeIssuerKit } from '@agoric/ertp';
+import { allValues } from '@agoric/internal';
+import { makeMockChainStorageRoot } from '@agoric/internal/src/storage-test-utils.js';
+import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { makeScalarMapStore } from '@agoric/store';
-import { makeDurableZone } from '@agoric/zone/durable.js';
 import { makeNameHubKit, makePromiseSpace } from '@agoric/vats';
+import { makeWellKnownSpaces } from '@agoric/vats/src/core/utils.js';
+import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
 import { makeFakeVatAdmin } from '@agoric/zoe/tools/fakeVatAdmin.js';
 import { makeZoeKitForTest } from '@agoric/zoe/tools/setup-zoe.js';
-import { makeWellKnownSpaces } from '@agoric/vats/src/core/utils.js';
-import { makeMockChainStorageRoot } from '@agoric/internal/src/storage-test-utils.js';
-import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
-import { allValues } from '@agoric/internal';
-import { AmountMath, makeIssuerKit } from '@agoric/ertp';
+import { makeDurableZone } from '@agoric/zone/durable.js';
 import { makeNodeBundleCache } from '@endo/bundle-source/cache.js';
-import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
+import { E, Far } from '@endo/far';
+import { createRequire } from 'module';
+
 import { prepareSmartWallet } from '../src/smartWallet.js';
 
 /** @type {import('ava').TestFn<Awaited<ReturnType<makeTestContext>>>} */

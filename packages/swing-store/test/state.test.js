@@ -1,14 +1,13 @@
 // @ts-check
 
-import tmp from 'tmp';
-import test from 'ava';
-
 import bundleSource from '@endo/bundle-source';
+import test from 'ava';
+import tmp from 'tmp';
 
 import {
   initSwingStore,
-  openSwingStore,
   isSwingStore,
+  openSwingStore,
 } from '../src/swingStore.js';
 
 /**

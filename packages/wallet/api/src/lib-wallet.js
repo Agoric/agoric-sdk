@@ -11,21 +11,12 @@
  * and dapps.
  */
 
-import { assert, q, Fail } from '@endo/errors';
+import './internal-types.js';
+
 import { makeScalarStoreCoordinator } from '@agoric/cache';
+import { AmountMath } from '@agoric/ertp';
 import { objectMap, WalletName } from '@agoric/internal';
 import { slotStringUnserialize } from '@agoric/internal/src/storage-test-utils.js';
-import {
-  makeLegacyMap,
-  makeScalarMapStore,
-  makeScalarWeakMapStore,
-} from '@agoric/store';
-import { makeScalarBigMapStore } from '@agoric/vat-data';
-import { AmountMath } from '@agoric/ertp';
-import { E } from '@endo/eventual-send';
-
-import { passStyleOf, Far, mapIterable } from '@endo/marshal';
-import { Nat } from '@endo/nat';
 import {
   makeNotifierFromSubscriber,
   makeNotifierKit,
@@ -33,16 +24,24 @@ import {
   observeNotifier,
   subscribeEach,
 } from '@agoric/notifier';
+import { makeExportContext } from '@agoric/smart-wallet/src/marshal-contexts.js';
+import {
+  makeLegacyMap,
+  makeScalarMapStore,
+  makeScalarWeakMapStore,
+} from '@agoric/store';
+import { makeScalarBigMapStore } from '@agoric/vat-data';
+import { assert, Fail, q } from '@endo/errors';
+import { E } from '@endo/eventual-send';
+import { Far, mapIterable, passStyleOf } from '@endo/marshal';
+import { Nat } from '@endo/nat';
 import { makePromiseKit } from '@endo/promise-kit';
 
-import { makeExportContext } from '@agoric/smart-wallet/src/marshal-contexts.js';
+import { makePaymentActions } from './actions.js';
+import { bigintStringify } from './bigintStringify.js';
+import { findOrMakeInvitation, makeId } from './findOrMakeInvitation.js';
 import { makeIssuerTable } from './issuerTable.js';
 import { makeDehydrator } from './lib-dehydrate.js';
-import { makeId, findOrMakeInvitation } from './findOrMakeInvitation.js';
-import { bigintStringify } from './bigintStringify.js';
-import { makePaymentActions } from './actions.js';
-
-import './internal-types.js';
 
 // does nothing
 const noActionStateChangeHandler = _newState => {};

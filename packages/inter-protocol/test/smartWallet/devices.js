@@ -5,6 +5,7 @@ import walletFactory from '@agoric/smart-wallet/bundles/bundle-walletFactory.js'
 import centralSupply from '@agoric/vats/bundles/bundle-centralSupply.js';
 import mintHolder from '@agoric/vats/bundles/bundle-mintHolder.js';
 import provisionPool from '@agoric/vats/bundles/bundle-provisionPool.js';
+
 import econCommitteeCharter from '../../bundles/bundle-econCommitteeCharter.js';
 import psm from '../../bundles/bundle-psm.js';
 

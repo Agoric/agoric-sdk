@@ -1,14 +1,15 @@
 /** @file Bootstrap test of restarting (almost) all vats */
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
+
+import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
+import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
+import { BridgeHandler, ScopedBridgeManager } from '@agoric/vats';
+import { makeAgoricNamesRemotesFromFakeStorage } from '@agoric/vats/tools/board-utils.js';
+import { Fail } from '@endo/errors';
 import { TestFn } from 'ava';
 
-import { Fail } from '@endo/errors';
-import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
-import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
-import { makeAgoricNamesRemotesFromFakeStorage } from '@agoric/vats/tools/board-utils.js';
-import { BridgeHandler, ScopedBridgeManager } from '@agoric/vats';
-import { makeSwingsetTestKit } from '../../tools/supports.js';
 import { makeWalletFactoryDriver } from '../../tools/drivers.js';
+import { makeSwingsetTestKit } from '../../tools/supports.js';
 
 // main/production config doesn't have initialPrice, upon which 'open vaults' depends
 const PLATFORM_CONFIG = '@agoric/vm-config/decentral-itest-vaults-config.json';

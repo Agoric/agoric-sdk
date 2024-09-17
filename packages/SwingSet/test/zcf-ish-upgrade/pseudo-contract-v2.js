@@ -1,7 +1,8 @@
 // @ts-nocheck
 /* eslint-disable no-unused-vars */
 import { defineDurableKind, defineDurableKindMulti } from '@agoric/vat-data';
-import { provideHandle, provideBaggageSubset } from './util.js';
+
+import { provideBaggageSubset, provideHandle } from './util.js';
 
 export const setupInstallation = async installationBaggage => {
   const installationHandle1 = provideHandle(

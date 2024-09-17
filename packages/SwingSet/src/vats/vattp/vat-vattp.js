@@ -1,13 +1,13 @@
-import { Fail } from '@endo/errors';
 import {
-  provide,
   defineDurableKindMulti,
   makeScalarBigMapStore,
+  provide,
   provideDurableMapStore,
   provideDurableSetStore,
   provideKindHandle,
 } from '@agoric/vat-data';
-import { Far, E } from '@endo/far';
+import { Fail } from '@endo/errors';
+import { E, Far } from '@endo/far';
 
 // See ../../docs/delivery.md for a description of the architecture of the
 // comms system.

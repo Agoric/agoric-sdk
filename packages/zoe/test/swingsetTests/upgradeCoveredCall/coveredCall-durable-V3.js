@@ -1,6 +1,7 @@
-import { X } from '@endo/errors';
 import { M, mustMatch } from '@agoric/store';
-import { prepareExoClass, prepareExo } from '@agoric/vat-data';
+import { prepareExo, prepareExoClass } from '@agoric/vat-data';
+import { X } from '@endo/errors';
+
 import { swapExact } from '../../../src/contractSupport/index.js';
 import {
   InvitationShape,

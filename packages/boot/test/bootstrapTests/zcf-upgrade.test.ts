@@ -1,13 +1,13 @@
-import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
-import bundleSource from '@endo/bundle-source';
 
+import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
+import { makeAgoricNamesRemotesFromFakeStorage } from '@agoric/vats/tools/board-utils.js';
+import bundleSource from '@endo/bundle-source';
+import { TestFn } from 'ava';
 import path from 'path';
 
-import { makeAgoricNamesRemotesFromFakeStorage } from '@agoric/vats/tools/board-utils.js';
-import { TestFn } from 'ava';
-import { matchAmount, makeSwingsetTestKit } from '../../tools/supports.js';
 import { makeZoeDriver } from '../../tools/drivers.js';
+import { makeSwingsetTestKit, matchAmount } from '../../tools/supports.js';
 
 const dirname = path.dirname(new URL(import.meta.url).pathname);
 

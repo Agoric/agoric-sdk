@@ -1,14 +1,14 @@
 // @ts-nocheck
-// eslint-disable-next-line import/order
+
 import { test } from '../../../tools/prepare-test-env-ava.js';
 
 import { kser } from '@agoric/kmarshal';
 import { initSwingStore } from '@agoric/swing-store';
 
 import {
+  buildKernelBundles,
   buildVatController,
   loadSwingsetConfigFile,
-  buildKernelBundles,
 } from '../../../src/index.js';
 
 test.before(async t => {

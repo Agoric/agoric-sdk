@@ -2,7 +2,7 @@
 // @jessie-check
 
 import { Fail } from '@endo/errors';
-import { Nat, isNat } from '@endo/nat';
+import { isNat, Nat } from '@endo/nat';
 
 export const stringToNat = s => {
   typeof s === 'string' || Fail`${s} must be a string`;

@@ -22,9 +22,9 @@
  * expose only capabilities that don't reveal them.
  */
 
-import { Nat } from '@endo/nat';
 import { assert, Fail } from '@endo/errors';
 import { Far } from '@endo/far';
+import { Nat } from '@endo/nat';
 
 // Since we use harden when saving the state, we need to copy the arrays so they
 // will continue to be mutable. each record inside handlers is immutable, so we

@@ -1,12 +1,12 @@
 import { synchronizedTee } from '@agoric/internal';
-import { assert, Fail, q } from '@endo/errors';
 import { ExitCode } from '@agoric/xsnap/api.js';
-import { makeManagerKit } from './manager-helper.js';
+import { assert, Fail, q } from '@endo/errors';
 
 import {
-  insistVatSyscallObject,
   insistVatDeliveryResult,
+  insistVatSyscallObject,
 } from '../../lib/message.js';
+import { makeManagerKit } from './manager-helper.js';
 
 /// <reference path="../../types-ambient.js" />
 

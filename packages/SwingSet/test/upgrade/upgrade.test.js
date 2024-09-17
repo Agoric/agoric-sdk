@@ -1,19 +1,20 @@
 // @ts-nocheck
-// eslint-disable-next-line import/order
+
 import { test } from '../../tools/prepare-test-env-ava.js';
 
-import { assert } from '@endo/errors';
-import bundleSource from '@endo/bundle-source';
 import { objectMap } from '@agoric/internal';
-import { kser, kunser, krefOf } from '@agoric/kmarshal';
+import { krefOf, kser, kunser } from '@agoric/kmarshal';
 import { initSwingStore } from '@agoric/swing-store';
-import { parseReachableAndVatSlot } from '../../src/kernel/state/reachable.js';
-import { parseVatSlot } from '../../src/lib/parseVatSlots.js';
+import bundleSource from '@endo/bundle-source';
+import { assert } from '@endo/errors';
+
 import {
   buildKernelBundles,
   initializeSwingset,
   makeSwingsetController,
 } from '../../src/index.js';
+import { parseReachableAndVatSlot } from '../../src/kernel/state/reachable.js';
+import { parseVatSlot } from '../../src/lib/parseVatSlots.js';
 import { bundleOpts, restartVatAdminVat } from '../util.js';
 
 const bfile = name => new URL(name, import.meta.url).pathname;

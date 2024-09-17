@@ -1,5 +1,5 @@
-import { Far } from '@endo/marshal';
 import { defineKind } from '@agoric/vat-data';
+import { Far } from '@endo/marshal';
 
 const p = console.log;
 

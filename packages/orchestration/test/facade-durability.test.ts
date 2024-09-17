@@ -4,6 +4,7 @@ import { makeIssuerKit } from '@agoric/ertp';
 import { reincarnate } from '@agoric/swingset-liveslots/tools/setup-vat-data.js';
 import { prepareSwingsetVowTools } from '@agoric/vow/vat.js';
 import { setupZCFTest } from '@agoric/zoe/test/unitTests/zcf/setupZcfTest.js';
+
 import type { CosmosChainInfo, IBCConnectionInfo } from '../src/cosmos-api.js';
 import fetchedChainInfo from '../src/fetched-chain-info.js'; // Refresh with scripts/refresh-chain-info.ts
 import type { Chain } from '../src/orchestration-api.js';

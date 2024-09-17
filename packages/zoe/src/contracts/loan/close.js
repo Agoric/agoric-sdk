@@ -1,7 +1,7 @@
 /// <reference path="./types-ambient.js" />
 
-import { Fail } from '@endo/errors';
 import { AmountMath } from '@agoric/ertp';
+import { Fail } from '@endo/errors';
 
 import { assertProposalShape } from '../../contractSupport/index.js';
 

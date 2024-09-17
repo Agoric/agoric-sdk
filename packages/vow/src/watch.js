@@ -1,6 +1,7 @@
 // @ts-check
 import { PromiseWatcherI } from '@agoric/base-zone';
-import { getVowPayload, basicE } from './vow-utils.js';
+
+import { basicE, getVowPayload } from './vow-utils.js';
 
 const { apply } = Reflect;
 

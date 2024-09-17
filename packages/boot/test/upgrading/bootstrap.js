@@ -1,6 +1,6 @@
+import { feeIssuerConfig } from '@agoric/vats/src/core/utils.js';
 import { E, Far } from '@endo/far';
 import { makePromiseKit } from '@endo/promise-kit';
-import { feeIssuerConfig } from '@agoric/vats/src/core/utils.js';
 
 const bundles = {
   mintHolder: 'mintHolder',

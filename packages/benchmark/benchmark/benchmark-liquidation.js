@@ -1,8 +1,7 @@
-// eslint-disable-next-line import/order
-import { bench } from '../src/benchmarkerator.js';
-
-import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
 import { scale6 } from '@agoric/boot/tools/liquidation.js';
+import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
+
+import { bench } from '../src/benchmarkerator.js';
 
 const setupData = {
   vaults: [

@@ -1,12 +1,11 @@
 // @ts-check
 
-import path from 'path';
 import test from 'ava';
 import sqlite3 from 'better-sqlite3';
+import path from 'path';
 
 import { importSwingStore, openSwingStore } from '../src/index.js';
-
-import { makeExporter, buildData } from './exports.js';
+import { buildData, makeExporter } from './exports.js';
 import { tmpDir } from './util.js';
 
 test('repair metadata', async t => {

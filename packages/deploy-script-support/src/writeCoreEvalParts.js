@@ -1,9 +1,9 @@
 // @ts-check
-import fs from 'fs';
+import { createBundles } from '@agoric/internal/src/node/createBundles.js';
 import { E } from '@endo/far';
 import { deeplyFulfilled } from '@endo/marshal';
+import fs from 'fs';
 
-import { createBundles } from '@agoric/internal/src/node/createBundles.js';
 import { defangAndTrim, mergePermits, stringify } from './code-gen.js';
 import {
   makeCoreProposalBehavior,

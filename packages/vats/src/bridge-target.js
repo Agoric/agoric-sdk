@@ -1,4 +1,4 @@
-import { X, Fail, makeError } from '@endo/errors';
+import { Fail, makeError, X } from '@endo/errors';
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
 

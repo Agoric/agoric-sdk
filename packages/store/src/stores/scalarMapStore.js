@@ -1,18 +1,19 @@
 import { q } from '@endo/errors';
+import { compareRank } from '@endo/marshal';
 import {
-  Far,
   assertPassable,
+  Far,
   filterIterable,
   mapIterable,
 } from '@endo/pass-style';
-import { compareRank } from '@endo/marshal';
 import {
+  assertPattern,
   assertScalarKey,
   makeCopyMap,
   matches,
   mustMatch,
-  assertPattern,
 } from '@endo/patterns';
+
 import { makeWeakMapStoreMethods } from './scalarWeakMapStore.js';
 import { makeCurrentKeysKit } from './store-utils.js';
 

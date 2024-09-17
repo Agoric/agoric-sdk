@@ -1,7 +1,7 @@
 #! /usr/bin/env node
 import fs from 'fs';
-import process from 'process';
 import { createRequire } from 'module';
+import process from 'process';
 
 const require = createRequire(import.meta.url);
 const spec = process.argv[2];

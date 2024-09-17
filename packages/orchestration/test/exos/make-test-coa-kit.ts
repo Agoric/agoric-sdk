@@ -3,9 +3,10 @@ import { heapVowE as E } from '@agoric/vow/vat.js';
 import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/recorder.js';
 import { Far } from '@endo/far';
 import type { ExecutionContext } from 'ava';
+
 import { prepareCosmosOrchestrationAccount } from '../../src/exos/cosmos-orchestration-account.js';
-import { commonSetup } from '../supports.js';
 import type { ICQConnection } from '../../src/exos/icq-connection-kit.js';
+import { commonSetup } from '../supports.js';
 
 /**
  * A testing utility that creates a (Cosmos)ChainAccount and makes a

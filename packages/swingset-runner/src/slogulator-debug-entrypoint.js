@@ -6,6 +6,7 @@
  * as yet not-entirely-ESM-supporting version of NodeJS.
  */
 import '@endo/init';
+
 import { main } from './slogulator.js';
 
 process.exitCode = 1;

@@ -1,12 +1,10 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
-import path from 'path';
-
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
+import bundleSource from '@endo/bundle-source';
 import { E } from '@endo/eventual-send';
 import { passStyleOf } from '@endo/marshal';
-
-import bundleSource from '@endo/bundle-source';
+import path from 'path';
 
 import { setup } from './setupBasicMints.js';
 import { setupZCFTest } from './zcf/setupZcfTest.js';

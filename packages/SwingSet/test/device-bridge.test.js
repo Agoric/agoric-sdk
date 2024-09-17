@@ -1,13 +1,13 @@
 // @ts-nocheck
+
 import { test } from '../tools/prepare-test-env-ava.js';
 
-// eslint-disable-next-line import/order
 import { initSwingStore } from '@agoric/swing-store';
 
 import {
+  buildBridge,
   initializeSwingset,
   makeSwingsetController,
-  buildBridge,
 } from '../src/index.js';
 
 test('bridge device', async t => {

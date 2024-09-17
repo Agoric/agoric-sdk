@@ -1,6 +1,7 @@
 // @jessie-check
 
 import { Far } from '@endo/marshal';
+
 import { start } from './output.js';
 
 export const bootPlugin = () => {

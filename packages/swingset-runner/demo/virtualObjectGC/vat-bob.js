@@ -1,6 +1,6 @@
+import { defineKind } from '@agoric/vat-data';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
-import { defineKind } from '@agoric/vat-data';
 
 export function buildRootObject() {
   const makeThing = defineKind('thing', label => ({ label }), {

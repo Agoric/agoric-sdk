@@ -1,10 +1,11 @@
-import { expectType } from 'tsd';
 import type { Vow, VowTools } from '@agoric/vow';
+import { expectType } from 'tsd';
+
 import type {
-  HostOf,
+  GuestInterface,
   GuestOf,
   HostInterface,
-  GuestInterface,
+  HostOf,
 } from '../src/types.js';
 
 const castable: unknown = null;

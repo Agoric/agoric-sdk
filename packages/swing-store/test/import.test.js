@@ -1,18 +1,15 @@
 // @ts-check
 
-import path from 'path';
-import { createGunzip } from 'zlib';
-import { Readable } from 'stream';
-import { Buffer } from 'buffer';
-
-import sqlite3 from 'better-sqlite3';
-import test from 'ava';
 import { decodeBase64 } from '@endo/base64';
+import test from 'ava';
+import sqlite3 from 'better-sqlite3';
+import { Buffer } from 'buffer';
+import path from 'path';
+import { Readable } from 'stream';
+import { createGunzip } from 'zlib';
 
-import { buffer } from '../src/util.js';
 import { importSwingStore, makeSwingStoreExporter } from '../src/index.js';
-
-import { tmpDir } from './util.js';
+import { buffer } from '../src/util.js';
 import {
   buildData,
   bundle0,
@@ -21,6 +18,7 @@ import {
   snapHash,
   snapshotData,
 } from './exports.js';
+import { tmpDir } from './util.js';
 
 const rank = {
   operational: 1,

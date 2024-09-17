@@ -1,21 +1,19 @@
 /* global process setTimeout */
+import { untilTrue } from '@agoric/internal';
+import { isNat, Nat } from '@endo/nat';
 import chalk from 'chalk';
 import { createHash } from 'crypto';
-import path from 'path';
 import { createRequire } from 'module';
-
-import { Nat, isNat } from '@endo/nat';
-import { untilTrue } from '@agoric/internal';
+import path from 'path';
 
 import {
   CENTRAL_DENOM,
-  STAKING_DENOM,
-  finishTendermintConfig,
-  finishCosmosGenesis,
   finishCosmosApp,
+  finishCosmosGenesis,
+  finishTendermintConfig,
+  STAKING_DENOM,
 } from './chain-config.js';
-
-import { makePspawn, getSDKBinaries } from './helpers.js';
+import { getSDKBinaries, makePspawn } from './helpers.js';
 
 const require = createRequire(import.meta.url);
 

@@ -1,4 +1,5 @@
 import { kser } from '@agoric/kmarshal';
+
 import { extractMessage } from './vat-util.js';
 
 export default function setup(syscall, _state, _helpers, vatPowers) {

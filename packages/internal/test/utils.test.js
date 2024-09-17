@@ -1,16 +1,16 @@
 // @ts-check
+import { Far } from '@endo/far';
 import test from 'ava';
 
-import { Far } from '@endo/far';
 import {
-  makeMeasureSeconds,
   assertAllDefined,
-  whileTrue,
-  untilTrue,
-  forever,
   deeplyFulfilledObject,
   deepMapObject,
+  forever,
+  makeMeasureSeconds,
   synchronizedTee,
+  untilTrue,
+  whileTrue,
 } from '../src/utils.js';
 
 test('deeplyFulfilledObject', async t => {

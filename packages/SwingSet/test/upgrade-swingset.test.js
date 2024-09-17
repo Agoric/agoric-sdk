@@ -1,14 +1,15 @@
 /* eslint-disable no-underscore-dangle */
 // @ts-nocheck
 
-import { initSwingStore } from '@agoric/swing-store';
 import { test } from '../tools/prepare-test-env-ava.js';
 
+import { initSwingStore } from '@agoric/swing-store';
+
 import {
+  buildKernelBundles,
   initializeSwingset,
   makeSwingsetController,
   upgradeSwingset,
-  buildKernelBundles,
 } from '../src/index.js';
 
 test.before(async t => {

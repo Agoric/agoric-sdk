@@ -1,8 +1,8 @@
-// eslint-disable-next-line import/order
 import { test } from '../../tools/prepare-test-env-ava.js';
 
-import { initSwingStore } from '@agoric/swing-store';
 import { kser, kunser } from '@agoric/kmarshal';
+import { initSwingStore } from '@agoric/swing-store';
+
 import { initializeSwingset, makeSwingsetController } from '../../src/index.js';
 
 const bfile = name => new URL(name, import.meta.url).pathname;

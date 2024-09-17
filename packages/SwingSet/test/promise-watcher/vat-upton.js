@@ -1,13 +1,13 @@
 // @ts-nocheck
-import { Far, E } from '@endo/far';
 import { initEmpty } from '@agoric/store';
-import { makePromiseKit } from '@endo/promise-kit';
 import {
+  defineDurableKindMulti,
   provideKindHandle,
   providePromiseWatcher,
-  defineDurableKindMulti,
   watchPromise,
 } from '@agoric/vat-data';
+import { E, Far } from '@endo/far';
+import { makePromiseKit } from '@endo/promise-kit';
 
 export function buildRootObject(vatPowers, vatParameters, baggage) {
   const log = vatPowers.testLog;

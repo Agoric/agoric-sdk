@@ -1,10 +1,12 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
-import { Far } from '@endo/far';
+
 import { heapVowE as E } from '@agoric/vow/vat.js';
-import { commonSetup } from '../supports.js';
+import { Far } from '@endo/far';
+
 import { preparePortfolioHolder } from '../../src/exos/portfolio-holder-kit.js';
-import { prepareMakeTestLOAKit } from './make-test-loa-kit.js';
+import { commonSetup } from '../supports.js';
 import { prepareMakeTestCOAKit } from './make-test-coa-kit.js';
+import { prepareMakeTestLOAKit } from './make-test-loa-kit.js';
 
 test('portfolio holder kit behaviors', async t => {
   const common = await commonSetup(t);

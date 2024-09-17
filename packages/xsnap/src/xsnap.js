@@ -1,16 +1,17 @@
 /* global process */
 /* eslint no-await-in-loop: ["off"] */
 
-import { finished } from 'stream/promises';
-import { PassThrough, Readable } from 'stream';
-import { promisify } from 'util';
-import { fileURLToPath } from 'url';
+import { forever } from '@agoric/internal';
 import { Fail, q } from '@endo/errors';
 import { makeNetstringReader, makeNetstringWriter } from '@endo/netstring';
-import { makeNodeReader, makeNodeWriter } from '@endo/stream-node';
 import { makePromiseKit, racePromises } from '@endo/promise-kit';
-import { forever } from '@agoric/internal';
-import { ErrorCode, ErrorSignal, ErrorMessage, METER_TYPE } from '../api.js';
+import { makeNodeReader, makeNodeWriter } from '@endo/stream-node';
+import { PassThrough, Readable } from 'stream';
+import { finished } from 'stream/promises';
+import { fileURLToPath } from 'url';
+import { promisify } from 'util';
+
+import { ErrorCode, ErrorMessage, ErrorSignal, METER_TYPE } from '../api.js';
 
 /** @import {PromiseKit} from '@endo/promise-kit' */
 

@@ -1,7 +1,6 @@
+import { evalContractBundle } from '@agoric/zoe/src/contractFacet/evalContractCode.js';
 import { E } from '@endo/far';
 import { makePromiseKit } from '@endo/promise-kit';
-
-import { evalContractBundle } from '@agoric/zoe/src/contractFacet/evalContractCode.js';
 
 export default harden({
   createMeter: () => {},

@@ -1,8 +1,7 @@
 // @ts-check
+import { parse } from '@agoric/network';
 import { Fail } from '@endo/errors';
 import { Far } from '@endo/far';
-
-import { parse } from '@agoric/network';
 
 /**
  * Return a source-prefixed version of the denomination, as specified in

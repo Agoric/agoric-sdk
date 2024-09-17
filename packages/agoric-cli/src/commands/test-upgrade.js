@@ -2,6 +2,7 @@
 /* global process */
 import { Fail } from '@endo/errors';
 import { CommanderError } from 'commander';
+
 import { normalizeAddressWithOptions } from '../lib/chain.js';
 import { bigintReplacer } from '../lib/format.js';
 import { getNetworkConfig } from '../lib/rpc.js';

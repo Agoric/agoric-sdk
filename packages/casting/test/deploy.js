@@ -1,4 +1,5 @@
 import { E } from '@endo/far';
+
 import { iterateLatest, makeFollower } from '../src/main.js';
 
 const COLLATERAL = 'ATOM';

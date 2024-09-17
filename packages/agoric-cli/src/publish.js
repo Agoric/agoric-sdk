@@ -1,21 +1,20 @@
 // @ts-check
 /// <reference types="ses" />
 
-import { X, q, Fail } from '@endo/errors';
-import { E } from '@endo/far';
-
 import {
   iterateEach,
+  makeCastingSpec,
   makeFollower,
   makeLeaderFromRpcAddresses,
-  makeCastingSpec,
 } from '@agoric/casting';
+import { MsgInstallBundle } from '@agoric/cosmic-proto/swingset/msgs.js';
+import { stringToPath } from '@cosmjs/crypto';
+import { fromBech32 } from '@cosmjs/encoding';
+import { Decimal } from '@cosmjs/math';
 import { DirectSecp256k1HdWallet, Registry } from '@cosmjs/proto-signing';
 import { defaultRegistryTypes } from '@cosmjs/stargate';
-import { stringToPath } from '@cosmjs/crypto';
-import { Decimal } from '@cosmjs/math';
-import { fromBech32 } from '@cosmjs/encoding';
-import { MsgInstallBundle } from '@agoric/cosmic-proto/swingset/msgs.js';
+import { Fail, q, X } from '@endo/errors';
+import { E } from '@endo/far';
 
 // https://github.com/Agoric/agoric-sdk/blob/master/golang/cosmos/daemon/main.go
 const Agoric = {

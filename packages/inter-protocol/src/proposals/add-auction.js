@@ -1,7 +1,8 @@
 import { deeplyFulfilledObject, makeTracer } from '@agoric/internal';
 import { makeStorageNodeChild } from '@agoric/internal/src/lib-chainStorage.js';
-import { E } from '@endo/far';
 import { Stable } from '@agoric/internal/src/tokens.js';
+import { E } from '@endo/far';
+
 import { makeGovernedTerms as makeGovernedATerms } from '../auction/params.js';
 
 const trace = makeTracer('NewAuction', true);

@@ -1,4 +1,5 @@
 import { makeHelpers } from '@agoric/deploy-script-support';
+
 import { defaultProposalBuilder as vaultProposalBuilder } from './add-collateral-core.js';
 import { defaultProposalBuilder as oraclesProposalBuilder } from './price-feed-core.js';
 

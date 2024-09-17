@@ -4,6 +4,7 @@ import {
   makeRatio,
 } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { Far } from '@endo/marshal';
+
 import { reverseInterest } from '../../src/interest-math.js';
 
 export const makeCompoundedInterestProvider = brand => {

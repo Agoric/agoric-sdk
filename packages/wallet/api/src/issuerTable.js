@@ -1,11 +1,10 @@
 // @ts-check
 
-import { assert } from '@endo/errors';
-import { E } from '@endo/eventual-send';
+import './internal-types.js';
 
 import { makeScalarWeakMapStore } from '@agoric/store';
-
-import './internal-types.js';
+import { assert } from '@endo/errors';
+import { E } from '@endo/eventual-send';
 
 /**
  * IssuerTable

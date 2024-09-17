@@ -1,7 +1,8 @@
 // @ts-check
 
-import { InvalidArgumentError } from 'commander';
 import { Fail } from '@endo/errors';
+import { InvalidArgumentError } from 'commander';
+
 import { makeRpcUtils } from '../lib/rpc.js';
 import { outputActionAndHint } from '../lib/wallet.js';
 

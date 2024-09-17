@@ -1,11 +1,11 @@
+import { AmountMath, isSetValue } from '@agoric/ertp';
+import { claim } from '@agoric/ertp/src/legacy-payment-helpers.js';
+import { keyEQ } from '@agoric/store';
 import { assert, X } from '@endo/errors';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
-import { keyEQ } from '@agoric/store';
-import { AmountMath, isSetValue } from '@agoric/ertp';
-import { claim } from '@agoric/ertp/src/legacy-payment-helpers.js';
 
-import { showPurseBalance, setupIssuers } from '../helpers.js';
+import { setupIssuers, showPurseBalance } from '../helpers.js';
 
 const build = async (log, zoe, issuers, payments, installations, timer) => {
   const { moola, simoleans, bucks, purses } = await setupIssuers(zoe, issuers);

@@ -1,8 +1,9 @@
-import { assert, Fail } from '@endo/errors';
-import { makeDeviceSlots } from './deviceSlots.js';
-import { insistCapData } from '../lib/capdata.js';
-
 import '../types-ambient.js';
+
+import { assert, Fail } from '@endo/errors';
+
+import { insistCapData } from '../lib/capdata.js';
+import { makeDeviceSlots } from './deviceSlots.js';
 
 /* The DeviceManager is much simpler than the VatManager, because the feature
  * set is smaller:

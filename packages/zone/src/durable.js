@@ -1,9 +1,7 @@
 // @ts-check
 // @jessie-check
 
-import { Fail } from '@endo/errors';
-import { Far, isPassable } from '@endo/pass-style';
-
+import { agoricVatDataKeys as keys, makeOnceKit } from '@agoric/base-zone';
 import {
   canBeDurable,
   makeScalarMapStore,
@@ -16,8 +14,8 @@ import {
   provideDurableWeakSetStore,
   watchPromise,
 } from '@agoric/vat-data';
-
-import { agoricVatDataKeys as keys, makeOnceKit } from '@agoric/base-zone';
+import { Fail } from '@endo/errors';
+import { Far, isPassable } from '@endo/pass-style';
 
 /**
  * A variant of `canBeDurable` that returns `false` instead of ever throwing.

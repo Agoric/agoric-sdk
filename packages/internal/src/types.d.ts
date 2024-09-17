@@ -1,6 +1,7 @@
 /* eslint-disable max-classes-per-file */
 import type { ERef, RemotableBrand } from '@endo/eventual-send';
 import type { Primitive } from '@endo/pass-style';
+
 import type { Callable } from './utils.js';
 
 /**

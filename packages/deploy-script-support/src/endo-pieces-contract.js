@@ -1,7 +1,7 @@
 // @ts-check
+import { decodeBase64, encodeBase64 } from '@endo/base64';
 import { Fail, q } from '@endo/errors';
 import { E, Far } from '@endo/far';
-import { encodeBase64, decodeBase64 } from '@endo/base64';
 import { ZipWriter } from '@endo/zip';
 
 export const start = () => {

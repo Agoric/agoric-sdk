@@ -1,6 +1,5 @@
 /* global process */
 import { makeHelpers } from '@agoric/deploy-script-support';
-
 import { getManifestForInviteCommittee } from '@agoric/inter-protocol/src/proposals/committee-proposal.js';
 
 // Build proposal for sim-chain etc.

@@ -7,6 +7,7 @@ import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js'
 import { buildZoeManualTimer } from '@agoric/zoe/tools/manualTimer.js';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
+
 import { setupPsm } from './setupPsm.js';
 
 test.before(async t => {

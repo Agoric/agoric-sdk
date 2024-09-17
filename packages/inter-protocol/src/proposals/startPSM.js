@@ -1,28 +1,27 @@
 // @jessie-check
 
-import { makeMap } from 'jessie.js';
-import { X } from '@endo/errors';
-import { E } from '@endo/far';
 import { AmountMath, AssetKind } from '@agoric/ertp';
 import { CONTRACT_ELECTORATE, ParamTypes } from '@agoric/governance';
+import { deeplyFulfilledObject } from '@agoric/internal';
 import { makeStorageNodeChild } from '@agoric/internal/src/lib-chainStorage.js';
-import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
 import {
-  makeHistoryReviver,
   makeBoardRemote,
+  makeHistoryReviver,
   slotToBoardRemote,
 } from '@agoric/internal/src/marshal.js';
-import { deeplyFulfilledObject } from '@agoric/internal';
-import { makeScalarBigMapStore } from '@agoric/vat-data';
 import { Stable } from '@agoric/internal/src/tokens.js';
-
-import { reserveThenGetNamePaths } from './utils.js';
+import { makeScalarBigMapStore } from '@agoric/vat-data';
+import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
+import { X } from '@endo/errors';
+import { E } from '@endo/far';
+import { makeMap } from 'jessie.js';
 
 import {
   inviteCommitteeMembers,
-  startEconCharter,
   inviteToEconCharter,
+  startEconCharter,
 } from './committee-proposal.js';
+import { reserveThenGetNamePaths } from './utils.js';
 
 /** @import {BootstrapManifest} from '@agoric/vats/src/core/lib-boot.js' */
 /** @import {MetricsNotification} from '../psm/psm.js' */

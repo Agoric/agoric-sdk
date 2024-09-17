@@ -1,10 +1,11 @@
 /* eslint-disable no-use-before-define */
 
-import { assert, Fail } from '@endo/errors';
 import { kser } from '@agoric/kmarshal';
-import { parseLocalSlot, insistLocalType } from './parseLocalSlots.js';
-import { makeUndeliverableError } from '../../lib/makeUndeliverableError.js';
+import { assert, Fail } from '@endo/errors';
+
 import { extractSingleSlot, insistCapData } from '../../lib/capdata.js';
+import { makeUndeliverableError } from '../../lib/makeUndeliverableError.js';
+import { insistLocalType, parseLocalSlot } from './parseLocalSlots.js';
 import { insistRemoteType } from './parseRemoteSlot.js';
 import { insistRemoteID } from './remote.js';
 

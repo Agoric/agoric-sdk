@@ -4,6 +4,14 @@ import {
   QueryBalanceResponse,
 } from '@agoric/cosmic-proto/cosmos/bank/v1beta1/query.js';
 import {
+  MsgSend,
+  MsgSendResponse,
+} from '@agoric/cosmic-proto/cosmos/bank/v1beta1/tx.js';
+import {
+  MsgWithdrawDelegatorReward,
+  MsgWithdrawDelegatorRewardResponse,
+} from '@agoric/cosmic-proto/cosmos/distribution/v1beta1/tx.js';
+import {
   MsgBeginRedelegate,
   MsgBeginRedelegateResponse,
   MsgDelegate,
@@ -11,21 +19,14 @@ import {
   MsgUndelegate,
   MsgUndelegateResponse,
 } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/tx.js';
-import {
-  MsgWithdrawDelegatorReward,
-  MsgWithdrawDelegatorRewardResponse,
-} from '@agoric/cosmic-proto/cosmos/distribution/v1beta1/tx.js';
 import type { Timestamp } from '@agoric/cosmic-proto/google/protobuf/timestamp.js';
+
 import {
-  MsgSend,
-  MsgSendResponse,
-} from '@agoric/cosmic-proto/cosmos/bank/v1beta1/tx.js';
-import {
-  buildMsgResponseString,
-  buildQueryResponseString,
   buildMsgErrorString,
-  buildTxPacketString,
+  buildMsgResponseString,
   buildQueryPacketString,
+  buildQueryResponseString,
+  buildTxPacketString,
   createMockAckMap,
 } from '../tools/ibc-mocks.js';
 

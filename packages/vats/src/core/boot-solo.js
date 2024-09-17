@@ -1,8 +1,7 @@
-import { makeBootstrap } from './lib-boot.js';
-
 import * as basicBehaviorsPlus from './basic-behaviors.js';
 import * as chainBehaviorsPlus from './chain-behaviors.js';
 import * as clientBehaviorsPlus from './client-behaviors.js';
+import { makeBootstrap } from './lib-boot.js';
 import * as utils from './utils.js';
 
 const { BASIC_BOOTSTRAP_PERMITS: _b, ...basicBehaviors } = basicBehaviorsPlus;

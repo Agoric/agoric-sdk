@@ -1,6 +1,6 @@
 import {
-  DEFAULT_REAP_DIRT_THRESHOLD_KEY,
   DEFAULT_GC_KREFS_PER_BOYD,
+  DEFAULT_REAP_DIRT_THRESHOLD_KEY,
   getAllDynamicVats,
   getAllStaticVats,
 } from '../kernel/state/kernelKeeper.js';

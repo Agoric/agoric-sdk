@@ -19,6 +19,7 @@ import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { E, Far } from '@endo/far';
 import path from 'path';
+
 import { makeBridgeProvisionTool } from '../src/provisionPoolKit.js';
 import {
   makeMockChainStorageRoot,

@@ -1,13 +1,5 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
-import type { TestFn } from 'ava';
-import { heapVowE as E } from '@agoric/vow/vat.js';
-import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
-import { IBCMethod } from '@agoric/vats';
-import {
-  MsgTransfer,
-  MsgTransferResponse,
-} from '@agoric/cosmic-proto/ibc/applications/transfer/v1/tx.js';
-import { SIMULATED_ERRORS } from '@agoric/vats/tools/fake-bridge.js';
+
 import {
   QueryAllBalancesRequest,
   QueryAllBalancesResponse,
@@ -16,30 +8,39 @@ import {
 } from '@agoric/cosmic-proto/cosmos/bank/v1beta1/query.js';
 import { Coin } from '@agoric/cosmic-proto/cosmos/base/v1beta1/coin.js';
 import {
-  QueryDelegationRequest,
-  QueryDelegatorDelegationsRequest,
-  QueryUnbondingDelegationRequest,
-  QueryDelegatorUnbondingDelegationsRequest,
-  QueryRedelegationsRequest,
-  QueryDelegationResponse,
-  QueryDelegatorDelegationsResponse,
-  QueryUnbondingDelegationResponse,
-  QueryDelegatorUnbondingDelegationsResponse,
-  QueryRedelegationsResponse,
-} from '@agoric/cosmic-proto/cosmos/staking/v1beta1/query.js';
-import {
   QueryDelegationRewardsRequest,
-  QueryDelegationTotalRewardsRequest,
   QueryDelegationRewardsResponse,
+  QueryDelegationTotalRewardsRequest,
   QueryDelegationTotalRewardsResponse,
 } from '@agoric/cosmic-proto/cosmos/distribution/v1beta1/query.js';
-import { commonSetup } from '../supports.js';
+import {
+  QueryDelegationRequest,
+  QueryDelegationResponse,
+  QueryDelegatorDelegationsRequest,
+  QueryDelegatorDelegationsResponse,
+  QueryDelegatorUnbondingDelegationsRequest,
+  QueryDelegatorUnbondingDelegationsResponse,
+  QueryRedelegationsRequest,
+  QueryRedelegationsResponse,
+  QueryUnbondingDelegationRequest,
+  QueryUnbondingDelegationResponse,
+} from '@agoric/cosmic-proto/cosmos/staking/v1beta1/query.js';
+import {
+  MsgTransfer,
+  MsgTransferResponse,
+} from '@agoric/cosmic-proto/ibc/applications/transfer/v1/tx.js';
+import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
+import { IBCMethod } from '@agoric/vats';
+import { SIMULATED_ERRORS } from '@agoric/vats/tools/fake-bridge.js';
+import { heapVowE as E } from '@agoric/vow/vat.js';
+import type { TestFn } from 'ava';
+
+import type { CosmosValidatorAddress } from '../../src/cosmos-api.js';
 import type {
   AmountArg,
   ChainAddress,
   Denom,
 } from '../../src/orchestration-api.js';
-import { prepareMakeTestCOAKit } from './make-test-coa-kit.js';
 import {
   buildMsgResponseString,
   buildQueryPacketString,
@@ -47,7 +48,8 @@ import {
   buildTxPacketString,
   parseOutgoingTxPacket,
 } from '../../tools/ibc-mocks.js';
-import type { CosmosValidatorAddress } from '../../src/cosmos-api.js';
+import { commonSetup } from '../supports.js';
+import { prepareMakeTestCOAKit } from './make-test-coa-kit.js';
 
 type TestContext = Awaited<ReturnType<typeof commonSetup>>;
 

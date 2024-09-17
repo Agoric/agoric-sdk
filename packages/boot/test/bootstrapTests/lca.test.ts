@@ -1,11 +1,11 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
+import type { start as stakeBldStart } from '@agoric/orchestration/src/examples/stakeBld.contract.js';
+import { SIMULATED_ERRORS } from '@agoric/vats/tools/fake-bridge.js';
+import type { Instance } from '@agoric/zoe/src/zoeService/utils.js';
+import { Fail } from '@endo/errors';
 import type { TestFn } from 'ava';
 
-import { Fail } from '@endo/errors';
-import type { start as stakeBldStart } from '@agoric/orchestration/src/examples/stakeBld.contract.js';
-import type { Instance } from '@agoric/zoe/src/zoeService/utils.js';
-import { SIMULATED_ERRORS } from '@agoric/vats/tools/fake-bridge.js';
 import {
   makeWalletFactoryContext,
   type WalletFactoryTestContext,

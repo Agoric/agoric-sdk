@@ -1,16 +1,17 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
+import { QueryDelegatorDelegationsResponse } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/query.js';
+import { MsgUndelegateResponse } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/tx.js';
+import { inspectMapStore } from '@agoric/internal/src/testing-utils.js';
 import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { E } from '@endo/far';
 import path from 'path';
-import { inspectMapStore } from '@agoric/internal/src/testing-utils.js';
-import { QueryDelegatorDelegationsResponse } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/query.js';
-import { MsgUndelegateResponse } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/tx.js';
-import { commonSetup } from '../supports.js';
+
 import {
   buildMsgResponseString,
   buildQueryResponseString,
 } from '../../tools/ibc-mocks.js';
+import { commonSetup } from '../supports.js';
 
 const dirname = path.dirname(new URL(import.meta.url).pathname);
 

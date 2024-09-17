@@ -1,4 +1,5 @@
 import { test } from '../tools/prepare-test-env-ava.js';
+
 import { stripPrefix } from '../src/kernel/state/kernelKeeper.js';
 
 test('stripPrefix', t => {

@@ -1,9 +1,10 @@
 // @ts-nocheck
 
 import '@endo/init';
-import process from 'process';
-import fs from 'fs';
+
 import { isSwingStore, openSwingStore } from '@agoric/swing-store';
+import fs from 'fs';
+import process from 'process';
 
 const argv = process.argv.splice(2);
 const dirPath = argv[0];

@@ -1,6 +1,5 @@
 /* global process */
 import { makeHelpers } from '@agoric/deploy-script-support';
-
 import { getManifestForAddAssetToVault } from '@agoric/inter-protocol/src/proposals/addAssetToVault.js';
 import { getManifestForPsm } from '@agoric/inter-protocol/src/proposals/startPSM.js';
 import { makeInstallCache } from '@agoric/inter-protocol/src/proposals/utils.js';

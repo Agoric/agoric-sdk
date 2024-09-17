@@ -1,4 +1,5 @@
 import { M } from '@agoric/store';
+
 import { AmountKeywordRecordShape, SeatShape } from '../typeGuards.js';
 
 export const TransferPartShape = M.splitArray(

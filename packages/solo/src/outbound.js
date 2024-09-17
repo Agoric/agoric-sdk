@@ -1,7 +1,6 @@
 /* global process */
-import anylogger from 'anylogger';
-
 import { Fail } from '@endo/errors';
+import anylogger from 'anylogger';
 
 // Limit the debug log length.
 const SOLO_MAX_DEBUG_LENGTH =

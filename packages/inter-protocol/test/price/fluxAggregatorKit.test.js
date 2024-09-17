@@ -1,21 +1,21 @@
 import { test as unknownTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { AssetKind, makeIssuerKit } from '@agoric/ertp';
-import { E } from '@endo/eventual-send';
-import { Far } from '@endo/far';
-
+import { documentStorageSchema } from '@agoric/governance/tools/storageDoc.js';
 import { makeMockChainStorageRoot } from '@agoric/internal/src/storage-test-utils.js';
 import { subscribeEach } from '@agoric/notifier';
 import {
   eventLoopIteration,
   makeFakeMarshaller,
 } from '@agoric/notifier/tools/testSupports.js';
+import { TimeMath } from '@agoric/time';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
+import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/recorder.js';
 import { setupZCFTest } from '@agoric/zoe/test/unitTests/zcf/setupZcfTest.js';
 import { buildZoeManualTimer } from '@agoric/zoe/tools/manualTimer.js';
-import { TimeMath } from '@agoric/time';
-import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/recorder.js';
-import { documentStorageSchema } from '@agoric/governance/tools/storageDoc.js';
+import { E } from '@endo/eventual-send';
+import { Far } from '@endo/far';
+
 import { prepareFluxAggregatorKit } from '../../src/price/fluxAggregatorKit.js';
 import { topicPath } from '../supports.js';
 

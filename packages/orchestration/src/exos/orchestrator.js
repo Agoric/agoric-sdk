@@ -1,15 +1,16 @@
 /** @file Orchestrator exo */
 import { AmountShape } from '@agoric/ertp';
-import { pickFacet } from '@agoric/vat-data';
 import { makeTracer } from '@agoric/internal';
 import { Shape as NetworkShape } from '@agoric/network';
+import { pickFacet } from '@agoric/vat-data';
 import { Fail, q } from '@endo/errors';
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
+
 import {
-  DenomInfoShape,
   ChainInfoShape,
   DenomAmountShape,
+  DenomInfoShape,
   DenomShape,
   LocalChainAccountShape,
 } from '../typeGuards.js';

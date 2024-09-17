@@ -1,7 +1,10 @@
 import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
-import { allValues, makeTracer, objectMap, NonNullish } from '@agoric/internal';
+import { allValues, makeTracer, NonNullish, objectMap } from '@agoric/internal';
 import { makeNotifierFromSubscriber } from '@agoric/notifier';
+import { eventLoopIteration } from '@agoric/notifier/tools/testSupports.js';
 import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
+import { makeScalarBigMapStore } from '@agoric/vat-data/src/index.js';
+import { providePriceAuthorityRegistry } from '@agoric/vats/src/priceAuthorityRegistry.js';
 import {
   ceilMultiplyBy,
   makeRatio,
@@ -11,10 +14,6 @@ import { makeManualPriceAuthority } from '@agoric/zoe/tools/manualPriceAuthority
 import { buildZoeManualTimer } from '@agoric/zoe/tools/manualTimer.js';
 import { E } from '@endo/eventual-send';
 import { deeplyFulfilled } from '@endo/marshal';
-
-import { eventLoopIteration } from '@agoric/notifier/tools/testSupports.js';
-import { providePriceAuthorityRegistry } from '@agoric/vats/src/priceAuthorityRegistry.js';
-import { makeScalarBigMapStore } from '@agoric/vat-data/src/index.js';
 
 import {
   setupReserve,

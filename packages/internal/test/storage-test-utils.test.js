@@ -1,7 +1,7 @@
 // @ts-check
-import test from 'ava';
 import { Far } from '@endo/far';
 import { makeMarshal } from '@endo/marshal';
+import test from 'ava';
 
 import {
   defaultMarshaller,

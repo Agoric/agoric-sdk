@@ -1,18 +1,17 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
+import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
+import { E } from '@endo/eventual-send';
 import path from 'path';
 
-import { E } from '@endo/eventual-send';
-import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
-import buildManualTimer from '../../../tools/manualTimer.js';
-
-import { setup } from '../setupBasicMints.js';
-import { installationPFromSource } from '../installFromSource.js';
-import {
-  assertPayoutDeposit,
-  assertPayoutAmount,
-} from '../../zoeTestHelpers.js';
 import { makeFakePriceAuthority } from '../../../tools/fakePriceAuthority.js';
+import buildManualTimer from '../../../tools/manualTimer.js';
+import {
+  assertPayoutAmount,
+  assertPayoutDeposit,
+} from '../../zoeTestHelpers.js';
+import { installationPFromSource } from '../installFromSource.js';
+import { setup } from '../setupBasicMints.js';
 
 const dirname = path.dirname(new URL(import.meta.url).pathname);
 

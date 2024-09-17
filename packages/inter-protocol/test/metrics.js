@@ -1,3 +1,4 @@
+import { makeTracer } from '@agoric/internal';
 import {
   makeNotifierFromAsyncIterable,
   makeNotifierFromSubscriber,
@@ -5,8 +6,6 @@ import {
 } from '@agoric/notifier';
 import { E } from '@endo/eventual-send';
 import { diff } from 'deep-object-diff';
-
-import { makeTracer } from '@agoric/internal';
 
 // While t.log has the advantage of omitting by default when tests pass,
 // when debugging it's most valuable to have the messages in sequence with app

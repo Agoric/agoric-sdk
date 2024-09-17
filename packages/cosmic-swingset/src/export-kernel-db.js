@@ -4,17 +4,16 @@
 
 import '@endo/init/unsafe-fast.js';
 
-import os from 'os';
-import process from 'process';
-import fsPower from 'fs/promises';
-import pathPower from 'path';
-import { fileURLToPath } from 'url';
-
+import { waitUntilQuiescent } from '@agoric/internal/src/lib-nodejs/waitUntilQuiescent.js';
+import { makeShutdown } from '@agoric/internal/src/node/shutdown.js';
+import { makeSwingStoreExporter } from '@agoric/swing-store';
 import { Fail, q } from '@endo/errors';
 import { makePromiseKit } from '@endo/promise-kit';
-import { makeShutdown } from '@agoric/internal/src/node/shutdown.js';
-import { waitUntilQuiescent } from '@agoric/internal/src/lib-nodejs/waitUntilQuiescent.js';
-import { makeSwingStoreExporter } from '@agoric/swing-store';
+import fsPower from 'fs/promises';
+import os from 'os';
+import pathPower from 'path';
+import process from 'process';
+import { fileURLToPath } from 'url';
 
 import { isEntrypoint } from './helpers/is-entrypoint.js';
 import { makeProcessValue } from './helpers/process-value.js';

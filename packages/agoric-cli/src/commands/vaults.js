@@ -1,11 +1,12 @@
 // @ts-check
 /* eslint-disable func-names */
 /* global fetch, process */
-import { Command } from 'commander';
 import {
   lookupOfferIdForVault,
   Offers,
 } from '@agoric/inter-protocol/src/clientSupport.js';
+import { Command } from 'commander';
+
 import { normalizeAddressWithOptions } from '../lib/chain.js';
 import { makeRpcUtils } from '../lib/rpc.js';
 import { getCurrent, outputExecuteOfferAction } from '../lib/wallet.js';

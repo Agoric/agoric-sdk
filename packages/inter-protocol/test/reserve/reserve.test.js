@@ -1,11 +1,11 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
+import { documentStorageSchema } from '@agoric/governance/tools/storageDoc.js';
 import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
 import { buildZoeManualTimer } from '@agoric/zoe/tools/manualTimer.js';
 import { E } from '@endo/eventual-send';
 
-import { documentStorageSchema } from '@agoric/governance/tools/storageDoc.js';
 import { reserveInitialState, subscriptionTracker } from '../metrics.js';
 import { setupReserveServices } from './setup.js';
 

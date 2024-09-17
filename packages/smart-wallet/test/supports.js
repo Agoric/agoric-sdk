@@ -1,4 +1,3 @@
-import { Fail } from '@endo/errors';
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 import * as ActionType from '@agoric/internal/src/action-types.js';
 import { makeMockChainStorageRoot } from '@agoric/internal/src/storage-test-utils.js';
@@ -16,6 +15,7 @@ import { buildRootObject as mintsRoot } from '@agoric/vats/src/vat-mints.js';
 import { makeFakeBankManagerKit } from '@agoric/vats/tools/bank-utils.js';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
+import { Fail } from '@endo/errors';
 import { E, Far } from '@endo/far';
 
 /**

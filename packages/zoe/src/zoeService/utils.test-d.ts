@@ -1,4 +1,5 @@
 import { E } from '@endo/far';
+
 import type { StartedInstanceKit } from './utils';
 
 const someContractStartFn = (

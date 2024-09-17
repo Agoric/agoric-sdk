@@ -1,10 +1,10 @@
 import { test } from '../tools/prepare-test-env-ava.js';
 
 import {
-  legibilizeValue,
-  legibilizeMethod,
   extractMethod,
   legibilizeMessageArgs,
+  legibilizeMethod,
+  legibilizeValue,
 } from '../src/lib/kdebug.js';
 
 function testLegibilizeValue(t, body, slots, out) {

@@ -1,16 +1,16 @@
-import { Fail, q } from '@endo/errors';
 import { AmountMath } from '@agoric/ertp';
 import { makeTracer } from '@agoric/internal';
+import { UnguardedHelperI } from '@agoric/internal/src/typeGuards.js';
 import { TimeMath, TimestampShape } from '@agoric/time';
 import { M, makeScalarBigMapStore, prepareExoClassKit } from '@agoric/vat-data';
 import {
   calculateMedian,
   natSafeMath,
 } from '@agoric/zoe/src/contractSupport/index.js';
+import { Fail, q } from '@endo/errors';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import { isNat, Nat } from '@endo/nat';
-import { UnguardedHelperI } from '@agoric/internal/src/typeGuards.js';
 
 const { add, subtract, multiply, floorDivide, ceilDivide, isGTE } = natSafeMath;
 

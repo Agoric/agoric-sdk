@@ -1,10 +1,9 @@
 import { test } from '../../tools/prepare-test-env-ava.js';
 
-// eslint-disable-next-line import/order
 import { initSwingStore } from '@agoric/swing-store';
 
-import { initializeSwingset, makeSwingsetController } from '../../src/index.js';
 import { buildTimer } from '../../src/devices/timer/timer.js';
+import { initializeSwingset, makeSwingsetController } from '../../src/index.js';
 
 const TimerSrc = new URL(
   '../../src/devices/timer/device-timer.js',

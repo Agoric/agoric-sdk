@@ -1,23 +1,23 @@
 import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { makeNotifierFromSubscriber } from '@agoric/notifier';
-import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
-import { makeManualPriceAuthority } from '@agoric/zoe/tools/manualPriceAuthority.js';
 import { makeScalarBigMapStore } from '@agoric/vat-data/src/index.js';
 import { providePriceAuthorityRegistry } from '@agoric/vats/src/priceAuthorityRegistry.js';
-
+import { makeRatio } from '@agoric/zoe/src/contractSupport/index.js';
+import { makeManualPriceAuthority } from '@agoric/zoe/tools/manualPriceAuthority.js';
 import { makeScriptedPriceAuthority } from '@agoric/zoe/tools/scriptedPriceAuthority.js';
 import { E } from '@endo/eventual-send';
+
 import {
   SECONDS_PER_WEEK,
   setupReserve,
   startAuctioneer,
 } from '../../src/proposals/econ-behaviors.js';
+import { startEconomicCommittee } from '../../src/proposals/startEconCommittee.js';
 import {
   installPuppetGovernance,
   produceInstallations,
   setupBootstrap,
 } from '../supports.js';
-import { startEconomicCommittee } from '../../src/proposals/startEconCommittee.js';
 
 export const BASIS_POINTS = 10000n;
 

@@ -1,4 +1,4 @@
-import { makeKindHandle, defineDurableKind } from '@agoric/vat-data';
+import { defineDurableKind, makeKindHandle } from '@agoric/vat-data';
 
 // root objects must be ephemeral, not virtual/durable
 

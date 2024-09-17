@@ -3,6 +3,7 @@ import { makeScalarBigMapStore, makeScalarMapStore } from '@agoric/vat-data';
 import { makeDurableZone } from '@agoric/zone/durable.js';
 import { E } from '@endo/far';
 import { Far } from '@endo/marshal';
+
 import { buildRootObject as buildBankVatRoot } from '../src/vat-bank.js';
 import { FAUCET_ADDRESS, makeFakeBankBridge } from './fake-bridge.js';
 

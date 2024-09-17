@@ -1,19 +1,18 @@
 // @ts-nocheck
 
 import './lockdown.js';
-
-import { makeMarshal } from '@endo/marshal';
 import { test } from './prepare-test-env-ava.js';
 
-import {
-  iterateLatest,
-  iterateEach,
-  makeFollower,
-  makeLeader,
-  makeCastingSpec,
-} from '../src/main.js';
+import { makeMarshal } from '@endo/marshal';
 
 import { delay } from '../src/defaults.js';
+import {
+  iterateEach,
+  iterateLatest,
+  makeCastingSpec,
+  makeFollower,
+  makeLeader,
+} from '../src/main.js';
 import { startFakeServer } from './fake-rpc-server.js';
 
 // TODO: Replace with test.macro({title, exec}).

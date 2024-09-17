@@ -5,21 +5,21 @@ import {
   allValues,
   deeplyFulfilledObject,
   makeTracer,
-  objectMap,
   NonNullish,
+  objectMap,
 } from '@agoric/internal';
+import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
+import { buildManualTimer } from '@agoric/swingset-vat/tools/manual-timer.js';
+import { TimeMath } from '@agoric/time';
 import {
   ceilMultiplyBy,
   makeRatio,
   makeRatioFromAmounts,
 } from '@agoric/zoe/src/contractSupport/index.js';
-import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
-import { buildManualTimer } from '@agoric/swingset-vat/tools/manual-timer.js';
-import { E } from '@endo/eventual-send';
-import { TimeMath } from '@agoric/time';
-import { assertPayoutAmount } from '@agoric/zoe/test/zoeTestHelpers.js';
 import { multiplyBy } from '@agoric/zoe/src/contractSupport/ratio.js';
+import { assertPayoutAmount } from '@agoric/zoe/test/zoeTestHelpers.js';
+import { E } from '@endo/eventual-send';
 
 import {
   SECONDS_PER_DAY as ONE_DAY,
