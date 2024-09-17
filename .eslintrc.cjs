@@ -75,7 +75,7 @@ module.exports = {
     tsconfigRootDir: __dirname,
     extraFileExtensions: ['.cjs'],
   },
-  plugins: ['@typescript-eslint', 'prettier'],
+  plugins: ['@typescript-eslint', 'prettier', 'simple-import-sort'],
   extends: ['@agoric', 'plugin:ava/recommended'],
   // XXX false positive: Unused eslint-disable directive (no problems were reported from 'max-len')
   reportUnusedDisableDirectives: true,
@@ -98,6 +98,30 @@ module.exports = {
     'ava/no-skip-test': 'off',
     // Contrary to recommendation https://github.com/avajs/ava/blob/main/docs/recipes/typescript.md#typing-tcontext
     'ava/use-test': 'off',
+
+    // Trying out a simpler ordering system that is compatible with VS Code's "Organize Imports"
+    'import/order': 'off',
+    'simple-import-sort/imports': [
+      'error',
+      {
+        // This is the default values, with 'prepare-test-env' marked as having side-effects
+        groups: [
+          // Side effect imports.
+          ['^\\u0000', 'prepare-test-env'],
+          // Node.js builtins prefixed with `node:`.
+          ['^node:'],
+          // Packages.
+          // Things that start with a letter (or digit or underscore), or `@` followed by a letter.
+          ['^@?\\w'],
+          // Absolute imports and other imports such as Vue-style `@/foo`.
+          // Anything not matched in another group.
+          ['^'],
+          // Relative imports.
+          // Anything that starts with a dot.
+          ['^\\.'],
+        ],
+      },
+    ],
 
     // The rule is “safe await separator" which implements the architectural
     // goal of “clearly separate an async function's synchronous prelude from

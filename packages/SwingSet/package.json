@@ -24,10 +24,10 @@
     "@types/better-sqlite3": "^7.6.9",
     "@types/microtime": "^2.1.0",
     "@types/tmp": "^0.2.0",
-    "@types/yargs-parser": "^21.0.0"
+    "@types/yargs-parser": "^21.0.0",
+    "eslint-plugin-simple-import-sort": "^12.1.1"
   },
   "dependencies": {
-    "@endo/errors": "^1.2.5",
     "@agoric/internal": "^0.3.2",
     "@agoric/kmarshal": "^0.1.0",
     "@agoric/store": "^0.9.2",
@@ -43,6 +43,7 @@
     "@endo/captp": "^4.3.0",
     "@endo/check-bundle": "^1.0.9",
     "@endo/compartment-mapper": "^1.2.2",
+    "@endo/errors": "^1.2.5",
     "@endo/eventual-send": "^1.2.5",
     "@endo/far": "^1.1.5",
     "@endo/import-bundle": "^1.2.2",
