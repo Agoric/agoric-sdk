@@ -1,3 +1,5 @@
+import { inspect } from 'node:util';
+
 import { VowTools } from '@agoric/vow';
 import {
   base64ToBytes,
@@ -24,6 +26,7 @@ import { BridgeId, makeTracer } from '@agoric/internal';
 import { E, Far } from '@endo/far';
 import type { Guarded } from '@endo/exo';
 import { defaultMockAckMap, errorAcknowledgments } from './ibc-mocks.js';
+import { decodeProtobufBase64 } from '../tools/protobuf-decoder.js';
 
 const trace = makeTracer('NetworkFakes');
 
@@ -252,10 +255,19 @@ export const makeFakeIBCBridge = (
             const mockAckMapHasData = obj.packet.data in mockAckMap;
             if (!mockAckMapHasData) {
               trace(
-                'sendPacket acking err bc no mock ack for data:',
-                obj.packet.data,
-                base64ToBytes(obj.packet.data),
+                `sendPacket acking err because no mock ack for b64 data key: '${obj.packet.data}'`,
               );
+              try {
+                const decoded = decodeProtobufBase64(
+                  JSON.parse(base64ToBytes(obj.packet.data)).data,
+                );
+                trace(
+                  'Fix the source of this request or define a ack mapping for it:',
+                  inspect(decoded, { depth: null }),
+                );
+              } catch (err) {
+                trace('Could not decode packet data', err);
+              }
             }
             const ackEvent = ibcBridgeMocks.acknowledgementPacket(obj, {
               sequence: ibcSequenceNonce,

@@ -1,16 +1,34 @@
 /** @file Use-object for the owner of a staking account */
 import { toRequestQueryJson } from '@agoric/cosmic-proto';
 import {
-  QueryBalanceRequest,
-  QueryBalanceResponse,
   QueryAllBalancesRequest,
   QueryAllBalancesResponse,
+  QueryBalanceRequest,
+  QueryBalanceResponse,
 } from '@agoric/cosmic-proto/cosmos/bank/v1beta1/query.js';
 import { MsgSend } from '@agoric/cosmic-proto/cosmos/bank/v1beta1/tx.js';
+import {
+  QueryDelegationRewardsRequest,
+  QueryDelegationRewardsResponse,
+  QueryDelegationTotalRewardsRequest,
+  QueryDelegationTotalRewardsResponse,
+} from '@agoric/cosmic-proto/cosmos/distribution/v1beta1/query.js';
 import {
   MsgWithdrawDelegatorReward,
   MsgWithdrawDelegatorRewardResponse,
 } from '@agoric/cosmic-proto/cosmos/distribution/v1beta1/tx.js';
+import {
+  QueryDelegationRequest,
+  QueryDelegationResponse,
+  QueryDelegatorDelegationsRequest,
+  QueryDelegatorDelegationsResponse,
+  QueryDelegatorUnbondingDelegationsRequest,
+  QueryDelegatorUnbondingDelegationsResponse,
+  QueryRedelegationsRequest,
+  QueryRedelegationsResponse,
+  QueryUnbondingDelegationRequest,
+  QueryUnbondingDelegationResponse,
+} from '@agoric/cosmic-proto/cosmos/staking/v1beta1/query.js';
 import {
   MsgBeginRedelegate,
   MsgDelegate,
@@ -36,19 +54,22 @@ import {
 import { coerceCoin, coerceDenom } from '../utils/amounts.js';
 import {
   maxClockSkew,
-  tryDecodeResponse,
+  toCosmosDelegationResponse,
+  toCosmosValidatorAddress,
   toDenomAmount,
+  toTruncatedDenomAmount,
+  tryDecodeResponse,
 } from '../utils/cosmos.js';
 import { orchestrationAccountMethods } from '../utils/orchestrationAccount.js';
 import { makeTimestampHelper } from '../utils/time.js';
 
 /**
  * @import {HostOf} from '@agoric/async-flow';
- * @import {AmountArg, IcaAccount, ChainAddress, CosmosValidatorAddress, ICQConnection, StakingAccountActions, DenomAmount, OrchestrationAccountI, IBCConnectionInfo, IBCMsgTransferOptions, ChainHub} from '../types.js';
+ * @import {AmountArg, IcaAccount, ChainAddress, CosmosValidatorAddress, ICQConnection, StakingAccountActions, StakingAccountQueries, OrchestrationAccountI, CosmosRewardsResponse, IBCConnectionInfo, IBCMsgTransferOptions, ChainHub, CosmosDelegationResponse} from '../types.js';
  * @import {RecorderKit, MakeRecorderKit} from '@agoric/zoe/src/contractSupport/recorder.js';
  * @import {Coin} from '@agoric/cosmic-proto/cosmos/base/v1beta1/coin.js';
- * @import {Delegation} from '@agoric/cosmic-proto/cosmos/staking/v1beta1/staking.js';
  * @import {Remote} from '@agoric/internal';
+ * @import {DelegationResponse} from '@agoric/cosmic-proto/cosmos/staking/v1beta1/staking.js';
  * @import {InvitationMakers} from '@agoric/smart-wallet/src/types.js';
  * @import {TimerService} from '@agoric/time';
  * @import {Vow, VowTools} from '@agoric/vow';
@@ -89,20 +110,37 @@ const { Vow$ } = NetworkShape; // TODO #9611
  * }} CosmosOrchestrationAccountStorageState
  */
 
-/** @see {OrchestrationAccountI} */
-export const IcaAccountHolderI = M.interface('IcaAccountHolder', {
-  ...orchestrationAccountMethods,
+/** @see {StakingAccountActions} */
+const stakingAccountActionsMethods = {
   delegate: M.call(ChainAddressShape, AmountArgShape).returns(VowShape),
   redelegate: M.call(
     ChainAddressShape,
     ChainAddressShape,
     AmountArgShape,
   ).returns(VowShape),
+  undelegate: M.call(M.arrayOf(DelegationShape)).returns(VowShape),
   withdrawReward: M.call(ChainAddressShape).returns(
     Vow$(M.arrayOf(DenomAmountShape)),
   ),
   withdrawRewards: M.call().returns(Vow$(M.arrayOf(DenomAmountShape))),
-  undelegate: M.call(M.arrayOf(DelegationShape)).returns(VowShape),
+};
+
+/** @see {StakingAccountQueries} */
+const stakingAccountQueriesMethods = {
+  getDelegation: M.call(ChainAddressShape).returns(VowShape),
+  getDelegations: M.call().returns(VowShape),
+  getUnbondingDelegation: M.call(ChainAddressShape).returns(VowShape),
+  getUnbondingDelegations: M.call().returns(VowShape),
+  getRedelegations: M.call().returns(VowShape),
+  getReward: M.call(ChainAddressShape).returns(VowShape),
+  getRewards: M.call().returns(VowShape),
+};
+
+/** @see {OrchestrationAccountI} */
+export const IcaAccountHolderI = M.interface('IcaAccountHolder', {
+  ...orchestrationAccountMethods,
+  ...stakingAccountActionsMethods,
+  ...stakingAccountQueriesMethods,
   deactivate: M.call().returns(VowShape),
   reactivate: M.call().returns(VowShape),
 });
@@ -198,6 +236,46 @@ export const prepareCosmosOrchestrationAccountKit = (
           })
           .returns(Vow$(M.record())),
       }),
+      delegationQueryWatcher: M.interface('delegationQueryWatcher', {
+        onFulfilled: M.call(M.arrayOf(M.record())).returns(M.record()),
+      }),
+      delegationsQueryWatcher: M.interface('delegationsQueryWatcher', {
+        onFulfilled: M.call(M.arrayOf(M.record())).returns(
+          M.arrayOf(M.record()),
+        ),
+      }),
+      unbondingDelegationQueryWatcher: M.interface(
+        'unbondingDelegationQueryWatcher',
+        {
+          onFulfilled: M.call(M.arrayOf(M.record())).returns(M.record()),
+        },
+      ),
+      unbondingDelegationsQueryWatcher: M.interface(
+        'unbondingDelegationsQueryWatcher',
+        {
+          onFulfilled: M.call(M.arrayOf(M.record())).returns(
+            M.arrayOf(M.record()),
+          ),
+        },
+      ),
+      redelegationQueryWatcher: M.interface('redelegationQueryWatcher', {
+        onFulfilled: M.call(M.arrayOf(M.record())).returns(
+          M.arrayOf(M.record()),
+        ),
+      }),
+      redelegationsQueryWatcher: M.interface('redelegationsQueryWatcher', {
+        onFulfilled: M.call(M.arrayOf(M.record())).returns(
+          M.arrayOf(M.record()),
+        ),
+      }),
+      rewardQueryWatcher: M.interface('rewardQueryWatcher', {
+        onFulfilled: M.call(M.arrayOf(M.record())).returns(
+          M.arrayOf(M.record()),
+        ),
+      }),
+      rewardsQueryWatcher: M.interface('rewardsQueryWatcher', {
+        onFulfilled: M.call(M.arrayOf(M.record())).returns(M.record()),
+      }),
       holder: IcaAccountHolderI,
       invitationMakers: CosmosOrchestrationInvitationMakersI,
     },
@@ -271,6 +349,134 @@ export const prepareCosmosOrchestrationAccountKit = (
           );
           if (!balance) throw Fail`Result lacked balance key: ${result}`;
           return harden(toDenomAmount(balance));
+        },
+      },
+      delegationQueryWatcher: {
+        /**
+         * @param {JsonSafe<ResponseQuery>[]} results
+         * @returns {CosmosDelegationResponse}
+         */
+        onFulfilled([result]) {
+          if (!result?.key) throw Fail`Error parsing result ${result}`;
+          const { delegationResponse } = QueryDelegationResponse.decode(
+            decodeBase64(result.key),
+          );
+          if (!delegationResponse)
+            throw Fail`Result lacked delegationResponse key: ${result}`;
+          const { chainAddress } = this.state;
+          return harden(
+            toCosmosDelegationResponse(chainAddress, delegationResponse),
+          );
+        },
+      },
+      delegationsQueryWatcher: {
+        /**
+         * @param {JsonSafe<ResponseQuery>[]} results
+         * @returns {CosmosDelegationResponse[]}
+         */
+        onFulfilled([result]) {
+          if (!result?.key) throw Fail`Error parsing result ${result}`;
+          const { delegationResponses } =
+            QueryDelegatorDelegationsResponse.decode(decodeBase64(result.key));
+          if (!delegationResponses)
+            throw Fail`Result lacked delegationResponses key: ${result}`;
+          const { chainAddress } = this.state;
+          return harden(
+            delegationResponses.map(r =>
+              toCosmosDelegationResponse(chainAddress, r),
+            ),
+          );
+        },
+      },
+      unbondingDelegationQueryWatcher: {
+        /**
+         * @param {JsonSafe<ResponseQuery>[]} results
+         */
+        onFulfilled([result]) {
+          if (!result?.key) throw Fail`Error parsing result ${result}`;
+          const { unbond } = QueryUnbondingDelegationResponse.decode(
+            decodeBase64(result.key),
+          );
+          if (!unbond) throw Fail`Result lacked unbond key: ${result}`;
+          return harden(unbond);
+        },
+      },
+      unbondingDelegationsQueryWatcher: {
+        /**
+         * @param {JsonSafe<ResponseQuery>[]} results
+         */
+        onFulfilled([result]) {
+          if (!result?.key) throw Fail`Error parsing result ${result}`;
+          const { unbondingResponses } =
+            QueryDelegatorUnbondingDelegationsResponse.decode(
+              decodeBase64(result.key),
+            );
+          if (!unbondingResponses)
+            throw Fail`Result lacked unbondingResponses key: ${result}`;
+          return harden(unbondingResponses);
+        },
+      },
+      redelegationQueryWatcher: {
+        /**
+         * @param {JsonSafe<ResponseQuery>[]} results
+         */
+        onFulfilled([result]) {
+          if (!result?.key) throw Fail`Error parsing result ${result}`;
+          const { redelegationResponses } = QueryRedelegationsResponse.decode(
+            decodeBase64(result.key),
+          );
+          if (!redelegationResponses)
+            throw Fail`Result lacked redelegationResponses key: ${result}`;
+          return harden(redelegationResponses);
+        },
+      },
+      redelegationsQueryWatcher: {
+        /**
+         * @param {JsonSafe<ResponseQuery>[]} results
+         */
+        onFulfilled([result]) {
+          if (!result?.key) throw Fail`Error parsing result ${result}`;
+          const { redelegationResponses } = QueryRedelegationsResponse.decode(
+            decodeBase64(result.key),
+          );
+          if (!redelegationResponses)
+            throw Fail`Result lacked redelegationResponses key: ${result}`;
+          return harden(redelegationResponses);
+        },
+      },
+      rewardQueryWatcher: {
+        /**
+         * @param {JsonSafe<ResponseQuery>[]} results
+         */
+        onFulfilled([result]) {
+          if (!result?.key) throw Fail`Error parsing result ${result}`;
+          const { rewards } = QueryDelegationRewardsResponse.decode(
+            decodeBase64(result.key),
+          );
+          if (!rewards) throw Fail`Result lacked rewards key: ${result}`;
+          return harden(rewards.map(toTruncatedDenomAmount));
+        },
+      },
+      rewardsQueryWatcher: {
+        /**
+         * @param {JsonSafe<ResponseQuery>[]} results
+         * @returns {CosmosRewardsResponse}
+         */
+        onFulfilled([result]) {
+          if (!result?.key) throw Fail`Error parsing result ${result}`;
+          const { rewards, total } = QueryDelegationTotalRewardsResponse.decode(
+            decodeBase64(result.key),
+          );
+          if (!rewards || !total)
+            throw Fail`Result lacked rewards or total key: ${result}`;
+          const { chainAddress } = this.state;
+          return harden({
+            rewards: rewards.map(reward => ({
+              validator: toCosmosValidatorAddress(reward, chainAddress.chainId),
+              reward: reward.reward.map(toTruncatedDenomAmount),
+            })),
+            total: total.map(toTruncatedDenomAmount),
+          });
         },
       },
       allBalancesQueryWatcher: {
@@ -726,6 +932,10 @@ export const prepareCosmosOrchestrationAccountKit = (
             const { helper } = this.facets;
             const { chainAddress } = this.state;
 
+            delegations.every(d =>
+              d.delegator ? d.delegator.value === chainAddress.value : true,
+            ) || Fail`Some delegation record is for another delegator`;
+
             const undelegateV = watch(
               E(helper.owned()).executeEncodedTx(
                 delegations.map(({ validator, amount }) =>
@@ -750,6 +960,138 @@ export const prepareCosmosOrchestrationAccountKit = (
         /** @type {HostOf<IcaAccount['reactivate']>} */
         reactivate() {
           return watch(E(this.facets.helper.owned()).reactivate());
+        },
+        /** @type {HostOf<StakingAccountQueries['getDelegation']>} */
+        getDelegation(validator) {
+          return asVow(() => {
+            trace('getDelegation', validator);
+            const { chainAddress, icqConnection } = this.state;
+            if (!icqConnection) {
+              throw Fail`Queries not available for chain ${q(chainAddress.chainId)}`;
+            }
+            const results = E(icqConnection).query([
+              toRequestQueryJson(
+                QueryDelegationRequest.toProtoMsg({
+                  delegatorAddr: chainAddress.value,
+                  validatorAddr: validator.value,
+                }),
+              ),
+            ]);
+            return watch(results, this.facets.delegationQueryWatcher);
+          });
+        },
+        /** @type {HostOf<StakingAccountQueries['getDelegations']>} */
+        getDelegations() {
+          return asVow(() => {
+            trace('getDelegations');
+            const { chainAddress, icqConnection } = this.state;
+            if (!icqConnection) {
+              throw Fail`Queries not available for chain ${q(chainAddress.chainId)}`;
+            }
+            const results = E(icqConnection).query([
+              toRequestQueryJson(
+                QueryDelegatorDelegationsRequest.toProtoMsg({
+                  delegatorAddr: chainAddress.value,
+                }),
+              ),
+            ]);
+            return watch(results, this.facets.delegationsQueryWatcher);
+          });
+        },
+        /** @type {HostOf<StakingAccountQueries['getUnbondingDelegation']>} */
+        getUnbondingDelegation(validator) {
+          return asVow(() => {
+            trace('getUnbondingDelegation', validator);
+            const { chainAddress, icqConnection } = this.state;
+            if (!icqConnection) {
+              throw Fail`Queries not available for chain ${q(chainAddress.chainId)}`;
+            }
+            const results = E(icqConnection).query([
+              toRequestQueryJson(
+                QueryUnbondingDelegationRequest.toProtoMsg({
+                  delegatorAddr: chainAddress.value,
+                  validatorAddr: validator.value,
+                }),
+              ),
+            ]);
+            return watch(results, this.facets.unbondingDelegationQueryWatcher);
+          });
+        },
+        /** @type {HostOf<StakingAccountQueries['getUnbondingDelegations']>} */
+        getUnbondingDelegations() {
+          return asVow(() => {
+            trace('getUnbondingDelegations');
+            const { chainAddress, icqConnection } = this.state;
+            if (!icqConnection) {
+              throw Fail`Queries not available for chain ${q(chainAddress.chainId)}`;
+            }
+            const results = E(icqConnection).query([
+              toRequestQueryJson(
+                QueryDelegatorUnbondingDelegationsRequest.toProtoMsg({
+                  delegatorAddr: chainAddress.value,
+                }),
+              ),
+            ]);
+            return watch(results, this.facets.unbondingDelegationsQueryWatcher);
+          });
+        },
+        /** @type {HostOf<StakingAccountQueries['getRedelegations']>} */
+        getRedelegations() {
+          return asVow(() => {
+            trace('getRedelegations');
+            const { chainAddress, icqConnection } = this.state;
+            if (!icqConnection) {
+              throw Fail`Queries not available for chain ${q(chainAddress.chainId)}`;
+            }
+            const results = E(icqConnection).query([
+              toRequestQueryJson(
+                QueryRedelegationsRequest.toProtoMsg({
+                  delegatorAddr: chainAddress.value,
+                  // These are optional but the protobufs require values to be set
+                  dstValidatorAddr: '',
+                  srcValidatorAddr: '',
+                }),
+              ),
+            ]);
+            return watch(results, this.facets.redelegationsQueryWatcher);
+          });
+        },
+        /** @type {HostOf<StakingAccountQueries['getReward']>} */
+        getReward(validator) {
+          return asVow(() => {
+            trace('getReward', validator);
+            const { chainAddress, icqConnection } = this.state;
+            if (!icqConnection) {
+              throw Fail`Queries not available for chain ${q(chainAddress.chainId)}`;
+            }
+            const results = E(icqConnection).query([
+              toRequestQueryJson(
+                QueryDelegationRewardsRequest.toProtoMsg({
+                  delegatorAddress: chainAddress.value,
+                  validatorAddress: validator.value,
+                }),
+              ),
+            ]);
+            return watch(results, this.facets.rewardQueryWatcher);
+          });
+        },
+        /** @type {HostOf<StakingAccountQueries['getRewards']>} */
+        getRewards() {
+          return asVow(() => {
+            trace('getRewards');
+            const { chainAddress, icqConnection } = this.state;
+            if (!icqConnection) {
+              throw Fail`Queries not available for chain ${q(chainAddress.chainId)}`;
+            }
+            const results = E(icqConnection).query([
+              toRequestQueryJson(
+                QueryDelegationTotalRewardsRequest.toProtoMsg({
+                  delegatorAddress: chainAddress.value,
+                }),
+              ),
+            ]);
+            return watch(results, this.facets.rewardsQueryWatcher);
+          });
         },
       },
     },

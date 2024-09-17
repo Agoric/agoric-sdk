@@ -4,7 +4,13 @@ import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { E } from '@endo/far';
 import path from 'path';
 import { inspectMapStore } from '@agoric/internal/src/testing-utils.js';
+import { QueryDelegatorDelegationsResponse } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/query.js';
+import { MsgUndelegateResponse } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/tx.js';
 import { commonSetup } from '../supports.js';
+import {
+  buildMsgResponseString,
+  buildQueryResponseString,
+} from '../../tools/ibc-mocks.js';
 
 const dirname = path.dirname(new URL(import.meta.url).pathname);
 
@@ -14,10 +20,40 @@ type StartFn =
 
 test('start', async t => {
   const {
-    bootstrap: { vowTools: vt },
+    bootstrap: { timer, vowTools: vt },
     brands: { ist },
     commonPrivateArgs,
+    mocks: { ibcBridge },
   } = await commonSetup(t);
+
+  const buildMocks = () => {
+    const makeDelegationsResponse = () =>
+      buildQueryResponseString(QueryDelegatorDelegationsResponse, {
+        delegationResponses: [
+          {
+            delegation: {
+              delegatorAddress: 'cosmos1test',
+              validatorAddress: 'cosmosvaloper1xyz',
+              shares: '1000000',
+            },
+            balance: { denom: 'uosmo', amount: '1000000' },
+          },
+        ],
+      });
+    const makeUndelegateResponse = () =>
+      buildMsgResponseString(MsgUndelegateResponse, {
+        completionTime: { seconds: 3600n, nanos: 0 },
+      });
+
+    return {
+      'eyJkYXRhIjoiQ2tNS0RRb0xZMjl6Ylc5ek1YUmxjM1FTTWk5amIzTnRiM011YzNSaGEybHVaeTUyTVdKbGRHRXhMbEYxWlhKNUwwUmxiR1ZuWVhSdmNrUmxiR1ZuWVhScGIyNXoiLCJtZW1vIjoiIn0=':
+        makeDelegationsResponse(),
+      'eyJ0eXBlIjoxLCJkYXRhIjoiQ2xzS0pTOWpiM050YjNNdWMzUmhhMmx1Wnk1Mk1XSmxkR0V4TGsxeloxVnVaR1ZzWldkaGRHVVNNZ29MWTI5emJXOXpNWFJsYzNRU0VXTnZjMjF2YzNaaGJHOXdaWEl4ZUhsNkdoQUtCWFZ2YzIxdkVnY3hNREF3TURBdyIsIm1lbW8iOiIifQ==':
+        makeUndelegateResponse(),
+    };
+  };
+
+  ibcBridge.setMockAck(buildMocks());
 
   let contractBaggage;
   const { zoe, bundleAndInstall } = await setUpZoeForTest({
@@ -35,11 +71,11 @@ test('start', async t => {
     commonPrivateArgs,
   );
 
-  const inv = E(publicFacet).makeUnbondAndLiquidStakeInvitation();
+  const inv = E(publicFacet).makeUnbondAndTransferInvitation();
 
   t.is(
     (await E(zoe).getInvitationDetails(inv)).description,
-    'Unbond and liquid stake',
+    'Unbond and transfer',
   );
 
   const userSeat = await E(zoe).offer(
@@ -48,7 +84,13 @@ test('start', async t => {
     {},
     { validator: 'agoric1valopsfufu' },
   );
-  const result = await vt.when(E(userSeat).getOfferResult());
+  const resultP = vt.when(E(userSeat).getOfferResult());
+  t.truthy(resultP);
+
+  // Wait for the completionTime to pass
+  timer.advanceBy(3600n * 1000n);
+
+  const result = await resultP;
   t.is(result, undefined);
 
   const tree = inspectMapStore(contractBaggage);
