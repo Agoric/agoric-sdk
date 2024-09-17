@@ -45,7 +45,7 @@ function parseAction(s) {
 }
 
 /**
- * @param {*} kernelKeeper
+ * @param {KernelKeeper} kernelKeeper
  * @returns {import('../types-internal.js').RunQueueEvent | undefined}
  */
 export function processGCActionSet(kernelKeeper) {
@@ -86,10 +86,9 @@ export function processGCActionSet(kernelKeeper) {
     const hasCList = vatKeeper.hasCListEntry(kref);
     const isReachable = hasCList ? vatKeeper.getReachableFlag(kref) : undefined;
     const exists = kernelKeeper.kernelObjectExists(kref);
-    // @ts-expect-error xxx
     const { reachable, recognizable } = exists
       ? kernelKeeper.getObjectRefCount(kref)
-      : {};
+      : { reachable: 0, recognizable: 0 };
 
     if (type === 'dropExport') {
       if (!exists) return false; // already, shouldn't happen

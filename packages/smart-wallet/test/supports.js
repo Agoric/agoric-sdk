@@ -63,7 +63,6 @@ export const subscriptionKey = subscription => {
 
 /** @returns {import('@agoric/vats').BridgeManager} */
 const makeFakeBridgeManager = () =>
-  // @ts-expect-error XXX generics puzzle: could be instantiated with a different subtype of constraint
   Far('fakeBridgeManager', {
     register(bridgeId, handler) {
       return Far('scopedBridgeManager', {

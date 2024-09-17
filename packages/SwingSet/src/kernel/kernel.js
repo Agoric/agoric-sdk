@@ -39,8 +39,10 @@ import { makeDeviceTranslators } from './deviceTranslator.js';
 import { notifyTermination } from './notifyTermination.js';
 import { makeVatAdminHooks } from './vat-admin-hooks.js';
 
-/** @import * as liveslots from '@agoric/swingset-liveslots' */
-/** @import {PolicyInputCleanupCounts} from '../types-external.js' */
+/**
+ * @import {MeterConsumption, VatDeliveryObject, VatDeliveryResult, VatSyscallObject, VatSyscallResult} from '@agoric/swingset-liveslots';
+ * @import {PolicyInputCleanupCounts} from '../types-external.js';
+ */
 
 function abbreviateReplacer(_, arg) {
   if (typeof arg === 'bigint') {
@@ -56,7 +58,7 @@ function abbreviateReplacer(_, arg) {
 /**
  * Provide the kref of a vat's root object, as if it had been exported.
  *
- * @param {*} kernelKeeper  Kernel keeper managing persistent kernel state.
+ * @param {KernelKeeper} kernelKeeper  Kernel keeper managing persistent kernel state.
  * @param {string} vatID  Vat ID of the vat whose root kref is sought.
  *
  * @returns {string} the kref of the root object of the given vat.
@@ -380,7 +382,6 @@ export default function buildKernel(
 
   /**
    *
-   * @typedef { import('@agoric/swingset-liveslots').MeterConsumption } MeterConsumption
    * @typedef { import('../types-internal.js').MeterID } MeterID
    * @typedef { import('../types-internal.js').Dirt } Dirt
    *
@@ -416,7 +417,7 @@ export default function buildKernel(
    *
    * @param {VatID} vatID
    * @param {KernelDeliveryObject} kd
-   * @param {liveslots.VatDeliveryObject} vd
+   * @param {VatDeliveryObject} vd
    */
   async function deliverAndLogToVat(vatID, kd, vd) {
     vatRequestedTermination = undefined;
@@ -426,7 +427,7 @@ export default function buildKernel(
     const vs = kernelSlog.provideVatSlogger(vatID).vatSlog;
     await null;
     try {
-      /** @type { liveslots.VatDeliveryResult } */
+      /** @type { VatDeliveryResult } */
       const deliveryResult = await vatWarehouse.deliverToVat(vatID, kd, vd, vs);
       insistVatDeliveryResult(deliveryResult);
       // const [ ok, problem, usage ] = deliveryResult;
@@ -1542,8 +1543,8 @@ export default function buildKernel(
     // not
     /**
      *
-     * @param {liveslots.VatSyscallObject} vatSyscallObject
-     * @returns {liveslots.VatSyscallResult}
+     * @param {VatSyscallObject} vatSyscallObject
+     * @returns {VatSyscallResult}
      */
     function vatSyscallHandler(vatSyscallObject) {
       if (!vatWarehouse.lookup(vatID)) {
@@ -1558,7 +1559,7 @@ export default function buildKernel(
       let ksc;
       /** @type { KernelSyscallResult } */
       let kres = harden(['error', 'incomplete']);
-      /** @type { liveslots.VatSyscallResult } */
+      /** @type { VatSyscallResult } */
       let vres = harden(['error', 'incomplete']);
 
       try {

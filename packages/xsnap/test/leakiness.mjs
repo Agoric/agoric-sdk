@@ -4,6 +4,7 @@
 // See below for usage detail about the latter.
 import 'ses';
 import '@endo/eventual-send/shim.js';
+// @ts-expect-error Cannot find module
 import 'data:text/javascript,try { lockdown(); } catch (_err) {}';
 
 import * as proc from 'child_process';
