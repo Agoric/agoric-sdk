@@ -26,7 +26,8 @@
     "@types/microtime": "^2.1.0",
     "@types/tmp": "^0.2.0",
     "@types/yargs-parser": "^21.0.0",
-    "ava": "^7.0.0"
+    "ava": "^7.0.0",
+    "eslint-plugin-simple-import-sort": "^12.1.1"
   },
   "dependencies": {
     "@agoric/internal": "workspace:*",

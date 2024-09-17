@@ -8,6 +8,7 @@ import js from '@eslint/js';
 import { FlatCompat } from '@eslint/eslintrc';
 import { createRequire } from 'node:module';
 import nodePlugin from 'eslint-plugin-n';
+import simpleImportSort from 'eslint-plugin-simple-import-sort';
 import { legacySrcToToolsFiles } from './scripts/ci/tools-scope-policy.mjs';
 
 // Workaround for https://github.com/anza-xyz/eslint-plugin-require-extensions/issues/18
@@ -89,6 +90,7 @@ export default [
       '@typescript-eslint': typescriptEslint,
       'require-extensions': fixupPluginRules(requireExtensions),
       n: nodePlugin,
+      'simple-import-sort': simpleImportSort,
     },
 
     linterOptions: {
@@ -149,6 +151,38 @@ export default [
       'ava/no-skip-test': 'off',
       'ava/use-test': 'off',
       '@jessie.js/safe-await-separator': 'error',
+
+      // Trying out a simpler ordering system that is compatible with VS Code's "Organize Imports"
+      //
+      // GOTCHA: simple-import-sort only *reorders* imports; it does not fix
+      // whitespace. When `eslint --fix` (e.g. `yarn lint-fix`) reorders a
+      // statement, it can leave cramped specifier spacing like
+      // `{ Fail, makeError,q, X }`. dprint (the prettier plugin) normalizes
+      // that back to `{ Fail, makeError, q, X }`, so always run a format pass
+      // after sorting. The repo's pre-commit hook does this automatically;
+      // install it with `scripts/install-git-hooks.sh` (or run `yarn format`).
+      'import/order': 'off',
+      'simple-import-sort/imports': [
+        'error',
+        {
+          // This is the default values, with 'prepare-test-env' marked as having side-effects
+          groups: [
+            // Side effect imports.
+            ['^\\u0000', 'prepare-test-env'],
+            // Node.js builtins prefixed with `node:`.
+            ['^node:'],
+            // Packages.
+            // Things that start with a letter (or digit or underscore), or `@` followed by a letter.
+            ['^@?\\w'],
+            // Absolute imports and other imports such as Vue-style `@/foo`.
+            // Anything not matched in another group.
+            ['^'],
+            // Relative imports.
+            // Anything that starts with a dot.
+            ['^\\.'],
+          ],
+        },
+      ],
 
       'jsdoc/check-tag-names': [
         'error',
