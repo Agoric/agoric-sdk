@@ -10,11 +10,11 @@ We would like to have similar behavior regardless of whether a chain launched fr
 
 We previously maintained `release-*` branches which represented a fork of the `master` dev branch at a given point:
 - `release-pismo` is the original/archived release branch used before the "bulldozer" upgrade which threw away all JavaScript state.
-- `release-mainnet1B` was our previous release branch up until upgrade-15. Despite its name, it lived beyond the "mainnet-1" phase of the agoric-3 chain.
+- `release-mainnet1B` was our previous release branch up until `agoric-upgrade-15`. Despite its name, it lived beyond the "mainnet-1" phase of the agoric-3 chain.
 
 We don't expect these previous release branches to ever be updated again.
 
-Starting with `upgrade-16`, we try to release directly from `master` by creating a `dev-release-*` branch. These branches allow us to work on the release concurrently with other engineering efforts, and are not currently merged back once the release is complete.
+Starting with `agoric-upgrade-16`, we try to release directly from `master` by creating a `dev-release-*` release branch. These branches allow us to work on the release concurrently with other engineering efforts, and are not currently merged back once the release is complete.
 
 Releases are tagged commits from the above release branches, with a corresponding entry in https://github.com/Agoric/agoric-sdk/releases .
 
