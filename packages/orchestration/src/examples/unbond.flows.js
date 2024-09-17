@@ -1,12 +1,10 @@
+import { makeTracer } from '@agoric/internal';
+
+const trace = makeTracer('UnbondAndTransfer');
+
 /**
- * @import {Orchestrator, OrchestrationFlow} from '../types.js'
- * @import {TimerService} from '@agoric/time';
- * @import {LocalChain} from '@agoric/vats/src/localchain.js';
- * @import {NameHub} from '@agoric/vats';
- * @import {Remote} from '@agoric/internal';
- * @import {Zone} from '@agoric/zone';
- * @import {CosmosInterchainService} from '../exos/exo-interfaces.js';
- * @import {OrchestrationTools} from '../utils/start-helper.js';
+ * @import {Orchestrator, OrchestrationFlow, CosmosDelegationResponse} from '../types.js'
+ * @import {DelegationResponse} from '@agoric/cosmic-proto/cosmos/staking/v1beta1/staking.js';
  */
 
 /**
@@ -14,25 +12,20 @@
  * @param {Orchestrator} orch
  * @param {object} ctx
  * @param {ZCF} ctx.zcf
- * @param {ZCFSeat} _seat
- * @param {undefined} _offerArgs
  */
-export const unbondAndLiquidStake = async (
-  orch,
-  { zcf },
-  _seat,
-  _offerArgs,
-) => {
+export const unbondAndTransfer = async (orch, { zcf }) => {
   console.log('zcf within the membrane', zcf);
   // Osmosis is one of the few chains with icqEnabled
   const osmosis = await orch.getChain('osmosis');
   // In a real world scenario, accounts would be re-used across invokations of the handler
   const osmoAccount = await osmosis.makeAccount();
 
-  // TODO https://github.com/Agoric/agoric-sdk/issues/10016
-  // const delegations = await celestiaAccount.getDelegations();
-  // // wait for the undelegations to be complete (may take weeks)
-  // await celestiaAccount.undelegate(delegations);
+  /** @type {CosmosDelegationResponse[]} Cosmos */
+  const delegations = await osmoAccount.getDelegations();
+  trace('delegations', delegations);
+  // wait for the undelegations to be complete (may take weeks)
+  await osmoAccount.undelegate(delegations);
+
   // ??? should this be synchronous? depends on how names are resolved.
   const stride = await orch.getChain('stride');
   const strideAccount = await stride.makeAccount();
@@ -44,4 +37,4 @@ export const unbondAndLiquidStake = async (
   // await strideAccount.liquidStake(tiaAmt);
   console.log(osmoAccount, strideAccount);
 };
-harden(unbondAndLiquidStake);
+harden(unbondAndTransfer);

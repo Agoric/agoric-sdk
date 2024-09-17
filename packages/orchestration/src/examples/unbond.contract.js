@@ -28,13 +28,13 @@ import * as flows from './unbond.flows.js';
  * @param {OrchestrationTools} tools
  */
 const contract = async (zcf, privateArgs, zone, { orchestrateAll }) => {
-  const { unbondAndLiquidStake } = orchestrateAll(flows, { zcf });
+  const { unbondAndTransfer } = orchestrateAll(flows, { zcf });
 
   const publicFacet = zone.exo('publicFacet', undefined, {
-    makeUnbondAndLiquidStakeInvitation() {
+    makeUnbondAndTransferInvitation() {
       return zcf.makeInvitation(
-        unbondAndLiquidStake,
-        'Unbond and liquid stake',
+        unbondAndTransfer,
+        'Unbond and transfer',
         undefined,
         harden({
           // Nothing to give; the funds come from undelegating
