@@ -39,7 +39,7 @@ const getChainTerms = (
   }
   return {
     chainId,
-    hostConnectionId: agoricConns[chainId].counterparty.connection_id,
+    hostConnectionId: agoricConns[chainId].counterpartyConnectionId,
     controllerConnectionId: agoricConns[chainId].id,
     icqEnabled: !!icqEnabled,
   };

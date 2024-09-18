@@ -76,15 +76,15 @@ export const makeIBCTransferMsg = (
     throw Error(
       `No connection found between ${sender.chainName} and ${destination.chainName}`,
     );
-  const { counterPartyPortId, counterPartyChannelId } =
+  const { counterpartyPortId, counterpartyChannelId } =
     connection.transferChannel;
 
   const msgTransfer = MsgTransfer.fromPartial({
     sender: sender.address,
     receiver: destination.address,
     token: { denom: amount.denom, amount: String(amount.value) },
-    sourcePort: counterPartyPortId,
-    sourceChannel: counterPartyChannelId,
+    sourcePort: counterpartyPortId,
+    sourceChannel: counterpartyChannelId,
     timeoutHeight,
     timeoutTimestamp: timeoutHeight
       ? undefined

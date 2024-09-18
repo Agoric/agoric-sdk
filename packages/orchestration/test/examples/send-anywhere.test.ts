@@ -28,7 +28,7 @@ const chainInfoDefaults = {
 };
 
 const txChannelDefaults = {
-  counterPartyPortId: 'transfer',
+  counterpartyPortId: 'transfer',
   version: 'ics20-1',
   portId: 'transfer',
   ordering: 1, // ORDER_UNORDERED
@@ -92,14 +92,12 @@ test('send using arbitrary chain info', async t => {
   t.log('admin adds chain using creatorFacet', hotChainInfo.chainId);
   const agoricToHotConnection = {
     id: 'connection-1',
-    client_id: '07-tendermint-1',
+    clientId: '07-tendermint-1',
     state: 3, // STATE_OPEN
-    counterparty: {
-      client_id: '07-tendermint-2109',
-      connection_id: 'connection-1649',
-    },
+    counterpartyClientId: '07-tendermint-2109',
+    counterpartyConnectionId: 'connection-1649',
     transferChannel: {
-      counterPartyChannelId: 'channel-1',
+      counterpartyChannelId: 'channel-1',
       channelId: 'channel-0',
       ...txChannelDefaults,
     },

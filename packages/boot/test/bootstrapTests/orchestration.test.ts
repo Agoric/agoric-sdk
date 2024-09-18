@@ -85,13 +85,11 @@ test.serial('config', async t => {
     );
     t.like(connection, {
       id: 'connection-1',
-      client_id: '07-tendermint-1',
-      counterparty: {
-        client_id: '07-tendermint-2109',
-        connection_id: 'connection-1649',
-      },
+      clientId: '07-tendermint-1',
+      counterpartyClientId: '07-tendermint-2109',
+      counterpartyConnectionId: 'connection-1649',
       transferChannel: {
-        counterPartyChannelId: 'channel-320',
+        counterpartyChannelId: 'channel-320',
         channelId: 'channel-1',
       },
     });
@@ -278,7 +276,7 @@ test.serial('revise chain info', async t => {
   );
   t.like(connection, {
     id: 'connection-1',
-    client_id: '07-tendermint-2',
+    clientId: '07-tendermint-2',
   });
 });
 

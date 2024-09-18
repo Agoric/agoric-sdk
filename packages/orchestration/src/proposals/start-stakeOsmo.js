@@ -64,7 +64,7 @@ export const startStakeOsmo = async ({
     installation: stakeIca,
     terms: {
       chainId: osmosis.chainId,
-      hostConnectionId: connectionInfo.counterparty.connection_id,
+      hostConnectionId: connectionInfo.counterpartyConnectionId,
       controllerConnectionId: connectionInfo.id,
       icqEnabled: osmosis.icqEnabled,
     },
