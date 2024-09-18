@@ -1,12 +1,12 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
+import { makeScalarBigMapStore } from '@agoric/vat-data';
 import {
   makeRatio,
   makeRatioFromAmounts,
 } from '@agoric/zoe/src/contractSupport/ratio.js';
 
-import { makeScalarBigMapStore } from '@agoric/vat-data';
 import {
   currentDebtToCollateral,
   makePrioritizedVaults,

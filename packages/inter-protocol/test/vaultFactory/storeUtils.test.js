@@ -1,7 +1,7 @@
-import test from 'ava';
-
 import { AmountMath } from '@agoric/ertp';
 import { Far } from '@endo/marshal';
+import test from 'ava';
+
 import * as StoreUtils from '../../src/vaultFactory/storeUtils.js';
 
 /** @type {Brand<'nat'>} */

@@ -1,6 +1,6 @@
-import { makeError } from '@endo/errors';
-import { decodeBase64 } from '@endo/base64';
 import { Any } from '@agoric/cosmic-proto/google/protobuf/any.js';
+import { decodeBase64 } from '@endo/base64';
+import { makeError } from '@endo/errors';
 
 /**
  * @import {CosmosDelegationResponse, CosmosValidatorAddress, DenomAmount} from '../types.js';

@@ -5,6 +5,7 @@
 import { Fail } from '@endo/errors';
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
+
 import { toBytes } from './bytes.js';
 import { Shape } from './shapes.js';
 

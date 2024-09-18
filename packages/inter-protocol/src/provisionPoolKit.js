@@ -1,11 +1,8 @@
 // @ts-check
-import { X, q, Fail } from '@endo/errors';
-import { E } from '@endo/far';
-import { Far } from '@endo/marshal';
-
 import { AmountMath, BrandShape } from '@agoric/ertp';
 import { deeplyFulfilledObject, makeTracer } from '@agoric/internal';
 import { UnguardedHelperI } from '@agoric/internal/src/typeGuards.js';
+import { isUpgradeDisconnection } from '@agoric/internal/src/upgrade-api.js';
 import {
   observeIteration,
   observeNotifier,
@@ -19,11 +16,13 @@ import {
 } from '@agoric/vat-data';
 import { PowerFlags } from '@agoric/vats/src/walletFlags.js';
 import {
-  PublicTopicShape,
   makeRecorderTopic,
+  PublicTopicShape,
 } from '@agoric/zoe/src/contractSupport/topics.js';
 import { InstanceHandleShape } from '@agoric/zoe/src/typeGuards.js';
-import { isUpgradeDisconnection } from '@agoric/internal/src/upgrade-api.js';
+import { Fail, q, X } from '@endo/errors';
+import { E } from '@endo/far';
+import { Far } from '@endo/marshal';
 
 const trace = makeTracer('ProvPool');
 

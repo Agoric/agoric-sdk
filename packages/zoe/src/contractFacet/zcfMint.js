@@ -1,16 +1,16 @@
-import { Fail } from '@endo/errors';
-import { E } from '@endo/eventual-send';
+import '../internal-types.js';
+import './internal-types.js';
+import './types-ambient.js';
+
 import { AmountMath } from '@agoric/ertp';
 import { prepareExoClass } from '@agoric/vat-data';
+import { Fail } from '@endo/errors';
+import { E } from '@endo/eventual-send';
 
 import { coerceAmountKeywordRecord } from '../cleanProposal.js';
 import { assertFullIssuerRecord, makeIssuerRecord } from '../issuerRecord.js';
 import { addToAllocation, subtractFromAllocation } from './allocationMath.js';
-
-import '../internal-types.js';
 import { ZcfMintI } from './typeGuards.js';
-import './internal-types.js';
-import './types-ambient.js';
 
 /**
  * @param {AmountKeywordRecord} amr

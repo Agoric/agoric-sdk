@@ -1,7 +1,7 @@
 // @ts-check
 /** @file Boot script for PSM-only (aka Pismo) chain */
 import * as ERTPmod from '@agoric/ertp';
-import { E, Far } from '@endo/far';
+import { Stable, Stake } from '@agoric/internal/src/tokens.js';
 // TODO: factor startEconomicCommittee out of econ-behaviors.js
 import { M, makeScalarMapStore, mustMatch } from '@agoric/store';
 import {
@@ -34,7 +34,13 @@ import {
 } from '@agoric/vats/src/core/startWalletFactory.js';
 import * as utils from '@agoric/vats/src/core/utils.js';
 import { makeHeapZone } from '@agoric/zone';
-import { Stable, Stake } from '@agoric/internal/src/tokens.js';
+import { E, Far } from '@endo/far';
+
+import {
+  inviteCommitteeMembers,
+  inviteToEconCharter,
+  startEconCharter,
+} from '../../src/proposals/committee-proposal.js';
 import {
   ECON_COMMITTEE_MANIFEST,
   startEconomicCommittee,
@@ -46,11 +52,6 @@ import {
   PSM_MANIFEST,
   startPSM,
 } from '../../src/proposals/startPSM.js';
-import {
-  inviteCommitteeMembers,
-  inviteToEconCharter,
-  startEconCharter,
-} from '../../src/proposals/committee-proposal.js';
 
 /** @import {EconomyBootstrapSpace} from '@agoric/inter-protocol/src/proposals/econ-behaviors.js' */
 

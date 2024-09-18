@@ -2,6 +2,7 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
 import { makeHistoryReviver } from '@agoric/vats/tools/board-utils.js';
+
 import { chainStorageEntries } from './psm-storage-fixture.js';
 
 test('restore PSM: revive metrics, governance with old board IDs', async t => {

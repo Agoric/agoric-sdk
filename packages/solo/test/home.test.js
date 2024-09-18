@@ -2,13 +2,13 @@
 
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
-import bundleSourceAmbient from '@endo/bundle-source';
 import { AmountMath } from '@agoric/ertp';
 import { TimeMath } from '@agoric/time';
+import bundleSourceAmbient from '@endo/bundle-source';
 import { Far } from '@endo/marshal';
 import { resolve as importMetaResolve } from 'import-meta-resolve';
 
-import { makeFixture, E } from './captp-fixture.js';
+import { E, makeFixture } from './captp-fixture.js';
 
 const SOLO_PORT = 7999;
 

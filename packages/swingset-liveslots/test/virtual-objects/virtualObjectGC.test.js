@@ -1,13 +1,13 @@
 // @ts-nocheck
+import { krefOf, kser, kslot } from '@agoric/kmarshal';
+import { Far } from '@endo/marshal';
 import test from 'ava';
 
-import { Far } from '@endo/marshal';
-import { krefOf, kser, kslot } from '@agoric/kmarshal';
-import {
-  setupTestLiveslots,
-  findSyscallsByType,
-} from '../liveslots-helpers.js';
 import { parseVatSlot } from '../../src/parseVatSlots.js';
+import {
+  findSyscallsByType,
+  setupTestLiveslots,
+} from '../liveslots-helpers.js';
 
 // Legs:
 //

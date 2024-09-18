@@ -1,5 +1,6 @@
-import { M } from '@endo/patterns';
 import { makeDurableZone } from '@agoric/zone/durable.js';
+import { M } from '@endo/patterns';
+
 import { prepareOwnable } from '../../../src/contractSupport/prepare-ownable.js';
 
 /**

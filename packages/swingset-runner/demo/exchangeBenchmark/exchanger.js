@@ -1,10 +1,10 @@
 // @ts-check
 
+import { claim } from '@agoric/ertp/src/legacy-payment-helpers.js';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
-import { claim } from '@agoric/ertp/src/legacy-payment-helpers.js';
 
-import { showPurseBalance, setupPurses } from './helpers.js';
+import { setupPurses, showPurseBalance } from './helpers.js';
 import { makePrintLog } from './printLog.js';
 
 const log = makePrintLog();

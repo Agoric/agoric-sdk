@@ -1,5 +1,4 @@
 import * as STORAGE_PATH from '@agoric/internal/src/chain-storage-paths.js';
-
 import { Fail, q } from '@endo/errors';
 
 /**

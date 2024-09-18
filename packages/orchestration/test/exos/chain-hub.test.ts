@@ -1,24 +1,25 @@
 /* eslint-disable @jessie.js/safe-await-separator -- XXX irrelevant for tests */
 import '@agoric/swingset-liveslots/tools/prepare-test-env.js';
-import test from '@endo/ses-ava/prepare-endo.js';
 
+import { makeIssuerKit } from '@agoric/ertp';
 import { makeNameHubKit } from '@agoric/vats';
 import { prepareSwingsetVowTools } from '@agoric/vow/vat.js';
-import { E } from '@endo/far';
-import { makeIssuerKit } from '@agoric/ertp';
 import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
-import { makeChainHub, registerAssets } from '../../src/exos/chain-hub.js';
-import { provideDurableZone } from '../supports.js';
+import { E } from '@endo/far';
+import test from '@endo/ses-ava/prepare-endo.js';
+
 import {
   registerChainAssets,
   registerKnownChains,
 } from '../../src/chain-info.js';
-import knownChains from '../../src/fetched-chain-info.js';
 import type {
   CosmosChainInfo,
   IBCConnectionInfo,
 } from '../../src/cosmos-api.js';
+import { makeChainHub, registerAssets } from '../../src/exos/chain-hub.js';
+import knownChains from '../../src/fetched-chain-info.js';
 import { assets as assetFixture } from '../assets.fixture.js';
+import { provideDurableZone } from '../supports.js';
 
 const connection = {
   id: 'connection-1',

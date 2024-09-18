@@ -1,58 +1,56 @@
 // @ts-check
 
-import path from 'node:path';
-import v8 from 'node:v8';
-import process from 'node:process';
+import { fork } from 'node:child_process';
 import fs from 'node:fs';
 import fsPromises from 'node:fs/promises';
+import path from 'node:path';
 import { performance } from 'node:perf_hooks';
-import { fork } from 'node:child_process';
-import { resolve as importMetaResolve } from 'import-meta-resolve';
-import tmp from 'tmp';
+import process from 'node:process';
+import v8 from 'node:v8';
 
-import { Fail, q } from '@endo/errors';
-import { E } from '@endo/far';
-import { makeMarshal } from '@endo/marshal';
-import { isNat } from '@endo/nat';
-import { M, mustMatch } from '@endo/patterns';
-import engineGC from '@agoric/internal/src/lib-nodejs/engine-gc.js';
-import { waitUntilQuiescent } from '@agoric/internal/src/lib-nodejs/waitUntilQuiescent.js';
-import {
-  importMailbox,
-  exportMailbox,
-} from '@agoric/swingset-vat/src/devices/mailbox/mailbox.js';
-
-import { makeSlogSender, tryFlushSlogSender } from '@agoric/telemetry';
-
+import { BridgeId, CosmosInitKeyToBridgeId } from '@agoric/internal';
+import * as ActionType from '@agoric/internal/src/action-types.js';
+import * as STORAGE_PATH from '@agoric/internal/src/chain-storage-paths.js';
 import {
   makeChainStorageRoot,
   makeSerializeToStorage,
 } from '@agoric/internal/src/lib-chainStorage.js';
+import engineGC from '@agoric/internal/src/lib-nodejs/engine-gc.js';
+import { waitUntilQuiescent } from '@agoric/internal/src/lib-nodejs/waitUntilQuiescent.js';
 import { makeShutdown } from '@agoric/internal/src/node/shutdown.js';
-
-import * as STORAGE_PATH from '@agoric/internal/src/chain-storage-paths.js';
-import * as ActionType from '@agoric/internal/src/action-types.js';
-import { BridgeId, CosmosInitKeyToBridgeId } from '@agoric/internal';
 import {
   makeArchiveSnapshot,
   makeArchiveTranscript,
 } from '@agoric/swing-store';
 import {
-  makeBufferedStorage,
-  makeReadCachingStorage,
-} from './helpers/bufferedStorage.js';
-import stringify from './helpers/json-stable-stringify.js';
-import { launch } from './launch-chain.js';
-import { getTelemetryProviders } from './kernel-stats.js';
-import { makeProcessValue } from './helpers/process-value.js';
+  exportMailbox,
+  importMailbox,
+} from '@agoric/swingset-vat/src/devices/mailbox/mailbox.js';
+import { makeSlogSender, tryFlushSlogSender } from '@agoric/telemetry';
+import { Fail, q } from '@endo/errors';
+import { E } from '@endo/far';
+import { makeMarshal } from '@endo/marshal';
+import { isNat } from '@endo/nat';
+import { M, mustMatch } from '@endo/patterns';
+import { resolve as importMetaResolve } from 'import-meta-resolve';
+import tmp from 'tmp';
+
 import {
   spawnSwingStoreExport,
   validateExporterOptions,
 } from './export-kernel-db.js';
 import {
+  makeBufferedStorage,
+  makeReadCachingStorage,
+} from './helpers/bufferedStorage.js';
+import stringify from './helpers/json-stable-stringify.js';
+import { makeProcessValue } from './helpers/process-value.js';
+import {
   performStateSyncImport,
   validateImporterOptions,
 } from './import-kernel-db.js';
+import { getTelemetryProviders } from './kernel-stats.js';
+import { launch } from './launch-chain.js';
 
 const ignore = () => {};
 

@@ -3,7 +3,6 @@
 import bundleSource from '@endo/bundle-source';
 import { E } from '@endo/captp';
 import { search as readContainingPackageDescriptor } from '@endo/compartment-mapper';
-
 import createEsmRequire from 'esm';
 import { createRequire } from 'module';
 import path from 'path';

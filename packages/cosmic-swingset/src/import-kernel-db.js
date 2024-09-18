@@ -4,24 +4,23 @@
 
 import '@endo/init/unsafe-fast.js';
 
-import os from 'os';
-import process from 'process';
-import { Transform } from 'stream';
-import fsPower from 'fs';
-import fsPromisesPower from 'fs/promises';
-import pathPower from 'path';
-
-import { Fail, q } from '@endo/errors';
 import BufferLineTransform from '@agoric/internal/src/node/buffer-line-transform.js';
 import { importSwingStore, openSwingStore } from '@agoric/swing-store';
+import { Fail, q } from '@endo/errors';
+import fsPower from 'fs';
+import fsPromisesPower from 'fs/promises';
+import os from 'os';
+import pathPower from 'path';
+import process from 'process';
+import { Transform } from 'stream';
 
+import {
+  checkArtifactMode,
+  checkExportDataMode,
+  ExportManifestFileName,
+} from './export-kernel-db.js';
 import { isEntrypoint } from './helpers/is-entrypoint.js';
 import { makeProcessValue } from './helpers/process-value.js';
-import {
-  ExportManifestFileName,
-  checkExportDataMode,
-  checkArtifactMode,
-} from './export-kernel-db.js';
 
 /**
  * @typedef {object} StateSyncImporterOptions

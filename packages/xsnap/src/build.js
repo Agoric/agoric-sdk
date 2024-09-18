@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 /* global process */
 import * as childProcessTop from 'child_process';
-import { fileURLToPath } from 'url';
 import fsTop from 'fs';
 import osTop from 'os';
+import { fileURLToPath } from 'url';
 
 const { freeze } = Object;
 

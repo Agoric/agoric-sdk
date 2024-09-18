@@ -1,19 +1,19 @@
 // @ts-nocheck
+import { kser, kslot } from '@agoric/kmarshal';
+import { Far } from '@endo/marshal';
 import test from 'ava';
 
-import { Far } from '@endo/marshal';
-import { kslot, kser } from '@agoric/kmarshal';
 import { makeLiveSlots } from '../src/liveslots.js';
 import { parseVatSlot } from '../src/parseVatSlots.js';
 import { buildSyscall } from './liveslots-helpers.js';
+import { makeMockGC } from './mock-gc.js';
 import {
-  makeMessage,
-  makeStartVat,
   makeBringOutYourDead,
+  makeMessage,
   makeResolve,
   makeRetireImports,
+  makeStartVat,
 } from './util.js';
-import { makeMockGC } from './mock-gc.js';
 
 test('dropImports', async t => {
   const { syscall } = buildSyscall();

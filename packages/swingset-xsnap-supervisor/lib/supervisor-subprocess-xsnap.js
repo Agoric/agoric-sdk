@@ -1,21 +1,21 @@
 /* global globalThis WeakRef FinalizationRegistry */
-import { assert, Fail } from '@endo/errors';
-import { importBundle } from '@endo/import-bundle';
 import {
-  makeLiveSlots,
   insistVatDeliveryObject,
   insistVatSyscallResult,
+  makeLiveSlots,
 } from '@agoric/swingset-liveslots';
-// import '../../types-ambient.js';
-// grumble... waitUntilQuiescent is exported and closes over ambient authority
-import { waitUntilQuiescent } from './waitUntilQuiescent.js';
-import { makeGcAndFinalize } from './gc-and-finalize.js';
+import { assert, Fail } from '@endo/errors';
+import { importBundle } from '@endo/import-bundle';
 
+import { makeGcAndFinalize } from './gc-and-finalize.js';
 import {
   makeSupervisorDispatch,
   makeSupervisorSyscall,
   makeVatConsole,
 } from './supervisor-helper.js';
+// import '../../types-ambient.js';
+// grumble... waitUntilQuiescent is exported and closes over ambient authority
+import { waitUntilQuiescent } from './waitUntilQuiescent.js';
 
 /**
  * @import {VatDeliveryObject} from '@agoric/swingset-liveslots'

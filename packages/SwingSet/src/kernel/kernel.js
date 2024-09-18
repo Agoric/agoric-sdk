@@ -1,43 +1,44 @@
 /* global globalThis */
 
-import { assert, Fail } from '@endo/errors';
-import { isNat } from '@endo/nat';
-import { mustMatch, M } from '@endo/patterns';
-import { importBundle } from '@endo/import-bundle';
 import { objectMetaMap, PromiseAllOrErrors } from '@agoric/internal';
 import { makeUpgradeDisconnection } from '@agoric/internal/src/upgrade-api.js';
 import { kser, kslot, makeError } from '@agoric/kmarshal';
+import { assert, Fail } from '@endo/errors';
+import { importBundle } from '@endo/import-bundle';
+import { isNat } from '@endo/nat';
+import { M, mustMatch } from '@endo/patterns';
+
 import { assertKnownOptions } from '../lib/assertOptions.js';
-import { foreverPolicy } from '../lib/runPolicies.js';
-import { makeVatManagerFactory } from './vat-loader/manager-factory.js';
-import { makeVatWarehouse } from './vat-warehouse.js';
-import makeDeviceManager from './deviceManager.js';
-import makeKernelKeeper, {
-  CURRENT_SCHEMA_VERSION,
-} from './state/kernelKeeper.js';
+import { extractSingleSlot, insistCapData } from '../lib/capdata.js';
+import { insistDeviceID, insistVatID } from '../lib/id.js';
 import {
+  extractMethod,
   kdebug,
   kdebugEnable,
   legibilizeMessageArgs,
-  extractMethod,
 } from '../lib/kdebug.js';
-import { insistKernelType, parseKernelSlot } from './parseKernelSlots.js';
-import { parseVatSlot } from '../lib/parseVatSlots.js';
-import { extractSingleSlot, insistCapData } from '../lib/capdata.js';
 import { insistMessage, insistVatDeliveryResult } from '../lib/message.js';
-import { insistDeviceID, insistVatID } from '../lib/id.js';
-import { updateWorkerOptions } from '../lib/workerOptions.js';
+import { parseVatSlot } from '../lib/parseVatSlots.js';
 import { makeVatOptionRecorder } from '../lib/recordVatOptions.js';
+import { foreverPolicy } from '../lib/runPolicies.js';
+import { updateWorkerOptions } from '../lib/workerOptions.js';
+import { getKpidsToRetire } from './cleanup.js';
+import makeDeviceManager from './deviceManager.js';
+import { makeDeviceTranslators } from './deviceTranslator.js';
+import { makeDummyMeterControl } from './dummyMeterControl.js';
+import { processGCActionSet } from './gc-actions.js';
 import { makeKernelQueueHandler } from './kernelQueue.js';
 import { makeKernelSyscallHandler } from './kernelSyscall.js';
-import { makeSlogger, makeDummySlogger } from './slogger.js';
-import { makeDummyMeterControl } from './dummyMeterControl.js';
-import { getKpidsToRetire } from './cleanup.js';
-import { processGCActionSet } from './gc-actions.js';
-import { makeVatLoader } from './vat-loader/vat-loader.js';
-import { makeDeviceTranslators } from './deviceTranslator.js';
 import { notifyTermination } from './notifyTermination.js';
+import { insistKernelType, parseKernelSlot } from './parseKernelSlots.js';
+import { makeDummySlogger, makeSlogger } from './slogger.js';
+import makeKernelKeeper, {
+  CURRENT_SCHEMA_VERSION,
+} from './state/kernelKeeper.js';
 import { makeVatAdminHooks } from './vat-admin-hooks.js';
+import { makeVatManagerFactory } from './vat-loader/manager-factory.js';
+import { makeVatLoader } from './vat-loader/vat-loader.js';
+import { makeVatWarehouse } from './vat-warehouse.js';
 
 /**
  * @import {MeterConsumption, VatDeliveryObject, VatDeliveryResult, VatSyscallObject, VatSyscallResult} from '@agoric/swingset-liveslots';

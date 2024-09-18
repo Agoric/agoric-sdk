@@ -1,11 +1,10 @@
-import { E } from '@endo/eventual-send';
-import { Far } from '@endo/marshal';
-import { Fail } from '@endo/errors';
 import { AmountMath } from '@agoric/ertp';
 import { SECOND_PRICE } from '@agoric/zoe/src/contracts/auction/index.js';
+import { Fail } from '@endo/errors';
+import { E } from '@endo/eventual-send';
+import { Far } from '@endo/marshal';
 
-import { showPurseBalance, setupIssuers } from './helpers.js';
-
+import { setupIssuers, showPurseBalance } from './helpers.js';
 import { makePrintLog } from './printLog.js';
 
 const build = async (log, zoe, issuers, payments, installations, timer) => {

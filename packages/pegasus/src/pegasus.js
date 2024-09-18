@@ -1,17 +1,17 @@
 // @ts-check
 
-import { assert, X, Fail, makeError } from '@endo/errors';
-import { makeLegacyWeakMap, makeLegacyMap } from '@agoric/store';
-import { E, Far } from '@endo/far';
+import { makeSubscriptionKit } from '@agoric/notifier';
+import { makeLegacyMap, makeLegacyWeakMap } from '@agoric/store';
 import {
   assertProposalShape,
   atomicTransfer,
 } from '@agoric/zoe/src/contractSupport/index.js';
-import { makeSubscriptionKit } from '@agoric/notifier';
+import { assert, Fail, makeError, X } from '@endo/errors';
+import { E, Far } from '@endo/far';
 
+import { getCourierPK, makeCourierMaker } from './courier.js';
 import { IBCSourceTraceDenomTransformer } from './ibc-trace.js';
 import { ICS20TransferProtocol } from './ics20.js';
-import { makeCourierMaker, getCourierPK } from './courier.js';
 
 /**
  * @import {CloseReason, Connection} from '@agoric/network';

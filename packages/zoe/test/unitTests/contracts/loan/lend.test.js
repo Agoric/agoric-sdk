@@ -1,13 +1,12 @@
 // @ts-nocheck
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
-import { E } from '@endo/eventual-send';
 import { AmountMath } from '@agoric/ertp';
-
-import { setupLoanUnitTest, checkDescription } from './helpers.js';
+import { E } from '@endo/eventual-send';
 
 import { makeLendInvitation } from '../../../../src/contracts/loan/lend.js';
 import { makeRatio } from '../../../../src/contractSupport/index.js';
+import { checkDescription, setupLoanUnitTest } from './helpers.js';
 
 test('makeLendInvitation', async t => {
   const { zcf, zoe, loanKit } = await setupLoanUnitTest();

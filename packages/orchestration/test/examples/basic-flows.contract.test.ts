@@ -1,9 +1,11 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
-import type { TestFn } from 'ava';
-import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
+
 import type { Instance } from '@agoric/zoe/src/zoeService/utils.js';
+import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { E, getInterfaceOf } from '@endo/far';
+import type { TestFn } from 'ava';
 import path from 'path';
+
 import { commonSetup } from '../supports.js';
 
 const dirname = path.dirname(new URL(import.meta.url).pathname);

@@ -1,14 +1,15 @@
 // @ts-nocheck
-// eslint-disable-next-line import/order
+
 import { test } from '../../tools/prepare-test-env-ava.js';
 
-// import * as proc from 'child_process';
-import sqlite3 from 'better-sqlite3';
 import {
   initSwingStore,
   makeSnapStore,
   makeSnapStoreIO,
 } from '@agoric/swing-store';
+// import * as proc from 'child_process';
+import sqlite3 from 'better-sqlite3';
+
 import { initializeSwingset, makeSwingsetController } from '../../src/index.js';
 
 test('only preload maxVatsOnline vats', async t => {

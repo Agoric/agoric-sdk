@@ -1,19 +1,19 @@
 // @ts-check
-import process from 'process';
 import {
-  Far,
-  getInterfaceOf,
-  decodeToJustin,
-  makeMarshal,
-} from '@endo/marshal';
-
-import {
+  iterateEach,
   iterateLatest,
   makeCastingSpec,
-  iterateEach,
   makeFollower,
   makeLeader,
 } from '@agoric/casting';
+import {
+  decodeToJustin,
+  Far,
+  getInterfaceOf,
+  makeMarshal,
+} from '@endo/marshal';
+import process from 'process';
+
 import { makeLeaderOptions } from './lib/casting.js';
 
 const makeCapDataToQclass = () => {

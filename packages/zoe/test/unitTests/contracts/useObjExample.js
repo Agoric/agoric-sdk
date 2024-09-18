@@ -1,6 +1,6 @@
+import { AmountMath } from '@agoric/ertp';
 import { X } from '@endo/errors';
 import { Far } from '@endo/marshal';
-import { AmountMath } from '@agoric/ertp';
 
 // Eventually will be importable from '@agoric/zoe-contract-support'
 import {

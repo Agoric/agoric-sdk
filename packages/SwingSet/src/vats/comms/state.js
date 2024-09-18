@@ -1,14 +1,15 @@
-import { Nat } from '@endo/nat';
 import { assert, Fail } from '@endo/errors';
+import { Nat } from '@endo/nat';
+
 import { insistCapData } from '../../lib/capdata.js';
 import {
-  makeVatSlot,
   insistVatType,
+  makeVatSlot,
   parseVatSlot,
 } from '../../lib/parseVatSlots.js';
-import { makeLocalSlot, parseLocalSlot } from './parseLocalSlots.js';
-import { initializeRemoteState, makeRemote, insistRemoteID } from './remote.js';
 import { cdebug } from './cdebug.js';
+import { makeLocalSlot, parseLocalSlot } from './parseLocalSlots.js';
+import { initializeRemoteState, insistRemoteID, makeRemote } from './remote.js';
 
 const COMMS = 'comms';
 const KERNEL = 'kernel';

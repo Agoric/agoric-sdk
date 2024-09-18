@@ -1,14 +1,13 @@
 // @ts-check
 // @jessie-check
 
+import { AmountMath } from '@agoric/ertp';
+import { makeNotifier } from '@agoric/notifier';
 import { E } from '@endo/far';
 import { Far } from '@endo/marshal';
 
-import { makeNotifier } from '@agoric/notifier';
-import { AmountMath } from '@agoric/ertp';
-
-import { multiplyBy } from './ratio.js';
 import { mintQuote } from './priceAuthorityTransform.js';
+import { multiplyBy } from './ratio.js';
 
 /**
  * @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js';

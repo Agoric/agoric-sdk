@@ -5,18 +5,18 @@
  * must ensure that only data goes in and out. It's also responsible for turning
  * device affordances into objects that can be used by code in other vats.
  */
-import { Nat, isNat } from '@endo/nat';
-import { q, Fail } from '@endo/errors';
-import { makePromiseKit } from '@endo/promise-kit';
-// import { makeNotifierKit } from '@agoric/notifier'; // XXX RESTORE
-import { Far, E, passStyleOf } from '@endo/far';
 import {
-  provide,
   makeScalarBigMapStore,
   makeScalarBigSetStore,
   prepareKind,
   prepareSingleton,
+  provide,
 } from '@agoric/vat-data';
+import { Fail, q } from '@endo/errors';
+// import { makeNotifierKit } from '@agoric/notifier'; // XXX RESTORE
+import { E, Far, passStyleOf } from '@endo/far';
+import { isNat, Nat } from '@endo/nat';
+import { makePromiseKit } from '@endo/promise-kit';
 
 /**
  * @import {VatAdminRootDeviceNode} from '../../devices/vat-admin/device-vat-admin.js';

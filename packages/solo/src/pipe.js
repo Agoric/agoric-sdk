@@ -1,11 +1,9 @@
 // @ts-check
+import { makeShutdown } from '@agoric/internal/src/node/shutdown.js';
+import { parse, stringify } from '@endo/marshal';
+import { makePromiseKit } from '@endo/promise-kit';
 import { fork } from 'child_process';
 import path from 'path';
-
-import { makePromiseKit } from '@endo/promise-kit';
-import { parse, stringify } from '@endo/marshal';
-
-import { makeShutdown } from '@agoric/internal/src/node/shutdown.js';
 
 const dirname = path.dirname(new URL(import.meta.url).pathname);
 

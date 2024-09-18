@@ -1,9 +1,8 @@
 import test from 'ava';
 
-import { buffer } from '../src/util.js';
 import { initSwingStore, makeSwingStoreExporter } from '../src/index.js';
-
-import { tmpDir, getSnapshotStream, makeB0ID } from './util.js';
+import { buffer } from '../src/util.js';
+import { getSnapshotStream, makeB0ID, tmpDir } from './util.js';
 
 const rank = {
   operational: 1,

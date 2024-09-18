@@ -1,8 +1,9 @@
 import { assert, Fail, q } from '@endo/errors';
 import { isNat } from '@endo/nat';
-import { makeVatTranslators } from './vatTranslator.js';
-import { insistVatDeliveryResult } from '../lib/message.js';
+
 import djson from '../lib/djson.js';
+import { insistVatDeliveryResult } from '../lib/message.js';
+import { makeVatTranslators } from './vatTranslator.js';
 
 /**
  * @import {VatDeliveryObject} from '@agoric/swingset-liveslots'

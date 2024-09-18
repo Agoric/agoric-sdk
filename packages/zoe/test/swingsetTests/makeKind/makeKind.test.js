@@ -1,7 +1,8 @@
+import { buildKernelBundles, buildVatController } from '@agoric/swingset-vat';
+import bundleSource from '@endo/bundle-source';
 import anyTest from 'ava';
 import path from 'path';
-import { buildVatController, buildKernelBundles } from '@agoric/swingset-vat';
-import bundleSource from '@endo/bundle-source';
+
 import zcfBundle from '../../../bundles/bundle-contractFacet.js';
 
 const CONTRACT_FILES = ['minimalMakeKindContract'];

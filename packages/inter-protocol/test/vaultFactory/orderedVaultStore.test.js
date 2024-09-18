@@ -4,6 +4,7 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { AmountMath } from '@agoric/ertp';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
 import { Far } from '@endo/marshal';
+
 import { makeOrderedVaultStore } from '../../src/vaultFactory/orderedVaultStore.js';
 import { fromVaultKey } from '../../src/vaultFactory/storeUtils.js';
 import { makeFakeVault } from './interestSupport.js';

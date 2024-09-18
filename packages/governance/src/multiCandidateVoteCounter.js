@@ -1,7 +1,10 @@
+import { keyEQ, makeExo, makeScalarMapStore } from '@agoric/store';
 import { Fail } from '@endo/errors';
 import { E } from '@endo/eventual-send';
 import { makePromiseKit } from '@endo/promise-kit';
-import { keyEQ, makeExo, makeScalarMapStore } from '@agoric/store';
+
+import { breakTie } from './breakTie.js';
+import { scheduleClose } from './closingRule.js';
 import {
   buildQuestion,
   ChoiceMethod,
@@ -9,14 +12,12 @@ import {
   ElectionType,
   positionIncluded,
 } from './question.js';
-import { scheduleClose } from './closingRule.js';
+import { makeQuorumCounter } from './quorumCounter.js';
 import {
   VoteCounterAdminI,
   VoteCounterCloseI,
   VoteCounterPublicI,
 } from './typeGuards.js';
-import { makeQuorumCounter } from './quorumCounter.js';
-import { breakTie } from './breakTie.js';
 
 /**
  * @import {QuestionSpec, BuildMultiVoteCounter, MultiOutcomeRecord, Position, VoteStatistics} from './types.js';

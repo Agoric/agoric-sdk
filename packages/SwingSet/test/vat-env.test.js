@@ -1,9 +1,10 @@
 // @ts-nocheck
-// eslint-disable-next-line import/order
+
 import { test, VatData } from '../tools/prepare-test-env-ava.js';
 
-import bundleSource from '@endo/bundle-source';
 import { initSwingStore } from '@agoric/swing-store';
+import bundleSource from '@endo/bundle-source';
+
 import { buildVatController } from '../src/index.js';
 
 test('harden from SES is in the test environment', t => {

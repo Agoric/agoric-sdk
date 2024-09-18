@@ -1,49 +1,44 @@
 // @ts-check
 /* global process setTimeout */
-import fs from 'fs';
-import url from 'url';
-import path from 'path';
-import temp from 'temp';
-import { fork } from 'child_process';
-import { promisify } from 'util';
-import { resolve as importMetaResolve } from 'import-meta-resolve';
-// import { createHash } from 'crypto';
-
-import createRequire from 'esm';
-
-import anylogger from 'anylogger';
-
-// import connect from 'lotion-connect';
-// import djson from 'deterministic-json';
-
-import { assert, Fail } from '@endo/errors';
-import { makeSlogSender, tryFlushSlogSender } from '@agoric/telemetry';
 import {
-  loadSwingsetConfigFile,
+  exportKernelStats,
+  getTelemetryProviders,
+  makeDefaultMeterProvider,
+  makeSlogCallbacks,
+} from '@agoric/cosmic-swingset/src/kernel-stats.js';
+import { makeShutdown } from '@agoric/internal/src/node/shutdown.js';
+import { makeWithQueue } from '@agoric/internal/src/queue.js';
+import { openSwingStore } from '@agoric/swing-store';
+import {
   buildCommand,
-  swingsetIsInitialized,
-  initializeSwingset,
-  makeSwingsetController,
-  buildMailboxStateMap,
   buildMailbox,
+  buildMailboxStateMap,
   buildPlugin,
   buildTimer,
+  initializeSwingset,
+  loadSwingsetConfigFile,
+  makeSwingsetController,
+  swingsetIsInitialized,
 } from '@agoric/swingset-vat';
-import { openSwingStore } from '@agoric/swing-store';
-import { makeWithQueue } from '@agoric/internal/src/queue.js';
-import { makeShutdown } from '@agoric/internal/src/node/shutdown.js';
-import {
-  makeDefaultMeterProvider,
-  getTelemetryProviders,
-  makeSlogCallbacks,
-  exportKernelStats,
-} from '@agoric/cosmic-swingset/src/kernel-stats.js';
-
-import { deliver, addDeliveryTarget } from './outbound.js';
-// import { connectToPipe } from './pipe.js';
-import { makeHTTPListener } from './web.js';
+import { makeSlogSender, tryFlushSlogSender } from '@agoric/telemetry';
+// import connect from 'lotion-connect';
+// import djson from 'deterministic-json';
+import { assert, Fail } from '@endo/errors';
+import anylogger from 'anylogger';
+import { fork } from 'child_process';
+// import { createHash } from 'crypto';
+import createRequire from 'esm';
+import fs from 'fs';
+import { resolve as importMetaResolve } from 'import-meta-resolve';
+import path from 'path';
+import temp from 'temp';
+import url from 'url';
+import { promisify } from 'util';
 
 import { connectToChain } from './chain-cosmos-sdk.js';
+import { addDeliveryTarget, deliver } from './outbound.js';
+// import { connectToPipe } from './pipe.js';
+import { makeHTTPListener } from './web.js';
 
 const log = anylogger('start');
 

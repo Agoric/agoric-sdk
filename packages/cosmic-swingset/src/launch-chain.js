@@ -5,52 +5,48 @@
 // so let the JS tooling know about it by importing it here.
 import '@agoric/builders';
 
-import anylogger from 'anylogger';
-
-import { assert, Fail } from '@endo/errors';
-import { E } from '@endo/far';
-import bundleSource from '@endo/bundle-source';
-
-import {
-  buildMailbox,
-  buildMailboxStateMap,
-  buildTimer,
-  buildBridge,
-  swingsetIsInitialized,
-  initializeSwingset,
-  makeSwingsetController,
-  loadBasedir,
-  loadSwingsetConfigFile,
-  upgradeSwingset,
-} from '@agoric/swingset-vat';
-import { waitUntilQuiescent } from '@agoric/internal/src/lib-nodejs/waitUntilQuiescent.js';
-import { openSwingStore } from '@agoric/swing-store';
-import { BridgeId as BRIDGE_ID } from '@agoric/internal';
-import { makeWithQueue } from '@agoric/internal/src/queue.js';
-import * as ActionType from '@agoric/internal/src/action-types.js';
-
 import {
   extractCoreProposalBundles,
   mergeCoreProposals,
 } from '@agoric/deploy-script-support/src/extract-proposal.js';
+import { BridgeId as BRIDGE_ID } from '@agoric/internal';
+import * as ActionType from '@agoric/internal/src/action-types.js';
+import { waitUntilQuiescent } from '@agoric/internal/src/lib-nodejs/waitUntilQuiescent.js';
+import { makeWithQueue } from '@agoric/internal/src/queue.js';
+import { openSwingStore } from '@agoric/swing-store';
+import {
+  buildBridge,
+  buildMailbox,
+  buildMailboxStateMap,
+  buildTimer,
+  initializeSwingset,
+  loadBasedir,
+  loadSwingsetConfigFile,
+  makeSwingsetController,
+  swingsetIsInitialized,
+  upgradeSwingset,
+} from '@agoric/swingset-vat';
+import bundleSource from '@endo/bundle-source';
+import { assert, Fail } from '@endo/errors';
+import { E } from '@endo/far';
+import anylogger from 'anylogger';
 import { fileURLToPath } from 'url';
 
+import { exportStorage } from './export-storage.js';
+import { parseLocatedJson } from './helpers/json.js';
+import { makeQueue, makeQueueStorageMock } from './helpers/make-queue.js';
 import {
+  exportKernelStats,
   makeDefaultMeterProvider,
   makeInboundQueueMetrics,
-  exportKernelStats,
   makeSlogCallbacks,
 } from './kernel-stats.js';
-
+import { parseParams } from './params.js';
 import {
   BeansPerBlockComputeLimit,
   BeansPerVatCreation,
   BeansPerXsnapComputron,
 } from './sim-params.js';
-import { parseParams } from './params.js';
-import { makeQueue, makeQueueStorageMock } from './helpers/make-queue.js';
-import { exportStorage } from './export-storage.js';
-import { parseLocatedJson } from './helpers/json.js';
 
 /** @import {RunPolicy} from '@agoric/swingset-vat' */
 

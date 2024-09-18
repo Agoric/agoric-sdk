@@ -1,10 +1,10 @@
+import { BrandShape } from '@agoric/ertp/src/typeGuards.js';
+import { VowShape } from '@agoric/vow';
+import { makeHeapZone } from '@agoric/zone';
 import { Fail, makeError, q } from '@endo/errors';
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
-import { BrandShape } from '@agoric/ertp/src/typeGuards.js';
 
-import { VowShape } from '@agoric/vow';
-import { makeHeapZone } from '@agoric/zone';
 import { CosmosChainInfoShape, IBCConnectionInfoShape } from '../typeGuards.js';
 
 /**

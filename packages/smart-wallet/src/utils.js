@@ -1,4 +1,4 @@
-import { deeplyFulfilledObject, objectMap, makeTracer } from '@agoric/internal';
+import { deeplyFulfilledObject, makeTracer, objectMap } from '@agoric/internal';
 import { observeIteration, subscribeEach } from '@agoric/notifier';
 import { E } from '@endo/far';
 

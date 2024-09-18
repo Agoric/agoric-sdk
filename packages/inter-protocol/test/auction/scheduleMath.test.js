@@ -1,9 +1,9 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
+import { NonNullish } from '@agoric/internal';
 import { TimeMath } from '@agoric/time';
 import { Far } from '@endo/marshal';
 
-import { NonNullish } from '@agoric/internal';
 import {
   computeRoundTiming,
   nextDescendingStepTime,

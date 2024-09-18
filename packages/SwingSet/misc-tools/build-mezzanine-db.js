@@ -1,11 +1,10 @@
 /* eslint-disable camelcase */
 // import '@endo/init';
+import sqlite3 from 'better-sqlite3';
 import fs from 'fs';
-import zlib from 'zlib';
 import process from 'process';
 import readline from 'readline';
-
-import sqlite3 from 'better-sqlite3';
+import zlib from 'zlib';
 
 function makeDB(dbPath) {
   const db = sqlite3(dbPath);

@@ -1,4 +1,5 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
+
 import { toRequestQueryJson } from '@agoric/cosmic-proto';
 import {
   QueryBalanceRequest,
@@ -9,18 +10,19 @@ import {
   MsgDelegateResponse,
 } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/tx.js';
 import { Any } from '@agoric/cosmic-proto/google/protobuf/any.js';
-import { matches } from '@endo/patterns';
+import { getMethodNames } from '@agoric/internal';
+import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
+import type { Port } from '@agoric/network';
+import type { IBCMethod } from '@agoric/vats';
+import type { LocalIbcAddress } from '@agoric/vats/tools/ibc-utils.js';
 import { heapVowE as E } from '@agoric/vow/vat.js';
 import { decodeBase64 } from '@endo/base64';
-import type { LocalIbcAddress } from '@agoric/vats/tools/ibc-utils.js';
-import { getMethodNames } from '@agoric/internal';
-import type { Port } from '@agoric/network';
-import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
-import type { IBCMethod } from '@agoric/vats';
-import { commonSetup } from './supports.js';
+import { matches } from '@endo/patterns';
+
 import { ChainAddressShape } from '../src/typeGuards.js';
 import { tryDecodeResponse } from '../src/utils/cosmos.js';
 import { buildChannelCloseConfirmEvent } from '../tools/ibc-mocks.js';
+import { commonSetup } from './supports.js';
 
 const CHAIN_ID = 'cosmoshub-99';
 const HOST_CONNECTION_ID = 'connection-0';

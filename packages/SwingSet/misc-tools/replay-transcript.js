@@ -2,33 +2,34 @@
 
 /* global WeakRef FinalizationRegistry */
 
-import fs from 'fs';
 import '@agoric/internal/src/install-ses-debug.js';
 
-import zlib from 'zlib';
-import readline from 'readline';
-import process from 'process';
-import { spawn } from 'child_process';
-import { promisify } from 'util';
-import { createHash } from 'crypto';
-import { Readable, finished as finishedCallback } from 'stream';
-import { performance } from 'perf_hooks';
-import { tmpName, dirSync as tmpDirSync } from 'tmp';
-import sqlite3 from 'better-sqlite3';
-import yargsParser from 'yargs-parser';
 import { makeMeasureSeconds } from '@agoric/internal';
+import engineGC from '@agoric/internal/src/lib-nodejs/engine-gc.js';
+import { makeGcAndFinalize } from '@agoric/internal/src/lib-nodejs/gc-and-finalize.js';
+import { waitUntilQuiescent } from '@agoric/internal/src/lib-nodejs/waitUntilQuiescent.js';
 import { makeWithQueue } from '@agoric/internal/src/queue.js';
 import { makeSnapStore } from '@agoric/swing-store';
-import { getLockdownBundle } from '@agoric/xsnap-lockdown';
 import { getSupervisorBundle } from '@agoric/swingset-xsnap-supervisor';
-import { waitUntilQuiescent } from '@agoric/internal/src/lib-nodejs/waitUntilQuiescent.js';
-import { makeGcAndFinalize } from '@agoric/internal/src/lib-nodejs/gc-and-finalize.js';
-import engineGC from '@agoric/internal/src/lib-nodejs/engine-gc.js';
+import { getLockdownBundle } from '@agoric/xsnap-lockdown';
+import sqlite3 from 'better-sqlite3';
+import { spawn } from 'child_process';
+import { createHash } from 'crypto';
+import fs from 'fs';
+import { performance } from 'perf_hooks';
+import process from 'process';
+import readline from 'readline';
+import { finished as finishedCallback, Readable } from 'stream';
+import { dirSync as tmpDirSync, tmpName } from 'tmp';
+import { promisify } from 'util';
+import yargsParser from 'yargs-parser';
+import zlib from 'zlib';
+
 import { makeStartXSnap } from '../src/controller/startXSnap.js';
-import { makeXsSubprocessFactory } from '../src/kernel/vat-loader/manager-subprocess-xsnap.js';
-import { makeLocalVatManagerFactory } from '../src/kernel/vat-loader/manager-local.js';
-import { makeSyscallSimulator } from '../src/kernel/vat-warehouse.js';
 import { makeDummyMeterControl } from '../src/kernel/dummyMeterControl.js';
+import { makeLocalVatManagerFactory } from '../src/kernel/vat-loader/manager-local.js';
+import { makeXsSubprocessFactory } from '../src/kernel/vat-loader/manager-subprocess-xsnap.js';
+import { makeSyscallSimulator } from '../src/kernel/vat-warehouse.js';
 
 /**
  * @import {SnapStore} from '@agoric/swing-store';

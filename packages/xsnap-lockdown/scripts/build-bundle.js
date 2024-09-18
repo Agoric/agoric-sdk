@@ -1,11 +1,12 @@
 #! /usr/bin/env node
 import '@endo/init';
-import path from 'path';
-import { promises as fsp } from 'fs';
-import crypto from 'crypto';
-import process from 'process';
 
 import bundleSource from '@endo/bundle-source';
+import crypto from 'crypto';
+import { promises as fsp } from 'fs';
+import path from 'path';
+import process from 'process';
+
 import { bundlePaths, entryPaths, hashPaths } from '../src/paths.js';
 
 /** @param {Uint8Array | string} bytes */

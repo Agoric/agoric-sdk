@@ -1,8 +1,9 @@
 import { kser } from '@agoric/kmarshal';
-import { insistKernelType, parseKernelSlot } from './parseKernelSlots.js';
+
 import { insistCapData } from '../lib/capdata.js';
-import { insistMessage } from '../lib/message.js';
 import { insistVatID } from '../lib/id.js';
+import { insistMessage } from '../lib/message.js';
+import { insistKernelType, parseKernelSlot } from './parseKernelSlots.js';
 
 /**
  * @param {object} tools

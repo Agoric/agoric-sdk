@@ -1,12 +1,11 @@
 /* globals process */
+import { makeShutdown } from '@agoric/internal/src/node/shutdown.js';
+import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';
+import { Resource } from '@opentelemetry/resources';
 import {
   BasicTracerProvider,
   BatchSpanProcessor,
 } from '@opentelemetry/sdk-trace-base';
-
-import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';
-import { Resource } from '@opentelemetry/resources';
-import { makeShutdown } from '@agoric/internal/src/node/shutdown.js';
 
 import { getResourceAttributes } from './index.js';
 import { makeSlogToOtelKit } from './slog-to-otel.js';

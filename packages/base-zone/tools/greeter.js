@@ -1,4 +1,4 @@
-import { M, getInterfaceGuardPayload } from '@endo/patterns';
+import { getInterfaceGuardPayload, M } from '@endo/patterns';
 
 /**
  * @template {{}} T

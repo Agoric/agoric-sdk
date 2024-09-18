@@ -1,8 +1,9 @@
 // @ts-check
 import test from 'ava';
+
 import {
-  makeUpgradeDisconnection,
   isUpgradeDisconnection,
+  makeUpgradeDisconnection,
 } from '../src/upgrade-api.js';
 
 test('isUpgradeDisconnection must recognize disconnection objects', t => {

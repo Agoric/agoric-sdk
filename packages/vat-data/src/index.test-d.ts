@@ -1,17 +1,18 @@
 /* eslint-disable no-use-before-define */
-import { expectType } from 'tsd';
 import type {
-  KindFacets,
   DurableKindHandle,
-  KindFacet,
   FunctionsPlusContext,
+  KindFacet,
+  KindFacets,
 } from '@agoric/swingset-liveslots';
 import { VirtualObjectManager } from '@agoric/swingset-liveslots/src/virtualObjectManager.js';
+import { expectType } from 'tsd';
+
 import {
+  defineDurableKind,
   defineKind,
   defineKindMulti,
   makeKindHandle,
-  defineDurableKind,
   partialAssign,
   watchPromise,
 } from './index.js';

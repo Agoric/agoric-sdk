@@ -1,15 +1,14 @@
-import { assert, Fail, q } from '@endo/errors';
-import { E } from '@endo/far';
-import { makePromiseKit } from '@endo/promise-kit';
-import { M, getInterfaceGuardPayload } from '@endo/patterns';
-
+import { deeplyFulfilledObject, NonNullish } from '@agoric/internal';
 /// <reference path="./types.js" />
 import {
   makeSyncMethodCallback,
   prepareGuardedAttenuator,
 } from '@agoric/internal/src/callback.js';
 import { makeHeapZone } from '@agoric/zone';
-import { deeplyFulfilledObject, NonNullish } from '@agoric/internal';
+import { assert, Fail, q } from '@endo/errors';
+import { E } from '@endo/far';
+import { getInterfaceGuardPayload, M } from '@endo/patterns';
+import { makePromiseKit } from '@endo/promise-kit';
 
 const KeyShape = M.string();
 const PathShape = M.arrayOf(KeyShape);

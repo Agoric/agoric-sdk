@@ -18,8 +18,6 @@
  */
 /// <reference types="@agoric/zoe/exported" />
 
-import { X, Fail, q, makeError } from '@endo/errors';
-import { E } from '@endo/eventual-send';
 import {
   AmountMath,
   AmountShape,
@@ -50,8 +48,12 @@ import {
   SubscriberShape,
   TopicsRecordShape,
 } from '@agoric/zoe/src/contractSupport/index.js';
-import { PriceQuoteShape, SeatShape } from '@agoric/zoe/src/typeGuards.js';
 import { multiplyBy } from '@agoric/zoe/src/contractSupport/ratio.js';
+import { PriceQuoteShape, SeatShape } from '@agoric/zoe/src/typeGuards.js';
+import { Fail, makeError, q, X } from '@endo/errors';
+import { E } from '@endo/eventual-send';
+
+import { AuctionPFShape } from '../auction/auctioneer.js';
 import {
   checkDebtLimit,
   makeNatAmountShape,
@@ -61,9 +63,8 @@ import { chargeInterest } from '../interest.js';
 import { getLiquidatableVaults } from './liquidation.js';
 import { calculateMinimumCollateralization, minimumPrice } from './math.js';
 import { makePrioritizedVaults } from './prioritizedVaults.js';
-import { Phase, prepareVault } from './vault.js';
 import { calculateDistributionPlan } from './proceeds.js';
-import { AuctionPFShape } from '../auction/auctioneer.js';
+import { Phase, prepareVault } from './vault.js';
 
 /**
  * @import {Baggage} from '@agoric/vat-data';

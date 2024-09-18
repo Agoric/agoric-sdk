@@ -2,13 +2,11 @@
 /// <reference types="@agoric/governance/exported" />
 /// <reference types="@agoric/zoe/exported" />
 
-import { Fail } from '@endo/errors';
-import { E } from '@endo/captp';
 import { AmountMath, RatioShape } from '@agoric/ertp';
+import { assertAllDefined, makeTracer } from '@agoric/internal';
+import { observeNotifier } from '@agoric/notifier';
 import { mustMatch } from '@agoric/store';
 import { M, prepareExoClassKit } from '@agoric/vat-data';
-
-import { assertAllDefined, makeTracer } from '@agoric/internal';
 import {
   ceilMultiplyBy,
   makeRatioFromAmounts,
@@ -16,7 +14,8 @@ import {
   multiplyRatios,
   ratioGTE,
 } from '@agoric/zoe/src/contractSupport/index.js';
-import { observeNotifier } from '@agoric/notifier';
+import { E } from '@endo/captp';
+import { Fail } from '@endo/errors';
 
 import { makeNatAmountShape } from '../contractSupport.js';
 import { amountsToSettle } from './auctionMath.js';

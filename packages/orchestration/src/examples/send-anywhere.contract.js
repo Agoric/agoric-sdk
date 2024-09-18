@@ -2,9 +2,10 @@ import { makeSharedStateRecord } from '@agoric/async-flow';
 import { AmountShape } from '@agoric/ertp';
 import { InvitationShape } from '@agoric/zoe/src/typeGuards.js';
 import { M } from '@endo/patterns';
+
+import { prepareChainHubAdmin } from '../exos/chain-hub-admin.js';
 import { withOrchestration } from '../utils/start-helper.js';
 import * as flows from './send-anywhere.flows.js';
-import { prepareChainHubAdmin } from '../exos/chain-hub-admin.js';
 
 /**
  * @import {Zone} from '@agoric/zone';

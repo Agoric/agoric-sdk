@@ -5,8 +5,8 @@ import { makeTracer } from '@agoric/internal';
 import { Shape as NetworkShape } from '@agoric/network';
 import { M } from '@agoric/vat-data';
 import { VowShape } from '@agoric/vow';
-import { E } from '@endo/far';
 import { Fail, q } from '@endo/errors';
+import { E } from '@endo/far';
 
 import {
   AmountArgShape,
@@ -17,12 +17,12 @@ import {
   TimestampProtoShape,
   TypedJsonShape,
 } from '../typeGuards.js';
+import { coerceCoin, coerceDenomAmount } from '../utils/amounts.js';
 import { maxClockSkew, toDenomAmount } from '../utils/cosmos.js';
 import { orchestrationAccountMethods } from '../utils/orchestrationAccount.js';
 import { makeTimestampHelper } from '../utils/time.js';
-import { preparePacketTools } from './packet-tools.js';
 import { prepareIBCTools } from './ibc-packet.js';
-import { coerceCoin, coerceDenomAmount } from '../utils/amounts.js';
+import { preparePacketTools } from './packet-tools.js';
 
 /**
  * @import {HostOf} from '@agoric/async-flow';

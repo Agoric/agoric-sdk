@@ -1,11 +1,11 @@
 import { test } from '../tools/prepare-test-env-ava.js';
 
-// eslint-disable-next-line import/order
 import { initSwingStore } from '@agoric/swing-store';
+
 import { buildLoopbox } from '../src/devices/loopbox/loopbox.js';
 import {
-  loadBasedir,
   initializeSwingset,
+  loadBasedir,
   makeSwingsetController,
 } from '../src/index.js';
 

@@ -1,12 +1,11 @@
 /** global FinalizationRegistry */
 
-import test from 'ava';
-
 import process from 'node:process';
 import v8 from 'node:v8';
 
 import engineGC from '@agoric/internal/src/lib-nodejs/engine-gc.js';
 import { waitUntilQuiescent } from '@agoric/internal/src/lib-nodejs/waitUntilQuiescent.js';
+import test from 'ava';
 
 import { spawnRetentiveVatSequence } from './leakiness.mjs';
 

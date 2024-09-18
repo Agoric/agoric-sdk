@@ -1,7 +1,8 @@
-import { Far } from '@endo/marshal';
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { waitUntilQuiescent } from '@agoric/swingset-liveslots/test/waitUntilQuiescent.js';
+import { Far } from '@endo/marshal';
+
 import { makeAllManagersDo } from '../../src/vaultFactory/vaultDirector.js';
 
 const makeFakeVM = (name, thrower) => {

@@ -1,19 +1,17 @@
 /* global setTimeout, FinalizationRegistry, setImmediate, process */
 
 import test from 'ava';
-
-import { createHash } from 'crypto';
 import * as proc from 'child_process';
-import * as os from 'os';
+import { createHash } from 'crypto';
 import fs from 'fs';
+import * as os from 'os';
 import path from 'path';
 import { tmpName } from 'tmp';
 
-import { xsnap } from '../src/xsnap.js';
+import { ErrorCode, ExitCode } from '../api.js';
 import { recordXSnap } from '../src/replay.js';
-import { ExitCode, ErrorCode } from '../api.js';
-
-import { options, decode, encode, loader } from './message-tools.js';
+import { xsnap } from '../src/xsnap.js';
+import { decode, encode, loader, options } from './message-tools.js';
 
 const io = { spawn: proc.spawn, os: os.type(), fs, tmpName }; // WARNING: ambient
 const ld = loader(import.meta.url);

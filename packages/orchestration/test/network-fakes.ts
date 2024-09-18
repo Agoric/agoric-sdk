@@ -1,6 +1,6 @@
 import { inspect } from 'node:util';
 
-import { VowTools } from '@agoric/vow';
+import { BridgeId, makeTracer } from '@agoric/internal';
 import {
   base64ToBytes,
   prepareEchoConnectionKit,
@@ -9,24 +9,25 @@ import {
   preparePortAllocator,
   prepareRouterProtocol,
 } from '@agoric/network';
-import type { Zone } from '@agoric/zone';
 import type {
   IBCChannelID,
-  IBCMethod,
-  IBCEvent,
-  ScopedBridgeManagerMethods,
   IBCConnectionID,
+  IBCEvent,
+  IBCMethod,
   IBCPortID,
+  ScopedBridgeManagerMethods,
 } from '@agoric/vats';
 import {
   prepareCallbacks as prepareIBCCallbacks,
   prepareIBCProtocol,
 } from '@agoric/vats/src/ibc.js';
-import { BridgeId, makeTracer } from '@agoric/internal';
-import { E, Far } from '@endo/far';
+import { VowTools } from '@agoric/vow';
+import type { Zone } from '@agoric/zone';
 import type { Guarded } from '@endo/exo';
-import { defaultMockAckMap, errorAcknowledgments } from './ibc-mocks.js';
+import { E, Far } from '@endo/far';
+
 import { decodeProtobufBase64 } from '../tools/protobuf-decoder.js';
+import { defaultMockAckMap, errorAcknowledgments } from './ibc-mocks.js';
 
 const trace = makeTracer('NetworkFakes');
 

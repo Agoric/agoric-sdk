@@ -1,8 +1,8 @@
-import { Fail } from '@endo/errors';
-import { isRemotable } from '@endo/marshal';
-import { assertIsRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { mustMatch } from '@agoric/store';
 import { RelativeTimeRecordShape, TimestampRecordShape } from '@agoric/time';
+import { assertIsRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
+import { Fail } from '@endo/errors';
+import { isRemotable } from '@endo/marshal';
 
 const makeLooksLikeBrand = name => {
   /** @param {Brand} brand */

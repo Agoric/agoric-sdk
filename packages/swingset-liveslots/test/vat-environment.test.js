@@ -1,14 +1,16 @@
 // @ts-nocheck
 import '@endo/init/debug.js';
-import test from 'ava';
-import { Far } from '@endo/marshal';
+
 import { kser } from '@agoric/kmarshal';
+import { Far } from '@endo/marshal';
 import { passStyleOf } from '@endo/pass-style';
 import { PassStyleOfEndowmentSymbol } from '@endo/pass-style/endow.js';
+import test from 'ava';
+
 import { makeLiveSlots } from '../src/index.js';
-import { makeStartVat } from './util.js';
 import { buildSyscall } from './liveslots-helpers.js';
 import { makeMockGC } from './mock-gc.js';
+import { makeStartVat } from './util.js';
 
 test('vat globals', async t => {
   const { syscall } = buildSyscall();

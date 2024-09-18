@@ -6,6 +6,7 @@ import {
   makeRatioFromAmounts,
   multiplyRatios,
 } from '@agoric/zoe/src/contractSupport/index.js';
+
 import { quoteAsRatio, subtractToEmpty } from '../contractSupport.js';
 import { liquidationResults } from './liquidation.js';
 

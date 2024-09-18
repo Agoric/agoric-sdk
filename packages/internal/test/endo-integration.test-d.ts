@@ -1,8 +1,6 @@
-import { expectNotType, expectType } from 'tsd';
-
-import { M } from '@endo/patterns';
-
 import type { InterfaceGuard } from '@endo/patterns';
+import { M } from '@endo/patterns';
+import { expectNotType, expectType } from 'tsd';
 
 expectType<InterfaceGuard>(
   M.interface('some sring', { inc: M.call().returns() }),

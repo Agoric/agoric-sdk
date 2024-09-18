@@ -1,7 +1,8 @@
-import { Fail, q } from '@endo/errors';
 import { objectMap } from '@agoric/internal';
-import { Far, E } from '@endo/far';
+import { Fail, q } from '@endo/errors';
+import { E, Far } from '@endo/far';
 import { makePromiseKit } from '@endo/promise-kit';
+
 import { buildManualTimer } from './manual-timer.js';
 
 export const buildRootObject = () => {

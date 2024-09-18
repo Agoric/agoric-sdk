@@ -1,6 +1,7 @@
-import { Fail, X, annotateError, makeError, q } from '@endo/errors';
-import { throwLabeled } from '@endo/common/throw-labeled.js';
+import { isVow } from '@agoric/vow/src/vow-utils.js';
 import { objectMap } from '@endo/common/object-map.js';
+import { throwLabeled } from '@endo/common/throw-labeled.js';
+import { annotateError, Fail, makeError, q, X } from '@endo/errors';
 import {
   getErrorConstructor,
   getTag,
@@ -8,7 +9,6 @@ import {
   makeTagged,
   passStyleOf,
 } from '@endo/pass-style';
-import { isVow } from '@agoric/vow/src/vow-utils.js';
 
 /**
  * @import {Passable} from '@endo/pass-style'

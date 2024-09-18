@@ -44,6 +44,7 @@ import { VowShape } from '@agoric/vow';
 import { decodeBase64 } from '@endo/base64';
 import { Fail, makeError, q } from '@endo/errors';
 import { E } from '@endo/far';
+
 import {
   AmountArgShape,
   ChainAddressShape,

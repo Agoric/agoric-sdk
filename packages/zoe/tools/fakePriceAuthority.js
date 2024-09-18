@@ -1,14 +1,13 @@
-import { Fail } from '@endo/errors';
-import { makePromiseKit } from '@endo/promise-kit';
-import { E } from '@endo/eventual-send';
-import { Far } from '@endo/marshal';
-
-import { makeIssuerKit, AssetKind, AmountMath } from '@agoric/ertp';
+import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
 import {
-  makeNotifierKit,
   makeNotifierFromAsyncIterable,
+  makeNotifierKit,
 } from '@agoric/notifier';
 import { TimeMath } from '@agoric/time';
+import { Fail } from '@endo/errors';
+import { E } from '@endo/eventual-send';
+import { Far } from '@endo/marshal';
+import { makePromiseKit } from '@endo/promise-kit';
 
 import { natSafeMath } from '../src/contractSupport/index.js';
 

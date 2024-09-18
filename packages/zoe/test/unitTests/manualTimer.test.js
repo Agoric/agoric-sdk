@@ -1,9 +1,10 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
-import { E } from '@endo/eventual-send';
-import { Far } from '@endo/marshal';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { TimeMath } from '@agoric/time';
+import { E } from '@endo/eventual-send';
+import { Far } from '@endo/marshal';
+
 import buildManualTimer from '../../tools/manualTimer.js';
 
 const { coerceTimestampRecord, coerceRelativeTimeRecord } = TimeMath;

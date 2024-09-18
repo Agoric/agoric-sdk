@@ -1,5 +1,5 @@
-import test from 'ava';
 import { Far } from '@endo/marshal';
+import test from 'ava';
 import { setTimeout } from 'timers';
 
 import { makeScalarMapStore } from '../src/stores/scalarMapStore.js';

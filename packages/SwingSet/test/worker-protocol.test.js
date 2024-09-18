@@ -1,15 +1,15 @@
 /* global Buffer */
-// eslint-disable-next-line import/order
+
 import { test } from '../tools/prepare-test-env-ava.js';
 
 import {
-  arrayEncoderStream,
   arrayDecoderStream,
+  arrayEncoderStream,
 } from '@agoric/internal/src/lib-nodejs/worker-protocol.js';
 import {
   encode,
-  netstringEncoderStream,
   netstringDecoderStream,
+  netstringEncoderStream,
 } from '@agoric/internal/src/netstring.js';
 
 test('arrayEncoderStream', async t => {

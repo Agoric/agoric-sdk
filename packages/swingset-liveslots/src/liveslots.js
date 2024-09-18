@@ -1,18 +1,19 @@
 import { annotateError, assert, Fail, makeError, X } from '@endo/errors';
+import { E, HandledPromise } from '@endo/eventual-send';
+import { getInterfaceOf, makeMarshal, Remotable } from '@endo/marshal';
 import { passStyleOf } from '@endo/pass-style';
 import { PassStyleOfEndowmentSymbol } from '@endo/pass-style/endow.js';
-import { Remotable, getInterfaceOf, makeMarshal } from '@endo/marshal';
 import { isPromise } from '@endo/promise-kit';
-import { E, HandledPromise } from '@endo/eventual-send';
-import { insistVatType, makeVatSlot, parseVatSlot } from './parseVatSlots.js';
+
+import { makeBOYDKit } from './boyd-gc.js';
 import { insistCapData } from './capdata.js';
+import { makeCollectionManager } from './collectionManager.js';
 import { extractMethod, legibilizeMethod } from './kdebug.js';
 import { insistMessage } from './message.js';
-import { makeVirtualReferenceManager } from './virtualReferences.js';
+import { insistVatType, makeVatSlot, parseVatSlot } from './parseVatSlots.js';
 import { makeVirtualObjectManager } from './virtualObjectManager.js';
-import { makeCollectionManager } from './collectionManager.js';
+import { makeVirtualReferenceManager } from './virtualReferences.js';
 import { makeWatchedPromiseManager } from './watchedPromises.js';
-import { makeBOYDKit } from './boyd-gc.js';
 
 const SYSCALL_CAPDATA_BODY_SIZE_LIMIT = 10_000_000;
 const SYSCALL_CAPDATA_SLOTS_LENGTH_LIMIT = 10_000;

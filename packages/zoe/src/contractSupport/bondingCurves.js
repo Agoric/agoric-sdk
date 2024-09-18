@@ -1,7 +1,8 @@
 // @jessie-check
 
-import { Nat } from '@endo/nat';
 import { Fail } from '@endo/errors';
+import { Nat } from '@endo/nat';
+
 import { natSafeMath } from './safeMath.js';
 
 const { subtract, add, multiply, floorDivide } = natSafeMath;

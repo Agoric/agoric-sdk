@@ -1,10 +1,11 @@
 // @ts-check
+import { withDeferredCleanup } from '@agoric/internal';
+import { Fail, q } from '@endo/errors';
 import { createHash } from 'crypto';
 import { finished as finishedCallback, PassThrough, Readable } from 'stream';
 import { promisify } from 'util';
-import { createGzip, createGunzip } from 'zlib';
-import { Fail, q } from '@endo/errors';
-import { withDeferredCleanup } from '@agoric/internal';
+import { createGunzip, createGzip } from 'zlib';
+
 import { buffer } from './util.js';
 
 /**

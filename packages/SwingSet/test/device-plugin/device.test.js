@@ -1,16 +1,16 @@
 // @ts-nocheck
+
 import { test } from '../../tools/prepare-test-env-ava.js';
 
-// eslint-disable-next-line import/order
 import { initSwingStore } from '@agoric/swing-store';
 
-import {
-  swingsetIsInitialized,
-  initializeSwingset,
-  makeSwingsetController,
-} from '../../src/index.js';
 import { buildBridge } from '../../src/devices/bridge/bridge.js';
 import { buildPlugin } from '../../src/devices/plugin/plugin.js';
+import {
+  initializeSwingset,
+  makeSwingsetController,
+  swingsetIsInitialized,
+} from '../../src/index.js';
 
 test.before('initialize storage', t => {
   t.context.kernelStorage = initSwingStore().kernelStorage;

@@ -1,5 +1,4 @@
 import type { ERef, RemotableBrand } from '@endo/eventual-send';
-
 import type { RankComparison, RemotableObject } from '@endo/marshal';
 
 /// <reference types="@agoric/notifier/src/types.js" />

@@ -1,4 +1,5 @@
 import test from 'ava';
+
 import unconfinedInspect from '../lib/object-inspect.js';
 
 const testCases = [

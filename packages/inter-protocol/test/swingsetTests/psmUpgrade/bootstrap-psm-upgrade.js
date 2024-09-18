@@ -1,6 +1,5 @@
 // @ts-check
 
-import { Fail } from '@endo/errors';
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 import { CONTRACT_ELECTORATE, ParamTypes } from '@agoric/governance';
 import {
@@ -14,9 +13,11 @@ import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { PaymentPKeywordRecordShape } from '@agoric/zoe/src/typeGuards.js';
 import { buildZoeManualTimer } from '@agoric/zoe/tools/manualTimer.js';
+import { Fail } from '@endo/errors';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import { makePromiseKit } from '@endo/promise-kit';
+
 import { scale6, withAmountUtils } from '../../supports.js';
 
 const trace = makeTracer('BootPSMUpg');

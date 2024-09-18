@@ -1,6 +1,5 @@
 // @ts-check
 import anyTest from 'ava';
-
 // Use ambient authority only in test.before()
 import { spawn as ambientSpawn } from 'child_process';
 import * as ambientPath from 'path';

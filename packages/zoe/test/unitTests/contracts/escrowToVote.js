@@ -1,14 +1,15 @@
 // @ts-nocheck
 
-import { X, q } from '@endo/errors';
-import { Far } from '@endo/marshal';
-import { makeScalarMapStore } from '@agoric/store';
 import { AmountMath } from '@agoric/ertp';
+import { makeScalarMapStore } from '@agoric/store';
+import { q, X } from '@endo/errors';
+import { Far } from '@endo/marshal';
+
 // Eventually will be importable from '@agoric/zoe-contract-support'
 import {
   assertIssuerKeywords,
-  assertProposalShape,
   assertNatAssetKind,
+  assertProposalShape,
 } from '../../../src/contractSupport/index.js';
 
 /**

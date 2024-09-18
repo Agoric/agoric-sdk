@@ -1,6 +1,7 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
 import { E, Far } from '@endo/far';
+
 import { makeFakeBoard } from '../tools/board-utils.js';
 
 test('makeBoard', async t => {

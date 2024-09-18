@@ -1,23 +1,22 @@
+import { makeIssuerKit } from '@agoric/ertp';
+import { allValues } from '@agoric/internal';
+import { makeMockChainStorageRoot } from '@agoric/internal/src/storage-test-utils.js';
+import { makeScalarMapStore } from '@agoric/vat-data';
+import { makeAgoricNamesAccess, makePromiseSpace } from '@agoric/vats';
+import { produceDiagnostics } from '@agoric/vats/src/core/basic-behaviors.js';
+import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
+import { buildZoeManualTimer } from '@agoric/zoe/tools/manualTimer.js';
+import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { Far } from '@endo/captp';
 import { E } from '@endo/eventual-send';
 
-import { makeAgoricNamesAccess, makePromiseSpace } from '@agoric/vats';
-import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
-import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
-import { makeScalarMapStore } from '@agoric/vat-data';
-import { buildZoeManualTimer } from '@agoric/zoe/tools/manualTimer.js';
-import { allValues } from '@agoric/internal';
-import { makeMockChainStorageRoot } from '@agoric/internal/src/storage-test-utils.js';
-import { makeIssuerKit } from '@agoric/ertp';
-
-import { produceDiagnostics } from '@agoric/vats/src/core/basic-behaviors.js';
+import { startEconomicCommittee } from '../../src/proposals/startEconCommittee.js';
+import { startEconCharter, startPSM } from '../../src/proposals/startPSM.js';
 import {
   installGovernance,
   provideBundle,
   withAmountUtils,
 } from '../supports.js';
-import { startEconomicCommittee } from '../../src/proposals/startEconCommittee.js';
-import { startPSM, startEconCharter } from '../../src/proposals/startPSM.js';
 
 const psmRoot = './src/psm/psm.js'; // package relative
 const charterRoot = './src/econCommitteeCharter.js'; // package relative

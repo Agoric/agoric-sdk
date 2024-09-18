@@ -7,9 +7,9 @@
  */
 
 import '@endo/init/pre.js';
-
 // Now do lockdown.
 import '@endo/init';
+
 import { main } from './main.js';
 
 process.exitCode = 1;

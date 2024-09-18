@@ -1,9 +1,9 @@
 import '@endo/init/pre-bundle-source.js';
 import '@endo/init';
-import bundleSource from '@endo/bundle-source';
-import { resolve as importMetaResolve } from 'import-meta-resolve';
 
+import bundleSource from '@endo/bundle-source';
 import fs from 'fs';
+import { resolve as importMetaResolve } from 'import-meta-resolve';
 
 const CONTRACT_FILES = [
   'automaticRefund',

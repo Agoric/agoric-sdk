@@ -1,11 +1,11 @@
+import { AmountMath } from '@agoric/ertp';
 import { makeTracer } from '@agoric/internal';
-import { E } from '@endo/far';
+import { M, prepareExoClass, provide } from '@agoric/vat-data';
 import {
   atomicRearrange,
   provideAll,
 } from '@agoric/zoe/src/contractSupport/index.js';
-import { M, prepareExoClass, provide } from '@agoric/vat-data';
-import { AmountMath } from '@agoric/ertp';
+import { E } from '@endo/far';
 
 const trace = makeTracer('ZCF Probe');
 

@@ -1,5 +1,5 @@
-import { M } from '@endo/patterns';
 import { VowShape } from '@agoric/vow';
+import { M } from '@endo/patterns';
 
 export const FlowStateShape = M.or(
   'Running',

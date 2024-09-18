@@ -1,9 +1,10 @@
-import { basename } from 'path';
 import { Fail } from '@endo/errors';
+import { basename } from 'path';
+
 import {
   finishCosmosApp,
-  finishTendermintConfig,
   finishCosmosGenesis,
+  finishTendermintConfig,
 } from './chain-config.js';
 
 export default async function setDefaultsMain(progname, rawArgs, powers, opts) {

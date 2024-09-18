@@ -1,20 +1,21 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
 import { makeMockChainStorageRoot } from '@agoric/internal/src/storage-test-utils.js';
-import { makeHandle } from '@agoric/zoe/src/makeHandle.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
-import {
-  makeAgoricNamesAccess,
-  makePromiseSpaceForNameHub,
-} from '../src/core/utils.js';
-import { makePromiseSpace } from '../src/core/promise-space.js';
+import { makeHandle } from '@agoric/zoe/src/makeHandle.js';
+
+import { makeAddressNameHubs } from '../src/core/basic-behaviors.js';
 import {
   publishAgoricNames,
   setupClientManager,
 } from '../src/core/chain-behaviors.js';
-import { makeFakeBoard } from '../tools/board-utils.js';
-import { makeAddressNameHubs } from '../src/core/basic-behaviors.js';
+import { makePromiseSpace } from '../src/core/promise-space.js';
+import {
+  makeAgoricNamesAccess,
+  makePromiseSpaceForNameHub,
+} from '../src/core/utils.js';
 import { makeNameHubKit } from '../src/nameHub.js';
+import { makeFakeBoard } from '../tools/board-utils.js';
 
 test('publishAgoricNames publishes AMM instance', async t => {
   const space = makePromiseSpace();

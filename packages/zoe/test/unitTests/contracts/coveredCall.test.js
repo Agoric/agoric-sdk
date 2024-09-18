@@ -1,19 +1,18 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
-import path from 'path';
-
-import bundleSource from '@endo/bundle-source';
-import { E } from '@endo/eventual-send';
-import { Far } from '@endo/marshal';
 import { AmountMath, AssetKind } from '@agoric/ertp';
 import { claim } from '@agoric/ertp/src/legacy-payment-helpers.js';
 import { keyEQ } from '@agoric/store';
 import { TimeMath } from '@agoric/time';
+import bundleSource from '@endo/bundle-source';
+import { E } from '@endo/eventual-send';
+import { Far } from '@endo/marshal';
+import path from 'path';
 
 import buildManualTimer from '../../../tools/manualTimer.js';
+import { assertAmountsEqual } from '../../zoeTestHelpers.js';
 import { setup } from '../setupBasicMints.js';
 import { setupNonFungible } from '../setupNonFungibleMints.js';
-import { assertAmountsEqual } from '../../zoeTestHelpers.js';
 
 const dirname = path.dirname(new URL(import.meta.url).pathname);
 

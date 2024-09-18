@@ -1,7 +1,7 @@
 // @ts-check
-import { assert, X, Fail, annotateError } from '@endo/errors';
-import { Nat } from '@endo/nat';
+import { annotateError, assert, Fail, X } from '@endo/errors';
 import { Far } from '@endo/far';
+import { Nat } from '@endo/nat';
 
 /**
  * @typedef {object} ICS20TransferPacket Packet shape defined at:

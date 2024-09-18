@@ -1,7 +1,7 @@
 // @ts-check
 
-import { M } from '@endo/patterns';
 import { PromiseWatcherI } from '@agoric/base-zone';
+import { M } from '@endo/patterns';
 
 const { Fail, bare, details: X } = assert;
 

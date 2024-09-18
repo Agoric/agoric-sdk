@@ -1,6 +1,6 @@
-import { Fail, q } from '@endo/errors';
 import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
 import { assertAllDefined } from '@agoric/internal';
+import { notForProductionUse } from '@agoric/internal/src/magic-cookie-test-only.js';
 import {
   makeNotifierKit,
   makeStoredPublishKit,
@@ -8,9 +8,9 @@ import {
 } from '@agoric/notifier';
 import { makeLegacyMap } from '@agoric/store';
 import { TimeMath } from '@agoric/time';
+import { Fail, q } from '@endo/errors';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
-import { notForProductionUse } from '@agoric/internal/src/magic-cookie-test-only.js';
 
 import {
   calculateMedian,

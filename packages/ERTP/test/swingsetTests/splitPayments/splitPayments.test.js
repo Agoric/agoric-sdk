@@ -1,6 +1,6 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
-import { loadBasedir, buildVatController } from '@agoric/swingset-vat';
+import { buildVatController, loadBasedir } from '@agoric/swingset-vat';
 
 async function main(basedir, argv) {
   const dir = new URL(`../${basedir}/`, import.meta.url).pathname;

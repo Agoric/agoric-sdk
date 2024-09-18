@@ -3,6 +3,7 @@
 import { assert, Fail } from '@endo/errors';
 import { E } from '@endo/eventual-send';
 import { makePromiseKit } from '@endo/promise-kit';
+
 import { makeManagerKit } from './manager-helper.js';
 
 // start a "Worker" (Node's tool for starting new threads) and load a bundle

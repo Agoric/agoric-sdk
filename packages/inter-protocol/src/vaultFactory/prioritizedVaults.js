@@ -1,16 +1,17 @@
 // @jessie-check
 
-import { makeTracer } from '@agoric/internal';
-import { makeRatioFromAmounts } from '@agoric/zoe/src/contractSupport/index.js';
 import { AmountMath } from '@agoric/ertp';
-import { Far } from '@endo/marshal';
-import { M } from '@agoric/vat-data';
+import { makeTracer } from '@agoric/internal';
 import { makeScalarMapStore } from '@agoric/store';
+import { M } from '@agoric/vat-data';
+import { makeRatioFromAmounts } from '@agoric/zoe/src/contractSupport/index.js';
+import { Far } from '@endo/marshal';
+
 import { makeOrderedVaultStore } from './orderedVaultStore.js';
 import {
-  toVaultKey,
-  normalizedCollRatioKey,
   normalizedCollRatio,
+  normalizedCollRatioKey,
+  toVaultKey,
 } from './storeUtils.js';
 
 /** @import {Vault} from './vault.js' */

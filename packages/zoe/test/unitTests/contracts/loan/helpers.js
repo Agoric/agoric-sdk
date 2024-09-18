@@ -1,15 +1,14 @@
 // @ts-nocheck
 import '@agoric/swingset-liveslots/tools/prepare-test-env.js';
 
+import { AmountMath, makeIssuerKit } from '@agoric/ertp';
+import bundleSource from '@endo/bundle-source';
+import { E } from '@endo/eventual-send';
 import path from 'path';
 
-import { E } from '@endo/eventual-send';
-import bundleSource from '@endo/bundle-source';
-import { makeIssuerKit, AmountMath } from '@agoric/ertp';
-
-import { setupZCFTest } from '../../zcf/setupZcfTest.js';
 import { makeRatio } from '../../../../src/contractSupport/index.js';
 import { assertAmountsEqual } from '../../../zoeTestHelpers.js';
+import { setupZCFTest } from '../../zcf/setupZcfTest.js';
 
 const dirname = path.dirname(new URL(import.meta.url).pathname);
 

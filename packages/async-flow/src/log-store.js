@@ -1,8 +1,9 @@
 import { Fail, q } from '@endo/errors';
-import { makePromiseKit } from '@endo/promise-kit';
 import { M } from '@endo/patterns';
-import { LogEntryShape } from './type-guards.js';
+import { makePromiseKit } from '@endo/promise-kit';
+
 import { makeEphemera } from './ephemera.js';
+import { LogEntryShape } from './type-guards.js';
 
 /**
  * @import {PromiseKit} from '@endo/promise-kit'

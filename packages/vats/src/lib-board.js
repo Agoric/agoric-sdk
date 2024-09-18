@@ -3,13 +3,13 @@
  * @see prepareBoardKit()
  */
 
-import { assert, Fail, q } from '@endo/errors';
 import { prepareDurablePublishKit } from '@agoric/notifier';
 import { M, makeScalarBigMapStore, prepareExoClassKit } from '@agoric/vat-data';
 import {
   defineRecorderKit,
   prepareRecorder,
 } from '@agoric/zoe/src/contractSupport/recorder.js';
+import { assert, Fail, q } from '@endo/errors';
 import { E, Far } from '@endo/far';
 import { isRemotable, makeMarshal } from '@endo/marshal';
 

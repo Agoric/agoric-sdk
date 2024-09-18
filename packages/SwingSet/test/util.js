@@ -1,11 +1,10 @@
 /* global WeakRef, FinalizationRegistry */
-import anylogger from 'anylogger';
-
-import bundleSource from '@endo/bundle-source';
-
+import { waitUntilQuiescent } from '@agoric/internal/src/lib-nodejs/waitUntilQuiescent.js';
 import { kser } from '@agoric/kmarshal';
 import { initSwingStore } from '@agoric/swing-store';
-import { waitUntilQuiescent } from '@agoric/internal/src/lib-nodejs/waitUntilQuiescent.js';
+import bundleSource from '@endo/bundle-source';
+import anylogger from 'anylogger';
+
 import { extractMessage, ignore, vstr } from './vat-util.js';
 
 export { extractMessage, ignore, vstr };

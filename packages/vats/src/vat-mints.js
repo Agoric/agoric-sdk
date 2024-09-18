@@ -1,8 +1,7 @@
-import { Far } from '@endo/far';
-import { makeIssuerKit, AmountMath } from '@agoric/ertp';
-
-import { makeScalarMapStore } from '@agoric/store';
+import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 import { notForProductionUse } from '@agoric/internal/src/magic-cookie-test-only.js';
+import { makeScalarMapStore } from '@agoric/store';
+import { Far } from '@endo/far';
 
 // This vat contains two starting mints for demos: moolaMint and
 // simoleanMint.

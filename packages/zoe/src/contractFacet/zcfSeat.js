@@ -1,5 +1,5 @@
-import { annotateError, Fail } from '@endo/errors';
-import { E } from '@endo/eventual-send';
+import { AmountMath } from '@agoric/ertp';
+import { initEmpty, M } from '@agoric/store';
 import {
   makeScalarBigWeakMapStore,
   prepareExoClass,
@@ -8,20 +8,20 @@ import {
   provideDurableMapStore,
   provideDurableWeakMapStore,
 } from '@agoric/vat-data';
-import { AmountMath } from '@agoric/ertp';
-import { initEmpty, M } from '@agoric/store';
+import { annotateError, Fail } from '@endo/errors';
+import { E } from '@endo/eventual-send';
 
-import { isOfferSafe } from './offerSafety.js';
-import { assertRightsConserved } from './rightsConservation.js';
-import { addToAllocation, subtractFromAllocation } from './allocationMath.js';
 import { coerceAmountKeywordRecord } from '../cleanProposal.js';
+import { TransferPartShape } from '../contractSupport/atomicTransfer.js';
 import {
   AmountKeywordRecordShape,
   SeatDataShape,
   SeatShape,
 } from '../typeGuards.js';
+import { addToAllocation, subtractFromAllocation } from './allocationMath.js';
+import { isOfferSafe } from './offerSafety.js';
 import { makeAllocationMap } from './reallocate.js';
-import { TransferPartShape } from '../contractSupport/atomicTransfer.js';
+import { assertRightsConserved } from './rightsConservation.js';
 
 /**
  * The SeatManager holds the active zcfSeats and can reallocate and

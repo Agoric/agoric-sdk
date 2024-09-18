@@ -1,11 +1,12 @@
 import test from 'ava';
-import { tmpDir } from './tmp.js';
+
 import {
-  initJSONStore,
-  openJSONStore,
   getAllState,
+  initJSONStore,
   isJSONStore,
+  openJSONStore,
 } from '../src/json-store.js';
+import { tmpDir } from './tmp.js';
 
 function testStorage(t, storage) {
   t.falsy(storage.has('missing'));

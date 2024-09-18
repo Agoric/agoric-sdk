@@ -1,10 +1,10 @@
+import { AmountMath } from '@agoric/ertp';
 import { assert, X } from '@endo/errors';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
-import { AmountMath } from '@agoric/ertp';
 
-import { showPurseBalance, setupIssuers } from '../helpers.js';
 import { SECOND_PRICE } from '../../../src/contracts/auction/index.js';
+import { setupIssuers, showPurseBalance } from '../helpers.js';
 
 const build = async (log, zoe, issuers, payments, installations, timer) => {
   const { moola, simoleans, bucks, purses } = await setupIssuers(zoe, issuers);

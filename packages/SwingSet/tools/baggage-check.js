@@ -1,5 +1,5 @@
-import { makeMarshal } from '@endo/marshal';
 import { Far } from '@endo/far';
+import { makeMarshal } from '@endo/marshal';
 
 /* eslint-disable no-use-before-define */
 

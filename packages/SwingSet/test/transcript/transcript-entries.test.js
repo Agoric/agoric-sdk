@@ -1,10 +1,10 @@
 // @ts-nocheck
-import test from 'ava';
-
 import { kunser } from '@agoric/kmarshal';
 import { initSwingStore } from '@agoric/swing-store';
-import { initializeSwingset, makeSwingsetController } from '../../src/index.js';
+import test from 'ava';
+
 import { buildKernelBundle } from '../../src/controller/initializeSwingset.js';
+import { initializeSwingset, makeSwingsetController } from '../../src/index.js';
 
 const bfile = name => new URL(name, import.meta.url).pathname;
 

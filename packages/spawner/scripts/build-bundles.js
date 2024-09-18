@@ -1,5 +1,6 @@
 #! /usr/bin/env node
 import '@endo/init';
+
 import { createBundles } from '@agoric/internal/src/node/createBundles.js';
 import url from 'url';
 

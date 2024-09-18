@@ -3,20 +3,20 @@
 /* eslint dot-notation: "off" */
 /* eslint object-shorthand: "off" */
 
-// eslint-disable-next-line import/order -- has side-effects AND exports
 import { test } from '../tools/prepare-test-env-ava.js';
 
-import path from 'path';
-import bundleSource from '@endo/bundle-source';
 import { initSwingStore } from '@agoric/swing-store';
+import bundleSource from '@endo/bundle-source';
+import path from 'path';
+
+import { buildLoopbox } from '../src/devices/loopbox/loopbox.js';
 import {
+  buildKernelBundles,
   initializeSwingset,
   makeSwingsetController,
-  buildKernelBundles,
 } from '../src/index.js';
-import { bundleOpts } from './util.js';
-import { buildLoopbox } from '../src/devices/loopbox/loopbox.js';
 import { buildPatterns } from './message-patterns.js';
+import { bundleOpts } from './util.js';
 
 // This exercises all the patterns in 'message-patterns.js' twice with
 // comms vats in the path (a different file runs them all with a

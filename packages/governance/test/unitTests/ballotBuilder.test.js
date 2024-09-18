@@ -1,9 +1,10 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
 import { buildZoeManualTimer } from '@agoric/zoe/tools/manualTimer.js';
+
 import {
-  coerceQuestionSpec,
   ChoiceMethod,
+  coerceQuestionSpec,
   ElectionType,
   QuorumRule,
 } from '../../src/index.js';

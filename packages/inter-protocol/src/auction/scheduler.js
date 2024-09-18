@@ -1,16 +1,16 @@
-import { X, Fail, q, makeError } from '@endo/errors';
-import { E } from '@endo/eventual-send';
-import { Far } from '@endo/marshal';
-import { TimeMath } from '@agoric/time';
 import { makeTracer } from '@agoric/internal';
 import { observeIteration, subscribeEach } from '@agoric/notifier';
+import { TimeMath } from '@agoric/time';
+import { Fail, makeError, q, X } from '@endo/errors';
+import { E } from '@endo/eventual-send';
+import { Far } from '@endo/marshal';
 
-import { AuctionState, makeCancelTokenMaker } from './util.js';
 import {
   computeRoundTiming,
   nextDescendingStepTime,
   timeVsSchedule,
 } from './scheduleMath.js';
+import { AuctionState, makeCancelTokenMaker } from './util.js';
 
 const trace = makeTracer('SCHED', true);
 

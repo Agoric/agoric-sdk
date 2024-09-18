@@ -1,14 +1,13 @@
-import { E, passStyleOf } from '@endo/far';
-
+import { AmountShape } from '@agoric/ertp/src/typeGuards.js';
+import { deeplyFulfilledObject, objectMap } from '@agoric/internal';
 import { isUpgradeDisconnection } from '@agoric/internal/src/upgrade-api.js';
-import { prepareExoClassKit, watchPromise } from '@agoric/vat-data';
 import { M } from '@agoric/store';
+import { prepareExoClassKit, watchPromise } from '@agoric/vat-data';
 import {
   PaymentPKeywordRecordShape,
   SeatShape,
 } from '@agoric/zoe/src/typeGuards.js';
-import { AmountShape } from '@agoric/ertp/src/typeGuards.js';
-import { deeplyFulfilledObject, objectMap } from '@agoric/internal';
+import { E, passStyleOf } from '@endo/far';
 
 import { UNPUBLISHED_RESULT } from './offers.js';
 

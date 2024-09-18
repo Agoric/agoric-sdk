@@ -1,11 +1,11 @@
 // @ts-check
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
+import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 import { makeZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import bundleSource from '@endo/bundle-source';
-import { makeIssuerKit, AmountMath } from '@agoric/ertp';
-import { resolve as importMetaResolve } from 'import-meta-resolve';
 import { E } from '@endo/far';
+import { resolve as importMetaResolve } from 'import-meta-resolve';
 
 import { makeOfferAndFindInvitationAmount } from '../../src/offer.js';
 

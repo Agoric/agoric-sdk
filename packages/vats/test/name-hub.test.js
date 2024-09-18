@@ -1,4 +1,5 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
+
 import { Far } from '@endo/far';
 
 import { makeNameHubKit } from '../src/nameHub.js';

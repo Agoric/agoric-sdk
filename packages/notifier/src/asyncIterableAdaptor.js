@@ -1,6 +1,7 @@
 /// <reference types="ses" />
 
 import { E } from '@endo/far';
+
 import { subscribeLatest } from './subscribe.js';
 
 /**

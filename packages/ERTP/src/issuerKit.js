@@ -1,11 +1,11 @@
 // @jessie-check
 
-import { assert, Fail } from '@endo/errors';
 import { assertPattern } from '@agoric/store';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
 import { makeDurableZone } from '@agoric/zone/durable.js';
+import { assert, Fail } from '@endo/errors';
 
-import { AssetKind, assertAssetKind } from './amountMath.js';
+import { assertAssetKind, AssetKind } from './amountMath.js';
 import { coerceDisplayInfo } from './displayInfo.js';
 import { preparePaymentLedger } from './paymentLedger.js';
 

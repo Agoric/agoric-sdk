@@ -1,8 +1,8 @@
 // modeled on test-amplify-heap-class-kits.js
 import { test } from './prepare-test-env-ava.js';
 
-// eslint-disable-next-line import/order
 import { M } from '@endo/patterns';
+
 import {
   defineVirtualExoClass,
   defineVirtualExoClassKit,

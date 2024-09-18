@@ -1,10 +1,8 @@
+import { makeShutdown } from '@agoric/internal/src/node/shutdown.js';
+import { makeQueue } from '@endo/stream';
+import anylogger from 'anylogger';
 import { fork } from 'child_process';
 import path from 'path';
-import anylogger from 'anylogger';
-
-import { makeQueue } from '@endo/stream';
-
-import { makeShutdown } from '@agoric/internal/src/node/shutdown.js';
 
 const dirname = path.dirname(new URL(import.meta.url).pathname);
 

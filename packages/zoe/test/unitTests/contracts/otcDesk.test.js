@@ -1,15 +1,14 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
-import path from 'path';
-
+import { claim } from '@agoric/ertp/src/legacy-payment-helpers.js';
 import bundleSource from '@endo/bundle-source';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
-import { claim } from '@agoric/ertp/src/legacy-payment-helpers.js';
+import path from 'path';
 
-import { setup } from '../setupBasicMints.js';
 import buildManualTimer from '../../../tools/manualTimer.js';
 import { assertPayoutAmount } from '../../zoeTestHelpers.js';
+import { setup } from '../setupBasicMints.js';
 
 const dirname = path.dirname(new URL(import.meta.url).pathname);
 

@@ -2,8 +2,8 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { makeIssuerKit } from '@agoric/ertp';
-import { Far } from '@endo/marshal';
 import { makeRatioFromAmounts } from '@agoric/zoe/src/contractSupport/index.js';
+import { Far } from '@endo/marshal';
 
 import { normalizedCollRatio } from '../../src/vaultFactory/storeUtils.js';
 import { withAmountUtils } from '../supports.js';

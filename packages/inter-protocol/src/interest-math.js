@@ -2,8 +2,8 @@
 
 import {
   divideBy,
-  multiplyBy,
   invertRatio,
+  multiplyBy,
   multiplyRatios,
   ratiosSame,
 } from '@agoric/zoe/src/contractSupport/ratio.js';

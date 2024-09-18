@@ -14,19 +14,19 @@
 /// <reference types="@agoric/notifier/exported.js" />
 /// <reference path="../internal-types.js" />
 
+import { M } from '@agoric/store';
+import { makeScalarBigMapStore, prepareExo } from '@agoric/vat-data';
+import { Fail } from '@endo/errors';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
-import { makeScalarBigMapStore, prepareExo } from '@agoric/vat-data';
-import { M } from '@agoric/store';
 
-import { Fail } from '@endo/errors';
-import { makeZoeStorageManager } from './zoeStorageManager.js';
-import { makeStartInstance } from './startInstance.js';
-import { makeOfferMethod } from './offer/offer.js';
-import { makeInvitationQueryFns } from './invitationQueries.js';
+import { ZoeServiceI } from '../typeGuards.js';
 import { getZcfBundleCap } from './createZCFVat.js';
 import { defaultFeeIssuerConfig, prepareFeeMint } from './feeMint.js';
-import { ZoeServiceI } from '../typeGuards.js';
+import { makeInvitationQueryFns } from './invitationQueries.js';
+import { makeOfferMethod } from './offer/offer.js';
+import { makeStartInstance } from './startInstance.js';
+import { makeZoeStorageManager } from './zoeStorageManager.js';
 
 /** @import {Baggage} from '@agoric/vat-data' */
 

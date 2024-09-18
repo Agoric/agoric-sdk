@@ -1,9 +1,9 @@
 // @ts-check
-import { X } from '@endo/errors';
-
 import { AmountMath } from '@agoric/ertp';
 import { WalletName } from '@agoric/internal';
+import { X } from '@endo/errors';
 import { E, Far } from '@endo/far';
+
 import { makeOncePromiseKit } from './once-promise-kit.js';
 
 /**

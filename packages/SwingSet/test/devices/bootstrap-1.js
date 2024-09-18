@@ -1,5 +1,6 @@
+import { krefOf, kser, kunser } from '@agoric/kmarshal';
 import { Fail } from '@endo/errors';
-import { kser, kunser, krefOf } from '@agoric/kmarshal';
+
 import { extractMessage } from '../vat-util.js';
 
 export default function setup(syscall, state, _helpers, vatPowers) {

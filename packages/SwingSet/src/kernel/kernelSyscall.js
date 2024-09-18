@@ -1,7 +1,8 @@
 import { assert, Fail } from '@endo/errors';
-import { insistKernelType } from './parseKernelSlots.js';
+
 import { insistCapData } from '../lib/capdata.js';
 import { insistDeviceID, insistVatID } from '../lib/id.js';
+import { insistKernelType } from './parseKernelSlots.js';
 
 /** @type { KernelSyscallResult } */
 const OKNULL = harden(['ok', null]);

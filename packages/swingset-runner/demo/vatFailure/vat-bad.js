@@ -1,5 +1,5 @@
-import { assert } from '@endo/errors';
 import { kser } from '@agoric/kmarshal';
+import { assert } from '@endo/errors';
 
 export default function setup(syscall, _state, _helpers, _vatPowers) {
   function deliver(target, method, args) {

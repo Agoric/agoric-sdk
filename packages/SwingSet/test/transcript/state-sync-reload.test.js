@@ -1,16 +1,16 @@
 // @ts-nocheck
-import test from 'ava';
-
-import tmp from 'tmp';
 import { kunser } from '@agoric/kmarshal';
 import {
-  initSwingStore,
-  openSwingStore,
-  makeSwingStoreExporter,
   importSwingStore,
+  initSwingStore,
+  makeSwingStoreExporter,
+  openSwingStore,
 } from '@agoric/swing-store';
-import { initializeSwingset, makeSwingsetController } from '../../src/index.js';
+import test from 'ava';
+import tmp from 'tmp';
+
 import { buildKernelBundle } from '../../src/controller/initializeSwingset.js';
+import { initializeSwingset, makeSwingsetController } from '../../src/index.js';
 
 /**
  * @param {string} [prefix]

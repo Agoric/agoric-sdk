@@ -1,5 +1,6 @@
-import { Far, E } from '@endo/far';
 import { Fail } from '@endo/errors';
+import { E, Far } from '@endo/far';
+
 import { makePluginManager } from '../../src/vats/plugin-manager.js';
 
 export function buildRootObject(vatPowers, vatParameters) {

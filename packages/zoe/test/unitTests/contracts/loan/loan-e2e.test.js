@@ -1,17 +1,17 @@
 // @ts-nocheck
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
+
+import { AmountMath } from '@agoric/ertp';
+import { makeNotifierKit } from '@agoric/notifier';
+import bundleSource from '@endo/bundle-source';
+import { E } from '@endo/eventual-send';
 import path from 'path';
 
-import { E } from '@endo/eventual-send';
-import { AmountMath } from '@agoric/ertp';
-import bundleSource from '@endo/bundle-source';
-import { makeNotifierKit } from '@agoric/notifier';
-
-import { checkDetails, checkPayout } from './helpers.js';
-import { setup } from '../../setupBasicMints.js';
+import { makeRatio } from '../../../../src/contractSupport/index.js';
 import { makeFakePriceAuthority } from '../../../../tools/fakePriceAuthority.js';
 import buildManualTimer from '../../../../tools/manualTimer.js';
-import { makeRatio } from '../../../../src/contractSupport/index.js';
+import { setup } from '../../setupBasicMints.js';
+import { checkDetails, checkPayout } from './helpers.js';
 
 const dirname = path.dirname(new URL(import.meta.url).pathname);
 

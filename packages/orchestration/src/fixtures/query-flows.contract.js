@@ -3,6 +3,7 @@
  */
 import { InvitationShape } from '@agoric/zoe/src/typeGuards.js';
 import { M } from '@endo/patterns';
+
 import { withOrchestration } from '../utils/start-helper.js';
 import * as flows from './query-flows.flows.js';
 

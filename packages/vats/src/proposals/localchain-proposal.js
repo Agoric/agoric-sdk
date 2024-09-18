@@ -1,6 +1,7 @@
 // @ts-check
-import { E } from '@endo/far';
 import { BridgeId as BRIDGE_ID } from '@agoric/internal';
+import { E } from '@endo/far';
+
 import { makeScopedBridge } from '../bridge.js';
 
 /**

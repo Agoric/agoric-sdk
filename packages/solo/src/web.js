@@ -1,17 +1,16 @@
 /* global setTimeout clearTimeout setInterval clearInterval process */
 // Start a network service
-import path from 'path';
-import http from 'http';
-import { createConnection } from 'net';
-import { existsSync as existsSyncAmbient } from 'fs';
-import express from 'express';
-import { createProxyMiddleware } from 'http-proxy-middleware';
-import WebSocket from 'ws';
-import anylogger from 'anylogger';
-import morgan from 'morgan';
-import { format as urlFormat } from 'url';
-
 import { getAccessToken } from '@agoric/access-token';
+import anylogger from 'anylogger';
+import express from 'express';
+import { existsSync as existsSyncAmbient } from 'fs';
+import http from 'http';
+import { createProxyMiddleware } from 'http-proxy-middleware';
+import morgan from 'morgan';
+import { createConnection } from 'net';
+import path from 'path';
+import { format as urlFormat } from 'url';
+import WebSocket from 'ws';
 
 const maximumBundleSize = 1024 * 1024 * 128; // 128MB
 

@@ -5,14 +5,13 @@
  *   governance votes (n/a on sim-chain).
  */
 import { makeHelpers } from '@agoric/deploy-script-support';
-import { objectMap } from '@agoric/internal';
-
 import {
-  getManifestForInterProtocol,
   getManifestForEconCommittee,
+  getManifestForInterProtocol,
   getManifestForMain,
 } from '@agoric/inter-protocol/src/proposals/core-proposal.js';
 import { makeInstallCache } from '@agoric/inter-protocol/src/proposals/utils.js';
+import { objectMap } from '@agoric/internal';
 
 // TODO end inter-package filesystem references https://github.com/Agoric/agoric-sdk/issues/8178
 

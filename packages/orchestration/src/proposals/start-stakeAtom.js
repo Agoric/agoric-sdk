@@ -3,6 +3,7 @@ import { makeStorageNodeChild } from '@agoric/internal/src/lib-chainStorage.js';
 import { prepareVowTools } from '@agoric/vow';
 import { makeHeapZone } from '@agoric/zone';
 import { E } from '@endo/far';
+
 import { makeChainHub } from '../exos/chain-hub.js';
 
 /**

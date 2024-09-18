@@ -1,14 +1,14 @@
 // @ts-check
 /* global Buffer */
 import '@endo/init';
-import test from 'ava';
-import { createCommand, CommanderError } from 'commander';
 
-import { Far } from '@endo/far';
 import { makeParseAmount } from '@agoric/inter-protocol/src/clientSupport.js';
-import { boardSlottingMarshaller, makeFromBoard } from '../src/lib/rpc.js';
+import { Far } from '@endo/far';
+import test from 'ava';
+import { CommanderError, createCommand } from 'commander';
 
 import { fmtBid, makeInterCommand } from '../src/commands/inter.js';
+import { boardSlottingMarshaller, makeFromBoard } from '../src/lib/rpc.js';
 
 const { entries } = Object;
 

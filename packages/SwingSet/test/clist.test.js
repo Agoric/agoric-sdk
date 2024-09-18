@@ -1,8 +1,9 @@
 // @ts-nocheck
+
 import { test } from '../tools/prepare-test-env-ava.js';
 
-// eslint-disable-next-line import/order
 import { initSwingStore } from '@agoric/swing-store';
+
 import { makeDummySlogger } from '../src/kernel/slogger.js';
 import makeKernelKeeper, {
   CURRENT_SCHEMA_VERSION,

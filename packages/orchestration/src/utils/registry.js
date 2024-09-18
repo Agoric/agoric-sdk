@@ -1,9 +1,10 @@
+import assert from 'node:assert';
+
 import {
-  State as IBCChannelState,
   Order,
+  State as IBCChannelState,
 } from '@agoric/cosmic-proto/ibc/core/channel/v1/channel.js';
 import { State as IBCConnectionState } from '@agoric/cosmic-proto/ibc/core/connection/v1/connection.js';
-import assert from 'node:assert';
 
 /**
  * @import {IBCChannelID, IBCConnectionID} from '@agoric/vats';

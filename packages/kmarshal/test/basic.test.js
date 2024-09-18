@@ -1,6 +1,6 @@
 import test from 'ava';
 
-import { kser, kunser, krefOf, kslot } from '../src/kmarshal.js';
+import { krefOf, kser, kslot, kunser } from '../src/kmarshal.js';
 
 test('sanity check', t => {
   const assertRoundTrip = (val, toComparable = v => v) => {

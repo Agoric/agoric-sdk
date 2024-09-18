@@ -1,9 +1,9 @@
-import { E } from '@endo/far';
-import { makeNotifierFromAsyncIterable } from '@agoric/notifier';
 import { AmountMath } from '@agoric/ertp/src/index.js';
 import { makeTracer } from '@agoric/internal/src/index.js';
-import { Fail } from '@endo/errors';
+import { makeNotifierFromAsyncIterable } from '@agoric/notifier';
 import { TimeMath } from '@agoric/time';
+import { Fail } from '@endo/errors';
+import { E } from '@endo/far';
 
 const trace = makeTracer('upgrade Vaults proposal');
 

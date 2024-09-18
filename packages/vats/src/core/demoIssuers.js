@@ -1,15 +1,14 @@
-import { Fail, q } from '@endo/errors';
-import { Nat } from '@endo/nat';
-import { E, Far } from '@endo/far';
-
 import { AmountMath, AssetKind } from '@agoric/ertp';
 import { split, splitMany } from '@agoric/ertp/src/legacy-payment-helpers.js';
+import { notForProductionUse } from '@agoric/internal/src/magic-cookie-test-only.js';
+import { Stable, Stake } from '@agoric/internal/src/tokens.js';
 import {
   makeRatio,
   natSafeMath,
 } from '@agoric/zoe/src/contractSupport/index.js';
-import { notForProductionUse } from '@agoric/internal/src/magic-cookie-test-only.js';
-import { Stake, Stable } from '@agoric/internal/src/tokens.js';
+import { Fail, q } from '@endo/errors';
+import { E, Far } from '@endo/far';
+import { Nat } from '@endo/nat';
 
 const { multiply, floorDivide } = natSafeMath;
 const { entries, fromEntries, keys, values } = Object;

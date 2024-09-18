@@ -1,4 +1,5 @@
-import type { AnyJson, TypedJson, JsonSafe } from '@agoric/cosmic-proto';
+import type { AnyJson, JsonSafe, TypedJson } from '@agoric/cosmic-proto';
+import type { QueryDelegationTotalRewardsResponse } from '@agoric/cosmic-proto/cosmos/distribution/v1beta1/query.js';
 import type {
   Delegation,
   DelegationResponse,
@@ -9,15 +10,15 @@ import type {
 import type { TxBody } from '@agoric/cosmic-proto/cosmos/tx/v1beta1/tx.js';
 import type { MsgTransfer } from '@agoric/cosmic-proto/ibc/applications/transfer/v1/tx.js';
 import type {
-  State as IBCChannelState,
   Order,
+  State as IBCChannelState,
 } from '@agoric/cosmic-proto/ibc/core/channel/v1/channel.js';
 import type { State as IBCConnectionState } from '@agoric/cosmic-proto/ibc/core/connection/v1/connection.js';
 import type {
   RequestQuery,
   ResponseQuery,
 } from '@agoric/cosmic-proto/tendermint/abci/types.js';
-import type { Brand, Purse, Payment, Amount } from '@agoric/ertp/src/types.js';
+import type { Amount, Brand, Payment, Purse } from '@agoric/ertp/src/types.js';
 import type { Port } from '@agoric/network';
 import type { IBCChannelID, IBCConnectionID } from '@agoric/vats';
 import type {
@@ -28,7 +29,7 @@ import type {
   LocalIbcAddress,
   RemoteIbcAddress,
 } from '@agoric/vats/tools/ibc-utils.js';
-import type { QueryDelegationTotalRewardsResponse } from '@agoric/cosmic-proto/cosmos/distribution/v1beta1/query.js';
+
 import type { AmountArg, ChainAddress, Denom, DenomAmount } from './types.js';
 
 /** An address for a validator on some blockchain, e.g., cosmos, eth, etc. */

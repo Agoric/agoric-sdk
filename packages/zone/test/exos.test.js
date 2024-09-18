@@ -1,4 +1,3 @@
-// eslint-disable-next-line import/order
 import {
   annihilate,
   getBaggage,
@@ -6,16 +5,15 @@ import {
   test,
 } from './prepare-test-env-ava.js';
 
-import * as vatData from '@agoric/vat-data';
-
 import { agoricVatDataKeys as keys } from '@agoric/base-zone';
+import * as g from '@agoric/base-zone/tools/greeter.js';
 import {
   agoricVatDataCompatibleKeys,
   testFirstZoneIncarnation,
-  testSecondZoneIncarnation,
   testGreeter,
+  testSecondZoneIncarnation,
 } from '@agoric/base-zone/tools/testers.js';
-import * as g from '@agoric/base-zone/tools/greeter.js';
+import * as vatData from '@agoric/vat-data';
 
 import { makeDurableZone } from '../durable.js';
 import { makeHeapZone } from '../heap.js';

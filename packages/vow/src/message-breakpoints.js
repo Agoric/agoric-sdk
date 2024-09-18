@@ -1,7 +1,6 @@
 // @ts-check
 import { getEnvironmentOption } from '@endo/env-options';
-
-import { q, Fail } from '@endo/errors';
+import { Fail, q } from '@endo/errors';
 
 const { hasOwn, freeze, entries } = Object;
 

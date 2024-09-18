@@ -1,12 +1,13 @@
-import { Remotable, makeMarshal } from '@endo/marshal';
-import { passStyleOf } from '@endo/far';
 import { assert, Fail } from '@endo/errors';
+import { passStyleOf } from '@endo/far';
+import { makeMarshal, Remotable } from '@endo/marshal';
+
+import { insistCapData } from '../lib/capdata.js';
 import {
   insistVatType,
   makeVatSlot,
   parseVatSlot,
 } from '../lib/parseVatSlots.js';
-import { insistCapData } from '../lib/capdata.js';
 
 // 'makeDeviceSlots' is a subset of makeLiveSlots, for device code
 

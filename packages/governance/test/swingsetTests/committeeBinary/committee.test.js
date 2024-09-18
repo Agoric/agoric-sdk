@@ -1,9 +1,9 @@
 /* eslint-disable ava/assertion-arguments -- the standard diff is unreadable */
 
-import test from 'ava';
-import { buildVatController, buildKernelBundles } from '@agoric/swingset-vat';
-import bundleSource from '@endo/bundle-source';
+import { buildKernelBundles, buildVatController } from '@agoric/swingset-vat';
 import zcfBundle from '@agoric/zoe/bundles/bundle-contractFacet.js';
+import bundleSource from '@endo/bundle-source';
+import test from 'ava';
 import path from 'path';
 
 const CONTRACT_FILES = ['committee', 'binaryVoteCounter'];

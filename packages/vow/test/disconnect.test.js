@@ -1,8 +1,8 @@
 // @ts-check
-import test from 'ava';
-
 import { makeHeapZone } from '@agoric/base-zone/heap.js';
 import { makeTagged } from '@endo/pass-style';
+import test from 'ava';
+
 import { prepareBasicVowTools } from '../src/tools.js';
 
 /** @import {Vow} from '../src/types.js' */

@@ -1,4 +1,5 @@
 import { M } from '@endo/patterns';
+
 import { AmountKeywordRecordShape, IssuerRecordShape } from '../typeGuards.js';
 
 export const ZcfSeatShape = M.remotable('zcfSeat');

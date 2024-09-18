@@ -2,8 +2,9 @@ import type { FungibleTokenPacketData } from '@agoric/cosmic-proto/ibc/applicati
 import type { BridgeIdValue, Remote } from '@agoric/internal';
 import type { Bytes } from '@agoric/network';
 import type { Guarded } from '@endo/exo';
-import type { LocalChainAccount } from './localchain.js';
+
 import type { TargetApp } from './bridge-target.js';
+import type { LocalChainAccount } from './localchain.js';
 
 export type Board = ReturnType<
   ReturnType<typeof import('./lib-board.js').prepareBoardKit>

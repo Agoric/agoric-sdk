@@ -1,6 +1,6 @@
 import '@agoric/swingset-liveslots/tools/prepare-test-env.js';
-import { reincarnate } from '@agoric/swingset-liveslots/tools/setup-vat-data.js';
 
+import { reincarnate } from '@agoric/swingset-liveslots/tools/setup-vat-data.js';
 import test from 'ava';
 
 export { test };

@@ -1,6 +1,6 @@
+import { makeNameHubKit } from '@agoric/vats';
 import test from 'ava';
 
-import { makeNameHubKit } from '@agoric/vats';
 import { registerKnownChains } from '../src/chain-info.js';
 
 test('chain-info', async t => {

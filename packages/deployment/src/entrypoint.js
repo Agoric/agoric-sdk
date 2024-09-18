@@ -3,17 +3,17 @@
 
 import '@endo/init';
 
-import fs from 'fs';
-import path from 'path';
-import temp from 'temp';
-import process from 'process';
 import { exec, spawn } from 'child_process';
+import fs from 'fs';
 import inquirer from 'inquirer';
+import path from 'path';
+import process from 'process';
+import temp from 'temp';
 
-import { running } from './run.js';
-import { setup } from './setup.js';
 import * as files from './files.js';
 import deploy from './main.js';
+import { running } from './run.js';
+import { setup } from './setup.js';
 
 process.on('SIGINT', () => process.exit(-1));
 deploy(process.argv[1], process.argv.splice(2), {

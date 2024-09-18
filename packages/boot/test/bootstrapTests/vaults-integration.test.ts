@@ -1,21 +1,21 @@
 /** @file Bootstrap test integration vaults with smart-wallet */
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-import { Fail } from '@endo/errors';
 import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
+import { ParamChangesOfferArgs } from '@agoric/inter-protocol/src/econCommitteeCharter.js';
 import { SECONDS_PER_DAY } from '@agoric/inter-protocol/src/proposals/econ-behaviors.js';
 import { unmarshalFromVstorage } from '@agoric/internal/src/marshal.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
-import { makeMarshal } from '@endo/marshal';
 import {
   makeAgoricNamesRemotesFromFakeStorage,
   slotToBoardRemote,
 } from '@agoric/vats/tools/board-utils.js';
+import { Fail } from '@endo/errors';
+import { makeMarshal } from '@endo/marshal';
 import type { TestFn } from 'ava';
-import { ParamChangesOfferArgs } from '@agoric/inter-protocol/src/econCommitteeCharter.js';
 
-import { makeSwingsetTestKit } from '../../tools/supports.js';
 import { makeWalletFactoryDriver } from '../../tools/drivers.js';
+import { makeSwingsetTestKit } from '../../tools/supports.js';
 
 // presently all these tests use one collateral manager
 const collateralBrandKey = 'ATOM';

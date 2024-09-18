@@ -1,8 +1,7 @@
 /* global process */
+import { Fail } from '@endo/errors';
 import fs from 'fs';
 import path from 'path';
-
-import { Fail } from '@endo/errors';
 
 function scanMax(filePath, fields) {
   const lines = fs.readFileSync(filePath, { encoding: 'utf8' }).split('\n');

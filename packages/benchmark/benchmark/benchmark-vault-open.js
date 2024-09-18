@@ -1,7 +1,6 @@
-import { bench } from '../src/benchmarkerator.js';
-
-// eslint-disable-next-line import/order
 import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
+
+import { bench } from '../src/benchmarkerator.js';
 
 const collateralBrandKey = 'ATOM';
 

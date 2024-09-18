@@ -1,4 +1,5 @@
 import test from 'ava';
+
 import { runVOTest } from '../tools/vo-test-harness.js';
 
 async function voTestTest(t, mode) {

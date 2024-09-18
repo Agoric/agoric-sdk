@@ -4,16 +4,17 @@
  *   integrates multiple bundles so should move to a bootstrap-style test.
  */
 // @ts-check
-import { Fail } from '@endo/errors';
-import { E } from '@endo/eventual-send';
+import { makeScalarBigMapStore } from '@agoric/vat-data';
+import { vatRoots } from '@agoric/vats/tools/boot-test-utils.js';
 import {
   makeFakeVatAdmin,
   zcfBundleCap,
 } from '@agoric/zoe/tools/fakeVatAdmin.js';
 import { buildZoeManualTimer } from '@agoric/zoe/tools/manualTimer.js';
+import { Fail } from '@endo/errors';
+import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
-import { makeScalarBigMapStore } from '@agoric/vat-data';
-import { vatRoots } from '@agoric/vats/tools/boot-test-utils.js';
+
 import { bundles, devices } from './devices.js';
 
 export const noop = () => {};

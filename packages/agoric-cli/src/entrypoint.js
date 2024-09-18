@@ -6,16 +6,15 @@
 import '@endo/init/pre.js';
 import 'esm';
 import '@endo/init/legacy.js';
+// Configure logs.
+import './anylogger-agoric.js';
 
-import path from 'path';
-import WebSocket from 'ws';
+import anylogger from 'anylogger';
 import { spawn } from 'child_process';
 import rawFs from 'fs';
 import os from 'os';
-
-// Configure logs.
-import './anylogger-agoric.js';
-import anylogger from 'anylogger';
+import path from 'path';
+import WebSocket from 'ws';
 
 import main from './main.js';
 

@@ -1,13 +1,13 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
 import { AmountMath } from '@agoric/ertp';
-import { buildZoeManualTimer } from '@agoric/zoe/tools/manualTimer.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
-import { setup } from '@agoric/zoe/test/unitTests/setupBasicMints.js';
-
-import { assertPayoutAmount } from '@agoric/zoe/test/zoeTestHelpers.js';
-import { E, Far } from '@endo/far';
 import { mustMatch } from '@agoric/store';
+import { setup } from '@agoric/zoe/test/unitTests/setupBasicMints.js';
+import { assertPayoutAmount } from '@agoric/zoe/test/zoeTestHelpers.js';
+import { buildZoeManualTimer } from '@agoric/zoe/tools/manualTimer.js';
+import { E, Far } from '@endo/far';
+
 import { makeFeeDistributor, meta } from '../src/feeDistributor.js';
 
 /** @param {Issuer} feeIssuer */

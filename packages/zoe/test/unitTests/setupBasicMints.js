@@ -1,7 +1,8 @@
-import { makeIssuerKit, AmountMath } from '@agoric/ertp';
+import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 import { makeScalarMapStore } from '@agoric/store';
-import { makeZoeForTest } from '../../tools/setup-zoe.js';
+
 import { makeFakeVatAdmin } from '../../tools/fakeVatAdmin.js';
+import { makeZoeForTest } from '../../tools/setup-zoe.js';
 
 export const setup = () => {
   const moolaKit = makeIssuerKit('moola');

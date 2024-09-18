@@ -1,4 +1,5 @@
 import { Buffer } from 'buffer';
+
 import { makeB0ID } from './util.js';
 
 export const snapshotData = 'snapshot data';

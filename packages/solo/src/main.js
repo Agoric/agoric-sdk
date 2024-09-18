@@ -1,11 +1,10 @@
-import fs from 'fs';
-import path from 'path';
-import parseArgs from 'minimist';
-import process from 'process';
-import { spawnSync } from 'child_process';
 import { assert } from '@endo/errors';
-
 import anylogger from 'anylogger';
+import { spawnSync } from 'child_process';
+import fs from 'fs';
+import parseArgs from 'minimist';
+import path from 'path';
+import process from 'process';
 
 // Start a network service
 import addChain from './add-chain.js';

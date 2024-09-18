@@ -1,13 +1,13 @@
+import { kslot } from '@agoric/kmarshal';
 import test from 'ava';
 
-import { kslot } from '@agoric/kmarshal';
-import { setupTestLiveslots } from '../liveslots-helpers.js';
 import {
-  buildRootObject,
-  refValString,
   assertCollectionDeleted,
+  buildRootObject,
   deduceCollectionID,
+  refValString,
 } from '../gc-helpers.js';
+import { setupTestLiveslots } from '../liveslots-helpers.js';
 import { vstr } from '../util.js';
 
 // These tests follow the model described in test-virtualObjectGC.js

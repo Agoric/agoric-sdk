@@ -1,18 +1,17 @@
 // @ts-nocheck
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
-import { E } from '@endo/eventual-send';
 import { AmountMath } from '@agoric/ertp';
-
-import {
-  setupLoanUnitTest,
-  checkDescription,
-  makeSeatKit,
-  checkPayouts,
-  checkNoNewOffers,
-} from './helpers.js';
+import { E } from '@endo/eventual-send';
 
 import { makeCloseLoanInvitation } from '../../../../src/contracts/loan/close.js';
+import {
+  checkDescription,
+  checkNoNewOffers,
+  checkPayouts,
+  makeSeatKit,
+  setupLoanUnitTest,
+} from './helpers.js';
 
 test.todo('makeCloseLoanInvitation repay partial fails');
 test.todo(`makeCloseLoanInvitation repay but don't repay interest`);

@@ -1,9 +1,8 @@
 // @ts-check
 /* global setTimeout */
-import test from 'ava';
-
 import { makeHeapZone } from '@agoric/base-zone/heap.js';
 import { E, getInterfaceOf } from '@endo/far';
+import test from 'ava';
 
 import { prepareBasicVowTools } from '../src/tools.js';
 

@@ -1,11 +1,12 @@
 // @ts-check
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
-import { E, Far } from '@endo/far';
+
 import {
   makeExportContext,
   makeImportContext,
   makeLoggingPresence,
 } from '@agoric/smart-wallet/src/marshal-contexts.js';
+import { E, Far } from '@endo/far';
 
 const capData1 = {
   body: '#[["applyMethod","$0.Alleged: purse.actions","deposit",["$1.Alleged: payment"]],["applyFunction","$0",[1,"thing"]]]',

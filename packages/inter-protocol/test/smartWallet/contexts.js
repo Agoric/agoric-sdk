@@ -2,17 +2,18 @@ import { BridgeId, deeplyFulfilledObject } from '@agoric/internal';
 import { makeStorageNodeChild } from '@agoric/internal/src/lib-chainStorage.js';
 import { coalesceUpdates } from '@agoric/smart-wallet/src/utils.js';
 import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
+import { makeScopedBridge } from '@agoric/vats';
 import {
-  produceStartUpgradable,
-  produceStartGovernedUpgradable,
   produceDiagnostics,
+  produceStartGovernedUpgradable,
+  produceStartUpgradable,
 } from '@agoric/vats/src/core/basic-behaviors.js';
 import { makeHeapZone } from '@agoric/zone';
 import { E } from '@endo/far';
 import path from 'path';
-import { makeScopedBridge } from '@agoric/vats';
-import { oracleBrandFeedName } from '../../src/proposals/utils.js';
+
 import { createPriceFeed } from '../../src/proposals/price-feed-proposal.js';
+import { oracleBrandFeedName } from '../../src/proposals/utils.js';
 import { withAmountUtils } from '../supports.js';
 
 // referenced by TS

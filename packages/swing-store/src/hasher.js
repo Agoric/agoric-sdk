@@ -1,5 +1,4 @@
 import { Fail } from '@endo/errors';
-
 import { createHash } from 'crypto';
 
 /**

@@ -1,9 +1,10 @@
 /** @file Bootstrap test of restarting contracts using orchestration */
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
-import { TestFn } from 'ava';
 
 import type { CosmosValidatorAddress } from '@agoric/orchestration';
 import type { UpdateRecord } from '@agoric/smart-wallet/src/smartWallet.js';
+import { TestFn } from 'ava';
+
 import {
   makeWalletFactoryContext,
   type WalletFactoryTestContext,

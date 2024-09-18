@@ -1,7 +1,8 @@
+import { AmountMath } from '@agoric/ertp';
 import { q, X } from '@endo/errors';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
-import { AmountMath } from '@agoric/ertp';
+
 import buildManualTimer from '../../../tools/manualTimer.js';
 
 const mintInto = (kit, purse, value) =>

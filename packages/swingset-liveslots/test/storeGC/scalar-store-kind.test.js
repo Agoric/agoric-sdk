@@ -1,7 +1,7 @@
 import test from 'ava';
 
-import { setupTestLiveslots } from '../liveslots-helpers.js';
 import { buildRootObject, mapRef } from '../gc-helpers.js';
+import { setupTestLiveslots } from '../liveslots-helpers.js';
 
 // These tests follow the model described in test-virtualObjectGC.js
 

@@ -1,6 +1,7 @@
 /* global process Buffer */
-import path from 'path';
 import chalk from 'chalk';
+import path from 'path';
+
 import { makePspawn } from './helpers.js';
 import DEFAULT_SDK_PACKAGE_NAMES from './sdk-package-names.js';
 

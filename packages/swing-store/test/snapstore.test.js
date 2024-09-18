@@ -1,16 +1,16 @@
 // @ts-check
-import test from 'ava';
-
 import { Buffer } from 'node:buffer';
 import fs from 'node:fs';
 import path from 'node:path';
 import zlib from 'node:zlib';
+
+import { makeMeasureSeconds } from '@agoric/internal';
+import test from 'ava';
 import sqlite3 from 'better-sqlite3';
 import tmp from 'tmp';
 
-import { makeMeasureSeconds } from '@agoric/internal';
-import { makeSnapStore } from '../src/snapStore.js';
 import { makeArchiveSnapshot } from '../src/archiver.js';
+import { makeSnapStore } from '../src/snapStore.js';
 import { tmpDir } from './util.js';
 
 function makeExportLog() {

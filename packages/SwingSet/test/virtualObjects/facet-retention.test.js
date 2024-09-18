@@ -1,8 +1,8 @@
 // @ts-nocheck
-import test from 'ava';
-
 import { kunser } from '@agoric/kmarshal';
 import { initSwingStore } from '@agoric/swing-store';
+import test from 'ava';
+
 import { buildVatController } from '../../src/index.js';
 
 // Check that facets which don't reference their state still keep their cohort alive

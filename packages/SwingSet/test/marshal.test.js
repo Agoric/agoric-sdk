@@ -1,11 +1,11 @@
 /* global WeakRef, FinalizationRegistry */
-// eslint-disable-next-line import/order
+
 import { test } from '../tools/prepare-test-env-ava.js';
 
-import { Far } from '@endo/far';
-import { makePromiseKit } from '@endo/promise-kit';
 import { kser, makeError } from '@agoric/kmarshal';
 import { makeMarshaller } from '@agoric/swingset-liveslots';
+import { Far } from '@endo/far';
+import { makePromiseKit } from '@endo/promise-kit';
 
 import { makeDummyMeterControl } from '../src/kernel/dummyMeterControl.js';
 

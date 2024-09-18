@@ -1,13 +1,13 @@
 // @ts-nocheck
-// eslint-disable-next-line import/order
+
 import { test } from '../tools/prepare-test-env-ava.js';
 
+import { makeSnapStore, makeSnapStoreIO } from '@agoric/swing-store';
+import { makePromiseKit } from '@endo/promise-kit';
+import sqlite3 from 'better-sqlite3';
 import { spawn } from 'child_process';
 import fs from 'fs';
 import { tmpName } from 'tmp';
-import sqlite3 from 'better-sqlite3';
-import { makePromiseKit } from '@endo/promise-kit';
-import { makeSnapStore, makeSnapStoreIO } from '@agoric/swing-store';
 
 import { makeStartXSnap } from '../src/controller/startXSnap.js';
 

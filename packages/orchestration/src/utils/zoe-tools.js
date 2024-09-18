@@ -1,5 +1,5 @@
-import { Fail } from '@endo/errors';
 import { atomicTransfer } from '@agoric/zoe/src/contractSupport/index.js';
+import { Fail } from '@endo/errors';
 import { E } from '@endo/far';
 
 /**

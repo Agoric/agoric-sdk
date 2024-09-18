@@ -11,9 +11,9 @@ import path from 'path';
 
 import {
   ChoiceMethod,
+  coerceQuestionSpec,
   ElectionType,
   QuorumRule,
-  coerceQuestionSpec,
 } from '../../src/index.js';
 import { documentStorageSchema } from '../../tools/storageDoc.js';
 import { remoteNullMarshaller } from '../swingsetTests/utils.js';

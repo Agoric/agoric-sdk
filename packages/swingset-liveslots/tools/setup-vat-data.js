@@ -8,6 +8,7 @@
 
 import { passStyleOf } from '@endo/pass-style';
 import { PassStyleOfEndowmentSymbol } from '@endo/pass-style/endow.js';
+
 import { makeFakeVirtualStuff } from './fakeVirtualSupport.js';
 
 const { WeakMap, WeakSet } = globalThis;

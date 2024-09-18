@@ -7,9 +7,10 @@
  * @import {ZoeTools} from '../utils/zoe-tools.js';
  */
 
-import { mustMatch } from '@endo/patterns';
-import { makeError } from '@endo/errors';
 import { makeTracer } from '@agoric/internal';
+import { makeError } from '@endo/errors';
+import { mustMatch } from '@endo/patterns';
+
 import { ChainAddressShape } from '../typeGuards.js';
 
 const trace = makeTracer('StakingCombinationsFlows');

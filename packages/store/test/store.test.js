@@ -1,6 +1,6 @@
+import { Far, passStyleOf } from '@endo/marshal';
 import test from 'ava';
 
-import { Far, passStyleOf } from '@endo/marshal';
 import { makeLegacyMap } from '../src/legacy/legacyMap.js';
 import { makeLegacyWeakMap } from '../src/legacy/legacyWeakMap.js';
 import { makeScalarMapStore } from '../src/stores/scalarMapStore.js';

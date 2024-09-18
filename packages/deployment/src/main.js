@@ -1,13 +1,14 @@
 /* eslint-disable @jessie.js/safe-await-separator */
-import djson from 'deterministic-json';
-import { createHash } from 'crypto';
-import chalk from 'chalk';
-import parseArgs from 'minimist';
 import { Fail } from '@endo/errors';
-import { doInit } from './init.js';
-import { shellMetaRegexp, shellEscape } from './run.js';
+import chalk from 'chalk';
+import { createHash } from 'crypto';
+import djson from 'deterministic-json';
+import parseArgs from 'minimist';
+
 import { streamFromString } from './files.js';
-import { SSH_TYPE, DEFAULT_BOOT_TOKENS } from './setup.js';
+import { doInit } from './init.js';
+import { shellEscape, shellMetaRegexp } from './run.js';
+import { DEFAULT_BOOT_TOKENS, SSH_TYPE } from './setup.js';
 
 const PROVISION_DIR = 'provision';
 const COSMOS_DIR = 'ag-chain-cosmos';

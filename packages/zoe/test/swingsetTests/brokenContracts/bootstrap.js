@@ -1,6 +1,6 @@
+import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
-import { makeIssuerKit, AmountMath } from '@agoric/ertp';
 
 const setupBasicMints = () => {
   const all = [

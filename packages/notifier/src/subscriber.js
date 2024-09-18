@@ -3,9 +3,9 @@
 /// <reference types="ses" />
 
 import { E, Far } from '@endo/far';
-import { subscribeEach } from './subscribe.js';
-import { makePublishKit } from './publish-kit.js';
 
+import { makePublishKit } from './publish-kit.js';
+import { subscribeEach } from './subscribe.js';
 import { makePinnedHistoryTopic } from './topic.js';
 
 /**

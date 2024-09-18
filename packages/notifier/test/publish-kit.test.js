@@ -1,23 +1,24 @@
 /* eslint-disable no-void */
 
 import '@agoric/swingset-liveslots/tools/prepare-test-env.js';
-import test from 'ava';
 
-import { q } from '@endo/errors';
-import { E } from '@endo/far';
+import { kunser } from '@agoric/kmarshal';
+import { initSwingStore } from '@agoric/swing-store';
 import {
   buildKernelBundles,
   initializeSwingset,
   makeSwingsetController,
 } from '@agoric/swingset-vat';
-import { initSwingStore } from '@agoric/swing-store';
-import { kunser } from '@agoric/kmarshal';
 import { makeScalarBigMapStore } from '@agoric/vat-data/src/vat-data-bindings.js';
+import { q } from '@endo/errors';
+import { E } from '@endo/far';
+import test from 'ava';
+
 import {
   makePublishKit,
+  prepareDurablePublishKit,
   subscribeEach,
   subscribeLatest,
-  prepareDurablePublishKit,
 } from '../src/index.js';
 import { invertPromiseSettlement } from './iterable-testing-tools.js';
 

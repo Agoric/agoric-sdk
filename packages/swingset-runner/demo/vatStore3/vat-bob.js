@@ -1,6 +1,6 @@
+import { defineKind } from '@agoric/vat-data';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
-import { defineKind } from '@agoric/vat-data';
 
 const things = [];
 

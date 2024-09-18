@@ -1,8 +1,9 @@
 // @ts-nocheck
+import { buildKernelBundles, buildVatController } from '@agoric/swingset-vat';
+import bundleSource from '@endo/bundle-source';
 import test from 'ava';
 import path from 'path';
-import { buildVatController, buildKernelBundles } from '@agoric/swingset-vat';
-import bundleSource from '@endo/bundle-source';
+
 import zcfBundle from '../../../bundles/bundle-contractFacet.js';
 
 const dirname = path.dirname(new URL(import.meta.url).pathname);

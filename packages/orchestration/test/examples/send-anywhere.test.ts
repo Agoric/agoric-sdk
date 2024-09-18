@@ -1,20 +1,21 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
-import { E } from '@endo/far';
-import path from 'path';
-import { mustMatch } from '@endo/patterns';
 import { makeIssuerKit } from '@agoric/ertp';
 import {
   eventLoopIteration,
   inspectMapStore,
 } from '@agoric/internal/src/testing-utils.js';
+import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
+import { E } from '@endo/far';
+import { mustMatch } from '@endo/patterns';
+import path from 'path';
 import { inspect } from 'util';
-import { CosmosChainInfo, IBCConnectionInfo } from '../../src/cosmos-api.js';
-import { commonSetup } from '../supports.js';
-import { SingleAmountRecord } from '../../src/examples/send-anywhere.contract.js';
+
 import { registerChain } from '../../src/chain-info.js';
+import { CosmosChainInfo, IBCConnectionInfo } from '../../src/cosmos-api.js';
+import { SingleAmountRecord } from '../../src/examples/send-anywhere.contract.js';
 import { buildVTransferEvent } from '../../tools/ibc-mocks.js';
+import { commonSetup } from '../supports.js';
 
 const dirname = path.dirname(new URL(import.meta.url).pathname);
 

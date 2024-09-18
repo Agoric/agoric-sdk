@@ -1,14 +1,15 @@
 // @ts-nocheck
-// eslint-disable-next-line import/order
+
 import { test } from '../tools/prepare-test-env-ava.js';
 
-import { spawn } from 'child_process';
-import { kser, kunser, kslot } from '@agoric/kmarshal';
+import { kser, kslot, kunser } from '@agoric/kmarshal';
 import { initSwingStore } from '@agoric/swing-store';
+import { spawn } from 'child_process';
+
 import {
   buildVatController,
-  loadBasedir,
   initializeSwingset,
+  loadBasedir,
   makeSwingsetController,
 } from '../src/index.js';
 import makeKernelKeeper, {

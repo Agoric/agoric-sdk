@@ -1,4 +1,4 @@
-import { Fail } from '@endo/errors';
+import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
 import {
   SECONDS_PER_HOUR,
   SECONDS_PER_MINUTE,
@@ -7,17 +7,18 @@ import {
   AgoricNamesRemotes,
   makeAgoricNamesRemotesFromFakeStorage,
 } from '@agoric/vats/tools/board-utils.js';
-import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
+import { Fail } from '@endo/errors';
 import type { ExecutionContext } from 'ava';
-import { type SwingsetTestKit, makeSwingsetTestKit } from './supports.js';
+
 import {
   type GovernanceDriver,
-  type PriceFeedDriver,
-  type WalletFactoryDriver,
   makeGovernanceDriver,
   makePriceFeedDriver,
   makeWalletFactoryDriver,
+  type PriceFeedDriver,
+  type WalletFactoryDriver,
 } from './drivers.js';
+import { makeSwingsetTestKit, type SwingsetTestKit } from './supports.js';
 
 export type LiquidationSetup = {
   vaults: {

@@ -1,20 +1,18 @@
 // @ts-check
 /* global Buffer */
+import { Fail, q } from '@endo/errors';
+import sqlite3 from 'better-sqlite3';
 import * as fs from 'fs';
 import * as path from 'path';
 
-import sqlite3 from 'better-sqlite3';
-
-import { Fail, q } from '@endo/errors';
-
-import { dbFileInDirectory } from './util.js';
-import { makeKVStore, getKeyType } from './kvStore.js';
-import { makeTranscriptStore } from './transcriptStore.js';
-import { makeSnapStore } from './snapStore.js';
 import { makeBundleStore } from './bundleStore.js';
 import { createSHA256 } from './hasher.js';
-import { makeSnapStoreIO } from './snapStoreIO.js';
+import { getKeyType, makeKVStore } from './kvStore.js';
 import { doRepairMetadata } from './repairMetadata.js';
+import { makeSnapStore } from './snapStore.js';
+import { makeSnapStoreIO } from './snapStoreIO.js';
+import { makeTranscriptStore } from './transcriptStore.js';
+import { dbFileInDirectory } from './util.js';
 
 /**
  * @typedef { import('./kvStore.js').KVStore } KVStore

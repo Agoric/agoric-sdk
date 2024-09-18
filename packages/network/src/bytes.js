@@ -1,6 +1,6 @@
 // @ts-check
-import { X, Fail } from '@endo/errors';
-import { encodeBase64, decodeBase64 } from '@endo/base64';
+import { decodeBase64, encodeBase64 } from '@endo/base64';
+import { Fail, X } from '@endo/errors';
 import { isObject } from '@endo/pass-style';
 
 /**

@@ -1,12 +1,13 @@
 // @ts-nocheck
-// eslint-disable-next-line import/order
+
 import { test } from '../tools/prepare-test-env-ava.js';
 
-import { Far, E } from '@endo/far';
-import { makePromiseKit } from '@endo/promise-kit';
+import { waitUntilQuiescent } from '@agoric/internal/src/lib-nodejs/waitUntilQuiescent.js';
 import { makeScalarMapStore } from '@agoric/store';
 import { TimeMath } from '@agoric/time';
-import { waitUntilQuiescent } from '@agoric/internal/src/lib-nodejs/waitUntilQuiescent.js';
+import { E, Far } from '@endo/far';
+import { makePromiseKit } from '@endo/promise-kit';
+
 import { buildRootObject, debugTools } from '../src/vats/timer/vat-timer.js';
 
 test('schedule', t => {

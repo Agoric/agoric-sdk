@@ -14,9 +14,9 @@ import { makeOffer } from '@agoric/zoe/test/unitTests/makeOffer.js';
 import { setup } from '@agoric/zoe/test/unitTests/setupBasicMints.js';
 import { setupZCFTest } from '@agoric/zoe/test/unitTests/zcf/setupZcfTest.js';
 import { makeManualPriceAuthority } from '@agoric/zoe/tools/manualPriceAuthority.js';
-import { makeMockChainStorageRoot } from '../supports.js';
 
 import { prepareAuctionBook } from '../../src/auction/auctionBook.js';
+import { makeMockChainStorageRoot } from '../supports.js';
 
 const buildManualPriceAuthority = initialPrice =>
   makeManualPriceAuthority({

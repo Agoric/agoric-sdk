@@ -1,9 +1,5 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
-import type { TestFn } from 'ava';
-import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
-import type { Instance } from '@agoric/zoe/src/zoeService/utils.js';
-import { E } from '@endo/far';
-import path from 'path';
+
 import { JsonSafe, toRequestQueryJson, typedJson } from '@agoric/cosmic-proto';
 import {
   QueryAllBalancesRequest,
@@ -12,17 +8,23 @@ import {
   QueryBalanceResponse,
 } from '@agoric/cosmic-proto/cosmos/bank/v1beta1/query.js';
 import type { ResponseQuery } from '@agoric/cosmic-proto/tendermint/abci/types.js';
-import { decodeBase64 } from '@endo/base64';
 import {
   LOCALCHAIN_DEFAULT_ADDRESS,
   LOCALCHAIN_QUERY_ALL_BALANCES_RESPONSE,
 } from '@agoric/vats/tools/fake-bridge.js';
-import { commonSetup } from '../supports.js';
-import { defaultMockAckMap } from '../ibc-mocks.js';
+import type { Instance } from '@agoric/zoe/src/zoeService/utils.js';
+import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
+import { decodeBase64 } from '@endo/base64';
+import { E } from '@endo/far';
+import type { TestFn } from 'ava';
+import path from 'path';
+
 import {
   buildQueryPacketString,
   buildQueryResponseString,
 } from '../../tools/ibc-mocks.js';
+import { defaultMockAckMap } from '../ibc-mocks.js';
+import { commonSetup } from '../supports.js';
 
 const dirname = path.dirname(new URL(import.meta.url).pathname);
 

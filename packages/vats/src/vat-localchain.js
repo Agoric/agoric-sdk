@@ -1,7 +1,7 @@
 // @ts-check
-import { Far } from '@endo/far';
-import { makeDurableZone } from '@agoric/zone/durable.js';
 import { prepareVowTools } from '@agoric/vow/vat.js';
+import { makeDurableZone } from '@agoric/zone/durable.js';
+import { Far } from '@endo/far';
 
 import { prepareLocalChainTools } from './localchain.js';
 

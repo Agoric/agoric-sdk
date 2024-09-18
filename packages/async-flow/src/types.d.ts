@@ -1,8 +1,9 @@
-import type { Passable } from '@endo/pass-style';
 import type { Vow, VowTools } from '@agoric/vow';
-import type { LogStore } from './log-store.js';
+import type { Passable } from '@endo/pass-style';
+
 import type { Bijection } from './bijection.js';
 import type { EndowmentTools } from './endowments.js';
+import type { LogStore } from './log-store.js';
 
 export type FlowState =
   | 'Running'

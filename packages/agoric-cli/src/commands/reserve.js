@@ -3,6 +3,7 @@
 /* global fetch, process */
 import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
 import { Command } from 'commander';
+
 import { makeRpcUtils } from '../lib/rpc.js';
 import { outputActionAndHint } from '../lib/wallet.js';
 

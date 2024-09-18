@@ -1,14 +1,14 @@
-import { Far, E } from '@endo/far';
-import { makePromiseKit } from '@endo/promise-kit';
 import { initEmpty } from '@agoric/store';
 import {
-  makeKindHandle,
   defineDurableKind,
   defineDurableKindMulti,
   defineKind,
+  makeKindHandle,
   makeScalarBigMapStore,
   makeScalarBigWeakMapStore,
 } from '@agoric/vat-data';
+import { E, Far } from '@endo/far';
+import { makePromiseKit } from '@endo/promise-kit';
 
 // we set up a lot of ephemeral, merely-virtual, and durable objects
 // holding references to imported objects

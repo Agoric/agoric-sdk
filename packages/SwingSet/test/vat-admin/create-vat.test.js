@@ -1,18 +1,19 @@
 // @ts-nocheck
-// eslint-disable-next-line import/order
+
 import { test } from '../../tools/prepare-test-env-ava.js';
 
-import bundleSource from '@endo/bundle-source';
-import { kunser, krefOf } from '@agoric/kmarshal';
+import { krefOf, kunser } from '@agoric/kmarshal';
 import { initSwingStore } from '@agoric/swing-store';
+import bundleSource from '@endo/bundle-source';
+
 import {
   buildKernelBundles,
   initializeSwingset,
-  makeSwingsetController,
   loadBasedir,
+  makeSwingsetController,
 } from '../../src/index.js';
-import { bundleOpts, restartVatAdminVat } from '../util.js';
 import { extractMethod } from '../../src/lib/kdebug.js';
+import { bundleOpts, restartVatAdminVat } from '../util.js';
 
 function nonBundleFunction(_E) {
   return {};

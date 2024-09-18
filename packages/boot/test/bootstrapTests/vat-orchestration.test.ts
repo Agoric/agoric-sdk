@@ -1,19 +1,20 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
-import type { TestFn } from 'ava';
 
 import { toRequestQueryJson } from '@agoric/cosmic-proto';
 import {
   QueryBalanceRequest,
   QueryBalanceResponse,
 } from '@agoric/cosmic-proto/cosmos/bank/v1beta1/query.js';
-import { Any } from '@agoric/cosmic-proto/google/protobuf/any.js';
 import {
   MsgDelegate,
   MsgDelegateResponse,
 } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/tx.js';
+import { Any } from '@agoric/cosmic-proto/google/protobuf/any.js';
 import type { CosmosInterchainService } from '@agoric/orchestration';
 import { decodeBase64 } from '@endo/base64';
 import { M, matches } from '@endo/patterns';
+import type { TestFn } from 'ava';
+
 import {
   makeWalletFactoryContext,
   type WalletFactoryTestContext,

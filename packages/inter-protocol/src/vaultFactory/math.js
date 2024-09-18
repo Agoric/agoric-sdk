@@ -13,6 +13,7 @@ import {
   floorDivideBy,
   ratioGTE,
 } from '@agoric/zoe/src/contractSupport/ratio.js';
+
 import { priceFrom } from '../auction/util.js';
 import { addSubtract } from '../contractSupport.js';
 

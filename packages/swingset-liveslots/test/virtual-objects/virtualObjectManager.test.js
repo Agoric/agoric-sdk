@@ -1,12 +1,11 @@
 // @ts-nocheck
+import { kser, kslot } from '@agoric/kmarshal';
 import test from 'ava';
 
-import { kser, kslot } from '@agoric/kmarshal';
 import {
   makeFakeVirtualObjectManager,
   makeFakeVirtualStuff,
 } from '../../tools/fakeVirtualSupport.js';
-
 import { vstr } from '../util.js';
 
 function initThing(label = 'thing', counter = 0) {

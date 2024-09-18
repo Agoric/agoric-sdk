@@ -1,6 +1,6 @@
+import { CONTRACT_ELECTORATE } from '../../../src/contractGovernance/governParam.js';
 import { handleParamGovernance } from '../../../src/contractHelper.js';
 import { ParamTypes } from '../../../src/index.js';
-import { CONTRACT_ELECTORATE } from '../../../src/contractGovernance/governParam.js';
 
 /**
  * @import {GovernanceTerms} from '../../../src/types.js';

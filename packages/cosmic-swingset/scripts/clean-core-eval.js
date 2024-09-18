@@ -2,7 +2,9 @@
 /* global globalThis */
 
 import '@endo/init/debug.js';
+
 import * as farExports from '@endo/far';
+
 import { isEntrypoint } from '../src/helpers/is-entrypoint.js';
 
 export const compartmentEvaluate = code => {

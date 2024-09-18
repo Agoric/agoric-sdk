@@ -1,7 +1,8 @@
-import { expectNotType, expectType } from 'tsd';
 import { E, ERef } from '@endo/far';
-import type { Remote } from '../src/types.js';
+import { expectNotType, expectType } from 'tsd';
+
 import type { StorageNode } from '../src/lib-chainStorage.js';
+import type { Remote } from '../src/types.js';
 
 const eventualStorageNode: ERef<StorageNode> = null as any;
 const remoteStorageNode: Remote<StorageNode> = null as any;

@@ -1,11 +1,11 @@
-import { AmountMath } from '@agoric/ertp';
-import { E } from '@endo/eventual-send';
-import { q, Fail } from '@endo/errors';
-import { deeplyFulfilledObject, objectMap } from '@agoric/internal';
-import { provideDurableWeakMapStore } from '@agoric/vat-data';
-
 /// <reference path="./types.js" />
 import './internal-types.js';
+
+import { AmountMath } from '@agoric/ertp';
+import { deeplyFulfilledObject, objectMap } from '@agoric/internal';
+import { provideDurableWeakMapStore } from '@agoric/vat-data';
+import { Fail, q } from '@endo/errors';
+import { E } from '@endo/eventual-send';
 
 import { cleanKeywords } from '../cleanProposal.js';
 

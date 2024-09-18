@@ -1,16 +1,15 @@
 // @ts-check
 
-import { assert, X, Fail } from '@endo/errors';
+import { makeTracer } from '@agoric/internal';
+import { base64ToBytes, byteSourceToBase64 } from '@agoric/network';
+import { assert, Fail, X } from '@endo/errors';
 import { E } from '@endo/far';
 
-import { byteSourceToBase64, base64ToBytes } from '@agoric/network';
-
-import { makeTracer } from '@agoric/internal';
 import {
-  localAddrToPortID,
   decodeRemoteIbcAddress,
   encodeLocalIbcAddress,
   encodeRemoteIbcAddress,
+  localAddrToPortID,
 } from '../tools/ibc-utils.js';
 
 const trace = makeTracer('IBC', false);

@@ -1,22 +1,19 @@
 /* global clearTimeout setTimeout Buffer */
-import path from 'path';
-import fs from 'fs';
-import url from 'url';
-import { execFile } from 'child_process';
-import { open as tempOpen } from 'temp';
-
-import WebSocket from 'ws';
-
-import anylogger from 'anylogger';
-import { Fail, makeError } from '@endo/errors';
-import { makePromiseKit } from '@endo/promise-kit';
-
-import { makeNotifierKit } from '@agoric/notifier';
+import { forever, whileTrue } from '@agoric/internal';
 import {
   DEFAULT_BATCH_TIMEOUT_MS,
   makeBatchedDeliver,
 } from '@agoric/internal/src/batched-deliver.js';
-import { forever, whileTrue } from '@agoric/internal';
+import { makeNotifierKit } from '@agoric/notifier';
+import { Fail, makeError } from '@endo/errors';
+import { makePromiseKit } from '@endo/promise-kit';
+import anylogger from 'anylogger';
+import { execFile } from 'child_process';
+import fs from 'fs';
+import path from 'path';
+import { open as tempOpen } from 'temp';
+import url from 'url';
+import WebSocket from 'ws';
 
 const console = anylogger('chain-cosmos-sdk');
 

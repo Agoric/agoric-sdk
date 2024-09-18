@@ -1,4 +1,5 @@
 import { Fail, q } from '@endo/errors';
+
 import { assertComplete } from './assertComplete.js';
 
 /**

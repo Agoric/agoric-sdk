@@ -8,11 +8,9 @@ import {
   makeLeader,
   makeLeaderFromRpcAddresses,
 } from '@agoric/casting';
+import { execFileSync } from 'child_process';
 import fs from 'fs';
 import util from 'util';
-import { execFileSync } from 'child_process';
-import { fmtRecordOfLines, summarize } from '../lib/format.js';
-import { makeRpcUtils, networkConfig } from '../lib/rpc.js';
 
 import { makeLeaderOptions } from '../lib/casting.js';
 import {
@@ -20,6 +18,8 @@ import {
   fetchSwingsetParams,
   normalizeAddressWithOptions,
 } from '../lib/chain.js';
+import { fmtRecordOfLines, summarize } from '../lib/format.js';
+import { makeRpcUtils, networkConfig } from '../lib/rpc.js';
 import { coalesceWalletState, getCurrent } from '../lib/wallet.js';
 
 const SLEEP_SECONDS = 3;

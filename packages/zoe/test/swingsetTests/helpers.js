@@ -1,5 +1,5 @@
-import { E } from '@endo/eventual-send';
 import { AmountMath } from '@agoric/ertp';
+import { E } from '@endo/eventual-send';
 
 export const showPurseBalance = async (purseP, name, log) => {
   try {

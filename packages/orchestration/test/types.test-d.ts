@@ -14,6 +14,7 @@ import type { Vow, VowTools } from '@agoric/vow';
 import type { ResolvedPublicTopic } from '@agoric/zoe/src/contractSupport/topics.js';
 import type { Passable } from '@endo/marshal';
 import { expectAssignable, expectNotType, expectType } from 'tsd';
+
 import { prepareCosmosOrchestrationAccount } from '../src/exos/cosmos-orchestration-account.js';
 import type { LocalOrchestrationAccountKit } from '../src/exos/local-orchestration-account.js';
 import type { OrchestrationFacade } from '../src/facade.js';

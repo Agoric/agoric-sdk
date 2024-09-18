@@ -1,8 +1,8 @@
 // @ts-check
+import { makeHeapZone } from '@agoric/base-zone/heap.js';
+import { Far } from '@endo/far';
 import test from 'ava';
 
-import { Far } from '@endo/far';
-import { makeHeapZone } from '@agoric/base-zone/heap.js';
 import * as cb from '../src/callback.js';
 
 /** @import {Callback, SyncCallback} from '../src/types.js' */

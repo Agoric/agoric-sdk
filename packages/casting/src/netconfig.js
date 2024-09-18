@@ -1,6 +1,6 @@
 // @jessie-check
 
-import { mustMatch, M } from '@agoric/store';
+import { M, mustMatch } from '@agoric/store';
 
 // NB: keep type and shape in sync manually until https://github.com/Agoric/agoric-sdk/issues/6160
 /**

@@ -1,8 +1,8 @@
 // @ts-check
-import { assert } from '@endo/errors';
-import { E } from '@endo/far';
 // Avoid pulling in too many dependencies like notifiers
 import { AmountMath } from '@agoric/ertp/src/amountMath.js';
+import { assert } from '@endo/errors';
+import { E } from '@endo/far';
 
 /** @import {Petname} from '@agoric/deploy-script-support/src/externalTypes.js' */
 

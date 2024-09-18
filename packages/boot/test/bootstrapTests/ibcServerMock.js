@@ -1,9 +1,9 @@
 /** @file Mock IBC Server */
 // @ts-check
-import { q, Fail } from '@endo/errors';
+import { heapVowE as E } from '@agoric/vow/vat.js';
+import { Fail, q } from '@endo/errors';
 import { Far } from '@endo/far';
 import { makePromiseKit } from '@endo/promise-kit';
-import { heapVowE as E } from '@agoric/vow/vat.js';
 
 const { log } = console;
 

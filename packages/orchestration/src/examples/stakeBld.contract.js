@@ -9,6 +9,7 @@ import { InvitationShape } from '@agoric/zoe/src/typeGuards.js';
 import { makeDurableZone } from '@agoric/zone/durable.js';
 import { deeplyFulfilled } from '@endo/marshal';
 import { M } from '@endo/patterns';
+
 import { makeChainHub } from '../exos/chain-hub.js';
 import { prepareLocalOrchestrationAccountKit } from '../exos/local-orchestration-account.js';
 import fetchedChainInfo from '../fetched-chain-info.js';

@@ -1,13 +1,13 @@
-import { M } from '@endo/patterns';
 import { test as rawTest } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
-import { reincarnate } from '@agoric/swingset-liveslots/tools/setup-vat-data.js';
 
-import { E } from '@endo/far';
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 import { claim } from '@agoric/ertp/src/legacy-payment-helpers.js';
-
 import { makeNotifierKit } from '@agoric/notifier';
+import { reincarnate } from '@agoric/swingset-liveslots/tools/setup-vat-data.js';
 import { makeDurableZone } from '@agoric/zone/durable.js';
+import { E } from '@endo/far';
+import { M } from '@endo/patterns';
+
 import { prepareVirtualPurse } from '../src/virtual-purse.js';
 
 /** @type {import('ava').TestFn<ReturnType<makeTestContext>>} */

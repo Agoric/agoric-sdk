@@ -1,12 +1,10 @@
 /* global process */
 // @ts-check
 
+import { SigningStargateClient } from '@cosmjs/stargate';
 import path from 'path';
 
-import { SigningStargateClient } from '@cosmjs/stargate';
-
 import { parseLocatedJson } from './json.js';
-
 import { makeBundlePublisher, makeCosmosBundlePublisher } from './publish.js';
 
 const publishMain = async (progname, rawArgs, powers, opts) => {

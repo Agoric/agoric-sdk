@@ -4,12 +4,13 @@
 
 import '@endo/init';
 
+import { makePromiseKit } from '@endo/promise-kit';
 import * as childProcess from 'child_process';
 import fs from 'fs';
-import { tmpName } from 'tmp';
 import * as os from 'os';
 import * as readline from 'readline';
-import { makePromiseKit } from '@endo/promise-kit';
+import { tmpName } from 'tmp';
+
 import { xsnap } from './xsnap.js';
 
 /** @import {PromiseKit} from '@endo/promise-kit' */

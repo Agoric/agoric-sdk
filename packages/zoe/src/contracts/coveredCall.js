@@ -1,5 +1,6 @@
-import { Fail, q } from '@endo/errors';
 import { M, mustMatch } from '@agoric/store';
+import { Fail, q } from '@endo/errors';
+
 // Eventually will be importable from '@agoric/zoe-contract-support'
 import { swapExact } from '../contractSupport/index.js';
 import { isAfterDeadlineExitRule } from '../typeGuards.js';

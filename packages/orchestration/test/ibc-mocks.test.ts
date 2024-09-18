@@ -1,3 +1,5 @@
+import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
+
 import {
   QueryBalanceRequest,
   QueryBalanceResponse,
@@ -11,7 +13,7 @@ import {
   CosmosQuery,
   CosmosResponse,
 } from '@agoric/cosmic-proto/icq/v1/packet.js';
-import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
+
 import {
   buildMsgErrorString,
   buildMsgResponseString,

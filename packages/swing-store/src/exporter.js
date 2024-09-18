@@ -1,15 +1,14 @@
+import { Fail, q } from '@endo/errors';
 import sqlite3 from 'better-sqlite3';
 
-import { Fail, q } from '@endo/errors';
-
-import { dbFileInDirectory } from './util.js';
-import { getKeyType } from './kvStore.js';
+import { assertComplete } from './assertComplete.js';
 import { makeBundleStore } from './bundleStore.js';
+import { validateArtifactMode } from './internal.js';
+import { getKeyType } from './kvStore.js';
 import { makeSnapStore } from './snapStore.js';
 import { makeSnapStoreIO } from './snapStoreIO.js';
 import { makeTranscriptStore } from './transcriptStore.js';
-import { assertComplete } from './assertComplete.js';
-import { validateArtifactMode } from './internal.js';
+import { dbFileInDirectory } from './util.js';
 
 /**
  * @template T

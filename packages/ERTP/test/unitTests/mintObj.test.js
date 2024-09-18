@@ -1,10 +1,10 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
-import { assert } from '@endo/errors';
 import { initEmpty, M } from '@agoric/store';
-
 import { defineDurableKind, makeKindHandle } from '@agoric/vat-data';
-import { makeIssuerKit, AssetKind, AmountMath } from '../../src/index.js';
+import { assert } from '@endo/errors';
+
+import { AmountMath, AssetKind, makeIssuerKit } from '../../src/index.js';
 import { claim, combine } from '../../src/legacy-payment-helpers.js';
 
 test('mint.getIssuer', t => {

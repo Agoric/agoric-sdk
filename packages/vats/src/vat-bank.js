@@ -1,7 +1,3 @@
-import { Fail } from '@endo/errors';
-import { E, Far } from '@endo/far';
-import { M, getInterfaceGuardPayload } from '@endo/patterns';
-
 import { AmountMath, AssetKind, BrandShape } from '@agoric/ertp';
 import { deeplyFulfilledObject } from '@agoric/internal';
 import { prepareGuardedAttenuator } from '@agoric/internal/src/callback.js';
@@ -13,8 +9,12 @@ import {
   subscribeEach,
 } from '@agoric/notifier';
 import { provideLazy } from '@agoric/store';
-import { makeDurableZone } from '@agoric/zone/durable.js';
 import { makeAtomicProvider } from '@agoric/store/src/stores/store-utils.js';
+import { makeDurableZone } from '@agoric/zone/durable.js';
+import { Fail } from '@endo/errors';
+import { E, Far } from '@endo/far';
+import { getInterfaceGuardPayload, M } from '@endo/patterns';
+
 import { BridgeHandlerI, BridgeScopedManagerI } from './bridge.js';
 import {
   makeVirtualPurseKitIKit,

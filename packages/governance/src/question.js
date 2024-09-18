@@ -1,4 +1,4 @@
-import { makeExo, mustMatch, keyEQ, M } from '@agoric/store';
+import { keyEQ, M, makeExo, mustMatch } from '@agoric/store';
 import { makeHandle } from '@agoric/zoe/src/makeHandle.js';
 
 import { QuestionI, QuestionSpecShape } from './typeGuards.js';

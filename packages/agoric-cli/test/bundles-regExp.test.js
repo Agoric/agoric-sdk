@@ -1,4 +1,5 @@
 import test from 'ava';
+
 import { PACKAGE_NAME_RE } from '../src/lib/bundles.js';
 
 const goodPatterns = [

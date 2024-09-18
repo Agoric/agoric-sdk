@@ -1,14 +1,15 @@
 /* global globalThis */
 
+import { makeLiveSlots } from '@agoric/swingset-liveslots';
 import { assert, Fail } from '@endo/errors';
 import { importBundle } from '@endo/import-bundle';
-import { makeLiveSlots } from '@agoric/swingset-liveslots';
-import { makeManagerKit } from './manager-helper.js';
+
 import {
   makeSupervisorDispatch,
   makeSupervisorSyscall,
   makeVatConsole,
 } from '../../supervisors/supervisor-helper.js';
+import { makeManagerKit } from './manager-helper.js';
 
 export function makeLocalVatManagerFactory({
   allVatPowers,

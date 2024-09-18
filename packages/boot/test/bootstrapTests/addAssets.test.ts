@@ -4,9 +4,9 @@
  */
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
+import { TimeMath } from '@agoric/time';
 import type { TestFn } from 'ava';
 
-import { TimeMath } from '@agoric/time';
 import {
   LiquidationTestContext,
   makeLiquidationTestContext,

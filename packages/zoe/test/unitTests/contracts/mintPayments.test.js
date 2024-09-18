@@ -1,14 +1,12 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
-import path from 'path';
-
+import { AmountMath, makeIssuerKit } from '@agoric/ertp';
+import { claim } from '@agoric/ertp/src/legacy-payment-helpers.js';
 import bundleSource from '@endo/bundle-source';
 import { E } from '@endo/eventual-send';
-import { makeIssuerKit, AmountMath } from '@agoric/ertp';
-import { claim } from '@agoric/ertp/src/legacy-payment-helpers.js';
+import path from 'path';
 
 import { makeFakeVatAdmin } from '../../../tools/fakeVatAdmin.js';
-
 import { makeZoeForTest } from '../../../tools/setup-zoe.js';
 
 const dirname = path.dirname(new URL(import.meta.url).pathname);

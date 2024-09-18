@@ -1,13 +1,13 @@
-import test from 'ava';
-
-import { Far } from '@endo/marshal';
 import { kser } from '@agoric/kmarshal';
 import { M } from '@agoric/store';
+import { Far } from '@endo/marshal';
+import test from 'ava';
+
 import { makeLiveSlots } from '../src/liveslots.js';
 import { parseVatSlot } from '../src/parseVatSlots.js';
 import { buildSyscall } from './liveslots-helpers.js';
-import { makeStartVat } from './util.js';
 import { makeMockGC } from './mock-gc.js';
+import { makeStartVat } from './util.js';
 
 test('durable collections survive upgrade', async t => {
   let map1;

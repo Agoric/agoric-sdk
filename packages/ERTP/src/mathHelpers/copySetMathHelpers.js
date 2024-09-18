@@ -1,14 +1,14 @@
 // @jessie-check
 
 import {
+  getCopySetKeys,
   keyEQ,
+  M,
   makeCopySet,
   mustMatch,
-  M,
-  getCopySetKeys,
-  setIsSuperset,
-  setDisjointUnion,
   setDisjointSubtract,
+  setDisjointUnion,
+  setIsSuperset,
 } from '@agoric/store';
 
 /**
