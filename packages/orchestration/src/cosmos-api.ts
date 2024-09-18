@@ -46,9 +46,6 @@ export interface IBCConnectionInfo {
   counterparty: {
     client_id: string;
     connection_id: IBCConnectionID;
-    prefix: {
-      key_prefix: string;
-    };
   };
   transferChannel: {
     portId: string;

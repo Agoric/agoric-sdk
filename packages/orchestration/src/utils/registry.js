@@ -61,9 +61,6 @@ function toConnectionEntry(ibcInfo, name, chainInfo) {
     counterparty: {
       client_id: to.client_id,
       connection_id: /** @type {IBCConnectionID} */ (to.connection_id),
-      prefix: {
-        key_prefix: 'FIXME',
-      },
     },
     state: IBCConnectionState.STATE_OPEN, // XXX presumably
     transferChannel: {
