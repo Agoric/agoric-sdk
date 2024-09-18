@@ -27,9 +27,6 @@ const mockChainConnection: IBCConnectionInfo = {
   counterparty: {
     client_id: '07-tendermint-2',
     connection_id: 'connection-1',
-    prefix: {
-      key_prefix: '',
-    },
   },
   state: 3 /* IBCConnectionState.STATE_OPEN */,
   transferChannel: {

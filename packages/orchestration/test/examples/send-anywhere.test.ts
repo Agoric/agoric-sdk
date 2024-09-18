@@ -97,9 +97,6 @@ test('send using arbitrary chain info', async t => {
     counterparty: {
       client_id: '07-tendermint-2109',
       connection_id: 'connection-1649',
-      prefix: {
-        key_prefix: 'aWJj',
-      },
     },
     transferChannel: {
       counterPartyChannelId: 'channel-1',

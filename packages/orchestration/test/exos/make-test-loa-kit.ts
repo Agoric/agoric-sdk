@@ -57,7 +57,7 @@ export const prepareMakeTestLOAKit = (
       account: lca,
       address: harden({
         value: address,
-        chainId: 'agoriclocal',
+        chainId: 'agoric-3',
         encoding: 'bech32',
       }),
       storageNode: storageNode.makeChildNode(address),

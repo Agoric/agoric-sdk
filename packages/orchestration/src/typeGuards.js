@@ -73,9 +73,6 @@ export const IBCConnectionInfoShape = M.splitRecord({
   counterparty: {
     client_id: M.string(),
     connection_id: IBCConnectionIDShape,
-    prefix: {
-      key_prefix: M.string(),
-    },
   },
   transferChannel: IBCChannelInfoShape,
 });
