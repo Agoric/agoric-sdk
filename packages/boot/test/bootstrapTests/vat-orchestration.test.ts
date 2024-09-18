@@ -55,6 +55,11 @@ test.before(async t => {
     await evalProposal(
       buildProposal('@agoric/builders/scripts/vats/init-orchestration.js'),
     );
+    await evalProposal(
+      buildProposal(
+        '@agoric/builders/scripts/orchestration/write-chain-info.js',
+      ),
+    );
     const vatStore = await EV.vat('bootstrap').consumeItem('vatStore');
     t.true(await EV(vatStore).has('ibc'), 'ibc');
     t.true(await EV(vatStore).has('network'), 'network');
