@@ -16,3 +16,18 @@ expectType<(p1: number, p2: string) => Vow<{ someValue: 'bar' }>>(
     Promise.resolve({ someValue: 'bar' } as const),
   ),
 );
+
+expectType<
+  Vow<
+    (
+      | { status: 'fulfilled'; value: any }
+      | { status: 'rejected'; reason: any }
+    )[]
+  >
+>(
+  vt.allSettled([
+    Promise.resolve(1),
+    Promise.reject(new Error('test')),
+    Promise.resolve('hello'),
+  ]),
+);
