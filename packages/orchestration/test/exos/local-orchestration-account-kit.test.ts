@@ -127,7 +127,7 @@ test('transfer', async t => {
     value: 'cosmos1pleab',
     encoding: 'bech32',
   };
-  const sourceChannel = 'channel-1'; // observed in toBridge VLOCALCHAIN_EXECUTE_TX sourceChannel
+  const sourceChannel = 'channel-5'; // observed in toBridge VLOCALCHAIN_EXECUTE_TX sourceChannel, confirmed via fetched-chain-info.js
 
   // TODO rename to lastSequence
   /** The running tally of transfer messages that were sent over the bridge */
@@ -195,7 +195,7 @@ test('transfer', async t => {
   // XXX dev has to know not to startTransfer here
   await t.throwsAsync(
     VE(account).transfer({ denom: 'ubld', value: 1n }, unknownDestination),
-    { message: /connection not found: agoriclocal<->fakenet/ },
+    { message: /connection not found: agoric-3<->fakenet/ },
     'cannot create transfer msg with unknown chainId',
   );
 
@@ -310,7 +310,7 @@ test('send', async t => {
 
   const toAddress = {
     value: 'agoric1EOAAccAddress',
-    chainId: 'agoriclocal',
+    chainId: 'agoric-3',
     encoding: 'bech32' as const,
   };
 

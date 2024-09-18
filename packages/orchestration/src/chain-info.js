@@ -20,52 +20,7 @@ import { CosmosAssetInfoShape, CosmosChainInfoShape } from './typeGuards.js';
  */
 
 const knownChains = /** @satisfies {Record<string, ChainInfo>} */ (
-  harden({
-    ...fetchedChainInfo,
-    // FIXME does not have useful connections
-    // UNTIL https://github.com/Agoric/agoric-sdk/issues/9492
-    agoriclocal: {
-      chainId: 'agoriclocal',
-      connections: {
-        'cosmoshub-4': {
-          id: 'connection-1',
-          client_id: '07-tendermint-3',
-          counterparty: {
-            client_id: '07-tendermint-2',
-            connection_id: 'connection-1',
-          },
-          state: 3 /* IBCConnectionState.STATE_OPEN */,
-          transferChannel: {
-            portId: 'transfer',
-            channelId: 'channel-1',
-            counterPartyChannelId: 'channel-1',
-            counterPartyPortId: 'transfer',
-            ordering: 1 /* Order.ORDER_UNORDERED */,
-            state: 3 /* IBCConnectionState.STATE_OPEN */,
-            version: 'ics20-1',
-          },
-        },
-        osmosislocal: {
-          id: 'connection-0',
-          client_id: '07-tendermint-2',
-          counterparty: {
-            client_id: '07-tendermint-2',
-            connection_id: 'connection-1',
-          },
-          state: 3 /* IBCConnectionState.STATE_OPEN */,
-          transferChannel: {
-            portId: 'transfer',
-            channelId: 'channel-0',
-            counterPartyChannelId: 'channel-1',
-            counterPartyPortId: 'transfer',
-            ordering: 1 /* Order.ORDER_UNORDERED */,
-            state: 3 /* IBCConnectionState.STATE_OPEN */,
-            version: 'ics20-1',
-          },
-        },
-      },
-    },
-  })
+  harden(fetchedChainInfo)
 );
 
 /**
@@ -73,7 +28,7 @@ const knownChains = /** @satisfies {Record<string, ChainInfo>} */ (
  * @internal
  */
 
-// TODO(#9572): include this in registerChain
+// TODO(#9966, #9967): include this in registerChain
 /**
  * Register chain assets into agoricNames
  *
