@@ -3,6 +3,14 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.10.4-u17.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/deploy-script-support@0.10.4-u17.0...@agoric/deploy-script-support@0.10.4-u17.1) (2024-09-19)
+
+**Note:** Version bump only for package @agoric/deploy-script-support
+
+
+
+
+
 ### [0.10.4-u17.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/deploy-script-support@0.10.3...@agoric/deploy-script-support@0.10.4-u17.0) (2024-09-17)
 
 

@@ -1,6 +1,6 @@
 {
   "name": "@agoric/internal",
-  "version": "0.4.0-u17.0",
+  "version": "0.4.0-u17.1",
   "description": "Externally unsupported utilities internal to agoric-sdk",
   "type": "module",
   "main": "src/index.js",
@@ -20,7 +20,7 @@
     "lint:types": "tsc"
   },
   "dependencies": {
-    "@agoric/base-zone": "^0.1.1-u17.0",
+    "@agoric/base-zone": "^0.1.1-u17.1",
     "@endo/common": "^1.2.5",
     "@endo/errors": "^1.2.5",
     "@endo/far": "^1.1.5",
