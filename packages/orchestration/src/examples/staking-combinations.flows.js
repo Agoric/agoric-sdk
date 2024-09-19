@@ -8,7 +8,7 @@
  */
 
 import { mustMatch } from '@endo/patterns';
-import { makeError } from '@endo/errors';
+import { makeError, q } from '@endo/errors';
 import { makeTracer } from '@agoric/internal';
 import { ChainAddressShape } from '../typeGuards.js';
 
@@ -77,7 +77,9 @@ export const depositAndDelegate = async (
     await contractState.localAccount.transfer(give.Stake, address);
   } catch (cause) {
     await zoeTools.withdrawToSeat(contractState.localAccount, seat, give);
-    throw seat.fail(makeError('ibc transfer failed', undefined, { cause }));
+    const errMsg = makeError(`ibc transfer failed ${q(cause)}`);
+    seat.exit(errMsg);
+    throw errMsg;
   }
   seat.exit();
   await account.delegate(validator, give.Stake);

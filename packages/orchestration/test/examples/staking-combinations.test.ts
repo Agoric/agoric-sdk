@@ -229,7 +229,8 @@ test('start', async t => {
       },
     );
     await t.throwsAsync(vt.when(E(seat).getOfferResult()), {
-      message: 'ibc transfer failed',
+      message:
+        'ibc transfer failed "[Error: simulated unexpected MsgTransfer packet timeout]"',
     });
     await vt.when(E(seat).hasExited());
     const payouts = await E(seat).getPayouts();
