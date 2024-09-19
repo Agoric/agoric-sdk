@@ -12,7 +12,9 @@ import { makeFakeVirtualStuff } from './fakeVirtualSupport.js';
 
 const { WeakMap, WeakSet } = globalThis;
 
-/** @type {ReturnType<makeFakeVirtualStuff>} */
+/** @typedef {ReturnType<typeof makeFakeVirtualStuff>} FakeVomKit */
+
+/** @type {FakeVomKit} */
 let fakeVomKit;
 
 globalThis.VatData = harden({
@@ -44,10 +46,22 @@ globalThis.VatData = harden({
 
 globalThis[PassStyleOfEndowmentSymbol] = passStyleOf;
 
+/**
+ * @typedef {import("@agoric/internal").Simplify<
+ *   Omit<NonNullable<Parameters<typeof makeFakeVirtualStuff>[0]>, 'WeakMap' | 'WeakSet'> &
+ *   { fakeVomKit: FakeVomKit; fakeStore: Map<string, string> }
+ * >} ReincarnateOptions
+ */
+
+/**
+ *
+ * @param {Partial<ReincarnateOptions>} options
+ * @returns {ReincarnateOptions}
+ */
 export const reincarnate = (options = {}) => {
   const { fakeStore = new Map(), fakeVomKit: fvk } = options;
 
-  if (options.fakeVomKit) {
+  if (fvk) {
     fvk.vom.flushStateCache();
     fvk.cm.flushSchemaCache();
     fvk.vrm.flushIDCounters();
