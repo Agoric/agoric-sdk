@@ -1,3 +1,20 @@
+/**
+ * @file Helper functions for transferring payments between a LocalChainAccount
+ *   and a ZCFSeat.
+ *
+ *   Maintainers: This exists as an endowment for orchestrated async-flows so we
+ *   can make use of E and promises. The logic for recovering partial failures
+ *   is also an added convenience for developers.
+ *
+ *   Functions are written using `asVow` and non-resumable promises as we expect
+ *   each invocation to resolve promptly - there are no timers or interchain
+ *   network calls.
+ *
+ *   A promise resolved promptly is currently safe from being severed by an
+ *   upgrade because we only trigger vat upgrades as the result of network
+ *   input.
+ */
+
 import { makeError, q, Fail } from '@endo/errors';
 import { depositToSeat } from '@agoric/zoe/src/contractSupport/index.js';
 import { E } from '@endo/far';
@@ -5,10 +22,10 @@ import { E } from '@endo/far';
 const { assign, keys, values } = Object;
 
 /**
+ * @import {HostOf} from '@agoric/async-flow';
  * @import {InvitationMakers} from '@agoric/smart-wallet/src/types.js';
  * @import {ResolvedPublicTopic} from '@agoric/zoe/src/contractSupport/topics.js';
  * @import {VowTools} from '@agoric/vow';
- * @import {Zone} from '@agoric/zone';
  * @import {LocalAccountMethods} from '../types.js';
  */
 
@@ -38,25 +55,19 @@ const { assign, keys, values } = Object;
  */
 
 /**
- * @param {Zone} zone
- * @param {{ zcf: ZCF; vowTools: VowTools }} io
+ * @param {ZCF} zcf
+ * @param {VowTools} vowTools
  */
-export const makeZoeTools = (
-  zone,
-  { zcf, vowTools: { retriable, when, allVows, allSettled } },
-) => {
+export const makeZoeTools = (zcf, { when, allVows, allSettled, asVow }) => {
   /**
    * Transfer the `amounts` from `srcSeat` to `localAccount`. If any of the
    * deposits fail, everything will be rolled back to the `srcSeat`. Supports
    * multiple items in the `amounts` {@link AmountKeywordRecord}.
+   *
+   * @type {HostOf<LocalTransfer>}
    */
-  const localTransfer = retriable(
-    zone,
-    'localTransfer',
-    /**
-     * @type {LocalTransfer}
-     */
-    async (srcSeat, localAccount, amounts) => {
+  const localTransfer = (srcSeat, localAccount, amounts) =>
+    asVow(async () => {
       !srcSeat.hasExited() || Fail`The seat cannot have exited.`;
       const { zcfSeat: tempSeat, userSeat: userSeatP } = zcf.makeEmptySeatKit();
       const userSeat = await userSeatP;
@@ -114,21 +125,18 @@ export const makeZoeTools = (
         throw makeError(`One or more deposits failed ${q(errors)}`);
       }
       // TODO #9541 remove userSeat from baggage
-    },
-  );
+    });
 
   /**
    * Transfer the `amounts` from a `localAccount` to the `recipientSeat`. If any
    * of the withdrawals fail, everything will be rolled back to the
    * `srcLocalAccount`. Supports multiple items in the `amounts`
-   * {@link PaymentKeywordRecord}.
+   * {@link PaymentKeywordRecord}
+   *
+   * @type {HostOf<WithdrawToSeat>}
    */
-  const withdrawToSeat = retriable(
-    zone,
-    'withdrawToSeat',
-    /** @type {WithdrawToSeat} */
-    async (localAccount, destSeat, amounts) => {
-      await null;
+  const withdrawToSeat = (localAccount, destSeat, amounts) =>
+    asVow(async () => {
       !destSeat.hasExited() || Fail`The seat cannot have exited.`;
 
       const settledWithdrawals = await when(
@@ -167,12 +175,12 @@ export const makeZoeTools = (
         paymentKwr,
       );
       console.debug(depositResponse);
-    },
-  );
+    });
 
   return harden({
     localTransfer,
     withdrawToSeat,
   });
 };
+
 /** @typedef {ReturnType<typeof makeZoeTools>} ZoeTools */
