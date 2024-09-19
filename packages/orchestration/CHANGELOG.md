@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.2.0-u17.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/orchestration@0.2.0-u17.0...@agoric/orchestration@0.2.0-u17.1) (2024-09-19)
+
+
+### Bug Fixes
+
+* write-chain-info after u17 ([a25d3c6](https://github.com/Agoric/agoric-sdk/commit/a25d3c6b9c31e0d7bedf17ecb22463e9a5d3e5ba))
+
+
+
 ## 0.2.0-u17.0 (2024-09-17)
 
 

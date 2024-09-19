@@ -1,6 +1,6 @@
 {
   "name": "@agoric/kmarshal",
-  "version": "0.1.1-u17.0",
+  "version": "0.1.1-u17.1",
   "description": "Token-only marshaller for kernel and tests",
   "type": "module",
   "main": "./src/kmarshal.js",

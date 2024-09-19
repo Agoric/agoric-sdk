@@ -1,6 +1,6 @@
 {
   "name": "@agoric/network",
-  "version": "0.2.0-u17.0",
+  "version": "0.2.0-u17.1",
   "description": "Agoric's network protocol API",
   "type": "module",
   "main": "./src/index.js",
@@ -21,9 +21,9 @@
   "author": "Agoric",
   "license": "Apache-2.0",
   "dependencies": {
-    "@agoric/internal": "^0.4.0-u17.0",
-    "@agoric/store": "^0.9.3-u17.0",
-    "@agoric/vat-data": "^0.5.3-u17.0",
+    "@agoric/internal": "^0.4.0-u17.1",
+    "@agoric/store": "^0.9.3-u17.1",
+    "@agoric/vat-data": "^0.5.3-u17.1",
     "@endo/base64": "^1.0.7",
     "@endo/errors": "^1.2.5",
     "@endo/far": "^1.1.5",
@@ -32,10 +32,10 @@
     "@endo/promise-kit": "^1.1.5"
   },
   "devDependencies": {
-    "@agoric/swingset-liveslots": "^0.10.3-u17.0",
-    "@agoric/swingset-vat": "^0.33.0-u17.0",
-    "@agoric/vow": "^0.2.0-u17.0",
-    "@agoric/zone": "^0.3.0-u17.0",
+    "@agoric/swingset-liveslots": "^0.10.3-u17.1",
+    "@agoric/swingset-vat": "^0.33.0-u17.1",
+    "@agoric/vow": "^0.2.0-u17.1",
+    "@agoric/zone": "^0.3.0-u17.1",
     "@endo/bundle-source": "^3.4.0",
     "ava": "^5.3.0",
     "c8": "^9.1.0"
