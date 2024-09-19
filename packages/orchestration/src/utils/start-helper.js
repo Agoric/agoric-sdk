@@ -63,8 +63,6 @@ export const provideOrchestration = (
       orchestration: zone.subZone('orchestration'),
       /** system names for vows */
       vows: zone.subZone('vows'),
-      /** system names for zoe */
-      zoe: zone.subZone('zoe'),
       /** contract-provided names, and subzones */
       contract: zone.subZone('contract'),
     };
@@ -76,7 +74,7 @@ export const provideOrchestration = (
 
   const chainHub = makeChainHub(agoricNames, vowTools);
 
-  const zoeTools = makeZoeTools(zones.zoe, { zcf, vowTools });
+  const zoeTools = makeZoeTools(zcf, vowTools);
 
   const { makeRecorderKit } = prepareRecorderKitMakers(baggage, marshaller);
   const makeLocalOrchestrationAccountKit = prepareLocalOrchestrationAccountKit(
