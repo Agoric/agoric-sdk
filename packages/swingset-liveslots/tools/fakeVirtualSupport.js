@@ -275,6 +275,7 @@ export function makeFakeLiveSlotsStuff(options = {}) {
   return {
     syscall,
     allocateExportID,
+    allocatePromiseID,
     allocateCollectionID,
     getSlotForVal,
     requiredValForSlot,
