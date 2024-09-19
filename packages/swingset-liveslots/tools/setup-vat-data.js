@@ -56,10 +56,10 @@ globalThis[PassStyleOfEndowmentSymbol] = passStyleOf;
 /**
  *
  * @param {Partial<ReincarnateOptions>} options
- * @returns {ReincarnateOptions}
+ * @returns {Omit<ReincarnateOptions, 'fakeVomKit'>}
  */
-export const reincarnate = (options = {}) => {
-  const { fakeStore = new Map(), fakeVomKit: fvk } = options;
+export const flushIncarnation = (options = {}) => {
+  const { fakeVomKit: fvk = fakeVomKit, ...fakeStuffOptions } = options;
 
   if (fvk) {
     fvk.vom.flushStateCache();
@@ -67,9 +67,22 @@ export const reincarnate = (options = {}) => {
     fvk.vrm.flushIDCounters();
   }
 
+  // Clone previous fakeStore (if any) to avoid mutations from previous incarnation
+  const fakeStore = new Map(options.fakeStore);
+
+  return { ...fakeStuffOptions, fakeStore };
+};
+
+/**
+ *
+ * @param {Partial<ReincarnateOptions>} options
+ * @returns {ReincarnateOptions}
+ */
+export const reincarnate = (options = {}) => {
+  const clonedIncarnation = flushIncarnation(options);
+
   fakeVomKit = makeFakeVirtualStuff({
-    ...options,
-    fakeStore,
+    ...clonedIncarnation,
     WeakMap,
     WeakSet,
   });
@@ -79,5 +92,5 @@ export const reincarnate = (options = {}) => {
   // @ts-expect-error ditto
   globalThis.WeakSet = fakeVomKit.vom.VirtualObjectAwareWeakSet;
 
-  return { ...options, fakeStore, fakeVomKit };
+  return { ...clonedIncarnation, fakeVomKit };
 };
