@@ -9,7 +9,7 @@ import { makeNetstringWriter } from '@endo/netstring';
 import { makeNodeWriter } from '@endo/stream-node';
 import { makePromiseKit } from '@endo/promise-kit';
 import { options } from './message-tools.js';
-import { xsnap } from '../src/xsnap.js';
+import { xsnap, QUERY_RESPONSE_BUF } from '../src/xsnap.js';
 
 test('xsnap-worker complains while waiting for answer when parent is killed', async t => {
   const exitedPKit = makePromiseKit();
@@ -152,7 +152,7 @@ test('xsnap-worker complains while trying to WRITE when pipes are closed', async
       // attempt to write out return value from its own "handleCommand()"
       // into a pipe which we've just closed above.
       await makeNetstringWriter(makeNodeWriter(worker.toXsnap)).next([
-        new TextEncoder().encode('/') /* QUERY_RESPONSE_BUF */,
+        QUERY_RESPONSE_BUF,
         new Uint8Array(),
       ]);
       worker.toXsnap.end();

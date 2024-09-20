@@ -27,7 +27,7 @@ const decoder = new TextDecoder();
 
 const COMMAND_BUF = encoder.encode('?');
 const QUERY = '?'.charCodeAt(0);
-const QUERY_RESPONSE_BUF = encoder.encode('/');
+export const QUERY_RESPONSE_BUF = encoder.encode('/');
 const OK = '.'.charCodeAt(0);
 const ERROR = '!'.charCodeAt(0);
 
