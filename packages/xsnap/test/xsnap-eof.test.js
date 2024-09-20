@@ -17,34 +17,39 @@ import { xsnap, QUERY_RESPONSE_BUF } from '../src/xsnap.js';
 
 /**
  * @typedef {Omit<import("child_process").ChildProcess, 'stdio'> &
-*   {
-*     stdin: null;
-*     stdout: null;
-*     stderr: Readable;
-*     readonly stdio: [null, null, Readable, Duplex, Duplex, undefined, undefined, Duplex, Duplex];
-*   }
-* } XsnapChildProcess
-*/
+ *   {
+ *     stdin: null;
+ *     stdout: null;
+ *     stderr: Readable;
+ *     readonly stdio: [null, null, Readable, Duplex, Duplex, undefined, undefined, Duplex, Duplex];
+ *   }
+ * } XsnapChildProcess
+ */
 
 test('xsnap-worker complains while waiting for answer when parent is killed', async t => {
   const exitedPKit = makePromiseKit();
 
-  const p =
+  const child =
     /** @type {import("child_process").ChildProcessWithoutNullStreams} */ (
       proc.fork(
-        fileURLToPath(new URL('./fixture-xsnap-eof.js', import.meta.url)),
+        fileURLToPath(
+          new URL(
+            './fixture-xsnap-kill-parent-in-handlecommand.js',
+            import.meta.url,
+          ),
+        ),
         { stdio: ['ignore', 'pipe', 'pipe', 'ipc'] },
       )
     );
 
-  const outP = text(p.stdout);
-  const errP = text(p.stderr);
+  const outP = text(child.stdout);
+  const errP = text(child.stderr);
 
-  p.on('error', err => {
+  child.on('error', err => {
     exitedPKit.reject(err);
   });
 
-  p.on('exit', (code, signal) => {
+  child.on('exit', (code, signal) => {
     exitedPKit.resolve({ code, signal });
   });
 
@@ -69,7 +74,7 @@ async function spawnReflectiveWorker(handleCommand) {
   /** @type {typeof import('child_process').spawn} */
   const spawnSpy = (...args) => {
     // @ts-expect-error overloaded signature
-    const cp = proc.spawn(...args)
+    const cp = proc.spawn(...args);
     xsnapProcess = cp;
     return cp;
   };
@@ -149,10 +154,14 @@ test('xsnap-worker complains while trying to READ an answer when pipes are close
     vatExitSignal,
   } = await issueCommandAndWait(worker);
 
-  t.not(issueCommandError, undefined, 'issueCommand() must produce and error');
-  t.not(vatCloseError, 'vat.close() must produce and error');
+  t.not(issueCommandError, undefined, 'issueCommand() must produce an error');
+  t.not(vatCloseError, 'vat.close() must produce an error');
   t.is(vatExitSignal, null, 'vat exit signal must be null');
-  t.is(vatExitCode, 2 /* E_IO_ERROR */, 'vat exit code must be 2');
+  t.is(
+    vatExitCode,
+    2 /* E_IO_ERROR */,
+    'vat exit code must indicate an IO error',
+  );
   t.is(
     strErr,
     'Got EOF on netstring read. Has parent died?\n',
@@ -188,10 +197,14 @@ test('xsnap-worker complains while trying to WRITE when pipes are closed', async
     vatExitSignal,
   } = await issueCommandAndWait(worker);
 
-  t.not(issueCommandError, undefined, 'issueCommand() must produce and error');
-  t.not(vatCloseError, 'vat.close() must produce and error');
+  t.not(issueCommandError, undefined, 'issueCommand() must produce an error');
+  t.not(vatCloseError, 'vat.close() must produce an error');
   t.is(vatExitSignal, null, 'vat exit signal must be null');
-  t.is(vatExitCode, 2 /* E_IO_ERROR */, 'vat exit code must be 2');
+  t.is(
+    vatExitCode,
+    2 /* E_IO_ERROR */,
+    'vat exit code must indicate an IO error',
+  );
   t.is(
     strErr,
     'Caught SIGPIPE. Has parent died?\n',
