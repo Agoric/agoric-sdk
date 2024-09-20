@@ -1,93 +1,58 @@
-/* global setTimeout */
-
 import test from 'ava';
 import * as proc from 'child_process';
 import * as os from 'os';
 import fs from 'fs';
-import process from 'node:process';
+import { fileURLToPath, URL } from 'url';
 import { tmpName } from 'tmp';
-import { xsnap } from '../src/xsnap.js';
+import { text } from 'stream/consumers';
+import { makeNetstringWriter } from '@endo/netstring';
+import { makeNodeWriter } from '@endo/stream-node';
+import { makePromiseKit } from '@endo/promise-kit';
 import { options } from './message-tools.js';
-
-const sleep = ms => new Promise(res => setTimeout(res, ms));
-
-async function waitFor(conditionFn) {
-  while (!conditionFn()) {
-    await sleep(100);
-  }
-}
+import { xsnap } from '../src/xsnap.js';
 
 test('xsnap-worker complains while waiting for answer when parent is killed', async t => {
-  const parentText = `
-        import * as proc from 'child_process';
-        import * as os from 'os';
-        import fs from 'fs';
-        import process from 'node:process';
-        import { tmpName } from 'tmp';
-        import '@endo/init';
-        import { xsnap } from '../src/xsnap.js';
-        import { options, decode, encode, loader } from './message-tools.js';
-        import console from 'console';
-        const io = { spawn: proc.spawn, os: os.type(), fs, tmpName };
+  const exitedPKit = makePromiseKit();
 
-        async function handleCommand(message) {
-            process.kill(process.pid, 'SIGKILL');
-            return new Uint8Array();
-        }
+  const p =
+    /** @type {import("child_process").ChildProcessWithoutNullStreams} */ (
+      proc.fork(
+        fileURLToPath(new URL('./fixture-xsnap-eof.js', import.meta.url)),
+        { stdio: ['ignore', 'pipe', 'pipe', 'ipc'] },
+      )
+    );
 
-        const vat = await xsnap({ ...options(io), handleCommand });
-        await vat.evaluate('function handleCommand(message) { issueCommand(new Uint8Array().buffer); };');
-        await vat.issueStringCommand('0');
-        console.error('Error: parent was not killed!');
-        await vat.close();
-    `;
-
-  let nodeExited = false;
-  let nodeError = null;
-  let nodeExitCode = null;
-  let nodeExitSignal = null;
-  let strOut = '';
-  let strErr = '';
-
-  const p = proc.spawn('node', ['--input-type=module', '-e', parentText], {
-    cwd: `${process.cwd()}/test`,
-  });
-
-  p.stdout.on('data', data => {
-    strOut = `${strOut}${data}`;
-  });
-
-  p.stderr.on('data', data => {
-    strErr = `${strErr}${data}`;
-  });
+  const outP = text(p.stdout);
+  const errP = text(p.stderr);
 
   p.on('error', err => {
-    nodeError = err;
+    exitedPKit.reject(err);
   });
 
   p.on('exit', (code, signal) => {
-    nodeExited = true;
-    nodeExitCode = code;
-    nodeExitSignal = signal;
+    exitedPKit.resolve({ code, signal });
   });
 
-  p.stdin.end();
+  const [strOut, strErr, { code: nodeExitCode, signal: nodeExitSignal }] =
+    await Promise.all([outP, errP, exitedPKit.promise]);
 
-  await waitFor(() => {
-    return nodeExited;
-  });
-
-  t.is(`${strOut}`, ``, 'wrong stdout output');
-  t.regex(`${strErr}`, /Has parent died\?/, 'wrong stderr output');
-  t.is(nodeError, null, 'parent returned an error');
-  t.is(nodeExited, true, 'parent did not exit');
-  t.is(nodeExitCode, null, 'parent exit code is not null');
-  t.is(`${nodeExitSignal}`, `SIGKILL`, 'wrong parent exit signal');
+  t.is(strOut, '', 'stdout must be empty');
+  t.regex(
+    strErr,
+    /Has parent died\?/,
+    'stderr must contain "Has parent died?"',
+  );
+  t.is(nodeExitCode, null, 'exit code must be null');
+  t.is(nodeExitSignal, 'SIGKILL', 'exit signal must be "SIGKILL"');
 });
 
-async function doSetup(handleCommand) {
+async function spawnReflectiveWorker(handleCommand) {
+  const exitedPKit = makePromiseKit();
   let xsnapProcess;
+
+  /** @type {typeof import('child_process').spawn} */
   const spawnSpy = (...args) => {
+    // @ts-expect-error overloaded signature
     xsnapProcess = proc.spawn(...args);
     return xsnapProcess;
   };
@@ -97,59 +62,26 @@ async function doSetup(handleCommand) {
   await vat.evaluate(
     'function handleCommand(message) { issueCommand(new Uint8Array().buffer); };',
   );
-  return { vat, xsnapProcess };
+
+  const toXsnap = xsnapProcess.stdio[3];
+  const fromXsnap = xsnapProcess.stdio[4];
+  const stderrP = text(xsnapProcess.stderr);
+
+  xsnapProcess.on('error', err => {
+    exitedPKit.reject(err);
+  });
+
+  xsnapProcess!.on('exit', (code, signal) => {
+    exitedPKit.resolve({ code, signal });
+  });
+
+  return { vat, xsnapProcess, toXsnap, fromXsnap, stderrP, exitedPKit };
 }
 
-test('xsnap-worker complains while trying to READ an answer when pipes are closed', async t => {
-  let xsnapProcess;
-  let toXsnap;
-  let fromXsnap;
+async function issueCommandAndWait(worker) {
   let issueCommandError;
   let vatCloseError;
-  let vatExitCode;
-  let vatExitSignal;
-  let strErr = '';
-
-  async function handleCommand(_message) {
-    // suspend the child process so the pipes appear
-    // to close atomically from its perspective
-    xsnapProcess.kill('SIGSTOP');
-    // wait for signal delivery
-    await waitFor(() => {
-      return xsnapProcess.killed;
-    });
-
-    // close the pipes
-    toXsnap.end();
-    toXsnap.destroy();
-    fromXsnap.end();
-    fromXsnap.destroy();
-
-    // un-suspend the child process
-    xsnapProcess.kill('SIGCONT');
-    // wait for signal delivery
-    await waitFor(() => {
-      return xsnapProcess.killed;
-    });
-
-    return new Uint8Array();
-  }
-
-  const setup = await doSetup(handleCommand);
-  const { vat } = setup;
-  ({ xsnapProcess } = setup);
-
-  toXsnap = xsnapProcess.stdio[3];
-  fromXsnap = xsnapProcess.stdio[4];
-
-  xsnapProcess.on('exit', (code, signal) => {
-    vatExitCode = code;
-    vatExitSignal = signal;
-  });
-
-  xsnapProcess.stdio[2].on('data', data => {
-    strErr = `${strErr}${data}`;
-  });
+  const { vat, stderrP, exitedPKit } = worker;
 
   try {
     // this will error out since we are intentionally
@@ -159,10 +91,9 @@ test('xsnap-worker complains while trying to READ an answer when pipes are close
     issueCommandError = err;
   }
 
-  // wait for the child to exit
-  await waitFor(() => {
-    return vatExitCode || vatExitSignal;
-  });
+  // wait for the worker to exit
+  const [strErr, { code: vatExitCode, signal: vatExitSignal }] =
+    await Promise.all([stderrP, exitedPKit.promise]);
 
   try {
     // this will error out since vat has died.
@@ -170,99 +101,81 @@ test('xsnap-worker complains while trying to READ an answer when pipes are close
   } catch (err) {
     vatCloseError = err;
   }
-  t.truthy(issueCommandError, 'issueCommand() did not error out');
-  t.truthy(vatCloseError, 'vat.close() did not error out');
-  t.falsy(vatExitSignal, 'wrong vat exit signal');
-  t.is(vatExitCode, 2 /* E_IO_ERROR */, 'wrong vat exit code');
+  return {
+    issueCommandError,
+    vatCloseError,
+    strErr,
+    vatExitCode,
+    vatExitSignal,
+  };
+}
+
+test('xsnap-worker complains while trying to READ an answer when pipes are closed', async t => {
+  const worker = await spawnReflectiveWorker(
+    async function handleCommand(_message) {
+      // the worker is blocked on read here, so we should close "fromXsnap" pipe first
+      worker.fromXsnap.end();
+      worker.fromXsnap.destroy();
+      worker.toXsnap.end();
+      worker.toXsnap.destroy();
+      return new Uint8Array();
+    },
+  );
+
+  const {
+    issueCommandError,
+    vatCloseError,
+    strErr,
+    vatExitCode,
+    vatExitSignal,
+  } = await issueCommandAndWait(worker);
+
+  t.not(issueCommandError, undefined, 'issueCommand() must produce and error');
+  t.not(vatCloseError, 'vat.close() must produce and error');
+  t.is(vatExitSignal, null, 'vat exit signal must be null');
+  t.is(vatExitCode, 2 /* E_IO_ERROR */, 'vat exit code must be 2');
   t.is(
     strErr,
     'Got EOF on netstring read. Has parent died?\n',
-    'wrong vat stderr message',
+    'stderr must be "Got EOF on netstring read. Has parent died?"',
   );
 });
 
 test('xsnap-worker complains while trying to WRITE when pipes are closed', async t => {
-  let xsnapProcess;
-  let toXsnap;
-  let fromXsnap;
-  let issueCommandError;
-  let vatCloseError;
-  let vatExitCode;
-  let vatExitSignal;
-  let strErr = '';
+  const worker = await spawnReflectiveWorker(
+    async function handleCommand(_message) {
+      // the worker is blocked on read here, so we should close "fromXsnap" pipe first
+      worker.fromXsnap.end();
+      worker.fromXsnap.destroy();
+      // write a fake but valid response into a pipe buffer,
+      // forcing the worker to move to the next state where it would
+      // attempt to write out return value from its own "handleCommand()"
+      // into a pipe which we've just closed above.
+      await makeNetstringWriter(makeNodeWriter(worker.toXsnap)).next([
+        new TextEncoder().encode('/') /* QUERY_RESPONSE_BUF */,
+        new Uint8Array(),
+      ]);
+      worker.toXsnap.end();
+      worker.toXsnap.destroy();
+      return new Uint8Array();
+    },
+  );
 
-  async function handleCommand(_message) {
-    // suspend the child process so the pipes appear
-    // to close atomically from its perspective
-    await xsnapProcess.kill('SIGSTOP');
-    // wait for signal delivery
-    await waitFor(() => {
-      return xsnapProcess.killed;
-    });
-    fromXsnap.end();
-    fromXsnap.destroy();
-    // write a fake but valid response into a pipe buffer,
-    // forcing the worker to move to the next state where it would
-    // attempt to write out return value from its own "handleCommand()"
-    // into a pipe which we've just closed above.
-    toXsnap.write('2:/0,\n');
-    toXsnap.end();
-    toXsnap.destroy();
+  const {
+    issueCommandError,
+    vatCloseError,
+    strErr,
+    vatExitCode,
+    vatExitSignal,
+  } = await issueCommandAndWait(worker);
 
-    // Release the kraken!
-    await xsnapProcess.kill('SIGCONT');
-    // wait for signal delivery
-    await waitFor(() => {
-      return xsnapProcess.killed;
-    });
-
-    //
-    return new Uint8Array();
-  }
-
-  const setup = await doSetup(handleCommand);
-  const { vat } = setup;
-  ({ xsnapProcess } = setup);
-
-  toXsnap = xsnapProcess.stdio[3];
-  fromXsnap = xsnapProcess.stdio[4];
-
-  xsnapProcess.on('exit', (code, signal) => {
-    vatExitCode = code;
-    vatExitSignal = signal;
-  });
-
-  xsnapProcess.stdio[2].on('data', data => {
-    strErr = `${strErr}${data}`;
-  });
-
-  try {
-    // this will error out since we are intentionally
-    // breaking communications with the worker
-    await vat.issueStringCommand('0');
-  } catch (err) {
-    issueCommandError = err;
-  }
-
-  // wait for the child to exit
-  await waitFor(() => {
-    return vatExitCode || vatExitSignal;
-  });
-
-  try {
-    // this will error out since vat has died.
-    await vat.close();
-  } catch (err) {
-    vatCloseError = err;
-  }
-
-  t.truthy(issueCommandError, 'issueCommand() did not error out');
-  t.truthy(vatCloseError, 'vat.close() did not error out');
-  t.falsy(vatExitSignal, 'wrong vat exit signal');
-  t.is(vatExitCode, 2 /* E_IO_ERROR */, 'wrong vat exit code');
+  t.not(issueCommandError, undefined, 'issueCommand() must produce and error');
+  t.not(vatCloseError, 'vat.close() must produce and error');
+  t.is(vatExitSignal, null, 'vat exit signal must be null');
+  t.is(vatExitCode, 2 /* E_IO_ERROR */, 'vat exit code must be 2');
   t.is(
     strErr,
     'Caught SIGPIPE. Has parent died?\n',
-    'wrong vat stderr message',
+    'stderr must be "Caught SIGPIPE. Has parent died?"',
   );
 });
