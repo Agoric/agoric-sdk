@@ -7,7 +7,7 @@ import { makeChainHub } from '../exos/chain-hub.js';
 
 /**
  * @import {IBCConnectionID} from '@agoric/vats';
- * @import {StakeIcaSF,  StakeIcaTerms} from '../examples/stakeIca.contract';
+ * @import {StakeIcaSF,  StakeIcaTerms} from '../examples/stake-ica.contract';
  */
 
 const trace = makeTracer('StartStakeAtom', true);
@@ -17,7 +17,7 @@ const trace = makeTracer('StartStakeAtom', true);
  *   installation: {
  *     consume: {
  *       stakeIca: Installation<
- *         import('../examples/stakeIca.contract.js').start
+ *         import('../examples/stake-ica.contract.js').start
  *       >;
  *     };
  *   };

@@ -9,7 +9,7 @@ export const defaultProposalBuilder = async ({ publishRef, install }) => {
       {
         installKeys: {
           stakeIca: publishRef(
-            install('@agoric/orchestration/src/examples/stakeIca.contract.js'),
+            install('@agoric/orchestration/src/examples/stake-ica.contract.js'),
           ),
         },
       },

@@ -10,7 +10,7 @@ const trace = makeTracer('StartStakeBld', true);
  *   installation: {
  *     consume: {
  *       stakeBld: Installation<
- *         import('../../src/examples/stakeBld.contract.js').start
+ *         import('../../src/examples/stake-bld.contract.js').start
  *       >;
  *     };
  *   };
@@ -50,7 +50,7 @@ export const startStakeBld = async ({
 
   /**
    * @type {StartUpgradableOpts<
-   *   import('../../src/examples/stakeBld.contract.js').start
+   *   import('../../src/examples/stake-bld.contract.js').start
    * >}
    */
   const startOpts = {

@@ -5,13 +5,12 @@ This directory contains sample contracts showcasing the Orchestration API. Each 
 - **basic-flows.contract.js**: Account creation and query sending
 - **send-anywhere.contract.js**: Token sending across supported blockchains
 - **auto-stake-it.contract.js**: Automatic remote staking of received tokens
+- **unbond.contract.js**: Cross-chain unbonding and transfer
 
 ## In Progress
 
 The following contracts are a work in progress as they contain bindings that need to be promptly updated. 
 
-- **stakeIca.contract.js**: Interchain account creation for remote staking
-- **unbond.contract.js**: Cross-chain unbonding and liquid staking
+- **stake-bld.contract.js**: BLD token staking on Agoric
+- **stake-ica.contract.js**: Interchain account creation for remote staking
 - **swap.contract.js**: Token swapping and remote staking
-- **stakeBld.contract.js**: BLD token staking on Agoric
-
