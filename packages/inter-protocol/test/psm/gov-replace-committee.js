@@ -1,6 +1,11 @@
 /* global E */
 // @ts-check
-/// <reference types="@agoric/vats/src/core/core-eval-env" />
+/// <reference types="@agoric/vats/src/core/core-eval-env"/>
+/// <reference types="@agoric/vats/src/core/types-ambient"/>
+
+/**
+ * @import {NameAdmin} from '@agoric/vats';
+ */
 
 /**
  * @file Script to replace the econ governance committee in a SwingSet Core Eval
@@ -25,7 +30,15 @@ const { values } = Object;
 /** @type {<X, Y>(xs: X[], ys: Y[]) => [X, Y][]} */
 const zip = (xs, ys) => xs.map((x, i) => [x, ys[i]]);
 
+/**
+ * @param {NameAdmin} nameAdmin
+ * @param {string[][]} paths
+ */
 const reserveThenGetNamePaths = async (nameAdmin, paths) => {
+  /**
+   * @param {NameAdmin} nextAdmin
+   * @param {string[]} path
+   */
   const nextPath = async (nextAdmin, path) => {
     const [nextName, ...rest] = path;
     assert.typeof(nextName, 'string');
@@ -86,6 +99,7 @@ const invitePSMCommitteeMembers = async (
   ).getVoterInvitations();
   assert.equal(invitations.length, values(voterAddresses).length);
 
+  /** @param {[string, Promise<Invitation>][]} addrInvitations */
   const distributeInvitations = async addrInvitations => {
     await Promise.all(
       addrInvitations.map(async ([addr, invitationP]) => {
@@ -93,14 +107,14 @@ const invitePSMCommitteeMembers = async (
           invitationP,
           E(E.get(econCharterKit).creatorFacet).makeCharterMemberInvitation(),
         ]);
-        console.log('sending charter, voting invitations to', addr);
+        trace('sending charter, voting invitations to', addr);
         await reserveThenDeposit(
           `econ committee member ${addr}`,
           namesByAddressAdmin,
           addr,
           [voterInvitation, charterMemberInvitation],
         );
-        console.log('sent charter, voting invitations to', addr);
+        trace('sent charter, voting invitations to', addr);
       }),
     );
   };
@@ -109,6 +123,15 @@ const invitePSMCommitteeMembers = async (
 };
 harden(invitePSMCommitteeMembers);
 
+/**
+ * Convenience function for returning a storage node at or under its input,
+ * falling back to an inert object with the correct interface (but incomplete
+ * behavior) when that is unavailable.
+ *
+ * @param {ERef<StorageNode>} storageNodeRef
+ * @param {string} childName
+ * @returns {Promise<StorageNode>}
+ */
 async function makeStorageNodeChild(storageNodeRef, childName) {
   return E(storageNodeRef).makeChildNode(childName);
 }
@@ -146,8 +169,6 @@ const startNewEconomicCommittee = async ({
     produce: { economicCommittee },
   },
 }) => {
-  console.log('fraz startNewEconomicCommittee');
-
   const COMMITTEES_ROOT = 'committees';
   trace('startNewEconomicCommittee');
   const { committeeName } = runConfig;
@@ -166,8 +187,9 @@ const startNewEconomicCommittee = async ({
   // NB: committee must only publish what it intended to be public
   const marshaller = await E(board).getPublishingMarshaller();
 
+  trace('Starting new EC Committee Instance');
   const { instance, creatorFacet } = await E(zoe).startInstance(
-    committee, // aka electorate
+    committee,
     {},
     { committeeName, committeeSize },
     {
@@ -176,13 +198,13 @@ const startNewEconomicCommittee = async ({
     },
     'economicCommittee',
   );
+  trace('Started new EC Committee Instance Successfully');
 
   const newPoserInvitationP = E(creatorFacet).getPoserInvitation();
 
   economicCommittee.reset();
   economicCommittee.resolve(instance);
 
-  // reset because it's already been resolved
   economicCommitteeCreatorFacet.reset();
   economicCommitteeCreatorFacet.resolve(creatorFacet);
   return newPoserInvitationP;
@@ -207,87 +229,35 @@ const startNewEconCharter = async ({
     binaryVoteCounterInstallation: counterInstall,
   });
 
-  const startResult = E(zoe).startInstance(
+  trace('Starting new EC Charter Instance');
+  const startResult = await E(zoe).startInstance(
     charterInstall,
     undefined,
     terms,
     undefined,
     'econCommitteeCharter',
   );
+  trace('Started new EC Charter Instance Successfully');
+
   instanceP.resolve(E.get(startResult).instance);
   econCharterKit.resolve(startResult);
 };
 harden(startNewEconCharter);
 
-const clearAll = async ({ consume: { econCharterKit } }) => {
-  console.log('fraz clearAll');
-  await E(E.get(econCharterKit).creatorFacet).clearInstances();
-  console.log('fraz after clearing instances');
-};
-harden(clearAll);
-
-const addGovernorsToEconCharter = async ({
-  consume: { reserveKit, vaultFactoryKit, econCharterKit, auctioneerKit },
-  instance: {
-    consume: { reserve, VaultFactory, auctioneer },
-  },
-}) => {
-  const { creatorFacet } = E.get(econCharterKit);
-
-  await Promise.all(
-    [
-      {
-        label: 'reserve',
-        instanceP: reserve,
-        facetP: E.get(reserveKit).governorCreatorFacet,
-      },
-      {
-        label: 'VaultFactory',
-        instanceP: VaultFactory,
-        facetP: E.get(vaultFactoryKit).governorCreatorFacet,
-      },
-      {
-        label: 'auctioneer',
-        instanceP: auctioneer,
-        facetP: E.get(auctioneerKit).governorCreatorFacet,
-      },
-    ].map(async ({ label, instanceP, facetP }) => {
-      const [instance, govFacet] = await Promise.all([instanceP, facetP]);
-
-      return E(creatorFacet).addInstance(instance, govFacet, label);
-    }),
-  );
-};
-
-harden(addGovernorsToEconCharter);
-
 const main = async permittedPowers => {
-  // console.log("fraz in main")
-  // await addGovernorsToEconCharter(permittedPowers)
-  console.log('fraz before startNewEconomicCommittee');
   const newElectoratePoser = await startNewEconomicCommittee(permittedPowers);
-
   await startNewEconCharter(permittedPowers);
-  /*
-   * put the new economic committee into agoricNames
-   */
 
-  /*
-   * tell all the PSM contracts about it
-   */
   const psmKitMap = await permittedPowers.consume.psmKit;
-  // TODO make sure new PSMs get this committee (using ".reset" in the space?)
   const replacements = [...psmKitMap.values()].map(psmKit =>
     E(psmKit.psmGovernorCreatorFacet).replaceElectorate(newElectoratePoser),
   );
   await Promise.all(replacements);
 
-  /*
-   * use economicCommitteeCreatorFacet in the space to invite those commitee members
-   */
   await invitePSMCommitteeMembers(permittedPowers, {
     options: { voterAddresses: runConfig.economicCommitteeAddresses },
   });
+
   // somethign with the PSM charter?
 
   /*
@@ -295,7 +265,7 @@ const main = async permittedPowers => {
    */
 
   // done
-  console.log('installed new economic committee');
+  trace('Installed New Economic Committee');
 };
 
 /**
