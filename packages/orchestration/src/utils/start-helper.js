@@ -79,7 +79,15 @@ export const provideOrchestration = (
   const { makeRecorderKit } = prepareRecorderKitMakers(baggage, marshaller);
   const makeLocalOrchestrationAccountKit = prepareLocalOrchestrationAccountKit(
     zones.orchestration,
-    { makeRecorderKit, zcf, timerService, vowTools, chainHub, localchain },
+    {
+      makeRecorderKit,
+      zcf,
+      timerService,
+      vowTools,
+      chainHub,
+      localchain,
+      zoeTools,
+    },
   );
 
   const asyncFlowTools = prepareAsyncFlowTools(zones.asyncFlow, {

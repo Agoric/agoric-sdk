@@ -180,3 +180,13 @@ export const TxBodyOptsShape = M.splitRecord(
     nonCriticalExtensionOptions: M.arrayOf(M.any()),
   },
 );
+
+/**
+ * Ensures at least one {@link AmountKeywordRecord} entry is present and only
+ * permits Nat (fungible) amounts.
+ */
+export const AnyNatAmountsRecord = M.and(
+  M.recordOf(M.string(), AnyNatAmountShape),
+  M.not(harden({})),
+);
+harden(AnyNatAmountsRecord);

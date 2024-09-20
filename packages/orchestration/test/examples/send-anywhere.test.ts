@@ -13,7 +13,7 @@ import { SIMULATED_ERRORS } from '@agoric/vats/tools/fake-bridge.js';
 import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
 import { CosmosChainInfo, IBCConnectionInfo } from '../../src/cosmos-api.js';
 import { commonSetup } from '../supports.js';
-import { SingleAmountRecord } from '../../src/examples/send-anywhere.contract.js';
+import { SingleNatAmountRecord } from '../../src/examples/send-anywhere.contract.js';
 import { registerChain } from '../../src/chain-info.js';
 
 const dirname = path.dirname(new URL(import.meta.url).pathname);
@@ -48,10 +48,10 @@ test('single amount proposal shape (keyword record)', async t => {
     ],
   });
   for (const give of cases.good) {
-    t.notThrows(() => mustMatch(give, SingleAmountRecord));
+    t.notThrows(() => mustMatch(give, SingleNatAmountRecord));
   }
   for (const { give, msg } of cases.bad) {
-    t.throws(() => mustMatch(give, SingleAmountRecord), {
+    t.throws(() => mustMatch(give, SingleNatAmountRecord), {
       message: msg,
     });
   }
