@@ -71,7 +71,7 @@ async function spawnReflectiveWorker(handleCommand) {
     exitedPKit.reject(err);
   });
 
-  xsnapProcess!.on('exit', (code, signal) => {
+  xsnapProcess.on('exit', (code, signal) => {
     exitedPKit.resolve({ code, signal });
   });
 
