@@ -10,6 +10,7 @@ import { makeNodeWriter } from '@endo/stream-node';
 import { makePromiseKit } from '@endo/promise-kit';
 import { options } from './message-tools.js';
 import { xsnap, QUERY_RESPONSE_BUF } from '../src/xsnap.js';
+import { ExitCode } from '../api.js';
 
 /**
  * @import { Readable, Writable, Duplex } from 'stream'
@@ -134,17 +135,13 @@ async function issueCommandAndWait(worker) {
   };
 }
 
-test('xsnap-worker complains while trying to READ an answer when pipes are closed', async t => {
-  const worker = await spawnReflectiveWorker(
-    async function handleCommand(_message) {
-      // the worker is blocked on read here, so we should close "fromXsnap" pipe first
-      worker.fromXsnap.end();
-      worker.fromXsnap.destroy();
-      worker.toXsnap.end();
-      worker.toXsnap.destroy();
-      return new Uint8Array();
-    },
-  );
+const testInterruption = test.macro(async (t, onRequest, expectedStderr) => {
+  const handleCommand = message => {
+    // @ts-expect-error onRequest is untyped
+    // eslint-disable-next-line no-use-before-define
+    return onRequest(worker, message);
+  };
+  const worker = await spawnReflectiveWorker(handleCommand);
 
   const {
     issueCommandError,
@@ -159,55 +156,44 @@ test('xsnap-worker complains while trying to READ an answer when pipes are close
   t.is(vatExitSignal, null, 'vat exit signal must be null');
   t.is(
     vatExitCode,
-    2 /* E_IO_ERROR */,
+    ExitCode.E_IO_ERROR,
     'vat exit code must indicate an IO error',
   );
-  t.is(
-    strErr,
-    'Got EOF on netstring read. Has parent died?\n',
-    'stderr must be "Got EOF on netstring read. Has parent died?"',
-  );
+  t.is(strErr, expectedStderr, 'stderr must indicate expected error');
 });
 
-test('xsnap-worker complains while trying to WRITE when pipes are closed', async t => {
-  const worker = await spawnReflectiveWorker(
-    async function handleCommand(_message) {
-      // the worker is blocked on read here, so we should close "fromXsnap" pipe first
-      worker.fromXsnap.end();
-      worker.fromXsnap.destroy();
-      // write a fake but valid response into a pipe buffer,
-      // forcing the worker to move to the next state where it would
-      // attempt to write out return value from its own "handleCommand()"
-      // into a pipe which we've just closed above.
-      await makeNetstringWriter(makeNodeWriter(worker.toXsnap)).next([
-        QUERY_RESPONSE_BUF,
-        new Uint8Array(),
-      ]);
-      worker.toXsnap.end();
-      worker.toXsnap.destroy();
-      return new Uint8Array();
-    },
-  );
+test(
+  'xsnap-worker complains while trying to READ an answer when pipes are closed',
+  testInterruption,
+  async function onRequest(worker, _message) {
+    // the worker is blocked on read here, so we should close "fromXsnap" pipe first
+    worker.fromXsnap.end();
+    worker.fromXsnap.destroy();
+    worker.toXsnap.end();
+    worker.toXsnap.destroy();
+    return new Uint8Array();
+  },
+  'Got EOF on netstring read. Has parent died?\n',
+);
 
-  const {
-    issueCommandError,
-    vatCloseError,
-    strErr,
-    vatExitCode,
-    vatExitSignal,
-  } = await issueCommandAndWait(worker);
-
-  t.not(issueCommandError, undefined, 'issueCommand() must produce an error');
-  t.not(vatCloseError, 'vat.close() must produce an error');
-  t.is(vatExitSignal, null, 'vat exit signal must be null');
-  t.is(
-    vatExitCode,
-    2 /* E_IO_ERROR */,
-    'vat exit code must indicate an IO error',
-  );
-  t.is(
-    strErr,
-    'Caught SIGPIPE. Has parent died?\n',
-    'stderr must be "Caught SIGPIPE. Has parent died?"',
-  );
-});
+test(
+  'xsnap-worker complains while trying to WRITE an answer when pipes are closed',
+  testInterruption,
+  async function onRequest(worker, _message) {
+    // the worker is blocked on read here, so we should close "fromXsnap" pipe first
+    worker.fromXsnap.end();
+    worker.fromXsnap.destroy();
+    // write a fake but valid response into a pipe buffer,
+    // forcing the worker to move to the next state where it would
+    // attempt to write out return value from its own "handleCommand()"
+    // into a pipe which we've just closed above.
+    await makeNetstringWriter(makeNodeWriter(worker.toXsnap)).next([
+      QUERY_RESPONSE_BUF,
+      new Uint8Array(),
+    ]);
+    worker.toXsnap.end();
+    worker.toXsnap.destroy();
+    return new Uint8Array();
+  },
+  'Caught SIGPIPE. Has parent died?\n',
+);
