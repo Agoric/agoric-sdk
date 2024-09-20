@@ -11,6 +11,21 @@ import { makePromiseKit } from '@endo/promise-kit';
 import { options } from './message-tools.js';
 import { xsnap, QUERY_RESPONSE_BUF } from '../src/xsnap.js';
 
+/**
+ * @import { Readable, Writable, Duplex } from 'stream'
+ */
+
+/**
+ * @typedef {Omit<import("child_process").ChildProcess, 'stdio'> &
+*   {
+*     stdin: null;
+*     stdout: null;
+*     stderr: Readable;
+*     readonly stdio: [null, null, Readable, Duplex, Duplex, undefined, undefined, Duplex, Duplex];
+*   }
+* } XsnapChildProcess
+*/
+
 test('xsnap-worker complains while waiting for answer when parent is killed', async t => {
   const exitedPKit = makePromiseKit();
 
@@ -48,13 +63,15 @@ test('xsnap-worker complains while waiting for answer when parent is killed', as
 
 async function spawnReflectiveWorker(handleCommand) {
   const exitedPKit = makePromiseKit();
+  /** @type {XsnapChildProcess | undefined} */
   let xsnapProcess;
 
   /** @type {typeof import('child_process').spawn} */
   const spawnSpy = (...args) => {
     // @ts-expect-error overloaded signature
-    xsnapProcess = proc.spawn(...args);
-    return xsnapProcess;
+    const cp = proc.spawn(...args)
+    xsnapProcess = cp;
+    return cp;
   };
 
   const io = { spawn: spawnSpy, os: os.type(), fs, tmpName };
@@ -62,6 +79,8 @@ async function spawnReflectiveWorker(handleCommand) {
   await vat.evaluate(
     'function handleCommand(message) { issueCommand(new Uint8Array().buffer); };',
   );
+
+  assert(xsnapProcess);
 
   const toXsnap = xsnapProcess.stdio[3];
   const fromXsnap = xsnapProcess.stdio[4];
