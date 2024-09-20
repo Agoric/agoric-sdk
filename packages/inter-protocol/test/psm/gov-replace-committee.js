@@ -1,6 +1,7 @@
 /* global E */
 // @ts-check
 /// <reference types="@agoric/vats/src/core/core-eval-env" />
+
 /**
  * @file Script to replace the econ governance committee in a SwingSet Core Eval
  *   (aka big hammer)
@@ -78,6 +79,8 @@ const invitePSMCommitteeMembers = async (
   },
   { options: { voterAddresses = {} } },
 ) => {
+  console.log('fraz invitePSMCommitteeMembers');
+
   const invitations = await E(
     economicCommitteeCreatorFacet,
   ).getVoterInvitations();
@@ -142,6 +145,8 @@ const startNewEconomicCommittee = async ({
     produce: { economicCommittee },
   },
 }) => {
+  console.log('fraz startNewEconomicCommittee');
+
   const COMMITTEES_ROOT = 'committees';
   trace('startNewEconomicCommittee');
   const { committeeName } = runConfig;
@@ -183,9 +188,85 @@ const startNewEconomicCommittee = async ({
 };
 harden(startNewEconomicCommittee);
 
+const startNewEconCharter = async ({
+  consume: { zoe },
+  produce: { econCharterKit },
+  installation: {
+    consume: { binaryVoteCounter: counterP, econCommitteeCharter: installP },
+  },
+  instance: {
+    produce: { econCommitteeCharter: instanceP },
+  },
+}) => {
+  const [charterInstall, counterInstall] = await Promise.all([
+    installP,
+    counterP,
+  ]);
+  const terms = await harden({
+    binaryVoteCounterInstallation: counterInstall,
+  });
+
+  const startResult = E(zoe).startInstance(
+    charterInstall,
+    undefined,
+    terms,
+    undefined,
+    'econCommitteeCharter',
+  );
+  instanceP.resolve(E.get(startResult).instance);
+  econCharterKit.resolve(startResult);
+};
+harden(startNewEconCharter);
+
+const clearAll = async ({ consume: { econCharterKit } }) => {
+  console.log("fraz clearAll")
+  await E(E.get(econCharterKit).creatorFacet).clearInstances()
+  console.log("fraz after clearing instances")
+};
+harden(clearAll);
+
+const addGovernorsToEconCharter = async ({
+  consume: { reserveKit, vaultFactoryKit, econCharterKit, auctioneerKit },
+  instance: {
+    consume: { reserve, VaultFactory, auctioneer },
+  },
+}) => {
+  const { creatorFacet } = E.get(econCharterKit);
+
+  await Promise.all(
+    [
+      {
+        label: 'reserve',
+        instanceP: reserve,
+        facetP: E.get(reserveKit).governorCreatorFacet,
+      },
+      {
+        label: 'VaultFactory',
+        instanceP: VaultFactory,
+        facetP: E.get(vaultFactoryKit).governorCreatorFacet,
+      },
+      {
+        label: 'auctioneer',
+        instanceP: auctioneer,
+        facetP: E.get(auctioneerKit).governorCreatorFacet,
+      },
+    ].map(async ({ label, instanceP, facetP }) => {
+      const [instance, govFacet] = await Promise.all([instanceP, facetP]);
+
+      return E(creatorFacet).addInstance(instance, govFacet, label);
+    }),
+  );
+};
+
+harden(addGovernorsToEconCharter);
+
 const main = async permittedPowers => {
+  // console.log("fraz in main")
+  // await addGovernorsToEconCharter(permittedPowers)
+  console.log('fraz before startNewEconomicCommittee');
   const newElectoratePoser = await startNewEconomicCommittee(permittedPowers);
 
+  await startNewEconCharter(permittedPowers);
   /*
    * put the new economic committee into agoricNames
    */
