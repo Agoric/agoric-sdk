@@ -41,6 +41,7 @@ export function makeFakeLiveSlotsStuff(options = {}) {
   let vrm;
   function setVrm(vrmToUse) {
     assert(!vrm, 'vrm already configured');
+    vrmToUse.initializeIDCounters();
     vrm = vrmToUse;
   }
 
