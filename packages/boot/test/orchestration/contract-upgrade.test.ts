@@ -69,10 +69,14 @@ test('resume', async t => {
     buildProposal('@agoric/builders/scripts/testing/fix-buggy-sendAnywhere.js'),
   );
 
+  // Gets much farther
   t.deepEqual(getLogged(), [
     'sending {0} from cosmoshub to cosmos1whatever',
-    // XXX this denom list may be wrong
-    'got info for denoms: ubld, uist',
-    'transfer complete, seat exited',
+    'got info for denoms: ibc/toyatom, ibc/toyusdc, ubld, uist',
+    'got info for chain: cosmoshub cosmoshub-4',
+    'completed transfer to localAccount',
+    // But does not get to a complete transaction without mocking the IBC transfer acknowledgementPacket
+    // TODO file a ticket for providing that and also fixing it in restart-contracts's .failing test
+    // 'transfer complete, seat exited',
   ]);
 });
