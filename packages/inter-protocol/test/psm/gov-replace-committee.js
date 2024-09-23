@@ -254,12 +254,27 @@ const startNewEconCharter = async ({
 harden(startNewEconCharter);
 
 const addGovernorsToEconCharter = async ({
-  consume: { reserveKit, vaultFactoryKit, econCharterKit, auctioneerKit },
+  consume: {
+    reserveKit,
+    vaultFactoryKit,
+    econCharterKit,
+    auctioneerKit,
+    psmKit,
+  },
   instance: {
     consume: { reserve, VaultFactory, auctioneer },
   },
 }) => {
   const { creatorFacet } = E.get(econCharterKit);
+  const psmKitMap = await psmKit;
+
+  const psmGovernors = [...psmKitMap.values()].map(obj => {
+    return {
+      label: obj.label,
+      instanceP: obj.psm,
+      facetP: obj.psmGovernorCreatorFacet,
+    };
+  });
 
   await Promise.all(
     [
@@ -278,19 +293,19 @@ const addGovernorsToEconCharter = async ({
         instanceP: auctioneer,
         facetP: E.get(auctioneerKit).governorCreatorFacet,
       },
+      ...psmGovernors,
     ].map(async ({ label, instanceP, facetP }) => {
       const [instance, govFacet] = await Promise.all([instanceP, facetP]);
-
       return E(creatorFacet).addInstance(instance, govFacet, label);
     }),
   );
 };
-
 harden(addGovernorsToEconCharter);
 
 const main = async permittedPowers => {
   const newElectoratePoser = await startNewEconomicCommittee(permittedPowers);
   await startNewEconCharter(permittedPowers);
+  await addGovernorsToEconCharter(permittedPowers);
 
   const psmKitMap = await permittedPowers.consume.psmKit;
   const replacements = [...psmKitMap.values()].map(psmKit =>
@@ -306,13 +321,6 @@ const main = async permittedPowers => {
     options: { voterAddresses: runConfig.economicCommitteeAddresses },
   });
 
-  // somethign with the PSM charter?
-
-  /*
-   * tell the provisionPool contract about it
-   */
-
-  // done
   trace('Installed New Economic Committee');
 };
 
