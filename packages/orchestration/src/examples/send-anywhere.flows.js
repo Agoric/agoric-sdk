@@ -3,7 +3,7 @@ import { makeError, q } from '@endo/errors';
 import { M, mustMatch } from '@endo/patterns';
 
 /**
- * @import {GuestInterface} from '@agoric/async-flow';
+ * @import {GuestInterface, GuestOf} from '@agoric/async-flow';
  * @import {Vow} from '@agoric/vow';
  * @import {ZoeTools} from '../utils/zoe-tools.js';
  * @import {Orchestrator, LocalAccountMethods, OrchestrationAccountI, OrchestrationFlow} from '../types.js';
@@ -43,22 +43,21 @@ export const sendIt = async (
     assets.find(a => a.brand === amt.brand),
     `${amt.brand} not registered in vbank`,
   );
-  const chain = await orch.getChain(chainName);
 
+  // FIXME racy
   if (!contractState.localAccount) {
     contractState.localAccount = await agoric.makeAccount();
   }
 
+  const chain = await orch.getChain(chainName);
   const info = await chain.getChainInfo();
   const { chainId } = info;
   assert(typeof chainId === 'string', 'bad chainId');
+  void log(`got info for chain: ${chainName} ${chainId}`);
 
-  await localTransfer(
-    seat,
-    // @ts-expect-error Index signature for type 'string' is missing in type 'OrchestrationAccountI & LocalAccountMethods'
-    contractState.localAccount,
-    give,
-  );
+  await localTransfer(seat, contractState.localAccount, give);
+
+  void log(`completed transfer to localAccount`);
 
   try {
     await contractState.localAccount.transfer(
@@ -69,9 +68,11 @@ export const sendIt = async (
         chainId,
       },
     );
+    void log(`completed transfer to ${destAddr}`);
   } catch (e) {
     await withdrawToSeat(contractState.localAccount, seat, give);
     const errorMsg = `IBC Transfer failed ${q(e)}`;
+    void log(`ERROR: ${errorMsg}`);
     seat.exit(errorMsg);
     throw makeError(errorMsg);
   }
