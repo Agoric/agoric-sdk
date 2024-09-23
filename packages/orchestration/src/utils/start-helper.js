@@ -59,10 +59,10 @@ export const provideOrchestration = (
     return {
       /** system names for async flow */
       asyncFlow: zone.subZone('asyncFlow'),
-      /** system zone for chain hub */
-      chainHub: zone.subZone('chainHub'),
       /** system names for orchestration implementation */
       orchestration: zone.subZone('orchestration'),
+      /** system names for chainHub */
+      chainHub: zone.subZone('chainHub'),
       /** system names for vows */
       vows: zone.subZone('vows'),
       /** contract-provided names, and subzones */
