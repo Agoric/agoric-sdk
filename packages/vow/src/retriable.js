@@ -38,9 +38,9 @@ const AdminRetriableFlowI = M.interface('RetriableFlowAdmin', {
 
 /**
  * @param {Zone} outerZone
- * @param {PreparationOptions} [outerOptions]
+ * @param {PreparationOptions} outerOptions
  */
-export const prepareRetriableTools = (outerZone, outerOptions = {}) => {
+export const prepareRetriableTools = (outerZone, outerOptions) => {
   const { makeVowKit, isRetryableReason } = outerOptions;
 
   /**
