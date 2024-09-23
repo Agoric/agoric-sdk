@@ -152,7 +152,7 @@ export function buildQueryPacketString(
   return btoa(makeQueryPacket(msgs.map(msg => toRequestQueryJson(msg, opts))));
 }
 
-type BuildVTransferEventParams = {
+export type BuildVTransferEventParams = {
   event?: VTransferIBCEvent['event'];
   /* defaults to cosmos1AccAddress. set to `agoric1fakeLCAAddress` to simulate an outgoing transfer event */
   sender?: ChainAddress['value'];

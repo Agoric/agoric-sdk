@@ -26,8 +26,13 @@ test.after.always(t => t.context.shutdown?.());
  * and see that the flow continues from that point.
  */
 test('resume', async t => {
-  const { walletFactoryDriver, buildProposal, evalProposal, storage } =
-    t.context;
+  const {
+    walletFactoryDriver,
+    buildProposal,
+    evalProposal,
+    storage,
+    bridgeUtils: { inboundVTransferEvent },
+  } = t.context;
 
   const { IST } = t.context.agoricNamesRemotes.brand;
 
@@ -69,14 +74,19 @@ test('resume', async t => {
     buildProposal('@agoric/builders/scripts/testing/fix-buggy-sendAnywhere.js'),
   );
 
+  await inboundVTransferEvent({
+    sourceChannel: 'channel-5',
+    // @ts-expect-error fixme
+    sequence: '1',
+  });
+
   // Gets much farther
   t.deepEqual(getLogged(), [
     'sending {0} from cosmoshub to cosmos1whatever',
     'got info for denoms: ibc/toyatom, ibc/toyusdc, ubld, uist',
     'got info for chain: cosmoshub cosmoshub-4',
     'completed transfer to localAccount',
-    // But does not get to a complete transaction without mocking the IBC transfer acknowledgementPacket
-    // TODO file a ticket for providing that and also fixing it in restart-contracts's .failing test
-    // 'transfer complete, seat exited',
+    'completed transfer to cosmos1whatever',
+    'transfer complete, seat exited',
   ]);
 });

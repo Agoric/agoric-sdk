@@ -46,6 +46,10 @@ import type { SwingsetController } from '@agoric/swingset-vat/src/controller/con
 import type { BridgeHandler, IBCMethod, IBCPacket } from '@agoric/vats';
 import type { BootstrapRootObject } from '@agoric/vats/src/core/lib-boot.js';
 import type { EProxy } from '@endo/eventual-send';
+import {
+  buildVTransferEvent,
+  type BuildVTransferEventParams,
+} from '@agoric/orchestration/tools/ibc-mocks.js';
 import { icaMocks, protoMsgMockMap, protoMsgMocks } from './ibc/mocks.js';
 
 const trace = makeTracer('BSTSupport', false);
@@ -614,6 +618,12 @@ export const makeSwingsetTestKit = async (
       }
       console.log('🧻');
       return i;
+    },
+    async inboundVTransferEvent(params: BuildVTransferEventParams) {
+      await runUtils.queueAndRun(
+        () => inbound(BridgeId.VTRANSFER, buildVTransferEvent(params)),
+        true,
+      );
     },
   };
 
