@@ -82,18 +82,10 @@ const reserveThenDeposit = async (
   console.info('confirmed deposit for', debugName);
 };
 
-const invitePSMCommitteeMembers = async (
-  {
-    consume: {
-      namesByAddressAdmin,
-      economicCommitteeCreatorFacet,
-      econCharterKit,
-    },
-  },
+const inviteECMembers = async (
+  { consume: { namesByAddressAdmin, economicCommitteeCreatorFacet } },
   { options: { voterAddresses = {} } },
 ) => {
-  console.log('fraz invitePSMCommitteeMembers');
-
   const invitations = await E(
     economicCommitteeCreatorFacet,
   ).getVoterInvitations();
@@ -117,7 +109,7 @@ const invitePSMCommitteeMembers = async (
 
   await distributeInvitations(zip(values(voterAddresses), invitations));
 };
-harden(invitePSMCommitteeMembers);
+harden(inviteECMembers);
 
 const inviteToEconCharter = async (
   { consume: { namesByAddressAdmin, econCharterKit } },
@@ -125,8 +117,6 @@ const inviteToEconCharter = async (
 ) => {
   const { creatorFacet } = E.get(econCharterKit);
 
-  // This doesn't resolve until the committee members create their smart wallets.
-  // Don't block bootstrap on it.
   void Promise.all(
     values(voterAddresses).map(async addr => {
       const debugName = `econ charter member ${addr}`;
@@ -255,7 +245,10 @@ const startNewEconCharter = async ({
   );
   trace('Started new EC Charter Instance Successfully');
 
+  instanceP.reset();
   instanceP.resolve(E.get(startResult).instance);
+
+  econCharterKit.reset();
   econCharterKit.resolve(startResult);
 };
 harden(startNewEconCharter);
@@ -305,7 +298,7 @@ const main = async permittedPowers => {
   );
   await Promise.all(replacements);
 
-  await invitePSMCommitteeMembers(permittedPowers, {
+  await inviteECMembers(permittedPowers, {
     options: { voterAddresses: runConfig.economicCommitteeAddresses },
   });
 
