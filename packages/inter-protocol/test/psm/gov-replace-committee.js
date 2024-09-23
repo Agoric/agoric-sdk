@@ -103,18 +103,14 @@ const invitePSMCommitteeMembers = async (
   const distributeInvitations = async addrInvitations => {
     await Promise.all(
       addrInvitations.map(async ([addr, invitationP]) => {
-        const [voterInvitation, charterMemberInvitation] = await Promise.all([
-          invitationP,
-          E(E.get(econCharterKit).creatorFacet).makeCharterMemberInvitation(),
-        ]);
+        const [voterInvitation] = await Promise.all([invitationP]);
         trace('sending charter, voting invitations to', addr);
         await reserveThenDeposit(
           `econ committee member ${addr}`,
           namesByAddressAdmin,
           addr,
-          [voterInvitation, charterMemberInvitation],
+          [voterInvitation],
         );
-        trace('sent charter, voting invitations to', addr);
       }),
     );
   };
@@ -122,6 +118,26 @@ const invitePSMCommitteeMembers = async (
   await distributeInvitations(zip(values(voterAddresses), invitations));
 };
 harden(invitePSMCommitteeMembers);
+
+const inviteToEconCharter = async (
+  { consume: { namesByAddressAdmin, econCharterKit } },
+  { options: { voterAddresses } },
+) => {
+  const { creatorFacet } = E.get(econCharterKit);
+
+  // This doesn't resolve until the committee members create their smart wallets.
+  // Don't block bootstrap on it.
+  void Promise.all(
+    values(voterAddresses).map(async addr => {
+      const debugName = `econ charter member ${addr}`;
+      reserveThenDeposit(debugName, namesByAddressAdmin, addr, [
+        E(creatorFacet).makeCharterMemberInvitation(),
+      ]).catch(err => console.error(`failed deposit to ${debugName}`, err));
+    }),
+  );
+};
+
+harden(inviteToEconCharter);
 
 /**
  * Convenience function for returning a storage node at or under its input,
@@ -255,6 +271,10 @@ const main = async permittedPowers => {
   await Promise.all(replacements);
 
   await invitePSMCommitteeMembers(permittedPowers, {
+    options: { voterAddresses: runConfig.economicCommitteeAddresses },
+  });
+
+  await inviteToEconCharter(permittedPowers, {
     options: { voterAddresses: runConfig.economicCommitteeAddresses },
   });
 
