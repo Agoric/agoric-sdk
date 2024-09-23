@@ -1,9 +1,11 @@
-import { Far } from '@endo/far';
+/* eslint-disable jsdoc/require-param -- ts types */
 import { heapVowE as E } from '@agoric/vow/vat.js';
 import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/recorder.js';
+import { Far } from '@endo/far';
 import type { ExecutionContext } from 'ava';
-import { commonSetup } from '../supports.js';
 import { prepareCosmosOrchestrationAccount } from '../../src/exos/cosmos-orchestration-account.js';
+import { commonSetup } from '../supports.js';
+import type { ICQConnection } from '../../src/exos/icq-connection-kit.js';
 
 /**
  * A testing utility that creates a (Cosmos)ChainAccount and makes a
@@ -12,17 +14,13 @@ import { prepareCosmosOrchestrationAccount } from '../../src/exos/cosmos-orchest
  *
  * Helps reduce boilerplate in test files, and retains testing context through
  * parameterized endowments.
- *
- * @param t
- * @param bootstrap
- * @param opts
- * @param opts.zcf
  */
 export const prepareMakeTestCOAKit = (
   t: ExecutionContext,
-  bootstrap: Awaited<ReturnType<typeof commonSetup>>['bootstrap'],
+  { bootstrap, facadeServices, utils }: Awaited<ReturnType<typeof commonSetup>>,
   { zcf = Far('MockZCF', {}) } = {},
 ) => {
+  t.log('exo setup - prepareCosmosOrchestrationAccount');
   const { cosmosInterchainService, marshaller, rootZone, timer, vowTools } =
     bootstrap;
 
@@ -33,21 +31,23 @@ export const prepareMakeTestCOAKit = (
 
   const makeCosmosOrchestrationAccount = prepareCosmosOrchestrationAccount(
     rootZone.subZone('CosmosOrchAccount'),
-    makeRecorderKit,
-    vowTools,
-    // @ts-expect-error mocked zcf
-    zcf,
+    {
+      chainHub: facadeServices.chainHub,
+      makeRecorderKit,
+      timerService: timer,
+      vowTools,
+      // @ts-expect-error mocked zcf
+      zcf,
+    },
   );
 
   return async ({
     storageNode = bootstrap.storage.rootNode.makeChildNode('accounts'),
-    chainId = 'cosmoshub-99',
+    chainId = 'cosmoshub-4',
     hostConnectionId = 'connection-0' as const,
     controllerConnectionId = 'connection-1' as const,
-    bondDenom = 'uatom',
+    icqEnabled = false,
   } = {}) => {
-    t.log('exo setup - prepareCosmosOrchestrationAccount');
-
     t.log('request account from orchestration service');
     const cosmosOrchAccount = await E(cosmosInterchainService).makeAccount(
       chainId,
@@ -55,15 +55,33 @@ export const prepareMakeTestCOAKit = (
       controllerConnectionId,
     );
 
-    const accountAddress = await E(cosmosOrchAccount).getAddress();
+    let icqConnection: ICQConnection | undefined;
+    if (icqEnabled) {
+      t.log('requesting icq connection from orchestration service');
+      icqConnection = await E(cosmosInterchainService).provideICQConnection(
+        controllerConnectionId,
+      );
+    }
+
+    const [chainAddress, localAddress, remoteAddress] = await Promise.all([
+      E(cosmosOrchAccount).getAddress(),
+      E(cosmosOrchAccount).getLocalAddress(),
+      E(cosmosOrchAccount).getRemoteAddress(),
+    ]);
 
     t.log('make a CosmosOrchestrationAccount');
-    const holder = makeCosmosOrchestrationAccount(accountAddress, bondDenom, {
-      account: cosmosOrchAccount,
-      storageNode: storageNode.makeChildNode(accountAddress.value),
-      icqConnection: undefined,
-      timer,
-    });
+    const holder = makeCosmosOrchestrationAccount(
+      { chainAddress, localAddress, remoteAddress },
+      {
+        account: cosmosOrchAccount,
+        storageNode: storageNode.makeChildNode(chainAddress.value),
+        icqConnection,
+        timer,
+      },
+    );
+
+    t.log('register Agoric chain and BLD in ChainHub');
+    utils.registerAgoricBld();
 
     return holder;
   };

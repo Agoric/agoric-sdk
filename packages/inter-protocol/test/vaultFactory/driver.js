@@ -142,7 +142,10 @@ export const makeDriverContext = async ({
     aethInitialLiquidity: AmountMath.make(aeth.brand, 900_000_000n),
   };
   const frozenCtx = await deeplyFulfilled(harden(contextPs));
+  /* eslint-disable @typescript-eslint/ban-ts-comment */
+  // @ts-ignore Local tsc sees this as an error but typedoc does not
   return { ...frozenCtx, bundleCache, run, aeth };
+  /* eslint-enable @typescript-eslint/ban-ts-comment */
 };
 
 /** @param {import('ava').ExecutionContext<DriverContext>} t */
@@ -210,7 +213,7 @@ const getRunFromFaucet = async (t, amt) => {
  * @param {Amount} priceBase
  */
 const setupServices = async (t, initialPrice, priceBase) => {
-  const timer = buildZoeManualTimer(t.log);
+  const timer = buildZoeManualTimer(t.log, 0n, { timeStep: 60n * 60n });
   const { zoe, run, aeth, interestTiming, minInitialDebt, rates } = t.context;
   t.context.timer = timer;
 
@@ -333,6 +336,10 @@ export const makeManagerDriver = async (
     publicTopics.asset.subscriber,
   );
   let managerNotification = await E(managerNotifier).getUpdateSince();
+  const metricsNotifier = await makeNotifierFromSubscriber(
+    publicTopics.metrics.subscriber,
+  );
+  let metricsNotification = await E(metricsNotifier).getUpdateSince();
 
   /** @type {UserSeat} */
   let currentSeat;
@@ -553,6 +560,21 @@ export const makeManagerDriver = async (
       trace(t, 'manager notifier', managerNotification);
       if (likeExpected) {
         t.like(managerNotification.value, likeExpected);
+      }
+      return managerNotification;
+    },
+    /**
+     * @param {object} [likeExpected]
+     * @param {AT_NEXT | number} [optSince] AT_NEXT is an alias for updateCount
+     *   of the last update, forcing to wait for another
+     */
+    metricsNotified: async (likeExpected, optSince) => {
+      metricsNotification = await E(metricsNotifier).getUpdateSince(
+        optSince === AT_NEXT ? metricsNotification.updateCount : optSince,
+      );
+      trace(t, 'metrics notifier', metricsNotification);
+      if (likeExpected) {
+        t.like(metricsNotification.value, likeExpected);
       }
       return managerNotification;
     },

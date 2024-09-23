@@ -1,7 +1,9 @@
-import type { AnyJson, TypedJson } from '@agoric/cosmic-proto';
+import type { AnyJson, TypedJson, JsonSafe } from '@agoric/cosmic-proto';
 import type {
   Delegation,
+  DelegationResponse,
   Redelegation,
+  RedelegationResponse,
   UnbondingDelegation,
 } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/staking.js';
 import type { TxBody } from '@agoric/cosmic-proto/cosmos/tx/v1beta1/tx.js';
@@ -11,6 +13,10 @@ import type {
   Order,
 } from '@agoric/cosmic-proto/ibc/core/channel/v1/channel.js';
 import type { State as IBCConnectionState } from '@agoric/cosmic-proto/ibc/core/connection/v1/connection.js';
+import type {
+  RequestQuery,
+  ResponseQuery,
+} from '@agoric/cosmic-proto/tendermint/abci/types.js';
 import type { Brand, Purse, Payment, Amount } from '@agoric/ertp/src/types.js';
 import type { Port } from '@agoric/network';
 import type { IBCChannelID, IBCConnectionID } from '@agoric/vats';
@@ -22,7 +28,8 @@ import type {
   LocalIbcAddress,
   RemoteIbcAddress,
 } from '@agoric/vats/tools/ibc-utils.js';
-import type { AmountArg, ChainAddress, DenomAmount } from './types.js';
+import type { QueryDelegationTotalRewardsResponse } from '@agoric/cosmic-proto/cosmos/distribution/v1beta1/query.js';
+import type { AmountArg, ChainAddress, Denom, DenomAmount } from './types.js';
 
 /** An address for a validator on some blockchain, e.g., cosmos, eth, etc. */
 export type CosmosValidatorAddress = ChainAddress & {
@@ -32,16 +39,13 @@ export type CosmosValidatorAddress = ChainAddress & {
 };
 
 /** Represents an IBC Connection between two chains, which can contain multiple Channels. */
-export type IBCConnectionInfo = {
+export interface IBCConnectionInfo {
   id: IBCConnectionID; // e.g. connection-0
   client_id: string; // '07-tendermint-0'
   state: IBCConnectionState;
   counterparty: {
     client_id: string;
     connection_id: IBCConnectionID;
-    prefix: {
-      key_prefix: string;
-    };
   };
   transferChannel: {
     portId: string;
@@ -52,7 +56,30 @@ export type IBCConnectionInfo = {
     state: IBCChannelState;
     version: string; // e.eg. 'ics20-1'
   };
-};
+}
+
+/**
+ * https://github.com/cosmos/chain-registry/blob/master/assetlist.schema.json
+ */
+export interface CosmosAssetInfo extends Record<string, unknown> {
+  base: Denom;
+  name: string;
+  display: string;
+  symbol: string;
+  denom_units: Array<{ denom: Denom; exponent: number }>;
+  traces?: Array<{
+    type: 'ibc';
+    counterparty: {
+      chain_name: string;
+      base_denom: Denom;
+      channel_id: IBCChannelID;
+    };
+    chain: {
+      channel_id: IBCChannelID;
+      path: string;
+    };
+  }>;
+}
 
 /**
  * Info for a Cosmos-based chain.
@@ -70,17 +97,43 @@ export type CosmosChainInfo = Readonly<{
   stakingTokens?: Readonly<Array<{ denom: string }>>;
 }>;
 
+// #region Orchestration views on Cosmos response types
+// Naming scheme: Cosmos for the chain system, Rewards b/c getRewards function,
+// and Response because it's the return value.
+
+/** @see {QueryDelegationTotalRewardsResponse} */
+export interface CosmosRewardsResponse {
+  rewards: { validator: CosmosValidatorAddress; reward: DenomAmount[] }[];
+  total: DenomAmount[];
+}
+
+/** @see {DelegationResponse} */
+export interface CosmosDelegationResponse {
+  delegator: ChainAddress;
+  validator: CosmosValidatorAddress;
+  amount: DenomAmount;
+}
+// #endregion
+
+/**
+ * Queries for the staking properties of an account.
+ *
+ * @see {@link https://docs.cosmos.network/main/build/modules/staking#messages x/staking messages}
+ * {@link https://cosmos.github.io/cosmjs/latest/stargate/interfaces/StakingExtension.html StakingExtension} in cosmjs
+ */
 export interface StakingAccountQueries {
   /**
    * @returns all active delegations from the account to any validator (or [] if none)
    */
-  getDelegations: () => Promise<Delegation[]>;
+  getDelegations: () => Promise<CosmosDelegationResponse[]>;
 
   /**
    * @returns the active delegation from the account to a specific validator. Return an
    * empty Delegation if there is no delegation.
    */
-  getDelegation: (validator: CosmosValidatorAddress) => Promise<Delegation>;
+  getDelegation: (
+    validator: CosmosValidatorAddress,
+  ) => Promise<CosmosDelegationResponse>;
 
   /**
    * @returns the unbonding delegations from the account to any validator (or [] if none)
@@ -94,18 +147,13 @@ export interface StakingAccountQueries {
     validator: CosmosValidatorAddress,
   ) => Promise<UnbondingDelegation>;
 
-  getRedelegations: () => Promise<Redelegation[]>;
-
-  getRedelegation: (
-    srcValidator: CosmosValidatorAddress,
-    dstValidator?: CosmosValidatorAddress,
-  ) => Promise<Redelegation>;
+  getRedelegations: () => Promise<RedelegationResponse[]>;
 
   /**
    * Get the pending rewards for the account.
    * @returns the amounts of the account's rewards pending from all validators
    */
-  getRewards: () => Promise<DenomAmount[]>;
+  getRewards: () => Promise<CosmosRewardsResponse>;
 
   /**
    * Get the rewards pending with a specific validator.
@@ -114,6 +162,13 @@ export interface StakingAccountQueries {
    */
   getReward: (validator: CosmosValidatorAddress) => Promise<DenomAmount[]>;
 }
+
+/**
+ * Transactions for doing staking operations on an individual account.
+ *
+ * @see {@link https://docs.cosmos.network/main/build/modules/staking#messages x/staking messages} and
+ * {@link https://cosmos.github.io/cosmjs/latest/stargate/interfaces/StakingExtension.html StakingExtension} in cosmjs
+ */
 export interface StakingAccountActions {
   /**
    * Delegate an amount to a validator. The promise settles when the delegation is complete.
@@ -147,7 +202,11 @@ export interface StakingAccountActions {
    * @param delegations - the delegation to undelegate
    */
   undelegate: (
-    delegations: Omit<Delegation, 'delegatorAddress'>[],
+    delegations: {
+      amount: AmountArg;
+      delegator?: ChainAddress;
+      validator: CosmosValidatorAddress;
+    }[],
   ) => Promise<void>;
 
   /**
@@ -189,12 +248,23 @@ export interface IcaAccount {
     msgs: AnyJson[],
     opts?: Partial<Omit<TxBody, 'messages'>>,
   ) => Promise<string>;
-  /** get Purse for a brand to .withdraw() a Payment from the account */
-  getPurse: (brand: Brand) => Promise<Purse>;
   /**
-   * Close the remote account
+   * Deactivates the ICA account by closing the ICA channel. The `Port` is
+   * persisted so holders can always call `.reactivate()` to re-establish a new
+   * channel with the same chain address.
+   * CAVEAT: Does not retrieve assets so they may be lost if left.
+   * @throws {Error} if connection is not available or already deactivated
    */
-  close: () => Promise<void>;
+  deactivate: () => Promise<void>;
+  /**
+   * Reactivates the ICA account by re-establishing a new channel with the
+   * original Port and requested address.
+   * If a channel is closed for an unexpected reason, such as a packet timeout,
+   * an automatic attempt to re will be made and the holder should not need
+   * to call `.reactivate()`.
+   * @throws {Error} if connection is currently active
+   */
+  reactivate: () => Promise<void>;
   /** @returns the address of the remote channel */
   getRemoteAddress: () => RemoteIbcAddress;
   /** @returns the address of the local channel */
@@ -203,11 +273,13 @@ export interface IcaAccount {
   getPort: () => Port;
 }
 
-export type LiquidStakingMethods = {
+/** Methods on chains that support Liquid Staking */
+export interface LiquidStakingMethods {
   liquidStake: (amount: AmountArg) => Promise<void>;
-};
+}
 
-export type LocalAccountMethods = {
+/** Methods supported only on Agoric chain accounts */
+export interface LocalAccountMethods {
   /** deposit payment (from zoe, for example) to the account */
   deposit: (payment: Payment<'nat'>) => Promise<void>;
   /** withdraw a Payment from the account */
@@ -223,14 +295,28 @@ export type LocalAccountMethods = {
    * @param tap
    */
   monitorTransfers: (tap: TargetApp) => Promise<TargetRegistration>;
-};
+}
 
-export type IBCMsgTransferOptions = {
+/**
+ * Options for {@link OrchestrationAccountI} `transfer` method.
+ *
+ * @see {@link https://github.com/cosmos/ibc/tree/master/spec/app/ics-020-fungible-token-transfer#data-structures ICS 20 Data Structures}
+ */
+export interface IBCMsgTransferOptions {
   timeoutHeight?: MsgTransfer['timeoutHeight'];
   timeoutTimestamp?: MsgTransfer['timeoutTimestamp'];
   memo?: string;
-};
+}
 
+/**
+ * Cosmos-specific methods to extend `OrchestrationAccountI`, parameterized
+ * by `CosmosChainInfo`.
+ *
+ * In particular, if the chain info includes a staking token, {@link StakingAccountActions}
+ * are available.
+ *
+ * @see {OrchestrationAccountI}
+ */
 export type CosmosChainAccountMethods<CCI extends CosmosChainInfo> =
   (CCI extends {
     icaEnabled: true;
@@ -240,5 +326,9 @@ export type CosmosChainAccountMethods<CCI extends CosmosChainInfo> =
     CCI extends {
     stakingTokens: {};
   }
-    ? StakingAccountActions
+    ? StakingAccountActions & StakingAccountQueries
     : {};
+
+export type ICQQueryFunction = (
+  msgs: JsonSafe<RequestQuery>[],
+) => Promise<JsonSafe<ResponseQuery>[]>;

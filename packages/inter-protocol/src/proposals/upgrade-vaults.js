@@ -2,63 +2,47 @@ import { E } from '@endo/far';
 import { makeNotifierFromAsyncIterable } from '@agoric/notifier';
 import { AmountMath } from '@agoric/ertp/src/index.js';
 import { makeTracer } from '@agoric/internal/src/index.js';
-import { isUpgradeDisconnection } from '@agoric/internal/src/upgrade-api.js';
+import { Fail } from '@endo/errors';
+import { TimeMath } from '@agoric/time';
 
 const trace = makeTracer('upgrade Vaults proposal');
 
-// stand-in for Promise.any() which isn't available at this point.
-/** @param {Promise<any>[]} promises */
-const any = promises =>
-  new Promise((resolve, reject) => {
-    for (const promise of promises) {
-      void promise.then(resolve, () => {});
-    }
-    void Promise.allSettled(promises).then(results => {
-      const rejects = /** @type {PromiseRejectedResult[]} */ (
-        results.filter(({ status }) => status === 'rejected')
-      );
-      if (rejects.length === results.length) {
-        const messages = rejects.map(
-          ({ reason: { message } }) => message || 'no error message',
-        );
-        const aggregate = new Error(messages.join(';'));
-        /** @type {any} */ (aggregate).errors = rejects.map(
-          ({ reason }) => reason,
-        );
-        reject(aggregate);
-      }
-    });
-  });
+/**
+ * @typedef {PromiseSpaceOf<{
+ *   auctionUpgradeNewInstance: Instance;
+ * }>} interlockPowers
+ */
 
 /**
- * @param {import('../../src/proposals/econ-behaviors').EconomyBootstrapPowers} powers
+ * @param {import('../../src/proposals/econ-behaviors').EconomyBootstrapPowers &
+ *     interlockPowers} powers
  * @param {{ options: { vaultsRef: { bundleID: string } } }} options
  */
-export const upgradeVaults = async (powers, { options }) => {
-  const {
+export const upgradeVaults = async (
+  {
     consume: {
-      agoricNamesAdmin,
-      newAuctioneerKit: auctioneerKitP,
-      priceAuthority,
-      vaultFactoryKit,
-      zoe,
+      auctionUpgradeNewInstance,
+      chainTimerService,
       economicCommitteeCreatorFacet: electorateCreatorFacet,
       reserveKit,
+      vaultFactoryKit,
+      zoe,
     },
-    produce: {
-      auctioneerKit: auctioneerKitProducer,
-      newAuctioneerKit: tempAuctioneerKit,
+    produce: { auctionUpgradeNewInstance: auctionUpgradeNewInstanceProducer },
+    installation: {
+      produce: { VaultFactory: produceVaultInstallation },
     },
     instance: {
-      produce: { auctioneer: auctioneerProducer },
+      consume: { auctioneer: auctioneerInstanceP },
     },
-  } = powers;
+  },
+  { options },
+) => {
   const { vaultsRef } = options;
   const kit = await vaultFactoryKit;
-  const auctioneerKit = await auctioneerKitP;
   const { instance: directorInstance } = kit;
   const allBrands = await E(zoe).getBrands(directorInstance);
-  const { Minted: istBrand, ...vaultBrands } = allBrands;
+  const { Minted: _istBrand, ...vaultBrands } = allBrands;
 
   const bundleID = vaultsRef.bundleID;
   console.log(`upgradeVaults: bundleId`, bundleID);
@@ -67,23 +51,50 @@ export const upgradeVaults = async (powers, { options }) => {
    *   Installation<import('../../src/vaultFactory/vaultFactory.js')['start']>
    * >}
    */
-  let installationP;
-  await null;
-  if (vaultsRef) {
-    if (bundleID) {
-      installationP = E(zoe).installBundleID(bundleID);
-      await E.when(
-        installationP,
-        installation =>
-          E(E(agoricNamesAdmin).lookupAdmin('installation')).update(
-            'vaultFactory',
-            installation,
-          ),
-        err =>
-          console.error(`🚨 failed to update vaultFactory installation`, err),
+  const installationP = E(zoe).installBundleID(bundleID);
+  produceVaultInstallation.reset();
+  produceVaultInstallation.resolve(installationP);
+
+  const [auctionOldInstance, auctionNewInstance] = await Promise.all([
+    auctioneerInstanceP,
+    auctionUpgradeNewInstance,
+  ]);
+  auctionOldInstance !== auctionNewInstance ||
+    Fail`Auction instance didn't change`;
+  auctionUpgradeNewInstanceProducer.reset();
+  const publicFacet = E(zoe).getPublicFacet(auctionNewInstance);
+  /** @type {import('@agoric/inter-protocol/src/auction/scheduler.js').FullSchedule} */
+  const schedules = await E(publicFacet).getSchedules();
+  const now = await E(chainTimerService).getCurrentTimestamp();
+  (schedules.nextAuctionSchedule &&
+    TimeMath.compareAbs(schedules.nextAuctionSchedule.startTime, now) > 0) ||
+    Fail`Expected next start time in the future ${schedules.nextAuctionSchedule?.startTime}`;
+
+  const readCurrentDirectorParams = async () => {
+    const { publicFacet: directorPF } = kit;
+
+    await null;
+
+    const subscription = E(directorPF).getElectorateSubscription();
+    const notifier = makeNotifierFromAsyncIterable(subscription);
+    let { value, updateCount } = await notifier.getUpdateSince(0n);
+    // @ts-expect-error It's an amount.
+    while (AmountMath.isEmpty(value.current.MinInitialDebt.value)) {
+      ({ value, updateCount } = await notifier.getUpdateSince(updateCount));
+      trace(
+        `minInitialDebt was empty, retried`,
+        value.current.MinInitialDebt.value,
       );
     }
-  }
+
+    return harden({
+      MinInitialDebt: value.current.MinInitialDebt.value,
+      ReferencedUI: value.current.ReferencedUI.value,
+      RecordingPeriod: value.current.RecordingPeriod.value,
+      ChargingPeriod: value.current.ChargingPeriod.value,
+    });
+  };
+  const directorParamOverrides = await readCurrentDirectorParams();
 
   const readManagerParams = async () => {
     const { publicFacet: directorPF } = kit;
@@ -99,9 +110,17 @@ export const upgradeVaults = async (powers, { options }) => {
       const notifier = makeNotifierFromAsyncIterable(subscription);
       let { value, updateCount } = await notifier.getUpdateSince(0n);
       // @ts-expect-error It's an amount.
-      while (AmountMath.isEmpty(value.current.DebtLimit.value)) {
+      if (AmountMath.isEmpty(value.current.DebtLimit.value)) {
+        // The parameters might have been empty at start, and the notifier might
+        // give the first state before the current state.
+        trace(`debtLimit was empty, retrying`, value.current.DebtLimit.value);
         ({ value, updateCount } = await notifier.getUpdateSince(updateCount));
-        trace(`debtLimit was empty, retried`, value.current.DebtLimit.value);
+
+        // @ts-expect-error It's an amount.
+        if (AmountMath.isEmpty(value.current.DebtLimit.value)) {
+          trace('debtLimit was empty after retrying');
+          throw Error('🚨Governed parameters empty after retry, Giving up');
+        }
       }
       trace(kwd, 'params at', updateCount, 'are', value.current);
       params[kwd] = harden({
@@ -130,14 +149,15 @@ export const upgradeVaults = async (powers, { options }) => {
     const poserInvitation = await E(
       electorateCreatorFacet,
     ).getPoserInvitation();
+
     /** @type {import('../../src/vaultFactory/vaultFactory').VaultFactoryContract['privateArgs']} */
     const newPrivateArgs = harden({
       ...privateArgs,
-      // @ts-expect-error It has a value until reset after the upgrade
-      auctioneerInstance: auctioneerKit.instance,
+      auctioneerInstance: auctionNewInstance,
       initialPoserInvitation: poserInvitation,
       initialShortfallInvitation: shortfallInvitation,
       managerParams: managerParamValues,
+      directorParamOverrides,
     });
 
     const upgradeResult = await E(kit.adminFacet).upgradeContract(
@@ -148,60 +168,22 @@ export const upgradeVaults = async (powers, { options }) => {
     trace('upgraded vaultFactory.', upgradeResult);
   };
 
-  // Wait for at least one new price feed to be ready before upgrading Vaults
-  void E.when(
-    any(
-      Object.values(vaultBrands).map(async brand => {
-        const getQuote = async lastRejectionReason => {
-          await null;
-          try {
-            return await E(priceAuthority).quoteGiven(
-              AmountMath.make(brand, 10n),
-              istBrand,
-            );
-          } catch (reason) {
-            if (
-              isUpgradeDisconnection(reason) &&
-              (!lastRejectionReason ||
-                reason.incarnationNumber >
-                  lastRejectionReason.incarnationNumber)
-            ) {
-              return getQuote(reason);
-            }
-            throw reason;
-          }
-        };
-        return getQuote(null);
-      }),
-    ),
-    async price => {
-      trace(`upgrading after delay`, price);
-      await upgradeVaultFactory();
-      auctioneerKitProducer.reset();
-      // @ts-expect-error auctioneerKit is non-null except between auctioneerKitProducer.reset() and auctioneerKitProducer.resolve()
-      auctioneerKitProducer.resolve(auctioneerKit);
-      auctioneerProducer.reset();
-      // @ts-expect-error auctioneerKit is non-null except between auctioneerKitProducer.reset() and auctioneerKitProducer.resolve()
-      auctioneerProducer.resolve(auctioneerKit.instance);
-      // We wanted it to be valid for only a short while.
-      tempAuctioneerKit.reset();
-      await E(E(agoricNamesAdmin).lookupAdmin('instance')).update(
-        'auctioneer',
-        // @ts-expect-error auctioneerKit is non-null except between auctioneerKitProducer.reset() and auctioneerKitProducer.resolve()
-        auctioneerKit.instance,
-      );
-      trace(`upgrading complete`, price);
-    },
-    error => {
-      console.error(
-        'Failed to upgrade vaultFactory',
-        error.message,
-        ...(error.errors || []),
-      );
-    },
+  await upgradeVaultFactory();
+
+  // @ts-expect-error It's saved in econ-behaviors.js:startVaultFactory()
+  const vaultFactoryPrivateArgs = kit.privateArgs;
+  console.log('UPGV upgraded vaults, restarting governor');
+
+  const ecf = await electorateCreatorFacet;
+  // restart vaultFactory governor
+  await E(kit.governorAdminFacet).restartContract(
+    harden({
+      electorateCreatorFacet: ecf,
+      governed: vaultFactoryPrivateArgs,
+    }),
   );
 
-  console.log(`upgradeVaults scheduled; waiting for priceFeeds`);
+  console.log('UPGV restarted governor');
 };
 
 const uV = 'upgradeVaults';
@@ -218,17 +200,18 @@ export const getManifestForUpgradeVaults = async (
   manifest: {
     [upgradeVaults.name]: {
       consume: {
-        agoricNamesAdmin: uV,
-        newAuctioneerKit: uV,
+        auctionUpgradeNewInstance: uV,
+        chainTimerService: uV,
         economicCommitteeCreatorFacet: uV,
-        priceAuthority: uV,
         reserveKit: uV,
         vaultFactoryKit: uV,
-        board: uV,
         zoe: uV,
       },
-      produce: { auctioneerKit: uV, newAuctioneerKit: uV },
-      instance: { produce: { auctioneer: uV, newAuctioneerKit: uV } },
+      produce: { auctionUpgradeNewInstance: uV },
+      installation: {
+        produce: { VaultFactory: true },
+      },
+      instance: { consume: { auctioneer: true } },
     },
   },
   options: { ...vaultUpgradeOptions },

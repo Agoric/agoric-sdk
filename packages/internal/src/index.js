@@ -14,4 +14,5 @@ export * from './typeGuards.js';
 export * from './types.js';
 
 export { objectMap } from '@endo/common/object-map.js';
+export { objectMetaMap } from '@endo/common/object-meta-map.js';
 export { fromUniqueEntries } from '@endo/common/from-unique-entries.js';

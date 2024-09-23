@@ -21,6 +21,7 @@ import {
   makeSwingsetController,
   loadBasedir,
   loadSwingsetConfigFile,
+  upgradeSwingset,
 } from '@agoric/swingset-vat';
 import { waitUntilQuiescent } from '@agoric/internal/src/lib-nodejs/waitUntilQuiescent.js';
 import { openSwingStore } from '@agoric/swing-store';
@@ -96,7 +97,7 @@ const getHostKey = path => `host.${path}`;
 
 /**
  * @param {Map<*, *>} mailboxStorage
- * @param {undefined | ((dstID: string, obj: any) => any)} bridgeOutbound
+ * @param {((dstID: string, obj: any) => any)} bridgeOutbound
  * @param {SwingStoreKernelStorage} kernelStorage
  * @param {string | (() => string | Promise<string>)} vatconfig absolute path or thunk
  * @param {unknown} bootstrapArgs JSON-serializable data
@@ -118,22 +119,21 @@ export async function buildSwingset(
     verbose,
     profileVats,
     debugVats,
+    warehousePolicy,
   },
 ) {
   const debugPrefix = debugName === undefined ? '' : `${debugName}:`;
   const mbs = buildMailboxStateMap(mailboxStorage);
 
-  const bridgeDevice = bridgeOutbound && buildBridge(bridgeOutbound);
+  const bridgeDevice = buildBridge(bridgeOutbound);
   const mailboxDevice = buildMailbox(mbs);
   const timerDevice = buildTimer();
 
   const deviceEndowments = {
     mailbox: { ...mailboxDevice.endowments },
     timer: { ...timerDevice.endowments },
+    bridge: { ...bridgeDevice.endowments },
   };
-  if (bridgeDevice) {
-    deviceEndowments.bridge = { ...bridgeDevice.endowments };
-  }
 
   async function ensureSwingsetInitialized() {
     if (swingsetIsInitialized(kernelStorage)) {
@@ -175,18 +175,16 @@ export async function buildSwingset(
     const bootVat =
       swingsetConfig.vats[swingsetConfig.bootstrap || 'bootstrap'];
 
-    if (bridgeOutbound) {
-      const batchChainStorage = (method, args) =>
-        bridgeOutbound(BRIDGE_ID.STORAGE, { method, args });
+    const batchChainStorage = (method, args) =>
+      bridgeOutbound(BRIDGE_ID.STORAGE, { method, args });
 
-      // Extract data from chain storage as [path, value?] pairs.
-      const chainStorageEntries = exportStorage(
-        batchChainStorage,
-        exportStorageSubtrees,
-        clearStorageSubtrees,
-      );
-      bootVat.parameters = { ...bootVat.parameters, chainStorageEntries };
-    }
+    // Extract data from chain storage as [path, value?] pairs.
+    const chainStorageEntries = exportStorage(
+      batchChainStorage,
+      exportStorageSubtrees,
+      clearStorageSubtrees,
+    );
+    bootVat.parameters = { ...bootVat.parameters, chainStorageEntries };
 
     // Since only on-chain swingsets like `agd` have a bridge (and thereby
     // `CORE_EVAL` support), things like `ag-solo` will need to do the
@@ -217,7 +215,8 @@ export async function buildSwingset(
     return bridgedCoreProposals;
   }
 
-  const coreProposals = await ensureSwingsetInitialized();
+  const pendingCoreProposals = await ensureSwingsetInitialized();
+  upgradeSwingset(kernelStorage);
   const controller = await makeSwingsetController(
     kernelStorage,
     deviceEndowments,
@@ -228,6 +227,7 @@ export async function buildSwingset(
       verbose,
       profileVats,
       debugVats,
+      warehousePolicy,
     },
   );
 
@@ -235,10 +235,10 @@ export async function buildSwingset(
   // (either on bootstrap block (0) or in endBlock).
 
   return {
-    coreProposals,
+    coreProposals: pendingCoreProposals,
     controller,
     mb: mailboxDevice,
-    bridgeInbound: bridgeDevice && bridgeDevice.deliverInbound,
+    bridgeInbound: bridgeDevice.deliverInbound,
     timer: timerDevice,
   };
 }
@@ -331,9 +331,32 @@ export async function launch({
   swingStoreTraceFile,
   swingStoreExportCallback,
   keepSnapshots,
+  keepTranscripts,
+  archiveSnapshot,
+  archiveTranscript,
   afterCommitCallback = async () => ({}),
+  swingsetConfig,
 }) {
   console.info('Launching SwingSet kernel');
+
+  // The swingstore export-data callback gives us export-data records,
+  // which must be written into IAVL by sending them over to the
+  // golang side with swingStoreExportCallback . However, that
+  // callback isn't ready right away, so if e.g. openSwingStore() were
+  // to invoke it, we might lose those records. Likewise
+  // saveOutsideState() gathers the chainSends just before calling
+  // commit, so if the callback were invoked during commit(), those
+  // records would be left for a subsequent block, which would break
+  // consensus if the node crashed before the next commit. So this
+  // `allowExportCallback` flag serves to catch these two cases.
+  //
+  // Note that swingstore is within its rights to call exportCallback
+  // during openSwingStore() or commit(), it just happens to not do so
+  // right now. If that changes under maintenance, this guard should
+  // turn a corruption bug into a crash bug. See
+  // https://github.com/Agoric/agoric-sdk/issues/9655 for details
+
+  let allowExportCallback = false;
 
   // The swingStore's exportCallback is synchronous, however we allow the
   // callback provided to launch-chain to be asynchronous. The callbacks are
@@ -345,6 +368,7 @@ export async function launch({
   const swingStoreExportSyncCallback =
     swingStoreExportCallback &&
     (updates => {
+      assert(allowExportCallback, 'export-data callback called at bad time');
       pendingSwingStoreExport = swingStoreExportCallbackWithQueue(updates);
     });
 
@@ -352,6 +376,9 @@ export async function launch({
     traceFile: swingStoreTraceFile,
     exportCallback: swingStoreExportSyncCallback,
     keepSnapshots,
+    keepTranscripts,
+    archiveSnapshot,
+    archiveTranscript,
   });
   const { kvStore, commit } = hostStorage;
 
@@ -376,6 +403,9 @@ export async function launch({
   });
 
   console.debug(`buildSwingset`);
+  const warehousePolicy = {
+    maxVatsOnline: swingsetConfig.maxVatsOnline,
+  };
   const {
     coreProposals: bootstrapCoreProposals,
     controller,
@@ -393,6 +423,7 @@ export async function launch({
       debugName,
       slogCallbacks,
       slogSender,
+      warehousePolicy,
     },
   );
 
@@ -472,6 +503,7 @@ export async function launch({
   }
 
   async function saveOutsideState(blockHeight) {
+    allowExportCallback = false;
     const chainSends = await clearChainSends();
     kvStore.set(getHostKey('height'), `${blockHeight}`);
     kvStore.set(getHostKey('chainSends'), JSON.stringify(chainSends));
@@ -549,8 +581,15 @@ export async function launch({
   let savedBeginHeight = Number(
     kvStore.get(getHostKey('beginHeight')) || savedHeight,
   );
+  /**
+   * duration of the latest swingset execution in either END_BLOCK or
+   * once-per-chain bootstrap (the latter excluding "bridged" core proposals
+   * that run outside the bootstrap vat)
+   */
   let runTime = 0;
+  /** duration of the latest saveChainState(), which commits mailbox data to chain storage */
   let chainTime;
+  /** duration of the latest saveOutsideState(), which commits to swing-store host storage */
   let saveTime = 0;
   let endBlockFinish = 0;
   let blockParams;
@@ -705,33 +744,16 @@ export async function launch({
 
   /**
    * @template T
-   * @param {string} type
+   * @param {string} label
    * @param {() => Promise<T>} fn
+   * @param {() => void} onSettled
    */
-  async function processAction(type, fn) {
-    const start = Date.now();
-    const finish = res => {
-      // blockManagerConsole.error(
-      //   'Action',
-      //   action.type,
-      //   action.blockHeight,
-      //   'is done!',
-      // );
-      runTime += Date.now() - start;
-      return res;
-    };
-
+  function withErrorLogging(label, fn, onSettled) {
     const p = fn();
-    // Just attach some callbacks, but don't use the resulting neutered result
-    // promise.
-    void E.when(p, finish, e => {
-      // None of these must fail, and if they do, log them verbosely before
-      // returning to the chain.
-      blockManagerConsole.error(type, 'error:', e);
-      finish();
+    void E.when(p, onSettled, err => {
+      blockManagerConsole.error(label, 'error:', err);
+      onSettled();
     });
-    // Return the original promise so that the caller gets the original
-    // resolution or rejection.
     return p;
   }
 
@@ -802,8 +824,13 @@ export async function launch({
       // Start a block transaction, but without changing state
       // for the upcoming begin block check
       saveBeginHeight(savedBeginHeight);
-      await processAction(action.type, async () =>
-        bootstrapBlock(blockHeight, blockTime, bootstrapBlockParams),
+      const start = Date.now();
+      await withErrorLogging(
+        action.type,
+        () => bootstrapBlock(blockHeight, blockTime, bootstrapBlockParams),
+        () => {
+          runTime += Date.now() - start;
+        },
       );
     } finally {
       controller.writeSlogObject({
@@ -891,6 +918,7 @@ export async function launch({
     // );
     switch (action.type) {
       case ActionType.AG_COSMOS_INIT: {
+        allowExportCallback = true; // cleared by saveOutsideState in COMMIT_BLOCK
         const { blockHeight, isBootstrap, upgradeDetails } = action;
 
         if (!blockNeedsExecution(blockHeight)) {
@@ -907,17 +935,16 @@ export async function launch({
           await doBootstrap(action);
         }
 
-        // Merge the core proposals from the bootstrap block with the
-        // ones from the upgrade.
+        // Concatenate together any pending core proposals from chain bootstrap
+        // with any from this inbound init action, then execute them all.
         const coreProposals = mergeCoreProposals(
           bootstrapCoreProposals,
           softwareUpgradeCoreProposals,
           upgradeInfoCoreProposals,
         );
-
         if (coreProposals.steps.length) {
-          upgradeDetails ||
-            isBootstrap ||
+          isBootstrap ||
+            upgradeDetails ||
             Fail`Unexpected core proposals outside of consensus start`;
           await doCoreProposals(action, coreProposals);
         }
@@ -944,9 +971,9 @@ export async function launch({
         });
 
         // Save the kernel's computed state just before the chain commits.
-        const start2 = Date.now();
+        const start = Date.now();
         await saveOutsideState(savedHeight);
-        saveTime = Date.now() - start2;
+        saveTime = Date.now() - start;
 
         blockParams = undefined;
 
@@ -977,6 +1004,7 @@ export async function launch({
       }
 
       case ActionType.BEGIN_BLOCK: {
+        allowExportCallback = true; // cleared by saveOutsideState in COMMIT_BLOCK
         const { blockHeight, blockTime, params } = action;
         blockParams = parseParams(params);
         verboseBlocks &&
@@ -1043,14 +1071,19 @@ export async function launch({
 
           provideInstallationPublisher();
 
-          await processAction(action.type, async () =>
-            endBlock(blockHeight, blockTime, blockParams),
+          const start = Date.now();
+          await withErrorLogging(
+            action.type,
+            () => endBlock(blockHeight, blockTime, blockParams),
+            () => {
+              runTime += Date.now() - start;
+            },
           );
 
           // We write out our on-chain state as a number of chainSends.
-          const start = Date.now();
+          const start2 = Date.now();
           await saveChainState();
-          chainTime = Date.now() - start;
+          chainTime = Date.now() - start2;
 
           // Advance our saved state variables.
           savedHeight = blockHeight;

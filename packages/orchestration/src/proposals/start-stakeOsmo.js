@@ -1,4 +1,4 @@
-import { makeTracer } from '@agoric/internal';
+import { deeplyFulfilledObject, makeTracer } from '@agoric/internal';
 import { makeStorageNodeChild } from '@agoric/internal/src/lib-chainStorage.js';
 import { prepareVowTools } from '@agoric/vow';
 import { makeHeapZone } from '@agoric/zone';
@@ -7,7 +7,7 @@ import { makeChainHub } from '../exos/chain-hub.js';
 
 /**
  * @import {IBCConnectionID} from '@agoric/vats';
- * @import {StakeIcaSF} from '../examples/stakeIca.contract';
+ * @import {StakeIcaSF} from '../examples/stake-ica.contract';
  */
 
 const trace = makeTracer('StartStakeOsmo', true);
@@ -17,7 +17,7 @@ const trace = makeTracer('StartStakeOsmo', true);
  *   installation: {
  *     consume: {
  *       stakeIca: Installation<
- *         import('../examples/stakeIca.contract.js').start
+ *         import('../examples/stake-ica.contract.js').start
  *       >;
  *     };
  *   };
@@ -33,7 +33,7 @@ export const startStakeOsmo = async ({
     agoricNames,
     board,
     chainStorage,
-    chainTimerService,
+    chainTimerService: timer,
     cosmosInterchainService,
     startUpgradable,
   },
@@ -66,15 +66,17 @@ export const startStakeOsmo = async ({
       chainId: osmosis.chainId,
       hostConnectionId: connectionInfo.counterparty.connection_id,
       controllerConnectionId: connectionInfo.id,
-      bondDenom: osmosis.stakingTokens[0].denom,
       icqEnabled: osmosis.icqEnabled,
     },
-    privateArgs: {
-      cosmosInterchainService: await cosmosInterchainService,
-      storageNode,
-      marshaller,
-      timer: await chainTimerService,
-    },
+    privateArgs: await deeplyFulfilledObject(
+      harden({
+        agoricNames,
+        cosmosInterchainService,
+        storageNode,
+        marshaller,
+        timer,
+      }),
+    ),
   };
 
   const { instance } = await E(startUpgradable)(startOpts);

@@ -13,7 +13,8 @@
         "@agoric/builders/scripts/vats/init-transfer.js"
       ],
       [
-        "@agoric/builders/scripts/vats/init-orchestration.js"
+        "@agoric/builders/scripts/vats/init-orchestration.js",
+        "@agoric/builders/scripts/orchestration/write-chain-info.js"
       ],
       [
         {

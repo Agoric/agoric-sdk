@@ -8,6 +8,7 @@ import { Nat } from '@endo/nat';
 /**
  * @import {JsonSafe} from '@agoric/cosmic-proto';
  * @import {MsgDelegateResponse, MsgUndelegateResponse} from '@agoric/cosmic-proto/cosmos/staking/v1beta1/tx.js';
+ * @import {MsgSendResponse} from '@agoric/cosmic-proto/cosmos/bank/v1beta1/tx.js';
  * @import {BridgeHandler, ScopedBridgeManager} from '../src/types.js';
  * @import {Remote} from '@agoric/vow';
  */
@@ -26,14 +27,16 @@ const INFINITE_AMOUNT = 99999999999n;
  * transaction outside the Agoric VM. (Similarly for deposits.)
  *
  * @param {import('@agoric/zone').Zone} zone
- * @param {object} opts
- * @param {Balances} opts.balances initial balances
+ * @param {object} [opts]
+ * @param {Balances} [opts.balances] initial balances
+ * @param {(obj) => void} [opts.onToBridge]
  * @returns {ScopedBridgeManager<'bank'>}
  * @see {makeFakeBankManagerKit} and its `pourPayment` for a helper
  */
-export const makeFakeBankBridge = (zone, opts = { balances: {} }) => {
-  const { balances } = opts;
-
+export const makeFakeBankBridge = (
+  zone,
+  { balances = {}, onToBridge = () => {} } = {},
+) => {
   const currentBalance = ({ address, denom }) =>
     address === FAUCET_ADDRESS
       ? INFINITE_AMOUNT
@@ -45,6 +48,7 @@ export const makeFakeBankBridge = (zone, opts = { balances: {} }) => {
   return zone.exo('Fake Bank Bridge Manager', undefined, {
     getBridgeId: () => 'bank',
     toBridge: async obj => {
+      onToBridge(obj);
       const { method, type, ...params } = obj;
       trace('toBridge', type, method, params);
       switch (obj.type) {
@@ -137,6 +141,16 @@ export const makeFakeIbcBridge = (zone, onToBridge) => {
       if (method === 'sendPacket') {
         const { packet } = params;
         return { ...packet, sequence: '39' };
+      } else if (method === 'startChannelCloseInit') {
+        const { packet } = params;
+        if (hndlr)
+          E(hndlr)
+            .fromBridge({
+              type: 'IBC_EVENT',
+              event: 'channelCloseConfirm',
+              packet,
+            })
+            .catch(e => console.error(e));
       }
       return undefined;
     },
@@ -156,6 +170,123 @@ export const makeFakeIbcBridge = (zone, onToBridge) => {
 };
 
 export const LOCALCHAIN_DEFAULT_ADDRESS = 'agoric1fakeLCAAddress';
+
+/**
+ * Constants that can be used to force an error state in a bridge transaction.
+ * Typically used for the LocalChainBridge which currently accepts all messages
+ * unless specified otherwise. Less useful for the DibcBridge which rejects all
+ * messages unless specified otherwise.
+ */
+export const SIMULATED_ERRORS = {
+  TIMEOUT: 504n,
+  BAD_REQUEST: 400n,
+};
+
+/**
+ * Used to mock responses from Cosmos Golang back to SwingSet for for
+ * E(lca).executeTx().
+ *
+ * Returns an empty object per message unless specified.
+ *
+ * @param {object} message
+ * @param {number} sequence
+ * @returns {unknown}
+ * @throws {Error} to simulate failures in certain cases
+ */
+export const fakeLocalChainBridgeTxMsgHandler = (message, sequence) => {
+  switch (message['@type']) {
+    // TODO #9402 reference bank to ensure caller has tokens they are transferring
+    case '/ibc.applications.transfer.v1.MsgTransfer': {
+      if (message.token.amount === String(SIMULATED_ERRORS.TIMEOUT)) {
+        throw Error('simulated unexpected MsgTransfer packet timeout');
+      }
+      // like `JsonSafe<MsgTransferResponse>`, but bigints are converted to numbers
+      // FIXME should vlocalchain return a string instead of number for bigint?
+      return {
+        sequence,
+      };
+    }
+    case '/cosmos.bank.v1beta1.MsgSend': {
+      if (message.amount[0].amount === String(SIMULATED_ERRORS.BAD_REQUEST)) {
+        throw Error('simulated error');
+      }
+      return /** @type {JsonSafe<MsgSendResponse>} */ ({});
+    }
+    case '/cosmos.staking.v1beta1.MsgDelegate': {
+      if (message.amount.amount === String(SIMULATED_ERRORS.TIMEOUT)) {
+        throw Error('simulated packet timeout');
+      }
+      return /** @type {JsonSafe<MsgDelegateResponse>} */ ({});
+    }
+    case '/cosmos.staking.v1beta1.MsgUndelegate': {
+      return /** @type {JsonSafe<MsgUndelegateResponse>} */ ({
+        // 5 seconds from unix epoch
+        completionTime: { seconds: '5', nanos: 0 },
+      });
+    }
+    // returns one empty object per message unless specified
+    default:
+      return {};
+  }
+};
+
+export const LOCALCHAIN_QUERY_ALL_BALANCES_RESPONSE = [
+  {
+    value: 10n,
+    denom: 'ubld',
+  },
+  {
+    value: 10n,
+    denom: 'uist',
+  },
+];
+
+/**
+ * Used to mock responses from Cosmos Golang back to SwingSet for for
+ * E(lca).query() and E(lca).queryMany().
+ *
+ * Returns an empty object per query message unless specified.
+ *
+ * @param {object} message
+ * @returns {unknown}
+ */
+export const fakeLocalChainBridgeQueryHandler = message => {
+  switch (message['@type']) {
+    case '/cosmos.bank.v1beta1.QueryAllBalancesRequest': {
+      return {
+        error: '',
+        height: '1',
+        reply: {
+          '@type': '/cosmos.bank.v1beta1.QueryAllBalancesResponse',
+          balances: LOCALCHAIN_QUERY_ALL_BALANCES_RESPONSE.map(x => ({
+            denom: x.denom,
+            amount: String(x.value),
+          })),
+          pagination: { nextKey: null, total: '2' },
+        },
+      };
+    }
+    case '/cosmos.bank.v1beta1.QueryBalanceRequest': {
+      return {
+        error: '',
+        height: '1',
+        reply: {
+          '@type': '/cosmos.bank.v1beta1.QueryBalanceResponse',
+          balance: {
+            denom: message.denom,
+            // return 10 for all denoms, somewhat arbitrarily.
+            // if a denom is not known to cosmos bank, we'd expect to see
+            // `{denom, amount: '0'}` returned
+            amount: '10',
+          },
+        },
+      };
+    }
+    // returns one empty object per message unless specified
+    default:
+      return {};
+  }
+};
 
 /**
  * @param {import('@agoric/zone').Zone} zone
@@ -181,38 +312,14 @@ export const makeFakeLocalchainBridge = (zone, onToBridge = () => {}) => {
         }
         case 'VLOCALCHAIN_EXECUTE_TX': {
           lcaExecuteTxSequence += 1;
-          return obj.messages.map(message => {
-            switch (message['@type']) {
-              // TODO #9402 reference bank to ensure caller has tokens they are transferring
-              case '/ibc.applications.transfer.v1.MsgTransfer': {
-                if (message.token.amount === '504') {
-                  throw Error(
-                    'simulated unexpected MsgTransfer packet timeout',
-                  );
-                }
-                // like `JsonSafe<MsgTransferResponse>`, but bigints are converted to numbers
-                // XXX should vlocalchain return a string instead of number for bigint?
-                return {
-                  sequence: lcaExecuteTxSequence,
-                };
-              }
-              case '/cosmos.staking.v1beta1.MsgDelegate': {
-                if (message.amount.amount === '504') {
-                  throw Error('simulated packet timeout');
-                }
-                return /** @type {JsonSafe<MsgDelegateResponse>} */ ({});
-              }
-              case '/cosmos.staking.v1beta1.MsgUndelegate': {
-                return /** @type {JsonSafe<MsgUndelegateResponse>} */ ({
-                  // 5 seconds from unix epoch
-                  completionTime: { seconds: 5n, nanos: 0 },
-                });
-              }
-              // returns one empty object per message unless specified
-              default:
-                return {};
-            }
-          });
+          return obj.messages.map(message =>
+            fakeLocalChainBridgeTxMsgHandler(message, lcaExecuteTxSequence),
+          );
+        }
+        case 'VLOCALCHAIN_QUERY_MANY': {
+          return obj.messages.map(message =>
+            fakeLocalChainBridgeQueryHandler(message),
+          );
         }
         default:
           Fail`unknown type ${type}`;

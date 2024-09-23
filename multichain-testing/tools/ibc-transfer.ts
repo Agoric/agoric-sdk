@@ -37,12 +37,14 @@ type SimpleChainAddress = {
   chainName: string;
 };
 
-export const DEFAULT_TIMEOUT_NS = 1893456000000000000n;
+// 2030-01-01T00:00:00Z
+export const DEFAULT_TIMEOUT_NS =
+  1893456000n * NANOSECONDS_PER_MILLISECOND * MILLISECONDS_PER_SECOND;
 
 /**
  * @param {number} [ms] current time in ms (e.g. Date.now())
  * @param {bigint} [minutes=5n] number of minutes in the future
- * @returns {bigint} nanosecond timestamp 5 mins in the future */
+ * @returns {bigint} nanosecond timestamp absolute since Unix epoch */
 export const getTimeout = (ms: number = 0, minutes = 5n) => {
   // UNTIL #9200. timestamps are getting clobbered somewhere along the way
   // and we are observing failed transfers with timeouts years in the past.
@@ -126,7 +128,7 @@ export const createFundedWalletAndClient = async (
   // TODO use telescope generated rpc client from @agoric/cosmic-proto
   // https://github.com/Agoric/agoric-sdk/issues/9200
   const client = await SigningStargateClient.connectWithSigner(
-    getRpcEndpoint(),
+    await getRpcEndpoint(),
     wallet,
   );
   return { client, wallet, address };

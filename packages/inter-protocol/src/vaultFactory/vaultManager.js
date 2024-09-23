@@ -39,7 +39,6 @@ import {
 } from '@agoric/vat-data';
 import { TransferPartShape } from '@agoric/zoe/src/contractSupport/atomicTransfer.js';
 import {
-  atomicRearrange,
   ceilMultiplyBy,
   floorDivideBy,
   getAmountIn,
@@ -52,6 +51,7 @@ import {
   TopicsRecordShape,
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { PriceQuoteShape, SeatShape } from '@agoric/zoe/src/typeGuards.js';
+import { multiplyBy } from '@agoric/zoe/src/contractSupport/ratio.js';
 import {
   checkDebtLimit,
   makeNatAmountShape,
@@ -756,7 +756,7 @@ export const prepareVaultManagerKit = (
                   amounts,
                 ]),
             );
-            atomicRearrange(zcf, harden(transfers));
+            zcf.atomicRearrange(harden(transfers));
           }
 
           const { prioritizedVaults } = collateralEphemera(
@@ -993,8 +993,9 @@ export const prepareVaultManagerKit = (
           );
           state.totalDebt = AmountMath.subtract(
             AmountMath.add(state.totalDebt, vault.getCurrentDebt()),
-            oldDebtNormalized,
+            multiplyBy(oldDebtNormalized, state.compoundedInterest),
           );
+
           void facets.helper.writeMetrics();
         },
       },

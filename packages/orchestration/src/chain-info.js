@@ -1,72 +1,53 @@
 import { E } from '@endo/far';
-import { mustMatch } from '@endo/patterns';
-import { normalizeConnectionInfo } from './exos/chain-hub.js';
+import { M, mustMatch } from '@endo/patterns';
+import {
+  ASSETS_KEY,
+  CHAIN_KEY,
+  CONNECTIONS_KEY,
+  normalizeConnectionInfo,
+} from './exos/chain-hub.js';
 import fetchedChainInfo from './fetched-chain-info.js'; // Refresh with scripts/refresh-chain-info.ts
-import { CosmosChainInfoShape } from './typeGuards.js';
+import { CosmosAssetInfoShape, CosmosChainInfoShape } from './typeGuards.js';
 
-/** @import {CosmosChainInfo, EthChainInfo, IBCConnectionInfo} from './types.js'; */
-
-/** @typedef {CosmosChainInfo | EthChainInfo} ChainInfo */
-
-const knownChains = /** @satisfies {Record<string, ChainInfo>} */ (
-  harden({
-    ...fetchedChainInfo,
-    // FIXME does not have useful connections
-    // UNTIL https://github.com/Agoric/agoric-sdk/issues/9492
-    agoriclocal: {
-      chainId: 'agoriclocal',
-      connections: {
-        'cosmoshub-4': {
-          id: 'connection-1',
-          client_id: '07-tendermint-3',
-          counterparty: {
-            client_id: '07-tendermint-2',
-            connection_id: 'connection-1',
-            prefix: {
-              key_prefix: '',
-            },
-          },
-          state: 3 /* IBCConnectionState.STATE_OPEN */,
-          transferChannel: {
-            portId: 'transfer',
-            channelId: 'channel-1',
-            counterPartyChannelId: 'channel-1',
-            counterPartyPortId: 'transfer',
-            ordering: 1 /* Order.ORDER_UNORDERED */,
-            state: 3 /* IBCConnectionState.STATE_OPEN */,
-            version: 'ics20-1',
-          },
-        },
-        osmosislocal: {
-          id: 'connection-0',
-          client_id: '07-tendermint-2',
-          counterparty: {
-            client_id: '07-tendermint-2',
-            connection_id: 'connection-1',
-            prefix: {
-              key_prefix: '',
-            },
-          },
-          state: 3 /* IBCConnectionState.STATE_OPEN */,
-          transferChannel: {
-            portId: 'transfer',
-            channelId: 'channel-0',
-            counterPartyChannelId: 'channel-1',
-            counterPartyPortId: 'transfer',
-            ordering: 1 /* Order.ORDER_UNORDERED */,
-            state: 3 /* IBCConnectionState.STATE_OPEN */,
-            version: 'ics20-1',
-          },
-        },
-      },
-    },
-  })
-);
-
-/** @typedef {typeof knownChains} KnownChains */
+/** @import {Chain, CosmosAssetInfo, CosmosChainInfo, EthChainInfo, IBCConnectionInfo} from './types.js'; */
+/** @import {NameAdmin} from '@agoric/vats'; */
 
 /**
- * @param {ERef<import('@agoric/vats').NameHubKit['nameAdmin']>} agoricNamesAdmin
+ * Info used to build a {@link Chain} object - channel, connection, and denom
+ * info.
+ *
+ * @typedef {CosmosChainInfo | EthChainInfo} ChainInfo
+ */
+
+const knownChains = /** @satisfies {Record<string, ChainInfo>} */ (
+  harden(fetchedChainInfo)
+);
+
+/**
+ * @typedef {typeof knownChains} KnownChains
+ * @internal
+ */
+
+// TODO(#9966, #9967): include this in registerChain
+/**
+ * Register chain assets into agoricNames
+ *
+ * @param {ERef<NameAdmin>} agoricNamesAdmin
+ * @param {string} name
+ * @param {CosmosAssetInfo[]} assets
+ * @alpha
+ */
+export const registerChainAssets = async (agoricNamesAdmin, name, assets) => {
+  mustMatch(assets, M.arrayOf(CosmosAssetInfoShape));
+  const { nameAdmin: assetAdmin } =
+    await E(agoricNamesAdmin).provideChild(ASSETS_KEY);
+  return E(assetAdmin).update(name, assets);
+};
+
+/**
+ * Register a chain into agoricNames
+ *
+ * @param {ERef<NameAdmin>} agoricNamesAdmin
  * @param {string} name
  * @param {CosmosChainInfo} chainInfo
  * @param {(...messages: string[]) => void} [log]
@@ -80,9 +61,9 @@ export const registerChain = async (
   log = () => {},
   handledConnections = new Set(),
 ) => {
-  const { nameAdmin } = await E(agoricNamesAdmin).provideChild('chain');
+  const { nameAdmin } = await E(agoricNamesAdmin).provideChild(CHAIN_KEY);
   const { nameAdmin: connAdmin } =
-    await E(agoricNamesAdmin).provideChild('chainConnection');
+    await E(agoricNamesAdmin).provideChild(CONNECTIONS_KEY);
 
   mustMatch(chainInfo, CosmosChainInfoShape);
   const { connections = {}, ...vertex } = chainInfo;

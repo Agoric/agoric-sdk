@@ -8,7 +8,7 @@ import { VowShape } from '@agoric/vow';
 const { fromEntries } = Object;
 
 /**
- * @import {HostOf} from '@agoric/async-flow';
+ * @import {HostInterface, HostOf} from '@agoric/async-flow';
  * @import {MapStore} from '@agoric/store';
  * @import {VowTools} from '@agoric/vow';
  * @import {ResolvedPublicTopic} from '@agoric/zoe/src/contractSupport/topics.js';
@@ -18,7 +18,7 @@ const { fromEntries } = Object;
 
 /**
  * @typedef {{
- *   accounts: MapStore<string, OrchestrationAccount<any>>;
+ *   accounts: MapStore<string, HostInterface<OrchestrationAccount<any>>>;
  *   publicTopics: MapStore<string, ResolvedPublicTopic<unknown>>;
  * }} PortfolioHolderState
  */
@@ -43,7 +43,7 @@ const preparePortfolioHolderKit = (zone, { asVow, when }) => {
     'PortfolioHolderKit',
     {
       invitationMakers: M.interface('InvitationMakers', {
-        MakeInvitation: M.call(
+        Proxying: M.call(
           ChainNameShape,
           M.string(),
           M.arrayOf(M.any()),
@@ -95,10 +95,11 @@ const preparePortfolioHolderKit = (zone, { asVow, when }) => {
          * @param {IA} invitationArgs
          * @returns {Promise<Invitation<unknown, IA>>}
          */
-        MakeInvitation(chainName, action, invitationArgs) {
+        Proxying(chainName, action, invitationArgs) {
           const { accounts } = this.state;
           accounts.has(chainName) || Fail`no account found for ${chainName}`;
           const account = accounts.get(chainName);
+          // @ts-expect-error XXX invitationMakers
           return when(E(account).asContinuingOffer(), ({ invitationMakers }) =>
             E(invitationMakers)[action](...invitationArgs),
           );
@@ -125,7 +126,7 @@ const preparePortfolioHolderKit = (zone, { asVow, when }) => {
         },
         /**
          * @param {string} chainName key where the account is stored
-         * @param {OrchestrationAccount<any>} account
+         * @param {HostInterface<OrchestrationAccount<any>>} account
          * @param {ResolvedPublicTopic<unknown>} publicTopic
          */
         addAccount(chainName, account, publicTopic) {

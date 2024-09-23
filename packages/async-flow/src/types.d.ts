@@ -46,11 +46,18 @@ export type GuestOf<F extends HostAsyncFuncWrapper> = F extends (
   ? (...args: A) => Promise<R>
   : F;
 
+// from https://github.com/sindresorhus/type-fest/blob/main/source/simplify.d.ts
+type Simplify<T> = { [KeyType in keyof T]: T[KeyType] } & {};
+
 /**
  * Convert an entire Guest interface into what the host will implement.
  */
 type HostInterface<T> = {
-  [K in keyof T]: HostOf<T[K]>;
+  [K in keyof T]: T[K] extends CallableFunction
+    ? HostOf<T[K]>
+    : T[K] extends Record<string, any>
+      ? Simplify<HostInterface<T[K]>>
+      : T[K];
 };
 
 /**
@@ -61,9 +68,11 @@ export type GuestInterface<T> = {
     ? (...args: Parameters<T[K]>) => Promise<R>
     : T[K] extends HostAsyncFuncWrapper
       ? GuestOf<T[K]>
-      : T[K] extends object
-        ? GuestInterface<T[K]>
-        : T[K];
+      : T[K] extends (...args: any[]) => infer R
+        ? T[K]
+        : T[K] extends object
+          ? GuestInterface<T[K]>
+          : T[K];
 };
 
 /**
@@ -71,8 +80,12 @@ export type GuestInterface<T> = {
  *
  * Specifically, Promise return values are converted to Vows.
  */
-export type HostOf<F> = F extends (...args: infer A) => Promise<infer R>
-  ? (...args: A) => Vow<R extends Passable ? R : HostInterface<R>>
+export type HostOf<F extends CallableFunction> = F extends (
+  ...args: infer A
+) => infer R
+  ? R extends Promise<infer T>
+    ? (...args: A) => Vow<T extends Passable ? T : HostInterface<T>>
+    : (...args: A) => HostInterface<R>
   : F;
 
 export type HostArgs<GA extends any[]> = { [K in keyof GA]: HostOf<GA[K]> };

@@ -5,7 +5,7 @@ FILE = config.yaml
 
 HELM_REPO = starship
 HELM_CHART = devnet
-HELM_VERSION = v0.2.2
+HELM_VERSION = v0.2.10
 
 ###############################################################################
 ###                              All commands                               ###
@@ -61,7 +61,7 @@ setup-kind:
 
 .PHONY: clean-kind
 clean-kind:
-	kind delete cluster --name $(KIND_CLUSTER)
+	-kind delete cluster --name $(KIND_CLUSTER)
 
 ###############################################################################
 ###                          Agoric Setup                                   ###
@@ -91,3 +91,15 @@ provision-smart-wallet:
 # view agoric swingset logs from slog file, until we can set `DEBUG=SwingSet:vat,SwingSet:ls`
 tail-slog:
 	kubectl exec -i agoriclocal-genesis-0 -c validator -- tail -f slog.slog
+
+###############################################################################
+###                           Start All                                     ###
+###############################################################################
+
+.PHONY: wait-for-pods
+wait-for-pods:
+	node_modules/.bin/tsx scripts/pod-readiness.ts
+
+.PHONY: start
+start: install wait-for-pods port-forward fund-provision-pool override-chain-registry
+

@@ -18,7 +18,6 @@ import {
 } from '@agoric/vat-data';
 import { assertKeywordName } from '@agoric/zoe/src/cleanProposal.js';
 import {
-  atomicRearrange,
   makeRecorderTopic,
   provideEmptySeat,
   SubscriberShape,
@@ -82,6 +81,21 @@ const trace = makeTracer('VD', true);
 
 const shortfallInvitationKey = 'shortfallInvitation';
 
+// If one manager/token fails, we don't want that to block possible success for
+// others, so we .catch() and log separately.
+//
+// exported for testing
+export const makeAllManagersDo = (collateralManagers, vaultManagers) => {
+  /** @param {(vm: VaultManager) => void} fn */
+  return fn => {
+    for (const managerIndex of collateralManagers.values()) {
+      Promise.resolve(vaultManagers.get(managerIndex).self)
+        .then(vm => fn(vm))
+        .catch(e => trace('🚨ERROR: allManagersDo', e));
+    }
+  };
+};
+
 /**
  * @param {import('@agoric/swingset-liveslots').Baggage} baggage
  * @param {import('./vaultFactory.js').VaultFactoryZCF} zcf
@@ -93,7 +107,7 @@ const shortfallInvitationKey = 'shortfallInvitation';
  * @param {ERef<Marshaller>} marshaller
  * @param {import('@agoric/zoe/src/contractSupport/recorder.js').MakeRecorderKit} makeRecorderKit
  * @param {import('@agoric/zoe/src/contractSupport/recorder.js').MakeERecorderKit} makeERecorderKit
- * @param managerParams
+ * @param {Record<string, import('./params.js').VaultManagerParamOverrides>} managerParams
  */
 const prepareVaultDirector = (
   baggage,
@@ -216,7 +230,7 @@ const prepareVaultDirector = (
         [mintSeat, mintReceiver, { Minted: kept }],
       ];
       try {
-        atomicRearrange(zcf, harden(transfers));
+        zcf.atomicRearrange(harden(transfers));
       } catch (e) {
         console.error('mintAndTransfer failed to rearrange', e);
         // If the rearrange fails, burn the newly minted tokens.
@@ -263,13 +277,7 @@ const prepareVaultDirector = (
     metrics: makeRecorderTopic('Vault Factory metrics', metricsKit),
   });
 
-  /** @param {(vm: VaultManager) => void} fn */
-  const allManagersDo = fn => {
-    for (const managerIndex of collateralManagers.values()) {
-      const vm = vaultManagers.get(managerIndex).self;
-      fn(vm);
-    }
-  };
+  const allManagersDo = makeAllManagersDo(collateralManagers, vaultManagers);
 
   const makeWaker = (name, func) => {
     return Far(name, {

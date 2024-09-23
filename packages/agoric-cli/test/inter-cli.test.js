@@ -252,8 +252,6 @@ test('amount parsing', t => {
   });
 });
 
-test.todo('want as max collateral wanted');
-
 /**
  * @type {import('@agoric/smart-wallet/src/offers.js').OfferStatus &
  *         { offerArgs: import('@agoric/inter-protocol/src/auction/auctionBook.js').OfferSpec}}
@@ -358,8 +356,6 @@ test('diagnostic for agd ENOENT', async t => {
   t.is(out.join('').trim(), '');
 });
 
-test.todo('agd ENOENT clue outside normalizeAddress');
-
 const usageTest = (words, blurb = 'Command usage:') => {
   test(`Usage: ${words}`, async t => {
     const argv = `node agops ${words} --help`.split(' ');
@@ -370,6 +366,8 @@ const usageTest = (words, blurb = 'Command usage:') => {
     program.addCommand(cmd);
     for (const c of subCommands(program)) {
       c.exitOverride(() => {
+        // CommanderError is a class constructor, and so
+        // must be invoked with `new`.
         throw new CommanderError(1, 'usage', '');
       });
     }
@@ -416,7 +414,6 @@ test('formatBid', t => {
   }
 });
 
-test.todo('fmtBid with error does not show result');
 /*
 _not_ like this:
 
@@ -607,7 +604,6 @@ test('README ex1: inter bid place by-price: printed offer is correct', async t =
   t.deepEqual(txt, expected);
 });
 
-test.todo('inter bid by-price shows tx, wallet status');
 /*
 $ agops inter bid by-price --price 0.81 --give 0.5 --maxBuy 3 --from gov2
 2023-03-30T21:48:14.479332418Z not in block 49618 retrying...
@@ -617,12 +613,9 @@ first bid update:
 {"id":"bid-1680212903989","price":"0.81 IST/ATOM","give":{"Bid":"0.5IST"},"want":"3ATOM","result":"Your bid has been accepted"}
 */
 
-test.todo('execSwingsetTransaction returns non-0 code');
-
-test.todo('already cancelled bid');
 /*
 $ agops inter bid cancel --from gov2 bid-1680211556497
 bid-1680211556497 not in live offer ids: bid-1680211593489,bid-1680212903989,bid-1680213097499,bid-1680220217218,bid-1680220368714,bid-1680220406939
 */
 
-test.todo('--give without number');
+// TODO improve test coverage https://github.com/Agoric/agoric-sdk/issues/9965

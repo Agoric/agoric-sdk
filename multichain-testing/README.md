@@ -2,10 +2,9 @@
 
 End-to-end testing environment for fully simulated chains, powered by [Starship](https://docs.cosmology.zone/starship).
 
-
 ## Configuration
 
-The current commands will read from [`config.yaml`](./config.yaml) to build a multi-chain teting environment. Currently, the image includes `agoric`, `osmosis`, and `cosmos-hub` chains and a hermes relayer between each.
+The current commands will read from [`config.yaml`](./config.yaml) to build a multi-chain testing environment. Currently, the image includes `agoric`, `osmosis`, and `cosmoshub` chains and a hermes relayer between each.
 
 The `agoric` software revision includes the vats necessary for building and testing orchestration applications:
 - vat-network
@@ -16,9 +15,15 @@ The `agoric` software revision includes the vats necessary for building and test
 
 ## Initial Setup
 
-First, ensure you have Kubernetes available. See https://docs.cosmology.zone/starship/get-started/step-2.
+Install the relevant dependencies:
 
-The following will install `kubectl`, `kind`, `helm`, and `yq` as needed.
+```sh
+yarn install
+```
+
+Ensure you have Kubernetes available. See https://docs.cosmology.zone/starship/get-started/step-2.
+
+The following will install `kubectl`, `kind`, `helm`, and `yq` as needed:
 
 ```sh
 make clean setup
@@ -26,19 +31,31 @@ make clean setup
 
 ## Getting Started
 
+You can start everything with a single command:
+
+```sh
+make start
+```
+
+This command will:
+1. Install the Helm chart and start the Starship service
+2. Wait for all pods to be ready
+3. Set up port forwarding
+4. Fund the provision pool
+5. Override the chain registry
+
+The process may take 7-12 minutes to complete. You'll see status updates as the pods come online.
+
+Alternatively, you can run the steps individually:
+
 ```sh
 # install helm chart and start starship service
 make install
 
 # wait for all pods to spin up
-watch kubectl get pods
-```
+make wait-for-pods
 
-**Wait 10-12** minutes. It takes some time for the above to finish setting up. The watch command should show a table in which the STATUS of every pod is Running.
-
-
-```bash
-# expose ports on your local machine. useful for testing dapps
+# expose ports on your local machine (useful for testing dapps)
 make port-forward
 
 # set up Agoric testing environment
@@ -47,7 +64,7 @@ make fund-provision-pool override-chain-registry
 
 If you get an error like "connection refused", you need to wait longer, until all the pods are Running.
 
-# Cleanup
+## Cleanup
 
 ```sh
 # stop the containers and port-forwarding
@@ -57,10 +74,9 @@ make stop
 make clean
 ```
 
-
 ## Logs
 
-You can use the following commmands to view logs:
+You can use the following commands to view logs:
 
 ```sh
 # agoric slogfile
@@ -92,12 +108,12 @@ make fund-wallet COIN=20000000ubld ADDR=$ADDR
 make provision-smart-wallet ADDR=$ADDR
 ```
 
-# Chain Registry
+## Chain Registry
 
 These only work if you've done `make port-forward`.
 
-http://localhost:8081/chains/agoriclocal
-http://localhost:8081/chains/osmosislocal
-http://localhost:8081/chains/gaialocal
-http://localhost:8081/chains/agoriclocal/keys
-http://localhost:8081/ibc
+- http://localhost:8081/chains/agoriclocal
+- http://localhost:8081/chains/osmosislocal
+- http://localhost:8081/chains/gaialocal
+- http://localhost:8081/chains/agoriclocal/keys
+- http://localhost:8081/ibc

@@ -10,6 +10,7 @@ import { prepareVowTools } from '@agoric/vow/vat.js';
 import { makeDurableZone } from '@agoric/zone/durable.js';
 import { E } from '@endo/far';
 
+import { prepareNetworkPowers } from '@agoric/network';
 import { buildRootObject as ibcBuildRootObject } from '../src/vat-ibc.js';
 import { buildRootObject as networkBuildRootObject } from '../src/vat-network.js';
 import { makeFakeIbcBridge } from '../tools/fake-bridge.js';
@@ -80,7 +81,8 @@ test('network - ibc', async t => {
   const ibcVat = E(ibcBuildRootObject)(null, null, provideBaggage('ibc'));
   const baggage = provideBaggage('network - ibc');
   const zone = makeDurableZone(baggage);
-  const powers = prepareVowTools(zone);
+  const vowTools = prepareVowTools(zone);
+  const powers = prepareNetworkPowers(zone, vowTools);
   const { when } = powers;
 
   const makeDurablePublishKit = prepareDurablePublishKit(
@@ -117,7 +119,10 @@ test('network - ibc', async t => {
   const makeIBCListener = prepareIBCListener(zone, makePlusOne);
 
   const testEcho = async () => {
-    await E(p).addListener(makeIBCListener({ publisher }));
+    const { publisher: voidP } = makeDurablePublishKit();
+
+    const listener = makeIBCListener({ publisher: voidP });
+    await E(p).addListener(listener);
 
     t.log('Accepting an Inbound Connection');
     const c = await when(E(p).connect('/ibc-port/port-1/unordered/foo'));
@@ -128,25 +133,19 @@ test('network - ibc', async t => {
 
     t.log('Closing the Connection');
     await when(E(c).close());
+    await E(p).removeListener(listener);
   };
 
   await testEcho();
 
   const testIBCOutbound = async () => {
+    const listener = makeIBCListener({ publisher });
+    await E(p).addListener(listener);
+
     t.log('Connecting to a Remote Port');
     const [hopName, portName, version] = ['connection-11', 'port-98', 'bar'];
     const remoteEndpoint = `/ibc-hop/${hopName}/ibc-port/${portName}/unordered/${version}`;
     const cP = E(p).connect(remoteEndpoint);
-
-    const evopen = await events.next();
-    t.assert(!evopen.done);
-    t.deepEqual(evopen.value, [
-      'plusOne-open',
-      {
-        localAddr: '/ibc-port/port-1/unordered/foo',
-        remoteAddr: '/ibc-port/port-1',
-      },
-    ]);
 
     const ev2 = await events.next();
     t.assert(!ev2.done);
@@ -169,7 +168,11 @@ test('network - ibc', async t => {
       connectionHops: ['connection-11'],
     });
 
+    t.log('Waiting for Connection');
     const c = await when(cP);
+
+    t.log('Waiting for events');
+
     const remoteAddress = c.getRemoteAddress();
     const localAddress = c.getLocalAddress();
     t.is(
@@ -215,7 +218,21 @@ test('network - ibc', async t => {
 
     t.is(await when(ack), 'a-transfer-reply');
 
-    await E(c).close();
+    t.log('Closing the Connection');
+    const closeV = E(c).close();
+    const evclose = await events.next();
+    t.assert(!evclose.done);
+    t.deepEqual(evclose.value, [
+      'startChannelCloseInit',
+      {
+        packet: {
+          source_channel: 'channel-1',
+          source_port: 'port-1',
+        },
+      },
+    ]);
+
+    await when(closeV);
   };
 
   await testIBCOutbound();

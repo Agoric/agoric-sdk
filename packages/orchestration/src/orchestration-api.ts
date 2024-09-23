@@ -7,16 +7,21 @@
 import type { Amount, Brand, NatAmount } from '@agoric/ertp/src/types.js';
 import type { CurrentWalletRecord } from '@agoric/smart-wallet/src/smartWallet.js';
 import type { Timestamp } from '@agoric/time';
-import type { LocalChainAccount } from '@agoric/vats/src/localchain.js';
+import type {
+  LocalChainAccount,
+  QueryManyFn,
+} from '@agoric/vats/src/localchain.js';
 import type { ResolvedPublicTopic } from '@agoric/zoe/src/contractSupport/topics.js';
 import type { Passable } from '@endo/marshal';
 import type {
+  AgoricChainMethods,
   ChainInfo,
   CosmosChainAccountMethods,
   CosmosChainInfo,
   IBCMsgTransferOptions,
   KnownChains,
   LocalAccountMethods,
+  ICQQueryFunction,
 } from './types.js';
 import type { ResolvedContinuingOfferResult } from './utils/zoe-tools.js';
 
@@ -39,7 +44,7 @@ export type Denom = string; // ibc/... or uist
  * In many cases, either a denom string or a local Brand can be used to
  * designate a remote token type.
  */
-export type DenomArg = Denom | Brand;
+export type DenomArg = Denom | Brand<'nat'>;
 
 /**
  * Count of some fungible token on some blockchain.
@@ -52,7 +57,7 @@ export type DenomAmount = {
 };
 
 /** Amounts can be provided as pure data using denoms or as ERTP Amounts */
-export type AmountArg = DenomAmount | Amount;
+export type AmountArg = DenomAmount | Amount<'nat'>;
 
 /** An address on some blockchain, e.g., cosmos, eth, etc. */
 export type ChainAddress = {
@@ -63,6 +68,11 @@ export type ChainAddress = {
   encoding: 'bech32' | 'ethereum';
 };
 
+/**
+ * Object that controls an account on a particular chain.
+ *
+ * The methods available depend on the chain and its capabilities.
+ */
 export type OrchestrationAccount<CI extends ChainInfo> = OrchestrationAccountI &
   (CI extends CosmosChainInfo
     ? CI['chainId'] extends `agoric${string}`
@@ -87,40 +97,63 @@ export interface Chain<CI extends ChainInfo> {
   makeAccount: () => Promise<OrchestrationAccount<CI>>;
   // FUTURE supply optional port object; also fetch port object
 
+  query: CI extends { icqEnabled: true }
+    ? ICQQueryFunction
+    : CI['chainId'] extends `agoric${string}`
+      ? QueryManyFn
+      : never;
+
   // TODO provide a way to get the local denom/brand/whatever for this chain
+}
+
+export interface DenomInfo<
+  HoldingChain extends keyof KnownChains,
+  IssuingChain extends keyof KnownChains,
+> {
+  /** The well-known Brand on Agoric for the direct asset */
+  brand?: Brand;
+  /** The Chain at which the argument `denom` exists (where the asset is currently held) */
+  chain: Chain<KnownChains[HoldingChain]>;
+  /** The Chain that is the issuer of the underlying asset */
+  base: Chain<KnownChains[IssuingChain]>;
+  /** the Denom for the underlying asset on its issuer chain */
+  baseDenom: Denom;
 }
 
 /**
  * Provided in the callback to `orchestrate()`.
  */
 export interface Orchestrator {
+  /**
+   * Get a Chain object for working with the given chain.
+   *
+   * @param {C} chainName name of the chain in KnownChains or the ChainHub backing the Orchestrator
+   */
   getChain: <C extends string>(
     chainName: C,
-  ) => Promise<Chain<C extends keyof KnownChains ? KnownChains[C] : any>>;
+  ) => Promise<
+    Chain<C extends keyof KnownChains ? KnownChains[C] : any> &
+      (C extends 'agoric' ? AgoricChainMethods : {})
+  >;
 
+  /**
+   * Make a new local (Agoric) ChainAccount
+   */
   makeLocalAccount: () => Promise<LocalChainAccount>;
+
   /**
    * For a denom, return information about a denom including the equivalent
    * local Brand, the Chain on which the denom is held, and the Chain that
    * issues the corresponding asset.
    * @param denom
    */
-  getBrandInfo: <
+  getDenomInfo: <
     HoldingChain extends keyof KnownChains,
     IssuingChain extends keyof KnownChains,
   >(
     denom: Denom,
-  ) => {
-    /** The well-known Brand on Agoric for the direct asset */
-    brand?: Brand;
-    /** The Chain at which the argument `denom` exists (where the asset is currently held) */
-    chain: Chain<KnownChains[HoldingChain]>;
-    /** The Chain that is the issuer of the underlying asset */
-    base: Chain<KnownChains[IssuingChain]>;
-    /** the Denom for the underlying asset on its issuer chain */
-    baseDenom: Denom;
-  };
-  // TODO preload the mapping so this can be synchronous
+  ) => DenomInfo<HoldingChain, IssuingChain>;
+
   /**
    * Convert an amount described in native data to a local, structured Amount.
    * @param amount - the described amount
@@ -150,7 +183,15 @@ export interface OrchestrationAccountI {
    * @param amount - the amount to send
    * @returns void
    */
-  send: (toAccount: ChainAddress, amount: AmountArg) => Promise<void>;
+  send: (toAccount: ChainAddress, amounts: AmountArg) => Promise<void>;
+
+  /**
+   * Transfer multiple amounts to another account on the same chain. The promise settles when the transfer is complete.
+   * @param toAccount - the account to send the amount to. MUST be on the same chain
+   * @param amounts - the amounts to send
+   * @returns void
+   */
+  sendAll: (toAccount: ChainAddress, amounts: AmountArg[]) => Promise<void>;
 
   /**
    * Transfer an amount to another account, typically on another chain.
@@ -193,6 +234,26 @@ export interface OrchestrationAccountI {
   getPublicTopics: () => Promise<Record<string, ResolvedPublicTopic<unknown>>>;
 }
 
+/**
+ * Flows to orchestrate are regular Javascript functions but have some
+ * constraints to fulfill the requirements of resumability after termination of
+ * the enclosing vat. Some requirements for each orchestration flow:
+ * - must not close over any values that could change between invocations
+ * - must satisfy the `OrchestrationFlow` interface
+ * - must be hardened
+ * - must not use `E()` (eventual send)
+ *
+ * The call to `orchestrate` using a flow function in reincarnations of the vat
+ * must have the same `durableName` as before. To help enforce these
+ * constraints, we recommend:
+ *
+ * - keeping flows in a `.flows.js` module
+ * - importing them all with `import * as flows` to get a single object keyed by
+ *   the export name
+ * - using `orchestrateAll` to treat each export name as the `durableName` of
+ *   the flow
+ * - adopting `@agoric/eslint-config` that has rules to help detect problems
+ */
 export interface OrchestrationFlow<CT = unknown> {
   (orc: Orchestrator, ctx: CT, ...args: Passable[]): Promise<unknown>;
 }
@@ -202,18 +263,28 @@ export interface OrchestrationFlow<CT = unknown> {
  * The type must be able to express transfers across different chains and transports.
  *
  * NOTE Expected to change, so consider an opaque structure.
+ * @internal
  */
-export type TransferMsg = {
+export interface TransferMsg {
   toAccount: ChainAddress;
   timeout?: Timestamp;
   next?: TransferMsg;
   data?: object;
-};
+}
 
-export type AfterAction = { destChain: string; destAddress: ChainAddress };
-export type SwapExact = { amountIn: Amount; amountOut: Amount };
-export type SwapMaxSlippage = {
+/** @alpha */
+export interface AfterAction {
+  destChain: string;
+  destAddress: ChainAddress;
+}
+/** @alpha */
+export interface SwapExact {
+  amountIn: Amount;
+  amountOut: Amount;
+}
+/** @alpha */
+export interface SwapMaxSlippage {
   amountIn: Amount;
   brandOut: Brand;
   slippage: number;
-};
+}

@@ -2,14 +2,15 @@
 import { Fail } from '@endo/errors';
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
+import { VowShape } from '@agoric/vow';
 import { NonNullish, makeTracer } from '@agoric/internal';
 import { makeQueryPacket, parseQueryPacket } from '../utils/packet.js';
-import { OutboundConnectionHandlerI } from '../typeGuards.js';
+import { ICQMsgShape, OutboundConnectionHandlerI } from '../typeGuards.js';
 
 /**
  * @import {Zone} from '@agoric/base-zone';
  * @import {Connection, Port} from '@agoric/network';
- * @import {Remote, VowTools} from '@agoric/vow';
+ * @import {Remote, Vow, VowTools} from '@agoric/vow';
  * @import {JsonSafe} from '@agoric/cosmic-proto';
  * @import {RequestQuery, ResponseQuery} from '@agoric/cosmic-proto/tendermint/abci/types.js';
  * @import {LocalIbcAddress, RemoteIbcAddress} from '@agoric/vats/tools/ibc-utils.js';
@@ -17,15 +18,10 @@ import { OutboundConnectionHandlerI } from '../typeGuards.js';
 
 const trace = makeTracer('Orchestration:ICQConnection');
 
-export const ICQMsgShape = M.splitRecord(
-  { path: M.string(), data: M.string() },
-  { height: M.string(), prove: M.boolean() },
-);
-
 export const ICQConnectionI = M.interface('ICQConnection', {
   getLocalAddress: M.call().returns(M.string()),
   getRemoteAddress: M.call().returns(M.string()),
-  query: M.call(M.arrayOf(ICQMsgShape)).returns(M.promise()),
+  query: M.call(M.arrayOf(ICQMsgShape)).returns(VowShape),
 });
 
 /**
@@ -38,6 +34,8 @@ export const ICQConnectionI = M.interface('ICQConnection', {
  */
 
 /**
+ * Used only by CosmosInterchainService
+ *
  * Prepares an ICQ Connection Kit based on the
  * {@link https://github.com/cosmos/ibc-apps/blob/e9b46e4bf0ad0a66cf6bc53b5e5496f6e2b4b02b/modules/async-icq/README.md | `icq/v1` IBC application protocol}.
  *
@@ -52,8 +50,9 @@ export const ICQConnectionI = M.interface('ICQConnection', {
  *
  * @param {Zone} zone
  * @param {VowTools} vowTools
+ * @internal
  */
-export const prepareICQConnectionKit = (zone, { watch, when }) =>
+export const prepareICQConnectionKit = (zone, { watch, asVow }) =>
   zone.exoClassKit(
     'ICQConnectionKit',
     {
@@ -88,21 +87,20 @@ export const prepareICQConnectionKit = (zone, { watch, when }) =>
           );
         },
         /**
+         * Vow rejects if packet fails to send or an error is returned
+         *
          * @param {JsonSafe<RequestQuery>[]} msgs
-         * @returns {Promise<JsonSafe<ResponseQuery>[]>}
-         * @throws {Error} if packet fails to send or an error is returned
+         * @returns {Vow<JsonSafe<ResponseQuery>[]>}
          */
         query(msgs) {
-          const { connection } = this.state;
-          // TODO #9281 do not throw synchronously when returning a promise; return a rejected Vow
-          /// see https://github.com/Agoric/agoric-sdk/pull/9454#discussion_r1626898694
-          if (!connection) throw Fail`connection not available`;
-          return when(
-            watch(
+          return asVow(() => {
+            const { connection } = this.state;
+            if (!connection) throw Fail`connection not available`;
+            return watch(
               E(connection).send(makeQueryPacket(msgs)),
               this.facets.parseQueryPacketWatcher,
-            ),
-          );
+            );
+          });
         },
       },
       parseQueryPacketWatcher: {

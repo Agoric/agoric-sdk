@@ -13,7 +13,6 @@ An example of following an on-chain mailbox in code (using this package) is:
 ```js
 // First, obtain a Hardened JS environment via Endo.
 import '@endo/init/pre-remoting.js'; // needed only for the next line
-import '@agoric/casting/node-fetch-shim.js'; // needed for Node.js
 import '@endo/init';
 
 import {

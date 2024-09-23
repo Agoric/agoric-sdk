@@ -898,3 +898,104 @@ test('inter-vat circular promise references', async t => {
   // });
   // t.deepEqual(log, []);
 });
+
+test('accept previously allocated promise', async t => {
+  function build(vatPowers, vatParameters) {
+    const { target } = vatParameters;
+    return Far('root', {
+      call() {
+        const promise = E(target).foo();
+        // wrap to avoid adoption
+        return { promise };
+      },
+      async waitFor(promise2) {
+        // if we're in the same incarnation as the `E(target).foo()`, this
+        // `promise2` will be the same JS Promise as the `promise` above
+        const v = await promise2;
+        return v;
+      },
+    });
+  }
+
+  let log;
+  let syscall;
+  let dispatch;
+
+  const kvStore = new Map();
+  ({ log, syscall } = buildSyscall({ kvStore }));
+
+  const target = 'o-1';
+  ({ dispatch } = await makeDispatch(
+    syscall,
+    build,
+    'reimport-promise',
+    {},
+    { target: kslot(target) },
+  ));
+  log.length = 0; // assume pre-build vatstore operations are correct
+
+  const root = 'o+0';
+  const callResultP = 'p-1';
+  const waitForResultP = 'p-2';
+  const expectedP1 = 'p+5';
+
+  await dispatch(makeMessage(root, 'call', [], callResultP));
+
+  // The vat should send 'foo', subscribe to the result promise, and resolve with that promise
+  t.deepEqual(log.splice(0, 3), [
+    {
+      type: 'send',
+      targetSlot: target,
+      methargs: kser(['foo', []]),
+      resultSlot: expectedP1,
+    },
+    { type: 'subscribe', target: expectedP1 },
+    {
+      type: 'resolve',
+      resolutions: [[callResultP, false, kser({ promise: kslot(expectedP1) })]],
+    },
+  ]);
+  matchIDCounterSet(t, log);
+  t.deepEqual(log, []);
+
+  // snapshot the store at this point
+  const clonedStore = new Map(kvStore);
+
+  const verifyPromiseReImport = async shouldSubscribe => {
+    await dispatch(
+      makeMessage(root, 'waitFor', [kslot(expectedP1)], waitForResultP),
+    );
+
+    // The vat will only subscribe if it was upgraded; if the vat still
+    // remembers it, receiving the vref will merely look it up in slotToVal and
+    // not create a new Promise (and trigger a subscribe)
+    if (shouldSubscribe) {
+      t.deepEqual(log.shift(), { type: 'subscribe', target: expectedP1 });
+    }
+
+    // waitFor will suspend until promise is resolved
+    t.deepEqual(log, []);
+
+    // Resolution propagates the value to the waitFor result
+    await dispatch(makeResolve(expectedP1, kser('success')));
+    t.deepEqual(log.shift(), {
+      type: 'resolve',
+      resolutions: [[waitForResultP, false, kser('success')]],
+    });
+    t.deepEqual(log, []);
+  };
+
+  await verifyPromiseReImport(false);
+  ({ log, syscall } = buildSyscall({ kvStore: clonedStore }));
+  ({ dispatch } = await makeDispatch(
+    syscall,
+    build,
+    'reimport-promise-v2',
+    {},
+    {},
+  ));
+  log.length = 0;
+
+  // verify this works the same in the restarted vat
+  await verifyPromiseReImport(true);
+});

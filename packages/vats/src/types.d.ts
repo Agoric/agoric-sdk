@@ -142,9 +142,9 @@ export type IBCPacket = {
   source_port: IBCPortID;
   destination_channel: IBCChannelID;
   destination_port: IBCPortID;
-  sequence?: number;
-  timeout_height?: number;
-  timeout_timestamp?: number;
+  sequence?: PacketSDKType['sequence'];
+  timeout_height?: PacketSDKType['timeout_height'];
+  timeout_timestamp?: PacketSDKType['timeout_timestamp'];
 };
 
 export type IBCCounterParty = {
@@ -192,8 +192,8 @@ type IBCPacketEvents = {
   timeoutPacket: {
     packet: IBCPacket;
   };
-  channelCloseInit: ConnectingInfo; // TODO update
-  channelCloseConfirm: ConnectingInfo; // TODO update
+  channelCloseInit: { channelID: IBCChannelID; portID: IBCPortID };
+  channelCloseConfirm: { channelID: IBCChannelID; portID: IBCPortID };
   sendPacket: { relativeTimeoutNs: bigint; packet: IBCPacket };
 };
 
@@ -223,7 +223,7 @@ type IBCMethodEvents = {
   receiveExecuted: {}; // TODO update
   startChannelOpenInit: ChannelOpenInitDowncall;
   startChannelCloseInit: {}; // TODO update
-  bindPort: {}; // TODO update
+  bindPort: { packet: { source_port: IBCPortID } };
   timeoutExecuted: {}; // TODO update
   // XXX why isn't this in receiver.go?
   initOpenExecuted: ChannelOpenAckDowncall;

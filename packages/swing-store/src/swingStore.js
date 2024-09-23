@@ -169,7 +169,13 @@ export function makeSwingStore(dirPath, forceReset, options = {}) {
     filePath = ':memory:';
   }
 
-  const { traceFile, keepSnapshots, keepTranscripts } = options;
+  const {
+    traceFile,
+    keepSnapshots,
+    keepTranscripts,
+    archiveSnapshot,
+    archiveTranscript,
+  } = options;
 
   let traceOutput = traceFile
     ? fs.createWriteStream(path.resolve(traceFile), {
@@ -297,6 +303,7 @@ export function makeSwingStore(dirPath, forceReset, options = {}) {
     noteExport,
     {
       keepTranscripts,
+      archiveTranscript,
     },
   );
   const { dumpSnapshots, ...snapStore } = makeSnapStore(
@@ -306,6 +313,7 @@ export function makeSwingStore(dirPath, forceReset, options = {}) {
     noteExport,
     {
       keepSnapshots,
+      archiveSnapshot,
     },
   );
   const { dumpBundles, ...bundleStore } = makeBundleStore(
@@ -554,6 +562,7 @@ export function makeSwingStore(dirPath, forceReset, options = {}) {
     getCurrentSpanBounds: transcriptStore.getCurrentSpanBounds,
     addItem: transcriptStore.addItem,
     readSpan: transcriptStore.readSpan,
+    stopUsingTranscript: transcriptStore.stopUsingTranscript,
     deleteVatTranscripts: transcriptStore.deleteVatTranscripts,
   };
 

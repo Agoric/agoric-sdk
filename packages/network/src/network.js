@@ -10,14 +10,23 @@ import { Shape } from './shapes.js';
 
 /// <reference path="./types.js" />
 /**
- * @import {AttemptDescription, Bytes, Closable, CloseReason, Connection, ConnectionHandler, Endpoint, ListenHandler, Port, Protocol, ProtocolHandler, ProtocolImpl} from './types.js';
+ * @import {AttemptDescription, Bytes, CloseReason, Closable, Connection, ConnectionHandler, Endpoint, ListenHandler, Port, Protocol, ProtocolHandler, ProtocolImpl} from './types.js';
+ * @import {PromiseVow, Remote, VowTools} from '@agoric/vow';
  */
+
+/** @typedef {VowTools & { finalizer: Finalizer }} Powers */
+
+const sink = () => {};
+harden(sink);
 
 /**
  * Compatibility note: this must match what our peers use, so don't change it
  * casually.
  */
 export const ENDPOINT_SEPARATOR = '/';
+
+// Mark the finalizer close reason.
+export const CLOSE_REASON_FINALIZER = 'closed-by-finalizer';
 
 /** @param {unknown} err */
 export const rethrowUnlessMissing = err => {
@@ -60,14 +69,14 @@ function throwIfInvalidPortName(specifiedName) {
   // Valid symbols: ., ,, _, +, -, #, [, ], <, >
   const portNameRegex = new RegExp('^[a-zA-Z0-9.,_+\\-#<>\\[\\]]{2,128}$');
   if (!portNameRegex.test(specifiedName)) {
-    throw new Error(`Invalid IBC port name: ${specifiedName}`);
+    throw Error(`Invalid IBC port name: ${specifiedName}`);
   }
 }
 
 /**
  * @typedef {object} ConnectionOpts
  * @property {Endpoint[]} addrs
- * @property {import('@agoric/vow').Remote<Required<ConnectionHandler>>[]} handlers
+ * @property {Remote<Required<ConnectionHandler>>[]} handlers
  * @property {MapStore<number, Connection>} conns
  * @property {WeakSetStore<Closable>} current
  * @property {0|1} l
@@ -76,9 +85,9 @@ function throwIfInvalidPortName(specifiedName) {
 
 /**
  * @param {import('@agoric/base-zone').Zone} zone
- * @param {ReturnType<import('@agoric/vow').prepareVowTools>} powers
+ * @param {Powers} powers
  */
-const prepareHalfConnection = (zone, { watch }) => {
+const prepareHalfConnection = (zone, { watch, allVows, finalizer }) => {
   const makeHalfConnectionKit = zone.exoClassKit(
     'Connection',
     Shape.ConnectionI,
@@ -123,18 +132,20 @@ const prepareHalfConnection = (zone, { watch }) => {
           return watch(innerVow, this.facets.rethrowUnlessMissingWatcher);
         },
         async close() {
-          const { closed, current, conns, l, handlers } = this.state;
+          const { closed, current, conns, l, r } = this.state;
           if (closed) {
             throw Error(closed);
           }
           this.state.closed = 'Connection closed';
-          current.delete(conns.get(l));
+
+          // Tear down both sides.
+          const lconn = conns.get(l);
+          const rconn = conns.get(r);
+          current.delete(lconn);
+          current.delete(rconn);
+
           const innerVow = watch(
-            E(this.state.handlers[l]).onClose(
-              conns.get(l),
-              undefined,
-              handlers[l],
-            ),
+            allVows([finalizer.finalize(lconn), finalizer.finalize(rconn)]),
             this.facets.sinkWatcher,
           );
 
@@ -176,11 +187,12 @@ const prepareHalfConnection = (zone, { watch }) => {
 
 /**
  * @param {import('@agoric/zone').Zone} zone
- * @param {import('@agoric/vow').Remote<Required<ConnectionHandler>>} handler0
+ * @param {Remote<Required<ConnectionHandler>>} handler0
  * @param {Endpoint} addr0
- * @param {import('@agoric/vow').Remote<Required<ConnectionHandler>>} handler1
+ * @param {Remote<Required<ConnectionHandler>>} handler1
  * @param {Endpoint} addr1
  * @param {(opts: ConnectionOpts) => Connection} makeConnection
+ * @param {Finalizer} finalizer
  * @param {WeakSetStore<Closable>} [current]
  */
 export const crossoverConnection = (
@@ -190,6 +202,7 @@ export const crossoverConnection = (
   handler1,
   addr1,
   makeConnection,
+  finalizer,
   current = zone.detached().weakSetStore('crossoverCurrentConnections'),
 ) => {
   const detached = zone.detached();
@@ -197,7 +210,7 @@ export const crossoverConnection = (
   /** @type {MapStore<number, Connection>} */
   const conns = detached.mapStore('addrToConnections');
 
-  /** @type {import('@agoric/vow').Remote<Required<ConnectionHandler>>[]} */
+  /** @type {Remote<Required<ConnectionHandler>>[]} */
   const handlers = harden([handler0, handler1]);
   /** @type {Endpoint[]} */
   const addrs = harden([addr0, addr1]);
@@ -215,9 +228,13 @@ export const crossoverConnection = (
    * @param {number} r remote side of the connection
    */
   const openHalfConnection = (l, r) => {
-    current.add(conns.get(l));
+    const lconn = conns.get(l);
+    current.add(lconn);
+    if (!finalizer.has(lconn)) {
+      finalizer.initConnection(lconn, handlers[l]);
+    }
     E(handlers[l])
-      .onOpen(conns.get(l), addrs[l], addrs[r], handlers[l])
+      .onOpen(lconn, addrs[l], addrs[r], handlers[l])
       .catch(rethrowUnlessMissing);
   };
 
@@ -233,9 +250,9 @@ export const crossoverConnection = (
 /**
  * @param {import('@agoric/zone').Zone} zone
  * @param {(opts: ConnectionOpts) => Connection} makeConnection
- * @param {ReturnType<import('@agoric/vow').prepareVowTools>} powers
+ * @param {Powers} powers
  */
-const prepareInboundAttempt = (zone, makeConnection, { watch }) => {
+const prepareInboundAttempt = (zone, makeConnection, { watch, finalizer }) => {
   const makeInboundAttemptKit = zone.exoClassKit(
     'InboundAttempt',
     Shape.InboundAttemptI,
@@ -245,7 +262,7 @@ const prepareInboundAttempt = (zone, makeConnection, { watch }) => {
      * @param {string} opts.remoteAddr
      * @param {MapStore<Port, SetStore<Closable>>} opts.currentConnections
      * @param {string} opts.listenPrefix
-     * @param {MapStore<Endpoint, [Port, import('@agoric/vow').Remote<Required<ListenHandler>>]>} opts.listening
+     * @param {MapStore<Endpoint, [Port, Remote<Required<ListenHandler>>]>} opts.listening
      */
     ({
       localAddr,
@@ -288,6 +305,7 @@ const prepareInboundAttempt = (zone, makeConnection, { watch }) => {
 
           const current = currentConnections.get(port);
           current.delete(this.facets.inboundAttempt);
+          finalizer.unpin(this.facets.inboundAttempt);
 
           const innerVow = watch(
             E(listener).onReject(port, localAddr, remoteAddr, listener),
@@ -300,7 +318,7 @@ const prepareInboundAttempt = (zone, makeConnection, { watch }) => {
          * @param {object} opts
          * @param {string} [opts.localAddress]
          * @param {string} [opts.remoteAddress]
-         * @param {import('@agoric/vow').Remote<ConnectionHandler>} opts.handler
+         * @param {Remote<ConnectionHandler>} opts.handler
          */
         async accept({ localAddress, remoteAddress, handler: rchandler }) {
           const { consummated, localAddr, remoteAddr } = this.state;
@@ -342,15 +360,12 @@ const prepareInboundAttempt = (zone, makeConnection, { watch }) => {
 
           return crossoverConnection(
             zone,
-            /** @type {import('@agoric/vow').Remote<Required<ConnectionHandler>>} */ (
-              lchandler
-            ),
+            /** @type {Remote<Required<ConnectionHandler>>} */ (lchandler),
             localAddress,
-            /** @type {import('@agoric/vow').Remote<Required<ConnectionHandler>>} */ (
-              rchandler
-            ),
+            /** @type {Remote<Required<ConnectionHandler>>} */ (rchandler),
             remoteAddress,
             makeConnection,
+            finalizer,
             current,
           )[1];
         },
@@ -398,22 +413,22 @@ const RevokeState = /** @type {const} */ ({
 
 /**
  * @param {import('@agoric/zone').Zone} zone
- * @param {ReturnType<import('@agoric/vow').prepareVowTools>} powers
+ * @param {Powers} powers
  */
 const preparePort = (zone, powers) => {
   const makeIncapable = zone.exoClass('Incapable', undefined, () => ({}), {});
 
-  const { watch, allVows } = powers;
+  const { finalizer, watch, allVows } = powers;
 
   /**
    * @param {object} opts
    * @param {Endpoint} opts.localAddr
-   * @param {MapStore<Endpoint, [Port, import('@agoric/vow').Remote<Required<ListenHandler>>]>} opts.listening
-   * @param {SetStore<import('@agoric/vow').Remote<Connection>>} opts.openConnections
+   * @param {MapStore<Endpoint, [Port, Remote<Required<ListenHandler>>]>} opts.listening
+   * @param {SetStore<Remote<Connection>>} opts.openConnections
    * @param {MapStore<Port, SetStore<Closable>>} opts.currentConnections
    * @param {MapStore<string, Port>} opts.boundPorts
-   * @param {import('@agoric/vow').Remote<ProtocolHandler>} opts.protocolHandler
-   * @param {import('@agoric/vow').Remote<ProtocolImpl>} opts.protocolImpl
+   * @param {Remote<ProtocolHandler>} opts.protocolHandler
+   * @param {Remote<ProtocolImpl>} opts.protocolImpl
    */
   const initPort = ({
     localAddr,
@@ -443,7 +458,7 @@ const preparePort = (zone, powers) => {
         // Works even after revoke().
         return this.state.localAddr;
       },
-      /** @param {import('@agoric/vow').Remote<ListenHandler>} listenHandler */
+      /** @param {Remote<ListenHandler>} listenHandler */
       async addListener(listenHandler) {
         const { revoked, listening, localAddr, protocolHandler } = this.state;
 
@@ -458,9 +473,7 @@ const preparePort = (zone, powers) => {
           }
           listening.set(localAddr, [
             this.facets.port,
-            /** @type {import('@agoric/vow').Remote<Required<ListenHandler>>} */ (
-              listenHandler
-            ),
+            /** @type {Remote<Required<ListenHandler>>} */ (listenHandler),
           ]);
           E(lhandler).onRemove(lport, lhandler).catch(rethrowUnlessMissing);
         } else {
@@ -468,9 +481,7 @@ const preparePort = (zone, powers) => {
             localAddr,
             harden([
               this.facets.port,
-              /** @type {import('@agoric/vow').Remote<Required<ListenHandler>>} */ (
-                listenHandler
-              ),
+              /** @type {Remote<Required<ListenHandler>>} */ (listenHandler),
             ]),
           );
         }
@@ -489,7 +500,7 @@ const preparePort = (zone, powers) => {
         );
         return watch(innerVow, this.facets.rethrowUnlessMissingWatcher);
       },
-      /** @param {import('@agoric/vow').Remote<ListenHandler>} listenHandler */
+      /** @param {Remote<ListenHandler>} listenHandler */
       async removeListener(listenHandler) {
         const { listening, localAddr, protocolHandler } = this.state;
         listening.has(localAddr) || Fail`Port ${localAddr} is not listening`;
@@ -511,11 +522,11 @@ const preparePort = (zone, powers) => {
       },
       /**
        * @param {Endpoint} remotePort
-       * @param {import('@agoric/vow').Remote<ConnectionHandler>} [connectionHandler]
+       * @param {Remote<ConnectionHandler>} [connectionHandler]
        */
       async connect(
         remotePort,
-        connectionHandler = /** @type {import('@agoric/vow').Remote<ConnectionHandler>} */ (
+        connectionHandler = /** @type {Remote<ConnectionHandler>} */ (
           makeIncapable()
         ),
       ) {
@@ -527,7 +538,7 @@ const preparePort = (zone, powers) => {
         return watch(
           E(protocolImpl).outbound(this.facets.port, dst, connectionHandler),
           this.facets.portConnectWatcher,
-          { revoked },
+          { chandler: connectionHandler },
         );
       },
       async revoke() {
@@ -538,7 +549,6 @@ const preparePort = (zone, powers) => {
           Fail`Port ${localAddr} is already revoked`;
 
         this.state.revoked = RevokeState.REVOKING;
-
         const revokeVow = watch(
           E(protocolHandler).onRevoke(
             this.facets.port,
@@ -564,15 +574,16 @@ const preparePort = (zone, powers) => {
       },
     },
     portConnectWatcher: {
-      onFulfilled(conn, watchContext) {
-        const { revoked } = watchContext;
-        const { openConnections } = this.state;
+      onFulfilled(conn, { chandler }) {
+        const { openConnections, revoked } = this.state;
 
-        if (revoked) {
-          void E(conn).close();
-        } else {
-          openConnections.add(conn);
+        if (!finalizer.has(conn)) {
+          finalizer.initConnection(conn, chandler);
         }
+        if (revoked) {
+          return finalizer.finalize(conn);
+        }
+        openConnections.add(conn);
         return conn;
       },
     },
@@ -586,8 +597,8 @@ const preparePort = (zone, powers) => {
 
         const ps = [];
         ps.push(
-          ...values.map(conn =>
-            watch(E(conn).close(), this.facets.sinkWatcher),
+          ...values.map(obj =>
+            watch(finalizer.finalize(obj), this.facets.sinkWatcher),
           ),
         );
 
@@ -650,12 +661,12 @@ const preparePort = (zone, powers) => {
 
 /**
  * @param {import('@agoric/base-zone').Zone} zone
- * @param {ReturnType<import('@agoric/vow').prepareVowTools>} powers
+ * @param {Powers} powers
  */
 const prepareBinder = (zone, powers) => {
   const makeConnection = prepareHalfConnection(zone, powers);
 
-  const { watch } = powers;
+  const { watch, finalizer } = powers;
 
   const makeInboundAttempt = prepareInboundAttempt(
     zone,
@@ -730,8 +741,8 @@ const prepareBinder = (zone, powers) => {
      * @param {object} opts
      * @param {MapStore<Port, SetStore<Closable>>} opts.currentConnections
      * @param {MapStore<string, Port>} opts.boundPorts
-     * @param {MapStore<Endpoint, [Port, import('@agoric/vow').Remote<Required<ListenHandler>>]>} opts.listening
-     * @param {import('@agoric/vow').Remote<ProtocolHandler>} opts.protocolHandler
+     * @param {MapStore<Endpoint, [Port, Remote<Required<ListenHandler>>]>} opts.listening
+     * @param {Remote<ProtocolHandler>} opts.protocolHandler
      */
     ({ currentConnections, boundPorts, listening, protocolHandler }) => {
       /** @type {SetStore<Connection>} */
@@ -777,7 +788,7 @@ const prepareBinder = (zone, powers) => {
 
           const innerVow = watch(
             E(
-              /** @type {import('@agoric/vow').Remote<Required<ProtocolHandler>>} */ (
+              /** @type {Remote<Required<ProtocolHandler>>} */ (
                 protocolHandler
               ),
             ).onInstantiate(
@@ -819,7 +830,7 @@ const prepareBinder = (zone, powers) => {
           // Allocate a local address.
           const instantiateInnerVow = watch(
             E(
-              /** @type {import('@agoric/vow').Remote<Required<ProtocolHandler>>} */ (
+              /** @type {Remote<Required<ProtocolHandler>>} */ (
                 protocolHandler
               ),
             ).onInstantiate(port, localAddr, remoteAddr, protocolHandler),
@@ -904,6 +915,7 @@ const prepareBinder = (zone, powers) => {
           });
 
           current.add(inboundAttempt);
+          finalizer.initCloser(inboundAttempt);
           return inboundAttempt;
         },
       },
@@ -945,7 +957,7 @@ const prepareBinder = (zone, powers) => {
 
           const innerVow = watch(
             E(
-              /** @type {import('@agoric/vow').Remote<Required<ProtocolHandler>>} */ (
+              /** @type {Remote<Required<ProtocolHandler>>} */ (
                 protocolHandler
               ),
             ).onInstantiate(
@@ -1008,15 +1020,12 @@ const prepareBinder = (zone, powers) => {
 
           return crossoverConnection(
             zone,
-            /** @type {import('@agoric/vow').Remote<Required<ConnectionHandler>>} */ (
-              lchandler
-            ),
+            /** @type {Remote<Required<ConnectionHandler>>} */ (lchandler),
             negotiatedLocalAddress || requestedLocalAddress,
-            /** @type {import('@agoric/vow').Remote<Required<ConnectionHandler>>} */ (
-              rchandler
-            ),
+            /** @type {Remote<Required<ConnectionHandler>>} */ (rchandler),
             negotiatedRemoteAddress || requestedRemoteAddress,
             makeConnection,
+            finalizer,
             current,
           )[0];
         },
@@ -1169,13 +1178,13 @@ const prepareBinder = (zone, powers) => {
 
 /**
  * @param {import('@agoric/base-zone').Zone} zone
- * @param {ReturnType<import('@agoric/vow').prepareVowTools>} powers
+ * @param {Powers} powers
  */
 export const prepareNetworkProtocol = (zone, powers) => {
   const makeBinderKit = prepareBinder(zone, powers);
 
   /**
-   * @param {import('@agoric/vow').Remote<ProtocolHandler>} protocolHandler
+   * @param {Remote<ProtocolHandler>} protocolHandler
    * @returns {Protocol}
    */
   const makeNetworkProtocol = protocolHandler => {
@@ -1187,7 +1196,7 @@ export const prepareNetworkProtocol = (zone, powers) => {
     /** @type {MapStore<string, Port>} */
     const boundPorts = detached.mapStore('addrToPort');
 
-    /** @type {MapStore<Endpoint, [Port, import('@agoric/vow').Remote<Required<ListenHandler>>]>} */
+    /** @type {MapStore<Endpoint, [Port, Remote<Required<ListenHandler>>]>} */
     const listening = detached.mapStore('listening');
 
     const { binder, protocolImpl } = makeBinderKit({
@@ -1261,17 +1270,17 @@ export const prepareEchoConnectionKit = zone => {
         },
         /**
          * @param {Connection} _connection
-         * @param {CloseReason} [_reason]
+         * @param {CloseReason} [reason]
          * @param {ConnectionHandler} [_connectionHandler]
          */
-        async onClose(_connection, _reason, _connectionHandler) {
+        async onClose(_connection, reason, _connectionHandler) {
           const { closed } = this.state;
 
           if (closed) {
             throw Error(closed);
           }
 
-          this.state.closed = 'Connection closed';
+          this.state.closed = reason || 'Connection closed';
         },
       },
       listener: {
@@ -1293,14 +1302,14 @@ export const prepareEchoConnectionKit = zone => {
  * Create a protocol handler that just connects to itself.
  *
  * @param {import('@agoric/base-zone').Zone} zone
- * @param {ReturnType<import('@agoric/vow').prepareVowTools>} powers
+ * @param {VowTools} powers
  */
 export function prepareLoopbackProtocolHandler(zone, { watch, allVows }) {
   const detached = zone.detached();
 
   /** @param {string} [instancePrefix] */
   const initHandler = (instancePrefix = 'nonce/') => {
-    /** @type {MapStore<string, [import('@agoric/vow').Remote<Port>, import('@agoric/vow').Remote<Required<ListenHandler>>]>} */
+    /** @type {MapStore<string, [Remote<Port>, Remote<Required<ListenHandler>>]>} */
     const listeners = detached.mapStore('localAddr');
 
     return {
@@ -1379,7 +1388,7 @@ export function prepareLoopbackProtocolHandler(zone, { watch, allVows }) {
                 localAddr,
                 harden([
                   port,
-                  /** @type {import('@agoric/vow').Remote<Required<ListenHandler>>} */ (
+                  /** @type {Remote<Required<ListenHandler>>} */ (
                     listenHandler
                   ),
                 ]),
@@ -1390,17 +1399,15 @@ export function prepareLoopbackProtocolHandler(zone, { watch, allVows }) {
               localAddr,
               harden([
                 port,
-                /** @type {import('@agoric/vow').Remote<Required<ListenHandler>>} */ (
-                  listenHandler
-                ),
+                /** @type {Remote<Required<ListenHandler>>} */ (listenHandler),
               ]),
             );
           }
         },
         /**
-         * @param {import('@agoric/vow').Remote<Port>} port
+         * @param {Remote<Port>} port
          * @param {Endpoint} localAddr
-         * @param {import('@agoric/vow').Remote<ListenHandler>} listenHandler
+         * @param {Remote<ListenHandler>} listenHandler
          * @param {*} _protocolHandler
          */
         async onListenRemove(port, localAddr, listenHandler, _protocolHandler) {
@@ -1453,7 +1460,7 @@ export function prepareLoopbackProtocolHandler(zone, { watch, allVows }) {
 /**
  *
  * @param {import('@agoric/base-zone').Zone} zone
- * @param {ReturnType<import('@agoric/vow').prepareVowTools>} powers
+ * @param {Powers} powers
  */
 export const preparePortAllocator = (zone, { watch }) =>
   zone.exoClass(
@@ -1523,3 +1530,79 @@ export const preparePortAllocator = (zone, { watch }) =>
     },
   );
 /** @typedef {ReturnType<ReturnType<typeof preparePortAllocator>>} PortAllocator */
+
+/**
+ * Return a package-specific singleton that pins objects until they are
+ * explicitly unpinned or finalized.  It needs to pin objects only because they
+ * are resources that need to be released.
+ *
+ * The reason this functionality wasn't just baked into the other network exos
+ * is to maintain upgrade-compatible with minimal additional changes.
+ *
+ * @param {import('@agoric/base-zone').Zone} zone
+ * @param {VowTools} vowTools
+ */
+const prepareFinalizer = (zone, { watch }) => {
+  /**
+   * @type {MapStore<{},
+   *   { conn: Remote<Connection>, handler: Remote<Required<ConnectionHandler>>} |
+   *   { closer: Remote<{ close(): PromiseVow<any> }> }
+   * >}
+   */
+  const objToFinalizerInfo = zone.mapStore('objToFinalizerInfo');
+  return zone.exo('NetworkFinalizer', undefined, {
+    has(obj) {
+      return objToFinalizerInfo.has(obj);
+    },
+    /**
+     * Add a connection and handler for an `onClose` method to be called upon
+     * finalization.
+     * @param {Remote<Connection>} conn
+     * @param {Remote<Required<ConnectionHandler>>} handler
+     */
+    initConnection(conn, handler) {
+      objToFinalizerInfo.init(conn, harden({ conn, handler }));
+    },
+    /**
+     * Add an object with a `close` method to be called (such as an
+     * `inboundAttempt`) upon finalization.
+     * @param {Remote<{ close(): PromiseVow<any> }>} closer
+     */
+    initCloser(closer) {
+      objToFinalizerInfo.init(closer, harden({ closer }));
+    },
+    finalize(obj) {
+      if (!objToFinalizerInfo.has(obj)) {
+        return;
+      }
+      const disposeInfo = objToFinalizerInfo.get(obj);
+      if ('conn' in disposeInfo) {
+        // A connection+handler.
+        const { conn, handler } = disposeInfo;
+        objToFinalizerInfo.delete(obj);
+        return watch(E(handler).onClose(conn, CLOSE_REASON_FINALIZER, handler));
+      } else if ('closer' in disposeInfo) {
+        // Just something with a `close` method.
+        const { closer } = disposeInfo;
+        objToFinalizerInfo.delete(obj);
+        return watch(E(closer).close());
+      }
+    },
+    unpin(obj) {
+      objToFinalizerInfo.delete(obj);
+    },
+  });
+};
+harden(prepareFinalizer);
+
+/**
+ * @param {import('@agoric/base-zone').Zone} zone
+ * @param {VowTools} vowTools
+ * @returns {Powers}
+ */
+export const prepareNetworkPowers = (zone, vowTools) => {
+  const finalizer = prepareFinalizer(zone, vowTools);
+  return harden({ ...vowTools, finalizer });
+};
+
+/** @typedef {ReturnType<typeof prepareFinalizer>} Finalizer */

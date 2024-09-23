@@ -1,6 +1,5 @@
 /** @file Orchestration facade */
-
-import { assertAllDefined } from '@agoric/internal';
+import { assertAllDefined, deepMapObject } from '@agoric/internal';
 
 /**
  * @import {AsyncFlowTools, GuestInterface, HostArgs, HostOf} from '@agoric/async-flow';
@@ -10,7 +9,7 @@ import { assertAllDefined } from '@agoric/internal';
  * @import {RecorderKit, MakeRecorderKit} from '@agoric/zoe/src/contractSupport/recorder.js'.
  * @import {HostOrchestrator} from './exos/orchestrator.js';
  * @import {Remote} from '@agoric/internal';
- * @import {CosmosInterchainService} from './exos/cosmos-interchain-service.js';
+ * @import {CosmosInterchainService} from './exos/exo-interfaces.js';
  * @import {Chain, ChainInfo, CosmosChainInfo, IBCConnectionInfo, OrchestrationAccount, OrchestrationFlow, Orchestrator} from './types.js';
  */
 
@@ -63,7 +62,7 @@ export const makeOrchestrationFacade = ({
     asyncFlowTools,
   });
 
-  const { prepareEndowment, asyncFlow, adminAsyncFlow } = asyncFlowTools;
+  const { prepareEndowment, asyncFlow } = asyncFlowTools;
 
   /**
    * @template HC - host context
@@ -76,30 +75,31 @@ export const makeOrchestrationFacade = ({
    */
   const orchestrate = (durableName, hostCtx, guestFn) => {
     const subZone = zone.subZone(durableName);
-
-    const hostOrc = makeOrchestrator();
-
-    const [wrappedOrc, wrappedCtx] = prepareEndowment(subZone, 'endowments', [
-      hostOrc,
-      hostCtx,
-    ]);
-
+    const [wrappedCtx] = prepareEndowment(subZone, 'endowments', [hostCtx]);
     const hostFn = asyncFlow(subZone, 'asyncFlow', guestFn);
 
     // cast because return could be arbitrary subtype
     const orcFn = /** @type {HostForGuest<GF>} */ (
-      (...args) => hostFn(wrappedOrc, wrappedCtx, ...args)
+      (...args) => {
+        // each invocation gets a new orchestrator
+        const hostOrc = makeOrchestrator();
+        // TODO: why are the types showing the guest types for arguments?
+        // @ts-expect-error XXX fix broken types
+        return hostFn(hostOrc, wrappedCtx, ...args);
+      }
     );
-
     return harden(orcFn);
   };
 
   /**
    * Orchestrate all the guest functions.
    *
+   * If the `guestFns` object is provided as a property of `hostCtx` the
+   * functions will be available within the other guests.
+   *
    * NOTE multiple calls to this with the same guestFn name will fail
    *
-   * @template HC - host context
+   * @template {Record<string, any>} HC - host context
    * @template {{
    *   [durableName: string]: OrchestrationFlow<GuestInterface<HC>>;
    * }} GFM
@@ -108,18 +108,33 @@ export const makeOrchestrationFacade = ({
    * @param {HC} hostCtx
    * @returns {{ [N in keyof GFM]: HostForGuest<GFM[N]> }}
    */
-  const orchestrateAll = (guestFns, hostCtx) =>
-    /** @type {{ [N in keyof GFM]: HostForGuest<GFM[N]> }} */ (
+  const orchestrateAll = (guestFns, hostCtx) => {
+    const mappedFlows = new Map(
+      Object.entries(guestFns).map(([name, guestFn]) => [
+        guestFn,
+        // eslint-disable-next-line no-use-before-define
+        (...args) => orcFns[name](...args),
+      ]),
+    );
+
+    const mappedContext = deepMapObject(
+      hostCtx,
+      val => mappedFlows.get(val) || val,
+    );
+
+    const orcFns = /** @type {{ [N in keyof GFM]: HostForGuest<GFM[N]> }} */ (
       Object.fromEntries(
         Object.entries(guestFns).map(([name, guestFn]) => [
           name,
-          orchestrate(name, hostCtx, guestFn),
+          orchestrate(name, mappedContext, guestFn),
         ]),
       )
     );
 
+    return { ...orcFns };
+  };
+
   return harden({
-    adminAsyncFlow,
     orchestrate,
     orchestrateAll,
   });

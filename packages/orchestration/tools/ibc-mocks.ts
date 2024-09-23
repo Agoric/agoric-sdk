@@ -1,14 +1,26 @@
+/** @file Tools to support making IBC mocks */
 import { Any } from '@agoric/cosmic-proto/google/protobuf/any.js';
 import { CosmosResponse } from '@agoric/cosmic-proto/icq/v1/packet.js';
 import {
   RequestQuery,
   ResponseQuery,
 } from '@agoric/cosmic-proto/tendermint/abci/types.js';
-import { encodeBase64, btoa } from '@endo/base64';
+import { encodeBase64, btoa, atob, decodeBase64 } from '@endo/base64';
 import { toRequestQueryJson } from '@agoric/cosmic-proto';
-import { IBCChannelID, VTransferIBCEvent } from '@agoric/vats';
-import { VTRANSFER_IBC_EVENT } from '@agoric/internal/src/action-types.js';
+import {
+  IBCChannelID,
+  IBCEvent,
+  VTransferIBCEvent,
+  type IBCPacket,
+} from '@agoric/vats';
+import {
+  IBC_EVENT,
+  VTRANSFER_IBC_EVENT,
+} from '@agoric/internal/src/action-types.js';
 import { FungibleTokenPacketData } from '@agoric/cosmic-proto/ibc/applications/transfer/v2/packet.js';
+import type { PacketSDKType } from '@agoric/cosmic-proto/ibc/core/channel/v1/channel.js';
+import { LOCALCHAIN_DEFAULT_ADDRESS } from '@agoric/vats/tools/fake-bridge.js';
+import { TxBody } from '@agoric/cosmic-proto/cosmos/tx/v1beta1/tx.js';
 import { makeQueryPacket, makeTxPacket } from '../src/utils/packet.js';
 import { ChainAddress } from '../src/orchestration-api.js';
 
@@ -118,6 +130,16 @@ export function buildTxPacketString(
 }
 
 /**
+ * Parse an outgoing ica tx packet. Useful for testing when inspecting
+ * outgoing dibc bridge messages.
+ *
+ * @param b64 base64 encoded string
+ */
+export const parseOutgoingTxPacket = (b64: string) => {
+  return TxBody.decode(decodeBase64(JSON.parse(atob(b64)).data));
+};
+
+/**
  * Build a query packet string for the mocked dibc bridge handler
  * @param msgs
  * @param opts
@@ -136,10 +158,12 @@ type BuildVTransferEventParams = {
   sender?: ChainAddress['value'];
   /**  defaults to agoric1fakeLCAAddress. set to a different value to simulate an outgoing transfer event */
   receiver?: ChainAddress['value'];
+  target?: ChainAddress['value'];
   amount?: bigint;
   denom?: string;
   destinationChannel?: IBCChannelID;
   sourceChannel?: IBCChannelID;
+  sequence?: PacketSDKType['sequence'];
 };
 
 /**
@@ -170,11 +194,13 @@ type BuildVTransferEventParams = {
 export const buildVTransferEvent = ({
   event = 'acknowledgementPacket' as const,
   sender = 'cosmos1AccAddress',
-  receiver = 'agoric1fakeLCAAddress',
+  receiver = LOCALCHAIN_DEFAULT_ADDRESS,
+  target = LOCALCHAIN_DEFAULT_ADDRESS,
   amount = 10n,
   denom = 'uatom',
   destinationChannel = 'channel-0' as IBCChannelID,
   sourceChannel = 'channel-405' as IBCChannelID,
+  sequence = 0n,
 }: BuildVTransferEventParams = {}): VTransferIBCEvent => ({
   type: VTRANSFER_IBC_EVENT,
   blockHeight: 0,
@@ -182,7 +208,7 @@ export const buildVTransferEvent = ({
   event,
   acknowledgement: btoa(JSON.stringify({ result: 'AQ==' })),
   relayer: 'agoric123',
-  target: receiver,
+  target,
   packet: {
     data: btoa(
       JSON.stringify(
@@ -198,5 +224,38 @@ export const buildVTransferEvent = ({
     source_channel: sourceChannel,
     destination_port: 'transfer',
     source_port: 'transfer',
-  },
+    sequence,
+  } as IBCPacket,
+});
+
+export function createMockAckMap(
+  mockMap: Record<string, { msg: string; ack: string }>,
+) {
+  const res = Object.values(mockMap).reduce((acc, { msg, ack }) => {
+    acc[msg] = ack;
+    return acc;
+  }, {});
+  return res;
+}
+
+/**
+ * Simulate an IBC channelCloseConfirm event. This can be used to simulate an
+ * ICA channel closing for an unexpected reason from a remote chain, _or
+ * anything besides the Connection holder calling `.close()`_. If `close()` is
+ * called, we'd instead expect to see a Downcall for channelCloseInit.
+ *
+ * @param {Pick<IBCEvent<'channelCloseConfirm'>, 'portID' | 'channelID'>} event
+ */
+export const buildChannelCloseConfirmEvent = ({
+  channelID = 'channel-0',
+  portID = 'icacontroller-1',
+}: Partial<IBCEvent<'channelCloseConfirm'>> = {}): Partial<
+  IBCEvent<'channelCloseConfirm'>
+> => ({
+  blockHeight: 0,
+  blockTime: 0,
+  channelID,
+  event: 'channelCloseConfirm',
+  portID,
+  type: IBC_EVENT,
 });

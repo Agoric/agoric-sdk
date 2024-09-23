@@ -7,6 +7,7 @@ import { makeWhen } from './when.js';
 
 /**
  * @import {Zone} from '@agoric/base-zone';
+ * @import {Passable} from '@endo/pass-style';
  * @import {IsRetryableReason, AsPromiseFunction, EVow, Vow, ERef} from './types.js';
  */
 
@@ -18,7 +19,7 @@ import { makeWhen } from './when.js';
  * @param {object} [powers]
  * @param {IsRetryableReason} [powers.isRetryableReason]
  */
-export const prepareVowTools = (zone, powers = {}) => {
+export const prepareBasicVowTools = (zone, powers = {}) => {
   const { isRetryableReason = /** @type {IsRetryableReason} */ (() => false) } =
     powers;
   const makeVowKit = prepareVowKit(zone);
@@ -52,11 +53,31 @@ export const prepareVowTools = (zone, powers = {}) => {
     };
 
   /**
-   * Vow-tolerant implementation of Promise.all.
+   * Vow-tolerant implementation of Promise.all that takes an iterable of vows
+   * and other {@link Passable}s and returns a single {@link Vow}. It resolves
+   * with an array of values when all of the input's promises or vows are
+   * fulfilled and rejects when any of the input's promises or vows are
+   * rejected with the first rejection reason.
    *
-   * @param {EVow<unknown>[]} maybeVows
+   * @param {unknown[]} maybeVows
    */
-  const allVows = maybeVows => watchUtils.all(maybeVows);
+  const all = maybeVows => watchUtils.all(maybeVows);
+
+  /**
+   * @param {unknown[]} maybeVows
+   * @deprecated use `vowTools.all`
+   */
+  const allVows = all;
+
+  /**
+   * Vow-tolerant implementation of Promise.allSettled that takes an iterable
+   * of vows and other {@link Passable}s and returns a single {@link Vow}. It
+   * resolves when all of the input's promises or vows are settled with an
+   * array of settled outcome objects.
+   *
+   * @param {unknown[]} maybeVows
+   */
+  const allSettled = maybeVows => watchUtils.allSettled(maybeVows);
 
   /** @type {AsPromiseFunction} */
   const asPromise = (specimenP, ...watcherArgs) =>
@@ -66,12 +87,14 @@ export const prepareVowTools = (zone, powers = {}) => {
     when,
     watch,
     makeVowKit,
+    all,
     allVows,
+    allSettled,
     asVow,
     asPromise,
     retriable,
   });
 };
-harden(prepareVowTools);
+harden(prepareBasicVowTools);
 
-/** @typedef {ReturnType<typeof prepareVowTools>} VowTools */
+/** @typedef {ReturnType<typeof prepareBasicVowTools>} VowTools */

@@ -141,6 +141,7 @@ harden(makeParamManagerSync);
  * @param {ZCF<GovernanceTerms<M>>} zcf
  * @param {I} invitations invitation objects, which must come from privateArgs
  * @param {M} paramTypesMap
+ * @param {object} [overrides]
  * @returns {TypedParamManager<M & {[K in keyof I]: 'invitation'}>}
  */
 export const makeParamManagerFromTerms = (
@@ -148,17 +149,23 @@ export const makeParamManagerFromTerms = (
   zcf,
   invitations,
   paramTypesMap,
+  overrides,
 ) => {
+  if (overrides) {
+    console.log('TPM ', { overrides });
+  }
+
   const { governedParams } = zcf.getTerms();
-  /** @type {Array<[Keyword, SyncSpecTuple | AsyncSpecTuple]>} */
+  /** @type {Array<[Keyword, (SyncSpecTuple | AsyncSpecTuple)]>} */
   const makerSpecEntries = Object.entries(paramTypesMap).map(
-    ([paramKey, paramType]) => [
-      paramKey,
-      /** @type {SyncSpecTuple} */ ([
-        paramType,
-        governedParams[paramKey].value,
-      ]),
-    ],
+    ([paramKey, paramType]) => {
+      const value =
+        overrides && overrides[paramKey]
+          ? overrides[paramKey]
+          : governedParams[paramKey].value;
+
+      return [paramKey, /** @type {SyncSpecTuple} */ ([paramType, value])];
+    },
   );
   // Every governed contract has an Electorate param that starts as `initialPoserInvitation` private arg
   for (const [name, invitation] of Object.entries(invitations)) {

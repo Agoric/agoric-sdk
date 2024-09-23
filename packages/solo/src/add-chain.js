@@ -1,5 +1,4 @@
-/* global process */
-import fetch from 'node-fetch';
+/* eslint-env node */
 import crypto from 'crypto';
 import djson from 'deterministic-json';
 import path from 'path';

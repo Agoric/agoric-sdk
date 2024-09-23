@@ -2,6 +2,7 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { AmountMath } from '@agoric/ertp';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
+import { SIMULATED_ERRORS } from '@agoric/vats/tools/fake-bridge.js';
 import { heapVowE as E } from '@agoric/vow/vat.js';
 import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import path from 'path';
@@ -9,9 +10,9 @@ import { commonSetup } from '../supports.js';
 
 const dirname = path.dirname(new URL(import.meta.url).pathname);
 
-const contractFile = `${dirname}/../../src/examples/stakeBld.contract.js`;
+const contractFile = `${dirname}/../../src/examples/stake-bld.contract.js`;
 type StartFn =
-  typeof import('@agoric/orchestration/src/examples/stakeBld.contract.js').start;
+  typeof import('@agoric/orchestration/src/examples/stake-bld.contract.js').start;
 
 const startContract = async ({
   agoricNames,
@@ -56,8 +57,11 @@ test('makeAccount, deposit, withdraw', async t => {
   const depositResp = await E(account).deposit(
     await utils.pourPayment(bld.units(100)),
   );
-  // FIXME #9211
-  // t.deepEqual(await E(account).getBalance('ubld'), bld.units(100));
+  t.deepEqual(await E(account).getBalance('ubld'), {
+    denom: 'ubld',
+    value: bld.units(100).value,
+  });
+
   // XXX races in the bridge
   await eventLoopIteration();
 
@@ -117,7 +121,7 @@ test('makeStakeBldInvitation', async t => {
       'agoric1validator1',
       {
         brand: bld.brand,
-        value: 504n,
+        value: SIMULATED_ERRORS.TIMEOUT,
       },
     );
     const delegateOffer = await E(zoe).offer(delegateInv);

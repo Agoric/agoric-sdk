@@ -70,17 +70,10 @@ publish() {
     yarn build
     git commit --allow-empty -am "chore: prepare for publishing"
 
-    # Convention used in Endo
-    yarn lerna run build:types
-
     # Publish the packages to our local service.
     # without concurrency until https://github.com/Agoric/agoric-sdk/issues/8091
-    yarn lerna publish --concurrency 1 prerelease --exact \
-      --dist-tag="$DISTTAG" --preid=dev \
-      --no-push --no-git-reset --no-git-tag-version --no-verify-access --yes
-
-    # Convention used in Endo
-    yarn lerna run clean:types
+    yarn lerna version --concurrency 1 prerelease --exact \
+      --preid=dev --no-push --no-git-tag-version --yes
 
     # Change any version prefices to an exact match, and merge our versions.
     VERSIONSHASH=$(jq --slurpfile versions <(popd > /dev/null && git cat-file blob "$VERSIONSHASH") \
@@ -91,6 +84,18 @@ publish() {
       | (popd > /dev/null && git hash-object -w --stdin))
 
     git commit -am "chore: update versions"
+
+    while ! yarn lerna publish from-package \
+      --dist-tag="$DISTTAG" --no-git-reset --no-verify-access --yes; do
+      echo 1>&2 "Retrying publish..."
+      sleep 5
+    done
+
+    git reset --hard HEAD
+
+    # Convention used in Endo
+    yarn lerna run clean:types
+
     git checkout "$prior"
     popd
   done
@@ -104,8 +109,6 @@ integrationTest() {
   # Install the Agoric CLI on this machine's $PATH.
   case $1 in
     link-cli | link-cli/*)
-      # Prevent retries from failing with "must not already exist"
-      rm -f "$HOME/bin/agoric"
       yarn link-cli "$HOME/bin/agoric"
       persistVar AGORIC_CMD "[\"$HOME/bin/agoric\"]"
       ;;
@@ -121,7 +124,7 @@ integrationTest() {
       ;;
     *)
       yarn global add "agoric@$DISTTAG"
-      persistVar AGORIC_CMD '["agoric"]'
+      persistVar AGORIC_CMD "[\"$(yarn global bin)/agoric\"]"
       ;;
   esac
 

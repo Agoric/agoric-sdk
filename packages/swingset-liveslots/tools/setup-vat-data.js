@@ -1,8 +1,13 @@
 // @ts-check
 /* global globalThis */
-// This file produces the globalThis.VatData property outside of a running
-// SwingSet so that it can be used by '@agoric/vat-data' (which only *consumes*
-// `globalThis.VatData`) in code under test.
+
+// This file produces the globalThis.VatData property outside of a
+// running SwingSet so that it can be used by '@agoric/vat-data'
+// (which only *consumes* `globalThis.VatData`) in code under test. It
+// also populates the passStyleOf symbol-named property.
+
+import { passStyleOf } from '@endo/pass-style';
+import { PassStyleOfEndowmentSymbol } from '@endo/pass-style/endow.js';
 import { makeFakeVirtualStuff } from './fakeVirtualSupport.js';
 
 const { WeakMap, WeakSet } = globalThis;
@@ -36,6 +41,8 @@ globalThis.VatData = harden({
   makeScalarBigWeakSetStore: (...args) =>
     fakeVomKit.cm.makeScalarBigWeakSetStore(...args),
 });
+
+globalThis[PassStyleOfEndowmentSymbol] = passStyleOf;
 
 export const reincarnate = (options = {}) => {
   const { fakeStore = new Map(), fakeVomKit: fvk } = options;

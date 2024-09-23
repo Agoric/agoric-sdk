@@ -155,82 +155,106 @@ test('persistent kvStore maxKeySize write', async t => {
   await hostStorage.close();
 });
 
-async function testTranscriptStore(t, dbDir) {
-  const exportLog = makeExportLog();
-  const { kernelStorage, hostStorage } = initSwingStore(dbDir, {
-    exportCallback: exportLog.callback,
-    keepTranscripts: true, // XXX need to vary
-  });
-  const { transcriptStore } = kernelStorage;
-  const { commit, close } = hostStorage;
+const testTranscriptStore = test.macro({
+  title(prefix = '', { ephemeral, keepTranscripts }) {
+    const type = ephemeral ? 'in-memory' : 'persistent';
+    const detail = keepTranscripts ? 'with retention' : 'without retention';
+    return `${prefix.replace(/.$/, '$& ')}${type} transcriptStore ${detail}`;
+  },
+  async exec(t, { ephemeral, keepTranscripts }) {
+    let dbDir = null;
+    if (!ephemeral) {
+      const [tmpPath, cleanup] = await tmpDir('testdb');
+      t.teardown(cleanup);
+      t.is(isSwingStore(tmpPath), false);
+      dbDir = tmpPath;
+    }
 
-  transcriptStore.initTranscript('st1');
-  transcriptStore.initTranscript('st2');
-  transcriptStore.addItem('st1', 'first');
-  transcriptStore.addItem('st1', 'second');
-  transcriptStore.rolloverSpan('st1');
-  transcriptStore.addItem('st1', 'third');
-  transcriptStore.addItem('st2', 'oneth');
-  transcriptStore.addItem('st1', 'fourth');
-  transcriptStore.addItem('st2', 'twoth');
-  transcriptStore.addItem('st2', 'threeth');
-  transcriptStore.addItem('st2', 'fourst');
-  const reader1 = transcriptStore.readSpan('st1', 0);
-  t.deepEqual(Array.from(reader1), ['first', 'second']);
-  const reader2 = transcriptStore.readSpan('st2', 0);
-  t.deepEqual(Array.from(reader2), ['oneth', 'twoth', 'threeth', 'fourst']);
+    const exportLog = makeExportLog();
+    const { kernelStorage, hostStorage } = initSwingStore(dbDir, {
+      exportCallback: exportLog.callback,
+      keepTranscripts,
+    });
+    const { transcriptStore } = kernelStorage;
+    const { commit, close } = hostStorage;
 
-  t.throws(() => transcriptStore.readSpan('st2', 3), {
-    message: 'no transcript span for "st2" at 3',
-  });
+    transcriptStore.initTranscript('st1');
+    transcriptStore.initTranscript('st2');
+    transcriptStore.addItem('st1', 'zeroth');
+    await transcriptStore.rolloverSpan('st1');
+    transcriptStore.addItem('st1', 'first');
+    transcriptStore.addItem('st1', 'second');
+    await transcriptStore.rolloverSpan('st1');
+    transcriptStore.addItem('st1', 'third');
+    transcriptStore.addItem('st2', 'oneth');
+    transcriptStore.addItem('st1', 'fourth');
+    transcriptStore.addItem('st2', 'twoth');
+    transcriptStore.addItem('st2', 'threeth');
+    transcriptStore.addItem('st2', 'fourst');
+    const reader1a = transcriptStore.readSpan('st1', 0);
+    const reader1b = transcriptStore.readSpan('st1', 1);
+    if (keepTranscripts) {
+      t.deepEqual(Array.from(reader1a), ['zeroth']);
+      t.deepEqual(Array.from(reader1b), ['first', 'second']);
+    } else {
+      const fna = async () => Array.from(reader1a);
+      const fnb = async () => Array.from(reader1b);
+      await t.throwsAsync(fna, undefined, 'pruned spans must not be readable');
+      await t.throwsAsync(fnb, undefined, 'pruned spans must not be readable');
+    }
+    const reader2 = transcriptStore.readSpan('st2', 0);
+    t.deepEqual(Array.from(reader2), ['oneth', 'twoth', 'threeth', 'fourst']);
 
-  const reader1alt = transcriptStore.readSpan('st1');
-  t.deepEqual(Array.from(reader1alt), ['third', 'fourth']);
-  const reader1alt2 = transcriptStore.readSpan('st1', 2);
-  t.deepEqual(Array.from(reader1alt2), ['third', 'fourth']);
+    t.throws(() => transcriptStore.readSpan('st2', 3), {
+      message: 'no transcript span for "st2" at 3',
+    });
 
-  transcriptStore.initTranscript('empty');
-  const readerEmpty = transcriptStore.readSpan('empty');
-  t.deepEqual(Array.from(readerEmpty), []);
+    const reader1alt = transcriptStore.readSpan('st1');
+    t.deepEqual(Array.from(reader1alt), ['third', 'fourth']);
+    const reader1alt2 = transcriptStore.readSpan('st1', 3);
+    t.deepEqual(Array.from(reader1alt2), ['third', 'fourth']);
 
-  t.throws(() => transcriptStore.readSpan('nonexistent'), {
-    message: 'no current transcript for "nonexistent"',
-  });
+    transcriptStore.initTranscript('empty');
+    const readerEmpty = transcriptStore.readSpan('empty');
+    t.deepEqual(Array.from(readerEmpty), []);
 
-  await commit();
-  t.deepEqual(exportLog.getLog(), [
-    [
+    t.throws(() => transcriptStore.readSpan('nonexistent'), {
+      message: 'no current transcript for "nonexistent"',
+    });
+
+    await commit();
+    t.deepEqual(exportLog.getLog(), [
       [
-        'transcript.empty.current',
-        '{"vatID":"empty","startPos":0,"endPos":0,"hash":"43e6be43a3a34d60c0ebeb8498b5849b094fc20fc68483a7aeb3624fa10f79f6","isCurrent":1,"incarnation":0}',
+        [
+          'transcript.empty.current',
+          '{"vatID":"empty","startPos":0,"endPos":0,"hash":"43e6be43a3a34d60c0ebeb8498b5849b094fc20fc68483a7aeb3624fa10f79f6","isCurrent":1,"incarnation":0}',
+        ],
+        [
+          'transcript.st1.0',
+          '{"vatID":"st1","startPos":0,"endPos":1,"hash":"92d0cf6ecd39b60b4e32dc65d4c6f343495928cb041f25b19e2825b17f4daa9a","isCurrent":0,"incarnation":0}',
+        ],
+        [
+          'transcript.st1.1',
+          '{"vatID":"st1","startPos":1,"endPos":3,"hash":"d385c43882cfb5611d255e362a9a98626ba4e55dfc308fc346c144c696ae734e","isCurrent":0,"incarnation":0}',
+        ],
+        [
+          'transcript.st1.current',
+          '{"vatID":"st1","startPos":3,"endPos":5,"hash":"789342fab468506c624c713c46953992f53a7eaae390d634790d791636b96cab","isCurrent":1,"incarnation":0}',
+        ],
+        [
+          'transcript.st2.current',
+          '{"vatID":"st2","startPos":0,"endPos":4,"hash":"45de7ae9d2be34148f9cf3000052e5d1374932d663442fe9f39a342d221cebf1","isCurrent":1,"incarnation":0}',
+        ],
       ],
-      [
-        'transcript.st1.0',
-        '{"vatID":"st1","startPos":0,"endPos":2,"hash":"d385c43882cfb5611d255e362a9a98626ba4e55dfc308fc346c144c696ae734e","isCurrent":0,"incarnation":0}',
-      ],
-      [
-        'transcript.st1.current',
-        '{"vatID":"st1","startPos":2,"endPos":4,"hash":"789342fab468506c624c713c46953992f53a7eaae390d634790d791636b96cab","isCurrent":1,"incarnation":0}',
-      ],
-      [
-        'transcript.st2.current',
-        '{"vatID":"st2","startPos":0,"endPos":4,"hash":"45de7ae9d2be34148f9cf3000052e5d1374932d663442fe9f39a342d221cebf1","isCurrent":1,"incarnation":0}',
-      ],
-    ],
-  ]);
-  await close();
-}
-
-test('in-memory transcriptStore read/write', async t => {
-  await testTranscriptStore(t, null);
+    ]);
+    await close();
+  },
 });
 
-test('persistent transcriptStore read/write', async t => {
-  const [dbDir, cleanup] = await tmpDir('testdb');
-  t.teardown(cleanup);
-  t.is(isSwingStore(dbDir), false);
-  await testTranscriptStore(t, dbDir);
-});
+test(testTranscriptStore, { ephemeral: true, keepTranscripts: true });
+test(testTranscriptStore, { ephemeral: true, keepTranscripts: false });
+test(testTranscriptStore, { ephemeral: false, keepTranscripts: true });
+test(testTranscriptStore, { ephemeral: false, keepTranscripts: false });
 
 test('transcriptStore abort', async t => {
   const [dbDir, cleanup] = await tmpDir('testdb');

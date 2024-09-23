@@ -4,10 +4,7 @@ import { finished as finishedCallback, PassThrough, Readable } from 'stream';
 import { promisify } from 'util';
 import { createGzip, createGunzip } from 'zlib';
 import { Fail, q } from '@endo/errors';
-import {
-  aggregateTryFinally,
-  PromiseAllOrErrors,
-} from '@agoric/internal/src/node/utils.js';
+import { withDeferredCleanup } from '@agoric/internal';
 import { buffer } from './util.js';
 
 /**
@@ -17,6 +14,7 @@ import { buffer } from './util.js';
  * @property {number} dbSaveSeconds time to write snapshot in DB
  * @property {number} compressedSize size of (compressed) snapshot
  * @property {number} compressSeconds time to generate and compress the snapshot
+ * @property {number} [archiveWriteSeconds] time to write an archive to disk (if applicable)
  */
 
 /**
@@ -39,7 +37,7 @@ import { buffer } from './util.js';
  *   loadSnapshot: (vatID: string) => AsyncIterableIterator<Uint8Array>,
  *   saveSnapshot: (vatID: string, snapPos: number, snapshotStream: AsyncIterable<Uint8Array>) => Promise<SnapshotResult>,
  *   deleteAllUnusedSnapshots: () => void,
- *   deleteVatSnapshots: (vatID: string) => void,
+ *   deleteVatSnapshots: (vatID: string, budget?: number) => { done: boolean, cleanups: number },
  *   stopUsingLastSnapshot: (vatID: string) => void,
  *   getSnapshotInfo: (vatID: string) => SnapshotInfo,
  * }} SnapStore
@@ -73,6 +71,7 @@ const finished = promisify(finishedCallback);
  * @param {(key: string, value: string | undefined) => void} noteExport
  * @param {object} [options]
  * @param {boolean | undefined} [options.keepSnapshots]
+ * @param {(name: string, compressedData: Parameters<import('stream').Readable.from>[0]) => Promise<void>} [options.archiveSnapshot]
  * @returns {SnapStore & SnapStoreInternal & SnapStoreDebug}
  */
 export function makeSnapStore(
@@ -80,7 +79,7 @@ export function makeSnapStore(
   ensureTxn,
   { measureSeconds },
   noteExport = () => {},
-  { keepSnapshots = false } = {},
+  { keepSnapshots = false, archiveSnapshot } = {},
 ) {
   db.exec(`
     CREATE TABLE IF NOT EXISTS snapshots (
@@ -173,11 +172,13 @@ export function makeSnapStore(
   `);
 
   function stopUsingLastSnapshot(vatID) {
+    // idempotent
     ensureTxn();
     const oldInfo = sqlGetPriorSnapshotInfo.get(vatID);
     if (oldInfo) {
       const rec = snapshotRec(vatID, oldInfo.snapPos, oldInfo.hash, 0);
       noteExport(snapshotMetadataKey(rec), JSON.stringify(rec));
+      noteExport(currentSnapshotMetadataKey(rec), undefined);
       if (keepSnapshots) {
         sqlStopUsingLastSnapshot.run(vatID);
       } else {
@@ -194,7 +195,8 @@ export function makeSnapStore(
 
   /**
    * Generates a new XS heap snapshot, stores a gzipped copy of it into the
-   * snapshots table, and reports information about the process, including
+   * snapshots table (and also to an archiveSnapshot callback if provided for
+   * e.g. disk archival), and reports information about the process, including
    * snapshot size and timing metrics.
    *
    * @param {string} vatID
@@ -203,74 +205,62 @@ export function makeSnapStore(
    * @returns {Promise<SnapshotResult>}
    */
   async function saveSnapshot(vatID, snapPos, snapshotStream) {
-    const cleanup = [];
-    return aggregateTryFinally(
-      async () => {
-        const hashStream = createHash('sha256');
-        const gzip = createGzip();
-        let compressedSize = 0;
-        let uncompressedSize = 0;
+    return withDeferredCleanup(async addCleanup => {
+      const hashStream = createHash('sha256');
+      const gzip = createGzip();
+      let compressedSize = 0;
+      let uncompressedSize = 0;
 
-        const { duration: compressSeconds, result: compressedSnapshot } =
-          await measureSeconds(async () => {
-            const snapReader = Readable.from(snapshotStream);
-            cleanup.push(
-              () =>
-                new Promise((resolve, reject) =>
-                  snapReader.destroy(
-                    null,
-                    // @ts-expect-error incorrect types
-                    err => (err ? reject(err) : resolve()),
-                  ),
-                ),
-            );
-
-            snapReader.on('data', chunk => {
-              uncompressedSize += chunk.length;
-            });
-            snapReader.pipe(hashStream);
-            const compressedSnapshotData = await buffer(snapReader.pipe(gzip));
-            await finished(snapReader);
-            return compressedSnapshotData;
+      const { duration: compressSeconds, result: compressedSnapshot } =
+        await measureSeconds(async () => {
+          const snapReader = Readable.from(snapshotStream);
+          const destroyReader = promisify(snapReader.destroy.bind(snapReader));
+          addCleanup(() => destroyReader(null));
+          snapReader.on('data', chunk => {
+            uncompressedSize += chunk.length;
           });
-        const hash = hashStream.digest('hex');
-
-        const { duration: dbSaveSeconds } = await measureSeconds(async () => {
-          ensureTxn();
-          stopUsingLastSnapshot(vatID);
-          compressedSize = compressedSnapshot.length;
-          sqlSaveSnapshot.run(
-            vatID,
-            snapPos,
-            1,
-            hash,
-            uncompressedSize,
-            compressedSize,
-            compressedSnapshot,
-          );
-          const rec = snapshotRec(vatID, snapPos, hash, 1);
-          const exportKey = snapshotMetadataKey(rec);
-          noteExport(exportKey, JSON.stringify(rec));
-          noteExport(
-            currentSnapshotMetadataKey(rec),
-            snapshotArtifactName(rec),
-          );
+          snapReader.pipe(hashStream);
+          const compressedSnapshotData = await buffer(snapReader.pipe(gzip));
+          await finished(snapReader);
+          return compressedSnapshotData;
         });
+      const hash = hashStream.digest('hex');
+      const rec = snapshotRec(vatID, snapPos, hash, 1);
+      const exportKey = snapshotMetadataKey(rec);
 
-        return harden({
+      const { duration: dbSaveSeconds } = await measureSeconds(async () => {
+        ensureTxn();
+        stopUsingLastSnapshot(vatID);
+        compressedSize = compressedSnapshot.length;
+        sqlSaveSnapshot.run(
+          vatID,
+          snapPos,
+          1,
           hash,
           uncompressedSize,
-          compressSeconds,
-          dbSaveSeconds,
           compressedSize,
-        });
-      },
-      async () => {
-        await PromiseAllOrErrors(
-          cleanup.reverse().map(fn => Promise.resolve().then(() => fn())),
+          compressedSnapshot,
         );
-      },
-    );
+        noteExport(exportKey, JSON.stringify(rec));
+        noteExport(currentSnapshotMetadataKey(rec), snapshotArtifactName(rec));
+      });
+
+      let archiveWriteSeconds;
+      if (archiveSnapshot) {
+        ({ duration: archiveWriteSeconds } = await measureSeconds(async () => {
+          await archiveSnapshot(exportKey, compressedSnapshot);
+        }));
+      }
+
+      return harden({
+        hash,
+        uncompressedSize,
+        compressSeconds,
+        dbSaveSeconds,
+        archiveWriteSeconds,
+        compressedSize,
+      });
+    });
   }
 
   const sqlGetSnapshot = db.prepare(`
@@ -354,28 +344,74 @@ export function makeSnapStore(
     WHERE vatID = ?
   `);
 
+  const sqlDeleteOneVatSnapshot = db.prepare(`
+    DELETE FROM snapshots
+    WHERE vatID = ? AND snapPos = ?
+  `);
+
   const sqlGetSnapshotList = db.prepare(`
     SELECT snapPos
     FROM snapshots
     WHERE vatID = ?
     ORDER BY snapPos
   `);
-  sqlGetSnapshotList.pluck(true);
+
+  const sqlGetSnapshotListLimited = db.prepare(`
+    SELECT snapPos, inUse
+    FROM snapshots
+    WHERE vatID = ?
+    ORDER BY snapPos DESC
+    LIMIT ?
+  `);
 
   /**
-   * Delete all snapshots for a given vat (for use when, e.g., a vat is terminated)
+   * @param {string} vatID
+   * @returns {boolean}
+   */
+  function hasSnapshots(vatID) {
+    // the LIMIT 1 means we aren't really getting all entries
+    return sqlGetSnapshotListLimited.all(vatID, 1).length > 0;
+  }
+
+  /**
+   * Delete some or all snapshots for a given vat (for use when, e.g.,
+   * a vat is terminated)
    *
    * @param {string} vatID
+   * @param {number} [budget]
+   * @returns {{ done: boolean, cleanups: number }}
    */
-  function deleteVatSnapshots(vatID) {
+  function deleteVatSnapshots(vatID, budget = Infinity) {
     ensureTxn();
-    const deletions = sqlGetSnapshotList.all(vatID);
-    for (const snapPos of deletions) {
+    const deleteAll = budget === Infinity;
+    assert(deleteAll || budget >= 1, 'budget must be undefined or positive');
+    // We can't use .iterate because noteExport can write to the DB,
+    // and overlapping queries are not supported.
+    const deletions = deleteAll
+      ? sqlGetSnapshotList.all(vatID)
+      : sqlGetSnapshotListLimited.all(vatID, budget);
+    let clearCurrent = deleteAll;
+    for (const deletion of deletions) {
+      clearCurrent ||= deletion.inUse;
+      const { snapPos } = deletion;
       const exportRec = snapshotRec(vatID, snapPos, undefined);
       noteExport(snapshotMetadataKey(exportRec), undefined);
+      // Budgeted deletion must delete rows one by one,
+      // but full deletion is handled all at once after this loop.
+      if (!deleteAll) {
+        sqlDeleteOneVatSnapshot.run(vatID, snapPos);
+      }
     }
-    noteExport(currentSnapshotMetadataKey({ vatID }), undefined);
-    sqlDeleteVatSnapshots.run(vatID);
+    if (deleteAll) {
+      sqlDeleteVatSnapshots.run(vatID);
+    }
+    if (clearCurrent) {
+      noteExport(currentSnapshotMetadataKey({ vatID }), undefined);
+    }
+    return {
+      done: deleteAll || deletions.length === 0 || !hasSnapshots(vatID),
+      cleanups: deletions.length,
+    };
   }
 
   const sqlGetSnapshotInfo = db.prepare(`
@@ -452,7 +488,7 @@ export function makeSnapStore(
   `);
 
   /**
-   * Obtain artifact metadata records for spanshots contained in this store.
+   * Obtain artifact metadata records for snapshots contained in this store.
    *
    * @param {boolean} includeHistorical  If true, include all metadata that is
    *   present in the store regardless of its currency; if false, only include

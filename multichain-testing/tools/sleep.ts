@@ -1,18 +1,36 @@
+const ambientSetTimeout = globalThis.setTimeout;
+
 type Log = (...values: unknown[]) => void;
 
-export const sleep = (ms: number, log: Log = () => {}) =>
+type SleepOptions = {
+  log?: Log;
+  setTimeout?: typeof ambientSetTimeout;
+};
+
+export const sleep = (
+  ms: number,
+  { log = () => {}, setTimeout = ambientSetTimeout }: SleepOptions = {},
+) =>
   new Promise(resolve => {
     log(`Sleeping for ${ms}ms...`);
     setTimeout(resolve, ms);
   });
 
+export type RetryOptions = {
+  maxRetries?: number;
+  retryIntervalMs?: number;
+} & SleepOptions;
+
 const retryUntilCondition = async <T>(
   operation: () => Promise<T>,
   condition: (result: T) => boolean,
   message: string,
-  maxRetries: number,
-  retryIntervalMs: number,
-  log: Log,
+  {
+    maxRetries = 6,
+    retryIntervalMs = 3500,
+    log = () => {},
+    setTimeout = ambientSetTimeout,
+  }: RetryOptions = {},
 ): Promise<T> => {
   console.log({ maxRetries, retryIntervalMs, message });
   let retries = 0;
@@ -35,28 +53,25 @@ const retryUntilCondition = async <T>(
     console.log(
       `Retry ${retries}/${maxRetries} - Waiting for ${retryIntervalMs}ms for ${message}...`,
     );
-    await sleep(retryIntervalMs, log);
+    await sleep(retryIntervalMs, { log, setTimeout });
   }
 
-  throw new Error(`${message} condition failed after ${maxRetries} retries.`);
+  throw Error(`${message} condition failed after ${maxRetries} retries.`);
 };
 
-export const makeRetryUntilCondition =
-  (
-    log: Log = () => {},
-    maxRetries: number = 6,
-    retryIntervalMs: number = 3500,
-  ) =>
-  <T>(
+export const makeRetryUntilCondition = (defaultOptions: RetryOptions = {}) => {
+  /**
+   * Retry an asynchronous operation until a condition is met.
+   * Defaults to maxRetries = 6, retryIntervalMs = 3500
+   */
+  return <T>(
     operation: () => Promise<T>,
     condition: (result: T) => boolean,
     message: string,
+    options?: RetryOptions,
   ) =>
-    retryUntilCondition(
-      operation,
-      condition,
-      message,
-      maxRetries,
-      retryIntervalMs,
-      log,
-    );
+    retryUntilCondition(operation, condition, message, {
+      ...defaultOptions,
+      ...options,
+    });
+};

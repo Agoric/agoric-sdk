@@ -1,4 +1,3 @@
-/* eslint @typescript-eslint/no-floating-promises: "warn" */
 import { annotateError, Fail } from '@endo/errors';
 import { E } from '@endo/eventual-send';
 import {

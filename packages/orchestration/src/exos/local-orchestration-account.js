@@ -1,41 +1,53 @@
 /** @file Use-object for the owner of a localchain account */
-import { typedJson } from '@agoric/cosmic-proto/vatsafe';
+import { typedJson } from '@agoric/cosmic-proto';
 import { AmountShape, PaymentShape } from '@agoric/ertp';
 import { makeTracer } from '@agoric/internal';
 import { Shape as NetworkShape } from '@agoric/network';
 import { M } from '@agoric/vat-data';
 import { VowShape } from '@agoric/vow';
 import { E } from '@endo/far';
+import { Fail, q } from '@endo/errors';
+
 import {
+  AmountArgShape,
+  AnyNatAmountsRecord,
   ChainAddressShape,
   DenomAmountShape,
   DenomShape,
   IBCTransferOptionsShape,
   TimestampProtoShape,
+  TypedJsonShape,
 } from '../typeGuards.js';
-import { maxClockSkew } from '../utils/cosmos.js';
+import { maxClockSkew, toDenomAmount } from '../utils/cosmos.js';
 import { orchestrationAccountMethods } from '../utils/orchestrationAccount.js';
 import { makeTimestampHelper } from '../utils/time.js';
+import { preparePacketTools } from './packet-tools.js';
+import { prepareIBCTools } from './ibc-packet.js';
+import { coerceCoin, coerceDenomAmount } from '../utils/amounts.js';
 
 /**
  * @import {HostOf} from '@agoric/async-flow';
- * @import {LocalChainAccount} from '@agoric/vats/src/localchain.js';
- * @import {AmountArg, ChainAddress, DenomAmount, IBCMsgTransferOptions, ChainInfo, IBCConnectionInfo, OrchestrationAccountI} from '@agoric/orchestration';
+ * @import {LocalChain, LocalChainAccount} from '@agoric/vats/src/localchain.js';
+ * @import {AmountArg, ChainAddress, DenomAmount, IBCMsgTransferOptions, IBCConnectionInfo, OrchestrationAccountI} from '@agoric/orchestration';
  * @import {RecorderKit, MakeRecorderKit} from '@agoric/zoe/src/contractSupport/recorder.js'.
  * @import {Zone} from '@agoric/zone';
  * @import {Remote} from '@agoric/internal';
  * @import {InvitationMakers} from '@agoric/smart-wallet/src/types.js';
  * @import {TimerService, TimestampRecord} from '@agoric/time';
  * @import {Vow, VowTools} from '@agoric/vow';
- * @import {TypedJson, JsonSafe} from '@agoric/cosmic-proto';
+ * @import {TypedJson, JsonSafe, ResponseTo} from '@agoric/cosmic-proto';
+ * @import {Coin} from '@agoric/cosmic-proto/cosmos/base/v1beta1/coin.js';
  * @import {Matcher} from '@endo/patterns';
  * @import {ChainHub} from './chain-hub.js';
+ * @import {PacketTools} from './packet-tools.js';
+ * @import {ZoeTools} from '../utils/zoe-tools.js';
  */
 
 const trace = makeTracer('LOA');
 
-const { Fail } = assert;
 const { Vow$ } = NetworkShape; // TODO #9611
+
+const EVow$ = shape => M.or(Vow$(shape), M.promise(/* shape */));
 
 /**
  * @typedef {object} LocalChainAccountNotification
@@ -43,11 +55,14 @@ const { Vow$ } = NetworkShape; // TODO #9611
  */
 
 /**
+ * @private
  * @typedef {{
  *   topicKit: RecorderKit<LocalChainAccountNotification>;
+ *   packetTools: PacketTools;
  *   account: LocalChainAccount;
  *   address: ChainAddress;
  * }} State
+ *   Internal to the LocalOrchestrationAccount exo
  */
 
 const HolderI = M.interface('holder', {
@@ -57,9 +72,11 @@ const HolderI = M.interface('holder', {
   deposit: M.call(PaymentShape).returns(VowShape),
   withdraw: M.call(AmountShape).returns(Vow$(PaymentShape)),
   executeTx: M.call(M.arrayOf(M.record())).returns(Vow$(M.record())),
-  monitorTransfers: M.call(M.remotable('TransferTap')).returns(
-    Vow$(M.remotable('TargetRegistration')),
-  ),
+  sendThenWaitForAck: M.call(EVow$(M.remotable('PacketSender')))
+    .optional(M.any())
+    .returns(EVow$(M.string())),
+  matchFirstPacket: M.call(M.any()).returns(EVow$(M.any())),
+  monitorTransfers: M.call(M.remotable('TargetApp')).returns(EVow$(M.any())),
 });
 
 /** @type {{ [name: string]: [description: string, valueShape: Matcher] }} */
@@ -69,26 +86,45 @@ const PUBLIC_TOPICS = {
 
 /**
  * @param {Zone} zone
- * @param {MakeRecorderKit} makeRecorderKit
- * @param {ZCF} zcf
- * @param {Remote<TimerService>} timerService
- * @param {VowTools} vowTools
- * @param {ChainHub} chainHub
+ * @param {object} powers
+ * @param {MakeRecorderKit} powers.makeRecorderKit
+ * @param {ZCF} powers.zcf
+ * @param {Remote<TimerService>} powers.timerService
+ * @param {VowTools} powers.vowTools
+ * @param {ChainHub} powers.chainHub
+ * @param {Remote<LocalChain>} powers.localchain
+ * @param {ZoeTools} powers.zoeTools
  */
 export const prepareLocalOrchestrationAccountKit = (
   zone,
-  makeRecorderKit,
-  zcf,
-  timerService,
-  { watch, allVows, asVow, when },
-  chainHub,
+  {
+    makeRecorderKit,
+    zcf,
+    timerService,
+    vowTools,
+    chainHub,
+    localchain,
+    zoeTools,
+  },
 ) => {
+  const { watch, allVows, asVow, when } = vowTools;
+  const { makeIBCTransferSender } = prepareIBCTools(
+    zone.subZone('ibcTools'),
+    vowTools,
+  );
+  const makePacketTools = preparePacketTools(
+    zone.subZone('packetTools'),
+    vowTools,
+  );
   const timestampHelper = makeTimestampHelper(timerService);
 
   /** Make an object wrapping an LCA with Zoe interfaces. */
   const makeLocalOrchestrationAccountKit = zone.exoClassKit(
     'Local Orchestration Account Kit',
     {
+      helper: M.interface('helper', {
+        amountToCoin: M.call(AmountArgShape).returns(M.record()),
+      }),
       holder: HolderI,
       undelegateWatcher: M.interface('undelegateWatcher', {
         onFulfilled: M.call([
@@ -96,11 +132,6 @@ export const prepareLocalOrchestrationAccountKit = (
         ])
           .optional(M.arrayOf(M.undefined())) // empty context
           .returns(VowShape),
-      }),
-      getChainInfoWatcher: M.interface('getChainInfoWatcher', {
-        onFulfilled: M.call(M.record()) // agoric chain info
-          .optional(ChainAddressShape)
-          .returns(Vow$(M.record())), // connection info
       }),
       transferWatcher: M.interface('transferWatcher', {
         onFulfilled: M.call([M.record(), M.nat()])
@@ -117,19 +148,34 @@ export const prepareLocalOrchestrationAccountKit = (
           .returns(M.any()),
       }),
       returnVoidWatcher: M.interface('returnVoidWatcher', {
-        onFulfilled: M.call(M.any())
-          .optional(M.arrayOf(M.undefined()))
-          .returns(M.undefined()),
+        onFulfilled: M.call(M.any()).optional(M.any()).returns(M.undefined()),
+      }),
+      seatExiterHandler: M.interface('seatExiterHandler', {
+        onFulfilled: M.call(M.undefined(), M.remotable()).returns(
+          M.undefined(),
+        ),
+        onRejected: M.call(M.error(), M.remotable()).returns(M.undefined()),
       }),
       getBalanceWatcher: M.interface('getBalanceWatcher', {
-        onFulfilled: M.call(AmountShape)
-          .optional(DenomShape)
-          .returns(DenomAmountShape),
+        onFulfilled: M.call(AmountShape, DenomShape).returns(DenomAmountShape),
+      }),
+      queryBalanceWatcher: M.interface('queryBalanceWatcher', {
+        onFulfilled: M.call(TypedJsonShape).returns(DenomAmountShape),
+      }),
+      queryBalancesWatcher: M.interface('queryBalancesWatcher', {
+        onFulfilled: M.call(TypedJsonShape).returns(
+          M.arrayOf(DenomAmountShape),
+        ),
       }),
       invitationMakers: M.interface('invitationMakers', {
-        Delegate: M.call(M.string(), AmountShape).returns(M.promise()),
-        Undelegate: M.call(M.string(), AmountShape).returns(M.promise()),
         CloseAccount: M.call().returns(M.promise()),
+        Delegate: M.call(M.string(), AmountShape).returns(M.promise()),
+        Deposit: M.call().returns(M.promise()),
+        Send: M.call().returns(M.promise()),
+        SendAll: M.call().returns(M.promise()),
+        Transfer: M.call().returns(M.promise()),
+        Undelegate: M.call(M.string(), AmountShape).returns(M.promise()),
+        Withdraw: M.call().returns(M.promise()),
       }),
     },
     /**
@@ -144,10 +190,20 @@ export const prepareLocalOrchestrationAccountKit = (
       const topicKit = makeRecorderKit(storageNode, PUBLIC_TOPICS.account[1]);
       // TODO determine what goes in vstorage https://github.com/Agoric/agoric-sdk/issues/9066
       void E(topicKit.recorder).write('');
+      const packetTools = makePacketTools(account);
 
-      return { account, address, topicKit };
+      return { account, address, topicKit, packetTools };
     },
     {
+      helper: {
+        /**
+         * @param {AmountArg} amount
+         * @returns {Coin}
+         */
+        amountToCoin(amount) {
+          return coerceCoin(chainHub, amount);
+        },
+      },
       invitationMakers: {
         /**
          * @param {string} validatorAddress
@@ -162,6 +218,27 @@ export const prepareLocalOrchestrationAccountKit = (
               this.facets.holder.delegate(validatorAddress, ertpAmount),
             );
           }, 'Delegate');
+        },
+        Deposit() {
+          trace('Deposit');
+          return zcf.makeInvitation(
+            seat => {
+              const { give } = seat.getProposal();
+              return watch(
+                zoeTools.localTransfer(
+                  seat,
+                  // @ts-expect-error LocalAccount vs LocalAccountMethods
+                  this.state.account,
+                  give,
+                ),
+                this.facets.seatExiterHandler,
+                seat,
+              );
+            },
+            'Deposit',
+            undefined,
+            M.splitRecord({ give: AnyNatAmountsRecord, want: {} }),
+          );
         },
         /**
          * @param {string} validatorAddress
@@ -179,6 +256,72 @@ export const prepareLocalOrchestrationAccountKit = (
         },
         CloseAccount() {
           throw Error('not yet implemented');
+        },
+        Send() {
+          /**
+           * @type {OfferHandler<
+           *   Vow<void>,
+           *   { toAccount: ChainAddress; amount: AmountArg }
+           * >}
+           */
+          const offerHandler = (seat, { toAccount, amount }) => {
+            seat.exit();
+            return watch(this.facets.holder.send(toAccount, amount));
+          };
+          return zcf.makeInvitation(offerHandler, 'Send');
+        },
+        SendAll() {
+          /**
+           * @type {OfferHandler<
+           *   Vow<void>,
+           *   { toAccount: ChainAddress; amounts: AmountArg[] }
+           * >}
+           */
+          const offerHandler = (seat, { toAccount, amounts }) => {
+            seat.exit();
+            return watch(this.facets.holder.sendAll(toAccount, amounts));
+          };
+          return zcf.makeInvitation(offerHandler, 'SendAll');
+        },
+        Transfer() {
+          /**
+           * @type {OfferHandler<
+           *   Vow<void>,
+           *   {
+           *     amount: AmountArg;
+           *     destination: ChainAddress;
+           *     opts: IBCMsgTransferOptions;
+           *   }
+           * >}
+           */
+          const offerHandler = (seat, { amount, destination, opts }) => {
+            seat.exit();
+            return watch(
+              this.facets.holder.transfer(amount, destination, opts),
+            );
+          };
+          return zcf.makeInvitation(offerHandler, 'Transfer');
+        },
+        Withdraw() {
+          trace('Withdraw');
+          return zcf.makeInvitation(
+            seat => {
+              const { want } = seat.getProposal();
+              return watch(
+                zoeTools.withdrawToSeat(
+                  // @ts-expect-error LocalAccount vs LocalAccountMethods
+                  this.state.account,
+                  seat,
+                  want,
+                ),
+                this.facets.seatExiterHandler,
+                seat,
+              );
+            },
+            'Withdraw',
+            undefined,
+            M.splitRecord({ give: {}, want: AnyNatAmountsRecord }),
+          );
         },
       },
       undelegateWatcher: {
@@ -200,18 +343,6 @@ export const prepareLocalOrchestrationAccountKit = (
           );
         },
       },
-      getChainInfoWatcher: {
-        /**
-         * @param {ChainInfo} agoricChainInfo
-         * @param {ChainAddress} destination
-         */
-        onFulfilled(agoricChainInfo, destination) {
-          return chainHub.getConnectionInfo(
-            agoricChainInfo.chainId,
-            destination.chainId,
-          );
-        },
-      },
       transferWatcher: {
         /**
          * @param {[
@@ -220,7 +351,7 @@ export const prepareLocalOrchestrationAccountKit = (
          * ]} results
          * @param {{
          *   destination: ChainAddress;
-         *   opts: IBCMsgTransferOptions;
+         *   opts?: IBCMsgTransferOptions;
          *   amount: DenomAmount;
          * }} ctx
          */
@@ -228,26 +359,35 @@ export const prepareLocalOrchestrationAccountKit = (
           [{ transferChannel }, timeoutTimestamp],
           { opts, amount, destination },
         ) {
-          return watch(
-            E(this.state.account).executeTx([
-              typedJson('/ibc.applications.transfer.v1.MsgTransfer', {
-                sourcePort: transferChannel.portId,
-                sourceChannel: transferChannel.channelId,
-                token: {
-                  amount: String(amount.value),
-                  denom: amount.denom,
-                },
-                sender: this.state.address.value,
-                receiver: destination.value,
-                timeoutHeight: opts?.timeoutHeight ?? {
-                  revisionHeight: 0n,
-                  revisionNumber: 0n,
-                },
-                timeoutTimestamp,
-                memo: opts?.memo ?? '',
-              }),
-            ]),
+          const transferMsg = typedJson(
+            '/ibc.applications.transfer.v1.MsgTransfer',
+            {
+              sourcePort: transferChannel.portId,
+              sourceChannel: transferChannel.channelId,
+              token: {
+                amount: String(amount.value),
+                denom: amount.denom,
+              },
+              sender: this.state.address.value,
+              receiver: destination.value,
+              timeoutHeight: opts?.timeoutHeight ?? {
+                revisionHeight: 0n,
+                revisionNumber: 0n,
+              },
+              timeoutTimestamp,
+              memo: opts?.memo ?? '',
+            },
           );
+
+          const { holder } = this.facets;
+          const sender = makeIBCTransferSender(
+            /** @type {any} */ (holder),
+            transferMsg,
+          );
+          // Begin capturing packets, send the transfer packet, then return a
+          // vow that rejects unless the packet acknowledgment comes back and is
+          // verified.
+          return holder.sendThenWaitForAck(sender);
         },
       },
       /**
@@ -264,15 +404,8 @@ export const prepareLocalOrchestrationAccountKit = (
           return results[0];
         },
       },
-      /**
-       * takes an array of results (from `executeEncodedTx`) and returns void
-       * since we are not interested in the result
-       */
       returnVoidWatcher: {
-        /**
-         * @param {unknown} _result
-         */
-        onFulfilled(_result) {
+        onFulfilled() {
           return undefined;
         },
       },
@@ -290,9 +423,68 @@ export const prepareLocalOrchestrationAccountKit = (
           return harden({ denom, value: natAmount.value });
         },
       },
+      /** exits or fails a seat depending the outcome */
+      seatExiterHandler: {
+        /**
+         * @param {undefined} _
+         * @param {ZCFSeat} seat
+         */
+        onFulfilled(_, seat) {
+          seat.exit();
+        },
+        /**
+         * @param {Error} reason
+         * @param {ZCFSeat} seat
+         */
+        onRejected(reason, seat) {
+          seat.exit(reason);
+          throw reason;
+        },
+      },
+      /**
+       * handles a QueryBalanceRequest from localchain.query and returns the
+       * balance as a DenomAmount
+       */
+      queryBalanceWatcher: {
+        /**
+         * @param {ResponseTo<
+         *   TypedJson<'/cosmos.bank.v1beta1.QueryBalanceRequest'>
+         * >} result
+         * @returns {DenomAmount}
+         */
+        onFulfilled(result) {
+          const { balance } = result;
+          if (!balance || !balance?.denom) {
+            throw Fail`Expected balance ${q(result)};`;
+          }
+          return harden(toDenomAmount(balance));
+        },
+      },
+      /**
+       * handles a QueryAllBalancesRequest from localchain.query and returns the
+       * balances as a DenomAmounts
+       */
+      queryBalancesWatcher: {
+        /**
+         * @param {JsonSafe<
+         *   ResponseTo<
+         *     TypedJson<'/cosmos.bank.v1beta1.QueryAllBalancesRequest'>
+         *   >
+         * >} result
+         * @returns {DenomAmount[]}
+         */
+        onFulfilled(result) {
+          const { balances } = result;
+          if (!balances || !Array.isArray(balances)) {
+            throw Fail`Expected balances ${q(result)};`;
+          }
+          return harden(balances.map(toDenomAmount));
+        },
+      },
       holder: {
         /** @type {HostOf<OrchestrationAccountI['asContinuingOffer']>} */
         asContinuingOffer() {
+          // @ts-expect-error XXX invitationMakers
           // getPublicTopics resolves promptly (same run), so we don't need a watcher
           // eslint-disable-next-line no-restricted-syntax
           return asVow(async () => {
@@ -313,28 +505,48 @@ export const prepareLocalOrchestrationAccountKit = (
           });
         },
         /**
-         * TODO: balance lookups for non-vbank assets
-         *
          * @type {HostOf<OrchestrationAccountI['getBalance']>}
          */
         getBalance(denomArg) {
-          // FIXME look up real values
-          // UNTIL https://github.com/Agoric/agoric-sdk/issues/9211
-          const [brand, denom] =
-            typeof denomArg === 'string'
-              ? [/** @type {any} */ (null), denomArg]
-              : [denomArg, 'FIXME'];
+          return asVow(() => {
+            const [brand, denom] =
+              typeof denomArg === 'string'
+                ? [chainHub.getAsset(denomArg)?.brand, denomArg]
+                : [denomArg, chainHub.getDenom(denomArg)];
 
-          return watch(
-            E(this.state.account).getBalance(brand),
-            this.facets.getBalanceWatcher,
-            denom,
-          );
+            if (!denom) {
+              throw Fail`No denom for brand: ${denomArg}`;
+            }
+
+            if (brand) {
+              return watch(
+                E(this.state.account).getBalance(brand),
+                this.facets.getBalanceWatcher,
+                denom,
+              );
+            }
+
+            return watch(
+              E(localchain).query(
+                typedJson('/cosmos.bank.v1beta1.QueryBalanceRequest', {
+                  address: this.state.address.value,
+                  denom,
+                }),
+              ),
+              this.facets.queryBalanceWatcher,
+            );
+          });
         },
         /** @type {HostOf<OrchestrationAccountI['getBalances']>} */
         getBalances() {
-          // TODO https://github.com/Agoric/agoric-sdk/issues/9610
-          return asVow(() => Fail`not yet implemented`);
+          return watch(
+            E(localchain).query(
+              typedJson('/cosmos.bank.v1beta1.QueryAllBalancesRequest', {
+                address: this.state.address.value,
+              }),
+            ),
+            this.facets.queryBalancesWatcher,
+          );
         },
 
         /**
@@ -361,12 +573,9 @@ export const prepareLocalOrchestrationAccountKit = (
          * @param {Amount<'nat'>} ertpAmount
          */
         delegate(validatorAddress, ertpAmount) {
-          // TODO #9211 lookup denom from brand
-          const amount = {
-            amount: String(ertpAmount.value),
-            denom: 'ubld',
-          };
           const { account: lca } = this.state;
+
+          const amount = coerceCoin(chainHub, ertpAmount);
 
           return watch(
             E(lca).executeTx([
@@ -386,11 +595,7 @@ export const prepareLocalOrchestrationAccountKit = (
          * @returns {Vow<void | TimestampRecord>}
          */
         undelegate(validatorAddress, ertpAmount) {
-          // TODO #9211 lookup denom from brand
-          const amount = {
-            amount: String(ertpAmount.value),
-            denom: 'ubld',
-          };
+          const amount = coerceCoin(chainHub, ertpAmount);
           const { account: lca } = this.state;
           return watch(
             E(lca).executeTx([
@@ -427,11 +632,46 @@ export const prepareLocalOrchestrationAccountKit = (
         getAddress() {
           return this.state.address;
         },
+        /**
+         * XXX consider using ERTP to send if it's vbank asset
+         *
+         * @type {HostOf<OrchestrationAccountI['send']>}
+         */
         send(toAccount, amount) {
           return asVow(() => {
-            // FIXME implement
-            console.log('send got', toAccount, amount);
-            throw Fail`send not yet implemented`;
+            trace('send', toAccount, amount);
+            const { helper } = this.facets;
+            return watch(
+              E(this.state.account).executeTx([
+                typedJson('/cosmos.bank.v1beta1.MsgSend', {
+                  amount: [helper.amountToCoin(amount)],
+                  toAddress: toAccount.value,
+                  fromAddress: this.state.address.value,
+                }),
+              ]),
+              this.facets.returnVoidWatcher,
+            );
+          });
+        },
+        /**
+         * XXX consider using ERTP to send if it's vbank asset
+         *
+         * @type {HostOf<OrchestrationAccountI['sendAll']>}
+         */
+        sendAll(toAccount, amounts) {
+          return asVow(() => {
+            trace('sendAll', toAccount, amounts);
+            const { helper } = this.facets;
+            return watch(
+              E(this.state.account).executeTx([
+                typedJson('/cosmos.bank.v1beta1.MsgSend', {
+                  amount: amounts.map(a => helper.amountToCoin(a)),
+                  toAddress: toAccount.value,
+                  fromAddress: this.state.address.value,
+                }),
+              ]),
+              this.facets.returnVoidWatcher,
+            );
           });
         },
         /**
@@ -441,18 +681,17 @@ export const prepareLocalOrchestrationAccountKit = (
          * @param {IBCMsgTransferOptions} [opts] if either timeoutHeight or
          *   timeoutTimestamp are not supplied, a default timeoutTimestamp will
          *   be set for 5 minutes in the future
-         * @returns {Vow<void>}
+         * @returns {Vow<any>}
          */
         transfer(amount, destination, opts) {
           return asVow(() => {
             trace('Transferring funds from LCA over IBC');
-            // TODO #9211 lookup denom from brand
-            if ('brand' in amount) throw Fail`ERTP Amounts not yet supported`;
 
             const connectionInfoV = watch(
-              chainHub.getChainInfo('agoric'),
-              this.facets.getChainInfoWatcher,
-              destination,
+              chainHub.getConnectionInfo(
+                this.state.address.chainId,
+                destination.chainId,
+              ),
             );
 
             // set a `timeoutTimestamp` if caller does not supply either `timeoutHeight` or `timeoutTimestamp`
@@ -463,12 +702,18 @@ export const prepareLocalOrchestrationAccountKit = (
                 ? 0n
                 : E(timestampHelper).getTimeoutTimestampNS());
 
-            const transferV = watch(
+            // don't resolve the vow until the transfer is confirmed on remote
+            // and reject vow if the transfer fails for any reason
+            const resultV = watch(
               allVows([connectionInfoV, timeoutTimestampVowOrValue]),
               this.facets.transferWatcher,
-              { opts, amount, destination },
+              {
+                opts,
+                amount: coerceDenomAmount(chainHub, amount),
+                destination,
+              },
             );
-            return watch(transferV, this.facets.returnVoidWatcher);
+            return resultV;
           });
         },
         /** @type {HostOf<OrchestrationAccountI['transferSteps']>} */
@@ -478,14 +723,25 @@ export const prepareLocalOrchestrationAccountKit = (
             throw Fail`not yet implemented`;
           });
         },
+        /** @type {HostOf<PacketTools['sendThenWaitForAck']>} */
+        sendThenWaitForAck(sender, opts) {
+          return watch(
+            E(this.state.packetTools).sendThenWaitForAck(sender, opts),
+          );
+        },
+        /** @type {HostOf<PacketTools['matchFirstPacket']>} */
+        matchFirstPacket(patternV) {
+          return watch(E(this.state.packetTools).matchFirstPacket(patternV));
+        },
         /** @type {HostOf<LocalChainAccount['monitorTransfers']>} */
         monitorTransfers(tap) {
-          return watch(E(this.state.account).monitorTransfers(tap));
+          return watch(E(this.state.packetTools).monitorTransfers(tap));
         },
       },
     },
   );
   return makeLocalOrchestrationAccountKit;
 };
+
 /** @typedef {ReturnType<typeof prepareLocalOrchestrationAccountKit>} MakeLocalOrchestrationAccountKit */
 /** @typedef {ReturnType<MakeLocalOrchestrationAccountKit>} LocalOrchestrationAccountKit */

@@ -13,7 +13,7 @@ import {
   makeFakeLocalchainBridge,
   makeFakeTransferBridge,
 } from '@agoric/vats/tools/fake-bridge.js';
-import { prepareVowTools } from '@agoric/vow';
+import { prepareSwingsetVowTools } from '@agoric/vow/vat.js';
 import type { Installation } from '@agoric/zoe/src/zoeService/utils.js';
 import { buildZoeManualTimer } from '@agoric/zoe/tools/manualTimer.js';
 import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
@@ -21,9 +21,13 @@ import { makeHeapZone, type Zone } from '@agoric/zone';
 import { makeDurableZone } from '@agoric/zone/durable.js';
 import { E } from '@endo/far';
 import type { ExecutionContext } from 'ava';
+import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { registerKnownChains } from '../src/chain-info.js';
 import { prepareCosmosInterchainService } from '../src/exos/cosmos-interchain-service.js';
 import { setupFakeNetwork } from './network-fakes.js';
+import { buildVTransferEvent } from '../tools/ibc-mocks.js';
+import { makeChainHub } from '../src/exos/chain-hub.js';
+import fetchedChainInfo from '../src/fetched-chain-info.js';
 
 export {
   makeFakeLocalchainBridge,
@@ -43,7 +47,10 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
 
   const bld = withAmountUtils(makeIssuerKit('BLD'));
   const ist = withAmountUtils(makeIssuerKit('IST'));
-  const { bankManager, pourPayment } = await makeFakeBankManagerKit();
+  const bankBridgeMessages = [] as any[];
+  const { bankManager, pourPayment } = await makeFakeBankManagerKit({
+    onToBridge: obj => bankBridgeMessages.push(obj),
+  });
   await E(bankManager).addAsset('ubld', 'BLD', 'Staking Token', bld.issuerKit);
   await E(bankManager).addAsset(
     'uist',
@@ -56,6 +63,7 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
   const { mint: _b, ...bldSansMint } = bld;
   const { mint: _i, ...istSansMint } = ist;
   // XXX real bankManager does this. fake should too?
+  // TODO https://github.com/Agoric/agoric-sdk/issues/9966
   await makeWellKnownSpaces(agoricNamesAdmin, t.log, ['vbankAsset']);
   await E(E(agoricNamesAdmin).lookupAdmin('vbankAsset')).update(
     'uist',
@@ -68,8 +76,19 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
       displayInfo: { IOU: true },
     }),
   );
+  await E(E(agoricNamesAdmin).lookupAdmin('vbankAsset')).update(
+    'ubld',
+    /** @type {AssetInfo} */ harden({
+      brand: bld.brand,
+      issuer: bld.issuer,
+      issuerName: 'BLD',
+      denom: 'ubld',
+      proposedName: 'BLD',
+      displayInfo: { IOU: true },
+    }),
+  );
 
-  const vowTools = prepareVowTools(rootZone.subZone('vows'));
+  const vowTools = prepareSwingsetVowTools(rootZone.subZone('vows'));
 
   const transferBridge = makeFakeTransferBridge(rootZone);
   const { makeBridgeTargetKit } = prepareBridgeTargetModule(
@@ -90,9 +109,9 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
   finisher.useRegistry(bridgeTargetKit.targetRegistry);
   await E(transferBridge).initHandler(bridgeTargetKit.bridgeHandler);
 
-  const localBrigeMessages = [] as any[];
+  const localBridgeMessages = [] as any[];
   const localchainBridge = makeFakeLocalchainBridge(rootZone, obj =>
-    localBrigeMessages.push(obj),
+    localBridgeMessages.push(obj),
   );
   const localchain = prepareLocalChainTools(
     rootZone.subZone('localchain'),
@@ -124,6 +143,46 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
 
   await registerKnownChains(agoricNamesAdmin, () => {});
 
+  let ibcSequenceNonce = 0n;
+  /** simulate incoming message as if the transfer completed over IBC */
+  const transmitTransferAck = async () => {
+    // assume this is called after each outgoing IBC transfer
+    ibcSequenceNonce += 1n;
+    // let the promise for the transfer start
+    await eventLoopIteration();
+    const lastMsgTransfer = localBridgeMessages.at(-1).messages[0];
+    await E(transferBridge).fromBridge(
+      buildVTransferEvent({
+        receiver: lastMsgTransfer.receiver,
+        sender: lastMsgTransfer.sender,
+        target: lastMsgTransfer.sender,
+        sourceChannel: lastMsgTransfer.sourceChannel,
+        sequence: ibcSequenceNonce,
+      }),
+    );
+    // let the bridge handler finish
+    await eventLoopIteration();
+  };
+
+  const chainHub = makeChainHub(agoricNames, vowTools);
+
+  /**
+   * Register BLD if it's not already registered.
+   * Does not work with `withOrchestration` contracts, as these have their own
+   * ChainHub. Use `ChainHubAdmin` instead.
+   */
+  const registerAgoricBld = () => {
+    if (!chainHub.getAsset('ubld')) {
+      chainHub.registerChain('agoric', fetchedChainInfo.agoric);
+      chainHub.registerAsset('ubld', {
+        chainName: 'agoric',
+        baseName: 'agoric',
+        baseDenom: 'ubld',
+        brand: bld.brand,
+      });
+    }
+  };
+
   return {
     bootstrap: {
       agoricNames,
@@ -131,11 +190,13 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
       bankManager,
       timer,
       localchain,
+      // TODO remove; bootstrap doesn't havemarshaller
       marshaller,
       cosmosInterchainService,
       // TODO remove; bootstrap doesn't have a zone
       rootZone: rootZone.subZone('contract'),
       storage,
+      // TODO remove; bootstrap doesn't have vowTools
       vowTools,
     },
     brands: {
@@ -156,14 +217,18 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
     },
     facadeServices: {
       agoricNames,
+      chainHub,
       localchain,
       orchestrationService: cosmosInterchainService,
       timerService: timer,
     },
     utils: {
       pourPayment,
-      inspectLocalBridge: () => harden([...localBrigeMessages]),
+      inspectLocalBridge: () => harden([...localBridgeMessages]),
       inspectDibcBridge: () => E(ibcBridge).inspectDibcBridge(),
+      inspectBankBridge: () => harden([...bankBridgeMessages]),
+      registerAgoricBld,
+      transmitTransferAck,
     },
   };
 };

@@ -161,8 +161,17 @@ export { bootPlugin } from ${JSON.stringify(absPath)};
 
       const allEndowments = harden({
         home: bootP,
-        bundleSource: (file, options = undefined) =>
-          bundleSource(pathResolve(file), options),
+        /**
+         * @template {import('@endo/bundle-source').ModuleFormat} ModuleFormat
+         * @param {string} file
+         * @param {import('@endo/bundle-source').BundleOptions<ModuleFormat>} options
+         * @returns {Promise<import('@endo/bundle-source').BundleSourceResult<ModuleFormat>>}
+         */
+        bundleSource: (file, options = {}) =>
+          bundleSource(pathResolve(file), {
+            elideComments: true,
+            ...options,
+          }),
         ...endowments,
         pathResolve,
         installUnsafePlugin,

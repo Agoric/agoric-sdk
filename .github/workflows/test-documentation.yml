@@ -26,12 +26,6 @@ jobs:
           node-version: ${{ matrix.node-version }}
           path: ./agoric-sdk
 
-      - name: yarn link
-        run: |
-          yarn link-cli ~/bin/agoric
-          echo "/home/runner/bin" >> $GITHUB_PATH
-        working-directory: ./agoric-sdk
-
       # Select a branch on dapp to test against by adding text to the body of the
       # pull request. For example: #dapp-encouragement-branch: zoe-release-0.7.0
       # The default is 'main'
@@ -60,8 +54,10 @@ jobs:
           path: dapp
           ref: ${{steps.get-branch.outputs.result}}
 
-      - name: Agoric install in dapp
-        run: agoric install
+      - name: point dapp to agoric-SDK HEAD
+        # This assumes the dapp uses Yarn 4 and its other deps are compatible
+        # with the versions in the agoric-sdk packages.
+        run: yarn link ../agoric-sdk --all --relative
         working-directory: ./dapp
 
       - name: yarn build in dapp

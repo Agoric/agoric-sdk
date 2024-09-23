@@ -6,12 +6,12 @@ import path from 'path';
 
 import { makeAgoricNamesRemotesFromFakeStorage } from '@agoric/vats/tools/board-utils.js';
 import { TestFn } from 'ava';
-import { matchAmount, makeSwingsetTestKit } from '../../tools/supports.ts';
-import { makeZoeDriver } from '../../tools/drivers.ts';
+import { matchAmount, makeSwingsetTestKit } from '../../tools/supports.js';
+import { makeZoeDriver } from '../../tools/drivers.js';
 
 const dirname = path.dirname(new URL(import.meta.url).pathname);
 
-const ZCF_PROBE_SRC = './zcfProbe.js';
+const ZCF_PROBE_SRC = './zcfProbe.contract.js';
 
 /**
  * @file Bootstrap test of upgrading ZCF to support atomicRearrange internally.
@@ -85,7 +85,7 @@ test('run restart-vats proposal', async t => {
   await controller.validateAndInstallBundle(zcfProbeBundle);
   // This test self-sufficiently builds all the artifacts it needs. The test in
   // .../packages/deployment/upgradeTest/upgrade-test-scripts/unreleased-upgrade/zoe-upgrade/
-  // needs a bundled copy of ./zcfProbe.js as of the final commit that will be
+  // needs a bundled copy of ./zcfProbe.contract.js as of the final commit that will be
   // installed on-chain. Uncomment the following line and add
   // `import fs from "fs";` to generate a bundle of the contract.
   // fs.writeFileSync('bundles/prober-contract-bundle.json', JSON.stringify(zcfProbeBundle));

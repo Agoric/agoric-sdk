@@ -7,8 +7,8 @@ import { prepareMakeTestLOAKit } from './make-test-loa-kit.js';
 import { prepareMakeTestCOAKit } from './make-test-coa-kit.js';
 
 test('portfolio holder kit behaviors', async t => {
-  const { bootstrap } = await commonSetup(t);
-  const { rootZone, storage, vowTools } = bootstrap;
+  const common = await commonSetup(t);
+  const { rootZone, storage, vowTools } = common.bootstrap;
   const storageNode = storage.rootNode.makeChildNode('accounts');
 
   /**
@@ -23,8 +23,10 @@ test('portfolio holder kit behaviors', async t => {
     },
   });
 
-  const makeTestCOAKit = prepareMakeTestCOAKit(t, bootstrap, { zcf: mockZcf });
-  const makeTestLOAKit = prepareMakeTestLOAKit(t, bootstrap, { zcf: mockZcf });
+  const makeTestCOAKit = prepareMakeTestCOAKit(t, common, {
+    zcf: mockZcf,
+  });
+  const makeTestLOAKit = prepareMakeTestLOAKit(t, common, { zcf: mockZcf });
   const makeCosmosAccount = async ({
     chainId,
     hostConnectionId,
@@ -70,14 +72,13 @@ test('portfolio holder kit behaviors', async t => {
   const cosmosAccount = await E(holder).getAccount('cosmoshub');
   t.is(
     cosmosAccount,
-    // @ts-expect-error type mismatch between kit and OrchestrationAccountI
     accounts.cosmoshub,
     'same account holder kit provided is returned',
   );
 
   const { invitationMakers } = await E(holder).asContinuingOffer();
 
-  const delegateInv = await E(invitationMakers).MakeInvitation(
+  const delegateInv = await E(invitationMakers).Proxying(
     'cosmoshub',
     'Delegate',
     [
@@ -98,7 +99,7 @@ test('portfolio holder kit behaviors', async t => {
     // note: mocked zcf (we are not in a contract) returns inv description
     // @ts-expect-error Argument of type 'string' is not assignable to parameter of type 'Vow<any>'
     'Delegate',
-    'any invitation maker accessible via MakeInvitation',
+    'any invitation maker accessible via Proxying',
   );
 
   const osmosisAccount = await makeCosmosAccount({
@@ -109,12 +110,15 @@ test('portfolio holder kit behaviors', async t => {
 
   const osmosisTopic = (await E(osmosisAccount).getPublicTopics()).account;
 
-  // @ts-expect-error type mismatch between kit and OrchestrationAccountI
-  await E(holder).addAccount('osmosis', osmosisAccount, osmosisTopic);
+  await E(holder).addAccount(
+    'osmosis',
+    osmosisAccount,
+    // @ts-expect-error the promise from `subscriber.getUpdateSince` can't be used in a flow
+    osmosisTopic,
+  );
 
   t.is(
     await E(holder).getAccount('osmosis'),
-    // @ts-expect-error type mismatch between kit and OrchestrationAccountI
     osmosisAccount,
     'new accounts can be added',
   );

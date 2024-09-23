@@ -1,6 +1,6 @@
 import { expectType } from 'tsd';
 import { typedJson } from '../src/helpers.js';
-import type { ResponseTo, TypedJson } from '../src/helpers.ts';
+import type { ResponseTo, TypedJson } from '../src/helpers.js';
 import type { JsonSafe } from '../src/codegen/json-safe.js';
 import type { Timestamp } from '../src/codegen/google/protobuf/timestamp.js';
 
@@ -69,6 +69,5 @@ import type { Timestamp } from '../src/codegen/google/protobuf/timestamp.js';
     null as any;
   expectType<Timestamp>(response.completionTime);
   const responseJson: JsonSafe<typeof response> = null as any;
-  // FIXME: should be a string. UNTIL: github.com/cosmology-tech/telescope/pull/632
-  expectType<bigint>(responseJson.completionTime.seconds);
+  expectType<string>(responseJson.completionTime.seconds);
 }

@@ -22,7 +22,6 @@
   "author": "Agoric",
   "license": "Apache-2.0",
   "dependencies": {
-    "@endo/errors": "^1.2.2",
     "@agoric/builders": "^0.1.0",
     "@agoric/cosmos": "^0.34.1",
     "@agoric/deploy-script-support": "^0.10.3",
@@ -32,17 +31,19 @@
     "@agoric/swingset-vat": "^0.32.2",
     "@agoric/telemetry": "^0.6.2",
     "@agoric/vm-config": "^0.1.0",
-    "@endo/bundle-source": "^3.2.3",
-    "@endo/env-options": "^1.1.4",
-    "@endo/far": "^1.1.2",
-    "@endo/import-bundle": "^1.1.2",
-    "@endo/init": "^1.1.2",
-    "@endo/marshal": "^1.5.0",
-    "@endo/nat": "^5.0.7",
-    "@endo/promise-kit": "^1.1.2",
+    "@endo/bundle-source": "^3.4.0",
+    "@endo/env-options": "^1.1.6",
+    "@endo/errors": "^1.2.5",
+    "@endo/import-bundle": "^1.2.2",
+    "@endo/init": "^1.1.4",
+    "@endo/far": "^1.1.5",
+    "@endo/marshal": "^1.5.3",
+    "@endo/nat": "^5.0.10",
+    "@endo/patterns": "^1.4.3",
+    "@endo/promise-kit": "^1.1.5",
     "@iarna/toml": "^2.2.3",
-    "@opentelemetry/sdk-metrics": "~1.9.0",
     "@opentelemetry/api": "~1.3.0",
+    "@opentelemetry/sdk-metrics": "~1.9.0",
     "anylogger": "^0.21.0",
     "deterministic-json": "^1.0.5",
     "import-meta-resolve": "^2.2.1",
@@ -68,6 +69,6 @@
     "timeout": "20m"
   },
   "typeCoverage": {
-    "atLeast": 80.6
+    "atLeast": 80.55
   }
 }

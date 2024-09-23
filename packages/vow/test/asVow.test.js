@@ -4,11 +4,11 @@ import test from 'ava';
 import { E } from '@endo/far';
 import { makeHeapZone } from '@agoric/base-zone/heap.js';
 
-import { prepareVowTools } from '../src/tools.js';
+import { prepareBasicVowTools } from '../src/tools.js';
 import { getVowPayload, isVow } from '../src/vow-utils.js';
 
 test('asVow takes a function that throws/returns synchronously and returns a vow', async t => {
-  const { watch, when, asVow } = prepareVowTools(makeHeapZone());
+  const { watch, when, asVow } = prepareBasicVowTools(makeHeapZone());
 
   const fnThatThrows = () => {
     throw Error('fail');
@@ -36,7 +36,7 @@ test('asVow takes a function that throws/returns synchronously and returns a vow
 });
 
 test('asVow does not resolve a vow to a vow', async t => {
-  const { watch, when, asVow } = prepareVowTools(makeHeapZone());
+  const { watch, when, asVow } = prepareBasicVowTools(makeHeapZone());
 
   const testVow = watch(Promise.resolve('payload'));
   const testVowAsVow = asVow(() => testVow);

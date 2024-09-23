@@ -1,9 +1,9 @@
+/* eslint-disable jsdoc/require-param -- ts types */
 import { heapVowE as E } from '@agoric/vow/vat.js';
 import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/recorder.js';
 import { Far } from '@endo/far';
 import { ExecutionContext } from 'ava';
 import { prepareLocalOrchestrationAccountKit } from '../../src/exos/local-orchestration-account.js';
-import { makeChainHub } from '../../src/exos/chain-hub.js';
 import { commonSetup } from '../supports.js';
 
 /**
@@ -13,19 +13,17 @@ import { commonSetup } from '../supports.js';
  *
  * Helps reduce boilerplate in test files, and retains testing context through
  * parameterized endowments.
- *
- * @param t
- * @param bootstrap
- * @param opts
- * @param opts.zcf
  */
 export const prepareMakeTestLOAKit = (
   t: ExecutionContext,
-  bootstrap: Awaited<ReturnType<typeof commonSetup>>['bootstrap'],
+  {
+    bootstrap,
+    facadeServices: { chainHub },
+    utils,
+  }: Awaited<ReturnType<typeof commonSetup>>,
   { zcf = Far('MockZCF', {}) } = {},
 ) => {
-  const { timer, localchain, marshaller, rootZone, vowTools, agoricNames } =
-    bootstrap;
+  const { timer, localchain, marshaller, rootZone, vowTools } = bootstrap;
 
   const { makeRecorderKit } = prepareRecorderKitMakers(
     rootZone.mapStore('recorder'),
@@ -34,12 +32,15 @@ export const prepareMakeTestLOAKit = (
 
   const makeLocalOrchestrationAccountKit = prepareLocalOrchestrationAccountKit(
     rootZone,
-    makeRecorderKit,
-    // @ts-expect-error mocked zcf. use `stake-bld.contract.test.ts` to test LCA with offer
-    zcf,
-    timer,
-    vowTools,
-    makeChainHub(agoricNames, vowTools),
+    {
+      makeRecorderKit,
+      // @ts-expect-error mocked zcf. use `stake-bld.contract.test.ts` to test LCA with offer
+      zcf,
+      timerService: timer,
+      vowTools,
+      chainHub,
+      localchain,
+    },
   );
 
   return async ({
@@ -56,11 +57,14 @@ export const prepareMakeTestLOAKit = (
       account: lca,
       address: harden({
         value: address,
-        chainId: 'agoric-n',
+        chainId: 'agoric-3',
         encoding: 'bech32',
       }),
       storageNode: storageNode.makeChildNode(address),
     });
+
+    t.log('register Agoric chain and BLD in ChainHub');
+    utils.registerAgoricBld();
     return account;
   };
 };

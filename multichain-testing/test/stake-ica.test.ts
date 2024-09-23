@@ -1,9 +1,14 @@
 import anyTest from '@endo/ses-ava/prepare-endo.js';
 import type { TestFn } from 'ava';
-import { commonSetup, SetupContextWithWallets } from './support.js';
+import {
+  commonSetup,
+  SetupContextWithWallets,
+  FAUCET_POUR,
+} from './support.js';
 import { makeDoOffer } from '../tools/e2e-tools.js';
 import { makeQueryClient } from '../tools/query.js';
 import { sleep } from '../tools/sleep.js';
+import { STAKING_REWARDS_TIMEOUT } from './config.js';
 
 const test = anyTest as TestFn<SetupContextWithWallets>;
 
@@ -17,8 +22,6 @@ test.before(async t => {
   const wallets = await setupTestKeys(accounts);
   t.context = { ...rest, wallets, deleteTestKeys };
 });
-
-const FAUCET_POUR = 10000000000n;
 
 test.after(async t => {
   const { deleteTestKeys } = t.context;
@@ -40,20 +43,13 @@ const stakeScenario = test.macro(async (t, scenario: StakeIcaScenario) => {
   const {
     wallets,
     provisionSmartWallet,
-    makeQueryTool,
+    vstorageClient,
     retryUntilCondition,
     useChain,
-    deployBuilder,
+    startContract,
   } = t.context;
 
-  t.log('bundle and install contract', scenario);
-  await deployBuilder(scenario.builder);
-  const vstorageClient = makeQueryTool();
-  await retryUntilCondition(
-    () => vstorageClient.queryData(`published.agoricNames.instance`),
-    res => scenario.contractName in Object.fromEntries(res),
-    `${scenario.contractName} instance is available`,
-  );
+  await startContract(scenario.contractName, scenario.builder);
   const wdUser1 = await provisionSmartWallet(wallets[scenario.wallet], {
     BLD: 100n,
     IST: 100n,
@@ -102,15 +98,8 @@ const stakeScenario = test.macro(async (t, scenario: StakeIcaScenario) => {
     `address for ${scenario.chain} is valid`,
   );
 
-  if (scenario.chain === 'cosmoshub') {
-    // see https://github.com/cosmos/cosmjs/pull/1593 for upstream fix
-    t.pass(
-      `SKIP ${scenario.chain}. @cosmjs/faucet does not support ICA address length.`,
-    );
-    return;
-  }
   const { creditFromFaucet, getRestEndpoint } = useChain(scenario.chain);
-  const queryClient = makeQueryClient(getRestEndpoint());
+  const queryClient = makeQueryClient(await getRestEndpoint());
 
   t.log(`Requesting faucet funds for ${address}`);
   // XXX fails intermittently until https://github.com/cosmology-tech/starship/issues/417
@@ -186,6 +175,7 @@ const stakeScenario = test.macro(async (t, scenario: StakeIcaScenario) => {
       return Number(total?.[0]?.amount) > 0;
     },
     `rewards available on ${scenario.chain}`,
+    STAKING_REWARDS_TIMEOUT,
   );
   t.log('reward:', total[0]);
   t.log('WithrawReward offer from continuing inv');
@@ -210,7 +200,7 @@ const stakeScenario = test.macro(async (t, scenario: StakeIcaScenario) => {
   );
   t.log('Balance after claiming rewards:', rewards);
 
-  const SHARES = 50;
+  const TOKENS_TO_UNDELEGATE = 50n;
   t.log('Undelegate offer from continuing inv');
   const undelegateOfferId = `undelegate-${Date.now()}`;
   await doOffer({
@@ -222,8 +212,11 @@ const stakeScenario = test.macro(async (t, scenario: StakeIcaScenario) => {
       invitationArgs: [
         [
           {
-            validatorAddress,
-            shares: String(SHARES),
+            validator: validatorChainAddress,
+            amount: {
+              denom: scenario.denom,
+              value: TOKENS_TO_UNDELEGATE,
+            },
           },
         ],
       ],
@@ -239,7 +232,7 @@ const stakeScenario = test.macro(async (t, scenario: StakeIcaScenario) => {
   t.log('unbonding_responses:', unbonding_responses[0].entries);
   t.is(
     unbonding_responses[0].entries[0].balance,
-    String(SHARES),
+    String(TOKENS_TO_UNDELEGATE),
     'undelegating 50 shares in progress',
   );
 
@@ -249,11 +242,13 @@ const stakeScenario = test.macro(async (t, scenario: StakeIcaScenario) => {
   t.log('Current Balance:', currentBalances[0]);
 
   console.log('waiting for unbonding period');
+  // XXX reference `120000` from chain state + `maxClockSkew`
   await sleep(120000);
   const { balances: rewardsWithUndelegations } = await retryUntilCondition(
     () => queryClient.queryBalances(address),
     ({ balances }) => {
-      const expectedBalance = Number(currentBalances[0].amount) + SHARES;
+      const expectedBalance =
+        Number(currentBalances[0].amount) + Number(TOKENS_TO_UNDELEGATE);
       return Number(balances?.[0]?.amount) >= expectedBalance;
     },
     'claimed rewards available',

@@ -13,6 +13,7 @@ test('gc actions', t => {
   }
   const clistState = { v1: { ko1: {}, ko2: {} }, v2: { ko2: {} } };
 
+  /** @type {KernelKeeper} */
   const kernelKeeper = {
     getGCActions() {
       return new Set(actions);
@@ -28,7 +29,9 @@ test('gc actions', t => {
       const [reachable, recognizable] = rc[kref];
       return { reachable, recognizable };
     },
+    // @ts-expect-error mock
     emitCrankHashes() {},
+    // @ts-expect-error mock
     provideVatKeeper(vatID) {
       return {
         hasCListEntry(kref) {

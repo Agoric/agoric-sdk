@@ -1,13 +1,14 @@
 #!/usr/bin/env node
 /* global process */
 import * as childProcessTop from 'child_process';
+import { fileURLToPath } from 'url';
 import fsTop from 'fs';
 import osTop from 'os';
 
 const { freeze } = Object;
 
 /** @param {string} path */
-const asset = path => new URL(path, import.meta.url).pathname;
+const asset = path => fileURLToPath(new URL(path, import.meta.url));
 
 const ModdableSDK = {
   MODDABLE: asset('../moddable'),
@@ -341,7 +342,7 @@ async function main(args, { env, stdout, spawn, fs, os }) {
 
   if (isWorkingCopy || showEnv) {
     if (showEnv && !isWorkingCopy) {
-      throw new Error('XSnap requires a working copy and git to --show-env');
+      throw Error('XSnap requires a working copy and git to --show-env');
     }
     await updateSubmodules(showEnv, { env, stdout, spawn, fs });
     hasSource = true;
@@ -362,7 +363,7 @@ async function main(args, { env, stdout, spawn, fs, os }) {
       }
       await makeXsnap({ spawn, fs, os }, { forceBuild });
     } else if (!hasBin) {
-      throw new Error(
+      throw Error(
         'XSnap has neither sources nor a pre-built binary. Docker? .dockerignore? npm files?',
       );
     }

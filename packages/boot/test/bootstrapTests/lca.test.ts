@@ -3,12 +3,13 @@ import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import type { TestFn } from 'ava';
 
 import { Fail } from '@endo/errors';
-import type { start as stakeBldStart } from '@agoric/orchestration/src/examples/stakeBld.contract.js';
+import type { start as stakeBldStart } from '@agoric/orchestration/src/examples/stake-bld.contract.js';
 import type { Instance } from '@agoric/zoe/src/zoeService/utils.js';
+import { SIMULATED_ERRORS } from '@agoric/vats/tools/fake-bridge.js';
 import {
   makeWalletFactoryContext,
   type WalletFactoryTestContext,
-} from './walletFactory.ts';
+} from './walletFactory.js';
 
 const test: TestFn<WalletFactoryTestContext> = anyTest;
 
@@ -100,17 +101,88 @@ test.serial('stakeBld', async t => {
         source: 'continuing',
         previousOffer: 'request-stake',
         invitationMakerName: 'Delegate',
-        invitationArgs: ['agoric1validator1', { brand: BLD, value: 504n }],
+        invitationArgs: [
+          'agoric1validator1',
+          { brand: BLD, value: SIMULATED_ERRORS.TIMEOUT },
+        ],
       },
       proposal: {
         give: {
           // @ts-expect-error XXX BoardRemote
-          In: { brand: BLD, value: 504n },
+          In: { brand: BLD, value: SIMULATED_ERRORS.TIMEOUT },
         },
       },
     }),
     // TODO propagate error message through bridge
     // FIXME should receive "simulated packet timeout" error
     // { message: 'simulated packet timeout' },
+  );
+
+  await wd.executeOffer({
+    id: 'bank-send',
+    invitationSpec: {
+      source: 'continuing',
+      previousOffer: 'request-stake',
+      invitationMakerName: 'Send',
+    },
+    proposal: {},
+    offerArgs: {
+      toAccount: {
+        value: 'agoric1EOAAccAddress',
+        chainId: 'agoriclocal',
+        encoding: 'bech32',
+      },
+      amount: { denom: 'ibc/1234', value: 10n },
+    },
+  });
+  t.like(wd.getLatestUpdateRecord(), {
+    status: { id: 'bank-send', numWantsSatisfied: 1 },
+  });
+
+  await wd.executeOffer({
+    id: 'bank-sendAll',
+    invitationSpec: {
+      source: 'continuing',
+      previousOffer: 'request-stake',
+      invitationMakerName: 'SendAll',
+    },
+    proposal: {},
+    offerArgs: {
+      toAccount: {
+        value: 'agoric1EOAAccAddress',
+        chainId: 'agoriclocal',
+        encoding: 'bech32',
+      },
+      amounts: [
+        { denom: 'uatom', value: 10n },
+        { denom: 'ibc/1234', value: 10n },
+      ],
+    },
+  });
+  t.like(wd.getLatestUpdateRecord(), {
+    status: { id: 'bank-sendAll', numWantsSatisfied: 1 },
+  });
+
+  await t.throwsAsync(
+    wd.executeOffer({
+      id: 'bank-send-fail',
+      invitationSpec: {
+        source: 'continuing',
+        previousOffer: 'request-stake',
+        invitationMakerName: 'Send',
+      },
+      proposal: {},
+      offerArgs: {
+        toAccount: {
+          value: 'agoric1EOAAccAddress',
+          chainId: 'agoriclocal',
+          encoding: 'bech32',
+        },
+        amount: {
+          denom: 'ibc/1234',
+          value: SIMULATED_ERRORS.BAD_REQUEST,
+        },
+      },
+    }),
   );
 });

@@ -1,4 +1,3 @@
-/* eslint @typescript-eslint/no-floating-promises: "warn" */
 import { Fail } from '@endo/errors';
 import { prepareDurablePublishKit } from '@agoric/notifier';
 import { E } from '@endo/eventual-send';

@@ -19,10 +19,6 @@
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
     },
-    "./vatsafe": {
-      "types": "./dist/vatsafe.d.ts",
-      "default": "./dist/vatsafe.js"
-    },
     "./package.json": "./package.json",
     "./agoric/*.js": {
       "types": "./dist/codegen/agoric/*.d.ts",
@@ -36,9 +32,21 @@
       "types": "./dist/codegen/cosmos/bank/v1beta1/query.d.ts",
       "default": "./dist/codegen/cosmos/bank/v1beta1/query.js"
     },
+    "./cosmos/bank/v1beta1/tx.js": {
+      "types": "./dist/codegen/cosmos/bank/v1beta1/tx.d.ts",
+      "default": "./dist/codegen/cosmos/bank/v1beta1/tx.js"
+    },
+    "./cosmos/distribution/v1beta1/query.js": {
+      "types": "./dist/codegen/cosmos/distribution/v1beta1/query.d.ts",
+      "default": "./dist/codegen/cosmos/distribution/v1beta1/query.js"
+    },
     "./cosmos/distribution/v1beta1/tx.js": {
       "types": "./dist/codegen/cosmos/distribution/v1beta1/tx.d.ts",
       "default": "./dist/codegen/cosmos/distribution/v1beta1/tx.js"
+    },
+    "./cosmos/staking/v1beta1/query.js": {
+      "types": "./dist/codegen/cosmos/staking/v1beta1/query.d.ts",
+      "default": "./dist/codegen/cosmos/staking/v1beta1/query.js"
     },
     "./cosmos/staking/v1beta1/tx.js": {
       "types": "./dist/codegen/cosmos/staking/v1beta1/tx.d.ts",
@@ -63,6 +71,10 @@
     "./ibc/applications/interchain_accounts/v1/packet.js": {
       "types": "./dist/codegen/ibc/applications/interchain_accounts/v1/packet.d.ts",
       "default": "./dist/codegen/ibc/applications/interchain_accounts/v1/packet.js"
+    },
+    "./ibc/applications/transfer/v1/tx.js": {
+      "types": "./dist/codegen/ibc/applications/transfer/v1/tx.d.ts",
+      "default": "./dist/codegen/ibc/applications/transfer/v1/tx.js"
     },
     "./ibc/core/channel/v1/channel.js": {
       "types": "./dist/codegen/ibc/core/channel/v1/channel.d.ts",
@@ -132,18 +144,18 @@
   "devDependencies": {
     "@agoric/cosmos": "^0.34.1",
     "@ava/typescript": "^4.1.0",
-    "@cosmology/telescope": "^1.7.1",
-    "@endo/bundle-source": "^3.2.3",
-    "@endo/import-bundle": "^1.1.2",
+    "@cosmology/telescope": "https://gitpkg.vercel.app/agoric-labs/telescope/packages/telescope?8d2c2f6ba637a5578eead09a7368dc41c262a9d0",
+    "@endo/bundle-source": "^3.4.0",
+    "@endo/import-bundle": "^1.2.2",
     "ava": "^5.3.1",
     "rimraf": "^5.0.0",
     "tsd": "^0.31.1",
     "tsimp": "^2.0.11",
-    "typescript": "^5.5.3"
+    "typescript": "~5.6.2"
   },
   "dependencies": {
-    "@endo/base64": "^1.0.5",
-    "@endo/init": "^1.1.2"
+    "@endo/base64": "^1.0.7",
+    "@endo/init": "^1.1.4"
   },
   "resolutions": {
     "**/axios": "^1.6.7",

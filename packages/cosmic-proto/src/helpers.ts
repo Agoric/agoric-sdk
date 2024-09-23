@@ -7,7 +7,9 @@ import type {
 import type {
   QueryAllBalancesRequest,
   QueryAllBalancesResponse,
+  QueryBalanceRequest,
   QueryBalanceRequestProtoMsg,
+  QueryBalanceResponse,
 } from './codegen/cosmos/bank/v1beta1/query.js';
 import type {
   MsgSend,
@@ -38,6 +40,8 @@ export type Proto3Shape = {
   '/cosmos.bank.v1beta1.MsgSendResponse': MsgSendResponse;
   '/cosmos.bank.v1beta1.QueryAllBalancesRequest': QueryAllBalancesRequest;
   '/cosmos.bank.v1beta1.QueryAllBalancesResponse': QueryAllBalancesResponse;
+  '/cosmos.bank.v1beta1.QueryBalanceRequest': QueryBalanceRequest;
+  '/cosmos.bank.v1beta1.QueryBalanceResponse': QueryBalanceResponse;
   '/cosmos.staking.v1beta1.MsgDelegate': MsgDelegate;
   '/cosmos.staking.v1beta1.MsgDelegateResponse': MsgDelegateResponse;
   '/cosmos.staking.v1beta1.MsgUndelegate': MsgUndelegate;
@@ -93,9 +97,7 @@ const QUERY_REQ_TYPEURL_RE =
 export const typeUrlToGrpcPath = (typeUrl: Any['typeUrl']) => {
   const match = typeUrl.match(QUERY_REQ_TYPEURL_RE);
   if (!(match && match.groups)) {
-    throw new TypeError(
-      `Invalid typeUrl: ${typeUrl}. Must be a Query Request.`,
-    );
+    throw TypeError(`Invalid typeUrl: ${typeUrl}. Must be a Query Request.`);
   }
   const { serviceName, methodName } = match.groups;
   return `/${serviceName}.Query/${methodName}`;

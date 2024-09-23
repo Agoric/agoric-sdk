@@ -1,15 +1,28 @@
 {
   "agoricProposal": {
-    "type": "/cosmos.params.v1beta1.ParameterChangeProposal"
+    "type": "/agoric.swingset.CoreEvalProposal",
+    "sdk-generate": [
+      "testing/start-valueVow.js start-valueVow",
+      "testing/restart-valueVow.js restart-valueVow"
+    ]
   },
   "type": "module",
   "license": "Apache-2.0",
   "dependencies": {
-    "@agoric/synthetic-chain": "^0.1.0",
-    "ava": "^6.1.2"
+    "@agoric/internal": "0.3.3-dev-5676146.0",
+    "@agoric/synthetic-chain": "^0.2.1",
+    "@endo/errors": "^1.2.2",
+    "@endo/far": "^1.1.5",
+    "@endo/init": "^1.1.4",
+    "ava": "^6.1.2",
+    "tsx": "^4.17.0"
+  },
+  "resolutions": {
+    "execa": "^9.3.1"
   },
   "ava": {
     "concurrency": 1,
+    "serial": true,
     "timeout": "2m",
     "files": [
       "!submission"
@@ -18,5 +31,8 @@
   "scripts": {
     "agops": "yarn --cwd /usr/src/agoric-sdk/ --silent agops"
   },
-  "packageManager": "yarn@4.2.2"
+  "packageManager": "yarn@4.2.2",
+  "devDependencies": {
+    "typescript": "^5.5.4"
+  }
 }

@@ -1,11 +1,13 @@
-import { AmountShape } from '@agoric/ertp';
 import { VowShape } from '@agoric/vow';
 import { M } from '@endo/patterns';
 
 /**
  * @import {TypedPattern} from '@agoric/internal';
- * @import {ChainAddress, ChainInfo, CosmosChainInfo, DenomAmount} from './types.js';
+ * @import {ChainAddress, CosmosAssetInfo, Chain, ChainInfo, CosmosChainInfo, DenomAmount, DenomDetail, DenomInfo, AmountArg, CosmosValidatorAddress} from './types.js';
+ * @import {Any as Proto3Msg} from '@agoric/cosmic-proto/google/protobuf/any.js';
  * @import {Delegation} from '@agoric/cosmic-proto/cosmos/staking/v1beta1/staking.js';
+ * @import {TxBody} from '@agoric/cosmic-proto/cosmos/tx/v1beta1/tx.js';
+ * @import {TypedJson} from '@agoric/cosmic-proto';
  */
 
 /**
@@ -30,18 +32,13 @@ export const ChainAddressShape = {
   value: M.string(),
 };
 
+/** @type {TypedPattern<Proto3Msg>} */
 export const Proto3Shape = {
   typeUrl: M.string(),
   value: M.string(),
 };
 
-// FIXME missing `delegatorAddress` from the type
-/** @type {TypedPattern<Delegation>} */
-export const DelegationShape = harden({
-  validatorAddress: M.string(),
-  shares: M.string(), // TODO: bigint?
-});
-
+/** @internal */
 export const IBCTransferOptionsShape = M.splitRecord(
   {},
   {
@@ -54,7 +51,9 @@ export const IBCTransferOptionsShape = M.splitRecord(
   },
 );
 
+/** @internal */
 export const IBCChannelIDShape = M.string();
+/** @internal */
 export const IBCChannelInfoShape = M.splitRecord({
   portId: M.string(),
   channelId: IBCChannelIDShape,
@@ -64,7 +63,9 @@ export const IBCChannelInfoShape = M.splitRecord({
   state: M.scalar(), // XXX
   version: M.string(),
 });
+/** @internal */
 export const IBCConnectionIDShape = M.string();
+/** @internal */
 export const IBCConnectionInfoShape = M.splitRecord({
   id: IBCConnectionIDShape,
   client_id: M.string(),
@@ -72,11 +73,19 @@ export const IBCConnectionInfoShape = M.splitRecord({
   counterparty: {
     client_id: M.string(),
     connection_id: IBCConnectionIDShape,
-    prefix: {
-      key_prefix: M.string(),
-    },
   },
   transferChannel: IBCChannelInfoShape,
+});
+
+/** @type {TypedPattern<CosmosAssetInfo>} */
+export const CosmosAssetInfoShape = M.splitRecord({
+  base: M.string(),
+  name: M.string(),
+  display: M.string(),
+  symbol: M.string(),
+  denom_units: M.arrayOf(
+    M.splitRecord({ denom: M.string(), exponent: M.number() }),
+  ),
 });
 
 /** @type {TypedPattern<CosmosChainInfo>} */
@@ -98,16 +107,52 @@ export const ChainInfoShape = M.splitRecord({
 });
 export const LocalChainAccountShape = M.remotable('LocalChainAccount');
 export const DenomShape = M.string();
-// TODO define for #9211
-export const BrandInfoShape = M.any();
+
+/** @type {TypedPattern<DenomInfo<any, any>>} */
+export const DenomInfoShape = {
+  chain: M.remotable('Chain'),
+  base: M.remotable('Chain'),
+  brand: M.or(M.remotable('Brand'), M.undefined()),
+  baseDenom: M.string(),
+};
 
 /** @type {TypedPattern<DenomAmount>} */
 export const DenomAmountShape = { denom: DenomShape, value: M.bigint() };
 
-export const AmountArgShape = M.or(AmountShape, DenomAmountShape);
+/** @type {TypedPattern<Amount<'nat'>>} */
+export const AnyNatAmountShape = harden({
+  brand: M.remotable('Brand'),
+  value: M.nat(),
+});
+
+/** @type {TypedPattern<AmountArg>} */
+export const AmountArgShape = M.or(AnyNatAmountShape, DenomAmountShape);
+
+/**
+ * @type {TypedPattern<{
+ *   validator: CosmosValidatorAddress;
+ *   amount: AmountArg;
+ * }>}
+ */
+export const DelegationShape = M.splitRecord(
+  {
+    validator: ChainAddressShape,
+    amount: AmountArgShape,
+  },
+  { delegator: ChainAddressShape },
+);
+
+/** Approximately @see RequestQuery */
+export const ICQMsgShape = M.splitRecord(
+  { path: M.string(), data: M.string() },
+  { height: M.string(), prove: M.boolean() },
+);
+
+/** @type {TypedPattern<TypedJson>} */
+export const TypedJsonShape = M.splitRecord({ '@type': M.string() });
 
 /** @see {Chain} */
-export const ChainFacadeI = M.interface('ChainFacade', {
+export const chainFacadeMethods = harden({
   getChainInfo: M.call().returns(VowShape),
   makeAccount: M.call().returns(VowShape),
 });
@@ -115,5 +160,33 @@ export const ChainFacadeI = M.interface('ChainFacade', {
 /**
  * for google/protobuf/timestamp.proto, not to be confused with TimestampShape
  * from `@agoric/time`
+ *
+ * `seconds` is a big integer but since it goes through JSON it is encoded as
+ * string
  */
-export const TimestampProtoShape = { seconds: M.nat(), nanos: M.number() };
+export const TimestampProtoShape = { seconds: M.string(), nanos: M.number() };
+
+/**
+ * see {@link TxBody} for more details
+ *
+ * @internal
+ */
+export const TxBodyOptsShape = M.splitRecord(
+  {},
+  {
+    memo: M.string(),
+    timeoutHeight: M.bigint(),
+    extensionOptions: M.arrayOf(M.any()),
+    nonCriticalExtensionOptions: M.arrayOf(M.any()),
+  },
+);
+
+/**
+ * Ensures at least one {@link AmountKeywordRecord} entry is present and only
+ * permits Nat (fungible) amounts.
+ */
+export const AnyNatAmountsRecord = M.and(
+  M.recordOf(M.string(), AnyNatAmountShape),
+  M.not(harden({})),
+);
+harden(AnyNatAmountsRecord);

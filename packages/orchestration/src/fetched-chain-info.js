@@ -15,9 +15,6 @@ export default /** @type {const} } */ ({
         counterparty: {
           client_id: '07-tendermint-927',
           connection_id: 'connection-649',
-          prefix: {
-            key_prefix: 'FIXME',
-          },
         },
         state: 3,
         transferChannel: {
@@ -36,9 +33,6 @@ export default /** @type {const} } */ ({
         counterparty: {
           client_id: '07-tendermint-32',
           connection_id: 'connection-40',
-          prefix: {
-            key_prefix: 'FIXME',
-          },
         },
         state: 3,
         transferChannel: {
@@ -57,9 +51,6 @@ export default /** @type {const} } */ ({
         counterparty: {
           client_id: '07-tendermint-47',
           connection_id: 'connection-40',
-          prefix: {
-            key_prefix: 'FIXME',
-          },
         },
         state: 3,
         transferChannel: {
@@ -78,9 +69,6 @@ export default /** @type {const} } */ ({
         counterparty: {
           client_id: '07-tendermint-2109',
           connection_id: 'connection-1649',
-          prefix: {
-            key_prefix: 'FIXME',
-          },
         },
         state: 3,
         transferChannel: {
@@ -99,9 +87,6 @@ export default /** @type {const} } */ ({
         counterparty: {
           client_id: '07-tendermint-111',
           connection_id: 'connection-80',
-          prefix: {
-            key_prefix: 'FIXME',
-          },
         },
         state: 3,
         transferChannel: {
@@ -120,9 +105,6 @@ export default /** @type {const} } */ ({
         counterparty: {
           client_id: '07-tendermint-129',
           connection_id: 'connection-118',
-          prefix: {
-            key_prefix: 'FIXME',
-          },
         },
         state: 3,
         transferChannel: {
@@ -141,9 +123,6 @@ export default /** @type {const} } */ ({
         counterparty: {
           client_id: '07-tendermint-152',
           connection_id: 'connection-101',
-          prefix: {
-            key_prefix: 'FIXME',
-          },
         },
         state: 3,
         transferChannel: {
@@ -173,9 +152,6 @@ export default /** @type {const} } */ ({
         counterparty: {
           client_id: '07-tendermint-48',
           connection_id: 'connection-36',
-          prefix: {
-            key_prefix: 'FIXME',
-          },
         },
         state: 3,
         transferChannel: {
@@ -194,9 +170,6 @@ export default /** @type {const} } */ ({
         counterparty: {
           client_id: '07-tendermint-3012',
           connection_id: 'connection-2503',
-          prefix: {
-            key_prefix: 'FIXME',
-          },
         },
         state: 3,
         transferChannel: {
@@ -215,9 +188,6 @@ export default /** @type {const} } */ ({
         counterparty: {
           client_id: '07-tendermint-174',
           connection_id: 'connection-131',
-          prefix: {
-            key_prefix: 'FIXME',
-          },
         },
         state: 3,
         transferChannel: {
@@ -236,9 +206,6 @@ export default /** @type {const} } */ ({
         counterparty: {
           client_id: '07-tendermint-359',
           connection_id: 'connection-296',
-          prefix: {
-            key_prefix: 'FIXME',
-          },
         },
         state: 3,
         transferChannel: {
@@ -257,9 +224,6 @@ export default /** @type {const} } */ ({
         counterparty: {
           client_id: '07-tendermint-137',
           connection_id: 'connection-125',
-          prefix: {
-            key_prefix: 'FIXME',
-          },
         },
         state: 3,
         transferChannel: {
@@ -283,15 +247,30 @@ export default /** @type {const} } */ ({
     ],
     icqEnabled: false,
     connections: {
+      'stargaze-1': {
+        id: 'connection-918',
+        client_id: '07-tendermint-1188',
+        counterparty: {
+          client_id: '07-tendermint-320',
+          connection_id: 'connection-256',
+        },
+        state: 3,
+        transferChannel: {
+          channelId: 'channel-730',
+          portId: 'transfer',
+          counterPartyChannelId: 'channel-239',
+          counterPartyPortId: 'transfer',
+          ordering: 0,
+          state: 3,
+          version: 'ics20-1',
+        },
+      },
       'agoric-3': {
         id: 'connection-649',
         client_id: '07-tendermint-927',
         counterparty: {
           client_id: '07-tendermint-6',
           connection_id: 'connection-8',
-          prefix: {
-            key_prefix: 'FIXME',
-          },
         },
         state: 3,
         transferChannel: {
@@ -310,9 +289,6 @@ export default /** @type {const} } */ ({
         counterparty: {
           client_id: '07-tendermint-3',
           connection_id: 'connection-2',
-          prefix: {
-            key_prefix: 'FIXME',
-          },
         },
         state: 3,
         transferChannel: {
@@ -331,9 +307,6 @@ export default /** @type {const} } */ ({
         counterparty: {
           client_id: '07-tendermint-0',
           connection_id: 'connection-0',
-          prefix: {
-            key_prefix: 'FIXME',
-          },
         },
         state: 3,
         transferChannel: {
@@ -352,9 +325,6 @@ export default /** @type {const} } */ ({
         counterparty: {
           client_id: '07-tendermint-4',
           connection_id: 'connection-12',
-          prefix: {
-            key_prefix: 'FIXME',
-          },
         },
         state: 3,
         transferChannel: {
@@ -373,9 +343,6 @@ export default /** @type {const} } */ ({
         counterparty: {
           client_id: '07-tendermint-23',
           connection_id: 'connection-19',
-          prefix: {
-            key_prefix: 'FIXME',
-          },
         },
         state: 3,
         transferChannel: {
@@ -394,9 +361,6 @@ export default /** @type {const} } */ ({
         counterparty: {
           client_id: '07-tendermint-1',
           connection_id: 'connection-1',
-          prefix: {
-            key_prefix: 'FIXME',
-          },
         },
         state: 3,
         transferChannel: {
@@ -415,9 +379,6 @@ export default /** @type {const} } */ ({
         counterparty: {
           client_id: '07-tendermint-1',
           connection_id: 'connection-0',
-          prefix: {
-            key_prefix: 'FIXME',
-          },
         },
         state: 3,
         transferChannel: {
@@ -430,36 +391,12 @@ export default /** @type {const} } */ ({
           version: 'ics20-1',
         },
       },
-      'stargaze-1': {
-        id: 'connection-918',
-        client_id: '07-tendermint-1188',
-        counterparty: {
-          client_id: '07-tendermint-320',
-          connection_id: 'connection-256',
-          prefix: {
-            key_prefix: 'FIXME',
-          },
-        },
-        state: 3,
-        transferChannel: {
-          channelId: 'channel-730',
-          portId: 'transfer',
-          counterPartyChannelId: 'channel-239',
-          counterPartyPortId: 'transfer',
-          ordering: 0,
-          state: 3,
-          version: 'ics20-1',
-        },
-      },
       'stride-1': {
         id: 'connection-635',
         client_id: '07-tendermint-913',
         counterparty: {
           client_id: '07-tendermint-0',
           connection_id: 'connection-0',
-          prefix: {
-            key_prefix: 'FIXME',
-          },
         },
         state: 3,
         transferChannel: {
@@ -489,9 +426,6 @@ export default /** @type {const} } */ ({
         counterparty: {
           client_id: '07-tendermint-72',
           connection_id: 'connection-51',
-          prefix: {
-            key_prefix: 'FIXME',
-          },
         },
         state: 3,
         transferChannel: {
@@ -510,9 +444,6 @@ export default /** @type {const} } */ ({
         counterparty: {
           client_id: '07-tendermint-59',
           connection_id: 'connection-57',
-          prefix: {
-            key_prefix: 'FIXME',
-          },
         },
         state: 3,
         transferChannel: {
@@ -531,9 +462,6 @@ export default /** @type {const} } */ ({
         counterparty: {
           client_id: '07-tendermint-3009',
           connection_id: 'connection-2500',
-          prefix: {
-            key_prefix: 'FIXME',
-          },
         },
         state: 3,
         transferChannel: {
@@ -552,9 +480,6 @@ export default /** @type {const} } */ ({
         counterparty: {
           client_id: '07-tendermint-133',
           connection_id: 'connection-123',
-          prefix: {
-            key_prefix: 'FIXME',
-          },
         },
         state: 3,
         transferChannel: {
@@ -573,9 +498,6 @@ export default /** @type {const} } */ ({
         counterparty: {
           client_id: '07-tendermint-244',
           connection_id: 'connection-208',
-          prefix: {
-            key_prefix: 'FIXME',
-          },
         },
         state: 3,
         transferChannel: {
@@ -605,9 +527,6 @@ export default /** @type {const} } */ ({
         counterparty: {
           client_id: '07-tendermint-439',
           connection_id: 'connection-372',
-          prefix: {
-            key_prefix: 'FIXME',
-          },
         },
         state: 3,
         transferChannel: {
@@ -626,9 +545,6 @@ export default /** @type {const} } */ ({
         counterparty: {
           client_id: '07-tendermint-97',
           connection_id: 'connection-71',
-          prefix: {
-            key_prefix: 'FIXME',
-          },
         },
         state: 3,
         transferChannel: {
@@ -647,9 +563,6 @@ export default /** @type {const} } */ ({
         counterparty: {
           client_id: '07-tendermint-3',
           connection_id: 'connection-8',
-          prefix: {
-            key_prefix: 'FIXME',
-          },
         },
         state: 3,
         transferChannel: {
@@ -668,9 +581,6 @@ export default /** @type {const} } */ ({
         counterparty: {
           client_id: '07-tendermint-1457',
           connection_id: 'connection-1142',
-          prefix: {
-            key_prefix: 'FIXME',
-          },
         },
         state: 3,
         transferChannel: {
@@ -689,9 +599,6 @@ export default /** @type {const} } */ ({
         counterparty: {
           client_id: '07-tendermint-23',
           connection_id: 'connection-9',
-          prefix: {
-            key_prefix: 'FIXME',
-          },
         },
         state: 3,
         transferChannel: {
@@ -710,9 +617,6 @@ export default /** @type {const} } */ ({
         counterparty: {
           client_id: '07-tendermint-13',
           connection_id: 'connection-11',
-          prefix: {
-            key_prefix: 'FIXME',
-          },
         },
         state: 3,
         transferChannel: {
@@ -731,9 +635,6 @@ export default /** @type {const} } */ ({
         counterparty: {
           client_id: '07-tendermint-31',
           connection_id: 'connection-19',
-          prefix: {
-            key_prefix: 'FIXME',
-          },
         },
         state: 3,
         transferChannel: {
@@ -763,9 +664,6 @@ export default /** @type {const} } */ ({
         counterparty: {
           client_id: '07-tendermint-29',
           connection_id: 'connection-7',
-          prefix: {
-            key_prefix: 'FIXME',
-          },
         },
         state: 3,
         transferChannel: {
@@ -784,9 +682,6 @@ export default /** @type {const} } */ ({
         counterparty: {
           client_id: '07-tendermint-1119',
           connection_id: 'connection-809',
-          prefix: {
-            key_prefix: 'FIXME',
-          },
         },
         state: 3,
         transferChannel: {
@@ -805,9 +700,6 @@ export default /** @type {const} } */ ({
         counterparty: {
           client_id: '07-tendermint-11',
           connection_id: 'connection-17',
-          prefix: {
-            key_prefix: 'FIXME',
-          },
         },
         state: 3,
         transferChannel: {
@@ -826,9 +718,6 @@ export default /** @type {const} } */ ({
         counterparty: {
           client_id: '07-tendermint-557',
           connection_id: 'connection-524',
-          prefix: {
-            key_prefix: 'FIXME',
-          },
         },
         state: 3,
         transferChannel: {
@@ -847,9 +736,6 @@ export default /** @type {const} } */ ({
         counterparty: {
           client_id: '07-tendermint-25',
           connection_id: 'connection-34',
-          prefix: {
-            key_prefix: 'FIXME',
-          },
         },
         state: 3,
         transferChannel: {
@@ -868,9 +754,6 @@ export default /** @type {const} } */ ({
         counterparty: {
           client_id: '07-tendermint-2823',
           connection_id: 'connection-2338',
-          prefix: {
-            key_prefix: 'FIXME',
-          },
         },
         state: 3,
         transferChannel: {
@@ -889,9 +772,6 @@ export default /** @type {const} } */ ({
         counterparty: {
           client_id: '07-tendermint-199',
           connection_id: 'connection-192',
-          prefix: {
-            key_prefix: 'FIXME',
-          },
         },
         state: 3,
         transferChannel: {
@@ -910,9 +790,6 @@ export default /** @type {const} } */ ({
         counterparty: {
           client_id: '07-tendermint-283',
           connection_id: 'connection-211',
-          prefix: {
-            key_prefix: 'FIXME',
-          },
         },
         state: 3,
         transferChannel: {
@@ -931,9 +808,6 @@ export default /** @type {const} } */ ({
         counterparty: {
           client_id: '07-tendermint-125',
           connection_id: 'connection-113',
-          prefix: {
-            key_prefix: 'FIXME',
-          },
         },
         state: 3,
         transferChannel: {
@@ -950,11 +824,6 @@ export default /** @type {const} } */ ({
   },
   noble: {
     chainId: 'noble-1',
-    stakingTokens: [
-      {
-        denom: 'ustake',
-      },
-    ],
     icqEnabled: false,
     connections: {
       'agoric-3': {
@@ -963,9 +832,6 @@ export default /** @type {const} } */ ({
         counterparty: {
           client_id: '07-tendermint-77',
           connection_id: 'connection-72',
-          prefix: {
-            key_prefix: 'FIXME',
-          },
         },
         state: 3,
         transferChannel: {
@@ -984,9 +850,6 @@ export default /** @type {const} } */ ({
         counterparty: {
           client_id: '07-tendermint-1116',
           connection_id: 'connection-790',
-          prefix: {
-            key_prefix: 'FIXME',
-          },
         },
         state: 3,
         transferChannel: {
@@ -1005,9 +868,6 @@ export default /** @type {const} } */ ({
         counterparty: {
           client_id: '07-tendermint-0',
           connection_id: 'connection-0',
-          prefix: {
-            key_prefix: 'FIXME',
-          },
         },
         state: 3,
         transferChannel: {
@@ -1026,9 +886,6 @@ export default /** @type {const} } */ ({
         counterparty: {
           client_id: '07-tendermint-334',
           connection_id: 'connection-322',
-          prefix: {
-            key_prefix: 'FIXME',
-          },
         },
         state: 3,
         transferChannel: {
@@ -1047,9 +904,6 @@ export default /** @type {const} } */ ({
         counterparty: {
           client_id: '07-tendermint-40',
           connection_id: 'connection-31',
-          prefix: {
-            key_prefix: 'FIXME',
-          },
         },
         state: 3,
         transferChannel: {
@@ -1068,9 +922,6 @@ export default /** @type {const} } */ ({
         counterparty: {
           client_id: '07-tendermint-51',
           connection_id: 'connection-49',
-          prefix: {
-            key_prefix: 'FIXME',
-          },
         },
         state: 3,
         transferChannel: {
@@ -1089,9 +940,6 @@ export default /** @type {const} } */ ({
         counterparty: {
           client_id: '07-tendermint-2704',
           connection_id: 'connection-2241',
-          prefix: {
-            key_prefix: 'FIXME',
-          },
         },
         state: 3,
         transferChannel: {
@@ -1110,9 +958,6 @@ export default /** @type {const} } */ ({
         counterparty: {
           client_id: '07-tendermint-170',
           connection_id: 'connection-127',
-          prefix: {
-            key_prefix: 'FIXME',
-          },
         },
         state: 3,
         transferChannel: {
@@ -1131,9 +976,6 @@ export default /** @type {const} } */ ({
         counterparty: {
           client_id: '07-tendermint-287',
           connection_id: 'connection-214',
-          prefix: {
-            key_prefix: 'FIXME',
-          },
         },
         state: 3,
         transferChannel: {
@@ -1152,9 +994,6 @@ export default /** @type {const} } */ ({
         counterparty: {
           client_id: '07-tendermint-248',
           connection_id: 'connection-210',
-          prefix: {
-            key_prefix: 'FIXME',
-          },
         },
         state: 3,
         transferChannel: {
@@ -1184,9 +1023,6 @@ export default /** @type {const} } */ ({
         counterparty: {
           client_id: '07-tendermint-73',
           connection_id: 'connection-67',
-          prefix: {
-            key_prefix: 'FIXME',
-          },
         },
         state: 3,
         transferChannel: {
@@ -1205,9 +1041,6 @@ export default /** @type {const} } */ ({
         counterparty: {
           client_id: '07-tendermint-656',
           connection_id: 'connection-501',
-          prefix: {
-            key_prefix: 'FIXME',
-          },
         },
         state: 3,
         transferChannel: {
@@ -1226,9 +1059,6 @@ export default /** @type {const} } */ ({
         counterparty: {
           client_id: '07-tendermint-68',
           connection_id: 'connection-65',
-          prefix: {
-            key_prefix: 'FIXME',
-          },
         },
         state: 3,
         transferChannel: {
@@ -1247,9 +1077,6 @@ export default /** @type {const} } */ ({
         counterparty: {
           client_id: '07-tendermint-1829',
           connection_id: 'connection-1431',
-          prefix: {
-            key_prefix: 'FIXME',
-          },
         },
         state: 3,
         transferChannel: {
@@ -1279,9 +1106,6 @@ export default /** @type {const} } */ ({
         counterparty: {
           client_id: '07-tendermint-1',
           connection_id: 'connection-1',
-          prefix: {
-            key_prefix: 'FIXME',
-          },
         },
         state: 3,
         transferChannel: {
@@ -1300,9 +1124,6 @@ export default /** @type {const} } */ ({
         counterparty: {
           client_id: '07-tendermint-10',
           connection_id: 'connection-2',
-          prefix: {
-            key_prefix: 'FIXME',
-          },
         },
         state: 3,
         transferChannel: {
@@ -1321,9 +1142,6 @@ export default /** @type {const} } */ ({
         counterparty: {
           client_id: '07-tendermint-259',
           connection_id: 'connection-257',
-          prefix: {
-            key_prefix: 'FIXME',
-          },
         },
         state: 3,
         transferChannel: {
@@ -1342,9 +1160,6 @@ export default /** @type {const} } */ ({
         counterparty: {
           client_id: '07-tendermint-3',
           connection_id: 'connection-7',
-          prefix: {
-            key_prefix: 'FIXME',
-          },
         },
         state: 3,
         transferChannel: {
@@ -1363,9 +1178,6 @@ export default /** @type {const} } */ ({
         counterparty: {
           client_id: '07-tendermint-0',
           connection_id: 'connection-0',
-          prefix: {
-            key_prefix: 'FIXME',
-          },
         },
         state: 3,
         transferChannel: {
@@ -1384,9 +1196,6 @@ export default /** @type {const} } */ ({
         counterparty: {
           client_id: '07-tendermint-19',
           connection_id: 'connection-18',
-          prefix: {
-            key_prefix: 'FIXME',
-          },
         },
         state: 3,
         transferChannel: {
@@ -1405,9 +1214,6 @@ export default /** @type {const} } */ ({
         counterparty: {
           client_id: '07-tendermint-0',
           connection_id: 'connection-2',
-          prefix: {
-            key_prefix: 'FIXME',
-          },
         },
         state: 3,
         transferChannel: {
@@ -1426,9 +1232,6 @@ export default /** @type {const} } */ ({
         counterparty: {
           client_id: '07-tendermint-8',
           connection_id: 'connection-8',
-          prefix: {
-            key_prefix: 'FIXME',
-          },
         },
         state: 3,
         transferChannel: {
@@ -1447,9 +1250,6 @@ export default /** @type {const} } */ ({
         counterparty: {
           client_id: '07-tendermint-2',
           connection_id: 'connection-1',
-          prefix: {
-            key_prefix: 'FIXME',
-          },
         },
         state: 3,
         transferChannel: {
@@ -1468,9 +1268,6 @@ export default /** @type {const} } */ ({
         counterparty: {
           client_id: '07-tendermint-0',
           connection_id: 'connection-0',
-          prefix: {
-            key_prefix: 'FIXME',
-          },
         },
         state: 3,
         transferChannel: {
@@ -1489,9 +1286,6 @@ export default /** @type {const} } */ ({
         counterparty: {
           client_id: '07-tendermint-1',
           connection_id: 'connection-2',
-          prefix: {
-            key_prefix: 'FIXME',
-          },
         },
         state: 3,
         transferChannel: {
@@ -1510,9 +1304,6 @@ export default /** @type {const} } */ ({
         counterparty: {
           client_id: '07-tendermint-6',
           connection_id: 'connection-0',
-          prefix: {
-            key_prefix: 'FIXME',
-          },
         },
         state: 3,
         transferChannel: {
@@ -1542,9 +1333,6 @@ export default /** @type {const} } */ ({
         counterparty: {
           client_id: '07-tendermint-17',
           connection_id: 'connection-17',
-          prefix: {
-            key_prefix: 'FIXME',
-          },
         },
         state: 3,
         transferChannel: {
@@ -1563,9 +1351,6 @@ export default /** @type {const} } */ ({
         counterparty: {
           client_id: '07-tendermint-52',
           connection_id: 'connection-15',
-          prefix: {
-            key_prefix: 'FIXME',
-          },
         },
         state: 3,
         transferChannel: {
@@ -1584,9 +1369,6 @@ export default /** @type {const} } */ ({
         counterparty: {
           client_id: '07-tendermint-492',
           connection_id: 'connection-401',
-          prefix: {
-            key_prefix: 'FIXME',
-          },
         },
         state: 3,
         transferChannel: {
@@ -1605,9 +1387,6 @@ export default /** @type {const} } */ ({
         counterparty: {
           client_id: '07-tendermint-108',
           connection_id: 'connection-68',
-          prefix: {
-            key_prefix: 'FIXME',
-          },
         },
         state: 3,
         transferChannel: {
@@ -1626,9 +1405,6 @@ export default /** @type {const} } */ ({
         counterparty: {
           client_id: '07-tendermint-85',
           connection_id: 'connection-63',
-          prefix: {
-            key_prefix: 'FIXME',
-          },
         },
         state: 3,
         transferChannel: {
@@ -1647,9 +1423,6 @@ export default /** @type {const} } */ ({
         counterparty: {
           client_id: '07-tendermint-24',
           connection_id: 'connection-33',
-          prefix: {
-            key_prefix: 'FIXME',
-          },
         },
         state: 3,
         transferChannel: {
@@ -1668,9 +1441,6 @@ export default /** @type {const} } */ ({
         counterparty: {
           client_id: '07-tendermint-1588',
           connection_id: 'connection-1244',
-          prefix: {
-            key_prefix: 'FIXME',
-          },
         },
         state: 3,
         transferChannel: {
@@ -1689,9 +1459,6 @@ export default /** @type {const} } */ ({
         counterparty: {
           client_id: '07-tendermint-177',
           connection_id: 'connection-110',
-          prefix: {
-            key_prefix: 'FIXME',
-          },
         },
         state: 3,
         transferChannel: {
@@ -1710,9 +1477,6 @@ export default /** @type {const} } */ ({
         counterparty: {
           client_id: '07-tendermint-37',
           connection_id: 'connection-25',
-          prefix: {
-            key_prefix: 'FIXME',
-          },
         },
         state: 3,
         transferChannel: {
@@ -1731,9 +1495,6 @@ export default /** @type {const} } */ ({
         counterparty: {
           client_id: '07-tendermint-249',
           connection_id: 'connection-213',
-          prefix: {
-            key_prefix: 'FIXME',
-          },
         },
         state: 3,
         transferChannel: {
@@ -1763,9 +1524,6 @@ export default /** @type {const} } */ ({
         counterparty: {
           client_id: '07-tendermint-86',
           connection_id: 'connection-56',
-          prefix: {
-            key_prefix: 'FIXME',
-          },
         },
         state: 3,
         transferChannel: {
@@ -1784,9 +1542,6 @@ export default /** @type {const} } */ ({
         counterparty: {
           client_id: '07-tendermint-1188',
           connection_id: 'connection-918',
-          prefix: {
-            key_prefix: 'FIXME',
-          },
         },
         state: 3,
         transferChannel: {
@@ -1805,9 +1560,6 @@ export default /** @type {const} } */ ({
         counterparty: {
           client_id: '07-tendermint-44',
           connection_id: 'connection-30',
-          prefix: {
-            key_prefix: 'FIXME',
-          },
         },
         state: 3,
         transferChannel: {
@@ -1826,9 +1578,6 @@ export default /** @type {const} } */ ({
         counterparty: {
           client_id: '07-tendermint-31',
           connection_id: 'connection-23',
-          prefix: {
-            key_prefix: 'FIXME',
-          },
         },
         state: 3,
         transferChannel: {
@@ -1847,9 +1596,6 @@ export default /** @type {const} } */ ({
         counterparty: {
           client_id: '07-tendermint-16',
           connection_id: 'connection-25',
-          prefix: {
-            key_prefix: 'FIXME',
-          },
         },
         state: 3,
         transferChannel: {
@@ -1868,9 +1614,6 @@ export default /** @type {const} } */ ({
         counterparty: {
           client_id: '07-tendermint-1562',
           connection_id: 'connection-1223',
-          prefix: {
-            key_prefix: 'FIXME',
-          },
         },
         state: 3,
         transferChannel: {
@@ -1889,9 +1632,6 @@ export default /** @type {const} } */ ({
         counterparty: {
           client_id: '07-tendermint-43',
           connection_id: 'connection-25',
-          prefix: {
-            key_prefix: 'FIXME',
-          },
         },
         state: 3,
         transferChannel: {
@@ -1910,9 +1650,6 @@ export default /** @type {const} } */ ({
         counterparty: {
           client_id: '07-tendermint-30',
           connection_id: 'connection-18',
-          prefix: {
-            key_prefix: 'FIXME',
-          },
         },
         state: 3,
         transferChannel: {
@@ -1942,9 +1679,6 @@ export default /** @type {const} } */ ({
         counterparty: {
           client_id: '07-tendermint-74',
           connection_id: 'connection-68',
-          prefix: {
-            key_prefix: 'FIXME',
-          },
         },
         state: 3,
         transferChannel: {
@@ -1963,9 +1697,6 @@ export default /** @type {const} } */ ({
         counterparty: {
           client_id: '07-tendermint-0',
           connection_id: 'connection-4',
-          prefix: {
-            key_prefix: 'FIXME',
-          },
         },
         state: 3,
         transferChannel: {
@@ -1984,9 +1715,6 @@ export default /** @type {const} } */ ({
         counterparty: {
           client_id: '07-tendermint-913',
           connection_id: 'connection-635',
-          prefix: {
-            key_prefix: 'FIXME',
-          },
         },
         state: 3,
         transferChannel: {
@@ -2005,9 +1733,6 @@ export default /** @type {const} } */ ({
         counterparty: {
           client_id: '07-tendermint-1',
           connection_id: 'connection-1',
-          prefix: {
-            key_prefix: 'FIXME',
-          },
         },
         state: 3,
         transferChannel: {
@@ -2026,9 +1751,6 @@ export default /** @type {const} } */ ({
         counterparty: {
           client_id: '07-tendermint-263',
           connection_id: 'connection-205',
-          prefix: {
-            key_prefix: 'FIXME',
-          },
         },
         state: 3,
         transferChannel: {
@@ -2047,9 +1769,6 @@ export default /** @type {const} } */ ({
         counterparty: {
           client_id: '07-tendermint-18',
           connection_id: 'connection-15',
-          prefix: {
-            key_prefix: 'FIXME',
-          },
         },
         state: 3,
         transferChannel: {
@@ -2068,9 +1787,6 @@ export default /** @type {const} } */ ({
         counterparty: {
           client_id: '07-tendermint-2119',
           connection_id: 'connection-1657',
-          prefix: {
-            key_prefix: 'FIXME',
-          },
         },
         state: 3,
         transferChannel: {
@@ -2089,9 +1805,6 @@ export default /** @type {const} } */ ({
         counterparty: {
           client_id: '07-tendermint-75',
           connection_id: 'connection-40',
-          prefix: {
-            key_prefix: 'FIXME',
-          },
         },
         state: 3,
         transferChannel: {
@@ -2110,9 +1823,6 @@ export default /** @type {const} } */ ({
         counterparty: {
           client_id: '07-tendermint-195',
           connection_id: 'connection-128',
-          prefix: {
-            key_prefix: 'FIXME',
-          },
         },
         state: 3,
         transferChannel: {
@@ -2131,9 +1841,6 @@ export default /** @type {const} } */ ({
         counterparty: {
           client_id: '07-tendermint-64',
           connection_id: 'connection-45',
-          prefix: {
-            key_prefix: 'FIXME',
-          },
         },
         state: 3,
         transferChannel: {
@@ -2163,9 +1870,6 @@ export default /** @type {const} } */ ({
         counterparty: {
           client_id: '07-tendermint-18',
           connection_id: 'connection-18',
-          prefix: {
-            key_prefix: 'FIXME',
-          },
         },
         state: 3,
         transferChannel: {
@@ -2184,9 +1888,6 @@ export default /** @type {const} } */ ({
         counterparty: {
           client_id: '07-tendermint-8',
           connection_id: 'connection-13',
-          prefix: {
-            key_prefix: 'FIXME',
-          },
         },
         state: 3,
         transferChannel: {
@@ -2205,9 +1906,6 @@ export default /** @type {const} } */ ({
         counterparty: {
           client_id: '07-tendermint-73',
           connection_id: 'connection-74',
-          prefix: {
-            key_prefix: 'FIXME',
-          },
         },
         state: 3,
         transferChannel: {
@@ -2226,9 +1924,6 @@ export default /** @type {const} } */ ({
         counterparty: {
           client_id: '07-tendermint-1805',
           connection_id: 'connection-1410',
-          prefix: {
-            key_prefix: 'FIXME',
-          },
         },
         state: 3,
         transferChannel: {
@@ -2247,9 +1942,6 @@ export default /** @type {const} } */ ({
         counterparty: {
           client_id: '07-tendermint-193',
           connection_id: 'connection-188',
-          prefix: {
-            key_prefix: 'FIXME',
-          },
         },
         state: 3,
         transferChannel: {
@@ -2268,9 +1960,6 @@ export default /** @type {const} } */ ({
         counterparty: {
           client_id: '07-tendermint-32',
           connection_id: 'connection-20',
-          prefix: {
-            key_prefix: 'FIXME',
-          },
         },
         state: 3,
         transferChannel: {

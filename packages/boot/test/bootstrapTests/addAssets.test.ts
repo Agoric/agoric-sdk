@@ -1,3 +1,7 @@
+/**
+ * @file tests of adding an asset to the vaultFactory.
+ * Checks that auctions update correctly.
+ */
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import type { TestFn } from 'ava';
@@ -6,8 +10,8 @@ import { TimeMath } from '@agoric/time';
 import {
   LiquidationTestContext,
   makeLiquidationTestContext,
-} from '../../tools/liquidation.ts';
-import { makeProposalExtractor } from '../../tools/supports.ts';
+} from '../../tools/liquidation.js';
+import { makeProposalExtractor } from '../../tools/supports.js';
 
 const test = anyTest as TestFn<
   LiquidationTestContext & {
@@ -15,6 +19,7 @@ const test = anyTest as TestFn<
       name: string,
       id: string,
     ) => Awaited<ReturnType<ReturnType<typeof makeProposalExtractor>>>;
+    getNumAuctionBooks: () => number;
   }
 >;
 
@@ -34,23 +39,28 @@ test.before(async t => {
       .replaceAll('ibc/987C17B1', `ibc/987C17B1${id}`);
     return JSON.parse(proposalMod);
   };
+
+  const getNumAuctionBooks = () =>
+    Array.from(context.storage.data.keys()).filter(k =>
+      k.startsWith(`${auctioneerPath}.book`),
+    ).length;
+
   t.context = {
     ...context,
     getCollateralProposal,
+    getNumAuctionBooks,
   };
 });
 
 test.after.always(t => {
-  // This will fail if a subset of tests are run. It detects that three
-  // collaterals were added to the auction after ATOM.
-  t.like(t.context.readLatest(`${auctioneerPath}.book3`), {
-    currentPriceLevel: null,
-  });
   return t.context.shutdown && t.context.shutdown();
 });
 
-test('addAsset to quiescent auction', async t => {
-  const { advanceTimeTo, evalProposal, readLatest } = t.context;
+test.serial('addAsset to quiescent auction', async t => {
+  const { advanceTimeTo, evalProposal, getNumAuctionBooks, readLatest } =
+    t.context;
+
+  const booksBefore = getNumAuctionBooks();
 
   await evalProposal(t.context.getCollateralProposal('COMETS', 'A'));
 
@@ -61,7 +71,7 @@ test('addAsset to quiescent auction', async t => {
   const { liveAuctionSchedule, nextAuctionSchedule } = schedules;
   const nextEndTime = liveAuctionSchedule
     ? liveAuctionSchedule.endTime
-    : nextAuctionSchedule.endTime;
+    : nextAuctionSchedule!.endTime;
   const fiveMinutes = harden({
     relValue: 5n * 60n,
     timerBrand: nextEndTime.timerBrand,
@@ -69,21 +79,36 @@ test('addAsset to quiescent auction', async t => {
   const nextQuiescentTime = TimeMath.addAbsRel(nextEndTime, fiveMinutes);
   await advanceTimeTo(nextQuiescentTime);
 
-  t.like(readLatest(`${auctioneerPath}.book1`), {
-    currentPriceLevel: null,
-  });
+  const booksAfter = getNumAuctionBooks();
+  t.is(booksAfter, booksBefore + 1);
+
+  t.like(
+    readLatest(`${auctioneerPath}.book${booksAfter - 1}`),
+    {
+      currentPriceLevel: null,
+    },
+    'quiescent',
+  );
 });
 
-test('addAsset to active auction', async t => {
-  const { advanceTimeTo, readLatest } = t.context;
+test.serial('addAsset to active auction', async t => {
+  const { advanceTimeTo, getNumAuctionBooks, readLatest } = t.context;
   const { EV } = t.context.runUtils;
 
-  t.like(readLatest(`${auctioneerPath}.book0`), { startPrice: null });
+  const booksBefore = getNumAuctionBooks();
+
+  t.like(
+    readLatest(`${auctioneerPath}.book${booksBefore - 1}`),
+    {
+      startPrice: null,
+    },
+    'active',
+  );
 
   const auctioneerKit = await EV.vat('bootstrap').consumeItem('auctioneerKit');
   const schedules = await EV(auctioneerKit.creatorFacet).getSchedule();
   const { nextAuctionSchedule } = schedules;
-  t.truthy(nextAuctionSchedule);
+  assert(nextAuctionSchedule);
   const nextStartTime = nextAuctionSchedule.startTime;
   const fiveMinutes = harden({
     relValue: 5n * 60n,
@@ -105,9 +130,10 @@ test('addAsset to active auction', async t => {
   const coreEvalBridgeHandler = await EV.vat('bootstrap').consumeItem(
     'coreEvalBridgeHandler',
   );
-  EV(coreEvalBridgeHandler).fromBridge(bridgeMessage);
+  // XXX races with the following lines
+  void EV(coreEvalBridgeHandler).fromBridge(bridgeMessage);
 
-  const nextEndTime = nextAuctionSchedule.endTime;
+  const nextEndTime = nextAuctionSchedule!.endTime;
   const afterEndTime = TimeMath.addAbsRel(nextEndTime, fiveMinutes);
   await advanceTimeTo(afterEndTime);
   t.log('proposal executed');
@@ -115,21 +141,23 @@ test('addAsset to active auction', async t => {
   const schedulesAfter = await EV(auctioneerKit.creatorFacet).getSchedule();
   // TimeMath.compareAbs() can't handle brands processed by kmarshall
   t.truthy(
-    schedules.nextAuctionSchedule.endTime.absValue <
-      schedulesAfter.nextAuctionSchedule.endTime.absValue,
+    schedules.nextAuctionSchedule!.endTime.absValue <
+      schedulesAfter.nextAuctionSchedule!.endTime.absValue,
   );
 
-  t.like(readLatest(`${auctioneerPath}.book1`), { currentPriceLevel: null });
+  const booksAfter = getNumAuctionBooks();
+  t.is(booksAfter, booksBefore + 1);
 });
 
-test('addAsset to auction starting soon', async t => {
-  const { advanceTimeTo, readLatest } = t.context;
+test.serial('addAsset to auction starting soon', async t => {
+  const { advanceTimeTo, getNumAuctionBooks } = t.context;
   const { EV } = t.context.runUtils;
+  const booksBefore = getNumAuctionBooks();
 
   const auctioneerKit = await EV.vat('bootstrap').consumeItem('auctioneerKit');
   const schedules = await EV(auctioneerKit.creatorFacet).getSchedule();
   const { nextAuctionSchedule } = schedules;
-  t.truthy(nextAuctionSchedule);
+  assert(nextAuctionSchedule);
   const nextStartTime = nextAuctionSchedule.startTime;
   const fiveMinutes = harden({
     relValue: 5n * 60n,
@@ -150,7 +178,8 @@ test('addAsset to auction starting soon', async t => {
   const coreEvalBridgeHandler = await EV.vat('bootstrap').consumeItem(
     'coreEvalBridgeHandler',
   );
-  EV(coreEvalBridgeHandler).fromBridge(bridgeMessage);
+  // XXX races with the following lines
+  void EV(coreEvalBridgeHandler).fromBridge(bridgeMessage);
 
   const nextEndTime = nextAuctionSchedule.endTime;
   const afterEndTime = TimeMath.addAbsRel(nextEndTime, fiveMinutes);
@@ -160,8 +189,10 @@ test('addAsset to auction starting soon', async t => {
 
   const schedulesAfter = await EV(auctioneerKit.creatorFacet).getSchedule();
   t.truthy(
-    schedules.nextAuctionSchedule.endTime.absValue <
-      schedulesAfter.nextAuctionSchedule.endTime.absValue,
+    schedules.nextAuctionSchedule!.endTime.absValue <
+      schedulesAfter.nextAuctionSchedule!.endTime.absValue,
   );
-  t.like(readLatest(`${auctioneerPath}.book1`), { currentPriceLevel: null });
+
+  const booksAfter = getNumAuctionBooks();
+  t.is(booksAfter, booksBefore + 1);
 });

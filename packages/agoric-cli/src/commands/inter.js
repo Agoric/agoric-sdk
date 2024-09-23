@@ -218,6 +218,8 @@ export const makeInterCommand = (
     try {
       return rawExec(file, args, ...opts);
     } catch (err) {
+      // InvalidArgumentError is a class constructor, and so
+      // must be invoked with `new`.
       throw new InvalidArgumentError(
         `${err.message}: is ${file} in your $PATH?`,
       );
@@ -239,6 +241,8 @@ export const makeInterCommand = (
       const networkConfig = await getNetworkConfig(env);
       return makeWalletUtils({ fetch, execFileSync, delay }, networkConfig);
     } catch (err) {
+      // CommanderError is a class constructor, and so
+      // must be invoked with `new`.
       throw new CommanderError(1, 'RPC_FAIL', err.message);
     }
   };
@@ -431,6 +435,8 @@ inter auction status
   const parsePercent = v => {
     const p = Number(v);
     if (!(p >= -100 && p <= 100)) {
+      // InvalidArgumentError is a class constructor, and so
+      // must be invoked with `new`.
       throw new InvalidArgumentError('must be between -100 and 100');
     }
     return p / 100;
@@ -498,6 +504,8 @@ inter auction status
         const current = await getCurrent(from, { readLatestHead });
         const liveIds = current.liveOffers.map(([i, _s]) => i);
         if (!liveIds.includes(id)) {
+          // InvalidArgumentError is a class constructor, and so
+          // must be invoked with `new`.
           throw new InvalidArgumentError(
             `${id} not in live offer ids: ${liveIds}`,
           );

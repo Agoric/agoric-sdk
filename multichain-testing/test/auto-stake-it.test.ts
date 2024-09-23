@@ -1,16 +1,17 @@
+import type { CosmosChainInfo } from '@agoric/orchestration';
 import anyTest from '@endo/ses-ava/prepare-endo.js';
 import type { ExecutionContext, TestFn } from 'ava';
 import { useChain } from 'starshipjs';
-import type { CosmosChainInfo, IBCConnectionInfo } from '@agoric/orchestration';
-import type { SetupContextWithWallets } from './support.js';
-import { chainConfig, commonSetup } from './support.js';
-import { makeQueryClient } from '../tools/query.js';
-import { makeDoOffer } from '../tools/e2e-tools.js';
 import chainInfo from '../starship-chain-info.js';
+import { makeDoOffer } from '../tools/e2e-tools.js';
 import {
   createFundedWalletAndClient,
   makeIBCTransferMsg,
 } from '../tools/ibc-transfer.js';
+import { makeQueryClient } from '../tools/query.js';
+import type { SetupContextWithWallets } from './support.js';
+import { chainConfig, commonSetup } from './support.js';
+import { AUTO_STAKE_IT_DELEGATIONS_TIMEOUT } from './config.js';
 
 const test = anyTest as TestFn<SetupContextWithWallets>;
 
@@ -25,15 +26,8 @@ test.before(async t => {
   deleteTestKeys(accounts).catch();
   const wallets = await setupTestKeys(accounts);
   t.context = { ...rest, wallets, deleteTestKeys };
-
-  t.log('bundle and install contract', contractName);
-  await t.context.deployBuilder(contractBuilder);
-  const vstorageClient = t.context.makeQueryTool();
-  await t.context.retryUntilCondition(
-    () => vstorageClient.queryData(`published.agoricNames.instance`),
-    res => contractName in Object.fromEntries(res),
-    `${contractName} instance is available`,
-  );
+  const { startContract } = rest;
+  await startContract(contractName, contractBuilder);
 });
 
 test.after(async t => {
@@ -89,49 +83,26 @@ const makeFundAndTransfer = (t: ExecutionContext<SetupContextWithWallets>) => {
 const autoStakeItScenario = test.macro({
   title: (_, chainName: string) => `auto-stake-it on ${chainName}`,
   exec: async (t, chainName: string) => {
+    // 1. setup
     const {
       wallets,
-      makeQueryTool,
+      vstorageClient,
       provisionSmartWallet,
       retryUntilCondition,
     } = t.context;
 
     const fundAndTransfer = makeFundAndTransfer(t);
 
-    // 1. Send initial tokens so denom is available (debatably necessary, but
-    // allows us to trace the denom until we have ibc denoms in chainInfo)
-    const agAdminAddr = wallets['agoricAdmin'];
-    console.log('Sending tokens to', agAdminAddr, `from ${chainName}`);
-    await fundAndTransfer(chainName, agAdminAddr);
-
     // 2. Find 'stakingDenom' denom on agoric
-    const agoricConns = chainInfo['agoric'].connections as Record<
-      string,
-      IBCConnectionInfo
-    >;
     const remoteChainInfo = (chainInfo as Record<string, CosmosChainInfo>)[
       chainName
     ];
-    // const remoteChainId = remoteChainInfo.chain.chain_id;
-    // const agoricToRemoteConn = agoricConns[remoteChainId];
-    const { portId, channelId } =
-      agoricConns[remoteChainInfo.chainId].transferChannel;
-    const agoricQueryClient = makeQueryClient(
-      useChain('agoric').getRestEndpoint(),
-    );
     const stakingDenom = remoteChainInfo?.stakingTokens?.[0].denom;
     if (!stakingDenom) throw Error(`staking denom found for ${chainName}`);
-    const { hash } = await retryUntilCondition(
-      () =>
-        agoricQueryClient.queryDenom(`/${portId}/${channelId}`, stakingDenom),
-      denomTrace => !!denomTrace.hash,
-      `local denom hash for ${stakingDenom} found`,
-    );
-    t.log(`found ibc denom hash for ${stakingDenom}:`, hash);
 
     // 3. Find a remoteChain validator to delegate to
     const remoteQueryClient = makeQueryClient(
-      useChain(chainName).getRestEndpoint(),
+      await useChain(chainName).getRestEndpoint(),
     );
     const { validators } = await remoteQueryClient.queryValidators();
     const validatorAddress = validators[0]?.operator_address;
@@ -168,13 +139,11 @@ const autoStakeItScenario = test.macro({
           encoding: 'bech32',
           chainId: remoteChainInfo.chainId,
         },
-        localDenom: `ibc/${hash}`,
       },
       proposal: {},
     });
 
     // FIXME https://github.com/Agoric/agoric-sdk/issues/9643
-    const vstorageClient = makeQueryTool();
     const currentWalletRecord = await retryUntilCondition(
       () =>
         vstorageClient.queryData(`published.wallet.${agoricUserAddr}.current`),
@@ -208,14 +177,11 @@ const autoStakeItScenario = test.macro({
     await fundAndTransfer(chainName, lcaAddress, transferAmount);
 
     // 7. verify the COA has active delegations
-    if (chainName === 'cosmoshub') {
-      // FIXME: delegations are not visible on cosmoshub
-      return t.pass('skipping verifying delegations on cosmoshub');
-    }
     const { delegation_responses } = await retryUntilCondition(
       () => remoteQueryClient.queryDelegations(icaAddress),
       ({ delegation_responses }) => !!delegation_responses.length,
-      `delegations visible on ${chainName}`,
+      `auto-stake-it delegations visible on ${chainName}`,
+      AUTO_STAKE_IT_DELEGATIONS_TIMEOUT,
     );
     t.log('delegation balance', delegation_responses[0]?.balance);
     t.like(

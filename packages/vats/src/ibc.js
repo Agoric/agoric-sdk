@@ -140,26 +140,32 @@ export const prepareIBCConnectionHandler = zone => {
         return protocolUtils.ibcSendPacket(packet, relativeTimeoutNs);
       },
       /** @type {Required<ConnectionHandler>['onClose']} */
-      async onClose() {
+      onClose(_conn, _reason) {
         const { portID, channelID } = this.state;
-        const { protocolUtils, channelKeyToSeqAck } = this.state;
+        const { protocolUtils, channelKeyToSeqAck, channelKeyToConnP } =
+          this.state;
 
         const packet = {
           source_port: portID,
           source_channel: channelID,
         };
-        await protocolUtils.downcall('startChannelCloseInit', {
-          packet,
-        });
-        const rejectReason = Error('Connection closed');
         const channelKey = `${channelID}:${portID}`;
-
+        const rejectReason = Error('Connection closed');
         const seqToAck = channelKeyToSeqAck.get(channelKey);
 
         for (const ackKit of seqToAck.values()) {
           ackKit.resolver.reject(rejectReason);
         }
         channelKeyToSeqAck.delete(channelKey);
+
+        // This Connection object is initiating the close event
+        if (channelKeyToConnP.has(channelKey)) {
+          channelKeyToConnP.delete(channelKey);
+          return protocolUtils.downcall('startChannelCloseInit', {
+            packet,
+          });
+        }
+        return Promise.resolve();
       },
     },
   );
@@ -586,11 +592,16 @@ export const prepareIBCProtocol = (zone, powers) => {
               break;
             }
 
-            case 'channelCloseInit':
+            // We ignore the close init tx message, since any decision to
+            // close should be left to the VM...
+            case 'channelCloseInit': {
+              break;
+            }
+
+            // ... or received from the other side.
             case 'channelCloseConfirm': {
               const { portID, channelID } =
-                // could be either but that complicates line wrapping
-                /** @type {IBCEvent<'channelCloseInit'>} */ (obj);
+                /** @type {IBCEvent<'channelCloseConfirm'>} */ (obj);
               const channelKey = `${channelID}:${portID}`;
               if (channelKeyToConnP.has(channelKey)) {
                 const conn = channelKeyToConnP.get(channelKey);

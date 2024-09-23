@@ -1,17 +1,20 @@
 // @ts-check
 
-import { resolve as pathResolve } from 'path';
+import path from 'node:path';
 import v8 from 'node:v8';
 import process from 'node:process';
 import fs from 'node:fs';
 import fsPromises from 'node:fs/promises';
-import { performance } from 'perf_hooks';
-import { resolve as importMetaResolve } from 'import-meta-resolve';
-import tmpfs from 'tmp';
+import { performance } from 'node:perf_hooks';
 import { fork } from 'node:child_process';
+import { resolve as importMetaResolve } from 'import-meta-resolve';
+import tmp from 'tmp';
 
 import { Fail, q } from '@endo/errors';
 import { E } from '@endo/far';
+import { makeMarshal } from '@endo/marshal';
+import { isNat } from '@endo/nat';
+import { M, mustMatch } from '@endo/patterns';
 import engineGC from '@agoric/internal/src/lib-nodejs/engine-gc.js';
 import { waitUntilQuiescent } from '@agoric/internal/src/lib-nodejs/waitUntilQuiescent.js';
 import {
@@ -25,12 +28,15 @@ import {
   makeChainStorageRoot,
   makeSerializeToStorage,
 } from '@agoric/internal/src/lib-chainStorage.js';
-import { makeMarshal } from '@endo/marshal';
 import { makeShutdown } from '@agoric/internal/src/node/shutdown.js';
 
 import * as STORAGE_PATH from '@agoric/internal/src/chain-storage-paths.js';
 import * as ActionType from '@agoric/internal/src/action-types.js';
 import { BridgeId, CosmosInitKeyToBridgeId } from '@agoric/internal';
+import {
+  makeArchiveSnapshot,
+  makeArchiveTranscript,
+} from '@agoric/swing-store';
 import {
   makeBufferedStorage,
   makeReadCachingStorage,
@@ -48,6 +54,8 @@ import {
   validateImporterOptions,
 } from './import-kernel-db.js';
 
+const ignore = () => {};
+
 // eslint-disable-next-line no-unused-vars
 let whenHellFreezesOver = null;
 
@@ -60,6 +68,66 @@ const toNumber = specimen => {
   String(number) === String(specimen) ||
     Fail`Could not parse ${JSON.stringify(specimen)} as a number`;
   return number;
+};
+
+/**
+ * The swingset config object parsed and resolved by cosmos in
+ * `golang/cosmos/x/swingset/config.go`. The shape should be kept in sync
+ * with `SwingsetConfig` defined there.
+ *
+ * @typedef {object} CosmosSwingsetConfig
+ * @property {string} [slogfile]
+ * @property {number} [maxVatsOnline]
+ * @property {'debug' | 'operational'} [vatSnapshotRetention]
+ * @property {'archival' | 'operational'} [vatTranscriptRetention]
+ * @property {string} [vatSnapshotArchiveDir]
+ * @property {string} [vatTranscriptArchiveDir]
+ */
+const SwingsetConfigShape = M.splitRecord(
+  // All known properties are optional, but unknown properties are not allowed.
+  {},
+  {
+    slogfile: M.string(),
+    maxVatsOnline: M.number(),
+    vatSnapshotRetention: M.or('debug', 'operational'),
+    vatTranscriptRetention: M.or('archival', 'operational'),
+    vatSnapshotArchiveDir: M.string(),
+    vatTranscriptArchiveDir: M.string(),
+  },
+  {},
+);
+const validateSwingsetConfig = swingsetConfig => {
+  mustMatch(swingsetConfig, SwingsetConfigShape);
+  const { maxVatsOnline } = swingsetConfig;
+  maxVatsOnline === undefined ||
+    (isNat(maxVatsOnline) && maxVatsOnline > 0) ||
+    Fail`maxVatsOnline must be a positive integer`;
+};
+
+/**
+ * A boot message consists of cosmosInitAction fields that are subject to
+ * consensus. See cosmosInitAction in {@link ../../../golang/cosmos/app/app.go}.
+ *
+ * @param {any} initAction
+ */
+const makeBootMsg = initAction => {
+  const {
+    type,
+    blockTime,
+    blockHeight,
+    chainID,
+    params,
+    // NB: resolvedConfig is independent of consensus and MUST NOT be included
+    supplyCoins,
+  } = initAction;
+  return {
+    type,
+    blockTime,
+    blockHeight,
+    chainID,
+    params,
+    supplyCoins,
+  };
 };
 
 /**
@@ -99,8 +167,8 @@ const makePrefixedBridgeStorage = (
       return fromBridgeStringValue(ret);
     },
     set: (key, value) => {
-      const path = `${prefix}${key}`;
-      const entry = [path, toBridgeStringValue(value)];
+      const fullPath = `${prefix}${key}`;
+      const entry = [fullPath, toBridgeStringValue(value)];
       call(
         stringify({
           method: setterMethod,
@@ -109,8 +177,8 @@ const makePrefixedBridgeStorage = (
       );
     },
     delete: key => {
-      const path = `${prefix}${key}`;
-      const entry = [path];
+      const fullPath = `${prefix}${key}`;
+      const entry = [fullPath];
       call(
         stringify({
           method: setterMethod,
@@ -214,7 +282,7 @@ export default async function main(progname, args, { env, homedir, agcc }) {
 
   const clearChainSends = async () => {
     // Cosmos should have blocked before calling commit, but wait just in case
-    await stateSyncExport?.exporter?.onStarted().catch(() => {});
+    await stateSyncExport?.exporter?.onStarted().catch(ignore);
 
     const chainSends = savedChainSends;
     savedChainSends = [];
@@ -246,10 +314,33 @@ export default async function main(progname, args, { env, homedir, agcc }) {
   /** @type {((obj: object) => void) | undefined} */
   let writeSlogObject;
 
-  // the storagePort used to change for every single message. It's defined out
+  // In the past, storagePort could change with every message. It's defined out
   // here so 'sendToChainStorage' can close over the single mutable instance,
   // when we updated the 'portNums.storage' value each time toSwingSet was called.
-  async function launchAndInitializeSwingSet(bootMsg) {
+  async function launchAndInitializeSwingSet(initAction) {
+    const { XSNAP_KEEP_SNAPSHOTS, NODE_HEAP_SNAPSHOTS = -1 } = env;
+
+    /** @type {CosmosSwingsetConfig} */
+    const swingsetConfig = harden(initAction.resolvedConfig || {});
+    validateSwingsetConfig(swingsetConfig);
+    const {
+      slogfile,
+      vatSnapshotRetention,
+      vatTranscriptRetention,
+      vatSnapshotArchiveDir,
+      vatTranscriptArchiveDir,
+    } = swingsetConfig;
+    const keepSnapshots = vatSnapshotRetention
+      ? vatSnapshotRetention !== 'operational'
+      : ['1', 'true'].includes(XSNAP_KEEP_SNAPSHOTS);
+    const keepTranscripts = vatTranscriptRetention
+      ? vatTranscriptRetention !== 'operational'
+      : false;
+
+    // As a kludge, back-propagate selected configuration into environment variables.
+    // eslint-disable-next-line dot-notation
+    if (slogfile) env['SLOGFILE'] = slogfile;
+
     const sendToChainStorage = msg => chainSend(portNums.storage, msg);
     // this object is used to store the mailbox state.
     const fromBridgeMailbox = data => {
@@ -363,7 +454,7 @@ export default async function main(progname, args, { env, homedir, agcc }) {
     };
 
     const argv = {
-      bootMsg,
+      bootMsg: makeBootMsg(initAction),
     };
     const getVatConfig = async () => {
       const vatHref = await importMetaResolve(
@@ -384,7 +475,6 @@ export default async function main(progname, args, { env, homedir, agcc }) {
       serviceName: TELEMETRY_SERVICE_NAME,
     });
 
-    const { XSNAP_KEEP_SNAPSHOTS, NODE_HEAP_SNAPSHOTS = -1 } = env;
     const slogSender = await makeSlogSender({
       stateDir: stateDBDir,
       env,
@@ -394,17 +484,14 @@ export default async function main(progname, args, { env, homedir, agcc }) {
     const swingStoreTraceFile = processValue.getPath({
       envName: 'SWING_STORE_TRACE',
       flagName: 'trace-store',
-      trueValue: pathResolve(stateDBDir, 'store-trace.log'),
+      trueValue: path.resolve(stateDBDir, 'store-trace.log'),
     });
-
-    const keepSnapshots =
-      XSNAP_KEEP_SNAPSHOTS === '1' || XSNAP_KEEP_SNAPSHOTS === 'true';
 
     const nodeHeapSnapshots = Number.parseInt(NODE_HEAP_SNAPSHOTS, 10);
 
     let lastCommitTime = 0;
     let commitCallsSinceLastSnapshot = NaN;
-    const snapshotBaseDir = pathResolve(stateDBDir, 'node-heap-snapshots');
+    const snapshotBaseDir = path.resolve(stateDBDir, 'node-heap-snapshots');
 
     if (nodeHeapSnapshots >= 0) {
       fs.mkdirSync(snapshotBaseDir, { recursive: true });
@@ -440,7 +527,7 @@ export default async function main(progname, args, { env, homedir, agcc }) {
         ) {
           commitCallsSinceLastSnapshot = 0;
           heapSnapshot = `Heap-${process.pid}-${Date.now()}.heapsnapshot`;
-          const snapshotPath = pathResolve(snapshotBaseDir, heapSnapshot);
+          const snapshotPath = path.resolve(snapshotBaseDir, heapSnapshot);
           v8.writeHeapSnapshot(snapshotPath);
           heapSnapshotTime = performance.now() - t3;
         }
@@ -463,6 +550,14 @@ export default async function main(progname, args, { env, homedir, agcc }) {
       }
     };
 
+    const fsPowers = { fs, path, tmp };
+    const archiveSnapshot = vatSnapshotArchiveDir
+      ? makeArchiveSnapshot(vatSnapshotArchiveDir, fsPowers)
+      : undefined;
+    const archiveTranscript = vatTranscriptArchiveDir
+      ? makeArchiveTranscript(vatTranscriptArchiveDir, fsPowers)
+      : undefined;
+
     const s = await launch({
       actionQueueStorage,
       highPriorityQueueStorage,
@@ -481,7 +576,11 @@ export default async function main(progname, args, { env, homedir, agcc }) {
       swingStoreExportCallback,
       swingStoreTraceFile,
       keepSnapshots,
+      keepTranscripts,
+      archiveSnapshot,
+      archiveTranscript,
       afterCommitCallback,
+      swingsetConfig,
     });
 
     const { blockingSend, shutdown } = s;
@@ -489,21 +588,19 @@ export default async function main(progname, args, { env, homedir, agcc }) {
 
     let pendingBlockingSend = Promise.resolve();
 
-    registerShutdown(async interrupted =>
-      Promise.all([
+    registerShutdown(async interrupted => {
+      await Promise.all([
         interrupted && pendingBlockingSend.then(shutdown),
         discardStateSyncExport(),
-      ]).then(() => {}),
-    );
+      ]);
+    });
 
-    return async action => {
+    const blockingSendSpy = async action => {
       const result = blockingSend(action);
-      pendingBlockingSend = Promise.resolve(result).then(
-        () => {},
-        () => {},
-      );
+      pendingBlockingSend = Promise.resolve(result).then(ignore, ignore);
       return result;
     };
+    return blockingSendSpy;
   }
 
   /** @type {Awaited<ReturnType<typeof launch>>['blockingSend'] | undefined} */
@@ -534,7 +631,7 @@ export default async function main(progname, args, { env, homedir, agcc }) {
         );
         return performStateSyncImport(options, {
           fs: { ...fs, ...fsPromises },
-          pathResolve,
+          pathResolve: path.resolve,
           log: null,
         });
       }
@@ -558,7 +655,7 @@ export default async function main(progname, args, { env, homedir, agcc }) {
         stateSyncExport = exportData;
 
         await new Promise((resolve, reject) => {
-          tmpfs.dir(
+          tmp.dir(
             {
               prefix: `agd-state-sync-${blockHeight}-`,
               unsafeCleanup: true,
@@ -658,6 +755,7 @@ export default async function main(progname, args, { env, homedir, agcc }) {
 
         !blockingSend || Fail`Swingset already initialized`;
 
+        // Capture "port numbers" for communicating with cosmos modules.
         for (const [key, value] of Object.entries(action)) {
           const portAlias = CosmosInitKeyToBridgeId[key];
           if (portAlias) {

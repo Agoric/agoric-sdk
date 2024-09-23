@@ -1,6 +1,7 @@
-import { Fail, makeError } from '@endo/errors';
+import { Fail, makeError, q } from '@endo/errors';
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
+import { BrandShape } from '@agoric/ertp/src/typeGuards.js';
 
 import { VowShape } from '@agoric/vow';
 import { makeHeapZone } from '@agoric/zone';
@@ -9,23 +10,44 @@ import { CosmosChainInfoShape, IBCConnectionInfoShape } from '../typeGuards.js';
 /**
  * @import {NameHub} from '@agoric/vats';
  * @import {Vow, VowTools} from '@agoric/vow';
- * @import {CosmosChainInfo, IBCConnectionInfo} from '../cosmos-api.js';
+ * @import {CosmosAssetInfo, CosmosChainInfo, IBCConnectionInfo} from '../cosmos-api.js';
  * @import {ChainInfo, KnownChains} from '../chain-info.js';
+ * @import {Denom} from '../orchestration-api.js';
  * @import {Remote} from '@agoric/internal';
- * @import {Zone} from '@agoric/zone';
+ * @import {TypedPattern} from '@agoric/internal';
  */
 
 /**
+ * If K matches a known chain, narrow the type from generic ChainInfo
+ *
  * @template {string} K
  * @typedef {K extends keyof KnownChains
- *   ? Omit<KnownChains[K], 'connections'>
+ *   ? ChainInfo & Omit<KnownChains[K], 'connections'>
  *   : ChainInfo} ActualChainInfo
+ * @internal
  */
 
+/**
+ * @typedef {object} DenomDetail
+ * @property {string} baseName - name of issuing chain; e.g. cosmoshub
+ * @property {Denom} baseDenom - e.g. uatom
+ * @property {string} chainName - name of holding chain; e.g. agoric
+ * @property {Brand<'nat'>} [brand] - vbank brand, if registered
+ * @see {ChainHub} `registerAsset` method
+ */
+/** @type {TypedPattern<DenomDetail>} */
+export const DenomDetailShape = M.splitRecord(
+  { chainName: M.string(), baseName: M.string(), baseDenom: M.string() },
+  { brand: BrandShape },
+);
+
+// TODO refactor into an enum-ish object
 /** agoricNames key for ChainInfo hub */
 export const CHAIN_KEY = 'chain';
 /** namehub for connection info */
 export const CONNECTIONS_KEY = 'chainConnection';
+/** namehub for assets info */
+export const ASSETS_KEY = 'chainAssets';
 
 /**
  * Character used in a connection tuple key to separate the two chain ids. Valid
@@ -62,7 +84,7 @@ export const connectionKey = (chainId1, chainId2) => {
  * @param {IBCConnectionInfo} connInfo
  * @returns {IBCConnectionInfo}
  */
-export const reverseConnInfo = connInfo => {
+const reverseConnInfo = connInfo => {
   const { transferChannel } = connInfo;
   return {
     id: connInfo.counterparty.connection_id,
@@ -70,9 +92,6 @@ export const reverseConnInfo = connInfo => {
     counterparty: {
       client_id: connInfo.client_id,
       connection_id: connInfo.id,
-      prefix: {
-        key_prefix: 'FIXME',
-      },
     },
     state: connInfo.state,
     transferChannel: {
@@ -146,6 +165,9 @@ const ChainHubI = M.interface('ChainHub', {
   ).returns(),
   getConnectionInfo: M.call(ChainIdArgShape, ChainIdArgShape).returns(VowShape),
   getChainsAndConnection: M.call(M.string(), M.string()).returns(VowShape),
+  registerAsset: M.call(M.string(), DenomDetailShape).returns(),
+  getAsset: M.call(M.string()).returns(M.or(DenomDetailShape, M.undefined())),
+  getDenom: M.call(BrandShape).returns(M.or(M.string(), M.undefined())),
 });
 
 /**
@@ -170,6 +192,17 @@ export const makeChainHub = (agoricNames, vowTools) => {
   const connectionInfos = zone.mapStore('connectionInfos', {
     keyShape: M.string(),
     valueShape: IBCConnectionInfoShape,
+  });
+
+  /** @type {MapStore<string, DenomDetail>} */
+  const denomDetails = zone.mapStore('denom', {
+    keyShape: M.string(),
+    valueShape: DenomDetailShape,
+  });
+  /** @type {MapStore<Brand, string>} */
+  const brandDenoms = zone.mapStore('brandDenom', {
+    keyShape: BrandShape,
+    valueShape: M.string(),
   });
 
   const lookupChainInfo = vowTools.retriable(
@@ -336,8 +369,74 @@ export const makeChainHub = (agoricNames, vowTools) => {
       // @ts-expect-error XXX generic parameter propagation
       return lookupChainsAndConnection(primaryName, counterName);
     },
+
+    /**
+     * Register an asset that may be held on a chain other than the issuing
+     * chain.
+     *
+     * @param {Denom} denom - on the holding chain, whose name is given in
+     *   `detail.chainName`
+     * @param {DenomDetail} detail - chainName and baseName must be registered
+     */
+    registerAsset(denom, detail) {
+      const { chainName, baseName } = detail;
+      chainInfos.has(chainName) ||
+        Fail`must register chain ${q(chainName)} first`;
+      chainInfos.has(baseName) ||
+        Fail`must register chain ${q(baseName)} first`;
+      denomDetails.init(denom, detail);
+      if (detail.brand) {
+        brandDenoms.init(detail.brand, denom);
+      }
+    },
+    /**
+     * Retrieve holding, issuing chain names etc. for a denom.
+     *
+     * @param {Denom} denom
+     * @returns {DenomDetail | undefined}
+     */
+    getAsset(denom) {
+      if (denomDetails.has(denom)) {
+        return denomDetails.get(denom);
+      }
+      return undefined;
+    },
+    /**
+     * Retrieve denom (string) for a Brand.
+     *
+     * @param {Brand} brand
+     * @returns {Denom | undefined}
+     */
+    getDenom(brand) {
+      if (brandDenoms.has(brand)) {
+        return brandDenoms.get(brand);
+      }
+      return undefined;
+    },
   });
 
   return chainHub;
 };
 /** @typedef {ReturnType<typeof makeChainHub>} ChainHub */
+
+/**
+ * Register assets with the given ChainHub so they are available for lookup
+ *
+ * @param {ChainHub} chainHub
+ * @param {string} name
+ * @param {CosmosAssetInfo[]} assets
+ */
+export const registerAssets = (chainHub, name, assets) => {
+  for (const { base, traces } of assets) {
+    const native = !traces;
+    native || traces.length === 1 || Fail`unexpected ${traces.length} traces`;
+    const [chainName, baseName, baseDenom] = native
+      ? [name, name, base]
+      : [
+          name,
+          traces[0].counterparty.chain_name,
+          traces[0].counterparty.base_denom,
+        ];
+    chainHub.registerAsset(base, { chainName, baseName, baseDenom });
+  }
+};

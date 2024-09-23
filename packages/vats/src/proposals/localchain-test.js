@@ -1,6 +1,6 @@
 // @ts-check
 import { heapVowE as E } from '@agoric/vow/vat.js';
-import { typedJson } from '@agoric/cosmic-proto/vatsafe';
+import { typedJson } from '@agoric/cosmic-proto';
 
 /**
  * @param {BootstrapPowers & {
@@ -20,7 +20,7 @@ export const testLocalChain = async (
   let node = await chainStorage;
   if (!node) {
     console.error('testLocalChain no chainStorage');
-    throw new Error('no chainStorage');
+    throw Error('no chainStorage');
   }
 
   let result;
@@ -58,7 +58,7 @@ export const testLocalChain = async (
     const emptyQuery = await E(localchain).queryMany([]);
     console.info('emptyQuery', emptyQuery);
     if (emptyQuery.length !== 0) {
-      throw new Error('emptyQuery results should be empty');
+      throw Error('emptyQuery results should be empty');
     }
 
     result = { success: true };

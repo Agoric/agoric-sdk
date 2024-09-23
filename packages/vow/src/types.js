@@ -66,6 +66,7 @@ export {};
  */
 
 /**
+ * Vows are objects that represent promises that can be stored durably.
  * @template [T=any]
  * @typedef {CopyTagged<'Vow', VowPayload<T>>} Vow
  */

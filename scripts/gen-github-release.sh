@@ -59,7 +59,7 @@ declare -r AWK_REPLACE_PLACEHOLDERS='
   BEGIN {
     for (i = 1; i < ARGC; i++) {
       arg = ARGV[i];
-      if (!match(arg, /^[^/=]+=/)) continue;
+      if (!match(arg, "^[^/=]+=")) continue;
       placeholder = "$" substr(arg, 1, RLENGTH - 1);
       placeholders[placeholder] = 1;
       subs[placeholder] = substr(arg, RLENGTH + 1, length(arg) - RLENGTH);
@@ -116,13 +116,19 @@ The full set of changes in this release can be found at https://github.com/Agori
 
 $CHECKS_TEXT. As a chain-halting upgrade, once approved, all chain validators will need to upgrade from `$PREV_RELEASE` to this new version (after the chain halts due to reaching the height required in a governance proposal).
 
-Since the `agoric-upgrade-11` release, state-sync snapshots include more data than before. Nodes which have inadvertently pruned this data (e.g. those created from a state-sync before the `agoric-upgrade-11` release) will not be able to produce such snapshots, and will need to be restored from state-sync. We are aware of continued performance issues related to state-sync. In particular, we've observed that on some deployments, the current implementation can require 100 GB of temporary free disk space and 16GB of memory.
+## State-sync
+
+State-sync snapshots now only include minimal data to restore a node. However there are still continued performance issues related to state-sync. In particular, we've observed that on some deployments, the snapshot taking and restoring process can take multiple hours, require about 20GB of temporary free disk space, and 16GB of memory.
+
+## Cosmos Upgrade Handler Name
 
 Below is the _cosmos upgrade handler name_ for this release. This is the name that can be used in governance proposals to deploy this upgrade.
 
 ```
 Cosmos Upgrade Handler Name: $COSMOS_UPGRADE_NAME
 ```
+
+## Tags
 
 Below is the git information related to this software release. Note the _git tag_ does not always match the _cosmos upgrade handler name_.
 
@@ -149,6 +155,8 @@ Presuming that your node is running `$PREV_RELEASE`, once the upgrade height for
 
 Install supported versions of Go, Node.js, and a compiler such as gcc or clang as documented in the [README](https://github.com/Agoric/agoric-sdk/tree/$TAG#prerequisites).
 
+Make sure that the environment running the agd service has the same Node.js version as the environment used for building. In particular, if using `nvm` to manage Node.js version, the service environment should enable nvm and use the same version.
+
 ### Building
 
 ```
@@ -156,14 +164,16 @@ Install supported versions of Go, Node.js, and a compiler such as gcc or clang a
 cd agoric-sdk
 git fetch --all
 git checkout $TAG
-git clean -xdf
-yarn install
-yarn build
-(cd packages/cosmic-swingset && make)
+git clean -xdf && git submodule foreach --recursive git clean -xdf
+./bin/agd build
 # (start the agd service)
 ```
 
 Do _not_ copy the `agd` script or Go binary to another location. If you would like to have an executable `agd` in another location, then create a symlink in that location pointing to `agoric-sdk/bin/agd`.
+
+### Troubleshooting `module ... was compiled against a different Node.js version` and `SyntaxError` issues
+
+The agd service is not using the same version of Node.js as the one used when building. The most likely cause is that `nvm` was used to manage the Node.js version in the shell when building. Either install the required version of Node.js globally using the system's package manager, or enable `nvm` in the environment of the agd service.
 
 ### Troubleshooting `repoconfig.sh: No such file or directory`
 
