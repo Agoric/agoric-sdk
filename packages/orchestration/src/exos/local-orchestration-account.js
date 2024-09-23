@@ -10,6 +10,7 @@ import { Fail, q } from '@endo/errors';
 
 import {
   AmountArgShape,
+  AnyNatAmountsRecord,
   ChainAddressShape,
   DenomAmountShape,
   DenomShape,
@@ -39,6 +40,7 @@ import { coerceCoin, coerceDenomAmount } from '../utils/amounts.js';
  * @import {Matcher} from '@endo/patterns';
  * @import {ChainHub} from './chain-hub.js';
  * @import {PacketTools} from './packet-tools.js';
+ * @import {ZoeTools} from '../utils/zoe-tools.js';
  */
 
 const trace = makeTracer('LOA');
@@ -91,10 +93,19 @@ const PUBLIC_TOPICS = {
  * @param {VowTools} powers.vowTools
  * @param {ChainHub} powers.chainHub
  * @param {Remote<LocalChain>} powers.localchain
+ * @param {ZoeTools} powers.zoeTools
  */
 export const prepareLocalOrchestrationAccountKit = (
   zone,
-  { makeRecorderKit, zcf, timerService, vowTools, chainHub, localchain },
+  {
+    makeRecorderKit,
+    zcf,
+    timerService,
+    vowTools,
+    chainHub,
+    localchain,
+    zoeTools,
+  },
 ) => {
   const { watch, allVows, asVow, when } = vowTools;
   const { makeIBCTransferSender } = prepareIBCTools(
@@ -139,6 +150,12 @@ export const prepareLocalOrchestrationAccountKit = (
       returnVoidWatcher: M.interface('returnVoidWatcher', {
         onFulfilled: M.call(M.any()).optional(M.any()).returns(M.undefined()),
       }),
+      seatExiterHandler: M.interface('seatExiterHandler', {
+        onFulfilled: M.call(M.undefined(), M.remotable()).returns(
+          M.undefined(),
+        ),
+        onRejected: M.call(M.error(), M.remotable()).returns(M.undefined()),
+      }),
       getBalanceWatcher: M.interface('getBalanceWatcher', {
         onFulfilled: M.call(AmountShape, DenomShape).returns(DenomAmountShape),
       }),
@@ -151,12 +168,14 @@ export const prepareLocalOrchestrationAccountKit = (
         ),
       }),
       invitationMakers: M.interface('invitationMakers', {
-        Delegate: M.call(M.string(), AmountShape).returns(M.promise()),
-        Undelegate: M.call(M.string(), AmountShape).returns(M.promise()),
         CloseAccount: M.call().returns(M.promise()),
+        Delegate: M.call(M.string(), AmountShape).returns(M.promise()),
+        Deposit: M.call().returns(M.promise()),
         Send: M.call().returns(M.promise()),
         SendAll: M.call().returns(M.promise()),
         Transfer: M.call().returns(M.promise()),
+        Undelegate: M.call(M.string(), AmountShape).returns(M.promise()),
+        Withdraw: M.call().returns(M.promise()),
       }),
     },
     /**
@@ -199,6 +218,27 @@ export const prepareLocalOrchestrationAccountKit = (
               this.facets.holder.delegate(validatorAddress, ertpAmount),
             );
           }, 'Delegate');
+        },
+        Deposit() {
+          trace('Deposit');
+          return zcf.makeInvitation(
+            seat => {
+              const { give } = seat.getProposal();
+              return watch(
+                zoeTools.localTransfer(
+                  seat,
+                  // @ts-expect-error LocalAccount vs LocalAccountMethods
+                  this.state.account,
+                  give,
+                ),
+                this.facets.seatExiterHandler,
+                seat,
+              );
+            },
+            'Deposit',
+            undefined,
+            M.splitRecord({ give: AnyNatAmountsRecord, want: {} }),
+          );
         },
         /**
          * @param {string} validatorAddress
@@ -261,6 +301,27 @@ export const prepareLocalOrchestrationAccountKit = (
             );
           };
           return zcf.makeInvitation(offerHandler, 'Transfer');
+        },
+        Withdraw() {
+          trace('Withdraw');
+          return zcf.makeInvitation(
+            seat => {
+              const { want } = seat.getProposal();
+              return watch(
+                zoeTools.withdrawToSeat(
+                  // @ts-expect-error LocalAccount vs LocalAccountMethods
+                  this.state.account,
+                  seat,
+                  want,
+                ),
+                this.facets.seatExiterHandler,
+                seat,
+              );
+            },
+            'Withdraw',
+            undefined,
+            M.splitRecord({ give: {}, want: AnyNatAmountsRecord }),
+          );
         },
       },
       undelegateWatcher: {
@@ -360,6 +421,24 @@ export const prepareLocalOrchestrationAccountKit = (
          */
         onFulfilled(natAmount, denom) {
           return harden({ denom, value: natAmount.value });
+        },
+      },
+      /** exits or fails a seat depending the outcome */
+      seatExiterHandler: {
+        /**
+         * @param {undefined} _
+         * @param {ZCFSeat} seat
+         */
+        onFulfilled(_, seat) {
+          seat.exit();
+        },
+        /**
+         * @param {Error} reason
+         * @param {ZCFSeat} seat
+         */
+        onRejected(reason, seat) {
+          seat.exit(reason);
+          throw reason;
         },
       },
       /**

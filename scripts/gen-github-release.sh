@@ -59,7 +59,7 @@ declare -r AWK_REPLACE_PLACEHOLDERS='
   BEGIN {
     for (i = 1; i < ARGC; i++) {
       arg = ARGV[i];
-      if (!match(arg, /^[^/=]+=/)) continue;
+      if (!match(arg, "^[^/=]+=")) continue;
       placeholder = "$" substr(arg, 1, RLENGTH - 1);
       placeholders[placeholder] = 1;
       subs[placeholder] = substr(arg, RLENGTH + 1, length(arg) - RLENGTH);

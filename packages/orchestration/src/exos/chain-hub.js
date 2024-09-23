@@ -92,9 +92,6 @@ const reverseConnInfo = connInfo => {
     counterparty: {
       client_id: connInfo.client_id,
       connection_id: connInfo.id,
-      prefix: {
-        key_prefix: 'FIXME',
-      },
     },
     state: connInfo.state,
     transferChannel: {

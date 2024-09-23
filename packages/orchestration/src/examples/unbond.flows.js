@@ -1,12 +1,9 @@
+import { makeTracer } from '@agoric/internal';
+
+const trace = makeTracer('UnbondAndTransfer');
+
 /**
- * @import {Orchestrator, OrchestrationFlow} from '../types.js'
- * @import {TimerService} from '@agoric/time';
- * @import {LocalChain} from '@agoric/vats/src/localchain.js';
- * @import {NameHub} from '@agoric/vats';
- * @import {Remote} from '@agoric/internal';
- * @import {Zone} from '@agoric/zone';
- * @import {CosmosInterchainService} from '../exos/exo-interfaces.js';
- * @import {OrchestrationTools} from '../utils/start-helper.js';
+ * @import {Orchestrator, OrchestrationFlow, CosmosDelegationResponse} from '../types.js'
  */
 
 /**
@@ -14,34 +11,29 @@
  * @param {Orchestrator} orch
  * @param {object} ctx
  * @param {ZCF} ctx.zcf
- * @param {ZCFSeat} _seat
- * @param {undefined} _offerArgs
  */
-export const unbondAndLiquidStake = async (
-  orch,
-  { zcf },
-  _seat,
-  _offerArgs,
-) => {
-  console.log('zcf within the membrane', zcf);
+export const unbondAndTransfer = async (orch, { zcf }) => {
+  trace('zcf within the membrane', zcf);
   // Osmosis is one of the few chains with icqEnabled
   const osmosis = await orch.getChain('osmosis');
-  // In a real world scenario, accounts would be re-used across invokations of the handler
+  const osmoDenom = (await osmosis.getChainInfo()).stakingTokens[0].denom;
+
+  // In a real world scenario, accounts would be reused across invokations of the handler.
+  // See the staking-combinations contract for an example of how to reuse an account.
   const osmoAccount = await osmosis.makeAccount();
 
-  // TODO https://github.com/Agoric/agoric-sdk/issues/10016
-  // const delegations = await celestiaAccount.getDelegations();
-  // // wait for the undelegations to be complete (may take weeks)
-  // await celestiaAccount.undelegate(delegations);
-  // ??? should this be synchronous? depends on how names are resolved.
+  /** @type {CosmosDelegationResponse[]} Cosmos */
+  const delegations = await osmoAccount.getDelegations();
+  trace('delegations', delegations);
+  const osmoDelegations = delegations.filter(d => d.amount.denom === osmoDenom);
+
+  // wait for the undelegations to be complete (may take weeks)
+  await osmoAccount.undelegate(osmoDelegations);
+
   const stride = await orch.getChain('stride');
   const strideAccount = await stride.makeAccount();
 
-  // TODO the `TIA` string actually needs to be the Brand from AgoricNames
-  // const tiaAmt = await celestiaAccount.getBalance('TIA');
-  // await celestiaAccount.transfer(tiaAmt, strideAccount.getAddress());
-  // TODO https://github.com/Agoric/agoric-sdk/issues/10017
-  // await strideAccount.liquidStake(tiaAmt);
-  console.log(osmoAccount, strideAccount);
+  const balance = await osmoAccount.getBalance(osmoDenom);
+  await osmoAccount.transfer(balance, strideAccount.getAddress());
 };
-harden(unbondAndLiquidStake);
+harden(unbondAndTransfer);

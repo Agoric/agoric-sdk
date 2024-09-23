@@ -12,6 +12,7 @@ import { M } from '@endo/patterns';
 import { makeChainHub } from '../exos/chain-hub.js';
 import { prepareLocalOrchestrationAccountKit } from '../exos/local-orchestration-account.js';
 import fetchedChainInfo from '../fetched-chain-info.js';
+import { makeZoeTools } from '../utils/zoe-tools.js';
 
 /**
  * @import {NameHub} from '@agoric/vats';
@@ -47,6 +48,7 @@ export const start = async (zcf, privateArgs, baggage) => {
     privateArgs.agoricNames,
     vowTools,
   );
+  const zoeTools = makeZoeTools(zcf, vowTools);
 
   const { localchain, timerService } = privateArgs;
   const makeLocalOrchestrationAccountKit = prepareLocalOrchestrationAccountKit(
@@ -58,6 +60,7 @@ export const start = async (zcf, privateArgs, baggage) => {
       vowTools,
       chainHub,
       localchain,
+      zoeTools,
     },
   );
 

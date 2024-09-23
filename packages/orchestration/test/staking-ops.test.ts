@@ -71,7 +71,7 @@ const configStaking = {
   validator: {
     value: 'agoric1valoper234',
     encoding: 'bech32',
-    chainId: 'agoriclocal',
+    chainId: 'agoric-3',
   },
   delegations: {
     agoric1valoper234: { denom: 'uatom', amount: '200' },

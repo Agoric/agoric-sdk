@@ -73,9 +73,6 @@ export const IBCConnectionInfoShape = M.splitRecord({
   counterparty: {
     client_id: M.string(),
     connection_id: IBCConnectionIDShape,
-    prefix: {
-      key_prefix: M.string(),
-    },
   },
   transferChannel: IBCChannelInfoShape,
 });
@@ -137,10 +134,13 @@ export const AmountArgShape = M.or(AnyNatAmountShape, DenomAmountShape);
  *   amount: AmountArg;
  * }>}
  */
-export const DelegationShape = harden({
-  validator: ChainAddressShape,
-  amount: AmountArgShape,
-});
+export const DelegationShape = M.splitRecord(
+  {
+    validator: ChainAddressShape,
+    amount: AmountArgShape,
+  },
+  { delegator: ChainAddressShape },
+);
 
 /** Approximately @see RequestQuery */
 export const ICQMsgShape = M.splitRecord(
@@ -180,3 +180,13 @@ export const TxBodyOptsShape = M.splitRecord(
     nonCriticalExtensionOptions: M.arrayOf(M.any()),
   },
 );
+
+/**
+ * Ensures at least one {@link AmountKeywordRecord} entry is present and only
+ * permits Nat (fungible) amounts.
+ */
+export const AnyNatAmountsRecord = M.and(
+  M.recordOf(M.string(), AnyNatAmountShape),
+  M.not(harden({})),
+);
+harden(AnyNatAmountsRecord);

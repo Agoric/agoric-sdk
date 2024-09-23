@@ -11,7 +11,7 @@ import { E } from '@endo/far';
 const trace = makeTracer('RestartSA', true);
 
 /**
- * @import {start as StartFn} from '@agoric/orchestration/src/examples/stakeIca.contract.js';
+ * @import {start as StartFn} from '@agoric/orchestration/src/examples/stake-ica.contract.js';
  */
 
 /**

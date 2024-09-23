@@ -178,6 +178,7 @@ export const CURRENT_SCHEMA_VERSION = 2;
 //   * change `version` to `'2'`
 //   * add `vats.terminated` with `[]` as initial value
 
+/** @type {(s: string) => string[]} s */
 export function commaSplit(s) {
   if (s === '') {
     return [];
@@ -804,6 +805,7 @@ export default function makeKernelKeeper(
           p.decider = undefined;
         }
         p.policy = kvStore.get(`${kernelSlot}.policy`) || 'ignore';
+        // @ts-expect-error get() may fail
         p.subscribers = commaSplit(kvStore.get(`${kernelSlot}.subscribers`));
         p.queue = Array.from(
           getPrefixedValues(kvStore, `${kernelSlot}.queue.`),
@@ -815,6 +817,7 @@ export default function makeKernelKeeper(
         p.refCount = Number(kvStore.get(`${kernelSlot}.refCount`));
         p.data = {
           body: kvStore.get(`${kernelSlot}.data.body`),
+          // @ts-expect-error get() may fail
           slots: commaSplit(kvStore.get(`${kernelSlot}.data.slots`)),
         };
         for (const s of p.data.slots) {
@@ -1981,3 +1984,4 @@ export default function makeKernelKeeper(
     dump,
   });
 }
+/** @typedef {ReturnType<typeof makeKernelKeeper>} KernelKeeper */

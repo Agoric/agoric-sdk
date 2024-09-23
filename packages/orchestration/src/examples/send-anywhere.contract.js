@@ -1,12 +1,12 @@
 import { makeSharedStateRecord } from '@agoric/async-flow';
 
-import { AmountShape } from '@agoric/ertp';
 import { InvitationShape } from '@agoric/zoe/src/typeGuards.js';
 import { M } from '@endo/patterns';
 import { E } from '@endo/far';
 import { withOrchestration } from '../utils/start-helper.js';
 import * as flows from './send-anywhere.flows.js';
 import { prepareChainHubAdmin } from '../exos/chain-hub-admin.js';
+import { AnyNatAmountShape } from '../typeGuards.js';
 
 /**
  * @import {Vow} from '@agoric/vow';
@@ -14,13 +14,13 @@ import { prepareChainHubAdmin } from '../exos/chain-hub-admin.js';
  * @import {OrchestrationPowers, OrchestrationTools} from '../utils/start-helper.js';
  */
 
-export const SingleAmountRecord = M.and(
-  M.recordOf(M.string(), AmountShape, {
+export const SingleNatAmountRecord = M.and(
+  M.recordOf(M.string(), AnyNatAmountShape, {
     numPropertiesLimit: 1,
   }),
   M.not(harden({})),
 );
-harden(SingleAmountRecord);
+harden(SingleNatAmountRecord);
 
 /**
  * Orchestration contract to be wrapped by withOrchestration for Zoe
@@ -56,7 +56,7 @@ export const contract = async (
     zcf,
     contractState,
     log,
-    localTransfer: zoeTools.localTransfer,
+    zoeTools,
   });
 
   const publicFacet = zone.exo(
@@ -70,7 +70,7 @@ export const contract = async (
           orchFns.sendIt,
           'send',
           undefined,
-          M.splitRecord({ give: SingleAmountRecord }),
+          M.splitRecord({ give: SingleNatAmountRecord }),
         );
       },
     },

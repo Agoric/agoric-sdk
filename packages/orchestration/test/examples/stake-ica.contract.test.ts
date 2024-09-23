@@ -10,7 +10,7 @@ import {
   QueryBalanceResponse,
 } from '@agoric/cosmic-proto/cosmos/bank/v1beta1/query.js';
 import { commonSetup } from '../supports.js';
-import { type StakeIcaTerms } from '../../src/examples/stakeIca.contract.js';
+import { type StakeIcaTerms } from '../../src/examples/stake-ica.contract.js';
 import fetchedChainInfo from '../../src/fetched-chain-info.js';
 import {
   buildQueryPacketString,
@@ -24,9 +24,9 @@ import { makeChainHub } from '../../src/exos/chain-hub.js';
 
 const dirname = path.dirname(new URL(import.meta.url).pathname);
 
-const contractFile = `${dirname}/../../src/examples/stakeIca.contract.js`;
+const contractFile = `${dirname}/../../src/examples/stake-ica.contract.js`;
 type StartFn =
-  typeof import('@agoric/orchestration/src/examples/stakeIca.contract.js').start;
+  typeof import('@agoric/orchestration/src/examples/stake-ica.contract.js').start;
 
 const getChainTerms = (
   chainName: keyof typeof fetchedChainInfo,

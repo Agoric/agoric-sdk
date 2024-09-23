@@ -8,7 +8,7 @@
  */
 
 import { mustMatch } from '@endo/patterns';
-import { makeError } from '@endo/errors';
+import { makeError, q } from '@endo/errors';
 import { makeTracer } from '@agoric/internal';
 import { ChainAddressShape } from '../typeGuards.js';
 
@@ -76,9 +76,10 @@ export const depositAndDelegate = async (
   try {
     await contractState.localAccount.transfer(give.Stake, address);
   } catch (cause) {
-    // TODO, put funds back on user seat and exit
-    // https://github.com/Agoric/agoric-sdk/issues/9925
-    throw makeError('ibc transfer failed', undefined, { cause });
+    await zoeTools.withdrawToSeat(contractState.localAccount, seat, give);
+    const errMsg = makeError(`ibc transfer failed ${q(cause)}`);
+    seat.exit(errMsg);
+    throw errMsg;
   }
   seat.exit();
   await account.delegate(validator, give.Stake);

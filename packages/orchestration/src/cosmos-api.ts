@@ -1,7 +1,9 @@
 import type { AnyJson, TypedJson, JsonSafe } from '@agoric/cosmic-proto';
 import type {
   Delegation,
+  DelegationResponse,
   Redelegation,
+  RedelegationResponse,
   UnbondingDelegation,
 } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/staking.js';
 import type { TxBody } from '@agoric/cosmic-proto/cosmos/tx/v1beta1/tx.js';
@@ -26,6 +28,7 @@ import type {
   LocalIbcAddress,
   RemoteIbcAddress,
 } from '@agoric/vats/tools/ibc-utils.js';
+import type { QueryDelegationTotalRewardsResponse } from '@agoric/cosmic-proto/cosmos/distribution/v1beta1/query.js';
 import type { AmountArg, ChainAddress, Denom, DenomAmount } from './types.js';
 
 /** An address for a validator on some blockchain, e.g., cosmos, eth, etc. */
@@ -43,9 +46,6 @@ export interface IBCConnectionInfo {
   counterparty: {
     client_id: string;
     connection_id: IBCConnectionID;
-    prefix: {
-      key_prefix: string;
-    };
   };
   transferChannel: {
     portId: string;
@@ -97,6 +97,24 @@ export type CosmosChainInfo = Readonly<{
   stakingTokens?: Readonly<Array<{ denom: string }>>;
 }>;
 
+// #region Orchestration views on Cosmos response types
+// Naming scheme: Cosmos for the chain system, Rewards b/c getRewards function,
+// and Response because it's the return value.
+
+/** @see {QueryDelegationTotalRewardsResponse} */
+export interface CosmosRewardsResponse {
+  rewards: { validator: CosmosValidatorAddress; reward: DenomAmount[] }[];
+  total: DenomAmount[];
+}
+
+/** @see {DelegationResponse} */
+export interface CosmosDelegationResponse {
+  delegator: ChainAddress;
+  validator: CosmosValidatorAddress;
+  amount: DenomAmount;
+}
+// #endregion
+
 /**
  * Queries for the staking properties of an account.
  *
@@ -107,13 +125,15 @@ export interface StakingAccountQueries {
   /**
    * @returns all active delegations from the account to any validator (or [] if none)
    */
-  getDelegations: () => Promise<Delegation[]>;
+  getDelegations: () => Promise<CosmosDelegationResponse[]>;
 
   /**
    * @returns the active delegation from the account to a specific validator. Return an
    * empty Delegation if there is no delegation.
    */
-  getDelegation: (validator: CosmosValidatorAddress) => Promise<Delegation>;
+  getDelegation: (
+    validator: CosmosValidatorAddress,
+  ) => Promise<CosmosDelegationResponse>;
 
   /**
    * @returns the unbonding delegations from the account to any validator (or [] if none)
@@ -127,18 +147,13 @@ export interface StakingAccountQueries {
     validator: CosmosValidatorAddress,
   ) => Promise<UnbondingDelegation>;
 
-  getRedelegations: () => Promise<Redelegation[]>;
-
-  getRedelegation: (
-    srcValidator: CosmosValidatorAddress,
-    dstValidator?: CosmosValidatorAddress,
-  ) => Promise<Redelegation>;
+  getRedelegations: () => Promise<RedelegationResponse[]>;
 
   /**
    * Get the pending rewards for the account.
    * @returns the amounts of the account's rewards pending from all validators
    */
-  getRewards: () => Promise<DenomAmount[]>;
+  getRewards: () => Promise<CosmosRewardsResponse>;
 
   /**
    * Get the rewards pending with a specific validator.
@@ -187,7 +202,11 @@ export interface StakingAccountActions {
    * @param delegations - the delegation to undelegate
    */
   undelegate: (
-    delegations: { amount: AmountArg; validator: CosmosValidatorAddress }[],
+    delegations: {
+      amount: AmountArg;
+      delegator?: ChainAddress;
+      validator: CosmosValidatorAddress;
+    }[],
   ) => Promise<void>;
 
   /**
@@ -307,7 +326,7 @@ export type CosmosChainAccountMethods<CCI extends CosmosChainInfo> =
     CCI extends {
     stakingTokens: {};
   }
-    ? StakingAccountActions
+    ? StakingAccountActions & StakingAccountQueries
     : {};
 
 export type ICQQueryFunction = (
