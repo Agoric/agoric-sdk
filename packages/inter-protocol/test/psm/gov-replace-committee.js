@@ -279,11 +279,6 @@ const addGovernorsToEconCharter = async ({
   await Promise.all(
     [
       {
-        label: 'reserve',
-        instanceP: reserve,
-        facetP: E.get(reserveKit).governorCreatorFacet,
-      },
-      {
         label: 'VaultFactory',
         instanceP: VaultFactory,
         facetP: E.get(vaultFactoryKit).governorCreatorFacet,
@@ -312,6 +307,14 @@ const main = async permittedPowers => {
     E(psmKit.psmGovernorCreatorFacet).replaceElectorate(newElectoratePoser),
   );
   await Promise.all(replacements);
+
+  await E(
+    E.get(permittedPowers.consume.vaultFactoryKit).governorCreatorFacet,
+  ).replaceElectorate(newElectoratePoser);
+
+  await E(
+    E.get(permittedPowers.consume.auctioneerKit).governorCreatorFacet,
+  ).replaceElectorate(newElectoratePoser);
 
   await inviteECMembers(permittedPowers, {
     options: { voterAddresses: runConfig.economicCommitteeAddresses },
