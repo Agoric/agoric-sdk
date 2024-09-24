@@ -297,7 +297,7 @@ export const prepareLocalOrchestrationAccountKit = (
           const offerHandler = (seat, { amount, destination, opts }) => {
             seat.exit();
             return watch(
-              this.facets.holder.transfer(amount, destination, opts),
+              this.facets.holder.transfer(destination, amount, opts),
             );
           };
           return zcf.makeInvitation(offerHandler, 'Transfer');
@@ -675,15 +675,15 @@ export const prepareLocalOrchestrationAccountKit = (
           });
         },
         /**
+         * @param {ChainAddress} destination
          * @param {AmountArg} amount an ERTP {@link Amount} or a
          *   {@link DenomAmount}
-         * @param {ChainAddress} destination
          * @param {IBCMsgTransferOptions} [opts] if either timeoutHeight or
          *   timeoutTimestamp are not supplied, a default timeoutTimestamp will
          *   be set for 5 minutes in the future
          * @returns {Vow<any>}
          */
-        transfer(amount, destination, opts) {
+        transfer(destination, amount, opts) {
           return asVow(() => {
             trace('Transferring funds from LCA over IBC');
 

@@ -34,6 +34,6 @@ export const unbondAndTransfer = async (orch, { zcfTools }) => {
   const strideAccount = await stride.makeAccount();
 
   const balance = await osmoAccount.getBalance(osmoDenom);
-  await osmoAccount.transfer(balance, strideAccount.getAddress());
+  await osmoAccount.transfer(strideAccount.getAddress(), balance);
 };
 harden(unbondAndTransfer);

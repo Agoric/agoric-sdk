@@ -74,7 +74,7 @@ export const depositAndDelegate = async (
 
   const address = account.getAddress();
   try {
-    await contractState.localAccount.transfer(give.Stake, address);
+    await contractState.localAccount.transfer(address, give.Stake);
   } catch (cause) {
     await zoeTools.withdrawToSeat(contractState.localAccount, seat, give);
     const errMsg = makeError(`ibc transfer failed ${q(cause)}`);
@@ -105,7 +105,7 @@ export const undelegateAndTransfer = async (
 ) => {
   await account.undelegate(delegations);
   for (const { amount } of delegations) {
-    await account.transfer(amount, destination);
+    await account.transfer(destination, amount);
   }
 };
 harden(undelegateAndTransfer);

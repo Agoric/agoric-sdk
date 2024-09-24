@@ -25,7 +25,7 @@ export const orchestrationAccountMethods = {
   sendAll: M.call(ChainAddressShape, M.arrayOf(AmountArgShape)).returns(
     VowShape,
   ),
-  transfer: M.call(AmountArgShape, ChainAddressShape)
+  transfer: M.call(ChainAddressShape, AmountArgShape)
     .optional(IBCTransferOptionsShape)
     .returns(VowShape),
   transferSteps: M.call(AmountArgShape, M.any()).returns(VowShape),

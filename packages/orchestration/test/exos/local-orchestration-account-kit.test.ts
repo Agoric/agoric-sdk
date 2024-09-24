@@ -145,7 +145,7 @@ test('transfer', async t => {
     dest: ChainAddress,
     opts = {},
   ) => {
-    const transferP = VE(account).transfer(amount, dest, opts);
+    const transferP = VE(account).transfer(dest, amount, opts);
     sequence += 1n;
     // Ensure the toBridge of the transferP happens before the fromBridge is awaited after this function returns
     await eventLoopIteration();
@@ -194,7 +194,7 @@ test('transfer', async t => {
   };
   // XXX dev has to know not to startTransfer here
   await t.throwsAsync(
-    VE(account).transfer({ denom: 'ubld', value: 1n }, unknownDestination),
+    VE(account).transfer(unknownDestination, { denom: 'ubld', value: 1n }),
     { message: /connection not found: agoric-3<->fakenet/ },
     'cannot create transfer msg with unknown chainId',
   );

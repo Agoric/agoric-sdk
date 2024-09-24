@@ -688,7 +688,7 @@ export const prepareCosmosOrchestrationAccountKit = (
           const offerHandler = (seat, { amount, destination, opts }) => {
             seat.exit();
             return watch(
-              this.facets.holder.transfer(amount, destination, opts),
+              this.facets.holder.transfer(destination, amount, opts),
             );
           };
           return zcf.makeInvitation(offerHandler, 'Transfer');
@@ -881,8 +881,8 @@ export const prepareCosmosOrchestrationAccountKit = (
         },
 
         /** @type {HostOf<OrchestrationAccountI['transfer']>} */
-        transfer(amount, destination, opts) {
-          trace('transfer', amount, destination, opts);
+        transfer(destination, amount, opts) {
+          trace('transfer', destination, amount, opts);
           return asVow(() => {
             const { helper } = this.facets;
             const token = helper.amountToCoin(amount);

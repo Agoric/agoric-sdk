@@ -209,7 +209,7 @@ test('transfer', async t => {
     encoding: 'bech32',
   };
   const mockAmountArg: AmountArg = { value: 10n, denom: 'ibc/uusdchash' };
-  const res = E(account).transfer(mockAmountArg, mockDestination);
+  const res = E(account).transfer(mockDestination, mockAmountArg);
   await eventLoopIteration();
 
   t.deepEqual(
@@ -220,7 +220,7 @@ test('transfer', async t => {
   t.is(await res, undefined, 'transfer returns undefined');
 
   t.log('transfer accepts custom memo');
-  await E(account).transfer(mockAmountArg, mockDestination, {
+  await E(account).transfer(mockDestination, mockAmountArg, {
     memo: JSON.stringify({ custom: 'pfm memo' }),
   });
   t.like(
@@ -232,7 +232,7 @@ test('transfer', async t => {
   );
 
   t.log('transfer accepts custom timeoutHeight');
-  await E(account).transfer(mockAmountArg, mockDestination, {
+  await E(account).transfer(mockDestination, mockAmountArg, {
     timeoutHeight: {
       revisionHeight: 1000n,
       revisionNumber: 1n,
@@ -251,7 +251,7 @@ test('transfer', async t => {
   );
 
   t.log('transfer accepts custom timeoutTimestamp');
-  await E(account).transfer(mockAmountArg, mockDestination, {
+  await E(account).transfer(mockDestination, mockAmountArg, {
     timeoutTimestamp: 999n,
   });
   t.like(
@@ -267,7 +267,7 @@ test('transfer', async t => {
   );
 
   t.log('transfer accepts custom timeoutHeight and timeoutTimestamp');
-  await E(account).transfer(mockAmountArg, mockDestination, {
+  await E(account).transfer(mockDestination, mockAmountArg, {
     timeoutHeight: {
       revisionHeight: 5000n,
       revisionNumber: 5n,
@@ -288,17 +288,20 @@ test('transfer', async t => {
 
   t.log('transfer throws if connection is not in its chainHub');
   await t.throwsAsync(
-    E(account).transfer(mockAmountArg, {
-      ...mockDestination,
-      chainId: 'unknown-1',
-    }),
+    E(account).transfer(
+      {
+        ...mockDestination,
+        chainId: 'unknown-1',
+      },
+      mockAmountArg,
+    ),
     {
       message: 'connection not found: cosmoshub-4<->unknown-1',
     },
   );
 
   t.log('transfer throws if asset is not in its chainHub');
-  await t.throwsAsync(E(account).transfer(ist.make(10n), mockDestination), {
+  await t.throwsAsync(E(account).transfer(mockDestination, ist.make(10n)), {
     message: 'No denom for brand [object Alleged: IST brand]',
   });
   chainHub.registerAsset('uist', {
@@ -308,14 +311,14 @@ test('transfer', async t => {
     chainName: 'agoric',
   });
   // uses uistTransfer mock above
-  await E(account).transfer(ist.make(10n), mockDestination);
+  await E(account).transfer(mockDestination, ist.make(10n));
 
   t.log('transfer timeout error recieved and handled from the bridge');
   await t.throwsAsync(
-    E(account).transfer(
-      { ...mockAmountArg, value: SIMULATED_ERRORS.TIMEOUT },
-      mockDestination,
-    ),
+    E(account).transfer(mockDestination, {
+      ...mockAmountArg,
+      value: SIMULATED_ERRORS.TIMEOUT,
+    }),
     {
       message: 'ABCI code: 5: error handling packet: see events for details',
     },
