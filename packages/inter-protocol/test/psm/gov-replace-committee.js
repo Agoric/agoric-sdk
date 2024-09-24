@@ -255,6 +255,7 @@ harden(startNewEconCharter);
 
 const addGovernorsToEconCharter = async ({
   consume: {
+    zoe,
     reserveKit,
     vaultFactoryKit,
     econCharterKit,
@@ -267,8 +268,10 @@ const addGovernorsToEconCharter = async ({
 }) => {
   const { creatorFacet } = E.get(econCharterKit);
 
-  // Adding PSM Instances
   const psmKitMap = await psmKit;
+
+  // Adding PSM Instances
+
   await Promise.all(
     [...psmKitMap.values()].map(async obj => {
       return E(creatorFacet).addInstance(
@@ -282,21 +285,21 @@ const addGovernorsToEconCharter = async ({
   // Add Instances for other contracts
   await Promise.all(
     [
-      {
-        label: 'reserve',
-        instanceP: reserve,
-        facetP: E.get(reserveKit).governorCreatorFacet,
-      },
+      // {
+      //   label: 'reserve',
+      //   instanceP: reserve,
+      //   facetP: E.get(reserveKit).governorCreatorFacet,
+      // },
       {
         label: 'VaultFactory',
         instanceP: VaultFactory,
         facetP: E.get(vaultFactoryKit).governorCreatorFacet,
       },
-      {
-        label: 'auctioneer',
-        instanceP: auctioneer,
-        facetP: E.get(auctioneerKit).governorCreatorFacet,
-      },
+      // {
+      //   label: 'auctioneer',
+      //   instanceP: auctioneer,
+      //   facetP: E.get(auctioneerKit).governorCreatorFacet,
+      // },
     ].map(async ({ label, instanceP, facetP }) => {
       const [instance, govFacet] = await Promise.all([instanceP, facetP]);
 
@@ -307,7 +310,23 @@ const addGovernorsToEconCharter = async ({
 
 harden(addGovernorsToEconCharter);
 
+const shutdown = async ({
+  consume: { economicCommitteeCreatorFacet, econCharterKit },
+}) => {
+  console.log('Shutting down old EC Committee');
+  await E(economicCommitteeCreatorFacet).shutdown();
+  console.log('EC Committee shutdown successful');
+
+  console.log('Shutting down old EC Charter');
+  const { creatorFacet } = E.get(econCharterKit);
+  await E(creatorFacet).shutdown();
+  console.log('EC Charter shutdown successful');
+};
+
+harden(shutdown);
+
 const main = async permittedPowers => {
+  await shutdown(permittedPowers);
   const newElectoratePoser = await startNewEconomicCommittee(permittedPowers);
   await startNewEconCharter(permittedPowers);
   await addGovernorsToEconCharter(permittedPowers);
