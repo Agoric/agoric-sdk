@@ -130,8 +130,8 @@ async function spawnReflectiveWorker(handleCommand) {
 
 /**
  * @param {ReflectiveWorker} worker
- * @param {(worker: ReflectiveWorker) => Promise<void>} beforeWait
- * @param {(worker: ReflectiveWorker) => Promise<void>} afterWait
+ * @param {(worker: ReflectiveWorker) => Promise<unknown>} beforeWait
+ * @param {(worker: ReflectiveWorker) => Promise<unknown>} afterWait
  */
 async function expectTermination(worker, beforeWait, afterWait) {
   let beforeWaitError;
@@ -189,15 +189,20 @@ function verifyStdError(t, results, expectedStderr) {
 }
 
 const testInterruption = test.macro(
+  /**
+   * @param {import('ava').ExecutionContext} t
+   * @param {(worker: ReflectiveWorker) => Promise<unknown>} beforeWait
+   * @param {(worker: ReflectiveWorker, message: Uint8Array) => Promise<Uint8Array>} onRequest
+   * @param {(worker: ReflectiveWorker) => Promise<unknown>} afterWait
+   * @param {(t: import('ava').ExecutionContext, results: Awaited<ReturnType<expectTermination>>) => void} verifyResults
+   */
   async (t, beforeWait, onRequest, afterWait, verifyResults) => {
     const handleCommand = message => {
-      // @ts-expect-error onRequest is untyped
       // eslint-disable-next-line no-use-before-define
       return onRequest(worker, message);
     };
     const worker = await spawnReflectiveWorker(handleCommand);
     const results = await expectTermination(worker, beforeWait, afterWait);
-    // @ts-expect-error verifyResults is untyped
     verifyResults(t, results);
   },
 );
@@ -205,7 +210,7 @@ const testInterruption = test.macro(
 test(
   'xsnap-worker complains while trying to READ an answer when pipes are closed',
   testInterruption,
-  async worker => worker.vat.issueCommand('0'),
+  async worker => worker.vat.issueStringCommand('0'),
   async function onRequest(worker, _message) {
     // the worker is blocked on read here, so closing "toXsnap" pipe
     // should cause an immediate read error on worker side.
@@ -221,7 +226,7 @@ test(
 test(
   'xsnap-worker complains while trying to WRITE an answer when pipes are closed',
   testInterruption,
-  async worker => worker.vat.issueCommand('0'),
+  async worker => worker.vat.issueStringCommand('0'),
   async function onRequest(worker, _message) {
     // The worker is blocked on read here, so closing "fromXsnap" pipe
     // does not cause an immediate exit. However, an attempt to send an
@@ -282,7 +287,7 @@ test(
     // attempt to issueCommand() (query) back to us.
     worker.fromXsnap.end();
     worker.fromXsnap.destroy();
-    await worker.vat.issueCommand('0');
+    await worker.vat.issueStringCommand('0');
   },
   async function onRequest(_worker, _message) {
     return new Uint8Array();
