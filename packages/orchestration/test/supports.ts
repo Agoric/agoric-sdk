@@ -164,7 +164,11 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
     await eventLoopIteration();
   };
 
-  const chainHub = makeChainHub(agoricNames, vowTools);
+  const chainHub = makeChainHub(
+    rootZone.subZone('chainHub'),
+    agoricNames,
+    vowTools,
+  );
 
   /**
    * Register BLD if it's not already registered.
