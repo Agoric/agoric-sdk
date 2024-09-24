@@ -162,7 +162,7 @@ async function expectTermination(worker, beforeWait, afterWait) {
   };
 }
 
-async function verifyStdError(t, results, expectedStderr) {
+function verifyStdError(t, results, expectedStderr) {
   const {
     beforeWaitError,
     afterWaitError,
