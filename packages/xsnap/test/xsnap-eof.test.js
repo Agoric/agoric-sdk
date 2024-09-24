@@ -162,14 +162,6 @@ async function expectTermination(worker, beforeWait, afterWait) {
   };
 }
 
-async function issueCommandZero(worker) {
-  await worker.vat.issueCommand('0');
-}
-
-async function closeVat(worker) {
-  await worker.vat.close();
-}
-
 async function verifyStdError(t, results, expectedStderr) {
   const {
     beforeWaitError,
