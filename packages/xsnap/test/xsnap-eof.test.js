@@ -205,7 +205,7 @@ const testInterruption = test.macro(
 test(
   'xsnap-worker complains while trying to READ an answer when pipes are closed',
   testInterruption,
-  worker => worker.vat.issueCommand('0'),
+  async worker => worker.vat.issueCommand('0'),
   async function onRequest(worker, _message) {
     // the worker is blocked on read here, so closing "toXsnap" pipe
     // should cause an immediate read error on worker side.
@@ -221,7 +221,7 @@ test(
 test(
   'xsnap-worker complains while trying to WRITE an answer when pipes are closed',
   testInterruption,
-  worker => worker.vat.issueCommand('0'),
+  async worker => worker.vat.issueCommand('0'),
   async function onRequest(worker, _message) {
     // The worker is blocked on read here, so closing "fromXsnap" pipe
     // does not cause an immediate exit. However, an attempt to send an
@@ -249,7 +249,7 @@ test(
   async function onRequest(_worker, _message) {
     return new Uint8Array();
   },
-  worker => worker.vat.close(),
+  async worker => worker.vat.close(),
   (t, results) => {
     const {
       beforeWaitError,
@@ -287,7 +287,7 @@ test(
   async function onRequest(_worker, _message) {
     return new Uint8Array();
   },
-  worker => worker.vat.close(),
+  async worker => worker.vat.close(),
   (t, results) =>
     verifyStdError(t, results, 'Caught SIGPIPE. Has parent died?\n'),
 );
