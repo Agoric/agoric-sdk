@@ -194,7 +194,7 @@ const testInterruption = test.macro(
     const worker = await spawnReflectiveWorker(handleCommand);
     const results = await issueCommandAndWait(worker, beforeWait, afterWait);
     // @ts-expect-error verifyResults is untyped
-    await verifyResults(t, results);
+    verifyResults(t, results);
   },
 );
 
