@@ -20,6 +20,12 @@ const runConfig = {
     // gov3: 'agoric1w8wktaur4zf8qmmtn3n7x3r0jhsjkjntcm3u6h',
     // gov4: 'agoric1p2aqakv3ulz4qfy2nut86j9gx0dx0yw09h96md',
   },
+  economicCommitteeAddressesToRemove: {
+    gov1: 'agoric1ldmtatp24qlllgxmrsjzcpe20fvlkp448zcuce',
+    gov2: 'agoric140dmkrz2e42ergjj7gyvejhzmjzurvqeq82ang',
+    gov3: 'agoric1w8wktaur4zf8qmmtn3n7x3r0jhsjkjntcm3u6h',
+    // gov4: 'agoric1p2aqakv3ulz4qfy2nut86j9gx0dx0yw09h96md',
+  },
 };
 
 //#region Quasi-imports
@@ -82,15 +88,61 @@ const reserveThenDeposit = async (
   console.info('confirmed deposit for', debugName);
 };
 
+const handlehighPrioritySendersList = async ({
+  consume: { highPrioritySendersManager: highPrioritySendersManagerP },
+}) => {
+  const EC_HIGH_PRIORITY_SENDERS_NAMESPACE = 'economicCommittee';
+
+  const highPrioritySendersManager = await highPrioritySendersManagerP;
+
+  const voterAddressesToAdd = Object.values(
+    runConfig.economicCommitteeAddresses,
+  );
+  const voterAddressesToRemove = Object.values(
+    runConfig.economicCommitteeAddressesToRemove,
+  );
+
+  // Create Sets from the arrays for efficient lookup
+  const addSet = new Set(voterAddressesToAdd);
+  const removeSet = new Set(voterAddressesToRemove);
+
+  // Filter out common elements from both sets
+  const uniqueAddAddresses = voterAddressesToAdd.filter(
+    address => !removeSet.has(address),
+  );
+  const uniqueRemoveAddresses = voterAddressesToRemove.filter(
+    address => !addSet.has(address),
+  );
+  
+  if (highPrioritySendersManager) {
+    // Add the addresses
+    for (let address of uniqueAddAddresses) {
+      await E(highPrioritySendersManager).add(
+        EC_HIGH_PRIORITY_SENDERS_NAMESPACE,
+        address,
+      );
+    }
+    // Remove the addresses
+    for (let address of uniqueRemoveAddresses) {
+      await E(highPrioritySendersManager).remove(
+        EC_HIGH_PRIORITY_SENDERS_NAMESPACE,
+        address,
+      );
+    }
+  }
+};
+
 const inviteECMembers = async (
   { consume: { namesByAddressAdmin, economicCommitteeCreatorFacet } },
-  { options: { voterAddresses = {} } },
+  { options: { voterAddresses = {}, voterAddressesToRemove = {} } },
 ) => {
+  // Generate Invitations
   const invitations = await E(
     economicCommitteeCreatorFacet,
   ).getVoterInvitations();
   assert.equal(invitations.length, values(voterAddresses).length);
 
+  // Distribute Invitations
   /** @param {[string, Promise<Invitation>][]} addrInvitations */
   const distributeInvitations = async addrInvitations => {
     await Promise.all(
@@ -270,42 +322,39 @@ const addGovernorsToEconCharter = async ({
 
   const psmKitMap = await psmKit;
 
-  // Adding PSM Instances
+  // Adding PSM Instances sequentially
+  for (const obj of psmKitMap.values()) {
+    await E(creatorFacet).addInstance(
+      obj.psm,
+      obj.psmGovernorCreatorFacet,
+      obj.label,
+    );
+  }
 
-  await Promise.all(
-    [...psmKitMap.values()].map(async obj => {
-      return E(creatorFacet).addInstance(
-        obj.psm,
-        obj.psmGovernorCreatorFacet,
-        obj.label,
-      );
-    }),
-  );
+  // Add Instances for other contracts sequentially
+  // const instances = [
+  //   {
+  //     label: 'reserve',
+  //     instanceP: reserve,
+  //     facetP: E.get(reserveKit).governorCreatorFacet,
+  //   },
+  //   {
+  //     label: 'VaultFactory',
+  //     instanceP: VaultFactory,
+  //     facetP: E.get(vaultFactoryKit).governorCreatorFacet,
+  //   },
+  //   {
+  //     label: 'auctioneer',
+  //     instanceP: auctioneer,
+  //     facetP: E.get(auctioneerKit).governorCreatorFacet,
+  //   },
+  // ];
 
-  // Add Instances for other contracts
-  await Promise.all(
-    [
-      // {
-      //   label: 'reserve',
-      //   instanceP: reserve,
-      //   facetP: E.get(reserveKit).governorCreatorFacet,
-      // },
-      {
-        label: 'VaultFactory',
-        instanceP: VaultFactory,
-        facetP: E.get(vaultFactoryKit).governorCreatorFacet,
-      },
-      // {
-      //   label: 'auctioneer',
-      //   instanceP: auctioneer,
-      //   facetP: E.get(auctioneerKit).governorCreatorFacet,
-      // },
-    ].map(async ({ label, instanceP, facetP }) => {
-      const [instance, govFacet] = await Promise.all([instanceP, facetP]);
-
-      return E(creatorFacet).addInstance(instance, govFacet, label);
-    }),
-  );
+  // for (const { label, instanceP, facetP } of instances) {
+  //   const instance = await instanceP;
+  //   const govFacet = await facetP;
+  //   await E(creatorFacet).addInstance(instance, govFacet, label);
+  // }
 };
 
 harden(addGovernorsToEconCharter);
@@ -326,10 +375,11 @@ const shutdown = async ({
 harden(shutdown);
 
 const main = async permittedPowers => {
-  await shutdown(permittedPowers);
+  // await shutdown(permittedPowers);
   const newElectoratePoser = await startNewEconomicCommittee(permittedPowers);
   await startNewEconCharter(permittedPowers);
   await addGovernorsToEconCharter(permittedPowers);
+  await handlehighPrioritySendersList(permittedPowers);
 
   const psmKitMap = await permittedPowers.consume.psmKit;
   const replacements = [...psmKitMap.values()].map(psmKit =>
@@ -350,7 +400,10 @@ const main = async permittedPowers => {
   ).replaceElectorate(newElectoratePoser);
 
   await inviteECMembers(permittedPowers, {
-    options: { voterAddresses: runConfig.economicCommitteeAddresses },
+    options: {
+      voterAddresses: runConfig.economicCommitteeAddresses,
+      voterAddressesToRemove: runConfig.economicCommitteeAddressesToRemove,
+    },
   });
 
   await inviteToEconCharter(permittedPowers, {
