@@ -7,6 +7,8 @@
     "build": "yarn run build:sdk && yarn run build:submissions && yarn run build:synthetic-chain",
     "build:sdk": "make -C ../packages/deployment docker-build-sdk",
     "build:submissions": "scripts/build-all-submissions.sh",
+    "build:priceFeeds-for-mainnet": "scripts/build-submission.sh proposals/f:replace-price-feeds inter-protocol/updatePriceFeeds.js f:mainNet UNRELEASED_main; scripts/build-submission.sh proposals/f:replace-price-feeds vats/add-auction.js f:mainNet; scripts/build-submission.sh proposals/f:replace-price-feeds vats/upgradeVaults.js f:mainNet",
+    "build:priceFeeds-for-devnet": "scripts/build-submission.sh proposals/f:replace-price-feeds inter-protocol/updatePriceFeeds.js f:devNet UNRELEASED_devnet; scripts/build-submission.sh proposals/f:replace-price-feeds vats/add-auction.js f:devNet; scripts/build-submission.sh proposals/f:replace-price-feeds vats/upgradeVaults.js f:devNet",
     "build:synthetic-chain": "yarn synthetic-chain build",
     "test": "yarn synthetic-chain test",
     "doctor": "yarn synthetic-chain doctor"
