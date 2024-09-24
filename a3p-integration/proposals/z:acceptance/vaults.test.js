@@ -1,24 +1,18 @@
 import test from 'ava';
 import {
   agops,
+  agoric,
   bankSend,
   getUser,
   openVault,
   adjustVault,
   closeVault,
   getISTBalance,
-  queryVstorage,
+  getContractInfo,
   ATOM_DENOM,
   USER1ADDR,
   waitForBlock,
 } from '@agoric/synthetic-chain';
-
-const getFormattedVaultData = vaultData => {
-  const { values } = JSON.parse(vaultData.value);
-  const { body } = JSON.parse(values[0]);
-  const cleanedBody = JSON.parse(body.slice(1));
-  return cleanedBody;
-};
 
 test.serial('attempt to open vaults under the minimum amount', async t => {
   const activeVaultsBefore = await agops.vaults('list', '--from', USER1ADDR);
@@ -65,15 +59,14 @@ test.serial('remove collateral', async t => {
   const vaultPath = activeVaults[activeVaults.length - 1];
   const vaultID = vaultPath.split('.').pop();
 
-  let vaultDataString = await queryVstorage(vaultPath);
-  let vaultData = getFormattedVaultData(vaultDataString);
+  let vaultData = await getContractInfo(vaultPath, { agoric, prefix: '' });
   const collateralBefore = vaultData.locked.value;
 
   await adjustVault(USER1ADDR, vaultID, { wantCollateral: 1.0 });
   await waitForBlock();
 
-  vaultDataString = await queryVstorage(vaultPath);
-  vaultData = getFormattedVaultData(vaultDataString);
+  vaultData = await getContractInfo(vaultPath, { agoric, prefix: '' });
+  
   const collateralAfter = vaultData.locked.value;
 
   t.true(
@@ -87,15 +80,13 @@ test.serial('remove IST', async t => {
   const vaultPath = activeVaults[activeVaults.length - 1];
   const vaultID = vaultPath.split('.').pop();
 
-  let vaultDataString = await queryVstorage(vaultPath);
-  let vaultData = getFormattedVaultData(vaultDataString);
+  let vaultData = await getContractInfo(vaultPath, { agoric, prefix: '' });
   const debtBefore = vaultData.debtSnapshot.debt.value;
 
   await adjustVault(USER1ADDR, vaultID, { wantMinted: 1.0 });
   await waitForBlock();
 
-  vaultDataString = await queryVstorage(vaultPath);
-  vaultData = getFormattedVaultData(vaultDataString);
+  vaultData = await getContractInfo(vaultPath, { agoric, prefix: '' });
   const debtAfter = vaultData.debtSnapshot.debt.value;
 
   t.true(
@@ -112,8 +103,7 @@ test.serial('close vault', async t => {
   await closeVault(USER1ADDR, vaultID, 6.03);
   await waitForBlock();
 
-  const vaultDataString = await queryVstorage(vaultPath);
-  const vaultData = getFormattedVaultData(vaultDataString);
+  const vaultData = await getContractInfo(vaultPath, { agoric, prefix: '' });
   const vaultState = vaultData.vaultState;
 
   t.is(vaultState, 'closed', 'The vault should be in the "closed" state.');
@@ -144,15 +134,13 @@ test.serial('add collateral', async t => {
   const vaultPath = activeVaults[activeVaults.length - 1];
   const vaultID = vaultPath.split('.').pop();
 
-  let vaultDataString = await queryVstorage(vaultPath);
-  let vaultData = getFormattedVaultData(vaultDataString);
+  let vaultData = await getContractInfo(vaultPath, { agoric, prefix: '' });
   const collateralBefore = vaultData.locked.value;
 
   await adjustVault(user2Address, vaultID, { giveCollateral: 1.0 });
   await waitForBlock();
 
-  vaultDataString = await queryVstorage(vaultPath);
-  vaultData = getFormattedVaultData(vaultDataString);
+  vaultData = await getContractInfo(vaultPath, { agoric, prefix: '' });
   const collateralAfter = vaultData.locked.value;
 
   t.true(
@@ -167,15 +155,13 @@ test.serial('add IST', async t => {
   const vaultPath = activeVaults[activeVaults.length - 1];
   const vaultID = vaultPath.split('.').pop();
 
-  let vaultDataString = await queryVstorage(vaultPath);
-  let vaultData = getFormattedVaultData(vaultDataString);
+  let vaultData = await getContractInfo(vaultPath, { agoric, prefix: '' });
   const debtBefore = vaultData.debtSnapshot.debt.value;
 
   await adjustVault(user2Address, vaultID, { giveMinted: 1.0 });
   await waitForBlock();
 
-  vaultDataString = await queryVstorage(vaultPath);
-  vaultData = getFormattedVaultData(vaultDataString);
+  vaultData = await getContractInfo(vaultPath, { agoric, prefix: '' });
   const debtAfter = vaultData.debtSnapshot.debt.value;
 
   t.true(
@@ -193,8 +179,7 @@ test.serial('close second vault', async t => {
   await closeVault(user2Address, vaultID, 6.035);
   await waitForBlock();
 
-  const vaultDataString = await queryVstorage(vaultPath);
-  const vaultData = getFormattedVaultData(vaultDataString);
+  const vaultData = await getContractInfo(vaultPath, { agoric, prefix: '' });
   const vaultState = vaultData.vaultState;
 
   t.is(vaultState, 'closed', 'The vault should be in the "closed" state.');
