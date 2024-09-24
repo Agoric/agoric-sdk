@@ -65,6 +65,15 @@ test('xsnap-worker complains while waiting for answer when parent is killed', as
   t.is(nodeExitSignal, 'SIGKILL', 'exit signal must be "SIGKILL"');
 });
 
+/**
+ * Launch an xsnap vat that responds to every command by issuing an empty
+ * request of its own, to be received by the provided `handleCommand`.
+ * Returns the vat along with values capturing its surface area (ChildProcess
+ * object and exit promise, command input/output streams, and promises for
+ * stdout/stderr text).
+ *
+ * @param {import('../src/xsnap.js').XSnapOptions['handleCommand']} handleCommand
+ */
 async function spawnReflectiveWorker(handleCommand) {
   const exitedPKit = makePromiseKit();
   /** @type {XsnapChildProcess | undefined} */
