@@ -179,9 +179,6 @@ export const start = (zcf, privateArgs, baggage) => {
       getPublicFacet() {
         return publicFacet;
       },
-      shutdown() {
-        zcf.shutdown('EC Charter Shutdown');
-      },
     },
   );
 
