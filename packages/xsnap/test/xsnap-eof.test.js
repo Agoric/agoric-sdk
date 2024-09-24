@@ -185,7 +185,7 @@ function verifyStdError(t, results, expectedStderr) {
 }
 
 const testInterruption = test.macro(
-  async (t, onRequest, beforeWait, afterWait, verifyResults) => {
+  async (t, beforeWait, onRequest, afterWait, verifyResults) => {
     const handleCommand = message => {
       // @ts-expect-error onRequest is untyped
       // eslint-disable-next-line no-use-before-define
