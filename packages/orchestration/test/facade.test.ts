@@ -49,7 +49,6 @@ test('calls between flows', async t => {
 
   const { outer, outer2, inner } = orchestrateAll(flows, {
     peerFlows: flows,
-    zcf,
   });
 
   t.deepEqual(await vt.when(inner('a', 'b', 'c')), 'a b c');
@@ -70,7 +69,6 @@ test('context mapping individual flows', async t => {
 
   const { outer } = orchestrateAll(flows, {
     peerFlows: { inner: flows.inner },
-    zcf,
   });
 
   t.deepEqual(await vt.when(outer('a', 'b', 'c')), 'Hello a b c');
