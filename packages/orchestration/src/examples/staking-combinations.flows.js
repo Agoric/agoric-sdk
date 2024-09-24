@@ -2,6 +2,7 @@
  * @import {GuestInterface} from '@agoric/async-flow';
  * @import {Orchestrator, OrchestrationFlow, AmountArg, CosmosValidatorAddress, ChainAddress, LocalAccountMethods, OrchestrationAccountI} from '../types.js'
  * @import {ContinuingOfferResult, InvitationMakers} from '@agoric/smart-wallet/src/types.js';
+ * @import {LocalOrchestrationAccountKit} from '../exos/local-orchestration-account.js';
  * @import {MakeCombineInvitationMakers} from '../exos/combine-invitation-makers.js';
  * @import {CosmosOrchestrationAccount} from '../exos/cosmos-orchestration-account.js';
  * @import {ResolvedContinuingOfferResult, ZoeTools} from '../utils/zoe-tools.js';
@@ -47,7 +48,7 @@ harden(makeAccount);
  * @satisfies {OrchestrationFlow}
  * @param {Orchestrator} orch
  * @param {object} ctx
- * @param {{ localAccount?: OrchestrationAccountI & LocalAccountMethods }} ctx.contractState
+ * @param {Promise<GuestInterface<LocalOrchestrationAccountKit['holder']>>} ctx.sharedLocalAccountP
  * @param {GuestInterface<ZoeTools>} ctx.zoeTools
  * @param {GuestInterface<CosmosOrchestrationAccount>} account
  * @param {ZCFSeat} seat
@@ -56,7 +57,7 @@ harden(makeAccount);
  */
 export const depositAndDelegate = async (
   orch,
-  { contractState, zoeTools },
+  { sharedLocalAccountP, zoeTools },
   account,
   seat,
   validator,
@@ -64,18 +65,20 @@ export const depositAndDelegate = async (
   await null;
   trace('depositAndDelegate', account, seat, validator);
   mustMatch(validator, ChainAddressShape);
-  if (!contractState.localAccount) {
-    const agoricChain = await orch.getChain('agoric');
-    contractState.localAccount = await agoricChain.makeAccount();
-  }
+
   const { give } = seat.getProposal();
-  await zoeTools.localTransfer(seat, contractState.localAccount, give);
+  /**
+   * @type {any} XXX methods returning vows
+   *   https://github.com/Agoric/agoric-sdk/issues/9822
+   */
+  const sharedLocalAccount = await sharedLocalAccountP;
+  await zoeTools.localTransfer(seat, sharedLocalAccount, give);
 
   const address = account.getAddress();
   try {
-    await contractState.localAccount.transfer(address, give.Stake);
+    await sharedLocalAccount.transfer(address, give.Stake);
   } catch (cause) {
-    await zoeTools.withdrawToSeat(contractState.localAccount, seat, give);
+    await zoeTools.withdrawToSeat(sharedLocalAccount, seat, give);
     const errMsg = makeError(`ibc transfer failed ${q(cause)}`);
     seat.exit(errMsg);
     throw errMsg;

@@ -5,8 +5,9 @@ import { M, mustMatch } from '@endo/patterns';
 /**
  * @import {GuestInterface, GuestOf} from '@agoric/async-flow';
  * @import {Vow} from '@agoric/vow';
+ * @import {LocalOrchestrationAccountKit} from '../exos/local-orchestration-account.js';
  * @import {ZoeTools} from '../utils/zoe-tools.js';
- * @import {Orchestrator, LocalAccountMethods, OrchestrationAccountI, OrchestrationFlow} from '../types.js';
+ * @import {Orchestrator, OrchestrationFlow, LocalAccountMethods} from '../types.js';
  */
 
 const { entries } = Object;
@@ -18,7 +19,7 @@ const { entries } = Object;
  * @satisfies {OrchestrationFlow}
  * @param {Orchestrator} orch
  * @param {object} ctx
- * @param {{ localAccount?: OrchestrationAccountI & LocalAccountMethods }} ctx.contractState
+ * @param {Promise<GuestInterface<LocalOrchestrationAccountKit['holder']>>} ctx.sharedLocalAccountP
  * @param {GuestInterface<ZoeTools>} ctx.zoeTools
  * @param {GuestOf<(msg: string) => Vow<void>>} ctx.log
  * @param {ZCFSeat} seat
@@ -26,7 +27,7 @@ const { entries } = Object;
  */
 export const sendIt = async (
   orch,
-  { contractState, log, zoeTools: { localTransfer, withdrawToSeat } },
+  { sharedLocalAccountP, log, zoeTools: { localTransfer, withdrawToSeat } },
   seat,
   offerArgs,
 ) => {
@@ -44,23 +45,23 @@ export const sendIt = async (
     `${amt.brand} not registered in vbank`,
   );
 
-  // FIXME racy
-  if (!contractState.localAccount) {
-    contractState.localAccount = await agoric.makeAccount();
-  }
-
   const chain = await orch.getChain(chainName);
   const info = await chain.getChainInfo();
   const { chainId } = info;
   assert(typeof chainId === 'string', 'bad chainId');
   void log(`got info for chain: ${chainName} ${chainId}`);
 
-  await localTransfer(seat, contractState.localAccount, give);
+  /**
+   * @type {any} XXX methods returning vows
+   *   https://github.com/Agoric/agoric-sdk/issues/9822
+   */
+  const sharedLocalAccount = await sharedLocalAccountP;
+  await localTransfer(seat, sharedLocalAccount, give);
 
   void log(`completed transfer to localAccount`);
 
   try {
-    await contractState.localAccount.transfer(
+    await sharedLocalAccount.transfer(
       {
         value: destAddr,
         encoding: 'bech32',
@@ -70,7 +71,7 @@ export const sendIt = async (
     );
     void log(`completed transfer to ${destAddr}`);
   } catch (e) {
-    await withdrawToSeat(contractState.localAccount, seat, give);
+    await withdrawToSeat(sharedLocalAccount, seat, give);
     const errorMsg = `IBC Transfer failed ${q(e)}`;
     void log(`ERROR: ${errorMsg}`);
     seat.exit(errorMsg);
