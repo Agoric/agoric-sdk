@@ -208,15 +208,13 @@ test(
     worker.toXsnap.destroy();
     return new Uint8Array();
   },
-  issueCommandZero,
-  closeVat,
-  async function verifyResults(t, results) {
-    await verifyStdError(
-      t,
-      results,
-      'Got EOF on netstring read. Has parent died?\n',
-    );
-  },
+  worker => worker.vat.issueCommand('0'),
+  worker => worker.vat.close(),
+  (t, results) => verifyStdError(
+    t,
+    results,
+    'Got EOF on netstring read. Has parent died?\n',
+  ),
 );
 
 test(
