@@ -192,7 +192,7 @@ const testInterruption = test.macro(
       return onRequest(worker, message);
     };
     const worker = await spawnReflectiveWorker(handleCommand);
-    const results = await issueCommandAndWait(worker, beforeWait, afterWait);
+    const results = await expectTermination(worker, beforeWait, afterWait);
     // @ts-expect-error verifyResults is untyped
     verifyResults(t, results);
   },
@@ -201,6 +201,7 @@ const testInterruption = test.macro(
 test(
   'xsnap-worker complains while trying to READ an answer when pipes are closed',
   testInterruption,
+  worker => worker.vat.issueCommand('0'),
   async function onRequest(worker, _message) {
     // the worker is blocked on read here, so closing "toXsnap" pipe
     // should cause an immediate read error on worker side.
@@ -208,18 +209,15 @@ test(
     worker.toXsnap.destroy();
     return new Uint8Array();
   },
-  worker => worker.vat.issueCommand('0'),
   worker => worker.vat.close(),
-  (t, results) => verifyStdError(
-    t,
-    results,
-    'Got EOF on netstring read. Has parent died?\n',
-  ),
+  (t, results) =>
+    verifyStdError(t, results, 'Got EOF on netstring read. Has parent died?\n'),
 );
 
 test(
   'xsnap-worker complains while trying to WRITE an answer when pipes are closed',
   testInterruption,
+  worker => worker.vat.issueCommand('0'),
   async function onRequest(worker, _message) {
     // The worker is blocked on read here, so closing "fromXsnap" pipe
     // does not cause an immediate exit. However, an attempt to send an
@@ -228,19 +226,14 @@ test(
     worker.fromXsnap.destroy();
     return new Uint8Array();
   },
-  issueCommandZero,
-  closeVat,
-  async function verifyResults(t, results) {
-    await verifyStdError(t, results, 'Caught SIGPIPE. Has parent died?\n');
-  },
+  worker => worker.vat.close(),
+  (t, results) =>
+    verifyStdError(t, results, 'Caught SIGPIPE. Has parent died?\n'),
 );
 
 test(
   'xsnap-worker exits quietly when pipes are closed in quiescent state',
   testInterruption,
-  async function onRequest(_worker, _message) {
-    return new Uint8Array();
-  },
   async function beforeWait(worker) {
     // Simulating an orderly shutdown in quiescent state by closing both pipes.
     // The worker is blocked on read here, so we should close "fromXsnap" pipe first
@@ -249,8 +242,11 @@ test(
     worker.toXsnap.end();
     worker.toXsnap.destroy();
   },
-  closeVat,
-  async function verifyResults(t, results) {
+  async function onRequest(_worker, _message) {
+    return new Uint8Array();
+  },
+  worker => worker.vat.close(),
+  (t, results) => {
     const {
       beforeWaitError,
       afterWaitError,
@@ -276,19 +272,18 @@ test(
 test(
   'xsnap-worker complains while trying to WRITE a query when pipes are closed',
   testInterruption,
-  async function onRequest(_worker, _message) {
-    return new Uint8Array();
-  },
-  async function beforeWait(worker) {
+  async worker => {
     // The worker is blocked on read here, so we close "fromXsnap" pipe before
     // issuing a command. This will trigger worker's handleCommand(), which will
     // attempt to issueCommand() (query) back to us.
     worker.fromXsnap.end();
     worker.fromXsnap.destroy();
-    await issueCommandZero(worker);
+    await worker.vat.issueCommand('0');
   },
-  closeVat,
-  async function verifyResults(t, results) {
-    await verifyStdError(t, results, 'Caught SIGPIPE. Has parent died?\n');
+  async function onRequest(_worker, _message) {
+    return new Uint8Array();
   },
+  worker => worker.vat.close(),
+  (t, results) =>
+    verifyStdError(t, results, 'Caught SIGPIPE. Has parent died?\n'),
 );
