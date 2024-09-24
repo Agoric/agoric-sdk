@@ -54,38 +54,6 @@ export const forwardingMethods = rem => {
 };
 
 /**
- * Given a possibly mutable (and therefore unhardened) record, return a
- * corresponding state record that acts identically for normal
- * gets and sets, but is implemented using accessors, so it will be recognized
- * as a state record.
- *
- * @template { string | number | symbol } K
- * @template {Record<K, any>} R
- * @param {R} dataRecord
- * @returns {R}
- */
-export const makeSharedStateRecord = dataRecord =>
-  harden(
-    create(
-      objectPrototype,
-      fromEntries(
-        ownKeys(dataRecord).flatMap(key =>
-          entries(
-            getOwnPropertyDescriptors({
-              get [key]() {
-                return dataRecord[key];
-              },
-              set [key](newValue) {
-                dataRecord[key] = newValue;
-              },
-            }),
-          ),
-        ),
-      ),
-    ),
-  );
-
-/**
  * @param {Zone} outerZone
  * @param {PreparationOptions} [outerOptions]
  */
