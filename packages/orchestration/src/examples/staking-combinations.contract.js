@@ -133,7 +133,6 @@ const contract = async (
     makeCombineInvitationMakers,
     makeExtraInvitationMaker,
     flows,
-    zcf,
     zoeTools,
   });
 

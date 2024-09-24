@@ -45,7 +45,6 @@ const contract = async (
 
   // orchestrate uses the names on orchestrationFns to do a "prepare" of the associated behavior
   const orchFns = orchestrateAll(flows, {
-    zcf,
     contractState,
     zoeTools,
   });

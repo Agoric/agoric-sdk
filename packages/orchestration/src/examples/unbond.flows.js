@@ -3,17 +3,17 @@ import { makeTracer } from '@agoric/internal';
 const trace = makeTracer('UnbondAndTransfer');
 
 /**
- * @import {Orchestrator, OrchestrationFlow, CosmosDelegationResponse} from '../types.js'
+ * @import {Orchestrator, OrchestrationFlow, CosmosDelegationResponse, ZcfTools} from '../types.js'
  */
 
 /**
  * @satisfies {OrchestrationFlow}
  * @param {Orchestrator} orch
  * @param {object} ctx
- * @param {ZCF} ctx.zcf
+ * @param {ZcfTools} ctx.zcfTools
  */
-export const unbondAndTransfer = async (orch, { zcf }) => {
-  trace('zcf within the membrane', zcf);
+export const unbondAndTransfer = async (orch, { zcfTools }) => {
+  trace('zcfTools within the membrane', zcfTools);
   // Osmosis is one of the few chains with icqEnabled
   const osmosis = await orch.getChain('osmosis');
   const osmoDenom = (await osmosis.getChainInfo()).stakingTokens[0].denom;
