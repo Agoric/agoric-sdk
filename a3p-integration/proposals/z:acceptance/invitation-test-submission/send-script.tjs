@@ -1,3 +1,4 @@
+#! false node --ignore-this-line
 /* global E */
 
 /// <reference types="@agoric/vats/src/core/core-eval-env"/>
