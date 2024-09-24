@@ -1,7 +1,7 @@
 import test from 'ava';
 import {
-  agd,
   agoric,
+  makeAgd,
   evalBundles,
   GOV1ADDR,
   GOV2ADDR,
@@ -10,6 +10,7 @@ import {
 } from '@agoric/synthetic-chain';
 import { readFile, writeFile } from 'node:fs/promises';
 import { $ } from 'execa';
+import { execFileSync } from 'node:child_process';
 
 /**
  * @param {string} fileName base file name without .tjs extension
@@ -23,6 +24,16 @@ const replaceTemplateValuesInFile = async (fileName, replacements) => {
   await writeFile(`${fileName}.js`, script);
 };
 
+const showAndExec = (file, args, opts) => {
+  console.log('$', file, ...args);
+  return execFileSync(file, args, opts);
+};
+
+// @ts-expect-error string is not assignable to Buffer
+const agd = makeAgd({ execFileSync: showAndExec }).withOpts({
+  keyringBackend: 'test',
+});
+
 /**
  * @param {string[]} addresses
  * @param {string} [targetDenom]
@@ -30,7 +41,7 @@ const replaceTemplateValuesInFile = async (fileName, replacements) => {
 const getBalance = async (addresses, targetDenom = undefined) => {
   const balancesList = await Promise.all(
     addresses.map(async address => {
-      const { balances } = await agd.query('bank', 'balances', address);
+      const { balances } = await agd.query(['bank', 'balances', address]);
 
       if (targetDenom) {
         const balance = balances.find(({ denom }) => denom === targetDenom);
@@ -98,7 +109,7 @@ test.serial(`ante handler sends fee only to vbank/reserve`, async t => {
           '@type': moduleAcct,
           base_account: { address },
         },
-      } = await agd.query('auth', 'module-account', name);
+      } = await agd.query(['auth', 'module-account', name]);
 
       t.is(
         moduleAcct,
@@ -112,13 +123,21 @@ test.serial(`ante handler sends fee only to vbank/reserve`, async t => {
   const [feeCollectorStartBalances, vbankReserveStartBalances] =
     await getBalance([feeCollector, vbankReserve]);
 
-  // Send a transaction with a known fee.
   const feeAmount = 999n;
   const feeDenom = 'uist';
   const result = await agd.tx(
-    `bank send ${GOV1ADDR} ${GOV2ADDR} 1234ubld --fees=${feeAmount}${feeDenom} \
-    --from=${GOV1ADDR} --chain-id=${CHAINID} --keyring-backend=test --yes`,
+    [
+      'bank',
+      'send',
+      GOV1ADDR,
+      GOV2ADDR,
+      '1234ubld',
+      '--fees',
+      `${feeAmount}${feeDenom}`,
+    ],
+    { chainId: CHAINID, from: GOV1ADDR, yes: true },
   );
+
   await waitForBlock();
   t.like(result, { code: 0 });
 
