@@ -125,9 +125,13 @@ async function spawnReflectiveWorker(handleCommand) {
 }
 
 /**
- * @param {ReturnType<spawnReflectiveWorker>} worker
- * @param {(worker: typeof worker) => Promise<void>} beforeWait
- * @param {(worker: typeof worker) => Promise<void>} afterWait
+ * @typedef {Awaited<ReturnType<spawnReflectiveWorker>>} ReflectiveWorker
+ */
+
+/**
+ * @param {ReflectiveWorker} worker
+ * @param {(worker: ReflectiveWorker) => Promise<void>} beforeWait
+ * @param {(worker: ReflectiveWorker) => Promise<void>} afterWait
  */
 async function expectTermination(worker, beforeWait, afterWait) {
   let beforeWaitError;
