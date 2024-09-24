@@ -290,7 +290,7 @@ export const prepareLocalOrchestrationAccountKit = (
            *   {
            *     amount: AmountArg;
            *     destination: ChainAddress;
-           *     opts: IBCMsgTransferOptions;
+           *     opts?: IBCMsgTransferOptions;
            *   }
            * >}
            */

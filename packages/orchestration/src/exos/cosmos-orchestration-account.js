@@ -681,7 +681,7 @@ export const prepareCosmosOrchestrationAccountKit = (
            *   {
            *     amount: AmountArg;
            *     destination: ChainAddress;
-           *     opts: IBCMsgTransferOptions;
+           *     opts?: IBCMsgTransferOptions;
            *   }
            * >}
            */
