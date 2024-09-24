@@ -179,6 +179,9 @@ export const start = async (zcf, privateArgs, baggage) => {
       },
       makeCharterMemberInvitation: () =>
         zcf.makeInvitation(charterMemberHandler, INVITATION_MAKERS_DESC),
+      shutdown: () => {
+        zcf.shutdown('EC Charter Shutdown');
+      },
     },
   );
 

@@ -18,7 +18,7 @@ const runConfig = {
     gov1: 'agoric1ldmtatp24qlllgxmrsjzcpe20fvlkp448zcuce',
     // gov2: 'agoric140dmkrz2e42ergjj7gyvejhzmjzurvqeq82ang',
     // gov3: 'agoric1w8wktaur4zf8qmmtn3n7x3r0jhsjkjntcm3u6h',
-    gov4: 'agoric1p2aqakv3ulz4qfy2nut86j9gx0dx0yw09h96md',
+    // gov4: 'agoric1p2aqakv3ulz4qfy2nut86j9gx0dx0yw09h96md',
   },
 };
 
@@ -266,18 +266,27 @@ const addGovernorsToEconCharter = async ({
   },
 }) => {
   const { creatorFacet } = E.get(econCharterKit);
+
+  // Adding PSM Instances
   const psmKitMap = await psmKit;
+  await Promise.all(
+    [...psmKitMap.values()].map(async obj => {
+      return E(creatorFacet).addInstance(
+        obj.psm,
+        obj.psmGovernorCreatorFacet,
+        obj.label,
+      );
+    }),
+  );
 
-  const psmGovernors = [...psmKitMap.values()].map(obj => {
-    return {
-      label: obj.label,
-      instanceP: obj.psm,
-      facetP: obj.psmGovernorCreatorFacet,
-    };
-  });
-
+  // Add Instances for other contracts
   await Promise.all(
     [
+      {
+        label: 'reserve',
+        instanceP: reserve,
+        facetP: E.get(reserveKit).governorCreatorFacet,
+      },
       {
         label: 'VaultFactory',
         instanceP: VaultFactory,
@@ -288,13 +297,14 @@ const addGovernorsToEconCharter = async ({
         instanceP: auctioneer,
         facetP: E.get(auctioneerKit).governorCreatorFacet,
       },
-      ...psmGovernors,
     ].map(async ({ label, instanceP, facetP }) => {
       const [instance, govFacet] = await Promise.all([instanceP, facetP]);
+
       return E(creatorFacet).addInstance(instance, govFacet, label);
     }),
   );
 };
+
 harden(addGovernorsToEconCharter);
 
 const main = async permittedPowers => {
@@ -307,6 +317,10 @@ const main = async permittedPowers => {
     E(psmKit.psmGovernorCreatorFacet).replaceElectorate(newElectoratePoser),
   );
   await Promise.all(replacements);
+
+  await E(
+    E.get(permittedPowers.consume.reserveKit).governorCreatorFacet,
+  ).replaceElectorate(newElectoratePoser);
 
   await E(
     E.get(permittedPowers.consume.vaultFactoryKit).governorCreatorFacet,
