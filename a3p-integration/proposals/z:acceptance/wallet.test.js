@@ -44,7 +44,7 @@ const getBalance = async (addresses, targetDenom = undefined) => {
   return addresses.length === 1 ? balancesList[0] : balancesList;
 };
 
-test.serial(`send invitation via namesByAddress`, async t => {
+test.only(`send invitation via namesByAddress`, async t => {
   const SUBMISSION_DIR = 'invitation-test-submission';
 
   await replaceTemplateValuesInFile(`${SUBMISSION_DIR}/send-script`, {

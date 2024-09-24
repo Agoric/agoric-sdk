@@ -24,7 +24,13 @@ test.serial('attempt to open vaults under the minimum amount', async t => {
   const activeVaultsBefore = await agops.vaults('list', '--from', USER1ADDR);
   await bankSend(USER1ADDR, `20000000${ATOM_DENOM}`);
 
-  const mint = '3.0';
+  const governancePath = 'published.vaultFactory.governance';
+  const governanceDataString = await queryVstorage(governancePath);
+  const governanceData = getFormattedVaultData(governanceDataString);
+  const minInitialDebt = governanceData.current.MinInitialDebt.value.value;
+  const minInitialDebtNumber = Number(minInitialDebt) / Math.pow(10, 6);
+
+  const mint = (minInitialDebtNumber - 1.0).toString();
   const collateral = '5.0';
   await t.throwsAsync(() => openVault(USER1ADDR, mint, collateral));
 
