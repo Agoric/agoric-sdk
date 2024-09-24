@@ -1,5 +1,5 @@
 #! /usr/bin/env node
-/* global setTimeout */
+/* eslint-env node */
 import '@endo/init';
 
 import fs from 'fs';

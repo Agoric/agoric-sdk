@@ -1,4 +1,4 @@
-/* global process */
+/* eslint-env node */
 import '@endo/init';
 
 import anylogger from 'anylogger';

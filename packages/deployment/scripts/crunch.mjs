@@ -1,7 +1,6 @@
 #! /usr/bin/env node
+/* eslint-env node */
 // crunch.mjs - crunch a kvstore trace file's writes into TSV
-
-/* global process,Buffer */
 
 import fs from 'fs';
 import ReadlineTransform from 'readline-transform';

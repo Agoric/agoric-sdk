@@ -1,4 +1,4 @@
-/* global process */
+/* eslint-env node */
 import { Command } from 'commander';
 import path from 'path';
 import url from 'url';

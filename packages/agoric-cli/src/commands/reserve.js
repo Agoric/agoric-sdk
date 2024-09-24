@@ -1,6 +1,6 @@
 // @ts-check
 /* eslint-disable func-names */
-/* global fetch, process */
+/* eslint-env node */
 import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
 import { Command } from 'commander';
 import { makeRpcUtils } from '../lib/rpc.js';
