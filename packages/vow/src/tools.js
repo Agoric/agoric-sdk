@@ -37,7 +37,7 @@ import { makeWhen } from './when.js';
  *
  * Does not survive upgrade (even if specimenP is a durable Vow).
  *
- * Use only if the Vow will resolve _promptly_.
+ * Use only if the Vow will resolve _promptly_ {@see {@link @agoric/swingset-vat/docs/async.md}}.
  */
 
 /**
