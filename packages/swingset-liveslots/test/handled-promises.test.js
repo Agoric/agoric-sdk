@@ -2,7 +2,7 @@ import test from 'ava';
 
 import { Fail } from '@endo/errors';
 import { Far } from '@endo/marshal';
-import { M, provideLazy as provide } from '@agoric/store';
+import { M } from '@agoric/store';
 import { makePromiseKit } from '@endo/promise-kit';
 // Disabled to avoid circular dependencies.
 // import { makeStoreUtils } from '@agoric/vat-data/src/vat-data-bindings.js';
@@ -10,78 +10,10 @@ import { makePromiseKit } from '@endo/promise-kit';
 import { kslot, kser } from '@agoric/kmarshal';
 import { setupTestLiveslots } from './liveslots-helpers.js';
 import { makeResolve, makeReject } from './util.js';
+import { makeExoUtils } from './exo-utils.js';
 
 // eslint-disable-next-line no-unused-vars
 const compareEntriesByKey = ([ka], [kb]) => (ka < kb ? -1 : 1);
-
-// Paritally duplicates @agoric/vat-data to avoid circular dependencies.
-const makeExoUtils = VatData => {
-  const { defineDurableKind, makeKindHandle, watchPromise } = VatData;
-
-  const provideKindHandle = (baggage, kindName) =>
-    provide(baggage, `${kindName}_kindHandle`, () => makeKindHandle(kindName));
-
-  const emptyRecord = harden({});
-  const initEmpty = () => emptyRecord;
-
-  const defineDurableExoClass = (
-    kindHandle,
-    interfaceGuard,
-    init,
-    methods,
-    options,
-  ) =>
-    defineDurableKind(kindHandle, init, methods, {
-      ...options,
-      thisfulMethods: true,
-      interfaceGuard,
-    });
-
-  const prepareExoClass = (
-    baggage,
-    kindName,
-    interfaceGuard,
-    init,
-    methods,
-    options = undefined,
-  ) =>
-    defineDurableExoClass(
-      provideKindHandle(baggage, kindName),
-      interfaceGuard,
-      init,
-      methods,
-      options,
-    );
-
-  const prepareExo = (
-    baggage,
-    kindName,
-    interfaceGuard,
-    methods,
-    options = undefined,
-  ) => {
-    const makeSingleton = prepareExoClass(
-      baggage,
-      kindName,
-      interfaceGuard,
-      initEmpty,
-      methods,
-      options,
-    );
-    return provide(baggage, `the_${kindName}`, () => makeSingleton());
-  };
-
-  return {
-    defineDurableKind,
-    makeKindHandle,
-    watchPromise,
-
-    provideKindHandle,
-    defineDurableExoClass,
-    prepareExoClass,
-    prepareExo,
-  };
-};
 
 // cf. packages/SwingSet/test/vat-durable-promise-watcher.js
 const buildPromiseWatcherRootObject = (vatPowers, vatParameters, baggage) => {

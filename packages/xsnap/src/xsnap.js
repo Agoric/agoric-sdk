@@ -1,4 +1,4 @@
-/* global process */
+/* eslint-env node */
 /* eslint no-await-in-loop: ["off"] */
 
 import { finished } from 'stream/promises';

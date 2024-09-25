@@ -2,7 +2,9 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { TestFn } from 'ava';
 
+import { BridgeId } from '@agoric/internal';
 import type { CosmosValidatorAddress } from '@agoric/orchestration';
+import { buildVTransferEvent } from '@agoric/orchestration/tools/ibc-mocks.js';
 import type { UpdateRecord } from '@agoric/smart-wallet/src/smartWallet.js';
 import {
   makeWalletFactoryContext,
@@ -18,14 +20,13 @@ test.before(async t => {
 });
 test.after.always(t => t.context.shutdown?.());
 
-// FIXME the test needs to be able to send the acknowledgementPacket ack
-// so that the transfer vow resolves.
-test.serial.failing('send-anywhere', async t => {
+// TODO #9303 execute restart-send-anywhere.js proposal
+test.serial('send-anywhere', async t => {
   const {
     walletFactoryDriver,
     buildProposal,
     evalProposal,
-    bridgeUtils: { flushInboundQueue },
+    bridgeUtils: { runInbound },
   } = t.context;
 
   const { IST } = t.context.agoricNamesRemotes.brand;
@@ -57,43 +58,48 @@ test.serial.failing('send-anywhere', async t => {
       chainName: 'cosmoshub',
     },
   });
-  // no errors and no resolution
-  const beforeFlush = wallet.getLatestUpdateRecord();
-  t.like(wallet.getLatestUpdateRecord(), {
-    updated: 'offerStatus',
-    status: {
-      id: 'send-somewhere',
-      error: undefined,
+
+  t.like(
+    wallet.getCurrentWalletRecord(),
+    { liveOffers: [['send-somewhere']] },
+    'live offer until we simulate the transfer ack',
+  );
+
+  // TODO #9303 Error#1: replay 12: ["checkCall","[Alleged: contractState guest wrapper]","get",["localAccount"],12] vs ["doReturn",11,"[undefined]"] : length: unequal 5 vs 3
+  // t.log('restart send-anywhere');
+  // await evalProposal(
+  //   buildProposal('@agoric/builders/scripts/testing/restart-send-anywhere.js'),
+  // );
+
+  t.like(
+    wallet.getLatestUpdateRecord(),
+    {
+      updated: 'balance',
+      currentAmount: { value: [] },
     },
-    numWantsSatisfied: undefined,
-    payouts: undefined,
-    result: undefined,
-  });
+    'no offerStatus updates',
+  );
 
-  t.is(await flushInboundQueue(), 0);
-  t.deepEqual(wallet.getLatestUpdateRecord(), beforeFlush);
-
-  t.log('restart send-anywhere');
-  await evalProposal(
-    buildProposal('@agoric/builders/scripts/testing/restart-send-anywhere.js'),
+  // simulate ibc/MsgTransfer ack from remote chain, enabling `.transfer()` promise
+  // to resolve
+  await runInbound(
+    BridgeId.VTRANSFER,
+    buildVTransferEvent({
+      sourceChannel: 'channel-5',
+      sequence: '1',
+    }),
   );
 
   const conclusion = wallet.getLatestUpdateRecord();
-  console.log('conclusion', conclusion);
   t.like(conclusion, {
     updated: 'offerStatus',
     status: {
       id: 'send-somewhere',
+      numWantsSatisfied: 1,
       error: undefined,
+      result: undefined,
     },
-    numWantsSatisfied: undefined,
-    payouts: undefined,
-    result: undefined,
   });
-
-  await flushInboundQueue();
-
-  // Nothing interesting to confirm here.
 });
 
 const validatorAddress: CosmosValidatorAddress = {

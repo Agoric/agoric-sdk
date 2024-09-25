@@ -1,4 +1,4 @@
-/* global process */
+/* eslint-env node */
 import { makeHelpers } from '@agoric/deploy-script-support';
 
 import { getManifestForInviteCommittee } from '@agoric/inter-protocol/src/proposals/committee-proposal.js';

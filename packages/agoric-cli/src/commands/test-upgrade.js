@@ -1,5 +1,5 @@
 // @ts-check
-/* global process */
+/* eslint-env node */
 import { Fail } from '@endo/errors';
 import { CommanderError } from 'commander';
 import { normalizeAddressWithOptions } from '../lib/chain.js';

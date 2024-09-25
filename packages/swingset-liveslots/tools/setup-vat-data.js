@@ -12,7 +12,9 @@ import { makeFakeVirtualStuff } from './fakeVirtualSupport.js';
 
 const { WeakMap, WeakSet } = globalThis;
 
-/** @type {ReturnType<makeFakeVirtualStuff>} */
+/** @typedef {ReturnType<typeof makeFakeVirtualStuff>} FakeVomKit */
+
+/** @type {FakeVomKit} */
 let fakeVomKit;
 
 globalThis.VatData = harden({
@@ -44,18 +46,43 @@ globalThis.VatData = harden({
 
 globalThis[PassStyleOfEndowmentSymbol] = passStyleOf;
 
-export const reincarnate = (options = {}) => {
-  const { fakeStore = new Map(), fakeVomKit: fvk } = options;
+/**
+ * @typedef {import("@agoric/internal").Simplify<
+ *   Omit<NonNullable<Parameters<typeof makeFakeVirtualStuff>[0]>, 'WeakMap' | 'WeakSet'> &
+ *   { fakeVomKit: FakeVomKit; fakeStore: Map<string, string> }
+ * >} ReincarnateOptions
+ */
 
-  if (options.fakeVomKit) {
+/**
+ *
+ * @param {Partial<ReincarnateOptions>} options
+ * @returns {Omit<ReincarnateOptions, 'fakeVomKit'>}
+ */
+export const flushIncarnation = (options = {}) => {
+  const { fakeVomKit: fvk = fakeVomKit, ...fakeStuffOptions } = options;
+
+  if (fvk) {
     fvk.vom.flushStateCache();
     fvk.cm.flushSchemaCache();
     fvk.vrm.flushIDCounters();
   }
 
+  // Clone previous fakeStore (if any) to avoid mutations from previous incarnation
+  const fakeStore = new Map(options.fakeStore);
+
+  return { ...fakeStuffOptions, fakeStore };
+};
+
+/**
+ *
+ * @param {Partial<ReincarnateOptions>} options
+ * @returns {ReincarnateOptions}
+ */
+export const reincarnate = (options = {}) => {
+  const clonedIncarnation = flushIncarnation(options);
+
   fakeVomKit = makeFakeVirtualStuff({
-    ...options,
-    fakeStore,
+    ...clonedIncarnation,
     WeakMap,
     WeakSet,
   });
@@ -65,5 +92,5 @@ export const reincarnate = (options = {}) => {
   // @ts-expect-error ditto
   globalThis.WeakSet = fakeVomKit.vom.VirtualObjectAwareWeakSet;
 
-  return { ...options, fakeStore, fakeVomKit };
+  return { ...clonedIncarnation, fakeVomKit };
 };

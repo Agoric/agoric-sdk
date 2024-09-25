@@ -28,12 +28,14 @@ class FakeFinalizationRegistry {
 }
 
 class FakeWeakRef {
+  #target;
+
   constructor(target) {
-    this.target = target;
+    this.#target = target;
   }
 
   deref() {
-    return this.target; // strong ref
+    return this.#target; // strong ref
   }
 }
 
@@ -41,6 +43,7 @@ export function makeFakeLiveSlotsStuff(options = {}) {
   let vrm;
   function setVrm(vrmToUse) {
     assert(!vrm, 'vrm already configured');
+    vrmToUse.initializeIDCounters();
     vrm = vrmToUse;
   }
 
@@ -174,6 +177,7 @@ export function makeFakeLiveSlotsStuff(options = {}) {
   // and the WeakRef may or may not contain the target value. Use
   // options={weak:true} to match that behavior, or the default weak:false to
   // keep strong references.
+  const WeakRefForSlot = weak ? RealWeakRef : FakeWeakRef;
   const valToSlot = new WeakMap();
   const slotToVal = new Map();
 
@@ -183,7 +187,7 @@ export function makeFakeLiveSlotsStuff(options = {}) {
 
   function getValForSlot(slot) {
     const d = slotToVal.get(slot);
-    return d && (weak ? d.deref() : d);
+    return d && d.deref();
   }
 
   function requiredValForSlot(slot) {
@@ -193,7 +197,7 @@ export function makeFakeLiveSlotsStuff(options = {}) {
   }
 
   function setValForSlot(slot, val) {
-    slotToVal.set(slot, weak ? new RealWeakRef(val) : val);
+    slotToVal.set(slot, new WeakRefForSlot(val));
   }
 
   function convertValToSlot(val) {
@@ -275,6 +279,7 @@ export function makeFakeLiveSlotsStuff(options = {}) {
   return {
     syscall,
     allocateExportID,
+    allocatePromiseID,
     allocateCollectionID,
     getSlotForVal,
     requiredValForSlot,
@@ -339,7 +344,7 @@ export function makeFakeWatchedPromiseManager(
  * @param {object} [options]
  * @param {number} [options.cacheSize]
  * @param {boolean} [options.relaxDurabilityRules]
- * @param {Map<any, any>} [options.fakeStore]
+ * @param {Map<string, string>} [options.fakeStore]
  * @param {WeakMapConstructor} [options.WeakMap]
  * @param {WeakSetConstructor} [options.WeakSet]
  * @param {boolean} [options.weak]

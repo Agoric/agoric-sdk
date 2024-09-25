@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/* global process */
+/* eslint-env node */
 import * as childProcessTop from 'child_process';
 import { fileURLToPath } from 'url';
 import fsTop from 'fs';

@@ -1,6 +1,6 @@
 // @ts-check
 /* eslint-disable func-names */
-/* global fetch, process */
+/* eslint-env node */
 import {
   iterateLatest,
   makeCastingSpec,

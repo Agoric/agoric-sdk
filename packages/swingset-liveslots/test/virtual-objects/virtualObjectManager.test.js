@@ -127,8 +127,8 @@ test('multifaceted virtual objects', t => {
 
   flushStateCache();
   t.deepEqual(log.splice(0), [
-    `get kindIDID => undefined`,
     `get idCounters => undefined`,
+    `get kindIDID => undefined`,
     `set kindIDID 1`,
     `set vom.vkind.2.descriptor {"kindID":"2","tag":"multithing"}`,
     `set vom.${kid}/1 ${multiThingVal('foo', 1)}`,
@@ -203,8 +203,8 @@ test('virtual object operations', t => {
   // t3-0: 'thing-3' 200 0
   const thing4 = makeThing('thing-4', 300); // [t4-0* t3-0* t2-0* t1-0*]
   // t4-0: 'thing-4' 300 0
-  t.is(log.shift(), `get kindIDID => undefined`);
   t.is(log.shift(), `get idCounters => undefined`);
+  t.is(log.shift(), `get kindIDID => undefined`);
   t.is(log.shift(), `set kindIDID 1`);
   t.is(log.shift(), `set vom.vkind.2.descriptor {"kindID":"2","tag":"thing"}`);
   t.is(log.shift(), `set vom.vkind.3.descriptor {"kindID":"3","tag":"zot"}`);
@@ -468,8 +468,8 @@ test('symbol named methods', t => {
   // t1-0: 'thing-1' 0 0
   const thing2 = makeThing('thing-2', 100); // [t1-0* t2-0*]
   // t2-0: 'thing-2' 100 0
-  t.is(log.shift(), `get kindIDID => undefined`);
   t.is(log.shift(), `get idCounters => undefined`);
+  t.is(log.shift(), `get kindIDID => undefined`);
   t.is(log.shift(), `set kindIDID 1`);
   t.is(
     log.shift(),
@@ -649,8 +649,8 @@ test('virtual object gc', t => {
     },
   });
 
-  t.is(log.shift(), `get kindIDID => undefined`);
   t.is(log.shift(), `get idCounters => undefined`);
+  t.is(log.shift(), `get kindIDID => undefined`);
   t.is(log.shift(), `set kindIDID 1`);
   const skit = [
     'storeKindIDTable',

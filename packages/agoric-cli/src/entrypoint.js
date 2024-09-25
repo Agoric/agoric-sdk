@@ -1,7 +1,6 @@
 #!/usr/bin/env node
+/* eslint-env node */
 // @jessie-check
-
-/* global process */
 
 import '@endo/init/pre.js';
 import 'esm';

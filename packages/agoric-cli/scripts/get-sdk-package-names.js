@@ -1,5 +1,5 @@
 #! /usr/bin/env node
-/* global process, Buffer */
+/* eslint-env node */
 import { spawn } from 'child_process';
 import { basename } from 'path';
 

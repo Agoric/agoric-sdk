@@ -1,5 +1,5 @@
 // @ts-check
-/* global Buffer */
+/* eslint-env node */
 /// <reference types="ses" />
 
 import fs from 'node:fs';
