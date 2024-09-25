@@ -627,6 +627,9 @@ export const makeSwingsetTestKit = async (
       console.log('🧻');
       return i;
     },
+    async runInbound(bridgeId: BridgeIdValue, msg: unknown) {
+      await runUtils.queueAndRun(() => inbound(bridgeId, msg), true);
+    },
   };
 
   return {
