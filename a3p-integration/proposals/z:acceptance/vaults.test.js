@@ -15,7 +15,7 @@ import {
 } from '@agoric/synthetic-chain';
 import { getBalance } from './test-lib/utils.js';
 
-test.only('attempt to open vaults under the minimum amount', async t => {
+test.serial('attempt to open vaults under the minimum amount', async t => {
   const activeVaultsBefore = await agops.vaults('list', '--from', USER1ADDR);
   await bankSend(USER1ADDR, `20000000${ATOM_DENOM}`);
   t.log('active vaults before:', activeVaultsBefore);
