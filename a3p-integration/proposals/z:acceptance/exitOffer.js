@@ -28,9 +28,9 @@ const badUsage = () => {
   throw reason;
 };
 
-const { stringify: q } = JSON;
+const { stringify: jq } = JSON;
 // limited to JSON data: no remotables/promises; no undefined.
-const toCapData = data => ({ body: `#${q(data)}`, slots: [] });
+const toCapData = data => ({ body: `#${jq(data)}`, slots: [] });
 
 const { entries } = Object;
 /**
@@ -64,7 +64,7 @@ const withTempFile = async (tail, fn) => {
 
 const doAction = async (action, from) => {
   await withTempFile('offer.json', async tmpOffer => {
-    await writeFile(tmpOffer, q(toCapData(action)));
+    await writeFile(tmpOffer, jq(toCapData(action)));
 
     const out = await showAndRun('agoric', [
       'wallet',
