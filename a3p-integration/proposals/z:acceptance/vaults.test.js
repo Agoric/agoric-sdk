@@ -13,6 +13,7 @@ import {
   USER1ADDR,
   waitForBlock,
 } from '@agoric/synthetic-chain';
+import { getBalance } from './test-lib/utils.js';
 
 test.serial('attempt to open vaults under the minimum amount', async t => {
   const activeVaultsBefore = await agops.vaults('list', '--from', USER1ADDR);
@@ -114,13 +115,28 @@ test.serial('close vault', async t => {
   const vaultPath = activeVaults[activeVaults.length - 1];
   const vaultID = vaultPath.split('.').pop();
 
+  let vaultData = await getContractInfo(vaultPath, { agoric, prefix: '' });
+  const vaultCollateral = vaultData.locked.value;
+  t.log('vault collateral:', vaultCollateral);
+
+  const atomBalanceBefore = await getBalance([USER1ADDR], ATOM_DENOM);
+  t.log('atom balance before', atomBalanceBefore);
+
   await closeVault(USER1ADDR, vaultID, 6.03);
   await waitForBlock();
 
-  const vaultData = await getContractInfo(vaultPath, { agoric, prefix: '' });
+  const atomBalanceAfter = await getBalance([USER1ADDR], ATOM_DENOM);
+  t.log('atom balance after', atomBalanceAfter);
+
+  vaultData = await getContractInfo(vaultPath, { agoric, prefix: '' });
   const vaultState = vaultData.vaultState;
   t.log('vault state:', vaultState);
 
+  t.is(
+    atomBalanceAfter,
+    atomBalanceBefore + Number(vaultCollateral),
+    'The ATOM balance should increase by the vault collateral amount',
+  );
   t.is(vaultState, 'closed', 'The vault should be in the "closed" state.');
 });
 
@@ -200,12 +216,27 @@ test.serial('close second vault', async t => {
   const vaultPath = activeVaults[activeVaults.length - 1];
   const vaultID = vaultPath.split('.').pop();
 
+  let vaultData = await getContractInfo(vaultPath, { agoric, prefix: '' });
+  const vaultCollateral = vaultData.locked.value;
+  t.log('vault collateral:', vaultCollateral);
+
+  const atomBalanceBefore = await getBalance([user2Address], ATOM_DENOM);
+  t.log('atom balance before', atomBalanceBefore);
+
   await closeVault(user2Address, vaultID, 6.035);
   await waitForBlock();
 
-  const vaultData = await getContractInfo(vaultPath, { agoric, prefix: '' });
+  const atomBalanceAfter = await getBalance([user2Address], ATOM_DENOM);
+  t.log('atom balance after', atomBalanceAfter);
+
+  vaultData = await getContractInfo(vaultPath, { agoric, prefix: '' });
   const vaultState = vaultData.vaultState;
   t.log('vault state:', vaultState);
 
+  t.is(
+    atomBalanceAfter,
+    atomBalanceBefore + Number(vaultCollateral),
+    'The ATOM balance should increase by the vault collateral amount',
+  );
   t.is(vaultState, 'closed', 'The vault should be in the "closed" state.');
 });
