@@ -22,7 +22,16 @@ test.only('attempt to open vaults under the minimum amount', async t => {
 
   const mint = '3.0';
   const collateral = '5.0';
-  await t.throwsAsync(() => openVault(USER1ADDR, mint, collateral));
+  const error = await t.throwsAsync(() =>
+    openVault(USER1ADDR, mint, collateral),
+  );
+
+  t.true(
+    error?.message.includes(
+      'Error: Vault creation requires a minInitialDebt of {"brand":"[Alleged: IST brand]","value":"[5000000n]"}',
+    ),
+    'Error message does not contain the expected text',
+  );
 
   const activeVaultsAfter = await agops.vaults('list', '--from', USER1ADDR);
   t.log('active vaults after:', activeVaultsAfter);
