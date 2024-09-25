@@ -1,59 +1,18 @@
 import test from 'ava';
 import {
   agoric,
-  makeAgd,
   evalBundles,
   GOV1ADDR,
   GOV2ADDR,
   CHAINID,
   waitForBlock,
 } from '@agoric/synthetic-chain';
-import { readFile, writeFile } from 'node:fs/promises';
+import {
+  agd,
+  getBalance,
+  replaceTemplateValuesInFile,
+} from './test-lib/utils.js';
 import { $ } from 'execa';
-import { execFileSync } from 'node:child_process';
-
-/**
- * @param {string} fileName base file name without .tjs extension
- * @param {Record<string, string>} replacements
- */
-const replaceTemplateValuesInFile = async (fileName, replacements) => {
-  let script = await readFile(`${fileName}.tjs`, 'utf-8');
-  for (const [template, value] of Object.entries(replacements)) {
-    script = script.replaceAll(`{{${template}}}`, value);
-  }
-  await writeFile(`${fileName}.js`, script);
-};
-
-const showAndExec = (file, args, opts) => {
-  console.log('$', file, ...args);
-  return execFileSync(file, args, opts);
-};
-
-// @ts-expect-error string is not assignable to Buffer
-const agd = makeAgd({ execFileSync: showAndExec }).withOpts({
-  keyringBackend: 'test',
-});
-
-/**
- * @param {string[]} addresses
- * @param {string} [targetDenom]
- */
-const getBalance = async (addresses, targetDenom = undefined) => {
-  const balancesList = await Promise.all(
-    addresses.map(async address => {
-      const { balances } = await agd.query(['bank', 'balances', address]);
-
-      if (targetDenom) {
-        const balance = balances.find(({ denom }) => denom === targetDenom);
-        return Number(balance.amount);
-      }
-
-      return balances;
-    }),
-  );
-
-  return addresses.length === 1 ? balancesList[0] : balancesList;
-};
 
 test.serial(`send invitation via namesByAddress`, async t => {
   const SUBMISSION_DIR = 'invitation-test-submission';
@@ -63,8 +22,6 @@ test.serial(`send invitation via namesByAddress`, async t => {
   });
 
   await evalBundles(SUBMISSION_DIR);
-  await waitForBlock(2);
-
   const update = await agoric.follow('-lF', `:published.wallet.${GOV1ADDR}`);
 
   t.is(
