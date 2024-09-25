@@ -243,7 +243,7 @@ test(
 test(
   'xsnap-worker exits quietly when pipes are closed in quiescent state (waiting to READ a command)',
   testInterruption,
-  async function beforeWait(worker) {
+  async worker => {
     // Simulating an orderly shutdown in quiescent state by closing both pipes.
     // The worker is blocked on read here, so we should close "fromXsnap" pipe first
     worker.fromXsnap.end();
