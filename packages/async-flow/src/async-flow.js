@@ -247,6 +247,19 @@ export const prepareAsyncFlowTools = (outerZone, outerOptions = {}) => {
               guestResultP,
               gFulfillment => {
                 if (bijection.hasGuest(guestResultP)) {
+                  try {
+                    !log.isReplaying() ||
+                      admin.panic(
+                        makeError(
+                          X`guest fulfilled with ${gFulfillment} before finishing replay`,
+                        ),
+                      );
+                  } catch (hostPanic) {
+                    // Catch the hostPanic or else it becomes an unhandled rejection.
+                    // FIXME: Do we want to surface the panic in the outcome?
+                    // outcomeKit.resolver.reject(hostPanic);
+                    return;
+                  }
                   outcomeKit.resolver.resolve(
                     membrane.guestToHost(gFulfillment),
                   );

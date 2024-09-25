@@ -149,8 +149,8 @@ const testBadShortReplay = async (t, zone) => {
 
   const { guestMethod } = {
     async guestMethod(_gOrch7, _g1, _p3) {
-      t.log('  badReplay return early');
-      resolveStep(true);
+      t.log('  badShortReplay return early');
+      resolveStep(eventLoopIteration()); // resolveStep(true) is too fast.
       return 'bad';
     },
   };
@@ -174,7 +174,7 @@ const testBadShortReplay = async (t, zone) => {
   await promiseStep;
 
   const replayProblem = flow.getOptFatalProblem();
-  t.log('  badShortReplay failures', replayProblem);
+  t.log('  badShortReplay replayProblem', replayProblem);
   t.true(replayProblem instanceof Error);
 
   const outcome = when(outcomeV);
@@ -190,7 +190,7 @@ const testBadShortReplay = async (t, zone) => {
   t.log('badShortReplay done');
 };
 
-test.serial.failing('test durable async-flow early completion', async t => {
+test.serial('test durable async-flow early completion', async t => {
   annihilate();
   const zone1 = makeDurableZone(getBaggage(), 'durableRoot');
   await testFirstPlay(t, zone1);
