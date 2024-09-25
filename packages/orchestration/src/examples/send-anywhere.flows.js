@@ -54,12 +54,12 @@ export const sendIt = async (
 
   try {
     await contractState.localAccount.transfer(
-      { denom, value: amt.value },
       {
         value: destAddr,
         encoding: 'bech32',
         chainId,
       },
+      { denom, value: amt.value },
     );
   } catch (e) {
     await withdrawToSeat(contractState.localAccount, seat, give);

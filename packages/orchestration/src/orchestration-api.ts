@@ -204,8 +204,8 @@ export interface OrchestrationAccountI {
    * TODO document the mapping from the address to the destination chain.
    */
   transfer: (
-    amount: AmountArg,
     destination: ChainAddress,
+    amount: AmountArg,
     opts?: IBCMsgTransferOptions,
   ) => Promise<void>;
 
