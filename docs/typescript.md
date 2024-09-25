@@ -4,41 +4,54 @@ Our use of TypeScript has to accommodate both .js development in agoric-sdk (whi
 
 ## Best practices
 
-- `.d.ts` for types modules
+### Exported types
+
+- `.ts` for modules defining exported types
 - package entrypoint(s) exports explicit types
+- use `/** @import ` comments to import types without getting the runtime module
+
+### Ambient types
+
+- `.d.ts` for modules defining ambient types
+- import types using [triple-slash reference](https://www.typescriptlang.org/docs/handbook/triple-slash-directives.html#-reference-types-)
 - for packages upon which other packages expect ambient types:
   - `exported.js` supplies ambients
 - don't use runtime imports to get types ([issue](https://github.com/Agoric/agoric-sdk/issues/6512))
 
-## .d.ts modules
+## .ts modules
 
 We cannot use `.ts` files in any modules that are transitively imported into an Endo bundle. The reason is that the Endo bundler doesn't understand `.ts` syntax and we don't want it to until we have sufficient auditability of the transformation. Moreover we've tried to avoid a build step in order to import a module. (The one exception so far is `@agoric/cosmic-proto` because we codegen the types. Those modules are written in `.ts` syntax and build to `.js` by a build step that creates `dist`, which is the package export.)
 
-### Benefits
+The trick is to use `.ts` for defining types and then make them available in the packages using a `types-index` module that has both `.js` and `.d.ts` files.
 
-- A `.d.ts` module allows defining the type in `.ts` syntax, without any risk that it will be included in runtime code. The `.js` is what actually gets imported.
-- Only `.d.ts` files can be used in [triple-slash reference types](https://www.typescriptlang.org/docs/handbook/triple-slash-directives.html#-reference-types-)
+**Entrypoint (index.js)**
+```js
+// eslint-disable-next-line import/export
+export * from './src/types-index.js'; // no named exports
+```
 
-The are some consequences to this approach.
-
-### File pair
-
-You have to create a `.js` and `.d.ts` pair for each module. Usually it's of the form,
-
+**types-index.js**
 ```js
 // Empty JS file to correspond with its .d.ts twin
 export {};
 ```
 
-### Lack of type checking
+**types-index.d.ts**
+```ts
+// Export all the types this package provides
+export * from './types.js';
+export * from './other-types.js';
+```
 
-We have `"skipLibCheck": true"` in the root tsconfig.json because some libraries we depend on have their own type errors. (A massive one is the output of Telescope, used in `@agoric/cosmic-proto`.)
+The actual type implementation is then written in `types.ts` and `other-types.ts` files (per the example above).
+These files are never runtime imported as they are only linked through a `.d.ts` file.
+
+
+## d.ts modules
+
+We take on the complexity above of indirection because `.d.ts` files aren't checked. We have `"skipLibCheck": true"` in the root tsconfig.json because some libraries we depend on have their own type errors. (A massive one is the output of Telescope, used in `@agoric/cosmic-proto`.)
 
 This means that the types you write in `.d.ts` file won't be checked by `tsc`. To gain some confidence, you can temporarily flip that setting in a package's own `tsconfig.json` and pay attention to only the relevant errors.
-
-### Alternatives
-
-We've experimented with having `.ts` files. It works, and gets around the skipLibCheck problem, but it complicates the build and exports. It also necessitates a build step even in package that don't currently need it.
 
 ## entrypoint
 
