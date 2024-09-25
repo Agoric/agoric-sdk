@@ -3,7 +3,7 @@ import {
   getBaggage,
   nextLife,
   test,
-} from './prepare-test-env-ava.js';
+} from '@agoric/swingset-vat/tools/prepare-strict-test-env-ava.js';
 
 import { makeDurableZone } from '../durable.js';
 import { makeHeapZone } from '../heap.js';

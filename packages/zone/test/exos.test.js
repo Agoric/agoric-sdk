@@ -1,10 +1,9 @@
-// eslint-disable-next-line import/order
 import {
   annihilate,
   getBaggage,
   nextLife,
   test,
-} from './prepare-test-env-ava.js';
+} from '@agoric/swingset-vat/tools/prepare-strict-test-env-ava.js';
 
 import * as vatData from '@agoric/vat-data';
 
