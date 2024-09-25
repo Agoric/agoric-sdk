@@ -1,5 +1,5 @@
 import { execa } from 'execa';
-import { sleep } from '../tools/sleep.ts';
+import { sleep } from '../tools/sleep.js';
 
 const checkPodsReadiness = async (): Promise<boolean> => {
   const { stdout } = await execa('kubectl', ['get', 'pods']);
