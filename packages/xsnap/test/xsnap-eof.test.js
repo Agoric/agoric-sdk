@@ -252,7 +252,7 @@ test(
     worker.toXsnap.destroy();
   },
   async function onRequest(_worker, _message) {
-    return new Uint8Array();
+    throw new Error('handleCommand() / onRequest() must never trigger');
   },
   async worker => worker.vat.close(),
   (t, results) => {
@@ -290,7 +290,7 @@ test(
     await worker.vat.issueStringCommand('0');
   },
   async function onRequest(_worker, _message) {
-    return new Uint8Array();
+    throw new Error('handleCommand() / onRequest() must never trigger');
   },
   async worker => worker.vat.close(),
   (t, results) =>
