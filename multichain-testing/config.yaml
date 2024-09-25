@@ -58,19 +58,9 @@ chains:
     resources:
       cpu: 1
       memory: 1Gi
-  - id: gaialocal
-    name: cosmoshub
+  - id: injective-1
+    name: injective
     numValidators: 1
-    genesis:
-      app_state:
-        staking:
-          params:
-            unbonding_time: '2m'
-        interchain_accounts:
-          host_genesis_state:
-            params:
-              host_enabled: true
-              allow_messages: ['*']
     faucet:
       enabled: true
       type: starship
@@ -84,24 +74,24 @@ chains:
       memory: 1Gi
 
 relayers:
-  - name: osmosis-gaia
+  - name: osmosis-injective
     type: hermes
     replicas: 1
     chains:
       - osmosislocal
-      - gaialocal
+      - injective-1
   - name: agoric-osmosis
     type: hermes
     replicas: 1
     chains:
       - agoriclocal
       - osmosislocal
-  - name: agoric-gaia
+  - name: agoric-injective
     type: hermes
     replicas: 1
     chains:
       - agoriclocal
-      - gaialocal
+      - injective-1
 
 explorer:
   enabled: false
