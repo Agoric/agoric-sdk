@@ -208,7 +208,7 @@ const testInterruption = test.macro(
 );
 
 test(
-  'xsnap-worker complains while trying to READ an answer when pipes are closed',
+  'xsnap-worker complains while trying to READ a query answer when pipes are closed',
   testInterruption,
   async worker => worker.vat.issueStringCommand('0'),
   async function onRequest(worker, _message) {
@@ -224,7 +224,7 @@ test(
 );
 
 test(
-  'xsnap-worker complains while trying to WRITE an answer when pipes are closed',
+  'xsnap-worker complains while trying to WRITE a command result when pipes are closed',
   testInterruption,
   async worker => worker.vat.issueStringCommand('0'),
   async function onRequest(worker, _message) {
@@ -241,7 +241,7 @@ test(
 );
 
 test(
-  'xsnap-worker exits quietly when pipes are closed in quiescent state',
+  'xsnap-worker exits quietly when pipes are closed in quiescent state (waiting to READ a command)',
   testInterruption,
   async function beforeWait(worker) {
     // Simulating an orderly shutdown in quiescent state by closing both pipes.
@@ -282,7 +282,7 @@ test(
   'xsnap-worker complains while trying to WRITE a query when pipes are closed',
   testInterruption,
   async worker => {
-    // The worker is blocked on read here, so we close "fromXsnap" pipe before
+    // The worker is blocked on reading a command here, so we close "fromXsnap" pipe before
     // issuing a command. This will trigger worker's handleCommand(), which will
     // attempt to issueCommand() (query) back to us.
     worker.fromXsnap.end();
