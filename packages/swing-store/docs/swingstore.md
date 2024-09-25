@@ -25,8 +25,6 @@ If, for some reason, the host wants to abandon execution, it can call `hostStora
 
 `hostStorage.kvStore` is also available to let the host add items to a separate portion of the kvStore, using keys which start with a `host.` prefix. It can use this to coordinate with a separately-committed host database (e.g. to remember how much work has been given to the kernel, and how much has been successfully executed). This portion of the kvStore is unreachable by the kernel.
 
-`hostStorage.setExportCallback()` is used to register an export callback after swingstore creation, see [data-export.md](./data-export.md) for details. Most applications will instead provide `options.exportCallback` to `openSwingStore()`.
-
 `hostStorage.repairMetadata()` was used to repair a historical flaw in the database format, and is not needed by new installations.
 
 ## KernelStorage
