@@ -17,6 +17,7 @@ const chainNames = [
   'celestia',
   'cosmoshub',
   'dydx',
+  'injective',
   'juno',
   'neutron',
   'noble',
