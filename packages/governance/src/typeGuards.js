@@ -197,6 +197,7 @@ export const ElectorateCreatorI = M.interface('Committee AdminFacet', {
   getVoterInvitations: M.call().returns(M.arrayOf(M.promise())),
   getQuestionSubscriber: M.call().returns(SubscriberShape),
   getPublicFacet: M.call().returns(ElectoratePublicShape),
+  shutdown: M.call().returns(),
 });
 
 export const QuestionStatsShape = harden({
