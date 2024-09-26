@@ -337,7 +337,7 @@ const shutdown = async ({
   trace('EC Charter shutdown successful');
 };
 
-const replaceCommitteeAndCharter = async permittedPowers => {
+export const replaceCommitteeAndCharter = async permittedPowers => {
   await shutdown(permittedPowers);
   await startNewEconomicCommittee(permittedPowers);
   await startNewEconCharter(permittedPowers);
@@ -377,6 +377,7 @@ const replaceCommitteeAndCharter = async permittedPowers => {
   trace('Installed New Economic Committee');
 };
 
+harden(replaceCommitteeAndCharter);
 export const getManifestForReplaceCommitteeAndCharter = async ({
   economicCommitteeRef: _economicCommitteeRef,
   economicCharterRef: _economicCharterRef,
