@@ -111,14 +111,14 @@ const handlehighPrioritySendersList = async ({
 
   if (highPrioritySendersManager) {
     // Add the addresses
-    for (let address of uniqueAddAddresses) {
+    for (const address of uniqueAddAddresses) {
       await E(highPrioritySendersManager).add(
         EC_HIGH_PRIORITY_SENDERS_NAMESPACE,
         address,
       );
     }
     // Remove the addresses
-    for (let address of uniqueRemoveAddresses) {
+    for (const address of uniqueRemoveAddresses) {
       await E(highPrioritySendersManager).remove(
         EC_HIGH_PRIORITY_SENDERS_NAMESPACE,
         address,

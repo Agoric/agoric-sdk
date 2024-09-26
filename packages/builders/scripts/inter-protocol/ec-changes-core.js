@@ -1,7 +1,5 @@
-/* global process */
-
 import { makeHelpers } from '@agoric/deploy-script-support';
-import { getManifestForReplaceCommitteeAndCharter } from '@agoric/inter-protocol/src/proposals/replaceCommitteeAndCharter';
+import { getManifestForReplaceCommitteeAndCharter } from '@agoric/inter-protocol/src/proposals/replaceCommitteeAndCharter.js';
 
 /** @type {import('@agoric/deploy-script-support/src/externalTypes.js').CoreEvalBuilder} */
 export const defaultProposalBuilder = async ({ publishRef, install }, opts) => {
@@ -15,13 +13,13 @@ export const defaultProposalBuilder = async ({ publishRef, install }, opts) => {
         economicCommitteeRef: publishRef(
           install(
             '@agoric/governance/src/committee.js',
-            '@agoric/governance/bundles/bundle-committee.js',
+            '../bundles/bundle-committee.js',
           ),
         ),
         economicCharterRef: publishRef(
           install(
             '@agoric/inter-protocol/src/econCommitteeCharter.js',
-            '@agoric/inter-protocol/bundles/bundle-econCommitteeCharter.js',
+            '../bundles/bundle-econCommitteeCharter.js',
           ),
         ),
       },
