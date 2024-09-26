@@ -62,6 +62,7 @@ export const startEconomicCommittee = async (
   const privateArgs = {
     storageNode,
     marshaller,
+    customId: 0,
   };
   const startResult = await E(zoe).startInstance(
     committee,

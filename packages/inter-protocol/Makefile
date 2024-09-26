@@ -41,19 +41,19 @@ EVALS = test/psm/wildcard-permit.json test/psm/gov-replace-committee.js
 DESCRIPTION = test/psm/gov-replace-committee.md
 TITLE = $$(head -1 $(DESCRIPTION))
 
-KEY=k1
+KEY=bootstrap
 # ADDR=agoric1z8vavxgfjztlhay5kftgp4kp5l4znkh4gf8lg4
 ADDR=$$(agd keys show $(KEY) --output json |jq --raw-output .address)
 
 submit-proposal: $(EVALS) $(DESCRIPTION)
-	agd keys show $(KEY)
+	agd keys show $(KEY) --home=//home/fraz/Projects/agoric-sdk/packages/cosmic-swingset/t1/bootstrap --keyring-backend=test 
 	agd $(CHAIN_OPTS) \
 	  tx gov submit-proposal swingset-core-eval \
 	  $(EVALS) \
 	  --title="$(TITLE) on $(CHAIN_ID)" --description="$$(cat $(DESCRIPTION))" \
 	  --deposit=$(EVAL_DEPOSIT) \
 	  --gas=auto --gas-adjustment=$(GAS_ADJUSTMENT) \
-	  --yes --from=$(KEY) -b sync
+	  --yes --from=$(KEY) -b sync --home=//home/fraz/Projects/agoric-sdk/packages/cosmic-swingset/t1/bootstrap --keyring-backend=test 
 
 gov-q:
 	agd $(CHAIN_OPTS) query gov proposals --output json | \

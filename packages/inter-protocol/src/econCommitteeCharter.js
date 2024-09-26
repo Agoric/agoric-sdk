@@ -49,7 +49,7 @@ harden(meta);
 
 /**
  * @param {ZCF<{ binaryVoteCounterInstallation: Installation }>} zcf
- * @param {undefined} privateArgs
+ * @param {{ customId: number }} privateArgs
  * @param {import('@agoric/vat-data').Baggage} baggage
  */
 export const start = async (zcf, privateArgs, baggage) => {
@@ -59,13 +59,28 @@ export const start = async (zcf, privateArgs, baggage) => {
     baggage,
     'instanceToGovernor',
   );
+  const id = privateArgs?.customId || 0;
+  const printId = () => console.log('fraz', 'id: charter', id);
+  const printInstances = () =>
+    console.log(
+      'fraz',
+      'charter: instances',
+      Object.entries(instanceToGovernor).length,
+      Object.entries(instanceToGovernor),
+    );
 
   const makeParamInvitation = () => {
     /**
      * @param {ZCFSeat} seat
      * @param {ParamChangesOfferArgs} args
      */
+
+    console.log('fraz', 'makeParamInvitation');
+    printId();
     const voteOnParamChanges = (seat, args) => {
+      console.log('fraz', 'voteOnParamChanges', seat, args);
+      printId();
+      printInstances();
       mustMatch(args, ParamChangesOfferArgsShape);
       seat.exit();
 
@@ -87,7 +102,18 @@ export const start = async (zcf, privateArgs, baggage) => {
   };
 
   const makeOfferFilterInvitation = (instance, strings, deadline) => {
+    console.log(
+      'fraz',
+      'makeOfferFilterInvitation',
+      instance,
+      strings,
+      deadline,
+    );
+    printId();
     const voteOnOfferFilterHandler = seat => {
+      console.log('fraz', 'voteOnOfferFilterHandler', seat);
+      printId();
+      printInstances();
       seat.exit();
 
       const governor = instanceToGovernor.get(instance);
@@ -109,7 +135,19 @@ export const start = async (zcf, privateArgs, baggage) => {
     methodArgs,
     deadline,
   ) => {
+    console.log(
+      'fraz',
+      'makeApiInvocationInvitation',
+      instance,
+      methodName,
+      methodArgs,
+      deadline,
+    );
+    printId();
     const handler = seat => {
+      console.log('fraz', ' handler makeApiInvocationInvitation', seat);
+      printId();
+      printInstances();
       seat.exit();
 
       const governor = instanceToGovernor.get(instance);
@@ -153,6 +191,8 @@ export const start = async (zcf, privateArgs, baggage) => {
 
   const charterMemberHandler = seat => {
     seat.exit();
+    console.log('fraz', 'charterMemberHandler', seat);
+    printId();
     return harden({ invitationMakers });
   };
 
@@ -161,6 +201,8 @@ export const start = async (zcf, privateArgs, baggage) => {
       .optional(M.string())
       .returns(),
     makeCharterMemberInvitation: M.call().returns(M.promise()),
+    printId: M.call().returns(),
+    getInstances: M.call().returns(M.any()),
   });
 
   const creatorFacet = prepareExo(
@@ -174,11 +216,27 @@ export const start = async (zcf, privateArgs, baggage) => {
        * @param {string} [label] for diagnostic use only
        */
       addInstance: (governedInstance, governorFacet, label) => {
+        console.log(
+          'fraz',
+          'addInstance',
+          governedInstance,
+          governorFacet,
+          label,
+        );
+        printId();
+        printInstances();
         console.log('charter: adding instance', label);
         instanceToGovernor.init(governedInstance, governorFacet);
       },
-      makeCharterMemberInvitation: () =>
-        zcf.makeInvitation(charterMemberHandler, INVITATION_MAKERS_DESC),
+      makeCharterMemberInvitation: () => {
+        console.log('fraz', 'makeCharterMemberInvitation');
+        printId();
+        return zcf.makeInvitation(charterMemberHandler, INVITATION_MAKERS_DESC);
+      },
+      getInstances: () => {
+        return instanceToGovernor;
+      },
+      printId,
     },
   );
 

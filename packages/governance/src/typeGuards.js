@@ -186,6 +186,7 @@ export const ElectoratePublicI = M.interface('Committee PublicFacet', {
   getName: M.call().returns(M.string()),
   getInstance: M.call().returns(InstanceHandleShape),
   getQuestion: M.call(QuestionHandleShape).returns(M.promise()),
+  printId: M.call().returns(),
 });
 const ElectoratePublicShape = M.remotable('ElectoratePublic');
 
@@ -197,6 +198,7 @@ export const ElectorateCreatorI = M.interface('Committee AdminFacet', {
   getVoterInvitations: M.call().returns(M.arrayOf(M.promise())),
   getQuestionSubscriber: M.call().returns(SubscriberShape),
   getPublicFacet: M.call().returns(ElectoratePublicShape),
+  printId: M.call().returns(),
 });
 
 export const QuestionStatsShape = harden({

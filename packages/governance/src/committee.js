@@ -33,6 +33,7 @@ export const meta = {
   privateArgsShape: {
     storageNode: StorageNodeShape,
     marshaller: M.remotable('Marshaller'),
+    customId: M.opt(M.number()),
   },
   upgradability: 'canUpgrade',
 };
@@ -51,13 +52,15 @@ harden(meta);
  *   committeeName: string,
  *   committeeSize: number,
  * }>} zcf
- * @param {{ storageNode: ERef<StorageNode>, marshaller: ERef<Marshaller>}} privateArgs
+ * @param {{ storageNode: ERef<StorageNode>, marshaller: ERef<Marshaller>, customId: number }} privateArgs
  * @param {import('@agoric/vat-data').Baggage} baggage
  * @returns {{creatorFacet: CommitteeElectorateCreatorFacet, publicFacet: CommitteeElectoratePublic}}
  */
 export const start = (zcf, privateArgs, baggage) => {
   /** @type {MapStore<Handle<'Question'>, import('./electorateTools.js').QuestionRecord>} */
   const allQuestions = provideDurableMapStore(baggage, 'Question');
+  const id = privateArgs?.customId || 0;
+  const printId = () => console.log('fraz', 'id: committee', id);
 
   // CRUCIAL: voteCap carries the ability to cast votes for any voter at
   // any weight. It's wrapped here and given to the voter.
@@ -66,11 +69,20 @@ export const start = (zcf, privateArgs, baggage) => {
   // has no control over the voteHandle or weight
   /** @type {Parameters<typeof prepareVoterKit>[1]['submitVote']} */
   const submitVote = (questionHandle, voterHandle, positions, weight) => {
+    console.log(
+      'fraz',
+      'submitVote',
+      questionHandle,
+      voterHandle,
+      positions,
+      weight,
+    );
+    printId();
     const { voteCap } = allQuestions.get(questionHandle);
     return E(voteCap).submitVote(voterHandle, positions, weight);
   };
 
-  const makeVoterKit = prepareVoterKit(baggage, { zcf, submitVote });
+  const makeVoterKit = prepareVoterKit(baggage, printId, { zcf, submitVote });
 
   const questionNode = E(privateArgs.storageNode).makeChildNode(
     'latestQuestion',
@@ -84,6 +96,9 @@ export const start = (zcf, privateArgs, baggage) => {
     // This will produce unique descriptions because
     // makeCommitteeVoterInvitation() is only called within the following loop,
     // which is only called once per Electorate.
+
+    console.log('fraz', 'makeCommitteeVoterInvitation', index);
+    printId();
     return zcf.makeInvitation(
       seat => {
         seat.exit();
@@ -107,20 +122,31 @@ export const start = (zcf, privateArgs, baggage) => {
     ElectoratePublicI,
     {
       getQuestionSubscriber() {
+        console.log('fraz', 'getQuestionSubscriber', questionsSubscriber);
+        printId();
         return questionsSubscriber;
       },
       getOpenQuestions() {
+        console.log('fraz', 'getOpenQuestions', getOpenQuestions(allQuestions));
+        printId();
         return getOpenQuestions(allQuestions);
       },
       getName() {
+        console.log('fraz', 'getName', committeeName);
+        printId();
         return committeeName;
       },
       getInstance() {
+        console.log('fraz', 'getInstance', zcf.getInstance());
+        printId();
         return zcf.getInstance();
       },
       getQuestion(handleP) {
+        console.log('fraz', 'getQuestion', getQuestion(handleP, allQuestions));
+        printId();
         return getQuestion(handleP, allQuestions);
       },
+      printId,
     },
   );
 
@@ -130,12 +156,18 @@ export const start = (zcf, privateArgs, baggage) => {
     ElectorateCreatorI,
     {
       getPoserInvitation() {
-        return getPoserInvitation(zcf, async (voteCounter, questionSpec) =>
-          creatorFacet.addQuestion(voteCounter, questionSpec),
-        );
+        console.log('fraz', 'getPoserInvitation main');
+        printId();
+        return getPoserInvitation(zcf, async (voteCounter, questionSpec) => {
+          console.log('fraz', 'getPoserInvitation inside');
+          printId();
+          return creatorFacet.addQuestion(voteCounter, questionSpec);
+        });
       },
       /** @type {AddQuestion} */
       async addQuestion(voteCounter, questionSpec) {
+        console.log('fraz', 'addQuestion', questionSpec, voteCounter);
+        printId();
         const quorumThreshold = quorumRule => {
           switch (quorumRule) {
             case QuorumRule.MAJORITY:
@@ -170,15 +202,23 @@ export const start = (zcf, privateArgs, baggage) => {
         );
       },
       getVoterInvitations() {
+        console.log('fraz', 'getVoterInvitations');
+        printId();
         return invitations;
       },
       getQuestionSubscriber() {
+        console.log('fraz', 'getQuestionSubscriber');
+        printId();
         return questionsSubscriber;
       },
 
       getPublicFacet() {
+        console.log('fraz', 'getPublicFacet');
+        printId();
         return publicFacet;
       },
+
+      printId,
     },
   );
 

@@ -28,7 +28,8 @@ const InvitationMakerI = M.interface('invitationMaker', {
  * @param {ZCF} powers.zcf
  * @param {(questionHandle: Handle<'Question'>, voterHandle: Handle<'Voter'>, chosenPositions: Position[], weight: bigint) => ERef<CompletedBallet>} powers.submitVote
  */
-export const prepareVoterKit = (baggage, { submitVote, zcf }) => {
+export const prepareVoterKit = (baggage, printId, { submitVote, zcf }) => {
+  console.log('fraz', 'prepareVoterKit');
   const makeVoterHandle = defineDurableHandle(baggage, 'Voter');
   const makeVoterKit = prepareExoClassKit(
     baggage,
@@ -41,12 +42,22 @@ export const prepareVoterKit = (baggage, { submitVote, zcf }) => {
     {
       voter: {
         castBallotFor(questionHandle, positions, weight = 1n) {
+          console.log(
+            'fraz',
+            'castBallotFor',
+            questionHandle,
+            positions,
+            weight,
+          );
+          printId();
           const { voterHandle } = this.state;
           return E(submitVote)(questionHandle, voterHandle, positions, weight);
         },
       },
       invitationMakers: {
         makeVoteInvitation(positions, questionHandle) {
+          console.log('fraz', 'makeVoteInvitation', positions, questionHandle);
+          printId();
           const { voter } = this.facets;
           const continuingVoteHandler = cSeat => {
             cSeat.exit();

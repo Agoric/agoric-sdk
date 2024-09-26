@@ -565,6 +565,8 @@ export const makeSwingsetTestKit = async (
   };
   const advanceTimeTo = async (targetTime: Timestamp) => {
     targetTime = TimeMath.absValue(targetTime);
+    console.log('curentTime', currentTime);
+    console.log('targetTime', targetTime);
     targetTime >= currentTime ||
       Fail`cannot reverse time :-(  (${targetTime} < ${currentTime})`;
     while (currentTime < targetTime) {
