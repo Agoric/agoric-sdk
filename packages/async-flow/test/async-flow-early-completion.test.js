@@ -15,7 +15,7 @@ import { isVow } from '@agoric/vow/src/vow-utils.js';
 import { prepareVowTools } from '@agoric/vow';
 import { makeDurableZone } from '@agoric/zone/durable.js';
 
-import { prepareAsyncFlowTools } from '../src/async-flow.js';
+import { prepareTestAsyncFlowTools } from './_utils.js';
 
 /**
  * @import {Zone} from '@agoric/base-zone';
@@ -59,7 +59,7 @@ const firstLogLen = 7;
 const testFirstPlay = async (t, zone) => {
   t.log('firstPlay started');
   const vowTools = prepareVowTools(zone);
-  const { asyncFlow, adminAsyncFlow } = prepareAsyncFlowTools(zone, {
+  const { asyncFlow, adminAsyncFlow } = prepareTestAsyncFlowTools(t, zone, {
     vowTools,
   });
   const makeOrchestra = prepareOrchestra(zone);
@@ -97,9 +97,7 @@ const testFirstPlay = async (t, zone) => {
     },
   };
 
-  const wrapperFunc = asyncFlow(zone, 'AsyncFlow1', guestMethod, {
-    panicHandler: e => t.log('Panic handler:', e),
-  });
+  const wrapperFunc = asyncFlow(zone, 'AsyncFlow1', guestMethod);
 
   const outcomeV = zone.makeOnce('outcomeV', () => wrapperFunc(hOrch7, v1, v3));
 
@@ -141,8 +139,19 @@ const testFirstPlay = async (t, zone) => {
 const testBadShortReplay = async (t, zone, rejection) => {
   t.log('badShortReplay started');
   const vowTools = prepareVowTools(zone);
-  const { asyncFlow, adminAsyncFlow } = prepareAsyncFlowTools(zone, {
+  const { asyncFlow, adminAsyncFlow } = prepareTestAsyncFlowTools(t, zone, {
     vowTools,
+    panicHandler: e => {
+      t.throws(
+        () => {
+          throw e;
+        },
+        {
+          message:
+            /^guest (fulfilled with "bad"|rejected with "\[Error: replayProblem\]") before finishing replay$/,
+        },
+      );
+    },
   });
   prepareOrchestra(zone);
   const { when } = vowTools;
@@ -152,12 +161,12 @@ const testBadShortReplay = async (t, zone, rejection) => {
 
   const { guestMethod } = {
     async guestMethod(_gOrch7, _g1, _p3) {
-      t.log('  badShortReplay return early');
       resolveStep(eventLoopIteration()); // resolveStep(true) is too fast.
       if (rejection) {
         t.log('  badShortReplay rejecting');
         throw rejection;
       }
+      t.log('  badShortReplay return early');
       return 'bad';
     },
   };
@@ -166,9 +175,7 @@ const testBadShortReplay = async (t, zone, rejection) => {
   // by ignoring the returned wrapper function. If the wrapper function is
   // invoked, that would be a *new* activation with a new outcome and
   // flow, and would have nothing to do with the existing one.
-  asyncFlow(zone, 'AsyncFlow1', guestMethod, {
-    panicHandler: e => t.log('Panic handler:', e),
-  });
+  asyncFlow(zone, 'AsyncFlow1', guestMethod);
 
   const outcomeV = /** @type {Vow} */ (
     zone.makeOnce('outcomeV', () => Fail`need outcomeV`)

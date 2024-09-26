@@ -14,12 +14,10 @@ import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { prepareVowTools } from '@agoric/vow';
 import { makeDurableZone } from '@agoric/zone/durable.js';
 
-import { prepareAsyncFlowTools } from '../src/async-flow.js';
+import { prepareTestAsyncFlowTools } from './_utils.js';
 
 /**
- * @import {PromiseKit} from '@endo/promise-kit'
  * @import {Zone} from '@agoric/base-zone'
- * @import {Ephemera} from './types.js';
  */
 
 const neverSettlesP = new Promise(() => {});
@@ -30,7 +28,7 @@ const neverSettlesP = new Promise(() => {});
  */
 const testPlay1 = async (t, zone) => {
   const vowTools = prepareVowTools(zone);
-  const { asyncFlow } = prepareAsyncFlowTools(zone, {
+  const { asyncFlow } = prepareTestAsyncFlowTools(t, zone, {
     vowTools,
   });
 
@@ -48,7 +46,7 @@ const testPlay1 = async (t, zone) => {
  */
 const testPlay2 = async (t, zone) => {
   const vowTools = prepareVowTools(zone);
-  const { asyncFlow } = prepareAsyncFlowTools(zone, {
+  const { asyncFlow } = prepareTestAsyncFlowTools(t, zone, {
     vowTools,
   });
 
@@ -63,7 +61,7 @@ const testPlay2 = async (t, zone) => {
  */
 const testPlay3 = async (t, zone) => {
   const vowTools = prepareVowTools(zone);
-  const { asyncFlow, allWokenP } = prepareAsyncFlowTools(zone, {
+  const { asyncFlow, allWokenP } = prepareTestAsyncFlowTools(t, zone, {
     vowTools,
   });
 

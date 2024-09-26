@@ -55,6 +55,9 @@ export const prepareAsyncFlowTools = (outerZone, outerOptions = {}) => {
       { vowTools },
     ),
     makeBijection = prepareBijection(outerZone, unwrap),
+    panicHandler = err => {
+      throw err;
+    },
   } = outerOptions;
   const { watch, makeVowKit } = vowTools;
 
@@ -91,7 +94,7 @@ export const prepareAsyncFlowTools = (outerZone, outerOptions = {}) => {
    * @param {Zone} zone
    * @param {string} tag
    * @param {GuestAsyncFunc} guestAsyncFunc
-   * @param {{ startEager?: boolean, panicHandler?: (e: any) => void }} [options]
+   * @param {{ startEager?: boolean }} [options]
    */
   const prepareAsyncFlowKit = (zone, tag, guestAsyncFunc, options = {}) => {
     typeof guestAsyncFunc === 'function' ||
@@ -99,9 +102,6 @@ export const prepareAsyncFlowTools = (outerZone, outerOptions = {}) => {
     const {
       // May change default to false, once instances reliably wake up
       startEager = true,
-      panicHandler = e => {
-        throw e;
-      },
     } = options;
 
     const internalMakeAsyncFlowKit = zone.exoClassKit(
@@ -482,7 +482,7 @@ export const prepareAsyncFlowTools = (outerZone, outerOptions = {}) => {
    * @param {Zone} zone
    * @param {string} tag
    * @param {F} guestFunc
-   * @param {{ startEager?: boolean, panicHandler?: (e: any) => void }} [options]
+   * @param {{ startEager?: boolean }} [options]
    * @returns {HostOf<F>}
    */
   const asyncFlow = (zone, tag, guestFunc, options = undefined) => {
