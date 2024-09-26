@@ -97,7 +97,9 @@ const testFirstPlay = async (t, zone) => {
     },
   };
 
-  const wrapperFunc = asyncFlow(zone, 'AsyncFlow1', guestMethod);
+  const wrapperFunc = asyncFlow(zone, 'AsyncFlow1', guestMethod, {
+    panicHandler: e => t.log('Panic handler:', e),
+  });
 
   const outcomeV = zone.makeOnce('outcomeV', () => wrapperFunc(hOrch7, v1, v3));
 
@@ -134,8 +136,9 @@ const testFirstPlay = async (t, zone) => {
  *
  * @param {any} t
  * @param {Zone} zone
+ * @param {unknown} [rejection]
  */
-const testBadShortReplay = async (t, zone) => {
+const testBadShortReplay = async (t, zone, rejection) => {
   t.log('badShortReplay started');
   const vowTools = prepareVowTools(zone);
   const { asyncFlow, adminAsyncFlow } = prepareAsyncFlowTools(zone, {
@@ -151,6 +154,10 @@ const testBadShortReplay = async (t, zone) => {
     async guestMethod(_gOrch7, _g1, _p3) {
       t.log('  badShortReplay return early');
       resolveStep(eventLoopIteration()); // resolveStep(true) is too fast.
+      if (rejection) {
+        t.log('  badShortReplay rejecting');
+        throw rejection;
+      }
       return 'bad';
     },
   };
@@ -159,7 +166,9 @@ const testBadShortReplay = async (t, zone) => {
   // by ignoring the returned wrapper function. If the wrapper function is
   // invoked, that would be a *new* activation with a new outcome and
   // flow, and would have nothing to do with the existing one.
-  asyncFlow(zone, 'AsyncFlow1', guestMethod);
+  asyncFlow(zone, 'AsyncFlow1', guestMethod, {
+    panicHandler: e => t.log('Panic handler:', e),
+  });
 
   const outcomeV = /** @type {Vow} */ (
     zone.makeOnce('outcomeV', () => Fail`need outcomeV`)
@@ -200,4 +209,8 @@ test.serial('test durable async-flow early completion', async t => {
   nextLife();
   const zone2a = makeDurableZone(getBaggage(), 'durableRoot');
   await testBadShortReplay(t, zone2a);
+
+  nextLife();
+  const zone2b = makeDurableZone(getBaggage(), 'durableRoot');
+  await testBadShortReplay(t, zone2b, Error('replayProblem'));
 });

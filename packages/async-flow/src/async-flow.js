@@ -91,7 +91,7 @@ export const prepareAsyncFlowTools = (outerZone, outerOptions = {}) => {
    * @param {Zone} zone
    * @param {string} tag
    * @param {GuestAsyncFunc} guestAsyncFunc
-   * @param {{ startEager?: boolean }} [options]
+   * @param {{ startEager?: boolean, panicHandler?: (e: any) => void }} [options]
    */
   const prepareAsyncFlowKit = (zone, tag, guestAsyncFunc, options = {}) => {
     typeof guestAsyncFunc === 'function' ||
@@ -99,6 +99,9 @@ export const prepareAsyncFlowTools = (outerZone, outerOptions = {}) => {
     const {
       // May change default to false, once instances reliably wake up
       startEager = true,
+      panicHandler = e => {
+        throw e;
+      },
     } = options;
 
     const internalMakeAsyncFlowKit = zone.exoClassKit(
@@ -247,19 +250,12 @@ export const prepareAsyncFlowTools = (outerZone, outerOptions = {}) => {
               guestResultP,
               gFulfillment => {
                 if (bijection.hasGuest(guestResultP)) {
-                  try {
-                    !log.isReplaying() ||
-                      admin.panic(
-                        makeError(
-                          X`guest fulfilled with ${gFulfillment} before finishing replay`,
-                        ),
-                      );
-                  } catch (hostPanic) {
-                    // Catch the hostPanic or else it becomes an unhandled rejection.
-                    // FIXME: Do we want to surface the panic in the outcome?
-                    // outcomeKit.resolver.reject(hostPanic);
-                    return;
-                  }
+                  !log.isReplaying() ||
+                    panic(
+                      makeError(
+                        X`guest fulfilled with ${gFulfillment} before finishing replay`,
+                      ),
+                    );
                   outcomeKit.resolver.resolve(
                     membrane.guestToHost(gFulfillment),
                   );
@@ -275,11 +271,46 @@ export const prepareAsyncFlowTools = (outerZone, outerOptions = {}) => {
                 // in the `guestResultP` being absent from the bijection,
                 // so this leave the outcome vow unsettled, as it must.
                 if (bijection.hasGuest(guestResultP)) {
+                  !log.isReplaying() ||
+                    panic(
+                      makeError(
+                        X`guest rejected with ${guestReason} before finishing replay`,
+                      ),
+                    );
                   outcomeKit.resolver.reject(membrane.guestToHost(guestReason));
                   admin.complete();
                 }
               },
-            );
+            )
+              .then(
+                () => {
+                  if (flow.getFlowState() === 'Failed') {
+                    // If the flow fails, we need to trigger the panic handler with
+                    // the failure.
+                    throw flow.getOptFatalProblem();
+                  }
+                },
+                maybePanicReason => {
+                  if (flow.getFlowState() === 'Failed') {
+                    const err = flow.getOptFatalProblem();
+                    // TODO: Annotate maybePanicReason robustly with err if it
+                    // is indeed not the same as one we already threw from
+                    // panic.
+                    throw err;
+                  }
+
+                  // Definitely not a reason from an existing panic, so raise a new panic.
+                  const err = makeError(
+                    X`internal: unexpected error in guest completion handling ${maybePanicReason}`,
+                  );
+                  try {
+                    panic(err);
+                  } catch (_e) {
+                    throw err;
+                  }
+                },
+              )
+              .catch(panicHandler);
           },
           wake() {
             const { facets } = this;
@@ -451,7 +482,7 @@ export const prepareAsyncFlowTools = (outerZone, outerOptions = {}) => {
    * @param {Zone} zone
    * @param {string} tag
    * @param {F} guestFunc
-   * @param {{ startEager?: boolean }} [options]
+   * @param {{ startEager?: boolean, panicHandler?: (e: any) => void }} [options]
    * @returns {HostOf<F>}
    */
   const asyncFlow = (zone, tag, guestFunc, options = undefined) => {
