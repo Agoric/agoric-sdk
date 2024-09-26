@@ -75,8 +75,12 @@ module.exports = {
     tsconfigRootDir: __dirname,
     extraFileExtensions: ['.cjs'],
   },
-  plugins: ['@typescript-eslint', 'prettier'],
-  extends: ['@agoric', 'plugin:ava/recommended'],
+  plugins: ['@typescript-eslint', 'prettier', 'require-extensions'],
+  extends: [
+    '@agoric',
+    'plugin:ava/recommended',
+    'plugin:require-extensions/recommended',
+  ],
   // XXX false positive: Unused eslint-disable directive (no problems were reported from 'max-len')
   reportUnusedDisableDirectives: true,
 

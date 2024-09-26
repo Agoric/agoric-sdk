@@ -6,7 +6,7 @@ import {
   ResponseQuery,
 } from '@agoric/cosmic-proto/tendermint/abci/types.js';
 import { encodeBase64, btoa, atob, decodeBase64 } from '@endo/base64';
-import { toRequestQueryJson } from '@agoric/cosmic-proto';
+import { type JsonSafe, toRequestQueryJson } from '@agoric/cosmic-proto';
 import {
   IBCChannelID,
   IBCEvent,
@@ -156,14 +156,15 @@ type BuildVTransferEventParams = {
   event?: VTransferIBCEvent['event'];
   /* defaults to cosmos1AccAddress. set to `agoric1fakeLCAAddress` to simulate an outgoing transfer event */
   sender?: ChainAddress['value'];
-  /**  defaults to agoric1fakeLCAAddress. set to a different value to simulate an outgoing transfer event */
+  /*  defaults to agoric1fakeLCAAddress. set to a different value to simulate an outgoing transfer event */
   receiver?: ChainAddress['value'];
   target?: ChainAddress['value'];
   amount?: bigint;
   denom?: string;
   destinationChannel?: IBCChannelID;
   sourceChannel?: IBCChannelID;
-  sequence?: PacketSDKType['sequence'];
+  /* support bigint and string, to facilitate bootstrap testing */
+  sequence?: PacketSDKType['sequence'] | JsonSafe<PacketSDKType['sequence']>;
 };
 
 /**

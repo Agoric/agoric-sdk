@@ -84,7 +84,11 @@ export const start = async (zcf, privateArgs, baggage) => {
 
   const vowTools = prepareVowTools(zone.subZone('vows'));
 
-  const chainHub = makeChainHub(agoricNames, vowTools);
+  const chainHub = makeChainHub(
+    zone.subZone('chainHub'),
+    agoricNames,
+    vowTools,
+  );
 
   const makeCosmosOrchestrationAccount = prepareCosmosOrchestrationAccount(
     zone,

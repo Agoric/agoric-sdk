@@ -1,5 +1,5 @@
 /* eslint-disable jsdoc/require-param, @jessie.js/safe-await-separator */
-/* global process */
+/* eslint-env node */
 
 import childProcessAmbient from 'child_process';
 import { promises as fsAmbientPromises } from 'fs';
@@ -98,11 +98,12 @@ export const keyArrayEqual = (
   return t.deepEqual(aobj, bobj, message);
 };
 
-export const getNodeTestVaultsConfig = async (
+export const getNodeTestVaultsConfig = async ({
   bundleDir = 'bundles',
   specifier = '@agoric/vm-config/decentral-itest-vaults-config.json',
   defaultManagerType = 'local' as ManagerType,
-) => {
+  discriminator = '',
+}) => {
   const fullPath = await importMetaResolve(specifier, import.meta.url).then(
     u => new URL(u).pathname,
   );
@@ -129,7 +130,15 @@ export const getNodeTestVaultsConfig = async (
     );
   }
 
-  const testConfigPath = `${bundleDir}/${basename(specifier)}`;
+  // make an almost-certainly-unique file name with a fixed-length prefix
+  const configFilenameParts = [
+    'config',
+    discriminator,
+    new Date().toISOString().replaceAll(/[^0-9TZ]/g, ''),
+    `${Math.random()}`.replace(/.*[.]/, '').padEnd(8, '0').slice(0, 8),
+    basename(specifier),
+  ].filter(s => !!s);
+  const testConfigPath = `${bundleDir}/${configFilenameParts.join('.')}`;
   await fsAmbientPromises.writeFile(
     testConfigPath,
     JSON.stringify(config),
@@ -287,6 +296,7 @@ export const matchIter = (t: AvaT, iter, valueRef) => {
  * @param bundleDir directory to write bundles and config to
  * @param [options]
  * @param [options.configSpecifier] bootstrap config specifier
+ * @param [options.label] bootstrap config specifier
  * @param [options.storage]
  * @param [options.verbose]
  * @param [options.slogFile]
@@ -299,6 +309,7 @@ export const makeSwingsetTestKit = async (
   bundleDir = 'bundles',
   {
     configSpecifier = undefined as string | undefined,
+    label = undefined as string | undefined,
     storage = makeFakeStorageKit('bootstrapTests'),
     verbose = false,
     slogFile = undefined as string | undefined,
@@ -308,11 +319,12 @@ export const makeSwingsetTestKit = async (
   } = {},
 ) => {
   console.time('makeBaseSwingsetTestKit');
-  const configPath = await getNodeTestVaultsConfig(
+  const configPath = await getNodeTestVaultsConfig({
     bundleDir,
-    configSpecifier,
+    specifier: configSpecifier,
+    discriminator: label,
     defaultManagerType,
-  );
+  });
   const swingStore = initSwingStore();
   const { kernelStorage, hostStorage } = swingStore;
   const { fromCapData } = boardSlottingMarshaller(slotToBoardRemote);
@@ -614,6 +626,9 @@ export const makeSwingsetTestKit = async (
       }
       console.log('🧻');
       return i;
+    },
+    async runInbound(bridgeId: BridgeIdValue, msg: unknown) {
+      await runUtils.queueAndRun(() => inbound(bridgeId, msg), true);
     },
   };
 

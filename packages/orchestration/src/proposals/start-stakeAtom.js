@@ -7,7 +7,7 @@ import { makeChainHub } from '../exos/chain-hub.js';
 
 /**
  * @import {IBCConnectionID} from '@agoric/vats';
- * @import {StakeIcaSF,  StakeIcaTerms} from '../examples/stakeIca.contract';
+ * @import {StakeIcaSF,  StakeIcaTerms} from '../examples/stake-ica.contract';
  */
 
 const trace = makeTracer('StartStakeAtom', true);
@@ -17,7 +17,7 @@ const trace = makeTracer('StartStakeAtom', true);
  *   installation: {
  *     consume: {
  *       stakeIca: Installation<
- *         import('../examples/stakeIca.contract.js').start
+ *         import('../examples/stake-ica.contract.js').start
  *       >;
  *     };
  *   };
@@ -46,8 +46,13 @@ export const startStakeAtom = async ({
   const storageNode = await makeStorageNodeChild(chainStorage, VSTORAGE_PATH);
   const marshaller = await E(board).getPublishingMarshaller();
 
-  const vt = prepareVowTools(makeHeapZone());
-  const chainHub = makeChainHub(await agoricNames, vt);
+  const zone = makeHeapZone();
+  const vt = prepareVowTools(zone.subZone('vows'));
+  const chainHub = makeChainHub(
+    zone.subZone('chainHub'),
+    await agoricNames,
+    vt,
+  );
 
   const [_, cosmoshub, connectionInfo] = await vt.when(
     chainHub.getChainsAndConnection('agoric', 'cosmoshub'),

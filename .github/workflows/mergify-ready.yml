@@ -107,11 +107,12 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
       - name: Check for fixup commits
         id: fixup-commits
         run: |
-          if [[ $(git rev-list "$BASE_SHA".."$HEAD_SHA" --grep="^\(fixup\|amend\|squash\)! " | wc -l) -eq 0 ]]; then
+          if ! git merge-base --is-ancestor "$BASE_SHA" "$HEAD_SHA"; then
+             echo "PR is not up to date with target branch, skipping fixup commit check"
+          elif [[ $(git rev-list "$BASE_SHA".."$HEAD_SHA" --grep="^\(fixup\|amend\|squash\)! " | wc -l) -eq 0 ]]; then
             echo "No fixup/amend/squash commits found in commit history"
           else
             echo "fixup/amend/squash commits found in commit history"

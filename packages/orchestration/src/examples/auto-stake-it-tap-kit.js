@@ -101,13 +101,10 @@ const prepareStakingTapKit = (zone, { watch }) => {
 
           const { localAccount, localDenom, remoteChainAddress } = this.state;
           return watch(
-            E(localAccount).transfer(
-              {
-                denom: localDenom,
-                value: BigInt(tx.amount),
-              },
-              remoteChainAddress,
-            ),
+            E(localAccount).transfer(remoteChainAddress, {
+              denom: localDenom,
+              value: BigInt(tx.amount),
+            }),
             this.facets.transferWatcher,
             BigInt(tx.amount),
           );

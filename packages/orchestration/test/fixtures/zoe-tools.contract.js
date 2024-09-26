@@ -58,7 +58,6 @@ const contract = async (
   const creatorFacet = prepareChainHubAdmin(zone, chainHub);
 
   const orchFns = orchestrateAll(flows, {
-    zcf,
     contractState,
     zoeTools,
   });

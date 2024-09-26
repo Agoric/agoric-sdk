@@ -62,7 +62,6 @@ const contract = async (
   const { brands } = zcf.getTerms();
 
   const { stakeAndSwap } = orchestrateAll(flows, {
-    zcf,
     localTransfer: zoeTools.localTransfer,
   });
 

@@ -1,4 +1,4 @@
-/* global Buffer */
+/* eslint-env node */
 import { Transform } from 'stream';
 
 // Transform objects which convert from hardened Arrays of JSON-serializable

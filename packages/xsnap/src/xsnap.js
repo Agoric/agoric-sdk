@@ -1,4 +1,4 @@
-/* global process */
+/* eslint-env node */
 /* eslint no-await-in-loop: ["off"] */
 
 import { finished } from 'stream/promises';
@@ -141,8 +141,8 @@ const makeSnapshotLoaderWithPipe = async (
  * @property {AsyncIterable<Uint8Array>} [snapshotStream]
  * @property {string} [snapshotDescription]
  * @property {boolean} [snapshotUseFs]
- * @property {'ignore' | 'inherit'} [stdout]
- * @property {'ignore' | 'inherit'} [stderr]
+ * @property {'ignore' | 'inherit' | 'pipe'} [stdout]
+ * @property {'ignore' | 'inherit' | 'pipe'} [stderr]
  * @property {number} [meteringLimit]
  * @property {Record<string, string>} [env]
  */

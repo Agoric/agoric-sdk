@@ -11,3 +11,12 @@ export type * from './orchestration-api.js';
 export type * from './exos/cosmos-interchain-service.js';
 export type * from './exos/chain-hub.js';
 export type * from './vat-orchestration.js';
+
+/**
+ * ({@link ZCF})-like tools for use in {@link OrchestrationFlow}s.
+ */
+export interface ZcfTools {
+  assertUniqueKeyword: ZCF['assertUniqueKeyword'];
+  atomicRearrange: ZCF['atomicRearrange'];
+  makeInvitation: ZCF['makeInvitation'];
+}
