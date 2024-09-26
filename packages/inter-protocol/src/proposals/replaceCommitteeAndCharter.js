@@ -337,7 +337,7 @@ const shutdown = async ({
   trace('EC Charter shutdown successful');
 };
 
-const main = async permittedPowers => {
+const replaceCommitteeAndCharter = async permittedPowers => {
   await shutdown(permittedPowers);
   await startNewEconomicCommittee(permittedPowers);
   await startNewEconCharter(permittedPowers);
@@ -377,4 +377,52 @@ const main = async permittedPowers => {
   trace('Installed New Economic Committee');
 };
 
-main;
+export const getManifestForReplaceCommitteeAndCharter = async ({
+  economicCommitteeRef: _economicCommitteeRef,
+  economicCharterRef: _economicCharterRef,
+}) => ({
+  manifest: {
+    [replaceCommitteeAndCharter.name]: {
+      consume: {
+        board: true,
+        chainStorage: true,
+        econCharterKit: true,
+        economicCommitteeCreatorFacet: true,
+        highPrioritySendersManager: true,
+        instancePrivateArgs: true,
+        namesByAddressAdmin: true,
+        priceAuthority: true,
+        priceAuthorityAdmin: true,
+        reserveKit: true,
+        vaultFactoryKit: true,
+        auctioneerKit: true,
+        psmKit: true,
+        zoe: true,
+      },
+      produce: {
+        economicCommittee: true,
+        economicCommitteeCreatorFacet: true,
+        econCharterKit: true,
+        econCommitteeCharter: true,
+      },
+      installation: {
+        consume: {
+          committee: true,
+          econCommitteeCharter: true,
+          binaryVoteCounter: true,
+        },
+      },
+      instance: {
+        consume: {
+          reserve: true,
+          VaultFactory: true,
+          auctioneer: true,
+        },
+        produce: {
+          economicCommittee: true,
+          econCommitteeCharter: true,
+        },
+      },
+    },
+  },
+});
