@@ -22,6 +22,8 @@ import { objectToMap } from './helpers/objectTools.js';
 import { getMerkleRootFromMerkleProof } from './merkle-tree/index.js';
 import './types.js';
 
+const TT = makeTracer('ContractStartFn');
+
 export const messagesObject = {
   makeClaimInvitationDescription: () => 'claim airdrop',
   makeIllegalActionString: status =>
@@ -80,6 +82,13 @@ export const divideAmountByTwo = brand => amount =>
   divideBy(amount, makeRatio(200n, brand), 0n);
 harden(divideAmountByTwo);
 
+const handleUpdateCancelToken = (makeCancelTokenFn = cancelTokenMaker) => {
+  const cancelToken = makeCancelTokenFn();
+  TT('created new cancel token');
+  return cancelToken;
+};
+harden(handleUpdateCancelToken);
+
 /**
  * Utility function that encapsulates the process of creates a token mint, and
  * gathers its associated rand and issuer.
@@ -119,7 +128,6 @@ const tokenMintFactory = async (
 const createFutureTs = (sourceTs, inputTs) =>
   TimeMath.absValue(sourceTs) + TimeMath.relValue(inputTs);
 
-const TT = makeTracer('ContractStartFn');
 /**
  * @param {ZCF<ContractTerms>} zcf
  * @param {{ marshaller: Remotable; timer: TimerService }} privateArgs
@@ -137,7 +145,7 @@ export const start = async (zcf, privateArgs, baggage) => {
   const { timer } = privateArgs;
   /** @type {ContractTerms} */
   const {
-    startTime = oneDay,
+    startTime,
     targetEpochLength = oneDay,
     targetTokenSupply = 10_000_000n,
     tokenName = 'Tribbles',
@@ -172,6 +180,11 @@ export const start = async (zcf, privateArgs, baggage) => {
     E(timer).getCurrentTimestamp(),
     tokenMintFactory(zcf, tokenName),
   ]);
+  let cancelToken = null;
+  const makeNewCancelToken = () => {
+    cancelToken = handleUpdateCancelToken(cancelTokenMaker);
+    TT('Reassigned cancelToken', cancelToken);
+  };
 
   TT('t0', t0);
 
@@ -194,10 +207,7 @@ export const start = async (zcf, privateArgs, baggage) => {
       // Do I need to store tokenIssuer and tokenBrand in baggage?
       tokenIssuer,
       tokenBrand,
-      startTime: createFutureTs(
-        t0,
-        harden({ relValue: startTime, timerBrand }),
-      ),
+      startTime: createFutureTs(t0, harden({ relValue: 60_000n, timerBrand })),
     },
     baggage,
   );
@@ -222,9 +232,9 @@ export const start = async (zcf, privateArgs, baggage) => {
   const prepareContract = zone.exoClassKit(
     'Tribble Token Distribution',
     interfaceGuard,
-    (store, currentCancelToken) => ({
-      currentCancelToken,
+    store => ({
       claimCount: 0,
+      lastRecordedTimestamp: null,
       claimedAccounts: store,
       payoutArray: baggage.get('payouts'),
       currentEpoch: null,
@@ -248,8 +258,13 @@ export const start = async (zcf, privateArgs, baggage) => {
         },
         async updateDistributionMultiplier(wakeTime) {
           const { facets } = this;
-          this.state.currentCancelToken = cancelTokenMaker();
+          makeNewCancelToken();
+          TT('previous timestamp:', this.state.lastRecordedTimestamp);
+          const currentTimestamp = await E(timer).getCurrentTimestamp();
+          this.state.lastRecordedTimestamp = currentTimestamp;
+          TT('new timestamp:', this.state.lastRecordedTimestamp);
 
+          TT('baggage.keys', [...baggage.keys()]);
           void E(timer).setWakeup(
             wakeTime,
             makeWaker(
@@ -268,13 +283,13 @@ export const start = async (zcf, privateArgs, baggage) => {
                 );
               },
             ),
-            this.state.currentCancelToken,
+            cancelToken,
           );
 
           return 'wake up successfully set.';
         },
         async cancelTimer() {
-          await E(timer).cancel(this.state.currentCancelToken);
+          await E(timer).cancel(cancelToken);
         },
       },
       public: {
@@ -367,15 +382,14 @@ export const start = async (zcf, privateArgs, baggage) => {
       },
     },
   );
-  const cancelToken = cancelTokenMaker();
   const {
     creator: creatorFacet,
     helper,
     public: publicFacet,
-  } = prepareContract(airdropStatusTracker, cancelToken);
+  } = prepareContract(airdropStatusTracker);
 
   console.log('START TIME', baggage.get('startTime'));
-  await E(timer).setWakeup(
+  void E(timer).setWakeup(
     baggage.get('startTime'),
     makeWaker('claimWindowOpenWaker', ({ absValue }) => {
       airdropStatusTracker.init('currentEpoch', 0n);

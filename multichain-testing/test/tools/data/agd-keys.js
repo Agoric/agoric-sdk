@@ -1,19 +1,4 @@
-// @ts-nocheck
-import anyTest from '@endo/ses-ava/prepare-endo.js';
-import type { TestFn } from 'ava';
-import { makeDoOffer } from '../tools/e2e-tools.js';
-import {
-  commonSetup,
-  SetupContextWithWallets,
-  chainConfig,
-} from './support.js';
-
-const test = anyTest as TestFn<SetupContextWithWallets>;
-
-const contractName = 'tribblesAirdrop';
-const contractBuilder =
-  '../packages/builders/scripts/testing/start-tribbles-airdrop.js';
-const agoricAccounts = [
+const accounts = [
   {
     tier: 1,
     name: 'gov1',
@@ -46,7 +31,7 @@ const agoricAccounts = [
   },
   {
     tier: 4,
-    name: 'testkey-may11',
+    name: 'may11',
     type: 'local',
     address: 'agoric1g6lrpj3wtdrdlsakxky4rhnzfkep23vgfk9esp',
     pubkey: {
@@ -56,7 +41,7 @@ const agoricAccounts = [
   },
   {
     tier: 2,
-    name: 'key',
+    name: 'owens-key',
     type: 'local',
     address: 'agoric18tdsgyamdkcs0lkf885gp3v5slq3q5n455lett',
     pubkey: {
@@ -66,7 +51,7 @@ const agoricAccounts = [
   },
   {
     tier: 3,
-    name: 'testkey2-may-11',
+    name: 'test-may-11',
     type: 'local',
     address: 'agoric1p6fp3zj9er8h47r3yndysd9k7ew7es8kjlffus',
     pubkey: {
@@ -156,7 +141,7 @@ const agoricAccounts = [
   },
   {
     tier: 1,
-    name: 'vic',
+    name: 'victor-da-best',
     type: 'local',
     address: 'agoric1vzqqm5dfdhlxh6n3pgkyp5z5thljklq3l02kug',
     pubkey: {
@@ -167,63 +152,6 @@ const agoricAccounts = [
 ];
 
 const getPubkeyKey = ({ pubkey }) => `${pubkey.key}`;
-const agoricPubkeys = agoricAccounts.map(getPubkeyKey);
+const agoricPubkeys = accounts.map(getPubkeyKey);
 
-const accounts = ['alice', 'bob', 'carol'];
-
-test.before(async t => {
-  const { deleteTestKeys, setupTestKeys, ...rest } = await commonSetup(t);
-  deleteTestKeys(accounts).catch();
-  const wallets = await setupTestKeys(accounts);
-  t.context = { ...rest, wallets, deleteTestKeys };
-  const { startContract } = rest;
-
-  console.group(
-    '################ START inside test.before logger ##############',
-  );
-  console.log('----------------------------------------');
-  console.log('t.context ::::', t.context);
-  console.log('----------------------------------------');
-  console.log('wallets ::::', wallets);
-
-  console.log(
-    '--------------- END inside test.before logger -------------------',
-  );
-  console.groupEnd();
-  await startContract(contractName, contractBuilder);
-});
-
-test.after(async t => {
-  const { deleteTestKeys } = t.context;
-  deleteTestKeys(accounts);
-});
-
-const simulatreClaim = test.macro({
-  title: (_, agoricAccount) =>
-    `Simulate claim for account ${agoricAccount.name} with address ${agoricAccount.address}`,
-  exec: async (t, agoricAccount) => {
-    const { address, pubkey } = agoricAccount;
-    console.log(
-      `testing makeCreateAndFundScenario for account ${agoricAccount.name}, and pubkey ${pubkey}`,
-    );
-    const {
-      wallets,
-      provisionSmartWallet,
-      vstorageClient,
-      retryUntilCondition,
-    } = t.context;
-
-    const instnace = vstorageClient.queryData(
-      'published.agoricNames.instance.tibblesAirdrop',
-    );
-
-    t.log(instnace);
-    const alicesWallet = await provisionSmartWallet(wallets[accounts[0]], {
-      IST: 10n,
-      BLD: 30n,
-    });
-
-    t.deepEqual(alicesWallet, {});
-  },
-});
-test.serial(simulatreClaim, agoricAccounts[0]);
+export { accounts, agoricPubkeys };
