@@ -1,13 +1,11 @@
-/* global E */
 // @ts-check
-/// <reference types="@agoric/vats/src/core/core-eval-env"/>
-/// <reference types="@agoric/vats/src/core/types-ambient"/>
+import { E } from '@endo/eventual-send';
 const { Fail } = assert;
 
 const runConfig = {
   committeeName: 'Economic Committee',
   economicCommitteeAddresses: {
-    gov1: 'agoric1ldmtatp24qlllgxmrsjzcpe20fvlkp448zcuce',
+    gov1: 'agoric1ee9hr0jyrxhy999y755mp862ljgycmwyp4pl7q',
     // gov2: 'agoric140dmkrz2e42ergjj7gyvejhzmjzurvqeq82ang',
     // gov3: 'agoric1w8wktaur4zf8qmmtn3n7x3r0jhsjkjntcm3u6h',
     // gov4: 'agoric1p2aqakv3ulz4qfy2nut86j9gx0dx0yw09h96md',
@@ -338,11 +336,11 @@ const shutdown = async ({
 };
 
 export const replaceCommitteeAndCharter = async permittedPowers => {
-  await shutdown(permittedPowers);
+  // await shutdown(permittedPowers);
   await startNewEconomicCommittee(permittedPowers);
   await startNewEconCharter(permittedPowers);
   await addGovernorsToEconCharter(permittedPowers);
-  await handlehighPrioritySendersList(permittedPowers);
+  // await handlehighPrioritySendersList(permittedPowers);
 
   const psmKitMap = await permittedPowers.consume.psmKit;
 
