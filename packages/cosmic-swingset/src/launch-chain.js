@@ -52,6 +52,8 @@ import { makeQueue, makeQueueStorageMock } from './helpers/make-queue.js';
 import { exportStorage } from './export-storage.js';
 import { parseLocatedJson } from './helpers/json.js';
 
+const { hasOwn } = Object;
+
 /** @import { Mailbox, RunPolicy, SwingSetConfig } from '@agoric/swingset-vat' */
 /** @import { KVStore } from './helpers/bufferedStorage.js' */
 
@@ -88,13 +90,17 @@ const parseUpgradePlanInfo = (upgradePlan, prefix = '') => {
  */
 
 /**
- * @typedef {'leftover' | 'forced' | 'high-priority' | 'intermission' | 'queued'} CrankerPhase
+ * @typedef {'leftover' | 'forced' | 'high-priority' | 'intermission' | 'queued' | 'cleanup'} CrankerPhase
  *   - leftover: work from a previous block
  *   - forced: work that claims the entirety of the current block
  *   - high-priority: queued work the precedes timer advancement
  *   - intermission: needed to note state exports and update consistency hashes
  *   - queued: queued work the follows timer advancement
+ *   - cleanup: for dealing with data from terminated vats
  */
+
+/** @type {CrankerPhase} */
+const CLEANUP = 'cleanup';
 
 /**
  * @typedef {(phase: CrankerPhase) => Promise<boolean>} Cranker runs the kernel
@@ -262,6 +268,7 @@ export async function buildSwingset(
  *   shouldRun(): boolean;
  *   remainingBeans(): bigint | undefined;
  *   totalBeans(): bigint;
+ *   startCleanup(): boolean;
  * }} ChainRunPolicy
  */
 
@@ -273,13 +280,21 @@ export async function buildSwingset(
  */
 
 /**
+ * Return a stateful run policy that supports two phases: first allow
+ * non-cleanup work (presumably deliveries) until an overrideable computron
+ * budget is exhausted, then (iff no work was done and at least one vat cleanup
+ * budget field is positive) a cleanup phase that allows cleanup work (and
+ * presumably nothing else) until one of those fields is exhausted.
+ * https://github.com/Agoric/agoric-sdk/issues/8928#issuecomment-2053357870
+ *
  * @param {object} params
  * @param {BeansPerUnit} params.beansPerUnit
+ * @param {import('@agoric/swingset-vat').CleanupBudget} [params.vatCleanupBudget]
  * @param {boolean} [ignoreBlockLimit]
  * @returns {ChainRunPolicy}
  */
 function computronCounter(
-  { beansPerUnit },
+  { beansPerUnit, vatCleanupBudget },
   ignoreBlockLimit = false,
 ) {
   const {
@@ -293,6 +308,38 @@ function computronCounter(
 
   let totalBeans = 0n;
   const shouldRun = () => ignoreBlockLimit || totalBeans < blockComputeLimit;
+
+  const remainingCleanups = { default: Infinity, ...vatCleanupBudget };
+  const defaultCleanupBudget = remainingCleanups.default;
+  let cleanupStarted = false;
+  let cleanupDone = false;
+  const cleanupPossible =
+    Object.values(remainingCleanups).length > 0
+      ? Object.values(remainingCleanups).some(n => n > 0)
+      : defaultCleanupBudget > 0;
+  if (!cleanupPossible) cleanupDone = true;
+  /** @type {() => (false | import('@agoric/swingset-vat').CleanupBudget)} */
+  const allowCleanup = () =>
+    cleanupStarted && !cleanupDone && { ...remainingCleanups };
+  const startCleanup = () => {
+    assert(!cleanupStarted);
+    cleanupStarted = true;
+    return totalBeans === 0n && !cleanupDone;
+  };
+  const didCleanup = details => {
+    for (const [phase, count] of Object.entries(details)) {
+      if (phase === 'total') continue;
+      if (!hasOwn(remainingCleanups, phase)) {
+        // TODO: log unknown phases?
+        remainingCleanups[phase] = defaultCleanupBudget;
+      }
+      remainingCleanups[phase] -= count;
+      if (remainingCleanups[phase] <= 0) cleanupDone = true;
+    }
+    // We return true to allow processing of any BOYD/GC prompted by cleanup,
+    // even if cleanup as such is now done.
+    return true;
+  };
 
   const policy = harden({
     vatCreated() {
@@ -318,11 +365,14 @@ function computronCounter(
     emptyCrank() {
       return shouldRun();
     },
+    allowCleanup,
+    didCleanup,
 
     shouldRun,
     remainingBeans: () =>
       ignoreBlockLimit ? undefined : blockComputeLimit - totalBeans,
     totalBeans: () => totalBeans,
+    startCleanup,
   });
   return policy;
 }
@@ -469,7 +519,11 @@ export async function launch({
    */
   function makeRunSwingset(blockHeight, runPolicy) {
     let runNum = 0;
-    async function runSwingset(_phase) {
+    async function runSwingset(phase) {
+      if (phase === CLEANUP) {
+        const allowCleanup = runPolicy.startCleanup();
+        if (!allowCleanup) return false;
+      }
       const startBeans = runPolicy.totalBeans();
       controller.writeSlogObject({
         type: 'cosmic-swingset-run-start',
@@ -771,6 +825,9 @@ export async function launch({
 
     // Finally, process as much as we can from the actionQueue.
     await processActions(actionQueue, runSwingset, 'queued');
+
+    // Cleanup after terminated vats as allowed.
+    await runSwingset('cleanup');
   }
 
   async function endBlock(blockHeight, blockTime, params) {
