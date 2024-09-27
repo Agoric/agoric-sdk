@@ -1,9 +1,13 @@
 // @ts-check
 // @jessie-check
 
-import { Fail } from '@endo/errors';
+import { X, Fail, makeError } from '@endo/errors';
 import { Nat, isNat } from '@endo/nat';
 
+/**
+ * @param {string} s
+ * @returns {bigint}
+ */
 export const stringToNat = s => {
   typeof s === 'string' || Fail`${s} must be a string`;
   const bint = BigInt(s);
@@ -11,6 +15,27 @@ export const stringToNat = s => {
   `${nat}` === s || Fail`${s} must be the canonical representation of ${nat}`;
   return nat;
 };
+
+/**
+ * @template T
+ * @template U
+ * @param {Array<[key: string, value: T]>} entries
+ * @param {(value: T) => U} [mapper]
+ */
+const recordFromEntries = (
+  entries,
+  mapper = x => /** @type {U} */ (/** @type {unknown} */ (x)),
+) =>
+  Object.fromEntries(
+    entries.map(([key, value]) => {
+      typeof key === 'string' || Fail`Key ${key} must be a string`;
+      try {
+        return [key, mapper(value)];
+      } catch (err) {
+        throw makeError(X`${key} value was invalid`, undefined, { cause: err });
+      }
+    }),
+  );
 
 /** @param {{key: string, size: number}[]} queueSizeEntries */
 export const parseQueueSizes = queueSizeEntries =>
@@ -38,7 +63,9 @@ export const parseParams = params => {
     beans_per_unit: rawBeansPerUnit,
     fee_unit_price: rawFeeUnitPrice,
     queue_max: rawQueueMax,
+    vat_cleanup_budget: rawVatCleanupBudget,
   } = params;
+
   Array.isArray(rawBeansPerUnit) ||
     Fail`beansPerUnit must be an array, not ${rawBeansPerUnit}`;
   const beansPerUnit = Object.fromEntries(
@@ -47,6 +74,7 @@ export const parseParams = params => {
       return [key, stringToNat(beans)];
     }),
   );
+
   Array.isArray(rawFeeUnitPrice) ||
     Fail`feeUnitPrice ${rawFeeUnitPrice} must be an array`;
   const feeUnitPrice = rawFeeUnitPrice.map(({ denom, amount }) => {
@@ -54,9 +82,20 @@ export const parseParams = params => {
     denom || Fail`denom ${denom} must be non-empty`;
     return { denom, amount: stringToNat(amount) };
   });
+
   Array.isArray(rawQueueMax) ||
     Fail`queueMax must be an array, not ${rawQueueMax}`;
   const queueMax = parseQueueSizes(rawQueueMax);
 
-  return { beansPerUnit, feeUnitPrice, queueMax };
+  Array.isArray(rawVatCleanupBudget) ||
+    Fail`vatCleanupBudget must be an array, not ${rawVatCleanupBudget}`;
+  const vatCleanupBudget = recordFromEntries(
+    rawVatCleanupBudget.map(({ key, value }) => [key, value]),
+    s => Number(stringToNat(s)),
+  );
+  rawVatCleanupBudget.length === 0 ||
+    vatCleanupBudget.default !== undefined ||
+    Fail`vatCleanupBudget.default must be provided when vatCleanupBudget is not empty`;
+
+  return { beansPerUnit, feeUnitPrice, queueMax, vatCleanupBudget };
 };
