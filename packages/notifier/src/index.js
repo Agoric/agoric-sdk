@@ -28,5 +28,5 @@ export {
 export * from './storesub.js';
 export * from './stored-notifier.js';
 
-// eslint-disable-next-line import/export -- doesn't know types
-export * from './types.js';
+// eslint-disable-next-line import/export
+export * from './types-index.js'; // no named exports in JS
