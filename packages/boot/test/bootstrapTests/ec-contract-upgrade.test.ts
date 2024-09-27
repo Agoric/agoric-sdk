@@ -24,9 +24,10 @@ const latestQuestionKey = `published.committees.Economic_Committee.latestQuestio
 const lastOutcomeKey = `published.committees.Economic_Committee.latestOutcome`;
 const highPrioritySenderKey = 'highPrioritySenders';
 
-const PROPOSAL_INV = 'old_proposal_invitation';
-const VOTER_INV = 'old_voter_invitation';
-const NEW_VOTER_INV = 'new_voter_invitation';
+const offerIds = {
+  propose: { outgoing: 'outgoing_propose' },
+  vote: { outgoing: 'outgoing_vote', incoming: 'incoming_vote' },
+};
 
 const getQuestionId = id => `propose-question-${id}`;
 const getVoteId = id => `vote-${id}`;
@@ -87,11 +88,11 @@ test.serial('normal running of committee', async t => {
     agoricNamesRemotes.instance;
   const { ATOM: collateralBrand, IST: debtBrand } = agoricNamesRemotes.brand;
 
-  // Accepting all invitations for original committee
+  t.log('Accepting all invitations for original committee');
   await Promise.all(
     smartWallets.map(w =>
       w.executeOffer({
-        id: PROPOSAL_INV,
+        id: offerIds.propose.outgoing,
         invitationSpec: {
           source: 'purse',
           instance: econCommitteeCharter,
@@ -114,7 +115,7 @@ test.serial('normal running of committee', async t => {
         a.description.includes('Voter'),
       );
       return w.executeOffer({
-        id: VOTER_INV,
+        id: offerIds.vote.outgoing,
         invitationSpec: {
           source: 'purse',
           instance: economicCommittee,
@@ -125,12 +126,12 @@ test.serial('normal running of committee', async t => {
     }),
   );
 
-  // Proposing a question using first wallet
+  t.log('Proposing a question using first wallet');
   await smartWallets[0].executeOffer({
     id: getQuestionId(1),
     invitationSpec: {
       invitationMakerName: 'VoteOnParamChange',
-      previousOffer: PROPOSAL_INV,
+      previousOffer: offerIds.propose.outgoing,
       source: 'continuing',
     },
     offerArgs: {
@@ -146,7 +147,7 @@ test.serial('normal running of committee', async t => {
     status: { id: getQuestionId(1), numWantsSatisfied: 1 },
   });
 
-  // Voting on question using first 3 wallets
+  t.log('Voting on question using first 3 wallets');
   const lastQuestion = unmarshalFromVstorage(
     storage.data,
     latestQuestionKey,
@@ -163,7 +164,7 @@ test.serial('normal running of committee', async t => {
             lastQuestion.questionHandle,
           ],
           invitationMakerName: 'makeVoteInvitation',
-          previousOffer: VOTER_INV,
+          previousOffer: offerIds.vote.outgoing,
           source: 'continuing',
         },
         proposal: {},
@@ -177,10 +178,10 @@ test.serial('normal running of committee', async t => {
     });
   }
 
-  // Waiting for period to end
+  t.log('Waiting for period to end');
   await advanceTimeTo(2n);
 
-  // Verifying outcome
+  t.log('Verifying outcome');
   const lastOutcome = unmarshalFromVstorage(
     storage.data,
     lastOutcomeKey,
@@ -238,9 +239,13 @@ test.serial('successful vote by 2 continuing members', async t => {
 
   const agoricNamesRemotes = makeAgoricNamesRemotesFromFakeStorage(storage);
   const { economicCommittee, VaultFactory } = agoricNamesRemotes.instance;
-  const { ATOM: collateralBrand, IST: debtBrand } = agoricNamesRemotes.brand;
+  const {
+    ATOM: collateralBrand,
+    IST: debtBrand,
+    Invitation,
+  } = agoricNamesRemotes.brand;
 
-  // Accepting all new invitations for voters
+  t.log('Accepting all new invitations for voters');
   await Promise.all(
     newCommittee.map(w => {
       const invitationPurse = w.getCurrentWalletRecord().purses.find(p => {
@@ -253,7 +258,7 @@ test.serial('successful vote by 2 continuing members', async t => {
         a.description.includes('Voter'),
       );
       return w.executeOffer({
-        id: NEW_VOTER_INV,
+        id: offerIds.vote.incoming,
         invitationSpec: {
           source: 'purse',
           instance: economicCommittee,
@@ -264,12 +269,12 @@ test.serial('successful vote by 2 continuing members', async t => {
     }),
   );
 
-  // Proposing question using old charter invitation
+  t.log('Proposing question using old charter invitation');
   await newCommittee[0].executeOffer({
     id: getQuestionId(2),
     invitationSpec: {
       invitationMakerName: 'VoteOnParamChange',
-      previousOffer: PROPOSAL_INV,
+      previousOffer: offerIds.propose.outgoing,
       source: 'continuing',
     },
     offerArgs: {
@@ -285,7 +290,7 @@ test.serial('successful vote by 2 continuing members', async t => {
     status: { id: getQuestionId(2), numWantsSatisfied: 1 },
   });
 
-  // Voting on question using first 2 wallets
+  t.log('Voting on question using first 2 wallets');
   const lastQuestionForNewCommittee = unmarshalFromVstorage(
     storage.data,
     latestQuestionKey,
@@ -302,7 +307,7 @@ test.serial('successful vote by 2 continuing members', async t => {
             lastQuestionForNewCommittee.questionHandle,
           ],
           invitationMakerName: 'makeVoteInvitation',
-          previousOffer: NEW_VOTER_INV,
+          previousOffer: offerIds.vote.incoming,
           source: 'continuing',
         },
         proposal: {},
@@ -315,10 +320,10 @@ test.serial('successful vote by 2 continuing members', async t => {
     });
   }
 
-  // Waiting for period to end
+  t.log('Waiting for period to end');
   await advanceTimeTo(4n);
 
-  // Verifying outcome
+  t.log('Verifying outcome');
   const lastOutcomeForNewCommittee = unmarshalFromVstorage(
     storage.data,
     lastOutcomeKey,
@@ -336,7 +341,7 @@ test.serial('unsuccessful vote by 2 outgoing members', async t => {
   const { VaultFactory } = agoricNamesRemotes.instance;
   const { ATOM: collateralBrand, IST: debtBrand } = agoricNamesRemotes.brand;
 
-  // Should have no new invitations
+  t.log('Should have no new invitations');
   for (const w of outgoingCommittee) {
     const invitationPurse = w.getCurrentWalletRecord().purses.find(p => {
       return p.brand.toString().includes('Invitation');
@@ -350,12 +355,12 @@ test.serial('unsuccessful vote by 2 outgoing members', async t => {
     t.assert(invitation === undefined);
   }
 
-  // Proposing question using old charter invitation
+  t.log('Proposing question using old charter invitation');
   await outgoingCommittee[0].executeOffer({
     id: getQuestionId(3),
     invitationSpec: {
       invitationMakerName: 'VoteOnParamChange',
-      previousOffer: PROPOSAL_INV,
+      previousOffer: offerIds.propose.outgoing,
       source: 'continuing',
     },
     offerArgs: {
@@ -371,8 +376,8 @@ test.serial('unsuccessful vote by 2 outgoing members', async t => {
     status: { id: getQuestionId(3), numWantsSatisfied: 1 },
   });
 
-  // Voting on question using first 2 wallets
-  // voting is done by invitations already present and should fail
+  t.log('Voting on question using first 2 wallets');
+  t.log('voting is done by invitations already present and should fail');
   const lastQuestionForOutgoingCommittee = unmarshalFromVstorage(
     storage.data,
     latestQuestionKey,
@@ -388,7 +393,7 @@ test.serial('unsuccessful vote by 2 outgoing members', async t => {
           lastQuestionForOutgoingCommittee.questionHandle,
         ],
         invitationMakerName: 'makeVoteInvitation',
-        previousOffer: VOTER_INV,
+        previousOffer: offerIds.vote.outgoing,
         source: 'continuing',
       },
       proposal: {},
@@ -404,7 +409,7 @@ test.serial('unsuccessful vote by 2 outgoing members', async t => {
     });
   }
 
-  // Waiting for period to end
+  t.log('Waiting for period to end');
   await advanceTimeTo(6n);
 
   const lastOutcomeForNewCommittee = unmarshalFromVstorage(
@@ -426,7 +431,7 @@ test.serial(
     const { VaultFactory } = agoricNamesRemotes.instance;
     const { ATOM: collateralBrand, IST: debtBrand } = agoricNamesRemotes.brand;
 
-    // All invitations should already be accepted.
+    t.log('All invitations should already be accepted.');
     for (const w of committee) {
       const invitationPurse = w.getCurrentWalletRecord().purses.find(p => {
         return p.brand.toString().includes('Invitation');
@@ -440,12 +445,12 @@ test.serial(
       t.assert(invitation === undefined);
     }
 
-    // Proposing question using old charter invitation
+    t.log('Proposing question using old charter invitation');
     await committee[0].executeOffer({
       id: getQuestionId(4),
       invitationSpec: {
         invitationMakerName: 'VoteOnParamChange',
-        previousOffer: PROPOSAL_INV,
+        previousOffer: offerIds.propose.outgoing,
         source: 'continuing',
       },
       offerArgs: {
@@ -461,8 +466,8 @@ test.serial(
       status: { id: getQuestionId(4), numWantsSatisfied: 1 },
     });
 
-    // Voting on question using first all wallets
-    // first 2 should pass, last should fail
+    t.log('Voting on question using first all wallets');
+    t.log('first 2 should pass, last should fail');
     const lastQuestionForNewCommittee = unmarshalFromVstorage(
       storage.data,
       latestQuestionKey,
@@ -478,7 +483,8 @@ test.serial(
             lastQuestionForNewCommittee.questionHandle,
           ],
           invitationMakerName: 'makeVoteInvitation',
-          previousOffer: index === 2 ? VOTER_INV : NEW_VOTER_INV, // using old invitation for outgoing member
+          previousOffer:
+            index === 2 ? offerIds.vote.outgoing : offerIds.vote.incoming, // using old invitation for outgoing member
           source: 'continuing',
         },
         proposal: {},
@@ -495,7 +501,7 @@ test.serial(
       });
     }
 
-    // Waiting for period to end
+    t.log('Waiting for period to end');
     await advanceTimeTo(8n);
 
     const lastOutcomeForNewCommittee = unmarshalFromVstorage(
@@ -518,7 +524,7 @@ test.serial(
     const { VaultFactory } = agoricNamesRemotes.instance;
     const { ATOM: collateralBrand, IST: debtBrand } = agoricNamesRemotes.brand;
 
-    // All invitations should already be accepted.
+    t.log('All invitations should already be accepted.');
     for (const w of committee) {
       const invitationPurse = w.getCurrentWalletRecord().purses.find(p => {
         return p.brand.toString().includes('Invitation');
@@ -532,12 +538,12 @@ test.serial(
       t.assert(invitation === undefined);
     }
 
-    // Proposing question using old charter invitation
+    t.log('Proposing question using old charter invitation');
     await committee[0].executeOffer({
       id: getQuestionId(5),
       invitationSpec: {
         invitationMakerName: 'VoteOnParamChange',
-        previousOffer: PROPOSAL_INV,
+        previousOffer: offerIds.propose.outgoing,
         source: 'continuing',
       },
       offerArgs: {
@@ -553,8 +559,8 @@ test.serial(
       status: { id: getQuestionId(5), numWantsSatisfied: 1 },
     });
 
-    // Voting on question using first all wallets
-    // first 2 should fail, last should pass
+    t.log('Voting on question using first all wallets');
+    t.log('first 2 should fail, last should pass');
     const lastQuestionForNewCommittee = unmarshalFromVstorage(
       storage.data,
       latestQuestionKey,
@@ -570,7 +576,8 @@ test.serial(
             lastQuestionForNewCommittee.questionHandle,
           ],
           invitationMakerName: 'makeVoteInvitation',
-          previousOffer: index === 0 ? NEW_VOTER_INV : VOTER_INV, // using new invitation for continuing member
+          previousOffer:
+            index === 0 ? offerIds.vote.incoming : offerIds.vote.outgoing, // using new invitation for continuing member
           source: 'continuing',
         },
         proposal: {},
@@ -587,7 +594,7 @@ test.serial(
       });
     }
 
-    // Waiting for period to end
+    t.log('Waiting for period to end');
     await advanceTimeTo(10n);
 
     const lastOutcomeForNewCommittee = unmarshalFromVstorage(
