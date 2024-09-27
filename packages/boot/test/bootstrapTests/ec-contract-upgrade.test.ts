@@ -22,6 +22,7 @@ const wallets = {
 
 const latestQuestionKey = `published.committees.Economic_Committee.latestQuestion`;
 const lastOutcomeKey = `published.committees.Economic_Committee.latestOutcome`;
+const highPrioritySenderKey = 'highPrioritySenders';
 
 const PROPOSAL_INV = 'old_proposal_invitation';
 const VOTER_INV = 'old_voter_invitation';
@@ -189,21 +190,46 @@ test.serial('normal running of committee', async t => {
   t.assert(lastOutcome.outcome === 'win');
 });
 
-test.todo('check high priority senders before replacing committee');
+test.serial(
+  'check high priority senders before replacing committee',
+  async t => {
+    const { storage } = t.context;
+
+    const data = storage.toStorage({
+      method: 'children',
+      args: [highPrioritySenderKey],
+    });
+    t.true(data.length === 6);
+    t.deepEqual(data.sort(), Object.values(wallets).sort());
+  },
+);
 
 test.serial('replace committee', async t => {
   const { buildProposal, evalProposal } = t.context;
   await evalProposal(
     buildProposal(
       '@agoric/builders/scripts/inter-protocol/replace-electorate-core.js',
-      ['A3P_INTEGRATION'],
+      ['BOOTSTRAP_TEST'],
     ),
   );
   await eventLoopIteration();
   t.true(true); // just to avoid failure
 });
 
-test.todo('check high priority senders after replacing committee');
+test.serial(
+  'check high priority senders after replacing committee',
+  async t => {
+    const { storage } = t.context;
+
+    const data = storage.toStorage({
+      method: 'children',
+      args: [highPrioritySenderKey],
+    });
+
+    t.true(data.length === 3);
+    t.deepEqual(data.sort(), Object.values(wallets).slice(0, 3).sort());
+  },
+);
 
 test.serial('successful vote by 2 continuing members', async t => {
   const { smartWallets, storage, fromCapData, advanceTimeTo } = t.context;
