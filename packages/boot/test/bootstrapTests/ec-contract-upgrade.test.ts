@@ -109,6 +109,7 @@ test.serial('normal running of committee', async t => {
       });
       if (!invitationPurse) return null;
 
+      // @ts-expect-error
       const invitation = invitationPurse.balance.value.find(a =>
         a.description.includes('Voter'),
       );
@@ -170,11 +171,11 @@ test.serial('normal running of committee', async t => {
     ),
   );
 
-  smartWallets.slice(0, 3).forEach(w =>
+  for (const w of smartWallets.slice(0, 3)) {
     t.like(w.getLatestUpdateRecord(), {
       status: { id: getVoteId(1), numWantsSatisfied: 1 },
-    }),
-  );
+    });
+  }
 
   // Waiting for period to end
   await advanceTimeTo(2n);
@@ -195,7 +196,7 @@ test.serial(
   async t => {
     const { storage } = t.context;
 
-    const data = storage.toStorage({
+    const data: any = storage.toStorage({
       method: 'children',
       args: [highPrioritySenderKey],
     });
@@ -221,7 +222,7 @@ test.serial(
   async t => {
     const { storage } = t.context;
 
-    const data = storage.toStorage({
+    const data: any = storage.toStorage({
       method: 'children',
       args: [highPrioritySenderKey],
     });
@@ -247,6 +248,7 @@ test.serial('successful vote by 2 continuing members', async t => {
       });
       if (!invitationPurse) return null;
 
+      // @ts-expect-error
       const invitation = invitationPurse.balance.value.find(a =>
         a.description.includes('Voter'),
       );
@@ -307,11 +309,11 @@ test.serial('successful vote by 2 continuing members', async t => {
       }),
     ),
   );
-  newCommittee.slice(0, 2).forEach(w =>
+  for (const w of newCommittee.slice(0, 2)) {
     t.like(w.getLatestUpdateRecord(), {
       status: { id: getVoteId(2), numWantsSatisfied: 1 },
-    }),
-  );
+    });
+  }
 
   // Waiting for period to end
   await advanceTimeTo(4n);
@@ -335,17 +337,18 @@ test.serial('unsuccessful vote by 2 outgoing members', async t => {
   const { ATOM: collateralBrand, IST: debtBrand } = agoricNamesRemotes.brand;
 
   // Should have no new invitations
-  outgoingCommittee.forEach(w => {
+  for (const w of outgoingCommittee) {
     const invitationPurse = w.getCurrentWalletRecord().purses.find(p => {
       return p.brand.toString().includes('Invitation');
     });
-    if (!invitationPurse) return null;
+    if (!invitationPurse) continue;
 
+    // @ts-expect-error
     const invitation = invitationPurse.balance.value.find(a =>
       a.description.includes('Voter'),
     );
     t.assert(invitation === undefined);
-  });
+  }
 
   // Proposing question using old charter invitation
   await outgoingCommittee[0].executeOffer({
@@ -395,11 +398,11 @@ test.serial('unsuccessful vote by 2 outgoing members', async t => {
   await t.throwsAsync(votePromises[0]);
   await t.throwsAsync(votePromises[1]);
 
-  outgoingCommittee.slice(0, 2).forEach(w =>
+  for (const w of outgoingCommittee.slice(0, 2)) {
     t.like(w.getLatestUpdateRecord(), {
       status: { id: getVoteId(3), numWantsSatisfied: 1 },
-    }),
-  );
+    });
+  }
 
   // Waiting for period to end
   await advanceTimeTo(6n);
@@ -424,17 +427,18 @@ test.serial(
     const { ATOM: collateralBrand, IST: debtBrand } = agoricNamesRemotes.brand;
 
     // All invitations should already be accepted.
-    committee.forEach(w => {
+    for (const w of committee) {
       const invitationPurse = w.getCurrentWalletRecord().purses.find(p => {
         return p.brand.toString().includes('Invitation');
       });
-      if (!invitationPurse) return null;
+      if (!invitationPurse) continue;
 
+      // @ts-expect-error
       const invitation = invitationPurse.balance.value.find(a =>
         a.description.includes('Voter'),
       );
       t.assert(invitation === undefined);
-    });
+    }
 
     // Proposing question using old charter invitation
     await committee[0].executeOffer({
@@ -485,11 +489,11 @@ test.serial(
     await votePromises[1];
     await t.throwsAsync(votePromises[2]);
 
-    committee.forEach(w =>
+    for (const w of committee) {
       t.like(w.getLatestUpdateRecord(), {
         status: { id: getVoteId(4), numWantsSatisfied: 1 },
-      }),
-    );
+      });
+    }
 
     // Waiting for period to end
     await advanceTimeTo(8n);
@@ -515,17 +519,18 @@ test.serial(
     const { ATOM: collateralBrand, IST: debtBrand } = agoricNamesRemotes.brand;
 
     // All invitations should already be accepted.
-    committee.forEach(w => {
+    for (const w of committee) {
       const invitationPurse = w.getCurrentWalletRecord().purses.find(p => {
         return p.brand.toString().includes('Invitation');
       });
-      if (!invitationPurse) return null;
+      if (!invitationPurse) continue;
 
+      // @ts-expect-error
       const invitation = invitationPurse.balance.value.find(a =>
         a.description.includes('Voter'),
       );
       t.assert(invitation === undefined);
-    });
+    }
 
     // Proposing question using old charter invitation
     await committee[0].executeOffer({
@@ -576,11 +581,11 @@ test.serial(
     await t.throwsAsync(votePromises[1]);
     await t.throwsAsync(votePromises[2]);
 
-    committee.forEach(w =>
+    for (const w of committee) {
       t.like(w.getLatestUpdateRecord(), {
         status: { id: getVoteId(5), numWantsSatisfied: 1 },
-      }),
-    );
+      });
+    }
 
     // Waiting for period to end
     await advanceTimeTo(10n);
