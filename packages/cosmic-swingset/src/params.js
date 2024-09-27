@@ -5,6 +5,13 @@ import { X, Fail, makeError } from '@endo/errors';
 import { Nat, isNat } from '@endo/nat';
 
 /**
+ * @template {number | bigint} T
+ * @param {T} n
+ * @returns {T}
+ */
+const requireNat = n => (isNat(n) ? n : Fail`${n} must be a positive integer`);
+
+/**
  * @param {string} s
  * @returns {bigint}
  */
@@ -37,14 +44,10 @@ const recordFromEntries = (
     }),
   );
 
-/** @param {{key: string, size: number}[]} queueSizeEntries */
-export const parseQueueSizes = queueSizeEntries =>
-  Object.fromEntries(
-    queueSizeEntries.map(({ key, size }) => {
-      typeof key === 'string' || Fail`Key ${key} must be a string`;
-      isNat(size) || Fail`Size ${size} is not a positive integer`;
-      return [key, size];
-    }),
+export const parseQueueSizes = entryRecords =>
+  recordFromEntries(
+    entryRecords.map(({ key, size }) => [key, size]),
+    requireNat,
   );
 
 /** @param {Record<string, number>} queueSizes */
@@ -68,11 +71,9 @@ export const parseParams = params => {
 
   Array.isArray(rawBeansPerUnit) ||
     Fail`beansPerUnit must be an array, not ${rawBeansPerUnit}`;
-  const beansPerUnit = Object.fromEntries(
-    rawBeansPerUnit.map(({ key, beans }) => {
-      typeof key === 'string' || Fail`Key ${key} must be a string`;
-      return [key, stringToNat(beans)];
-    }),
+  const beansPerUnit = recordFromEntries(
+    rawBeansPerUnit.map(({ key, beans }) => [key, beans]),
+    stringToNat,
   );
 
   Array.isArray(rawFeeUnitPrice) ||
