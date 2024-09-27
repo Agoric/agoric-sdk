@@ -21,14 +21,10 @@ test.serial('attempt to open vaults under the minimum amount', async t => {
 
   const mint = '3.0';
   const collateral = '5.0';
-  await t.throwsAsync(
-    () => openVault(USER1ADDR, mint, collateral),
-    {
-      message:
-        /Vault creation requires a minInitialDebt of {"brand":"\[Alleged: IST brand\]","value":"\[5000000n\]"}/,
-    },
-    'Error triggered by openVault does not contain the expected message',
-  );
+  await t.throwsAsync(() => openVault(USER1ADDR, mint, collateral), {
+    message:
+      /Vault creation requires a minInitialDebt of {"brand":"\[Alleged: IST brand\]","value":"\[5000000n\]"}/,
+  });
 
   const activeVaultsAfter = await agopsVaults(USER1ADDR);
   t.log('active vaults after:', activeVaultsAfter);
@@ -88,7 +84,7 @@ test.serial('remove collateral', async t => {
 
   t.is(
     collateralBefore,
-    collateralAfter + 1000000n,
+    collateralAfter + 1_000_000n,
     'The vault Collateral should decrease after removing some ATOM',
   );
 });
@@ -111,7 +107,7 @@ test.serial('remove IST', async t => {
 
   t.is(
     debtAfter,
-    debtBefore + 1005000n,
+    debtBefore + 1_005_000n,
     'The vault Debt should increase after removing some IST',
   );
 });
@@ -187,7 +183,7 @@ test.serial('add collateral', async t => {
 
   t.is(
     collateralBefore,
-    collateralAfter - 1000000n,
+    collateralAfter - 1_000_000n,
     'The vault Collateral should increase after adding some ATOM',
   );
 });
@@ -211,7 +207,7 @@ test.serial('add IST', async t => {
 
   t.is(
     debtAfter,
-    debtBefore - 1000000n,
+    debtBefore - 1_000_000n,
     'The vault Debt should decrease after adding some IST',
   );
 });
