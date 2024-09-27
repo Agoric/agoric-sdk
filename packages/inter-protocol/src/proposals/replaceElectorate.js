@@ -1,8 +1,10 @@
 // @ts-check
 import { E } from '@endo/eventual-send';
 import { reserveThenDeposit } from './utils.js';
-
-const { Fail } = assert;
+import {
+  assertPathSegment,
+  makeStorageNodeChild,
+} from '@agoric/internal/src/lib-chainStorage.js';
 
 const runConfig = {
   committeeName: 'Economic Committee',
@@ -21,14 +23,6 @@ const { values } = Object;
 
 /** @type {<X, Y>(xs: X[], ys: Y[]) => [X, Y][]} */
 const zip = (xs, ys) => xs.map((x, i) => [x, ys[i]]);
-
-const pathSegmentPattern = /^[a-zA-Z0-9_-]{1,100}$/;
-
-/** @type {(name: string) => void} */
-const assertPathSegment = name => {
-  pathSegmentPattern.test(name) ||
-    Fail`Path segment names must consist of 1 to 100 characters limited to ASCII alphanumerics, underscores, and/or dashes: ${name}`;
-};
 
 /** @type {(name: string) => string} */
 const sanitizePathSegment = name => {
@@ -68,8 +62,8 @@ const handlehighPrioritySendersList = async ({
 };
 
 const inviteECMembers = async (
-  { consume: { namesByAddressAdmin, economicCommitteeCreatorFacet } },
-  { options: { voterAddresses = {} } },
+  { consume: { namesByAddressAdmin } },
+  { options: { voterAddresses = {}, economicCommitteeCreatorFacet } },
 ) => {
   trace('Create invitations for new committee');
 
@@ -118,8 +112,10 @@ const startNewEconomicCommittee = async ({
   const committeeSize = values(runConfig.voterAddresses).length;
   trace(`committeeSize ${committeeSize}`);
 
-  const committeesNode = await E(chainStorage).makeChildNode(COMMITTEES_ROOT);
-
+  const committeesNode = await makeStorageNodeChild(
+    chainStorage,
+    COMMITTEES_ROOT,
+  );
   const storageNode = await E(committeesNode).makeChildNode(
     sanitizePathSegment(committeeName),
   );
@@ -128,16 +124,19 @@ const startNewEconomicCommittee = async ({
 
   trace('Starting new EC Committee Instance');
 
-  const { instance, creatorFacet } = await E(zoe).startInstance(
+  const privateArgs = {
+    storageNode,
+    marshaller,
+  };
+
+  const startResult = await E(zoe).startInstance(
     committee,
     {},
     { committeeName, committeeSize },
-    {
-      storageNode,
-      marshaller,
-    },
+    privateArgs,
     'economicCommittee',
   );
+  const { instance, creatorFacet } = startResult;
 
   trace('Started new EC Committee Instance Successfully');
 
@@ -151,10 +150,13 @@ const startNewEconomicCommittee = async ({
 
   economicCommitteeCreatorFacet.reset();
   economicCommitteeCreatorFacet.resolve(creatorFacet);
+
+  return creatorFacet;
 };
 
 export const replaceElectorate = async permittedPowers => {
-  await startNewEconomicCommittee(permittedPowers);
+  const economicCommitteeCreatorFacet =
+    await startNewEconomicCommittee(permittedPowers);
 
   const psmKitMap = await permittedPowers.consume.psmKit;
 
@@ -166,9 +168,6 @@ export const replaceElectorate = async permittedPowers => {
       .governorCreatorFacet,
     ...[...psmKitMap.values()].map(psmKit => psmKit.psmGovernorCreatorFacet),
   ];
-
-  const economicCommitteeCreatorFacet =
-    await permittedPowers.consume.economicCommitteeCreatorFacet;
 
   await Promise.all(
     creatorFacets.map(async creatorFacet => {
@@ -190,6 +189,7 @@ export const replaceElectorate = async permittedPowers => {
   await inviteECMembers(permittedPowers, {
     options: {
       voterAddresses: runConfig.voterAddresses,
+      economicCommitteeCreatorFacet,
     },
   });
 
@@ -211,7 +211,6 @@ export const getManifestForReplaceElectorate = async (
         auctioneerKit: true,
         vaultFactoryKit: true,
         psmKit: true,
-        provisionPoolStartResult: true,
 
         board: true,
         chainStorage: true,
