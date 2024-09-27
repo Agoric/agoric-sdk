@@ -184,15 +184,15 @@ func validateVatCleanupBudget(i interface{}) error {
 // modified, regardless of their value, and they are not removed if they no
 // longer appear in the defaults.
 func UpdateParams(params Params) (Params, error) {
-	newBpu, err := appendMissingDefaultBeansPerUnit(params.BeansPerUnit, DefaultBeansPerUnit())
+	newBpu, err := appendMissingDefaults(params.BeansPerUnit, DefaultBeansPerUnit())
 	if err != nil {
 		return params, err
 	}
-	newPff, err := appendMissingDefaultPowerFlagFees(params.PowerFlagFees, DefaultPowerFlagFees)
+	newPff, err := appendMissingDefaults(params.PowerFlagFees, DefaultPowerFlagFees)
 	if err != nil {
 		return params, err
 	}
-	newQm, err := appendMissingDefaultQueueSize(params.QueueMax, DefaultQueueMax)
+	newQm, err := appendMissingDefaults(params.QueueMax, DefaultQueueMax)
 	if err != nil {
 		return params, err
 	}
@@ -206,56 +206,6 @@ func UpdateParams(params Params) (Params, error) {
 	params.QueueMax = newQm
 	params.VatCleanupBudget = newVcb
 	return params, nil
-}
-
-// appendMissingDefaultBeansPerUnit appends the default beans per unit entries
-// not in the list of bean costs already, returning the possibly-updated list,
-// or an error.
-func appendMissingDefaultBeansPerUnit(bpu []StringBeans, defaultBpu []StringBeans) ([]StringBeans, error) {
-	existingBpu := make(map[string]struct{}, len(bpu))
-	for _, ob := range bpu {
-		existingBpu[ob.Key] = struct{}{}
-	}
-
-	for _, b := range defaultBpu {
-		if _, exists := existingBpu[b.Key]; !exists {
-			bpu = append(bpu, b)
-		}
-	}
-	return bpu, nil
-}
-
-// appendMissingDefaultPowerFlagFees appends the default power flag fee entries
-// not in the list of power flags already, returning the possibly-updated list,
-// or an error.
-func appendMissingDefaultPowerFlagFees(pff []PowerFlagFee, defaultPff []PowerFlagFee) ([]PowerFlagFee, error) {
-	existingPff := make(map[string]struct{}, len(pff))
-	for _, of := range pff {
-		existingPff[of.PowerFlag] = struct{}{}
-	}
-
-	for _, f := range defaultPff {
-		if _, exists := existingPff[f.PowerFlag]; !exists {
-			pff = append(pff, f)
-		}
-	}
-	return pff, nil
-}
-
-// appendMissingDefaultQueueSize appends the default queue size entries not in
-// the list of sizes already, returning the possibly-updated list, or an error.
-func appendMissingDefaultQueueSize(qs []QueueSize, defaultQs []QueueSize) ([]QueueSize, error) {
-	existingQs := make(map[string]struct{}, len(qs))
-	for _, os := range qs {
-		existingQs[os.Key] = struct{}{}
-	}
-
-	for _, s := range defaultQs {
-		if _, exists := existingQs[s.Key]; !exists {
-			qs = append(qs, s)
-		}
-	}
-	return qs, nil
 }
 
 // appendMissingDefaults appends to an input list any missing entries with their

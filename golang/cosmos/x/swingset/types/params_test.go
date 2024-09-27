@@ -80,7 +80,7 @@ func TestAddStorageBeanCost(t *testing.T) {
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := appendMissingDefaultBeansPerUnit(tt.in, []StringBeans{defaultStorageCost})
+			got, err := appendMissingDefaults(tt.in, []StringBeans{defaultStorageCost})
 			if err != nil {
 				t.Errorf("got error %v", err)
 			} else if !reflect.DeepEqual(got, tt.want) {
