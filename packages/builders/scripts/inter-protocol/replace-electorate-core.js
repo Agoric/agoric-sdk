@@ -82,8 +82,7 @@ const { keys } = Object;
 const Usage = `agoric run replace-electorate-core.js ${keys(configurations).join(' | ')}`;
 export default async (homeP, endowments) => {
   const { scriptArgs } = endowments;
-  const key = scriptArgs?.[0] || process.env.CONFIG_KEY;
-  const config = configurations[key];
+  const config = configurations[scriptArgs?.[0]];
   if (!config) {
     console.error(Usage);
     process.exit(1);
