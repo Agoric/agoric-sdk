@@ -1,6 +1,7 @@
 // @ts-check
 import { E } from '@endo/eventual-send';
 import { reserveThenDeposit } from './utils.js';
+
 const { Fail } = assert;
 
 const runConfig = {
@@ -49,7 +50,7 @@ const handlehighPrioritySendersList = async ({
   const { addressesToAdd, addressesToRemove } =
     runConfig.highPrioritySendersConfig;
 
-  for (let addr of addressesToAdd) {
+  for (const addr of addressesToAdd) {
     trace(`Adding ${addr} to High Priority Senders list`);
     await E(highPrioritySendersManager).add(
       HIGH_PRIORITY_SENDERS_NAMESPACE,
@@ -57,7 +58,7 @@ const handlehighPrioritySendersList = async ({
     );
   }
 
-  for (let addr of addressesToRemove) {
+  for (const addr of addressesToRemove) {
     trace(`Removing ${addr} from High Priority Senders list`);
     await E(highPrioritySendersManager).remove(
       HIGH_PRIORITY_SENDERS_NAMESPACE,
