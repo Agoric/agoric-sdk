@@ -69,11 +69,30 @@ export const defaultPowerFlagFees = [
 ];
 
 export const QueueInbound = 'inbound';
-
 export const defaultInboundQueueMax = 1_000;
-
 export const defaultQueueMax = [
   makeQueueSize(QueueInbound, defaultInboundQueueMax),
+];
+
+export const vatCleanupDefault = 'default';
+export const defaultVatCleanupDefault = 0;
+export const vatCleanupExports = 'exports';
+export const defaultVatCleanupExports = 0;
+export const vatCleanupImports = 'imports';
+export const defaultVatCleanupImports = 0;
+export const vatCleanupKv = 'kv';
+export const defaultVatCleanupKv = 0;
+export const vatCleanupSnapshots = 'snapshots';
+export const defaultVatCleanupSnapshots = 0;
+export const vatCleanupTranscripts = 'transcripts';
+export const defaultVatCleanupTranscripts = 0;
+export const defaultVatCleanupBudget = [
+  { key: vatCleanupDefault, value: `${defaultVatCleanupDefault}` },
+  { key: vatCleanupExports, value: `${defaultVatCleanupExports}` },
+  { key: vatCleanupImports, value: `${defaultVatCleanupImports}` },
+  { key: vatCleanupKv, value: `${defaultVatCleanupKv}` },
+  { key: vatCleanupSnapshots, value: `${defaultVatCleanupSnapshots}` },
+  { key: vatCleanupTranscripts, value: `${defaultVatCleanupTranscripts}` },
 ];
 
 /**
@@ -85,4 +104,5 @@ export const DEFAULT_SIM_SWINGSET_PARAMS = {
   bootstrap_vat_config: defaultBootstrapVatConfig,
   power_flag_fees: defaultPowerFlagFees,
   queue_max: defaultQueueMax,
+  vat_cleanup_budget: defaultVatCleanupBudget,
 };
