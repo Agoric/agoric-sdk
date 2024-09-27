@@ -67,11 +67,21 @@ export const makeZoeTestContext = async t => {
   );
   const { fromCapData } = makeMarshal(undefined, slotToBoardRemote);
 
+  const getUpdatedDebtLimit = () => {
+    const atomGovernance = unmarshalFromVstorage(
+      storage.data,
+      'published.vaultFactory.managers.manager0.governance',
+      fromCapData,
+      -1,
+    );
+    return atomGovernance.current.DebtLimit.value.value;
+  };
   return {
     ...swingsetTestKit,
     storage,
     smartWallets,
     fromCapData,
+    getUpdatedDebtLimit,
   };
 };
 const test = anyTest as TestFn<Awaited<ReturnType<typeof makeZoeTestContext>>>;
@@ -81,7 +91,13 @@ test.before(async t => {
 });
 
 test.serial('normal running of committee', async t => {
-  const { advanceTimeTo, storage, smartWallets, fromCapData } = t.context;
+  const {
+    advanceTimeTo,
+    storage,
+    smartWallets,
+    fromCapData,
+    getUpdatedDebtLimit,
+  } = t.context;
 
   const agoricNamesRemotes = makeAgoricNamesRemotesFromFakeStorage(storage);
   const { econCommitteeCharter, economicCommittee, VaultFactory } =
@@ -188,7 +204,7 @@ test.serial('normal running of committee', async t => {
     fromCapData,
     -1,
   );
-
+  t.deepEqual(getUpdatedDebtLimit(), 100_000_000n);
   t.assert(lastOutcome.outcome === 'win');
 });
 
@@ -201,7 +217,6 @@ test.serial(
       method: 'children',
       args: [highPrioritySenderKey],
     });
-    t.true(data.length === 6);
     t.deepEqual(data.sort(), Object.values(wallets).sort());
   },
 );
@@ -227,23 +242,23 @@ test.serial(
       method: 'children',
       args: [highPrioritySenderKey],
     });
-
-    t.true(data.length === 3);
     t.deepEqual(data.sort(), Object.values(wallets).slice(0, 3).sort());
   },
 );
 
 test.serial('successful vote by 2 continuing members', async t => {
-  const { smartWallets, storage, fromCapData, advanceTimeTo } = t.context;
+  const {
+    smartWallets,
+    storage,
+    fromCapData,
+    advanceTimeTo,
+    getUpdatedDebtLimit,
+  } = t.context;
   const newCommittee = smartWallets.slice(0, 3);
 
   const agoricNamesRemotes = makeAgoricNamesRemotesFromFakeStorage(storage);
   const { economicCommittee, VaultFactory } = agoricNamesRemotes.instance;
-  const {
-    ATOM: collateralBrand,
-    IST: debtBrand,
-    Invitation,
-  } = agoricNamesRemotes.brand;
+  const { ATOM: collateralBrand, IST: debtBrand } = agoricNamesRemotes.brand;
 
   t.log('Accepting all new invitations for voters');
   await Promise.all(
@@ -280,7 +295,7 @@ test.serial('successful vote by 2 continuing members', async t => {
     offerArgs: {
       deadline: 3n,
       instance: VaultFactory,
-      params: { DebtLimit: { brand: debtBrand, value: 100_000_000n } },
+      params: { DebtLimit: { brand: debtBrand, value: 200_000_000n } },
       path: { paramPath: { key: { collateralBrand } } },
     },
     proposal: {},
@@ -330,11 +345,18 @@ test.serial('successful vote by 2 continuing members', async t => {
     fromCapData,
     -1,
   );
+  t.deepEqual(getUpdatedDebtLimit(), 200_000_000n);
   t.assert(lastOutcomeForNewCommittee.outcome === 'win');
 });
 
 test.serial('unsuccessful vote by 2 outgoing members', async t => {
-  const { smartWallets, storage, fromCapData, advanceTimeTo } = t.context;
+  const {
+    smartWallets,
+    storage,
+    fromCapData,
+    advanceTimeTo,
+    getUpdatedDebtLimit,
+  } = t.context;
   const outgoingCommittee = smartWallets.slice(3);
 
   const agoricNamesRemotes = makeAgoricNamesRemotesFromFakeStorage(storage);
@@ -366,7 +388,7 @@ test.serial('unsuccessful vote by 2 outgoing members', async t => {
     offerArgs: {
       deadline: 5n,
       instance: VaultFactory,
-      params: { DebtLimit: { brand: debtBrand, value: 100_000_000n } },
+      params: { DebtLimit: { brand: debtBrand, value: 300_000_000n } },
       path: { paramPath: { key: { collateralBrand } } },
     },
     proposal: {},
@@ -418,13 +440,20 @@ test.serial('unsuccessful vote by 2 outgoing members', async t => {
     fromCapData,
     -1,
   );
+  t.notDeepEqual(getUpdatedDebtLimit(), 300_000_000n);
   t.assert(lastOutcomeForNewCommittee.outcome === 'fail');
 });
 
 test.serial(
   'successful vote by 2 continuing and 1 outgoing members',
   async t => {
-    const { smartWallets, storage, fromCapData, advanceTimeTo } = t.context;
+    const {
+      smartWallets,
+      storage,
+      fromCapData,
+      advanceTimeTo,
+      getUpdatedDebtLimit,
+    } = t.context;
     const committee = [...smartWallets.slice(0, 2), smartWallets[3]];
 
     const agoricNamesRemotes = makeAgoricNamesRemotesFromFakeStorage(storage);
@@ -456,7 +485,7 @@ test.serial(
       offerArgs: {
         deadline: 7n,
         instance: VaultFactory,
-        params: { DebtLimit: { brand: debtBrand, value: 100_000_000n } },
+        params: { DebtLimit: { brand: debtBrand, value: 400_000_000n } },
         path: { paramPath: { key: { collateralBrand } } },
       },
       proposal: {},
@@ -510,6 +539,7 @@ test.serial(
       fromCapData,
       -1,
     );
+    t.deepEqual(getUpdatedDebtLimit(), 400_000_000n);
     t.assert(lastOutcomeForNewCommittee.outcome === 'win');
   },
 );
@@ -517,7 +547,13 @@ test.serial(
 test.serial(
   'unsuccessful vote by 1 continuing and 2 outgoing members',
   async t => {
-    const { smartWallets, storage, fromCapData, advanceTimeTo } = t.context;
+    const {
+      smartWallets,
+      storage,
+      fromCapData,
+      advanceTimeTo,
+      getUpdatedDebtLimit,
+    } = t.context;
     const committee = [smartWallets[0], ...smartWallets.slice(3, 5)];
 
     const agoricNamesRemotes = makeAgoricNamesRemotesFromFakeStorage(storage);
@@ -549,7 +585,7 @@ test.serial(
       offerArgs: {
         deadline: 9n,
         instance: VaultFactory,
-        params: { DebtLimit: { brand: debtBrand, value: 100_000_000n } },
+        params: { DebtLimit: { brand: debtBrand, value: 500_000_000n } },
         path: { paramPath: { key: { collateralBrand } } },
       },
       proposal: {},
@@ -603,6 +639,7 @@ test.serial(
       fromCapData,
       -1,
     );
+    t.notDeepEqual(getUpdatedDebtLimit(), 500_000_000n);
     t.assert(lastOutcomeForNewCommittee.outcome === 'fail');
   },
 );
