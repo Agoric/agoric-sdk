@@ -1,4 +1,6 @@
 // @ts-check
+import { text } from 'node:stream/consumers';
+
 const { freeze, entries } = Object;
 
 const onlyStderr = ['ignore', 'ignore', 'inherit'];
@@ -10,13 +12,33 @@ export const pspawn = (bin, { spawn, cwd }) => {
     /** @type {import('child_process').ChildProcess} */
     let child;
     const exit = new Promise((resolve, reject) => {
-      // console.debug('spawn', bin, args, { cwd: makefileDir, ...opts });
-      child = spawn(bin, args, { cwd, ...opts });
-      child.addListener('exit', code => {
+      // When stderr is otherwise ignored, spy on it for inclusion in error messages.
+      /** @type {Promise<string> | undefined} */
+      let stderrP = Promise.resolve('');
+      // https://nodejs.org/docs/latest/api/child_process.html#optionsstdio
+      let { stdio = 'pipe' } = opts;
+      if (stdio === 'ignore' || stdio[2] === 'ignore') {
+        stderrP = undefined;
+        stdio = typeof stdio === 'string' ? [stdio, stdio, stdio] : [...stdio];
+        stdio[2] = 'pipe';
+      }
+      const resolvedOpts = { cwd, ...opts, stdio };
+      // console.debug('spawn', bin, args, resolvedOpts);
+      child = spawn(bin, args, resolvedOpts);
+      if (!stderrP) {
+        assert(child.stderr);
+        stderrP = text(child.stderr);
+        child.stderr = null;
+      }
+      child.addListener('exit', async code => {
         if (code !== 0) {
-          // TODO: Include ~3 lines from child.stderr or child.stdout if present.
-          // see https://nodejs.org/api/child_process.html#child_processspawncommand-args-options
-          reject(Error(`exit ${code} from command: ${bin} ${args}`));
+          let msg = `exit ${code} from command: ${bin} ${args}`;
+          const errStr = await stderrP;
+          if (errStr) {
+            const errTail = errStr.split('\n').slice(-3);
+            msg = `${msg}\n${errTail.map(line => `  ${line}`).join('\n')}`;
+          }
+          reject(Error(msg));
           return;
         }
         resolve(0);
