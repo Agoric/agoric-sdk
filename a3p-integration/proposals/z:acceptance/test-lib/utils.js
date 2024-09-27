@@ -1,4 +1,4 @@
-import { makeAgd } from '@agoric/synthetic-chain';
+import { makeAgd, agops } from '@agoric/synthetic-chain';
 import { execFileSync } from 'node:child_process';
 import { readFile, writeFile } from 'node:fs/promises';
 
@@ -44,3 +44,6 @@ export const getBalances = async (addresses, targetDenom = undefined) => {
 
   return addresses.length === 1 ? balancesList[0] : balancesList;
 };
+
+export const agopsVaults = async addr =>
+  await agops.vaults('list', '--from', addr);

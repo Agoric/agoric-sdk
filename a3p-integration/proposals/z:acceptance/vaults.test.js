@@ -1,6 +1,5 @@
 import test from 'ava';
 import {
-  agops,
   agoric,
   bankSend,
   getUser,
@@ -13,10 +12,10 @@ import {
   USER1ADDR,
   waitForBlock,
 } from '@agoric/synthetic-chain';
-import { getBalances } from './test-lib/utils.js';
+import { getBalances, agopsVaults } from './test-lib/utils.js';
 
 test.serial('attempt to open vaults under the minimum amount', async t => {
-  const activeVaultsBefore = await agops.vaults('list', '--from', USER1ADDR);
+  const activeVaultsBefore = await agopsVaults(USER1ADDR);
   await bankSend(USER1ADDR, `20000000${ATOM_DENOM}`);
   t.log('active vaults before:', activeVaultsBefore);
 
@@ -33,7 +32,7 @@ test.serial('attempt to open vaults under the minimum amount', async t => {
     'Error message does not contain the expected text',
   );
 
-  const activeVaultsAfter = await agops.vaults('list', '--from', USER1ADDR);
+  const activeVaultsAfter = await agopsVaults(USER1ADDR);
   t.log('active vaults after:', activeVaultsAfter);
 
   t.true(
@@ -44,7 +43,7 @@ test.serial('attempt to open vaults under the minimum amount', async t => {
 
 test.serial('open new vault', async t => {
   const istBalanceBefore = await getISTBalance(USER1ADDR);
-  const activeVaultsBefore = await agops.vaults('list', '--from', USER1ADDR);
+  const activeVaultsBefore = await agopsVaults(USER1ADDR);
   t.log('uist balance before:', istBalanceBefore);
   t.log('active vaults before:', activeVaultsBefore);
 
@@ -55,7 +54,7 @@ test.serial('open new vault', async t => {
   await openVault(USER1ADDR, mint, collateral);
 
   const istBalanceAfter = await getISTBalance(USER1ADDR);
-  const activeVaultsAfter = await agops.vaults('list', '--from', USER1ADDR);
+  const activeVaultsAfter = await agopsVaults(USER1ADDR);
   t.log('uist balance after:', istBalanceAfter);
   t.log('active vaults after:', activeVaultsAfter);
 
@@ -72,7 +71,7 @@ test.serial('open new vault', async t => {
 });
 
 test.serial('remove collateral', async t => {
-  const activeVaults = await agops.vaults('list', '--from', USER1ADDR);
+  const activeVaults = await agopsVaults(USER1ADDR);
   const vaultPath = activeVaults[activeVaults.length - 1];
   const vaultID = vaultPath.split('.').pop();
 
@@ -96,7 +95,7 @@ test.serial('remove collateral', async t => {
 });
 
 test.serial('remove IST', async t => {
-  const activeVaults = await agops.vaults('list', '--from', USER1ADDR);
+  const activeVaults = await agopsVaults(USER1ADDR);
   const vaultPath = activeVaults[activeVaults.length - 1];
   const vaultID = vaultPath.split('.').pop();
 
@@ -119,7 +118,7 @@ test.serial('remove IST', async t => {
 });
 
 test.serial('close vault', async t => {
-  const activeVaults = await agops.vaults('list', '--from', USER1ADDR);
+  const activeVaults = await agopsVaults(USER1ADDR);
   const vaultPath = activeVaults[activeVaults.length - 1];
   const vaultID = vaultPath.split('.').pop();
 
@@ -152,7 +151,7 @@ test.serial('open second vault', async t => {
   const user2Address = await getUser('user2');
   await bankSend(user2Address, `20000000${ATOM_DENOM}`);
 
-  const activeVaultsBefore = await agops.vaults('list', '--from', user2Address);
+  const activeVaultsBefore = await agopsVaults(user2Address);
   t.log('active vaults before:', activeVaultsBefore);
 
   const mint = '7.0';
@@ -160,7 +159,7 @@ test.serial('open second vault', async t => {
   await openVault(user2Address, mint, collateral);
   await waitForBlock();
 
-  const activeVaultsAfter = await agops.vaults('list', '--from', user2Address);
+  const activeVaultsAfter = await agopsVaults(user2Address);
   t.log('active vaults after:', activeVaultsAfter);
 
   t.is(
@@ -172,7 +171,7 @@ test.serial('open second vault', async t => {
 
 test.serial('add collateral', async t => {
   const user2Address = await getUser('user2');
-  const activeVaults = await agops.vaults('list', '--from', user2Address);
+  const activeVaults = await agopsVaults(user2Address);
   const vaultPath = activeVaults[activeVaults.length - 1];
   const vaultID = vaultPath.split('.').pop();
 
@@ -196,7 +195,7 @@ test.serial('add collateral', async t => {
 
 test.serial('add IST', async t => {
   const user2Address = await getUser('user2');
-  const activeVaults = await agops.vaults('list', '--from', user2Address);
+  const activeVaults = await agopsVaults(user2Address);
   const vaultPath = activeVaults[activeVaults.length - 1];
   const vaultID = vaultPath.split('.').pop();
 
@@ -220,7 +219,7 @@ test.serial('add IST', async t => {
 
 test.serial('close second vault', async t => {
   const user2Address = await getUser('user2');
-  const activeVaults = await agops.vaults('list', '--from', user2Address);
+  const activeVaults = await agopsVaults(user2Address);
   const vaultPath = activeVaults[activeVaults.length - 1];
   const vaultID = vaultPath.split('.').pop();
 
