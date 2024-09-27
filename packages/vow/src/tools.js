@@ -8,36 +8,7 @@ import { makeWhen } from './when.js';
 /**
  * @import {Zone} from '@agoric/base-zone';
  * @import {Passable} from '@endo/pass-style';
- * @import {EUnwrap, IsRetryableReason, AsPromiseFunction, Vow, VowKit, EVow, PromiseVow, Watcher} from './types.js';
- */
-
-/**
- * @typedef VowTools
- * @property {(maybeVows: unknown[]) => Vow<any[]>} all Vow-tolerant implementation of Promise.all that takes an iterable of vows
- * and other {@link Passable}s and returns a single {@link Vow}. It resolves
- * with an array of values when all of the input's promises or vows are
- * fulfilled and rejects when any of the input's promises or vows are rejected
- * with the first rejection reason.
- * @property {(maybeVows: unknown[]) => Vow<({status: 'fulfilled', value: any} |
- * {status: 'rejected', reason: any})[]>} allSettled Vow-tolerant
- * implementation of Promise.allSettled that takes an iterable of vows and other
- * {@link Passable}s and returns a single {@link Vow}. It resolves when all of
- * the input's promises or vows are settled with an array of settled outcome
- * objects.
- * @property {(maybeVows: unknown[]) => Vow<any[]>} allVows
- * @property {AsPromiseFunction} asPromise Convert a vow or promise to a promise, ensuring proper handling of ephemeral promises.
- * @property {<T extends unknown>(fn: (...args: any[]) => Vow<Awaited<T>> |
- * Awaited<T> | PromiseVow<T>) => Vow<Awaited<T>>} asVow Helper function that
- * coerces the result of a function to a Vow. Helpful for scenarios like a
- * synchronously thrown error.
- * @property {<T>() => VowKit<T>} makeVowKit
- * @property {<F extends (...args: any[]) => Promise<any>>(fnZone: Zone, name: string, fn: F) => F extends (...args: infer Args) => Promise<infer R> ? (...args: Args) => Vow<R> : never} retriable
- * @property {<T = any, TResult1 = T, TResult2 = never, C extends any[] = any[]>(specimenP: EVow<T>, watcher?: Watcher<T, TResult1, TResult2, C> | undefined, ...watcherArgs: C) => Vow<Exclude<TResult1, void> | Exclude<TResult2, void> extends never ? TResult1 : Exclude<TResult1, void> | Exclude<TResult2, void>>} watch
- * @property {<T, TResult1 = EUnwrap<T>, TResult2 = never>(specimenP: T, onFulfilled?: ((value: EUnwrap<T>) => TResult1 | PromiseLike<TResult1>) | undefined, onRejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined) => Promise<TResult1 | TResult2>} when Shorten `specimenP` until we achieve a final result.
- *
- * Does not survive upgrade (even if specimenP is a durable Vow).
- *
- * Use only if the Vow will resolve _promptly_ {@see {@link @agoric/swingset-vat/docs/async.md}}.
+ * @import {IsRetryableReason, AsPromiseFunction, Vow, VowTools} from './types.js';
  */
 
 /**

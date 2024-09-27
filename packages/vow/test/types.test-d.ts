@@ -1,7 +1,7 @@
 import { expectType } from 'tsd';
+
 import type { Zone } from '@agoric/base-zone';
-import type { Vow } from '../src/types.js';
-import type { VowTools } from '../src/tools.js';
+import type { Vow, VowTools } from '../src/types.js';
 
 const vt: VowTools = null as any;
 
