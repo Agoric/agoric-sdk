@@ -194,3 +194,38 @@ export const replaceElectorate = async permittedPowers => {
 };
 
 harden(replaceElectorate);
+
+export const getManifestForReplaceElectorate = async ({
+  economicCommitteeRef: _economicCommitteeRef,
+}) => ({
+  manifest: {
+    [replaceElectorate.name]: {
+      consume: {
+        board: true,
+        chainStorage: true,
+        economicCommitteeCreatorFacet: true,
+        highPrioritySendersManager: true,
+        namesByAddressAdmin: true,
+        zoe: true,
+        reserveKit: true,
+        auctioneerKit: true,
+        vaultFactoryKit: true,
+        psmKit: true,
+      },
+      produce: {
+        economicCommittee: true,
+        economicCommitteeCreatorFacet: true,
+      },
+      installation: {
+        consume: {
+          committee: true,
+        },
+      },
+      instance: {
+        produce: {
+          economicCommittee: true,
+        },
+      },
+    },
+  },
+});
