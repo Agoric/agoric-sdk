@@ -182,10 +182,18 @@ export const replaceElectorate = async permittedPowers => {
 
   await Promise.all(
     creatorFacets.map(async creatorFacet => {
+      trace(
+        'Getting PoserInvitation from economicCommitteeCreatorFacet...',
+        creatorFacet,
+      );
       const newElectoratePoser = await E(
         economicCommitteeCreatorFacet,
       ).getPoserInvitation();
+      trace('Successfully received newElectoratePoser');
+
+      trace('Replace electorate');
       await E(creatorFacet).replaceElectorate(newElectoratePoser);
+      trace('Successfully replaced electorate');
     }),
   );
 
