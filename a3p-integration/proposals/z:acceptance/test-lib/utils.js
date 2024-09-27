@@ -28,14 +28,14 @@ export const agd = makeAgd({ execFileSync: showAndExec }).withOpts({
  * @param {string[]} addresses
  * @param {string} [targetDenom]
  */
-export const getBalance = async (addresses, targetDenom = undefined) => {
+export const getBalances = async (addresses, targetDenom = undefined) => {
   const balancesList = await Promise.all(
     addresses.map(async address => {
       const { balances } = await agd.query(['bank', 'balances', address]);
 
       if (targetDenom) {
         const balance = balances.find(({ denom }) => denom === targetDenom);
-        return Number(balance.amount);
+        return balance ? BigInt(balance.amount) : undefined;
       }
 
       return balances;

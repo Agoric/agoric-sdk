@@ -13,7 +13,7 @@ import {
   USER1ADDR,
   waitForBlock,
 } from '@agoric/synthetic-chain';
-import { getBalance } from './test-lib/utils.js';
+import { getBalances } from './test-lib/utils.js';
 
 test.serial('attempt to open vaults under the minimum amount', async t => {
   const activeVaultsBefore = await agops.vaults('list', '--from', USER1ADDR);
@@ -89,8 +89,8 @@ test.serial('remove collateral', async t => {
   t.log('vault collateral after:', collateralAfter);
 
   t.is(
-    Number(collateralBefore),
-    Number(collateralAfter) + 1000000,
+    collateralBefore,
+    collateralAfter + 1000000n,
     'The vault Collateral should decrease after removing some ATOM',
   );
 });
@@ -112,8 +112,8 @@ test.serial('remove IST', async t => {
   t.log('vault debt after:', debtAfter);
 
   t.is(
-    Number(debtAfter),
-    Number(debtBefore) + 1005000,
+    debtAfter,
+    debtBefore + 1005000n,
     'The vault Debt should increase after removing some IST',
   );
 });
@@ -127,13 +127,13 @@ test.serial('close vault', async t => {
   const vaultCollateral = vaultData.locked.value;
   t.log('vault collateral:', vaultCollateral);
 
-  const atomBalanceBefore = await getBalance([USER1ADDR], ATOM_DENOM);
+  const atomBalanceBefore = await getBalances([USER1ADDR], ATOM_DENOM);
   t.log('atom balance before', atomBalanceBefore);
 
   await closeVault(USER1ADDR, vaultID, 6.03);
   await waitForBlock();
 
-  const atomBalanceAfter = await getBalance([USER1ADDR], ATOM_DENOM);
+  const atomBalanceAfter = await getBalances([USER1ADDR], ATOM_DENOM);
   t.log('atom balance after', atomBalanceAfter);
 
   vaultData = await getContractInfo(vaultPath, { agoric, prefix: '' });
@@ -142,7 +142,7 @@ test.serial('close vault', async t => {
 
   t.is(
     atomBalanceAfter,
-    atomBalanceBefore + Number(vaultCollateral),
+    atomBalanceBefore + vaultCollateral,
     'The ATOM balance should increase by the vault collateral amount',
   );
   t.is(vaultState, 'closed', 'The vault should be in the "closed" state.');
@@ -188,8 +188,8 @@ test.serial('add collateral', async t => {
   t.log('vault collateral after:', collateralAfter);
 
   t.is(
-    Number(collateralBefore),
-    Number(collateralAfter) - 1000000,
+    collateralBefore,
+    collateralAfter - 1000000n,
     'The vault Collateral should increase after adding some ATOM',
   );
 });
@@ -212,8 +212,8 @@ test.serial('add IST', async t => {
   t.log('vault debt after:', debtAfter);
 
   t.is(
-    Number(debtAfter),
-    Number(debtBefore) - 1000000,
+    debtAfter,
+    debtBefore - 1000000n,
     'The vault Debt should decrease after adding some IST',
   );
 });
@@ -228,13 +228,13 @@ test.serial('close second vault', async t => {
   const vaultCollateral = vaultData.locked.value;
   t.log('vault collateral:', vaultCollateral);
 
-  const atomBalanceBefore = await getBalance([user2Address], ATOM_DENOM);
+  const atomBalanceBefore = await getBalances([user2Address], ATOM_DENOM);
   t.log('atom balance before', atomBalanceBefore);
 
   await closeVault(user2Address, vaultID, 6.035);
   await waitForBlock();
 
-  const atomBalanceAfter = await getBalance([user2Address], ATOM_DENOM);
+  const atomBalanceAfter = await getBalances([user2Address], ATOM_DENOM);
   t.log('atom balance after', atomBalanceAfter);
 
   vaultData = await getContractInfo(vaultPath, { agoric, prefix: '' });
@@ -243,7 +243,7 @@ test.serial('close second vault', async t => {
 
   t.is(
     atomBalanceAfter,
-    atomBalanceBefore + Number(vaultCollateral),
+    atomBalanceBefore + vaultCollateral,
     'The ATOM balance should increase by the vault collateral amount',
   );
   t.is(vaultState, 'closed', 'The vault should be in the "closed" state.');

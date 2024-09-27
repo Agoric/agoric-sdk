@@ -9,7 +9,7 @@ import {
 } from '@agoric/synthetic-chain';
 import {
   agd,
-  getBalance,
+  getBalances,
   replaceTemplateValuesInFile,
 } from './test-lib/utils.js';
 import { $ } from 'execa';
@@ -45,13 +45,13 @@ test.serial('exitOffer tool reclaims stuck payment', async t => {
   const offerId = 'bad-invitation-15'; // offer submitted on proposal upgrade-15 with an incorrect method name
   const from = 'gov1';
 
-  const before = await getBalance([GOV1ADDR], 'uist');
+  const before = await getBalances([GOV1ADDR], 'uist');
   t.log('uist balance before:', before);
 
   await $`node ./exitOffer.js --id ${offerId} --from ${from} `;
   await waitForBlock(2);
 
-  const after = await getBalance([GOV1ADDR], 'uist');
+  const after = await getBalances([GOV1ADDR], 'uist');
   t.log('uist balance after:', after);
 
   t.true(after > before),
@@ -78,7 +78,7 @@ test.serial(`ante handler sends fee only to vbank/reserve`, async t => {
   );
 
   const [feeCollectorStartBalances, vbankReserveStartBalances] =
-    await getBalance([feeCollector, vbankReserve]);
+    await getBalances([feeCollector, vbankReserve]);
 
   const feeAmount = 999n;
   const feeDenom = 'uist';
@@ -98,7 +98,7 @@ test.serial(`ante handler sends fee only to vbank/reserve`, async t => {
   await waitForBlock();
   t.like(result, { code: 0 });
 
-  const [feeCollectorEndBalances, vbankReserveEndBalances] = await getBalance([
+  const [feeCollectorEndBalances, vbankReserveEndBalances] = await getBalances([
     feeCollector,
     vbankReserve,
   ]);
