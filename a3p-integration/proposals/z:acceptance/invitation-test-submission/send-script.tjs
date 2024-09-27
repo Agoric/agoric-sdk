@@ -4,9 +4,15 @@
 /// <reference types="@agoric/vats/src/core/types-ambient"/>
 
 /**
- * Send a payment by looking up deposit facet via namesByAddress.
+ * The primary purpose of this script is to access the depositFacet of a given address
+ * via the namesByAddress and then send a payment to it.
  *
- * see ./post.test.js
+ * The {{ADDRESS}} placeholder should be replaced with the desired address before use.
+ *
+ * The payment in this case is an invitation to add collateral to the reserve. 
+ * However, the use of the reserve is incidental and simply provides an easy payment to construct.
+ *
+ * see a3p-integration/proposals/z:acceptance/wallet.test.js
  *
  * @param {BootstrapPowers} powers
  */
