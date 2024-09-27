@@ -137,6 +137,22 @@ const inviteECMembers = async (
   await distributeInvitations(zip(values(voterAddresses), invitations));
 };
 
+const inviteToEconCharter = async (
+  { consume: { namesByAddressAdmin } },
+  { options: { voterAddresses, econCharterKit } },
+) => {
+  const { creatorFacet } = E.get(econCharterKit);
+
+  void Promise.all(
+    values(voterAddresses).map(async addr => {
+      const debugName = `econ charter member ${addr}`;
+      reserveThenDeposit(debugName, namesByAddressAdmin, addr, [
+        E(creatorFacet).makeCharterMemberInvitation(),
+      ]).catch(err => console.error(`failed deposit to ${debugName}`, err));
+    }),
+  );
+};
+
 /**
  * Starts a new Economic Committee (EC) by creating an instance with the
  * provided committee specifications.
@@ -219,6 +235,94 @@ const startNewEconomicCommittee = async (
 
   return creatorFacet;
 };
+const startNewEconCharter = async ({
+  consume: { zoe },
+  produce: { econCharterKit },
+  installation: {
+    consume: { binaryVoteCounter: counterP, econCommitteeCharter: installP },
+  },
+  instance: {
+    produce: { econCommitteeCharter },
+  },
+}) => {
+  const [charterInstall, counterInstall] = await Promise.all([
+    installP,
+    counterP,
+  ]);
+  const terms = await harden({
+    binaryVoteCounterInstallation: counterInstall,
+  });
+
+  trace('Starting new EC Charter Instance');
+  const startResult = E(zoe).startInstance(
+    charterInstall,
+    undefined,
+    terms,
+    undefined,
+    'econCommitteeCharter',
+  );
+  trace('Started new EC Charter Instance Successfully');
+
+  econCommitteeCharter.reset();
+  econCommitteeCharter.resolve(E.get(startResult).instance);
+
+  econCharterKit.reset();
+  econCharterKit.resolve(startResult);
+  return startResult;
+};
+
+const addGovernorsToEconCharter = async (
+  {
+    consume: {
+      reserveKit,
+      vaultFactoryKit,
+      auctioneerKit,
+      psmKit,
+      provisionPoolStartResult,
+    },
+    instance: {
+      consume: { reserve, VaultFactory, auctioneer, provisionPool },
+    },
+  },
+  { options: { econCharterKit } },
+) => {
+  const { creatorFacet } = E.get(econCharterKit);
+
+  const psmKitMap = await psmKit;
+
+  for (const { psm, psmGovernorCreatorFacet, label } of psmKitMap.values()) {
+    E(creatorFacet).addInstance(psm, psmGovernorCreatorFacet, label);
+  }
+
+  await Promise.all(
+    [
+      {
+        label: 'reserve',
+        instanceP: reserve,
+        facetP: E.get(reserveKit).governorCreatorFacet,
+      },
+      {
+        label: 'VaultFactory',
+        instanceP: VaultFactory,
+        facetP: E.get(vaultFactoryKit).governorCreatorFacet,
+      },
+      {
+        label: 'auctioneer',
+        instanceP: auctioneer,
+        facetP: E.get(auctioneerKit).governorCreatorFacet,
+      },
+      {
+        label: 'provisionPool',
+        instanceP: provisionPool,
+        facetP: E.get(provisionPoolStartResult).governorCreatorFacet,
+      },
+    ].map(async ({ label, instanceP, facetP }) => {
+      const [instance, govFacet] = await Promise.all([instanceP, facetP]);
+
+      return E(creatorFacet).addInstance(instance, govFacet, label);
+    }),
+  );
+};
 
 /**
  * Replaces the electorate for governance contracts by creating a new Economic
@@ -299,6 +403,17 @@ export const replaceAllElectorates = async (permittedPowers, config) => {
   });
 
   trace('Installed New Economic Committee');
+
+  const econCharterKit = await startNewEconCharter(permittedPowers);
+  await addGovernorsToEconCharter(permittedPowers, {
+    options: { econCharterKit },
+  });
+
+  await inviteToEconCharter(permittedPowers, {
+    options: { voterAddresses, econCharterKit },
+  });
+
+  trace('Installed New EC Charter');
 };
 
 harden(replaceAllElectorates);
@@ -320,14 +435,28 @@ export const getManifestForReplaceAllElectorates = async (
         startUpgradable: true,
       },
       produce: {
+        econCharterKit: true,
         economicCommitteeKit: true,
-        economicCommitteeCreatorFacet: 'economicCommittee',
+        economicCommitteeCreatorFacet: true,
       },
       installation: {
-        consume: { committee: 'zoe' },
+        consume: {
+          committee: true,
+          binaryVoteCounter: true,
+          econCommitteeCharter: true,
+        },
       },
       instance: {
-        produce: { economicCommittee: 'economicCommittee' },
+        produce: {
+          economicCommittee: true,
+          econCommitteeCharter: true,
+        },
+        consume: {
+          reserve: true,
+          VaultFactory: true,
+          auctioneer: true,
+          provisionPool: true,
+        },
       },
     },
   },
