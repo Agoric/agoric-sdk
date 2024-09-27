@@ -21,22 +21,21 @@ test.serial('attempt to open vaults under the minimum amount', async t => {
 
   const mint = '3.0';
   const collateral = '5.0';
-  const error = await t.throwsAsync(() =>
-    openVault(USER1ADDR, mint, collateral),
-  );
-
-  t.true(
-    error?.message.includes(
-      'Error: Vault creation requires a minInitialDebt of {"brand":"[Alleged: IST brand]","value":"[5000000n]"}',
-    ),
-    'Error message does not contain the expected text',
+  await t.throwsAsync(
+    () => openVault(USER1ADDR, mint, collateral),
+    {
+      message:
+        /Vault creation requires a minInitialDebt of {"brand":"\[Alleged: IST brand\]","value":"\[5000000n\]"}/,
+    },
+    'Error triggered by openVault does not contain the expected message',
   );
 
   const activeVaultsAfter = await agopsVaults(USER1ADDR);
   t.log('active vaults after:', activeVaultsAfter);
 
-  t.true(
-    activeVaultsAfter.length === activeVaultsBefore.length,
+  t.is(
+    activeVaultsAfter.length,
+    activeVaultsBefore.length,
     'The number of active vaults should remain the same.',
   );
 });
