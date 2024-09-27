@@ -1,21 +1,10 @@
 // @ts-check
 import { E } from '@endo/eventual-send';
-import { reserveThenDeposit } from './utils.js';
 import {
   assertPathSegment,
   makeStorageNodeChild,
 } from '@agoric/internal/src/lib-chainStorage.js';
-
-const runConfig = {
-  committeeName: 'Economic Committee',
-  voterAddresses: {
-    gov1: 'agoric1ee9hr0jyrxhy999y755mp862ljgycmwyp4pl7q',
-  },
-  highPrioritySendersConfig: {
-    addressesToAdd: [],
-    addressesToRemove: ['agoric1wrfh296eu2z34p6pah7q04jjuyj3mxu9v98277'],
-  },
-};
+import { reserveThenDeposit } from './utils.js';
 
 const trace = (...args) => console.log('GovReplaceCommiteeAndCharter', ...args);
 
@@ -31,9 +20,10 @@ const sanitizePathSegment = name => {
   return candidate;
 };
 
-const handlehighPrioritySendersList = async ({
-  consume: { highPrioritySendersManager: highPrioritySendersManagerP },
-}) => {
+const handlehighPrioritySendersList = async (
+  { consume: { highPrioritySendersManager: highPrioritySendersManagerP } },
+  { options: { highPrioritySendersConfig } },
+) => {
   const HIGH_PRIORITY_SENDERS_NAMESPACE = 'economicCommittee';
   const highPrioritySendersManager = await highPrioritySendersManagerP;
 
@@ -41,8 +31,7 @@ const handlehighPrioritySendersList = async ({
     throw Error('highPrioritySendersManager is not defined');
   }
 
-  const { addressesToAdd, addressesToRemove } =
-    runConfig.highPrioritySendersConfig;
+  const { addressesToAdd, addressesToRemove } = highPrioritySendersConfig;
 
   for (const addr of addressesToAdd) {
     trace(`Adding ${addr} to High Priority Senders list`);
@@ -92,24 +81,24 @@ const inviteECMembers = async (
   await distributeInvitations(zip(values(voterAddresses), invitations));
 };
 
-const startNewEconomicCommittee = async ({
-  consume: { board, chainStorage, diagnostics, zoe },
-  produce: { economicCommitteeKit, economicCommitteeCreatorFacet },
-  installation: {
-    consume: { committee },
+const startNewEconomicCommittee = async (
+  {
+    consume: { board, chainStorage, diagnostics, zoe },
+    produce: { economicCommitteeKit, economicCommitteeCreatorFacet },
+    installation: {
+      consume: { committee },
+    },
+    instance: {
+      produce: { economicCommittee },
+    },
   },
-  instance: {
-    produce: { economicCommittee },
-  },
-}) => {
+  { options: { committeeName, committeeSize } },
+) => {
   const COMMITTEES_ROOT = 'committees';
 
   trace('startNewEconomicCommittee');
 
-  const { committeeName } = runConfig;
   trace(`committeeName ${committeeName}`);
-
-  const committeeSize = values(runConfig.voterAddresses).length;
   trace(`committeeSize ${committeeSize}`);
 
   const committeesNode = await makeStorageNodeChild(
@@ -155,9 +144,19 @@ const startNewEconomicCommittee = async ({
   return creatorFacet;
 };
 
-export const replaceElectorate = async permittedPowers => {
-  const economicCommitteeCreatorFacet =
-    await startNewEconomicCommittee(permittedPowers);
+export const replaceElectorate = async (permittedPowers, config) => {
+  const { committeeName, voterAddresses, highPrioritySendersConfig } =
+    config.options;
+
+  const economicCommitteeCreatorFacet = await startNewEconomicCommittee(
+    permittedPowers,
+    {
+      options: {
+        committeeName,
+        committeeSize: values(voterAddresses).length,
+      },
+    },
+  );
 
   const psmKitMap = await permittedPowers.consume.psmKit;
 
@@ -179,21 +178,26 @@ export const replaceElectorate = async permittedPowers => {
 
   await inviteECMembers(permittedPowers, {
     options: {
-      voterAddresses: runConfig.voterAddresses,
+      voterAddresses: voterAddresses,
       economicCommitteeCreatorFacet,
     },
   });
 
-  await handlehighPrioritySendersList(permittedPowers);
+  await handlehighPrioritySendersList(permittedPowers, {
+    options: {
+      highPrioritySendersConfig,
+    },
+  });
 
   trace('Installed New Economic Committee');
 };
 
 harden(replaceElectorate);
 
-export const getManifestForReplaceElectorate = async ({
-  economicCommitteeRef: _economicCommitteeRef,
-}) => ({
+export const getManifestForReplaceElectorate = async (
+  { economicCommitteeRef: _economicCommitteeRef },
+  options,
+) => ({
   manifest: {
     [replaceElectorate.name]: {
       consume: {
@@ -221,4 +225,5 @@ export const getManifestForReplaceElectorate = async ({
       },
     },
   },
+  options: { ...options },
 });
