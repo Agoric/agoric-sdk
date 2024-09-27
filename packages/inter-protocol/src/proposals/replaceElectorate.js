@@ -1,16 +1,16 @@
 // @ts-check
 import { E } from '@endo/eventual-send';
 import { reserveThenDeposit } from './utils.js';
-import { makeStorageNodeChild } from '@agoric/internal/src/lib-chainStorage.js';
 const { Fail } = assert;
 
 const runConfig = {
   committeeName: 'Economic Committee',
-  economicCommitteeAddresses: {
+  voterAddresses: {
     gov1: 'agoric1ee9hr0jyrxhy999y755mp862ljgycmwyp4pl7q',
   },
-  economicCommitteeAddressesToRemove: {
-    gov1: 'agoric1wrfh296eu2z34p6pah7q04jjuyj3mxu9v98277',
+  highPrioritySendersConfig: {
+    addressesToAdd: [],
+    addressesToRemove: ['agoric1wrfh296eu2z34p6pah7q04jjuyj3mxu9v98277'],
   },
 };
 
@@ -46,20 +46,10 @@ const handlehighPrioritySendersList = async ({
     throw Error('highPrioritySendersManager is not defined');
   }
 
-  const { economicCommitteeAddresses, economicCommitteeAddressesToRemove } =
-    runConfig;
+  const { addressesToAdd, addressesToRemove } =
+    runConfig.highPrioritySendersConfig;
 
-  const addSet = new Set(Object.values(economicCommitteeAddresses));
-  const removeSet = new Set(Object.values(economicCommitteeAddressesToRemove));
-
-  const uniqueAddAddresses = Array.from(addSet).filter(
-    address => !removeSet.has(address),
-  );
-  const uniqueRemoveAddresses = Array.from(removeSet).filter(
-    address => !addSet.has(address),
-  );
-
-  for (let addr of uniqueAddAddresses) {
+  for (let addr of addressesToAdd) {
     trace(`Adding ${addr} to High Priority Senders list`);
     await E(highPrioritySendersManager).add(
       HIGH_PRIORITY_SENDERS_NAMESPACE,
@@ -67,7 +57,7 @@ const handlehighPrioritySendersList = async ({
     );
   }
 
-  for (let addr of uniqueRemoveAddresses) {
+  for (let addr of addressesToRemove) {
     trace(`Removing ${addr} from High Priority Senders list`);
     await E(highPrioritySendersManager).remove(
       HIGH_PRIORITY_SENDERS_NAMESPACE,
@@ -122,14 +112,13 @@ const startNewEconomicCommittee = async ({
   trace('startNewEconomicCommittee');
 
   const { committeeName } = runConfig;
-  const committeeSize = Object.values(
-    runConfig.economicCommitteeAddresses,
-  ).length;
+  trace(`committeeName ${committeeName}`);
 
-  const committeesNode = await makeStorageNodeChild(
-    chainStorage,
-    COMMITTEES_ROOT,
-  );
+  const committeeSize = values(runConfig.voterAddresses).length;
+  trace(`committeeSize ${committeeSize}`);
+
+  const committeesNode = await E(chainStorage).makeChildNode(COMMITTEES_ROOT);
+
   const storageNode = await E(committeesNode).makeChildNode(
     sanitizePathSegment(committeeName),
   );
@@ -184,7 +173,7 @@ export const replaceElectorate = async permittedPowers => {
 
   await inviteECMembers(permittedPowers, {
     options: {
-      voterAddresses: runConfig.economicCommitteeAddresses,
+      voterAddresses: runConfig.voterAddresses,
     },
   });
 
