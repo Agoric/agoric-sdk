@@ -196,6 +196,7 @@ test.serial('replace committee', async t => {
   await evalProposal(
     buildProposal(
       '@agoric/builders/scripts/inter-protocol/replace-electorate-core.js',
+      ['A3P_INTEGRATION'],
     ),
   );
   await eventLoopIteration();

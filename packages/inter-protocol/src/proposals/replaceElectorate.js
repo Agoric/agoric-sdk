@@ -178,7 +178,7 @@ export const replaceElectorate = async (permittedPowers, config) => {
 
   await inviteECMembers(permittedPowers, {
     options: {
-      voterAddresses: voterAddresses,
+      voterAddresses,
       economicCommitteeCreatorFacet,
     },
   });
