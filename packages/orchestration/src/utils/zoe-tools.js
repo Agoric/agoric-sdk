@@ -46,6 +46,24 @@ const { assign, keys, values } = Object;
  * ) => Promise<void>} LocalTransfer
  */
 
+// TODO currently unused
+export const wrapZCF = (zcf, watch) => {
+  const { atomicRearrange, reallocate, assertUniqueKeyword, getTerms } = zcf;
+  const makeZCFMint = (...args) => watch(zcf.makeZCFMint(...args));
+  const makeInvitation = (...args) => watch(zcf.makeInvitation(...args));
+  const makeEmptySeatKit = (...args) => watch(zcf.makeEmptySeatKit(...args));
+
+  return {
+    atomicRearrange,
+    reallocate,
+    assertUniqueKeyword,
+    getTerms,
+    makeInvitation,
+    makeZCFMint,
+    makeEmptySeatKit,
+  };
+};
+
 /**
  * @typedef {(
  *   localAccount: LocalAccountMethods,

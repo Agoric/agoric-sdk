@@ -218,6 +218,9 @@ export const withOrchestration =
       privateArgs,
       privateArgs.marshaller,
     );
-    return contractFn(zcf, privateArgs, zone, tools);
+    // all prepares happen, then we wake up asyncFlow
+    const result = await contractFn(zcf, privateArgs, zone, tools);
+    tools.asyncFlowTools.adminAsyncFlow.wakeAll();
+    return result;
   };
 harden(withOrchestration);
