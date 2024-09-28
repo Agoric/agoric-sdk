@@ -16,7 +16,12 @@ const trace = makeTracer('upgrade Vaults proposal');
 /**
  * @param {import('../../src/proposals/econ-behaviors').EconomyBootstrapPowers &
  *     interlockPowers} powers
- * @param {{ options: { vaultsRef: { bundleID: string } } }} options
+ * @param {{
+ *   options: {
+ *     vaultsRef: { bundleID: string };
+ *     governorRef: { bundleID: string };
+ *   };
+ * }} options
  */
 export const upgradeVaults = async (
   {
@@ -39,7 +44,7 @@ export const upgradeVaults = async (
   },
   { options },
 ) => {
-  const { vaultsRef } = options;
+  const { vaultsRef, governorRef } = options;
   const kit = await vaultFactoryKit;
   const { instance: directorInstance } = kit;
   const allBrands = await E(zoe).getBrands(directorInstance);
@@ -162,8 +167,9 @@ export const upgradeVaults = async (
   trace('restarting governor');
 
   const ecf = await electorateCreatorFacet;
-  // restart vaultFactory governor
-  await E(kit.governorAdminFacet).restartContract(
+  // upgrade vaultFactory governor. Won't be needed next time: see #10063
+  await E(kit.governorAdminFacet).upgradeContract(
+    governorRef.bundleID,
     harden({
       electorateCreatorFacet: ecf,
       governed: vaultFactoryPrivateArgs,

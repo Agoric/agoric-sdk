@@ -13,6 +13,12 @@ export const defaultProposalBuilder = async ({ publishRef, install }) =>
             '../bundles/bundle-vaultFactory.js',
           ),
         ),
+        governorRef: publishRef(
+          install(
+            '@agoric/governance/src/contractGovernor.js',
+            '../bundles/bundle-contractGovernor.js',
+          ),
+        ),
       },
     ],
   });

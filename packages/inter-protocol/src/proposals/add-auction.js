@@ -15,7 +15,12 @@ const trace = makeTracer('NewAuction', true);
 /**
  * @param {import('./econ-behaviors.js').EconomyBootstrapPowers &
  *   interlockPowers} powers
- * @param {{ options: { auctionsRef: { bundleID: string } } }} options
+ * @param {{
+ *   options: {
+ *     auctionsRef: { bundleID: string };
+ *     governorRef: { bundleID: string };
+ *   };
+ * }} options
  */
 export const addAuction = async (
   {
@@ -36,8 +41,10 @@ export const addAuction = async (
       produce: { auctioneer: auctionInstance },
     },
     installation: {
-      consume: { contractGovernor: contractGovernorInstallation },
-      produce: { auctioneer: produceInstallation },
+      produce: {
+        auctioneer: produceAuctionInstallation,
+        contractGovernor: produceGovernorInstallation,
+      },
     },
     issuer: {
       consume: { [Stable.symbol]: stableIssuerP },
@@ -47,19 +54,22 @@ export const addAuction = async (
 ) => {
   trace('addAuction start', options);
   const STORAGE_PATH = 'auction';
-  const { auctionsRef } = options;
+  const { auctionsRef, governorRef } = options;
 
   const poserInvitationP = E(electorateCreatorFacet).getPoserInvitation();
-  const bundleID = auctionsRef.bundleID;
+  const auctioneerBundleID = auctionsRef.bundleID;
+  const governorBundleID = governorRef.bundleID;
   /**
    * @type {Promise<
    *   Installation<import('../../src/auction/auctioneer.js')['start']>
    * >}
    */
-  const installationP = E(zoe).installBundleID(bundleID);
-  produceInstallation.reset();
-  produceInstallation.resolve(installationP);
-
+  const auctioneerInstallationP = E(zoe).installBundleID(auctioneerBundleID);
+  const governorInstallationP = E(zoe).installBundleID(governorBundleID);
+  produceAuctionInstallation.reset();
+  produceAuctionInstallation.resolve(auctioneerInstallationP);
+  produceGovernorInstallation.reset();
+  produceGovernorInstallation.resolve(governorInstallationP);
   const [
     initialPoserInvitation,
     electorateInvitationAmount,
@@ -104,12 +114,15 @@ export const addAuction = async (
     },
   );
 
-  const installation = await installationP;
+  const [auctioneerInstallation, governorInstallation] = await Promise.all([
+    auctioneerInstallationP,
+    governorInstallationP,
+  ]);
 
   const governorTerms = await deeplyFulfilledObject(
     harden({
       timer: chainTimerService,
-      governedContractInstallation: installation,
+      governedContractInstallation: auctioneerInstallation,
       governed: {
         terms: auctionTerms,
         issuerKeywordRecord: { Bid: stableIssuer },
@@ -120,9 +133,9 @@ export const addAuction = async (
     }),
   );
 
-  /** @type {GovernorStartedInstallationKit<typeof installationP>} */
+  /** @type {GovernorStartedInstallationKit<typeof auctioneerInstallationP>} */
   const governorStartResult = await E(zoe).startInstance(
-    contractGovernorInstallation,
+    governorInstallation,
     undefined,
     governorTerms,
     harden({
