@@ -96,6 +96,7 @@ export type PreparationOptions = {
   makeLogStore?: (() => LogStore) | undefined;
   makeBijection?: (() => Bijection) | undefined;
   endowmentTools?: EndowmentTools;
+  panicHandler?: (e: any) => void;
 };
 export type OutcomeKind = 'return' | 'throw';
 

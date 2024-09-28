@@ -7,12 +7,10 @@ import { makeHeapZone } from '@agoric/zone/heap.js';
 import { makeVirtualZone } from '@agoric/zone/virtual.js';
 import { makeDurableZone } from '@agoric/zone/durable.js';
 
-import { prepareAsyncFlowTools } from '../src/async-flow.js';
+import { prepareTestAsyncFlowTools } from './_utils.js';
 
 /**
  * @import {Zone} from '@agoric/base-zone';
- * @import {Vow, VowTools} from '@agoric/vow'
- * @import {AsyncFlow} from '../src/async-flow.js'
  */
 
 const { apply } = Reflect;
@@ -23,7 +21,7 @@ const { apply } = Reflect;
  */
 const testPlay = async (t, zone) => {
   const vowTools = prepareVowTools(zone);
-  const { asyncFlow } = prepareAsyncFlowTools(zone, {
+  const { asyncFlow } = prepareTestAsyncFlowTools(t, zone, {
     vowTools,
   });
 

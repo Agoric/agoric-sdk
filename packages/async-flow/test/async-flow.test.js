@@ -17,7 +17,7 @@ import { makeHeapZone } from '@agoric/zone/heap.js';
 import { makeVirtualZone } from '@agoric/zone/virtual.js';
 import { makeDurableZone } from '@agoric/zone/durable.js';
 
-import { prepareAsyncFlowTools } from '../src/async-flow.js';
+import { prepareTestAsyncFlowTools } from './_utils.js';
 
 /**
  * @import {AsyncFlow} from '../src/async-flow.js'
@@ -62,7 +62,7 @@ const firstLogLen = 7;
 const testFirstPlay = async (t, zone) => {
   t.log('firstPlay started');
   const vowTools = prepareVowTools(zone);
-  const { asyncFlow, adminAsyncFlow } = prepareAsyncFlowTools(zone, {
+  const { asyncFlow, adminAsyncFlow } = prepareTestAsyncFlowTools(t, zone, {
     vowTools,
   });
   const makeOrchestra = prepareOrchestra(zone);
@@ -139,8 +139,16 @@ const testFirstPlay = async (t, zone) => {
 const testBadReplay = async (t, zone) => {
   t.log('badReplay started');
   const vowTools = prepareVowTools(zone);
-  const { asyncFlow, adminAsyncFlow } = prepareAsyncFlowTools(zone, {
+  const { asyncFlow, adminAsyncFlow } = prepareTestAsyncFlowTools(t, zone, {
     vowTools,
+    panicHandler: e => {
+      t.throws(
+        () => {
+          throw e;
+        },
+        { message: /^replay 3:/ },
+      );
+    },
   });
   prepareOrchestra(zone);
   const { when } = vowTools;
@@ -206,7 +214,7 @@ const testBadReplay = async (t, zone) => {
 const testGoodReplay = async (t, zone) => {
   t.log('goodReplay started');
   const vowTools = prepareVowTools(zone);
-  const { asyncFlow, adminAsyncFlow } = prepareAsyncFlowTools(zone, {
+  const { asyncFlow, adminAsyncFlow } = prepareTestAsyncFlowTools(t, zone, {
     vowTools,
   });
   prepareOrchestra(zone, 2); // Note change in new behavior
@@ -310,7 +318,7 @@ const testGoodReplay = async (t, zone) => {
 const testAfterPlay = async (t, zone) => {
   t.log('testAfterPlay started');
   const vowTools = prepareVowTools(zone);
-  const { asyncFlow, adminAsyncFlow } = prepareAsyncFlowTools(zone, {
+  const { asyncFlow, adminAsyncFlow } = prepareTestAsyncFlowTools(t, zone, {
     vowTools,
   });
   prepareOrchestra(zone);

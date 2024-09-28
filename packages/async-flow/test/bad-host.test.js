@@ -15,7 +15,7 @@ import { makeHeapZone } from '@agoric/zone/heap.js';
 import { makeVirtualZone } from '@agoric/zone/virtual.js';
 import { makeDurableZone } from '@agoric/zone/durable.js';
 
-import { prepareAsyncFlowTools } from '../src/async-flow.js';
+import { prepareTestAsyncFlowTools } from './_utils.js';
 
 /**
  * @import {PromiseKit} from '@endo/promise-kit'
@@ -51,8 +51,16 @@ const prepareBadHost = zone =>
 const testBadHostFirstPlay = async (t, zone) => {
   t.log('badHost firstPlay started');
   const vowTools = prepareVowTools(zone);
-  const { asyncFlow, adminAsyncFlow } = prepareAsyncFlowTools(zone, {
+  const { asyncFlow, adminAsyncFlow } = prepareTestAsyncFlowTools(t, zone, {
     vowTools,
+    panicHandler: e => {
+      t.throws(
+        () => {
+          throw e;
+        },
+        { message: '[3]: [0]: cannot yet send guest promises "[Promise]"' },
+      );
+    },
   });
   const makeBadHost = prepareBadHost(zone);
   const { makeVowKit } = vowTools;
@@ -103,6 +111,8 @@ const testBadHostFirstPlay = async (t, zone) => {
     // Notice that the bad call was not recorded in the log
   ]);
   t.log('badHost firstPlay done');
+  // Allow panicHandler to be called.
+  await eventLoopIteration();
 };
 
 /**
@@ -112,7 +122,7 @@ const testBadHostFirstPlay = async (t, zone) => {
 const testBadHostReplay1 = async (t, zone) => {
   t.log('badHost replay1 started');
   const vowTools = prepareVowTools(zone);
-  const { asyncFlow, adminAsyncFlow } = prepareAsyncFlowTools(zone, {
+  const { asyncFlow, adminAsyncFlow } = prepareTestAsyncFlowTools(t, zone, {
     vowTools,
   });
   prepareBadHost(zone);
