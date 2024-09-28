@@ -222,7 +222,7 @@ export const prepareIBCProtocol = (zone, powers) => {
       /** @type {MapStore<string, Outbound[]>} */
       const srcPortToOutbounds = detached.mapStore('srcPortToOutbounds');
 
-      /** @type {MapStore<string, MapStore<number, VowKit<Bytes>>>} */
+      /** @type {MapStore<string, MapStore<bigint, VowKit<Bytes>>>} */
       const channelKeyToSeqAck = detached.mapStore('channelKeyToSeqAck');
 
       /** @type {MapStore<string, SetStore<VowResolver>>} */
@@ -669,7 +669,7 @@ export const prepareIBCProtocol = (zone, powers) => {
         /**
          * @param {IBCChannelID} channelID
          * @param {IBCPortID} portID
-         * @param {number} sequence
+         * @param {bigint} sequence
          */
         findAckKit(channelID, portID, sequence) {
           const { channelKeyToSeqAck } = this.state;

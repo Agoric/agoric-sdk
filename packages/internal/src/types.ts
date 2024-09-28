@@ -1,6 +1,7 @@
 /* eslint-disable max-classes-per-file */
 import type { ERef, RemotableBrand } from '@endo/eventual-send';
 import type { Primitive } from '@endo/pass-style';
+import type { Pattern } from '@endo/patterns';
 import type { Callable } from './utils.js';
 
 /**
@@ -11,7 +12,7 @@ export type TotalMap<K, V> = Omit<Map<K, V>, 'get'> & {
   /** Returns the element associated with the specified key in the TotalMap. */
   get: (key: K) => V;
 };
-export type TotalMapFrom<M extends Map> =
+export type TotalMapFrom<M extends Map<any, any>> =
   M extends Map<infer K, infer V> ? TotalMap<K, V> : never;
 
 export declare class Callback<I extends (...args: any[]) => any> {

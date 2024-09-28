@@ -5,7 +5,8 @@ import { heapVowE as E } from '@agoric/vow/vat.js';
 
 /**
  * @import {Connection, PortAllocator} from '@agoric/network';
- * @import {FarRef, ERef} from '@agoric/vow';
+ * @import {FarRef} from '@agoric/internal';
+ * @import {ERef} from '@agoric/vow';
  */
 
 /**

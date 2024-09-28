@@ -6,7 +6,9 @@
         "declarationMap": true
     },
     "exclude": [
+        // Implies there's a types-index.d.ts already which shouldn't be overwritten
+        "**/types-index.js",
         "**/scripts",
-        "**/test"
+        "**/test",
     ]
 }
