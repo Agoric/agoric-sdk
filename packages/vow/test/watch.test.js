@@ -232,18 +232,21 @@ test('disconnection of non-vow informs watcher', async t => {
 
   // Even though this promise is rejected with a retryable reason, there's no
   // vow before it to retry, so we pass the rejection up to the watcher.
-  /* eslint-disable-next-line prefer-promise-reject-errors */
-  const vow = watch(Promise.reject('disconnected'), {
-    onFulfilled(value) {
-      t.log(`onfulfilled ${value}`);
-      t.fail('should not fulfil');
-      return 'fulfilled';
-    },
-    onRejected(reason) {
-      t.is(reason, 'disconnected');
-      return `rejected ${reason}`;
-    },
-  });
+  const vow = watch(
+    /* eslint-disable-next-line prefer-promise-reject-errors */
+    Promise.reject('disconnected'),
+    zone.exo('Watcher', undefined, {
+      onFulfilled(value) {
+        t.log(`onfulfilled ${value}`);
+        t.fail('should not fulfil');
+        return 'fulfilled';
+      },
+      onRejected(reason) {
+        t.is(reason, 'disconnected');
+        return `rejected ${reason}`;
+      },
+    }),
+  );
 
   t.is(await when(vow), 'rejected disconnected');
 });

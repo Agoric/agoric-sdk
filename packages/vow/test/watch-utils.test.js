@@ -256,14 +256,14 @@ test('asPromise handles watcher arguments', async t => {
   const vow = watch(testPromiseP);
 
   let watcherCalled = false;
-  const watcher = {
+  const watcher = zone.exo('Watcher', undefined, {
     onFulfilled(value, ctx) {
       watcherCalled = true;
       t.is(value, 'watcher test');
       t.deepEqual(ctx, ['ctx']);
       return value;
     },
-  };
+  });
 
   // XXX fix type: `watcherContext` doesn't need to be an array
   const result = await asPromise(vow, watcher, ['ctx']);

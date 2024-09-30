@@ -43,6 +43,23 @@ test('retry on disconnection', async t => {
       },
     },
   );
+  const makeFinalWatcher = zone.exoClass(
+    'FinalWatcher',
+    undefined,
+    final => ({ final }),
+    {
+      onFulfilled(value) {
+        t.is(this.state.final, 'happy');
+        t.is(value, 'resolved');
+        return value;
+      },
+      onRejected(reason) {
+        t.is(this.state.final, 'sad');
+        t.is(reason && reason.message, 'dejected');
+        return ['rejected', reason];
+      },
+    },
+  );
 
   const PLANS = [
     [0, 'happy'],
@@ -72,18 +89,7 @@ test('retry on disconnection', async t => {
       let resultP;
       switch (pattern) {
         case 'watch-with-handler': {
-          const resultW = watch(vow, {
-            onFulfilled(value) {
-              t.is(plan[final], 'happy');
-              t.is(value, 'resolved');
-              return value;
-            },
-            onRejected(reason) {
-              t.is(plan[final], 'sad');
-              t.is(reason && reason.message, 'dejected');
-              return ['rejected', reason];
-            },
-          });
+          const resultW = watch(vow, makeFinalWatcher(plan[final]));
           t.is('then' in resultW, false, 'watch resultW.then is undefined');
           resultP = when(resultW);
           break;
