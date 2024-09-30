@@ -5,11 +5,8 @@
  * Downside is it can't reference any ambient types, which most of agoric-sdk type are presently.
  */
 
-import type { ERef } from '@endo/far';
-import type { CapData } from '@endo/marshal';
-import type { agoric } from '@agoric/cosmic-proto';
+import type { agoric } from '@agoric/cosmic-proto/agoric/bundle.js';
 import type { AgoricNamesRemotes } from '@agoric/vats/tools/board-utils.js';
-import type { StoredFacet } from '@agoric/internal/src/lib-chainStorage.js';
 import type { PublicTopic } from '@agoric/zoe/src/contractSupport/topics.js';
 import type { OfferSpec } from './offers.js';
 
@@ -28,6 +25,7 @@ export type InvitationMakers = Record<
   (...args: any[]) => Promise<Invitation>
 >;
 
+// @ts-expect-error FIXME needs generic param
 export type PublicSubscribers = Record<string, PublicTopic>;
 
 export interface ContinuingOfferResult {
