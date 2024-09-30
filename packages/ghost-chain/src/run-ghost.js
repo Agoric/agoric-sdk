@@ -11,7 +11,9 @@ import { upgradeSwingset } from '@agoric/swingset-vat';
 import { makeSwingsetController } from '@agoric/swingset-vat';
 import { kser, kunser, krefOf, kslot } from '@agoric/kmarshal';
 import { makeDummySlogger } from  '@agoric/swingset-vat/src/kernel/slogger.js';
-import makeKernelKeeper from '@agoric/swingset-vat/src/kernel/state/kernelKeeper.js';
+import makeKernelKeeper, {
+  CURRENT_SCHEMA_VERSION,
+} from '@agoric/swingset-vat/src/kernel/state/kernelKeeper.js';
 import { makeKernelQueueHandler } from '@agoric/swingset-vat/src/kernel/kernelQueue.js';
 import { BridgeId } from '@agoric/internal';
 import bundleSource from '@endo/bundle-source';
@@ -623,7 +625,7 @@ async function run() {
   await doCommit();
 
   const dummySlog = makeDummySlogger({}, console);
-  const kernelKeeper = makeKernelKeeper(kernelStorage, dummySlog);
+  const kernelKeeper = makeKernelKeeper(kernelStorage, CURRENT_SCHEMA_VERSION, dummySlog);
   kernelKeeper.loadStats();
   const kq = makeKernelQueueHandler({kernelKeeper});
   const { kvStore } = kernelStorage;
