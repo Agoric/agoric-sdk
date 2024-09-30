@@ -81,6 +81,22 @@ const inviteECMembers = async (
   await distributeInvitations(zip(values(voterAddresses), invitations));
 };
 
+const inviteToEconCharter = async (
+  { consume: { namesByAddressAdmin, econCharterKit } },
+  { options: { voterAddresses } },
+) => {
+  const { creatorFacet } = E.get(econCharterKit);
+
+  void Promise.all(
+    values(voterAddresses).map(async addr => {
+      const debugName = `econ charter member ${addr}`;
+      reserveThenDeposit(debugName, namesByAddressAdmin, addr, [
+        E(creatorFacet).makeCharterMemberInvitation(),
+      ]).catch(err => console.error(`failed deposit to ${debugName}`, err));
+    }),
+  );
+};
+
 const startNewEconomicCommittee = async (
   {
     consume: { board, chainStorage, diagnostics, zoe },
@@ -145,6 +161,95 @@ const startNewEconomicCommittee = async (
   return creatorFacet;
 };
 
+const startNewEconCharter = async ({
+  consume: { zoe },
+  produce: { econCharterKit },
+  installation: {
+    consume: { binaryVoteCounter: counterP, econCommitteeCharter: installP },
+  },
+  instance: {
+    produce: { econCommitteeCharter },
+  },
+}) => {
+  const [charterInstall, counterInstall] = await Promise.all([
+    installP,
+    counterP,
+  ]);
+  const terms = await harden({
+    binaryVoteCounterInstallation: counterInstall,
+  });
+
+  trace('Starting new EC Charter Instance');
+  const startResult = E(zoe).startInstance(
+    charterInstall,
+    undefined,
+    terms,
+    undefined,
+    'econCommitteeCharter',
+  );
+  trace('Started new EC Charter Instance Successfully');
+
+  econCommitteeCharter.reset();
+  econCommitteeCharter.resolve(E.get(startResult).instance);
+
+  econCharterKit.reset();
+  econCharterKit.resolve(startResult);
+  return startResult;
+};
+
+const addGovernorsToEconCharter = async (
+  {
+    consume: {
+      reserveKit,
+      vaultFactoryKit,
+      auctioneerKit,
+      psmKit,
+      provisionPoolStartResult,
+    },
+    instance: {
+      consume: { reserve, VaultFactory, auctioneer, provisionPool },
+    },
+  },
+  { options: { econCharterKit } },
+) => {
+  const { creatorFacet } = E.get(econCharterKit);
+
+  const psmKitMap = await psmKit;
+
+  for (const { psm, psmGovernorCreatorFacet, label } of psmKitMap.values()) {
+    E(creatorFacet).addInstance(psm, psmGovernorCreatorFacet, label);
+  }
+
+  await Promise.all(
+    [
+      {
+        label: 'reserve',
+        instanceP: reserve,
+        facetP: E.get(reserveKit).governorCreatorFacet,
+      },
+      {
+        label: 'VaultFactory',
+        instanceP: VaultFactory,
+        facetP: E.get(vaultFactoryKit).governorCreatorFacet,
+      },
+      {
+        label: 'auctioneer',
+        instanceP: auctioneer,
+        facetP: E.get(auctioneerKit).governorCreatorFacet,
+      },
+      {
+        label: 'provisionPool',
+        instanceP: provisionPool,
+        facetP: E.get(provisionPoolStartResult).governorCreatorFacet,
+      },
+    ].map(async ({ label, instanceP, facetP }) => {
+      const [instance, govFacet] = await Promise.all([instanceP, facetP]);
+
+      return E(creatorFacet).addInstance(instance, govFacet, label);
+    }),
+  );
+};
+
 export const replaceElectorate = async (permittedPowers, config) => {
   const { committeeName, voterAddresses, highPrioritySendersConfig } =
     config.options;
@@ -193,14 +298,22 @@ export const replaceElectorate = async (permittedPowers, config) => {
   });
 
   trace('Installed New Economic Committee');
+
+  const econCharterKit = await startNewEconCharter(permittedPowers);
+  await addGovernorsToEconCharter(permittedPowers, {
+    options: { econCharterKit },
+  });
+
+  await inviteToEconCharter(permittedPowers, {
+    options: { voterAddresses },
+  });
+
+  trace('Installed New EC Charter');
 };
 
 harden(replaceElectorate);
 
-export const getManifestForReplaceElectorate = async (
-  { economicCommitteeRef: _economicCommitteeRef },
-  options,
-) => ({
+export const getManifestForReplaceElectorate = async options => ({
   manifest: {
     [replaceElectorate.name]: {
       consume: {
@@ -216,16 +329,30 @@ export const getManifestForReplaceElectorate = async (
         zoe: true,
         highPrioritySendersManager: true,
         namesByAddressAdmin: true,
+        econCharterKit: true,
       },
       produce: {
         economicCommitteeKit: true,
         economicCommitteeCreatorFacet: 'economicCommittee',
       },
       installation: {
-        consume: { committee: 'zoe' },
+        consume: {
+          committee: 'zoe',
+          binaryVoteCounter: true,
+          econCommitteeCharter: true,
+        },
       },
       instance: {
-        produce: { economicCommittee: 'economicCommittee' },
+        produce: {
+          economicCommittee: 'economicCommittee',
+          econCommitteeCharter: true,
+        },
+        consume: {
+          reserve: true,
+          VaultFactory: true,
+          auctioneer: true,
+          provisionPool: true,
+        },
       },
     },
   },

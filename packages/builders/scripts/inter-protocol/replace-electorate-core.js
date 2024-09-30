@@ -9,12 +9,6 @@ export const defaultProposalBuilder = async ({ publishRef, install }, opts) => {
       getManifestForReplaceElectorate.name,
       {
         ...opts,
-        economicCommitteeRef: publishRef(
-          install(
-            '@agoric/governance/src/committee.js',
-            '../bundles/bundle-committee.js',
-          ),
-        ),
       },
     ],
   });
