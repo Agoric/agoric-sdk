@@ -335,7 +335,7 @@ type StartedInstanceKitWithLabel = {
 type ChainBootstrapSpaceT = {
   agoricNames: import('../types.js').NameHub;
   agoricNamesAdmin: import('@agoric/vats').NameAdmin;
-  bankManager: BankManager;
+  bankManager: import('@agoric/vats/src/vat-bank.js').BankManager;
   bldIssuerKit: RemoteIssuerKit;
   board: import('@agoric/vats').Board;
   bridgeManager: import('../types.js').BridgeManager | undefined;
@@ -371,7 +371,7 @@ type ChainBootstrapSpaceT = {
   namesByAddress: import('../types.js').NameHub;
   namesByAddressAdmin: import('../types.js').NamesByAddressAdmin;
   networkVat: NetworkVat;
-  orchestration?: CosmosInterchainService;
+  orchestration?: import('@agoric/orchestration').CosmosInterchainService;
   pegasusConnections: import('@agoric/vats').NameHubKit;
   pegasusConnectionsAdmin: import('@agoric/vats').NameAdmin;
   powerStore: MapStore;
