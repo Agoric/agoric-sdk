@@ -25,8 +25,7 @@ export type InvitationMakers = Record<
   (...args: any[]) => Promise<Invitation>
 >;
 
-// @ts-expect-error FIXME needs generic param
-export type PublicSubscribers = Record<string, PublicTopic>;
+export type PublicSubscribers = Record<string, PublicTopic<unknown>>;
 
 export interface ContinuingOfferResult {
   invitationMakers: InvitationMakers;
