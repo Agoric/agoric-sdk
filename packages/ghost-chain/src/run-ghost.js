@@ -507,7 +507,7 @@ function makeRunPolicies() {
     ignoreBlockLimit ? undefined : blockComputeLimit - totalBeans;
 
   const runPolicy = harden({
-    allowCleanup: () => false,
+    //allowCleanup: () => false,
     didCleanup: () => undefined, // ignore
     vatCreated() {
       didWork = true;
@@ -542,18 +542,18 @@ function makeRunPolicies() {
 
   const cleanupPolicy = harden({
     ...runPolicy,
-    allowCleanup() {
+    NOTallowCleanup() {
       if (cleanups > 0) {
         //console.log(`  cleanupPolicy.allowCleanup, ${cleanups}, returning yes`);
-        return { budget: cleanups };
+        return { default: cleanups };
       } else {
         //console.log(`  cleanupPolicy.allowCleanup, ${cleanups}, returning no`);
         return false;
       }
     },
-    didCleanup(spent) {
+    didCleanup(details) {
       //console.log(`   cleanupPolicy.didCleanup(${spent}), now ${cleanups}`);
-      cleanups -= spent.cleanups;
+      cleanups -= details.cleanups.total;
       didWork = true;
       //return cleanups > 0;
       return true;
