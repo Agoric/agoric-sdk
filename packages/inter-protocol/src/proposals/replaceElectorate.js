@@ -333,18 +333,18 @@ export const getManifestForReplaceElectorate = async ({}, options) => ({
       produce: {
         econCharterKit: true,
         economicCommitteeKit: true,
-        economicCommitteeCreatorFacet: 'economicCommittee',
+        economicCommitteeCreatorFacet: true,
       },
       installation: {
         consume: {
-          committee: 'zoe',
+          committee: true,
           binaryVoteCounter: true,
           econCommitteeCharter: true,
         },
       },
       instance: {
         produce: {
-          economicCommittee: 'economicCommittee',
+          economicCommittee: true,
           econCommitteeCharter: true,
         },
         consume: {
