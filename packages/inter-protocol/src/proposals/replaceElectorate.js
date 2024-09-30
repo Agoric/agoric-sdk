@@ -128,7 +128,7 @@ const startNewEconomicCommittee = async (
   const { instance, creatorFacet } = startResult;
 
   trace('Started new EC Committee Instance Successfully');
-  
+
   economicCommitteeKit.reset();
   economicCommitteeKit.resolve(
     harden({ ...startResult, label: 'economicCommittee' }),
@@ -165,6 +165,8 @@ export const replaceElectorate = async (permittedPowers, config) => {
     E.get(permittedPowers.consume.reserveKit).governorCreatorFacet,
     E.get(permittedPowers.consume.auctioneerKit).governorCreatorFacet,
     E.get(permittedPowers.consume.vaultFactoryKit).governorCreatorFacet,
+    E.get(permittedPowers.consume.provisionPoolStartResult)
+      .governorCreatorFacet,
     ...[...psmKitMap.values()].map(psmKit => psmKit.psmGovernorCreatorFacet),
   ];
 
@@ -206,6 +208,7 @@ export const getManifestForReplaceElectorate = async (
         auctioneerKit: true,
         vaultFactoryKit: true,
         psmKit: true,
+        provisionPoolStartResult: true,
 
         board: true,
         chainStorage: true,
