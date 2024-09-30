@@ -11,7 +11,7 @@ import { resolve as importMetaResolve } from 'import-meta-resolve';
 import tmp from 'tmp';
 
 import { Fail, q } from '@endo/errors';
-import { E } from '@endo/far';
+import { E, Far } from '@endo/far';
 import { makeMarshal } from '@endo/marshal';
 import { isNat } from '@endo/nat';
 import { M, mustMatch } from '@endo/patterns';
@@ -432,9 +432,9 @@ export default async function main(progname, args, { env, homedir, agcc }) {
       }
     }
 
-    const toStorage = message => {
+    const toStorage = Far('BridgeStorageHandler', message => {
       return doOutboundBridge(BridgeId.STORAGE, message);
-    };
+    });
 
     const makeInstallationPublisher = () => {
       const installationStorageNode = makeChainStorageRoot(
