@@ -27,13 +27,16 @@ harden(makeSimpleMarshaller);
 
 const setup = () => {
   const storageNodeState = {};
-  const chainStorage = makeChainStorageRoot(message => {
-    assert(message.method === 'set');
-    assert(message.args.length === 1);
-    const [[path, value]] = message.args;
-    assert(path === 'cache');
-    storageNodeState.cache = value;
-  }, 'cache');
+  const chainStorage = makeChainStorageRoot(
+    Far('ToStorage', message => {
+      assert(message.method === 'set');
+      assert(message.args.length === 1);
+      const [[path, value]] = message.args;
+      assert(path === 'cache');
+      storageNodeState.cache = value;
+    }),
+    'cache',
+  );
   const cache = makeCache(
     makeChainStorageCoordinator(chainStorage, makeSimpleMarshaller()),
   );
