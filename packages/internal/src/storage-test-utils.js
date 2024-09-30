@@ -108,82 +108,86 @@ export const makeFakeStorageKit = (rootPath, rootOptions) => {
   };
   /** @type {StorageMessage[]} */
   const messages = [];
-  /** @param {StorageMessage} message */
 
-  const toStorage = message => {
-    messages.push(message);
-    switch (message.method) {
-      case 'getStoreKey': {
-        const [key] = message.args;
-        return { storeName: 'swingset', storeSubkey: `fake:${key}` };
-      }
-      case 'get': {
-        const [key] = message.args;
-        return data.has(key) ? data.get(key) : null;
-      }
-      case 'children': {
-        const [key] = message.args;
-        const childEntries = getChildEntries(`${key}.`);
-        return [...childEntries.keys()];
-      }
-      case 'entries': {
-        const [key] = message.args;
-        const childEntries = getChildEntries(`${key}.`);
-        return [...childEntries.entries()].map(entry =>
-          entry[1] != null ? entry : [entry[0]],
-        );
-      }
-      case 'set':
-      case 'setWithoutNotify': {
-        trace('toStorage set', message);
-        /** @type {StorageEntry[]} */
-        const newEntries = message.args;
-        for (const [key, value] of newEntries) {
-          if (value != null) {
-            data.set(key, value);
-          } else {
-            data.delete(key);
-          }
+  const toStorage = Far(
+    'ToStorage',
+    /** @param {StorageMessage} message */
+    message => {
+      messages.push(message);
+      switch (message.method) {
+        case 'getStoreKey': {
+          const [key] = message.args;
+          return { storeName: 'swingset', storeSubkey: `fake:${key}` };
         }
-        break;
-      }
-      case 'append': {
-        trace('toStorage append', message);
-        /** @type {StorageEntry[]} */
-        const newEntries = message.args;
-        for (const [key, value] of newEntries) {
-          value != null || Fail`attempt to append with no value`;
-          // In the absence of block boundaries, everything goes in a single StreamCell.
-          const oldVal = data.get(key);
-          let streamCell;
-          if (oldVal != null) {
-            try {
-              streamCell = JSON.parse(oldVal);
-              assert(isStreamCell(streamCell));
-            } catch (_err) {
-              streamCell = undefined;
+        case 'get': {
+          const [key] = message.args;
+          return data.has(key) ? data.get(key) : null;
+        }
+        case 'children': {
+          const [key] = message.args;
+          const childEntries = getChildEntries(`${key}.`);
+          return [...childEntries.keys()];
+        }
+        case 'entries': {
+          const [key] = message.args;
+          const childEntries = getChildEntries(`${key}.`);
+          return [...childEntries.entries()].map(entry =>
+            entry[1] != null ? entry : [entry[0]],
+          );
+        }
+        case 'set':
+        case 'setWithoutNotify': {
+          trace('toStorage set', message);
+          /** @type {StorageEntry[]} */
+          const newEntries = message.args;
+          for (const [key, value] of newEntries) {
+            if (value != null) {
+              data.set(key, value);
+            } else {
+              data.delete(key);
             }
           }
-          if (streamCell === undefined) {
-            streamCell = {
-              blockHeight: '0',
-              values: oldVal != null ? [oldVal] : [],
-            };
-          }
-          streamCell.values.push(value);
-          data.set(key, JSON.stringify(streamCell));
+          break;
         }
-        break;
+        case 'append': {
+          trace('toStorage append', message);
+          /** @type {StorageEntry[]} */
+          const newEntries = message.args;
+          for (const [key, value] of newEntries) {
+            value != null || Fail`attempt to append with no value`;
+            // In the absence of block boundaries, everything goes in a single StreamCell.
+            const oldVal = data.get(key);
+            let streamCell;
+            if (oldVal != null) {
+              try {
+                streamCell = JSON.parse(oldVal);
+                assert(isStreamCell(streamCell));
+              } catch (_err) {
+                streamCell = undefined;
+              }
+            }
+            if (streamCell === undefined) {
+              streamCell = {
+                blockHeight: '0',
+                values: oldVal != null ? [oldVal] : [],
+              };
+            }
+            streamCell.values.push(value);
+            data.set(key, JSON.stringify(streamCell));
+          }
+          break;
+        }
+        case 'size':
+          // Intentionally incorrect because it counts non-child descendants,
+          // but nevertheless supports a "has children" test.
+          return [...data.keys()].filter(k =>
+            k.startsWith(`${message.args[0]}.`),
+          ).length;
+        default:
+          throw Error(`unsupported method: ${message.method}`);
       }
-      case 'size':
-        // Intentionally incorrect because it counts non-child descendants,
-        // but nevertheless supports a "has children" test.
-        return [...data.keys()].filter(k => k.startsWith(`${message.args[0]}.`))
-          .length;
-      default:
-        throw Error(`unsupported method: ${message.method}`);
-    }
-  };
+    },
+  );
   const rootNode = makeChainStorageRoot(toStorage, rootPath, resolvedOptions);
   return {
     rootNode,
