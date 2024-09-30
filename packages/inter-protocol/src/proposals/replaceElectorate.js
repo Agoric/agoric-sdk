@@ -128,7 +128,8 @@ const startNewEconomicCommittee = async (
   const { instance, creatorFacet } = startResult;
 
   trace('Started new EC Committee Instance Successfully');
-
+  
+  economicCommitteeKit.reset();
   economicCommitteeKit.resolve(
     harden({ ...startResult, label: 'economicCommittee' }),
   );
