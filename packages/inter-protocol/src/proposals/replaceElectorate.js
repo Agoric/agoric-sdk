@@ -82,8 +82,8 @@ const inviteECMembers = async (
 };
 
 const inviteToEconCharter = async (
-  { consume: { namesByAddressAdmin, econCharterKit } },
-  { options: { voterAddresses } },
+  { consume: { namesByAddressAdmin } },
+  { options: { voterAddresses, econCharterKit } },
 ) => {
   const { creatorFacet } = E.get(econCharterKit);
 
@@ -305,7 +305,7 @@ export const replaceElectorate = async (permittedPowers, config) => {
   });
 
   await inviteToEconCharter(permittedPowers, {
-    options: { voterAddresses },
+    options: { voterAddresses, econCharterKit },
   });
 
   trace('Installed New EC Charter');
@@ -313,7 +313,7 @@ export const replaceElectorate = async (permittedPowers, config) => {
 
 harden(replaceElectorate);
 
-export const getManifestForReplaceElectorate = async options => ({
+export const getManifestForReplaceElectorate = async ({}, options) => ({
   manifest: {
     [replaceElectorate.name]: {
       consume: {
@@ -329,9 +329,9 @@ export const getManifestForReplaceElectorate = async options => ({
         zoe: true,
         highPrioritySendersManager: true,
         namesByAddressAdmin: true,
-        econCharterKit: true,
       },
       produce: {
+        econCharterKit: true,
         economicCommitteeKit: true,
         economicCommitteeCreatorFacet: 'economicCommittee',
       },
