@@ -607,8 +607,14 @@ export function makeVatKeeper(
    *
    * @param {TranscriptEntry} entry  The transcript entry to append.
    */
-  function addToTranscript(entry) {
-    transcriptStore.addItem(vatID, JSON.stringify(entry));
+  function addToTranscript(entry, f) {
+    //transcriptStore.addItem(vatID, JSON.stringify(entry));
+    const item = JSON.stringify(entry);
+    f?.(item.length);
+    if (item.length > 1_000_000) {
+      kernelSlog.write({type: 'large-transcript-entry', size: item.length });
+    }
+    transcriptStore.addItem(vatID, item);
   }
 
   /** @returns {number} */

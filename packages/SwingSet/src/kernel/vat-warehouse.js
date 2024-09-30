@@ -548,7 +548,11 @@ export function makeVatWarehouse({
     // TODO: if the dispatch failed for whatever reason, and we choose to
     // destroy the vat, change what we do with the transcript here.
     if (options.useTranscript) {
-      vatKeeper.addToTranscript(getTranscriptEntry(vd, deliveryResult));
+      vs.write({type: 'add-to-transcript-start', vatID});
+      let size;
+      const f = s => size = s;
+      vatKeeper.addToTranscript(getTranscriptEntry(vd, deliveryResult), f);
+      vs.write({type: 'add-to-transcript-finish', vatID, size});
     }
 
     if (kd[0] === 'bringOutYourDead') {

@@ -215,6 +215,7 @@ export function makeSlogger(slogCallbacks, writeObj) {
       syscall,
       changeCList,
       terminateVat,
+      write,
     });
   }
 
