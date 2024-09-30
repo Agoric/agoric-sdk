@@ -122,6 +122,7 @@ test.serial('normal running of committee', async t => {
   await Promise.all(
     smartWallets.map(w => {
       const invitationPurse = w.getCurrentWalletRecord().purses.find(p => {
+        // TODO: manage brands by object identity #10167
         return p.brand.toString().includes('Invitation');
       });
       if (!invitationPurse) return null;
@@ -264,6 +265,7 @@ test.serial('successful vote by 2 continuing members', async t => {
   await Promise.all(
     newCommittee.map(w => {
       const invitationPurse = w.getCurrentWalletRecord().purses.find(p => {
+        // TODO: manage brands by object identity #10167
         return p.brand.toString().includes('Invitation');
       });
       if (!invitationPurse) return null;
@@ -366,6 +368,7 @@ test.serial('unsuccessful vote by 2 outgoing members', async t => {
   t.log('Should have no new invitations');
   for (const w of outgoingCommittee) {
     const invitationPurse = w.getCurrentWalletRecord().purses.find(p => {
+      // TODO: manage brands by object identity #10167
       return p.brand.toString().includes('Invitation');
     });
     if (!invitationPurse) continue;
@@ -463,6 +466,7 @@ test.serial(
     t.log('All invitations should already be accepted.');
     for (const w of committee) {
       const invitationPurse = w.getCurrentWalletRecord().purses.find(p => {
+        // TODO: manage brands by object identity #10167
         return p.brand.toString().includes('Invitation');
       });
       if (!invitationPurse) continue;
@@ -563,6 +567,7 @@ test.serial(
     t.log('All invitations should already be accepted.');
     for (const w of committee) {
       const invitationPurse = w.getCurrentWalletRecord().purses.find(p => {
+        // TODO: manage brands by object identity #10167
         return p.brand.toString().includes('Invitation');
       });
       if (!invitationPurse) continue;
