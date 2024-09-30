@@ -313,7 +313,7 @@ export const replaceElectorate = async (permittedPowers, config) => {
 
 harden(replaceElectorate);
 
-export const getManifestForReplaceElectorate = async ({}, options) => ({
+export const getManifestForReplaceElectorate = async (_, options) => ({
   manifest: {
     [replaceElectorate.name]: {
       consume: {
