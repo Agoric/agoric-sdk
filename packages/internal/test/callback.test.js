@@ -304,11 +304,11 @@ test('makeAttenuator', async t => {
     overrides: {
       m1: null,
       m2: cb.makeMethodCallback(
-        {
+        Far('Abc', {
           abc() {
             return 'return abc';
           },
-        },
+        }),
         'abc',
       ),
     },
