@@ -10,4 +10,4 @@ export { makeSnapStore } from './snapStore.js';
 export { makeSnapStoreIO } from './snapStoreIO.js';
 
 // eslint-disable-next-line import/export
-export * from './types.js';
+export * from './types-index.js';
