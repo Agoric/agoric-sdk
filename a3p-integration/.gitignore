@@ -23,4 +23,4 @@ proposals/*/.yarn/*
 
 # build artifacts
 proposals/*/mainNet/*
-proposals/*/devMet/*
+proposals/*/devNet/*
