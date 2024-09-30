@@ -22,5 +22,5 @@ proposals/*/.yarn/*
 !proposals/*/.yarn/versions
 
 # build artifacts
-proposals/*/mainnet/*
-proposals/*/devnet/*
+proposals/*/mainNet/*
+proposals/*/devMet/*
