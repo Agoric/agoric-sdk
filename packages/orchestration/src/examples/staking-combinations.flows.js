@@ -4,7 +4,7 @@
  * @import {ContinuingOfferResult, InvitationMakers} from '@agoric/smart-wallet/src/types.js';
  * @import {MakeCombineInvitationMakers} from '../exos/combine-invitation-makers.js';
  * @import {CosmosOrchestrationAccount} from '../exos/cosmos-orchestration-account.js';
- * @import {ZoeTools} from '../utils/zoe-tools.js';
+ * @import {ResolvedContinuingOfferResult, ZoeTools} from '../utils/zoe-tools.js';
  */
 
 import { mustMatch } from '@endo/patterns';
@@ -23,7 +23,7 @@ const trace = makeTracer('StakingCombinationsFlows');
  * }} ctx
  * @param {ZCFSeat} _seat
  * @param {{ chainName: string }} offerArgs
- * @returns {Promise<ContinuingOfferResult>}
+ * @returns {Promise<ResolvedContinuingOfferResult>}
  */
 export const makeAccount = async (orch, ctx, _seat, { chainName }) => {
   const chain = await orch.getChain(chainName);
@@ -31,7 +31,6 @@ export const makeAccount = async (orch, ctx, _seat, { chainName }) => {
 
   const extraMakers = ctx.makeExtraInvitationMaker(account);
 
-  /** @type {ContinuingOfferResult} */
   const result = await account.asContinuingOffer();
 
   return {
