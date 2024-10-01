@@ -272,56 +272,26 @@ const startNewEconCharter = async ({
 };
 
 const addGovernorsToEconCharter = async (
-  {
-    consume: {
-      reserveKit,
-      vaultFactoryKit,
-      auctioneerKit,
-      psmKit,
-      provisionPoolStartResult,
-    },
-    instance: {
-      consume: { reserve, VaultFactory, auctioneer, provisionPool },
-    },
-  },
+  { consume: { psmKit, governedContractKits } },
   { options: { econCharterKit } },
 ) => {
-  const { creatorFacet } = E.get(econCharterKit);
+  const { creatorFacet: ecCreatorFacet } = E.get(econCharterKit);
 
   const psmKitMap = await psmKit;
 
   for (const { psm, psmGovernorCreatorFacet, label } of psmKitMap.values()) {
-    E(creatorFacet).addInstance(psm, psmGovernorCreatorFacet, label);
+    E(ecCreatorFacet).addInstance(psm, psmGovernorCreatorFacet, label);
   }
 
-  await Promise.all(
-    [
-      {
-        label: 'reserve',
-        instanceP: reserve,
-        facetP: E.get(reserveKit).governorCreatorFacet,
-      },
-      {
-        label: 'VaultFactory',
-        instanceP: VaultFactory,
-        facetP: E.get(vaultFactoryKit).governorCreatorFacet,
-      },
-      {
-        label: 'auctioneer',
-        instanceP: auctioneer,
-        facetP: E.get(auctioneerKit).governorCreatorFacet,
-      },
-      {
-        label: 'provisionPool',
-        instanceP: provisionPool,
-        facetP: E.get(provisionPoolStartResult).governorCreatorFacet,
-      },
-    ].map(async ({ label, instanceP, facetP }) => {
-      const [instance, govFacet] = await Promise.all([instanceP, facetP]);
+  const governedContractKitMap = await governedContractKits;
 
-      return E(creatorFacet).addInstance(instance, govFacet, label);
-    }),
-  );
+  for (const {
+    instance,
+    governorCreatorFacet,
+    label,
+  } of governedContractKitMap.values()) {
+    E(ecCreatorFacet).addInstance(instance, governorCreatorFacet, label);
+  }
 };
 
 /**
@@ -450,12 +420,6 @@ export const getManifestForReplaceAllElectorates = async (
         produce: {
           economicCommittee: true,
           econCommitteeCharter: true,
-        },
-        consume: {
-          reserve: true,
-          VaultFactory: true,
-          auctioneer: true,
-          provisionPool: true,
         },
       },
     },
