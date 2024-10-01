@@ -15,9 +15,9 @@ import {
   setDebtLimit,
 } from '../lib/vaults.mjs';
 
-const START_FREQUENCY = 600; // StartFrequency: 600s (auction runs every 10m)
-const CLOCK_STEP = 20; // ClockStep: 20s (ensures auction completes in time)
-const PRICE_LOCK_PERIOD = 300;
+const START_FREQUENCY = 120; // StartFrequency: 600s (auction runs every 10m)
+const CLOCK_STEP = 10; // ClockStep: 20s (ensures auction completes in time)
+const PRICE_LOCK_PERIOD = 60;
 const oraclesAddresses = [GOV1ADDR, GOV2ADDR];
 
 const oracles = [] as { address: string; id: string }[];
