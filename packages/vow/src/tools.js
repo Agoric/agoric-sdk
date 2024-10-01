@@ -36,19 +36,8 @@ export const prepareBasicVowTools = (zone, powers = {}) => {
   const asVow = makeAsVow(makeVowKit);
 
   // FIXME in https://github.com/Agoric/agoric-sdk/pull/9785
-  /**
-   * @alpha Not yet implemented
-   *
-   * Create a function that retries the given function if the underlying
-   * functions rejects due to upgrade disconnection.
-   *
-   * @template {(...args: any[]) => Promise<any>} F
-   * @param {Zone} fnZone - the zone for the named function
-   * @param {string} name
-   * @param {F} fn
-   * @returns {F extends (...args: infer Args) => Promise<infer R> ? (...args: Args) => Vow<R> : never}
-   */
-  const retriable =
+  /** @type {VowTools['retryable']} */
+  const retryable =
     (fnZone, name, fn) =>
     // @ts-expect-error cast
     (...args) => {
@@ -95,7 +84,8 @@ export const prepareBasicVowTools = (zone, powers = {}) => {
     allSettled,
     asVow,
     asPromise,
-    retriable,
+    retryable,
+    retriable: retryable, // For temporary backwards compat with alpha implementation
   });
 };
 harden(prepareBasicVowTools);

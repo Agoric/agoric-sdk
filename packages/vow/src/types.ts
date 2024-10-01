@@ -100,6 +100,27 @@ export type AsPromiseFunction<
   watcherArgs?: C | undefined,
 ) => Promise<TResult1 | TResult2>;
 
+export interface RetryableTool {
+  /**
+   * Create a function that retries the given function if the underlying
+   * async function rejects due to an upgrade disconnection. The return value
+   * of the created function is a vow that settles to the final retry result.
+   *
+   * The retried function should be idempotent.
+   *
+   * @param fnZone the zone for the named function
+   * @param name base name to use in the zone
+   * @param fn the retried function
+   */
+  <F extends (...args: any[]) => Promise<any>>(
+    fnZone: Zone,
+    name: string,
+    fn: F,
+  ): F extends (...args: infer Args) => Promise<infer R>
+    ? (...args: Args) => Vow<R>
+    : never;
+}
+
 export type VowTools = {
   /**
    * Vow-tolerant implementation of Promise.all that takes an iterable of vows
@@ -142,13 +163,14 @@ export type VowTools = {
     fn: (...args: any[]) => Vow<Awaited<T>> | Awaited<T> | PromiseVow<T>,
   ) => Vow<Awaited<T>>;
   makeVowKit: <T>() => VowKit<T>;
-  retriable: <F extends (...args: any[]) => Promise<any>>(
-    fnZone: Zone,
-    name: string,
-    fn: F,
-  ) => F extends (...args: infer Args) => Promise<infer R>
-    ? (...args: Args) => Vow<R>
-    : never;
+  /**
+   * @alpha Not yet implemented
+   */
+  retryable: RetryableTool;
+  /**
+   * @deprecated use `retryable`
+   */
+  retriable: RetryableTool;
   watch: <T = any, TResult1 = T, TResult2 = never, C extends any[] = any[]>(
     specimenP: EVow<T>,
     watcher?: Watcher<T, TResult1, TResult2, C> | undefined,

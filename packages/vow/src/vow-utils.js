@@ -29,7 +29,7 @@ harden(isVow);
 /**
  * A vow is a passable tagged as 'Vow'.  Its payload is a record with
  * API-versioned remotables.  payload.vowV0 is the API for the `watch` and
- * `when` operators to use for retriable shortening of the vow chain.
+ * `when` operators to use for retryable shortening of the vow chain.
  *
  * If the specimen is a Vow, return its payload, otherwise undefined.
  *
