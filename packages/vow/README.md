@@ -150,8 +150,8 @@ Here is an (oversimplified) algorithm that `watch` and `when` use to obtain a
 final result:
 
 ```js
-// Directly await the non-retriable original specimen.
-// This is non-retriable because we don't know how our caller obtained
+// Directly await the non-retryable original specimen.
+// This is non-retryable because we don't know how our caller obtained
 // it in the first place, since it is an application-specific detail
 // that may not be side-effect free.
 let result = await specimenP;

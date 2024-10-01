@@ -80,7 +80,7 @@ export const makeZoeTools = (zcf, { when, allVows, allSettled, asVow }) => {
       //     const { zcfSeat: tempSeat, userSeat: userSeatP } =
       //       zcf.makeEmptySeatKit();
       //     const uSeat = await userSeatP;
-      //     // TODO how do I store in the place for this retriable?
+      //     // TODO how do I store in the place for this retryable?
       //     atomicTransfer(zcf, srcSeat, tempSeat, amounts);
       //     tempSeat.exit();
       //     return uSeat;

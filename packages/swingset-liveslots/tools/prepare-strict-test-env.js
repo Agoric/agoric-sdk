@@ -21,6 +21,8 @@ export { flushIncarnation };
 export { eventLoopIteration as nextCrank };
 
 /**
+ * @import { PromiseKit } from '@endo/promise-kit'
+ * @import { Baggage } from '@agoric/swingset-liveslots'
  * @import { ReincarnateOptions } from './setup-vat-data.js'
  */
 
@@ -37,6 +39,7 @@ export const annihilate = (options = {}) => {
   return incarnation;
 };
 
+/** @returns {Baggage} */
 export const getBaggage = () => {
   return incarnation.fakeVomKit.cm.provideBaggage();
 };
@@ -51,7 +54,7 @@ export const nextLife = (fromIncarnation = incarnation) => {
 };
 
 /**
- * @template {(baggage: import('@agoric/swingset-liveslots').Baggage) => Promise<any> | any} B
+ * @template {(baggage: Baggage) => Promise<any> | any} B
  * @param {B} build
  * @param {(tools: Awaited<ReturnType<B>>) => Promise<void> | void} [run]
  * @param {object} [options]
@@ -72,7 +75,7 @@ export const startLife = async (
     oldIncarnationNumber,
   );
   const { fakeVomKit } = nextLife(fromIncarnation);
-  /** @type {Map<string, import('@endo/promise-kit').PromiseKit<any>>} */
+  /** @type {Map<string, PromiseKit<any>>} */
   const previouslyWatchedPromises = new Map();
   let buildTools;
   try {
