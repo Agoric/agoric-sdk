@@ -24,8 +24,8 @@ test.after.always(t => t.context.shutdown?.());
  * Because the send-anywhere flow requires a lookup(), it waits forever. This
  * gives us a point at which we can upgrade the vat with a working agoricNames
  * and see that the flow continues from that point. (The lookup call is not made
- * directly in a flow, but instead from a host API which uses the retriable
- * helper. As such it tests both the idempotent retry mechanism of retriable on
+ * directly in a flow, but instead from a host API which uses the retryable
+ * helper. As such it tests both the idempotent retry mechanism of retryable on
  * upgrades, and the ability to resume an async-flow for which a host vow
  * settles after an upgrade.)
  */
