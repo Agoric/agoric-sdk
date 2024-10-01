@@ -5,7 +5,6 @@ import {
   makeStorageNodeChild,
 } from '@agoric/internal/src/lib-chainStorage.js';
 import { reserveThenDeposit } from './utils.js';
-import { deeplyFulfilledObject } from '@agoric/internal';
 
 const trace = (...args) => console.log('GovReplaceCommiteeAndCharter', ...args);
 
