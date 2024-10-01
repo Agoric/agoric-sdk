@@ -5,6 +5,7 @@ import {
   makeStorageNodeChild,
 } from '@agoric/internal/src/lib-chainStorage.js';
 import { reserveThenDeposit } from './utils.js';
+import { deeplyFulfilledObject } from '@agoric/internal';
 
 const trace = (...args) => console.log('GovReplaceCommiteeAndCharter', ...args);
 
@@ -198,18 +199,7 @@ const startNewEconCharter = async ({
 };
 
 const addGovernorsToEconCharter = async (
-  {
-    consume: {
-      reserveKit,
-      vaultFactoryKit,
-      auctioneerKit,
-      psmKit,
-      provisionPoolStartResult,
-    },
-    instance: {
-      consume: { reserve, VaultFactory, auctioneer, provisionPool },
-    },
-  },
+  { consume: { psmKit, governedContractKits } },
   { options: { econCharterKit } },
 ) => {
   const { creatorFacet } = E.get(econCharterKit);
@@ -220,34 +210,15 @@ const addGovernorsToEconCharter = async (
     E(creatorFacet).addInstance(psm, psmGovernorCreatorFacet, label);
   }
 
-  await Promise.all(
-    [
-      {
-        label: 'reserve',
-        instanceP: reserve,
-        facetP: E.get(reserveKit).governorCreatorFacet,
-      },
-      {
-        label: 'VaultFactory',
-        instanceP: VaultFactory,
-        facetP: E.get(vaultFactoryKit).governorCreatorFacet,
-      },
-      {
-        label: 'auctioneer',
-        instanceP: auctioneer,
-        facetP: E.get(auctioneerKit).governorCreatorFacet,
-      },
-      {
-        label: 'provisionPool',
-        instanceP: provisionPool,
-        facetP: E.get(provisionPoolStartResult).governorCreatorFacet,
-      },
-    ].map(async ({ label, instanceP, facetP }) => {
-      const [instance, govFacet] = await Promise.all([instanceP, facetP]);
+  const governedContractKitMap = await governedContractKits;
 
-      return E(creatorFacet).addInstance(instance, govFacet, label);
-    }),
-  );
+  for (const {
+    instance,
+    governorCreatorFacet,
+    label,
+  } of governedContractKitMap.values()) {
+    E(creatorFacet).addInstance(instance, governorCreatorFacet, label);
+  }
 };
 
 export const replaceElectorate = async (permittedPowers, config) => {
@@ -264,14 +235,16 @@ export const replaceElectorate = async (permittedPowers, config) => {
     },
   );
 
+  const governedContractKitsMap =
+    await permittedPowers.consume.governedContractKits;
   const psmKitMap = await permittedPowers.consume.psmKit;
 
+  console.log('RABI', [...governedContractKitsMap.values()]);
+
   const creatorFacets = [
-    E.get(permittedPowers.consume.reserveKit).governorCreatorFacet,
-    E.get(permittedPowers.consume.auctioneerKit).governorCreatorFacet,
-    E.get(permittedPowers.consume.vaultFactoryKit).governorCreatorFacet,
-    E.get(permittedPowers.consume.provisionPoolStartResult)
-      .governorCreatorFacet,
+    ...[...governedContractKitsMap.values()].map(
+      governedContractKit => governedContractKit.governorCreatorFacet,
+    ),
     ...[...psmKitMap.values()].map(psmKit => psmKit.psmGovernorCreatorFacet),
   ];
 
@@ -317,11 +290,8 @@ export const getManifestForReplaceElectorate = async (_, options) => ({
   manifest: {
     [replaceElectorate.name]: {
       consume: {
-        reserveKit: true,
-        auctioneerKit: true,
-        vaultFactoryKit: true,
         psmKit: true,
-        provisionPoolStartResult: true,
+        governedContractKits: true,
 
         board: true,
         chainStorage: true,
@@ -346,12 +316,6 @@ export const getManifestForReplaceElectorate = async (_, options) => ({
         produce: {
           economicCommittee: true,
           econCommitteeCharter: true,
-        },
-        consume: {
-          reserve: true,
-          VaultFactory: true,
-          auctioneer: true,
-          provisionPool: true,
         },
       },
     },
