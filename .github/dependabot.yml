@@ -1,12 +1,16 @@
 version: 2
 updates:
   - package-ecosystem: 'npm'
-    directory: '/'
+    directories:
+      - '/'
+      - '/packages/*'
     schedule:
-      interval: 'daily'
-    allow:
-      - dependency-type: 'production'
-        dependency-name: '*'
+      interval: 'weekly'
+    groups:
+      patches:
+        update-types:
+          - 'patch'
+
   - package-ecosystem: 'gomod'
     directory: '/'
     schedule:
