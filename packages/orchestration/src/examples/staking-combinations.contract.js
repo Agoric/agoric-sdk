@@ -5,7 +5,6 @@
  *   The primary offer result is a power for invitation makers that can perform
  *   actions with an ICA account.
  */
-import { makeSharedStateRecord } from '@agoric/async-flow';
 import { AmountShape } from '@agoric/ertp';
 import { M } from '@endo/patterns';
 import { prepareCombineInvitationMakers } from '../exos/combine-invitation-makers.js';
@@ -13,6 +12,7 @@ import { CosmosOrchestrationInvitationMakersI } from '../exos/cosmos-orchestrati
 import { ChainAddressShape, DelegationShape } from '../typeGuards.js';
 import { withOrchestration } from '../utils/start-helper.js';
 import * as flows from './staking-combinations.flows.js';
+import * as sharedFlows from './shared.flows.js';
 import { prepareChainHubAdmin } from '../exos/chain-hub-admin.js';
 
 /**
@@ -46,16 +46,6 @@ const contract = async (
   zone,
   { orchestrateAll, zoeTools, chainHub },
 ) => {
-  const contractState = makeSharedStateRecord(
-    /**
-     * @type {{
-     *   account: (OrchestrationAccount<any> & LocalAccountMethods) | undefined;
-     * }}
-     */ {
-      localAccount: undefined,
-    },
-  );
-
   const StakingCombinationsInvitationMakersI = M.interface(
     'StakingCombinationsInvitationMakersI',
     {
@@ -128,8 +118,22 @@ const contract = async (
     StakingCombinationsInvitationMakersI,
   );
 
+  const { makeLocalAccount } = orchestrateAll(sharedFlows, {});
+  /**
+   * Setup a shared local account for use in async-flow functions. Typically,
+   * exo initState functions need to resolve synchronously, but `makeOnce`
+   * allows us to provide a Promise. When using this inside a flow, we must
+   * await it to ensure the account is available for use.
+   *
+   * @type {any} sharedLocalAccountP expects a Promise but this is a vow
+   *   https://github.com/Agoric/agoric-sdk/issues/9822
+   */
+  const sharedLocalAccountP = zone.makeOnce('localAccount', () =>
+    makeLocalAccount(),
+  );
+
   const orchFns = orchestrateAll(flows, {
-    contractState,
+    sharedLocalAccountP,
     makeCombineInvitationMakers,
     makeExtraInvitationMaker,
     flows,

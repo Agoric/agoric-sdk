@@ -11,6 +11,8 @@ const { values } = Object;
 
 /**
  * @import {GuestInterface} from '@agoric/async-flow';
+ * @import {AtomicProvider} from '@agoric/store/src/stores/store-utils.js';
+ * @import {LocalOrchestrationAccountKit} from '../../src/exos/local-orchestration-account.js';
  * @import {Orchestrator, LocalAccountMethods, OrchestrationAccountI, OrchestrationFlow, ChainAddress} from '@agoric/orchestration';
  * @import {ZoeTools} from '../../src/utils/zoe-tools.js';
  */
@@ -23,14 +25,14 @@ const { values } = Object;
  * @satisfies {OrchestrationFlow}
  * @param {Orchestrator} orch
  * @param {object} ctx
- * @param {{ localAccount?: OrchestrationAccountI & LocalAccountMethods }} ctx.contractState
+ * @param {Promise<GuestInterface<LocalOrchestrationAccountKit['holder']>>} ctx.sharedLocalAccountP
  * @param {GuestInterface<ZoeTools>} ctx.zoeTools
  * @param {ZCFSeat} seat
  * @param {{ destAddr: ChainAddress }} offerArgs
  */
 export const depositSend = async (
   orch,
-  { contractState, zoeTools: { localTransfer, withdrawToSeat } },
+  { sharedLocalAccountP, zoeTools: { localTransfer, withdrawToSeat } },
   seat,
   offerArgs,
 ) => {
@@ -40,18 +42,17 @@ export const depositSend = async (
 
   const { give } = seat.getProposal();
 
-  await null;
-  if (!contractState.localAccount) {
-    const agoricChain = await orch.getChain('agoric');
-    contractState.localAccount = await agoricChain.makeAccount();
-  }
-
-  await localTransfer(seat, contractState.localAccount, give);
+  /**
+   * @type {any} XXX methods returning vows
+   *   https://github.com/Agoric/agoric-sdk/issues/9822
+   */
+  const sharedLocalAccount = await sharedLocalAccountP;
+  await localTransfer(seat, sharedLocalAccount, give);
 
   try {
-    await contractState.localAccount.sendAll(destAddr, values(give));
+    await sharedLocalAccount.sendAll(destAddr, values(give));
   } catch (error) {
-    await withdrawToSeat(contractState.localAccount, seat, give);
+    await withdrawToSeat(sharedLocalAccount, seat, give);
     const errMsg = makeError(`SendAll failed ${q(error)}`);
     seat.exit(errMsg);
     throw errMsg;
@@ -67,25 +68,24 @@ harden(depositSend);
  * @satisfies {OrchestrationFlow}
  * @param {Orchestrator} orch
  * @param {object} ctx
- * @param {{ localAccount?: OrchestrationAccountI & LocalAccountMethods }} ctx.contractState
+ * @param {Promise<GuestInterface<LocalOrchestrationAccountKit['holder']>>} ctx.sharedLocalAccountP
  * @param {GuestInterface<ZoeTools>} ctx.zoeTools
  * @param {ZCFSeat} seat
  */
 export const deposit = async (
   orch,
-  { contractState, zoeTools: { localTransfer } },
+  { sharedLocalAccountP, zoeTools: { localTransfer } },
   seat,
 ) => {
   const { give } = seat.getProposal();
 
-  await null;
-  if (!contractState.localAccount) {
-    const agoricChain = await orch.getChain('agoric');
-    contractState.localAccount = await agoricChain.makeAccount();
-  }
-
+  /**
+   * @type {any} XXX methods returning vows
+   *   https://github.com/Agoric/agoric-sdk/issues/9822
+   */
+  const sharedLocalAccount = await sharedLocalAccountP;
   try {
-    await localTransfer(seat, contractState.localAccount, give);
+    await localTransfer(seat, sharedLocalAccount, give);
   } catch (e) {
     seat.exit(e);
     throw e;
@@ -100,25 +100,25 @@ harden(deposit);
  * @satisfies {OrchestrationFlow}
  * @param {Orchestrator} orch
  * @param {object} ctx
- * @param {{ localAccount?: OrchestrationAccountI & LocalAccountMethods }} ctx.contractState
+ * @param {Promise<GuestInterface<LocalOrchestrationAccountKit['holder']>>} ctx.sharedLocalAccountP
  * @param {GuestInterface<ZoeTools>} ctx.zoeTools
  * @param {ZCFSeat} seat
  */
 export const withdraw = async (
   orch,
-  { contractState, zoeTools: { withdrawToSeat } },
+  { sharedLocalAccountP, zoeTools: { withdrawToSeat } },
   seat,
 ) => {
   const { want } = seat.getProposal();
 
-  await null;
-  if (!contractState.localAccount) {
-    const agoricChain = await orch.getChain('agoric');
-    contractState.localAccount = await agoricChain.makeAccount();
-  }
+  /**
+   * @type {any} XXX methods returning vows
+   *   https://github.com/Agoric/agoric-sdk/issues/9822
+   */
+  const sharedLocalAccount = await sharedLocalAccountP;
 
   try {
-    await withdrawToSeat(contractState.localAccount, seat, want);
+    await withdrawToSeat(sharedLocalAccount, seat, want);
   } catch (e) {
     seat.exit(e);
     throw e;
