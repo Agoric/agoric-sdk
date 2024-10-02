@@ -18,12 +18,14 @@ chains:
       updateConfig:
         file: scripts/update-config.sh
     faucet:
-      enabled: false
+      enabled: true
+      type: starship
     ports:
       rest: 1317
       rpc: 26657
       exposer: 38087
       grpc: 9090
+      faucet: 8082
     resources:
       cpu: 1
       memory: 4Gi
