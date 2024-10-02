@@ -13,7 +13,7 @@
   },
   "dependencies": {
     "@agoric/synthetic-chain": "^0.3.0",
-    "@types/better-sqlite3": "^7.6.9"
+    "@types/better-sqlite3": "^7.6.11"
   },
   "packageManager": "yarn@4.2.2",
   "license": "Apache-2.0"
