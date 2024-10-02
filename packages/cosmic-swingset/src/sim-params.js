@@ -75,24 +75,24 @@ export const defaultQueueMax = [
 ];
 
 export const vatCleanupDefault = 'default';
-export const defaultVatCleanupDefault = 0;
+export const defaultVatCleanupDefault = 5;
 export const vatCleanupExports = 'exports';
-export const defaultVatCleanupExports = 0;
+// export const defaultVatCleanupExports = defaultVatCleanupDefault;
 export const vatCleanupImports = 'imports';
-export const defaultVatCleanupImports = 0;
+// export const defaultVatCleanupImports = defaultVatCleanupDefault;
 export const vatCleanupKv = 'kv';
-export const defaultVatCleanupKv = 0;
+export const defaultVatCleanupKv = 50;
 export const vatCleanupSnapshots = 'snapshots';
-export const defaultVatCleanupSnapshots = 0;
+// export const defaultVatCleanupSnapshots = defaultVatCleanupDefault;
 export const vatCleanupTranscripts = 'transcripts';
-export const defaultVatCleanupTranscripts = 0;
+// export const defaultVatCleanupTranscripts = defaultVatCleanupDefault;
 export const defaultVatCleanupBudget = [
   { key: vatCleanupDefault, value: `${defaultVatCleanupDefault}` },
-  { key: vatCleanupExports, value: `${defaultVatCleanupExports}` },
-  { key: vatCleanupImports, value: `${defaultVatCleanupImports}` },
+  // { key: vatCleanupExports, value: `${defaultVatCleanupExports}` },
+  // { key: vatCleanupImports, value: `${defaultVatCleanupImports}` },
   { key: vatCleanupKv, value: `${defaultVatCleanupKv}` },
-  { key: vatCleanupSnapshots, value: `${defaultVatCleanupSnapshots}` },
-  { key: vatCleanupTranscripts, value: `${defaultVatCleanupTranscripts}` },
+  // { key: vatCleanupSnapshots, value: `${defaultVatCleanupSnapshots}` },
+  // { key: vatCleanupTranscripts, value: `${defaultVatCleanupTranscripts}` },
 ];
 
 /**

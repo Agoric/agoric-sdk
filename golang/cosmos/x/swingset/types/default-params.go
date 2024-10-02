@@ -75,20 +75,19 @@ var (
 		NewQueueSize(QueueInbound, DefaultInboundQueueMax),
 	}
 
-	// FIXME: Settle on default values
-	DefaultVatCleanupDefault     = sdk.NewUint(0) // 5
-	DefaultVatCleanupExports     = sdk.NewUint(0) // 5
-	DefaultVatCleanupImports     = sdk.NewUint(0) // 5
-	DefaultVatCleanupKv          = sdk.NewUint(0) // 50
-	DefaultVatCleanupSnapshots   = sdk.NewUint(0) // 50
-	DefaultVatCleanupTranscripts = sdk.NewUint(0) // 50
-	DefaultVatCleanupBudget      = []UintMapEntry{
+	DefaultVatCleanupDefault = sdk.NewUint(5)
+	// DefaultVatCleanupExports     = DefaultVatCleanupDefault
+	// DefaultVatCleanupImports     = DefaultVatCleanupDefault
+	DefaultVatCleanupKv = sdk.NewUint(50)
+	// DefaultVatCleanupSnapshots   = DefaultVatCleanupDefault
+	// DefaultVatCleanupTranscripts = DefaultVatCleanupDefault
+	DefaultVatCleanupBudget = []UintMapEntry{
 		UintMapEntry{VatCleanupDefault, DefaultVatCleanupDefault},
-		UintMapEntry{VatCleanupExports, DefaultVatCleanupExports},
-		UintMapEntry{VatCleanupImports, DefaultVatCleanupImports},
+		// UintMapEntry{VatCleanupExports, DefaultVatCleanupExports},
+		// UintMapEntry{VatCleanupImports, DefaultVatCleanupImports},
 		UintMapEntry{VatCleanupKv, DefaultVatCleanupKv},
-		UintMapEntry{VatCleanupSnapshots, DefaultVatCleanupSnapshots},
-		UintMapEntry{VatCleanupTranscripts, DefaultVatCleanupTranscripts},
+		// UintMapEntry{VatCleanupSnapshots, DefaultVatCleanupSnapshots},
+		// UintMapEntry{VatCleanupTranscripts, DefaultVatCleanupTranscripts},
 	}
 )
 
