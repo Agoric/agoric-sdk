@@ -90,6 +90,13 @@ kubectl logs hermes-agoric-gaia-0 --container=relayer --follow
 kubectl logs hermes-osmosis-gaia-0 --container=relayer --follow
 ```
 
+## Running With Different Config File
+
+```sh
+# run tests with go-relayer configuration
+make start FILE=config.gorelayer.yaml
+```
+
 ## Agoric Smart Wallet
 
 For the steps below, you must import a key to `agd` or create a new one.
