@@ -16,6 +16,7 @@ import { makeDurableZone } from '@agoric/zone/durable.js';
 import { forwardingMethods, prepareEndowmentTools } from '../src/endowments.js';
 import { makeConvertKit } from '../src/convert.js';
 import { prepareBijection } from '../src/bijection.js';
+import { makeEquate } from '../src/equate.js';
 
 const { ownKeys } = Reflect;
 
@@ -114,13 +115,20 @@ const testEndowmentPlay = async (t, zone, gen, isDurable) => {
   t.is(unwrapped.storable.exo.name(), `${gen} exo`);
   t.is(passStyleOf(unwrapped.far), 'remotable');
   t.is(unwrapped.far.name(), `${gen} far`);
-  t.false(isPassable(unwrapped.function));
+  t.is(passStyleOf(unwrapped.function), 'remotable');
   t.is(typeof unwrapped.function, 'function');
   t.is(unwrapped.function(), `${gen} function`);
   t.is(unwrapped.array[0](), `${gen} f1`);
   t.false(isPassable(unwrapped.state));
   t.is(typeof unwrapped.state, 'object');
   t.is(unwrapped.state[`${gen}_foo`], `${gen} foo`);
+
+  const equate = makeEquate(bij);
+
+  const { state: _1, ...passableUnwrapped } = unwrapped;
+  const { state: _2, ...passableWrapped } = wrapped;
+
+  t.notThrows(() => equate(harden(passableUnwrapped), harden(passableWrapped)));
 };
 
 const testEndowmentBadReplay = async (_t, _zone, _gen, _isDurable) => {
