@@ -146,3 +146,37 @@ func TestUpdateParamsFromExisting(t *testing.T) {
 		t.Errorf("GOT\n%v\nWANTED\n%v", got, want)
 	}
 }
+
+func TestValidateParams(t *testing.T) {
+	params := Params{
+		BeansPerUnit:       DefaultBeansPerUnit(),
+		BootstrapVatConfig: "foo",
+		FeeUnitPrice:       sdk.NewCoins(sdk.NewInt64Coin("denom", 789)),
+		PowerFlagFees:      DefaultPowerFlagFees,
+		QueueMax:           DefaultQueueMax,
+		VatCleanupBudget:   DefaultVatCleanupBudget,
+	}
+	err := params.ValidateBasic()
+	if err != nil {
+		t.Errorf("unexpected ValidateBasic() error with default params: %v", err)
+	}
+
+	customVatCleanup := UintMapEntry{"corge", sdk.NewUint(4)}
+	params.VatCleanupBudget = append(params.VatCleanupBudget, customVatCleanup)
+	err = params.ValidateBasic()
+	if err != nil {
+		t.Errorf("unexpected ValidateBasic() error with extended params: %v", err)
+	}
+
+	params.VatCleanupBudget = params.VatCleanupBudget[1:]
+	err = params.ValidateBasic()
+	if err == nil {
+		t.Errorf("ValidateBasic() failed to reject VatCleanupBudget with missing `default` %v", params.VatCleanupBudget)
+	}
+
+	params.VatCleanupBudget = []UintMapEntry{}
+	err = params.ValidateBasic()
+	if err != nil {
+		t.Errorf("unexpected ValidateBasic() error with empty VatCleanupBudget: %v", params.VatCleanupBudget)
+	}
+}

@@ -172,9 +172,19 @@ func validateQueueMax(i interface{}) error {
 }
 
 func validateVatCleanupBudget(i interface{}) error {
-	_, ok := i.([]UintMapEntry)
+	entries, ok := i.([]UintMapEntry)
 	if !ok {
 		return fmt.Errorf("invalid parameter type: %T", i)
+	}
+	hasDefault := false
+	for _, entry := range entries {
+		if entry.Key == VatCleanupDefault {
+			hasDefault = true
+			break
+		}
+	}
+	if len(entries) > 0 && !hasDefault {
+		return fmt.Errorf("`default` must be present in a non-empty vat cleanup budget")
 	}
 	return nil
 }
