@@ -76,6 +76,7 @@ jobs:
         working-directory: ./agoric-sdk/multichain-testing
         env:
           FILE: ${{ inputs.config }}
+          RELAYER_TYPE: ${{ inputs.relayer-type }}
 
       - name: Capture and print agoric validator logs
         if: always()

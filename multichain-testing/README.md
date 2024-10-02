@@ -97,7 +97,7 @@ kubectl logs hermes-osmosis-gaia-0 --container=relayer --follow
 make start FILE=config.gorelayer.yaml
 
 # run tests with go-relayer configuration
-FILE=config.gorelayer.yaml yarn test
+FILE=config.gorelayer.yaml RELAYER_TYPE=go-relayer yarn test
 ```
 
 ## Agoric Smart Wallet
