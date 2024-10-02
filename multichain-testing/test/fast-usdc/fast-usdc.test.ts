@@ -23,6 +23,8 @@ import { createWallet } from '../../tools/wallet.js';
 import { commonSetup, type SetupContextWithWallets } from '../support.js';
 import { makeFeedPolicyPartial, oracleMnemonics } from './config.js';
 
+const { RELAYER_TYPE } = process.env;
+
 const log = makeTracer('MCFU');
 
 const { keys, values, fromEntries } = Object;
@@ -50,7 +52,7 @@ const LP_DEPOSIT_AMOUNT = 8_000n * 10n ** 6n;
 
 test.before(async t => {
   const { setupTestKeys, ...common } = await commonSetup(t, {
-    config: '../config.fusdc.yaml',
+    config: `../config.fusdc${RELAYER_TYPE ? '.' + RELAYER_TYPE : ''}.yaml`,
   });
   const {
     chainInfo,

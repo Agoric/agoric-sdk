@@ -96,7 +96,7 @@ kubectl logs hermes-osmosis-cosmoshub-0 --container=relayer --follow
 
 ```sh
 # run tests with go-relayer configuration
-make start FILE=config.gorelayer.yaml
+make start FILE=config.go-relayer.yaml
 
 RELAYER_TYPE=go-relayer yarn test
 ```

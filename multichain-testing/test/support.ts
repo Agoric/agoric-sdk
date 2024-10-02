@@ -70,7 +70,10 @@ const makeKeyring = async (
 
 export const commonSetup = async (
   t: ExecutionContext,
-  { config = '../config.yaml' } = {},
+  {
+    relayerType = process.env.RELAYER_TYPE,
+    config = `../config${relayerType ? '.' + relayerType : ''}.yaml`,
+  } = {},
 ) => {
   let useChain: MultichainRegistry['useChain'];
   try {
