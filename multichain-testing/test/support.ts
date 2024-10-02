@@ -54,7 +54,9 @@ const makeKeyring = async (
 };
 
 export const commonSetup = async (t: ExecutionContext) => {
-  const { useChain } = await setupRegistry();
+  const { useChain } = await setupRegistry({
+    config: `../${process.env.FILE || 'config.yaml'}`,
+  });
   const tools = await makeAgdTools(t.log, childProcess);
   const keyring = await makeKeyring(tools);
   const deployBuilder = makeDeployBuilder(tools, fse.readJSON, execa);
