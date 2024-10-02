@@ -9,7 +9,7 @@ import { makeGetFile, makeSetupRegistry } from '../tools/registry.js';
 import { generateMnemonic } from '../tools/wallet.js';
 import { makeRetryUntilCondition } from '../tools/sleep.js';
 import { makeDeployBuilder } from '../tools/deploy.js';
-import { makeHermes } from '../tools/hermes-tools.js';
+import { makeRelayer } from '../tools/relayer-tools.js';
 
 export const FAUCET_POUR = 10_000n * 1_000_000n;
 
@@ -62,7 +62,7 @@ export const commonSetup = async (t: ExecutionContext) => {
     log: t.log,
     setTimeout: globalThis.setTimeout,
   });
-  const hermes = makeHermes(childProcess);
+  const relayer = makeRelayer(childProcess);
 
   /**
    * Starts a contract if instance not found. Takes care of installing
@@ -97,7 +97,7 @@ export const commonSetup = async (t: ExecutionContext) => {
     ...keyring,
     retryUntilCondition,
     deployBuilder,
-    hermes,
+    relayer,
     startContract,
   };
 };

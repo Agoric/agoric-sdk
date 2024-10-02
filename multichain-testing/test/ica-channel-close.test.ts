@@ -217,7 +217,7 @@ const channelCloseInitScenario = test.macro({
       vstorageClient,
       retryUntilCondition,
       useChain,
-      hermes,
+      relayer,
     } = t.context;
 
     // make an account so there's an ICA channel we can attempt to close
@@ -281,14 +281,14 @@ const channelCloseInitScenario = test.macro({
       `Initiating channelCloseInit for dst: ${JSON.stringify(dst)} src: ${JSON.stringify(src)}`,
     );
     t.throws(
-      () => hermes.channelCloseInit(chainName, dst, src),
+      () => relayer.channelCloseInit(chainName, dst, src),
       { message: /Command failed/ },
-      'hermes channelCloseInit failed from agoric side for ICA',
+      'relayer channelCloseInit failed from agoric side for ICA',
     );
     t.throws(
-      () => hermes.channelCloseInit(chainName, src, dst),
+      () => relayer.channelCloseInit(chainName, src, dst),
       { message: /Command failed/ },
-      `hermes channelCloseInit failed from ${chainName} side for ICA`,
+      `relayer channelCloseInit failed from ${chainName} side for ICA`,
     );
 
     const remoteQueryClient = makeQueryClient(
@@ -298,7 +298,7 @@ const channelCloseInitScenario = test.macro({
       () => remoteQueryClient.queryChannel(rPortID, rChannelID),
       // @ts-expect-error ChannelSDKType.state is a string not a number
       ({ channel }) => channel?.state === 'STATE_OPEN',
-      'Hermes closeChannelInit failed so ICA channel is still open',
+      'Relayer closeChannelInit failed so ICA channel is still open',
     );
     t.log(channel);
     t.is(
@@ -330,23 +330,23 @@ const channelCloseInitScenario = test.macro({
       };
       t.throws(
         () =>
-          hermes.channelCloseInit(
+          relayer.channelCloseInit(
             chainName,
             dstTransferChannel,
             srcTransferChannel,
           ),
         { message: /Command failed/ },
-        'hermes channelCloseInit failed from agoric side for transfer',
+        'relayer channelCloseInit failed from agoric side for transfer',
       );
       t.throws(
         () =>
-          hermes.channelCloseInit(
+          relayer.channelCloseInit(
             chainName,
             srcTransferChannel,
             dstTransferChannel,
           ),
         { message: /Command failed/ },
-        `hermes channelCloseInit failed from ${chainName} side for transfer`,
+        `relayer channelCloseInit failed from ${chainName} side for transfer`,
       );
 
       const { channel } = await retryUntilCondition(
@@ -357,7 +357,7 @@ const channelCloseInitScenario = test.macro({
           ),
         // @ts-expect-error ChannelSDKType.state is a string not a number
         ({ channel }) => channel?.state === 'STATE_OPEN',
-        'Hermes closeChannelInit failed so transfer channel is still open',
+        'Relayer closeChannelInit failed so transfer channel is still open',
       );
       t.log(channel);
       t.is(
