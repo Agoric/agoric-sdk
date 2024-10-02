@@ -85,7 +85,16 @@ const testEndowmentPlay = async (t, zone, gen, isDurable) => {
   t.is(endowment.state[`${gen}_foo`], `${gen} foo`);
   t.is(wrapped.state.get(`${gen}_foo`), `${gen} foo`);
 
-  const makeBijection = prepareBijection(zone, unwrap);
+  const guestWrappers = new Map();
+  const unwrapSpy = (hostWrapped, guestWrapped) => {
+    const unwrapped = unwrap(hostWrapped, guestWrapped);
+    if (unwrapped !== guestWrapped) {
+      guestWrappers.set(hostWrapped, guestWrapped);
+    }
+    return unwrapped;
+  };
+
+  const makeBijection = prepareBijection(zone, unwrapSpy);
   const bij = zone.makeOnce('bij', makeBijection);
 
   const makeGuestForHostRemotable = hRem => {
@@ -129,6 +138,9 @@ const testEndowmentPlay = async (t, zone, gen, isDurable) => {
   const { state: _2, ...passableWrapped } = wrapped;
 
   t.notThrows(() => equate(harden(passableUnwrapped), harden(passableWrapped)));
+  for (const [hostWrapped, guestWrapped] of guestWrappers) {
+    t.notThrows(() => equate(guestWrapped, hostWrapped));
+  }
 };
 
 const testEndowmentBadReplay = async (_t, _zone, _gen, _isDurable) => {
