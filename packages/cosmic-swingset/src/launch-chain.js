@@ -90,7 +90,7 @@ const parseUpgradePlanInfo = (upgradePlan, prefix = '') => {
  */
 
 /**
- * @typedef {'leftover' | 'forced' | 'high-priority' | 'intermission' | 'queued' | 'cleanup'} CrankerPhase
+ * @typedef {'leftover' | 'forced' | 'high-priority' | 'timer' | 'queued' | 'cleanup'} CrankerPhase
  *   - leftover: work from a previous block
  *   - forced: work that claims the entirety of the current block
  *   - high-priority: queued work the precedes timer advancement
@@ -565,7 +565,7 @@ export async function launch({
     const runPolicy = computronCounter(params, true);
     const runSwingset = makeRunSwingset(blockHeight, runPolicy);
 
-    await runSwingset('queued');
+    await runSwingset('forced');
   }
 
   async function saveChainState() {
@@ -820,7 +820,7 @@ export async function launch({
     // We must run the kernel even if nothing was added since the kernel
     // only notes state exports and updates consistency hashes when attempting
     // to perform a crank.
-    keepGoing = await runSwingset('intermission');
+    keepGoing = await runSwingset('timer');
     if (!keepGoing) return;
 
     // Finally, process as much as we can from the actionQueue.
