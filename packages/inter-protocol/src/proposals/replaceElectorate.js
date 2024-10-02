@@ -201,12 +201,12 @@ const addGovernorsToEconCharter = async (
   { consume: { psmKit, governedContractKits } },
   { options: { econCharterKit } },
 ) => {
-  const { creatorFacet } = E.get(econCharterKit);
+  const { creatorFacet: ecCreatorFacet } = E.get(econCharterKit);
 
   const psmKitMap = await psmKit;
 
   for (const { psm, psmGovernorCreatorFacet, label } of psmKitMap.values()) {
-    E(creatorFacet).addInstance(psm, psmGovernorCreatorFacet, label);
+    E(ecCreatorFacet).addInstance(psm, psmGovernorCreatorFacet, label);
   }
 
   const governedContractKitMap = await governedContractKits;
@@ -216,7 +216,7 @@ const addGovernorsToEconCharter = async (
     governorCreatorFacet,
     label,
   } of governedContractKitMap.values()) {
-    E(creatorFacet).addInstance(instance, governorCreatorFacet, label);
+    E(ecCreatorFacet).addInstance(instance, governorCreatorFacet, label);
   }
 };
 
@@ -237,8 +237,6 @@ export const replaceElectorate = async (permittedPowers, config) => {
   const governedContractKitsMap =
     await permittedPowers.consume.governedContractKits;
   const psmKitMap = await permittedPowers.consume.psmKit;
-
-  console.log('RABI', [...governedContractKitsMap.values()]);
 
   const creatorFacets = [
     ...[...governedContractKitsMap.values()].map(
