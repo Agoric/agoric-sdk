@@ -37,7 +37,7 @@ type ChannelCloseParams = {
   };
 };
 
-export const makeHermes = ({ execFileSync }: { execFileSync: ExecSync }) => {
+export const makeRelayer = ({ execFileSync }: { execFileSync: ExecSync }) => {
   const exec = (
     chainName: string,
     args: string[],
