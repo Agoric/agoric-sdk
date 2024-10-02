@@ -12,6 +12,8 @@ import {
 import { makeQueryClient } from '../tools/query.js';
 import { parseLocalAddress, parseRemoteAddress } from '../tools/address.js';
 import chainInfo from '../starship-chain-info.js';
+import { ICA_CHANNEL_CLOSE_TIMEOUT } from './config.js';
+import { sleep } from '../tools/sleep.js';
 
 const test = anyTest as TestFn<SetupContextWithWallets>;
 
@@ -182,6 +184,7 @@ const intentionalCloseAccountScenario = test.macro({
       () => remoteQueryClient.queryChannels(),
       ({ channels }) => !!findNewChannel(channels, { rPortID, lPortID }),
       `ICA channel is reopened on ${chainName} Host`,
+      ICA_CHANNEL_CLOSE_TIMEOUT,
     );
     const newChannel = findNewChannel(channels, { rPortID, lPortID });
     t.log('New Channel after Reactivate', newChannel);
@@ -280,17 +283,21 @@ const channelCloseInitScenario = test.macro({
     console.log(
       `Initiating channelCloseInit for dst: ${JSON.stringify(dst)} src: ${JSON.stringify(src)}`,
     );
-    t.throws(
-      () => relayer.channelCloseInit(chainName, dst, src),
-      { message: /Command failed/ },
-      'relayer channelCloseInit failed from agoric side for ICA',
-    );
-    t.throws(
-      () => relayer.channelCloseInit(chainName, src, dst),
-      { message: /Command failed/ },
-      `relayer channelCloseInit failed from ${chainName} side for ICA`,
-    );
-
+    try {
+      t.log('relayer channelCloseInit failed from agoric side for ICA');
+      relayer.channelCloseInit(chainName, dst, src);
+    } catch (e) {
+      t.log(e); // hermes relayer throws, but go-relayer does not
+    }
+    try {
+      t.log(`relayer channelCloseInit failed from ${chainName} side for ICA`);
+      relayer.channelCloseInit(chainName, src, dst);
+    } catch (e) {
+      t.log(e); // hermes relayer throws, but go-relayer does not
+    }
+    t.log('Sleeping 10 seconds for potential channel closure to propagate');
+    // approx 3-4 blocks time to propagate
+    await sleep(10 * 1_000);
     const remoteQueryClient = makeQueryClient(
       await useChain(chainName).getRestEndpoint(),
     );
@@ -328,26 +335,31 @@ const channelCloseInitScenario = test.macro({
         portID: 'transfer',
         connectionID: rConnectionID,
       };
-      t.throws(
-        () =>
-          relayer.channelCloseInit(
-            chainName,
-            dstTransferChannel,
-            srcTransferChannel,
-          ),
-        { message: /Command failed/ },
-        'relayer channelCloseInit failed from agoric side for transfer',
-      );
-      t.throws(
-        () =>
-          relayer.channelCloseInit(
-            chainName,
-            srcTransferChannel,
-            dstTransferChannel,
-          ),
-        { message: /Command failed/ },
-        `relayer channelCloseInit failed from ${chainName} side for transfer`,
-      );
+      try {
+        t.log('relayer channelCloseInit failed from agoric side for transfer');
+        relayer.channelCloseInit(
+          chainName,
+          dstTransferChannel,
+          srcTransferChannel,
+        );
+      } catch (e) {
+        t.log(e); // hermes relayer throws, but go-relayer does not
+      }
+      try {
+        t.log(
+          `relayer channelCloseInit failed from ${chainName} side for transfer`,
+        );
+        relayer.channelCloseInit(
+          chainName,
+          srcTransferChannel,
+          dstTransferChannel,
+        );
+      } catch (e) {
+        t.log(e); // hermes relayer throws, but go-relayer does not
+      }
+      t.log('Sleeping 10 seconds for potential channel closure to propagate');
+      // approx 3-4 blocks time to propagate
+      await sleep(10 * 1_000);
 
       const { channel } = await retryUntilCondition(
         () =>
