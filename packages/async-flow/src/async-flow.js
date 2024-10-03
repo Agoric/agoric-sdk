@@ -43,6 +43,34 @@ const AdminAsyncFlowI = M.interface('AsyncFlowAdmin', {
 });
 
 /**
+ * Helper to enforce that a user "finalize" step has been called after an
+ * upgrade. In the first incarnation, the state is assumed to be born already
+ * finalized, and there is no failure if the "finalize" is not explicitly
+ * performed. In future incarnation the upgrade will fail if the "finalize" step
+ * is not explicitly performed.
+ *
+ * @param {Zone} outerZone
+ * @param {string} gateName
+ */
+const makeFinalizeUpgradeGate = (outerZone, gateName) => {
+  let finalized = false;
+
+  const finalize = () => {
+    if (finalized) return;
+
+    // Use an exo definition to leverage requirement to reconnect
+    // durable kinds on upgrades
+    outerZone.exo(`${gateName}Sentinel`, undefined, {});
+    finalized = true;
+  };
+  outerZone.makeOnce(`${gateName}Setup`, () => {
+    finalize();
+    return true;
+  });
+  return finalize;
+};
+
+/**
  * @param {Zone} outerZone
  * @param {PreparationOptions} [outerOptions]
  */
@@ -503,11 +531,14 @@ export const prepareAsyncFlowTools = (outerZone, outerOptions = {}) => {
     return harden(wrapperFunc);
   };
 
+  const wakeUpgradeGate = makeFinalizeUpgradeGate(outerZone, 'WakeGate');
+
   const adminAsyncFlow = outerZone.exo('AdminAsyncFlow', AdminAsyncFlowI, {
     getFailures() {
       return failures.snapshot();
     },
     wakeAll() {
+      wakeUpgradeGate();
       // [...stuff.keys()] in order to snapshot before iterating
       const failuresToRestart = [...failures.keys()];
       const flowsToWake = [...eagerWakers.keys()];
