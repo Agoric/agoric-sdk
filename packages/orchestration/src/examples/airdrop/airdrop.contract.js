@@ -2,7 +2,7 @@
 import { M } from '@endo/patterns';
 import { makeDurableZone } from '@agoric/zone/durable.js';
 import { E } from '@endo/far';
-import { AmountMath, AmountShape, AssetKind } from '@agoric/ertp';
+import { AmountMath, AmountShape, AssetKind, MintShape } from '@agoric/ertp';
 import { TimeMath } from '@agoric/time';
 import { TimerShape } from '@agoric/zoe/src/typeGuards.js';
 import {
@@ -145,7 +145,7 @@ export const start = async (zcf, privateArgs, baggage) => {
   const { timer } = privateArgs;
   /** @type {ContractTerms} */
   const {
-    startTime,
+    startTime = 120n,
     targetEpochLength = oneDay,
     targetTokenSupply = 10_000_000n,
     tokenName = 'Tribbles',
@@ -207,7 +207,10 @@ export const start = async (zcf, privateArgs, baggage) => {
       // Do I need to store tokenIssuer and tokenBrand in baggage?
       tokenIssuer,
       tokenBrand,
-      startTime: createFutureTs(t0, harden({ relValue: 60_000n, timerBrand })),
+      startTime: createFutureTs(
+        t0,
+        harden({ relValue: startTime, timerBrand }),
+      ),
     },
     baggage,
   );
@@ -226,6 +229,7 @@ export const start = async (zcf, privateArgs, baggage) => {
     }),
     creator: M.interface('creator', {
       pauseContract: M.call().returns(M.any()),
+      getBankAssetMint: M.call().returns(MintShape),
     }),
   };
 
@@ -374,6 +378,9 @@ export const start = async (zcf, privateArgs, baggage) => {
         },
       },
       creator: {
+        getBankAssetMint() {
+          return tokenMint;
+        },
         pauseContract() {
           void zcf.setOfferFilter([
             messagesObject.makeClaimInvitationDescription(),

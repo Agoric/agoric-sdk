@@ -1543,7 +1543,7 @@
   resolved "https://registry.yarnpkg.com/@endo/env-options/-/env-options-1.1.6.tgz#f4e2dcb22f19f33c0431303c7387c7f5b54c757f"
   integrity sha512-Uqy94PwLTco90Yfign43muvDtjsYTbL6Ck4W5sSWQUqJiFOL+YP8kiBOoGyQynDsGTY0MCQvMxEPfphaJKnzlQ==
 
-"@endo/errors@^1.2.5":
+"@endo/errors@1.2.5", "@endo/errors@^1.2.5":
   version "1.2.5"
   resolved "https://registry.yarnpkg.com/@endo/errors/-/errors-1.2.5.tgz#158bc584b9e648e4ca2978a240b57cb45df05c03"
   integrity sha512-iZ8Kv0DoE70Z4GDoXZQK3mS3BzDnA1kSeDdE97I02ESWe9tR30TGCHW++CqbCt/lZ6bG/RBq1a6JNuOae+WKlw==

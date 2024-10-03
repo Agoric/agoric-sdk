@@ -78,15 +78,15 @@ fund-provision-pool:
 override-chain-registry:
 	node_modules/.bin/tsx scripts/fetch-starship-chain-info.ts && \
 	node_modules/.bin/tsx scripts/deploy-cli.ts src/revise-chain-info.builder.js
-
-ADDR=agoric1ldmtatp24qlllgxmrsjzcpe20fvlkp448zcuce
-COIN=1000000000uist
+ 
+ADDR=agoric1jng25adrtpl53eh50q7fch34e0vn4g72j6zcml
+COIN=1000000000ubld
 
 fund-wallet:
 	kubectl exec -i agoriclocal-genesis-0 -c validator -- agd tx bank send faucet $(ADDR) $(COIN) -y -b block
 
 provision-smart-wallet:
-	kubectl exec -i agoriclocal-genesis-0 -c validator -- agd tx swingset provision-one wallet $(ADDR) SMART_WALLET --from $(ADDR) -y -b block
+	kubectl exec -i agoriclocal-genesis-0 -c validator -- agd tx swingset provision-one wallet $(kagd keys show tg -a) SMART_WALLET --from $(kagd keys show tg -a) -y -b block
 
 # view agoric swingset logs from slog file, until we can set `DEBUG=SwingSet:vat,SwingSet:ls`
 tail-slog:

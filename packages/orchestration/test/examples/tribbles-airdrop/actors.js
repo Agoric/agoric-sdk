@@ -1,7 +1,10 @@
 import { E } from '@endo/far';
 import { AmountMath } from '@agoric/ertp';
-import { accounts } from './data/agd-keys.js';
-import { merkleTreeAPI } from '../../../src/examples/airdrop/merkle-tree/index.js';
+import { agoricGenesisAccounts as accounts } from './data/genesis.keys.js';
+import {
+  generateMerkleProof,
+  merkleTreeAPI,
+} from '../../../src/examples/airdrop/merkle-tree/index.js';
 
 const generateInt = x => () => Math.floor(Math.random() * (x + 1));
 
@@ -12,7 +15,7 @@ const makeMakeOfferArgs =
   (keys = publicKeys) =>
   ({ pubkey: { key = '' }, address = 'agoric12d3fault' }) => ({
     key,
-    proof: merkleTreeAPI.generateMerkleProof(key, keys),
+    proof: generateMerkleProof(key, keys),
     address,
     tier: createTestTier(),
   });

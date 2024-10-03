@@ -80,7 +80,7 @@ const publishBankAsset = async (
  */
 
 export const defaultCustomTerms = {
-  startTime: 0n,
+  startTime: 120n,
   initialPayoutValues: harden(AIRDROP_TIERS_STATIC),
   targetNumberOfEpochs: 5,
   targetEpochLength: 12_000n / 2n,
@@ -117,7 +117,14 @@ export const startAirdrop = async (powers, config) => {
   trace('powers.installation', powers.installation.consume);
   trace('powers.installation', powers.installation.consume[contractName]);
   const {
-    consume: { board, chainTimerService, chainStorage, startUpgradable, zoe },
+    consume: {
+      board,
+      //      bankManager,
+      chainTimerService,
+      chainStorage,
+      startUpgradable,
+      zoe,
+    },
     installation: {
       consume: { [contractName]: airdropInstallationP },
     },
@@ -160,6 +167,7 @@ export const startAirdrop = async (powers, config) => {
 
   const marshaller = await E(board).getReadonlyMarshaller();
 
+  const issuerKeyword = 'Tribbles';
   const startArgs = {
     installation: await airdropInstallationP,
     label: contractName,
@@ -167,7 +175,7 @@ export const startAirdrop = async (powers, config) => {
     issuerKeywordRecord: {
       Fee: issuerIST,
     },
-    issuerNames: ['Tribbles'],
+    issuerNames: [issuerKeyword],
     privateArgs: await deeplyFulfilledObject(
       harden({
         timer,
@@ -179,15 +187,22 @@ export const startAirdrop = async (powers, config) => {
   trace('BEFORE astartContract(permittedPowers, startArgs);', { startArgs });
 
   const { instance } = await E(startUpgradable)(startArgs);
-  trace('contract installation started');
-  trace(instance);
+
+  trace('######## CONTRACT-START-RESULT #########', instance);
+
   const instanceTerms = await E(zoe).getTerms(instance);
-  trace('instanceTerms::', instanceTerms);
+  //  E(instance).getCreatorFacet(),
+
+  // const {
+  //   brands: { Tribbles: tribblesBrand },
+  //   issuers: { Item: tribblesIssuer },
+  // } = instanceTerms;
+
   const {
     brands: { Tribbles: tribblesBrand },
     issuers: { Item: tribblesIssuer },
   } = instanceTerms;
-
+  trace('tribblesIssuer && tribblesbrand', tribblesIssuer, tribblesBrand);
   produceInstance.reset();
   produceInstance.resolve(instance);
 
@@ -195,8 +210,10 @@ export const startAirdrop = async (powers, config) => {
   produceTribblesIssuer.reset();
   produceTribblesBrand.resolve(tribblesBrand);
   produceTribblesIssuer.resolve(tribblesIssuer);
+  trace('ADDED ISSUER, BRAND, AND INSTANCE -- PUBLISHING INFO');
 
   await publishBrandInfo(chainStorage, board, tribblesBrand);
+
   trace('deploy script complete.');
 };
 
@@ -216,14 +233,8 @@ const airdropManifest = harden({
       consume: { [contractName]: true },
       produce: { [contractName]: true },
     },
-    issuer: {
-      consume: { IST: true, Tribbles: true },
-      produce: { Tribbles: true },
-    },
-    brand: {
-      consume: { IST: true, Tribbles: true },
-      produce: { Tribbles: true },
-    },
+    issuer: { consume: { IST: true }, produce: { Tribbles: true } },
+    brand: { consume: { IST: true }, produce: { Tribbles: true } },
     instance: { produce: { [contractName]: true } },
   },
 });
@@ -247,7 +258,7 @@ export const getManifestForAirdrop = (
   return harden({
     manifest: airdropManifest,
     installations: {
-      tribblesAirdrop: restoreRef(installKeys.tribblesAirdrop),
+      [contractName]: restoreRef(installKeys.tribblesAirdrop),
     },
     options,
   });
@@ -257,7 +268,7 @@ export const getManifestForAirdrop = (
 export const defaultProposalBuilder = async ({ publishRef, install }) => {
   return harden({
     // Somewhat unorthodox, source the exports from this builder module
-    sourceSpec: '@agoric/builders/scripts/testing/start-tribbles-airdrop.js',
+    sourceSpec: '@agoric/builders/scripts/testing/start-airdrop.js',
     getManifestCall: [
       'getManifestForAirdrop',
       {

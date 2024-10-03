@@ -52,7 +52,7 @@ esac
 
 # Set proper defaults and change ports
 sedi 's/"leveldb"/"goleveldb"/g' ~/.$DAEMON/config/config.toml
-sedi 's#"tcp://127.0.0.1:26657"#"tcp://0.0.0.0:26657"#g' ~/.$DAEMON/config/config.toml
+sedi 's#"tcp://127.0.0.1:16657"#"tcp://0.0.0.0:16657"#g' ~/.$DAEMON/config/config.toml
 sedi 's/timeout_commit = "5s"/timeout_commit = "1s"/g' ~/.$DAEMON/config/config.toml
 sedi 's/timeout_propose = "3s"/timeout_propose = "1s"/g' ~/.$DAEMON/config/config.toml
 sedi 's/index_all_keys = false/index_all_keys = true/g' ~/.$DAEMON/config/config.toml

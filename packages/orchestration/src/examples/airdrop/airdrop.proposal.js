@@ -47,13 +47,11 @@ const publishBrandInfo = async (chainStorage, board, brand) => {
 const trace = makeTracer('tribbles airdrop');
 /** @import {StartArgs} from './platform-goals/start-contract.js'; */
 
-const relTimeMaker = (timerBrand, x = 0n) =>
-  harden({ timerBrand, relValue: x });
-
 export const defaultCustomTerms = {
+  startTime: 120n,
   initialPayoutValues: harden(AIRDROP_TIERS_STATIC),
   targetNumberOfEpochs: 5,
-  targetEpochLength: ONE_DAY,
+  targetEpochLength: 36_000n / 2n,
   targetTokenSupply: 10_000_000n,
   tokenName: 'Tribbles',
 };
@@ -205,7 +203,7 @@ export const getManifestForAirdrop = (
       customTerms: {
         ...defaultCustomTerms,
         merkleRoot:
-          '9a5e4cc906ea7511c776b9ef1d6c59ddb7c64c34848f6c58e982b168cc34849b',
+          '9a2f65951204939963b32771032964b743991e7bba0a4ec11341e36d59b441f2',
       },
     },
   },

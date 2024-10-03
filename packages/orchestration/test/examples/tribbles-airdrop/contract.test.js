@@ -26,13 +26,18 @@ import {
 import { extract } from '@agoric/vats/src/core/utils.js';
 import { mockBootstrapPowers } from './boot-tools.js';
 import { head } from '../../../src/examples/airdrop/helpers/objectTools.js';
-import { accounts, agoricPubkeys } from './data/agd-keys.js';
-import { merkleTreeAPI } from '../../../src/examples/airdrop/merkle-tree/index.js';
+import {
+  generateMerkleRoot,
+  merkleTreeAPI,
+} from '../../../src/examples/airdrop/merkle-tree/index.js';
 import { simulateClaim } from './actors.js';
 import {
   messagesObject,
   OPEN,
 } from '../../../src/examples/airdrop/airdrop.contract.js';
+import { agoricGenesisAccounts as accounts } from './data/genesis.keys.js';
+
+const agoricPubkeys = accounts.map(x => x.pubkey.key);
 
 export const getBundleId = bundle => `b1-${bundle.endoZipBase64Sha512}`;
 
@@ -55,7 +60,7 @@ const defaultCustomTerms = {
   targetTokenSupply: 10_000_000n,
   tokenName: 'Tribbles',
   startTime: oneDay,
-  merkleRoot: merkleTreeAPI.generateMerkleRoot(publicKeys),
+  merkleRoot: generateMerkleRoot(publicKeys),
 };
 
 const UNIT6 = 1_000_000n;
@@ -145,6 +150,10 @@ const startLocalInstance = async (
   );
 
   const publicFacet = await instance.publicFacet;
+
+  const terms = await E(zoe).getTerms(instance);
+  console.log('------------------------');
+  console.log('terms::', terms);
   t.log('instance', { instance });
 
   return { instance, installation, timer, publicFacet };
@@ -169,6 +178,7 @@ test.serial('Start the contract', async t => {
   };
 
   const contractInstance = await startLocalInstance(t, bundle, localTestConfig);
+
   t.log(contractInstance.instance);
   t.is(typeof contractInstance.instance, 'object');
 });
@@ -206,6 +216,26 @@ test('Airdrop ::: happy paths', async t => {
   t.deepEqual(await E(publicFacet).getStatus(), 'claim-window-open');
 
   await E(timer).advanceBy(oneDay);
+});
+
+test('mint handoff', async t => {
+  const { zoe: zoeRef, bundle, faucet } = await t.context;
+  console.log(t.context);
+  const { instance, publicFacet, timer } = await startLocalInstance(t, bundle, {
+    zoe: zoeRef,
+    issuers: { Fee: await E(zoeRef).getFeeIssuer() },
+    terms: defaultCustomTerms,
+  });
+
+  const {
+    issuers: { Tribbles: tribblesIssuer },
+  } = await E(zoeRef).getTerms(instance);
+
+  const tokenMint = await E(instance.creatorFacet).getBankAssetMint();
+  t.true(tokenMint, 'creatorFacet.getBankAssetMint should return a token mint');
+
+  const { issuer: issuerFromMint } = await tokenMint.getIssuerRecord();
+  t.deepEqual(issuerFromMint, tribblesIssuer);
 });
 
 test('pause method', async t => {
@@ -263,7 +293,7 @@ test.skip('MN-2 Task: Add a deployment test that exercises the core-eval that wi
       options: {
         customTerms: {
           ...makeTerms(),
-          merkleRoot: merkleTreeAPI.generateMerkleRoot(agoricPubkeys),
+          merkleRoot: generateMerkleRoot(agoricPubkeys),
         },
         airdrop: { bundleID },
       },

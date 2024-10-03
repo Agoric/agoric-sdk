@@ -17,16 +17,7 @@ const accounts = ['osmosis', 'cosmoshub', 'agoric'];
 const contractName = 'queryFlows';
 const contractBuilder =
   '../packages/builders/scripts/testing/start-query-flows.js';
-
-test.before(async t => {
-  const { deleteTestKeys, setupTestKeys, ...rest } = await commonSetup(t);
-  deleteTestKeys(accounts).catch();
-  const wallets = await setupTestKeys(accounts);
-  t.context = { ...rest, wallets, deleteTestKeys };
-  const { startContract } = rest;
-  await startContract(contractName, contractBuilder);
-});
-
+∑
 test.after(async t => {
   const { deleteTestKeys } = t.context;
   deleteTestKeys(accounts);

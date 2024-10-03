@@ -7,167 +7,23 @@ import {
   SetupContextWithWallets,
   chainConfig,
 } from './support.js';
-
+import {
+  agoricGenesisAccounts as agoricAccounts,
+  pubkeys,
+} from './airdrop-data/genesis.keys.js';
+import { merkleTreeAPI } from './airdrop-data/merkle-tree/index.js';
+import { AmountMath } from '@agoric/ertp';
 const test = anyTest as TestFn<SetupContextWithWallets>;
 
 const contractName = 'tribblesAirdrop';
 const contractBuilder =
   '../packages/builders/scripts/testing/start-tribbles-airdrop.js';
-const agoricAccounts = [
-  {
-    tier: 1,
-    name: 'gov1',
-    type: 'local',
-    address: 'agoric1aa9jh3am8l94kawqy8003999ekk8dksdmwdemy',
-    pubkey: {
-      type: '/cosmos.crypto.secp256k1.PubKey',
-      key: 'AlGGU+FJgSGdwXjG2tGmza5UFYQhoeWBlTzFK8YSk6nM',
-    },
-  },
-  {
-    tier: 4,
-    name: 'gov2',
-    type: 'local',
-    address: 'agoric15r9kesuumyfdjtuj5pvulmt6tgr0uqz82yhk84',
-    pubkey: {
-      type: '/cosmos.crypto.secp256k1.PubKey',
-      key: 'A98CowubQ7ui4BO++4NFvf4NxxjkQGAUo8787y3ipa06',
-    },
-  },
-  {
-    tier: 1,
-    name: 'gov3',
-    type: 'local',
-    address: 'agoric1h3jpwr2tawcc4ahlez45qepy5mnwdnlps55xvr',
-    pubkey: {
-      type: '/cosmos.crypto.secp256k1.PubKey',
-      key: 'ArcFg4+WNp7wpD8PlgOwB1gRIvuN9tkOz5S2yskZsTtp',
-    },
-  },
-  {
-    tier: 4,
-    name: 'testkey-may11',
-    type: 'local',
-    address: 'agoric1g6lrpj3wtdrdlsakxky4rhnzfkep23vgfk9esp',
-    pubkey: {
-      type: '/cosmos.crypto.secp256k1.PubKey',
-      key: 'Ar+zTmVnp1l696gMJZZ2nF9tV4l75beK2hchMmki+DL0',
-    },
-  },
-  {
-    tier: 2,
-    name: 'key',
-    type: 'local',
-    address: 'agoric18tdsgyamdkcs0lkf885gp3v5slq3q5n455lett',
-    pubkey: {
-      type: '/cosmos.crypto.secp256k1.PubKey',
-      key: 'A+tCAk6BFice/hlHWQaGT1P9wb2A5Nl6vCzATqM4xCip',
-    },
-  },
-  {
-    tier: 3,
-    name: 'testkey2-may-11',
-    type: 'local',
-    address: 'agoric1p6fp3zj9er8h47r3yndysd9k7ew7es8kjlffus',
-    pubkey: {
-      type: '/cosmos.crypto.secp256k1.PubKey',
-      key: 'AwuJqq2wUhIY2MlLew4JPbUH97tSBTiTJ+59M5TRLqi5',
-    },
-  },
-  {
-    tier: 1,
-    name: 'tg',
-    type: 'local',
-    address: 'agoric1ly74z376l5fwrr5z26n4pfns7qllraq2nwwfgr',
-    pubkey: {
-      type: '/cosmos.crypto.secp256k1.PubKey',
-      key: 'AqOKu/JGhihnbWO0e9OipfgNLWg4mUsZyP/LCsGonj+C',
-    },
-  },
-  {
-    tier: 2,
-    name: 'user1',
-    type: 'local',
-    address: 'agoric1xe269y3fhye8nrlduf826wgn499y6wmnv32tw5',
-    pubkey: {
-      type: '/cosmos.crypto.secp256k1.PubKey',
-      key: 'A4owcrbL34M4lCDua/zhpampsPRJHu5zKp9gc/u8c1YH',
-    },
-  },
-  {
-    tier: 1,
-    name: 'tg-oracle',
-    type: 'local',
-    address: 'agoric1we6knu9ukr8szlrmd3229jlmengng9j68zd355',
-    pubkey: {
-      type: '/cosmos.crypto.secp256k1.PubKey',
-      key: 'AiFAg1ZqtHo7WoheNUAJEScqSLuQCiv7umfToaNjaEv1',
-    },
-  },
-  {
-    tier: 2,
-    name: 'tg-test',
-    type: 'local',
-    address: 'agoric1d3pmtdzem9a8fqe8vkfswdwnuy9hcwjmhlh4zz',
-    pubkey: {
-      type: '/cosmos.crypto.secp256k1.PubKey',
-      key: 'A5A20phWctpT88lD+jbXxdA06llfvXd0aq3BnkRozDg8',
-    },
-  },
-  {
-    tier: 1,
-    name: 'tgrex',
-    type: 'local',
-    address: 'agoric1zqhk63e5maeqjv4rgcl7lk2gdghqq5w60hhhdm',
-    pubkey: {
-      type: '/cosmos.crypto.secp256k1.PubKey',
-      key: 'AybVHbbXgexk5dz+RWfch+2a1rCS5IYl5vSJF9l/qE48',
-    },
-  },
-  {
-    tier: 1,
-    name: 'u1',
-    type: 'local',
-    address: 'agoric1p2aqakv3ulz4qfy2nut86j9gx0dx0yw09h96md',
-    pubkey: {
-      type: '/cosmos.crypto.secp256k1.PubKey',
-      key: 'Anc5HuzkD5coFkPWAgC87lGbfC+SdzCPwRpOajFrGYSZ',
-    },
-  },
-  {
-    tier: 5,
-    name: 'user1',
-    type: 'local',
-    address: 'agoric1xe269y3fhye8nrlduf826wgn499y6wmnv32tw5',
-    pubkey: {
-      type: '/cosmos.crypto.secp256k1.PubKey',
-      key: 'A4owcrbL34M4lCDua/zhpampsPRJHu5zKp9gc/u8c1YH',
-    },
-  },
-  {
-    tier: 4,
-    name: 'user2local',
-    type: 'local',
-    address: 'agoric1ahsjklvps67a0y7wj0hqs0ekp55hxayppdw5az',
-    pubkey: {
-      type: '/cosmos.crypto.secp256k1.PubKey',
-      key: 'Anqep1Y/ZxRDMbiZ3ng03JmX3qyTl77x4OnXylI7w46b',
-    },
-  },
-  {
-    tier: 1,
-    name: 'vic',
-    type: 'local',
-    address: 'agoric1vzqqm5dfdhlxh6n3pgkyp5z5thljklq3l02kug',
-    pubkey: {
-      type: '/cosmos.crypto.secp256k1.PubKey',
-      key: 'A+Si8+03Q85NQUAsvhW999q8Xw0fON08k3i6iZXg3S7/',
-    },
-  },
-];
 
 const getPubkeyKey = ({ pubkey }) => `${pubkey.key}`;
 const agoricPubkeys = agoricAccounts.map(getPubkeyKey);
+const generateInt = x => () => Math.floor(Math.random() * (x + 1));
+
+const createTestTier = generateInt(4); // ?
 
 const accounts = ['alice', 'bob', 'carol'];
 
@@ -187,7 +43,7 @@ test.before(async t => {
   console.log('wallets ::::', wallets);
 
   console.log(
-    '--------------- END inside test.before logger -------------------',
+    '--------------- END insi ®de test.before logger -------------------',
   );
   console.groupEnd();
   await startContract(contractName, contractBuilder);
@@ -197,33 +53,149 @@ test.after(async t => {
   const { deleteTestKeys } = t.context;
   deleteTestKeys(accounts);
 });
+const makeMakeOfferArgs =
+  (keys = publicKeys) =>
+  ({ pubkey: { key = '' }, address = 'agoric12d3fault' }) => ({
+    key,
+    proof: merkleTreeAPI.generateMerkleProof(key, keys),
+    address,
+    tier: createTestTier(),
+  });
+const makeOfferArgs = makeMakeOfferArgs(pubkeys);
 
 const simulatreClaim = test.macro({
   title: (_, agoricAccount) =>
     `Simulate claim for account ${agoricAccount.name} with address ${agoricAccount.address}`,
   exec: async (t, agoricAccount) => {
+    console.log(t.context);
     const { address, pubkey } = agoricAccount;
     console.log(
       `testing makeCreateAndFundScenario for account ${agoricAccount.name}, and pubkey ${pubkey}`,
     );
     const {
+      useChain,
       wallets,
       provisionSmartWallet,
       vstorageClient,
       retryUntilCondition,
     } = t.context;
 
-    const instnace = vstorageClient.queryData(
-      'published.agoricNames.instance.tibblesAirdrop',
+    // const [pfFromZoe, terms] = await Promise.all([
+    //   E(zoe).getPublicFacet(instance),
+    //   E(zoe).getTerms(instance),
+    // ]);
+
+    const makeTestBalances = ({ IST = 50n, BLD = 100n }) => ({
+      IST,
+      BLD,
+    });
+    t.log(
+      wallets[accounts[0]],
+      Object.values(wallets).map(x => x),
     );
 
-    t.log(instnace);
-    const alicesWallet = await provisionSmartWallet(wallets[accounts[0]], {
-      IST: 10n,
-      BLD: 30n,
+    const [brands, instances] = await Promise.all([
+      vstorageClient.queryData('published.agoricNames.brand'),
+      vstorageClient.queryData('published.agoricNames.instance'),
+    ]);
+
+    const istBrand = Object.fromEntries(brands).IST;
+
+    console.group(
+      '################ START AIRDROP.TEST.TS logger ##############',
+    );
+    console.log('----------------------------------------');
+    console.log('brands ::::', brands);
+    console.log('----------------------------------------');
+    console.log('instances ::::', Object.fromEntries(instances));
+    console.log('----------------------------------');
+    console.log(
+      '--------------- END AIRDROP.TEST.TS logger -------------------',
+    );
+    console.groupEnd();
+    const feeAmount = harden({
+      brand: istBrand,
+      value: 5n,
     });
 
-    t.deepEqual(alicesWallet, {});
+    // const testAddresses = await Promise.all(
+    //   Object.values(wallets).map(async x => {
+    //     await null;
+    //     const newWallet = await provisionSmartWallet(x, {
+    //       IST: 100n,
+    //       BLD: 50n,
+    //     });
+    //     t.log('provisioned wallet for address::', x);
+    //     return newWallet;
+    //   }),
+    // );
+    const eligibleAccounts = agoricAccounts.map(x => x.address);
+
+    const currentAcct = agoricAccount;
+
+    const alicesWallet = await provisionSmartWallet(currentAcct.address, {
+      IST: 10n,
+      BLD: 30n,
+      Tribbles: 0n,
+    });
+
+    const doOffer = makeDoOffer(alicesWallet);
+    const id = 0;
+    const offerId = `offer-${Date.now()}`;
+    await doOffer({
+      id: offerId,
+      invitationSpec: {
+        source: 'agoricContract',
+        instancePath: [contractName],
+        callPipe: [['makeClaimTokensInvitation']],
+      },
+      offerArgs: {
+        ...makeOfferArgs(currentAcct),
+        proof: merkleTreeAPI.generateMerkleProof(
+          currentAcct.pubkey.key,
+          agoricAccounts.map(x => x.pubkey.key),
+        ),
+        tier: 3,
+      },
+      proposal: {
+        give: { Fee: feeAmount },
+      },
+    });
+    const walletViewResults = await Promise.all(
+      Object.values(wallets).map(x => vstorageClient.walletView(x)),
+    );
+
+    console.group(
+      '################ START walletViewResults logger ##############',
+    );
+    console.log('----------------------------------------');
+    console.log('walletViewResults ::::', walletViewResults);
+    console.log('----------------------------------------');
+    console.log('alicesWallet ::::', alicesWallet);
+    console.log(
+      '--------------- END walletViewResults logger -------------------',
+    );
+    console.groupEnd();
+
+    const walletCurrent = await vstorageClient.queryData(
+      `published.wallet.${currentAcct.address}.current`,
+    );
+    t.like(walletCurrent, { liveOffers: [], offerToPublicSubscriberPaths: [] });
+
+    const agQueryClient = makeQueryClient(
+      await useChain('agoric').getRestEndpoint(),
+    );
+
+    const { balances } = await agQueryClient.queryBalances(alicesWallet);
+    t.deepEqual(
+      balances,
+      [
+        { denom: 'ubld', amount: String(90_000_000n) },
+        { denom: 'uist', amount: String(250_000n) },
+      ],
+      'faucet request minus 10 BLD, plus 0.25 IST provisioning credit',
+    );
+    t.log({ [currentAcct.address]: balances });
   },
 });
-test.serial(simulatreClaim, agoricAccounts[0]);
+test.serial(simulatreClaim, agoricAccounts[5]);
