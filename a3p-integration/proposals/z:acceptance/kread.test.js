@@ -3,7 +3,6 @@ import {
   provisionSmartWallet,
   USER1ADDR as Alice,
   GOV1ADDR as Bob,
-  waitForBlock,
 } from '@agoric/synthetic-chain';
 import {
   buyCharacter,
@@ -49,7 +48,7 @@ test.serial('Alice unequips all defaults Items', async t => {
   );
 
   await unequipAllItems(Alice);
-  waitForBlock(5);
+  
 
   const characterInventoryAfter = await getCharacterInventory(characterId);
   t.log(`Character inventory after unequipping: ${characterInventoryAfter}`);
@@ -72,7 +71,7 @@ test.serial('Alice sells unequiped Item', async t => {
   const itemBefore = await getBalanceFromPurse(Alice, 'item');
 
   await sellItem(Alice);
-  waitForBlock(5);
+  
 
   const itemListAfter = await getMarketItemsChildren();
   t.is(itemListAfter.length, itemListBefore.length + 1);
@@ -100,7 +99,7 @@ test.serial('Bob buys an Item on marketplace', async t => {
   const marketItem = await getMarketItem(marketItemNode);
 
   await buyItem(Bob);
-  waitForBlock(5);
+  
 
   const itemListAfter = await getMarketItemsChildren();
   t.is(itemListAfter.length, itemListBefore.length - 1);
@@ -138,7 +137,7 @@ test.serial('Alice sells a Character', async t => {
   );
 
   await sellCharacter(Alice);
-  waitForBlock(5);
+  
 
   const characterListAfter = await getMarketCharactersChildren();
   t.true(
