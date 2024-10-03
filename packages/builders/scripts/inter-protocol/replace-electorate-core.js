@@ -38,7 +38,7 @@ export const defaultProposalBuilder = async ({ publishRef, install }, opts) => {
 const configurations = {
   MAINNET: {
     committeeName: 'Economic Committee',
-    // TODO: Update the addresses after confirmation
+    // UNTIL https://github.com/Agoric/agoric-sdk/issues/10194
     voterAddresses: {
       gov1: 'agoric1gx9uu7y6c90rqruhesae2t7c2vlw4uyyxlqxrx',
       gov2: 'agoric1d4228cvelf8tj65f4h7n2td90sscavln2283h5',
