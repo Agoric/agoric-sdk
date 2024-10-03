@@ -71,7 +71,7 @@ export const ibcBridgeMocks: {
     : T extends 'acknowledgementPacket'
       ? (
           obj: IBCMethod<'sendPacket'>,
-          opts: { sequence: number; acknowledgement: string },
+          opts: { sequence: bigint; acknowledgement: string },
         ) => IBCEvent<'acknowledgementPacket'>
       : never;
 } = {
@@ -109,7 +109,7 @@ export const ibcBridgeMocks: {
 
   acknowledgementPacket: (
     obj: IBCMethod<'sendPacket'>,
-    opts: { sequence: number; acknowledgement: string },
+    opts: { sequence: bigint; acknowledgement: string },
   ): IBCEvent<'acknowledgementPacket'> => {
     const { sequence, acknowledgement } = opts;
     return {
@@ -124,8 +124,7 @@ export const ibcBridgeMocks: {
         sequence,
         source_channel: obj.packet.source_channel,
         source_port: obj.packet.source_port,
-        timeout_height: 0,
-        timeout_timestamp: 1712183910866313000,
+        timeout_timestamp: 1712183910866313000n,
       },
       relayer: 'agoric1gtkg0g6x8lqc734ht3qe2sdkrfugpdp2h7fuu0',
       type: 'IBC_EVENT',
@@ -173,9 +172,9 @@ export const makeFakeIBCBridge = (
    * accounts.
    * XXX teach this about IBCConnections and store sequence on a
    * per-channel basis.
-   * @type {number}
+   * @type {bigint}
    */
-  let ibcSequenceNonce = 0;
+  let ibcSequenceNonce = 0n;
   /**
    * The number of channels created. Currently used as a proxy to increment
    * fake account addresses and channels.
@@ -276,7 +275,7 @@ export const makeFakeIBCBridge = (
                 : errorAcknowledgments.error5,
             });
             bridgeEvents = bridgeEvents.concat(ackEvent);
-            ibcSequenceNonce += 1;
+            ibcSequenceNonce += 1n;
             bridgeHandler?.fromBridge(ackEvent);
             return ackEvent.packet;
           }

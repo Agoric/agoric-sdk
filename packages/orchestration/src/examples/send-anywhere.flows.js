@@ -3,9 +3,11 @@ import { makeError, q } from '@endo/errors';
 import { M, mustMatch } from '@endo/patterns';
 
 /**
- * @import {GuestInterface} from '@agoric/async-flow';
+ * @import {GuestInterface, GuestOf} from '@agoric/async-flow';
+ * @import {Vow} from '@agoric/vow';
+ * @import {LocalOrchestrationAccountKit} from '../exos/local-orchestration-account.js';
  * @import {ZoeTools} from '../utils/zoe-tools.js';
- * @import {Orchestrator, LocalAccountMethods, OrchestrationAccountI, OrchestrationFlow} from '../types.js';
+ * @import {Orchestrator, OrchestrationFlow, LocalAccountMethods} from '../types.js';
  */
 
 const { entries } = Object;
@@ -17,14 +19,15 @@ const { entries } = Object;
  * @satisfies {OrchestrationFlow}
  * @param {Orchestrator} orch
  * @param {object} ctx
- * @param {{ localAccount?: OrchestrationAccountI & LocalAccountMethods }} ctx.contractState
+ * @param {Promise<GuestInterface<LocalOrchestrationAccountKit['holder']>>} ctx.sharedLocalAccountP
  * @param {GuestInterface<ZoeTools>} ctx.zoeTools
+ * @param {GuestOf<(msg: string) => Vow<void>>} ctx.log
  * @param {ZCFSeat} seat
  * @param {{ chainName: string; destAddr: string }} offerArgs
  */
 export const sendIt = async (
   orch,
-  { contractState, zoeTools: { localTransfer, withdrawToSeat } },
+  { sharedLocalAccountP, log, zoeTools: { localTransfer, withdrawToSeat } },
   seat,
   offerArgs,
 ) => {
@@ -33,27 +36,32 @@ export const sendIt = async (
   // NOTE the proposal shape ensures that the `give` is a single asset
   const { give } = seat.getProposal();
   const [[_kw, amt]] = entries(give);
+  void log(`sending {${amt.value}} from ${chainName} to ${destAddr}`);
   const agoric = await orch.getChain('agoric');
   const assets = await agoric.getVBankAssetInfo();
+  void log(`got info for denoms: ${assets.map(a => a.denom).join(', ')}`);
   const { denom } = NonNullish(
     assets.find(a => a.brand === amt.brand),
     `${amt.brand} not registered in vbank`,
   );
+
   const chain = await orch.getChain(chainName);
-
-  if (!contractState.localAccount) {
-    const agoricChain = await orch.getChain('agoric');
-    contractState.localAccount = await agoricChain.makeAccount();
-  }
-
   const info = await chain.getChainInfo();
   const { chainId } = info;
   assert(typeof chainId === 'string', 'bad chainId');
+  void log(`got info for chain: ${chainName} ${chainId}`);
 
-  await localTransfer(seat, contractState.localAccount, give);
+  /**
+   * @type {any} XXX methods returning vows
+   *   https://github.com/Agoric/agoric-sdk/issues/9822
+   */
+  const sharedLocalAccount = await sharedLocalAccountP;
+  await localTransfer(seat, sharedLocalAccount, give);
+
+  void log(`completed transfer to localAccount`);
 
   try {
-    await contractState.localAccount.transfer(
+    await sharedLocalAccount.transfer(
       {
         value: destAddr,
         encoding: 'bech32',
@@ -61,13 +69,16 @@ export const sendIt = async (
       },
       { denom, value: amt.value },
     );
+    void log(`completed transfer to ${destAddr}`);
   } catch (e) {
-    await withdrawToSeat(contractState.localAccount, seat, give);
+    await withdrawToSeat(sharedLocalAccount, seat, give);
     const errorMsg = `IBC Transfer failed ${q(e)}`;
+    void log(`ERROR: ${errorMsg}`);
     seat.exit(errorMsg);
     throw makeError(errorMsg);
   }
 
   seat.exit();
+  void log(`transfer complete, seat exited`);
 };
 harden(sendIt);

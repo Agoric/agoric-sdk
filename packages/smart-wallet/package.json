@@ -3,6 +3,7 @@
   "version": "0.5.3",
   "description": "Wallet contract",
   "type": "module",
+  "main": "src/index.js",
   "scripts": {
     "build": "yarn build:bundles",
     "build:bundles": "node ./scripts/build-bundles.js",

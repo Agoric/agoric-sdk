@@ -1,8 +1,7 @@
+/* eslint-disable no-use-before-define */
 import type { ERef, RemotableBrand } from '@endo/eventual-send';
 
 import type { RankComparison, RemotableObject } from '@endo/marshal';
-
-/// <reference types="@agoric/notifier/src/types.js" />
 
 // These aren't in the global runtime environment. They are just types that are
 // meant to be globally accessible as a side-effect of importing this module.

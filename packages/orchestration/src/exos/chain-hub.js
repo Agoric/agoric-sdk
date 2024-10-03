@@ -205,7 +205,7 @@ export const makeChainHub = (zone, agoricNames, vowTools) => {
     valueShape: M.string(),
   });
 
-  const lookupChainInfo = vowTools.retriable(
+  const lookupChainInfo = vowTools.retryable(
     zone,
     'lookupChainInfo',
     /** @param {string} chainName */
@@ -227,7 +227,7 @@ export const makeChainHub = (zone, agoricNames, vowTools) => {
     },
   );
 
-  const lookupConnectionInfo = vowTools.retriable(
+  const lookupConnectionInfo = vowTools.retryable(
     zone,
     'lookupConnectionInfo',
     /**
@@ -258,7 +258,7 @@ export const makeChainHub = (zone, agoricNames, vowTools) => {
   );
 
   /* eslint-disable no-use-before-define -- chainHub defined below */
-  const lookupChainsAndConnection = vowTools.retriable(
+  const lookupChainsAndConnection = vowTools.retryable(
     zone,
     'lookupChainsAndConnection',
     /**

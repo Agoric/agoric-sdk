@@ -1,12 +1,21 @@
 version: 2
 updates:
   - package-ecosystem: 'npm'
-    directory: '/'
+    # Just yarn workspaces (paths that have a yarn.lock)
+    # When we had all package, '/packages/*',' the job timed out (~55 minutes).
+    # As long as the yarn.lock is updated, the actual deps are updated,
+    # even if the the version ranges in the package.json are not.
+    directories:
+      - '/'
+      - '/a3p-integration/'
+      - '/multichain-testing/'
     schedule:
-      interval: 'daily'
-    allow:
-      - dependency-type: 'production'
-        dependency-name: '*'
+      interval: 'weekly'
+    groups:
+      patches:
+        update-types:
+          - 'patch'
+
   - package-ecosystem: 'gomod'
     directory: '/'
     schedule:

@@ -88,7 +88,7 @@ export const makeIBCTransferMsg = (
     timeoutHeight,
     timeoutTimestamp: timeoutHeight
       ? undefined
-      : timeoutTimestamp ?? getTimeout(currentTime),
+      : (timeoutTimestamp ?? getTimeout(currentTime)),
     memo,
   });
   const { fee_tokens } = senderChainInfo.chain.fees ?? {};

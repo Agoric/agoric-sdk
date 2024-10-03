@@ -1,12 +1,14 @@
-import { makeSharedStateRecord } from '@agoric/async-flow';
 import { InvitationShape } from '@agoric/zoe/src/typeGuards.js';
+import { E } from '@endo/far';
 import { M } from '@endo/patterns';
-import { withOrchestration } from '../utils/start-helper.js';
-import * as flows from './send-anywhere.flows.js';
 import { prepareChainHubAdmin } from '../exos/chain-hub-admin.js';
 import { AnyNatAmountShape } from '../typeGuards.js';
+import { withOrchestration } from '../utils/start-helper.js';
+import * as flows from './send-anywhere.flows.js';
+import * as sharedFlows from './shared.flows.js';
 
 /**
+ * @import {Vow} from '@agoric/vow';
  * @import {Zone} from '@agoric/zone';
  * @import {OrchestrationPowers, OrchestrationTools} from '../utils/start-helper.js';
  */
@@ -29,23 +31,37 @@ harden(SingleNatAmountRecord);
  * @param {Zone} zone
  * @param {OrchestrationTools} tools
  */
-const contract = async (
+export const contract = async (
   zcf,
   privateArgs,
   zone,
-  { chainHub, orchestrateAll, zoeTools },
+  { chainHub, orchestrateAll, vowTools, zoeTools },
 ) => {
-  const contractState = makeSharedStateRecord(
-    /** @type {{ account: OrchestrationAccount<any> | undefined }} */ {
-      localAccount: undefined,
-    },
-  );
-
   const creatorFacet = prepareChainHubAdmin(zone, chainHub);
+
+  // UNTIL https://github.com/Agoric/agoric-sdk/issues/9066
+  const logNode = E(privateArgs.storageNode).makeChildNode('log');
+  /** @type {(msg: string) => Vow<void>} */
+  const log = msg => vowTools.watch(E(logNode).setValue(msg));
+
+  const { makeLocalAccount } = orchestrateAll(sharedFlows, {});
+  /**
+   * Setup a shared local account for use in async-flow functions. Typically,
+   * exo initState functions need to resolve synchronously, but `makeOnce`
+   * allows us to provide a Promise. When using this inside a flow, we must
+   * await it to ensure the account is available for use.
+   *
+   * @type {any} sharedLocalAccountP expects a Promise but this is a vow
+   *   https://github.com/Agoric/agoric-sdk/issues/9822
+   */
+  const sharedLocalAccountP = zone.makeOnce('localAccount', () =>
+    makeLocalAccount(),
+  );
 
   // orchestrate uses the names on orchestrationFns to do a "prepare" of the associated behavior
   const orchFns = orchestrateAll(flows, {
-    contractState,
+    log,
+    sharedLocalAccountP,
     zoeTools,
   });
 
@@ -68,6 +84,7 @@ const contract = async (
 
   return { publicFacet, creatorFacet };
 };
+harden(contract);
 
 export const start = withOrchestration(contract);
 harden(start);

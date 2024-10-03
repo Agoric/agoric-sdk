@@ -1,3 +1,4 @@
+/* eslint-disable no-use-before-define */
 import type { Passable } from '@endo/pass-style';
 import type { Vow, VowTools } from '@agoric/vow';
 import type { LogStore } from './log-store.js';
@@ -52,7 +53,7 @@ type Simplify<T> = { [KeyType in keyof T]: T[KeyType] } & {};
 /**
  * Convert an entire Guest interface into what the host will implement.
  */
-type HostInterface<T> = {
+export type HostInterface<T> = {
   [K in keyof T]: T[K] extends CallableFunction
     ? HostOf<T[K]>
     : T[K] extends Record<string, any>
@@ -95,6 +96,7 @@ export type PreparationOptions = {
   makeLogStore?: (() => LogStore) | undefined;
   makeBijection?: (() => Bijection) | undefined;
   endowmentTools?: EndowmentTools;
+  panicHandler?: (e: any) => void;
 };
 export type OutcomeKind = 'return' | 'throw';
 

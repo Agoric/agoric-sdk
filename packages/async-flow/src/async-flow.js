@@ -55,6 +55,9 @@ export const prepareAsyncFlowTools = (outerZone, outerOptions = {}) => {
       { vowTools },
     ),
     makeBijection = prepareBijection(outerZone, unwrap),
+    panicHandler = err => {
+      throw err;
+    },
   } = outerOptions;
   const { watch, makeVowKit } = vowTools;
 
@@ -247,6 +250,12 @@ export const prepareAsyncFlowTools = (outerZone, outerOptions = {}) => {
               guestResultP,
               gFulfillment => {
                 if (bijection.hasGuest(guestResultP)) {
+                  !log.isReplaying() ||
+                    panic(
+                      makeError(
+                        X`guest fulfilled with ${gFulfillment} before finishing replay`,
+                      ),
+                    );
                   outcomeKit.resolver.resolve(
                     membrane.guestToHost(gFulfillment),
                   );
@@ -262,11 +271,46 @@ export const prepareAsyncFlowTools = (outerZone, outerOptions = {}) => {
                 // in the `guestResultP` being absent from the bijection,
                 // so this leave the outcome vow unsettled, as it must.
                 if (bijection.hasGuest(guestResultP)) {
+                  !log.isReplaying() ||
+                    panic(
+                      makeError(
+                        X`guest rejected with ${guestReason} before finishing replay`,
+                      ),
+                    );
                   outcomeKit.resolver.reject(membrane.guestToHost(guestReason));
                   admin.complete();
                 }
               },
-            );
+            )
+              .then(
+                () => {
+                  if (flow.getFlowState() === 'Failed') {
+                    // If the flow fails, we need to trigger the panic handler with
+                    // the failure.
+                    throw flow.getOptFatalProblem();
+                  }
+                },
+                maybePanicReason => {
+                  if (flow.getFlowState() === 'Failed') {
+                    const err = flow.getOptFatalProblem();
+                    // TODO: Annotate maybePanicReason robustly with err if it
+                    // is indeed not the same as one we already threw from
+                    // panic.
+                    throw err;
+                  }
+
+                  // Definitely not a reason from an existing panic, so raise a new panic.
+                  const err = makeError(
+                    X`internal: unexpected error in guest completion handling ${maybePanicReason}`,
+                  );
+                  try {
+                    panic(err);
+                  } catch (_e) {
+                    throw err;
+                  }
+                },
+              )
+              .catch(panicHandler);
           },
           wake() {
             const { facets } = this;

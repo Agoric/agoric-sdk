@@ -3,13 +3,13 @@
  *   around `zoeTools.localTransfer` and `zoeTools.withdrawToSeat`
  */
 
-import { makeSharedStateRecord } from '@agoric/async-flow';
 import { InvitationShape } from '@agoric/zoe/src/typeGuards.js';
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
 import { withOrchestration } from '../../src/utils/start-helper.js';
 import { prepareChainHubAdmin } from '../../src/exos/chain-hub-admin.js';
 import * as flows from './zoe-tools.flows.js';
+import * as sharedFlows from '../../src/examples/shared.flows.js';
 import fetchedChainInfo from '../../src/fetched-chain-info.js';
 
 const { values } = Object;
@@ -49,16 +49,24 @@ const contract = async (
   zone,
   { chainHub, orchestrateAll, zoeTools },
 ) => {
-  const contractState = makeSharedStateRecord(
-    /** @type {{ account: OrchestrationAccount<any> | undefined }} */ {
-      localAccount: undefined,
-    },
-  );
-
   const creatorFacet = prepareChainHubAdmin(zone, chainHub);
 
+  const { makeLocalAccount } = orchestrateAll(sharedFlows, {});
+  /**
+   * Setup a shared local account for use in async-flow functions. Typically,
+   * exo initState functions need to resolve synchronously, but `makeOnce`
+   * allows us to provide a Promise. When using this inside a flow, we must
+   * await it to ensure the account is available for use.
+   *
+   * @type {any} sharedLocalAccountP expects a Promise but this is a vow
+   *   https://github.com/Agoric/agoric-sdk/issues/9822
+   */
+  const sharedLocalAccountP = zone.makeOnce('localAccount', () =>
+    makeLocalAccount(),
+  );
+
   const orchFns = orchestrateAll(flows, {
-    contractState,
+    sharedLocalAccountP,
     zoeTools,
   });
 

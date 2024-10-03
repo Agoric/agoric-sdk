@@ -30,10 +30,6 @@ export type Baggage = MapStore<string, any>;
 
 type WatchedPromisesManager = ReturnType<typeof makeWatchedPromiseManager>;
 
-type Tail<T extends any[]> = T extends [head: any, ...rest: infer Rest]
-  ? Rest
-  : [];
-
 // used to omit the 'context' parameter
 type OmitFirstArg<F> = F extends (x: any, ...args: infer P) => infer R
   ? (...args: P) => R

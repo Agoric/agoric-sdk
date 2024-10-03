@@ -146,6 +146,7 @@ export const objectMapStoragePath = subscribers => {
   }
   return deeplyFulfilledObject(
     objectMap(subscribers, sub =>
+      // @ts-expect-error backwards compat
       'subscriber' in sub ? sub.storagePath : E(sub).getPath(),
     ),
   );

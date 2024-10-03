@@ -11,5 +11,4 @@ export {
   insistVatSyscallResult,
 } from './message.js';
 
-export * from './types.js';
-export * from './vatDataTypes.js';
+export * from './types-index.js';

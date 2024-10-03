@@ -15,7 +15,7 @@ import { isVow } from '@agoric/vow/src/vow-utils.js';
 import { prepareVowTools } from '@agoric/vow';
 import { makeDurableZone } from '@agoric/zone/durable.js';
 
-import { prepareAsyncFlowTools } from '../src/async-flow.js';
+import { prepareTestAsyncFlowTools } from './_utils.js';
 
 /**
  * @import {Zone} from '@agoric/base-zone';
@@ -59,7 +59,7 @@ const firstLogLen = 7;
 const testFirstPlay = async (t, zone) => {
   t.log('firstPlay started');
   const vowTools = prepareVowTools(zone);
-  const { asyncFlow, adminAsyncFlow } = prepareAsyncFlowTools(zone, {
+  const { asyncFlow, adminAsyncFlow } = prepareTestAsyncFlowTools(t, zone, {
     vowTools,
   });
   const makeOrchestra = prepareOrchestra(zone);
@@ -134,12 +134,24 @@ const testFirstPlay = async (t, zone) => {
  *
  * @param {any} t
  * @param {Zone} zone
+ * @param {unknown} [rejection]
  */
-const testBadShortReplay = async (t, zone) => {
+const testBadShortReplay = async (t, zone, rejection) => {
   t.log('badShortReplay started');
   const vowTools = prepareVowTools(zone);
-  const { asyncFlow, adminAsyncFlow } = prepareAsyncFlowTools(zone, {
+  const { asyncFlow, adminAsyncFlow } = prepareTestAsyncFlowTools(t, zone, {
     vowTools,
+    panicHandler: e => {
+      t.throws(
+        () => {
+          throw e;
+        },
+        {
+          message:
+            /^guest (fulfilled with "bad"|rejected with "\[Error: replayProblem\]") before finishing replay$/,
+        },
+      );
+    },
   });
   prepareOrchestra(zone);
   const { when } = vowTools;
@@ -149,8 +161,12 @@ const testBadShortReplay = async (t, zone) => {
 
   const { guestMethod } = {
     async guestMethod(_gOrch7, _g1, _p3) {
-      t.log('  badReplay return early');
-      resolveStep(true);
+      resolveStep(eventLoopIteration()); // resolveStep(true) is too fast.
+      if (rejection) {
+        t.log('  badShortReplay rejecting');
+        throw rejection;
+      }
+      t.log('  badShortReplay return early');
       return 'bad';
     },
   };
@@ -174,7 +190,7 @@ const testBadShortReplay = async (t, zone) => {
   await promiseStep;
 
   const replayProblem = flow.getOptFatalProblem();
-  t.log('  badShortReplay failures', replayProblem);
+  t.log('  badShortReplay replayProblem', replayProblem);
   t.true(replayProblem instanceof Error);
 
   const outcome = when(outcomeV);
@@ -190,7 +206,7 @@ const testBadShortReplay = async (t, zone) => {
   t.log('badShortReplay done');
 };
 
-test.serial.failing('test durable async-flow early completion', async t => {
+test.serial('test durable async-flow early completion', async t => {
   annihilate();
   const zone1 = makeDurableZone(getBaggage(), 'durableRoot');
   await testFirstPlay(t, zone1);
@@ -200,4 +216,8 @@ test.serial.failing('test durable async-flow early completion', async t => {
   nextLife();
   const zone2a = makeDurableZone(getBaggage(), 'durableRoot');
   await testBadShortReplay(t, zone2a);
+
+  nextLife();
+  const zone2b = makeDurableZone(getBaggage(), 'durableRoot');
+  await testBadShortReplay(t, zone2b, Error('replayProblem'));
 });

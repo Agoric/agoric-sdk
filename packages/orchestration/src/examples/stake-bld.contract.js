@@ -111,6 +111,8 @@ export const start = async (zcf, privateArgs, baggage) => {
             const { give } = seat.getProposal();
             trace('makeStakeBldInvitation', give);
             const { holder } = await makeLocalAccountKit();
+            /** @type {Record<string, Payment<'nat'>>} */
+            // @ts-expect-error XXX PaymentPKeywordRecord throught deeplyFulfilled will be a PaymnentKeywordRecord
             const { In } = await deeplyFulfilled(
               withdrawFromSeat(zcf, seat, give),
             );

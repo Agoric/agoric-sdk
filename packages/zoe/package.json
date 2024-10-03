@@ -124,6 +124,9 @@
       "test/unitTests/scriptedOracle.test.js",
       "test/unitTests/zoe.test.js",
       "test/unitTests/zcf/allStagedSeatsUsed.test.js",
+      "# t.snapshot",
+      "test/exports.test.js",
+      "test/snapshots",
       "# We use SWINGSET_WORKER_TYPE=xs ava to run these...",
       "swingsetTests"
     ]

@@ -3,12 +3,13 @@ import { makeAsVow } from './vow-utils.js';
 import { prepareVowKit } from './vow.js';
 import { prepareWatchUtils } from './watch-utils.js';
 import { prepareWatch } from './watch.js';
+import { prepareRetryableTools } from './retryable.js';
 import { makeWhen } from './when.js';
 
 /**
  * @import {Zone} from '@agoric/base-zone';
  * @import {Passable} from '@endo/pass-style';
- * @import {IsRetryableReason, AsPromiseFunction, EVow, Vow, ERef} from './types.js';
+ * @import {IsRetryableReason, AsPromiseFunction, Vow, VowTools} from './types.js';
  */
 
 /**
@@ -18,6 +19,7 @@ import { makeWhen } from './when.js';
  * @param {Zone} zone
  * @param {object} [powers]
  * @param {IsRetryableReason} [powers.isRetryableReason]
+ * @returns {VowTools}
  */
 export const prepareBasicVowTools = (zone, powers = {}) => {
   const { isRetryableReason = /** @type {IsRetryableReason} */ (() => false) } =
@@ -34,23 +36,10 @@ export const prepareBasicVowTools = (zone, powers = {}) => {
   const watchUtils = makeWatchUtils();
   const asVow = makeAsVow(makeVowKit);
 
-  /**
-   * TODO FIXME make this real
-   * Create a function that retries the given function if the underlying
-   * functions rejects due to upgrade disconnection.
-   *
-   * @template {(...args: any[]) => Promise<any>} F
-   * @param {Zone} fnZone - the zone for the named function
-   * @param {string} name
-   * @param {F} fn
-   * @returns {F extends (...args: infer Args) => Promise<infer R> ? (...args: Args) => Vow<R> : never}
-   */
-  const retriable =
-    (fnZone, name, fn) =>
-    // @ts-expect-error cast
-    (...args) => {
-      return watch(fn(...args));
-    };
+  const { retryable } = prepareRetryableTools(zone, {
+    makeVowKit,
+    isRetryableReason,
+  });
 
   /**
    * Vow-tolerant implementation of Promise.all that takes an iterable of vows
@@ -92,9 +81,8 @@ export const prepareBasicVowTools = (zone, powers = {}) => {
     allSettled,
     asVow,
     asPromise,
-    retriable,
+    retryable,
+    retriable: retryable, // For temporary backwards compat with alpha implementation
   });
 };
 harden(prepareBasicVowTools);
-
-/** @typedef {ReturnType<typeof prepareBasicVowTools>} VowTools */

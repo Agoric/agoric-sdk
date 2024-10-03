@@ -28,7 +28,7 @@ import { coerceCoin, coerceDenomAmount } from '../utils/amounts.js';
 /**
  * @import {HostOf} from '@agoric/async-flow';
  * @import {LocalChain, LocalChainAccount} from '@agoric/vats/src/localchain.js';
- * @import {AmountArg, ChainAddress, DenomAmount, IBCMsgTransferOptions, IBCConnectionInfo, OrchestrationAccountI} from '@agoric/orchestration';
+ * @import {AmountArg, ChainAddress, DenomAmount, IBCMsgTransferOptions, IBCConnectionInfo, OrchestrationAccountI, LocalAccountMethods} from '@agoric/orchestration';
  * @import {RecorderKit, MakeRecorderKit} from '@agoric/zoe/src/contractSupport/recorder.js'.
  * @import {Zone} from '@agoric/zone';
  * @import {Remote} from '@agoric/internal';
@@ -613,14 +613,14 @@ export const prepareLocalOrchestrationAccountKit = (
          * updater will get a special notification that the account is being
          * transferred.
          */
-        /** @type {HostOf<LocalChainAccount['deposit']>} */
+        /** @type {HostOf<LocalAccountMethods['deposit']>} */
         deposit(payment) {
           return watch(
             E(this.state.account).deposit(payment),
             this.facets.returnVoidWatcher,
           );
         },
-        /** @type {HostOf<LocalChainAccount['withdraw']>} */
+        /** @type {HostOf<LocalAccountMethods['withdraw']>} */
         withdraw(amount) {
           return watch(E(this.state.account).withdraw(amount));
         },
@@ -733,7 +733,7 @@ export const prepareLocalOrchestrationAccountKit = (
         matchFirstPacket(patternV) {
           return watch(E(this.state.packetTools).matchFirstPacket(patternV));
         },
-        /** @type {HostOf<LocalChainAccount['monitorTransfers']>} */
+        /** @type {HostOf<LocalAccountMethods['monitorTransfers']>} */
         monitorTransfers(tap) {
           return watch(E(this.state.packetTools).monitorTransfers(tap));
         },
