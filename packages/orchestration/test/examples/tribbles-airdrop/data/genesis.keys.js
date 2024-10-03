@@ -1,3 +1,6 @@
+import '@endo/init';
+import { merkleTreeAPI } from '../../../../src/examples/airdrop/merkle-tree/index.js';
+
 const agoricGenesisAccounts = [
   {
     name: 'faucet',
@@ -112,5 +115,5 @@ const agoricGenesisAccounts = [
 const getPubkey = ({ pubkey: { key } }) => key;
 
 const pubkeys = agoricGenesisAccounts.map(getPubkey);
-
+merkleTreeAPI.generateMerkleRoot(pubkeys);
 export { agoricGenesisAccounts, pubkeys };

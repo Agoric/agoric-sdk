@@ -125,11 +125,11 @@ export const startAirdrop = async (powers, config) => {
       produce: { [contractName]: produceInstance },
     },
     issuer: {
-      consume: { IST: istIssuer },
+      consume: { IST: istIssuer, Tribbles: consumeTribblesIssuer },
       produce: { Tribbles: produceTribblesIssuer },
     },
     brand: {
-      consume: { IST: istBrand },
+      consume: { IST: istBrand, Tribbles: consumeTribblesBrand },
       produce: { Tribbles: produceTribblesBrand },
     },
   } = powers;
@@ -185,7 +185,7 @@ export const startAirdrop = async (powers, config) => {
   trace('instanceTerms::', instanceTerms);
   const {
     brands: { Tribbles: tribblesBrand },
-    issuers: { Item: tribblesIssuer },
+    issuers: { Tribbles: tribblesIssuer },
   } = instanceTerms;
 
   produceInstance.reset();

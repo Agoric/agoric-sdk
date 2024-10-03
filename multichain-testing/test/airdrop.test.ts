@@ -13,6 +13,7 @@ import {
 } from './airdrop-data/genesis.keys.js';
 import { merkleTreeAPI } from './airdrop-data/merkle-tree/index.js';
 import { AmountMath } from '@agoric/ertp';
+
 const test = anyTest as TestFn<SetupContextWithWallets>;
 
 const contractName = 'tribblesAirdrop';
@@ -99,6 +100,8 @@ const simulatreClaim = test.macro({
       vstorageClient.queryData('published.agoricNames.instance'),
     ]);
 
+    console.log('Brands::', brands);
+
     const istBrand = Object.fromEntries(brands).IST;
 
     console.group(
@@ -136,7 +139,6 @@ const simulatreClaim = test.macro({
     const alicesWallet = await provisionSmartWallet(currentAcct.address, {
       IST: 10n,
       BLD: 30n,
-      Tribbles: 0n,
     });
 
     const doOffer = makeDoOffer(alicesWallet);
@@ -198,4 +200,4 @@ const simulatreClaim = test.macro({
     t.log({ [currentAcct.address]: balances });
   },
 });
-test.serial(simulatreClaim, agoricAccounts[5]);
+test.serial(simulatreClaim, agoricAccounts[agoricAccounts.length - 1]);
