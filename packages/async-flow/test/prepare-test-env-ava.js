@@ -24,7 +24,8 @@ export const asyncFlowVerbose = () => {
  */
 
 /**
- * @typedef {Parameters<typeof startLife>[2] & {
+ * @typedef {Omit<Parameters<typeof startLife>[2], 'notAllKindsReconnectedHandler'> & {
+ *   notAllKindsReconnectedHandler?: (e: Error, t: ExecutionContext) => void;
  *   panicHandler?: import('./_utils.js').TestAsyncFlowPanicHandler;
  * }} StartAsyncLifeOptions
  */
@@ -40,7 +41,11 @@ export const startAsyncLife = async (
   t,
   build,
   run,
-  { panicHandler, ...startOptions } = {},
+  {
+    panicHandler,
+    notAllKindsReconnectedHandler: notAllKindsReconnectedHandlerOriginal,
+    ...startOptions
+  } = {},
 ) =>
   startLife(
     async baggage => {
@@ -57,7 +62,12 @@ export const startAsyncLife = async (
       return tools;
     },
     run,
-    startOptions,
+    {
+      notAllKindsReconnectedHandler: notAllKindsReconnectedHandlerOriginal
+        ? e => notAllKindsReconnectedHandlerOriginal(e, t)
+        : undefined,
+      ...startOptions,
+    },
   );
 
 /**
