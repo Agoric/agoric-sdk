@@ -1,5 +1,6 @@
 // @ts-check
 import { E } from '@endo/eventual-send';
+import { Fail } from '@endo/errors';
 import {
   assertPathSegment,
   makeStorageNodeChild,
@@ -7,6 +8,11 @@ import {
 import { reserveThenDeposit } from './utils.js';
 
 const trace = (...args) => console.log('GovReplaceCommiteeAndCharter', ...args);
+
+const traced = (label, x) => {
+  trace(label, x);
+  return x;
+};
 
 const { values } = Object;
 
@@ -27,27 +33,27 @@ const handlehighPrioritySendersList = async (
   const HIGH_PRIORITY_SENDERS_NAMESPACE = 'economicCommittee';
   const highPrioritySendersManager = await highPrioritySendersManagerP;
 
-  if (!highPrioritySendersManager) {
-    throw Error('highPrioritySendersManager is not defined');
-  }
+  highPrioritySendersManager || Fail`highPrioritySendersManager is not defined`;
 
   const { addressesToAdd, addressesToRemove } = highPrioritySendersConfig;
 
-  for (const addr of addressesToAdd) {
-    trace(`Adding ${addr} to High Priority Senders list`);
-    await E(highPrioritySendersManager).add(
-      HIGH_PRIORITY_SENDERS_NAMESPACE,
-      addr,
-    );
-  }
+  await Promise.all(
+    addressesToAdd.map(addr =>
+      E(highPrioritySendersManager).add(
+        HIGH_PRIORITY_SENDERS_NAMESPACE,
+        traced('High Priority Senders: adding', addr),
+      ),
+    ),
+  );
 
-  for (const addr of addressesToRemove) {
-    trace(`Removing ${addr} from High Priority Senders list`);
-    await E(highPrioritySendersManager).remove(
-      HIGH_PRIORITY_SENDERS_NAMESPACE,
-      addr,
-    );
-  }
+  await Promise.all(
+    addressesToRemove.map(addr =>
+      E(highPrioritySendersManager).remove(
+        HIGH_PRIORITY_SENDERS_NAMESPACE,
+        traced('High Priority Senders: removing', addr),
+      ),
+    ),
+  );
 };
 
 const inviteECMembers = async (
@@ -157,31 +163,32 @@ export const replaceElectorate = async (permittedPowers, config) => {
     },
   );
 
+  const governedContractKitsMap =
+    await permittedPowers.consume.governedContractKits;
   const psmKitMap = await permittedPowers.consume.psmKit;
 
-  const creatorFacets = [
-    E.get(permittedPowers.consume.reserveKit).governorCreatorFacet,
-    E.get(permittedPowers.consume.auctioneerKit).governorCreatorFacet,
-    E.get(permittedPowers.consume.vaultFactoryKit).governorCreatorFacet,
-    E.get(permittedPowers.consume.provisionPoolStartResult)
-      .governorCreatorFacet,
-    ...[...psmKitMap.values()].map(psmKit => psmKit.psmGovernorCreatorFacet),
+  const governanceDetails = [
+    ...[...governedContractKitsMap.values()].map(governedContractKit => ({
+      creatorFacet: governedContractKit.governorCreatorFacet,
+      label: governedContractKit.label,
+    })),
+    ...[...psmKitMap.values()].map(psmKit => ({
+      creatorFacet: psmKit.psmGovernorCreatorFacet,
+      label: psmKit.label,
+    })),
   ];
 
   await Promise.all(
-    creatorFacets.map(async creatorFacet => {
-      trace(
-        'Getting PoserInvitation from economicCommitteeCreatorFacet...',
-        creatorFacet,
-      );
+    governanceDetails.map(async ({ creatorFacet, label }) => {
+      trace(`Getting PoserInvitation for ${label}...`);
       const newElectoratePoser = await E(
         economicCommitteeCreatorFacet,
       ).getPoserInvitation();
-      trace('Successfully received newElectoratePoser');
+      trace(`Successfully received newElectoratePoser for ${label}`);
 
-      trace('Replace electorate');
+      trace(`Replacing electorate for ${label}`);
       await E(creatorFacet).replaceElectorate(newElectoratePoser);
-      trace('Successfully replaced electorate');
+      trace(`Successfully replaced electorate for ${label}`);
     }),
   );
 
@@ -210,17 +217,15 @@ export const getManifestForReplaceElectorate = async (
   manifest: {
     [replaceElectorate.name]: {
       consume: {
-        reserveKit: true,
-        auctioneerKit: true,
-        vaultFactoryKit: true,
         psmKit: true,
-
-        board: true,
+        governedContractKits: true,
         chainStorage: true,
         diagnostics: true,
-        zoe: true,
         highPrioritySendersManager: true,
         namesByAddressAdmin: true,
+        // Rest of these are designed to be widely shared
+        board: true,
+        zoe: true,
       },
       produce: {
         economicCommitteeKit: true,

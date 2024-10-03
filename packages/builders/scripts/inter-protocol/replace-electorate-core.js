@@ -57,7 +57,7 @@ const configurations = {
     },
     highPrioritySendersConfig: {
       addressesToAdd: [],
-      addressesToRemove: [],
+      addressesToRemove: ['agoric1wrfh296eu2z34p6pah7q04jjuyj3mxu9v98277'],
     },
   },
   BOOTSTRAP_TEST: {
@@ -82,7 +82,8 @@ const { keys } = Object;
 const Usage = `agoric run replace-electorate-core.js ${keys(configurations).join(' | ')}`;
 export default async (homeP, endowments) => {
   const { scriptArgs } = endowments;
-  const config = configurations[scriptArgs?.[0]];
+  const variant = scriptArgs?.[0];
+  const config = configurations[variant];
   if (!config) {
     console.error(Usage);
     process.exit(1);
@@ -91,7 +92,7 @@ export default async (homeP, endowments) => {
 
   const { writeCoreEval } = await makeHelpers(homeP, endowments);
 
-  await writeCoreEval('replace-committee', (utils, opts) =>
+  await writeCoreEval(`replace-committee-${variant}`, (utils, opts) =>
     defaultProposalBuilder(utils, { ...opts, ...config }),
   );
 };
