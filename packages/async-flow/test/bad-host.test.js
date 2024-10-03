@@ -87,6 +87,7 @@ const testBadHostFirstPlay = async (t, zone) => {
   };
 
   const wrapperFunc = asyncFlow(zone, 'AsyncFlow1', guestMethod);
+  await adminAsyncFlow.wakeAll();
 
   const badHost = zone.makeOnce('badHost', () => makeBadHost());
 
@@ -166,6 +167,7 @@ const testBadHostReplay1 = async (t, zone) => {
   };
 
   asyncFlow(zone, 'AsyncFlow1', guestMethod);
+  await adminAsyncFlow.wakeAll();
 
   const badHost = zone.makeOnce('badHost', () => Fail`need badHost`);
 

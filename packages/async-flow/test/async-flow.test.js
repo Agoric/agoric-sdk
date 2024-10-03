@@ -99,6 +99,7 @@ const testFirstPlay = async (t, zone) => {
   };
 
   const wrapperFunc = asyncFlow(zone, 'AsyncFlow1', guestMethod);
+  await adminAsyncFlow.wakeAll();
 
   const outcomeV = zone.makeOnce('outcomeV', () => wrapperFunc(hOrch7, v1, v3));
 
@@ -174,6 +175,7 @@ const testBadReplay = async (t, zone) => {
   // invoked, that would be a *new* activation with a new outcome and
   // flow, and would have nothing to do with the existing one.
   asyncFlow(zone, 'AsyncFlow1', guestMethod);
+  await adminAsyncFlow.wakeAll();
 
   const outcomeV = /** @type {Vow} */ (
     zone.makeOnce('outcomeV', () => Fail`need outcomeV`)
@@ -258,6 +260,7 @@ const testGoodReplay = async (t, zone) => {
   // invoked, that would be a *new* activation with a new outcome and
   // flow, and would have nothing to do with the existing one.
   asyncFlow(zone, 'AsyncFlow1', guestMethod);
+  await adminAsyncFlow.wakeAll();
 
   const outcomeV = /** @type {Vow} */ (
     zone.makeOnce('outcomeV', () => Fail`need outcomeV`)
@@ -329,6 +332,7 @@ const testAfterPlay = async (t, zone) => {
   // invoked, that would be a *new* activation with a new outcome and
   // flow, and would have nothing to do with the existing one.
   asyncFlow(zone, 'AsyncFlow1', guestMethod);
+  await adminAsyncFlow.wakeAll();
 
   const outcomeV = /** @type {Vow} */ (
     zone.makeOnce('outcomeV', () => Fail`need outcomeV`)

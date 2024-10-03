@@ -537,6 +537,10 @@ export const prepareAsyncFlowTools = (outerZone, outerOptions = {}) => {
     getFailures() {
       return failures.snapshot();
     },
+    /**
+     * Must be called once on upgrade during the start crank, but after all
+     * async flows have been redefined
+     */
     wakeAll() {
       wakeUpgradeGate();
       // [...stuff.keys()] in order to snapshot before iterating
@@ -550,22 +554,16 @@ export const prepareAsyncFlowTools = (outerZone, outerOptions = {}) => {
       }
     },
     getFlowForOutcomeVow(outcomeVow) {
-      return flowForOutcomeVowKey.get(toPassableCap(outcomeVow));
+      return /** @type {AsyncFlow} */ (
+        flowForOutcomeVowKey.get(toPassableCap(outcomeVow))
+      );
     },
   });
-
-  // Cannot call this until everything is prepared, so postpone to a later
-  // turn. (Ideally, we'd postpone to a later crank because prepares are
-  // allowed anytime in the first crank. But there's currently no pleasant
-  // way to postpone to a later crank.)
-  // See https://github.com/Agoric/agoric-sdk/issues/9377
-  const allWokenP = E.when(null, () => adminAsyncFlow.wakeAll());
 
   return harden({
     prepareAsyncFlowKit,
     asyncFlow,
     adminAsyncFlow,
-    allWokenP,
     prepareEndowment,
   });
 };

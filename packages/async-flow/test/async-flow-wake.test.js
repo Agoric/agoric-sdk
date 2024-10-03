@@ -122,55 +122,27 @@ testAsyncLife(
   },
 );
 
-testAsyncLife.failing(
-  'failed wake',
-  async (t, { zone, asyncFlow, makeVowKit, allWokenP }) => {
-    t.plan(2);
-    // Spend a bunch of turns to pretend any concurrent async operation has settled
-    // Triggers https://github.com/Agoric/agoric-sdk/issues/9377
-    for (let i = 0; i < 100; i += 1) {
-      await null;
-    }
+testAsyncLife('failed wake', async (t, { zone, asyncFlow, makeVowKit }) => {
+  t.plan(2);
+  // Spend a bunch of turns to pretend any concurrent async operation has settled
+  // Previously the async-flows would be awoken one turn after preparation of the tools
+  // which would prevent asynchronous definitions.
+  for (let i = 0; i < 100; i += 1) {
+    await null;
+  }
 
-    makeTestKit({ zone, makeVowKit });
-    const guestFunc = async w => {
-      t.pass('not triggered - invocation cannot be awoken');
-      return w.wait('foo');
-    };
-    t.notThrows(() =>
-      asyncFlow(zone, 'guestFunc', guestFunc, {
-        // Next incarnation should not start eager
-        startEager: false,
-      }),
-    );
-
-    return { allWokenP };
-  },
-  async (t, { allWokenP }) => {
-    await t.notThrowsAsync(
-      () => allWokenP,
-      'will actually throw due to crank bug #9377',
-    );
-  },
-);
-
-testAsyncLife(
-  'failed wake redo',
-  async (t, { zone, asyncFlow, makeVowKit }) => {
-    t.plan(2);
-    makeTestKit({ zone, makeVowKit });
-    const guestFunc = async w => {
-      t.pass();
-      return w.wait('foo');
-    };
-    t.notThrows(() =>
-      asyncFlow(zone, 'guestFunc', guestFunc, {
-        // Next incarnation should not start eager
-        startEager: false,
-      }),
-    );
-  },
-);
+  makeTestKit({ zone, makeVowKit });
+  const guestFunc = async w => {
+    t.pass();
+    return w.wait('foo');
+  };
+  t.notThrows(() =>
+    asyncFlow(zone, 'guestFunc', guestFunc, {
+      // Next incarnation should not start eager
+      startEager: false,
+    }),
+  );
+});
 
 testAsyncLife(
   'not eager waker stay sleeping 3',
@@ -215,5 +187,31 @@ testAsyncLife(
       'flow must have got awoken after panic',
     );
     t.is(guestCalled.tripped, true, 'flow woke up');
+  },
+);
+
+testAsyncLife(
+  'no wakeAll causes start failure',
+  async (t, { zone, asyncFlow, makeVowKit }) => {
+    // Not reconnected handler invoked
+    t.plan(2);
+    makeTestKit({ zone, makeVowKit });
+    const guestFunc = async _ => t.fail(`Should not restart`);
+
+    t.notThrows(() => asyncFlow(zone, 'guestFunc', guestFunc));
+  },
+  undefined,
+  {
+    skipWakeAll: true,
+    notAllKindsReconnectedHandler: (e, t) => {
+      t.throws(
+        () => {
+          throw e;
+        },
+        {
+          message: 'defineDurableKind not called for tags: [WakeGateSentinel]',
+        },
+      );
+    },
   },
 );

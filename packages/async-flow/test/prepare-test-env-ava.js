@@ -27,6 +27,7 @@ export const asyncFlowVerbose = () => {
  * @typedef {Omit<Parameters<typeof startLife>[2], 'notAllKindsReconnectedHandler'> & {
  *   notAllKindsReconnectedHandler?: (e: Error, t: ExecutionContext) => void;
  *   panicHandler?: import('./_utils.js').TestAsyncFlowPanicHandler;
+ *   skipWakeAll?: boolean;
  * }} StartAsyncLifeOptions
  */
 
@@ -43,6 +44,7 @@ export const startAsyncLife = async (
   run,
   {
     panicHandler,
+    skipWakeAll,
     notAllKindsReconnectedHandler: notAllKindsReconnectedHandlerOriginal,
     ...startOptions
   } = {},
@@ -59,6 +61,9 @@ export const startAsyncLife = async (
         zone: rootZone.subZone('contract'),
         ...asyncFlowTools,
       });
+      if (!skipWakeAll) {
+        await asyncFlowTools.adminAsyncFlow.wakeAll();
+      }
       return tools;
     },
     run,
