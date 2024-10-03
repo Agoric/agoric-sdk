@@ -18,6 +18,7 @@ import {
 import { reserveThenDeposit } from './utils.js';
 
 /** @import {EconomyBootstrapPowers} from './econ-behaviors.js' */
+/** @import {EconCharterStartResult} from './econ-behaviors.js' */
 /** @import {CommitteeElectorateCreatorFacet} from '@agoric/governance/src/committee.js'; */
 
 const trace = (...args) => console.log('GovReplaceCommiteeAndCharter', ...args);
@@ -137,6 +138,29 @@ const inviteECMembers = async (
   await distributeInvitations(zip(values(voterAddresses), invitations));
 };
 
+/**
+ * Invites members to the Economic Charter by creating and distributing charter
+ * member invitations to the specified voter addresses.
+ *
+ * @param {EconomyBootstrapPowers} powers - The bootstrap powers required for
+ *   economic operations, including `namesByAddressAdmin` used for managing
+ *   names and deposits.
+ * @param {{
+ *   options: {
+ *     voterAddresses: Record<string, string>;
+ *     econCharterKit: {
+ *       creatorFacet: {
+ *         makeCharterMemberInvitation: () => Promise<Invitation>;
+ *       };
+ *     };
+ *   };
+ * }} opts
+ *   - The configuration object containing voter addresses and the econ charter kit
+ *       for creating charter member invitations.
+ *
+ * @returns {Promise<void>} This function does not explicitly return a value. It
+ *   processes all charter member invitations asynchronously.
+ */
 const inviteToEconCharter = async (
   { consume: { namesByAddressAdmin } },
   { options: { voterAddresses, econCharterKit } },
@@ -235,6 +259,16 @@ const startNewEconomicCommittee = async (
 
   return creatorFacet;
 };
+
+/**
+ * Starts a new Economic Committee Charter by creating an instance with the
+ * provided committee specifications.
+ *
+ * @param {EconomyBootstrapPowers} powers - The resources and capabilities
+ *   required to start the committee.
+ * @returns {Promise<EconCharterStartResult>} A promise that resolves to the
+ *   charter kit result.
+ */
 const startNewEconCharter = async ({
   consume: { zoe },
   produce: { econCharterKit },
@@ -271,6 +305,22 @@ const startNewEconCharter = async ({
   return startResult;
 };
 
+/**
+ * Adds governors to an existing Economic Committee Charter
+ *
+ * - @param {EconomyBootstrapPowers} powers - The resources and capabilities
+ *   required to start the committee.
+ *
+ * @param {{
+ *   options: {
+ *     econCharterKit: EconCharterStartResult;
+ *   };
+ * }} config
+ *   - Configuration object containing the name and size of the committee.
+ *
+ * @returns {Promise<void>} A promise that resolves once all the governors have
+ *   been successfully added to the economic charter
+ */
 const addGovernorsToEconCharter = async (
   { consume: { psmKit, governedContractKits } },
   { options: { econCharterKit } },
