@@ -77,9 +77,9 @@ export const startLife = async (
   const { fakeVomKit } = nextLife(fromIncarnation);
   /** @type {Map<string, PromiseKit<any>>} */
   const previouslyWatchedPromises = new Map();
-  let buildTools;
-  try {
-    buildTools = await build(getBaggage());
+
+  const start = async () => {
+    const buildTools = await build(getBaggage());
     fakeVomKit.wpm.loadWatchedPromiseTable(vref => {
       // See revivePromise in liveslots.js
       const { getValForSlot, valToSlot, setValForSlot } = fakeVomKit.fakeStuff;
@@ -95,14 +95,20 @@ export const startLife = async (
 
     fakeVomKit.vom.insistAllDurableKindsReconnected();
 
-    await eventLoopIteration();
-    // End of start crank
-  } catch (err) {
+    return buildTools;
+  };
+
+  const buildTools = await Promise.race([
+    eventLoopIteration().then(() => {
+      Fail`build didn't settle by end of start crank`;
+    }),
+    start().then(tools => tools),
+  ]).catch(err => {
     // Rollback upgrade
     incarnation = oldIncarnation;
     incarnationNumber = oldIncarnationNumber;
     throw err;
-  }
+  });
 
   // Simulate a dispatch of previously decided promise rejections
   // In real swingset this could happen after some deliveries
