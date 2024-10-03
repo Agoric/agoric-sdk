@@ -20,7 +20,7 @@ const trace = makeTracer('AutoStakeItTap');
 /**
  * @typedef {{
  *   stakingAccount: ERef<OrchestrationAccount<any> & StakingAccountActions>;
- *   localAccount: ERef<OrchestrationAccount<{ chainId: 'agoric' }>>;
+ *   localAccount: ERef<OrchestrationAccount<'agoric'>>;
  *   validator: CosmosValidatorAddress;
  *   localChainAddress: ChainAddress;
  *   remoteChainAddress: ChainAddress;

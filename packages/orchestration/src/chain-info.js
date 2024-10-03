@@ -28,6 +28,10 @@ const knownChains = /** @satisfies {Record<string, ChainInfo>} */ (
  * @internal
  */
 
+/**
+ * @typedef {keyof KnownChains} KnownChainName
+ */
+
 // TODO(#9966, #9967): include this in registerChain
 /**
  * Register chain assets into agoricNames

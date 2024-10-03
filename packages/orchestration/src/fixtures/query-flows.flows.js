@@ -8,7 +8,7 @@ import { M, mustMatch } from '@endo/patterns';
 const trace = makeTracer('BasicFlows');
 
 /**
- * @import {Chain, DenomArg, OrchestrationFlow, Orchestrator, ICQQueryFunction, CosmosChainInfo} from '@agoric/orchestration';
+ * @import {Chain, DenomArg, OrchestrationFlow, Orchestrator, ICQQueryFunction, CosmosChainInfo, KnownChainName} from '@agoric/orchestration';
  * @import {QueryManyFn} from '@agoric/vats/src/localchain.js';
  */
 
@@ -22,16 +22,18 @@ const trace = makeTracer('BasicFlows');
  * @param {Orchestrator} orch
  * @param {any} _ctx
  * @param {ZCFSeat} seat
- * @param {{ chainName: string; msgs: Parameters<ICQQueryFunction>[0] }} offerArgs
+ * @param {{
+ *   chainName: KnownChainName;
+ *   msgs: Parameters<ICQQueryFunction>[0];
+ * }} offerArgs
  */
 export const sendICQQuery = async (orch, _ctx, seat, { chainName, msgs }) => {
   seat.exit(); // no funds exchanged
   mustMatch(chainName, M.string());
   if (chainName === 'agoric') throw Fail`ICQ not supported on local chain`;
-  const remoteChain =
-    /** @type {Chain<CosmosChainInfo & { icqEnabled: true }>} */ (
-      await orch.getChain(chainName)
-    );
+  const remoteChain = /** @type {Chain<'osmosis'>} */ (
+    await orch.getChain(chainName)
+  );
   const queryResponse = await remoteChain.query(msgs);
   trace('SendICQQuery response:', queryResponse);
   // `quote` to ensure offerResult (array) is visible in smart-wallet
@@ -49,7 +51,7 @@ harden(sendICQQuery);
  * @param {Orchestrator} orch
  * @param {any} _ctx
  * @param {ZCFSeat} seat
- * @param {{ chainName: string; denom: DenomArg }} offerArgs
+ * @param {{ chainName: KnownChainName; denom: DenomArg }} offerArgs
  */
 export const makeAccountAndGetBalanceQuery = async (
   orch,
@@ -78,7 +80,7 @@ harden(makeAccountAndGetBalanceQuery);
  * @param {Orchestrator} orch
  * @param {any} _ctx
  * @param {ZCFSeat} seat
- * @param {{ chainName: string }} offerArgs
+ * @param {{ chainName: KnownChainName }} offerArgs
  */
 export const makeAccountAndGetBalancesQuery = async (
   orch,

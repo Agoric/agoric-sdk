@@ -9,7 +9,7 @@ import { M, mustMatch } from '@endo/patterns';
 const trace = makeTracer('BasicFlows');
 
 /**
- * @import {OrchestrationAccount, OrchestrationFlow, Orchestrator} from '@agoric/orchestration';
+ * @import {KnownChainName, OrchestrationAccount, OrchestrationFlow, Orchestrator} from '@agoric/orchestration';
  * @import {ResolvedPublicTopic} from '@agoric/zoe/src/contractSupport/topics.js';
  * @import {MakePortfolioHolder} from '../exos/portfolio-holder-kit.js';
  */
@@ -22,7 +22,7 @@ const trace = makeTracer('BasicFlows');
  * @param {Orchestrator} orch
  * @param {any} _ctx
  * @param {ZCFSeat} seat
- * @param {{ chainName: string }} offerArgs
+ * @param {{ chainName: KnownChainName }} offerArgs
  */
 export const makeOrchAccount = async (orch, _ctx, seat, { chainName }) => {
   trace('makeOrchAccount', chainName);
@@ -45,7 +45,7 @@ harden(makeOrchAccount);
  * @param {object} ctx
  * @param {MakePortfolioHolder} ctx.makePortfolioHolder
  * @param {ZCFSeat} seat
- * @param {{ chainNames: string[] }} offerArgs
+ * @param {{ chainNames: KnownChainName[] }} offerArgs
  */
 export const makePortfolioAccount = async (
   orch,

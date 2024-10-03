@@ -111,9 +111,9 @@ expectNotType<CosmosValidatorAddress>(chainAddr);
 {
   // HostInterface
 
-  const chain: Chain<ChainInfo> = null as any;
+  const chain: Chain<'agoric'> = null as any;
   expectType<Promise<ChainInfo>>(chain.getChainInfo());
-  const chainHostInterface: HostInterface<Chain<ChainInfo>> = null as any;
+  const chainHostInterface: HostInterface<Chain<'agoric'>> = null as any;
   expectType<Vow<ChainInfo>>(chainHostInterface.getChainInfo());
 
   const publicTopicRecord: HostInterface<
@@ -193,7 +193,7 @@ expectNotType<CosmosValidatorAddress>(chainAddr);
 
 // Test LocalChain.query()
 {
-  type ChainFacade = Chain<{ chainId: 'agoriclocal' }>;
+  type ChainFacade = Chain<'agoric'>;
   const localChain: ChainFacade = null as any;
   const results = localChain.query([
     typedJson('/cosmos.bank.v1beta1.QueryBalanceRequest', {
@@ -212,7 +212,7 @@ expectNotType<CosmosValidatorAddress>(chainAddr);
 
 // Test RemoteCosmosChain.query() (icqEnabled: true)
 {
-  type ChainFacade = Chain<CosmosChainInfo & { icqEnabled: true }>;
+  type ChainFacade = Chain<'osmosis'>;
   const remoteChain: ChainFacade = null as any;
   const results = remoteChain.query([
     {
@@ -236,7 +236,7 @@ expectNotType<CosmosValidatorAddress>(chainAddr);
 
 // Test RemoteCosmosChain.query() (icqEnabled: false)
 {
-  type ChainFacade = Chain<CosmosChainInfo>;
+  type ChainFacade = Chain<'cosmoshub'>;
   const remoteChain: ChainFacade = null as any;
 
   expectType<never>(remoteChain.query);

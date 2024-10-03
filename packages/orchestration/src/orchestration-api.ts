@@ -15,7 +15,6 @@ import type { ResolvedPublicTopic } from '@agoric/zoe/src/contractSupport/topics
 import type { Passable } from '@endo/marshal';
 import type {
   AgoricChainMethods,
-  ChainInfo,
   CosmosChainAccountMethods,
   CosmosChainInfo,
   IBCMsgTransferOptions,
@@ -73,12 +72,13 @@ export type ChainAddress = {
  *
  * The methods available depend on the chain and its capabilities.
  */
-export type OrchestrationAccount<CI extends ChainInfo> = OrchestrationAccountI &
-  (CI extends CosmosChainInfo
-    ? CI['chainId'] extends `agoric${string}`
-      ? CosmosChainAccountMethods<CI> & LocalAccountMethods
-      : CosmosChainAccountMethods<CI>
-    : {});
+export type OrchestrationAccount<C extends keyof KnownChains> =
+  OrchestrationAccountI &
+    (KnownChains[C] extends CosmosChainInfo
+      ? KnownChains[C]['chainId'] extends `agoric${string}`
+        ? CosmosChainAccountMethods<KnownChains[C]> & LocalAccountMethods
+        : CosmosChainAccountMethods<KnownChains[C]>
+      : {});
 
 /**
  * An object for access the core functions of a remote chain.
@@ -86,21 +86,20 @@ export type OrchestrationAccount<CI extends ChainInfo> = OrchestrationAccountI &
  * Note that "remote" can mean the local chain; it's just that
  * accounts are treated as remote/arms length for consistency.
  */
-export interface Chain<CI extends ChainInfo> {
-  getChainInfo: () => Promise<CI>;
+export interface Chain<C extends keyof KnownChains> {
+  getChainInfo: () => Promise<KnownChains[C]>;
 
   // "makeAccount" suggests an operation within a vat
   /**
    * Creates a new account on the remote chain.
    * @returns an object that controls a new remote account on Chain
    */
-  makeAccount: () => Promise<OrchestrationAccount<CI>>;
+  makeAccount: () => Promise<OrchestrationAccount<C>>;
   // FUTURE supply optional port object; also fetch port object
-
-  query: CI extends { icqEnabled: true }
-    ? ICQQueryFunction
-    : CI['chainId'] extends `agoric${string}`
-      ? QueryManyFn
+  query: C extends 'agoric'
+    ? QueryManyFn
+    : KnownChains[C] extends { icqEnabled: true }
+      ? ICQQueryFunction
       : never;
 
   // TODO provide a way to get the local denom/brand/whatever for this chain
@@ -113,9 +112,9 @@ export interface DenomInfo<
   /** The well-known Brand on Agoric for the direct asset */
   brand?: Brand;
   /** The Chain at which the argument `denom` exists (where the asset is currently held) */
-  chain: Chain<KnownChains[HoldingChain]>;
+  chain: Chain<HoldingChain>;
   /** The Chain that is the issuer of the underlying asset */
-  base: Chain<KnownChains[IssuingChain]>;
+  base: Chain<IssuingChain>;
   /** the Denom for the underlying asset on its issuer chain */
   baseDenom: Denom;
 }
@@ -129,13 +128,9 @@ export interface Orchestrator {
    *
    * @param {C} chainName name of the chain in KnownChains or the ChainHub backing the Orchestrator
    */
-  getChain: <C extends string>(
+  getChain: <C extends keyof KnownChains>(
     chainName: C,
-  ) => Promise<
-    Chain<C extends keyof KnownChains ? KnownChains[C] : any> &
-      (C extends 'agoric' ? AgoricChainMethods : {})
-  >;
-
+  ) => Promise<Chain<C> & (C extends 'agoric' ? AgoricChainMethods : {})>;
   /**
    * Make a new local (Agoric) ChainAccount
    */
@@ -157,7 +152,7 @@ export interface Orchestrator {
   /**
    * Convert an amount described in native data to a local, structured Amount.
    * @param amount - the described amount
-   * @returns the Amount in local structuerd format
+   * @returns the Amount in local structured format
    */
   asAmount: (amount: DenomAmount) => NatAmount;
 }

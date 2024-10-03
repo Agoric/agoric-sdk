@@ -73,6 +73,7 @@ test.serial('chain info', async t => {
   );
 
   const handle = orchestrate('mock', {}, async orc => {
+    // @ts-expect-error 'mock' not in KnownChainNames
     return orc.getChain('mock');
   });
 
@@ -117,6 +118,7 @@ test.serial('faulty chain info', async t => {
   );
 
   const handle = orchestrate('mock', {}, async orc => {
+    // @ts-expect-error 'mock' not in KnownChainNames
     const chain = await orc.getChain('mock');
     const account = await chain.makeAccount();
     return account;
@@ -179,6 +181,7 @@ test.serial('asset / denom info', async t => {
     { brand },
     // eslint-disable-next-line no-shadow
     async (orc, { brand }) => {
+      // @ts-expect-error 'mock-id' not in KnownChainNames
       const c1 = await orc.getChain(mockChainInfo.chainId);
 
       {

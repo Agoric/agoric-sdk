@@ -126,6 +126,7 @@ const prepareOrchestratorKit = (
             return asVow(() => chainByName.get(name));
           }
           if (name === 'agoric') {
+            // @ts-expect-error types of property 'chainId' are incompatible (string vs a chainId const)
             return watch(
               chainHub.getChainInfo('agoric'),
               this.facets.makeLocalChainFacadeWatcher,
