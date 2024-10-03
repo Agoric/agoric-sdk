@@ -60,11 +60,18 @@ export const nextLife = (fromIncarnation = incarnation) => {
  * @param {object} [options]
  * @param {ReincarnateOptions} [options.fromIncarnation]
  * @param {boolean} [options.cleanStart]
+ * @param {(e: Error) => void} [options.notAllKindsReconnectedHandler]
  */
 export const startLife = async (
   build,
   run,
-  { fromIncarnation, cleanStart } = {},
+  {
+    fromIncarnation,
+    cleanStart,
+    notAllKindsReconnectedHandler = err => {
+      throw err;
+    },
+  } = {},
 ) => {
   await eventLoopIteration();
   if (cleanStart) annihilate();
@@ -93,7 +100,11 @@ export const startLife = async (
       return val;
     });
 
-    fakeVomKit.vom.insistAllDurableKindsReconnected();
+    try {
+      fakeVomKit.vom.insistAllDurableKindsReconnected();
+    } catch (err) {
+      notAllKindsReconnectedHandler(err);
+    }
 
     return buildTools;
   };
