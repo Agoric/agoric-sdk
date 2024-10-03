@@ -270,7 +270,7 @@ const startNewEconomicCommittee = async (
  *   charter kit result.
  */
 const startNewEconCharter = async ({
-  consume: { zoe },
+  consume: { startUpgradable },
   produce: { econCharterKit },
   installation: {
     consume: { binaryVoteCounter: counterP, econCommitteeCharter: installP },
@@ -288,13 +288,13 @@ const startNewEconCharter = async ({
   });
 
   trace('Starting new EC Charter Instance');
-  const startResult = E(zoe).startInstance(
-    charterInstall,
-    undefined,
+
+  const startResult = await E(startUpgradable)({
+    label: 'econCommitteeCharter',
+    installation: charterInstall,
     terms,
-    undefined,
-    'econCommitteeCharter',
-  );
+  });
+
   trace('Started new EC Charter Instance Successfully');
 
   econCommitteeCharter.reset();
