@@ -43,11 +43,9 @@ const preparePortfolioHolderKit = (zone, { asVow, when }) => {
     'PortfolioHolderKit',
     {
       invitationMakers: M.interface('InvitationMakers', {
-        Proxying: M.call(
-          ChainNameShape,
-          M.string(),
-          M.arrayOf(M.any()),
-        ).returns(M.promise()),
+        Proxying: M.call(ChainNameShape, M.string())
+          .optional(M.arrayOf(M.any()))
+          .returns(M.promise()),
       }),
       holder: M.interface('Holder', {
         asContinuingOffer: M.call().returns(VowShape),
@@ -92,7 +90,7 @@ const preparePortfolioHolderKit = (zone, { asVow, when }) => {
          * @template {unknown[]} IA
          * @param {string} chainName key where the account is stored
          * @param {string} action invitation maker name, e.g. 'Delegate'
-         * @param {IA} invitationArgs
+         * @param {IA} [invitationArgs]
          * @returns {Promise<Invitation<unknown, IA>>}
          */
         Proxying(chainName, action, invitationArgs) {
@@ -101,7 +99,7 @@ const preparePortfolioHolderKit = (zone, { asVow, when }) => {
           const account = accounts.get(chainName);
           // @ts-expect-error XXX invitationMakers
           return when(E(account).asContinuingOffer(), ({ invitationMakers }) =>
-            E(invitationMakers)[action](...invitationArgs),
+            E(invitationMakers)[action](...(invitationArgs || [])),
           );
         },
       },
