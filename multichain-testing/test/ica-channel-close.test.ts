@@ -248,6 +248,7 @@ const channelCloseInitScenario = test.macro({
       ({ offerToPublicSubscriberPaths }) =>
         Object.fromEntries(offerToPublicSubscriberPaths)[offerId],
       `${offerId} continuing invitation is in vstorage`,
+      TWO_MINUTES,
     );
     const offerToPublicSubscriberMap = Object.fromEntries(
       currentWalletRecord.offerToPublicSubscriberPaths,
