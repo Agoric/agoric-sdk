@@ -72,9 +72,10 @@ export const startAsyncLife = async (
 
 /**
  * @param {SerialFn} test
+ * @param {{nextTestClean: boolean}} serialState
  */
 const makeTestAsyncLifeFn =
-  test =>
+  (test, serialState) =>
   /**
    * @template {any} RT
    * @param {string} title
@@ -83,12 +84,16 @@ const makeTestAsyncLifeFn =
    * @param {StartAsyncLifeOptions} [options]
    */
   (title, build, run, options) => {
+    const actualOptions = serialState.nextTestClean
+      ? { cleanStart: true, ...options }
+      : options;
+    serialState.nextTestClean = false;
     return test(title, async t =>
       startAsyncLife(
         t,
         tools => build(t, tools),
         typeof run === 'function' ? tools => run(t, tools) : undefined,
-        options,
+        actualOptions,
       ),
     );
   };
@@ -100,18 +105,28 @@ const makeTestAsyncLifeFn =
  *   only: ReturnType<typeof makeTestAsyncLifeFn>;
  *   skip: ReturnType<typeof makeTestAsyncLifeFn>;
  *   todo: TodoFn;
+ *   reset: () => void;
  * }}
  */
 const makeTestAsyncLife = test => {
-  const testAsyncLife = makeTestAsyncLifeFn(test);
+  const serialState = { nextTestClean: false };
+  const testAsyncLife = makeTestAsyncLifeFn(test, serialState);
   for (const subTestName of ['failing', 'only', 'skip', 'todo']) {
     Object.defineProperty(testAsyncLife, subTestName, {
-      value: makeTestAsyncLifeFn(test[subTestName]),
+      value: makeTestAsyncLifeFn(test[subTestName], serialState),
       writable: true,
       enumerable: true,
       configurable: true,
     });
   }
+  Object.defineProperty(testAsyncLife, 'reset', {
+    value: () => {
+      serialState.nextTestClean = true;
+    },
+    writable: true,
+    enumerable: true,
+    configurable: true,
+  });
   harden(testAsyncLife);
   // @ts-expect-error define
   return testAsyncLife;
