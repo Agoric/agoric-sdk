@@ -14,7 +14,7 @@ npm install -g tsx
 scripts/test-vaults.mts
 
 echo ACCEPTANCE TESTING kread
-./create-kread-item-test.sh
+yarn ava kread.test.js
 
 echo ACCEPTANCE TESTING valueVow
 yarn ava valueVow.test.js
