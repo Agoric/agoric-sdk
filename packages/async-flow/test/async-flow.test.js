@@ -12,7 +12,6 @@ import { makeCopyMap } from '@endo/patterns';
 import { makePromiseKit } from '@endo/promise-kit';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { isVow } from '@agoric/vow/src/vow-utils.js';
-import { prepareVowTools } from '@agoric/vow';
 import { makeHeapZone } from '@agoric/zone/heap.js';
 import { makeVirtualZone } from '@agoric/zone/virtual.js';
 import { makeDurableZone } from '@agoric/zone/durable.js';
@@ -61,12 +60,11 @@ const firstLogLen = 7;
  */
 const testFirstPlay = async (t, zone) => {
   t.log('firstPlay started');
-  const vowTools = prepareVowTools(zone);
-  const { asyncFlow, adminAsyncFlow } = prepareTestAsyncFlowTools(t, zone, {
-    vowTools,
-  });
+  const { makeVowKit, asyncFlow, adminAsyncFlow } = prepareTestAsyncFlowTools(
+    t,
+    zone,
+  );
   const makeOrchestra = prepareOrchestra(zone);
-  const { makeVowKit } = vowTools;
 
   const { vow: v1, resolver: r1 } = zone.makeOnce('v1', () => makeVowKit());
   const { vow: v2, resolver: r2 } = zone.makeOnce('v2', () => makeVowKit());
@@ -138,20 +136,21 @@ const testFirstPlay = async (t, zone) => {
  */
 const testBadReplay = async (t, zone) => {
   t.log('badReplay started');
-  const vowTools = prepareVowTools(zone);
-  const { asyncFlow, adminAsyncFlow } = prepareTestAsyncFlowTools(t, zone, {
-    vowTools,
-    panicHandler: e => {
-      t.throws(
-        () => {
-          throw e;
-        },
-        { message: /^replay 3:/ },
-      );
+  const { when, asyncFlow, adminAsyncFlow } = prepareTestAsyncFlowTools(
+    t,
+    zone,
+    {
+      panicHandler: e => {
+        t.throws(
+          () => {
+            throw e;
+          },
+          { message: /^replay 3:/ },
+        );
+      },
     },
-  });
+  );
   prepareOrchestra(zone);
-  const { when } = vowTools;
   const hOrch7 = /** @type {Orchestra} */ (
     zone.makeOnce('hOrch7', () => Fail`need hOrch7`)
   );
@@ -213,12 +212,11 @@ const testBadReplay = async (t, zone) => {
  */
 const testGoodReplay = async (t, zone) => {
   t.log('goodReplay started');
-  const vowTools = prepareVowTools(zone);
-  const { asyncFlow, adminAsyncFlow } = prepareTestAsyncFlowTools(t, zone, {
-    vowTools,
-  });
+  const { when, asyncFlow, adminAsyncFlow } = prepareTestAsyncFlowTools(
+    t,
+    zone,
+  );
   prepareOrchestra(zone, 2); // Note change in new behavior
-  const { when } = vowTools;
   const hOrch7 = /** @type {Orchestra} */ (
     zone.makeOnce('hOrch7', () => Fail`need hOrch7`)
   );
@@ -317,10 +315,7 @@ const testGoodReplay = async (t, zone) => {
  */
 const testAfterPlay = async (t, zone) => {
   t.log('testAfterPlay started');
-  const vowTools = prepareVowTools(zone);
-  const { asyncFlow, adminAsyncFlow } = prepareTestAsyncFlowTools(t, zone, {
-    vowTools,
-  });
+  const { asyncFlow, adminAsyncFlow } = prepareTestAsyncFlowTools(t, zone);
   prepareOrchestra(zone);
 
   const { guestMethod } = {

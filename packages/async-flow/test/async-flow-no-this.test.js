@@ -2,7 +2,6 @@
 import { test, getBaggage, annihilate } from './prepare-test-env-ava.js';
 
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
-import { prepareVowTools } from '@agoric/vow';
 import { makeHeapZone } from '@agoric/zone/heap.js';
 import { makeVirtualZone } from '@agoric/zone/virtual.js';
 import { makeDurableZone } from '@agoric/zone/durable.js';
@@ -20,10 +19,7 @@ const { apply } = Reflect;
  * @param {Zone} zone
  */
 const testPlay = async (t, zone) => {
-  const vowTools = prepareVowTools(zone);
-  const { asyncFlow } = prepareTestAsyncFlowTools(t, zone, {
-    vowTools,
-  });
+  const { asyncFlow } = prepareTestAsyncFlowTools(t, zone);
 
   const { guestFunc } = {
     async guestFunc() {

@@ -11,7 +11,6 @@ import {
 } from './prepare-test-env-ava.js';
 
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
-import { prepareVowTools } from '@agoric/vow';
 import { makeDurableZone } from '@agoric/zone/durable.js';
 
 import { prepareTestAsyncFlowTools } from './_utils.js';
@@ -27,10 +26,7 @@ const neverSettlesP = new Promise(() => {});
  * @param {Zone} zone
  */
 const testPlay1 = async (t, zone) => {
-  const vowTools = prepareVowTools(zone);
-  const { asyncFlow } = prepareTestAsyncFlowTools(t, zone, {
-    vowTools,
-  });
+  const { asyncFlow } = prepareTestAsyncFlowTools(t, zone);
 
   const guestFunc = async () => neverSettlesP;
 
@@ -45,10 +41,7 @@ const testPlay1 = async (t, zone) => {
  * @param {Zone} zone
  */
 const testPlay2 = async (t, zone) => {
-  const vowTools = prepareVowTools(zone);
-  const { asyncFlow } = prepareTestAsyncFlowTools(t, zone, {
-    vowTools,
-  });
+  const { asyncFlow } = prepareTestAsyncFlowTools(t, zone);
 
   const guestFunc = async () => neverSettlesP;
 
@@ -60,10 +53,7 @@ const testPlay2 = async (t, zone) => {
  * @param {Zone} zone
  */
 const testPlay3 = async (t, zone) => {
-  const vowTools = prepareVowTools(zone);
-  const { asyncFlow, allWokenP } = prepareTestAsyncFlowTools(t, zone, {
-    vowTools,
-  });
+  const { asyncFlow, allWokenP } = prepareTestAsyncFlowTools(t, zone);
 
   await null;
 

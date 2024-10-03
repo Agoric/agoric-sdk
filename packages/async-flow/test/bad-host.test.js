@@ -10,7 +10,6 @@ import { Fail } from '@endo/errors';
 import { M } from '@endo/patterns';
 import { makePromiseKit } from '@endo/promise-kit';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
-import { prepareVowTools } from '@agoric/vow';
 import { makeHeapZone } from '@agoric/zone/heap.js';
 import { makeVirtualZone } from '@agoric/zone/virtual.js';
 import { makeDurableZone } from '@agoric/zone/durable.js';
@@ -50,20 +49,21 @@ const prepareBadHost = zone =>
  */
 const testBadHostFirstPlay = async (t, zone) => {
   t.log('badHost firstPlay started');
-  const vowTools = prepareVowTools(zone);
-  const { asyncFlow, adminAsyncFlow } = prepareTestAsyncFlowTools(t, zone, {
-    vowTools,
-    panicHandler: e => {
-      t.throws(
-        () => {
-          throw e;
-        },
-        { message: '[3]: [0]: cannot yet send guest promises "[Promise]"' },
-      );
+  const { makeVowKit, asyncFlow, adminAsyncFlow } = prepareTestAsyncFlowTools(
+    t,
+    zone,
+    {
+      panicHandler: e => {
+        t.throws(
+          () => {
+            throw e;
+          },
+          { message: '[3]: [0]: cannot yet send guest promises "[Promise]"' },
+        );
+      },
     },
-  });
+  );
   const makeBadHost = prepareBadHost(zone);
-  const { makeVowKit } = vowTools;
 
   const { vow: v1, resolver: _r1 } = zone.makeOnce('v1', () => makeVowKit());
   // purposely violate rule that guestMethod is closed.
@@ -121,10 +121,7 @@ const testBadHostFirstPlay = async (t, zone) => {
  */
 const testBadHostReplay1 = async (t, zone) => {
   t.log('badHost replay1 started');
-  const vowTools = prepareVowTools(zone);
-  const { asyncFlow, adminAsyncFlow } = prepareTestAsyncFlowTools(t, zone, {
-    vowTools,
-  });
+  const { asyncFlow, adminAsyncFlow } = prepareTestAsyncFlowTools(t, zone);
   prepareBadHost(zone);
 
   // const { vow: v1, resolver: r1 } = zone.makeOnce('v1', () => Fail`need v1`);
