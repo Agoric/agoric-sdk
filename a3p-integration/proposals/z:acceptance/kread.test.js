@@ -48,7 +48,6 @@ test.serial('Alice unequips all defaults Items', async t => {
   );
 
   await unequipAllItems(Alice);
-  
 
   const characterInventoryAfter = await getCharacterInventory(characterId);
   t.log(`Character inventory after unequipping: ${characterInventoryAfter}`);
@@ -71,7 +70,6 @@ test.serial('Alice sells unequiped Item', async t => {
   const itemBefore = await getBalanceFromPurse(Alice, 'item');
 
   await sellItem(Alice);
-  
 
   const itemListAfter = await getMarketItemsChildren();
   t.is(itemListAfter.length, itemListBefore.length + 1);
@@ -99,7 +97,6 @@ test.serial('Bob buys an Item on marketplace', async t => {
   const marketItem = await getMarketItem(marketItemNode);
 
   await buyItem(Bob);
-  
 
   const itemListAfter = await getMarketItemsChildren();
   t.is(itemListAfter.length, itemListBefore.length - 1);
@@ -137,7 +134,6 @@ test.serial('Alice sells a Character', async t => {
   );
 
   await sellCharacter(Alice);
-  
 
   const characterListAfter = await getMarketCharactersChildren();
   t.true(
