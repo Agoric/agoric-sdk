@@ -54,25 +54,29 @@ test.serial('Alice unequips all defaults Items', async t => {
   t.is(
     characterInventoryAfter.length,
     0,
-    'Character should have 2 items in inventory',
+    'Character should have 0 items in inventory',
   );
 
   const itemBalanceAfter = await getBalanceFromPurse(Alice, 'item');
   t.is(
     itemBalanceAfter.description,
     characterInventoryBefore[0][0].description,
-    'The unequiped Item should exist in purse',
+    'The unequipped Item should exist in purse',
   );
 });
 
-test.serial('Alice sells unequiped Item', async t => {
+test.serial('Alice sells unequipped Item', async t => {
   const itemListBefore = await getMarketItemsChildren();
   const itemBefore = await getBalanceFromPurse(Alice, 'item');
 
   await sellItem(Alice);
 
   const itemListAfter = await getMarketItemsChildren();
-  t.is(itemListAfter.length, itemListBefore.length + 1);
+  t.is(
+    itemListAfter.length,
+    itemListBefore.length + 1,
+    'Items market should have 1 more item',
+  );
 
   const itemAfter = await getBalanceFromPurse(Alice, 'item');
   t.is(itemAfter, null, 'An Item should not exist in purse');
@@ -99,7 +103,11 @@ test.serial('Bob buys an Item on marketplace', async t => {
   await buyItem(Bob);
 
   const itemListAfter = await getMarketItemsChildren();
-  t.is(itemListAfter.length, itemListBefore.length - 1);
+  t.is(
+    itemListAfter.length,
+    itemListBefore.length - 1,
+    'Items market should have 1 less item',
+  );
 
   const boughtItemNode = itemListBefore.filter(
     itemNode => !itemListAfter.includes(itemNode),
