@@ -7,20 +7,26 @@ import { prepareAsyncFlowTools } from '../src/async-flow.js';
  * @import {PreparationOptions} from '../src/types.js';
  */
 
+/** @typedef {(e: any, t: ExecutionContext) => void} TestAsyncFlowPanicHandler */
+
 /**
  * @param {ExecutionContext} t
  * @param {Zone} zone
- * @param {PreparationOptions} [opts]
+ * @param {Omit<PreparationOptions, 'panicHandler'> & {panicHandler?: TestAsyncFlowPanicHandler}} [opts]
  */
 export const prepareTestAsyncFlowTools = (t, zone, opts) => {
   const {
-    panicHandler = e => {
-      t.log('Panic handler called', e);
-      t.fail('Unexpected panic');
-    },
+    panicHandler: originalPanicHandler,
     vowTools = prepareVowTools(zone),
     ...otherOpts
   } = { ...opts };
+
+  const panicHandler = originalPanicHandler
+    ? e => originalPanicHandler(e, t)
+    : e => {
+        t.log('Panic handler called', e);
+        t.fail('Unexpected panic');
+      };
 
   const asyncFlowTools = prepareAsyncFlowTools(zone, {
     panicHandler,
