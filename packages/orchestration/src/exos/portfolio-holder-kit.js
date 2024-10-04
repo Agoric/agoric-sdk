@@ -13,7 +13,7 @@ const { fromEntries } = Object;
  * @import {VowTools} from '@agoric/vow';
  * @import {ResolvedPublicTopic} from '@agoric/zoe/src/contractSupport/topics.js';
  * @import {Zone} from '@agoric/zone';
- * @import {OrchestrationAccount, OrchestrationAccountI} from '@agoric/orchestration';
+ * @import {OrchestrationAccount, OrchestrationAccountI, MakeCombineInvitationMakers} from '@agoric/orchestration';
  */
 
 /**
@@ -156,8 +156,65 @@ const preparePortfolioHolderKit = (zone, { asVow, when }) => {
  * A portfolio holder stores two or more OrchestrationAccounts and combines
  * ContinuingOfferResult's from each into a single result.
  *
- * XXX consider an interface for extending the exo maker with additional
- * invitation makers.
+ * The invitationMakers can be accessed via the `Proxy` invitationMaker, which
+ * calls out to other invitationMakers.
+ *
+ * See {@link MakeCombineInvitationMakers} for an exo that allows a developer to
+ * define extra invitationMakers to combine with platform-provided ones.
+ *
+ * @example
+ *
+ * ```js
+ * // in contract start/prepare
+ * const makePortfolioHolder = preparePortfolioHolder(
+ *   rootZone.subZone('portfolio'),
+ *   vowTools,
+ * );
+ *
+ * // in a flow
+ * const accounts = {
+ *   cosmoshub: await cosmosChain.makeAccount(),
+ *   agoric: await agoricChain.makeAccount(),
+ * };
+ * const accountEntries = harden(Object.entries(accounts));
+ * const publicTopicEntries = harden(
+ *   await Promise.all(
+ *     Object.entries(accounts).map(async ([chainName, holder]) => {
+ *       const { account } = await E(holder).getPublicTopics();
+ *       return [chainName, account];
+ *     }),
+ *   ),
+ * );
+ * const holder = makePortfolioHolder(accountEntries, publicTopicEntries);
+ *
+ * // return ContinuingOfferResult to client
+ * return E(holder).asContinuingOffer();
+ *
+ * const { invitationMakers } = await E(holder).asContinuingOffer();
+ *
+ * // with invitationArgs
+ * const delegateInv = await E(invitationMakers).Proxying(
+ *   'cosmoshub',
+ *   'Delegate',
+ *   [
+ *     {
+ *       value: 'cosmos1valoper',
+ *       chainId: 'cosmoshub-99',
+ *       encoding: 'bech32',
+ *     },
+ *     {
+ *       denom: 'uatom',
+ *       value: 10n,
+ *     },
+ *   ],
+ * );
+ *
+ * // without invitationArgs
+ * const transferInv = await E(invitationMakers).Proxying(
+ *   'cosmoshub',
+ *   'Transfer',
+ * );
+ * ```
  *
  * @param {Zone} zone
  * @param {VowTools} vowTools
