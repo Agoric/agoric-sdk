@@ -4,6 +4,7 @@ import {
   executeOffer,
   getContractInfo,
   makeAgd,
+  smallCapsContext,
 } from '@agoric/synthetic-chain';
 import { execFileSync } from 'child_process';
 
@@ -31,19 +32,6 @@ const fromSmallCapsEntries = txt => {
   return Object.fromEntries(theEntries);
 };
 
-const smallCaps = slots => {
-  return {
-    slots,
-    Nat: n => `+${n}`,
-    ref: obj => {
-      const ix = slots.length;
-      slots.push(obj.boardID);
-      obj.ix = `$${ix}.Alleged: ${obj.iface}`;
-      return obj.ix;
-    },
-  };
-};
-
 const brand = fromSmallCapsEntries(
   await agoric.follow('-lF', ':published.agoricNames.brand', '-o', 'text'),
 );
@@ -53,11 +41,12 @@ assert(brand.KREAdCHARACTER, 'Brand KREAdCHARACTER not found');
 assert(brand.KREAdITEM, 'Brand KREAdITEM not found');
 
 const mintCharacterOffer = async () => {
-  const slots = [];
-  const { Nat, ref } = smallCaps(slots);
+  const { smallCaps, toCapData } = smallCapsContext();
+
+  // Remove the ix attribute from the brand to avoid smallCapsContext caching
+  delete brand.IST.ix;
 
   const id = `KREAd-mint-character-acceptance-test`;
-
   const body = {
     method: 'executeOffer',
     offer: {
@@ -71,28 +60,31 @@ const mintCharacterOffer = async () => {
       proposal: {
         give: {
           Price: {
-            brand: ref(brand.IST),
-            value: Nat(5n * ISTunit),
+            brand: smallCaps.ref(brand.IST),
+            value: smallCaps.Nat(5n * ISTunit),
           },
         },
       },
     },
   };
 
-  const capData = { body: `#${JSON.stringify(body)}`, slots };
-  return JSON.stringify(capData);
+  return toCapData(body);
 };
 
 const unequipAllItemsOffer = async address => {
-  const slots = [];
-  const { ref } = smallCaps(slots);
+  const { smallCaps, toCapData } = smallCapsContext();
+
+  // Remove the ix attribute from the brand to avoid smallCapsContext caching
+  delete brand.IST.ix;
+  delete brand.KREAdCHARACTER.ix;
+  delete brand.timer.ix;
 
   const kreadCharacter = await getBalanceFromPurse(address, 'character');
   if (!kreadCharacter) {
     throw new Error('Character not found on user purse');
   }
 
-  kreadCharacter.date.timerBrand = ref(brand.timer);
+  kreadCharacter.date.timerBrand = smallCaps.ref(brand.timer);
   const inventoryKeyId = kreadCharacter.keyId === 1 ? 2 : 1;
 
   const id = `KREAd-unequip-all-items-acceptance-test`;
@@ -109,13 +101,13 @@ const unequipAllItemsOffer = async address => {
       proposal: {
         give: {
           CharacterKey1: {
-            brand: ref(brand.KREAdCHARACTER),
+            brand: smallCaps.ref(brand.KREAdCHARACTER),
             value: { '#tag': 'copyBag', payload: [[kreadCharacter, '+1']] },
           },
         },
         want: {
           CharacterKey2: {
-            brand: ref(brand.KREAdCHARACTER),
+            brand: smallCaps.ref(brand.KREAdCHARACTER),
             value: {
               '#tag': 'copyBag',
               payload: [[{ ...kreadCharacter, keyId: inventoryKeyId }, '+1']],
@@ -126,13 +118,15 @@ const unequipAllItemsOffer = async address => {
     },
   };
 
-  const capData = { body: `#${JSON.stringify(body)}`, slots };
-  return JSON.stringify(capData);
+  return toCapData(body);
 };
 
 const buyItemOffer = async () => {
-  const slots = [];
-  const { Nat, ref } = smallCaps(slots);
+  const { smallCaps, toCapData } = smallCapsContext();
+
+  // Remove the ix attribute from the brand to avoid smallCapsContext caching
+  delete brand.IST.ix;
+  delete brand.KREAdITEM.ix;
 
   const children = await getMarketItemsChildren();
   const marketItem = await getMarketItem(children[0]);
@@ -157,13 +151,13 @@ const buyItemOffer = async () => {
       proposal: {
         give: {
           Price: {
-            brand: ref(brand.IST),
-            value: Nat(itemPrice),
+            brand: smallCaps.ref(brand.IST),
+            value: smallCaps.Nat(itemPrice),
           },
         },
         want: {
           Item: {
-            brand: ref(brand.KREAdITEM),
+            brand: smallCaps.ref(brand.KREAdITEM),
             value: { '#tag': 'copyBag', payload: [[marketItem.asset, '+1']] },
           },
         },
@@ -171,13 +165,18 @@ const buyItemOffer = async () => {
     },
   };
 
-  const capData = { body: `#${JSON.stringify(body)}`, slots };
-  return JSON.stringify(capData);
+  console.log('LOG: body', body);
+  console.log('LOG: capData', toCapData(body));
+
+  return toCapData(body);
 };
 
 const sellItemOffer = async address => {
-  const slots = [];
-  const { Nat, ref } = smallCaps(slots);
+  const { smallCaps, toCapData } = smallCapsContext();
+
+  // Remove the ix attribute from the brand to avoid smallCapsContext caching
+  delete brand.IST.ix;
+  delete brand.KREAdITEM.ix;
 
   const kreadItem = await getBalanceFromPurse(address, 'item');
   if (!kreadItem) {
@@ -185,7 +184,6 @@ const sellItemOffer = async address => {
   }
 
   const id = `KREAd-sell-item-acceptance-test`;
-
   const body = {
     method: 'executeOffer',
     offer: {
@@ -198,27 +196,30 @@ const sellItemOffer = async address => {
       proposal: {
         give: {
           Item: {
-            brand: ref(brand.KREAdITEM),
+            brand: smallCaps.ref(brand.KREAdITEM),
             value: { '#tag': 'copyBag', payload: [[kreadItem, '+1']] },
           },
         },
         want: {
           Price: {
-            brand: ref(brand.IST),
-            value: Nat(5n * ISTunit),
+            brand: smallCaps.ref(brand.IST),
+            value: smallCaps.Nat(5n * ISTunit),
           },
         },
       },
     },
   };
 
-  const capData = { body: `#${JSON.stringify(body)}`, slots };
-  return JSON.stringify(capData);
+  return toCapData(body);
 };
 
 const buyCharacterOffer = async () => {
-  const slots = [];
-  const { Nat, ref } = smallCaps(slots);
+  const { smallCaps, toCapData } = smallCapsContext();
+
+  // Remove the ix attribute from the brand to avoid smallCapsContext caching
+  delete brand.IST.ix;
+  delete brand.KREAdCHARACTER.ix;
+  delete brand.timer.ix;
 
   const charactersMarket = await getMarketCharactersChildren();
   const path = `:published.kread.market-characters.${charactersMarket[0]}`;
@@ -226,7 +227,7 @@ const buyCharacterOffer = async () => {
 
   const characterData = JSON.parse(rawCharacterData);
   const marketCharacter = JSON.parse(characterData.body.slice(1));
-  marketCharacter.asset.date.timerBrand = ref(brand.timer);
+  marketCharacter.asset.date.timerBrand = smallCaps.ref(brand.timer);
 
   const characterPrice =
     BigInt(marketCharacter.askingPrice.value) +
@@ -247,13 +248,13 @@ const buyCharacterOffer = async () => {
       proposal: {
         give: {
           Price: {
-            brand: ref(brand.IST),
-            value: Nat(characterPrice),
+            brand: smallCaps.ref(brand.IST),
+            value: smallCaps.Nat(characterPrice),
           },
         },
         want: {
           Character: {
-            brand: ref(brand.KREAdCHARACTER),
+            brand: smallCaps.ref(brand.KREAdCHARACTER),
             value: {
               '#tag': 'copyBag',
               payload: [[marketCharacter.asset, '+1']],
@@ -264,20 +265,23 @@ const buyCharacterOffer = async () => {
     },
   };
 
-  const capData = { body: `#${JSON.stringify(body)}`, slots };
-  return JSON.stringify(capData);
+  return toCapData(body);
 };
 
 const sellCharacterOffer = async address => {
-  const slots = [];
-  const { Nat, ref } = smallCaps(slots);
+  const { smallCaps, toCapData } = smallCapsContext();
+
+  // Remove the ix attribute from the brand to avoid smallCapsContext caching
+  delete brand.IST.ix;
+  delete brand.KREAdCHARACTER.ix;
+  delete brand.timer.ix;
 
   const kreadCharacter = await getBalanceFromPurse(address, 'character');
   if (!kreadCharacter) {
     throw new Error('Character not found on user purse');
   }
 
-  kreadCharacter.date.timerBrand = ref(brand.timer);
+  kreadCharacter.date.timerBrand = smallCaps.ref(brand.timer);
 
   const id = `KREAd-sell-character-acceptance-test`;
 
@@ -293,22 +297,21 @@ const sellCharacterOffer = async address => {
       proposal: {
         give: {
           Character: {
-            brand: ref(brand.KREAdCHARACTER),
+            brand: smallCaps.ref(brand.KREAdCHARACTER),
             value: { '#tag': 'copyBag', payload: [[kreadCharacter, '+1']] },
           },
         },
         want: {
           Price: {
-            brand: ref(brand.IST),
-            value: Nat(5n * ISTunit),
+            brand: smallCaps.ref(brand.IST),
+            value: smallCaps.Nat(5n * ISTunit),
           },
         },
       },
     },
   };
 
-  const capData = { body: `#${JSON.stringify(body)}`, slots };
-  return JSON.stringify(capData);
+  return toCapData(body);
 };
 
 export const mintCharacter = async address => {
