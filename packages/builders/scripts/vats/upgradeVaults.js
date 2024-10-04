@@ -7,13 +7,13 @@ export const defaultProposalBuilder = async ({ publishRef, install }) =>
     getManifestCall: [
       'getManifestForUpgradeVaults',
       {
-        vaultsRef: publishRef(
+        VaultFactoryRef: publishRef(
           install(
             '@agoric/inter-protocol/src/vaultFactory/vaultFactory.js',
             '../bundles/bundle-vaultFactory.js',
           ),
         ),
-        governorRef: publishRef(
+        contractGovernorRef: publishRef(
           install(
             '@agoric/governance/src/contractGovernor.js',
             '../bundles/bundle-contractGovernor.js',

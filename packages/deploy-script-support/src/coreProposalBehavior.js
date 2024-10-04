@@ -167,6 +167,7 @@ export const makeCoreProposalBehavior = ({
       const installAdmin = E(agoricNamesAdmin).lookupAdmin('installation');
       await Promise.all(
         installationEntries.map(([key, value]) => {
+          produceInstallations[key].reset();
           produceInstallations[key].resolve(value);
           return E(installAdmin).update(key, value);
         }),

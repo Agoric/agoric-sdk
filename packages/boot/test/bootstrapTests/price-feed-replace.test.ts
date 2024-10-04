@@ -81,6 +81,13 @@ test.serial('setupVaults; run updatePriceFeeds proposals', async t => {
   const SOME_GUI = 'someGUIHASH';
   await updateVaultDirectorParams(t, gd, SOME_GUI);
 
+  const { EV } = t.context.runUtils;
+  const agoricNames = await EV.vat('bootstrap').consumeItem('agoricNames');
+  const oldVaultInstallation = await EV(agoricNames).lookup(
+    'installation',
+    'VaultFactory',
+  );
+
   t.log('building all relevant CoreEvals');
   const coreEvals = await Promise.all([
     buildProposal(priceFeedBuilder, ['main']),
@@ -99,6 +106,16 @@ test.serial('setupVaults; run updatePriceFeeds proposals', async t => {
   t.not(instancePre, instancePost);
 
   await priceFeedDrivers[collateralBrandKey].refreshInvitations();
+
+  const newVaultInstallation = await EV(agoricNames).lookup(
+    'installation',
+    'VaultFactory',
+  );
+
+  t.notDeepEqual(
+    newVaultInstallation.getKref(),
+    oldVaultInstallation.getKref(),
+  );
 });
 
 test.serial('1. place bid', async t => {

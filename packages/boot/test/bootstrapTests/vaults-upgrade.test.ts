@@ -286,10 +286,15 @@ test.serial('restart vaultFactory', async t => {
   const vaultFactoryKit =
     await EV.vat('bootstrap').consumeItem('vaultFactoryKit');
 
-  const reserveKit = await EV.vat('bootstrap').consumeItem('reserveKit');
   const bootstrapVat = EV.vat('bootstrap');
+  const reserveKit = await bootstrapVat.consumeItem('reserveKit');
   const electorateCreatorFacet = await bootstrapVat.consumeItem(
     'economicCommitteeCreatorFacet',
+  );
+  const agoricNames = await EV.vat('bootstrap').consumeItem('agoricNames');
+  const oldVaultInstallation = await EV(agoricNames).lookup(
+    'installation',
+    'VaultFactory',
   );
 
   const poserInvitation = await EV(electorateCreatorFacet).getPoserInvitation();
@@ -319,6 +324,13 @@ test.serial('restart vaultFactory', async t => {
   const upgradeResult = await EV(vfAdminFacet).restartContract(privateArgs);
   t.deepEqual(upgradeResult, { incarnationNumber: 1 });
   t.like(readCollateralMetrics(0), keyMetrics); // unchanged
+
+  const newVaultInstallation = await EV(agoricNames).lookup(
+    'installation',
+    'VaultFactory',
+  );
+
+  t.notDeepEqual(newVaultInstallation, oldVaultInstallation);
 });
 
 test.serial('restart contractGovernor', async t => {
