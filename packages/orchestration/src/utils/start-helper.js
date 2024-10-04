@@ -129,13 +129,10 @@ export const provideOrchestration = (
     vowTools,
   });
 
-  const chainByName = zones.orchestration.mapStore('chainName');
-
   const makeOrchestrator = prepareOrchestrator(zones.orchestration, {
     asyncFlowTools,
     chainHub,
     localchain: remotePowers.localchain,
-    chainByName,
     makeRecorderKit,
     makeLocalChainFacade,
     makeRemoteChainFacade,
