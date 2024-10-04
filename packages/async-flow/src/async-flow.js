@@ -43,11 +43,16 @@ const AdminAsyncFlowI = M.interface('AsyncFlowAdmin', {
 });
 
 /**
- * Helper to enforce that a user "finalize" step has been called after an
- * upgrade. In the first incarnation, the state is assumed to be born already
- * finalized, and there is no failure if the "finalize" is not explicitly
- * performed. In future incarnation the upgrade will fail if the "finalize" step
- * is not explicitly performed.
+ * Helper to enforce that a post-redefinition "finalize" step has been performed
+ * on upgrade. In some cases, it may be necessary to execute some operations on
+ * upgraded durable objects, which can only happen after the objects' kinds and
+ * their dependencies have all been redefined. A "finalize upgrade gate" helps
+ * enforce that this finalize step is performed by the contract on upgrade. It
+ * returns a function which should be called by the finalize step to indicate
+ * the operations were performed. In the first incarnation, it assumes that no
+ * finalizer step is necessary, and there is no failure if the function is not
+ * called. However, in a future incarnation, the upgrade will fail if the
+ * function is not called.
  *
  * @param {Zone} outerZone
  * @param {string} gateName
