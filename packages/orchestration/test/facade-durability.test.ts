@@ -76,6 +76,8 @@ test.serial('chain info', async t => {
     return orc.getChain('mock');
   });
 
+  await orchKit.asyncFlowTools.adminAsyncFlow.wakeAll();
+
   const result = (await vt.when(handle())) as Chain<any>;
   t.deepEqual(await vt.when(result.getChainInfo()), mockChainInfo);
 });
@@ -121,6 +123,8 @@ test.serial('faulty chain info', async t => {
     const account = await chain.makeAccount();
     return account;
   });
+
+  await orchKit.asyncFlowTools.adminAsyncFlow.wakeAll();
 
   await t.throwsAsync(vt.when(handle()), {
     message: 'chain info lacks staking denom',
@@ -208,6 +212,8 @@ test.serial('asset / denom info', async t => {
       }
     },
   );
+
+  await orchKit.asyncFlowTools.adminAsyncFlow.wakeAll();
 
   await vt.when(handle());
 

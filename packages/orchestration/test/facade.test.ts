@@ -1,4 +1,3 @@
-/* eslint-disable @jessie.js/safe-await-separator */
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import type { VowTools } from '@agoric/vow';
@@ -10,7 +9,12 @@ import type { OrchestrationFlow } from '../src/orchestration-api.js';
 import { provideOrchestration } from '../src/utils/start-helper.js';
 import { commonSetup } from './supports.js';
 
-const test = anyTest as TestFn<{ vt: VowTools; orchestrateAll: any; zcf: ZCF }>;
+const test = anyTest as TestFn<{
+  vt: VowTools;
+  orchestrateAll: any;
+  zcf: ZCF;
+  wakeAll: () => Promise<void>;
+}>;
 
 test.beforeEach(async t => {
   const { facadeServices, commonPrivateArgs } = await commonSetup(t);
@@ -32,11 +36,13 @@ test.beforeEach(async t => {
   );
 
   const { orchestrateAll } = orchKit;
-  t.context = { vt, orchestrateAll, zcf };
+  const wakeAll = async () => orchKit.asyncFlowTools.adminAsyncFlow.wakeAll();
+
+  t.context = { vt, orchestrateAll, zcf, wakeAll };
 });
 
 test('calls between flows', async t => {
-  const { vt, orchestrateAll, zcf } = t.context;
+  const { vt, orchestrateAll, zcf, wakeAll } = t.context;
 
   const flows = {
     outer(orch, ctx, ...recipients) {
@@ -51,12 +57,14 @@ test('calls between flows', async t => {
     peerFlows: flows,
   });
 
+  await wakeAll();
+
   t.deepEqual(await vt.when(inner('a', 'b', 'c')), 'a b c');
   t.deepEqual(await vt.when(outer('a', 'b', 'c')), 'Hello a b c');
 });
 
 test('context mapping individual flows', async t => {
-  const { vt, orchestrateAll, zcf } = t.context;
+  const { vt, orchestrateAll, zcf, wakeAll } = t.context;
 
   const flows = {
     outer(orch, ctx, ...recipients) {
@@ -70,6 +78,8 @@ test('context mapping individual flows', async t => {
   const { outer } = orchestrateAll(flows, {
     peerFlows: { inner: flows.inner },
   });
+
+  await wakeAll();
 
   t.deepEqual(await vt.when(outer('a', 'b', 'c')), 'Hello a b c');
 });
