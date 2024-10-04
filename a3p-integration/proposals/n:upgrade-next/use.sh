@@ -8,3 +8,4 @@ node ./addGov4
 
 ./verifyPushedPrice.js 'ATOM' 12.01
 ./verifyPushedPrice.js 'stATOM' 12.01
+./submitBid.js

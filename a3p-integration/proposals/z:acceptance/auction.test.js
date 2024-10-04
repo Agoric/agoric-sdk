@@ -1,221 +1,216 @@
+/* eslint-env node */
 /**
  * @file In this file we aim to test auctioneer in an isolated manner. Here's the scenario to test;
- * - Send 100 ATOMs to gov1 from validator
- * - Make sure auctioneer params like ClockStep, StartFrequency are reduced
- * - For book0, ATOM is collateral, set two types of bids; by price and by percentage, user1 is the bidder
- * - Deposit some collateral into book0, gov1 is the depositor
+ *
+ * - Prerequisites: In one of the earlier proposal(n:upgrade-next), a user called "long-living-bidder"
+ *   has placed a bid where { give: 80IST, price: 49.0 }
+ * - Push price so that 1 ATOM is 50 ISTs
+ * - Wait until the auctioneer captures the price we just pushed
+ * - Fund actors
+ *  - gov1 gets 100 ATOMs
+ *  - user1 gets 90 ISTs
+ *  - gov3 gets 150 ISTs
+ * - Place bids for user1 and gov3 following the values in "config"
+ * - Deposit 100 ATOMs into book0, gov1 is the depositor
  * - Wait until placed bids get their payouts
- * - Make sure the depositer gets correct amounts
+ * - Wait until proceeds are distributed to the depositor
+ * - Make sure all actors receive the correct payouts
  */
 
+// Typo will be fixed with https://github.com/Agoric/agoric-sdk/pull/10171
+/** @typedef {import('./test-lib/sync-tools.js').RetryOptions} RetryOptions */
+
 import {
-  addPreexistingOracles,
   agd,
-  agopsInter,
   agoric,
-  ATOM_DENOM,
-  bankSend,
-  createBid,
-  executeOffer,
-  getLiveOffers,
-  getPriceQuote,
+  getUser,
   GOV1ADDR,
-  pushPrices,
+  GOV3ADDR,
   USER1ADDR,
-  waitForBlock,
 } from '@agoric/synthetic-chain';
 import '@endo/init';
 import test from 'ava';
 import { boardSlottingMarshaller, makeFromBoard } from './test-lib/rpc.js';
+import { retryUntilCondition } from './test-lib/sync-tools.js';
 import {
-  retryUntilCondition,
-  waitUntilAccountFunded,
-  waitUntilOfferResult,
-} from './test-lib/sync-tools.js';
+  calculateRetryUntilNextStartTime,
+  checkBidsOutcome,
+  checkDepositOutcome,
+  checkPrice,
+  depositCollateral,
+  fundAccts,
+  getCapturedPrice,
+  placeBids,
+  pushPricesForAuction,
+  scale6,
+} from './test-lib/auction-lib.js';
 
-const ambientAuthroity = {
+const ambientAuthority = {
   query: agd.query,
   follow: agoric.follow,
-  setTimeout: globalThis.setTimeout,
+  setTimeout,
 };
+
+const fromBoard = makeFromBoard();
+const marshaller = boardSlottingMarshaller(fromBoard.convertSlotToVal);
 
 const config = {
-  price: 9.99,
-  bidsSetup: [
-    {
-      give: '80IST',
-      discount: 0.1,
-    },
-    {
+  depositor: {
+    name: 'gov1',
+    addr: GOV1ADDR,
+    depositValue: '100000000',
+    offerId: `gov1-deposit-${Date.now()}`,
+  },
+  price: 50.0,
+  longLivingBidSetup: {
+    name: 'long-living-bidder',
+    // This bid is placed in an earlier proposal
+    give: '80IST',
+  },
+  currentBidsSetup: {
+    user1: {
+      bidder: USER1ADDR,
+      bidderFund: {
+        value: 90000000,
+        denom: 'uist',
+      },
+      offerId: `user1-bid-${Date.now()}`,
       give: '90IST',
-      price: 9.0,
+      price: 46,
     },
-    {
+    gov3: {
+      bidder: GOV3ADDR,
+      bidderFund: {
+        value: 150000000,
+        denom: 'uist',
+      },
+      offerId: `gov3-bid-${Date.now()}`,
       give: '150IST',
-      discount: 0.15,
+      discount: '13',
     },
-  ],
-  bidsOutcome: [
-    {
+  },
+  bidsOutcome: {
+    longLivingBidder: {
       payouts: {
         Bid: 0,
-        Collateral: 8.897786,
+        Collateral: 1.68421,
       },
     },
-    {
+    user1: {
       payouts: {
         Bid: 0,
-        Collateral: 10.01001,
+        Collateral: 2.0,
       },
     },
-    {
+    gov3: {
       payouts: {
-        Bid: 10.46,
-        Collateral: 16.432903,
+        Bid: 0,
+        Collateral: 3.448275,
       },
     },
-  ],
+  },
 };
 
-const oraclesByBrand = new Map();
+test.before(async t => {
+  /** @type {RetryOptions} */
+  const pushPriceRetryOpts = {
+    maxRetries: 5, // arbitrary
+    retryIntervalMs: 5000, // in ms
+  };
 
-let roundId = 2;
+  /** @type {RetryOptions} */
+  const bankSendRetryOpts = {
+    maxRetries: 3, // arbitrary
+    retryIntervalMs: 3000, // in ms
+  };
 
-const setupOracles = async t => {
-  await addPreexistingOracles('ATOM', oraclesByBrand);
-
-  await pushPrices(9.99, 'ATOM', oraclesByBrand, roundId);
-  roundId += 1;
-  await retryUntilCondition(
-    () => getPriceQuote('ATOM'),
-    res => res === '+9990000',
-    'error',
-    { log: t.log, setTimeout: globalThis.setTimeout },
-  );
-};
-
-const BID_OFFER_ID = `bid-acceptance-${Date.now()}`;
-const DEPOSIT_OFFER_ID = `gov1-deposit-${Date.now()}`;
-
-const createNewBid = async t => {
-  await createBid('20', USER1ADDR, BID_OFFER_ID);
-  const liveOffers = await getLiveOffers(USER1ADDR);
-  t.true(liveOffers[0].includes(BID_OFFER_ID));
-};
-
-const getBalance = async (target, addr) => {
-  const { balances } = await agd.query('bank', 'balances', addr);
-  const { amount } = balances.find(({ denom }) => denom === target);
-  return Number(amount);
-};
-
-const fundAccts = async (
-  depositorAmt = '100000000',
-  bidderAmt = '100000000',
-) => {
-  await Promise.all([
-    bankSend(GOV1ADDR, `${depositorAmt}${ATOM_DENOM}`),
-    bankSend(USER1ADDR, `${bidderAmt}${ATOM_DENOM}`),
-  ]);
-
-  await Promise.all([
-    waitUntilAccountFunded(
-      GOV1ADDR,
-      ambientAuthroity,
-      { denom: 'uist', value: Number(depositorAmt) },
-      { errorMessage: 'gov1 not funded yet' },
-    ),
-    waitUntilAccountFunded(
-      USER1ADDR,
-      ambientAuthroity,
-      { denom: ATOM_DENOM, value: Number(bidderAmt) },
-      { errorMessage: 'user1 not funded yet' },
-    ),
-  ]);
-};
-
-const bidByPrice = (price, give, offerId) => {
-  agopsInter(
-    'bid',
-    'by-price',
-    `--price ${price}`,
-    `--give ${give}`,
-    '--from',
-    USER1ADDR,
-    '--keyring-backend test',
-    `--offer-id ${offerId}`,
-  );
-
-  return waitUntilOfferResult(USER1ADDR, offerId, true, ambientAuthroity, {
-    errorMessage: 'bid not settled yet',
-    maxRetries: 10,
-    retryIntervalMs: 10000,
-  });
-};
-
-const depositCollateral = async t => {
-  const fromBoard = makeFromBoard();
-  const marshaller = boardSlottingMarshaller(fromBoard.convertSlotToVal);
-
-  const brandsRaw = await agoric.follow(
+  // Get current round id
+  const round = await agoric.follow(
     '-lF',
-    ':published.agoricNames.brand',
-    '-o',
-    'text',
+    ':published.priceFeed.ATOM-USD_price_feed.latestRound',
   );
-  const brands = Object.fromEntries(
-    marshaller.fromCapData(JSON.parse(brandsRaw)),
-  );
-  t.log(brands);
-
-  const offerSpec = {
-    id: DEPOSIT_OFFER_ID,
-    invitationSpec: {
-      source: 'agoricContract',
-      instancePath: ['auctioneer'],
-      callPipe: [['makeDepositInvitation']],
-    },
-    proposal: {
-      give: {
-        Collateral: { brand: brands.ATOM, value: 100_000_000n },
-      },
+  t.context = {
+    roundId: parseInt(round.roundId, 10),
+    retryOpts: {
+      bankSendRetryOpts,
+      pushPriceRetryOpts,
     },
   };
+});
 
-  const spendAction = {
-    method: 'executeOffer',
-    offer: offerSpec,
-  };
+test('run auction', async t => {
+  // Push the price to a point where only our bids can settle
+  await pushPricesForAuction(t, config.price);
 
-  const offer = JSON.stringify(marshaller.toCapData(harden(spendAction)));
-  t.log('OFFER', offer);
-
-  executeOffer(GOV1ADDR, offer);
-  return waitUntilOfferResult(GOV1ADDR, DEPOSIT_OFFER_ID, true, ambientAuthroity, {
-    errorMessage: 'proceeds not distributed yet',
-    maxRetries: 10,
-    retryIntervalMs: 10000,
-  });
-};
-
-test.only('run auction', async t => {
-  await setupOracles(t);
-  await fundAccts();
-  const settleBidP = bidByPrice(
-    config.bidsSetup[1].price,
-    config.bidsSetup[1].give,
-    BID_OFFER_ID,
+  // Wait until next round starts. Retry error message is useful for debugging
+  const retryOptions = await calculateRetryUntilNextStartTime();
+  await retryUntilCondition(
+    () => getCapturedPrice('book0'),
+    res => checkPrice(res, scale6(config.price).toString()), // scale price to uist
+    'price not captured yet [AUCTION TEST]',
+    {
+      log: t.log,
+      ...ambientAuthority,
+      ...retryOptions,
+    },
   );
-  const proceedsP = depositCollateral(t);
 
-  await Promise.all([settleBidP, proceedsP]);
+  // Make sure depositor and bidders have enough balance
+  await fundAccts(t, config.depositor, config.currentBidsSetup);
+  const bidsP = placeBids(t, config.currentBidsSetup);
+  const proceedsP = depositCollateral(t, config.depositor);
 
-  const [gov1Results, user1Results] = await Promise.all([
-    agoric.follow('-lF', `:published.wallet.${GOV1ADDR}`),
-    agoric.follow('-lF', `:published.wallet.${USER1ADDR}`),
+  // Resolves when auction finalizes and depositor gets payouts
+  const [longLivingBidderAddr] = await Promise.all([
+    getUser(config.longLivingBidSetup.name),
+    ...bidsP,
+    proceedsP,
   ]);
-  t.log('GOV1', gov1Results.status.payouts);
-  t.log('USER1', user1Results.status.payouts);
-  t.log('DONE!');
-  t.pass();
+
+  // Query wallets of the actors involved for assertions
+  const [gov1Results, longLivingBidResults, user1Results, gov3Results, brands] =
+    await Promise.all([
+      agoric
+        .follow(
+          '-lF',
+          `:published.wallet.${config.depositor.addr}`,
+          '-o',
+          'text',
+        )
+        .then(res => marshaller.fromCapData(JSON.parse(res))),
+      agoric
+        .follow(
+          '-lF',
+          `:published.wallet.${longLivingBidderAddr}`,
+          '-o',
+          'text',
+        )
+        .then(res => marshaller.fromCapData(JSON.parse(res))),
+      agoric
+        .follow('-lF', `:published.wallet.${USER1ADDR}`, '-o', 'text')
+        .then(res => marshaller.fromCapData(JSON.parse(res))),
+      agoric
+        .follow('-lF', `:published.wallet.${GOV3ADDR}`, '-o', 'text')
+        .then(res => marshaller.fromCapData(JSON.parse(res))),
+      agoric
+        .follow('-lF', ':published.agoricNames.brand', '-o', 'text')
+        .then(res =>
+          Object.fromEntries(marshaller.fromCapData(JSON.parse(res))),
+        ),
+    ]);
+
+  // Assert depositor paid correctly
+  checkDepositOutcome(t, gov1Results.status.payouts, config, brands);
+
+  // Assert bidders paid correctly
+  checkBidsOutcome(
+    t,
+    {
+      'longLivingBidder.results': longLivingBidResults,
+      'user1.results': user1Results,
+      'gov3.results': gov3Results,
+    },
+    config.bidsOutcome,
+    brands,
+  );
 });
