@@ -42,7 +42,7 @@
     "@endo/init": "^1.1.4",
     "@endo/marshal": "^1.5.3",
     "@endo/promise-kit": "^1.1.5",
-    "anylogger": "^0.21.0",
+    "anylogger": "^1.0.11",
     "deterministic-json": "^1.0.5",
     "esm": "agoric-labs/esm#Agoric-built",
     "express": "^4.17.1",
