@@ -11,7 +11,7 @@ import { testAsyncLife } from './prepare-test-env-ava.js';
 
 /** @param {Pick<import('./prepare-test-env-ava.js').AsyncLifeTools, 'makeVowKit' | 'zone'>} tools */
 const makeTestKit = ({ zone, makeVowKit }) => {
-  const { resolver, vow } = zone.makeOnce('trigger', makeVowKit);
+  const { resolver, vow } = zone.makeOnce('trigger', () => makeVowKit());
   const waiter = zone.exo('arg', undefined, {
     wait(_ignoredArg) {
       return vow;
