@@ -47,7 +47,6 @@ export const OrchestratorI = M.interface('Orchestrator', {
  *   asyncFlowTools: AsyncFlowTools;
  *   chainHub: ChainHub;
  *   localchain: Remote<LocalChain>;
- *   chainByName: MapStore<string, HostInterface<Chain>>;
  *   makeRecorderKit: MakeRecorderKit;
  *   makeLocalChainFacade: MakeLocalChainFacade;
  *   makeRemoteChainFacade: MakeRemoteChainFacade;
@@ -63,13 +62,15 @@ const prepareOrchestratorKit = (
   {
     chainHub,
     localchain,
-    chainByName,
     makeLocalChainFacade,
     makeRemoteChainFacade,
     vowTools: { watch, asVow },
   },
-) =>
-  zone.exoClassKit(
+) => {
+  /** @type {MapStore<string, HostInterface<Chain>>} */
+  const chainByName = zone.mapStore('chainName');
+
+  return zone.exoClassKit(
     'Orchestrator',
     {
       orchestrator: OrchestratorI,
@@ -158,6 +159,7 @@ const prepareOrchestratorKit = (
       },
     },
   );
+};
 harden(prepareOrchestratorKit);
 
 /**
@@ -166,7 +168,6 @@ harden(prepareOrchestratorKit);
  *   asyncFlowTools: AsyncFlowTools;
  *   chainHub: ChainHub;
  *   localchain: Remote<LocalChain>;
- *   chainByName: MapStore<string, HostInterface<Chain>>;
  *   makeRecorderKit: MakeRecorderKit;
  *   makeLocalChainFacade: MakeLocalChainFacade;
  *   makeRemoteChainFacade: MakeRemoteChainFacade;
