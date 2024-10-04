@@ -10,9 +10,10 @@ import { makeConvertKit } from './convert.js';
 import { makeEquate } from './equate.js';
 
 /**
- * @import {PromiseKit} from '@endo/promise-kit'
- * @import {Passable, PassableCap, CopyTagged} from '@endo/pass-style'
- * @import {Vow, VowTools, VowKit} from '@agoric/vow'
+ * @import {PromiseKit} from '@endo/promise-kit';
+ * @import {RemotableBrand} from '@endo/eventual-send';
+ * @import {Callable, Passable, PassableCap} from '@endo/pass-style';
+ * @import {Vow, VowTools, VowKit} from '@agoric/vow';
  * @import {LogStore} from '../src/log-store.js';
  * @import {Bijection} from '../src/bijection.js';
  * @import {Host, HostVow, LogEntry, Outcome} from '../src/types.js';
@@ -218,30 +219,22 @@ export const makeReplayMembrane = ({
   // //////////////// Eventual Send ////////////////////////////////////////////
 
   /**
-   * @param {PassableCap} hostTarget
+   * @param {RemotableBrand<PassableCap, Callable>} hostTarget
    * @param {string | undefined} optVerb
    * @param {Passable[]} hostArgs
    */
   const performSendOnly = (hostTarget, optVerb, hostArgs) => {
     try {
-      optVerb
-        ? heapVowE.sendOnly(hostTarget)[optVerb](...hostArgs)
-        : // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-          // @ts-ignore once we changed this from E to heapVowE,
-          // typescript started complaining that heapVowE(hostTarget)
-          // is not callable. I'm not sure if this is a just a typing bug
-          // in heapVowE or also reflects a runtime deficiency. But this
-          // case it not used yet anyway. We disable it
-          // with at-ts-ignore rather than at-ts-expect-error because
-          // the dependency-graph tests complains that the latter is unused.
-          heapVowE.sendOnly(hostTarget)(...hostArgs);
+      optVerb === undefined
+        ? heapVowE.sendOnly(hostTarget)(...hostArgs)
+        : heapVowE.sendOnly(hostTarget)[optVerb](...hostArgs);
     } catch (hostProblem) {
-      throw Panic`internal: eventual sendOnly synchrously failed ${hostProblem}`;
+      throw Panic`internal: eventual sendOnly synchronously failed ${hostProblem}`;
     }
   };
 
   /**
-   * @param {PassableCap} hostTarget
+   * @param {RemotableBrand<PassableCap, Callable>} hostTarget
    * @param {string | undefined} optVerb
    * @param {Passable[]} hostArgs
    * @param {number} callIndex
@@ -259,20 +252,13 @@ export const makeReplayMembrane = ({
   ) => {
     const { vow, resolver } = hostResultKit;
     try {
-      const hostPromise = optVerb
-        ? heapVowE(hostTarget)[optVerb](...hostArgs)
-        : // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-          // @ts-ignore once we changed this from E to heapVowE,
-          // typescript started complaining that heapVowE(hostTarget)
-          // is not callable. I'm not sure if this is a just a typing bug
-          // in heapVowE or also reflects a runtime deficiency. But this
-          // case it not used yet anyway. We disable it
-          // with at-ts-ignore rather than at-ts-expect-error because
-          // the dependency-graph tests complains that the latter is unused.
-          heapVowE(hostTarget)(...hostArgs);
+      const hostPromise =
+        optVerb === undefined
+          ? heapVowE(hostTarget)(...hostArgs)
+          : heapVowE(hostTarget)[optVerb](...hostArgs);
       resolver.resolve(hostPromise); // TODO does this always work?
     } catch (hostProblem) {
-      throw Panic`internal: eventual send synchrously failed ${hostProblem}`;
+      throw Panic`internal: eventual send synchronously failed ${hostProblem}`;
     }
     try {
       const entry = harden(['doReturn', callIndex, vow]);
