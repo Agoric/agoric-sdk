@@ -17,10 +17,9 @@ import { makeDurableZone } from '@agoric/zone/durable.js';
 
 import { prepareLogStore } from '../src/log-store.js';
 import { prepareBijection } from '../src/bijection.js';
-import { makeReplayMembrane } from '../src/replay-membrane.js';
+import { makeReplayMembraneForTesting } from '../src/replay-membrane.js';
 
 /**
- * @import {PromiseKit} from '@endo/promise-kit'
  * @import {Zone} from '@agoric/base-zone'
  * @import {LogStore} from '../src/log-store.js';
  * @import {Bijection} from '../src/bijection.js';
@@ -41,11 +40,19 @@ const preparePingee = zone =>
  * @typedef {ReturnType<ReturnType<preparePingee>>} Pingee
  */
 
+const testMode = /** @type {const} */ ({
+  normal: 'normal',
+  noEventualSend: 'noEventualSend',
+  retry: 'retry',
+});
+
 /**
  * @param {any} t
  * @param {Zone} zone
+ * @param {testMode[keyof testMode]} [mode]
  */
-const testFirstPlay = async (t, zone) => {
+const testFirstPlay = async (t, zone, mode = testMode.normal) => {
+  t.log('testFirstPlay', mode);
   const vowTools = prepareVowTools(zone);
   const { makeVowKit } = vowTools;
   const makeLogStore = prepareLogStore(zone);
@@ -57,22 +64,33 @@ const testFirstPlay = async (t, zone) => {
   const log = zone.makeOnce('log', () => makeLogStore());
   const bijection = zone.makeOnce('bij', makeBijection);
 
-  const mem = makeReplayMembrane({
+  const mem = makeReplayMembraneForTesting({
     log,
     bijection,
     vowTools,
     watchWake,
     panic,
+    __eventualSendForTesting: mode !== testMode.noEventualSend,
   });
-
-  const p1 = mem.hostToGuest(v1);
-  t.deepEqual(log.dump(), []);
 
   /** @type {Pingee} */
   const pingee = zone.makeOnce('pingee', () => makePingee());
+  const beforeSend = [
+    ['checkCall', pingee, 'ping', ['call'], 0],
+    ['doReturn', 0, undefined],
+  ];
+
+  const initialDump = [];
+  if (mode === testMode.retry) {
+    initialDump.push(...beforeSend);
+  }
+
+  const p1 = mem.hostToGuest(v1);
+  t.deepEqual(log.dump(), initialDump);
+
   /** @type {Pingee} */
   const guestPingee = mem.hostToGuest(pingee);
-  t.deepEqual(log.dump(), []);
+  t.deepEqual(log.dump(), initialDump);
 
   const p = E(guestPingee).ping('send');
   const pOnly = E.sendOnly(guestPingee).ping('sendOnly');
@@ -80,17 +98,29 @@ const testFirstPlay = async (t, zone) => {
 
   guestPingee.ping('call');
 
+  /** @type {any[][]} */
+  const afterPingDump = [...beforeSend];
+  if (mode === testMode.noEventualSend) {
+    await t.throwsAsync(p, {
+      message:
+        /panic over "\[Error: guest eventual applyMethod not yet supported:/,
+    });
+    const dump = log.dump();
+    t.deepEqual(dump, afterPingDump);
+    return p;
+  }
+
   t.is(await p, undefined);
   const dump = log.dump();
   const v3 = dump[3][2];
-  t.deepEqual(dump, [
-    ['checkCall', pingee, 'ping', ['call'], 0],
-    ['doReturn', 0, undefined],
+  const afterSend = [
     ['checkSend', pingee, 'ping', ['send'], 2],
     ['doReturn', 2, v3],
     ['checkSendOnly', pingee, 'ping', ['sendOnly'], 4],
     ['doFulfill', v3, undefined],
-  ]);
+  ];
+  afterPingDump.push(...afterSend);
+  t.deepEqual(dump, afterPingDump);
 
   r1.resolve('x');
   t.is(await p1, 'x');
@@ -109,8 +139,10 @@ const testFirstPlay = async (t, zone) => {
 /**
  * @param {any} t
  * @param {Zone} zone
+ * @param {testMode[keyof testMode]} [mode]
  */
-const testReplay = async (t, zone) => {
+const testReplay = async (t, zone, mode = testMode.normal) => {
+  t.log('testReplay', mode);
   const vowTools = prepareVowTools(zone);
   prepareLogStore(zone);
   prepareBijection(zone);
@@ -129,7 +161,7 @@ const testReplay = async (t, zone) => {
 
   const dump = log.dump();
   const v3 = dump[3][2];
-  t.deepEqual(dump, [
+  const beforeY = [
     ['checkCall', pingee, 'ping', ['call'], 0],
     ['doReturn', 0, undefined],
     ['checkSend', pingee, 'ping', ['send'], 2],
@@ -137,14 +169,18 @@ const testReplay = async (t, zone) => {
     ['checkSendOnly', pingee, 'ping', ['sendOnly'], 4],
     ['doFulfill', v3, undefined],
     ['doFulfill', v1, 'x'],
-  ]);
+  ];
+  const afterY = [['doFulfill', v2, 'y']];
+  const initialDump = beforeY;
+  t.deepEqual(dump, initialDump);
 
-  const mem = makeReplayMembrane({
+  const mem = makeReplayMembraneForTesting({
     log,
     bijection,
     vowTools,
     watchWake,
     panic,
+    __eventualSendForTesting: mode !== testMode.noEventualSend,
   });
   t.true(log.isReplaying());
   t.is(log.getIndex(), 0);
@@ -153,23 +189,15 @@ const testReplay = async (t, zone) => {
   const p2 = mem.hostToGuest(v2);
   // @ts-expect-error TS doesn't know that r2 is a resolver
   r2.resolve('y');
-  await eventLoopIteration();
 
   const p1 = mem.hostToGuest(v1);
   mem.wake();
   t.true(log.isReplaying());
   t.is(log.getIndex(), 0);
-  t.deepEqual(log.dump(), [
-    ['checkCall', pingee, 'ping', ['call'], 0],
-    ['doReturn', 0, undefined],
-    ['checkSend', pingee, 'ping', ['send'], 2],
-    ['doReturn', 2, v3],
-    ['checkSendOnly', pingee, 'ping', ['sendOnly'], 4],
-    ['doFulfill', v3, undefined],
-    ['doFulfill', v1, 'x'],
-  ]);
+  t.deepEqual(log.dump(), initialDump);
 
-  E(guestPingee).ping('send');
+  const pingSend = E(guestPingee).ping('send');
+
   // TODO Once https://github.com/endojs/endo/issues/2336 is fixed,
   // the following `void` should not be needed. But strangely, TS isn't
   // telling me a `void` is needed above, which is also incorrect.
@@ -177,20 +205,19 @@ const testReplay = async (t, zone) => {
 
   guestPingee.ping('call');
 
-  t.is(await p1, 'x');
-  t.is(await p2, 'y');
-  t.false(log.isReplaying());
+  let finalDump;
+  if (mode === testMode.noEventualSend) {
+    t.true(log.isReplaying());
+    finalDump = beforeY;
+  } else {
+    t.is(await p1, 'x');
+    t.is(await p2, 'y');
+    t.false(log.isReplaying());
+    finalDump = [...beforeY, ...afterY];
+  }
 
-  t.deepEqual(log.dump(), [
-    ['checkCall', pingee, 'ping', ['call'], 0],
-    ['doReturn', 0, undefined],
-    ['checkSend', pingee, 'ping', ['send'], 2],
-    ['doReturn', 2, v3],
-    ['checkSendOnly', pingee, 'ping', ['sendOnly'], 4],
-    ['doFulfill', v3, undefined],
-    ['doFulfill', v1, 'x'],
-    ['doFulfill', v2, 'y'],
-  ]);
+  t.deepEqual(log.dump(), finalDump);
+  return pingSend;
 };
 
 test.serial('test heap replay-membrane settlement', async t => {
@@ -214,4 +241,33 @@ test.serial('test durable replay-membrane settlement', async t => {
   nextLife();
   const zone3 = makeDurableZone(getBaggage(), 'durableRoot');
   return testReplay(t, zone3);
+});
+
+test.serial('test durable toggle eventual send', async t => {
+  annihilate();
+
+  nextLife();
+  const zone1 = makeDurableZone(getBaggage(), 'durableRoot');
+  await t.throwsAsync(() => testFirstPlay(t, zone1, testMode.noEventualSend), {
+    message:
+      /^panic over "\[Error: guest eventual applyMethod not yet supported:/,
+  });
+
+  await eventLoopIteration();
+  nextLife();
+  const zone1a = makeDurableZone(getBaggage(), 'durableRoot');
+  await testFirstPlay(t, zone1a, testMode.retry);
+
+  await eventLoopIteration();
+  nextLife();
+  const zone2 = makeDurableZone(getBaggage(), 'durableRoot');
+  await t.throwsAsync(() => testReplay(t, zone2, testMode.noEventualSend), {
+    message:
+      /^panic over "\[Error: guest eventual applyMethod not yet supported:/,
+  });
+
+  await eventLoopIteration();
+  nextLife();
+  const zone2a = makeDurableZone(getBaggage(), 'durableRoot');
+  await testReplay(t, zone2a, testMode.retry);
 });
