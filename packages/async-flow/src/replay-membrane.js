@@ -29,12 +29,29 @@ const { fromEntries, defineProperties, assign } = Object;
  * @param {(vowish: Promise | Vow) => void} arg.watchWake
  * @param {(problem: Error) => never} arg.panic
  */
-export const makeReplayMembrane = ({
+export const makeReplayMembrane = arg => {
+  const noDunderArg = /** @type {typeof arg} */ (
+    Object.fromEntries(Object.entries(arg).filter(([k]) => !k.startsWith('__')))
+  );
+  return makeReplayMembraneForTesting(noDunderArg);
+};
+
+/**
+ * @param {object} arg
+ * @param {LogStore} arg.log
+ * @param {Bijection} arg.bijection
+ * @param {VowTools} arg.vowTools
+ * @param {(vowish: Promise | Vow) => void} arg.watchWake
+ * @param {(problem: Error) => never} arg.panic
+ * @param {boolean} [arg.__eventualSendForTesting] CAVEAT: Only for async-flow tests
+ */
+export const makeReplayMembraneForTesting = ({
   log,
   bijection,
   vowTools,
   watchWake,
   panic,
+  __eventualSendForTesting,
 }) => {
   const { when, makeVowKit } = vowTools;
 
@@ -279,6 +296,10 @@ export const makeReplayMembrane = ({
 
   const guestHandler = harden({
     applyMethodSendOnly(guestTarget, optVerb, guestArgs) {
+      __eventualSendForTesting ||
+        Panic`guest eventual applyMethodSendOnly not yet supported: ${guestTarget}.${b(optVerb)}`;
+      // The following code is only intended to be used by tests.
+      // TODO: properly support applyMethodSendOnly
       const callIndex = log.getIndex();
       if (stopped || !bijection.hasGuest(guestTarget)) {
         Fail`Sent from a previous run: ${guestTarget}`;
@@ -317,6 +338,10 @@ export const makeReplayMembrane = ({
       }
     },
     applyMethod(guestTarget, optVerb, guestArgs, guestReturnedP) {
+      __eventualSendForTesting ||
+        Panic`guest eventual applyMethod not yet supported: ${guestTarget}.${b(optVerb)} -> ${b(guestReturnedP)}`;
+      // The following code is only intended to be used by tests.
+      // TODO: properly support applyMethod
       const callIndex = log.getIndex();
       if (stopped || !bijection.hasGuest(guestTarget)) {
         Fail`Sent from a previous run: ${guestTarget}`;
@@ -384,6 +409,8 @@ export const makeReplayMembrane = ({
       }
     },
     applyFunctionSendOnly(guestTarget, guestArgs) {
+      __eventualSendForTesting ||
+        Panic`guest eventual applyFunctionSendOnly not yet supported: ${guestTarget}`;
       return guestHandler.applyMethodSendOnly(
         guestTarget,
         undefined,
@@ -391,6 +418,8 @@ export const makeReplayMembrane = ({
       );
     },
     applyFunction(guestTarget, guestArgs, guestReturnedP) {
+      __eventualSendForTesting ||
+        Panic`guest eventual applyFunction not yet supported: ${guestTarget} -> ${b(guestReturnedP)}`;
       return guestHandler.applyMethod(
         guestTarget,
         undefined,
@@ -399,9 +428,11 @@ export const makeReplayMembrane = ({
       );
     },
     getSendOnly(guestTarget, prop) {
+      // TODO: support getSendOnly
       throw Panic`guest eventual getSendOnly not yet supported: ${guestTarget}.${b(prop)}`;
     },
     get(guestTarget, prop, guestReturnedP) {
+      // TODO: support get
       throw Panic`guest eventual get not yet supported: ${guestTarget}.${b(prop)} -> ${b(guestReturnedP)}`;
     },
   });
