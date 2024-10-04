@@ -1,6 +1,7 @@
 name: Multichain E2E Tests
 
 on:
+  workflow_dispatch:
   workflow_call:
 
 jobs:
