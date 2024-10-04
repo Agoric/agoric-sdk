@@ -218,6 +218,8 @@ export const withOrchestration =
       privateArgs,
       privateArgs.marshaller,
     );
-    return contractFn(zcf, privateArgs, zone, tools);
+    const result = await contractFn(zcf, privateArgs, zone, tools);
+    await tools.asyncFlowTools.adminAsyncFlow.wakeAll();
+    return result;
   };
 harden(withOrchestration);

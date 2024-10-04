@@ -12,7 +12,6 @@ import { makeCopyMap } from '@endo/patterns';
 import { makePromiseKit } from '@endo/promise-kit';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { isVow } from '@agoric/vow/src/vow-utils.js';
-import { prepareVowTools } from '@agoric/vow';
 import { makeDurableZone } from '@agoric/zone/durable.js';
 
 import { prepareTestAsyncFlowTools } from './_utils.js';
@@ -58,12 +57,11 @@ const firstLogLen = 7;
  */
 const testFirstPlay = async (t, zone) => {
   t.log('firstPlay started');
-  const vowTools = prepareVowTools(zone);
-  const { asyncFlow, adminAsyncFlow } = prepareTestAsyncFlowTools(t, zone, {
-    vowTools,
-  });
+  const { makeVowKit, asyncFlow, adminAsyncFlow } = prepareTestAsyncFlowTools(
+    t,
+    zone,
+  );
   const makeOrchestra = prepareOrchestra(zone);
-  const { makeVowKit } = vowTools;
 
   const { vow: v1, resolver: r1 } = zone.makeOnce('v1', () => makeVowKit());
   const { vow: v2, resolver: r2 } = zone.makeOnce('v2', () => makeVowKit());
@@ -98,6 +96,7 @@ const testFirstPlay = async (t, zone) => {
   };
 
   const wrapperFunc = asyncFlow(zone, 'AsyncFlow1', guestMethod);
+  await adminAsyncFlow.wakeAll();
 
   const outcomeV = zone.makeOnce('outcomeV', () => wrapperFunc(hOrch7, v1, v3));
 
@@ -138,23 +137,24 @@ const testFirstPlay = async (t, zone) => {
  */
 const testBadShortReplay = async (t, zone, rejection) => {
   t.log('badShortReplay started');
-  const vowTools = prepareVowTools(zone);
-  const { asyncFlow, adminAsyncFlow } = prepareTestAsyncFlowTools(t, zone, {
-    vowTools,
-    panicHandler: e => {
-      t.throws(
-        () => {
-          throw e;
-        },
-        {
-          message:
-            /^guest (fulfilled with "bad"|rejected with "\[Error: replayProblem\]") before finishing replay$/,
-        },
-      );
+  const { when, asyncFlow, adminAsyncFlow } = prepareTestAsyncFlowTools(
+    t,
+    zone,
+    {
+      panicHandler: e => {
+        t.throws(
+          () => {
+            throw e;
+          },
+          {
+            message:
+              /^guest (fulfilled with "bad"|rejected with "\[Error: replayProblem\]") before finishing replay$/,
+          },
+        );
+      },
     },
-  });
+  );
   prepareOrchestra(zone);
-  const { when } = vowTools;
 
   // purposely violate rule that guestMethod is closed.
   const { promise: promiseStep, resolve: resolveStep } = makePromiseKit();
@@ -176,6 +176,7 @@ const testBadShortReplay = async (t, zone, rejection) => {
   // invoked, that would be a *new* activation with a new outcome and
   // flow, and would have nothing to do with the existing one.
   asyncFlow(zone, 'AsyncFlow1', guestMethod);
+  await adminAsyncFlow.wakeAll();
 
   const outcomeV = /** @type {Vow} */ (
     zone.makeOnce('outcomeV', () => Fail`need outcomeV`)

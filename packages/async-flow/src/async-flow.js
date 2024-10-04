@@ -43,6 +43,39 @@ const AdminAsyncFlowI = M.interface('AsyncFlowAdmin', {
 });
 
 /**
+ * Helper to enforce that a post-redefinition "finalize" step has been performed
+ * on upgrade. In some cases, it may be necessary to execute some operations on
+ * upgraded durable objects, which can only happen after the objects' kinds and
+ * their dependencies have all been redefined. A "finalize upgrade gate" helps
+ * enforce that this finalize step is performed by the contract on upgrade. It
+ * returns a function which should be called by the finalize step to indicate
+ * the operations were performed. In the first incarnation, it assumes that no
+ * finalizer step is necessary, and there is no failure if the function is not
+ * called. However, in a future incarnation, the upgrade will fail if the
+ * function is not called.
+ *
+ * @param {Zone} outerZone
+ * @param {string} gateName
+ */
+const makeFinalizeUpgradeGate = (outerZone, gateName) => {
+  let finalized = false;
+
+  const finalize = () => {
+    if (finalized) return;
+
+    // Use an exo definition to leverage requirement to reconnect
+    // durable kinds on upgrades
+    outerZone.exo(`${gateName}Sentinel`, undefined, {});
+    finalized = true;
+  };
+  outerZone.makeOnce(`${gateName}Setup`, () => {
+    finalize();
+    return true;
+  });
+  return finalize;
+};
+
+/**
  * @param {Zone} outerZone
  * @param {PreparationOptions} [outerOptions]
  */
@@ -503,11 +536,18 @@ export const prepareAsyncFlowTools = (outerZone, outerOptions = {}) => {
     return harden(wrapperFunc);
   };
 
+  const wakeUpgradeGate = makeFinalizeUpgradeGate(outerZone, 'WakeGate');
+
   const adminAsyncFlow = outerZone.exo('AdminAsyncFlow', AdminAsyncFlowI, {
     getFailures() {
       return failures.snapshot();
     },
+    /**
+     * Must be called once on upgrade during the start crank, but after all
+     * async flows have been redefined
+     */
     wakeAll() {
+      wakeUpgradeGate();
       // [...stuff.keys()] in order to snapshot before iterating
       const failuresToRestart = [...failures.keys()];
       const flowsToWake = [...eagerWakers.keys()];
@@ -519,22 +559,16 @@ export const prepareAsyncFlowTools = (outerZone, outerOptions = {}) => {
       }
     },
     getFlowForOutcomeVow(outcomeVow) {
-      return flowForOutcomeVowKey.get(toPassableCap(outcomeVow));
+      return /** @type {AsyncFlow} */ (
+        flowForOutcomeVowKey.get(toPassableCap(outcomeVow))
+      );
     },
   });
-
-  // Cannot call this until everything is prepared, so postpone to a later
-  // turn. (Ideally, we'd postpone to a later crank because prepares are
-  // allowed anytime in the first crank. But there's currently no pleasant
-  // way to postpone to a later crank.)
-  // See https://github.com/Agoric/agoric-sdk/issues/9377
-  const allWokenP = E.when(null, () => adminAsyncFlow.wakeAll());
 
   return harden({
     prepareAsyncFlowKit,
     asyncFlow,
     adminAsyncFlow,
-    allWokenP,
     prepareEndowment,
   });
 };
