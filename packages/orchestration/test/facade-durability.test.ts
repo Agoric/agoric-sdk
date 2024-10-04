@@ -127,7 +127,7 @@ test.serial('faulty chain info', async t => {
   });
 });
 
-test.serial.failing('racy chain info', async t => {
+test.serial('racy chain info', async t => {
   const { facadeServices, commonPrivateArgs } = await commonSetup(t);
 
   // XXX relax again
@@ -244,7 +244,11 @@ test.serial('asset / denom info', async t => {
         });
       }
 
-      const ag = await orc.getChain('agoric');
+      const agP = orc.getChain('agoric');
+      t.throws(() => orc.getDenomInfo(agDenom), {
+        message: /^wait until getChain\("agoric"\) completes/,
+      });
+      const ag = await agP;
       {
         const actual = orc.getDenomInfo(agDenom);
 
