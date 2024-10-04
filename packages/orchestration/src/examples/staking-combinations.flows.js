@@ -1,6 +1,6 @@
 /**
  * @import {GuestInterface} from '@agoric/async-flow';
- * @import {Orchestrator, OrchestrationFlow, AmountArg, CosmosValidatorAddress, ChainAddress, LocalAccountMethods, OrchestrationAccountI} from '../types.js'
+ * @import {Orchestrator, OrchestrationFlow, AmountArg, CosmosValidatorAddress, ChainAddress, LocalAccountMethods, OrchestrationAccountI, KnownChainName} from '../types.js'
  * @import {ContinuingOfferResult, InvitationMakers} from '@agoric/smart-wallet/src/types.js';
  * @import {LocalOrchestrationAccountKit} from '../exos/local-orchestration-account.js';
  * @import {MakeCombineInvitationMakers} from '../exos/combine-invitation-makers.js';
@@ -23,7 +23,7 @@ const trace = makeTracer('StakingCombinationsFlows');
  *   makeExtraInvitationMaker: (account: any) => InvitationMakers;
  * }} ctx
  * @param {ZCFSeat} _seat
- * @param {{ chainName: string }} offerArgs
+ * @param {{ chainName: KnownChainName }} offerArgs
  * @returns {Promise<ResolvedContinuingOfferResult>}
  */
 export const makeAccount = async (orch, ctx, _seat, { chainName }) => {

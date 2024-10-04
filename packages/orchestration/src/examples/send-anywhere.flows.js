@@ -7,7 +7,7 @@ import { M, mustMatch } from '@endo/patterns';
  * @import {Vow} from '@agoric/vow';
  * @import {LocalOrchestrationAccountKit} from '../exos/local-orchestration-account.js';
  * @import {ZoeTools} from '../utils/zoe-tools.js';
- * @import {Orchestrator, OrchestrationFlow, LocalAccountMethods} from '../types.js';
+ * @import {Orchestrator, OrchestrationFlow, LocalAccountMethods, KnownChainName} from '../types.js';
  */
 
 const { entries } = Object;
@@ -23,7 +23,7 @@ const { entries } = Object;
  * @param {GuestInterface<ZoeTools>} ctx.zoeTools
  * @param {GuestOf<(msg: string) => Vow<void>>} ctx.log
  * @param {ZCFSeat} seat
- * @param {{ chainName: string; destAddr: string }} offerArgs
+ * @param {{ chainName: KnownChainName; destAddr: string }} offerArgs
  */
 export const sendIt = async (
   orch,
