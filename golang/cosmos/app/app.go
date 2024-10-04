@@ -873,7 +873,7 @@ func NewAgoricApp(
 	app.SetBeginBlocker(app.BeginBlocker)
 	app.SetEndBlocker(app.EndBlocker)
 
-	for _, name := range upgradeNamesOfThisVersion {
+	for name := range upgradeNamesOfThisVersion {
 		app.UpgradeKeeper.SetUpgradeHandler(
 			name,
 			unreleasedUpgradeHandler(app, name),
@@ -889,7 +889,10 @@ func NewAgoricApp(
 	// Store migrations can only run once, so we use a notion of "primary upgrade
 	// name" to trigger them. Testnets may end up upgrading from one rc to
 	// another, which shouldn't re-run store upgrades.
-	if isPrimaryUpgradeName(upgradeInfo.Name) && !app.UpgradeKeeper.IsSkipHeight(upgradeInfo.Height) {
+	if upgradeInfo.Name != "" &&
+		isPrimaryUpgradeName(upgradeInfo.Name) &&
+		!app.UpgradeKeeper.IsSkipHeight(upgradeInfo.Height) {
+
 		storeUpgrades := storetypes.StoreUpgrades{
 			Added:   []string{},
 			Deleted: []string{},
