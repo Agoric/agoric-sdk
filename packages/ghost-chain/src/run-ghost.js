@@ -947,6 +947,7 @@ async function run() {
 
   await controller.shutdown();
   console.log(`\n`);
+  return;
   let keys = new Set(vatstoreDeletes.keys());
   for (const key of vatstoreSets.keys()) {
     keys.add(key);
