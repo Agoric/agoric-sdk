@@ -47,7 +47,7 @@ export const forEachPublicationRecord = async (subscriber, consumeValue) => {
  * @template {import('@endo/marshal').PassableCap} T
  * @param {Subscriber<T>} subscriber
  * @param {ERef<StorageNode>} storageNode
- * @param {ERef<ReturnType<typeof makeMarshal>>} marshaller
+ * @param {ERef<ReturnType<typeof makeMarshal<string | null>>>} marshaller
  * @returns {StoredSubscriber<T>}
  */
 export const makeStoredSubscriber = (subscriber, storageNode, marshaller) => {

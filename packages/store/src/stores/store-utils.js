@@ -150,7 +150,7 @@ harden(provideLazy);
  * @param {WeakMapStore<K, V>} store
  */
 export const makeAtomicProvider = store => {
-  /** @type {Map<K, Promise<V>>} */
+  /** @type {Map<K, Promise<Awaited<V>>>} */
   const pending = new Map();
 
   /**
@@ -160,11 +160,11 @@ export const makeAtomicProvider = store => {
    * it.
    *
    * @param {K} key
-   * @param {(key: K) => Promise<V>} makeValue make the value for the store if
-   *   it hasn't been made yet or the last make failed
-   * @param {(key: K, value: V) => Promise<void>} [finishValue] runs exactly
-   *   once after a new value is added to the store
-   * @returns {Promise<V>}
+   * @param {(key: K) => Promise<Awaited<V>>} makeValue make the value for the
+   *   store if it hasn't been made yet or the last make failed
+   * @param {(key: K, value: Awaited<V>) => Promise<void>} [finishValue] runs
+   *   exactly once after a new value is added to the store
+   * @returns {Promise<Awaited<V>>}
    */
   const provideAsync = (key, makeValue, finishValue) => {
     if (store.has(key)) {

@@ -225,7 +225,9 @@ export const makeReplayMembrane = ({
   const performSendOnly = (hostTarget, optVerb, hostArgs) => {
     try {
       optVerb
-        ? heapVowE.sendOnly(hostTarget)[optVerb](...hostArgs)
+        ? // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+          // @ts-ignore
+          heapVowE.sendOnly(hostTarget)[optVerb](...hostArgs)
         : // eslint-disable-next-line @typescript-eslint/ban-ts-comment
           // @ts-ignore once we changed this from E to heapVowE,
           // typescript started complaining that heapVowE(hostTarget)
@@ -260,7 +262,9 @@ export const makeReplayMembrane = ({
     const { vow, resolver } = hostResultKit;
     try {
       const hostPromise = optVerb
-        ? heapVowE(hostTarget)[optVerb](...hostArgs)
+        ? // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+          // @ts-ignore
+          heapVowE(hostTarget)[optVerb](...hostArgs)
         : // eslint-disable-next-line @typescript-eslint/ban-ts-comment
           // @ts-ignore once we changed this from E to heapVowE,
           // typescript started complaining that heapVowE(hostTarget)

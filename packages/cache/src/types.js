@@ -14,7 +14,7 @@ export {};
 
 /**
  * @typedef {object} Updater
- * @property {(oldValue: Passable) => unknown} update
+ * @property {(oldValue: Passable) => Passable} update
  */
 
 /**
