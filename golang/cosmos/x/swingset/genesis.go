@@ -13,6 +13,7 @@ import (
 	agoric "github.com/Agoric/agoric-sdk/golang/cosmos/types"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/keeper"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/types"
+	"github.com/cosmos/cosmos-sdk/server"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
@@ -136,6 +137,7 @@ func ExportGenesis(ctx sdk.Context, k Keeper, swingStoreExportsHandler *SwingSto
 		State:                k.GetState(ctx),
 		SwingStoreExportData: nil,
 	}
+	fmt.Println("ctx.Value(server.ServerContextKey): ", ctx.Value(server.ServerContextKey))
 
 	snapshotHeight := uint64(ctx.BlockHeight())
 

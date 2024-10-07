@@ -386,6 +386,12 @@ const (
 	ExportedSwingStoreDirectoryName = "swing-store"
 )
 
+var allowedSwingSetExportModes = map[string]bool{
+	"debug":       true,
+	"operational": true,
+	"skip":        true,
+}
+
 // extendCosmosExportCommand monkey-patches the "export" command added by
 // cosmos-sdk to add a required "export-dir" command-line flag, and create the
 // genesis export in the specified directory if the VM is running.
@@ -395,6 +401,20 @@ func extendCosmosExportCommand(cmd *cobra.Command) {
 	if err != nil {
 		panic(err)
 	}
+
+	var keys []string
+	for key := range allowedSwingSetExportModes {
+		keys = append(keys, key)
+	}
+
+	cmd.Flags().String(
+		gaia.FlagSwingStoreExportMode,
+		"operational",
+		fmt.Sprintf(
+			"The mode for swingstore export (%s)",
+			strings.Join(keys, " | "),
+		),
+	)
 
 	originalRunE := cmd.RunE
 
@@ -462,6 +482,14 @@ func (ac appCreator) appExport(
 	homePath, ok := appOpts.Get(flags.FlagHome).(string)
 	if !ok || homePath == "" {
 		return servertypes.ExportedApp{}, errors.New("application home is not set")
+	}
+
+	swingStoreExportMode, ok := appOpts.Get(gaia.FlagSwingStoreExportMode).(string)
+	if !(ok && allowedSwingSetExportModes[swingStoreExportMode]) {
+		return servertypes.ExportedApp{}, fmt.Errorf(
+			"export mode '%s' is not supported",
+			swingStoreExportMode,
+		)
 	}
 
 	var loadLatest bool

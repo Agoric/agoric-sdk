@@ -215,6 +215,7 @@ export default async function main(progname, args, { env, homedir, agcc }) {
   function registerPortHandler(portHandler) {
     lastPort += 1;
     const port = lastPort;
+    console.log(`Registering handler on port ${port}`);
     portHandlers[port] = async (...phArgs) =>
       E.resolve(portHandler(...phArgs)).catch(e => {
         console.error('portHandler threw', e);
@@ -252,7 +253,9 @@ export default async function main(progname, args, { env, homedir, agcc }) {
 
   // Need to keep the process alive until Go exits.
   whenHellFreezesOver = new Promise(() => {});
+  console.log('[JS] runAgCosmosDaemon started');
   agcc.runAgCosmosDaemon(nodePort, fromGo, [progname, ...args]);
+  console.log('[JS] runAgCosmosDaemon finished');
 
   /**
    * @type {undefined | {
@@ -746,6 +749,7 @@ export default async function main(progname, args, { env, homedir, agcc }) {
 
   async function toSwingSet(action, _replier) {
     // console.log(`toSwingSet`, action);
+    console.log(`toSwingSet running with action ${action.type}`);
 
     await null;
 
