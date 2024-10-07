@@ -7,9 +7,14 @@ import { makeAgdTools } from '../tools/agd-tools.js';
 import { type E2ETools } from '../tools/e2e-tools.js';
 import { makeGetFile, makeSetupRegistry } from '../tools/registry.js';
 import { generateMnemonic } from '../tools/wallet.js';
-import { makeRetryUntilCondition } from '../tools/sleep.js';
+import {
+  makeRetryUntilCondition,
+  sleep,
+  stirUntilSettled,
+} from '../tools/sleep.js';
 import { makeDeployBuilder } from '../tools/deploy.js';
 import { makeHermes } from '../tools/hermes-tools.js';
+import type { ExecAsync, ExecSync } from '../tools/agd-lib.js';
 
 export const FAUCET_POUR = 10_000n * 1_000_000n;
 
@@ -53,16 +58,97 @@ const makeKeyring = async (
   return { setupTestKeys, deleteTestKeys };
 };
 
+const ambientSetTimeout = globalThis.setTimeout;
+const ambientFetch = globalThis.fetch;
+
+export const makeStirringOptions = (
+  t: ExecutionContext,
+  stir: (description: string) => void,
+  setTimeout = ambientSetTimeout,
+) => ({
+  log: t.log,
+  stir,
+  setTimeout,
+});
+
+const makeStirringPowers = (
+  t: ExecutionContext,
+  {
+    fetch = ambientFetch,
+    execFile = childProcess.execFile,
+    setTimeout = ambientSetTimeout,
+  } = {},
+) => {
+  const stirWith = (stir: (description: string) => void) =>
+    makeStirringOptions(t, stir, setTimeout);
+  const delay = (ms: number) =>
+    sleep(
+      ms,
+      stirWith(description => t.pass(`stirring in commonSetup ${description}`)),
+    );
+
+  const stirringFetch: typeof fetch = async (
+    ...args: Parameters<typeof fetch>
+  ) => {
+    const resultP = ambientFetch(...args);
+    return stirUntilSettled(
+      resultP,
+      stirWith(description => t.pass(`stirring during fetch ${description}`)),
+    );
+  };
+
+  const execFileAsync: ExecAsync = (file, args, opts) => {
+    const stdoutP = new Promise<string>((resolve, reject) => {
+      execFile(
+        file,
+        args,
+        { ...opts, encoding: 'utf-8' },
+        (error, stdout, _stderr) => {
+          if (error) {
+            reject(error);
+          } else {
+            resolve(stdout);
+          }
+        },
+      );
+    });
+    return stirUntilSettled(
+      stdoutP,
+      stirWith(description =>
+        t.pass(`stirring in execFileAsync ${description}`),
+      ),
+    );
+  };
+  const stirWhile = <T>(
+    result: T,
+    stir: (description: string) => void = desc =>
+      t.pass(`stirring while ${desc}`),
+  ) => stirUntilSettled(result, stirWith(stir));
+  return { delay, fetch: stirringFetch, execFileAsync, stirWhile };
+};
+
 export const commonSetup = async (t: ExecutionContext) => {
   const { useChain } = await setupRegistry();
-  const tools = await makeAgdTools(t.log, childProcess);
-  const keyring = await makeKeyring(tools);
-  const deployBuilder = makeDeployBuilder(tools, fse.readJSON, execa);
-  const retryUntilCondition = makeRetryUntilCondition({
-    log: t.log,
-    setTimeout: globalThis.setTimeout,
+  const stirringPowers = makeStirringPowers(t);
+  const tools = await makeAgdTools(t.log, {
+    execFileSync: childProcess.execFileSync as ExecSync,
+    ...stirringPowers,
   });
-  const hermes = makeHermes(childProcess);
+  const keyring = await makeKeyring(tools);
+  const deployBuilder = makeDeployBuilder(
+    tools,
+    fse.readJSON,
+    execa,
+    stirringPowers.stirWhile,
+  );
+  const retryUntilCondition = makeRetryUntilCondition(
+    makeStirringOptions(t, description =>
+      t.pass(`stirring in retryUntilCondition ${description}`),
+    ),
+  );
+  const hermes = makeHermes({
+    execFileSync: childProcess.execFileSync as ExecSync,
+  });
 
   /**
    * Starts a contract if instance not found. Takes care of installing
