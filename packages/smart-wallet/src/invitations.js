@@ -8,55 +8,7 @@ import { shape } from './typeGuards.js';
 // A safety limit
 const MAX_PIPE_LENGTH = 2;
 
-/**
- * @typedef {AgoricContractInvitationSpec
- *   | ContractInvitationSpec
- *   | PurseInvitationSpec
- *   | ContinuingInvitationSpec} InvitationSpec
- *   Specify how to produce an invitation. See each type in the union for details.
- */
-
-/**
- * @typedef {{
- *   source: 'agoricContract';
- *   instancePath: string[];
- *   callPipe: [methodName: string, methodArgs?: any[]][];
- * }} AgoricContractInvitationSpec
- *   source of invitation is a chain of calls starting with an agoricName
- *
- *   - the start of the pipe is a lookup of instancePath within agoricNames
- *   - each entry in the callPipe executes a call on the preceding result
- *   - the end of the pipe is expected to return an Invitation
- *
- *
- * @typedef {{
- *   source: 'contract';
- *   instance: Instance;
- *   publicInvitationMaker: string;
- *   invitationArgs?: any[];
- * }} ContractInvitationSpec
- *   source is a contract (in which case this takes an Instance to look up in zoe)
- *
- * @typedef {{
- *   source: 'purse';
- *   instance: Instance;
- *   description: string;
- * }} PurseInvitationSpec
- *   the invitation is already in your Zoe "invitation" purse so we need to query
- *   it
- *
- *   - use the find/query invitation by kvs thing
- *
- *
- * @typedef {{
- *   source: 'continuing';
- *   previousOffer: import('./offers.js').OfferId;
- *   invitationMakerName: string;
- *   invitationArgs?: any[];
- * }} ContinuingInvitationSpec
- *   continuing invitation in which the offer result from a previous invitation
- *   had an `invitationMakers` property
- */
+/** @import {AgoricContractInvitationSpec, ContinuingInvitationSpec, ContractInvitationSpec, InvitationSpec, PurseInvitationSpec} from './types-index.js'; */
 
 /**
  * @typedef {Pick<InvitationDetails, 'description' | 'instance'>} InvitationsPurseQuery
@@ -100,6 +52,7 @@ export const makeInvitationsHelper = (
       mustMatch(spec, shape.ContractInvitationSpec);
 
       const { instance, publicInvitationMaker, invitationArgs = [] } = spec;
+      // @ts-expect-error TODO map marshaled references to within-vat types
       const pf = E(zoe).getPublicFacet(instance);
       return E(pf)[publicInvitationMaker](...invitationArgs);
     },

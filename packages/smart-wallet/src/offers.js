@@ -1,3 +1,5 @@
+/** @import {InvitationSpec} from './types-index.js'; */
+
 /**
  * @typedef {number | string} OfferId
  */
@@ -5,7 +7,7 @@
 /**
  * @typedef {{
  *   id: OfferId;
- *   invitationSpec: import('./invitations.js').InvitationSpec;
+ *   invitationSpec: InvitationSpec;
  *   proposal: Proposal;
  *   offerArgs?: any;
  * }} OfferSpec

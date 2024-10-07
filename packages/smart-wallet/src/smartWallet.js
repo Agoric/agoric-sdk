@@ -56,10 +56,12 @@ const trace = makeTracer('SmrtWlt');
 
 /** @typedef {number | string} OfferId */
 
+/** @import {InvitationSpec} from './types-index.js'; */
+
 /**
  * @typedef {{
  *   id: OfferId;
- *   invitationSpec: import('./invitations').InvitationSpec;
+ *   invitationSpec: InvitationSpec;
  *   proposal: Proposal;
  *   offerArgs?: any;
  * }} OfferSpec

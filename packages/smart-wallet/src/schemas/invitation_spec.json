@@ -1,0 +1,148 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "InvitationSpec",
+    "description": "Specify how to produce an invitation. See each type in the union for details.",
+    "oneOf": [
+        {
+            "title": "AgoricContractInvitationSpec",
+            "type": "object",
+            "description": "The source of invitation is a chain of calls starting with an agoricName. The start of the pipe is a lookup of instancePath within agoricNames, each entry in the callPipe executes a call on the preceding result, and the end of the pipe is expected to return an Invitation.",
+            "properties": {
+                "source": {
+                    "type": "string",
+                    "const": "agoricContract",
+                    "description": "Source of invitation is a chain of calls starting with an agoricName."
+                },
+                "instancePath": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "description": "The instance path to look up within agoricNames."
+                },
+                "callPipe": {
+                    "type": "array",
+                    "items": {
+                        "type": "array",
+                        "minItems": 1,
+                        "maxItems": 2,
+                        "items": [
+                            {
+                                "title": "methodName",
+                                "type": "string",
+                                "description": "The method name to call"
+                            },
+                            {
+                                "title": "methodArgs",
+                                "type": "array",
+                                "items": {
+                                    "type": "any"
+                                },
+                                "description": "Optional array of arguments for the method"
+                            }
+                        ]
+                    },
+                    "description": "A series of calls where each entry in the callPipe executes a call on the preceding result. Each entry is a tuple of [methodName, methodArgs?] where methodName is a string and methodArgs is an optional array of any type."
+                }
+            },
+            "additionalProperties": false,
+            "required": [
+                "source",
+                "instancePath",
+                "callPipe"
+            ]
+        },
+        {
+            "title": "ContractInvitationSpec",
+            "type": "object",
+            "description": "The source is a contract, which takes an Instance to look up in Zoe.",
+            "properties": {
+                "source": {
+                    "type": "string",
+                    "const": "contract",
+                    "description": "Source is a contract (an Instance to look up in Zoe)."
+                },
+                "instance": {
+                    "type": "object",
+                    "description": "The contract instance to look up in Zoe."
+                },
+                "publicInvitationMaker": {
+                    "type": "string",
+                    "description": "The method name used to make the public invitation."
+                },
+                "invitationArgs": {
+                    "type": "array",
+                    "items": {
+                        "type": "any"
+                    },
+                    "description": "Optional arguments to pass to the public invitation maker."
+                }
+            },
+            "additionalProperties": false,
+            "required": [
+                "source",
+                "instance",
+                "publicInvitationMaker"
+            ]
+        },
+        {
+            "title": "PurseInvitationSpec",
+            "type": "object",
+            "description": "The invitation is already in your Zoe 'invitation' purse, so we need to query it.",
+            "properties": {
+                "source": {
+                    "type": "string",
+                    "const": "purse",
+                    "description": "The invitation is already in your Zoe 'invitation' purse."
+                },
+                "instance": {
+                    "type": "object",
+                    "description": "The contract instance associated with the purse invitation."
+                },
+                "description": {
+                    "type": "string",
+                    "description": "A description of the invitation to query."
+                }
+            },
+            "additionalProperties": false,
+            "required": [
+                "source",
+                "instance",
+                "description"
+            ]
+        },
+        {
+            "title": "ContinuingInvitationSpec",
+            "type": "object",
+            "description": "A continuing invitation, where the offer result from a previous invitation had an `invitationMakers` property.",
+            "properties": {
+                "source": {
+                    "type": "string",
+                    "const": "continuing",
+                    "description": "Continuing invitation, starting from a previous offer result that included invitation makers."
+                },
+                "previousOffer": {
+                    "type": "string",
+                    "description": "The ID of the previous offer whose result included invitation makers."
+                },
+                "invitationMakerName": {
+                    "type": "string",
+                    "description": "The method name of the invitation maker."
+                },
+                "invitationArgs": {
+                    "type": "array",
+                    "items": {
+                        "type": "any"
+                    },
+                    "description": "Optional arguments for the invitation maker."
+                }
+            },
+            "additionalProperties": false,
+            "required": [
+                "source",
+                "previousOffer",
+                "invitationMakerName"
+            ]
+        }
+    ]
+}
