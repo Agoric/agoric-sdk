@@ -7,7 +7,7 @@ import { E, Far } from '@endo/far';
 import { AmountShape } from '@agoric/ertp/src/typeGuards.js';
 import { AmountMath, AssetKind } from '@agoric/ertp/src/amountMath.js';
 import { makeTracer } from '@agoric/internal';
-import { M, getCopyBagEntries } from '@agoric/store';
+import { M, getCopyBagEntries } from '@endo/patterns';
 
 const trace = makeTracer('Game', true);
 

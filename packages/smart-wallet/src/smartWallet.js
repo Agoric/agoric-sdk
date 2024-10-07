@@ -15,7 +15,7 @@ import {
   StorageNodeShape,
 } from '@agoric/internal';
 import { isUpgradeDisconnection } from '@agoric/internal/src/upgrade-api.js';
-import { M, mustMatch } from '@agoric/store';
+import { M, mustMatch } from '@endo/patterns';
 import {
   appendToStoredArray,
   provideLazy,

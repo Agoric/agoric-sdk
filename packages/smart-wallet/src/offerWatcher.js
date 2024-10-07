@@ -2,7 +2,7 @@ import { E, passStyleOf } from '@endo/far';
 
 import { isUpgradeDisconnection } from '@agoric/internal/src/upgrade-api.js';
 import { prepareExoClassKit, watchPromise } from '@agoric/vat-data';
-import { M } from '@agoric/store';
+import { M } from '@endo/patterns';
 import {
   PaymentPKeywordRecordShape,
   SeatShape,
