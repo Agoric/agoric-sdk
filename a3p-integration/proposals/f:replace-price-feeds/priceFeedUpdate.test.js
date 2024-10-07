@@ -98,7 +98,7 @@ const triggerAuction = async t => {
 const checkNewAuctionVat = async t => {
   const details = await getDetailsMatchingVats('auctioneer');
   // This query matches both the auction and its governor, so double the count
-  t.true(Object.keys(details).length > 2);
+  t.is(Object.keys(details).length, 3 * 2);
 };
 
 const countPriceFeedVats = async t => {
@@ -110,6 +110,8 @@ const countPriceFeedVats = async t => {
   const details = await getDetailsMatchingVats('scaledPriceAuthority');
   t.is(Object.keys(details).length, 4);
 
+  // ATOM vat name is something like zcf-DEADBEEF-ATOM_USD_price_feed
+  // initial '-' distinguishes this from stAOM
   const atomDetails = await getDetailsMatchingVats('-ATOM-USD_price_feed');
   t.is(Object.keys(atomDetails).length, 4);
 
@@ -119,7 +121,8 @@ const countPriceFeedVats = async t => {
 };
 
 const verifyVaultPriceUpdate = async t => {
-  const quote = await getVaultPrices(0);
+  const ATOMManagerIndex = 0;
+  const quote = await getVaultPrices(ATOMManagerIndex);
   t.true(quote.value[0].amountIn.brand.includes(' ATOM '));
   t.is(quote.value[0].amountOut.value, '+5200000');
 };

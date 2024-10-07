@@ -25,7 +25,7 @@ import {
 import {
   updateVaultDirectorParams,
   updateVaultManagerParams,
-} from '../tools/changeVaultParams';
+} from '../tools/changeVaultParams.js';
 
 const test = anyTest as TestFn<LiquidationTestContext>;
 test.before(
@@ -54,7 +54,7 @@ const outcome = {
   bids: [{ payouts: { Bid: 0, Collateral: 2.224446 } }],
 };
 
-test.serial('setupVaults; run replace-price-feeds proposals', async t => {
+test.serial('setupVaults; run updatePriceFeeds proposals', async t => {
   const {
     agoricNamesRemotes,
     buildProposal,
@@ -83,7 +83,7 @@ test.serial('setupVaults; run replace-price-feeds proposals', async t => {
 
   t.log('building all relevant CoreEvals');
   const coreEvals = await Promise.all([
-    buildProposal(priceFeedBuilder, ['UNRELEASED_main']),
+    buildProposal(priceFeedBuilder, ['main']),
     buildProposal('@agoric/builders/scripts/vats/upgradeVaults.js'),
     buildProposal('@agoric/builders/scripts/vats/add-auction.js'),
   ]);

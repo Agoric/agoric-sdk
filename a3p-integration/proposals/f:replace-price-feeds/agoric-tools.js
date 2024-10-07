@@ -14,6 +14,7 @@ export const generateVaultDirectorParamChange = async (
   const deadline = toSec(Date.now()) + voteDurSec;
 
   const zip = (xs, ys) => xs.map((x, i) => [x, ys[i]]);
+  // KLUDGE: partial deconstruction of smallCaps values
   const fromSmallCapsEntries = txt => {
     const { body, slots } = JSON.parse(txt);
     const theEntries = zip(JSON.parse(body.slice(1)), slots).map(

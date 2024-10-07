@@ -24,7 +24,7 @@ export const DEFAULT_CONTRACT_TERMS = {
 
 /** @import {EconomyBootstrapPowers} from './econ-behaviors.js'; */
 /** @import {ChainlinkConfig} from '@agoric/inter-protocol/src/price/fluxAggregatorKit.js'; */
-/** @typedef {typeof import('@agoric/inter-protocol/src/price/fluxAggregatorContract.js').start} FluxStartFn */
+/** @import {FluxStartFn} from '@agoric/inter-protocol/src/price/fluxAggregatorContract.js'; */
 
 const trace = makeTracer('DeployPriceFeed', true);
 
@@ -58,7 +58,7 @@ const installPriceAggregator = async (
 };
 
 /**
- * Create inert brands (no mint or issuer) referred to by price oracles.
+ * Provide (find/create) inert brands (no mint or issuer) referred to by oracles
  *
  * @param {EconomyBootstrapPowers & NamedVatPowers} space
  * @param {{ name: string; decimalPlaces: number }} opt
@@ -93,7 +93,7 @@ export const ensureOracleBrand = async (
  * }} config
  * @param {Installation<FluxStartFn>} installation
  */
-const startPriceAggegatorInstance = async (
+const startPriceAggregatorInstance = async (
   {
     consume: {
       board,
@@ -121,6 +121,7 @@ const startPriceAggegatorInstance = async (
     description: AGORIC_INSTANCE_NAME,
     brandIn,
     brandOut,
+    // XXX powerful TimerService, see #6003
     timer: await chainTimerService,
     unitAmountIn: await unitAmount(brandIn),
   });
@@ -184,7 +185,7 @@ const distributeInvitations = async (
 
   trace('distributing invitations', oracleAddresses);
   // This doesn't resolve until oracle operators create their smart wallets.
-  // Don't block bootstrap on it.
+  // Don't block completion on it.
   void Promise.all(oracleAddresses.map(addOracle));
   trace('createPriceFeed complete');
 };
@@ -231,7 +232,7 @@ export const deployPriceFeeds = async (powers, config) => {
       name: outBrandName,
       decimalPlaces: outBrandDecimals,
     });
-    const kit = await startPriceAggegatorInstance(
+    const kit = await startPriceAggregatorInstance(
       powers,
       {
         AGORIC_INSTANCE_NAME,

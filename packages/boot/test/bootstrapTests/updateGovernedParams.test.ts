@@ -138,7 +138,7 @@ test('modify manager & director params; update vats, check', async t => {
   const priceFeedBuilder =
     '@agoric/builders/scripts/inter-protocol/updatePriceFeeds.js';
   const coreEvals = await Promise.all([
-    buildProposal(priceFeedBuilder, ['UNRELEASED_main']),
+    buildProposal(priceFeedBuilder, ['main']),
     buildProposal('@agoric/builders/scripts/vats/upgradeVaults.js'),
     buildProposal('@agoric/builders/scripts/vats/add-auction.js'),
   ]);

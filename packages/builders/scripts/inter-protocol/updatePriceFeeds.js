@@ -7,7 +7,7 @@ import { getManifestForPriceFeeds } from '@agoric/inter-protocol/src/proposals/d
 
 /** @type {Record<string, PriceFeedConfig>} */
 const configurations = {
-  UNRELEASED_A3P_INTEGRATION: {
+  A3P_INTEGRATION: {
     oracleAddresses: [
       'agoric1ee9hr0jyrxhy999y755mp862ljgycmwyp4pl7q', // GOV1
       'agoric1wrfh296eu2z34p6pah7q04jjuyj3mxu9v98277', // GOV2
@@ -15,7 +15,7 @@ const configurations = {
     ],
     inBrandNames: ['ATOM', 'stATOM'],
   },
-  UNRELEASED_main: {
+  main: {
     oracleAddresses: [
       'agoric144rrhh4m09mh7aaffhm6xy223ym76gve2x7y78', // DSRV
       'agoric19d6gnr9fyp6hev4tlrg87zjrzsd5gzr5qlfq2p', // Stakin
@@ -26,7 +26,7 @@ const configurations = {
     inBrandNames: ['ATOM', 'stATOM', 'stOSMO', 'stTIA', 'stkATOM'],
     contractTerms: { minSubmissionCount: 3 },
   },
-  UNRELEASED_devnet: {
+  devnet: {
     oracleAddresses: [
       'agoric1lw4e4aas9q84tq0q92j85rwjjjapf8dmnllnft', // DSRV
       'agoric1zj6vrrrjq4gsyr9lw7dplv4vyejg3p8j2urm82', // Stakin
