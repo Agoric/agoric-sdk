@@ -1,12 +1,14 @@
 import assert from 'assert';
+import '@endo/init';
 import {
   agoric,
   executeOffer,
   getContractInfo,
   makeAgd,
-  smallCapsContext,
 } from '@agoric/synthetic-chain';
+import { makeFromBoard, boardSlottingMarshaller } from './rpc.js';
 import { execFileSync } from 'child_process';
+import { makeCopyBag } from '@agoric/store';
 
 const ISTunit = 1_000_000n;
 
@@ -20,32 +22,25 @@ const agd = makeAgd({ execFileSync: showAndExec }).withOpts({
   keyringBackend: 'test',
 });
 
-const zip = (xs, ys) => xs.map((x, i) => [x, ys[i]]);
-const fromSmallCapsEntries = txt => {
-  const { body, slots } = JSON.parse(txt);
-  const theEntries = zip(JSON.parse(body.slice(1)), slots).map(
-    ([[name, ref], boardID]) => {
-      const iface = ref.replace(/^\$\d+\./, '');
-      return [name, { iface, boardID }];
-    },
-  );
-  return Object.fromEntries(theEntries);
-};
+const fromBoard = makeFromBoard();
+const marshaller = boardSlottingMarshaller(fromBoard.convertSlotToVal);
 
-const brand = fromSmallCapsEntries(
-  await agoric.follow('-lF', ':published.agoricNames.brand', '-o', 'text'),
+const brandsRaw = await agoric.follow(
+  '-lF',
+  ':published.agoricNames.brand',
+  '-o',
+  'text',
 );
-assert(brand.IST, 'Brand IST not found');
-assert(brand.timer, 'Brand timer not found');
-assert(brand.KREAdCHARACTER, 'Brand KREAdCHARACTER not found');
-assert(brand.KREAdITEM, 'Brand KREAdITEM not found');
+const brands = Object.fromEntries(
+  marshaller.fromCapData(JSON.parse(brandsRaw)),
+);
+
+assert(brands.IST, 'Brand IST not found');
+assert(brands.timer, 'Brand timer not found');
+assert(brands.KREAdCHARACTER, 'Brand KREAdCHARACTER not found');
+assert(brands.KREAdITEM, 'Brand KREAdITEM not found');
 
 const mintCharacterOffer = async () => {
-  const { smallCaps, toCapData } = smallCapsContext();
-
-  // Remove the ix attribute from the brand to avoid smallCapsContext caching
-  delete brand.IST.ix;
-
   const id = `KREAd-mint-character-acceptance-test`;
   const body = {
     method: 'executeOffer',
@@ -60,35 +55,27 @@ const mintCharacterOffer = async () => {
       proposal: {
         give: {
           Price: {
-            brand: smallCaps.ref(brand.IST),
-            value: smallCaps.Nat(5n * ISTunit),
+            brand: brands.IST,
+            value: 5n * ISTunit,
           },
         },
       },
     },
   };
 
-  return toCapData(body);
+  return JSON.stringify(marshaller.toCapData(harden(body)));
 };
 
 const unequipAllItemsOffer = async address => {
-  const { smallCaps, toCapData } = smallCapsContext();
-
-  // Remove the ix attribute from the brand to avoid smallCapsContext caching
-  delete brand.IST.ix;
-  delete brand.KREAdCHARACTER.ix;
-  delete brand.timer.ix;
-
   const kreadCharacter = await getBalanceFromPurse(address, 'character');
   if (!kreadCharacter) {
     throw new Error('Character not found on user purse');
   }
 
-  kreadCharacter.date.timerBrand = smallCaps.ref(brand.timer);
   const inventoryKeyId = kreadCharacter.keyId === 1 ? 2 : 1;
+  const kreadCharacter2 = { ...kreadCharacter, keyId: inventoryKeyId };
 
   const id = `KREAd-unequip-all-items-acceptance-test`;
-
   const body = {
     method: 'executeOffer',
     offer: {
@@ -101,43 +88,33 @@ const unequipAllItemsOffer = async address => {
       proposal: {
         give: {
           CharacterKey1: {
-            brand: smallCaps.ref(brand.KREAdCHARACTER),
-            value: { '#tag': 'copyBag', payload: [[kreadCharacter, '+1']] },
+            brand: brands.KREAdCHARACTER,
+            value: makeCopyBag([[kreadCharacter, 1n]]),
           },
         },
         want: {
           CharacterKey2: {
-            brand: smallCaps.ref(brand.KREAdCHARACTER),
-            value: {
-              '#tag': 'copyBag',
-              payload: [[{ ...kreadCharacter, keyId: inventoryKeyId }, '+1']],
-            },
+            brand: brands.KREAdCHARACTER,
+            value: makeCopyBag([[kreadCharacter2, 1n]]),
           },
         },
       },
     },
   };
 
-  return toCapData(body);
+  return JSON.stringify(marshaller.toCapData(harden(body)));
 };
 
 const buyItemOffer = async () => {
-  const { smallCaps, toCapData } = smallCapsContext();
-
-  // Remove the ix attribute from the brand to avoid smallCapsContext caching
-  delete brand.IST.ix;
-  delete brand.KREAdITEM.ix;
-
   const children = await getMarketItemsChildren();
   const marketItem = await getMarketItem(children[0]);
 
   const itemPrice =
-    BigInt(marketItem.askingPrice.value) +
-    BigInt(marketItem.platformFee.value) +
-    BigInt(marketItem.royalty.value);
+    marketItem.askingPrice.value +
+    marketItem.platformFee.value +
+    marketItem.royalty.value;
 
   const id = `KREAd-buy-item-acceptance-test`;
-
   const body = {
     method: 'executeOffer',
     offer: {
@@ -151,33 +128,24 @@ const buyItemOffer = async () => {
       proposal: {
         give: {
           Price: {
-            brand: smallCaps.ref(brand.IST),
-            value: smallCaps.Nat(itemPrice),
+            brand: brands.IST,
+            value: itemPrice,
           },
         },
         want: {
           Item: {
-            brand: smallCaps.ref(brand.KREAdITEM),
-            value: { '#tag': 'copyBag', payload: [[marketItem.asset, '+1']] },
+            brand: brands.KREAdITEM,
+            value: makeCopyBag([[marketItem.asset, 1n]]),
           },
         },
       },
     },
   };
 
-  console.log('LOG: body', body);
-  console.log('LOG: capData', toCapData(body));
-
-  return toCapData(body);
+  return JSON.stringify(marshaller.toCapData(harden(body)));
 };
 
 const sellItemOffer = async address => {
-  const { smallCaps, toCapData } = smallCapsContext();
-
-  // Remove the ix attribute from the brand to avoid smallCapsContext caching
-  delete brand.IST.ix;
-  delete brand.KREAdITEM.ix;
-
   const kreadItem = await getBalanceFromPurse(address, 'item');
   if (!kreadItem) {
     throw new Error('Item not found on user purse');
@@ -196,46 +164,35 @@ const sellItemOffer = async address => {
       proposal: {
         give: {
           Item: {
-            brand: smallCaps.ref(brand.KREAdITEM),
-            value: { '#tag': 'copyBag', payload: [[kreadItem, '+1']] },
+            brand: brands.KREAdITEM,
+            value: makeCopyBag([[kreadItem, 1n]]),
           },
         },
         want: {
           Price: {
-            brand: smallCaps.ref(brand.IST),
-            value: smallCaps.Nat(5n * ISTunit),
+            brand: brands.IST,
+            value: 5n * ISTunit,
           },
         },
       },
     },
   };
 
-  return toCapData(body);
+  return JSON.stringify(marshaller.toCapData(harden(body)));
 };
 
 const buyCharacterOffer = async () => {
-  const { smallCaps, toCapData } = smallCapsContext();
-
-  // Remove the ix attribute from the brand to avoid smallCapsContext caching
-  delete brand.IST.ix;
-  delete brand.KREAdCHARACTER.ix;
-  delete brand.timer.ix;
-
   const charactersMarket = await getMarketCharactersChildren();
   const path = `:published.kread.market-characters.${charactersMarket[0]}`;
   const rawCharacterData = await agoric.follow('-lF', path, '-o', 'text');
-
-  const characterData = JSON.parse(rawCharacterData);
-  const marketCharacter = JSON.parse(characterData.body.slice(1));
-  marketCharacter.asset.date.timerBrand = smallCaps.ref(brand.timer);
+  const marketCharacter = marshaller.fromCapData(JSON.parse(rawCharacterData));
 
   const characterPrice =
-    BigInt(marketCharacter.askingPrice.value) +
-    BigInt(marketCharacter.platformFee.value) +
-    BigInt(marketCharacter.royalty.value);
+    marketCharacter.askingPrice.value +
+    marketCharacter.platformFee.value +
+    marketCharacter.royalty.value;
 
   const id = `KREAd-buy-character-acceptance-test`;
-
   const body = {
     method: 'executeOffer',
     offer: {
@@ -248,43 +205,30 @@ const buyCharacterOffer = async () => {
       proposal: {
         give: {
           Price: {
-            brand: smallCaps.ref(brand.IST),
-            value: smallCaps.Nat(characterPrice),
+            brand: brands.IST,
+            value: characterPrice,
           },
         },
         want: {
           Character: {
-            brand: smallCaps.ref(brand.KREAdCHARACTER),
-            value: {
-              '#tag': 'copyBag',
-              payload: [[marketCharacter.asset, '+1']],
-            },
+            brand: brands.KREAdCHARACTER,
+            value: makeCopyBag([[marketCharacter.asset, 1n]]),
           },
         },
       },
     },
   };
 
-  return toCapData(body);
+  return JSON.stringify(marshaller.toCapData(harden(body)));
 };
 
 const sellCharacterOffer = async address => {
-  const { smallCaps, toCapData } = smallCapsContext();
-
-  // Remove the ix attribute from the brand to avoid smallCapsContext caching
-  delete brand.IST.ix;
-  delete brand.KREAdCHARACTER.ix;
-  delete brand.timer.ix;
-
   const kreadCharacter = await getBalanceFromPurse(address, 'character');
   if (!kreadCharacter) {
     throw new Error('Character not found on user purse');
   }
 
-  kreadCharacter.date.timerBrand = smallCaps.ref(brand.timer);
-
   const id = `KREAd-sell-character-acceptance-test`;
-
   const body = {
     method: 'executeOffer',
     offer: {
@@ -297,21 +241,21 @@ const sellCharacterOffer = async address => {
       proposal: {
         give: {
           Character: {
-            brand: smallCaps.ref(brand.KREAdCHARACTER),
-            value: { '#tag': 'copyBag', payload: [[kreadCharacter, '+1']] },
+            brand: brands.KREAdCHARACTER,
+            value: makeCopyBag([[kreadCharacter, 1n]]),
           },
         },
         want: {
           Price: {
-            brand: smallCaps.ref(brand.IST),
-            value: smallCaps.Nat(5n * ISTunit),
+            brand: brands.IST,
+            value: 5n * ISTunit,
           },
         },
       },
     },
   };
 
-  return toCapData(body);
+  return JSON.stringify(marshaller.toCapData(harden(body)));
 };
 
 export const mintCharacter = async address => {
@@ -361,11 +305,9 @@ export const getMarketItemsChildren = async () => {
 export const getMarketItem = async itemNode => {
   const itemMarketPath = `:published.kread.market-items.${itemNode}`;
   const rawItemData = await agoric.follow('-lF', itemMarketPath, '-o', 'text');
+  const item = marshaller.fromCapData(JSON.parse(rawItemData));
 
-  const itemData = JSON.parse(rawItemData);
-  const marketItem = JSON.parse(itemData.body.slice(1));
-
-  return marketItem;
+  return item;
 };
 
 export const getCharacterInventory = async characterName => {
@@ -379,32 +321,26 @@ export const getCharacterInventory = async characterName => {
 };
 
 export const getBalanceFromPurse = async (address, type) => {
-  const wallet = await agoric.follow(
+  const walletRaw = await agoric.follow(
     '-lF',
     `:published.wallet.${address}.current`,
     '-o',
     'text',
   );
+  const purses = marshaller.fromCapData(JSON.parse(walletRaw)).purses;
 
-  const walletData = JSON.parse(wallet);
-  const walletBody = JSON.parse(walletData.body.slice(1));
-
-  let iface;
-  if (type === 'character') {
-    iface = brand.KREAdCHARACTER.iface;
-  } else if (type === 'item') {
-    iface = brand.KREAdITEM.iface;
-  } else {
+  const assetBrands = {
+    character: brands.KREAdCHARACTER,
+    item: brands.KREAdITEM,
+  };
+  const assetBrand = assetBrands[type];
+  if (!assetBrand) {
     throw new Error('Invalid type provided. Must be "character" or "item".');
   }
 
-  const purse = walletBody.purses.find(({ balance }) =>
-    balance.brand.includes(iface),
+  const assetPurse = purses.find(
+    ({ brand }) => brand.getBoardId() === assetBrand.getBoardId(),
   );
 
-  if (purse) {
-    return purse.balance.value.payload[0][0];
-  } else {
-    return null;
-  }
+  return assetPurse?.balance.value.payload[0]?.[0] || null;
 };
