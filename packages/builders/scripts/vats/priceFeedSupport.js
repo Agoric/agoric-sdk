@@ -1,32 +1,8 @@
 /* global process */
 
-import { makeHelpers } from '@agoric/deploy-script-support';
-import { M, mustMatch } from '@agoric/store';
 import { DEFAULT_CONTRACT_TERMS } from '../inter-protocol/price-feed-core.js';
 
-/** @import {TypedPattern} from '@agoric/internal'; */
-/**
- * @typedef {{
- *   AGORIC_INSTANCE_NAME: string,
- *   ORACLE_ADDRESSES: string[],
- *   IN_BRAND_LOOKUP?: string[],
- *   IN_BRAND_NAME?: string,
- * } & ({ IN_BRAND_LOOKUP: string[] }
- *    | { IN_BRAND_NAME: string })
- * } PriceFeedOptions
- */
-
-/** @type {TypedPattern<PriceFeedOptions>} */
-const PriceFeedOptionsShape = M.and(
-  M.splitRecord({
-    AGORIC_INSTANCE_NAME: M.string(),
-    ORACLE_ADDRESSES: M.arrayOf(M.string()),
-  }),
-  M.or(
-    M.splitRecord({ IN_BRAND_LOOKUP: M.arrayOf(M.string()) }),
-    M.splitRecord({ IN_BRAND_NAME: M.string() }),
-  ),
-);
+const { Fail } = assert;
 
 /**
  * modified copy of ../inter-protocol/price-feed-core.js
@@ -37,16 +13,22 @@ export const strictPriceFeedProposalBuilder = async (
   { publishRef, install },
   options,
 ) => {
-  mustMatch(options, PriceFeedOptionsShape);
   const {
     AGORIC_INSTANCE_NAME,
     IN_BRAND_LOOKUP,
-    // @ts-expect-error yes, IN_BRAND_LOOKUP may be undefined, but then IN_BRAND_LOOKUP must be defined
     IN_BRAND_NAME = IN_BRAND_LOOKUP[IN_BRAND_LOOKUP.length - 1],
     ORACLE_ADDRESSES,
   } = options;
 
   const oracleAddresses = ORACLE_ADDRESSES;
+  Array.isArray(oracleAddresses) ||
+    Fail`ORACLE_ADDRESSES array is required; got ${oracleAddresses}`;
+
+  AGORIC_INSTANCE_NAME ||
+    Fail`AGORIC_INSTANCE_NAME is required; got ${AGORIC_INSTANCE_NAME}`;
+
+  Array.isArray(IN_BRAND_LOOKUP) ||
+    Fail`IN_BRAND_NAME array is required; got ${IN_BRAND_LOOKUP}`;
 
   return harden({
     sourceSpec: '@agoric/inter-protocol/src/proposals/price-feed-proposal.js',
@@ -106,20 +88,3 @@ export const deprecatedPriceFeedProposalBuilder = async (powers, options) => {
  * @type {import('@agoric/deploy-script-support/src/externalTypes.js').CoreEvalBuilder}
  */
 export const priceFeedProposalBuilder = deprecatedPriceFeedProposalBuilder;
-
-export default async (homeP, endowments) => {
-  const { writeCoreEval } = await makeHelpers(homeP, endowments);
-
-  const { scriptArgs } = endowments;
-  if (scriptArgs.length !== 1) throw RangeError('arg 0 must be JSON opts');
-  let opts;
-  try {
-    opts = JSON.parse(scriptArgs[0]);
-  } catch (cause) {
-    throw RangeError('expected JSON', { cause });
-  }
-
-  await writeCoreEval('atomPriceFeed', powers =>
-    strictPriceFeedProposalBuilder(powers, opts),
-  );
-};
