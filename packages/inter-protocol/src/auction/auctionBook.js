@@ -29,13 +29,13 @@ import {
 
 /**
  * @import {Baggage} from '@agoric/vat-data';
- * @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js';
+ * @import {PriceAuthority} from '@agoric/zoe/tools/types.js';
  * @import {TypedPattern} from '@agoric/internal';
  */
 
 const { makeEmpty } = AmountMath;
 
-const DEFAULT_DECIMALS = 9;
+const QUOTE_SCALE = 10n ** 9n;
 
 /**
  * @file The book represents the collateral-specific state of an ongoing
@@ -460,39 +460,32 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
 
           trace('observing');
 
-          void E.when(
-            E(collateralBrand).getDisplayInfo(),
-            ({ decimalPlaces = DEFAULT_DECIMALS }) => {
-              const quoteNotifier = E(priceAuthority).makeQuoteNotifier(
-                AmountMath.make(collateralBrand, 10n ** BigInt(decimalPlaces)),
-                bidBrand,
-              );
-              void observeNotifier(quoteNotifier, {
-                updateState: quote => {
-                  trace(
-                    `BOOK notifier ${priceFrom(quote).numerator.value}/${
-                      priceFrom(quote).denominator.value
-                    }`,
-                  );
-                  state.updatingOracleQuote = priceFrom(quote);
-                },
-                fail: reason => {
-                  trace(
-                    `Failure from quoteNotifier (${reason}) setting to null`,
-                  );
-                  // lack of quote will trigger restart
-                  state.updatingOracleQuote = null;
-                },
-                finish: done => {
-                  trace(
-                    `quoteNotifier invoked finish(${done}). setting quote to null`,
-                  );
-                  // lack of quote will trigger restart
-                  state.updatingOracleQuote = null;
-                },
-              });
-            },
+          const quoteNotifier = E(priceAuthority).makeQuoteNotifier(
+            AmountMath.make(collateralBrand, QUOTE_SCALE),
+            bidBrand,
           );
+          void observeNotifier(quoteNotifier, {
+            updateState: quote => {
+              trace(
+                `BOOK notifier ${priceFrom(quote).numerator.value}/${
+                  priceFrom(quote).denominator.value
+                }`,
+              );
+              state.updatingOracleQuote = priceFrom(quote);
+            },
+            fail: reason => {
+              trace(`Failure from quoteNotifier (${reason}) setting to null`);
+              // lack of quote will trigger restart
+              state.updatingOracleQuote = null;
+            },
+            finish: done => {
+              trace(
+                `quoteNotifier invoked finish(${done}). setting quote to null`,
+              );
+              // lack of quote will trigger restart
+              state.updatingOracleQuote = null;
+            },
+          });
 
           void facets.helper.publishBookData();
         },

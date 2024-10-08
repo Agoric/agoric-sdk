@@ -170,8 +170,9 @@ export const registerScaledPriceAuthority = async (
     ]),
   ]);
 
+  // TODO get unit amounts elsewhere https://github.com/Agoric/agoric-sdk/issues/10235
   // We need "unit amounts" of each brand in order to get the ratios right.  You
-  // can ignore decimalPlaces when adding and subtracting a brand with itself,
+  // can ignore unit amounts when adding and subtracting a brand with itself,
   // but not when creating ratios.
   const getDecimalP = async brand => {
     const displayInfo = E(brand).getDisplayInfo();
