@@ -102,15 +102,20 @@ export const getManifestForReplaceScaledPriceAuthorities = async (
   manifest: {
     [replaceScaledPriceAuthorities.name]: {
       consume: {
-        agoricNamesAdmin: t,
+        // //// Widely known  ////
         agoricNames: t,
-        contractKits: t,
         priceAuthority: t,
-        priceAuthorityAdmin: t,
-        zoe: t,
         startUpgradable: t,
+        zoe: t,
+
+        // //// closely held, powerful ////
+        agoricNamesAdmin: t,
+        contractKits: t,
+        priceAuthorityAdmin: t,
       },
       instance: {
+        // This is a right to add/replace any instance. That we update only the
+        // relevant ones must be verified by inspection.
         produce: t,
       },
     },
