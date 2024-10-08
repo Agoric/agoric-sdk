@@ -65,7 +65,7 @@ test.serial('Alice unequips all defaults Items', async t => {
   );
 });
 
-test.serial('Alice sells unequipped Item', async t => {
+test.serial('Alice sells one unequipped Item', async t => {
   const itemListBefore = await getMarketItemsChildren();
   const itemBefore = await getBalanceFromPurse(Alice, 'item');
 
@@ -78,13 +78,9 @@ test.serial('Alice sells unequipped Item', async t => {
     'Items market should have 1 more item',
   );
 
-  const itemAfter = await getBalanceFromPurse(Alice, 'item');
-  t.is(itemAfter, null, 'An Item should not exist in purse');
-
   const soldItemNode = itemListAfter.filter(
     itemNode => !itemListBefore.includes(itemNode),
   );
-
   const soldItem = await getMarketItem(soldItemNode);
   t.log(`Sold Item: ${soldItem}`);
 
