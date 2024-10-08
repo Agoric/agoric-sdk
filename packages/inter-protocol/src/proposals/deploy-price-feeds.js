@@ -285,6 +285,7 @@ export const getManifestForPriceFeeds = async (
       namedVat: t,
       consume: {
         agoricNamesAdmin: t,
+        agoricNames: t,
         board: t,
         chainStorage: t,
         chainTimerService: t,
