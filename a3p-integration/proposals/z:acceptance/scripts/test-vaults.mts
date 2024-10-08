@@ -13,7 +13,7 @@ import {
   ISTunit,
   provisionWallet,
   setDebtLimit,
-} from '../lib/vaults.mjs';
+} from '../test-lib/vaults.mjs';
 
 const START_FREQUENCY = 600; // StartFrequency: 600s (auction runs every 10m)
 const CLOCK_STEP = 20; // ClockStep: 20s (ensures auction completes in time)
