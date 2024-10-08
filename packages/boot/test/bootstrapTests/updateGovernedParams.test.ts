@@ -1,7 +1,7 @@
 /**
- * @file  The goal of this test is  to see that the
- * upgrade scripts re-wire all the contracts so new auctions and
- * price feeds are connected to vaults correctly.
+ * @file  The goal of this test is to ensure that governance can update params
+ * after an upgrade. There was a point when the contractGovernor kept trying to
+ * use the old paramManager which was ephemeral and no longer useable.
  *
  * 1. enter a bid
  * 2. force prices to drop so a vault liquidates
@@ -21,7 +21,7 @@ import {
 import {
   updateVaultDirectorParams,
   updateVaultManagerParams,
-} from '../tools/changeVaultParams';
+} from '../tools/changeVaultParams.js';
 
 const makeDefaultTestContext = async t => {
   console.time('DefaultTestContext');
@@ -75,10 +75,6 @@ test.before(async t => {
 test.after.always(t => {
   return t.context.shutdown && t.context.shutdown();
 });
-
-const outcome = {
-  bids: [{ payouts: { Bid: 0, Collateral: 1.800828 } }],
-};
 
 test('modify manager & director params; update vats, check', async t => {
   const { agoricNamesRemotes, evalProposal, buildProposal, gd } = t.context;
