@@ -10,7 +10,6 @@ import (
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 )
 
-
 func TestKeeper_ParseRequestTypeURL(t *testing.T) {
 	testCases := []struct {
 		name        string
@@ -46,7 +45,7 @@ func TestKeeper_DeserializeTxMessages(t *testing.T) {
 
 	banktypes.RegisterInterfaces(encodingConfig.InterfaceRegistry)
 
-	keeper := NewKeeper(cdc, nil, nil, nil)
+	keeper := NewKeeper(cdc, nil, nil, nil, nil)
 
 	expectedMsgSend := []sdk.Msg{
 		&banktypes.MsgSend{
@@ -63,22 +62,22 @@ func TestKeeper_DeserializeTxMessages(t *testing.T) {
 		wantErr  bool
 	}{
 		{
-			name: "camelCase keys",
-			json: `{"messages":[{"@type":"/cosmos.bank.v1beta1.MsgSend","fromAddress":"cosmos1abc","toAddress":"cosmos1xyz","amount":[{"denom":"stake","amount":"100"}]}]}`,
+			name:     "camelCase keys",
+			json:     `{"messages":[{"@type":"/cosmos.bank.v1beta1.MsgSend","fromAddress":"cosmos1abc","toAddress":"cosmos1xyz","amount":[{"denom":"stake","amount":"100"}]}]}`,
 			expected: expectedMsgSend,
-			wantErr: false,
+			wantErr:  false,
 		},
 		{
-			name: "snake_case keys",
-			json: `{"messages":[{"@type":"/cosmos.bank.v1beta1.MsgSend","from_address":"cosmos1abc","to_address":"cosmos1xyz","amount":[{"denom":"stake","amount":"100"}]}]}`,
+			name:     "snake_case keys",
+			json:     `{"messages":[{"@type":"/cosmos.bank.v1beta1.MsgSend","from_address":"cosmos1abc","to_address":"cosmos1xyz","amount":[{"denom":"stake","amount":"100"}]}]}`,
 			expected: expectedMsgSend,
-			wantErr: false,
+			wantErr:  false,
 		},
 		{
-			name: "misspelled key",
-			json: `{"messages":[{"@type":"/cosmos.bank.v1beta1.MsgSend","from_addresss":"cosmos1abc","to_address":"cosmos1xyz","amount":[{"denom":"stake","amount":"100"}]}]}`,
+			name:     "misspelled key",
+			json:     `{"messages":[{"@type":"/cosmos.bank.v1beta1.MsgSend","from_addresss":"cosmos1abc","to_address":"cosmos1xyz","amount":[{"denom":"stake","amount":"100"}]}]}`,
 			expected: expectedMsgSend,
-			wantErr: true,
+			wantErr:  true,
 		},
 	}
 

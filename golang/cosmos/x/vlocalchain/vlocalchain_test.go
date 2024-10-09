@@ -16,6 +16,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/store"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	transfertypes "github.com/cosmos/ibc-go/v6/modules/apps/transfer/types"
@@ -35,6 +36,25 @@ const (
 	firstAddr          = "cosmos1uupflqrldlpkktssnzgp3r03ff6kz4u4kzd92pjgsfddye7grrlqt9rmmt"
 	msgAllocateAddress = `{"type":"VLOCALCHAIN_ALLOCATE_ADDRESS"}`
 )
+
+type mockAccounts struct {
+	existing map[string]bool
+}
+
+var _ types.AccountKeeper = (*mockAccounts)(nil)
+
+func (a *mockAccounts) NewAccountWithAddress(ctx sdk.Context, addr sdk.AccAddress) authtypes.AccountI {
+	return authtypes.NewBaseAccountWithAddress(addr)
+}
+
+func (a *mockAccounts) HasAccount(ctx sdk.Context, addr sdk.AccAddress) bool {
+	existing := a.existing[addr.String()]
+	return existing
+}
+
+func (a *mockAccounts) SetAccount(ctx sdk.Context, acc authtypes.AccountI) {
+	a.existing[acc.GetAddress().String()] = true
+}
 
 type mockBank struct {
 	banktypes.UnimplementedQueryServer
@@ -108,7 +128,7 @@ func (s *mockStaking) UnbondingDelegation(cctx context.Context, req *stakingtype
 }
 
 // makeTestKit creates a minimal Keeper and Context for use in testing.
-func makeTestKit(bank *mockBank, transfer *mockTransfer, staking *mockStaking) (vm.PortHandler, context.Context) {
+func makeTestKit(bank *mockBank, transfer *mockTransfer, staking *mockStaking, accts *mockAccounts) (vm.PortHandler, context.Context) {
 	encodingConfig := params.MakeEncodingConfig()
 	cdc := encodingConfig.Marshaler
 
@@ -127,9 +147,8 @@ func makeTestKit(bank *mockBank, transfer *mockTransfer, staking *mockStaking) (
 	stakingtypes.RegisterMsgServer(txRouter, staking)
 	stakingtypes.RegisterQueryServer(queryRouter, staking)
 
-
 	// create a new Keeper
-	keeper := vlocalchain.NewKeeper(cdc, vlocalchainStoreKey, txRouter, queryRouter)
+	keeper := vlocalchain.NewKeeper(cdc, vlocalchainStoreKey, txRouter, queryRouter, accts)
 
 	db := dbm.NewMemDB()
 	ms := store.NewCommitMultiStore(db)
@@ -153,13 +172,15 @@ func TestAllocateAddress(t *testing.T) {
 	bank := &mockBank{}
 	transfer := &mockTransfer{}
 	staking := &mockStaking{}
-	handler, cctx := makeTestKit(bank, transfer, staking)
+	acct := &mockAccounts{existing: map[string]bool{
+		firstAddr: true,
+		"cosmos1c5hplwyxk5jr2dsygjqepzfqvfukwduq9c4660aah76krf99m6gs0k7hvl": true,
+	}}
+	handler, cctx := makeTestKit(bank, transfer, staking, acct)
 
 	addrs := map[string]bool{
-		firstAddr: false,
 		"cosmos1yj40fakym8kf4wvgz9tky7k9f3v9msm3t7frscrmkjsdkxkpsfkqgeczkg": false,
 		"cosmos1s76vryj7m8k8nm9le65a4plhf5rym5sumtt2n0vwnk5l6k4cwuhsj56ujj": false,
-		"cosmos1c5hplwyxk5jr2dsygjqepzfqvfukwduq9c4660aah76krf99m6gs0k7hvl": false,
 		"cosmos1ys3a7mtna3cad0wxcs4ddukn37stexjdvns8jfdn4uerlr95y4xqnrypf6": false,
 	}
 	numToTest := len(addrs)
@@ -185,6 +206,9 @@ func TestAllocateAddress(t *testing.T) {
 			t.Fatalf("unexpected duplicate address[%d]: %v", i, addr)
 		}
 		addrs[addr] = true
+		if !acct.existing[addr] {
+			t.Fatalf("expected address[%d]: %v to be added to accounts", i, addr)
+		}
 	}
 }
 
@@ -197,7 +221,8 @@ func TestQuery(t *testing.T) {
 	}}
 	transfer := &mockTransfer{}
 	staking := &mockStaking{}
-	handler, cctx := makeTestKit(bank, transfer, staking)
+	accts := &mockAccounts{existing: map[string]bool{}}
+	handler, cctx := makeTestKit(bank, transfer, staking, accts)
 
 	// get balances
 	testCases := []struct {
@@ -338,7 +363,8 @@ func TestExecuteTx(t *testing.T) {
 	}}
 	transfer := &mockTransfer{}
 	staking := &mockStaking{}
-	handler, cctx := makeTestKit(bank, transfer, staking)
+	accts := &mockAccounts{existing: map[string]bool{}}
+	handler, cctx := makeTestKit(bank, transfer, staking, accts)
 
 	// create a new message
 	msg := `{"type":"VLOCALCHAIN_ALLOCATE_ADDRESS"}`
@@ -426,7 +452,7 @@ func TestExecuteTx(t *testing.T) {
 		if len(resp) != 1 {
 			t.Fatalf("expected 1 response, got %d", len(resp))
 		}
-		
+
 		if _, ok := resp[0]["completionTime"]; !ok {
 			t.Error("expected 'completionTime' field in response")
 		}
