@@ -363,6 +363,11 @@ const testUpgrade = async (t, defaultManagerType, options = {}) => {
   // grab the promises that should be rejected
   const v1p1Kref = verifyPresence(v1result.p1);
   const v1p2Kref = verifyPresence(v1result.p2);
+  const v1p1wKref = verifyPresence(v1result.p1w);
+  const v1p2wKref = verifyPresence(v1result.p2w);
+  const v1p3Kref = verifyPresence(v1result.p3);
+  c.kpRegisterInterest(v1p1wKref);
+  c.kpRegisterInterest(v1p2wKref);
   // grab krefs for the exported durable/virtual objects to check their abandonment
   const retainedKrefs = objectMap(v1result.retain, obj => verifyPresence(obj));
   const retainedNames = 'dur1 vir2 vir5 vir7 vc1 vc3 dc4 rem1 rem2 rem3'.split(
@@ -461,16 +466,34 @@ const testUpgrade = async (t, defaultManagerType, options = {}) => {
   const newDurKref = verifyPresence(v2result.newDur);
   t.not(newDurKref, dur1Kref);
 
-  // the old version's non-durable promises should be rejected
-  t.is(c.kpStatus(v1p1Kref), 'rejected');
+  // The old version's non-durable promises should be rejected. The
+  // original kpids will be GCed. Bug #9039 failed to GC them.
+  t.is(kvStore.get(`${v1p1Kref}.refCount`), undefined);
+  t.is(kvStore.get(`${v1p2Kref}.refCount`), undefined);
+  t.is(kvStore.get(`${vatID}.c.${v1p1Kref}`), undefined);
+  t.is(kvStore.get(`${vatID}.c.${v1p2Kref}`), undefined);
+  t.is(kvStore.get(`${v1p1Kref}.state`), undefined);
+  t.is(kvStore.get(`${v1p2Kref}.state`), undefined);
+  // but vat-bootstrap wraps them (with Promise.all() so we can
+  // examine their rejection data.
+  t.is(c.kpStatus(v1p1wKref), 'rejected');
   const vatUpgradedError = {
     name: 'vatUpgraded',
     upgradeMessage: 'test upgrade',
     incarnationNumber: 0,
   };
-  t.deepEqual(kunser(c.kpResolution(v1p1Kref)), vatUpgradedError);
-  t.is(c.kpStatus(v1p2Kref), 'rejected');
-  t.deepEqual(kunser(c.kpResolution(v1p2Kref)), vatUpgradedError);
+  t.deepEqual(kunser(c.kpResolution(v1p1wKref)), vatUpgradedError);
+  t.is(c.kpStatus(v1p2wKref), 'rejected');
+  t.deepEqual(kunser(c.kpResolution(v1p2wKref)), vatUpgradedError);
+
+  // The local-promise watcher should have fired. If vat-upgrade is
+  // too aggressive about removing c-list entries (i.e. it doesn't
+  // check for self-subscription first), the kernel-provoked
+  // dispatch.notify won't be delivered, and the new incarnation won't
+  // fire the durable watcher.
+  t.deepEqual(v2result.watcherResult, ['reject', vatUpgradedError]);
+  // and the promise it was watching should be GCed
+  t.is(kvStore.get(`${v1p3Kref}.refCount`), undefined);
 
   // verify export abandonment/garbage collection/etc.
   // This used to be MUCH more extensive, but GC was cut to the bone
