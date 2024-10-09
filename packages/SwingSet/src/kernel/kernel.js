@@ -1000,9 +1000,30 @@ export default function buildKernel(
       return results;
     }
 
-    // reject all promises for which the vat was decider
-    for (const [kpid, _p] of kernelKeeper.enumeratePromisesByDecider(vatID)) {
-      resolveToError(kpid, disconnectionCapData, vatID);
+    // We are homesick for a future in which most promises are
+    // durable, and vats do not need to subscribe to their own
+    // promises to make promise-watchers work. In that world, vats
+    // somehow mark the non-durable promises, which we must
+    // reject/disconnect on their behalf during upgrade.
+    //
+    // To handle the present reality, without durable promises, we
+    // pretend that all promises are so marked.
+
+    // reject all ephemeral promises for which the vat was decider
+    for (const [kpid, p] of kernelKeeper.enumeratePromisesByDecider(vatID)) {
+      const isEphemeral = true; // future vats will mark these explicitly
+      const selfSubscribed =
+        p.state === 'unresolved' && p.subscribers.includes(vatID);
+      if (isEphemeral) {
+        resolveToError(kpid, disconnectionCapData, vatID);
+        if (!selfSubscribed) {
+          // If the vat was subscribed to its own promise, the
+          // resolveToError will enqueue a dispatch.notify, whose delivery
+          // will delete the c-list entry. If it is *not* subscribed, we
+          // should delete the c-list entry now, because nobody else will.
+          vatKeeper.deleteCListEntriesForKernelSlots([kpid]);
+        }
+      }
     }
 
     // simulate an abandonExports syscall from the vat,
