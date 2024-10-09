@@ -39,7 +39,7 @@ export const upgradeVaults = async (
       consume: { auctioneer: auctioneerInstanceP },
     },
   },
-  { options: { VaultFactoryBundle, contractGovernorBundle } },
+  { options: { VaultFactoryBundle: vaultBundleRef, contractGovernorBundle } },
 ) => {
   const kit = await vaultFactoryKit;
   const { instance: directorInstance } = kit;
@@ -139,7 +139,7 @@ export const upgradeVaults = async (
     });
 
     const upgradeResult = await E(kit.adminFacet).upgradeContract(
-      VaultFactoryBundle.bundleID,
+      vaultBundleRef.bundleID,
       newPrivateArgs,
     );
 
