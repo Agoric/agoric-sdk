@@ -17,7 +17,6 @@ const main = rawArgv => {
   const { _: args, ...options } = yargsParser(rawArgv.slice(2));
   // console.log(args, options);
   if (Reflect.ownKeys(options).length > 0 || args.length !== 1) {
-    const q = str => `'${str.replaceAll("'", String.raw`'\''`)}'`;
     console.error(
       [
         `Usage: ${rawArgv[1]} /path/to/swingstore.sqlite`,
@@ -36,17 +35,33 @@ const main = rawArgv => {
   let queries = 0;
 
   const sqlGet = ssDB.prepare('SELECT value FROM kvStore WHERE key=?').pluck();
-  const realRawGet = key => { queries += 1; return sqlGet.get(key) };
+  const realRawGet = key => {
+    queries += 1;
+    return sqlGet.get(key);
+  };
   const realGet = key => JSON.parse(realRawGet(key));
 
   // fake database for testing
   const fake = {
-    runQueue: [10, 11],
-    'runQueue.10': { type: 'notify', vatID: 'v1', kpid: 'kp95588' },
+    'vat.names': ['bootstrap'],
+    'vat.name.bootstrap': 'v1',
+    'vat.dynamicIDs': ['v9'],
+    runQueue: [10, 10],
+    'runQueue.10': { type: 'notify', vatID: 'v9', kpid: 'kp1005304' },
+    'kp1005304.data.body':
+      '#{"incarnationNumber":0,"name":"vatUpgraded","upgradeMessage":"vat upgraded"}',
+    'kp1005304.data.slots': [],
+    'kp1005304.refCount': 1,
+    'kp1005304.state': 'rejected',
   };
-  const fakeRawGet = key => { queries += 1; return fake[key] };
+  const fakeRawGet = key => {
+    queries += 1;
+    return fake[key];
+  };
+  // eslint-disable-next-line no-unused-vars
   const fakeGet = key => fakeRawGet(key);
 
+  // const [get, rawGet] = [fakeGet, fakeRawGet];
   const [get, rawGet] = [realGet, realRawGet];
 
   const vatNames = get('vat.names');
@@ -55,17 +70,15 @@ const main = rawArgv => {
   const allVatIDs = [...staticIDs, ...dynamicIDs];
   // console.log(allVatIDs);
 
-  queries += 1; // larger than most
-  const sqlListKPIDs = ssDB.prepare(`SELECT * FROM kvStore WHERE key >= 'kp' AND key < 'kq'`);
+  const sqlRange = ssDB.prepare(
+    `SELECT * FROM kvStore WHERE key >= ? AND key < ?`,
+  );
+
+  // old way took 547472 queries
+  // const rejectedKPIDs = new Set();
+
   const rejectedKPIDs = new Set();
-  for (const row of sqlListKPIDs.iterate()) {
-    if (row.key.endsWith('.state') && row.value == 'rejected') {
-      const kpid = row.key.split('.')[0];
-      rejectedKPIDs.add(kpid);
-    }
-  }
-  console.log(`${rejectedKPIDs.size} rejected kpids`);
-  // console.log(rejectedKPIDs);
+  const nonRejectedKPIDs = new Set();
 
   const [head, tail] = get('runQueue');
   const notifies = new Map(); // .get(kpid) = [vatIDs..];
@@ -84,6 +97,24 @@ const main = rawArgv => {
   }
   console.log(`pending notifies:`, notifies);
 
+  const isRejected = kpid => {
+    if (nonRejectedKPIDs.has(kpid)) {
+      return false;
+    }
+    if (rejectedKPIDs.has(kpid)) {
+      return true;
+    }
+    const state = rawGet(`${kpid}.state`);
+    // missing state means the kpid is deleted somehow, shouldn't happen
+    assert(state, `${kpid}.state is missing`);
+    if (state === 'rejected') {
+      rejectedKPIDs.add(kpid);
+      return true;
+    }
+    nonRejectedKPIDs.add(kpid);
+    return false;
+  };
+
   // Bug 9039 causes the kernel to reject/disconnect a promise on
   // behalf of the upgraded vat, but not remove it from the vat's
   // c-list (which would normally happen when the vat emitted a
@@ -95,26 +126,36 @@ const main = rawArgv => {
   const buggyKPIDs = []; // tuples of [kpid, vatID]
   const involvedVats = {};
 
-  // for (const kpid of [...rejectedKPIDs].slice(0, 2000)) {
-  for (const kpid of rejectedKPIDs) {
-    for (const vatID of allVatIDs) {
-      const ck = `${vatID}.c.${kpid}`;
-      if (rawGet(ck)) {
-        // in c-list
-        const n = notifies.get(kpid);
-        if (!n || !n.includes(vatID)) {
-          // and there is no pending notify
-          buggyKPIDs.push([kpid, vatID]);
-          involvedVats[vatID] = 1 + (involvedVats[vatID] || 0);
-        }
+  for (const vatID of allVatIDs) {
+    // TODO: skip vats in vats.terminated, belt-and-suspenders
+    const prefix = `${vatID}.c.`;
+    const len = prefix.length;
+    const k1 = `${prefix}kp`;
+    const k2 = `${prefix}kq`;
+    for (const row of sqlRange.iterate(k1, k2)) {
+      // the kvStore's actual API (getNextKey) requires one query per result
+      queries += 1;
+      const kpid = row.key.slice(len);
+      if (!isRejected(kpid)) {
+        continue;
+      }
+      const n = notifies.get(kpid);
+      if (!n || !n.includes(vatID)) {
+        // there is no pending notify
+        buggyKPIDs.push([kpid, vatID]);
+        involvedVats[vatID] = 1 + (involvedVats[vatID] || 0);
       }
     }
   }
+
   // console.log(buggyKPIDs);
   console.log(`scan 9039: ${buggyKPIDs.length} kpid/vatID pairs to clean up`);
-  console.log(`${Reflect.ownKeys(involvedVats).length} vats involved:`, involvedVats);
+  console.log(`first is:`, buggyKPIDs[0]);
+  console.log(
+    `${Reflect.ownKeys(involvedVats).length} vats involved:`,
+    involvedVats,
+  );
   console.log(`${queries} DB queries`);
-  
 };
 
 main(process.argv);
