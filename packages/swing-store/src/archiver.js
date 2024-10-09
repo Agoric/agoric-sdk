@@ -23,8 +23,9 @@ export const makeArchiveSnapshot = (dirPath, powers) => {
         fd,
         removeCallback,
       } = tmp.fileSync({
+        tmpdir: dirPath,
         prefix: name,
-        postfix: '.gz',
+        postfix: '.gz.tmp',
         detachDescriptor: true,
       });
       addCleanup(() => removeCallback());
@@ -59,8 +60,9 @@ export const makeArchiveTranscript = (dirPath, powers) => {
         fd,
         removeCallback,
       } = tmp.fileSync({
+        tmpdir: dirPath,
         prefix: spanName,
-        postfix: '.gz',
+        postfix: '.gz.tmp',
         detachDescriptor: true,
       });
       addCleanup(() => removeCallback());
