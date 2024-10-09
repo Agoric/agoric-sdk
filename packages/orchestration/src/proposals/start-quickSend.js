@@ -1,11 +1,30 @@
-import { makeTracer } from '@agoric/internal';
-import { makeStorageNodeChild } from '@agoric/internal/src/lib-chainStorage.js';
+import { deeplyFulfilledObject, makeTracer } from '@agoric/internal';
 import { Stake } from '@agoric/internal/src/tokens.js';
 import { E } from '@endo/far';
 
 const trace = makeTracer('StartQuickSend', true);
+const { Fail } = assert;
 
-/** @import {Instance} from '@agoric/zoe/src/zoeService/utils'; */
+/**
+ * @import {Instance} from '@agoric/zoe/src/zoeService/utils';
+ * @import {Board} from '@agoric/vats';
+ */
+
+/**
+ * @param {string} path
+ * @param {{
+ *   chainStorage: ERef<StorageNode | null>;
+ *   board: ERef<Board>;
+ * }} io
+ */
+const makePublishingStorageKit = async (path, { chainStorage, board }) => {
+  const root = await chainStorage;
+  root || Fail`chainStorage null case is vestigial`;
+  const storageNode = await E(chainStorage)?.makeChildNode(path);
+
+  const marshaller = await E(board).getPublishingMarshaller();
+  return { storageNode, marshaller };
+};
 
 /**
  * @param {BootstrapPowers & {
@@ -21,10 +40,10 @@ const trace = makeTracer('StartQuickSend', true);
  */
 export const startQuickSend = async ({
   consume: {
-    agoricNames: agoricNamesP,
+    agoricNames,
     board,
     chainStorage,
-    chainTimerService: chainTimerServiceP,
+    chainTimerService: timerService,
     localchain,
     startUpgradable,
   },
@@ -38,18 +57,15 @@ export const startQuickSend = async ({
     consume: { [Stake.symbol]: stakeIssuer },
   },
 }) => {
-  const VSTORAGE_PATH = 'quickSend';
   trace('startQuickSend');
+  const { storageNode, marshaller } = await makePublishingStorageKit(
+    'quickSend',
+    { board, chainStorage },
+  );
 
-  const storageNode = await makeStorageNodeChild(chainStorage, VSTORAGE_PATH);
-
-  // NB: only publish what is intended to be public
-  const marshaller = await E(board).getPublishingMarshaller();
-
-  const [agoricNames, timerService] = await Promise.all([
-    agoricNamesP,
-    chainTimerServiceP,
-  ]);
+  const privateArgs = await deeplyFulfilledObject(
+    harden({ agoricNames, localchain, timerService, storageNode, marshaller }),
+  );
 
   /**
    * @type {StartUpgradableOpts<
@@ -61,13 +77,7 @@ export const startQuickSend = async ({
     installation: quickSend,
     issuerKeywordRecord: harden({ In: await stakeIssuer }),
     terms: {},
-    privateArgs: {
-      agoricNames,
-      localchain: await localchain,
-      timerService,
-      storageNode,
-      marshaller,
-    },
+    privateArgs,
   };
 
   const { instance } = await E(startUpgradable)(startOpts);
