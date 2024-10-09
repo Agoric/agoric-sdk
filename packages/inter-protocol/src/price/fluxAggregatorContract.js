@@ -195,3 +195,5 @@ export const start = async (zcf, privateArgs, baggage) => {
   });
 };
 harden(start);
+
+/** @typedef {typeof start} FluxStartFn */
