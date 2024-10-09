@@ -11,16 +11,12 @@ import type { TestFn } from 'ava';
 import { makeAgoricNamesRemotesFromFakeStorage } from '@agoric/vats/tools/board-utils';
 import { Fail } from '@endo/errors';
 
-import { AmountMath } from '@agoric/ertp/src';
 import { makeSwingsetTestKit } from '../../tools/supports.js';
 import {
   makeGovernanceDriver,
   makeWalletFactoryDriver,
 } from '../../tools/drivers.js';
-import {
-  updateVaultDirectorParams,
-  updateVaultManagerParams,
-} from '../tools/changeVaultParams';
+import { updateVaultManagerParams } from '../tools/changeVaultParams.js';
 
 const makeDefaultTestContext = async t => {
   console.time('DefaultTestContext');
