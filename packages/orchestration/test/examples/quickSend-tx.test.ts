@@ -1,26 +1,31 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { createRequire } from 'node:module';
+import {
+  AgoricCalc,
+  makeOrchestration,
+  makeVStorage,
+  withVTransfer,
+} from '../../tools/agoric-mock.js';
+import { makeCCTP, NobleCalc, withForwarding } from '../../tools/noble-mock.js';
+import { makeCosmosChain, pickChain } from '../../tools/cosmoverse-mock.js';
+import {
+  makeERC20,
+  makeEthChain,
+  makeEventCounter,
+} from '../../tools/eth-mock.js';
+import type { EthChain } from '../../tools/eth-mock.js';
+import { start as startContract } from '../../src/examples/quickSend.contract.js';
 
 const nodeRequire = createRequire(import.meta.url);
-const contractName = 'sendAnywhere';
+const contractName = 'quickSend';
 const contractFile = nodeRequire.resolve(
-  `../../src/examples/send-anywhere.contract.js`,
+  `../../src/examples/quickSend.contract.js`,
 );
 
 type StartFn = typeof import('../../src/examples/quickSend.contract.js').start;
 
 const todo = () => assert.fail('TODO');
-
-const NobleCalc = harden({
-  fwdAddressFor: (dest: string) => `noble1${dest.length}${dest.slice(-4)}`,
-});
-
-const AgoricCalc = harden({
-  virtualAddressFor: (base: string, dest: string) => `${base}+${dest}`,
-  isVirtualAddress: addr => addr.includes('+'),
-  virtualAddressParts: addr => addr.split('+'),
-});
 
 const logged = (it, label) => {
   console.debug(label, it);
@@ -35,136 +40,6 @@ test.before(async t => {
   harden(nextLabel);
   t.context = { startLabels, nextLabel };
 });
-
-const makeEventCounter = ({ setTimeout }) => {
-  let current = 0;
-  let going = true;
-  async function* eachEvent() {
-    await null;
-    for (; ; current += 1) {
-      if (!going) break;
-      yield current;
-      await new Promise(resolve => setTimeout(resolve, 100));
-    }
-  }
-  const iter = eachEvent();
-
-  return harden({
-    getCurrent: () => current,
-    cancel: () => (going = false),
-    [Symbol.asyncIterator]: () => iter,
-  });
-};
-
-const makeCosmosChain = (prefix, t) => {
-  let nonce = 10;
-  const balances = new Map();
-  const whaleAddress = `${prefix}${(nonce += 1)}`;
-  balances.set(whaleAddress, 1_000_000);
-  const { nextLabel: next } = t.context;
-
-  const burn = async ({ from, amount }) => {
-    const fromPre = balances.get(from) || 0;
-    const fromPost = fromPre - amount;
-    fromPost >= 0 || assert.fail(`${from} overdrawn: ${fromPre} - ${amount}`);
-    balances.set(from, fromPost);
-  };
-
-  const mint = async ({ dest, amount }) => {
-    const destPre = balances.get(dest) || 0;
-    const destPost = destPre + amount;
-    balances.set(dest, destPost);
-  };
-
-  return harden({
-    prefix,
-    whaleAddress,
-    makeAccount: async () => {
-      const address = `${prefix}${(nonce += 1)}`;
-      balances.set(address, 0);
-      t.log('chain', prefix, 'makeAccount', address);
-      return address;
-    },
-    getBalance: async dest => balances.get(dest),
-    send: async ({ amount, from, dest, quiet }) => {
-      t.true(dest.startsWith(prefix), dest);
-      await burn({ from, amount });
-      await mint({ dest, amount });
-      const label = quiet ? '' : next();
-      t.log(label, dest, 'balance +=', amount, '=', balances.get(dest));
-    },
-  });
-};
-
-const pickChain = (chains, dest) => {
-  const pfxLen = dest.indexOf('1');
-  const pfx = dest.slice(0, pfxLen);
-  const chain = chains[pfx];
-  assert(chain, dest);
-  return chain;
-};
-
-const ibcTransfer = async (chains, { amount, from, dest, t }) => {
-  const { nextLabel: next } = t.context;
-  t.log(next(), 'ibc transfer', amount, 'to', dest);
-  const chainSrc = pickChain(chains, from);
-  const chainDest = pickChain(chains, dest);
-  const burn = `${chainSrc.prefix}IBCburn`;
-  const quiet = true;
-  await chainSrc.send({ amount, from, dest: burn, quiet });
-  await chainDest.send({ amount, from: chainDest.whaleAddress, dest, quiet });
-};
-
-const withForwarding = (chain, chains, t) => {
-  const destOf = new Map();
-  const { nextLabel: next } = t.context;
-  return harden({
-    ...chain,
-    provideForwardingAccount: async dest => {
-      const address = NobleCalc.fwdAddressFor(dest);
-      destOf.set(address, dest);
-      t.log('x/forwarding fwd', address, '->', dest);
-      return address;
-    },
-    send: async ({ amount, from, dest }) => {
-      await chain.send({ amount, from, dest, quiet: true });
-      if (!destOf.has(dest)) return;
-      const fwd = destOf.get(dest);
-      t.log(next(), 'fwd', { amount, dest, fwd });
-      await ibcTransfer(chains, { amount, from: dest, dest: fwd, t });
-    },
-  });
-};
-
-const withVTransfer = (chain, t) => {
-  const addrToTap = new Map();
-  return harden({
-    ...chain,
-    register: async ({ addr, handler }) => {
-      t.log('vtransfer register', { addr, handler });
-      !addrToTap.has(addr) || assert.fail('already registered');
-      addrToTap.set(addr, handler);
-    },
-    send: async ({ amount, from, dest }) => {
-      const [agAddr, extra] = AgoricCalc.isVirtualAddress(dest)
-        ? AgoricCalc.virtualAddressParts(dest)
-        : [dest, undefined];
-      const quiet = true;
-      const result = await chain.send({ amount, from, dest: agAddr, quiet });
-
-      if (extra === undefined) return result;
-      t.log('vtransfer to virtual address', { agAddr, extra });
-      if (!addrToTap.has(agAddr)) return result;
-
-      const handler = addrToTap.get(agAddr);
-      void handler.onReceive({ amount, extra }).catch(err => {
-        console.error('onRecieve rejected', err);
-      });
-
-      return result;
-    },
-  });
-};
 
 const makeUser = ({ nobleApp, ethereum, myAddr, cctpAddr }) =>
   harden({
@@ -240,109 +115,11 @@ const makeNobleExpress = ({ agoricWatcher, chain, t, agoricRpc }) => {
   });
 };
 
-const makeERC20 = (t, msg0, supply) => {
-  const balances = new Map();
-  balances.set(msg0.sender, supply);
-  const balanceOf = account => balances.get(account) || 0;
-  return harden({
-    balanceOf,
-    transfer: (msg, dest, numTokens) => {
-      const srcBal = balanceOf(msg.sender);
-      t.log('ERC20 transfer', { sender: msg.sender, srcBal, numTokens, dest });
-      t.true(srcBal > numTokens);
-      const destBal = balanceOf(dest);
-      balances.set(msg.sender, srcBal - numTokens);
-      balances.set(dest, destBal + numTokens);
-    },
-  });
-};
-
-const makeCCTP = ({ t, usdc, noble, events }) => {
-  const { nextLabel: next } = t.context;
-  return harden({
-    bridge: (msg, { dest, amount }) => {
-      t.regex(dest, /^noble/);
-      t.log(next(), 'cctp.bridge:', { msg, dest });
-      usdc.transfer(msg, '0x0000', amount); // burn
-      const t0 = events.getCurrent();
-      void (async () => {
-        t.log('waiting 3 blocks (TODO: 20min) before minting on noble');
-        for await (const te of events) {
-          if (te - t0 > 3) break;
-        }
-        noble.send({ amount, from: 'noble1mint', dest });
-      })();
-    },
-  });
-};
-
-type EthAddr = `0x${string}`;
-type EthData = Record<string, string | number>;
-type EthMsgInfo = { sender: EthAddr; value?: number };
-type EthCallTx = {
-  txId: number;
-  msg: EthMsgInfo;
-  contractAddress: EthAddr;
-  method: string;
-  args: EthData[];
-};
-
-const makeEthChain = (heightInitial: number, { t, setTimeout }) => {
-  let nonce = 10;
-  let height = heightInitial;
-  const contracts = new Map();
-  const mempool: EthCallTx[] = [];
-  const blocks: EthCallTx[][] = [[]];
-  const emptyBlock = harden([]);
-
-  let going = true;
-  const advanceBlock = () => {
-    blocks.push(harden([...mempool]));
-    mempool.splice(0, mempool.length);
-    height += 1;
-    t.log('eth advance to block', height);
-  };
-  void (async () => {
-    const ticks = makeEventCounter({ setTimeout });
-    for await (const tick of ticks) {
-      if (!going) break;
-      advanceBlock();
-    }
-  })();
-
-  const { nextLabel: next } = t.context;
-  return harden({
-    deployContract: async c => {
-      const address = `0x${(nonce += 1)}`;
-      contracts.set(address, c);
-      return address;
-    },
-    call: async (
-      msg: EthMsgInfo,
-      addr: EthAddr,
-      method: string,
-      args: EthData[],
-    ) => {
-      const txId = nonce;
-      nonce += 1;
-      mempool.push({ txId, msg, contractAddress: addr, method, args });
-      t.log(next(), 'eth call', addr, '.', method, '(', ...args, ')');
-      const contract = contracts.get(addr);
-      const result = contract[method](msg, ...args);
-      t.is(result, undefined);
-    },
-    currentHeight: () => height - 1,
-    getBlock: (h: number) => blocks[h - heightInitial] || emptyBlock,
-    stop: () => (going = false),
-  });
-};
-type EthChain = ReturnType<typeof makeEthChain>;
-
 const makeAgoricWatcher = ({
   t,
   ethereum: eth,
   cctpAddr,
-  contract,
+  watcherFacet,
   setTimeout,
 }) => {
   const ethereum: EthChain = eth; // TODO: concise typing
@@ -366,7 +143,7 @@ const makeAgoricWatcher = ({
       pending.splice(ix, 1);
       t.log(next(), 'watcher checked', tx.txId);
       t.log(next(), 'watcher confirmed', item);
-      await contract.releaseAdvance(item);
+      await watcherFacet.releaseAdvance(item); // TODO: continuing offerSpec
     }
   };
 
@@ -393,94 +170,6 @@ const makeAgoricWatcher = ({
   });
 };
 
-// funding pool is a local account
-const makeOrchestration = (t, chains) => {
-  const { nextLabel: next } = t.context;
-  return harden({
-    makeLocalAccount: async () => {
-      const addr = await chains.agoric.makeAccount();
-      return harden({
-        getAddress: () => addr,
-        transfer: async ({ amount, dest }) => {
-          t.log(next(), 'orch acct', addr, 'txfr', amount, 'to', dest);
-          await ibcTransfer(chains, { amount, dest, from: addr, t });
-        },
-        send: async ({ amount, dest }) => {
-          t.log(next(), 'orch acct', addr, 'send', amount, 'to', dest);
-          await chains.agoric.send({ amount, dest, from: addr });
-        },
-        tap: async handler => {
-          await chains.agoric.register({ addr, handler });
-        },
-      });
-    },
-  });
-};
-
-const makeVStorage = () => {
-  const data = new Map();
-  const storageNode = harden({
-    makeChildNode: path =>
-      harden({
-        setValue: value => data.set(path, value),
-      }),
-  });
-  const rpc = harden({
-    getData: async path => data.get(path),
-  });
-
-  return { storageNode, rpc };
-};
-
-const makeQuickSend = async ({
-  t,
-  privateArgs: { orch, storageNode },
-  terms: { makerFee, contractFee },
-}) => {
-  const fundingPool = await orch.makeLocalAccount();
-  const settlement = await orch.makeLocalAccount();
-  const feeAccount = await orch.makeLocalAccount();
-
-  const { nextLabel: next } = t.context;
-  storageNode.setValue(settlement.getAddress());
-
-  await settlement.tap(
-    harden({
-      onReceive: async ({ amount, extra }) => {
-        t.log(next(), 'tap onReceive', { amount });
-        // XXX partial failure?
-        await Promise.all([
-          settlement.send({
-            dest: fundingPool.getAddress(),
-            amount: amount - contractFee,
-          }),
-          settlement.send({
-            dest: feeAccount.getAddress(),
-            amount: contractFee,
-          }),
-        ]);
-      },
-    }),
-  );
-
-  return harden({
-    releaseAdvance: async ({ amount, dest, nobleFwd }) => {
-      t.log(next(), 'contract.releaseAdvance', { amount, dest });
-      t.is(
-        NobleCalc.fwdAddressFor(
-          AgoricCalc.virtualAddressFor(fundingPool.getAddress(), dest),
-        ),
-        nobleFwd,
-      );
-      const advance = amount - makerFee - contractFee;
-      await fundingPool.transfer({ dest, amount: advance });
-    },
-    getPoolAddress: async () => fundingPool.getAddress(),
-    getSettlementAddress: async () => settlement.getAddress(),
-    getFeeAddress: async () => feeAccount.getAddress(),
-  });
-};
-
 const terms = { makerFee: 3, contractFee: 2 };
 const startFunds = {
   usdcMint: 10_000,
@@ -498,7 +187,7 @@ const setup = async (t, io) => {
   //     },
   //   };
   t.log('-- SETUP...');
-  const ethereum = makeEthChain(9876, { t, setTimeout });
+  // aka cosmoverse
   let chains = harden({
     agoric: withVTransfer(makeCosmosChain('agoric1', t), t),
     noble: makeCosmosChain('noble1', t),
@@ -514,18 +203,16 @@ const setup = async (t, io) => {
   const storageNode = chainStorage.makeChildNode(
     'published.quickSend.settlementBase',
   );
-  const contract = await makeQuickSend({
-    t,
-    privateArgs: { orch, storageNode },
-    terms,
-  });
-  const poolAddr = await contract.getPoolAddress();
+  const zcf: ZCF = harden({ getTerms: () => terms }) as any;
+  const contract = await startContract(zcf, { t, orch, storageNode }, {});
+  const poolAddr = await contract.publicFacet.getPoolAddress();
   await chains.agoric.send({
     amount: startFunds.pool,
     from: chains.agoric.whaleAddress, // TODO: market maker contributes
     dest: poolAddr,
   });
 
+  const ethereum = makeEthChain(9876, { t, setTimeout });
   const usdc = makeERC20(t, { sender: '0xcircle' }, startFunds.usdcMint);
   const usdcAddr = await ethereum.deployContract(usdc);
   await chains.noble.send({
@@ -542,11 +229,12 @@ const setup = async (t, io) => {
   });
   const cctpAddr = await ethereum.deployContract(cctp);
 
+  const watcherFacet = await contract.creatorFacet.getWatcherFacet(); // TODO: cont.
   const agoricWatcher = makeAgoricWatcher({
     t,
     ethereum,
     cctpAddr,
-    contract,
+    watcherFacet,
     setTimeout: globalThis.setTimeout,
   });
   const nobleService = makeNobleExpress({
@@ -574,19 +262,16 @@ const setup = async (t, io) => {
 
   t.log('-- SETUP done.');
   t.context.startLabels();
+
   const nobleApp = await makeNobleApp({
     t,
     nobleService,
-    chains,
+    chains, // to watch balance at EUD
     agoricRpc,
     setTimeout: globalThis.setTimeout,
   });
-  const ursula = makeUser({
-    nobleApp,
-    ethereum,
-    myAddr: '0xUrsula',
-    cctpAddr,
-  });
+
+  const ursula = makeUser({ nobleApp, ethereum, myAddr: '0xUrsula', cctpAddr });
 
   return { chains, ursula, quiesce, contract, usdc };
 };
@@ -600,9 +285,9 @@ test('tx lifecycle', async t => {
 
   await quiesce();
 
-  const poolAddr = await contract.getPoolAddress();
-  const feeAddr = await contract.getFeeAddress();
-  const settlementAddr = await contract.getSettlementAddress();
+  const poolAddr = await contract.publicFacet.getPoolAddress();
+  const feeAddr = await contract.publicFacet.getFeeAddress();
+  const settlementAddr = await contract.publicFacet.getSettlementAddress();
   const actual = {
     user: {
       addr: '0xUrsula',
