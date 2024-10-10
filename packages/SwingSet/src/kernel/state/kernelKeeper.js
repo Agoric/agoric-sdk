@@ -45,6 +45,7 @@ const enableKernelGC = true;
  * @typedef { import('../../types-external.js').VatKeeper } VatKeeper
  * @typedef { import('../../types-internal.js').InternalKernelOptions } InternalKernelOptions
  * @typedef { import('../../types-internal.js').ReapDirtThreshold } ReapDirtThreshold
+ * @import {PromiseRecord} from '../../types-internal.js';
  * @import {CleanupBudget, CleanupWork, PolicyOutputCleanupBudget} from '../../types-external.js';
  * @import {RunQueueEventCleanupTerminatedVat} from '../../types-internal.js';
  */
@@ -791,45 +792,47 @@ export default function makeKernelKeeper(
     return kpid;
   }
 
+  /**
+   * @param {string} kernelSlot
+   * @returns {PromiseRecord}
+   */
   function getKernelPromise(kernelSlot) {
     insistKernelType('promise', kernelSlot);
-    const p = { state: getRequired(`${kernelSlot}.state`) };
-    switch (p.state) {
+    const state = getRequired(`${kernelSlot}.state`);
+    const refCount = Number(kvStore.get(`${kernelSlot}.refCount`));
+    switch (state) {
       case undefined: {
         throw Fail`unknown kernelPromise '${kernelSlot}'`;
       }
       case 'unresolved': {
-        p.refCount = Number(kvStore.get(`${kernelSlot}.refCount`));
-        p.decider = kvStore.get(`${kernelSlot}.decider`);
-        if (p.decider === '') {
-          p.decider = undefined;
+        let decider = kvStore.get(`${kernelSlot}.decider`);
+        if (decider === '') {
+          decider = undefined;
         }
-        p.policy = kvStore.get(`${kernelSlot}.policy`) || 'ignore';
-        // @ts-expect-error get() may fail
-        p.subscribers = commaSplit(kvStore.get(`${kernelSlot}.subscribers`));
-        p.queue = Array.from(
+        const policy = kvStore.get(`${kernelSlot}.policy`) || 'ignore';
+        const subscribers = commaSplit(
+          getRequired(`${kernelSlot}.subscribers`),
+        );
+        const queue = Array.from(
           getPrefixedValues(kvStore, `${kernelSlot}.queue.`),
         ).map(s => JSON.parse(s));
-        break;
+        return harden({ state, refCount, decider, policy, subscribers, queue });
       }
       case 'fulfilled':
       case 'rejected': {
-        p.refCount = Number(kvStore.get(`${kernelSlot}.refCount`));
-        p.data = {
-          body: kvStore.get(`${kernelSlot}.data.body`),
-          // @ts-expect-error get() may fail
-          slots: commaSplit(kvStore.get(`${kernelSlot}.data.slots`)),
+        const data = {
+          body: getRequired(`${kernelSlot}.data.body`),
+          slots: commaSplit(getRequired(`${kernelSlot}.data.slots`)),
         };
-        for (const s of p.data.slots) {
+        for (const s of data.slots) {
           parseKernelSlot(s);
         }
-        break;
+        return harden({ state, refCount, data });
       }
       default: {
-        throw Fail`unknown state for ${kernelSlot}: ${p.state}`;
+        throw Fail`unknown state for ${kernelSlot}: ${state}`;
       }
     }
-    return harden(p);
   }
 
   function getResolveablePromise(kpid, expectedDecider) {
@@ -838,7 +841,7 @@ export default function makeKernelKeeper(
       insistVatID(expectedDecider);
     }
     const p = getKernelPromise(kpid);
-    p.state === 'unresolved' || Fail`${kpid} was already resolved`;
+    assert.equal(p.state, 'unresolved', `${kpid} was already resolved`);
     if (expectedDecider) {
       p.decider === expectedDecider ||
         Fail`${kpid} is decided by ${p.decider}, not ${expectedDecider}`;
@@ -897,6 +900,7 @@ export default function makeKernelKeeper(
     // up the resolution *now* and set the correct target early. Doing that
     // might make it easier to remove the Promise Table entry earlier.
     const p = getKernelPromise(kernelSlot);
+    assert.equal(p.state, 'unresolved');
     for (const msg of p.queue) {
       const entry = harden({ type: 'send', target: kernelSlot, msg });
       enqueue('acceptanceQueue', entry);
@@ -1142,18 +1146,22 @@ export default function makeKernelKeeper(
   function setDecider(kpid, decider) {
     insistVatID(decider);
     const p = getKernelPromise(kpid);
-    p.state === 'unresolved' || Fail`${kpid} was already resolved`;
-    !p.decider || Fail`${kpid} has decider ${p.decider}, not empty`;
+    assert.equal(p.state, 'unresolved', `${kpid} was already resolved`);
+    assert(!p.decider, `${kpid} has decider ${p.decider}, not empty`);
     kvStore.set(`${kpid}.decider`, decider);
   }
 
   function clearDecider(kpid) {
     const p = getKernelPromise(kpid);
-    p.state === 'unresolved' || Fail`${kpid} was already resolved`;
-    p.decider || Fail`${kpid} does not have a decider`;
+    assert.equal(p.state, 'unresolved', `${kpid} was already resolved`);
+    assert(p.decider, `${kpid} does not have a decider`);
     kvStore.set(`${kpid}.decider`, '');
   }
 
+  /**
+   * @param {string} vatID
+   * @returns {IterableIterator<string>}
+   */
   function* enumeratePromisesByDecider(vatID) {
     insistVatID(vatID);
     const promisePrefix = `${vatID}.c.p`;
@@ -1167,7 +1175,7 @@ export default function makeKernelKeeper(
       // whether the vat is the decider or not.  If it is, we add the promise
       // to the list of promises that must be rejected because the dead vat
       // will never be able to act upon them.
-      const kpid = kvStore.get(k);
+      const kpid = getRequired(k);
       const p = getKernelPromise(kpid);
       if (p.state === 'unresolved' && p.decider === vatID) {
         yield kpid;
@@ -1180,6 +1188,7 @@ export default function makeKernelKeeper(
     insistKernelType('promise', kernelSlot);
     insistVatID(vatID);
     const p = getKernelPromise(kernelSlot);
+    assert.equal(p.state, 'unresolved');
     const s = new Set(p.subscribers);
     s.add(vatID);
     const v = Array.from(s).sort().join(',');
@@ -1542,13 +1551,15 @@ export default function makeKernelKeeper(
           const kp = getKernelPromise(kpid);
           if (kp.refCount === 0) {
             let idx = 0;
-            // TODO (#9889) don't assume promise is settled
-            for (const slot of kp.data.slots) {
-              // Note: the following decrement can result in an addition to the
-              // maybeFreeKrefs set, which we are in the midst of iterating.
-              // TC39 went to a lot of trouble to ensure that this is kosher.
-              decrementRefCount(slot, `gc|${kpid}|s${idx}`);
-              idx += 1;
+            if (kp.state === 'fulfilled' || kp.state === 'rejected') {
+              // #9889 don't assume promise is settled
+              for (const slot of kp.data.slots) {
+                // Note: the following decrement can result in an addition to the
+                // maybeFreeKrefs set, which we are in the midst of iterating.
+                // TC39 went to a lot of trouble to ensure that this is kosher.
+                decrementRefCount(slot, `gc|${kpid}|s${idx}`);
+                idx += 1;
+              }
             }
             deleteKernelPromise(kpid);
           }
