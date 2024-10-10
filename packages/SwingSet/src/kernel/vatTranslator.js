@@ -50,6 +50,7 @@ function makeTranslateKernelDeliveryToVatDelivery(vatID, kernelKeeper) {
       parseVatSlot(targetSlot).allocatedByVat || Fail`deliver() to wrong vat`;
     } else if (type === 'promise') {
       const p = kernelKeeper.getKernelPromise(target);
+      assert(p.state === 'unresolved');
       p.decider === vatID || Fail`wrong decider`;
     }
     const inputSlots = msg.methargs.slots.map(slot =>
@@ -59,7 +60,9 @@ function makeTranslateKernelDeliveryToVatDelivery(vatID, kernelKeeper) {
     if (msg.result) {
       insistKernelType('promise', msg.result);
       const p = kernelKeeper.getKernelPromise(msg.result);
-      p.state === 'unresolved' || Fail`result ${msg.result} already resolved`;
+      if (p.state !== 'unresolved') {
+        throw Fail`result ${msg.result} already resolved`;
+      }
       !p.decider || Fail`result ${msg.result} already has decider ${p.decider}`;
       resultSlot = vatKeeper.mapKernelSlotToVatSlot(msg.result);
       insistVatType('promise', resultSlot);
@@ -318,8 +321,9 @@ function makeTranslateVatSyscallToKernelSyscall(vatID, kernelKeeper) {
       // In the case of non-pipelining vats these checks are redundant since
       // we're guaranteed to have a promise newly allocated by the vat.
       const p = kernelKeeper.getKernelPromise(result);
-      p.state === 'unresolved' ||
-        Fail`send() result ${result} is already resolved`;
+      if (p.state !== 'unresolved') {
+        throw Fail`send() result ${result} is already resolved`;
+      }
       p.decider === vatID ||
         Fail`send() result ${result} is decided by ${p.decider} not ${vatID}`;
       kernelKeeper.clearDecider(result);
