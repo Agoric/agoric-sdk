@@ -26,6 +26,7 @@ const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 // The initial and exported module state.
 type GenesisState struct {
+	// The list of account addresses that are being watched by the VM.
 	WatchedAddresses []github_com_cosmos_cosmos_sdk_types.AccAddress `protobuf:"bytes,1,rep,name=watched_addresses,json=watchedAddresses,proto3,casttype=github.com/cosmos/cosmos-sdk/types.AccAddress" json:"watched_addresses" yaml:"watched_addresses"`
 }
 
