@@ -4,9 +4,9 @@
     "fromTag": "use-vaults-auctions"
   },
   "scripts": {
-    "build": "yarn run build:sdk && yarn run build:submissions && yarn run build:synthetic-chain && yarn run build:priceFeeds-for-mainnet && yarn run build:priceFeeds-for-devnet",
+    "build": "yarn run build:sdk && yarn run build:submissions && yarn run build:synthetic-chain",
     "build:sdk": "make -C ../packages/deployment docker-build-sdk",
-    "build:submissions": "scripts/build-all-submissions.sh",
+    "build:submissions": "scripts/build-all-submissions.sh && yarn run build:priceFeeds-for-mainnet && yarn run build:priceFeeds-for-devnet",
     "build:priceFeeds-for-mainnet": "scripts/build-submission.sh proposals/f:replace-price-feeds inter-protocol/updatePriceFeeds.js submission UNRELEASED_main; scripts/build-submission.sh proposals/f:replace-price-feeds vats/add-auction.js; scripts/build-submission.sh proposals/f:replace-price-feeds vats/upgradeVaults.js",
     "build:priceFeeds-for-devnet": "scripts/build-submission.sh proposals/f:replace-price-feeds inter-protocol/updatePriceFeeds.js submission UNRELEASED_devnet; scripts/build-submission.sh proposals/f:replace-price-feeds vats/add-auction.js; scripts/build-submission.sh proposals/f:replace-price-feeds vats/upgradeVaults.js",
     "build:synthetic-chain": "yarn synthetic-chain build",
