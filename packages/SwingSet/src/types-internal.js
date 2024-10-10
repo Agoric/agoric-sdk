@@ -93,6 +93,17 @@ export {};
  */
 
 /**
+ * @typedef {{ state: 'unresolved', refCount: number,
+ *             decider: string | undefined, policy: string,
+ *             subscribers: string[], queue: string[],
+ *          }} UnresolvedPromiseRecord
+ * @typedef {{ state: 'fulfilled' | 'rejected', refCount: number,
+ *             data: SwingSetCapData,
+ *          }} SettledPromiseRecord
+ * @typedef {UnresolvedPromiseRecord | SettledPromiseRecord} PromiseRecord
+ */
+
+/**
  * @typedef {{
  *   enablePipelining: boolean,
  *   workerOptions: WorkerOptions,

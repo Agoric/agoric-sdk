@@ -366,6 +366,10 @@ export async function makeSwingsetController(
       return kref;
     },
 
+    kpRegisterInterest(kpid) {
+      return kernel.kpRegisterInterest(kpid);
+    },
+
     kpStatus(kpid) {
       return kernel.kpStatus(kpid);
     },
