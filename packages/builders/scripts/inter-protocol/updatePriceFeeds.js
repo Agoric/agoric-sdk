@@ -77,7 +77,10 @@ export default async (homeP, endowments) => {
 
   const { writeCoreEval } = await makeHelpers(homeP, endowments);
 
-  await writeCoreEval('gov-price-feeds', (utils, opts) =>
+  const match = scriptArgs[0].match(/UNRELEASED_(.*)/);
+  const variant = match ? match[1] : scriptArgs;
+
+  await writeCoreEval(`gov-price-feeds-${variant}`, (utils, opts) =>
     defaultProposalBuilder(utils, { ...opts, ...config }),
   );
 };
