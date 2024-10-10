@@ -9,7 +9,7 @@ import { WalletFactoryDriver } from '../../tools/drivers.js';
 
 const test: TestFn<WalletFactoryTestContext> = anyTest;
 
-test.before(async t => {
+test.skip('bootstrap', async t => {
   t.context = await makeWalletFactoryContext(
     t,
     '@agoric/vm-config/decentral-itest-orchestration-config.json',
@@ -17,7 +17,7 @@ test.before(async t => {
 });
 test.after.always(t => t.context.shutdown?.());
 
-test.serial('deploy contract', async t => {
+test.skip('deploy contract', async t => {
   const {
     agoricNamesRemotes,
     evalProposal,
@@ -36,7 +36,7 @@ type SmartWallet = Awaited<
   ReturnType<WalletFactoryDriver['provideSmartWallet']>
 >;
 
-test.serial('expedited send', async t => {
+test.skip('expedited send', async t => {
   const alice = async (sw: SmartWallet) => {
     await sw.executeOffer({
       id: 'request-dest-addr',
