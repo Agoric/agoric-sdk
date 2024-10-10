@@ -597,7 +597,7 @@ export default function buildKernel(
     const p = kernelKeeper.getKernelPromise(kpid);
     kernelKeeper.incStat('dispatchNotify');
     const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
-    p.state !== 'unresolved' || Fail`spurious notification ${kpid}`;
+    assert(p.state !== 'unresolved', `spurious notification ${kpid}`);
     /** @type { KernelDeliveryOneNotify[] } */
     const resolutions = [];
     if (!vatKeeper.hasCListEntry(kpid)) {
@@ -612,7 +612,9 @@ export default function buildKernel(
       return NO_DELIVERY_CRANK_RESULTS;
     }
     for (const toResolve of targets) {
-      const { state, data } = kernelKeeper.getKernelPromise(toResolve);
+      const tp = kernelKeeper.getKernelPromise(toResolve);
+      assert(tp.state !== 'unresolved');
+      const { state, data } = tp;
       resolutions.push([toResolve, { state, data }]);
     }
     /** @type { KernelDeliveryNotify } */
@@ -1186,6 +1188,7 @@ export default function buildKernel(
         }
       }
       default:
+        // @ts-expect-error
         throw Fail`unknown promise resolution '${kp.state}'`;
     }
   }
@@ -2081,6 +2084,7 @@ export default function buildKernel(
         return p.data;
       }
       default: {
+        // @ts-expect-error
         throw Fail`invalid state for ${kpid}: ${p.state}`;
       }
     }
