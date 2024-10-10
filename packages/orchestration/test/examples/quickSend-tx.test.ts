@@ -166,68 +166,6 @@ const withVTransfer = (chain, t) => {
   });
 };
 
-type EthAddr = `0x${string}`;
-type EthData = Record<string, string | number>;
-type EthMsgInfo = { sender: EthAddr; value?: number };
-type EthCallTx = {
-  txId: number;
-  msg: EthMsgInfo;
-  contractAddress: EthAddr;
-  method: string;
-  args: EthData[];
-};
-
-const makeEthChain = (heightInitial: number, { t, setTimeout }) => {
-  let nonce = 10;
-  let height = heightInitial;
-  const contracts = new Map();
-  const mempool: EthCallTx[] = [];
-  const blocks: EthCallTx[][] = [[]];
-  const emptyBlock = harden([]);
-
-  let going = true;
-  const advanceBlock = () => {
-    blocks.push(harden([...mempool]));
-    mempool.splice(0, mempool.length);
-    height += 1;
-    t.log('eth advance to block', height);
-  };
-  void (async () => {
-    const ticks = makeEventCounter({ setTimeout });
-    for await (const tick of ticks) {
-      if (!going) break;
-      advanceBlock();
-    }
-  })();
-
-  const { nextLabel: next } = t.context;
-  return harden({
-    deployContract: async c => {
-      const address = `0x${(nonce += 1)}`;
-      contracts.set(address, c);
-      return address;
-    },
-    call: async (
-      msg: EthMsgInfo,
-      addr: EthAddr,
-      method: string,
-      args: EthData[],
-    ) => {
-      const txId = nonce;
-      nonce += 1;
-      mempool.push({ txId, msg, contractAddress: addr, method, args });
-      t.log(next(), 'eth call', addr, '.', method, '(', ...args, ')');
-      const contract = contracts.get(addr);
-      const result = contract[method](msg, ...args);
-      t.is(result, undefined);
-    },
-    currentHeight: () => height - 1,
-    getBlock: (h: number) => blocks[h - heightInitial] || emptyBlock,
-    stop: () => (going = false),
-  });
-};
-type EthChain = ReturnType<typeof makeEthChain>;
-
 const makeUser = ({ nobleApp, ethereum, myAddr, cctpAddr }) =>
   harden({
     doTransfer: async (amount, dest) => {
@@ -337,6 +275,68 @@ const makeCCTP = ({ t, usdc, noble, events }) => {
     },
   });
 };
+
+type EthAddr = `0x${string}`;
+type EthData = Record<string, string | number>;
+type EthMsgInfo = { sender: EthAddr; value?: number };
+type EthCallTx = {
+  txId: number;
+  msg: EthMsgInfo;
+  contractAddress: EthAddr;
+  method: string;
+  args: EthData[];
+};
+
+const makeEthChain = (heightInitial: number, { t, setTimeout }) => {
+  let nonce = 10;
+  let height = heightInitial;
+  const contracts = new Map();
+  const mempool: EthCallTx[] = [];
+  const blocks: EthCallTx[][] = [[]];
+  const emptyBlock = harden([]);
+
+  let going = true;
+  const advanceBlock = () => {
+    blocks.push(harden([...mempool]));
+    mempool.splice(0, mempool.length);
+    height += 1;
+    t.log('eth advance to block', height);
+  };
+  void (async () => {
+    const ticks = makeEventCounter({ setTimeout });
+    for await (const tick of ticks) {
+      if (!going) break;
+      advanceBlock();
+    }
+  })();
+
+  const { nextLabel: next } = t.context;
+  return harden({
+    deployContract: async c => {
+      const address = `0x${(nonce += 1)}`;
+      contracts.set(address, c);
+      return address;
+    },
+    call: async (
+      msg: EthMsgInfo,
+      addr: EthAddr,
+      method: string,
+      args: EthData[],
+    ) => {
+      const txId = nonce;
+      nonce += 1;
+      mempool.push({ txId, msg, contractAddress: addr, method, args });
+      t.log(next(), 'eth call', addr, '.', method, '(', ...args, ')');
+      const contract = contracts.get(addr);
+      const result = contract[method](msg, ...args);
+      t.is(result, undefined);
+    },
+    currentHeight: () => height - 1,
+    getBlock: (h: number) => blocks[h - heightInitial] || emptyBlock,
+    stop: () => (going = false),
+  });
+};
+type EthChain = ReturnType<typeof makeEthChain>;
 
 const makeAgoricWatcher = ({
   t,
