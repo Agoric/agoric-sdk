@@ -7,6 +7,7 @@ import (
 	"io"
 
 	agoric "github.com/Agoric/agoric-sdk/golang/cosmos/types"
+	"github.com/Agoric/agoric-sdk/golang/cosmos/types/conv"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
@@ -37,7 +38,7 @@ func NewPortHandler(k Keeper) vm.PortHandler {
 func (ph portHandler) Receive(cctx context.Context, str string) (string, error) {
 	ctx := sdk.UnwrapSDKContext(cctx)
 	var msg swingsetMessage
-	err := json.Unmarshal([]byte(str), &msg)
+	err := conv.UnmarshalJSONString(str, &msg)
 	if err != nil {
 		return "", err
 	}

@@ -2,11 +2,11 @@ package vbank
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	stdlog "log"
 	"sort"
 
+	"github.com/Agoric/agoric-sdk/golang/cosmos/types/conv"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -115,11 +115,11 @@ func getBalanceUpdate(ctx sdk.Context, keeper Keeper, addressToUpdate map[string
 	return vm.PopulateAction(ctx, event)
 }
 
-func marshal(event vm.Jsonable) ([]byte, error) {
+func marshal(event vm.Jsonable, nilResult string) (string, error) {
 	if event == nil {
-		return nil, nil
+		return nilResult, nil
 	}
-	return json.Marshal(event)
+	return conv.MarshalToJSONString(event)
 }
 
 func (ch portHandler) Receive(cctx context.Context, str string) (ret string, err error) {
@@ -128,7 +128,7 @@ func (ch portHandler) Receive(cctx context.Context, str string) (ret string, err
 	keeper := ch.keeper
 
 	var msg portMessage
-	err = json.Unmarshal([]byte(str), &msg)
+	err = conv.UnmarshalJSONString(str, &msg)
 	if err != nil {
 		return ret, err
 	}
@@ -145,9 +145,9 @@ func (ch portHandler) Receive(cctx context.Context, str string) (ret string, err
 		coin := keeper.GetBalance(ctx, addr, msg.Denom)
 		packet := coin.Amount.String()
 		if err == nil {
-			bytes, err := json.Marshal(&packet)
+			str, err := marshal(&packet, "")
 			if err == nil {
-				ret = string(bytes)
+				ret = str
 			}
 		}
 
@@ -169,15 +169,11 @@ func (ch portHandler) Receive(cctx context.Context, str string) (ret string, err
 		}
 		addressToBalances := make(map[string]sdk.Coins, 1)
 		addressToBalances[msg.Sender] = sdk.NewCoins(sdk.NewInt64Coin(msg.Denom, 1))
-		bz, err := marshal(getBalanceUpdate(ctx, keeper, addressToBalances))
+		str, err := marshal(getBalanceUpdate(ctx, keeper, addressToBalances), "true")
 		if err != nil {
 			return "", err
 		}
-		if bz == nil {
-			ret = "true"
-		} else {
-			ret = string(bz)
-		}
+		ret = str
 
 	case "VBANK_GIVE":
 		addr, err := sdk.AccAddressFromBech32(msg.Recipient)
@@ -197,15 +193,11 @@ func (ch portHandler) Receive(cctx context.Context, str string) (ret string, err
 		}
 		addressToBalances := make(map[string]sdk.Coins, 1)
 		addressToBalances[msg.Recipient] = sdk.NewCoins(sdk.NewInt64Coin(msg.Denom, 1))
-		bz, err := marshal(getBalanceUpdate(ctx, keeper, addressToBalances))
+		str, err := marshal(getBalanceUpdate(ctx, keeper, addressToBalances), "true")
 		if err != nil {
 			return "", err
 		}
-		if bz == nil {
-			ret = "true"
-		} else {
-			ret = string(bz)
-		}
+		ret = str
 
 	case "VBANK_GIVE_TO_REWARD_DISTRIBUTOR":
 		value, ok := sdk.NewIntFromString(msg.Amount)
@@ -230,11 +222,11 @@ func (ch portHandler) Receive(cctx context.Context, str string) (ret string, err
 		if len(addr) == 0 {
 			return "", fmt.Errorf("module account %s not found", msg.ModuleName)
 		}
-		bz, err := marshal(addr)
+		str, err := marshal(addr, "")
 		if err != nil {
 			return "", err
 		}
-		ret = string(bz)
+		ret = str
 
 	default:
 		err = fmt.Errorf("unrecognized type %s", msg.Type)
