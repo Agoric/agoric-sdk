@@ -442,16 +442,15 @@ const makeQuickSend = async ({
   });
 };
 
-test('tx lifecycle', async t => {
-  const terms = { makerFee: 3, contractFee: 2 };
-  const startFunds = {
-    usdcMint: 10_000,
-    nobleMint: 100_000,
-    pool: 2000,
-    user: 150,
-  };
+const terms = { makerFee: 3, contractFee: 2 };
+const startFunds = {
+  usdcMint: 10_000,
+  nobleMint: 100_000,
+  pool: 2000,
+  user: 150,
+};
 
-  const io = { setTimeout };
+const setup = async (t, io) => {
   //   const t = {
   //     ...t0,
   //     log: (...args) => {
@@ -459,6 +458,7 @@ test('tx lifecycle', async t => {
   //       t0.log(...args);
   //     },
   //   };
+  t.log('-- SETUP...');
   const ethereum = makeEthChain(9876, { t, setTimeout });
   let chains = harden({
     agoric: withVTransfer(makeCosmosChain('agoric1', t), t),
@@ -529,9 +529,6 @@ test('tx lifecycle', async t => {
     console.error('failure while watching', err);
     t.fail(err.message);
   });
-
-  const destAddr = await chains.dydx.makeAccount(); // is this a prereq?
-
   usdc.transfer({ sender: '0xcircle' }, '0xUrsula', startFunds.user);
   const ursula = makeUser({
     nobleApp,
@@ -539,16 +536,32 @@ test('tx lifecycle', async t => {
     myAddr: '0xUrsula',
     cctpAddr,
   });
+
+  const quiesce = async () => {
+    const ticks = makeEventCounter({ setTimeout });
+    for await (const tick of ticks) {
+      if (tick > 2) break;
+    }
+    t.log('quiesced for 3 ticks');
+    agoricWatcher.stop();
+    ethereum.stop();
+  };
+
+  t.log('-- SETUP done.');
+
+  return { chains, ursula, quiesce, contract, usdc };
+};
+
+test('tx lifecycle', async t => {
+  const io = { setTimeout };
+  const { chains, ursula, quiesce, contract, usdc } = await setup(t, io);
+
+  const destAddr = await chains.dydx.makeAccount(); // is this a prereq?
   await ursula.doTransfer(100, destAddr);
 
-  const quiesce = makeEventCounter({ setTimeout });
-  for await (const tick of quiesce) {
-    if (tick > 2) break;
-  }
-  t.log('quiesced for 3 ticks');
-  agoricWatcher.stop();
-  ethereum.stop();
+  await quiesce();
 
+  const poolAddr = await contract.getPoolAddress();
   const feeAddr = await contract.getFeeAddress();
   const settlementAddr = await contract.getSettlementAddress();
   const actual = {
