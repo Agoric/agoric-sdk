@@ -289,7 +289,10 @@ export default function buildKernel(
 
       // Reject all promises decided by the vat, making sure to capture the list
       // of kpids before that data is deleted.
-      const deadPromises = [...kernelKeeper.enumeratePromisesByDecider(vatID)];
+      const deadPromises = [];
+      for (const [kpid, _p] of kernelKeeper.enumeratePromisesByDecider(vatID)) {
+        deadPromises.push(kpid);
+      }
       // remove vatID from the list of live vats, and mark for deletion
       kernelKeeper.deleteVatID(vatID);
       kernelKeeper.markVatAsTerminated(vatID);
@@ -998,7 +1001,7 @@ export default function buildKernel(
     }
 
     // reject all promises for which the vat was decider
-    for (const kpid of kernelKeeper.enumeratePromisesByDecider(vatID)) {
+    for (const [kpid, _p] of kernelKeeper.enumeratePromisesByDecider(vatID)) {
       resolveToError(kpid, disconnectionCapData, vatID);
     }
 
