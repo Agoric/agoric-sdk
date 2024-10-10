@@ -10,7 +10,6 @@
   "license": "Apache-2.0",
   "dependencies": {
     "@agoric/synthetic-chain": "^0.3.0",
-    "@agoric/vats": "0.15.1",
     "@endo/init": "^1.1.4",
     "@endo/marshal": "^1.5.3",
     "ava": "^6.1.3"

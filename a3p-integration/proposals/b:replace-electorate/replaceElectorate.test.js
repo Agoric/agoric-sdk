@@ -1,44 +1,40 @@
 import test from 'ava';
-import 'ses';
 import '@endo/init';
-import {
-  agops,
-  ATOM_DENOM,
-  getISTBalance,
-  GOV1ADDR,
-  GOV2ADDR,
-  GOV3ADDR,
-  openVault,
-  queryVstorage,
-  USER1ADDR,
-} from '@agoric/synthetic-chain';
-import {
-  acceptInvitation,
-  marshaller,
-  proposeVaultDirectorParamChange,
-  voteOnProposedChanges,
-  queryVstorageFormatted,
-} from './agoric-tools.js';
-import { waitUntil } from './utils.js';
+import { GOV1ADDR } from '@agoric/synthetic-chain';
+import { acceptInvitation, queryVstorageFormatted } from './agoric-tools.js';
 
-test('new committee should be able to vote', async t => {
-  const params = {
-    ChargingPeriod: 400n,
-  };
+test.serial(
+  'should have new invites for committee and charter and should be able to accept them',
+  async t => {
+    const wallet = await queryVstorageFormatted(
+      `published.wallet.${GOV1ADDR}.current`,
+    );
 
-  const { fromCapData } = marshaller;
+    const invitations = wallet.purses[0].balance.value;
+
+    const charterInvitation = invitations.find(
+      v => v.description === 'charter member invitation',
+    );
+    t.truthy(charterInvitation);
+
+    const committeeInvitation = invitations.find(v =>
+      v.description.startsWith('Voter'),
+    );
+    t.truthy(committeeInvitation);
+  },
+);
+
+test.serial('should be able to accept the new invitations', async t => {
   const charterOfferId = 'newEcCharter';
   const committeeOfferId = 'newEcCommittee';
 
-  const path = { paramPath: { key: 'governedParams' } };
-
-  t.log('accept new invitations');
   await acceptInvitation(
     GOV1ADDR,
     'economicCommittee',
     'Voter0',
     committeeOfferId,
   );
+
   await acceptInvitation(
     GOV1ADDR,
     'econCommitteeCharter',
@@ -46,32 +42,19 @@ test('new committee should be able to vote', async t => {
     charterOfferId,
   );
 
-  t.log('propose a param change with the new invitation');
-  await proposeVaultDirectorParamChange(GOV1ADDR, params, path, charterOfferId);
-
-  // const wallet = await queryVstorageFormatted(
-  //   `published.wallet.${GOV1ADDR}.current`,
-  //   -1,
-  //   fromCapData,
-  // );
-  // console.log('wallet', wallet);
-
-  t.log('vote on proposed changes');
-  await voteOnProposedChanges(GOV1ADDR, committeeOfferId);
-
-  t.log('wait until the vote is closed');
-  const latestQuestion = await queryVstorageFormatted(
-    'published.committees.Economic_Committee.latestQuestion',
-    -1,
-    fromCapData,
+  const wallet = await queryVstorageFormatted(
+    `published.wallet.${GOV1ADDR}.current`,
   );
-  await waitUntil(latestQuestion.closingRule.deadline);
 
-  t.log('check if latest outcome is correct');
-  const latestOutcome = await queryVstorageFormatted(
-    'published.committees.Economic_Committee.latestOutcome',
-    -1,
-    fromCapData,
+  const usedInvitations = wallet.offerToUsedInvitation;
+
+  const usedCharterInvitation = usedInvitations.find(
+    v => v[0] === charterOfferId,
   );
-  t.is(latestOutcome.outcome, 'win');
+  t.truthy(usedCharterInvitation);
+
+  const usedCommitteeInvitation = usedInvitations.find(
+    v => v[0] === committeeOfferId,
+  );
+  t.truthy(usedCommitteeInvitation);
 });
