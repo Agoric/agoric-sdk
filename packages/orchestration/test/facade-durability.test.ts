@@ -127,6 +127,55 @@ test.serial('faulty chain info', async t => {
   });
 });
 
+test.serial('racy chain info', async t => {
+  const { facadeServices, commonPrivateArgs } = await commonSetup(t);
+
+  // XXX relax again
+  reincarnate({ relaxDurabilityRules: true });
+  const { zcf } = await setupZCFTest();
+
+  // After setupZCFTest because this disables relaxDurabilityRules
+  // which breaks Zoe test setup's fakeVatAdmin
+  const zone = provideDurableZone('test');
+  const vt = prepareSwingsetVowTools(zone);
+
+  const orchKit = provideOrchestration(
+    zcf,
+    zone.mapStore('test'),
+    {
+      agoricNames: facadeServices.agoricNames,
+      timerService: facadeServices.timerService,
+      storageNode: commonPrivateArgs.storageNode,
+      orchestrationService: facadeServices.orchestrationService,
+      localchain: facadeServices.localchain,
+    },
+    commonPrivateArgs.marshaller,
+  );
+
+  const { chainHub, orchestrate } = orchKit;
+
+  chainHub.registerChain('mock', mockChainInfo);
+  chainHub.registerConnection(
+    'agoric-3',
+    mockChainInfo.chainId,
+    mockChainConnection,
+  );
+
+  const raceGetChain = orchestrate('race', {}, async orc => {
+    return Promise.all([orc.getChain('mock'), orc.getChain('mock')]);
+  });
+
+  const resultP = vt.when(raceGetChain());
+  await t.notThrowsAsync(resultP);
+  const result = await resultP;
+  t.is(result[0], result[1], 'same chain facade');
+  const chainInfos = await vt.when(
+    vt.allVows([result[0].getChainInfo(), result[1].getChainInfo()]),
+  );
+  t.deepEqual(await chainInfos[0], mockChainInfo);
+  t.deepEqual(await chainInfos[1], mockChainInfo);
+});
+
 test.serial('asset / denom info', async t => {
   const { facadeServices, commonPrivateArgs } = await commonSetup(t);
 
@@ -195,7 +244,11 @@ test.serial('asset / denom info', async t => {
         });
       }
 
-      const ag = await orc.getChain('agoric');
+      const agP = orc.getChain('agoric');
+      t.throws(() => orc.getDenomInfo(agDenom), {
+        message: /^wait until getChain\("agoric"\) completes/,
+      });
+      const ag = await agP;
       {
         const actual = orc.getDenomInfo(agDenom);
 

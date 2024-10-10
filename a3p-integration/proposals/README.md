@@ -11,7 +11,7 @@ Steps:
 1. Get the upgrade branch
 2. Build the submissions
 3. Migrate the proposal
-4. Update the `latest` iamge
+4. Update the `latest` image
 
 ### Get the proposal's branch
 

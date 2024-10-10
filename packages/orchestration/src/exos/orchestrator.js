@@ -47,7 +47,6 @@ export const OrchestratorI = M.interface('Orchestrator', {
  *   asyncFlowTools: AsyncFlowTools;
  *   chainHub: ChainHub;
  *   localchain: Remote<LocalChain>;
- *   chainByName: MapStore<string, HostInterface<Chain>>;
  *   makeRecorderKit: MakeRecorderKit;
  *   makeLocalChainFacade: MakeLocalChainFacade;
  *   makeRemoteChainFacade: MakeRemoteChainFacade;
@@ -63,13 +62,20 @@ const prepareOrchestratorKit = (
   {
     chainHub,
     localchain,
-    chainByName,
     makeLocalChainFacade,
     makeRemoteChainFacade,
     vowTools: { watch, asVow },
   },
-) =>
-  zone.exoClassKit(
+) => {
+  /**
+   * @template T
+   * @typedef {{ vow: Vow<T>; pending: true } | { value: T; pending: false }} MaybePendingValue
+   */
+
+  /** @type {MapStore<string, MaybePendingValue<HostInterface<Chain>>>} */
+  const chainByName = zone.mapStore('chainName');
+
+  return zone.exoClassKit(
     'Orchestrator',
     {
       orchestrator: OrchestratorI,
@@ -97,7 +103,7 @@ const prepareOrchestratorKit = (
          */
         onFulfilled(agoricChainInfo) {
           const it = makeLocalChainFacade(agoricChainInfo);
-          chainByName.init('agoric', it);
+          chainByName.set('agoric', harden({ value: it, pending: false }));
           return it;
         },
       },
@@ -115,27 +121,32 @@ const prepareOrchestratorKit = (
          */
         onFulfilled([_agoricChainInfo, remoteChainInfo, connectionInfo], name) {
           const it = makeRemoteChainFacade(remoteChainInfo, connectionInfo);
-          chainByName.init(name, it);
+          chainByName.set(name, harden({ value: it, pending: false }));
           return it;
         },
       },
       orchestrator: {
         /** @type {HostOf<Orchestrator['getChain']>} */
         getChain(name) {
-          if (chainByName.has(name)) {
-            return asVow(() => chainByName.get(name));
-          }
-          if (name === 'agoric') {
-            return watch(
-              chainHub.getChainInfo('agoric'),
-              this.facets.makeLocalChainFacadeWatcher,
-            );
-          }
-          return watch(
-            chainHub.getChainsAndConnection('agoric', name),
-            this.facets.makeRemoteChainFacadeWatcher,
-            name,
-          );
+          return asVow(() => {
+            if (chainByName.has(name)) {
+              const maybeChain = chainByName.get(name);
+              return maybeChain.pending ? maybeChain.vow : maybeChain.value;
+            }
+            const vow =
+              name === 'agoric'
+                ? watch(
+                    chainHub.getChainInfo('agoric'),
+                    this.facets.makeLocalChainFacadeWatcher,
+                  )
+                : watch(
+                    chainHub.getChainsAndConnection('agoric', name),
+                    this.facets.makeRemoteChainFacadeWatcher,
+                    name,
+                  );
+            chainByName.init(name, harden({ vow, pending: true }));
+            return vow;
+          });
         },
         makeLocalAccount() {
           return watch(E(localchain).makeAccount());
@@ -147,10 +158,18 @@ const prepareOrchestratorKit = (
           const { chainName, baseName, baseDenom, brand } = denomDetail;
           chainByName.has(chainName) ||
             Fail`use getChain(${q(chainName)}) before getDenomInfo(${q(denom)})`;
-          const chain = chainByName.get(chainName);
+          const maybeChain = chainByName.get(chainName);
+          if (maybeChain.pending) {
+            throw Fail`wait until getChain(${q(chainName)}) completes before getDenomInfo(${q(denom)})`;
+          }
+          const chain = maybeChain.value;
           chainByName.has(baseName) ||
             Fail`use getChain(${q(baseName)}) before getDenomInfo(${q(denom)})`;
-          const base = chainByName.get(baseName);
+          const maybeBase = chainByName.get(baseName);
+          if (maybeBase.pending) {
+            throw Fail`wait until getChain(${q(baseName)}) completes before getDenomInfo(${q(denom)})`;
+          }
+          const base = maybeBase.value;
           return harden({ chain, base, brand, baseDenom });
         },
         /** @type {HostOf<Orchestrator['asAmount']>} */
@@ -158,6 +177,7 @@ const prepareOrchestratorKit = (
       },
     },
   );
+};
 harden(prepareOrchestratorKit);
 
 /**
@@ -166,7 +186,6 @@ harden(prepareOrchestratorKit);
  *   asyncFlowTools: AsyncFlowTools;
  *   chainHub: ChainHub;
  *   localchain: Remote<LocalChain>;
- *   chainByName: MapStore<string, HostInterface<Chain>>;
  *   makeRecorderKit: MakeRecorderKit;
  *   makeLocalChainFacade: MakeLocalChainFacade;
  *   makeRemoteChainFacade: MakeRemoteChainFacade;

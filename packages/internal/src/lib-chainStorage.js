@@ -1,7 +1,7 @@
 // @ts-check
 
 import { Fail } from '@endo/errors';
-import { E } from '@endo/far';
+import { E, Far } from '@endo/far';
 import { M } from '@endo/patterns';
 import { makeHeapZone } from '@agoric/base-zone/heap.js';
 import * as cb from './callback.js';
@@ -278,7 +278,10 @@ export function makeChainStorageRoot(
  */
 const makeNullStorageNode = () => {
   // XXX re-use "ChainStorage" methods above which don't actually depend on chains
-  return makeChainStorageRoot(() => null, 'null');
+  return makeChainStorageRoot(
+    Far('NullMessenger', () => null),
+    'null',
+  );
 };
 
 /**

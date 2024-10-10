@@ -28,6 +28,7 @@ type Keeper struct {
 	cdc         codec.Codec
 	msgRouter   types.MsgRouter
 	queryRouter types.GRPCQueryRouter
+	acctKeeper  types.AccountKeeper
 }
 
 // NewKeeper creates a new dIBC Keeper instance
@@ -36,12 +37,14 @@ func NewKeeper(
 	key storetypes.StoreKey,
 	msgRouter types.MsgRouter,
 	queryRouter types.GRPCQueryRouter,
+	acctKeeper types.AccountKeeper,
 ) Keeper {
 	return Keeper{
 		key:         key,
 		cdc:         cdc,
 		msgRouter:   msgRouter,
 		queryRouter: queryRouter,
+		acctKeeper:  acctKeeper,
 	}
 }
 
@@ -266,14 +269,27 @@ func (k Keeper) AllocateAddress(cctx context.Context) sdk.AccAddress {
 	localchainModuleAcc := sdkaddress.Module(types.ModuleName, []byte("localchain"))
 	header := ctx.BlockHeader()
 
-	// Increment our sequence number.
-	seq := store.Get(types.KeyLastSequence)
-	seq = types.NextSequence(seq)
-	store.Set(types.KeyLastSequence, seq)
+	// Loop until we find an unused address.
+	for {
+		// Increment our sequence number.
+		seq := store.Get(types.KeyLastSequence)
+		seq = types.NextSequence(seq)
+		store.Set(types.KeyLastSequence, seq)
 
-	buf := seq
-	buf = append(buf, header.AppHash...)
-	buf = append(buf, header.DataHash...)
+		buf := seq
+		buf = append(buf, header.AppHash...)
+		buf = append(buf, header.DataHash...)
 
-	return sdkaddress.Derive(localchainModuleAcc, buf)
+		addr := sdkaddress.Derive(localchainModuleAcc, buf)
+		if k.acctKeeper.HasAccount(ctx, addr) {
+			continue
+		}
+
+		// We found an unused address, so create an account for it.
+		acct := k.acctKeeper.NewAccountWithAddress(ctx, addr)
+		k.acctKeeper.SetAccount(ctx, acct)
+
+		// All good, return the address.
+		return addr
+	}
 }

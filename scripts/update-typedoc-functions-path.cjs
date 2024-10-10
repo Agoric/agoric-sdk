@@ -7,9 +7,9 @@
  * https://github.com/cloudflare/workers-sdk/pull/2103).
  *
  * This script -
- * 1. renames `/functions` directory to `/function`
+ * 1. renames `/functions` directory to `/funcs`
  * 2. updates generated urls in html files to reference new url path
- * 3. updates base64 encoded navigation state to reference new url path
+ * 3. updates base64 encoded navigation and search data to reference new url path
  *
  * If an `md` argument is supplied - versus the optional default `html` document -
  * a different set of logic will run to update paths are links for markdown files.
@@ -31,17 +31,20 @@ const config = {
   oldDirName: 'functions',
   newDirName: 'funcs',
   apiDocsDir: path.join(__dirname, '..', 'api-docs'),
-  navigationFilePath: path.join(
-    __dirname,
-    '..',
-    'api-docs',
-    'assets',
-    'navigation.js',
-  ),
+  dataFiles: [
+    {
+      path: path.join(__dirname, '..', 'api-docs', 'assets', 'navigation.js'),
+      windowKey: 'navigationData',
+    },
+    {
+      path: path.join(__dirname, '..', 'api-docs', 'assets', 'search.js'),
+      windowKey: 'searchData',
+    },
+  ],
 };
 
-// Decodes and decompresses the TypeDoc navigation data
-function decodeTypeDocNavigation(encodedData) {
+// Decodes and decompresses the TypeDoc data
+function decodeTypeDocData(encodedData) {
   return new Promise((resolve, reject) => {
     const base64Data = encodedData.replace(
       /^data:application\/octet-stream;base64,/,
@@ -65,8 +68,8 @@ function decodeTypeDocNavigation(encodedData) {
   });
 }
 
-// Compresses and encodes the TypeDoc navigation data
-function encodeTypeDocNavigation(jsonData) {
+// Compresses and encodes the TypeDoc data
+function encodeTypeDocData(jsonData) {
   return new Promise((resolve, reject) => {
     const jsonString = JSON.stringify(jsonData);
 
@@ -82,7 +85,7 @@ function encodeTypeDocNavigation(jsonData) {
   });
 }
 
-// Recursively updates URLs in the navigation data
+// Recursively updates URLs in the data
 function updateUrls(data, searchString, replaceString) {
   if (typeof data === 'object' && data !== null) {
     for (const key in data) {
@@ -102,25 +105,27 @@ function updateUrls(data, searchString, replaceString) {
   return data;
 }
 
-// Updates js-based navigation state
-async function updateNavigationFile() {
-  const fileContent = await fsp.readFile(config.navigationFilePath, 'utf8');
-  const match = fileContent.match(/window\.navigationData = "(.*?)"/);
+// Updates js-based data file (navigation or search)
+async function updateDataFile(filePath, windowKey) {
+  const fileContent = await fsp.readFile(filePath, 'utf8');
+  const match = fileContent.match(
+    new RegExp(`window\\.${windowKey} = "(.*?)"`),
+  );
   if (!match) {
-    throw new Error('Navigation data not found in file');
+    throw new Error(`${windowKey} data not found in file`);
   }
   const encodedData = match[1];
 
-  const decodedData = await decodeTypeDocNavigation(encodedData);
+  const decodedData = await decodeTypeDocData(encodedData);
   const updatedData = updateUrls(
     decodedData,
     config.oldDirName,
     config.newDirName,
   );
-  const newEncodedData = await encodeTypeDocNavigation(updatedData);
-  const newFileContent = `window.navigationData = "${newEncodedData}"`;
-  await fsp.writeFile(config.navigationFilePath, newFileContent);
-  console.log('Navigation file updated successfully');
+  const newEncodedData = await encodeTypeDocData(updatedData);
+  const newFileContent = `window.${windowKey} = "${newEncodedData}"`;
+  await fsp.writeFile(filePath, newFileContent);
+  console.log(`${windowKey} updated successfully`);
 }
 
 /**
@@ -196,7 +201,10 @@ async function main() {
   switch (fileType) {
     case 'html':
       await updateFiles(config.apiDocsDir, '.html', updateHtmlContentLinks);
-      return updateNavigationFile();
+      for (const dataFile of config.dataFiles) {
+        await updateDataFile(dataFile.path, dataFile.windowKey);
+      }
+      return;
     case 'md':
       return updateFiles(config.apiDocsDir, '.md', updateMarkdownContentLinks);
     default:

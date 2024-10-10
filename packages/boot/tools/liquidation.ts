@@ -53,6 +53,17 @@ export type LiquidationSetup = {
   };
 };
 
+// TODO read from the config file
+export const atomConfig = {
+  oracleAddresses: [
+    'agoric1krunjcqfrf7la48zrvdfeeqtls5r00ep68mzkr',
+    'agoric19uscwxdac6cf6z7d5e26e0jm0lgwstc47cpll8',
+    'agoric144rrhh4m09mh7aaffhm6xy223ym76gve2x7y78',
+    'agoric19d6gnr9fyp6hev4tlrg87zjrzsd5gzr5qlfq2p',
+    'agoric1n4fcxsnkxe4gj6e24naec99hzmc4pjfdccy5nj',
+  ],
+};
+
 export const scale6 = x => BigInt(Math.round(x * 1_000_000));
 
 const DebtLimitValue = scale6(100_000);
@@ -103,14 +114,7 @@ export const makeLiquidationTestKit = async ({
         collateralBrandKey,
         agoricNamesRemotes,
         walletFactoryDriver,
-        // TODO read from the config file
-        [
-          'agoric1krunjcqfrf7la48zrvdfeeqtls5r00ep68mzkr',
-          'agoric19uscwxdac6cf6z7d5e26e0jm0lgwstc47cpll8',
-          'agoric144rrhh4m09mh7aaffhm6xy223ym76gve2x7y78',
-          'agoric19d6gnr9fyp6hev4tlrg87zjrzsd5gzr5qlfq2p',
-          'agoric1n4fcxsnkxe4gj6e24naec99hzmc4pjfdccy5nj',
-        ],
+        atomConfig.oracleAddresses,
       );
     }
 
@@ -304,8 +308,14 @@ export const makeLiquidationTestKit = async ({
   };
 };
 
-export const makeLiquidationTestContext = async t => {
-  const swingsetTestKit = await makeSwingsetTestKit(t.log);
+export const makeLiquidationTestContext = async (
+  t,
+  io: { env?: Record<string, string | undefined> } = {},
+) => {
+  const { env = {} } = io;
+  const swingsetTestKit = await makeSwingsetTestKit(t.log, undefined, {
+    slogFile: env.SLOGFILE,
+  });
   console.time('DefaultTestContext');
 
   const { runUtils, storage } = swingsetTestKit;

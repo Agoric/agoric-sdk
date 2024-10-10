@@ -29,7 +29,7 @@ test.after.always(t => t.context.shutdown?.());
  * upgrades, and the ability to resume an async-flow for which a host vow
  * settles after an upgrade.)
  */
-test.failing('resume', async t => {
+test('resume', async t => {
   const { walletFactoryDriver, buildProposal, evalProposal, storage } =
     t.context;
 
@@ -73,8 +73,6 @@ test.failing('resume', async t => {
     buildProposal('@agoric/builders/scripts/testing/fix-buggy-sendAnywhere.js'),
   );
 
-  // FIXME https://github.com/Agoric/agoric-sdk/issues/9303
-  // This doesn't yet get past 'sending'
   t.deepEqual(getLogged(), [
     'sending {0} from cosmoshub to cosmos1whatever',
     'got info for denoms: ibc/toyatom, ibc/toyusdc, ubld, uist',

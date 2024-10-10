@@ -9,8 +9,9 @@ a3pProposalDir=$1
 builderScript=$2
 submissionDirName=${3:-submission}
 submissionDir="./a3p-integration/$a3pProposalDir/$submissionDirName"
+extraParams=${4:-}
 
-yarn agoric run "packages/builders/scripts/$builderScript"
+yarn agoric run "packages/builders/scripts/$builderScript" $extraParams
 mkdir -p "$submissionDir"
 
 plans=*-plan.json

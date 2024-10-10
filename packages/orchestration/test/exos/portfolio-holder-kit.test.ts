@@ -102,6 +102,19 @@ test('portfolio holder kit behaviors', async t => {
     'any invitation maker accessible via Proxying',
   );
 
+  // scenario with optional invitationArgs
+  const transferInv = await E(invitationMakers).Proxying(
+    'cosmoshub',
+    'Transfer',
+  );
+  t.is(
+    transferInv,
+    // note: mocked zcf (we are not in a contract) returns inv description
+    // @ts-expect-error Argument of type 'string' is not assignable to parameter of type 'Vow<any>'
+    'Transfer',
+    'invitationArgs are optional',
+  );
+
   const osmosisAccount = await makeCosmosAccount({
     chainId: 'osmosis-99',
     hostConnectionId: 'connection-2' as const,

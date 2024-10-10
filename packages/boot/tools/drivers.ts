@@ -3,7 +3,10 @@ import { Fail } from '@endo/errors';
 import { NonNullish } from '@agoric/internal';
 import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
 import { SECONDS_PER_MINUTE } from '@agoric/inter-protocol/src/proposals/econ-behaviors.js';
-import { unmarshalFromVstorage } from '@agoric/internal/src/marshal.js';
+import {
+  slotToBoardRemote,
+  unmarshalFromVstorage,
+} from '@agoric/internal/src/marshal.js';
 import {
   FakeStorageKit,
   slotToRemotable,
@@ -24,6 +27,7 @@ import type { OfferSpec } from '@agoric/smart-wallet/src/offers.js';
 import type { TimerService } from '@agoric/time';
 import type { OfferMaker } from '@agoric/smart-wallet/src/types.js';
 import type { RunUtils } from '@agoric/swingset-vat/tools/run-utils.js';
+import { makeMarshal } from '@endo/marshal';
 import type { SwingsetTestKit } from './supports.js';
 
 export const makeWalletFactoryDriver = async (
@@ -151,24 +155,28 @@ export const makePriceFeedDriver = async (
     oracleAddresses.map(addr => walletFactoryDriver.provideSmartWallet(addr)),
   );
 
-  const priceFeedInstance = agoricNamesRemotes.instance[priceFeedName];
-  priceFeedInstance || Fail`no price feed ${priceFeedName}`;
-  const adminOfferId = `accept-${collateralBrandKey}-oracleInvitation`;
-
-  // accept invitations
-  await Promise.all(
-    oracleWallets.map(w =>
-      w.executeOffer({
-        id: adminOfferId,
-        invitationSpec: {
-          source: 'purse',
-          instance: priceFeedInstance,
-          description: 'oracle invitation',
-        },
-        proposal: {},
-      }),
-    ),
-  );
+  let nonce = 0;
+  let adminOfferId;
+  const acceptInvitations = async () => {
+    const priceFeedInstance = agoricNamesRemotes.instance[priceFeedName];
+    priceFeedInstance || Fail`no price feed ${priceFeedName}`;
+    nonce += 1;
+    adminOfferId = `accept-${collateralBrandKey}-oracleInvitation${nonce}`;
+    return Promise.all(
+      oracleWallets.map(w =>
+        w.executeOffer({
+          id: adminOfferId,
+          invitationSpec: {
+            source: 'purse',
+            instance: priceFeedInstance,
+            description: 'oracle invitation',
+          },
+          proposal: {},
+        }),
+      ),
+    );
+  };
+  await acceptInvitations();
 
   // zero is the initial lastReportedRoundId so causes an error: cannot report on previous rounds
   let roundId = 1n;
@@ -192,6 +200,10 @@ export const makePriceFeedDriver = async (
       roundId += 1n;
       // TODO confirm the new price is written to storage
     },
+    async refreshInvitations() {
+      roundId = 1n;
+      await acceptInvitations();
+    },
   };
 };
 harden(makePriceFeedDriver);
@@ -207,67 +219,131 @@ export const makeGovernanceDriver = async (
   const charterMembershipId = 'charterMembership';
   const committeeMembershipId = 'committeeMembership';
 
+  const { fromCapData } = makeMarshal(undefined, slotToBoardRemote);
+
   const chainTimerService: ERef<TimerService> =
     await EV.vat('bootstrap').consumeItem('chainTimerService');
 
   let invitationsAccepted = false;
 
-  const ecMembers = await Promise.all(
+  const smartWallets = await Promise.all(
     committeeAddresses.map(address =>
       walletFactoryDriver.provideSmartWallet(address),
     ),
   );
 
+  const findInvitation = (wallet, descriptionSubstr) => {
+    return wallet
+      .getCurrentWalletRecord()
+      .purses[0].balance.value.find(v =>
+        v.description.startsWith(descriptionSubstr),
+      );
+  };
+
+  const ecMembers = smartWallets.map(w => ({
+    ...w,
+    acceptOutstandingCharterInvitation: async (
+      charterOfferId = charterMembershipId,
+      instance = agoricNamesRemotes.instance.econCommitteeCharter,
+    ) => {
+      if (!findInvitation(w, 'charter member invitation')) {
+        console.log('No charter member invitation found');
+        return;
+      }
+      await w.executeOffer({
+        id: charterOfferId,
+        invitationSpec: {
+          source: 'purse',
+          instance,
+          description: 'charter member invitation',
+        },
+        proposal: {},
+      });
+    },
+    acceptOutstandingCommitteeInvitation: async (
+      committeeOfferId = committeeMembershipId,
+      instance = agoricNamesRemotes.instance.economicCommittee,
+    ) => {
+      const invitation = findInvitation(w, 'Voter');
+      if (!invitation) {
+        console.log('No committee member invitation found');
+        return;
+      }
+      await w.executeOffer({
+        id: committeeOfferId,
+        invitationSpec: {
+          source: 'purse',
+          instance,
+          description: invitation.description,
+        },
+        proposal: {},
+      });
+    },
+    voteOnLatestProposal: async (
+      voteId = 'voteInNewLimit',
+      committeeId = committeeMembershipId,
+    ) => {
+      const latestQuestionRecord = testKit.readLatest(
+        'published.committees.Economic_Committee.latestQuestion',
+      ) as any;
+
+      const chosenPositions = [latestQuestionRecord.positions[0]];
+
+      await w.executeOffer({
+        id: voteId,
+        invitationSpec: {
+          source: 'continuing',
+          previousOffer: committeeId,
+          invitationMakerName: 'makeVoteInvitation',
+          // (positionList, questionHandle)
+          invitationArgs: harden([
+            chosenPositions,
+            latestQuestionRecord.questionHandle,
+          ]),
+        },
+        proposal: {},
+      });
+    },
+    findOracleInvitation: async () => {
+      const purse = w
+        .getCurrentWalletRecord()
+        // TODO: manage brands by object identity #10167
+        .purses.find(p => p.brand.toString().includes('Invitation'));
+      // @ts-expect-error
+      const invitation = purse?.balance.value.find(
+        v => v.description === 'oracle invitation',
+      );
+      return invitation;
+    },
+  }));
+
   const ensureInvitationsAccepted = async () => {
     if (invitationsAccepted) {
       return;
     }
-    // accept charter invitations
-    {
-      const instance = agoricNamesRemotes.instance.econCommitteeCharter;
-      const promises = ecMembers.map(member =>
-        member.executeOffer({
-          id: charterMembershipId,
-          invitationSpec: {
-            source: 'purse',
-            instance,
-            description: 'charter member invitation',
-          },
-          proposal: {},
-        }),
-      );
-      await Promise.all(promises);
-    }
-    // accept committee invitations
-    {
-      const instance = agoricNamesRemotes.instance.economicCommittee;
-      const promises = ecMembers.map(member => {
-        const description =
-          member.getCurrentWalletRecord().purses[0].balance.value[0]
-            .description;
-        return member.executeOffer({
-          id: committeeMembershipId,
-          invitationSpec: {
-            source: 'purse',
-            instance,
-            description,
-          },
-          proposal: {},
-        });
-      });
-      await Promise.all(promises);
+    await null;
+    for (const member of ecMembers) {
+      await member.acceptOutstandingCharterInvitation();
+      await member.acceptOutstandingCommitteeInvitation();
     }
     invitationsAccepted = true;
   };
 
-  const proposeParams = async (instance, params, path) => {
+  const proposeParams = async (
+    instance,
+    params,
+    path,
+    ecMember: (typeof ecMembers)[0] | null = null,
+    questionId = 'propose',
+    charterOfferId = charterMembershipId,
+  ) => {
     const now = await EV(chainTimerService).getCurrentTimestamp();
 
-    await ecMembers[0].executeOffer({
-      id: 'propose',
+    await (ecMember || ecMembers[0]).executeOffer({
+      id: questionId,
       invitationSpec: {
         invitationMakerName: 'VoteOnParamChange',
-        previousOffer: charterMembershipId,
+        previousOffer: charterOfferId,
         source: 'continuing',
       },
       offerArgs: {
@@ -280,33 +356,53 @@ export const makeGovernanceDriver = async (
     });
   };
 
-  const enactLatestProposal = async () => {
-    const latestQuestionRecord = testKit.readLatest(
-      'published.committees.Economic_Committee.latestQuestion',
-    ) as any;
+  const proposeApiCall = async (
+    instance,
+    methodName: string,
+    methodArgs: any[],
+    ecMember: (typeof ecMembers)[0] | null = null,
+    questionId = 'propose',
+    charterOfferId = charterMembershipId,
+  ) => {
+    const now = await EV(chainTimerService).getCurrentTimestamp();
+    const deadline = SECONDS_PER_MINUTE + now.absValue;
+    await (ecMember || ecMembers[0]).executeOffer({
+      id: questionId,
+      invitationSpec: {
+        invitationMakerName: 'VoteOnApiCall',
+        previousOffer: charterOfferId,
+        source: 'continuing',
+        invitationArgs: [instance, methodName, methodArgs, deadline],
+      },
+      proposal: {},
+    });
+  };
 
-    const chosenPositions = [latestQuestionRecord.positions[0]];
-
-    const promises = ecMembers.map(member =>
-      member.executeOffer({
-        id: 'voteInNewLimit',
-        invitationSpec: {
-          source: 'continuing',
-          previousOffer: committeeMembershipId,
-          invitationMakerName: 'makeVoteInvitation',
-          // (positionList, questionHandle)
-          invitationArgs: harden([
-            chosenPositions,
-            latestQuestionRecord.questionHandle,
-          ]),
-        },
-        proposal: {},
-      }),
+  const enactLatestProposal = async (
+    members = ecMembers,
+    voteId = 'voteInNewLimit',
+    committeeId = committeeMembershipId,
+  ) => {
+    const promises = members.map(member =>
+      member.voteOnLatestProposal(voteId, committeeId),
     );
     await Promise.all(promises);
   };
 
+  const getLatestOutcome = async () => {
+    return unmarshalFromVstorage(
+      testKit.storage.data,
+      'published.committees.Economic_Committee.latestOutcome',
+      fromCapData,
+      -1,
+    );
+  };
+
   return {
+    proposeParams,
+    proposeApiCall,
+    enactLatestProposal,
+    getLatestOutcome,
     async changeParams(instance: Instance, params: Object, path?: object) {
       instance || Fail`missing instance`;
       await ensureInvitationsAccepted();
