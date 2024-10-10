@@ -27,6 +27,15 @@ const logged = (it, label) => {
   return it;
 };
 
+test.before(async t => {
+  let label;
+  const startLabels = () => (label = 0);
+  const nextLabel = () =>
+    typeof label === 'number' ? `--> #${(label += 1)}:` : '';
+  harden(nextLabel);
+  t.context = { startLabels, nextLabel };
+});
+
 const makeEventCounter = ({ setTimeout }) => {
   let current = 0;
   let going = true;
@@ -52,6 +61,21 @@ const makeCosmosChain = (prefix, t) => {
   const balances = new Map();
   const whaleAddress = `${prefix}${(nonce += 1)}`;
   balances.set(whaleAddress, 1_000_000);
+  const { nextLabel: next } = t.context;
+
+  const burn = async ({ from, amount }) => {
+    const fromPre = balances.get(from) || 0;
+    const fromPost = fromPre - amount;
+    fromPost >= 0 || assert.fail(`${from} overdrawn: ${fromPre} - ${amount}`);
+    balances.set(from, fromPost);
+  };
+
+  const mint = async ({ dest, amount }) => {
+    const destPre = balances.get(dest) || 0;
+    const destPost = destPre + amount;
+    balances.set(dest, destPost);
+  };
+
   return harden({
     prefix,
     whaleAddress,
@@ -62,16 +86,12 @@ const makeCosmosChain = (prefix, t) => {
       return address;
     },
     getBalance: async dest => balances.get(dest),
-    send: async ({ amount, from, dest }) => {
+    send: async ({ amount, from, dest, quiet }) => {
       t.true(dest.startsWith(prefix), dest);
-      const fromPre = balances.get(from) || 0;
-      const fromPost = fromPre - amount;
-      fromPost >= 0 || assert.fail(`${from} overdrawn: ${fromPre} - ${amount}`);
-      const destPre = balances.get(dest) || 0;
-      const destPost = destPre + amount;
-      balances.set(from, fromPost);
-      balances.set(dest, destPost);
-      t.log(dest, 'balance +=', amount, '=', balances.get(dest));
+      await burn({ from, amount });
+      await mint({ dest, amount });
+      const label = quiet ? '' : next();
+      t.log(label, dest, 'balance +=', amount, '=', balances.get(dest));
     },
   });
 };
@@ -84,19 +104,20 @@ const pickChain = (chains, dest) => {
   return chain;
 };
 
-const ibcTransfer = async (chains, { amount, from, dest }) => {
+const ibcTransfer = async (chains, { amount, from, dest, t }) => {
+  const { nextLabel: next } = t.context;
+  t.log(next(), 'ibc transfer', amount, 'to', dest);
   const chainSrc = pickChain(chains, from);
   const chainDest = pickChain(chains, dest);
-  await chainSrc.send({
-    amount,
-    from,
-    dest: `${chainSrc.prefix}IBCburn`,
-  });
-  await chainDest.send({ amount, from: chainDest.whaleAddress, dest });
+  const burn = `${chainSrc.prefix}IBCburn`;
+  const quiet = true;
+  await chainSrc.send({ amount, from, dest: burn, quiet });
+  await chainDest.send({ amount, from: chainDest.whaleAddress, dest, quiet });
 };
 
 const withForwarding = (chain, chains, t) => {
   const destOf = new Map();
+  const { nextLabel: next } = t.context;
   return harden({
     ...chain,
     provideForwardingAccount: async dest => {
@@ -106,11 +127,11 @@ const withForwarding = (chain, chains, t) => {
       return address;
     },
     send: async ({ amount, from, dest }) => {
-      await chain.send({ amount, from, dest });
+      await chain.send({ amount, from, dest, quiet: true });
       if (!destOf.has(dest)) return;
       const fwd = destOf.get(dest);
-      t.log('fwd', { amount, dest, fwd });
-      await ibcTransfer(chains, { amount, from: dest, dest: fwd });
+      t.log(next(), 'fwd', { amount, dest, fwd });
+      await ibcTransfer(chains, { amount, from: dest, dest: fwd, t });
     },
   });
 };
@@ -128,7 +149,8 @@ const withVTransfer = (chain, t) => {
       const [agAddr, extra] = AgoricCalc.isVirtualAddress(dest)
         ? AgoricCalc.virtualAddressParts(dest)
         : [dest, undefined];
-      const result = await chain.send({ amount, from, dest: agAddr });
+      const quiet = true;
+      const result = await chain.send({ amount, from, dest: agAddr, quiet });
 
       if (extra === undefined) return result;
       t.log('vtransfer to virtual address', { agAddr, extra });
@@ -178,6 +200,7 @@ const makeEthChain = (heightInitial: number, { t, setTimeout }) => {
     }
   })();
 
+  const { nextLabel: next } = t.context;
   return harden({
     deployContract: async c => {
       const address = `0x${(nonce += 1)}`;
@@ -193,7 +216,7 @@ const makeEthChain = (heightInitial: number, { t, setTimeout }) => {
       const txId = nonce;
       nonce += 1;
       mempool.push({ txId, msg, contractAddress: addr, method, args });
-      t.log('blk', height, 'eth call', addr, '.', method, '(', ...args, ')');
+      t.log(next(), 'eth call', addr, '.', method, '(', ...args, ')');
       const contract = contracts.get(addr);
       const result = contract[method](msg, ...args);
       t.is(result, undefined);
@@ -208,10 +231,7 @@ type EthChain = ReturnType<typeof makeEthChain>;
 const makeUser = ({ nobleApp, ethereum, myAddr, cctpAddr }) =>
   harden({
     doTransfer: async (amount, dest) => {
-      const settlementBase = await nobleApp.getSettlementBaseAddress();
-      const nobleFwd = NobleCalc.fwdAddressFor(
-        AgoricCalc.virtualAddressFor(settlementBase, dest),
-      );
+      const nobleFwd = await nobleApp.getNobleFwd(dest);
       const { setup, done } = await nobleApp.initiateTransaction({
         dest,
         amount,
@@ -225,7 +245,13 @@ const makeUser = ({ nobleApp, ethereum, myAddr, cctpAddr }) =>
     },
   });
 
-const makeNobleApp = ({ t, nobleService, chains, agoricRpc, setTimeout }) => {
+const makeNobleApp = async ({
+  t,
+  nobleService,
+  chains,
+  agoricRpc,
+  setTimeout,
+}) => {
   const watchAddr = async ({ dest, amount }) => {
     const chain = pickChain(chains, dest);
     const balancePre = await chain.getBalance(dest);
@@ -240,26 +266,36 @@ const makeNobleApp = ({ t, nobleService, chains, agoricRpc, setTimeout }) => {
     assert.fail('unreachable');
   };
 
+  const { nextLabel } = t.context;
+  const settlementBase = await agoricRpc.getData(
+    'published.quickSend.settlementBase',
+  );
+  t.log(nextLabel(), 'app got settlementBase', settlementBase);
   return harden({
+    getNobleFwd: async (dest: string) => {
+      const nobleFwd = NobleCalc.fwdAddressFor(
+        AgoricCalc.virtualAddressFor(settlementBase, dest),
+      );
+      return nobleFwd;
+    },
     initiateTransaction: async ({ dest, amount, nobleFwd }) => {
-      t.log('app initiate', { amount, dest });
+      t.log(nextLabel(), 'app initiate', { amount, dest });
       const setup = nobleService.initiateTransfer({ amount, dest, nobleFwd });
       const done = watchAddr({ dest, amount });
       return { setup, done };
     },
-    getSettlementBaseAddress: async () =>
-      agoricRpc.getData('published.quickSend.settlementBase'),
   });
 };
 
 const makeNobleExpress = ({ agoricWatcher, chain, t, agoricRpc }) => {
   const baseP = agoricRpc.getData('published.quickSend.settlementBase');
+  const { nextLabel: next } = t.context;
   return harden({
     initiateTransfer: async ({ dest, amount, nobleFwd }) => {
       const base = await baseP;
       const agAddr = AgoricCalc.virtualAddressFor(base, dest);
       const fwd = await chain.provideForwardingAccount(agAddr);
-      t.log('express initiate', { dest, base, agAddr, fwd, nobleFwd });
+      t.log(next(), 'express initiate', { dest, base, agAddr, fwd, nobleFwd });
       fwd === nobleFwd || assert.fail('mismatch');
       await agoricWatcher.startWatchingFor({ dest, amount, nobleFwd });
     },
@@ -284,10 +320,11 @@ const makeERC20 = (t, msg0, supply) => {
 };
 
 const makeCCTP = ({ t, usdc, noble, events }) => {
+  const { nextLabel: next } = t.context;
   return harden({
     bridge: (msg, { dest, amount }) => {
       t.regex(dest, /^noble/);
-      t.log('cctp.bridge:', { msg, dest });
+      t.log(next(), 'cctp.bridge:', { msg, dest });
       usdc.transfer(msg, '0x0000', amount); // burn
       const t0 = events.getCurrent();
       void (async () => {
@@ -312,6 +349,7 @@ const makeAgoricWatcher = ({
   const pending: { dest: string; amount: number; nobleFwd: string }[] = [];
   let done = false;
 
+  const { nextLabel: next } = t.context;
   const check = async height => {
     await null;
     const txs = await ethereum.getBlock(height);
@@ -326,7 +364,8 @@ const makeAgoricWatcher = ({
       if (ix < 0) continue;
       const item = pending[ix];
       pending.splice(ix, 1);
-      t.log('watcher confirmed', tx.txId, item);
+      t.log(next(), 'watcher checked', tx.txId);
+      t.log(next(), 'watcher confirmed', item);
       await contract.releaseAdvance(item);
     }
   };
@@ -335,7 +374,7 @@ const makeAgoricWatcher = ({
 
   return harden({
     startWatchingFor: async ({ dest, amount, nobleFwd }) => {
-      t.log('watcher.startWatchingFor', { dest, amount, nobleFwd });
+      t.log(next(), 'watcher.startWatchingFor', { dest, amount, nobleFwd });
       pending.push(harden({ dest, amount, nobleFwd }));
       await check(ethereum.currentHeight());
     },
@@ -344,9 +383,6 @@ const makeAgoricWatcher = ({
       for await (const tick of events) {
         const ethHeight = ethereum.currentHeight();
         if (done) break;
-        // if (blk > 0) {
-        //   await check(blk - 1);
-        // }
         await check(ethHeight);
       }
     },
@@ -359,17 +395,18 @@ const makeAgoricWatcher = ({
 
 // funding pool is a local account
 const makeOrchestration = (t, chains) => {
+  const { nextLabel: next } = t.context;
   return harden({
     makeLocalAccount: async () => {
       const addr = await chains.agoric.makeAccount();
       return harden({
         getAddress: () => addr,
         transfer: async ({ amount, dest }) => {
-          t.log('orch acct', addr, 'txfr', amount, 'to', dest);
-          await ibcTransfer(chains, { amount, dest, from: addr });
+          t.log(next(), 'orch acct', addr, 'txfr', amount, 'to', dest);
+          await ibcTransfer(chains, { amount, dest, from: addr, t });
         },
         send: async ({ amount, dest }) => {
-          t.log('orch acct', addr, 'send', amount, 'to', dest);
+          t.log(next(), 'orch acct', addr, 'send', amount, 'to', dest);
           await chains.agoric.send({ amount, dest, from: addr });
         },
         tap: async handler => {
@@ -404,11 +441,13 @@ const makeQuickSend = async ({
   const settlement = await orch.makeLocalAccount();
   const feeAccount = await orch.makeLocalAccount();
 
+  const { nextLabel: next } = t.context;
   storageNode.setValue(settlement.getAddress());
 
   await settlement.tap(
     harden({
       onReceive: async ({ amount, extra }) => {
+        t.log(next(), 'tap onReceive', { amount });
         // XXX partial failure?
         await Promise.all([
           settlement.send({
@@ -426,7 +465,7 @@ const makeQuickSend = async ({
 
   return harden({
     releaseAdvance: async ({ amount, dest, nobleFwd }) => {
-      t.log('contract.releaseAdvance', { amount, dest });
+      t.log(next(), 'contract.releaseAdvance', { amount, dest });
       t.is(
         NobleCalc.fwdAddressFor(
           AgoricCalc.virtualAddressFor(fundingPool.getAddress(), dest),
@@ -517,37 +556,37 @@ const setup = async (t, io) => {
     t,
   });
 
-  const nobleApp = makeNobleApp({
+  void agoricWatcher.watch().catch(err => {
+    console.error('failure while watching', err);
+    t.fail(err.message);
+  });
+  usdc.transfer({ sender: '0xcircle' }, '0xUrsula', startFunds.user);
+
+  const quiesce = async () => {
+    const ticks = makeEventCounter({ setTimeout });
+    for await (const tick of ticks) {
+      if (tick >= 5) break;
+    }
+    t.log('quiesced for 5 ticks');
+    agoricWatcher.stop();
+    ethereum.stop();
+  };
+
+  t.log('-- SETUP done.');
+  t.context.startLabels();
+  const nobleApp = await makeNobleApp({
     t,
     nobleService,
     chains,
     agoricRpc,
     setTimeout: globalThis.setTimeout,
   });
-
-  void agoricWatcher.watch().catch(err => {
-    console.error('failure while watching', err);
-    t.fail(err.message);
-  });
-  usdc.transfer({ sender: '0xcircle' }, '0xUrsula', startFunds.user);
   const ursula = makeUser({
     nobleApp,
     ethereum,
     myAddr: '0xUrsula',
     cctpAddr,
   });
-
-  const quiesce = async () => {
-    const ticks = makeEventCounter({ setTimeout });
-    for await (const tick of ticks) {
-      if (tick > 2) break;
-    }
-    t.log('quiesced for 3 ticks');
-    agoricWatcher.stop();
-    ethereum.stop();
-  };
-
-  t.log('-- SETUP done.');
 
   return { chains, ursula, quiesce, contract, usdc };
 };
