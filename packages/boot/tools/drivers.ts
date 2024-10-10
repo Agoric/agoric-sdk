@@ -232,12 +232,24 @@ export const makeGovernanceDriver = async (
     ),
   );
 
+  const findInvitation = (wallet, descriptionSubstr) => {
+    return wallet
+      .getCurrentWalletRecord()
+      .purses[0].balance.value.find(v =>
+        v.description.startsWith(descriptionSubstr),
+      );
+  };
+
   const ecMembers = smartWallets.map(w => ({
     ...w,
-    acceptCharterInvitation: async (
+    acceptOutstandingCharterInvitation: async (
       charterOfferId = charterMembershipId,
       instance = agoricNamesRemotes.instance.econCommitteeCharter,
     ) => {
+      if (!findInvitation(w, 'charter member invitation')) {
+        console.log('No charter member invitation found');
+        return;
+      }
       await w.executeOffer({
         id: charterOfferId,
         invitationSpec: {
@@ -248,18 +260,21 @@ export const makeGovernanceDriver = async (
         proposal: {},
       });
     },
-    acceptCommitteeInvitation: async (
+    acceptOutstandingCommitteeInvitation: async (
       committeeOfferId = committeeMembershipId,
       instance = agoricNamesRemotes.instance.economicCommittee,
     ) => {
-      const description =
-        w.getCurrentWalletRecord().purses[0].balance.value[0].description;
+      const invitation = findInvitation(w, 'Voter');
+      if (!invitation) {
+        console.log('No committee member invitation found');
+        return;
+      }
       await w.executeOffer({
         id: committeeOfferId,
         invitationSpec: {
           source: 'purse',
           instance,
-          description,
+          description: invitation.description,
         },
         proposal: {},
       });
@@ -289,6 +304,17 @@ export const makeGovernanceDriver = async (
         proposal: {},
       });
     },
+    findOracleInvitation: async () => {
+      const purse = w
+        .getCurrentWalletRecord()
+        // TODO: manage brands by object identity #10167
+        .purses.find(p => p.brand.toString().includes('Invitation'));
+      // @ts-expect-error
+      const invitation = purse?.balance.value.find(
+        v => v.description === 'oracle invitation',
+      );
+      return invitation;
+    },
   }));
 
   const ensureInvitationsAccepted = async () => {
@@ -297,8 +323,8 @@ export const makeGovernanceDriver = async (
     }
     await null;
     for (const member of ecMembers) {
-      await member.acceptCharterInvitation();
-      await member.acceptCommitteeInvitation();
+      await member.acceptOutstandingCharterInvitation();
+      await member.acceptOutstandingCommitteeInvitation();
     }
     invitationsAccepted = true;
   };
@@ -330,6 +356,28 @@ export const makeGovernanceDriver = async (
     });
   };
 
+  const proposeApiCall = async (
+    instance,
+    methodName: string,
+    methodArgs: any[],
+    ecMember: (typeof ecMembers)[0] | null = null,
+    questionId = 'propose',
+    charterOfferId = charterMembershipId,
+  ) => {
+    const now = await EV(chainTimerService).getCurrentTimestamp();
+    const deadline = SECONDS_PER_MINUTE + now.absValue;
+    await (ecMember || ecMembers[0]).executeOffer({
+      id: questionId,
+      invitationSpec: {
+        invitationMakerName: 'VoteOnApiCall',
+        previousOffer: charterOfferId,
+        source: 'continuing',
+        invitationArgs: [instance, methodName, methodArgs, deadline],
+      },
+      proposal: {},
+    });
+  };
+
   const enactLatestProposal = async (
     members = ecMembers,
     voteId = 'voteInNewLimit',
@@ -352,6 +400,7 @@ export const makeGovernanceDriver = async (
 
   return {
     proposeParams,
+    proposeApiCall,
     enactLatestProposal,
     getLatestOutcome,
     async changeParams(instance: Instance, params: Object, path?: object) {

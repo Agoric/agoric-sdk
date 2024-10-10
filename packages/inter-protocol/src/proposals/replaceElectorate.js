@@ -18,6 +18,7 @@ import {
 import { reserveThenDeposit } from './utils.js';
 
 /** @import {EconomyBootstrapPowers} from './econ-behaviors.js' */
+/** @import {EconCharterStartResult} from './econ-behaviors.js' */
 /** @import {CommitteeElectorateCreatorFacet} from '@agoric/governance/src/committee.js'; */
 
 const trace = (...args) => console.log('GovReplaceCommiteeAndCharter', ...args);
@@ -138,6 +139,45 @@ const inviteECMembers = async (
 };
 
 /**
+ * Invites members to the Economic Charter by creating and distributing charter
+ * member invitations to the specified voter addresses.
+ *
+ * @param {EconomyBootstrapPowers} powers - The bootstrap powers required for
+ *   economic operations, including `namesByAddressAdmin` used for managing
+ *   names and deposits.
+ * @param {{
+ *   options: {
+ *     voterAddresses: Record<string, string>;
+ *     econCharterKit: {
+ *       creatorFacet: {
+ *         makeCharterMemberInvitation: () => Promise<Invitation>;
+ *       };
+ *     };
+ *   };
+ * }} opts
+ *   - The configuration object containing voter addresses and the econ charter kit
+ *       for creating charter member invitations.
+ *
+ * @returns {Promise<void>} This function does not explicitly return a value. It
+ *   processes all charter member invitations asynchronously.
+ */
+const inviteToEconCharter = async (
+  { consume: { namesByAddressAdmin } },
+  { options: { voterAddresses, econCharterKit } },
+) => {
+  const { creatorFacet } = E.get(econCharterKit);
+
+  void Promise.all(
+    values(voterAddresses).map(async addr => {
+      const debugName = `econ charter member ${addr}`;
+      reserveThenDeposit(debugName, namesByAddressAdmin, addr, [
+        E(creatorFacet).makeCharterMemberInvitation(),
+      ]).catch(err => console.error(`failed deposit to ${debugName}`, err));
+    }),
+  );
+};
+
+/**
  * Starts a new Economic Committee (EC) by creating an instance with the
  * provided committee specifications.
  *
@@ -206,7 +246,6 @@ const startNewEconomicCommittee = async (
   const { instance, creatorFacet } = startResult;
 
   trace('Started new EC Committee Instance Successfully');
-
   economicCommitteeKit.reset();
   economicCommitteeKit.resolve(
     harden({ ...startResult, label: 'economicCommittee' }),
@@ -219,6 +258,90 @@ const startNewEconomicCommittee = async (
   economicCommitteeCreatorFacet.resolve(creatorFacet);
 
   return creatorFacet;
+};
+
+/**
+ * Starts a new Economic Committee Charter by creating an instance with the
+ * provided committee specifications.
+ *
+ * @param {EconomyBootstrapPowers} powers - The resources and capabilities
+ *   required to start the committee.
+ * @returns {Promise<EconCharterStartResult>} A promise that resolves to the
+ *   charter kit result.
+ */
+const startNewEconCharter = async ({
+  consume: { startUpgradable },
+  produce: { econCharterKit },
+  installation: {
+    consume: { binaryVoteCounter: counterP, econCommitteeCharter: installP },
+  },
+  instance: {
+    produce: { econCommitteeCharter },
+  },
+}) => {
+  const [charterInstall, counterInstall] = await Promise.all([
+    installP,
+    counterP,
+  ]);
+  const terms = await harden({
+    binaryVoteCounterInstallation: counterInstall,
+  });
+
+  trace('Starting new EC Charter Instance');
+
+  const startResult = await E(startUpgradable)({
+    label: 'econCommitteeCharter',
+    installation: charterInstall,
+    terms,
+  });
+
+  trace('Started new EC Charter Instance Successfully');
+
+  econCommitteeCharter.reset();
+  econCommitteeCharter.resolve(E.get(startResult).instance);
+
+  econCharterKit.reset();
+  econCharterKit.resolve(startResult);
+  return startResult;
+};
+
+/**
+ * Adds governors to an existing Economic Committee Charter
+ *
+ * - @param {EconomyBootstrapPowers} powers - The resources and capabilities
+ *   required to start the committee.
+ *
+ * @param {{
+ *   options: {
+ *     econCharterKit: EconCharterStartResult;
+ *   };
+ * }} config
+ *   - Configuration object containing the name and size of the committee.
+ *
+ * @returns {Promise<void>} A promise that resolves once all the governors have
+ *   been successfully added to the economic charter
+ */
+const addGovernorsToEconCharter = async (
+  { consume: { psmKit, governedContractKits } },
+  { options: { econCharterKit } },
+) => {
+  const { creatorFacet: ecCreatorFacet } = E.get(econCharterKit);
+
+  const psmKitMap = await psmKit;
+
+  for (const { psm, psmGovernorCreatorFacet, label } of psmKitMap.values()) {
+    await E(ecCreatorFacet).addInstance(psm, psmGovernorCreatorFacet, label);
+  }
+
+  const governedContractKitMap = await governedContractKits;
+
+  for (const {
+    instance,
+    governorCreatorFacet,
+    label,
+  } of governedContractKitMap.values()) {
+    await E(ecCreatorFacet).addInstance(instance, governorCreatorFacet, label);
+  }
 };
 
 /**
@@ -300,6 +423,17 @@ export const replaceAllElectorates = async (permittedPowers, config) => {
   });
 
   trace('Installed New Economic Committee');
+
+  const econCharterKit = await startNewEconCharter(permittedPowers);
+  await addGovernorsToEconCharter(permittedPowers, {
+    options: { econCharterKit },
+  });
+
+  await inviteToEconCharter(permittedPowers, {
+    options: { voterAddresses, econCharterKit },
+  });
+
+  trace('Installed New EC Charter');
 };
 
 harden(replaceAllElectorates);
@@ -321,14 +455,22 @@ export const getManifestForReplaceAllElectorates = async (
         startUpgradable: true,
       },
       produce: {
+        econCharterKit: true,
         economicCommitteeKit: true,
-        economicCommitteeCreatorFacet: 'economicCommittee',
+        economicCommitteeCreatorFacet: true,
       },
       installation: {
-        consume: { committee: 'zoe' },
+        consume: {
+          committee: true,
+          binaryVoteCounter: true,
+          econCommitteeCharter: true,
+        },
       },
       instance: {
-        produce: { economicCommittee: 'economicCommittee' },
+        produce: {
+          economicCommittee: true,
+          econCommitteeCharter: true,
+        },
       },
     },
   },
