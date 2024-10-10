@@ -80,7 +80,7 @@ override-chain-registry:
 	node_modules/.bin/tsx scripts/deploy-cli.ts src/revise-chain-info.builder.js
  
 ADDR=agoric1jng25adrtpl53eh50q7fch34e0vn4g72j6zcml
-COIN=1000000000ubld
+COIN=1000000000uist
 
 fund-wallet:
 	kubectl exec -i agoriclocal-genesis-0 -c validator -- agd tx bank send faucet $(ADDR) $(COIN) -y -b block
