@@ -1156,7 +1156,7 @@ export default function makeKernelKeeper(
 
   /**
    * @param {string} vatID
-   * @returns {IterableIterator<string>}
+   * @returns {IterableIterator<[kpid: string, p: PromiseRecord]>}
    */
   function* enumeratePromisesByDecider(vatID) {
     insistVatID(vatID);
@@ -1174,7 +1174,7 @@ export default function makeKernelKeeper(
       const kpid = getRequired(k);
       const p = getKernelPromise(kpid);
       if (p.state === 'unresolved' && p.decider === vatID) {
-        yield kpid;
+        yield [kpid, p];
       }
     }
   }
