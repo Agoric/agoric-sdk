@@ -41,16 +41,10 @@ export const OrchestratorI = M.interface('Orchestrator', {
 /**
  * @param {Zone} zone
  * @param {{
- *   asyncFlowTools: AsyncFlowTools;
  *   chainHub: ChainHub;
- *   makeRecorderKit: MakeRecorderKit;
  *   makeLocalChainFacade: MakeLocalChainFacade;
  *   makeRemoteChainFacade: MakeRemoteChainFacade;
- *   orchestrationService: Remote<CosmosInterchainService>;
- *   storageNode: Remote<StorageNode>;
- *   timerService: Remote<TimerService>;
  *   vowTools: VowTools;
- *   zcf: ZCF;
  * }} powers
  */
 const prepareOrchestratorKit = (
@@ -175,16 +169,10 @@ harden(prepareOrchestratorKit);
 /**
  * @param {Zone} zone
  * @param {{
- *   asyncFlowTools: AsyncFlowTools;
  *   chainHub: ChainHub;
- *   makeRecorderKit: MakeRecorderKit;
  *   makeLocalChainFacade: MakeLocalChainFacade;
  *   makeRemoteChainFacade: MakeRemoteChainFacade;
- *   orchestrationService: Remote<CosmosInterchainService>;
- *   storageNode: Remote<StorageNode>;
- *   timerService: Remote<TimerService>;
  *   vowTools: VowTools;
- *   zcf: ZCF;
  * }} powers
  */
 export const prepareOrchestrator = (zone, powers) => {
