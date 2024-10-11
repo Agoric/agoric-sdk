@@ -23,7 +23,6 @@ const boardSlottingMarshaller = slotToVal => {
 
 export const marshaller = boardSlottingMarshaller(slotToRemotable);
 
-/** @param {string} path */
 export const queryVstorageFormatted = async (path, index = -1) => {
   const data = await queryVstorage(path);
   const formattedData = JSON.parse(data.value);
@@ -51,7 +50,7 @@ export const acceptInvitation = async (
   const body = {
     method: 'executeOffer',
     offer: {
-      id: id,
+      id,
       invitationSpec: {
         source: 'purse',
         instance: instance[instanceName],
