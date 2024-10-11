@@ -2,18 +2,19 @@ export const makeCosmosChain = (prefix, t) => {
   let nonce = 10;
   const balances = new Map();
   const whaleAddress = `${prefix}${(nonce += 1)}`;
-  balances.set(whaleAddress, 1_000_000);
+  balances.set(whaleAddress, 1_000_000n);
   const { nextLabel: next } = t.context;
 
+  const balanceOf = a => balances.get(a) || 0n;
   const burn = async ({ from, amount }) => {
-    const fromPre = balances.get(from) || 0;
+    const fromPre = balanceOf(from);
     const fromPost = fromPre - amount;
-    fromPost >= 0 || assert.fail(`${from} overdrawn: ${fromPre} - ${amount}`);
+    fromPost >= 0n || assert.fail(`${from} overdrawn: ${fromPre} - ${amount}`);
     balances.set(from, fromPost);
   };
 
   const mint = async ({ dest, amount }) => {
-    const destPre = balances.get(dest) || 0;
+    const destPre = balanceOf(dest);
     const destPost = destPre + amount;
     balances.set(dest, destPost);
   };

@@ -83,7 +83,7 @@ export type EthChain = ReturnType<typeof makeEthChain>;
 export const makeERC20 = (t, msg0, supply) => {
   const balances = new Map();
   balances.set(msg0.sender, supply);
-  const balanceOf = account => balances.get(account) || 0;
+  const balanceOf = account => balances.get(account) || 0n;
   return harden({
     balanceOf,
     transfer: (msg, dest, numTokens) => {

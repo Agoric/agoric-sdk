@@ -84,3 +84,18 @@ export const findAddressField = remoteAddressString => {
   }
 };
 harden(findAddressField);
+
+export const AgoricCalc = harden({
+  virtualAddressFor: (base, supplemental) => {
+    assert.typeof(base, 'string');
+    assert.typeof(supplemental, 'string');
+    return `${base}+${supplemental}`;
+  },
+  isVirtualAddress: addr => addr.includes('+'),
+  virtualAddressParts: addr => addr.split('+'), // XXX 1st split only
+});
+
+export const NobleCalc = harden({
+  // XXX mock only
+  fwdAddressFor: dest => `noble1${dest.length}${dest.slice(-4)}`,
+});
