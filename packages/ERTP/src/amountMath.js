@@ -16,22 +16,15 @@ import { copyBagMathHelpers } from './mathHelpers/copyBagMathHelpers.js';
 /**
  * Constants for the kinds of assets we support.
  *
- * @type {{
- *   NAT: 'nat';
- *   SET: 'set';
- *   COPY_SET: 'copySet';
- *   COPY_BAG: 'copyBag';
- * }}
+ * @enum {(typeof AssetKind)[keyof typeof AssetKind]}
  */
-export const AssetKind = harden({
+export const AssetKind = /** @type {const} */ ({
   NAT: 'nat',
   SET: 'set',
   COPY_SET: 'copySet',
   COPY_BAG: 'copyBag',
 });
-/**
- * @typedef {(typeof AssetKind)[keyof typeof AssetKind]} AssetKind
- */
+harden(AssetKind);
 const assetKindNames = harden(Object.values(AssetKind).sort());
 
 /** @param {AssetKind} allegedAK */

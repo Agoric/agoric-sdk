@@ -52,6 +52,8 @@ const trace = makeTracer('Vault', true);
  * - CLOSED - vault was closed by the user and all assets have been paid out
  * - LIQUIDATED - vault was closed by the manager, with remaining assets paid to
  *   owner
+ *
+ * @enum {(typeof Phase)[keyof typeof Phase]}
  */
 export const Phase = /** @type {const} */ ({
   ACTIVE: 'active',
@@ -60,9 +62,10 @@ export const Phase = /** @type {const} */ ({
   LIQUIDATED: 'liquidated',
   TRANSFER: 'transfer',
 });
+harden(Phase);
 
 /**
- * @typedef {Phase[keyof Omit<typeof Phase, 'TRANSFER'>]} VaultPhase
+ * @typedef {Exclude<Phase, 'transfer'>} VaultPhase
  * @type {{ [K in VaultPhase]: VaultPhase[] }}
  */
 const validTransitions = {
@@ -73,13 +76,11 @@ const validTransitions = {
 };
 
 /**
- * @typedef {Phase[keyof typeof Phase]} HolderPhase
- *
  * @typedef {object} VaultNotification
  * @property {Amount<'nat'>} locked Amount of Collateral locked
  * @property {{ debt: Amount<'nat'>; interest: Ratio }} debtSnapshot 'debt' at
  *   the point the compounded interest was 'interest'
- * @property {HolderPhase} vaultState
+ * @property {Phase} vaultState
  */
 
 // XXX masks typedef from types.js, but using that causes circular def problems
@@ -341,7 +342,7 @@ export const prepareVault = (baggage, makeRecorderKit, zcf) => {
             )} for ${q(collateralAmount)} collateral`;
         },
 
-        /** @param {HolderPhase} newPhase */
+        /** @param {Phase} newPhase */
         getStateSnapshot(newPhase) {
           const { state, facets } = this;
 
