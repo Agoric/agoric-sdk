@@ -23,4 +23,5 @@ export const ParamType = /** @type {const} */ ({
 harden(ParamType);
 
 // For backwards compatibility
-export const ParamTypes = ParamType;
+// Shallow copy to work around TS d.ts defining an empty namespace instead of an object
+export const ParamTypes = { ...ParamType };
