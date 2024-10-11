@@ -1,72 +1,55 @@
-import { NobleCalc } from '../../tools/noble-mock.js';
-import { AgoricCalc } from '../../tools/agoric-mock.js';
+import { BrandShape } from '@agoric/ertp/src/typeGuards.js';
+import { M } from '@endo/patterns';
+import { withOrchestration } from '../utils/start-helper.js';
+import * as flows from './quickSend.flows.js';
 
 /**
- * @import {Baggage} from '@agoric/vat-data';
+ * @import {OrchestrationPowers, OrchestrationTools} from '../utils/start-helper.js';
+ * @import {Zone} from '@agoric/zone';
  */
+
+const NatAmountShape = { brand: BrandShape, value: M.nat() };
+export const meta = {
+  customTermsShape: {
+    contractFee: NatAmountShape,
+    makerFee: NatAmountShape,
+  },
+};
+harden(meta);
 
 /**
- * @param {ZCF<{ makerFee: number; contractFee: number }>} zcf
- * @param {{ orch: any; storageNode: any; t: any }} privateArgs
- * @param {Baggage} baggage
+ * @typedef {{ makerFee: Amount<'nat'>; contractFee: Amount<'nat'> }} QuickSendTerms
+ * @param {ZCF<QuickSendTerms>} zcf
+ * @param {OrchestrationPowers & {
+ *   marshaller: Marshaller;
+ * }} privateArgs
+ * @param {Zone} zone
+ * @param {OrchestrationTools & { t: any }} tools
  */
-export const start = async (zcf, privateArgs, baggage) => {
-  const { orch, storageNode, t } = privateArgs;
-  const { contractFee, makerFee } = zcf.getTerms();
-  const fundingPool = await orch.makeLocalAccount();
-  const settlement = await orch.makeLocalAccount();
-  const feeAccount = await orch.makeLocalAccount();
+export const contract = async (zcf, privateArgs, zone, tools) => {
+  const { storageNode } = privateArgs;
+  const { t } = tools;
+  const terms = zcf.getTerms();
 
-  const { nextLabel: next } = t.context;
-  storageNode.setValue(settlement.getAddress());
-
-  const publicFacet = harden({
-    getPoolAddress: async () => fundingPool.getAddress(),
-    getSettlementAddress: async () => settlement.getAddress(),
-    getFeeAddress: async () => feeAccount.getAddress(),
-  });
-
-  await settlement.tap(
-    harden({
-      onReceive: async ({ amount, extra }) => {
-        t.log(next(), 'tap onReceive', { amount });
-        // XXX partial failure?
-        await Promise.all([
-          settlement.send({
-            dest: fundingPool.getAddress(),
-            amount: amount - contractFee,
-          }),
-          settlement.send({
-            dest: feeAccount.getAddress(),
-            amount: contractFee,
-          }),
-        ]);
-      },
-    }),
-  );
-
-  const watcherFacet = harden({
-    releaseAdvance: async ({ amount, dest, nobleFwd }) => {
-      t.log(next(), 'contract.releaseAdvance', { amount, dest });
-      t.is(
-        NobleCalc.fwdAddressFor(
-          AgoricCalc.virtualAddressFor(fundingPool.getAddress(), dest),
-        ),
-        nobleFwd,
-      );
-      const advance = amount - makerFee - contractFee;
-      await fundingPool.transfer({ dest, amount: advance });
-    },
+  const { initAccounts } = tools.orchestrateAll(flows, {
+    storageNode, // TODO: storage node per init?
+    terms,
+    makeInvitation: tools.zcfTools.makeInvitation,
+    t,
   });
 
   const creatorFacet = harden({
     // TODO: continuing invitation pattern
-    getWatcherFacet: () => watcherFacet,
+    getWatcherInvitation: () =>
+      zcf.makeInvitation(initAccounts, 'initAccounts'),
   });
 
   return harden({
-    publicFacet,
+    publicFacet: {},
     creatorFacet,
   });
 };
+harden(contract);
+
+export const start = withOrchestration(contract);
 harden(start);

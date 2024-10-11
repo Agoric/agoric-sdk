@@ -1,13 +1,16 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { createRequire } from 'node:module';
+import { E, passStyleOf } from '@endo/far';
+import { objectMap } from '@endo/patterns';
+import { deeplyFulfilledObject } from '@agoric/internal';
+import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 import {
-  AgoricCalc,
   makeOrchestration,
   makeVStorage,
   withVTransfer,
 } from '../../tools/agoric-mock.js';
-import { makeCCTP, NobleCalc, withForwarding } from '../../tools/noble-mock.js';
+import { makeCCTP, withForwarding } from '../../tools/noble-mock.js';
 import { makeCosmosChain, pickChain } from '../../tools/cosmoverse-mock.js';
 import {
   makeERC20,
@@ -15,7 +18,10 @@ import {
   makeEventCounter,
 } from '../../tools/eth-mock.js';
 import type { EthChain } from '../../tools/eth-mock.js';
-import { start as startContract } from '../../src/examples/quickSend.contract.js';
+import type { QuickSendTerms } from '../../src/examples/quickSend.contract.js';
+import { contract as contractFn } from '../../src/examples/quickSend.contract.js';
+import { AgoricCalc, NobleCalc } from '../../src/utils/address.js';
+import { ResolvedContinuingOfferResult } from '../../src/utils/zoe-tools.js';
 
 const nodeRequire = createRequire(import.meta.url);
 const contractName = 'quickSend';
@@ -143,7 +149,7 @@ const makeAgoricWatcher = ({
       pending.splice(ix, 1);
       t.log(next(), 'watcher checked', tx.txId);
       t.log(next(), 'watcher confirmed', item);
-      await watcherFacet.releaseAdvance(item); // TODO: continuing offerSpec
+      await watcherFacet.actions.handleCCTPCall(null, item); // TODO: continuing offerSpec
     }
   };
 
@@ -170,22 +176,22 @@ const makeAgoricWatcher = ({
   });
 };
 
-const terms = { makerFee: 3, contractFee: 2 };
+const termValues = { makerFee: 3n, contractFee: 2n };
 const startFunds = {
-  usdcMint: 10_000,
-  nobleMint: 100_000,
-  pool: 2000,
-  user: 150,
+  usdcMint: 10_000n,
+  nobleMint: 100_000n,
+  pool: 2000n,
+  user: 150n,
 };
 
 const setup = async (t, io) => {
-  //   const t = {
-  //     ...t0,
-  //     log: (...args) => {
-  //       console.debug(...args);
-  //       t0.log(...args);
-  //     },
-  //   };
+  // const t = {
+  //   ...t0,
+  //   log: (...args) => {
+  //     console.debug(...args);
+  //     t0.log(...args);
+  //   },
+  // };
   t.log('-- SETUP...');
   // aka cosmoverse
   let chains = harden({
@@ -200,17 +206,38 @@ const setup = async (t, io) => {
 
   const orch = makeOrchestration(t, chains);
   const { storageNode: chainStorage, rpc: agoricRpc } = makeVStorage();
-  const storageNode = chainStorage.makeChildNode(
+  const storageNode = await E(chainStorage).makeChildNode(
     'published.quickSend.settlementBase',
   );
-  const zcf: ZCF = harden({ getTerms: () => terms }) as any;
-  const contract = await startContract(zcf, { t, orch, storageNode }, {});
-  const poolAddr = await contract.publicFacet.getPoolAddress();
-  await chains.agoric.send({
-    amount: startFunds.pool,
-    from: chains.agoric.whaleAddress, // TODO: market maker contributes
-    dest: poolAddr,
-  });
+
+  const USDCe = makeIssuerKit('USDC');
+  const terms = {
+    issuers: { USDC: USDCe.issuer },
+    brands: { USDC: USDCe.brand },
+    makerFee: AmountMath.make(USDCe.brand, termValues.makerFee),
+    contractFee: AmountMath.make(USDCe.brand, termValues.contractFee),
+  };
+  const handlers = new Map();
+  const zcf: ZCF<QuickSendTerms> = harden({
+    getTerms: () => terms,
+    makeInvitation: (handler, desc) => {
+      handlers.set(desc, handler);
+    },
+  }) as any;
+  const zone = {} as any;
+  const privateArgs: Parameters<typeof contractFn>[1] = {
+    storageNode,
+  } as any;
+  const tools: Parameters<typeof contractFn>[3] = {
+    t,
+    zcfTools: { makeInvitation: zcf.makeInvitation },
+    orchestrateAll: (flows, ctx) =>
+      objectMap(
+        flows,
+        (h, k) => (seat, offerArgs) => h(orch, ctx, seat, offerArgs),
+      ),
+  } as any;
+  const contract = await contractFn(zcf, privateArgs, zone, tools);
 
   const ethereum = makeEthChain(9876, { t, setTimeout });
   const usdc = makeERC20(t, { sender: '0xcircle' }, startFunds.usdcMint);
@@ -229,7 +256,27 @@ const setup = async (t, io) => {
   });
   const cctpAddr = await ethereum.deployContract(cctp);
 
-  const watcherFacet = await contract.creatorFacet.getWatcherFacet(); // TODO: cont.
+  const toWatch = await E(contract.creatorFacet).getWatcherInvitation();
+  const watcherFacet: ResolvedContinuingOfferResult =
+    await handlers.get('initAccounts')();
+  console.debug(watcherFacet);
+
+  const addrs = await deeplyFulfilledObject(
+    objectMap(watcherFacet.publicSubscribers, topic =>
+      E(topic.subscriber)
+        .getUpdateSince()
+        .then(x => x.value),
+    ),
+  );
+  console.debug(addrs);
+  storageNode.setValue(addrs.settlement);
+
+  await chains.agoric.send({
+    amount: startFunds.pool,
+    from: chains.agoric.whaleAddress, // TODO: market maker contributes
+    dest: addrs.fundingPool,
+  });
+
   const agoricWatcher = makeAgoricWatcher({
     t,
     ethereum,
@@ -273,21 +320,23 @@ const setup = async (t, io) => {
 
   const ursula = makeUser({ nobleApp, ethereum, myAddr: '0xUrsula', cctpAddr });
 
-  return { chains, ursula, quiesce, contract, usdc };
+  return { chains, ursula, quiesce, contract, addrs, usdc };
 };
 
 test('tx lifecycle', async t => {
   const io = { setTimeout };
-  const { chains, ursula, quiesce, contract, usdc } = await setup(t, io);
+  const { chains, ursula, quiesce, contract, addrs, usdc } = await setup(t, io);
 
   const destAddr = await chains.dydx.makeAccount(); // is this a prereq?
-  await ursula.doTransfer(100, destAddr);
+  await ursula.doTransfer(100n, destAddr);
 
   await quiesce();
 
-  const poolAddr = await contract.publicFacet.getPoolAddress();
-  const feeAddr = await contract.publicFacet.getFeeAddress();
-  const settlementAddr = await contract.publicFacet.getSettlementAddress();
+  const {
+    fundingPool: poolAddr,
+    feeAccount: feeAddr,
+    settlement: settlementAddr,
+  } = addrs;
   const actual = {
     user: {
       addr: '0xUrsula',
@@ -316,21 +365,21 @@ test('tx lifecycle', async t => {
     user: {
       addr: '0xUrsula',
       start: startFunds.user,
-      balance: 50,
+      balance: 50n,
     },
     dest: {
       addr: 'dydx112',
-      balance: 100 - terms.makerFee - terms.contractFee,
+      balance: 100n - termValues.makerFee - termValues.contractFee,
     },
     pool: {
       addr: 'agoric112',
       start: startFunds.pool,
-      balance: startFunds.pool + terms.makerFee,
+      balance: startFunds.pool + termValues.makerFee,
     },
-    fee: { addr: 'agoric114', balance: terms.contractFee },
+    fee: { addr: 'agoric114', balance: termValues.contractFee },
     settlement: {
       addr: 'agoric113',
-      balance: 0,
+      balance: 0n,
     },
   };
   t.log('actual result', actual);
