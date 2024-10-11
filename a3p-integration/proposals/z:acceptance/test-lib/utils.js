@@ -1,6 +1,8 @@
-import { makeAgd, agops } from '@agoric/synthetic-chain';
+import '@endo/init';
+import { makeAgd, agops, agoric } from '@agoric/synthetic-chain';
 import { execFileSync } from 'node:child_process';
 import { readFile, writeFile } from 'node:fs/promises';
+import { boardSlottingMarshaller, makeFromBoard } from './rpc.js';
 
 /**
  * @param {string} fileName base file name without .tjs extension
@@ -45,4 +47,16 @@ export const getBalances = async (addresses, targetDenom = undefined) => {
   return addresses.length === 1 ? balancesList[0] : balancesList;
 };
 
-export const agopsVaults = addr => agops.vaults('list', '--from', addr);
+export const agopsVaults = async addr =>
+  await agops.vaults('list', '--from', addr);
+
+const fromBoard = makeFromBoard();
+const marshaller = boardSlottingMarshaller(fromBoard.convertSlotToVal);
+
+export const getAgoricNamesBrands = async () => {
+  const brands = await agoric
+    .follow('-lF', ':published.agoricNames.brand', '-o', 'text')
+    .then(res => Object.fromEntries(marshaller.fromCapData(JSON.parse(res))));
+
+  return brands;
+};
