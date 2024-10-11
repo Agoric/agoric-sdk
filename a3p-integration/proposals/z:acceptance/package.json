@@ -9,6 +9,7 @@
   "type": "module",
   "license": "Apache-2.0",
   "dependencies": {
+    "@agoric/ertp": "0.16.3-u17.1",
     "@agoric/internal": "0.3.3-dev-5676146.0",
     "@agoric/synthetic-chain": "^0.3.0",
     "@endo/errors": "^1.2.2",
