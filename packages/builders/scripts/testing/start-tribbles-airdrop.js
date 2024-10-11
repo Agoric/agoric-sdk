@@ -117,7 +117,14 @@ export const startAirdrop = async (powers, config) => {
   trace('powers.installation', powers.installation.consume);
   trace('powers.installation', powers.installation.consume[contractName]);
   const {
-    consume: { board, chainTimerService, chainStorage, startUpgradable, zoe },
+    consume: {
+      bankManager,
+      board,
+      chainTimerService,
+      chainStorage,
+      startUpgradable,
+      zoe,
+    },
     installation: {
       consume: { [contractName]: airdropInstallationP },
     },
@@ -196,6 +203,20 @@ export const startAirdrop = async (powers, config) => {
   produceTribblesBrand.resolve(tribblesBrand);
   produceTribblesIssuer.resolve(tribblesIssuer);
 
+  const tribblesMint = await E(instance.creatorFacet).getBankAssetMint();
+
+  console.log('------------------------');
+  console.log('tribblesMint::', tribblesMint);
+  await E(bankManager).addAsset(
+    'ibc/tribbles',
+    'Tribbles',
+    'Tribbles',
+    harden({
+      mint: tribblesMint,
+      brand: tribblesBrand,
+      issuer: tribblesIssuer,
+    }),
+  );
   await publishBrandInfo(chainStorage, board, tribblesBrand);
   trace('deploy script complete.');
 };
@@ -204,6 +225,7 @@ export const startAirdrop = async (powers, config) => {
 const airdropManifest = harden({
   [startAirdrop.name]: {
     consume: {
+      bankManager: true,
       board: true,
       chainStorage: true,
       chainTimerService: true,
