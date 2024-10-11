@@ -48,6 +48,7 @@ const enableKernelGC = true;
  * @import {PromiseRecord} from '../../types-internal.js';
  * @import {CleanupBudget, CleanupWork, PolicyOutputCleanupBudget} from '../../types-external.js';
  * @import {RunQueueEventCleanupTerminatedVat} from '../../types-internal.js';
+ * @import {SwingStoreKernelStorage} from '@agoric/swing-store';
  */
 
 export { DEFAULT_REAP_DIRT_THRESHOLD_KEY };
@@ -242,8 +243,8 @@ const setObjectReferenceCount = (kvStore, kref, counts) => {
  * have only a "reachable" count, whereas objects track both "reachable"
  * and "recognizable" counts.
  *
- * @param { string => string} getRequired
- * @param { import('@agoric/swing-store').SwingStoreKernelStorage.kvStore } kvStore
+ * @param { (key: string) => string} getRequired
+ * @param { SwingStoreKernelStorage['kvStore'] } kvStore
  * @param {string} kref  The kernel slot whose refcount is to be incremented.
  * @param {string?} tag  Debugging note with rough source of the reference.
  * @param {{ isExport?: boolean, onlyRecognizable?: boolean }} options
