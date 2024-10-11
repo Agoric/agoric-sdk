@@ -21,16 +21,16 @@
     "lint:eslint": "eslint ."
   },
   "dependencies": {
-    "@endo/errors": "^1.2.5",
+    "@endo/errors": "^1.2.6",
     "@agoric/internal": "^0.3.2",
-    "@endo/base64": "^1.0.7",
-    "@endo/bundle-source": "^3.4.0",
-    "@endo/check-bundle": "^1.0.9",
-    "@endo/nat": "^5.0.10",
+    "@endo/base64": "^1.0.8",
+    "@endo/bundle-source": "^3.4.1",
+    "@endo/check-bundle": "^1.0.10",
+    "@endo/nat": "^5.0.11",
     "better-sqlite3": "^9.1.1"
   },
   "devDependencies": {
-    "@endo/init": "^1.1.4",
+    "@endo/init": "^1.1.5",
     "@types/better-sqlite3": "^7.6.9",
     "ava": "^5.3.0",
     "c8": "^9.1.0",
