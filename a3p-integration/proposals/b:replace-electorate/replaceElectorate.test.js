@@ -3,26 +3,23 @@ import '@endo/init';
 import { GOV1ADDR } from '@agoric/synthetic-chain';
 import { acceptInvitation, queryVstorageFormatted } from './agoric-tools.js';
 
-test.serial(
-  'should have new invites for committee and charter and should be able to accept them',
-  async t => {
-    const wallet = await queryVstorageFormatted(
-      `published.wallet.${GOV1ADDR}.current`,
-    );
+test.serial('should have new invites for committee and charter', async t => {
+  const wallet = await queryVstorageFormatted(
+    `published.wallet.${GOV1ADDR}.current`,
+  );
 
-    const invitations = wallet.purses[0].balance.value;
+  const invitations = wallet.purses[0].balance.value;
 
-    const charterInvitation = invitations.find(
-      v => v.description === 'charter member invitation',
-    );
-    t.truthy(charterInvitation);
+  const charterInvitation = invitations.find(
+    v => v.description === 'charter member invitation',
+  );
+  t.truthy(charterInvitation);
 
-    const committeeInvitation = invitations.find(v =>
-      v.description.startsWith('Voter'),
-    );
-    t.truthy(committeeInvitation);
-  },
-);
+  const committeeInvitation = invitations.find(v =>
+    v.description.startsWith('Voter'),
+  );
+  t.truthy(committeeInvitation);
+});
 
 test.serial('should be able to accept the new invitations', async t => {
   const charterOfferId = 'newEcCharter';
