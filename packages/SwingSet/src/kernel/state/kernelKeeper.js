@@ -48,6 +48,7 @@ const enableKernelGC = true;
  * @import {PromiseRecord} from '../../types-internal.js';
  * @import {CleanupBudget, CleanupWork, PolicyOutputCleanupBudget} from '../../types-external.js';
  * @import {RunQueueEventCleanupTerminatedVat} from '../../types-internal.js';
+ * @import {SwingStoreKernelStorage} from '@agoric/swing-store';
  */
 
 export { DEFAULT_REAP_DIRT_THRESHOLD_KEY };
@@ -212,6 +213,77 @@ export const getAllStaticVats = kvStore => {
 export const getAllDynamicVats = getRequired => {
   return JSON.parse(getRequired('vat.dynamicIDs'));
 };
+
+const getObjectReferenceCount = (kvStore, kref) => {
+  const data = kvStore.get(`${kref}.refCount`);
+  if (!data) {
+    return { reachable: 0, recognizable: 0 };
+  }
+  const [reachable, recognizable] = commaSplit(data).map(Number);
+  reachable <= recognizable ||
+    Fail`refmismatch(get) ${kref} ${reachable},${recognizable}`;
+  return { reachable, recognizable };
+};
+
+const setObjectReferenceCount = (kvStore, kref, counts) => {
+  const { reachable, recognizable } = counts;
+  assert.typeof(reachable, 'number');
+  assert.typeof(recognizable, 'number');
+  (reachable >= 0 && recognizable >= 0) ||
+    Fail`${kref} underflow ${reachable},${recognizable}`;
+  reachable <= recognizable ||
+    Fail`refmismatch(set) ${kref} ${reachable},${recognizable}`;
+  kvStore.set(`${kref}.refCount`, `${reachable},${recognizable}`);
+};
+
+/**
+ * Increment the reference count associated with some kernel object.
+ *
+ * We track references to promises and objects, but not devices. Promises
+ * have only a "reachable" count, whereas objects track both "reachable"
+ * and "recognizable" counts.
+ *
+ * @param { (key: string) => string} getRequired
+ * @param { import('@agoric/swing-store').KVStore } kvStore
+ * @param {string} kref  The kernel slot whose refcount is to be incremented.
+ * @param {string?} tag  Debugging note with rough source of the reference.
+ * @param {{ isExport?: boolean, onlyRecognizable?: boolean }} options
+ * 'isExport' means the reference comes from a clist export, which counts
+ * for promises but not objects. 'onlyRecognizable' means the reference
+ * provides only recognition, not reachability
+ */
+export const incrementReferenceCount = (
+  getRequired,
+  kvStore,
+  kref,
+  tag,
+  options = {},
+) => {
+  const { isExport = false, onlyRecognizable = false } = options;
+  kref || Fail`incrementRefCount called with empty kref, tag=${tag}`;
+  const { type } = parseKernelSlot(kref);
+  if (type === 'promise') {
+    const refCount = Number(getRequired(`${kref}.refCount`)) + 1;
+    // kdebug(`++ ${kref}  ${tag} ${refCount}`);
+    kvStore.set(`${kref}.refCount`, `${refCount}`);
+  }
+  if (type === 'object' && !isExport) {
+    let { reachable, recognizable } = getObjectReferenceCount(kvStore, kref);
+    if (!onlyRecognizable) {
+      reachable += 1;
+    }
+    recognizable += 1;
+    // kdebug(`++ ${kref}  ${tag} ${reachable},${recognizable}`);
+    setObjectReferenceCount(kvStore, kref, { reachable, recognizable });
+  }
+};
+
+export function* readQueue(queue, getRequired) {
+  const [head, tail] = JSON.parse(getRequired(`${queue}`));
+  for (let i = head; i < tail; i += 1) {
+    yield JSON.parse(getRequired(`${queue}.${i}`));
+  }
+}
 
 // we use different starting index values for the various vNN/koNN/kdNN/kpNN
 // slots, to reduce confusing overlap when looking at debug messages (e.g.
@@ -390,14 +462,7 @@ export default function makeKernelKeeper(
     return tail - head;
   }
 
-  function dumpQueue(queue) {
-    const [head, tail] = JSON.parse(getRequired(`${queue}`));
-    const result = [];
-    for (let i = head; i < tail; i += 1) {
-      result.push(JSON.parse(getRequired(`${queue}.${i}`)));
-    }
-    return result;
-  }
+  const dumpQueue = queue => [...readQueue(queue, getRequired)];
 
   /**
    * @param {InternalKernelOptions} kernelOptions
@@ -621,26 +686,9 @@ export default function makeKernelKeeper(
     return parseReachableAndVatSlot(kvStore.get(kernelKey));
   }
 
-  function getObjectRefCount(kernelSlot) {
-    const data = kvStore.get(`${kernelSlot}.refCount`);
-    if (!data) {
-      return { reachable: 0, recognizable: 0 };
-    }
-    const [reachable, recognizable] = commaSplit(data).map(Number);
-    reachable <= recognizable ||
-      Fail`refmismatch(get) ${kernelSlot} ${reachable},${recognizable}`;
-    return { reachable, recognizable };
-  }
-
-  function setObjectRefCount(kernelSlot, { reachable, recognizable }) {
-    assert.typeof(reachable, 'number');
-    assert.typeof(recognizable, 'number');
-    (reachable >= 0 && recognizable >= 0) ||
-      Fail`${kernelSlot} underflow ${reachable},${recognizable}`;
-    reachable <= recognizable ||
-      Fail`refmismatch(set) ${kernelSlot} ${reachable},${recognizable}`;
-    kvStore.set(`${kernelSlot}.refCount`, `${reachable},${recognizable}`);
-  }
+  const getObjectRefCount = kref => getObjectReferenceCount(kvStore, kref);
+  const setObjectRefCount = (kref, counts) =>
+    setObjectReferenceCount(kvStore, kref, counts);
 
   /**
    * Iterate over non-durable objects exported by a vat.
@@ -1422,40 +1470,8 @@ export default function makeKernelKeeper(
     maybeFreeKrefs.add(kref);
   }
 
-  /**
-   * Increment the reference count associated with some kernel object.
-   *
-   * We track references to promises and objects, but not devices. Promises
-   * have only a "reachable" count, whereas objects track both "reachable"
-   * and "recognizable" counts.
-   *
-   * @param {unknown} kernelSlot  The kernel slot whose refcount is to be incremented.
-   * @param {string?} tag  Debugging note with rough source of the reference.
-   * @param {{ isExport?: boolean, onlyRecognizable?: boolean }} options
-   * 'isExport' means the reference comes from a clist export, which counts
-   * for promises but not objects. 'onlyRecognizable' means the reference
-   * provides only recognition, not reachability
-   */
-  function incrementRefCount(kernelSlot, tag, options = {}) {
-    const { isExport = false, onlyRecognizable = false } = options;
-    kernelSlot ||
-      Fail`incrementRefCount called with empty kernelSlot, tag=${tag}`;
-    const { type } = parseKernelSlot(kernelSlot);
-    if (type === 'promise') {
-      const refCount = Nat(BigInt(getRequired(`${kernelSlot}.refCount`))) + 1n;
-      // kdebug(`++ ${kernelSlot}  ${tag} ${refCount}`);
-      kvStore.set(`${kernelSlot}.refCount`, `${refCount}`);
-    }
-    if (type === 'object' && !isExport) {
-      let { reachable, recognizable } = getObjectRefCount(kernelSlot);
-      if (!onlyRecognizable) {
-        reachable += 1;
-      }
-      recognizable += 1;
-      // kdebug(`++ ${kernelSlot}  ${tag} ${reachable},${recognizable}`);
-      setObjectRefCount(kernelSlot, { reachable, recognizable });
-    }
-  }
+  const incrementRefCount = (kref, tag, options = {}) =>
+    incrementReferenceCount(getRequired, kvStore, kref, tag, options);
 
   /**
    * Decrement the reference count associated with some kernel object.
