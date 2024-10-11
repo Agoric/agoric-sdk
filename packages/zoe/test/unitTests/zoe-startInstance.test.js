@@ -83,7 +83,12 @@ test('promise for installation', async t => {
     getStringMethodNames(result.adminFacet).filter(
       name => !name.startsWith('__'),
     ),
-    ['getVatShutdownPromise', 'restartContract', 'upgradeContract'],
+    [
+      'getVatShutdownPromise',
+      'restartContract',
+      'terminateContract',
+      'upgradeContract',
+    ],
   );
 });
 
