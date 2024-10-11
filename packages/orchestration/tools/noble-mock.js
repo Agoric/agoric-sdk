@@ -1,8 +1,6 @@
+import { NobleCalc } from '../src/utils/address.js';
 import { ibcTransfer } from './cosmoverse-mock.js';
 
-export const NobleCalc = harden({
-  fwdAddressFor: dest => `noble1${dest.length}${dest.slice(-4)}`,
-});
 export const withForwarding = (chain, chains, t) => {
   const destOf = new Map();
   const { nextLabel: next } = t.context;
