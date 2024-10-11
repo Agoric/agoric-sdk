@@ -1,4 +1,3 @@
-/* eslint-disable @jessie.js/safe-await-separator -- buggy version */
 import test from 'ava';
 
 import { QueryClient, setupStakingExtension } from '@cosmjs/stargate'; // fails to import after Endo/init
