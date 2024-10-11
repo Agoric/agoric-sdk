@@ -4,14 +4,12 @@ import { pickFacet } from '@agoric/vat-data';
 import { makeTracer } from '@agoric/internal';
 import { Shape as NetworkShape } from '@agoric/network';
 import { Fail, q } from '@endo/errors';
-import { E } from '@endo/far';
 import { M } from '@endo/patterns';
 import {
   DenomInfoShape,
   ChainInfoShape,
   DenomAmountShape,
   DenomShape,
-  LocalChainAccountShape,
 } from '../typeGuards.js';
 
 /**
@@ -36,7 +34,6 @@ const trace = makeTracer('Orchestrator');
 /** @see {Orchestrator} */
 export const OrchestratorI = M.interface('Orchestrator', {
   getChain: M.call(M.string()).returns(Vow$(ChainInfoShape)),
-  makeLocalAccount: M.call().returns(Vow$(LocalChainAccountShape)),
   getDenomInfo: M.call(DenomShape).returns(DenomInfoShape),
   asAmount: M.call(DenomAmountShape).returns(AmountShape),
 });
@@ -46,7 +43,6 @@ export const OrchestratorI = M.interface('Orchestrator', {
  * @param {{
  *   asyncFlowTools: AsyncFlowTools;
  *   chainHub: ChainHub;
- *   localchain: Remote<LocalChain>;
  *   makeRecorderKit: MakeRecorderKit;
  *   makeLocalChainFacade: MakeLocalChainFacade;
  *   makeRemoteChainFacade: MakeRemoteChainFacade;
@@ -61,7 +57,6 @@ const prepareOrchestratorKit = (
   zone,
   {
     chainHub,
-    localchain,
     makeLocalChainFacade,
     makeRemoteChainFacade,
     vowTools: { watch, asVow },
@@ -148,9 +143,6 @@ const prepareOrchestratorKit = (
             return vow;
           });
         },
-        makeLocalAccount() {
-          return watch(E(localchain).makeAccount());
-        },
         /** @type {HostOf<Orchestrator['getDenomInfo']>} */
         getDenomInfo(denom) {
           const denomDetail = chainHub.getAsset(denom);
@@ -185,7 +177,6 @@ harden(prepareOrchestratorKit);
  * @param {{
  *   asyncFlowTools: AsyncFlowTools;
  *   chainHub: ChainHub;
- *   localchain: Remote<LocalChain>;
  *   makeRecorderKit: MakeRecorderKit;
  *   makeLocalChainFacade: MakeLocalChainFacade;
  *   makeRemoteChainFacade: MakeRemoteChainFacade;

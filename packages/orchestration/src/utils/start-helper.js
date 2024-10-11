@@ -132,7 +132,6 @@ export const provideOrchestration = (
   const makeOrchestrator = prepareOrchestrator(zones.orchestration, {
     asyncFlowTools,
     chainHub,
-    localchain: remotePowers.localchain,
     makeRecorderKit,
     makeLocalChainFacade,
     makeRemoteChainFacade,
