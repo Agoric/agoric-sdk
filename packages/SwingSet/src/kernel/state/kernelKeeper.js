@@ -54,7 +54,7 @@ const enableKernelGC = true;
 export { DEFAULT_REAP_DIRT_THRESHOLD_KEY };
 
 // most recent DB schema version
-export const CURRENT_SCHEMA_VERSION = 2;
+export const CURRENT_SCHEMA_VERSION = 3;
 
 // Kernel state lives in a key-value store supporting key retrieval by
 // lexicographic range. All keys and values are strings.
@@ -73,9 +73,9 @@ export const CURRENT_SCHEMA_VERSION = 2;
 // only modified by a call to upgradeSwingset(). See below for
 // deltas/upgrades from one version to the next.
 //
-// The current ("v2") schema keys/values are:
+// The current ("v3") schema keys/values are:
 //
-// version = '2'
+// version = '3'
 // vat.names = JSON([names..])
 // vat.dynamicIDs = JSON([vatIDs..])
 // vat.name.$NAME = $vatID = v$NN
@@ -179,6 +179,9 @@ export const CURRENT_SCHEMA_VERSION = 2;
 // v2:
 //   * change `version` to `'2'`
 //   * add `vats.terminated` with `[]` as initial value
+// v3:
+//   * change `version` to `'3'`
+//   * perform remediation for bug #9039
 
 /** @type {(s: string) => string[]} s */
 export function commaSplit(s) {
