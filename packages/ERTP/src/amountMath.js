@@ -9,9 +9,10 @@ import { copyBagMathHelpers } from './mathHelpers/copyBagMathHelpers.js';
 
 /**
  * @import {CopyBag, CopySet} from '@endo/patterns';
- * @import {Amount, AssetKind, AmountValue, AssetKindForValue, AssetValueForKind, Brand, CopyBagAmount, CopySetAmount, MathHelpers, NatAmount, NatValue, SetAmount, SetValue} from './types.js';
+ * @import {Amount, AssetValueForKind, Brand, CopyBagAmount, CopySetAmount, MathHelpers, NatAmount, NatValue, SetAmount, SetValue} from './types.js';
  */
 
+// NB: AssetKind is both a constant for enumerated values and a type for those values.
 /**
  * Constants for the kinds of assets we support.
  *
@@ -28,6 +29,9 @@ export const AssetKind = harden({
   COPY_SET: 'copySet',
   COPY_BAG: 'copyBag',
 });
+/**
+ * @typedef {(typeof AssetKind)[keyof typeof AssetKind]} AssetKind
+ */
 const assetKindNames = harden(Object.values(AssetKind).sort());
 
 /** @param {AssetKind} allegedAK */
