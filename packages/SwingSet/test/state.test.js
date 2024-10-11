@@ -183,7 +183,7 @@ test('kernel state', async t => {
   k.emitCrankHashes();
 
   checkState(t, store.dump, [
-    ['version', '2'],
+    ['version', '3'],
     ['crankNumber', '0'],
     ['gcActions', '[]'],
     ['runQueue', '[1,1]'],
@@ -223,7 +223,7 @@ test('kernelKeeper vat names', async t => {
 
   k.emitCrankHashes();
   checkState(t, store.dump, [
-    ['version', '2'],
+    ['version', '3'],
     ['crankNumber', '0'],
     ['gcActions', '[]'],
     ['runQueue', '[1,1]'],
@@ -279,7 +279,7 @@ test('kernelKeeper device names', async t => {
 
   k.emitCrankHashes();
   checkState(t, store.dump, [
-    ['version', '2'],
+    ['version', '3'],
     ['crankNumber', '0'],
     ['gcActions', '[]'],
     ['runQueue', '[1,1]'],
@@ -462,7 +462,7 @@ test('kernelKeeper promises', async t => {
   k.emitCrankHashes();
 
   checkState(t, store.dump, [
-    ['version', '2'],
+    ['version', '3'],
     ['crankNumber', '0'],
     ['device.nextID', '7'],
     ['vat.nextID', '1'],
@@ -1078,7 +1078,7 @@ test('dirt upgrade', async t => {
   // * v3.reapCountdown: 'never'
   // * v3.reapInterval: 'never'
 
-  t.is(k.kvStore.get('version'), '2');
+  t.is(k.kvStore.get('version'), '3');
   k.kvStore.delete(`kernel.defaultReapDirtThreshold`);
   k.kvStore.set(`kernel.defaultReapInterval`, '1000');
 
@@ -1168,7 +1168,7 @@ test('v2 upgrade', async t => {
   k.saveStats();
 
   // roll back to v1
-  t.is(k.kvStore.get('version'), '2');
+  t.is(k.kvStore.get('version'), '3');
   k.kvStore.delete(`vats.terminated`);
   k.kvStore.set('version', '1');
 
@@ -1187,5 +1187,5 @@ test('v2 upgrade', async t => {
 
   t.true(k2.kvStore.has(`vats.terminated`));
   t.deepEqual(JSON.parse(k2.kvStore.get(`vats.terminated`)), []);
-  t.is(k2.kvStore.get(`version`), '2');
+  t.is(k2.kvStore.get(`version`), '3');
 });
