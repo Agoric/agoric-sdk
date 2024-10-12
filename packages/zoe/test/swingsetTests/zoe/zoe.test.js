@@ -86,7 +86,7 @@ async function main(t, argv) {
 }
 
 const expectedAutomaticRefundOkLog = [
-  '=> alice, bob, carol and dave are set up',
+  '=> alice and bob are set up',
   '=> alice.doCreateAutomaticRefund called',
   'The offer was accepted',
   'The offer was accepted',
@@ -106,7 +106,7 @@ test.serial('zoe - automaticRefund - valid inputs', async t => {
 });
 
 const expectedCoveredCallOkLog = [
-  '=> alice, bob, carol and dave are set up',
+  '=> alice and bob are set up',
   '=> alice.doCreateCoveredCall called',
   '@@ schedule task for:1, currently: 0 @@',
   'The option was exercised. Please collect the assets in your payout.',
@@ -183,7 +183,7 @@ test.serial('zoe - secondPriceAuction - valid inputs', async t => {
 });
 
 const expectedAtomicSwapOkLog = [
-  '=> alice, bob, carol and dave are set up',
+  '=> alice and bob are set up',
   'The offer has been accepted. Once the contract has been completed, please check your payout',
   'aliceMoolaPurse: balance {"brand":{},"value":0}',
   'bobMoolaPurse: balance {"brand":{},"value":3}',
@@ -200,7 +200,7 @@ test.serial('zoe - atomicSwap - valid inputs', async t => {
 });
 
 const expectedSimpleExchangeOkLog = [
-  '=> alice, bob, carol and dave are set up',
+  '=> alice and bob are set up',
   'Order Added',
   'Order Added',
   'bobMoolaPurse: balance {"brand":{},"value":3}',
@@ -219,7 +219,7 @@ test.serial('zoe - simpleExchange - valid inputs', async t => {
 });
 
 const expectedSimpleExchangeNotificationLog = [
-  '=> alice, bob, carol and dave are set up',
+  '=> alice and bob are set up',
   '{"buys":[],"sells":[]}',
   '{"buys":[],"sells":[{"give":{"Asset":{"brand":{},"value":3}},"want":{"Price":{"brand":{},"value":4}}}]}',
   'Order Added',
@@ -253,7 +253,7 @@ test.serial('zoe - simpleExchange - state Update', async t => {
 });
 
 const expectedAutoswapOkLog = [
-  '=> alice, bob, carol and dave are set up',
+  '=> alice and bob are set up',
   'Added liquidity.',
   'simoleanAmounts {"brand":{},"value":1}',
   'Swap successfully completed.',
@@ -278,7 +278,7 @@ test.serial('zoe - autoswap - valid inputs', async t => {
 });
 
 const expectedSellTicketsOkLog = [
-  '=> alice, bob, carol and dave are set up',
+  '=> alice and bob are set up',
   'availableTickets: {"brand":{},"value":[{"number":3,"show":"Steven Universe, the Opera","start":"Wed, March 25th 2020 at 8pm"},{"number":2,"show":"Steven Universe, the Opera","start":"Wed, March 25th 2020 at 8pm"},{"number":1,"show":"Steven Universe, the Opera","start":"Wed, March 25th 2020 at 8pm"}]}',
   'boughtTicketAmount: {"brand":{},"value":[{"number":1,"show":"Steven Universe, the Opera","start":"Wed, March 25th 2020 at 8pm"}]}',
   'after ticket1 purchased: {"brand":{},"value":[{"number":3,"show":"Steven Universe, the Opera","start":"Wed, March 25th 2020 at 8pm"},{"number":2,"show":"Steven Universe, the Opera","start":"Wed, March 25th 2020 at 8pm"}]}',
@@ -294,7 +294,7 @@ test.serial('zoe - sellTickets - valid inputs', async t => {
 });
 
 const expectedOTCDeskOkLog = [
-  '=> alice, bob, carol and dave are set up',
+  '=> alice and bob are set up',
   'Inventory added',
   '@@ schedule task for:1, currently: 0 @@',
   'The option was exercised. Please collect the assets in your payout.',
@@ -313,7 +313,7 @@ test('zoe - otcDesk - valid inputs', async t => {
 });
 
 const expectedBadTimerLog = [
-  '=> alice, bob, carol and dave are set up',
+  '=> alice and bob are set up',
   '=> alice.doBadTimer called',
   'is a zoe invitation: true',
   'aliceMoolaPurse: balance {"brand":{},"value":3}',
