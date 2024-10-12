@@ -449,7 +449,7 @@ test.serial('invalid criticalVatKey causes vat creation to fail', async t => {
   });
 });
 
-test.serial('dead vat state removed', async t => {
+test.serial.failing('dead vat state removed', async t => {
   const configPath = new URL('swingset-die-cleanly.json', import.meta.url)
     .pathname;
   const config = await loadSwingsetConfigFile(configPath);
@@ -471,6 +471,23 @@ test.serial('dead vat state removed', async t => {
   t.is(kvStore.get('vat.dynamicIDs'), '["v6"]');
   t.is(kvStore.get('ko26.owner'), 'v6');
   t.is(Array.from(enumeratePrefixedKeys(kvStore, 'v6.')).length > 10, true);
+  // find the two promises in the new vat's c-list, they should both
+  // have refCount=2 (one for bootstrap, one for the dynamic vat)
+  let decidedKPID;
+  let subscribedKPID;
+  for (const key of enumeratePrefixedKeys(kvStore, 'v6.')) {
+    if (key.startsWith('v6.c.kp')) {
+      const kpid = key.slice('v6.c.'.length);
+      const refCount = Number(kvStore.get(`${kpid}.refCount`));
+      const decider = kvStore.get(`${kpid}.decider`);
+      if (decider === 'v6') {
+        decidedKPID = kpid;
+      } else {
+        subscribedKPID = kpid;
+      }
+      t.is(refCount, 2, `${kpid}.refCount=${refCount}, not 2`);
+    }
+  }
   const beforeDump = debug.dump(true);
   t.truthy(beforeDump.transcripts.v6);
   t.truthy(beforeDump.snapshots.v6);
@@ -483,6 +500,16 @@ test.serial('dead vat state removed', async t => {
   const afterDump = debug.dump(true);
   t.falsy(afterDump.transcripts.v6);
   t.falsy(afterDump.snapshots.v6);
+  // the promise that v6 was deciding will be removed from v6's
+  // c-list, rejected by the kernel, and the reject notification to
+  // vat-bootstrap will remove it from that c-list, so the end state
+  // should be no references, and a completely deleted kernel promise
+  // table entry
+  t.is(kvStore.get(`${decidedKPID}.refCount`), undefined);
+  // the promise that v6 received from vat-bootstrap should be removed
+  // from v6's c-list, but it is still being exported by
+  // vat-bootstrap, so the refcount should finish at 1
+  t.is(kvStore.get(`${subscribedKPID}.refCount`), '1');
 });
 
 test.serial('terminate with presence', async t => {
