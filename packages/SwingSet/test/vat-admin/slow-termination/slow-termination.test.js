@@ -315,10 +315,10 @@ async function doSlowTerminate(t, mode) {
   t.false(JSON.parse(kvStore.get('vats.terminated')).includes(vatID));
 }
 
-test.serial.failing('slow terminate (kill)', async t => {
+test.serial('slow terminate (kill)', async t => {
   await doSlowTerminate(t, 'kill');
 });
 
-test.serial.failing('slow terminate (die happy)', async t => {
+test.serial('slow terminate (die happy)', async t => {
   await doSlowTerminate(t, 'dieHappy');
 });

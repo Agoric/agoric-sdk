@@ -449,7 +449,7 @@ test.serial('invalid criticalVatKey causes vat creation to fail', async t => {
   });
 });
 
-test.serial.failing('dead vat state removed', async t => {
+test.serial('dead vat state removed', async t => {
   const configPath = new URL('swingset-die-cleanly.json', import.meta.url)
     .pathname;
   const config = await loadSwingsetConfigFile(configPath);
