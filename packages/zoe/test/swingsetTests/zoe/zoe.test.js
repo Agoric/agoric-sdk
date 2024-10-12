@@ -329,3 +329,18 @@ test.skip('zoe - bad timer', async t => {
   const dump = await main(t, ['badTimer', startingValues]);
   t.deepEqual(dump.log, expectedBadTimerLog);
 });
+
+const expectedShutdownAutoswapOkLog = [
+  '=> alice and bob are set up',
+  'vat terminated',
+  'aliceMoolaPurse: balance {"brand":{},"value":0}',
+  'aliceSimoleanPurse: balance {"brand":{},"value":0}',
+];
+test.serial('zoe - shutdown autoswap', async t => {
+  const startingValues = [
+    [10, 5, 0],
+    [3, 7, 0],
+  ];
+  const dump = await main(t, ['shutdownAutoswap', startingValues]);
+  t.deepEqual(dump.log, expectedShutdownAutoswapOkLog);
+});
