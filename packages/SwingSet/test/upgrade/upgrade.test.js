@@ -953,3 +953,69 @@ test('failed vatAdmin upgrade - bad replacement code', async t => {
   // Just a taste to verify that the create went right; other tests check the rest
   t.deepEqual(v1result.data, ['some', 'data']);
 });
+
+test('vat upgrade retains vatParameters', async t => {
+  const config = makeConfigFromPaths('bootstrap-scripted-upgrade.js', {
+    defaultManagerType: 'xs-worker',
+    defaultReapInterval: 'never',
+    bundlePaths: {
+      ulrik1: 'vat-ulrik-1.js',
+      ulrik2: 'vat-ulrik-2.js',
+    },
+  });
+  const kft = await initKernelForTest(t, t.context.data, config);
+  const { controller: c, kvStore } = kft;
+
+  // create initial version
+  const kpid1 = c.queueToVatRoot('bootstrap', 'buildV1WithVatParameters', []);
+  await c.run();
+  // incref=false to keep it from adding a refcount to the marker
+  const params1 = kunser(c.kpResolution(kpid1, { incref: false }));
+  // Free kpid1, else it will hold an extra refcount on the
+  // marker. The c.kpResolution() decremented the kpid1 refcount to 0,
+  // but we need to provoke a call to processRefcounts(), which only
+  // happens at end-of-crank
+  c.queueToVatRoot('bootstrap', 'nop', []);
+  // BOYD to get vat-admin to drop it's copy of the marker
+  c.reapAllVats();
+  await c.run();
+
+  t.is(params1.number, 1);
+  const marker = params1.marker;
+  t.deepEqual(params1, { number: 1, marker });
+  const kref = marker.getKref();
+
+  // confirm the vatParameters were recorded in kvStore
+  const vatID = JSON.parse(kvStore.get('vat.dynamicIDs'))[0];
+  const vp1cd = kvStore.get(`${vatID}.vatParameters`);
+  const vp1 = kunser(JSON.parse(vp1cd));
+  t.is(vp1.number, 1);
+  t.is(vp1.marker.getKref(), kref);
+
+  // Ideally, the refcount should be 2: one for the importing vat's
+  // c-list, and a second for the retained vNN.vatParameters. But it
+  // will also get a refcount from device-vat-admin, as a conduit for
+  // the upgrade() call, because devices don't do GC.
+
+  t.is(kvStore.get(`${kref}.refCount`), '3,3');
+
+  // upgrade
+  const kpid2 = c.queueToVatRoot('bootstrap', 'upgradeV2WithVatParameters', []);
+  await c.run();
+  const params2 = kunser(c.kpResolution(kpid2, { incref: false }));
+  c.queueToVatRoot('bootstrap', 'nop', []);
+  c.reapAllVats();
+  await c.run();
+
+  t.is(params2.number, 2);
+  t.is(params2.marker.getKref(), kref);
+  // kvStore should now hold the new vatParameters
+  const vp2cd = kvStore.get(`${vatID}.vatParameters`);
+  const vp2 = kunser(JSON.parse(vp2cd));
+  t.is(vp2.number, 2);
+  t.is(vp2.marker.getKref(), kref);
+
+  // same refcount: the old retained vatParameters should be swapped
+  // out
+  t.is(kvStore.get(`${kref}.refCount`), '3,3');
+});
