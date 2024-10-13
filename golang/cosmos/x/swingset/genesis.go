@@ -13,7 +13,6 @@ import (
 	agoric "github.com/Agoric/agoric-sdk/golang/cosmos/types"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/keeper"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/types"
-	"github.com/cosmos/cosmos-sdk/server"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
@@ -131,24 +130,37 @@ func InitGenesis(ctx sdk.Context, k Keeper, swingStoreExportsHandler *SwingStore
 	return false
 }
 
-func ExportGenesis(ctx sdk.Context, k Keeper, swingStoreExportsHandler *SwingStoreExportsHandler, swingStoreExportDir string) *types.GenesisState {
+func ExportGenesis(
+	ctx sdk.Context,
+	k Keeper,
+	swingStoreExportsHandler *SwingStoreExportsHandler,
+	swingStoreExportDir string,
+	swingStoreExportMode string,
+) *types.GenesisState {
 	gs := &types.GenesisState{
 		Params:               k.GetParams(ctx),
 		State:                k.GetState(ctx),
 		SwingStoreExportData: nil,
 	}
-	fmt.Println("ctx.Value(server.ServerContextKey): ", ctx.Value(server.ServerContextKey))
 
 	snapshotHeight := uint64(ctx.BlockHeight())
+	if swingStoreExportMode == "debug" {
+		snapshotHeight = 0
+	}
 
-	eventHandler := swingStoreGenesisEventHandler{exportDir: swingStoreExportDir, snapshotHeight: snapshotHeight, swingStore: k.GetSwingStore(ctx), hasher: sha256.New()}
+	eventHandler := swingStoreGenesisEventHandler{
+		exportDir:      swingStoreExportDir,
+		snapshotHeight: snapshotHeight,
+		swingStore:     k.GetSwingStore(ctx),
+		hasher:         sha256.New(),
+	}
 
 	err := swingStoreExportsHandler.InitiateExport(
-		// The export will fail if the export of a historical height was requested
+		// The export will fail if the export of a historical height was requested outside of debug mode
 		snapshotHeight,
 		eventHandler,
 		keeper.SwingStoreExportOptions{
-			ArtifactMode:   keeper.SwingStoreArtifactModeOperational,
+			ArtifactMode:   swingStoreExportMode,
 			ExportDataMode: keeper.SwingStoreExportDataModeSkip,
 		},
 	)
@@ -178,7 +190,7 @@ func (eventHandler swingStoreGenesisEventHandler) OnExportStarted(height uint64,
 }
 
 func (eventHandler swingStoreGenesisEventHandler) OnExportRetrieved(provider keeper.SwingStoreExportProvider) error {
-	if eventHandler.snapshotHeight != provider.BlockHeight {
+	if !(eventHandler.snapshotHeight == 0 || eventHandler.snapshotHeight == provider.BlockHeight) {
 		return fmt.Errorf("snapshot block height (%d) doesn't match requested height (%d)", provider.BlockHeight, eventHandler.snapshotHeight)
 	}
 

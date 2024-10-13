@@ -182,7 +182,12 @@ func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, data json.
 
 func (am AppModule) ExportGenesis(ctx sdk.Context, cdc codec.JSONCodec) json.RawMessage {
 	am.checkSwingStoreExportSetup()
-	fmt.Println("am.swingStoreExportMode: ", am.swingStoreExportMode)
-	gs := ExportGenesis(ctx, am.keeper, am.swingStoreExportsHandler, am.swingStoreExportDir)
+	gs := ExportGenesis(
+		ctx,
+		am.keeper,
+		am.swingStoreExportsHandler,
+		am.swingStoreExportDir,
+		am.swingStoreExportMode,
+	)
 	return cdc.MustMarshalJSON(gs)
 }
