@@ -743,6 +743,8 @@ export default function buildKernel(
       kdebug(`vat ${vatID} terminated before startVat delivered`);
       return NO_DELIVERY_CRANK_RESULTS;
     }
+    const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
+    vatKeeper.setVatParameters(vatParameters);
     const { meterID } = vatInfo;
     /** @type { KernelDeliveryStartVat } */
     const kd = harden(['startVat', vatParameters]);
@@ -1022,6 +1024,7 @@ export default function buildKernel(
     });
     const vatOptions = harden({ ...origOptions, workerOptions });
     vatKeeper.setSourceAndOptions(source, vatOptions);
+    vatKeeper.setVatParameters(vatParameters);
     // TODO: decref the bundleID once setSourceAndOptions increfs it
 
     // pause, take a deep breath, appreciate this moment of silence

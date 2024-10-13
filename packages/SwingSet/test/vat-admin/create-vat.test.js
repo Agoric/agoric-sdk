@@ -276,13 +276,20 @@ test('createVat holds refcount', async t => {
   const { c, idRC, kernelStorage } = await doTestSetup(t, false, printSlog);
   const { kvStore } = kernelStorage;
 
+  // we typicaly get: v1-bootstrap, v2-vatAdmin, v6-export-held
+  // for (const name of JSON.parse(kvStore.get('vat.names'))) {
+  //   console.log(`${kvStore.get(`vat.name.${name}`)}: ${name}`);
+  // }
+  // and d7-vatAdmin
+
   // The bootstrap vat starts by fetching 'held' from vat-export-held, during
   // doTestSetup(), and retains it throughout the entire test. When we send
   // it refcount(), it will send VatAdminService.getBundleCap(), wait for the
   // response, then send VatAdminService.createVat(held). VAS will tell
   // device-vat-admin to push a create-vat event (including 'held') on the
   // run-queue. Some time later, the create-vat event reaches the front, and
-  // the new vat is created, receiving 'held' in vatParametesr.
+  // the new vat is created, receiving 'held' in vatParameters. The kernel
+  // retains a copy of those vatParameters for any future unilateral upgrade.
 
   // We want to check the refcounts during this sequence, to confirm that the
   // create-vat event holds a reference. Otherwise, 'held' might get GCed
@@ -292,7 +299,7 @@ test('createVat holds refcount', async t => {
   // nothing ever decrements it: devices hold eternal refcounts on their
   // c-list entries, and nothing ever removes a device c-list entry. But some
   // day when we fix that, we'll rely upon the create-vat event's refcount to
-  // keep these things alive.
+  // keep these things alive.)
 
   // We happen to know that 'held' will be allocated ko27, but we use
   // `getHeld()` to obtain the real value in case e.g. a new built-in vat is
@@ -365,9 +372,11 @@ test('createVat holds refcount', async t => {
   expectedRefcount -= 1; // kpid1 deleted, drops ref to 'held', now 2,2
   // it also does syscall.send(createVat), which holds a new reference
   expectedRefcount += 1; // arg to 'createVat'
-  // now we should see 3,3: v1-bootstrap, the kpResolution pin, and the
-  // send(createVat) arguments. Two of these are c-lists.
+  // now we should see 3,3: v1-bootstrap, the kpResolution pin, and
+  // the send(createVat) arguments. For c-lists, it is present in v1.c
+  // (import) and v6.c (export)
   const r1 = findRefs(kvStore, held);
+  // console.log(`r1:`, JSON.stringify(r1));
   t.deepEqual(r1.refcount, [expectedRefcount, expectedRefcount]);
   t.is(r1.refs.length, expectedCLists);
   // console.log(`---`);
@@ -384,13 +393,13 @@ test('createVat holds refcount', async t => {
   await stepUntil(seeCreateVat);
   // console.log(`---`);
 
-  // We should see 5,5: v2-bootstrap, the kpResolution pin, vat-vat-admin,
-  // device-vat-admin, and the create-vat run-queue event. Three of these are
-  // c-lists.
-  expectedRefcount += 1; // vat-vat-admin c-list
-  expectedCLists += 1; // vat-vat-admin c-list
-  expectedRefcount += 1; // device-vat-admin c-list
-  expectedCLists += 1; // device-vat-admin c-list
+  // We should see 5,5: v1-bootstrap, the kpResolution pin,
+  // v2-vatAdmin, d7-vatAdmin, and the create-vat run-queue
+  // event. c-lists: v1/v2/d7 imports, v6 export
+  expectedRefcount += 1; // v2-vatAdmin c-list
+  expectedCLists += 1; // v2-vatAdmin c-list
+  expectedRefcount += 1; // d7-vatAdmin c-list
+  expectedCLists += 1; // d7-vatAdmin c-list
 
   const r2 = findRefs(kvStore, held);
   // console.log(`r2:`, JSON.stringify(r2));
@@ -400,8 +409,8 @@ test('createVat holds refcount', async t => {
   // Allow the vat-admin bringOutYourDead to be delivered, which
   // allows it to drop its reference to 'held'.
 
-  expectedRefcount -= 1; // vat-vat-admin retires
-  expectedCLists -= 1; // vat-vat-admin retires
+  expectedRefcount -= 1; // v2-vatAdmin retires
+  expectedCLists -= 1; // v2-vatAdmin retires
 
   // In addition, device-vat-admin does not yet participate in GC, and holds
   // its references forever. So this -=1 remains commented out until we
@@ -415,25 +424,27 @@ test('createVat holds refcount', async t => {
   t.deepEqual(c.dump().reapQueue, []);
   // console.log(`---`);
 
-  // At this point we expected to see 5,5: v2-bootstrap, kpResolution pin,
-  // vat-vat-admin (because of the non-dropping bug), device-vat-admin
-  // (because of unimplemented GC), and the create-vat run-queue event. Two
-  // are c-lists.
+  // At this point we expected to see 4,4: v1-bootstrap, kpResolution
+  // pin, d7-vatAdmin (because of unimplemented GC), and the
+  // create-vat run-queue event. c-lists: v1/d7 imports, v6 export
 
   const r3 = findRefs(kvStore, held);
   // console.log(`r3:`, JSON.stringify(r3));
   t.deepEqual(r3.refcount, [expectedRefcount, expectedRefcount]);
   t.is(r3.refs.length, expectedCLists);
 
-  // Allow create-vat to be processed, removing the create-vat reference and
-  // adding a reference from the new vat's c-list
+  // Allow create-vat to be processed, removing the create-vat
+  // reference and adding a reference from the new vat's c-list, plus
+  // a second reference from the retained vatParameters
   await c.step();
   expectedRefcount -= 1; // remove send(createVat) argument
   expectedRefcount += 1; // new-vat c-list
+  expectedRefcount += 1; // retained vatParameters
   expectedCLists += 1; // new-vat c-list
   // console.log(`---`);
 
-  // v2-bootstrap, kpResolution pin, device-vat-admin, new-vat
+  // v1-bootstrap, kpResolution pin, d7-vatAdmin, new-vat, retained
+  // vatParameters
   const r4 = findRefs(kvStore, held);
   // console.log(`r4:`, JSON.stringify(r4));
   t.deepEqual(r4.refcount, [expectedRefcount, expectedRefcount]);

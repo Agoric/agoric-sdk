@@ -7,6 +7,7 @@ import { isObject } from '@endo/marshal';
 import { parseKernelSlot } from '../parseKernelSlots.js';
 import { makeVatSlot, parseVatSlot } from '../../lib/parseVatSlots.js';
 import { insistVatID } from '../../lib/id.js';
+import { insistCapData } from '../../lib/capdata.js';
 import { kdebug } from '../../lib/kdebug.js';
 import {
   parseReachableAndVatSlot,
@@ -171,6 +172,35 @@ export function makeVatKeeper(
     /** @type { RecordedVatOptions } */
     const options = JSON.parse(getRequired(`${vatID}.options`));
     return harden(options);
+  }
+
+  /**
+   * @param {SwingSetCapData} newVPCD
+   */
+  function setVatParameters(newVPCD) {
+    insistCapData(newVPCD);
+    const key = `${vatID}.vatParameters`;
+    // increment-before-decrement to minimize spurious rc=0 checks
+    for (const kref of newVPCD.slots) {
+      incrementRefCount(kref, `${vatID}.vp`);
+    }
+    const old = kvStore.get(key) || '{"slots":[]}';
+    for (const kref of JSON.parse(old).slots) {
+      decrementRefCount(kref, `${vatID}.vp`);
+    }
+    kvStore.set(key, JSON.stringify(newVPCD));
+  }
+
+  /**
+   * @returns {SwingSetCapData | undefined} vpcd
+   */
+  function getVatParameters() {
+    const key = `${vatID}.vatParameters`;
+    const old = kvStore.get(key);
+    if (old) {
+      return JSON.parse(old);
+    }
+    return undefined;
   }
 
   // This is named "addDirt" because it should increment all dirt
@@ -768,6 +798,8 @@ export function makeVatKeeper(
     setSourceAndOptions,
     getSourceAndOptions,
     getOptions,
+    setVatParameters,
+    getVatParameters,
     addDirt,
     getReapDirt,
     clearReapDirt,

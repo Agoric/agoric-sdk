@@ -592,6 +592,44 @@ test('vatKeeper.getOptions', async t => {
   t.is(name, 'fred');
 });
 
+test('vatKeeper.setVatParameters', async t => {
+  const store = buildKeeperStorageInMemory();
+  const k = makeKernelKeeper(store, 'uninitialized');
+  k.createStartingKernelState({ defaultManagerType: 'local' });
+  k.setInitialized();
+  const v1 = k.allocateVatIDForNameIfNeeded('name1');
+  const bundleID =
+    'b1-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000';
+  const source = { bundleID };
+  const workerOptions = { type: 'local' };
+  const options = { workerOptions, name: 'fred', reapDirtThreshold: {} };
+  k.createVatState(v1, source, options);
+
+  const vk = k.provideVatKeeper(v1);
+  const ko1 = kslot('ko1');
+  const ko2 = kslot('ko2');
+  const vp1 = kser({ foo: 1, bar: ko1, baz: ko1 });
+  vk.setVatParameters(vp1);
+  t.deepEqual(JSON.parse(store.kvStore.get('v1.vatParameters')), vp1);
+  t.is(store.kvStore.get('ko1.refCount'), '1,1');
+  t.deepEqual(vk.getVatParameters(), vp1);
+
+  const vp2 = kser({ foo: 1, bar: ko1, baz: ko2 });
+  vk.setVatParameters(vp2);
+  t.deepEqual(JSON.parse(store.kvStore.get('v1.vatParameters')), vp2);
+  t.is(store.kvStore.get('ko1.refCount'), '1,1');
+  t.is(store.kvStore.get('ko2.refCount'), '1,1');
+  t.deepEqual(vk.getVatParameters(), vp2);
+
+  const vp3 = kser({ foo: 1, baz: ko2 });
+  vk.setVatParameters(vp3);
+  t.deepEqual(JSON.parse(store.kvStore.get('v1.vatParameters')), vp3);
+  // this test doesn't do processRefcounts, which would remove the 0,0
+  t.is(store.kvStore.get('ko1.refCount'), '0,0');
+  t.is(store.kvStore.get('ko2.refCount'), '1,1');
+  t.deepEqual(vk.getVatParameters(), vp3);
+});
+
 test('XS vatKeeper defaultManagerType', async t => {
   const store = buildKeeperStorageInMemory();
   const k = makeKernelKeeper(store, 'uninitialized');

@@ -152,10 +152,10 @@ async function doSlowTerminate(t, mode) {
       .get(vatID);
 
   // 20*2 for imports, 21*2 for exports, 20*2 for promises, 20*1 for
-  // vatstore = 142.  Plus 21 for the usual liveslots stuff, and 6 for
+  // vatstore = 142.  Plus 21 for the usual liveslots stuff, and 7 for
   // kernel stuff like vNN.source/options
 
-  t.is(remainingKV().length, 169);
+  t.is(remainingKV().length, 170);
   t.false(JSON.parse(kvStore.get('vats.terminated')).includes(vatID));
 
   // we get one span for snapshotInitial (=2), then a span every
@@ -202,7 +202,7 @@ async function doSlowTerminate(t, mode) {
   t.true(JSON.parse(kvStore.get('vats.terminated')).includes(vatID));
   // no cleanups were allowed, so nothing should be removed yet
   t.truthy(kernelStorage.kvStore.get(`${vatID}.options`));
-  t.is(remainingKV().length, 169);
+  t.is(remainingKV().length, 170);
 
   // now do a series of cleanup runs, each with budget=5
   const clean = async (budget = 5) => {
@@ -252,36 +252,36 @@ async function doSlowTerminate(t, mode) {
   await cleanKV(10, 5); // 5 c-list promises
 
   // that finishes the promises, so the next clean will delete the
-  // first five of our 47 other kv entries (20 vatstore plus 27
-  // liveslots overhead
+  // first five of our 48 other kv entries (20 vatstore plus 28
+  // overhead)
 
   await cleanKV(5, 5); // 5 other kv
-  // now there are 42 other kv entries left
-  t.is(remainingKV().length, 42);
+  // now there are 43 other kv entries left
+  t.is(remainingKV().length, 43);
 
   await cleanKV(5, 5); // 5 other kv
-  t.is(remainingKV().length, 37);
+  t.is(remainingKV().length, 38);
   await cleanKV(5, 5); // 5 other kv
-  t.is(remainingKV().length, 32);
+  t.is(remainingKV().length, 33);
   await cleanKV(5, 5); // 5 other kv
-  t.is(remainingKV().length, 27);
+  t.is(remainingKV().length, 28);
   await cleanKV(5, 5); // 5 other kv
-  t.is(remainingKV().length, 22);
+  t.is(remainingKV().length, 23);
   await cleanKV(5, 5); // 5 other kv
-  t.is(remainingKV().length, 17);
+  t.is(remainingKV().length, 18);
   checkTS();
   await cleanKV(5, 5); // 5 other kv
-  t.is(remainingKV().length, 12);
+  t.is(remainingKV().length, 13);
   await cleanKV(5, 5); // 5 other kv
-  t.is(remainingKV().length, 7);
+  t.is(remainingKV().length, 8);
   await cleanKV(5, 5); // 5 other kv
-  t.is(remainingKV().length, 2);
+  t.is(remainingKV().length, 3);
 
   checkTS();
 
-  // there are two kv left, so this clean will delete those, then 5 of
-  // the 7 snapshots
-  await cleanKV(2, 7); // 2 final kv, and 5 snapshots
+  // there are three kv left, so this clean will delete those, then 5
+  // of the 7 snapshots
+  await cleanKV(3, 8); // 3 final kv, and 5 snapshots
   t.deepEqual(remainingKV(), []);
   t.is(kernelStorage.kvStore.get(`${vatID}.options`), undefined);
   expectedRemainingSnapshots -= 5;

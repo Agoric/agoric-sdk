@@ -930,3 +930,40 @@ test('failed vatAdmin upgrade - bad replacement code', async t => {
   // Just a taste to verify that the create went right; other tests check the rest
   t.deepEqual(v1result.data, ['some', 'data']);
 });
+
+test('vat upgrade retains vatParameters', async t => {
+  const config = makeConfigFromPaths('bootstrap-scripted-upgrade.js', {
+    defaultManagerType: 'xs-worker',
+    defaultReapInterval: 'never',
+    bundlePaths: {
+      ulrik1: 'vat-ulrik-1.js',
+      ulrik2: 'vat-ulrik-2.js',
+    },
+  });
+  const kft = await initKernelForTest(t, t.context.data, config);
+  const { messageToVat, kvStore } = kft;
+
+  // create initial version
+  const params1 = await messageToVat('bootstrap', 'buildV1WithVatParameters');
+  t.is(params1.number, 1);
+  const marker = params1.marker;
+  t.deepEqual(params1, { number: 1, marker });
+  const markerKref = marker.getKref();
+
+  // confirm the vatParameters were recorded in kvStore
+  const vatID = JSON.parse(kvStore.get('vat.dynamicIDs'))[0];
+  const vp1cd = kvStore.get(`${vatID}.vatParameters`);
+  const vp1 = kunser(JSON.parse(vp1cd));
+  t.is(vp1.number, 1);
+  t.is(vp1.marker.getKref(), markerKref);
+
+  // upgrade
+  const params2 = await messageToVat('bootstrap', 'upgradeV2WithVatParameters');
+  t.is(params2.number, 2);
+  t.is(params2.marker.getKref(), markerKref);
+  // kvStore should now hold the new vatParameters
+  const vp2cd = kvStore.get(`${vatID}.vatParameters`);
+  const vp2 = kunser(JSON.parse(vp2cd));
+  t.is(vp2.number, 2);
+  t.is(vp2.marker.getKref(), markerKref);
+});
