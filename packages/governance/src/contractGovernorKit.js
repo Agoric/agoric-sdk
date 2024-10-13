@@ -160,7 +160,7 @@ export const prepareContractGovernorKit = (baggage, powers) => {
             const { timer } = powers;
             const { creatorFacet, instance } = this.state;
             paramGovernance = setupParamGovernance(
-              E(creatorFacet).getParamMgrRetriever(),
+              () => E(creatorFacet).getParamMgrRetriever(),
               instance,
               timer,
               () => this.facets.helper.getUpdatedPoserFacet(),

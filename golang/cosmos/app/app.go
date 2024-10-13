@@ -658,6 +658,7 @@ func NewAgoricApp(
 		keys[vlocalchain.StoreKey],
 		app.BaseApp.MsgServiceRouter(),
 		app.BaseApp.GRPCQueryRouter(),
+		app.AccountKeeper,
 	)
 	app.vlocalchainPort = app.AgdServer.MustRegisterPortHandler(
 		"vlocalchain",

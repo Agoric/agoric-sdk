@@ -55,14 +55,14 @@ const assertBallotConcernsParam = (paramSpec, questionSpec) => {
 };
 
 /**
- * @param {ERef<ParamManagerRetriever>} paramManagerRetriever
+ * @param {() => ERef<ParamManagerRetriever>} paramManagerRetrieverAccessor
  * @param {Instance} contractInstance
  * @param {import('@agoric/time').TimerService} timer
  * @param {() => Promise<PoserFacet>} getUpdatedPoserFacet
  * @returns {ParamGovernor}
  */
 const setupParamGovernance = (
-  paramManagerRetriever,
+  paramManagerRetrieverAccessor,
   contractInstance,
   timer,
   getUpdatedPoserFacet,
@@ -76,6 +76,7 @@ const setupParamGovernance = (
     deadline,
     paramSpec,
   ) => {
+    const paramManagerRetriever = paramManagerRetrieverAccessor();
     const paramMgr = await E(paramManagerRetriever).get(paramSpec.paramPath);
     /** @type {import('@endo/marshal').Passable} */
     const changePs = {};

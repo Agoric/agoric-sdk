@@ -230,6 +230,7 @@ type WellKnownContracts = {
   mintHolder: typeof import('@agoric/vats/src/mintHolder.js').start;
   psm: typeof import('@agoric/inter-protocol/src/psm/psm.js').start;
   provisionPool: typeof import('@agoric/inter-protocol/src/provisionPool.js').start;
+  priceAggregator: typeof import('@agoric/inter-protocol/src/price/fluxAggregatorContract.js').start;
   reserve: typeof import('@agoric/inter-protocol/src/reserve/assetReserve.js').start;
   VaultFactory: typeof import('@agoric/inter-protocol/src/vaultFactory/vaultFactory.js').start;
   // no typeof because walletFactory is exporting `start` as a type
@@ -377,6 +378,8 @@ type ChainBootstrapSpaceT = {
   powerStore: MapStore;
   priceAuthorityVat: Awaited<PriceAuthorityVat>;
   priceAuthority: import('@agoric/zoe/tools/types.js').PriceAuthority;
+  // signal that price feeds have #8400 QuotePayments storage leak fixed
+  priceAuthority8400: import('@agoric/zoe/tools/types.js').PriceAuthority;
   priceAuthorityAdmin: import('@agoric/vats/src/priceAuthorityRegistry').PriceAuthorityRegistryAdmin;
   provisioning: Awaited<ProvisioningVat> | undefined;
   provisionBridgeManager:

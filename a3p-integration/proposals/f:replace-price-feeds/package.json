@@ -1,0 +1,28 @@
+{
+  "agoricProposal": {
+    "source": "subdir",
+    "sdk-generate": [
+      "inter-protocol/updatePriceFeeds.js submission A3P_INTEGRATION",
+      "vats/add-auction.js",
+      "vats/upgradeVaults.js"
+    ],
+    "type": "/agoric.swingset.CoreEvalProposal"
+  },
+  "type": "module",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "@agoric/synthetic-chain": "^0.3.0",
+    "ava": "^5.3.1"
+  },
+  "ava": {
+    "concurrency": 1,
+    "timeout": "2m",
+    "files": [
+      "!submission"
+    ]
+  },
+  "scripts": {
+    "agops": "yarn --cwd /usr/src/agoric-sdk/ --silent agops"
+  },
+  "packageManager": "yarn@4.2.2"
+}

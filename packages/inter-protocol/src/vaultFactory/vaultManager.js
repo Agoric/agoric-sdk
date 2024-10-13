@@ -455,6 +455,7 @@ export const prepareVaultManagerKit = (
           // will throw. See https://github.com/Agoric/agoric-sdk/issues/4317
           const quoteWatcher = harden({
             onFulfilled(value) {
+              trace('watcher updated price', value);
               ephemera.storedCollateralQuote = value;
             },
             onRejected() {

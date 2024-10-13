@@ -7,10 +7,16 @@ export const defaultProposalBuilder = async ({ publishRef, install }) => {
     getManifestCall: [
       'getManifestForAddAuction',
       {
-        auctionsRef: publishRef(
+        auctioneerRef: publishRef(
           install(
             '@agoric/inter-protocol/src/auction/auctioneer.js',
             '../../inter-protocol/bundles/bundle-auctioneer.js',
+          ),
+        ),
+        contractGovernorRef: publishRef(
+          install(
+            '@agoric/governance/src/contractGovernor.js',
+            '../bundles/bundle-contractGovernor.js',
           ),
         ),
       },

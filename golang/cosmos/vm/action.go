@@ -86,7 +86,7 @@ func PopulateAction(ctx sdk.Context, action Action) Action {
 		var headerPtr *ActionHeader
 		if fieldType.Type == actionHeaderType {
 			headerPtr = field.Addr().Interface().(*ActionHeader)
-		} else if fieldType.Type == reflect.PtrTo(actionHeaderType) {
+		} else if fieldType.Type == reflect.PointerTo(actionHeaderType) {
 			if field.IsNil() {
 				headerPtr = &ActionHeader{}
 			} else {
