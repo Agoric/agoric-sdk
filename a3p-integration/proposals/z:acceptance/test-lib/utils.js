@@ -60,3 +60,11 @@ export const getAgoricNamesBrands = async () => {
 
   return brands;
 };
+
+export const getAgoricNamesInstances = async () => {
+  const instances = await agoric
+    .follow('-lF', ':published.agoricNames.instance', '-o', 'text')
+    .then(res => Object.fromEntries(marshaller.fromCapData(JSON.parse(res))));
+
+  return instances;
+};

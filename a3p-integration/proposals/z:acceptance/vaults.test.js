@@ -22,6 +22,7 @@ import {
   getAvailableDebtForMint,
   getLastVaultFromAddress,
   getMinInitialDebt,
+  setDebtLimit,
 } from './test-lib/vaults.js';
 
 const VAULT_MANAGER = 'manager0';
@@ -376,5 +377,43 @@ test.serial(
     t.log('vault state:', state);
 
     t.is(state, 'closed', 'The vault should be in the "closed" state.');
+  },
+);
+
+test.serial(
+  'User can pay off debt when totalDebt is above debtLimit',
+  async t => {
+    const mint = '5.0';
+    const collateral = '10.0';
+    await openVault(GOV1ADDR, mint, collateral);
+
+    const { debtLimit: debtLimitBefore, totalDebt: totalDebtBefore } =
+      await getAvailableDebtForMint(VAULT_MANAGER);
+    t.log('debtLimit before adjusting parameter: ', debtLimitBefore);
+    t.log('totalDebt before adjusting parameter: ', totalDebtBefore);
+
+    const limit = (totalDebtBefore - 10_000_000n) / 1_000_000n;
+    await setDebtLimit(GOV1ADDR, limit);
+
+    const { debtLimit: debtLimitAfter, totalDebt: totalDebtAfter } =
+      await getAvailableDebtForMint(VAULT_MANAGER);
+    t.log('debtLimit after adjusting parameter: ', debtLimitAfter);
+    t.true(
+      debtLimitAfter < totalDebtAfter,
+      'debtLimit should be less than totalDebt',
+    );
+
+    const { vaultID, debt: vaultDebtBefore } =
+      await getLastVaultFromAddress(GOV1ADDR);
+    t.log('vault debt before pay off:', vaultDebtBefore);
+
+    await adjustVault(GOV1ADDR, vaultID, {
+      giveMinted: Number(vaultDebtBefore) / 1_000_000,
+    });
+
+    const { debt: vaultDebtAfter } = await getLastVaultFromAddress(GOV1ADDR);
+    t.log('vault debt after pay off:', vaultDebtAfter);
+
+    t.is(vaultDebtAfter, 0n, 'The vault Debt should have been erased');
   },
 );

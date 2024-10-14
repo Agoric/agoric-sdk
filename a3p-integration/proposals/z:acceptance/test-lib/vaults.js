@@ -1,7 +1,21 @@
-import { agops, agoric, getContractInfo } from '@agoric/synthetic-chain';
+import '@endo/init';
+import {
+  agops,
+  agoric,
+  executeOffer,
+  getContractInfo,
+  GOV1ADDR,
+  GOV2ADDR,
+  GOV3ADDR,
+} from '@agoric/synthetic-chain';
 import { AmountMath } from '@agoric/ertp';
 import { ceilMultiplyBy } from './ratio.js';
-import { getAgoricNamesBrands } from './utils.js';
+import { getAgoricNamesBrands, getAgoricNamesInstances } from './utils.js';
+import { boardSlottingMarshaller, makeFromBoard } from './rpc.js';
+import { retryUntilCondition } from './sync-tools.js';
+
+const fromBoard = makeFromBoard();
+const marshaller = boardSlottingMarshaller(fromBoard.convertSlotToVal);
 
 /**
  *
@@ -109,4 +123,110 @@ export const calculateMintFee = async (toMintValue, vaultManager) => {
   console.log('adjustedToMintAmount: ', adjustedToMintAmount);
 
   return { mintFee, adjustedToMintAmount };
+};
+
+const voteForNewParams = (accounts, position) => {
+  console.log('ACTIONS voting for position', position, 'using', accounts);
+  return Promise.all(
+    accounts.map(account =>
+      agops.ec('vote', '--forPosition', position, '--send-from', account),
+    ),
+  );
+};
+
+const paramChangeOfferGeneration = async (
+  previousOfferId,
+  voteDur,
+  debtLimit,
+) => {
+  const ISTunit = 1_000_000n; // aka displayInfo: { decimalPlaces: 6 }
+
+  const brand = await getAgoricNamesBrands();
+  assert(brand.IST);
+  assert(brand.ATOM);
+
+  const instance = await getAgoricNamesInstances();
+  assert(instance.VaultFactory);
+
+  const voteDurSec = BigInt(voteDur);
+  const debtLimitValue = BigInt(debtLimit) * ISTunit;
+  const toSec = ms => BigInt(Math.round(ms / 1000));
+
+  const id = `propose-${Date.now()}`;
+  const deadline = toSec(Date.now()) + voteDurSec;
+
+  const body = {
+    method: 'executeOffer',
+    offer: {
+      id,
+      invitationSpec: {
+        invitationMakerName: 'VoteOnParamChange',
+        previousOffer: previousOfferId,
+        source: 'continuing',
+      },
+      offerArgs: {
+        deadline: deadline,
+        instance: instance.VaultFactory,
+        params: {
+          DebtLimit: {
+            brand: brand.IST,
+            value: debtLimitValue,
+          },
+        },
+        path: {
+          paramPath: {
+            key: {
+              collateralBrand: brand.ATOM,
+            },
+          },
+        },
+      },
+      proposal: {},
+    },
+  };
+
+  return JSON.stringify(marshaller.toCapData(harden(body)));
+};
+
+export const proposeNewDebtCeiling = async (address, debtLimit) => {
+  const charterAcceptOfferId = await agops.ec(
+    'find-continuing-id',
+    '--for',
+    `${'charter\\ member\\ invitation'}`,
+    '--from',
+    address,
+  );
+
+  return executeOffer(
+    address,
+    paramChangeOfferGeneration(charterAcceptOfferId, 30, debtLimit),
+  );
+};
+
+export const setDebtLimit = async (address, debtLimit) => {
+  const VOTING_WAIT_MS = 65 * 1000;
+  const govAccounts = [GOV1ADDR, GOV2ADDR, GOV3ADDR];
+
+  console.log('ACTIONS Setting debt limit');
+
+  await proposeNewDebtCeiling(address, debtLimit);
+  await voteForNewParams(govAccounts, 0);
+
+  console.log('ACTIONS wait for the vote to pass');
+
+  const pushPriceRetryOpts = {
+    maxRetries: 10, // arbitrary
+    retryIntervalMs: 5000, // in ms
+  };
+
+  await retryUntilCondition(
+    () => getAvailableDebtForMint('manager0'),
+    res => res.debtLimit === debtLimit * 1_000_000n,
+    'debt limit not set yet',
+    {
+      log: console.log,
+      setTimeout: globalThis.setTimeout,
+      ...pushPriceRetryOpts,
+    },
+  );
 };
