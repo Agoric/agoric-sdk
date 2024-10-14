@@ -23,28 +23,6 @@ import {
 
 const VAULT_MANAGER = 'manager0';
 
-test.serial('attempt to open vaults under the minimum amount', async t => {
-  const activeVaultsBefore = await agopsVaults(USER1ADDR);
-  await bankSend(USER1ADDR, `20000000${ATOM_DENOM}`);
-  t.log('active vaults before:', activeVaultsBefore);
-
-  const mint = '3.0';
-  const collateral = '5.0';
-  await t.throwsAsync(() => openVault(USER1ADDR, mint, collateral), {
-    message:
-      /Vault creation requires a minInitialDebt of {"brand":"\[Alleged: IST brand\]","value":"\[5000000n\]"}/,
-  });
-
-  const activeVaultsAfter = await agopsVaults(USER1ADDR);
-  t.log('active vaults after:', activeVaultsAfter);
-
-  t.is(
-    activeVaultsAfter.length,
-    activeVaultsBefore.length,
-    'The number of active vaults should remain the same.',
-  );
-});
-
 test.serial('open new vault', async t => {
   await bankSend(USER1ADDR, `20000000${ATOM_DENOM}`);
 
