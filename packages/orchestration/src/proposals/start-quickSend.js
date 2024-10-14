@@ -1,5 +1,5 @@
+import { AmountMath } from '@agoric/ertp/src/amountMath.js';
 import { deeplyFulfilledObject, makeTracer } from '@agoric/internal';
-import { Stake } from '@agoric/internal/src/tokens.js';
 import { E } from '@endo/far';
 
 const trace = makeTracer('StartQuickSend', true);
@@ -8,6 +8,7 @@ const { Fail } = assert;
 /**
  * @import {Instance} from '@agoric/zoe/src/zoeService/utils';
  * @import {Board} from '@agoric/vats';
+ * @import {QuickSendContractFn} from '../examples/quickSend.contract.js';
  */
 
 /**
@@ -29,58 +30,85 @@ const makePublishingStorageKit = async (path, { chainStorage, board }) => {
 /**
  * @param {BootstrapPowers & {
  *   installation: PromiseSpaceOf<{
- *     quickSend: Installation<
- *       import('../examples/quickSend.contract.js').start
- *     >;
+ *     quickSend: Installation<QuickSendContractFn>;
  *   }>;
  *   instance: PromiseSpaceOf<{
- *     quickSend: Instance<import('../examples/quickSend.contract.js').start>;
+ *     quickSend: Instance<QuickSendContractFn>;
  *   }>;
+ *   brand: PromiseSpaceOf<{ USDC: Brand<'nat'> }>;
  * }} powers
+ * @param {{ options?: { quickSend?: { watcherAddress: string } } }} config
  */
-export const startQuickSend = async ({
-  consume: {
-    agoricNames,
-    board,
-    chainStorage,
-    chainTimerService: timerService,
-    localchain,
-    startUpgradable,
+export const startQuickSend = async (
+  {
+    consume: {
+      agoricNames,
+      namesByAddress,
+      board,
+      chainStorage,
+      chainTimerService: timerService,
+      localchain,
+      cosmosInterchainService,
+      startUpgradable,
+    },
+    installation: {
+      consume: { quickSend },
+    },
+    instance: {
+      produce: { quickSend: produceInstance },
+    },
+    brand,
+    issuer,
   },
-  installation: {
-    consume: { quickSend },
-  },
-  instance: {
-    produce: { quickSend: produceInstance },
-  },
-  issuer: {
-    consume: { [Stake.symbol]: stakeIssuer },
-  },
-}) => {
+  config = {},
+) => {
   trace('startQuickSend');
+  const { watcherAddress = 'agoric1watcher' } = config.options?.quickSend || {};
+
+  await null;
+  const USDC = {
+    brand: await brand.consume.IST, // TODO: USDC interchain asset
+    issuer: await issuer.consume.IST,
+  };
+  const terms = {
+    makerFee: AmountMath.make(USDC.brand, 100n), // TODO: parameterize
+    contractFee: AmountMath.make(USDC.brand, 30n),
+  };
   const { storageNode, marshaller } = await makePublishingStorageKit(
     'quickSend',
     { board, chainStorage },
   );
+  assert(storageNode);
 
   const privateArgs = await deeplyFulfilledObject(
-    harden({ agoricNames, localchain, timerService, storageNode, marshaller }),
+    harden({
+      agoricNames,
+      localchain,
+      orchestrationService: cosmosInterchainService,
+      storageNode,
+      timerService,
+      marshaller,
+    }),
   );
 
   /**
-   * @type {StartUpgradableOpts<
-   *   import('../examples/quickSend.contract.js').start
-   * >}
+   * @type {StartUpgradableOpts<QuickSendContractFn>}
    */
   const startOpts = {
     label: 'quickSend',
     installation: quickSend,
-    issuerKeywordRecord: harden({ In: await stakeIssuer }),
-    terms: {},
+    issuerKeywordRecord: harden({ Fee: USDC.issuer }),
+    terms,
     privateArgs,
   };
 
-  const { instance } = await E(startUpgradable)(startOpts);
+  const { instance, creatorFacet } = await E(startUpgradable)(startOpts);
+  trace('CF', creatorFacet);
+  const toWatch = await E(creatorFacet).getWatcherInvitation();
+  /** @type {ERef<import('@agoric/ertp/src/types.js').DepositFacet>} */
+  const wdf = E(namesByAddress).lookup(watcherAddress, 'depositFacet');
+  await E(wdf).receive(toWatch);
+
   produceInstance.resolve(instance);
   trace('done');
 };
@@ -91,12 +119,18 @@ export const getManifestForQuickSend = ({ restoreRef }, { installKeys }) => {
     manifest: {
       [startQuickSend.name]: {
         consume: {
-          agoricNames: true,
-          board: true,
           chainStorage: true,
           chainTimerService: true,
           localchain: true,
+          cosmosInterchainService: true,
+
+          // limited distribution durin MN2: contract installation
           startUpgradable: true,
+
+          // widely shared: name services
+          agoricNames: true,
+          namesByAddress: true,
+          board: true,
         },
         installation: {
           consume: { quickSend: true },
@@ -104,8 +138,17 @@ export const getManifestForQuickSend = ({ restoreRef }, { installKeys }) => {
         instance: {
           produce: { quickSend: true },
         },
+        brand: {
+          consume: {
+            // TODO USDC
+            IST: true,
+          },
+        },
         issuer: {
-          consume: { [Stake.symbol]: true },
+          consume: {
+            // TODO USDC
+            IST: true,
+          },
         },
       },
     },

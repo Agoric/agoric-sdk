@@ -18,18 +18,19 @@ import {
   makeEventCounter,
 } from '../../tools/eth-mock.js';
 import type { EthChain } from '../../tools/eth-mock.js';
-import type { QuickSendTerms } from '../../src/examples/quickSend.contract.js';
+import type {
+  QuickSendTerms,
+  QuickSendContractFn,
+} from '../../src/examples/quickSend.contract.js';
 import { contract as contractFn } from '../../src/examples/quickSend.contract.js';
 import { AgoricCalc, NobleCalc } from '../../src/utils/address.js';
-import { ResolvedContinuingOfferResult } from '../../src/utils/zoe-tools.js';
+import type { ResolvedContinuingOfferResult } from '../../src/utils/zoe-tools.js';
 
 const nodeRequire = createRequire(import.meta.url);
 const contractName = 'quickSend';
 const contractFile = nodeRequire.resolve(
   `../../src/examples/quickSend.contract.js`,
 );
-
-type StartFn = typeof import('../../src/examples/quickSend.contract.js').start;
 
 const todo = () => assert.fail('TODO');
 
