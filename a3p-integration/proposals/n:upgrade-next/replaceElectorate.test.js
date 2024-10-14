@@ -12,33 +12,24 @@ test.serial('should be able to view the new accepted invitations', async t => {
   );
   const instances = Object.fromEntries(instance);
 
-  const wallet = await queryVstorageFormatted(
-    `published.wallet.${GOV1ADDR}.current`,
-  );
-  const usedInvitations = wallet.offerToUsedInvitation.map(v => v[1]);
+  for (const address of governanceAddresses) {
+    const wallet = await queryVstorageFormatted(
+      `published.wallet.${address}.current`,
+    );
+    const usedInvitations = wallet.offerToUsedInvitation.map(v => v[1]);
 
-  const totalCharterInvitations = usedInvitations.filter(
-    v => v.value[0].description === 'charter member invitation',
-  ).length;
+    const charterInvitation = usedInvitations.find(
+      v =>
+        v.value[0].instance.getBoardId() ===
+        instances.econCommitteeCharter.getBoardId(),
+    );
+    t.is(passStyleOf(charterInvitation), 'copyRecord');
 
-  t.is(totalCharterInvitations, 2);
-
-  const totalCommitteeInvitations = usedInvitations.filter(v =>
-    v.value[0].description.startsWith('Voter'),
-  ).length;
-  t.is(totalCommitteeInvitations, 2);
-
-  const charterInvitation = usedInvitations.find(
-    v =>
-      v.value[0].instance.getBoardId() ===
-      instances.econCommitteeCharter.getBoardId(),
-  );
-  t.is(passStyleOf(charterInvitation), 'copyRecord');
-
-  const committeeInvitation = usedInvitations.find(
-    v =>
-      v.value[0].instance.getBoardId() ===
-      instances.economicCommittee.getBoardId(),
-  );
-  t.is(passStyleOf(committeeInvitation), 'copyRecord');
+    const committeeInvitation = usedInvitations.find(
+      v =>
+        v.value[0].instance.getBoardId() ===
+        instances.economicCommittee.getBoardId(),
+    );
+    t.is(passStyleOf(committeeInvitation), 'copyRecord');
+  }
 });

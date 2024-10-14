@@ -19,3 +19,8 @@ export const walletUtils = await makeWalletUtils(
   { delay, execFileSync, fetch },
   networkConfig,
 );
+
+export const waitUntil = async timestamp => {
+  const timeDelta = Math.floor(Date.now() / 1000) - Number(timestamp);
+  await delay(timeDelta);
+};

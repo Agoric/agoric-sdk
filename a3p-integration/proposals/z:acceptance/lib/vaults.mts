@@ -11,12 +11,12 @@ import {
   executeOffer,
   GOV1ADDR,
   GOV2ADDR,
-  GOV3ADDR,
   provisionSmartWallet,
   waitForBlock,
 } from '@agoric/synthetic-chain';
 
-const govAccounts = [GOV1ADDR, GOV2ADDR, GOV3ADDR];
+const GOV4ADDR = 'agoric1c9gyu460lu70rtcdp95vummd6032psmpdx7wdy';
+const govAccounts = [GOV1ADDR, GOV2ADDR, GOV4ADDR];
 
 export const ISTunit = 1_000_000n; // aka displayInfo: { decimalPlaces: 6 }
 
