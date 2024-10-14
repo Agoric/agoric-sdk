@@ -1,3 +1,4 @@
+import { btoa } from '@endo/base64';
 import { AgoricCalc } from '../src/utils/address.js';
 import { ibcTransfer } from './cosmoverse-mock.js';
 
@@ -6,13 +7,18 @@ import { ibcTransfer } from './cosmoverse-mock.js';
  * @import {OrchestrationAccount} from '../src/orchestration-api.js';
  */
 
+/**
+ * @param {any} t
+ * @param {Record<string, import('./cosmoverse-mock.js').CosmosChain} chains
+ */
 export const makeOrchestration = (t, chains) => {
   const { nextLabel: next } = t.context;
+  const encoding = 'bech32';
   /** @returns {Promise<OrchestrationAccount<any>>} */
   const makeAccount = async () => {
     const addr = await chains.agoric.makeAccount();
     return harden({
-      getAddress: () => addr,
+      getAddress: () => ({ value: addr, chainId: 'agoric3', encoding }),
       getPublicTopics: async () => ({
         account: {
           subscriber: {
@@ -28,15 +34,15 @@ export const makeOrchestration = (t, chains) => {
         },
       }),
       transfer: async (dest, { value: amount }) => {
-        t.log(next(), 'orch acct', addr, 'txfr', amount, 'to', dest);
-        await ibcTransfer(chains, { amount, dest, from: addr, t });
+        t.log(next(), 'orch acct', addr, 'txfr', amount, 'to', dest.value);
+        await ibcTransfer(chains, { amount, dest: dest.value, from: addr, t });
       },
       send: async (dest, { value: amount }) => {
-        t.log(next(), 'orch acct', addr, 'send', amount, 'to', dest);
-        await chains.agoric.send({ amount, dest, from: addr });
+        t.log(next(), 'orch acct', addr, 'send', amount, 'to', dest.value);
+        await chains.agoric.send({ amount, dest: dest.value, from: addr });
       },
-      monitorTransfers: async tap => {
-        await chains.agoric.register({ addr, handler: tap });
+      monitorTransfers: async handler => {
+        await chains.agoric.register({ addr, handler });
       },
     });
   };
@@ -66,6 +72,8 @@ export const makeVStorage = () => {
   return { storageNode, rpc };
 };
 
+const mkEvent = data => ({ packet: { data: btoa(JSON.stringify(data)) } });
+
 export const withVTransfer = (chain, t) => {
   const addrToTap = new Map();
   return harden({
@@ -87,13 +95,7 @@ export const withVTransfer = (chain, t) => {
       if (!addrToTap.has(agAddr)) return result;
 
       const handler = addrToTap.get(agAddr);
-      void handler
-        .receiveUpcall({
-          packet: { data: JSON.stringify({ amount: Number(amount), extra }) },
-        })
-        .catch(err => {
-          console.error('receiveUpcall rejected', err);
-        });
+      handler.receiveUpcall(mkEvent({ amount: Number(amount), extra }));
 
       return result;
     },

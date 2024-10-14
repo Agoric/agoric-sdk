@@ -38,7 +38,12 @@ export const makeCosmosChain = (prefix, t) => {
     },
   });
 };
+/** @typedef {ReturnType<makeCosmosChain>} CosmosChain */
 
+/**
+ * @param {Record<string, CosmosChain>} chains
+ * @param {string} dest
+ */
 export const pickChain = (chains, dest) => {
   const pfxLen = dest.indexOf('1');
   const pfx = dest.slice(0, pfxLen);
