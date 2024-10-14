@@ -12,6 +12,9 @@ import {
   ATOM_DENOM,
   USER1ADDR,
   GOV1ADDR,
+  generateOracleMap,
+  pushPrices,
+  getPriceQuote,
 } from '@agoric/synthetic-chain';
 import { getBalances, agopsVaults } from './test-lib/utils.js';
 import {
@@ -313,14 +316,30 @@ test.serial(
 );
 
 test.serial('confirm that Oracle prices are being received', async t => {
-  const quotePath = `published.vaultFactory.managers.${VAULT_MANAGER}.quotes`;
-  const quote = await getContractInfo(quotePath, {
+  /*
+   * The Oracle for ATOM brand is being registered in the offer made at file:
+   * a3p-integration/proposals/f:replace-price-feeds/pushPrice.js
+   * At pushPrice.js, a price is being pushed for ATOM, for that reason the roundId is set to 2.
+   */
+  const BRANDS = ['ATOM'];
+  const BASE_ID = 'f-priceFeeds';
+  const roundId = 2;
+  const oraclesByBrand = generateOracleMap(BASE_ID, BRANDS);
+
+  await pushPrices(10, 'ATOM', oraclesByBrand, roundId);
+
+  const atomQuote = await getPriceQuote('ATOM');
+  t.log('price quote:', atomQuote);
+  t.is(atomQuote, '+10000000');
+
+  const vaultQuotePath = `published.vaultFactory.managers.${VAULT_MANAGER}.quotes`;
+  const vaultQuoteBody = await getContractInfo(vaultQuotePath, {
     agoric,
     prefix: '',
   });
-
-  t.log('quote:', quote);
-  t.assert(quote);
+  const vaultQuote = vaultQuoteBody.quoteAmount.value[0].amountOut.value;
+  t.log('vault quote:', vaultQuote);
+  t.is(vaultQuote, BigInt(atomQuote));
 });
 
 test.serial(
