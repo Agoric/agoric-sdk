@@ -15,7 +15,6 @@ import {
   getVatDetails,
   openVault,
   pushPrices,
-  registerOraclesForBrand,
   USER1ADDR,
 } from '@agoric/synthetic-chain';
 
@@ -37,12 +36,13 @@ const checkPriceFeedVatsUpdated = async t => {
   await checkForOracle(t, 'stATOM');
 };
 
-console.log('adding oracle for each brand');
+/*
+ * The Oracle for ATOM and stATOM brands are being registered in the offer made at file:
+ * a3p-integration/proposals/f:replace-price-feeds/pushPrice.js
+ * At pushPrice.js, a price is being pushed for both brands, for that reason the roundId is set to 2.
+ */
 const oraclesByBrand = generateOracleMap('f-priceFeeds', ['ATOM', 'stATOM']);
-await registerOraclesForBrand('ATOM', oraclesByBrand);
-await registerOraclesForBrand('stATOM', oraclesByBrand);
-
-let roundId = 1;
+let roundId = 2;
 
 const tryPushPrices = async t => {
   // There are no old prices for the other currencies.
