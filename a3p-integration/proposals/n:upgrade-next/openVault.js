@@ -9,36 +9,8 @@ import {
   waitForBlock,
   provisionSmartWallet,
   ATOM_DENOM,
-  pushPrices,
-  registerOraclesForBrand,
-  generateOracleMap,
 } from '@agoric/synthetic-chain';
-import { retryUntilCondition } from './sync-tools.js';
-import { getPriceQuote } from './agd-tools.js';
 
-export const scale6 = x => BigInt(x * 1_000_000);
-
-const pushPriceRetryOpts = {
-  maxRetries: 5, // arbitrary
-  retryIntervalMs: 5000, // in ms
-};
-
-const oraclesByBrand = generateOracleMap('n-upgrade', ['ATOM']);
-await registerOraclesForBrand('ATOM', oraclesByBrand);
-
-const price = 15.2;
-await pushPrices(price, 'ATOM', oraclesByBrand, 1);
-
-await retryUntilCondition(
-  () => getPriceQuote('ATOM'),
-  res => res === `+${scale6(price).toString()}`,
-  'price not pushed yet',
-  {
-    log: console.log,
-    setTimeout: globalThis.setTimeout,
-    ...pushPriceRetryOpts,
-  },
-);
 
 export const bankSend = (from, addr, wanted) => {
   const chain = ['--chain-id', CHAINID];
