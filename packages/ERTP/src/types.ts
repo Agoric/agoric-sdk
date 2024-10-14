@@ -411,6 +411,14 @@ export type PaymentMethods<K extends AssetKind = AssetKind> = {
    */
   getAllegedBrand: () => Brand<K>;
 };
+
+export type AmountValueSplit <
+  V extends AmountValue = AmountValue,
+    > = {
+    matched: V,
+    change: V,
+};
+
 /**
  * All of the difference in how digital asset
  *   amount are manipulated can be reduced to the behavior of the math on
@@ -459,6 +467,23 @@ export type MathHelpers<V extends AmountValue> = {
    * left, we throw an error.
    */
   doSubtract: (left: V, right: V) => V;
+  /**
+ *   Only needs to deal with the helper-specific cases left over after the
+ *   `frugalValueSplit` in amountMath.js has taken case of the cases it can
+ *   handle optimally. When `valuePattern` is
+ *
+ *   - a concrete value (i.e., a `Key`), producing an exact subtract.
+ *   - Anything that matches `empty`, since that gives an optimally frugal success.
+ *
+ *   `doFrugalSplit` should return `undefined` anytime it has nothing further
+ *   contribute. That will not be interpreted as saying that failure to split
+ *   should be reported. Rather, the caller may then fall back to generic
+ *   conservative checks.
+   */
+  doFrugalSplit: (
+    totalValue: V,
+    valuePattern: Pattern,
+  ) => AmountValueSplit<V> | undefined;
 };
 export type NatValue = bigint;
 export type SetValue<K extends Key = Key> = K[];

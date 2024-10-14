@@ -32,4 +32,5 @@ export const natMathHelpers = harden({
   // BigInts don't observably overflow
   doAdd: (left, right) => left + right,
   doSubtract: (left, right) => Nat(left - right),
+  doFrugalSplit: (_totalValue, _valuePattern) => undefined,
 });
