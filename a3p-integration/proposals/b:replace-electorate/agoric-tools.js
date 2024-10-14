@@ -1,5 +1,4 @@
-import assert from 'node:assert';
-import { agoric, executeOffer, queryVstorage } from '@agoric/synthetic-chain';
+import { queryVstorage } from '@agoric/synthetic-chain';
 import { makeMarshal, Remotable } from '@endo/marshal';
 
 const slotToRemotable = (_slotId, iface = 'Remotable') =>
@@ -28,38 +27,4 @@ export const queryVstorageFormatted = async (path, index = -1) => {
   const formattedData = JSON.parse(data.value);
   const formattedDataAtIndex = JSON.parse(formattedData.values.at(index));
   return marshaller.fromCapData(formattedDataAtIndex);
-};
-
-export const acceptInvitation = async (
-  address,
-  instanceName,
-  description,
-  offerId,
-) => {
-  const instanceDataRaw = await agoric.follow(
-    '-lF',
-    ':published.agoricNames.instance',
-    '-o',
-    'text',
-  );
-  const instance = Object.fromEntries(
-    marshaller.fromCapData(JSON.parse(instanceDataRaw)),
-  );
-  assert(instance[instanceName]);
-  const id = offerId || `econ-${Date.now()}`;
-  const body = {
-    method: 'executeOffer',
-    offer: {
-      id,
-      invitationSpec: {
-        source: 'purse',
-        instance: instance[instanceName],
-        description,
-      },
-      proposal: {},
-    },
-  };
-
-  const capData = marshaller.toCapData(harden(body));
-  return executeOffer(address, JSON.stringify(capData));
 };

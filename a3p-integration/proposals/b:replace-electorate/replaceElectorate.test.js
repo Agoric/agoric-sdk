@@ -2,57 +2,40 @@ import test from 'ava';
 import '@endo/init';
 import { GOV1ADDR } from '@agoric/synthetic-chain';
 import { passStyleOf } from '@endo/marshal';
-import { acceptInvitation, queryVstorageFormatted } from './agoric-tools.js';
+import { queryVstorageFormatted } from './agoric-tools.js';
 
-test.serial('should have new invites for committee and charter', async t => {
+test.serial('should be able to accept the new invitations', async t => {
+  const instance = await queryVstorageFormatted(
+    `published.agoricNames.instance`,
+  );
+  const instances = Object.fromEntries(instance);
+
   const wallet = await queryVstorageFormatted(
     `published.wallet.${GOV1ADDR}.current`,
   );
+  const usedInvitations = wallet.offerToUsedInvitation.map(v => v[1]);
 
-  const invitations = wallet.purses[0].balance.value;
+  const totalCharterInvitations = usedInvitations.filter(
+    v => v.value[0].description === 'charter member invitation',
+  ).length;
+  t.is(totalCharterInvitations, 2);
 
-  const charterInvitation = invitations.find(
-    v => v.description === 'charter member invitation',
+  const totalCommitteeInvitations = usedInvitations.filter(v =>
+    v.value[0].description.startsWith('Voter'),
+  ).length;
+  t.is(totalCommitteeInvitations, 2);
+
+  const charterInvitation = usedInvitations.find(
+    v =>
+      v.value[0].instance.getBoardId() ===
+      instances.econCommitteeCharter.getBoardId(),
   );
   t.is(passStyleOf(charterInvitation), 'copyRecord');
 
-  const committeeInvitation = invitations.find(v =>
-    v.description.startsWith('Voter'),
+  const committeeInvitation = usedInvitations.find(
+    v =>
+      v.value[0].instance.getBoardId() ===
+      instances.economicCommittee.getBoardId(),
   );
   t.is(passStyleOf(committeeInvitation), 'copyRecord');
-});
-
-test.serial('should be able to accept the new invitations', async t => {
-  const charterOfferId = 'newEcCharter';
-  const committeeOfferId = 'newEcCommittee';
-
-  await acceptInvitation(
-    GOV1ADDR,
-    'econCommitteeCharter',
-    'charter member invitation',
-    charterOfferId,
-  );
-
-  await acceptInvitation(
-    GOV1ADDR,
-    'economicCommittee',
-    'Voter0',
-    committeeOfferId,
-  );
-
-  const wallet = await queryVstorageFormatted(
-    `published.wallet.${GOV1ADDR}.current`,
-  );
-
-  const usedInvitations = wallet.offerToUsedInvitation;
-
-  const usedCharterInvitation = usedInvitations.find(
-    v => v[0] === charterOfferId,
-  );
-  t.is(passStyleOf(usedCharterInvitation), 'copyArray');
-
-  const usedCommitteeInvitation = usedInvitations.find(
-    v => v[0] === committeeOfferId,
-  );
-  t.is(passStyleOf(usedCommitteeInvitation), 'copyArray');
 });
