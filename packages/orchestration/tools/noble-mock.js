@@ -25,9 +25,10 @@ export const withForwarding = (chain, chains, t) => {
 export const makeCCTP = ({ t, usdc, noble, events }) => {
   const { nextLabel: next } = t.context;
   return harden({
-    bridge: (msg, { dest, amount }) => {
+    bridge: (msg, { dest, amount: aNumeral }) => {
       t.regex(dest, /^noble/);
       t.log(next(), 'cctp.bridge:', { msg, dest });
+      const amount = BigInt(aNumeral);
       usdc.transfer(msg, '0x0000', amount); // burn
       const t0 = events.getCurrent();
       void (async () => {

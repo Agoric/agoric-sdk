@@ -63,12 +63,21 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
 
   const { makeInvitation } = tools.zcfTools;
   const ifaceTODO = undefined;
-  const makeWatcherContKit = zone.exoClassKit(
+  const makeWatcherCont = zone.exoClassKit(
     'WatcherCont',
     ifaceTODO,
     /** @param {QuickSendAccounts & CopyRecord} accts */
-    accts => accts,
+    accts => {
+      console.log('@@@init accts', accts);
+      return { ...accts };
+    },
     {
+      actions: {
+        // TODO: skip continuing invitation gymnastics
+        handleCCTPCall(offerArgs) {
+          return handleCCTPCall({ ...this.state }, offerArgs);
+        },
+      },
       offerHandler: {
         handle(seat, offerArgs) {
           seat.exit();
@@ -84,7 +93,7 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
       },
     },
   );
-  const makeWatcherCont = accts => makeWatcherContKit(accts).invitationMakers;
+  // const makeWatcherCont = accts => makeWatcherContKit(accts).invitationMakers;
 
   const initAccounts = tools.orchestrate(
     'initAccounts',

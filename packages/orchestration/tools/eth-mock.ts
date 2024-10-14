@@ -1,4 +1,4 @@
-type EthAddr = `0x${string}`;
+export type EthAddr = `0x${string}`;
 type EthData = Record<string, string | number>;
 type EthMsgInfo = { sender: EthAddr; value?: number };
 type EthCallTx = {

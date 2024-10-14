@@ -1,30 +1,34 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-import { createRequire } from 'node:module';
-import { E, passStyleOf } from '@endo/far';
-import { objectMap } from '@endo/patterns';
-import { deeplyFulfilledObject } from '@agoric/internal';
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
+import { deeplyFulfilledObject } from '@agoric/internal';
+import { makeHeapZone } from '@agoric/zone';
+import { E } from '@endo/far';
+import { Nat } from '@endo/nat';
+import { objectMap } from '@endo/patterns';
+import { createRequire } from 'node:module';
+import { NatAmount } from '@agoric/ertp/src/types.js';
+import type { QuickSendTerms } from '../../src/examples/quickSend.contract.js';
+import { contract as contractFn } from '../../src/examples/quickSend.contract.js';
+import { CallDetails } from '../../src/examples/quickSend.flows.js';
+import { AgoricCalc, NobleCalc } from '../../src/utils/address.js';
+import type { ResolvedContinuingOfferResult } from '../../src/utils/zoe-tools.js';
 import {
   makeOrchestration,
   makeVStorage,
   withVTransfer,
 } from '../../tools/agoric-mock.js';
-import { makeCCTP, withForwarding } from '../../tools/noble-mock.js';
 import { makeCosmosChain, pickChain } from '../../tools/cosmoverse-mock.js';
+import type { EthAddr, EthChain } from '../../tools/eth-mock.js';
 import {
   makeERC20,
   makeEthChain,
   makeEventCounter,
 } from '../../tools/eth-mock.js';
-import type { EthChain } from '../../tools/eth-mock.js';
-import type {
-  QuickSendTerms,
-  QuickSendContractFn,
-} from '../../src/examples/quickSend.contract.js';
-import { contract as contractFn } from '../../src/examples/quickSend.contract.js';
-import { AgoricCalc, NobleCalc } from '../../src/utils/address.js';
-import type { ResolvedContinuingOfferResult } from '../../src/utils/zoe-tools.js';
+import { makeCCTP, withForwarding } from '../../tools/noble-mock.js';
+import type { ChainAddress } from '../../src/types.js';
+
+type NatValue = bigint;
 
 const nodeRequire = createRequire(import.meta.url);
 const contractName = 'quickSend';
@@ -48,18 +52,26 @@ test.before(async t => {
   t.context = { startLabels, nextLabel };
 });
 
-const makeUser = ({ nobleApp, ethereum, myAddr, cctpAddr }) =>
+const makeUser = ({
+  nobleApp,
+  ethereum,
+  myAddr,
+  cctpAddr,
+}: {
+  // eslint-disable-next-line no-use-before-define
+  nobleApp: NobleApp;
+  ethereum: EthChain;
+  myAddr: EthAddr;
+  cctpAddr: EthAddr;
+}) =>
   harden({
-    doTransfer: async (amount, dest) => {
-      const nobleFwd = await nobleApp.getNobleFwd(dest);
-      const { setup, done } = await nobleApp.initiateTransaction({
-        dest,
-        amount,
-        nobleFwd,
-      });
+    doTransfer: async (amount: NatValue, dest: ChainAddress) => {
+      const nobleFwd = await nobleApp.getNobleFwd(dest.value);
+      const detail = harden({ dest, amount, nobleFwd });
+      const { setup, done } = await nobleApp.initiateTransaction(detail);
       await setup;
       await ethereum.call({ sender: myAddr }, cctpAddr, 'bridge', [
-        { dest: nobleFwd, amount },
+        { dest: nobleFwd, amount: `${amount}` },
       ]);
       return done;
     },
@@ -72,7 +84,13 @@ const makeNobleApp = async ({
   agoricRpc,
   setTimeout,
 }) => {
-  const watchAddr = async ({ dest, amount }) => {
+  const watchAddr = async ({
+    dest,
+    amount,
+  }: {
+    dest: string;
+    amount: bigint;
+  }) => {
     const chain = pickChain(chains, dest);
     const balancePre = await chain.getBalance(dest);
     const events = makeEventCounter({ setTimeout });
@@ -98,26 +116,29 @@ const makeNobleApp = async ({
       );
       return nobleFwd;
     },
-    initiateTransaction: async ({ dest, amount, nobleFwd }) => {
+    initiateTransaction: async (detail: CallDetails) => {
+      const { amount, dest, nobleFwd } = detail;
       t.log(nextLabel(), 'app initiate', { amount, dest });
-      const setup = nobleService.initiateTransfer({ amount, dest, nobleFwd });
-      const done = watchAddr({ dest, amount });
+      const setup = nobleService.initiateTransfer(detail);
+      const done = watchAddr({ dest: dest.value, amount });
       return { setup, done };
     },
   });
 };
+type NobleApp = Awaited<ReturnType<typeof makeNobleApp>>;
 
 const makeNobleExpress = ({ agoricWatcher, chain, t, agoricRpc }) => {
   const baseP = agoricRpc.getData('published.quickSend.settlementBase');
   const { nextLabel: next } = t.context;
   return harden({
-    initiateTransfer: async ({ dest, amount, nobleFwd }) => {
+    initiateTransfer: async (detail: CallDetails) => {
       const base = await baseP;
-      const agAddr = AgoricCalc.virtualAddressFor(base, dest);
+      const { dest, amount, nobleFwd } = detail;
+      const agAddr = AgoricCalc.virtualAddressFor(base, dest.value);
       const fwd = await chain.provideForwardingAccount(agAddr);
       t.log(next(), 'express initiate', { dest, base, agAddr, fwd, nobleFwd });
       fwd === nobleFwd || assert.fail('mismatch');
-      await agoricWatcher.startWatchingFor({ dest, amount, nobleFwd });
+      await agoricWatcher.startWatchingFor(detail);
     },
   });
 };
@@ -130,7 +151,7 @@ const makeAgoricWatcher = ({
   setTimeout,
 }) => {
   const ethereum: EthChain = eth; // TODO: concise typing
-  const pending: { dest: string; amount: number; nobleFwd: string }[] = [];
+  const pending: CallDetails[] = [];
   let done = false;
 
   const { nextLabel: next } = t.context;
@@ -143,23 +164,24 @@ const makeAgoricWatcher = ({
       if (tx.contractAddress !== cctpAddr) break;
       const [{ dest, amount }] = tx.args;
       const ix = pending.findIndex(
-        item => item.nobleFwd === dest && item.amount === amount,
+        item => item.nobleFwd === dest && item.amount === BigInt(amount),
       );
       if (ix < 0) continue;
       const item = pending[ix];
       pending.splice(ix, 1);
       t.log(next(), 'watcher checked', tx.txId);
       t.log(next(), 'watcher confirmed', item);
-      await watcherFacet.actions.handleCCTPCall(null, item); // TODO: continuing offerSpec
+      await watcherFacet.actions.handleCCTPCall(item); // TODO: continuing offerSpec
     }
   };
 
   const events = makeEventCounter({ setTimeout });
 
   return harden({
-    startWatchingFor: async ({ dest, amount, nobleFwd }) => {
-      t.log(next(), 'watcher.startWatchingFor', { dest, amount, nobleFwd });
-      pending.push(harden({ dest, amount, nobleFwd }));
+    startWatchingFor: async (detail: CallDetails) => {
+      const { dest, amount, nobleFwd } = detail;
+      t.log(next(), 'watcher.startWatchingFor', detail);
+      pending.push(detail);
       await check(ethereum.currentHeight());
     },
     watch: async () => {
@@ -225,18 +247,21 @@ const setup = async (t, io) => {
       handlers.set(desc, handler);
     },
   }) as any;
-  const zone = {} as any;
+  const zone = makeHeapZone();
   const privateArgs: Parameters<typeof contractFn>[1] = {
     storageNode,
   } as any;
+  const orchestrate =
+    (n, ctx, h) =>
+    (...args) =>
+      h(orch, ctx, ...args);
   const tools: Parameters<typeof contractFn>[3] = {
     t,
     zcfTools: { makeInvitation: zcf.makeInvitation },
+    vowTools: { watch: x => x },
+    orchestrate,
     orchestrateAll: (flows, ctx) =>
-      objectMap(
-        flows,
-        (h, k) => (seat, offerArgs) => h(orch, ctx, seat, offerArgs),
-      ),
+      objectMap(flows, (h, n) => orchestrate(n, ctx, h)),
   } as any;
   const contract = await contractFn(zcf, privateArgs, zone, tools);
 
@@ -257,9 +282,10 @@ const setup = async (t, io) => {
   });
   const cctpAddr = await ethereum.deployContract(cctp);
 
+  const aSeat = { exit: () => {} };
   const toWatch = await E(contract.creatorFacet).getWatcherInvitation();
   const watcherFacet: ResolvedContinuingOfferResult =
-    await handlers.get('initAccounts')();
+    await handlers.get('initAccounts')(aSeat);
   console.debug(watcherFacet);
 
   const addrs = await deeplyFulfilledObject(
@@ -329,7 +355,11 @@ test('tx lifecycle', async t => {
   const { chains, ursula, quiesce, contract, addrs, usdc } = await setup(t, io);
 
   const destAddr = await chains.dydx.makeAccount(); // is this a prereq?
-  await ursula.doTransfer(100n, destAddr);
+  await ursula.doTransfer(100n, {
+    chainId: 'dydx2',
+    encoding: 'bech32',
+    value: destAddr,
+  });
 
   await quiesce();
 
