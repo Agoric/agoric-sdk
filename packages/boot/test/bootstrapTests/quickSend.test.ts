@@ -9,15 +9,18 @@ import { WalletFactoryDriver } from '../../tools/drivers.js';
 
 const test: TestFn<WalletFactoryTestContext> = anyTest;
 
-test.skip('bootstrap', async t => {
+test.before('bootstrap', async t => {
   t.context = await makeWalletFactoryContext(
     t,
     '@agoric/vm-config/decentral-itest-orchestration-config.json',
   );
+
+  // TODO: handle creating watcher smart wallet _after_ deploying contract
+  await t.context.walletFactoryDriver.provideSmartWallet('agoric1watcher');
 });
 test.after.always(t => t.context.shutdown?.());
 
-test.skip('deploy contract', async t => {
+test.serial('deploy contract', async t => {
   const {
     agoricNamesRemotes,
     evalProposal,
@@ -36,26 +39,28 @@ type SmartWallet = Awaited<
   ReturnType<WalletFactoryDriver['provideSmartWallet']>
 >;
 
-test.skip('expedited send', async t => {
-  const alice = async (sw: SmartWallet) => {
+test.serial('accept watcher invitation', async t => {
+  const { agoricNamesRemotes } = t.context;
+
+  const william = async (sw: SmartWallet) => {
     await sw.executeOffer({
-      id: 'request-dest-addr',
+      id: 'accept',
       invitationSpec: {
-        source: 'agoricContract',
-        instancePath: ['quickSend'],
-        callPipe: [['makeInvitation']],
+        source: 'purse',
+        instance: agoricNamesRemotes.instance.quickSend,
+        description: 'initAccounts',
       },
       proposal: {},
     });
     const update = sw.getLatestUpdateRecord();
     t.like(update, {
       updated: 'offerStatus',
-      status: { id: 'request-dest-addr', numWantsSatisfied: 1, result: 'TODO' },
+      status: { id: 'accept', numWantsSatisfied: 1, result: 'TODO' },
     });
   };
 
   const wd =
-    await t.context.walletFactoryDriver.provideSmartWallet('agoric1alice');
+    await t.context.walletFactoryDriver.provideSmartWallet('agoric1watcher');
 
-  await alice(wd);
+  await william(wd);
 });
