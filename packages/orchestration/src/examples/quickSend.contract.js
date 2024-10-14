@@ -10,6 +10,7 @@ import * as flows from './quickSend.flows.js';
  * @import {OrchestrationPowers, OrchestrationTools} from '../utils/start-helper.js';
  * @import {Zone} from '@agoric/zone';
  * @import {VTransferIBCEvent} from '@agoric/vats';
+ * @import {InvitationMakers} from '@agoric/smart-wallet/src/types.js';
  * @import {QuickSendAccounts} from './quickSend.flows.js';
  */
 
@@ -48,17 +49,46 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
     {
       /** @param {VTransferIBCEvent & CopyRecord} event */
       receiveUpcall(event) {
-        const accts = this.state;
         // eslint-disable-next-line no-use-before-define -- see orchestrate below
-        settle(accts, harden(event));
+        settle({ ...this.state }, harden(event));
       },
     },
   );
 
+  const handleCCTPCall = tools.orchestrate(
+    'handleCCTPCall',
+    { terms, t },
+    flows.handleCCTPCall,
+  );
+
   const { makeInvitation } = tools.zcfTools;
+  const ifaceTODO = undefined;
+  const makeWatcherContKit = zone.exoClassKit(
+    'WatcherCont',
+    ifaceTODO,
+    /** @param {QuickSendAccounts & CopyRecord} accts */
+    accts => accts,
+    {
+      offerHandler: {
+        handle(seat, offerArgs) {
+          seat.exit();
+          return handleCCTPCall({ ...this.state }, offerArgs);
+        },
+      },
+      /** @type {import('@agoric/async-flow').HostInterface<InvitationMakers>} */
+      invitationMakers: {
+        ReportCCTPCall() {
+          const { offerHandler } = this.facets;
+          return makeInvitation(offerHandler, 'reportCCTPCall');
+        },
+      },
+    },
+  );
+  const makeWatcherCont = accts => makeWatcherContKit(accts).invitationMakers;
+
   const initAccounts = tools.orchestrate(
     'initAccounts',
-    { terms, makeSettleTap, makeInvitation, t },
+    { terms, makeSettleTap, makeInvitation, makeWatcherCont, t },
     flows.initAccounts,
   );
 
