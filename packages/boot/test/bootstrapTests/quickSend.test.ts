@@ -55,7 +55,7 @@ test.serial('accept watcher invitation', async t => {
     const update = sw.getLatestUpdateRecord();
     t.like(update, {
       updated: 'offerStatus',
-      status: { id: 'accept', numWantsSatisfied: 1, result: 'TODO' },
+      status: { id: 'accept', numWantsSatisfied: 1, result: 'UNPUBLISHED' },
     });
   };
 
