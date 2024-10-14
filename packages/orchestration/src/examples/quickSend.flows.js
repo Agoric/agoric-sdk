@@ -51,10 +51,13 @@ const { add, make, subtract } = AmountMath;
  * @param {Orchestrator} orch
  * @param {{
  *   t?: ExecutionContext<{ nextLabel: Function }>; // XXX
- *   makeSettleTap: (
- *     accts: QuickSendAccounts,
- *   ) => Guarded<{ receiveUpcall: (event: VTransferIBCEvent) => void }>;
- *   makeWatcherCont: (accts: QuickSendAccounts) => InvitationMakers;
+ *   makeSettleTap: (accts: QuickSendAccounts) => Guarded<{
+ *     receiveUpcall: (event: VTransferIBCEvent) => void;
+ *   }>;
+ *   makeWatcherCont: (accts: QuickSendAccounts) => {
+ *     invitationMakers: InvitationMakers;
+ *     actions: Record<string, Function>;
+ *   };
  * }} ctx
  * @param {ZCFSeat} seat
  * @param {{}} _offerArgs
@@ -68,10 +71,12 @@ export const initAccounts = async (orch, ctx, seat, _offerArgs) => {
   const settlement = await agoric.makeAccount();
   const feeAccount = await agoric.makeAccount();
   const accts = harden({ fundingPool, settlement, feeAccount });
-  const registration = await ctx.makeSettleTap(accts);
+  const tap = ctx.makeSettleTap(accts);
+  const registration = await settlement.monitorTransfers(tap);
 
   log('@@@what to do with registration?', registration);
 
+  const cont = ctx.makeWatcherCont(accts);
   /** @type {ResolvedContinuingOfferResult} */
   const watcherFacet = harden({
     publicSubscribers: {
@@ -79,9 +84,7 @@ export const initAccounts = async (orch, ctx, seat, _offerArgs) => {
       settlement: (await settlement.getPublicTopics()).account,
       feeAccount: (await feeAccount.getPublicTopics()).account,
     },
-    invitationMakers: ctx.makeWatcherCont(accts),
-    // TODO: skip continuing invitation gymnastics
-    // actions: { handleCCTPCall },
+    ...cont,
   });
 
   seat.exit();
@@ -103,14 +106,14 @@ export const handleCCTPCall = async (_orch, ctx, accts, offerArgs) => {
   const { log = console.log } = ctx.t || {};
   mustMatch(offerArgs, CallDetailsShape);
   const { amount, dest, nobleFwd } = offerArgs;
-  log(next(), 'contract.reportCCTPCall', { amount, dest });
+  log(next(), 'flows.reportCCTPCall', { amount, dest });
   const { makerFee, contractFee } = ctx.terms;
   const { USDC } = ctx.terms.brands;
   const { fundingPool } = accts;
 
   assert.equal(
     NobleCalc.fwdAddressFor(
-      AgoricCalc.virtualAddressFor(fundingPool.getAddress(), dest),
+      AgoricCalc.virtualAddressFor(fundingPool.getAddress().value, dest.value),
     ),
     nobleFwd,
   );
@@ -132,20 +135,19 @@ harden(handleCCTPCall);
  * @returns {Promise<void>}
  */
 export const settle = async (orch, ctx, acct, event) => {
-  const config = {}; // TODO
   const { log = console.log } = ctx?.t || {};
-  // ignore packets from unknown channels
-  if (event.packet.source_channel !== config.sourceChannel) {
-    return;
-  }
+  // TODO: ignore packets from unknown channels
+  //   if (event.packet.source_channel !== config.sourceChannel) {
+  //     return;
+  //   }
 
   const tx = /** @type {FungibleTokenPacketData} */ (
     JSON.parse(atob(event.packet.data))
   );
-  // only interested in transfers of `remoteDenom`
-  if (tx.denom !== config.remoteDenom) {
-    return;
-  }
+  // TODO: only interested in transfers of `remoteDenom`
+  //   if (tx.denom !== config.remoteDenom) {
+  //     return;
+  //   }
   const { contractFee } = ctx.terms;
   const { USDC } = ctx.terms.brands;
   const { settlement, fundingPool, feeAccount } = acct;
