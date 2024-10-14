@@ -1,7 +1,8 @@
 import { AmountMath } from '@agoric/ertp/src/amountMath.js';
+import { mustMatch } from '@agoric/internal';
 import { atob } from '@endo/base64';
-import { Far } from '@endo/far';
-import { M, mustMatch } from '@endo/patterns';
+import { M } from '@endo/patterns';
+import { ChainAddressShape } from '../typeGuards.js';
 import { AgoricCalc, NobleCalc } from '../utils/address.js';
 
 /**
@@ -9,18 +10,29 @@ import { AgoricCalc, NobleCalc } from '../utils/address.js';
  *
  * @import {Passable} from '@endo/pass-style';
  * @import {Guarded} from '@endo/exo';
- * @import {OrchestrationAccountI, OrchestrationFlow, Orchestrator, ZcfTools} from '@agoric/orchestration';
+ * @import {ChainAddress, OrchestrationAccountI, OrchestrationFlow, Orchestrator, ZcfTools} from '@agoric/orchestration';
  * @import {VTransferIBCEvent} from '@agoric/vats';
  * @import {ResolvedContinuingOfferResult} from '../../src/utils/zoe-tools.js';
+ * @import {InvitationMakers} from '@agoric/smart-wallet/src/types.js';
  * @import {QuickSendTerms} from './quickSend.contract.js';
  * @import {FungibleTokenPacketData} from '@agoric/cosmic-proto/ibc/applications/transfer/v2/packet.js';
+ * @import {TypedPattern} from '@agoric/internal';
  */
 
 const AddressShape = M.string(); // XXX
 
+/**
+ * @typedef {{
+ *   amount: NatValue;
+ *   dest: ChainAddress;
+ *   nobleFwd: string;
+ * }} CallDetails
+ */
+
+/** @type {TypedPattern<CallDetails>} */
 const CallDetailsShape = harden({
   amount: M.nat(),
-  dest: AddressShape,
+  dest: ChainAddressShape,
   nobleFwd: AddressShape,
 });
 
@@ -38,21 +50,17 @@ const { add, make, subtract } = AmountMath;
  * @satisfies {OrchestrationFlow}
  * @param {Orchestrator} orch
  * @param {{
- *   terms: QuickSendTerms & StandardTerms;
  *   t?: ExecutionContext<{ nextLabel: Function }>; // XXX
- *   makeInvitation: Function; // XXX ZcfTools['makeInvitation'];
  *   makeSettleTap: (
  *     accts: QuickSendAccounts,
  *   ) => Guarded<{ receiveUpcall: (event: VTransferIBCEvent) => void }>;
+ *   makeWatcherCont: (accts: QuickSendAccounts) => InvitationMakers;
  * }} ctx
- * @param {ZCFSeat} _seat
+ * @param {ZCFSeat} seat
  * @param {{}} _offerArgs
  */
-export const initAccounts = async (orch, ctx, _seat, _offerArgs) => {
-  const { nextLabel: next = () => '#?' } = ctx.t?.context || {};
+export const initAccounts = async (orch, ctx, seat, _offerArgs) => {
   const { log = console.log } = ctx.t || {};
-  const { makerFee, contractFee } = ctx.terms;
-  const { USDC } = ctx.terms.brands;
 
   const agoric = await orch.getChain('agoric');
 
@@ -64,24 +72,6 @@ export const initAccounts = async (orch, ctx, _seat, _offerArgs) => {
 
   log('@@@what to do with registration?', registration);
 
-  /** @type {OfferHandler} */
-  const handleCCTPCall = Far('Handler', {
-    handle: async (_s, offerArgs) => {
-      mustMatch(offerArgs, CallDetailsShape);
-      const { amount, dest, nobleFwd } = offerArgs;
-      log(next(), 'contract.reportCCTPCall', { amount, dest });
-      assert.equal(
-        NobleCalc.fwdAddressFor(
-          AgoricCalc.virtualAddressFor(fundingPool.getAddress(), dest),
-        ),
-        nobleFwd,
-      );
-      const withBrand = make(USDC, amount);
-      const advance = subtract(withBrand, add(makerFee, contractFee));
-      await fundingPool.transfer(dest, advance);
-    },
-  });
-
   /** @type {ResolvedContinuingOfferResult} */
   const watcherFacet = harden({
     publicSubscribers: {
@@ -89,17 +79,44 @@ export const initAccounts = async (orch, ctx, _seat, _offerArgs) => {
       settlement: (await settlement.getPublicTopics()).account,
       feeAccount: (await feeAccount.getPublicTopics()).account,
     },
-    invitationMakers: Far('WatcherInvitationMakers', {
-      ReportCCTPCall: () =>
-        ctx.makeInvitation(handleCCTPCall, 'reportCCTPCall'),
-    }),
+    invitationMakers: ctx.makeWatcherCont(accts),
     // TODO: skip continuing invitation gymnastics
-    actions: { handleCCTPCall },
+    // actions: { handleCCTPCall },
   });
 
+  seat.exit();
   return watcherFacet;
 };
 harden(initAccounts);
+
+/**
+ * @param {Orchestrator} _orch
+ * @param {{
+ *   terms: QuickSendTerms & StandardTerms;
+ *   t?: ExecutionContext<{ nextLabel: Function }>; // XXX
+ * }} ctx
+ * @param {QuickSendAccounts & Passable} accts
+ * @param {unknown} offerArgs
+ */
+export const handleCCTPCall = async (_orch, ctx, accts, offerArgs) => {
+  const { nextLabel: next = () => '#?' } = ctx.t?.context || {};
+  const { log = console.log } = ctx.t || {};
+  mustMatch(offerArgs, CallDetailsShape);
+  const { amount, dest, nobleFwd } = offerArgs;
+  log(next(), 'contract.reportCCTPCall', { amount, dest });
+  const { makerFee, contractFee } = ctx.terms;
+  const { USDC } = ctx.terms.brands;
+  const { fundingPool } = accts;
+
+  const fAddr = fundingPool.getAddress().value;
+  const vAddr = AgoricCalc.virtualAddressFor(fAddr, dest.value);
+  const nfAddr = NobleCalc.fwdAddressFor(vAddr);
+  assert.equal(nfAddr, nobleFwd, `for ${vAddr}`);
+  const withBrand = make(USDC, amount);
+  const advance = subtract(withBrand, add(makerFee, contractFee));
+  await fundingPool.transfer(dest, advance);
+};
+harden(handleCCTPCall);
 
 /**
  * @satisfies {OrchestrationFlow}
