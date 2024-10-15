@@ -32,6 +32,14 @@ const LogStoreI = M.interface('LogStore', {
  * @param {number} [optMetadata.generation]
  */
 export const prepareLogStore = (zone, optMetadata) => {
+  const { generation = 0 } = optMetadata || {};
+
+  /**
+   * Only prepend entries as part of the first pushEntry.
+   * @type {LogEntry[] | undefined}
+   */
+  let prependedEntries = [['updateMetadata', generation]];
+
   /**
    * @type {Ephemera<LogStore, {
    *           index: number
@@ -132,8 +140,20 @@ export const prepareLogStore = (zone, optMetadata) => {
         }
         return result;
       },
+      /**
+       * @param {LogEntry} entry
+       */
       pushEntry(entry) {
         const { state, self } = this;
+        if (prependedEntries) {
+          // Atomically capture and undefine the prependedEntries.
+          const ents = prependedEntries;
+          prependedEntries = undefined;
+          for (const ent of ents) {
+            self.pushEntry(ent);
+          }
+        }
+
         const { mapStore } = state;
         const eph = tmp.for(self);
 
