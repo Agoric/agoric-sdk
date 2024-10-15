@@ -15,7 +15,6 @@ export const networkConfig = {
  */
 const delay = ms => new Promise(resolve => setTimeout(() => resolve(), ms));
 
-// eslint-disable-next-line @jessie.js/safe-await-separator -- buggy version
 export const walletUtils = await makeWalletUtils(
   { delay, execFileSync, fetch },
   networkConfig,
