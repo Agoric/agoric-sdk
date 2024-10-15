@@ -11,7 +11,8 @@ export const FlowStateShape = M.or(
 
 export const PropertyKeyShape = M.or(M.string(), M.symbol());
 
-export const LogEntryShape = M.or(
+const LogEntryAlternatives = [
+  ['updateMetadata', M.number()],
   // ////////////////////////////// From Host to Guest /////////////////////////
   ['doFulfill', VowShape, M.any()],
   ['doReject', VowShape, M.any()],
@@ -65,4 +66,6 @@ export const LogEntryShape = M.or(
   ],
   // ['checkReturn', M.number(), M.any()],
   // ['checkThrow', M.number(), M.any()],
-);
+];
+
+export const LogEntryShape = M.or(...LogEntryAlternatives);

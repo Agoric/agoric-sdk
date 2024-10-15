@@ -28,8 +28,10 @@ const LogStoreI = M.interface('LogStore', {
  * A growable, replayable, sequence of `LogEntry`s.
  *
  * @param {Zone} zone
+ * @param {object} [optMetadata]
+ * @param {number} [optMetadata.generation]
  */
-export const prepareLogStore = zone => {
+export const prepareLogStore = (zone, optMetadata) => {
   /**
    * @type {Ephemera<LogStore, {
    *           index: number
@@ -101,6 +103,9 @@ export const prepareLogStore = zone => {
 
         return eph.index < mapStore.getSize();
       },
+      /**
+       * @returns {LogEntry}
+       */
       peekEntry() {
         const { state, self } = this;
         const { mapStore } = state;
@@ -113,6 +118,9 @@ export const prepareLogStore = zone => {
         const result = mapStore.get(eph.index);
         return result;
       },
+      /**
+       * @returns {LogEntry}
+       */
       nextEntry() {
         const { self } = this;
         const eph = tmp.for(self);
@@ -144,6 +152,9 @@ export const prepareLogStore = zone => {
         // console.log('LOG ENTRY ', eph.index - 1, entry);
         return eph.index;
       },
+      /**
+       * @returns {LogEntry[]}
+       */
       dump() {
         const { state } = this;
         const { mapStore } = state;
