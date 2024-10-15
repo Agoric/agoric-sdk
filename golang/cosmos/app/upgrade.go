@@ -93,6 +93,10 @@ func unreleasedUpgradeHandler(app *GaiaApp, targetUpgrade string) func(sdk.Conte
 			// one or more modules executing in parallel within the step.
 			CoreProposalSteps = []vm.CoreProposalStep{
 				vm.CoreProposalStepForModules(
+					// Upgrade Zoe (no new ZCF needed).
+					"@agoric/builders/scripts/vats/upgrade-zoe.js",
+				),
+				vm.CoreProposalStepForModules(
 					// Upgrade to new liveslots for repaired vow usage.
 					"@agoric/builders/scripts/vats/upgrade-orch-core.js",
 				),
