@@ -3,9 +3,12 @@ import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 import { makeMockChainStorageRoot } from '@agoric/internal/src/storage-test-utils.js';
 import { makeHandle } from '@agoric/zoe/src/makeHandle.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
+import { makeTracer } from '@agoric/internal';
 import {
+  agoricNamesReserved,
   makeAgoricNamesAccess,
   makePromiseSpaceForNameHub,
+  makeWellKnownSpaces,
 } from '../src/core/utils.js';
 import { makePromiseSpace } from '../src/core/promise-space.js';
 import {
@@ -57,4 +60,31 @@ test('promise space reserves non-well-known names', async t => {
   t.is(await thing1, true);
 
   t.is(await nameHub.lookup('thing1'), true);
+});
+
+test('promise space reset instance to change a value', async t => {
+  const { nameAdmin, nameHub: agoricNames } = makeNameHubKit();
+
+  const tracer = makeTracer('test NS');
+  const space = await makeWellKnownSpaces(
+    nameAdmin,
+    tracer,
+    Object.keys(agoricNamesReserved),
+  );
+
+  const auctionInstance1 = makeHandle('instance1');
+  const instanceLookup = await agoricNames.lookup('instance');
+
+  // @ts-expect-error storing fake instance
+  space.instance.produce.auctioneer.resolve(auctionInstance1);
+  // @ts-expect-error expecting instance
+  t.is(await space.instance.consume.auctioneer, auctionInstance1);
+  t.is(await instanceLookup.lookup('auctioneer'), auctionInstance1);
+
+  const auctionInstance2 = makeHandle('instance2');
+  await space.instance.produce.auctioneer.reset();
+  // @ts-expect-error fake instance
+  await space.instance.produce.auctioneer.resolve(auctionInstance2);
+
+  t.is(await instanceLookup.lookup('auctioneer'), auctionInstance2);
 });
