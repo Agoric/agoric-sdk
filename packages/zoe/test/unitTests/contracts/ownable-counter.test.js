@@ -32,7 +32,7 @@ test('zoe - ownable-counter contract', async t => {
     undefined,
     undefined,
     harden({
-      count: 3n,
+      count: 10n,
     }),
     'c1-ownable-counter',
   );
@@ -42,7 +42,7 @@ test('zoe - ownable-counter contract', async t => {
     E(firstCounter).toBeAttenuated(),
     {
       message:
-        'target has no method "toBeAttenuated", has ["__getInterfaceGuard__","__getMethodNames__","getInvitationCustomDetails","incr","makeTransferInvitation"]',
+        'target has no method "toBeAttenuated", has ["__getInterfaceGuard__","__getMethodNames__","decr","getInvitationCustomDetails","makeTransferInvitation"]',
     },
   );
 
@@ -53,16 +53,16 @@ test('zoe - ownable-counter contract', async t => {
   t.deepEqual(await E(firstCounter)[GET_METHOD_NAMES](), [
     '__getInterfaceGuard__',
     '__getMethodNames__',
+    'decr',
     'getInvitationCustomDetails',
-    'incr',
     'makeTransferInvitation',
   ]);
 
-  t.is(await E(firstCounter).incr(), 4n);
-  t.is(await E(viewCounter).view(), 4n);
+  t.is(await E(firstCounter).decr(), 9n);
+  t.is(await E(viewCounter).view(), 9n);
 
   t.deepEqual(await E(firstCounter).getInvitationCustomDetails(), {
-    count: 4n,
+    count: 9n,
   });
 
   const invite = await E(firstCounter).makeTransferInvitation();
@@ -70,18 +70,18 @@ test('zoe - ownable-counter contract', async t => {
   t.deepEqual(await E(firstCounter)[GET_METHOD_NAMES](), [
     '__getInterfaceGuard__',
     '__getMethodNames__',
+    'decr',
     'getInvitationCustomDetails',
-    'incr',
     'makeTransferInvitation',
   ]);
 
   await t.throwsAsync(() => E(firstCounter).getInvitationCustomDetails(), {
     message: '"OwnableCounter_caretaker" revoked',
   });
-  await t.throwsAsync(() => E(firstCounter).incr(), {
+  await t.throwsAsync(() => E(firstCounter).decr(), {
     message: '"OwnableCounter_caretaker" revoked',
   });
-  t.is(await E(viewCounter).view(), 4n);
+  t.is(await E(viewCounter).view(), 9n);
 
   const inviteAmount = await E(invitationIssuer).getAmountOf(invite);
 
@@ -94,7 +94,7 @@ test('zoe - ownable-counter contract', async t => {
         handle: inviteAmount.value[0].handle,
         instance: inviteAmount.value[0].instance,
         customDetails: {
-          count: 4n,
+          count: 9n,
         },
       },
     ],
@@ -105,15 +105,15 @@ test('zoe - ownable-counter contract', async t => {
   const counter2 = await E(reviveCounterSeat).getOfferResult();
   t.is(await E(reviveCounterSeat).hasExited(), true);
 
-  t.is(await E(viewCounter).view(), 4n);
+  t.is(await E(viewCounter).view(), 9n);
   t.deepEqual(await E(counter2).getInvitationCustomDetails(), {
-    count: 4n,
+    count: 9n,
   });
 
-  t.is(await E(counter2).incr(), 5n);
+  t.is(await E(counter2).decr(), 8n);
 
-  t.is(await E(viewCounter).view(), 5n);
+  t.is(await E(viewCounter).view(), 8n);
   t.deepEqual(await E(counter2).getInvitationCustomDetails(), {
-    count: 5n,
+    count: 8n,
   });
 });
