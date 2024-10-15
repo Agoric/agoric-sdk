@@ -22,3 +22,9 @@ yarn ava valueVow.test.js
 echo ACCEPTANCE TESTING state sync
 ./state-sync-snapshots-test.sh
 ./genesis-test.sh
+
+echo ACCEPTANCE TESTING wallet
+yarn ava wallet.test.js
+
+echo ACCEPTANCE TESTING vaults
+yarn ava vaults.test.js

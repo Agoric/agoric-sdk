@@ -13,6 +13,11 @@ import { getMethodNames } from '@agoric/internal';
 // TODO use a helper from Endo https://github.com/endojs/endo/issues/2448
 /**
  * Takes two or more InvitationMaker exos and combines them into a new one.
+ * Combine with `publicTopics` to form a {@link ContinuingOfferResult} that can
+ * be returned to a smart-wallet client.
+ *
+ * Useful for writing your own invitationMakers while preserving
+ * platform-provided ones like `Delegate`, `Transfer`, `Send`.
  *
  * @param {Zone} zone
  * @param {import('@endo/patterns').InterfaceGuard[]} interfaceGuards
@@ -51,3 +56,4 @@ export const prepareCombineInvitationMakers = (zone, ...interfaceGuards) => {
 };
 
 /** @typedef {ReturnType<typeof prepareCombineInvitationMakers>} MakeCombineInvitationMakers */
+/** @typedef {ReturnType<MakeCombineInvitationMakers>} CombinedInvitationMakers */

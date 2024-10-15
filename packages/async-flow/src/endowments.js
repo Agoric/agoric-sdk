@@ -1,7 +1,12 @@
 import { Fail } from '@endo/errors';
 import { E } from '@endo/eventual-send';
 import { isPromise } from '@endo/promise-kit';
-import { isRemotable, isPassable, GET_METHOD_NAMES } from '@endo/pass-style';
+import {
+  isRemotable,
+  isPassable,
+  GET_METHOD_NAMES,
+  Far,
+} from '@endo/pass-style';
 import { M, objectMap } from '@endo/patterns';
 import { prepareVowTools, toPassableCap } from '@agoric/vow';
 import { isVow } from '@agoric/vow/src/vow-utils.js';
@@ -63,8 +68,7 @@ export const prepareEndowmentTools = (outerZone, outerOptions = {}) => {
 
   const functionUnwrapper = outerZone.exo('FunctionUnwrapper', UnwrapperI, {
     unwrap(guestWrapped) {
-      const unwrapped = (...args) => guestWrapped.apply(args);
-      return harden(unwrapped);
+      return Far('UnwrappedFunction', (...args) => guestWrapped.apply(args));
     },
   });
 

@@ -2,6 +2,7 @@ import { Fail } from '@endo/errors';
 import { E } from '@endo/far';
 import { WalletName } from '@agoric/internal';
 import { getCopyMapEntries, makeCopyMap } from '@agoric/store';
+import { assertPathSegment } from '@agoric/internal/src/lib-chainStorage.js';
 
 /** @import {CopyMap} from '@endo/patterns'; */
 
@@ -163,3 +164,10 @@ export const oracleBrandFeedName = (inBrandName, outBrandName) =>
 
 export const scaledPriceFeedName = issuerName =>
   `scaledPriceAuthority-${issuerName}`;
+
+/** @type {(name: string) => string} */
+export const sanitizePathSegment = name => {
+  const candidate = name.replace(/ /g, '_');
+  assertPathSegment(candidate);
+  return candidate;
+};

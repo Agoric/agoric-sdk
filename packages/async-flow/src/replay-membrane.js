@@ -10,9 +10,10 @@ import { makeConvertKit } from './convert.js';
 import { makeEquate } from './equate.js';
 
 /**
- * @import {PromiseKit} from '@endo/promise-kit'
- * @import {Passable, PassableCap, CopyTagged} from '@endo/pass-style'
- * @import {Vow, VowTools, VowKit} from '@agoric/vow'
+ * @import {PromiseKit} from '@endo/promise-kit';
+ * @import {RemotableBrand} from '@endo/eventual-send';
+ * @import {Callable, Passable, PassableCap} from '@endo/pass-style';
+ * @import {Vow, VowTools, VowKit} from '@agoric/vow';
  * @import {LogStore} from '../src/log-store.js';
  * @import {Bijection} from '../src/bijection.js';
  * @import {Host, HostVow, LogEntry, Outcome} from '../src/types.js';
@@ -28,12 +29,29 @@ const { fromEntries, defineProperties, assign } = Object;
  * @param {(vowish: Promise | Vow) => void} arg.watchWake
  * @param {(problem: Error) => never} arg.panic
  */
-export const makeReplayMembrane = ({
+export const makeReplayMembrane = arg => {
+  const noDunderArg = /** @type {typeof arg} */ (
+    Object.fromEntries(Object.entries(arg).filter(([k]) => !k.startsWith('__')))
+  );
+  return makeReplayMembraneForTesting(noDunderArg);
+};
+
+/**
+ * @param {object} arg
+ * @param {LogStore} arg.log
+ * @param {Bijection} arg.bijection
+ * @param {VowTools} arg.vowTools
+ * @param {(vowish: Promise | Vow) => void} arg.watchWake
+ * @param {(problem: Error) => never} arg.panic
+ * @param {boolean} [arg.__eventualSendForTesting] CAVEAT: Only for async-flow tests
+ */
+export const makeReplayMembraneForTesting = ({
   log,
   bijection,
   vowTools,
   watchWake,
   panic,
+  __eventualSendForTesting,
 }) => {
   const { when, makeVowKit } = vowTools;
 
@@ -218,30 +236,22 @@ export const makeReplayMembrane = ({
   // //////////////// Eventual Send ////////////////////////////////////////////
 
   /**
-   * @param {PassableCap} hostTarget
+   * @param {RemotableBrand<PassableCap, Callable>} hostTarget
    * @param {string | undefined} optVerb
    * @param {Passable[]} hostArgs
    */
   const performSendOnly = (hostTarget, optVerb, hostArgs) => {
     try {
-      optVerb
-        ? heapVowE.sendOnly(hostTarget)[optVerb](...hostArgs)
-        : // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-          // @ts-ignore once we changed this from E to heapVowE,
-          // typescript started complaining that heapVowE(hostTarget)
-          // is not callable. I'm not sure if this is a just a typing bug
-          // in heapVowE or also reflects a runtime deficiency. But this
-          // case it not used yet anyway. We disable it
-          // with at-ts-ignore rather than at-ts-expect-error because
-          // the dependency-graph tests complains that the latter is unused.
-          heapVowE.sendOnly(hostTarget)(...hostArgs);
+      optVerb === undefined
+        ? heapVowE.sendOnly(hostTarget)(...hostArgs)
+        : heapVowE.sendOnly(hostTarget)[optVerb](...hostArgs);
     } catch (hostProblem) {
-      throw Panic`internal: eventual sendOnly synchrously failed ${hostProblem}`;
+      throw Panic`internal: eventual sendOnly synchronously failed ${hostProblem}`;
     }
   };
 
   /**
-   * @param {PassableCap} hostTarget
+   * @param {RemotableBrand<PassableCap, Callable>} hostTarget
    * @param {string | undefined} optVerb
    * @param {Passable[]} hostArgs
    * @param {number} callIndex
@@ -259,20 +269,13 @@ export const makeReplayMembrane = ({
   ) => {
     const { vow, resolver } = hostResultKit;
     try {
-      const hostPromise = optVerb
-        ? heapVowE(hostTarget)[optVerb](...hostArgs)
-        : // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-          // @ts-ignore once we changed this from E to heapVowE,
-          // typescript started complaining that heapVowE(hostTarget)
-          // is not callable. I'm not sure if this is a just a typing bug
-          // in heapVowE or also reflects a runtime deficiency. But this
-          // case it not used yet anyway. We disable it
-          // with at-ts-ignore rather than at-ts-expect-error because
-          // the dependency-graph tests complains that the latter is unused.
-          heapVowE(hostTarget)(...hostArgs);
+      const hostPromise =
+        optVerb === undefined
+          ? heapVowE(hostTarget)(...hostArgs)
+          : heapVowE(hostTarget)[optVerb](...hostArgs);
       resolver.resolve(hostPromise); // TODO does this always work?
     } catch (hostProblem) {
-      throw Panic`internal: eventual send synchrously failed ${hostProblem}`;
+      throw Panic`internal: eventual send synchronously failed ${hostProblem}`;
     }
     try {
       const entry = harden(['doReturn', callIndex, vow]);
@@ -293,6 +296,10 @@ export const makeReplayMembrane = ({
 
   const guestHandler = harden({
     applyMethodSendOnly(guestTarget, optVerb, guestArgs) {
+      __eventualSendForTesting ||
+        Panic`guest eventual applyMethodSendOnly not yet supported: ${guestTarget}.${b(optVerb)}`;
+      // The following code is only intended to be used by tests.
+      // TODO: properly support applyMethodSendOnly
       const callIndex = log.getIndex();
       if (stopped || !bijection.hasGuest(guestTarget)) {
         Fail`Sent from a previous run: ${guestTarget}`;
@@ -331,6 +338,10 @@ export const makeReplayMembrane = ({
       }
     },
     applyMethod(guestTarget, optVerb, guestArgs, guestReturnedP) {
+      __eventualSendForTesting ||
+        Panic`guest eventual applyMethod not yet supported: ${guestTarget}.${b(optVerb)} -> ${b(guestReturnedP)}`;
+      // The following code is only intended to be used by tests.
+      // TODO: properly support applyMethod
       const callIndex = log.getIndex();
       if (stopped || !bijection.hasGuest(guestTarget)) {
         Fail`Sent from a previous run: ${guestTarget}`;
@@ -398,6 +409,8 @@ export const makeReplayMembrane = ({
       }
     },
     applyFunctionSendOnly(guestTarget, guestArgs) {
+      __eventualSendForTesting ||
+        Panic`guest eventual applyFunctionSendOnly not yet supported: ${guestTarget}`;
       return guestHandler.applyMethodSendOnly(
         guestTarget,
         undefined,
@@ -405,6 +418,8 @@ export const makeReplayMembrane = ({
       );
     },
     applyFunction(guestTarget, guestArgs, guestReturnedP) {
+      __eventualSendForTesting ||
+        Panic`guest eventual applyFunction not yet supported: ${guestTarget} -> ${b(guestReturnedP)}`;
       return guestHandler.applyMethod(
         guestTarget,
         undefined,
@@ -413,9 +428,11 @@ export const makeReplayMembrane = ({
       );
     },
     getSendOnly(guestTarget, prop) {
+      // TODO: support getSendOnly
       throw Panic`guest eventual getSendOnly not yet supported: ${guestTarget}.${b(prop)}`;
     },
     get(guestTarget, prop, guestReturnedP) {
+      // TODO: support get
       throw Panic`guest eventual get not yet supported: ${guestTarget}.${b(prop)} -> ${b(guestReturnedP)}`;
     },
   });
