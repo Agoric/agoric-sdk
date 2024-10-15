@@ -107,8 +107,7 @@ const validatorAddress: CosmosValidatorAddress = {
 };
 const ATOM_DENOM = 'uatom';
 
-// check for key because the value will be 'undefined' when the result is provided
-// TODO should it be something truthy?
+// check for key because the value can be `undefined`
 const hasResult = (r: UpdateRecord) => {
   assert(r.updated === 'offerStatus');
   return 'result' in r.status;
