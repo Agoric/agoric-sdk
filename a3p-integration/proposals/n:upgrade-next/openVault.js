@@ -11,7 +11,6 @@ import {
   ATOM_DENOM,
 } from '@agoric/synthetic-chain';
 
-
 export const bankSend = (from, addr, wanted) => {
   const chain = ['--chain-id', CHAINID];
   const fromArg = ['--from', from];
