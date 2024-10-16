@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+/* eslint-env node */
 
 import {
   pushPrices,
@@ -35,7 +36,7 @@ await retryUntilCondition(
   'price not pushed yet',
   {
     log: console.log,
-    setTimeout: globalThis.setTimeout,
+    setTimeout: global.setTimeout,
     ...pushPriceRetryOpts,
   },
 );

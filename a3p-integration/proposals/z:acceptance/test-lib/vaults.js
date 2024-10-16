@@ -1,3 +1,5 @@
+/* eslint-env node */
+
 import '@endo/init';
 import {
   agops,
