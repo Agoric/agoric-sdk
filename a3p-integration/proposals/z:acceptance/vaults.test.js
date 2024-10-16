@@ -8,13 +8,13 @@ import {
   adjustVault,
   closeVault,
   getISTBalance,
-  getContractInfo,
   ATOM_DENOM,
   USER1ADDR,
   GOV1ADDR,
   generateOracleMap,
   pushPrices,
   getPriceQuote,
+  getVaultPrices,
 } from '@agoric/synthetic-chain';
 import { getBalances, agopsVaults } from './test-lib/utils.js';
 import {
@@ -22,6 +22,7 @@ import {
   getAvailableDebtForMint,
   getLastVaultFromAddress,
   getMinInitialDebt,
+  getPriceFeedRoundId,
   setDebtLimit,
 } from './test-lib/vaults.js';
 
@@ -320,27 +321,26 @@ test.serial('confirm that Oracle prices are being received', async t => {
   /*
    * The Oracle for ATOM brand is being registered in the offer made at file:
    * a3p-integration/proposals/f:replace-price-feeds/pushPrice.js
-   * At pushPrice.js, a price is being pushed for ATOM, for that reason the roundId is set to 2.
    */
+  const ATOMManagerIndex = 0;
   const BRANDS = ['ATOM'];
   const BASE_ID = 'f-priceFeeds';
-  const roundId = 2;
   const oraclesByBrand = generateOracleMap(BASE_ID, BRANDS);
 
-  await pushPrices(10, 'ATOM', oraclesByBrand, roundId);
+  const latestRoundId = await getPriceFeedRoundId(BRANDS[0]);
+  const roundId = latestRoundId + 1;
 
-  const atomQuote = await getPriceQuote('ATOM');
+  await pushPrices(10, BRANDS[0], oraclesByBrand, roundId);
+
+  const atomQuote = await getPriceQuote(BRANDS[0]);
   t.log('price quote:', atomQuote);
   t.is(atomQuote, '+10000000');
 
-  const vaultQuotePath = `published.vaultFactory.managers.${VAULT_MANAGER}.quotes`;
-  const vaultQuoteBody = await getContractInfo(vaultQuotePath, {
-    agoric,
-    prefix: '',
-  });
-  const vaultQuote = vaultQuoteBody.quoteAmount.value[0].amountOut.value;
-  t.log('vault quote:', vaultQuote);
-  t.is(vaultQuote, BigInt(atomQuote));
+  const vaultQuote = await getVaultPrices(ATOMManagerIndex);
+  t.log('vault quote:', vaultQuote.value[0].amountOut.value);
+
+  t.true(vaultQuote.value[0].amountIn.brand.includes(' ATOM '));
+  t.is(vaultQuote.value[0].amountOut.value, atomQuote);
 });
 
 test.serial(

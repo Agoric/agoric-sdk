@@ -125,6 +125,22 @@ export const calculateMintFee = async (toMintValue, vaultManager) => {
   return { mintFee, adjustedToMintAmount };
 };
 
+/**
+ *
+ * @param {string} brand
+ * @returns {Promise<number>}
+ */
+export const getPriceFeedRoundId = async brand => {
+  const latestRoundPath = `published.priceFeed.${brand}-USD_price_feed.latestRound`;
+  const latestRound = await getContractInfo(latestRoundPath, {
+    agoric,
+    prefix: '',
+  });
+
+  console.log('latestRound: ', latestRound);
+  return Number(latestRound.roundId);
+};
+
 const voteForNewParams = (accounts, position) => {
   console.log('ACTIONS voting for position', position, 'using', accounts);
   return Promise.all(

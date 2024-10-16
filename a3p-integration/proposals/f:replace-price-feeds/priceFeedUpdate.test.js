@@ -1,11 +1,13 @@
 import test from 'ava';
 
 import {
+  agoric,
   agops,
   ATOM_DENOM,
   bankSend,
   createBid,
   generateOracleMap,
+  getContractInfo,
   getDetailsMatchingVats,
   getInstanceBoardId,
   getISTBalance,
@@ -36,13 +38,25 @@ const checkPriceFeedVatsUpdated = async t => {
   await checkForOracle(t, 'stATOM');
 };
 
+export const getPriceFeedRoundId = async brand => {
+  const latestRoundPath = `published.priceFeed.${brand}-USD_price_feed.latestRound`;
+  const latestRound = await getContractInfo(latestRoundPath, {
+    agoric,
+    prefix: '',
+  });
+
+  console.log('latestRound: ', latestRound);
+  return Number(latestRound.roundId);
+};
+
 /*
  * The Oracle for ATOM and stATOM brands are being registered in the offer made at file:
  * a3p-integration/proposals/f:replace-price-feeds/pushPrice.js
- * At pushPrice.js, a price is being pushed for both brands, for that reason the roundId is set to 2.
  */
 const oraclesByBrand = generateOracleMap('f-priceFeeds', ['ATOM', 'stATOM']);
-let roundId = 2;
+
+let atomRoundId = (await getPriceFeedRoundId('ATOM')) + 1;
+let stAtomRoundId = (await getPriceFeedRoundId('stATOM')) + 1;
 
 const tryPushPrices = async t => {
   // There are no old prices for the other currencies.
@@ -52,9 +66,10 @@ const tryPushPrices = async t => {
   // t.is(stAtomOutPre, '+12010000');
 
   t.log('pushing new prices');
-  await pushPrices(13.4, 'ATOM', oraclesByBrand, roundId);
-  await pushPrices(13.7, 'stATOM', oraclesByBrand, roundId);
-  roundId += 1;
+  await pushPrices(13.4, 'ATOM', oraclesByBrand, atomRoundId);
+  await pushPrices(13.7, 'stATOM', oraclesByBrand, stAtomRoundId);
+  atomRoundId += 1;
+  stAtomRoundId += 1;
 
   t.log('awaiting new quotes');
   const atomOut = await getPriceQuote('ATOM');
@@ -89,7 +104,7 @@ const openMarginalVault = async t => {
 };
 
 const triggerAuction = async t => {
-  await pushPrices(5.2, 'ATOM', oraclesByBrand, roundId);
+  await pushPrices(5.2, 'ATOM', oraclesByBrand, atomRoundId);
 
   const atomOut = await getPriceQuote('ATOM');
   t.is(atomOut, '+5200000');
