@@ -45,9 +45,14 @@ test('makeAccount, deposit, withdraw', async t => {
   const {
     bootstrap,
     brands: { bld },
+    commonPrivateArgs: { marshaller },
     utils,
   } = await commonSetup(t);
-  const { publicFacet } = await startContract({ ...bootstrap, bld });
+  const { publicFacet, zoe } = await startContract({
+    ...bootstrap,
+    bld,
+    marshaller,
+  });
 
   t.log('make a LocalChainAccount');
   const account = await E(publicFacet).makeAccount();
@@ -81,9 +86,14 @@ test('makeStakeBldInvitation', async t => {
   const {
     bootstrap,
     brands: { bld },
+    commonPrivateArgs: { marshaller },
     utils,
   } = await commonSetup(t);
-  const { publicFacet, zoe } = await startContract({ ...bootstrap, bld });
+  const { publicFacet, zoe } = await startContract({
+    ...bootstrap,
+    bld,
+    marshaller,
+  });
 
   t.log('call makeStakeBldInvitation');
   const inv = await E(publicFacet).makeStakeBldInvitation();
@@ -139,8 +149,14 @@ test('makeAccountInvitationMaker', async t => {
   const {
     bootstrap,
     brands: { bld },
+    commonPrivateArgs: { marshaller },
+    utils,
   } = await commonSetup(t);
-  const { publicFacet, zoe } = await startContract({ ...bootstrap, bld });
+  const { publicFacet, zoe } = await startContract({
+    ...bootstrap,
+    bld,
+    marshaller,
+  });
 
   const inv = await E(publicFacet).makeAccountInvitationMaker();
 

@@ -2010,6 +2010,8 @@ __metadata:
     "@endo/init": "npm:^1.1.5"
     "@endo/marshal": "npm:^1.5.4"
     ava: "npm:^5.3.1"
+    better-sqlite3: "npm:^9.6.0"
+    execa: "npm:^9.3.1"
   languageName: unknown
   linkType: soft
 

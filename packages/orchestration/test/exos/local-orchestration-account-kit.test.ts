@@ -129,9 +129,8 @@ test('transfer', async t => {
   };
   const sourceChannel = 'channel-5'; // observed in toBridge VLOCALCHAIN_EXECUTE_TX sourceChannel, confirmed via fetched-chain-info.js
 
-  // TODO rename to lastSequence
   /** The running tally of transfer messages that were sent over the bridge */
-  let sequence = 0n;
+  let lastSequence = 0n;
   /**
    * Helper to start the transfer without awaiting the result. It await the
    * event loop so the promise starts and increments sequence for use in the
@@ -146,7 +145,7 @@ test('transfer', async t => {
     opts = {},
   ) => {
     const transferP = VE(account).transfer(dest, amount, opts);
-    sequence += 1n;
+    lastSequence += 1n;
     // Ensure the toBridge of the transferP happens before the fromBridge is awaited after this function returns
     await eventLoopIteration();
     return { transferP };
@@ -165,7 +164,7 @@ test('transfer', async t => {
       receiver: destination.value,
       sender,
       sourceChannel,
-      sequence,
+      sequence: lastSequence,
     }),
   );
 
@@ -217,7 +216,7 @@ test('transfer', async t => {
         receiver: dest.value,
         sender,
         sourceChannel,
-        sequence,
+        sequence: lastSequence,
       }),
     );
     return promise;

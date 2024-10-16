@@ -20,7 +20,6 @@ test.before(async t => {
 });
 test.after.always(t => t.context.shutdown?.());
 
-// TODO #9303 execute restart-send-anywhere.js proposal
 test.serial('send-anywhere', async t => {
   const {
     walletFactoryDriver,
@@ -65,11 +64,10 @@ test.serial('send-anywhere', async t => {
     'live offer until we simulate the transfer ack',
   );
 
-  // TODO #9303 Error#1: replay 12: ["checkCall","[Alleged: contractState guest wrapper]","get",["localAccount"],12] vs ["doReturn",11,"[undefined]"] : length: unequal 5 vs 3
-  // t.log('restart send-anywhere');
-  // await evalProposal(
-  //   buildProposal('@agoric/builders/scripts/testing/restart-send-anywhere.js'),
-  // );
+  t.log('restart send-anywhere');
+  await evalProposal(
+    buildProposal('@agoric/builders/scripts/testing/restart-send-anywhere.js'),
+  );
 
   t.like(
     wallet.getLatestUpdateRecord(),
@@ -109,8 +107,7 @@ const validatorAddress: CosmosValidatorAddress = {
 };
 const ATOM_DENOM = 'uatom';
 
-// check for key because the value will be 'undefined' when the result is provided
-// TODO should it be something truthy?
+// check for key because the value can be `undefined`
 const hasResult = (r: UpdateRecord) => {
   assert(r.updated === 'offerStatus');
   return 'result' in r.status;

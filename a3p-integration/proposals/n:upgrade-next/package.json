@@ -22,7 +22,8 @@
     "@agoric/synthetic-chain": "^0.3.0",
     "@endo/init": "^1.1.5",
     "@endo/marshal": "^1.5.4",
-    "ava": "^5.3.1"
+    "better-sqlite3": "^9.6.0",
+    "execa": "^9.3.1"
   },
   "ava": {
     "concurrency": 1,
