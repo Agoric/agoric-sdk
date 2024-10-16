@@ -1,0 +1,112 @@
+chains:
+  - id: agoriclocal
+    name: agoric
+    image: ghcr.io/agoric/agoric-sdk:dev
+    numValidators: 1
+    env:
+      - name: DEBUG
+        value: SwingSet:vat,SwingSet:ls
+    genesis:
+      app_state:
+        staking:
+          params:
+            unbonding_time: '2m'
+        swingset:
+          params:
+            bootstrap_vat_config: '@agoric/vm-config/decentral-itest-orchestration-config.json'
+    scripts:
+      updateConfig:
+        file: scripts/update-config.sh
+    faucet:
+      enabled: false
+    ports:
+      rest: 1317
+      rpc: 26657
+      exposer: 38087
+      grpc: 9090
+    resources:
+      cpu: 1
+      memory: 4Gi
+  - id: osmosislocal
+    name: osmosis
+    numValidators: 1
+    genesis:
+      app_state:
+        staking:
+          params:
+            unbonding_time: '2m'
+        interchain_accounts:
+          host_genesis_state:
+            params:
+              host_enabled: true
+              allow_messages: ['*']
+        interchainquery:
+          host_port: 'icqhost'
+          params:
+            host_enabled: true
+            allow_queries:
+              - /cosmos.bank.v1beta1.Query/Balance
+              - /cosmos.bank.v1beta1.Query/AllBalances
+    faucet:
+      enabled: true
+      type: starship
+    ports:
+      rest: 1315
+      rpc: 26655
+      grpc: 9093
+      faucet: 8084
+    resources:
+      cpu: 1
+      memory: 1Gi
+  - id: gaialocal
+    name: cosmoshub
+    numValidators: 1
+    genesis:
+      app_state:
+        staking:
+          params:
+            unbonding_time: '2m'
+        interchain_accounts:
+          host_genesis_state:
+            params:
+              host_enabled: true
+              allow_messages: ['*']
+    faucet:
+      enabled: true
+      type: starship
+    ports:
+      rest: 1314
+      rpc: 26654
+      grpc: 9092
+      faucet: 8083
+    resources:
+      cpu: 1
+      memory: 1Gi
+
+relayers:
+  - name: osmosis-gaia
+    type: hermes
+    replicas: 1
+    chains:
+      - osmosislocal
+      - gaialocal
+  - name: agoric-osmosis
+    type: hermes
+    replicas: 1
+    chains:
+      - agoriclocal
+      - osmosislocal
+  - name: agoric-gaia
+    type: hermes
+    replicas: 1
+    chains:
+      - agoriclocal
+      - gaialocal
+
+explorer:
+  enabled: false
+
+registry:
+  enabled: true
+  ports:
+    rest: 8081

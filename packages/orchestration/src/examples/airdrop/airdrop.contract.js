@@ -8,6 +8,7 @@ import { TimerShape } from '@agoric/zoe/src/typeGuards.js';
 import {
   atomicRearrange,
   makeRatio,
+  withdrawFromSeat,
 } from '@agoric/zoe/src/contractSupport/index.js';
 import { divideBy } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { makeTracer } from '@agoric/internal';
@@ -118,6 +119,14 @@ const tokenMintFactory = async (
   };
 };
 
+const withdrawAndBurn = async (zcf, seat, keyword, issuer, brand) => {
+  const remainingPayment = await withdrawFromSeat(zcf, seat, {
+    [keyword]: seat.getAmountAllocated(keyword, brand),
+  });
+  issuer.burn(remainingPayment);
+  return 'Successfully burned remaining tokens.';
+};
+
 /**
  * @param {TimestampRecord} sourceTs Base timestamp used to as the starting time
  *   which a new Timestamp will be created against.
@@ -128,6 +137,7 @@ const tokenMintFactory = async (
 const createFutureTs = (sourceTs, inputTs) =>
   TimeMath.absValue(sourceTs) + TimeMath.relValue(inputTs);
 
+const SIX_DIGITS = 1_000_000n;
 /**
  * @param {ZCF<ContractTerms>} zcf
  * @param {{ marshaller: Remotable; timer: TimerService }} privateArgs
@@ -147,11 +157,11 @@ export const start = async (zcf, privateArgs, baggage) => {
   const {
     startTime = 120n,
     targetEpochLength = oneDay,
-    targetTokenSupply = 10_000_000n,
+    targetTokenSupply = 10_000_000n * SIX_DIGITS,
     tokenName = 'Tribbles',
     targetNumberOfEpochs = 5,
     merkleRoot,
-    initialPayoutValues = AIRDROP_TIERS_STATIC,
+    initialPayoutValues = AIRDROP_TIERS_STATIC.map(x => x * 1_000_000n),
     feeAmount,
     _brands,
   } = zcf.getTerms();
@@ -253,6 +263,13 @@ export const start = async (zcf, privateArgs, baggage) => {
           const { helper } = this.facets;
           this.state.currentEpoch = epochIdx;
           if (this.state.currentEpoch === targetNumberOfEpochs) {
+            void withdrawAndBurn(
+              zcf,
+              tokenHolderSeat,
+              'Tokens',
+              tokenIssuer,
+              tokenBrand,
+            );
             zcf.shutdown('Airdrop complete');
             stateMachine.transitionTo(EXPIRED);
           }

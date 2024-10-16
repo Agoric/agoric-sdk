@@ -1,0 +1,8 @@
+.tsimp
+.yarn/*
+!.yarn/patches/*
+# fetched chain info from running starship
+starship-chain-info*
+# output of build script to get update running chain info
+revise-chain-info*
+start*

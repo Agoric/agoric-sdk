@@ -247,7 +247,7 @@ export const getManifestForAirdrop = (
       customTerms: {
         ...defaultCustomTerms,
         merkleRoot:
-          '9a2f65951204939963b32771032964b743991e7bba0a4ec11341e36d59b441f2',
+          '610a4a1d5366d8f24611e492b88494444f6f8422768e90052266ed1b3d947139',
       },
     },
   },

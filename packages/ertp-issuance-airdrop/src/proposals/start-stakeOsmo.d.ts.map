@@ -1,0 +1,1 @@
+{"version":3,"file":"start-stakeOsmo.d.ts","sourceRoot":"","sources":["start-stakeOsmo.js"],"names":[],"mappings":"AA8BO,0PAfI,eAAe,GAAG;IACxB,YAAY,EAAE;QACZ,OAAO,EAAE;YACP,QAAQ,EAAE,YAAY,CAC9B,GAA2D,CAClD,CAAC;SACH,CAAC;KACH,CAAC;IACF,QAAQ,EAAE;QACR,OAAO,EAAE;YACP,SAAS,EAAE,GAAG,CAAC;SAChB,CAAC;KACH,CAAC;CACH,iBA4DH;AAGM;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;EA4BN"}

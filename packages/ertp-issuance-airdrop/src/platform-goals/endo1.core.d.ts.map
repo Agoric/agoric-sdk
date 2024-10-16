@@ -1,0 +1,1 @@
+{"version":3,"file":"endo1.core.d.ts","sourceRoot":"","sources":["endo1.core.js"],"names":[],"mappings":"AAmBO,oDAFI,eAAe,GAAG,UAAU,QAMtC;AAED,+EAA+E;AAC/E,qBADW,OAAO,gCAAgC,EAAE,uBAAuB,CAIzE;AAVK,sCAFI,eAAe,GAAG,UAAU,QAMtC;2BAlBY;IACR,KAAK,EAAE;QACL,OAAO,EAAE,cAAc,eAAe,CAAC,CAAC;QACxC,QAAQ,EAAE,cAAc,gBAAgB,CAAC,CAAC;KAC3C,CAAA;CACF;yBACS,cAAc,CAAC,YAAY,CAAC"}
