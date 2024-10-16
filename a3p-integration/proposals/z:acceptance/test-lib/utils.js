@@ -47,8 +47,7 @@ export const getBalances = async (addresses, targetDenom = undefined) => {
   return addresses.length === 1 ? balancesList[0] : balancesList;
 };
 
-export const agopsVaults = async addr =>
-  await agops.vaults('list', '--from', addr);
+export const agopsVaults = async addr => agops.vaults('list', '--from', addr);
 
 const fromBoard = makeFromBoard();
 const marshaller = boardSlottingMarshaller(fromBoard.convertSlotToVal);

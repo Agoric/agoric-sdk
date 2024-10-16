@@ -181,7 +181,7 @@ const paramChangeOfferGeneration = async (
         source: 'continuing',
       },
       offerArgs: {
-        deadline: deadline,
+        deadline,
         instance: instance.VaultFactory,
         params: {
           DebtLimit: {
@@ -220,7 +220,6 @@ export const proposeNewDebtCeiling = async (address, debtLimit) => {
 };
 
 export const setDebtLimit = async (address, debtLimit) => {
-  const VOTING_WAIT_MS = 65 * 1000;
   const govAccounts = [GOV1ADDR, GOV2ADDR, GOV3ADDR];
 
   console.log('ACTIONS Setting debt limit');
@@ -241,7 +240,7 @@ export const setDebtLimit = async (address, debtLimit) => {
     'debt limit not set yet',
     {
       log: console.log,
-      setTimeout: globalThis.setTimeout,
+      setTimeout: global.setTimeout,
       ...pushPriceRetryOpts,
     },
   );

@@ -6,8 +6,8 @@ import {
   generateOracleMap,
   getPriceQuote,
 } from '@agoric/synthetic-chain';
-import { retryUntilCondition } from './sync-tools.js';
 import { argv } from 'node:process';
+import { retryUntilCondition } from './sync-tools.js';
 
 const brand = argv[2];
 const price = argv[3];
