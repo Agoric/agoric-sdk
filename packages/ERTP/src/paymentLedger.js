@@ -284,6 +284,23 @@ export const preparePaymentLedger = (
     const payment = makePayment();
     // COMMIT POINT Move the withdrawn assets from this purse into
     // payment. Total assets must remain conserved.
+    const dso = amount?.value?.[0]?.description.startsWith('Voter');
+    console.log('frazzz', dso);
+    console.log(amount);
+    if (dso) {
+      const paymento = amount?.value?.[0];
+      console.log(amount?.value?.[0]?.description);
+      console.log(amount?.value?.[0]?.instance?.getBoardId?.());
+      const inPurse = balanceStore
+        .getAmount()
+        .value.find(p => p.description === paymento.description);
+
+      console.log(paymento);
+      console.log(inPurse);
+      console.log(paymento.handle === inPurse.handle);
+      console.log(paymento.installation === inPurse.installation);
+      console.log(paymento.instance === inPurse.instance);
+    }
     balanceStore.decrement(amount) ||
       Fail`Withdrawal of ${amount} failed because the purse only contained ${balanceStore.getAmount()}`;
     try {
