@@ -17,7 +17,7 @@ const trace = makeTracer('NewAuction', true);
  * @param {import('./econ-behaviors.js').EconomyBootstrapPowers &
  *   interlockPowers} powers
  * @param {{
- *   options: { contractGovernorBundle: { bundleID: string } };
+ *   options: { contractGovernorRef: { bundleID: string } };
  * }} options
  */
 export const addAuction = async (
@@ -52,7 +52,7 @@ export const addAuction = async (
       consume: { [Stable.symbol]: stableIssuerP },
     },
   },
-  { options: { contractGovernorBundle } },
+  { options: { contractGovernorRef: contractGovernorBundle } },
 ) => {
   trace('addAuction start');
   const STORAGE_PATH = 'auction';
