@@ -7,9 +7,10 @@ import {
   getPriceQuote,
 } from '@agoric/synthetic-chain';
 import { retryUntilCondition } from './sync-tools.js';
+import { argv } from 'node:process';
 
-const BRANDS = ['ATOM', 'stATOM'];
-const PRICES = [12.01, 12.01];
+const brand = argv[2];
+const price = argv[3];
 
 const BASE_ID = 'f-priceFeeds';
 const ROUND_ID = 1;
@@ -21,24 +22,21 @@ const pushPriceRetryOpts = {
 
 export const scale6 = x => BigInt(x * 1_000_000);
 
-const oraclesByBrand = generateOracleMap(BASE_ID, BRANDS);
+const oraclesByBrand = generateOracleMap(BASE_ID, [brand]);
+await registerOraclesForBrand(brand, oraclesByBrand);
+console.log(`Registering Oracle for ${brand}`);
 
-for (let i = 0; i < BRANDS.length; i++) {
-  await registerOraclesForBrand(BRANDS[i], oraclesByBrand);
-  console.log(`Registering Oracle for ${BRANDS[i]}`);
+await pushPrices(price, brand, oraclesByBrand, ROUND_ID);
+console.log(`Pushing price ${price} for ${brand}`);
 
-  await pushPrices(PRICES[i], BRANDS[i], oraclesByBrand, ROUND_ID);
-  console.log(`Pushing price ${PRICES[i]} for ${BRANDS[i]}`);
-
-  await retryUntilCondition(
-    () => getPriceQuote(BRANDS[i]),
-    res => res === `+${scale6(PRICES[i]).toString()}`,
-    'price not pushed yet',
-    {
-      log: console.log,
-      setTimeout: globalThis.setTimeout,
-      ...pushPriceRetryOpts,
-    },
-  );
-  console.log('Price pushed');
-}
+await retryUntilCondition(
+  () => getPriceQuote(brand),
+  res => res === `+${scale6(price).toString()}`,
+  'price not pushed yet',
+  {
+    log: console.log,
+    setTimeout: globalThis.setTimeout,
+    ...pushPriceRetryOpts,
+  },
+);
+console.log('Price pushed');
