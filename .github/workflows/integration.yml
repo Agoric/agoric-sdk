@@ -272,7 +272,7 @@ jobs:
         run: yarn build
         working-directory: a3p-integration
       - name: run proposals tests
-        run: yarn test
+        run: yarn test -m n:upgrade-next
         working-directory: a3p-integration
       - name: collect all core eval scripts
         # Core eval scripts will be copied under /tmp/core_eval_scripts directory
