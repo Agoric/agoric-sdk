@@ -1,8 +1,10 @@
 import test from 'ava';
 import '@endo/init';
-import { GOV1ADDR } from '@agoric/synthetic-chain';
+import { GOV1ADDR, GOV2ADDR, GOV3ADDR } from '@agoric/synthetic-chain';
 import { governanceDriver, walletUtils, waitUntil } from './test-lib/index.js';
 import { getLastUpdate } from './test-lib/wallet.js';
+
+const governanceAddresses = [GOV1ADDR, GOV2ADDR, GOV3ADDR];
 
 test.serial(
   'economic committee can make governance proposal and vote on it',
@@ -48,14 +50,19 @@ test.serial(
     });
 
     t.log('Voting on param change');
-    await governanceDriver.voteOnProposedChanges(
-      GOV1ADDR,
-      committeeInvitation[0],
+    await Promise.all(
+      governanceAddresses.map(address =>
+        governanceDriver.voteOnProposedChanges(address, committeeInvitation[0]),
+      ),
     );
 
-    const voteUpdate = await getLastUpdate(GOV1ADDR, walletUtils);
-    t.like(voteUpdate, {
-      status: { numWantsSatisfied: 1 },
+    const voteUpdates = await Promise.all(
+      governanceAddresses.map(address => getLastUpdate(address, walletUtils)),
+    );
+    voteUpdates.forEach(voteUpdate => {
+      t.like(voteUpdate, {
+        status: { numWantsSatisfied: 1 },
+      });
     });
 
     /** @type {any} */

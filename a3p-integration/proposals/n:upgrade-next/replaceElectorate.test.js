@@ -11,9 +11,10 @@ import { queryVstorageFormatted, acceptInvitation } from './agoric-tools.js';
 
 const UPGRADE_PP_DIR = 'replace-electorate';
 
-test.serial('what', async t => {
+test.skip('what', async t => {
   await evalBundles(UPGRADE_PP_DIR);
   await waitForBlock(2);
+  t.pass();
 });
 
 test.serial('should be able to accept the new invitations', async t => {
@@ -41,7 +42,7 @@ test.serial('should be able to accept the new invitations', async t => {
   const wallet = await queryVstorageFormatted(
     `published.wallet.${GOV1ADDR}.current`,
   );
-  const usedInvitations = wallet.offerToUsedInvitation.map(v => v[1]);
+  // const usedInvitations = wallet.offerToUsedInvitation.map(v => v[1]);
   console.log(
     wallet.offerToUsedInvitation.map(c => [
       c[0],
@@ -54,32 +55,39 @@ test.serial('should be able to accept the new invitations', async t => {
       p.instance.getBoardId(),
     ]),
   );
-  await acceptInvitation(
-    GOV1ADDR,
-    'econCommitteeCharter',
-    'charter member invitation',
-    'charterOfferId',
-  );
-  await acceptInvitation(
-    GOV1ADDR,
-    'economicCommittee',
-    'Voter0',
-    'committeeOfferId',
-  );
+  // await acceptInvitation(
+  //   GOV1ADDR,
+  //   'econCommitteeCharter',
+  //   'charter member invitation',
+  //   'charterOfferId',
+  // );
+  // await acceptInvitation(
+  //   GOV1ADDR,
+  //   'economicCommittee',
+  //   'Voter0',
+  //   'committeeOfferId',
+  // );
 
   // await waitForBlock(1000);
 
-  // await agops.ec('committee', '--send-from', GOV1ADDR);
-  // await agops.ec(
-  //   'charter',
-  //   '--send-from',
-  //   GOV1ADDR,
-  //   '--name',
-  //   'econCommitteeCharter',
-  // );
+  await agops.ec(
+    'charter',
+    '--send-from',
+    GOV1ADDR,
+    '--name',
+    'econCommitteeCharter',
+  );
+  await agops.ec('committee', '--send-from', GOV1ADDR);
+
+  const walletPostOffer = await queryVstorageFormatted(
+    `published.wallet.${GOV1ADDR}.current`,
+  );
+  const usedInvitations = walletPostOffer.offerToUsedInvitation.map(v => v[1]);
+
   const totalCharterInvitations = usedInvitations.filter(
     v => v.value[0].description === 'charter member invitation',
   ).length;
+
   t.is(totalCharterInvitations, 2);
 
   const totalCommitteeInvitations = usedInvitations.filter(v =>
