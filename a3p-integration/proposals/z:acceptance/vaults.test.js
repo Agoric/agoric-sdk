@@ -1,4 +1,3 @@
-/* eslint-env node */
 import test from 'ava';
 import {
   bankSend,
@@ -11,7 +10,6 @@ import {
   USER1ADDR,
   GOV1ADDR,
   generateOracleMap,
-  pushPrices,
   getPriceQuote,
   getVaultPrices,
 } from '@agoric/synthetic-chain';
@@ -21,9 +19,12 @@ import {
   getAvailableDebtForMint,
   getLastVaultFromAddress,
   getMinInitialDebt,
-  getPriceFeedRoundId,
   setDebtLimit,
 } from './test-lib/vaults.js';
+import {
+  verifyPushedPrice,
+  getPriceFeedRoundId,
+} from './test-lib/price-feed.js';
 
 const VAULT_MANAGER = 'manager0';
 
@@ -319,7 +320,7 @@ test.serial(
 test.serial('confirm that Oracle prices are being received', async t => {
   /*
    * The Oracle for ATOM brand is being registered in the offer made at file:
-   * a3p-integration/proposals/f:replace-price-feeds/pushPrice.js
+   * a3p-integration/proposals/f:replace-price-feeds/verifyPushedPrice.js
    */
   const ATOMManagerIndex = 0;
   const BRANDS = ['ATOM'];
@@ -329,7 +330,7 @@ test.serial('confirm that Oracle prices are being received', async t => {
   const latestRoundId = await getPriceFeedRoundId(BRANDS[0]);
   const roundId = latestRoundId + 1;
 
-  await pushPrices(10, BRANDS[0], oraclesByBrand, roundId);
+  await verifyPushedPrice(oraclesByBrand, BRANDS[0], 10, roundId);
 
   const atomQuote = await getPriceQuote(BRANDS[0]);
   t.log('price quote:', atomQuote);
