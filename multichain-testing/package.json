@@ -58,8 +58,7 @@
       "**/*.test.ts"
     ],
     "concurrency": 1,
-    "serial": true,
-    "timeout": "125s"
+    "serial": true
   },
   "eslintConfig": {
     "root": true,
