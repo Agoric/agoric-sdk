@@ -1,7 +1,6 @@
 import type { CosmosChainInfo } from '@agoric/orchestration';
 import anyTest from '@endo/ses-ava/prepare-endo.js';
 import type { ExecutionContext, TestFn } from 'ava';
-import { useChain } from 'starshipjs';
 import chainInfo from '../starship-chain-info.js';
 import { makeDoOffer } from '../tools/e2e-tools.js';
 import {
@@ -36,7 +35,7 @@ test.after(async t => {
 });
 
 const makeFundAndTransfer = (t: ExecutionContext<SetupContextWithWallets>) => {
-  const { retryUntilCondition } = t.context;
+  const { retryUntilCondition, useChain } = t.context;
   return async (chainName: string, agoricAddr: string, amount = 100n) => {
     const { staking } = useChain(chainName).chainInfo.chain;
     const denom = staking?.staking_tokens?.[0].denom;
@@ -45,6 +44,7 @@ const makeFundAndTransfer = (t: ExecutionContext<SetupContextWithWallets>) => {
     const { client, address, wallet } = await createFundedWalletAndClient(
       t,
       chainName,
+      useChain,
     );
     const balancesResult = await retryUntilCondition(
       () => client.getAllBalances(address),
@@ -59,6 +59,7 @@ const makeFundAndTransfer = (t: ExecutionContext<SetupContextWithWallets>) => {
       { address: agoricAddr, chainName: 'agoric' },
       { address: address, chainName },
       Date.now(),
+      useChain,
     );
     console.log('Transfer Args:', transferArgs);
     // TODO #9200 `sendIbcTokens` does not support `memo`
@@ -89,6 +90,7 @@ const autoStakeItScenario = test.macro({
       vstorageClient,
       provisionSmartWallet,
       retryUntilCondition,
+      useChain,
     } = t.context;
 
     const fundAndTransfer = makeFundAndTransfer(t);
