@@ -109,14 +109,22 @@ export const startQuickSend = async (
   };
 
   const { instance, creatorFacet } = await E(startUpgradable)(startOpts);
-  trace('CF', creatorFacet);
-  const toWatch = await E(creatorFacet).getWatcherInvitation();
-  /** @type {ERef<import('@agoric/ertp/src/types.js').DepositFacet>} */
-  const wdf = E(namesByAddress).lookup(watcherAddress, 'depositFacet');
-  await E(wdf).receive(toWatch);
 
+  const toWatch = await E(creatorFacet).getWatcherInvitation();
+  trace('got invitation', { toWatch, watcherAddress });
+
+  /** @type {import('@agoric/ertp/src/types.js').DepositFacet} */
+  const depositFacet = await E(namesByAddress).lookup(
+    watcherAddress,
+    'depositFacet',
+  );
+  trace(depositFacet, '.receive(', toWatch, ')');
+  const amt = await E(depositFacet).receive(toWatch);
+  trace('sent', amt, 'to', watcherAddress, 'using', depositFacet);
+
+  produceInstance.reset();
   produceInstance.resolve(instance);
-  trace('done');
+  trace('startQuickSend done', instance);
 };
 harden(startQuickSend);
 
