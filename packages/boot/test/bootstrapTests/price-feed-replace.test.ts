@@ -123,6 +123,11 @@ test.serial('setupVaults; run updatePriceFeeds proposals', async t => {
     'VaultFactory',
   );
 
+  // after the coreEval, the roundId will reset to 1.
+  t.like(readLatest('published.priceFeed.ATOM-USD_price_feed.latestRound'), {
+    roundId: 1n,
+  });
+
   t.notDeepEqual(
     newVaultInstallation.getKref(),
     oldVaultInstallation.getKref(),
@@ -141,6 +146,8 @@ test.serial('1. place bid', async t => {
 test.serial('2. trigger liquidation by changing price', async t => {
   const { priceFeedDrivers, readLatest } = t.context;
 
+  // the current roundId is still 1. Round 1 is special, and you can't get to
+  // round 2 until roundTimeout (10s) has elapsed.
   await priceFeedDrivers[collateralBrandKey].setPrice(9.99);
 
   t.like(readLatest('published.priceFeed.ATOM-USD_price_feed'), {
