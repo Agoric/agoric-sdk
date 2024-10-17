@@ -26,5 +26,7 @@ test('quickSend is in agoricNames.instance', async t => {
   const value = extractStreamCellValue(data);
   const capData = JSON.parse(value);
   const encoding = JSON.parse(capData?.body.replace(/^#/, ''));
-  t.like(encoding, { quickSend: /.*/ });
+  const byName = Object.fromEntries(encoding);
+  t.log('agoricNames.instance keys', Object.keys(byName));
+  t.truthy(byName.quickSend);
 });
