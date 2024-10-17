@@ -108,15 +108,26 @@ export const startQuickSend = async (
     privateArgs,
   };
 
-  const { instance, creatorFacet } = await E(startUpgradable)(startOpts);
-  trace('CF', creatorFacet);
-  const toWatch = await E(creatorFacet).getWatcherInvitation();
-  /** @type {ERef<import('@agoric/ertp/src/types.js').DepositFacet>} */
-  const wdf = E(namesByAddress).lookup(watcherAddress, 'depositFacet');
-  await E(wdf).receive(toWatch);
-
+  const { instance, creatorFacet } = E.get(E(startUpgradable)(startOpts));
+  produceInstance.reset();
   produceInstance.resolve(instance);
-  trace('done');
+
+  const toWatch = await E(creatorFacet).getWatcherInvitation();
+  trace('got invitation', { toWatch, watcherAddress });
+
+  // Don't wait for watcher to provision their smart wallet.
+  void E(namesByAddress)
+    .lookup(watcherAddress, 'depositFacet')
+    .then(
+      /** @param {ERef<import('@agoric/ertp/src/types.js').DepositFacet>} depositFacet */
+      async depositFacet => {
+        trace(depositFacet, '.receive(', toWatch, ')');
+        const amt = await E(depositFacet);
+        trace('sent', amt, 'to', watcherAddress, 'using', depositFacet);
+      },
+    );
+
+  trace('startQuickSend done', instance);
 };
 harden(startQuickSend);
 
