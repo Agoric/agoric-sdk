@@ -29,7 +29,7 @@ export const chainConfig: Record<string, { expectedAddressPrefix: string }> = {
 } as const;
 
 const makeKeyring = async (
-  e2eTools: Pick<E2ETools, 'addKey' | 'deleteKey'>,
+  e2eTools: Pick<E2ETools, 'addKey' | 'deleteKey' | 'listKeys'>,
 ) => {
   let _keys = ['user1'];
   const setupTestKeys = async (keys = ['user1']) => {
@@ -43,17 +43,23 @@ const makeKeyring = async (
     return wallets;
   };
 
-  const deleteTestKeys = (keys: string[] = []) =>
-    Promise.allSettled(
-      Array.from(new Set([...keys, ..._keys])).map(key =>
-        e2eTools.deleteKey(key).catch(),
-      ),
+  const deleteTestKeys = async (keys: string[] = []) => {
+    const activeKeys = await e2eTools.listKeys();
+    const keysToDelete = Array.from(new Set([...keys, ..._keys])).filter(key =>
+      activeKeys.some(activeKey => activeKey.name === key),
+    );
+    return Promise.allSettled(
+      keysToDelete.map(key => e2eTools.deleteKey(key).catch()),
     ).catch();
+  };
 
   return { setupTestKeys, deleteTestKeys };
 };
 
-export const commonSetup = async (t: ExecutionContext) => {
+export const commonSetup = async (
+  t: ExecutionContext,
+  accounts: string[] = [],
+) => {
   const { useChain } = await setupRegistry({
     config: `../${process.env.FILE || 'config.yaml'}`,
   });
@@ -93,6 +99,11 @@ export const commonSetup = async (t: ExecutionContext) => {
     );
   };
 
+  // XXX not necessary for CI, but helpful for unexpected failures in
+  // active development (test.after cleanup doesn't run).
+  await keyring.deleteTestKeys(accounts);
+  const wallets = await keyring.setupTestKeys(accounts);
+
   return {
     useChain,
     ...tools,
@@ -101,10 +112,8 @@ export const commonSetup = async (t: ExecutionContext) => {
     deployBuilder,
     relayer,
     startContract,
+    wallets,
   };
 };
 
 export type SetupContext = Awaited<ReturnType<typeof commonSetup>>;
-export type SetupContextWithWallets = Omit<SetupContext, 'setupTestKeys'> & {
-  wallets: Record<string, string>;
-};

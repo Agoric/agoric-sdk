@@ -4,18 +4,14 @@ import type { CosmosOrchestrationAccountStorageState } from '@agoric/orchestrati
 import type { IdentifiedChannelSDKType } from '@agoric/cosmic-proto/ibc/core/channel/v1/channel.js';
 import type { IBCChannelID, IBCPortID } from '@agoric/vats';
 import { makeDoOffer } from '../tools/e2e-tools.js';
-import {
-  commonSetup,
-  SetupContextWithWallets,
-  chainConfig,
-} from './support.js';
+import { commonSetup, type SetupContext, chainConfig } from './support.js';
 import { makeQueryClient } from '../tools/query.js';
 import { parseLocalAddress, parseRemoteAddress } from '../tools/address.js';
 import chainInfo from '../starship-chain-info.js';
 import { TWO_MINUTES } from './config.js';
 import { sleep } from '../tools/sleep.js';
 
-const test = anyTest as TestFn<SetupContextWithWallets>;
+const test = anyTest as TestFn<SetupContext>;
 
 const accounts = ['cosmoshub', 'osmosis'];
 
@@ -24,17 +20,14 @@ const contractBuilder =
   '../packages/builders/scripts/orchestration/init-basic-flows.js';
 
 test.before(async t => {
-  const { deleteTestKeys, setupTestKeys, ...rest } = await commonSetup(t);
-  deleteTestKeys(accounts).catch();
-  const wallets = await setupTestKeys(accounts);
-  t.context = { ...rest, wallets, deleteTestKeys };
-  const { startContract } = rest;
+  t.context = await commonSetup(t, accounts);
+  const { startContract } = t.context;
   await startContract(contractName, contractBuilder);
 });
 
 test.after(async t => {
   const { deleteTestKeys } = t.context;
-  deleteTestKeys(accounts);
+  await deleteTestKeys(accounts);
 });
 
 // XXX until https://github.com/Agoric/agoric-sdk/issues/9066,
