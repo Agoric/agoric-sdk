@@ -2,6 +2,7 @@
   "agoricProposal": {
     "source": "subdir",
     "sdk-generate": [
+      "vats/init-orchestration.js",
       "orchestration/init-quickSend.js"
     ],
     "type": "/agoric.swingset.CoreEvalProposal"
