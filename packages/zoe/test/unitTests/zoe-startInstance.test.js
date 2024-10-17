@@ -23,7 +23,7 @@ test('bad installation', async t => {
 function isEmptyFacet(t, facet) {
   t.is(passStyleOf(facet), 'remotable');
   t.deepEqual(
-    Object.getOwnPropertyNames(facet).filter(name => !name.startsWith('__')),
+    Object.keys(facet).filter(name => !name.startsWith('__')),
     [],
   );
 }
@@ -31,7 +31,7 @@ function isEmptyFacet(t, facet) {
 function facetHasMethods(t, facet, names) {
   t.is(passStyleOf(facet), 'remotable');
   t.deepEqual(
-    Object.getOwnPropertyNames(facet).filter(name => !name.startsWith('__')),
+    Object.keys(facet).filter(name => !name.startsWith('__')),
     names,
   );
 }
@@ -40,7 +40,7 @@ test('no issuerKeywordRecord, no terms', async t => {
   const result = await setupZCFTest();
   // Note that deepEqual treats all empty objects (handles) as interchangeable.
   t.deepEqual(
-    Object.getOwnPropertyNames(result.startInstanceResult)
+    Object.keys(result.startInstanceResult)
       .filter(name => !name.startsWith('__'))
       .sort(),
     [
@@ -65,7 +65,7 @@ test('promise for installation', async t => {
   const result = await startInstanceResult;
   // Note that deepEqual treats all empty objects (handles) as interchangeable.
   t.deepEqual(
-    Object.getOwnPropertyNames(result)
+    Object.keys(result)
       .filter(name => !name.startsWith('__'))
       .sort(),
     [
@@ -83,7 +83,12 @@ test('promise for installation', async t => {
     getStringMethodNames(result.adminFacet).filter(
       name => !name.startsWith('__'),
     ),
-    ['getVatShutdownPromise', 'restartContract', 'upgradeContract'],
+    [
+      'getVatShutdownPromise',
+      'restartContract',
+      'terminateContract',
+      'upgradeContract',
+    ],
   );
 });
 
