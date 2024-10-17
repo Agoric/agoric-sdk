@@ -9,6 +9,8 @@ const { Fail } = assert;
  * @import {Instance} from '@agoric/zoe/src/zoeService/utils';
  * @import {Board} from '@agoric/vats';
  * @import {QuickSendContractFn} from '../examples/quickSend.contract.js';
+ * @import {ManifestBundleRef} from '@agoric/deploy-script-support/src/externalTypes.js';
+ * @import {BootstrapManifest} from '@agoric/vats/src/core/lib-boot.js';
  */
 
 /**
@@ -28,6 +30,10 @@ const makePublishingStorageKit = async (path, { chainStorage, board }) => {
 };
 
 /**
+ * @typedef {{ watcherAddress: string }} QuickSendConfig
+ */
+
+/**
  * @param {BootstrapPowers & {
  *   installation: PromiseSpaceOf<{
  *     quickSend: Installation<QuickSendContractFn>;
@@ -37,7 +43,7 @@ const makePublishingStorageKit = async (path, { chainStorage, board }) => {
  *   }>;
  *   brand: PromiseSpaceOf<{ USDC: Brand<'nat'> }>;
  * }} powers
- * @param {{ options?: { quickSend?: { watcherAddress: string } } }} config
+ * @param {{ options?: { quickSend?: QuickSendConfig } }} config
  */
 export const startQuickSend = async (
   {
@@ -114,8 +120,21 @@ export const startQuickSend = async (
 };
 harden(startQuickSend);
 
-export const getManifestForQuickSend = ({ restoreRef }, { installKeys }) => {
+/**
+ * @param {{
+ *   restoreRef: (b: ERef<ManifestBundleRef>) => Promise<Installation>;
+ * }} utils
+ * @param {{
+ *   installKeys: { quickSend: ERef<ManifestBundleRef> };
+ *   options?: { quickSend?: QuickSendConfig };
+ * }} param1
+ */
+export const getManifestForQuickSend = (
+  { restoreRef },
+  { installKeys, options },
+) => {
   return {
+    /** @type {BootstrapManifest} */
     manifest: {
       [startQuickSend.name]: {
         consume: {
@@ -155,5 +174,6 @@ export const getManifestForQuickSend = ({ restoreRef }, { installKeys }) => {
     installations: {
       quickSend: restoreRef(installKeys.quickSend),
     },
+    options,
   };
 };
