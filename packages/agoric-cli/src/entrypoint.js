@@ -31,7 +31,9 @@ main(progname, rawArgs, {
   stdout,
   makeWebSocket,
   fs,
-  now: Date.now,
+  // Some silly filename generation depends on this, so we might as well try
+  // harder to avoid collisions.
+  now: () => Date.now() + Math.random(),
   os,
   process,
   spawn,
