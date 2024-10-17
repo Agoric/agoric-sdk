@@ -44,7 +44,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        cli: [registry/npm]
+        cli: [link-cli/yarn, registry/yarn, registry/npm, registry/npx]
     timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
@@ -101,6 +101,8 @@ jobs:
           timeout_minutes: 20
           command: scripts/registry.sh test ${{ matrix.cli }} ${{steps.get-branch.outputs.result}}
           on_retry_command: rm -f $HOME/bin/agoric
+          max_attempts: 5
+          retry_wait_seconds: 30
 
       - name: notify on failure
         if: >
