@@ -113,7 +113,7 @@ export const makeScheduler = async (
 
   const stepCancelToken = makeCancelToken();
 
-  /** @type {(typeof AuctionState)[keyof typeof AuctionState]} */
+  /** @type {AuctionState} */
   let auctionState = AuctionState.WAITING;
 
   /**

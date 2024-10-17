@@ -9,29 +9,26 @@ import { copyBagMathHelpers } from './mathHelpers/copyBagMathHelpers.js';
 
 /**
  * @import {CopyBag, CopySet} from '@endo/patterns';
- * @import {Amount, AssetKind, AmountValue, AssetKindForValue, AssetValueForKind, Brand, CopyBagAmount, CopySetAmount, MathHelpers, NatAmount, NatValue, SetAmount, SetValue} from './types.js';
+ * @import {Amount, AssetValueForKind, Brand, CopyBagAmount, CopySetAmount, MathHelpers, NatAmount, NatValue, SetAmount, SetValue} from './types.js';
  */
 
+// NB: AssetKind is both a constant for enumerated values and a type for those values.
 /**
  * Constants for the kinds of assets we support.
  *
- * @type {{
- *   NAT: 'nat';
- *   SET: 'set';
- *   COPY_SET: 'copySet';
- *   COPY_BAG: 'copyBag';
- * }}
+ * @enum {(typeof AssetKind)[keyof typeof AssetKind]}
  */
-const AssetKind = harden({
+export const AssetKind = /** @type {const} */ ({
   NAT: 'nat',
   SET: 'set',
   COPY_SET: 'copySet',
   COPY_BAG: 'copyBag',
 });
+harden(AssetKind);
 const assetKindNames = harden(Object.values(AssetKind).sort());
 
 /** @param {AssetKind} allegedAK */
-const assertAssetKind = allegedAK => {
+export const assertAssetKind = allegedAK => {
   assetKindNames.includes(allegedAK) ||
     Fail`The assetKind ${allegedAK} must be one of ${q(assetKindNames)}`;
 };
@@ -192,7 +189,7 @@ const isGTE = (leftAmount, rightAmount, brand = undefined) => {
  * and payments. They can be used to represent things like currency, stock, and
  * the abstract right to participate in a particular exchange.
  */
-const AmountMath = {
+export const AmountMath = {
   // TODO use overloading to handle when Brand has an AssetKind and when it doesn't.
   // a AmountForValue utility could help DRY those cases.
   /**
@@ -387,11 +384,9 @@ const AmountMath = {
 harden(AmountMath);
 
 /** @param {Amount} amount */
-const getAssetKind = amount => {
+export const getAssetKind = amount => {
   assertRecord(amount, 'amount');
   const { value } = amount;
   return assertValueGetAssetKind(value);
 };
 harden(getAssetKind);
-
-export { AmountMath, AssetKind, getAssetKind, assertAssetKind };

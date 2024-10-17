@@ -10,10 +10,9 @@ import { inspect } from 'util';
 import { buildSwingset } from '@agoric/cosmic-swingset/src/launch-chain.js';
 import {
   BridgeId,
+  makeTracer,
   NonNullish,
   VBankAccount,
-  makeTracer,
-  type BridgeIdValue,
   type Remote,
 } from '@agoric/internal';
 import { unmarshalFromVstorage } from '@agoric/internal/src/marshal.js';
@@ -23,11 +22,11 @@ import { initSwingStore } from '@agoric/swing-store';
 import { loadSwingsetConfigFile } from '@agoric/swingset-vat';
 import { makeSlogSender } from '@agoric/telemetry';
 import { TimeMath, Timestamp } from '@agoric/time';
-import { Fail } from '@endo/errors';
 import {
   fakeLocalChainBridgeTxMsgHandler,
   LOCALCHAIN_DEFAULT_ADDRESS,
 } from '@agoric/vats/tools/fake-bridge.js';
+import { Fail } from '@endo/errors';
 
 import {
   makeRunUtils,
@@ -43,7 +42,7 @@ import type { ExecutionContext as AvaT } from 'ava';
 import type { CoreEvalSDKType } from '@agoric/cosmic-proto/swingset/swingset.js';
 import type { EconomyBootstrapPowers } from '@agoric/inter-protocol/src/proposals/econ-behaviors.js';
 import type { SwingsetController } from '@agoric/swingset-vat/src/controller/controller.js';
-import type { BridgeHandler, IBCMethod, IBCPacket } from '@agoric/vats';
+import type { BridgeHandler, IBCMethod } from '@agoric/vats';
 import type { BootstrapRootObject } from '@agoric/vats/src/core/lib-boot.js';
 import type { EProxy } from '@endo/eventual-send';
 import { icaMocks, protoMsgMockMap, protoMsgMocks } from './ibc/mocks.js';
@@ -370,9 +369,9 @@ export const makeSwingsetTestKit = async (
     return msg.packet;
   };
 
-  const inboundQueue: [bridgeId: BridgeIdValue, arg1: unknown][] = [];
+  const inboundQueue: [bridgeId: BridgeId, arg1: unknown][] = [];
   /** Add a message that will be sent to the bridge by flushInboundQueue. */
-  const pushInbound = (bridgeId: BridgeIdValue, arg1: unknown) => {
+  const pushInbound = (bridgeId: BridgeId, arg1: unknown) => {
     inboundQueue.push([bridgeId, arg1]);
   };
   /**
@@ -512,8 +511,10 @@ export const makeSwingsetTestKit = async (
       },
     });
   }
+  const mailboxStorage = new Map();
   const { controller, timer, bridgeInbound } = await buildSwingset(
-    new Map(),
+    // @ts-expect-error missing method 'getNextKey'
+    mailboxStorage,
     bridgeOutbound,
     kernelStorage,
     configPath,
@@ -629,7 +630,7 @@ export const makeSwingsetTestKit = async (
       console.log('🧻');
       return i;
     },
-    async runInbound(bridgeId: BridgeIdValue, msg: unknown) {
+    async runInbound(bridgeId: BridgeId, msg: unknown) {
       await runUtils.queueAndRun(() => inbound(bridgeId, msg), true);
     },
   };
