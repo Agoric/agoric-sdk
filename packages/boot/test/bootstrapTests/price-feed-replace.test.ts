@@ -63,11 +63,22 @@ test.serial('setupVaults; run updatePriceFeeds proposals', async t => {
     refreshAgoricNamesRemotes,
     setupVaults,
     governanceDriver: gd,
+    readLatest,
   } = t.context;
 
   await setupVaults(collateralBrandKey, managerIndex, setup);
 
   const instancePre = agoricNamesRemotes.instance['ATOM-USD price feed'];
+
+  t.like(readLatest('published.priceFeed.ATOM-USD_price_feed.latestRound'), {
+    roundId: 1n,
+  });
+
+  await priceFeedDrivers[collateralBrandKey].setPrice(15.99);
+
+  t.like(readLatest('published.priceFeed.ATOM-USD_price_feed.latestRound'), {
+    roundId: 2n,
+  });
 
   const priceFeedBuilder =
     '@agoric/builders/scripts/inter-protocol/updatePriceFeeds.js';
@@ -132,10 +143,14 @@ test.serial('2. trigger liquidation by changing price', async t => {
 
   await priceFeedDrivers[collateralBrandKey].setPrice(9.99);
 
-  t.log(readLatest('published.priceFeed.ATOM-USD_price_feed'), {
+  t.like(readLatest('published.priceFeed.ATOM-USD_price_feed'), {
     // aka 9.99
     amountIn: { value: 1000000n },
     amountOut: { value: 9990000n },
+  });
+
+  t.like(readLatest('published.priceFeed.ATOM-USD_price_feed.latestRound'), {
+    roundId: 1n,
   });
 
   // check nothing liquidating yet
