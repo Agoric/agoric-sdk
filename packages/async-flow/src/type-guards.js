@@ -11,8 +11,10 @@ export const FlowStateShape = M.or(
 
 export const PropertyKeyShape = M.or(M.string(), M.symbol());
 
+export const START_GENERATION_OP_NAME = 'startGeneration';
+
 const LogEntryAlternatives = [
-  ['updateMetadata', M.number()],
+  [START_GENERATION_OP_NAME, M.number()],
   // ////////////////////////////// From Host to Guest /////////////////////////
   ['doFulfill', VowShape, M.any()],
   ['doReject', VowShape, M.any()],

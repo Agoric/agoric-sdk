@@ -8,6 +8,7 @@ import { getMethodNames } from '@endo/eventual-send/utils.js';
 import { Far, Remotable, getInterfaceOf } from '@endo/pass-style';
 import { makeConvertKit } from './convert.js';
 import { makeEquate } from './equate.js';
+import { START_GENERATION_OP_NAME } from './type-guards.js';
 
 /**
  * @import {PromiseKit} from '@endo/promise-kit';
@@ -62,6 +63,13 @@ export const makeReplayMembraneForTesting = ({
   let stopped = false;
 
   const Panic = (template, ...args) => panic(makeError(X(template, ...args)));
+
+  const startGeneration = generation => {
+    Number.isSafeInteger(generation) ||
+      Fail`generation expected integer; got ${generation}`;
+    generation >= 0 ||
+      Fail`generation expected non-negative; got ${generation}`;
+  };
 
   // ////////////// Host or Interpreter to Guest ///////////////////////////////
 
@@ -278,6 +286,7 @@ export const makeReplayMembraneForTesting = ({
       throw Panic`internal: eventual send synchronously failed ${hostProblem}`;
     }
     try {
+      /** @type {LogEntry} */
       const entry = harden(['doReturn', callIndex, vow]);
       log.pushEntry(entry);
       const guestPromise = makeGuestForHostVow(vow, guestReturnedP);
@@ -605,6 +614,7 @@ export const makeReplayMembraneForTesting = ({
    * These are the only ones that are driven from the interpreter loop
    */
   const topDispatch = harden({
+    [START_GENERATION_OP_NAME]: startGeneration,
     doFulfill,
     doReject,
     // doCall, // unimplemented in the current plan

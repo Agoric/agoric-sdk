@@ -122,7 +122,7 @@ export type Ephemera<S extends WeakKey = WeakKey, V extends unknown = any> = {
  * yet support.
  */
 export type LogEntry =
-  | [op: 'updateMetadata', generation: number]
+  | [op: 'startGeneration', generation: number]
   // ///////////////// From Host to Guest /////////////////////////
   | [op: 'doFulfill', vow: HostVow, fulfillment: Host]
   | [op: 'doReject', vow: HostVow, reason: Host]
@@ -158,7 +158,7 @@ export type LogEntry =
  *   vows and remotables.
  */
 export type FutureLogEntry =
-  | [op: 'updateMetadata', generation: number]
+  | [op: 'startGeneration', generation: number]
   // ///////////////// From Host to Guest ///////////////////////
   | [op: 'doFulfill', vow: HostVow, fulfillment: Host]
   | [op: 'doReject', vow: HostVow, reason: Host]
