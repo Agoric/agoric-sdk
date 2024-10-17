@@ -511,8 +511,10 @@ export const makeSwingsetTestKit = async (
       },
     });
   }
+  const mailboxStorage = new Map();
   const { controller, timer, bridgeInbound } = await buildSwingset(
-    new Map(),
+    // @ts-expect-error missing method 'getNextKey'
+    mailboxStorage,
     bridgeOutbound,
     kernelStorage,
     configPath,
