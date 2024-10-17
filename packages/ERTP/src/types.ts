@@ -3,6 +3,9 @@ import type { LatestTopic } from '@agoric/notifier';
 import type { ERef } from '@endo/far';
 import type { RemotableObject } from '@endo/pass-style';
 import type { CopyBag, CopySet, Key, Pattern } from '@endo/patterns';
+import type { AssetKind } from './amountMath.js';
+
+export type { AssetKind } from './amountMath.js';
 
 export type NatAmount = {
   brand: Brand<'nat'>;
@@ -75,7 +78,6 @@ export type AmountValue =
  * See doc-comment
  *   for `AmountValue`.
  */
-export type AssetKind = 'nat' | 'set' | 'copySet' | 'copyBag';
 export type AssetValueForKind<
   K extends AssetKind,
   M extends Key = Key,

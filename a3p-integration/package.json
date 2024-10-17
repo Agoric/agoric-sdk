@@ -10,6 +10,7 @@
     "build:priceFeeds-for-mainnet": "scripts/build-submission.sh proposals/f:replace-price-feeds inter-protocol/updatePriceFeeds.js submission/main main; scripts/build-submission.sh proposals/f:replace-price-feeds vats/add-auction.js submission/main; scripts/build-submission.sh proposals/f:replace-price-feeds vats/upgradeVaults.js submission/main",
     "build:priceFeeds-for-devnet": "scripts/build-submission.sh proposals/f:replace-price-feeds inter-protocol/updatePriceFeeds.js submission/devnet devnet; scripts/build-submission.sh proposals/f:replace-price-feeds vats/add-auction.js submission/devnet; scripts/build-submission.sh proposals/f:replace-price-feeds vats/upgradeVaults.js submission/devnet",
     "build:synthetic-chain": "yarn synthetic-chain build",
+    "lint": "../node_modules/.bin/eslint proposals",
     "test": "yarn synthetic-chain test",
     "doctor": "yarn synthetic-chain doctor"
   },

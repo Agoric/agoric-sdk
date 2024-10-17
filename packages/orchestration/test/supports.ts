@@ -194,8 +194,6 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
       bankManager,
       timer,
       localchain,
-      // TODO remove; bootstrap doesn't havemarshaller
-      marshaller,
       cosmosInterchainService,
       // TODO remove; bootstrap doesn't have a zone
       rootZone: rootZone.subZone('contract'),
