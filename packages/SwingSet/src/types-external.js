@@ -227,6 +227,7 @@ export {};
  *
  * @typedef { { exports: number,
  *              imports: number,
+ *              promises: number,
  *              kv: number,
  *              snapshots: number,
  *              transcripts: number,
