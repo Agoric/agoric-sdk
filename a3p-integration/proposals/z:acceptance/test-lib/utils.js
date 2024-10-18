@@ -45,5 +45,4 @@ export const getBalances = async (addresses, targetDenom = undefined) => {
   return addresses.length === 1 ? balancesList[0] : balancesList;
 };
 
-export const agopsVaults = async addr =>
-  await agops.vaults('list', '--from', addr);
+export const agopsVaults = addr => agops.vaults('list', '--from', addr);

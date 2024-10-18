@@ -17,9 +17,6 @@ shared:
           - and: # breakage fails like we thought
               - check-failure=breakage
               - label=proto:expect-breakage
-    high_priority_queue_conditions: &high-priority-queue-conditions
-      - and: *queue-conditions
-      - label=priority:high
     merge_conditions: &merge-conditions
       - base=master
       # Rebase PRs with fixup commits are allowed to enter the merge queue but 
@@ -48,31 +45,13 @@ shared:
       - base=master
       - label=automerge:squash
 
+priority_rules:
+  - name: high_priority
+    conditions:
+      - label=priority:high
+    priority: high
+
 queue_rules:
-  - name: high_priority_rebase
-    commit_message_template: *commit-message-template
-    queue_conditions: *high-priority-queue-conditions
-    merge_conditions: *merge-conditions
-    merge_method: merge
-    update_method: rebase
-
-  - name: high_priority_merge
-    commit_message_template: *commit-message-template
-    queue_conditions: *high-priority-queue-conditions
-    merge_conditions: *merge-conditions
-    disallow_checks_interruption_from_queues:
-      - high_priority_rebase
-    merge_method: merge
-
-  - name: high_priority_squash
-    commit_message_template: *commit-message-template
-    queue_conditions: *high-priority-queue-conditions
-    merge_conditions: *merge-conditions
-    disallow_checks_interruption_from_queues:
-      - high_priority_rebase
-      - high_priority_merge
-    merge_method: squash
-
   - name: rebase
     commit_message_template: *commit-message-template
     queue_conditions: *queue-conditions
@@ -84,41 +63,15 @@ queue_rules:
     commit_message_template: *commit-message-template
     queue_conditions: *queue-conditions
     merge_conditions: *merge-conditions
-    disallow_checks_interruption_from_queues:
-      - rebase
     merge_method: merge
 
   - name: squash
     commit_message_template: *commit-message-template
     queue_conditions: *queue-conditions
     merge_conditions: *merge-conditions
-    disallow_checks_interruption_from_queues:
-      - rebase
-      - merge
     merge_method: squash
 
 pull_request_rules:
-  - name:  high priority - merge to master
-    conditions:
-      - and: *pr-queue-merge-conditions
-      - label=priority:high
-    actions:
-      queue:
-        name: high_priority_merge
-  - name: high priority - rebase updates then merge to master
-    conditions:
-      - and: *pr-queue-rebase-conditions
-      - label=priority:high
-    actions:
-      queue:
-        name: high_priority_rebase
-  - name: high priority - squash to master
-    conditions:
-      - and: *pr-queue-squash-conditions
-      - label=priority:high
-    actions:
-      queue:
-        name: high_priority_squash
   - name: merge to master
     conditions: *pr-queue-merge-conditions
     actions:

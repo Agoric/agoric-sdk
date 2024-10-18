@@ -91,8 +91,8 @@ export interface Chain<CI extends ChainInfo> {
 
   // "makeAccount" suggests an operation within a vat
   /**
-   * Creates a new account on the remote chain.
-   * @returns an object that controls a new remote account on Chain
+   * Creates a new Orchestration Account on the current Chain.
+   * @returns an object that controls the account
    */
   makeAccount: () => Promise<OrchestrationAccount<CI>>;
   // FUTURE supply optional port object; also fetch port object
@@ -135,11 +135,6 @@ export interface Orchestrator {
     Chain<C extends keyof KnownChains ? KnownChains[C] : any> &
       (C extends 'agoric' ? AgoricChainMethods : {})
   >;
-
-  /**
-   * Make a new local (Agoric) ChainAccount
-   */
-  makeLocalAccount: () => Promise<LocalChainAccount>;
 
   /**
    * For a denom, return information about a denom including the equivalent

@@ -144,11 +144,9 @@ func (ch portHandler) Receive(cctx context.Context, str string) (ret string, err
 		}
 		coin := keeper.GetBalance(ctx, addr, msg.Denom)
 		packet := coin.Amount.String()
+		bytes, err := json.Marshal(&packet)
 		if err == nil {
-			bytes, err := json.Marshal(&packet)
-			if err == nil {
-				ret = string(bytes)
-			}
+			ret = string(bytes)
 		}
 
 	case "VBANK_GRAB":
@@ -215,9 +213,6 @@ func (ch portHandler) Receive(cctx context.Context, str string) (ret string, err
 		coins := sdk.NewCoins(sdk.NewCoin(msg.Denom, value))
 		if err := keeper.StoreRewardCoins(ctx, coins); err != nil {
 			return "", fmt.Errorf("cannot store reward %s coins: %s", coins.Sort().String(), err)
-		}
-		if err != nil {
-			return "", err
 		}
 		state := keeper.GetState(ctx)
 		state.RewardPool = state.RewardPool.Add(coins...)

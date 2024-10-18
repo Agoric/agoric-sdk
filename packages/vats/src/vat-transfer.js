@@ -33,7 +33,7 @@ export const buildRootObject = (_vatPowers, _args, baggage) => {
   const managerToKits = zone.weakMapStore('managerToHandler');
   return Far('TransferVat', {
     /**
-     * @template {import('@agoric/internal').BridgeIdValue} T
+     * @template {import('@agoric/internal').BridgeId} T
      * @param {import('./types').ScopedBridgeManager<T>} manager
      * @param {string} [inboundType]
      * @param {import('./bridge-target').AppTransformer} [appTransformer]

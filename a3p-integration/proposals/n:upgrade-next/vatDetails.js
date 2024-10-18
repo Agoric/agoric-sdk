@@ -1,3 +1,5 @@
+/* eslint-env node */
+
 import dbOpenAmbient from 'better-sqlite3';
 
 const HOME = process.env.HOME;
@@ -43,6 +45,7 @@ const makeSwingstore = db => {
   const sql = dbTool(db);
 
   /** @param {string} key */
+  // @ts-expect-error cast
   const kvGet = key => sql.get`select * from kvStore where key = ${key}`.value;
   /** @param {string} key */
   const kvGetJSON = key => JSON.parse(kvGet(key));

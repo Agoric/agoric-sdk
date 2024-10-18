@@ -52,7 +52,8 @@ import { makeQueue, makeQueueStorageMock } from './helpers/make-queue.js';
 import { exportStorage } from './export-storage.js';
 import { parseLocatedJson } from './helpers/json.js';
 
-/** @import {RunPolicy} from '@agoric/swingset-vat' */
+/** @import { Mailbox, RunPolicy, SwingSetConfig } from '@agoric/swingset-vat' */
+/** @import { KVStore } from './helpers/bufferedStorage.js' */
 
 const console = anylogger('launch-chain');
 const blockManagerConsole = anylogger('block-manager');
@@ -74,8 +75,6 @@ const parseUpgradePlanInfo = (upgradePlan, prefix = '') => {
   return harden(upgradePlanInfo || {});
 };
 
-/** @import {SwingSetConfig} from '@agoric/swingset-vat' */
-
 /**
  * @typedef {object} CosmicSwingsetConfig
  * @property {import('@agoric/deploy-script-support/src/extract-proposal.js').ConfigProposal[]} [coreProposals]
@@ -96,7 +95,7 @@ const parseUpgradePlanInfo = (upgradePlan, prefix = '') => {
 const getHostKey = path => `host.${path}`;
 
 /**
- * @param {Map<*, *>} mailboxStorage
+ * @param {KVStore<Mailbox>} mailboxStorage
  * @param {((dstID: string, obj: any) => any)} bridgeOutbound
  * @param {SwingStoreKernelStorage} kernelStorage
  * @param {string | (() => string | Promise<string>)} vatconfig absolute path or thunk

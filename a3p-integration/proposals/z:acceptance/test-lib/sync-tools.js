@@ -1,3 +1,5 @@
+/* eslint-env node */
+
 /**
  * @file These tools mostly duplicate code that will be added in other PRs
  * and eventually migrated to synthetic-chain. Sorry for the duplication.
@@ -7,12 +9,12 @@
  * @typedef {object} RetryOptions
  * @property {number} [maxRetries]
  * @property {number} [retryIntervalMs]
- * @property {(...arg0: string[]) => void} [log]
+ * @property {(...arg0: string[]) => void} log
  * @property {(object) => void} [setTimeout]
  * @property {string} [errorMessage=Error]
  */
 
-const ambientSetTimeout = globalThis.setTimeout;
+const ambientSetTimeout = global.setTimeout;
 
 /**
  * From https://github.com/Agoric/agoric-sdk/blob/442f07c8f0af03281b52b90e90c27131eef6f331/multichain-testing/tools/sleep.ts#L10

@@ -12,12 +12,13 @@ import { Far } from '@endo/marshal';
 /**
  * Constants for Auction State.
  *
- * @type {{ ACTIVE: 'active'; WAITING: 'waiting' }}
+ * @enum {(typeof AuctionState)[keyof typeof AuctionState]}
  */
-export const AuctionState = {
+export const AuctionState = /** @type {const} */ ({
   ACTIVE: 'active',
   WAITING: 'waiting',
-};
+});
+harden(AuctionState);
 
 /**
  * @param {{ brand: Brand; value: Pattern }} numeratorAmountShape

@@ -46,6 +46,7 @@ export type AdminFacet<SF extends ContractStartFunction> = FarRef<{
   restartContract: Parameters<SF>[1] extends undefined
     ? () => Promise<VatUpgradeResults>
     : (newPrivateArgs: Parameters<SF>[1]) => Promise<VatUpgradeResults>;
+  terminateContract: (Error) => void;
 }>;
 
 export type StartParams<SF> = SF extends ContractStartFunction

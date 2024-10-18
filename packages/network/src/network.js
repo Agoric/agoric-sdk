@@ -404,12 +404,13 @@ const prepareInboundAttempt = (zone, makeConnection, { watch, finalizer }) => {
   return makeInboundAttempt;
 };
 
-/** @enum {number} */
+/** @enum {typeof RevokeState[keyof typeof RevokeState]} */
 const RevokeState = /** @type {const} */ ({
   NOT_REVOKED: 0,
   REVOKING: 1,
   REVOKED: 2,
 });
+harden(RevokeState);
 
 /**
  * @param {import('@agoric/zone').Zone} zone

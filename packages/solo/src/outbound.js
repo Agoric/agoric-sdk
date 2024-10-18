@@ -1,7 +1,7 @@
 /* eslint-env node */
 import anylogger from 'anylogger';
-
 import { Fail } from '@endo/errors';
+import { exportMailboxData } from '@agoric/swingset-vat';
 
 // Limit the debug log length.
 const SOLO_MAX_DEBUG_LENGTH =
@@ -22,8 +22,8 @@ const log = anylogger('outbound');
  */
 const knownTargets = new Map();
 
-export function deliver(mbs) {
-  const data = mbs.exportToData();
+export function deliver(mailboxStorage) {
+  const data = exportMailboxData(mailboxStorage);
   log.debug(`deliver`, data);
   for (const target of Object.getOwnPropertyNames(data)) {
     if (!knownTargets.has(target)) {

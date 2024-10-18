@@ -1,6 +1,6 @@
 /* eslint-disable no-use-before-define */
 import type { FungibleTokenPacketData } from '@agoric/cosmic-proto/ibc/applications/transfer/v2/packet.js';
-import type { BridgeIdValue, Remote } from '@agoric/internal';
+import type { BridgeId, Remote } from '@agoric/internal';
 import type { Bytes } from '@agoric/network';
 import type { Guarded } from '@endo/exo';
 import type { PacketSDKType } from '@agoric/cosmic-proto/ibc/core/channel/v1/channel.js';
@@ -105,13 +105,13 @@ export type BridgeHandler = {
   fromBridge: (obj: any) => Promise<unknown>;
 };
 
-export type ScopedBridgeManagerMethods<BridgeId extends BridgeIdValue> = {
+export type ScopedBridgeManagerMethods<B extends BridgeId> = {
   /**
    * Optional bridge ID getter. Not part of the production bridge vat but
    * available in fake bridges as a means for test reflection and for the type
    * system to hang the bridgeId
    */
-  getBridgeId?: () => BridgeId;
+  getBridgeId?: () => B;
   /** Downcall from the VM into Golang */
   toBridge: (obj: any) => Promise<any>;
   /** Upcall from Golang into the VM */
@@ -121,16 +121,16 @@ export type ScopedBridgeManagerMethods<BridgeId extends BridgeIdValue> = {
 };
 
 /** An object which handles messages for a specific bridge */
-export type ScopedBridgeManager<BridgeId extends BridgeIdValue> = Guarded<
-  ScopedBridgeManagerMethods<BridgeId>
+export type ScopedBridgeManager<B extends BridgeId> = Guarded<
+  ScopedBridgeManagerMethods<B>
 >;
 
 /** The object to manage this bridge */
 export type BridgeManager = {
-  register: <BridgeId extends BridgeIdValue>(
-    bridgeId: BridgeId,
+  register: <B extends BridgeId>(
+    bridgeId: B,
     handler?: Remote<BridgeHandler>,
-  ) => ScopedBridgeManager<BridgeId>;
+  ) => ScopedBridgeManager<B>;
 };
 
 export type IBCPortID = string;

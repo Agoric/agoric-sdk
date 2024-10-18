@@ -7,12 +7,12 @@ import {
   CHAINID,
   waitForBlock,
 } from '@agoric/synthetic-chain';
+import { $ } from 'execa';
 import {
   agd,
   getBalances,
   replaceTemplateValuesInFile,
 } from './test-lib/utils.js';
-import { $ } from 'execa';
 
 test.serial(`send invitation via namesByAddress`, async t => {
   const SUBMISSION_DIR = 'invitation-test-submission';
@@ -54,8 +54,10 @@ test.serial('exitOffer tool reclaims stuck payment', async t => {
   const after = await getBalances([GOV1ADDR], 'uist');
   t.log('uist balance after:', after);
 
-  t.true(after > before),
-    'The IST balance should increase after reclaiming the stuck payment';
+  t.true(
+    after > before,
+    'The IST balance should increase after reclaiming the stuck payment',
+  );
 });
 
 test.serial(`ante handler sends fee only to vbank/reserve`, async t => {

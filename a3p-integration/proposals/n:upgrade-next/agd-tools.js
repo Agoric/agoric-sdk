@@ -8,7 +8,6 @@ import {
   GOV1ADDR,
   GOV2ADDR,
   GOV3ADDR,
-  newOfferId,
   VALIDATORADDR,
 } from '@agoric/synthetic-chain';
 
@@ -97,7 +96,7 @@ export const addPreexistingOracles = async (brandIn, oraclesByBrand) => {
     const path = `published.wallet.${oracleAddress}.current`;
     const wallet = await getQuoteBody(path);
     const idToInvitation = wallet.offerToUsedInvitation.find(([k]) => {
-      return !isNaN(k[0]);
+      return !Number.isNaN(k[0]);
     });
     if (idToInvitation) {
       oraclesWithID.push({

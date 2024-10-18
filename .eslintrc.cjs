@@ -69,7 +69,6 @@ module.exports = {
       './packages/*/tsconfig.json',
       './packages/*/tsconfig.json',
       './packages/wallet/*/tsconfig.json',
-      './a3p-integration/proposals/*/tsconfig.json',
       './tsconfig.json',
     ],
     tsconfigRootDir: __dirname,
@@ -238,6 +237,17 @@ module.exports = {
       files: ['*.html'],
       parserOptions: {
         project: false,
+      },
+    },
+    {
+      files: ['a3p-integration/**'],
+      extends: ['plugin:@typescript-eslint/disable-type-checked'],
+      parserOptions: {
+        EXPERIMENTAL_useProjectService: false,
+        project: false,
+      },
+      rules: {
+        '@jessie.js/safe-await-separator': 'off',
       },
     },
     {

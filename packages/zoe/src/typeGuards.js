@@ -370,6 +370,7 @@ export const AdminFacetI = M.interface('ZcfAdminFacet', {
   getVatShutdownPromise: M.call().returns(M.promise()),
   restartContract: M.call().optional(M.any()).returns(M.promise()),
   upgradeContract: M.call(M.string()).optional(M.any()).returns(M.promise()),
+  terminateContract: M.call(M.error()).returns(M.promise()),
 });
 
 export const SeatDataShape = M.splitRecord(

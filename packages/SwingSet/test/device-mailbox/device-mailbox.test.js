@@ -13,6 +13,8 @@ import {
 import {
   buildMailboxStateMap,
   buildMailbox,
+  exportMailboxData,
+  makeEphemeralMailboxStorage,
 } from '../../src/devices/mailbox/mailbox.js';
 import { bundleOpts } from '../util.js';
 
@@ -24,7 +26,8 @@ test.before(async t => {
 });
 
 test('mailbox outbound', async t => {
-  const s = buildMailboxStateMap();
+  const mailboxStorage = harden(new Map());
+  const s = buildMailboxStateMap(mailboxStorage);
   const mb = buildMailbox(s);
   const config = {
     bootstrap: 'bootstrap',
@@ -49,8 +52,8 @@ test('mailbox outbound', async t => {
   const c = await makeSwingsetController(kernelStorage, devEndows, runtimeOpts);
   t.teardown(c.shutdown);
   await c.run();
-  // exportToData() provides plain Numbers to the host that needs to convey the messages
-  t.deepEqual(s.exportToData(), {
+  // exportMailboxData() provides plain Numbers to the host that needs to convey the messages
+  t.deepEqual(exportMailboxData(mailboxStorage), {
     peer1: {
       inboundAck: 13,
       outbox: [
@@ -68,9 +71,9 @@ test('mailbox outbound', async t => {
     },
   });
 
-  const s2 = buildMailboxStateMap();
-  s2.populateFromData(s.exportToData());
-  t.deepEqual(s.exportToData(), s2.exportToData());
+  const mailboxDataExport = exportMailboxData(mailboxStorage);
+  const mailboxStorageCopy = makeEphemeralMailboxStorage(mailboxDataExport);
+  t.deepEqual(exportMailboxData(mailboxStorageCopy), mailboxDataExport);
 });
 
 test('mailbox inbound', async t => {

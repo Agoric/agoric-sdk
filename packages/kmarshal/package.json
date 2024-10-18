@@ -21,9 +21,9 @@
     "lint:eslint": "eslint ."
   },
   "dependencies": {
-    "@endo/far": "^1.1.5",
-    "@endo/marshal": "^1.5.3",
-    "@endo/errors": "^1.2.5"
+    "@endo/far": "^1.1.6",
+    "@endo/marshal": "^1.5.4",
+    "@endo/errors": "^1.2.6"
   },
   "devDependencies": {
     "ava": "^5.3.0"

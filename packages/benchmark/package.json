@@ -22,14 +22,14 @@
   "author": "Agoric",
   "license": "Apache-2.0",
   "dependencies": {
-    "@endo/errors": "^1.2.5",
+    "@endo/errors": "^1.2.6",
     "@agoric/boot": "^0.1.0",
     "@agoric/cosmic-swingset": "^0.41.3",
     "@agoric/internal": "^0.3.2",
     "@agoric/inter-protocol": "^0.16.1",
     "@agoric/vats": "^0.15.1",
     "@agoric/zoe": "^0.26.2",
-    "@endo/init": "^1.1.4"
+    "@endo/init": "^1.1.5"
   },
   "devDependencies": {},
   "files": [

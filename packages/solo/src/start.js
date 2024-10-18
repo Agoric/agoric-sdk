@@ -28,6 +28,8 @@ import {
   buildMailbox,
   buildPlugin,
   buildTimer,
+  exportMailboxData,
+  makeEphemeralMailboxStorage,
 } from '@agoric/swingset-vat';
 import { openSwingStore } from '@agoric/swing-store';
 import { makeWithQueue } from '@agoric/internal/src/queue.js';
@@ -110,8 +112,8 @@ const buildSwingset = async (
     fs.readFileSync(mailboxStateFile, 'utf8'),
   );
 
-  const mbs = buildMailboxStateMap();
-  mbs.populateFromData(initialMailboxState);
+  const mailboxStorage = makeEphemeralMailboxStorage(initialMailboxState);
+  const mbs = buildMailboxStateMap(mailboxStorage);
   const mb = buildMailbox(mbs);
   const cm = buildCommand(broadcast);
   const timer = buildTimer();
@@ -235,13 +237,13 @@ const buildSwingset = async (
   });
 
   async function saveState() {
-    const ms = JSON.stringify(mbs.exportToData());
+    const ms = JSON.stringify(exportMailboxData(mailboxStorage));
     await atomicReplaceFile(mailboxStateFile, ms);
     await hostStorage.commit();
   }
 
   function deliverOutbound() {
-    deliver(mbs);
+    deliver(mailboxStorage);
   }
 
   const policy = neverStop();

@@ -1,5 +1,5 @@
 // Export all the types this package provides
-export * from './types.js';
+export type * from './types.js';
 
 // XXX re-exporting the Remote type for back-compat
-export { Remote } from '@agoric/internal/src/types.js';
+export type { Remote } from '@agoric/internal/src/types.js';

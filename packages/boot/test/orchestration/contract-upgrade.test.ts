@@ -2,6 +2,8 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { TestFn } from 'ava';
 
+import { BridgeId } from '@agoric/internal';
+import { buildVTransferEvent } from '@agoric/orchestration/tools/ibc-mocks.js';
 import {
   makeWalletFactoryContext,
   type WalletFactoryTestContext,
@@ -30,8 +32,13 @@ test.after.always(t => t.context.shutdown?.());
  * settles after an upgrade.)
  */
 test('resume', async t => {
-  const { walletFactoryDriver, buildProposal, evalProposal, storage } =
-    t.context;
+  const {
+    walletFactoryDriver,
+    bridgeUtils: { runInbound },
+    buildProposal,
+    evalProposal,
+    storage,
+  } = t.context;
 
   const { IST } = t.context.agoricNamesRemotes.brand;
 
@@ -78,8 +85,24 @@ test('resume', async t => {
     'got info for denoms: ibc/toyatom, ibc/toyusdc, ubld, uist',
     'got info for chain: cosmoshub cosmoshub-4',
     'completed transfer to localAccount',
-    // But does not get to a complete transaction without mocking the IBC transfer acknowledgementPacket
-    // TODO file a ticket for providing that and also fixing it in restart-contracts's .failing test
-    // 'transfer complete, seat exited',
+  ]);
+
+  // simulate ibc/MsgTransfer ack from remote chain, enabling `.transfer()` promise
+  // to resolve
+  await runInbound(
+    BridgeId.VTRANSFER,
+    buildVTransferEvent({
+      sourceChannel: 'channel-5',
+      sequence: '1',
+    }),
+  );
+
+  t.deepEqual(getLogged(), [
+    'sending {0} from cosmoshub to cosmos1whatever',
+    'got info for denoms: ibc/toyatom, ibc/toyusdc, ubld, uist',
+    'got info for chain: cosmoshub cosmoshub-4',
+    'completed transfer to localAccount',
+    'completed transfer to cosmos1whatever',
+    'transfer complete, seat exited',
   ]);
 });

@@ -7,6 +7,7 @@ import { initializeSwingset, makeSwingsetController } from '../src/index.js';
 import {
   buildMailboxStateMap,
   buildMailbox,
+  exportMailboxData,
 } from '../src/devices/mailbox/mailbox.js';
 
 async function restartVatTP(controller) {
@@ -19,7 +20,8 @@ async function restartVatTP(controller) {
 }
 
 test.serial('vattp', async t => {
-  const s = buildMailboxStateMap();
+  const mailboxStorage = harden(new Map());
+  const s = buildMailboxStateMap(mailboxStorage);
   const mb = buildMailbox(s);
   const config = {
     bootstrap: 'bootstrap',
@@ -46,7 +48,7 @@ test.serial('vattp', async t => {
   const c = await makeSwingsetController(kernelStorage, deviceEndowments);
   t.teardown(c.shutdown);
   await c.run();
-  t.deepEqual(s.exportToData(), {});
+  t.deepEqual(exportMailboxData(mailboxStorage), {});
 
   const m1 = [1, 'msg1'];
   const m2 = [2, 'msg2'];
@@ -57,15 +59,20 @@ test.serial('vattp', async t => {
     'ch.receive msg1',
     'ch.receive msg2',
   ]);
-  t.deepEqual(s.exportToData(), { remote1: { outbox: [], inboundAck: 2 } });
+  t.deepEqual(exportMailboxData(mailboxStorage), {
+    remote1: { outbox: [], inboundAck: 2 },
+  });
 
   t.is(mb.deliverInbound('remote1', [m1, m2], 0), true);
   await c.run();
-  t.deepEqual(s.exportToData(), { remote1: { outbox: [], inboundAck: 2 } });
+  t.deepEqual(exportMailboxData(mailboxStorage), {
+    remote1: { outbox: [], inboundAck: 2 },
+  });
 });
 
 test.serial('vattp 2', async t => {
-  const s = buildMailboxStateMap();
+  const mailboxStorage = harden(new Map());
+  const s = buildMailboxStateMap(mailboxStorage);
   const mb = buildMailbox(s);
   const config = {
     bootstrap: 'bootstrap',
@@ -93,19 +100,23 @@ test.serial('vattp 2', async t => {
   t.teardown(c.shutdown);
   c.pinVatRoot('bootstrap');
   await c.run();
-  t.deepEqual(s.exportToData(), {
+  t.deepEqual(exportMailboxData(mailboxStorage), {
     remote1: { outbox: [[1, 'out1']], inboundAck: 0 },
   });
 
   t.is(mb.deliverInbound('remote1', [], 1), true);
   await c.run();
   t.deepEqual(c.dump().log, []);
-  t.deepEqual(s.exportToData(), { remote1: { outbox: [], inboundAck: 0 } });
+  t.deepEqual(exportMailboxData(mailboxStorage), {
+    remote1: { outbox: [], inboundAck: 0 },
+  });
 
   t.is(mb.deliverInbound('remote1', [[1, 'msg1']], 1), true);
   await c.run();
   t.deepEqual(c.dump().log, ['ch.receive msg1']);
-  t.deepEqual(s.exportToData(), { remote1: { outbox: [], inboundAck: 1 } });
+  t.deepEqual(exportMailboxData(mailboxStorage), {
+    remote1: { outbox: [], inboundAck: 1 },
+  });
 
   t.is(mb.deliverInbound('remote1', [[1, 'msg1']], 1), true);
 
@@ -114,7 +125,9 @@ test.serial('vattp 2', async t => {
   t.is(mb.deliverInbound('remote1', [m1, m2], 1), true);
   await c.run();
   t.deepEqual(c.dump().log, ['ch.receive msg1', 'ch.receive msg2']);
-  t.deepEqual(s.exportToData(), { remote1: { outbox: [], inboundAck: 2 } });
+  t.deepEqual(exportMailboxData(mailboxStorage), {
+    remote1: { outbox: [], inboundAck: 2 },
+  });
 
   // now upgrade vattp, and see if the state is retained
   await restartVatTP(c);
@@ -123,7 +136,9 @@ test.serial('vattp 2', async t => {
   t.is(mb.deliverInbound('remote1', [m2], 1), true);
   t.deepEqual(c.dump().log, ['ch.receive msg1', 'ch.receive msg2']);
   // vattp remembers the inboundAck number
-  t.deepEqual(s.exportToData(), { remote1: { outbox: [], inboundAck: 2 } });
+  t.deepEqual(exportMailboxData(mailboxStorage), {
+    remote1: { outbox: [], inboundAck: 2 },
+  });
 
   // vattp remembers the receiver: new inbound msgs are still delivered
   const m3 = [3, 'msg3'];
@@ -134,13 +149,15 @@ test.serial('vattp 2', async t => {
     'ch.receive msg2',
     'ch.receive msg3',
   ]);
-  t.deepEqual(s.exportToData(), { remote1: { outbox: [], inboundAck: 3 } });
+  t.deepEqual(exportMailboxData(mailboxStorage), {
+    remote1: { outbox: [], inboundAck: 3 },
+  });
 
   // vattp still supports the transmitter object
   c.queueToVatRoot('bootstrap', 'transmit', ['out2']);
   await c.run();
   // vattp remembers the outbound seqnum
-  t.deepEqual(s.exportToData(), {
+  t.deepEqual(exportMailboxData(mailboxStorage), {
     remote1: { outbox: [[2, 'out2']], inboundAck: 3 },
   });
 });

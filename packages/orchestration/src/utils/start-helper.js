@@ -130,17 +130,10 @@ export const provideOrchestration = (
   });
 
   const makeOrchestrator = prepareOrchestrator(zones.orchestration, {
-    asyncFlowTools,
     chainHub,
-    localchain: remotePowers.localchain,
-    makeRecorderKit,
     makeLocalChainFacade,
     makeRemoteChainFacade,
-    storageNode: remotePowers.storageNode,
-    orchestrationService: remotePowers.orchestrationService,
-    timerService,
     vowTools,
-    zcf,
   });
 
   /**

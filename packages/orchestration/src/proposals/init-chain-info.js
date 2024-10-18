@@ -3,7 +3,7 @@ import { E, Far } from '@endo/far';
 import { makeMarshal } from '@endo/marshal';
 import { makeTracer } from '@agoric/internal';
 import { registerKnownChains } from '../chain-info.js';
-import { CHAIN_KEY, CONNECTIONS_KEY } from '../exos/chain-hub.js';
+import { HubName } from '../exos/chain-hub.js';
 
 const trace = makeTracer('InitChainInfo', true);
 
@@ -66,8 +66,8 @@ const publishChainInfoToChainStorage = async (
       }),
     );
   };
-  await echoNameUpdates(CHAIN_KEY);
-  await echoNameUpdates(CONNECTIONS_KEY);
+  await echoNameUpdates(HubName.Chain);
+  await echoNameUpdates(HubName.ChainConnection);
 };
 
 /**

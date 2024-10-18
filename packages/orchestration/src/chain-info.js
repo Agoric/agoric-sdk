@@ -1,11 +1,6 @@
 import { E } from '@endo/far';
 import { M, mustMatch } from '@endo/patterns';
-import {
-  ASSETS_KEY,
-  CHAIN_KEY,
-  CONNECTIONS_KEY,
-  normalizeConnectionInfo,
-} from './exos/chain-hub.js';
+import { HubName, normalizeConnectionInfo } from './exos/chain-hub.js';
 import fetchedChainInfo from './fetched-chain-info.js'; // Refresh with scripts/refresh-chain-info.ts
 import { CosmosAssetInfoShape, CosmosChainInfoShape } from './typeGuards.js';
 
@@ -39,8 +34,9 @@ const knownChains = /** @satisfies {Record<string, ChainInfo>} */ (
  */
 export const registerChainAssets = async (agoricNamesAdmin, name, assets) => {
   mustMatch(assets, M.arrayOf(CosmosAssetInfoShape));
-  const { nameAdmin: assetAdmin } =
-    await E(agoricNamesAdmin).provideChild(ASSETS_KEY);
+  const { nameAdmin: assetAdmin } = await E(agoricNamesAdmin).provideChild(
+    HubName.ChainAssets,
+  );
   return E(assetAdmin).update(name, assets);
 };
 
@@ -61,9 +57,10 @@ export const registerChain = async (
   log = () => {},
   handledConnections = new Set(),
 ) => {
-  const { nameAdmin } = await E(agoricNamesAdmin).provideChild(CHAIN_KEY);
-  const { nameAdmin: connAdmin } =
-    await E(agoricNamesAdmin).provideChild(CONNECTIONS_KEY);
+  const { nameAdmin } = await E(agoricNamesAdmin).provideChild(HubName.Chain);
+  const { nameAdmin: connAdmin } = await E(agoricNamesAdmin).provideChild(
+    HubName.ChainConnection,
+  );
 
   mustMatch(chainInfo, CosmosChainInfoShape);
   const { connections = {}, ...vertex } = chainInfo;

@@ -284,6 +284,13 @@ export {};
  */
 
 /**
+ * @typedef { import('./devices/mailbox/mailbox.js').Mailbox } Mailbox
+ */
+/**
+ * @typedef { import('./devices/mailbox/mailbox.js').MailboxExport } MailboxExport
+ */
+
+/**
  * Vat Creation and Management
  *
  * @typedef { string } BundleID

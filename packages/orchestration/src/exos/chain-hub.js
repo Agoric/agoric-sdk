@@ -41,13 +41,25 @@ export const DenomDetailShape = M.splitRecord(
   { brand: BrandShape },
 );
 
-// TODO refactor into an enum-ish object
-/** agoricNames key for ChainInfo hub */
-export const CHAIN_KEY = 'chain';
-/** namehub for connection info */
-export const CONNECTIONS_KEY = 'chainConnection';
-/** namehub for assets info */
-export const ASSETS_KEY = 'chainAssets';
+/**
+ * @enum {(typeof HubName)[keyof typeof HubName]}
+ */
+export const HubName = /** @type {const} */ ({
+  /** agoricNames key for ChainInfo hub */
+  Chain: 'chain',
+  /** namehub for assets info */
+  ChainAssets: 'chainAssets',
+  /** namehub for connection info */
+  ChainConnection: 'chainConnection',
+});
+harden(HubName);
+
+/** @deprecated use HubName.Chain */
+export const CHAIN_KEY = HubName.Chain;
+/** @deprecated use HubName.ChainConnection */
+export const CONNECTIONS_KEY = HubName.ChainConnection;
+/** @deprecated use HubName.ChainAssets */
+export const ASSETS_KEY = HubName.ChainAssets;
 
 /**
  * Character used in a connection tuple key to separate the two chain ids. Valid
@@ -213,7 +225,7 @@ export const makeChainHub = (zone, agoricNames, vowTools) => {
     async chainName => {
       await null;
       try {
-        const chainInfo = await E(agoricNames).lookup(CHAIN_KEY, chainName);
+        const chainInfo = await E(agoricNames).lookup(HubName.Chain, chainName);
         // It may have been set by another concurrent call
         // TODO consider makeAtomicProvider for vows
         if (!chainInfos.has(chainName)) {
@@ -240,7 +252,7 @@ export const makeChainHub = (zone, agoricNames, vowTools) => {
       const key = connectionKey(chainId1, chainId2);
       try {
         const connectionInfo = await E(agoricNames).lookup(
-          CONNECTIONS_KEY,
+          HubName.ChainConnection,
           key,
         );
         // It may have been set by another concurrent call

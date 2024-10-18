@@ -2,6 +2,7 @@
  * @file work-around: importing @agoric/synthetic-chain hangs XXX
  */
 // @ts-check
+/* eslint-env node */
 import { $ } from 'execa';
 
 const waitForBootstrap = async () => {
@@ -103,6 +104,7 @@ export const makeAgd = ({ execFileSync }) => {
     const nameHub = freeze({
       /**
        * NOTE: synchronous I/O
+       * @param {...any} path
        */
       lookup: (...path) => {
         if (!Array.isArray(path)) {

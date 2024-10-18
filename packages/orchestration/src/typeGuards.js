@@ -105,7 +105,6 @@ export const CosmosChainInfoShape = M.splitRecord(
 export const ChainInfoShape = M.splitRecord({
   chainId: M.string(),
 });
-export const LocalChainAccountShape = M.remotable('LocalChainAccount');
 export const DenomShape = M.string();
 
 /** @type {TypedPattern<DenomInfo<any, any>>} */

@@ -1,3 +1,4 @@
+/* eslint-env node */
 import test from 'ava';
 import {
   agoric,
@@ -47,7 +48,7 @@ test.before(async t => {
     'price not pushed yet',
     {
       log: t.log,
-      setTimeout: globalThis.setTimeout,
+      setTimeout: global.setTimeout,
       // @ts-expect-error t.context is fine
       ...t.context.pushPriceRetryOpts,
     },
