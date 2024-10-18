@@ -57,8 +57,8 @@ export const IBCChannelIDShape = M.string();
 export const IBCChannelInfoShape = M.splitRecord({
   portId: M.string(),
   channelId: IBCChannelIDShape,
-  counterPartyPortId: M.string(),
-  counterPartyChannelId: IBCChannelIDShape,
+  counterpartyPortId: M.string(),
+  counterpartyChannelId: IBCChannelIDShape,
   ordering: M.scalar(), // XXX
   state: M.scalar(), // XXX
   version: M.string(),
@@ -68,12 +68,10 @@ export const IBCConnectionIDShape = M.string();
 /** @internal */
 export const IBCConnectionInfoShape = M.splitRecord({
   id: IBCConnectionIDShape,
-  client_id: M.string(),
+  clientId: M.string(),
   state: M.scalar(), // XXX STATE_OPEN or...
-  counterparty: {
-    client_id: M.string(),
-    connection_id: IBCConnectionIDShape,
-  },
+  counterpartyClientId: M.string(),
+  counterpartyConnectionId: IBCConnectionIDShape,
   transferChannel: IBCChannelInfoShape,
 });
 
@@ -83,7 +81,7 @@ export const CosmosAssetInfoShape = M.splitRecord({
   name: M.string(),
   display: M.string(),
   symbol: M.string(),
-  denom_units: M.arrayOf(
+  denomUnits: M.arrayOf(
     M.splitRecord({ denom: M.string(), exponent: M.number() }),
   ),
 });
