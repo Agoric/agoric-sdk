@@ -62,8 +62,7 @@ module.exports = {
   root: true,
   parser: '@typescript-eslint/parser',
   parserOptions: {
-    // Works for us!
-    EXPERIMENTAL_useProjectService: true,
+    projectService: true,
     sourceType: 'module',
     project: [
       './packages/*/tsconfig.json',
