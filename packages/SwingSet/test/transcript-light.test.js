@@ -17,7 +17,7 @@ test('transcript-light load', async t => {
   t.teardown(c.shutdown);
   const serialized0 = debug.serialize();
   const kvstate0 = debug.dump().kvEntries;
-  t.is(kvstate0.version, '2');
+  t.is(kvstate0.version, '3');
   t.is(kvstate0.runQueue, '[1,1]');
   t.not(kvstate0.acceptanceQueue, '[]');
 
