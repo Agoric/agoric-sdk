@@ -172,7 +172,7 @@ export const gettingStartedWorkflowTest = async (t, options = {}) => {
 
     // ==============
     // wait for the chain to start
-    let lastKnownBlockHeight = 0n;
+    let lastKnownBlockHeight = 2n;
     for (;;) {
       try {
         const currentHeight = await getLatestBlockHeight(
@@ -181,8 +181,8 @@ export const gettingStartedWorkflowTest = async (t, options = {}) => {
         if (currentHeight > lastKnownBlockHeight) {
           const earlierHeight = lastKnownBlockHeight;
           lastKnownBlockHeight = currentHeight;
-          if (earlierHeight > 0n && currentHeight > earlierHeight) {
-            // We've had at least one block produced.
+          if (earlierHeight > 2n && currentHeight > earlierHeight) {
+            // We've had at least 3 blocks produced.
             break;
           }
         }
