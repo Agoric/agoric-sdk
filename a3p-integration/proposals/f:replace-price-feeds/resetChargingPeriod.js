@@ -2,13 +2,18 @@
 
 /* global setTimeout */
 
-import { getQuoteBody, GOV1ADDR } from '@agoric/synthetic-chain';
+import {
+  getQuoteBody,
+  GOV1ADDR,
+  GOV2ADDR,
+  GOV3ADDR,
+} from '@agoric/synthetic-chain';
 import {
   proposeVaultDirectorParamChange,
   voteForNewParams,
 } from './agoric-tools.js';
 
-const GOV_ADDRESSES = [GOV1ADDR];
+const GOV_ADDRESSES = [GOV1ADDR, GOV2ADDR, GOV3ADDR];
 
 const readChargingPeriod = async () => {
   const governanceBody = await getQuoteBody(
