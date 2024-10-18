@@ -1,4 +1,5 @@
 import { Far, E } from '@endo/far';
+import { makePromiseKit } from '@endo/promise-kit';
 
 export function buildRootObject(_vatPowers) {
   let root;
@@ -21,9 +22,20 @@ export function buildRootObject(_vatPowers) {
       }
 
       // set up 20 "dude exports, bootstrap imports" c-list entries
-
       for (let i = 0; i < 20; i += 1) {
         myImports.push(await E(root).sendExport());
+      }
+
+      // also 10 imported promises
+      for (let i = 0; i < 10; i += 1) {
+        await E(root).acceptImports(makePromiseKit().promise);
+      }
+
+      // and 10 exported promises
+      for (let i = 0; i < 10; i += 1) {
+        const p = E(root).forever();
+        myImports.push(p);
+        p.catch(_err => 0); // hush
       }
 
       // ask dude to creates 20 vatstore entries (in addition to the

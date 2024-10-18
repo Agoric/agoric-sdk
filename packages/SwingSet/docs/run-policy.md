@@ -68,15 +68,18 @@ Some vats may grow very large (i.e. large c-lists with lots of imported/exported
 
 To protect the system against these bursts, the run policy can be configured to terminate vats slowly. Instead of doing all the cleanup work immediately, the policy allows the kernel to do a little bit of work each time `controller.run()` is called (e.g. once per block, for kernels hosted inside a blockchain). Internally, before servicing the run-queue, the kernel checks to see if any vats are in the "terminated but not fully deleted" state, and executes a "vat-cleanup crank", to delete some state. Depending upon what the run-policy allows, it may do multiple vat-cleanup cranks in a single `controller.run()`, or just one, or none at all. And depending upon the budget provided to each one, it may only take one vat-cleanup crank to finish the job, or millions. If the policy limits the number of cranks in a single block, and limits the budget of the crank, then the cleanup process will be spread over multiple blocks.
 
-For each terminated vat, cleanup proceeds through five phases:
+For each terminated vat, cleanup proceeds through six phases:
 
-* `exports`: delete c-list entries for objects/promises *exported* by the vat
-* `imports`: same but for objects/promises *imported* by the vat
+* `exports`: delete c-list entries for objects *exported* by the vat
+* `imports`: same but for objects *imported* by the vat
+* `promises`: same but promises referenced by the vat
 * `kv`: delete all other kv entries for this vat, mostly vatstore records
 * `snapshots`: delete xsnap heap snapshots, typically one per 200 deliveries (`snapshotInterval`)
 * `transcripts`: delete transcript spans, and their associated transcript items
 
 The first two phases, `exports` and `imports`, cause the most activity in other vats. Deleting `exports` can cause objects to be retired, which will deliver `dispatch.retireImports` GC messages to other vats which have imported those objects and used them as keys in a WeakMapStore. Deleting `imports` can cause refcounts to drop to zero, delivering `dispatch.dropImports` into vats which were exporting those objects. Both of these will add `gcKref` "dirt" to the other vat, eventually triggering a BringOutYourDead, which will cause more DB activity. These are generally the phases we must rate-limit to avoid overwhelming the system.
+
+The `promises` phase may cause kernel promise table entries to be deleted. This is unlikely to trigger activity in other vats, because only settled promises can have references to other objects, and the notification of settlement is enqueued to all subscribers as soon as the promise is fulfilled or rejected. However, if some of these notifications were still in the run-queue when the vat got deleted, the GC work might be accelerated slightly.
 
 The other phases cause DB activity (deleting rows), but do not interact with other vats, so it is easier to accomodate more cleanup steps. The budget can be tuned to allow more kv/snapshots/transcripts than exports/imports in a single cleanup run.
 
@@ -92,7 +95,7 @@ The limit can be set to `Infinity` to allow unlimited deletion of that particula
 
 Each budget record must include a `{ default }` property, which is used as the default for any phase that is not explicitly mentioned in the budget. This also provides forwards-compatibility for any phases that might be added in the future. So `budget = { default: 5 }` would provide a conservative budget for cleanup, `budget = { default: 5, kv: 50 }` would enable faster deletion of the non-c-list kvstore entries, and `budget = { default: Infinity }` allows unlimited cleanup for all phases.
 
-Note that the cleanup crank ends when no more work is left to be done (which finally allows the vat to be forgotten entirely), or when an individual phase's budget is exceeded. That means multiple phases might see deletion work in a single crank, if the earlier phase finishes its work without exhausting its budget. For example, if the budget is `{ default: 5 }`, but the vat had 4 exports, 4 imports, 4 other kv entries, 4 snapshots, and 4 transcript spans, then all that work would be done in a single crank, because no individual phase would exhaust its budget. The only case that is even worth mentioning is when the end of the `exports` phase overlaps with the start of the `imports` phase, where we might do four more cleanups than usual.
+Note that the cleanup crank ends when no more work is left to be done (which finally allows the vat to be forgotten entirely), or when an individual phase's budget is exceeded. That means multiple phases might see deletion work in a single crank, if the earlier phase finishes its work without exhausting its budget. For example, if the budget is `{ default: 5 }`, but the vat had 4 exports, 4 imports, 4 promise entries, 4 other kv entries, 4 snapshots, and 4 transcript spans, then all that work would be done in a single crank, because no individual phase would exhaust its budget. The only case that is even worth mentioning is when the end of the `exports` phase overlaps with the start of the `imports` phase, where we might do four more cleanups than usual.
 
 A `true` return value from `allowCleanup()` is equivalent to `{ default: Infinity }`, which allows unlimited cleanup work. This also happens if `allowCleanup()` is missing entirely, which maintains the old behavior for host applications that haven't been updated to make new policy objects. Note that cleanup is higher priority than any delivery, and is second only to acceptance queue routing.
 
