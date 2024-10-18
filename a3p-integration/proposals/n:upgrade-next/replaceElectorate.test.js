@@ -1,16 +1,8 @@
 import test from 'ava';
 import '@endo/init';
-import { GOV1ADDR, evalBundles, waitForBlock } from '@agoric/synthetic-chain';
+import { GOV1ADDR } from '@agoric/synthetic-chain';
 import { passStyleOf } from '@endo/marshal';
 import { queryVstorageFormatted } from './agoric-tools.js';
-
-const UPGRADE_PP_DIR = 'replace-electorate';
-
-test.skip('what', async t => {
-  await evalBundles(UPGRADE_PP_DIR);
-  await waitForBlock(2);
-  t.pass();
-});
 
 test.serial('should be able to view the new accepted invitations', async t => {
   const instance = await queryVstorageFormatted(
