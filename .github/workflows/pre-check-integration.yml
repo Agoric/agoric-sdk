@@ -1,4 +1,4 @@
-name: Pre-check Integration Test
+name: Pre-check Integration Test!
 
 on:
   workflow_call:
@@ -22,7 +22,7 @@ on:
               ) &&
               github.event.pull_request.draft == false &&
               (
-                contains(github.event.pull_request.labels.*.name, 'automerge:squash') || 
+                contains(github.event.pull_request.labels.*.name, 'automerge:squash') ||
                 contains(github.event.pull_request.labels.*.name, 'automerge:no-update') ||
                 contains(github.event.pull_request.labels.*.name, 'automerge:rebase') ||
                 github.event.pull_request.auto_merge != null
@@ -44,11 +44,11 @@ jobs:
         ) &&
         github.event.pull_request.draft == false &&
         (
-          contains(github.event.pull_request.labels.*.name, 'automerge:squash') || 
+          contains(github.event.pull_request.labels.*.name, 'automerge:squash') ||
           contains(github.event.pull_request.labels.*.name, 'automerge:no-update') ||
           contains(github.event.pull_request.labels.*.name, 'automerge:rebase') ||
           github.event.pull_request.auto_merge != null
-        ) && 
+        ) &&
         !contains(github.event.pull_request.labels.*.name, 'bypass:integration')
       )
     runs-on: ubuntu-latest
@@ -56,7 +56,7 @@ jobs:
       should_skip: ${{ (steps.step2.outcome == 'skipped' || steps.step2.outputs.concurrent_conclusion == 'success') && steps.step1.outputs.should_skip || 'false' }}
       previous_success: >-
         ${{
-          (steps.step2.outcome == 'skipped' && steps.step1.outputs.reason == 'skip_after_successful_duplicate' && 'true') || 
+          (steps.step2.outcome == 'skipped' && steps.step1.outputs.reason == 'skip_after_successful_duplicate' && 'true') ||
           (steps.step2.outputs.concurrent_conclusion == 'success' && 'true') ||
           'false'
         }}
@@ -69,11 +69,11 @@ jobs:
       - id: step2
         name: Wait for concurrent run conclusion
         if: >-
-          steps.step1.outputs.should_skip == 'true' && 
-          steps.step1.outputs.reason == 'concurrent_skipping' && 
+          steps.step1.outputs.should_skip == 'true' &&
+          steps.step1.outputs.reason == 'concurrent_skipping' &&
           fromJSON(steps.step1.outputs.skipped_by).status != 'completed'
         run: |
-          while : ; do 
+          while : ; do
             conclusion="$(curl --fail --silent \
               --url https://api.github.com/repos/${{ github.repository }}/actions/runs/${{ fromJSON(steps.step1.outputs.skipped_by).id }} \
               --header 'authorization: Bearer ${{ secrets.GITHUB_TOKEN }}' \
