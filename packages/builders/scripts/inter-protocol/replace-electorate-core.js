@@ -16,25 +16,6 @@
 import { makeHelpers } from '@agoric/deploy-script-support';
 import { getManifestForReplaceAllElectorates } from '@agoric/inter-protocol/src/proposals/replaceElectorate.js';
 
-/** @type {import('@agoric/deploy-script-support/src/externalTypes.js').CoreEvalBuilder} */
-export const defaultProposalBuilder = async ({ publishRef, install }, opts) => {
-  return harden({
-    sourceSpec: '@agoric/inter-protocol/src/proposals/replaceElectorate.js',
-    getManifestCall: [
-      getManifestForReplaceAllElectorates.name,
-      {
-        ...opts,
-        economicCommitteeRef: publishRef(
-          install(
-            '@agoric/governance/src/committee.js',
-            '../bundles/bundle-committee.js',
-          ),
-        ),
-      },
-    ],
-  });
-};
-
 const configurations = {
   MAINNET: {
     committeeName: 'Economic Committee',
@@ -94,21 +75,39 @@ const configurations = {
 
 const { keys } = Object;
 const Usage = `agoric run replace-electorate-core.js ${keys(configurations).join(' | ')}`;
+/** @type {import('@agoric/deploy-script-support/src/externalTypes.js').CoreEvalBuilder} */
+export const defaultProposalBuilder = async ({ publishRef, install }, opts) => {
+  const config = configurations[opts.variant];
+  if (!config) {
+    console.error(Usage);
+    process.exit(1);
+  }
+  return harden({
+    sourceSpec: '@agoric/inter-protocol/src/proposals/replaceElectorate.js',
+    getManifestCall: [
+      getManifestForReplaceAllElectorates.name,
+      {
+        ...config,
+        economicCommitteeRef: publishRef(
+          install(
+            '@agoric/governance/src/committee.js',
+            '../bundles/bundle-committee.js',
+          ),
+        ),
+      },
+    ],
+  });
+};
 
 /** @type {import('@agoric/deploy-script-support/src/externalTypes.js').DeployScriptFunction} */
 export default async (homeP, endowments) => {
   const { scriptArgs } = endowments;
   const variant = scriptArgs?.[0];
-  const config = configurations[variant];
-  if (!config) {
-    console.error(Usage);
-    process.exit(1);
-  }
-  console.log('replace-committee', scriptArgs, config);
+  console.log('replace-committee', scriptArgs, variant);
 
   const { writeCoreEval } = await makeHelpers(homeP, endowments);
 
   await writeCoreEval(`replace-committee-${variant}`, (utils, opts) =>
-    defaultProposalBuilder(utils, { ...opts, ...config }),
+    defaultProposalBuilder(utils, { ...opts, variant }),
   );
 };

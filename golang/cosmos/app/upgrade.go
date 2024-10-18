@@ -1,7 +1,10 @@
 package gaia
 
 import (
+	"encoding/json"
 	"fmt"
+	"strings"
+	"text/template"
 
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	swingsetkeeper "github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/keeper"
@@ -72,6 +75,59 @@ func isFirstTimeUpgradeOfThisVersion(app *GaiaApp, ctx sdk.Context) bool {
 	return true
 }
 
+func buildProposalStepWithArgs(moduleName string, entrypoint string, opts map[string]any) (vm.CoreProposalStep, error) {
+	t := template.Must(template.New("").Parse(`{
+		"module": "{{.moduleName}}",
+		"entrypoint": "{{.entrypoint}}",
+		"args": [ {{.args}} ]
+	}`))
+
+	args, err := json.Marshal(opts)
+	if err != nil {
+		return nil, err
+	}
+
+	var result strings.Builder
+	err = t.Execute(&result, map[string]any{
+		"moduleName": moduleName,
+		"entrypoint": entrypoint,
+		"args":       string(args),
+	})
+	if err != nil {
+		return nil, err
+	}
+	jsonStr := result.String()
+	jsonBz := []byte(jsonStr)
+	if !json.Valid(jsonBz) {
+		return nil, fmt.Errorf("invalid JSON: %s", jsonStr)
+	}
+	proposal := vm.ArbitraryCoreProposal{Json: jsonBz}
+	return vm.CoreProposalStepForModules(proposal), nil
+}
+
+func replaceElectorateCoreProposalStep(upgradeName string) (vm.CoreProposalStep, error) {
+	var variant string
+
+	switch validUpgradeName(upgradeName) {
+	case "UNRELEASED_A3P_INTEGRATION":
+		variant = "A3P_INTEGRATION"
+	case "UNRELEASED_main":
+		variant = "MAINNET"
+	case "UNRELEASED_devnet":
+		variant = "DEVNET"
+	// Noupgrade for this version.
+	case "UNRELEASED_BASIC":
+	}
+
+	return buildProposalStepWithArgs(
+		"@agoric/builders/scripts/inter-protocol/replace-electorate-core.js",
+		"defaultProposalBuilder",
+		map[string]any{
+			"variant": variant,
+		},
+	)
+}
+
 // unreleasedUpgradeHandler performs standard upgrade actions plus custom actions for the unreleased upgrade.
 func unreleasedUpgradeHandler(app *GaiaApp, targetUpgrade string) func(sdk.Context, upgradetypes.Plan, module.VersionMap) (module.VersionMap, error) {
 	return func(ctx sdk.Context, plan upgradetypes.Plan, fromVm module.VersionMap) (module.VersionMap, error) {
@@ -89,9 +145,15 @@ func unreleasedUpgradeHandler(app *GaiaApp, targetUpgrade string) func(sdk.Conte
 				return module.VersionMap{}, fmt.Errorf("cannot run %s as first upgrade", plan.Name)
 			}
 
+			replaceElectorateStep, err := replaceElectorateCoreProposalStep(targetUpgrade)
+			if err != nil {
+				return nil, err
+			}
+
 			// Each CoreProposalStep runs sequentially, and can be constructed from
 			// one or more modules executing in parallel within the step.
 			CoreProposalSteps = []vm.CoreProposalStep{
+				replaceElectorateStep,
 				vm.CoreProposalStepForModules(
 					// Upgrade Zoe (no new ZCF needed).
 					"@agoric/builders/scripts/vats/upgrade-zoe.js",
