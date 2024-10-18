@@ -10,11 +10,13 @@ import {
   ATOM_DENOM,
   executeOffer,
   GOV1ADDR,
+  GOV2ADDR,
+  GOV3ADDR,
   provisionSmartWallet,
   waitForBlock,
 } from '@agoric/synthetic-chain';
 
-const govAccounts = [GOV1ADDR];
+const govAccounts = [GOV1ADDR, GOV2ADDR, GOV3ADDR];
 
 export const ISTunit = 1_000_000n; // aka displayInfo: { decimalPlaces: 6 }
 
