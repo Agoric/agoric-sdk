@@ -32,14 +32,37 @@ export const flags = record => {
  * @callback ExecSync
  * @param {string} file
  * @param {string[]} args
- * @param {{ encoding: 'utf-8' } & { [k: string]: unknown }} opts
+ * @param {{ [k: string]: unknown }} [opts]
  * @returns {string}
  */
 
 /**
- * @param {{ execFileSync: ExecSync }} io
+ * @typedef {(...args: Parameters<ExecSync>) => Promise<ReturnType<ExecSync>>} ExecAsync
  */
-export const makeAgd = ({ execFileSync }) => {
+
+/**
+ * @param {ExecAsync} [execFileAsync]
+ * @param {ExecSync} [execFileSync]
+ * @returns {ExecAsync}
+ */
+const makeExecFileAsync = (execFileAsync, execFileSync) => {
+  if (execFileAsync) {
+    return execFileAsync;
+  }
+  if (!execFileSync) {
+    throw TypeError('execFileAsync or execFileSync required');
+  }
+  return async (...args) => {
+    return execFileSync(...args);
+  };
+};
+
+/**
+ * @param {{ execFileSync: ExecSync, execFileAsync?: ExecAsync }} io
+ */
+export const makeAgd = ({ execFileSync, execFileAsync: rawExecFileAsync }) => {
+  const execFileAsync = makeExecFileAsync(rawExecFileAsync, execFileSync);
+
   /**
    * @param { {
    *       home?: string;
@@ -66,6 +89,15 @@ export const makeAgd = ({ execFileSync }) => {
       args,
       opts = { encoding: 'utf-8', stdio: ['ignore', 'pipe', 'ignore'] },
     ) => execFileSync(kubectlBinary, [...binaryArgs, ...args], opts);
+
+    /**
+     * @param {string[]} args
+     * @param {Parameters<ExecSync>[2]} [opts]
+     */
+    const execAsync = async (
+      args,
+      opts = { encoding: 'utf-8', stdio: ['ignore', 'pipe', 'ignore'] },
+    ) => execFileAsync(kubectlBinary, [...binaryArgs, ...args], opts);
 
     const outJson = flags({ output: 'json' });
 
@@ -132,7 +164,12 @@ export const makeAgd = ({ execFileSync }) => {
           ...outJson,
         ];
         console.log('$$$ agd', ...args);
-        const out = exec(args, { stdio: ['ignore', 'pipe', 'ignore'] });
+        // This is practically the only command that takes longer than the
+        // default AVA 10s timeout.
+        const out = await execAsync(args, {
+          encoding: 'utf-8',
+          stdio: ['ignore', 'pipe', 'ignore'],
+        });
         try {
           const detail = JSON.parse(out);
           if (detail.code !== 0) {
@@ -183,19 +220,23 @@ export const makeAgd = ({ execFileSync }) => {
 
 /** @typedef {ReturnType<makeAgd>} Agd */
 
-/** @param {{ execFileSync: typeof import('child_process').execFileSync, log: typeof console.log }} powers */
+/** @param {{execFileSync?: ExecSync, execFileAsync?: ExecAsync, log: typeof console.log }} powers */
 export const makeCopyFiles = (
-  { execFileSync, log },
+  { execFileSync, execFileAsync: rawExecFileAsync, log },
   {
     podName = 'agoriclocal-genesis-0',
     containerName = 'validator',
     destDir = '/tmp/contracts',
   } = {},
 ) => {
+  // Provide a default execFileAsync if it's not specified.
+  /** @type {ExecAsync} */
+  const execFileAsync = makeExecFileAsync(rawExecFileAsync, execFileSync);
+
   /** @param {string[]} paths } */
-  return paths => {
+  return async paths => {
     // Create the destination directory if it doesn't exist
-    execFileSync(
+    await execFileAsync(
       kubectlBinary,
       `exec -i ${podName} -c ${containerName} -- mkdir -p ${destDir}`.split(
         ' ',
@@ -203,14 +244,14 @@ export const makeCopyFiles = (
       { stdio: ['ignore', 'pipe', 'ignore'] },
     );
     for (const path of paths) {
-      execFileSync(
+      await execFileAsync(
         kubectlBinary,
         `cp ${path} ${podName}:${destDir}/ -c ${containerName}`.split(' '),
         { stdio: ['ignore', 'pipe', 'ignore'] },
       );
       log(`Copied ${path} to ${destDir} in pod ${podName}`);
     }
-    const lsOutput = execFileSync(
+    const lsOutput = await execFileAsync(
       kubectlBinary,
       `exec -i ${podName} -c ${containerName}  -- ls ${destDir}`.split(' '),
       { stdio: ['ignore', 'pipe', 'ignore'], encoding: 'utf-8' },

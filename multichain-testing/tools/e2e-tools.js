@@ -1,4 +1,4 @@
-/** global harden */
+/** global harden, globalThis */
 import { assert } from '@endo/errors';
 import { E, Far } from '@endo/far';
 import { Nat } from '@endo/nat';
@@ -409,10 +409,11 @@ const runCoreEval = async (
  * @param {typeof console.log} log
  * @param {import('@agoric/swingset-vat/tools/bundleTool.js').BundleCache} bundleCache
  * @param {object} io
- * @param {typeof import('child_process').execFileSync} io.execFileSync
- * @param {typeof import('child_process').execFile} io.execFile
+ * @param {import('./agd-lib.js').ExecSync} io.execFileSync
+ * @param {import('./agd-lib.js').ExecAsync} [io.execFileAsync]
  * @param {typeof window.fetch} io.fetch
- * @param {typeof window.setTimeout} io.setTimeout
+ * @param {typeof window.setTimeout} [io.setTimeout]
+ * @param {(ms: number) => Promise<void>} [io.delay]
  * @param {string} [io.bundleDir]
  * @param {string} [io.rpcAddress]
  * @param {string} [io.apiAddress]
@@ -423,16 +424,19 @@ export const makeE2ETools = async (
   bundleCache,
   {
     execFileSync,
+    execFileAsync,
     fetch,
     setTimeout,
     rpcAddress = 'http://localhost:26657',
     apiAddress = 'http://localhost:1317',
+    delay = ms => new Promise(resolve => setTimeout(resolve, ms)),
   },
 ) => {
-  const agd = makeAgd({ execFileSync }).withOpts({ keyringBackend: 'test' });
+  const agd = makeAgd({ execFileSync, execFileAsync }).withOpts({
+    keyringBackend: 'test',
+  });
   const rpc = makeHttpClient(rpcAddress, fetch);
   const lcd = makeAPI(apiAddress, { fetch });
-  const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 
   const explainDelay = (ms, info) => {
     if (typeof info === 'object' && Object.keys(info).length > 0) {
@@ -504,7 +508,7 @@ export const makeE2ETools = async (
     return proposal;
   };
 
-  const copyFiles = makeCopyFiles({ execFileSync, log });
+  const copyFiles = makeCopyFiles({ execFileSync, execFileAsync, log });
 
   const vstorageClient = makeQueryKit(vstorage).query;
 
