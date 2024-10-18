@@ -1,3 +1,5 @@
+# mirrors config.yaml, except s/hermes/go-relayer
+
 chains:
   - id: agoriclocal
     name: agoric
@@ -87,19 +89,19 @@ chains:
 
 relayers:
   - name: osmosis-gaia
-    type: hermes
+    type: go-relayer
     replicas: 1
     chains:
       - osmosislocal
       - gaialocal
   - name: agoric-osmosis
-    type: hermes
+    type: go-relayer
     replicas: 1
     chains:
       - agoriclocal
       - osmosislocal
   - name: agoric-gaia
-    type: hermes
+    type: go-relayer
     replicas: 1
     chains:
       - agoriclocal
