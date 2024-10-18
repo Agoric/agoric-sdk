@@ -11,7 +11,7 @@ import { prepareEndowmentTools } from './endowments.js';
 import { LogEntryShape, FlowStateShape } from './type-guards.js';
 
 /**
- * @import {WeakMapStore} from '@agoric/store'
+ * @import {WeakMapStore, MapStore} from '@agoric/store'
  * @import {Zone} from '@agoric/base-zone'
  * @import {FlowState, GuestAsyncFunc, HostAsyncFuncWrapper, HostOf, PreparationOptions} from '../src/types.js'
  * @import {ReplayMembrane} from '../src/replay-membrane.js'
@@ -47,9 +47,25 @@ const AdminAsyncFlowI = M.interface('AsyncFlowAdmin', {
  * @param {PreparationOptions} [outerOptions]
  */
 export const prepareAsyncFlowTools = (outerZone, outerOptions = {}) => {
+  /** @type {MapStore<'logGeneration', number>} */
+  const flowMetadata = outerZone.mapStore('flowMetadata');
+  /**
+   * Get a generation number to attach to all flow log entries.
+   * @type {number}
+   */
+  let logGeneration;
+  const logGenerationKey = 'logGeneration';
+  if (flowMetadata.has(logGenerationKey)) {
+    logGeneration = flowMetadata.get(logGenerationKey) + 1;
+    flowMetadata.set(logGenerationKey, logGeneration);
+  } else {
+    logGeneration = 1;
+    flowMetadata.init(logGenerationKey, logGeneration);
+  }
+
   const {
     vowTools = prepareVowTools(outerZone),
-    makeLogStore = prepareLogStore(outerZone),
+    makeLogStore = prepareLogStore(outerZone, { generation: logGeneration }),
     endowmentTools: { prepareEndowment, unwrap } = prepareEndowmentTools(
       outerZone,
       { vowTools },
@@ -70,7 +86,7 @@ export const prepareAsyncFlowTools = (outerZone, outerOptions = {}) => {
     keyShape: M.remotable('flow'), // flowState !== 'Done'
   });
 
-  /** @type WeakMapStore<AsyncFlow, ReplayMembrane> */
+  /** @type {WeakMapStore<AsyncFlow, ReplayMembrane>} */
   const membraneMap = makeScalarWeakMapStore('membraneFor', {
     keyShape: M.remotable('flow'),
     valueShape: M.remotable('membrane'),
