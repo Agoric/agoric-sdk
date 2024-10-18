@@ -26,7 +26,7 @@ const V3_NO_DATA_ERROR = 'No data present';
 /** @type {bigint} */
 export const ROUND_MAX = BigInt(2 ** 32 - 1);
 
-const trace = makeTracer('RoundsM', false);
+const trace = makeTracer('RoundsM', true);
 
 /** @param {bigint} roundId */
 const validRoundId = roundId => {
@@ -172,10 +172,13 @@ export const prepareRoundsManagerKit = baggage =>
         rounds,
         unitIn,
       };
+
+      const roundId = 0n;
+
       return {
         ...immutable,
         lastValueOutForUnitIn: null,
-        reportingRoundId: 0n,
+        reportingRoundId: roundId,
       };
     },
     {
@@ -600,8 +603,8 @@ export const prepareRoundsManagerKit = baggage =>
 
         /**
          * a method to provide all current info oracleStatuses need. Intended
-         * only only to be callable by oracleStatuses. Not for use by contracts
-         * to read state.
+         * only to be callable by oracleStatuses. Not for use by contracts to
+         * read state.
          *
          * @param {OracleStatus} status
          * @param {Timestamp} blockTimestamp
@@ -726,6 +729,52 @@ export const prepareRoundsManagerKit = baggage =>
 
           return settledStatus;
         },
+      },
+    },
+    {
+      finish: ({ state }) => {
+        const { details, rounds, timerPresence } = state;
+        // Zero is treated as special as roundId and in times. It's hard to
+        // avoid on restart and in tests, so make 1 the minimum
+
+        const firstRound = 1n;
+        state.reportingRoundId = firstRound;
+        details.init(
+          firstRound,
+          harden({
+            submissions: [],
+            maxSubmissions: state.maxSubmissionCount,
+            minSubmissions: state.minSubmissionCount,
+            roundTimeout: state.timeout,
+          }),
+        );
+
+        // Cannot await in first crank. Fail if no timestamp available
+        void E.when(
+          E(timerPresence).getCurrentTimestamp(),
+          nowMaybe => {
+            const now =
+              TimeMath.compareAbs(nowMaybe, 1n) < 0
+                ? TimeMath.coerceTimestampRecord(1n, nowMaybe.timerBrand)
+                : nowMaybe;
+
+            const round = harden({
+              answer: 0n,
+              startedAt: now,
+              updatedAt: 0n,
+              answeredInRound: 0n,
+            });
+            rounds.init(firstRound, round);
+
+            // In case this is a replacement priceFeed, set roundId in vstorage.
+            void state.latestRoundPublisher.write({
+              roundId: firstRound,
+              startedAt: round.startedAt,
+              startedBy: 'uninitialized',
+            });
+          },
+          reason => Fail`need a timestamp to start roundsManager ${reason}`,
+        );
       },
     },
   );

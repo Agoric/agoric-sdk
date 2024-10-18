@@ -94,46 +94,53 @@ test('basic, with snapshot', async t => {
 
   t.log('----- round 1: basic consensus');
   await oracleTimer.tick();
-  await E(oracleA).pushPrice({ roundId: 1, unitPrice: 100n });
-  await E(oracleB).pushPrice({ roundId: 1, unitPrice: 200n });
-  await E(oracleC).pushPrice({ roundId: 1, unitPrice: 300n });
+  await E(oracleC).pushPrice({ roundId: 1, unitPrice: 130n });
+  await E(oracleA).pushPrice({ roundId: 1, unitPrice: 110n });
+  await E(oracleB).pushPrice({ roundId: 1, unitPrice: 120n });
+  await oracleTimer.tick();
+
+  t.log('----- round 2: more prices');
+  await oracleTimer.tick();
+  await E(oracleA).pushPrice({ roundId: 2, unitPrice: 100n });
+  await E(oracleC).pushPrice({ roundId: 2, unitPrice: 300n });
+  await E(oracleB).pushPrice({ roundId: 2, unitPrice: 200n });
   await oracleTimer.tick();
 
   const round1Attempt1 = await E(aggregator.creator).getRoundData(1);
   t.is(round1Attempt1.roundId, 1n);
-  t.is(round1Attempt1.answer, 200n);
+  t.is(round1Attempt1.answer, 120n);
 
   t.log('----- round 2: check restartDelay implementation');
   // since oracle A initialized the last round, it CANNOT start another round before
   // the restartDelay, which means its submission will be IGNORED. this means the median
   // should ONLY be between the OracleB and C values, which is why it is 25000
   await oracleTimer.tick();
-  await t.throwsAsync(E(oracleA).pushPrice({ roundId: 2, unitPrice: 1000n }), {
+  await t.throwsAsync(E(oracleA).pushPrice({ roundId: 3, unitPrice: 1000n }), {
     message:
-      'round 2 not accepting submissions from oracle "agorice1priceOracleA"',
+      'round 3 not accepting submissions from oracle "agorice1priceOracleA"',
   });
-  await E(oracleB).pushPrice({ roundId: 2, unitPrice: 2000n });
-  await E(oracleC).pushPrice({ roundId: 2, unitPrice: 3000n });
+  await E(oracleB).pushPrice({ roundId: 3, unitPrice: 2000n });
+  await E(oracleC).pushPrice({ roundId: 3, unitPrice: 3000n });
   await oracleTimer.tick();
 
-  const round1Attempt2 = await E(aggregator.creator).getRoundData(1);
-  t.is(round1Attempt2.answer, 200n);
   const round2Attempt1 = await E(aggregator.creator).getRoundData(2);
-  t.is(round2Attempt1.answer, 2500n);
+  t.is(round2Attempt1.answer, 200n);
+  const round3Attempt1 = await E(aggregator.creator).getRoundData(3);
+  t.is(round3Attempt1.answer, 2500n);
 
-  t.log('----- round 3: check oracle submission order');
+  t.log('----- round 4: check oracle submission order');
   // unlike the previous test, if C initializes, all submissions should be recorded,
   // which means the median will be the expected 5000 here
   await oracleTimer.tick();
-  await E(oracleC).pushPrice({ roundId: 3, unitPrice: 5000n });
-  await E(oracleA).pushPrice({ roundId: 3, unitPrice: 4000n });
-  await E(oracleB).pushPrice({ roundId: 3, unitPrice: 6000n });
+  await E(oracleC).pushPrice({ roundId: 4, unitPrice: 5000n });
+  await E(oracleA).pushPrice({ roundId: 4, unitPrice: 4000n });
+  await E(oracleB).pushPrice({ roundId: 4, unitPrice: 6000n });
   await oracleTimer.tick();
 
-  const round1Attempt3 = await E(aggregator.creator).getRoundData(1);
-  t.is(round1Attempt3.answer, 200n);
-  const round3Attempt1 = await E(aggregator.creator).getRoundData(3);
-  t.is(round3Attempt1.answer, 5000n);
+  const round2Attempt2 = await E(aggregator.creator).getRoundData(2);
+  t.is(round2Attempt2.answer, 200n);
+  const round4Attempt1 = await E(aggregator.creator).getRoundData(4);
+  t.is(round4Attempt1.answer, 5000n);
 
   const doc = {
     node: 'priceAggregator',
@@ -526,6 +533,18 @@ test('suggest', async t => {
   t.is(round1Attempt1.roundId, 1n);
   t.is(round1Attempt1.answer, 200n);
 
+  t.deepEqual(
+    await E(aggregator.creator).oracleRoundState('agorice1priceOracleC', 1n),
+    {
+      eligibleForSpecificRound: false,
+      oracleCount: 3,
+      latestSubmission: 300n,
+      queriedRoundId: 1n,
+      roundTimeout: 5,
+      startedAt: toTS(1n),
+    },
+  );
+
   // ----- round 2: add a new oracle and confirm the suggested round is correct
   await oracleTimer.tick();
   await E(oracleB).pushPrice({ roundId: 2, unitPrice: 1000n });
@@ -607,22 +626,41 @@ test('notifications', async t => {
   const { oracle: oracleB } = await E(aggregator.creator).initOracle(
     'agorice1priceOracleB',
   );
+  const { oracle: oracleC } = await E(aggregator.creator).initOracle(
+    'agorice1priceOracleC',
+  );
+
+  // Rounds 0 and 1 are weird. Let's jump to round 2
+  await oracleTimer.tick();
+  await E(oracleA).pushPrice({ roundId: 1, unitPrice: 350n });
+  await E(oracleB).pushPrice({ roundId: 1, unitPrice: 250n });
+  await E(oracleC).pushPrice({ roundId: 1, unitPrice: 150n });
+  await oracleTimer.tick();
+  await eventLoopIteration();
+
+  await E(oracleB).pushPrice({ roundId: 2, unitPrice: 450n });
+  await E(oracleC).pushPrice({ roundId: 2, unitPrice: 650n });
+  await E(oracleA).pushPrice({ roundId: 2, unitPrice: 550n });
+  await oracleTimer.tick();
+  await eventLoopIteration();
 
   const publicTopics = await E(aggregator.public).getPublicTopics();
   const eachLatestRound = subscribeEach(publicTopics.latestRound.subscriber)[
     Symbol.asyncIterator
   ]();
+  t.deepEqual((await eachLatestRound.next()).value, {
+    roundId: 2n,
+    startedAt: toTS(2n),
+    startedBy: 'agorice1priceOracleB',
+  });
 
   await oracleTimer.tick();
-  await E(oracleA).pushPrice({ roundId: 1, unitPrice: 100n });
-  t.deepEqual((await eachLatestRound.next()).value, {
-    roundId: 1n,
-    startedAt: toTS(1n),
-    startedBy: 'agorice1priceOracleA',
-  });
-  await E(oracleB).pushPrice({ roundId: 1, unitPrice: 200n });
+  await E(oracleA).pushPrice({ roundId: 3, unitPrice: 100n });
 
+  await oracleTimer.tick();
+  await E(oracleB).pushPrice({ roundId: 3, unitPrice: 200n });
   await eventLoopIteration();
+
   t.deepEqual(
     aggregator.mockStorageRoot.getBody(
       'mockChainStorageRoot.priceAggregator.LINK-USD_price_feed',
@@ -634,40 +672,48 @@ test('notifications', async t => {
         value: 150n, // AVG(100, 200)
       },
       timer: Far('ManualTimer'),
-      timestamp: toMockTS(1n),
+      timestamp: toMockTS(5n),
     },
   );
 
-  await t.throwsAsync(E(oracleA).pushPrice({ roundId: 2, unitPrice: 1000n }), {
+  await t.throwsAsync(E(oracleA).pushPrice({ roundId: 4, unitPrice: 1000n }), {
     message:
-      'round 2 not accepting submissions from oracle "agorice1priceOracleA"',
+      'round 4 not accepting submissions from oracle "agorice1priceOracleA"',
   });
   // A started last round so fails to start next round
   t.deepEqual(
     // subscribe fresh because the iterator won't advance yet
     (await publicTopics.latestRound.subscriber.subscribeAfter()).head.value,
     {
-      roundId: 1n,
-      startedAt: toTS(1n),
+      roundId: 3n,
+      startedAt: toTS(4n),
       startedBy: 'agorice1priceOracleA',
     },
   );
-  // B gets to start it
-  await E(oracleB).pushPrice({ roundId: 2, unitPrice: 1000n });
+
   t.deepEqual((await eachLatestRound.next()).value, {
-    roundId: 2n,
-    startedAt: toTS(1n),
+    roundId: 3n,
+    startedAt: toTS(4n),
+    startedBy: 'agorice1priceOracleA',
+  });
+
+  // B gets to start it
+  await E(oracleB).pushPrice({ roundId: 4, unitPrice: 1000n });
+  t.deepEqual((await eachLatestRound.next()).value, {
+    roundId: 4n,
+    startedAt: toTS(5n),
     startedBy: 'agorice1priceOracleB',
   });
   // A joins in
-  await E(oracleA).pushPrice({ roundId: 2, unitPrice: 1000n });
+  await E(oracleA).pushPrice({ roundId: 4, unitPrice: 1000n });
   // writes to storage
   t.deepEqual(
     aggregator.mockStorageRoot.getBody(
       'mockChainStorageRoot.priceAggregator.LINK-USD_price_feed.latestRound',
     ),
-    { roundId: 2n, startedAt: toMockTS(1n), startedBy: 'agorice1priceOracleB' },
+    { roundId: 4n, startedAt: toMockTS(5n), startedBy: 'agorice1priceOracleB' },
   );
+  await oracleTimer.tick();
 
   await eventLoopIteration();
   t.deepEqual(
@@ -681,15 +727,15 @@ test('notifications', async t => {
         value: 1000n, // AVG(1000, 1000)
       },
       timer: Far('ManualTimer'),
-      timestamp: toMockTS(1n),
+      timestamp: toMockTS(6n),
     },
   );
 
   // A can start again
-  await E(oracleA).pushPrice({ roundId: 3, unitPrice: 1000n });
+  await E(oracleA).pushPrice({ roundId: 5, unitPrice: 1000n });
   t.deepEqual((await eachLatestRound.next()).value, {
-    roundId: 3n,
-    startedAt: toTS(1n),
+    roundId: 5n,
+    startedAt: toTS(6n),
     startedBy: 'agorice1priceOracleA',
   });
   // no new price yet publishable
