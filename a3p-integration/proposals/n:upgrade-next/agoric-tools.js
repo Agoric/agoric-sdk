@@ -24,6 +24,7 @@ export const marshaller = boardSlottingMarshaller(slotToRemotable);
 
 export const queryVstorageFormatted = async (path, index = -1) => {
   const data = await queryVstorage(path);
+
   const formattedData = JSON.parse(data.value);
   const formattedDataAtIndex = JSON.parse(formattedData.values.at(index));
   return marshaller.fromCapData(formattedDataAtIndex);
