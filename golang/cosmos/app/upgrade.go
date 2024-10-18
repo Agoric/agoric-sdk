@@ -92,6 +92,7 @@ func unreleasedUpgradeHandler(app *GaiaApp, targetUpgrade string) func(sdk.Conte
 			// Each CoreProposalStep runs sequentially, and can be constructed from
 			// one or more modules executing in parallel within the step.
 			CoreProposalSteps = []vm.CoreProposalStep{
+				vm.CoreProposalStepForModules("@agoric/builders/scripts/inter-protocol/replace-electorate-core.js"),
 				vm.CoreProposalStepForModules(
 					// Upgrade to new liveslots for repaired vow usage.
 					"@agoric/builders/scripts/vats/upgrade-orch-core.js",

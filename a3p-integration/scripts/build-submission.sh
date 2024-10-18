@@ -1,5 +1,5 @@
 #!/bin/bash
-set -ueo pipefail
+set -uexo pipefail
 
 sdkroot=$(git rev-parse --show-toplevel)
 

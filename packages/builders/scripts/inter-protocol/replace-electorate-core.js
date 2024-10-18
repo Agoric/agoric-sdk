@@ -16,25 +16,6 @@
 import { makeHelpers } from '@agoric/deploy-script-support';
 import { getManifestForReplaceAllElectorates } from '@agoric/inter-protocol/src/proposals/replaceElectorate.js';
 
-/** @type {import('@agoric/deploy-script-support/src/externalTypes.js').CoreEvalBuilder} */
-export const defaultProposalBuilder = async ({ publishRef, install }, opts) => {
-  return harden({
-    sourceSpec: '@agoric/inter-protocol/src/proposals/replaceElectorate.js',
-    getManifestCall: [
-      getManifestForReplaceAllElectorates.name,
-      {
-        ...opts,
-        economicCommitteeRef: publishRef(
-          install(
-            '@agoric/governance/src/committee.js',
-            '../bundles/bundle-committee.js',
-          ),
-        ),
-      },
-    ],
-  });
-};
-
 const configurations = {
   MAINNET: {
     committeeName: 'Economic Committee',
@@ -93,12 +74,35 @@ const configurations = {
   },
 };
 
+/** @type {import('@agoric/deploy-script-support/src/externalTypes.js').CoreEvalBuilder} */
+export const defaultProposalBuilder = async ({ publishRef, install }, opts) => {
+  const variant = 'A3P_INTEGRATION';
+  const config = configurations[variant];
+  console.log('fraz 2');
+  return harden({
+    sourceSpec: '@agoric/inter-protocol/src/proposals/replaceElectorate.js',
+    getManifestCall: [
+      getManifestForReplaceAllElectorates.name,
+      {
+        ...config,
+        economicCommitteeRef: publishRef(
+          install(
+            '@agoric/governance/src/committee.js',
+            '../bundles/bundle-committee.js',
+          ),
+        ),
+      },
+    ],
+  });
+};
+
 const { keys } = Object;
 const Usage = `agoric run replace-electorate-core.js ${keys(configurations).join(' | ')}`;
 export default async (homeP, endowments) => {
   const { scriptArgs } = endowments;
-  const variant = scriptArgs?.[0];
+  const variant = 'A3P_INTEGRATION';
   const config = configurations[variant];
+  console.log('fraz 1');
   if (!config) {
     console.error(Usage);
     process.exit(1);
