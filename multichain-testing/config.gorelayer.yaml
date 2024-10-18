@@ -1,4 +1,6 @@
 # mirrors config.yaml, except s/hermes/go-relayer
+name: agoric-multichain-testing-go-relayer
+version: 0.2.19
 
 chains:
   - id: agoriclocal
