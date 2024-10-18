@@ -73,7 +73,7 @@ add-address:
 	kubectl exec -i agoriclocal-genesis-0 -c validator -- agd keys add user1
 
 fund-provision-pool:
-	kubectl exec -i agoriclocal-genesis-0 -c validator -- agd tx bank send faucet $(PROVISION_POOL_ADDR) 1000000000uist -y -b block
+	node_modules/.bin/tsx scripts/fund-provision-pool.ts
 
 override-chain-registry:
 	node_modules/.bin/tsx scripts/fetch-starship-chain-info.ts && \
