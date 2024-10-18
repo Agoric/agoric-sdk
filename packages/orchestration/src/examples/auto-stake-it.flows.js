@@ -58,7 +58,7 @@ export const makeAccounts = async (
     agoricChainId,
     chainId,
   );
-  assert(transferChannel.counterPartyChannelId, 'unable to find sourceChannel');
+  assert(transferChannel.counterpartyChannelId, 'unable to find sourceChannel');
 
   const localDenom = `ibc/${denomHash({ denom: remoteDenom, channelId: transferChannel.channelId })}`;
 
@@ -69,7 +69,7 @@ export const makeAccounts = async (
     validator,
     localChainAddress,
     remoteChainAddress,
-    sourceChannel: transferChannel.counterPartyChannelId,
+    sourceChannel: transferChannel.counterpartyChannelId,
     remoteDenom,
     localDenom,
   });

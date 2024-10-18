@@ -99,19 +99,17 @@ export const connectionKey = (chainId1, chainId2) => {
 const reverseConnInfo = connInfo => {
   const { transferChannel } = connInfo;
   return {
-    id: connInfo.counterparty.connection_id,
-    client_id: connInfo.counterparty.client_id,
-    counterparty: {
-      client_id: connInfo.client_id,
-      connection_id: connInfo.id,
-    },
+    id: connInfo.counterpartyConnectionId,
+    clientId: connInfo.counterpartyClientId,
+    counterpartyClientId: connInfo.clientId,
+    counterpartyConnectionId: connInfo.id,
     state: connInfo.state,
     transferChannel: {
       ...transferChannel,
-      channelId: transferChannel.counterPartyChannelId,
-      counterPartyChannelId: transferChannel.channelId,
-      portId: transferChannel.counterPartyPortId,
-      counterPartyPortId: transferChannel.portId,
+      channelId: transferChannel.counterpartyChannelId,
+      counterpartyChannelId: transferChannel.channelId,
+      portId: transferChannel.counterpartyPortId,
+      counterpartyPortId: transferChannel.portId,
     },
   };
 };
@@ -446,8 +444,8 @@ export const registerAssets = (chainHub, name, assets) => {
       ? [name, name, base]
       : [
           name,
-          traces[0].counterparty.chain_name,
-          traces[0].counterparty.base_denom,
+          traces[0].counterparty.chainName,
+          traces[0].counterparty.baseDenom,
         ];
     chainHub.registerAsset(base, { chainName, baseName, baseDenom });
   }
