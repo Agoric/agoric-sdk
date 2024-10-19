@@ -17,7 +17,7 @@ export const makeRunUtils = controller => {
    * Wait for exclusive access to the controller, then before relinquishing that access,
    * enqueue and process a delivery and return the result.
    *
-   * @param {() => ERef<void | ReturnType<controller['queueToVatObject']>>} deliveryThunk
+   * @param {() => ERef<void | ReturnType<typeof controller['queueToVatObject']>>} deliveryThunk
    * function for enqueueing a delivery and returning the result kpid (if any)
    * @param {boolean} [voidResult] whether to ignore the result
    * @returns {Promise<any>}
