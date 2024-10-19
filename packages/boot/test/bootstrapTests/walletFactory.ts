@@ -9,9 +9,11 @@ import { makeWalletFactoryDriver } from '../../tools/drivers.js';
 export const makeWalletFactoryContext = async (
   t,
   configSpecifier = '@agoric/vm-config/decentral-main-vaults-config.json',
+  opts,
 ) => {
   const swingsetTestKit = await makeSwingsetTestKit(t.log, undefined, {
     configSpecifier,
+    ...opts,
   });
 
   const { runUtils, storage } = swingsetTestKit;
