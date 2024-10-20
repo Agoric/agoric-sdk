@@ -55,7 +55,7 @@ export const makeEthChain = (heightInitial: number, { t, setTimeout }) => {
   const { nextLabel: next } = t.context;
   return harden({
     deployContract: async c => {
-      const address = `0x${(nonce += 1)}`;
+      const address: EthAddr = `0x${(nonce += 1)}`;
       contracts.set(address, c);
       return address;
     },
