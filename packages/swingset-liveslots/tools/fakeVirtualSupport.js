@@ -43,6 +43,30 @@ class FakeWeakRef {
   }
 }
 
+// Vendor until https://github.com/endojs/endo/pull/2008 is merged
+// then we can import the endo implementation.
+const compareByCodePoints = (left, right) => {
+  const leftIter = left[Symbol.iterator]();
+  const rightIter = right[Symbol.iterator]();
+  for (;;) {
+    const { value: leftChar } = leftIter.next();
+    const { value: rightChar } = rightIter.next();
+    if (leftChar === undefined && rightChar === undefined) {
+      return 0;
+    } else if (leftChar === undefined) {
+      // left is a prefix of right.
+      return -1;
+    } else if (rightChar === undefined) {
+      // right is a prefix of left.
+      return 1;
+    }
+    const leftCodepoint = /** @type {number} */ (leftChar.codePointAt(0));
+    const rightCodepoint = /** @type {number} */ (rightChar.codePointAt(0));
+    if (leftCodepoint < rightCodepoint) return -1;
+    if (leftCodepoint > rightCodepoint) return 1;
+  }
+};
+
 /**
  * @param {Map<string, string>} map
  */
@@ -57,7 +81,7 @@ export function makeKVStoreFromMap(map) {
       for (const key of map.keys()) {
         sortedKeys.push(key);
       }
-      sortedKeys.sort((k1, k2) => k1.localeCompare(k2));
+      sortedKeys.sort(compareByCodePoints);
     }
   }
 
@@ -93,7 +117,7 @@ export function makeKVStoreFromMap(map) {
       let result;
       for (let i = start; i < sortedKeys.length; i += 1) {
         const key = sortedKeys[i];
-        if (key > priorKey) {
+        if (compareByCodePoints(key, priorKey) > 0) {
           priorKeyReturned = key;
           priorKeyIndex = i;
           result = key;
