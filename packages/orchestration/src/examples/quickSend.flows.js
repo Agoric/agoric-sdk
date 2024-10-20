@@ -111,12 +111,10 @@ export const handleCCTPCall = async (_orch, ctx, accts, offerArgs) => {
   const { USDC } = ctx.terms.brands;
   const { fundingPool } = accts;
 
-  assert.equal(
-    NobleCalc.fwdAddressFor(
-      AgoricCalc.virtualAddressFor(fundingPool.getAddress().value, dest.value),
-    ),
-    nobleFwd,
-  );
+  const fAddr = fundingPool.getAddress().value;
+  const vAddr = AgoricCalc.virtualAddressFor(fAddr, dest.value);
+  const nfAddr = NobleCalc.fwdAddressFor(vAddr);
+  assert.equal(nfAddr, nobleFwd, `for ${vAddr}`);
   const withBrand = make(USDC, amount);
   const advance = subtract(withBrand, add(makerFee, contractFee));
   await fundingPool.transfer(dest, advance);
