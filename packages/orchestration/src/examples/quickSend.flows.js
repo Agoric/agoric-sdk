@@ -135,7 +135,9 @@ export const handleCCTPCall = async (_orch, ctx, accts, offerArgs) => {
   assert.equal(nfAddr, nobleFwd, `for ${vAddr}`);
   const withBrand = make(USDC, amount);
   const advance = subtract(withBrand, add(makerFee, contractFee));
+  log('transfer advance', { dest, advance });
   await fundingPool.transfer(dest, advance);
+  return `advance ${advance.value} uusdc sent to ${dest.value}`;
 };
 harden(handleCCTPCall);
 
