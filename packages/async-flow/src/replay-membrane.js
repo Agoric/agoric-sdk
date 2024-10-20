@@ -63,6 +63,13 @@ export const makeReplayMembraneForTesting = ({
 
   const Panic = (template, ...args) => panic(makeError(X(template, ...args)));
 
+  const startGeneration = generation => {
+    Number.isSafeInteger(generation) ||
+      Fail`generation expected integer; got ${generation}`;
+    generation >= 0 ||
+      Fail`generation expected non-negative; got ${generation}`;
+  };
+
   // ////////////// Host or Interpreter to Guest ///////////////////////////////
 
   /**
@@ -278,6 +285,7 @@ export const makeReplayMembraneForTesting = ({
       throw Panic`internal: eventual send synchronously failed ${hostProblem}`;
     }
     try {
+      /** @type {LogEntry} */
       const entry = harden(['doReturn', callIndex, vow]);
       log.pushEntry(entry);
       const guestPromise = makeGuestForHostVow(vow, guestReturnedP);
@@ -602,21 +610,22 @@ export const makeReplayMembraneForTesting = ({
   // /////////////////////////////// Interpreter ///////////////////////////////
 
   /**
-   * These are the only ones that are driven from the interpreter loop
+   * These are the only ones that are driven from the top level interpreter loop
    */
   const topDispatch = harden({
+    startGeneration,
     doFulfill,
     doReject,
     // doCall, // unimplemented in the current plan
   });
 
   /**
-   * These are the only ones that are driven from the interpreter loop
+   * These are the only ones that are driven from the nested interpreter loop
    */
   const nestDispatch = harden({
-    // doCall, // unimplemented in the current plan
     doReturn,
     doThrow,
+    // doCall, // unimplemented in the current plan
   });
 
   const interpretOne = (dispatch, [op, ...args]) => {
@@ -646,7 +655,7 @@ export const makeReplayMembraneForTesting = ({
   const nestInterpreter = callIndex => {
     callStack.push(callIndex);
     while (log.isReplaying() && !stopped) {
-      const entry = log.nextEntry();
+      const entry = log.nextUnfilteredEntry();
       const optOutcome = interpretOne(nestDispatch, entry);
       if (unnestFlag) {
         optOutcome ||
@@ -687,7 +696,7 @@ export const makeReplayMembraneForTesting = ({
       if (!(op in topDispatch)) {
         return;
       }
-      void log.nextEntry();
+      void log.nextUnfilteredEntry();
       interpretOne(topDispatch, entry);
     }
   };
