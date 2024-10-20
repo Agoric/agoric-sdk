@@ -22,7 +22,7 @@ const ambientSetTimeout = global.setTimeout;
  * @param {number} ms
  * @param {*} sleepOptions
  */
-const sleep = (ms, { log = () => {}, setTimeout = ambientSetTimeout }) =>
+export const sleep = (ms, { log = () => {}, setTimeout = ambientSetTimeout }) =>
   new Promise(resolve => {
     log(`Sleeping for ${ms}ms...`);
     setTimeout(resolve, ms);

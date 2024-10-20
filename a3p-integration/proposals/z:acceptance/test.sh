@@ -28,3 +28,6 @@ yarn ava wallet.test.js
 
 echo ACCEPTANCE TESTING vaults
 yarn ava vaults.test.js
+
+echo ACCEPTANCE TESTING psm
+yarn ava psm.test.js
