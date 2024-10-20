@@ -10,6 +10,10 @@ import { makeWatchedPromiseManager } from '../src/watchedPromises.js';
 import { makeFakeVirtualObjectManager } from './fakeVirtualObjectManager.js';
 import { makeFakeCollectionManager } from './fakeCollectionManager.js';
 
+/**
+ * @import { KVStore } from '@agoric/swing-store'
+ */
+
 const {
   WeakRef: RealWeakRef,
   WeakMap: RealWeakMap,
@@ -39,45 +43,18 @@ class FakeWeakRef {
   }
 }
 
-export function makeFakeLiveSlotsStuff(options = {}) {
-  let vrm;
-  function setVrm(vrmToUse) {
-    assert(!vrm, 'vrm already configured');
-    vrmToUse.initializeIDCounters();
-    vrm = vrmToUse;
-  }
-
-  const {
-    fakeStore = new Map(),
-    weak = false,
-    log,
-    FinalizationRegistry = FakeFinalizationRegistry,
-    WeakRef = FakeWeakRef, // VRM uses this
-    WeakMap = RealWeakMap,
-    WeakSet = RealWeakSet,
-    addToPossiblyDeadSet = () => {},
-    addToPossiblyRetiredSet = () => {},
-  } = options;
-
+/**
+ * @param {Map<string, string>} map
+ */
+export function makeKVStoreFromMap(map) {
   let sortedKeys;
   let priorKeyReturned;
   let priorKeyIndex;
 
-  function s(v) {
-    switch (typeof v) {
-      case 'symbol':
-        return v.toString();
-      case 'bigint':
-        return `${v}n`;
-      default:
-        return `${v}`;
-    }
-  }
-
   function ensureSorted() {
     if (!sortedKeys) {
       sortedKeys = [];
-      for (const key of fakeStore.keys()) {
+      for (const key of map.keys()) {
         sortedKeys.push(key);
       }
       sortedKeys.sort((k1, k2) => k1.localeCompare(k2));
@@ -95,24 +72,15 @@ export function makeFakeLiveSlotsStuff(options = {}) {
     clearGetNextKeyCache();
   }
 
-  function dumpStore() {
-    ensureSorted();
-    const result = [];
-    for (const key of sortedKeys) {
-      result.push([key, fakeStore.get(key)]);
-    }
-    return result;
-  }
-
-  const syscall = {
-    vatstoreGet(key) {
-      const result = fakeStore.get(key);
-      if (log) {
-        log.push(`get ${s(key)} => ${s(result)}`);
-      }
-      return result;
+  /** @type {KVStore} */
+  const fakeStore = harden({
+    has(key) {
+      return map.has(key);
     },
-    vatstoreGetNextKey(priorKey) {
+    get(key) {
+      return map.get(key);
+    },
+    getNextKey(priorKey) {
       assert.typeof(priorKey, 'string');
       ensureSorted();
       // TODO: binary search for priorKey (maybe missing), then get
@@ -136,6 +104,154 @@ export function makeFakeLiveSlotsStuff(options = {}) {
         // reached end without finding the key, so clear our cache
         clearGetNextKeyCache();
       }
+      return result;
+    },
+    set(key, value) {
+      if (!map.has(key)) {
+        clearSorted();
+      }
+      map.set(key, value);
+    },
+    delete(key) {
+      if (map.has(key)) {
+        clearSorted();
+      }
+      map.delete(key);
+    },
+  });
+  return fakeStore;
+}
+
+/**
+ * Create a Map backed by a sorted KVStore while keeping the getNextKey method
+ * specific to a KVStore making it mostly compatible with both.
+ *
+ * Iterating over the map while mutating it is "unsupported" (entries inserted
+ * that sort before the current iteration point will be skipped).
+ *
+ * The `size` property is not supported.
+ *
+ * @param {KVStore} fakeStore
+ */
+export function makeEnhancedKVStore(fakeStore) {
+  /** @type {Omit<KVStore,'set' | 'delete'> & Map<string, string>} */
+  const map = harden({
+    ...fakeStore,
+    set(key, value) {
+      fakeStore.set(key, value);
+      return map;
+    },
+    delete(key) {
+      const had = fakeStore.has(key);
+      fakeStore.delete(key);
+      return had;
+    },
+    clear() {
+      for (const key of map.keys()) {
+        fakeStore.delete(key);
+      }
+    },
+    /** @returns {number} */
+    get size() {
+      throw new Error('size not implemented.');
+    },
+    *entries() {
+      for (const key of map.keys()) {
+        yield [key, /** @type {string} */ (fakeStore.get(key))];
+      }
+    },
+    *keys() {
+      /** @type {string | undefined} */
+      let key = '';
+      // eslint-disable-next-line no-cond-assign
+      while ((key = fakeStore.getNextKey(key))) {
+        yield key;
+      }
+    },
+    *values() {
+      for (const key of map.keys()) {
+        yield /** @type {string} */ (fakeStore.get(key));
+      }
+    },
+    forEach(callbackfn, thisArg) {
+      for (const key of map.keys()) {
+        Reflect.apply(callbackfn, thisArg, [
+          /** @type {string} */ (fakeStore.get(key)),
+          key,
+          map,
+        ]);
+      }
+    },
+    [Symbol.iterator]() {
+      return map.entries();
+    },
+    [Symbol.toStringTag]: 'EnhancedKVStore',
+  });
+  return map;
+}
+
+/**
+ *
+ * @param {Map<string, string> | KVStore} [mapOrKvStore]
+ */
+export function provideEnhancedKVStore(mapOrKvStore = new Map()) {
+  if (!('getNextKey' in mapOrKvStore)) {
+    mapOrKvStore = makeKVStoreFromMap(mapOrKvStore);
+  }
+
+  if (!('keys' in mapOrKvStore)) {
+    mapOrKvStore = makeEnhancedKVStore(mapOrKvStore);
+  }
+
+  return /** @type {ReturnType<typeof makeEnhancedKVStore>} */ (mapOrKvStore);
+}
+
+export function makeFakeLiveSlotsStuff(options = {}) {
+  let vrm;
+  function setVrm(vrmToUse) {
+    assert(!vrm, 'vrm already configured');
+    vrmToUse.initializeIDCounters();
+    vrm = vrmToUse;
+  }
+
+  const {
+    weak = false,
+    log,
+    FinalizationRegistry = FakeFinalizationRegistry,
+    WeakRef = FakeWeakRef, // VRM uses this
+    WeakMap = RealWeakMap,
+    WeakSet = RealWeakSet,
+    addToPossiblyDeadSet = () => {},
+    addToPossiblyRetiredSet = () => {},
+  } = options;
+
+  const fakeStore = provideEnhancedKVStore(options.fakeStore);
+
+  function s(v) {
+    switch (typeof v) {
+      case 'symbol':
+        return v.toString();
+      case 'bigint':
+        return `${v}n`;
+      default:
+        return `${v}`;
+    }
+  }
+
+  function dumpStore() {
+    return [...fakeStore];
+  }
+
+  const syscall = {
+    vatstoreGet(key) {
+      const result = fakeStore.get(key);
+      if (log) {
+        log.push(`get ${s(key)} => ${s(result)}`);
+      }
+      return result;
+    },
+    vatstoreGetNextKey(priorKey) {
+      const result = fakeStore.getNextKey(priorKey);
       if (log) {
         log.push(`getNextKey ${s(priorKey)} => ${s(result)}`);
       }
@@ -145,17 +261,11 @@ export function makeFakeLiveSlotsStuff(options = {}) {
       if (log) {
         log.push(`set ${s(key)} ${s(value)}`);
       }
-      if (!fakeStore.has(key)) {
-        clearSorted();
-      }
       fakeStore.set(key, value);
     },
     vatstoreDelete(key) {
       if (log) {
         log.push(`delete ${s(key)}`);
-      }
-      if (fakeStore.has(key)) {
-        clearSorted();
       }
       fakeStore.delete(key);
     },
@@ -344,7 +454,7 @@ export function makeFakeWatchedPromiseManager(
  * @param {object} [options]
  * @param {number} [options.cacheSize]
  * @param {boolean} [options.relaxDurabilityRules]
- * @param {Map<string, string>} [options.fakeStore]
+ * @param {Map<string, string> | KVStore} [options.fakeStore]
  * @param {WeakMapConstructor} [options.WeakMap]
  * @param {WeakSetConstructor} [options.WeakSet]
  * @param {boolean} [options.weak]
