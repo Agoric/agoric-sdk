@@ -38,6 +38,7 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
   const { storageNode } = privateArgs;
   const { t } = tools;
   const terms = zcf.getTerms();
+  assert('USDC' in terms.brands, 'no USDC brand');
 
   const makeSettleTap = zone.exoClass(
     'SettleTap',
