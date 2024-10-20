@@ -103,7 +103,7 @@ export const startQuickSend = async (
   const startOpts = {
     label: 'quickSend',
     installation: quickSend,
-    issuerKeywordRecord: harden({ Fee: USDC.issuer }),
+    issuerKeywordRecord: harden({ USDC: USDC.issuer }),
     terms,
     privateArgs,
   };
