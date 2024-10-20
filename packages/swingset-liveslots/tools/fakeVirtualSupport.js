@@ -146,6 +146,8 @@ export function makeKVStoreFromMap(map) {
   return fakeStore;
 }
 
+/** @typedef {Omit<KVStore,'set' | 'delete'> & Map<string, string>} EnhancedKVStore */
+
 /**
  * Create a Map backed by a sorted KVStore while keeping the getNextKey method
  * specific to a KVStore making it mostly compatible with both.
@@ -158,7 +160,7 @@ export function makeKVStoreFromMap(map) {
  * @param {KVStore} fakeStore
  */
 export function makeEnhancedKVStore(fakeStore) {
-  /** @type {Omit<KVStore,'set' | 'delete'> & Map<string, string>} */
+  /** @type {EnhancedKVStore} */
   const map = harden({
     ...fakeStore,
     set(key, value) {
@@ -216,7 +218,7 @@ export function makeEnhancedKVStore(fakeStore) {
 
 /**
  *
- * @param {Map<string, string> | KVStore} [mapOrKvStore]
+ * @param {Map<string, string> | KVStore | EnhancedKVStore} [mapOrKvStore]
  */
 export function provideEnhancedKVStore(mapOrKvStore = new Map()) {
   if (!('getNextKey' in mapOrKvStore)) {
@@ -227,7 +229,7 @@ export function provideEnhancedKVStore(mapOrKvStore = new Map()) {
     mapOrKvStore = makeEnhancedKVStore(mapOrKvStore);
   }
 
-  return /** @type {ReturnType<typeof makeEnhancedKVStore>} */ (mapOrKvStore);
+  return /** @type {EnhancedKVStore} */ (mapOrKvStore);
 }
 
 export function makeFakeLiveSlotsStuff(options = {}) {
@@ -478,7 +480,7 @@ export function makeFakeWatchedPromiseManager(
  * @param {object} [options]
  * @param {number} [options.cacheSize]
  * @param {boolean} [options.relaxDurabilityRules]
- * @param {Map<string, string> | KVStore} [options.fakeStore]
+ * @param {Map<string, string> | KVStore | EnhancedKVStore} [options.fakeStore]
  * @param {WeakMapConstructor} [options.WeakMap]
  * @param {WeakSetConstructor} [options.WeakSet]
  * @param {boolean} [options.weak]
