@@ -57,6 +57,19 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@agoric/store@npm:0.9.3-u17.1":
+  version: 0.9.3-u17.1
+  resolution: "@agoric/store@npm:0.9.3-u17.1"
+  dependencies:
+    "@endo/errors": "npm:^1.2.5"
+    "@endo/exo": "npm:^1.5.3"
+    "@endo/marshal": "npm:^1.5.3"
+    "@endo/pass-style": "npm:^1.4.3"
+    "@endo/patterns": "npm:^1.4.3"
+  checksum: 10c0/cfd94f968b8c3ab7259058ba8574f8126e5db6e41b02a409ec9e9a5ad7e59f9341be2a3bc63c10c38c7130c65987d0cfa8aae18e585ee899c7d565c4863116bf
+  languageName: node
+  linkType: hard
+
 "@agoric/synthetic-chain@npm:^0.3.0":
   version: 0.3.0
   resolution: "@agoric/synthetic-chain@npm:0.3.0"
@@ -115,7 +128,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@endo/exo@npm:^1.2.1":
+"@endo/exo@npm:^1.2.1, @endo/exo@npm:^1.5.3":
   version: 1.5.3
   resolution: "@endo/exo@npm:1.5.3"
   dependencies:
@@ -2512,6 +2525,7 @@ __metadata:
   resolution: "root-workspace-0b6124@workspace:."
   dependencies:
     "@agoric/internal": "npm:0.3.3-dev-5676146.0"
+    "@agoric/store": "npm:0.9.3-u17.1"
     "@agoric/synthetic-chain": "npm:^0.3.0"
     "@endo/errors": "npm:^1.2.2"
     "@endo/far": "npm:^1.1.5"
