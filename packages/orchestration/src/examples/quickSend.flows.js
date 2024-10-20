@@ -10,6 +10,7 @@ import { AgoricCalc, NobleCalc } from '../utils/address.js';
  *
  * @import {Passable} from '@endo/pass-style';
  * @import {Guarded} from '@endo/exo';
+ * @import {GuestInterface} from '@agoric/async-flow';
  * @import {ChainAddress, OrchestrationAccountI, OrchestrationFlow, Orchestrator, ZcfTools} from '@agoric/orchestration';
  * @import {VTransferIBCEvent} from '@agoric/vats';
  * @import {ResolvedContinuingOfferResult} from '../../src/utils/zoe-tools.js';
@@ -17,6 +18,7 @@ import { AgoricCalc, NobleCalc } from '../utils/address.js';
  * @import {QuickSendTerms} from './quickSend.contract.js';
  * @import {FungibleTokenPacketData} from '@agoric/cosmic-proto/ibc/applications/transfer/v2/packet.js';
  * @import {TypedPattern} from '@agoric/internal';
+ * @import {ChainHub} from '../types.js';
  */
 
 const AddressShape = M.string(); // XXX
@@ -50,6 +52,8 @@ const { add, make, subtract } = AmountMath;
  * @satisfies {OrchestrationFlow}
  * @param {Orchestrator} orch
  * @param {{
+ *   terms: QuickSendTerms & StandardTerms;
+ *   chainHub: GuestInterface<ChainHub>;
  *   t?: ExecutionContext<{ nextLabel: Function }>; // XXX
  *   makeSettleTap: (accts: QuickSendAccounts) => Guarded<{
  *     receiveUpcall: (event: VTransferIBCEvent) => void;
@@ -66,6 +70,20 @@ export const initAccounts = async (orch, ctx, seat, _offerArgs) => {
   const { log = console.log } = ctx.t || {};
 
   const agoric = await orch.getChain('agoric');
+  const aInfo = await agoric.getVBankAssetInfo();
+  for (const a of aInfo) {
+    if (a.brand === ctx.terms.brands.USDC) {
+      const [baseName, baseDenom] = ['noble', 'uusdc']; // ???
+      await orch.getChain(baseName);
+      ctx.chainHub.registerAsset(a.denom, {
+        baseDenom,
+        baseName,
+        chainName: 'agoric',
+        brand: ctx.terms.brands.USDC,
+      });
+      break;
+    }
+  }
 
   const fundingPool = await agoric.makeAccount();
   const settlement = await agoric.makeAccount();
