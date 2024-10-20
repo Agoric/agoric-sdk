@@ -853,7 +853,7 @@ function build(
   function DeviceHandler(slot) {
     return {
       get(target, prop) {
-        if (typeof prop !== 'string' && typeof prop !== 'symbol') {
+        if (typeof prop !== 'string') {
           return undefined;
         }
         return (...args) => {
