@@ -296,7 +296,7 @@ const setup = async (t, io) => {
     ),
   );
   console.debug(addrs);
-  storageNode.setValue(addrs.settlement);
+  await storageNode.setValue(addrs.settlement);
 
   await chains.agoric.send({
     amount: startFunds.pool,
