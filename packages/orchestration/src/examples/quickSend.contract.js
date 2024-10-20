@@ -10,7 +10,6 @@ import * as flows from './quickSend.flows.js';
  * @import {OrchestrationPowers, OrchestrationTools} from '../utils/start-helper.js';
  * @import {Zone} from '@agoric/zone';
  * @import {VTransferIBCEvent} from '@agoric/vats';
- * @import {InvitationMakers} from '@agoric/smart-wallet/src/types.js';
  * @import {QuickSendAccounts} from './quickSend.flows.js';
  */
 
@@ -36,7 +35,8 @@ harden(meta);
  */
 export const contract = async (zcf, privateArgs, zone, tools) => {
   const { storageNode } = privateArgs;
-  const { t } = tools;
+  const { t, chainHub } = tools;
+
   const terms = zcf.getTerms();
   assert('USDC' in terms.brands, 'no USDC brand');
 
@@ -62,7 +62,6 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
     flows.handleCCTPCall,
   );
 
-  const { makeInvitation } = tools.zcfTools;
   const ifaceTODO = undefined;
   const makeWatcherCont = zone.exoClassKit(
     'WatcherCont',
@@ -82,11 +81,10 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
           return handleCCTPCall({ ...this.state }, offerArgs);
         },
       },
-      /** @type {import('@agoric/async-flow').HostInterface<InvitationMakers>} */
       invitationMakers: {
         ReportCCTPCall() {
           const { offerHandler } = this.facets;
-          return makeInvitation(offerHandler, 'reportCCTPCall');
+          return zcf.makeInvitation(offerHandler, 'reportCCTPCall');
         },
       },
     },
@@ -95,7 +93,7 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
 
   const initAccounts = tools.orchestrate(
     'initAccounts',
-    { terms, makeSettleTap, makeInvitation, makeWatcherCont, t },
+    { terms, chainHub, makeSettleTap, makeWatcherCont, t },
     flows.initAccounts,
   );
 
