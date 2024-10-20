@@ -1,40 +1,64 @@
+/* eslint-disable no-restricted-syntax */
 import { makeFsStreamWriter } from '@agoric/internal/src/node/fs-stream.js';
 
 /**
+ * @typedef {{
+ *  blockHeight?: number;
+ *  blockTime?: number;
+ *  crankNum?: bigint;
+ *  crankType?: string;
+ *  deliveryNum?: bigint;
+ *  inboundNum?: string;
+ *  monotime: number;
+ *  replay?: boolean;
+ *  runNum?: number;
+ *  sender?: string;
+ *  source?: string;
+ *  syscallNum?: number;
+ *  time: number;
+ *  type: string;
+ *  vatID?: string;
+ * }} Slog
+ *
  * @typedef {Partial<{
- *    block: Partial<{
- *      height: number;
- *      time: number;
- *    }>;
- *    crank: Partial<{
- *      num: bigint;
- *      type: string;
- *    }>;
+ *    'block.height': Slog['blockHeight'];
+ *    'block.time': Slog['blockTime'];
+ *    'crank.deliveryNum': Slog['deliveryNum'];
+ *    'crank.num': Slog['crankNum'];
+ *    'crank.type': Slog['crankType'];
+ *    'crank.vatID': Slog['vatID'];
  *    init: boolean;
  *    replay: boolean;
- *    run: Partial<{
- *      id: string;
- *      trigger: Partial<{
- *        blockHeight: number;
- *        msgIdx: number;
- *        sender: string;
- *        source: string;
- *        time: number;
- *        txHash: string;
- *        type: string;
- *      }>
- *    }>;
+ *    'run.id': string;
+ *    'run.num': string;
+ *    'run.trigger.blockHeight': Slog['blockHeight'];
+ *    'run.trigger.msgIdx': number;
+ *    'run.trigger.sender': Slog['sender'];
+ *    'run.trigger.source': Slog['source'];
+ *    'run.trigger.time': Slog['blockTime'];
+ *    'run.trigger.txHash': string;
+ *    'run.trigger.type': string;
  *  }>
  * } Context
+ *
+ * @typedef {{
+ *  'crank.syscallNum'?: Slog['syscallNum'];
+ *  'process.uptime': Slog['monotime'];
+ *  timestamp: Slog['time'];
+ * } & Context & Partial<Slog>} ReportedSlog
  */
 
 const FILE_PATH = 'slogs-temp.log';
 
 const SLOG_TYPES = {
+  CLIST: 'clist',
+  CONSOLE: 'console',
   CRANK: {
     RESULT: 'crank-result',
     START: 'crank-start',
   },
+  DELIVER: 'deliver',
+  DELIVER_RESULT: 'deliver-result',
   KERNEL: {
     INIT: {
       FINISH: 'kernel-init-finish',
@@ -44,6 +68,10 @@ const SLOG_TYPES = {
   REPLAY: {
     FINISH: 'finish-replay',
     START: 'start-replay',
+  },
+  RUN: {
+    FINISH: 'cosmic-swingset-run-finish',
+    START: 'cosmic-swingset-run-start',
   },
   SWINGSET: {
     AFTER_COMMIT_STATS: 'cosmic-swingset-after-commit-stats',
@@ -63,6 +91,8 @@ const SLOG_TYPES = {
       START: 'cosmic-swingset-end-block-start',
     },
   },
+  SYSCALL: 'syscall',
+  SYSCALL_RESULT: 'syscall-result',
 };
 
 const stringify = data =>
@@ -86,19 +116,7 @@ export const makeSlogSender = async ({ env: _ }) => {
     [null, null, null, null, null];
 
   /**
-   *
-   * @param {{
-   *  blockHeight?: number;
-   *  blockTime?: number;
-   *  crankNum?: bigint;
-   *  crankType?: string;
-   *  inboundNum?: string;
-   *  monotime: number;
-   *  sender?: string;
-   *  source?: string;
-   *  time: number;
-   *  type: string;
-   * }} slog
+   * @param {Slog} slog
    */
   const slogSender = async ({
     monotime,
@@ -110,15 +128,59 @@ export const makeSlogSender = async ({ env: _ }) => {
 
     let [afterProcessed, beforeProcessed] = [true, true];
 
+    /** @type ReportedSlog */
+    const extractedFields = { 'process.uptime': monotime, timestamp };
+    const finalBody = { ...body };
+
     /**
      * Add any before report operations here
      * like setting context data
      */
     switch (slogType) {
+      case SLOG_TYPES.CONSOLE: {
+        delete finalBody.crankNum;
+        delete finalBody.deliveryNum;
+
+        break;
+      }
+      case SLOG_TYPES.CLIST: {
+        assert(!!crankContext);
+        crankContext['crank.vatID'] = finalBody.vatID;
+        break;
+      }
       case SLOG_TYPES.CRANK.START: {
         crankContext = {
-          crank: { num: body.crankNum, type: body.crankType },
+          'crank.num': finalBody.crankNum,
+          'crank.type': finalBody.crankType,
         };
+        break;
+      }
+      case SLOG_TYPES.DELIVER: {
+        if (replayContext) {
+          assert(finalBody.replay);
+          replayContext = {
+            ...replayContext,
+            'crank.deliveryNum': finalBody.deliveryNum,
+            'crank.vatID': finalBody.vatID,
+          };
+        } else {
+          assert(!!crankContext);
+          crankContext = {
+            ...crankContext,
+            'crank.deliveryNum': finalBody.deliveryNum,
+            'crank.vatID': finalBody.vatID,
+          };
+        }
+
+        delete finalBody.deliveryNum;
+        delete finalBody.replay;
+
+        break;
+      }
+      case SLOG_TYPES.DELIVER_RESULT: {
+        delete finalBody.deliveryNum;
+        delete finalBody.replay;
+
         break;
       }
       case SLOG_TYPES.KERNEL.INIT.START: {
@@ -129,52 +191,61 @@ export const makeSlogSender = async ({ env: _ }) => {
         replayContext = { replay: true };
         break;
       }
+      case SLOG_TYPES.RUN.START: {
+        if (!(triggerContext || finalBody.runNum === 0))
+          // TBD: add explicit slog events of both timer poll and install bundle
+          triggerContext = {
+            'run.id': `timer-${finalBody.blockHeight}`,
+            'run.trigger.time': finalBody.blockTime,
+            'run.trigger.type': 'timer',
+          };
+        // TODO: Persist this context
+
+        if (!triggerContext) triggerContext = {};
+        triggerContext = {
+          ...triggerContext,
+          'run.num': `${finalBody.runNum}`,
+        };
+
+        break;
+      }
       case SLOG_TYPES.SWINGSET.BEGIN_BLOCK: {
         blockContext = {
-          block: {
-            height: body.blockHeight,
-            time: body.blockTime,
-          },
+          'block.height': finalBody.blockHeight,
+          'block.time': finalBody.blockTime,
         };
         break;
       }
       case SLOG_TYPES.SWINGSET.BOOTSTRAP_BLOCK.START: {
         blockContext = {
-          block: {
-            height: body.blockHeight || 0,
-            time: body.blockTime,
-          },
+          'block.height': finalBody.blockHeight || 0,
+          'block.time': finalBody.blockTime,
         };
         triggerContext = {
-          run: {
-            id: `bootstrap-${body.blockTime}`,
-            trigger: {
-              time: body.blockTime,
-              type: 'bootstrap',
-            },
-          },
+          'run.id': `bootstrap-${finalBody.blockTime}`,
+          'run.trigger.time': finalBody.blockTime,
+          'run.trigger.type': 'bootstrap',
         };
         break;
       }
       case SLOG_TYPES.SWINGSET.BRIDGE_INBOUND:
       case SLOG_TYPES.SWINGSET.DELIVER_INBOUND: {
-        const [blockHeight, txHash, msgIdx] = (body.inboundNum || '').split('');
+        const [blockHeight, txHash, msgIdx] = (
+          finalBody.inboundNum || ''
+        ).split('-');
         const triggerType = slogType.split('-')[2];
 
         triggerContext = {
-          run: {
-            id: `${triggerType}-${body.inboundNum}`,
-            trigger: {
-              blockHeight: Number(blockHeight),
-              msgIdx: Number(msgIdx),
-              sender: body.sender,
-              source: body.source,
-              time: body.blockTime,
-              txHash,
-              type: triggerType,
-            },
-          },
+          'run.id': `${triggerType}-${finalBody.inboundNum}`,
+          'run.trigger.blockHeight': Number(blockHeight),
+          'run.trigger.msgIdx': Number(msgIdx),
+          'run.trigger.sender': finalBody.sender,
+          'run.trigger.source': finalBody.source,
+          'run.trigger.time': finalBody.blockTime,
+          'run.trigger.txHash': txHash,
+          'run.trigger.type': triggerType,
         };
+        // TODO: Persist this context
         break;
       }
       case SLOG_TYPES.SWINGSET.COMMIT.FINISH:
@@ -187,21 +258,29 @@ export const makeSlogSender = async ({ env: _ }) => {
         assert(!!blockContext);
         break;
       }
+      case SLOG_TYPES.SYSCALL:
+      case SLOG_TYPES.SYSCALL_RESULT: {
+        extractedFields['crank.syscallNum'] = finalBody.syscallNum;
+
+        delete finalBody.deliveryNum;
+        delete finalBody.replay;
+        delete finalBody.syscallNum;
+
+        break;
+      }
       default:
         beforeProcessed = false;
     }
 
+    /** @type ReportedSlog */
     const finalSlog = {
-      body,
-      context: {
-        ...blockContext,
-        ...crankContext,
-        ...initContext,
-        ...replayContext,
-        ...triggerContext,
-      },
-      process: { uptime: monotime },
-      timestamp,
+      ...blockContext,
+      ...crankContext,
+      ...extractedFields,
+      ...finalBody,
+      ...initContext,
+      ...replayContext,
+      ...triggerContext,
       type: slogType,
     };
 
@@ -218,8 +297,12 @@ export const makeSlogSender = async ({ env: _ }) => {
         initContext = null;
         break;
       }
-      case SLOG_TYPES.REPLAY.START: {
+      case SLOG_TYPES.REPLAY.FINISH: {
         replayContext = null;
+        break;
+      }
+      case SLOG_TYPES.RUN.FINISH: {
+        triggerContext = null;
         break;
       }
       case SLOG_TYPES.SWINGSET.AFTER_COMMIT_STATS: {
