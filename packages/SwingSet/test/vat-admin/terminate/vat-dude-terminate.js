@@ -6,10 +6,16 @@ export function buildRootObject(vatPowers) {
   // to be cut off
   const { testLog } = vatPowers;
 
+  const hold = [];
+
   return Far('root', {
     foo(arg) {
       testLog(`FOO ${arg}`);
       return `FOO SAYS ${arg}`;
+    },
+
+    holdPromise(p) {
+      hold.push(p);
     },
 
     never() {
