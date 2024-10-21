@@ -142,8 +142,8 @@ manifest.) The submission should return the script, which can take
 BootstrapPowers as a parameter.  
 
 If the submission does require bundle references or other options to be
-provided, it should be written as two parts: a core eval (in
-`.../vats/proposals`) and a builder for it (in `.../builders/scripts/vats`).
+provided, it should be written as two parts: a core eval (in one of the
+`.../proposals` directories) and a builder for it (under `.../builders/scripts`).
 
 The `build-all-submissions.sh` script reads instructions from
 `agoricProposal.sdk-generate` in `package.json`. That field contains a list of
@@ -162,7 +162,13 @@ a distinct directory name.
   "add-auction newAuction-submission"
 ],
 ```
-
+A third argument can be used to provide additional parameters to the
+build script.
+```json
+"sdk-generate": [
+  "inter-protocol/updatePriceFeeds.js submission/main main",
+],
+```
 
 ## Building synthetic-chain images
 
