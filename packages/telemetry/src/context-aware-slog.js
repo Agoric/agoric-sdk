@@ -1,8 +1,14 @@
 /* globals process */
-/* eslint-disable no-restricted-syntax */
-import { makeFsStreamWriter } from '@agoric/internal/src/node/fs-stream.js';
+import { logs, SeverityNumber } from '@opentelemetry/api-logs';
+import { Resource } from '@opentelemetry/resources';
+import {
+  LoggerProvider,
+  SimpleLogRecordProcessor,
+} from '@opentelemetry/sdk-logs';
+import { OTLPLogExporter } from '@opentelemetry/exporter-logs-otlp-http';
 import sqlite from 'better-sqlite3';
 import { closeSync, existsSync, openSync } from 'fs';
+import { getResourceAttributes } from './index.js';
 
 /**
  * @typedef {{
@@ -51,7 +57,6 @@ import { closeSync, existsSync, openSync } from 'fs';
  * } & Context & Partial<Slog>} ReportedSlog
  */
 
-const FILE_PATH = 'slogs-temp.log';
 const DATABASE_FILE_PATH =
   process.env.SLOG_CONTEXT_DATABASE_FILE_PATH || '/state/slog-db.sqlite3';
 const DATABASE_TABLE_NAME = 'context';
@@ -93,6 +98,7 @@ const SLOG_TYPES = {
     FINISH: 'finish-replay',
     START: 'start-replay',
   },
+  // eslint-disable-next-line no-restricted-syntax
   RUN: {
     FINISH: 'cosmic-swingset-run-finish',
     START: 'cosmic-swingset-run-start',
@@ -204,12 +210,22 @@ const stringify = data =>
  *
  * @param {{env: typeof process.env}} options
  */
-export const makeSlogSender = async ({ env: _ }) => {
-  const stream = await makeFsStreamWriter(FILE_PATH);
+export const makeSlogSender = async options => {
+  const { OTEL_EXPORTER_OTLP_ENDPOINT } = options.env;
+  if (!OTEL_EXPORTER_OTLP_ENDPOINT)
+    return console.warn(
+      'Ignoring invocation of slogger "context-aware-slog" without the presence of "OTEL_EXPORTER_OTLP_ENDPOINT" envrionment variable',
+    );
 
-  if (!stream) {
-    return undefined;
-  }
+  const loggerProvider = new LoggerProvider({
+    resource: new Resource(getResourceAttributes(options)),
+  });
+  loggerProvider.addLogRecordProcessor(
+    new SimpleLogRecordProcessor(new OTLPLogExporter({ keepAlive: true })),
+  );
+
+  logs.setGlobalLoggerProvider(loggerProvider);
+  const logger = logs.getLogger('default');
 
   const db = await getDatabaseInstance();
 
@@ -220,12 +236,7 @@ export const makeSlogSender = async ({ env: _ }) => {
   /**
    * @param {Slog} slog
    */
-  const slogSender = async ({
-    monotime,
-    time: timestamp,
-    type: slogType,
-    ...body
-  }) => {
+  const slogSender = async ({ monotime, time: timestamp, ...body }) => {
     await Promise.resolve();
 
     let [afterProcessed, beforeProcessed] = [true, true];
@@ -238,7 +249,7 @@ export const makeSlogSender = async ({ env: _ }) => {
      * Add any before report operations here
      * like setting context data
      */
-    switch (slogType) {
+    switch (body.type) {
       case SLOG_TYPES.CONSOLE: {
         delete finalBody.crankNum;
         delete finalBody.deliveryNum;
@@ -293,6 +304,7 @@ export const makeSlogSender = async ({ env: _ }) => {
         replayContext = { replay: true };
         break;
       }
+      // eslint-disable-next-line no-restricted-syntax
       case SLOG_TYPES.RUN.START: {
         if (!(triggerContext || finalBody.runNum === 0)) {
           const blockTime = finalBody.blockTime || blockContext?.['block.time'];
@@ -339,7 +351,7 @@ export const makeSlogSender = async ({ env: _ }) => {
         const [blockHeight, txHash, msgIdx] = (
           finalBody.inboundNum || ''
         ).split('-');
-        const triggerType = slogType.split('-')[2];
+        const triggerType = body.type.split('-')[2];
 
         triggerContext = {
           'run.id': `${triggerType}-${finalBody.inboundNum}`,
@@ -386,14 +398,13 @@ export const makeSlogSender = async ({ env: _ }) => {
       ...initContext,
       ...replayContext,
       ...triggerContext,
-      type: slogType,
     };
 
     /**
      * Add any after report operations here
      * like resetting context data
      */
-    switch (slogType) {
+    switch (body.type) {
       case SLOG_TYPES.CRANK.RESULT: {
         crankContext = null;
         break;
@@ -406,6 +417,7 @@ export const makeSlogSender = async ({ env: _ }) => {
         replayContext = null;
         break;
       }
+      // eslint-disable-next-line no-restricted-syntax
       case SLOG_TYPES.RUN.FINISH: {
         triggerContext = null;
         break;
@@ -427,8 +439,11 @@ export const makeSlogSender = async ({ env: _ }) => {
     }
 
     if (afterProcessed || beforeProcessed)
-      await stream.write(`${stringify(finalSlog)}\n`);
-    else console.log(`Unexpected slog type: ${slogType}`);
+      logger.emit({
+        body: JSON.parse(stringify(finalSlog)),
+        severityNumber: SeverityNumber.INFO,
+      });
+    else console.log(`Unexpected slog type: ${body.type}`);
   };
 
   return slogSender;
