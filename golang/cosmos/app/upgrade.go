@@ -80,63 +80,29 @@ func replaceElectorateCoreProposalStep(upgradeName string) (vm.CoreProposalStep,
 		"module": "@agoric/builders/scripts/inter-protocol/replace-electorate-core.js",
     	"entrypoint": "defaultProposalBuilder",
 		"args": [{
-			"committeeName": "Economic Committee",
-			"voterAddresses": {{.voterAddressesJson}},
-			"highPrioritySendersConfig": {{.highPrioritySendersConfigJson}}
+			"variant": {{.variantJson}}
 		}]
 	}`))
 
-	var voterAddresses map[string]string
-	var highPrioritySendersConfig map[string]any
+	var variant string
 
 	switch validUpgradeName(upgradeName) {
 	case "UNRELEASED_A3P_INTEGRATION":
-		voterAddresses = map[string]string{
-			"gov1": "agoric1ee9hr0jyrxhy999y755mp862ljgycmwyp4pl7q",
-		}
-		highPrioritySendersConfig = map[string]any{
-			"addressesToAdd":    []string{},
-			"addressesToRemove": []string{"agoric1wrfh296eu2z34p6pah7q04jjuyj3mxu9v98277"},
-		}
+		variant = "A3P_INTEGRATION"
 	case "UNRELEASED_main":
-		voterAddresses = map[string]string{
-			"gov1": "agoric1gx9uu7y6c90rqruhesae2t7c2vlw4uyyxlqxrx",
-			"gov2": "agoric1d4228cvelf8tj65f4h7n2td90sscavln2283h5",
-			"gov3": "agoric14543m33dr28x7qhwc558hzlj9szwhzwzpcmw6a",
-		}
-		highPrioritySendersConfig = map[string]any{
-			"addressesToAdd": []string{},
-			"addressesToRemove": []string{
-				"agoric13p9adwk0na5npfq64g22l6xucvqdmu3xqe70wq",
-				"agoric1el6zqs8ggctj5vwyukyk4fh50wcpdpwgugd5l5",
-				"agoric1zayxg4e9vd0es9c9jlpt36qtth255txjp6a8yc",
-			},
-		}
+		variant = "MAINNET"
 	case "UNRELEASED_devnet":
-		voterAddresses = map[string]string{
-			"gov1": "agoric1ldmtatp24qlllgxmrsjzcpe20fvlkp448zcuce",
-			"gov2": "agoric140dmkrz2e42ergjj7gyvejhzmjzurvqeq82ang",
-			"gov4": "agoric1f0h5zgxyg3euxsqzs0506uj4cmu56y30pqx46s",
-		}
-		highPrioritySendersConfig = map[string]any{
-			"addressesToAdd":    []string{"agoric1f0h5zgxyg3euxsqzs0506uj4cmu56y30pqx46s"},
-			"addressesToRemove": []string{"agoric1w8wktaur4zf8qmmtn3n7x3r0jhsjkjntcm3u6h"},
-		}
+		variant = "DEVNET"
 	// Noupgrade for this version.
 	case "UNRELEASED_BASIC":
 	}
-	voterAddressesJson, err := json.Marshal(voterAddresses)
-	if err != nil {
-		return nil, err
-	}
-	highPrioritySendersConfigJson, err := json.Marshal(highPrioritySendersConfig)
+	variantJson, err := json.Marshal(variant)
 	if err != nil {
 		return nil, err
 	}
 	var result strings.Builder
 	err = t.Execute(&result, map[string]any{
-		"voterAddressesJson":            string(voterAddressesJson),
-		"highPrioritySendersConfigJson": string(highPrioritySendersConfigJson),
+		"variantJson": string(variantJson),
 	})
 	if err != nil {
 		return nil, err
