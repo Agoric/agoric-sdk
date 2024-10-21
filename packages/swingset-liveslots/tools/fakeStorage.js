@@ -104,3 +104,63 @@ export function makeKVStoreFromMap(map) {
   });
   return fakeStore;
 }
+
+/**
+ * @template [S=Iterable<[string, string]>]
+ * @typedef {object} LiveFakeStorage
+ * @property {KVStore} kvStore
+ * @property {undefined} serialized
+ * @property {() => SerializedFakeStorage<S>} commit
+ * @property {(serialized?: S) => LiveFakeStorage<S>} init
+ */
+
+/**
+ * @template [S=Iterable<[string, string]>]
+ * @typedef {object} SerializedFakeStorage
+ * @property {undefined} kvStore
+ * @property {S | undefined} serialized
+ * @property {() => never} commit
+ * @property {(serialized?: S) => LiveFakeStorage<S>} init
+ */
+
+/**
+ * @template [S=Iterable<[string, string]>]
+ * @typedef {LiveFakeStorage<S> | SerializedFakeStorage<S>} FakeStorage<S>
+ */
+
+export const serializedCommit = harden(() => {
+  throw Error('Cannot commit serialized storage');
+});
+
+/**
+ * @param {Iterable<[string, string]>} [storeMap]
+ * @returns {SerializedFakeStorage}
+ */
+export const initSerializedFakeStorageFromMap = storeMap => {
+  const serialized = new Map(storeMap);
+  return harden({
+    kvStore: undefined,
+    serialized,
+    commit: serializedCommit,
+    // eslint-disable-next-line no-use-before-define
+    init: initLiveFakeStorageFromMap,
+  });
+};
+
+/**
+ * @param {Iterable<[string, string]>} [serialized]
+ * @returns {LiveFakeStorage}
+ */
+export const initLiveFakeStorageFromMap = serialized => {
+  const storeMap = new Map(serialized);
+  const kvStore = makeKVStoreFromMap(storeMap);
+
+  const commit = initSerializedFakeStorageFromMap.bind(null, storeMap);
+
+  return harden({
+    kvStore,
+    serialized: undefined,
+    commit,
+    init: initLiveFakeStorageFromMap,
+  });
+};
