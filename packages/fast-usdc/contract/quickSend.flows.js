@@ -2,8 +2,11 @@ import { AmountMath } from '@agoric/ertp/src/amountMath.js';
 import { mustMatch } from '@agoric/internal';
 import { atob } from '@endo/base64';
 import { M } from '@endo/patterns';
-import { ChainAddressShape } from '../typeGuards.js';
-import { AgoricCalc, NobleCalc } from '../utils/address.js';
+import { ChainAddressShape } from '@agoric/orchestration';
+import {
+  AgoricCalc,
+  NobleCalc,
+} from '@agoric/orchestration/src/utils/address.js';
 
 /**
  * @import {ExecutionContext} from 'ava';
@@ -13,12 +16,12 @@ import { AgoricCalc, NobleCalc } from '../utils/address.js';
  * @import {GuestInterface} from '@agoric/async-flow';
  * @import {ChainAddress, OrchestrationAccountI, OrchestrationFlow, Orchestrator, ZcfTools} from '@agoric/orchestration';
  * @import {VTransferIBCEvent} from '@agoric/vats';
- * @import {ResolvedContinuingOfferResult} from '../../src/utils/zoe-tools.js';
+ * @import {ResolvedContinuingOfferResult} from '@agoric/orchestration/src/utils/zoe-tools.js';
  * @import {InvitationMakers} from '@agoric/smart-wallet/src/types.js';
  * @import {QuickSendTerms} from './quickSend.contract.js';
  * @import {FungibleTokenPacketData} from '@agoric/cosmic-proto/ibc/applications/transfer/v2/packet.js';
  * @import {TypedPattern} from '@agoric/internal';
- * @import {ChainHub} from '../types.js';
+ * @import {ChainHub} from '@agoric/orchestration';
  */
 
 const AddressShape = M.string(); // XXX

@@ -1,13 +1,13 @@
 import { BrandShape } from '@agoric/ertp/src/typeGuards.js';
 import { M } from '@endo/patterns';
-import { withOrchestration } from '../utils/start-helper.js';
+import { withOrchestration } from '@agoric/orchestration';
 import * as flows from './quickSend.flows.js';
 
 /**
  * @import {ExecutionContext} from 'ava'; // XXX
  *
  * @import {CopyRecord} from '@endo/pass-style';
- * @import {OrchestrationPowers, OrchestrationTools} from '../utils/start-helper.js';
+ * @import {OrchestrationPowers, OrchestrationTools} from '@agoric/orchestration/src/utils/start-helper.js';
  * @import {Zone} from '@agoric/zone';
  * @import {VTransferIBCEvent} from '@agoric/vats';
  * @import {QuickSendAccounts} from './quickSend.flows.js';
@@ -34,7 +34,6 @@ harden(meta);
  * }} tools
  */
 export const contract = async (zcf, privateArgs, zone, tools) => {
-  const { storageNode } = privateArgs;
   const { t, chainHub } = tools;
 
   const terms = zcf.getTerms();
