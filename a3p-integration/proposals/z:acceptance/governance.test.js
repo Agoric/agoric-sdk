@@ -1,18 +1,24 @@
-/* global fetch */
+/* global fetch setTimeout */
 
 import test from 'ava';
 import '@endo/init';
+import { execFileSync } from 'node:child_process';
 import { GOV1ADDR, GOV2ADDR, GOV3ADDR } from '@agoric/synthetic-chain';
-import { walletUtils, waitUntil, networkConfig } from './test-lib/index.js';
-import { getLastUpdate } from './test-lib/wallet.js';
+import { networkConfig } from './test-lib/index.js';
+import { getLastUpdate, makeWalletUtils } from './test-lib/wallet.js';
 import { makeGovernanceDriver } from './test-lib/governance.js';
+import { makeTimerUtils } from './test-lib/utils.js';
 
 const governanceAddresses = [GOV1ADDR, GOV2ADDR, GOV3ADDR];
 
 test.serial(
   'economic committee can make governance proposal and vote on it',
   async t => {
-    const { readLatestHead } = walletUtils;
+    const { waitUntil } = makeTimerUtils({ setTimeout });
+    const { readLatestHead } = await makeWalletUtils(
+      { setTimeout, execFileSync, fetch },
+      networkConfig,
+    );
     const governanceDriver = await makeGovernanceDriver(fetch, networkConfig);
 
     /** @type {any} */
@@ -48,7 +54,7 @@ test.serial(
       charterInvitation[0],
     );
 
-    const questionUpdate = await getLastUpdate(GOV1ADDR, walletUtils);
+    const questionUpdate = await getLastUpdate(GOV1ADDR, { readLatestHead });
     t.like(questionUpdate, {
       status: { numWantsSatisfied: 1 },
     });
@@ -61,7 +67,9 @@ test.serial(
     );
 
     const voteUpdates = await Promise.all(
-      governanceAddresses.map(address => getLastUpdate(address, walletUtils)),
+      governanceAddresses.map(address =>
+        getLastUpdate(address, { readLatestHead }),
+      ),
     );
     voteUpdates.forEach(voteUpdate => {
       t.like(voteUpdate, {
