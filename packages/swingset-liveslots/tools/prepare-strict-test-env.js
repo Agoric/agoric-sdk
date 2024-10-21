@@ -10,7 +10,11 @@
 import '@agoric/internal/src/install-ses-debug.js';
 
 // eslint-disable-next-line import/order
-import { reincarnate, flushIncarnation } from './setup-vat-data.js';
+import {
+  annihilate as originalAnnihilate,
+  reincarnate,
+  flushIncarnation,
+} from './setup-vat-data.js';
 
 import { makePromiseKit } from '@endo/promise-kit';
 import { Fail } from '@endo/errors';
@@ -23,24 +27,26 @@ export { eventLoopIteration as nextCrank };
 /**
  * @import { PromiseKit } from '@endo/promise-kit'
  * @import { Baggage } from '@agoric/swingset-liveslots'
- * @import { ReincarnateOptions } from './setup-vat-data.js'
+ * @import { ReincarnateOptions, LiveIncarnation, FlushedIncarnation } from './setup-vat-data.js'
  */
 
-/** @type {ReincarnateOptions} */
+/** @type {LiveIncarnation | FlushedIncarnation} */
 let incarnation;
 let incarnationNumber = 0;
 
-/** @param {Omit<ReincarnateOptions, 'fakeVomKit' | 'fakeStore'>} [options] */
+/** @type {typeof originalAnnihilate} */
 export const annihilate = (options = {}) => {
   // @ts-expect-error fakeStore and fakeVomKit don't exist on type, but drop them if they do at runtime
   const { fakeStore: _fs, fakeVomKit: _fvk, ...opts } = options;
-  incarnation = reincarnate({ relaxDurabilityRules: false, ...opts });
+  // Unlike original, default to not relax durability rules if not specified
+  incarnation = originalAnnihilate({ relaxDurabilityRules: false, ...opts });
   incarnationNumber = 0;
   return incarnation;
 };
 
 /** @returns {Baggage} */
 export const getBaggage = () => {
+  assert(incarnation.fakeVomKit);
   return incarnation.fakeVomKit.cm.provideBaggage();
 };
 
@@ -48,9 +54,10 @@ export const getBaggage = () => {
  * @param {ReincarnateOptions} [fromIncarnation]
  */
 export const nextLife = (fromIncarnation = incarnation) => {
-  incarnation = reincarnate(fromIncarnation);
+  const newIncarnation = reincarnate(fromIncarnation);
+  incarnation = newIncarnation;
   incarnationNumber += 1;
-  return incarnation;
+  return newIncarnation;
 };
 
 /**
@@ -69,7 +76,7 @@ export const startLife = async (
   await eventLoopIteration();
   if (cleanStart) annihilate();
   const oldIncarnationNumber = incarnationNumber;
-  const oldIncarnation = incarnation;
+  const oldIncarnation = flushIncarnation(incarnation);
   const disconnectionObject = makeUpgradeDisconnection(
     'vat upgraded',
     oldIncarnationNumber,
@@ -117,7 +124,9 @@ export const startLife = async (
     await eventLoopIteration();
   }
 
-  return incarnation;
+  const newIncarnation = flushIncarnation(incarnation);
+  incarnation = newIncarnation;
+  return newIncarnation;
 };
 
 // Setup the initial incarnation

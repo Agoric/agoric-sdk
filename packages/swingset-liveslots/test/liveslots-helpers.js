@@ -6,6 +6,7 @@ import { waitUntilQuiescent } from './waitUntilQuiescent.js';
 import { makeGcAndFinalize } from './gc-and-finalize.js';
 import { makeDummyMeterControl } from './dummyMeterControl.js';
 import { makeLiveSlots } from '../src/liveslots.js';
+import { provideEnhancedKVStore } from '../tools/fakeVirtualSupport.js';
 import {
   makeMessage,
   makeDropExports,
@@ -15,42 +16,23 @@ import {
 } from './util.js';
 
 /**
+ * @import { KVStore } from '@agoric/swing-store'
+ */
+
+/**
  * @param {object} [options]
  * @param {boolean} [options.skipLogging]
- * @param {Map<string, string>} [options.kvStore]
+ * @param {Map<string, string> | KVStore} [options.kvStore]
  */
 export function buildSyscall(options = {}) {
-  const { skipLogging = false, kvStore: fakestore = new Map() } = options;
+  const { skipLogging = false, kvStore } = options;
+  const fakestore = provideEnhancedKVStore(kvStore);
   const log = [];
-  let sortedKeys;
-  let priorKeyReturned;
-  let priorKeyIndex;
 
   function appendLog(s) {
     if (!skipLogging) {
       log.push(s);
     }
-  }
-
-  function ensureSorted() {
-    if (!sortedKeys) {
-      sortedKeys = [];
-      for (const key of fakestore.keys()) {
-        sortedKeys.push(key);
-      }
-      sortedKeys.sort((k1, k2) => k1.localeCompare(k2));
-    }
-  }
-
-  function clearGetNextKeyCache() {
-    priorKeyReturned = undefined;
-    priorKeyIndex = -1;
-  }
-  clearGetNextKeyCache();
-
-  function clearSorted() {
-    sortedKeys = undefined;
-    clearGetNextKeyCache();
   }
 
   const syscall = {
@@ -81,44 +63,16 @@ export function buildSyscall(options = {}) {
       return result;
     },
     vatstoreGetNextKey(priorKey) {
-      assert.typeof(priorKey, 'string');
-      ensureSorted();
-      // TODO: binary search for priorKey (maybe missing), then get
-      // the one after that. For now we go simple and slow. But cache
-      // a starting point, because the main use case is a full
-      // iteration. OTOH, the main use case also deletes everything,
-      // which will clobber the cache on each deletion, so it might
-      // not help.
-      const start = priorKeyReturned === priorKey ? priorKeyIndex : 0;
-      let result;
-      for (let i = start; i < sortedKeys.length; i += 1) {
-        const key = sortedKeys[i];
-        if (key > priorKey) {
-          priorKeyReturned = key;
-          priorKeyIndex = i;
-          result = key;
-          break;
-        }
-      }
-      if (!result) {
-        // reached end without finding the key, so clear our cache
-        clearGetNextKeyCache();
-      }
+      const result = fakestore.getNextKey(priorKey);
       appendLog({ type: 'vatstoreGetNextKey', priorKey, result });
       return result;
     },
     vatstoreSet(key, value) {
       appendLog({ type: 'vatstoreSet', key, value });
-      if (!fakestore.has(key)) {
-        clearSorted();
-      }
       fakestore.set(key, value);
     },
     vatstoreDelete(key) {
       appendLog({ type: 'vatstoreDelete', key });
-      if (fakestore.has(key)) {
-        clearSorted();
-      }
       fakestore.delete(key);
     },
   };
@@ -263,8 +217,8 @@ export async function setupTestLiveslots(
   }
 
   function dumpFakestore() {
-    for (const key of [...fakestore.keys()].sort()) {
-      console.log(`--fs: ${key} -> ${fakestore.get(key)}`);
+    for (const [key, value] of fakestore.entries()) {
+      console.log(`--fs: ${key} -> ${value}`);
     }
   }
 

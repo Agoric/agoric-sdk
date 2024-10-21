@@ -25,13 +25,17 @@ test.serial('exercise baggage', async t => {
     { forceGC: true },
   );
   const { fakestore } = v;
-  const get = key => fakestore.get(key);
+  const get = key => {
+    const result = fakestore.get(key);
+    assert(result !== undefined);
+    return result;
+  };
   const getLabel = key => kunser(JSON.parse(get(key))).label;
 
-  const baggageVref = fakestore.get('baggageID');
+  const baggageVref = get('baggageID');
   const { subid } = parseVatSlot(baggageVref);
   const baggageID = Number(subid);
-  const kindIDs = JSON.parse(fakestore.get('storeKindIDTable'));
+  const kindIDs = JSON.parse(get('storeKindIDTable'));
   // baggage is the first collection created, a scalarDurableMapStore
   t.is(baggageVref, `o+d${kindIDs.scalarDurableMapStore}/1`);
   t.is(getLabel(`vc.${baggageID}.|schemata`), 'baggage');

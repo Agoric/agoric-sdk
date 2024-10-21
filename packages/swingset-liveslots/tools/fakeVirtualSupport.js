@@ -9,6 +9,11 @@ import { makeVirtualReferenceManager } from '../src/virtualReferences.js';
 import { makeWatchedPromiseManager } from '../src/watchedPromises.js';
 import { makeFakeVirtualObjectManager } from './fakeVirtualObjectManager.js';
 import { makeFakeCollectionManager } from './fakeCollectionManager.js';
+import { makeKVStoreFromMap } from './fakeStorage.js';
+
+/**
+ * @import { KVStore } from '@agoric/swing-store'
+ */
 
 const {
   WeakRef: RealWeakRef,
@@ -39,6 +44,92 @@ class FakeWeakRef {
   }
 }
 
+/** @typedef {Omit<KVStore,'set' | 'delete'> & Map<string, string>} EnhancedKVStore */
+
+/**
+ * Create a Map backed by a sorted KVStore while keeping the getNextKey method
+ * specific to a KVStore making it mostly compatible with both.
+ *
+ * Iterating over the map while mutating it is "unsupported" (entries inserted
+ * that sort before the current iteration point will be skipped).
+ *
+ * The `size` property is not supported.
+ *
+ * @param {KVStore} fakeStore
+ */
+export function makeEnhancedKVStore(fakeStore) {
+  /** @type {EnhancedKVStore} */
+  const map = harden({
+    ...fakeStore,
+    set(key, value) {
+      fakeStore.set(key, value);
+      return map;
+    },
+    delete(key) {
+      const had = fakeStore.has(key);
+      fakeStore.delete(key);
+      return had;
+    },
+    clear() {
+      for (const key of map.keys()) {
+        fakeStore.delete(key);
+      }
+    },
+    /** @returns {number} */
+    get size() {
+      throw new Error('size not implemented.');
+    },
+    *entries() {
+      for (const key of map.keys()) {
+        yield [key, /** @type {string} */ (fakeStore.get(key))];
+      }
+    },
+    *keys() {
+      /** @type {string | undefined} */
+      let key = '';
+      // eslint-disable-next-line no-cond-assign
+      while ((key = fakeStore.getNextKey(key))) {
+        yield key;
+      }
+    },
+    *values() {
+      for (const key of map.keys()) {
+        yield /** @type {string} */ (fakeStore.get(key));
+      }
+    },
+    forEach(callbackfn, thisArg) {
+      for (const key of map.keys()) {
+        Reflect.apply(callbackfn, thisArg, [
+          /** @type {string} */ (fakeStore.get(key)),
+          key,
+          map,
+        ]);
+      }
+    },
+    [Symbol.iterator]() {
+      return map.entries();
+    },
+    [Symbol.toStringTag]: 'EnhancedKVStore',
+  });
+  return map;
+}
+
+/**
+ *
+ * @param {Map<string, string> | KVStore | EnhancedKVStore} [mapOrKvStore]
+ */
+export function provideEnhancedKVStore(mapOrKvStore = new Map()) {
+  if (!('getNextKey' in mapOrKvStore)) {
+    mapOrKvStore = makeKVStoreFromMap(mapOrKvStore);
+  }
+
+  if (!('keys' in mapOrKvStore)) {
+    mapOrKvStore = makeEnhancedKVStore(mapOrKvStore);
+  }
+
+  return /** @type {EnhancedKVStore} */ (mapOrKvStore);
+}
+
 export function makeFakeLiveSlotsStuff(options = {}) {
   let vrm;
   function setVrm(vrmToUse) {
@@ -48,7 +139,6 @@ export function makeFakeLiveSlotsStuff(options = {}) {
   }
 
   const {
-    fakeStore = new Map(),
     weak = false,
     log,
     FinalizationRegistry = FakeFinalizationRegistry,
@@ -59,9 +149,7 @@ export function makeFakeLiveSlotsStuff(options = {}) {
     addToPossiblyRetiredSet = () => {},
   } = options;
 
-  let sortedKeys;
-  let priorKeyReturned;
-  let priorKeyIndex;
+  const fakeStore = provideEnhancedKVStore(options.fakeStore);
 
   function s(v) {
     switch (typeof v) {
@@ -74,34 +162,8 @@ export function makeFakeLiveSlotsStuff(options = {}) {
     }
   }
 
-  function ensureSorted() {
-    if (!sortedKeys) {
-      sortedKeys = [];
-      for (const key of fakeStore.keys()) {
-        sortedKeys.push(key);
-      }
-      sortedKeys.sort((k1, k2) => k1.localeCompare(k2));
-    }
-  }
-
-  function clearGetNextKeyCache() {
-    priorKeyReturned = undefined;
-    priorKeyIndex = -1;
-  }
-  clearGetNextKeyCache();
-
-  function clearSorted() {
-    sortedKeys = undefined;
-    clearGetNextKeyCache();
-  }
-
   function dumpStore() {
-    ensureSorted();
-    const result = [];
-    for (const key of sortedKeys) {
-      result.push([key, fakeStore.get(key)]);
-    }
-    return result;
+    return [...fakeStore];
   }
 
   const syscall = {
@@ -113,29 +175,7 @@ export function makeFakeLiveSlotsStuff(options = {}) {
       return result;
     },
     vatstoreGetNextKey(priorKey) {
-      assert.typeof(priorKey, 'string');
-      ensureSorted();
-      // TODO: binary search for priorKey (maybe missing), then get
-      // the one after that. For now we go simple and slow. But cache
-      // a starting point, because the main use case is a full
-      // iteration. OTOH, the main use case also deletes everything,
-      // which will clobber the cache on each deletion, so it might
-      // not help.
-      const start = priorKeyReturned === priorKey ? priorKeyIndex : 0;
-      let result;
-      for (let i = start; i < sortedKeys.length; i += 1) {
-        const key = sortedKeys[i];
-        if (key > priorKey) {
-          priorKeyReturned = key;
-          priorKeyIndex = i;
-          result = key;
-          break;
-        }
-      }
-      if (!result) {
-        // reached end without finding the key, so clear our cache
-        clearGetNextKeyCache();
-      }
+      const result = fakeStore.getNextKey(priorKey);
       if (log) {
         log.push(`getNextKey ${s(priorKey)} => ${s(result)}`);
       }
@@ -145,17 +185,11 @@ export function makeFakeLiveSlotsStuff(options = {}) {
       if (log) {
         log.push(`set ${s(key)} ${s(value)}`);
       }
-      if (!fakeStore.has(key)) {
-        clearSorted();
-      }
       fakeStore.set(key, value);
     },
     vatstoreDelete(key) {
       if (log) {
         log.push(`delete ${s(key)}`);
-      }
-      if (fakeStore.has(key)) {
-        clearSorted();
       }
       fakeStore.delete(key);
     },
@@ -344,7 +378,7 @@ export function makeFakeWatchedPromiseManager(
  * @param {object} [options]
  * @param {number} [options.cacheSize]
  * @param {boolean} [options.relaxDurabilityRules]
- * @param {Map<string, string>} [options.fakeStore]
+ * @param {Map<string, string> | KVStore | EnhancedKVStore} [options.fakeStore]
  * @param {WeakMapConstructor} [options.WeakMap]
  * @param {WeakSetConstructor} [options.WeakSet]
  * @param {boolean} [options.weak]

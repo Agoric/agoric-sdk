@@ -54,7 +54,11 @@ test('initial vatstore contents', async t => {
     forceGC: true,
   });
   const { fakestore } = v;
-  const get = key => fakestore.get(key);
+  const get = key => {
+    const result = fakestore.get(key);
+    assert(result !== undefined);
+    return result;
+  };
   const getLabel = key => kunser(JSON.parse(get(key))).label;
 
   // an empty buildRootObject should create 4 collections, and some metadata
@@ -109,12 +113,16 @@ test('vrefs', async t => {
   );
   // const { fakestore, dumpFakestore } = v;
   const { fakestore } = v;
-  const get = key => fakestore.get(key);
+  const get = key => {
+    const result = fakestore.get(key);
+    assert(result !== undefined);
+    return result;
+  };
   const getLabel = key => kunser(JSON.parse(get(key))).label;
 
-  const kindIDID = JSON.parse(fakestore.get('kindIDID'));
-  const initialKindIDs = JSON.parse(fakestore.get('storeKindIDTable'));
-  const initialCounters = JSON.parse(fakestore.get(`idCounters`));
+  const kindIDID = JSON.parse(get('kindIDID'));
+  const initialKindIDs = JSON.parse(get('storeKindIDTable'));
+  const initialCounters = JSON.parse(get(`idCounters`));
   const firstObjID = initialCounters.exportID;
 
   // we expect makeVK1 (virtual, non-durable) to get firstObjID
@@ -147,5 +155,5 @@ test('vrefs', async t => {
   const expectedStore1Vref = `o+v${initialKindIDs.scalarMapStore}/5`;
   const store1Vref = (await run('getStore1')).slots[0];
   t.is(store1Vref, expectedStore1Vref);
-  t.is(kunser(JSON.parse(fakestore.get(`vc.5.s${'key'}`))), 'value');
+  t.is(kunser(JSON.parse(get(`vc.5.s${'key'}`))), 'value');
 });
