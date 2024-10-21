@@ -17,7 +17,10 @@ const trace = makeTracer('NewAuction', true);
  * @param {import('./econ-behaviors.js').EconomyBootstrapPowers &
  *   interlockPowers} powers
  * @param {{
- *   options: { contractGovernorRef: { bundleID: string } };
+ *   options: {
+ *     contractGovernorRef: { bundleID: string };
+ *     contractGovernorInstallation: Installation;
+ *   };
  * }} options
  */
 export const addAuction = async (
@@ -43,16 +46,18 @@ export const addAuction = async (
       produce: { auctioneer: auctionInstance },
     },
     installation: {
-      consume: {
-        auctioneer: auctioneerInstallationP,
-        contractGovernor: governorInstallationP,
-      },
+      consume: { auctioneer: auctioneerInstallationP },
     },
     issuer: {
       consume: { [Stable.symbol]: stableIssuerP },
     },
   },
-  { options: { contractGovernorRef: contractGovernorBundle } },
+  {
+    options: {
+      contractGovernorRef: contractGovernorBundle,
+      contractGovernorInstallation,
+    },
+  },
 ) => {
   trace('addAuction start');
   const STORAGE_PATH = 'auction';
@@ -64,14 +69,12 @@ export const addAuction = async (
     stableIssuer,
     legacyKit,
     auctioneerInstallation,
-    governorInstallation,
   ] = await Promise.all([
     poserInvitationP,
     E(E(zoe).getInvitationIssuer()).getAmountOf(poserInvitationP),
     stableIssuerP,
     legacyKitP,
     auctioneerInstallationP,
-    governorInstallationP,
   ]);
 
   // Each field has an extra layer of type +  value:
@@ -120,9 +123,14 @@ export const addAuction = async (
     }),
   );
 
+  const bundleIdFromZoe = await E(zoe).getBundleIDFromInstallation(
+    contractGovernorInstallation,
+  );
+  trace('governor bundle ID', bundleIdFromZoe, contractGovernorBundle.bundleID);
+
   /** @type {GovernorStartedInstallationKit<typeof auctioneerInstallationP>} */
   const governorStartResult = await E(zoe).startInstance(
-    governorInstallation,
+    contractGovernorInstallation,
     undefined,
     governorTerms,
     harden({
@@ -235,9 +243,12 @@ export const getManifestForAddAuction = async (
   { restoreRef },
   { auctioneerRef, contractGovernorRef },
 ) => {
+  const contractGovernorInstallation = restoreRef(contractGovernorRef);
   return {
     manifest: ADD_AUCTION_MANIFEST,
-    options: { contractGovernorRef },
+    // XXX we should be able to receive contractGovernorInstallation via
+    // installations.consume, but the received installation isn't right.
+    options: { contractGovernorRef, contractGovernorInstallation },
     installations: {
       auctioneer: restoreRef(auctioneerRef),
       contractGovernor: restoreRef(contractGovernorRef),
