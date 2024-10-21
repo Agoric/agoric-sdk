@@ -1,10 +1,10 @@
 import { btoa } from '@endo/base64';
-import { AgoricCalc } from '../src/utils/address.js';
+import { AgoricCalc } from '@agoric/orchestration/src/utils/address.js';
 import { ibcTransfer } from './cosmoverse-mock.js';
 
 /**
  * @import {Remote} from '@agoric/vow';
- * @import {OrchestrationAccount} from '../src/orchestration-api.js';
+ * @import {OrchestrationAccount} from '@agoric/orchestration';
  */
 
 /**

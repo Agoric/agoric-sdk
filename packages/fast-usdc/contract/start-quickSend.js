@@ -8,7 +8,7 @@ const { Fail } = assert;
 /**
  * @import {Instance} from '@agoric/zoe/src/zoeService/utils';
  * @import {Board} from '@agoric/vats';
- * @import {QuickSendContractFn} from '../examples/quickSend.contract.js';
+ * @import {QuickSendContractFn} from './quickSend.contract.js';
  * @import {ManifestBundleRef} from '@agoric/deploy-script-support/src/externalTypes.js';
  * @import {BootstrapManifest} from '@agoric/vats/src/core/lib-boot.js';
  */
