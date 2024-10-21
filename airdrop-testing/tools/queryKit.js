@@ -78,6 +78,7 @@ export async function* eachVstorageUpdate(key, { vstorage, delay }) {
  */
 export const makeWalletView = (addr, { query, vstorage }) => {
   return Far('WalletQuery', {
+    getAddress: () => addr,
     current: () => query.queryData(`published.wallet.${addr}.current`),
     /**
      * TODO: visit in chunks by block

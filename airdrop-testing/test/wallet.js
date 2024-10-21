@@ -3,7 +3,6 @@ import {
   DirectSecp256k1HdWallet,
   decodeOptionalPubkey,
 } from '@cosmjs/proto-signing';
-import { writeFile } from '../writeFile.js';
 
 export const generateMnemonic = () =>
   Bip39.encode(Random.getBytes(16)).toString();
@@ -23,6 +22,7 @@ const createWallets = total =>
     wallet: createWallet(),
   })).map(x =>
     x.wallet.then(res => {
+      // console.log(res);
       return res;
     }),
   );

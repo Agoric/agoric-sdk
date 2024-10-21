@@ -8,8 +8,8 @@ import {
 } from '@cosmjs/amino';
 import { sha256 } from '@noble/hashes/sha256';
 import { ripemd160 } from '@noble/hashes/ripemd160';
-import { Either } from './adts.js';
-import { agoricGenesisAccounts } from './test/airdrop-data/genesis.keys.js';
+import { Either } from '../adts.js';
+import { agoricGenesisAccounts } from './airdrop-data/genesis.keys.js';
 const { Left, Right } = Either;
 
 const [

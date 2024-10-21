@@ -23,7 +23,7 @@ async function writeFile(filename, data) {
         console.error(`Failed to write to file ${filename}:`, err);
         return reject(err);
       }
-      console.log(`Successfully wrote to file ${filename}`);
+      // console.log(`Successfully wrote to file ${filename}`);
       resolve(dataString);
     });
   });

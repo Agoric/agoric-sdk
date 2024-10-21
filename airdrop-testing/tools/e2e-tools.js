@@ -438,7 +438,7 @@ export const makeE2ETools = async (
     if (typeof info === 'object' && Object.keys(info).length > 0) {
       // XXX normally we have the caller pass in the log function
       // later, but the way blockTool is factored, we have to supply it early.
-      console.log({ ...info, delay: ms / 1000 }, '...');
+      // console.log({ ...info, delay: ms / 1000 }, '...');
     }
     return delay(ms);
   };

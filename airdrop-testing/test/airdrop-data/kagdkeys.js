@@ -1,7 +1,6 @@
-import '@endo/init';
 import { merkleTreeAPI } from './merkle-tree/index.js';
 
-const keys = [
+const accounts = [
   {
     name: 'a',
     type: 'local',
@@ -365,4 +364,7 @@ const keys = [
 ];
 
 const getPubkey = ({ pubkey }) => pubkey.key;
-const root = merkleTreeAPI.generateMerkleRoot(keys.map(getPubkey)); //?
+const keys = accounts.map(getPubkey);
+const root = merkleTreeAPI.generateMerkleRoot(keys); //?
+
+export { accounts, keys, root };

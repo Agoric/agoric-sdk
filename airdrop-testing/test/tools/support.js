@@ -53,5 +53,5 @@ const commonSetup = async t => {
 
   return { useChain, ...tools, ...keyring, retryUntilCondition, deployBuilder };
 };
-∑
+
 export { chainConfig, commonSetup };

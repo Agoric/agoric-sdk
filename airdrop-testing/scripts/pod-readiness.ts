@@ -23,7 +23,7 @@ const main = async () => {
   for (;;) {
     const allReady = await checkPodsReadiness();
     if (allReady) {
-      console.log('All pods are ready!');
+      // console.log('All pods are ready!');
       process.exit(0);
     }
     await sleep(2 * 1_000);

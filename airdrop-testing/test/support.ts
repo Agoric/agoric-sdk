@@ -37,10 +37,10 @@ export const makeKeyring = async (
     const wallets: Record<string, string> = {};
     for (const name of keys) {
       const mnemonic = generateMnemonic();
-      console.log('mnemonic ::::', mnemonic);
-      console.log('----------------------------------');
+      // console.log('mnemonic ::::', mnemonic);
+      // console.log('----------------------------------');
       const res = await e2eTools.addKey(name, generateMnemonic());
-      console.log('result from new account creation:::', res);
+      // console.log('result from new account creation:::', res);
       const { address } = JSON.parse(res);
       wallets[name] = address;
     }
@@ -55,7 +55,15 @@ export const makeKeyring = async (
       ),
     ).catch();
 
-  return { setupTestKeys, deleteTestKeys };
+  const setupSpecificKeys = (mnemonics = []) =>
+    mnemonics.reduceRight(async (acc, val, index) => {
+      const name = `user_${index}`;
+      const res = await e2eTools.addKey(name, val);
+      const { address } = JSON.parse(res);
+      acc[name] = address;
+      return acc;
+    }, []);
+  return { setupSpecificKeys, setupTestKeys, deleteTestKeys };
 };
 
 export const commonSetup = async (t: ExecutionContext) => {
