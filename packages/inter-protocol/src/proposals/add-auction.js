@@ -9,40 +9,51 @@ const trace = makeTracer('NewAuction', true);
 /**
  * @typedef {PromiseSpaceOf<{
  *   auctionUpgradeNewInstance: Instance;
+ *   newContractGovBundleId: string;
  * }>} interlockPowers
  */
 
 /**
  * @param {import('./econ-behaviors.js').EconomyBootstrapPowers &
  *   interlockPowers} powers
+ * @param {{
+ *   options: { contractGovernorRef: { bundleID: string } };
+ * }} options
  */
-export const addAuction = async ({
-  consume: {
-    agoricNamesAdmin,
-    auctioneerKit: legacyKitP,
-    board,
-    chainStorage,
-    chainTimerService,
-    economicCommitteeCreatorFacet: electorateCreatorFacet,
-    econCharterKit,
-    priceAuthority8400,
-    zoe,
-  },
-  produce: { auctioneerKit: produceAuctioneerKit, auctionUpgradeNewInstance },
-  instance: {
-    consume: { reserve: reserveInstance },
-    produce: { auctioneer: auctionInstance },
-  },
-  installation: {
+export const addAuction = async (
+  {
     consume: {
-      auctioneer: auctioneerInstallationP,
-      contractGovernor: governorInstallationP,
+      agoricNamesAdmin,
+      auctioneerKit: legacyKitP,
+      board,
+      chainStorage,
+      chainTimerService,
+      economicCommitteeCreatorFacet: electorateCreatorFacet,
+      econCharterKit,
+      priceAuthority8400,
+      zoe,
+    },
+    produce: {
+      auctioneerKit: produceAuctioneerKit,
+      auctionUpgradeNewInstance,
+      newContractGovBundleId,
+    },
+    instance: {
+      consume: { reserve: reserveInstance },
+      produce: { auctioneer: auctionInstance },
+    },
+    installation: {
+      consume: {
+        auctioneer: auctioneerInstallationP,
+        contractGovernor: governorInstallationP,
+      },
+    },
+    issuer: {
+      consume: { [Stable.symbol]: stableIssuerP },
     },
   },
-  issuer: {
-    consume: { [Stable.symbol]: stableIssuerP },
-  },
-}) => {
+  { options: { contractGovernorRef: contractGovernorBundle } },
+) => {
   trace('addAuction start');
   const STORAGE_PATH = 'auction';
 
@@ -179,6 +190,7 @@ export const addAuction = async ({
   );
 
   auctionUpgradeNewInstance.resolve(governedInstance);
+  newContractGovBundleId.resolve(contractGovernorBundle.bundleID);
 };
 
 export const ADD_AUCTION_MANIFEST = harden({
@@ -197,6 +209,7 @@ export const ADD_AUCTION_MANIFEST = harden({
     produce: {
       auctioneerKit: true,
       auctionUpgradeNewInstance: true,
+      newContractGovBundleId: true,
     },
     instance: {
       consume: { reserve: true },
@@ -224,7 +237,7 @@ export const getManifestForAddAuction = async (
 ) => {
   return {
     manifest: ADD_AUCTION_MANIFEST,
-    options: { auctioneerRef, contractGovernorRef },
+    options: { contractGovernorRef },
     installations: {
       auctioneer: restoreRef(auctioneerRef),
       contractGovernor: restoreRef(contractGovernorRef),
