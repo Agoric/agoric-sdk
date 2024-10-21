@@ -1,8 +1,11 @@
+/* global fetch */
+
 import test from 'ava';
 import '@endo/init';
 import { GOV1ADDR, GOV2ADDR, GOV3ADDR } from '@agoric/synthetic-chain';
-import { governanceDriver, walletUtils, waitUntil } from './test-lib/index.js';
+import { walletUtils, waitUntil, networkConfig } from './test-lib/index.js';
 import { getLastUpdate } from './test-lib/wallet.js';
+import { makeGovernanceDriver } from './test-lib/governance.js';
 
 const governanceAddresses = [GOV1ADDR, GOV2ADDR, GOV3ADDR];
 
@@ -10,6 +13,7 @@ test.serial(
   'economic committee can make governance proposal and vote on it',
   async t => {
     const { readLatestHead } = walletUtils;
+    const governanceDriver = await makeGovernanceDriver(fetch, networkConfig);
 
     /** @type {any} */
     const instance = await readLatestHead(`published.agoricNames.instance`);
