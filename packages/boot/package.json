@@ -58,7 +58,7 @@
     "@endo/patterns": "^1.4.4",
     "ava": "^5.3.0",
     "c8": "^9.1.0",
-    "tsx": "3.12.8"
+    "ts-blank-space": "^0.4.1"
   },
   "files": [
     "CHANGELOG.md",
@@ -81,7 +81,7 @@
       "test/**/*.test.*"
     ],
     "nodeArguments": [
-      "--loader=tsx",
+      "--loader=ts-blank-space/register",
       "--no-warnings"
     ],
     "require": [

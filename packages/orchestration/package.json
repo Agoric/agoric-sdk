@@ -63,7 +63,8 @@
     "@endo/ses-ava": "^1.2.6",
     "ava": "^5.3.1",
     "c8": "^9.1.0",
-    "prettier": "^3.3.2"
+    "prettier": "^3.3.2",
+    "ts-blank-space": "^0.4.1"
   },
   "ava": {
     "extensions": {
@@ -74,7 +75,7 @@
       "test/**/*.test.*"
     ],
     "nodeArguments": [
-      "--loader=tsx",
+      "--loader=ts-blank-space/register",
       "--no-warnings"
     ],
     "require": [
