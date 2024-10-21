@@ -1,4 +1,4 @@
-import { NobleCalc } from '../src/utils/address.js';
+import { NobleCalc } from '@agoric/orchestration/src/utils/address.js';
 import { ibcTransfer } from './cosmoverse-mock.js';
 
 export const withForwarding = (chain, chains, t) => {
@@ -13,7 +13,7 @@ export const withForwarding = (chain, chains, t) => {
       return address;
     },
     send: async ({ amount, from, dest, quiet = false }) => {
-      await chain.send({ amount, from, dest, quiet: true });
+      await chain.send({ amount, from, dest, quiet });
       if (!destOf.has(dest)) return;
       const fwd = destOf.get(dest);
       t.log(next(), 'fwd', { amount, dest, fwd });
