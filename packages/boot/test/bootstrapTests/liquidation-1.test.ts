@@ -7,11 +7,11 @@ import type { ExecutionContext, TestFn } from 'ava';
 import type { ScheduleNotification } from '@agoric/inter-protocol/src/auction/scheduler.js';
 import {
   ensureVaultCollateral,
-  LiquidationTestContext,
+  type LiquidationTestContext,
   likePayouts,
   makeLiquidationTestContext,
   scale6,
-  LiquidationSetup,
+  type LiquidationSetup,
 } from '../../tools/liquidation.js';
 
 const test = anyTest as TestFn<LiquidationTestContext>;

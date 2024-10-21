@@ -1,4 +1,4 @@
-import { ParamChangesOfferArgs } from '@agoric/inter-protocol/src/econCommitteeCharter';
+import type { ParamChangesOfferArgs } from '@agoric/inter-protocol/src/econCommitteeCharter.js';
 
 export const updateVaultManagerParams = async (t, gd, brand, newDebtLimit) => {
   const { agoricNamesRemotes } = t.context;

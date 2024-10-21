@@ -4,7 +4,11 @@ import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import type { Instance } from '@agoric/zoe/src/zoeService/utils.js';
 import { E } from '@endo/far';
 import path from 'path';
-import { JsonSafe, toRequestQueryJson, typedJson } from '@agoric/cosmic-proto';
+import {
+  type JsonSafe,
+  toRequestQueryJson,
+  typedJson,
+} from '@agoric/cosmic-proto';
 import {
   QueryAllBalancesRequest,
   QueryAllBalancesResponse,

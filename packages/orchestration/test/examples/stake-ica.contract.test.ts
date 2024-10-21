@@ -1,26 +1,17 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
-import { heapVowE as E } from '@agoric/vow/vat.js';
-import path from 'path';
 import { makeNotifierFromSubscriber } from '@agoric/notifier';
+import { heapVowE as E } from '@agoric/vow/vat.js';
 import type { Installation } from '@agoric/zoe/src/zoeService/utils.js';
-import {
-  QueryBalanceRequest,
-  QueryBalanceResponse,
-} from '@agoric/cosmic-proto/cosmos/bank/v1beta1/query.js';
-import { commonSetup } from '../supports.js';
+import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
+import path from 'path';
+import type { CosmosChainInfo } from '../../src/cosmos-api.js';
 import { type StakeIcaTerms } from '../../src/examples/stake-ica.contract.js';
 import fetchedChainInfo from '../../src/fetched-chain-info.js';
-import {
-  buildQueryPacketString,
-  buildQueryResponseString,
-} from '../../tools/ibc-mocks.js';
-import type { CosmosChainInfo } from '../../src/cosmos-api.js';
-import { DenomAmount } from '../../src/orchestration-api.js';
+import type { DenomAmount } from '../../src/orchestration-api.js';
 import { maxClockSkew } from '../../src/utils/cosmos.js';
 import { UNBOND_PERIOD_SECONDS } from '../ibc-mocks.js';
-import { makeChainHub } from '../../src/exos/chain-hub.js';
+import { commonSetup } from '../supports.js';
 
 const dirname = path.dirname(new URL(import.meta.url).pathname);
 

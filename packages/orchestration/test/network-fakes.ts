@@ -1,6 +1,6 @@
 import { inspect } from 'node:util';
 
-import { VowTools } from '@agoric/vow';
+import type { VowTools } from '@agoric/vow';
 import {
   base64ToBytes,
   prepareEchoConnectionKit,

@@ -1,6 +1,6 @@
 import { Fail } from '@endo/errors';
 import {
-  AgoricNamesRemotes,
+  type AgoricNamesRemotes,
   makeAgoricNamesRemotesFromFakeStorage,
 } from '@agoric/vats/tools/board-utils.js';
 import { makeSwingsetTestKit } from '../../tools/supports.js';

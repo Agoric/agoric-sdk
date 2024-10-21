@@ -21,7 +21,7 @@ import { krefOf } from '@agoric/kmarshal';
 import { initSwingStore } from '@agoric/swing-store';
 import { loadSwingsetConfigFile } from '@agoric/swingset-vat';
 import { makeSlogSender } from '@agoric/telemetry';
-import { TimeMath, Timestamp } from '@agoric/time';
+import { TimeMath, type Timestamp } from '@agoric/time';
 import {
   fakeLocalChainBridgeTxMsgHandler,
   LOCALCHAIN_DEFAULT_ADDRESS,
