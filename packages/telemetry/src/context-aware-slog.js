@@ -1,5 +1,8 @@
+/* globals process */
 /* eslint-disable no-restricted-syntax */
 import { makeFsStreamWriter } from '@agoric/internal/src/node/fs-stream.js';
+import sqlite from 'better-sqlite3';
+import { closeSync, existsSync, openSync } from 'fs';
 
 /**
  * @typedef {{
@@ -49,6 +52,27 @@ import { makeFsStreamWriter } from '@agoric/internal/src/node/fs-stream.js';
  */
 
 const FILE_PATH = 'slogs-temp.log';
+const DATABASE_FILE_PATH =
+  process.env.SLOG_CONTEXT_DATABASE_FILE_PATH || '/state/slog-db.sqlite3';
+const DATABASE_TABLE_NAME = 'context';
+
+const DATABASE_TYPES = {
+  INTEGER: 'INTEGER',
+  TEXT: 'TEXT',
+};
+
+const DATABASE_SCHEMA = {
+  key: `${DATABASE_TYPES.TEXT} PRIMARY KEY`,
+  'run.id': DATABASE_TYPES.TEXT,
+  'run.num': DATABASE_TYPES.TEXT,
+  'run.trigger.blockHeight': DATABASE_TYPES.INTEGER,
+  'run.trigger.msgIdx': DATABASE_TYPES.INTEGER,
+  'run.trigger.sender': DATABASE_TYPES.TEXT,
+  'run.trigger.source': DATABASE_TYPES.TEXT,
+  'run.trigger.time': DATABASE_TYPES.INTEGER,
+  'run.trigger.txHash': DATABASE_TYPES.TEXT,
+  'run.trigger.type': DATABASE_TYPES.TEXT,
+};
 
 const SLOG_TYPES = {
   CLIST: 'clist',
@@ -95,6 +119,82 @@ const SLOG_TYPES = {
   SYSCALL_RESULT: 'syscall-result',
 };
 
+const getDatabaseInstance = async () => {
+  if (!existsSync(DATABASE_FILE_PATH))
+    closeSync(openSync(DATABASE_FILE_PATH, 'w'));
+
+  const databaseInstance = sqlite(DATABASE_FILE_PATH, { fileMustExist: true });
+  databaseInstance.exec(
+    `
+      CREATE TABLE IF NOT EXISTS '${DATABASE_TABLE_NAME}'(
+        ${Object.entries(DATABASE_SCHEMA)
+          .map(([name, type]) => `[${name}] ${type}`)
+          .join(',\n')}
+      )
+    `,
+  );
+
+  /**
+   * @type {Array<{ cid: number; name: string; type: string; notnull: number; dflt_value: null; pk: number; }>}
+   */
+  // @ts-expect-error
+  const rows = databaseInstance
+    .prepare(`PRAGMA table_info('${DATABASE_TABLE_NAME}')`)
+    .all();
+
+  const existingColumns = rows.map(row => row.name);
+
+  Object.entries(DATABASE_SCHEMA).map(
+    ([name, type]) =>
+      !existingColumns.includes(name) &&
+      databaseInstance
+        .prepare(`ALTER TABLE '${DATABASE_TABLE_NAME}' ADD [${name}] ${type}`)
+        .run(),
+  );
+
+  return {
+    /**
+     *
+     * @param {Context} context
+     */
+    persistContext: context => {
+      /** @type {Array<string>} */
+      const keys = [];
+      const values = [];
+
+      for (const [key, value] of Object.entries(context)) {
+        keys.push(`[${key}]`);
+        if (value === undefined) values.push(null);
+        else
+          values.push(
+            DATABASE_SCHEMA[key].startsWith(DATABASE_TYPES.TEXT)
+              ? `'${value}'`
+              : value,
+          );
+      }
+
+      databaseInstance
+        .prepare(
+          `INSERT OR REPLACE INTO '${DATABASE_TABLE_NAME}' (key, ${keys.join(', ')}) VALUES ('trigger-context', ${values.join(', ')})`,
+        )
+        .run();
+    },
+
+    restoreContext: () => {
+      /**
+       * @type {Context | undefined}
+       */
+      // @ts-expect-error
+      const row = databaseInstance
+        .prepare(
+          `SELECT * FROM '${DATABASE_TABLE_NAME}' WHERE key = 'trigger-context'`,
+        )
+        .get();
+      return row || null;
+    },
+  };
+};
+
 const stringify = data =>
   JSON.stringify(data, (_, value) =>
     typeof value === 'bigint' ? Number(value) : value,
@@ -110,6 +210,8 @@ export const makeSlogSender = async ({ env: _ }) => {
   if (!stream) {
     return undefined;
   }
+
+  const db = await getDatabaseInstance();
 
   /** @type Array<Context | null> */
   let [blockContext, crankContext, initContext, replayContext, triggerContext] =
@@ -192,14 +294,18 @@ export const makeSlogSender = async ({ env: _ }) => {
         break;
       }
       case SLOG_TYPES.RUN.START: {
-        if (!(triggerContext || finalBody.runNum === 0))
+        if (!(triggerContext || finalBody.runNum === 0)) {
+          const blockTime = finalBody.blockTime || blockContext?.['block.time'];
+
+          assert(blockTime);
           // TBD: add explicit slog events of both timer poll and install bundle
           triggerContext = {
             'run.id': `timer-${finalBody.blockHeight}`,
-            'run.trigger.time': finalBody.blockTime,
+            'run.trigger.time': blockTime,
             'run.trigger.type': 'timer',
           };
-        // TODO: Persist this context
+          db.persistContext(triggerContext);
+        }
 
         if (!triggerContext) triggerContext = {};
         triggerContext = {
@@ -245,7 +351,7 @@ export const makeSlogSender = async ({ env: _ }) => {
           'run.trigger.txHash': txHash,
           'run.trigger.type': triggerType,
         };
-        // TODO: Persist this context
+        db.persistContext(triggerContext);
         break;
       }
       case SLOG_TYPES.SWINGSET.COMMIT.FINISH:
@@ -272,7 +378,6 @@ export const makeSlogSender = async ({ env: _ }) => {
         beforeProcessed = false;
     }
 
-    /** @type ReportedSlog */
     const finalSlog = {
       ...blockContext,
       ...crankContext,
@@ -314,7 +419,7 @@ export const makeSlogSender = async ({ env: _ }) => {
         break;
       }
       case SLOG_TYPES.SWINGSET.END_BLOCK.START: {
-        // TODO: restore the trigger context here
+        triggerContext = db.restoreContext();
         break;
       }
       default:
