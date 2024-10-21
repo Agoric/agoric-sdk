@@ -11432,6 +11432,13 @@ ts-api-utils@~1.0.1:
   resolved "https://registry.yarnpkg.com/ts-api-utils/-/ts-api-utils-1.0.3.tgz#f12c1c781d04427313dbac808f453f050e54a331"
   integrity sha512-wNMeqtMz5NtwpT/UZGY5alT+VoKdSsOOP/kqHFcUW1P/VRhH2wJ48+DN2WwUliNbQ976ETwDL0Ifd2VVvgonvg==
 
+ts-blank-space@^0.4.1:
+  version "0.4.1"
+  resolved "https://registry.yarnpkg.com/ts-blank-space/-/ts-blank-space-0.4.1.tgz#3ddc6c7c4009337ffb1811071a8fc55d8076b619"
+  integrity sha512-i0JvTvFaZcXCj+tcs67G0K3zXgUr1ebGvhmuB3ov0ByFrbuvTOgUwtFEOP8dN+B+ou0wkhosJ8Q4RPfi8mHFQQ==
+  dependencies:
+    typescript "5.1.6 - 5.6.x"
+
 tsconfig-paths@^3.15.0:
   version "3.15.0"
   resolved "https://registry.yarnpkg.com/tsconfig-paths/-/tsconfig-paths-3.15.0.tgz#5299ec605e55b1abb23ec939ef15edaf483070d4"
@@ -11674,7 +11681,7 @@ typescript-eslint@^7.18.0, typescript-eslint@^7.3.1:
   resolved "https://registry.yarnpkg.com/typescript/-/typescript-4.9.5.tgz#095979f9bcc0d09da324d58d03ce8f8374cbe65a"
   integrity sha512-1FXk9E2Hm+QzZQ7z+McJiHL4NW1F2EzMu9Nq9i3zAaGqibafqYwCVU6WyWAuyQRRzOlxou8xZSyXLEN8oKj24g==
 
-typescript@^5.6.2, typescript@~5.6.1-rc, typescript@~5.6.2:
+typescript@^5.6.2, typescript@~5.6.1-rc, typescript@~5.6.2, "typescript@5.1.6 - 5.6.x":
   version "5.6.2"
   resolved "https://registry.yarnpkg.com/typescript/-/typescript-5.6.2.tgz#d1de67b6bef77c41823f822df8f0b3bcff60a5a0"
   integrity sha512-NW8ByodCSNCwZeghjN3o+JX5OFH0Ojg6sadjEKY4huZ52TqbJTJnDo5+Tw98lSy63NZvi4n+ez5m2u5d4PkZyw==
