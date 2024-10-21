@@ -1,0 +1,92 @@
+/* global fetch setTimeout */
+
+import test from 'ava';
+import '@endo/init';
+import { execFileSync } from 'node:child_process';
+import { GOV1ADDR, GOV2ADDR, GOV3ADDR } from '@agoric/synthetic-chain';
+import { networkConfig } from './test-lib/index.js';
+import { getLastUpdate, makeWalletUtils } from './test-lib/wallet.js';
+import { makeGovernanceDriver } from './test-lib/governance.js';
+import { makeTimerUtils } from './test-lib/utils.js';
+
+const governanceAddresses = [GOV1ADDR, GOV2ADDR, GOV3ADDR];
+
+test.serial(
+  'economic committee can make governance proposal and vote on it',
+  async t => {
+    const { waitUntil } = makeTimerUtils({ setTimeout });
+    const { readLatestHead } = await makeWalletUtils(
+      { setTimeout, execFileSync, fetch },
+      networkConfig,
+    );
+    const governanceDriver = await makeGovernanceDriver(fetch, networkConfig);
+
+    /** @type {any} */
+    const instance = await readLatestHead(`published.agoricNames.instance`);
+    const instances = Object.fromEntries(instance);
+
+    /** @type {any} */
+    const wallet = await readLatestHead(`published.wallet.${GOV1ADDR}.current`);
+    const usedInvitations = wallet.offerToUsedInvitation;
+
+    const charterInvitation = usedInvitations.find(
+      v =>
+        v[1].value[0].instance.getBoardId() ===
+        instances.econCommitteeCharter.getBoardId(),
+    );
+
+    const committeeInvitation = usedInvitations.find(
+      v =>
+        v[1].value[0].instance.getBoardId() ===
+        instances.economicCommittee.getBoardId(),
+    );
+
+    t.log('proposing on param change');
+    const params = {
+      ChargingPeriod: 400n,
+    };
+    const path = { paramPath: { key: 'governedParams' } };
+
+    await governanceDriver.proposeVaultDirectorParamChange(
+      GOV1ADDR,
+      params,
+      path,
+      charterInvitation[0],
+    );
+
+    const questionUpdate = await getLastUpdate(GOV1ADDR, { readLatestHead });
+    t.like(questionUpdate, {
+      status: { numWantsSatisfied: 1 },
+    });
+
+    t.log('Voting on param change');
+    await Promise.all(
+      governanceAddresses.map(address =>
+        governanceDriver.voteOnProposedChanges(address, committeeInvitation[0]),
+      ),
+    );
+
+    const voteUpdates = await Promise.all(
+      governanceAddresses.map(address =>
+        getLastUpdate(address, { readLatestHead }),
+      ),
+    );
+    voteUpdates.forEach(voteUpdate => {
+      t.like(voteUpdate, {
+        status: { numWantsSatisfied: 1 },
+      });
+    });
+
+    /** @type {any} */
+    const latestQuestion = await readLatestHead(
+      'published.committees.Economic_Committee.latestQuestion',
+    );
+    await waitUntil(latestQuestion.closingRule.deadline);
+
+    t.log('check if latest outcome is correct');
+    const latestOutcome = await readLatestHead(
+      'published.committees.Economic_Committee.latestOutcome',
+    );
+    t.like(latestOutcome, { outcome: 'win' });
+  },
+);

@@ -10,6 +10,7 @@ import { E, Far } from '@endo/far';
 import { inspect } from 'util';
 import { execSwingsetTransaction, pollTx } from './chain.js';
 import { makeRpcUtils } from './rpc.js';
+import { makeTimerUtils } from './utils.js';
 
 /** @import {CurrentWalletRecord} from '@agoric/smart-wallet/src/smartWallet.js' */
 /** @import {AgoricNamesRemotes} from '@agoric/vats/tools/board-utils.js' */
@@ -132,12 +133,13 @@ export const sendAction = async (bridgeAction, opts) => {
 };
 
 export const makeWalletUtils = async (
-  { delay, execFileSync, fetch },
+  { setTimeout, execFileSync, fetch },
   networkConfig,
 ) => {
   const { agoricNames, fromBoard, marshaller, readLatestHead, vstorage } =
     await makeRpcUtils({ fetch }, networkConfig);
 
+  const { delay } = await makeTimerUtils({ setTimeout });
   /**
    *
    * @param {string} from

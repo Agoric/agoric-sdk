@@ -10,6 +10,9 @@ yarn ava initial.test.js
 # XXX some of these tests have path dependencies so no globs
 yarn ava core-eval.test.js
 
+echo ACCEPTANCE TESTING governance
+yarn ava governance.test.js
+
 npm install -g tsx
 scripts/test-vaults.mts
 
