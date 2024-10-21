@@ -2,7 +2,7 @@ import { Fail } from '@endo/errors';
 
 /**
  * @import {IBCConnectionID} from '@agoric/vats';
- * @import {ChainAddress} from '../types.js';
+ * @import {ChainAddress} from '@agoric/orchestration';
  * @import {RemoteIbcAddress} from '@agoric/vats/tools/ibc-utils.js';
  */
 
