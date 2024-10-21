@@ -92,7 +92,7 @@ export type CosmosChainInfo = Readonly<{
   connections?: Record<string, IBCConnectionInfo>; // chainId or wellKnownName
   // UNTIL https://github.com/Agoric/agoric-sdk/issues/9326
   icqEnabled?: boolean;
-
+  pfmEnabled?: boolean;
   /**
    * cf https://github.com/cosmos/chain-registry/blob/master/chain.schema.json#L117
    */
