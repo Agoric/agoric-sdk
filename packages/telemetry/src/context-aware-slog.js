@@ -60,6 +60,7 @@ import { getResourceAttributes } from './index.js';
 const DATABASE_FILE_PATH =
   process.env.SLOG_CONTEXT_DATABASE_FILE_PATH || '/state/slog-db.sqlite3';
 const DATABASE_TABLE_NAME = 'context';
+const DATABASE_TRIGGER_CONTEXT_KEY_NAME = 'trigger-context';
 
 const DATABASE_TYPES = {
   INTEGER: 'INTEGER',
@@ -181,7 +182,8 @@ const getDatabaseInstance = async () => {
 
       databaseInstance
         .prepare(
-          `INSERT OR REPLACE INTO '${DATABASE_TABLE_NAME}' (key, ${keys.join(', ')}) VALUES ('trigger-context', ${values.join(', ')})`,
+          `INSERT OR REPLACE INTO '${DATABASE_TABLE_NAME}' (key, ${keys.join(', ')})
+           VALUES ('${DATABASE_TRIGGER_CONTEXT_KEY_NAME}', ${values.join(', ')})`,
         )
         .run();
     },
@@ -193,7 +195,7 @@ const getDatabaseInstance = async () => {
       // @ts-expect-error
       const row = databaseInstance
         .prepare(
-          `SELECT * FROM '${DATABASE_TABLE_NAME}' WHERE key = 'trigger-context'`,
+          `SELECT * FROM '${DATABASE_TABLE_NAME}' WHERE key = '${DATABASE_TRIGGER_CONTEXT_KEY_NAME}'`,
         )
         .get();
 
@@ -203,11 +205,6 @@ const getDatabaseInstance = async () => {
     },
   };
 };
-
-const stringify = data =>
-  JSON.stringify(data, (_, value) =>
-    typeof value === 'bigint' ? Number(value) : value,
-  );
 
 /**
  *
@@ -261,11 +258,11 @@ export const makeSlogSender = async options => {
   const slogSender = async ({ monotime, time: timestamp, ...body }) => {
     await Promise.resolve();
 
-    let [afterProcessed, beforeProcessed] = [true, true];
-
-    /** @type ReportedSlog */
-    const extractedFields = { 'process.uptime': monotime, timestamp };
-    const finalBody = { ...body };
+    const finalBody = {
+      ...body,
+      'process.uptime': monotime,
+      timestamp,
+    };
 
     /**
      * Add any before report operations here
@@ -400,7 +397,7 @@ export const makeSlogSender = async options => {
       }
       case SLOG_TYPES.SYSCALL:
       case SLOG_TYPES.SYSCALL_RESULT: {
-        extractedFields['crank.syscallNum'] = finalBody.syscallNum;
+        finalBody['crank.syscallNum'] = finalBody.syscallNum;
 
         delete finalBody.deliveryNum;
         delete finalBody.replay;
@@ -409,29 +406,27 @@ export const makeSlogSender = async options => {
         break;
       }
       default:
-        beforeProcessed = false;
+        break;
     }
 
     const finalSlog = {
       ...blockContext,
       ...crankContext,
-      ...extractedFields,
       ...finalBody,
       ...initContext,
       ...replayContext,
       ...triggerContext,
     };
 
-    if (finalSlog['block.height']) delete finalSlog.blockHeight;
-    if (finalSlog['block.time']) delete finalSlog.blockTime;
-    if (finalSlog['crank.deliveryNum']) delete finalSlog.deliveryNum;
-    if (finalSlog['crank.num']) delete finalSlog.crankNum;
-    if (finalSlog['crank.syscallNum']) delete finalSlog.syscallNum;
-    if (finalSlog['crank.type']) delete finalSlog.crankType;
-    if (finalSlog['crank.vatID']) delete finalSlog.vatID;
-    if (finalSlog['run.num']) delete finalSlog.runNum;
-    if (finalSlog['run.trigger.sender']) delete finalSlog.sender;
-    if (finalSlog['run.trigger.source']) delete finalSlog.source;
+    logger.emit({
+      attributes: { 'chain-id': CHAIN_ID },
+      body: JSON.parse(
+        JSON.stringify(finalSlog, (_, value) =>
+          typeof value === 'bigint' ? Number(value) : value,
+        ),
+      ),
+      severityNumber: SeverityNumber.INFO,
+    });
 
     /**
      * Add any after report operations here
@@ -468,16 +463,8 @@ export const makeSlogSender = async options => {
         break;
       }
       default:
-        afterProcessed = false;
+        break;
     }
-
-    if (afterProcessed || beforeProcessed)
-      logger.emit({
-        attributes: { 'chain-id': CHAIN_ID },
-        body: JSON.parse(stringify(finalSlog)),
-        severityNumber: SeverityNumber.INFO,
-      });
-    else console.log(`Unexpected slog type: ${body.type}`);
   };
 
   return slogSender;
