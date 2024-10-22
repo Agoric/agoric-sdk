@@ -188,7 +188,7 @@ const getDatabaseInstance = async () => {
 
     restoreContext: () => {
       /**
-       * @type {Context | undefined}
+       * @type {Context & {key?: string} | undefined}
        */
       // @ts-expect-error
       const row = databaseInstance
@@ -196,6 +196,9 @@ const getDatabaseInstance = async () => {
           `SELECT * FROM '${DATABASE_TABLE_NAME}' WHERE key = 'trigger-context'`,
         )
         .get();
+
+      delete row?.key;
+
       return row || null;
     },
   };
@@ -211,7 +214,7 @@ const stringify = data =>
  * @param {{env: typeof process.env}} options
  */
 export const makeSlogSender = async options => {
-  const { OTEL_EXPORTER_OTLP_ENDPOINT } = options.env;
+  const { CHAIN_ID, OTEL_EXPORTER_OTLP_ENDPOINT } = options.env;
   if (!OTEL_EXPORTER_OTLP_ENDPOINT)
     return console.warn(
       'Ignoring invocation of slogger "context-aware-slog" without the presence of "OTEL_EXPORTER_OTLP_ENDPOINT" envrionment variable',
@@ -230,8 +233,27 @@ export const makeSlogSender = async options => {
   const db = await getDatabaseInstance();
 
   /** @type Array<Context | null> */
-  let [blockContext, crankContext, initContext, replayContext, triggerContext] =
-    [null, null, null, null, null];
+  let [
+    blockContext,
+    crankContext,
+    initContext,
+    lastPersistedTriggerContext,
+    replayContext,
+    triggerContext,
+  ] = [null, null, null, null, null, null];
+
+  /**
+   * @param {Context} context
+   */
+  const persistContext = context => {
+    lastPersistedTriggerContext = context;
+    db.persistContext(context);
+  };
+
+  const restoreContext = () => {
+    if (lastPersistedTriggerContext) return lastPersistedTriggerContext;
+    return db.restoreContext();
+  };
 
   /**
    * @param {Slog} slog
@@ -316,7 +338,7 @@ export const makeSlogSender = async options => {
             'run.trigger.time': blockTime,
             'run.trigger.type': 'timer',
           };
-          db.persistContext(triggerContext);
+          persistContext(triggerContext);
         }
 
         if (!triggerContext) triggerContext = {};
@@ -363,7 +385,7 @@ export const makeSlogSender = async options => {
           'run.trigger.txHash': txHash,
           'run.trigger.type': triggerType,
         };
-        db.persistContext(triggerContext);
+        persistContext(triggerContext);
         break;
       }
       case SLOG_TYPES.SWINGSET.COMMIT.FINISH:
@@ -400,6 +422,17 @@ export const makeSlogSender = async options => {
       ...triggerContext,
     };
 
+    if (finalSlog['block.height']) delete finalSlog.blockHeight;
+    if (finalSlog['block.time']) delete finalSlog.blockTime;
+    if (finalSlog['crank.deliveryNum']) delete finalSlog.deliveryNum;
+    if (finalSlog['crank.num']) delete finalSlog.crankNum;
+    if (finalSlog['crank.syscallNum']) delete finalSlog.syscallNum;
+    if (finalSlog['crank.type']) delete finalSlog.crankType;
+    if (finalSlog['crank.vatID']) delete finalSlog.vatID;
+    if (finalSlog['run.num']) delete finalSlog.runNum;
+    if (finalSlog['run.trigger.sender']) delete finalSlog.sender;
+    if (finalSlog['run.trigger.source']) delete finalSlog.source;
+
     /**
      * Add any after report operations here
      * like resetting context data
@@ -431,7 +464,7 @@ export const makeSlogSender = async options => {
         break;
       }
       case SLOG_TYPES.SWINGSET.END_BLOCK.START: {
-        triggerContext = db.restoreContext();
+        triggerContext = restoreContext();
         break;
       }
       default:
@@ -440,6 +473,7 @@ export const makeSlogSender = async options => {
 
     if (afterProcessed || beforeProcessed)
       logger.emit({
+        attributes: { 'chain-id': CHAIN_ID },
         body: JSON.parse(stringify(finalSlog)),
         severityNumber: SeverityNumber.INFO,
       });
