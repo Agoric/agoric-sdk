@@ -49,10 +49,11 @@ const test: TestFn<
 
 test.before('bootstrap', async t => {
   const meter = makeMeter();
+  const { SLOGFILE: slogFile } = process.env;
   const ctx = await makeWalletFactoryContext(
     t,
     '@agoric/vm-config/decentral-itest-orchestration-config.json',
-    { defaultManagerType: 'xsnap', meter }, // for perf testing
+    { defaultManagerType: 'xsnap', meter, slogFile }, // for perf testing
     // { defaultManagerType: 'local' }, // 3x faster, node debugger
   );
   t.context = { ...ctx, meter };
