@@ -85,7 +85,7 @@ runs:
       if: steps.endo-branch.outputs.result != 'NOPE'
       uses: actions/checkout@v4
       with:
-        repository: agoric/endo
+        repository: endojs/endo
         path: ./replacement-endo
         ref: ${{ steps.endo-branch.outputs.result }}
         clean: 'false'
