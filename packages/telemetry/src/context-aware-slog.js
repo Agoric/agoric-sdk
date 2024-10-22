@@ -51,10 +51,11 @@ import { getResourceAttributes } from './index.js';
  * } Context
  *
  * @typedef {{
+ *  'chain-id': string;
  *  'crank.syscallNum'?: Slog['syscallNum'];
  *  'process.uptime': Slog['monotime'];
  *  timestamp: Slog['time'];
- * } & Context & Partial<Slog>} ReportedSlog
+ * } & Context} LogAttributes
  */
 
 const DATABASE_FILE_PATH =
@@ -206,6 +207,11 @@ const getDatabaseInstance = async () => {
   };
 };
 
+const stringify = data =>
+  JSON.stringify(data, (_, value) =>
+    typeof value === 'bigint' ? Number(value) : value,
+  );
+
 /**
  *
  * @param {{env: typeof process.env}} options
@@ -256,8 +262,11 @@ export const makeSlogSender = async options => {
    * @param {Slog} slog
    */
   const slogSender = ({ monotime, time: timestamp, ...body }) => {
-    const finalBody = {
-      ...body,
+    const finalBody = { ...body };
+
+    /** @type {LogAttributes} */
+    let logAttributes = {
+      'chain-id': String(CHAIN_ID),
       'process.uptime': monotime,
       timestamp,
     };
@@ -395,7 +404,7 @@ export const makeSlogSender = async options => {
       }
       case SLOG_TYPES.SYSCALL:
       case SLOG_TYPES.SYSCALL_RESULT: {
-        finalBody['crank.syscallNum'] = finalBody.syscallNum;
+        logAttributes['crank.syscallNum'] = finalBody.syscallNum;
 
         delete finalBody.deliveryNum;
         delete finalBody.replay;
@@ -407,22 +416,19 @@ export const makeSlogSender = async options => {
         break;
     }
 
-    const finalSlog = {
+    /** @type {LogAttributes} */
+    logAttributes = {
       ...blockContext,
       ...crankContext,
-      ...finalBody,
       ...initContext,
+      ...logAttributes,
       ...replayContext,
       ...triggerContext,
     };
 
     logger.emit({
-      attributes: { 'chain-id': CHAIN_ID },
-      body: JSON.parse(
-        JSON.stringify(finalSlog, (_, value) =>
-          typeof value === 'bigint' ? Number(value) : value,
-        ),
-      ),
+      attributes: JSON.parse(stringify(logAttributes)),
+      body: JSON.parse(stringify(finalBody)),
       severityNumber: SeverityNumber.INFO,
     });
 
