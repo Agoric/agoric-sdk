@@ -158,12 +158,23 @@ export function mapRef(idx) {
 // (excluding the prefix itself)
 
 export function* enumerateKeysWithPrefix(fakestore, prefix) {
-  const keys = [...fakestore.keys()];
-  keys.sort();
-  for (const key of keys) {
-    if (key.startsWith(prefix)) {
+  if ('getNextKey' in fakestore) {
+    let key = prefix;
+    while (true) {
+      key = fakestore.getNextKey(key);
+      if (!key || !key.startsWith(prefix)) {
+        break;
+      }
       yield key;
     }
+  } else if ('keys' in fakestore) {
+    for (const key of fakestore.keys()) {
+      if (!key.startsWith(prefix)) {
+        yield key;
+      }
+    }
+  } else {
+    throw Error('fakestore is not a usable KVStore');
   }
 }
 harden(enumerateKeysWithPrefix);

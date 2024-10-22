@@ -65,7 +65,9 @@ const shapetest = test.macro(async (t, collectionType, remotableType) => {
   const mapVref = testHooks.valToSlot.get(map);
   const collectionID = parseVatSlot(mapVref).subid;
   const schemaKey = `vc.${collectionID}.|schemata`;
-  const schemataData = JSON.parse(fakestore.get(schemaKey));
+  const encodedSchemata = fakestore.get(schemaKey);
+  t.not(encodedSchemata, undefined);
+  const schemataData = JSON.parse(/** @type {string} */ (encodedSchemata));
   t.deepEqual(schemataData.slots, [vref]);
 
   // and it should hold a refcount
