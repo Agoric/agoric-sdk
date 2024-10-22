@@ -1,24 +1,24 @@
 //@ts-nocheck
-import { DecCoin, DecCoinSDKType } from '../../base/v1beta1/coin.js';
+import { DecCoin, type DecCoinSDKType } from '../../base/v1beta1/coin.js';
 import {
   ValidatorAccumulatedCommission,
-  ValidatorAccumulatedCommissionSDKType,
+  type ValidatorAccumulatedCommissionSDKType,
   ValidatorHistoricalRewards,
-  ValidatorHistoricalRewardsSDKType,
+  type ValidatorHistoricalRewardsSDKType,
   ValidatorCurrentRewards,
-  ValidatorCurrentRewardsSDKType,
+  type ValidatorCurrentRewardsSDKType,
   DelegatorStartingInfo,
-  DelegatorStartingInfoSDKType,
+  type DelegatorStartingInfoSDKType,
   ValidatorSlashEvent,
-  ValidatorSlashEventSDKType,
+  type ValidatorSlashEventSDKType,
   Params,
-  ParamsSDKType,
+  type ParamsSDKType,
   FeePool,
-  FeePoolSDKType,
+  type FeePoolSDKType,
 } from './distribution.js';
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
 import { isSet } from '../../../helpers.js';
-import { JsonSafe } from '../../../json-safe.js';
+import { type JsonSafe } from '../../../json-safe.js';
 /**
  * DelegatorWithdrawInfo is the address for where distributions rewards are
  * withdrawn to by default this struct is only used at genesis to feed in

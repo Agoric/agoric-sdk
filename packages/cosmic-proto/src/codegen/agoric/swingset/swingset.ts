@@ -1,8 +1,8 @@
 //@ts-nocheck
-import { Coin, CoinSDKType } from '../../cosmos/base/v1beta1/coin.js';
+import { Coin, type CoinSDKType } from '../../cosmos/base/v1beta1/coin.js';
 import { BinaryReader, BinaryWriter } from '../../binary.js';
 import { isSet, bytesFromBase64, base64FromBytes } from '../../helpers.js';
-import { JsonSafe } from '../../json-safe.js';
+import { type JsonSafe } from '../../json-safe.js';
 /**
  * CoreEvalProposal is a gov Content type for evaluating code in the SwingSet
  * core.

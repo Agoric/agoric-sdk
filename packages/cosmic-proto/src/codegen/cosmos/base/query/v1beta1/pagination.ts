@@ -5,7 +5,7 @@ import {
   bytesFromBase64,
   base64FromBytes,
 } from '../../../../helpers.js';
-import { JsonSafe } from '../../../../json-safe.js';
+import { type JsonSafe } from '../../../../json-safe.js';
 /**
  * PageRequest is to be embedded in gRPC request messages for efficient
  * pagination. Ex:

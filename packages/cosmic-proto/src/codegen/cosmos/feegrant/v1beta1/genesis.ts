@@ -1,7 +1,7 @@
 //@ts-nocheck
-import { Grant, GrantSDKType } from './feegrant.js';
+import { Grant, type GrantSDKType } from './feegrant.js';
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
-import { JsonSafe } from '../../../json-safe.js';
+import { type JsonSafe } from '../../../json-safe.js';
 /** GenesisState contains a set of fee allowances, persisted from the store */
 export interface GenesisState {
   allowances: Grant[];

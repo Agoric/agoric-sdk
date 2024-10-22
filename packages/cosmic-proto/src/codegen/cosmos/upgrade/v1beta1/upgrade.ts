@@ -1,12 +1,12 @@
 //@ts-nocheck
 import {
   Timestamp,
-  TimestampSDKType,
+  type TimestampSDKType,
 } from '../../../google/protobuf/timestamp.js';
-import { Any, AnySDKType } from '../../../google/protobuf/any.js';
+import { Any, type AnySDKType } from '../../../google/protobuf/any.js';
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
 import { isSet, fromJsonTimestamp, fromTimestamp } from '../../../helpers.js';
-import { JsonSafe } from '../../../json-safe.js';
+import { type JsonSafe } from '../../../json-safe.js';
 /** Plan specifies information about a planned upgrade and when it should occur. */
 export interface Plan {
   /**

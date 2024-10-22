@@ -1,8 +1,8 @@
 //@ts-nocheck
-import { Any, AnySDKType } from '../../../google/protobuf/any.js';
+import { Any, type AnySDKType } from '../../../google/protobuf/any.js';
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
 import { isSet } from '../../../helpers.js';
-import { JsonSafe } from '../../../json-safe.js';
+import { type JsonSafe } from '../../../json-safe.js';
 /**
  * LegacyAminoPubKey specifies a public key type
  * which nests multiple public keys and a threshold,

@@ -1,16 +1,16 @@
 //@ts-nocheck
 import {
   Header,
-  HeaderSDKType,
+  type HeaderSDKType,
   Data,
-  DataSDKType,
+  type DataSDKType,
   Commit,
-  CommitSDKType,
+  type CommitSDKType,
 } from './types.js';
-import { EvidenceList, EvidenceListSDKType } from './evidence.js';
+import { EvidenceList, type EvidenceListSDKType } from './evidence.js';
 import { BinaryReader, BinaryWriter } from '../../binary.js';
 import { isSet } from '../../helpers.js';
-import { JsonSafe } from '../../json-safe.js';
+import { type JsonSafe } from '../../json-safe.js';
 export interface Block {
   header: Header;
   data: Data;

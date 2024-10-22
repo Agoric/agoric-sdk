@@ -1,8 +1,13 @@
 //@ts-nocheck
-import { Params, ParamsSDKType, State, StateSDKType } from './swingset.js';
+import {
+  Params,
+  type ParamsSDKType,
+  State,
+  type StateSDKType,
+} from './swingset.js';
 import { BinaryReader, BinaryWriter } from '../../binary.js';
 import { isSet } from '../../helpers.js';
-import { JsonSafe } from '../../json-safe.js';
+import { type JsonSafe } from '../../json-safe.js';
 /** The initial or exported state. */
 export interface GenesisState {
   params: Params;

@@ -1,5 +1,5 @@
 //@ts-nocheck
-import { Any, AnySDKType } from '../../../google/protobuf/any.js';
+import { Any, type AnySDKType } from '../../../google/protobuf/any.js';
 import {
   SignMode,
   signModeFromJSON,
@@ -7,12 +7,12 @@ import {
 } from '../signing/v1beta1/signing.js';
 import {
   CompactBitArray,
-  CompactBitArraySDKType,
+  type CompactBitArraySDKType,
 } from '../../crypto/multisig/v1beta1/multisig.js';
-import { Coin, CoinSDKType } from '../../base/v1beta1/coin.js';
+import { Coin, type CoinSDKType } from '../../base/v1beta1/coin.js';
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
 import { isSet, bytesFromBase64, base64FromBytes } from '../../../helpers.js';
-import { JsonSafe } from '../../../json-safe.js';
+import { type JsonSafe } from '../../../json-safe.js';
 /** Tx is the standard type used for broadcasting transactions. */
 export interface Tx {
   /** body is the processable content of the transaction */

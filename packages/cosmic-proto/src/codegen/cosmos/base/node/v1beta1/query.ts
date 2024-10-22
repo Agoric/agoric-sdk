@@ -1,6 +1,6 @@
 //@ts-nocheck
 import { BinaryReader, BinaryWriter } from '../../../../binary.js';
-import { JsonSafe } from '../../../../json-safe.js';
+import { type JsonSafe } from '../../../../json-safe.js';
 import { isSet } from '../../../../helpers.js';
 /** ConfigRequest defines the request structure for the Config gRPC query. */
 export interface ConfigRequest {}
