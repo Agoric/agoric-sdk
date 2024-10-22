@@ -7,7 +7,7 @@ import { makeQueue } from '@endo/stream';
  * @import { RunPolicy } from '../src/types-external.js'
  */
 
-/** @typedef {{ makeRunPolicy: () => RunPolicy }} RunPolicyMaker */
+/** @typedef {{ provideRunPolicy: () => RunPolicy }} RunPolicyMaker */
 
 /**
  * @param {import('../src/controller/controller.js').SwingsetController} controller
@@ -31,7 +31,7 @@ export const makeRunUtils = (controller, meter) => {
   const queueAndRun = async (deliveryThunk, voidResult = false) => {
     await mutex.get();
     const kpid = await deliveryThunk();
-    const runPolicy = meter && meter.makeRunPolicy();
+    const runPolicy = meter && meter.provideRunPolicy();
     const runResultP = controller.run(runPolicy);
     mutex.put(runResultP.catch(logRunFailure));
     await runResultP;

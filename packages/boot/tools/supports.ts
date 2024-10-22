@@ -31,6 +31,7 @@ import { Fail } from '@endo/errors';
 import {
   makeRunUtils,
   type RunUtils,
+  type RunPolicyMaker,
 } from '@agoric/swingset-vat/tools/run-utils.js';
 import {
   boardSlottingMarshaller,
@@ -45,7 +46,7 @@ import type { SwingsetController } from '@agoric/swingset-vat/src/controller/con
 import type { BridgeHandler, IBCMethod } from '@agoric/vats';
 import type { BootstrapRootObject } from '@agoric/vats/src/core/lib-boot.js';
 import type { EProxy } from '@endo/eventual-send';
-import type { RunPolicyMaker } from './computron-counter.js';
+
 import { icaMocks, protoMsgMockMap, protoMsgMocks } from './ibc/mocks.js';
 
 const trace = makeTracer('BSTSupport', false);
