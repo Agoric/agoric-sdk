@@ -39,9 +39,6 @@ export const upgradeVaults = async (
       auctionUpgradeNewInstance: auctionUpgradeNewInstanceProducer,
       newContractGovBundleId: newContractGovBundleIdErasor,
     },
-    instance: {
-      consume: { auctioneer: auctioneerInstanceP },
-    },
   },
   { options: { VaultFactoryBundle: vaultBundleRef } },
 ) => {
@@ -52,12 +49,7 @@ export const upgradeVaults = async (
 
   await priceAuthority8400;
 
-  const [auctionOldInstance, auctionNewInstance] = await Promise.all([
-    auctioneerInstanceP,
-    auctionUpgradeNewInstance,
-  ]);
-  auctionOldInstance !== auctionNewInstance ||
-    Fail`Auction instance didn't change`;
+  const auctionNewInstance = await auctionUpgradeNewInstance;
   auctionUpgradeNewInstanceProducer.reset();
   const publicFacet = E(zoe).getPublicFacet(auctionNewInstance);
   /** @type {import('@agoric/inter-protocol/src/auction/scheduler.js').FullSchedule} */
@@ -202,7 +194,6 @@ export const getManifestForUpgradeVaults = async (
           auctionUpgradeNewInstance: uV,
           newContractGovBundleId: uV,
         },
-        instance: { consume: { auctioneer: uV } },
       },
     },
     installations: { VaultFactory: restoreRef(VaultFactoryRef) },
