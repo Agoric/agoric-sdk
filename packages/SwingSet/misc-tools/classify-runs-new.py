@@ -1,5 +1,7 @@
 import sys, json
 
+from classify import classify
+
 # * runs-continued.jsonlines : JSON of:
 #   { classification, runids: [runids..],
 #     normal: { deliveries, computrons, elapsed, vatIDs: set },
@@ -33,6 +35,8 @@ import sys, json
 
 
 # input is decompressed slog on stdin
+
+# filter-slog.py cosmic-swingset- deliver heap-snapshot- vat-startup- =start-replay =finish-replay =create-vat
 
 def parse_and_filter(iter_lines):
     for line in iter_lines:
@@ -125,13 +129,24 @@ GC_ACTIONS = { "dropExports", "retireExports", "retireImports" }
 
 # we write heap-snapshot-load before sending the snapshot to the new worker
 
+def sorted_vatIDs(vatIDs):
+    return sorted(vatIDs, key=lambda vatID: int(vatID[1:]))
+
 class Run:
-    def __init__(self, d, block_height, block_time):
+    def __init__(self, d, block_height, block_time, bridge_inbound, upgrade):
         self.run_num = d["runNum"]
         self.block_height = block_height
         self.block_time = block_time
         self.run_id = "b%d-r%d" % (self.block_height, self.run_num)
         #print(self.run_id)
+
+        self.bridge_inbound = bridge_inbound
+        self.is_upgrade = bool(upgrade)
+
+        self.classification = None
+        self.is_continuation = self.run_num == 0 and not self.is_upgrade
+        if self.is_continuation:
+            self.classification = "continuation"
 
         self.normal = { "deliveries": 0, "computrons": 0, "elapsed": 0, "vatIDs": set() }
         self.GC = {"deliveries": 0, "computrons": 0, "elapsed": 0, "vatIDs": set()  }
@@ -157,6 +172,8 @@ class Run:
             self._deliver = d
             if not self.first_delivery:
                 self.first_delivery = d
+                if not self.is_continuation:
+                    self.classification = classify(self.bridge_inbound, d)
         if type == "deliver-result":
             self._deliver_result = d
             elapsed = d["time"] - self._deliver["time"]
@@ -217,10 +234,17 @@ class Run:
 
     def get_data(self):
         if not self._data:
-            GC = self.GC.copy()
-            GC["vatIDs"] = list(GC["vatIDs"])
             normal = self.normal.copy()
-            normal["vatIDs"] = list(normal["vatIDs"])
+            normal["vatIDs"] = sorted_vatIDs(normal["vatIDs"])
+            GC = self.GC.copy()
+            GC["vatIDs"] = sorted_vatIDs(GC["vatIDs"])
+            BOYD = self.BOYD.copy()
+            BOYD["vatIDs"] = sorted_vatIDs(BOYD["vatIDs"])
+            replay = self.replay.copy()
+            replay["vatIDs"] = sorted_vatIDs(replay["vatIDs"])
+            snapshot = self.snapshot.copy()
+            snapshot["vatIDs"] = sorted_vatIDs(snapshot["vatIDs"])
+
             total = {
                 "deliveries": self.sum("deliveries"),
                 "computrons": self.sum("computrons"),
@@ -228,6 +252,7 @@ class Run:
                 }
             self._data = {
                 "id": self.run_id,
+                "blockTime": self.block_time,
                 "normal": normal,
                 "replay": self.replay,
                 "GC": GC, "BOYD": self.BOYD,
@@ -255,13 +280,13 @@ class ContinuedRuns:
             for r in runs:
                 for vatID in r.get_data()[x]["vatIDs"]:
                     s.add(vatID)
-            return list(s)
+            return sorted_vatIDs(s)
         def do_list(x, y):
             l = []
             for r in runs:
                 for vatID in r.get_data()[x]["vatIDs"]:
                     l.append(vatID)
-            return l
+            return sorted_vatIDs(l)
 
         normal["deliveries"] = do_sum("normal", "deliveries")
         normal["computrons"] = do_sum("normal", "computrons")
@@ -296,6 +321,8 @@ class ContinuedRuns:
 
         self._data = {
             "runids": runids,
+            "class": runs[0].classification,
+            "blockTime": runs[0].block_time,
             "normal": normal,
             "GC": GC,
             "BOYD": BOYD,
@@ -308,27 +335,34 @@ class ContinuedRuns:
         return self._data
 
 def iter_runs(filtered_iter):
+    upgrade = None
     bridge_inbound = None
     run = None
     for d in filtered_iter:
         type = d["type"]
+        if type == "cosmic-swingset-upgrade-start":
+            # first block after chain-halting upgrade sees -upgrade-start,
+            # -upgrade-finish, -begin-block
+            upgrade = d
         if type == "cosmic-swingset-begin-block":
             block_height = d["blockHeight"]
             block_time = d["blockTime"]
         if type == "cosmic-swingset-bridge-inbound":
             bridge_inbound = d
         if type == "cosmic-swingset-run-start":
-            run = Run(d, block_height, block_time)
+            run = Run(d, block_height, block_time, bridge_inbound, upgrade)
         if run:
             run.add_event(d)
         if type == "cosmic-swingset-run-finish":
             yield run
             run = None
+            upgrade = None
+            bridge_inbound = None
 
 def iter_continued_runs(runs_iter):
     run_sequence = []
     for run in runs_iter:
-        if run.run_num > 0:
+        if not run.is_continuation:
             if run_sequence:
                 yield ContinuedRuns(run_sequence)
                 run_sequence = []
@@ -353,3 +387,7 @@ for continued_run in continued_runs_iter:
 # cat runs.new |jq -c 'select((.replay.vatIDs | length) > 0) | [.id, .total.elapsed, .replay.elapsed, .replay.vatIDs]'
 # cat runs.new |jq -c 'select(.BOYD.deliveries > 0) | [.id, .total.elapsed, .BOYD.elapsed, .BOYD.vatIDs]'
 # cat runs.new |jq -c 'select(.snapshot.loads > 0) | [.id, .total.elapsed, .snapshot]'
+
+# lz4cat run-58-chain.slog.lz4 |python3 ~/stuff/agoric/trees/agoric-sdk/packages/SwingSet/misc-tools/filter-slog.py cosmic-swingset- deliver heap-snapshot- vat-startup- =start-replay =finish-replay =create-vat |gzip >slog-filtered.gz
+# gzcat slog-filtered.gz |python3 ~/stuff/agoric/trees/agoric-sdk/packages/SwingSet/misc-tools/classify-runs-new.py >continued-runs.new
+# for c in `cat continued-runs.new | jq -r '.classification' |sort |uniq`; do echo $c; cat continued-runs.new |jq -c "select(.classification==\"${c}\")" >classes/${c}.jsonl; done
