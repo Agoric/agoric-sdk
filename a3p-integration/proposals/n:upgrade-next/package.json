@@ -12,7 +12,10 @@
       "vats/upgrade-provisionPool.js upgrade-provisionPool",
       "testing/add-LEMONS.js add-LEMONS",
       "testing/add-OLIVES.js add-OLIVES",
-      "inter-protocol/replace-electorate-core.js replace-electorate A3P_INTEGRATION"
+      "inter-protocol/replace-electorate-core.js replace-electorate A3P_INTEGRATION",
+      "inter-protocol/updatePriceFeeds.js price-feeds A3P_INTEGRATION",
+      "vats/add-auction.js price-feeds",
+      "vats/upgradeVaults.js price-feeds"
     ],
     "type": "Software Upgrade Proposal"
   },
