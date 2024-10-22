@@ -172,7 +172,7 @@ export async function makeHTTPListener(
     app.use('/wallet', express.static(walletHtmlDir));
 
     // Default non-bridge GETs to /wallet/index.html for history routing.
-    app.get('/wallet/*', (_, res) =>
+    app.get('/wallet/:slug', (_, res) =>
       res.sendFile(path.resolve(walletHtmlDir, 'index.html')),
     );
   }
@@ -218,7 +218,7 @@ export async function makeHTTPListener(
   };
 
   // accept POST messages as commands.
-  app.post('*', async (req, res) => {
+  app.post(':path', async (req, res) => {
     const valid = await validateAccessToken(req);
     if (!valid) {
       res.json({ ok: false, rej: 'Unauthorized' });
