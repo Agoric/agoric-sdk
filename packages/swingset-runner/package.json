@@ -19,7 +19,7 @@
     "ci:autobench": "./autobench.js"
   },
   "dependencies": {
-    "@endo/errors": "^1.2.6",
+    "@endo/errors": "^1.2.7",
     "@agoric/deploy-script-support": "^0.10.3",
     "@agoric/ertp": "^0.16.2",
     "@agoric/internal": "^0.3.2",
@@ -32,11 +32,11 @@
     "@agoric/telemetry": "^0.6.2",
     "@agoric/vat-data": "^0.5.2",
     "@agoric/zoe": "^0.26.2",
-    "@endo/bundle-source": "^3.4.1",
-    "@endo/eventual-send": "^1.2.6",
-    "@endo/init": "^1.1.5",
-    "@endo/marshal": "^1.5.4",
-    "@endo/nat": "^5.0.11",
+    "@endo/bundle-source": "^3.4.2",
+    "@endo/eventual-send": "^1.2.7",
+    "@endo/init": "^1.1.6",
+    "@endo/marshal": "^1.6.0",
+    "@endo/nat": "^5.0.12",
     "expose-gc": "^1.0.0",
     "n-readlines": "^1.0.1",
     "yargs": "^16.1.0"
