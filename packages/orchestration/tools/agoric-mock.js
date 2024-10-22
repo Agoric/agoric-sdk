@@ -9,9 +9,10 @@ import { ibcTransfer } from './cosmoverse-mock.js';
 
 /**
  * @param {any} t
- * @param {Record<string, import('./cosmoverse-mock.js').CosmosChain} chains
+ * @param {Record<string, import('./cosmoverse-mock.js').CosmosChain>} chains
+ * @param {{ brand: Brand; denom: string }[]} assetInfo
  */
-export const makeOrchestration = (t, chains) => {
+export const makeOrchestration = (t, chains, assetInfo) => {
   const { nextLabel: next } = t.context;
   const encoding = 'bech32';
   /** @returns {Promise<OrchestrationAccount<any>>} */
@@ -47,7 +48,7 @@ export const makeOrchestration = (t, chains) => {
     });
   };
   const chainHub = harden({
-    agoric: { makeAccount },
+    agoric: { makeAccount, getVBankAssetInfo: async () => assetInfo },
   });
   return harden({
     getChain: name => chainHub[name],

@@ -227,13 +227,14 @@ const setup = async (t, io) => {
     noble: withForwarding(chains.noble, chains, t),
   });
 
-  const orch = makeOrchestration(t, chains);
+  const USDCe = makeIssuerKit('USDC');
+  const assetInfo = [{ brand: USDCe.brand, denom: 'ibc/toyusd' }];
+  const orch = makeOrchestration(t, chains, assetInfo);
   const { storageNode: chainStorage, rpc: agoricRpc } = makeVStorage();
   const storageNode = await E(chainStorage).makeChildNode(
     'published.quickSend.settlementBase',
   );
 
-  const USDCe = makeIssuerKit('USDC');
   const terms = {
     issuers: { USDC: USDCe.issuer },
     brands: { USDC: USDCe.brand },
@@ -262,6 +263,9 @@ const setup = async (t, io) => {
     orchestrate,
     orchestrateAll: (flows, ctx) =>
       objectMap(flows, (h, n) => orchestrate(n, ctx, h)),
+    chainHub: {
+      registerAsset: (...args) => t.log('@@@register', args),
+    },
   } as any;
   const contract = await contractFn(zcf, privateArgs, zone, tools);
 
