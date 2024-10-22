@@ -9,40 +9,56 @@ const trace = makeTracer('NewAuction', true);
 /**
  * @typedef {PromiseSpaceOf<{
  *   auctionUpgradeNewInstance: Instance;
+ *   newContractGovBundleId: string;
  * }>} interlockPowers
  */
 
 /**
  * @param {import('./econ-behaviors.js').EconomyBootstrapPowers &
  *   interlockPowers} powers
+ * @param {{
+ *   options: {
+ *     contractGovernorRef: { bundleID: string };
+ *     contractGovernorInstallation: Installation;
+ *   };
+ * }} options
  */
-export const addAuction = async ({
-  consume: {
-    agoricNamesAdmin,
-    auctioneerKit: legacyKitP,
-    board,
-    chainStorage,
-    chainTimerService,
-    economicCommitteeCreatorFacet: electorateCreatorFacet,
-    econCharterKit,
-    priceAuthority8400,
-    zoe,
-  },
-  produce: { auctioneerKit: produceAuctioneerKit, auctionUpgradeNewInstance },
-  instance: {
-    consume: { reserve: reserveInstance },
-    produce: { auctioneer: auctionInstance },
-  },
-  installation: {
+export const addAuction = async (
+  {
     consume: {
-      auctioneer: auctioneerInstallationP,
-      contractGovernor: governorInstallationP,
+      agoricNamesAdmin,
+      auctioneerKit: legacyKitP,
+      board,
+      chainStorage,
+      chainTimerService,
+      economicCommitteeCreatorFacet: electorateCreatorFacet,
+      econCharterKit,
+      priceAuthority8400,
+      zoe,
+    },
+    produce: {
+      auctioneerKit: produceAuctioneerKit,
+      auctionUpgradeNewInstance,
+      newContractGovBundleId,
+    },
+    instance: {
+      consume: { reserve: reserveInstance },
+      produce: { auctioneer: auctionInstance },
+    },
+    installation: {
+      consume: { auctioneer: auctioneerInstallationP },
+    },
+    issuer: {
+      consume: { [Stable.symbol]: stableIssuerP },
     },
   },
-  issuer: {
-    consume: { [Stable.symbol]: stableIssuerP },
+  {
+    options: {
+      contractGovernorRef: contractGovernorBundle,
+      contractGovernorInstallation,
+    },
   },
-}) => {
+) => {
   trace('addAuction start');
   const STORAGE_PATH = 'auction';
 
@@ -53,14 +69,12 @@ export const addAuction = async ({
     stableIssuer,
     legacyKit,
     auctioneerInstallation,
-    governorInstallation,
   ] = await Promise.all([
     poserInvitationP,
     E(E(zoe).getInvitationIssuer()).getAmountOf(poserInvitationP),
     stableIssuerP,
     legacyKitP,
     auctioneerInstallationP,
-    governorInstallationP,
   ]);
 
   // Each field has an extra layer of type +  value:
@@ -109,9 +123,14 @@ export const addAuction = async ({
     }),
   );
 
+  const bundleIdFromZoe = await E(zoe).getBundleIDFromInstallation(
+    contractGovernorInstallation,
+  );
+  trace('governor bundle ID', bundleIdFromZoe, contractGovernorBundle.bundleID);
+
   /** @type {GovernorStartedInstallationKit<typeof auctioneerInstallationP>} */
   const governorStartResult = await E(zoe).startInstance(
-    governorInstallation,
+    contractGovernorInstallation,
     undefined,
     governorTerms,
     harden({
@@ -179,6 +198,7 @@ export const addAuction = async ({
   );
 
   auctionUpgradeNewInstance.resolve(governedInstance);
+  newContractGovBundleId.resolve(contractGovernorBundle.bundleID);
 };
 
 export const ADD_AUCTION_MANIFEST = harden({
@@ -197,6 +217,7 @@ export const ADD_AUCTION_MANIFEST = harden({
     produce: {
       auctioneerKit: true,
       auctionUpgradeNewInstance: true,
+      newContractGovBundleId: true,
     },
     instance: {
       consume: { reserve: true },
@@ -222,9 +243,12 @@ export const getManifestForAddAuction = async (
   { restoreRef },
   { auctioneerRef, contractGovernorRef },
 ) => {
+  const contractGovernorInstallation = restoreRef(contractGovernorRef);
   return {
     manifest: ADD_AUCTION_MANIFEST,
-    options: { auctioneerRef, contractGovernorRef },
+    // XXX we should be able to receive contractGovernorInstallation via
+    // installations.consume, but the received installation isn't right.
+    options: { contractGovernorRef, contractGovernorInstallation },
     installations: {
       auctioneer: restoreRef(auctioneerRef),
       contractGovernor: restoreRef(contractGovernorRef),
