@@ -1,12 +1,12 @@
 //@ts-nocheck
-import { Any, AnySDKType } from '../../../../google/protobuf/any.js';
+import { Any, type AnySDKType } from '../../../../google/protobuf/any.js';
 import {
   Plan,
-  PlanSDKType,
+  type PlanSDKType,
 } from '../../../../cosmos/upgrade/v1beta1/upgrade.js';
 import { BinaryReader, BinaryWriter } from '../../../../binary.js';
 import { isSet } from '../../../../helpers.js';
-import { JsonSafe } from '../../../../json-safe.js';
+import { type JsonSafe } from '../../../../json-safe.js';
 /**
  * IdentifiedClientState defines a client state with an additional client
  * identifier field.

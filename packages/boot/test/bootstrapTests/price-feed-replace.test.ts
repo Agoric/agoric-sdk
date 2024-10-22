@@ -10,17 +10,17 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import type { TestFn } from 'ava';
-import { ScheduleNotification } from '@agoric/inter-protocol/src/auction/scheduler.js';
+import type { ScheduleNotification } from '@agoric/inter-protocol/src/auction/scheduler.js';
 import { NonNullish } from '@agoric/internal';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { Fail } from '@endo/errors';
 
 import {
-  LiquidationTestContext,
+  type LiquidationTestContext,
   likePayouts,
   makeLiquidationTestContext,
   scale6,
-  LiquidationSetup,
+  type LiquidationSetup,
 } from '../../tools/liquidation.js';
 import {
   updateVaultDirectorParams,

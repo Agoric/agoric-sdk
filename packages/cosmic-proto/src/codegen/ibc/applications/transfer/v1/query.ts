@@ -1,19 +1,19 @@
 //@ts-nocheck
 import {
   PageRequest,
-  PageRequestSDKType,
+  type PageRequestSDKType,
   PageResponse,
-  PageResponseSDKType,
+  type PageResponseSDKType,
 } from '../../../../cosmos/base/query/v1beta1/pagination.js';
 import {
   DenomTrace,
-  DenomTraceSDKType,
+  type DenomTraceSDKType,
   Params,
-  ParamsSDKType,
+  type ParamsSDKType,
 } from './transfer.js';
 import { BinaryReader, BinaryWriter } from '../../../../binary.js';
 import { isSet } from '../../../../helpers.js';
-import { JsonSafe } from '../../../../json-safe.js';
+import { type JsonSafe } from '../../../../json-safe.js';
 /**
  * QueryDenomTraceRequest is the request type for the Query/DenomTrace RPC
  * method

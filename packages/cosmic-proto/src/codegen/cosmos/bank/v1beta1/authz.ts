@@ -1,7 +1,7 @@
 //@ts-nocheck
-import { Coin, CoinSDKType } from '../../base/v1beta1/coin.js';
+import { Coin, type CoinSDKType } from '../../base/v1beta1/coin.js';
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
-import { JsonSafe } from '../../../json-safe.js';
+import { type JsonSafe } from '../../../json-safe.js';
 /**
  * SendAuthorization allows the grantee to spend up to spend_limit coins from
  * the granter's account.

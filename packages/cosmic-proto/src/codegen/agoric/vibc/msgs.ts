@@ -1,8 +1,11 @@
 //@ts-nocheck
-import { Packet, PacketSDKType } from '../../ibc/core/channel/v1/channel.js';
+import {
+  Packet,
+  type PacketSDKType,
+} from '../../ibc/core/channel/v1/channel.js';
 import { BinaryReader, BinaryWriter } from '../../binary.js';
 import { isSet, bytesFromBase64, base64FromBytes } from '../../helpers.js';
-import { JsonSafe } from '../../json-safe.js';
+import { type JsonSafe } from '../../json-safe.js';
 /** MsgSendPacket is an SDK message for sending an outgoing IBC packet */
 export interface MsgSendPacket {
   packet: Packet;

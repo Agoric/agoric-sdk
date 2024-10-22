@@ -1,8 +1,8 @@
 //@ts-nocheck
-import { PublicKey, PublicKeySDKType } from '../crypto/keys.js';
+import { PublicKey, type PublicKeySDKType } from '../crypto/keys.js';
 import { BinaryReader, BinaryWriter } from '../../binary.js';
 import { isSet, bytesFromBase64, base64FromBytes } from '../../helpers.js';
-import { JsonSafe } from '../../json-safe.js';
+import { type JsonSafe } from '../../json-safe.js';
 export interface ValidatorSet {
   validators: Validator[];
   proposer?: Validator;

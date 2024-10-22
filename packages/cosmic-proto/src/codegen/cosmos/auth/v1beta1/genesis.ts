@@ -1,9 +1,9 @@
 //@ts-nocheck
-import { Params, ParamsSDKType } from './auth.js';
-import { Any, AnySDKType } from '../../../google/protobuf/any.js';
+import { Params, type ParamsSDKType } from './auth.js';
+import { Any, type AnySDKType } from '../../../google/protobuf/any.js';
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
 import { isSet } from '../../../helpers.js';
-import { JsonSafe } from '../../../json-safe.js';
+import { type JsonSafe } from '../../../json-safe.js';
 /** GenesisState defines the auth module's genesis state. */
 export interface GenesisState {
   /** params defines all the paramaters of the module. */

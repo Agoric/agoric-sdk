@@ -6,7 +6,7 @@ import { heapVowE as E, prepareVowTools } from '@agoric/vow/vat.js';
 import {
   prepareRecorderKitMakers,
   provideAll,
-} from '@agoric/zoe/src/contractSupport';
+} from '@agoric/zoe/src/contractSupport/index.js';
 import { InvitationShape } from '@agoric/zoe/src/typeGuards.js';
 import { makeDurableZone } from '@agoric/zone/durable.js';
 import { M } from '@endo/patterns';

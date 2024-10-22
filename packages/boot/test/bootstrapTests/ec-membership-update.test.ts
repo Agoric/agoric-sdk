@@ -1,5 +1,5 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
-import { TestFn } from 'ava';
+import type { TestFn } from 'ava';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import {
   makeAgoricNamesRemotesFromFakeStorage,

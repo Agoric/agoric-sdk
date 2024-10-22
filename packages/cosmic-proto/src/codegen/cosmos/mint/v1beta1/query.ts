@@ -1,7 +1,7 @@
 //@ts-nocheck
-import { Params, ParamsSDKType } from './mint.js';
+import { Params, type ParamsSDKType } from './mint.js';
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
-import { JsonSafe } from '../../../json-safe.js';
+import { type JsonSafe } from '../../../json-safe.js';
 import { isSet, bytesFromBase64, base64FromBytes } from '../../../helpers.js';
 /** QueryParamsRequest is the request type for the Query/Params RPC method. */
 export interface QueryParamsRequest {}

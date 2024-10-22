@@ -1,8 +1,8 @@
 //@ts-nocheck
-import { Coin, CoinSDKType } from '../../base/v1beta1/coin.js';
+import { Coin, type CoinSDKType } from '../../base/v1beta1/coin.js';
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
 import { isSet } from '../../../helpers.js';
-import { JsonSafe } from '../../../json-safe.js';
+import { type JsonSafe } from '../../../json-safe.js';
 /** Params defines the parameters for the bank module. */
 export interface Params {
   sendEnabled: SendEnabled[];

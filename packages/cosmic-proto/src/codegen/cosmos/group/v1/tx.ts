@@ -1,7 +1,7 @@
 //@ts-nocheck
 import {
   MemberRequest,
-  MemberRequestSDKType,
+  type MemberRequestSDKType,
   VoteOption,
   ProposalExecutorResult,
   voteOptionFromJSON,
@@ -9,10 +9,10 @@ import {
   proposalExecutorResultFromJSON,
   proposalExecutorResultToJSON,
 } from './types.js';
-import { Any, AnySDKType } from '../../../google/protobuf/any.js';
+import { Any, type AnySDKType } from '../../../google/protobuf/any.js';
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
 import { isSet } from '../../../helpers.js';
-import { JsonSafe } from '../../../json-safe.js';
+import { type JsonSafe } from '../../../json-safe.js';
 /** Exec defines modes of execution of a proposal on creation or on new vote. */
 export enum Exec {
   /**

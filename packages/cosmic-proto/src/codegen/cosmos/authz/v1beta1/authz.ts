@@ -1,24 +1,24 @@
 //@ts-nocheck
-import { Any, AnySDKType } from '../../../google/protobuf/any.js';
+import { Any, type AnySDKType } from '../../../google/protobuf/any.js';
 import {
   Timestamp,
-  TimestampSDKType,
+  type TimestampSDKType,
 } from '../../../google/protobuf/timestamp.js';
 import {
   SendAuthorization,
-  SendAuthorizationSDKType,
+  type SendAuthorizationSDKType,
 } from '../../bank/v1beta1/authz.js';
 import {
   StakeAuthorization,
-  StakeAuthorizationSDKType,
+  type StakeAuthorizationSDKType,
 } from '../../staking/v1beta1/authz.js';
 import {
   TransferAuthorization,
-  TransferAuthorizationSDKType,
+  type TransferAuthorizationSDKType,
 } from '../../../ibc/applications/transfer/v1/authz.js';
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
 import { isSet, fromJsonTimestamp, fromTimestamp } from '../../../helpers.js';
-import { JsonSafe } from '../../../json-safe.js';
+import { type JsonSafe } from '../../../json-safe.js';
 /**
  * GenericAuthorization gives the grantee unrestricted permissions to execute
  * the provided method on behalf of the granter's account.

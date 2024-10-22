@@ -1,19 +1,19 @@
 //@ts-nocheck
 import {
   Params,
-  ParamsSDKType,
+  type ParamsSDKType,
   Validator,
-  ValidatorSDKType,
+  type ValidatorSDKType,
   Delegation,
-  DelegationSDKType,
+  type DelegationSDKType,
   UnbondingDelegation,
-  UnbondingDelegationSDKType,
+  type UnbondingDelegationSDKType,
   Redelegation,
-  RedelegationSDKType,
+  type RedelegationSDKType,
 } from './staking.js';
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
 import { isSet, bytesFromBase64, base64FromBytes } from '../../../helpers.js';
-import { JsonSafe } from '../../../json-safe.js';
+import { type JsonSafe } from '../../../json-safe.js';
 /** GenesisState defines the staking module's genesis state. */
 export interface GenesisState {
   /** params defines all the paramaters of related to deposit. */
