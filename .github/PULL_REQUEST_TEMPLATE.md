@@ -7,6 +7,15 @@ v                               ✰  Thanks for creating a PR! ✰
 closes: #XXXX
 refs: #XXXX
 
+<!-- Integration testing generally doesn't run until a PR is labeled for merge, but can be opted into for every push by adding label 'force:integration', and can be customized to use non-default external targets by including lines here that **start** with leading-`#` directives:
+* (https://github.com/Agoric/documentation) #documentation-branch: $BRANCH_NAME
+* (https://github.com/endojs/endo) #endo-branch: $BRANCH_NAME
+* (https://github.com/Agoric/dapp-offer-up) #getting-started-branch: $BRANCH_NAME
+* (https://github.com/Agoric/testnet-load-generator) #loadgen-branch: $BRANCH_NAME
+
+These directives should be removed before adding a merge label, so final integration tests run against default targets.
+-->
+
 ## Description
 <!-- Add a description of the changes that this PR introduces and the files that are the most critical to review. -->
 
