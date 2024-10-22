@@ -255,9 +255,7 @@ export const makeSlogSender = async options => {
   /**
    * @param {Slog} slog
    */
-  const slogSender = async ({ monotime, time: timestamp, ...body }) => {
-    await Promise.resolve();
-
+  const slogSender = ({ monotime, time: timestamp, ...body }) => {
     const finalBody = {
       ...body,
       'process.uptime': monotime,
