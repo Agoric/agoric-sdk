@@ -30,12 +30,14 @@ const makeMeter = () => {
   let policy;
 
   const meter = harden({
-    makeRunPolicy: () => {
-      policy = metering ? computronCounter(mainParams) : undefined;
+    provideRunPolicy: () => {
+      if (metering && !policy) {
+        policy = computronCounter(mainParams);
+      }
       return policy;
     },
     setMetering: x => (metering = x),
-    getValue: () => policy?.remainingBeans(),
+    getValue: () => (policy?.totalBeans() || 0) / mainParams.xsnapComputron,
     resetPolicy: () => (policy = undefined),
   });
   return meter;
@@ -131,6 +133,7 @@ const makeWatcher = (sw: SmartWallet, instance, runInbound) => {
 test.serial('watcher: accept, report', async t => {
   const { agoricNamesRemotes, meter, walletFactoryDriver } = t.context;
   const { runInbound } = t.context.bridgeUtils;
+  const mc = qty => Number(qty) / 1_000_000;
 
   const wd = await walletFactoryDriver.provideSmartWallet('agoric1watcher');
   const william = makeWatcher(
@@ -143,7 +146,7 @@ test.serial('watcher: accept, report', async t => {
     t.log('start metering');
     meter.setMetering(true);
     const update = await william.accept();
-    t.log('accept cost (beans)', meter.getValue());
+    t.log('accept cost (Mc)', mc(meter.getValue()));
     t.like(update, { status: { id: 'accept-1', numWantsSatisfied: 1 } });
   }
 
@@ -156,7 +159,7 @@ test.serial('watcher: accept, report', async t => {
     const vAddr = AgoricCalc.virtualAddressFor(settlementBase, dest.value);
     const nobleFwd = NobleCalc.fwdAddressFor(vAddr);
     const status = await william.report({ amount: 1234n, dest, nobleFwd });
-    t.log('advance cost (beans)', meter.getValue());
+    t.log('advance cost (Mc)', mc(meter.getValue()));
 
     t.like(status, {
       status: {
