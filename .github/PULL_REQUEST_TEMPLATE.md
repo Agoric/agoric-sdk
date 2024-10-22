@@ -2,7 +2,7 @@
 v                               ✰  Thanks for creating a PR! ✰
 ☺ > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > > >  -->
 
-<!-- Most PRs should close a specific Issue. All PRs should at least reference one or more Issues. Edit and/or delete the following lines as appropriate (note: you don't need both `refs` and `closes` for the same one): -->
+<!-- Most PRs should close a specific issue. All PRs should at least reference one or more issues. Edit and/or delete the following lines as appropriate (note: you don't need both `refs` and `closes` for the same one): -->
 
 closes: #XXXX
 refs: #XXXX
