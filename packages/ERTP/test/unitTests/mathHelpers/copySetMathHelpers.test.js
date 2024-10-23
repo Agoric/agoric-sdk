@@ -1,6 +1,7 @@
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 import { getCopySetKeys, makeCopySet } from '@agoric/store';
 
+import { Far } from '@endo/far';
 import { AmountMath as m, AssetKind } from '../../../src/index.js';
 import { mockCopySetBrand as mockBrand } from './mockBrand.js';
 
@@ -290,4 +291,17 @@ test('copySet with strings subtract', t => {
     { brand: mockBrand, value: makeCopySet(['b']) },
     `['a', 'b'] - ['a'] = ['a']`,
   );
+});
+
+const mockHandle = iface => Far(iface, {});
+
+test('balance {x, y, z} >= {z}', t => {
+  const x = { instance: mockHandle('Foo'), description: 'fraz' };
+  const y = { instance: mockHandle('Foo'), description: 'fraz' };
+  const z = { instance: mockHandle('Foo'), description: 'alan' };
+
+  const balance = harden({ brand: mockBrand, value: makeCopySet([x, y, z]) });
+  const withdraw = harden({ brand: mockBrand, value: makeCopySet([z]) });
+
+  t.true(m.isGTE(balance, withdraw));
 });
