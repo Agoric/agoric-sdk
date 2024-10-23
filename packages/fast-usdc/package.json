@@ -31,6 +31,10 @@
         "commander": "^12.1.0"
     },
     "ava": {
+        "extensions": {
+            "js": true,
+            "ts": "module"
+        },
         "files": [
             "test/**/*.test.*"
         ],
