@@ -1,24 +1,27 @@
 //@ts-nocheck
-import { Tx, TxSDKType } from './tx.js';
+import { Tx, type TxSDKType } from './tx.js';
 import {
   PageRequest,
-  PageRequestSDKType,
+  type PageRequestSDKType,
   PageResponse,
-  PageResponseSDKType,
+  type PageResponseSDKType,
 } from '../../base/query/v1beta1/pagination.js';
 import {
   TxResponse,
-  TxResponseSDKType,
+  type TxResponseSDKType,
   GasInfo,
-  GasInfoSDKType,
+  type GasInfoSDKType,
   Result,
-  ResultSDKType,
+  type ResultSDKType,
 } from '../../base/abci/v1beta1/abci.js';
-import { BlockID, BlockIDSDKType } from '../../../tendermint/types/types.js';
-import { Block, BlockSDKType } from '../../../tendermint/types/block.js';
+import {
+  BlockID,
+  type BlockIDSDKType,
+} from '../../../tendermint/types/types.js';
+import { Block, type BlockSDKType } from '../../../tendermint/types/block.js';
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
 import { isSet, bytesFromBase64, base64FromBytes } from '../../../helpers.js';
-import { JsonSafe } from '../../../json-safe.js';
+import { type JsonSafe } from '../../../json-safe.js';
 /** OrderBy defines the sorting order */
 export enum OrderBy {
   /** ORDER_BY_UNSPECIFIED - ORDER_BY_UNSPECIFIED specifies an unknown sorting order. OrderBy defaults to ASC in this case. */

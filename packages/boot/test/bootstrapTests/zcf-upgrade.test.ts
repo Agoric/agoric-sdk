@@ -5,7 +5,7 @@ import bundleSource from '@endo/bundle-source';
 import path from 'path';
 
 import { makeAgoricNamesRemotesFromFakeStorage } from '@agoric/vats/tools/board-utils.js';
-import { TestFn } from 'ava';
+import type { TestFn } from 'ava';
 import { matchAmount, makeSwingsetTestKit } from '../../tools/supports.js';
 import { makeZoeDriver } from '../../tools/drivers.js';
 

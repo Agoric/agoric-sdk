@@ -1,7 +1,7 @@
 //@ts-nocheck
 import { BinaryReader, BinaryWriter } from '../../../../../binary.js';
 import { isSet } from '../../../../../helpers.js';
-import { JsonSafe } from '../../../../../json-safe.js';
+import { type JsonSafe } from '../../../../../json-safe.js';
 /**
  * Params defines the set of on-chain interchain accounts parameters.
  * The following parameters may be used to disable the host submodule.

@@ -21,7 +21,7 @@ import { krefOf } from '@agoric/kmarshal';
 import { initSwingStore } from '@agoric/swing-store';
 import { loadSwingsetConfigFile } from '@agoric/swingset-vat';
 import { makeSlogSender } from '@agoric/telemetry';
-import { TimeMath, Timestamp } from '@agoric/time';
+import { TimeMath, type Timestamp } from '@agoric/time';
 import {
   fakeLocalChainBridgeTxMsgHandler,
   LOCALCHAIN_DEFAULT_ADDRESS,
@@ -511,8 +511,10 @@ export const makeSwingsetTestKit = async (
       },
     });
   }
+  const mailboxStorage = new Map();
   const { controller, timer, bridgeInbound } = await buildSwingset(
-    new Map(),
+    // @ts-expect-error missing method 'getNextKey'
+    mailboxStorage,
     bridgeOutbound,
     kernelStorage,
     configPath,

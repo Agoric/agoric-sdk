@@ -1,12 +1,15 @@
 //@ts-nocheck
-import { CommitmentProof, CommitmentProofSDKType } from '../../../../proofs.js';
+import {
+  CommitmentProof,
+  type CommitmentProofSDKType,
+} from '../../../../proofs.js';
 import { BinaryReader, BinaryWriter } from '../../../../binary.js';
 import {
   isSet,
   bytesFromBase64,
   base64FromBytes,
 } from '../../../../helpers.js';
-import { JsonSafe } from '../../../../json-safe.js';
+import { type JsonSafe } from '../../../../json-safe.js';
 /**
  * MerkleRoot defines a merkle root hash.
  * In the Cosmos SDK, the AppHash of a block header becomes the root.

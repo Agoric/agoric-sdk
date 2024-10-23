@@ -1,8 +1,13 @@
 //@ts-nocheck
-import { Minter, MinterSDKType, Params, ParamsSDKType } from './mint.js';
+import {
+  Minter,
+  type MinterSDKType,
+  Params,
+  type ParamsSDKType,
+} from './mint.js';
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
 import { isSet } from '../../../helpers.js';
-import { JsonSafe } from '../../../json-safe.js';
+import { type JsonSafe } from '../../../json-safe.js';
 /** GenesisState defines the mint module's genesis state. */
 export interface GenesisState {
   /** minter is a space for holding current inflation information. */

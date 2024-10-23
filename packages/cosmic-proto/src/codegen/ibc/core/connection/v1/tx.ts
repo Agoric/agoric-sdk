@@ -1,19 +1,19 @@
 //@ts-nocheck
 import {
   Counterparty,
-  CounterpartySDKType,
+  type CounterpartySDKType,
   Version,
-  VersionSDKType,
+  type VersionSDKType,
 } from './connection.js';
-import { Any, AnySDKType } from '../../../../google/protobuf/any.js';
-import { Height, HeightSDKType } from '../../client/v1/client.js';
+import { Any, type AnySDKType } from '../../../../google/protobuf/any.js';
+import { Height, type HeightSDKType } from '../../client/v1/client.js';
 import { BinaryReader, BinaryWriter } from '../../../../binary.js';
 import {
   isSet,
   bytesFromBase64,
   base64FromBytes,
 } from '../../../../helpers.js';
-import { JsonSafe } from '../../../../json-safe.js';
+import { type JsonSafe } from '../../../../json-safe.js';
 /**
  * MsgConnectionOpenInit defines the msg sent by an account on Chain A to
  * initialize a connection with Chain B.

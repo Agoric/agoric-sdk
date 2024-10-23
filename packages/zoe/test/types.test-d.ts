@@ -4,7 +4,7 @@
  * https://www.typescriptlang.org/docs/handbook/jsdoc-supported-types.html
  */
 
-import { E, RemoteFunctions } from '@endo/eventual-send';
+import { E, type RemoteFunctions } from '@endo/eventual-send';
 import { expectNotType, expectType } from 'tsd';
 
 import { M, type Key } from '@endo/patterns';

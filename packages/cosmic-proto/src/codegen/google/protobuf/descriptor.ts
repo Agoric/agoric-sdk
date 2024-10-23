@@ -1,6 +1,6 @@
 //@ts-nocheck
 import { BinaryReader, BinaryWriter } from '../../binary.js';
-import { JsonSafe } from '../../json-safe.js';
+import { type JsonSafe } from '../../json-safe.js';
 import { isSet, bytesFromBase64, base64FromBytes } from '../../helpers.js';
 export enum FieldDescriptorProto_Type {
   /**

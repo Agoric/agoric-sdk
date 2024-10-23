@@ -5,7 +5,7 @@ import { heapVowE } from '@agoric/vow/vat.js';
 import path from 'path';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { MsgDelegateResponse } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/tx.js';
-import { IBCEvent } from '@agoric/vats';
+import type { IBCEvent } from '@agoric/vats';
 import { commonSetup } from '../supports.js';
 import {
   buildMsgResponseString,

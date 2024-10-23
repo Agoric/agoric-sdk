@@ -20,7 +20,3 @@ proposals/*/.yarn/*
 !proposals/*/.yarn/releases
 !proposals/*/.yarn/sdks
 !proposals/*/.yarn/versions
-
-# build artifacts
-proposals/*/mainNet/*
-proposals/*/devNet/*

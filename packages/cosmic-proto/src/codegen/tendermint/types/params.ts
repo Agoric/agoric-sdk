@@ -1,8 +1,11 @@
 //@ts-nocheck
-import { Duration, DurationSDKType } from '../../google/protobuf/duration.js';
+import {
+  Duration,
+  type DurationSDKType,
+} from '../../google/protobuf/duration.js';
 import { BinaryReader, BinaryWriter } from '../../binary.js';
 import { isSet } from '../../helpers.js';
-import { JsonSafe } from '../../json-safe.js';
+import { type JsonSafe } from '../../json-safe.js';
 /**
  * ConsensusParams contains consensus critical parameters that determine the
  * validity of blocks.

@@ -1,11 +1,11 @@
 //@ts-nocheck
 import {
   MerklePrefix,
-  MerklePrefixSDKType,
+  type MerklePrefixSDKType,
 } from '../../commitment/v1/commitment.js';
 import { BinaryReader, BinaryWriter } from '../../../../binary.js';
 import { isSet } from '../../../../helpers.js';
-import { JsonSafe } from '../../../../json-safe.js';
+import { type JsonSafe } from '../../../../json-safe.js';
 /**
  * State defines if a connection is in one of the following states:
  * INIT, TRYOPEN, OPEN or UNINITIALIZED.

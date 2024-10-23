@@ -3,7 +3,7 @@ import type { TestFn } from 'ava';
 import { AmountMath } from '@agoric/ertp';
 import { makeDoOffer } from '../tools/e2e-tools.js';
 import { makeQueryClient } from '../tools/query.js';
-import { commonSetup, SetupContextWithWallets } from './support.js';
+import { commonSetup, type SetupContextWithWallets } from './support.js';
 
 const test = anyTest as TestFn<SetupContextWithWallets>;
 

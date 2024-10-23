@@ -1,9 +1,14 @@
 //@ts-nocheck
-import { Params, ParamsSDKType, Metadata, MetadataSDKType } from './bank.js';
-import { Coin, CoinSDKType } from '../../base/v1beta1/coin.js';
+import {
+  Params,
+  type ParamsSDKType,
+  Metadata,
+  type MetadataSDKType,
+} from './bank.js';
+import { Coin, type CoinSDKType } from '../../base/v1beta1/coin.js';
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
 import { isSet } from '../../../helpers.js';
-import { JsonSafe } from '../../../json-safe.js';
+import { type JsonSafe } from '../../../json-safe.js';
 /** GenesisState defines the bank module's genesis state. */
 export interface GenesisState {
   /** params defines all the paramaters of the module. */

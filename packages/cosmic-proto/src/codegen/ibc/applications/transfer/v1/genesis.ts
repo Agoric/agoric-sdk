@@ -1,13 +1,13 @@
 //@ts-nocheck
 import {
   DenomTrace,
-  DenomTraceSDKType,
+  type DenomTraceSDKType,
   Params,
-  ParamsSDKType,
+  type ParamsSDKType,
 } from './transfer.js';
 import { BinaryReader, BinaryWriter } from '../../../../binary.js';
 import { isSet } from '../../../../helpers.js';
-import { JsonSafe } from '../../../../json-safe.js';
+import { type JsonSafe } from '../../../../json-safe.js';
 /** GenesisState defines the ibc-transfer genesis state */
 export interface GenesisState {
   portId: string;

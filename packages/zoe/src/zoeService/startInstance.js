@@ -268,6 +268,11 @@ export const makeStartInstance = (
           E(state.adminNode).upgrade(bCap, { vatParameters }),
         );
       },
+      terminateContract(reason) {
+        const { state } = this;
+
+        return E(state.adminNode).terminateWithFailure(reason);
+      },
     },
   );
 
