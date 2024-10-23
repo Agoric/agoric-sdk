@@ -26,7 +26,6 @@ test.serial('Alice mints a new Character', async t => {
   await mintCharacter(Alice);
 
   const characterBalanceAfter = await getBalanceFromPurse(Alice, 'character');
-  t.log(`Character minted: ${characterBalanceAfter}`);
   t.is(
     characterBalanceAfter.name,
     'ephemeral_Ace',
@@ -40,7 +39,6 @@ test.serial('Alice unequips all defaults Items', async t => {
 
   const characterId = 'ephemeral_Ace';
   const characterInventoryBefore = await getCharacterInventory(characterId);
-  t.log(`Character inventory before unequipping: ${characterInventoryBefore}`);
   t.is(
     characterInventoryBefore.length,
     3,
@@ -50,7 +48,6 @@ test.serial('Alice unequips all defaults Items', async t => {
   await unequipAllItems(Alice);
 
   const characterInventoryAfter = await getCharacterInventory(characterId);
-  t.log(`Character inventory after unequipping: ${characterInventoryAfter}`);
   t.is(
     characterInventoryAfter.length,
     0,
@@ -82,7 +79,6 @@ test.serial('Alice sells one unequipped Item', async t => {
     itemNode => !itemListBefore.includes(itemNode),
   );
   const soldItem = await getMarketItem(soldItemNode);
-  t.log(`Sold Item: ${soldItem}`);
 
   t.is(
     itemBefore.description,
@@ -115,7 +111,6 @@ test.serial('Bob buys an Item on marketplace', async t => {
   );
 
   const item = await getBalanceFromPurse(Bob, 'item');
-  t.log(`Bought Item: ${item}`);
   t.is(
     item.description,
     marketItem.asset.description,
@@ -148,7 +143,6 @@ test.serial('Alice sells a Character', async t => {
   const characterBalanceAfter = await getBalanceFromPurse(Alice, 'character');
   t.is(characterBalanceAfter, null),
     'Character should not be in purse after selling';
-  t.log(`Sold Character: ${characterBalanceBefore}`);
 });
 
 test.serial('Bob buys a Character on marketplace', async t => {
@@ -166,5 +160,4 @@ test.serial('Bob buys a Character on marketplace', async t => {
     'ephemeral_Ace',
     'Character name should be ephemeral_Ace',
   );
-  t.log(`Bought Character: ${characterBalance}`);
 });

@@ -9,6 +9,7 @@ import {
 import { makeFromBoard, boardSlottingMarshaller } from './rpc.js';
 import { execFileSync } from 'child_process';
 import { makeCopyBag } from '@agoric/store';
+import { AmountMath } from '@agoric/ertp';
 
 const ISTunit = 1_000_000n;
 
@@ -75,6 +76,16 @@ const unequipAllItemsOffer = async address => {
   const inventoryKeyId = kreadCharacter.keyId === 1 ? 2 : 1;
   const kreadCharacter2 = { ...kreadCharacter, keyId: inventoryKeyId };
 
+  const kreadCharacterAmount = getAssetAmount(
+    brands.KREAdCHARACTER,
+    kreadCharacter,
+  );
+
+  const kreadCharacter2Amount = getAssetAmount(
+    brands.KREAdCHARACTER,
+    kreadCharacter2,
+  );
+
   const id = `KREAd-unequip-all-items-acceptance-test`;
   const body = {
     method: 'executeOffer',
@@ -87,16 +98,10 @@ const unequipAllItemsOffer = async address => {
       },
       proposal: {
         give: {
-          CharacterKey1: {
-            brand: brands.KREAdCHARACTER,
-            value: makeCopyBag([[kreadCharacter, 1n]]),
-          },
+          CharacterKey1: kreadCharacterAmount,
         },
         want: {
-          CharacterKey2: {
-            brand: brands.KREAdCHARACTER,
-            value: makeCopyBag([[kreadCharacter2, 1n]]),
-          },
+          CharacterKey2: kreadCharacter2Amount,
         },
       },
     },
@@ -109,10 +114,8 @@ const buyItemOffer = async () => {
   const children = await getMarketItemsChildren();
   const marketItem = await getMarketItem(children[0]);
 
-  const itemPrice =
-    marketItem.askingPrice.value +
-    marketItem.platformFee.value +
-    marketItem.royalty.value;
+  const itemAmount = getAssetAmount(brands.KREAdITEM, marketItem.asset);
+  const priceAmount = getAssetPriceAmount(marketItem);
 
   const id = `KREAd-buy-item-acceptance-test`;
   const body = {
@@ -127,16 +130,10 @@ const buyItemOffer = async () => {
       offerArgs: { entryId: marketItem.id },
       proposal: {
         give: {
-          Price: {
-            brand: brands.IST,
-            value: itemPrice,
-          },
+          Price: priceAmount,
         },
         want: {
-          Item: {
-            brand: brands.KREAdITEM,
-            value: makeCopyBag([[marketItem.asset, 1n]]),
-          },
+          Item: itemAmount,
         },
       },
     },
@@ -151,6 +148,8 @@ const sellItemOffer = async address => {
     throw new Error('Item not found on user purse');
   }
 
+  const itemAmount = getAssetAmount(brands.KREAdITEM, kreadItem);
+
   const id = `KREAd-sell-item-acceptance-test`;
   const body = {
     method: 'executeOffer',
@@ -163,10 +162,7 @@ const sellItemOffer = async address => {
       },
       proposal: {
         give: {
-          Item: {
-            brand: brands.KREAdITEM,
-            value: makeCopyBag([[kreadItem, 1n]]),
-          },
+          Item: itemAmount,
         },
         want: {
           Price: {
@@ -187,10 +183,11 @@ const buyCharacterOffer = async () => {
   const rawCharacterData = await agoric.follow('-lF', path, '-o', 'text');
   const marketCharacter = marshaller.fromCapData(JSON.parse(rawCharacterData));
 
-  const characterPrice =
-    marketCharacter.askingPrice.value +
-    marketCharacter.platformFee.value +
-    marketCharacter.royalty.value;
+  const kreadCharacterAmount = getAssetAmount(
+    brands.KREAdCHARACTER,
+    marketCharacter.asset,
+  );
+  const priceAmount = getAssetPriceAmount(marketCharacter);
 
   const id = `KREAd-buy-character-acceptance-test`;
   const body = {
@@ -204,16 +201,10 @@ const buyCharacterOffer = async () => {
       },
       proposal: {
         give: {
-          Price: {
-            brand: brands.IST,
-            value: characterPrice,
-          },
+          Price: priceAmount,
         },
         want: {
-          Character: {
-            brand: brands.KREAdCHARACTER,
-            value: makeCopyBag([[marketCharacter.asset, 1n]]),
-          },
+          Character: kreadCharacterAmount,
         },
       },
     },
@@ -228,6 +219,11 @@ const sellCharacterOffer = async address => {
     throw new Error('Character not found on user purse');
   }
 
+  const kreadCharacterAmount = getAssetAmount(
+    brands.KREAdCHARACTER,
+    kreadCharacter,
+  );
+
   const id = `KREAd-sell-character-acceptance-test`;
   const body = {
     method: 'executeOffer',
@@ -240,10 +236,7 @@ const sellCharacterOffer = async address => {
       },
       proposal: {
         give: {
-          Character: {
-            brand: brands.KREAdCHARACTER,
-            value: makeCopyBag([[kreadCharacter, 1n]]),
-          },
+          Character: kreadCharacterAmount,
         },
         want: {
           Price: {
@@ -343,4 +336,20 @@ export const getBalanceFromPurse = async (address, type) => {
   );
 
   return assetPurse?.balance.value.payload[0]?.[0] || null;
+};
+
+export const getAssetAmount = (brand, asset) => {
+  const assetValue = makeCopyBag([[asset, 1n]]);
+  const assetAmount = AmountMath.make(
+    brand,
+    //@ts-expect-error casting
+    assetValue,
+  );
+  return assetAmount;
+};
+
+export const getAssetPriceAmount = asset => {
+  const fees = AmountMath.add(asset.platformFee, asset.royalty);
+  const price = AmountMath.add(asset.askingPrice, fees);
+  return price;
 };
