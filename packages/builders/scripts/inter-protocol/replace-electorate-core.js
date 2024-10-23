@@ -95,6 +95,8 @@ const configurations = {
 
 const { keys } = Object;
 const Usage = `agoric run replace-electorate-core.js ${keys(configurations).join(' | ')}`;
+
+/** @type {import('@agoric/deploy-script-support/src/externalTypes.js').DeployScriptFunction} */
 export default async (homeP, endowments) => {
   const { scriptArgs } = endowments;
   const variant = scriptArgs?.[0];

@@ -6,6 +6,9 @@ import { Fail } from '@endo/errors';
  */
 export const makeCacheAndGetBundleSpec =
   (cacheDir, { now, fs, pathResolve }) =>
+  /**
+   * @param {Promise<import('@endo/bundle-source').BundleSourceResult<'endoZipBase64'>>} bundleP
+   */
   async bundleP => {
     const bundle = await bundleP;
     const { endoZipBase64Sha512: hash } = bundle;

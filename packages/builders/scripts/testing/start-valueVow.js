@@ -83,6 +83,7 @@ export const defaultProposalBuilder = async ({ publishRef, install }) =>
     ],
   });
 
+/** @type {import('@agoric/deploy-script-support/src/externalTypes.js').DeployScriptFunction} */
 export default async (homeP, endowments) => {
   // import dynamically so the module can work in CoreEval environment
   const dspModule = await import('@agoric/deploy-script-support');
