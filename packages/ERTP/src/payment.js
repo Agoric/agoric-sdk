@@ -1,8 +1,16 @@
 // @jessie-check
 
+import { prepareRevocableMakerKit } from '@agoric/base-zone/zone-helpers.js';
 import { initEmpty } from '@agoric/store';
 
 /** @import {AssetKind, Brand, Payment} from './types.js' */
+
+/**
+ * @template {AssetKind} K
+ * @typedef {object} PaymentMakerKit
+ * @property {(payment: Payment<K>) => boolean} revokePayment
+ * @property {() => Payment<K>} makePayment
+ */
 
 // TODO Type InterfaceGuard better than InterfaceGuard<any>
 /**
@@ -11,11 +19,24 @@ import { initEmpty } from '@agoric/store';
  * @param {string} name
  * @param {Brand<K>} brand
  * @param {import('@endo/patterns').InterfaceGuard<any>} PaymentI
- * @returns {() => Payment<K>}
+ * @returns {PaymentMakerKit<K>}
  */
-export const preparePaymentKind = (issuerZone, name, brand, PaymentI) => {
-  const makePayment = issuerZone.exoClass(
-    `${name} payment`,
+export const preparePaymentMakerKit = (issuerZone, name, brand, PaymentI) => {
+  const paymentKindName = `${name} payment`;
+
+  /**
+   * @type {import('@agoric/base-zone/zone-helpers.js').RevocableMakerKit<
+   *   Payment<K>
+   * >}
+   */
+  const { revoke, makeRevocable } = prepareRevocableMakerKit(
+    issuerZone,
+    paymentKindName,
+    ['getAllegedBrand'],
+  );
+
+  const makeUnderlyingPayment = issuerZone.exoClass(
+    paymentKindName,
     PaymentI,
     initEmpty,
     {
@@ -24,6 +45,11 @@ export const preparePaymentKind = (issuerZone, name, brand, PaymentI) => {
       },
     },
   );
-  return makePayment;
+
+  const makePayment = () => makeRevocable(makeUnderlyingPayment());
+  return harden({
+    revokePayment: revoke,
+    makePayment,
+  });
 };
-harden(preparePaymentKind);
+harden(preparePaymentMakerKit);

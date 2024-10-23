@@ -368,7 +368,8 @@ test('issuer.split good amount', async t => {
     await t.throwsAsync(
       () => issuer.getAmountOf(oldPayment),
       {
-        message: `"[Alleged: fungible payment]" was not a live payment for brand "[Alleged: fungible brand]". It could be a used-up payment, a payment for another brand, or it might not be a payment at all.`,
+        message:
+          '"[Alleged: fungible payment_caretaker revocable]" was not a live payment for brand "[Alleged: fungible brand]". It could be a used-up payment, a payment for another brand, or it might not be a payment at all.',
       },
       `oldPayment no longer exists`,
     );
@@ -448,6 +449,6 @@ test('issuer.combine bad payments', async t => {
 
   await t.throwsAsync(() => combine(E(issuer).makeEmptyPurse(), payments), {
     message:
-      /^"\[Alleged: other fungible payment\]" was not a live payment for brand "\[Alleged: fungible brand\]"./,
+      '"[Alleged: other fungible payment_caretaker revocable]" was not a live payment for brand "[Alleged: fungible brand]". It could be a used-up payment, a payment for another brand, or it might not be a payment at all.',
   });
 });
