@@ -3,7 +3,7 @@ export default {
     ts: 'module',
   },
   require: ['@endo/init/debug.js'],
-  nodeArguments: ['--import=tsimp/import'],
+  nodeArguments: ['--import=ts-blank-space/register'],
   files: ['test/fast-usdc/**/*.test.ts'],
   concurrency: 1,
   serial: true,
