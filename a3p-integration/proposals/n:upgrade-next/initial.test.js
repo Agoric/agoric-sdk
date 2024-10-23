@@ -9,7 +9,7 @@ const vats = {
   orchestration: { incarnation: 0 },
   transfer: { incarnation: 1 },
   walletFactory: { incarnation: 4 },
-  zoe: { incarnation: 2 },
+  zoe: { incarnation: 3 },
 };
 
 test(`vat details`, async t => {
