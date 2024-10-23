@@ -36,6 +36,7 @@ import { getResourceAttributes } from './index.js';
  *  'chain-id': string;
  *  'crank.syscallNum'?: Slog['syscallNum'];
  *  'process.uptime': Slog['monotime'];
+ *  timestamp: Slog['time'];
  * } & Context} LogAttributes
  *
  * @typedef {{env: typeof process.env; stateDir: string;}} Options
@@ -366,12 +367,12 @@ export const logCreator = (emitLog, options, persistenceUtils) => {
       ...crankContext, // Finally cranks are the last level of nesting
       ...replayContext, // Replay is a substitute for crank context during vat page in
       ...eventLogAttributes,
+      timestamp,
     };
 
     emitLog({
       attributes: JSON.parse(stringify(logAttributes)),
       body: JSON.parse(stringify(finalBody)),
-      observedTimestamp: timestamp,
       severityNumber: SeverityNumber.INFO,
     });
 
