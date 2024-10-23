@@ -5,8 +5,12 @@
     "description": "Create an Agoric Javascript smart contract application",
     "type": "module",
     "files": [
-        "contract"
+        "contract",
+        "src"
     ],
+    "bin": {
+        "fast-usdc": "./src/cli.js"
+    },
     "scripts": {
         "build": "exit 0",
         "test": "ava",
@@ -23,7 +27,8 @@
         "ts-blank-space": "^0.4.1"
     },
     "dependencies": {
-        "agoric": "^0.21.1"
+        "agoric": "^0.21.1",
+        "commander": "^12.1.0"
     },
     "ava": {
         "files": [
