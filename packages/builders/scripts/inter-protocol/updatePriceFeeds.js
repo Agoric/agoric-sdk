@@ -69,7 +69,8 @@ const Usage = `agoric run updatePriceFeed.js ${keys(configurations).join(' | ')}
 /** @type {import('@agoric/deploy-script-support/src/externalTypes.js').DeployScriptFunction} */
 export default async (homeP, endowments) => {
   const { scriptArgs } = endowments;
-  const config = configurations[scriptArgs?.[0]];
+  assert(scriptArgs, 'expected script args endowment');
+  const config = configurations[scriptArgs[0]];
   if (!config) {
     console.error(Usage);
     process.exit(1);

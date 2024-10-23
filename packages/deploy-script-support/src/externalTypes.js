@@ -60,6 +60,7 @@ export {};
  *  now: () => number,
  *  pathResolve: (...path: string[]) => string,
  *  publishBundle: PublishBundleRef,
+ *  scriptArgs?: string[],
  * }} DeployScriptEndownments
  */
 
