@@ -6,10 +6,10 @@ import {
   getContractInfo,
   makeAgd,
 } from '@agoric/synthetic-chain';
-import { makeFromBoard, boardSlottingMarshaller } from './rpc.js';
 import { execFileSync } from 'child_process';
 import { makeCopyBag } from '@agoric/store';
 import { AmountMath } from '@agoric/ertp';
+import { makeFromBoard, boardSlottingMarshaller } from './rpc.js';
 
 const ISTunit = 1_000_000n;
 
@@ -41,6 +41,84 @@ assert(brands.timer, 'Brand timer not found');
 assert(brands.KREAdCHARACTER, 'Brand KREAdCHARACTER not found');
 assert(brands.KREAdITEM, 'Brand KREAdITEM not found');
 
+export const getMarketCharactersChildren = async () => {
+  const { children } = await agd.query([
+    'vstorage',
+    'children',
+    `published.kread.market-characters`,
+  ]);
+
+  return children;
+};
+
+export const getMarketItemsChildren = async () => {
+  const { children } = await agd.query([
+    'vstorage',
+    'children',
+    `published.kread.market-items`,
+  ]);
+
+  return children;
+};
+
+export const getMarketItem = async itemNode => {
+  const itemMarketPath = `:published.kread.market-items.${itemNode}`;
+  const rawItemData = await agoric.follow('-lF', itemMarketPath, '-o', 'text');
+  const item = marshaller.fromCapData(JSON.parse(rawItemData));
+
+  return item;
+};
+
+export const getCharacterInventory = async characterName => {
+  const inventoryPath = `kread.character.inventory-${characterName}`;
+  const characterInventory = await getContractInfo(inventoryPath, {
+    agoric,
+    prefix: 'published.',
+  });
+
+  return characterInventory;
+};
+
+export const getBalanceFromPurse = async (address, type) => {
+  const walletRaw = await agoric.follow(
+    '-lF',
+    `:published.wallet.${address}.current`,
+    '-o',
+    'text',
+  );
+  const purses = marshaller.fromCapData(JSON.parse(walletRaw)).purses;
+
+  const assetBrands = {
+    character: brands.KREAdCHARACTER,
+    item: brands.KREAdITEM,
+  };
+  const assetBrand = assetBrands[type];
+  if (!assetBrand) {
+    throw new Error('Invalid type provided. Must be "character" or "item".');
+  }
+
+  const assetPurse = purses.find(
+    ({ brand }) => brand.getBoardId() === assetBrand.getBoardId(),
+  );
+
+  return assetPurse?.balance.value.payload[0]?.[0] || null;
+};
+
+export const getAssetAmount = (brand, asset) => {
+  const assetValue = makeCopyBag([[asset, 1n]]);
+  const assetAmount = AmountMath.make(
+    brand,
+    // @ts-expect-error casting
+    assetValue,
+  );
+  return assetAmount;
+};
+
+export const getAssetPriceAmount = asset => {
+  const fees = AmountMath.add(asset.platformFee, asset.royalty);
+  const price = AmountMath.add(asset.askingPrice, fees);
+  return price;
+};
 const mintCharacterOffer = async () => {
   const id = `KREAd-mint-character-acceptance-test`;
   const body = {
@@ -273,83 +351,4 @@ export const sellCharacter = async address => {
 
 export const buyCharacter = async address => {
   return executeOffer(address, buyCharacterOffer());
-};
-
-export const getMarketCharactersChildren = async () => {
-  const { children } = await agd.query([
-    'vstorage',
-    'children',
-    `published.kread.market-characters`,
-  ]);
-
-  return children;
-};
-
-export const getMarketItemsChildren = async () => {
-  const { children } = await agd.query([
-    'vstorage',
-    'children',
-    `published.kread.market-items`,
-  ]);
-
-  return children;
-};
-
-export const getMarketItem = async itemNode => {
-  const itemMarketPath = `:published.kread.market-items.${itemNode}`;
-  const rawItemData = await agoric.follow('-lF', itemMarketPath, '-o', 'text');
-  const item = marshaller.fromCapData(JSON.parse(rawItemData));
-
-  return item;
-};
-
-export const getCharacterInventory = async characterName => {
-  const inventoryPath = `kread.character.inventory-${characterName}`;
-  const characterInventory = await getContractInfo(inventoryPath, {
-    agoric,
-    prefix: 'published.',
-  });
-
-  return characterInventory;
-};
-
-export const getBalanceFromPurse = async (address, type) => {
-  const walletRaw = await agoric.follow(
-    '-lF',
-    `:published.wallet.${address}.current`,
-    '-o',
-    'text',
-  );
-  const purses = marshaller.fromCapData(JSON.parse(walletRaw)).purses;
-
-  const assetBrands = {
-    character: brands.KREAdCHARACTER,
-    item: brands.KREAdITEM,
-  };
-  const assetBrand = assetBrands[type];
-  if (!assetBrand) {
-    throw new Error('Invalid type provided. Must be "character" or "item".');
-  }
-
-  const assetPurse = purses.find(
-    ({ brand }) => brand.getBoardId() === assetBrand.getBoardId(),
-  );
-
-  return assetPurse?.balance.value.payload[0]?.[0] || null;
-};
-
-export const getAssetAmount = (brand, asset) => {
-  const assetValue = makeCopyBag([[asset, 1n]]);
-  const assetAmount = AmountMath.make(
-    brand,
-    //@ts-expect-error casting
-    assetValue,
-  );
-  return assetAmount;
-};
-
-export const getAssetPriceAmount = asset => {
-  const fees = AmountMath.add(asset.platformFee, asset.royalty);
-  const price = AmountMath.add(asset.askingPrice, fees);
-  return price;
 };

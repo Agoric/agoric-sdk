@@ -141,8 +141,11 @@ test.serial('Alice sells a Character', async t => {
   );
 
   const characterBalanceAfter = await getBalanceFromPurse(Alice, 'character');
-  t.is(characterBalanceAfter, null),
-    'Character should not be in purse after selling';
+  t.is(
+    characterBalanceAfter,
+    null,
+    'Character should not be in purse after selling',
+  );
 });
 
 test.serial('Bob buys a Character on marketplace', async t => {
