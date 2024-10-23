@@ -49,10 +49,12 @@ const configurations = {
     committeeName: 'Economic Committee',
     voterAddresses: {
       gov1: 'agoric1ee9hr0jyrxhy999y755mp862ljgycmwyp4pl7q',
+      gov2: 'agoric1wrfh296eu2z34p6pah7q04jjuyj3mxu9v98277',
+      gov4: 'agoric1c9gyu460lu70rtcdp95vummd6032psmpdx7wdy',
     },
     highPrioritySendersConfig: {
-      addressesToAdd: [],
-      addressesToRemove: ['agoric1wrfh296eu2z34p6pah7q04jjuyj3mxu9v98277'],
+      addressesToAdd: ['agoric1c9gyu460lu70rtcdp95vummd6032psmpdx7wdy'],
+      addressesToRemove: ['agoric1ydzxwh6f893jvpaslmaz6l8j2ulup9a7x8qvvq'],
     },
   },
   BOOTSTRAP_TEST: {
