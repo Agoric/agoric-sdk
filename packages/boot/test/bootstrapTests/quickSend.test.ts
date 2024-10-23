@@ -1,6 +1,6 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-import type { CallDetails } from '@agoric/orchestration/src/examples/quickSend.flows.js';
+import type { CallDetails } from 'fast-usdc/contract/quickSend.flows.js';
 import { makePromiseKit } from '@endo/promise-kit';
 import type { TestFn } from 'ava';
 import type { OfferId } from '@agoric/smart-wallet/src/offers.js';
@@ -37,7 +37,7 @@ const makeMeter = () => {
       return policy;
     },
     setMetering: x => (metering = x),
-    getValue: () => (policy?.totalBeans() || 0) / mainParams.xsnapComputron,
+    getValue: () => (policy?.totalBeans() || 0n) / mainParams.xsnapComputron,
     resetPolicy: () => (policy = undefined),
   });
   return meter;
@@ -49,12 +49,14 @@ const test: TestFn<
 
 test.before('bootstrap', async t => {
   const meter = makeMeter();
-  const { SLOGFILE: slogFile } = process.env;
+  const {
+    SLOGFILE: slogFile,
+    SWINGSET_WORKER_TYPE: defaultManagerType = 'xsnap',
+  } = process.env;
   const ctx = await makeWalletFactoryContext(
     t,
     '@agoric/vm-config/decentral-itest-orchestration-config.json',
-    { defaultManagerType: 'xsnap', meter, slogFile }, // for perf testing
-    // { defaultManagerType: 'local' }, // 3x faster, node debugger
+    { defaultManagerType, meter, slogFile }, // for perf testing
   );
   t.context = { ...ctx, meter };
 
@@ -73,7 +75,7 @@ test.serial('deploy contract', async t => {
     refreshAgoricNamesRemotes,
   } = t.context;
   await evalProposal(
-    buildProposal('@agoric/builders/scripts/orchestration/init-quickSend.js'),
+    buildProposal('@agoric/builders/scripts/fast-usdc/init-quickSend.js'),
   );
   // update now that quickSend is instantiated
   refreshAgoricNamesRemotes();
