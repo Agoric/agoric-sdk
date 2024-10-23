@@ -158,6 +158,10 @@ func unreleasedUpgradeHandler(app *GaiaApp, targetUpgrade string) func(sdk.Conte
 					// Upgrade Zoe (no new ZCF needed).
 					"@agoric/builders/scripts/vats/upgrade-zoe.js",
 				),
+                // Revive KREAd characters
+                vm.CoreProposalStepForModules(
+                    "@agoric/builders/scripts/vats/revive-kread.js",
+                ),
 				vm.CoreProposalStepForModules(
 					// Upgrade to new liveslots for repaired vow usage.
 					"@agoric/builders/scripts/vats/upgrade-orch-core.js",
