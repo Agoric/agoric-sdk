@@ -353,7 +353,7 @@ const setup = async (t, io) => {
   return { chains, ursula, quiesce, contract, addrs, usdc };
 };
 
-test.failing('tx lifecycle', async t => {
+test('tx lifecycle', async t => {
   const io = { setTimeout };
   const { chains, ursula, quiesce, contract, addrs, usdc } = await setup(t, io);
 
