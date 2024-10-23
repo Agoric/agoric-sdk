@@ -16,6 +16,11 @@ import { assert, Fail } from '@endo/errors';
  */
 
 /**
+ * @template {unknown} [T=unknown]
+ * @typedef {KVStore<T> & {commit: () => void, abort: () => void}} BufferedKVStore
+ */
+
+/**
  * Assert function to ensure that an object implements the StorageAPI
  * interface: methods { has, getNextKey, get, set, delete }
  * (cf. packages/SwingSet/docs/state.md#transactions).
@@ -37,17 +42,17 @@ export function insistStorageAPI(kvStore) {
  * Create a StorageAPI object that buffers writes to a wrapped StorageAPI object
  * until told to commit (or abort) them.
  *
- * @template {unknown} [T=unknown]
+ * @template [T=unknown]
  * @param {KVStore<T>} kvStore  The StorageAPI object to wrap
  * @param {{
- *   onGet?: (key: string, value: T) => void, // a callback invoked after getting a value from kvStore
+ *   onGet?: (key: string, value: T | undefined) => void, // a callback invoked after getting a value from kvStore
  *   onPendingSet?: (key: string, value: T) => void, // a callback invoked after a new uncommitted value is set
  *   onPendingDelete?: (key: string) => void, // a callback invoked after a new uncommitted delete
  *   onCommit?: () => void, // a callback invoked after pending operations have been committed
  *   onAbort?: () => void, // a callback invoked after pending operations have been aborted
  * }} listeners  Optional callbacks to be invoked when respective events occur
  *
- * @returns {{kvStore: KVStore<T>, commit: () => void, abort: () => void}}
+ * @returns {{kvStore: KVStore<T>} & Pick<BufferedKVStore<T>, 'commit' | 'abort'>}
  */
 export function makeBufferedStorage(kvStore, listeners = {}) {
   insistStorageAPI(kvStore);
@@ -59,6 +64,7 @@ export function makeBufferedStorage(kvStore, listeners = {}) {
   const additions = new Map();
   const deletions = new Set();
 
+  /** @type {KVStore<T>} */
   const buffered = {
     has(key) {
       assert.typeof(key, 'string');
@@ -71,7 +77,6 @@ export function makeBufferedStorage(kvStore, listeners = {}) {
       if (additions.has(key)) return additions.get(key);
       if (deletions.has(key)) return undefined;
       const value = kvStore.get(key);
-      // @ts-expect-error value may be undefined
       if (onGet !== undefined) onGet(key, value);
       return value;
     },
@@ -118,18 +123,20 @@ export function makeBufferedStorage(kvStore, listeners = {}) {
 /**
  * @template {unknown} [T=unknown]
  * @param {KVStore<T>} kvStore
+ * @returns {BufferedKVStore<T>}
  */
 export const makeReadCachingStorage = kvStore => {
   // In addition to the wrapping write buffer, keep a simple cache of
   // read values for has and get.
+  const deleted = Symbol('deleted');
+  const undef = Symbol('undefined');
+  /** @typedef {(typeof deleted) | (typeof undef)} ReadCacheSentinel */
+  /** @type {Map<string, T | ReadCacheSentinel>} */
   let cache;
   function resetCache() {
     cache = new Map();
   }
   resetCache();
-
-  const deleted = Symbol('deleted');
-  const undef = Symbol('undefined');
 
   /** @type {KVStore<T>} */
   const storage = harden({
@@ -190,5 +197,5 @@ export const makeReadCachingStorage = kvStore => {
     onCommit: resetCache,
     onAbort: resetCache,
   });
-  return harden({ ...buffered, commit, abort });
+  return harden({ .../** @type {KVStore<T>} */ (buffered), commit, abort });
 };

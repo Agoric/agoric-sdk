@@ -55,7 +55,7 @@ import { parseLocatedJson } from './helpers/json.js';
 const { hasOwn } = Object;
 
 /** @import { Mailbox, RunPolicy, SwingSetConfig } from '@agoric/swingset-vat' */
-/** @import { KVStore } from './helpers/bufferedStorage.js' */
+/** @import { KVStore, BufferedKVStore } from './helpers/bufferedStorage.js' */
 
 const console = anylogger('launch-chain');
 const blockManagerConsole = anylogger('block-manager');
@@ -116,7 +116,7 @@ const getHostKey = path => `host.${path}`;
 
 /**
  * @param {KVStore<Mailbox>} mailboxStorage
- * @param {((dstID: string, obj: any) => any)} bridgeOutbound
+ * @param {((destPort: string, msg: unknown) => unknown)} bridgeOutbound
  * @param {SwingStoreKernelStorage} kernelStorage
  * @param {string | (() => string | Promise<string>)} vatconfig absolute path or thunk
  * @param {unknown} bootstrapArgs JSON-serializable data
@@ -377,6 +377,41 @@ function computronCounter(
   return policy;
 }
 
+/**
+ * @template [T=unknown]
+ * @typedef {object} LaunchOptions
+ * @property {import('./helpers/make-queue.js').QueueStorage} actionQueueStorage
+ * @property {import('./helpers/make-queue.js').QueueStorage} highPriorityQueueStorage
+ * @property {string} kernelStateDBDir
+ * @property {BufferedKVStore<Mailbox>} mailboxStorage
+ *   TODO: Merge together BufferedKVStore and QueueStorage (get/set/delete/commit/abort)
+ * @property {() => Promise<unknown>} clearChainSends
+ * @property {() => void} replayChainSends
+ * @property {((destPort: string, msg: unknown) => unknown)} bridgeOutbound
+ * @property {() => ({publish: (value: unknown) => Promise<void>})} [makeInstallationPublisher]
+ * @property {string | (() => string | Promise<string>)} vatconfig
+ * @property {unknown} argv for the bootstrap vat
+ * @property {typeof process['env']} [env]
+ * @property {string} [debugName]
+ * @property {boolean} [verboseBlocks]
+ * @property {ReturnType<typeof import('./kernel-stats.js').makeDefaultMeterProvider>} [metricsProvider]
+ * @property {import('@agoric/telemetry').SlogSender} [slogSender]
+ * @property {string} [swingStoreTraceFile]
+ * @property {(...args: unknown[]) => void} [swingStoreExportCallback]
+ * @property {boolean} [keepSnapshots]
+ * @property {boolean} [keepTranscripts]
+ * @property {ReturnType<typeof import('@agoric/swing-store').makeArchiveSnapshot>} [archiveSnapshot]
+ * @property {ReturnType<typeof import('@agoric/swing-store').makeArchiveTranscript>} [archiveTranscript]
+ * @property {() => object | Promise<object>} [afterCommitCallback]
+ * @property {import('./chain-main.js').CosmosSwingsetConfig} swingsetConfig
+ *   TODO refactor to clarify relationship vs. import('@agoric/swingset-vat').SwingSetConfig
+ *   --- maybe partition into in-consensus "config" vs. consensus-independent "options"?
+ *   (which would mostly just require `bundleCachePath` to become a `buildSwingset` input)
+ */
+
+/**
+ * @param {LaunchOptions} options
+ */
 export async function launch({
   actionQueueStorage,
   highPriorityQueueStorage,
@@ -428,14 +463,16 @@ export async function launch({
   // invoked sequentially like if they were awaited, and the block manager
   // synchronizes before finishing END_BLOCK
   let pendingSwingStoreExport = Promise.resolve();
-  const swingStoreExportCallbackWithQueue =
-    swingStoreExportCallback && makeWithQueue()(swingStoreExportCallback);
-  const swingStoreExportSyncCallback =
-    swingStoreExportCallback &&
-    (updates => {
+  const swingStoreExportSyncCallback = (() => {
+    if (!swingStoreExportCallback) return undefined;
+    const enqueueSwingStoreExportCallback = makeWithQueue()(
+      swingStoreExportCallback,
+    );
+    return updates => {
       assert(allowExportCallback, 'export-data callback called at bad time');
-      pendingSwingStoreExport = swingStoreExportCallbackWithQueue(updates);
-    });
+      pendingSwingStoreExport = enqueueSwingStoreExportCallback(updates);
+    };
+  })();
 
   const { kernelStorage, hostStorage } = openSwingStore(kernelStateDBDir, {
     traceFile: swingStoreTraceFile,
