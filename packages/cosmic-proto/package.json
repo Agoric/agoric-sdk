@@ -150,7 +150,6 @@
     "ava": "^5.3.1",
     "rimraf": "^5.0.0",
     "tsd": "^0.31.1",
-    "tsimp": "^2.0.11",
     "typescript": "~5.6.2"
   },
   "dependencies": {
@@ -166,7 +165,7 @@
       "rewritePaths": {
         "src/": "dist/"
       },
-      "compile": false
+      "compile": "tsc"
     },
     "files": [
       "test/**/*.test.*"
