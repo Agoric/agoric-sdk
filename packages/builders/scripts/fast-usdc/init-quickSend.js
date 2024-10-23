@@ -1,13 +1,13 @@
 // @ts-check
 import { makeHelpers } from '@agoric/deploy-script-support';
 import { mustMatch } from '@agoric/internal';
-import { getManifestForQuickSend } from '@agoric/orchestration/src/proposals/start-quickSend.js';
+import { getManifestForQuickSend } from 'fast-usdc/contract/start-quickSend.js';
 import { M } from '@endo/patterns';
 import { parseArgs } from 'node:util';
 
 /**
  * @import {CoreEvalBuilder} from '@agoric/deploy-script-support/src/externalTypes.js';
- * @import {QuickSendConfig} from '@agoric/orchestration/src/proposals/start-quickSend.js';
+ * @import {QuickSendConfig} from 'fast-usdc/contract/start-quickSend.js';
  * @import {TypedPattern} from '@agoric/internal';
  * @import {ParseArgsConfig} from 'node:util';
  */
@@ -25,7 +25,7 @@ const QuickSendConfigShape = M.splitRecord({ watcherAddress: M.string() });
 export const defaultProposalBuilder = async ({ publishRef, install }, opts) => {
   opts && mustMatch(opts, QuickSendConfigShape);
   return harden({
-    sourceSpec: '@agoric/orchestration/src/proposals/start-quickSend.js',
+    sourceSpec: 'fast-usdc/contract/start-quickSend.js',
     /** @type {[string, Parameters<typeof getManifestForQuickSend>[1]]} */
     getManifestCall: [
       getManifestForQuickSend.name,
@@ -33,7 +33,7 @@ export const defaultProposalBuilder = async ({ publishRef, install }, opts) => {
         options: { quickSend: opts },
         installKeys: {
           quickSend: publishRef(
-            install('@agoric/orchestration/src/examples/quickSend.contract.js'),
+            install('fast-usdc/contract/quickSend.contract.js'),
           ),
         },
       },
