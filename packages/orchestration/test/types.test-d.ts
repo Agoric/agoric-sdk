@@ -3,7 +3,7 @@
  */
 
 import type { HostInterface, HostOf } from '@agoric/async-flow';
-import { JsonSafe, typedJson } from '@agoric/cosmic-proto';
+import { type JsonSafe, typedJson } from '@agoric/cosmic-proto';
 import type {
   QueryAllBalancesResponse,
   QueryBalanceResponse,

@@ -2,14 +2,14 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { AmountMath, makeIssuerKit } from '@agoric/ertp';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
-import { TargetApp } from '@agoric/vats/src/bridge-target.js';
+import type { TargetApp } from '@agoric/vats/src/bridge-target.js';
 import {
   LOCALCHAIN_QUERY_ALL_BALANCES_RESPONSE,
   SIMULATED_ERRORS,
 } from '@agoric/vats/tools/fake-bridge.js';
 import { heapVowE as VE } from '@agoric/vow/vat.js';
 import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
-import { ChainAddress, type AmountArg } from '../../src/orchestration-api.js';
+import type { ChainAddress, AmountArg } from '../../src/orchestration-api.js';
 import { maxClockSkew } from '../../src/utils/cosmos.js';
 import { NANOSECONDS_PER_SECOND } from '../../src/utils/time.js';
 import { buildVTransferEvent } from '../../tools/ibc-mocks.js';

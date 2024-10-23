@@ -1,7 +1,7 @@
 //@ts-nocheck
-import { Lien, LienSDKType } from './lien.js';
+import { Lien, type LienSDKType } from './lien.js';
 import { BinaryReader, BinaryWriter } from '../../binary.js';
-import { JsonSafe } from '../../json-safe.js';
+import { type JsonSafe } from '../../json-safe.js';
 import { isSet } from '../../helpers.js';
 /** The initial or exported state. */
 export interface GenesisState {

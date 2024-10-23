@@ -1,12 +1,12 @@
 //@ts-nocheck
-import { Height, HeightSDKType } from '../../client/v1/client.js';
+import { Height, type HeightSDKType } from '../../client/v1/client.js';
 import { BinaryReader, BinaryWriter } from '../../../../binary.js';
 import {
   isSet,
   bytesFromBase64,
   base64FromBytes,
 } from '../../../../helpers.js';
-import { JsonSafe } from '../../../../json-safe.js';
+import { type JsonSafe } from '../../../../json-safe.js';
 /**
  * State defines if a channel is in one of the following states:
  * CLOSED, INIT, TRYOPEN, OPEN or UNINITIALIZED.

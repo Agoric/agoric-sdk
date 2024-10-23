@@ -1,11 +1,11 @@
 //@ts-nocheck
 import { Params as Params1 } from '../../controller/v1/controller.js';
-import { ParamsSDKType as Params1SDKType } from '../../controller/v1/controller.js';
+import { type ParamsSDKType as Params1SDKType } from '../../controller/v1/controller.js';
 import { Params as Params2 } from '../../host/v1/host.js';
-import { ParamsSDKType as Params2SDKType } from '../../host/v1/host.js';
+import { type ParamsSDKType as Params2SDKType } from '../../host/v1/host.js';
 import { BinaryReader, BinaryWriter } from '../../../../../binary.js';
 import { isSet } from '../../../../../helpers.js';
-import { JsonSafe } from '../../../../../json-safe.js';
+import { type JsonSafe } from '../../../../../json-safe.js';
 /** GenesisState defines the interchain accounts genesis state */
 export interface GenesisState {
   controllerGenesisState: ControllerGenesisState;

@@ -2,31 +2,31 @@
 import {
   ProposalStatus,
   Proposal,
-  ProposalSDKType,
+  type ProposalSDKType,
   Vote,
-  VoteSDKType,
+  type VoteSDKType,
   VotingParams,
-  VotingParamsSDKType,
+  type VotingParamsSDKType,
   DepositParams,
-  DepositParamsSDKType,
+  type DepositParamsSDKType,
   TallyParams,
-  TallyParamsSDKType,
+  type TallyParamsSDKType,
   Deposit,
-  DepositSDKType,
+  type DepositSDKType,
   TallyResult,
-  TallyResultSDKType,
+  type TallyResultSDKType,
   proposalStatusFromJSON,
   proposalStatusToJSON,
 } from './gov.js';
 import {
   PageRequest,
-  PageRequestSDKType,
+  type PageRequestSDKType,
   PageResponse,
-  PageResponseSDKType,
+  type PageResponseSDKType,
 } from '../../base/query/v1beta1/pagination.js';
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
 import { isSet } from '../../../helpers.js';
-import { JsonSafe } from '../../../json-safe.js';
+import { type JsonSafe } from '../../../json-safe.js';
 /** QueryProposalRequest is the request type for the Query/Proposal RPC method. */
 export interface QueryProposalRequest {
   /** proposal_id defines the unique id of the proposal. */

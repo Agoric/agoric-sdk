@@ -1,32 +1,32 @@
 //@ts-nocheck
 import {
   PageRequest,
-  PageRequestSDKType,
+  type PageRequestSDKType,
   PageResponse,
-  PageResponseSDKType,
+  type PageResponseSDKType,
 } from '../../../../cosmos/base/query/v1beta1/pagination.js';
 import {
   Channel,
-  ChannelSDKType,
+  type ChannelSDKType,
   IdentifiedChannel,
-  IdentifiedChannelSDKType,
+  type IdentifiedChannelSDKType,
   PacketState,
-  PacketStateSDKType,
+  type PacketStateSDKType,
 } from './channel.js';
 import {
   Height,
-  HeightSDKType,
+  type HeightSDKType,
   IdentifiedClientState,
-  IdentifiedClientStateSDKType,
+  type IdentifiedClientStateSDKType,
 } from '../../client/v1/client.js';
-import { Any, AnySDKType } from '../../../../google/protobuf/any.js';
+import { Any, type AnySDKType } from '../../../../google/protobuf/any.js';
 import { BinaryReader, BinaryWriter } from '../../../../binary.js';
 import {
   isSet,
   bytesFromBase64,
   base64FromBytes,
 } from '../../../../helpers.js';
-import { JsonSafe } from '../../../../json-safe.js';
+import { type JsonSafe } from '../../../../json-safe.js';
 /** QueryChannelRequest is the request type for the Query/Channel RPC method */
 export interface QueryChannelRequest {
   /** port unique identifier */

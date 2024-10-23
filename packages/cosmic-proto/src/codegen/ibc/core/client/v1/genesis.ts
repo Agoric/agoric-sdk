@@ -1,11 +1,11 @@
 //@ts-nocheck
 import {
   IdentifiedClientState,
-  IdentifiedClientStateSDKType,
+  type IdentifiedClientStateSDKType,
   ClientConsensusStates,
-  ClientConsensusStatesSDKType,
+  type ClientConsensusStatesSDKType,
   Params,
-  ParamsSDKType,
+  type ParamsSDKType,
 } from './client.js';
 import { BinaryReader, BinaryWriter } from '../../../../binary.js';
 import {
@@ -13,7 +13,7 @@ import {
   bytesFromBase64,
   base64FromBytes,
 } from '../../../../helpers.js';
-import { JsonSafe } from '../../../../json-safe.js';
+import { type JsonSafe } from '../../../../json-safe.js';
 /** GenesisState defines the ibc client submodule's genesis state. */
 export interface GenesisState {
   /** client states with their corresponding identifiers */

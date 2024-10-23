@@ -1,19 +1,19 @@
 //@ts-nocheck
 import {
   PageRequest,
-  PageRequestSDKType,
+  type PageRequestSDKType,
   PageResponse,
-  PageResponseSDKType,
+  type PageResponseSDKType,
 } from '../../base/query/v1beta1/pagination.js';
 import {
   Grant,
-  GrantSDKType,
+  type GrantSDKType,
   GrantAuthorization,
-  GrantAuthorizationSDKType,
+  type GrantAuthorizationSDKType,
 } from './authz.js';
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
 import { isSet } from '../../../helpers.js';
-import { JsonSafe } from '../../../json-safe.js';
+import { type JsonSafe } from '../../../json-safe.js';
 /** QueryGrantsRequest is the request type for the Query/Grants RPC method. */
 export interface QueryGrantsRequest {
   granter: string;

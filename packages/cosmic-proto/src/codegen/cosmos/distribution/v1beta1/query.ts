@@ -1,25 +1,25 @@
 //@ts-nocheck
 import {
   PageRequest,
-  PageRequestSDKType,
+  type PageRequestSDKType,
   PageResponse,
-  PageResponseSDKType,
+  type PageResponseSDKType,
 } from '../../base/query/v1beta1/pagination.js';
 import {
   Params,
-  ParamsSDKType,
+  type ParamsSDKType,
   ValidatorOutstandingRewards,
-  ValidatorOutstandingRewardsSDKType,
+  type ValidatorOutstandingRewardsSDKType,
   ValidatorAccumulatedCommission,
-  ValidatorAccumulatedCommissionSDKType,
+  type ValidatorAccumulatedCommissionSDKType,
   ValidatorSlashEvent,
-  ValidatorSlashEventSDKType,
+  type ValidatorSlashEventSDKType,
   DelegationDelegatorReward,
-  DelegationDelegatorRewardSDKType,
+  type DelegationDelegatorRewardSDKType,
 } from './distribution.js';
-import { DecCoin, DecCoinSDKType } from '../../base/v1beta1/coin.js';
+import { DecCoin, type DecCoinSDKType } from '../../base/v1beta1/coin.js';
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
-import { JsonSafe } from '../../../json-safe.js';
+import { type JsonSafe } from '../../../json-safe.js';
 import { isSet } from '../../../helpers.js';
 /** QueryParamsRequest is the request type for the Query/Params RPC method. */
 export interface QueryParamsRequest {}

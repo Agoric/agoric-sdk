@@ -1,12 +1,12 @@
 //@ts-nocheck
 import {
   Plan,
-  PlanSDKType,
+  type PlanSDKType,
   ModuleVersion,
-  ModuleVersionSDKType,
+  type ModuleVersionSDKType,
 } from './upgrade.js';
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
-import { JsonSafe } from '../../../json-safe.js';
+import { type JsonSafe } from '../../../json-safe.js';
 import { isSet, bytesFromBase64, base64FromBytes } from '../../../helpers.js';
 /**
  * QueryCurrentPlanRequest is the request type for the Query/CurrentPlan RPC

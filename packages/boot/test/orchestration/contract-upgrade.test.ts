@@ -1,6 +1,6 @@
 /** @file Bootstrap test of restarting contracts using orchestration */
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
-import { TestFn } from 'ava';
+import type { TestFn } from 'ava';
 
 import { BridgeId } from '@agoric/internal';
 import { buildVTransferEvent } from '@agoric/orchestration/tools/ibc-mocks.js';

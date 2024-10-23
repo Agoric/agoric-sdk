@@ -4,8 +4,11 @@ import type { TestFn } from 'ava';
 import path from 'path';
 import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { makeIssuerKit } from '@agoric/ertp';
-import { AmountUtils, withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
-import { Issuer } from '@agoric/ertp/src/types.js';
+import {
+  type AmountUtils,
+  withAmountUtils,
+} from '@agoric/zoe/tools/test-utils.js';
+import type { Issuer } from '@agoric/ertp/src/types.js';
 import { E } from '@endo/far';
 import {
   LOCALCHAIN_DEFAULT_ADDRESS,

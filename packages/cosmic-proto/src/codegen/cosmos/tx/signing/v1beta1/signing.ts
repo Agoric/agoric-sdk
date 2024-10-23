@@ -1,11 +1,11 @@
 //@ts-nocheck
 import {
   CompactBitArray,
-  CompactBitArraySDKType,
+  type CompactBitArraySDKType,
 } from '../../../crypto/multisig/v1beta1/multisig.js';
-import { Any, AnySDKType } from '../../../../google/protobuf/any.js';
+import { Any, type AnySDKType } from '../../../../google/protobuf/any.js';
 import { BinaryReader, BinaryWriter } from '../../../../binary.js';
-import { JsonSafe } from '../../../../json-safe.js';
+import { type JsonSafe } from '../../../../json-safe.js';
 import {
   isSet,
   bytesFromBase64,

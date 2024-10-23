@@ -8,7 +8,7 @@ import type { QueryDelegatorDelegationsResponseSDKType } from '@agoric/cosmic-pr
 import type { QueryDelegatorUnbondingDelegationsResponseSDKType } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/query.js';
 import type { QueryDenomHashResponseSDKType } from '@agoric/cosmic-proto/ibc/applications/transfer/v1/query.js';
 import type { QueryChannelResponseSDKType } from '@agoric/cosmic-proto/ibc/core/channel/v1/query.js';
-import { QueryChannelsResponseSDKType } from '@agoric/cosmic-proto/ibc/core/channel/v1/query.js';
+import type { QueryChannelsResponseSDKType } from '@agoric/cosmic-proto/ibc/core/channel/v1/query.js';
 
 // TODO use telescope generated query client from @agoric/cosmic-proto
 // https://github.com/Agoric/agoric-sdk/issues/9200

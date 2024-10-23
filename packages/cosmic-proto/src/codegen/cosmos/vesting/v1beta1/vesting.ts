@@ -1,9 +1,12 @@
 //@ts-nocheck
-import { BaseAccount, BaseAccountSDKType } from '../../auth/v1beta1/auth.js';
-import { Coin, CoinSDKType } from '../../base/v1beta1/coin.js';
+import {
+  BaseAccount,
+  type BaseAccountSDKType,
+} from '../../auth/v1beta1/auth.js';
+import { Coin, type CoinSDKType } from '../../base/v1beta1/coin.js';
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
 import { isSet } from '../../../helpers.js';
-import { JsonSafe } from '../../../json-safe.js';
+import { type JsonSafe } from '../../../json-safe.js';
 /**
  * BaseVestingAccount implements the VestingAccount interface. It contains all
  * the necessary fields needed for any vesting account implementation.
