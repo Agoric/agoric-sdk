@@ -1,50 +1,50 @@
 {
-    "name": "fast-usdc",
-    "private": true,
-    "version": "0.1.0",
-    "description": "Create an Agoric Javascript smart contract application",
-    "type": "module",
+  "name": "fast-usdc",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Create an Agoric Javascript smart contract application",
+  "type": "module",
+  "files": [
+    "contract",
+    "src"
+  ],
+  "bin": {
+    "fast-usdc": "./src/cli.js"
+  },
+  "scripts": {
+    "build": "exit 0",
+    "test": "ava",
+    "test:c8": "c8 $C8_OPTIONS ava --config=ava-nesm.config.js",
+    "test:xs": "exit 0",
+    "lint-fix": "yarn lint:eslint --fix",
+    "lint": "run-s --continue-on-error lint:*",
+    "lint:types": "tsc",
+    "lint:eslint": "eslint ."
+  },
+  "devDependencies": {
+    "ava": "^5.3.0",
+    "c8": "^9.1.0",
+    "ts-blank-space": "^0.4.1"
+  },
+  "dependencies": {
+    "agoric": "^0.21.1",
+    "commander": "^12.1.0"
+  },
+  "ava": {
+    "extensions": {
+      "js": true,
+      "ts": "module"
+    },
     "files": [
-        "contract",
-        "src"
+      "test/**/*.test.*"
     ],
-    "bin": {
-        "fast-usdc": "./src/cli.js"
-    },
-    "scripts": {
-        "build": "exit 0",
-        "test": "ava",
-        "test:c8": "c8 $C8_OPTIONS ava --config=ava-nesm.config.js",
-        "test:xs": "exit 0",
-        "lint-fix": "yarn lint:eslint --fix",
-        "lint": "run-s --continue-on-error lint:*",
-        "lint:types": "tsc",
-        "lint:eslint": "eslint ."
-    },
-    "devDependencies": {
-        "ava": "^5.3.0",
-        "c8": "^9.1.0",
-        "ts-blank-space": "^0.4.1"
-    },
-    "dependencies": {
-        "agoric": "^0.21.1",
-        "commander": "^12.1.0"
-    },
-    "ava": {
-        "extensions": {
-            "js": true,
-            "ts": "module"
-        },
-        "files": [
-            "test/**/*.test.*"
-        ],
-        "nodeArguments": [
-            "--import=ts-blank-space/register",
-            "--no-warnings"
-        ],
-        "require": [
-            "@endo/init/debug.js"
-        ],
-        "timeout": "20m"
-    }
+    "nodeArguments": [
+      "--import=ts-blank-space/register",
+      "--no-warnings"
+    ],
+    "require": [
+      "@endo/init/debug.js"
+    ],
+    "timeout": "20m"
+  }
 }
