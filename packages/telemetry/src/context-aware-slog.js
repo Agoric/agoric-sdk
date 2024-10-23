@@ -6,7 +6,7 @@ import {
   LoggerProvider,
   SimpleLogRecordProcessor,
 } from '@opentelemetry/sdk-logs';
-import { readFile, writeFile } from 'fs';
+import { readFileSync, writeFileSync } from 'fs';
 import { dirSync } from 'tmp';
 import { getResourceAttributes } from './index.js';
 
@@ -111,42 +111,32 @@ const SLOG_TYPES = {
 /**
  * @param {string} filePath
  */
-export const getContextFilePersistenceUtils = async filePath => {
+export const getContextFilePersistenceUtils = filePath => {
   console.log(`Using file ${filePath} for slogger`);
 
   return {
     /**
      * @param {Context} context
-     * @returns {Promise<null>}
      */
-    persistContext: context =>
-      new Promise(resolve =>
-        writeFile(filePath, JSON.stringify(context), FILE_ENCODING, err => {
-          if (err) console.warn('Error writing context to file: ', err);
-          resolve(null);
-        }),
-      ),
+    persistContext: context => {
+      try {
+        writeFileSync(filePath, JSON.stringify(context), FILE_ENCODING);
+      } catch (err) {
+        console.warn('Error writing context to file: ', err);
+      }
+    },
 
     /**
-     * @returns {Promise<Context | null>}
+     * @returns {Context | null}
      */
-    restoreContext: () =>
-      new Promise(resolve =>
-        readFile(filePath, FILE_ENCODING, (err, data) => {
-          if (!err) {
-            try {
-              resolve(JSON.parse(data));
-            } catch (parseErr) {
-              err = parseErr;
-            }
-          }
-
-          if (err) {
-            console.warn('Error reading context from file: ', err);
-            return resolve(null);
-          }
-        }),
-      ),
+    restoreContext: () => {
+      try {
+        return JSON.parse(readFileSync(filePath, FILE_ENCODING));
+      } catch (parseErr) {
+        console.warn('Error reading context from file: ', parseErr);
+        return null;
+      }
+    },
   };
 };
 
@@ -158,7 +148,7 @@ const stringify = data =>
 /**
  * @param {(log: import('@opentelemetry/api-logs').LogRecord) => void} emitLog
  * @param {Options} options
- * @param {Partial<{ persistContext: (context: Context) => Promise<null>; restoreContext: () => Promise<Context | null>; }>} persistenceUtils
+ * @param {Partial<{ persistContext: (context: Context) => void; restoreContext: () => Context | null; }>} persistenceUtils
  */
 export const logCreator = (emitLog, options, persistenceUtils) => {
   const { CHAIN_ID } = options.env;
@@ -181,21 +171,16 @@ export const logCreator = (emitLog, options, persistenceUtils) => {
     return persistenceUtils.persistContext?.(context);
   };
 
-  const restoreContext = async () => {
-    await Promise.resolve();
-
+  const restoreContext = () => {
     if (!lastPersistedTriggerContext)
-      lastPersistedTriggerContext =
-        (await persistenceUtils.restoreContext?.()) || null;
+      lastPersistedTriggerContext = persistenceUtils.restoreContext?.() || null;
     return lastPersistedTriggerContext;
   };
 
   /**
    * @param {Slog} slog
    */
-  const slogSender = async ({ monotime, time: timestamp, ...body }) => {
-    await Promise.resolve();
-
+  const slogSender = ({ monotime, time: timestamp, ...body }) => {
     const finalBody = { ...body };
 
     /** @type {{'crank.syscallNum'?: Slog['syscallNum']}} */
@@ -306,7 +291,7 @@ export const logCreator = (emitLog, options, persistenceUtils) => {
           'run.trigger.txHash': txHash,
           'run.trigger.msgIdx': Number(msgIdx),
         };
-        await persistContext(triggerContext);
+        persistContext(triggerContext);
         break;
       }
       case SLOG_TYPES.COSMIC_SWINGSET.COMMIT.FINISH:
@@ -330,7 +315,7 @@ export const logCreator = (emitLog, options, persistenceUtils) => {
             'run.trigger.type': 'timer',
             'run.trigger.time': blockContext['block.time'],
           };
-          await persistContext(triggerContext);
+          persistContext(triggerContext);
         }
 
         if (!triggerContext) triggerContext = {};
@@ -407,7 +392,7 @@ export const logCreator = (emitLog, options, persistenceUtils) => {
         break;
       }
       case SLOG_TYPES.COSMIC_SWINGSET.END_BLOCK.START: {
-        triggerContext = await restoreContext();
+        triggerContext = restoreContext();
         break;
       }
       default:
@@ -421,7 +406,7 @@ export const logCreator = (emitLog, options, persistenceUtils) => {
 /**
  * @param {Options} options
  */
-export const makeSlogSender = async options => {
+export const makeSlogSender = options => {
   const { OTEL_EXPORTER_OTLP_ENDPOINT } = options.env;
   if (!OTEL_EXPORTER_OTLP_ENDPOINT)
     return console.warn(
@@ -440,7 +425,7 @@ export const makeSlogSender = async options => {
   logs.setGlobalLoggerProvider(loggerProvider);
   const logger = logs.getLogger('default');
 
-  const persistenceUtils = await getContextFilePersistenceUtils(
+  const persistenceUtils = getContextFilePersistenceUtils(
     process.env.SLOG_CONTEXT_FILE_PATH ||
       `${options.stateDir || dirSync({ prefix: 'slog-context' }).name}/slog-context.json`,
   );
