@@ -1,3 +1,4 @@
+// @ts-check
 /** global harden */
 import { assert } from '@endo/errors';
 import { E, Far } from '@endo/far';
@@ -123,6 +124,7 @@ const installBundle = async (fullPath, opts) => {
  *   chainId?: string;
  *   whale?: string;
  *   progress?: typeof console.log;
+ *   q?: import('./queryKit.js').QueryTool;
  * }} opts
  */
 export const provisionSmartWallet = async (
@@ -474,6 +476,7 @@ export const makeE2ETools = async (
         // name,
         id: fullPath,
         installHeight: tx.height,
+        // @ts-expect-error confirm is a boolean?
         installed: confirm.installed,
       });
     }
