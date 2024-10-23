@@ -457,13 +457,13 @@ export default async function main(progname, args, { env, homedir, agcc }) {
       bootMsg: makeBootMsg(initAction),
     };
     const getVatConfig = async () => {
-      const vatHref = await importMetaResolve(
+      const href = await importMetaResolve(
         env.CHAIN_BOOTSTRAP_VAT_CONFIG ||
           argv.bootMsg.params.bootstrap_vat_config,
         import.meta.url,
       );
-      const vatconfig = new URL(vatHref).pathname;
-      return vatconfig;
+      const { pathname } = new URL(href);
+      return pathname;
     };
 
     // Delay makeShutdown to override the golang interrupts

@@ -8,6 +8,7 @@ export {
   buildKernelBundles,
   loadBasedir,
   loadSwingsetConfigFile,
+  normalizeConfig,
 } from './controller/initializeSwingset.js';
 export { upgradeSwingset } from './controller/upgradeSwingset.js';
 export {
