@@ -35,7 +35,6 @@ export const privateArgsShape = harden(
 );
 
 const WALLETS_BY_ADDRESS = 'walletsByAddress';
-const UPGRADE_TO_INCARNATION_TWO = 'upgrade to incarnation two';
 
 /**
  * Provide a NameHub for this address and insert depositFacet only if not
@@ -238,15 +237,6 @@ export const prepare = async (zcf, privateArgs, baggage) => {
 
   const registry = makeAssetRegistry(assetPublisher);
 
-  /**
-   * An object known only to walletFactory and smartWallets. The WalletFactory
-   * only has the self facet for the pre-existing wallets that must be repaired.
-   * Self is too accessible, so use of the repair function requires use of a
-   * secret that clients won't have. This can be removed once the upgrade has
-   * taken place.
-   */
-  const upgradeToIncarnation2Key = harden({});
-
   const shared = harden({
     agoricNames,
     invitationBrand,
@@ -255,7 +245,6 @@ export const prepare = async (zcf, privateArgs, baggage) => {
     publicMarshaller,
     registry,
     zoe,
-    secretWalletFactoryKey: upgradeToIncarnation2Key,
   });
 
   /**
@@ -265,22 +254,6 @@ export const prepare = async (zcf, privateArgs, baggage) => {
    * - wallet-ui (which has key material; dapps use wallet-ui to propose actions)
    */
   const makeSmartWallet = prepareSmartWallet(baggage, shared);
-
-  // One time repair for incarnation 2. We're adding WatchedPromises to allow
-  // wallets to durably monitor offer outcomes, but wallets that already exist
-  // need to be backfilled. This code needs to run once at the beginning of
-  // incarnation 2, and then shouldn't be needed again.
-  if (!baggage.has(UPGRADE_TO_INCARNATION_TWO)) {
-    trace('Wallet Factory upgrading to incarnation 2');
-
-    // This could take a while, depending on how many outstanding wallets exist.
-    // The current plan is that it will run exactly once, and inside an upgrade
-    // handler, between blocks.
-    for (const wallet of walletsByAddress.values()) {
-      wallet.repairWalletForIncarnation2(upgradeToIncarnation2Key);
-    }
-    baggage.init(UPGRADE_TO_INCARNATION_TWO, 'done');
-  }
 
   const creatorFacet = prepareExo(
     baggage,
