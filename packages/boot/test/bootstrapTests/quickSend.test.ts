@@ -28,13 +28,11 @@ const makeMeter = () => {
 
   let metering = false;
   let policy;
-  const seen = new Set();
 
   const meter = harden({
     provideRunPolicy: () => {
       if (metering && !policy) {
         policy = computronCounter(mainParams);
-        seen.add(policy);
       }
       return policy;
     },
