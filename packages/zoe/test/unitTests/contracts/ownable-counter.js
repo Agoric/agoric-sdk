@@ -16,7 +16,7 @@ export const start = async (zcf, privateArgs, baggage) => {
     'OwnableCounter',
     {
       counter: M.interface('OwnableCounter', {
-        incr: M.call().returns(M.bigint()),
+        decr: M.call().returns(M.bigint()),
         // required by makePrepareOwnableClass
         getInvitationCustomDetails: M.call().returns(
           harden({
@@ -37,9 +37,9 @@ export const start = async (zcf, privateArgs, baggage) => {
     }),
     {
       counter: {
-        incr() {
+        decr() {
           const { state } = this;
-          state.count += 1n;
+          state.count -= 1n;
           return state.count;
         },
         getInvitationCustomDetails() {
@@ -63,7 +63,7 @@ export const start = async (zcf, privateArgs, baggage) => {
     zone,
     (...args) => zcf.makeInvitation(...args),
     'OwnableCounter',
-    /** @type {const} */ (['incr', 'getInvitationCustomDetails']),
+    /** @type {const} */ (['decr', 'getInvitationCustomDetails']),
   );
 
   const { counter: underlyingCounter, viewer } =
