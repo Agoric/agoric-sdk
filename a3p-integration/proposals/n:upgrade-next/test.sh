@@ -4,7 +4,7 @@
 # The effects of this step are not persisted in further proposal layers.
 
 # suppress file names from glob that run earlier
-GLOBIGNORE=initial.test.js replaceElectorate.test.js
+GLOBIGNORE=initial.test.js
 
 yarn ava ./replaceElectorate.test.js
 
