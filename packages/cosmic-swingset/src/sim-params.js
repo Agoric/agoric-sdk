@@ -1,6 +1,7 @@
 // @jessie-check
 // @ts-check
 
+import { Fail } from '@endo/errors';
 import { Nat } from '@endo/nat';
 
 const makeStringBeans = (key, beans) => ({ key, beans: `${Nat(beans)}` });
@@ -74,26 +75,43 @@ export const defaultQueueMax = [
   makeQueueSize(QueueInbound, defaultInboundQueueMax),
 ];
 
-export const vatCleanupDefault = 'default';
-export const defaultVatCleanupDefault = 5;
-export const vatCleanupExports = 'exports';
-// export const defaultVatCleanupExports = defaultVatCleanupDefault;
-export const vatCleanupImports = 'imports';
-// export const defaultVatCleanupImports = defaultVatCleanupDefault;
-export const vatCleanupKv = 'kv';
-export const defaultVatCleanupKv = 50;
-export const vatCleanupSnapshots = 'snapshots';
-// export const defaultVatCleanupSnapshots = defaultVatCleanupDefault;
-export const vatCleanupTranscripts = 'transcripts';
-// export const defaultVatCleanupTranscripts = defaultVatCleanupDefault;
-export const defaultVatCleanupBudget = [
-  { key: vatCleanupDefault, value: `${defaultVatCleanupDefault}` },
-  // { key: vatCleanupExports, value: `${defaultVatCleanupExports}` },
-  // { key: vatCleanupImports, value: `${defaultVatCleanupImports}` },
-  { key: vatCleanupKv, value: `${defaultVatCleanupKv}` },
-  // { key: vatCleanupSnapshots, value: `${defaultVatCleanupSnapshots}` },
-  // { key: vatCleanupTranscripts, value: `${defaultVatCleanupTranscripts}` },
-];
+/**
+ * @enum {(typeof VatCleanupPhase)[keyof typeof VatCleanupPhase]}
+ */
+export const VatCleanupPhase = /** @type {const} */ ({
+  Default: 'default',
+  Exports: 'exports',
+  Imports: 'imports',
+  Kv: 'kv',
+  Snapshots: 'snapshots',
+  Transcripts: 'transcripts',
+});
+
+/** @typedef {Partial<Record<keyof typeof VatCleanupPhase, number>>} VatCleanupKeywordsRecord */
+
+/** @type {VatCleanupKeywordsRecord} */
+export const VatCleanupDefaults = {
+  Default: 5,
+  Kv: 50,
+};
+
+/**
+ * @param {VatCleanupKeywordsRecord} keywordsRecord
+ * @returns {import('@agoric/cosmic-proto/swingset/swingset.js').ParamsSDKType['vat_cleanup_budget']}
+ */
+export const makeVatCleanupBudgetFromKeywords = keywordsRecord => {
+  return Object.entries(keywordsRecord).map(([keyName, value]) => {
+    Object.hasOwn(VatCleanupPhase, keyName) ||
+      Fail`unknown vat cleanup phase keyword ${keyName}`;
+    return {
+      key: Reflect.get(VatCleanupPhase, keyName),
+      value: `${Nat(value)}`,
+    };
+  });
+};
+
+export const defaultVatCleanupBudget =
+  makeVatCleanupBudgetFromKeywords(VatCleanupDefaults);
 
 /**
  * @type {import('@agoric/cosmic-proto/swingset/swingset.js').ParamsSDKType}
