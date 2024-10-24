@@ -35,8 +35,10 @@ jobs:
   pre_check:
     uses: ./.github/workflows/pre-check-integration.yml
 
-  # This job is meant to emulate what developers working with the Agoric platform will experience
-  # It should be kept in sync with https://agoric.com/documentation/getting-started/
+  # This job is meant to emulate what developers working with the Agoric
+  # platform will experience.
+  # It should be kept in sync with the "getting started" workflow at
+  # https://docs.agoric.com/guides/getting-started/
   getting-started:
     needs: pre_check
     if: needs.pre_check.outputs.should_run == 'true'
@@ -60,9 +62,11 @@ jobs:
           node-version: 18.18
           keep-endo: 'true'
 
-      # Select a branch on dapp to test against by adding text to the body of the
-      # pull request. For example: #getting-started-branch: zoe-release-0.7.0
-      # The default is 'main'
+      # Select a branch of the
+      # [default dapp repository](https://github.com/Agoric/dapp-offer-up) (cf.
+      # packages/agoric-cli/src/main.js) against which to test, defaulting to
+      # 'main' but allowing overrides in the pull request description using
+      # lines like `#getting-started-branch: zoe-release-0.7.0`
       - name: Get the appropriate dapp branch
         id: get-branch
         uses: actions/github-script@v7
@@ -138,9 +142,10 @@ jobs:
           # the chances the content of snapshots may deviate between validators
           xsnap-random-init: '1'
 
-      # Select a branch on loadgen to test against by adding text to the body of the
-      # pull request. For example: #loadgen-branch: user-123-update-foo
-      # The default is 'main'
+      # Select a branch of the
+      # [load generator dapp repository](https://github.com/Agoric/testnet-load-generator)
+      # to use, defaulting to 'main' but allowing overrides in the pull request
+      # description using lines like `#loadgen-branch: ceelab`
       - name: Get the appropriate loadgen branch
         id: get-loadgen-branch
         uses: actions/github-script@v7
