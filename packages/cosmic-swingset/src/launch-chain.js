@@ -389,7 +389,8 @@ function computronCounter(
  * @typedef {object} LaunchOptions
  * @property {import('./helpers/make-queue.js').QueueStorage} actionQueueStorage
  * @property {import('./helpers/make-queue.js').QueueStorage} highPriorityQueueStorage
- * @property {string} kernelStateDBDir
+ * @property {string} [kernelStateDBDir]
+ * @property {import('@agoric/swing-store').SwingStore} [swingStore]
  * @property {BufferedKVStore<Mailbox>} mailboxStorage
  *   TODO: Merge together BufferedKVStore and QueueStorage (get/set/delete/commit/abort)
  * @property {() => Promise<unknown>} clearChainSends
@@ -427,6 +428,7 @@ export async function launch({
   actionQueueStorage,
   highPriorityQueueStorage,
   kernelStateDBDir,
+  swingStore,
   mailboxStorage,
   clearChainSends,
   replayChainSends,
@@ -485,14 +487,23 @@ export async function launch({
     };
   })();
 
-  const { kernelStorage, hostStorage } = openSwingStore(kernelStateDBDir, {
-    traceFile: swingStoreTraceFile,
-    exportCallback: swingStoreExportSyncCallback,
-    keepSnapshots,
-    keepTranscripts,
-    archiveSnapshot,
-    archiveTranscript,
-  });
+  if (swingStore) {
+    !swingStoreExportCallback ||
+      Fail`swingStoreExportCallback is not compatible with a provided swingStore; either drop the former or allow launch to open the latter`;
+    kernelStateDBDir === undefined ||
+      kernelStateDBDir === swingStore.internal.dirPath ||
+      Fail`provided kernelStateDBDir does not match provided swingStore`;
+  }
+  const { kernelStorage, hostStorage } =
+    swingStore ||
+    openSwingStore(/** @type {string} */ (kernelStateDBDir), {
+      traceFile: swingStoreTraceFile,
+      exportCallback: swingStoreExportSyncCallback,
+      keepSnapshots,
+      keepTranscripts,
+      archiveSnapshot,
+      archiveTranscript,
+    });
   const { kvStore, commit } = hostStorage;
 
   /** @typedef {ReturnType<typeof makeQueue<{context: any, action: any}>>} InboundQueue */
