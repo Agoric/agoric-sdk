@@ -137,7 +137,7 @@ const prepareRemoteChainFacadeKit = (
 
             const makeAccountV = E(orchestration).makeAccount(
               remoteChainInfo.chainId,
-              connectionInfo.counterparty.connection_id,
+              connectionInfo.counterpartyConnectionId,
               connectionInfo.id,
             );
 

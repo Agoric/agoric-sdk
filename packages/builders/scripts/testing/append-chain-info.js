@@ -9,17 +9,15 @@ const chainInfo = {
     connections: {
       'cosmoshub-4': {
         id: 'connection-99',
-        client_id: '07-tendermint-3',
-        counterparty: {
-          client_id: '07-tendermint-2',
-          connection_id: 'connection-1',
-        },
+        clientId: '07-tendermint-3',
+        counterpartyClientId: '07-tendermint-2',
+        counterpartyConnectionId: 'connection-1',
         state: 3 /* IBCConnectionState.STATE_OPEN */,
         transferChannel: {
           portId: 'transfer',
           channelId: 'channel-1',
-          counterPartyChannelId: 'channel-1',
-          counterPartyPortId: 'transfer',
+          counterpartyChannelId: 'channel-1',
+          counterpartyPortId: 'transfer',
           ordering: 1 /* Order.ORDER_UNORDERED */,
           state: 3 /* IBCConnectionState.STATE_OPEN */,
           version: 'ics20-1',
