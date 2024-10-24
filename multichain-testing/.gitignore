@@ -2,7 +2,7 @@
 .yarn/*
 !.yarn/patches/*
 # fetched chain info from running starship
-starship-chain-info*
+starship-chain-info.js
 # output of build script to get update running chain info
 revise-chain-info*
 start*
