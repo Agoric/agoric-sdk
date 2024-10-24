@@ -3,6 +3,7 @@ import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 import { makeScalarMapStore } from '@agoric/vat-data';
 
 import { E } from '@endo/far';
+import { AG_COSMOS_INIT } from '@agoric/internal/src/action-types.js';
 import { makePromiseKit } from '@endo/promise-kit';
 import { makeZoeKitForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { observeIteration } from '@agoric/notifier';
@@ -45,14 +46,12 @@ test('mintInitialSupply, addBankAssets bootstrap actions', async t => {
   });
 
   // Genesis RUN supply: 50
+  /** @type {import('@agoric/internal/src/chain-utils.js').BootMsg} */
+  // @ts-expect-error missing properties
   const bootMsg = {
-    type: 'INIT@@',
+    type: AG_COSMOS_INIT,
     chainID: 'ag',
-    storagePort: 1,
     supplyCoins: [{ amount: '50000000', denom: 'uist' }],
-    swingsetPort: 4,
-    vbankPort: 2,
-    vibcPort: 3,
   };
 
   // Now run the function under test.

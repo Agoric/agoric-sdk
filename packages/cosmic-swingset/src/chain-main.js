@@ -30,6 +30,7 @@ import {
 } from '@agoric/internal/src/lib-chainStorage.js';
 import { makeShutdown } from '@agoric/internal/src/node/shutdown.js';
 
+import { makeBootMsg } from '@agoric/internal/src/chain-utils.js';
 import * as STORAGE_PATH from '@agoric/internal/src/chain-storage-paths.js';
 import * as ActionType from '@agoric/internal/src/action-types.js';
 import { BridgeId, CosmosInitKeyToBridgeId } from '@agoric/internal';
@@ -102,32 +103,6 @@ const validateSwingsetConfig = swingsetConfig => {
   maxVatsOnline === undefined ||
     (isNat(maxVatsOnline) && maxVatsOnline > 0) ||
     Fail`maxVatsOnline must be a positive integer`;
-};
-
-/**
- * A boot message consists of cosmosInitAction fields that are subject to
- * consensus. See cosmosInitAction in {@link ../../../golang/cosmos/app/app.go}.
- *
- * @param {any} initAction
- */
-const makeBootMsg = initAction => {
-  const {
-    type,
-    blockTime,
-    blockHeight,
-    chainID,
-    params,
-    // NB: resolvedConfig is independent of consensus and MUST NOT be included
-    supplyCoins,
-  } = initAction;
-  return {
-    type,
-    blockTime,
-    blockHeight,
-    chainID,
-    params,
-    supplyCoins,
-  };
 };
 
 /**

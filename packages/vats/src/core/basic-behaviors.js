@@ -22,29 +22,6 @@ import { makeScopedBridge } from '../bridge.js';
 /** @import {GovernableStartFn, GovernanceFacetKit} from '@agoric/governance/src/types.js'; */
 
 /**
- * In golang/cosmos/app/app.go, we define cosmosInitAction with type
- * AG_COSMOS_INIT, with the following shape.
- *
- * The uist supplyCoins value is taken from genesis, thereby authorizing the
- * minting an initial supply of RUN.
- */
-// eslint-disable-next-line no-unused-vars
-const bootMsgEx = {
-  type: 'AG_COSMOS_INIT',
-  chainID: 'agoric',
-  storagePort: 1,
-  supplyCoins: [
-    { denom: 'provisionpass', amount: '100' },
-    { denom: 'sendpacketpass', amount: '100' },
-    { denom: 'ubld', amount: '1000000000000000' },
-    { denom: 'uist', amount: '50000000000' },
-  ],
-  swingsetPort: 4,
-  vbankPort: 3,
-  vibcPort: 2,
-};
-
-/**
  * TODO: review behaviors carefully for powers that go out of scope, since we
  * may want/need them later.
  */
@@ -560,7 +537,11 @@ export const installBootContracts = async ({
  * Mint IST genesis supply.
  *
  * @param {BootstrapPowers & {
- *   vatParameters: { argv: { bootMsg?: typeof bootMsgEx } };
+ *   vatParameters: {
+ *     argv: {
+ *       bootMsg?: import('@agoric/internal/src/chain-utils.js').BootMsg;
+ *     };
+ *   };
  * }} powers
  */
 export const mintInitialSupply = async ({

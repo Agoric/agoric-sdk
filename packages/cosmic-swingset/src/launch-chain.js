@@ -55,6 +55,7 @@ import { parseLocatedJson } from './helpers/json.js';
 
 const { hasOwn } = Object;
 
+/** @import { BlockInfo } from '@agoric/internal/src/chain-utils.js' */
 /** @import { Mailbox, RunPolicy, SwingSetConfig } from '@agoric/swingset-vat' */
 /** @import { KVStore, BufferedKVStore } from './helpers/bufferedStorage.js' */
 
@@ -840,8 +841,8 @@ export async function launch({
    * work or when instructed to (whichever comes first).
    *
    * @param {Cranker} runSwingset
-   * @param {number} blockHeight
-   * @param {number} blockTime seconds since the POSIX epoch
+   * @param {BlockInfo['blockHeight']} blockHeight
+   * @param {BlockInfo['blockTime']} blockTime
    */
   async function processBlockActions(runSwingset, blockHeight, blockTime) {
     // First, complete leftover work, if any
