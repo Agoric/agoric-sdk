@@ -8,6 +8,7 @@ export default /** @type {const} } */ ({
       },
     ],
     icqEnabled: false,
+    pfmEnabled: true,
     connections: {
       'cosmoshub-4': {
         id: 'connection-8',
@@ -145,6 +146,7 @@ export default /** @type {const} } */ ({
       },
     ],
     icqEnabled: false,
+    pfmEnabled: true,
     connections: {
       'neutron-1': {
         id: 'connection-7',
@@ -246,25 +248,8 @@ export default /** @type {const} } */ ({
       },
     ],
     icqEnabled: false,
+    pfmEnabled: true,
     connections: {
-      'stargaze-1': {
-        id: 'connection-918',
-        client_id: '07-tendermint-1188',
-        counterparty: {
-          client_id: '07-tendermint-320',
-          connection_id: 'connection-256',
-        },
-        state: 3,
-        transferChannel: {
-          channelId: 'channel-730',
-          portId: 'transfer',
-          counterPartyChannelId: 'channel-239',
-          counterPartyPortId: 'transfer',
-          ordering: 0,
-          state: 3,
-          version: 'ics20-1',
-        },
-      },
       'agoric-3': {
         id: 'connection-649',
         client_id: '07-tendermint-927',
@@ -391,6 +376,24 @@ export default /** @type {const} } */ ({
           version: 'ics20-1',
         },
       },
+      'stargaze-1': {
+        id: 'connection-918',
+        client_id: '07-tendermint-1188',
+        counterparty: {
+          client_id: '07-tendermint-320',
+          connection_id: 'connection-256',
+        },
+        state: 3,
+        transferChannel: {
+          channelId: 'channel-730',
+          portId: 'transfer',
+          counterPartyChannelId: 'channel-239',
+          counterPartyPortId: 'transfer',
+          ordering: 0,
+          state: 3,
+          version: 'ics20-1',
+        },
+      },
       'stride-1': {
         id: 'connection-635',
         client_id: '07-tendermint-913',
@@ -419,6 +422,7 @@ export default /** @type {const} } */ ({
       },
     ],
     icqEnabled: false,
+    pfmEnabled: false,
     connections: {
       'neutron-1': {
         id: 'connection-17',
@@ -520,6 +524,7 @@ export default /** @type {const} } */ ({
       },
     ],
     icqEnabled: false,
+    pfmEnabled: true,
     connections: {
       'cosmoshub-4': {
         id: 'connection-2',
@@ -657,6 +662,7 @@ export default /** @type {const} } */ ({
       },
     ],
     icqEnabled: false,
+    pfmEnabled: true,
     connections: {
       celestia: {
         id: 'connection-36',
@@ -825,6 +831,7 @@ export default /** @type {const} } */ ({
   noble: {
     chainId: 'noble-1',
     icqEnabled: false,
+    pfmEnabled: true,
     connections: {
       'agoric-3': {
         id: 'connection-40',
@@ -1015,7 +1022,8 @@ export default /** @type {const} } */ ({
         denom: 'uflix',
       },
     ],
-    icqEnabled: false,
+    icqEnabled: true,
+    pfmEnabled: true,
     connections: {
       'agoric-3': {
         id: 'connection-40',
@@ -1099,6 +1107,7 @@ export default /** @type {const} } */ ({
       },
     ],
     icqEnabled: true,
+    pfmEnabled: true,
     connections: {
       'agoric-3': {
         id: 'connection-1649',
@@ -1326,6 +1335,7 @@ export default /** @type {const} } */ ({
       },
     ],
     icqEnabled: false,
+    pfmEnabled: true,
     connections: {
       'agoric-3': {
         id: 'connection-80',
@@ -1517,6 +1527,7 @@ export default /** @type {const} } */ ({
       },
     ],
     icqEnabled: false,
+    pfmEnabled: true,
     connections: {
       celestia: {
         id: 'connection-296',
@@ -1672,6 +1683,7 @@ export default /** @type {const} } */ ({
       },
     ],
     icqEnabled: false,
+    pfmEnabled: true,
     connections: {
       'agoric-3': {
         id: 'connection-118',
@@ -1863,6 +1875,7 @@ export default /** @type {const} } */ ({
       },
     ],
     icqEnabled: false,
+    pfmEnabled: true,
     connections: {
       'agoric-3': {
         id: 'connection-101',
