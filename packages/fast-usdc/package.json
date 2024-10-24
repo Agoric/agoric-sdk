@@ -29,6 +29,12 @@
     "ts-blank-space": "^0.4.1"
   },
   "dependencies": {
+    "@agoric/ertp": "^0.16.2",
+    "@endo/patterns": "^1.4.6",
+    "@agoric/orchestration": "^0.1.0",
+    "@agoric/internal": "^0.3.2",
+    "@endo/base64": "^1.0.8",
+    "@endo/far": "^1.1.8",
     "commander": "^12.1.0"
   },
   "ava": {
