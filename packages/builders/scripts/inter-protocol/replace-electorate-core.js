@@ -38,18 +38,17 @@ export const defaultProposalBuilder = async ({ publishRef, install }, opts) => {
 const configurations = {
   MAINNET: {
     committeeName: 'Economic Committee',
-    // UNTIL https://github.com/Agoric/agoric-sdk/issues/10194
     voterAddresses: {
-      gov1: 'agoric1gx9uu7y6c90rqruhesae2t7c2vlw4uyyxlqxrx',
-      gov2: 'agoric1d4228cvelf8tj65f4h7n2td90sscavln2283h5',
-      gov3: 'agoric14543m33dr28x7qhwc558hzlj9szwhzwzpcmw6a',
+      'Chloe White': 'agoric1d4228cvelf8tj65f4h7n2td90sscavln2283h5',
+      'Chris Berg': 'agoric13p9adwk0na5npfq64g22l6xucvqdmu3xqe70wq',
+      'Joe Clark': 'agoric1zayxg4e9vd0es9c9jlpt36qtth255txjp6a8yc',
     },
     highPrioritySendersConfig: {
       addressesToAdd: [],
       addressesToRemove: [
-        'agoric13p9adwk0na5npfq64g22l6xucvqdmu3xqe70wq',
+        'agoric1gx9uu7y6c90rqruhesae2t7c2vlw4uyyxlqxrx',
+        'agoric14543m33dr28x7qhwc558hzlj9szwhzwzpcmw6a',
         'agoric1el6zqs8ggctj5vwyukyk4fh50wcpdpwgugd5l5',
-        'agoric1zayxg4e9vd0es9c9jlpt36qtth255txjp6a8yc',
       ],
     },
   },
