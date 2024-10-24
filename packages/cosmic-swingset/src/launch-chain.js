@@ -52,6 +52,8 @@ import { makeQueue, makeQueueStorageMock } from './helpers/make-queue.js';
 import { exportStorage } from './export-storage.js';
 import { parseLocatedJson } from './helpers/json.js';
 
+const { hasOwn } = Object;
+
 /** @import { Mailbox, RunPolicy, SwingSetConfig } from '@agoric/swingset-vat' */
 /** @import { KVStore } from './helpers/bufferedStorage.js' */
 
@@ -85,6 +87,24 @@ const parseUpgradePlanInfo = (upgradePlan, prefix = '') => {
  *   for which data should be exported into bootstrap vat parameter `chainStorageEntries`
  *   (e.g., `exportStorageSubtrees: ['c.o']` might result in vatParameters including
  *   `chainStorageEntries: [ ['c.o', '"top"'], ['c.o.i'], ['c.o.i.n', '42'], ['c.o.w', '"moo"'] ]`).
+ */
+
+/**
+ * @typedef {'leftover' | 'forced' | 'high-priority' | 'timer' | 'queued' | 'cleanup'} CrankerPhase
+ *   - leftover: work from a previous block
+ *   - forced: work that claims the entirety of the current block
+ *   - high-priority: queued work the precedes timer advancement
+ *   - intermission: needed to note state exports and update consistency hashes
+ *   - queued: queued work the follows timer advancement
+ *   - cleanup: for dealing with data from terminated vats
+ */
+
+/** @type {CrankerPhase} */
+const CLEANUP = 'cleanup';
+
+/**
+ * @typedef {(phase: CrankerPhase) => Promise<boolean>} Cranker runs the kernel
+ *   and reports if it is time to stop
  */
 
 /**
@@ -247,6 +267,7 @@ export async function buildSwingset(
  *   shouldRun(): boolean;
  *   remainingBeans(): bigint | undefined;
  *   totalBeans(): bigint;
+ *   startCleanup(): boolean;
  * }} ChainRunPolicy
  */
 
@@ -258,25 +279,66 @@ export async function buildSwingset(
  */
 
 /**
- * @param {BeansPerUnit} beansPerUnit
+ * Return a stateful run policy that supports two phases: first allow
+ * non-cleanup work (presumably deliveries) until an overrideable computron
+ * budget is exhausted, then (iff no work was done and at least one vat cleanup
+ * budget field is positive) a cleanup phase that allows cleanup work (and
+ * presumably nothing else) until one of those fields is exhausted.
+ * https://github.com/Agoric/agoric-sdk/issues/8928#issuecomment-2053357870
+ *
+ * @param {object} params
+ * @param {BeansPerUnit} params.beansPerUnit
+ * @param {import('@agoric/swingset-vat').CleanupBudget} [params.vatCleanupBudget]
  * @param {boolean} [ignoreBlockLimit]
  * @returns {ChainRunPolicy}
  */
 function computronCounter(
-  {
+  { beansPerUnit, vatCleanupBudget },
+  ignoreBlockLimit = false,
+) {
+  const {
     [BeansPerBlockComputeLimit]: blockComputeLimit,
     [BeansPerVatCreation]: vatCreation,
     [BeansPerXsnapComputron]: xsnapComputron,
-  },
-  ignoreBlockLimit = false,
-) {
+  } = beansPerUnit;
   assert.typeof(blockComputeLimit, 'bigint');
   assert.typeof(vatCreation, 'bigint');
   assert.typeof(xsnapComputron, 'bigint');
+
   let totalBeans = 0n;
   const shouldRun = () => ignoreBlockLimit || totalBeans < blockComputeLimit;
-  const remainingBeans = () =>
-    ignoreBlockLimit ? undefined : blockComputeLimit - totalBeans;
+
+  const remainingCleanups = { default: Infinity, ...vatCleanupBudget };
+  const defaultCleanupBudget = remainingCleanups.default;
+  let cleanupStarted = false;
+  let cleanupDone = false;
+  const cleanupPossible =
+    Object.values(remainingCleanups).length > 0
+      ? Object.values(remainingCleanups).some(n => n > 0)
+      : defaultCleanupBudget > 0;
+  if (!cleanupPossible) cleanupDone = true;
+  /** @type {() => (false | import('@agoric/swingset-vat').CleanupBudget)} */
+  const allowCleanup = () =>
+    cleanupStarted && !cleanupDone && { ...remainingCleanups };
+  const startCleanup = () => {
+    assert(!cleanupStarted);
+    cleanupStarted = true;
+    return totalBeans === 0n && !cleanupDone;
+  };
+  const didCleanup = details => {
+    for (const [phase, count] of Object.entries(details)) {
+      if (phase === 'total') continue;
+      if (!hasOwn(remainingCleanups, phase)) {
+        // TODO: log unknown phases?
+        remainingCleanups[phase] = defaultCleanupBudget;
+      }
+      remainingCleanups[phase] -= count;
+      if (remainingCleanups[phase] <= 0) cleanupDone = true;
+    }
+    // We return true to allow processing of any BOYD/GC prompted by cleanup,
+    // even if cleanup as such is now done.
+    return true;
+  };
 
   const policy = harden({
     vatCreated() {
@@ -302,11 +364,14 @@ function computronCounter(
     emptyCrank() {
       return shouldRun();
     },
+    allowCleanup,
+    didCleanup,
+
     shouldRun,
-    remainingBeans,
-    totalBeans() {
-      return totalBeans;
-    },
+    remainingBeans: () =>
+      ignoreBlockLimit ? undefined : blockComputeLimit - totalBeans,
+    totalBeans: () => totalBeans,
+    startCleanup,
   });
   return policy;
 }
@@ -448,10 +513,15 @@ export async function launch({
   /**
    * @param {number} blockHeight
    * @param {ChainRunPolicy} runPolicy
+   * @returns {Cranker}
    */
   function makeRunSwingset(blockHeight, runPolicy) {
     let runNum = 0;
-    async function runSwingset() {
+    async function runSwingset(phase) {
+      if (phase === CLEANUP) {
+        const allowCleanup = runPolicy.startCleanup();
+        if (!allowCleanup) return false;
+      }
       const startBeans = runPolicy.totalBeans();
       controller.writeSlogObject({
         type: 'cosmic-swingset-run-start',
@@ -490,10 +560,10 @@ export async function launch({
     timer.poll(blockTime);
     // This is before the initial block, we need to finish processing the
     // entire bootstrap before opening for business.
-    const runPolicy = computronCounter(params.beansPerUnit, true);
+    const runPolicy = computronCounter(params, true);
     const runSwingset = makeRunSwingset(blockHeight, runPolicy);
 
-    await runSwingset();
+    await runSwingset('forced');
   }
 
   async function saveChainState() {
@@ -662,15 +732,16 @@ export async function launch({
    * newly added, running the kernel to completion after each.
    *
    * @param {InboundQueue} inboundQueue
-   * @param {ReturnType<typeof makeRunSwingset>} runSwingset
+   * @param {Cranker} runSwingset
+   * @param {CrankerPhase} phase
    */
-  async function processActions(inboundQueue, runSwingset) {
+  async function processActions(inboundQueue, runSwingset, phase) {
     let keepGoing = true;
     for await (const { action, context } of inboundQueue.consumeAll()) {
       const inboundNum = `${context.blockHeight}-${context.txHash}-${context.msgIdx}`;
       inboundQueueMetrics.decStat();
       await performAction(action, inboundNum);
-      keepGoing = await runSwingset();
+      keepGoing = await runSwingset(phase);
       if (!keepGoing) {
         // any leftover actions will remain on the inbound queue for possible
         // processing in the next block
@@ -680,20 +751,32 @@ export async function launch({
     return keepGoing;
   }
 
-  async function runKernel(runSwingset, blockHeight, blockTime) {
+  /**
+   * Trigger the Swingset runs for this block, stopping when out of relevant
+   * work or when instructed to (whichever comes first).
+   *
+   * @param {Cranker} runSwingset
+   * @param {number} blockHeight
+   * @param {number} blockTime seconds since the POSIX epoch
+   */
+  async function processBlockActions(runSwingset, blockHeight, blockTime) {
     // First, complete leftover work, if any
-    let keepGoing = await runSwingset();
+    let keepGoing = await runSwingset('leftover');
     if (!keepGoing) return;
 
     // Then, if we have anything in the special runThisBlock queue, process
     // it and do no further work.
     if (runThisBlock.size()) {
-      await processActions(runThisBlock, runSwingset);
+      await processActions(runThisBlock, runSwingset, 'forced');
       return;
     }
 
     // Then, process as much as we can from the priorityQueue.
-    keepGoing = await processActions(highPriorityQueue, runSwingset);
+    keepGoing = await processActions(
+      highPriorityQueue,
+      runSwingset,
+      'high-priority',
+    );
     if (!keepGoing) return;
 
     // Then, update the timer device with the new external time, which might
@@ -706,11 +789,14 @@ export async function launch({
     // We must run the kernel even if nothing was added since the kernel
     // only notes state exports and updates consistency hashes when attempting
     // to perform a crank.
-    keepGoing = await runSwingset();
+    keepGoing = await runSwingset('timer');
     if (!keepGoing) return;
 
     // Finally, process as much as we can from the actionQueue.
-    await processActions(actionQueue, runSwingset);
+    await processActions(actionQueue, runSwingset, 'queued');
+
+    // Cleanup after terminated vats as allowed.
+    await runSwingset('cleanup');
   }
 
   async function endBlock(blockHeight, blockTime, params) {
@@ -728,11 +814,11 @@ export async function launch({
     // It will also run to completion any work that swingset still had pending.
     const neverStop = runThisBlock.size() > 0;
 
-    // make a runPolicy that will be shared across all cycles
-    const runPolicy = computronCounter(params.beansPerUnit, neverStop);
+    // Process the work for this block using a dedicated Cranker with a stateful
+    // run policy.
+    const runPolicy = computronCounter(params, neverStop);
     const runSwingset = makeRunSwingset(blockHeight, runPolicy);
-
-    await runKernel(runSwingset, blockHeight, blockTime);
+    await processBlockActions(runSwingset, blockHeight, blockTime);
 
     if (END_BLOCK_SPIN_MS) {
       // Introduce a busy-wait to artificially put load on the chain.
@@ -919,6 +1005,7 @@ export async function launch({
       case ActionType.AG_COSMOS_INIT: {
         allowExportCallback = true; // cleared by saveOutsideState in COMMIT_BLOCK
         const { blockHeight, isBootstrap, upgradeDetails } = action;
+        // TODO: parseParams(action.params), for validation?
 
         if (!blockNeedsExecution(blockHeight)) {
           return true;
