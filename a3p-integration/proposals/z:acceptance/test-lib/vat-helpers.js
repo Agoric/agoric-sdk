@@ -2,8 +2,7 @@ import dbOpenAmbient from 'better-sqlite3';
 import { HOME, dbTool } from '@agoric/synthetic-chain';
 
 /**
- * @file look up vat incarnation from kernel DB
- * @see {getIncarnation}
+ * @typedef {{position: number; item: string; vatID: string; incarnation: number}} TranscriptItem
  */
 
 const swingstorePath = '~/.agoric/data/agoric/swingstore.sqlite';
@@ -57,18 +56,20 @@ export const makeSwingstore = db => {
       );
     },
     lookupVat,
-    kvGetJSON,
-    sql,
     db,
   });
+};
+
+const initSwingstore = () => {
+  const fullPath = swingstorePath.replace(/^~/, HOME);
+  return makeSwingstore(dbOpenAmbient(fullPath, { readonly: true }));
 };
 
 /**
  * @param {string} vatName
  */
 export const getVatsWithSameName = async vatName => {
-  const fullPath = swingstorePath.replace(/^~/, HOME);
-  const kStore = makeSwingstore(dbOpenAmbient(fullPath, { readonly: true }));
+  const kStore = initSwingstore();
 
   const vatIDs = kStore.findVatsExact(vatName);
   const vats = vatIDs.map(id => {
@@ -81,20 +82,37 @@ export const getVatsWithSameName = async vatName => {
   return vats;
 };
 
+/**
+ *
+ * @param {string} vatId
+ * @param {number} n
+ * @returns {Array<TranscriptItem>}
+ */
 export const getTranscriptItemsForVat = (vatId, n = 10) => {
-  const fullPath = swingstorePath.replace(/^~/, HOME);
-  const { sql, db } = makeSwingstore(
-    dbOpenAmbient(fullPath, { readonly: true }),
-  );
+  const { db } = initSwingstore();
 
-  // const items = sql.get`select * from transcriptItems where vatId = ${vatId} order by position desc limit ${n}`;
   const items = db
     .prepare(
       'select * from transcriptItems where vatId = ? order by position desc limit ?',
     )
     .all(vatId, n);
-  // console.log(items);
+
+  // @ts-expect-error casting problem when assigning values coming from db
   return items;
+};
+
+export const snapshotVat = vatName => {
+  const { findVatsExact } = initSwingstore();
+
+  const snapshots = {};
+  const vatIdsWithExactName = findVatsExact(vatName);
+  vatIdsWithExactName.forEach(id => {
+    const element = getTranscriptItemsForVat(id, 1)[0];
+
+    snapshots[id] = element.position;
+  });
+
+  return snapshots;
 };
 
 export const swingStore = makeSwingstore(
