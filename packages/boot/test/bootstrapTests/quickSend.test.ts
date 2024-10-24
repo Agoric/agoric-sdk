@@ -11,7 +11,7 @@ import {
 import { buildVTransferEvent } from '@agoric/orchestration/tools/ibc-mocks.js';
 import { BridgeId } from '@agoric/internal';
 import { computronCounter } from '../../tools/computron-counter.js';
-import { WalletFactoryDriver } from '../../tools/drivers.js';
+import { type WalletFactoryDriver } from '../../tools/drivers.js';
 import {
   makeWalletFactoryContext,
   type WalletFactoryTestContext,
