@@ -15,9 +15,9 @@
     "@endo/far": "^1.1.5",
     "@endo/init": "^1.1.4",
     "ava": "^6.1.2",
+    "better-sqlite3": "11.5.0",
     "execa": "^9.3.1",
-    "tsx": "^4.17.0",
-    "better-sqlite3": "11.5.0"
+    "tsx": "^4.17.0"
   },
   "ava": {
     "concurrency": 1,

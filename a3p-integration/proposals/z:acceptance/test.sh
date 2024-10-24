@@ -26,5 +26,8 @@ echo ACCEPTANCE TESTING state sync
 echo ACCEPTANCE TESTING wallet
 yarn ava wallet.test.js
 
+echo ACCEPTANCE TESTING replaced price feeds
+yarn ava priceFeed.test.js
+
 echo ACCEPTANCE TESTING vaults
 yarn ava vaults.test.js

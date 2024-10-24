@@ -8,9 +8,12 @@ import { HOME, dbTool } from '@agoric/synthetic-chain';
 const swingstorePath = '~/.agoric/data/agoric/swingstore.sqlite';
 
 /**
+ * Initially from https://github.com/Agoric/agoric-3-proposals/blob/93bb953db209433499db08ae563942d1bf7eeb46/proposals/76%3Avaults-auctions/vatDetails.js#L36
+ * but with small modifications
+ *
  * @param {import('better-sqlite3').Database} db
  */
-export const makeSwingstore = db => {
+const makeSwingstore = db => {
   const sql = dbTool(db);
 
   /** @param {string} key */
@@ -66,23 +69,6 @@ const initSwingstore = () => {
 };
 
 /**
- * @param {string} vatName
- */
-export const getVatsWithSameName = async vatName => {
-  const kStore = initSwingstore();
-
-  const vatIDs = kStore.findVatsExact(vatName);
-  const vats = vatIDs.map(id => {
-    const vatLookup = kStore.lookupVat(id);
-    return {
-      options: vatLookup.options(),
-      currentSpan: vatLookup.currentSpan(),
-    };
-  });
-  return vats;
-};
-
-/**
  *
  * @param {string} vatId
  * @param {number} n
@@ -114,7 +100,3 @@ export const snapshotVat = vatName => {
 
   return snapshots;
 };
-
-export const swingStore = makeSwingstore(
-  dbOpenAmbient(swingstorePath.replace(/^~/, HOME), { readonly: true }),
-);
