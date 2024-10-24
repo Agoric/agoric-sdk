@@ -26,6 +26,9 @@ test.before(async t => {
     ...setup
   } = await commonSetup(t);
 
+  // example usage. comment out after first run
+  await setupSpecificKeys(SEED_PHRASES);
+
   await startContract(contractName, contractBuilder);
 
   const [brands] = await Promise.all([
@@ -76,8 +79,6 @@ const makeDoOfferHandler = async (
       callPipe: [['makeClaimTokensInvitation']],
     },
     offerArgs: makeOfferArgs(currentAccount),
-    // proof: defaultMerkleObject.getProof(currentAccount),
-    // tier: createTestTier(),
 
     proposal: {
       give: {
@@ -90,8 +91,7 @@ const makeDoOfferHandler = async (
   return { ...currentAccount, duration, wallet };
 };
 
-// Define a macro that tests API communication with a specified frequency
-const apiCommunicationMacro = async (t, addressRange = [0, 1], delay) => {
+const claimAirdropMacro = async (t, addressRange = [0, 1], delay) => {
   const [start, end] = addressRange;
   const { provisionSmartWallet, useChain, istBrand } = t.context;
   const durations = [];
@@ -133,7 +133,7 @@ test.serial(
   'makeClaimTokensInvitation offers ### start: accounts[20] || end: accounts[24] ### offer interval: 10000ms',
   async t => {
     const claimRange = [20, 24];
-    const durations = await apiCommunicationMacro(t, claimRange, 10000);
+    const durations = await claimAirdropMacro(t, claimRange, 10000);
     t.deepEqual(durations.length === 4, true);
     t.log('Durations for all calls', durations);
     console.group('################ START DURATIONS logger ##############');
@@ -150,7 +150,7 @@ test.serial(
   'makeClaimTokensInvitation offers ### start: accounts[25] || end: accounts[29] ### offer interval: 5000ms',
   async t => {
     const claimRange = [25, 29];
-    const durations = await apiCommunicationMacro(t, claimRange, 5000);
+    const durations = await claimAirdropMacro(t, claimRange, 5000);
     t.deepEqual(durations.length === 4, true);
     t.log('Durations for all calls', durations);
     console.group('################ START DURATIONS logger ##############');
