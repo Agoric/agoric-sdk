@@ -21,9 +21,9 @@ __metadata:
   linkType: hard
 
 "@endo/zip@npm:^1.0.7":
-  version: 1.0.7
-  resolution: "@endo/zip@npm:1.0.7"
-  checksum: 10c0/a1c0d155448ce877012b34c8fe8cd3a58de9eb807514c81cddeebb802ee8e552b27d8a9a40fab3f3e4c49e0cb7fea6902fa1dd12a23ff6f30b56161fc3edc1f8
+  version: 1.0.8
+  resolution: "@endo/zip@npm:1.0.8"
+  checksum: 10c0/bb74862121932cd27eef59326325c4b61671ce0962033a2ad18e6d6978a9e94bfe604dbfa8c0b039a38fa7eefc495e6a69c583c0e75929cd267979b2c65b775b
   languageName: node
   linkType: hard
 
