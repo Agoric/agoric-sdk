@@ -1,6 +1,7 @@
 /* eslint-disable no-use-before-define */
 import { Nat, isNat } from '@endo/nat';
 import { assert, Fail } from '@endo/errors';
+import { naturalCompare } from '@agoric/internal/src/natural-sort.js';
 import {
   initializeVatState,
   makeVatKeeper,
@@ -1790,41 +1791,15 @@ export default function makeKernelKeeper(
       }
     }
 
-    function compareNumbers(a, b) {
-      return Number(a - b);
-    }
-
-    function compareStrings(a, b) {
-      // natural-sort strings having a shared prefix followed by digits
-      // (e.g., 'ko42' and 'ko100')
-      const [_a, aPrefix, aDigits] = /^(\D+)(\d+)$/.exec(a) || [];
-      if (aPrefix) {
-        const [_b, bPrefix, bDigits] = /^(\D+)(\d+)$/.exec(b) || [];
-        if (bPrefix === aPrefix) {
-          return compareNumbers(aDigits, bDigits);
-        }
+    // Perform an element-by-element natural sort.
+    kernelTable.sort((a, b) => {
+      const len = Math.min(a.length, b.length);
+      for (let i = 0; i < len; i += 1) {
+        const result = naturalCompare(String(a[0]), String(b[0]));
+        if (result !== 0) return result;
       }
-
-      // otherwise use the default string ordering
-      if (a > b) {
-        return 1;
-      }
-      if (a < b) {
-        return -1;
-      }
-      return 0;
-    }
-
-    kernelTable.sort(
-      (a, b) =>
-        compareStrings(a[0], b[0]) ||
-        compareStrings(a[1], b[1]) ||
-        compareNumbers(a[2], b[2]) ||
-        compareStrings(a[3], b[3]) ||
-        compareNumbers(a[4], b[4]) ||
-        compareNumbers(a[5], b[5]) ||
-        0,
-    );
+      return a.length - b.length;
+    });
 
     const promises = [];
 
@@ -1835,7 +1810,7 @@ export default function makeKernelKeeper(
         promises.push({ id: kpid, ...getKernelPromise(kpid) });
       }
     }
-    promises.sort((a, b) => compareStrings(a.id, b.id));
+    promises.sort((a, b) => naturalCompare(a.id, b.id));
 
     const objects = [];
     const nextObjectID = Nat(BigInt(getRequired('ko.nextID')));
