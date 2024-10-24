@@ -7,8 +7,9 @@ import {
   SimpleLogRecordProcessor,
 } from '@opentelemetry/sdk-logs';
 import { readFileSync, writeFileSync } from 'fs';
-import { getResourceAttributes } from './index.js';
 import { logCreator } from './context-aware-slog.js';
+import { getResourceAttributes } from './index.js';
+import { serializeSlogObj } from './serialize-slog-obj.js';
 
 /**
  * @typedef {import('./index.js').MakeSlogSenderOptions} Options
@@ -16,12 +17,6 @@ import { logCreator } from './context-aware-slog.js';
 
 const DEFAULT_CONTEXT_FILE = 'slog-context.json';
 const FILE_ENCODING = 'utf8';
-
-const stringify = data =>
-  JSON.stringify(data, (_, value) =>
-    // eslint-disable-next-line valid-typeof
-    typeof value === BigInt.name.toLowerCase() ? Number(value) : value,
-  );
 
 /**
  * @param {string} filePath
@@ -35,7 +30,7 @@ export const getContextFilePersistenceUtils = filePath => {
      */
     persistContext: context => {
       try {
-        writeFileSync(filePath, stringify(context), FILE_ENCODING);
+        writeFileSync(filePath, serializeSlogObj(context), FILE_ENCODING);
       } catch (err) {
         console.warn('Error writing context to file: ', err);
       }
@@ -85,7 +80,7 @@ export const makeSlogSender = async options => {
   const slogSender = logCreator(
     logRecord =>
       logger.emit({
-        ...JSON.parse(stringify(logRecord)),
+        ...JSON.parse(serializeSlogObj(logRecord)),
         severityNumber: SeverityNumber.INFO,
       }),
     persistenceUtils,
