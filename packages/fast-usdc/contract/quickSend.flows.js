@@ -93,6 +93,7 @@ export const initAccounts = async (orch, ctx, seat, _offerArgs) => {
   const feeAccount = await agoric.makeAccount();
   const accts = harden({ fundingPool, settlement, feeAccount });
   const tap = ctx.makeSettleTap(accts);
+  // @ts-expect-error tap.receiveUpcall: 'Vow<void> | undefined' not assignable to 'Promise<any>'
   const registration = await settlement.monitorTransfers(tap);
 
   log('@@@what to do with registration?', registration);
