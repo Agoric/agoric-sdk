@@ -104,17 +104,20 @@ export const getBalanceFromPurse = async (address, type) => {
   return assetPurse?.balance.value.payload[0]?.[0] || null;
 };
 
-export const getAssetAmount = (brand, asset) => {
+/** @import {Brand, CopyBagAmount} from '@agoric/ertp/src/types.js'; */
+
+/**
+ * @param {Brand} brand
+ * @param {any} asset
+ * @returns {CopyBagAmount<'item'>}
+ */
+export const assetAsAmount = (brand, asset) => {
   const assetValue = makeCopyBag([[asset, 1n]]);
-  const assetAmount = AmountMath.make(
-    brand,
-    // @ts-expect-error casting
-    assetValue,
-  );
+  const assetAmount = AmountMath.make(brand, assetValue);
   return assetAmount;
 };
 
-export const getAssetPriceAmount = asset => {
+export const totalAssetPriceAmount = asset => {
   const fees = AmountMath.add(asset.platformFee, asset.royalty);
   const price = AmountMath.add(asset.askingPrice, fees);
   return price;
@@ -154,12 +157,12 @@ const unequipAllItemsOffer = async address => {
   const inventoryKeyId = kreadCharacter.keyId === 1 ? 2 : 1;
   const kreadCharacter2 = { ...kreadCharacter, keyId: inventoryKeyId };
 
-  const kreadCharacterAmount = getAssetAmount(
+  const kreadCharacterAmount = assetAsAmount(
     brands.KREAdCHARACTER,
     kreadCharacter,
   );
 
-  const kreadCharacter2Amount = getAssetAmount(
+  const kreadCharacter2Amount = assetAsAmount(
     brands.KREAdCHARACTER,
     kreadCharacter2,
   );
@@ -192,8 +195,8 @@ const buyItemOffer = async () => {
   const children = await getMarketItemsChildren();
   const marketItem = await getMarketItem(children[0]);
 
-  const itemAmount = getAssetAmount(brands.KREAdITEM, marketItem.asset);
-  const priceAmount = getAssetPriceAmount(marketItem);
+  const itemAmount = assetAsAmount(brands.KREAdITEM, marketItem.asset);
+  const priceAmount = totalAssetPriceAmount(marketItem);
 
   const id = `KREAd-buy-item-acceptance-test`;
   const body = {
@@ -226,7 +229,7 @@ const sellItemOffer = async address => {
     throw new Error('Item not found on user purse');
   }
 
-  const itemAmount = getAssetAmount(brands.KREAdITEM, kreadItem);
+  const itemAmount = assetAsAmount(brands.KREAdITEM, kreadItem);
 
   const id = `KREAd-sell-item-acceptance-test`;
   const body = {
@@ -261,11 +264,11 @@ const buyCharacterOffer = async () => {
   const rawCharacterData = await agoric.follow('-lF', path, '-o', 'text');
   const marketCharacter = marshaller.fromCapData(JSON.parse(rawCharacterData));
 
-  const kreadCharacterAmount = getAssetAmount(
+  const kreadCharacterAmount = assetAsAmount(
     brands.KREAdCHARACTER,
     marketCharacter.asset,
   );
-  const priceAmount = getAssetPriceAmount(marketCharacter);
+  const priceAmount = totalAssetPriceAmount(marketCharacter);
 
   const id = `KREAd-buy-character-acceptance-test`;
   const body = {
@@ -297,7 +300,7 @@ const sellCharacterOffer = async address => {
     throw new Error('Character not found on user purse');
   }
 
-  const kreadCharacterAmount = getAssetAmount(
+  const kreadCharacterAmount = assetAsAmount(
     brands.KREAdCHARACTER,
     kreadCharacter,
   );
