@@ -27,6 +27,15 @@ import { validateArtifactMode } from './internal.js';
  *   value?: string | null | undefined,
  * ]} KVPair
  *
+ * @typedef {{
+ *   vatID: string,
+ *   startPos: number,
+ *   endPos: number,
+ *   hash: string,
+ *   isCurrent: boolean,
+ *   incarnation: number
+ * }} SpanMetadata
+ * 
  * @typedef {object} SwingStoreExporter
  *
  * Allows export of data from a swingStore as a fixed view onto the content as
@@ -75,6 +84,14 @@ import { validateArtifactMode } from './internal.js';
  * the artifact is not available, which can occur if the artifact is historical
  * and wasn't preserved.
  *
+ * @property {(vatID: string) => AnyIterableIterator<SpanMetadata>} getSpanMetadataForVat
+ *
+ * Retrieve span metadata for a given vat.
+ * 
+ * @property {() => AnyIterableIterator<string>} getVatList
+ *
+ * Retrieve a list of vats. 
+ * 
  * @property {() => Promise<void>} close
  *
  * Dispose of all resources held by this exporter. Any further operation on this
@@ -201,6 +218,20 @@ export function makeSwingStoreExporter(dirPath, options = {}) {
     }
   }
 
+  /**
+   * @param {string} vatID
+   * @returns {AsyncIterableIterator<SpanMetadata>}
+   */
+  function getSpanMetadataForVat(vatID) {
+      return transcriptStore.exportSpanMetadataForVat(vatID);
+  }
+ 
+  /**
+   * @returns {AsyncIterableIterator<string>}
+   */
+  function getVatList() {
+    return transcriptStore.getVatList();
+}
   const sqlAbort = db.prepare('ROLLBACK');
 
   async function close() {
@@ -216,6 +247,8 @@ export function makeSwingStoreExporter(dirPath, options = {}) {
     getExportData,
     getArtifactNames,
     getArtifact,
+    getSpanMetadataForVat,
+    getVatList,
     close,
   });
 }

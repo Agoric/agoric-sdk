@@ -37,6 +37,13 @@ export const ExportManifestFileName = 'export-manifest.json';
  */
 
 /**
+ * @typedef {'skip'      // Do not include span metadata
+ *   | undefined         // Do not include span metadata
+ *   | 'all'             // Include all swing store span metadata data
+ * } SwingStoreExportSpanMetadataMode
+ */
+
+/**
  * @param {SwingStoreArtifactMode | undefined} artifactMode
  * @returns {import('@agoric/swing-store').ArtifactMode}
  */
@@ -83,6 +90,22 @@ export const checkExportDataMode = (mode, isImport = false) => {
 };
 
 /**
+ * @param {string | undefined} mode
+ * @returns {asserts mode is SwingStoreExportSpanMetadataMode | undefined}
+ */
+export const checkExportSpanMetadataMode= (mode) => {
+  switch (mode) {
+    case 'skip':
+    case undefined:
+      break;
+    case 'all':
+      break;
+    default:
+      throw Fail`Invalid value ${q(mode)} for "export-span-metadata-mode"`;
+  }
+};
+
+/**
  * A state-sync manifest is a representation of the information contained in a
  * swingStore export for a given block.
  *
@@ -115,6 +138,7 @@ export const checkExportDataMode = (mode, isImport = false) => {
  * @property {number} [blockHeight] block height to check for
  * @property {SwingStoreArtifactMode} [artifactMode] the level of artifacts to include in the export
  * @property {SwingStoreExportDataMode} [exportDataMode] include a synthetic artifact for the export data in the export
+ * @property {SwingStoreExportSpanMetadataMode} [exportSpanMetadataMode] include a synthetic artifact for the span metadata in the export 
  */
 
 /**
@@ -148,7 +172,7 @@ export const validateExporterOptions = options => {
  * @returns {StateSyncExporter}
  */
 export const initiateSwingStoreExport = (
-  { stateDir, exportDir, blockHeight, artifactMode, exportDataMode },
+  { stateDir, exportDir, blockHeight, artifactMode, exportDataMode, exportSpanMetadataMode },
   {
     fs: { open, writeFile },
     pathResolve,
@@ -215,6 +239,19 @@ export const initiateSwingStoreExport = (
       }
 
       manifest.data = fileName;
+    }
+    abortIfStopped();
+
+    if (exportSpanMetadataMode === 'all') {
+      log?.(`Writing Span Metadata`);
+      for await (const vatID of swingStoreExporter.getVatList()) {
+        const fileName = `spans.${vatID}.jsonl`;
+        const exportDataFile = await open(pathResolve(exportDir, fileName), 'wx');
+        cleanup.push(async () => exportDataFile.close());
+        for await (const entry of swingStoreExporter.getSpanMetadataForVat(vatID)) {
+          await exportDataFile.write(`${JSON.stringify(entry)}\n`);
+        }
+      }
     }
     abortIfStopped();
 
@@ -316,6 +353,9 @@ export const main = async (
   const exportDataMode = processValue.getFlag('export-data-mode');
   checkExportDataMode(exportDataMode);
 
+  const exportSpanMetadataMode = processValue.getFlag('export-span-metadata-mode');
+  checkExportSpanMetadataMode(exportSpanMetadataMode);
+
   if (
     processValue.getBoolean({ flagName: 'include-export-data' }) !== undefined
   ) {
@@ -342,6 +382,7 @@ export const main = async (
       blockHeight: checkBlockHeight,
       artifactMode,
       exportDataMode,
+      exportSpanMetadataMode,
     },
     {
       fs,
@@ -382,7 +423,7 @@ export const main = async (
  * @returns {StateSyncExporter}
  */
 export const spawnSwingStoreExport = (
-  { stateDir, exportDir, blockHeight, artifactMode, exportDataMode },
+  { stateDir, exportDir, blockHeight, artifactMode, exportDataMode, exportSpanMetadataMode },
   { fork, verbose },
 ) => {
   const args = ['--state-dir', stateDir, '--export-dir', exportDir];
@@ -397,6 +438,10 @@ export const spawnSwingStoreExport = (
 
   if (exportDataMode) {
     args.push('--export-data-mode', exportDataMode);
+  }
+
+  if (exportSpanMetadataMode) {
+    args.push('--export-span-metadata-mode', exportSpanMetadataMode);
   }
 
   if (verbose) {

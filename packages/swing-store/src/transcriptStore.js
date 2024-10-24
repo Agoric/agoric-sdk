@@ -25,9 +25,20 @@ import { createSHA256 } from './hasher.js';
  * }} TranscriptStore
  *
  * @typedef {{
- *   exportSpan: (name: string) => AsyncIterableIterator<Uint8Array>
+ *   vatID: string,
+ *   startPos: number,
+ *   endPos: number,
+ *   hash: string,
+ *   isCurrent: boolean,
+ *   incarnation: number,
+ * }} SpanMetadata
+ * 
+ * @typedef {{
+ *   exportSpan: (name: string) => AsyncIterableIterator<Uint8Array>,
+ *   exportSpanMetadataForVat: (vatID: string) => AsyncIterableIterator<SpanMetadata>,
  *   getExportRecords: (includeHistorical: boolean) => IterableIterator<readonly [key: string, value: string]>,
  *   getArtifactNames: (artifactMode: ArtifactMode) => AsyncIterableIterator<string>,
+ *   getVatList: () => AsyncIterableIterator<string>,
  *   importTranscriptSpanRecord: (key: string, value: string) => void,
  *   populateTranscriptSpan: (name: string, makeChunkIterator: () => AnyIterableIterator<Uint8Array>, options: { artifactMode: ArtifactMode }) => Promise<void>,
  *   assertComplete: (checkMode: Omit<ArtifactMode, 'debug'>) => void,
@@ -181,10 +192,53 @@ export function makeTranscriptStore(
     }
   }
 
+ /**
+  * @returns {SpanMetadata}
+  */
   function spanRec(vatID, startPos, endPos, hash, isCurrent, incarnation) {
     isCurrent = isCurrent ? 1 : 0;
     return { vatID, startPos, endPos, hash, isCurrent, incarnation };
   }
+
+  const sqlGetSpanMetadataForVat = db.prepare(`
+    SELECT vatID, startPos, endPos, hash, isCurrent, incarnation
+      FROM transcriptSpans
+      WHERE vatID = ?
+      ORDER BY startPos ASC
+  `);
+
+  /**
+   * Return async iterator of span metadata records for a vat.
+   *
+   * @param {string} vatID  vat ID in 'vXX' format
+   *
+   * @yields {AsyncIterableIterator<SpanMetadata>}  span metadata records.
+   */
+  async function* exportSpanMetadataForVat(vatID) {
+    for (const row of sqlGetSpanMetadataForVat.iterate(vatID)) {
+      yield dbRecToExportRec(row);
+    }
+  }
+  harden(exportSpanMetadataForVat);
+
+  const sqlGetVatList = db.prepare(`
+    SELECT DISTINCT vatID
+      FROM transcriptSpans
+      ORDER BY vatID ASC
+  `);
+  sqlGetVatList.pluck();
+
+  /**
+   * Return async iterator of vatIDs .
+   *
+   * @yields {AsyncIterableIterator<string>}  vatID list.
+   */
+  async function* getVatList() {
+    for (const vatID of sqlGetVatList.iterate()) {
+      yield vatID;
+    }
+  }
+  harden(getVatList);
 
   /**
    * Compute a new cumulative hash for a span that includes a new transcript
@@ -917,8 +971,10 @@ export function makeTranscriptStore(
     deleteVatTranscripts,
 
     exportSpan,
+    exportSpanMetadataForVat,
     getExportRecords,
     getArtifactNames,
+    getVatList,
 
     importTranscriptSpanRecord,
     populateTranscriptSpan,
