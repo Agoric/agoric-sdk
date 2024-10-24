@@ -2,7 +2,7 @@ import { Fail } from '@endo/errors';
 
 /**
  * @import {IBCConnectionID} from '@agoric/vats';
- * @import {ChainAddress} from '../types.js';
+ * @import {ChainAddress} from '@agoric/orchestration';
  * @import {RemoteIbcAddress} from '@agoric/vats/tools/ibc-utils.js';
  */
 
@@ -84,3 +84,22 @@ export const findAddressField = remoteAddressString => {
   }
 };
 harden(findAddressField);
+
+export const AgoricCalc = harden({
+  /**
+   * @param {string} base
+   * @param {string} supplemental
+   */
+  virtualAddressFor: (base, supplemental) => {
+    assert.typeof(base, 'string');
+    assert.typeof(supplemental, 'string');
+    return `${base}+${supplemental}`;
+  },
+  isVirtualAddress: addr => addr.includes('+'),
+  virtualAddressParts: addr => addr.split('+'), // XXX 1st split only
+});
+
+export const NobleCalc = harden({
+  // XXX mock only
+  fwdAddressFor: dest => `noble1${dest.length}${dest.slice(-4)}`,
+});
