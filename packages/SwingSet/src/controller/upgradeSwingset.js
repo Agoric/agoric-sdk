@@ -3,7 +3,10 @@ import {
   DEFAULT_GC_KREFS_PER_BOYD,
   getAllDynamicVats,
   getAllStaticVats,
+  incrementReferenceCount,
+  addToQueue,
 } from '../kernel/state/kernelKeeper.js';
+import { enumeratePrefixedKeys } from '../kernel/state/storageHelper.js';
 
 const upgradeVatV0toV1 = (kvStore, defaultReapDirtThreshold, vatID) => {
   // This is called, once per vat, when upgradeSwingset migrates from
@@ -202,6 +205,154 @@ export const upgradeSwingset = kernelStorage => {
     kvStore.set('vats.terminated', JSON.stringify([]));
     modified = true;
     version = 2;
+  }
+
+  if (version < 3) {
+    // v3 means that we've completed remediation for bug #9039
+    console.log(`Starting remediation of bug #9039`);
+
+    // find all terminated vats
+    const terminated = new Set(JSON.parse(getRequired('vats.terminated')));
+
+    // find all live vats
+    const allVatIDs = [];
+    for (const [_name, vatID] of getAllStaticVats(kvStore)) {
+      if (!terminated.has(vatID)) {
+        allVatIDs.push(vatID);
+      }
+    }
+    for (const vatID of getAllDynamicVats(getRequired)) {
+      if (!terminated.has(vatID)) {
+        allVatIDs.push(vatID);
+      }
+    }
+
+    // find all pending notifies
+    const notifies = new Map(); // .get(kpid) = [vatIDs..];
+    const [runHead, runTail] = JSON.parse(getRequired('runQueue'));
+    for (let p = runHead; p < runTail; p += 1) {
+      const rq = JSON.parse(getRequired(`runQueue.${p}`));
+      if (rq.type === 'notify') {
+        const { vatID, kpid } = rq;
+        assert(vatID);
+        assert(kpid);
+        if (!notifies.has(kpid)) {
+          notifies.set(kpid, []);
+        }
+        notifies.get(kpid).push(vatID);
+      }
+    }
+    const [accHead, accTail] = JSON.parse(getRequired('acceptanceQueue'));
+    for (let p = accHead; p < accTail; p += 1) {
+      const rq = JSON.parse(getRequired(`acceptanceQueue.${p}`));
+      if (rq.type === 'notify') {
+        const { vatID, kpid } = rq;
+        assert(vatID);
+        assert(kpid);
+        if (!notifies.has(kpid)) {
+          notifies.set(kpid, []);
+        }
+        notifies.get(kpid).push(vatID);
+      }
+    }
+    console.log(` - pending notifies:`, notifies);
+
+    // cache of known-settled kpids: will grow to num(kpids)
+    const settledKPIDs = new Set();
+    const nonSettledKPIDs = new Set();
+    const isSettled = kpid => {
+      if (settledKPIDs.has(kpid)) {
+        return true;
+      }
+      if (nonSettledKPIDs.has(kpid)) {
+        return false;
+      }
+      const state = kvStore.get(`${kpid}.state`);
+      // missing state means the kpid is deleted somehow, shouldn't happen
+      assert(state, `${kpid}.state is missing`);
+      if (state === 'unresolved') {
+        nonSettledKPIDs.add(kpid);
+        return false;
+      }
+      settledKPIDs.add(kpid);
+      return true;
+    };
+
+    // walk vNN.c.kpNN for all vats, for each one check the
+    // kpNN.state, for the settled ones check for a pending notify,
+    // record the ones without a pending notify
+
+    const buggyKPIDs = []; // [kpid, vatID]
+    for (const vatID of allVatIDs) {
+      const prefix = `${vatID}.c.`;
+      const len = prefix.length;
+      const ckpPrefix = `${vatID}.c.kp`;
+      for (const key of enumeratePrefixedKeys(kvStore, ckpPrefix)) {
+        const kpid = key.slice(len);
+        if (isSettled(kpid)) {
+          const n = notifies.get(kpid);
+          if (!n || !n.includes(vatID)) {
+            // there is no pending notify
+            buggyKPIDs.push([kpid, vatID]);
+          }
+        }
+      }
+    }
+    console.log(` - found ${buggyKPIDs.length} buggy kpids, enqueueing fixes`);
+
+    // now fix it. The bug means we failed to delete the c-list entry
+    // and decref it back when the promise was rejected. That decref
+    // would have pushed the kpid onto maybeFreeKrefs, which would
+    // have triggered a refcount check at end-of-crank, which might
+    // have deleted the promise records (if nothing else was
+    // referencing the promise, like arguments in messages enqueued to
+    // unresolved promises, or something transient on the
+    // run-queue). Deleting those promise records might have decreffed
+    // krefs in the rejection data (although in general 9039 rejects
+    // those promises with non-slot-bearing DisconnectionObjects).
+    //
+    // To avoid duplicating a lot of kernel code inside this upgrade
+    // handler, we do the simplest possible thing: enqueue a notify to
+    // the upgraded vat for all these leftover promises. The new vat
+    // incarnation will ignore it (they don't recognize the vpid), but
+    // the dispatch.notify() delivery will clear the c-list and decref
+    // the kpid, and will trigger all the usual GC work. Note that
+    // these notifies will be delivered before any activity the host
+    // app might trigger for e.g. a chain upgrade, but they should not
+    // cause userspace-visible behavior (non-slot-bearing rejection
+    // data means no other vat will even get a gc-action delivery:
+    // only the upgraded vat will see anything, and those deliveries
+    // won't make it past liveslots).
+
+    const kernelStats = JSON.parse(getRequired('kernelStats'));
+    // copied from kernel/state/stats.js, awkward to factor out
+    const incStat = (stat, delta = 1) => {
+      assert.equal(stat, 'acceptanceQueueLength');
+      kernelStats[stat] += delta;
+      const maxStat = `${stat}Max`;
+      if (
+        kernelStats[maxStat] !== undefined &&
+        kernelStats[stat] > kernelStats[maxStat]
+      ) {
+        kernelStats[maxStat] = kernelStats[stat];
+      }
+      const upStat = `${stat}Up`;
+      if (kernelStats[upStat] !== undefined) {
+        kernelStats[upStat] += delta;
+      }
+    };
+
+    for (const [kpid, vatID] of buggyKPIDs) {
+      const m = harden({ type: 'notify', vatID, kpid });
+      incrementReferenceCount(getRequired, kvStore, kpid, `enq|notify`);
+      addToQueue('acceptanceQueue', m, getRequired, kvStore, incStat);
+    }
+
+    kvStore.set('kernelStats', JSON.stringify(kernelStats));
+
+    console.log(` - #9039 remediation complete`);
+    modified = true;
+    version = 3;
   }
 
   if (modified) {
