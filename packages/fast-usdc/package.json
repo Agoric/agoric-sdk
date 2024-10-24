@@ -27,7 +27,6 @@
     "ts-blank-space": "^0.4.1"
   },
   "dependencies": {
-    "agoric": "^0.21.1",
     "commander": "^12.1.0"
   },
   "ava": {
