@@ -93,6 +93,7 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
   const initAccounts = tools.orchestrate(
     'initAccounts',
     { terms, chainHub, makeSettleTap, makeWatcherCont, t },
+    // @ts-expect-error HALP! monster error around ctx
     flows.initAccounts,
   );
 
