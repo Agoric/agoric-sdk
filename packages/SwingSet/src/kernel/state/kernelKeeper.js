@@ -967,6 +967,7 @@ export default function makeKernelKeeper(
     const work = {
       exports: 0,
       imports: 0,
+      promises: 0,
       kv: 0,
       snapshots: 0,
       transcripts: 0,
@@ -991,6 +992,7 @@ export default function makeKernelKeeper(
     const clistPrefix = `${vatID}.c.`;
     const exportPrefix = `${clistPrefix}o+`;
     const importPrefix = `${clistPrefix}o-`;
+    const promisePrefix = `${clistPrefix}p`;
 
     // Note: ASCII order is "+,-./", and we rely upon this to split the
     // keyspace into the various o+NN/o-NN/etc spaces. If we were using a
@@ -1043,8 +1045,22 @@ export default function makeKernelKeeper(
       }
     }
 
-    // the caller used enumeratePromisesByDecider() before calling us,
-    // so they already know the orphaned promises to reject
+    // The caller used enumeratePromisesByDecider() before calling us,
+    // so they have already rejected the orphan promises, but those
+    // kpids are still present in the dead vat's c-list. Clean those
+    // up now.
+    remaining = budget.promises ?? budget.default;
+    for (const k of enumeratePrefixedKeys(kvStore, promisePrefix)) {
+      const kref = kvStore.get(k) || Fail`getNextKey ensures get`;
+      const vref = stripPrefix(clistPrefix, k);
+      vatKeeper.deleteCListEntry(kref, vref);
+      // that will also delete both db keys
+      work.promises += 1;
+      remaining -= 1;
+      if (remaining <= 0) {
+        return { done: false, work };
+      }
+    }
 
     // now loop back through everything and delete it all
     remaining = budget.kv ?? budget.default;
