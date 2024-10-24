@@ -5,11 +5,18 @@ import { ibcTransfer } from './cosmoverse-mock.js';
 /**
  * @import {Remote} from '@agoric/vow';
  * @import {OrchestrationAccount} from '@agoric/orchestration';
+ * @import {LocalAccountMethods} from '@agoric/orchestration';
+ * @import {TargetRegistration} from '@agoric/vats/src/bridge-target.js';
+ * @import {CosmosChain} from './cosmoverse-mock.js';
+ * @import {ExecutionContext as AvaT} from 'ava';
  */
 
 /**
- * @param {any} t
- * @param {Record<string, import('./cosmoverse-mock.js').CosmosChain>} chains
+ * @param {AvaT<any>} t
+ * @param {{
+ *  agoric: ReturnType<typeof withVTransfer>
+ *  } & Record<string, CosmosChain>
+ * } chains
  * @param {{ brand: Brand; denom: string }[]} assetInfo
  */
 export const makeOrchestration = (t, chains, assetInfo) => {
@@ -18,8 +25,11 @@ export const makeOrchestration = (t, chains, assetInfo) => {
   /** @returns {Promise<OrchestrationAccount<any>>} */
   const makeAccount = async () => {
     const addr = await chains.agoric.makeAccount();
+    // @ts-expect-error only some methods are mocked
     return harden({
+      /** @type {OrchestrationAccount<any>['getAddress']} */
       getAddress: () => ({ value: addr, chainId: 'agoric3', encoding }),
+      /** @type {OrchestrationAccount<any>['getPublicTopics']} */
       getPublicTopics: async () => ({
         account: {
           subscriber: {
@@ -34,16 +44,19 @@ export const makeOrchestration = (t, chains, assetInfo) => {
           storagePath: 'XXX',
         },
       }),
+      /** @type {OrchestrationAccount<any>['transfer']} */
       transfer: async (dest, { value: amount }) => {
         t.log(next(), 'orch acct', addr, 'txfr', amount, 'to', dest.value);
         await ibcTransfer(chains, { amount, dest: dest.value, from: addr, t });
       },
+      /** @type {OrchestrationAccount<any>['send']} */
       send: async (dest, { value: amount }) => {
         t.log(next(), 'orch acct', addr, 'send', amount, 'to', dest.value);
         await chains.agoric.send({ amount, dest: dest.value, from: addr });
       },
-      monitorTransfers: async handler => {
-        await chains.agoric.register({ addr, handler });
+      /** @type {LocalAccountMethods['monitorTransfers']} */
+      monitorTransfers: async tap => {
+        return chains.agoric.register({ addr, tap });
       },
     });
   };
@@ -75,14 +88,26 @@ export const makeVStorage = () => {
 
 const mkEvent = data => ({ packet: { data: btoa(JSON.stringify(data)) } });
 
+/**
+ * @param {CosmosChain} chain
+ * @param {AvaT} t
+ */
 export const withVTransfer = (chain, t) => {
   const addrToTap = new Map();
   return harden({
     ...chain,
-    register: async ({ addr, handler }) => {
-      t.log('vtransfer register', { addr, handler });
+    /**
+     * @param {{addr: string, tap: {receiveUpcall: (obj: any) => Promise<any>}}} param0
+     * @returns {Promise<TargetRegistration>}
+     */
+    register: async ({ addr, tap }) => {
+      t.log('vtransfer register', { addr, tap });
       !addrToTap.has(addr) || assert.fail('already registered');
-      addrToTap.set(addr, handler);
+      addrToTap.set(addr, tap);
+      return harden({
+        revoke: async () => {},
+        updateTargetApp: async () => {},
+      });
     },
     send: async ({ amount, from, dest }) => {
       const [agAddr, extra] = AgoricCalc.isVirtualAddress(dest)
