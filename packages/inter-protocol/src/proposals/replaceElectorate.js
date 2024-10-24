@@ -322,7 +322,7 @@ const startNewEconCharter = async ({
  *   been successfully added to the economic charter
  */
 const addGovernorsToEconCharter = async (
-  { consume: { psmKit, governedContractKits } },
+  { consume: { psmKit, governedContractKits, auctioneerKit } },
   { options: { econCharterKit } },
 ) => {
   const { creatorFacet: ecCreatorFacet } = E.get(econCharterKit);
@@ -334,13 +334,27 @@ const addGovernorsToEconCharter = async (
   }
 
   const governedContractKitMap = await governedContractKits;
-
+  const auctioneerKitObject = await auctioneerKit;
   for (const {
     instance,
     governorCreatorFacet,
     label,
   } of governedContractKitMap.values()) {
-    await E(ecCreatorFacet).addInstance(instance, governorCreatorFacet, label);
+    // `governedContractKitMap` has an old version of the auctioneer kit
+    // so using `auctioneerKit` instead
+    if (label === 'auctioneer') {
+      await E(ecCreatorFacet).addInstance(
+        auctioneerKitObject.instance,
+        auctioneerKitObject.governorCreatorFacet,
+        label,
+      );
+    } else {
+      await E(ecCreatorFacet).addInstance(
+        instance,
+        governorCreatorFacet,
+        label,
+      );
+    }
   }
 };
 
@@ -448,6 +462,7 @@ export const getManifestForReplaceAllElectorates = async (
         psmKit: true,
         governedContractKits: true,
         chainStorage: true,
+        auctioneerKit: true,
         highPrioritySendersManager: true,
         namesByAddressAdmin: true,
         // Rest of these are designed to be widely shared
