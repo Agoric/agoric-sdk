@@ -1888,14 +1888,13 @@ export default function makeKernelKeeper(
     }
 
     // Perform an element-by-element natural sort.
-    kernelTable.sort((a, b) => {
-      const len = Math.min(a.length, b.length);
-      for (let i = 0; i < len; i += 1) {
-        const result = naturalCompare(String(a[0]), String(b[0]));
-        if (result !== 0) return result;
-      }
-      return a.length - b.length;
-    });
+    kernelTable.sort(
+      (a, b) =>
+        naturalCompare(a[0], b[0]) ||
+        naturalCompare(a[1], b[1]) ||
+        naturalCompare(a[2], b[2]) ||
+        0,
+    );
 
     const promises = [];
 
