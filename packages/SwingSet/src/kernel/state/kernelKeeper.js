@@ -288,6 +288,13 @@ export const addToQueue = (queue, item, getRequired, kvStore, incStat) => {
   incStat(`${queue}Length`);
 };
 
+export function* readQueue(queue, getRequired) {
+  const [head, tail] = JSON.parse(getRequired(`${queue}`));
+  for (let i = head; i < tail; i += 1) {
+    yield JSON.parse(getRequired(`${queue}.${i}`));
+  }
+}
+
 // we use different starting index values for the various vNN/koNN/kdNN/kpNN
 // slots, to reduce confusing overlap when looking at debug messages (e.g.
 // seeing both kp1 and ko1, which are completely unrelated despite having the
@@ -461,14 +468,7 @@ export default function makeKernelKeeper(
     return tail - head;
   }
 
-  function dumpQueue(queue) {
-    const [head, tail] = JSON.parse(getRequired(`${queue}`));
-    const result = [];
-    for (let i = head; i < tail; i += 1) {
-      result.push(JSON.parse(getRequired(`${queue}.${i}`)));
-    }
-    return result;
-  }
+  const dumpQueue = queue => [...readQueue(queue, getRequired)];
 
   /**
    * @param {InternalKernelOptions} kernelOptions

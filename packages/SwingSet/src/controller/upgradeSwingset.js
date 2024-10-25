@@ -6,6 +6,7 @@ import {
   getAllStaticVats,
   incrementReferenceCount,
   addToQueue,
+  readQueue,
 } from '../kernel/state/kernelKeeper.js';
 import { enumeratePrefixedKeys } from '../kernel/state/storageHelper.js';
 
@@ -230,55 +231,35 @@ export const upgradeSwingset = kernelStorage => {
 
     // find all pending notifies
     const notifies = new Map(); // .get(kpid) = [vatIDs..];
-    const [runHead, runTail] = JSON.parse(getRequired('runQueue'));
-    for (let p = runHead; p < runTail; p += 1) {
-      const rq = JSON.parse(getRequired(`runQueue.${p}`));
-      if (rq.type === 'notify') {
-        const { vatID, kpid } = rq;
-        assert(vatID);
-        assert(kpid);
-        let vats = notifies.get(kpid);
-        if (!vats) {
-          vats = [];
-          notifies.set(kpid, vats);
+    for (const name of ['runQueue', 'acceptanceQueue']) {
+      for (const rq of readQueue(name, getRequired)) {
+        if (rq.type === 'notify') {
+          const { vatID, kpid } = rq;
+          assert(vatID);
+          assert(kpid);
+          let vats = notifies.get(kpid);
+          if (!vats) {
+            vats = [];
+            notifies.set(kpid, vats);
+          }
+          vats.push(vatID);
         }
-        vats.push(vatID);
-      }
-    }
-    const [accHead, accTail] = JSON.parse(getRequired('acceptanceQueue'));
-    for (let p = accHead; p < accTail; p += 1) {
-      const rq = JSON.parse(getRequired(`acceptanceQueue.${p}`));
-      if (rq.type === 'notify') {
-        const { vatID, kpid } = rq;
-        assert(vatID);
-        assert(kpid);
-        if (!notifies.has(kpid)) {
-          notifies.set(kpid, []);
-        }
-        notifies.get(kpid).push(vatID);
       }
     }
     console.log(` - pending notifies:`, notifies);
 
     // cache of known-settled kpids: will grow to num(kpids)
-    const settledKPIDs = new Set();
-    const nonSettledKPIDs = new Set();
+    const KPIDStatus = new Map();
     const isSettled = kpid => {
-      if (settledKPIDs.has(kpid)) {
-        return true;
-      }
-      if (nonSettledKPIDs.has(kpid)) {
-        return false;
+      if (KPIDStatus.has(kpid)) {
+        return KPIDStatus.get(kpid);
       }
       const state = kvStore.get(`${kpid}.state`);
       // missing state means the kpid is deleted somehow, shouldn't happen
       state || Fail`${kpid}.state is missing`;
-      if (state === 'unresolved') {
-        nonSettledKPIDs.add(kpid);
-        return false;
-      }
-      settledKPIDs.add(kpid);
-      return true;
+      const settled = state !== 'unresolved';
+      KPIDStatus.set(kpid, settled);
+      return settled;
     };
 
     // walk vNN.c.kpNN for all vats, for each one check the
