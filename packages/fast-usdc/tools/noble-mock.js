@@ -1,6 +1,10 @@
 import { NobleCalc } from '@agoric/orchestration/src/utils/address.js';
 import { ibcTransfer } from './cosmoverse-mock.js';
 
+/**
+ * @import {EthEvent} from './eth-mock.js';
+ */
+
 export const withForwarding = (chain, chains, t) => {
   const destOf = new Map();
   const { nextLabel: next } = t.context;
@@ -27,8 +31,19 @@ export const makeCCTP = ({ t, usdc, noble, events }) => {
   return harden({
     bridge: (msg, { dest, amount: aNumeral }) => {
       t.regex(dest, /^noble/);
-      t.log(next(), 'cctp.bridge:', { msg, dest });
+
       const amount = BigInt(aNumeral);
+      /** @type {Omit<EthEvent, 'transactionHash'>} */
+      const event = {
+        eventName: 'DepositForBurn',
+        args: {
+          amount,
+          mintRecipient: dest, // TODO: hex
+        },
+        // caller adds txHash
+      };
+
+      t.log(next(), 'cctp.bridge:', { msg, dest });
       usdc.transfer(msg, '0x0000', amount); // burn
       const t0 = events.getCurrent();
       void (async () => {
@@ -38,6 +53,8 @@ export const makeCCTP = ({ t, usdc, noble, events }) => {
         }
         noble.send({ amount, from: 'noble1mint', dest });
       })();
+
+      return [event];
     },
   });
 };

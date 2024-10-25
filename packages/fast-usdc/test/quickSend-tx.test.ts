@@ -14,7 +14,7 @@ import { objectMap } from '@endo/patterns';
 import { createRequire } from 'node:module';
 import type { QuickSendTerms } from '../contract/quickSend.contract.js';
 import { contract as contractFn } from '../contract/quickSend.contract.js';
-import type { CallDetails } from '../contract/quickSend.flows.js';
+import type { CCTPTxEvidence } from '../contract/client-types.js';
 import {
   makeOrchestration,
   makeVStorage,
@@ -40,6 +40,12 @@ const todo = () => assert.fail('TODO');
 const logged = (it, label) => {
   console.debug(label, it);
   return it;
+};
+
+type CallDetails = {
+  amount: NatValue;
+  dest: ChainAddress;
+  nobleFwd: `noble1${string}`;
 };
 
 test.before(async t => {
@@ -154,23 +160,39 @@ const makeAgoricWatcher = ({
   let done = false;
 
   const { nextLabel: next } = t.context;
-  const check = async height => {
+  const check = async (height: number) => {
     await null;
-    const txs = await ethereum.getBlock(height);
-    t.log('watcher found', txs.length, 'txs at height', height);
-    for (const tx of txs) {
+    const block = await ethereum.getBlock(height);
+    const { events } = block;
+    t.log('watcher found', events.length, 'events at height', height);
+    for (const ev of events) {
       if (done) break;
-      if (tx.contractAddress !== cctpAddr) break;
-      const [{ dest, amount }] = tx.args;
+      if (ev.address !== cctpAddr) break;
+      const { mintRecipient, amount } = ev.args;
       const ix = pending.findIndex(
-        item => item.nobleFwd === dest && item.amount === BigInt(amount),
+        item => item.nobleFwd === mintRecipient && item.amount === amount,
       );
       if (ix < 0) continue;
       const item = pending[ix];
       pending.splice(ix, 1);
-      t.log(next(), 'watcher checked', tx.txId);
+      t.log(next(), 'watcher checked', ev.transactionHash);
       t.log(next(), 'watcher confirmed', item);
-      await watcherFacet.actions.handleCCTPCall(item); // TODO: continuing offerSpec
+
+      const evidence: CCTPTxEvidence = {
+        tx: {
+          amount: item.amount,
+          forwardingAddress: item.nobleFwd,
+        },
+        txHash: ev.transactionHash,
+        aux: {
+          forwardingChannel: 'channel-999', // not used???
+          recipientAddress: item.dest.value,
+        },
+        blockHash: block.blockHash,
+        blockNumber: block.blockNumber,
+        blockTimestamp: block.timeStamp,
+      };
+      await watcherFacet.actions.handleCCTPCall(evidence); // TODO: continuing offerSpec
     }
   };
 
