@@ -144,6 +144,7 @@ class Run:
         self.is_upgrade = bool(upgrade)
 
         self.classification = None
+        self.details = None
         self.is_continuation = self.run_num == 0 and not self.is_upgrade
         if self.is_continuation:
             self.classification = "continuation"
@@ -173,7 +174,9 @@ class Run:
             if not self.first_delivery:
                 self.first_delivery = d
                 if not self.is_continuation:
-                    self.classification = classify(self.bridge_inbound, d)
+                    (klass, details) = classify(self.bridge_inbound, d)
+                    self.classification = klass
+                    self.details = details
         if type == "deliver-result":
             self._deliver_result = d
             elapsed = d["time"] - self._deliver["time"]
@@ -322,6 +325,8 @@ class ContinuedRuns:
         self._data = {
             "runids": runids,
             "class": runs[0].classification,
+            "details": runs[0].details,
+            "block": runs[0].block_height,
             "blockTime": runs[0].block_time,
             "normal": normal,
             "GC": GC,
@@ -390,4 +395,9 @@ for continued_run in continued_runs_iter:
 
 # lz4cat run-58-chain.slog.lz4 |python3 ~/stuff/agoric/trees/agoric-sdk/packages/SwingSet/misc-tools/filter-slog.py cosmic-swingset- deliver heap-snapshot- vat-startup- =start-replay =finish-replay =create-vat |gzip >slog-filtered.gz
 # gzcat slog-filtered.gz |python3 ~/stuff/agoric/trees/agoric-sdk/packages/SwingSet/misc-tools/classify-runs-new.py >continued-runs.new
-# for c in `cat continued-runs.new | jq -r '.classification' |sort |uniq`; do echo $c; cat continued-runs.new |jq -c "select(.classification==\"${c}\")" >classes/${c}.jsonl; done
+# (gzcat ~/stuff/agoric/mainnet-logs/agreeable/run-5[012]/run-*-chain.slog.gz; lz4cat ~/stuff/agoric/mainnet-logs/agreeable/run-5[345678]/run-*-chain.slog.lz4) | python3 ~/stuff/agoric/trees/agoric-sdk/packages/SwingSet/misc-tools/classify-runs-new.py >runs-50-58.jsonl
+
+## for c in `cat continued-runs.new | jq -r '.classification' |sort |uniq`; do echo $c; cat continued-runs.new |jq -c "select(.classification==\"${c}\")" >classes/${c}.jsonl; done
+# cat runs-5* | jq -r '.class' |sort |uniq >classes.txt
+# for c in `cat classes.txt`; do echo $c; cat runs-5*.jsonl |jq -c "select(.class==\"${c}\")" >classes/${c}.jsonl; done
+

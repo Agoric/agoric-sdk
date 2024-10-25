@@ -32,6 +32,7 @@ vbank_addresses = defaultdict(int)
 
 def classify(bridge_inbound, first_delivery):
     #print("-classify", bool(bridge_inbound))
+    details = {}
     source = None
     if bridge_inbound:
         inbound_num = bridge_inbound["inboundNum"]
@@ -43,7 +44,7 @@ def classify(bridge_inbound, first_delivery):
     if not bridge_inbound:
         if (first_delivery["vatID"] == "v2" and
             "bundleInstalled" in first_delivery["kd"][2]["methargs"]["body"]):
-            return "bundle-installed"
+            return ("bundle-installed", details)
         if (first_delivery["vatID"] != "v5" or
             first_delivery["kd"][0] != "message" or
             first_delivery["kd"][1] != "ko296" or
@@ -52,7 +53,7 @@ def classify(bridge_inbound, first_delivery):
             print(first_delivery, file=sys.stderr)
             # might be an upgrade run without any installed bundles
             raise RuntimeError()
-        return "timer"
+        return ("timer", details)
     methargs = json.loads(first_delivery["kd"][2]["methargs"]["body"][1:])
     method, args = methargs
     if source == "bank":
@@ -62,19 +63,20 @@ def classify(bridge_inbound, first_delivery):
             print(first_delivery, file=sys.stderr)
             raise RuntimeError()
         addresses = [update["address"] for update in args[1]["updated"]]
+        details["addresses"] = addresses
         for addr in addresses:
             vbank_addresses[addr] += 1
-        return "vbank-balance-update"
+        return ("vbank-balance-update", details)
     if source == "provision":
         if (args[0] != "provision" or
             args[1]["type"] != "PLEASE_PROVISION"):
             print("provision but not PLEASE_PROVISION", file=sys.stderr)
             raise RuntimeError()
-        address = args[1]["address"]
-        return "provision"
+        details["address"] = args[1]["address"]
+        return ("provision", details)
     if source == "wallet":
         action = args[1]
-        owner = action["owner"]
+        details["owner"] = action["owner"]
         sa_body = json.loads(action["spendAction"])["body"]
         if sa_body[0] == "#":
             spend_action = json.loads(sa_body[1:]) # smallcaps
@@ -106,66 +108,66 @@ def classify(bridge_inbound, first_delivery):
 
             if invitation_maker_name: # source="continuing"
                 if invitation_maker_name == "PushPrice":
-                    return "push-price"
+                    return ("push-price", details)
                 elif invitation_maker_name == "AdjustBalances":
-                    return "adjust-balances"
+                    return ("adjust-balances", details)
                 elif invitation_maker_name == "CloseVault":
-                    return "close-vault"
+                    return ("close-vault", details)
                 elif invitation_maker_name == "makeVoteInvitation":
-                    return "make-vote"
+                    return ("make-vote", details)
                 elif invitation_maker_name == "VoteOnParamChange":
                     # id: econgov-NNN
-                    return "vote-param-change"
+                    return ("vote-param-change", details)
                 elif invitation_maker_name == "VoteOnApiCall":
                     # id: econgov-NNN
-                    return "vote-api-call"
+                    return ("vote-api-call", details)
                 # TODO: other invitationMakerName
             elif public_invitation_maker: # source="contract"
                 if public_invitation_maker == "makeWantMintedInvitation":
                     # this is probably a PSM trade, getting IST
-                    return "psm-buy"
+                    return ("psm-buy", details)
                 elif public_invitation_maker == "makeGiveMintedInvitation":
                     # this is probably a PSM trade, selling IST
-                    return "psm-sell"
+                    return ("psm-sell", details)
                 
                 elif public_invitation_maker == "makeMintCharacterInvitation":
-                    return "kread-mint-character"
+                    return ("kread-mint-character", details)
                 elif public_invitation_maker == "makeSellCharacterInvitation":
-                    return "kread-sell-character"
+                    return ("kread-sell-character", details)
                 elif public_invitation_maker == "makeBuyCharacterInvitation":
-                    return "kread-buy-character"
+                    return ("kread-buy-character", details)
                 elif public_invitation_maker == "makeBuyItemInvitation":
-                    return "kread-buy-item"
+                    return ("kread-buy-item", details)
                 elif public_invitation_maker == "makeItemSwapInvitation":
-                    return "kread-swap-item"
+                    return ("kread-swap-item", details)
                 elif public_invitation_maker == "makeSellItemInvitation":
-                    return "kread-sell-item"
+                    return ("kread-sell-item", details)
                 elif public_invitation_maker == "makeEquipInvitation":
-                    return "kread-equip-item"
+                    return ("kread-equip-item", details)
                 elif public_invitation_maker == "makeUnequipInvitation":
-                    return "kread-unequip-item"
+                    return ("kread-unequip-item", details)
                 # TODO: other publicInvitationMaker
             elif call_pipe: # source="purse"
                 if (call_pipe[0][0] == "getCollateralManager" and
                     call_pipe[1][0] == "makeVaultInvitation"):
-                    return "create-vault"
+                    return ("create-vault", details)
                 elif (call_pipe[0][0] == "makeBidInvitation"):
-                    return "vault-bid"
+                    return ("vault-bid", details)
                 elif (call_pipe[0][0] == "makeAddCollateralInvitation"):
-                    return "vault-add-collateral"
+                    return ("vault-add-collateral", details)
                 # TODO: other callPipe
             else:
                 if offer_id.startswith("econgov-"):
                     # not really sure
-                    return "maybe-gov-vote"
+                    return ("maybe-gov-vote", details)
                 if offer_id.startswith("oracleAccept-"):
-                    return "maybe-oracle-accept"
+                    return ("maybe-oracle-accept", details)
         elif method == "tryExitOffer":
             # has spend_action["offerId"]
-            return "exit-offer"
+            return ("exit-offer", details)
 
         print("args", args, file=sys.stderr)
         print(spend_action, file=sys.stderr)
         raise RuntimeError()
 
-    return source
+    return (source, details)
