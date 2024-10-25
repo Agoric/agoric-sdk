@@ -1,12 +1,18 @@
+export type Hex = `0x${string}`; // as in viem
 export type EthAddr = `0x${string}`;
 type EthData = Record<string, string | number>;
 type EthMsgInfo = { sender: EthAddr; value?: number };
 type EthCallTx = {
-  txId: number;
   msg: EthMsgInfo;
   contractAddress: EthAddr;
   method: string;
   args: EthData[];
+};
+export type EthEvent = {
+  eventName: string;
+  args: Record<string, string | bigint>;
+  address: string;
+  transactionHash;
 };
 
 export const makeEventCounter = ({ setTimeout }) => {
@@ -30,17 +36,20 @@ export const makeEventCounter = ({ setTimeout }) => {
 };
 
 export const makeEthChain = (heightInitial: number, { t, setTimeout }) => {
+  const modern = new Date('2024-10-29T20:00:00');
   let nonce = 10;
   let height = heightInitial;
   const contracts = new Map();
   const mempool: EthCallTx[] = [];
-  const blocks: EthCallTx[][] = [[]];
-  const emptyBlock = harden([]);
+  const eventLog: EthEvent[] = [];
+  const emptyBlock = harden({ txs: [], events: [] });
+  const blocks: { txs: EthCallTx[]; events: EthEvent[] }[] = [emptyBlock];
 
   let going = true;
   const advanceBlock = () => {
-    blocks.push(harden([...mempool]));
+    blocks.push(harden({ txs: [...mempool], events: [...eventLog] }));
     mempool.splice(0, mempool.length);
+    eventLog.splice(0, eventLog.length);
     height += 1;
     t.log('eth advance to block', height);
   };
@@ -61,20 +70,28 @@ export const makeEthChain = (heightInitial: number, { t, setTimeout }) => {
     },
     call: async (
       msg: EthMsgInfo,
-      addr: EthAddr,
+      address: EthAddr,
       method: string,
       args: EthData[],
     ) => {
-      const txId = nonce;
-      nonce += 1;
-      mempool.push({ txId, msg, contractAddress: addr, method, args });
-      t.log(next(), 'eth call', addr, '.', method, '(', ...args, ')');
-      const contract = contracts.get(addr);
+      mempool.push({ msg, contractAddress: address, method, args });
+      t.log(next(), 'eth call', address, '.', method, '(', ...args, ')');
+      const contract = contracts.get(address);
       const result = contract[method](msg, ...args);
-      t.is(result, undefined);
+      const transactionHash = `0x${(nonce += 1)}`;
+      eventLog.push(...result.map(e => ({ ...e, address, transactionHash })));
     },
     currentHeight: () => height - 1,
-    getBlock: (h: number) => blocks[h - heightInitial] || emptyBlock,
+    getBlock: (h: number) => {
+      const secs = modern.getTime() / 1000 + 15 * (h - heightInitial);
+      const blockHash: Hex = '0xBLOCK_HASH_TODO';
+      return harden({
+        timeStamp: BigInt(secs),
+        blockNumber: BigInt(height),
+        blockHash,
+        ...(blocks[h - heightInitial] || emptyBlock),
+      });
+    },
     stop: () => (going = false),
   });
 };
