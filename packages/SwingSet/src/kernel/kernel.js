@@ -287,18 +287,16 @@ export default function buildKernel(
       const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
       critical = vatKeeper.getOptions().critical;
 
-      // Reject all promises decided by the vat, making sure to capture the list
-      // of kpids before that data is deleted.
-      const deadPromises = [];
-      for (const [kpid, _p] of kernelKeeper.enumeratePromisesByDecider(vatID)) {
-        deadPromises.push(kpid);
-      }
-      // remove vatID from the list of live vats, and mark for deletion
+      // remove vatID from the list of live vats, and mark for
+      // deletion (which will happen later, in vat-cleanup events)
       kernelKeeper.deleteVatID(vatID);
       kernelKeeper.markVatAsTerminated(vatID);
       deferred.push(kernelKeeper.removeVatFromSwingStoreExports(vatID));
-      for (const kpid of deadPromises) {
-        resolveToError(kpid, makeError('vat terminated'), vatID);
+
+      // Reject all promises decided by the vat
+      const errdata = makeError('vat terminated');
+      for (const [kpid, _p] of kernelKeeper.enumeratePromisesByDecider(vatID)) {
+        resolveToError(kpid, errdata, vatID);
       }
     }
     if (critical) {
