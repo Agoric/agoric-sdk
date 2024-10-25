@@ -7,8 +7,14 @@ if len(sys.argv) > 3:
     endblocknum = int(sys.argv[3])
 yes = False
 
-opener = gzip.open if fn.endswith(".gz") else open
-with opener(sys.argv[1]) as f:
+def opener():
+    if fn == "-":
+        return sys.stdin
+    if fn.endswith(".gz"):
+        return gzip.open(fn)
+    return open(fn)
+
+with opener() as f:
     for line in f:
         if isinstance(line, bytes):
             line = line.decode("utf-8")
