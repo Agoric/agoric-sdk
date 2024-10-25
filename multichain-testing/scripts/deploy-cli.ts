@@ -7,6 +7,7 @@ import childProcess from 'node:child_process';
 
 import { makeAgdTools } from '../tools/agd-tools.js';
 import { makeDeployBuilder } from '../tools/deploy.js';
+import type { ExecSync } from '../tools/agd-lib.js';
 
 async function main() {
   const builder = process.argv[2];
@@ -17,7 +18,9 @@ async function main() {
   }
 
   try {
-    const agdTools = await makeAgdTools(console.log, childProcess);
+    const agdTools = await makeAgdTools(console.log, {
+      execFileSync: childProcess.execFileSync as ExecSync,
+    });
     const deployBuilder = makeDeployBuilder(agdTools, fse.readJSON, execa);
     await deployBuilder(builder);
   } catch (err) {

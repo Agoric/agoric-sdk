@@ -243,7 +243,10 @@ const stakeScenario = test.macro(async (t, scenario: StakeIcaScenario) => {
 
   console.log('waiting for unbonding period');
   // XXX reference `120000` from chain state + `maxClockSkew`
-  await sleep(120000);
+  await sleep(120000, {
+    stir: description =>
+      t.pass(`stirring while waiting for unbonding period: ${description}`),
+  });
   const { balances: rewardsWithUndelegations } = await retryUntilCondition(
     () => queryClient.queryBalances(address),
     ({ balances }) => {
