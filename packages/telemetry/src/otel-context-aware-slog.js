@@ -87,10 +87,18 @@ export const makeSlogSender = async options => {
    */
   const slogSender = slog => {
     const { timestamp, ...logRecord } = contextualSlogProcessor(slog);
+
+    const [secondsStr, fractionStr] = String(timestamp).split('.');
+    const seconds = parseInt(secondsStr, 10);
+    const nanoSeconds = parseInt(
+      (fractionStr || String(0)).padEnd(9, String(0)),
+      10,
+    );
+
     return logger.emit({
       ...JSON.parse(serializeSlogObj(logRecord)),
       severityNumber: SeverityNumber.INFO,
-      timestamp: timestamp * 1000,
+      timestamp: [seconds, nanoSeconds],
     });
   };
 
