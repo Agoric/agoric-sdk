@@ -1,5 +1,3 @@
-/* global process */
-
 import { makeHelpers } from '@agoric/deploy-script-support';
 import { getManifestForPriceFeeds } from '@agoric/inter-protocol/src/proposals/deploy-price-feeds.js';
 
@@ -38,14 +36,21 @@ const configurations = {
   },
 };
 
+const { keys } = Object;
+const Usage = `agoric run updatePriceFeed.js ${keys(configurations).join(' | ')}`;
 /** @type {import('@agoric/deploy-script-support/src/externalTypes.js').CoreEvalBuilder} */
 export const defaultProposalBuilder = async ({ publishRef, install }, opts) => {
+  const config = configurations[opts.variant];
+  if (!config) {
+    console.error(Usage);
+    throw Error(Usage);
+  }
   return harden({
     sourceSpec: '@agoric/inter-protocol/src/proposals/deploy-price-feeds.js',
     getManifestCall: [
       getManifestForPriceFeeds.name,
       {
-        ...opts,
+        ...config,
         priceAggregatorRef: publishRef(
           install(
             '@agoric/inter-protocol/src/price/fluxAggregatorContract.js',
@@ -63,26 +68,15 @@ export const defaultProposalBuilder = async ({ publishRef, install }, opts) => {
   });
 };
 
-const { keys } = Object;
-const Usage = `agoric run updatePriceFeed.js ${keys(configurations).join(' | ')}`;
-
 /** @type {import('@agoric/deploy-script-support/src/externalTypes.js').DeployScriptFunction} */
 export default async (homeP, endowments) => {
   const { scriptArgs } = endowments;
-  assert(scriptArgs, 'expected script args endowment');
-  const config = configurations[scriptArgs[0]];
-  if (!config) {
-    console.error(Usage);
-    process.exit(1);
-  }
-  console.log('UPPrices', scriptArgs, config);
+  const variant = scriptArgs?.[0];
+  console.log('updatePriceFeeds', scriptArgs, variant);
 
   const { writeCoreEval } = await makeHelpers(homeP, endowments);
 
-  const match = scriptArgs[0].match(/UNRELEASED_(.*)/);
-  const variant = match ? match[1] : scriptArgs;
-
   await writeCoreEval(`gov-price-feeds-${variant}`, (utils, opts) =>
-    defaultProposalBuilder(utils, { ...opts, ...config }),
+    defaultProposalBuilder(utils, { ...opts, variant }),
   );
 };

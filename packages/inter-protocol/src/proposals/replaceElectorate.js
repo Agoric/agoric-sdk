@@ -306,23 +306,41 @@ const startNewEconCharter = async ({
 };
 
 /**
+ * @typedef {PromiseSpaceOf<{
+ *   auctionUpgradeNewInstance: Instance;
+ *   auctionUpgradeNewGovCreator: any;
+ * }>} interlockPowers
+ */
+
+/**
  * Adds governors to an existing Economic Committee Charter
  *
- * - @param {EconomyBootstrapPowers} powers - The resources and capabilities
- *   required to start the committee.
+ * @param {EconomyBootstrapPowers & interlockPowers} powers
+ *
+ *   - The resources and capabilities required to start the committee.
  *
  * @param {{
  *   options: {
  *     econCharterKit: EconCharterStartResult;
  *   };
- * }} config
+ * }} options
  *   - Configuration object containing the name and size of the committee.
  *
  * @returns {Promise<void>} A promise that resolves once all the governors have
  *   been successfully added to the economic charter
  */
 const addGovernorsToEconCharter = async (
-  { consume: { psmKit, governedContractKits, auctioneerKit } },
+  {
+    consume: {
+      auctionUpgradeNewInstance: auctionUpgradeNewInstanceP,
+      auctionUpgradeNewGovCreator: auctionUpgradeNewGovCreatorP,
+      psmKit,
+      governedContractKits,
+    },
+    produce: {
+      auctionUpgradeNewGovCreator: auctionUpgradeNewGovCreatorProduce,
+    },
+  },
   { options: { econCharterKit } },
 ) => {
   const { creatorFacet: ecCreatorFacet } = E.get(econCharterKit);
@@ -334,21 +352,15 @@ const addGovernorsToEconCharter = async (
   }
 
   const governedContractKitMap = await governedContractKits;
-  const auctioneerKitObject = await auctioneerKit;
   for (const {
     instance,
     governorCreatorFacet,
     label,
   } of governedContractKitMap.values()) {
-    // `governedContractKitMap` has an old version of the auctioneer kit
-    // so using `auctioneerKit` instead
-    if (label === 'auctioneer') {
-      await E(ecCreatorFacet).addInstance(
-        auctioneerKitObject.instance,
-        auctioneerKitObject.governorCreatorFacet,
-        label,
-      );
-    } else {
+    // The auctioneer was updated in this same release, getting values directly
+    // (there might be more than one auctioneer instance, but the others don't
+    // need to be registered.)
+    if (label !== 'auctioneer') {
       await E(ecCreatorFacet).addInstance(
         instance,
         governorCreatorFacet,
@@ -356,15 +368,29 @@ const addGovernorsToEconCharter = async (
       );
     }
   }
+
+  const [auctionUpgradeNewInstance, auctionUpgradeNewGovCreator] =
+    await Promise.all([
+      auctionUpgradeNewInstanceP,
+      auctionUpgradeNewGovCreatorP,
+    ]);
+  // reset after use. auctionUpgradeNewInstance is reset by upgrade-vault.js
+  auctionUpgradeNewGovCreatorProduce.reset();
+
+  await E(ecCreatorFacet).addInstance(
+    auctionUpgradeNewInstance,
+    auctionUpgradeNewGovCreator,
+    'auctioneer',
+  );
 };
 
 /**
  * Replaces the electorate for governance contracts by creating a new Economic
  * Committee and updating contracts with the new electorate's creator facet.
  *
- * @param {EconomyBootstrapPowers} permittedPowers - The resources and
- *   capabilities needed for operations, including access to governance
- *   contracts and the PSM kit.
+ * @param {EconomyBootstrapPowers & interlockPowers} permittedPowers - The
+ *   resources and capabilities needed for operations, including access to
+ *   governance contracts and the PSM kit.
  * @param {{
  *   options: {
  *     committeeName: string;
@@ -459,10 +485,11 @@ export const getManifestForReplaceAllElectorates = async (
   manifest: {
     [replaceAllElectorates.name]: {
       consume: {
+        auctionUpgradeNewGovCreator: true,
+        auctionUpgradeNewInstance: true,
         psmKit: true,
         governedContractKits: true,
         chainStorage: true,
-        auctioneerKit: true,
         highPrioritySendersManager: true,
         namesByAddressAdmin: true,
         // Rest of these are designed to be widely shared
@@ -473,6 +500,7 @@ export const getManifestForReplaceAllElectorates = async (
         econCharterKit: true,
         economicCommitteeKit: true,
         economicCommitteeCreatorFacet: true,
+        auctionUpgradeNewGovCreator: true,
       },
       installation: {
         consume: {
