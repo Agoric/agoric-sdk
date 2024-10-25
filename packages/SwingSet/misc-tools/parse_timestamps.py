@@ -16,7 +16,7 @@ class Syscall:
             target = vsc[1]
             msg = vsc[2]
             methargsCD = msg["methargs"]
-            method = json.loads(methargsCD["body"])[0]
+            method = json.loads(methargsCD["body"].removeprefix("#"))[0]
             result = msg.get("result")
             self.description = "(%s).%s -> %s" % (target, method, result)
         elif vsc[0] == "callNow":
@@ -101,7 +101,7 @@ class Delivery:
             target = vd[1]
             msg = vd[2]
             methargsCD = msg["methargs"]
-            method = json.loads(methargsCD["body"])[0]
+            method = json.loads(methargsCD["body"].removeprefix("#"))[0]
             result = msg.get("result")
             self.description = "(%s).%s -> %s" % (target, method, result)
         elif vd[0] == "notify":
