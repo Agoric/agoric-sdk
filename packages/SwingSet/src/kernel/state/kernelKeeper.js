@@ -266,7 +266,7 @@ export const incrementReferenceCount = (
   kref || Fail`incrementRefCount called with empty kref, tag=${tag}`;
   const { type } = parseKernelSlot(kref);
   if (type === 'promise') {
-    const refCount = Nat(BigInt(getRequired(`${kref}.refCount`))) + 1n;
+    const refCount = Number(getRequired(`${kref}.refCount`)) + 1;
     // kdebug(`++ ${kref}  ${tag} ${refCount}`);
     kvStore.set(`${kref}.refCount`, `${refCount}`);
   }
