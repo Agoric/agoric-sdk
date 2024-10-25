@@ -162,18 +162,6 @@ func unreleasedUpgradeHandler(app *GaiaApp, targetUpgrade string) func(sdk.Conte
                 vm.CoreProposalStepForModules(
                     "@agoric/builders/scripts/vats/revive-kread.js",
                 ),
-				vm.CoreProposalStepForModules(
-					// Upgrade to new liveslots for repaired vow usage.
-					"@agoric/builders/scripts/vats/upgrade-orch-core.js",
-				),
-				vm.CoreProposalStepForModules(
-					// Upgrade to new liveslots and support vows.
-					"@agoric/builders/scripts/smart-wallet/build-wallet-factory2-upgrade.js",
-				),
-				vm.CoreProposalStepForModules(
-					// Create vat-orchestration.
-					"@agoric/builders/scripts/vats/init-orchestration.js",
-				),
 			}
 		}
 
