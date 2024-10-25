@@ -105,22 +105,39 @@ func buildProposalStepWithArgs(moduleName string, entrypoint string, opts map[st
 	return vm.CoreProposalStepForModules(proposal), nil
 }
 
-func replaceElectorateCoreProposalStep(upgradeName string) (vm.CoreProposalStep, error) {
-	var variant string
-
-	switch validUpgradeName(upgradeName) {
-	case "UNRELEASED_A3P_INTEGRATION":
-		variant = "A3P_INTEGRATION"
-	case "UNRELEASED_main":
-		variant = "MAINNET"
-	case "UNRELEASED_devnet":
-		variant = "DEVNET"
+func getVariantFromUpgradeName(upgradeName string) string {
+    switch upgradeName {
+    case "UNRELEASED_A3P_INTEGRATION":
+        return "A3P_INTEGRATION"
+    case "UNRELEASED_main":
+        return "MAINNET"
+    case "UNRELEASED_devnet":
+        return "DEVNET"
 	// Noupgrade for this version.
-	case "UNRELEASED_BASIC":
-	}
+    case "UNRELEASED_BASIC":
+        return ""
+    default:
+        return ""
+    }
+}
+
+func replaceElectorateCoreProposalStep(upgradeName string) (vm.CoreProposalStep, error) {
+    variant := getVariantFromUpgradeName(upgradeName)
 
 	return buildProposalStepWithArgs(
 		"@agoric/builders/scripts/inter-protocol/replace-electorate-core.js",
+		"defaultProposalBuilder",
+		map[string]any{
+			"variant": variant,
+		},
+	)
+}
+
+func replacePriceFeedsCoreProposal(upgradeName string) (vm.CoreProposalStep, error) {
+    variant := getVariantFromUpgradeName(upgradeName)
+
+	return buildProposalStepWithArgs(
+		"@agoric/builders/scripts/inter-protocol/updatePriceFeeds.js",
 		"defaultProposalBuilder",
 		map[string]any{
 			"variant": variant,
@@ -150,10 +167,22 @@ func unreleasedUpgradeHandler(app *GaiaApp, targetUpgrade string) func(sdk.Conte
 				return nil, err
 			}
 
+			priceFeedUpdate, err := replacePriceFeedsCoreProposal(targetUpgrade)
+			if err != nil {
+				return nil, err
+			}
+
 			// Each CoreProposalStep runs sequentially, and can be constructed from
 			// one or more modules executing in parallel within the step.
 			CoreProposalSteps = []vm.CoreProposalStep{
 				replaceElectorateStep,
+				priceFeedUpdate,
+				vm.CoreProposalStepForModules(
+					"@agoric/builders/scripts/vats/add-auction.js",
+				),
+				vm.CoreProposalStepForModules(
+					"@agoric/builders/scripts/vats/upgradeVaults.js",
+				),
 				vm.CoreProposalStepForModules(
 					// Upgrade Zoe (no new ZCF needed).
 					"@agoric/builders/scripts/vats/upgrade-zoe.js",

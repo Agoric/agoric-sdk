@@ -222,6 +222,9 @@ export const deployPriceFeeds = async (powers, config) => {
   );
 
   const { priceAuthorityAdmin, priceAuthority } = powers.consume;
+
+  trace({ oracleAddresses });
+  trace({ inBrandNames });
   for (const inBrandName of inBrandNames) {
     const AGORIC_INSTANCE_NAME = oracleBrandFeedName(inBrandName, outBrandName);
     const brandIn = await ensureOracleBrand(powers, {
@@ -263,6 +266,7 @@ export const deployPriceFeeds = async (powers, config) => {
     options: { scaledPARef },
   });
 
+  trace('resolving priceAuthority8400');
   // cf. #8400 QuotePayments storage leak
   powers.produce.priceAuthority8400.resolve(priceAuthority);
 };
