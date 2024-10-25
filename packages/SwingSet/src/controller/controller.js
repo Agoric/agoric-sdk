@@ -388,6 +388,8 @@ export async function makeSwingsetController(
       return kernel.deviceNameToID(deviceName);
     },
 
+    injectQueuedUpgradeEvents: () => kernel.injectQueuedUpgradeEvents(),
+
     /**
      * Queue a method call into the named vat
      *

@@ -143,6 +143,7 @@ export const CURRENT_SCHEMA_VERSION = 3;
 // gcActions = JSON(gcActions)
 // reapQueue = JSON([vatIDs...])
 // pinnedObjects = ko$NN[,ko$NN..]
+// upgradeEvents = JSON([events..])
 
 // ko.nextID = $NN
 // ko$NN.owner = $vatID
@@ -182,6 +183,8 @@ export const CURRENT_SCHEMA_VERSION = 3;
 // v3:
 //   * change `version` to `'3'`
 //   * perform remediation for bug #9039
+// (after v3, does not get its own version)
+//   * `upgradeEvents` recognized, but omitted if empty
 
 /** @type {(s: string) => string[]} s */
 export function commaSplit(s) {
@@ -1266,6 +1269,27 @@ export default function makeKernelKeeper(
     return dequeue('acceptanceQueue');
   }
 
+  function injectQueuedUpgradeEvents() {
+    // refcounts: Any krefs in `upgradeEvents` must have a refcount to
+    // represent the list's hold on those objects. When
+    // upgradeSwingset() creates these events, it must also
+    // incref(kref), otherwise we run the risk of dropping the kref by
+    // the time injectQueuedUpgradeEvents() is called. We're nominally
+    // removing each event from upgradeEvents (decref), then pushing
+    // it onto the run-queue (incref), but since those two cancel each
+    // other out, we don't actually need to modify any reference
+    // counts from within this function. Note that
+    // addToAcceptanceQueue does not increment refcounts, just kernel
+    // queue-length stats.
+
+    const events = JSON.parse(kvStore.get('upgradeEvents') || '[]');
+    kvStore.delete('upgradeEvents');
+    for (const e of events) {
+      assert(e.type, `not an event`);
+      addToAcceptanceQueue(e);
+    }
+  }
+
   function allocateMeter(remaining, threshold) {
     if (remaining !== 'unlimited') {
       assert.typeof(remaining, 'bigint');
@@ -1964,6 +1988,8 @@ export default function makeKernelKeeper(
     addToAcceptanceQueue,
     getAcceptanceQueueLength,
     getNextAcceptanceQueueMsg,
+
+    injectQueuedUpgradeEvents,
 
     allocateMeter,
     addMeterRemaining,

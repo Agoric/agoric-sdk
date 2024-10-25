@@ -5,10 +5,13 @@ import {
   getAllDynamicVats,
   getAllStaticVats,
   incrementReferenceCount,
-  addToQueue,
   readQueue,
 } from '../kernel/state/kernelKeeper.js';
 import { enumeratePrefixedKeys } from '../kernel/state/storageHelper.js';
+
+/**
+ * @import {RunQueueEvent} from '../types-internal.js';
+ */
 
 const upgradeVatV0toV1 = (kvStore, defaultReapDirtThreshold, vatID) => {
   // This is called, once per vat, when upgradeSwingset migrates from
@@ -97,11 +100,13 @@ const upgradeVatV0toV1 = (kvStore, defaultReapDirtThreshold, vatID) => {
  * `hostStorage.commit()` afterwards.
  *
  * @param {SwingStoreKernelStorage} kernelStorage
- * @returns {boolean} true if any changes were made
+ * @returns {{ modified: boolean }}
  */
 export const upgradeSwingset = kernelStorage => {
   const { kvStore } = kernelStorage;
   let modified = false;
+  /** @type {RunQueueEvent[]} */
+  const upgradeEvents = [];
   let vstring = kvStore.get('version');
   if (vstring === undefined) {
     vstring = '0';
@@ -308,40 +313,30 @@ export const upgradeSwingset = kernelStorage => {
     // only the upgraded vat will see anything, and those deliveries
     // won't make it past liveslots).
 
-    const kernelStats = JSON.parse(getRequired('kernelStats'));
-    // copied from kernel/state/stats.js, awkward to factor out
-    const incStat = (stat, delta = 1) => {
-      assert.equal(stat, 'acceptanceQueueLength');
-      kernelStats[stat] += delta;
-      const maxStat = `${stat}Max`;
-      if (
-        kernelStats[maxStat] !== undefined &&
-        kernelStats[stat] > kernelStats[maxStat]
-      ) {
-        kernelStats[maxStat] = kernelStats[stat];
-      }
-      const upStat = `${stat}Up`;
-      if (kernelStats[upStat] !== undefined) {
-        kernelStats[upStat] += delta;
-      }
-    };
-
+    let count = 0;
     for (const [kpid, vatID] of buggyKPIDs) {
-      const m = harden({ type: 'notify', vatID, kpid });
+      // account for the reference to this kpid in upgradeEvents
       incrementReferenceCount(getRequired, kvStore, kpid, `enq|notify`);
-      addToQueue('acceptanceQueue', m, getRequired, kvStore, incStat);
+      upgradeEvents.push({ type: 'notify', vatID, kpid });
+      count += 1;
     }
 
-    kvStore.set('kernelStats', JSON.stringify(kernelStats));
-
-    console.log(` - #9039 remediation complete`);
+    console.log(` - #9039 remediation complete, ${count} notifies to inject`);
     modified = true;
     version = 3;
+  }
+
+  if (upgradeEvents.length) {
+    assert(modified);
+    // stash until host calls controller.injectQueuedUpgradeEvents()
+    const oldEvents = JSON.parse(kvStore.get('upgradeEvents') || '[]');
+    const events = [...oldEvents, ...upgradeEvents];
+    kvStore.set('upgradeEvents', JSON.stringify(events));
   }
 
   if (modified) {
     kvStore.set('version', `${version}`);
   }
-  return modified;
+  return harden({ modified });
 };
 harden(upgradeSwingset);

@@ -215,6 +215,10 @@ export default function buildKernel(
     return deviceID;
   }
 
+  function injectQueuedUpgradeEvents() {
+    kernelKeeper.injectQueuedUpgradeEvents();
+  }
+
   function addImport(forVatID, what) {
     if (!started) {
       throw Error('must do kernel.start() before addImport()');
@@ -2207,6 +2211,7 @@ export default function buildKernel(
     pinObject,
     vatNameToID,
     deviceNameToID,
+    injectQueuedUpgradeEvents,
     queueToKref,
     kpRegisterInterest,
     kpStatus,
