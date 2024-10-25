@@ -178,7 +178,6 @@ const trace = makeTracer('SmrtWlt');
  *   invitationDisplayInfo: DisplayInfo;
  *   publicMarshaller: Marshaller;
  *   zoe: ERef<ZoeService>;
- *   secretWalletFactoryKey: any;
  * }} SharedParams
  *
  *
@@ -279,12 +278,6 @@ export const prepareSmartWallet = (baggage, shared) => {
       invitationDisplayInfo: DisplayInfoShape,
       publicMarshaller: M.remotable('Marshaller'),
       zoe: M.eref(M.remotable('ZoeService')),
-
-      // known only to smartWallets and walletFactory, this allows the
-      // walletFactory to invoke functions on the self facet that no one else
-      // can. Used to protect the upgrade-to-incarnation 2 repair. This can be
-      // dropped once the repair has taken place.
-      secretWalletFactoryKey: M.any(),
     }),
   );
   const zone = makeDurableZone(baggage);
@@ -443,8 +436,6 @@ export const prepareSmartWallet = (baggage, shared) => {
       publishCurrentState: M.call().returns(),
       watchPurse: M.call(M.eref(PurseShape)).returns(M.promise()),
       watchNextBalance: M.call(M.any(), NotifierShape, M.bigint()).returns(),
-      repairUnwatchedSeats: M.call().returns(M.promise()),
-      repairUnwatchedPurses: M.call().returns(M.promise()),
       updateStatus: M.call(M.any()).returns(),
       addContinuingOffer: M.call(
         M.or(M.number(), M.string()),
@@ -483,7 +474,6 @@ export const prepareSmartWallet = (baggage, shared) => {
       getCurrentSubscriber: M.call().returns(SubscriberShape),
       getUpdatesSubscriber: M.call().returns(SubscriberShape),
       getPublicTopics: M.call().returns(TopicsRecordShape),
-      repairWalletForIncarnation2: M.call(M.any()).returns(),
     }),
   };
 
@@ -643,99 +633,6 @@ export const prepareSmartWallet = (baggage, shared) => {
 
           void helper.watchPurse(purse);
           return purse;
-        },
-
-        /**
-         * see https://github.com/Agoric/agoric-sdk/issues/8445 and
-         * https://github.com/Agoric/agoric-sdk/issues/8286. As originally
-         * released, the smartWallet didn't durably monitor the promises for the
-         * outcomes of offers, and would have dropped them on upgrade of Zoe or
-         * the smartWallet itself. Using watchedPromises, (see offerWatcher.js)
-         * we've addressed the problem for new offers. This function will
-         * backfill the solution for offers that were outstanding before the
-         * transition to incarnation 2 of the smartWallet.
-         */
-        async repairUnwatchedSeats() {
-          const { state, facets } = this;
-          const { address, invitationPurse, liveOffers, liveOfferSeats } =
-            state;
-          const { zoe, agoricNames, invitationBrand, invitationIssuer } =
-            shared;
-
-          const invitationFromSpec = makeInvitationsHelper(
-            zoe,
-            agoricNames,
-            invitationBrand,
-            invitationPurse,
-            state.offerToInvitationMakers.get,
-          );
-
-          const watcherPromises = [];
-          for (const seatId of liveOfferSeats.keys()) {
-            facets.helper.logWalletInfo(`repairing ${seatId}`);
-            const offerSpec = liveOffers.get(seatId);
-            const seat = liveOfferSeats.get(seatId);
-
-            const watchOutcome = (async () => {
-              await null;
-              let invitationAmount = state.offerToUsedInvitation.has(
-                // @ts-expect-error older type allowed number
-                offerSpec.id,
-              )
-                ? state.offerToUsedInvitation.get(
-                    // @ts-expect-error older type allowed number
-                    offerSpec.id,
-                  )
-                : undefined;
-              if (invitationAmount) {
-                facets.helper.logWalletInfo(
-                  'recovered invitation amount for offer',
-                  offerSpec.id,
-                );
-              } else {
-                facets.helper.logWalletInfo(
-                  'inferring invitation amount for offer',
-                  offerSpec.id,
-                );
-                const tempInvitation = invitationFromSpec(
-                  offerSpec.invitationSpec,
-                );
-                invitationAmount =
-                  await E(invitationIssuer).getAmountOf(tempInvitation);
-                void E(invitationIssuer).burn(tempInvitation);
-              }
-
-              const watcher = makeOfferWatcher(
-                facets.helper,
-                facets.deposit,
-                offerSpec,
-                address,
-                invitationAmount,
-                seat,
-              );
-              return watchOfferOutcomes(watcher, seat);
-            })();
-            trace(`Repaired seat ${seatId} for wallet ${address}`);
-            watcherPromises.push(watchOutcome);
-          }
-
-          await Promise.all(watcherPromises);
-        },
-        async repairUnwatchedPurses() {
-          const { state, facets } = this;
-          const { helper, self } = facets;
-          const { invitationPurse, address } = state;
-
-          const brandToPurses = getBrandToPurses(walletPurses, self);
-          trace(`Found ${brandToPurses.values()} purse(s) for ${address}`);
-          for (const purses of brandToPurses.values()) {
-            for (const record of purses) {
-              void helper.watchPurse(record.purse);
-              trace(`Repaired purse ${record.petname} of ${address}`);
-            }
-          }
-
-          void helper.watchPurse(invitationPurse);
         },
 
         /** @param {OfferStatus} offerStatus */
@@ -1203,27 +1100,6 @@ export const prepareSmartWallet = (baggage, shared) => {
               storagePath: updateRecorderKit.recorder.getStoragePath(),
             },
           });
-        },
-        // TODO remove this and repairUnwatchedSeats once the repair has taken place.
-        /**
-         * To be called once ever per wallet.
-         *
-         * @param {object} key
-         */
-        repairWalletForIncarnation2(key) {
-          const { state, facets } = this;
-
-          if (key !== shared.secretWalletFactoryKey) {
-            return;
-          }
-
-          facets.helper.repairUnwatchedSeats().catch(e => {
-            console.error('repairUnwatchedSeats rejection', e);
-          });
-          facets.helper.repairUnwatchedPurses().catch(e => {
-            console.error('repairUnwatchedPurses rejection', e);
-          });
-          trace(`repaired wallet ${state.address}`);
         },
       },
     },

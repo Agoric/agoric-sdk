@@ -46,3 +46,23 @@ export const getBalances = async (addresses, targetDenom = undefined) => {
 };
 
 export const agopsVaults = addr => agops.vaults('list', '--from', addr);
+
+export const makeTimerUtils = ({ setTimeout }) => {
+  /**
+   * Resolve after a delay in milliseconds.
+   *
+   * @param {number} ms
+   * @returns {Promise<void>}
+   */
+  const delay = ms => new Promise(resolve => setTimeout(() => resolve(), ms));
+
+  const waitUntil = async timestamp => {
+    const timeDelta = Math.floor(Date.now() / 1000) - Number(timestamp);
+    await delay(timeDelta);
+  };
+
+  return {
+    delay,
+    waitUntil,
+  };
+};

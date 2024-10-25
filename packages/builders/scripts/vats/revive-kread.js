@@ -7,6 +7,7 @@ export const defaultProposalBuilder = async () =>
     getManifestCall: ['getManifestForKread'],
   });
 
+/** @type {import('@agoric/deploy-script-support/src/externalTypes.js').DeployScriptFunction} */
 export default async (homeP, endowments) => {
   const { writeCoreProposal } = await makeHelpers(homeP, endowments);
   await writeCoreProposal('revive-kread', defaultProposalBuilder);
