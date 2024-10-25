@@ -12,6 +12,10 @@ vatID = sys.argv[2] if len(sys.argv) > 2 else None
 
 deliveries = parse_file(fn, vatID)
 
+total_total_pipe = 0
+total_total_worker = 0
+total_total_kernel = 0
+
 fill = "                         "
 prev_d = None
 for d in deliveries:
@@ -69,3 +73,10 @@ for d in deliveries:
     else:
         print("         total  (k->k %.6f)" % k_to_k)
     print()
+    total_total_pipe += total_pipe
+    total_total_worker += total_worker
+    total_total_kernel += total_kernel
+
+print("total:  pipe %.6f, worker %.6f, kernel %.6f" % (
+      total_total_pipe, total_total_worker, total_total_kernel))
+
