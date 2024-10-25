@@ -855,17 +855,11 @@ export default function makeKernelKeeper(
     const state = getRequired(`${kernelSlot}.state`);
     const refCount = Number(kvStore.get(`${kernelSlot}.refCount`));
     switch (state) {
-      case undefined: {
-        throw Fail`unknown kernelPromise '${kernelSlot}'`;
-      }
       case 'unresolved': {
-        let decider = kvStore.get(`${kernelSlot}.decider`);
-        if (decider === '') {
-          decider = undefined;
-        }
+        const decider = kvStore.get(`${kernelSlot}.decider`) || undefined;
         const policy = kvStore.get(`${kernelSlot}.policy`) || 'ignore';
         const subscribers = commaSplit(
-          getRequired(`${kernelSlot}.subscribers`),
+          kvStore.get(`${kernelSlot}.subscribers`) || '',
         );
         const queue = Array.from(
           getPrefixedValues(kvStore, `${kernelSlot}.queue.`),

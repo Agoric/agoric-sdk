@@ -80,15 +80,12 @@ export const buildRootObject = () => {
       p2.catch(() => 'hush');
       const p3 = E(ulrikRoot).getWatchedDecidedPromise();
 
-      // Create our own promises that capture the rejection data,
-      // because the originals will be GCed when the rejection
-      // notifications finish delivery. Promise.all() returns a new
-      // promise, which either fulfills to an array of fulfillment
-      // values, or rejects with the first rejection reason, so for
-      // p1/p2 (which are supposed to reject), it effectively wraps
-      // the promise in a new one that behaves the same way.
-      const p1w = Promise.all([p1]);
-      const p2w = Promise.all([p2]);
+      // Create our own promises that capture the rejection data in a
+      // way that the test harness can read, because the originals
+      // will be GCed when the rejection notifications finish
+      // delivery.
+      const p1w = Promise.resolve().then(() => p1);
+      const p2w = Promise.resolve().then(() => p2);
 
       return { version, data, p1, p2, p3, p1w, p2w, retain, ...parameters };
     },

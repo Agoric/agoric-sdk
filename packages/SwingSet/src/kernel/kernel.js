@@ -600,7 +600,9 @@ export default function buildKernel(
     const p = kernelKeeper.getKernelPromise(kpid);
     kernelKeeper.incStat('dispatchNotify');
     const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
-    assert(p.state !== 'unresolved', `spurious notification ${kpid}`);
+    if (p.state === 'unresolved') {
+      throw Fail`spurious notification ${kpid}`;
+    }
     /** @type { KernelDeliveryOneNotify[] } */
     const resolutions = [];
     if (!vatKeeper.hasCListEntry(kpid)) {

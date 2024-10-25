@@ -1,3 +1,4 @@
+import { Fail } from '@endo/errors';
 import {
   DEFAULT_REAP_DIRT_THRESHOLD_KEY,
   DEFAULT_GC_KREFS_PER_BOYD,
@@ -236,10 +237,12 @@ export const upgradeSwingset = kernelStorage => {
         const { vatID, kpid } = rq;
         assert(vatID);
         assert(kpid);
-        if (!notifies.has(kpid)) {
-          notifies.set(kpid, []);
+        let vats = notifies.get(kpid);
+        if (!vats) {
+          vats = [];
+          notifies.set(kpid, vats);
         }
-        notifies.get(kpid).push(vatID);
+        vats.push(vatID);
       }
     }
     const [accHead, accTail] = JSON.parse(getRequired('acceptanceQueue'));
@@ -269,7 +272,7 @@ export const upgradeSwingset = kernelStorage => {
       }
       const state = kvStore.get(`${kpid}.state`);
       // missing state means the kpid is deleted somehow, shouldn't happen
-      assert(state, `${kpid}.state is missing`);
+      state || Fail`${kpid}.state is missing`;
       if (state === 'unresolved') {
         nonSettledKPIDs.add(kpid);
         return false;
