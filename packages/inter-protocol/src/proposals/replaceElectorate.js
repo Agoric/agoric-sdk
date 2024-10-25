@@ -358,21 +358,9 @@ const addGovernorsToEconCharter = async (
     label,
   } of governedContractKitMap.values()) {
     // The auctioneer was updated in this same release, getting values directly
-    if (label === 'auctioneer') {
-      const [auctionUpgradeNewInstance, auctionUpgradeNewGovCreator] =
-        await Promise.all([
-          auctionUpgradeNewInstanceP,
-          auctionUpgradeNewGovCreatorP,
-        ]);
-      // reset after use. auctionUpgradeNewInstance is reset by upgrade-vault.js
-      auctionUpgradeNewGovCreatorProduce.reset();
-
-      await E(ecCreatorFacet).addInstance(
-        auctionUpgradeNewInstance,
-        auctionUpgradeNewGovCreator,
-        label,
-      );
-    } else {
+    // (there might be more than one auctioneer instance, but the others don't
+    // need to be registered.)
+    if (label !== 'auctioneer') {
       await E(ecCreatorFacet).addInstance(
         instance,
         governorCreatorFacet,
@@ -380,6 +368,20 @@ const addGovernorsToEconCharter = async (
       );
     }
   }
+
+  const [auctionUpgradeNewInstance, auctionUpgradeNewGovCreator] =
+    await Promise.all([
+      auctionUpgradeNewInstanceP,
+      auctionUpgradeNewGovCreatorP,
+    ]);
+  // reset after use. auctionUpgradeNewInstance is reset by upgrade-vault.js
+  auctionUpgradeNewGovCreatorProduce.reset();
+
+  await E(ecCreatorFacet).addInstance(
+    auctionUpgradeNewInstance,
+    auctionUpgradeNewGovCreator,
+    'auctioneer',
+  );
 };
 
 /**
