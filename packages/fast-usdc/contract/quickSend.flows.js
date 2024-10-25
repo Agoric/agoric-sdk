@@ -1,12 +1,11 @@
 import { AmountMath } from '@agoric/ertp/src/amountMath.js';
 import { mustMatch } from '@agoric/internal';
 import { atob } from '@endo/base64';
-import { M } from '@endo/patterns';
-import { ChainAddressShape } from '@agoric/orchestration';
 import {
   AgoricCalc,
   NobleCalc,
 } from '@agoric/orchestration/src/utils/address.js';
+import { CCTPTxEvidenceShape } from './client-support.js';
 
 /**
  * @import {ExecutionContext} from 'ava';
@@ -14,32 +13,13 @@ import {
  * @import {Passable} from '@endo/pass-style';
  * @import {Guarded} from '@endo/exo';
  * @import {GuestInterface} from '@agoric/async-flow';
- * @import {ChainAddress, OrchestrationAccountI, OrchestrationFlow, Orchestrator, ZcfTools} from '@agoric/orchestration';
+ * @import {ChainAddress, ChainHub, OrchestrationAccountI, OrchestrationFlow, Orchestrator} from '@agoric/orchestration';
  * @import {VTransferIBCEvent} from '@agoric/vats';
  * @import {ResolvedContinuingOfferResult} from '@agoric/orchestration/src/utils/zoe-tools.js';
  * @import {InvitationMakers} from '@agoric/smart-wallet/src/types.js';
  * @import {QuickSendTerms} from './quickSend.contract.js';
  * @import {FungibleTokenPacketData} from '@agoric/cosmic-proto/ibc/applications/transfer/v2/packet.js';
- * @import {TypedPattern} from '@agoric/internal';
- * @import {ChainHub} from '@agoric/orchestration';
  */
-
-const AddressShape = M.string(); // XXX
-
-/**
- * @typedef {{
- *   amount: NatValue;
- *   dest: ChainAddress;
- *   nobleFwd: string;
- * }} CallDetails
- */
-
-/** @type {TypedPattern<CallDetails>} */
-const CallDetailsShape = harden({
-  amount: M.nat(),
-  dest: ChainAddressShape,
-  nobleFwd: AddressShape,
-});
 
 const { add, make, subtract } = AmountMath;
 
@@ -115,20 +95,43 @@ export const initAccounts = async (orch, ctx, seat, _offerArgs) => {
 harden(initAccounts);
 
 /**
+ * TODO: move to a method on ChainHub
+ *
+ * @param {string} value
+ * @returns {ChainAddress}
+ */
+const asChainAddress = value => {
+  // TODO: from ChainInfo, from chain-registry
+  const toId = {
+    dydx: 'dydx-mainnet-1',
+    osmo: 'osmosis-1',
+  };
+  for (const [pfx, chainId] of Object.entries(toId)) {
+    if (value.startsWith(pfx))
+      return harden({ encoding: 'bech32', value, chainId });
+  }
+  assert.fail(`unsupported prefix: ${value}`);
+};
+
+/**
  * @param {Orchestrator} _orch
  * @param {{
  *   terms: QuickSendTerms & StandardTerms;
  *   t?: ExecutionContext<{ nextLabel: Function }>; // XXX
  * }} ctx
  * @param {QuickSendAccounts & Passable} accts
- * @param {unknown} offerArgs
+ * @param {import('./client-types.js').CCTPTxEvidence} offerArgs
  */
 export const handleCCTPCall = async (_orch, ctx, accts, offerArgs) => {
   const { nextLabel: next = () => '#?' } = ctx.t?.context || {};
   const { log = console.log } = ctx.t || {};
-  mustMatch(offerArgs, CallDetailsShape);
-  const { amount, dest, nobleFwd } = offerArgs;
-  log(next(), 'flows.reportCCTPCall', { amount, dest });
+  log(next(), 'flows.reportCCTPCall', offerArgs);
+  mustMatch(offerArgs, CCTPTxEvidenceShape);
+  const {
+    tx: { amount, forwardingAddress: nobleFwd },
+    aux: { recipientAddress },
+  } = offerArgs;
+  const dest = asChainAddress(recipientAddress);
   const { makerFee, contractFee } = ctx.terms;
   const { USDC } = ctx.terms.brands;
   const { fundingPool } = accts;
