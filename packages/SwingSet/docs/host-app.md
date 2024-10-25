@@ -18,21 +18,39 @@ SwingSet provides robust and deterministic computation, even in the face of unex
 
 ### Kernel Upgrade
 
-The life cycle of a SwingSet kernel begins with the one and only call to `initializeSwingset()`, which populates the swingstore DB for the first time. After that, the kernel is presumed to be immortal, but its execution is broken up into a series of reboots. Each reboot (e.g. each time the host application is started), the app must build a new controller with `makeSwingsetController()`, to have something to run.
+The life cycle of a SwingSet kernel begins with the one and only call to `initializeSwingset()`, which populates the SwingStore DB for the first time. After that, the kernel is presumed to be immortal, but its execution is broken up into a series of reboots. Each reboot (e.g. each time the host application is started), the app must build a new controller with `makeSwingsetController()`, to have something to run.
 
-From time to time, the host app will be upgraded to use a newer version of the SwingSet kernel code (e.g. a new version of the `@agoric/swingset-vat` package). This newer version might require an upgrade to the kernel's internal state. For example, the way it represents some data about a vat might be made more efficient, and the upgrade process needs to examine and rewrite vat state to switch to the new representation. Or, a bug might be fixed, and the upgrade process needs to locate and remediate any consequences of the bug having been present for earlier execution.
+From time to time, the host app will be upgraded to use a newer version of the SwingSet kernel code (e.g. a new version of this `@agoric/swingset-vat` package). The newer version might require an upgrade to the kernel's persisted/durable state. For example, the way it represents some vat metadata might be made more efficient, and the upgrade process needs to examine and rewrite vat state to use the new representation. Or, a bug might be fixed, and the upgrade process needs to locate and remediate any consequences of the bug having been present during earlier execution.
 
-To make the resulting state changes occur at a predictable time, upgrades do not happen automatically. Instead, each time the host app reboots with a new version of the kernel code, it must call `upgradeSwingset(kernelStorage)`. It must do this *before* calling `makeSwingsetController()`, as that function will throw an error if given a swingstore that has not been upgraded.
+To make the resulting state changes occur deterministically, upgrades are not automatic. Instead, each time the host app reboots with a new version of the kernel code, it must call `upgradeSwingset(kernelStorage)`. It must do this *before* calling `makeSwingsetController()`, as that function will throw an error if given a SwingStore that has not been upgraded.
 
-It is safe to call `upgradeSwingset` on reboots that do not change the version of the kernel code: the function is idempotent, and will do nothing if the swingstore is already up-to-date.
+It is safe to call `upgradeSwingset` on reboots that do not change the version of the kernel code: the function is idempotent, and will do nothing if the SwingStore is already up-to-date.
+
+Some upgrades (in particular bug remediations) need to add events to the kernel's run-queue. To avoid having these events be intermingled with work that might already be on the run-queue at reboot time (e.g. work leftover from previous runs), these events are not automatically injected at that time. Instead, the kernel remembers what needs to be done, and waits for the host to invoke `controller.injectQueuedUpgradeEvents()` at a time of their choosing. This should be done before the next `commit()`, to avoid the risk of them being lost by a reboot.
 
 So most host applications will start each reboot with a sequence like this:
 
 ```js
 const { hostStorage, kernelStorage } = openSwingStore(baseDirectory);
 upgradeSwingset(kernelStorage);
-const c = makeSwingsetController(kernelStorage, deviceEndowments);
+const controller = makeSwingsetController(kernelStorage, deviceEndowments);
+controller.injectQueuedUpgradeEvents();
 ```
+
+followed by later code to execute runs. Inputs can be fed all-at-once, or each processed in their own run, but at the end of the block, the host app must `commit()` the DB:
+
+```js
+async function doBlock(deviceInputs) {
+  for (const input of deviceInputs) {
+    injectDeviceInput(input);
+    await controller.run();
+  }
+  hostStorage.commit();
+  emitDeviceOutputs();
+}
+```
+
+The actual signature of `upgradeSwingset` is `const { modified } = upgradeSwingset(kernelStorage)`, and the `modified` flag indicates whether anything actually got upgraded. Host applications which have other means to keep track of software upgrades may wish to assert that `modified === false` in reboots that are not associated with a change to the kernel package version. They can also safely skip the `injectQueuedUpgradeEvents` call if nothing was modified.
 
 ### Crank Execution
 

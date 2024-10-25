@@ -1817,3 +1817,46 @@ test('reap gc-krefs 12', async t => {
 test('reap gc-krefs overrideNever', async t => {
   await reapGCKrefsTest(t, 12, true);
 });
+
+test('injectQueuedUpgradeEvents', async t => {
+  const endowments = makeKernelEndowments();
+  const { kernelStorage } = endowments;
+  const { kvStore } = kernelStorage;
+  await initializeKernel({}, kernelStorage);
+  const kernel = buildKernel(endowments, {}, {});
+  await kernel.start();
+  // TODO: extract `queueLength`/`dumpQueue` from kernelKeeper.js?
+  {
+    const [start, end] = JSON.parse(kvStore.get('acceptanceQueue'));
+    t.deepEqual([start, end], [1, 1]);
+  }
+
+  // These events would fail if they actually got processed: the vatID
+  // and all the krefs are fake, the methargs are not valid capdata,
+  // and we haven't updated refcounts. But all we care about is that
+  // they make it onto the acceptance queue.
+  const vatID = 'v1';
+  const e1 = harden({ type: 'notify', vatID, kpid: 'kp25' });
+  // kernelKeeper.incrementRefCount(kpid, `enq|notify`);
+  const target = 'ko11';
+  const methargs = '';
+  const msg = harden({ methargs, result: 'kp33' });
+  const e2 = harden({ type: 'send', target, msg });
+  kvStore.set('upgradeEvents', JSON.stringify([e1, e2]));
+
+  kernel.injectQueuedUpgradeEvents([e1, e2]);
+
+  {
+    const [start, end] = JSON.parse(kvStore.get('acceptanceQueue'));
+    t.deepEqual([start, end], [1, 3]);
+    t.deepEqual(JSON.parse(kvStore.get('acceptanceQueue.1')), e1);
+    t.deepEqual(JSON.parse(kvStore.get('acceptanceQueue.2')), e2);
+  }
+
+  // It'd be nice to also check that the stats were incremented:
+  // stats.acceptanceQueueLength shoule be 2, acceptanceQueueLengthUp
+  // should be 2, and acceptanceQueueLengthMax should be 2. But the
+  // stats are held in RAM until a crank is executed, and we're not
+  // doing that here. And the kernel hides the kernelKeeper so we
+  // can't call getStats() to check.
+});

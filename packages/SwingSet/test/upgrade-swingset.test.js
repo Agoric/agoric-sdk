@@ -1,4 +1,3 @@
-/* eslint-disable no-underscore-dangle */
 // @ts-nocheck
 
 // eslint-disable-next-line import/order
@@ -162,7 +161,8 @@ test('upgrade kernel state', async t => {
   upgradeSwingset(kernelStorage);
 
   // now we should be good to go
-  const _controller = await makeSwingsetController(kernelStorage);
+  const controller = await makeSwingsetController(kernelStorage);
+  controller.injectQueuedUpgradeEvents();
 
   t.true(kvStore.has('kernel.defaultReapDirtThreshold'));
   // the kernel-wide threshold gets a .gcKrefs (to meet our upcoming
@@ -245,7 +245,8 @@ test('upgrade non-reaping kernel state', async t => {
   upgradeSwingset(kernelStorage);
 
   // now we should be good to go
-  const _controller = await makeSwingsetController(kernelStorage);
+  const controller = await makeSwingsetController(kernelStorage);
+  controller.injectQueuedUpgradeEvents();
 
   t.true(kvStore.has('kernel.defaultReapDirtThreshold'));
   t.deepEqual(JSON.parse(kvStore.get('kernel.defaultReapDirtThreshold')), {
@@ -374,7 +375,7 @@ test('v3 upgrade', async t => {
   }
   kvStore.set('acceptanceQueue', JSON.stringify([accHead, accTail]));
 
-  let stats = JSON.parse(kvStore.get('kernelStats'));
+  const stats = JSON.parse(kvStore.get('kernelStats'));
   stats.runQueueLength += runQueue.length;
   stats.runQueueLengthUp += runQueue.length;
   stats.runQueueLengthMax = runQueue.length;
@@ -394,8 +395,10 @@ test('v3 upgrade', async t => {
 
   // upgrade it
   upgradeSwingset(kernelStorage);
+
   // now we should be good to go
-  const _controller = await makeSwingsetController(kernelStorage);
+  const controller = await makeSwingsetController(kernelStorage);
+  controller.injectQueuedUpgradeEvents();
 
   // check state by mutating our dumped copy and then comparing
   // against a new dump
@@ -415,12 +418,16 @@ test('v3 upgrade', async t => {
   const np5 = JSON.stringify({ type: 'notify', vatID, kpid: p5 });
   data[`acceptanceQueue.${tail - 1}`] = np5;
 
-  // stats are updated with the queue changes
-  stats = JSON.parse(data.kernelStats);
-  stats.acceptanceQueueLength += 3;
-  stats.acceptanceQueueLengthUp += 3;
-  stats.acceptanceQueueLengthMax = stats.acceptanceQueueLength;
-  data.kernelStats = JSON.stringify(stats);
+  // note: the in-RAM copy of kernelStats will have the elevated
+  // acceptance-queue counters, but these are not written to the
+  // kvStore until a crank is executed, so the data we're comparing
+  // won't see them
+  //
+  // stats = JSON.parse(data.kernelStats);
+  // stats.acceptanceQueueLength += 3;
+  // stats.acceptanceQueueLengthUp += 3;
+  // stats.acceptanceQueueLengthMax = stats.acceptanceQueueLength;
+  // data.kernelStats = JSON.stringify(stats);
 
   // the refcounts should now be one larger, because of the queued
   // notifies

@@ -1109,12 +1109,15 @@ test('dirt upgrade', async t => {
 
   // it requires a manual upgrade
   let k2;
+  let ks2;
   {
     const serialized = store.serialize();
     const { kernelStorage } = initSwingStore(null, { serialized });
-    upgradeSwingset(kernelStorage);
+    const { modified } = upgradeSwingset(kernelStorage);
+    t.true(modified);
     k2 = makeKernelKeeper(kernelStorage, CURRENT_SCHEMA_VERSION); // works this time
     k2.loadStats();
+    ks2 = kernelStorage;
   }
 
   t.true(k2.kvStore.has(`kernel.defaultReapDirtThreshold`));
@@ -1157,6 +1160,12 @@ test('dirt upgrade', async t => {
   t.deepEqual(JSON.parse(k2.kvStore.get(`${v3}.options`)).reapDirtThreshold, {
     never: true,
   });
+
+  {
+    // upgrade is idempotent
+    const { modified } = upgradeSwingset(ks2);
+    t.false(modified);
+  }
 });
 
 test('v2 upgrade', async t => {
@@ -1177,15 +1186,24 @@ test('v2 upgrade', async t => {
 
   // it requires a manual upgrade
   let k2;
+  let ks2;
   {
     const serialized = store.serialize();
     const { kernelStorage } = initSwingStore(null, { serialized });
-    upgradeSwingset(kernelStorage);
+    const { modified } = upgradeSwingset(kernelStorage);
+    t.true(modified);
     k2 = makeKernelKeeper(kernelStorage, CURRENT_SCHEMA_VERSION); // works this time
     k2.loadStats();
+    ks2 = kernelStorage;
   }
 
   t.true(k2.kvStore.has(`vats.terminated`));
   t.deepEqual(JSON.parse(k2.kvStore.get(`vats.terminated`)), []);
   t.is(k2.kvStore.get(`version`), '3');
+
+  {
+    // upgrade is idempotent
+    const { modified } = upgradeSwingset(ks2);
+    t.false(modified);
+  }
 });
