@@ -23,10 +23,8 @@
  * } Context
  *
  * @typedef {{
- *  'chain-id': string;
  *  'crank.syscallNum'?: Slog['syscallNum'];
  *  'process.uptime': Slog['monotime'];
- *  timestamp: Slog['time'];
  * } & Context} LogAttributes
  *
  * @typedef {{
@@ -95,12 +93,14 @@ const SLOG_TYPES = {
 };
 
 /**
- * @param {(log: { attributes: LogAttributes, body: Partial<Slog> }) => void} emitLog
- * @param {Partial<{ persistContext: (context: Context) => void; restoreContext: () => Context | null; }>?} persistenceUtils
+ * @template {Record<string, any>} [T={}]
+ * @param {T} [staticContext]
+ * @param {Partial<{ persistContext: (context: Context) => void; restoreContext: () => Context | null; }>} [persistenceUtils]
  */
-export const logCreator = (emitLog, persistenceUtils = {}) => {
-  const { CHAIN_ID } = process.env;
-
+export const makeContextualSlogProcessor = (
+  staticContext,
+  persistenceUtils = {},
+) => {
   /** @type Array<Context | null> */
   let [
     blockContext,
@@ -128,6 +128,7 @@ export const logCreator = (emitLog, persistenceUtils = {}) => {
 
   /**
    * @param {Slog} slog
+   * @returns {{ attributes: T & LogAttributes, body: Partial<Slog>; timestamp: Slog['time'] }}
    */
   const slogProcessor = ({ monotime, time: timestamp, ...body }) => {
     const finalBody = { ...body };
@@ -151,20 +152,6 @@ export const logCreator = (emitLog, persistenceUtils = {}) => {
         };
         break;
       }
-      case SLOG_TYPES.COSMIC_SWINGSET.END_BLOCK.START: {
-        assert(!!blockContext);
-        break;
-      }
-      case SLOG_TYPES.COSMIC_SWINGSET.END_BLOCK.FINISH:
-      case SLOG_TYPES.COSMIC_SWINGSET.COMMIT.START:
-      case SLOG_TYPES.COSMIC_SWINGSET.COMMIT.FINISH: {
-        assert(!!blockContext);
-        break;
-      }
-      case SLOG_TYPES.COSMIC_SWINGSET.AFTER_COMMIT_STATS: {
-        assert(!!blockContext && !triggerContext);
-        break;
-      }
       case SLOG_TYPES.COSMIC_SWINGSET.BOOTSTRAP_BLOCK.START: {
         blockContext = {
           'block.height': finalBody.blockHeight || 0,
@@ -178,7 +165,15 @@ export const logCreator = (emitLog, persistenceUtils = {}) => {
         };
         break;
       }
-      case SLOG_TYPES.COSMIC_SWINGSET.BOOTSTRAP_BLOCK.FINISH: {
+      case SLOG_TYPES.COSMIC_SWINGSET.END_BLOCK.START: {
+        assert(!!blockContext);
+        break;
+      }
+      case SLOG_TYPES.COSMIC_SWINGSET.END_BLOCK.FINISH:
+      case SLOG_TYPES.COSMIC_SWINGSET.BOOTSTRAP_BLOCK.FINISH:
+      case SLOG_TYPES.COSMIC_SWINGSET.COMMIT.START:
+      case SLOG_TYPES.COSMIC_SWINGSET.COMMIT.FINISH:
+      case SLOG_TYPES.COSMIC_SWINGSET.AFTER_COMMIT_STATS: {
         assert(!!blockContext && !triggerContext);
         break;
       }
@@ -207,12 +202,14 @@ export const logCreator = (emitLog, persistenceUtils = {}) => {
       case SLOG_TYPES.COSMIC_SWINGSET.RUN.START: {
         if (!triggerContext && finalBody.runNum !== 0) {
           assert(!!blockContext);
-          // TBD: add explicit slog events of both timer poll and install bundle
+          // TODO: add explicit slog events of both timer poll and install bundle
+          // https://github.com/Agoric/agoric-sdk/issues/10332
           triggerContext = {
             'run.num': null,
-            'run.id': `timer-${finalBody.blockHeight}`,
-            'run.trigger.type': 'timer',
+            'run.id': `unknown-${finalBody.blockHeight}-${finalBody.runNum}`,
+            'run.trigger.type': 'unknown',
             'run.trigger.time': blockContext['block.time'],
+            'run.trigger.blockHeight': finalBody.blockHeight,
           };
           persistContext(triggerContext);
         }
@@ -243,15 +240,15 @@ export const logCreator = (emitLog, persistenceUtils = {}) => {
           assert(finalBody.replay);
           replayContext = {
             ...replayContext,
-            'crank.deliveryNum': finalBody.deliveryNum,
             'crank.vatID': finalBody.vatID,
+            'crank.deliveryNum': finalBody.deliveryNum,
           };
         } else {
           assert(!!crankContext && !finalBody.replay);
           crankContext = {
             ...crankContext,
-            'crank.deliveryNum': finalBody.deliveryNum,
             'crank.vatID': finalBody.vatID,
+            'crank.deliveryNum': finalBody.deliveryNum,
           };
         }
 
@@ -291,9 +288,7 @@ export const logCreator = (emitLog, persistenceUtils = {}) => {
         break;
     }
 
-    /** @type {LogAttributes} */
     const logAttributes = {
-      'chain-id': String(CHAIN_ID),
       'process.uptime': monotime,
       ...initContext, // Optional prelude
       ...blockContext, // Block is the first level of execution nesting
@@ -301,10 +296,8 @@ export const logCreator = (emitLog, persistenceUtils = {}) => {
       ...crankContext, // Finally cranks are the last level of nesting
       ...replayContext, // Replay is a substitute for crank context during vat page in
       ...eventLogAttributes,
-      timestamp,
+      ...staticContext,
     };
-
-    emitLog({ attributes: logAttributes, body: finalBody });
 
     /**
      * Add any after report operations here
@@ -343,6 +336,12 @@ export const logCreator = (emitLog, persistenceUtils = {}) => {
       default:
         break;
     }
+
+    return {
+      attributes: /** @type {T & LogAttributes} */ (logAttributes),
+      body: finalBody,
+      timestamp,
+    };
   };
 
   return slogProcessor;

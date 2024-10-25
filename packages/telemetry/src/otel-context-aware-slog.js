@@ -7,7 +7,7 @@ import {
   SimpleLogRecordProcessor,
 } from '@opentelemetry/sdk-logs';
 import { readFileSync, writeFileSync } from 'fs';
-import { logCreator } from './context-aware-slog.js';
+import { makeContextualSlogProcessor } from './context-aware-slog.js';
 import { getResourceAttributes } from './index.js';
 import { serializeSlogObj } from './serialize-slog-obj.js';
 
@@ -54,7 +54,7 @@ export const getContextFilePersistenceUtils = filePath => {
  * @param {Options} options
  */
 export const makeSlogSender = async options => {
-  const { OTEL_EXPORTER_OTLP_ENDPOINT } = options.env || {};
+  const { CHAIN_ID, OTEL_EXPORTER_OTLP_ENDPOINT } = options.env || {};
   if (!(OTEL_EXPORTER_OTLP_ENDPOINT && options.stateDir))
     return console.warn(
       'Ignoring invocation of slogger "context-aware-slog" without the presence of "OTEL_EXPORTER_OTLP_ENDPOINT" and "stateDir"',
@@ -77,14 +77,22 @@ export const makeSlogSender = async options => {
       `${options.stateDir}/${DEFAULT_CONTEXT_FILE}`,
   );
 
-  const slogSender = logCreator(
-    logRecord =>
-      logger.emit({
-        ...JSON.parse(serializeSlogObj(logRecord)),
-        severityNumber: SeverityNumber.INFO,
-      }),
+  const contextualSlogProcessor = makeContextualSlogProcessor(
+    { 'chain-id': CHAIN_ID },
     persistenceUtils,
   );
+
+  /**
+   * @param {import('./context-aware-slog.js').Slog} slog
+   */
+  const slogSender = slog => {
+    const { timestamp, ...logRecord } = contextualSlogProcessor(slog);
+    return logger.emit({
+      ...JSON.parse(serializeSlogObj(logRecord)),
+      severityNumber: SeverityNumber.INFO,
+      timestamp: timestamp * 1000,
+    });
+  };
 
   return Object.assign(slogSender, {
     forceFlush: () => logRecordProcessor.forceFlush(),
