@@ -35,6 +35,7 @@
  *  deliveryNum?: bigint;
  *  inboundNum?: string;
  *  monotime: number;
+ *  remainingBeans?: bigint;
  *  replay?: boolean;
  *  runNum?: number;
  *  sender?: string;
@@ -73,7 +74,7 @@ const SLOG_TYPES = {
     },
   },
   CRANK: {
-    RESULT: 'crank-result',
+    FINISH: 'crank-finish',
     START: 'crank-start',
   },
   DELIVER: 'deliver',
@@ -157,18 +158,9 @@ export const makeContextualSlogProcessor = (
           'block.height': finalBody.blockHeight || 0,
           'block.time': finalBody.blockTime,
         };
-        triggerContext = {
-          'run.num': null,
-          'run.id': `bootstrap-${finalBody.blockTime}`,
-          'run.trigger.type': 'bootstrap',
-          'run.trigger.time': finalBody.blockTime,
-        };
         break;
       }
-      case SLOG_TYPES.COSMIC_SWINGSET.END_BLOCK.START: {
-        assert(!!blockContext);
-        break;
-      }
+      case SLOG_TYPES.COSMIC_SWINGSET.END_BLOCK.START:
       case SLOG_TYPES.COSMIC_SWINGSET.END_BLOCK.FINISH:
       case SLOG_TYPES.COSMIC_SWINGSET.BOOTSTRAP_BLOCK.FINISH:
       case SLOG_TYPES.COSMIC_SWINGSET.COMMIT.START:
@@ -186,7 +178,7 @@ export const makeContextualSlogProcessor = (
           /cosmic-swingset-([^-]+)-inbound/.exec(body.type) || [];
 
         triggerContext = {
-          'run.num': null,
+          'run.num': undefined,
           'run.id': `${triggerType}-${finalBody.inboundNum}`,
           'run.trigger.type': triggerType,
           'run.trigger.source': finalBody.source,
@@ -195,23 +187,23 @@ export const makeContextualSlogProcessor = (
           'run.trigger.txHash': txHash,
           'run.trigger.msgIdx': Number(msgIdx),
         };
-        persistContext(triggerContext);
         break;
       }
       // eslint-disable-next-line no-restricted-syntax
       case SLOG_TYPES.COSMIC_SWINGSET.RUN.START: {
-        if (!triggerContext && finalBody.runNum !== 0) {
+        if (!finalBody.runNum) {
+          assert(!triggerContext);
+          triggerContext = restoreContext(); // Restore persisted context if any
+        } else if (!triggerContext) {
           assert(!!blockContext);
           // TODO: add explicit slog events of both timer poll and install bundle
           // https://github.com/Agoric/agoric-sdk/issues/10332
           triggerContext = {
-            'run.num': null,
+            'run.num': undefined,
             'run.id': `unknown-${finalBody.blockHeight}-${finalBody.runNum}`,
             'run.trigger.type': 'unknown',
-            'run.trigger.time': blockContext['block.time'],
             'run.trigger.blockHeight': finalBody.blockHeight,
           };
-          persistContext(triggerContext);
         }
 
         if (!triggerContext) triggerContext = {};
@@ -231,8 +223,9 @@ export const makeContextualSlogProcessor = (
         crankContext['crank.vatID'] = finalBody.vatID;
         break;
       }
-      case SLOG_TYPES.REPLAY.START: {
-        replayContext = { replay: true };
+      case SLOG_TYPES.REPLAY.START:
+      case SLOG_TYPES.REPLAY.FINISH: {
+        replayContext = { replay: true, 'crank.vatID': finalBody.vatID };
         break;
       }
       case SLOG_TYPES.DELIVER: {
@@ -289,6 +282,7 @@ export const makeContextualSlogProcessor = (
     }
 
     const logAttributes = {
+      ...staticContext,
       'process.uptime': monotime,
       ...initContext, // Optional prelude
       ...blockContext, // Block is the first level of execution nesting
@@ -296,7 +290,6 @@ export const makeContextualSlogProcessor = (
       ...crankContext, // Finally cranks are the last level of nesting
       ...replayContext, // Replay is a substitute for crank context during vat page in
       ...eventLogAttributes,
-      ...staticContext,
     };
 
     /**
@@ -308,24 +301,29 @@ export const makeContextualSlogProcessor = (
         initContext = null;
         break;
       }
-      case SLOG_TYPES.COSMIC_SWINGSET.END_BLOCK.START: {
-        triggerContext = restoreContext();
+      case SLOG_TYPES.COSMIC_SWINGSET.BOOTSTRAP_BLOCK.START: {
+        triggerContext = {
+          'run.num': undefined,
+          'run.id': `bootstrap-${finalBody.blockTime}`,
+          'run.trigger.type': 'bootstrap',
+          'run.trigger.time': finalBody.blockTime,
+        };
         break;
       }
-      case SLOG_TYPES.COSMIC_SWINGSET.AFTER_COMMIT_STATS: {
-        blockContext = null;
-        break;
-      }
+      case SLOG_TYPES.COSMIC_SWINGSET.AFTER_COMMIT_STATS:
       case SLOG_TYPES.COSMIC_SWINGSET.BOOTSTRAP_BLOCK.FINISH: {
         blockContext = null;
         break;
       }
       // eslint-disable-next-line no-restricted-syntax
       case SLOG_TYPES.COSMIC_SWINGSET.RUN.FINISH: {
+        persistContext(
+          finalBody.remainingBeans || !triggerContext ? {} : triggerContext,
+        );
         triggerContext = null;
         break;
       }
-      case SLOG_TYPES.CRANK.RESULT: {
+      case SLOG_TYPES.CRANK.FINISH: {
         crankContext = null;
         break;
       }
