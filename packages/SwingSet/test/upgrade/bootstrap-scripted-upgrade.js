@@ -78,8 +78,16 @@ export const buildRootObject = () => {
       p1.catch(() => 'hush');
       const p2 = E(ulrikRoot).getEternalPromise();
       p2.catch(() => 'hush');
+      const p3 = E(ulrikRoot).getWatchedDecidedPromise();
 
-      return { version, data, p1, p2, retain, ...parameters };
+      // Create our own promises that capture the rejection data in a
+      // way that the test harness can read, because the originals
+      // will be GCed when the rejection notifications finish
+      // delivery.
+      const p1w = Promise.resolve().then(() => p1);
+      const p2w = Promise.resolve().then(() => p2);
+
+      return { version, data, p1, p2, p3, p1w, p2w, retain, ...parameters };
     },
 
     upgradeV2: async () => {
@@ -145,8 +153,17 @@ export const buildRootObject = () => {
       resolve(`message for your predecessor, don't freak out`);
 
       const newDur = await E(ulrikRoot).getNewDurandal();
+      const watcherResult = await E(ulrikRoot).getWatcherResult();
 
-      return { version, data, remoerr, newDur, upgradeResult, ...parameters };
+      return {
+        version,
+        data,
+        remoerr,
+        newDur,
+        upgradeResult,
+        watcherResult,
+        ...parameters,
+      };
     },
 
     buildV1WithLostKind: async () => {

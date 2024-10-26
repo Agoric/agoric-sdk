@@ -9,6 +9,7 @@ const trace = makeTracer('NewAuction', true);
 /**
  * @typedef {PromiseSpaceOf<{
  *   auctionUpgradeNewInstance: Instance;
+ *   auctionUpgradeNewGovCreator: any;
  *   newContractGovBundleId: string;
  * }>} interlockPowers
  */
@@ -33,12 +34,14 @@ export const addAuction = async (
       chainTimerService,
       economicCommitteeCreatorFacet: electorateCreatorFacet,
       econCharterKit,
+      governedContractKits: governedContractKitsP,
       priceAuthority8400,
       zoe,
     },
     produce: {
       auctioneerKit: produceAuctioneerKit,
       auctionUpgradeNewInstance,
+      auctionUpgradeNewGovCreator,
       newContractGovBundleId,
     },
     instance: {
@@ -197,7 +200,10 @@ export const addAuction = async (
     governedInstance,
   );
 
+  const governedContractKits = await governedContractKitsP;
+  governedContractKits.init(kit.instance, kit);
   auctionUpgradeNewInstance.resolve(governedInstance);
+  auctionUpgradeNewGovCreator.resolve(kit.governorCreatorFacet);
   newContractGovBundleId.resolve(contractGovernorBundle.bundleID);
 };
 
@@ -211,12 +217,14 @@ export const ADD_AUCTION_MANIFEST = harden({
       chainTimerService: true,
       econCharterKit: true,
       economicCommitteeCreatorFacet: true,
+      governedContractKits: true,
       priceAuthority8400: true,
       zoe: true,
     },
     produce: {
       auctioneerKit: true,
       auctionUpgradeNewInstance: true,
+      auctionUpgradeNewGovCreator: true,
       newContractGovBundleId: true,
     },
     instance: {

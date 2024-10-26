@@ -8,6 +8,7 @@ import {
   defineKind,
   makeScalarBigMapStore,
   makeScalarBigWeakMapStore,
+  watchPromise,
 } from '@agoric/vat-data';
 
 // we set up a lot of ephemeral, merely-virtual, and durable objects
@@ -28,6 +29,20 @@ const holderMethods = {
 };
 const makeVir = defineKind('virtual', initHolder, holderMethods);
 const makeDur = defineDurableKind(durandalHandle, initHolder, holderMethods);
+
+const initWatcher = () => harden({ result: ['unresolved'] });
+const watcherMethods = {
+  onFulfilled: ({ state }, data) => (state.result = harden(['fulfill', data])),
+  onRejected: ({ state }, reason) =>
+    (state.result = harden(['reject', reason])),
+  getResult: ({ state }) => state.result,
+};
+const watcherHandle = makeKindHandle('watcher');
+const makeWatcher = defineDurableKind(
+  watcherHandle,
+  initWatcher,
+  watcherMethods,
+);
 
 // TODO: explore 'export modRetains'
 // eslint-disable-next-line no-unused-vars
@@ -134,6 +149,12 @@ const buildExports = (baggage, imp) => {
 export const buildRootObject = (_vatPowers, vatParameters, baggage) => {
   const { promise: p1 } = makePromiseKit();
   const { promise: p2 } = makePromiseKit();
+  const { promise: p3 } = makePromiseKit();
+  const watcher = makeWatcher();
+  watchPromise(p3, watcher);
+  baggage.init('watcher', watcher);
+  baggage.init('wh', watcherHandle);
+
   let heldPromise;
   let counter = 0;
 
@@ -165,6 +186,7 @@ export const buildRootObject = (_vatPowers, vatParameters, baggage) => {
     },
     getEternalPromiseInArray: () => [p1],
     getEternalPromise: () => p2,
+    getWatchedDecidedPromise: () => p3,
 
     makeLostKind: () => {
       makeKindHandle('unhandled');
