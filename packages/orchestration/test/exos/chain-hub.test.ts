@@ -20,25 +20,6 @@ import type {
 } from '../../src/cosmos-api.js';
 import { assets as assetFixture } from '../assets.fixture.js';
 
-const connection = {
-  id: 'connection-1',
-  client_id: '07-tendermint-3',
-  counterparty: {
-    client_id: '07-tendermint-2',
-    connection_id: 'connection-1',
-  },
-  state: 3 /* IBCConnectionState.STATE_OPEN */,
-  transferChannel: {
-    portId: 'transfer',
-    channelId: 'channel-1',
-    counterPartyChannelId: 'channel-1',
-    counterPartyPortId: 'transfer',
-    ordering: 1 /* Order.ORDER_UNORDERED */,
-    state: 3 /* IBCConnectionState.STATE_OPEN */,
-    version: 'ics20-1',
-  },
-} as const;
-
 // fresh state for each test
 const setup = () => {
   const zone = provideDurableZone('root');
