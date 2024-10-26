@@ -90,6 +90,7 @@ export const convertChainInfo = async registry => {
   for (const chain of registry.chains) {
     console.log('processing info', chain.chain_name);
     chainInfo[chain.chain_name] = {
+      bech32Prefix: chain.bech32_prefix,
       chainId: chain.chain_id,
       stakingTokens: chain.staking?.staking_tokens,
       // UNTIL https://github.com/Agoric/agoric-sdk/issues/9326

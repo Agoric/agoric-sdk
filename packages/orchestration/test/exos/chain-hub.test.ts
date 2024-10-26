@@ -94,11 +94,12 @@ test.serial('getConnectionInfo', async t => {
   t.deepEqual(await vt.when(chainHub.getConnectionInfo(b, a)), ba);
 });
 
-test('denom info support via getAsset and getDenom', async t => {
+test.serial('denom info support via getAsset and getDenom', async t => {
   const { chainHub } = setup();
 
   const denom = 'utok1';
   const info1: CosmosChainInfo = {
+    bech32Prefix: 'chain',
     chainId: 'chain1',
     stakingTokens: [{ denom }],
   };
@@ -139,7 +140,7 @@ test('denom info support via getAsset and getDenom', async t => {
   );
 });
 
-test('toward asset info in agoricNames (#9572)', async t => {
+test.serial('toward asset info in agoricNames (#9572)', async t => {
   const { chainHub, nameAdmin, vt } = setup();
   // use fetched chain info
   await registerKnownChains(nameAdmin);
@@ -147,7 +148,7 @@ test('toward asset info in agoricNames (#9572)', async t => {
   await vt.when(chainHub.getChainInfo('cosmoshub'));
 
   for (const name of ['kava', 'fxcore']) {
-    chainHub.registerChain(name, { chainId: name });
+    chainHub.registerChain(name, { chainId: name, bech32Prefix: name });
   }
 
   await registerChainAssets(nameAdmin, 'cosmoshub', assetFixture.cosmoshub);
