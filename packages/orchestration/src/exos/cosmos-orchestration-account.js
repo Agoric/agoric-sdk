@@ -960,11 +960,11 @@ export const prepareCosmosOrchestrationAccountKit = (
         },
         /** @type {HostOf<IcaAccount['deactivate']>} */
         deactivate() {
-          return watch(E(this.facets.helper.owned()).deactivate());
+          return asVow(() => watch(E(this.facets.helper.owned()).deactivate()));
         },
         /** @type {HostOf<IcaAccount['reactivate']>} */
         reactivate() {
-          return watch(E(this.facets.helper.owned()).reactivate());
+          return asVow(() => watch(E(this.facets.helper.owned()).reactivate()));
         },
         /** @type {HostOf<StakingAccountQueries['getDelegation']>} */
         getDelegation(validator) {
@@ -1100,8 +1100,8 @@ export const prepareCosmosOrchestrationAccountKit = (
         },
         /** @type {HostOf<IcaAccount['executeEncodedTx']>} */
         executeEncodedTx(msgs, opts) {
-          return watch(
-            E(this.facets.helper.owned()).executeEncodedTx(msgs, opts),
+          return asVow(() =>
+            watch(E(this.facets.helper.owned()).executeEncodedTx(msgs, opts)),
           );
         },
       },
