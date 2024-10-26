@@ -50,6 +50,8 @@ import {
   DelegationShape,
   DenomAmountShape,
   IBCTransferOptionsShape,
+  Proto3Shape,
+  TxBodyOptsShape,
 } from '../typeGuards.js';
 import { coerceCoin, coerceDenom } from '../utils/amounts.js';
 import {
@@ -143,6 +145,9 @@ export const IcaAccountHolderI = M.interface('IcaAccountHolder', {
   ...stakingAccountQueriesMethods,
   deactivate: M.call().returns(VowShape),
   reactivate: M.call().returns(VowShape),
+  executeEncodedTx: M.call(M.arrayOf(Proto3Shape))
+    .optional(TxBodyOptsShape)
+    .returns(VowShape),
 });
 
 /** @type {{ [name: string]: [description: string, valueShape: Matcher] }} */
@@ -1092,6 +1097,12 @@ export const prepareCosmosOrchestrationAccountKit = (
             ]);
             return watch(results, this.facets.rewardsQueryWatcher);
           });
+        },
+        /** @type {HostOf<IcaAccount['executeEncodedTx']>} */
+        executeEncodedTx(msgs, opts) {
+          return watch(
+            E(this.facets.helper.owned()).executeEncodedTx(msgs, opts),
+          );
         },
       },
     },
