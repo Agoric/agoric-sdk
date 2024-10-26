@@ -159,3 +159,35 @@ test.serial('toward asset info in agoricNames (#9572)', async t => {
     });
   }
 });
+
+test.serial('getChainInfoByAddress', async t => {
+  const { chainHub, nameAdmin, vt } = setup();
+  // use fetched chain info
+  await registerKnownChains(nameAdmin);
+
+  // call getChainInfo so ChainHub performs agoricNames lookup that populates its local cache
+  await vt.asPromise(chainHub.getChainInfo('osmosis'));
+
+  const MOCK_ICA_ADDRESS =
+    'osmo1ht7u569vpuryp6utadsydcne9ckeh2v8dkd38v5hptjl3u2ewppqc6kzgd';
+  t.like(chainHub.getChainInfoByAddress(MOCK_ICA_ADDRESS), {
+    chainId: 'osmosis-1',
+    bech32Prefix: 'osmo',
+  });
+
+  t.throws(
+    () =>
+      chainHub.getChainInfoByAddress(MOCK_ICA_ADDRESS.replace('osmo1', 'foo1')),
+    {
+      message: 'Chain info not found for bech32Prefix "foo"',
+    },
+  );
+
+  t.throws(() => chainHub.getChainInfoByAddress('notbech32'), {
+    message: 'No separator character for "notbech32"',
+  });
+
+  t.throws(() => chainHub.getChainInfoByAddress('1notbech32'), {
+    message: 'Missing prefix for "1notbech32"',
+  });
+});
