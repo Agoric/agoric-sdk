@@ -215,7 +215,7 @@ export async function buildSwingset(
   }
 
   const pendingCoreProposals = await ensureSwingsetInitialized();
-  upgradeSwingset(kernelStorage);
+  const { modified } = upgradeSwingset(kernelStorage);
   const controller = await makeSwingsetController(
     kernelStorage,
     deviceEndowments,
@@ -236,6 +236,7 @@ export async function buildSwingset(
   return {
     coreProposals: pendingCoreProposals,
     controller,
+    kernelHasUpgradeEvents: modified,
     mb: mailboxDevice,
     bridgeInbound: bridgeDevice.deliverInbound,
     timer: timerDevice,
@@ -408,6 +409,7 @@ export async function launch({
   const {
     coreProposals: bootstrapCoreProposals,
     controller,
+    kernelHasUpgradeEvents,
     mb,
     bridgeInbound,
     timer,
@@ -508,6 +510,14 @@ export async function launch({
     kvStore.set(getHostKey('chainSends'), JSON.stringify(chainSends));
 
     await commit();
+  }
+
+  async function doKernelUpgradeEvents(inboundNum) {
+    controller.writeSlogObject({
+      type: 'cosmic-swingset-inject-kernel-upgrade-events',
+      inboundNum,
+    });
+    controller.injectQueuedUpgradeEvents();
   }
 
   async function deliverInbound(sender, messages, ack, inboundNum) {
@@ -626,6 +636,11 @@ export async function launch({
 
       case ActionType.PLEASE_PROVISION: {
         p = doBridgeInbound(BRIDGE_ID.PROVISION, action, inboundNum);
+        break;
+      }
+
+      case ActionType.KERNEL_UPGRADE_EVENTS: {
+        p = doKernelUpgradeEvents(inboundNum);
         break;
       }
 
@@ -932,6 +947,22 @@ export async function launch({
         if (isBootstrap) {
           // This only runs for the very first block on the chain.
           await doBootstrap(action);
+        }
+
+        // The reboot-time upgradeSwingset() may have generated some
+        // remediation events that need to be injected at the right
+        // time (after catchup, before proposals). Push them onto
+        // runThisBlock before anything else goes there.
+        if (kernelHasUpgradeEvents) {
+          isBootstrap ||
+            upgradeDetails ||
+            Fail`Unexpected kernel upgrade events outside of consensus start`;
+          const txHash = 'x/kernel-upgrade-events';
+          const context = { blockHeight, txHash, msgIdx: 0 };
+          runThisBlock.push({
+            action: { type: ActionType.KERNEL_UPGRADE_EVENTS },
+            context,
+          });
         }
 
         // Concatenate together any pending core proposals from chain bootstrap

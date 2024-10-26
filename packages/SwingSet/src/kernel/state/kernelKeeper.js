@@ -45,14 +45,16 @@ const enableKernelGC = true;
  * @typedef { import('../../types-external.js').VatKeeper } VatKeeper
  * @typedef { import('../../types-internal.js').InternalKernelOptions } InternalKernelOptions
  * @typedef { import('../../types-internal.js').ReapDirtThreshold } ReapDirtThreshold
+ * @import {PromiseRecord} from '../../types-internal.js';
  * @import {CleanupBudget, CleanupWork, PolicyOutputCleanupBudget} from '../../types-external.js';
  * @import {RunQueueEventCleanupTerminatedVat} from '../../types-internal.js';
+ * @import {SwingStoreKernelStorage} from '@agoric/swing-store';
  */
 
 export { DEFAULT_REAP_DIRT_THRESHOLD_KEY };
 
 // most recent DB schema version
-export const CURRENT_SCHEMA_VERSION = 2;
+export const CURRENT_SCHEMA_VERSION = 3;
 
 // Kernel state lives in a key-value store supporting key retrieval by
 // lexicographic range. All keys and values are strings.
@@ -71,9 +73,9 @@ export const CURRENT_SCHEMA_VERSION = 2;
 // only modified by a call to upgradeSwingset(). See below for
 // deltas/upgrades from one version to the next.
 //
-// The current ("v2") schema keys/values are:
+// The current ("v3") schema keys/values are:
 //
-// version = '2'
+// version = '3'
 // vat.names = JSON([names..])
 // vat.dynamicIDs = JSON([vatIDs..])
 // vat.name.$NAME = $vatID = v$NN
@@ -141,6 +143,7 @@ export const CURRENT_SCHEMA_VERSION = 2;
 // gcActions = JSON(gcActions)
 // reapQueue = JSON([vatIDs...])
 // pinnedObjects = ko$NN[,ko$NN..]
+// upgradeEvents = JSON([events..])
 
 // ko.nextID = $NN
 // ko$NN.owner = $vatID
@@ -177,6 +180,11 @@ export const CURRENT_SCHEMA_VERSION = 2;
 // v2:
 //   * change `version` to `'2'`
 //   * add `vats.terminated` with `[]` as initial value
+// v3:
+//   * change `version` to `'3'`
+//   * perform remediation for bug #9039
+// (after v3, does not get its own version)
+//   * `upgradeEvents` recognized, but omitted if empty
 
 /** @type {(s: string) => string[]} s */
 export function commaSplit(s) {
@@ -211,6 +219,77 @@ export const getAllStaticVats = kvStore => {
 export const getAllDynamicVats = getRequired => {
   return JSON.parse(getRequired('vat.dynamicIDs'));
 };
+
+const getObjectReferenceCount = (kvStore, kref) => {
+  const data = kvStore.get(`${kref}.refCount`);
+  if (!data) {
+    return { reachable: 0, recognizable: 0 };
+  }
+  const [reachable, recognizable] = commaSplit(data).map(Number);
+  reachable <= recognizable ||
+    Fail`refmismatch(get) ${kref} ${reachable},${recognizable}`;
+  return { reachable, recognizable };
+};
+
+const setObjectReferenceCount = (kvStore, kref, counts) => {
+  const { reachable, recognizable } = counts;
+  assert.typeof(reachable, 'number');
+  assert.typeof(recognizable, 'number');
+  (reachable >= 0 && recognizable >= 0) ||
+    Fail`${kref} underflow ${reachable},${recognizable}`;
+  reachable <= recognizable ||
+    Fail`refmismatch(set) ${kref} ${reachable},${recognizable}`;
+  kvStore.set(`${kref}.refCount`, `${reachable},${recognizable}`);
+};
+
+/**
+ * Increment the reference count associated with some kernel object.
+ *
+ * We track references to promises and objects, but not devices. Promises
+ * have only a "reachable" count, whereas objects track both "reachable"
+ * and "recognizable" counts.
+ *
+ * @param { (key: string) => string} getRequired
+ * @param { import('@agoric/swing-store').KVStore } kvStore
+ * @param {string} kref  The kernel slot whose refcount is to be incremented.
+ * @param {string?} tag  Debugging note with rough source of the reference.
+ * @param {{ isExport?: boolean, onlyRecognizable?: boolean }} options
+ * 'isExport' means the reference comes from a clist export, which counts
+ * for promises but not objects. 'onlyRecognizable' means the reference
+ * provides only recognition, not reachability
+ */
+export const incrementReferenceCount = (
+  getRequired,
+  kvStore,
+  kref,
+  tag,
+  options = {},
+) => {
+  const { isExport = false, onlyRecognizable = false } = options;
+  kref || Fail`incrementRefCount called with empty kref, tag=${tag}`;
+  const { type } = parseKernelSlot(kref);
+  if (type === 'promise') {
+    const refCount = Number(getRequired(`${kref}.refCount`)) + 1;
+    // kdebug(`++ ${kref}  ${tag} ${refCount}`);
+    kvStore.set(`${kref}.refCount`, `${refCount}`);
+  }
+  if (type === 'object' && !isExport) {
+    let { reachable, recognizable } = getObjectReferenceCount(kvStore, kref);
+    if (!onlyRecognizable) {
+      reachable += 1;
+    }
+    recognizable += 1;
+    // kdebug(`++ ${kref}  ${tag} ${reachable},${recognizable}`);
+    setObjectReferenceCount(kvStore, kref, { reachable, recognizable });
+  }
+};
+
+export function* readQueue(queue, getRequired) {
+  const [head, tail] = JSON.parse(getRequired(`${queue}`));
+  for (let i = head; i < tail; i += 1) {
+    yield JSON.parse(getRequired(`${queue}.${i}`));
+  }
+}
 
 // we use different starting index values for the various vNN/koNN/kdNN/kpNN
 // slots, to reduce confusing overlap when looking at debug messages (e.g.
@@ -389,14 +468,7 @@ export default function makeKernelKeeper(
     return tail - head;
   }
 
-  function dumpQueue(queue) {
-    const [head, tail] = JSON.parse(getRequired(`${queue}`));
-    const result = [];
-    for (let i = head; i < tail; i += 1) {
-      result.push(JSON.parse(getRequired(`${queue}.${i}`)));
-    }
-    return result;
-  }
+  const dumpQueue = queue => [...readQueue(queue, getRequired)];
 
   /**
    * @param {InternalKernelOptions} kernelOptions
@@ -620,26 +692,9 @@ export default function makeKernelKeeper(
     return parseReachableAndVatSlot(kvStore.get(kernelKey));
   }
 
-  function getObjectRefCount(kernelSlot) {
-    const data = kvStore.get(`${kernelSlot}.refCount`);
-    if (!data) {
-      return { reachable: 0, recognizable: 0 };
-    }
-    const [reachable, recognizable] = commaSplit(data).map(Number);
-    reachable <= recognizable ||
-      Fail`refmismatch(get) ${kernelSlot} ${reachable},${recognizable}`;
-    return { reachable, recognizable };
-  }
-
-  function setObjectRefCount(kernelSlot, { reachable, recognizable }) {
-    assert.typeof(reachable, 'number');
-    assert.typeof(recognizable, 'number');
-    (reachable >= 0 && recognizable >= 0) ||
-      Fail`${kernelSlot} underflow ${reachable},${recognizable}`;
-    reachable <= recognizable ||
-      Fail`refmismatch(set) ${kernelSlot} ${reachable},${recognizable}`;
-    kvStore.set(`${kernelSlot}.refCount`, `${reachable},${recognizable}`);
-  }
+  const getObjectRefCount = kref => getObjectReferenceCount(kvStore, kref);
+  const setObjectRefCount = (kref, counts) =>
+    setObjectReferenceCount(kvStore, kref, counts);
 
   /**
    * Iterate over non-durable objects exported by a vat.
@@ -791,45 +846,41 @@ export default function makeKernelKeeper(
     return kpid;
   }
 
+  /**
+   * @param {string} kernelSlot
+   * @returns {PromiseRecord}
+   */
   function getKernelPromise(kernelSlot) {
     insistKernelType('promise', kernelSlot);
-    const p = { state: getRequired(`${kernelSlot}.state`) };
-    switch (p.state) {
-      case undefined: {
-        throw Fail`unknown kernelPromise '${kernelSlot}'`;
-      }
+    const state = getRequired(`${kernelSlot}.state`);
+    const refCount = Number(kvStore.get(`${kernelSlot}.refCount`));
+    switch (state) {
       case 'unresolved': {
-        p.refCount = Number(kvStore.get(`${kernelSlot}.refCount`));
-        p.decider = kvStore.get(`${kernelSlot}.decider`);
-        if (p.decider === '') {
-          p.decider = undefined;
-        }
-        p.policy = kvStore.get(`${kernelSlot}.policy`) || 'ignore';
-        // @ts-expect-error get() may fail
-        p.subscribers = commaSplit(kvStore.get(`${kernelSlot}.subscribers`));
-        p.queue = Array.from(
+        const decider = kvStore.get(`${kernelSlot}.decider`) || undefined;
+        const policy = kvStore.get(`${kernelSlot}.policy`) || 'ignore';
+        const subscribers = commaSplit(
+          kvStore.get(`${kernelSlot}.subscribers`) || '',
+        );
+        const queue = Array.from(
           getPrefixedValues(kvStore, `${kernelSlot}.queue.`),
         ).map(s => JSON.parse(s));
-        break;
+        return harden({ state, refCount, decider, policy, subscribers, queue });
       }
       case 'fulfilled':
       case 'rejected': {
-        p.refCount = Number(kvStore.get(`${kernelSlot}.refCount`));
-        p.data = {
-          body: kvStore.get(`${kernelSlot}.data.body`),
-          // @ts-expect-error get() may fail
-          slots: commaSplit(kvStore.get(`${kernelSlot}.data.slots`)),
+        const data = {
+          body: getRequired(`${kernelSlot}.data.body`),
+          slots: commaSplit(getRequired(`${kernelSlot}.data.slots`)),
         };
-        for (const s of p.data.slots) {
+        for (const s of data.slots) {
           parseKernelSlot(s);
         }
-        break;
+        return harden({ state, refCount, data });
       }
       default: {
-        throw Fail`unknown state for ${kernelSlot}: ${p.state}`;
+        throw Fail`unknown state for ${kernelSlot}: ${state}`;
       }
     }
-    return harden(p);
   }
 
   function getResolveablePromise(kpid, expectedDecider) {
@@ -838,7 +889,9 @@ export default function makeKernelKeeper(
       insistVatID(expectedDecider);
     }
     const p = getKernelPromise(kpid);
-    p.state === 'unresolved' || Fail`${kpid} was already resolved`;
+    if (p.state !== 'unresolved') {
+      throw Fail`${kpid} was already resolved`;
+    }
     if (expectedDecider) {
       p.decider === expectedDecider ||
         Fail`${kpid} is decided by ${p.decider}, not ${expectedDecider}`;
@@ -897,6 +950,7 @@ export default function makeKernelKeeper(
     // up the resolution *now* and set the correct target early. Doing that
     // might make it easier to remove the Promise Table entry earlier.
     const p = getKernelPromise(kernelSlot);
+    assert.equal(p.state, 'unresolved');
     for (const msg of p.queue) {
       const entry = harden({ type: 'send', target: kernelSlot, msg });
       enqueue('acceptanceQueue', entry);
@@ -1142,18 +1196,22 @@ export default function makeKernelKeeper(
   function setDecider(kpid, decider) {
     insistVatID(decider);
     const p = getKernelPromise(kpid);
-    p.state === 'unresolved' || Fail`${kpid} was already resolved`;
-    !p.decider || Fail`${kpid} has decider ${p.decider}, not empty`;
+    assert.equal(p.state, 'unresolved', `${kpid} was already resolved`);
+    assert(!p.decider, `${kpid} has decider ${p.decider}, not empty`);
     kvStore.set(`${kpid}.decider`, decider);
   }
 
   function clearDecider(kpid) {
     const p = getKernelPromise(kpid);
-    p.state === 'unresolved' || Fail`${kpid} was already resolved`;
-    p.decider || Fail`${kpid} does not have a decider`;
+    assert.equal(p.state, 'unresolved', `${kpid} was already resolved`);
+    assert(p.decider, `${kpid} does not have a decider`);
     kvStore.set(`${kpid}.decider`, '');
   }
 
+  /**
+   * @param {string} vatID
+   * @returns {IterableIterator<[kpid: string, p: PromiseRecord]>}
+   */
   function* enumeratePromisesByDecider(vatID) {
     insistVatID(vatID);
     const promisePrefix = `${vatID}.c.p`;
@@ -1167,10 +1225,10 @@ export default function makeKernelKeeper(
       // whether the vat is the decider or not.  If it is, we add the promise
       // to the list of promises that must be rejected because the dead vat
       // will never be able to act upon them.
-      const kpid = kvStore.get(k);
+      const kpid = getRequired(k);
       const p = getKernelPromise(kpid);
       if (p.state === 'unresolved' && p.decider === vatID) {
-        yield kpid;
+        yield [kpid, p];
       }
     }
   }
@@ -1180,6 +1238,7 @@ export default function makeKernelKeeper(
     insistKernelType('promise', kernelSlot);
     insistVatID(vatID);
     const p = getKernelPromise(kernelSlot);
+    assert.equal(p.state, 'unresolved');
     const s = new Set(p.subscribers);
     s.add(vatID);
     const v = Array.from(s).sort().join(',');
@@ -1208,6 +1267,27 @@ export default function makeKernelKeeper(
 
   function getNextAcceptanceQueueMsg() {
     return dequeue('acceptanceQueue');
+  }
+
+  function injectQueuedUpgradeEvents() {
+    // refcounts: Any krefs in `upgradeEvents` must have a refcount to
+    // represent the list's hold on those objects. When
+    // upgradeSwingset() creates these events, it must also
+    // incref(kref), otherwise we run the risk of dropping the kref by
+    // the time injectQueuedUpgradeEvents() is called. We're nominally
+    // removing each event from upgradeEvents (decref), then pushing
+    // it onto the run-queue (incref), but since those two cancel each
+    // other out, we don't actually need to modify any reference
+    // counts from within this function. Note that
+    // addToAcceptanceQueue does not increment refcounts, just kernel
+    // queue-length stats.
+
+    const events = JSON.parse(kvStore.get('upgradeEvents') || '[]');
+    kvStore.delete('upgradeEvents');
+    for (const e of events) {
+      assert(e.type, `not an event`);
+      addToAcceptanceQueue(e);
+    }
   }
 
   function allocateMeter(remaining, threshold) {
@@ -1417,40 +1497,8 @@ export default function makeKernelKeeper(
     maybeFreeKrefs.add(kref);
   }
 
-  /**
-   * Increment the reference count associated with some kernel object.
-   *
-   * We track references to promises and objects, but not devices. Promises
-   * have only a "reachable" count, whereas objects track both "reachable"
-   * and "recognizable" counts.
-   *
-   * @param {unknown} kernelSlot  The kernel slot whose refcount is to be incremented.
-   * @param {string?} tag  Debugging note with rough source of the reference.
-   * @param {{ isExport?: boolean, onlyRecognizable?: boolean }} options
-   * 'isExport' means the reference comes from a clist export, which counts
-   * for promises but not objects. 'onlyRecognizable' means the reference
-   * provides only recognition, not reachability
-   */
-  function incrementRefCount(kernelSlot, tag, options = {}) {
-    const { isExport = false, onlyRecognizable = false } = options;
-    kernelSlot ||
-      Fail`incrementRefCount called with empty kernelSlot, tag=${tag}`;
-    const { type } = parseKernelSlot(kernelSlot);
-    if (type === 'promise') {
-      const refCount = Nat(BigInt(getRequired(`${kernelSlot}.refCount`))) + 1n;
-      // kdebug(`++ ${kernelSlot}  ${tag} ${refCount}`);
-      kvStore.set(`${kernelSlot}.refCount`, `${refCount}`);
-    }
-    if (type === 'object' && !isExport) {
-      let { reachable, recognizable } = getObjectRefCount(kernelSlot);
-      if (!onlyRecognizable) {
-        reachable += 1;
-      }
-      recognizable += 1;
-      // kdebug(`++ ${kernelSlot}  ${tag} ${reachable},${recognizable}`);
-      setObjectRefCount(kernelSlot, { reachable, recognizable });
-    }
-  }
+  const incrementRefCount = (kref, tag, options = {}) =>
+    incrementReferenceCount(getRequired, kvStore, kref, tag, options);
 
   /**
    * Decrement the reference count associated with some kernel object.
@@ -1542,13 +1590,15 @@ export default function makeKernelKeeper(
           const kp = getKernelPromise(kpid);
           if (kp.refCount === 0) {
             let idx = 0;
-            // TODO (#9889) don't assume promise is settled
-            for (const slot of kp.data.slots) {
-              // Note: the following decrement can result in an addition to the
-              // maybeFreeKrefs set, which we are in the midst of iterating.
-              // TC39 went to a lot of trouble to ensure that this is kosher.
-              decrementRefCount(slot, `gc|${kpid}|s${idx}`);
-              idx += 1;
+            if (kp.state === 'fulfilled' || kp.state === 'rejected') {
+              // #9889 don't assume promise is settled
+              for (const slot of kp.data.slots) {
+                // Note: the following decrement can result in an addition to the
+                // maybeFreeKrefs set, which we are in the midst of iterating.
+                // TC39 went to a lot of trouble to ensure that this is kosher.
+                decrementRefCount(slot, `gc|${kpid}|s${idx}`);
+                idx += 1;
+              }
             }
             deleteKernelPromise(kpid);
           }
@@ -1938,6 +1988,8 @@ export default function makeKernelKeeper(
     addToAcceptanceQueue,
     getAcceptanceQueueLength,
     getNextAcceptanceQueueMsg,
+
+    injectQueuedUpgradeEvents,
 
     allocateMeter,
     addMeterRemaining,

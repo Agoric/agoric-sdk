@@ -215,6 +215,10 @@ export default function buildKernel(
     return deviceID;
   }
 
+  function injectQueuedUpgradeEvents() {
+    kernelKeeper.injectQueuedUpgradeEvents();
+  }
+
   function addImport(forVatID, what) {
     if (!started) {
       throw Error('must do kernel.start() before addImport()');
@@ -287,15 +291,16 @@ export default function buildKernel(
       const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
       critical = vatKeeper.getOptions().critical;
 
-      // Reject all promises decided by the vat, making sure to capture the list
-      // of kpids before that data is deleted.
-      const deadPromises = [...kernelKeeper.enumeratePromisesByDecider(vatID)];
-      // remove vatID from the list of live vats, and mark for deletion
+      // remove vatID from the list of live vats, and mark for
+      // deletion (which will happen later, in vat-cleanup events)
       kernelKeeper.deleteVatID(vatID);
       kernelKeeper.markVatAsTerminated(vatID);
       deferred.push(kernelKeeper.removeVatFromSwingStoreExports(vatID));
-      for (const kpid of deadPromises) {
-        resolveToError(kpid, makeError('vat terminated'), vatID);
+
+      // Reject all promises decided by the vat
+      const errdata = makeError('vat terminated');
+      for (const [kpid, _p] of kernelKeeper.enumeratePromisesByDecider(vatID)) {
+        resolveToError(kpid, errdata, vatID);
       }
     }
     if (critical) {
@@ -597,7 +602,9 @@ export default function buildKernel(
     const p = kernelKeeper.getKernelPromise(kpid);
     kernelKeeper.incStat('dispatchNotify');
     const vatKeeper = kernelKeeper.provideVatKeeper(vatID);
-    p.state !== 'unresolved' || Fail`spurious notification ${kpid}`;
+    if (p.state === 'unresolved') {
+      throw Fail`spurious notification ${kpid}`;
+    }
     /** @type { KernelDeliveryOneNotify[] } */
     const resolutions = [];
     if (!vatKeeper.hasCListEntry(kpid)) {
@@ -612,7 +619,9 @@ export default function buildKernel(
       return NO_DELIVERY_CRANK_RESULTS;
     }
     for (const toResolve of targets) {
-      const { state, data } = kernelKeeper.getKernelPromise(toResolve);
+      const tp = kernelKeeper.getKernelPromise(toResolve);
+      assert(tp.state !== 'unresolved');
+      const { state, data } = tp;
       resolutions.push([toResolve, { state, data }]);
     }
     /** @type { KernelDeliveryNotify } */
@@ -995,9 +1004,30 @@ export default function buildKernel(
       return results;
     }
 
-    // reject all promises for which the vat was decider
-    for (const kpid of kernelKeeper.enumeratePromisesByDecider(vatID)) {
-      resolveToError(kpid, disconnectionCapData, vatID);
+    // We are homesick for a future in which most promises are
+    // durable, and vats do not need to subscribe to their own
+    // promises to make promise-watchers work. In that world, vats
+    // somehow mark the non-durable promises, which we must
+    // reject/disconnect on their behalf during upgrade.
+    //
+    // To handle the present reality, without durable promises, we
+    // pretend that all promises are so marked.
+
+    // reject all ephemeral promises for which the vat was decider
+    for (const [kpid, p] of kernelKeeper.enumeratePromisesByDecider(vatID)) {
+      const isEphemeral = true; // future vats will mark these explicitly
+      const selfSubscribed =
+        p.state === 'unresolved' && p.subscribers.includes(vatID);
+      if (isEphemeral) {
+        resolveToError(kpid, disconnectionCapData, vatID);
+        if (!selfSubscribed) {
+          // If the vat was subscribed to its own promise, the
+          // resolveToError will enqueue a dispatch.notify, whose delivery
+          // will delete the c-list entry. If it is *not* subscribed, we
+          // should delete the c-list entry now, because nobody else will.
+          vatKeeper.deleteCListEntriesForKernelSlots([kpid]);
+        }
+      }
     }
 
     // simulate an abandonExports syscall from the vat,
@@ -1186,6 +1216,7 @@ export default function buildKernel(
         }
       }
       default:
+        // @ts-expect-error
         throw Fail`unknown promise resolution '${kp.state}'`;
     }
   }
@@ -2081,6 +2112,7 @@ export default function buildKernel(
         return p.data;
       }
       default: {
+        // @ts-expect-error
         throw Fail`invalid state for ${kpid}: ${p.state}`;
       }
     }
@@ -2179,6 +2211,7 @@ export default function buildKernel(
     pinObject,
     vatNameToID,
     deviceNameToID,
+    injectQueuedUpgradeEvents,
     queueToKref,
     kpRegisterInterest,
     kpStatus,
