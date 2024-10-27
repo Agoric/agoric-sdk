@@ -119,6 +119,8 @@ export const CURRENT_SCHEMA_VERSION = 3;
 // old (v0): v$NN.reapCountdown = $NN or 'never'
 // v$NN.reapDirt = JSON({ deliveries, gcKrefs, computrons }) // missing keys treated as zero
 // (leave room for v$NN.snapshotDirt and options.snapshotDirtThreshold for #6786)
+// v$NN.vatParameters = JSON(capdata) // missing for vats created/upgraded before #8947
+//
 // exclude from consensus
 // local.*
 
