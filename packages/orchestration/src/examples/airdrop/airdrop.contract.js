@@ -414,7 +414,7 @@ export const start = async (zcf, privateArgs, baggage) => {
         //   );
         //   console.groupEnd();
         // },
-        async makePauseContractInvitation(adminDepositFacet) {
+        makePauseContractInvitation(adminDepositFacet) {
           console.group(
             '------------- NESTED LOGGER OPEN:: makePauseContractInvitation -------------',
           );
@@ -465,7 +465,7 @@ export const start = async (zcf, privateArgs, baggage) => {
             E(depositFacet).receive(pauseInvitation);
           };
 
-          const recievedPause = await depositInvitation(adminDepositFacet);
+          const recievedPause = depositInvitation(adminDepositFacet);
           return recievedPause;
         },
       },

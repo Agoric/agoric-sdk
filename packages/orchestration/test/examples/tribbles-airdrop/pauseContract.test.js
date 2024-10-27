@@ -220,14 +220,16 @@ test.serial(
       { zoe, namesByAddressAdmin },
       smartWalletIssuers,
     );
-    const wallet = await walletFactory.makeSmartWallet(
+    const adminWallet = await walletFactory.makeSmartWallet(
       'agoric1jng25adrtpl53eh50q7fch34e0vn4g72j6zcml',
     );
     console.log({ instance });
 
-    t.deepEqual(await E(wallet.peek).purseUpdates(invitationBrand), {});
-    const publicFacet = await E(zoe).getPublicFacet(instance);
-    t.is(publicFacet, {});
+    const adminInvitationPayment = await (
+      await E(adminWallet.peek).purseUpdates(invitationBrand)
+    ).next();
+
+    t.deepEqual(adminInvitationPayment, {});
   },
 );
 
