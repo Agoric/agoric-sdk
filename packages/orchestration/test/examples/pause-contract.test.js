@@ -14,28 +14,28 @@ import buildManualTimer from '@agoric/zoe/tools/manualTimer.js';
 import {
   oneDay,
   TimeIntervals,
-} from '../../../src/examples/airdrop/helpers/time.js';
+} from '../../src/examples/airdrop/helpers/time.js';
 import {
   permit,
   startAirdrop,
   makeTerms,
-} from '../../../src/examples/airdrop/airdrop.proposal.js';
+} from '../../src/examples/airdrop/airdrop.proposal.js';
 import {
   produceBoardAuxManager,
   permit as boardAuxPermit,
-} from '../../../src/examples/airdrop/platform-goals/board-aux.core.js';
+} from '../../src/examples/airdrop/platform-goals/board-aux.core.js';
 import { extract } from '@agoric/vats/src/core/utils.js';
 import { mockBootstrapPowers } from './boot-tools.js';
-import { head } from '../../../src/examples/airdrop/helpers/objectTools.js';
+import { head } from '../../src/examples/airdrop/helpers/objectTools.js';
 import {
   generateMerkleRoot,
   merkleTreeAPI,
-} from '../../../src/examples/airdrop/merkle-tree/index.js';
+} from '../../src/examples/airdrop/merkle-tree/index.js';
 import { simulateClaim } from './actors.js';
 import {
   messagesObject,
   OPEN,
-} from '../../../src/examples/airdrop/airdrop.contract.js';
+} from '../../src/examples/airdrop/airdrop.contract.js';
 import { agoricGenesisAccounts as accounts } from './data/genesis.keys.js';
 
 const agoricPubkeys = accounts.map(x => x.pubkey.key);

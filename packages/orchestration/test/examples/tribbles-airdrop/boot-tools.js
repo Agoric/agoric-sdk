@@ -14,6 +14,7 @@ import { makeMockChainStorageRoot } from '@agoric/internal/src/storage-test-util
 
 import '@agoric/vats/src/core/types-ambient.js';
 import '@agoric/zoe/src/zoeService/types-ambient.js';
+export const getBundleId = bundle => `b1-${bundle.endoZipBase64Sha512}`;
 
 const { entries } = Object;
 

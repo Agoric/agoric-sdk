@@ -1,4 +1,3 @@
-import '@endo/init';
 import { merkleTreeAPI } from '../../../../src/examples/airdrop/merkle-tree/index.js';
 
 const agoricGenesisAccounts = [

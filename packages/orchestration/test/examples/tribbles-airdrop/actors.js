@@ -43,7 +43,7 @@ const makeMakeOfferArgs =
  */
 const simulateClaim = async (
   t,
-  zoe,
+  _zoe,
   instance,
   feePurse,
   accountObject,
@@ -51,6 +51,7 @@ const simulateClaim = async (
   errorMessage = '',
   pubkeys = publicKeys,
 ) => {
+  const { zoe } = t.context;
   const [pfFromZoe, terms] = await Promise.all([
     E(zoe).getPublicFacet(instance),
     E(zoe).getTerms(instance),
@@ -63,7 +64,7 @@ const simulateClaim = async (
   const claimOfferArgs = makeOfferArgs(accountObject);
 
   console.log('TERMS:::', { terms, claimOfferArgs });
-  console.log(instance.instance);
+  console.log(instance);
 
   const proposal = {
     give: { Fee: AmountMath.make(brands.Fee, 5n) },
