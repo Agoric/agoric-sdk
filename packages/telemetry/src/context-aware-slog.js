@@ -317,9 +317,8 @@ export const makeContextualSlogProcessor = (
       }
       // eslint-disable-next-line no-restricted-syntax
       case SLOG_TYPES.COSMIC_SWINGSET.RUN.FINISH: {
-        persistContext(
-          finalBody.remainingBeans || !triggerContext ? {} : triggerContext,
-        );
+        assert(!!triggerContext);
+        persistContext(finalBody.remainingBeans ? {} : triggerContext);
         triggerContext = null;
         break;
       }

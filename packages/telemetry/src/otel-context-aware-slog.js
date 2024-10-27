@@ -91,7 +91,7 @@ export const makeSlogSender = async options => {
     const [secondsStr, fractionStr] = String(timestamp).split('.');
     const seconds = parseInt(secondsStr, 10);
     const nanoSeconds = parseInt(
-      (fractionStr || String(0)).padEnd(9, String(0)),
+      (fractionStr || String(0)).padEnd(9, String(0)).slice(0, 9),
       10,
     );
 
