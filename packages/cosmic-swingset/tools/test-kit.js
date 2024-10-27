@@ -2,18 +2,26 @@
 
 import * as fsPromises from 'node:fs/promises';
 import * as pathNamespace from 'node:path';
-import { assert, Fail } from '@endo/errors';
-import * as ActionType from '@agoric/internal/src/action-types.js';
+import { Fail } from '@endo/errors';
+import {
+  SwingsetMessageType,
+  QueuedActionType,
+} from '@agoric/internal/src/action-types.js';
 import { makeBootMsg } from '@agoric/internal/src/chain-utils.js';
 import { initSwingStore } from '@agoric/swing-store';
 import { makeSlogSender } from '@agoric/telemetry';
 import { launch } from '../src/launch-chain.js';
 import { DEFAULT_SIM_SWINGSET_PARAMS } from '../src/sim-params.js';
-import { makeBufferedStorage } from '../src/helpers/bufferedStorage.js';
+import {
+  makeBufferedStorage,
+  makeKVStoreFromMap,
+} from '../src/helpers/bufferedStorage.js';
 import { makeQueue, makeQueueStorageMock } from '../src/helpers/make-queue.js';
 
 /** @import { BlockInfo, BootMsg } from '@agoric/internal/src/chain-utils.js' */
-/** @import { SwingSetConfig } from '@agoric/swingset-vat' */
+/** @import { Mailbox, ManagerType, SwingSetConfig } from '@agoric/swingset-vat' */
+/** @import { KVStore } from '../src/helpers/bufferedStorage.js' */
+/** @import { InboundQueue } from '../src/launch-chain.js'; */
 
 /**
  * @template T
@@ -23,95 +31,9 @@ import { makeQueue, makeQueueStorageMock } from '../src/helpers/make-queue.js';
 /** @type {Replacer<object>} */
 const clone = obj => JSON.parse(JSON.stringify(obj));
 
-// TODO: Replace compareByCodePoints and makeKVStoreFromMap with imports when
-// available.
-// https://github.com/Agoric/agoric-sdk/pull/10299
-
-const compareByCodePoints = (left, right) => {
-  const leftIter = left[Symbol.iterator]();
-  const rightIter = right[Symbol.iterator]();
-  for (;;) {
-    const { value: leftChar } = leftIter.next();
-    const { value: rightChar } = rightIter.next();
-    if (leftChar === undefined && rightChar === undefined) {
-      return 0;
-    } else if (leftChar === undefined) {
-      // left is a prefix of right.
-      return -1;
-    } else if (rightChar === undefined) {
-      // right is a prefix of left.
-      return 1;
-    }
-    const leftCodepoint = /** @type {number} */ (leftChar.codePointAt(0));
-    const rightCodepoint = /** @type {number} */ (rightChar.codePointAt(0));
-    if (leftCodepoint < rightCodepoint) return -1;
-    if (leftCodepoint > rightCodepoint) return 1;
-  }
-};
-
-/**
- * @param {Map<string, string>} map
- */
-const makeKVStoreFromMap = map => {
-  let sortedKeys;
-  let priorKeyReturned;
-  let priorKeyIndex;
-
-  const ensureSorted = () => {
-    if (!sortedKeys) {
-      sortedKeys = [...map.keys()];
-      sortedKeys.sort(compareByCodePoints);
-    }
-  };
-
-  const clearGetNextKeyCache = () => {
-    priorKeyReturned = undefined;
-    priorKeyIndex = -1;
-  };
-  clearGetNextKeyCache();
-
-  const clearSorted = () => {
-    sortedKeys = undefined;
-    clearGetNextKeyCache();
-  };
-
-  /** @type {KVStore} */
-  const fakeStore = harden({
-    has: key => map.has(key),
-    get: key => map.get(key),
-    getNextKey: priorKey => {
-      assert.typeof(priorKey, 'string');
-      ensureSorted();
-      const start =
-        compareByCodePoints(priorKeyReturned, priorKey) <= 0
-          ? priorKeyIndex + 1
-          : 0;
-      for (let i = start; i < sortedKeys.length; i += 1) {
-        const key = sortedKeys[i];
-        if (compareByCodePoints(key, priorKey) <= 0) continue;
-        priorKeyReturned = key;
-        priorKeyIndex = i;
-        return key;
-      }
-      // reached end without finding the key, so clear our cache
-      clearGetNextKeyCache();
-      return undefined;
-    },
-    set: (key, value) => {
-      if (!map.has(key)) clearSorted();
-      map.set(key, value);
-    },
-    delete: key => {
-      if (map.has(key)) clearSorted();
-      map.delete(key);
-    },
-  });
-  return fakeStore;
-};
-
 export const defaultBootMsg = harden(
   makeBootMsg({
-    type: ActionType.AG_COSMOS_INIT,
+    type: SwingsetMessageType.AG_COSMOS_INIT,
     blockHeight: 100,
     blockTime: Math.floor(Date.parse('2020-01-01T00:00Z') / 1000),
     chainID: 'localtest',
@@ -147,13 +69,13 @@ export const defaultBootstrapMessage = harden({
 /**
  * This is intended as the minimum practical definition needed for testing that
  * runs with a mock chain on the other side of a bridge. The bootstrap vat is a
- * generic 'relay' that exposes reflective methods for inspecting and
+ * generic object that exposes reflective methods for inspecting and
  * interacting with devices and other vats, and is also capable of handling
  * 'CORE_EVAL' requests containing a list of { json_permits, js_code } 'evals'
  * by evaluating the code in an environment constrained by the permits (and it
  * registers itself with the bridge vat as the recipient of such requests).
  *
- * @type {import('@agoric/swingset-vat').SwingSetConfig}
+ * @type {SwingSetConfig}
  */
 const baseConfig = harden({
   defaultReapInterval: 'never',
@@ -161,7 +83,7 @@ const baseConfig = harden({
   bootstrap: 'bootstrap',
   vats: {
     bootstrap: {
-      sourceSpec: '@agoric/vats/tools/bootstrap-relay.js',
+      sourceSpec: '@agoric/vats/tools/vat-bootstrap-chain-reflective.js',
       creationOptions: {
         critical: true,
       },
@@ -202,10 +124,9 @@ const baseConfig = harden({
  *   default SwingSet configuration (may be overridden by more specific options
  *   such as `defaultManagerType`)
  * @param {string} [options.debugName]
- * @param {import('@agoric/swingset-vat').ManagerType} [options.defaultManagerType]
- *   As documented at {@link ../../../docs/env.md#swingset_worker_type}, the
- *   implicit default of 'local' can be overridden by a SWINGSET_WORKER_TYPE
- *   environment variable.
+ * @param {ManagerType} [options.defaultManagerType] As documented at
+ *   {@link ../../../docs/env.md#swingset_worker_type}, the implicit default of
+ *   'local' can be overridden by a SWINGSET_WORKER_TYPE environment variable.
  * @param {typeof process['env']} [options.env]
  * @param {Replacer<BootMsg>} [options.fixupBootMsg] a final opportunity to make
  *   any changes
@@ -214,11 +135,18 @@ const baseConfig = harden({
  * @param {import('@agoric/telemetry').SlogSender} [options.slogSender]
  * @param {import('../src/chain-main.js').CosmosSwingsetConfig} [options.swingsetConfig]
  * @param {SwingSetConfig['vats']} [options.vats] extra static vat configuration
- * @param {string} [options.baseBootstrapManifest] see {@link ../../vats/tools/bootstrap-relay.js}
- * @param {string} [options.addBootstrapBehaviors] see {@link ../../vats/tools/bootstrap-relay.js}
+ * @param {string} [options.baseBootstrapManifest] identifies the colletion of
+ *   "behaviors" to run at bootstrap for creating and configuring the initial
+ *   population of vats (see
+ *   {@link ../../vats/tools/vat-bootstrap-chain-reflective.js})
+ * @param {string[]} [options.addBootstrapBehaviors] additional specific
+ *   behavior functions to augment the selected manifest (see
+ *   {@link ../../vats/src/core})
+ * @param {string[]} [options.bootstrapCoreEvals] code defining functions to be
+ *   called with a set of powers, each in their own isolated compartment
  * @param {object} [powers]
  * @param {Pick<import('node:fs/promises'), 'mkdir'>} [powers.fsp]
- * @param {typeof (import('node:path')['resolve'])} [powers.resolvePath]
+ * @param {typeof import('node:path').resolve} [powers.resolvePath]
  */
 export const makeCosmicSwingsetTestKit = async (
   receiveBridgeSend,
@@ -236,10 +164,11 @@ export const makeCosmicSwingsetTestKit = async (
     swingsetConfig = {},
     vats,
 
-    // Options for vats (particularly the bootstrap-relay vat).
+    // Options for vats (particularly the reflective bootstrap vat).
     baseBootstrapManifest,
     addBootstrapBehaviors,
-  },
+    bootstrapCoreEvals,
+  } = {},
   { fsp = fsPromises, resolvePath = pathNamespace.resolve } = {},
 ) => {
   await null;
@@ -257,14 +186,13 @@ export const makeCosmicSwingsetTestKit = async (
   config.bundles = { ...config.bundles, ...bundles };
   config.vats = { ...config.vats, ...vats };
 
+  // @ts-expect-error we assume that config.bootstrap is not undefined
   const bootstrapVatDesc = config.vats[config.bootstrap];
-  const bootstrapVatParams = bootstrapVatDesc.parameters;
-  if (baseBootstrapManifest) {
-    bootstrapVatParams.baseManifest = baseBootstrapManifest;
-  }
-  if (addBootstrapBehaviors) {
-    bootstrapVatParams.addBehaviors = addBootstrapBehaviors;
-  }
+  Object.assign(bootstrapVatDesc.parameters, {
+    baseManifest: baseBootstrapManifest,
+    addBehaviors: addBootstrapBehaviors,
+    coreProposalCodeSteps: bootstrapCoreEvals,
+  });
 
   if (fixupConfig) config = fixupConfig(config);
 
@@ -273,7 +201,11 @@ export const makeCosmicSwingsetTestKit = async (
 
   const actionQueueStorage = makeQueueStorageMock().storage;
   const highPriorityQueueStorage = makeQueueStorageMock().storage;
-  const mailboxStorage = makeBufferedStorage(makeKVStoreFromMap(new Map()));
+  const { kvStore: mailboxKVStore, ...mailboxBufferMethods } =
+    makeBufferedStorage(
+      /** @type {KVStore<Mailbox>} */ (makeKVStoreFromMap(new Map())),
+    );
+  const mailboxStorage = { ...mailboxKVStore, ...mailboxBufferMethods };
 
   const savedChainSends = [];
   const clearChainSends = async () => savedChainSends.splice(0);
@@ -308,7 +240,7 @@ export const makeCosmicSwingsetTestKit = async (
     mailboxStorage,
     clearChainSends,
     replayChainSends,
-    receiveBridgeSend,
+    bridgeOutbound: receiveBridgeSend,
     vatconfig: config,
     argv: { bootMsg },
     env,
@@ -350,39 +282,76 @@ export const makeCosmicSwingsetTestKit = async (
     blockTxCount = 0;
     const context = { blockHeight, blockTime };
     await blockingSend({
-      type: ActionType.BEGIN_BLOCK,
+      type: SwingsetMessageType.BEGIN_BLOCK,
       ...context,
       params,
     });
-    await blockingSend({ type: ActionType.END_BLOCK, ...context });
-    await blockingSend({ type: ActionType.COMMIT_BLOCK, ...context });
-    await blockingSend({ type: ActionType.AFTER_COMMIT_BLOCK, ...context });
+    await blockingSend({ type: SwingsetMessageType.END_BLOCK, ...context });
+    await blockingSend({ type: SwingsetMessageType.COMMIT_BLOCK, ...context });
+    await blockingSend({
+      type: SwingsetMessageType.AFTER_COMMIT_BLOCK,
+      ...context,
+    });
     return getLastBlockInfo();
   };
+  await runNextBlock();
 
-  const makeQueueRecord = action => {
+  /** @type {InboundQueue} */
+  const actionQueue = makeQueue(actionQueueStorage);
+  /** @type {InboundQueue} */
+  const highPriorityQueue = makeQueue(highPriorityQueueStorage);
+  /**
+   * @param {{ type: QueuedActionType } & Record<string, unknown>} action
+   * @param {InboundQueue} [queue]
+   */
+  const pushQueueRecord = (action, queue = actionQueue) => {
     blockTxCount += 1;
-    return {
+    queue.push({
       action,
       context: {
         blockHeight: lastBlockHeight + 1,
         txHash: blockTxCount,
         msgIdx: '',
       },
+    });
+  };
+  /**
+   * @param {string | ((...args: any[]) => void)} fn
+   * @param {string} [jsonPermits] should deserialize into a BootstrapManifestPermit
+   * @param {InboundQueue} [queue]
+   */
+  const pushCoreEval = (
+    fn,
+    jsonPermits = 'true',
+    queue = highPriorityQueue,
+  ) => {
+    /** @type {import('@agoric/vats/src/core/lib-boot.js').BootstrapManifestPermit} */
+    // eslint-disable-next-line no-unused-vars
+    const permit = JSON.parse(jsonPermits);
+    /** @type {import('@agoric/cosmic-proto/swingset/swingset.js').CoreEvalSDKType} */
+    const coreEvalDesc = {
+      json_permits: jsonPermits,
+      js_code: String(fn),
     };
+    const action = {
+      type: QueuedActionType.CORE_EVAL,
+      evals: [coreEvalDesc],
+    };
+    pushQueueRecord(action, queue);
   };
 
   return {
     // SwingSet-oriented references.
-    actionQueue: makeQueue(actionQueueStorage),
-    highPriorityActionQueue: makeQueue(highPriorityQueueStorage),
+    actionQueue,
+    highPriorityQueue,
     mailboxStorage,
     shutdown,
     swingStore,
 
     // Functions specific to this kit.
     getLastBlockInfo,
-    makeQueueRecord,
+    pushQueueRecord,
+    pushCoreEval,
     runNextBlock,
   };
 };

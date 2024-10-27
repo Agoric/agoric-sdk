@@ -1,8 +1,15 @@
+/**
+ * @file Source code for a bootstrap vat that runs blockchain behaviors (such as
+ *   bridge vat integration) and exposes reflective methods for use in testing.
+ *
+ *   TODO: Share code with packages/SwingSet/tools/bootstrap-relay.js
+ */
+
 import { Fail, q } from '@endo/errors';
 import { Far, E } from '@endo/far';
 import { makePromiseKit } from '@endo/promise-kit';
-import { objectMap } from '@agoric/internal';
 import { buildManualTimer } from '@agoric/swingset-vat/tools/manual-timer.js';
+import { makeReflectionMethods } from '@agoric/swingset-vat/tools/vat-puppet.js';
 import { makeDurableZone } from '@agoric/zone/durable.js';
 import { makeBootstrap } from '../src/core/lib-boot.js';
 import * as basicBehaviorsNamespace from '../src/core/basic-behaviors.js';
@@ -51,14 +58,11 @@ manifests.MINIMAL = makeManifestForBehaviors([
 ]);
 
 /**
- * @param {VatPowers & {
- *   D: DProxy;
- *   logger: (msg) => void;
- * }} vatPowers
+ * @param {VatPowers & { D: DProxy; testLog: typeof console.log }} vatPowers
  * @param {{
- *   coreProposalCodeSteps?: string[];
  *   baseManifest?: string;
  *   addBehaviors?: string[];
+ *   coreProposalCodeSteps?: string[];
  * }} bootstrapParameters
  * @param {import('@agoric/vat-data').Baggage} baggage
  */
@@ -66,16 +70,22 @@ export const buildRootObject = (vatPowers, bootstrapParameters, baggage) => {
   const manualTimer = buildManualTimer();
   let vatAdmin;
   const { promise: vatAdminP, resolve: captureVatAdmin } = makePromiseKit();
-  vatAdminP.then(value => (vatAdmin = value)); // for better debugging
-  const vatData = new Map();
+  void vatAdminP.then(value => (vatAdmin = value)); // for better debugging
+  /** @typedef {{ root: object; incarnationNumber?: number }} VatRecord */
+  /**
+   * @typedef {VatRecord &
+   *   import('@agoric/swingset-vat').CreateVatResults & {
+   *     bundleCap: unknown;
+   *   }} DynamicVatRecord
+   */
+  /** @type {Map<string, VatRecord | DynamicVatRecord>} */
+  const vatRecords = new Map();
   const devicesByName = new Map();
-  const callLogsByRemotable = new Map();
 
   const { baseManifest: manifestName = 'MINIMAL', addBehaviors = [] } =
     bootstrapParameters;
   Object.hasOwn(manifests, manifestName) ||
     Fail`missing manifest ${manifestName}`;
-  Array.isArray(addBehaviors) || Fail`addBehaviors must be an array of names`;
   const manifest = {
     ...manifests[manifestName],
     ...makeManifestForBehaviors(addBehaviors),
@@ -91,7 +101,7 @@ export const buildRootObject = (vatPowers, bootstrapParameters, baggage) => {
    *   V]>
    */
   const bootstrapBase = makeBootstrap(
-    vatPowers,
+    { ...vatPowers, logger: vatPowers.testLog },
     bootstrapParameters,
     manifest,
     allBehaviors,
@@ -99,7 +109,11 @@ export const buildRootObject = (vatPowers, bootstrapParameters, baggage) => {
     makeDurableZone(baggage),
   );
 
+  const reflectionMethods = makeReflectionMethods(vatPowers, baggage);
+
   return Far('root', {
+    ...reflectionMethods,
+
     ...bootstrapBase,
     bootstrap: async (vats, devices) => {
       await bootstrapBase.bootstrap(vats, devices);
@@ -107,10 +121,10 @@ export const buildRootObject = (vatPowers, bootstrapParameters, baggage) => {
       // createVatAdminService is idempotent (despite the name).
       captureVatAdmin(E(vats.vatAdmin).createVatAdminService(devices.vatAdmin));
 
-      // Capture references to devices and static vats.
+      // Capture references to static vats and devices.
       for (const [name, root] of Object.entries(vats)) {
         if (name !== 'vatAdmin') {
-          vatData.set(name, { root });
+          vatRecords.set(name, { root });
         }
       }
       for (const [name, device] of Object.entries(devices)) {
@@ -118,85 +132,55 @@ export const buildRootObject = (vatPowers, bootstrapParameters, baggage) => {
       }
     },
 
-    getDevice: async deviceName => devicesByName.get(deviceName),
+    getDevice: deviceName => devicesByName.get(deviceName),
 
-    getVatAdmin: async () => vatAdmin || vatAdminP,
+    getManualTimer: () => manualTimer,
 
-    /** @deprecated in favor of getManualTimer */
-    getTimer: async () => manualTimer,
+    getVatAdmin: () => vatAdmin || vatAdminP,
 
-    getManualTimer: async () => manualTimer,
-
-    getVatRoot: async vatName => {
-      const vat = vatData.get(vatName) || Fail`unknown vat name: ${q(vatName)}`;
+    getVatRoot: vatName => {
+      const vat =
+        vatRecords.get(vatName) || Fail`unknown vat name: ${q(vatName)}`;
       const { root } = vat;
       return root;
     },
 
-    createVat: async (
-      { name, bundleCapName, vatParameters = {} },
-      options = {},
-    ) => {
-      const bcap = await E(vatAdminP).getNamedBundleCap(bundleCapName);
-      const vatOptions = { ...options, vatParameters };
-      const { adminNode, root } = await E(vatAdminP).createVat(
-        bcap,
-        vatOptions,
-      );
-      vatData.set(name, { adminNode, root });
+    /**
+     * @param {string} vatName
+     * @param {string} [bundleCapName]
+     * @param {{ vatParameters?: object } & Record<string, unknown>} [vatOptions]
+     * @returns {Promise<DynamicVatRecord['root']>} root object of the new vat
+     */
+    createVat: async (vatName, bundleCapName = vatName, vatOptions = {}) => {
+      const bundleCap = await E(vatAdminP).getNamedBundleCap(bundleCapName);
+      const { root, adminNode } = await E(vatAdminP).createVat(bundleCap, {
+        vatParameters: {},
+        ...vatOptions,
+      });
+      vatRecords.set(vatName, { root, adminNode, bundleCap });
       return root;
     },
 
-    upgradeVat: async ({ name, bundleCapName, vatParameters = {} }) => {
-      const vat = vatData.get(name) || Fail`unknown vat name: ${q(name)}`;
-      const bcap = await E(vatAdminP).getNamedBundleCap(bundleCapName);
-      const options = { vatParameters };
-      const incarnationNumber = await E(vat.adminNode).upgrade(bcap, options);
-      vat.incarnationNumber = incarnationNumber;
+    /**
+     * @param {string} vatName
+     * @param {string} [bundleCapName]
+     * @param {{ vatParameters?: object } & Record<string, unknown>} [vatOptions]
+     * @returns {Promise<number>} the resulting incarnation number
+     */
+    upgradeVat: async (vatName, bundleCapName, vatOptions = {}) => {
+      const vatRecord = /** @type {DynamicVatRecord} */ (
+        vatRecords.get(vatName) || Fail`unknown vat name: ${q(vatName)}`
+      );
+      const bundleCap = await (bundleCapName
+        ? E(vatAdminP).getNamedBundleCap(bundleCapName)
+        : vatRecord.bundleCap);
+      const upgradeOptions = { vatParameters: {}, ...vatOptions };
+      const { incarnationNumber } = await E(vatRecord.adminNode).upgrade(
+        bundleCap,
+        upgradeOptions,
+      );
+      vatRecord.incarnationNumber = incarnationNumber;
       return incarnationNumber;
-    },
-
-    /**
-     * Derives a remotable from an object by mapping each object property into a
-     * method that returns the value.
-     *
-     * @param {string} label
-     * @param {Record<string, any>} returnValues
-     */
-    makeRemotable: (label, returnValues) => {
-      const callLogs = [];
-      const makeGetterFunction = (value, name) => {
-        const getValue = (...args) => {
-          callLogs.push([name, ...args]);
-          return value;
-        };
-        return getValue;
-      };
-      // `objectMap` hardens its result, but...
-      const methods = objectMap(returnValues, makeGetterFunction);
-      // ... `Far` requires its methods argument not to be hardened.
-      const remotable = Far(label, { ...methods });
-      callLogsByRemotable.set(remotable, callLogs);
-      return remotable;
-    },
-
-    makePromiseKit: () => {
-      const { promise, ...resolverMethods } = makePromiseKit();
-      const resolver = Far('resolver', resolverMethods);
-      return harden({ promise, resolver });
-    },
-
-    /**
-     * Returns a copy of a remotable's logs.
-     *
-     * @param {object} remotable
-     */
-    getLogForRemotable: remotable => {
-      const logs =
-        callLogsByRemotable.get(remotable) ||
-        Fail`logs not found for ${q(remotable)}`;
-      // Return a copy so that the original remains mutable.
-      return harden([...logs]);
     },
   });
 };

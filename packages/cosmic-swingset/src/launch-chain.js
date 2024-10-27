@@ -59,6 +59,8 @@ const { hasOwn } = Object;
 /** @import { Mailbox, RunPolicy, SwingSetConfig } from '@agoric/swingset-vat' */
 /** @import { KVStore, BufferedKVStore } from './helpers/bufferedStorage.js' */
 
+/** @typedef {ReturnType<typeof makeQueue<{context: any, action: any}>>} InboundQueue */
+
 const console = anylogger('launch-chain');
 const blockManagerConsole = anylogger('block-manager');
 
@@ -507,7 +509,6 @@ export async function launch({
     });
   const { kvStore, commit } = hostStorage;
 
-  /** @typedef {ReturnType<typeof makeQueue<{context: any, action: any}>>} InboundQueue */
   /** @type {InboundQueue} */
   const actionQueue = makeQueue(actionQueueStorage);
   /** @type {InboundQueue} */

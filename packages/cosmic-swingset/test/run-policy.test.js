@@ -1,18 +1,26 @@
 /* eslint-env node */
 import test from 'ava';
-import { Fail, q } from '@endo/errors';
+import { assert, q, Fail } from '@endo/errors';
 import { E } from '@endo/far';
 import { BridgeId, objectMap } from '@agoric/internal';
-import { CORE_EVAL } from '@agoric/internal/src/action-types.js';
 import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
-import { makeCosmicSwingsetTestKit } from '../tools/test-kit.js';
+import {
+  defaultBootstrapMessage,
+  makeCosmicSwingsetTestKit,
+} from '../tools/test-kit.js';
+import { provideEnhancedKVStore } from '../src/helpers/bufferedStorage.js';
 import {
   DEFAULT_SIM_SWINGSET_PARAMS,
   makeVatCleanupBudgetFromKeywords,
 } from '../src/sim-params.js';
 
+/** @import { KVStore } from '../src/helpers/bufferedStorage.js' */
+
 /**
- * @param {Record<string, string: specifier>} src
+ * Converts a Record<name, specifierString> into Record<name, { sourceSpec }>
+ * for defining e.g. a `bundles` group.
+ *
+ * @param {Record<string, string>} src
  * @returns {import('@agoric/swingset-vat').SwingSetConfigDescriptor}
  */
 const makeSourceDescriptors = src => {
@@ -42,44 +50,47 @@ test('cleanup work must be limited by vat_cleanup_budget', async t => {
         Fail`port ${q(destPort)} not implemented for message ${msg}`;
     }
   };
-  const {
-    actionQueue,
-    getLastBlockInfo,
-    makeQueueRecord,
-    runNextBlock,
-    shutdown,
-    swingStore,
-  } = await makeCosmicSwingsetTestKit(receiveBridgeSend, {
-    bundles: makeSourceDescriptors({
-      exporter: '@agoric/swingset-vat/test/vat-exporter.js',
-    }),
-  });
-  await runNextBlock({
-    params: makeCleanupBudgetParams({ Default: 0 }),
-  });
-
-  // We'll be interacting through core evals.
-  // TODO: But will probably also need controller access for deep inspection.
-  const pushCoreEval = fn =>
-    actionQueue.push(
-      makeQueueRecord({
-        type: CORE_EVAL,
-        evals: [
-          {
-            json_permits: 'true',
-            js_code: String(fn),
-          },
-        ],
+  const { pushCoreEval, runNextBlock, shutdown, swingStore } =
+    await makeCosmicSwingsetTestKit(receiveBridgeSend, {
+      bundles: makeSourceDescriptors({
+        puppet: '@agoric/swingset-vat/tools/vat-puppet.js',
       }),
-    );
-
-  pushCoreEval(async powers => {
-    const bootstrap = powers.vats.bootstrap;
-    const vat = await E(bootstrap).createVat({
-      name: 'doomed',
-      bundleCapName: 'exporter',
+      fixupBootMsg: () => ({
+        ...defaultBootstrapMessage,
+        params: makeCleanupBudgetParams({ Default: 0 }),
+      }),
     });
-    // TODO: Give the vat a big footprint, then terminate it.
+  const mapStore = provideEnhancedKVStore(
+    /** @type {KVStore<string>} */ (swingStore.kernelStorage.kvStore),
+  );
+  /** @type {(key: string) => string} */
+  const mustGet = key => {
+    const value = mapStore.get(key);
+    assert(value !== undefined, `kvStore entry for ${key} must exist`);
+    return value;
+  };
+
+  // Launch the new vat and capture its ID.
+  pushCoreEval(async powers => {
+    const { bootstrap } = powers.vats;
+    await E(bootstrap).createVat('doomed', 'puppet');
+  });
+  await runNextBlock();
+  const vatIDs = JSON.parse(mustGet('vat.dynamicIDs'));
+  const vatID = vatIDs.at(-1);
+  t.is(
+    vatID,
+    'v8',
+    `time to update expected vatID to ${JSON.stringify(vatIDs)}.at(-1)?`,
+  );
+
+  // Terminate the vat and assert lack of cleanup.
+  pushCoreEval(async powers => {
+    const { bootstrap } = powers.vats;
+    const vat = await E(bootstrap).getVatRoot('doomed');
+    // TODO: Give the vat a big footprint, similar to
+    // packages/SwingSet/test/vat-admin/slow-termination/slow-termination.test.js
+    await E(vat).dieHappy();
   });
   await runNextBlock();
   // TODO: Assert lack of cleanup.
@@ -89,4 +100,6 @@ test('cleanup work must be limited by vat_cleanup_budget', async t => {
   });
   // TODO: Assert limited cleanup.
   // TODO: Further cleanup assertions.
+
+  await shutdown();
 });

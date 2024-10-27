@@ -38,6 +38,173 @@ export function insistStorageAPI(kvStore) {
   }
 }
 
+// TODO: Replace compareByCodePoints and makeKVStoreFromMap and
+// provideEnhancedKVStore with imports when
+// available.
+// https://github.com/Agoric/agoric-sdk/pull/10299
+
+const compareByCodePoints = (left, right) => {
+  const leftIter = left[Symbol.iterator]();
+  const rightIter = right[Symbol.iterator]();
+  for (;;) {
+    const { value: leftChar } = leftIter.next();
+    const { value: rightChar } = rightIter.next();
+    if (leftChar === undefined && rightChar === undefined) {
+      return 0;
+    } else if (leftChar === undefined) {
+      // left is a prefix of right.
+      return -1;
+    } else if (rightChar === undefined) {
+      // right is a prefix of left.
+      return 1;
+    }
+    const leftCodepoint = /** @type {number} */ (leftChar.codePointAt(0));
+    const rightCodepoint = /** @type {number} */ (rightChar.codePointAt(0));
+    if (leftCodepoint < rightCodepoint) return -1;
+    if (leftCodepoint > rightCodepoint) return 1;
+  }
+};
+
+/**
+ * @template [T=unknown]
+ * @param {Map<string, T>} map
+ * @returns {KVStore<T>}
+ */
+export const makeKVStoreFromMap = map => {
+  let sortedKeys;
+  let priorKeyReturned;
+  let priorKeyIndex;
+
+  const ensureSorted = () => {
+    if (!sortedKeys) {
+      sortedKeys = [...map.keys()];
+      sortedKeys.sort(compareByCodePoints);
+    }
+  };
+
+  const clearGetNextKeyCache = () => {
+    priorKeyReturned = undefined;
+    priorKeyIndex = -1;
+  };
+  clearGetNextKeyCache();
+
+  const clearSorted = () => {
+    sortedKeys = undefined;
+    clearGetNextKeyCache();
+  };
+
+  /** @type {KVStore<T>} */
+  const fakeStore = harden({
+    has: key => map.has(key),
+    get: key => map.get(key),
+    getNextKey: priorKey => {
+      assert.typeof(priorKey, 'string');
+      ensureSorted();
+      const start =
+        compareByCodePoints(priorKeyReturned, priorKey) <= 0
+          ? priorKeyIndex + 1
+          : 0;
+      for (let i = start; i < sortedKeys.length; i += 1) {
+        const key = sortedKeys[i];
+        if (compareByCodePoints(key, priorKey) <= 0) continue;
+        priorKeyReturned = key;
+        priorKeyIndex = i;
+        return key;
+      }
+      // reached end without finding the key, so clear our cache
+      clearGetNextKeyCache();
+      return undefined;
+    },
+    set: (key, value) => {
+      if (!map.has(key)) clearSorted();
+      map.set(key, value);
+    },
+    delete: key => {
+      if (map.has(key)) clearSorted();
+      map.delete(key);
+    },
+  });
+  return fakeStore;
+};
+
+/**
+ * Return an object representing KVStore contents as both a KVStore and a Map.
+ *
+ * Iterating over the map while mutating it is "unsupported" (entries inserted
+ * that sort before the current iteration point will be skipped).
+ *
+ * The `size` property is not supported.
+ *
+ * @template [T=unknown]
+ * @param {Map<string, T> | KVStore<T>} [mapOrKvStore]
+ */
+export function provideEnhancedKVStore(mapOrKvStore = new Map()) {
+  if (!('getNextKey' in mapOrKvStore)) {
+    mapOrKvStore = makeKVStoreFromMap(mapOrKvStore);
+  }
+
+  if (!('keys' in mapOrKvStore)) {
+    const kvStore = mapOrKvStore;
+    const map = harden({
+      ...mapOrKvStore,
+      set(key, value) {
+        kvStore.set(key, value);
+        return map;
+      },
+      delete(key) {
+        const had = kvStore.has(key);
+        kvStore.delete(key);
+        return had;
+      },
+      clear() {
+        for (const key of map.keys()) {
+          kvStore.delete(key);
+        }
+      },
+      /** @returns {number} */
+      get size() {
+        throw new Error('size not implemented.');
+      },
+      *entries() {
+        for (const key of map.keys()) {
+          yield [key, /** @type {string} */ (kvStore.get(key))];
+        }
+      },
+      *keys() {
+        /** @type {string | undefined} */
+        let key = '';
+        if (kvStore.has(key)) {
+          yield key;
+        }
+        // eslint-disable-next-line no-cond-assign
+        while ((key = kvStore.getNextKey(key))) {
+          yield key;
+        }
+      },
+      *values() {
+        for (const key of map.keys()) {
+          yield /** @type {string} */ (kvStore.get(key));
+        }
+      },
+      forEach(callbackfn, thisArg) {
+        for (const key of map.keys()) {
+          Reflect.apply(callbackfn, thisArg, [
+            /** @type {string} */ (kvStore.get(key)),
+            key,
+            map,
+          ]);
+        }
+      },
+      [Symbol.iterator]() {
+        return map.entries();
+      },
+    });
+    mapOrKvStore = map;
+  }
+
+  return /** @type {Map<string, T> & KVStore<T>} */ (mapOrKvStore);
+}
+
 /**
  * Create a StorageAPI object that buffers writes to a wrapped StorageAPI object
  * until told to commit (or abort) them.
