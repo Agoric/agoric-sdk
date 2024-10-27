@@ -710,6 +710,7 @@ export default function buildKernel(
       total:
         work.exports +
         work.imports +
+        work.promises +
         work.kv +
         work.snapshots +
         work.transcripts,
@@ -1851,6 +1852,7 @@ export default function buildKernel(
       {
         exports: M.number(),
         imports: M.number(),
+        promises: M.number(),
         kv: M.number(),
         snapshots: M.number(),
         transcripts: M.number(),
