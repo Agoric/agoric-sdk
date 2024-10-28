@@ -43,6 +43,8 @@ export const buildRootObject = () => {
       vatAdmin = await E(vats.vatAdmin).createVatAdminService(devices.vatAdmin);
     },
 
+    nop: () => 0,
+
     getMarker: () => marker,
 
     getImportSensors: () => importSensors,
@@ -281,6 +283,27 @@ export const buildRootObject = () => {
       const paramB = await E(root).getParameters();
 
       return [paramA, paramB];
+    },
+
+    buildV1WithVatParameters: async () => {
+      const bcap1 = await E(vatAdmin).getNamedBundleCap('ulrik1');
+      const vp1 = { number: 1, marker };
+      const options1 = { vatParameters: vp1 };
+      const res = await E(vatAdmin).createVat(bcap1, options1);
+      ulrikAdmin = res.adminNode;
+      ulrikRoot = res.root;
+      const param1 = await E(ulrikRoot).getParameters();
+      return param1;
+    },
+
+    upgradeV2WithVatParameters: async () => {
+      const bcap2 = await E(vatAdmin).getNamedBundleCap('ulrik2');
+      const vp2 = { number: 2, marker };
+      const options2 = { vatParameters: vp2 };
+      await E(ulrikAdmin).upgrade(bcap2, options2);
+      const param2 = await E(ulrikRoot).getParameters();
+
+      return param2;
     },
   });
 };
