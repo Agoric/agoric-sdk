@@ -13,16 +13,11 @@ export const defaultProposalBuilder = async ({ publishRef, install }) =>
             '../bundles/bundle-vaultFactory.js',
           ),
         ),
-        contractGovernorRef: publishRef(
-          install(
-            '@agoric/governance/src/contractGovernor.js',
-            '../bundles/bundle-contractGovernor.js',
-          ),
-        ),
       },
     ],
   });
 
+/** @type {import('@agoric/deploy-script-support/src/externalTypes.js').DeployScriptFunction} */
 export default async (homeP, endowments) => {
   const { writeCoreEval } = await makeHelpers(homeP, endowments);
   await writeCoreEval('upgrade-vaults', defaultProposalBuilder);

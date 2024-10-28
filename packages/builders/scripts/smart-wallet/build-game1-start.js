@@ -27,6 +27,7 @@ const game1ProposalBuilder = async ({ publishRef, install }) => {
   });
 };
 
+/** @type {import('@agoric/deploy-script-support/src/externalTypes.js').DeployScriptFunction} */
 export default async (homeP, endowments) => {
   const { writeCoreEval } = await makeHelpers(homeP, endowments);
   await writeCoreEval('start-game1', game1ProposalBuilder);

@@ -39,8 +39,8 @@ export {};
 **types-index.d.ts**
 ```ts
 // Export all the types this package provides
-export * from './types.js';
-export * from './other-types.js';
+export type * from './types.js';
+export type * from './other-types.js';
 ```
 
 The actual type implementation is then written in `types.ts` and `other-types.ts` files (per the example above).

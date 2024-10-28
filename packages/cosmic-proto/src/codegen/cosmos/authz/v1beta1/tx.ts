@@ -1,9 +1,9 @@
 //@ts-nocheck
-import { Grant, GrantSDKType } from './authz.js';
-import { Any, AnySDKType } from '../../../google/protobuf/any.js';
+import { Grant, type GrantSDKType } from './authz.js';
+import { Any, type AnySDKType } from '../../../google/protobuf/any.js';
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
 import { isSet, bytesFromBase64, base64FromBytes } from '../../../helpers.js';
-import { JsonSafe } from '../../../json-safe.js';
+import { type JsonSafe } from '../../../json-safe.js';
 /**
  * MsgGrant is a request type for Grant method. It declares authorization to the grantee
  * on behalf of the granter with the provided expiration time.

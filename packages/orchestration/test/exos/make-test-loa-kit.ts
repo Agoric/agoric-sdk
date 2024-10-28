@@ -2,7 +2,7 @@
 import { heapVowE as E } from '@agoric/vow/vat.js';
 import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/recorder.js';
 import { Far } from '@endo/far';
-import { ExecutionContext } from 'ava';
+import type { ExecutionContext } from 'ava';
 import { prepareLocalOrchestrationAccountKit } from '../../src/exos/local-orchestration-account.js';
 import { commonSetup } from '../supports.js';
 
@@ -18,12 +18,13 @@ export const prepareMakeTestLOAKit = (
   t: ExecutionContext,
   {
     bootstrap,
+    commonPrivateArgs: { marshaller },
     facadeServices: { chainHub },
     utils,
   }: Awaited<ReturnType<typeof commonSetup>>,
   { zcf = Far('MockZCF', {}) } = {},
 ) => {
-  const { timer, localchain, marshaller, rootZone, vowTools } = bootstrap;
+  const { timer, localchain, rootZone, vowTools } = bootstrap;
 
   const { makeRecorderKit } = prepareRecorderKitMakers(
     rootZone.mapStore('recorder'),

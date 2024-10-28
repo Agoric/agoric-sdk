@@ -10,7 +10,7 @@ import { toRequestQueryJson, typedJson } from '@agoric/cosmic-proto';
 import { decodeBase64 } from '@endo/base64';
 import {
   commonSetup,
-  SetupContextWithWallets,
+  type SetupContextWithWallets,
   chainConfig,
   FAUCET_POUR,
 } from './support.js';

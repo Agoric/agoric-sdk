@@ -52,6 +52,10 @@ const makeLazyObject = sourceObject => {
   return /** @type {T} */ (lazyObject);
 };
 
+/**
+ * @param {Promise<import('./externalTypes.js').CommonHome | import('./externalTypes.js').AgSoloHome>} homePromise
+ * @param {import('./externalTypes.js').DeployScriptEndownments} endowments
+ */
 export const makeHelpers = async (homePromise, endowments) => {
   // Endowments provided via `agoric run` or `agoric deploy`.
   const {
@@ -84,6 +88,7 @@ export const makeHelpers = async (homePromise, endowments) => {
       return E(deps.walletAdmin).getIssuerManager();
     },
     get offerAndFind() {
+      assert('wallet' in deps.home, 'expected AgSolo home');
       return makeOfferAndFindInvitationAmount(
         deps.walletAdmin,
         deps.home.zoe,
@@ -91,6 +96,7 @@ export const makeHelpers = async (homePromise, endowments) => {
       );
     },
     get walletAdmin() {
+      assert('wallet' in deps.home, 'expected AgSolo home');
       return E(deps.home.wallet).getAdminFacet();
     },
     get zoeInvitationPurse() {
@@ -110,6 +116,7 @@ export const makeHelpers = async (homePromise, endowments) => {
       return deps.offerAndFind.findInvitationAmount;
     },
     get install() {
+      assert('wallet' in deps.home, 'expected AgSolo home');
       return makeInstall(
         bundleSource,
         deps.home.zoe,
@@ -127,6 +134,7 @@ export const makeHelpers = async (homePromise, endowments) => {
       return makeSaveIssuer(deps.walletAdmin, deps.issuerManager);
     },
     get startInstance() {
+      assert('wallet' in deps.home, 'expected AgSolo home');
       return makeStartInstance(
         deps.issuerManager,
         deps.instanceManager,

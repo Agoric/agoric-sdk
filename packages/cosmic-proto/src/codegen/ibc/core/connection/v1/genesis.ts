@@ -1,15 +1,15 @@
 //@ts-nocheck
 import {
   IdentifiedConnection,
-  IdentifiedConnectionSDKType,
+  type IdentifiedConnectionSDKType,
   ConnectionPaths,
-  ConnectionPathsSDKType,
+  type ConnectionPathsSDKType,
   Params,
-  ParamsSDKType,
+  type ParamsSDKType,
 } from './connection.js';
 import { BinaryReader, BinaryWriter } from '../../../../binary.js';
 import { isSet } from '../../../../helpers.js';
-import { JsonSafe } from '../../../../json-safe.js';
+import { type JsonSafe } from '../../../../json-safe.js';
 /** GenesisState defines the ibc connection submodule's genesis state. */
 export interface GenesisState {
   connections: IdentifiedConnection[];

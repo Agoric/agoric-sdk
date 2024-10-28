@@ -1,29 +1,29 @@
 //@ts-nocheck
 import {
   PageRequest,
-  PageRequestSDKType,
+  type PageRequestSDKType,
   PageResponse,
-  PageResponseSDKType,
+  type PageResponseSDKType,
 } from '../../base/query/v1beta1/pagination.js';
 import {
   Validator,
-  ValidatorSDKType,
+  type ValidatorSDKType,
   DelegationResponse,
-  DelegationResponseSDKType,
+  type DelegationResponseSDKType,
   UnbondingDelegation,
-  UnbondingDelegationSDKType,
+  type UnbondingDelegationSDKType,
   RedelegationResponse,
-  RedelegationResponseSDKType,
+  type RedelegationResponseSDKType,
   HistoricalInfo,
-  HistoricalInfoSDKType,
+  type HistoricalInfoSDKType,
   Pool,
-  PoolSDKType,
+  type PoolSDKType,
   Params,
-  ParamsSDKType,
+  type ParamsSDKType,
 } from './staking.js';
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
 import { isSet } from '../../../helpers.js';
-import { JsonSafe } from '../../../json-safe.js';
+import { type JsonSafe } from '../../../json-safe.js';
 /** QueryValidatorsRequest is request type for Query/Validators RPC method. */
 export interface QueryValidatorsRequest {
   /** status enables to query for validators matching a given status. */

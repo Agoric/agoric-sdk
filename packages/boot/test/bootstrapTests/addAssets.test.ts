@@ -8,7 +8,7 @@ import type { TestFn } from 'ava';
 
 import { TimeMath } from '@agoric/time';
 import {
-  LiquidationTestContext,
+  type LiquidationTestContext,
   makeLiquidationTestContext,
 } from '../../tools/liquidation.js';
 import { makeProposalExtractor } from '../../tools/supports.js';

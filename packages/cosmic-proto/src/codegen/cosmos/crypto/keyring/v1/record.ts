@@ -1,9 +1,9 @@
 //@ts-nocheck
-import { Any, AnySDKType } from '../../../../google/protobuf/any.js';
-import { BIP44Params, BIP44ParamsSDKType } from '../../hd/v1/hd.js';
+import { Any, type AnySDKType } from '../../../../google/protobuf/any.js';
+import { BIP44Params, type BIP44ParamsSDKType } from '../../hd/v1/hd.js';
 import { BinaryReader, BinaryWriter } from '../../../../binary.js';
 import { isSet } from '../../../../helpers.js';
-import { JsonSafe } from '../../../../json-safe.js';
+import { type JsonSafe } from '../../../../json-safe.js';
 /** Record is used for representing a key in the keyring. */
 export interface Record {
   /** name represents a name of Record */

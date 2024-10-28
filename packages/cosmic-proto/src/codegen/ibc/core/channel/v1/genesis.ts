@@ -1,13 +1,13 @@
 //@ts-nocheck
 import {
   IdentifiedChannel,
-  IdentifiedChannelSDKType,
+  type IdentifiedChannelSDKType,
   PacketState,
-  PacketStateSDKType,
+  type PacketStateSDKType,
 } from './channel.js';
 import { BinaryReader, BinaryWriter } from '../../../../binary.js';
 import { isSet } from '../../../../helpers.js';
-import { JsonSafe } from '../../../../json-safe.js';
+import { type JsonSafe } from '../../../../json-safe.js';
 /** GenesisState defines the ibc channel submodule's genesis state. */
 export interface GenesisState {
   channels: IdentifiedChannel[];

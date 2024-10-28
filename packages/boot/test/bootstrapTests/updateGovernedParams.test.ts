@@ -10,7 +10,7 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import type { TestFn } from 'ava';
-import { makeAgoricNamesRemotesFromFakeStorage } from '@agoric/vats/tools/board-utils';
+import { makeAgoricNamesRemotesFromFakeStorage } from '@agoric/vats/tools/board-utils.js';
 import { Fail } from '@endo/errors';
 
 import { makeSwingsetTestKit } from '../../tools/supports.js';

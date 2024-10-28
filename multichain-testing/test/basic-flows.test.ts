@@ -3,7 +3,7 @@ import type { TestFn } from 'ava';
 import { makeDoOffer } from '../tools/e2e-tools.js';
 import {
   commonSetup,
-  SetupContextWithWallets,
+  type SetupContextWithWallets,
   chainConfig,
 } from './support.js';
 

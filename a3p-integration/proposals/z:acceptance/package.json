@@ -14,11 +14,10 @@
     "@endo/errors": "^1.2.2",
     "@endo/far": "^1.1.5",
     "@endo/init": "^1.1.4",
+    "@endo/marshal": "^1.5.3",
     "ava": "^6.1.2",
+    "execa": "^9.3.1",
     "tsx": "^4.17.0"
-  },
-  "resolutions": {
-    "execa": "^9.3.1"
   },
   "ava": {
     "concurrency": 1,

@@ -1,4 +1,4 @@
-import { ExecutionContext } from 'ava';
+import type { ExecutionContext } from 'ava';
 import type { StdFee } from '@cosmjs/amino';
 import { coins } from '@cosmjs/proto-signing';
 import { SigningStargateClient } from '@cosmjs/stargate';

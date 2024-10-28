@@ -1,11 +1,11 @@
 //@ts-nocheck
 import {
   InterchainAccountPacketData,
-  InterchainAccountPacketDataSDKType,
+  type InterchainAccountPacketDataSDKType,
 } from '../../v1/packet.js';
 import { BinaryReader, BinaryWriter } from '../../../../../binary.js';
 import { isSet } from '../../../../../helpers.js';
-import { JsonSafe } from '../../../../../json-safe.js';
+import { type JsonSafe } from '../../../../../json-safe.js';
 /** MsgRegisterInterchainAccount defines the payload for Msg/MsgRegisterInterchainAccount */
 export interface MsgRegisterInterchainAccount {
   owner: string;

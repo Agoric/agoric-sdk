@@ -11,7 +11,10 @@ import {
 } from '@agoric/internal/src/testing-utils.js';
 import { SIMULATED_ERRORS } from '@agoric/vats/tools/fake-bridge.js';
 import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
-import { CosmosChainInfo, IBCConnectionInfo } from '../../src/cosmos-api.js';
+import type {
+  CosmosChainInfo,
+  IBCConnectionInfo,
+} from '../../src/cosmos-api.js';
 import { commonSetup } from '../supports.js';
 import { SingleNatAmountRecord } from '../../src/examples/send-anywhere.contract.js';
 import { registerChain } from '../../src/chain-info.js';

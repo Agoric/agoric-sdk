@@ -1,5 +1,5 @@
 import { expectNotType, expectType } from 'tsd';
-import { E, ERef } from '@endo/far';
+import { E, type ERef } from '@endo/far';
 import type { Remote } from '../src/types.js';
 import type { StorageNode } from '../src/lib-chainStorage.js';
 

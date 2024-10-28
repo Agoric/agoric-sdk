@@ -1,19 +1,19 @@
 //@ts-nocheck
 import {
   Timestamp,
-  TimestampSDKType,
+  type TimestampSDKType,
 } from '../../google/protobuf/timestamp.js';
-import { Header, HeaderSDKType } from '../types/types.js';
-import { ProofOps, ProofOpsSDKType } from '../crypto/proof.js';
+import { Header, type HeaderSDKType } from '../types/types.js';
+import { ProofOps, type ProofOpsSDKType } from '../crypto/proof.js';
 import {
   EvidenceParams,
-  EvidenceParamsSDKType,
+  type EvidenceParamsSDKType,
   ValidatorParams,
-  ValidatorParamsSDKType,
+  type ValidatorParamsSDKType,
   VersionParams,
-  VersionParamsSDKType,
+  type VersionParamsSDKType,
 } from '../types/params.js';
-import { PublicKey, PublicKeySDKType } from '../crypto/keys.js';
+import { PublicKey, type PublicKeySDKType } from '../crypto/keys.js';
 import { BinaryReader, BinaryWriter } from '../../binary.js';
 import {
   isSet,
@@ -22,7 +22,7 @@ import {
   fromTimestamp,
   base64FromBytes,
 } from '../../helpers.js';
-import { JsonSafe } from '../../json-safe.js';
+import { type JsonSafe } from '../../json-safe.js';
 export enum CheckTxType {
   NEW = 0,
   RECHECK = 1,

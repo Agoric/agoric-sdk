@@ -183,7 +183,7 @@ test('kernel state', async t => {
   k.emitCrankHashes();
 
   checkState(t, store.dump, [
-    ['version', '2'],
+    ['version', '3'],
     ['crankNumber', '0'],
     ['gcActions', '[]'],
     ['runQueue', '[1,1]'],
@@ -223,7 +223,7 @@ test('kernelKeeper vat names', async t => {
 
   k.emitCrankHashes();
   checkState(t, store.dump, [
-    ['version', '2'],
+    ['version', '3'],
     ['crankNumber', '0'],
     ['gcActions', '[]'],
     ['runQueue', '[1,1]'],
@@ -279,7 +279,7 @@ test('kernelKeeper device names', async t => {
 
   k.emitCrankHashes();
   checkState(t, store.dump, [
-    ['version', '2'],
+    ['version', '3'],
     ['crankNumber', '0'],
     ['gcActions', '[]'],
     ['runQueue', '[1,1]'],
@@ -462,7 +462,7 @@ test('kernelKeeper promises', async t => {
   k.emitCrankHashes();
 
   checkState(t, store.dump, [
-    ['version', '2'],
+    ['version', '3'],
     ['crankNumber', '0'],
     ['device.nextID', '7'],
     ['vat.nextID', '1'],
@@ -590,6 +590,44 @@ test('vatKeeper.getOptions', async t => {
   const vk = k.provideVatKeeper(v1);
   const { name } = vk.getOptions();
   t.is(name, 'fred');
+});
+
+test('vatKeeper.setVatParameters', async t => {
+  const store = buildKeeperStorageInMemory();
+  const k = makeKernelKeeper(store, 'uninitialized');
+  k.createStartingKernelState({ defaultManagerType: 'local' });
+  k.setInitialized();
+  const v1 = k.allocateVatIDForNameIfNeeded('name1');
+  const bundleID =
+    'b1-00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000';
+  const source = { bundleID };
+  const workerOptions = { type: 'local' };
+  const options = { workerOptions, name: 'fred', reapDirtThreshold: {} };
+  k.createVatState(v1, source, options);
+
+  const vk = k.provideVatKeeper(v1);
+  const ko1 = kslot('ko1');
+  const ko2 = kslot('ko2');
+  const vp1 = kser({ foo: 1, bar: ko1, baz: ko1 });
+  vk.setVatParameters(vp1);
+  t.deepEqual(JSON.parse(store.kvStore.get('v1.vatParameters')), vp1);
+  t.is(store.kvStore.get('ko1.refCount'), '1,1');
+  t.deepEqual(vk.getVatParameters(), vp1);
+
+  const vp2 = kser({ foo: 1, bar: ko1, baz: ko2 });
+  vk.setVatParameters(vp2);
+  t.deepEqual(JSON.parse(store.kvStore.get('v1.vatParameters')), vp2);
+  t.is(store.kvStore.get('ko1.refCount'), '1,1');
+  t.is(store.kvStore.get('ko2.refCount'), '1,1');
+  t.deepEqual(vk.getVatParameters(), vp2);
+
+  const vp3 = kser({ foo: 1, baz: ko2 });
+  vk.setVatParameters(vp3);
+  t.deepEqual(JSON.parse(store.kvStore.get('v1.vatParameters')), vp3);
+  // this test doesn't do processRefcounts, which would remove the 0,0
+  t.is(store.kvStore.get('ko1.refCount'), '0,0');
+  t.is(store.kvStore.get('ko2.refCount'), '1,1');
+  t.deepEqual(vk.getVatParameters(), vp3);
 });
 
 test('XS vatKeeper defaultManagerType', async t => {
@@ -1078,7 +1116,7 @@ test('dirt upgrade', async t => {
   // * v3.reapCountdown: 'never'
   // * v3.reapInterval: 'never'
 
-  t.is(k.kvStore.get('version'), '2');
+  t.is(k.kvStore.get('version'), '3');
   k.kvStore.delete(`kernel.defaultReapDirtThreshold`);
   k.kvStore.set(`kernel.defaultReapInterval`, '1000');
 
@@ -1109,12 +1147,15 @@ test('dirt upgrade', async t => {
 
   // it requires a manual upgrade
   let k2;
+  let ks2;
   {
     const serialized = store.serialize();
     const { kernelStorage } = initSwingStore(null, { serialized });
-    upgradeSwingset(kernelStorage);
+    const { modified } = upgradeSwingset(kernelStorage);
+    t.true(modified);
     k2 = makeKernelKeeper(kernelStorage, CURRENT_SCHEMA_VERSION); // works this time
     k2.loadStats();
+    ks2 = kernelStorage;
   }
 
   t.true(k2.kvStore.has(`kernel.defaultReapDirtThreshold`));
@@ -1157,6 +1198,12 @@ test('dirt upgrade', async t => {
   t.deepEqual(JSON.parse(k2.kvStore.get(`${v3}.options`)).reapDirtThreshold, {
     never: true,
   });
+
+  {
+    // upgrade is idempotent
+    const { modified } = upgradeSwingset(ks2);
+    t.false(modified);
+  }
 });
 
 test('v2 upgrade', async t => {
@@ -1168,7 +1215,7 @@ test('v2 upgrade', async t => {
   k.saveStats();
 
   // roll back to v1
-  t.is(k.kvStore.get('version'), '2');
+  t.is(k.kvStore.get('version'), '3');
   k.kvStore.delete(`vats.terminated`);
   k.kvStore.set('version', '1');
 
@@ -1177,15 +1224,24 @@ test('v2 upgrade', async t => {
 
   // it requires a manual upgrade
   let k2;
+  let ks2;
   {
     const serialized = store.serialize();
     const { kernelStorage } = initSwingStore(null, { serialized });
-    upgradeSwingset(kernelStorage);
+    const { modified } = upgradeSwingset(kernelStorage);
+    t.true(modified);
     k2 = makeKernelKeeper(kernelStorage, CURRENT_SCHEMA_VERSION); // works this time
     k2.loadStats();
+    ks2 = kernelStorage;
   }
 
   t.true(k2.kvStore.has(`vats.terminated`));
   t.deepEqual(JSON.parse(k2.kvStore.get(`vats.terminated`)), []);
-  t.is(k2.kvStore.get(`version`), '2');
+  t.is(k2.kvStore.get(`version`), '3');
+
+  {
+    // upgrade is idempotent
+    const { modified } = upgradeSwingset(ks2);
+    t.false(modified);
+  }
 });
