@@ -132,11 +132,10 @@ export const totalAssetPriceAmount = asset => {
   return price;
 };
 const mintCharacterOffer = async () => {
-  const id = `KREAd-mint-character-acceptance-test`;
   const body = {
     method: 'executeOffer',
     offer: {
-      id,
+      id: 'KREAd-mint-character-acceptance-test',
       invitationSpec: {
         source: 'agoricContract',
         instancePath: ['kread'],
@@ -176,11 +175,10 @@ const unequipAllItemsOffer = async address => {
     kreadCharacter2,
   );
 
-  const id = `KREAd-unequip-all-items-acceptance-test`;
   const body = {
     method: 'executeOffer',
     offer: {
-      id,
+      id: 'KREAd-unequip-all-items-acceptance-test',
       invitationSpec: {
         source: 'agoricContract',
         instancePath: ['kread'],
@@ -207,11 +205,10 @@ const buyItemOffer = async () => {
   const itemAmount = assetAsAmount(brands.KREAdITEM, marketItem.asset);
   const priceAmount = totalAssetPriceAmount(marketItem);
 
-  const id = `KREAd-buy-item-acceptance-test`;
   const body = {
     method: 'executeOffer',
     offer: {
-      id,
+      id: 'KREAd-buy-item-acceptance-test',
       invitationSpec: {
         source: 'agoricContract',
         instancePath: ['kread'],
@@ -240,11 +237,10 @@ const sellItemOffer = async address => {
 
   const itemAmount = assetAsAmount(brands.KREAdITEM, kreadItem);
 
-  const id = `KREAd-sell-item-acceptance-test`;
   const body = {
     method: 'executeOffer',
     offer: {
-      id,
+      id: 'KREAd-sell-item-acceptance-test',
       invitationSpec: {
         source: 'agoricContract',
         instancePath: ['kread'],
@@ -276,11 +272,10 @@ const buyCharacterOffer = async () => {
   );
   const priceAmount = totalAssetPriceAmount(marketCharacter);
 
-  const id = `KREAd-buy-character-acceptance-test`;
   const body = {
     method: 'executeOffer',
     offer: {
-      id,
+      id: 'KREAd-buy-character-acceptance-test',
       invitationSpec: {
         source: 'agoricContract',
         instancePath: ['kread'],
@@ -311,11 +306,10 @@ const sellCharacterOffer = async address => {
     kreadCharacter,
   );
 
-  const id = `KREAd-sell-character-acceptance-test`;
   const body = {
     method: 'executeOffer',
     offer: {
-      id,
+      id: 'KREAd-sell-character-acceptance-test',
       invitationSpec: {
         source: 'agoricContract',
         instancePath: ['kread'],
