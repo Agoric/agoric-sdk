@@ -347,7 +347,7 @@ export const ZoeServiceI = M.interface('ZoeService', {
   getInstallationForInstance: M.callWhen(M.await(InstanceHandleShape)).returns(
     M.eref(M.remotable('Installation')),
   ),
-  getBundleIDFromInstallation: M.call(InstallationShape).returns(
+  getBundleIDFromInstallation: M.callWhen(M.await(InstallationShape)).returns(
     M.eref(M.string()),
   ),
 
