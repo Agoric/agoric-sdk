@@ -195,7 +195,8 @@ func (eventHandler swingStoreGenesisEventHandler) OnExportStarted(height uint64,
 }
 
 func (eventHandler swingStoreGenesisEventHandler) OnExportRetrieved(provider keeper.SwingStoreExportProvider) error {
-	if !(eventHandler.snapshotHeight == 0 || eventHandler.snapshotHeight == provider.BlockHeight) {
+	if !((eventHandler.exportMode == keeper.SwingStoreArtifactModeDebug && eventHandler.snapshotHeight == 0) ||
+		eventHandler.snapshotHeight == provider.BlockHeight) {
 		return fmt.Errorf("snapshot block height (%d) doesn't match requested height (%d)", provider.BlockHeight, eventHandler.snapshotHeight)
 	}
 
@@ -234,7 +235,7 @@ func (eventHandler swingStoreGenesisEventHandler) OnExportRetrieved(provider kee
 				artifactsEnded = true
 				if eventHandler.exportMode == keeper.SwingStoreArtifactModeDebug {
 					err = nil
-					exportDataReader, err := provider.GetExportDataReader()
+					exportDataReader, err := getExportDataReader()
 
 					if err == nil {
 						err = agoric.EncodeKVEntryReaderToJsonl(
