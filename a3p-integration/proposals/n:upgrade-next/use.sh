@@ -5,3 +5,6 @@ set -uxeo pipefail
 
 node ./addGov4
 ./acceptInvites.js
+
+./verifyPushedPrice.js 'ATOM' 12.01
+./verifyPushedPrice.js 'stATOM' 12.01
