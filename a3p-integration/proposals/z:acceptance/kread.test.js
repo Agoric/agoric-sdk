@@ -83,7 +83,7 @@ test.serial('Alice sells one unequipped Item', async t => {
   t.is(
     itemBefore.description,
     soldItem.asset.description,
-    'Item on purse should have the same description as the one on sold to market',
+    'Item on purse should have the same description as the one sold to market',
   );
 });
 
