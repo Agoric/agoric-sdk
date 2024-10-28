@@ -82,6 +82,7 @@ export const VatCleanupPhase = /** @type {const} */ ({
   Default: 'default',
   Exports: 'exports',
   Imports: 'imports',
+  Promises: 'promises',
   Kv: 'kv',
   Snapshots: 'snapshots',
   Transcripts: 'transcripts',

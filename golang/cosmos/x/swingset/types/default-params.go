@@ -35,6 +35,7 @@ const (
 	VatCleanupDefault     = "default"
 	VatCleanupExports     = "exports"
 	VatCleanupImports     = "imports"
+	VatCleanupPromises    = "promises"
 	VatCleanupKv          = "kv"
 	VatCleanupSnapshots   = "snapshots"
 	VatCleanupTranscripts = "transcripts"
@@ -78,6 +79,7 @@ var (
 	DefaultVatCleanupDefault = sdk.NewUint(5)
 	// DefaultVatCleanupExports     = DefaultVatCleanupDefault
 	// DefaultVatCleanupImports     = DefaultVatCleanupDefault
+	// DefaultVatCleanupPromises    = DefaultVatCleanupDefault
 	DefaultVatCleanupKv = sdk.NewUint(50)
 	// DefaultVatCleanupSnapshots   = DefaultVatCleanupDefault
 	// DefaultVatCleanupTranscripts = DefaultVatCleanupDefault
@@ -85,6 +87,7 @@ var (
 		UintMapEntry{VatCleanupDefault, DefaultVatCleanupDefault},
 		// UintMapEntry{VatCleanupExports, DefaultVatCleanupExports},
 		// UintMapEntry{VatCleanupImports, DefaultVatCleanupImports},
+		// UintMapEntry{VatCleanupPromises, DefaultVatCleanupPromises},
 		UintMapEntry{VatCleanupKv, DefaultVatCleanupKv},
 		// UintMapEntry{VatCleanupSnapshots, DefaultVatCleanupSnapshots},
 		// UintMapEntry{VatCleanupTranscripts, DefaultVatCleanupTranscripts},
