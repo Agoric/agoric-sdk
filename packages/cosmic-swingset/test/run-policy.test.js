@@ -55,6 +55,12 @@ test('cleanup work must be limited by vat_cleanup_budget', async t => {
       bundles: makeSourceDescriptors({
         puppet: '@agoric/swingset-vat/tools/vat-puppet.js',
       }),
+      configOverrides: {
+        // Ensure multiple spans and snapshots.
+        defaultManagerType: 'xsnap',
+        snapshotInitial: 2,
+        snapshotInterval: 4,
+      },
       fixupBootMsg: () => ({
         ...defaultBootstrapMessage,
         params: makeCleanupBudgetParams({ Default: 0 }),
@@ -70,7 +76,7 @@ test('cleanup work must be limited by vat_cleanup_budget', async t => {
     return value;
   };
 
-  // Launch the new vat and capture its ID.
+  // Launch the new vat and capture its ID and store snapshotting.
   pushCoreEval(async powers => {
     const { bootstrap } = powers.vats;
     await E(bootstrap).createVat('doomed', 'puppet');
@@ -83,23 +89,108 @@ test('cleanup work must be limited by vat_cleanup_budget', async t => {
     'v8',
     `time to update expected vatID to ${JSON.stringify(vatIDs)}.at(-1)?`,
   );
+  const getKV = () =>
+    [...mapStore].filter(([key]) => key.startsWith(`${vatID}.`));
+  // console.log(swingStore.kernelStorage);
 
-  // Terminate the vat and assert lack of cleanup.
+  t.false(
+    JSON.parse(mustGet('vats.terminated')).includes(vatID),
+    'must not be terminated',
+  );
+  const initialEntries = new Map(getKV());
+  t.not(initialEntries.size, 0, 'initial kvStore entries must exist');
+
+  // Give the vat a big footprint.
   pushCoreEval(async powers => {
     const { bootstrap } = powers.vats;
-    const vat = await E(bootstrap).getVatRoot('doomed');
-    // TODO: Give the vat a big footprint, similar to
-    // packages/SwingSet/test/vat-admin/slow-termination/slow-termination.test.js
-    await E(vat).dieHappy();
+    const doomed = await E(bootstrap).getVatRoot('doomed');
+
+    const makeArray = (length, makeElem) => Array.from({ length }, makeElem);
+
+    // import 20 remotables and 10 promises
+    const doomedRemotableImports = await Promise.all(
+      makeArray(20, (_, i) => E(bootstrap).makeRemotable(`doomed import ${i}`)),
+    );
+    const doomedPromiseImports = (
+      await Promise.all(makeArray(10, () => E(bootstrap).makePromiseKit()))
+    ).map(kit => kit.promise);
+    const doomedImports = [...doomedRemotableImports, ...doomedPromiseImports];
+    await E(doomed).holdInHeap(doomedImports);
+
+    // export 20 remotables and 10 promises to bootstrap
+    const doomedRemotableExports = await Promise.all(
+      makeArray(20, (_, i) => E(doomed).makeRemotable(`doomed export ${i}`)),
+    );
+    const doomedPromiseExports = (
+      await Promise.all(makeArray(10, () => E(doomed).makePromiseKit()))
+    ).map(kit => {
+      const { promise } = kit;
+      void promise.catch(() => {});
+      return promise;
+    });
+    const doomedExports = [...doomedRemotableExports, ...doomedPromiseExports];
+    await E(bootstrap).holdInHeap(doomedExports);
+
+    // make 20 extra vatstore entries
+    await E(doomed).holdInBaggage(...makeArray(20, (_, i) => i));
   });
   await runNextBlock();
-  // TODO: Assert lack of cleanup.
+  t.false(
+    JSON.parse(mustGet('vats.terminated')).includes(vatID),
+    'must not be terminated',
+  );
+  const peakEntries = new Map(getKV());
+  t.deepEqual(
+    [...peakEntries.keys()].filter(key => initialEntries.has(key)),
+    [...initialEntries.keys()],
+    'initial kvStore keys must still exist',
+  );
+  t.true(
+    peakEntries.size > initialEntries.size + 20,
+    `kvStore entry count must grow by more than 20: ${initialEntries.size} -> ${peakEntries.size}`,
+  );
 
-  await runNextBlock({
-    params: makeCleanupBudgetParams({ Default: 2, Kv: 3 }),
+  // Terminate the vat and verify lack of cleanup.
+  pushCoreEval(async powers => {
+    const { bootstrap } = powers.vats;
+    const doomed = await E(bootstrap).getVatRoot('doomed');
+    await E(doomed).dieHappy();
   });
-  // TODO: Assert limited cleanup.
-  // TODO: Further cleanup assertions.
+  await runNextBlock();
+  t.true(
+    JSON.parse(mustGet('vats.terminated')).includes(vatID),
+    'must be terminated',
+  );
+  t.deepEqual(
+    [...getKV().map(([key]) => key)],
+    [...peakEntries.keys()],
+    'kvStore keys must remain',
+  );
+
+  // Allow some cleanup.
+  // TODO: Verify snapshots and transcripts with `Default: 2`
+  // cf. packages/SwingSet/test/vat-admin/slow-termination/bootstrap-slow-terminate.js
+  await runNextBlock({
+    params: makeCleanupBudgetParams({ Default: 2 ** 32, Kv: 0 }),
+  });
+  const onlyKV = getKV();
+  t.true(
+    onlyKV.length < peakEntries.size,
+    `kvStore entry count should have dropped from export/import cleanup: ${peakEntries.size} -> ${onlyKV.length}`,
+  );
+  await runNextBlock({
+    params: makeCleanupBudgetParams({ Default: 2 ** 32, Kv: 3 }),
+  });
+  t.is(getKV().length, onlyKV.length - 3, 'initial kvStore deletion');
+  await runNextBlock();
+  t.is(getKV().length, onlyKV.length - 6, 'further kvStore deletion');
+
+  // Allow remaining cleanup.
+  await runNextBlock({
+    params: makeCleanupBudgetParams({ Default: 2 ** 32 }),
+  });
+  await runNextBlock();
+  t.is(getKV().length, 0, 'cleanup complete');
 
   await shutdown();
 });
