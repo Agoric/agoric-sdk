@@ -29,7 +29,7 @@ async function run() {
     return;
   }
 
-  const [slogFile] = args;
+  const slogFile = args[0] === '-' ? undefined : args[0];
   const slogSender = await makeSlogSender({
     serviceName,
     stateDir: '.',
