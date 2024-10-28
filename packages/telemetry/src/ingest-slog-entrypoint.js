@@ -56,12 +56,18 @@ async function run() {
   const lines = readline.createInterface({ input: slogF });
   const slogFileName = slogFile || '*stdin*';
 
-  const progressFileName = `${slogFileName}.ingest-progress`;
-  if (!fs.existsSync(progressFileName)) {
-    const progress = { virtualTimeOffset: 0, lastSlogTime: 0 };
-    fs.writeFileSync(progressFileName, JSON.stringify(progress));
+  const progressFileName = slogFile && `${slogFileName}.ingest-progress`;
+  const progress = { virtualTimeOffset: 0, lastSlogTime: 0 };
+  if (progressFileName) {
+    if (!fs.existsSync(progressFileName)) {
+      fs.writeFileSync(progressFileName, JSON.stringify(progress));
+    } else {
+      Object.assign(
+        progress,
+        JSON.parse(fs.readFileSync(progressFileName).toString()),
+      );
+    }
   }
-  const progress = JSON.parse(fs.readFileSync(progressFileName).toString());
 
   let linesProcessedThisPeriod = 0;
   let startOfLastPeriod = 0;
@@ -75,7 +81,9 @@ async function run() {
       return;
     }
     await slogSender.forceFlush?.();
-    fs.writeFileSync(progressFileName, JSON.stringify(progress));
+    if (progressFileName) {
+      fs.writeFileSync(progressFileName, JSON.stringify(progress));
+    }
   };
 
   console.warn(`parsing`, slogFileName);
