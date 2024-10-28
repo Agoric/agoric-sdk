@@ -1,8 +1,11 @@
 import { createWriteStream } from 'node:fs';
+import process from 'node:process';
 import { open } from 'node:fs/promises';
 
 /**
- * @param {import('fs').ReadStream | import('fs').WriteStream} stream
+ * @param {import('fs').ReadStream
+ *   | import('fs').WriteStream
+ *   | import('net').Socket} stream
  * @returns {Promise<void>}
  */
 export const fsStreamReady = stream =>
@@ -48,9 +51,11 @@ export const makeFsStreamWriter = async filePath => {
     return undefined;
   }
 
-  const handle = await open(filePath, 'a');
+  const handle = await (filePath !== '-' ? open(filePath, 'a') : undefined);
 
-  const stream = createWriteStream(noPath, { fd: handle.fd });
+  const stream = handle
+    ? createWriteStream(noPath, { fd: handle.fd })
+    : process.stdout;
   await fsStreamReady(stream);
 
   let flushed = Promise.resolve();
@@ -90,7 +95,7 @@ export const makeFsStreamWriter = async filePath => {
 
   const flush = async () => {
     await flushed;
-    await handle.sync().catch(err => {
+    await handle?.sync().catch(err => {
       if (err.code === 'EINVAL') {
         return;
       }
@@ -102,7 +107,8 @@ export const makeFsStreamWriter = async filePath => {
     // TODO: Consider creating a single Error here to use a write rejection
     closed = true;
     await flush();
-    stream.close();
+    // @ts-expect-error calling a possibly missing method
+    stream.close?.();
   };
 
   stream.on('error', err => updateFlushed(Promise.reject(err)));
