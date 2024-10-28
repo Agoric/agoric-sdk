@@ -16,12 +16,12 @@
 
 /**
  * @typedef {object} RetryOptions
- * @property {number} maxRetries
- * @property {number} retryIntervalMs
- * @property {(...arg0: string[]) => void} log
- * @property {(object) => void} [setTimeout]
- * @property {string} [errorMessage=Error]
+ * @property {number} [maxRetries]
+ * @property {number} [retryIntervalMs]
+ * @property {(...arg0: string[]) => void} [log]
+ * @property {(callback: Function, delay: number) => void} [setTimeout]
  *
+ * @typedef {RetryOptions & {errorMessage: string}} WaitUntilOptions
  *
  * @typedef {object} CosmosBalanceThreshold
  * @property {string} denom
@@ -54,7 +54,7 @@ export const retryUntilCondition = async (
   operation,
   condition,
   message,
-  { maxRetries = 6, retryIntervalMs = 3500, log, setTimeout },
+  { maxRetries = 6, retryIntervalMs = 3500, log = console.log, setTimeout },
 ) => {
   console.log({ maxRetries, retryIntervalMs, message });
   let retries = 0;
@@ -85,7 +85,7 @@ export const retryUntilCondition = async (
 };
 
 /**
- * @param {RetryOptions} options
+ * @param {WaitUntilOptions} options
  */
 const overrideDefaultOptions = options => {
   const defaultValues = {
@@ -113,7 +113,7 @@ const makeGetInstances = follow => async () => {
  *
  * @param {string} contractName
  * @param {{follow: () => object, setTimeout: (object) => void}} ambientAuthority
- * @param {RetryOptions} options
+ * @param {WaitUntilOptions} options
  */
 export const waitUntilContractDeployed = (
   contractName,
@@ -155,7 +155,7 @@ const checkCosmosBalance = (balances, threshold) => {
  * @param {string} destAcct
  * @param {{query: () => Promise<object>, setTimeout: (object) => void}} ambientAuthority
  * @param {{denom: string, value: number}} threshold
- * @param {RetryOptions} options
+ * @param {WaitUntilOptions} options
  */
 export const waitUntilAccountFunded = (
   destAcct,
@@ -197,7 +197,7 @@ const checkOfferState = (offerStatus, waitForPayouts, offerId) => {
   if (!status) return false;
   if (status.id !== offerId) return false;
   if (!status.numWantsSatisfied || status.numWantsSatisfied !== 1) return false;
-  if (waitForPayouts && status.result && status.payouts) return true;
+  if (waitForPayouts && status.payouts) return true;
   if (!waitForPayouts && status.result) return true;
 
   return false;
@@ -208,8 +208,8 @@ const checkOfferState = (offerStatus, waitForPayouts, offerId) => {
  * @param {string} addr
  * @param {string} offerId
  * @param {boolean} waitForPayouts
- * @param {{follow: () => object, setTimeout: (object) => void}} ambientAuthority
- * @param {RetryOptions} options
+ * @param {{follow: () => object, setTimeout: (callback: Function, delay: number) => void}} ambientAuthority
+ * @param {WaitUntilOptions} options
  */
 export const waitUntilOfferResult = (
   addr,
@@ -251,7 +251,7 @@ const checkForInvitation = update => {
  *
  * @param {string} addr
  * @param {{follow: () => object, setTimeout: (object) => void}} ambientAuthority
- * @param {RetryOptions} options
+ * @param {WaitUntilOptions} options
  */
 export const waitUntilInvitationReceived = (
   addr,
