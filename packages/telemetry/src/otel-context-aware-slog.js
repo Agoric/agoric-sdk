@@ -11,10 +11,6 @@ import { makeContextualSlogProcessor } from './context-aware-slog.js';
 import { getResourceAttributes } from './index.js';
 import { serializeSlogObj } from './serialize-slog-obj.js';
 
-/**
- * @typedef {import('./index.js').MakeSlogSenderOptions} Options
- */
-
 const DEFAULT_CONTEXT_FILE = 'slog-context.json';
 const FILE_ENCODING = 'utf8';
 
@@ -22,7 +18,7 @@ const FILE_ENCODING = 'utf8';
  * @param {string} filePath
  */
 export const getContextFilePersistenceUtils = filePath => {
-  console.log(`Using file ${filePath} for slogger context`);
+  console.warn(`Using file ${filePath} for slogger context`);
 
   return {
     /**
@@ -32,7 +28,7 @@ export const getContextFilePersistenceUtils = filePath => {
       try {
         writeFileSync(filePath, serializeSlogObj(context), FILE_ENCODING);
       } catch (err) {
-        console.warn('Error writing context to file: ', err);
+        console.error('Error writing context to file: ', err);
       }
     },
 
@@ -43,7 +39,7 @@ export const getContextFilePersistenceUtils = filePath => {
       try {
         return JSON.parse(readFileSync(filePath, FILE_ENCODING));
       } catch (parseErr) {
-        console.warn('Error reading context from file: ', parseErr);
+        console.error('Error reading context from file: ', parseErr);
         return null;
       }
     },
@@ -51,12 +47,12 @@ export const getContextFilePersistenceUtils = filePath => {
 };
 
 /**
- * @param {Options} options
+ * @param {import('./index.js').MakeSlogSenderOptions} options
  */
 export const makeSlogSender = async options => {
   const { CHAIN_ID, OTEL_EXPORTER_OTLP_ENDPOINT } = options.env || {};
   if (!(OTEL_EXPORTER_OTLP_ENDPOINT && options.stateDir))
-    return console.warn(
+    return console.error(
       'Ignoring invocation of slogger "context-aware-slog" without the presence of "OTEL_EXPORTER_OTLP_ENDPOINT" and "stateDir"',
     );
 
