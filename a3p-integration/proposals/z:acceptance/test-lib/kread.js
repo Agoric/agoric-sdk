@@ -79,6 +79,15 @@ export const getCharacterInventory = async characterName => {
   return characterInventory;
 };
 
+export const getMarketCharacterFromVstorage = async () => {
+  const charactersMarket = await getMarketCharactersChildren();
+  const path = `:published.kread.market-characters.${charactersMarket[0]}`;
+  const rawCharacterData = await agoric.follow('-lF', path, '-o', 'text');
+  const marketCharacter = marshaller.fromCapData(JSON.parse(rawCharacterData));
+
+  return marketCharacter;
+};
+
 export const getBalanceFromPurse = async (address, type) => {
   const walletRaw = await agoric.follow(
     '-lF',
@@ -259,10 +268,7 @@ const sellItemOffer = async address => {
 };
 
 const buyCharacterOffer = async () => {
-  const charactersMarket = await getMarketCharactersChildren();
-  const path = `:published.kread.market-characters.${charactersMarket[0]}`;
-  const rawCharacterData = await agoric.follow('-lF', path, '-o', 'text');
-  const marketCharacter = marshaller.fromCapData(JSON.parse(rawCharacterData));
+  const marketCharacter = await getMarketCharacterFromVstorage();
 
   const kreadCharacterAmount = assetAsAmount(
     brands.KREAdCHARACTER,
