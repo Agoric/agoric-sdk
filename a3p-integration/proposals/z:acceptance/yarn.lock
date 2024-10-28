@@ -864,6 +864,17 @@ __metadata:
   languageName: node
   linkType: hard
 
+"better-sqlite3@npm:11.5.0":
+  version: 11.5.0
+  resolution: "better-sqlite3@npm:11.5.0"
+  dependencies:
+    bindings: "npm:^1.5.0"
+    node-gyp: "npm:latest"
+    prebuild-install: "npm:^7.1.1"
+  checksum: 10c0/c24200972e11f6f99c4e6538122bd7ec8b31b92b2fa095f4b595cc39fedf924cb0a93fd326f0900415eccdf634367f7bba2ba4eaa4d164edd7352f4cfaaaec51
+  languageName: node
+  linkType: hard
+
 "better-sqlite3@npm:^9.6.0":
   version: 9.6.0
   resolution: "better-sqlite3@npm:9.6.0"
@@ -2603,6 +2614,7 @@ __metadata:
     "@endo/init": "npm:^1.1.4"
     "@endo/marshal": "npm:^1.5.3"
     ava: "npm:^6.1.2"
+    better-sqlite3: "npm:11.5.0"
     execa: "npm:^9.3.1"
     tsx: "npm:^4.17.0"
     typescript: "npm:^5.5.4"

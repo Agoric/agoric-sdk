@@ -14,7 +14,6 @@ import {
   ATOM_DENOM,
   USER1ADDR,
   waitForBlock,
-  registerOraclesForBrand,
   generateOracleMap,
 } from '@agoric/synthetic-chain';
 import { getBalances, agopsVaults } from './test-lib/utils.js';
@@ -30,13 +29,12 @@ test.before(async t => {
     retryIntervalMs: 5000, // in ms
   };
   t.context = {
-    roundId: 1,
+    roundId: 3,
     retryOpts: {
       pushPriceRetryOpts,
     },
   };
   const oraclesByBrand = generateOracleMap('z-acc', ['ATOM']);
-  await registerOraclesForBrand('ATOM', oraclesByBrand);
 
   const price = 15.2;
   // @ts-expect-error   t.context is fine
