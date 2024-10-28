@@ -54,6 +54,7 @@
       "test/**/*.test.*"
     ],
     "require": [
+      "./test/console-recorder-shim.js",
       "@endo/init/debug.js"
     ],
     "timeout": "20m",
