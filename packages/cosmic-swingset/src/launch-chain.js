@@ -337,7 +337,7 @@ function computronCounter(
     return totalBeans === 0n && !cleanupDone;
   };
   const didCleanup = details => {
-    for (const [phase, count] of Object.entries(details)) {
+    for (const [phase, count] of Object.entries(details.cleanups)) {
       if (phase === 'total') continue;
       if (!hasOwn(remainingCleanups, phase)) {
         // TODO: log unknown phases?
