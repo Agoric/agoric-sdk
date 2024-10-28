@@ -78,7 +78,7 @@ async function run() {
     fs.writeFileSync(progressFileName, JSON.stringify(progress));
   };
 
-  console.log(`parsing`, slogFileName);
+  console.warn(`parsing`, slogFileName);
 
   let update = false;
   const maybeUpdateStats = async now => {
@@ -136,7 +136,7 @@ async function run() {
   }
 
   await stats(true);
-  console.log(
+  console.warn(
     `done parsing`,
     slogFileName,
     `(${lineCount} lines, ${byteCount} bytes)`,
