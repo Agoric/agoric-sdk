@@ -143,8 +143,11 @@ func ExportGenesis(
 		SwingStoreExportData: nil,
 	}
 
+	exportDataMode := keeper.SwingStoreExportDataModeSkip
 	snapshotHeight := uint64(ctx.BlockHeight())
-	if swingStoreExportMode == "debug" {
+
+	if swingStoreExportMode == keeper.SwingStoreArtifactModeDebug {
+		exportDataMode = keeper.SwingStoreExportDataModeAll
 		snapshotHeight = 0
 	}
 
@@ -154,11 +157,6 @@ func ExportGenesis(
 		swingStore:     k.GetSwingStore(ctx),
 		hasher:         sha256.New(),
 		exportMode:     swingStoreExportMode,
-	}
-
-	exportDataMode := keeper.SwingStoreExportDataModeSkip
-	if swingStoreExportMode == keeper.SwingStoreArtifactModeDebug {
-		exportDataMode = keeper.SwingStoreExportDataModeAll
 	}
 
 	err := swingStoreExportsHandler.InitiateExport(

@@ -12,7 +12,6 @@ import "C"
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/rpc"
 	"os"
 	"path/filepath"
@@ -92,7 +91,6 @@ func RunAgCosmosDaemon(nodePort C.int, toNode C.sendFunc, cosmosArgs []*C.char) 
 
 	// fmt.Fprintln(os.Stderr, "Starting Cosmos", args)
 	os.Args = args
-	fmt.Println("os.Args: ", os.Args)
 	go func() {
 		// We run in the background, but exit when the job is over.
 		// swingset.SendToNode("hello from Initial Go!")
@@ -104,9 +102,7 @@ func RunAgCosmosDaemon(nodePort C.int, toNode C.sendFunc, cosmosArgs []*C.char) 
 			exitCode = 99
 			return nil
 		}
-		fmt.Println("RunWithController in RunAgCosmosDaemon started")
 		daemon.RunWithController(sendToNode)
-		fmt.Println("RunWithController in RunAgCosmosDaemon exited")
 		// fmt.Fprintln(os.Stderr, "Shutting down Cosmos")
 		os.Exit(exitCode)
 	}()

@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"errors"
-	"fmt"
 	"net/rpc"
 	"net/rpc/jsonrpc"
 	"os"
@@ -87,7 +86,6 @@ func main() {
 		args = append(args, os.Args[1:]...)
 
 		binary := cast.ToString(appOpts.Get(daemoncmd.FlagSplitVm))
-		fmt.Println("binary: ", binary, ", binary empty: ", binary == "")
 		if binary == "" {
 			binary, lookErr := FindCosmicSwingsetBinary()
 			if lookErr != nil {
@@ -155,7 +153,5 @@ func main() {
 		return launchVM(agdServer, logger, appOpts)
 	}
 
-	fmt.Println("RunWithController in main started")
 	daemon.RunWithController(sendToNode)
-	fmt.Println("RunWithController in main ended")
 }

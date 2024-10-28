@@ -45,10 +45,7 @@ func RunWithController(sendToController vm.Sender) {
 	config.Seal()
 
 	rootCmd, _ := cmd.NewRootCmd(sendToController)
-	fmt.Println("rootCmd.Long", rootCmd.Long)
-	fmt.Println("rootCmd started")
 	if err := svrcmd.Execute(rootCmd, "", app.DefaultNodeHome); err != nil {
-		fmt.Println("rootCmd err", err.Error())
 		switch e := err.(type) {
 		case server.ErrorCode:
 			os.Exit(e.Code)
@@ -57,5 +54,4 @@ func RunWithController(sendToController vm.Sender) {
 			os.Exit(1)
 		}
 	}
-	fmt.Println("rootCmd ended")
 }
