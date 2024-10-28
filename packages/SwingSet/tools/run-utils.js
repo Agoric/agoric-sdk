@@ -2,12 +2,18 @@ import { Fail, q } from '@endo/errors';
 import { kunser } from '@agoric/kmarshal';
 import { makeQueue } from '@endo/stream';
 
-/** @import { ERef } from '@endo/far' */
+/**
+ * @import { ERef } from '@endo/far'
+ * @import { RunPolicy } from '../src/types-external.js'
+ */
+
+/** @typedef {{ provideRunPolicy: () => RunPolicy | undefined }} RunPolicyMaker */
 
 /**
  * @param {import('../src/controller/controller.js').SwingsetController} controller
+ * @param {RunPolicyMaker} [perfTool]
  */
-export const makeRunUtils = controller => {
+export const makeRunUtils = (controller, perfTool) => {
   const mutex = makeQueue();
   const logRunFailure = reason =>
     console.log('controller.run() failure', reason);
@@ -25,7 +31,8 @@ export const makeRunUtils = controller => {
   const queueAndRun = async (deliveryThunk, voidResult = false) => {
     await mutex.get();
     const kpid = await deliveryThunk();
-    const runResultP = controller.run();
+    const runPolicy = perfTool && perfTool.provideRunPolicy();
+    const runResultP = controller.run(runPolicy);
     mutex.put(runResultP.catch(logRunFailure));
     await runResultP;
 
