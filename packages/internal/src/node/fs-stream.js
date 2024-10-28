@@ -56,31 +56,35 @@ export const makeFsStreamWriter = async filePath => {
   let flushed = Promise.resolve();
   let closed = false;
 
-  const write = async data => {
-    if (closed) {
-      throw Error('Stream closed');
-    }
-
-    /** @type {Promise<void>} */
-    const written = new Promise((resolve, reject) => {
-      stream.write(data, err => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve();
-        }
-      });
-    });
+  const updateFlushed = p => {
     flushed = flushed.then(
-      () => written,
-      async err =>
-        Promise.reject(
-          written.then(
-            () => err,
-            writtenError => AggregateError([err, writtenError]),
-          ),
+      () => p,
+      err =>
+        p.then(
+          () => Promise.reject(err),
+          pError =>
+            Promise.reject(
+              pError !== err ? AggregateError([err, pError]) : err,
+            ),
         ),
     );
+    flushed.catch(() => {});
+  };
+
+  const write = async data => {
+    /** @type {Promise<void>} */
+    const written = closed
+      ? Promise.reject(Error('Stream closed'))
+      : new Promise((resolve, reject) => {
+          stream.write(data, err => {
+            if (err) {
+              reject(err);
+            } else {
+              resolve();
+            }
+          });
+        });
+    updateFlushed(written);
     return written;
   };
 
@@ -95,10 +99,13 @@ export const makeFsStreamWriter = async filePath => {
   };
 
   const close = async () => {
+    // TODO: Consider creating a single Error here to use a write rejection
     closed = true;
     await flush();
     stream.close();
   };
+
+  stream.on('error', err => updateFlushed(Promise.reject(err)));
 
   return harden({ write, flush, close });
 };
