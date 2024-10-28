@@ -59,9 +59,9 @@ export const makeSlogSender = async options => {
   const loggerProvider = new LoggerProvider({
     resource: new Resource(getResourceAttributes(options)),
   });
-  const logRecordProcessor = new SimpleLogRecordProcessor(
-    new OTLPLogExporter({ keepAlive: true }),
-  );
+
+  const otelLogExporter = new OTLPLogExporter({ keepAlive: true });
+  const logRecordProcessor = new SimpleLogRecordProcessor(otelLogExporter);
 
   loggerProvider.addLogRecordProcessor(logRecordProcessor);
 
@@ -91,7 +91,7 @@ export const makeSlogSender = async options => {
       10,
     );
 
-    return logger.emit({
+    logger.emit({
       ...JSON.parse(serializeSlogObj(logRecord)),
       severityNumber: SeverityNumber.INFO,
       timestamp: [seconds, nanoSeconds],
@@ -99,8 +99,20 @@ export const makeSlogSender = async options => {
   };
 
   return Object.assign(slogSender, {
-    forceFlush: () => logRecordProcessor.forceFlush(),
+    forceFlush: otelLogExporter.forceFlush,
     shutdown: () =>
-      logRecordProcessor.forceFlush().then(logRecordProcessor.shutdown),
+      logRecordProcessor
+        .shutdown()
+        .then(otelLogExporter.forceFlush, shutdownError =>
+          otelLogExporter.forceFlush().then(
+            () => Promise.reject(shutdownError),
+            flushError =>
+              Promise.reject(AggregateError([shutdownError, flushError])),
+          ),
+        )
+        .then(
+          () => {},
+          flushError => Promise.reject(flushError),
+        ),
   });
 };
