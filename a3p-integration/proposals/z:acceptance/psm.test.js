@@ -14,43 +14,48 @@
 
 import test from 'ava';
 import {
+  agd,
+  agoric,
   getUser,
   GOV1ADDR,
   GOV2ADDR,
-  GOV3ADDR,
-  waitForBlock,
 } from '@agoric/synthetic-chain';
 import {
   adjustBalancesIfNotProvisioned,
-  agopsPsm,
+  psmSwap,
   bankSend,
   checkGovParams,
   checkSwapExceedMintLimit,
   checkSwapSucceeded,
-  checkUserInitializedSuccessfully,
   getPsmMetrics,
   implementPsmGovParamChange,
   initializeNewUser,
   maxMintBelowLimit,
 } from './test-lib/psm-lib.js';
 import { getBalances } from './test-lib/utils.js';
+import { NonNullish } from './test-lib/errors.js';
+import { waitUntilAccountFunded } from './test-lib/sync-tools.js';
 
 // Export these from synthetic-chain?
-export const USDC_DENOM = process.env.USDC_DENOM
-  ? process.env.USDC_DENOM
-  : 'no-denom';
-export const PSM_PAIR = process.env.PSM_PAIR?.replace('.', '-');
+const USDC_DENOM = NonNullish(process.env.USDC_DENOM);
+const PSM_PAIR = NonNullish(process.env.PSM_PAIR);
+const PSM_INSTANCE = `psm-${PSM_PAIR.replace('.', '-')}`;
+
+const psmSwapIo = {
+  now: Date.now,
+  follow: agoric.follow,
+  setTimeout,
+};
 
 const psmTestSpecs = {
   govParams: {
     giveMintedFeeVal: 10n, // in %
     wantMintedFeeVal: 10n, // in %
     mintLimit: 500n * 1_000_000n, // in IST
-    deadline: 1, // in minutes
+    votingDuration: 1, // in minutes
   },
-  psmInstance: `psm-${PSM_PAIR}`,
-  // @ts-expect-error we assume PSM_PAIR is set because of synthetic-chain environment
-  anchor: PSM_PAIR.split('-')[1],
+  psmInstance: PSM_INSTANCE,
+  anchor: PSM_INSTANCE.split('-')[2],
   newUser: {
     name: 'new-psm-trader',
     fund: {
@@ -82,13 +87,12 @@ test.serial('change gov params', async t => {
       address: GOV1ADDR,
       instanceName: psmTestSpecs.psmInstance,
       newParams: psmTestSpecs.govParams,
-      deadline: psmTestSpecs.govParams.deadline,
+      votingDuration: psmTestSpecs.govParams.votingDuration,
     },
-    { committeeAddrs: [GOV1ADDR, GOV2ADDR, GOV3ADDR], position: 0 },
+    { committeeAddrs: [GOV1ADDR, GOV2ADDR], position: 0 },
+    { now: Date.now, follow: agoric.follow },
   );
 
-  // Replace when https://github.com/Agoric/agoric-sdk/pull/10171 is in
-  await waitForBlock(3);
   await checkGovParams(
     t,
     {
@@ -120,11 +124,7 @@ test.serial('initialize new user', async t => {
     newUser: { name, fund },
   } = psmTestSpecs;
 
-  await initializeNewUser(name, fund);
-  // Replace when https://github.com/Agoric/agoric-sdk/pull/10171 is in
-  await waitForBlock(3);
-
-  await checkUserInitializedSuccessfully(name, fund);
+  await initializeNewUser(name, fund, { query: agd.query, setTimeout });
   t.pass();
 });
 
@@ -150,16 +150,19 @@ test.serial('swap into IST', async t => {
   t.log('METRICS', metricsBefore);
   t.log('BALANCES', balancesBefore);
 
-  await agopsPsm(psmTrader, [
-    'swap',
-    '--pair',
-    process.env.PSM_PAIR,
-    '--wantMinted',
-    toIst.value,
-    '--feePct',
-    wantMintedFeeVal,
-  ]);
-  await waitForBlock(5);
+  await psmSwap(
+    psmTrader,
+    [
+      'swap',
+      '--pair',
+      PSM_PAIR,
+      '--wantMinted',
+      toIst.value,
+      '--feePct',
+      wantMintedFeeVal,
+    ],
+    psmSwapIo,
+  );
 
   await checkSwapSucceeded(t, metricsBefore, balancesBefore, {
     wantMinted: toIst.value,
@@ -187,16 +190,19 @@ test.serial('swap out of IST', async t => {
   t.log('METRICS', metricsBefore);
   t.log('BALANCES', balancesBefore);
 
-  await agopsPsm(psmTrader, [
-    'swap',
-    '--pair',
-    process.env.PSM_PAIR,
-    '--giveMinted',
-    fromIst.value,
-    '--feePct',
-    giveMintedFeeVal,
-  ]);
-  await waitForBlock(5);
+  await psmSwap(
+    psmTrader,
+    [
+      'swap',
+      '--pair',
+      PSM_PAIR,
+      '--giveMinted',
+      fromIst.value,
+      '--feePct',
+      giveMintedFeeVal,
+    ],
+    psmSwapIo,
+  );
 
   await checkSwapSucceeded(t, metricsBefore, balancesBefore, {
     giveMinted: fromIst.value,
@@ -219,9 +225,12 @@ test.serial('mint limit is adhered', async t => {
   // Fund other user
   const otherAddr = await getUser(name);
   await bankSend(otherAddr, `${value}${denom}`);
-
-  // Replace when https://github.com/Agoric/agoric-sdk/pull/10171 is in
-  await waitForBlock(3);
+  await waitUntilAccountFunded(
+    otherAddr,
+    { query: agd.query, setTimeout },
+    { denom, value: parseInt(value, 10) },
+    { errorMessage: `${otherAddr} could not be funded with ${value}${denom}` },
+  );
 
   const [metricsBefore, balancesBefore] = await Promise.all([
     getPsmMetrics(anchor),
@@ -238,31 +247,41 @@ test.serial('mint limit is adhered', async t => {
   t.log({ maxMintableValue, wantFeeValue, maxMintFeesAccounted });
 
   // Send a swap, should fail because mint limit is exceeded
-  await agopsPsm(otherAddr, [
-    'swap',
-    '--pair',
-    process.env.PSM_PAIR,
-    '--wantMinted',
-    maxMintFeesAccounted / 1000000 + 2, // Make sure we exceed the limit
-    '--feePct',
-    govParams.wantMintedFeeVal,
-  ]);
-  await waitForBlock(5);
+  await t.throwsAsync(
+    () =>
+      psmSwap(
+        otherAddr,
+        [
+          'swap',
+          '--pair',
+          PSM_PAIR,
+          '--wantMinted',
+          maxMintFeesAccounted / 1000000 + 2, // Make sure we exceed the limit
+          '--feePct',
+          govParams.wantMintedFeeVal,
+        ],
+        psmSwapIo,
+      ),
+    { message: /not succeeded/ },
+  );
 
   // Now check if failed with correct error message
   await checkSwapExceedMintLimit(t, otherAddr, metricsBefore);
 
   // Send another swap offer, this time should succeed
-  await agopsPsm(otherAddr, [
-    'swap',
-    '--pair',
-    process.env.PSM_PAIR,
-    '--wantMinted',
-    maxMintFeesAccounted / 1000000,
-    '--feePct',
-    govParams.wantMintedFeeVal,
-  ]);
-  await waitForBlock(5);
+  await psmSwap(
+    otherAddr,
+    [
+      'swap',
+      '--pair',
+      PSM_PAIR,
+      '--wantMinted',
+      maxMintFeesAccounted / 1000000,
+      '--feePct',
+      govParams.wantMintedFeeVal,
+    ],
+    psmSwapIo,
+  );
 
   // Make sure swap succeeded
   await checkSwapSucceeded(t, metricsBefore, balancesBefore, {

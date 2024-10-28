@@ -19,13 +19,16 @@ import { AmountMath } from '@agoric/ertp';
 import fsp from 'node:fs/promises';
 import { boardSlottingMarshaller, makeFromBoard } from './rpc.js';
 import { getBalances } from './utils.js';
-import { sleep } from './sync-tools.js';
+import {
+  retryUntilCondition,
+  waitUntilAccountFunded,
+  waitUntilOfferResult,
+} from './sync-tools.js';
+import { NonNullish } from './errors.js';
 
 // Export these from synthetic-chain?
-export const USDC_DENOM = process.env.USDC_DENOM
-  ? process.env.USDC_DENOM
-  : 'no-denom';
-export const PSM_PAIR = process.env.PSM_PAIR?.replace('.', '-');
+const USDC_DENOM = NonNullish(process.env.USDC_DENOM);
+const PSM_PAIR = NonNullish(process.env.PSM_PAIR).replace('.', '-');
 
 /**
  * @typedef {object} PsmMetrics
@@ -40,8 +43,6 @@ export const PSM_PAIR = process.env.PSM_PAIR?.replace('.', '-');
 
 const fromBoard = makeFromBoard();
 const marshaller = boardSlottingMarshaller(fromBoard.convertSlotToVal);
-
-const VOTING_WAIT_MS = 65 * 1000;
 
 /**
  *  Import from synthetic-chain once it is updated
@@ -65,8 +66,8 @@ export const bankSend = (addr, wanted, from = VALIDATORADDR) => {
  *   address: string
  *   instanceName: string
  *   newParams: Params
- *   deadline: number
- *   offerId?: string
+ *   deadline: bigint
+ *   offerId: string
  * }} QuestionDetails
  */
 export const buildProposePSMParamChangeOffer = async ({
@@ -74,7 +75,7 @@ export const buildProposePSMParamChangeOffer = async ({
   instanceName,
   newParams,
   deadline,
-  offerId = Date.now().toString(),
+  offerId,
 }) => {
   const charterAcceptOfferId = await agops.ec(
     'find-continuing-id',
@@ -138,7 +139,7 @@ export const buildProposePSMParamChangeOffer = async ({
     offerArgs: {
       instance: instances[instanceName],
       params,
-      deadline: BigInt(deadline * 60 + Math.round(Date.now() / 1000)),
+      deadline,
     },
   };
 
@@ -173,6 +174,45 @@ export const voteForNewParams = ({ committeeAddrs, position }) => {
 };
 
 /**
+ * @param {{follow: (...params: string[]) => Promise<object> }} io
+ */
+export const fetchLatestEcQuestion = async io => {
+  const { follow } = io;
+  const pathOutcome = ':published.committees.Economic_Committee.latestOutcome';
+  const pathQuestion =
+    ':published.committees.Economic_Committee.latestQuestion';
+
+  const [latestOutcome, latestQuestion] = await Promise.all([
+    follow('-lF', pathOutcome, '-o', 'text').then(outcomeRaw =>
+      marshaller.fromCapData(JSON.parse(outcomeRaw)),
+    ),
+    follow('-lF', pathQuestion, '-o', 'text').then(questionRaw =>
+      marshaller.fromCapData(JSON.parse(questionRaw)),
+    ),
+  ]);
+
+  return { latestOutcome, latestQuestion };
+};
+
+const checkCommitteeElectionResult = (electionResult, expectedResult) => {
+  const {
+    latestOutcome: { outcome, question },
+    latestQuestion: {
+      closingRule: { deadline },
+      questionHandle,
+    },
+  } = electionResult;
+  const { outcome: expectedOutcome, deadline: expectedDeadline } =
+    expectedResult;
+
+  return (
+    expectedOutcome === outcome &&
+    deadline === expectedDeadline &&
+    question === questionHandle
+  );
+};
+
+/**
  * @typedef {{
  *   giveMintedFeeVal: bigint;
  *   wantMintedFeeVal: bigint;
@@ -184,7 +224,7 @@ export const voteForNewParams = ({ committeeAddrs, position }) => {
  *   address: string
  *   instanceName: string
  *   newParams: Params
- *   deadline: number
+ *   votingDuration: number
  *   offerId?: string
  * }} question
  *
@@ -192,12 +232,34 @@ export const voteForNewParams = ({ committeeAddrs, position }) => {
  *   committeeAddrs: Array<string>
  *   position: number
  * }} voting
+ *
+ * @param {{ now: () => number; follow: (...params: string[]) => Promise<object>}} io
  */
-export const implementPsmGovParamChange = async (question, voting) => {
-  await buildProposePSMParamChangeOffer(question);
+export const implementPsmGovParamChange = async (question, voting, io) => {
+  const { now: getNow, follow } = io;
+  const now = getNow();
+  const deadline = BigInt(
+    question.votingDuration * 60 + Math.round(now / 1000),
+  );
+
+  await buildProposePSMParamChangeOffer({
+    ...question,
+    deadline,
+    offerId: now.toString(),
+  });
   await voteForNewParams(voting);
+
   console.log('ACTIONS wait for the vote deadline to pass');
-  await sleep(VOTING_WAIT_MS, { log: console.log });
+  await retryUntilCondition(
+    () => fetchLatestEcQuestion({ follow }),
+    electionResult =>
+      checkCommitteeElectionResult(electionResult, {
+        outcome: 'win',
+        deadline,
+      }),
+    'PSM param change election failed',
+    { setTimeout, retryIntervalMs: 5000, maxRetries: 15 },
+  );
 };
 
 /**
@@ -242,22 +304,6 @@ export const checkGovParams = async (t, expected, psmName) => {
 
 /**
  *
- * @param {string} name
- * @param {{
- *   denom: string,
- *   value: string
- * }} fund
- */
-export const initializeNewUser = async (name, fund) => {
-  const psmTrader = await addUser(name);
-  await Promise.all([
-    bankSend(psmTrader, `20000000ubld,${fund.value}${fund.denom}`),
-    bankSend(psmTrader, `1000000uist`, GOV1ADDR),
-  ]);
-};
-
-/**
- *
  * @param {string} userName
  * @param {{
  *   denom: string,
@@ -272,6 +318,32 @@ export const checkUserInitializedSuccessfully = async (
 
   const balance = await getBalances([userAddress], expectedAnchorFunds.denom);
   assert(balance >= BigInt(expectedAnchorFunds.value));
+};
+
+/**
+ *
+ * @param {string} name
+ * @param {{
+ *   denom: string,
+ *   value: string
+ * }} fund
+ * @param io
+ */
+export const initializeNewUser = async (name, fund, io) => {
+  const psmTrader = await addUser(name);
+  await Promise.all([
+    bankSend(psmTrader, `20000000ubld,${fund.value}${fund.denom}`),
+    bankSend(psmTrader, `1000000uist`, GOV1ADDR),
+  ]);
+
+  await waitUntilAccountFunded(
+    psmTrader,
+    io,
+    { denom: fund.denom, value: parseInt(fund.value, 10) },
+    { errorMessage: `${psmTrader} not funded` },
+  );
+
+  await checkUserInitializedSuccessfully(name, fund);
 };
 
 /**
@@ -301,18 +373,28 @@ export const sendOfferAgoric = async (address, offerPromise) => {
 /**
  * @param {string} address
  * @param {Array<any>} params
+ * @param {{
+ *   follow: (...params: string[]) => Promise<object>;
+ *   setTimeout: (callback: Function, delay: number) => void;
+ *   now: () => number
+ * }} io
  */
-export const agopsPsm = (address, params) => {
-  const newParams = ['psm', ...params];
+export const psmSwap = async (address, params, io) => {
+  const now = io.now();
+  const offerId = `${address}-psm-swap-${now}`;
+  const newParams = ['psm', ...params, '--offerId', offerId];
   const offerPromise = executeCommand(agopsLocation, newParams);
-  return sendOfferAgoric(address, offerPromise);
+  await sendOfferAgoric(address, offerPromise);
+
+  await waitUntilOfferResult(address, offerId, true, io, {
+    errorMessage: `${offerId} not succeeded`,
+  });
 };
 
 /**
  *
  * @param {number} base
  * @param {number} fee
- * @returns
  */
 const giveAnchor = (base, fee) => Math.ceil(base / (1 - fee));
 
@@ -320,7 +402,6 @@ const giveAnchor = (base, fee) => Math.ceil(base / (1 - fee));
  *
  * @param {number} base
  * @param {number} fee
- * @returns
  */
 const receiveAnchor = (base, fee) => Math.ceil(base * (1 - fee));
 
@@ -328,12 +409,36 @@ const receiveAnchor = (base, fee) => Math.ceil(base * (1 - fee));
  *
  * @param {CosmosBalances} balances
  * @param {string} targetDenom
- * @returns
  */
 const extractBalance = (balances, targetDenom) => {
   const balance = balances.find(({ denom }) => denom === targetDenom);
   if (!balance) return 0;
   return Number(balance.amount);
+};
+
+/**
+ * Checking IST balances can be tricky because of the execution fee mentioned in
+ * https://github.com/Agoric/agoric-sdk/issues/6525. Here we first check with
+ * whatever is passed in. If the first attempt fails we try again to see if
+ * there was an execution fee charged. If still fails, we throw.
+ *
+ * @param {import('ava').ExecutionContext} t
+ * @param {number} actualBalance
+ * @param {number} expectedBalance
+ */
+const tryISTBalances = async (t, actualBalance, expectedBalance) => {
+  const firstTry = await t.try(
+    (tt, actual, expected) => {
+      tt.deepEqual(actual, expected);
+    },
+    actualBalance,
+    expectedBalance,
+  );
+
+  if (!firstTry.passed) {
+    firstTry.discard();
+    t.deepEqual(actualBalance + 200000, expectedBalance);
+  } else firstTry.commit();
 };
 
 /**
@@ -373,7 +478,8 @@ export const checkSwapSucceeded = async (
       extractBalance(balancesBefore, USDC_DENOM) - anchorPaid,
     );
 
-    t.deepEqual(
+    await tryISTBalances(
+      t,
       extractBalance(balancesAfter, 'uist'),
       extractBalance(balancesBefore, 'uist') + mintedReceived,
     );
@@ -408,7 +514,8 @@ export const checkSwapSucceeded = async (
       extractBalance(balancesBefore, USDC_DENOM) + anchorReceived,
     );
 
-    t.deepEqual(
+    await tryISTBalances(
+      t,
       extractBalance(balancesAfter, 'uist'),
       extractBalance(balancesBefore, 'uist') - mintedPaid,
     );
@@ -452,14 +559,18 @@ export const adjustBalancesIfNotProvisioned = async (balances, address) => {
 
   const balancesAdjusted = [];
 
-  balances.forEach(({ denom, amount }) => {
+  for (const { denom, amount } of balances) {
     if (denom === 'uist') {
-      amount = (parseInt(amount, 10) + 250000 - 1_000_000).toString(); // provision sends 250000uist to new accounts and 1 IST is charged
-      balancesAdjusted.push({ denom, amount });
+      const startingAmount = (
+        parseInt(amount, 10) +
+        250000 -
+        1_000_000
+      ).toString(); // provision sends 250000uist to new accounts and 1 IST is charged
+      balancesAdjusted.push({ denom, amount: startingAmount });
     } else {
       balancesAdjusted.push({ denom, amount });
     }
-  });
+  }
 
   return balancesAdjusted;
 };
@@ -473,7 +584,6 @@ export const adjustBalancesIfNotProvisioned = async (balances, address) => {
 export const checkSwapExceedMintLimit = async (t, address, metricsBefore) => {
   const [offerResult, metricsAfter] = await Promise.all([
     agoric.follow('-lF', `:published.wallet.${address}`),
-    // @ts-expect-error we assume PSM_PAIR is set because of synthetic-chain environment
     getPsmMetrics(PSM_PAIR.split('-')[1]),
   ]);
   const { status, updated } = offerResult;
