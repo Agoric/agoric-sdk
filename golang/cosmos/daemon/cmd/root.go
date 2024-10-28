@@ -387,9 +387,9 @@ const (
 )
 
 var allowedSwingSetExportModes = map[string]bool{
-	"debug":       true,
-	"operational": true,
-	"skip":        true,
+	swingsetkeeper.SwingStoreArtifactModeDebug:       true,
+	swingsetkeeper.SwingStoreArtifactModeOperational: true,
+	swingsetkeeper.SwingStoreArtifactModeNone:        true,
 }
 
 // extendCosmosExportCommand monkey-patches the "export" command added by
@@ -409,7 +409,7 @@ func extendCosmosExportCommand(cmd *cobra.Command) {
 
 	cmd.Flags().String(
 		gaia.FlagSwingStoreExportMode,
-		"operational",
+		swingsetkeeper.SwingStoreArtifactModeOperational,
 		fmt.Sprintf(
 			"The mode for swingstore export (%s)",
 			strings.Join(keys, " | "),

@@ -1,13 +1,13 @@
 package swingset
 
 import (
-	// "os"
 	"bytes"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"hash"
+	"io"
 	"strings"
 
 	agoric "github.com/Agoric/agoric-sdk/golang/cosmos/types"
@@ -153,6 +153,12 @@ func ExportGenesis(
 		snapshotHeight: snapshotHeight,
 		swingStore:     k.GetSwingStore(ctx),
 		hasher:         sha256.New(),
+		exportMode:     swingStoreExportMode,
+	}
+
+	exportDataMode := keeper.SwingStoreExportDataModeSkip
+	if swingStoreExportMode == keeper.SwingStoreArtifactModeDebug {
+		exportDataMode = keeper.SwingStoreExportDataModeAll
 	}
 
 	err := swingStoreExportsHandler.InitiateExport(
@@ -161,7 +167,7 @@ func ExportGenesis(
 		eventHandler,
 		keeper.SwingStoreExportOptions{
 			ArtifactMode:   swingStoreExportMode,
-			ExportDataMode: keeper.SwingStoreExportDataModeSkip,
+			ExportDataMode: exportDataMode,
 		},
 	)
 	if err != nil {
@@ -183,6 +189,7 @@ type swingStoreGenesisEventHandler struct {
 	snapshotHeight uint64
 	swingStore     sdk.KVStore
 	hasher         hash.Hash
+	exportMode     string
 }
 
 func (eventHandler swingStoreGenesisEventHandler) OnExportStarted(height uint64, retrieveSwingStoreExport func() error) error {
@@ -194,21 +201,60 @@ func (eventHandler swingStoreGenesisEventHandler) OnExportRetrieved(provider kee
 		return fmt.Errorf("snapshot block height (%d) doesn't match requested height (%d)", provider.BlockHeight, eventHandler.snapshotHeight)
 	}
 
-	artifactsProvider := keeper.SwingStoreExportProvider{
-		GetExportDataReader: func() (agoric.KVEntryReader, error) {
-			exportDataIterator := eventHandler.swingStore.Iterator(nil, nil)
-			kvReader := agoric.NewKVIteratorReader(exportDataIterator)
-			eventHandler.hasher.Reset()
-			encoder := json.NewEncoder(eventHandler.hasher)
-			encoder.SetEscapeHTML(false)
+	artifactsEnded := false
 
-			return agoric.NewKVHookingReader(kvReader, func(entry agoric.KVEntry) error {
-				return encoder.Encode(entry)
-			}, func() error {
-				return nil
-			}), nil
+	var getExportDataReader = func() (agoric.KVEntryReader, error) {
+		exportDataIterator := eventHandler.swingStore.Iterator(nil, nil)
+		kvReader := agoric.NewKVIteratorReader(exportDataIterator)
+		eventHandler.hasher.Reset()
+		encoder := json.NewEncoder(eventHandler.hasher)
+		encoder.SetEscapeHTML(false)
+
+		return agoric.NewKVHookingReader(kvReader, func(entry agoric.KVEntry) error {
+			return encoder.Encode(entry)
+		}, func() error {
+			return nil
+		}), nil
+	}
+
+	artifactsProvider := keeper.SwingStoreExportProvider{
+		GetExportDataReader: getExportDataReader,
+		ReadNextArtifact: func() (types.SwingStoreArtifact, error) {
+			var (
+				artifact          types.SwingStoreArtifact
+				err               error
+				encodedExportData bytes.Buffer
+			)
+
+			if !artifactsEnded {
+				artifact, err = provider.ReadNextArtifact()
+			} else {
+				return types.SwingStoreArtifact{}, io.EOF
+			}
+
+			if err == io.EOF {
+				artifactsEnded = true
+				if eventHandler.exportMode == keeper.SwingStoreArtifactModeDebug {
+					err = nil
+					exportDataReader, err := provider.GetExportDataReader()
+
+					if err == nil {
+						err = agoric.EncodeKVEntryReaderToJsonl(
+							exportDataReader,
+							&encodedExportData,
+						)
+						if err == nil {
+							artifact = types.SwingStoreArtifact{
+								Data: encodedExportData.Bytes(),
+								Name: keeper.UntrustedExportDataArtifactName,
+							}
+						}
+					}
+				}
+			}
+
+			return artifact, err
 		},
-		ReadNextArtifact: provider.ReadNextArtifact,
 	}
 
 	return keeper.WriteSwingStoreExportToDirectory(artifactsProvider, eventHandler.exportDir)
