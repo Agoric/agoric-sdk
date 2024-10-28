@@ -11,7 +11,8 @@ import { makeSlogSender } from './make-slog-sender.js';
 
 const LINE_COUNT_TO_FLUSH = 10000;
 const ELAPSED_MS_TO_FLUSH = 3000;
-const MAX_LINE_COUNT_PER_PERIOD = 1000;
+const MAX_LINE_COUNT_PER_PERIOD = 10000;
+const MAX_BLOCKS_PER_PERIOD = 10;
 const PROCESSING_PERIOD = 1000;
 
 async function run() {
@@ -70,6 +71,7 @@ async function run() {
   }
 
   let linesProcessedThisPeriod = 0;
+  let blocksInThisPeriod = 0;
   let startOfLastPeriod = 0;
 
   let lastTime = Date.now();
@@ -114,9 +116,14 @@ async function run() {
       continue;
     }
 
+    const isAfterCommit = obj.type === 'cosmic-swingset-after-commit-stats';
+
     // Maybe wait for the next period to process a bunch of lines.
     let maybeWait;
-    if (linesProcessedThisPeriod >= MAX_LINE_COUNT_PER_PERIOD) {
+    if (
+      linesProcessedThisPeriod >= MAX_LINE_COUNT_PER_PERIOD ||
+      blocksInThisPeriod >= MAX_BLOCKS_PER_PERIOD
+    ) {
       const delayMS = PROCESSING_PERIOD - (now - startOfLastPeriod);
       maybeWait = new Promise(resolve => setTimeout(resolve, delayMS));
     }
@@ -126,8 +133,8 @@ async function run() {
     if (now - startOfLastPeriod >= PROCESSING_PERIOD) {
       startOfLastPeriod = now;
       linesProcessedThisPeriod = 0;
+      blocksInThisPeriod = 0;
     }
-    linesProcessedThisPeriod += 1;
 
     if (progress.virtualTimeOffset) {
       const virtualTime = obj.time + progress.virtualTimeOffset;
@@ -140,6 +147,13 @@ async function run() {
     } else {
       // Use the original.
       slogSender(obj);
+    }
+
+    linesProcessedThisPeriod += 1;
+    if (isAfterCommit) {
+      blocksInThisPeriod += 1;
+      lastTime = Date.now();
+      await stats(true);
     }
   }
 
