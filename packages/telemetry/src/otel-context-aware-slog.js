@@ -98,21 +98,34 @@ export const makeSlogSender = async options => {
     });
   };
 
+  const shutdown = async () => {
+    await Promise.resolve();
+    const errors = [];
+
+    try {
+      await logRecordProcessor.shutdown();
+    } catch (err) {
+      errors.push(err);
+    }
+
+    try {
+      await otelLogExporter.forceFlush();
+    } catch (err) {
+      errors.push(err);
+    }
+
+    switch (errors.length) {
+      case 0:
+        return;
+      case 1:
+        throw errors[0];
+      default:
+        throw AggregateError(errors);
+    }
+  };
+
   return Object.assign(slogSender, {
-    forceFlush: otelLogExporter.forceFlush,
-    shutdown: () =>
-      logRecordProcessor
-        .shutdown()
-        .then(otelLogExporter.forceFlush, shutdownError =>
-          otelLogExporter.forceFlush().then(
-            () => Promise.reject(shutdownError),
-            flushError =>
-              Promise.reject(AggregateError([shutdownError, flushError])),
-          ),
-        )
-        .then(
-          () => {},
-          flushError => Promise.reject(flushError),
-        ),
+    forceFlush: () => otelLogExporter.forceFlush(),
+    shutdown,
   });
 };
