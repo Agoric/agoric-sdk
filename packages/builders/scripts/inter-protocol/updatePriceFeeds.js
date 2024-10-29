@@ -37,20 +37,29 @@ const configurations = {
 };
 
 const { keys } = Object;
-const Usage = `agoric run updatePriceFeed.js ${keys(configurations).join(' | ')}`;
+const knownVariants = keys(configurations);
+
 /** @type {import('@agoric/deploy-script-support/src/externalTypes.js').CoreEvalBuilder} */
 export const defaultProposalBuilder = async ({ publishRef, install }, opts) => {
-  const config = configurations[opts.variant];
+  const config = opts.config || configurations[opts.variant];
   if (!config) {
-    console.error(Usage);
-    throw Error(Usage);
+    const error = `Unknown variant "${opts.variant}". Expected one of ${knownVariants.join(', ')}`;
+    console.error(error);
+    throw Error(error);
   }
+  const { oracleAddresses, inBrandNames, contractTerms } = config;
+  console.log(
+    'Generating price feeds update proposal with config',
+    JSON.stringify({ oracleAddresses, inBrandNames, contractTerms }),
+  );
   return harden({
     sourceSpec: '@agoric/inter-protocol/src/proposals/deploy-price-feeds.js',
     getManifestCall: [
       getManifestForPriceFeeds.name,
       {
-        ...config,
+        oracleAddresses,
+        inBrandNames,
+        contractTerms,
         priceAggregatorRef: publishRef(
           install(
             '@agoric/inter-protocol/src/price/fluxAggregatorContract.js',
@@ -68,15 +77,35 @@ export const defaultProposalBuilder = async ({ publishRef, install }, opts) => {
   });
 };
 
+const Usage = `agoric run updatePriceFeeds.js ${[...knownVariants, '<json-config>'].join(' | ')}`;
+
 /** @type {import('@agoric/deploy-script-support/src/externalTypes.js').DeployScriptFunction} */
 export default async (homeP, endowments) => {
   const { scriptArgs } = endowments;
-  const variant = scriptArgs?.[0];
-  console.log('updatePriceFeeds', scriptArgs, variant);
+  const variantOrConfig = scriptArgs?.[0];
+  console.log('updatePriceFeeds.js', variantOrConfig);
+
+  const opts = {};
+
+  if (typeof variantOrConfig === 'string') {
+    if (variantOrConfig[0] === '{') {
+      try {
+        opts.config = JSON.parse(variantOrConfig);
+      } catch (err) {
+        throw Error(`Failed to parse config argument ${variantOrConfig}`);
+      }
+    } else {
+      opts.variant = variantOrConfig;
+    }
+  } else {
+    console.error(Usage);
+    throw Error(Usage);
+  }
 
   const { writeCoreEval } = await makeHelpers(homeP, endowments);
 
-  await writeCoreEval(`gov-price-feeds-${variant}`, (utils, opts) =>
-    defaultProposalBuilder(utils, { ...opts, variant }),
+  await writeCoreEval(
+    `gov-price-feeds-${opts.variant || 'from-config'}`,
+    utils => defaultProposalBuilder(utils, opts),
   );
 };
