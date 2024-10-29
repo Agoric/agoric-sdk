@@ -2,7 +2,7 @@
   "name": "fast-usdc",
   "private": true,
   "version": "0.1.0",
-  "description": "Create an Agoric Javascript smart contract application",
+  "description": "CLI and library for Fast USDC product",
   "type": "module",
   "files": [
     "contract",
