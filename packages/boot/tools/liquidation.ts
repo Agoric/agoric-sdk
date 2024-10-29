@@ -9,6 +9,7 @@ import {
 } from '@agoric/vats/tools/board-utils.js';
 import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
 import type { ExecutionContext } from 'ava';
+import { insistManagerType, makePolicyProvider } from './supports.js';
 import { type SwingsetTestKit, makeSwingsetTestKit } from './supports.js';
 import {
   type GovernanceDriver,
@@ -313,8 +314,17 @@ export const makeLiquidationTestContext = async (
   io: { env?: Record<string, string | undefined> } = {},
 ) => {
   const { env = {} } = io;
+  const {
+    SLOGFILE: slogFile,
+    SWINGSET_WORKER_TYPE: defaultManagerType = 'local',
+  } = env;
+  insistManagerType(defaultManagerType);
+  const perfTool =
+    defaultManagerType === 'xsnap' ? makePolicyProvider() : undefined;
   const swingsetTestKit = await makeSwingsetTestKit(t.log, undefined, {
-    slogFile: env.SLOGFILE,
+    slogFile,
+    defaultManagerType,
+    perfTool,
   });
   console.time('DefaultTestContext');
 
@@ -372,6 +382,7 @@ export const makeLiquidationTestContext = async (
     refreshAgoricNamesRemotes,
     walletFactoryDriver,
     governanceDriver,
+    perfTool,
   };
 };
 
