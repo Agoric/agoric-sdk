@@ -1,4 +1,3 @@
-import '@endo/init';
 import { makeAgd, agops, agoric } from '@agoric/synthetic-chain';
 import { execFileSync } from 'node:child_process';
 import { readFile, writeFile } from 'node:fs/promises';

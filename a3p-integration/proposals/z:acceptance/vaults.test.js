@@ -1,4 +1,5 @@
 import test from 'ava';
+import '@endo/init';
 import {
   bankSend,
   getUser,
