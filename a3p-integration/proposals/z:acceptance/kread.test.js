@@ -114,7 +114,7 @@ test.serial('Bob buys an Item on marketplace', async t => {
   t.is(
     item.description,
     marketItem.asset.description,
-    'Item on purse should have the same description as the one on bought from market',
+    'Item on purse should have the same description as the one bought from market',
   );
 });
 
