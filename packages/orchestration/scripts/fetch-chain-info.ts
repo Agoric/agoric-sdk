@@ -1,5 +1,5 @@
-#!/usr/bin/env tsx
 /** @file Fetch canonical chain info to generate the minimum needed for agoricNames */
+import '@endo/init';
 import { ChainRegistryClient } from '@chain-registry/client';
 import fsp from 'node:fs/promises';
 import prettier from 'prettier';
