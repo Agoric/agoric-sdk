@@ -134,6 +134,8 @@ const baseConfig = harden({
  *   to make any changes
  * @param {import('@agoric/telemetry').SlogSender} [options.slogSender]
  * @param {import('../src/chain-main.js').CosmosSwingsetConfig} [options.swingsetConfig]
+ * @param {import('@agoric/swing-store').SwingStore} [options.swingStore]
+ *   defaults to a new in-memory store
  * @param {SwingSetConfig['vats']} [options.vats] extra static vat configuration
  * @param {string} [options.baseBootstrapManifest] identifies the colletion of
  *   "behaviors" to run at bootstrap for creating and configuring the initial
@@ -162,6 +164,7 @@ export const makeCosmicSwingsetTestKit = async (
     fixupConfig,
     slogSender,
     swingsetConfig = {},
+    swingStore = initSwingStore(), // in-memory
     vats,
 
     // Options for vats (particularly the reflective bootstrap vat).
@@ -196,7 +199,6 @@ export const makeCosmicSwingsetTestKit = async (
 
   if (fixupConfig) config = fixupConfig(config);
 
-  const swingStore = initSwingStore(); // in-memory
   const { hostStorage } = swingStore;
 
   const actionQueueStorage = makeQueueStorageMock().storage;
@@ -233,7 +235,7 @@ export const makeCosmicSwingsetTestKit = async (
     slogSender = await makeSlogSender({ env });
   }
 
-  const { blockingSend, shutdown: shutdownKernel } = await launch({
+  const launchResult = await launch({
     swingStore,
     actionQueueStorage,
     highPriorityQueueStorage,
@@ -248,8 +250,12 @@ export const makeCosmicSwingsetTestKit = async (
     slogSender,
     swingsetConfig,
   });
-  const shutdown = async () => {
-    await Promise.all([shutdownKernel, hostStorage.close()]);
+  const { blockingSend, shutdown: shutdownKernel } = launchResult;
+  /** @type {(options?: { kernelOnly?: boolean }) => Promise<void>} */
+  const shutdown = async ({ kernelOnly = false } = {}) => {
+    await shutdownKernel();
+    if (kernelOnly) return;
+    await hostStorage.close();
   };
 
   /**
@@ -294,7 +300,6 @@ export const makeCosmicSwingsetTestKit = async (
     });
     return getLastBlockInfo();
   };
-  await runNextBlock();
 
   /** @type {InboundQueue} */
   const actionQueue = makeQueue(actionQueueStorage);

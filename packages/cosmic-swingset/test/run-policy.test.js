@@ -50,22 +50,23 @@ test('cleanup work must be limited by vat_cleanup_budget', async t => {
         Fail`port ${q(destPort)} not implemented for message ${msg}`;
     }
   };
+  const options = {
+    bundles: makeSourceDescriptors({
+      puppet: '@agoric/swingset-vat/tools/vat-puppet.js',
+    }),
+    configOverrides: {
+      // Ensure multiple spans and snapshots.
+      defaultManagerType: 'xsnap',
+      snapshotInitial: 2,
+      snapshotInterval: 4,
+    },
+    fixupBootMsg: () => ({
+      ...defaultBootstrapMessage,
+      params: makeCleanupBudgetParams({ Default: 0 }),
+    }),
+  };
   const { pushCoreEval, runNextBlock, shutdown, swingStore } =
-    await makeCosmicSwingsetTestKit(receiveBridgeSend, {
-      bundles: makeSourceDescriptors({
-        puppet: '@agoric/swingset-vat/tools/vat-puppet.js',
-      }),
-      configOverrides: {
-        // Ensure multiple spans and snapshots.
-        defaultManagerType: 'xsnap',
-        snapshotInitial: 2,
-        snapshotInterval: 4,
-      },
-      fixupBootMsg: () => ({
-        ...defaultBootstrapMessage,
-        params: makeCleanupBudgetParams({ Default: 0 }),
-      }),
-    });
+    await makeCosmicSwingsetTestKit(receiveBridgeSend, options);
   const mapStore = provideEnhancedKVStore(
     /** @type {KVStore<string>} */ (swingStore.kernelStorage.kvStore),
   );
@@ -89,6 +90,10 @@ test('cleanup work must be limited by vat_cleanup_budget', async t => {
     'v8',
     `time to update expected vatID to ${JSON.stringify(vatIDs)}.at(-1)?`,
   );
+  // This key is/was used as a predicate for vat liveness.
+  // https://github.com/Agoric/agoric-sdk/blob/7ae1f278fa8cbeb0cfc777b7cebf507b1f07c958/packages/SwingSet/src/kernel/state/kernelKeeper.js#L1706
+  const sentinelKey = `${vatID}.o.nextID`;
+  t.true(mapStore.has(sentinelKey));
   const getKV = () =>
     [...mapStore].filter(([key]) => key.startsWith(`${vatID}.`));
   // console.log(swingStore.kernelStorage);
@@ -182,15 +187,36 @@ test('cleanup work must be limited by vat_cleanup_budget', async t => {
     params: makeCleanupBudgetParams({ Default: 2 ** 32, Kv: 3 }),
   });
   t.is(getKV().length, onlyKV.length - 3, 'initial kvStore deletion');
-  await runNextBlock();
+  let lastBlockInfo = await runNextBlock();
   t.is(getKV().length, onlyKV.length - 6, 'further kvStore deletion');
 
-  // Allow remaining cleanup.
-  await runNextBlock({
-    params: makeCleanupBudgetParams({ Default: 2 ** 32 }),
-  });
-  await runNextBlock();
-  t.is(getKV().length, 0, 'cleanup complete');
+  // Wait for the sentinel key to be removed, then re-instantiate the swingset
+  // and allow remaining cleanup.
+  while (mapStore.has(sentinelKey)) {
+    lastBlockInfo = await runNextBlock();
+  }
+  await shutdown({ kernelOnly: true });
+  {
+    // Pick up where we left off with the same data and block,
+    // but with a new budget.
+    const newOptions = {
+      ...options,
+      swingStore,
+      fixupBootMsg: () => ({
+        ...defaultBootstrapMessage,
+        ...lastBlockInfo,
+        params: makeCleanupBudgetParams({ Default: 2 ** 32 }),
+      }),
+    };
+    // eslint-disable-next-line no-shadow
+    const { runNextBlock, shutdown } = await makeCosmicSwingsetTestKit(
+      receiveBridgeSend,
+      newOptions,
+    );
 
-  await shutdown();
+    await runNextBlock();
+    t.is(getKV().length, 0, 'cleanup complete');
+
+    await shutdown();
+  }
 });
