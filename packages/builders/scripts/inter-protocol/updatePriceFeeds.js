@@ -13,7 +13,7 @@ const configurations = {
     ],
     inBrandNames: ['ATOM', 'stATOM'],
   },
-  main: {
+  MAINNET: {
     oracleAddresses: [
       'agoric144rrhh4m09mh7aaffhm6xy223ym76gve2x7y78', // DSRV
       'agoric19d6gnr9fyp6hev4tlrg87zjrzsd5gzr5qlfq2p', // Stakin
@@ -24,7 +24,7 @@ const configurations = {
     inBrandNames: ['ATOM', 'stATOM', 'stOSMO', 'stTIA', 'stkATOM'],
     contractTerms: { minSubmissionCount: 3 },
   },
-  devnet: {
+  DEVNET: {
     oracleAddresses: [
       'agoric1lw4e4aas9q84tq0q92j85rwjjjapf8dmnllnft', // DSRV
       'agoric1zj6vrrrjq4gsyr9lw7dplv4vyejg3p8j2urm82', // Stakin
