@@ -100,6 +100,11 @@ export const AgoricCalc = harden({
 });
 
 export const NobleCalc = harden({
-  // XXX mock only
+  /**
+   * XXX mock only
+   *
+   * @param {string} dest
+   * @returns {`noble1${string}`}
+   */
   fwdAddressFor: dest => `noble1${dest.length}${dest.slice(-4)}`,
 });
