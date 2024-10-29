@@ -12,8 +12,10 @@ import {
   AmountArgShape,
   AnyNatAmountsRecord,
   ChainAddressShape,
+  ChainInfoShape,
   DenomAmountShape,
   DenomShape,
+  IBCConnectionInfoShape,
   IBCTransferOptionsShape,
   TimestampProtoShape,
   TypedJsonShape,
@@ -28,7 +30,7 @@ import { coerceCoin, coerceDenomAmount } from '../utils/amounts.js';
 /**
  * @import {HostOf} from '@agoric/async-flow';
  * @import {LocalChain, LocalChainAccount} from '@agoric/vats/src/localchain.js';
- * @import {AmountArg, ChainAddress, DenomAmount, IBCMsgTransferOptions, IBCConnectionInfo, OrchestrationAccountI, LocalAccountMethods, ForwardInfo} from '@agoric/orchestration';
+ * @import {AmountArg, ChainAddress, DenomAmount, IBCMsgTransferOptions, IBCConnectionInfo, OrchestrationAccountI, LocalAccountMethods, ForwardInfo, ChainInfo} from '@agoric/orchestration';
  * @import {RecorderKit, MakeRecorderKit} from '@agoric/zoe/src/contractSupport/recorder.js'.
  * @import {Zone} from '@agoric/zone';
  * @import {Remote} from '@agoric/internal';
@@ -38,7 +40,7 @@ import { coerceCoin, coerceDenomAmount } from '../utils/amounts.js';
  * @import {TypedJson, JsonSafe, ResponseTo} from '@agoric/cosmic-proto';
  * @import {Coin} from '@agoric/cosmic-proto/cosmos/base/v1beta1/coin.js';
  * @import {Matcher} from '@endo/patterns';
- * @import {ChainHub} from './chain-hub.js';
+ * @import {ChainHub, DenomDetail} from './chain-hub.js';
  * @import {PacketTools} from './packet-tools.js';
  * @import {ZoeTools} from '../utils/zoe-tools.js';
  */
@@ -167,6 +169,24 @@ export const prepareLocalOrchestrationAccountKit = (
         onFulfilled: M.call(TypedJsonShape).returns(
           M.arrayOf(DenomAmountShape),
         ),
+      }),
+      issuingChainInfoWatcher: M.interface('issuingChainInfoWatcher', {
+        onFulfilled: M.call(ChainInfoShape, {
+          baseName: M.string(),
+          denomAmount: DenomAmountShape,
+          destination: ChainAddressShape,
+          opts: M.or(IBCTransferOptionsShape, M.undefined()),
+          timeoutTimestampVowOrValue: M.any(), // TODO typeme
+        }).returns(VowShape),
+      }),
+      pfmConnectionsWatcher: M.interface('pfmConnectionsWatcher', {
+        onFulfilled: M.call([IBCConnectionInfoShape, IBCConnectionInfoShape], {
+          baseChainId: M.string(),
+          denomAmount: DenomAmountShape,
+          destination: ChainAddressShape,
+          opts: M.or(IBCTransferOptionsShape, M.undefined()),
+          timeoutTimestampVowOrValue: M.any(), // TODO typeme
+        }).returns(VowShape),
       }),
       invitationMakers: M.interface('invitationMakers', {
         CloseAccount: M.call().returns(M.promise()),
@@ -483,6 +503,132 @@ export const prepareLocalOrchestrationAccountKit = (
           return harden(balances.map(toDenomAmount));
         },
       },
+      issuingChainInfoWatcher: {
+        /**
+         * @param {ChainInfo} chainInfo
+         * @param {{
+         *   destination: ChainAddress;
+         *   baseName: DenomDetail['baseName'];
+         *   denomAmount: DenomAmount;
+         *   opts?: IBCMsgTransferOptions;
+         *   timeoutTimestampVowOrValue: Promise<bigint> | bigint;
+         * }} ctx
+         */
+        onFulfilled(
+          chainInfo,
+          {
+            destination,
+            baseName,
+            denomAmount,
+            opts,
+            timeoutTimestampVowOrValue,
+          },
+        ) {
+          const { chainId: baseChainId, pfmEnabled } = chainInfo;
+
+          if (baseChainId !== destination.chainId && baseName !== 'agoric') {
+            if (!pfmEnabled) {
+              throw makeError(
+                `PFM not supported on ${q(baseName)} - ${q(baseChainId)}`,
+              );
+            }
+
+            const currToIssuerV = chainHub.getConnectionInfo(
+              this.state.address.chainId,
+              baseChainId,
+            );
+            const issuerToDestV = chainHub.getConnectionInfo(
+              baseChainId,
+              destination.chainId,
+            );
+
+            return watch(
+              allVows([currToIssuerV, issuerToDestV]),
+              this.facets.pfmConnectionsWatcher,
+              {
+                baseChainId,
+                destination,
+                denomAmount,
+                opts,
+                timeoutTimestampVowOrValue,
+              },
+            );
+          }
+
+          // Direct transfer case
+          const connectionInfoV = chainHub.getConnectionInfo(
+            this.state.address.chainId,
+            destination.chainId,
+          );
+
+          return watch(
+            allVows([connectionInfoV, timeoutTimestampVowOrValue]),
+            this.facets.transferWatcher,
+            {
+              opts,
+              denomAmount,
+              destination,
+              isPfm: false,
+            },
+          );
+        },
+      },
+      pfmConnectionsWatcher: {
+        /**
+         * @param {[IBCConnectionInfo, IBCConnectionInfo]} connections
+         * @param {{
+         *   baseChainId: string;
+         *   destination: ChainAddress;
+         *   denomAmount: DenomAmount;
+         *   opts?: IBCMsgTransferOptions;
+         *   timeoutTimestampVowOrValue: Promise<bigint> | bigint;
+         * }} ctx
+         */
+        onFulfilled(
+          [currToIssuer, issuerToDest],
+          {
+            baseChainId,
+            destination,
+            denomAmount,
+            opts,
+            timeoutTimestampVowOrValue,
+          },
+        ) {
+          if (!currToIssuer.transferChannel) {
+            throw makeError(
+              `No transfer channel found between ${q(this.state.address.chainId)} and ${q(baseChainId)}`,
+            );
+          }
+
+          if (!issuerToDest.transferChannel) {
+            throw makeError(
+              `No transfer channel found between ${q(baseChainId)} and ${q(destination.chainId)}`,
+            );
+          }
+
+          /** @type {ForwardInfo} */
+          const pfmMemo = {
+            forward: {
+              receiver: destination.value,
+              port: issuerToDest.transferChannel.portId,
+              channel: issuerToDest.transferChannel.channelId,
+              timeout: '10m', // TODO const + expose in MsgTransferOpts?
+              retries: 3, // TODO const + expose in MsgTransferOpts?
+            },
+          };
+
+          return watch(
+            allVows([currToIssuer, timeoutTimestampVowOrValue]),
+            this.facets.transferWatcher,
+            {
+              opts: { ...opts, memo: JSON.stringify(pfmMemo) },
+              denomAmount,
+              destination,
+              isPfm: true,
+            },
+          );
+        },
+      },
       holder: {
         /** @type {HostOf<OrchestrationAccountI['asContinuingOffer']>} */
         asContinuingOffer() {
@@ -686,114 +832,39 @@ export const prepareLocalOrchestrationAccountKit = (
          * @returns {Vow<any>}
          */
         transfer(destination, amount, opts) {
-          // eslint-disable-next-line no-restricted-syntax
-          return asVow(async () => {
+          return asVow(() => {
             trace('Transferring funds from LCA over IBC');
             const denomAmount = coerceDenomAmount(chainHub, amount);
             const denomDetail = chainHub.getAsset(denomAmount.denom);
             if (!denomDetail) {
-              // TODO test
               throw makeError(
                 `Unable to fetch denom detail for ${denomAmount.denom}`,
               );
             }
             const { baseName, chainName } = denomDetail;
             if (chainName !== 'agoric') {
-              // TODO test
               throw makeError(
                 `Cannot transfer asset that's not present on ${this.state.address.chainId}. Ensure it's registered in ChainHub.`,
               );
             }
 
-            // set a `timeoutTimestamp` if caller does not supply either `timeoutHeight` or `timeoutTimestamp`
-            // TODO #9324 what's a reasonable default? currently 5 minutes
             const timeoutTimestampVowOrValue =
               opts?.timeoutTimestamp ??
               (opts?.timeoutHeight
                 ? 0n
                 : E(timestampHelper).getTimeoutTimestampNS());
 
-            // XXX FIXME, don't await when().
-            const {
-              chainId: baseChainId,
-              // @ts-expect-error Property 'pfmEnabled' does not exist on type 'ChainInfo'.ts(2339)
-              pfmEnabled,
-            } = await vowTools.when(chainHub.getChainInfo(baseName));
-
-            // Do we need to route through another chain?
-            if (baseChainId !== destination.chainId && baseName !== 'agoric') {
-              if (!pfmEnabled)
-                throw makeError(
-                  `PFM not supported on ${q(baseName)} - ${q(baseChainId)}`,
-                );
-
-              // XXX FIXME, don't await when().
-              const currToIssuer = await vowTools.when(
-                chainHub.getConnectionInfo(
-                  this.state.address.chainId,
-                  baseChainId,
-                ),
-              );
-              if (!currToIssuer.transferChannel) {
-                throw makeError(
-                  `No transfer channel found between ${q(this.state.address.chainId)} and ${q(baseChainId)}`,
-                );
-              }
-
-              // XXX FIXME, don't await when().
-              const issuerToDest = await vowTools.when(
-                chainHub.getConnectionInfo(baseChainId, destination.chainId),
-              );
-              if (!issuerToDest.transferChannel) {
-                throw makeError(
-                  `No transfer channel found between ${q(baseChainId)} and ${q(destination.chainId)}`,
-                );
-              }
-
-              /** @type {ForwardInfo} */
-              const pfmMemo = {
-                forward: {
-                  receiver: destination.value,
-                  port: issuerToDest.transferChannel.portId,
-                  channel: issuerToDest.transferChannel.channelId,
-                  timeout: '10m', // TODO const + expose in MsgTransferOpts?
-                  retries: 3, // TODO const + expose in MsgTransferOpts?
-                },
-              };
-
-              const resultV = watch(
-                allVows([currToIssuer, timeoutTimestampVowOrValue]),
-                this.facets.transferWatcher,
-                {
-                  opts: { ...opts, memo: JSON.stringify(pfmMemo) },
-                  denomAmount,
-                  destination,
-                  isPfm: true,
-                },
-              );
-              return resultV;
-            }
-
-            const connectionInfoV = watch(
-              chainHub.getConnectionInfo(
-                this.state.address.chainId,
-                destination.chainId,
-              ),
-            );
-
-            // don't resolve the vow until the transfer is confirmed on remote
-            // and reject vow if the transfer fails for any reason
-            const resultV = watch(
-              allVows([connectionInfoV, timeoutTimestampVowOrValue]),
-              this.facets.transferWatcher,
+            return watch(
+              chainHub.getChainInfo(baseName),
+              this.facets.issuingChainInfoWatcher,
               {
-                opts,
-                denomAmount,
                 destination,
-                isPfm: false,
+                baseName,
+                denomAmount,
+                opts,
+                timeoutTimestampVowOrValue,
               },
             );
-            return resultV;
           });
         },
         /** @type {HostOf<OrchestrationAccountI['transferSteps']>} */
