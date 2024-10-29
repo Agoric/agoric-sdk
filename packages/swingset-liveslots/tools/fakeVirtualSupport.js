@@ -246,8 +246,11 @@ export function makeFakeLiveSlotsStuff(options = {}) {
     serializeBodyFormat: 'smallcaps',
     marshalName: 'fakeLiveSlots',
     errorIdNum: 80_000,
-    marshalSaveError: _err => {},
+    marshalSaveError: err => console.warn('Logging sent error stack', err),
   });
+
+  const toStoredCapData = val =>
+    marshal.toCapData(val, { errorTagging: 'off' });
 
   function registerEntry(baseRef, val, valIsCohort) {
     const { facet } = parseVatSlot(baseRef);
@@ -290,6 +293,7 @@ export function makeFakeLiveSlotsStuff(options = {}) {
     slotToVal,
     convertValToSlot,
     convertSlotToVal,
+    toStoredCapData,
     marshal,
     deleteEntry,
     FinalizationRegistry,

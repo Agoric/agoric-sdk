@@ -416,6 +416,8 @@ function build(
   // eslint-disable-next-line no-use-before-define
   const unmeteredConvertSlotToVal = meterControl.unmetered(convertSlotToVal);
 
+  const toStoredCapData = val => m.toCapData(val, { errorTagging: 'off' });
+
   function getSlotForVal(val) {
     return valToSlot.get(val);
   }
@@ -460,7 +462,7 @@ function build(
     requiredValForSlot,
     // eslint-disable-next-line no-use-before-define
     registerValue,
-    m.serialize,
+    toStoredCapData,
     unmeteredUnserialize,
     assertAcceptableSyscallCapdataSize,
     liveSlotsOptions,
@@ -476,7 +478,7 @@ function build(
     unmeteredConvertSlotToVal,
     // eslint-disable-next-line no-use-before-define
     registerValue,
-    m.serialize,
+    toStoredCapData,
     unmeteredUnserialize,
     assertAcceptableSyscallCapdataSize,
   );
@@ -698,7 +700,7 @@ function build(
       meterControl.assertIsMetered(); // else userspace getters could escape
       let valueSer;
       try {
-        valueSer = m.serialize(value);
+        valueSer = toStoredCapData(value);
       } catch (e) {
         // Serialization failure.
         valueSer = m.serialize(e);
