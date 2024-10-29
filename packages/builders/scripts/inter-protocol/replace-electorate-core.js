@@ -12,10 +12,12 @@
  *   Example:
  *     agoric run replace-electorate-core.js MAINNET
  */
-/* global process */
 import { makeHelpers } from '@agoric/deploy-script-support';
 import { getManifestForReplaceAllElectorates } from '@agoric/inter-protocol/src/proposals/replaceElectorate.js';
 
+/** @typedef {Parameters<typeof import('@agoric/inter-protocol/src/proposals/replaceElectorate.js').replaceAllElectorates>[1]['options']} ReplaceElectorateOptions */
+
+/** @type {Record<string, ReplaceElectorateOptions>} */
 const configurations = {
   MAINNET: {
     committeeName: 'Economic Committee',
@@ -76,20 +78,33 @@ const configurations = {
 };
 
 const { keys } = Object;
-const Usage = `agoric run replace-electorate-core.js ${keys(configurations).join(' | ')}`;
+const knownVariants = keys(configurations);
+
 /** @type {import('@agoric/deploy-script-support/src/externalTypes.js').CoreEvalBuilder} */
 export const defaultProposalBuilder = async ({ publishRef, install }, opts) => {
-  const config = configurations[opts.variant];
+  const config = opts.config || configurations[opts.variant];
   if (!config) {
-    console.error(Usage);
-    process.exit(1);
+    const error = `Unknown variant "${opts.variant}". Expected one of ${knownVariants.join(', ')}`;
+    console.error(error);
+    throw Error(error);
   }
+  const { committeeName, voterAddresses, highPrioritySendersConfig } = config;
+  console.log(
+    'Generating replace committee proposal with config',
+    JSON.stringify({
+      committeeName,
+      voterAddresses,
+      highPrioritySendersConfig,
+    }),
+  );
   return harden({
     sourceSpec: '@agoric/inter-protocol/src/proposals/replaceElectorate.js',
     getManifestCall: [
       getManifestForReplaceAllElectorates.name,
       {
-        ...config,
+        committeeName,
+        voterAddresses,
+        highPrioritySendersConfig,
         economicCommitteeRef: publishRef(
           install(
             '@agoric/governance/src/committee.js',
@@ -101,15 +116,35 @@ export const defaultProposalBuilder = async ({ publishRef, install }, opts) => {
   });
 };
 
+const Usage = `agoric run replace-electorate-core.js ${[...knownVariants, '<json-config>'].join(' | ')}`;
+
 /** @type {import('@agoric/deploy-script-support/src/externalTypes.js').DeployScriptFunction} */
 export default async (homeP, endowments) => {
   const { scriptArgs } = endowments;
-  const variant = scriptArgs?.[0];
-  console.log('replace-committee', scriptArgs, variant);
+  const variantOrConfig = scriptArgs?.[0];
+  console.log('replace-electorate-core.js', variantOrConfig);
+
+  const opts = {};
+
+  if (typeof variantOrConfig === 'string') {
+    if (variantOrConfig[0] === '{') {
+      try {
+        opts.config = JSON.parse(variantOrConfig);
+      } catch (err) {
+        throw Error(`Failed to parse config argument ${variantOrConfig}`);
+      }
+    } else {
+      opts.variant = variantOrConfig;
+    }
+  } else {
+    console.error(Usage);
+    throw Error(Usage);
+  }
 
   const { writeCoreEval } = await makeHelpers(homeP, endowments);
 
-  await writeCoreEval(`replace-committee-${variant}`, (utils, opts) =>
-    defaultProposalBuilder(utils, { ...opts, variant }),
+  await writeCoreEval(
+    `replace-committee-${opts.variant || 'from-config'}`,
+    utils => defaultProposalBuilder(utils, opts),
   );
 };
