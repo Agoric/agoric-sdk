@@ -1,6 +1,6 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-import type { CallDetails } from 'fast-usdc/contract/quickSend.flows.js';
+import type { CCTPTxEvidence } from 'fast-usdc/contract/client-types.js';
 import { makePromiseKit } from '@endo/promise-kit';
 import type { TestFn } from 'ava';
 import type { OfferId } from '@agoric/smart-wallet/src/offers.js';
@@ -80,7 +80,7 @@ const makeWatcher = (sw: SmartWallet, instance, runInbound) => {
       return sw.getLatestUpdateRecord();
     },
 
-    report: async (callDetails: CallDetails) => {
+    report: async (evidence: CCTPTxEvidence) => {
       await sw.sendOffer({
         id: `report-${(seq += 1)}`,
         invitationSpec: {
@@ -89,7 +89,7 @@ const makeWatcher = (sw: SmartWallet, instance, runInbound) => {
           previousOffer: await accepted.promise,
         },
         proposal: {},
-        offerArgs: callDetails,
+        offerArgs: evidence,
       });
 
       // simulate ibc/MsgTransfer ack from remote chain,
@@ -127,6 +127,7 @@ test.serial('watcher: accept, report', async t => {
     t.like(update, { status: { id: 'accept-1', numWantsSatisfied: 1 } });
   }
 
+  const modern = new Date('2024-10-29T20:00:00');
   {
     perfTool.resetPolicy();
     const settlementBase = 'agoric1fakeLCAAddress'; // TODO: read from vstorage
@@ -135,7 +136,14 @@ test.serial('watcher: accept, report', async t => {
     const dest = { chainId: 'osmosis-1', encoding, value: 'osmo1333' };
     const vAddr = AgoricCalc.virtualAddressFor(settlementBase, dest.value);
     const nobleFwd = NobleCalc.fwdAddressFor(vAddr);
-    const status = await william.report({ amount: 1234n, dest, nobleFwd });
+    const status = await william.report({
+      tx: { amount: 1234n, forwardingAddress: nobleFwd },
+      txHash: '0xABCD1234',
+      blockHash: '0xDEADBEEF',
+      blockNumber: 1234n,
+      blockTimestamp: BigInt(modern.getTime() / 1000),
+      aux: { forwardingChannel: 'channel-123', recipientAddress: dest.value },
+    });
     t.log('advance cost (Mc)', mc(perfTool.totalCount()));
 
     t.like(status, {
@@ -143,9 +151,8 @@ test.serial('watcher: accept, report', async t => {
         id: 'report-2',
         invitationSpec: { previousOffer: 'accept-1' },
         offerArgs: {
-          amount: 1234n,
-          dest: { value: 'osmo1333' },
-          nobleFwd: 'noble1301333',
+          tx: { amount: 1234n, forwardingAddress: 'noble1301333' },
+          aux: { recipientAddress: 'osmo1333' },
         },
         result: 'advance 1104 uusdc sent to osmo1333',
       },
