@@ -40,7 +40,11 @@ const makeCleanupBudgetParams = budget => {
 };
 
 test('cleanup work must be limited by vat_cleanup_budget', async t => {
-  const { toStorage: handleVstorage } = makeFakeStorageKit('');
+  let finish;
+  t.teardown(() => finish?.());
+  // Make a test kit.
+  const fakeStorageKit = makeFakeStorageKit('');
+  const { toStorage: handleVstorage } = fakeStorageKit;
   const receiveBridgeSend = (destPort, msg) => {
     switch (destPort) {
       case BridgeId.STORAGE: {
@@ -65,8 +69,12 @@ test('cleanup work must be limited by vat_cleanup_budget', async t => {
       params: makeCleanupBudgetParams({ Default: 0 }),
     }),
   };
-  const { pushCoreEval, runNextBlock, shutdown, swingStore } =
-    await makeCosmicSwingsetTestKit(receiveBridgeSend, options);
+  const testKit = await makeCosmicSwingsetTestKit(receiveBridgeSend, options);
+  const { pushCoreEval, runNextBlock, shutdown, swingStore } = testKit;
+  finish = shutdown;
+  await runNextBlock();
+
+  // Define helper functions for interacting with its swing store.
   const mapStore = provideEnhancedKVStore(
     /** @type {KVStore<string>} */ (swingStore.kernelStorage.kvStore),
   );
@@ -77,7 +85,7 @@ test('cleanup work must be limited by vat_cleanup_budget', async t => {
     return value;
   };
 
-  // Launch the new vat and capture its ID and store snapshotting.
+  // Launch the new vat and capture its ID.
   pushCoreEval(async powers => {
     const { bootstrap } = powers.vats;
     await E(bootstrap).createVat('doomed', 'puppet');
@@ -90,18 +98,18 @@ test('cleanup work must be limited by vat_cleanup_budget', async t => {
     'v8',
     `time to update expected vatID to ${JSON.stringify(vatIDs)}.at(-1)?`,
   );
-  // This key is/was used as a predicate for vat liveness.
-  // https://github.com/Agoric/agoric-sdk/blob/7ae1f278fa8cbeb0cfc777b7cebf507b1f07c958/packages/SwingSet/src/kernel/state/kernelKeeper.js#L1706
-  const sentinelKey = `${vatID}.o.nextID`;
-  t.true(mapStore.has(sentinelKey));
-  const getKV = () =>
-    [...mapStore].filter(([key]) => key.startsWith(`${vatID}.`));
-  // console.log(swingStore.kernelStorage);
-
   t.false(
     JSON.parse(mustGet('vats.terminated')).includes(vatID),
     'must not be terminated',
   );
+  // This key is/was used as a predicate for vat liveness.
+  // https://github.com/Agoric/agoric-sdk/blob/7ae1f278fa8cbeb0cfc777b7cebf507b1f07c958/packages/SwingSet/src/kernel/state/kernelKeeper.js#L1706
+  const sentinelKey = `${vatID}.o.nextID`;
+  t.true(mapStore.has(sentinelKey));
+
+  // Define helper functions for interacting the vat's kvStore.
+  const getKV = () =>
+    [...mapStore].filter(([key]) => key.startsWith(`${vatID}.`));
   const initialEntries = new Map(getKV());
   t.not(initialEntries.size, 0, 'initial kvStore entries must exist');
 
@@ -196,6 +204,7 @@ test('cleanup work must be limited by vat_cleanup_budget', async t => {
     lastBlockInfo = await runNextBlock();
   }
   await shutdown({ kernelOnly: true });
+  finish = null;
   {
     // Pick up where we left off with the same data and block,
     // but with a new budget.
@@ -213,10 +222,9 @@ test('cleanup work must be limited by vat_cleanup_budget', async t => {
       receiveBridgeSend,
       newOptions,
     );
+    finish = shutdown;
 
     await runNextBlock();
     t.is(getKV().length, 0, 'cleanup complete');
-
-    await shutdown();
   }
 });

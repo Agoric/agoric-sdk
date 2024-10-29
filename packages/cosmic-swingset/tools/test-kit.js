@@ -29,7 +29,13 @@ import { makeQueue, makeQueueStorageMock } from '../src/helpers/make-queue.js';
  */
 
 /** @type {Replacer<object>} */
-const clone = obj => JSON.parse(JSON.stringify(obj));
+const deepCopyData = obj => JSON.parse(JSON.stringify(obj));
+
+/** @type {Replacer<object>} */
+const stripUndefined = obj =>
+  Object.fromEntries(
+    Object.entries(obj).filter(([_key, value]) => value !== undefined),
+  );
 
 export const defaultBootMsg = harden(
   makeBootMsg({
@@ -56,7 +62,7 @@ export const defaultBootMsg = harden(
   }),
 );
 export const defaultBootstrapMessage = harden({
-  ...clone(defaultBootMsg),
+  ...deepCopyData(defaultBootMsg),
   blockHeight: 1,
   blockTime: Math.floor(Date.parse('2010-01-01T00:00Z') / 1000),
   isBootstrap: true,
@@ -79,6 +85,7 @@ export const defaultBootstrapMessage = harden({
  */
 const baseConfig = harden({
   defaultReapInterval: 'never',
+  defaultReapGCKrefs: 'never',
   defaultManagerType: undefined,
   bootstrap: 'bootstrap',
   vats: {
@@ -164,7 +171,7 @@ export const makeCosmicSwingsetTestKit = async (
     fixupConfig,
     slogSender,
     swingsetConfig = {},
-    swingStore = initSwingStore(), // in-memory
+    swingStore,
     vats,
 
     // Options for vats (particularly the reflective bootstrap vat).
@@ -177,9 +184,9 @@ export const makeCosmicSwingsetTestKit = async (
   await null;
   /** @type {SwingSetConfig} */
   let config = {
-    ...clone(baseConfig),
+    ...deepCopyData(baseConfig),
     ...configOverrides,
-    defaultManagerType,
+    ...stripUndefined({ defaultManagerType }),
   };
   if (bundleDir) {
     bundleDir = resolvePath(bundleDir);
@@ -191,14 +198,26 @@ export const makeCosmicSwingsetTestKit = async (
 
   // @ts-expect-error we assume that config.bootstrap is not undefined
   const bootstrapVatDesc = config.vats[config.bootstrap];
-  Object.assign(bootstrapVatDesc.parameters, {
-    baseManifest: baseBootstrapManifest,
-    addBehaviors: addBootstrapBehaviors,
-    coreProposalCodeSteps: bootstrapCoreEvals,
-  });
+  Object.assign(
+    bootstrapVatDesc.parameters,
+    stripUndefined({
+      baseManifest: baseBootstrapManifest,
+      addBehaviors: addBootstrapBehaviors,
+      coreProposalCodeSteps: bootstrapCoreEvals,
+    }),
+  );
 
   if (fixupConfig) config = fixupConfig(config);
 
+  let bootMsg = deepCopyData(defaultBootMsg);
+  if (fixupBootMsg) bootMsg = fixupBootMsg(bootMsg);
+  bootMsg?.type === SwingsetMessageType.AG_COSMOS_INIT ||
+    Fail`bootMsg must be AG_COSMOS_INIT`;
+  if (bootMsg.isBootstrap === undefined && !swingStore) {
+    bootMsg.isBootstrap = true;
+  }
+
+  if (!swingStore) swingStore = initSwingStore(); // in-memory
   const { hostStorage } = swingStore;
 
   const actionQueueStorage = makeQueueStorageMock().storage;
@@ -213,22 +232,6 @@ export const makeCosmicSwingsetTestKit = async (
   const clearChainSends = async () => savedChainSends.splice(0);
   const replayChainSends = (..._args) => {
     throw Error('not implemented');
-  };
-
-  let bootMsg = clone(defaultBootMsg);
-  if (fixupBootMsg) bootMsg = fixupBootMsg(bootMsg);
-  let {
-    blockHeight: lastBlockHeight,
-    blockTime: lastBlockTime,
-    params: lastBlockParams,
-  } = bootMsg;
-  let lastBlockWalltime = Date.now();
-
-  // Advance block time at a nominal rate of one second per real millisecond,
-  // but introduce discontinuities as necessary to maintain monotonicity.
-  const nextBlockTime = () => {
-    const delta = Math.floor(Date.now() - lastBlockWalltime);
-    return lastBlockTime + (delta > 0 ? delta : 1);
   };
 
   if (!slogSender && (env.SLOGFILE || env.SLOGSENDER)) {
@@ -258,6 +261,17 @@ export const makeCosmicSwingsetTestKit = async (
     await hostStorage.close();
   };
 
+  // Remember information about the current block, starting with the boot
+  // message.
+  let {
+    isBootstrap: needsBootstrap,
+    blockHeight: lastBlockHeight,
+    blockTime: lastBlockTime,
+    params: lastBlockParams,
+  } = bootMsg;
+  let lastBlockWalltime = Date.now();
+  await blockingSend(bootMsg);
+
   /**
    * @returns {BlockInfo}
    */
@@ -267,20 +281,30 @@ export const makeCosmicSwingsetTestKit = async (
     params: lastBlockParams,
   });
 
+  // Advance block time at a nominal rate of one second per real millisecond,
+  // but introduce discontinuities as necessary to maintain monotonicity.
+  const nextBlockTime = () => {
+    const delta = Math.floor(Date.now() - lastBlockWalltime);
+    return lastBlockTime + (delta > 0 ? delta : 1);
+  };
+
   let blockTxCount = 0;
 
   /**
    * @param {Partial<BlockInfo>} [blockInfo]
    */
   const runNextBlock = async ({
-    blockHeight = lastBlockHeight + 1,
-    blockTime = nextBlockTime(),
+    blockHeight = needsBootstrap ? lastBlockHeight : lastBlockHeight + 1,
+    blockTime = needsBootstrap ? lastBlockTime : nextBlockTime(),
     params = lastBlockParams,
   } = {}) => {
-    blockHeight > lastBlockHeight ||
+    needsBootstrap ||
+      blockHeight > lastBlockHeight ||
       Fail`blockHeight ${blockHeight} must be greater than ${lastBlockHeight}`;
-    blockTime > lastBlockTime ||
+    needsBootstrap ||
+      blockTime > lastBlockTime ||
       Fail`blockTime ${blockTime} must be greater than ${lastBlockTime}`;
+    needsBootstrap = false;
     lastBlockWalltime = Date.now();
     lastBlockHeight = blockHeight;
     lastBlockTime = blockTime;
