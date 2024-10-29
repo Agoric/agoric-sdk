@@ -915,7 +915,7 @@ export const makeSlogToOtelKit = (tracer, overrideAttrs = {}) => {
         break;
       }
       case 'cosmic-swingset-upgrade-finish': {
-        spans.pop(['slogAttrs.blockHeight', slogAttrs.blockHeight]);
+        spans.pop(['upgrade', slogAttrs.blockHeight]);
         dbTransactionManager.end();
         break;
       }
