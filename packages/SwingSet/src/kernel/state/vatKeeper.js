@@ -84,49 +84,53 @@ export function initializeVatState(
 }
 
 /**
- * Produce a vat keeper for a vat.
+ * @typedef {object} VatKeeperPowers
+ * @property {TranscriptStore} transcriptStore  Accompanying transcript store, for the transcripts
+ * @property {*} kernelSlog
+ * @property {*} addKernelObject  Kernel function to add a new object to the kernel's mapping tables.
+ * @property {*} addKernelPromiseForVat  Kernel function to add a new promise to the kernel's mapping tables.
+ * @property {(kernelSlot: string) => boolean} kernelObjectExists
+ * @property {*} incrementRefCount
+ * @property {*} decrementRefCount
+ * @property {(kernelSlot: string) => {reachable: number, recognizable: number}} getObjectRefCount
+ * @property {(kernelSlot: string, o: { reachable: number, recognizable: number }) => void} setObjectRefCount
+ * @property {(vatID: string, kernelSlot: string) => {isReachable: boolean, vatSlot: string}} getReachableAndVatSlot
+ * @property {(kernelSlot: string) => void} addMaybeFreeKref
+ * @property {*} incStat
+ * @property {*} decStat
+ * @property {*} getCrankNumber
+ * @property {*} scheduleReap
+ * @property {SnapStore} snapStore
+ */
+
+/**
+ * Produce a "vat keeper" for the kernel state of a vat.
  *
- * @param {KVStore} kvStore  The keyValue store in which the persistent state will be kept
- * @param {TranscriptStore} transcriptStore  Accompanying transcript store, for the transcripts
- * @param {*} kernelSlog
  * @param {string} vatID  The vat ID string of the vat in question
- * @param {*} addKernelObject  Kernel function to add a new object to the kernel's
- * mapping tables.
- * @param {*} addKernelPromiseForVat  Kernel function to add a new promise to the
- * kernel's mapping tables.
- * @param {(kernelSlot: string) => boolean} kernelObjectExists
- * @param {*} incrementRefCount
- * @param {*} decrementRefCount
- * @param {(kernelSlot: string) => {reachable: number, recognizable: number}} getObjectRefCount
- * @param {(kernelSlot: string, o: { reachable: number, recognizable: number }) => void} setObjectRefCount
- * @param {(vatID: string, kernelSlot: string) => {isReachable: boolean, vatSlot: string}} getReachableAndVatSlot
- * @param {(kernelSlot: string) => void} addMaybeFreeKref
- * @param {*} incStat
- * @param {*} decStat
- * @param {*} getCrankNumber
- * @param {*} scheduleReap
- * @param {SnapStore} [snapStore]
- * returns an object to hold and access the kernel's state for the given vat
+ * @param {KVStore} kvStore  The keyValue store in which the persistent state will be kept
+ * @param {VatKeeperPowers} powers
  */
 export function makeVatKeeper(
-  kvStore,
-  transcriptStore,
-  kernelSlog,
   vatID,
-  addKernelObject,
-  addKernelPromiseForVat,
-  kernelObjectExists,
-  incrementRefCount,
-  decrementRefCount,
-  getObjectRefCount,
-  setObjectRefCount,
-  getReachableAndVatSlot,
-  addMaybeFreeKref,
-  incStat,
-  decStat,
-  getCrankNumber,
-  scheduleReap,
-  snapStore = undefined,
+  kvStore,
+  {
+    transcriptStore,
+    kernelSlog,
+    addKernelObject,
+    addKernelPromiseForVat,
+    kernelObjectExists,
+    incrementRefCount,
+    decrementRefCount,
+    getObjectRefCount,
+    setObjectRefCount,
+    getReachableAndVatSlot,
+    addMaybeFreeKref,
+    incStat,
+    decStat,
+    getCrankNumber,
+    scheduleReap,
+    snapStore,
+  },
 ) {
   insistVatID(vatID);
 
