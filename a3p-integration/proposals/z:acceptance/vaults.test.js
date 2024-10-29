@@ -319,12 +319,13 @@ test.serial(
 
 test.serial('confirm that Oracle prices are being received', async t => {
   /*
-   * The Oracle for ATOM brand is being registered in the offer made at file:
-   * a3p-integration/proposals/f:replace-price-feeds/verifyPushedPrice.js
+   * The Oracle for ATOM and stATOM brands are being registered in the offer made at file:
+   * a3p-integration/proposals/n:upgrade-next/verifyPushedPrice.js
+   * which is being executed during the use phase of upgrade-next proposal
    */
   const ATOMManagerIndex = 0;
   const BRANDS = ['ATOM'];
-  const BASE_ID = 'f-priceFeeds';
+  const BASE_ID = 'n-upgrade';
   const oraclesByBrand = generateOracleMap(BASE_ID, BRANDS);
 
   const latestRoundId = await getPriceFeedRoundId(BRANDS[0]);
