@@ -18,12 +18,17 @@ export const meta = {
   customTermsShape: {
     contractFee: NatAmountShape,
     makerFee: NatAmountShape,
+    feeAccountAddress: M.string(),
   },
 };
 harden(meta);
 
 /**
- * @typedef {{ makerFee: Amount<'nat'>; contractFee: Amount<'nat'> }} QuickSendTerms
+ * @typedef {{
+ *   makerFee: Amount<'nat'>;
+ *   contractFee: Amount<'nat'>;
+ *   feeAccountAddress: string;
+ * }} QuickSendTerms
  * @param {ZCF<QuickSendTerms>} zcf
  * @param {OrchestrationPowers & {
  *   marshaller: Marshaller;

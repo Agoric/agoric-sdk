@@ -256,11 +256,13 @@ const setup = async (t, io) => {
     'published.quickSend.settlementBase',
   );
 
+  const feeAccountAddress = await chains.agoric.makeAccount();
   const terms = {
     issuers: { USDC: USDCe.issuer },
     brands: { USDC: USDCe.brand },
     makerFee: AmountMath.make(USDCe.brand, termValues.makerFee),
     contractFee: AmountMath.make(USDCe.brand, termValues.contractFee),
+    feeAccountAddress,
   };
   const handlers = new Map();
   const zcf: ZCF<QuickSendTerms> = harden({
@@ -372,12 +374,13 @@ const setup = async (t, io) => {
 
   const ursula = makeUser({ nobleApp, ethereum, myAddr: '0xUrsula', cctpAddr });
 
-  return { chains, ursula, quiesce, contract, addrs, usdc };
+  return { chains, ursula, quiesce, contract, addrs, terms, usdc };
 };
 
 test('tx lifecycle', async t => {
   const io = { setTimeout };
-  const { chains, ursula, quiesce, contract, addrs, usdc } = await setup(t, io);
+  const info = await setup(t, io);
+  const { chains, ursula, quiesce, addrs, terms, usdc } = info;
 
   const destAddr = await chains.dydx.makeAccount(); // is this a prereq?
   await ursula.doTransfer(100n, {
@@ -388,11 +391,7 @@ test('tx lifecycle', async t => {
 
   await quiesce();
 
-  const {
-    fundingPool: poolAddr,
-    feeAccount: feeAddr,
-    settlement: settlementAddr,
-  } = addrs;
+  const { fundingPool: poolAddr, settlement: settlementAddr } = addrs;
   const actual = {
     user: {
       addr: '0xUrsula',
@@ -409,8 +408,8 @@ test('tx lifecycle', async t => {
       balance: await chains.agoric.getBalance(poolAddr),
     },
     fee: {
-      addr: feeAddr,
-      balance: await chains.agoric.getBalance(feeAddr),
+      addr: terms.feeAccountAddress,
+      balance: await chains.agoric.getBalance(terms.feeAccountAddress),
     },
     settlement: {
       addr: settlementAddr,
@@ -428,13 +427,13 @@ test('tx lifecycle', async t => {
       balance: 100n - termValues.makerFee - termValues.contractFee,
     },
     pool: {
-      addr: 'agoric112',
+      addr: 'agoric113',
       start: startFunds.pool,
       balance: startFunds.pool + termValues.makerFee,
     },
-    fee: { addr: 'agoric114', balance: termValues.contractFee },
+    fee: { addr: 'agoric112', balance: termValues.contractFee },
     settlement: {
-      addr: 'agoric113',
+      addr: 'agoric114',
       balance: 0n,
     },
   };
