@@ -106,23 +106,23 @@ func buildProposalStepWithArgs(moduleName string, entrypoint string, opts map[st
 }
 
 func getVariantFromUpgradeName(upgradeName string) string {
-    switch upgradeName {
-    case "UNRELEASED_A3P_INTEGRATION":
-        return "A3P_INTEGRATION"
-    case "UNRELEASED_main":
-        return "MAINNET"
-    case "UNRELEASED_devnet":
-        return "DEVNET"
-	// Noupgrade for this version.
-    case "UNRELEASED_BASIC":
-        return ""
-    default:
-        return ""
-    }
+	switch upgradeName {
+	case "UNRELEASED_A3P_INTEGRATION":
+		return "A3P_INTEGRATION"
+	case "UNRELEASED_main":
+		return "MAINNET"
+	case "UNRELEASED_devnet":
+		return "DEVNET"
+		// Noupgrade for this version.
+	case "UNRELEASED_BASIC":
+		return ""
+	default:
+		return ""
+	}
 }
 
 func replaceElectorateCoreProposalStep(upgradeName string) (vm.CoreProposalStep, error) {
-    variant := getVariantFromUpgradeName(upgradeName)
+	variant := getVariantFromUpgradeName(upgradeName)
 
 	return buildProposalStepWithArgs(
 		"@agoric/builders/scripts/inter-protocol/replace-electorate-core.js",
@@ -134,7 +134,7 @@ func replaceElectorateCoreProposalStep(upgradeName string) (vm.CoreProposalStep,
 }
 
 func replacePriceFeedsCoreProposal(upgradeName string) (vm.CoreProposalStep, error) {
-    variant := getVariantFromUpgradeName(upgradeName)
+	variant := getVariantFromUpgradeName(upgradeName)
 
 	return buildProposalStepWithArgs(
 		"@agoric/builders/scripts/inter-protocol/updatePriceFeeds.js",
@@ -187,10 +187,10 @@ func unreleasedUpgradeHandler(app *GaiaApp, targetUpgrade string) func(sdk.Conte
 					// Upgrade Zoe (no new ZCF needed).
 					"@agoric/builders/scripts/vats/upgrade-zoe.js",
 				),
-                // Revive KREAd characters
-                vm.CoreProposalStepForModules(
-                    "@agoric/builders/scripts/vats/revive-kread.js",
-                ),
+				// Revive KREAd characters
+				vm.CoreProposalStepForModules(
+					"@agoric/builders/scripts/vats/revive-kread.js",
+				),
 				vm.CoreProposalStepForModules(
 					// Upgrade to include a cleanup from https://github.com/Agoric/agoric-sdk/pull/10319
 					"@agoric/builders/scripts/smart-wallet/build-wallet-factory2-upgrade.js",
