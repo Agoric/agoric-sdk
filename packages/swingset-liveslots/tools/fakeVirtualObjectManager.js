@@ -31,8 +31,8 @@ export function makeFakeVirtualObjectManager(vrm, fakeStuff) {
     fakeStuff.getSlotForVal,
     fakeStuff.requiredValForSlot,
     fakeStuff.registerEntry,
-    fakeStuff.marshal.serialize,
-    fakeStuff.marshal.unserialize,
+    fakeStuff.toStoredCapData,
+    fakeStuff.marshal.fromCapData,
     fakeStuff.assertAcceptableSyscallCapdataSize,
   );
 

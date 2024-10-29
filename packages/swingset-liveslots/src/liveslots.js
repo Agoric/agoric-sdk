@@ -412,7 +412,7 @@ function build(
       // controlled by the `console` option given to makeLiveSlots.
       console.warn('Logging sent error stack', err),
   });
-  const unmeteredUnserialize = meterControl.unmetered(m.unserialize);
+  const unmeteredUnserialize = meterControl.unmetered(m.fromCapData);
   // eslint-disable-next-line no-use-before-define
   const unmeteredConvertSlotToVal = meterControl.unmetered(convertSlotToVal);
 
@@ -572,7 +572,7 @@ function build(
   // moves from REACHABLE to UNREACHABLE, but the JS engine then moves to
   // COLLECTED (and maybe FINALIZED) on its own, and we must not allow the
   // latter changes to affect metering. So every call to convertSlotToVal (or
-  // m.unserialize) must be wrapped by unmetered().
+  // m.fromCapData) must be wrapped by unmetered().
   function convertSlotToVal(slot, iface = undefined) {
     meterControl.assertNotMetered();
     const { type, allocatedByVat, id, virtual, durable, facet, baseRef } =
@@ -703,7 +703,7 @@ function build(
         valueSer = toStoredCapData(value);
       } catch (e) {
         // Serialization failure.
-        valueSer = m.serialize(e);
+        valueSer = m.toCapData(e);
         rejected = true;
       }
       valueSer.slots.map(retainExportedVref);
@@ -732,7 +732,7 @@ function build(
     const methargs = [prop, args];
 
     meterControl.assertIsMetered(); // else userspace getters could escape
-    const serMethargs = m.serialize(harden(methargs));
+    const serMethargs = m.toCapData(harden(methargs));
     assertAcceptableSyscallCapdataSize([serMethargs]);
     serMethargs.slots.map(retainExportedVref);
 
@@ -804,7 +804,7 @@ function build(
         );
         assertAcceptableSyscallCapdataSize(resolutionCDs);
       } catch (e) {
-        syscall.exit(true, m.serialize(e));
+        syscall.exit(true, m.toCapData(e));
         return null;
       }
       syscall.resolve(resolutions);
@@ -860,7 +860,7 @@ function build(
         }
         return (...args) => {
           meterControl.assertIsMetered(); // userspace getters shouldn't escape
-          const serArgs = m.serialize(harden(args));
+          const serArgs = m.toCapData(harden(args));
           assertAcceptableSyscallCapdataSize([serArgs]);
           serArgs.slots.map(retainExportedVref);
           // if we didn't forbid promises, we'd need to
@@ -914,7 +914,7 @@ function build(
     // promise (for which we were already the decider).
 
     meterControl.assertNotMetered();
-    const methargs = m.unserialize(methargsdata);
+    const methargs = m.fromCapData(methargsdata);
     const [method, args] = methargs;
 
     // If the method is missing, or is not a Function, or the method throws a
@@ -1016,7 +1016,7 @@ function build(
         );
         assertAcceptableSyscallCapdataSize(resolutionCDs);
       } catch (e) {
-        syscall.exit(true, m.serialize(e));
+        syscall.exit(true, m.toCapData(e));
         return;
       }
       syscall.resolve(resolutions);
@@ -1063,7 +1063,7 @@ function build(
     // previously-imported promise
     if (pRec) {
       meterControl.assertNotMetered();
-      const val = m.unserialize(data);
+      const val = m.fromCapData(data);
       if (rejected) {
         pRec.reject(val);
       } else {
@@ -1157,28 +1157,28 @@ function build(
 
   function exitVat(completion) {
     meterControl.assertIsMetered(); // else userspace getters could escape
-    const args = m.serialize(harden(completion));
+    const args = m.toCapData(harden(completion));
     if (isAcceptableSyscallCapdataSize([args])) {
       args.slots.map(retainExportedVref);
       syscall.exit(false, args);
     } else {
       syscall.exit(
         true,
-        m.serialize(harden(Error('syscall capdata too large'))),
+        m.toCapData(harden(Error('syscall capdata too large'))),
       );
     }
   }
 
   function exitVatWithFailure(reason) {
     meterControl.assertIsMetered(); // else userspace getters could escape
-    const args = m.serialize(harden(reason));
+    const args = m.toCapData(harden(reason));
     if (isAcceptableSyscallCapdataSize([args])) {
       args.slots.map(retainExportedVref);
       syscall.exit(true, args);
     } else {
       syscall.exit(
         true,
-        m.serialize(harden(Error('syscall capdata too large'))),
+        m.toCapData(harden(Error('syscall capdata too large'))),
       );
     }
   }
@@ -1306,7 +1306,7 @@ function build(
     vom.initializeKindHandleKind();
     collectionManager.initializeStoreKindInfo();
 
-    const vatParameters = m.unserialize(vatParametersCapData);
+    const vatParameters = m.fromCapData(vatParametersCapData);
     baggage = collectionManager.provideBaggage();
     watchedPromiseManager.preparePromiseWatcherTables();
 

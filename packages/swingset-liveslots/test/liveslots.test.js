@@ -1165,9 +1165,9 @@ test('unserializable promise resolution', async t => {
   const { m } = makeMarshaller(null, makeMockGC(), 'vatA');
   let expectedError;
   try {
-    m.serialize(unserializable);
+    m.toCapData(unserializable);
   } catch (e) {
-    expectedError = m.serialize(e);
+    expectedError = m.toCapData(e);
   }
   expectError(t, expectedError, /Remotables must be explicitly declared/);
 
@@ -1225,9 +1225,9 @@ test('unserializable promise rejection', async t => {
   const { m } = makeMarshaller(null, makeMockGC(), 'vatA');
   let expectedError;
   try {
-    m.serialize(unserializable);
+    m.toCapData(unserializable);
   } catch (e) {
-    expectedError = m.serialize(e);
+    expectedError = m.toCapData(e);
   }
   expectError(t, expectedError, /Remotables must be explicitly declared/);
 

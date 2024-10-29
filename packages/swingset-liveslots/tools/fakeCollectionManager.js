@@ -17,8 +17,8 @@ export function makeFakeCollectionManager(vrm, fakeStuff, _options = {}) {
     fakeStuff.convertValToSlot,
     fakeStuff.convertSlotToVal,
     fakeStuff.registerEntry,
-    fakeStuff.marshal.serialize,
-    fakeStuff.marshal.unserialize,
+    fakeStuff.toStoredCapData,
+    fakeStuff.marshal.fromCapData,
     fakeStuff.assertAcceptableSyscallCapdataSize,
   );
   initializeStoreKindInfo();
