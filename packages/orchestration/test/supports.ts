@@ -207,7 +207,7 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
    * Does not work with `withOrchestration` contracts, as these have their own
    * ChainHub. Use `ChainHubAdmin` instead.
    */
-  const registerAgoricBld = () => {
+  const registerAgoricAssets = () => {
     if (!chainHub.getAsset('ubld')) {
       chainHub.registerChain('agoric', fetchedChainInfo.agoric);
       chainHub.registerAsset('ubld', {
@@ -215,6 +215,14 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
         baseName: 'agoric',
         baseDenom: 'ubld',
         brand: bld.brand,
+      });
+    }
+    if (!chainHub.getAsset('uist')) {
+      chainHub.registerAsset('uist', {
+        chainName: 'agoric',
+        baseName: 'agoric',
+        baseDenom: 'uist',
+        brand: ist.brand,
       });
     }
   };
@@ -289,7 +297,7 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
       inspectLocalBridge: () => harden([...localBridgeMessages]),
       inspectDibcBridge: () => E(ibcBridge).inspectDibcBridge(),
       inspectBankBridge: () => harden([...bankBridgeMessages]),
-      registerAgoricBld,
+      registerAgoricAssets,
       registerUSDC,
       transmitTransferAck,
     },

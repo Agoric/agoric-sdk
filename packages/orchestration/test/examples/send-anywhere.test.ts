@@ -90,7 +90,6 @@ test('send using arbitrary chain info', async t => {
   const hotChainInfo = harden({
     chainId: 'hot-new-chain-0',
     stakingTokens: [{ denom: 'uhot' }],
-    ...chainInfoDefaults,
   }) as CosmosChainInfo;
   t.log('admin adds chain using creatorFacet', hotChainInfo.chainId);
   const agoricToHotConnection = {
@@ -108,9 +107,10 @@ test('send using arbitrary chain info', async t => {
     },
   } as IBCConnectionInfo;
   const chainName = 'hot';
-  await E(sendKit.creatorFacet).registerChain(
-    chainName,
-    hotChainInfo,
+  await E(sendKit.creatorFacet).registerChain(chainName, hotChainInfo);
+  await E(sendKit.creatorFacet).registerConnection(
+    'agoric-3',
+    hotChainInfo.chainId,
     agoricToHotConnection,
   );
 

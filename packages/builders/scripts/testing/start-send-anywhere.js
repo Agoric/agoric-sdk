@@ -7,6 +7,8 @@ import {
   makeTracer,
   NonNullish,
 } from '@agoric/internal';
+import { registerKnownChainsAndAssets } from '@agoric/orchestration';
+import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info';
 import { E } from '@endo/far';
 
 /// <reference types="@agoric/vats/src/core/types-ambient"/>
@@ -25,6 +27,13 @@ const trace = makeTracer('StartSA', true);
  *   installation: {
  *     consume: {
  *       sendAnywhere: Installation<StartFn>;
+ *     };
+ *   };
+ *   issuer: {
+ *     consume: {
+ *       BLD: Brand<'nat'>;
+ *       IST: Brand<'nat'>;
+ *       USDC: Brand<'nat'>;
  *     };
  *   };
  * }} powers
@@ -47,7 +56,7 @@ export const startSendAnywhere = async ({
     produce: { sendAnywhere: produceInstance },
   },
   issuer: {
-    consume: { IST },
+    consume: { BLD, IST, USDC },
   },
 }) => {
   trace(startSendAnywhere.name);
@@ -67,13 +76,20 @@ export const startSendAnywhere = async ({
     }),
   );
 
-  const { instance } = await E(startUpgradable)({
+  const { instance, creatorFacet } = await E(startUpgradable)({
     label: 'send-anywhere',
     installation: sendAnywhere,
     issuerKeywordRecord: { Stable: await IST },
     privateArgs,
   });
   produceInstance.resolve(instance);
+  trace('contract started');
+
+  await registerKnownChainsAndAssets(creatorFacet, fetchedChainInfo, {
+    BLD,
+    IST,
+    USDC,
+  });
   trace('done');
 };
 harden(startSendAnywhere);
@@ -99,7 +115,7 @@ export const getManifest = ({ restoreRef }, { installationRef }) => {
           produce: { sendAnywhere: true },
         },
         issuer: {
-          consume: { IST: true },
+          consume: { BLD: true, IST: true, USDC: true },
         },
       },
     },

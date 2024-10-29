@@ -9,3 +9,5 @@ export * from './src/exos/chain-hub-admin.js';
 export * from './src/typeGuards.js';
 
 export { withOrchestration } from './src/utils/start-helper.js';
+
+export { registerKnownChainsAndAssets } from './src/utils/chain-hub-helper.js';
