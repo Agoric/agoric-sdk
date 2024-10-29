@@ -1162,7 +1162,10 @@ function build(
       args.slots.map(retainExportedVref);
       syscall.exit(false, args);
     } else {
-      syscall.exit(true, m.serialize(Error('syscall capdata too large')));
+      syscall.exit(
+        true,
+        m.serialize(harden(Error('syscall capdata too large'))),
+      );
     }
   }
 
@@ -1173,7 +1176,10 @@ function build(
       args.slots.map(retainExportedVref);
       syscall.exit(true, args);
     } else {
-      syscall.exit(true, m.serialize(Error('syscall capdata too large')));
+      syscall.exit(
+        true,
+        m.serialize(harden(Error('syscall capdata too large'))),
+      );
     }
   }
 
