@@ -22,6 +22,12 @@ export type FlowState =
 export type Guest<T extends unknown = any> = T;
 export type Host<T extends Passable = Passable> = T;
 
+export type HostCall = {
+  target: any;
+  method: PropertyKey | undefined;
+  eventual?: boolean;
+};
+
 /**
  * A HostVow must be durably storable. It corresponds to an
  * ephemeral guest promise.

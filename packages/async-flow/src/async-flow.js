@@ -94,7 +94,7 @@ export const prepareAsyncFlowTools = (outerZone, outerOptions = {}) => {
    * @param {Zone} zone
    * @param {string} tag
    * @param {GuestAsyncFunc} guestAsyncFunc
-   * @param {{ startEager?: boolean }} [options]
+   * @param {{ startEager?: boolean, definitionStack?: string | Error}} [options]
    */
   const prepareAsyncFlowKit = (zone, tag, guestAsyncFunc, options = {}) => {
     typeof guestAsyncFunc === 'function' ||
@@ -118,6 +118,7 @@ export const prepareAsyncFlowTools = (outerZone, outerOptions = {}) => {
           bijection, // membrane's guest-host mapping
           outcomeKit: makeVowKit(), // outcome of activation as host vow
           isDone: false, // persistently done
+          hostVowToCall: zone.detached().weakMapStore('hostVowToCall'),
         };
       },
       {
@@ -165,7 +166,13 @@ export const prepareAsyncFlowTools = (outerZone, outerOptions = {}) => {
            */
           restart(eager = startEager) {
             const { state, facets } = this;
-            const { activationArgs, log, bijection, outcomeKit } = state;
+            const {
+              activationArgs,
+              log,
+              bijection,
+              outcomeKit,
+              hostVowToCall,
+            } = state;
             const { flow, admin, wakeWatcher } = facets;
 
             const startFlowState = flow.getFlowState();
@@ -198,6 +205,9 @@ export const prepareAsyncFlowTools = (outerZone, outerOptions = {}) => {
               vowTools,
               watchWake,
               panic,
+              tag,
+              definitionStack: options.definitionStack,
+              hostVowToCall,
             });
             initMembrane(flow, membrane);
             const guestArgs = membrane.hostToGuest(activationArgs);
@@ -486,7 +496,11 @@ export const prepareAsyncFlowTools = (outerZone, outerOptions = {}) => {
    * @returns {HostOf<F>}
    */
   const asyncFlow = (zone, tag, guestFunc, options = undefined) => {
-    const makeAsyncFlowKit = prepareAsyncFlowKit(zone, tag, guestFunc, options);
+    const definitionStack = Error('this stack');
+    const makeAsyncFlowKit = prepareAsyncFlowKit(zone, tag, guestFunc, {
+      ...options,
+      definitionStack,
+    });
     const hostFuncName = `${tag}_hostFlow`;
 
     const wrapperFunc = /** @type {HostOf<F>} */ (
