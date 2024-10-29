@@ -39,6 +39,20 @@ test.before('bootstrap', async t => {
 });
 test.after.always(t => t.context.shutdown?.());
 
+test.serial('add USDC work-alike', async t => {
+  const { EV } = t.context.runUtils;
+  const agoricNames = await EV.vat('bootstrap').consumeItem('agoricNames');
+  const agoricNamesAdmin =
+    await EV.vat('bootstrap').consumeItem('agoricNamesAdmin');
+  for (const kind of ['brand', 'issuer']) {
+    const it = await EV(agoricNames).lookup(kind, 'IST');
+    t.log(kind, it);
+    t.truthy(it);
+    const admin = await EV(agoricNamesAdmin).lookupAdmin(kind);
+    await EV(admin).update('USDC', it);
+  }
+});
+
 test.serial('deploy contract', async t => {
   await t.context.walletFactoryDriver.provideSmartWallet('agoric1watcher');
 

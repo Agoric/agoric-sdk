@@ -41,7 +41,6 @@ const makePublishingStorageKit = async (path, { chainStorage, board }) => {
  *   instance: PromiseSpaceOf<{
  *     quickSend: Instance<QuickSendContractFn>;
  *   }>;
- *   brand: PromiseSpaceOf<{ USDC: Brand<'nat'> }>;
  * }} powers
  * @param {{ options?: { quickSend?: QuickSendConfig } }} config
  */
@@ -63,8 +62,6 @@ export const startQuickSend = async (
     instance: {
       produce: { quickSend: produceInstance },
     },
-    brand,
-    issuer,
   },
   config = {},
 ) => {
@@ -73,8 +70,8 @@ export const startQuickSend = async (
 
   await null;
   const USDC = {
-    brand: await brand.consume.IST, // TODO: USDC interchain asset
-    issuer: await issuer.consume.IST,
+    brand: await E(agoricNames).lookup('brand', 'USDC'),
+    issuer: await E(agoricNames).lookup('issuer', 'USDC'),
   };
   const terms = {
     makerFee: AmountMath.make(USDC.brand, 100n), // TODO: parameterize
@@ -164,18 +161,6 @@ export const getManifestForQuickSend = (
         },
         instance: {
           produce: { quickSend: true },
-        },
-        brand: {
-          consume: {
-            // TODO USDC
-            IST: true,
-          },
-        },
-        issuer: {
-          consume: {
-            // TODO USDC
-            IST: true,
-          },
         },
       },
     },
