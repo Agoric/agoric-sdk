@@ -3,12 +3,6 @@
 Development package for the Fast USDC product.
 Here in agoric-sdk as a convenience for integration testing and iterating on the SDK affordances required for the product.
 
-# Naming
-
-The package is `fast-usdc`, not `@agoric/fast-usdc`, because it's not part of the SDK.
-
-It should not appear in the NPM directory. To this end the package is marked as private.
-
 # Factoring
 
 This package is meant to contain all the code for the Fast USDC product. However there are some constraints:
