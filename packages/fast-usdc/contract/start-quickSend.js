@@ -30,7 +30,7 @@ const makePublishingStorageKit = async (path, { chainStorage, board }) => {
 };
 
 /**
- * @typedef {{ watcherAddress: string }} QuickSendConfig
+ * @typedef {{ watcherAddress: string, feeAccountAddress: string }} QuickSendConfig
  */
 
 /**
@@ -66,7 +66,10 @@ export const startQuickSend = async (
   config = {},
 ) => {
   trace('startQuickSend');
-  const { watcherAddress = 'agoric1watcher' } = config.options?.quickSend || {};
+  const {
+    watcherAddress = 'agoric1watcher',
+    feeAccountAddress = 'agoric1fee',
+  } = config.options?.quickSend || {};
 
   await null;
   const USDC = {
@@ -76,6 +79,7 @@ export const startQuickSend = async (
   const terms = {
     makerFee: AmountMath.make(USDC.brand, 100n), // TODO: parameterize
     contractFee: AmountMath.make(USDC.brand, 30n),
+    feeAccountAddress,
   };
   const { storageNode, marshaller } = await makePublishingStorageKit(
     'quickSend',

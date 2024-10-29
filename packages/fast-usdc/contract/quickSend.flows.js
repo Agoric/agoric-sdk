@@ -27,7 +27,6 @@ const { add, make, subtract } = AmountMath;
  * @typedef {{
  *   settlement: OrchestrationAccountI;
  *   fundingPool: OrchestrationAccountI;
- *   feeAccount: OrchestrationAccountI;
  * }} QuickSendAccounts
  */
 
@@ -70,8 +69,7 @@ export const initAccounts = async (orch, ctx, seat, _offerArgs) => {
 
   const fundingPool = await agoric.makeAccount();
   const settlement = await agoric.makeAccount();
-  const feeAccount = await agoric.makeAccount();
-  const accts = harden({ fundingPool, settlement, feeAccount });
+  const accts = harden({ fundingPool, settlement });
   const tap = ctx.makeSettleTap(accts);
   // @ts-expect-error tap.receiveUpcall: 'Vow<void> | undefined' not assignable to 'Promise<any>'
   const registration = await settlement.monitorTransfers(tap);
@@ -84,7 +82,6 @@ export const initAccounts = async (orch, ctx, seat, _offerArgs) => {
     publicSubscribers: {
       fundingPool: (await fundingPool.getPublicTopics()).account,
       settlement: (await settlement.getPublicTopics()).account,
-      feeAccount: (await feeAccount.getPublicTopics()).account,
     },
     ...cont,
   });
@@ -175,14 +172,17 @@ export const settle = async (orch, ctx, acct, event) => {
   //   }
   const { contractFee } = ctx.terms;
   const { USDC } = ctx.terms.brands;
-  const { settlement, fundingPool, feeAccount } = acct;
+  const { settlement, fundingPool } = acct;
   const { nextLabel: next = () => '#?' } = ctx.t?.context || {};
   const amount = make(USDC, BigInt(tx.amount));
   log(next(), 'tap onReceive', { amount });
+
+  const poolAddr = fundingPool.getAddress();
+  const feeAddr = harden({ ...poolAddr, value: ctx.terms.feeAccountAddress });
   // XXX partial failure?
   await Promise.all([
-    settlement.send(fundingPool.getAddress(), subtract(amount, contractFee)),
-    settlement.send(feeAccount.getAddress(), contractFee),
+    settlement.send(poolAddr, subtract(amount, contractFee)),
+    settlement.send(feeAddr, contractFee),
   ]);
 };
 harden(settle);
