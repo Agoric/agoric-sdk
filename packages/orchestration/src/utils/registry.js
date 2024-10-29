@@ -4,6 +4,7 @@ import {
 } from '@agoric/cosmic-proto/ibc/core/channel/v1/channel.js';
 import { State as IBCConnectionState } from '@agoric/cosmic-proto/ibc/core/connection/v1/connection.js';
 import assert from 'node:assert';
+import { ICQ_ENABLED, PFM_ENABLED } from '../chain-capabilities.js';
 
 /**
  * @import {IBCChannelID, IBCConnectionID} from '@agoric/vats';
@@ -94,7 +95,14 @@ export const convertChainInfo = async registry => {
       chainId: chain.chain_id,
       stakingTokens: chain.staking?.staking_tokens,
       // UNTIL https://github.com/Agoric/agoric-sdk/issues/9326
-      icqEnabled: chain.chain_name === 'osmosis',
+      icqEnabled: ICQ_ENABLED.includes(
+        // @ts-expect-error string not assignable to `ICQ_ENABLED` const
+        chain.chain_name,
+      ),
+      pfmEnabled: PFM_ENABLED.includes(
+        // @ts-expect-error string not assignable to `PFM_ENABLED` const
+        chain.chain_name,
+      ),
     };
   }
 

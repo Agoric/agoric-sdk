@@ -25,6 +25,7 @@
     "@cosmjs/stargate": "^0.32.4",
     "@endo/errors": "^1.2.5",
     "@endo/far": "^1.1.5",
+    "@endo/init": "1.1.4",
     "@endo/nat": "^5.0.10",
     "@endo/ses-ava": "^1.2.5",
     "@types/eslint": "^8",
