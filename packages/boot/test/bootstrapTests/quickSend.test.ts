@@ -10,45 +10,19 @@ import {
 } from '@agoric/orchestration/src/utils/address.js';
 import { buildVTransferEvent } from '@agoric/orchestration/tools/ibc-mocks.js';
 import { BridgeId } from '@agoric/internal';
-import { computronCounter } from '../../tools/computron-counter.js';
 import { type WalletFactoryDriver } from '../../tools/drivers.js';
 import {
   makeWalletFactoryContext,
   type WalletFactoryTestContext,
 } from './walletFactory.js';
-
-const makeMeter = () => {
-  const beansPer = 100n;
-  // see https://cosgov.org/agoric?msgType=parameterChangeProposal&network=main
-  const mainParams = {
-    blockComputeLimit: 65_000_000n * beansPer,
-    vatCreation: 300_000n * beansPer,
-    xsnapComputron: beansPer,
-  };
-
-  let metering = false;
-  let policy;
-
-  const meter = harden({
-    provideRunPolicy: () => {
-      if (metering && !policy) {
-        policy = computronCounter(mainParams);
-      }
-      return policy;
-    },
-    setMetering: x => (metering = x),
-    getValue: () => (policy?.totalBeans() || 0n) / mainParams.xsnapComputron,
-    resetPolicy: () => (policy = undefined),
-  });
-  return meter;
-};
+import { makePolicyProvider } from '../../tools/supports.js';
 
 const test: TestFn<
-  WalletFactoryTestContext & { meter: ReturnType<typeof makeMeter> }
+  WalletFactoryTestContext & { perfTool: ReturnType<typeof makePolicyProvider> }
 > = anyTest;
 
 test.before('bootstrap', async t => {
-  const meter = makeMeter();
+  const perfTool = makePolicyProvider();
   const {
     SLOGFILE: slogFile,
     SWINGSET_WORKER_TYPE: defaultManagerType = 'xsnap',
@@ -56,9 +30,9 @@ test.before('bootstrap', async t => {
   const ctx = await makeWalletFactoryContext(
     t,
     '@agoric/vm-config/decentral-itest-orchestration-config.json',
-    { defaultManagerType, meter, slogFile }, // for perf testing
+    { defaultManagerType, perfTool, slogFile }, // for perf testing
   );
-  t.context = { ...ctx, meter };
+  t.context = { ...ctx, perfTool };
 
   // TODO: handle creating watcher smart wallet _after_ deploying contract
   await t.context.walletFactoryDriver.provideSmartWallet('agoric1watcher');
@@ -134,7 +108,7 @@ const makeWatcher = (sw: SmartWallet, instance, runInbound) => {
 };
 
 test.serial('watcher: accept, report', async t => {
-  const { agoricNamesRemotes, meter, walletFactoryDriver } = t.context;
+  const { agoricNamesRemotes, perfTool, walletFactoryDriver } = t.context;
   const { runInbound } = t.context.bridgeUtils;
   const mc = qty => Number(qty) / 1_000_000;
 
@@ -147,14 +121,14 @@ test.serial('watcher: accept, report', async t => {
 
   {
     t.log('start metering');
-    meter.setMetering(true);
+    perfTool.usePolicy(true);
     const update = await william.accept();
-    t.log('accept cost (Mc)', mc(meter.getValue()));
+    t.log('accept cost (Mc)', mc(perfTool.totalCount()));
     t.like(update, { status: { id: 'accept-1', numWantsSatisfied: 1 } });
   }
 
   {
-    meter.resetPolicy();
+    perfTool.resetPolicy();
     const settlementBase = 'agoric1fakeLCAAddress'; // TODO: read from vstorage
 
     const encoding = 'bech32' as const;
@@ -162,7 +136,7 @@ test.serial('watcher: accept, report', async t => {
     const vAddr = AgoricCalc.virtualAddressFor(settlementBase, dest.value);
     const nobleFwd = NobleCalc.fwdAddressFor(vAddr);
     const status = await william.report({ amount: 1234n, dest, nobleFwd });
-    t.log('advance cost (Mc)', mc(meter.getValue()));
+    t.log('advance cost (Mc)', mc(perfTool.totalCount()));
 
     t.like(status, {
       status: {
