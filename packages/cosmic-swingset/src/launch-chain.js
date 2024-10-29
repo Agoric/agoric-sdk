@@ -527,6 +527,8 @@ export async function launch({
       inboundNum,
       sender,
       count: messages.length,
+      messages,
+      ack,
     });
     if (!mb.deliverInbound(sender, messages, ack)) {
       return;
@@ -539,6 +541,7 @@ export async function launch({
       type: 'cosmic-swingset-bridge-inbound',
       inboundNum,
       source,
+      body,
     });
     if (!bridgeInbound) throw Fail`bridgeInbound undefined`;
     // console.log(`doBridgeInbound`);
@@ -547,7 +550,7 @@ export async function launch({
     bridgeInbound(source, body);
   }
 
-  async function installBundle(bundleJson) {
+  async function installBundle(bundleJson, inboundNum) {
     let bundle;
     try {
       bundle = JSON.parse(bundleJson);
@@ -563,6 +566,13 @@ export async function launch({
     );
 
     const { endoZipBase64Sha512 } = bundle;
+
+    controller.writeSlogObject({
+      type: 'cosmic-swingset-install-bundle',
+      inboundNum,
+      endoZipBase64Sha512,
+      error,
+    });
 
     if (installationPublisher === undefined) {
       return;
@@ -645,7 +655,7 @@ export async function launch({
       }
 
       case ActionType.INSTALL_BUNDLE: {
-        p = installBundle(action.bundle);
+        p = installBundle(action.bundle, inboundNum);
         break;
       }
 
@@ -714,6 +724,12 @@ export async function launch({
     // Then, update the timer device with the new external time, which might
     // push work onto the kernel run-queue (if any timers were ready to wake).
     const addedToQueue = timer.poll(blockTime);
+    controller.writeSlogObject({
+      type: 'cosmic-swingset-timer-poll',
+      blockHeight,
+      blockTime,
+      added: addedToQueue,
+    });
     console.debug(
       `polled; blockTime:${blockTime}, h:${blockHeight}; ADDED =`,
       addedToQueue,

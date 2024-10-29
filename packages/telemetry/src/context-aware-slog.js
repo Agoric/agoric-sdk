@@ -16,6 +16,7 @@
  *    'run.trigger.msgIdx': number;
  *    'run.trigger.sender': Slog['sender'];
  *    'run.trigger.source': Slog['source'];
+ *    'run.trigger.bundleHash': Slog['endoZipBase64Sha512'];
  *    'run.trigger.time': Slog['blockTime'];
  *    'run.trigger.txHash': string;
  *    'run.trigger.type': string;
@@ -40,6 +41,7 @@
  *  runNum?: number;
  *  sender?: string;
  *  source?: string;
+ *  endoZipBase64Sha512?: string;
  *  syscallNum?: number;
  *  time: number;
  *  type: string;
@@ -57,12 +59,10 @@ const SLOG_TYPES = {
       FINISH: 'cosmic-swingset-bootstrap-block-finish',
       START: 'cosmic-swingset-bootstrap-block-start',
     },
-    BRIDGE_INBOUND: 'cosmic-swingset-bridge-inbound',
     COMMIT: {
       FINISH: 'cosmic-swingset-commit-finish',
       START: 'cosmic-swingset-commit-start',
     },
-    DELIVER_INBOUND: 'cosmic-swingset-deliver-inbound',
     END_BLOCK: {
       FINISH: 'cosmic-swingset-end-block-finish',
       START: 'cosmic-swingset-end-block-start',
@@ -72,6 +72,12 @@ const SLOG_TYPES = {
       FINISH: 'cosmic-swingset-run-finish',
       START: 'cosmic-swingset-run-start',
     },
+  },
+  COSMIC_SWINGSET_TRIGGERS: {
+    BRIDGE_INBOUND: 'cosmic-swingset-bridge-inbound',
+    DELIVER_INBOUND: 'cosmic-swingset-deliver-inbound',
+    TIMER_POLL: 'cosmic-swingset-timer-poll',
+    INSTALL_BUNDLE: 'cosmic-swingset-install-bundle',
   },
   CRANK: {
     FINISH: 'crank-finish',
@@ -169,8 +175,8 @@ export const makeContextualSlogProcessor = (
         assert(!!blockContext && !triggerContext);
         break;
       }
-      case SLOG_TYPES.COSMIC_SWINGSET.BRIDGE_INBOUND:
-      case SLOG_TYPES.COSMIC_SWINGSET.DELIVER_INBOUND: {
+      case SLOG_TYPES.COSMIC_SWINGSET_TRIGGERS.BRIDGE_INBOUND:
+      case SLOG_TYPES.COSMIC_SWINGSET_TRIGGERS.DELIVER_INBOUND: {
         const [blockHeight, txHash, msgIdx] = (
           finalBody.inboundNum || ''
         ).split('-');
@@ -187,6 +193,38 @@ export const makeContextualSlogProcessor = (
           'run.trigger.txHash': txHash,
           'run.trigger.msgIdx': Number(msgIdx),
         };
+        break;
+      }
+      case SLOG_TYPES.COSMIC_SWINGSET_TRIGGERS.INSTALL_BUNDLE: {
+        const [blockHeight, txHash, msgIdx] = (
+          finalBody.inboundNum || ''
+        ).split('-');
+
+        const triggerType = 'install-bundle';
+
+        triggerContext = {
+          'run.num': undefined,
+          'run.id': `${triggerType}-${finalBody.inboundNum}`,
+          'run.trigger.type': triggerType,
+          'run.trigger.bundleHash': finalBody.endoZipBase64Sha512,
+          'run.trigger.blockHeight': Number(blockHeight),
+          'run.trigger.txHash': txHash,
+          'run.trigger.msgIdx': Number(msgIdx),
+        };
+
+        break;
+      }
+      case SLOG_TYPES.COSMIC_SWINGSET_TRIGGERS.TIMER_POLL: {
+        const triggerType = 'timer-poll';
+
+        triggerContext = {
+          'run.num': undefined,
+          'run.id': `${triggerType}-${finalBody.inboundNum}`,
+          'run.trigger.type': triggerType,
+          'run.trigger.time': finalBody.blockTime,
+          'run.trigger.blockHeight': finalBody.blockHeight,
+        };
+
         break;
       }
       // eslint-disable-next-line no-restricted-syntax

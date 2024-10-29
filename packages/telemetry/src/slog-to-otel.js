@@ -915,7 +915,7 @@ export const makeSlogToOtelKit = (tracer, overrideAttrs = {}) => {
         break;
       }
       case 'cosmic-swingset-upgrade-finish': {
-        spans.pop(['slogAttrs.blockHeight', slogAttrs.blockHeight]);
+        spans.pop(['upgrade', slogAttrs.blockHeight]);
         dbTransactionManager.end();
         break;
       }
@@ -969,6 +969,16 @@ export const makeSlogToOtelKit = (tracer, overrideAttrs = {}) => {
       case 'cosmic-swingset-bridge-inbound': {
         spans.push(['bridge-inbound', slogAttrs.source]);
         spans.pop('bridge-inbound');
+        break;
+      }
+      case 'cosmic-swingset-timer-poll': {
+        spans.push(['timer-poll', slogAttrs.blockTime]);
+        spans.pop('timer-poll');
+        break;
+      }
+      case 'cosmic-swingset-install-bundle': {
+        spans.push(['install-bundle', slogAttrs.endoZipBase64Sha512]);
+        spans.pop('install-bundle');
         break;
       }
       case 'cosmic-swingset-end-block-start': {
