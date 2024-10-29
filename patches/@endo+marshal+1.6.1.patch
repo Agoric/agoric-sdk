@@ -1,0 +1,47 @@
+diff --git a/node_modules/@endo/marshal/src/marshal.js b/node_modules/@endo/marshal/src/marshal.js
+index 86ad689..a68ea5f 100644
+--- a/node_modules/@endo/marshal/src/marshal.js
++++ b/node_modules/@endo/marshal/src/marshal.js
+@@ -73,7 +73,7 @@ export const makeMarshal = (
+   /**
+    * @type {ToCapData<Slot>}
+    */
+-  const toCapData = root => {
++  const toCapData = (root, options = {}) => {
+     const slots = [];
+     // maps val (promise or remotable) to index of slots[]
+     const slotMap = new Map();
+@@ -115,7 +115,7 @@ export const makeMarshal = (
+       // TODO Must encode `cause`, `errors`, but
+       // only once all possible counterparty decoders are tolerant of
+       // receiving them.
+-      if (errorTagging === 'on') {
++      if (errorTagging === 'on' && options.errorTagging !== 'off') {
+         // We deliberately do not share the stack, but it would
+         // be useful to log the stack locally so someone who has
+         // privileged access to the throwing Vat can correlate
+diff --git a/node_modules/@endo/marshal/src/types.d.ts b/node_modules/@endo/marshal/src/types.d.ts
+index eda1bed..d5dedc3 100644
+--- a/node_modules/@endo/marshal/src/types.d.ts
++++ b/node_modules/@endo/marshal/src/types.d.ts
+@@ -53,7 +53,7 @@ export type CapData<Slot> = {
+     body: string;
+     slots: Slot[];
+ };
+-export type ToCapData<Slot> = (val: Passable) => CapData<Slot>;
++export type ToCapData<Slot> = (val: Passable, options?: Pick<MakeMarshalOptions, 'errorTagging'>) => CapData<Slot>;
+ export type FromCapData<Slot> = (data: CapData<Slot>) => any;
+ export type Marshal<Slot> = {
+     /**
+diff --git a/node_modules/@endo/marshal/src/types.js b/node_modules/@endo/marshal/src/types.js
+index 8f73c6c..c604cc8 100644
+--- a/node_modules/@endo/marshal/src/types.js
++++ b/node_modules/@endo/marshal/src/types.js
+@@ -91,6 +91,7 @@ export {};
+  * @template Slot
+  * @callback ToCapData
+  * @param {Passable} val
++ * @param {Pick<MakeMarshalOptions, 'errorTagging'>} [options]
+  * @returns {CapData<Slot>}
+  */
+ 
