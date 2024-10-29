@@ -79,10 +79,10 @@ func buildProposalStepWithArgs(moduleName string, entrypoint string, opts map[st
 	t := template.Must(template.New("").Parse(`{
 		"module": "{{.moduleName}}",
 		"entrypoint": "{{.entrypoint}}",
-		"args": [ {{.args}} ]
+		"args": [ {{.optsArg}} ]
 	}`))
 
-	args, err := json.Marshal(opts)
+	optsArg, err := json.Marshal(opts)
 	if err != nil {
 		return nil, err
 	}
@@ -91,7 +91,7 @@ func buildProposalStepWithArgs(moduleName string, entrypoint string, opts map[st
 	err = t.Execute(&result, map[string]any{
 		"moduleName": moduleName,
 		"entrypoint": entrypoint,
-		"args":       string(args),
+		"optsArg":    string(optsArg),
 	})
 	if err != nil {
 		return nil, err
@@ -124,6 +124,10 @@ func getVariantFromUpgradeName(upgradeName string) string {
 func replaceElectorateCoreProposalStep(upgradeName string) (vm.CoreProposalStep, error) {
 	variant := getVariantFromUpgradeName(upgradeName)
 
+	if variant == "" {
+		return nil, nil
+	}
+
 	return buildProposalStepWithArgs(
 		"@agoric/builders/scripts/inter-protocol/replace-electorate-core.js",
 		"defaultProposalBuilder",
@@ -135,6 +139,10 @@ func replaceElectorateCoreProposalStep(upgradeName string) (vm.CoreProposalStep,
 
 func replacePriceFeedsCoreProposal(upgradeName string) (vm.CoreProposalStep, error) {
 	variant := getVariantFromUpgradeName(upgradeName)
+
+	if variant == "" {
+		return nil, nil
+	}
 
 	return buildProposalStepWithArgs(
 		"@agoric/builders/scripts/inter-protocol/updatePriceFeeds.js",
@@ -165,18 +173,20 @@ func unreleasedUpgradeHandler(app *GaiaApp, targetUpgrade string) func(sdk.Conte
 			replaceElectorateStep, err := replaceElectorateCoreProposalStep(targetUpgrade)
 			if err != nil {
 				return nil, err
+			} else if replaceElectorateStep != nil {
+				CoreProposalSteps = append(CoreProposalSteps, replaceElectorateStep)
 			}
 
 			priceFeedUpdate, err := replacePriceFeedsCoreProposal(targetUpgrade)
 			if err != nil {
 				return nil, err
+			} else if priceFeedUpdate != nil {
+				CoreProposalSteps = append(CoreProposalSteps, priceFeedUpdate)
 			}
 
 			// Each CoreProposalStep runs sequentially, and can be constructed from
 			// one or more modules executing in parallel within the step.
-			CoreProposalSteps = []vm.CoreProposalStep{
-				replaceElectorateStep,
-				priceFeedUpdate,
+			CoreProposalSteps = append(CoreProposalSteps,
 				vm.CoreProposalStepForModules(
 					"@agoric/builders/scripts/vats/add-auction.js",
 				),
@@ -195,7 +205,7 @@ func unreleasedUpgradeHandler(app *GaiaApp, targetUpgrade string) func(sdk.Conte
 					// Upgrade to include a cleanup from https://github.com/Agoric/agoric-sdk/pull/10319
 					"@agoric/builders/scripts/smart-wallet/build-wallet-factory2-upgrade.js",
 				),
-			}
+			)
 		}
 
 		app.upgradeDetails = &upgradeDetails{
