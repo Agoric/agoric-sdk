@@ -8,7 +8,6 @@ import {
   getContractInfo,
   GOV1ADDR,
   GOV2ADDR,
-  GOV3ADDR,
 } from '@agoric/synthetic-chain';
 import { AmountMath } from '@agoric/ertp';
 import { ceilMultiplyBy } from './ratio.js';
@@ -206,7 +205,8 @@ export const proposeNewDebtCeiling = async (address, debtLimit) => {
 };
 
 export const setDebtLimit = async (address, debtLimit) => {
-  const govAccounts = [GOV1ADDR, GOV2ADDR, GOV3ADDR];
+  const GOV4ADDR = 'agoric1c9gyu460lu70rtcdp95vummd6032psmpdx7wdy';
+  const govAccounts = [GOV1ADDR, GOV2ADDR, GOV4ADDR];
 
   console.log('ACTIONS Setting debt limit');
 
