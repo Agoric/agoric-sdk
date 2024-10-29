@@ -22,3 +22,20 @@ test('CLI shows help when run without arguments', async t => {
 
   t.snapshot(output);
 });
+
+test('CLI shows help for transfer command', async t => {
+  const output = await new Promise(resolve => {
+    const child = spawn('node', [CLI_PATH, 'transfer', '-h']);
+    let stdout = '';
+
+    child.stdout.on('data', data => {
+      stdout += data.toString();
+    });
+
+    child.on('close', () => {
+      resolve(stdout);
+    });
+  });
+
+  t.snapshot(output);
+});

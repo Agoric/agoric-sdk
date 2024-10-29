@@ -35,4 +35,23 @@ program
     // TODO: Implement withdraw logic
   });
 
+program
+  .command('transfer')
+  .description('Transfer USDC from Ethereum/L2 to Cosmos via Fast USDC')
+  .argument('amount', 'Amount to transfer denominated in uusdc')
+  .argument('dest', 'Destination address in Cosmos')
+  .action((/** @type {string} */ amount, /** @type {string} */ destination) => {
+    const start = Date.now();
+    console.error(
+      `TODO actually kick off USDC transfer. Amount: ${amount}uusdc Destination: ${destination}`,
+    );
+    console.info(`Finished in ${Date.now() - start}ms`);
+    // TODO: Implement transfer logic
+    // 1. Look up agoric Fast USDC contract address
+    // 2. Append destination address to agoric address
+    // 3. Compute noble forwarding address from result
+    // 4. Tell watcher to watch for transfers to computer address
+    // 5. Sign and broadcast CCTP transfer to noble forwarding address
+  });
+
 program.parse();
