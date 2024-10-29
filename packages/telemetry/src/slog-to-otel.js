@@ -971,6 +971,16 @@ export const makeSlogToOtelKit = (tracer, overrideAttrs = {}) => {
         spans.pop('bridge-inbound');
         break;
       }
+      case 'cosmic-swingset-timer-poll': {
+        spans.push(['timer-poll', slogAttrs.blockTime]);
+        spans.pop('timer-poll');
+        break;
+      }
+      case 'cosmic-swingset-install-bundle': {
+        spans.push(['install-bundle', slogAttrs.endoZipBase64Sha512]);
+        spans.pop('install-bundle');
+        break;
+      }
       case 'cosmic-swingset-end-block-start': {
         // Add `end-block` as an event onto the encompassing `block` span
         spans.top()?.addEvent('end-block-action', cleanAttrs(slogAttrs), now);
