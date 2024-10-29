@@ -14,12 +14,8 @@ import (
 )
 
 var upgradeNamesOfThisVersion = []string{
-	"UNRELEASED_BASIC", // no-frills
-	"UNRELEASED_A3P_INTEGRATION",
-	"UNRELEASED_main",
-	"UNRELEASED_devnet",
-	"UNRELEASED_emerynet",
-	"UNRELEASED_REAPPLY",
+	"agoric-upgrade-18",
+	"agorictest-upgrade-18",
 }
 
 // isUpgradeNameOfThisVersion returns whether the provided plan name is a
@@ -53,14 +49,9 @@ func isPrimaryUpgradeName(name string) bool {
 		return false
 	}
 	switch name {
-	case validUpgradeName("UNRELEASED_BASIC"),
-		validUpgradeName("UNRELEASED_A3P_INTEGRATION"),
-		validUpgradeName("UNRELEASED_main"),
-		validUpgradeName("UNRELEASED_devnet"),
-		validUpgradeName("UNRELEASED_emerynet"):
+	case validUpgradeName("agoric-upgrade-18"),
+		validUpgradeName("agorictest-upgrade-18"):
 		return true
-	case validUpgradeName("UNRELEASED_REAPPLY"):
-		return false
 	default:
 		panic(fmt.Errorf("unexpected upgrade name %s", validUpgradeName(name)))
 	}
@@ -109,17 +100,10 @@ func buildProposalStepWithArgs(moduleName string, entrypoint string, opts map[st
 
 func getVariantFromUpgradeName(upgradeName string) string {
 	switch upgradeName {
-	case "UNRELEASED_A3P_INTEGRATION":
-		return "A3P_INTEGRATION"
-	case "UNRELEASED_main":
+	case "agoric-upgrade-18":
 		return "MAINNET"
-	case "UNRELEASED_devnet":
+	case "agorictest-upgrade-18":
 		return "DEVNET"
-	case "UNRELEASED_emerynet":
-		return "EMERYNET"
-		// Noupgrade for this version.
-	case "UNRELEASED_BASIC":
-		return ""
 	default:
 		return ""
 	}
@@ -157,8 +141,8 @@ func replacePriceFeedsCoreProposal(upgradeName string) (vm.CoreProposalStep, err
 	)
 }
 
-// unreleasedUpgradeHandler performs standard upgrade actions plus custom actions for the unreleased upgrade.
-func unreleasedUpgradeHandler(app *GaiaApp, targetUpgrade string) func(sdk.Context, upgradetypes.Plan, module.VersionMap) (module.VersionMap, error) {
+// upgrade18Handler performs standard upgrade actions plus custom actions for upgrade-18.
+func upgrade18Handler(app *GaiaApp, targetUpgrade string) func(sdk.Context, upgradetypes.Plan, module.VersionMap) (module.VersionMap, error) {
 	return func(ctx sdk.Context, plan upgradetypes.Plan, fromVm module.VersionMap) (module.VersionMap, error) {
 		app.CheckControllerInited(false)
 
