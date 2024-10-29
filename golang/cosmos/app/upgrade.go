@@ -181,18 +181,21 @@ func unreleasedUpgradeHandler(app *GaiaApp, targetUpgrade string) func(sdk.Conte
 			if err != nil {
 				return nil, err
 			} else if priceFeedUpdate != nil {
-				CoreProposalSteps = append(CoreProposalSteps, priceFeedUpdate)
+				CoreProposalSteps = append(CoreProposalSteps,
+					priceFeedUpdate,
+					// The following have a dependency onto the price feed proposal
+					vm.CoreProposalStepForModules(
+						"@agoric/builders/scripts/vats/add-auction.js",
+					),
+					vm.CoreProposalStepForModules(
+						"@agoric/builders/scripts/vats/upgradeVaults.js",
+					),
+				)
 			}
 
 			// Each CoreProposalStep runs sequentially, and can be constructed from
 			// one or more modules executing in parallel within the step.
 			CoreProposalSteps = append(CoreProposalSteps,
-				vm.CoreProposalStepForModules(
-					"@agoric/builders/scripts/vats/add-auction.js",
-				),
-				vm.CoreProposalStepForModules(
-					"@agoric/builders/scripts/vats/upgradeVaults.js",
-				),
 				vm.CoreProposalStepForModules(
 					// Upgrade Zoe (no new ZCF needed).
 					"@agoric/builders/scripts/vats/upgrade-zoe.js",
