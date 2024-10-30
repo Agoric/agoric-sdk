@@ -60,6 +60,8 @@ test('cleanup work must be limited by vat_cleanup_budget', async t => {
       puppet: '@agoric/swingset-vat/tools/vat-puppet.js',
     }),
     configOverrides: {
+      // Aggressive GC.
+      defaultReapInterval: 1,
       // Ensure multiple spans and snapshots.
       defaultManagerType: 'xsnap',
       snapshotInitial: 2,
@@ -167,8 +169,8 @@ test('cleanup work must be limited by vat_cleanup_budget', async t => {
   // Terminate the vat and verify lack of cleanup.
   pushCoreEval(async powers => {
     const { bootstrap } = powers.vats;
-    const doomed = await E(bootstrap).getVatRoot('doomed');
-    await E(doomed).dieHappy();
+    const adminNode = await E(bootstrap).getVatAdminNode('doomed');
+    await E(adminNode).terminateWithFailure();
   });
   await runNextBlock();
   t.true(

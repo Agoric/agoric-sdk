@@ -138,6 +138,13 @@ export const buildRootObject = (vatPowers, bootstrapParameters, baggage) => {
 
     getVatAdmin: () => vatAdmin || vatAdminP,
 
+    getVatAdminNode: vatName => {
+      const vat =
+        vatRecords.get(vatName) || Fail`unknown vat name: ${q(vatName)}`;
+      const { adminNode } = /** @type {DynamicVatRecord} */ (vat);
+      return adminNode;
+    },
+
     getVatRoot: vatName => {
       const vat =
         vatRecords.get(vatName) || Fail`unknown vat name: ${q(vatName)}`;
