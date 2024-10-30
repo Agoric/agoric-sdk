@@ -539,7 +539,7 @@ export const installBootContracts = async ({
  * @param {BootstrapPowers & {
  *   vatParameters: {
  *     argv: {
- *       bootMsg?: import('@agoric/internal/src/chain-utils.js').BootMsg;
+ *       bootMsg?: import('@agoric/internal/src/chain-utils.js').InitMsg;
  *     };
  *   };
  * }} powers

@@ -30,7 +30,7 @@ import {
 } from '@agoric/internal/src/lib-chainStorage.js';
 import { makeShutdown } from '@agoric/internal/src/node/shutdown.js';
 
-import { makeBootMsg } from '@agoric/internal/src/chain-utils.js';
+import { makeInitMsg } from '@agoric/internal/src/chain-utils.js';
 import * as STORAGE_PATH from '@agoric/internal/src/chain-storage-paths.js';
 import * as ActionType from '@agoric/internal/src/action-types.js';
 import { BridgeId, CosmosInitKeyToBridgeId } from '@agoric/internal';
@@ -429,7 +429,7 @@ export default async function main(progname, args, { env, homedir, agcc }) {
     };
 
     const argv = {
-      bootMsg: makeBootMsg(initAction),
+      bootMsg: makeInitMsg(initAction),
     };
     const getVatConfig = async () => {
       const href = await importMetaResolve(

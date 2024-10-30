@@ -7,7 +7,7 @@ import {
   SwingsetMessageType,
   QueuedActionType,
 } from '@agoric/internal/src/action-types.js';
-import { makeBootMsg } from '@agoric/internal/src/chain-utils.js';
+import { makeInitMsg } from '@agoric/internal/src/chain-utils.js';
 import { initSwingStore } from '@agoric/swing-store';
 import { makeSlogSender } from '@agoric/telemetry';
 import { launch } from '../src/launch-chain.js';
@@ -18,7 +18,7 @@ import {
 } from '../src/helpers/bufferedStorage.js';
 import { makeQueue, makeQueueStorageMock } from '../src/helpers/make-queue.js';
 
-/** @import { BlockInfo, BootMsg } from '@agoric/internal/src/chain-utils.js' */
+/** @import { BlockInfo, InitMsg } from '@agoric/internal/src/chain-utils.js' */
 /** @import { Mailbox, ManagerType, SwingSetConfig } from '@agoric/swingset-vat' */
 /** @import { KVStore } from '../src/helpers/bufferedStorage.js' */
 /** @import { InboundQueue } from '../src/launch-chain.js'; */
@@ -37,8 +37,8 @@ const stripUndefined = obj =>
     Object.entries(obj).filter(([_key, value]) => value !== undefined),
   );
 
-export const defaultBootMsg = harden(
-  makeBootMsg({
+export const defaultInitMessage = harden(
+  makeInitMsg({
     type: SwingsetMessageType.AG_COSMOS_INIT,
     blockHeight: 100,
     blockTime: Math.floor(Date.parse('2020-01-01T00:00Z') / 1000),
@@ -62,7 +62,7 @@ export const defaultBootMsg = harden(
   }),
 );
 export const defaultBootstrapMessage = harden({
-  ...deepCopyData(defaultBootMsg),
+  ...deepCopyData(defaultInitMessage),
   blockHeight: 1,
   blockTime: Math.floor(Date.parse('2010-01-01T00:00Z') / 1000),
   isBootstrap: true,
@@ -135,7 +135,7 @@ const baseConfig = harden({
  *   {@link ../../../docs/env.md#swingset_worker_type}, the implicit default of
  *   'local' can be overridden by a SWINGSET_WORKER_TYPE environment variable.
  * @param {typeof process['env']} [options.env]
- * @param {Replacer<BootMsg>} [options.fixupBootMsg] a final opportunity to make
+ * @param {Replacer<InitMsg>} [options.fixupInitMessage] a final opportunity to make
  *   any changes
  * @param {Replacer<SwingSetConfig>} [options.fixupConfig] a final opportunity
  *   to make any changes
@@ -167,7 +167,7 @@ export const makeCosmicSwingsetTestKit = async (
     defaultManagerType,
     debugName,
     env = process.env,
-    fixupBootMsg,
+    fixupInitMessage,
     fixupConfig,
     slogSender,
     swingsetConfig = {},
@@ -209,12 +209,12 @@ export const makeCosmicSwingsetTestKit = async (
 
   if (fixupConfig) config = fixupConfig(config);
 
-  let bootMsg = deepCopyData(defaultBootMsg);
-  if (fixupBootMsg) bootMsg = fixupBootMsg(bootMsg);
-  bootMsg?.type === SwingsetMessageType.AG_COSMOS_INIT ||
-    Fail`bootMsg must be AG_COSMOS_INIT`;
-  if (bootMsg.isBootstrap === undefined && !swingStore) {
-    bootMsg.isBootstrap = true;
+  let initMessage = deepCopyData(defaultInitMessage);
+  if (fixupInitMessage) initMessage = fixupInitMessage(initMessage);
+  initMessage?.type === SwingsetMessageType.AG_COSMOS_INIT ||
+    Fail`initMessage must be AG_COSMOS_INIT`;
+  if (initMessage.isBootstrap === undefined && !swingStore) {
+    initMessage.isBootstrap = true;
   }
 
   if (!swingStore) swingStore = initSwingStore(); // in-memory
@@ -247,7 +247,7 @@ export const makeCosmicSwingsetTestKit = async (
     replayChainSends,
     bridgeOutbound: receiveBridgeSend,
     vatconfig: config,
-    argv: { bootMsg },
+    argv: { bootMsg: initMessage },
     env,
     debugName,
     slogSender,
@@ -261,16 +261,16 @@ export const makeCosmicSwingsetTestKit = async (
     await hostStorage.close();
   };
 
-  // Remember information about the current block, starting with the boot
+  // Remember information about the current block, starting with the init
   // message.
   let {
     isBootstrap: needsBootstrap,
     blockHeight: lastBlockHeight,
     blockTime: lastBlockTime,
     params: lastBlockParams,
-  } = bootMsg;
+  } = initMessage;
   let lastBlockWalltime = Date.now();
-  await blockingSend(bootMsg);
+  await blockingSend(initMessage);
 
   /**
    * @returns {BlockInfo}

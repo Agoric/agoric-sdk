@@ -6,6 +6,7 @@ import { BridgeId, objectMap } from '@agoric/internal';
 import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
 import {
   defaultBootstrapMessage,
+  defaultInitMessage,
   makeCosmicSwingsetTestKit,
 } from '../tools/test-kit.js';
 import { provideEnhancedKVStore } from '../src/helpers/bufferedStorage.js';
@@ -64,7 +65,7 @@ test('cleanup work must be limited by vat_cleanup_budget', async t => {
       snapshotInitial: 2,
       snapshotInterval: 4,
     },
-    fixupBootMsg: () => ({
+    fixupInitMessage: () => ({
       ...defaultBootstrapMessage,
       params: makeCleanupBudgetParams({ Default: 0 }),
     }),
@@ -211,8 +212,8 @@ test('cleanup work must be limited by vat_cleanup_budget', async t => {
     const newOptions = {
       ...options,
       swingStore,
-      fixupBootMsg: () => ({
-        ...defaultBootstrapMessage,
+      fixupInitMessage: () => ({
+        ...defaultInitMessage,
         ...lastBlockInfo,
         params: makeCleanupBudgetParams({ Default: 2 ** 32 }),
       }),

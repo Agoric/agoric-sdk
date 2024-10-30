@@ -26,16 +26,16 @@ import * as _ActionType from './action-types.js';
  *   type: typeof _ActionType.AG_COSMOS_INIT;
  *   chainID: string;
  *   supplyCoins: { denom: string; amount: NatString }[];
- * }} BootMsg
+ * }} InitMsg
  *   cosmosInitAction fields that are subject to consensus. See cosmosInitAction
  *   in {@link ../../../golang/cosmos/app/app.go}.
  */
 
 /**
  * @param {any} initAction
- * @returns {BootMsg}
+ * @returns {InitMsg}
  */
-export const makeBootMsg = initAction => {
+export const makeInitMsg = initAction => {
   const {
     type,
     blockHeight,

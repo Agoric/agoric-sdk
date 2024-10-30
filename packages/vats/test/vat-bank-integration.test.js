@@ -46,7 +46,7 @@ test('mintInitialSupply, addBankAssets bootstrap actions', async t => {
   });
 
   // Genesis RUN supply: 50
-  /** @type {import('@agoric/internal/src/chain-utils.js').BootMsg} */
+  /** @type {import('@agoric/internal/src/chain-utils.js').InitMsg} */
   // @ts-expect-error missing properties
   const bootMsg = {
     type: AG_COSMOS_INIT,
