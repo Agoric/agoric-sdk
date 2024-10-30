@@ -36,8 +36,9 @@ const configurations = {
   },
   EMERYNET: {
     oracleAddresses: [
-      'agoric1ee9hr0jyrxhy999y755mp862ljgycmwyp4pl7q', // GOV1
-      'agoric1wrfh296eu2z34p6pah7q04jjuyj3mxu9v98277', // GOV2
+      'agoric1ldmtatp24qlllgxmrsjzcpe20fvlkp448zcuce', // GOV1
+      'agoric140dmkrz2e42ergjj7gyvejhzmjzurvqeq82ang', // GOV2
+      'agoric1f0h5zgxyg3euxsqzs0506uj4cmu56y30pqx46s', // GOV4
     ],
     inBrandNames: ['ATOM', 'stATOM', 'stOSMO', 'stTIA', 'stkATOM'],
   },
