@@ -38,7 +38,6 @@ const configurations = {
     oracleAddresses: [
       'agoric1ldmtatp24qlllgxmrsjzcpe20fvlkp448zcuce', // GOV1
       'agoric140dmkrz2e42ergjj7gyvejhzmjzurvqeq82ang', // GOV2
-      'agoric1f0h5zgxyg3euxsqzs0506uj4cmu56y30pqx46s', // GOV4
     ],
     inBrandNames: ['ATOM', 'stATOM', 'stOSMO', 'stTIA', 'stkATOM'],
   },
