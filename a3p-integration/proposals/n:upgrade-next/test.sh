@@ -6,8 +6,6 @@
 # suppress file names from glob that run earlier
 GLOBIGNORE=initial.test.js
 
-yarn ava ./replaceElectorate.test.js
-
 # test the state right after upgrade
 yarn ava initial.test.js
 
