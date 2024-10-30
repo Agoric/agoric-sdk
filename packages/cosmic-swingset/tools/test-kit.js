@@ -90,7 +90,7 @@ const baseConfig = harden({
   bootstrap: 'bootstrap',
   vats: {
     bootstrap: {
-      sourceSpec: '@agoric/vats/tools/vat-bootstrap-chain-reflective.js',
+      sourceSpec: '@agoric/vats/tools/bootstrap-chain-reflective.js',
       creationOptions: {
         critical: true,
       },
@@ -147,7 +147,7 @@ const baseConfig = harden({
  * @param {string} [options.baseBootstrapManifest] identifies the colletion of
  *   "behaviors" to run at bootstrap for creating and configuring the initial
  *   population of vats (see
- *   {@link ../../vats/tools/vat-bootstrap-chain-reflective.js})
+ *   {@link ../../vats/tools/bootstrap-chain-reflective.js})
  * @param {string[]} [options.addBootstrapBehaviors] additional specific
  *   behavior functions to augment the selected manifest (see
  *   {@link ../../vats/src/core})
