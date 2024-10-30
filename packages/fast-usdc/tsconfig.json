@@ -1,10 +1,10 @@
 {
   "extends": "../../tsconfig.json",
-  "compilerOptions": {
-    "strict": true,
-  },
+  "compilerOptions": {},
   "include": [
+    "contract",
     "src",
     "test",
+    "tools"
   ],
 }

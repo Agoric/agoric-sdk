@@ -11,8 +11,13 @@ import {
   makeWalletFactoryContext,
   type WalletFactoryTestContext,
 } from './walletFactory.js';
+import { insistManagerType, makePolicyProvider } from '../../tools/supports.js';
 
-const test: TestFn<WalletFactoryTestContext> = anyTest;
+const test: TestFn<
+  WalletFactoryTestContext & {
+    perfTool?: ReturnType<typeof makePolicyProvider>;
+  }
+> = anyTest;
 
 const validatorAddress: CosmosValidatorAddress = {
   value: 'cosmosvaloper1test',
@@ -22,11 +27,21 @@ const validatorAddress: CosmosValidatorAddress = {
 
 const ATOM_DENOM = 'uatom';
 
+const {
+  SLOGFILE: slogFile,
+  SWINGSET_WORKER_TYPE: defaultManagerType = 'local',
+} = process.env;
+
 test.before(async t => {
-  t.context = await makeWalletFactoryContext(
+  insistManagerType(defaultManagerType);
+  const perfTool =
+    defaultManagerType === 'xsnap' ? makePolicyProvider() : undefined;
+  const ctx = await makeWalletFactoryContext(
     t,
     '@agoric/vm-config/decentral-itest-orchestration-config.json',
+    { slogFile, defaultManagerType, perfTool },
   );
+  t.context = { ...ctx, perfTool };
 });
 test.after.always(t => t.context.shutdown?.());
 
@@ -103,6 +118,7 @@ test.skip('stakeOsmo - queries', async t => {
     buildProposal,
     evalProposal,
     runUtils: { EV },
+    perfTool,
   } = t.context;
   await evalProposal(
     buildProposal('@agoric/builders/scripts/orchestration/init-stakeOsmo.js'),
@@ -141,6 +157,7 @@ test.serial('stakeAtom - smart wallet', async t => {
     agoricNamesRemotes,
     bridgeUtils: { flushInboundQueue },
     readLatest,
+    perfTool,
   } = t.context;
 
   await evalProposal(
@@ -151,6 +168,7 @@ test.serial('stakeAtom - smart wallet', async t => {
     'agoric1testStakAtom',
   );
 
+  perfTool?.usePolicy(true);
   await wd.sendOffer({
     id: 'request-account',
     invitationSpec: {
@@ -160,6 +178,9 @@ test.serial('stakeAtom - smart wallet', async t => {
     },
     proposal: {},
   });
+  perfTool && t.log('makeAccount computrons', perfTool.totalCount());
+  perfTool?.usePolicy(false);
+
   await flushInboundQueue();
   t.like(wd.getCurrentWalletRecord(), {
     offerToPublicSubscriberPaths: [
