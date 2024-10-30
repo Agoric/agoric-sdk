@@ -6,23 +6,6 @@
     "upgradeInfo": {
       "coreProposals": []
     },
-    "sdk-generate": [
-      "vats/test-localchain.js localchaintest-submission",
-      "vats/upgrade-bank.js upgrade-bank",
-      "vats/upgrade-provisionPool.js upgrade-provisionPool",
-      "testing/add-LEMONS.js add-LEMONS",
-      "testing/add-OLIVES.js add-OLIVES",
-      "inter-protocol/replace-electorate-core.js replace-electorate A3P_INTEGRATION",
-      "inter-protocol/updatePriceFeeds.js price-feeds A3P_INTEGRATION",
-      "vats/add-auction.js price-feeds",
-      "vats/upgradeVaults.js price-feeds",
-      "inter-protocol/updatePriceFeeds.js submission/main main",
-      "vats/add-auction.js submission/main",
-      "vats/upgradeVaults.js submission/main",
-      "inter-protocol/updatePriceFeeds.js submission/devnet devnet",
-      "vats/add-auction.js submission/devnet",
-      "vats/upgradeVaults.js submission/devnet"
-    ],
     "type": "Software Upgrade Proposal"
   },
   "type": "module",

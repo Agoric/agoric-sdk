@@ -79,10 +79,10 @@ func buildProposalStepWithArgs(moduleName string, entrypoint string, opts map[st
 	t := template.Must(template.New("").Parse(`{
 		"module": "{{.moduleName}}",
 		"entrypoint": "{{.entrypoint}}",
-		"args": [ {{.args}} ]
+		"args": [ {{.optsArg}} ]
 	}`))
 
-	args, err := json.Marshal(opts)
+	optsArg, err := json.Marshal(opts)
 	if err != nil {
 		return nil, err
 	}
@@ -91,7 +91,7 @@ func buildProposalStepWithArgs(moduleName string, entrypoint string, opts map[st
 	err = t.Execute(&result, map[string]any{
 		"moduleName": moduleName,
 		"entrypoint": entrypoint,
-		"args":       string(args),
+		"optsArg":    string(optsArg),
 	})
 	if err != nil {
 		return nil, err
@@ -106,23 +106,27 @@ func buildProposalStepWithArgs(moduleName string, entrypoint string, opts map[st
 }
 
 func getVariantFromUpgradeName(upgradeName string) string {
-    switch upgradeName {
-    case "UNRELEASED_A3P_INTEGRATION":
-        return "A3P_INTEGRATION"
-    case "UNRELEASED_main":
-        return "MAINNET"
-    case "UNRELEASED_devnet":
-        return "DEVNET"
-	// Noupgrade for this version.
-    case "UNRELEASED_BASIC":
-        return ""
-    default:
-        return ""
-    }
+	switch upgradeName {
+	case "UNRELEASED_A3P_INTEGRATION":
+		return "A3P_INTEGRATION"
+	case "UNRELEASED_main":
+		return "MAINNET"
+	case "UNRELEASED_devnet":
+		return "DEVNET"
+		// Noupgrade for this version.
+	case "UNRELEASED_BASIC":
+		return ""
+	default:
+		return ""
+	}
 }
 
 func replaceElectorateCoreProposalStep(upgradeName string) (vm.CoreProposalStep, error) {
-    variant := getVariantFromUpgradeName(upgradeName)
+	variant := getVariantFromUpgradeName(upgradeName)
+
+	if variant == "" {
+		return nil, nil
+	}
 
 	return buildProposalStepWithArgs(
 		"@agoric/builders/scripts/inter-protocol/replace-electorate-core.js",
@@ -134,7 +138,11 @@ func replaceElectorateCoreProposalStep(upgradeName string) (vm.CoreProposalStep,
 }
 
 func replacePriceFeedsCoreProposal(upgradeName string) (vm.CoreProposalStep, error) {
-    variant := getVariantFromUpgradeName(upgradeName)
+	variant := getVariantFromUpgradeName(upgradeName)
+
+	if variant == "" {
+		return nil, nil
+	}
 
 	return buildProposalStepWithArgs(
 		"@agoric/builders/scripts/inter-protocol/updatePriceFeeds.js",
@@ -165,37 +173,42 @@ func unreleasedUpgradeHandler(app *GaiaApp, targetUpgrade string) func(sdk.Conte
 			replaceElectorateStep, err := replaceElectorateCoreProposalStep(targetUpgrade)
 			if err != nil {
 				return nil, err
+			} else if replaceElectorateStep != nil {
+				CoreProposalSteps = append(CoreProposalSteps, replaceElectorateStep)
 			}
 
 			priceFeedUpdate, err := replacePriceFeedsCoreProposal(targetUpgrade)
 			if err != nil {
 				return nil, err
+			} else if priceFeedUpdate != nil {
+				CoreProposalSteps = append(CoreProposalSteps,
+					priceFeedUpdate,
+					// The following have a dependency onto the price feed proposal
+					vm.CoreProposalStepForModules(
+						"@agoric/builders/scripts/vats/add-auction.js",
+					),
+					vm.CoreProposalStepForModules(
+						"@agoric/builders/scripts/vats/upgradeVaults.js",
+					),
+				)
 			}
 
 			// Each CoreProposalStep runs sequentially, and can be constructed from
 			// one or more modules executing in parallel within the step.
-			CoreProposalSteps = []vm.CoreProposalStep{
-				replaceElectorateStep,
-				priceFeedUpdate,
-				vm.CoreProposalStepForModules(
-					"@agoric/builders/scripts/vats/add-auction.js",
-				),
-				vm.CoreProposalStepForModules(
-					"@agoric/builders/scripts/vats/upgradeVaults.js",
-				),
+			CoreProposalSteps = append(CoreProposalSteps,
 				vm.CoreProposalStepForModules(
 					// Upgrade Zoe (no new ZCF needed).
 					"@agoric/builders/scripts/vats/upgrade-zoe.js",
 				),
-                // Revive KREAd characters
-                vm.CoreProposalStepForModules(
-                    "@agoric/builders/scripts/vats/revive-kread.js",
-                ),
+				// Revive KREAd characters
+				vm.CoreProposalStepForModules(
+					"@agoric/builders/scripts/vats/revive-kread.js",
+				),
 				vm.CoreProposalStepForModules(
 					// Upgrade to include a cleanup from https://github.com/Agoric/agoric-sdk/pull/10319
 					"@agoric/builders/scripts/smart-wallet/build-wallet-factory2-upgrade.js",
 				),
-			}
+			)
 		}
 
 		app.upgradeDetails = &upgradeDetails{
