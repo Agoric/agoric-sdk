@@ -137,6 +137,7 @@ export const provisionSmartWallet = async (
     whale = 'faucet',
     progress = console.log,
     q = makeQueryKit(makeVStorage(lcd)).query,
+    skipProvision = false,
   },
 ) => {
   // TODO: skip this query if balances is {}
@@ -175,11 +176,13 @@ export const provisionSmartWallet = async (
     await sendFromWhale(denom, value);
   }
 
-  progress({ provisioning: address });
-  await agd.tx(
-    ['swingset', 'provision-one', 'my-wallet', address, 'SMART_WALLET'],
-    { chainId, from: address, yes: true },
-  );
+  if (!skipProvision) {
+    progress({ provisioning: address });
+    await agd.tx(
+      ['swingset', 'provision-one', 'my-wallet', address, 'SMART_WALLET'],
+      { chainId, from: address, yes: true },
+    );
+  }
 
   const info = await q.queryData(`published.wallet.${address}.current`);
   progress({

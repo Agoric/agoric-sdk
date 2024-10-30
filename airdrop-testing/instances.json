@@ -1,0 +1,109 @@
+{
+  "blockHeight": "55141",
+  "values": [
+    "{"body":"#[
+      [
+        "ATOM-USD price feed",
+        "$0.Alleged: InstanceHandle"
+      ],
+      [
+        "VaultFactory",
+        "$1.Alleged: InstanceHandle"
+      ],
+      [
+        "VaultFactoryGovernor",
+        "$2.Alleged: InstanceHandle"
+      ],
+      [
+        "auctioneer",
+        "$3.Alleged: InstanceHandle"
+      ],
+      [
+        "economicCommittee",
+        "$4.Alleged: InstanceHandle"
+      ],
+      [
+        "feeDistributor",
+        "$5.Alleged: InstanceHandle"
+      ],
+      [
+        "provisionPool",
+        "$6.Alleged: InstanceHandle"
+      ],
+      [
+        "psm-IST-USDC_axl",
+        "$7.Alleged: InstanceHandle"
+      ],
+      [
+        "reserve",
+        "$8.Alleged: InstanceHandle"
+      ],
+      [
+        "reserveGovernor",
+        "$9.Alleged: InstanceHandle"
+      ],
+      [
+        "scaledPriceAuthority-ATOM",
+        "$10.Alleged: InstanceHandle"
+      ],
+      [
+        "walletFactory",
+        "$11.Alleged: InstanceHandle"
+      ]
+    ]","slots":["board03138","board04542","board00443","board01034","board01029","board03935","board05736","board03040","board02733","board02437","board05141","board05039"]}",
+    "{"body":"#[
+      [
+        "ATOM-USD price feed",
+        "$0.Alleged: InstanceHandle"
+      ],
+      [
+        "VaultFactory",
+        "$1.Alleged: InstanceHandle"
+      ],
+      [
+        "VaultFactoryGovernor",
+        "$2.Alleged: InstanceHandle"
+      ],
+      [
+        "auctioneer",
+        "$3.Alleged: InstanceHandle"
+      ],
+      [
+        "economicCommittee",
+        "$4.Alleged: InstanceHandle"
+      ],
+      [
+        "feeDistributor",
+        "$5.Alleged: InstanceHandle"
+      ],
+      [
+        "provisionPool",
+        "$6.Alleged: InstanceHandle"
+      ],
+      [
+        "psm-IST-USDC_axl",
+        "$7.Alleged: InstanceHandle"
+      ],
+      [
+        "reserve",
+        "$8.Alleged: InstanceHandle"
+      ],
+      [
+        "reserveGovernor",
+        "$9.Alleged: InstanceHandle"
+      ],
+      [
+        "scaledPriceAuthority-ATOM",
+        "$10.Alleged: InstanceHandle"
+      ],
+      [
+        "walletFactory",
+        "$11.Alleged: InstanceHandle"
+      ],
+      [
+        "tribblesAirdrop",
+        "$12.Alleged: InstanceHandle"
+      ]
+    ]","slots":["board03138","board04542","board00443","board01034","board01029","board03935","board05736","board03040","board02733","board02437","board05141","board05039","board04149"]}"
+  ]
+}

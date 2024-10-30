@@ -93,7 +93,8 @@ export const commonSetup = async (t: ExecutionContext) => {
       await vstorageClient.queryData(`published.agoricNames.instance`),
     );
     if (contractName in instances) {
-      return t.log('Contract found. Skipping installation...');
+      t.log('Contract found. Skipping installation...');
+      return { instance: instances[contractName] };
     }
     t.log('bundle and install contract', contractName);
     await deployBuilder(contractBuilder);

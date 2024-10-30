@@ -4,7 +4,6 @@ import { makeMarshal } from '@endo/marshal';
 import { Fail } from '@endo/errors';
 import { makeTracer, deeplyFulfilledObject } from '@agoric/internal';
 import { makeStorageNodeChild } from '@agoric/internal/src/lib-chainStorage.js';
-import { agoricGenesisAccounts } from '../../../test/examples/tribbles-airdrop/data/genesis.keys';
 
 const ONE_DAY = 86_000n;
 
@@ -233,8 +232,8 @@ export const startAirdrop = async (powers, config = defaultConfig) => {
   produceTribblesBrand.resolve(tribblesBrand);
   produceTribblesIssuer.resolve(tribblesIssuer);
 
-  const tribblesMint = await E(creatorFacet).getBankAssetMint();
-
+  // Sending invitation for pausing contract to a specific wallet
+  // TODO: add correct wallet address
   const adminWallet = 'agoric1jng25adrtpl53eh50q7fch34e0vn4g72j6zcml';
   await E(namesByAddressAdmin).reserve(adminWallet);
   const adminDepositFacet = E(namesByAddress).lookup(
@@ -242,21 +241,11 @@ export const startAirdrop = async (powers, config = defaultConfig) => {
     'depositFacet',
   );
 
-  console.log('------------------------');
-  console.log(
-    'INSIDE NAMESBYADDRESS :: RESVOING BOBDEPOSITFACET::',
-    adminDepositFacet,
-  );
   await E(creatorFacet).makePauseContractInvitation(adminDepositFacet);
 
-  console.log('------------------------');
-  console.log('adminSeat::');
-  console.log('------------------------');
-  console.log('E(adminSeat).getOfferResult::');
+  // // Add utribbles token to vbank
+  // const tribblesMint = await E(creatorFacet).getBankAssetMint();
 
-  console.log('------------------------');
-  console.log('------------------------');
-  console.log('tribblesMint::', tribblesMint);
   // await E(bankManager).addAsset(
   //   'utribbles',
   //   'Tribbles',
@@ -269,7 +258,6 @@ export const startAirdrop = async (powers, config = defaultConfig) => {
   // );
   // await publishBrandInfo(chainStorage, board, tribblesBrand);
   trace('deploy script complete.');
-  return instance;
 };
 
 /** @type {import('@agoric/vats/src/core/lib-boot').BootstrapManifest} */

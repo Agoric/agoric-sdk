@@ -1,38 +1,47 @@
 // @ts-nocheck
 import anyTest from '@endo/ses-ava/prepare-endo.js';
 import type { TestFn } from 'ava';
-import { makeDoOffer } from '../tools/e2e-tools.js';
+import { makeDoOffer, provisionSmartWallet } from '../tools/e2e-tools.js';
 import { commonSetup, SetupContextWithWallets } from './support.js';
-import { makeQueryClient } from '../tools/query.js';
-
-import { merkleTreeAPI } from './airdrop-data/merkle-tree/index.js';
 import { addresses, defaultMerkleObject } from './airdrop-data/oct21-keys.js';
+import phrases from './phrases.js';
+
+import ADMIN_ACCOUNT from './tg-account.js';
+
 const test = anyTest as TestFn<SetupContextWithWallets>;
 
 const contractName = 'tribblesAirdrop';
 const contractBuilder =
   '../packages/builders/scripts/testing/start-tribbles-airdrop.js';
-import SEED_PHRASES from './phrases.js';
-import { E } from '@endo/far';
 
-const getPubkeyKey = ({ pubkey }) => `${pubkey.key}`;
 const generateInt = x => () => Math.floor(Math.random() * (x + 1));
 
 const createTestTier = generateInt(4); // ?
 
 test.before(async t => {
-  const { deleteTestKeys, startContract, vstorageClient, ...setup } =
-    await commonSetup(t);
+  const {
+    deleteTestKeys,
+    startContract,
+    setupSpecificKeys,
+    vstorageClient,
+    ...setup
+  } = await commonSetup(t);
 
+  const brands = await vstorageClient.queryData('published.agoricNames.brand');
+  // const wallets = await setupSpecificKeys(phrases);
+
+  t.log('Added' + phrases.length + ' keys to keyring');
   await startContract(contractName, contractBuilder);
 
-  // const wallets = await setupTestKeys(accounts);
   t.context = {
     ...setup,
+    brands,
+    istBrand: Object.fromEntries(brands).IST,
     vstorageClient,
     deleteTestKeys,
   };
 });
+
 const defaultAcct = {
   pubkey: { key: '' },
   address: 'agoric12d3fault',
@@ -44,24 +53,22 @@ const makeOfferArgs = (account = defaultAcct) => ({
   address: account.address,
   tier: createTestTier(),
 });
-const makeDoOfferHandler = async (t, currentAccount) => {
-  const { vstorageClient, provisionSmartWallet } = t.context;
-  t.log(
+
+const makeDoOfferHandler = async (
+  useChain,
+  currentAccount,
+  wallet,
+  feeAmount,
+) => {
+  console.log(
     'claiming for account::',
     currentAccount.address,
     'pubkey',
     currentAccount.pubkey,
   );
-  const [brands] = await Promise.all([
-    vstorageClient.queryData('published.agoricNames.brand'),
-  ]);
 
-  const istBrand = Object.fromEntries(brands).IST;
-  const wallet = await provisionSmartWallet(currentAccount.address, {
-    IST: 1000n,
-    BLD: 1000n,
-  });
   const doOffer = makeDoOffer(wallet);
+  const startTime = performance.now();
 
   await doOffer({
     id: `offer-${Date.now()}`,
@@ -84,185 +91,137 @@ const makeDoOfferHandler = async (t, currentAccount) => {
     },
   });
 
-  t.log('executing offer');
+  const duration = performance.now() - startTime;
+  return { ...currentAccount, duration, wallet };
 };
-test.serial('stress test', async t => {
-  const { vstorageClient, useChain } = t.context;
 
-  const durationMs = 5000;
-  const numCalls = 5;
-  const interval = durationMs / numCalls; // Calculate the interval between calls
-  for (let i = 0; i < numCalls; i++) {
-    setTimeout(async () => {
-      try {
-        const currentAccount = defaultMerkleObject.getAccount(addresses[i]);
+const handleAccountBalanceQuery = async (
+  t,
+  address = '',
+  chainName = 'agoric',
+) => {
+  const { useChain } = t.context;
+  const agQueryClient = makeQueryClient(
+    await useChain('agoric').getRestEndpoint(),
+  );
+  const { balances } = await queryClient.queryBalances(address);
 
-        await makeDoOfferHandler(t, currentAccount);
-        const walletCurrent = await vstorageClient.queryData(
-          `published.wallet.${currentAccount.address}.current`,
-        );
-        t.like(walletCurrent, {
-          liveOffers: [],
-          offerToPublicSubscriberPaths: [],
-        });
+  return { balances };
+};
+test.skip('tribblesAirdrop ### makeClaimTokensInvitation: happy path', async t => {
+  const { useChain, istBrand } = t.context;
 
-        const agQueryClient = makeQueryClient(
-          await useChain('agoric').getRestEndpoint(),
-        );
-        const { balances } = await agQueryClient.queryBalances(
-          currentAccount.address,
-        );
-        t.deepEqual(
-          balances,
-          [],
-          'faucet request minus 10 BLD, plus 0.25 IST provisioning credit',
-        );
+  const wallet = await provisionSmartWallet(ADMIN_ACCOUNT.address, {
+    BLD: 100,
+  });
 
-        t.log({ [wallet]: balances });
-        t.like(result, {});
-      } catch (error) {
-        console.error('Error during API call:', error);
-      }
-    }, i * interval);
-  }
+  const agQueryClient = makeQueryClient(
+    await useChain('agoric').getRestEndpoint(),
+  );
+  const { balances } = await queryClient.queryBalances(addr);
+
+  const claimAirdropResults = await makeDoOfferHandler(
+    useChain,
+    ADMIN_ACCOUNT,
+    wallet,
+    harden({ brand: istBrand, value: 5n }),
+  );
+  const walletCurrent = await vstorageClient.queryData(
+    `published.wallet.${ADMIN_ACCOUNT.address}.current`,
+  );
 });
 
-// const makeOfferArgs = makeMakeOfferArgs(pubkeys);
+const claimAirdropMacro = async (t, addressRange = [0, 1], delay) => {
+  const [start, end] = addressRange;
+  const { provisionSmartWallet, useChain, istBrand } = t.context;
+  const durations = [];
 
-// const simulatreClaim = test.macro({
-//   title: (_, agoricAccount) =>
-//     `Simulate claim for account ${agoricAccount.name} with address ${agoricAccount.address}`,
-//   exec: async (t, agoricAccount) => {
-//     console.log(t.context);
-//     const { address, pubkey } = agoricAccount;
-//     console.log(
-//       `testing makeCreateAndFundScenario for account ${agoricAccount.name}, and pubkey ${pubkey}`,
-//     );
-//     const {
-//       useChain,
-//       wallets,
-//       provisionSmartWallet,
-//       vstorageClient,
-//       retryUntilCondition,
-//     } = t.context;
+  // Make multiple API calls with the specified delay
+  for (let i = start; i < end; i++) {
+    const currentAccount = defaultMerkleObject.getAccount(addresses[i]);
+    console.log('Curren Acccount', currentAccount);
+    console.log('----------------------------------');
+    console.log('Current iteration::', i);
+    const wallet = await provisionSmartWallet(currentAccount.address, {
+      IST: 250000n,
+      BLD: 5000n,
+    });
+    // picking off duration and address
+    // this can be used to inspect the validity of offer results, however it comes at the expense
+    // of a failing test halting execution & destroying duration data
+    const { duration, address } = await makeDoOfferHandler(
+      useChain,
+      currentAccount,
+      wallet,
+      harden({ value: 5n, brand: istBrand }),
+    );
 
-//     // const [pfFromZoe, terms] = await Promise.all([
-//     //   E(zoe).getPublicFacet(instance),
-//     //   E(zoe).getTerms(instance),
-//     // ]);
+    durations.push(duration);
 
-//     const makeTestBalances = ({ IST = 50n, BLD = 100n }) => ({
-//       IST,
-//       BLD,
-//     });
-//     t.log(
-//       wallets[accounts[0]],
-//       Object.values(wallets).map(x => x),
-//     );
+    // Assert that the response matches the expected output
 
-//     const [brands, instances] = await Promise.all([
-//       vstorageClient.queryData('published.agoricNames.brand'),
-//       vstorageClient.queryData('published.agoricNames.instance'),
-//     ]);
+    console.group('######### CHECKING TRIBBLES ALLOCATION #######');
+    console.log('----------------------------------');
+    console.log('currentAccount.address ::::', address);
+    console.log('----------------------------------');
 
-//     console.log('Brands::', brands);
+    // Wait for the specified delay before making the next call
+    await new Promise(resolve => setTimeout(resolve, delay));
+  }
+  return durations;
+};
 
-//     const istBrand = Object.fromEntries(brands).IST;
+test.serial('contract pause invitation payment', async t => {
+  const { provisionSmartWallet, vstorageClient } = t.context;
+  const instances = await vstorageClient.queryData(
+    'published.agoricNames.instance',
+  );
 
-//     console.group(
-//       '################ START AIRDROP.TEST.TS logger ##############',
-//     );
-//     console.log('----------------------------------------');
-//     console.log('brands ::::', brands);
-//     console.log('----------------------------------------');
-//     console.log('instances ::::', Object.fromEntries(instances));
-//     console.log('----------------------------------');
-//     console.log(
-//       '--------------- END AIRDROP.TEST.TS logger -------------------',
-//     );
-//     console.groupEnd();
-//     const feeAmount = harden({
-//       brand: istBrand,
-//       value: 5n,
-//     });
+  console.log(Object.fromEntries(instances));
 
-//     // const testAddresses = await Promise.all(
-//     //   Object.values(wallets).map(async x => {
-//     //     await null;
-//     //     const newWallet = await provisionSmartWallet(x, {
-//     //       IST: 100n,
-//     //       BLD: 50n,
-//     //     });
-//     //     t.log('provisioned wallet for address::', x);
-//     //     return newWallet;
-//     //   }),
-//     // );
-//     const eligibleAccounts = agoricAccounts.map(x => x.address);
+  const wallet = await provisionSmartWallet(ADMIN_ACCOUNT.address, {
+    IST: 40000n,
+    BLD: 30000n,
+  });
+  const doOffer = makeDoOffer(wallet);
 
-//     const currentAcct = agoricAccount;
+  const pauseContractResult = await doOffer({
+    id: `offer-pause`,
+    invitationSpec: {
+      source: 'purse',
+      instance: instances.tribblesAirdrop,
+      description: 'pause contract',
+    },
+    proposal: {},
+  });
 
-//     /**
-//      * 1. Create wallet for them.
-//      * 2. Provision newly created wallet with ({ IST: 100, BLD: 30n })
-//      * 3. Fix makeDoOffer argument to provisioned wallet.
-//      * 4.
-//      */
+  t.deepEqual(pauseContractResult, 'pause contract success');
+});
 
-//     const doOffer = makeDoOffer(alicesWallet);
-//     const id = 0;
-//     const offerId = `offer-${Date.now()}`;
-//     const makeDoOffer = async currentAccount =>
-//       await doOffer({
-//         id: `offer-${Date.now()}`,
-//         invitationSpec: {
-//           source: 'agoricContract',
-//           instancePath: [contractName],
-//           callPipe: [['makeClaimTokensInvitation']],
-//         },
-//         offerArgs: {
-//           ...makeOfferArgs(currentAccount),
-//           proof: defaultMerkleObject.getProof(currentAccount.pubkey.key),
-//           tier: 3,
-//         },
-//         proposal: {
-//           give: { Fee: feeAmount },
-//         },
-//       });
-//     const walletViewResults = await Promise.all(
-//       Object.values(wallets).map(x => vstorageClient.walletView(x)),
-//     );
+test.skip('makeClaimTokensInvitation offers ### start: accounts[20] || end: accounts[24] ### offer interval: 10000ms', async t => {
+  const claimRange = [20, 24];
+  const durations = await claimAirdropMacro(t, claimRange, 10000);
+  t.deepEqual(durations.length === 4, true);
+  t.log('Durations for all calls', durations);
+  console.group('################ START DURATIONS logger ##############');
+  console.log('----------------------------------------');
+  console.log('durations ::::', durations);
+  console.log('----------------------------------------');
+  console.log('claimRange ::::', claimRange);
+  console.log('--------------- END DURATIONS logger -------------------');
+  console.groupEnd();
+});
 
-//     console.group(
-//       '################ START walletViewResults logger ##############',
-//     );
-//     console.log('----------------------------------------');
-//     console.log('walletViewResults ::::', walletViewResults);
-//     console.log('----------------------------------------');
-//     console.log('alicesWallet ::::', alicesWallet);
-//     console.log(
-//       '--------------- END walletViewResults logger -------------------',
-//     );
-//     console.groupEnd();
-
-//     const walletCurrent = await vstorageClient.queryData(
-//       `published.wallet.${currentAcct.address}.current`,
-//     );
-//     t.like(walletCurrent, { liveOffers: [], offerToPublicSubscriberPaths: [] });
-
-//     const agQueryClient = makeQueryClient(
-//       await useChain('agoric').getRestEndpoint(),
-//     );
-
-//     const { balances } = await agQueryClient.queryBalances(alicesWallet);
-//     t.deepEqual(
-//       balances,
-//       [
-//         { denom: 'ubld', amount: String(90_000_000n) },
-//         { denom: 'uist', amount: String(250_000n) },
-//       ],
-//       'faucet request minus 10 BLD, plus 0.25 IST provisioning credit',
-//     );
-//     t.log({ [currentAcct.address]: balances });
-//   },
-// });
-// test.serial(simulatreClaim, agoricAccounts[agoricAccounts.length - 1]);
+test.skip('makeClaimTokensInvitation offers ### start: accounts[25] || end: accounts[29] ### offer interval: 5000ms', async t => {
+  const claimRange = [25, 29];
+  const durations = await claimAirdropMacro(t, claimRange, 5000);
+  t.deepEqual(durations.length === 4, true);
+  t.log('Durations for all calls', durations);
+  console.group('################ START DURATIONS logger ##############');
+  console.log('----------------------------------------');
+  console.log('durations ::::', durations);
+  console.log('----------------------------------------');
+  console.log('claimRange ::::', claimRange);
+  console.log('--------------- END DURATIONS logger -------------------');
+  console.groupEnd();
+});

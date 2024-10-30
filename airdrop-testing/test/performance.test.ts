@@ -27,7 +27,7 @@ test.before(async t => {
   } = await commonSetup(t);
 
   // example usage. comment out after first run
-  await setupSpecificKeys(SEED_PHRASES);
+  // await setupSpecificKeys(SEED_PHRASES);
 
   await startContract(contractName, contractBuilder);
 
@@ -62,7 +62,7 @@ const makeDoOfferHandler = async (
   feeAmount,
 ) => {
   console.log(
-    'claiming for account::',
+    'claiming foxr account::',
     currentAccount.address,
     'pubkey',
     currentAccount.pubkey,

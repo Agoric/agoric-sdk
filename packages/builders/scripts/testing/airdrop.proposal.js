@@ -5,7 +5,6 @@ import { Fail } from '@endo/errors';
 import { makeTracer, deeplyFulfilledObject } from '@agoric/internal';
 import { makeStorageNodeChild } from '@agoric/internal/src/lib-chainStorage.js';
 
-const head = ([x, ...xs]) => x;
 const ONE_DAY = 86_000n;
 
 const AIRDROP_TIERS_STATIC = [9000n, 6500n, 3500n, 1500n, 750n].map(
@@ -69,7 +68,14 @@ const publishBankAsset = async (
 };
 
 /**
- * @type {{ startTime: bigint, initialPayoutValues: any; targetNumberOfEpochs: number; targetEpochLength: bigint; targetTokenSupply: bigint; tokenName: string; }}
+ * @type {{
+ *   startTime: bigint;
+ *   initialPayoutValues: any;
+ *   targetNumberOfEpochs: number;
+ *   targetEpochLength: bigint;
+ *   targetTokenSupply: bigint;
+ *   tokenName: string;
+ * }}
  */
 
 export const defaultCustomTerms = {
@@ -91,6 +97,30 @@ harden(makeTerms);
 const contractName = 'tribblesAirdrop';
 
 /**
+ * Core eval script to start contract q
+ *
+ * @param {BootstrapPowers} powers
+ * @param {any} config
+ *
+ * @typedef {{
+ *   brand: PromiseSpaceOf<{
+ *     Tribbles: import('@agoric/ertp/src/types.js').Brand;
+ *   }>;
+ *   issuer: PromiseSpaceOf<{
+ *     Tribbles: import('@agoric/ertp/src/types.js').Issuer;
+ *   }>;
+ *   instance: { produce: { tribblesAirdrop: Instance } };
+ *   installation: { consume: { tribblesAirdrop: Installation } };
+ * }} AirdropSpace
+ */
+
+const defaultConfig = {
+  options: {
+    [contractName]: { bundleID: '' },
+    customTerms: defaultCustomTerms,
+  },
+};
+/**
  * Core eval script to start contract
  *
  * @param {BootstrapPowers & AirdropSpace} powers
@@ -98,12 +128,6 @@ const contractName = 'tribblesAirdrop';
  *   options: { tribblesAirdrop: { bundleID: string }; customTerms: any };
  * }} config
  *   XXX export AirdropTerms record from contract
- */
-
-/**
- * Core eval script to start contract
-  @param {BootstrapPowers & AirdropSpace} powers
-  @param {{ options: { customTerms: any }}} config XXX export AirdropTerms record from contract
  */
 
 export const startAirdrop = async (powers, config = defaultConfig) => {
@@ -147,7 +171,10 @@ export const startAirdrop = async (powers, config = defaultConfig) => {
     makeStorageNodeChild(chainStorage, contractName),
   ]);
 
-  const { customTerms } = config.options;
+  const {
+    customTerms,
+    tribblesAirdrop: { bundleID },
+  } = config.options;
 
   /** @type {CustomContractTerms} */
   const terms = {
@@ -165,9 +192,12 @@ export const startAirdrop = async (powers, config = defaultConfig) => {
   trace('AFTER assert(config?.options?.merkleRoot');
 
   const marshaller = await E(board).getReadonlyMarshaller();
+  const installation = await E(zoe).installBundleID(bundleID);
 
+  console.log('------------------------');
+  console.log('installation::', installation);
   const startOpts = {
-    installation: await installationP,
+    installation,
     label: contractName,
     terms,
     issuerKeywordRecord: {
@@ -228,6 +258,7 @@ export const startAirdrop = async (powers, config = defaultConfig) => {
   );
   await publishBrandInfo(chainStorage, board, tribblesBrand);
   trace('deploy script complete.');
+  return instance;
 };
 
 /** @type {import('@agoric/vats/src/core/lib-boot').BootstrapManifest} */
@@ -261,22 +292,6 @@ const airdropManifest = harden({
   },
 });
 
-/**
- * Core eval script to start contract
- *
- * @param {BootstrapPowers} powers
- * @param {*} config
- *
- * @typedef {{
- *   brand: PromiseSpaceOf<{ Tribbles: import('@agoric/ertp/src/types.js').Brand }>;
- *   issuer: PromiseSpaceOf<{ Tribbles: import('@agoric/ertp/src/types.js').Issuer }>;
- *   instance: { produce: { tribblesAirdrop: Instance } };
- *   installation: { consume: { tribblesAirdrop: Installation } };
- * }} AirdropSpace
- */
-
-export const permit = Object.values(airdropManifest)[0];
-
 export const getManifestForAirdrop = (
   { restoreRef },
   {
@@ -301,6 +316,8 @@ export const getManifestForAirdrop = (
     options,
   });
 };
+
+export const permit = Object.values(airdropManifest)[0];
 
 /** @type {import('@agoric/deploy-script-support/src/externalTypes.js').CoreEvalBuilder} */
 export const defaultProposalBuilder = async ({ publishRef, install }) => {

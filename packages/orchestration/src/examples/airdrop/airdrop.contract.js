@@ -68,7 +68,6 @@ export const privateArgsShape = harden({
 harden(privateArgsShape);
 
 export const customTermsShape = harden({
-  namesByAddress: M.remotable('namesByAddress'),
   targetEpochLength: M.bigint(),
   initialPayoutValues: M.arrayOf(M.bigint()),
   tokenName: M.string(),
@@ -157,7 +156,6 @@ export const start = async (zcf, privateArgs, baggage) => {
   /** @type {ContractTerms} */
   const {
     startTime = 120n,
-    namesByAddress,
     targetEpochLength = oneDay,
     targetTokenSupply = 10_000_000n * SIX_DIGITS,
     tokenName = 'Tribbles',
@@ -400,62 +398,30 @@ export const start = async (zcf, privateArgs, baggage) => {
         getBankAssetMint() {
           return tokenMint;
         },
-        // transferPauseCapability(address) {
-        //   console.group(
-        //     '------------- NESTED LOGGER OPEN:: transforPaueCao -------------',
-        //   );
-        //   console.log('=====================================================');
-        //   console.log('getDepositFacet::');
-        //   console.log('----------------------------------------------');
-        //   console.log('::');
-        //   console.log('=====================================================');
-        //   console.log(
-        //     '---------- NESTED LOGGER CLOSED:: transforPaueCao----------',
-        //   );
-        //   console.groupEnd();
-        // },
-        makePauseContractInvitation(adminDepositFacet) {
-          console.group(
-            '------------- NESTED LOGGER OPEN:: makePauseContractInvitation -------------',
-          );
 
-          console.log('------------------------');
-          console.log('adminDepositFacet::', adminDepositFacet);
+        makePauseContractInvitation(adminDepositFacet) {
           /** @type {OfferHandler} */
-          const handlePauseInvocation = async (seat, { depositFacet }) => {
-            console.log('------------------------');
-            console.log('handlePauseInvocation#### seat::', seat);
-            console.log('------------------------');
-            console.log(
-              'handlePauseInvocation### depositFacet::',
-              depositFacet,
-            );
+          const handlePauseInvocation = async (seat, { _depositFacet }) => {
             // const depositFacet = await getDepositFacet(recipient);
-            const payouts = await withdrawFromSeat(zcf, tokenHolderSeat, {
-              Tokens: tokenHolderSeat.getAmountAllocated('Tokens'),
-            });
-            console.log('------------------------');
-            console.log('depositFacet::', depositFacet);
-            console.log('------------------------');
-            console.log('payouts::', payouts);
-            // XXX partial failure? return payments?
-            await Promise.all(
-              Object.values(payouts).map(pmtP =>
-                E.when(pmtP, pmt => E(depositFacet).receive(pmt)),
-              ),
-            );
-            seat.exit();
-            void zcf.setOfferFilter([
+            // const payouts = await withdrawFromSeat(zcf, tokenHolderSeat, {
+            //   Tokens: tokenHolderSeat.getAmountAllocated('Tokens'),
+            // });
+
+            // TODO: Use atomicRearrange to transfer tokens if necessary (not depositFacet)
+
+            // await Promise.all(
+            //   Object.values(payouts).map(pmtP =>
+            //     E.when(pmtP, pmt => E(depositFacet).receive(pmt)),
+            //   ),
+            // );
+            await zcf.setOfferFilter([
               messagesObject.makeClaimInvitationDescription(),
             ]);
-            return `setOfferFilter success. 
-                    Retrieved ${Object.keys(payouts).join(', ')} from contract.`;
+
+            seat.exit();
+
+            return `pause contract success.`;
           };
-          console.log('=====================================================');
-          console.log(
-            '---------- NESTED LOGGER CLOSED:: makePauseContractInvitation----------',
-          );
-          console.groupEnd();
 
           const depositInvitation = async depositFacet => {
             const pauseInvitation = await zcf.makeInvitation(
