@@ -1,12 +1,12 @@
 /* eslint-env node */
 import {
-  addPreexistingOracles,
   agd,
   agopsInter,
   agoric,
   ATOM_DENOM,
   CHAINID,
   executeOffer,
+  generateOracleMap,
   getPriceQuote,
   GOV1ADDR,
   pushPrices,
@@ -36,6 +36,9 @@ export const scale6 = x => BigInt(x * 1_000_000);
 const fromBoard = makeFromBoard();
 const marshaller = boardSlottingMarshaller(fromBoard.convertSlotToVal);
 
+// From n-upgrade/verifyPushedPrice.js
+const BASE_ID = 'n-upgrade';
+
 // Import from synthetic-chain once it is updated
 export const bankSend = (from, addr, wanted) => {
   const chain = ['--chain-id', CHAINID];
@@ -47,8 +50,7 @@ export const bankSend = (from, addr, wanted) => {
 };
 
 export const pushPricesForAuction = async (t, price) => {
-  const oraclesByBrand = new Map();
-  await addPreexistingOracles('ATOM', oraclesByBrand);
+  const oraclesByBrand = generateOracleMap(BASE_ID, ['ATOM']);
 
   await pushPrices(price, 'ATOM', oraclesByBrand, t.context.roundId + 1);
 
@@ -67,20 +69,20 @@ export const pushPricesForAuction = async (t, price) => {
 /**
  * @param {any} t
  * @param {{
- *  name: string
- *  offerId: string,
- *  depositValue: string,
+ *   name: string
+ *   offerId: string,
+ *   depositValue: string,
  * }} depositor
  * @param {Record<string, {
- *  bidder: string,
- *  bidderFund: {
- *   value: number,
- *   denom: string
+ *   bidder: string,
+ *   bidderFund: {
+ *     value: number,
+ *     denom: string
  *  },
- *  offerId: string,
- *  give: string,
- *  price?: number
- *  discount?: string
+ *   offerId: string,
+ *   give: string,
+ *   price?: number
+ *   discount?: string
  * }>} bidders
  */
 export const fundAccts = async (t, depositor, bidders) => {
@@ -152,11 +154,11 @@ export const calculateRetryUntilNextStartTime = async () => {
 
   /** @type {RetryOptions} */
   const capturePriceRetryOpts = {
-    maxRetries: Math.round((nextStartTime * 1000 - Date.now()) / 10000) + 2, // wait until next schedule
+    maxRetries: Math.ceil((nextStartTime * 1000 - Date.now()) / 10000) + 2, // wait until next schedule
     retryIntervalMs: 10000, // 10 seconds in ms
   };
 
-  return capturePriceRetryOpts;
+  return { retryOptions: capturePriceRetryOpts, nextStartTime };
 };
 
 /**
@@ -169,7 +171,7 @@ export const calculateRetryUntilNextStartTime = async () => {
  * }} depositor
  */
 export const depositCollateral = async (t, depositor) => {
-  const [brandsRaw, retryOptions] = await Promise.all([
+  const [brandsRaw, { retryOptions }] = await Promise.all([
     agoric.follow('-lF', ':published.agoricNames.brand', '-o', 'text'),
     calculateRetryUntilNextStartTime(),
   ]);
@@ -294,13 +296,16 @@ export const checkDepositOutcome = (t, depositorPayouts, config, brands) => {
   );
 };
 
-export const getCapturedPrice = async bookId => {
-  const result = await agoric.follow('-lF', `:published.auction.${bookId}`);
-  return result;
-};
-
-export const checkPrice = (res, expected) => {
-  if (res.startPrice === null) return false;
-  else if (res.startPrice.numerator.value === expected) return true;
-  return false;
+/**
+ *
+ * @param {string} bookId
+ * @param {string} expected
+ */
+export const checkPriceCaptured = async (bookId, expected) => {
+  const {
+    startPrice: {
+      numerator: { value },
+    },
+  } = await agoric.follow('-lF', `:published.auction.${bookId}`);
+  assert(value, expected);
 };

@@ -17,7 +17,6 @@
  * - Make sure all actors receive the correct payouts
  */
 
-// Typo will be fixed with https://github.com/Agoric/agoric-sdk/pull/10171
 /** @typedef {import('./test-lib/sync-tools.js').RetryOptions} RetryOptions */
 
 import {
@@ -36,10 +35,9 @@ import {
   calculateRetryUntilNextStartTime,
   checkBidsOutcome,
   checkDepositOutcome,
-  checkPrice,
+  checkPriceCaptured,
   depositCollateral,
   fundAccts,
-  getCapturedPrice,
   placeBids,
   pushPricesForAuction,
   scale6,
@@ -143,11 +141,12 @@ test('run auction', async t => {
   await pushPricesForAuction(t, config.price);
 
   // Wait until next round starts. Retry error message is useful for debugging
-  const retryOptions = await calculateRetryUntilNextStartTime();
+  const { retryOptions, nextStartTime } =
+    await calculateRetryUntilNextStartTime();
   await retryUntilCondition(
-    () => getCapturedPrice('book0'),
-    res => checkPrice(res, scale6(config.price).toString()), // scale price to uist
-    'price not captured yet [AUCTION TEST]',
+    () => Promise.resolve(Date.now()),
+    res => res >= nextStartTime * 1000,
+    'next auction round not started yet [AUCTION TEST]',
     {
       log: t.log,
       ...ambientAuthority,
@@ -159,6 +158,11 @@ test('run auction', async t => {
   await fundAccts(t, config.depositor, config.currentBidsSetup);
   const bidsP = placeBids(t, config.currentBidsSetup);
   const proceedsP = depositCollateral(t, config.depositor);
+
+  // Make sure price captured
+  // We have to check this after bids are placed and collateral deposited
+  // because of https://github.com/Agoric/BytePitchPartnerEng/issues/31
+  await checkPriceCaptured('book0', scale6(config.price).toString());
 
   // Resolves when auction finalizes and depositor gets payouts
   const [longLivingBidderAddr] = await Promise.all([
