@@ -1544,13 +1544,6 @@
   resolved "https://registry.yarnpkg.com/@endo/env-options/-/env-options-1.1.7.tgz#f8f9186010cff12506fdd8f5c8cd4d9051830fd8"
   integrity sha512-8twSTbM45rzIP0lHw99ei1EaW98H2BXYKjCTUcq1qgK2OvQWaoiXNcJvUQQo1g7i3oPwbXTQsY69L+nTNeCDyA==
 
-"@endo/errors@^1.2.6":
-  version "1.2.6"
-  resolved "https://registry.yarnpkg.com/@endo/errors/-/errors-1.2.6.tgz#d237b08dfb32a1c5474d83b4cbeb6363783a7767"
-  integrity sha512-Ly8qCgEoc3d23qklib87PPC829KmkpIkPSMnIiEFnTCedVs55LCoXz01bVEanR4lrCB/qkzjx7n21BwWbscc8Q==
-  dependencies:
-    ses "^1.9.0"
-
 "@endo/errors@^1.2.7":
   version "1.2.7"
   resolved "https://registry.yarnpkg.com/@endo/errors/-/errors-1.2.7.tgz#cd8513a8e5544f4caec3eb47dd2ec101b445ea8f"
@@ -1578,13 +1571,6 @@
     "@babel/traverse" "^7.23.6"
     source-map-js "^1.2.0"
 
-"@endo/eventual-send@^1.2.6":
-  version "1.2.6"
-  resolved "https://registry.yarnpkg.com/@endo/eventual-send/-/eventual-send-1.2.6.tgz#43d0f4567e3318491b3720bd7d13eef5448f5384"
-  integrity sha512-wD2OhDDvW8y519q6B8H5jox5mXau6OdTIlYQGzI2lk7xtPasydh2SgdQsX6u1jLAXVcJuNqW7wWgLmvk42ncVA==
-  dependencies:
-    "@endo/env-options" "^1.1.7"
-
 "@endo/eventual-send@^1.2.7":
   version "1.2.7"
   resolved "https://registry.yarnpkg.com/@endo/eventual-send/-/eventual-send-1.2.7.tgz#b4f5408bba1dd1974f147ecb8c346d443b5a31f5"
@@ -1605,16 +1591,7 @@
     "@endo/pass-style" "^1.4.6"
     "@endo/patterns" "^1.4.6"
 
-"@endo/far@^1.0.0":
-  version "1.1.6"
-  resolved "https://registry.yarnpkg.com/@endo/far/-/far-1.1.6.tgz#ca5804da58762cf8b7ecbf8bdd902254d898d456"
-  integrity sha512-rpMzGyyumpk0rXxIh189zimhMJknzfyJX+HCiYHXELk/iuX53HqwqVobP9HWB65lD9M2nwySgXWtxI75Lx4Afw==
-  dependencies:
-    "@endo/errors" "^1.2.6"
-    "@endo/eventual-send" "^1.2.6"
-    "@endo/pass-style" "^1.4.4"
-
-"@endo/far@^1.1.8":
+"@endo/far@^1.0.0", "@endo/far@^1.1.8":
   version "1.1.8"
   resolved "https://registry.yarnpkg.com/@endo/far/-/far-1.1.8.tgz#c8212b8182dd671719dc54e55f6406115f2966de"
   integrity sha512-xtfKPj1bhefpMouI+6q6zjfwDSSnaCZaSDqjClBrx6SnEO1B3ARdxtmiMEOgCdsw1XakvQwq8HDUWqDWEusJFQ==
@@ -1689,17 +1666,6 @@
     "@endo/stream" "^1.2.7"
     ses "^1.9.1"
 
-"@endo/pass-style@^1.4.4":
-  version "1.4.4"
-  resolved "https://registry.yarnpkg.com/@endo/pass-style/-/pass-style-1.4.4.tgz#01c1d6ffc4af3e39b7c8cb8b912d9f6b28d02e55"
-  integrity sha512-RlZMt2kKQUYfrxh9G4RZ8eQs+Bb6DwT7P8TbJZGfgIRYajL5I5zAdByz9PA8P0+aj4PZpKnTUfKwlhNs+tNV0w==
-  dependencies:
-    "@endo/env-options" "^1.1.7"
-    "@endo/errors" "^1.2.6"
-    "@endo/eventual-send" "^1.2.6"
-    "@endo/promise-kit" "^1.1.6"
-    "@fast-check/ava" "^1.1.5"
-
 "@endo/pass-style@^1.4.6":
   version "1.4.6"
   resolved "https://registry.yarnpkg.com/@endo/pass-style/-/pass-style-1.4.6.tgz#75092d33ad5183be120fb662361eef44c28f7768"
@@ -1721,13 +1687,6 @@
     "@endo/eventual-send" "^1.2.7"
     "@endo/marshal" "^1.6.1"
     "@endo/promise-kit" "^1.1.7"
-
-"@endo/promise-kit@^1.1.6":
-  version "1.1.6"
-  resolved "https://registry.yarnpkg.com/@endo/promise-kit/-/promise-kit-1.1.6.tgz#0357c09973fd28be0ef8cb18fbfbb3cfaf1f993b"
-  integrity sha512-14HtlfeUfm9voakcDF4hK15NlyzHtlPFBjJh42ZmWW3aGXmUJQTI/yIdv0zPXcMkogCdeBNKXpQSqIsYehAowQ==
-  dependencies:
-    ses "^1.9.0"
 
 "@endo/promise-kit@^1.1.7":
   version "1.1.7"
@@ -3059,7 +3018,7 @@
   resolved "https://registry.yarnpkg.com/@opentelemetry/api/-/api-1.3.0.tgz#27c6f776ac3c1c616651e506a89f438a0ed6a055"
   integrity sha512-YveTnGNsFFixTKJz09Oi4zYkiLT5af3WpZDu4aIUM7xX+2bHAkOJayFTVQd6zB8kkWPpbua4Ha6Ql00grdLlJQ==
 
-"@opentelemetry/core@1.26.0":
+"@opentelemetry/core@1.26.0", "@opentelemetry/core@^1.14.0":
   version "1.26.0"
   resolved "https://registry.yarnpkg.com/@opentelemetry/core/-/core-1.26.0.tgz#7d84265aaa850ed0ca5813f97d831155be42b328"
   integrity sha512-1iKxXXE8415Cdv0yjG3G6hQnB5eVEsJce3QaawX8SjDn0mAS0ZM8fAbZZJD4ajvhC15cePvosSCut404KrIIvQ==
@@ -3072,13 +3031,6 @@
   integrity sha512-6/qon6tw2I8ZaJnHAQUUn4BqhTbTNRS0WP8/bA0ynaX+Uzp/DDbd0NS0Cq6TMlh8+mrlsyqDE7mO50nmv2Yvlg==
   dependencies:
     "@opentelemetry/semantic-conventions" "1.9.1"
-
-"@opentelemetry/core@^1.14.0":
-  version "1.15.2"
-  resolved "https://registry.yarnpkg.com/@opentelemetry/core/-/core-1.15.2.tgz#5b170bf223a2333884bbc2d29d95812cdbda7c9f"
-  integrity sha512-+gBv15ta96WqkHZaPpcDHiaz0utiiHZVfm2YOYSqFGrUaJpPkMoSuLBB58YFQGi6Rsb9EHos84X6X5+9JspmLw==
-  dependencies:
-    "@opentelemetry/semantic-conventions" "1.15.2"
 
 "@opentelemetry/exporter-logs-otlp-http@0.53.0":
   version "0.53.0"
@@ -3208,11 +3160,6 @@
     "@opentelemetry/core" "1.9.1"
     "@opentelemetry/resources" "1.9.1"
     "@opentelemetry/semantic-conventions" "1.9.1"
-
-"@opentelemetry/semantic-conventions@1.15.2":
-  version "1.15.2"
-  resolved "https://registry.yarnpkg.com/@opentelemetry/semantic-conventions/-/semantic-conventions-1.15.2.tgz#3bafb5de3e20e841dff6cb3c66f4d6e9694c4241"
-  integrity sha512-CjbOKwk2s+3xPIMcd5UNYQzsf+v94RczbdNix9/kQh38WiQkM90sUOi3if8eyHFgiBjBjhwXrA7W3ydiSQP9mw==
 
 "@opentelemetry/semantic-conventions@1.27.0", "@opentelemetry/semantic-conventions@~1.27.0":
   version "1.27.0"
@@ -5015,11 +4962,6 @@ commander@7.1.0:
   version "7.1.0"
   resolved "https://registry.yarnpkg.com/commander/-/commander-7.1.0.tgz#f2eaecf131f10e36e07d894698226e36ae0eb5ff"
   integrity sha512-pRxBna3MJe6HKnBGsDyMv8ETbptw3axEdYHoqNh7gu5oDcew8fs0xnivZGm06Ogk8zGAJ9VX+OPEr2GXEQK4dg==
-
-commander@^11.1.0:
-  version "11.1.0"
-  resolved "https://registry.yarnpkg.com/commander/-/commander-11.1.0.tgz#62fdce76006a68e5c1ab3314dc92e800eb83d906"
-  integrity sha512-yPVavfyCcRhmorC7rWlkHn15b4wDVgVmBA7kV4QVBsF7kv/9TKJAbAXVTxvTnwP8HHKjRCJDClKbciiYS7p0DQ==
 
 commander@^12.1.0:
   version "12.1.0"
@@ -10728,13 +10670,6 @@ serve-static@^2.1.0:
     escape-html "^1.0.3"
     parseurl "^1.3.3"
     send "^1.0.0"
-
-ses@^1.9.0:
-  version "1.9.0"
-  resolved "https://registry.yarnpkg.com/ses/-/ses-1.9.0.tgz#ebf2de9759a21b09550aef0645c3f9b817409381"
-  integrity sha512-ZDAkixRUIPId1oXVxDhj1sIzFUeJ3vzaJCd64Ra1owuVH6Bcd+IOGrJtiFqUTA+YC9w8jTE9XkZTwin+hkbn5Q==
-  dependencies:
-    "@endo/env-options" "^1.1.7"
 
 ses@^1.9.1:
   version "1.9.1"
