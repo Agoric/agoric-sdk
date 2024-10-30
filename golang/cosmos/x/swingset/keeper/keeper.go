@@ -246,7 +246,10 @@ func (k Keeper) BlockingSend(ctx sdk.Context, action vm.Action) (string, error) 
 }
 
 func (k Keeper) GetParams(ctx sdk.Context) (params types.Params) {
-	k.paramSpace.GetParamSet(ctx, &params)
+	// Note the use of "IfExists"...
+	// migration fills in missing data with defaults,
+	// so it is the only consumer that should ever see a nil pair.
+	k.paramSpace.GetParamSetIfExists(ctx, &params)
 	return params
 }
 
