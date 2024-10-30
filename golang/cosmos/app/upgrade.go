@@ -18,6 +18,7 @@ var upgradeNamesOfThisVersion = []string{
 	"UNRELEASED_A3P_INTEGRATION",
 	"UNRELEASED_main",
 	"UNRELEASED_devnet",
+	"UNRELEASED_emerynet",
 	"UNRELEASED_REAPPLY",
 }
 
@@ -56,6 +57,7 @@ func isPrimaryUpgradeName(name string) bool {
 		validUpgradeName("UNRELEASED_A3P_INTEGRATION"),
 		validUpgradeName("UNRELEASED_main"),
 		validUpgradeName("UNRELEASED_devnet"):
+		validUpgradeName("UNRELEASED_emerynet"):
 		return true
 	case validUpgradeName("UNRELEASED_REAPPLY"):
 		return false
@@ -113,6 +115,8 @@ func getVariantFromUpgradeName(upgradeName string) string {
 		return "MAINNET"
 	case "UNRELEASED_devnet":
 		return "DEVNET"
+	case "UNRELEASED_emerynet":
+		return "EMERYNET"
 		// Noupgrade for this version.
 	case "UNRELEASED_BASIC":
 		return ""

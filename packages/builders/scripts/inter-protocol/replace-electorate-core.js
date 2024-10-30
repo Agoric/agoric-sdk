@@ -6,6 +6,7 @@
  *   where [ENVIRONMENT] is one of the following:
  *     - MAINNET
  *     - DEVNET
+ *     - EMERYNET
  *     - A3P_INTEGRATION
  *     - BOOTSTRAP_TEST
  *
@@ -45,6 +46,17 @@ const configurations = {
     highPrioritySendersConfig: {
       addressesToAdd: ['agoric1f0h5zgxyg3euxsqzs0506uj4cmu56y30pqx46s'],
       addressesToRemove: ['agoric1w8wktaur4zf8qmmtn3n7x3r0jhsjkjntcm3u6h'],
+    },
+  },
+  EMERYNET: {
+    committeeName: 'Economic Committee',
+    voterAddresses: {
+      gov1: 'agoric1ldmtatp24qlllgxmrsjzcpe20fvlkp448zcuce',
+      gov2: 'agoric140dmkrz2e42ergjj7gyvejhzmjzurvqeq82ang',
+    },
+    highPrioritySendersConfig: {
+      addressesToAdd: [],
+      addressesToRemove: [],
     },
   },
   A3P_INTEGRATION: {
