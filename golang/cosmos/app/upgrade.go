@@ -14,9 +14,10 @@ import (
 )
 
 var upgradeNamesOfThisVersion = []string{
-	"agoric-upgrade-18",
-	"agorictest-upgrade-18",
-	"A3P-INTEGRATION",
+	"agoric-upgrade-18-mainnet",
+	"agoric-upgrade-18-devnet",
+	"agoric-upgrade-18-basic",
+	"agoric-upgrade-18-a3p",
 }
 
 // isUpgradeNameOfThisVersion returns whether the provided plan name is a
@@ -50,9 +51,10 @@ func isPrimaryUpgradeName(name string) bool {
 		return false
 	}
 	switch name {
-	case validUpgradeName("agoric-upgrade-18"),
-		validUpgradeName("agorictest-upgrade-18"),
-		validUpgradeName("A3P-INTEGRATION"):
+	case validUpgradeName("agoric-upgrade-18-mainnet"),
+		validUpgradeName("agoric-upgrade-18-devnet"),
+		validUpgradeName("agoric-upgrade-18-basic"),
+		validUpgradeName("agoric-upgrade-18-a3p"):
 		return true
 	default:
 		panic(fmt.Errorf("unexpected upgrade name %s", validUpgradeName(name)))
@@ -102,11 +104,13 @@ func buildProposalStepWithArgs(moduleName string, entrypoint string, opts map[st
 
 func getVariantFromUpgradeName(upgradeName string) string {
 	switch upgradeName {
-	case "agoric-upgrade-18":
+	case "agoric-upgrade-18-mainnet":
 		return "MAINNET"
-	case "agorictest-upgrade-18":
+	case "agoric-upgrade-18-devnet":
 		return "DEVNET"
-	case "A3P-INTEGRATION":
+	case "agoric-upgrade-18-basic":
+		return ""
+	case "agoric-upgrade-18-a3p":
 		return "A3P_INTEGRATION"
 	default:
 		return ""

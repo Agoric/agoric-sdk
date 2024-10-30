@@ -2,7 +2,7 @@
   "agoricProposal": {
     "releaseNotes": false,
     "sdkImageTag": "unreleased",
-    "planName": "agoric-upgrade-18",
+    "planName": "agoric-upgrade-18-a3p",
     "upgradeInfo": {
       "coreProposals": [],
       "releaseNotes": false
