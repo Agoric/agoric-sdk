@@ -56,7 +56,7 @@ func isPrimaryUpgradeName(name string) bool {
 	case validUpgradeName("UNRELEASED_BASIC"),
 		validUpgradeName("UNRELEASED_A3P_INTEGRATION"),
 		validUpgradeName("UNRELEASED_main"),
-		validUpgradeName("UNRELEASED_devnet"):
+		validUpgradeName("UNRELEASED_devnet"),
 		validUpgradeName("UNRELEASED_emerynet"):
 		return true
 	case validUpgradeName("UNRELEASED_REAPPLY"):
