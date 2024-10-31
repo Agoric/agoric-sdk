@@ -389,7 +389,7 @@ const (
 var allowedSwingSetExportModes = map[string]bool{
 	swingsetkeeper.SwingStoreArtifactModeDebug:       true,
 	swingsetkeeper.SwingStoreArtifactModeOperational: true,
-	swingsetkeeper.SwingStoreArtifactModeNone:        true,
+	swingsetkeeper.SwingStoreArtifactModeSkip:        true,
 }
 
 // extendCosmosExportCommand monkey-patches the "export" command added by
@@ -422,25 +422,32 @@ func extendCosmosExportCommand(cmd *cobra.Command) {
 		serverCtx := server.GetServerContextFromCmd(cmd)
 
 		exportDir, _ := cmd.Flags().GetString(FlagExportDir)
+		swingStoreExportMode, _ := cmd.Flags().GetString(gaia.FlagSwingStoreExportMode)
+
 		err := os.MkdirAll(exportDir, os.ModePerm)
 		if err != nil {
 			return err
 		}
 
 		genesisPath := filepath.Join(exportDir, ExportedGenesisFileName)
-		swingStoreExportPath := filepath.Join(exportDir, ExportedSwingStoreDirectoryName)
 
-		err = os.MkdirAll(swingStoreExportPath, os.ModePerm)
-		if err != nil {
-			return err
+		// Since skip mode doesn't perform any swing store export
+		// There is no point in creating the export directory
+		if swingStoreExportMode != swingsetkeeper.SwingStoreArtifactModeSkip {
+			swingStoreExportPath := filepath.Join(exportDir, ExportedSwingStoreDirectoryName)
+
+			err = os.MkdirAll(swingStoreExportPath, os.ModePerm)
+			if err != nil {
+				return err
+			}
+			// We unconditionally set FlagSwingStoreExportDir as for export, it makes
+			// little sense for users to control this location separately, and we don't
+			// want to override any swing-store artifacts that may be associated to the
+			// current genesis.
+			serverCtx.Viper.Set(gaia.FlagSwingStoreExportDir, swingStoreExportPath)
 		}
-		// We unconditionally set FlagSwingStoreExportDir as for export, it makes
-		// little sense for users to control this location separately, and we don't
-		// want to override any swing-store artifacts that may be associated to the
-		// current genesis.
-		serverCtx.Viper.Set(gaia.FlagSwingStoreExportDir, swingStoreExportPath)
 
-		if hasVMController(serverCtx) {
+		if hasVMController(serverCtx) || swingStoreExportMode == swingsetkeeper.SwingStoreArtifactModeSkip {
 			// Capture the export in the genesisPath.
 			// This will fail if a genesis.json already exists in the export-dir
 			genesisFile, err := os.OpenFile(
@@ -473,7 +480,16 @@ func (ac appCreator) appExport(
 	jailAllowedAddrs []string,
 	appOpts servertypes.AppOptions,
 ) (servertypes.ExportedApp, error) {
-	if OnExportHook != nil {
+	swingStoreExportMode, ok := appOpts.Get(gaia.FlagSwingStoreExportMode).(string)
+	if !(ok && allowedSwingSetExportModes[swingStoreExportMode]) {
+		return servertypes.ExportedApp{}, fmt.Errorf(
+			"export mode '%s' is not supported",
+			swingStoreExportMode,
+		)
+	}
+
+	// We don't have to launch VM in case the swing store export is not required
+	if !(swingStoreExportMode == swingsetkeeper.SwingStoreArtifactModeSkip || OnExportHook == nil) {
 		if err := OnExportHook(ac.agdServer, logger, appOpts); err != nil {
 			return servertypes.ExportedApp{}, err
 		}
@@ -484,18 +500,7 @@ func (ac appCreator) appExport(
 		return servertypes.ExportedApp{}, errors.New("application home is not set")
 	}
 
-	swingStoreExportMode, ok := appOpts.Get(gaia.FlagSwingStoreExportMode).(string)
-	if !(ok && allowedSwingSetExportModes[swingStoreExportMode]) {
-		return servertypes.ExportedApp{}, fmt.Errorf(
-			"export mode '%s' is not supported",
-			swingStoreExportMode,
-		)
-	}
-
-	var loadLatest bool
-	if height == -1 {
-		loadLatest = true
-	}
+	loadLatest := height == -1
 
 	gaiaApp := gaia.NewAgoricApp(
 		ac.sender, ac.agdServer,

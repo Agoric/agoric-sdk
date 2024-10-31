@@ -160,7 +160,7 @@ type swingStoreRestoreExportAction struct {
 const (
 	// SwingStoreArtifactModeNone means that no artifacts are part of the
 	// export / import.
-	SwingStoreArtifactModeNone = "none"
+	SwingStoreArtifactModeSkip = "skip"
 
 	// SwingStoreArtifactModeOperational represents the minimal set of artifacts
 	// needed to operate a node.

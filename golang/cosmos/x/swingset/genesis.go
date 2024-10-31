@@ -138,9 +138,10 @@ func ExportGenesis(
 	swingStoreExportMode string,
 ) *types.GenesisState {
 	gs := &types.GenesisState{
-		Params:               k.GetParams(ctx),
-		State:                k.GetState(ctx),
-		SwingStoreExportData: nil,
+		Params:                   k.GetParams(ctx),
+		State:                    k.GetState(ctx),
+		SwingStoreExportData:     nil,
+		SwingStoreExportDataHash: "",
 	}
 
 	exportDataMode := keeper.SwingStoreExportDataModeSkip
@@ -151,33 +152,35 @@ func ExportGenesis(
 		snapshotHeight = 0
 	}
 
-	eventHandler := swingStoreGenesisEventHandler{
-		exportDir:      swingStoreExportDir,
-		snapshotHeight: snapshotHeight,
-		swingStore:     k.GetSwingStore(ctx),
-		hasher:         sha256.New(),
-		exportMode:     swingStoreExportMode,
-	}
+	if swingStoreExportMode != keeper.SwingStoreArtifactModeSkip {
+		eventHandler := swingStoreGenesisEventHandler{
+			exportDir:      swingStoreExportDir,
+			snapshotHeight: snapshotHeight,
+			swingStore:     k.GetSwingStore(ctx),
+			hasher:         sha256.New(),
+			exportMode:     swingStoreExportMode,
+		}
 
-	err := swingStoreExportsHandler.InitiateExport(
-		// The export will fail if the export of a historical height was requested outside of debug mode
-		snapshotHeight,
-		eventHandler,
-		keeper.SwingStoreExportOptions{
-			ArtifactMode:   swingStoreExportMode,
-			ExportDataMode: exportDataMode,
-		},
-	)
-	if err != nil {
-		panic(err)
-	}
+		err := swingStoreExportsHandler.InitiateExport(
+			// The export will fail if the export of a historical height was requested outside of debug mode
+			snapshotHeight,
+			eventHandler,
+			keeper.SwingStoreExportOptions{
+				ArtifactMode:   swingStoreExportMode,
+				ExportDataMode: exportDataMode,
+			},
+		)
+		if err != nil {
+			panic(err)
+		}
 
-	err = keeper.WaitUntilSwingStoreExportDone()
-	if err != nil {
-		panic(err)
-	}
+		err = keeper.WaitUntilSwingStoreExportDone()
+		if err != nil {
+			panic(err)
+		}
 
-	gs.SwingStoreExportDataHash = fmt.Sprintf("sha256:%x", eventHandler.hasher.Sum(nil))
+		gs.SwingStoreExportDataHash = fmt.Sprintf("sha256:%x", eventHandler.hasher.Sum(nil))
+	}
 
 	return gs
 }
