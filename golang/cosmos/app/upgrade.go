@@ -16,6 +16,7 @@ import (
 var upgradeNamesOfThisVersion = []string{
 	"agoric-upgrade-18-mainnet",
 	"agoric-upgrade-18-devnet",
+	"agoric-upgrade-18-emerynet",
 	"agoric-upgrade-18-basic",
 	"agoric-upgrade-18-a3p",
 }
@@ -53,6 +54,7 @@ func isPrimaryUpgradeName(name string) bool {
 	switch name {
 	case validUpgradeName("agoric-upgrade-18-mainnet"),
 		validUpgradeName("agoric-upgrade-18-devnet"),
+		validUpgradeName("agoric-upgrade-18-emerynet"),
 		validUpgradeName("agoric-upgrade-18-basic"),
 		validUpgradeName("agoric-upgrade-18-a3p"):
 		return true
@@ -108,6 +110,8 @@ func getVariantFromUpgradeName(upgradeName string) string {
 		return "MAINNET"
 	case "agoric-upgrade-18-devnet":
 		return "DEVNET"
+	case "agoric-upgrade-18-emerynet":
+		return "EMERYNET"
 	case "agoric-upgrade-18-basic":
 		return ""
 	case "agoric-upgrade-18-a3p":
