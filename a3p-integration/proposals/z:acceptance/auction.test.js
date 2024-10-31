@@ -129,10 +129,10 @@ test.before(async t => {
   );
   t.context = {
     roundId: parseInt(round.roundId, 10),
-    retryOpts: {
+    retryOpts: harden({
       bankSendRetryOpts,
       pushPriceRetryOpts,
-    },
+    }),
   };
 });
 
