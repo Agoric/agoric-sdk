@@ -8,7 +8,7 @@ export const assets = {
         'ATOM is the native cryptocurrency of the Cosmos network, designed to facilitate interoperability between multiple blockchains through its innovative hub-and-spoke model.',
       extended_description:
         "ATOM, the native cryptocurrency of the Cosmos network, is essential for achieving the project's goal of creating an 'Internet of Blockchains.' Launched in 2019, Cosmos aims to solve the scalability, usability, and interoperability issues prevalent in existing blockchain ecosystems. The Cosmos Hub, the central blockchain of the network, uses ATOM for transaction fees, staking, and governance. By staking ATOM, users can earn rewards and participate in governance, influencing decisions on network upgrades and changes.\n\nCosmos leverages the Tendermint consensus algorithm to achieve high transaction throughput and fast finality. Its Inter-Blockchain Communication (IBC) protocol enables seamless data and value transfer between different blockchains, fostering a highly interconnected and collaborative ecosystem. The flexibility and scalability offered by Cosmos have attracted numerous projects, enhancing its utility and adoption. ATOM's role in securing the network and facilitating governance underscores its importance in the broader blockchain landscape.",
-      denom_units: [
+      denomUnits: [
         {
           denom: 'uatom',
           exponent: 0,
@@ -43,7 +43,7 @@ export const assets = {
     },
     {
       description: 'Tether USDt on the Cosmos Hub',
-      denom_units: [
+      denomUnits: [
         {
           denom:
             'ibc/F04D72CF9B5D9C849BB278B691CDFA2241813327430EC9CDC83F8F4CA4CDC2B0',
@@ -63,12 +63,12 @@ export const assets = {
         {
           type: 'ibc',
           counterparty: {
-            chain_name: 'kava',
-            base_denom: 'erc20/tether/usdt',
-            channel_id: 'channel-0',
+            chainName: 'kava',
+            baseDenom: 'erc20/tether/usdt',
+            channelId: 'channel-0',
           },
           chain: {
-            channel_id: 'channel-277',
+            channelId: 'channel-277',
             path: 'transfer/channel-277/erc20/tether/usdt',
           },
         },
@@ -76,8 +76,8 @@ export const assets = {
       images: [
         {
           image_sync: {
-            chain_name: 'kava',
-            base_denom: 'erc20/tether/usdt',
+            chainName: 'kava',
+            baseDenom: 'erc20/tether/usdt',
           },
           svg: 'https://raw.githubusercontent.com/cosmos/chain-registry/master/_non-cosmos/ethereum/images/usdt.svg',
           png: 'https://raw.githubusercontent.com/cosmos/chain-registry/master/_non-cosmos/ethereum/images/usdt.png',
@@ -95,7 +95,7 @@ export const assets = {
     },
     {
       description: 'FX on Cosmos Hub',
-      denom_units: [
+      denomUnits: [
         {
           denom:
             'ibc/4925E6ABA571A44D2BE0286D2D29AF42A294D0FF2BB16490149A1B26EAD33729',
@@ -112,12 +112,12 @@ export const assets = {
         {
           type: 'ibc',
           counterparty: {
-            chain_name: 'fxcore',
-            base_denom: 'FX',
-            channel_id: 'channel-10',
+            chainName: 'fxcore',
+            baseDenom: 'FX',
+            channelId: 'channel-10',
           },
           chain: {
-            channel_id: 'channel-585',
+            channelId: 'channel-585',
             path: 'transfer/channel-585/FX',
           },
         },
@@ -125,8 +125,8 @@ export const assets = {
       images: [
         {
           image_sync: {
-            chain_name: 'fxcore',
-            base_denom: 'FX',
+            chainName: 'fxcore',
+            baseDenom: 'FX',
           },
           png: 'https://raw.githubusercontent.com/cosmos/chain-registry/master/fxcore/images/fx.png',
           svg: 'https://raw.githubusercontent.com/cosmos/chain-registry/master/fxcore/images/fx.svg',

@@ -57,17 +57,15 @@ function toConnectionEntry(ibcInfo, name, chainInfo) {
     : [channel.chain_2, channel.chain_1];
   const record = {
     id: /** @type {IBCConnectionID} */ (from.connection_id),
-    client_id: from.client_id,
-    counterparty: {
-      client_id: to.client_id,
-      connection_id: /** @type {IBCConnectionID} */ (to.connection_id),
-    },
+    clientId: from.client_id,
+    counterpartyClientId: to.client_id,
+    counterpartyConnectionId: /** @type {IBCConnectionID} */ (to.connection_id),
     state: IBCConnectionState.STATE_OPEN, // XXX presumably
     transferChannel: {
       channelId: /** @type {IBCChannelID} */ (channelFrom.channel_id),
       portId: channelFrom.port_id,
-      counterPartyChannelId: /** @type {IBCChannelID} */ (channelTo.channel_id),
-      counterPartyPortId: channelTo.port_id,
+      counterpartyChannelId: /** @type {IBCChannelID} */ (channelTo.channel_id),
+      counterpartyPortId: channelTo.port_id,
       // FIXME mapping, our guard expects a numerical enum
       ordering: Order.ORDER_NONE_UNSPECIFIED,
       state: IBCChannelState.STATE_OPEN, // XXX presumably

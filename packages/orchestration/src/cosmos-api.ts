@@ -41,17 +41,15 @@ export type CosmosValidatorAddress = ChainAddress & {
 /** Represents an IBC Connection between two chains, which can contain multiple Channels. */
 export interface IBCConnectionInfo {
   id: IBCConnectionID; // e.g. connection-0
-  client_id: string; // '07-tendermint-0'
+  clientId: string; // '07-tendermint-0'
   state: IBCConnectionState;
-  counterparty: {
-    client_id: string;
-    connection_id: IBCConnectionID;
-  };
+  counterpartyClientId: string;
+  counterpartyConnectionId: IBCConnectionID;
   transferChannel: {
     portId: string;
     channelId: IBCChannelID;
-    counterPartyPortId: string;
-    counterPartyChannelId: IBCChannelID;
+    counterpartyPortId: string;
+    counterpartyChannelId: IBCChannelID;
     ordering: Order;
     state: IBCChannelState;
     version: string; // e.eg. 'ics20-1'
@@ -66,16 +64,16 @@ export interface CosmosAssetInfo extends Record<string, unknown> {
   name: string;
   display: string;
   symbol: string;
-  denom_units: Array<{ denom: Denom; exponent: number }>;
+  denomUnits: Array<{ denom: Denom; exponent: number }>;
   traces?: Array<{
     type: 'ibc';
     counterparty: {
-      chain_name: string;
-      base_denom: Denom;
-      channel_id: IBCChannelID;
+      chainName: string;
+      baseDenom: Denom;
+      channelId: IBCChannelID;
     };
     chain: {
-      channel_id: IBCChannelID;
+      channelId: IBCChannelID;
       path: string;
     };
   }>;
