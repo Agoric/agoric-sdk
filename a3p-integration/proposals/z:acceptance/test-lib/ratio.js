@@ -126,3 +126,27 @@ const multiplyHelper = (amount, ratio, divideOp) => {
 export const ceilMultiplyBy = (amount, ratio) => {
   return multiplyHelper(amount, ratio, natSafeMath.ceilDivide);
 };
+
+const PERCENT = 100n;
+
+/**
+ * @param {bigint} numerator
+ * @param {import('@agoric/ertp').Brand} numeratorBrand
+ * @param {bigint} [denominator] The default denominator is 100
+ * @param {import('@agoric/ertp').Brand} [denominatorBrand] The default is to reuse the numeratorBrand
+ * @returns {import('@agoric/zoe/src/contractSupport/types-ambient.js').Ratio}
+ */
+export const makeRatio = (
+  numerator,
+  numeratorBrand,
+  denominator = PERCENT,
+  denominatorBrand = numeratorBrand,
+) => {
+  denominator > 0n ||
+    Fail`No infinite ratios! Denominator was 0 ${q(denominatorBrand)}`;
+
+  return harden({
+    numerator: AmountMath.make(numeratorBrand, numerator),
+    denominator: AmountMath.make(denominatorBrand, denominator),
+  });
+};

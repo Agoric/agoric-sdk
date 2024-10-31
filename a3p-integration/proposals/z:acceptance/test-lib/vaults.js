@@ -10,7 +10,7 @@ import {
   GOV2ADDR,
 } from '@agoric/synthetic-chain';
 import { AmountMath } from '@agoric/ertp';
-import { ceilMultiplyBy } from './ratio.js';
+import { ceilMultiplyBy, makeRatio } from './ratio.js';
 import { getAgoricNamesBrands, getAgoricNamesInstances } from './utils.js';
 import { boardSlottingMarshaller, makeFromBoard } from './rpc.js';
 import { retryUntilCondition } from './sync-tools.js';
@@ -100,10 +100,13 @@ export const calculateMintFee = async (toMintValue, vaultManager) => {
 
   const mintFee = governance.current.MintFee;
   const { numerator, denominator } = mintFee.value;
-  const mintFeeRatio = harden({
-    numerator: AmountMath.make(brands.IST, numerator.value),
-    denominator: AmountMath.make(brands.IST, denominator.value),
-  });
+
+  const mintFeeRatio = makeRatio(
+    numerator.value,
+    brands.IST,
+    denominator.value,
+    brands.IST,
+  );
 
   const toMintAmount = AmountMath.make(brands.IST, toMintValue * 1_000_000n);
   const expectedMintFee = ceilMultiplyBy(toMintAmount, mintFeeRatio);
