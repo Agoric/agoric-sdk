@@ -43,7 +43,7 @@ jobs:
           # uses ghcr.io/agoric/agoric-sdk:dev image (latest master)
           values: ./agoric-sdk/multichain-testing/config.yaml
           port-forward: true
-          version: 0.2.10
+          version: 0.2.20
           timeout: 30m
           namespace: agoric-multichain
 
