@@ -19,7 +19,6 @@ const fromBoard = makeFromBoard();
 const marshaller = boardSlottingMarshaller(fromBoard.convertSlotToVal);
 
 /**
- *
  * @param {string} address
  * @returns {Promise<{ vaultID: string, debt: bigint, collateral: bigint, state: string }>}
  */
@@ -33,7 +32,6 @@ export const getLastVaultFromAddress = async address => {
   }
 
   const vaultData = await getContractInfo(vaultPath, { agoric, prefix: '' });
-  console.log('vaultData: ', vaultData);
 
   const debt = vaultData.debtSnapshot.debt.value;
   const collateral = vaultData.locked.value;
@@ -43,7 +41,6 @@ export const getLastVaultFromAddress = async address => {
 };
 
 /**
- *
  * @param {string} vaultManager
  * @returns {Promise<{ availableDebtForMint: bigint, debtLimit: bigint, totalDebt: bigint }>}
  */
@@ -54,21 +51,16 @@ export const getAvailableDebtForMint = async vaultManager => {
     prefix: '',
   });
 
-  const debtLimit = governance.current.DebtLimit.value;
-  console.log('debtLimit: ', debtLimit.value);
-
   const metricsPath = `published.vaultFactory.managers.${vaultManager}.metrics`;
   const metrics = await getContractInfo(metricsPath, {
     agoric,
     prefix: '',
   });
 
+  const debtLimit = governance.current.DebtLimit.value;
   const totalDebt = metrics.totalDebt;
-  console.log('totalDebt: ', totalDebt.value);
-
   // @ts-expect-error
   const availableDebtForMint = (debtLimit.value - totalDebt.value) / 1_000_000n;
-  console.log('availableDebtForMint: ', availableDebtForMint);
 
   return {
     availableDebtForMint,
@@ -78,7 +70,6 @@ export const getAvailableDebtForMint = async vaultManager => {
 };
 
 /**
- *
  * @returns {Promise<bigint>}
  */
 export const getMinInitialDebt = async () => {
@@ -89,13 +80,11 @@ export const getMinInitialDebt = async () => {
   });
 
   const minInitialDebt = governance.current.MinInitialDebt.value.value;
-  console.log('minInitialDebt: ', minInitialDebt);
 
   return minInitialDebt / 1_000_000n;
 };
 
 /**
- *
  * @param {bigint} toMintValue
  * @param {string} vaultManager
  * @returns {Promise<{ mintFee: import('@agoric/ertp/src/types.js').NatAmount, adjustedToMintAmount: import('@agoric/ertp/src/types.js').NatAmount }>}
@@ -119,9 +108,6 @@ export const calculateMintFee = async (toMintValue, vaultManager) => {
   const toMintAmount = AmountMath.make(brands.IST, toMintValue * 1_000_000n);
   const expectedMintFee = ceilMultiplyBy(toMintAmount, mintFeeRatio);
   const adjustedToMintAmount = AmountMath.add(toMintAmount, expectedMintFee);
-
-  console.log('mintFee: ', mintFee);
-  console.log('adjustedToMintAmount: ', adjustedToMintAmount);
 
   return { mintFee, adjustedToMintAmount };
 };
