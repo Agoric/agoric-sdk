@@ -34,6 +34,13 @@ const configurations = {
     ],
     inBrandNames: ['ATOM', 'stTIA', 'stkATOM'],
   },
+  EMERYNET: {
+    oracleAddresses: [
+      'agoric1ldmtatp24qlllgxmrsjzcpe20fvlkp448zcuce', // GOV1
+      'agoric140dmkrz2e42ergjj7gyvejhzmjzurvqeq82ang', // GOV2
+    ],
+    inBrandNames: ['ATOM', 'stATOM', 'stOSMO', 'stTIA', 'stkATOM'],
+  },
 };
 
 const { keys } = Object;
