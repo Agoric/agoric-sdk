@@ -8,7 +8,7 @@ import { E } from '@endo/far';
 import { makeIssuerKit } from '@agoric/ertp';
 import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
 import { makeChainHub, registerAssets } from '../../src/exos/chain-hub.js';
-import { provideDurableZone } from '../supports.js';
+import { provideFreshRootZone } from '../durability.js';
 import {
   registerChainAssets,
   registerKnownChains,
@@ -22,7 +22,7 @@ import { assets as assetFixture } from '../assets.fixture.js';
 
 // fresh state for each test
 const setup = () => {
-  const zone = provideDurableZone('root');
+  const zone = provideFreshRootZone();
   const vt = prepareSwingsetVowTools(zone.subZone('vows'));
   const { nameHub, nameAdmin } = makeNameHubKit();
   const chainHub = makeChainHub(zone.subZone('chainHub'), nameHub, vt);
@@ -30,7 +30,7 @@ const setup = () => {
   return { chainHub, nameAdmin, vt };
 };
 
-test.serial('getChainInfo', async t => {
+test('getChainInfo', async t => {
   const { chainHub, nameAdmin, vt } = setup();
   // use fetched chain info
   await registerKnownChains(nameAdmin);
@@ -39,7 +39,7 @@ test.serial('getChainInfo', async t => {
   t.like(await vt.asPromise(vow), { chainId: 'celestia' });
 });
 
-test.serial('concurrency', async t => {
+test('concurrency', async t => {
   const { chainHub, nameAdmin, vt } = setup();
   // use fetched chain info
   await registerKnownChains(nameAdmin);
@@ -52,7 +52,7 @@ test.serial('concurrency', async t => {
   ]);
 });
 
-test.serial('getConnectionInfo', async t => {
+test('getConnectionInfo', async t => {
   const { chainHub, vt } = setup();
 
   // https://mapofzones.com/zones/celestia/peers
@@ -75,7 +75,7 @@ test.serial('getConnectionInfo', async t => {
   t.deepEqual(await vt.when(chainHub.getConnectionInfo(b, a)), ba);
 });
 
-test.serial('denom info support via getAsset and getDenom', async t => {
+test('denom info support via getAsset and getDenom', async t => {
   const { chainHub } = setup();
 
   const denom = 'utok1';
@@ -121,7 +121,7 @@ test.serial('denom info support via getAsset and getDenom', async t => {
   );
 });
 
-test.serial('toward asset info in agoricNames (#9572)', async t => {
+test('toward asset info in agoricNames (#9572)', async t => {
   const { chainHub, nameAdmin, vt } = setup();
   // use fetched chain info
   await registerKnownChains(nameAdmin);
@@ -160,7 +160,7 @@ test.serial('toward asset info in agoricNames (#9572)', async t => {
   }
 });
 
-test.serial('getChainInfoByAddress', async t => {
+test('getChainInfoByAddress', async t => {
   const { chainHub, nameAdmin, vt } = setup();
   // use fetched chain info
   await registerKnownChains(nameAdmin);
