@@ -162,6 +162,7 @@ const unequipAllItemsOffer = async address => {
     throw new Error('Character not found on user purse');
   }
 
+  // deal with KREAd's funky parallel character representation swap
   const inventoryKeyId = kreadCharacter.keyId === 1 ? 2 : 1;
   const kreadCharacter2 = { ...kreadCharacter, keyId: inventoryKeyId };
 
