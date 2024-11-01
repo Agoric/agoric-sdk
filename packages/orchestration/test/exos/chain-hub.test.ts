@@ -20,25 +20,6 @@ import type {
 } from '../../src/cosmos-api.js';
 import { assets as assetFixture } from '../assets.fixture.js';
 
-const connection = {
-  id: 'connection-1',
-  client_id: '07-tendermint-3',
-  counterparty: {
-    client_id: '07-tendermint-2',
-    connection_id: 'connection-1',
-  },
-  state: 3 /* IBCConnectionState.STATE_OPEN */,
-  transferChannel: {
-    portId: 'transfer',
-    channelId: 'channel-1',
-    counterPartyChannelId: 'channel-1',
-    counterPartyPortId: 'transfer',
-    ordering: 1 /* Order.ORDER_UNORDERED */,
-    state: 3 /* IBCConnectionState.STATE_OPEN */,
-    version: 'ics20-1',
-  },
-} as const;
-
 // fresh state for each test
 const setup = () => {
   const zone = provideDurableZone('root');
@@ -94,11 +75,12 @@ test.serial('getConnectionInfo', async t => {
   t.deepEqual(await vt.when(chainHub.getConnectionInfo(b, a)), ba);
 });
 
-test('denom info support via getAsset and getDenom', async t => {
+test.serial('denom info support via getAsset and getDenom', async t => {
   const { chainHub } = setup();
 
   const denom = 'utok1';
   const info1: CosmosChainInfo = {
+    bech32Prefix: 'chain',
     chainId: 'chain1',
     stakingTokens: [{ denom }],
   };
@@ -139,7 +121,7 @@ test('denom info support via getAsset and getDenom', async t => {
   );
 });
 
-test('toward asset info in agoricNames (#9572)', async t => {
+test.serial('toward asset info in agoricNames (#9572)', async t => {
   const { chainHub, nameAdmin, vt } = setup();
   // use fetched chain info
   await registerKnownChains(nameAdmin);
@@ -147,7 +129,7 @@ test('toward asset info in agoricNames (#9572)', async t => {
   await vt.when(chainHub.getChainInfo('cosmoshub'));
 
   for (const name of ['kava', 'fxcore']) {
-    chainHub.registerChain(name, { chainId: name });
+    chainHub.registerChain(name, { chainId: name, bech32Prefix: name });
   }
 
   await registerChainAssets(nameAdmin, 'cosmoshub', assetFixture.cosmoshub);
@@ -176,4 +158,36 @@ test('toward asset info in agoricNames (#9572)', async t => {
       baseDenom: 'erc20/tether/usdt',
     });
   }
+});
+
+test.serial('getChainInfoByAddress', async t => {
+  const { chainHub, nameAdmin, vt } = setup();
+  // use fetched chain info
+  await registerKnownChains(nameAdmin);
+
+  // call getChainInfo so ChainHub performs agoricNames lookup that populates its local cache
+  await vt.asPromise(chainHub.getChainInfo('osmosis'));
+
+  const MOCK_ICA_ADDRESS =
+    'osmo1ht7u569vpuryp6utadsydcne9ckeh2v8dkd38v5hptjl3u2ewppqc6kzgd';
+  t.like(chainHub.getChainInfoByAddress(MOCK_ICA_ADDRESS), {
+    chainId: 'osmosis-1',
+    bech32Prefix: 'osmo',
+  });
+
+  t.throws(
+    () =>
+      chainHub.getChainInfoByAddress(MOCK_ICA_ADDRESS.replace('osmo1', 'foo1')),
+    {
+      message: 'Chain info not found for bech32Prefix "foo"',
+    },
+  );
+
+  t.throws(() => chainHub.getChainInfoByAddress('notbech32'), {
+    message: 'No separator character for "notbech32"',
+  });
+
+  t.throws(() => chainHub.getChainInfoByAddress('1notbech32'), {
+    message: 'Missing prefix for "1notbech32"',
+  });
 });
