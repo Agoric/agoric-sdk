@@ -14,6 +14,7 @@ import { generateMnemonic } from '../tools/wallet.js';
 import { makeRetryUntilCondition } from '../tools/sleep.js';
 import { makeDeployBuilder } from '../tools/deploy.js';
 import { makeHermes } from '../tools/hermes-tools.js';
+import { makeNobleTools } from '../tools/noble-tools.js';
 
 export const FAUCET_POUR = 10_000n * 1_000_000n;
 
@@ -76,6 +77,7 @@ export const commonSetup = async (t: ExecutionContext) => {
     setTimeout: globalThis.setTimeout,
   });
   const hermes = makeHermes(childProcess);
+  const nobleTools = makeNobleTools(childProcess);
 
   /**
    * Starts a contract if instance not found. Takes care of installing
@@ -111,6 +113,7 @@ export const commonSetup = async (t: ExecutionContext) => {
     retryUntilCondition,
     deployBuilder,
     hermes,
+    nobleTools,
     startContract,
   };
 };
