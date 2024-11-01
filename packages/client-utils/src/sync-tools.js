@@ -10,7 +10,7 @@
  *  - condition: dest account has a balance >= sent token
  * - Making sure an offer resulted successfully
  * - Making sure an offer was exited successfully
- *
+ * - Make sure an election held by a given committee (see @agoric/governance) turned out as expected
  */
 
 /**
@@ -98,7 +98,7 @@ export const retryUntilCondition = async (
       }
     } catch (error) {
       if (error instanceof Error) {
-        log(`Error: ${error.message}`);
+        log(`Error: ${error.message}: ${error.stack}`);
       } else {
         log(`Unknown error: ${String(error)}`);
       }
@@ -323,5 +323,98 @@ export const waitUntilOfferExited = async (addr, offerId, io, options) => {
     update => checkLiveOffers(update, offerId),
     errorMessage,
     { setTimeout, ...resolvedOptions },
+  );
+};
+
+/// ////////// Make sure an election held by a given committee (see @agoric/governance) turned out as expected /////////////
+
+/**
+ * @typedef {{
+ *   latestOutcome: {
+ *     outcome: string;
+ *     question: import('@endo/marshal').RemotableObject
+ *   },
+ *   latestQuestion: {
+ *     closingRule: { deadline: bigint },
+ *     questionHandle: import('@endo/marshal').RemotableObject
+ *   }
+ * }} ElectionResult
+ */
+
+/**
+ * @param {string} basePath
+ * @param {{follow: (...params: string[]) => Promise<object>; marshaller: import("@endo/marshal").Marshal<any>}} io
+ * @returns {Promise<ElectionResult>}
+ */
+export const fetchLatestEcQuestion = async (basePath, io) => {
+  const { follow, marshaller } = io;
+  const pathOutcome = `:${basePath}.latestOutcome`;
+  const pathQuestion = `:${basePath}.latestQuestion`;
+
+  const [latestOutcome, latestQuestion] = await Promise.all([
+    follow('-lF', pathOutcome, '-o', 'text').then(outcomeRaw =>
+      marshaller.fromCapData(JSON.parse(outcomeRaw)),
+    ),
+    follow('-lF', pathQuestion, '-o', 'text').then(questionRaw =>
+      marshaller.fromCapData(JSON.parse(questionRaw)),
+    ),
+  ]);
+
+  return { latestOutcome, latestQuestion };
+};
+
+/**
+ *
+ * @param {ElectionResult} electionResult
+ * @param {{ outcome: string; deadline: bigint }} expectedResult
+ * @returns {boolean}
+ */
+const checkCommitteeElectionResult = (electionResult, expectedResult) => {
+  const {
+    latestOutcome: { outcome, question },
+    latestQuestion: {
+      closingRule: { deadline },
+      questionHandle,
+    },
+  } = electionResult;
+  const { outcome: expectedOutcome, deadline: expectedDeadline } =
+    expectedResult;
+
+  return (
+    expectedOutcome === outcome &&
+    deadline === expectedDeadline &&
+    question === questionHandle
+  );
+};
+
+/**
+ * Depends on "@agoric/governance" package's committee implementation where for a given committee
+ * there's two child nodes in vstorage named "latestOutcome" and "latestQuestion" respectively.
+ *
+ * @param {string} committeePathBase
+ * @param {{
+ *   outcome: string;
+ *   deadline: bigint;
+ * }} expectedResult
+ * @param {{follow: (...params: string[]) => Promise<object>; marshaller: import("@endo/marshal").Marshal<any>}} ambientAuthority
+ * @param {WaitUntilOptions} options
+ */
+export const waitUntilElectionResult = (
+  committeePathBase,
+  expectedResult,
+  ambientAuthority,
+  options,
+) => {
+  const { follow, marshaller } = ambientAuthority;
+
+  const { maxRetries, retryIntervalMs, errorMessage, log } =
+    overrideDefaultOptions(options);
+
+  return retryUntilCondition(
+    () => fetchLatestEcQuestion(committeePathBase, { follow, marshaller }),
+    electionResult =>
+      checkCommitteeElectionResult(electionResult, expectedResult),
+    errorMessage,
+    { maxRetries, retryIntervalMs, log, setTimeout },
   );
 };

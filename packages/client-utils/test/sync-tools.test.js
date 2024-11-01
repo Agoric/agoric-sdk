@@ -1,10 +1,13 @@
 /* eslint-env node */
 // @ts-check
 import test from 'ava';
-
+import '@endo/init/debug.js';
+import { makeMarshal } from '@endo/marshal';
+import { Far } from '@endo/far';
 import {
   waitUntilAccountFunded,
   waitUntilContractDeployed,
+  waitUntilElectionResult,
   waitUntilInvitationReceived,
   waitUntilOfferExited,
   waitUntilOfferResult,
@@ -14,13 +17,43 @@ import {
 const retryIntervalMs = 10;
 const DEFAULT_TIMEOUT = 30;
 
+const makeSimpleMarshaller = () => {
+  const vals = [];
+  const fromVal = val => {
+    vals.push(val);
+    return vals.length - 1;
+  };
+  const toVal = slot => vals[slot];
+  return makeMarshal(fromVal, toVal, {
+    serializeBodyFormat: 'smallcaps',
+    marshalSaveError: err => {
+      throw err;
+    },
+  });
+};
+harden(makeSimpleMarshaller);
+
 const makeFakeFollow = () => {
-  let value = [[]];
+  const marshaller = makeSimpleMarshaller();
+  let value;
 
   const setValue = newValue => (value = newValue);
   const follow = () => Promise.resolve(value);
+  /**
+   *
+   * @param {any} _
+   * @param {string} path Assumes the path will be something like 'published.auction.book0'
+   * where value = { book0: {...} }
+   */
+  const followByPath = (_, path) => {
+    const propName = path.split('.').at(-1);
+    return Promise.resolve(
+      // @ts-expect-error path will be a sequence of strings joined by "."
+      JSON.stringify(marshaller.toCapData(value[propName])),
+    );
+  };
 
-  return { setValue, follow };
+  return { setValue, follow, followByPath, marshaller };
 };
 
 const makeFakeBalanceQuery = () => {
@@ -421,4 +454,176 @@ test.serial('wait until offer exited', async t => {
   );
 
   await t.throwsAsync(waitP);
+});
+
+test.serial('wait election result: question handle is adhered', async t => {
+  const oldQuestionHandle = Far('Question 1', {});
+  const newQuestionHandle = Far('Question 2', {});
+
+  const { setValue, followByPath, marshaller } = makeFakeFollow();
+  const initState = harden({
+    latestOutcome: { outcome: 'win', question: oldQuestionHandle },
+    latestQuestion: {
+      closingRule: { deadline: 2n },
+      questionHandle: newQuestionHandle,
+    },
+  });
+  setValue(initState);
+
+  const waitFailP = waitUntilElectionResult(
+    'dummyPath',
+    { outcome: 'win', deadline: 2n },
+    {
+      follow: followByPath,
+      marshaller,
+    },
+    {
+      errorMessage: 'Oops, election did not turn out as expected',
+      maxRetries: 3,
+      retryIntervalMs: 500,
+      log: console.log,
+    },
+  );
+
+  // Make sure the promise rejects when state is not updated
+  await t.throwsAsync(waitFailP);
+
+  const waitHappyP = waitUntilElectionResult(
+    'dummyPath',
+    { outcome: 'win', deadline: 2n },
+    {
+      follow: followByPath,
+      marshaller,
+    },
+    {
+      errorMessage: 'Oops, election did not turn out as expected',
+      maxRetries: 5,
+      retryIntervalMs: 1000,
+      log: console.log,
+    },
+  );
+
+  // Now set the state to a value where the promise should resolve
+  const updatedState = harden({
+    ...initState,
+    latestOutcome: { outcome: 'win', question: newQuestionHandle },
+  });
+  setTimeout(() => setValue(updatedState), 2000);
+
+  await t.notThrowsAsync(waitHappyP);
+});
+
+test.serial('wait election result: deadline is adhered', async t => {
+  const questionHandle = Far('Question', {});
+
+  const { setValue, followByPath, marshaller } = makeFakeFollow();
+  const initState = harden({
+    latestOutcome: { outcome: 'win', question: questionHandle },
+    latestQuestion: {
+      closingRule: { deadline: 2n },
+      questionHandle,
+    },
+  });
+  setValue(initState);
+
+  const waitFailP = waitUntilElectionResult(
+    'dummyPath',
+    { outcome: 'win', deadline: 5n },
+    {
+      follow: followByPath,
+      marshaller,
+    },
+    {
+      errorMessage: 'Oops, election did not turn out as expected',
+      maxRetries: 3,
+      retryIntervalMs: 500,
+      log: console.log,
+    },
+  );
+
+  // Make sure the promise rejects when state is not updated
+  await t.throwsAsync(waitFailP);
+
+  const waitHappyP = waitUntilElectionResult(
+    'dummyPath',
+    { outcome: 'win', deadline: 5n },
+    {
+      follow: followByPath,
+      marshaller,
+    },
+    {
+      errorMessage: 'Oops, election did not turn out as expected',
+      maxRetries: 5,
+      retryIntervalMs: 1000,
+      log: console.log,
+    },
+  );
+
+  // Now set the state to a value where the promise should resolve
+  const updatedState = harden({
+    ...initState,
+    latestQuestion: {
+      closingRule: { deadline: 5n },
+      questionHandle,
+    },
+  });
+  setTimeout(() => setValue(updatedState), 2000);
+
+  await t.notThrowsAsync(waitHappyP);
+});
+
+test.serial('wait election result: outcome is adhered', async t => {
+  const questionHandle = Far('Question', {});
+
+  const { setValue, followByPath, marshaller } = makeFakeFollow();
+  const initState = harden({
+    latestOutcome: { outcome: 'lose', question: questionHandle },
+    latestQuestion: {
+      closingRule: { deadline: 5n },
+      questionHandle,
+    },
+  });
+  setValue(initState);
+
+  const waitFailP = waitUntilElectionResult(
+    'dummyPath',
+    { outcome: 'win', deadline: 5n },
+    {
+      follow: followByPath,
+      marshaller,
+    },
+    {
+      errorMessage: 'Oops, election did not turn out as expected',
+      maxRetries: 3,
+      retryIntervalMs: 500,
+      log: console.log,
+    },
+  );
+
+  // Make sure the promise rejects when state is not updated
+  await t.throwsAsync(waitFailP);
+
+  const waitHappyP = waitUntilElectionResult(
+    'dummyPath',
+    { outcome: 'win', deadline: 5n },
+    {
+      follow: followByPath,
+      marshaller,
+    },
+    {
+      errorMessage: 'Oops, election did not turn out as expected',
+      maxRetries: 5,
+      retryIntervalMs: 1000,
+      log: console.log,
+    },
+  );
+
+  // Now set the state to a value where the promise should resolve
+  const updatedState = harden({
+    ...initState,
+    latestOutcome: { outcome: 'win', question: questionHandle },
+  });
+  setTimeout(() => setValue(updatedState), 2000);
+
+  await t.notThrowsAsync(waitHappyP);
 });
