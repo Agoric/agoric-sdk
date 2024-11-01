@@ -1,9 +1,8 @@
 {
   "extends": "../../tsconfig.json",
-  "compilerOptions": {
-    "strict": true,
-  },
+  "compilerOptions": {},
   "include": [
+    "scripts",
     "src",
     "test",
   ],
