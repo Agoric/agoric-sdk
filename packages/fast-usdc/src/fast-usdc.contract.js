@@ -39,6 +39,7 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
   assert(tools, 'no tools');
   const terms = zcf.getTerms();
   assert('USDC' in terms.brands, 'no USDC brand');
+  assert('PoolShares' in terms.brands, 'no PoolShares brand');
 
   const statusManager = prepareStatusManager(zone);
   const feed = prepareTransactionFeed(zone);

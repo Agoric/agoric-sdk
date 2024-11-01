@@ -13,7 +13,7 @@ type StartFn = typeof import('../src/fast-usdc.contract.js').start;
 test('start', async t => {
   const {
     bootstrap,
-    brands: { usdc },
+    brands: { poolShares, usdc },
     commonPrivateArgs,
     utils,
   } = await commonSetup(t);
@@ -24,7 +24,7 @@ test('start', async t => {
 
   const { creatorFacet } = await E(zoe).startInstance(
     installation,
-    { USDC: usdc.issuer },
+    { PoolShares: poolShares.issuer, USDC: usdc.issuer },
     {
       poolFee: usdc.make(1n),
       contractFee: usdc.make(1n),
