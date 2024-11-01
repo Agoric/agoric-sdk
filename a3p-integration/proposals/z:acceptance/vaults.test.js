@@ -26,8 +26,11 @@ import {
   verifyPushedPrice,
   getPriceFeedRoundId,
 } from './test-lib/price-feed.js';
+import { tryISTBalances } from './test-lib/psm-lib.js';
 
 const VAULT_MANAGER = 'manager0';
+
+const scale6 = x => x * 1_000_000;
 
 test.serial('open new vault', async t => {
   await bankSend(USER1ADDR, `20000000${ATOM_DENOM}`);
@@ -42,11 +45,8 @@ test.serial('open new vault', async t => {
   const istBalanceAfter = await getISTBalance(USER1ADDR);
   const activeVaultsAfter = await agopsVaults(USER1ADDR);
 
-  t.is(
-    istBalanceBefore + 5,
-    istBalanceAfter,
-    'The IST balance should increase by the minted amount',
-  );
+  await tryISTBalances(t, scale6(istBalanceAfter), scale6(istBalanceBefore + 5));
+
   t.is(
     activeVaultsAfter.length,
     activeVaultsBefore.length + 1,
