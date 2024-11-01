@@ -5,7 +5,11 @@ import fse from 'fs-extra';
 import childProcess from 'node:child_process';
 import { makeAgdTools } from '../tools/agd-tools.js';
 import { type E2ETools } from '../tools/e2e-tools.js';
-import { makeGetFile, makeSetupRegistry } from '../tools/registry.js';
+import {
+  makeGetFile,
+  makeSetupRegistry,
+  type MultichainRegistry,
+} from '../tools/registry.js';
 import { generateMnemonic } from '../tools/wallet.js';
 import { makeRetryUntilCondition } from '../tools/sleep.js';
 import { makeDeployBuilder } from '../tools/deploy.js';
@@ -54,7 +58,16 @@ const makeKeyring = async (
 };
 
 export const commonSetup = async (t: ExecutionContext) => {
-  const { useChain } = await setupRegistry();
+  let useChain: MultichainRegistry['useChain'];
+  try {
+    const registry = await setupRegistry({
+      config: `../${process.env.FILE || 'config.yaml'}`,
+    });
+    useChain = registry.useChain;
+  } catch (e) {
+    console.error('setupRegistry failed', e);
+    throw e;
+  }
   const tools = await makeAgdTools(t.log, childProcess);
   const keyring = await makeKeyring(tools);
   const deployBuilder = makeDeployBuilder(tools, fse.readJSON, execa);
