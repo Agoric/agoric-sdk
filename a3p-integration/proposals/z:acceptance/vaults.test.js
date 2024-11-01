@@ -45,7 +45,11 @@ test.serial('open new vault', async t => {
   const istBalanceAfter = await getISTBalance(USER1ADDR);
   const activeVaultsAfter = await agopsVaults(USER1ADDR);
 
-  await tryISTBalances(t, scale6(istBalanceAfter), scale6(istBalanceBefore + 5));
+  await tryISTBalances(
+    t,
+    scale6(istBalanceAfter),
+    scale6(istBalanceBefore + 5),
+  );
 
   t.is(
     activeVaultsAfter.length,
