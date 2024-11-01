@@ -417,9 +417,7 @@ export const prepareLocalOrchestrationAccountKit = (
        * first result
        */
       extractFirstResultWatcher: {
-        /**
-         * @param {Record<unknown, unknown>[]} results
-         */
+        /** @param {Record<unknown, unknown>[]} results */
         onFulfilled(results) {
           results.length === 1 ||
             Fail`expected exactly one result; got ${results}`;
@@ -511,7 +509,7 @@ export const prepareLocalOrchestrationAccountKit = (
          *   baseName: DenomDetail['baseName'];
          *   denomAmount: DenomAmount;
          *   opts?: IBCMsgTransferOptions;
-         *   timeoutTimestampVowOrValue: Promise<bigint> | bigint;
+         *   timeoutTimestampVowOrValue: Vow<bigint> | bigint;
          * }} ctx
          */
         onFulfilled(
@@ -581,7 +579,7 @@ export const prepareLocalOrchestrationAccountKit = (
          *   destination: ChainAddress;
          *   denomAmount: DenomAmount;
          *   opts?: IBCMsgTransferOptions;
-         *   timeoutTimestampVowOrValue: Promise<bigint> | bigint;
+         *   timeoutTimestampVowOrValue: Vow<bigint> | bigint;
          * }} ctx
          */
         onFulfilled(
@@ -652,9 +650,7 @@ export const prepareLocalOrchestrationAccountKit = (
             });
           });
         },
-        /**
-         * @type {HostOf<OrchestrationAccountI['getBalance']>}
-         */
+        /** @type {HostOf<OrchestrationAccountI['getBalance']>} */
         getBalance(denomArg) {
           return asVow(() => {
             const [brand, denom] =
@@ -697,9 +693,7 @@ export const prepareLocalOrchestrationAccountKit = (
           );
         },
 
-        /**
-         * @type {HostOf<OrchestrationAccountI['getPublicTopics']>}
-         */
+        /** @type {HostOf<OrchestrationAccountI['getPublicTopics']>} */
         getPublicTopics() {
           // getStoragePath resolves promptly (same run), so we don't need a watcher
           // eslint-disable-next-line no-restricted-syntax
@@ -852,7 +846,7 @@ export const prepareLocalOrchestrationAccountKit = (
               opts?.timeoutTimestamp ??
               (opts?.timeoutHeight
                 ? 0n
-                : E(timestampHelper).getTimeoutTimestampNS());
+                : asVow(() => E(timestampHelper).getTimeoutTimestampNS()));
 
             return watch(
               chainHub.getChainInfo(baseName),
