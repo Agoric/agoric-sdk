@@ -1,6 +1,11 @@
 import { BrandShape } from '@agoric/ertp/src/typeGuards.js';
 import { withOrchestration } from '@agoric/orchestration';
 import { M } from '@endo/patterns';
+import { assertAllDefined } from '@agoric/internal';
+import { prepareTransactionFeed } from './exos/transaction-feed.js';
+import { prepareSettler } from './exos/settler.js';
+import { prepareAdvancer } from './exos/advancer.js';
+import { prepareStatusManager } from './exos/status-manager.js';
 
 /**
  * @import {OrchestrationPowers, OrchestrationTools} from '@agoric/orchestration/src/utils/start-helper.js';
@@ -34,6 +39,12 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
   assert(tools, 'no tools');
   const terms = zcf.getTerms();
   assert('USDC' in terms.brands, 'no USDC brand');
+
+  const statusManager = prepareStatusManager(zone);
+  const feed = prepareTransactionFeed(zone);
+  const settler = prepareSettler(zone, { statusManager });
+  const advancer = prepareAdvancer(zone, { feed, statusManager });
+  assertAllDefined({ feed, settler, advancer, statusManager });
 
   const creatorFacet = zone.exo('Fast USDC Creator', undefined, {});
 
