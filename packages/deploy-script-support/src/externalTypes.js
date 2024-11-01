@@ -1,6 +1,10 @@
 // @ts-check
 export {};
 
+/**
+ * @import {NameHub} from '@agoric/vats';
+ */
+
 // TODO move this type somewhere better
 /**
  * @typedef {string | string[]} Petname A petname can either be a plain string
@@ -46,4 +50,43 @@ export {};
  * } powers
  * @param {...any} args
  * @returns {Promise<CoreEvalDescriptor>}
+ */
+
+/**
+ * @typedef {{
+ *  bundleSource: typeof import('@endo/bundle-source').default,
+ *  cacheDir: string,
+ *  lookup: (...path: string[]) => unknown,
+ *  now: () => number,
+ *  pathResolve: (...path: string[]) => string,
+ *  publishBundle: PublishBundleRef,
+ *  scriptArgs?: string[],
+ * }} DeployScriptEndownments
+ */
+
+/**
+ * @typedef {{
+ *   scratch: ERef<import('@agoric/internal/src/scratch.js').ScratchPad>,
+ * }} CommonHome
+ */
+
+// TODO wallet as import('@agoric/wallet-backend/src/types').WalletAdmin once it's a module
+/**
+ * @typedef {CommonHome & {
+ * agoricNames: ERef<NameHub>,
+ * bank: ERef<import("@agoric/vats/src/vat-bank.js").Bank>,
+ * board: ERef<import("@agoric/vats").Board>,
+ * faucet: unknown,
+ * myAddressNameAdmin: ERef<import("@agoric/vats").NameAdmin>,
+ * namesByAddress: ERef<NameHub>,
+ * wallet: any,
+ * zoe: ERef<ZoeService>,
+ * }} AgSoloHome
+ */
+
+/**
+ * @callback DeployScriptFunction
+ * @param {Promise<CommonHome>} homeP
+ * @param {DeployScriptEndownments} endowments
+ * @returns {Promise<void>}
  */

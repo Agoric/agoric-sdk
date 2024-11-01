@@ -366,6 +366,10 @@ export async function makeSwingsetController(
       return kref;
     },
 
+    kpRegisterInterest(kpid) {
+      return kernel.kpRegisterInterest(kpid);
+    },
+
     kpStatus(kpid) {
       return kernel.kpStatus(kpid);
     },
@@ -383,6 +387,8 @@ export async function makeSwingsetController(
     deviceNameToID(deviceName) {
       return kernel.deviceNameToID(deviceName);
     },
+
+    injectQueuedUpgradeEvents: () => kernel.injectQueuedUpgradeEvents(),
 
     /**
      * Queue a method call into the named vat

@@ -1,5 +1,5 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
-import { TestFn } from 'ava';
+import type { TestFn } from 'ava';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import {
   makeAgoricNamesRemotesFromFakeStorage,
@@ -58,6 +58,23 @@ export const makeZoeTestContext = async t => {
   // Wait for ATOM to make it into agoricNames
   await EV.vat('bootstrap').consumeItem('vaultFactoryKit');
   console.timeLog('DefaultTestContext', 'vaultFactoryKit');
+
+  // replaceElectorate relies on these values from the auction upgrade.  Insert
+  // them manually since this bootstrap test doesn't run the auction upgrade.
+  const governedKits = await EV.vat('bootstrap').consumeItem(
+    'governedContractKits',
+  );
+  const auctioneerKit = await EV.vat('bootstrap').consumeItem('auctioneerKit');
+  const auctionInstance = await auctioneerKit.instance;
+  const aKit = await EV(governedKits).get(auctionInstance);
+  await EV.vat('bootstrap').produceItem(
+    'auctionUpgradeNewInstance',
+    aKit.instance,
+  );
+  await EV.vat('bootstrap').produceItem(
+    'auctionUpgradeNewGovCreator',
+    aKit.governorCreatorFacet,
+  );
 
   // has to be late enough for agoricNames data to have been published
   const agoricNamesRemotes = makeAgoricNamesRemotesFromFakeStorage(storage);

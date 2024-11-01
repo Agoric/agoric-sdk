@@ -1,13 +1,13 @@
 //@ts-nocheck
-import { Any, AnySDKType } from '../../../../google/protobuf/any.js';
-import { Event, EventSDKType } from '../../../../tendermint/abci/types.js';
+import { Any, type AnySDKType } from '../../../../google/protobuf/any.js';
+import { Event, type EventSDKType } from '../../../../tendermint/abci/types.js';
 import { BinaryReader, BinaryWriter } from '../../../../binary.js';
 import {
   isSet,
   bytesFromBase64,
   base64FromBytes,
 } from '../../../../helpers.js';
-import { JsonSafe } from '../../../../json-safe.js';
+import { type JsonSafe } from '../../../../json-safe.js';
 /**
  * TxResponse defines a structure containing relevant tx data and metadata. The
  * tags are stringified and the log is JSON decoded.

@@ -1,7 +1,10 @@
 package gaia
 
 import (
+	"encoding/json"
 	"fmt"
+	"strings"
+	"text/template"
 
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	swingsetkeeper "github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/keeper"
@@ -15,6 +18,7 @@ var upgradeNamesOfThisVersion = []string{
 	"UNRELEASED_A3P_INTEGRATION",
 	"UNRELEASED_main",
 	"UNRELEASED_devnet",
+	"UNRELEASED_emerynet",
 	"UNRELEASED_REAPPLY",
 }
 
@@ -52,7 +56,8 @@ func isPrimaryUpgradeName(name string) bool {
 	case validUpgradeName("UNRELEASED_BASIC"),
 		validUpgradeName("UNRELEASED_A3P_INTEGRATION"),
 		validUpgradeName("UNRELEASED_main"),
-		validUpgradeName("UNRELEASED_devnet"):
+		validUpgradeName("UNRELEASED_devnet"),
+		validUpgradeName("UNRELEASED_emerynet"):
 		return true
 	case validUpgradeName("UNRELEASED_REAPPLY"):
 		return false
@@ -72,6 +77,86 @@ func isFirstTimeUpgradeOfThisVersion(app *GaiaApp, ctx sdk.Context) bool {
 	return true
 }
 
+func buildProposalStepWithArgs(moduleName string, entrypoint string, opts map[string]any) (vm.CoreProposalStep, error) {
+	t := template.Must(template.New("").Parse(`{
+		"module": "{{.moduleName}}",
+		"entrypoint": "{{.entrypoint}}",
+		"args": [ {{.optsArg}} ]
+	}`))
+
+	optsArg, err := json.Marshal(opts)
+	if err != nil {
+		return nil, err
+	}
+
+	var result strings.Builder
+	err = t.Execute(&result, map[string]any{
+		"moduleName": moduleName,
+		"entrypoint": entrypoint,
+		"optsArg":    string(optsArg),
+	})
+	if err != nil {
+		return nil, err
+	}
+	jsonStr := result.String()
+	jsonBz := []byte(jsonStr)
+	if !json.Valid(jsonBz) {
+		return nil, fmt.Errorf("invalid JSON: %s", jsonStr)
+	}
+	proposal := vm.ArbitraryCoreProposal{Json: jsonBz}
+	return vm.CoreProposalStepForModules(proposal), nil
+}
+
+func getVariantFromUpgradeName(upgradeName string) string {
+	switch upgradeName {
+	case "UNRELEASED_A3P_INTEGRATION":
+		return "A3P_INTEGRATION"
+	case "UNRELEASED_main":
+		return "MAINNET"
+	case "UNRELEASED_devnet":
+		return "DEVNET"
+	case "UNRELEASED_emerynet":
+		return "EMERYNET"
+		// Noupgrade for this version.
+	case "UNRELEASED_BASIC":
+		return ""
+	default:
+		return ""
+	}
+}
+
+func replaceElectorateCoreProposalStep(upgradeName string) (vm.CoreProposalStep, error) {
+	variant := getVariantFromUpgradeName(upgradeName)
+
+	if variant == "" {
+		return nil, nil
+	}
+
+	return buildProposalStepWithArgs(
+		"@agoric/builders/scripts/inter-protocol/replace-electorate-core.js",
+		"defaultProposalBuilder",
+		map[string]any{
+			"variant": variant,
+		},
+	)
+}
+
+func replacePriceFeedsCoreProposal(upgradeName string) (vm.CoreProposalStep, error) {
+	variant := getVariantFromUpgradeName(upgradeName)
+
+	if variant == "" {
+		return nil, nil
+	}
+
+	return buildProposalStepWithArgs(
+		"@agoric/builders/scripts/inter-protocol/updatePriceFeeds.js",
+		"defaultProposalBuilder",
+		map[string]any{
+			"variant": variant,
+		},
+	)
+}
+
 // unreleasedUpgradeHandler performs standard upgrade actions plus custom actions for the unreleased upgrade.
 func unreleasedUpgradeHandler(app *GaiaApp, targetUpgrade string) func(sdk.Context, upgradetypes.Plan, module.VersionMap) (module.VersionMap, error) {
 	return func(ctx sdk.Context, plan upgradetypes.Plan, fromVm module.VersionMap) (module.VersionMap, error) {
@@ -89,22 +174,45 @@ func unreleasedUpgradeHandler(app *GaiaApp, targetUpgrade string) func(sdk.Conte
 				return module.VersionMap{}, fmt.Errorf("cannot run %s as first upgrade", plan.Name)
 			}
 
+			replaceElectorateStep, err := replaceElectorateCoreProposalStep(targetUpgrade)
+			if err != nil {
+				return nil, err
+			} else if replaceElectorateStep != nil {
+				CoreProposalSteps = append(CoreProposalSteps, replaceElectorateStep)
+			}
+
+			priceFeedUpdate, err := replacePriceFeedsCoreProposal(targetUpgrade)
+			if err != nil {
+				return nil, err
+			} else if priceFeedUpdate != nil {
+				CoreProposalSteps = append(CoreProposalSteps,
+					priceFeedUpdate,
+					// The following have a dependency onto the price feed proposal
+					vm.CoreProposalStepForModules(
+						"@agoric/builders/scripts/vats/add-auction.js",
+					),
+					vm.CoreProposalStepForModules(
+						"@agoric/builders/scripts/vats/upgradeVaults.js",
+					),
+				)
+			}
+
 			// Each CoreProposalStep runs sequentially, and can be constructed from
 			// one or more modules executing in parallel within the step.
-			CoreProposalSteps = []vm.CoreProposalStep{
+			CoreProposalSteps = append(CoreProposalSteps,
 				vm.CoreProposalStepForModules(
-					// Upgrade to new liveslots for repaired vow usage.
-					"@agoric/builders/scripts/vats/upgrade-orch-core.js",
+					// Upgrade Zoe (no new ZCF needed).
+					"@agoric/builders/scripts/vats/upgrade-zoe.js",
+				),
+				// Revive KREAd characters
+				vm.CoreProposalStepForModules(
+					"@agoric/builders/scripts/vats/revive-kread.js",
 				),
 				vm.CoreProposalStepForModules(
-					// Upgrade to new liveslots and support vows.
+					// Upgrade to include a cleanup from https://github.com/Agoric/agoric-sdk/pull/10319
 					"@agoric/builders/scripts/smart-wallet/build-wallet-factory2-upgrade.js",
 				),
-				vm.CoreProposalStepForModules(
-					// Create vat-orchestration.
-					"@agoric/builders/scripts/vats/init-orchestration.js",
-				),
-			}
+			)
 		}
 
 		app.upgradeDetails = &upgradeDetails{

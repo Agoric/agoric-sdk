@@ -1,7 +1,7 @@
 //@ts-nocheck
-import { GrantAuthorization, GrantAuthorizationSDKType } from './authz.js';
+import { GrantAuthorization, type GrantAuthorizationSDKType } from './authz.js';
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
-import { JsonSafe } from '../../../json-safe.js';
+import { type JsonSafe } from '../../../json-safe.js';
 /** GenesisState defines the authz module's genesis state. */
 export interface GenesisState {
   authorization: GrantAuthorization[];

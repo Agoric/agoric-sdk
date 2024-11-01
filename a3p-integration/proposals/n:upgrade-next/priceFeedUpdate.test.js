@@ -14,10 +14,12 @@ import {
   getVaultPrices,
   getVatDetails,
   openVault,
-  pushPrices,
-  registerOraclesForBrand,
   USER1ADDR,
 } from '@agoric/synthetic-chain';
+import {
+  getPriceFeedRoundId,
+  verifyPushedPrice,
+} from './test-lib/price-feed.js';
 
 import { BID_OFFER_ID } from './agd-tools.js';
 
@@ -37,12 +39,17 @@ const checkPriceFeedVatsUpdated = async t => {
   await checkForOracle(t, 'stATOM');
 };
 
-console.log('adding oracle for each brand');
-const oraclesByBrand = generateOracleMap('f-priceFeeds', ['ATOM', 'stATOM']);
-await registerOraclesForBrand('ATOM', oraclesByBrand);
-await registerOraclesForBrand('stATOM', oraclesByBrand);
+/*
+ * The Oracle for ATOM and stATOM brands are being registered in the offer made at file:
+ * a3p-integration/proposals/n:upgrade-next/verifyPushedPrice.js
+ * which is being executed during the use phase of upgrade-next proposal
+ */
+const oraclesByBrand = generateOracleMap('n-upgrade', ['ATOM', 'stATOM']);
 
-let roundId = 1;
+const latestAtomRoundId = await getPriceFeedRoundId('ATOM');
+const latestStAtomRoundId = await getPriceFeedRoundId('stATOM');
+let atomRoundId = latestAtomRoundId + 1;
+let stAtomRoundId = latestStAtomRoundId + 1;
 
 const tryPushPrices = async t => {
   // There are no old prices for the other currencies.
@@ -52,9 +59,10 @@ const tryPushPrices = async t => {
   // t.is(stAtomOutPre, '+12010000');
 
   t.log('pushing new prices');
-  await pushPrices(13.4, 'ATOM', oraclesByBrand, roundId);
-  await pushPrices(13.7, 'stATOM', oraclesByBrand, roundId);
-  roundId += 1;
+  await verifyPushedPrice(13.4, 'ATOM', oraclesByBrand, atomRoundId);
+  await verifyPushedPrice(13.7, 'stATOM', oraclesByBrand, stAtomRoundId);
+  atomRoundId += 1;
+  stAtomRoundId += 1;
 
   t.log('awaiting new quotes');
   const atomOut = await getPriceQuote('ATOM');
@@ -89,7 +97,7 @@ const openMarginalVault = async t => {
 };
 
 const triggerAuction = async t => {
-  await pushPrices(5.2, 'ATOM', oraclesByBrand, roundId);
+  await verifyPushedPrice(5.2, 'ATOM', oraclesByBrand, atomRoundId);
 
   const atomOut = await getPriceQuote('ATOM');
   t.is(atomOut, '+5200000');

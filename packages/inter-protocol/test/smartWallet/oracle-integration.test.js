@@ -280,6 +280,11 @@ test.serial('admin price', async t => {
   const timerBrand = await E(manualTimer).getTimerBrand();
   const toTS = val => TimeMath.coerceTimestampRecord(val, timerBrand);
   // trigger an aggregation (POLL_INTERVAL=1n in context)
+  // Can only get out of round 1 after more than roundTimeoutDuration (10s)
+  await E(manualTimer).tickN(12);
+
+  const result2 = { roundId: 2, unitPrice: 123n };
+  await pushPrice(wallet, adminOfferId, result2);
   await E(manualTimer).tickN(1);
 
   const paPublicFacet = E(zoe).getPublicFacet(governedPriceAggregator);
@@ -288,8 +293,8 @@ test.serial('admin price', async t => {
   const latestRoundSubscriber = publicTopics.latestRound.subscriber;
 
   t.deepEqual((await latestRoundSubscriber.subscribeAfter()).head.value, {
-    roundId: 1n,
-    startedAt: toTS(0n),
+    roundId: 2n,
+    startedAt: toTS(12n),
     startedBy: 'adminPriceAddress',
   });
 });
@@ -487,7 +492,7 @@ test.serial('govern oracles list', async t => {
       source: 'continuing',
       previousOffer: 'acceptEcInvitationOID',
       invitationMakerName: 'VoteOnApiCall',
-      invitationArgs: harden([feed, 'addOracles', [[newOracle]], 2n]),
+      invitationArgs: harden([feed, 'addOracles', [[newOracle]], 15n]),
     };
 
     await offersFacet.executeOffer({
@@ -544,7 +549,7 @@ test.serial('govern oracles list', async t => {
       previousOffer: 'acceptEcInvitationOID',
       invitationMakerName: 'VoteOnApiCall',
       // XXX deadline 20n >> 2n before
-      invitationArgs: harden([feed, 'removeOracles', [[newOracle]], 20n]),
+      invitationArgs: harden([feed, 'removeOracles', [[newOracle]], 25n]),
     };
 
     await offersFacet.executeOffer({

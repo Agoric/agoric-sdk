@@ -10,7 +10,7 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import type { TestFn } from 'ava';
-import { makeAgoricNamesRemotesFromFakeStorage } from '@agoric/vats/tools/board-utils';
+import { makeAgoricNamesRemotesFromFakeStorage } from '@agoric/vats/tools/board-utils.js';
 import { Fail } from '@endo/errors';
 
 import { makeSwingsetTestKit } from '../../tools/supports.js';
@@ -134,7 +134,7 @@ test('modify manager & director params; update vats, check', async t => {
   const priceFeedBuilder =
     '@agoric/builders/scripts/inter-protocol/updatePriceFeeds.js';
   const coreEvals = await Promise.all([
-    buildProposal(priceFeedBuilder, ['main']),
+    buildProposal(priceFeedBuilder, ['MAINNET']),
     buildProposal('@agoric/builders/scripts/vats/upgradeVaults.js'),
     buildProposal('@agoric/builders/scripts/vats/add-auction.js'),
   ]);

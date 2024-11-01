@@ -22,6 +22,7 @@ export const defaultProposalBuilder = async ({ publishRef, install }) =>
     ],
   });
 
+/** @type {import('@agoric/deploy-script-support/src/externalTypes.js').DeployScriptFunction} */
 export default async (homeP, endowments) => {
   const { writeCoreEval } = await makeHelpers(homeP, endowments);
   await writeCoreEval('upgrade-wallet-factory', defaultProposalBuilder);

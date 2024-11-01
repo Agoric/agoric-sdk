@@ -1,11 +1,11 @@
 //@ts-nocheck
-import { Proof, ProofSDKType } from '../crypto/proof.js';
-import { Consensus, ConsensusSDKType } from '../version/types.js';
+import { Proof, type ProofSDKType } from '../crypto/proof.js';
+import { Consensus, type ConsensusSDKType } from '../version/types.js';
 import {
   Timestamp,
-  TimestampSDKType,
+  type TimestampSDKType,
 } from '../../google/protobuf/timestamp.js';
-import { ValidatorSet, ValidatorSetSDKType } from './validator.js';
+import { ValidatorSet, type ValidatorSetSDKType } from './validator.js';
 import { BinaryReader, BinaryWriter } from '../../binary.js';
 import {
   isSet,
@@ -14,7 +14,7 @@ import {
   fromJsonTimestamp,
   fromTimestamp,
 } from '../../helpers.js';
-import { JsonSafe } from '../../json-safe.js';
+import { type JsonSafe } from '../../json-safe.js';
 /** BlockIdFlag indicates which BlcokID the signature is for */
 export enum BlockIDFlag {
   BLOCK_ID_FLAG_UNKNOWN = 0,

@@ -1,28 +1,28 @@
 /** @file Tools to support making IBC mocks */
+import { type JsonSafe, toRequestQueryJson } from '@agoric/cosmic-proto';
+import { TxBody } from '@agoric/cosmic-proto/cosmos/tx/v1beta1/tx.js';
 import { Any } from '@agoric/cosmic-proto/google/protobuf/any.js';
+import { FungibleTokenPacketData } from '@agoric/cosmic-proto/ibc/applications/transfer/v2/packet.js';
+import type { PacketSDKType } from '@agoric/cosmic-proto/ibc/core/channel/v1/channel.js';
 import { CosmosResponse } from '@agoric/cosmic-proto/icq/v1/packet.js';
 import {
   RequestQuery,
   ResponseQuery,
 } from '@agoric/cosmic-proto/tendermint/abci/types.js';
-import { encodeBase64, btoa, atob, decodeBase64 } from '@endo/base64';
-import { type JsonSafe, toRequestQueryJson } from '@agoric/cosmic-proto';
-import {
-  IBCChannelID,
-  IBCEvent,
-  VTransferIBCEvent,
-  type IBCPacket,
-} from '@agoric/vats';
 import {
   IBC_EVENT,
   VTRANSFER_IBC_EVENT,
 } from '@agoric/internal/src/action-types.js';
-import { FungibleTokenPacketData } from '@agoric/cosmic-proto/ibc/applications/transfer/v2/packet.js';
-import type { PacketSDKType } from '@agoric/cosmic-proto/ibc/core/channel/v1/channel.js';
+import type {
+  IBCChannelID,
+  IBCEvent,
+  IBCPacket,
+  VTransferIBCEvent,
+} from '@agoric/vats';
 import { LOCALCHAIN_DEFAULT_ADDRESS } from '@agoric/vats/tools/fake-bridge.js';
-import { TxBody } from '@agoric/cosmic-proto/cosmos/tx/v1beta1/tx.js';
+import { atob, btoa, decodeBase64, encodeBase64 } from '@endo/base64';
+import type { ChainAddress } from '../src/orchestration-api.js';
 import { makeQueryPacket, makeTxPacket } from '../src/utils/packet.js';
-import { ChainAddress } from '../src/orchestration-api.js';
 
 interface EncoderI<T> {
   encode: (message: T) => {

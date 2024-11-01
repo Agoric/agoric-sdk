@@ -1,7 +1,7 @@
 //@ts-nocheck
-import { Any, AnySDKType } from '../../google/protobuf/any.js';
+import { Any, type AnySDKType } from '../../google/protobuf/any.js';
 import { BinaryReader, BinaryWriter } from '../../binary.js';
-import { JsonSafe } from '../../json-safe.js';
+import { type JsonSafe } from '../../json-safe.js';
 import { isSet } from '../../helpers.js';
 /**
  * CosmosTx contains a list of sdk.Msg's. It should be used when sending

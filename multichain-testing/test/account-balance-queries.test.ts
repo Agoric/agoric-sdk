@@ -3,7 +3,7 @@ import type { TestFn } from 'ava';
 import type { CosmosChainInfo } from '@agoric/orchestration';
 import {
   commonSetup,
-  SetupContextWithWallets,
+  type SetupContextWithWallets,
   chainConfig,
 } from './support.js';
 import { makeDoOffer } from '../tools/e2e-tools.js';

@@ -10,6 +10,7 @@ const trace = makeTracer('upgrade Vaults proposal');
  * @typedef {PromiseSpaceOf<{
  *   priceAuthority8400: Instance;
  *   auctionUpgradeNewInstance: Instance;
+ *   newContractGovBundleId: string;
  * }>} interlockPowers
  */
 
@@ -19,7 +20,6 @@ const trace = makeTracer('upgrade Vaults proposal');
  * @param {{
  *   options: {
  *     VaultFactoryBundle: { bundleID: string };
- *     contractGovernorBundle: { bundleID: string };
  *   };
  * }} options
  */
@@ -33,13 +33,14 @@ export const upgradeVaults = async (
       vaultFactoryKit,
       zoe,
       priceAuthority8400,
+      newContractGovBundleId: newContractGovBundleIdP,
     },
-    produce: { auctionUpgradeNewInstance: auctionUpgradeNewInstanceProducer },
-    instance: {
-      consume: { auctioneer: auctioneerInstanceP },
+    produce: {
+      auctionUpgradeNewInstance: auctionUpgradeNewInstanceProducer,
+      newContractGovBundleId: newContractGovBundleIdErasor,
     },
   },
-  { options: { VaultFactoryBundle: vaultBundleRef, contractGovernorBundle } },
+  { options: { VaultFactoryBundle: vaultBundleRef } },
 ) => {
   const kit = await vaultFactoryKit;
   const { instance: directorInstance } = kit;
@@ -48,12 +49,7 @@ export const upgradeVaults = async (
 
   await priceAuthority8400;
 
-  const [auctionOldInstance, auctionNewInstance] = await Promise.all([
-    auctioneerInstanceP,
-    auctionUpgradeNewInstance,
-  ]);
-  auctionOldInstance !== auctionNewInstance ||
-    Fail`Auction instance didn't change`;
+  const auctionNewInstance = await auctionUpgradeNewInstance;
   auctionUpgradeNewInstanceProducer.reset();
   const publicFacet = E(zoe).getPublicFacet(auctionNewInstance);
   /** @type {import('@agoric/inter-protocol/src/auction/scheduler.js').FullSchedule} */
@@ -151,10 +147,15 @@ export const upgradeVaults = async (
   const vaultFactoryPrivateArgs = kit.privateArgs;
   trace('restarting governor');
 
-  const ecf = await electorateCreatorFacet;
+  const [ecf, newContractGovBundleId] = await Promise.all([
+    electorateCreatorFacet,
+    newContractGovBundleIdP,
+  ]);
+  newContractGovBundleIdErasor.reset();
+
   // upgrade vaultFactory governor. Won't be needed next time: see #10063
   await E(kit.governorAdminFacet).upgradeContract(
-    contractGovernorBundle.bundleID,
+    newContractGovBundleId,
     harden({
       electorateCreatorFacet: ecf,
       governed: vaultFactoryPrivateArgs,
@@ -174,7 +175,7 @@ const uV = 'upgradeVaults';
  */
 export const getManifestForUpgradeVaults = async (
   { restoreRef },
-  { VaultFactoryRef, contractGovernorRef },
+  { VaultFactoryRef },
 ) => {
   return {
     manifest: {
@@ -187,18 +188,15 @@ export const getManifestForUpgradeVaults = async (
           reserveKit: uV,
           vaultFactoryKit: uV,
           zoe: uV,
+          newContractGovBundleId: uV,
         },
-        produce: { auctionUpgradeNewInstance: uV },
-        instance: { consume: { auctioneer: uV } },
+        produce: {
+          auctionUpgradeNewInstance: uV,
+          newContractGovBundleId: uV,
+        },
       },
     },
-    installations: {
-      VaultFactory: restoreRef(VaultFactoryRef),
-      contractGovernor: restoreRef(contractGovernorRef),
-    },
-    options: {
-      VaultFactoryBundle: VaultFactoryRef,
-      contractGovernorBundle: contractGovernorRef,
-    },
+    installations: { VaultFactory: restoreRef(VaultFactoryRef) },
+    options: { VaultFactoryBundle: VaultFactoryRef },
   };
 };

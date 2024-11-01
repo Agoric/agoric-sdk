@@ -1,8 +1,8 @@
 //@ts-nocheck
-import { Params, ParamsSDKType } from './controller.js';
+import { Params, type ParamsSDKType } from './controller.js';
 import { BinaryReader, BinaryWriter } from '../../../../../binary.js';
 import { isSet } from '../../../../../helpers.js';
-import { JsonSafe } from '../../../../../json-safe.js';
+import { type JsonSafe } from '../../../../../json-safe.js';
 /** QueryInterchainAccountRequest is the request type for the Query/InterchainAccount RPC method. */
 export interface QueryInterchainAccountRequest {
   owner: string;

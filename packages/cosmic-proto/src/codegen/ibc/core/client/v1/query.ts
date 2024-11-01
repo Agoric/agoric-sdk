@@ -1,20 +1,20 @@
 //@ts-nocheck
 import {
   PageRequest,
-  PageRequestSDKType,
+  type PageRequestSDKType,
   PageResponse,
-  PageResponseSDKType,
+  type PageResponseSDKType,
 } from '../../../../cosmos/base/query/v1beta1/pagination.js';
-import { Any, AnySDKType } from '../../../../google/protobuf/any.js';
+import { Any, type AnySDKType } from '../../../../google/protobuf/any.js';
 import {
   Height,
-  HeightSDKType,
+  type HeightSDKType,
   IdentifiedClientState,
-  IdentifiedClientStateSDKType,
+  type IdentifiedClientStateSDKType,
   ConsensusStateWithHeight,
-  ConsensusStateWithHeightSDKType,
+  type ConsensusStateWithHeightSDKType,
   Params,
-  ParamsSDKType,
+  type ParamsSDKType,
 } from './client.js';
 import { BinaryReader, BinaryWriter } from '../../../../binary.js';
 import {
@@ -22,7 +22,7 @@ import {
   bytesFromBase64,
   base64FromBytes,
 } from '../../../../helpers.js';
-import { JsonSafe } from '../../../../json-safe.js';
+import { type JsonSafe } from '../../../../json-safe.js';
 /**
  * QueryClientStateRequest is the request type for the Query/ClientState RPC
  * method

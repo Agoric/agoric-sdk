@@ -8,8 +8,8 @@ const vats = {
   localchain: { incarnation: 1 },
   orchestration: { incarnation: 0 },
   transfer: { incarnation: 1 },
-  walletFactory: { incarnation: 4 },
-  zoe: { incarnation: 2 },
+  walletFactory: { incarnation: 5 },
+  zoe: { incarnation: 3 },
 };
 
 test(`vat details`, async t => {

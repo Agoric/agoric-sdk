@@ -129,8 +129,6 @@ const makeTestContext = async t => {
   /** @type {import('@agoric/vat-data').Baggage} */
   const swBaggage = makeScalarMapStore('smart-wallet');
 
-  const secretWalletFactoryKey = Far('Key', {});
-
   const { brand: brandSpace, issuer: issuerSpace } = bootKit.powers;
   /** @type {Issuer<'set'>} */
   // @ts-expect-error cast
@@ -147,7 +145,6 @@ const makeTestContext = async t => {
     invitationIssuer,
     publicMarshaller,
     zoe,
-    secretWalletFactoryKey,
     registry,
   });
 

@@ -8,7 +8,7 @@ import (
 
 // FindBinaryNextToMe looks for binName next to the current executable.
 // It returns an absolute filename for binName, or an error.
-func FindBinaryNextToMe(walkUp int, path... string) (string, error) {
+func FindBinaryNextToMe(walkUp int, path ...string) (string, error) {
 	ex, err := os.Executable()
 	if err != nil {
 		return "", err
@@ -32,7 +32,7 @@ func FindBinaryNextToMe(walkUp int, path... string) (string, error) {
 	if _, err = os.Stat(bin); err != nil {
 		return "", err
 	}
-	
+
 	return bin, nil
 }
 

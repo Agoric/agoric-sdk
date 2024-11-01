@@ -1,15 +1,20 @@
 //@ts-nocheck
 import {
   PageRequest,
-  PageRequestSDKType,
+  type PageRequestSDKType,
   PageResponse,
-  PageResponseSDKType,
+  type PageResponseSDKType,
 } from '../../base/query/v1beta1/pagination.js';
-import { Coin, CoinSDKType } from '../../base/v1beta1/coin.js';
-import { Params, ParamsSDKType, Metadata, MetadataSDKType } from './bank.js';
+import { Coin, type CoinSDKType } from '../../base/v1beta1/coin.js';
+import {
+  Params,
+  type ParamsSDKType,
+  Metadata,
+  type MetadataSDKType,
+} from './bank.js';
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
 import { isSet } from '../../../helpers.js';
-import { JsonSafe } from '../../../json-safe.js';
+import { type JsonSafe } from '../../../json-safe.js';
 /** QueryBalanceRequest is the request type for the Query/Balance RPC method. */
 export interface QueryBalanceRequest {
   /** address is the address to query balances for. */

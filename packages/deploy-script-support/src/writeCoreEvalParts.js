@@ -11,7 +11,8 @@ import {
 } from './coreProposalBehavior.js';
 
 /**
- * @import {CoreEvalDescriptor} from './externalTypes.js';
+ * @import {BundleSource, BundleSourceResult} from '@endo/bundle-source';
+ * @import {AgSoloHome, CanonicalHome, CommonHome, CoreEvalBuilder, CoreEvalDescriptor, ManifestBundleRef} from './externalTypes.js';
  */
 
 /**
@@ -27,20 +28,20 @@ import {
  *   summary to `${filePrefix}-plan.json), plus whatever bundles bundles the code loads)
  * see CoreEval in {@link '/golang/cosmos/x/swingset/types/swingset.pb.go'}
  * @param {string} filePrefix name on disk
- * @param {import('./externalTypes.js').CoreEvalBuilder} builder
+ * @param {CoreEvalBuilder} builder
  * @returns {Promise<CoreEvalPlan>}
  */
 
 /**
  *
- * @param {*} homeP
+ * @param {Promise<CommonHome | AgSoloHome>} homeP
  * @param {{
- *   bundleSource: (path: string) => Promise<NodeModule>,
+ *   bundleSource: BundleSource,
  *   pathResolve: (path: string) => string,
  * }} endowments
  * @param {{
  *   getBundlerMaker: () => Promise<import('./getBundlerMaker.js').BundleMaker>,
- *   getBundleSpec: (...args: *) => Promise<import('./externalTypes.js').ManifestBundleRef>,
+ *   getBundleSpec: (bundle: Promise<BundleSourceResult<'endoZipBase64'>>, getBundle: () => import('./getBundlerMaker.js').Bundler, opts?: any) => Promise<ManifestBundleRef>,
  *   log?: typeof console.log,
  *   writeFile?: typeof fs.promises.writeFile
  * }} io
@@ -63,6 +64,7 @@ export const makeWriteCoreEval = (
   const getBundler = () => {
     if (!bundlerCache) {
       bundlerCache = E(getBundlerMaker()).makeBundler({
+        // @ts-expect-error lazily resolved for AgSoloHome
         zoe: E.get(homeP).zoe,
       });
     }
@@ -95,17 +97,16 @@ export const makeWriteCoreEval = (
     };
   };
 
-  let mutex =
-    /** @type {Promise<import('./externalTypes.js').ManifestBundleRef | undefined>} */ (
-      Promise.resolve()
-    );
+  let mutex = /** @type {Promise<ManifestBundleRef | undefined>} */ (
+    Promise.resolve()
+  );
   /** @type {WriteCoreEval} */
   const writeCoreEval = async (filePrefix, builder) => {
     /**
      *
      * @param {string} entrypoint
      * @param {string} [bundlePath]
-     * @returns {Promise<NodeModule>}
+     * @returns {Promise<BundleSourceResult<'endoZipBase64'>>}
      */
     const getBundle = async (entrypoint, bundlePath) => {
       if (!bundlePath) {
@@ -125,7 +126,7 @@ export const makeWriteCoreEval = (
      * @param {string} entrypoint
      * @param {string} [bundlePath]
      * @param {unknown} [opts]
-     * @returns {Promise<import('./externalTypes.js').ManifestBundleRef>}
+     * @returns {Promise<ManifestBundleRef>}
      */
     const install = async (entrypoint, bundlePath, opts) => {
       const bundle = getBundle(entrypoint, bundlePath);
@@ -146,7 +147,7 @@ export const makeWriteCoreEval = (
 
     // Await a reference then publish to the board.
     const cmds = [];
-    /** @param {Promise<import('./externalTypes.js').ManifestBundleRef>} refP */
+    /** @param {Promise<ManifestBundleRef>} refP */
     const publishRef = async refP => {
       const { fileName, ...ref } = await refP;
       if (fileName) {

@@ -1,8 +1,8 @@
 //@ts-nocheck
-import { Params, ParamsSDKType } from './icq.js';
+import { Params, type ParamsSDKType } from './icq.js';
 import { BinaryReader, BinaryWriter } from '../../binary.js';
 import { isSet } from '../../helpers.js';
-import { JsonSafe } from '../../json-safe.js';
+import { type JsonSafe } from '../../json-safe.js';
 /**
  * MsgUpdateParams is the Msg/UpdateParams request type.
  *

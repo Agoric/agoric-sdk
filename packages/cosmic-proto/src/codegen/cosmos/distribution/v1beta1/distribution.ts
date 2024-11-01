@@ -1,13 +1,13 @@
 //@ts-nocheck
 import {
   DecCoin,
-  DecCoinSDKType,
+  type DecCoinSDKType,
   Coin,
-  CoinSDKType,
+  type CoinSDKType,
 } from '../../base/v1beta1/coin.js';
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
 import { Decimal, isSet } from '../../../helpers.js';
-import { JsonSafe } from '../../../json-safe.js';
+import { type JsonSafe } from '../../../json-safe.js';
 /** Params defines the set of params for the distribution module. */
 export interface Params {
   communityTax: string;

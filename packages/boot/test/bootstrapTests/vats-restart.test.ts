@@ -1,12 +1,12 @@
 /** @file Bootstrap test of restarting (almost) all vats */
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
-import { TestFn } from 'ava';
+import type { TestFn } from 'ava';
 
 import { Fail } from '@endo/errors';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
 import { makeAgoricNamesRemotesFromFakeStorage } from '@agoric/vats/tools/board-utils.js';
-import { BridgeHandler, ScopedBridgeManager } from '@agoric/vats';
+import type { ScopedBridgeManager } from '@agoric/vats';
 import { makeSwingsetTestKit } from '../../tools/supports.js';
 import { makeWalletFactoryDriver } from '../../tools/drivers.js';
 

@@ -173,7 +173,7 @@ export const prepareBridgeTargetKit = (zone, makeTargetRegistration) =>
       targetRegistry: TargetRegistryI,
     },
     /**
-     * @template {import('@agoric/internal').BridgeIdValue} T
+     * @template {import('@agoric/internal').BridgeId} T
      * @param {import('./types').ScopedBridgeManager<T>} manager
      * @param {string} inboundEventType
      * @param {AppTransformer} [appTransformer]

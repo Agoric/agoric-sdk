@@ -59,11 +59,6 @@ export const makeAuctionCommand = (
       'descending clock step size',
       BigInt,
     )
-    .option(
-      '--discount-step <integer>',
-      'proposed value (basis points)',
-      BigInt,
-    )
     .requiredOption(
       '--charterAcceptOfferId <string>',
       'offer that had continuing invitation result',

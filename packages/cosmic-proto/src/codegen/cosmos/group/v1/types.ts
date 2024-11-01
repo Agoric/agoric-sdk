@@ -1,16 +1,16 @@
 //@ts-nocheck
 import {
   Timestamp,
-  TimestampSDKType,
+  type TimestampSDKType,
 } from '../../../google/protobuf/timestamp.js';
 import {
   Duration,
-  DurationSDKType,
+  type DurationSDKType,
 } from '../../../google/protobuf/duration.js';
-import { Any, AnySDKType } from '../../../google/protobuf/any.js';
+import { Any, type AnySDKType } from '../../../google/protobuf/any.js';
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
 import { isSet, fromJsonTimestamp, fromTimestamp } from '../../../helpers.js';
-import { JsonSafe } from '../../../json-safe.js';
+import { type JsonSafe } from '../../../json-safe.js';
 /** VoteOption enumerates the valid vote options for a given proposal. */
 export enum VoteOption {
   /**

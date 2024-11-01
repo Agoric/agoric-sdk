@@ -1,13 +1,18 @@
 //@ts-nocheck
-import { Channel, ChannelSDKType, Packet, PacketSDKType } from './channel.js';
-import { Height, HeightSDKType } from '../../client/v1/client.js';
+import {
+  Channel,
+  type ChannelSDKType,
+  Packet,
+  type PacketSDKType,
+} from './channel.js';
+import { Height, type HeightSDKType } from '../../client/v1/client.js';
 import { BinaryReader, BinaryWriter } from '../../../../binary.js';
 import {
   isSet,
   bytesFromBase64,
   base64FromBytes,
 } from '../../../../helpers.js';
-import { JsonSafe } from '../../../../json-safe.js';
+import { type JsonSafe } from '../../../../json-safe.js';
 /** ResponseResultType defines the possible outcomes of the execution of a message */
 export enum ResponseResultType {
   /** RESPONSE_RESULT_TYPE_UNSPECIFIED - Default zero value enumeration */

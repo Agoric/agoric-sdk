@@ -1,7 +1,7 @@
 //@ts-nocheck
-import { Coin, CoinSDKType } from '../../cosmos/base/v1beta1/coin.js';
+import { Coin, type CoinSDKType } from '../../cosmos/base/v1beta1/coin.js';
 import { BinaryReader, BinaryWriter } from '../../binary.js';
-import { JsonSafe } from '../../json-safe.js';
+import { type JsonSafe } from '../../json-safe.js';
 /** Lien contains the lien state of a particular account. */
 export interface Lien {
   /** coins holds the amount liened */
