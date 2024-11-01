@@ -1,7 +1,7 @@
 import { makeIssuerKit } from '@agoric/ertp';
 import { VTRANSFER_IBC_EVENT } from '@agoric/internal/src/action-types.js';
 import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
-import { reincarnate } from '@agoric/swingset-liveslots/tools/setup-vat-data.js';
+import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { makeNameHubKit } from '@agoric/vats';
 import { prepareBridgeTargetModule } from '@agoric/vats/src/bridge-target.js';
 import { makeWellKnownSpaces } from '@agoric/vats/src/core/utils.js';
@@ -17,17 +17,15 @@ import { prepareSwingsetVowTools } from '@agoric/vow/vat.js';
 import type { Installation } from '@agoric/zoe/src/zoeService/utils.js';
 import { buildZoeManualTimer } from '@agoric/zoe/tools/manualTimer.js';
 import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
-import { makeHeapZone, type Zone } from '@agoric/zone';
-import { makeDurableZone } from '@agoric/zone/durable.js';
+import { makeHeapZone } from '@agoric/zone';
 import { E } from '@endo/far';
 import type { ExecutionContext } from 'ava';
-import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { registerKnownChains } from '../src/chain-info.js';
-import { prepareCosmosInterchainService } from '../src/exos/cosmos-interchain-service.js';
-import { setupFakeNetwork } from './network-fakes.js';
-import { buildVTransferEvent } from '../tools/ibc-mocks.js';
 import { makeChainHub } from '../src/exos/chain-hub.js';
+import { prepareCosmosInterchainService } from '../src/exos/cosmos-interchain-service.js';
 import fetchedChainInfo from '../src/fetched-chain-info.js';
+import { buildVTransferEvent } from '../tools/ibc-mocks.js';
+import { setupFakeNetwork } from './network-fakes.js';
 
 export {
   makeFakeLocalchainBridge,
@@ -236,14 +234,3 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
 };
 
 export const makeDefaultContext = <SF>(contract: Installation<SF>) => {};
-
-/**
- * Reincarnate without relaxDurabilityRules and provide a durable zone in the incarnation.
- * @param key
- */
-export const provideDurableZone = (key: string): Zone => {
-  const { fakeVomKit } = reincarnate({ relaxDurabilityRules: false });
-  const root = fakeVomKit.cm.provideBaggage();
-  const zone = makeDurableZone(root);
-  return zone.subZone(key);
-};

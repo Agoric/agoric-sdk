@@ -1,15 +1,14 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { makeIssuerKit } from '@agoric/ertp';
-import { reincarnate } from '@agoric/swingset-liveslots/tools/setup-vat-data.js';
 import { prepareSwingsetVowTools } from '@agoric/vow/vat.js';
-import { setupZCFTest } from '@agoric/zoe/test/unitTests/zcf/setupZcfTest.js';
 import type { CosmosChainInfo, IBCConnectionInfo } from '../src/cosmos-api.js';
 import fetchedChainInfo from '../src/fetched-chain-info.js'; // Refresh with scripts/refresh-chain-info.ts
 import type { Chain } from '../src/orchestration-api.js';
 import { denomHash } from '../src/utils/denomHash.js';
 import { provideOrchestration } from '../src/utils/start-helper.js';
-import { commonSetup, provideDurableZone } from './supports.js';
+import { commonSetup } from './supports.js';
+import { provideDurableZone, provideFreshRootZone } from './durability.js';
 
 const test = anyTest;
 
@@ -40,18 +39,19 @@ const mockChainConnection: IBCConnectionInfo = {
   },
 };
 
-test.serial('chain info', async t => {
-  const { bootstrap, facadeServices, commonPrivateArgs } = await commonSetup(t);
+// @ts-expect-error mock
+const mockZcf: ZCF = {
+  setTestJig: () => {},
+};
 
-  const { zcf } = await setupZCFTest();
+test('chain info', async t => {
+  const { facadeServices, commonPrivateArgs } = await commonSetup(t);
 
-  // After setupZCFTest because this disables relaxDurabilityRules
-  // which breaks Zoe test setup's fakeVatAdmin
-  const zone = provideDurableZone('test');
+  const zone = provideFreshRootZone();
   const vt = prepareSwingsetVowTools(zone);
 
   const orchKit = provideOrchestration(
-    zcf,
+    mockZcf,
     zone.mapStore('test'),
     {
       agoricNames: facadeServices.agoricNames,
@@ -80,20 +80,14 @@ test.serial('chain info', async t => {
   t.deepEqual(await vt.when(result.getChainInfo()), mockChainInfo);
 });
 
-test.serial('faulty chain info', async t => {
+test('faulty chain info', async t => {
   const { facadeServices, commonPrivateArgs } = await commonSetup(t);
 
-  // XXX relax again so setupZCFTest can run. This is also why the tests are serial.
-  reincarnate({ relaxDurabilityRules: true });
-  const { zcf } = await setupZCFTest();
-
-  // After setupZCFTest because this disables relaxDurabilityRules
-  // which breaks Zoe test setup's fakeVatAdmin
-  const zone = provideDurableZone('test');
+  const zone = provideFreshRootZone();
   const vt = prepareSwingsetVowTools(zone);
 
   const orchKit = provideOrchestration(
-    zcf,
+    mockZcf,
     zone.mapStore('test'),
     {
       agoricNames: facadeServices.agoricNames,
@@ -127,20 +121,14 @@ test.serial('faulty chain info', async t => {
   });
 });
 
-test.serial('racy chain info', async t => {
+test('racy chain info', async t => {
   const { facadeServices, commonPrivateArgs } = await commonSetup(t);
 
-  // XXX relax again
-  reincarnate({ relaxDurabilityRules: true });
-  const { zcf } = await setupZCFTest();
-
-  // After setupZCFTest because this disables relaxDurabilityRules
-  // which breaks Zoe test setup's fakeVatAdmin
-  const zone = provideDurableZone('test');
+  const zone = provideFreshRootZone();
   const vt = prepareSwingsetVowTools(zone);
 
   const orchKit = provideOrchestration(
-    zcf,
+    mockZcf,
     zone.mapStore('test'),
     {
       agoricNames: facadeServices.agoricNames,
@@ -176,16 +164,13 @@ test.serial('racy chain info', async t => {
   t.deepEqual(await chainInfos[1], mockChainInfo);
 });
 
-test.serial('asset / denom info', async t => {
+test('asset / denom info', async t => {
   const { facadeServices, commonPrivateArgs } = await commonSetup(t);
 
-  // XXX relax again
-  reincarnate({ relaxDurabilityRules: true });
-  const { zcf } = await setupZCFTest();
-  const zone = provideDurableZone('test');
+  const zone = provideFreshRootZone();
   const vt = prepareSwingsetVowTools(zone);
   const orchKit = provideOrchestration(
-    zcf,
+    mockZcf,
     zone.mapStore('test'),
     {
       agoricNames: facadeServices.agoricNames,
