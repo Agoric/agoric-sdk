@@ -1,21 +1,29 @@
-import test from 'ava';
+/* eslint-env node */
 import '@endo/init';
+import test from 'ava';
+
+import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
 import {
-  bankSend,
-  getUser,
-  openVault,
   adjustVault,
-  closeVault,
-  getISTBalance,
   ATOM_DENOM,
-  USER1ADDR,
-  GOV1ADDR,
+  bankSend,
+  closeVault,
   generateOracleMap,
+  getISTBalance,
   getPriceQuote,
+  getUser,
   getVaultPrices,
+  GOV1ADDR,
   GOV2ADDR,
+  openVault,
+  USER1ADDR,
 } from '@agoric/synthetic-chain';
-import { getBalances, agopsVaults } from './test-lib/utils.js';
+import {
+  getPriceFeedRoundId,
+  verifyPushedPrice,
+} from './test-lib/price-feed.js';
+import { bankSend as sendIST, tryISTBalances } from './test-lib/psm-lib.js';
+import { agopsVaults, getBalances } from './test-lib/utils.js';
 import {
   calculateMintFee,
   getAvailableDebtForMint,
@@ -23,15 +31,37 @@ import {
   getMinInitialDebt,
   setDebtLimit,
 } from './test-lib/vaults.js';
-import {
-  verifyPushedPrice,
-  getPriceFeedRoundId,
-} from './test-lib/price-feed.js';
-import { tryISTBalances, bankSend as sendIST } from './test-lib/psm-lib.js';
+import { makeWalletUtils } from './test-lib/wallet.js';
 
 const VAULT_MANAGER = 'manager0';
 
 const scale6 = x => x * 1_000_000;
+const walletUtils = await makeWalletUtils();
+
+// TODO produce this dynamically from an Offers object exported from a package clientSupport
+const exec = {
+  vaults: {
+    // TODO decide how to handle defaults, whether CLI and this should have the same
+    OpenVault: (
+      from,
+      wantMinted,
+      giveCollateral,
+      offerId = `openVault-${Date.now()}`,
+      collateralBrandKey = 'ATOM',
+    ) => {
+      const offer = Offers.vaults.OpenVault(walletUtils.agoricNames, {
+        giveCollateral,
+        wantMinted,
+        offerId,
+        collateralBrandKey,
+      });
+      return walletUtils.broadcastBridgeAction(from, {
+        method: 'executeOffer',
+        offer,
+      });
+    },
+  },
+};
 
 test.serial('open new vault', async t => {
   await bankSend(USER1ADDR, `20000000${ATOM_DENOM}`);
@@ -41,7 +71,7 @@ test.serial('open new vault', async t => {
 
   const mint = '5.0';
   const collateral = '10.0';
-  await openVault(USER1ADDR, mint, collateral);
+  await exec.vaults.OpenVault(USER1ADDR, mint, collateral);
 
   const istBalanceAfter = await getISTBalance(USER1ADDR);
   const activeVaultsAfter = await agopsVaults(USER1ADDR);
