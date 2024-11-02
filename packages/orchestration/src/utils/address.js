@@ -1,4 +1,4 @@
-import { Fail } from '@endo/errors';
+import { Fail, q } from '@endo/errors';
 
 /**
  * @import {IBCConnectionID} from '@agoric/vats';
@@ -84,3 +84,20 @@ export const findAddressField = remoteAddressString => {
   }
 };
 harden(findAddressField);
+
+/**
+ * Extracts the human readable part (HRP), aka `bech32Prefix`, from an address.
+ *
+ * see
+ * [bech32.js](https://github.com/bitcoinjs/bech32/blob/5ceb0e3d4625561a459c85643ca6947739b2d83c/src/index.ts#L146)
+ * for reference implementation
+ *
+ * @param {string} address
+ */
+export const getBech32Prefix = address => {
+  assert(address, 'address is required');
+  const split = address.lastIndexOf('1');
+  if (split === -1) return Fail`No separator character for ${q(address)}`;
+  if (split === 0) return Fail`Missing prefix for ${q(address)}`;
+  return address.slice(0, split);
+};

@@ -5,6 +5,7 @@ import { BrandShape } from '@agoric/ertp/src/typeGuards.js';
 
 import { VowShape } from '@agoric/vow';
 import { CosmosChainInfoShape, IBCConnectionInfoShape } from '../typeGuards.js';
+import { getBech32Prefix } from '../utils/address.js';
 
 /**
  * @import {NameHub} from '@agoric/vats';
@@ -180,6 +181,7 @@ const ChainHubI = M.interface('ChainHub', {
   registerAsset: M.call(M.string(), DenomDetailShape).returns(),
   getAsset: M.call(M.string()).returns(M.or(DenomDetailShape, M.undefined())),
   getDenom: M.call(BrandShape).returns(M.or(M.string(), M.undefined())),
+  getChainInfoByAddress: M.call(M.string()).returns(CosmosChainInfoShape),
 });
 
 /**
@@ -216,6 +218,11 @@ export const makeChainHub = (zone, agoricNames, vowTools) => {
     keyShape: BrandShape,
     valueShape: M.string(),
   });
+  /** @type {MapStore<string, string>} */
+  const bech32PrefixToChainName = zone.mapStore('bech32PrefixToChainName', {
+    keyShape: M.string(),
+    valueShape: M.string(),
+  });
 
   const lookupChainInfo = vowTools.retryable(
     zone,
@@ -230,6 +237,9 @@ export const makeChainHub = (zone, agoricNames, vowTools) => {
         // TODO consider makeAtomicProvider for vows
         if (!chainInfos.has(chainName)) {
           chainInfos.init(chainName, chainInfo);
+          if (chainInfo.bech32Prefix) {
+            bech32PrefixToChainName.init(chainInfo.bech32Prefix, chainName);
+          }
         }
         return chainInfo;
       } catch (e) {
@@ -316,6 +326,9 @@ export const makeChainHub = (zone, agoricNames, vowTools) => {
      */
     registerChain(name, chainInfo) {
       chainInfos.init(name, chainInfo);
+      if (chainInfo.bech32Prefix) {
+        bech32PrefixToChainName.init(chainInfo.bech32Prefix, name);
+      }
     },
     /**
      * @template {string} K
@@ -424,6 +437,18 @@ export const makeChainHub = (zone, agoricNames, vowTools) => {
         return brandDenoms.get(brand);
       }
       return undefined;
+    },
+    /**
+     * @param {string} address bech32 address
+     * @returns {CosmosChainInfo}
+     */
+    getChainInfoByAddress(address) {
+      const prefix = getBech32Prefix(address);
+      if (!bech32PrefixToChainName.has(prefix)) {
+        throw makeError(`Chain info not found for bech32Prefix ${q(prefix)}`);
+      }
+      const chainName = bech32PrefixToChainName.get(prefix);
+      return chainInfos.get(chainName);
     },
   });
 

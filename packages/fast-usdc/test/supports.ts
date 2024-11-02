@@ -2,6 +2,13 @@ import { makeIssuerKit } from '@agoric/ertp';
 import { VTRANSFER_IBC_EVENT } from '@agoric/internal/src/action-types.js';
 import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
+import { registerKnownChains } from '@agoric/orchestration/src/chain-info.js';
+import { makeChainHub } from '@agoric/orchestration/src/exos/chain-hub.js';
+import { prepareCosmosInterchainService } from '@agoric/orchestration/src/exos/cosmos-interchain-service.js';
+import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
+import { setupFakeNetwork } from '@agoric/orchestration/test/network-fakes.js';
+import { buildVTransferEvent } from '@agoric/orchestration/tools/ibc-mocks.js';
+import { reincarnate } from '@agoric/swingset-liveslots/tools/setup-vat-data.js';
 import { makeNameHubKit } from '@agoric/vats';
 import { prepareBridgeTargetModule } from '@agoric/vats/src/bridge-target.js';
 import { makeWellKnownSpaces } from '@agoric/vats/src/core/utils.js';
@@ -17,15 +24,10 @@ import { prepareSwingsetVowTools } from '@agoric/vow/vat.js';
 import type { Installation } from '@agoric/zoe/src/zoeService/utils.js';
 import { buildZoeManualTimer } from '@agoric/zoe/tools/manualTimer.js';
 import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
-import { makeHeapZone } from '@agoric/zone';
+import { makeHeapZone, type Zone } from '@agoric/zone';
+import { makeDurableZone } from '@agoric/zone/durable.js';
 import { E } from '@endo/far';
 import type { ExecutionContext } from 'ava';
-import { registerKnownChains } from '../src/chain-info.js';
-import { makeChainHub } from '../src/exos/chain-hub.js';
-import { prepareCosmosInterchainService } from '../src/exos/cosmos-interchain-service.js';
-import fetchedChainInfo from '../src/fetched-chain-info.js';
-import { buildVTransferEvent } from '../tools/ibc-mocks.js';
-import { setupFakeNetwork } from './network-fakes.js';
 
 export {
   makeFakeLocalchainBridge,
@@ -43,45 +45,31 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
   const { nameHub: agoricNames, nameAdmin: agoricNamesAdmin } =
     makeNameHubKit();
 
-  const bld = withAmountUtils(makeIssuerKit('BLD'));
-  const ist = withAmountUtils(makeIssuerKit('IST'));
+  const usdc = withAmountUtils(makeIssuerKit('USDC'));
   const bankBridgeMessages = [] as any[];
   const { bankManager, pourPayment } = await makeFakeBankManagerKit({
     onToBridge: obj => bankBridgeMessages.push(obj),
   });
-  await E(bankManager).addAsset('ubld', 'BLD', 'Staking Token', bld.issuerKit);
   await E(bankManager).addAsset(
-    'uist',
-    'IST',
-    'Inter Stable Token',
-    ist.issuerKit,
+    'uusdc',
+    'USDC',
+    'USD Circle Stablecoin',
+    usdc.issuerKit,
   );
   // These mints no longer stay in sync with bankManager.
   // Use pourPayment() for IST.
-  const { mint: _b, ...bldSansMint } = bld;
-  const { mint: _i, ...istSansMint } = ist;
+  const { mint: _i, ...usdcSansMint } = usdc;
   // XXX real bankManager does this. fake should too?
   // TODO https://github.com/Agoric/agoric-sdk/issues/9966
   await makeWellKnownSpaces(agoricNamesAdmin, t.log, ['vbankAsset']);
   await E(E(agoricNamesAdmin).lookupAdmin('vbankAsset')).update(
-    'uist',
+    'uusdc',
     /** @type {AssetInfo} */ harden({
-      brand: ist.brand,
-      issuer: ist.issuer,
+      brand: usdc.brand,
+      issuer: usdc.issuer,
       issuerName: 'IST',
-      denom: 'uist',
+      denom: 'uusdc',
       proposedName: 'IST',
-      displayInfo: { IOU: true },
-    }),
-  );
-  await E(E(agoricNamesAdmin).lookupAdmin('vbankAsset')).update(
-    'ubld',
-    /** @type {AssetInfo} */ harden({
-      brand: bld.brand,
-      issuer: bld.issuer,
-      issuerName: 'BLD',
-      denom: 'ubld',
-      proposedName: 'BLD',
       displayInfo: { IOU: true },
     }),
   );
@@ -168,23 +156,6 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
     vowTools,
   );
 
-  /**
-   * Register BLD if it's not already registered.
-   * Does not work with `withOrchestration` contracts, as these have their own
-   * ChainHub. Use `ChainHubAdmin` instead.
-   */
-  const registerAgoricBld = () => {
-    if (!chainHub.getAsset('ubld')) {
-      chainHub.registerChain('agoric', fetchedChainInfo.agoric);
-      chainHub.registerAsset('ubld', {
-        chainName: 'agoric',
-        baseName: 'agoric',
-        baseDenom: 'ubld',
-        brand: bld.brand,
-      });
-    }
-  };
-
   return {
     bootstrap: {
       agoricNames,
@@ -200,8 +171,8 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
       vowTools,
     },
     brands: {
-      bld: bldSansMint,
-      ist: istSansMint,
+      poolShares: withAmountUtils(makeIssuerKit('Fast USDC Pool Shares')),
+      usdc: usdcSansMint,
     },
     mocks: {
       ibcBridge,
@@ -227,10 +198,20 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
       inspectLocalBridge: () => harden([...localBridgeMessages]),
       inspectDibcBridge: () => E(ibcBridge).inspectDibcBridge(),
       inspectBankBridge: () => harden([...bankBridgeMessages]),
-      registerAgoricBld,
       transmitTransferAck,
     },
   };
 };
 
 export const makeDefaultContext = <SF>(contract: Installation<SF>) => {};
+
+/**
+ * Reincarnate without relaxDurabilityRules and provide a durable zone in the incarnation.
+ * @param key
+ */
+export const provideDurableZone = (key: string): Zone => {
+  const { fakeVomKit } = reincarnate({ relaxDurabilityRules: false });
+  const root = fakeVomKit.cm.provideBaggage();
+  const zone = makeDurableZone(root);
+  return zone.subZone(key);
+};
