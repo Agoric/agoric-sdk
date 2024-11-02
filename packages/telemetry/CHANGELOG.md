@@ -3,6 +3,30 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.6.3-u18.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/telemetry@0.6.2...@agoric/telemetry@0.6.3-u18.0) (2024-10-31)
+
+
+### Features
+
+* **cosmic-swingset:** add JS upgrade plan handler stub ([655133e](https://github.com/Agoric/agoric-sdk/commit/655133ed909b5d632dc033e992214a7b6a1b5ab1))
+* simple CircularBuffer with fs offsets ([8d9cb7a](https://github.com/Agoric/agoric-sdk/commit/8d9cb7abe96e8905f5aaa0927e02914ef09279c4))
+* **telemetry:** context aware slog support new triggers ([03965d9](https://github.com/Agoric/agoric-sdk/commit/03965d90b86cf75ce7f6677861e3a0aa8ac70710))
+* **telemetry:** ingest-slog explicitly supports `-` for stdin ([63367c4](https://github.com/Agoric/agoric-sdk/commit/63367c4aaf9bafbd6553a1f4cb808c96bc90845a))
+* **telemetry:** ingest-slog throttle and flush per block ([2134944](https://github.com/Agoric/agoric-sdk/commit/21349448b3b9379a9da43218a59a7e7eaf4f5a9e))
+* use writeSync slogSender ([47a2add](https://github.com/Agoric/agoric-sdk/commit/47a2adda72a5377eda181a425130cdc5a7fd7ff5))
+
+
+### Bug Fixes
+
+* ensure script main rejections exit with error ([abdab87](https://github.com/Agoric/agoric-sdk/commit/abdab879014a5c3124ebd0e9246995ac6b1ce6e5))
+* **telemetry:** avoid polluting stdout in ingest-slog ([d4b8dfa](https://github.com/Agoric/agoric-sdk/commit/d4b8dfa91155789f7ceda5cc3cef06019b9527e7))
+* **telemetry:** handle new trigger slog events ([d32cb7e](https://github.com/Agoric/agoric-sdk/commit/d32cb7e9f406c25399321dc32e827b5018c38b69))
+* **telemetry:** ingest-slog avoid writing progress file for stdin ([62589ca](https://github.com/Agoric/agoric-sdk/commit/62589ca7b6d4aaa9eb7042f95ec7aec633db27f9))
+* **telemetry:** otel correctly pop upgrade span ([0ffdf00](https://github.com/Agoric/agoric-sdk/commit/0ffdf001bc8cbdc94081fedfeb4d2376902f4ffc)), closes [#8272](https://github.com/Agoric/agoric-sdk/issues/8272) [#9569](https://github.com/Agoric/agoric-sdk/issues/9569)
+* **telemetry:** silence slogfile write errors ([91089d7](https://github.com/Agoric/agoric-sdk/commit/91089d7273ef3d41555b34d84471120d45602497))
+
+
+
 ### [0.6.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/telemetry@0.6.1...@agoric/telemetry@0.6.2) (2023-06-02)
 
 **Note:** Version bump only for package @agoric/telemetry
