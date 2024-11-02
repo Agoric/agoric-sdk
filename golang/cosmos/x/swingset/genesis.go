@@ -237,19 +237,18 @@ func (eventHandler swingStoreGenesisEventHandler) OnExportRetrieved(provider kee
 			if err == io.EOF {
 				artifactsEnded = true
 				if eventHandler.exportMode == keeper.SwingStoreArtifactModeDebug {
-					err = nil
-					exportDataReader, err := getExportDataReader()
+					exportDataReader, _ := getExportDataReader()
 
+					defer exportDataReader.Close()
+
+					err = agoric.EncodeKVEntryReaderToJsonl(
+						exportDataReader,
+						&encodedExportData,
+					)
 					if err == nil {
-						err = agoric.EncodeKVEntryReaderToJsonl(
-							exportDataReader,
-							&encodedExportData,
-						)
-						if err == nil {
-							artifact = types.SwingStoreArtifact{
-								Data: encodedExportData.Bytes(),
-								Name: keeper.UntrustedExportDataArtifactName,
-							}
+						artifact = types.SwingStoreArtifact{
+							Data: encodedExportData.Bytes(),
+							Name: keeper.UntrustedExportDataArtifactName,
 						}
 					}
 				}
