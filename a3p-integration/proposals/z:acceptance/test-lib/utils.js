@@ -1,7 +1,12 @@
-import { makeAgd, agops, agoric } from '@agoric/synthetic-chain';
+import { agoric, makeAgd } from '@agoric/synthetic-chain';
 import { execFileSync } from 'node:child_process';
 import { readFile, writeFile } from 'node:fs/promises';
 import { boardSlottingMarshaller, makeFromBoard } from './rpc.js';
+
+/**
+ * @import {WalletUtils} from './wallet.js';
+ * @import {CurrentWalletRecord} from '@agoric/smart-wallet/src/smartWallet.js';
+ */
 
 /**
  * @param {string} fileName base file name without .tjs extension
@@ -46,7 +51,26 @@ export const getBalances = async (addresses, targetDenom = undefined) => {
   return addresses.length === 1 ? balancesList[0] : balancesList;
 };
 
-export const agopsVaults = addr => agops.vaults('list', '--from', addr);
+// TODO move this out of testing. To inter-protocol?
+// "vaults" is an Inter thing, but vstorage shape is a full chain (client) thing
+// Maybe a plugin architecture where the truth is in inter-protocol and the
+// client-lib rolls up the exports of many packages?
+/**
+ * @param {string} addr
+ * @param {WalletUtils} walletUtils
+ * @returns {Promise<string[]>}
+ */
+export const listVaults = async (addr, { readLatestHead }) => {
+  // TODO parameterize readLatestHead to match these string types
+  const current = /** @type {CurrentWalletRecord} */ (
+    await readLatestHead(`published.wallet.${addr}.current`)
+  );
+  const vaultStoragePaths = current.offerToPublicSubscriberPaths.map(
+    ([_offerId, pathmap]) => pathmap.vault,
+  );
+
+  return vaultStoragePaths;
+};
 
 export const makeTimerUtils = ({ setTimeout }) => {
   /**

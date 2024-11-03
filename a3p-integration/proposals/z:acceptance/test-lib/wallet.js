@@ -91,3 +91,4 @@ export const makeWalletUtils = async (
     vstorage,
   };
 };
+/** @typedef {Awaited<ReturnType<typeof makeWalletUtils>>} WalletUtils */

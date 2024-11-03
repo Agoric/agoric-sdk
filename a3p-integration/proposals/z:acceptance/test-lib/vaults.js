@@ -14,9 +14,14 @@ import {
   ceilMultiplyBy,
   makeRatio,
 } from '@agoric/zoe/src/contractSupport/ratio.js';
-import { getAgoricNamesBrands, getAgoricNamesInstances } from './utils.js';
+import {
+  getAgoricNamesBrands,
+  getAgoricNamesInstances,
+  listVaults,
+} from './utils.js';
 import { boardSlottingMarshaller, makeFromBoard } from './rpc.js';
 import { retryUntilCondition } from './sync-tools.js';
+import { walletUtils } from './index.js';
 
 const fromBoard = makeFromBoard();
 const marshaller = boardSlottingMarshaller(fromBoard.convertSlotToVal);
@@ -26,7 +31,7 @@ const marshaller = boardSlottingMarshaller(fromBoard.convertSlotToVal);
  * @returns {Promise<{ vaultID: string, debt: bigint, collateral: bigint, state: string }>}
  */
 export const getLastVaultFromAddress = async address => {
-  const activeVaults = await agops.vaults('list', '--from', address);
+  const activeVaults = await listVaults(address, walletUtils);
   const vaultPath = activeVaults[activeVaults.length - 1];
   const vaultID = vaultPath.split('.').pop();
 
