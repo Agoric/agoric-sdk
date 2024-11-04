@@ -1,10 +1,14 @@
 // @ts-check
 /* eslint-env node */
-import { bigintReplacer, getNetworkConfig } from '@agoric/client-utils';
+import {
+  bigintReplacer,
+  getNetworkConfig,
+  makeWalletUtils,
+} from '@agoric/client-utils';
 import { Fail } from '@endo/errors';
 import { CommanderError } from 'commander';
 import { normalizeAddressWithOptions } from '../lib/chain.js';
-import { makeWalletUtils, sendAction } from '../lib/wallet.js';
+import { sendAction } from '../lib/wallet.js';
 
 /**
  * Make commands for testing.
@@ -38,7 +42,7 @@ export const makeTestCommand = (
       // XXX pass fetch to getNetworkConfig() explicitly
       // await null above makes this await safe
       const networkConfig = await getNetworkConfig(env);
-      return makeWalletUtils({ fetch, execFileSync, delay }, networkConfig);
+      return makeWalletUtils({ fetch, delay }, networkConfig);
     } catch (err) {
       // CommanderError is a class constructor, and so
       // must be invoked with `new`.

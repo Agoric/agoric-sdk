@@ -5,6 +5,7 @@ import {
   bigintReplacer,
   getNetworkConfig,
   makeRpcUtils,
+  makeWalletUtils,
   storageHelper,
 } from '@agoric/client-utils';
 import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
@@ -17,7 +18,6 @@ import { inspect } from 'util';
 import { normalizeAddressWithOptions } from '../lib/chain.js';
 import {
   getCurrent,
-  makeWalletUtils,
   outputAction,
   sendAction,
   sendHint,
@@ -271,10 +271,7 @@ export const makeOracleCommand = (logger, io = {}) => {
       ) => {
         const { readLatestHead, networkConfig, lookupPriceAggregatorInstance } =
           await rpcTools();
-        const wutil = await makeWalletUtils(
-          { fetch, execFileSync, delay },
-          networkConfig,
-        );
+        const wutil = await makeWalletUtils({ fetch, delay }, networkConfig);
         const unitPrice = scaleDecimals(price);
 
         const feedPath = `published.priceFeed.${pair[0]}-${pair[1]}_price_feed`;

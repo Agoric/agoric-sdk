@@ -10,6 +10,7 @@ import {
   bigintReplacer,
   getNetworkConfig,
   makeAmountFormatter,
+  makeWalletUtils,
 } from '@agoric/client-utils';
 import { makeOfferSpecShape } from '@agoric/inter-protocol/src/auction/auctionBook.js';
 import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
@@ -17,12 +18,7 @@ import { objectMap } from '@agoric/internal';
 import { M, matches } from '@endo/patterns';
 
 import { normalizeAddressWithOptions, pollBlocks } from '../lib/chain.js';
-import {
-  getCurrent,
-  makeWalletUtils,
-  outputActionAndHint,
-  sendAction,
-} from '../lib/wallet.js';
+import { getCurrent, outputActionAndHint, sendAction } from '../lib/wallet.js';
 
 const { values } = Object;
 
@@ -238,7 +234,7 @@ export const makeInterCommand = (
       // XXX pass fetch to getNetworkConfig() explicitly
       // await null above makes this await safe
       const networkConfig = await getNetworkConfig(env);
-      return makeWalletUtils({ fetch, execFileSync, delay }, networkConfig);
+      return makeWalletUtils({ fetch, delay }, networkConfig);
     } catch (err) {
       // CommanderError is a class constructor, and so
       // must be invoked with `new`.
