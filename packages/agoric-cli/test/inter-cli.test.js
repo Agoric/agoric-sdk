@@ -2,14 +2,11 @@
 /* eslint-env node */
 import '@endo/init';
 import test from 'ava';
-import { createCommand, CommanderError } from 'commander';
+import { CommanderError, createCommand } from 'commander';
 
-import { Far } from '@endo/far';
+import { boardSlottingMarshaller, makeFromBoard } from '@agoric/client-utils';
 import { makeParseAmount } from '@agoric/inter-protocol/src/clientSupport.js';
-import {
-  boardSlottingMarshaller,
-  makeFromBoard,
-} from '../../client-utils/src/rpc.js';
+import { Far } from '@endo/far';
 
 import { fmtBid, makeInterCommand } from '../src/commands/inter.js';
 

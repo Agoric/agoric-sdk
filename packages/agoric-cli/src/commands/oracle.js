@@ -1,6 +1,12 @@
 // @ts-check
 /* eslint-disable func-names */
 /* eslint-env node */
+import {
+  bigintReplacer,
+  getNetworkConfig,
+  makeRpcUtils,
+  storageHelper,
+} from '@agoric/client-utils';
 import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
 import { oracleBrandFeedName } from '@agoric/inter-protocol/src/proposals/utils.js';
 import { Fail } from '@endo/errors';
@@ -9,12 +15,6 @@ import * as cp from 'child_process';
 import { Command } from 'commander';
 import { inspect } from 'util';
 import { normalizeAddressWithOptions } from '../lib/chain.js';
-import { bigintReplacer } from '@agoric/client-utils';
-import {
-  getNetworkConfig,
-  makeRpcUtils,
-  storageHelper,
-} from '@agoric/client-utils';
 import {
   getCurrent,
   makeWalletUtils,

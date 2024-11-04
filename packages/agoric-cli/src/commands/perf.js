@@ -10,6 +10,7 @@ import {
 import { Command } from 'commander';
 import fs from 'fs';
 import { exit } from 'process';
+import { networkConfig } from '@agoric/client-utils';
 import { slotToRemotable } from '@agoric/internal/src/storage-test-utils.js';
 import { boardSlottingMarshaller } from '@agoric/vats/tools/board-utils.js';
 import { makeLeaderOptions } from '../lib/casting.js';
@@ -17,7 +18,6 @@ import {
   execSwingsetTransaction,
   normalizeAddressWithOptions,
 } from '../lib/chain.js';
-import { networkConfig } from '@agoric/client-utils';
 
 // tight for perf testing but less than this tends to hang.
 const SLEEP_SECONDS = 0.1;

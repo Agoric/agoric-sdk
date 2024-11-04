@@ -1,10 +1,9 @@
 // @ts-check
 /* eslint-disable func-names */
 /* eslint-env node */
-import { Command } from 'commander';
+import { asPercent, makeRpcUtils, storageHelper } from '@agoric/client-utils';
 import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
-import { asPercent } from '@agoric/client-utils';
-import { makeRpcUtils, storageHelper } from '@agoric/client-utils';
+import { Command } from 'commander';
 import { outputExecuteOfferAction } from '../lib/wallet.js';
 
 // Adapted from https://gist.github.com/dckc/8b5b2f16395cb4d7f2ff340e0bc6b610#file-psm-tool

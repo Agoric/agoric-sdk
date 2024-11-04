@@ -8,11 +8,15 @@ import {
   makeLeader,
   makeLeaderFromRpcAddresses,
 } from '@agoric/casting';
+import {
+  fmtRecordOfLines,
+  makeRpcUtils,
+  networkConfig,
+  summarize,
+} from '@agoric/client-utils';
+import { execFileSync } from 'child_process';
 import fs from 'fs';
 import util from 'util';
-import { execFileSync } from 'child_process';
-import { fmtRecordOfLines, summarize } from '@agoric/client-utils';
-import { makeRpcUtils, networkConfig } from '@agoric/client-utils';
 
 import { makeLeaderOptions } from '../lib/casting.js';
 import {
