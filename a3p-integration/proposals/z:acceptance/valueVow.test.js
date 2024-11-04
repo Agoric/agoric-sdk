@@ -1,30 +1,21 @@
-/* global fetch setTimeout */
-
 // @ts-check
+import '@endo/init/debug.js';
 import test from 'ava';
 import { inspect } from 'node:util';
-import { execFileSync } from 'node:child_process';
-import '@endo/init/debug.js';
 
 import {
   evalBundles,
   getIncarnation,
   GOV1ADDR as GETTER, // not particular to governance, just a handy wallet
-  GOV2ADDR as SETTER, // not particular to governance, just a handy wallet
+  GOV2ADDR as SETTER,
 } from '@agoric/synthetic-chain';
-import { makeWalletUtils } from './test-lib/wallet.js';
-import { networkConfig } from './test-lib/index.js';
+import { walletUtils } from './test-lib/index.js';
 import { retryUntilCondition } from './test-lib/sync-tools.js';
 
 const START_VALUEVOW_DIR = 'start-valueVow';
 const RESTART_VALUEVOW_DIR = 'restart-valueVow';
 
 test('vow survives restart', async t => {
-  const walletUtils = await makeWalletUtils(
-    { setTimeout, execFileSync, fetch },
-    networkConfig,
-  );
-
   t.log('start valueVow');
   await evalBundles(START_VALUEVOW_DIR);
   t.is(await getIncarnation('valueVow'), 0);

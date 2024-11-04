@@ -1,13 +1,13 @@
 /* global fetch setTimeout */
 
-import test from 'ava';
 import '@endo/init';
-import { execFileSync } from 'node:child_process';
+import test from 'ava';
+
 import { GOV1ADDR, GOV2ADDR } from '@agoric/synthetic-chain';
-import { networkConfig } from './test-lib/index.js';
-import { getLastUpdate, makeWalletUtils } from './test-lib/wallet.js';
 import { makeGovernanceDriver } from './test-lib/governance.js';
+import { networkConfig, walletUtils } from './test-lib/index.js';
 import { makeTimerUtils } from './test-lib/utils.js';
+import { getLastUpdate } from './test-lib/wallet.js';
 
 const GOV4ADDR = 'agoric1c9gyu460lu70rtcdp95vummd6032psmpdx7wdy';
 const governanceAddresses = [GOV4ADDR, GOV2ADDR, GOV1ADDR];
@@ -16,10 +16,7 @@ test.serial(
   'economic committee can make governance proposal and vote on it',
   async t => {
     const { waitUntil } = makeTimerUtils({ setTimeout });
-    const { readLatestHead } = await makeWalletUtils(
-      { setTimeout, execFileSync, fetch },
-      networkConfig,
-    );
+    const { readLatestHead } = walletUtils;
     const governanceDriver = await makeGovernanceDriver(fetch, networkConfig);
 
     /** @type {any} */
