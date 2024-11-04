@@ -119,6 +119,7 @@ test('make accounts, register tap, return invitationMakers', async t => {
     'tokens transferred from LOA to COA',
   );
   await transmitTransferAck();
+  await eventLoopIteration(); // propagate the ack
   const { acknowledgement } = (await inspectDibcBridge()).bridgeEvents.at(
     -1,
   ) as IBCEvent<'acknowledgementPacket'>;

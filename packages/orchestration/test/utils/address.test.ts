@@ -70,7 +70,7 @@ test('findAddressField', t => {
       '/ibc-hop/connection-0/ibc-port/icahost/ordered/{"version":"ics27-1","controller_connection_id":"connection-0","host_connection_id":"connection-1","address":"osmo1m30khedzqy9msu4502u74ugmep30v69pzee370jkas57xhmjfgjqe67ayq","encoding":"proto3","tx_type":"sdk_multi_msg"}/ibc-channel/channel-1',
     ),
     'osmo1m30khedzqy9msu4502u74ugmep30v69pzee370jkas57xhmjfgjqe67ayq',
-    'returns address when localAddrr is appended to version string',
+    'returns address when localAddr is appended to version string',
   );
   t.is(
     findAddressField(
@@ -103,7 +103,7 @@ test('makeICQChannelAddress', t => {
       ),
     {
       message:
-        /must be '\(\/ibc-hop\/CONNECTION\)\*\/ibc-port\/PORT\/\(ordered\|unordered\)\/VERSION'/,
+        /must be '\(\/ibc-hop\/CONNECTION\)\*\/ibc-port\/PORT\/\(pipelining\/\(true|false\)\/\)?\(ordered\|unordered\)\/VERSION'/,
     },
     'makeICQChannelAddress not hardened against malformed version. use `validateRemoteIbcAddress` to detect this, or expect IBC ProtocolImpl to throw',
   );

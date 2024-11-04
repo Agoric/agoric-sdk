@@ -70,7 +70,7 @@ export const ibcBridgeMocks: {
       ) => IBCEvent<'channelOpenAck'>
     : T extends 'acknowledgementPacket'
       ? (
-          obj: IBCMethod<'sendPacket'>,
+          obj: IBCEvent<'sendPacket'>,
           opts: { sequence: bigint; acknowledgement: string },
         ) => IBCEvent<'acknowledgementPacket'>
       : never;
@@ -102,13 +102,11 @@ export const ibcBridgeMocks: {
         address: mockChainAddress,
       }),
       connectionHops: obj.hops,
-      order: obj.order,
-      version: obj.version,
     };
   },
 
   acknowledgementPacket: (
-    obj: IBCMethod<'sendPacket'>,
+    obj: IBCEvent<'sendPacket'>,
     opts: { sequence: bigint; acknowledgement: string },
   ): IBCEvent<'acknowledgementPacket'> => {
     const { sequence, acknowledgement } = opts;
@@ -236,19 +234,23 @@ export const makeFakeIBCBridge = (
                   : `${bech32Prefix}1test`;
               addressMap.set(addressKey, mockChainAddress);
             }
-            const ackEvent = ibcBridgeMocks.channelOpenAck(obj, {
-              mockChainAddress,
-              channelID: `channel-${channelCount}`,
-              counterpartyChannelID: `channel-${connectionChannelCount}`,
+            const channelID = `channel-${channelCount}` as const;
+
+            setImmediate(() => {
+              const ackEvent = ibcBridgeMocks.channelOpenAck(obj, {
+                mockChainAddress,
+                channelID,
+                counterpartyChannelID: `channel-${connectionChannelCount}`,
+              });
+              bridgeHandler?.fromBridge(ackEvent);
+              bridgeEvents = bridgeEvents.concat(ackEvent);
+              channelCount += 1;
+              if (obj.packet.source_port.includes('icacontroller')) {
+                icaAccountCount += 1;
+              }
+              remoteChannelMap[obj.hops[0]] = connectionChannelCount + 1;
             });
-            bridgeHandler?.fromBridge(ackEvent);
-            bridgeEvents = bridgeEvents.concat(ackEvent);
-            channelCount += 1;
-            if (obj.packet.source_port.includes('icacontroller')) {
-              icaAccountCount += 1;
-            }
-            remoteChannelMap[obj.hops[0]] = connectionChannelCount + 1;
-            return undefined;
+            return channelID;
           }
           case 'sendPacket': {
             const mockAckMapHasData = obj.packet.data in mockAckMap;
@@ -274,9 +276,11 @@ export const makeFakeIBCBridge = (
                 ? mockAckMap[obj.packet.data]
                 : errorAcknowledgments.error5,
             });
-            bridgeEvents = bridgeEvents.concat(ackEvent);
             ibcSequenceNonce += 1n;
-            bridgeHandler?.fromBridge(ackEvent);
+            setImmediate(() => {
+              bridgeEvents = bridgeEvents.concat(ackEvent);
+              bridgeHandler?.fromBridge(ackEvent);
+            });
             return ackEvent.packet;
           }
           default:
