@@ -1,3 +1,6 @@
+name: agoric-multichain-testing-fusdc
+version: 0.2.20
+
 chains:
   - id: agoriclocal
     name: agoric
