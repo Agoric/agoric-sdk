@@ -98,16 +98,16 @@ func (im IBCModule) OnChanOpenInit(
 }
 
 type ChannelOpenTryEvent struct {
-	*vm.ActionHeader `actionType:"IBC_EVENT"`
-	Event            string                    `json:"event" default:"channelOpenTry"`
-	Target           string                    `json:"target,omitempty"`
-	Order            string                    `json:"order"`
-	ConnectionHops   []string                  `json:"connectionHops"`
-	PortID           string                    `json:"portID"`
-	ChannelID        string                    `json:"channelID"`
-	Counterparty     channeltypes.Counterparty `json:"counterparty"`
-	Version          string                    `json:"version"`
-	AsyncVersions    bool                      `json:"asyncVersions"`
+	*vm.ActionHeader    `actionType:"IBC_EVENT"`
+	Event               string                    `json:"event" default:"channelOpenTry"`
+	Target              string                    `json:"target,omitempty"`
+	Order               string                    `json:"order"`
+	ConnectionHops      []string                  `json:"connectionHops"`
+	PortID              string                    `json:"portID"`
+	ChannelID           string                    `json:"channelID"`
+	Counterparty        channeltypes.Counterparty `json:"counterparty"`
+	CounterpartyVersion string                    `json:"counterpartyVersion"`
+	AsyncVersions       bool                      `json:"asyncVersions"`
 }
 
 func (im IBCModule) OnChanOpenTry(
@@ -121,13 +121,13 @@ func (im IBCModule) OnChanOpenTry(
 	counterpartyVersion string,
 ) (string, error) {
 	event := ChannelOpenTryEvent{
-		Order:          orderToString(order),
-		ConnectionHops: connectionHops,
-		PortID:         portID,
-		ChannelID:      channelID,
-		Counterparty:   counterparty,
-		Version:        counterpartyVersion,
-		AsyncVersions:  AsyncVersions,
+		Order:               orderToString(order),
+		ConnectionHops:      connectionHops,
+		PortID:              portID,
+		ChannelID:           channelID,
+		Counterparty:        counterparty,
+		CounterpartyVersion: counterpartyVersion,
+		AsyncVersions:       AsyncVersions,
 	}
 
 	err := im.impl.PushAction(ctx, event)
@@ -142,7 +142,7 @@ func (im IBCModule) OnChanOpenTry(
 
 	if !event.AsyncVersions {
 		// We have to supply a synchronous version, so just echo back the one they sent.
-		return event.Version, nil
+		return event.CounterpartyVersion, nil
 	}
 
 	// Use an empty version string to indicate that the VM explicitly (possibly

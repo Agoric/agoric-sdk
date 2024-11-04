@@ -21,7 +21,8 @@ var (
 type ReceiverImpl interface {
 	ReceiveSendPacket(ctx sdk.Context, packet exported.PacketI) (uint64, error)
 	ReceiveWriteAcknowledgement(ctx sdk.Context, packet exported.PacketI, ack exported.Acknowledgement) error
-	ReceiveChanOpenInit(ctx sdk.Context, order channeltypes.Order, hops []string, sourcePort, destinationPort, version string) error
+	ReceiveChanOpenInit(ctx sdk.Context, order channeltypes.Order, hops []string, sourcePort, destinationPort, version string) (string, error)
+	ReceiveWriteOpenConfirmChannel(ctx sdk.Context, sourcePort, sourceChannel string) error
 	ReceiveWriteOpenTryChannel(ctx sdk.Context, packet exported.PacketI, order channeltypes.Order, connectionHops []string, version string) error
 	ReceiveChanCloseInit(ctx sdk.Context, sourcePort, sourceChannel string) error
 	ReceiveBindPort(ctx sdk.Context, sourcePort string) error
@@ -118,7 +119,7 @@ func (ir Receiver) Receive(cctx context.Context, jsonRequest string) (jsonReply 
 		packet := channeltypes.NewPacket(
 			msg.Packet.Data, 0,
 			msg.Packet.SourcePort, msg.Packet.SourceChannel,
-			msg.Packet.DestinationPort, msg.Packet.DestinationChannel,
+			"", "",
 			msg.Packet.TimeoutHeight, timeoutTimestamp,
 		)
 		seq, err := impl.ReceiveSendPacket(ctx, packet)
@@ -143,12 +144,23 @@ func (ir Receiver) Receive(cctx context.Context, jsonRequest string) (jsonReply 
 		err = impl.ReceiveWriteAcknowledgement(ctx, msg.Packet, ack)
 
 	case "startChannelOpenInit":
-		err = impl.ReceiveChanOpenInit(
+		var channelID string
+		channelID, err = impl.ReceiveChanOpenInit(
 			ctx, stringToOrder(msg.Order), msg.Hops,
 			msg.Packet.SourcePort,
 			msg.Packet.DestinationPort,
 			msg.Version,
 		)
+		if err == nil {
+			var bz []byte
+			bz, err = json.Marshal(channelID)
+			if err == nil {
+				jsonReply = string(bz)
+			}
+		}
+
+	case "confirmOpenExecuted":
+		err = impl.ReceiveWriteOpenConfirmChannel(ctx, msg.Packet.SourcePort, msg.Packet.SourceChannel)
 
 	case "startChannelCloseInit":
 		err = impl.ReceiveChanCloseInit(ctx, msg.Packet.SourcePort, msg.Packet.SourceChannel)

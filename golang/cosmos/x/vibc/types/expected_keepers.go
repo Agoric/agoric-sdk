@@ -31,6 +31,7 @@ type ChannelKeeper interface {
 		portCap *capability.Capability, counterparty channel.Counterparty, version string) (string, *capability.Capability, error)
 	WriteOpenInitChannel(ctx sdk.Context, portID, channelID string, order channel.Order,
 		connectionHops []string, counterparty channel.Counterparty, version string)
+	WriteOpenConfirmChannel(ctx sdk.Context, portID, channelID string)
 	WriteOpenTryChannel(ctx sdk.Context, portID, channelID string, order channel.Order,
 		connectionHops []string, counterparty channel.Counterparty, version string)
 	ChanCloseInit(ctx sdk.Context, portID, channelID string, chanCap *capability.Capability) error
