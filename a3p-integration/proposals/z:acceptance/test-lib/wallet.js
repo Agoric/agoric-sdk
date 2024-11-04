@@ -1,14 +1,9 @@
-/**
- * @file copied from packages/agoric-cli,
- * removing polling and coalescing features whose dependencies cause import problems here
- */
 // TODO DRY in https://github.com/Agoric/agoric-sdk/issues/9109
 // @ts-check
 /* global */
 
 import { inspect } from 'util';
 import { execSwingsetTransaction, pollTx } from './chain.js';
-import { makeRpcUtils } from './rpc.js';
 import { makeTimerUtils } from './utils.js';
 
 /**
@@ -18,7 +13,7 @@ import { makeTimerUtils } from './utils.js';
  * @param {import('@agoric/smart-wallet/src/smartWallet.js').BridgeAction} bridgeAction
  * @param {import('./rpc.js').MinimalNetworkConfig & {
  *   from: string,
- *   marshaller: import('@endo/marshal').Marshal<'string'>,
+ *   marshaller: Pick<import('@endo/marshal').Marshal<string | null>, 'toCapData'>,
  *   fees?: string,
  *   verbose?: boolean,
  *   keyring?: {home?: string, backend: string},
@@ -57,12 +52,20 @@ export const sendAction = async (bridgeAction, opts) => {
   return pollTx(tx.txhash, opts);
 };
 
-export const makeWalletUtils = async (
-  { setTimeout, execFileSync, fetch },
+/**
+ * Stop-gap using execFileSync until we have a pure JS signing client.
+ *
+ * @param {object} root0
+ * @param {import('@agoric/client-utils').WalletUtils} root0.walletUtils
+ * @param {import('child_process')['execFileSync']} root0.execFileSync
+ * @param {typeof setTimeout} root0.setTimeout
+ * @param {import('@agoric/client-utils').MinimalNetworkConfig} networkConfig
+ */
+export const makeAgdWalletUtils = async (
+  { execFileSync, walletUtils, setTimeout },
   networkConfig,
 ) => {
-  const { agoricNames, fromBoard, marshaller, readLatestHead, vstorage } =
-    await makeRpcUtils({ fetch }, networkConfig);
+  const { marshaller } = walletUtils;
 
   const { delay } = await makeTimerUtils({ setTimeout });
   /**
@@ -83,12 +86,6 @@ export const makeWalletUtils = async (
   };
 
   return {
-    agoricNames,
     broadcastBridgeAction,
-    fromBoard,
-    networkConfig,
-    readLatestHead,
-    vstorage,
   };
 };
-/** @typedef {Awaited<ReturnType<typeof makeWalletUtils>>} WalletUtils */

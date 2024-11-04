@@ -1,28 +1,21 @@
-/* global fetch setTimeout */
+/* eslint-env node */
 
 import test from 'ava';
 
 import { retryUntilCondition } from '@agoric/client-utils';
 import {
   agoric,
+  CHAINID,
   evalBundles,
   GOV1ADDR,
   GOV2ADDR,
-  CHAINID,
 } from '@agoric/synthetic-chain';
-import { execFileSync } from 'child_process';
 import { agdWalletUtils } from './test-lib/index.js';
+import {
   agd,
   getBalances,
   replaceTemplateValuesInFile,
 } from './test-lib/utils.js';
-import { makeWalletUtils } from './test-lib/wallet.js';
-import { networkConfig } from './test-lib/index.js';
-
-const walletUtils = await makeWalletUtils(
-  { setTimeout, execFileSync, fetch },
-  networkConfig,
-);
 
 test.serial(`send invitation via namesByAddress`, async t => {
   const SUBMISSION_DIR = 'invitation-test-submission';
@@ -55,7 +48,7 @@ test.serial('exitOffer tool reclaims stuck payment', async t => {
   const istBalanceBefore = await getBalances([GOV1ADDR], 'uist');
 
   const offerId = 'bad-invitation-15'; // offer submitted on proposal upgrade-15 with an incorrect method name
-  await walletUtils.broadcastBridgeAction(GOV1ADDR, {
+  await agdWalletUtils.broadcastBridgeAction(GOV1ADDR, {
     method: 'tryExitOffer',
     offerId,
   });
@@ -64,7 +57,7 @@ test.serial('exitOffer tool reclaims stuck payment', async t => {
     async () => getBalances([GOV1ADDR], 'uist'),
     istBalance => istBalance > istBalanceBefore,
     'tryExitOffer failed to reclaim stuck payment ',
-    { setTimeout, retryIntervalMs: 5000, maxRetries: 15 },
+    { log: t.log, setTimeout, retryIntervalMs: 5000, maxRetries: 15 },
   );
 
   t.true(

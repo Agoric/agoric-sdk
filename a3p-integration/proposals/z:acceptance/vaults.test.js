@@ -17,7 +17,7 @@ import {
   openVault,
   USER1ADDR,
 } from '@agoric/synthetic-chain';
-import { walletUtils } from './test-lib/index.js';
+import { agdWalletUtils, walletUtils } from './test-lib/index.js';
 import {
   getPriceFeedRoundId,
   verifyPushedPrice,
@@ -35,7 +35,6 @@ import {
 const VAULT_MANAGER = 'manager0';
 
 const scale6 = x => x * 1_000_000;
-const walletUtils = await makeWalletUtils();
 
 // TODO produce this dynamically from an Offers object exported from a package clientSupport
 const exec = {
@@ -61,7 +60,7 @@ const exec = {
         offerId,
         collateralBrandKey,
       });
-      return walletUtils.broadcastBridgeAction(from, {
+      return agdWalletUtils.broadcastBridgeAction(from, {
         method: 'executeOffer',
         offer,
       });
