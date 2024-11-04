@@ -9,7 +9,7 @@ import * as cp from 'child_process';
 import { Command } from 'commander';
 import { inspect } from 'util';
 import { normalizeAddressWithOptions } from '../lib/chain.js';
-import { bigintReplacer } from '../lib/format.js';
+import { bigintReplacer } from '@agoric/client-utils';
 import {
   getNetworkConfig,
   makeRpcUtils,

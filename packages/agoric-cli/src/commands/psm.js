@@ -3,7 +3,7 @@
 /* eslint-env node */
 import { Command } from 'commander';
 import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
-import { asPercent } from '../lib/format.js';
+import { asPercent } from '@agoric/client-utils';
 import { makeRpcUtils, storageHelper } from '@agoric/client-utils';
 import { outputExecuteOfferAction } from '../lib/wallet.js';
 

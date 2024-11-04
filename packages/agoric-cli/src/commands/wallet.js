@@ -11,7 +11,7 @@ import {
 import fs from 'fs';
 import util from 'util';
 import { execFileSync } from 'child_process';
-import { fmtRecordOfLines, summarize } from '../lib/format.js';
+import { fmtRecordOfLines, summarize } from '@agoric/client-utils';
 import { makeRpcUtils, networkConfig } from '@agoric/client-utils';
 
 import { makeLeaderOptions } from '../lib/casting.js';

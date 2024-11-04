@@ -16,7 +16,7 @@ import {
   asBoardRemote,
   bigintReplacer,
   makeAmountFormatter,
-} from '../lib/format.js';
+} from '@agoric/client-utils';
 import { getNetworkConfig } from '@agoric/client-utils';
 import {
   getCurrent,
