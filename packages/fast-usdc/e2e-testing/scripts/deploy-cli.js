@@ -1,4 +1,5 @@
-#!/usr/bin/env tsx
+#!/usr/bin/env node
+/* global globalThis, process */
 import '@endo/init/debug.js';
 
 import { makeNodeBundleCache } from '@endo/bundle-source/cache.js';
@@ -17,28 +18,29 @@ async function main() {
     process.exit(1);
   }
 
-  const container = makeContainer({ execFileSync: childProcess.execFileSync });
+  const container = makeContainer({
+    execFileSync: childProcess.execFileSync,
+    cmd: ['docker', 'compose', 'exec'],
+    pod: 'agd',
+  });
 
   const bundleCache = await makeNodeBundleCache('bundles', {}, s => import(s));
   const tools = makeE2ETools(console.log, bundleCache, {
     execFileSync: container.execFileSync,
     copyFiles: container.copyFiles,
-    fetch,
-    setTimeout,
+    fetch: globalThis.fetch,
+    setTimeout: globalThis.setTimeout,
   });
 
-  const readJSON = (path: string) =>
-    fsp.readFile(path, 'utf-8').then(x => JSON.parse(x));
+  const readJSON = path => fsp.readFile(path, 'utf-8').then(x => JSON.parse(x));
   const execFileP = promisify(childProcess.execFile);
-  const npx = (file: string, args: string[]) =>
-    execFileP('npx', ['--no-install', file, ...args]);
+  const npx = (file, args) => execFileP('npx', ['--no-install', file, ...args]);
   const deployBuilder = makeDeployBuilder(tools, readJSON, npx);
-  try {
-    await deployBuilder(builder);
-  } catch (err) {
-    console.error(err);
-    process.exit(1);
-  }
+
+  await deployBuilder(builder);
 }
 
-main();
+main().catch(err => {
+  console.error(err);
+  process.exit(1);
+});

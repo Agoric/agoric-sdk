@@ -3,22 +3,22 @@ import { assert } from '@endo/errors';
 import { E, Far } from '@endo/far';
 import { Nat } from '@endo/nat';
 import { makePromiseKit } from '@endo/promise-kit';
+import { exec } from 'child_process';
+import path from 'path';
+import fs from 'fs';
+import fse from 'fs-extra';
+import os from 'os';
+import { createRequire } from 'module';
 import { flags, makeAgd, makeContainer } from './agd-lib.js';
 import { makeHttpClient, makeAPI } from './makeHttpClient.js';
 import { dedup, makeQueryKit, poll } from './queryKit.js';
 import { makeVStorage } from './batchQuery.js';
 import { getBundleId } from './bundle-tools.js';
 
-/////////
+/// //////
 
-import { exec } from 'child_process';
-import path from 'path';
-import fs from 'fs';
-import { makeDeployBuilder } from '../tools/deploy.js';
-import fse from 'fs-extra';
-import { execa } from 'execa';
-import os from 'os';
-import { createRequire } from 'module';
+import { makeDeployBuilder } from './deploy.js';
+
 const nodeRequire = createRequire(import.meta.url);
 
 /** @import { Container, ExecSync } from './agd-lib.js'; */
@@ -102,7 +102,7 @@ const makeBlockTool = ({ rpc, delay }) => {
  */
 const installBundle = async (fullPath, opts) => {
   const { id, agd, progress = console.log } = opts;
-  const { chainId = 'agoriclocal', installer = 'faucet' } = opts;
+  const { chainId = 'agoriclocal', installer = 'gov1' } = opts;
   const from = await agd.lookup(installer);
   // const explainDelay = (ms, info) => {
   //   progress('follow', { ...info, delay: ms / 1000 }, '...');
@@ -149,7 +149,7 @@ export const provisionSmartWallet = async (
     lcd,
     delay,
     chainId = 'agoriclocal',
-    whale = 'faucet',
+    whale = 'validator',
     progress = console.log,
     // q = makeQueryKit(makeVStorage(lcd)).query,
   },
@@ -208,7 +208,6 @@ export const provisionSmartWallet = async (
 
   /** @param {import('@agoric/smart-wallet/src/smartWallet.js').BridgeAction} bridgeAction */
   const sendAction = async bridgeAction => {
-    // eslint-disable-next-line no-undef
     const capData = q.toCapData(harden(bridgeAction));
     const offerBody = JSON.stringify(capData);
     const txInfo = await agd.tx(
@@ -271,7 +270,6 @@ export const provisionSmartWallet = async (
     for await (const { balances: haystack } of cosmosBalanceUpdates()) {
       for (const candidate of haystack) {
         if (candidate.denom === denom) {
-          // eslint-disable-next-line no-undef
           const amt = harden({ brand, value: BigInt(candidate.amount) });
           yield amt;
         }
@@ -325,7 +323,7 @@ const voteLatestProposalAndWait = async ({
   agd,
   blockTool,
   chainId = 'agoriclocal',
-  validator = 'genesis',
+  validator = 'validator',
 }) => {
   await blockTool.waitForBlock(1, { before: 'get latest proposal' });
   const proposalsData = await agd.query(['gov', 'proposals']);
@@ -384,7 +382,7 @@ const runCoreEval = async (
     agd,
     blockTool,
     chainId = 'agoriclocal',
-    proposer = 'genesis',
+    proposer = 'validator',
     deposit = `1${BLD}`,
   },
 ) => {
@@ -492,7 +490,7 @@ export const makeE2ETools = (
         installed: confirm,
       });
     }
-    // eslint-disable-next-line no-undef
+
     return harden(bundles);
   };
 
@@ -525,7 +523,7 @@ export const makeE2ETools = (
 
       const fullPath = contractPath;
       const containerPath = fullPath.includes('contract/src/')
-        ? '/root/src/' + fullPath.split('contract/src/').pop()
+        ? `/root/src/${fullPath.split('contract/src/').pop()}`
         : fullPath;
 
       console.log('containerPath');
@@ -539,7 +537,7 @@ export const makeE2ETools = (
       console.log(bundle);
       console.log(bundle_proposal);
 
-      //copy to
+      // copy to
       const homeDir = os.homedir();
       const bundleId = getBundleId(bundle);
       const bundleFileName = path.join(
@@ -557,7 +555,6 @@ export const makeE2ETools = (
         exec(copyCommand, (error, stdout, stderr) => {
           if (error) {
             console.error(`Error copying file: ${stderr}`);
-            return;
           }
         });
         console.log(
@@ -598,7 +595,7 @@ export const makeE2ETools = (
         getBundleId(bundle) == plan.bundles[0].bundleID,
       );
 
-      //install proposal
+      // install proposal
       const proposalResult = await installBundle(
         `/root/${plan.bundles[1].bundleID}.json`,
         {
@@ -622,11 +619,11 @@ export const makeE2ETools = (
         installed: proposalResult.confirm,
       });
 
-      //install contract
+      // install contract
 
       // const { tx, confirm } = await installBundle(fullPath, {
       // const { tx, confirm } = await installBundle(containerPath, {
-      let { tx, confirm } = await installBundle(
+      const { tx, confirm } = await installBundle(
         `/root/${plan.bundles[0].bundleID}.json`,
         {
           id: fullPath,
@@ -649,7 +646,7 @@ export const makeE2ETools = (
         installed: confirm,
       });
     }
-    // eslint-disable-next-line no-undef
+
     return harden(bundles);
   };
 
@@ -748,7 +745,7 @@ export const seatLike = updates => {
       throw reason;
     }
   })();
-  // eslint-disable-next-line no-undef
+
   return harden({
     getOfferResult: () => sync.result.promise,
     getPayoutAmounts: () => sync.payouts.promise,

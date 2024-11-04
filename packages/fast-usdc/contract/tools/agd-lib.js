@@ -201,9 +201,9 @@ export const makeContainer = ({
       execFileSync: (file, args, opts = returnString) => {
         const execArgs = [...cmd.slice(1), container];
         log(`${pod}/${container}$`, ...[file, ...args].map(x => `${x}`));
-        const exFlags = flags({ container, ...hFlags });
+        const exFlags = flags({ ...hFlags });
         const [hFile, ...hArgs] = [...cmd, pod, ...exFlags];
-        return execFileSync(hFile, [...hArgs, '--', file, ...args], opts);
+        return execFileSync(hFile, [...hArgs, file, ...args], opts);
       },
       /** @param {string[]} paths } */
       copyFiles: paths => {
@@ -211,8 +211,8 @@ export const makeContainer = ({
         runtime.execFileSync('mkdir', ['-p', destDir], returnString);
         for (const path of paths) {
           execFileSync(
-            'kubectl',
-            [`cp`, path, `${pod}:${destDir}/`, ...flags({ container })],
+            'docker',
+            ['compose', `cp`, path, `${pod}:${destDir}/`],
             returnString,
           );
           log(`Copied ${path} to ${destDir} in pod ${pod}`);
