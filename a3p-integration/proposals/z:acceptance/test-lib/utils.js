@@ -4,7 +4,7 @@ import { readFile, writeFile } from 'node:fs/promises';
 import { boardSlottingMarshaller, makeFromBoard } from './rpc.js';
 
 /**
- * @import {WalletUtils} from './wallet.js';
+ * @import {WalletUtils} from '@agoric/client-utils';
  * @import {CurrentWalletRecord} from '@agoric/smart-wallet/src/smartWallet.js';
  */
 

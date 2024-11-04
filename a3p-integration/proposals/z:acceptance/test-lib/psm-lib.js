@@ -327,7 +327,7 @@ export const checkUserInitializedSuccessfully = async (
  *   denom: string,
  *   value: string
  * }} fund
- * @param io
+ * @param {{query: () => Promise<object>, setTimeout: (object) => void}} io
  */
 export const initializeNewUser = async (name, fund, io) => {
   const psmTrader = await addUser(name);

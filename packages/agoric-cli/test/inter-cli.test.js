@@ -4,9 +4,9 @@ import '@endo/init';
 import test from 'ava';
 import { CommanderError, createCommand } from 'commander';
 
-import { boardSlottingMarshaller, makeFromBoard } from '@agoric/client-utils';
 import { makeParseAmount } from '@agoric/inter-protocol/src/clientSupport.js';
 import { Far } from '@endo/far';
+import { boardSlottingMarshaller, makeFromBoard } from '@agoric/client-utils';
 
 import { fmtBid, makeInterCommand } from '../src/commands/inter.js';
 

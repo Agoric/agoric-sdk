@@ -1,22 +1,30 @@
 /* global fetch setTimeout */
 
-import '@endo/init';
 import test from 'ava';
 
+import '@endo/init';
+
+import { makeWalletUtils } from '@agoric/client-utils';
 import { GOV1ADDR, GOV2ADDR } from '@agoric/synthetic-chain';
 import { makeGovernanceDriver } from './test-lib/governance.js';
-import { networkConfig, walletUtils } from './test-lib/index.js';
+import { networkConfig } from './test-lib/index.js';
 import { makeTimerUtils } from './test-lib/utils.js';
-import { getLastUpdate } from './test-lib/wallet.js';
 
 const GOV4ADDR = 'agoric1c9gyu460lu70rtcdp95vummd6032psmpdx7wdy';
 const governanceAddresses = [GOV4ADDR, GOV2ADDR, GOV1ADDR];
+
+// TODO test-lib export `walletUtils` with this ambient authority like s:stake-bld has
+const delay = ms =>
+  new Promise(resolve => setTimeout(() => resolve(undefined), ms));
 
 test.serial(
   'economic committee can make governance proposal and vote on it',
   async t => {
     const { waitUntil } = makeTimerUtils({ setTimeout });
-    const { readLatestHead } = walletUtils;
+    const { readLatestHead, getLastUpdate } = await makeWalletUtils(
+      { delay, fetch },
+      networkConfig,
+    );
     const governanceDriver = await makeGovernanceDriver(fetch, networkConfig);
 
     /** @type {any} */
@@ -48,9 +56,7 @@ test.serial(
       charterInvitation[0],
     );
 
-    const questionUpdate = await getLastUpdate(governanceAddresses[0], {
-      readLatestHead,
-    });
+    const questionUpdate = await getLastUpdate(governanceAddresses[0]);
     t.like(questionUpdate, {
       status: { numWantsSatisfied: 1 },
     });
@@ -74,7 +80,7 @@ test.serial(
         committeeInvitationForVoter[0],
       );
 
-      const voteUpdate = await getLastUpdate(address, { readLatestHead });
+      const voteUpdate = await getLastUpdate(address);
       t.like(voteUpdate, {
         status: { numWantsSatisfied: 1 },
       });

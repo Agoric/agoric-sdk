@@ -16,6 +16,6 @@ export const networkConfig = {
 const delay = ms => new Promise(resolve => setTimeout(() => resolve(), ms));
 
 export const walletUtils = await makeWalletUtils(
-  { delay, execFileSync, fetch },
+  { execFileSync, delay, fetch },
   networkConfig,
 );
