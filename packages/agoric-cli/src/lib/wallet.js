@@ -4,11 +4,14 @@
 import { Fail } from '@endo/errors';
 import { iterateReverse } from '@agoric/casting';
 import { makeWalletStateCoalescer } from '@agoric/smart-wallet/src/utils.js';
-import { execSwingsetTransaction, pollBlocks, pollTx } from './chain.js';
 import { boardSlottingMarshaller, makeRpcUtils } from '@agoric/client-utils';
+import { execSwingsetTransaction, pollBlocks, pollTx } from './chain.js';
 
-/** @import {CurrentWalletRecord} from '@agoric/smart-wallet/src/smartWallet.js' */
-/** @import {AgoricNamesRemotes} from '@agoric/vats/tools/board-utils.js' */
+/**
+ * @import {CurrentWalletRecord} from '@agoric/smart-wallet/src/smartWallet.js';
+ * @import {AgoricNamesRemotes} from '@agoric/vats/tools/board-utils.js';
+ * @import {MinimalNetworkConfig, RpcUtils} from '@agoric/client-utils';
+ */
 
 const marshaller = boardSlottingMarshaller();
 
@@ -22,7 +25,7 @@ const emptyCurrentRecord = {
 
 /**
  * @param {string} addr
- * @param {Pick<import('../../../client-utils/src/rpc.js').RpcUtils, 'readLatestHead'>} io
+ * @param {Pick<import('@agoric/client-utils').RpcUtils, 'readLatestHead'>} io
  * @returns {Promise<import('@agoric/smart-wallet/src/smartWallet.js').CurrentWalletRecord>}
  */
 export const getCurrent = async (addr, { readLatestHead }) => {
@@ -57,7 +60,7 @@ export const getCurrent = async (addr, { readLatestHead }) => {
 
 /**
  * @param {string} addr
- * @param {Pick<import('../../../client-utils/src/rpc.js').RpcUtils, 'readLatestHead'>} io
+ * @param {Pick<import('@agoric/client-utils').RpcUtils, 'readLatestHead'>} io
  * @returns {Promise<import('@agoric/smart-wallet/src/smartWallet.js').UpdateRecord>}
  */
 export const getLastUpdate = (addr, { readLatestHead }) => {
@@ -142,7 +145,7 @@ export const coalesceWalletState = async (follower, invitationBrand) => {
  *
  * @throws { Error & { code: number } } if transaction fails
  * @param {import('@agoric/smart-wallet/src/smartWallet.js').BridgeAction} bridgeAction
- * @param {import('../../../client-utils/src/rpc.js').MinimalNetworkConfig & {
+ * @param {import('@agoric/client-utils').MinimalNetworkConfig & {
  *   from: string,
  *   fees?: string,
  *   verbose?: boolean,
@@ -284,3 +287,4 @@ export const makeWalletUtils = async (
     pollOffer,
   };
 };
+/** @typedef {Awaited<ReturnType<typeof makeWalletUtils>>} WalletUtils */
