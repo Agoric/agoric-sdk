@@ -122,15 +122,31 @@ export const calculateMintFee = async (toMintValue, vaultManager) => {
   return { mintFee, adjustedToMintAmount };
 };
 
+/**
+ * @param {Array<string>} accounts
+ * @param {number} position
+ */
 const voteForNewParams = (accounts, position) => {
   console.log('ACTIONS voting for position', position, 'using', accounts);
   return Promise.all(
     accounts.map(account =>
-      agops.ec('vote', '--forPosition', position, '--send-from', account),
+      agops.ec(
+        'vote',
+        '--forPosition',
+        String(position),
+        '--send-from',
+        account,
+      ),
     ),
   );
 };
 
+/**
+ *
+ * @param {string} previousOfferId
+ * @param {number} voteDur
+ * @param {number} debtLimit
+ */
 const paramChangeOfferGeneration = async (
   previousOfferId,
   voteDur,
@@ -185,6 +201,12 @@ const paramChangeOfferGeneration = async (
   return JSON.stringify(marshaller.toCapData(harden(body)));
 };
 
+/**
+ *
+ * @param {string} address
+ * @param {*} debtLimit
+ * @returns
+ */
 export const proposeNewDebtCeiling = async (address, debtLimit) => {
   const charterAcceptOfferId = await agops.ec(
     'find-continuing-id',
@@ -201,6 +223,12 @@ export const proposeNewDebtCeiling = async (address, debtLimit) => {
 };
 
 export const GOV4ADDR = 'agoric1c9gyu460lu70rtcdp95vummd6032psmpdx7wdy';
+
+/**
+ *
+ * @param {string} address
+ * @param {bigint} debtLimit
+ */
 export const setDebtLimit = async (address, debtLimit) => {
   const govAccounts = [GOV1ADDR, GOV2ADDR, GOV4ADDR];
 

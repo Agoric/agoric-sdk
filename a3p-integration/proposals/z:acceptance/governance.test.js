@@ -12,6 +12,7 @@ const GOV4ADDR = 'agoric1c9gyu460lu70rtcdp95vummd6032psmpdx7wdy';
 const governanceAddresses = [GOV4ADDR, GOV2ADDR, GOV1ADDR];
 
 // TODO test-lib export `walletUtils` with this ambient authority like s:stake-bld has
+/** @param {number} ms */
 const delay = ms =>
   new Promise(resolve => setTimeout(() => resolve(undefined), ms));
 
@@ -29,10 +30,12 @@ test.serial(
     const instance = await readLatestHead(`published.agoricNames.instance`);
     const instances = Object.fromEntries(instance);
 
-    /** @type {any} */
-    const wallet = await readLatestHead(
-      `published.wallet.${governanceAddresses[0]}.current`,
-    );
+    const wallet =
+      /** @type {import('@agoric/smart-wallet/src/smartWallet.js').CurrentWalletRecord} */ (
+        await readLatestHead(
+          `published.wallet.${governanceAddresses[0]}.current`,
+        )
+      );
     const usedInvitations = wallet.offerToUsedInvitation;
 
     const charterInvitation = usedInvitations.find(
@@ -40,6 +43,7 @@ test.serial(
         v[1].value[0].instance.getBoardId() ===
         instances.econCommitteeCharter.getBoardId(),
     );
+    assert(charterInvitation, 'missing charter invitation');
 
     t.log('proposing on param change');
     const params = {
@@ -61,10 +65,10 @@ test.serial(
 
     t.log('Voting on param change');
     for (const address of governanceAddresses) {
-      /** @type {any} */
-      const voteWallet = await readLatestHead(
-        `published.wallet.${address}.current`,
-      );
+      const voteWallet =
+        /** @type {import('@agoric/smart-wallet/src/smartWallet.js').CurrentWalletRecord} */ (
+          await readLatestHead(`published.wallet.${address}.current`)
+        );
 
       const usedInvitationsForVoter = voteWallet.offerToUsedInvitation;
 
@@ -73,6 +77,7 @@ test.serial(
           v[1].value[0].instance.getBoardId() ===
           instances.economicCommittee.getBoardId(),
       );
+      assert(committeeInvitationForVoter, 'missing committee invitation');
       await governanceDriver.voteOnProposedChanges(
         address,
         committeeInvitationForVoter[0],
@@ -84,10 +89,12 @@ test.serial(
       });
     }
 
-    /** @type {any} */
-    const latestQuestion = await readLatestHead(
-      'published.committees.Economic_Committee.latestQuestion',
-    );
+    const latestQuestion =
+      /** @type {import('@agoric/governance/src/types.js').QuestionSpec} */ (
+        await readLatestHead(
+          'published.committees.Economic_Committee.latestQuestion',
+        )
+      );
     await waitUntil(latestQuestion.closingRule.deadline);
 
     t.log('check if latest outcome is correct');

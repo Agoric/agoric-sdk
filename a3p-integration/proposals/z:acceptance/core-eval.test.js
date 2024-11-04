@@ -20,6 +20,7 @@ const replaceTemplateValuesInFile = async (fileName, replacements) => {
   await writeFile(`${fileName}.js`, script);
 };
 
+/** @param {string} path */
 const readPublished = async path => {
   const { value } = await agd.query(
     'vstorage',

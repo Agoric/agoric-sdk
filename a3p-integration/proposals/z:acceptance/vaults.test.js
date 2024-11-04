@@ -41,6 +41,13 @@ const walletUtils = await makeWalletUtils();
 const exec = {
   vaults: {
     // TODO decide how to handle defaults, whether CLI and this should have the same
+    /**
+     * @param {string} from
+     * @param {Parameters<typeof Offers.vaults.OpenVault>[1]['wantMinted']} wantMinted
+     * @param {Parameters<typeof Offers.vaults.OpenVault>[1]['giveCollateral']} giveCollateral
+     * @param {Parameters<typeof Offers.vaults.OpenVault>[1]['offerId']} offerId
+     * @param {Parameters<typeof Offers.vaults.OpenVault>[1]['collateralBrandKey']} collateralBrandKey
+     */
     OpenVault: (
       from,
       wantMinted,
@@ -68,8 +75,8 @@ test.serial('open new vault', async t => {
   const istBalanceBefore = await getISTBalance(USER1ADDR);
   const activeVaultsBefore = await listVaults(USER1ADDR, walletUtils);
 
-  const mint = '5.0';
-  const collateral = '10.0';
+  const mint = 5.0;
+  const collateral = 10.0;
   await exec.vaults.OpenVault(USER1ADDR, mint, collateral);
 
   const istBalanceAfter = await getISTBalance(USER1ADDR);

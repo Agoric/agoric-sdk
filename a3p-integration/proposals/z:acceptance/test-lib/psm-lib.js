@@ -30,14 +30,16 @@ const USDC_DENOM = NonNullish(process.env.USDC_DENOM);
 const PSM_PAIR = NonNullish(process.env.PSM_PAIR).replace('.', '-');
 
 /**
+ * @import {Coin} from '@agoric/cosmic-proto/cosmos/base/v1beta1/coin.js';
+ */
+
+/**
  * @typedef {object} PsmMetrics
  * @property {import('@agoric/ertp').Amount<'nat'>} anchorPoolBalance
  * @property {import('@agoric/ertp').Amount<'nat'>} feePoolBalance
  * @property {import('@agoric/ertp').Amount<'nat'>} mintedPoolBalance
  * @property {import('@agoric/ertp').Amount<'nat'>} totalAnchorProvided
  * @property {import('@agoric/ertp').Amount<'nat'>} totalMintedProvided
- *
- * @typedef {Array<{ denom: string; amount: string; }>} CosmosBalances
  */
 
 const fromBoard = makeFromBoard();
@@ -127,7 +129,7 @@ export const buildProposePSMParamChangeOffer = async ({
     params.MintLimit = AmountMath.make(brands.IST, newParams.mintLimit);
   }
 
-  const offerSpec = {
+  const offerSpec = /** @type {const} */ ({
     id: offerId,
     invitationSpec: {
       source: 'continuing',
@@ -140,14 +142,14 @@ export const buildProposePSMParamChangeOffer = async ({
       params,
       deadline,
     },
-  };
+  });
 
-  /** @type {string | object} */
   const spendAction = {
     method: 'executeOffer',
     offer: offerSpec,
   };
 
+  // @ts-expect-error XXX Passable
   const offer = JSON.stringify(marshaller.toCapData(harden(spendAction)));
   console.log(offerSpec);
   console.log(offer);
@@ -193,7 +195,10 @@ export const fetchLatestEcQuestion = async io => {
   return { latestOutcome, latestQuestion };
 };
 
-const checkCommitteeElectionResult = (electionResult, expectedResult) => {
+const checkCommitteeElectionResult = (
+  /** @type {{ latestOutcome: { outcome: any; question: any; }; latestQuestion: { closingRule: { deadline: any; }; questionHandle: any; }; }} */ electionResult,
+  /** @type {{ outcome: any; deadline: any; }} */ expectedResult,
+) => {
   const {
     latestOutcome: { outcome, question },
     latestQuestion: {
@@ -289,7 +294,11 @@ export const getPsmMetrics = async anchor => {
   return marshaller.fromCapData(JSON.parse(metricsRaw));
 };
 
-export const checkGovParams = async (t, expected, psmName) => {
+export const checkGovParams = async (
+  /** @type {import("ava").ExecutionContext<unknown>} */ t,
+  /** @type {any} */ expected,
+  /** @type {string} */ psmName,
+) => {
   const current = await getPsmGovernance(psmName);
 
   t.log({
@@ -326,7 +335,7 @@ export const checkUserInitializedSuccessfully = async (
  *   denom: string,
  *   value: string
  * }} fund
- * @param {{query: () => Promise<object>, setTimeout: (object) => void}} io
+ * @param {{query: () => Promise<object>, setTimeout: typeof setTimeout}} io
  */
 export const initializeNewUser = async (name, fund, io) => {
   const psmTrader = await addUser(name);
@@ -406,7 +415,7 @@ const receiveAnchor = (base, fee) => Math.ceil(base * (1 - fee));
 
 /**
  *
- * @param {CosmosBalances} balances
+ * @param {Coin[]} balances
  * @param {string} targetDenom
  */
 const extractBalance = (balances, targetDenom) => {
@@ -444,7 +453,7 @@ export const tryISTBalances = async (t, actualBalance, expectedBalance) => {
  *
  * @param {import('ava').ExecutionContext} t
  * @param {PsmMetrics} metricsBefore
- * @param {CosmosBalances} balancesBefore
+ * @param {Coin[]} balancesBefore
  * @param {{trader: string; fee: number; anchor: string;} & (
  *   | {wantMinted: number}
  *   | {giveMinted: number}

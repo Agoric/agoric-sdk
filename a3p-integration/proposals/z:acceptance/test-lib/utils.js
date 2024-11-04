@@ -4,6 +4,7 @@ import { readFile, writeFile } from 'node:fs/promises';
 import { boardSlottingMarshaller, makeFromBoard } from './rpc.js';
 
 /**
+ * @import {Coin} from '@agoric/cosmic-proto/cosmos/base/v1beta1/coin.js';
  * @import {WalletUtils} from '@agoric/client-utils';
  * @import {CurrentWalletRecord} from '@agoric/smart-wallet/src/smartWallet.js';
  */
@@ -20,6 +21,7 @@ export const replaceTemplateValuesInFile = async (fileName, replacements) => {
   await writeFile(`${fileName}.js`, script);
 };
 
+/** @type {(file: string, args: string[], opts: any) => string} */
 const showAndExec = (file, args, opts) => {
   console.log('$', file, ...args);
   return execFileSync(file, args, opts);
@@ -30,13 +32,16 @@ export const agd = makeAgd({ execFileSync: showAndExec }).withOpts({
   keyringBackend: 'test',
 });
 
+// FIXME this return type depends on its arguments in surprising ways
 /**
  * @param {string[]} addresses
  * @param {string} [targetDenom]
+ * @returns {Promise<any>}
  */
 export const getBalances = async (addresses, targetDenom = undefined) => {
   const balancesList = await Promise.all(
     addresses.map(async address => {
+      /** @type {{balances: Coin[]}} */
       const { balances } = await agd.query(['bank', 'balances', address]);
 
       if (targetDenom) {
@@ -72,6 +77,9 @@ export const listVaults = async (addr, { readLatestHead }) => {
   return vaultStoragePaths;
 };
 
+/**
+ * @param {{setTimeout: typeof setTimeout}} io
+ */
 export const makeTimerUtils = ({ setTimeout }) => {
   /**
    * Resolve after a delay in milliseconds.
@@ -81,6 +89,7 @@ export const makeTimerUtils = ({ setTimeout }) => {
    */
   const delay = ms => new Promise(resolve => setTimeout(() => resolve(), ms));
 
+  /** @param {number} timestamp */
   const waitUntil = async timestamp => {
     const timeDelta = Math.floor(Date.now() / 1000) - Number(timestamp);
     await delay(timeDelta);

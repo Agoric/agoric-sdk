@@ -14,6 +14,7 @@ import { boardSlottingMarshaller, makeFromBoard } from '@agoric/client-utils';
 
 const ISTunit = 1_000_000n;
 
+/** @type {(file: string, args: string[], opts: any) => string} */
 const showAndExec = (file, args, opts) => {
   console.log('$', file, ...args);
   return execFileSync(file, args, opts);
