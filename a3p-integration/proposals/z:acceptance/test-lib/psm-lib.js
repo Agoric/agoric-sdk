@@ -17,7 +17,7 @@ import {
 } from '@agoric/synthetic-chain';
 import { AmountMath } from '@agoric/ertp';
 import fsp from 'node:fs/promises';
-import { boardSlottingMarshaller, makeFromBoard } from './rpc.js';
+import { boardSlottingMarshaller, makeFromBoard } from '@agoric/client-utils';
 import { getBalances } from './utils.js';
 import {
   retryUntilCondition,

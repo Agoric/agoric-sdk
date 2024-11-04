@@ -9,7 +9,7 @@ import {
 import { execFileSync } from 'child_process';
 import { makeCopyBag } from '@agoric/store';
 import { AmountMath } from '@agoric/ertp';
-import { makeFromBoard, boardSlottingMarshaller } from './rpc.js';
+import { boardSlottingMarshaller, makeFromBoard } from '@agoric/client-utils';
 
 const ISTunit = 1_000_000n;
 

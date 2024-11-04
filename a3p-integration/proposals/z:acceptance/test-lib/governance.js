@@ -1,5 +1,5 @@
 import { agops, agoric, executeOffer } from '@agoric/synthetic-chain';
-import { makeRpcUtils } from './rpc.js';
+import { makeRpcUtils } from '@agoric/client-utils';
 
 export const makeGovernanceDriver = async (fetch, networkConfig) => {
   const { readLatestHead, marshaller } = await makeRpcUtils(
