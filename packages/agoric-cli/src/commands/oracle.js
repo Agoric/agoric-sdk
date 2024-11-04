@@ -10,7 +10,11 @@ import { Command } from 'commander';
 import { inspect } from 'util';
 import { normalizeAddressWithOptions } from '../lib/chain.js';
 import { bigintReplacer } from '../lib/format.js';
-import { getNetworkConfig, makeRpcUtils, storageHelper } from '../lib/rpc.js';
+import {
+  getNetworkConfig,
+  makeRpcUtils,
+  storageHelper,
+} from '@agoric/client-utils';
 import {
   getCurrent,
   makeWalletUtils,

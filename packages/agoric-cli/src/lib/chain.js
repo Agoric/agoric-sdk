@@ -3,6 +3,10 @@
 import { normalizeBech32 } from '@cosmjs/encoding';
 import { execFileSync as execFileSyncAmbient } from 'child_process';
 
+/**
+ * @import {MinimalNetworkConfig} from '@agoric/client-utils';
+ */
+
 const agdBinary = 'agd';
 
 /**
@@ -36,7 +40,7 @@ harden(normalizeAddressWithOptions);
 
 /**
  * @param {ReadonlyArray<string>} swingsetArgs
- * @param {import('./rpc.js').MinimalNetworkConfig & {
+ * @param {MinimalNetworkConfig & {
  *   from: string,
  *   fees?: string,
  *   dryRun?: boolean,
@@ -94,7 +98,7 @@ harden(execSwingsetTransaction);
 
 /**
  *
- * @param {import('./rpc.js').MinimalNetworkConfig} net
+ * @param {MinimalNetworkConfig} net
  */
 // TODO fetch by HTTP instead of shelling out https://github.com/Agoric/agoric-sdk/issues/9200
 export const fetchSwingsetParams = net => {
@@ -114,7 +118,7 @@ export const fetchSwingsetParams = net => {
 harden(fetchSwingsetParams);
 
 /**
- * @param {import('./rpc.js').MinimalNetworkConfig & {
+ * @param {MinimalNetworkConfig & {
  *   execFileSync: typeof import('child_process').execFileSync,
  *   delay: (ms: number) => Promise<void>,
  *   period?: number,
@@ -154,7 +158,7 @@ export const pollBlocks = opts => async lookup => {
 
 /**
  * @param {string} txhash
- * @param {import('./rpc.js').MinimalNetworkConfig & {
+ * @param {MinimalNetworkConfig & {
  *   execFileSync: typeof import('child_process').execFileSync,
  *   delay: (ms: number) => Promise<void>,
  *   period?: number,

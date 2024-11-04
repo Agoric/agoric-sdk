@@ -260,7 +260,7 @@ export const makeRpcUtils = async ({ fetch }, config = networkConfig) => {
     const fromBoard = makeFromBoard();
     const agoricNames = await makeAgoricNames(fromBoard, vstorage);
 
-    const unserializer = boardSlottingMarshaller(fromBoard.convertSlotToVal);
+    const marshaller = boardSlottingMarshaller(fromBoard.convertSlotToVal);
 
     /** @type {(txt: string) => unknown} */
     const unserializeHead = txt =>
@@ -273,9 +273,9 @@ export const makeRpcUtils = async ({ fetch }, config = networkConfig) => {
     return {
       agoricNames,
       fromBoard,
+      marshaller,
       readLatestHead,
       unserializeHead,
-      unserializer,
       vstorage,
     };
   } catch (err) {

@@ -2,7 +2,7 @@
 
 import { InvalidArgumentError } from 'commander';
 import { Fail } from '@endo/errors';
-import { makeRpcUtils } from '../lib/rpc.js';
+import { makeRpcUtils } from '@agoric/client-utils';
 import { outputActionAndHint } from '../lib/wallet.js';
 
 /**

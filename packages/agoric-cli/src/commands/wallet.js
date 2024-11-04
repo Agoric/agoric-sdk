@@ -12,7 +12,7 @@ import fs from 'fs';
 import util from 'util';
 import { execFileSync } from 'child_process';
 import { fmtRecordOfLines, summarize } from '../lib/format.js';
-import { makeRpcUtils, networkConfig } from '../lib/rpc.js';
+import { makeRpcUtils, networkConfig } from '@agoric/client-utils';
 
 import { makeLeaderOptions } from '../lib/casting.js';
 import {

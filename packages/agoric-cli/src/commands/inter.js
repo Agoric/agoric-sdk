@@ -17,7 +17,7 @@ import {
   bigintReplacer,
   makeAmountFormatter,
 } from '../lib/format.js';
-import { getNetworkConfig } from '../lib/rpc.js';
+import { getNetworkConfig } from '@agoric/client-utils';
 import {
   getCurrent,
   makeWalletUtils,

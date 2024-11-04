@@ -4,7 +4,7 @@
 import { execFileSync as execFileSyncAmbient } from 'child_process';
 import { Command, CommanderError } from 'commander';
 import { normalizeAddressWithOptions, pollBlocks } from '../lib/chain.js';
-import { getNetworkConfig, makeRpcUtils } from '../lib/rpc.js';
+import { getNetworkConfig, makeRpcUtils } from '@agoric/client-utils';
 import {
   findContinuingIds,
   getCurrent,

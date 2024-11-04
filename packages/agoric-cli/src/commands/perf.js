@@ -17,7 +17,7 @@ import {
   execSwingsetTransaction,
   normalizeAddressWithOptions,
 } from '../lib/chain.js';
-import { networkConfig } from '../lib/rpc.js';
+import { networkConfig } from '@agoric/client-utils';
 
 // tight for perf testing but less than this tends to hang.
 const SLEEP_SECONDS = 0.1;

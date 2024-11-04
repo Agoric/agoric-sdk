@@ -7,7 +7,7 @@ import {
   Offers,
 } from '@agoric/inter-protocol/src/clientSupport.js';
 import { normalizeAddressWithOptions } from '../lib/chain.js';
-import { makeRpcUtils } from '../lib/rpc.js';
+import { makeRpcUtils } from '@agoric/client-utils';
 import { getCurrent, outputExecuteOfferAction } from '../lib/wallet.js';
 
 /**

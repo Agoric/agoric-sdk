@@ -6,7 +6,10 @@ import { createCommand, CommanderError } from 'commander';
 
 import { Far } from '@endo/far';
 import { makeParseAmount } from '@agoric/inter-protocol/src/clientSupport.js';
-import { boardSlottingMarshaller, makeFromBoard } from '../src/lib/rpc.js';
+import {
+  boardSlottingMarshaller,
+  makeFromBoard,
+} from '../../client-utils/src/rpc.js';
 
 import { fmtBid, makeInterCommand } from '../src/commands/inter.js';
 
