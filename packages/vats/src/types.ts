@@ -179,10 +179,17 @@ export type IBCBridgeEvent =
   | 'sendPacket';
 
 type IBCPacketEvents = {
-  channelOpenInit: ConnectingInfo;
-  channelOpenTry: ConnectingInfo;
-  channelOpenAck: ConnectingInfo;
-  channelOpenConfirm: ConnectingInfo;
+  channelOpenInit: Omit<ConnectingInfo, 'counterpartyVersion'>;
+  channelOpenTry: Omit<ConnectingInfo, 'version'>;
+  channelOpenAck: Pick<
+    ConnectingInfo,
+    | 'portID'
+    | 'channelID'
+    | 'counterparty'
+    | 'counterpartyVersion'
+    | 'connectionHops'
+  >;
+  channelOpenConfirm: Pick<ConnectingInfo, 'portID' | 'channelID'>;
   receivePacket: {
     packet: IBCPacket;
   };
@@ -212,23 +219,22 @@ export type IBCEvent<E extends IBCBridgeEvent> = {
 export type IBCDowncallMethod =
   | 'sendPacket'
   | 'tryOpenExecuted'
+  | 'confirmOpenExecuted'
   | 'receiveExecuted'
   | 'startChannelOpenInit'
   | 'startChannelCloseInit'
   | 'bindPort'
-  | 'timeoutExecuted'
-  | 'initOpenExecuted';
+  | 'timeoutExecuted';
 
 type IBCMethodEvents = {
   sendPacket: SendPacketDownCall;
-  tryOpenExecuted: ChannelOpenAckDowncall;
   receiveExecuted: {}; // TODO update
   startChannelOpenInit: ChannelOpenInitDowncall;
+  tryOpenExecuted: ChannelOpenAckDowncall;
+  confirmOpenExecuted: ChannelConfirmDowncall;
   startChannelCloseInit: {}; // TODO update
   bindPort: { packet: { source_port: IBCPortID } };
   timeoutExecuted: {}; // TODO update
-  // XXX why isn't this in receiver.go?
-  initOpenExecuted: ChannelOpenAckDowncall;
 };
 
 export type IBCMethod<M extends IBCDowncallMethod> = {
@@ -265,8 +271,12 @@ type ChannelOpenAckDowncall = ChannelOpenDowncallBase & {
   >;
 };
 
+type ChannelConfirmDowncall = {
+  packet: Pick<IBCPacket, 'source_port' | 'source_channel'>;
+};
+
 type SendPacketDownCall = {
-  packet: IBCPacket;
+  packet: Omit<IBCPacket, 'destination_port' | 'destination_channel'>;
   relativeTimeoutNs: bigint;
 };
 
