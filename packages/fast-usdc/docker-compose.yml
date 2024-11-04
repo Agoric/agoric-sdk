@@ -1,0 +1,15 @@
+services:
+  agd:
+    # cf. https://github.com/Agoric/agoric-3-proposals
+    image: ghcr.io/agoric/agoric-3-proposals:latest
+    platform: linux/amd64
+    ports:
+      - 26656:26656
+      - 26657:26657
+      - 1317:1317
+    environment:
+      DEST: 1
+      DEBUG: 'SwingSet:ls,SwingSet:vat'
+    volumes:
+      - .:/workspace
+    entrypoint: /workspace/contract/scripts/run-chain.sh
