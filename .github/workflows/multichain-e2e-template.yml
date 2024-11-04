@@ -30,8 +30,11 @@ jobs:
       - name: Extract config information
         id: extract-config
         run: |
-          # Create logs directory
-          mkdir -p ./agoric-sdk/multichain-testing/logs
+          # Create logs directory with unique path per run/job
+          LOG_DIR="$GITHUB_WORKSPACE/agoric-sdk/multichain-testing/logs/$GITHUB_RUN_ID/$GITHUB_JOB"
+          mkdir -p "$LOG_DIR/validators"
+          mkdir -p "$LOG_DIR/relayers"
+          echo "LOG_DIR=${LOG_DIR}" >> $GITHUB_ENV
 
           # Extract namespace name
           NAMESPACE=$(yq e '.name' ./agoric-sdk/multichain-testing/${{ inputs.config }})
@@ -98,24 +101,24 @@ jobs:
       - name: Capture validator logs
         if: always()
         run: |
+          cd $GITHUB_WORKSPACE
           for pod in ${VALIDATOR_PODS}; do
             echo "Capturing validator logs for ${pod}"
-            kubectl logs ${pod} --container=validator > ./agoric-sdk/multichain-testing/logs/${pod}.log 2>&1 || true
+            kubectl logs ${pod} --container=validator > "${LOG_DIR}/validators/${pod}.log" 2>&1 || true
           done
-        working-directory: ./agoric-sdk
 
       - name: Capture relayer logs
         if: always()
         run: |
+          cd $GITHUB_WORKSPACE
           for pod in ${RELAYER_PODS}; do
             echo "Capturing relayer logs for ${pod}"
-            kubectl logs ${pod} --container=relayer > ./agoric-sdk/multichain-testing/logs/${pod}.log 2>&1 || true
+            kubectl logs ${pod} --container=relayer > "${LOG_DIR}/relayers/${pod}.log" 2>&1 || true
           done
-        working-directory: ./agoric-sdk
 
-      - name: Upload test logs
+      - name: Upload validator and relayer logs
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: multichain-e2e-logs-${NAMESPACE}
-          path: ./agoric-sdk/multichain-testing/logs/
+          name: multichain-e2e-logs-${{ env.NAMESPACE }}-${{ github.run_id }}-${{ github.job }}
+          path: ${{ env.LOG_DIR }}
