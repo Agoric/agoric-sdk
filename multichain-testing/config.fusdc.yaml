@@ -1,4 +1,4 @@
-name: agoric-multichain-testing
+name: agoric-multichain-testing-fusdc
 version: 0.2.20
 
 chains:
@@ -61,19 +61,14 @@ chains:
     resources:
       cpu: 1
       memory: 1Gi
-  - id: gaialocal
-    name: cosmoshub
+  - id: noblelocal
+    name: noble
     numValidators: 1
     genesis:
       app_state:
         staking:
           params:
             unbonding_time: '2m'
-        interchain_accounts:
-          host_genesis_state:
-            params:
-              host_enabled: true
-              allow_messages: ['*']
     faucet:
       enabled: true
       type: starship
@@ -87,24 +82,24 @@ chains:
       memory: 1Gi
 
 relayers:
-  - name: osmosis-gaia
+  - name: osmosis-noble
     type: hermes
     replicas: 1
     chains:
       - osmosislocal
-      - gaialocal
+      - noblelocal
   - name: agoric-osmosis
     type: hermes
     replicas: 1
     chains:
       - agoriclocal
       - osmosislocal
-  - name: agoric-gaia
+  - name: agoric-noble
     type: hermes
     replicas: 1
     chains:
       - agoriclocal
-      - gaialocal
+      - noblelocal
 
 explorer:
   enabled: false
