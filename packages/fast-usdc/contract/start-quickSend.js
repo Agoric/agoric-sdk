@@ -73,8 +73,9 @@ export const startQuickSend = async (
 
   await null;
   const USDC = {
-    brand: await E(agoricNames).lookup('brand', 'USDC'),
-    issuer: await E(agoricNames).lookup('issuer', 'USDC'),
+    // UNTIL mainnet 59 is available in agoric-3-proposal
+    brand: await E(agoricNames).lookup('brand', 'USDC_axl'),
+    issuer: await E(agoricNames).lookup('issuer', 'USDC_axl'),
   };
   const terms = {
     makerFee: AmountMath.make(USDC.brand, 100n), // TODO: parameterize
