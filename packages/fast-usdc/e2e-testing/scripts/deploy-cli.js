@@ -11,10 +11,10 @@ import { makeDeployBuilder } from '../../contract/tools/deploy.js';
 import { makeE2ETools } from '../../contract/tools/e2e-tools.js';
 
 async function main() {
-  const builder = process.argv[2];
+  const [builder, ...scriptArgs] = process.argv.slice(2);
 
   if (!builder) {
-    console.error('USAGE: deploy-cli.ts <builder script>');
+    console.error('USAGE: deploy-cli.ts <builder script> <script-arg>...');
     process.exit(1);
   }
 
@@ -37,7 +37,7 @@ async function main() {
   const npx = (file, args) => execFileP('npx', ['--no-install', file, ...args]);
   const deployBuilder = makeDeployBuilder(tools, readJSON, npx);
 
-  await deployBuilder(builder);
+  await deployBuilder(builder, scriptArgs);
 }
 
 main().catch(err => {

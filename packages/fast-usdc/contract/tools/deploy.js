@@ -8,11 +8,14 @@
  * @param {(file: string, args: string[]) => Promise<{stdout: string}>} npx
  */
 export const makeDeployBuilder = (tools, readJSON, npx) =>
-  /** @param {string} builder */
-  async function deployBuilder(builder) {
+  /**
+   * @param {string} builder
+   * @param {string[]} [scriptArgs]
+   */
+  async function deployBuilder(builder, scriptArgs = []) {
     console.log(`building plan: ${builder}`);
     // build the plan
-    const { stdout } = await npx('agoric', ['run', builder]);
+    const { stdout } = await npx('agoric', ['run', builder, ...scriptArgs]);
     const match = stdout.match(/ (?<name>[-\w]+)-permit.json/);
     if (!(match && match.groups)) {
       throw new Error('no permit found');
