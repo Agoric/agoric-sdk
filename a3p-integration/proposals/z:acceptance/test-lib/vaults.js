@@ -10,7 +10,10 @@ import {
   GOV2ADDR,
 } from '@agoric/synthetic-chain';
 import { AmountMath } from '@agoric/ertp';
-import { ceilMultiplyBy, makeRatio } from './ratio.js';
+import {
+  ceilMultiplyBy,
+  makeRatio,
+} from '@agoric/zoe/src/contractSupport/ratio.js';
 import { getAgoricNamesBrands, getAgoricNamesInstances } from './utils.js';
 import { boardSlottingMarshaller, makeFromBoard } from './rpc.js';
 import { retryUntilCondition } from './sync-tools.js';
