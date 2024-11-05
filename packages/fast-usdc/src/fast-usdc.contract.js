@@ -43,9 +43,15 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
 
   const statusManager = prepareStatusManager(zone);
   const feed = prepareTransactionFeed(zone);
-  const settler = prepareSettler(zone, { statusManager });
-  const advancer = prepareAdvancer(zone, { feed, statusManager });
-  assertAllDefined({ feed, settler, advancer, statusManager });
+  const makeSettler = prepareSettler(zone, { statusManager });
+  const { chainHub, vowTools } = tools;
+  const makeAdvancer = prepareAdvancer(zone, {
+    chainHub,
+    feed,
+    statusManager,
+    vowTools,
+  });
+  assertAllDefined({ feed, makeAdvancer, makeSettler, statusManager });
 
   const creatorFacet = zone.exo('Fast USDC Creator', undefined, {});
 

@@ -36,6 +36,7 @@
     "@agoric/orchestration": "^0.1.0",
     "@agoric/store": "^0.9.2",
     "@agoric/vow": "^0.1.0",
+    "@endo/base64": "^1.0.8",
     "@endo/common": "^1.2.7",
     "@endo/errors": "^1.2.7",
     "@endo/eventual-send": "^1.2.7",
