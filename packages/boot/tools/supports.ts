@@ -461,9 +461,11 @@ export const makeSwingsetTestKit = async (
       case `${BridgeId.DIBC}:IBC_METHOD`:
       case `${BridgeId.VTRANSFER}:IBC_METHOD`: {
         switch (obj.method) {
-          case 'startChannelOpenInit':
-            pushInbound(BridgeId.DIBC, icaMocks.channelOpenAck(obj));
-            return undefined;
+          case 'startChannelOpenInit': {
+            const obj2 = icaMocks.channelOpenAck(obj);
+            pushInbound(BridgeId.DIBC, obj2);
+            return obj2.channelID;
+          }
           case 'sendPacket': {
             if (protoMsgMockMap[obj.packet.data]) {
               return ackLater(obj, protoMsgMockMap[obj.packet.data]);
