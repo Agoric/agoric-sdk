@@ -30,6 +30,19 @@ export const makeParity = (numerator, denominatorBrand) => {
 };
 
 /**
+ * @typedef {{
+ *   deposit: {
+ *     give: { USDC: Amount<'nat'> },
+ *     want?: { PoolShare: Amount<'nat'> }
+ *   },
+ *   withdraw: {
+ *     give: { PoolShare: Amount<'nat'> }
+ *     want: { USDC: Amount<'nat'> },
+ *   }
+ * }} USDCProposalShapes
+ */
+
+/**
  * Compute Shares payout from a deposit proposal, as well as updated shareWorth.
  *
  * Clearly:
@@ -51,76 +64,52 @@ export const makeParity = (numerator, denominatorBrand) => {
  * Shares = ToPool / shareWorth
  *
  * @param {ShareWorth} shareWorth previous to the deposit
- * @param {Amount<'nat'>} ToPool as in give.ToPool
- * @param {Amount<'nat'>} [wantShares] as in want.Shares
- * @returns {{ Shares: Amount<'nat'>; shareWorth: ShareWorth }}
+ * @param {USDCProposalShapes['deposit']} proposal
+ * @returns {{ payouts: { PoolShare: Amount<'nat'> }; shareWorth: ShareWorth }}
  */
-export const deposit = (shareWorth, ToPool, wantShares) => {
-  assert(!isEmpty(ToPool)); // nice diagnostic provided by proposalShape
+export const deposit = (shareWorth, { give, want }) => {
+  assert(!isEmpty(give.USDC)); // nice diagnostic provided by proposalShape
 
   const { denominator: sharesOutstanding, numerator: poolBalance } = shareWorth;
 
-  const Shares = divideBy(ToPool, shareWorth); // TODO: floorDivideBy???
-  if (wantShares) {
-    isGTE(Shares, wantShares) ||
-      Fail`deposit cannot pay out ${q(wantShares)}; ${q(ToPool)} only gets ${q(Shares)}`;
+  const PoolShare = divideBy(give.USDC, shareWorth); // TODO: floorDivideBy???
+  if (want?.PoolShare) {
+    isGTE(PoolShare, want.PoolShare) ||
+      Fail`deposit cannot pay out ${q(want.PoolShare)}; ${q(give.USDC)} only gets ${q(PoolShare)}`;
   }
-  const outstandingPost = add(sharesOutstanding, Shares);
-  const balancePost = add(poolBalance, ToPool);
+  const outstandingPost = add(sharesOutstanding, PoolShare);
+  const balancePost = add(poolBalance, give.USDC);
   const worthPost = makeRatioFromAmounts(balancePost, outstandingPost);
-  return harden({ Shares, shareWorth: worthPost });
+  return harden({ payouts: { PoolShare }, shareWorth: worthPost });
 };
 
-/**
- * @param {Record<'pool' | 'lp' | 'mint', ZCFSeat>} seats
- * @param {Record<'Shares' | 'ToPool', Amount<'nat'>>} amounts
- * @returns {TransferPart[]}
- */
-export const depositTransfers = (seats, { ToPool, Shares }) =>
-  harden([
-    [seats.lp, seats.pool, { ToPool }, { Pool: ToPool }],
-    [seats.mint, seats.lp, { Shares }],
-  ]);
+const isGT = (x, y) => isGTE(x, y) && !isEqual(x, y);
 
 /**
  * Compute payout from a withdraw proposal, along with updated shareWorth
  *
  * @param {ShareWorth} shareWorth
- * @param {Amount<'nat'>} Shares from give
- * @param {Amount<'nat'>} FromPool from want
- * @returns {{ shareWorth: ShareWorth, FromPool: Amount<'nat'> }}
+ * @param {USDCProposalShapes['withdraw']} proposal
+ * @returns {{ shareWorth: ShareWorth, payouts: { USDC: Amount<'nat'> }}}
  */
-export const withdraw = (shareWorth, Shares, FromPool) => {
-  assert(!isEmpty(Shares));
-  assert(!isEmpty(FromPool));
+export const withdraw = (shareWorth, { give, want }) => {
+  assert(!isEmpty(give.PoolShare));
+  assert(!isEmpty(want.USDC));
 
-  const payout = multiplyBy(Shares, shareWorth);
-  isGTE(payout, FromPool) ||
-    Fail`cannot withdraw ${q(FromPool)}; ${q(Shares)} only worth ${q(payout)}`;
+  const payout = multiplyBy(give.PoolShare, shareWorth);
+  isGTE(payout, want.USDC) ||
+    Fail`cannot withdraw ${q(want.USDC)}; ${q(give.PoolShare)} only worth ${q(payout)}`;
   const { denominator: sharesOutstanding, numerator: poolBalance } = shareWorth;
-  isGTE(poolBalance, FromPool) ||
-    Fail`cannot withdraw ${q(FromPool)}; only ${q(poolBalance)} in pool`;
-  !isEqual(FromPool, poolBalance) ||
-    Fail`cannot withdraw ${q(FromPool)}; pool cannot be empty`;
+  isGT(poolBalance, want.USDC) ||
+    Fail`cannot withdraw ${q(want.USDC)}; only ${q(poolBalance)} in pool`;
   const balancePost = subtract(poolBalance, payout);
   // giving more shares than are outstanding is impossible,
   // so it's not worth a custom diagnostic. subtract will fail
-  const outstandingPost = subtract(sharesOutstanding, Shares);
+  const outstandingPost = subtract(sharesOutstanding, give.PoolShare);
 
   const worthPost = makeRatioFromAmounts(balancePost, outstandingPost);
-  return harden({ shareWorth: worthPost, FromPool: payout });
+  return harden({ shareWorth: worthPost, payouts: { USDC: payout } });
 };
-
-/**
- * @param {Record<'pool' | 'lp' | 'burn', ZCFSeat>} seats
- * @param {Record<'Shares' | 'FromPool', Amount<'nat'>>} amounts
- * @returns {TransferPart[]}
- */
-export const withdrawTransfers = (seats, { Shares, FromPool }) =>
-  harden([
-    [seats.pool, seats.lp, { Pool: FromPool }, { FromPool }],
-    [seats.lp, seats.burn, { Shares }],
-  ]);
 
 /**
  * @param {ShareWorth} shareWorth
@@ -130,11 +119,3 @@ export const withFees = (shareWorth, fees) => {
   const balancePost = add(shareWorth.numerator, fees);
   return makeRatioFromAmounts(balancePost, shareWorth.denominator);
 };
-
-/**
- * @param {Record<'fees' | 'pool', ZCFSeat>} seats
- * @param {Record<'Fees', Amount<'nat'>>} amounts
- * @returns {TransferPart[]}
- */
-export const feeTransfers = (seats, { Fees }) =>
-  harden([[seats.fees, seats.pool, { Fees }]]);

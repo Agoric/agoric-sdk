@@ -16,52 +16,60 @@ import { makeProposalShapes } from '../src/type-guards.js';
 
 const { add, make, isEmpty, makeEmpty, subtract } = AmountMath;
 
-const psKit = makeIssuerKit<'nat'>('PoolShare');
-const usdcKit = makeIssuerKit<'nat'>('USDC');
-const brands = harden({ PoolShares: psKit.brand, USDC: usdcKit.brand });
+const issuerKits = {
+  PoolShare: makeIssuerKit<'nat'>('PoolShare'),
+  USDC: makeIssuerKit<'nat'>('USDC'),
+};
+const brands = harden({
+  PoolShares: issuerKits.PoolShare.brand,
+  USDC: issuerKits.USDC.brand,
+});
+const parity = makeParity(make(brands.USDC, 1n), brands.PoolShares);
 const shapes = makeProposalShapes(brands);
 
 test('initial deposit to pool', t => {
   const { PoolShares, USDC } = brands;
-  const parity = makeParity(make(USDC, 1n), PoolShares);
 
   const proposal = harden({
-    give: { ToPool: make(USDC, 100n) },
-    want: { Shares: make(PoolShares, 1n) },
+    give: { USDC: make(USDC, 100n) },
+    want: { PoolShare: make(PoolShares, 1n) },
   });
   mustMatch(proposal, shapes.deposit);
-  const actual = deposit(parity, proposal.give.ToPool);
+  const actual = deposit(parity, proposal);
   t.deepEqual(actual, {
-    Shares: make(PoolShares, 100n),
+    payouts: { PoolShare: make(PoolShares, 100n) },
     shareWorth: makeParity(actual.shareWorth.numerator, PoolShares),
   });
 });
 
 test('initial withdrawal fails', t => {
   const { PoolShares, USDC } = brands;
-  const parity = makeParity(make(USDC, 1n), PoolShares);
-  t.throws(() => withdraw(parity, make(PoolShares, 100n), make(USDC, 100n)), {
+  const proposal = harden({
+    give: { PoolShare: make(PoolShares, 100n) },
+    want: { USDC: make(USDC, 100n) },
+  });
+  t.throws(() => withdraw(parity, proposal), {
     message: /cannot withdraw/,
   });
 });
 
 test('withdrawal after deposit OK', t => {
-  const { brand: PoolShares } = psKit;
-  const { brand: USDC } = usdcKit;
+  const { PoolShares, USDC } = brands;
   const state0 = makeParity(make(USDC, 1n), PoolShares);
 
-  const { shareWorth: state1 } = deposit(state0, make(USDC, 100n));
+  const pDep = { give: { USDC: make(USDC, 100n) } };
+  const { shareWorth: state1 } = deposit(state0, pDep);
 
   const proposal = harden({
-    give: { Shares: make(PoolShares, 50n) },
-    want: { FromPool: make(USDC, 50n) },
+    give: { PoolShare: make(PoolShares, 50n) },
+    want: { USDC: make(USDC, 50n) },
   });
   mustMatch(proposal, shapes.withdraw);
 
-  const actual = withdraw(state1, proposal.give.Shares, proposal.want.FromPool);
+  const actual = withdraw(state1, proposal);
 
   t.deepEqual(actual, {
-    FromPool: make(USDC, 50n),
+    payouts: { USDC: make(USDC, 50n) },
     shareWorth: {
       numerator: make(USDC, 51n),
       denominator: make(PoolShares, 51n),
@@ -71,25 +79,19 @@ test('withdrawal after deposit OK', t => {
 
 test('deposit offer underestimates value of share', t => {
   const { PoolShares, USDC } = brands;
-  const state0 = makeParity(make(USDC, 1n), PoolShares);
 
-  const { shareWorth: state1 } = deposit(state0, make(USDC, 100n));
+  const pDep = { give: { USDC: make(USDC, 100n) } };
+  const { shareWorth: state1 } = deposit(parity, pDep);
   const state2 = withFees(state1, make(USDC, 20n));
 
   const proposal = harden({
-    give: { ToPool: make(USDC, 50n) },
-    want: { Shares: make(PoolShares, 50n) },
+    give: { USDC: make(USDC, 50n) },
+    want: { PoolShare: make(PoolShares, 50n) },
   });
   mustMatch(proposal, shapes.deposit);
 
-  const actual = deposit(state2, proposal.give.ToPool);
-
-  t.deepEqual(actual, {
-    Shares: make(PoolShares, 42n),
-    shareWorth: {
-      numerator: make(USDC, 171n),
-      denominator: make(PoolShares, 143n),
-    },
+  t.throws(() => deposit(state2, proposal), {
+    message: /cannot pay out/,
   });
 });
 
@@ -98,13 +100,18 @@ test('deposit offer overestimates value of share', t => {
   const state0 = makeParity(make(USDC, 1n), PoolShares);
 
   const proposal = harden({
-    give: { ToPool: make(USDC, 10n) },
-    want: { Shares: make(PoolShares, 20n) },
+    give: { USDC: make(USDC, 10n) },
+    want: { PoolShare: make(PoolShares, 8n) },
   });
   mustMatch(proposal, shapes.deposit);
 
-  t.throws(() => deposit(state0, proposal.give.ToPool, proposal.want.Shares), {
-    message: /cannot pay out/,
+  const actual = deposit(state0, proposal);
+  t.deepEqual(actual, {
+    payouts: { PoolShare: make(PoolShares, 10n) },
+    shareWorth: {
+      numerator: make(USDC, 11n),
+      denominator: make(PoolShares, 11n),
+    },
   });
 });
 
@@ -112,18 +119,19 @@ test('withdrawal offer underestimates value of share', t => {
   const { PoolShares, USDC } = brands;
   const state0 = makeParity(make(USDC, 1n), PoolShares);
 
-  const { shareWorth: state1 } = deposit(state0, make(USDC, 100n));
+  const proposal1 = harden({ give: { USDC: make(USDC, 100n) } });
+  const { shareWorth: state1 } = deposit(state0, proposal1);
 
   const proposal = harden({
-    give: { Shares: make(PoolShares, 60n) },
-    want: { FromPool: make(USDC, 50n) },
+    give: { PoolShare: make(PoolShares, 60n) },
+    want: { USDC: make(USDC, 50n) },
   });
   mustMatch(proposal, shapes.withdraw);
 
-  const actual = withdraw(state1, proposal.give.Shares, proposal.want.FromPool);
+  const actual = withdraw(state1, proposal);
 
   t.deepEqual(actual, {
-    FromPool: make(USDC, 60n),
+    payouts: { USDC: make(USDC, 60n) },
     shareWorth: {
       numerator: make(USDC, 41n),
       denominator: make(PoolShares, 41n),
@@ -135,18 +143,16 @@ test('withdrawal offer overestimates value of share', t => {
   const { PoolShares, USDC } = brands;
   const state0 = makeParity(make(USDC, 1n), PoolShares);
 
-  const { shareWorth: state1 } = deposit(state0, make(USDC, 100n));
+  const d100 = { give: { USDC: make(USDC, 100n) } };
+  const { shareWorth: state1 } = deposit(state0, d100);
 
   const proposal = harden({
-    give: { Shares: make(PoolShares, 50n) },
-    want: { FromPool: make(USDC, 60n) },
+    give: { PoolShare: make(PoolShares, 50n) },
+    want: { USDC: make(USDC, 60n) },
   });
   mustMatch(proposal, shapes.withdraw);
 
-  t.throws(
-    () => withdraw(state1, proposal.give.Shares, proposal.want.FromPool),
-    { message: /cannot withdraw/ },
-  );
+  t.throws(() => withdraw(state1, proposal), { message: /cannot withdraw/ });
 });
 
 const scaleAmount = (frac: number, amount: Amount<'nat'>) => {
@@ -175,8 +181,8 @@ const arbAmountOf = brand =>
       value: fc.bigInt({ min: 1n, max: 1_000n * 1_000_000n }),
     })
     .map(x => harden(x));
-const arbUSDC = arbAmountOf(usdcKit.brand);
-const arbShares = arbAmountOf(psKit.brand);
+const arbUSDC = arbAmountOf(brands.USDC);
+const arbShares = arbAmountOf(brands.PoolShares);
 
 const arbShareWorth = fc
   .record({ numerator: arbUSDC, denominator: arbShares })
@@ -186,11 +192,14 @@ testProp(
   'deposit properties',
   [arbShareWorth, arbUSDC],
   (t, shareWorth, In) => {
-    const actual = deposit(shareWorth, In);
-    const { Shares, shareWorth: post } = actual;
+    const actual = deposit(shareWorth, { give: { USDC: In } });
+    const {
+      payouts: { PoolShare },
+      shareWorth: post,
+    } = actual;
     const { numerator: poolAmount, denominator: sharesOutstanding } = post;
     t.deepEqual(poolAmount, add(shareWorth.numerator, In));
-    t.deepEqual(sharesOutstanding, add(shareWorth.denominator, Shares));
+    t.deepEqual(sharesOutstanding, add(shareWorth.denominator, PoolShare));
   },
 );
 
@@ -221,15 +230,21 @@ testProp(
 
     for (const { party, action } of actions) {
       if ('In' in action) {
-        const d = deposit(shareWorth, action.In);
-        myShares[party] = add(myShares[party] || emptyShares, d.Shares);
+        const d = deposit(shareWorth, { give: { USDC: action.In } });
+        myShares[party] = add(
+          myShares[party] || emptyShares,
+          d.payouts.PoolShare,
+        );
         myDeposits[party] = add(myDeposits[party] || emptyUSDC, action.In);
 
-        const { Shares, shareWorth: post } = d;
+        const {
+          payouts: { PoolShare },
+          shareWorth: post,
+        } = d;
         const { numerator: poolAmount, denominator: sharesOutstanding } = post;
 
         t.deepEqual(poolAmount, add(shareWorth.numerator, action.In));
-        t.deepEqual(sharesOutstanding, add(shareWorth.denominator, Shares));
+        t.deepEqual(sharesOutstanding, add(shareWorth.denominator, PoolShare));
 
         shareWorth = post;
       } else if ('Part' in action) {
@@ -237,12 +252,15 @@ testProp(
         const toGive = scaleAmount(action.Part, myShares[party]);
         if (isEmpty(toGive)) continue;
         const toGet = scaleAmount(action.Slip, multiplyBy(toGive, shareWorth));
-        const s = withdraw(shareWorth, toGive, toGet);
+        const s = withdraw(shareWorth, {
+          give: { PoolShare: toGive },
+          want: { USDC: toGet },
+        });
         myShares[party] = subtract(myShares[party], toGive);
-        myDeposits[party] = subtract(myDeposits[party], s.FromPool);
+        myDeposits[party] = subtract(myDeposits[party], s.payouts.USDC);
         const { numerator: poolAmount, denominator: sharesOutstanding } =
           s.shareWorth;
-        t.deepEqual(poolAmount, subtract(shareWorth.numerator, s.FromPool));
+        t.deepEqual(poolAmount, subtract(shareWorth.numerator, s.payouts.USDC));
         t.deepEqual(
           sharesOutstanding,
           subtract(shareWorth.denominator, toGive),
