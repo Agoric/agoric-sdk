@@ -193,8 +193,8 @@ export const proposeNewDebtCeiling = async (address, debtLimit) => {
   );
 };
 
+export const GOV4ADDR = 'agoric1c9gyu460lu70rtcdp95vummd6032psmpdx7wdy';
 export const setDebtLimit = async (address, debtLimit) => {
-  const GOV4ADDR = 'agoric1c9gyu460lu70rtcdp95vummd6032psmpdx7wdy';
   const govAccounts = [GOV1ADDR, GOV2ADDR, GOV4ADDR];
 
   console.log('ACTIONS Setting debt limit');

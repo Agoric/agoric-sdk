@@ -13,6 +13,7 @@ import {
   generateOracleMap,
   getPriceQuote,
   getVaultPrices,
+  GOV2ADDR,
 } from '@agoric/synthetic-chain';
 import { getBalances, agopsVaults } from './test-lib/utils.js';
 import {
@@ -26,7 +27,7 @@ import {
   verifyPushedPrice,
   getPriceFeedRoundId,
 } from './test-lib/price-feed.js';
-import { tryISTBalances } from './test-lib/psm-lib.js';
+import { tryISTBalances, bankSend as sendIST } from './test-lib/psm-lib.js';
 
 const VAULT_MANAGER = 'manager0';
 
@@ -349,6 +350,9 @@ test.serial(
 
     const { totalDebt: totalDebtBefore } =
       await getAvailableDebtForMint(VAULT_MANAGER);
+
+    // provision governance wallet to cover transaction fees
+    await sendIST(GOV2ADDR, `1000000uist`, GOV1ADDR);
 
     const limit = (totalDebtBefore - 10_000_000n) / 1_000_000n;
     await setDebtLimit(GOV1ADDR, limit);
