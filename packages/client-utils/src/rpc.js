@@ -48,6 +48,9 @@ export const getNetworkConfig = async env => {
   });
 };
 
+// TODO distribute load
+export const pickEndpoint = ({ rpcAddrs }) => rpcAddrs[0];
+
 /** @type {MinimalNetworkConfig} */
 const networkConfig = await getNetworkConfig(process.env);
 export { networkConfig };

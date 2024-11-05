@@ -3,18 +3,14 @@
  */
 
 import { StargateClient } from '@cosmjs/stargate';
+import { pickEndpoint } from './rpc.js';
 
 /**
  * @param {MinimalNetworkConfig} config
  * @returns {Promise<StargateClient>}
  */
-export const makeStargateClient = async config => {
-  // TODO distribute load
-  const endpoint = config.rpcAddrs.at(-1);
-  assert(endpoint, 'no endpoints');
-
-  return StargateClient.connect(endpoint);
-};
+export const makeStargateClient = config =>
+  StargateClient.connect(pickEndpoint(config));
 
 /**
  * @param {{
