@@ -1,6 +1,6 @@
 /* eslint-env node */
 
-import '@endo/init';
+import { AmountMath } from '@agoric/ertp';
 import {
   agops,
   agoric,
@@ -9,19 +9,18 @@ import {
   GOV1ADDR,
   GOV2ADDR,
 } from '@agoric/synthetic-chain';
-import { AmountMath } from '@agoric/ertp';
 import {
   ceilMultiplyBy,
   makeRatio,
 } from '@agoric/zoe/src/contractSupport/ratio.js';
+import { walletUtils } from './index.js';
+import { boardSlottingMarshaller, makeFromBoard } from './rpc.js';
+import { retryUntilCondition } from './sync-tools.js';
 import {
   getAgoricNamesBrands,
   getAgoricNamesInstances,
   listVaults,
 } from './utils.js';
-import { boardSlottingMarshaller, makeFromBoard } from './rpc.js';
-import { retryUntilCondition } from './sync-tools.js';
-import { walletUtils } from './index.js';
 
 const fromBoard = makeFromBoard();
 const marshaller = boardSlottingMarshaller(fromBoard.convertSlotToVal);

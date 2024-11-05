@@ -1,5 +1,4 @@
 /* eslint-env node */
-import '@endo/init';
 import test from 'ava';
 
 import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';

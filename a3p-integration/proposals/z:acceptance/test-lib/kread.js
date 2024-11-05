@@ -1,5 +1,6 @@
-import assert from 'assert';
-import '@endo/init';
+// @ts-nocheck FIXME
+import assert from 'node:assert';
+
 import {
   agoric,
   executeOffer,

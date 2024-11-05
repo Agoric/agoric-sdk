@@ -1,7 +1,7 @@
 /* eslint-env node */
 // @ts-check
 import test from 'ava';
-import '@endo/init/debug.js';
+
 import {
   waitUntilAccountFunded,
   waitUntilContractDeployed,

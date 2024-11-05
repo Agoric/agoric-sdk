@@ -2,8 +2,6 @@
 
 import test from 'ava';
 
-import '@endo/init';
-
 import { makeWalletUtils } from '@agoric/client-utils';
 import { GOV1ADDR, GOV2ADDR } from '@agoric/synthetic-chain';
 import { makeGovernanceDriver } from './test-lib/governance.js';

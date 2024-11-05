@@ -1,6 +1,5 @@
 /* eslint-env node */
 
-import '@endo/init';
 import {
   addUser,
   agd,

@@ -76,6 +76,9 @@
     "@agoric/zone": "portal:../../agoric-sdk/packages/zone"
   },
   "ava": {
+    "require": [
+      "@endo/init/legacy.js"
+    ],
     "concurrency": 1,
     "serial": true,
     "timeout": "2m",

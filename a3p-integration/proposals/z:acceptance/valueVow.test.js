@@ -1,5 +1,5 @@
 // @ts-check
-import '@endo/init/debug.js';
+/* eslint-env node */
 import test from 'ava';
 import { inspect } from 'node:util';
 

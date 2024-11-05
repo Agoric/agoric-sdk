@@ -1,7 +1,8 @@
 /* global fetch setTimeout */
 
 import test from 'ava';
-import '@endo/init';
+
+import { retryUntilCondition } from '@agoric/client-utils';
 import {
   agoric,
   evalBundles,
