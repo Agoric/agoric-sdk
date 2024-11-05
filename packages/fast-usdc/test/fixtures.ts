@@ -3,7 +3,11 @@ import { buildVTransferEvent } from '@agoric/orchestration/tools/ibc-mocks.js';
 import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
 import type { CctpTxEvidence } from '../src/types.js';
 
-const mockScenarios = ['AGORIC_PLUS_OSMO', 'AGORIC_PLUS_DYDX'] as const;
+const mockScenarios = [
+  'AGORIC_PLUS_OSMO',
+  'AGORIC_PLUS_DYDX',
+  'AGORIC_NO_PARAMS',
+] as const;
 
 type MockScenario = (typeof mockScenarios)[number];
 
@@ -49,6 +53,25 @@ export const MockCctpTxEvidences: Record<
     },
     chainId: 1,
   }),
+  AGORIC_NO_PARAMS: (receiverAddress?: string) => ({
+    blockHash:
+      '0x70d7343e04f8160892e94f02d6a9b9f255663ed0ac34caca98544c8143fee699',
+    blockNumber: 21037669n,
+    blockTimestamp: 1730762099n,
+    txHash:
+      '0xa81bc6105b60a234c7c50ac17816ebcd5561d366df8bf3be59ff387552761799',
+    tx: {
+      amount: 200000000n,
+      forwardingAddress: 'noble1x0ydg69dh6fqvr27xjvp6maqmrldam6yfelyyy',
+    },
+    aux: {
+      forwardingChannel: 'channel-21',
+      recipientAddress:
+        receiverAddress ||
+        'agoric16kv2g7snfc4q24vg3pjdlnnqgngtjpwtetd2h689nz09lcklvh5s8u37ek',
+    },
+    chainId: 1,
+  }),
 };
 
 const nobleDefaultVTransferParams = {
@@ -82,5 +105,14 @@ export const MockVTransferEvents: Record<
       receiver:
         recieverAddress ||
         MockCctpTxEvidences.AGORIC_PLUS_DYDX().aux.recipientAddress,
+    }),
+  AGORIC_NO_PARAMS: (recieverAddress?: string) =>
+    buildVTransferEvent({
+      ...nobleDefaultVTransferParams,
+      amount: MockCctpTxEvidences.AGORIC_NO_PARAMS().tx.amount,
+      sender: MockCctpTxEvidences.AGORIC_NO_PARAMS().tx.forwardingAddress,
+      receiver:
+        recieverAddress ||
+        MockCctpTxEvidences.AGORIC_NO_PARAMS().aux.recipientAddress,
     }),
 };

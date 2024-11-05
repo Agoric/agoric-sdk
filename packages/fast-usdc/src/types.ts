@@ -23,6 +23,8 @@ export interface CctpTxEvidence {
   txHash: EvmHash;
 }
 
+export type LogFn = (...args: unknown[]) => void;
+
 export interface PendingTx extends CctpTxEvidence {
   status: PendingTxStatus;
 }
