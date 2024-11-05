@@ -9,12 +9,12 @@ import '@endo/init/debug.js';
 import {
   evalBundles,
   getIncarnation,
-  waitForBlock,
   GOV1ADDR as GETTER, // not particular to governance, just a handy wallet
   GOV2ADDR as SETTER, // not particular to governance, just a handy wallet
 } from '@agoric/synthetic-chain';
 import { makeWalletUtils } from './test-lib/wallet.js';
 import { networkConfig } from './test-lib/index.js';
+import { retryUntilCondition } from './test-lib/sync-tools.js';
 
 const START_VALUEVOW_DIR = 'start-valueVow';
 const RESTART_VALUEVOW_DIR = 'restart-valueVow';
@@ -44,7 +44,14 @@ test('vow survives restart', async t => {
   });
 
   t.log('confirm the value is not in offer results');
-  await waitForBlock(2);
+  await retryUntilCondition(
+    async () => walletUtils.readLatestHead(`published.wallet.${GETTER}`),
+    getterStatus =>
+      getterStatus.status.id === 'get-value' &&
+      getterStatus.updated === 'offerStatus',
+    'Offer get-value not succeeded',
+    { setTimeout, retryIntervalMs: 5000, maxRetries: 15 },
+  );
   {
     /** @type {any} */
     const getterStatus = await walletUtils.readLatestHead(

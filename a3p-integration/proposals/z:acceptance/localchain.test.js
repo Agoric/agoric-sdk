@@ -1,6 +1,8 @@
-import test from 'ava';
+/* global setTimeout */
 
-import { agd, evalBundles, waitForBlock } from '@agoric/synthetic-chain';
+import test from 'ava';
+import { agd, evalBundles } from '@agoric/synthetic-chain';
+import { retryUntilCondition } from './test-lib/sync-tools.js';
 
 const SUBMISSION_DIR = 'localchaintest-submission';
 
@@ -27,7 +29,12 @@ test(`localchain passes tests`, async t => {
   const nodePath = 'test.localchain';
   const nodeValue = JSON.stringify({ success: true });
 
-  await waitForBlock(2); // enough time for core eval to execute ?
+  await retryUntilCondition(
+    async () => readPublished(nodePath),
+    value => value === nodeValue,
+    'core eval not enforced yet',
+    { setTimeout, retryIntervalMs: 5000, maxRetries: 15 },
+  );
 
   t.is(await readPublished(nodePath), nodeValue);
 });

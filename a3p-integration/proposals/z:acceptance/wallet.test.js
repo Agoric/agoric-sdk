@@ -8,7 +8,6 @@ import {
   GOV1ADDR,
   GOV2ADDR,
   CHAINID,
-  waitForBlock,
 } from '@agoric/synthetic-chain';
 import { execFileSync } from 'child_process';
 import {
@@ -16,6 +15,7 @@ import {
   getBalances,
   replaceTemplateValuesInFile,
 } from './test-lib/utils.js';
+import { retryUntilCondition } from './test-lib/sync-tools.js';
 import { makeWalletUtils } from './test-lib/wallet.js';
 import { networkConfig } from './test-lib/index.js';
 
@@ -52,21 +52,25 @@ test.serial(`send invitation via namesByAddress`, async t => {
 });
 
 test.serial('exitOffer tool reclaims stuck payment', async t => {
-  const before = await getBalances([GOV1ADDR], 'uist');
-  t.log('uist balance before:', before);
+  const istBalanceBefore = await getBalances([GOV1ADDR], 'uist');
 
   const offerId = 'bad-invitation-15'; // offer submitted on proposal upgrade-15 with an incorrect method name
   await walletUtils.broadcastBridgeAction(GOV1ADDR, {
     method: 'tryExitOffer',
     offerId,
   });
-  await waitForBlock(2);
 
-  const after = await getBalances([GOV1ADDR], 'uist');
-  t.log('uist balance after:', after);
+  await retryUntilCondition(
+    async () => getBalances([GOV1ADDR], 'uist'),
+    istBalanceAfter => istBalanceAfter > istBalanceBefore,
+    'tryExitOffer failed to reclaim stuck payment ',
+    { setTimeout, retryIntervalMs: 5000, maxRetries: 15 },
+  );
+
+  const istBalanceAfter = await getBalances([GOV1ADDR], 'uist');
 
   t.true(
-    after > before,
+    istBalanceAfter > istBalanceBefore,
     'The IST balance should increase after reclaiming the stuck payment',
   );
 });
@@ -108,7 +112,6 @@ test.serial(`ante handler sends fee only to vbank/reserve`, async t => {
     { chainId: CHAINID, from: GOV1ADDR, yes: true },
   );
 
-  await waitForBlock();
   t.like(result, { code: 0 });
 
   const [feeCollectorEndBalances, vbankReserveEndBalances] = await getBalances([
