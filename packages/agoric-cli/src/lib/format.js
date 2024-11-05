@@ -3,8 +3,10 @@
 import { Fail, q } from '@endo/errors';
 import { makeBoardRemote } from '@agoric/vats/tools/board-utils.js';
 
-/** @import {BoardRemote} from '@agoric/vats/tools/board-utils.js' */
-/** @import {VBankAssetDetail} from '@agoric/vats/tools/board-utils.js'; */
+/**
+ * @import {Amount, Brand} from '@agoric/ertp'
+ * @import {AgoricNamesRemotes, BoardRemote, VBankAssetDetail} from '@agoric/vats/tools/board-utils.js';
+ */
 
 /**
  * Like @endo/nat but coerces
