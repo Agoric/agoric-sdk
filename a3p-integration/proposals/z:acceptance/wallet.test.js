@@ -1,3 +1,5 @@
+/* global fetch setTimeout */
+
 import test from 'ava';
 import '@endo/init';
 import {
@@ -8,12 +10,19 @@ import {
   CHAINID,
   waitForBlock,
 } from '@agoric/synthetic-chain';
-import { $ } from 'execa';
+import { execFileSync } from 'child_process';
 import {
   agd,
   getBalances,
   replaceTemplateValuesInFile,
 } from './test-lib/utils.js';
+import { makeWalletUtils } from './test-lib/wallet.js';
+import { networkConfig } from './test-lib/index.js';
+
+const walletUtils = await makeWalletUtils(
+  { setTimeout, execFileSync, fetch },
+  networkConfig,
+);
 
 test.serial(`send invitation via namesByAddress`, async t => {
   const SUBMISSION_DIR = 'invitation-test-submission';
@@ -43,13 +52,14 @@ test.serial(`send invitation via namesByAddress`, async t => {
 });
 
 test.serial('exitOffer tool reclaims stuck payment', async t => {
-  const offerId = 'bad-invitation-15'; // offer submitted on proposal upgrade-15 with an incorrect method name
-  const from = 'gov1';
-
   const before = await getBalances([GOV1ADDR], 'uist');
   t.log('uist balance before:', before);
 
-  await $`node ./exitOffer.js --id ${offerId} --from ${from} `;
+  const offerId = 'bad-invitation-15'; // offer submitted on proposal upgrade-15 with an incorrect method name
+  await walletUtils.broadcastBridgeAction(GOV1ADDR, {
+    method: 'tryExitOffer',
+    offerId,
+  });
   await waitForBlock(2);
 
   const after = await getBalances([GOV1ADDR], 'uist');
