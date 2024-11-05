@@ -171,7 +171,6 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
       vowTools,
     },
     brands: {
-      poolShares: withAmountUtils(makeIssuerKit('Fast USDC Pool Shares')),
       usdc: usdcSansMint,
     },
     mocks: {
