@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+/* eslint-env node */
 const { exec, spawnSync } = require('child_process');
 const path = require('path');
 const process = require('process');
@@ -28,7 +30,6 @@ function fixTypeImport(directory) {
     }
     if (stderr) {
       console.error(`Standard error: ${stderr}`);
-      return;
     }
   });
 }

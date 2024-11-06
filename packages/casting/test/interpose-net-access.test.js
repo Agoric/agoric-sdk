@@ -12,7 +12,7 @@ import {
   QueryChildrenResponse,
 } from '@agoric/cosmic-proto/vstorage/query.js';
 
-import { makeHttpClient } from '../src/makeHttpClient.js';
+import { makeTendermintRpcClient } from '../src/makeHttpClient.js';
 import { captureIO, replayIO, web1, web2 } from './net-access-fixture.js';
 
 /** @type {import('ava').TestFn<Awaited<ReturnType<typeof makeTestContext>>>} */
@@ -43,7 +43,7 @@ const scenario1 = {
 
 test('interpose net access', async t => {
   const fetchMock = replayIO(web1);
-  const rpcClient = makeHttpClient(scenario1.endpoint, fetchMock);
+  const rpcClient = makeTendermintRpcClient(scenario1.endpoint, fetchMock);
 
   t.log('raw JSON RPC');
   const res = await rpcClient.execute({
@@ -100,7 +100,7 @@ test(`vstorage query: Children (RECORDING: ${RECORDING})`, async t => {
   const { fetch: fetchMock, web } = io.recording
     ? captureIO(io.fetch)
     : { fetch: replayIO(web2), web: new Map() };
-  const rpcClient = makeHttpClient(scenario2.endpoint, fetchMock);
+  const rpcClient = makeTendermintRpcClient(scenario2.endpoint, fetchMock);
 
   const tmClient = await Tendermint34Client.create(rpcClient);
   const qClient = new QueryClient(tmClient);

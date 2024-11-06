@@ -1,24 +1,10 @@
-// @ts-check
-
 import { Fail, q } from '@endo/errors';
 import { makeBoardRemote } from '@agoric/vats/tools/board-utils.js';
 
-/** @import {BoardRemote} from '@agoric/vats/tools/board-utils.js' */
-/** @import {VBankAssetDetail} from '@agoric/vats/tools/board-utils.js'; */
-
 /**
- * Like @endo/nat but coerces
- *
- * @param {string} str
- * @returns {bigint}
+ * @import {Amount, Brand} from '@agoric/ertp'
+ * @import {AgoricNamesRemotes, BoardRemote, VBankAssetDetail} from '@agoric/vats/tools/board-utils.js';
  */
-export const Natural = str => {
-  const b = BigInt(str);
-  if (b < 0) {
-    throw RangeError(`${b} is negative`);
-  }
-  return b;
-};
 
 /**
  * JSON.stringify replacer to handle bigint
@@ -117,7 +103,7 @@ export const fmtRecordOfLines = record => {
  * Summarize the offerStatuses of the state as user-facing informative tuples
  *
  * @param {import('@agoric/smart-wallet/src/utils.js').CoalescedWalletState} state
- * @param {import('@agoric/vats/tools/board-utils.js').AgoricNamesRemotes} agoricNames
+ * @param {AgoricNamesRemotes} agoricNames
  */
 export const offerStatusTuples = (state, agoricNames) => {
   const { offerStatuses } = state;
@@ -174,7 +160,7 @@ export const offerStatusTuples = (state, agoricNames) => {
 /**
  * @param {import('@agoric/smart-wallet/src/smartWallet.js').CurrentWalletRecord} current
  * @param {ReturnType<import('@agoric/smart-wallet/src/utils.js').makeWalletStateCoalescer>['state']} coalesced
- * @param {import('@agoric/vats/tools/board-utils.js').AgoricNamesRemotes} agoricNames
+ * @param {AgoricNamesRemotes} agoricNames
  */
 export const summarize = (current, coalesced, agoricNames) => {
   return {

@@ -7,20 +7,22 @@ import {
   makeFollower,
   makeLeaderFromRpcAddresses,
 } from '@agoric/casting';
+import { slotToRemotable } from '@agoric/internal/src/storage-test-utils.js';
+import { boardSlottingMarshaller } from '@agoric/vats/tools/board-utils.js';
 import { Command } from 'commander';
 import fs from 'fs';
 import { exit } from 'process';
-import { slotToRemotable } from '@agoric/internal/src/storage-test-utils.js';
-import { boardSlottingMarshaller } from '@agoric/vats/tools/board-utils.js';
 import { makeLeaderOptions } from '../lib/casting.js';
 import {
   execSwingsetTransaction,
   normalizeAddressWithOptions,
 } from '../lib/chain.js';
-import { networkConfig } from '../lib/rpc.js';
+import { getNetworkConfig } from '../lib/network-config.js';
 
 // tight for perf testing but less than this tends to hang.
 const SLEEP_SECONDS = 0.1;
+
+const networkConfig = await getNetworkConfig({ env: process.env, fetch });
 
 /**
  * @param {import('anylogger').Logger} logger
