@@ -16,8 +16,6 @@
  * @typedef {object} RetryOptions
  * @property {number} [maxRetries]
  * @property {number} [retryIntervalMs]
- * @property {(...arg0: string[]) => void} [log]
- * @property {typeof global.setTimeout} setTimeout
  *
  * @typedef {RetryOptions & {errorMessage: string}} WaitUntilOptions
  *
@@ -44,7 +42,7 @@ export const sleep = (ms, { log = () => {}, setTimeout }) =>
  * @param {() => Promise} operation
  * @param {(result: any) => boolean} condition
  * @param {string} message
- * @param {RetryOptions} options
+ * @param {RetryOptions & {log?: typeof console.log, setTimeout: typeof global.setTimeout}} options
  */
 export const retryUntilCondition = async (
   operation,
@@ -110,7 +108,7 @@ const makeGetInstances = follow => async () => {
 /**
  *
  * @param {string} contractName
- * @param {{follow: () => object, setTimeout: typeof global.setTimeout}} ambientAuthority
+ * @param {{ log: (message: string) => void, follow: () => object, setTimeout: typeof global.setTimeout }} ambientAuthority
  * @param {WaitUntilOptions} options
  */
 export const waitUntilContractDeployed = (
@@ -151,17 +149,12 @@ const checkCosmosBalance = (balances, threshold) => {
 
 /**
  * @param {string} destAcct
- * @param {{query: () => Promise<object>, setTimeout: typeof global.setTimeout}} ambientAuthority
+ * @param {{ log: (message: string) => void, query: () => Promise<object>, setTimeout: typeof global.setTimeout}} io
  * @param {{denom: string, value: number}} threshold
  * @param {WaitUntilOptions} options
  */
-export const waitUntilAccountFunded = (
-  destAcct,
-  ambientAuthority,
-  threshold,
-  options,
-) => {
-  const { query, setTimeout } = ambientAuthority;
+export const waitUntilAccountFunded = (destAcct, io, threshold, options) => {
+  const { query, setTimeout } = io;
   const queryCosmosBalance = makeQueryCosmosBalance(query);
   const { maxRetries, retryIntervalMs, errorMessage, log } =
     overrideDefaultOptions(options);
@@ -206,17 +199,17 @@ const checkOfferState = (offerStatus, waitForPayouts, offerId) => {
  * @param {string} addr
  * @param {string} offerId
  * @param {boolean} waitForPayouts
- * @param {{follow: () => object, setTimeout: typeof global.setTimeout}} ambientAuthority
+ * @param {{ log: typeof console.log, follow: () => object, setTimeout: typeof global.setTimeout }} io
  * @param {WaitUntilOptions} options
  */
 export const waitUntilOfferResult = (
   addr,
   offerId,
   waitForPayouts,
-  ambientAuthority,
+  io,
   options,
 ) => {
-  const { follow, setTimeout } = ambientAuthority;
+  const { follow, setTimeout } = io;
   const queryWallet = makeQueryWallet(follow);
   const { maxRetries, retryIntervalMs, errorMessage, log } =
     overrideDefaultOptions(options);
@@ -248,15 +241,11 @@ const checkForInvitation = update => {
 /**
  *
  * @param {string} addr
- * @param {{follow: () => object, setTimeout: typeof global.setTimeout}} ambientAuthority
+ * @param {{ follow: () => object, log: typeof console.log, setTimeout: typeof global.setTimeout}} io
  * @param {WaitUntilOptions} options
  */
-export const waitUntilInvitationReceived = (
-  addr,
-  ambientAuthority,
-  options,
-) => {
-  const { follow, setTimeout } = ambientAuthority;
+export const waitUntilInvitationReceived = (addr, io, options) => {
+  const { follow, setTimeout } = io;
   const queryWallet = makeQueryWallet(follow);
   const { maxRetries, retryIntervalMs, errorMessage, log } =
     overrideDefaultOptions(options);

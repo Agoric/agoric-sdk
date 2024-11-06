@@ -48,12 +48,12 @@ test.serial('wait until contract is deployed', async t => {
     'name',
     {
       follow,
+      log: t.log,
       setTimeout,
     },
     {
       maxRetries: 5,
       retryIntervalMs: 1000,
-      log: t.log,
       errorMessage: 'Contract not deployed yet',
     },
   );
@@ -68,12 +68,11 @@ test.serial('wait until account funded', async t => {
 
   const waitP = waitUntilAccountFunded(
     'agoric12345',
-    { query, setTimeout },
+    { log: t.log, query, setTimeout },
     { denom: 'ufake', value: 100_000 },
     {
       maxRetries: 5,
       retryIntervalMs: 1000,
-      log: t.log,
       errorMessage: 'Account not funded yet',
     },
   );
@@ -107,12 +106,11 @@ test.serial('wait until account funded, insufficient balance', async t => {
 
   const waitP = waitUntilAccountFunded(
     'agoric12345',
-    { query, setTimeout },
+    { log: t.log, query, setTimeout },
     { denom: 'ufake', value: 100_000 },
     {
       maxRetries: 5,
       retryIntervalMs: 1000,
-      log: t.log,
       errorMessage: 'Account not funded yet',
     },
   );
@@ -151,11 +149,10 @@ test.serial(
       'agoric12345',
       'my-offer',
       false,
-      { follow, setTimeout },
+      { log: t.log, follow, setTimeout },
       {
         maxRetries: 5,
         retryIntervalMs: 1000,
-        log: t.log,
         errorMessage: 'Wrong update type',
       },
     );
@@ -172,11 +169,10 @@ test.serial('wait until offer result, wrong id - should throw', async t => {
     'agoric12345',
     'my-offer',
     false,
-    { follow, setTimeout },
+    { log: t.log, follow, setTimeout },
     {
       maxRetries: 5,
       retryIntervalMs: 1000,
-      log: t.log,
       errorMessage: 'Wrong offer id',
     },
   );
@@ -192,11 +188,10 @@ test.serial('wait until offer result, no "status" - should throw', async t => {
     'agoric12345',
     'my-offer',
     false,
-    { follow, setTimeout },
+    { follow, log: t.log, setTimeout },
     {
       maxRetries: 5,
       retryIntervalMs: 1000,
-      log: t.log,
       errorMessage: 'No "status" object',
     },
   );
@@ -217,11 +212,10 @@ test.serial(
       'agoric12345',
       'my-offer',
       false,
-      { follow, setTimeout },
+      { follow, log: t.log, setTimeout },
       {
         maxRetries: 5,
         retryIntervalMs: 1000,
-        log: t.log,
         errorMessage: '"numWantsSatisfied" is not 1',
       },
     );
@@ -238,11 +232,10 @@ test.serial('wait until offer result, do not wait for "payouts"', async t => {
     'agoric12345',
     'my-offer',
     false,
-    { follow, setTimeout },
+    { follow, log: t.log, setTimeout },
     {
       maxRetries: 7,
       retryIntervalMs: 1000,
-      log: t.log,
       errorMessage: 'offer not resulted on time',
     },
   );
@@ -275,11 +268,10 @@ test.serial('wait until offer result, wait for "payouts"', async t => {
     'agoric12345',
     'my-offer',
     true,
-    { follow, setTimeout },
+    { follow, log: t.log, setTimeout },
     {
       maxRetries: 7,
       retryIntervalMs: 1000,
-      log: t.log,
       errorMessage: 'payouts not received on time',
     },
   );
@@ -325,11 +317,10 @@ test.serial(
 
     const waitP = waitUntilInvitationReceived(
       'agoric12345',
-      { follow, setTimeout },
+      { follow, log: t.log, setTimeout },
       {
         maxRetries: 3,
         retryIntervalMs: 1000,
-        log: t.log,
         errorMessage: 'wrong "updated" value',
       },
     );
@@ -346,11 +337,10 @@ test.serial(
 
     const waitP = waitUntilInvitationReceived(
       'agoric12345',
-      { follow, setTimeout },
+      { follow, log: t.log, setTimeout },
       {
         maxRetries: 5,
         retryIntervalMs: 1000,
-        log: t.log,
         errorMessage: 'faulty "currentAmount" object',
       },
     );
@@ -372,11 +362,10 @@ test.serial(
 
     const waitP = waitUntilInvitationReceived(
       'agoric12345',
-      { follow, setTimeout },
+      { follow, log: t.log, setTimeout },
       {
         maxRetries: 3,
         retryIntervalMs: 1000,
-        log: t.log,
         errorMessage: 'brand string do not match',
       },
     );
@@ -391,11 +380,10 @@ test.serial('wait until invitation recevied', async t => {
 
   const waitP = waitUntilInvitationReceived(
     'agoric12345',
-    { follow, setTimeout },
+    { follow, log: t.log, setTimeout },
     {
       maxRetries: 5,
       retryIntervalMs: 1000,
-      log: t.log,
       errorMessage: 'brand string do not match',
     },
   );
