@@ -4,12 +4,15 @@
  */
 
 import { AmountMath } from '@agoric/ertp/src/amountMath.js';
+import { AmountShape, PaymentShape } from '@agoric/ertp/src/typeGuards.js';
+import { depositToSeat } from '@agoric/zoe/src/contractSupport/zoeHelpers.js';
 import { SeatShape } from '@agoric/zoe/src/typeGuards.js';
 import { M } from '@endo/patterns';
 import {
   deposit as depositCalc,
   makeParity,
   withdraw as withdrawCalc,
+  withFees,
 } from '../pool-share-math.js';
 import { makeProposalShapes } from '../type-guards.js';
 
@@ -22,6 +25,9 @@ export const prepareLiquidityPoolKit = (zone, zcf, brands) => {
   return zone.exoClassKit(
     'Fast Liquidity Pool',
     {
+      feeSink: M.interface('feeSink', {
+        receive: M.call(AmountShape, PaymentShape).returns(M.promise()),
+      }),
       depositHandler: M.interface('depositHandler', {
         handle: M.call(SeatShape, M.any()).returns(undefined),
       }),
@@ -46,6 +52,23 @@ export const prepareLiquidityPoolKit = (zone, zcf, brands) => {
       return { shareMint, shareWorth, poolSeat, PoolShares, proposalShapes };
     },
     {
+      feeSink: {
+        /**
+         * @param {Amount<'nat'>} amount
+         * @param {Payment<'nat'>} payment
+         */
+        async receive(amount, payment) {
+          const { poolSeat, shareWorth } = this.state;
+          await depositToSeat(
+            zcf,
+            poolSeat,
+            harden({ USDC: amount }),
+            harden({ USDC: payment }),
+          );
+          this.state.shareWorth = withFees(shareWorth, amount);
+        },
+      },
+
       depositHandler: {
         /** @param {ZCFSeat} lp */
         handle(lp) {

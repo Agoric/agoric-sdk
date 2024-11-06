@@ -76,31 +76,40 @@ test('LP deposit, withdraw', async t => {
   const { make, isGTE } = AmountMath;
 
   {
-    const toDeposit = await E(publicFacet).makeDepositInvitation();
     const proposal = harden({
       give: { USDC: usdc.make(100n) },
       want: { PoolShare: make(PoolShares, 20n) },
     });
+    t.log('deposit', proposal.give.USDC);
+    const toDeposit = await E(publicFacet).makeDepositInvitation();
     const payments = { USDC: utils.pourPayment(proposal.give.USDC) };
     const dSeat = await E(zoe).offer(toDeposit, proposal, payments);
     const sharePmt = await E(dSeat).getPayout('PoolShare');
     const amt = await E(sharePurseP).deposit(sharePmt);
+    t.log('deposit payout', amt);
     t.true(isGTE(amt, proposal.want.PoolShare));
   }
 
   {
-    const toWithdraw = await E(publicFacet).makeWithdrawInvitation();
+    const feeAmt = usdc.make(25n);
+    const feePmt = await utils.pourPayment(feeAmt);
+    await E(creatorFacet).simulateFeesFromAdvance(feeAmt, feePmt);
+  }
+
+  {
     const proposal = harden({
-      give: { PoolShare: make(PoolShares, 20n) },
-      want: { USDC: usdc.make(10n) },
+      give: { PoolShare: make(PoolShares, 40n) },
+      want: { USDC: usdc.make(50n) },
     });
+    t.log('withdraw', proposal.give.PoolShare);
+    const toWithdraw = await E(publicFacet).makeWithdrawInvitation();
     const pmt = await E(sharePurseP).withdraw(proposal.give.PoolShare);
     const dSeat = await E(zoe).offer(toWithdraw, proposal, {
       PoolShare: pmt,
     });
     const usdcPmt = await E(dSeat).getPayout('USDC');
     const amt = await E(usdcPurseP).deposit(usdcPmt);
-    t.log('withdrew', amt);
+    t.log('withdaw payout', amt);
     t.true(isGTE(amt, proposal.want.USDC));
   }
 });
