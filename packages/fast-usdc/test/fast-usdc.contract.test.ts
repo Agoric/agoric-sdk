@@ -1,10 +1,11 @@
-import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
+import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { E } from '@endo/far';
 import path from 'path';
 import { makeNodeBundleCache } from '@endo/bundle-source/cache.js';
 import { AmountMath } from '@agoric/ertp/src/amountMath.js';
+import type { TestFn } from 'ava';
 import { commonSetup } from './supports.js';
 
 const dirname = path.dirname(new URL(import.meta.url).pathname);
@@ -13,10 +14,13 @@ const contractName = 'fast-usdc';
 const contractFile = `${dirname}/../src/fast-usdc.contract.js`;
 type StartFn = typeof import('../src/fast-usdc.contract.js').start;
 
-test.before('cache bundles', async t => {
+const makeTestContext = async () => {
   const bundleCache = await makeNodeBundleCache('bundles', {}, s => import(s));
-  t.context = { bundleCache };
-});
+  return { bundleCache };
+};
+const test: TestFn<Awaited<ReturnType<typeof makeTestContext>>> = anyTest;
+
+test.before('cache bundles', async t => (t.context = await makeTestContext()));
 
 test('start', async t => {
   const {
