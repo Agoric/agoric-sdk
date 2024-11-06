@@ -52,7 +52,13 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
   });
   assertAllDefined({ feed, settler, advancer, statusManager });
 
-  const creatorFacet = zone.exo('Fast USDC Creator', undefined, {});
+  const creatorFacet = zone.exo('Fast USDC Creator', undefined, {
+    simulateFeesFromAdvance(amount, payment) {
+      console.log('UNTIL: advance fees are implemented');
+      // eslint-disable-next-line no-use-before-define
+      return poolKit.feeSink.receive(amount, payment);
+    },
+  });
 
   // NOTE: all kinds are defined above, before possible remote call.
   const shareMint = await provideSingleton(
@@ -63,12 +69,11 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
         decimalPlaces: 6,
       }),
   );
-  const publicFacet = zone.makeOnce(
-    'Fast USDC Public',
-    () => makeLiquidityPoolKit(shareMint).public,
+  const poolKit = zone.makeOnce('Liquidity Pool kit', () =>
+    makeLiquidityPoolKit(shareMint),
   );
 
-  return harden({ creatorFacet, publicFacet });
+  return harden({ creatorFacet, publicFacet: poolKit.public });
 };
 harden(contract);
 
