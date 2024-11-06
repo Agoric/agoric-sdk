@@ -17,7 +17,7 @@
  * @property {number} [maxRetries]
  * @property {number} [retryIntervalMs]
  * @property {(...arg0: string[]) => void} [log]
- * @property {(callback: Function, delay: number) => void} setTimeout
+ * @property {typeof global.setTimeout} setTimeout
  *
  * @typedef {RetryOptions & {errorMessage: string}} WaitUntilOptions
  *
@@ -110,7 +110,7 @@ const makeGetInstances = follow => async () => {
 /**
  *
  * @param {string} contractName
- * @param {{follow: () => object, setTimeout: (object) => void}} ambientAuthority
+ * @param {{follow: () => object, setTimeout: typeof global.setTimeout}} ambientAuthority
  * @param {WaitUntilOptions} options
  */
 export const waitUntilContractDeployed = (
@@ -151,7 +151,7 @@ const checkCosmosBalance = (balances, threshold) => {
 
 /**
  * @param {string} destAcct
- * @param {{query: () => Promise<object>, setTimeout: (object) => void}} ambientAuthority
+ * @param {{query: () => Promise<object>, setTimeout: typeof global.setTimeout}} ambientAuthority
  * @param {{denom: string, value: number}} threshold
  * @param {WaitUntilOptions} options
  */
@@ -206,7 +206,7 @@ const checkOfferState = (offerStatus, waitForPayouts, offerId) => {
  * @param {string} addr
  * @param {string} offerId
  * @param {boolean} waitForPayouts
- * @param {{follow: () => object, setTimeout: (callback: Function, delay: number) => void}} ambientAuthority
+ * @param {{follow: () => object, setTimeout: typeof global.setTimeout}} ambientAuthority
  * @param {WaitUntilOptions} options
  */
 export const waitUntilOfferResult = (
@@ -248,7 +248,7 @@ const checkForInvitation = update => {
 /**
  *
  * @param {string} addr
- * @param {{follow: () => object, setTimeout: (object) => void}} ambientAuthority
+ * @param {{follow: () => object, setTimeout: typeof global.setTimeout}} ambientAuthority
  * @param {WaitUntilOptions} options
  */
 export const waitUntilInvitationReceived = (

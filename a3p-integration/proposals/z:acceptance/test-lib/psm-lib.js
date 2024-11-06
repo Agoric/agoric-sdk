@@ -384,7 +384,7 @@ export const sendOfferAgoric = async (address, offerPromise) => {
  * @param {Array<any>} params
  * @param {{
  *   follow: (...params: string[]) => Promise<object>;
- *   setTimeout: (callback: Function, delay: number) => void;
+ *   setTimeout: typeof global.setTimeout;
  *   now: () => number
  * }} io
  */
