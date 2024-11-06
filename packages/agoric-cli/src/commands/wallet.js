@@ -8,11 +8,7 @@ import {
   makeLeader,
   makeLeaderFromRpcAddresses,
 } from '@agoric/casting';
-import {
-  fmtRecordOfLines,
-  makeRpcUtils,
-  summarize,
-} from '@agoric/client-utils';
+import { makeRpcUtils } from '@agoric/client-utils';
 import { execFileSync } from 'child_process';
 import fs from 'fs';
 import util from 'util';
@@ -25,6 +21,7 @@ import {
 } from '../lib/chain.js';
 import { getNetworkConfig } from '../lib/network-config.js';
 import { coalesceWalletState, getCurrent } from '../lib/wallet.js';
+import { summarize, fmtRecordOfLines } from '../lib/format.js';
 
 const networkConfig = await getNetworkConfig({ env: process.env, fetch });
 

@@ -1,11 +1,12 @@
 // @ts-check
 /* eslint-env node */
-import { bigintReplacer, makeWalletUtils } from '@agoric/client-utils';
+import { makeWalletUtils } from '@agoric/client-utils';
 import { Fail } from '@endo/errors';
 import { CommanderError } from 'commander';
 import { normalizeAddressWithOptions } from '../lib/chain.js';
 import { getNetworkConfig } from '../lib/network-config.js';
 import { sendAction } from '../lib/wallet.js';
+import { bigintReplacer } from '../lib/format.js';
 
 /**
  * Make commands for testing.

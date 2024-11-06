@@ -1,11 +1,12 @@
 // @ts-check
 /* eslint-disable func-names */
 /* eslint-env node */
-import { asPercent, makeRpcUtils, storageHelper } from '@agoric/client-utils';
+import { makeRpcUtils, storageHelper } from '@agoric/client-utils';
 import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
 import { Command } from 'commander';
 import { getNetworkConfig } from '../lib/network-config.js';
 import { outputExecuteOfferAction } from '../lib/wallet.js';
+import { asPercent } from '../lib/format.js';
 
 const networkConfig = await getNetworkConfig({ env: process.env, fetch });
 

@@ -2,7 +2,6 @@
 /* eslint-disable func-names */
 /* eslint-env node */
 import {
-  bigintReplacer,
   makeRpcUtils,
   makeWalletUtils,
   storageHelper,
@@ -22,6 +21,7 @@ import {
   sendAction,
   sendHint,
 } from '../lib/wallet.js';
+import { bigintReplacer } from '../lib/format.js';
 
 /** @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js'; */
 
