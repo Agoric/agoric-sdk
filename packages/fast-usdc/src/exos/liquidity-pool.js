@@ -4,8 +4,6 @@
  */
 
 import { AmountMath } from '@agoric/ertp/src/amountMath.js';
-import { AmountShape, PaymentShape } from '@agoric/ertp/src/typeGuards.js';
-import { depositToSeat } from '@agoric/zoe/src/contractSupport/zoeHelpers.js';
 import { SeatShape } from '@agoric/zoe/src/typeGuards.js';
 import { M } from '@endo/patterns';
 import {
