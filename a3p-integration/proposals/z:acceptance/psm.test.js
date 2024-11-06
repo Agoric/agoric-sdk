@@ -137,19 +137,6 @@ test.serial('swap into IST', async t => {
     govParams: { wantMintedFeeVal },
   } = psmTestSpecs;
 
-  const rejectionPatt = /admission_refused|inbound_not_allowed/;
-  const getTxRejectionMetrics = async () => {
-    const resp = await fetch('http://localhost:1317/metrics?format=prometheus');
-    const metrics = await (resp.ok ? resp.text() : Promise.reject(resp));
-    return metrics.split('\n').filter(line => line.match(rejectionPatt));
-  };
-  const txMetricsBefore = await getTxRejectionMetrics();
-  t.log('REJECTED_TRANSACTIONS', txMetricsBefore);
-  t.teardown(async () => {
-    const txMetricsAfter = await getTxRejectionMetrics();
-    t.log('REJECTED_TRANSACTIONS_AFTER', txMetricsAfter);
-  });
-
   const psmTrader = await getUser(name);
   t.log('TRADER', psmTrader);
 
@@ -198,19 +185,6 @@ test.serial('swap out of IST', async t => {
     fromIst,
     govParams: { giveMintedFeeVal },
   } = psmTestSpecs;
-
-  const rejectionPatt = /admission_refused|inbound_not_allowed/;
-  const getTxRejectionMetrics = async () => {
-    const resp = await fetch('http://localhost:1317/metrics?format=prometheus');
-    const metrics = await (resp.ok ? resp.text() : Promise.reject(resp));
-    return metrics.split('\n').filter(line => line.match(rejectionPatt));
-  };
-  const txMetricsBefore = await getTxRejectionMetrics();
-  t.log('REJECTED_TRANSACTIONS', txMetricsBefore);
-  t.teardown(async () => {
-    const txMetricsAfter = await getTxRejectionMetrics();
-    t.log('REJECTED_TRANSACTIONS_AFTER', txMetricsAfter);
-  });
 
   const psmTrader = await getUser(name);
 
