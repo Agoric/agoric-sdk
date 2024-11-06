@@ -9,20 +9,6 @@ import { makeBoardRemote } from '@agoric/vats/tools/board-utils.js';
  */
 
 /**
- * Like @endo/nat but coerces
- *
- * @param {string} str
- * @returns {bigint}
- */
-export const Natural = str => {
-  const b = BigInt(str);
-  if (b < 0) {
-    throw RangeError(`${b} is negative`);
-  }
-  return b;
-};
-
-/**
  * JSON.stringify replacer to handle bigint
  *
  * @param {unknown} k
