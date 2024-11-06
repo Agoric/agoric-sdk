@@ -8,6 +8,7 @@ import (
 
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/types"
+	vstoragetesting "github.com/Agoric/agoric-sdk/golang/cosmos/x/vstorage/testing"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
@@ -130,8 +131,10 @@ func (keeper msgServer) WalletSpendAction(goCtx context.Context, msg *types.MsgW
 	}
 	// fmt.Fprintf(os.Stderr, "Context is %+v\n", ctx)
 	err = keeper.routeAction(ctx, msg, action)
-	highPriorityQueueItems, hpqErr := keeper.Keeper.vstorageKeeper.GetQueueItems(ctx, StoragePathHighPriorityQueue)
-	actionQueueItems, aqErr := keeper.Keeper.vstorageKeeper.GetQueueItems(ctx, StoragePathActionQueue)
+	highPriorityQueueItems, hpqErr := vstoragetesting.GetQueueItems(
+		ctx, keeper.Keeper.vstorageKeeper, StoragePathHighPriorityQueue)
+	actionQueueItems, aqErr := vstoragetesting.GetQueueItems(
+		ctx, keeper.Keeper.vstorageKeeper, StoragePathActionQueue)
 	if xxx_gibson {
 		stdlog.Printf(
 			"xxx gibson WalletSpendAction routeAction %v: error %v, queues %#q %v %#q %v\n",
@@ -182,8 +185,10 @@ func (keeper msgServer) provisionIfNeeded(ctx sdk.Context, owner sdk.AccAddress)
 	}
 
 	err := keeper.routeAction(ctx, msg, action)
-	highPriorityQueueItems, hpqErr := keeper.Keeper.vstorageKeeper.GetQueueItems(ctx, StoragePathHighPriorityQueue)
-	actionQueueItems, aqErr := keeper.Keeper.vstorageKeeper.GetQueueItems(ctx, StoragePathActionQueue)
+  highPriorityQueueItems, hpqErr := vstoragetesting.GetQueueItems(
+    ctx, keeper.Keeper.vstorageKeeper, StoragePathHighPriorityQueue)
+  actionQueueItems, aqErr := vstoragetesting.GetQueueItems(
+    ctx, keeper.Keeper.vstorageKeeper, StoragePathActionQueue)
 	if xxx_gibson {
 		stdlog.Printf(
 			"xxx gibson provisionIfNeeded routeAction %v: error %v, queues %#q %v %#q %v\n",
