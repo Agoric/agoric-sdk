@@ -29,12 +29,12 @@ test(`localchain passes tests`, async t => {
   const nodePath = 'test.localchain';
   const nodeValue = JSON.stringify({ success: true });
 
-  await retryUntilCondition(
+  const actualValue = await retryUntilCondition(
     async () => readPublished(nodePath),
     value => value === nodeValue,
-    'core eval not enforced yet',
+    'core eval not processed yet',
     { setTimeout, retryIntervalMs: 5000, maxRetries: 15 },
   );
 
-  t.is(await readPublished(nodePath), nodeValue);
+  t.is(actualValue, nodeValue);
 });

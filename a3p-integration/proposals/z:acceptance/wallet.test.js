@@ -60,14 +60,12 @@ test.serial('exitOffer tool reclaims stuck payment', async t => {
     offerId,
   });
 
-  await retryUntilCondition(
+  const istBalanceAfter = await retryUntilCondition(
     async () => getBalances([GOV1ADDR], 'uist'),
-    istBalanceAfter => istBalanceAfter > istBalanceBefore,
+    istBalance => istBalance > istBalanceBefore,
     'tryExitOffer failed to reclaim stuck payment ',
     { setTimeout, retryIntervalMs: 5000, maxRetries: 15 },
   );
-
-  const istBalanceAfter = await getBalances([GOV1ADDR], 'uist');
 
   t.true(
     istBalanceAfter > istBalanceBefore,

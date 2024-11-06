@@ -48,12 +48,12 @@ test(`core eval works`, async t => {
 
   await evalBundles(SUBMISSION_DIR);
 
-  await retryUntilCondition(
+  const actualValue = await retryUntilCondition(
     async () => readPublished(nodePath),
     value => value === nodeValue,
-    'core eval not enforced yet',
+    'core eval not processed yet',
     { setTimeout, retryIntervalMs: 5000, maxRetries: 15 },
   );
 
-  t.is(await readPublished(nodePath), nodeValue);
+  t.is(actualValue, nodeValue);
 });

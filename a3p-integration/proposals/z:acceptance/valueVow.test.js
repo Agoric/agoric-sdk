@@ -44,28 +44,21 @@ test('vow survives restart', async t => {
   });
 
   t.log('confirm the value is not in offer results');
-  await retryUntilCondition(
+  let getterStatus = await retryUntilCondition(
     async () => walletUtils.readLatestHead(`published.wallet.${GETTER}`),
-    getterStatus =>
-      getterStatus.status.id === 'get-value' &&
-      getterStatus.updated === 'offerStatus',
+    value => value.status.id === 'get-value' && value.updated === 'offerStatus',
     'Offer get-value not succeeded',
     { setTimeout, retryIntervalMs: 5000, maxRetries: 15 },
   );
-  {
-    /** @type {any} */
-    const getterStatus = await walletUtils.readLatestHead(
-      `published.wallet.${GETTER}`,
-    );
-    console.log('current: ', inspect(getterStatus, { depth: 10 }));
-    t.like(getterStatus, {
-      status: {
-        id: 'get-value',
-      },
-      updated: 'offerStatus',
-    });
-    t.false('result' in getterStatus.status, 'no result yet');
-  }
+
+  console.log('current: ', inspect(getterStatus, { depth: 10 }));
+  t.like(getterStatus, {
+    status: {
+      id: 'get-value',
+    },
+    updated: 'offerStatus',
+  });
+  t.false('result' in getterStatus.status, 'no result yet');
 
   t.log('restart valueVow');
   await evalBundles(RESTART_VALUEVOW_DIR);
@@ -89,11 +82,7 @@ test('vow survives restart', async t => {
   });
 
   t.log('confirm the value is now in offer results');
-  {
-    const getterStatus = await walletUtils.readLatestHead(
-      `published.wallet.${GETTER}`,
-    );
+  getterStatus = await walletUtils.readLatestHead(`published.wallet.${GETTER}`);
 
-    t.like(getterStatus, { status: { result: offerArgs.value } });
-  }
+  t.like(getterStatus, { status: { result: offerArgs.value } });
 });
