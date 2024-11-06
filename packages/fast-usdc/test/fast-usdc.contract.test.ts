@@ -3,7 +3,7 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { E } from '@endo/far';
 import path from 'path';
-import { makeNodeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
+import { makeNodeBundleCache } from '@endo/bundle-source/cache.js';
 import { AmountMath } from '@agoric/ertp/src/amountMath.js';
 import { commonSetup } from './supports.js';
 
