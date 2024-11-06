@@ -36,7 +36,6 @@
     "@agoric/swingset-xsnap-supervisor": "^0.10.2",
     "@agoric/time": "^0.3.2",
     "@agoric/vat-data": "^0.5.2",
-    "@agoric/xsnap": "^0.14.2",
     "@agoric/xsnap-lockdown": "^0.14.0",
     "@endo/base64": "^1.0.8",
     "@endo/bundle-source": "^3.4.2",
@@ -65,6 +64,7 @@
     "yargs-parser": "^21.1.1"
   },
   "peerDependencies": {
+    "@agoric/xsnap": "^0.14.2",
     "ava": "^5.3.0"
   },
   "files": [
