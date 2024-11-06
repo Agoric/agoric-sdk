@@ -19,7 +19,7 @@ export const makeWalletUtils = async ({ fetch, delay }, networkConfig) => {
     await makeRpcUtils({ fetch }, networkConfig);
   const m = boardSlottingMarshaller(fromBoard.convertSlotToVal);
 
-  const client = await makeStargateClient(networkConfig);
+  const client = await makeStargateClient(networkConfig, { fetch });
 
   /**
    * @param {string} from

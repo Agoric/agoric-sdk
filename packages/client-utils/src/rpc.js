@@ -3,6 +3,8 @@ import {
   boardSlottingMarshaller,
   makeBoardRemote,
 } from '@agoric/vats/tools/board-utils.js';
+import { makeTendermintRpcClient } from '@agoric/casting';
+import { Tendermint34Client } from '@cosmjs/tendermint-rpc';
 
 export { boardSlottingMarshaller };
 
@@ -246,3 +248,13 @@ export const makeRpcUtils = async ({ fetch }, config) => {
   }
 };
 /** @typedef {Awaited<ReturnType<typeof makeRpcUtils>>} RpcUtils */
+
+/**
+ * @param {string} endpoint
+ * @param {{ fetch: typeof window.fetch }} io
+ * @returns {Promise<Tendermint34Client>}
+ */
+export const makeTendermint34Client = (endpoint, { fetch }) => {
+  const rpcClient = makeTendermintRpcClient(endpoint, fetch);
+  return Tendermint34Client.create(rpcClient);
+};

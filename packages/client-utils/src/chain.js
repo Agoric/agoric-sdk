@@ -3,14 +3,18 @@
  */
 
 import { StargateClient } from '@cosmjs/stargate';
-import { pickEndpoint } from './rpc.js';
+import { makeTendermint34Client, pickEndpoint } from './rpc.js';
 
 /**
  * @param {MinimalNetworkConfig} config
+ * @param {{ fetch: typeof window.fetch }} io
  * @returns {Promise<StargateClient>}
  */
-export const makeStargateClient = config =>
-  StargateClient.connect(pickEndpoint(config));
+export const makeStargateClient = async (config, { fetch }) => {
+  const url = pickEndpoint(config);
+  const tm = await makeTendermint34Client(url, { fetch });
+  return StargateClient.create(tm);
+};
 
 /**
  * @param {{
