@@ -1,6 +1,8 @@
+/// <reference types="node" />
 /* eslint-env node */
 
 import '@endo/init';
+import { makePromiseKit } from '@endo/promise-kit';
 import {
   addUser,
   agd,
@@ -9,14 +11,17 @@ import {
   executeOffer,
   getUser,
   agopsLocation,
-  executeCommand,
+  // xxx executeCommand,
   CHAINID,
   VALIDATORADDR,
   GOV1ADDR,
   mkTemp,
 } from '@agoric/synthetic-chain';
 import { AmountMath } from '@agoric/ertp';
+import { deepMapObject } from '@agoric/internal';
+import { spawn } from 'node:child_process';
 import fsp from 'node:fs/promises';
+import { Readable } from 'node:stream';
 import { boardSlottingMarshaller, makeFromBoard } from './rpc.js';
 import { getBalances } from './utils.js';
 import {
@@ -29,6 +34,152 @@ import { NonNullish } from './errors.js';
 // Export these from synthetic-chain?
 const USDC_DENOM = NonNullish(process.env.USDC_DENOM);
 const PSM_PAIR = NonNullish(process.env.PSM_PAIR).replace('.', '-');
+
+const q = JSON.stringify;
+
+/**
+ * @typedef {object} SpawnResult
+ * @property {number | null} status
+ * @property {Buffer | null} stdout
+ * @property {Buffer | null} stderr
+ * @property {string | null} signal
+ * @property {Error | null} error
+ */
+
+/**
+ * Launch a child process with optional standard input, because I can't use
+ * execa for some reason.
+ *
+ * @param { string[] } cmd
+ * @param { {input?: Parameters<typeof Readable.from>[0]} & Parameters<typeof spawn>[2] } options
+ * @returns { Promise<SpawnResult & ({error: Error} | {status: number} | {signal: string})> }
+ */
+const spawnKit = async ([cmd, ...args], { input, ...options } = {}) => {
+  const child = spawn(cmd, args, options);
+  /** @type {{stdout: Buffer[], stderr: Buffer[]}} */
+  const outChunks = { stdout: [], stderr: [] };
+  const exitKit = makePromiseKit();
+  const inKit = child.stdin && makePromiseKit();
+  const outKit = child.stdout && makePromiseKit();
+  const errKit = child.stderr && makePromiseKit();
+  // cf. https://nodejs.org/docs/latest/api/child_process.html#child_processspawnsynccommand-args-options
+  /** @type {SpawnResult} */
+  const result = {
+    status: null,
+    stdout: null,
+    stderr: null,
+    signal: null,
+    error: null,
+  };
+  child.on('error', err => {
+    result.error = err;
+    // An exit event *might* be coming, so wait a tick.
+    setImmediate(() => exitKit.resolve());
+  });
+  child.on('exit', (exitCode, signal) => {
+    result.status = exitCode;
+    result.signal = signal;
+    exitKit.resolve();
+  });
+  /** @type {(emitter: import('node:events').EventEmitter, kit: PromiseKit, msg: string) => void} */
+  const rejectOnError = (emitter, kit, msg) =>
+    emitter.on('error', err => kit.reject(Error(msg, { cause: err })));
+  /** @typedef {[string, Readable, Buffer[], PromiseKit]} ReadableKit */
+  for (const [label, stream, chunks, kit] of /** @type {ReadableKit[]} */ ([
+    ['stdout', child.stdout, outChunks.stdout, outKit],
+    ['stderr', child.stderr, outChunks.stderr, errKit],
+  ])) {
+    if (!stream) continue;
+    rejectOnError(stream, kit, `failed reading from ${q(cmd)} ${label}`);
+    stream.on('data', chunk => chunks.push(chunk));
+    stream.on('end', () => kit.resolve());
+  }
+  if (child.stdin) {
+    rejectOnError(child.stdin, inKit, `failed writing to ${q(cmd)} stdin`);
+    Readable.from(input || []).pipe(child.stdin);
+    child.stdin.on('finish', () => inKit.resolve());
+  } else if (input) {
+    throw Error(`missing ${q(cmd)} stdin`);
+  }
+  await Promise.all([exitKit, inKit, outKit, errKit].map(kit => kit?.promise));
+  if (outKit) result.stdout = Buffer.concat(outChunks.stdout);
+  if (errKit) result.stderr = Buffer.concat(outChunks.stderr);
+  return result;
+};
+
+const spawnResultData = spawnResult => ({
+  status: spawnResult.status,
+  stdout: spawnResult.stdout?.toString(),
+  stderr: spawnResult.stderr?.toString(),
+  signal: spawnResult.signal,
+  error: spawnResult.error,
+});
+
+/**
+ * Given either an array of [key, value] or
+ * { [labelKey]: string, [valueKey]: unknown } entries, or a
+ * Record<LabelString, Value> object, log a concise representation similar to
+ * the latter but hiding implementation details of any embedded remotables.
+ *
+ * @param {import('ava').ExecutionContext} t
+ * @param {string} label
+ * @param {Array<[string, unknown] | object> | Record<string, unknown>} data
+ * @returns {void}
+ */
+export const logKeyedNumerics = (t, label, data) => {
+  const entries = Array.isArray(data) ? [...data] : Object.entries(data);
+  /** @type {[labelKey: PropertyKey, valueKey: PropertyKey]} */
+  let shape;
+  for (let i = 0; i < entries.length; i += 1) {
+    let entry = entries[i];
+    if (!Array.isArray(entry)) {
+      // Determine which key of a two-property "entry object" (e.g.,
+      // {denom, amount} or {brand, value} is the label and which is the value
+      // (which may be of type object or number or bigint or string).
+      if (!shape) {
+        const entryKeys = Object.keys(entry);
+        t.is(
+          entryKeys.length,
+          2,
+          `not shaped like a record entry: {${entryKeys}}`,
+        );
+        const numericKeyIndex = entryKeys.findIndex(
+          k =>
+            typeof entry[k] === 'object' ||
+            (entry[k] !== '' && !Number.isNaN(Number(entry[k]))),
+        );
+        t.not(
+          numericKeyIndex,
+          undefined,
+          `no numeric-valued property: {${entryKeys}}={${Object.values(entry).map(String)}}`,
+        );
+        shape = numericKeyIndex === 1 ? entryKeys : entryKeys.reverse();
+      }
+      // Convert that object to a [key, value] entry array.
+      entries[i] = shape.map(k => entry[k]);
+      entry = entries[i];
+    }
+    // Simplify remotables in the value.
+    entry[1] = deepMapObject(entry[1], value => {
+      const tag =
+        value && typeof value === 'object' && value[Symbol.toStringTag];
+      return tag
+        ? Object.defineProperty({}, Symbol.toStringTag, { value: tag })
+        : value;
+    });
+  }
+  t.log(
+    label,
+    shape ? `{ [${shape[0]}]: ${shape[1]} }` : '',
+    Object.fromEntries(entries),
+  );
+  // TODO gibson: Remove this temporary hedge against t.log not being visible upon timeout.
+  console.log(
+    label,
+    shape ? `{ [${shape[0]}]: ${shape[1]} }` : '',
+    Object.fromEntries(entries),
+  );
+};
 
 /**
  * @typedef {object} PsmMetrics
@@ -327,7 +478,7 @@ export const checkUserInitializedSuccessfully = async (
  *   denom: string,
  *   value: string
  * }} fund
- * @param io
+ * @param {any} io
  */
 export const initializeNewUser = async (name, fund, io) => {
   const psmTrader = await addUser(name);
@@ -353,21 +504,26 @@ export const initializeNewUser = async (name, fund, io) => {
  * vstorage. In situations like this "agoric wallet send" seems a better choice as it doesn't depend on following user's vstorage wallet path
  *
  * @param {string} address
- * @param {Promise<string>} offerPromise
+ * @param {string | Promise<string>} offerPromise
+ * @returns {Promise<string>}
  */
 export const sendOfferAgoric = async (address, offerPromise) => {
   const offerPath = await mkTemp('agops.XXX');
   const offer = await offerPromise;
   await fsp.writeFile(offerPath, offer);
 
-  await agoric.wallet(
+  // Dive below agoric.wallet(...).
+  return spawnKit([
+    'agoric',
+    'wallet',
     '--keyring-backend=test',
     'send',
     '--offer',
     offerPath,
     '--from',
     address,
-  );
+    '--verbose',
+  ]);
 };
 
 /**
@@ -383,8 +539,20 @@ export const psmSwap = async (address, params, io) => {
   const now = io.now();
   const offerId = `${address}-psm-swap-${now}`;
   const newParams = ['psm', ...params, '--offerId', offerId];
-  const offerPromise = executeCommand(agopsLocation, newParams);
-  await sendOfferAgoric(address, offerPromise);
+  // xxx const offerPromise = executeCommand(agopsLocation, newParams);
+  const psmResult = await spawnKit([agopsLocation, ...newParams]);
+  console.log(
+    `psmSwap \`${agopsLocation} psm ${params[0]}\` results`,
+    spawnResultData(psmResult),
+  );
+  const sendResult = await sendOfferAgoric(
+    address,
+    psmResult.stdout.toString(),
+  );
+  console.log(
+    'psmSwap `agoric wallet send` results',
+    spawnResultData(sendResult),
+  );
 
   await waitUntilOfferResult(address, offerId, true, io, {
     errorMessage: `${offerId} not succeeded`,
@@ -427,18 +595,17 @@ const extractBalance = (balances, targetDenom) => {
  * @param {number} expectedBalance
  */
 export const tryISTBalances = async (t, actualBalance, expectedBalance) => {
-  const firstTry = await t.try(
-    (tt, actual, expected) => {
-      tt.deepEqual(actual, expected);
-    },
-    actualBalance,
-    expectedBalance,
-  );
+  const firstTry = await t.try(tt => {
+    tt.is(actualBalance, expectedBalance);
+  });
+  if (firstTry.passed) {
+    firstTry.commit();
+    return;
+  }
 
-  if (!firstTry.passed) {
-    firstTry.discard();
-    t.deepEqual(actualBalance + 200000, expectedBalance);
-  } else firstTry.commit();
+  firstTry.discard();
+  t.log('tryISTBalances assuming no batched IST fee', firstTry.errors);
+  t.is(actualBalance + 200000, expectedBalance);
 };
 
 /**

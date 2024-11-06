@@ -27,6 +27,7 @@ import {
   checkGovParams,
   checkSwapExceedMintLimit,
   checkSwapSucceeded,
+  logKeyedNumerics,
   getPsmMetrics,
   implementPsmGovParamChange,
   initializeNewUser,
@@ -136,19 +137,36 @@ test.serial('swap into IST', async t => {
     govParams: { wantMintedFeeVal },
   } = psmTestSpecs;
 
-  const psmTrader = await getUser(name);
+  const rejectionPatt = /admission_refused|inbound_not_allowed/;
+  const getTxRejectionMetrics = async () => {
+    const resp = await fetch('http://localhost:1317/metrics?format=prometheus');
+    const metrics = await (resp.ok ? resp.text() : Promise.reject(resp));
+    return metrics.split('\n').filter(line => line.match(rejectionPatt));
+  };
+  const txMetricsBefore = await getTxRejectionMetrics();
+  t.log('REJECTED_TRANSACTIONS', txMetricsBefore);
+  t.teardown(async () => {
+    const txMetricsAfter = await getTxRejectionMetrics();
+    t.log('REJECTED_TRANSACTIONS_AFTER', txMetricsAfter);
+  });
 
-  const [metricsBefore, balances] = await Promise.all([
-    getPsmMetrics(anchor),
-    getBalances([psmTrader]),
-  ]);
+  const psmTrader = await getUser(name);
+  t.log('TRADER', psmTrader);
+
+  // Print swingset params without the depth truncation of t.log.
+  const params = await agd.query('swingset', 'params');
+  t.log('SWINGSET PARAMS', JSON.stringify(params, null, 2));
+
+  const balances = await getBalances([psmTrader]);
+  logKeyedNumerics(t, 'BALANCES', balances);
+  const metricsBefore = await getPsmMetrics(anchor);
+  logKeyedNumerics(t, 'METRICS', metricsBefore);
 
   const balancesBefore = await adjustBalancesIfNotProvisioned(
     balances,
     psmTrader,
   );
-  t.log('METRICS', metricsBefore);
-  t.log('BALANCES', balancesBefore);
+  logKeyedNumerics(t, 'BALANCES_ADJUSTED', balancesBefore);
 
   await psmSwap(
     psmTrader,
@@ -163,6 +181,7 @@ test.serial('swap into IST', async t => {
     ],
     psmSwapIo,
   );
+  logKeyedNumerics(t, 'SWAPPED', []);
 
   await checkSwapSucceeded(t, metricsBefore, balancesBefore, {
     wantMinted: toIst.value,
@@ -180,6 +199,19 @@ test.serial('swap out of IST', async t => {
     govParams: { giveMintedFeeVal },
   } = psmTestSpecs;
 
+  const rejectionPatt = /admission_refused|inbound_not_allowed/;
+  const getTxRejectionMetrics = async () => {
+    const resp = await fetch('http://localhost:1317/metrics?format=prometheus');
+    const metrics = await (resp.ok ? resp.text() : Promise.reject(resp));
+    return metrics.split('\n').filter(line => line.match(rejectionPatt));
+  };
+  const txMetricsBefore = await getTxRejectionMetrics();
+  t.log('REJECTED_TRANSACTIONS', txMetricsBefore);
+  t.teardown(async () => {
+    const txMetricsAfter = await getTxRejectionMetrics();
+    t.log('REJECTED_TRANSACTIONS_AFTER', txMetricsAfter);
+  });
+
   const psmTrader = await getUser(name);
 
   const [metricsBefore, balancesBefore] = await Promise.all([
@@ -187,8 +219,8 @@ test.serial('swap out of IST', async t => {
     getBalances([psmTrader]),
   ]);
 
-  t.log('METRICS', metricsBefore);
-  t.log('BALANCES', balancesBefore);
+  logKeyedNumerics(t, 'METRICS', metricsBefore);
+  logKeyedNumerics(t, 'BALANCES', balancesBefore);
 
   await psmSwap(
     psmTrader,
@@ -237,8 +269,8 @@ test.serial('mint limit is adhered', async t => {
     getBalances([otherAddr]),
   ]);
 
-  t.log('METRICS', metricsBefore);
-  t.log('BALANCES', balancesBefore);
+  logKeyedNumerics(t, 'METRICS', metricsBefore);
+  logKeyedNumerics(t, 'BALANCES', balancesBefore);
 
   const { maxMintableValue, wantFeeValue } = await maxMintBelowLimit(anchor);
   const maxMintFeesAccounted = Math.floor(
