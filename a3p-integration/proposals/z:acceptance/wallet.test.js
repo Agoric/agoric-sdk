@@ -9,13 +9,21 @@ import {
   evalBundles,
   GOV1ADDR,
   GOV2ADDR,
+  makeAgd,
 } from '@agoric/synthetic-chain';
+import { execFileSync } from 'node:child_process';
 import { agdWalletUtils } from './test-lib/index.js';
-import {
-  agd,
-  getBalances,
-  replaceTemplateValuesInFile,
-} from './test-lib/utils.js';
+import { getBalances, replaceTemplateValuesInFile } from './test-lib/utils.js';
+
+const showAndExec = (file, args, opts) => {
+  console.log('$', file, ...args);
+  return execFileSync(file, args, opts);
+};
+
+// @ts-expect-error string is not assignable to Buffer
+const agd = makeAgd({ execFileSync: showAndExec }).withOpts({
+  keyringBackend: 'test',
+});
 
 test.serial(`send invitation via namesByAddress`, async t => {
   const SUBMISSION_DIR = 'invitation-test-submission';

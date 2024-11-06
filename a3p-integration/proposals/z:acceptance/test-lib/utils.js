@@ -21,17 +21,6 @@ export const replaceTemplateValuesInFile = async (fileName, replacements) => {
   await writeFile(`${fileName}.js`, script);
 };
 
-/** @type {(file: string, args: string[], opts: any) => string} */
-const showAndExec = (file, args, opts) => {
-  console.log('$', file, ...args);
-  return execFileSync(file, args, opts);
-};
-
-// @ts-expect-error string is not assignable to Buffer
-export const agd = makeAgd({ execFileSync: showAndExec }).withOpts({
-  keyringBackend: 'test',
-});
-
 // FIXME this return type depends on its arguments in surprising ways
 /**
  * @param {string[]} addresses
@@ -39,10 +28,10 @@ export const agd = makeAgd({ execFileSync: showAndExec }).withOpts({
  * @returns {Promise<any>}
  */
 export const getBalances = async (addresses, targetDenom = undefined) => {
+  const client = await stargateClientP;
   const balancesList = await Promise.all(
     addresses.map(async address => {
-      /** @type {{balances: Coin[]}} */
-      const { balances } = await agd.query(['bank', 'balances', address]);
+      const balances = await client.getAllBalances(address);
 
       if (targetDenom) {
         const balance = balances.find(({ denom }) => denom === targetDenom);
