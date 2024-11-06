@@ -221,6 +221,7 @@ jobs:
         with:
           datadog-token: ${{ secrets.DATADOG_API_KEY }}
           codecov-token: ${{ secrets.CODECOV_TOKEN }}
+          gcp-credentials: ${{ secrets.GCP_CREDENTIALS }}
 
   test-quick2:
     # BEGIN-TEST-BOILERPLATE
@@ -343,6 +344,7 @@ jobs:
         with:
           datadog-token: ${{ secrets.DATADOG_API_KEY }}
           codecov-token: ${{ secrets.CODECOV_TOKEN }}
+          gcp-credentials: ${{ secrets.GCP_CREDENTIALS }}
 
   ##############
   # Long-running tests are executed individually.
@@ -386,6 +388,7 @@ jobs:
         with:
           datadog-token: ${{ secrets.DATADOG_API_KEY }}
           codecov-token: ${{ secrets.CODECOV_TOKEN }}
+          gcp-credentials: ${{ secrets.GCP_CREDENTIALS }}
 
   test-solo:
     # BEGIN-TEST-BOILERPLATE
@@ -427,6 +430,7 @@ jobs:
         with:
           datadog-token: ${{ secrets.DATADOG_API_KEY }}
           codecov-token: ${{ secrets.CODECOV_TOKEN }}
+          gcp-credentials: ${{ secrets.GCP_CREDENTIALS }}
 
   test-cosmic-swingset:
     # BEGIN-TEST-BOILERPLATE
@@ -471,6 +475,7 @@ jobs:
         with:
           datadog-token: ${{ secrets.DATADOG_API_KEY }}
           codecov-token: ${{ secrets.CODECOV_TOKEN }}
+          gcp-credentials: ${{ secrets.GCP_CREDENTIALS }}
 
   test-inter-protocol:
     # BEGIN-TEST-BOILERPLATE
@@ -512,6 +517,7 @@ jobs:
         with:
           datadog-token: ${{ secrets.DATADOG_API_KEY }}
           codecov-token: ${{ secrets.CODECOV_TOKEN }}
+          gcp-credentials: ${{ secrets.GCP_CREDENTIALS }}
 
   test-boot:
     # BEGIN-TEST-BOILERPLATE
@@ -557,6 +563,7 @@ jobs:
         with:
           datadog-token: ${{ secrets.DATADOG_API_KEY }}
           codecov-token: ${{ secrets.CODECOV_TOKEN }}
+          gcp-credentials: ${{ secrets.GCP_CREDENTIALS }}
 
   test-swingset:
     # BEGIN-TEST-BOILERPLATE
@@ -608,6 +615,7 @@ jobs:
         with:
           datadog-token: ${{ secrets.DATADOG_API_KEY }}
           codecov-token: ${{ secrets.CODECOV_TOKEN }}
+          gcp-credentials: ${{ secrets.GCP_CREDENTIALS }}
 
   test-zoe-unit:
     # BEGIN-TEST-BOILERPLATE
@@ -651,6 +659,7 @@ jobs:
         with:
           datadog-token: ${{ secrets.DATADOG_API_KEY }}
           codecov-token: ${{ secrets.CODECOV_TOKEN }}
+          gcp-credentials: ${{ secrets.GCP_CREDENTIALS }}
 
   test-zoe-swingset:
     # BEGIN-TEST-BOILERPLATE
@@ -693,3 +702,4 @@ jobs:
         with:
           datadog-token: ${{ secrets.DATADOG_API_KEY }}
           codecov-token: ${{ secrets.CODECOV_TOKEN }}
+          gcp-credentials: ${{ secrets.GCP_CREDENTIALS }}

@@ -1,51 +1,43 @@
-/* eslint-env node */
 import test from 'ava';
+import '@endo/init';
 import {
-  agoric,
   bankSend,
   getUser,
   openVault,
   adjustVault,
   closeVault,
   getISTBalance,
-  getContractInfo,
   ATOM_DENOM,
   USER1ADDR,
-  waitForBlock,
+  GOV1ADDR,
+  generateOracleMap,
+  getPriceQuote,
+  getVaultPrices,
+  GOV2ADDR,
 } from '@agoric/synthetic-chain';
 import { getBalances, agopsVaults } from './test-lib/utils.js';
+import {
+  calculateMintFee,
+  getAvailableDebtForMint,
+  getLastVaultFromAddress,
+  getMinInitialDebt,
+  setDebtLimit,
+} from './test-lib/vaults.js';
+import {
+  verifyPushedPrice,
+  getPriceFeedRoundId,
+} from './test-lib/price-feed.js';
+import { tryISTBalances, bankSend as sendIST } from './test-lib/psm-lib.js';
 
-export const scale6 = x => BigInt(x * 1_000_000);
+const VAULT_MANAGER = 'manager0';
 
-test.serial('attempt to open vaults under the minimum amount', async t => {
-  const activeVaultsBefore = await agopsVaults(USER1ADDR);
-  await bankSend(USER1ADDR, `20000000${ATOM_DENOM}`);
-  t.log('active vaults before:', activeVaultsBefore);
-
-  const mint = '3.0';
-  const collateral = '5.0';
-  await t.throwsAsync(() => openVault(USER1ADDR, mint, collateral), {
-    message:
-      /Vault creation requires a minInitialDebt of {"brand":"\[Alleged: IST brand\]","value":"\[5000000n\]"}/,
-  });
-
-  const activeVaultsAfter = await agopsVaults(USER1ADDR);
-  t.log('active vaults after:', activeVaultsAfter);
-
-  t.is(
-    activeVaultsAfter.length,
-    activeVaultsBefore.length,
-    'The number of active vaults should remain the same.',
-  );
-});
+const scale6 = x => x * 1_000_000;
 
 test.serial('open new vault', async t => {
+  await bankSend(USER1ADDR, `20000000${ATOM_DENOM}`);
+
   const istBalanceBefore = await getISTBalance(USER1ADDR);
   const activeVaultsBefore = await agopsVaults(USER1ADDR);
-  t.log('uist balance before:', istBalanceBefore);
-  t.log('active vaults before:', activeVaultsBefore);
-
-  await bankSend(USER1ADDR, `20000000${ATOM_DENOM}`);
 
   const mint = '5.0';
   const collateral = '10.0';
@@ -53,11 +45,167 @@ test.serial('open new vault', async t => {
 
   const istBalanceAfter = await getISTBalance(USER1ADDR);
   const activeVaultsAfter = await agopsVaults(USER1ADDR);
-  t.log('uist balance after:', istBalanceAfter);
-  t.log('active vaults after:', activeVaultsAfter);
+
+  await tryISTBalances(
+    t,
+    scale6(istBalanceAfter),
+    scale6(istBalanceBefore + 5),
+  );
 
   t.is(
-    istBalanceBefore + 5,
+    activeVaultsAfter.length,
+    activeVaultsBefore.length + 1,
+    `The number of active vaults should increase after opening a new vault.`,
+  );
+});
+
+test.serial('remove collateral', async t => {
+  const { vaultID, collateral: collateralBefore } =
+    await getLastVaultFromAddress(USER1ADDR);
+
+  await adjustVault(USER1ADDR, vaultID, { wantCollateral: 1.0 });
+
+  const { collateral: collateralAfter } =
+    await getLastVaultFromAddress(USER1ADDR);
+
+  t.is(
+    collateralBefore,
+    collateralAfter + 1_000_000n,
+    'The vault Collateral should decrease after removing some ATOM',
+  );
+});
+
+test.serial('remove IST', async t => {
+  const { vaultID, debt: debtBefore } =
+    await getLastVaultFromAddress(USER1ADDR);
+
+  await adjustVault(USER1ADDR, vaultID, { wantMinted: 1.0 });
+
+  const { debt: debtAfter } = await getLastVaultFromAddress(USER1ADDR);
+
+  t.is(
+    debtAfter,
+    debtBefore + 1_005_000n,
+    'The vault Debt should increase after removing some IST',
+  );
+});
+
+test.serial('add collateral', async t => {
+  const { vaultID, collateral: collateralBefore } =
+    await getLastVaultFromAddress(USER1ADDR);
+
+  await adjustVault(USER1ADDR, vaultID, { giveCollateral: 1.0 });
+
+  const { collateral: collateralAfter } =
+    await getLastVaultFromAddress(USER1ADDR);
+
+  t.is(
+    collateralAfter,
+    collateralBefore + 1_000_000n,
+    'The vault Collateral should increase after adding some ATOM',
+  );
+});
+
+test.serial('add IST', async t => {
+  const { vaultID, debt: debtBefore } =
+    await getLastVaultFromAddress(USER1ADDR);
+
+  await adjustVault(USER1ADDR, vaultID, { giveMinted: 1.0 });
+
+  const { debt: debtAfter } = await getLastVaultFromAddress(USER1ADDR);
+
+  t.is(
+    debtAfter,
+    debtBefore - 1_000_000n,
+    'The vault Debt should decrease after adding some IST',
+  );
+});
+
+test.serial('close vault', async t => {
+  const { vaultID, collateral } = await getLastVaultFromAddress(USER1ADDR);
+  const atomBalanceBefore = await getBalances([USER1ADDR], ATOM_DENOM);
+
+  await closeVault(USER1ADDR, vaultID, 6.035);
+
+  const atomBalanceAfter = await getBalances([USER1ADDR], ATOM_DENOM);
+  const { state } = await getLastVaultFromAddress(USER1ADDR);
+
+  t.is(
+    atomBalanceAfter,
+    atomBalanceBefore + collateral,
+    'The ATOM balance should increase by the vault collateral amount',
+  );
+  t.is(state, 'closed', 'The vault should be in the "closed" state.');
+});
+
+test.serial(
+  'user cannot open a vault under the minimum initial debt',
+  async t => {
+    await bankSend(GOV1ADDR, `200000000000000000${ATOM_DENOM}`);
+    const activeVaultsBefore = await agopsVaults(GOV1ADDR);
+
+    const minInitialDebt = await getMinInitialDebt();
+
+    const mint = minInitialDebt - 1n;
+    const collateral = mint * 2n;
+
+    await t.throwsAsync(
+      () => openVault(GOV1ADDR, mint.toString(), collateral.toString()),
+      {
+        message: /Error: Vault creation requires a minInitialDebt/,
+      },
+    );
+
+    const activeVaultsAfter = await agopsVaults(GOV1ADDR);
+
+    t.is(
+      activeVaultsAfter.length,
+      activeVaultsBefore.length,
+      'The number of active vaults should remain the same.',
+    );
+  },
+);
+
+test.serial('user cannot open a vault above debt limit', async t => {
+  const activeVaultsBefore = await agopsVaults(GOV1ADDR);
+
+  const { availableDebtForMint } = await getAvailableDebtForMint(VAULT_MANAGER);
+
+  const mint = availableDebtForMint + 5n;
+  const collateral = mint * 2n;
+
+  await t.throwsAsync(
+    () => openVault(GOV1ADDR, mint.toString(), collateral.toString()),
+    {
+      message: /Error: Minting.*would hit total debt limit/,
+    },
+  );
+
+  const activeVaultsAfter = await agopsVaults(GOV1ADDR);
+
+  t.is(
+    activeVaultsAfter.length,
+    activeVaultsBefore.length,
+    `The number of active vaults should stay the same.`,
+  );
+});
+
+test.serial('user can open a vault under debt limit', async t => {
+  const istBalanceBefore = await getISTBalance(GOV1ADDR);
+  const activeVaultsBefore = await agopsVaults(GOV1ADDR);
+
+  const { availableDebtForMint } = await getAvailableDebtForMint(VAULT_MANAGER);
+
+  const mint = availableDebtForMint - 1_000_000n;
+  const collateral = availableDebtForMint * 2n;
+
+  await openVault(GOV1ADDR, mint.toString(), collateral.toString());
+
+  const istBalanceAfter = await getISTBalance(GOV1ADDR);
+  const activeVaultsAfter = await agopsVaults(GOV1ADDR);
+
+  t.is(
+    istBalanceBefore + Number(mint),
     istBalanceAfter,
     'The IST balance should increase by the minted amount',
   );
@@ -68,180 +216,163 @@ test.serial('open new vault', async t => {
   );
 });
 
-test.serial('remove collateral', async t => {
-  const activeVaults = await agopsVaults(USER1ADDR);
-  const vaultPath = activeVaults[activeVaults.length - 1];
-  const vaultID = vaultPath.split('.').pop();
+test.serial('user cannot increased vault debt above debt limit', async t => {
+  const { vaultID, debt: debtBefore } = await getLastVaultFromAddress(GOV1ADDR);
 
-  let vaultData = await getContractInfo(vaultPath, { agoric, prefix: '' });
-  const collateralBefore = vaultData.locked.value;
-  t.log('vault collateral before:', collateralBefore);
+  const { availableDebtForMint } = await getAvailableDebtForMint(VAULT_MANAGER);
 
-  await adjustVault(USER1ADDR, vaultID, { wantCollateral: 1.0 });
-  await waitForBlock();
+  // The availableDebtForMint + mintFee will surpass the debt limit
+  const mint = Number(availableDebtForMint);
+  await t.throwsAsync(
+    () =>
+      adjustVault(GOV1ADDR, vaultID, {
+        wantMinted: mint,
+      }),
+    {
+      message: /Error: Minting.*would hit total debt limit/,
+    },
+  );
 
-  vaultData = await getContractInfo(vaultPath, { agoric, prefix: '' });
+  const { debt: debtAfter } = await getLastVaultFromAddress(GOV1ADDR);
 
-  const collateralAfter = vaultData.locked.value;
-  t.log('vault collateral after:', collateralAfter);
+  t.is(debtAfter, debtBefore, 'The vault Debt should stay the same');
+});
 
+test.serial(
+  'Minting Fee is applied to users debt when creating a vault and minting more IST',
+  async t => {
+    const mint = 5n;
+    const collateral = mint * 2n;
+    await openVault(GOV1ADDR, mint.toString(), collateral.toString());
+
+    const { adjustedToMintAmount } = await calculateMintFee(
+      mint,
+      VAULT_MANAGER,
+    );
+
+    const { vaultID, debt: debtAfterOpenVault } =
+      await getLastVaultFromAddress(GOV1ADDR);
+
+    t.is(
+      debtAfterOpenVault,
+      adjustedToMintAmount.value,
+      'The vault Debt should be equal to mint + fee',
+    );
+
+    await adjustVault(GOV1ADDR, vaultID, { wantMinted: 1.0 });
+
+    const { adjustedToMintAmount: adjustedToMintAmountAfter } =
+      await calculateMintFee(1n, VAULT_MANAGER);
+
+    const { debt: debtAfterAdjustVault } =
+      await getLastVaultFromAddress(GOV1ADDR);
+
+    t.is(
+      debtAfterAdjustVault,
+      debtAfterOpenVault + adjustedToMintAmountAfter.value,
+      'The vault Debt after adjusting should be equal to debt after open + wantMinted + fee',
+    );
+  },
+);
+
+test.serial('confirm that Oracle prices are being received', async t => {
+  /*
+   * The Oracle for ATOM and stATOM brands are being registered in the offer made at file:
+   * a3p-integration/proposals/n:upgrade-next/verifyPushedPrice.js
+   * which is being executed during the use phase of upgrade-next proposal
+   */
+  const ATOMManagerIndex = 0;
+  const BRANDS = ['ATOM'];
+  const BASE_ID = 'n-upgrade';
+  const oraclesByBrand = generateOracleMap(BASE_ID, BRANDS);
+
+  const latestRoundId = await getPriceFeedRoundId(BRANDS[0]);
+  const roundId = latestRoundId + 1;
+
+  await verifyPushedPrice(oraclesByBrand, BRANDS[0], 10, roundId);
+
+  const atomQuote = await getPriceQuote(BRANDS[0]);
   t.is(
-    collateralBefore,
-    collateralAfter + 1_000_000n,
-    'The vault Collateral should decrease after removing some ATOM',
+    atomQuote,
+    '+10000000',
+    'ATOM price quote does not match the expected value',
+  );
+
+  const vaultQuote = await getVaultPrices(ATOMManagerIndex);
+
+  t.true(
+    vaultQuote.value[0].amountIn.brand.includes(' ATOM '),
+    'ATOM price quote not found',
+  );
+  t.is(
+    vaultQuote.value[0].amountOut.value,
+    atomQuote,
+    'Vault price quote does not match the expected ATOM price quote',
   );
 });
 
-test.serial('remove IST', async t => {
-  const activeVaults = await agopsVaults(USER1ADDR);
-  const vaultPath = activeVaults[activeVaults.length - 1];
-  const vaultID = vaultPath.split('.').pop();
+test.serial(
+  'Confirm that vaults that existed before the most recent upgrade continue to be useable',
+  async t => {
+    /*
+     * The long-living-vault user is being created and used to open a vault in the n:upgrade-next proposal USE phase.
+     * The offer to open a vault is implemented in a3p-integration/proposals/n:upgrade-next/openVault.js
+     */
+    const user = await getUser('long-living-vault');
 
-  let vaultData = await getContractInfo(vaultPath, { agoric, prefix: '' });
-  const debtBefore = vaultData.debtSnapshot.debt.value;
-  t.log('vault debt before:', debtBefore);
+    const { vaultID, collateral: collateralBefore } =
+      await getLastVaultFromAddress(user);
 
-  await adjustVault(USER1ADDR, vaultID, { wantMinted: 1.0 });
-  await waitForBlock();
+    await adjustVault(user, vaultID, { wantCollateral: 1.0 });
 
-  vaultData = await getContractInfo(vaultPath, { agoric, prefix: '' });
-  const debtAfter = vaultData.debtSnapshot.debt.value;
-  t.log('vault debt after:', debtAfter);
+    const { collateral: collateralAfter } = await getLastVaultFromAddress(user);
 
-  t.is(
-    debtAfter,
-    debtBefore + 1_005_000n,
-    'The vault Debt should increase after removing some IST',
-  );
-});
+    t.is(
+      collateralBefore,
+      collateralAfter + 1_000_000n,
+      'The vault Collateral should decrease after removing some ATOM',
+    );
 
-test.serial('close vault', async t => {
-  const activeVaults = await agopsVaults(USER1ADDR);
-  const vaultPath = activeVaults[activeVaults.length - 1];
-  const vaultID = vaultPath.split('.').pop();
+    await closeVault(user, vaultID, 6.03);
 
-  let vaultData = await getContractInfo(vaultPath, { agoric, prefix: '' });
-  const vaultCollateral = vaultData.locked.value;
-  t.log('vault collateral:', vaultCollateral);
+    const { state } = await getLastVaultFromAddress(user);
 
-  const atomBalanceBefore = await getBalances([USER1ADDR], ATOM_DENOM);
-  t.log('atom balance before', atomBalanceBefore);
+    t.is(state, 'closed', 'The vault should be in the "closed" state.');
+  },
+);
 
-  await closeVault(USER1ADDR, vaultID, 6.03);
-  await waitForBlock();
+test.serial(
+  'User can pay off debt when totalDebt is above debtLimit',
+  async t => {
+    const mint = '5.0';
+    const collateral = '10.0';
+    await openVault(GOV1ADDR, mint, collateral);
 
-  const atomBalanceAfter = await getBalances([USER1ADDR], ATOM_DENOM);
-  t.log('atom balance after', atomBalanceAfter);
+    const { totalDebt: totalDebtBefore } =
+      await getAvailableDebtForMint(VAULT_MANAGER);
 
-  vaultData = await getContractInfo(vaultPath, { agoric, prefix: '' });
-  const vaultState = vaultData.vaultState;
-  t.log('vault state:', vaultState);
+    // provision governance wallet to cover transaction fees
+    await sendIST(GOV2ADDR, `1000000uist`, GOV1ADDR);
 
-  t.is(
-    atomBalanceAfter,
-    atomBalanceBefore + vaultCollateral,
-    'The ATOM balance should increase by the vault collateral amount',
-  );
-  t.is(vaultState, 'closed', 'The vault should be in the "closed" state.');
-});
+    const limit = (totalDebtBefore - 10_000_000n) / 1_000_000n;
+    await setDebtLimit(GOV1ADDR, limit);
 
-test.serial('open second vault', async t => {
-  const user2Address = await getUser('user2');
-  await bankSend(user2Address, `20000000${ATOM_DENOM}`);
+    const { debtLimit: debtLimitAfter, totalDebt: totalDebtAfter } =
+      await getAvailableDebtForMint(VAULT_MANAGER);
+    t.true(
+      debtLimitAfter < totalDebtAfter,
+      'debtLimit should be less than totalDebt',
+    );
 
-  const activeVaultsBefore = await agopsVaults(user2Address);
-  t.log('active vaults before:', activeVaultsBefore);
+    const { vaultID, debt: vaultDebtBefore } =
+      await getLastVaultFromAddress(GOV1ADDR);
 
-  const mint = '7.0';
-  const collateral = '11.0';
-  await openVault(user2Address, mint, collateral);
-  await waitForBlock();
+    await adjustVault(GOV1ADDR, vaultID, {
+      giveMinted: Number(vaultDebtBefore) / 1_000_000,
+    });
 
-  const activeVaultsAfter = await agopsVaults(user2Address);
-  t.log('active vaults after:', activeVaultsAfter);
+    const { debt: vaultDebtAfter } = await getLastVaultFromAddress(GOV1ADDR);
 
-  t.is(
-    activeVaultsAfter.length,
-    activeVaultsBefore.length + 1,
-    `The number of active vaults should increase after opening a new vault.`,
-  );
-});
-
-test.serial('add collateral', async t => {
-  const user2Address = await getUser('user2');
-  const activeVaults = await agopsVaults(user2Address);
-  const vaultPath = activeVaults[activeVaults.length - 1];
-  const vaultID = vaultPath.split('.').pop();
-
-  let vaultData = await getContractInfo(vaultPath, { agoric, prefix: '' });
-  const collateralBefore = vaultData.locked.value;
-  t.log('vault collateral before:', collateralBefore);
-
-  await adjustVault(user2Address, vaultID, { giveCollateral: 1.0 });
-  await waitForBlock();
-
-  vaultData = await getContractInfo(vaultPath, { agoric, prefix: '' });
-  const collateralAfter = vaultData.locked.value;
-  t.log('vault collateral after:', collateralAfter);
-
-  t.is(
-    collateralBefore,
-    collateralAfter - 1_000_000n,
-    'The vault Collateral should increase after adding some ATOM',
-  );
-});
-
-test.serial('add IST', async t => {
-  const user2Address = await getUser('user2');
-  const activeVaults = await agopsVaults(user2Address);
-  const vaultPath = activeVaults[activeVaults.length - 1];
-  const vaultID = vaultPath.split('.').pop();
-
-  let vaultData = await getContractInfo(vaultPath, { agoric, prefix: '' });
-  const debtBefore = vaultData.debtSnapshot.debt.value;
-  t.log('vault debt before:', debtBefore);
-
-  await adjustVault(user2Address, vaultID, { giveMinted: 1.0 });
-  await waitForBlock();
-
-  vaultData = await getContractInfo(vaultPath, { agoric, prefix: '' });
-  const debtAfter = vaultData.debtSnapshot.debt.value;
-  t.log('vault debt after:', debtAfter);
-
-  t.is(
-    debtAfter,
-    debtBefore - 1_000_000n,
-    'The vault Debt should decrease after adding some IST',
-  );
-});
-
-test.serial('close second vault', async t => {
-  const user2Address = await getUser('user2');
-  const activeVaults = await agopsVaults(user2Address);
-  const vaultPath = activeVaults[activeVaults.length - 1];
-  const vaultID = vaultPath.split('.').pop();
-
-  let vaultData = await getContractInfo(vaultPath, { agoric, prefix: '' });
-  const vaultCollateral = vaultData.locked.value;
-  t.log('vault collateral:', vaultCollateral);
-
-  const atomBalanceBefore = await getBalances([user2Address], ATOM_DENOM);
-  t.log('atom balance before', atomBalanceBefore);
-
-  await closeVault(user2Address, vaultID, 6.035);
-  await waitForBlock();
-
-  const atomBalanceAfter = await getBalances([user2Address], ATOM_DENOM);
-  t.log('atom balance after', atomBalanceAfter);
-
-  vaultData = await getContractInfo(vaultPath, { agoric, prefix: '' });
-  const vaultState = vaultData.vaultState;
-  t.log('vault state:', vaultState);
-
-  t.is(
-    atomBalanceAfter,
-    atomBalanceBefore + vaultCollateral,
-    'The ATOM balance should increase by the vault collateral amount',
-  );
-  t.is(vaultState, 'closed', 'The vault should be in the "closed" state.');
-});
+    t.is(vaultDebtAfter, 0n, 'The vault Debt should have been erased');
+  },
+);

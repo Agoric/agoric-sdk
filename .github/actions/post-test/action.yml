@@ -14,6 +14,10 @@ inputs:
     description: 'site for datadog'
     required: false
     default: 'us3.datadoghq.com'
+  gcp-credentials:
+    description: 'gcp'
+    required: false
+    default: ''
 
 runs:
   using: composite
@@ -53,3 +57,10 @@ runs:
       continue-on-error: true
       with:
         token: ${{ inputs.codecov-token }}
+    - name: Send test results to GCP
+      shell: bash
+      if: ${{ inputs.gcp-credentials }}
+      env:
+        GCP_CREDENTIALS: ${{ inputs.gcp-credentials }}
+      run: |
+        node .github/actions/ci-test-result.cjs ./packages/*/_testoutput.txt
