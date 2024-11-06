@@ -329,7 +329,7 @@ inter auction status
    * @param {string} from
    * @param {import('@agoric/smart-wallet/src/offers.js').OfferSpec} offer
    * @param {Awaited<ReturnType<tryMakeUtils>>} tools
-   * @param {boolean?} dryRun
+   * @param {boolean | undefined} dryRun
    */
   const placeBid = async (from, offer, tools, dryRun = false) => {
     const { networkConfig, agoricNames, pollOffer } = tools;

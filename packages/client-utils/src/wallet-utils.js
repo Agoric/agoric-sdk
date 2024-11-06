@@ -4,8 +4,16 @@ import { boardSlottingMarshaller, makeRpcUtils } from './rpc.js';
 
 /**
  * @import {Amount, Brand} from '@agoric/ertp/src/types.js'
+ * @import {MinimalNetworkConfig} from './rpc.js';
  */
 
+/**
+ *
+ * @param {object} root0
+ * @param {typeof globalThis.fetch} root0.fetch
+ * @param {(ms: number) => Promise<void>} root0.delay
+ * @param {MinimalNetworkConfig} networkConfig
+ */
 export const makeWalletUtils = async ({ fetch, delay }, networkConfig) => {
   const { agoricNames, fromBoard, marshaller, readLatestHead, vstorage } =
     await makeRpcUtils({ fetch }, networkConfig);
