@@ -132,6 +132,7 @@ export const makeVStorage = (powers, config) => {
 };
 /** @typedef {ReturnType<typeof makeVStorage>} VStorage */
 
+/** @deprecated */
 export const makeFromBoard = () => {
   const cache = new Map();
   const convertSlotToVal = (boardId, iface) => {
@@ -146,6 +147,7 @@ export const makeFromBoard = () => {
 };
 /** @typedef {ReturnType<typeof makeFromBoard>} IdMap */
 
+/** @deprecated */
 export const storageHelper = {
   /** @param { string } txt */
   parseCapData: txt => {
@@ -185,6 +187,7 @@ export const storageHelper = {
 harden(storageHelper);
 
 /**
+ * @deprecated
  * @param {IdMap} ctx
  * @param {VStorage} vstorage
  * @returns {Promise<import('@agoric/vats/tools/board-utils.js').AgoricNamesRemotes>}
