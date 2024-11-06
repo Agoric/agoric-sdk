@@ -2,28 +2,13 @@ import test from 'ava';
 import mockfs from 'mock-fs';
 import { existsSync, readFileSync } from 'node:fs';
 import config from '../../src/cli/config.js';
-
-const mockOut = () => {
-  let logOut = '';
-  let errOut = '';
-  return {
-    log: (s: string) => (logOut += `${s}\n`),
-    error: (s: string) => (errOut += `${s}\n`),
-    getLogOut: () => logOut,
-    getErrOut: () => errOut,
-  };
-};
-
-const mockrl = (answer: string) => {
-  return {
-    question: () => Promise.resolve(answer),
-  };
-};
+import { mockOut, mockrl } from '../../testing/mocks.js';
 
 test.afterEach(() => {
   mockfs.restore();
 });
 
+// Serialize tests to prevent filesystem conflicts
 test.serial('show reads the config file', async t => {
   const path = 'config/dir/.fast-usdc/config.json';
   const val = JSON.stringify({ hello: 'world!' }, null, 2);

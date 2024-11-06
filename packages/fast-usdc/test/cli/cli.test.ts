@@ -149,6 +149,10 @@ test('CLI calls config init with default args', t => {
       ethSeed: 'bar',
       nobleRpc: '127.0.0.1:26657',
       nobleSeed: 'foo',
+      nobleApi: '127.0.0.1:1318',
+      nobleToAgoricChannel: 'channel-21',
+      tokenMessengerAddress: '0xbd3fa81b58ba92a82136038b25adec7066af3155',
+      tokenContractAddress: '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48',
     },
   ]);
 });
@@ -175,6 +179,14 @@ test('CLI calls config init with optional args', t => {
     '127.0.0.1:2222',
     '--noble-rpc',
     '127.0.0.1:3333',
+    '--noble-api',
+    '127.0.0.1:4444',
+    '--noble-to-agoric-channel',
+    'channel-101',
+    '--token-messenger-address',
+    '0xmessenger123',
+    '--token-contract-address',
+    '0xtoken123',
   ]);
 
   t.deepEqual(config.getInitArgs(), [
@@ -186,6 +198,10 @@ test('CLI calls config init with optional args', t => {
       ethSeed: 'bar',
       nobleRpc: '127.0.0.1:3333',
       nobleSeed: 'foo',
+      nobleApi: '127.0.0.1:4444',
+      nobleToAgoricChannel: 'channel-101',
+      tokenMessengerAddress: '0xmessenger123',
+      tokenContractAddress: '0xtoken123',
     },
   ]);
 });
@@ -212,6 +228,14 @@ test('CLI calls config update with args', t => {
     '127.0.0.1:2222',
     '--noble-rpc',
     '127.0.0.1:3333',
+    '--noble-api',
+    '127.0.0.1:4444',
+    '--noble-to-agoric-channel',
+    'channel-101',
+    '--token-messenger-address',
+    '0xmessenger123',
+    '--token-contract-address',
+    '0xtoken123',
   ]);
 
   t.deepEqual(config.getUpdateArgs(), [
@@ -222,6 +246,10 @@ test('CLI calls config update with args', t => {
       ethSeed: 'bar',
       nobleRpc: '127.0.0.1:3333',
       nobleSeed: 'foo',
+      nobleApi: '127.0.0.1:4444',
+      nobleToAgoricChannel: 'channel-101',
+      tokenMessengerAddress: '0xmessenger123',
+      tokenContractAddress: '0xtoken123',
     },
   ]);
 });

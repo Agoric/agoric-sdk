@@ -3,10 +3,24 @@ import { stdin as input, stdout as output } from 'node:process';
 import { readFile, writeFile } from 'node:fs/promises';
 import { existsSync, mkdirSync } from 'node:fs';
 
+/**
+   @typedef {{
+    nobleSeed: string,
+    ethSeed: string,
+    nobleToAgoricChannel: string,
+    agoricApi: string,
+    nobleApi: string,
+    nobleRpc: string,
+    ethRpc: string,
+    tokenMessengerAddress: string,
+    tokenAddress: string
+  }} ConfigOpts
+ */
+
 const init = async (
   /** @type {import("fs").PathLike} */ configDir,
   /** @type {import("fs").PathLike} */ configPath,
-  /** @type {object} */ options,
+  /** @type {ConfigOpts} */ options,
   out = console,
   rl = readline.createInterface({ input, output }),
 ) => {
@@ -46,10 +60,10 @@ const init = async (
 
 const update = async (
   /** @type {import("fs").PathLike} */ configPath,
-  /** @type {object} */ options,
+  /** @type {Partial<ConfigOpts>} */ options,
   out = console,
 ) => {
-  const updateConfig = async (/** @type {object} */ data) => {
+  const updateConfig = async (/** @type {ConfigOpts} */ data) => {
     await null;
     const stringified = JSON.stringify(data, null, 2);
     try {
