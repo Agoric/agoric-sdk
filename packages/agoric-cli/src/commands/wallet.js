@@ -68,7 +68,8 @@ export const makeWalletCommand = async command => {
     )
     .option('--spend', 'confirm you want to spend')
     .option('--nickname <string>', 'nickname to use', 'my-wallet')
-    .action(function (opts) {
+    .action(async function (opts) {
+      await null;
       /** @typedef {{account: string, spend?: boolean, nickname: 'my-wallet' | string }} Opts */
       const {
         account,
@@ -85,12 +86,12 @@ export const makeWalletCommand = async command => {
           ...networkConfig,
         });
       } else {
-        const params = fetchSwingsetParams(networkConfig);
+        const params = await fetchSwingsetParams(networkConfig);
         assert(
-          params.power_flag_fees.length === 1,
+          params.powerFlagFees.length === 1,
           'multiple power_flag_fees not supported',
         );
-        const { fee: fees } = params.power_flag_fees[0];
+        const { fee: fees } = params.powerFlagFees[0];
         const nf = new Intl.NumberFormat('en-US');
         const costs = fees
           .map(f => `${nf.format(Number(f.amount))} ${f.denom}`)
