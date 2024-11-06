@@ -229,6 +229,14 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
+      - name: capture runner environment
+        id: env
+        run: |
+          if [ ":$HOME" = : ]; then
+            # Keep the first two path components, e.g. /home/runner.
+            HOME="(pwd | sed -E 's#^(/[^/]+/[^/]+).*#\1#')"
+          fi
+          echo "HOME=$HOME" >> "$GITHUB_OUTPUT"
       - name: free up disk space
         run: |
           # Workaround to provide additional free space for testing.
@@ -273,36 +281,102 @@ jobs:
             exit 1
           fi
         working-directory: a3p-integration
+      - name: patch a3p-integration dependencies
+        run: 'yarn patch-package || ! [ -d patches ]'
+        working-directory: a3p-integration
       - name: build proposals tests
         run: yarn build
         working-directory: a3p-integration
       - name: run proposals tests
-        run: yarn test
-        working-directory: a3p-integration
-      - name: collect all core eval scripts
-        # Core eval scripts will be copied under /tmp/core_eval_scripts directory
-        # colons in the parent directory name will be replaced with dashes
         run: |
-          find . -type d -path "./a3p-integration/proposals/*/submission" | while read -r dir; do
-            # Get the parent directory name
-            parent_dir=$(basename "$(dirname "$dir")")
-            # Replace colons with dashes in the parent directory name
-            sanitized_parent_dir=${parent_dir//:/-}
-            # Create the destination directory under /tmp/core_eval_scripts if it doesn't exist
-            destination_dir="/tmp/core_eval_scripts/$sanitized_parent_dir"
-            mkdir -p "$destination_dir"
-            # Copy everything from the $dir to the destination directory
-            cp -r "$dir"/* "$destination_dir/"
-            echo "Copied contents of $dir to $destination_dir"
+          if [ "$SLOGFILE:$AGD_LOG_FILE:$XXX_GIBSON" != :: ]; then
+            echo "Overriding docker to inherit SLOGFILE ${SLOGFILE-}, AGD_LOG_FILE ${AGD_LOG_FILE-}, XXX_GIBSON ${XXX_GIBSON-}"
+            tmpbin="$HOME/tmpbin"
+            mkdir -p "$tmpbin"
+            printf >"$tmpbin/docker" '#!/bin/bash
+              set -ueo pipefail
+              # Inherit environment variables by replacing `docker run ...` with
+              # `docker run -e SLOGFILE -e AGD_LOG_FILE ...`.
+              cmd="%s"
+              if [ "${1-}" != run ]; then
+                "$cmd" "$@"
+              else
+                shift
+                echo "docker run with SLOGFILE ${SLOGFILE-}, AGD_LOG_FILE ${AGD_LOG_FILE-}, XXX_GIBSON ${XXX_GIBSON-}"
+                declare -a opts
+                for var in SLOGFILE AGD_LOG_FILE; do
+                  f="${!var-}"
+                  [ -n "$f" ] && touch "$f" && opts+=("-e" "$var" "-v" "$f:$f")
+                done
+                for var in XXX_GIBSON; do
+                  f="${!var-}"
+                  [ -n "$f" ] && opts+=("-e" "$var")
+                done
+                "$cmd" run "${opts[@]}" "$@"
+              fi
+            ' "$(which docker)"
+            chmod a+x "$tmpbin/docker"
+            export PATH="$tmpbin:$PATH"
+          fi
+          yarn test
+        working-directory: a3p-integration
+        env:
+          SLOGFILE: ${{ format('{0}/test.slog', steps.env.outputs.HOME) }}
+          XXX_GIBSON: '1'
+      - name: copy a3p-integration
+        if: (success() || failure())
+        run: |
+          # Copy everything from a3p-integration to /tmp/a3p-integration except
+          # `node_modules` and `.yarn`, replacing colons in proposal directory
+          # names with dashes.
+          mkdir -p /tmp/a3p-integration
+          # source descriptors: (a3p-integration subdirectory, depth, filter)
+          SUBSEP="$(printf '\034')"
+          printf "
+            # children of a3p-integration except proposals
+                      $SUBSEP 1 $SUBSEP -not -name proposals
+            # file children of proposals
+            proposals $SUBSEP 1 $SUBSEP -type f
+            # grandchildren of proposals, i.e. a3p-integration/proposals/*/*
+            proposals $SUBSEP 2
+          " \
+          | sed -E 's/^ *|#.*//g; /^[[:space:]]*$/d;' \
+          | while IFS="$SUBSEP" read subdir depth filter; do
+            find a3p-integration/$subdir -mindepth ${depth:-1} -maxdepth ${depth:-1} \
+              -name node_modules -prune -o -name .yarn -prune -o $filter -print \
+            | while read -r path; do
+              dirname="$(dirname -- "$path")"
+              dest="/tmp/$dirname" # $dirname already starts with a3p-integration
+              sanitized="${dest//:/-}"
+              mkdir -p "$sanitized"
+              cp -r "$path" "$sanitized/"
+              echo "Copied $dirname to $sanitized"
+            done \
+            | uniq
           done
-      - name: archive core eval scripts
-        # The core eval scripts can be found at the bottom of `Summary` page of
-        # `Integration tests` workflow once the workflow is completed.
-        # Ref: https://github.com/actions/upload-artifact?tab=readme-ov-file#where-does-the-upload-go
+      # Artifacts can be found at the bottom of `Summary` page of
+      # `Integration tests` workflow once the workflow is completed.
+      # Ref: https://github.com/actions/upload-artifact?tab=readme-ov-file#where-does-the-upload-go
+      - name: archive a3p-integration
+        if: (success() || failure())
         uses: actions/upload-artifact@v4
         with:
-          name: core-eval-scripts
-          path: /tmp/core_eval_scripts
+          name: a3p-integration
+          path: /tmp/a3p-integration
+      - name: archive slogfile
+        if: (success() || failure())
+        uses: actions/upload-artifact@v4
+        with:
+          name: slogfile
+          path: ${{ format('{0}/test.slog', steps.env.outputs.HOME) }}
+          retention-days: 4
+      - name: archive agd log
+        if: false && (success() || failure())
+        uses: actions/upload-artifact@v4
+        with:
+          name: agd.log
+          path: ${{ format('{0}/agd.log', steps.env.outputs.HOME) }}
+          retention-days: 4
       - name: notify on failure
         if: failure() && github.event_name != 'pull_request'
         uses: ./.github/actions/notify-status

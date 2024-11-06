@@ -2,6 +2,9 @@ package keeper
 
 import (
 	"context"
+	stdlog "log"
+	"os"
+	"strings"
 
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/types"
@@ -100,16 +103,40 @@ func (keeper msgServer) WalletSpendAction(goCtx context.Context, msg *types.MsgW
 	ctx := sdk.UnwrapSDKContext(goCtx)
 
 	err := keeper.provisionIfNeeded(ctx, msg.Owner)
+	xxx_gibson := false
+	for _, kv := range os.Environ() {
+		key, value, ok := strings.Cut(kv, "=")
+		xxx_gibson = xxx_gibson || ok && key == "XXX_GIBSON" && value != "" && value != "0"
+	}
+	if xxx_gibson {
+		stdlog.Println("xxx gibson WalletSpendAction ready", msg.Owner, err)
+	}
 	if err != nil {
 		return nil, err
 	}
 
+	if xxx_gibson {
+		defer func() {
+			if x := recover(); x != nil {
+				stdlog.Println("xxx gibson WalletSpendAction caught panic", msg.Owner, x)
+				panic(x)
+			}
+			stdlog.Println("xxx gibson WalletSpendAction done", msg.Owner)
+		}()
+	}
 	action := walletSpendAction{
 		Owner:       msg.Owner.String(),
 		SpendAction: msg.SpendAction,
 	}
 	// fmt.Fprintf(os.Stderr, "Context is %+v\n", ctx)
 	err = keeper.routeAction(ctx, msg, action)
+	highPriorityQueueItems, hpqErr := keeper.Keeper.vstorageKeeper.GetQueueItems(ctx, StoragePathHighPriorityQueue)
+	actionQueueItems, aqErr := keeper.Keeper.vstorageKeeper.GetQueueItems(ctx, StoragePathActionQueue)
+	if xxx_gibson {
+		stdlog.Printf(
+			"xxx gibson WalletSpendAction routeAction %v: error %v, queues %#q %v %#q %v\n",
+			msg.Owner, err, highPriorityQueueItems, hpqErr, actionQueueItems, aqErr)
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -131,7 +158,15 @@ func (keeper msgServer) provisionIfNeeded(ctx sdk.Context, owner sdk.AccAddress)
 	// been fully provisioned by the controller. This is because a provision is
 	// not guaranteed to succeed (e.g. lack of provision pool funds)
 	walletState := keeper.GetSmartWalletState(ctx, owner)
+	xxx_gibson := false
+	for _, kv := range os.Environ() {
+		key, value, ok := strings.Cut(kv, "=")
+		xxx_gibson = xxx_gibson || ok && key == "XXX_GIBSON" && value != "" && value != "0"
+	}
 	if walletState == types.SmartWalletStateProvisioned {
+		if xxx_gibson {
+			stdlog.Println("xxx gibson provisionIfNeeded", owner, "already provisioned")
+		}
 		return nil
 	}
 
@@ -147,6 +182,13 @@ func (keeper msgServer) provisionIfNeeded(ctx sdk.Context, owner sdk.AccAddress)
 	}
 
 	err := keeper.routeAction(ctx, msg, action)
+	highPriorityQueueItems, hpqErr := keeper.Keeper.vstorageKeeper.GetQueueItems(ctx, StoragePathHighPriorityQueue)
+	actionQueueItems, aqErr := keeper.Keeper.vstorageKeeper.GetQueueItems(ctx, StoragePathActionQueue)
+	if xxx_gibson {
+		stdlog.Printf(
+			"xxx gibson provisionIfNeeded routeAction %v: error %v, queues %#q %v %#q %v\n",
+			owner, err, highPriorityQueueItems, hpqErr, actionQueueItems, aqErr)
+	}
 	// fmt.Fprintln(os.Stderr, "Returned from SwingSet", out, err)
 	if err != nil {
 		return err

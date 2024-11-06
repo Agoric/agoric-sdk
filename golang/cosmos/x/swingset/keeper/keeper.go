@@ -6,6 +6,8 @@ import (
 	"fmt"
 	stdlog "log"
 	"math"
+	"os"
+	"strings"
 
 	sdkmath "cosmossdk.io/math"
 
@@ -246,7 +248,10 @@ func (k Keeper) BlockingSend(ctx sdk.Context, action vm.Action) (string, error) 
 }
 
 func (k Keeper) GetParams(ctx sdk.Context) (params types.Params) {
-	k.paramSpace.GetParamSet(ctx, &params)
+	// Note the use of "IfExists"...
+	// migration fills in missing data with defaults,
+	// so it is the only consumer that should ever see a nil pair.
+	k.paramSpace.GetParamSetIfExists(ctx, &params)
 	return params
 }
 
@@ -325,9 +330,21 @@ func (k Keeper) ChargeBeans(ctx sdk.Context, addr sdk.AccAddress, beans sdkmath.
 	// Charge the account immediately if they owe more than BeansPerMinFeeDebit.
 	// NOTE: We assume that BeansPerMinFeeDebit is a multiple of BeansPerFeeUnit.
 	feeCoins, _ := feeDecCoins.TruncateDecimal()
+	xxx_gibson := false
+	for _, kv := range os.Environ() {
+		key, value, ok := strings.Cut(kv, "=")
+		xxx_gibson = xxx_gibson || ok && key == "XXX_GIBSON" && value != "" && value != "0"
+	}
+	if xxx_gibson {
+		stdlog.Printf("xxx gibson ChargeBeans %v, owing %v + %v = %v => %v [transfer %v %v]\n",
+			addr, wasOwing, beans, nowOwing, remainderOwing, beansToDebit, feeCoins)
+	}
 	if !feeCoins.IsZero() {
 		err := k.bankKeeper.SendCoinsFromAccountToModule(ctx, addr, k.feeCollectorName, feeCoins)
 		if err != nil {
+			if xxx_gibson {
+				stdlog.Println("xxx gibson ChargeBeans error", addr, err.Error())
+			}
 			return err
 		}
 	}
@@ -343,6 +360,14 @@ func (k Keeper) ChargeForSmartWallet(ctx sdk.Context, addr sdk.AccAddress) error
 	beansPerUnit := k.GetBeansPerUnit(ctx)
 	beans := beansPerUnit[types.BeansPerSmartWalletProvision]
 	err := k.ChargeBeans(ctx, addr, beans)
+	xxx_gibson := false
+	for _, kv := range os.Environ() {
+		key, value, ok := strings.Cut(kv, "=")
+		xxx_gibson = xxx_gibson || ok && key == "XXX_GIBSON" && value != "" && value != "0"
+	}
+	if xxx_gibson {
+		stdlog.Println("xxx gibson ChargeForSmartWallet", addr, beans, err)
+	}
 	if err != nil {
 		return err
 	}
