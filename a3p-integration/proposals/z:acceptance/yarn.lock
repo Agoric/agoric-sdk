@@ -3674,6 +3674,7 @@ __metadata:
     "@endo/far": "npm:^1.1.5"
     "@endo/init": "npm:^1.1.4"
     "@endo/marshal": "npm:^1.5.3"
+    "@endo/promise-kit": "npm:^1.1.7"
     ava: "npm:^6.1.2"
     execa: "npm:^9.3.1"
     tsx: "npm:^4.17.0"
