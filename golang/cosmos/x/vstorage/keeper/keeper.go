@@ -469,3 +469,20 @@ func (k Keeper) PushQueueItem(ctx sdk.Context, queuePath string, value string) e
 	k.SetStorage(ctx, agoric.NewKVEntry(path, nextTail.String()))
 	return nil
 }
+
+func (k Keeper) GetQueueItems(ctx sdk.Context, queuePath string) ([]string, error) {
+	head, err := k.GetIntValue(ctx, queuePath+".head")
+	if err != nil {
+		return nil, err
+	}
+	tail, err := k.GetIntValue(ctx, queuePath+".tail")
+	if err != nil {
+		return nil, err
+	}
+	items := make([]string, 0, tail.Sub(head).Int64())
+	for i := head; i.LT(tail); i = i.Add(sdk.NewInt(1)) {
+		path := queuePath + "." + i.String()
+		items = append(items, k.GetEntry(ctx, path).StringValue())
+	}
+	return items, nil
+}
