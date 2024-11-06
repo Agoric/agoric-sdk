@@ -9,6 +9,7 @@ import { boardSlottingMarshaller, makeRpcUtils } from './rpc.js';
 export const makeWalletUtils = async ({ fetch, delay }, networkConfig) => {
   const { agoricNames, fromBoard, marshaller, readLatestHead, vstorage } =
     await makeRpcUtils({ fetch }, networkConfig);
+  const m = boardSlottingMarshaller(fromBoard.convertSlotToVal);
 
   const client = await makeStargateClient(networkConfig);
 
@@ -17,8 +18,6 @@ export const makeWalletUtils = async ({ fetch, delay }, networkConfig) => {
    * @param {number|string} [minHeight]
    */
   const storedWalletState = async (from, minHeight = undefined) => {
-    const m = boardSlottingMarshaller(fromBoard.convertSlotToVal);
-
     const history = await vstorage.readFully(
       `published.wallet.${from}`,
       minHeight,
