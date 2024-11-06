@@ -11,3 +11,4 @@ export * from './follower-cosmjs.js';
 export * from './casting-spec.js';
 export * from './leader.js';
 export * from './iterable.js';
+export * from './makeHttpClient.js';
