@@ -1,5 +1,6 @@
 /* eslint-env node */
 
+import { retryUntilCondition } from '@agoric/client-utils';
 import { AmountMath } from '@agoric/ertp';
 import {
   agops,
@@ -15,7 +16,6 @@ import {
 } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { walletUtils } from './index.js';
 import { boardSlottingMarshaller, makeFromBoard } from './rpc.js';
-import { retryUntilCondition } from './sync-tools.js';
 import {
   getAgoricNamesBrands,
   getAgoricNamesInstances,

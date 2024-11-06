@@ -7,7 +7,7 @@ import {
   waitUntilContractDeployed,
   waitUntilInvitationReceived,
   waitUntilOfferResult,
-} from './sync-tools.js';
+} from '../src/sync-tools.js';
 
 const makeFakeFollow = () => {
   let value = [[]];

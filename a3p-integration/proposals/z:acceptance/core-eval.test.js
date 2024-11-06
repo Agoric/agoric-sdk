@@ -4,7 +4,7 @@ import test from 'ava';
 import { readFile, writeFile } from 'node:fs/promises';
 
 import { agd, evalBundles } from '@agoric/synthetic-chain';
-import { retryUntilCondition } from './test-lib/sync-tools.js';
+import { retryUntilCondition } from '@agoric/client-utils';
 
 const SUBMISSION_DIR = 'core-eval-test-submission';
 

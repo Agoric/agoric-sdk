@@ -11,12 +11,11 @@ import {
   CHAINID,
 } from '@agoric/synthetic-chain';
 import { execFileSync } from 'child_process';
-import {
+import { agdWalletUtils } from './test-lib/index.js';
   agd,
   getBalances,
   replaceTemplateValuesInFile,
 } from './test-lib/utils.js';
-import { retryUntilCondition } from './test-lib/sync-tools.js';
 import { makeWalletUtils } from './test-lib/wallet.js';
 import { networkConfig } from './test-lib/index.js';
 

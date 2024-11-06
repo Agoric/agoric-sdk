@@ -3,6 +3,7 @@
 import test from 'ava';
 import { inspect } from 'node:util';
 
+import { retryUntilCondition } from '@agoric/client-utils';
 import {
   evalBundles,
   getIncarnation,
@@ -10,8 +11,7 @@ import {
   GOV2ADDR as SETTER,
 } from '@agoric/synthetic-chain';
 import { walletUtils } from './test-lib/index.js';
-import { retryUntilCondition } from './test-lib/sync-tools.js';
-
+import { agdWalletUtils, walletUtils } from './test-lib/index.js';
 const START_VALUEVOW_DIR = 'start-valueVow';
 const RESTART_VALUEVOW_DIR = 'restart-valueVow';
 

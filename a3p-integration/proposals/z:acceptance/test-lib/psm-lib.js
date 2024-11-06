@@ -1,29 +1,30 @@
 /* eslint-env node */
 
 import {
-  addUser,
-  agd,
-  agops,
-  agoric,
-  executeOffer,
-  getUser,
-  agopsLocation,
-  executeCommand,
-  CHAINID,
-  VALIDATORADDR,
-  GOV1ADDR,
-  mkTemp,
-} from '@agoric/synthetic-chain';
-import { AmountMath } from '@agoric/ertp';
-import fsp from 'node:fs/promises';
-import { boardSlottingMarshaller, makeFromBoard } from '@agoric/client-utils';
-import { getBalances } from './utils.js';
-import {
+  boardSlottingMarshaller,
+  makeFromBoard,
   retryUntilCondition,
   waitUntilAccountFunded,
   waitUntilOfferResult,
-} from './sync-tools.js';
+} from '@agoric/client-utils';
+import { AmountMath } from '@agoric/ertp';
+import {
+  addUser,
+  agd,
+  agops,
+  agopsLocation,
+  agoric,
+  CHAINID,
+  executeCommand,
+  executeOffer,
+  getUser,
+  GOV1ADDR,
+  mkTemp,
+  VALIDATORADDR,
+} from '@agoric/synthetic-chain';
+import fsp from 'node:fs/promises';
 import { NonNullish } from './errors.js';
+import { getBalances } from './utils.js';
 
 // Export these from synthetic-chain?
 const USDC_DENOM = NonNullish(process.env.USDC_DENOM);

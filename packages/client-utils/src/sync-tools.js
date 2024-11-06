@@ -1,5 +1,3 @@
-/* eslint-env node */
-
 /**
  * @file The purpose of this file is to bring together a set of tools that
  * developers can use to synchronize operations they carry out in their tests.
@@ -19,7 +17,7 @@
  * @property {number} [maxRetries]
  * @property {number} [retryIntervalMs]
  * @property {(...arg0: string[]) => void} [log]
- * @property {(callback: Function, delay: number) => void} [setTimeout]
+ * @property {(callback: Function, delay: number) => void} setTimeout
  *
  * @typedef {RetryOptions & {errorMessage: string}} WaitUntilOptions
  *
@@ -28,15 +26,13 @@
  * @property {number} value
  */
 
-const ambientSetTimeout = global.setTimeout;
-
 /**
  * From https://github.com/Agoric/agoric-sdk/blob/442f07c8f0af03281b52b90e90c27131eef6f331/multichain-testing/tools/sleep.ts#L10
  *
  * @param {number} ms
- * @param {*} sleepOptions
+ * @param {{log: (message: string) => void, setTimeout: typeof global.setTimeout}} io
  */
-export const sleep = (ms, { log = () => {}, setTimeout = ambientSetTimeout }) =>
+export const sleep = (ms, { log = () => {}, setTimeout }) =>
   new Promise(resolve => {
     log(`Sleeping for ${ms}ms...`);
     setTimeout(resolve, ms);
@@ -58,6 +54,8 @@ export const retryUntilCondition = async (
 ) => {
   console.log({ maxRetries, retryIntervalMs, message });
   let retries = 0;
+
+  await null; // separate sync prologue
 
   while (retries < maxRetries) {
     try {
