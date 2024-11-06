@@ -3,7 +3,6 @@
 /* eslint-env node */
 import {
   bigintReplacer,
-  getNetworkConfig,
   makeRpcUtils,
   makeWalletUtils,
   storageHelper,
@@ -16,6 +15,7 @@ import * as cp from 'child_process';
 import { Command } from 'commander';
 import { inspect } from 'util';
 import { normalizeAddressWithOptions } from '../lib/chain.js';
+import { getNetworkConfig } from '../lib/network-config.js';
 import {
   getCurrent,
   outputAction,
@@ -86,8 +86,8 @@ export const makeOracleCommand = (logger, io = {}) => {
 
   const rpcTools = async () => {
     // XXX pass fetch to getNetworkConfig() explicitly
-    const networkConfig = await getNetworkConfig(env);
-    const utils = await makeRpcUtils({ fetch });
+    const networkConfig = await getNetworkConfig({ env: process.env, fetch });
+    const utils = await makeRpcUtils({ fetch }, networkConfig);
 
     const lookupPriceAggregatorInstance = ([brandIn, brandOut]) => {
       const name = oracleBrandFeedName(brandIn, brandOut);

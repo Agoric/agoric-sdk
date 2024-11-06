@@ -8,7 +8,6 @@ import { CommanderError, InvalidArgumentError } from 'commander';
 import {
   asBoardRemote,
   bigintReplacer,
-  getNetworkConfig,
   makeAmountFormatter,
   makeWalletUtils,
 } from '@agoric/client-utils';
@@ -18,6 +17,7 @@ import { objectMap } from '@agoric/internal';
 import { M, matches } from '@endo/patterns';
 
 import { normalizeAddressWithOptions, pollBlocks } from '../lib/chain.js';
+import { getNetworkConfig } from '../lib/network-config.js';
 import { getCurrent, outputActionAndHint, sendAction } from '../lib/wallet.js';
 
 const { values } = Object;
@@ -233,7 +233,7 @@ export const makeInterCommand = (
     try {
       // XXX pass fetch to getNetworkConfig() explicitly
       // await null above makes this await safe
-      const networkConfig = await getNetworkConfig(env);
+      const networkConfig = await getNetworkConfig({ env, fetch });
       return makeWalletUtils({ fetch, delay }, networkConfig);
     } catch (err) {
       // CommanderError is a class constructor, and so

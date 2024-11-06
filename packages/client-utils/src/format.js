@@ -1,5 +1,3 @@
-// @ts-check
-
 import { Fail, q } from '@endo/errors';
 import { makeBoardRemote } from '@agoric/vats/tools/board-utils.js';
 

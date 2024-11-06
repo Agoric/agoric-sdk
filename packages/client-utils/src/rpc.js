@@ -1,7 +1,4 @@
-// @ts-check
-/* eslint-env node */
-
-import { NonNullish } from '@agoric/internal';
+/* global Buffer */
 import {
   boardSlottingMarshaller,
   makeBoardRemote,
@@ -9,59 +6,19 @@ import {
 
 export { boardSlottingMarshaller };
 
-export const networkConfigUrl = agoricNetSubdomain =>
-  `https://${agoricNetSubdomain}.agoric.net/network-config`;
-export const rpcUrl = agoricNetSubdomain =>
-  `https://${agoricNetSubdomain}.rpc.agoric.net:443`;
-
 /**
  * @typedef {{ rpcAddrs: string[], chainName: string }} MinimalNetworkConfig
  */
 
-/**
- *  @param {string} str
- * @returns {Promise<MinimalNetworkConfig>}
- */
-const fromAgoricNet = str => {
-  const [netName, chainName] = str.split(',');
-  if (chainName) {
-    return Promise.resolve({ chainName, rpcAddrs: [rpcUrl(netName)] });
-  }
-  return fetch(networkConfigUrl(netName)).then(res => res.json());
-};
-
-/**
- * @param {typeof process.env} env
- * @returns {Promise<MinimalNetworkConfig>}
- */
-export const getNetworkConfig = async env => {
-  if (!('AGORIC_NET' in env) || env.AGORIC_NET === 'local') {
-    return { rpcAddrs: ['http://0.0.0.0:26657'], chainName: 'agoriclocal' };
-  }
-
-  return fromAgoricNet(NonNullish(env.AGORIC_NET)).catch(err => {
-    throw Error(
-      `cannot get network config (${env.AGORIC_NET || 'local'}): ${
-        err.message
-      }`,
-    );
-  });
-};
-
 // TODO distribute load
 export const pickEndpoint = ({ rpcAddrs }) => rpcAddrs[0];
-
-/** @type {MinimalNetworkConfig} */
-const networkConfig = await getNetworkConfig(process.env);
-export { networkConfig };
-// console.warn('networkConfig', networkConfig);
 
 /**
  * @param {object} powers
  * @param {typeof window.fetch} powers.fetch
  * @param {MinimalNetworkConfig} config
  */
-export const makeVStorage = (powers, config = networkConfig) => {
+export const makeVStorage = (powers, config) => {
   /** @param {string} path */
   const getJSON = path => {
     const url = config.rpcAddrs[0] + path;
@@ -256,7 +213,7 @@ export const makeAgoricNames = async (ctx, vstorage) => {
  * @param {{ fetch: typeof window.fetch }} io
  * @param {MinimalNetworkConfig} config
  */
-export const makeRpcUtils = async ({ fetch }, config = networkConfig) => {
+export const makeRpcUtils = async ({ fetch }, config) => {
   await null;
   try {
     const vstorage = makeVStorage({ fetch }, config);
