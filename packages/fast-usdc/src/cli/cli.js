@@ -1,3 +1,4 @@
+import '@endo/init/legacy.js';
 import { Command } from 'commander';
 import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
@@ -60,8 +61,24 @@ export const initProgram = (
       'Seed phrase for Ethereum account. CAUTION: Stored unencrypted in file system',
     )
     .option('--agoric-api [url]', 'Agoric API endpoint', '127.0.0.1:1317')
+    .option('--noble-api [url]', 'Noble API endpoint', '127.0.0.1:1318')
+    .option(
+      '--noble-to-agoric-channel [channel]',
+      'Channel ID on Noble for Agoric',
+      'channel-21',
+    )
     .option('--noble-rpc [url]', 'Noble RPC endpoint', '127.0.0.1:26657')
     .option('--eth-rpc [url]', 'Ethereum RPC Endpoint', '127.0.0.1:8545')
+    .option(
+      '--token-messenger-address [address]',
+      'Address of TokenMessenger contract',
+      '0xbd3fa81b58ba92a82136038b25adec7066af3155',
+    )
+    .option(
+      '--token-contract-address [address]',
+      'Address of USDC token contract',
+      '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48',
+    )
     .action(async options => {
       const { home: configDir } = program.opts();
       const configPath = getConfigPath();
@@ -83,6 +100,19 @@ export const initProgram = (
     .option('--agoric-api [url]', 'Agoric API endpoint')
     .option('--noble-rpc [url]', 'Noble RPC endpoint')
     .option('--eth-rpc [url]', 'Ethereum RPC Endpoint')
+    .option('--noble-api [url]', 'Noble API endpoint')
+    .option(
+      '--noble-to-agoric-channel [channel]',
+      'Channel ID on Noble for Agoric',
+    )
+    .option(
+      '--token-messenger-address [address]',
+      'Address of TokenMessenger contract',
+    )
+    .option(
+      '--token-contract-address [address]',
+      'Address of USDC token contract',
+    )
     .action(async options => {
       const configPath = getConfigPath();
 
@@ -111,9 +141,12 @@ export const initProgram = (
     .argument('amount', 'Amount to transfer denominated in uusdc')
     .argument('dest', 'Destination address in Cosmos')
     .action(
-      (/** @type {string} */ amount, /** @type {string} */ destination) => {
+      async (
+        /** @type {string} */ amount,
+        /** @type {string} */ destination,
+      ) => {
         const configPath = getConfigPath();
-        transferHelpers.transfer(configPath, amount, destination);
+        await transferHelpers.transfer(configPath, amount, destination);
       },
     );
 

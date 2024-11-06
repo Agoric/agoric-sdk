@@ -29,8 +29,15 @@
     "@types/mock-fs": "4.13.4"
   },
   "dependencies": {
+    "@agoric/rpc": "^0.10.0",
+    "@cosmjs/proto-signing": "^0.32.4",
+    "@cosmjs/stargate": "^0.32.4",
+    "@endo/init": "^1.1.6",
+    "axios": "^1.7.7",
     "agoric": "^0.21.1",
-    "commander": "^12.1.0"
+    "bech32": "^2.0.0",
+    "commander": "^12.1.0",
+    "ethers": "^6.13.4"
   },
   "ava": {
     "extensions": {
@@ -45,7 +52,7 @@
       "--no-warnings"
     ],
     "require": [
-      "@endo/init/debug.js"
+      "@endo/init/legacy.js"
     ],
     "timeout": "20m"
   }
