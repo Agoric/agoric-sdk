@@ -1,6 +1,10 @@
 import { makeWalletStateCoalescer } from '@agoric/smart-wallet/src/utils.js';
-import { makeStargateClient, pollBlocks } from './chain.js';
-import { boardSlottingMarshaller, makeRpcUtils } from './rpc.js';
+import { pollBlocks } from './chain.js';
+import {
+  boardSlottingMarshaller,
+  makeRpcUtils,
+  makeStargateClient,
+} from './rpc.js';
 
 /**
  * @import {Amount, Brand} from '@agoric/ertp/src/types.js'
