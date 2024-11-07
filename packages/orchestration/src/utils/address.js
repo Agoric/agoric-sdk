@@ -42,7 +42,7 @@ export const makeICAChannelAddress = (
     encoding,
     txType,
   });
-  return `/ibc-hop/${controllerConnectionId}/ibc-port/icahost/${ordering}/${connString}`;
+  return `/ibc-hop/${controllerConnectionId}/ibc-port/icahost/pipelining/true/${ordering}/${connString}`;
 };
 harden(makeICAChannelAddress);
 
@@ -58,7 +58,7 @@ export const makeICQChannelAddress = (
   version = DEFAULT_ICQ_VERSION,
 ) => {
   controllerConnectionId || Fail`controllerConnectionId is required`;
-  return `/ibc-hop/${controllerConnectionId}/ibc-port/icqhost/unordered/${version}`;
+  return `/ibc-hop/${controllerConnectionId}/ibc-port/icqhost/pipelining/true/unordered/${version}`;
 };
 harden(makeICQChannelAddress);
 
