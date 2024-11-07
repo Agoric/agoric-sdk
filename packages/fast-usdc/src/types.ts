@@ -32,4 +32,7 @@ export interface PendingTx extends CctpTxEvidence {
 /** internal key for `StatusManager` exo */
 export type PendingTxKey = `pendingTx:${string}`;
 
+/** internal key for `StatusManager` exo */
+export type SeenTxKey = `seenTx:${string}`;
+
 export type * from './constants.js';

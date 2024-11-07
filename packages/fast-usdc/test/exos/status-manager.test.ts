@@ -35,6 +35,29 @@ test('observe creates new entry with OBSERVED status', t => {
   t.is(entries[0]?.status, PendingTxStatus.Observed);
 });
 
+test('cannot process same tx twice', t => {
+  const zone = provideDurableZone('status-test');
+  const statusManager = prepareStatusManager(zone.subZone('status-manager'));
+
+  const evidence = MockCctpTxEvidences.AGORIC_PLUS_OSMO();
+  statusManager.advance(evidence);
+
+  t.throws(() => statusManager.advance(evidence), {
+    message:
+      'Transaction already seen: "seenTx:[\\"0xc81bc6105b60a234c7c50ac17816ebcd5561d366df8bf3be59ff387552761702\\",1]"',
+  });
+
+  t.throws(() => statusManager.observe(evidence), {
+    message:
+      'Transaction already seen: "seenTx:[\\"0xc81bc6105b60a234c7c50ac17816ebcd5561d366df8bf3be59ff387552761702\\",1]"',
+  });
+
+  // new txHash should not throw
+  t.notThrows(() => statusManager.advance({ ...evidence, txHash: '0xtest2' }));
+  // new chainId with existing txHash should not throw
+  t.notThrows(() => statusManager.advance({ ...evidence, chainId: 9999 }));
+});
+
 test('settle removes entries from PendingTxs', t => {
   const zone = provideDurableZone('status-test');
   const statusManager = prepareStatusManager(zone.subZone('status-manager'));

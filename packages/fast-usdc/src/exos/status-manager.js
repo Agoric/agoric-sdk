@@ -6,9 +6,9 @@ import { CctpTxEvidenceShape, PendingTxShape } from '../typeGuards.js';
 import { PendingTxStatus } from '../constants.js';
 
 /**
- * @import {MapStore} from '@agoric/store';
+ * @import {MapStore, SetStore} from '@agoric/store';
  * @import {Zone} from '@agoric/zone';
- * @import {CctpTxEvidence, NobleAddress, PendingTxKey, PendingTx} from '../types.js';
+ * @import {CctpTxEvidence, NobleAddress, SeenTxKey, PendingTxKey, PendingTx} from '../types.js';
  */
 
 /**
@@ -36,6 +36,20 @@ const pendingTxKeyOf = evidence => {
 };
 
 /**
+ * Get the key for the seenTxs SetStore.
+ *
+ * The key is a composite of `NobleAddress` and transaction `amount` and not
+ * meant to be parsable.
+ *
+ * @param {CctpTxEvidence} evidence
+ * @returns {SeenTxKey}
+ */
+const seenTxKeyOf = evidence => {
+  const { txHash, chainId } = evidence;
+  return `seenTx:${JSON.stringify([txHash, chainId])}`;
+};
+
+/**
  * The `StatusManager` keeps track of Pending and Seen Transactions
  * via {@link PendingTxStatus} states, aiding in coordination between the `Advancer`
  * and `Settler`.
@@ -51,11 +65,27 @@ export const prepareStatusManager = zone => {
     valueShape: M.arrayOf(PendingTxShape),
   });
 
+  /** @type {SetStore<SeenTxKey>} */
+  const seenTxs = zone.setStore('SeenTxs', {
+    keyShape: M.string(),
+  });
+
   /**
+   * Ensures that `txHash+chainId` has not been processed
+   * and adds entry to `seenTxs` set.
+   *
+   * Also records the CctpTxEvidence and status in `pendingTxs`.
+   *
    * @param {CctpTxEvidence} evidence
    * @param {PendingTxStatus} status
    */
   const recordPendingTx = (evidence, status) => {
+    const seenKey = seenTxKeyOf(evidence);
+    if (seenTxs.has(seenKey)) {
+      throw makeError(`Transaction already seen: ${q(seenKey)}`);
+    }
+    seenTxs.add(seenKey);
+
     appendToStoredArray(
       pendingTxs,
       pendingTxKeyOf(evidence),
