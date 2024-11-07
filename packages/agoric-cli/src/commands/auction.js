@@ -89,16 +89,12 @@ export const makeAuctionCommand = (
        * }} opts
        */
       async opts => {
-        const { agoricNames, readLatestHead } = await makeVstorageKit(
+        const { agoricNames, readPublished } = await makeVstorageKit(
           { fetch },
           networkConfig,
         );
 
-        /** @type {{ current: AuctionParamRecord }} */
-        // @ts-expect-error XXX should runtime check?
-        const { current } = await readLatestHead(
-          `published.auction.governance`,
-        );
+        const { current } = await readPublished(`auction.governance`);
 
         const {
           AuctionStartDelay: {

@@ -10,7 +10,7 @@ import { execSwingsetTransaction, pollTx } from './chain.js';
 /**
  * @import {CurrentWalletRecord} from '@agoric/smart-wallet/src/smartWallet.js';
  * @import {AgoricNamesRemotes} from '@agoric/vats/tools/board-utils.js';
- * @import {MinimalNetworkConfig, WalletUtils} from '@agoric/client-utils';
+ * @import {MinimalNetworkConfig, VstorageKit} from '@agoric/client-utils';
  */
 
 const marshaller = boardSlottingMarshaller();
@@ -25,15 +25,15 @@ const emptyCurrentRecord = {
 
 /**
  * @param {string} addr
- * @param {Pick<WalletUtils, 'readLatestHead'>} io
+ * @param {Pick<VstorageKit, 'readPublished'>} io
  * @returns {Promise<import('@agoric/smart-wallet/src/smartWallet.js').CurrentWalletRecord>}
  */
-export const getCurrent = async (addr, { readLatestHead }) => {
+export const getCurrent = async (addr, { readPublished }) => {
   // Partial because older writes may not have had all properties
   // NB: assumes changes are only additions
   let current =
     /** @type {Partial<import('@agoric/smart-wallet/src/smartWallet.js').CurrentWalletRecord> | undefined} */ (
-      await readLatestHead(`published.wallet.${addr}.current`)
+      await readPublished(`wallet.${addr}.current`)
     );
   if (current === undefined) {
     throw Error(`undefined current node for ${addr}`);
@@ -60,12 +60,11 @@ export const getCurrent = async (addr, { readLatestHead }) => {
 
 /**
  * @param {string} addr
- * @param {Pick<WalletUtils, 'readLatestHead'>} io
+ * @param {Pick<VstorageKit, 'readPublished'>} io
  * @returns {Promise<import('@agoric/smart-wallet/src/smartWallet.js').UpdateRecord>}
  */
-export const getLastUpdate = (addr, { readLatestHead }) => {
-  // @ts-expect-error cast
-  return readLatestHead(`published.wallet.${addr}`);
+export const getLastUpdate = (addr, { readPublished }) => {
+  return readPublished(`wallet.${addr}`);
 };
 
 /**
