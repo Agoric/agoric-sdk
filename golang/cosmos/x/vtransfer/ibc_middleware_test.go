@@ -331,18 +331,19 @@ func (s *IntegrationTestSuite) TestTransferFromAgdToAgd() {
 
 	s.Run("TransferFromAgdToAgd", func() {
 		// create a transfer packet's data contents
+		baseReceiver := s.chainB.SenderAccounts[1].SenderAccount.GetAddress().String()
 		transferData := ibctransfertypes.NewFungibleTokenPacketData(
 			"uosmo",
 			"1000000",
 			s.chainA.SenderAccount.GetAddress().String(),
-			s.chainB.SenderAccounts[1].SenderAccount.GetAddress().String(),
+			baseReceiver+"?what=arbitrary-data&why=to-test-bridge-targets",
 			`"This is a JSON memo"`,
 		)
 
 		// Register the sender and receiver as bridge targets on their specific
 		// chain.
 		s.RegisterBridgeTarget(s.chainA, transferData.Sender)
-		s.RegisterBridgeTarget(s.chainB, transferData.Receiver)
+		s.RegisterBridgeTarget(s.chainB, baseReceiver)
 
 		s.mintToAddress(s.chainA, s.chainA.SenderAccount.GetAddress(), transferData.Denom, transferData.Amount)
 
@@ -384,7 +385,7 @@ func (s *IntegrationTestSuite) TestTransferFromAgdToAgd() {
 							BlockTime:   writeAcknowledgementTime,
 						},
 						Event:           "writeAcknowledgement",
-						Target:          transferData.Receiver,
+						Target:          baseReceiver,
 						Packet:          packet,
 						Acknowledgement: ack.Acknowledgement(),
 					},
