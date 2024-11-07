@@ -4,6 +4,9 @@ import type { TestFn } from 'ava';
 import { makeDoOffer, provisionSmartWallet } from '../tools/e2e-tools.js';
 import { commonSetup, SetupContextWithWallets } from './support.js';
 import { addresses, defaultMerkleObject } from './airdrop-data/oct21-keys.js';
+import phrases from './airdrop-data/keypairs/twenty.js';
+
+import ADMIN_ACCOUNT from './tg-account.js';
 
 const test = anyTest as TestFn<SetupContextWithWallets>;
 
@@ -24,14 +27,19 @@ test.before(async t => {
     ...setup
   } = await commonSetup(t);
 
-
-  const brands = await vstorageClient.queryData('published.agoricNames.brand');
-
   await startContract(contractName, contractBuilder);
-  t.log('Added' + MNEMONICS.length + ' keys to keyring');
+
+  const [brands, instances] = await Promise.all([
+    vstorageClient.queryData('published.agoricNames.brand'),
+    vstorageClient.queryData('published.agoricNames.instance'),
+  ]);
+
+  t.log('Added' + phrases.length + ' keys to keyring');
+  // await startContract(contractName, contractBuilder);
 
   t.context = {
     ...setup,
+    instances: Object.fromEntries(instances),
     brands,
     istBrand: Object.fromEntries(brands).IST,
     vstorageClient,
@@ -102,29 +110,34 @@ const handleAccountBalanceQuery = async (
 
   return { balances };
 };
-test.skip('tribblesAirdrop ### makeClaimTokensInvitation: happy path', async t => {
-  const { useChain, istBrand } = t.context;
+test.serial(
+  'tribblesAirdrop ### makeClaimTokensInvitation: happy path',
+  async t => {
+    const { useChain, istBrand } = t.context;
 
-  const wallet = await provisionSmartWallet(ACCOUNTS.address, {
-    BLD: 100,
-  });
+    const wallet = await provisionSmartWallet(ADMIN_ACCOUNT.address, {
+      BLD: 1000,
+      IST: 1000,
+    });
 
-  const agQueryClient = makeQueryClient(
-    await useChain('agoric').getRestEndpoint(),
-  );
-  const { balances } = await queryClient.queryBalances(addr);
+    const queryClient = makeQueryClient(
+      await useChain('agoric').getRestEndpoint(),
+    );
+    const { balances } = await queryClient.queryBalances(addr);
 
-  const claimAirdropResults = await makeDoOfferHandler(
-    useChain,
+    await makeDoOfferHandler(
+      useChain,
+      ADMIN_ACCOUNT,
+      wallet,
+      harden({ brand: istBrand, value: 5n }),
+    );
+    const walletCurrent = await vstorageClient.queryData(
+      `published.wallet.${ADMIN_ACCOUNT.address}.current`,
+    );
 
-    ACCOUNTS,
-    wallet,
-    harden({ brand: istBrand, value: 5n }),
-  );
-  const walletCurrent = await vstorageClient.queryData(
-    `published.wallet.${ACCOUNTS.address}.current`,
-  );
-});
+    t.is(balances, walletCurrent);
+  },
+);
 
 const claimAirdropMacro = async (t, addressRange = [0, 1], delay) => {
   const [start, end] = addressRange;
@@ -166,49 +179,19 @@ const claimAirdropMacro = async (t, addressRange = [0, 1], delay) => {
   return durations;
 };
 
-test.serial(
-  'makeClaimTokensInvitation offers ### start: accounts[20] || end: accounts[24] ### offer interval: 10000ms',
-  async t => {
-    const claimRange = [20, 24];
-    const durations = await claimAirdropMacro(t, claimRange, 10000);
-    t.deepEqual(durations.length === 4, true);
-    t.log('Durations for all calls', durations);
-    console.group('################ START DURATIONS logger ##############');
-    console.log('----------------------------------------');
-    console.log('durations ::::', durations);
-    console.log('----------------------------------------');
-    console.log('claimRange ::::', claimRange);
-    console.log('--------------- END DURATIONS logger -------------------');
-    console.groupEnd();
-  },
-);
-test.serial('contract pause invitation payment', async t => {
-  const { provisionSmartWallet, vstorageClient } = t.context;
-  const instances = await vstorageClient.queryData(
-    'published.agoricNames.instance',
-  );
-
-  const tribblesInstance = Object.fromEntries(instances).tribblesAirdrop;
-
-  console.log(Object.fromEntries(instances));
-
-  const wallet = await provisionSmartWallet(ACCOUNTS.address, {
-    IST: 40000n,
-    BLD: 30000n,
-  });
-  const doOffer = makeDoOffer(wallet);
-
-  const pauseContractResult = await doOffer({
-    id: `offer-pause`,
-    invitationSpec: {
-      source: 'purse',
-      instance: tribblesInstance,
-      description: 'pause contract',
-    },
-    proposal: {},
-  });
-
-  t.deepEqual(pauseContractResult, 'pause contract success');
+test.skip('makeClaimTokensInvitation offers ### start: accounts[20] || end: accounts[24] ### offer interval: 10000ms', async t => {
+  const claimRange = [20, 24];
+  const durations = await claimAirdropMacro(t, claimRange, 10000);
+  console.log('INTANCE', t.context.instances);
+  t.deepEqual(durations.length === 4, true);
+  t.log('Durations for all calls', durations);
+  console.group('################ START DURATIONS logger ##############');
+  console.log('----------------------------------------');
+  console.log('durations ::::', durations);
+  console.log('----------------------------------------');
+  console.log('claimRange ::::', claimRange);
+  console.log('--------------- END DURATIONS logger -------------------');
+  console.groupEnd();
 });
 
 test.skip('makeClaimTokensInvitation offers ### start: accounts[25] || end: accounts[29] ### offer interval: 5000ms', async t => {

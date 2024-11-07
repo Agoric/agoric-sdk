@@ -5,8 +5,6 @@ import { Fail } from '@endo/errors';
 import { makeTracer, deeplyFulfilledObject } from '@agoric/internal';
 import { makeStorageNodeChild } from '@agoric/internal/src/lib-chainStorage.js';
 
-const ONE_DAY = 86_000n;
-
 const AIRDROP_TIERS_STATIC = [9000n, 6500n, 3500n, 1500n, 750n].map(
   x => x * 1_000_000n,
 );
@@ -193,13 +191,15 @@ export const startAirdrop = async (powers, config = defaultConfig) => {
 
   console.log('------------------------');
   const startOpts = {
-    installation: await airdropInstallationP,
+    installation: !config?.options?.tribblesAirdrop?.bundleID
+      ? await airdropInstallationP
+      : await E(zoe).installBundleID(config.options.tribblesAirdrop.bundleID),
     label: contractName,
     terms,
     issuerKeywordRecord: {
       Fee: issuerIST,
     },
-    issuerNames: ['Tribbles'],
+    issuerNames: [issuerKeyword],
     privateArgs: await deeplyFulfilledObject(
       harden({
         timer,
@@ -239,20 +239,20 @@ export const startAirdrop = async (powers, config = defaultConfig) => {
 
   await E(creatorFacet).makePauseContractInvitation(adminDepositFacet);
 
-  // Add utribbles token to vbank
-  const tribblesMint = await E(creatorFacet).getBankAssetMint();
+  // // Add utribbles token to vbank
+  // const tribblesMint = await E(creatorFacet).getBankAssetMint();
 
-  await E(bankManager).addAsset(
-    'utribbles',
-    'Tribbles',
-    'Tribbles Intersubjective Token',
-    harden({
-      issuer: tribblesIssuer,
-      brand: tribblesBrand,
-      mint: tribblesMint,
-    }),
-  );
-  await publishBrandInfo(chainStorage, board, tribblesBrand);
+  // await E(bankManager).addAsset(
+  //   'utribbles',
+  //   'Tribbles',
+  //   'Tribbles Intersubjective Token',
+  //   harden({
+  //     issuer: tribblesIssuer,
+  //     brand: tribblesBrand,
+  //     mint: tribblesMint,
+  //   }),
+  // );
+  // await publishBrandInfo(chainStorage, board, tribblesBrand);
   trace('deploy script complete.');
 };
 

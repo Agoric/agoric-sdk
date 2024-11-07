@@ -384,7 +384,6 @@ export const merkleTreeAPI = {
   },
 };
 
-harden(merkleTreeAPI);
 export {
   getMerkleRootFromMerkleProof,
   generateMerkleProof,

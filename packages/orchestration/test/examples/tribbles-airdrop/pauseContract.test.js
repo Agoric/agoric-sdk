@@ -187,21 +187,12 @@ test.serial(
 
     const { zoe, namesByAddressAdmin } = powers.consume;
 
-    // await startAirdrop(
-    //   {
-    //     ...postalPowers,
-    //     installation: {
-    //       consume: { tribblesAirdrop: E(zoe).install(bundles) },
-    //     },
-    //   },
-    //   {
-    //     options: {
-    //       bundleID,
-    //       customTerms: { ...defaultCustomTerms },
-    //       merkleRoot: defaultCustomTerms.merkleRoot,
-    //     },
-    //   },
-    // );
+    await startAirdrop(airdropPowers, {
+      options: {
+        tribblesAirdrop: { bundleID },
+        customTerms: { ...defaultCustomTerms },
+      },
+    });
 
     const smartWalletIssuers = {
       Invitation: await E(zoe).getInvitationIssuer(),
@@ -233,30 +224,33 @@ test.serial(
   },
 );
 
-// test.skip('deploy contract with core eval: tribblesAirdrop / send', async t => {
-//   const { runCoreEval } = t.context;
-//   const { bundles } = t.context.shared;
-//   const bundleID = getBundleId(bundles.tribblesAirdrop);
+test.serial(
+  'deploy contract with core eval: tribblesAirdrop / send',
+  async t => {
+    const { runCoreEval } = t.context;
+    const { bundles } = t.context.shared;
+    const bundleID = getBundleId(bundles.tribblesAirdrop);
 
-//   const name = 'send';
-//   const result = await runCoreEval({
-//     name,
-//     behavior: startAirdrop,
-//     entryFile: scriptRoots.tribblesAirdrop,
-//     config: {
-//       options: {
-//         terms: defaultCustomTerms,
-//         tribblesAirdrop: { bundleID },
-//         merkleRoot: defaultCustomTerms.merkleRoot,
-//       },
-//     },
-//   });
+    const name = 'send';
+    const result = await runCoreEval({
+      name,
+      behavior: startAirdrop,
+      entryFile: scriptRoots.tribblesAirdrop,
+      config: {
+        options: {
+          terms: defaultCustomTerms,
+          tribblesAirdrop: { bundleID },
+          merkleRoot: defaultCustomTerms.merkleRoot,
+        },
+      },
+    });
 
-//   t.log(result.voting_end_time, '#', result.proposal_id, name);
-//   t.like(result, {
-//     content: {
-//       '@type': '/agoric.swingset.CoreEvalProposal',
-//     },
-//     status: 'PROPOSAL_STATUS_PASSED',
-//   });
-// });
+    t.log(result.voting_end_time, '#', result.proposal_id, name);
+    t.like(result, {
+      content: {
+        '@type': '/agoric.swingset.CoreEvalProposal',
+      },
+      status: 'PROPOSAL_STATUS_PASSED',
+    });
+  },
+);

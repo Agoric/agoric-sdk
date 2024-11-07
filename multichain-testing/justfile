@@ -72,16 +72,6 @@ PROVISION_POOL_ADDR=agoric1megzytg65cyrgzs6fvzxgrcqvwwl7ugpt62346
 add-address:
 	kubectl exec -i agoriclocal-genesis-0 -c validator -- agd keys add user1
 
-ADDRESS_FILE=./addresses.json
-# add multiple addresses from JSON file
-add-addresses:
-	@for addr in $$(jq -r '.addresses[]' $(ADDRESS_FILE)); do \
-		echo "Adding address: $$addr"; \
-		kubectl exec -i agoriclocal-genesis-0 -c validator -- agd keys add $$addr; \
-		sleep 1; \
-	done
-
-
 fund-provision-pool:
 	kubectl exec -i agoriclocal-genesis-0 -c validator -- agd tx bank send faucet $(PROVISION_POOL_ADDR) 1000000000uist -y -b block
 

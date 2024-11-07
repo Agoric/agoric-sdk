@@ -1,2 +1,2 @@
-import phrases from './phrases.js';
+import phrases from './airdrop-data/keypairs/twenty.js';
 setupSpecificKeys;

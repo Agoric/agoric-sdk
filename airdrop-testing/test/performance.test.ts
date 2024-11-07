@@ -1,62 +1,36 @@
-// @ts-nocheck
 import anyTest from '@endo/ses-ava/prepare-endo.js';
 import type { TestFn } from 'ava';
 import { makeDoOffer } from '../tools/e2e-tools.js';
 import { commonSetup, SetupContextWithWallets } from './support.js';
-import { addresses, defaultMerkleObject } from './airdrop-data/oct21-keys.js';
-const test = anyTest as TestFn<SetupContextWithWallets>;
+import AIRDROP_DATA from './keyring.js';
+import { merkleTreeAPI } from './airdrop-data/merkle-tree/index.js';
 
+const test = anyTest as TestFn<SetupContextWithWallets, Brand>;
 const contractName = 'tribblesAirdrop';
 const contractBuilder =
   '../packages/builders/scripts/testing/start-tribbles-airdrop.js';
-import SEED_PHRASES from './phrases.js';
 
 const generateInt = x => () => Math.floor(Math.random() * (x + 1));
 
 const createTestTier = generateInt(4); // ?
 
 test.before(async t => {
-  const {
-    deleteTestKeys,
-    startContract,
-    // setupSpecificKeys should be used upon first pass of tests
-    // adds keys to keyring, therefore it doesn't need to be called additional times (doing so will cause an error)
-    setupSpecificKeys,
-    vstorageClient,
-    ...setup
-  } = await commonSetup(t);
+  const setup = await commonSetup(t);
 
   // example usage. comment out after first run
-  // await setupSpecificKeys(SEED_PHRASES);
-
-  await startContract(contractName, contractBuilder);
-
+  //  await setupSpecificKeys(MNEMONICS_SET_1);
   const [brands] = await Promise.all([
-    vstorageClient.queryData('published.agoricNames.brand'),
+    setup.vstorageClient.queryData('published.agoricNames.brand'),
   ]);
 
   t.context = {
     ...setup,
-    istBrand: Object.fromEntries(brands).IST,
-    vstorageClient,
-    deleteTestKeys,
+    brands,
   };
 });
 
-const defaultAcct = {
-  pubkey: { key: '' },
-  address: 'agoric12d3fault',
-};
-
-const makeOfferArgs = (account = defaultAcct) => ({
-  key: account.pubkey.key,
-  proof: defaultMerkleObject.getProof(account),
-  address: account.address,
-  tier: createTestTier(),
-});
-
 const makeDoOfferHandler = async (
-  useChain,
+  _useChain,
   currentAccount,
   wallet,
   feeAmount,
@@ -69,6 +43,29 @@ const makeDoOfferHandler = async (
   );
 
   const doOffer = makeDoOffer(wallet);
+
+  const proof = merkleTreeAPI.generateMerkleProof(
+    currentAccount.pubkey.key,
+    AIRDROP_DATA.pubkeys,
+  );
+  const offerArgs = {
+    proof,
+    address: currentAccount.address,
+    key: currentAccount.pubkey.key,
+    tier: createTestTier(),
+  };
+  // const offerArgs2 = makeOfferArgs(currentAccount);
+  console.group(
+    '################ START makeDoOfferHandler logger ##############',
+  );
+  console.log('----------------------------------------');
+  console.log('proof ::::', proof);
+  console.log('----------------------------------------');
+  console.log('offerArgs ::::', offerArgs);
+  console.log(
+    '--------------- END makeDoOfferHandler logger -------------------',
+  );
+  console.groupEnd();
   const startTime = performance.now();
 
   await doOffer({
@@ -78,8 +75,7 @@ const makeDoOfferHandler = async (
       instancePath: [contractName],
       callPipe: [['makeClaimTokensInvitation']],
     },
-    offerArgs: makeOfferArgs(currentAccount),
-
+    offerArgs,
     proposal: {
       give: {
         Fee: feeAmount,
@@ -91,50 +87,53 @@ const makeDoOfferHandler = async (
   return { ...currentAccount, duration, wallet };
 };
 
-const claimAirdropMacro = async (t, addressRange = [0, 1], delay) => {
-  const [start, end] = addressRange;
-  const { provisionSmartWallet, useChain, istBrand } = t.context;
-  const durations = [];
-  // Make multiple API calls with the specified delay
-  for (let i = start; i < end; i++) {
-    const currentAccount = defaultMerkleObject.getAccount(addresses[i]);
-    console.log('Curren Acccount', currentAccount);
-    console.log('Current iteration::', i);
-    const wallet = await provisionSmartWallet(currentAccount.address, {
-      IST: 1000n,
-      BLD: 50n,
-    });
-    // picking off duration and address
-    // this can be used to inspect the validity of offer results, however it comes at the expense
-    // of a failing test halting execution & destroying duration data
-    const { duration, address } = await makeDoOfferHandler(
-      useChain,
-      currentAccount,
-      wallet,
-      harden({ value: 5n, brand: istBrand }),
-    );
+const makeClaimAirdropMacro =
+  accounts =>
+  async (t, addressRange = [0, 1], delay) => {
+    const [start, end] = addressRange;
+    const { provisionSmartWallet, useChain, istBrand } = t.context;
+    const durations: number[] = [];
 
-    durations.push(duration);
+    // Make multiple API calls with the specified delay
+    for (let i = start; i < end; i++) {
+      const currentAccount = accounts[i];
+      console.log('Curren Acccount', currentAccount);
+      console.log('Current iteration::', i);
+      const wallet = await provisionSmartWallet(currentAccount.address, {
+        IST: 1000n,
+        BLD: 50n,
+      });
+      // picking off duration and address
+      // this can be used to inspect the validity of offer results, however it comes at the expense
+      // of a failing test halting execution & destroying duration data
+      const { duration, address } = await makeDoOfferHandler(
+        useChain,
+        currentAccount,
+        wallet,
+        harden({ value: 5n, brand: istBrand }),
+      );
 
-    // Assert that the response matches the expected output
+      durations.push(duration);
 
-    console.group('######### CHECKING TRIBBLES ALLOCATION #######');
-    console.log('----------------------------------');
-    console.log('currentAccount.address ::::', address);
-    console.log('----------------------------------');
+      // Assert that the response matches the expected output
 
-    // Wait for the specified delay before making the next call
-    await new Promise(resolve => setTimeout(resolve, delay));
-  }
-  return durations;
-};
+      console.log('----------------------------------');
+      console.log('currentAccount.address ::::', address);
+      console.log('----------------------------------');
+
+      // Wait for the specified delay before making the next call
+      await new Promise(resolve => setTimeout(resolve, delay));
+    }
+    return durations;
+  };
+
+const claimAirdropMacro = makeClaimAirdropMacro(AIRDROP_DATA.accounts);
 
 test.serial(
-  'makeClaimTokensInvitation offers ### start: accounts[20] || end: accounts[24] ### offer interval: 10000ms',
+  'makeClaimTokensInvitation offers ### start: accounts[3] || end: accounts[4] ### offer interval: 3000ms',
   async t => {
-    const claimRange = [20, 24];
-    const durations = await claimAirdropMacro(t, claimRange, 10000);
-    t.deepEqual(durations.length === 4, true);
+    const claimRange = [15, 4];
+    const durations = await claimAirdropMacro(t, claimRange, 3000);
     t.log('Durations for all calls', durations);
     console.group('################ START DURATIONS logger ##############');
     console.log('----------------------------------------');
@@ -143,15 +142,21 @@ test.serial(
     console.log('claimRange ::::', claimRange);
     console.log('--------------- END DURATIONS logger -------------------');
     console.groupEnd();
+    t.deepEqual(durations.length === 10, true);
   },
 );
+const newLocal = provisionSmartWallet =>
+  AIRDROP_DATA.accounts.slice(5, 15).map(async accountData => {
+    const wallet = await provisionSmartWallet(accountData.address);
+    return wallet;
+  });
 
 test.serial(
-  'makeClaimTokensInvitation offers ### start: accounts[25] || end: accounts[29] ### offer interval: 5000ms',
+  'makeClaimTokensInvitation offers ### start: accounts[5] || end: accounts[15] ### offer interval: 3000ms',
   async t => {
-    const claimRange = [25, 29];
-    const durations = await claimAirdropMacro(t, claimRange, 5000);
-    t.deepEqual(durations.length === 4, true);
+    const claimRange = [5, 15];
+
+    const durations = await claimAirdropMacro(t, claimRange, 3000);
     t.log('Durations for all calls', durations);
     console.group('################ START DURATIONS logger ##############');
     console.log('----------------------------------------');
@@ -160,5 +165,34 @@ test.serial(
     console.log('claimRange ::::', claimRange);
     console.log('--------------- END DURATIONS logger -------------------');
     console.groupEnd();
+    t.deepEqual(durations.length === 10, true);
   },
 );
+
+test.skip('makeClaimTokensInvitation offers ### start: accounts[25] || end: accounts[29] ### offer interval: 3500ms', async t => {
+  const claimRange = [25, 29];
+  const durations = await claimAirdropMacro(t, claimRange, 3500);
+  t.log('Durations for all calls', durations);
+  console.group('################ START DURATIONS logger ##############');
+  console.log('----------------------------------------');
+  console.log('durations ::::', durations);
+  console.log('----------------------------------------');
+  console.log('claimRange ::::', claimRange);
+  console.log('--------------- END DURATIONS logger -------------------');
+  console.groupEnd();
+  t.deepEqual(durations.length === 4, true);
+});
+
+test.skip('makeClaimTokensInvitation offers ### start: accounts[40] || end: accounts[90] ### offer interval: 6000ms', async t => {
+  const claimRange = [40, 90];
+  const durations = await claimAirdropMacro(t, claimRange, 6000);
+  t.log('Durations for all calls', durations);
+  console.group('################ START DURATIONS logger ##############');
+  console.log('----------------------------------------');
+  console.log('durations ::::', durations);
+  console.log('----------------------------------------');
+  console.log('claimRange ::::', claimRange);
+  console.log('--------------- END DURATIONS logger -------------------');
+  console.groupEnd();
+  t.deepEqual(durations.length === 50, true);
+});

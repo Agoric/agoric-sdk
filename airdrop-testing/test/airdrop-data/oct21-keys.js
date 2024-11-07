@@ -1,37 +1,8 @@
+import '@endo/init';
 import { merkleTreeAPI } from './merkle-tree/index.js';
+import ONE_THOUSAND_AND_ELEVEN_KEYS from './ONE_THOUSAND_AND_ELEVEN_KEYS.js';
 
-const pubkeys = [
-  'ApbVlMcmEODtsa0hKbQDdfP6yDCVDtNsHfa0eJDYUlMm',
-  'AypaDjnPmDIfxBX2Tt6UQjeQq0ndaG5rQDbD4GLmwUQ5',
-  'AiVRzInOYZGPadFqE1fmybdO+lxt728mOODUT+iCUIpW',
-  'Ay1a99eE/NDlBCfltOBZJf5FEjJd7od3XRPykbdHOFj6',
-  'Ah1d0p817qdFQizepUhcj5wkhdDl8BkBoEpg0aFDy+dz',
-  'A8Gv8NXPOTgFWpTv2MSX76Xl9sZE+65bvRceRZbphpQv',
-  'Ap81RxuzlZbd5+3ybmq+8sl3Iv1VXjJZPr1be+biVRg/',
-  'Ap7zXOumBCVg3Yf2carRdTbXFn2h/UGE2QlJzshomwpe',
-  'Aj5lolSVU/bw+e3kdMyQclfHpxO8E5kIU8o1XKJ8JjNO',
-  'Ay1/r8XmHU6cXNnRHaxu5QP4Z2kWfIi11ZUNbKQhnd5l',
-  'A4PYpxsDLiygz7aqiBfjl8IpuSqmKHEg3Vf9r2EPXN1A',
-  'A1Dt/esAkHw/zHhzDOV5rfiYwWqsyzLT2jbr7f8AElvF',
-  'A0Z0P7Q+JJQs3qGuzPmm8T2itIFg9UzPbYVYQ882SicP',
-  'A85P8+rSMGcgt/yYeveadJI8YCNAxZ19dJ3z9OBKBrOK',
-  'Ag/IgBMYN75jLAB6/8MEQDg4zbI+WrlPG4uX622eM6vE',
-  'Aj+nHQ0jH3ZTwFUJvTS+yMzRfyYG2UtuYC4G5xw2OiMh',
-  'AvOcE8S0uhKjtJX0fZfwxxuVtkG3YHNY9Uzf0RUHeJsN',
-  'AsRGyNguPIlpUL9B/b4yG9IgumNTsmHt/tFGeJeXzq+/',
-  'Ar9685yscOGUj//HvVJXDGoEX5vFQrmPRuwz60fWB9Cb',
-  'Axw1peKnnWXhi/amZPgxOxi9/QlKwonfkExN27fULyw2',
-  'AkyqcBYJpHpExqhGXQZQz9kPaspCoQJP/zk18tpcnI3d',
-  'AzHpHNlE8rq6QbTxG792S/oVU/HWZLmIeFs8KLkmOLuK',
-  'A03XFUOExKyz4umCo21O1azAtWEH7KeQlVtmpn/9LM5k',
-  'AvSVLqQv5kD3qDvLOhk52FdXJ4DW4mXtdnwjYN8VnOc9',
-  'Al9pyfqu3/65mGty5Y4iUV/waKVh0E9LpzpcOCIqaJf9',
-  'A67IBziMdmS4S6vmf4ZB0rbeKQ09PxRyArzvlEjXPuio',
-  'AzOr7eHbt3cYy977mlXzqYaFQZ0qjsp/e1HqYLbA2I/j',
-  'A9IsS0Phutp4gFZbsUN/aNny+0tHN+IsV++uwPJWgjYw',
-  'A8OJpG8rsazyQ+DVy7BsWyJhLVkWhtc5PAXLQN5Z/8Ex',
-  'AypT4PwxmA3Brvgg6djyVMsVD5lEGGh63FvEg0zv8JjS',
-];
+const pubkeys = ONE_THOUSAND_AND_ELEVEN_KEYS.map(x => x.pubkey.key);
 
 const addresses = [
   'agoric1hm54wrxsv8e3pnw6lxj5lssfpexn48xtj6fhxw',

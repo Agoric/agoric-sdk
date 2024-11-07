@@ -177,19 +177,20 @@ export const provisionSmartWallet = async (
   }
 
   if (!skipProvision) {
+    console.log('inside !skipProvision block');
     progress({ provisioning: address });
     await agd.tx(
       ['swingset', 'provision-one', 'my-wallet', address, 'SMART_WALLET'],
       { chainId, from: address, yes: true },
     );
-  }
 
-  const info = await q.queryData(`published.wallet.${address}.current`);
-  progress({
-    provisioned: address,
-    purses: info.purses.length,
-    used: info.offerToUsedInvitation.length,
-  });
+    const info = await q.queryData(`published.wallet.${address}.current`);
+    progress({
+      provisioned: address,
+      purses: info.purses.length,
+      used: info.offerToUsedInvitation.length,
+    });
+  }
 
   /** @param {import('@agoric/smart-wallet/src/smartWallet.js').BridgeAction} bridgeAction */
   const sendAction = async bridgeAction => {

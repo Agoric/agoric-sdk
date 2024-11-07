@@ -106,7 +106,7 @@ const contractName = 'tribblesAirdrop';
   @param {{ options: { customTerms: any }}} config XXX export AirdropTerms record from contract
  */
 
-export const startAirdrop = async (powers, config = defaultConfig) => {
+export const startAirdrop = async (powers, config) => {
   trace('######## inside startAirdrop ###########');
   trace('config ::::', config);
   trace('----------------------------------');
@@ -285,7 +285,7 @@ export const getManifestForAirdrop = (
       customTerms: {
         ...defaultCustomTerms,
         merkleRoot:
-          '0f7e7eeb1c6e5dec518ec2534a4fc55738af04b5379a052c5e3fe836f451ccd0',
+          '236622f77321731f25d19cef0532d2f55287fc58608d74f694ce8ea3e7e91f61',
       },
     },
   },

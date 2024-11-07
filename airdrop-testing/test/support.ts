@@ -10,6 +10,7 @@ import { generateMnemonic } from '../tools/wallet.js';
 import { makeRetryUntilCondition } from '../tools/sleep.js';
 import { makeDeployBuilder } from '../tools/deploy.js';
 import { makeHermes } from '../tools/hermes-tools.js';
+import { createId } from '@paralleldrive/cuid2';
 
 export const FAUCET_POUR = 10_000n * 1_000_000n;
 
@@ -55,14 +56,17 @@ export const makeKeyring = async (
       ),
     ).catch();
 
-  const setupSpecificKeys = (mnemonics = []) =>
-    mnemonics.reduceRight(async (acc, val, index) => {
-      const name = `user_${index}`;
-      const res = await e2eTools.addKey(name, val);
-      const { address } = JSON.parse(res);
-      acc[name] = address;
-      return acc;
-    }, []);
+  const setupSpecificKeys =
+    (prefix = 'account') =>
+    (mnemonics = []) =>
+      mnemonics.reduceRight(async (acc, val, index) => {
+        const name = `${prefix}-${createId()}`;
+        const res = await e2eTools.addKey(name, val);
+        const { address } = JSON.parse(res);
+        acc[name] = address;
+        return acc;
+      }, []);
+
   return { setupSpecificKeys, setupTestKeys, deleteTestKeys };
 };
 

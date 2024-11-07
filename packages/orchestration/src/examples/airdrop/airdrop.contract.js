@@ -400,33 +400,13 @@ export const start = async (zcf, privateArgs, baggage) => {
         },
 
         makePauseContractInvitation(adminDepositFacet) {
-          /** @type {OfferHandler} */
-          const handlePauseInvocation = async (seat, { _depositFacet }) => {
-            // const depositFacet = await getDepositFacet(recipient);
-            // const payouts = await withdrawFromSeat(zcf, tokenHolderSeat, {
-            //   Tokens: tokenHolderSeat.getAmountAllocated('Tokens'),
-            // });
-
-            // TODO: Use atomicRearrange to transfer tokens if necessary (not depositFacet)
-
-            // await Promise.all(
-            //   Object.values(payouts).map(pmtP =>
-            //     E.when(pmtP, pmt => E(depositFacet).receive(pmt)),
-            //   ),
-            // );
-            await zcf.setOfferFilter([
-              messagesObject.makeClaimInvitationDescription(),
-            ]);
-
-            seat.exit();
-
-            return `pause contract success.`;
-          };
-
           const depositInvitation = async depositFacet => {
-            const pauseInvitation = await zcf.makeInvitation(
-              handlePauseInvocation,
-              'pause contract',
+            const pauseInvitation = zcf.makeInvitation(
+              _seat =>
+                zcf.setOfferFilter([
+                  messagesObject.makeClaimInvitationDescription(),
+                ]),
+              'pause makeClaimTokensInvitation',
             );
             E(depositFacet).receive(pauseInvitation);
           };

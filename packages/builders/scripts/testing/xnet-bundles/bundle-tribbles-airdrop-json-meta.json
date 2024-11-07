@@ -1,0 +1,875 @@
+{
+  "bundleFileName": "bundle-tribbles-airdrop.json",
+  "bundleTime": "2024-10-30T20:52:28.096Z",
+  "bundleSize": 1372505,
+  "moduleSource": {
+    "relative": "../../src/examples/airdrop/airdrop.contract.js",
+    "absolute": "/Users/tgreco/agoric-sdk/packages/orchestration/src/examples/airdrop/airdrop.contract.js"
+  },
+  "contents": [
+    {
+      "relativePath": "",
+      "mtime": "2024-10-30T20:47:25.355Z",
+      "size": 14795
+    },
+    {
+      "relativePath": "../helpers/time.js",
+      "mtime": "2024-10-10T18:46:28.778Z",
+      "size": 2379
+    },
+    {
+      "relativePath": "../helpers/validation.js",
+      "mtime": "2024-10-10T18:46:28.779Z",
+      "size": 648
+    },
+    {
+      "relativePath": "../helpers/stateMachine.js",
+      "mtime": "2024-10-10T18:46:28.777Z",
+      "size": 2202
+    },
+    {
+      "relativePath": "../helpers/messages.js",
+      "mtime": "2024-10-10T18:46:28.776Z",
+      "size": 1002
+    },
+    {
+      "relativePath": "../helpers/objectTools.js",
+      "mtime": "2024-10-10T18:46:28.777Z",
+      "size": 2102
+    },
+    {
+      "relativePath": "../merkle-tree/index.js",
+      "mtime": "2024-10-10T18:46:28.779Z",
+      "size": 12421
+    },
+    {
+      "relativePath": "../types.js",
+      "mtime": "2024-10-10T18:46:28.783Z",
+      "size": 3472
+    },
+    {
+      "relativePath": "../../../../../../node_modules/@endo/patterns/index.js",
+      "mtime": "2024-09-26T17:22:21.988Z",
+      "size": 1898
+    },
+    {
+      "relativePath": "../../../../../zone/durable.js",
+      "mtime": "2023-09-09T01:42:13.433Z",
+      "size": 52
+    },
+    {
+      "relativePath": "../../../../../../node_modules/@endo/far/src/index.js",
+      "mtime": "2024-09-26T17:22:21.689Z",
+      "size": 1240
+    },
+    {
+      "relativePath": "../../../../../ERTP/src/index.js",
+      "mtime": "2024-10-03T18:00:05.290Z",
+      "size": 331
+    },
+    {
+      "relativePath": "../../../../../time/index.js",
+      "mtime": "2024-10-03T18:24:28.417Z",
+      "size": 166
+    },
+    {
+      "relativePath": "../../../../../zoe/src/typeGuards.js",
+      "mtime": "2024-07-23T05:45:42.548Z",
+      "size": 12703
+    },
+    {
+      "relativePath": "../../../../../zoe/src/contractSupport/index.js",
+      "mtime": "2024-03-12T19:50:05.912Z",
+      "size": 1129
+    },
+    {
+      "relativePath": "../../../../../zoe/src/contractSupport/ratio.js",
+      "mtime": "2024-08-27T21:30:08.550Z",
+      "size": 12563
+    },
+    {
+      "relativePath": "../../../../../internal/src/index.js",
+      "mtime": "2024-10-03T18:24:28.405Z",
+      "size": 549
+    },
+    {
+      "relativePath": "../helpers/lenses.js",
+      "mtime": "2024-10-10T18:46:28.776Z",
+      "size": 1421
+    },
+    {
+      "relativePath": "../../../../../../node_modules/@endo/marshal/index.js",
+      "mtime": "2024-09-26T17:22:21.882Z",
+      "size": 1071
+    },
+    {
+      "relativePath": "../../../../../../node_modules/@endo/errors/index.js",
+      "mtime": "2024-09-26T17:22:19.908Z",
+      "size": 2741
+    },
+    {
+      "relativePath": "../../../../../../node_modules/@noble/hashes/esm/sha256.js",
+      "mtime": "2024-09-26T17:22:26.396Z",
+      "size": 4947
+    },
+    {
+      "relativePath": "../../../../../../node_modules/@noble/hashes/esm/utils.js",
+      "mtime": "2024-09-26T17:22:26.396Z",
+      "size": 7397
+    },
+    {
+      "relativePath": "../../../../../../node_modules/@endo/patterns/src/keys/checkKey.js",
+      "mtime": "2024-09-26T17:22:21.988Z",
+      "size": 14735
+    },
+    {
+      "relativePath": "../../../../../../node_modules/@endo/patterns/src/keys/copySet.js",
+      "mtime": "2024-09-26T17:22:21.988Z",
+      "size": 3011
+    },
+    {
+      "relativePath": "../../../../../../node_modules/@endo/patterns/src/keys/copyBag.js",
+      "mtime": "2024-09-26T17:22:21.988Z",
+      "size": 3991
+    },
+    {
+      "relativePath": "../../../../../../node_modules/@endo/patterns/src/keys/compareKeys.js",
+      "mtime": "2024-09-26T17:22:21.988Z",
+      "size": 8303
+    },
+    {
+      "relativePath": "../../../../../../node_modules/@endo/patterns/src/keys/merge-set-operators.js",
+      "mtime": "2024-09-26T17:22:21.988Z",
+      "size": 9558
+    },
+    {
+      "relativePath": "../../../../../../node_modules/@endo/patterns/src/keys/merge-bag-operators.js",
+      "mtime": "2024-09-26T17:22:21.988Z",
+      "size": 8748
+    },
+    {
+      "relativePath": "../../../../../../node_modules/@endo/patterns/src/patterns/patternMatchers.js",
+      "mtime": "2024-09-26T17:22:21.988Z",
+      "size": 63335
+    },
+    {
+      "relativePath": "../../../../../../node_modules/@endo/patterns/src/patterns/getGuardPayloads.js",
+      "mtime": "2024-09-26T17:22:21.988Z",
+      "size": 9710
+    },
+    {
+      "relativePath": "../../../../../../node_modules/@endo/patterns/src/types.js",
+      "mtime": "2024-09-26T17:22:21.988Z",
+      "size": 23662
+    },
+    {
+      "relativePath": "../../../../../../node_modules/@endo/common/list-difference.js",
+      "mtime": "2024-09-26T17:22:23.391Z",
+      "size": 755
+    },
+    {
+      "relativePath": "../../../../../../node_modules/@endo/common/object-map.js",
+      "mtime": "2024-09-26T17:22:23.391Z",
+      "size": 2213
+    },
+    {
+      "relativePath": "../../../../../zone/src/durable.js",
+      "mtime": "2024-07-23T05:45:42.555Z",
+      "size": 3775
+    },
+    {
+      "relativePath": "../../../../../../node_modules/@endo/eventual-send/src/no-shim.js",
+      "mtime": "2024-09-26T17:22:23.414Z",
+      "size": 474
+    },
+    {
+      "relativePath": "../../../../../../node_modules/@endo/pass-style/index.js",
+      "mtime": "2024-09-26T17:22:23.557Z",
+      "size": 1119
+    },
+    {
+      "relativePath": "../../../../../ERTP/src/amountMath.js",
+      "mtime": "2024-10-03T18:00:05.289Z",
+      "size": 13794
+    },
+    {
+      "relativePath": "../../../../../ERTP/src/issuerKit.js",
+      "mtime": "2024-10-03T18:00:05.291Z",
+      "size": 13258
+    },
+    {
+      "relativePath": "../../../../../ERTP/src/typeGuards.js",
+      "mtime": "2024-10-03T18:00:05.296Z",
+      "size": 8825
+    },
+    {
+      "relativePath": "../../../../../time/src/timeMath.js",
+      "mtime": "2024-07-23T05:45:42.527Z",
+      "size": 8440
+    },
+    {
+      "relativePath": "../../../../../time/src/typeGuards.js",
+      "mtime": "2024-07-23T05:45:42.527Z",
+      "size": 1146
+    },
+    {
+      "relativePath": "../../../../../time/src/types-index.js",
+      "mtime": "2024-10-03T18:24:28.417Z",
+      "size": 58
+    },
+    {
+      "relativePath": "../../../../../notifier/src/index.js",
+      "mtime": "2024-10-03T18:24:28.406Z",
+      "size": 920
+    },
+    {
+      "relativePath": "../../../../../store/src/index.js",
+      "mtime": "2024-07-23T05:45:42.512Z",
+      "size": 1880
+    },
+    {
+      "relativePath": "../../../../../zoe/src/contractSupport/bondingCurves.js",
+      "mtime": "2024-07-23T05:45:42.543Z",
+      "size": 6287
+    },
+    {
+      "relativePath": "../../../../../zoe/src/contractSupport/safeMath.js",
+      "mtime": "2023-09-09T01:42:13.410Z",
+      "size": 1420
+    },
+    {
+      "relativePath": "../../../../../zoe/src/contractSupport/stateMachine.js",
+      "mtime": "2024-07-23T05:45:42.544Z",
+      "size": 772
+    },
+    {
+      "relativePath": "../../../../../zoe/src/contractSupport/atomicTransfer.js",
+      "mtime": "2024-02-08T20:37:28.150Z",
+      "size": 3885
+    },
+    {
+      "relativePath": "../../../../../zoe/src/contractSupport/zoeHelpers.js",
+      "mtime": "2024-09-11T04:05:27.542Z",
+      "size": 12585
+    },
+    {
+      "relativePath": "../../../../../zoe/src/contractSupport/durability.js",
+      "mtime": "2024-05-11T06:46:14.759Z",
+      "size": 3941
+    },
+    {
+      "relativePath": "../../../../../zoe/src/contractSupport/prepare-ownable.js",
+      "mtime": "2024-10-03T18:00:06.173Z",
+      "size": 2927
+    },
+    {
+      "relativePath": "../../../../../zoe/src/contractSupport/priceAuthority.js",
+      "mtime": "2024-09-11T04:05:27.542Z",
+      "size": 11826
+    },
+    {
+      "relativePath": "../../../../../zoe/src/contractSupport/priceQuote.js",
+      "mtime": "2024-07-23T05:45:42.543Z",
+      "size": 1530
+    },
+    {
+      "relativePath": "../../../../../zoe/src/contractSupport/statistics.js",
+      "mtime": "2023-09-09T01:42:13.410Z",
+      "size": 1056
+    },
+    {
+      "relativePath": "../../../../../zoe/src/contractSupport/recorder.js",
+      "mtime": "2024-07-23T05:45:42.544Z",
+      "size": 8617
+    },
+    {
+      "relativePath": "../../../../../zoe/src/contractSupport/topics.js",
+      "mtime": "2024-08-07T16:36:12.561Z",
+      "size": 1640
+    },
+    {
+      "relativePath": "../../../../../../node_modules/@endo/nat/src/index.js",
+      "mtime": "2024-09-26T17:22:21.982Z",
+      "size": 2525
+    },
+    {
+      "relativePath": "../../../../../internal/src/config.js",
+      "mtime": "2024-07-23T05:45:42.488Z",
+      "size": 1372
+    },
+    {
+      "relativePath": "../../../../../internal/src/debug.js",
+      "mtime": "2023-09-09T01:42:13.326Z",
+      "size": 1029
+    },
+    {
+      "relativePath": "../../../../../internal/src/errors.js",
+      "mtime": "2024-10-03T18:00:05.800Z",
+      "size": 389
+    },
+    {
+      "relativePath": "../../../../../internal/src/utils.js",
+      "mtime": "2024-09-20T14:55:17.719Z",
+      "size": 11957
+    },
+    {
+      "relativePath": "../../../../../internal/src/method-tools.js",
+      "mtime": "2024-06-28T02:44:07.483Z",
+      "size": 3837
+    },
+    {
+      "relativePath": "../../../../../internal/src/typeCheck.js",
+      "mtime": "2024-10-03T18:00:05.811Z",
+      "size": 661
+    },
+    {
+      "relativePath": "../../../../../internal/src/typeGuards.js",
+      "mtime": "2024-02-08T20:37:28.069Z",
+      "size": 316
+    },
+    {
+      "relativePath": "../../../../../internal/src/types-index.js",
+      "mtime": "2024-10-03T18:24:28.405Z",
+      "size": 62
+    },
+    {
+      "relativePath": "../../../../../../node_modules/@endo/common/object-meta-map.js",
+      "mtime": "2024-09-26T17:22:23.391Z",
+      "size": 1884
+    },
+    {
+      "relativePath": "../../../../../../node_modules/@endo/common/from-unique-entries.js",
+      "mtime": "2024-09-26T17:22:23.391Z",
+      "size": 943
+    },
+    {
+      "relativePath": "../../../../../../node_modules/@endo/marshal/src/marshal.js",
+      "mtime": "2024-09-26T17:22:21.882Z",
+      "size": 14674
+    },
+    {
+      "relativePath": "../../../../../../node_modules/@endo/marshal/src/encodeToCapData.js",
+      "mtime": "2024-09-26T17:22:21.882Z",
+      "size": 16039
+    },
+    {
+      "relativePath": "../../../../../../node_modules/@endo/marshal/src/marshal-stringify.js",
+      "mtime": "2024-09-26T17:22:21.882Z",
+      "size": 1370
+    },
+    {
+      "relativePath": "../../../../../../node_modules/@endo/marshal/src/marshal-justin.js",
+      "mtime": "2024-09-26T17:22:21.882Z",
+      "size": 13298
+    },
+    {
+      "relativePath": "../../../../../../node_modules/@endo/marshal/src/encodePassable.js",
+      "mtime": "2024-09-26T17:22:21.882Z",
+      "size": 29002
+    },
+    {
+      "relativePath": "../../../../../../node_modules/@endo/marshal/src/types.js",
+      "mtime": "2024-09-26T17:22:21.882Z",
+      "size": 7559
+    },
+    {
+      "relativePath": "../../../../../../node_modules/@endo/marshal/src/rankOrder.js",
+      "mtime": "2024-09-26T17:22:21.882Z",
+      "size": 15401
+    },
+    {
+      "relativePath": "../../../../../../node_modules/@noble/hashes/esm/_md.js",
+      "mtime": "2024-09-26T17:22:26.396Z",
+      "size": 4660
+    },
+    {
+      "relativePath": "../../../../../../node_modules/@noble/hashes/esm/crypto.js",
+      "mtime": "2024-09-26T17:22:26.396Z",
+      "size": 146
+    },
+    {
+      "relativePath": "../../../../../../node_modules/@noble/hashes/esm/_assert.js",
+      "mtime": "2024-09-26T17:22:26.396Z",
+      "size": 1521
+    },
+    {
+      "relativePath": "../../../../../../node_modules/@endo/common/ident-checker.js",
+      "mtime": "2024-09-26T17:22:23.391Z",
+      "size": 1613
+    },
+    {
+      "relativePath": "../../../../../../node_modules/@endo/patterns/src/keys/keycollection-operators.js",
+      "mtime": "2024-09-26T17:22:21.988Z",
+      "size": 7647
+    },
+    {
+      "relativePath": "../../../../../../node_modules/@endo/common/apply-labeling-error.js",
+      "mtime": "2024-09-26T17:22:23.391Z",
+      "size": 2206
+    },
+    {
+      "relativePath": "../../../../../vat-data/src/index.js",
+      "mtime": "2024-07-23T05:45:42.527Z",
+      "size": 1499
+    },
+    {
+      "relativePath": "../../../../../base-zone/src/index.js",
+      "mtime": "2024-10-03T18:00:05.452Z",
+      "size": 306
+    },
+    {
+      "relativePath": "../../../../../../node_modules/@endo/eventual-send/src/E.js",
+      "mtime": "2024-09-26T17:22:23.414Z",
+      "size": 14272
+    },
+    {
+      "relativePath": "../../../../../../node_modules/@endo/eventual-send/src/exports.js",
+      "mtime": "2024-09-26T17:22:23.414Z",
+      "size": 76
+    },
+    {
+      "relativePath": "../../../../../../node_modules/@endo/pass-style/src/iter-helpers.js",
+      "mtime": "2024-09-26T17:22:23.557Z",
+      "size": 1810
+    },
+    {
+      "relativePath": "../../../../../../node_modules/@endo/pass-style/src/passStyle-helpers.js",
+      "mtime": "2024-09-26T17:22:23.557Z",
+      "size": 6320
+    },
+    {
+      "relativePath": "../../../../../../node_modules/@endo/pass-style/src/error.js",
+      "mtime": "2024-09-26T17:22:23.557Z",
+      "size": 6248
+    },
+    {
+      "relativePath": "../../../../../../node_modules/@endo/pass-style/src/remotable.js",
+      "mtime": "2024-09-26T17:22:23.557Z",
+      "size": 8535
+    },
+    {
+      "relativePath": "../../../../../../node_modules/@endo/pass-style/src/symbol.js",
+      "mtime": "2024-09-26T17:22:23.557Z",
+      "size": 3971
+    },
+    {
+      "relativePath": "../../../../../../node_modules/@endo/pass-style/src/string.js",
+      "mtime": "2024-09-26T17:22:23.557Z",
+      "size": 3121
+    },
+    {
+      "relativePath": "../../../../../../node_modules/@endo/pass-style/src/passStyleOf.js",
+      "mtime": "2024-09-26T17:22:23.557Z",
+      "size": 12909
+    },
+    {
+      "relativePath": "../../../../../../node_modules/@endo/pass-style/src/makeTagged.js",
+      "mtime": "2024-09-26T17:22:23.557Z",
+      "size": 792
+    },
+    {
+      "relativePath": "../../../../../../node_modules/@endo/pass-style/src/make-far.js",
+      "mtime": "2024-09-26T17:22:23.557Z",
+      "size": 8349
+    },
+    {
+      "relativePath": "../../../../../../node_modules/@endo/pass-style/src/typeGuards.js",
+      "mtime": "2024-09-26T17:22:23.557Z",
+      "size": 2220
+    },
+    {
+      "relativePath": "../../../../../../node_modules/@endo/pass-style/src/deeplyFulfilled.js",
+      "mtime": "2024-09-26T17:22:23.557Z",
+      "size": 4741
+    },
+    {
+      "relativePath": "../../../../../../node_modules/@endo/pass-style/src/types.js",
+      "mtime": "2024-09-26T17:22:23.557Z",
+      "size": 45
+    },
+    {
+      "relativePath": "../../../../../ERTP/src/mathHelpers/natMathHelpers.js",
+      "mtime": "2024-10-03T18:00:05.293Z",
+      "size": 1159
+    },
+    {
+      "relativePath": "../../../../../ERTP/src/mathHelpers/setMathHelpers.js",
+      "mtime": "2024-10-03T18:00:05.294Z",
+      "size": 1131
+    },
+    {
+      "relativePath": "../../../../../ERTP/src/mathHelpers/copySetMathHelpers.js",
+      "mtime": "2024-10-03T18:00:05.292Z",
+      "size": 684
+    },
+    {
+      "relativePath": "../../../../../ERTP/src/mathHelpers/copyBagMathHelpers.js",
+      "mtime": "2024-10-03T18:00:05.292Z",
+      "size": 677
+    },
+    {
+      "relativePath": "../../../../../ERTP/src/displayInfo.js",
+      "mtime": "2024-10-03T18:00:05.290Z",
+      "size": 1014
+    },
+    {
+      "relativePath": "../../../../../ERTP/src/paymentLedger.js",
+      "mtime": "2024-10-03T18:00:05.294Z",
+      "size": 12527
+    },
+    {
+      "relativePath": "../../../../../notifier/src/publish-kit.js",
+      "mtime": "2024-09-11T04:05:27.519Z",
+      "size": 14436
+    },
+    {
+      "relativePath": "../../../../../notifier/src/subscribe.js",
+      "mtime": "2024-07-23T05:45:42.492Z",
+      "size": 9406
+    },
+    {
+      "relativePath": "../../../../../notifier/src/notifier.js",
+      "mtime": "2024-08-07T16:36:12.543Z",
+      "size": 5839
+    },
+    {
+      "relativePath": "../../../../../notifier/src/subscriber.js",
+      "mtime": "2024-05-17T19:24:37.387Z",
+      "size": 2525
+    },
+    {
+      "relativePath": "../../../../../notifier/src/topic.js",
+      "mtime": "2024-05-11T06:46:14.716Z",
+      "size": 1142
+    },
+    {
+      "relativePath": "../../../../../notifier/src/storesub.js",
+      "mtime": "2024-05-11T06:46:14.715Z",
+      "size": 7802
+    },
+    {
+      "relativePath": "../../../../../notifier/src/asyncIterableAdaptor.js",
+      "mtime": "2024-05-17T19:24:37.386Z",
+      "size": 4148
+    },
+    {
+      "relativePath": "../../../../../notifier/src/stored-notifier.js",
+      "mtime": "2024-05-11T06:46:14.715Z",
+      "size": 2295
+    },
+    {
+      "relativePath": "../../../../../notifier/src/types-index.js",
+      "mtime": "2024-10-03T18:24:28.406Z",
+      "size": 62
+    },
+    {
+      "relativePath": "../../../../../store/src/stores/scalarWeakSetStore.js",
+      "mtime": "2024-07-23T05:45:42.513Z",
+      "size": 3300
+    },
+    {
+      "relativePath": "../../../../../store/src/stores/scalarSetStore.js",
+      "mtime": "2024-07-23T05:45:42.513Z",
+      "size": 3085
+    },
+    {
+      "relativePath": "../../../../../store/src/stores/scalarWeakMapStore.js",
+      "mtime": "2024-07-23T05:45:42.513Z",
+      "size": 4581
+    },
+    {
+      "relativePath": "../../../../../store/src/stores/scalarMapStore.js",
+      "mtime": "2024-07-23T05:45:42.513Z",
+      "size": 4960
+    },
+    {
+      "relativePath": "../../../../../store/src/stores/store-utils.js",
+      "mtime": "2024-07-23T05:45:42.514Z",
+      "size": 6341
+    },
+    {
+      "relativePath": "../../../../../store/src/legacy/legacyMap.js",
+      "mtime": "2024-07-23T05:45:42.513Z",
+      "size": 2578
+    },
+    {
+      "relativePath": "../../../../../store/src/legacy/legacyWeakMap.js",
+      "mtime": "2024-07-23T05:45:42.513Z",
+      "size": 1408
+    },
+    {
+      "relativePath": "../../../../../store/src/types.js",
+      "mtime": "2024-05-17T19:24:37.396Z",
+      "size": 7815
+    },
+    {
+      "relativePath": "../../../../../../node_modules/@endo/exo/index.js",
+      "mtime": "2024-09-26T17:22:23.748Z",
+      "size": 225
+    },
+    {
+      "relativePath": "../../../../../zoe/src/contractFacet/offerSafety.js",
+      "mtime": "2023-09-09T01:42:13.408Z",
+      "size": 3720
+    },
+    {
+      "relativePath": "../../../../../../node_modules/@endo/promise-kit/index.js",
+      "mtime": "2024-09-26T17:22:22.527Z",
+      "size": 1637
+    },
+    {
+      "relativePath": "../../../../../base-zone/zone-helpers.js",
+      "mtime": "2024-10-03T18:00:05.454Z",
+      "size": 44
+    },
+    {
+      "relativePath": "../../../../../notifier/tools/testSupports.js",
+      "mtime": "2024-05-11T06:46:14.717Z",
+      "size": 1223
+    },
+    {
+      "relativePath": "../../../../../../node_modules/@endo/stream/index.js",
+      "mtime": "2024-09-26T17:22:23.882Z",
+      "size": 6689
+    },
+    {
+      "relativePath": "../../../../../../node_modules/jessie.js/src/main.js",
+      "mtime": "2024-09-26T17:22:26.176Z",
+      "size": 66
+    },
+    {
+      "relativePath": "../../../../../../node_modules/@endo/marshal/src/encodeToSmallcaps.js",
+      "mtime": "2024-09-26T17:22:21.882Z",
+      "size": 16566
+    },
+    {
+      "relativePath": "../../../../../../node_modules/@endo/common/make-iterator.js",
+      "mtime": "2024-09-26T17:22:23.391Z",
+      "size": 335
+    },
+    {
+      "relativePath": "../../../../../../node_modules/@endo/common/make-array-iterator.js",
+      "mtime": "2024-09-26T17:22:23.391Z",
+      "size": 600
+    },
+    {
+      "relativePath": "../../../../../../node_modules/@endo/common/throw-labeled.js",
+      "mtime": "2024-09-26T17:22:23.391Z",
+      "size": 833
+    },
+    {
+      "relativePath": "../../../../../vat-data/src/vat-data-bindings.js",
+      "mtime": "2024-07-23T05:45:42.528Z",
+      "size": 6123
+    },
+    {
+      "relativePath": "../../../../../vat-data/src/exo-utils.js",
+      "mtime": "2024-07-23T05:45:42.527Z",
+      "size": 9278
+    },
+    {
+      "relativePath": "../../../../../base-zone/src/exports.js",
+      "mtime": "2024-10-03T18:00:05.451Z",
+      "size": 76
+    },
+    {
+      "relativePath": "../../../../../base-zone/src/make-once.js",
+      "mtime": "2024-10-03T18:00:05.452Z",
+      "size": 3282
+    },
+    {
+      "relativePath": "../../../../../base-zone/src/keys.js",
+      "mtime": "2024-10-03T18:00:05.452Z",
+      "size": 552
+    },
+    {
+      "relativePath": "../../../../../base-zone/src/is-passable.js",
+      "mtime": "2024-10-03T18:00:05.452Z",
+      "size": 266
+    },
+    {
+      "relativePath": "../../../../../base-zone/src/watch-promise.js",
+      "mtime": "2024-10-03T18:00:05.453Z",
+      "size": 2371
+    },
+    {
+      "relativePath": "../../../../../../node_modules/@endo/eventual-send/src/track-turns.js",
+      "mtime": "2024-09-26T17:22:23.414Z",
+      "size": 3945
+    },
+    {
+      "relativePath": "../../../../../../node_modules/@endo/eventual-send/src/message-breakpoints.js",
+      "mtime": "2024-09-26T17:22:23.414Z",
+      "size": 5618
+    },
+    {
+      "relativePath": "../../../../../../node_modules/@endo/env-options/index.js",
+      "mtime": "2024-09-26T17:22:21.685Z",
+      "size": 38
+    },
+    {
+      "relativePath": "../../../../../../node_modules/@endo/pass-style/src/copyArray.js",
+      "mtime": "2024-09-26T17:22:23.557Z",
+      "size": 1574
+    },
+    {
+      "relativePath": "../../../../../../node_modules/@endo/pass-style/src/copyRecord.js",
+      "mtime": "2024-09-26T17:22:23.557Z",
+      "size": 2256
+    },
+    {
+      "relativePath": "../../../../../../node_modules/@endo/pass-style/src/tagged.js",
+      "mtime": "2024-09-26T17:22:23.557Z",
+      "size": 1557
+    },
+    {
+      "relativePath": "../../../../../../node_modules/@endo/pass-style/src/safe-promise.js",
+      "mtime": "2024-09-26T17:22:23.557Z",
+      "size": 4921
+    },
+    {
+      "relativePath": "../../../../../../node_modules/@endo/eventual-send/utils.js",
+      "mtime": "2024-09-26T17:22:23.414Z",
+      "size": 125
+    },
+    {
+      "relativePath": "../../../../../ERTP/src/payment.js",
+      "mtime": "2024-10-03T18:00:05.294Z",
+      "size": 716
+    },
+    {
+      "relativePath": "../../../../../ERTP/src/purse.js",
+      "mtime": "2024-10-03T18:00:05.295Z",
+      "size": 6242
+    },
+    {
+      "relativePath": "../../../../../internal/src/upgrade-api.js",
+      "mtime": "2024-10-03T18:24:28.405Z",
+      "size": 2173
+    },
+    {
+      "relativePath": "../../../../../internal/src/lib-chainStorage.js",
+      "mtime": "2024-10-10T18:46:32.429Z",
+      "size": 9968
+    },
+    {
+      "relativePath": "../../../../../../node_modules/@endo/exo/src/exo-makers.js",
+      "mtime": "2024-09-26T17:22:23.748Z",
+      "size": 6947
+    },
+    {
+      "relativePath": "../../../../../../node_modules/@endo/exo/src/types.js",
+      "mtime": "2024-09-26T17:22:23.748Z",
+      "size": 45
+    },
+    {
+      "relativePath": "../../../../../../node_modules/@endo/exo/src/get-interface.js",
+      "mtime": "2024-09-26T17:22:23.748Z",
+      "size": 826
+    },
+    {
+      "relativePath": "../../../../../../node_modules/@endo/promise-kit/src/promise-executor-kit.js",
+      "mtime": "2024-09-26T17:22:22.527Z",
+      "size": 1535
+    },
+    {
+      "relativePath": "../../../../../../node_modules/@endo/promise-kit/src/memo-race.js",
+      "mtime": "2024-09-26T17:22:22.527Z",
+      "size": 4808
+    },
+    {
+      "relativePath": "../../../../../../node_modules/@endo/promise-kit/src/is-promise.js",
+      "mtime": "2024-09-26T17:22:22.527Z",
+      "size": 290
+    },
+    {
+      "relativePath": "../../../../../../node_modules/@endo/promise-kit/src/types.js",
+      "mtime": "2024-09-26T17:22:22.527Z",
+      "size": 681
+    },
+    {
+      "relativePath": "../../../../../base-zone/src/prepare-revocable.js",
+      "mtime": "2024-10-03T18:00:05.453Z",
+      "size": 4567
+    },
+    {
+      "relativePath": "../../../../../internal/src/testing-utils.js",
+      "mtime": "2024-07-23T05:45:42.490Z",
+      "size": 1615
+    },
+    {
+      "relativePath": "../../../../../../node_modules/jessie.js/src/ring0/main.js",
+      "mtime": "2024-09-26T17:22:26.176Z",
+      "size": 132
+    },
+    {
+      "relativePath": "../../../../../../node_modules/jessie.js/src/ring1/main.js",
+      "mtime": "2024-09-26T17:22:26.176Z",
+      "size": 34
+    },
+    {
+      "relativePath": "../../../../../../node_modules/@endo/env-options/src/env-options.js",
+      "mtime": "2024-09-26T17:22:21.685Z",
+      "size": 4330
+    },
+    {
+      "relativePath": "../../../../../../node_modules/@endo/eventual-send/src/local.js",
+      "mtime": "2024-09-26T17:22:23.414Z",
+      "size": 4000
+    },
+    {
+      "relativePath": "../../../../../ERTP/src/transientNotifier.js",
+      "mtime": "2024-10-03T18:00:05.295Z",
+      "size": 1050
+    },
+    {
+      "relativePath": "../../../../../ERTP/src/amountStore.js",
+      "mtime": "2024-10-03T18:00:05.290Z",
+      "size": 938
+    },
+    {
+      "relativePath": "../../../../../internal/src/callback.js",
+      "mtime": "2024-08-27T21:30:08.540Z",
+      "size": 9468
+    },
+    {
+      "relativePath": "../../../../../base-zone/heap.js",
+      "mtime": "2024-10-03T18:00:05.451Z",
+      "size": 49
+    },
+    {
+      "relativePath": "../../../../../../node_modules/@endo/exo/src/exo-tools.js",
+      "mtime": "2024-09-26T17:22:23.748Z",
+      "size": 15822
+    },
+    {
+      "relativePath": "../../../../../../node_modules/jessie.js/src/ring0/E.js",
+      "mtime": "2024-09-26T17:22:26.176Z",
+      "size": 27
+    },
+    {
+      "relativePath": "../../../../../../node_modules/jessie.js/src/ring0/makers.js",
+      "mtime": "2024-09-26T17:22:26.176Z",
+      "size": 1611
+    },
+    {
+      "relativePath": "../../../../../../node_modules/jessie.js/src/ring0/async-generate.js",
+      "mtime": "2024-09-26T17:22:26.176Z",
+      "size": 559
+    },
+    {
+      "relativePath": "../../../../../../node_modules/jessie.js/src/ring1/async-tools.js",
+      "mtime": "2024-09-26T17:22:26.176Z",
+      "size": 862
+    },
+    {
+      "relativePath": "../../../../../base-zone/src/heap.js",
+      "mtime": "2024-10-03T18:00:05.451Z",
+      "size": 1843
+    }
+  ],
+  "noTransforms": false,
+  "elideComments": false,
+  "format": "endoZipBase64",
+  "conditions": []
+}
