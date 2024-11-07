@@ -20,22 +20,15 @@ test.serial(
   'economic committee can make governance proposal and vote on it',
   async t => {
     const { waitUntil } = makeTimerUtils({ setTimeout });
-    const { readLatestHead, getLastUpdate } = await makeWalletUtils(
-      { delay, fetch },
-      networkConfig,
-    );
+    const { readLatestHead, getLastUpdate, getCurrentWalletRecord } =
+      await makeWalletUtils({ delay, fetch }, networkConfig);
     const governanceDriver = await makeGovernanceDriver(fetch, networkConfig);
 
     /** @type {any} */
     const instance = await readLatestHead(`published.agoricNames.instance`);
     const instances = Object.fromEntries(instance);
 
-    const wallet =
-      /** @type {import('@agoric/smart-wallet/src/smartWallet.js').CurrentWalletRecord} */ (
-        await readLatestHead(
-          `published.wallet.${governanceAddresses[0]}.current`,
-        )
-      );
+    const wallet = await getCurrentWalletRecord(governanceAddresses[0]);
     const usedInvitations = wallet.offerToUsedInvitation;
 
     const charterInvitation = usedInvitations.find(

@@ -1,5 +1,5 @@
 /* eslint-env node */
-import { makeVstorageKit, makeStargateClient } from '@agoric/client-utils';
+import { makeStargateClient, makeVstorageKit } from '@agoric/client-utils';
 import { readFile, writeFile } from 'node:fs/promises';
 import { networkConfig } from './rpc.js';
 
@@ -56,11 +56,8 @@ export const getBalances = async (addresses, targetDenom = undefined) => {
  * @param {WalletUtils} walletUtils
  * @returns {Promise<string[]>}
  */
-export const listVaults = async (addr, { readLatestHead }) => {
-  // TODO parameterize readLatestHead to match these string types
-  const current = /** @type {CurrentWalletRecord} */ (
-    await readLatestHead(`published.wallet.${addr}.current`)
-  );
+export const listVaults = async (addr, { getCurrentWalletRecord }) => {
+  const current = await getCurrentWalletRecord(addr);
   const vaultStoragePaths = current.offerToPublicSubscriberPaths.map(
     ([_offerId, pathmap]) => pathmap.vault,
   );

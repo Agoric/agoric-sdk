@@ -5,6 +5,7 @@ import { boardSlottingMarshaller, makeVstorageKit } from './vstorage-kit.js';
 
 /**
  * @import {Amount, Brand} from '@agoric/ertp/src/types.js'
+ * @import {CurrentWalletRecord, UpdateRecord} from '@agoric/smart-wallet/src/smartWallet.js';
  * @import {MinimalNetworkConfig} from './rpc.js';
  */
 
@@ -82,11 +83,22 @@ export const makeWalletUtils = async ({ fetch, delay }, networkConfig) => {
 
   /**
    * @param {string} addr
-   * @returns {Promise<import('@agoric/smart-wallet/src/smartWallet.js').UpdateRecord>}
+   * @returns {Promise<UpdateRecord>}
    */
   const getLastUpdate = addr => {
-    // @ts-expect-error cast
-    return readLatestHead(`published.wallet.${addr}`);
+    return /** @type {Promise<UpdateRecord>} */ (
+      readLatestHead(`published.wallet.${addr}`)
+    );
+  };
+
+  /**
+   * @param {string} addr
+   * @returns {Promise<CurrentWalletRecord>}
+   */
+  const getCurrentWalletRecord = addr => {
+    return /** @type {Promise<CurrentWalletRecord>} */ (
+      readLatestHead(`published.wallet.${addr}.current`)
+    );
   };
 
   return {
@@ -96,6 +108,7 @@ export const makeWalletUtils = async ({ fetch, delay }, networkConfig) => {
     marshaller,
     vstorage,
     getLastUpdate,
+    getCurrentWalletRecord,
     readLatestHead,
     storedWalletState,
     pollOffer,
