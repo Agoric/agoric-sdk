@@ -16,6 +16,7 @@ import { defineInertInvitation } from './utils/zoe.js';
 const trace = makeTracer('FastUsdc');
 
 /**
+ * @import {Denom} from '@agoric/orchestration';
  * @import {OrchestrationPowers, OrchestrationTools} from '@agoric/orchestration/src/utils/start-helper.js';
  * @import {Zone} from '@agoric/zone';
  * @import {OperatorKit} from './exos/operator-kit.js';
@@ -26,6 +27,7 @@ const trace = makeTracer('FastUsdc');
  * @typedef {{
  *   poolFee: Amount<'nat'>;
  *   contractFee: Amount<'nat'>;
+ *   usdcDenom: Denom;
  * }} FastUsdcTerms
  */
 const NatAmountShape = { brand: BrandShape, value: M.nat() };
@@ -33,6 +35,7 @@ export const meta = {
   customTermsShape: {
     contractFee: NatAmountShape,
     poolFee: NatAmountShape,
+    usdcDenom: M.string(),
   },
 };
 harden(meta);
@@ -49,6 +52,7 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
   assert(tools, 'no tools');
   const terms = zcf.getTerms();
   assert('USDC' in terms.brands, 'no USDC brand');
+  assert('usdcDenom' in terms, 'no usdcDenom');
 
   const { makeRecorderKit } = prepareRecorderKitMakers(
     zone.mapStore('vstorage'),
@@ -61,6 +65,10 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
   const makeAdvancer = prepareAdvancer(zone, {
     chainHub,
     log: trace,
+    usdc: harden({
+      brand: terms.brands.USDC,
+      denom: terms.usdcDenom,
+    }),
     statusManager,
     vowTools,
   });
@@ -75,7 +83,7 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
   void observeIteration(subscribeEach(feedKit.public.getEvidenceSubscriber()), {
     updateState(evidence) {
       try {
-        advancer.handleTransactionEvent(evidence);
+        void advancer.handleTransactionEvent(evidence);
       } catch (err) {
         trace('🚨 Error handling transaction event', err);
       }
@@ -117,7 +125,7 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
      * @param {CctpTxEvidence} evidence
      */
     makeTestPushInvitation(evidence) {
-      advancer.handleTransactionEvent(evidence);
+      void advancer.handleTransactionEvent(evidence);
       return makeTestInvitation();
     },
     makeDepositInvitation() {

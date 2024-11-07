@@ -53,6 +53,7 @@ const startContract = async (
     {
       poolFee: usdc.make(1n),
       contractFee: usdc.make(1n),
+      usdcDenom: 'ibc/usdconagoric',
     },
     commonPrivateArgs,
   );
@@ -244,6 +245,7 @@ test('baggage', async t => {
     {
       poolFee: usdc.make(1n),
       contractFee: usdc.make(1n),
+      usdcDenom: 'ibc/usdconagoric',
     },
     commonPrivateArgs,
   );
