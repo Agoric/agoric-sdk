@@ -245,6 +245,7 @@ test('concurrent flow 1', async t => {
     check,
     priceFeedDrivers,
     readLatest,
+    readPublished,
     walletFactoryDriver,
     setupVaults,
     placeBids,
@@ -305,7 +306,7 @@ test('concurrent flow 1', async t => {
     setups[collateralBrandKeySt].price.trigger,
   );
 
-  const liveSchedule = readLatest('published.auction.schedule');
+  const liveSchedule = readPublished('auction.schedule');
 
   for (const { collateralBrandKey, managerIndex } of cases) {
     // check nothing liquidating yet
@@ -339,7 +340,7 @@ test('concurrent flow 1', async t => {
   await advanceTimeBy(3, 'minutes');
 
   for (const { collateralBrandKey, managerIndex } of cases) {
-    t.like(readLatest(`published.auction.book${managerIndex}`), {
+    t.like(readPublished(`auction.book${managerIndex}`), {
       collateralAvailable: {
         value: scale6(setups[collateralBrandKey].auction.start.collateral),
       },
@@ -360,7 +361,7 @@ test('concurrent flow 1', async t => {
 
   // updates for bid1 and bid2 are appended in the same turn so readLatest gives bid2
   // updates for ATOM and STARS are appended in the same turn so readLatest gives STARS
-  t.like(readLatest('published.wallet.agoric1buyer'), {
+  t.like(readPublished('wallet.agoric1buyer'), {
     status: {
       id: `${collateralBrandKeySt}-bid2`,
       payouts: likePayouts(outcomes[collateralBrandKeySt].bids[1].payouts),
@@ -374,7 +375,7 @@ test('concurrent flow 1', async t => {
   await advanceTimeBy(3, 'minutes');
 
   for (const { collateralBrandKey, managerIndex } of cases) {
-    t.like(readLatest(`published.auction.book${managerIndex}`), {
+    t.like(readPublished(`auction.book${managerIndex}`), {
       collateralAvailable: {
         value: scale6(setups[collateralBrandKey].auction.end.collateral),
       },
@@ -393,15 +394,8 @@ test('concurrent flow 1', async t => {
   console.log('step 10 of 10');
   // continuing after now would start a new auction
   {
-    /**
-     * @type {Record<
-     *   string,
-     *   import('@agoric/time').TimestampRecord
-     * >}
-     */
-    const { nextDescendingStepTime, nextStartTime } = readLatest(
-      'published.auction.schedule',
-    );
+    const { nextDescendingStepTime, nextStartTime } =
+      readPublished('auction.schedule');
     t.is(nextDescendingStepTime.absValue, nextStartTime.absValue);
   }
 
@@ -422,7 +416,7 @@ test('concurrent flow 1', async t => {
     });
 
     // check reserve balances
-    t.like(readLatest('published.reserve.metrics'), {
+    t.like(readPublished('reserve.metrics'), {
       allocations: {
         [collateralBrandKey]: {
           value: scale6(
@@ -459,11 +453,11 @@ test('concurrent flow 1', async t => {
   });
 
   // bid3 still live because it's not fully satisfied
-  const { liveOffers } = readLatest('published.wallet.agoric1buyer.current');
+  const { liveOffers } = readPublished('wallet.agoric1buyer.current');
   t.is(liveOffers[0][1].id, `${collateralBrandKeyA}-bid3`);
   // exit to get payouts
   await buyer.tryExitOffer(`${collateralBrandKeyA}-bid3`);
-  t.like(readLatest('published.wallet.agoric1buyer'), {
+  t.like(readPublished('wallet.agoric1buyer'), {
     status: {
       id: `${collateralBrandKeyA}-bid3`,
       payouts: likePayouts(outcomes[collateralBrandKeyA].bids[2].payouts),
