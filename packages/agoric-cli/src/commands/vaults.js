@@ -1,7 +1,7 @@
 // @ts-check
 /* eslint-disable func-names */
 /* eslint-env node */
-import { makeRpcUtils } from '@agoric/client-utils';
+import { makeVstorageKit } from '@agoric/client-utils';
 import {
   lookupOfferIdForVault,
   Offers,
@@ -39,7 +39,10 @@ export const makeVaultsCommand = logger => {
       normalizeAddress,
     )
     .action(async function (opts) {
-      const { readLatestHead } = await makeRpcUtils({ fetch }, networkConfig);
+      const { readLatestHead } = await makeVstorageKit(
+        { fetch },
+        networkConfig,
+      );
 
       const current = await getCurrent(opts.from, {
         readLatestHead,
@@ -64,7 +67,7 @@ export const makeVaultsCommand = logger => {
     .option('--collateralBrand <string>', 'Collateral brand key', 'ATOM')
     .action(async function (opts) {
       logger.warn('running with options', opts);
-      const { agoricNames } = await makeRpcUtils({ fetch }, networkConfig);
+      const { agoricNames } = await makeVstorageKit({ fetch }, networkConfig);
 
       const offer = Offers.vaults.OpenVault(agoricNames, {
         giveCollateral: opts.giveCollateral,
@@ -99,7 +102,7 @@ export const makeVaultsCommand = logger => {
     .requiredOption('--vaultId <string>', 'Key of vault (e.g. vault1)')
     .action(async function (opts) {
       logger.warn('running with options', opts);
-      const { agoricNames, readLatestHead } = await makeRpcUtils(
+      const { agoricNames, readLatestHead } = await makeVstorageKit(
         { fetch },
         networkConfig,
       );
@@ -143,7 +146,7 @@ export const makeVaultsCommand = logger => {
     )
     .action(async function (opts) {
       logger.warn('running with options', opts);
-      const { agoricNames, readLatestHead } = await makeRpcUtils(
+      const { agoricNames, readLatestHead } = await makeVstorageKit(
         { fetch },
         networkConfig,
       );

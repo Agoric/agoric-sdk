@@ -8,7 +8,7 @@ import {
   makeLeader,
   makeLeaderFromRpcAddresses,
 } from '@agoric/casting';
-import { makeRpcUtils } from '@agoric/client-utils';
+import { makeVstorageKit } from '@agoric/client-utils';
 import { execFileSync } from 'child_process';
 import fs from 'fs';
 import util from 'util';
@@ -105,7 +105,7 @@ export const makeWalletCommand = async command => {
     .action(async function (opts) {
       const offerStr = fs.readFileSync(opts.file).toString();
 
-      const { unserializer } = await makeRpcUtils({ fetch }, networkConfig);
+      const { unserializer } = await makeVstorageKit({ fetch }, networkConfig);
 
       const offerObj = unserializer.fromCapData(JSON.parse(offerStr));
       console.log(offerObj);
@@ -120,7 +120,7 @@ export const makeWalletCommand = async command => {
     .action(async function (opts) {
       const offerStr = fs.readFileSync(opts.offer).toString();
 
-      const { unserializer } = await makeRpcUtils({ fetch }, networkConfig);
+      const { unserializer } = await makeVstorageKit({ fetch }, networkConfig);
 
       const offerObj = unserializer.fromCapData(JSON.parse(offerStr));
       console.log(offerObj.offer.id);
@@ -158,7 +158,7 @@ export const makeWalletCommand = async command => {
     .command('list')
     .description('list all wallets in vstorage')
     .action(async function () {
-      const { vstorage } = await makeRpcUtils({ fetch }, networkConfig);
+      const { vstorage } = await makeVstorageKit({ fetch }, networkConfig);
       const wallets = await vstorage.keys('published.wallet');
       process.stdout.write(wallets.join('\n'));
     });
@@ -172,12 +172,13 @@ export const makeWalletCommand = async command => {
       normalizeAddress,
     )
     .action(async function (opts) {
-      const { agoricNames, unserializer, readLatestHead } = await makeRpcUtils(
-        {
-          fetch,
-        },
-        networkConfig,
-      );
+      const { agoricNames, unserializer, readLatestHead } =
+        await makeVstorageKit(
+          {
+            fetch,
+          },
+          networkConfig,
+        );
 
       const leader = makeLeader(networkConfig.rpcAddrs[0]);
       const follower = await makeFollower(

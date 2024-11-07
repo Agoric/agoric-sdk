@@ -2,7 +2,7 @@
 /* eslint-env node */
 import { InvalidArgumentError } from 'commander';
 import { Fail } from '@endo/errors';
-import { makeRpcUtils } from '@agoric/client-utils';
+import { makeVstorageKit } from '@agoric/client-utils';
 import { outputActionAndHint } from '../lib/wallet.js';
 import { getNetworkConfig } from '../lib/network-config.js';
 
@@ -89,7 +89,7 @@ export const makeAuctionCommand = (
        * }} opts
        */
       async opts => {
-        const { agoricNames, readLatestHead } = await makeRpcUtils(
+        const { agoricNames, readLatestHead } = await makeVstorageKit(
           { fetch },
           networkConfig,
         );

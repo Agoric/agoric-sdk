@@ -1,12 +1,12 @@
 import { agops, agoric, executeOffer } from '@agoric/synthetic-chain';
-import { makeRpcUtils } from '@agoric/client-utils';
+import { makeVstorageKit } from '@agoric/client-utils';
 
 /**
  * @param {typeof window.fetch} fetch
  * @param {import('@agoric/client-utils').MinimalNetworkConfig} networkConfig
  */
 export const makeGovernanceDriver = async (fetch, networkConfig) => {
-  const { readLatestHead, marshaller } = await makeRpcUtils(
+  const { readLatestHead, marshaller } = await makeVstorageKit(
     { fetch },
     networkConfig,
   );

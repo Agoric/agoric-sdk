@@ -1,10 +1,7 @@
 import { makeWalletStateCoalescer } from '@agoric/smart-wallet/src/utils.js';
 import { pollBlocks } from './chain.js';
-import {
-  boardSlottingMarshaller,
-  makeRpcUtils,
-  makeStargateClient,
-} from './rpc.js';
+import { makeStargateClient } from './rpc.js';
+import { boardSlottingMarshaller, makeVstorageKit } from './vstorage-kit.js';
 
 /**
  * @import {Amount, Brand} from '@agoric/ertp/src/types.js'
@@ -20,7 +17,7 @@ import {
  */
 export const makeWalletUtils = async ({ fetch, delay }, networkConfig) => {
   const { agoricNames, fromBoard, marshaller, readLatestHead, vstorage } =
-    await makeRpcUtils({ fetch }, networkConfig);
+    await makeVstorageKit({ fetch }, networkConfig);
   const m = boardSlottingMarshaller(fromBoard.convertSlotToVal);
 
   const client = await makeStargateClient(networkConfig, { fetch });

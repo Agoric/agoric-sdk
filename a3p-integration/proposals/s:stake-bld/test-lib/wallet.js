@@ -8,7 +8,7 @@
 
 import { inspect } from 'util';
 import { execSwingsetTransaction, pollTx } from './chain.js';
-import { makeRpcUtils } from './rpc.js';
+import { makeVstorageKit } from './rpc.js';
 
 /**
  * Sign and broadcast a wallet-action.
@@ -61,7 +61,7 @@ export const makeWalletUtils = async (
   networkConfig,
 ) => {
   const { agoricNames, fromBoard, marshaller, readLatestHead, vstorage } =
-    await makeRpcUtils({ fetch }, networkConfig);
+    await makeVstorageKit({ fetch }, networkConfig);
 
   /**
    *

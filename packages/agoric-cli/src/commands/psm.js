@@ -1,7 +1,7 @@
 // @ts-check
 /* eslint-disable func-names */
 /* eslint-env node */
-import { makeRpcUtils, storageHelper } from '@agoric/client-utils';
+import { makeVstorageKit, storageHelper } from '@agoric/client-utils';
 import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
 import { Command } from 'commander';
 import { getNetworkConfig } from '../lib/network-config.js';
@@ -63,7 +63,7 @@ export const makePsmCommand = logger => {
   );
 
   const rpcTools = async () => {
-    const utils = await makeRpcUtils({ fetch }, networkConfig);
+    const utils = await makeVstorageKit({ fetch }, networkConfig);
 
     const lookupPsmInstance = ([minted, anchor]) => {
       const name = `psm-${minted}-${anchor}`;
