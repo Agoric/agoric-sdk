@@ -105,6 +105,7 @@ type walletSpendAction struct {
 type MultiStoreSpy struct {
 	storetypes.MultiStore
 }
+
 func (spy MultiStoreSpy) GetKVStore(storeKey storetypes.StoreKey) storetypes.KVStore {
 	return KVStoreSpy{spy.MultiStore.GetKVStore(storeKey), storeKey.Name()}
 }
@@ -113,16 +114,17 @@ type KVStoreSpy struct {
 	storetypes.KVStore
 	name string
 }
+
 func (spy KVStoreSpy) Get(key []byte) []byte {
 	got := spy.KVStore.Get(key)
 	stdlog.Printf("xxx gibson KVStore(%#q).Get(%#q) = %#q [k+v = %d]\n",
-		spy.name, key, got, len(key) + len(got))
+		spy.name, key, got, len(key)+len(got))
 	return got
 }
 func (spy KVStoreSpy) Set(key, value []byte) {
 	spy.KVStore.Set(key, value)
 	stdlog.Printf("xxx gibson KVStore(%#q).Set(%#q, %#q) [k+v = %d]\n",
-		spy.name, key, value, len(key) + len(value))
+		spy.name, key, value, len(key)+len(value))
 }
 func (spy KVStoreSpy) Has(key []byte) bool {
 	found := spy.KVStore.Has(key)
@@ -139,6 +141,7 @@ func (spy KVStoreSpy) Delete(key []byte) {
 type GasMeterSpy struct {
 	storetypes.GasMeter
 }
+
 func (spy GasMeterSpy) ConsumeGas(amount storetypes.Gas, descriptor string) {
 	stdlog.Printf("xxx gibson ConsumeGas %v %v\n", descriptor, amount)
 	spy.GasMeter.ConsumeGas(amount, descriptor)
@@ -159,8 +162,8 @@ func (keeper msgServer) WalletSpendAction(goCtx context.Context, msg *types.MsgW
 			"remaining":       gasMeter.GasRemaining(),
 			"limit":           gasMeter.Limit(),
 		}
-		stdlog.Printf("xxx gibson WalletSpendAction GasConfig %+v %v\n",
-			ctx.KVGasConfig(), meterState)
+		stdlog.Printf("xxx gibson WalletSpendAction GasConfig %s %+v %v\n",
+			msg.Owner, ctx.KVGasConfig(), meterState)
 		ctx = ctx.WithMultiStore(&MultiStoreSpy{ctx.MultiStore()})
 		ctx = ctx.WithGasMeter(&GasMeterSpy{gasMeter})
 	}
