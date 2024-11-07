@@ -1,10 +1,12 @@
-import { agoric, makeAgd } from '@agoric/synthetic-chain';
-import { execFileSync } from 'node:child_process';
+/* eslint-env node */
+import { makeVstorageKit, makeStargateClient } from '@agoric/client-utils';
 import { readFile, writeFile } from 'node:fs/promises';
-import { boardSlottingMarshaller, makeFromBoard } from './rpc.js';
+import { networkConfig } from './rpc.js';
+
+export const stargateClientP = makeStargateClient(networkConfig, { fetch });
+export const vstorageKitP = makeVstorageKit({ fetch }, networkConfig);
 
 /**
- * @import {Coin} from '@agoric/cosmic-proto/cosmos/base/v1beta1/coin.js';
  * @import {WalletUtils} from '@agoric/client-utils';
  * @import {CurrentWalletRecord} from '@agoric/smart-wallet/src/smartWallet.js';
  */
@@ -88,23 +90,4 @@ export const makeTimerUtils = ({ setTimeout }) => {
     delay,
     waitUntil,
   };
-};
-
-const fromBoard = makeFromBoard();
-const marshaller = boardSlottingMarshaller(fromBoard.convertSlotToVal);
-
-export const getAgoricNamesBrands = async () => {
-  const brands = await agoric
-    .follow('-lF', ':published.agoricNames.brand', '-o', 'text')
-    .then(res => Object.fromEntries(marshaller.fromCapData(JSON.parse(res))));
-
-  return brands;
-};
-
-export const getAgoricNamesInstances = async () => {
-  const instances = await agoric
-    .follow('-lF', ':published.agoricNames.instance', '-o', 'text')
-    .then(res => Object.fromEntries(marshaller.fromCapData(JSON.parse(res))));
-
-  return instances;
 };

@@ -1,6 +1,10 @@
 /* eslint-env node */
 
-import { retryUntilCondition } from '@agoric/client-utils';
+import {
+  boardSlottingMarshaller,
+  makeFromBoard,
+  retryUntilCondition,
+} from '@agoric/client-utils';
 import { AmountMath } from '@agoric/ertp';
 import {
   agops,
@@ -14,13 +18,9 @@ import {
   ceilMultiplyBy,
   makeRatio,
 } from '@agoric/zoe/src/contractSupport/ratio.js';
+import { E } from '@endo/far';
 import { walletUtils } from './index.js';
-import { boardSlottingMarshaller, makeFromBoard } from './rpc.js';
-import {
-  getAgoricNamesBrands,
-  getAgoricNamesInstances,
-  listVaults,
-} from './utils.js';
+import { listVaults, vstorageKitP } from './utils.js';
 
 const fromBoard = makeFromBoard();
 const marshaller = boardSlottingMarshaller(fromBoard.convertSlotToVal);
@@ -97,7 +97,7 @@ export const getMinInitialDebt = async () => {
  * @returns {Promise<{ mintFee: import('@agoric/ertp/src/types.js').NatAmount, adjustedToMintAmount: import('@agoric/ertp/src/types.js').NatAmount }>}
  */
 export const calculateMintFee = async (toMintValue, vaultManager) => {
-  const brands = await getAgoricNamesBrands();
+  const { brand } = await E.get(vstorageKitP).agoricNames;
 
   const governancePath = `published.vaultFactory.managers.${vaultManager}.governance`;
   const governance = await getContractInfo(governancePath, {
@@ -110,12 +110,13 @@ export const calculateMintFee = async (toMintValue, vaultManager) => {
 
   const mintFeeRatio = makeRatio(
     numerator.value,
-    brands.IST,
+    brand.IST,
     denominator.value,
-    brands.IST,
+    brand.IST,
   );
 
-  const toMintAmount = AmountMath.make(brands.IST, toMintValue * 1_000_000n);
+  // @ts-expect-error XXX BoardRemote not Brand
+  const toMintAmount = AmountMath.make(brand.IST, toMintValue * 1_000_000n);
   const expectedMintFee = ceilMultiplyBy(toMintAmount, mintFeeRatio);
   const adjustedToMintAmount = AmountMath.add(toMintAmount, expectedMintFee);
 
@@ -154,11 +155,11 @@ const paramChangeOfferGeneration = async (
 ) => {
   const ISTunit = 1_000_000n; // aka displayInfo: { decimalPlaces: 6 }
 
-  const brand = await getAgoricNamesBrands();
+  const { brand } = await E.get(vstorageKitP).agoricNames;
   assert(brand.IST);
   assert(brand.ATOM);
 
-  const instance = await getAgoricNamesInstances();
+  const { instance } = await E.get(vstorageKitP).agoricNames;
   assert(instance.VaultFactory);
 
   const voteDurSec = BigInt(voteDur);
