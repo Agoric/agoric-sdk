@@ -9,6 +9,10 @@ import {
   waitUntilOfferResult,
 } from '../src/sync-tools.js';
 
+// keep these small for tests
+const retryIntervalMs = 10;
+const DEFAULT_TIMEOUT = 30;
+
 const makeFakeFollow = () => {
   let value = [[]];
 
@@ -53,12 +57,12 @@ test.serial('wait until contract is deployed', async t => {
     },
     {
       maxRetries: 5,
-      retryIntervalMs: 1000,
+      retryIntervalMs,
       errorMessage: 'Contract not deployed yet',
     },
   );
 
-  setTimeout(() => setValue([['name', true]]), 3000); // set desired value after third retry
+  setTimeout(() => setValue([['name', true]]), DEFAULT_TIMEOUT); // set desired value after third retry
 
   await t.notThrowsAsync(waitP);
 });
@@ -72,7 +76,7 @@ test.serial('wait until account funded', async t => {
     { denom: 'ufake', value: 100_000 },
     {
       maxRetries: 5,
-      retryIntervalMs: 1000,
+      retryIntervalMs,
       errorMessage: 'Account not funded yet',
     },
   );
@@ -97,7 +101,7 @@ test.serial('wait until account funded', async t => {
       total: '0',
     },
   };
-  setTimeout(() => setResult(desiredResult), 3000); // set desired value after third retry
+  setTimeout(() => setResult(desiredResult), DEFAULT_TIMEOUT); // set desired value after third retry
   await t.notThrowsAsync(waitP);
 });
 
@@ -110,7 +114,7 @@ test.serial('wait until account funded, insufficient balance', async t => {
     { denom: 'ufake', value: 100_000 },
     {
       maxRetries: 5,
-      retryIntervalMs: 1000,
+      retryIntervalMs,
       errorMessage: 'Account not funded yet',
     },
   );
@@ -135,7 +139,7 @@ test.serial('wait until account funded, insufficient balance', async t => {
       total: '0',
     },
   };
-  setTimeout(() => setResult(desiredResult), 3000); // set desired value after third retry
+  setTimeout(() => setResult(desiredResult), DEFAULT_TIMEOUT); // set desired value after third retry
   await t.throwsAsync(waitP, { message: /Account not funded yet/ });
 });
 
@@ -152,7 +156,7 @@ test.serial(
       { log: t.log, follow, setTimeout },
       {
         maxRetries: 5,
-        retryIntervalMs: 1000,
+        retryIntervalMs,
         errorMessage: 'Wrong update type',
       },
     );
@@ -172,7 +176,7 @@ test.serial('wait until offer result, wrong id - should throw', async t => {
     { log: t.log, follow, setTimeout },
     {
       maxRetries: 5,
-      retryIntervalMs: 1000,
+      retryIntervalMs,
       errorMessage: 'Wrong offer id',
     },
   );
@@ -191,7 +195,7 @@ test.serial('wait until offer result, no "status" - should throw', async t => {
     { follow, log: t.log, setTimeout },
     {
       maxRetries: 5,
-      retryIntervalMs: 1000,
+      retryIntervalMs,
       errorMessage: 'No "status" object',
     },
   );
@@ -215,7 +219,7 @@ test.serial(
       { follow, log: t.log, setTimeout },
       {
         maxRetries: 5,
-        retryIntervalMs: 1000,
+        retryIntervalMs,
         errorMessage: '"numWantsSatisfied" is not 1',
       },
     );
@@ -235,7 +239,7 @@ test.serial('wait until offer result, do not wait for "payouts"', async t => {
     { follow, log: t.log, setTimeout },
     {
       maxRetries: 7,
-      retryIntervalMs: 1000,
+      retryIntervalMs,
       errorMessage: 'offer not resulted on time',
     },
   );
@@ -246,7 +250,7 @@ test.serial('wait until offer result, do not wait for "payouts"', async t => {
         status: { id: 'my-offer', numWantsSatisfied: 1 },
         updated: 'offerStatus',
       }),
-    1000,
+    10,
   ); // First, offer is seated
   setTimeout(
     () =>
@@ -254,7 +258,7 @@ test.serial('wait until offer result, do not wait for "payouts"', async t => {
         status: { id: 'my-offer', numWantsSatisfied: 1, result: 'thank you' },
         updated: 'offerStatus',
       }),
-    3000,
+    DEFAULT_TIMEOUT,
   ); // Then offer got results
 
   await t.notThrowsAsync(waitP);
@@ -271,7 +275,7 @@ test.serial('wait until offer result, wait for "payouts"', async t => {
     { follow, log: t.log, setTimeout },
     {
       maxRetries: 7,
-      retryIntervalMs: 1000,
+      retryIntervalMs,
       errorMessage: 'payouts not received on time',
     },
   );
@@ -282,7 +286,7 @@ test.serial('wait until offer result, wait for "payouts"', async t => {
         status: { id: 'my-offer', numWantsSatisfied: 1 },
         updated: 'offerStatus',
       }),
-    1000,
+    10,
   ); // First, offer is seated
   setTimeout(
     () =>
@@ -290,7 +294,7 @@ test.serial('wait until offer result, wait for "payouts"', async t => {
         status: { id: 'my-offer', numWantsSatisfied: 1, result: 'thank you' },
         updated: 'offerStatus',
       }),
-    3000,
+    30,
   ); // Now offer got results
   setTimeout(
     () =>
@@ -303,7 +307,7 @@ test.serial('wait until offer result, wait for "payouts"', async t => {
         },
         updated: 'offerStatus',
       }),
-    4000,
+    40,
   ); // Payouts are received
 
   await t.notThrowsAsync(waitP);
@@ -320,7 +324,7 @@ test.serial(
       { follow, log: t.log, setTimeout },
       {
         maxRetries: 3,
-        retryIntervalMs: 1000,
+        retryIntervalMs,
         errorMessage: 'wrong "updated" value',
       },
     );
@@ -340,14 +344,14 @@ test.serial(
       { follow, log: t.log, setTimeout },
       {
         maxRetries: 5,
-        retryIntervalMs: 1000,
+        retryIntervalMs,
         errorMessage: 'faulty "currentAmount" object',
       },
     );
 
     setTimeout(
       () => setValue({ updated: 'balance', currentAmount: { foo: true } }),
-      2000,
+      20,
     );
 
     await t.throwsAsync(waitP, { message: /faulty "currentAmount" object/ });
@@ -365,7 +369,7 @@ test.serial(
       { follow, log: t.log, setTimeout },
       {
         maxRetries: 3,
-        retryIntervalMs: 1000,
+        retryIntervalMs,
         errorMessage: 'brand string do not match',
       },
     );
@@ -383,7 +387,7 @@ test.serial('wait until invitation recevied', async t => {
     { follow, log: t.log, setTimeout },
     {
       maxRetries: 5,
-      retryIntervalMs: 1000,
+      retryIntervalMs,
       errorMessage: 'brand string do not match',
     },
   );
@@ -394,7 +398,7 @@ test.serial('wait until invitation recevied', async t => {
         updated: 'balance',
         currentAmount: { brand: '[Alleged: SEVERED: Zoe Invitation brand {}]' },
       }),
-    2000,
+    20,
   );
 
   await t.notThrowsAsync(waitP);
