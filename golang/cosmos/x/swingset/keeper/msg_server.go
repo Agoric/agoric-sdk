@@ -152,8 +152,17 @@ func (keeper msgServer) WalletSpendAction(goCtx context.Context, msg *types.MsgW
 	}
 	ctx := sdk.UnwrapSDKContext(goCtx)
 	if xxx_gibson {
+		gasMeter := ctx.GasMeter()
+		meterState := map[string]storetypes.Gas{
+			"consumed":        gasMeter.GasConsumed(),
+			"consumedToLimit": gasMeter.GasConsumedToLimit(),
+			"remaining":       gasMeter.GasRemaining(),
+			"limit":           gasMeter.Limit(),
+		}
+		stdlog.Println("xxx gibson WalletSpendAction GasConfig %+v %v\n",
+			ctx.KVGasConfig(), meterState)
 		ctx = ctx.WithMultiStore(&MultiStoreSpy{ctx.MultiStore()})
-		ctx = ctx.WithGasMeter(&GasMeterSpy{ctx.GasMeter()})
+		ctx = ctx.WithGasMeter(&GasMeterSpy{gasMeter})
 	}
 
 	err := keeper.provisionIfNeeded(ctx, msg.Owner)
