@@ -159,7 +159,7 @@ func (keeper msgServer) WalletSpendAction(goCtx context.Context, msg *types.MsgW
 			"remaining":       gasMeter.GasRemaining(),
 			"limit":           gasMeter.Limit(),
 		}
-		stdlog.Println("xxx gibson WalletSpendAction GasConfig %+v %v\n",
+		stdlog.Printf("xxx gibson WalletSpendAction GasConfig %+v %v\n",
 			ctx.KVGasConfig(), meterState)
 		ctx = ctx.WithMultiStore(&MultiStoreSpy{ctx.MultiStore()})
 		ctx = ctx.WithGasMeter(&GasMeterSpy{gasMeter})
