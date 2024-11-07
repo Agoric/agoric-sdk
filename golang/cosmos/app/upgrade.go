@@ -212,27 +212,27 @@ func unreleasedUpgradeHandler(app *GaiaApp, targetUpgrade string) func(sdk.Conte
 					// Upgrade to include a cleanup from https://github.com/Agoric/agoric-sdk/pull/10319
 					"@agoric/builders/scripts/smart-wallet/build-wallet-factory2-upgrade.js",
 				),
-				vm.CoreProposalStepForModules(
-					"@agoric/builders/scripts/vats/upgrade-provisionPool.js",
-				),
-				vm.CoreProposalStepForModules(
-					"@agoric/builders/scripts/vats/upgrade-bank.js",
-				),
 			)
 
-			//	// CoreProposals for Upgrade 19. These should not be introduced
-			//	// before upgrade 18 is done because they would be run in n:upgrade-next
-			//	CoreProposalSteps = append(CoreProposalSteps,
-			//		vm.CoreProposalStepForModules(
-			//			"@agoric/builders/scripts/inter-protocol/replace-feeDistributor.js",
-			//		),
-			//		vm.CoreProposalStepForModules(
-			//			"@agoric/builders/scripts/vats/upgrade-paRegistry.js",
-			//		),
-			//		vm.CoreProposalStepForModules(
-			//			"@agoric/builders/scripts/vats/upgrade-board.js",
-			//		),
-			//	)
+			// CoreProposals for Upgrade 19. These should not be introduced
+			// before upgrade 18 is done because they would be run in n:upgrade-next
+			// CoreProposalSteps = append(CoreProposalSteps,
+			// 	vm.CoreProposalStepForModules(
+			// 		"@agoric/builders/scripts/inter-protocol/replace-feeDistributor.js",
+			// 	),
+			// 	vm.CoreProposalStepForModules(
+			// 		"@agoric/builders/scripts/vats/upgrade-paRegistry.js",
+			// 	),
+			// 	vm.CoreProposalStepForModules(
+			// 		"@agoric/builders/scripts/vats/upgrade-board.js",
+			// 	),
+			// 	vm.CoreProposalStepForModules(
+			// 		"@agoric/builders/scripts/vats/upgrade-provisionPool.js",
+			// 	),
+			// 	vm.CoreProposalStepForModules(
+			// 		"@agoric/builders/scripts/vats/upgrade-bank.js",
+			// 	),
+			// )
 		}
 
 		app.upgradeDetails = &upgradeDetails{
