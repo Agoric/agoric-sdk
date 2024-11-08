@@ -215,7 +215,7 @@ func (msk mockSwingsetKeeper) GetBeansPerUnit(ctx sdk.Context) map[string]sdkmat
 	return nil
 }
 
-func (msk mockSwingsetKeeper) ChargeBeans(ctx sdk.Context, addr sdk.AccAddress, beans sdkmath.Uint) error {
+func (msk mockSwingsetKeeper) ChargeBeans(ctx sdk.Context, beansPerUnit map[string]sdkmath.Uint, addr sdk.AccAddress, beans sdkmath.Uint) error {
 	return fmt.Errorf("not implemented")
 }
 
@@ -223,6 +223,6 @@ func (msk mockSwingsetKeeper) GetSmartWalletState(ctx sdk.Context, addr sdk.AccA
 	panic(fmt.Errorf("not implemented"))
 }
 
-func (msk mockSwingsetKeeper) ChargeForSmartWallet(ctx sdk.Context, addr sdk.AccAddress) error {
+func (msk mockSwingsetKeeper) ChargeForSmartWallet(ctx sdk.Context, beansPerUnit map[string]sdkmath.Uint, addr sdk.AccAddress) error {
 	return fmt.Errorf("not implemented")
 }
