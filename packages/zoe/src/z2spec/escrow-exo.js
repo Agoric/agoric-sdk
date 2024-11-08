@@ -5,11 +5,12 @@
  */
 
 import { E } from '@endo/far';
+import { M } from '@endo/patterns';
 import { makePromiseKit } from '@endo/promise-kit';
 
 /** @param {Promise<void>} cancellationP */
 const failOnly = cancellationP =>
-  Promise.resolve(cancellationP).then(cancellation => {
+  E.when(cancellationP, cancellation => {
     throw cancellation;
   });
 harden(failOnly);
@@ -18,17 +19,14 @@ harden(failOnly);
 export const prepareEscrowExchange = zone =>
   zone.exoClass(
     'EscrowExchange',
-    undefined, // interface TODO
+    M.interface('EscrowExchangeI', {}, { defaultGuards: 'passable' }),
     /**
-     * @typedef {{ payment: Payment, sink: DepositFacet, cancel: Promise<void> }} Common
+     * @typedef {{ payment: Payment, sink: ERef<DepositFacet>, cancel: Promise<void> }} Common
      * @param {{
      *   a: Common & { give: {Money: Amount}, want: {Stock: Amount}};
      *   b: Common & { give: {Stock: Amount}, want: {Money: Amount}};
      * }} parties
-     * @param {{
-     *   Money: Issuer,
-     *   Stock: Issuer,
-     * }} issuers
+     * @param {{ Money: Issuer, Stock: Issuer }} issuers
      */
     (parties, issuers) => ({ parties, issuers }),
     {
@@ -39,17 +37,20 @@ export const prepareEscrowExchange = zone =>
         /** @type {PromiseKit<void>} */
         const decision = makePromiseKit();
         const decisionP = decision.promise;
+        const txfr = {
+          Money: self.transfer(Money, decisionP, a, b.sink, b.want.Money),
+          Stock: self.transfer(Stock, decisionP, b, a.sink, a.want.Stock),
+        };
         decision.resolve(
           Promise.race([
-            Promise.all([
-              self.transfer(Money, decisionP, a, b.sink, b.want.Money),
-              self.transfer(Stock, decisionP, b, a.sink, a.want.Stock),
-            ]),
-            failOnly(a.cancel),
-            failOnly(b.cancel),
+            Promise.all(Object.values(txfr).map(t => t.escrowed)),
+            ...[a, b].map(who => failOnly(who.cancel)),
           ]).then(_ => {}),
         );
-        return decision.promise;
+        return {
+          escrowed: decisionP,
+          paid: Promise.all(Object.values(txfr).map(t => t.paid)).then(_ => {}),
+        };
       },
 
       /**
@@ -62,7 +63,8 @@ export const prepareEscrowExchange = zone =>
       transfer(issuer, decisionP, src, dstPurseP, amount) {
         const escrowPurseP = E(issuer).makeEmptyPurse();
         // setup phase 2
-        Promise.resolve(decisionP).then(
+        const paid = E.when(
+          decisionP,
           _ =>
             E(escrowPurseP)
               .withdraw(amount)
@@ -72,7 +74,10 @@ export const prepareEscrowExchange = zone =>
               .withdraw(amount)
               .then(pmt => E(src.sink).receive(pmt, amount)),
         );
-        return E(escrowPurseP).deposit(src.payment, amount); // phase 1
+        return {
+          escrowed: E(escrowPurseP).deposit(src.payment, amount), // phase 1
+          paid,
+        };
       },
     },
   );
