@@ -426,7 +426,7 @@ const extractBalance = (balances, targetDenom) => {
  * @param {number} actualBalance
  * @param {number} expectedBalance
  */
-const tryISTBalances = async (t, actualBalance, expectedBalance) => {
+export const tryISTBalances = async (t, actualBalance, expectedBalance) => {
   const firstTry = await t.try(
     (tt, actual, expected) => {
       tt.deepEqual(actual, expected);

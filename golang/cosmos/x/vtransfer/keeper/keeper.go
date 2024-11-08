@@ -16,7 +16,7 @@ import (
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vibc"
 	vibctypes "github.com/Agoric/agoric-sdk/golang/cosmos/x/vibc/types"
-	transfertypes "github.com/cosmos/ibc-go/v6/modules/apps/transfer/types"
+	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vtransfer/types"
 	channeltypes "github.com/cosmos/ibc-go/v6/modules/core/04-channel/types"
 	porttypes "github.com/cosmos/ibc-go/v6/modules/core/05-port/types"
 	host "github.com/cosmos/ibc-go/v6/modules/core/24-host"
@@ -106,7 +106,13 @@ func (k Keeper) GetReceiverImpl() vibctypes.ReceiverImpl {
 // to tell the IBC system that acknowledgment is async (i.e., that WriteAcknowledgement
 // will be called later, after the VM has dealt with the packet).
 func (k Keeper) InterceptOnRecvPacket(ctx sdk.Context, ibcModule porttypes.IBCModule, packet channeltypes.Packet, relayer sdk.AccAddress) ibcexported.Acknowledgement {
-	ack := ibcModule.OnRecvPacket(ctx, packet, relayer)
+	// Pass every (stripped-receiver) inbound packet to the wrapped IBC module.
+	var strippedPacket channeltypes.Packet
+	_, err := types.ExtractBaseAddressFromPacket(k.cdc, packet, types.RoleReceiver, &strippedPacket)
+	if err != nil {
+		return channeltypes.NewErrorAcknowledgement(err)
+	}
+	ack := ibcModule.OnRecvPacket(ctx, strippedPacket, relayer)
 
 	if ack == nil {
 		// Already declared to be an async ack.
@@ -136,17 +142,21 @@ func (k Keeper) InterceptOnAcknowledgementPacket(
 	acknowledgement []byte,
 	relayer sdk.AccAddress,
 ) error {
-	// Pass every acknowledgement to the wrapped IBC module.
-	modErr := ibcModule.OnAcknowledgementPacket(ctx, packet, acknowledgement, relayer)
+	// Pass every (stripped-sender) acknowledgement to the wrapped IBC module.
+	var strippedPacket channeltypes.Packet
+	baseSender, err := types.ExtractBaseAddressFromPacket(k.cdc, packet, types.RoleSender, &strippedPacket)
+	if err != nil {
+		return err
+	}
+	modErr := ibcModule.OnAcknowledgementPacket(ctx, strippedPacket, acknowledgement, relayer)
 
-	// If the sender is not a targeted account, we're done.
-	sender, _, err := k.parseTransfer(ctx, packet)
-	if err != nil || sender == "" {
+	// If the sender is not a watched account, we're done.
+	if !k.targetIsWatched(ctx, baseSender) {
 		return modErr
 	}
 
-	// Trigger VM, regardless of errors in the ibcModule.
-	vmErr := k.vibcKeeper.TriggerOnAcknowledgementPacket(ctx, sender, packet, acknowledgement, relayer)
+	// Trigger VM with the original packet, regardless of errors in the ibcModule.
+	vmErr := k.vibcKeeper.TriggerOnAcknowledgementPacket(ctx, baseSender, packet, acknowledgement, relayer)
 
 	// Any error from the VM is trumped by one from the wrapped IBC module.
 	if modErr != nil {
@@ -163,17 +173,21 @@ func (k Keeper) InterceptOnTimeoutPacket(
 	packet channeltypes.Packet,
 	relayer sdk.AccAddress,
 ) error {
-	// Pass every timeout to the wrapped IBC module.
-	modErr := ibcModule.OnTimeoutPacket(ctx, packet, relayer)
+	// Pass every (stripped-sender) timeout to the wrapped IBC module.
+	var strippedPacket channeltypes.Packet
+	baseSender, err := types.ExtractBaseAddressFromPacket(k.cdc, packet, types.RoleSender, &strippedPacket)
+	if err != nil {
+		return err
+	}
+	modErr := ibcModule.OnTimeoutPacket(ctx, strippedPacket, relayer)
 
-	// If the sender is not a targeted account, we're done.
-	sender, _, err := k.parseTransfer(ctx, packet)
-	if err != nil || sender == "" {
+	// If the sender is not a watched account, we're done.
+	if !k.targetIsWatched(ctx, baseSender) {
 		return modErr
 	}
 
-	// Trigger VM, regardless of errors in the app.
-	vmErr := k.vibcKeeper.TriggerOnTimeoutPacket(ctx, sender, packet, relayer)
+	// Trigger VM with the original packet, regardless of errors in the app.
+	vmErr := k.vibcKeeper.TriggerOnTimeoutPacket(ctx, baseSender, packet, relayer)
 
 	// Any error from the VM is trumped by one from the wrapped IBC module.
 	if modErr != nil {
@@ -185,14 +199,15 @@ func (k Keeper) InterceptOnTimeoutPacket(
 // InterceptWriteAcknowledgement checks to see if the packet's receiver is a
 // targeted account, and if so, delegates to the VM.
 func (k Keeper) InterceptWriteAcknowledgement(ctx sdk.Context, chanCap *capabilitytypes.Capability, packet ibcexported.PacketI, ack ibcexported.Acknowledgement) error {
-	_, receiver, err := k.parseTransfer(ctx, packet)
-	if err != nil || receiver == "" {
-		// We can't parse, but that means just to ack directly.
+	// Get the base baseReceiver from the packet, without computing a stripped packet.
+	baseReceiver, err := types.ExtractBaseAddressFromPacket(k.cdc, packet, types.RoleReceiver, nil)
+	if err != nil || !k.targetIsWatched(ctx, baseReceiver) {
+		// We can't parse, or not watching, but that means just to ack directly.
 		return k.WriteAcknowledgement(ctx, chanCap, packet, ack)
 	}
 
-	// Trigger VM
-	if err = k.vibcKeeper.TriggerWriteAcknowledgement(ctx, receiver, packet, ack); err != nil {
+	// Trigger VM with the original packet.
+	if err = k.vibcKeeper.TriggerWriteAcknowledgement(ctx, baseReceiver, packet, ack); err != nil {
 		errAck := channeltypes.NewErrorAcknowledgement(err)
 		return k.WriteAcknowledgement(ctx, chanCap, packet, errAck)
 	}
@@ -200,27 +215,13 @@ func (k Keeper) InterceptWriteAcknowledgement(ctx sdk.Context, chanCap *capabili
 	return nil
 }
 
-// parseTransfer checks if a packet's sender and/or receiver are targeted accounts.
-func (k Keeper) parseTransfer(ctx sdk.Context, packet ibcexported.PacketI) (string, string, error) {
-	var transferData transfertypes.FungibleTokenPacketData
-	err := k.cdc.UnmarshalJSON(packet.GetData(), &transferData)
-	if err != nil {
-		return "", "", err
-	}
-
-	var sender string
-	var receiver string
+// targetIsWatched checks if a target address has been watched by the VM.
+func (k Keeper) targetIsWatched(ctx sdk.Context, target string) bool {
 	prefixStore := prefix.NewStore(
 		ctx.KVStore(k.key),
 		[]byte(watchedAddressStoreKeyPrefix),
 	)
-	if prefixStore.Has([]byte(transferData.Sender)) {
-		sender = transferData.Sender
-	}
-	if prefixStore.Has([]byte(transferData.Receiver)) {
-		receiver = transferData.Receiver
-	}
-	return sender, receiver, nil
+	return prefixStore.Has([]byte(target))
 }
 
 // GetWatchedAdresses returns the watched addresses from the keeper as a slice

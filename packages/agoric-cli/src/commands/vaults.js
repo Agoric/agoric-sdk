@@ -1,14 +1,17 @@
 // @ts-check
 /* eslint-disable func-names */
 /* eslint-env node */
-import { Command } from 'commander';
+import { makeRpcUtils } from '@agoric/client-utils';
 import {
   lookupOfferIdForVault,
   Offers,
 } from '@agoric/inter-protocol/src/clientSupport.js';
+import { Command } from 'commander';
 import { normalizeAddressWithOptions } from '../lib/chain.js';
-import { makeRpcUtils } from '../lib/rpc.js';
 import { getCurrent, outputExecuteOfferAction } from '../lib/wallet.js';
+import { getNetworkConfig } from '../lib/network-config.js';
+
+const networkConfig = await getNetworkConfig({ env: process.env, fetch });
 
 /**
  * @param {import('anylogger').Logger} logger
@@ -36,7 +39,7 @@ export const makeVaultsCommand = logger => {
       normalizeAddress,
     )
     .action(async function (opts) {
-      const { readLatestHead } = await makeRpcUtils({ fetch });
+      const { readLatestHead } = await makeRpcUtils({ fetch }, networkConfig);
 
       const current = await getCurrent(opts.from, {
         readLatestHead,
@@ -61,7 +64,7 @@ export const makeVaultsCommand = logger => {
     .option('--collateralBrand <string>', 'Collateral brand key', 'ATOM')
     .action(async function (opts) {
       logger.warn('running with options', opts);
-      const { agoricNames } = await makeRpcUtils({ fetch });
+      const { agoricNames } = await makeRpcUtils({ fetch }, networkConfig);
 
       const offer = Offers.vaults.OpenVault(agoricNames, {
         giveCollateral: opts.giveCollateral,
@@ -96,7 +99,10 @@ export const makeVaultsCommand = logger => {
     .requiredOption('--vaultId <string>', 'Key of vault (e.g. vault1)')
     .action(async function (opts) {
       logger.warn('running with options', opts);
-      const { agoricNames, readLatestHead } = await makeRpcUtils({ fetch });
+      const { agoricNames, readLatestHead } = await makeRpcUtils(
+        { fetch },
+        networkConfig,
+      );
 
       const previousOfferId = await lookupOfferIdForVault(
         opts.vaultId,
@@ -137,7 +143,10 @@ export const makeVaultsCommand = logger => {
     )
     .action(async function (opts) {
       logger.warn('running with options', opts);
-      const { agoricNames, readLatestHead } = await makeRpcUtils({ fetch });
+      const { agoricNames, readLatestHead } = await makeRpcUtils(
+        { fetch },
+        networkConfig,
+      );
 
       const previousOfferId = await lookupOfferIdForVault(
         opts.vaultId,

@@ -40,6 +40,7 @@
     "@endo/errors": "^1.2.7",
     "@agoric/cache": "^0.3.2",
     "@agoric/casting": "^0.4.2",
+    "@agoric/client-utils": "^0.1.0",
     "@agoric/cosmic-proto": "^0.4.0",
     "@agoric/ertp": "^0.16.2",
     "@agoric/governance": "^0.10.3",

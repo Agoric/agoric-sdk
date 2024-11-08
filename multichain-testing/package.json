@@ -8,7 +8,9 @@
     "lint:eslint": "eslint .",
     "lint:types": "tsc --noEmit",
     "lint-fix": "yarn lint:eslint --fix",
-    "test": "ava",
+    "test": "echo 'Run specific test suites:\nyarn test:main (needs `make start`)\nyarn test:fast-usdc (needs `make start FILE=config.fusdc.yaml`)'",
+    "test:main": "ava --config ava.main.config.js",
+    "test:fast-usdc": "FILE=config.fusdc.yaml ava --config ava.fusdc.config.js",
     "starship:setup": "make setup-deps setup-kind",
     "starship:install": "make install",
     "starship:port-forward": "make port-forward",
@@ -43,23 +45,6 @@
   },
   "resolutions": {
     "axios": "1.6.7"
-  },
-  "ava": {
-    "extensions": {
-      "ts": "module"
-    },
-    "require": [
-      "@endo/init/debug.js"
-    ],
-    "nodeArguments": [
-      "--import=tsimp/import"
-    ],
-    "files": [
-      "**/*.test.ts"
-    ],
-    "concurrency": 1,
-    "serial": true,
-    "timeout": "125s"
   },
   "eslintConfig": {
     "root": true,
