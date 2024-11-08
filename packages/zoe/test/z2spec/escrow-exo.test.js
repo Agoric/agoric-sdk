@@ -3,7 +3,7 @@ import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
 import { makeHeapZone } from '@agoric/zone';
 import { AmountMath, makeDurableIssuerKit } from '@agoric/ertp';
-import { makePromiseKit } from '@endo/promise-kit';
+import { makePromiseKit as withResolvers } from '@endo/promise-kit';
 import { objectMap } from '@endo/patterns';
 import { prepareEscrowExchange } from '../../src/z2spec/escrow-exo.js';
 
@@ -39,7 +39,7 @@ test('escrowExchange in heap zone', async t => {
     t.log(name, 'to give', { ...give, payment });
     const [wantKW] = Object.keys(want);
     const sink = purses[wantKW].getDepositFacet();
-    const sync = makePromiseKit();
+    const sync = withResolvers();
     const { promise: cancel } = sync;
     return { detail: { ...proposal, sink, cancel, payment }, purses, sync };
   };

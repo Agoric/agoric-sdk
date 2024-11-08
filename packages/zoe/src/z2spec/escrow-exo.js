@@ -6,7 +6,7 @@
 
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
-import { makePromiseKit } from '@endo/promise-kit';
+import { makePromiseKit as withResolvers } from '@endo/promise-kit';
 
 /** @param {Promise<void>} cancellationP */
 const failOnly = cancellationP =>
@@ -35,7 +35,7 @@ export const prepareEscrowExchange = zone =>
         const { Money, Stock } = this.state.issuers;
         const { self } = this;
         /** @type {PromiseKit<void>} */
-        const decision = makePromiseKit();
+        const decision = withResolvers();
         const decisionP = decision.promise;
         const txfr = {
           Money: self.transfer(Money, decisionP, a, b.sink, b.want.Money),
