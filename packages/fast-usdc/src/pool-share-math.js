@@ -72,7 +72,7 @@ export const deposit = (shareWorth, { give, want }) => {
 
   const { denominator: sharesOutstanding, numerator: poolBalance } = shareWorth;
 
-  const PoolShare = divideBy(give.USDC, shareWorth); // TODO: floorDivideBy???
+  const PoolShare = divideBy(give.USDC, shareWorth);
   if (want?.PoolShare) {
     isGTE(PoolShare, want.PoolShare) ||
       Fail`deposit cannot pay out ${q(want.PoolShare)}; ${q(give.USDC)} only gets ${q(PoolShare)}`;
