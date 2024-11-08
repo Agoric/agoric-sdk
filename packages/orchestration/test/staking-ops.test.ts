@@ -173,7 +173,6 @@ const makeScenario = () => {
         calls.push({ msgs });
         return doMessage(msgs[0]);
       },
-      executeTx: () => Fail`mock`,
       deactivate: () => Fail`mock`,
       getLocalAddress: () => configStaking.acct1.localAddress,
       getRemoteAddress: () => configStaking.acct1.remoteAddress,

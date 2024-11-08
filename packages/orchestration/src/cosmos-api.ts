@@ -272,13 +272,6 @@ export interface IcaAccount extends IcaAccountMethods {
    * @returns the address of the account on the remote chain
    */
   getAddress: () => ChainAddress;
-
-  /**
-   * Submit a transaction on behalf of the remote account for execution on the remote chain.
-   * @param msgs - records for the transaction
-   * @returns acknowledgement string
-   */
-  executeTx: (msgs: TypedJson[]) => Promise<string>;
   /** @returns the address of the remote channel */
   getRemoteAddress: () => RemoteIbcAddress;
   /** @returns the address of the local channel */

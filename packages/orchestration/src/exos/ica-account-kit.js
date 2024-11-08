@@ -33,7 +33,6 @@ export const IcaAccountI = M.interface('IcaAccount', {
   getLocalAddress: M.call().returns(M.string()),
   getRemoteAddress: M.call().returns(M.string()),
   getPort: M.call().returns(M.remotable('Port')),
-  executeTx: M.call(M.arrayOf(M.record())).returns(VowShape),
   executeEncodedTx: M.call(M.arrayOf(Proto3Shape))
     .optional(TxBodyOptsShape)
     .returns(VowShape),
@@ -122,9 +121,6 @@ export const prepareIcaAccountKit = (zone, { watch, asVow }) =>
         },
         getPort() {
           return this.state.port;
-        },
-        executeTx() {
-          return asVow(() => Fail`not yet implemented`);
         },
         /**
          * Submit a transaction on behalf of the remote account for execution on

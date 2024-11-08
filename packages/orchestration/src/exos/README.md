@@ -27,7 +27,6 @@ classDiagram
       getLocalAddress()
       getRemoteAddress()
       getPort()
-      executeTx()
       executeEncodedTx()
       deactivate()
       reactivate()
