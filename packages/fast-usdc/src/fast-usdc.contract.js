@@ -4,6 +4,7 @@ import { M } from '@endo/patterns';
 import { assertAllDefined } from '@agoric/internal';
 import { AssetKind } from '@agoric/ertp';
 import { provideSingleton } from '@agoric/zoe/src/contractSupport/durability.js';
+import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/recorder.js';
 import { prepareTransactionFeed } from './exos/transaction-feed.js';
 import { prepareSettler } from './exos/settler.js';
 import { prepareAdvancer } from './exos/advancer.js';
@@ -43,13 +44,21 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
   const terms = zcf.getTerms();
   assert('USDC' in terms.brands, 'no USDC brand');
 
+  const { makeRecorderKit } = prepareRecorderKitMakers(
+    zone.mapStore('vstorage'),
+    privateArgs.marshaller,
+  );
+
   const statusManager = prepareStatusManager(zone);
   const feed = prepareTransactionFeed(zone);
   const settler = prepareSettler(zone, { statusManager });
   const advancer = prepareAdvancer(zone, { feed, statusManager });
-  const makeLiquidityPoolKit = prepareLiquidityPoolKit(zone, zcf, {
-    USDC: terms.brands.USDC,
-  });
+  const makeLiquidityPoolKit = prepareLiquidityPoolKit(
+    zone,
+    zcf,
+    { USDC: terms.brands.USDC },
+    { makeRecorderKit },
+  );
   assertAllDefined({ feed, settler, advancer, statusManager });
 
   const creatorFacet = zone.exo('Fast USDC Creator', undefined, {
@@ -70,7 +79,8 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
       }),
   );
   const poolKit = zone.makeOnce('Liquidity Pool kit', () =>
-    makeLiquidityPoolKit(shareMint),
+    // @ts-expect-error makeLiquidityPoolKit isn't up to speed on Remote<>
+    makeLiquidityPoolKit(shareMint, privateArgs.storageNode),
   );
 
   return harden({ creatorFacet, publicFacet: poolKit.public });
