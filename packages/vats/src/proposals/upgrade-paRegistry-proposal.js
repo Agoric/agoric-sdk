@@ -4,15 +4,7 @@ import { AmountMath } from '@agoric/ertp';
 import { Stable } from '@agoric/internal/src/tokens.js';
 
 /**
- * @param {BootstrapPowers & {
- *   consume: {
- *     vatAdminSvc: VatAdminSvc;
- *     vatStore: MapStore<
- *       string,
- *       import('@agoric/swingset-vat').CreateVatResults
- *     >;
- *   };
- * }} powers
+ * @param {BootstrapPowers} powers
  * @param {object} options
  * @param {{ registryRef: VatSourceRef }} options.options
  */
@@ -54,7 +46,7 @@ export const getManifestForUpgradingRegistry = (_powers, { registryRef }) => ({
         agoricNames: par,
         vatAdminSvc: par,
         vatStore: par,
-        priceAuthority: 'par',
+        priceAuthority: par,
       },
       brand: { consume: { [Stable.symbol]: par } },
     },
