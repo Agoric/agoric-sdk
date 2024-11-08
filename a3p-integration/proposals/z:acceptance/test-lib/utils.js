@@ -1,7 +1,15 @@
-import { makeAgd, agops, agoric } from '@agoric/synthetic-chain';
-import { execFileSync } from 'node:child_process';
+/* eslint-env node */
+import { makeStargateClient, makeVstorageKit } from '@agoric/client-utils';
 import { readFile, writeFile } from 'node:fs/promises';
-import { boardSlottingMarshaller, makeFromBoard } from './rpc.js';
+import { networkConfig } from './rpc.js';
+
+export const stargateClientP = makeStargateClient(networkConfig, { fetch });
+export const vstorageKitP = makeVstorageKit({ fetch }, networkConfig);
+
+/**
+ * @import {WalletUtils} from '@agoric/client-utils';
+ * @import {CurrentWalletRecord} from '@agoric/smart-wallet/src/smartWallet.js';
+ */
 
 /**
  * @param {string} fileName base file name without .tjs extension
@@ -15,24 +23,17 @@ export const replaceTemplateValuesInFile = async (fileName, replacements) => {
   await writeFile(`${fileName}.js`, script);
 };
 
-const showAndExec = (file, args, opts) => {
-  console.log('$', file, ...args);
-  return execFileSync(file, args, opts);
-};
-
-// @ts-expect-error string is not assignable to Buffer
-export const agd = makeAgd({ execFileSync: showAndExec }).withOpts({
-  keyringBackend: 'test',
-});
-
+// FIXME this return type depends on its arguments in surprising ways
 /**
  * @param {string[]} addresses
  * @param {string} [targetDenom]
+ * @returns {Promise<any>}
  */
 export const getBalances = async (addresses, targetDenom = undefined) => {
+  const client = await stargateClientP;
   const balancesList = await Promise.all(
     addresses.map(async address => {
-      const { balances } = await agd.query(['bank', 'balances', address]);
+      const balances = await client.getAllBalances(address);
 
       if (targetDenom) {
         const balance = balances.find(({ denom }) => denom === targetDenom);
@@ -46,8 +47,27 @@ export const getBalances = async (addresses, targetDenom = undefined) => {
   return addresses.length === 1 ? balancesList[0] : balancesList;
 };
 
-export const agopsVaults = addr => agops.vaults('list', '--from', addr);
+// TODO move this out of testing. To inter-protocol?
+// "vaults" is an Inter thing, but vstorage shape is a full chain (client) thing
+// Maybe a plugin architecture where the truth is in inter-protocol and the
+// client-lib rolls up the exports of many packages?
+/**
+ * @param {string} addr
+ * @param {WalletUtils} walletUtils
+ * @returns {Promise<string[]>}
+ */
+export const listVaults = async (addr, { getCurrentWalletRecord }) => {
+  const current = await getCurrentWalletRecord(addr);
+  const vaultStoragePaths = current.offerToPublicSubscriberPaths.map(
+    ([_offerId, pathmap]) => pathmap.vault,
+  );
 
+  return vaultStoragePaths;
+};
+
+/**
+ * @param {{setTimeout: typeof setTimeout}} io
+ */
 export const makeTimerUtils = ({ setTimeout }) => {
   /**
    * Resolve after a delay in milliseconds.
@@ -57,6 +77,7 @@ export const makeTimerUtils = ({ setTimeout }) => {
    */
   const delay = ms => new Promise(resolve => setTimeout(() => resolve(), ms));
 
+  /** @param {number} timestamp */
   const waitUntil = async timestamp => {
     const timeDelta = Math.floor(Date.now() / 1000) - Number(timestamp);
     await delay(timeDelta);
@@ -66,23 +87,4 @@ export const makeTimerUtils = ({ setTimeout }) => {
     delay,
     waitUntil,
   };
-};
-
-const fromBoard = makeFromBoard();
-const marshaller = boardSlottingMarshaller(fromBoard.convertSlotToVal);
-
-export const getAgoricNamesBrands = async () => {
-  const brands = await agoric
-    .follow('-lF', ':published.agoricNames.brand', '-o', 'text')
-    .then(res => Object.fromEntries(marshaller.fromCapData(JSON.parse(res))));
-
-  return brands;
-};
-
-export const getAgoricNamesInstances = async () => {
-  const instances = await agoric
-    .follow('-lF', ':published.agoricNames.instance', '-o', 'text')
-    .then(res => Object.fromEntries(marshaller.fromCapData(JSON.parse(res))));
-
-  return instances;
 };

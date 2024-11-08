@@ -1,4 +1,3 @@
-/* eslint-disable @jessie.js/safe-await-separator */
 /* eslint-env node */
 
 import { strict as assert } from 'node:assert';
@@ -57,7 +56,13 @@ const voteForNewParams = (accounts: string[], position: number) => {
   console.log('ACTIONS voting for position', position, 'using', accounts);
   return Promise.all(
     accounts.map((account: string) =>
-      agops.ec('vote', '--forPosition', position, '--send-from', account),
+      agops.ec(
+        'vote',
+        '--forPosition',
+        String(position),
+        '--send-from',
+        account,
+      ),
     ),
   );
 };

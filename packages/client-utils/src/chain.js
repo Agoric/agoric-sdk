@@ -1,20 +1,6 @@
 /**
- * @import {MinimalNetworkConfig} from '@agoric/client-utils';
+ * @import {StargateClient} from '@cosmjs/stargate';
  */
-
-import { StargateClient } from '@cosmjs/stargate';
-import { makeTendermint34Client, pickEndpoint } from './rpc.js';
-
-/**
- * @param {MinimalNetworkConfig} config
- * @param {{ fetch: typeof window.fetch }} io
- * @returns {Promise<StargateClient>}
- */
-export const makeStargateClient = async (config, { fetch }) => {
-  const url = pickEndpoint(config);
-  const tm = await makeTendermint34Client(url, { fetch });
-  return StargateClient.create(tm);
-};
 
 /**
  * @param {{

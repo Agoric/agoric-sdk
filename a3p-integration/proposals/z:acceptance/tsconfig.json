@@ -9,6 +9,7 @@
     "strict": false,
     "strictNullChecks": true,
     "noImplicitThis": true,
+    "noImplicitAny": true,
     // XXX synthetic-chain has some errors
     "skipLibCheck": true
   }

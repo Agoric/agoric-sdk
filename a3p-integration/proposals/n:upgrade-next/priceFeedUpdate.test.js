@@ -83,6 +83,7 @@ const openMarginalVault = async t => {
   const currentVaults = await agops.vaults('list', '--from', USER1ADDR);
 
   t.log('opening a vault');
+  // @ts-expect-error bad typedef
   await openVault(USER1ADDR, 5, 10);
   user1IST += 5;
   const istBalanceAfterVaultOpen = await getISTBalance(USER1ADDR);

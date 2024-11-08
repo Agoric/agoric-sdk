@@ -1,21 +1,26 @@
 import { agops, agoric, executeOffer } from '@agoric/synthetic-chain';
-import { makeRpcUtils } from './rpc.js';
+import { makeVstorageKit } from '@agoric/client-utils';
 
+/**
+ * @param {typeof window.fetch} fetch
+ * @param {import('@agoric/client-utils').MinimalNetworkConfig} networkConfig
+ */
 export const makeGovernanceDriver = async (fetch, networkConfig) => {
-  const { readLatestHead, marshaller } = await makeRpcUtils(
+  const { readLatestHead, marshaller } = await makeVstorageKit(
     { fetch },
     networkConfig,
   );
 
+  /** @param {string} previousOfferId */
   const generateVoteOffer = async previousOfferId => {
     const id = `propose-${Date.now()}`;
 
-    /**
-     * @type {object}
-     */
-    const latestQuestionRecord = await readLatestHead(
-      'published.committees.Economic_Committee.latestQuestion',
-    );
+    const latestQuestionRecord =
+      /** @type {import('@agoric/governance/src/types.js').QuestionSpec} */ (
+        await readLatestHead(
+          'published.committees.Economic_Committee.latestQuestion',
+        )
+      );
 
     const chosenPositions = [latestQuestionRecord.positions[0]];
     const body = {
@@ -28,6 +33,7 @@ export const makeGovernanceDriver = async (fetch, networkConfig) => {
           source: 'continuing',
           invitationArgs: harden([
             chosenPositions,
+            // @ts-expect-error narrowing
             latestQuestionRecord.questionHandle,
           ]),
         },
@@ -39,7 +45,10 @@ export const makeGovernanceDriver = async (fetch, networkConfig) => {
     return JSON.stringify(capData);
   };
 
-  const voteOnProposedChanges = async (address, committeeAcceptOfferId) => {
+  const voteOnProposedChanges = async (
+    /** @type {string} */ address,
+    /** @type {string} */ committeeAcceptOfferId,
+  ) => {
     await null;
     const offerId =
       committeeAcceptOfferId ||
@@ -54,6 +63,18 @@ export const makeGovernanceDriver = async (fetch, networkConfig) => {
     return executeOffer(address, generateVoteOffer(offerId));
   };
 
+  /**
+   * Generates a vault director parameter change proposal as a `executeOffer` message
+   * body.
+   *
+   * @param {string} previousOfferId - the `id` of the offer that this proposal is
+   *   responding to
+   * @param {string | number | bigint | boolean} voteDur - how long the vote should
+   *   be open for (in seconds)
+   * @param {any} params
+   * @param {{ paramPath: any; }} paramsPath
+   * @returns {Promise<string>} - the `executeOffer` message body as a JSON string
+   */
   const generateVaultDirectorParamChange = async (
     previousOfferId,
     voteDur,
@@ -61,7 +82,7 @@ export const makeGovernanceDriver = async (fetch, networkConfig) => {
     paramsPath,
   ) => {
     const voteDurSec = BigInt(voteDur);
-    const toSec = ms => BigInt(Math.round(ms / 1000));
+    const toSec = (/** @type {number} */ ms) => BigInt(Math.round(ms / 1000));
 
     const id = `propose-${Date.now()}`;
     const deadline = toSec(Date.now()) + voteDurSec;
@@ -98,6 +119,13 @@ export const makeGovernanceDriver = async (fetch, networkConfig) => {
     return JSON.stringify(capData);
   };
 
+  /**
+   *
+   * @param {string} address
+   * @param {any} params
+   * @param {{paramPath: any}} path
+   * @param {string} charterAcceptOfferId
+   */
   const proposeVaultDirectorParamChange = async (
     address,
     params,

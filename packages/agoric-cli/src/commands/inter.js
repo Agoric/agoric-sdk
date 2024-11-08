@@ -4,21 +4,20 @@
  */
 
 // @ts-check
-import { CommanderError, InvalidArgumentError } from 'commander';
 import { makeWalletUtils } from '@agoric/client-utils';
 import { makeOfferSpecShape } from '@agoric/inter-protocol/src/auction/auctionBook.js';
 import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
 import { objectMap } from '@agoric/internal';
 import { M, matches } from '@endo/patterns';
-
+import { CommanderError, InvalidArgumentError } from 'commander';
 import { normalizeAddressWithOptions, pollBlocks } from '../lib/chain.js';
-import { getNetworkConfig } from '../lib/network-config.js';
 import { getCurrent, outputActionAndHint, sendAction } from '../lib/wallet.js';
 import {
   asBoardRemote,
-  makeAmountFormatter,
   bigintReplacer,
+  makeAmountFormatter,
 } from '../lib/format.js';
+import { getNetworkConfig } from '../lib/network-config.js';
 
 const { values } = Object;
 
