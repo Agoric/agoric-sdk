@@ -1,13 +1,24 @@
 /**
  * @import {Zone} from '@agoric/zone';
- * @import {USDCProposalShapes} from '../pool-share-math.js'
+ * @import {TypedPattern} from '@agoric/internal'
+ * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js'
+ * @import {MakeRecorderKit} from '@agoric/zoe/src/contractSupport/recorder.js'
+ * @import {USDCProposalShapes, ShareWorth} from '../pool-share-math.js'
  */
 
 import { AmountMath } from '@agoric/ertp/src/amountMath.js';
-import { AmountShape, PaymentShape } from '@agoric/ertp/src/typeGuards.js';
+import {
+  AmountShape,
+  PaymentShape,
+  RatioShape,
+} from '@agoric/ertp/src/typeGuards.js';
 import { depositToSeat } from '@agoric/zoe/src/contractSupport/zoeHelpers.js';
 import { SeatShape } from '@agoric/zoe/src/typeGuards.js';
 import { M } from '@endo/patterns';
+import {
+  makeRecorderTopic,
+  TopicsRecordShape,
+} from '@agoric/zoe/src/contractSupport/topics.js';
 import {
   deposit as depositCalc,
   makeParity,
@@ -20,36 +31,57 @@ import { makeProposalShapes } from '../type-guards.js';
  * @param {Zone} zone
  * @param {ZCF} zcf
  * @param {Record<'USDC', Brand<'nat'>>} brands
+ * @param {{
+ *   makeRecorderKit: MakeRecorderKit;
+ * }} tools
  */
-export const prepareLiquidityPoolKit = (zone, zcf, brands) => {
+export const prepareLiquidityPoolKit = (zone, zcf, brands, tools) => {
   return zone.exoClassKit(
     'Fast Liquidity Pool',
     {
       feeSink: M.interface('feeSink', {
         receive: M.call(AmountShape, PaymentShape).returns(M.promise()),
       }),
+      external: M.interface('external', {
+        setShareWorth: M.call(RatioShape).returns(M.promise()),
+      }),
       depositHandler: M.interface('depositHandler', {
-        handle: M.call(SeatShape, M.any()).returns(undefined),
+        handle: M.call(SeatShape, M.any()).returns(M.promise()),
       }),
       withdrawHandler: M.interface('withdrawHandler', {
-        handle: M.call(SeatShape, M.any()).returns(undefined),
+        handle: M.call(SeatShape, M.any()).returns(M.promise()),
       }),
       public: M.interface('public', {
         makeDepositInvitation: M.call().returns(M.promise()),
         makeWithdrawInvitation: M.call().returns(M.promise()),
+        getPublicTopics: M.call().returns(TopicsRecordShape),
       }),
     },
     /**
      * @param {ZCFMint<'nat'>} shareMint
+     * @param {import('@agoric/internal/src/lib-chainStorage.js').StorageNode} node
      */
-    shareMint => {
+    (shareMint, node) => {
       const { brand: PoolShares } = shareMint.getIssuerRecord();
       const { USDC } = brands;
       const proposalShapes = makeProposalShapes({ USDC, PoolShares });
       const dust = AmountMath.make(USDC, 1n);
       const shareWorth = makeParity(dust, PoolShares);
       const { zcfSeat: poolSeat } = zcf.makeEmptySeatKit();
-      return { shareMint, shareWorth, poolSeat, PoolShares, proposalShapes };
+      const shareWorthRecorderKit = tools.makeRecorderKit(
+        node,
+        /** @type {import('@agoric/internal').TypedPattern<ShareWorth>} */ (
+          RatioShape
+        ),
+      );
+      return {
+        shareMint,
+        shareWorth,
+        poolSeat,
+        PoolShares,
+        proposalShapes,
+        shareWorthRecorderKit,
+      };
     },
     {
       feeSink: {
@@ -59,20 +91,32 @@ export const prepareLiquidityPoolKit = (zone, zcf, brands) => {
          */
         async receive(amount, payment) {
           const { poolSeat, shareWorth } = this.state;
+          const { external } = this.facets;
           await depositToSeat(
             zcf,
             poolSeat,
             harden({ USDC: amount }),
             harden({ USDC: payment }),
           );
-          this.state.shareWorth = withFees(shareWorth, amount);
+          await external.setShareWorth(withFees(shareWorth, amount));
+        },
+      },
+
+      external: {
+        /** @param {ShareWorth} shareWorth */
+        async setShareWorth(shareWorth) {
+          const { recorder } = this.state.shareWorthRecorderKit;
+          this.state.shareWorth = shareWorth;
+          await recorder.write(shareWorth);
         },
       },
 
       depositHandler: {
         /** @param {ZCFSeat} lp */
-        handle(lp) {
+        async handle(lp) {
           const { shareWorth, shareMint, poolSeat } = this.state;
+          const { external } = this.facets;
+
           /** @type {USDCProposalShapes['deposit']} */
           // @ts-expect-error ensured by proposalShape
           const proposal = lp.getProposal();
@@ -85,15 +129,17 @@ export const prepareLiquidityPoolKit = (zone, zcf, brands) => {
               [mint, lp, post.payouts],
             ]),
           );
-          this.state.shareWorth = post.shareWorth;
           lp.exit();
           mint.exit();
+          await external.setShareWorth(post.shareWorth);
         },
       },
       withdrawHandler: {
         /** @param {ZCFSeat} lp */
-        handle(lp) {
+        async handle(lp) {
           const { shareWorth, shareMint, poolSeat } = this.state;
+          const { external } = this.facets;
+
           /** @type {USDCProposalShapes['withdraw']} */
           // @ts-expect-error ensured by proposalShape
           const proposal = lp.getProposal();
@@ -107,9 +153,9 @@ export const prepareLiquidityPoolKit = (zone, zcf, brands) => {
             ]),
           );
           shareMint.burnLosses(proposal.give, burn);
-          this.state.shareWorth = post.shareWorth;
           lp.exit();
           burn.exit();
+          await external.setShareWorth(post.shareWorth);
         },
       },
       public: {
@@ -123,6 +169,17 @@ export const prepareLiquidityPoolKit = (zone, zcf, brands) => {
           const { withdraw: shape } = this.state.proposalShapes;
           return zcf.makeInvitation(handler, 'Withdraw', undefined, shape);
         },
+        getPublicTopics() {
+          const { shareWorthRecorderKit } = this.state;
+          return {
+            shareWorth: makeRecorderTopic('shareWorth', shareWorthRecorderKit),
+          };
+        },
+      },
+    },
+    {
+      finish: ({ state: { shareWorth }, facets: { external } }) => {
+        void external.setShareWorth(shareWorth);
       },
     },
   );
