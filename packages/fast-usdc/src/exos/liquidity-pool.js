@@ -59,7 +59,7 @@ export const prepareLiquidityPoolKit = (zone, zcf, brands, tools) => {
     },
     /**
      * @param {ZCFMint<'nat'>} shareMint
-     * @param {import('@agoric/internal/src/lib-chainStorage.js').StorageNode} node
+     * @param {StorageNode} node
      */
     (shareMint, node) => {
       const { brand: PoolShares } = shareMint.getIssuerRecord();
@@ -70,9 +70,7 @@ export const prepareLiquidityPoolKit = (zone, zcf, brands, tools) => {
       const { zcfSeat: poolSeat } = zcf.makeEmptySeatKit();
       const shareWorthRecorderKit = tools.makeRecorderKit(
         node,
-        /** @type {import('@agoric/internal').TypedPattern<ShareWorth>} */ (
-          RatioShape
-        ),
+        /** @type {TypedPattern<ShareWorth>} */ (RatioShape),
       );
       return {
         shareMint,
