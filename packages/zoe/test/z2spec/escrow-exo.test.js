@@ -9,7 +9,7 @@ import { prepareEscrowExchange } from '../../src/z2spec/escrow-exo.js';
 
 test('escrowExchange in heap zone', async t => {
   const z1 = makeHeapZone();
-  const makeEscrowExchange = prepareEscrowExchange(z1);
+  const { makeEscrowExchange } = prepareEscrowExchange(z1);
   const kit = {
     Money: makeDurableIssuerKit(z1.mapStore('MB'), 'Money'),
     Stock: makeDurableIssuerKit(z1.mapStore('SB'), 'Stock'),
@@ -57,8 +57,9 @@ test('escrowExchange in heap zone', async t => {
   const ex1 = makeEscrowExchange({ a: a.detail, b: b.detail }, issuers);
   {
     const actual = ex1.run();
-    await t.notThrowsAsync(actual.escrowed);
-    await t.notThrowsAsync(actual.paid);
+    await t.notThrowsAsync(
+      Promise.all([actual.escrowed, actual.paid, actual.deposited]),
+    );
   }
 
   {
