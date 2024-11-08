@@ -52,7 +52,8 @@ import { makeQueue, makeQueueStorageMock } from './helpers/make-queue.js';
 import { exportStorage } from './export-storage.js';
 import { parseLocatedJson } from './helpers/json.js';
 
-/** @import {RunPolicy} from '@agoric/swingset-vat' */
+/** @import { Mailbox, RunPolicy, SwingSetConfig } from '@agoric/swingset-vat' */
+/** @import { KVStore } from './helpers/bufferedStorage.js' */
 
 const console = anylogger('launch-chain');
 const blockManagerConsole = anylogger('block-manager');
@@ -74,8 +75,6 @@ const parseUpgradePlanInfo = (upgradePlan, prefix = '') => {
   return harden(upgradePlanInfo || {});
 };
 
-/** @import {SwingSetConfig} from '@agoric/swingset-vat' */
-
 /**
  * @typedef {object} CosmicSwingsetConfig
  * @property {import('@agoric/deploy-script-support/src/extract-proposal.js').ConfigProposal[]} [coreProposals]
@@ -96,7 +95,7 @@ const parseUpgradePlanInfo = (upgradePlan, prefix = '') => {
 const getHostKey = path => `host.${path}`;
 
 /**
- * @param {Map<*, *>} mailboxStorage
+ * @param {KVStore<Mailbox>} mailboxStorage
  * @param {((dstID: string, obj: any) => any)} bridgeOutbound
  * @param {SwingStoreKernelStorage} kernelStorage
  * @param {string | (() => string | Promise<string>)} vatconfig absolute path or thunk
@@ -216,7 +215,7 @@ export async function buildSwingset(
   }
 
   const pendingCoreProposals = await ensureSwingsetInitialized();
-  upgradeSwingset(kernelStorage);
+  const { modified } = upgradeSwingset(kernelStorage);
   const controller = await makeSwingsetController(
     kernelStorage,
     deviceEndowments,
@@ -237,6 +236,7 @@ export async function buildSwingset(
   return {
     coreProposals: pendingCoreProposals,
     controller,
+    kernelHasUpgradeEvents: modified,
     mb: mailboxDevice,
     bridgeInbound: bridgeDevice.deliverInbound,
     timer: timerDevice,
@@ -409,6 +409,7 @@ export async function launch({
   const {
     coreProposals: bootstrapCoreProposals,
     controller,
+    kernelHasUpgradeEvents,
     mb,
     bridgeInbound,
     timer,
@@ -511,6 +512,14 @@ export async function launch({
     await commit();
   }
 
+  async function doKernelUpgradeEvents(inboundNum) {
+    controller.writeSlogObject({
+      type: 'cosmic-swingset-inject-kernel-upgrade-events',
+      inboundNum,
+    });
+    controller.injectQueuedUpgradeEvents();
+  }
+
   async function deliverInbound(sender, messages, ack, inboundNum) {
     Array.isArray(messages) || Fail`inbound given non-Array: ${messages}`;
     controller.writeSlogObject({
@@ -518,6 +527,8 @@ export async function launch({
       inboundNum,
       sender,
       count: messages.length,
+      messages,
+      ack,
     });
     if (!mb.deliverInbound(sender, messages, ack)) {
       return;
@@ -530,6 +541,7 @@ export async function launch({
       type: 'cosmic-swingset-bridge-inbound',
       inboundNum,
       source,
+      body,
     });
     if (!bridgeInbound) throw Fail`bridgeInbound undefined`;
     // console.log(`doBridgeInbound`);
@@ -538,7 +550,7 @@ export async function launch({
     bridgeInbound(source, body);
   }
 
-  async function installBundle(bundleJson) {
+  async function installBundle(bundleJson, inboundNum) {
     let bundle;
     try {
       bundle = JSON.parse(bundleJson);
@@ -554,6 +566,13 @@ export async function launch({
     );
 
     const { endoZipBase64Sha512 } = bundle;
+
+    controller.writeSlogObject({
+      type: 'cosmic-swingset-install-bundle',
+      inboundNum,
+      endoZipBase64Sha512,
+      error,
+    });
 
     if (installationPublisher === undefined) {
       return;
@@ -630,8 +649,13 @@ export async function launch({
         break;
       }
 
+      case ActionType.KERNEL_UPGRADE_EVENTS: {
+        p = doKernelUpgradeEvents(inboundNum);
+        break;
+      }
+
       case ActionType.INSTALL_BUNDLE: {
-        p = installBundle(action.bundle);
+        p = installBundle(action.bundle, inboundNum);
         break;
       }
 
@@ -700,6 +724,12 @@ export async function launch({
     // Then, update the timer device with the new external time, which might
     // push work onto the kernel run-queue (if any timers were ready to wake).
     const addedToQueue = timer.poll(blockTime);
+    controller.writeSlogObject({
+      type: 'cosmic-swingset-timer-poll',
+      blockHeight,
+      blockTime,
+      added: addedToQueue,
+    });
     console.debug(
       `polled; blockTime:${blockTime}, h:${blockHeight}; ADDED =`,
       addedToQueue,
@@ -933,6 +963,22 @@ export async function launch({
         if (isBootstrap) {
           // This only runs for the very first block on the chain.
           await doBootstrap(action);
+        }
+
+        // The reboot-time upgradeSwingset() may have generated some
+        // remediation events that need to be injected at the right
+        // time (after catchup, before proposals). Push them onto
+        // runThisBlock before anything else goes there.
+        if (kernelHasUpgradeEvents) {
+          isBootstrap ||
+            upgradeDetails ||
+            Fail`Unexpected kernel upgrade events outside of consensus start`;
+          const txHash = 'x/kernel-upgrade-events';
+          const context = { blockHeight, txHash, msgIdx: 0 };
+          runThisBlock.push({
+            action: { type: ActionType.KERNEL_UPGRADE_EVENTS },
+            context,
+          });
         }
 
         // Concatenate together any pending core proposals from chain bootstrap

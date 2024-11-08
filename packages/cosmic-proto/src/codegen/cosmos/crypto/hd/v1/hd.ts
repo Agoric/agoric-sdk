@@ -1,7 +1,7 @@
 //@ts-nocheck
 import { BinaryReader, BinaryWriter } from '../../../../binary.js';
 import { isSet } from '../../../../helpers.js';
-import { JsonSafe } from '../../../../json-safe.js';
+import { type JsonSafe } from '../../../../json-safe.js';
 /** BIP44Params is used as path field in ledger item in Record. */
 export interface BIP44Params {
   /** purpose is a constant set to 44' (or 0x8000002C) following the BIP43 recommendation */

@@ -1,25 +1,25 @@
 //@ts-nocheck
 import {
   Duration,
-  DurationSDKType,
+  type DurationSDKType,
 } from '../../../../google/protobuf/duration.js';
-import { Height, HeightSDKType } from '../../../core/client/v1/client.js';
-import { ProofSpec, ProofSpecSDKType } from '../../../../proofs.js';
+import { Height, type HeightSDKType } from '../../../core/client/v1/client.js';
+import { ProofSpec, type ProofSpecSDKType } from '../../../../proofs.js';
 import {
   Timestamp,
-  TimestampSDKType,
+  type TimestampSDKType,
 } from '../../../../google/protobuf/timestamp.js';
 import {
   MerkleRoot,
-  MerkleRootSDKType,
+  type MerkleRootSDKType,
 } from '../../../core/commitment/v1/commitment.js';
 import {
   SignedHeader,
-  SignedHeaderSDKType,
+  type SignedHeaderSDKType,
 } from '../../../../tendermint/types/types.js';
 import {
   ValidatorSet,
-  ValidatorSetSDKType,
+  type ValidatorSetSDKType,
 } from '../../../../tendermint/types/validator.js';
 import { BinaryReader, BinaryWriter } from '../../../../binary.js';
 import {
@@ -29,7 +29,7 @@ import {
   fromTimestamp,
   base64FromBytes,
 } from '../../../../helpers.js';
-import { JsonSafe } from '../../../../json-safe.js';
+import { type JsonSafe } from '../../../../json-safe.js';
 /**
  * ClientState from Tendermint tracks the current validator set, latest height,
  * and a possible frozen height.

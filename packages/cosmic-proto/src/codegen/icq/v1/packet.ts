@@ -1,13 +1,13 @@
 //@ts-nocheck
 import {
   RequestQuery,
-  RequestQuerySDKType,
+  type RequestQuerySDKType,
   ResponseQuery,
-  ResponseQuerySDKType,
+  type ResponseQuerySDKType,
 } from '../../tendermint/abci/types.js';
 import { BinaryReader, BinaryWriter } from '../../binary.js';
 import { isSet, bytesFromBase64, base64FromBytes } from '../../helpers.js';
-import { JsonSafe } from '../../json-safe.js';
+import { type JsonSafe } from '../../json-safe.js';
 /** InterchainQueryPacketData is comprised of raw query. */
 export interface InterchainQueryPacketData {
   data: Uint8Array;

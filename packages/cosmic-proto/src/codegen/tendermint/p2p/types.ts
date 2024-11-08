@@ -1,7 +1,7 @@
 //@ts-nocheck
 import {
   Timestamp,
-  TimestampSDKType,
+  type TimestampSDKType,
 } from '../../google/protobuf/timestamp.js';
 import { BinaryReader, BinaryWriter } from '../../binary.js';
 import {
@@ -11,7 +11,7 @@ import {
   fromJsonTimestamp,
   fromTimestamp,
 } from '../../helpers.js';
-import { JsonSafe } from '../../json-safe.js';
+import { type JsonSafe } from '../../json-safe.js';
 export interface ProtocolVersion {
   p2p: bigint;
   block: bigint;

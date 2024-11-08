@@ -6,7 +6,7 @@ import type {
   KindFacet,
   FunctionsPlusContext,
 } from '@agoric/swingset-liveslots';
-import { VirtualObjectManager } from '@agoric/swingset-liveslots/src/virtualObjectManager.js';
+import type { VirtualObjectManager } from '@agoric/swingset-liveslots/src/virtualObjectManager.js';
 import {
   defineKind,
   defineKindMulti,

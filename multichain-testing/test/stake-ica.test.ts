@@ -2,7 +2,7 @@ import anyTest from '@endo/ses-ava/prepare-endo.js';
 import type { TestFn } from 'ava';
 import {
   commonSetup,
-  SetupContextWithWallets,
+  type SetupContextWithWallets,
   FAUCET_POUR,
 } from './support.js';
 import { makeDoOffer } from '../tools/e2e-tools.js';

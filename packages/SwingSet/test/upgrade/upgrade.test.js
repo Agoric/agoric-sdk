@@ -363,6 +363,11 @@ const testUpgrade = async (t, defaultManagerType, options = {}) => {
   // grab the promises that should be rejected
   const v1p1Kref = verifyPresence(v1result.p1);
   const v1p2Kref = verifyPresence(v1result.p2);
+  const v1p1wKref = verifyPresence(v1result.p1w);
+  const v1p2wKref = verifyPresence(v1result.p2w);
+  const v1p3Kref = verifyPresence(v1result.p3);
+  c.kpRegisterInterest(v1p1wKref);
+  c.kpRegisterInterest(v1p2wKref);
   // grab krefs for the exported durable/virtual objects to check their abandonment
   const retainedKrefs = objectMap(v1result.retain, obj => verifyPresence(obj));
   const retainedNames = 'dur1 vir2 vir5 vir7 vc1 vc3 dc4 rem1 rem2 rem3'.split(
@@ -461,16 +466,34 @@ const testUpgrade = async (t, defaultManagerType, options = {}) => {
   const newDurKref = verifyPresence(v2result.newDur);
   t.not(newDurKref, dur1Kref);
 
-  // the old version's non-durable promises should be rejected
-  t.is(c.kpStatus(v1p1Kref), 'rejected');
+  // The old version's non-durable promises should be rejected. The
+  // original kpids will be GCed. Bug #9039 failed to GC them.
+  t.is(kvStore.get(`${v1p1Kref}.refCount`), undefined);
+  t.is(kvStore.get(`${v1p2Kref}.refCount`), undefined);
+  t.is(kvStore.get(`${vatID}.c.${v1p1Kref}`), undefined);
+  t.is(kvStore.get(`${vatID}.c.${v1p2Kref}`), undefined);
+  t.is(kvStore.get(`${v1p1Kref}.state`), undefined);
+  t.is(kvStore.get(`${v1p2Kref}.state`), undefined);
+  // but vat-bootstrap wraps them (with Promise.all() so we can
+  // examine their rejection data.
+  t.is(c.kpStatus(v1p1wKref), 'rejected');
   const vatUpgradedError = {
     name: 'vatUpgraded',
     upgradeMessage: 'test upgrade',
     incarnationNumber: 0,
   };
-  t.deepEqual(kunser(c.kpResolution(v1p1Kref)), vatUpgradedError);
-  t.is(c.kpStatus(v1p2Kref), 'rejected');
-  t.deepEqual(kunser(c.kpResolution(v1p2Kref)), vatUpgradedError);
+  t.deepEqual(kunser(c.kpResolution(v1p1wKref)), vatUpgradedError);
+  t.is(c.kpStatus(v1p2wKref), 'rejected');
+  t.deepEqual(kunser(c.kpResolution(v1p2wKref)), vatUpgradedError);
+
+  // The local-promise watcher should have fired. If vat-upgrade is
+  // too aggressive about removing c-list entries (i.e. it doesn't
+  // check for self-subscription first), the kernel-provoked
+  // dispatch.notify won't be delivered, and the new incarnation won't
+  // fire the durable watcher.
+  t.deepEqual(v2result.watcherResult, ['reject', vatUpgradedError]);
+  // and the promise it was watching should be GCed
+  t.is(kvStore.get(`${v1p3Kref}.refCount`), undefined);
 
   // verify export abandonment/garbage collection/etc.
   // This used to be MUCH more extensive, but GC was cut to the bone
@@ -929,4 +952,70 @@ test('failed vatAdmin upgrade - bad replacement code', async t => {
   const v1result = await messageToVat('bootstrap', 'buildV1');
   // Just a taste to verify that the create went right; other tests check the rest
   t.deepEqual(v1result.data, ['some', 'data']);
+});
+
+test('vat upgrade retains vatParameters', async t => {
+  const config = makeConfigFromPaths('bootstrap-scripted-upgrade.js', {
+    defaultManagerType: 'xs-worker',
+    defaultReapInterval: 'never',
+    bundlePaths: {
+      ulrik1: 'vat-ulrik-1.js',
+      ulrik2: 'vat-ulrik-2.js',
+    },
+  });
+  const kft = await initKernelForTest(t, t.context.data, config);
+  const { controller: c, kvStore } = kft;
+
+  // create initial version
+  const kpid1 = c.queueToVatRoot('bootstrap', 'buildV1WithVatParameters', []);
+  await c.run();
+  // incref=false to keep it from adding a refcount to the marker
+  const params1 = kunser(c.kpResolution(kpid1, { incref: false }));
+  // Free kpid1, else it will hold an extra refcount on the
+  // marker. The c.kpResolution() decremented the kpid1 refcount to 0,
+  // but we need to provoke a call to processRefcounts(), which only
+  // happens at end-of-crank
+  c.queueToVatRoot('bootstrap', 'nop', []);
+  // BOYD to get vat-admin to drop it's copy of the marker
+  c.reapAllVats();
+  await c.run();
+
+  t.is(params1.number, 1);
+  const marker = params1.marker;
+  t.deepEqual(params1, { number: 1, marker });
+  const kref = marker.getKref();
+
+  // confirm the vatParameters were recorded in kvStore
+  const vatID = JSON.parse(kvStore.get('vat.dynamicIDs'))[0];
+  const vp1cd = kvStore.get(`${vatID}.vatParameters`);
+  const vp1 = kunser(JSON.parse(vp1cd));
+  t.is(vp1.number, 1);
+  t.is(vp1.marker.getKref(), kref);
+
+  // Ideally, the refcount should be 2: one for the importing vat's
+  // c-list, and a second for the retained vNN.vatParameters. But it
+  // will also get a refcount from device-vat-admin, as a conduit for
+  // the upgrade() call, because devices don't do GC.
+
+  t.is(kvStore.get(`${kref}.refCount`), '3,3');
+
+  // upgrade
+  const kpid2 = c.queueToVatRoot('bootstrap', 'upgradeV2WithVatParameters', []);
+  await c.run();
+  const params2 = kunser(c.kpResolution(kpid2, { incref: false }));
+  c.queueToVatRoot('bootstrap', 'nop', []);
+  c.reapAllVats();
+  await c.run();
+
+  t.is(params2.number, 2);
+  t.is(params2.marker.getKref(), kref);
+  // kvStore should now hold the new vatParameters
+  const vp2cd = kvStore.get(`${vatID}.vatParameters`);
+  const vp2 = kunser(JSON.parse(vp2cd));
+  t.is(vp2.number, 2);
+  t.is(vp2.marker.getKref(), kref);
+
+  // same refcount: the old retained vatParameters should be swapped
+  // out
+  t.is(kvStore.get(`${kref}.refCount`), '3,3');
 });

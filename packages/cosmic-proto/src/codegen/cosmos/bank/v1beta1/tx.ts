@@ -1,9 +1,14 @@
 //@ts-nocheck
-import { Coin, CoinSDKType } from '../../base/v1beta1/coin.js';
-import { Input, InputSDKType, Output, OutputSDKType } from './bank.js';
+import { Coin, type CoinSDKType } from '../../base/v1beta1/coin.js';
+import {
+  Input,
+  type InputSDKType,
+  Output,
+  type OutputSDKType,
+} from './bank.js';
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
 import { isSet } from '../../../helpers.js';
-import { JsonSafe } from '../../../json-safe.js';
+import { type JsonSafe } from '../../../json-safe.js';
 /** MsgSend represents a message to send coins from one account to another. */
 export interface MsgSend {
   fromAddress: string;

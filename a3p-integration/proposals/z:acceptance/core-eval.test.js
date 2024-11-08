@@ -1,4 +1,3 @@
-/* eslint-disable @jessie.js/safe-await-separator */
 import test from 'ava';
 import { readFile, writeFile } from 'node:fs/promises';
 

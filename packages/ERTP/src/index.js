@@ -11,3 +11,6 @@ export * from './typeGuards.js';
  *
  * @import {Baggage} from '@agoric/vat-data'
  */
+
+// eslint-disable-next-line import/export
+export * from './types-index.js';

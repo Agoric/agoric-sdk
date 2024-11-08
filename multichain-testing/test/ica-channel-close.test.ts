@@ -6,7 +6,7 @@ import type { IBCChannelID, IBCPortID } from '@agoric/vats';
 import { makeDoOffer } from '../tools/e2e-tools.js';
 import {
   commonSetup,
-  SetupContextWithWallets,
+  type SetupContextWithWallets,
   chainConfig,
 } from './support.js';
 import { makeQueryClient } from '../tools/query.js';

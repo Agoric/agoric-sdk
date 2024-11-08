@@ -1,5 +1,3 @@
-/* global process */
-
 import { makeHelpers } from '@agoric/deploy-script-support';
 import { getManifestForPriceFeeds } from '@agoric/inter-protocol/src/proposals/deploy-price-feeds.js';
 
@@ -15,7 +13,7 @@ const configurations = {
     ],
     inBrandNames: ['ATOM', 'stATOM'],
   },
-  main: {
+  MAINNET: {
     oracleAddresses: [
       'agoric144rrhh4m09mh7aaffhm6xy223ym76gve2x7y78', // DSRV
       'agoric19d6gnr9fyp6hev4tlrg87zjrzsd5gzr5qlfq2p', // Stakin
@@ -26,7 +24,7 @@ const configurations = {
     inBrandNames: ['ATOM', 'stATOM', 'stOSMO', 'stTIA', 'stkATOM'],
     contractTerms: { minSubmissionCount: 3 },
   },
-  devnet: {
+  DEVNET: {
     oracleAddresses: [
       'agoric1lw4e4aas9q84tq0q92j85rwjjjapf8dmnllnft', // DSRV
       'agoric1zj6vrrrjq4gsyr9lw7dplv4vyejg3p8j2urm82', // Stakin
@@ -36,16 +34,39 @@ const configurations = {
     ],
     inBrandNames: ['ATOM', 'stTIA', 'stkATOM'],
   },
+  EMERYNET: {
+    oracleAddresses: [
+      'agoric1ldmtatp24qlllgxmrsjzcpe20fvlkp448zcuce', // GOV1
+      'agoric140dmkrz2e42ergjj7gyvejhzmjzurvqeq82ang', // GOV2
+    ],
+    inBrandNames: ['ATOM', 'stATOM', 'stOSMO', 'stTIA', 'stkATOM'],
+  },
 };
+
+const { keys } = Object;
+const knownVariants = keys(configurations);
 
 /** @type {import('@agoric/deploy-script-support/src/externalTypes.js').CoreEvalBuilder} */
 export const defaultProposalBuilder = async ({ publishRef, install }, opts) => {
+  const config = opts.config || configurations[opts.variant];
+  if (!config) {
+    const error = `Unknown variant "${opts.variant}". Expected one of ${knownVariants.join(', ')}`;
+    console.error(error);
+    throw Error(error);
+  }
+  const { oracleAddresses, inBrandNames, contractTerms } = config;
+  console.log(
+    'Generating price feeds update proposal with config',
+    JSON.stringify({ oracleAddresses, inBrandNames, contractTerms }),
+  );
   return harden({
     sourceSpec: '@agoric/inter-protocol/src/proposals/deploy-price-feeds.js',
     getManifestCall: [
       getManifestForPriceFeeds.name,
       {
-        ...opts,
+        oracleAddresses,
+        inBrandNames,
+        contractTerms,
         priceAggregatorRef: publishRef(
           install(
             '@agoric/inter-protocol/src/price/fluxAggregatorContract.js',
@@ -63,21 +84,35 @@ export const defaultProposalBuilder = async ({ publishRef, install }, opts) => {
   });
 };
 
-const { keys } = Object;
-const Usage = `agoric run updatePriceFeed.js ${keys(configurations).join(' | ')}`;
+const Usage = `agoric run updatePriceFeeds.js ${[...knownVariants, '<json-config>'].join(' | ')}`;
 
+/** @type {import('@agoric/deploy-script-support/src/externalTypes.js').DeployScriptFunction} */
 export default async (homeP, endowments) => {
   const { scriptArgs } = endowments;
-  const config = configurations[scriptArgs?.[0]];
-  if (!config) {
+  const variantOrConfig = scriptArgs?.[0];
+  console.log('updatePriceFeeds.js', variantOrConfig);
+
+  const opts = {};
+
+  if (typeof variantOrConfig === 'string') {
+    if (variantOrConfig[0] === '{') {
+      try {
+        opts.config = JSON.parse(variantOrConfig);
+      } catch (err) {
+        throw Error(`Failed to parse config argument ${variantOrConfig}`);
+      }
+    } else {
+      opts.variant = variantOrConfig;
+    }
+  } else {
     console.error(Usage);
-    process.exit(1);
+    throw Error(Usage);
   }
-  console.log('UPPrices', scriptArgs, config);
 
   const { writeCoreEval } = await makeHelpers(homeP, endowments);
 
-  await writeCoreEval('gov-price-feeds', (utils, opts) =>
-    defaultProposalBuilder(utils, { ...opts, ...config }),
+  await writeCoreEval(
+    `gov-price-feeds-${opts.variant || 'from-config'}`,
+    utils => defaultProposalBuilder(utils, opts),
   );
 };

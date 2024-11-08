@@ -27,7 +27,9 @@ const dirname = path.dirname(new URL(import.meta.url).pathname);
 const electorateRoot = `${dirname}/../../src/committee.js`;
 const counterRoot = `${dirname}/../../src/binaryVoteCounter.js`;
 
-const setupContract = async () => {
+const setupContract = async (
+  terms = { committeeName: 'illuminati', committeeSize: 13 },
+) => {
   const zoe = makeZoeForTest();
 
   const mockChainStorageRoot = makeMockChainStorageRoot();
@@ -45,7 +47,6 @@ const setupContract = async () => {
     E(zoe).install(electorateBundle),
     E(zoe).install(counterBundle),
   ]);
-  const terms = { committeeName: 'illuminati', committeeSize: 13 };
   const electorateStartResult = await E(zoe).startInstance(
     electorateInstallation,
     {},
@@ -56,7 +57,12 @@ const setupContract = async () => {
     },
   );
 
-  return { counterInstallation, electorateStartResult, mockChainStorageRoot };
+  return {
+    counterInstallation,
+    electorateStartResult,
+    mockChainStorageRoot,
+    zoe,
+  };
 };
 
 test('committee-open no questions', async t => {
@@ -232,4 +238,165 @@ test('committee-open question:mixed, with snapshot', async t => {
     replacement: 'published.committees.Economic_Committee.',
   };
   await documentStorageSchema(t, mockChainStorageRoot, doc);
+});
+
+const setUpVoterAndVote = async (invitation, zoe, qHandle, choice) => {
+  const seat = E(zoe).offer(invitation);
+  const { voter } = E.get(E(seat).getOfferResult());
+  return E(voter).castBallotFor(qHandle, [choice]);
+};
+
+test('committee-tie outcome', async t => {
+  const {
+    electorateStartResult: { creatorFacet },
+    counterInstallation: counter,
+    zoe,
+  } = await setupContract({ committeeName: 'halfDozen', committeeSize: 6 });
+
+  const timer = buildZoeManualTimer(t.log);
+
+  const positions = [harden({ text: 'guilty' }), harden({ text: 'innocent' })];
+  const questionSpec = coerceQuestionSpec(
+    harden({
+      method: ChoiceMethod.UNRANKED,
+      issue: { text: 'guilt' },
+      positions,
+      electionType: ElectionType.SURVEY,
+      maxChoices: 1,
+      maxWinners: 1,
+      closingRule: {
+        timer,
+        deadline: 2n,
+      },
+      quorumRule: QuorumRule.MAJORITY,
+      tieOutcome: positions[1],
+    }),
+  );
+
+  const qResult = await E(creatorFacet).addQuestion(counter, questionSpec);
+
+  const invites = await E(creatorFacet).getVoterInvitations();
+  const votes = [];
+  for (const i of [...Array(6).keys()]) {
+    votes.push(
+      setUpVoterAndVote(
+        invites[i],
+        zoe,
+        qResult.questionHandle,
+        positions[i % 2],
+      ),
+    );
+  }
+
+  await Promise.all(votes);
+  await E(timer).tick();
+  await E(timer).tick();
+
+  // if half vote each way, the tieOutcome prevails
+  await E.when(E(qResult.publicFacet).getOutcome(), async outcomes =>
+    t.deepEqual(outcomes, {
+      text: 'innocent',
+    }),
+  );
+});
+
+test('committee-half vote', async t => {
+  const {
+    electorateStartResult: { creatorFacet },
+    counterInstallation: counter,
+    zoe,
+  } = await setupContract({ committeeName: 'halfDozen', committeeSize: 6 });
+
+  const timer = buildZoeManualTimer(t.log);
+
+  const positions = [harden({ text: 'guilty' }), harden({ text: 'innocent' })];
+  const questionSpec = coerceQuestionSpec(
+    harden({
+      method: ChoiceMethod.UNRANKED,
+      issue: { text: 'guilt' },
+      positions,
+      electionType: ElectionType.SURVEY,
+      maxChoices: 1,
+      maxWinners: 1,
+      closingRule: {
+        timer,
+        deadline: 2n,
+      },
+      quorumRule: QuorumRule.MAJORITY,
+      tieOutcome: positions[1],
+    }),
+  );
+
+  const qResult = await E(creatorFacet).addQuestion(counter, questionSpec);
+
+  const invites = await E(creatorFacet).getVoterInvitations();
+  const votes = [];
+  for (const i of [...Array(3).keys()]) {
+    votes.push(
+      setUpVoterAndVote(invites[i], zoe, qResult.questionHandle, positions[0]),
+    );
+  }
+
+  await Promise.all(votes);
+  await E(timer).tick();
+  await E(timer).tick();
+
+  // if only half the voters vote, there is no quorum
+  await E.when(
+    E(qResult.publicFacet).getOutcome(),
+    async _outcomes => {
+      t.fail('expect no quorum');
+    },
+    e => {
+      t.is(e, 'No quorum');
+    },
+  );
+});
+
+test('committee-half plus one vote', async t => {
+  const {
+    electorateStartResult: { creatorFacet },
+    counterInstallation: counter,
+    zoe,
+  } = await setupContract({ committeeName: 'halfDozen', committeeSize: 6 });
+
+  const timer = buildZoeManualTimer(t.log);
+
+  const positions = [harden({ text: 'guilty' }), harden({ text: 'innocent' })];
+  const questionSpec = coerceQuestionSpec(
+    harden({
+      method: ChoiceMethod.UNRANKED,
+      issue: { text: 'guilt' },
+      positions,
+      electionType: ElectionType.SURVEY,
+      maxChoices: 1,
+      maxWinners: 1,
+      closingRule: {
+        timer,
+        deadline: 2n,
+      },
+      quorumRule: QuorumRule.MAJORITY,
+      tieOutcome: positions[1],
+    }),
+  );
+
+  const qResult = await E(creatorFacet).addQuestion(counter, questionSpec);
+
+  const invites = await E(creatorFacet).getVoterInvitations();
+  const votes = [];
+  for (const i of [...Array(4).keys()]) {
+    votes.push(
+      setUpVoterAndVote(invites[i], zoe, qResult.questionHandle, positions[0]),
+    );
+  }
+
+  await Promise.all(votes);
+  await E(timer).tick();
+  await E(timer).tick();
+
+  await E.when(E(qResult.publicFacet).getOutcome(), async outcomes =>
+    t.deepEqual(outcomes, {
+      text: 'guilty',
+    }),
+  );
 });

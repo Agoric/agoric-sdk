@@ -17,12 +17,16 @@ import type { ICQConnection } from '../../src/exos/icq-connection-kit.js';
  */
 export const prepareMakeTestCOAKit = (
   t: ExecutionContext,
-  { bootstrap, facadeServices, utils }: Awaited<ReturnType<typeof commonSetup>>,
+  {
+    bootstrap,
+    commonPrivateArgs: { marshaller },
+    facadeServices,
+    utils,
+  }: Awaited<ReturnType<typeof commonSetup>>,
   { zcf = Far('MockZCF', {}) } = {},
 ) => {
   t.log('exo setup - prepareCosmosOrchestrationAccount');
-  const { cosmosInterchainService, marshaller, rootZone, timer, vowTools } =
-    bootstrap;
+  const { cosmosInterchainService, rootZone, timer, vowTools } = bootstrap;
 
   const { makeRecorderKit } = prepareRecorderKitMakers(
     rootZone.mapStore('CosmosOrchAccountRecorder'),

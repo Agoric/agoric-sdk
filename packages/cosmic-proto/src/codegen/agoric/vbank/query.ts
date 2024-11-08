@@ -1,7 +1,12 @@
 //@ts-nocheck
-import { Params, ParamsSDKType, State, StateSDKType } from './vbank.js';
+import {
+  Params,
+  type ParamsSDKType,
+  State,
+  type StateSDKType,
+} from './vbank.js';
 import { BinaryReader, BinaryWriter } from '../../binary.js';
-import { JsonSafe } from '../../json-safe.js';
+import { type JsonSafe } from '../../json-safe.js';
 import { isSet } from '../../helpers.js';
 /** QueryParamsRequest is the request type for the Query/Params RPC method. */
 export interface QueryParamsRequest {}

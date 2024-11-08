@@ -1,7 +1,7 @@
 //@ts-nocheck
 import { BinaryReader, BinaryWriter } from './binary.js';
 import { isSet, bytesFromBase64, base64FromBytes } from './helpers.js';
-import { JsonSafe } from './json-safe.js';
+import { type JsonSafe } from './json-safe.js';
 export enum HashOp {
   /** NO_HASH - NO_HASH is the default if no data passed. Note this is an illegal argument some places. */
   NO_HASH = 0,

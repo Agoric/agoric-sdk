@@ -114,8 +114,17 @@ jobs:
         with:
           node-version: '18.x'
 
-      - name: yarn lint rest
+      # Check some of a3p-integration in this job that runs on PRs instead of
+      # waiting for the slow integration test that by default only runs in the
+      # master merge check
+      - name: yarn lint rest of packages/*
         run: ./scripts/lint-with-types.sh rest
+      - name: Lint a3p-integration
+        run: yarn install && yarn lint && yarn doctor
+        working-directory: a3p-integration
+      - name: build A3P submissions
+        run: yarn run build:submissions
+        working-directory: a3p-integration
 
   ##################
   # Fast-running tests run as a group:
@@ -256,6 +265,9 @@ jobs:
         run: cd packages/casting && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (create-dapp)
         run: cd packages/create-dapp && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
+      - name: yarn test (fast-usdc)
+        if: (success() || failure())
+        run: cd packages/fast-usdc && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT
       - name: yarn test (internal)
         if: (success() || failure())
         run: cd packages/internal && yarn ${{ steps.vars.outputs.test }} | $TEST_COLLECT

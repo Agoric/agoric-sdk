@@ -1,7 +1,7 @@
 //@ts-nocheck
 import { BinaryReader, BinaryWriter } from '../binary.js';
 import { isSet } from '../helpers.js';
-import { JsonSafe } from '../json-safe.js';
+import { type JsonSafe } from '../json-safe.js';
 export enum ScalarType {
   SCALAR_TYPE_UNSPECIFIED = 0,
   SCALAR_TYPE_STRING = 1,

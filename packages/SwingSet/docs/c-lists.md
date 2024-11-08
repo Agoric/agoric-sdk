@@ -16,7 +16,7 @@ The SwingSet kernel supports a number of vats, in a star configuration. At the b
 | kp8  | p-3      |
 | kd4  | d-4      |
 
-The c-list is currently stored as `kvStore` entries in the kernel's swing-store DB. Each c-list entry gets two kvStore keys, one for each direction. The kref-to-vref mapping gets a key of `${vatID}.c.${kref}`, while the vref-to-kref mapping gets `${vatID}.c.${vref}`. The value is the vref or kref, respectively. (The c-list is also used to track the reachable/recognizable status of the vat's import, so the krev-to-vref direction has additional flag characters in its value).
+The c-list is currently stored as `kvStore` entries in the kernel's swing-store DB. Each c-list entry gets two kvStore keys, one for each direction. The kref-to-vref mapping gets a key of `${vatID}.c.${kref}` and a value of `${flag} ${vref}` (where the flag is `R` for reachable references and `_` for merely recognizable ones, cf. [Garbage Collection in SwingSet](./garbage-collection.md)), while the vref-to-kref mapping gets a key of `${vatID}.c.${vref}` and a value of `${kref}`.
 
 Object krefs (`koNN`) point into the kernel object table. Each such object is exported by exactly one vat, and might be imported by one or more other vats.
 

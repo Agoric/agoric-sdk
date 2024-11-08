@@ -27,9 +27,9 @@ func NewVMCommand(logger log.Logger, binary string, args []string, vmFromAgd, vm
 	fdToAgd := fdFromAgd + 1
 
 	// ExtraFiles begins at fd numStdFiles, so we need to compute the array.
-	cmd.ExtraFiles = make([]*os.File, fdToAgd - numStdFiles + 1)
-	cmd.ExtraFiles[fdFromAgd - numStdFiles] = vmFromAgd
-	cmd.ExtraFiles[fdToAgd - numStdFiles] = vmToAgd
+	cmd.ExtraFiles = make([]*os.File, fdToAgd-numStdFiles+1)
+	cmd.ExtraFiles[fdFromAgd-numStdFiles] = vmFromAgd
+	cmd.ExtraFiles[fdToAgd-numStdFiles] = vmToAgd
 
 	// Pass the file descriptor numbers in the environment.
 	cmd.Env = append(

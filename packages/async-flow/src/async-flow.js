@@ -11,7 +11,7 @@ import { prepareEndowmentTools } from './endowments.js';
 import { LogEntryShape, FlowStateShape } from './type-guards.js';
 
 /**
- * @import {WeakMapStore} from '@agoric/store'
+ * @import {WeakMapStore, MapStore} from '@agoric/store'
  * @import {Zone} from '@agoric/base-zone'
  * @import {FlowState, GuestAsyncFunc, HostAsyncFuncWrapper, HostOf, PreparationOptions} from '../src/types.js'
  * @import {ReplayMembrane} from '../src/replay-membrane.js'
@@ -70,7 +70,7 @@ export const prepareAsyncFlowTools = (outerZone, outerOptions = {}) => {
     keyShape: M.remotable('flow'), // flowState !== 'Done'
   });
 
-  /** @type WeakMapStore<AsyncFlow, ReplayMembrane> */
+  /** @type {WeakMapStore<AsyncFlow, ReplayMembrane>} */
   const membraneMap = makeScalarWeakMapStore('membraneFor', {
     keyShape: M.remotable('flow'),
     valueShape: M.remotable('membrane'),

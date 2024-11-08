@@ -1,17 +1,17 @@
 //@ts-nocheck
-import { Any, AnySDKType } from '../../../google/protobuf/any.js';
-import { Coin, CoinSDKType } from '../../base/v1beta1/coin.js';
+import { Any, type AnySDKType } from '../../../google/protobuf/any.js';
+import { Coin, type CoinSDKType } from '../../base/v1beta1/coin.js';
 import {
   VoteOption,
   WeightedVoteOption,
-  WeightedVoteOptionSDKType,
+  type WeightedVoteOptionSDKType,
   voteOptionFromJSON,
   voteOptionToJSON,
 } from './gov.js';
-import { TextProposal, TextProposalSDKType } from '../v1beta1/gov.js';
+import { TextProposal, type TextProposalSDKType } from '../v1beta1/gov.js';
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
 import { isSet } from '../../../helpers.js';
-import { JsonSafe } from '../../../json-safe.js';
+import { type JsonSafe } from '../../../json-safe.js';
 /**
  * MsgSubmitProposal defines an sdk.Msg type that supports submitting arbitrary
  * proposal Content.

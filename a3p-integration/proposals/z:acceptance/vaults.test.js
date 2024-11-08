@@ -1,3 +1,4 @@
+/* eslint-env node */
 import test from 'ava';
 import {
   agoric,
@@ -7,52 +8,14 @@ import {
   adjustVault,
   closeVault,
   getISTBalance,
-  getPriceQuote,
-  pushPrices,
   getContractInfo,
   ATOM_DENOM,
   USER1ADDR,
   waitForBlock,
-  registerOraclesForBrand,
-  generateOracleMap,
 } from '@agoric/synthetic-chain';
 import { getBalances, agopsVaults } from './test-lib/utils.js';
-import { retryUntilCondition } from './test-lib/sync-tools.js';
 
 export const scale6 = x => BigInt(x * 1_000_000);
-
-// There may be a new vaultFactory that doesn't have prices yet, so we publish
-// prices now
-test.before(async t => {
-  const pushPriceRetryOpts = {
-    maxRetries: 5, // arbitrary
-    retryIntervalMs: 5000, // in ms
-  };
-  t.context = {
-    roundId: 1,
-    retryOpts: {
-      pushPriceRetryOpts,
-    },
-  };
-  const oraclesByBrand = generateOracleMap('z-acc', ['ATOM']);
-  await registerOraclesForBrand('ATOM', oraclesByBrand);
-
-  const price = 15.2;
-  // @ts-expect-error   t.context is fine
-  await pushPrices(price, 'ATOM', oraclesByBrand, t.context.roundId);
-
-  await retryUntilCondition(
-    () => getPriceQuote('ATOM'),
-    res => res === `+${scale6(price).toString()}`,
-    'price not pushed yet',
-    {
-      log: t.log,
-      setTimeout: globalThis.setTimeout,
-      // @ts-expect-error t.context is fine
-      ...t.context.pushPriceRetryOpts,
-    },
-  );
-});
 
 test.serial('attempt to open vaults under the minimum amount', async t => {
   const activeVaultsBefore = await agopsVaults(USER1ADDR);

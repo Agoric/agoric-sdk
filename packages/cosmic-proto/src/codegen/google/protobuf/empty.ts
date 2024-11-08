@@ -1,6 +1,6 @@
 //@ts-nocheck
 import { BinaryReader, BinaryWriter } from '../../binary.js';
-import { JsonSafe } from '../../json-safe.js';
+import { type JsonSafe } from '../../json-safe.js';
 /**
  * A generic empty message that you can re-use to avoid defining duplicated
  * empty messages in your APIs. A typical example is to use it as the request

@@ -11,7 +11,7 @@ import {
   MsgTransfer,
   MsgTransferResponse,
 } from '@agoric/cosmic-proto/ibc/applications/transfer/v1/tx.js';
-import { IBCMethod } from '@agoric/vats';
+import type { IBCMethod } from '@agoric/vats';
 import { SIMULATED_ERRORS } from '@agoric/vats/tools/fake-bridge.js';
 import { protoMsgMocks, UNBOND_PERIOD_SECONDS } from '../ibc-mocks.js';
 import { commonSetup } from '../supports.js';

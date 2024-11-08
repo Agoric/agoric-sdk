@@ -227,6 +227,7 @@ export {};
  *
  * @typedef { { exports: number,
  *              imports: number,
+ *              promises: number,
  *              kv: number,
  *              snapshots: number,
  *              transcripts: number,
@@ -281,6 +282,13 @@ export {};
  * @typedef {object} VatWarehousePolicy
  * @property { number } [maxVatsOnline]     Limit the number of simultaneous workers
  * @property { boolean } [restartWorkerOnSnapshot]     Reload worker immediately upon snapshot creation
+ */
+
+/**
+ * @typedef { import('./devices/mailbox/mailbox.js').Mailbox } Mailbox
+ */
+/**
+ * @typedef { import('./devices/mailbox/mailbox.js').MailboxExport } MailboxExport
  */
 
 /**

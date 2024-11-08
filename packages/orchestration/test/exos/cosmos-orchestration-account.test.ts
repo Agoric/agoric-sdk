@@ -2,7 +2,7 @@ import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import type { TestFn } from 'ava';
 import { heapVowE as E } from '@agoric/vow/vat.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
-import { IBCMethod } from '@agoric/vats';
+import type { IBCMethod } from '@agoric/vats';
 import {
   MsgTransfer,
   MsgTransferResponse,

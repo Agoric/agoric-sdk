@@ -73,7 +73,8 @@ publish() {
     # Publish the packages to our local service.
     # without concurrency until https://github.com/Agoric/agoric-sdk/issues/8091
     yarn lerna version --concurrency 1 prerelease --exact \
-      --preid=dev --no-push --no-git-tag-version --yes
+      --preid=dev --no-push --no-git-tag-version --yes \
+      --no-private
 
     # Change any version prefices to an exact match, and merge our versions.
     VERSIONSHASH=$(jq --slurpfile versions <(popd > /dev/null && git cat-file blob "$VERSIONSHASH") \

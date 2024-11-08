@@ -1,13 +1,14 @@
 {
   "private": true,
   "agoricSyntheticChain": {
-    "fromTag": "use-vaults-auctions"
+    "fromTag": "use-upgrade-17"
   },
   "scripts": {
     "build": "yarn run build:sdk && yarn run build:submissions && yarn run build:synthetic-chain",
     "build:sdk": "make -C ../packages/deployment docker-build-sdk",
     "build:submissions": "scripts/build-all-submissions.sh",
     "build:synthetic-chain": "yarn synthetic-chain build",
+    "lint": "../node_modules/.bin/eslint proposals",
     "test": "yarn synthetic-chain test",
     "doctor": "yarn synthetic-chain doctor"
   },

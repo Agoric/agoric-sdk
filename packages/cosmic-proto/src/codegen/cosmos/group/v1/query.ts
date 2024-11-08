@@ -1,27 +1,27 @@
 //@ts-nocheck
 import {
   PageRequest,
-  PageRequestSDKType,
+  type PageRequestSDKType,
   PageResponse,
-  PageResponseSDKType,
+  type PageResponseSDKType,
 } from '../../base/query/v1beta1/pagination.js';
 import {
   GroupInfo,
-  GroupInfoSDKType,
+  type GroupInfoSDKType,
   GroupPolicyInfo,
-  GroupPolicyInfoSDKType,
+  type GroupPolicyInfoSDKType,
   GroupMember,
-  GroupMemberSDKType,
+  type GroupMemberSDKType,
   Proposal,
-  ProposalSDKType,
+  type ProposalSDKType,
   Vote,
-  VoteSDKType,
+  type VoteSDKType,
   TallyResult,
-  TallyResultSDKType,
+  type TallyResultSDKType,
 } from './types.js';
 import { BinaryReader, BinaryWriter } from '../../../binary.js';
 import { isSet } from '../../../helpers.js';
-import { JsonSafe } from '../../../json-safe.js';
+import { type JsonSafe } from '../../../json-safe.js';
 /** QueryGroupInfoRequest is the Query/GroupInfo request type. */
 export interface QueryGroupInfoRequest {
   /** group_id is the unique ID of the group. */

@@ -1,4 +1,5 @@
 // Note: limit imports to node modules for portability
+/* eslint-env node */
 import { parseArgs, promisify } from 'node:util';
 import { execFile } from 'node:child_process';
 import { writeFile, mkdtemp, rm } from 'node:fs/promises';

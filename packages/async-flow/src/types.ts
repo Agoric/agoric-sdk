@@ -122,17 +122,14 @@ export type Ephemera<S extends WeakKey = WeakKey, V extends unknown = any> = {
  * yet support.
  */
 export type LogEntry =
-  | [
-      // ///////////////// From Host to Guest /////////////////////////
-      op: 'doFulfill',
-      vow: HostVow,
-      fulfillment: Host,
-    ]
+  | [op: 'startGeneration', generation: number]
+  // ///////////////// From Host to Guest /////////////////////////
+  | [op: 'doFulfill', vow: HostVow, fulfillment: Host]
   | [op: 'doReject', vow: HostVow, reason: Host]
   | [op: 'doReturn', callIndex: number, result: Host]
   | [op: 'doThrow', callIndex: number, problem: Host]
+  // ///////////////////// From Guest to Host /////////////////////////
   | [
-      // ///////////////////// From Guest to Host /////////////////////////
       op: 'checkCall',
       target: Host,
       optVerb: PropertyKey | undefined,
@@ -161,12 +158,9 @@ export type LogEntry =
  *   vows and remotables.
  */
 export type FutureLogEntry =
-  | [
-      // ///////////////// From Host to Guest ///////////////////////
-      op: 'doFulfill',
-      vow: HostVow,
-      fulfillment: Host,
-    ]
+  | [op: 'startGeneration', generation: number]
+  // ///////////////// From Host to Guest ///////////////////////
+  | [op: 'doFulfill', vow: HostVow, fulfillment: Host]
   | [op: 'doReject', vow: HostVow, reason: Host]
   | [
       op: 'doCall',
@@ -191,12 +185,8 @@ export type FutureLogEntry =
     ]
   | [op: 'doReturn', callIndex: number, result: Host]
   | [op: 'doThrow', callIndex: number, problem: Host]
-  | [
-      // ///////////////////// From Guest to Host /////////////////////////
-      op: 'checkFulfill',
-      vow: HostVow,
-      fulfillment: Host,
-    ]
+  // ///////////////////// From Guest to Host /////////////////////////
+  | [op: 'checkFulfill', vow: HostVow, fulfillment: Host]
   | [op: 'checkReject', vow: HostVow, reason: Host]
   | [
       op: 'checkCall',

@@ -17,6 +17,7 @@ const starsVaultProposalBuilder = async powers => {
   });
 };
 
+/** @type {import('@agoric/deploy-script-support/src/externalTypes.js').DeployScriptFunction} */
 export default async (homeP, endowments) => {
   const { writeCoreEval } = await makeHelpers(homeP, endowments);
   await writeCoreEval('add-STARS-collateral', starsVaultProposalBuilder);

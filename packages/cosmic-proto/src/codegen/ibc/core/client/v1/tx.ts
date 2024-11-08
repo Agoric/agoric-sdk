@@ -1,12 +1,12 @@
 //@ts-nocheck
-import { Any, AnySDKType } from '../../../../google/protobuf/any.js';
+import { Any, type AnySDKType } from '../../../../google/protobuf/any.js';
 import { BinaryReader, BinaryWriter } from '../../../../binary.js';
 import {
   isSet,
   bytesFromBase64,
   base64FromBytes,
 } from '../../../../helpers.js';
-import { JsonSafe } from '../../../../json-safe.js';
+import { type JsonSafe } from '../../../../json-safe.js';
 /** MsgCreateClient defines a message to create an IBC client */
 export interface MsgCreateClient {
   /** light client state */

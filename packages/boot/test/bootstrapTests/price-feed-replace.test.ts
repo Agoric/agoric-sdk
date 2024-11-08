@@ -10,17 +10,17 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import type { TestFn } from 'ava';
-import { ScheduleNotification } from '@agoric/inter-protocol/src/auction/scheduler.js';
+import type { ScheduleNotification } from '@agoric/inter-protocol/src/auction/scheduler.js';
 import { NonNullish } from '@agoric/internal';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { Fail } from '@endo/errors';
 
 import {
-  LiquidationTestContext,
+  type LiquidationTestContext,
   likePayouts,
   makeLiquidationTestContext,
   scale6,
-  LiquidationSetup,
+  type LiquidationSetup,
 } from '../../tools/liquidation.js';
 import {
   updateVaultDirectorParams,
@@ -63,11 +63,22 @@ test.serial('setupVaults; run updatePriceFeeds proposals', async t => {
     refreshAgoricNamesRemotes,
     setupVaults,
     governanceDriver: gd,
+    readLatest,
   } = t.context;
 
   await setupVaults(collateralBrandKey, managerIndex, setup);
 
   const instancePre = agoricNamesRemotes.instance['ATOM-USD price feed'];
+
+  t.like(readLatest('published.priceFeed.ATOM-USD_price_feed.latestRound'), {
+    roundId: 1n,
+  });
+
+  await priceFeedDrivers[collateralBrandKey].setPrice(15.99);
+
+  t.like(readLatest('published.priceFeed.ATOM-USD_price_feed.latestRound'), {
+    roundId: 2n,
+  });
 
   const priceFeedBuilder =
     '@agoric/builders/scripts/inter-protocol/updatePriceFeeds.js';
@@ -90,7 +101,7 @@ test.serial('setupVaults; run updatePriceFeeds proposals', async t => {
 
   t.log('building all relevant CoreEvals');
   const coreEvals = await Promise.all([
-    buildProposal(priceFeedBuilder, ['main']),
+    buildProposal(priceFeedBuilder, ['MAINNET']),
     buildProposal('@agoric/builders/scripts/vats/upgradeVaults.js'),
     buildProposal('@agoric/builders/scripts/vats/add-auction.js'),
   ]);
@@ -112,6 +123,11 @@ test.serial('setupVaults; run updatePriceFeeds proposals', async t => {
     'VaultFactory',
   );
 
+  // after the coreEval, the roundId will reset to 1.
+  t.like(readLatest('published.priceFeed.ATOM-USD_price_feed.latestRound'), {
+    roundId: 1n,
+  });
+
   t.notDeepEqual(
     newVaultInstallation.getKref(),
     oldVaultInstallation.getKref(),
@@ -130,12 +146,18 @@ test.serial('1. place bid', async t => {
 test.serial('2. trigger liquidation by changing price', async t => {
   const { priceFeedDrivers, readLatest } = t.context;
 
+  // the current roundId is still 1. Round 1 is special, and you can't get to
+  // round 2 until roundTimeout (10s) has elapsed.
   await priceFeedDrivers[collateralBrandKey].setPrice(9.99);
 
-  t.log(readLatest('published.priceFeed.ATOM-USD_price_feed'), {
+  t.like(readLatest('published.priceFeed.ATOM-USD_price_feed'), {
     // aka 9.99
     amountIn: { value: 1000000n },
     amountOut: { value: 9990000n },
+  });
+
+  t.like(readLatest('published.priceFeed.ATOM-USD_price_feed.latestRound'), {
+    roundId: 1n,
   });
 
   // check nothing liquidating yet

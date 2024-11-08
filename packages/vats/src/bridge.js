@@ -10,7 +10,7 @@ import { E } from '@endo/far';
  * loses the function's genericity. If `register` was async, we could use its
  * type directly, and it would remain generic.
  *
- * @template {import('@agoric/internal').BridgeIdValue} BridgeId
+ * @template {import('@agoric/internal').BridgeId} BridgeId
  * @param {ERef<import('./types.js').BridgeManager>} bridgeManager
  * @param {BridgeId} bridgeIdValue
  * @param {import('@agoric/internal').Remote<

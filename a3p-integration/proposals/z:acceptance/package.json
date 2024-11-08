@@ -3,22 +3,23 @@
     "type": "/agoric.swingset.CoreEvalProposal",
     "sdk-generate": [
       "testing/start-valueVow.js start-valueVow",
+      "vats/test-localchain.js localchaintest-submission",
       "testing/restart-valueVow.js restart-valueVow"
     ]
   },
   "type": "module",
   "license": "Apache-2.0",
   "dependencies": {
-    "@agoric/internal": "0.3.3-dev-5676146.0",
+    "@agoric/ertp": "dev",
+    "@agoric/internal": "dev",
     "@agoric/synthetic-chain": "^0.3.0",
     "@endo/errors": "^1.2.2",
     "@endo/far": "^1.1.5",
     "@endo/init": "^1.1.4",
+    "@endo/marshal": "^1.5.3",
     "ava": "^6.1.2",
+    "execa": "^9.3.1",
     "tsx": "^4.17.0"
-  },
-  "resolutions": {
-    "execa": "^9.3.1"
   },
   "ava": {
     "concurrency": 1,
