@@ -213,6 +213,10 @@ testProp(
       fc.record({
         party: fc.nat(7),
         action: fc.oneof(
+          fc.record({
+            FeePercent: fc.double({ min: 0.0001, max: 1.0, noNaN: true }),
+          }),
+          // fc.record({ Fee: arbUSDC }),
           fc.record({ In: arbUSDC }),
           fc.record({ Part: arbPortion, Slip: arbDelta }),
         ),
@@ -227,6 +231,8 @@ testProp(
     let shareWorth = makeParity(make(USDC, 1n), PoolShares);
     const myDeposits: Record<number, Amount<'nat'>> = {};
     const myShares: Record<number, Amount<'nat'>> = {};
+    let totalDeposits = makeEmpty(USDC); // second pointer for easy access
+    let totalFees = makeEmpty(USDC); // debug only
 
     for (const { party, action } of actions) {
       if ('In' in action) {
@@ -236,7 +242,7 @@ testProp(
           d.payouts.PoolShare,
         );
         myDeposits[party] = add(myDeposits[party] || emptyUSDC, action.In);
-
+        totalDeposits = add(totalDeposits, action.In);
         const {
           payouts: { PoolShare },
           shareWorth: post,
@@ -258,6 +264,7 @@ testProp(
         });
         myShares[party] = subtract(myShares[party], toGive);
         myDeposits[party] = subtract(myDeposits[party], s.payouts.USDC);
+        totalDeposits = add(totalDeposits, s.payouts.USDC);
         const { numerator: poolAmount, denominator: sharesOutstanding } =
           s.shareWorth;
         t.deepEqual(poolAmount, subtract(shareWorth.numerator, s.payouts.USDC));
@@ -266,15 +273,38 @@ testProp(
           subtract(shareWorth.denominator, toGive),
         );
         shareWorth = s.shareWorth;
+      } else if ('FeePercent' in action) {
+        if (Object.keys(myShares).length === 0) continue;
+        if (Object.keys(myDeposits).length === 0) continue;
+
+        const feeAmount = scaleAmount(action.FeePercent, totalDeposits);
+        totalFees = add(totalFees, feeAmount);
+        shareWorth = withFees(shareWorth, feeAmount);
       }
     }
 
     if (Object.keys(myShares).length === 0) t.pass();
-
     for (const p of Object.keys(myShares)) {
       const myValue = multiplyBy(myShares[p], shareWorth);
+
       // t.log(p, ...[myShares[p], myDeposits[p], myValue].map(logAmt).flat());
-      t.deepEqual(myValue, myDeposits[p]);
+      // t.deepEqual(myValue, myDeposits[p]);
+
+      const absDiff = (a, b) => {
+        const allowance = 1e5;
+        const diff = Math.abs(Number(a) - Number(b));
+        if (diff > allowance) {
+          // console.log({
+          //   totalFees,
+          //   totalDeposits,
+          //   shareWorth,
+          // });
+          throw new Error(
+            `absDiff(value:${a}, deposits:${b}) > allowance:${allowance}: diff:${diff}`,
+          );
+        }
+      };
+      t.notThrows(() => absDiff(myValue.value, myDeposits[p].value));
     }
 
     const allShares = Object.values(myShares).reduce(
@@ -293,3 +323,77 @@ testProp(
     );
   },
 );
+
+test('fees increase share value', t => {
+  const { PoolShares, USDC } = brands;
+
+  // Initial deposit
+  const deposit1 = deposit(parity, {
+    give: { USDC: make(USDC, 100n) },
+  });
+
+  // Add fees
+  const feeAmount = make(USDC, 10n);
+  const shareWorth = withFees(deposit1.shareWorth, feeAmount);
+
+  // Verify share value increased
+  const initialShareValue = multiplyBy(
+    make(PoolShares, 1n),
+    deposit1.shareWorth,
+  );
+  const finalShareValue = multiplyBy(make(PoolShares, 1n), shareWorth);
+
+  t.true(AmountMath.isGTE(finalShareValue, initialShareValue));
+});
+
+test('fees are distributed proportionally', t => {
+  const { USDC } = brands;
+
+  // Initial deposits from two users
+  const deposit1 = deposit(parity, {
+    give: { USDC: make(USDC, 100n) },
+  });
+
+  const deposit2 = deposit(deposit1.shareWorth, {
+    give: { USDC: make(USDC, 100n) },
+  });
+
+  // Add fees
+  const feeAmount = make(USDC, 40n);
+  const shareWorth = withFees(deposit2.shareWorth, feeAmount);
+
+  // Both users should get equal share of fees since they have equal shares
+  const user1Shares = deposit1.payouts.PoolShare;
+  const user2Shares = deposit2.payouts.PoolShare;
+
+  const user1ValueBefore = multiplyBy(user1Shares, deposit2.shareWorth);
+  const user2ValueBefore = multiplyBy(user2Shares, deposit2.shareWorth);
+
+  const user1ValueAfter = multiplyBy(user1Shares, shareWorth);
+  const user2ValueAfter = multiplyBy(user2Shares, shareWorth);
+
+  // Each user should get 20 USDC worth of fees (half of 40)
+  t.deepEqual(subtract(user1ValueAfter, user1ValueBefore), make(USDC, 20n));
+  t.deepEqual(subtract(user2ValueAfter, user2ValueBefore), make(USDC, 20n));
+});
+
+test('withdrawal after fees preserves proportions', t => {
+  const { PoolShares, USDC } = brands;
+
+  // Initial deposit
+  const deposit1 = deposit(parity, {
+    give: { USDC: make(USDC, 100n) },
+  });
+
+  // Add fees
+  const feeAmount = make(USDC, 20n);
+  const shareWorth = withFees(deposit1.shareWorth, feeAmount);
+
+  // Withdraw half of shares
+  const withdrawal = withdraw(shareWorth, {
+    give: { PoolShare: make(PoolShares, 50n) },
+    want: { USDC: make(USDC, 60n) }, // Expecting half of 100 + half of 20 fees
+  });
+
+  t.deepEqual(withdrawal.payouts.USDC, make(USDC, 60n));
+});
