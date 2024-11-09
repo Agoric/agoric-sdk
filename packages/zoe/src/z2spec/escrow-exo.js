@@ -124,13 +124,13 @@ export const prepareSeatKit = (zone, makeDurablePublishKit) =>
         updateAllocation(more, less) {
           const { proposal, currentAllocation, exiting } = this.state;
           !exiting || Fail`already exited`;
-          const candiate = subtractFromAllocation(
+          const candidate = subtractFromAllocation(
             addToAllocation(currentAllocation, more),
             less,
           );
-          isOfferSafe(proposal, candiate) ||
-            Fail`Offer safety was violated by the proposed allocation: ${candiate}. Proposal was ${proposal}`;
-          this.state.currentAllocation = candiate;
+          isOfferSafe(proposal, candidate) ||
+            Fail`Offer safety was violated by the proposed allocation: ${candidate}. Proposal was ${proposal}`;
+          this.state.currentAllocation = candidate;
         },
         /** @param {unknown} completion */
         async exit(completion) {
