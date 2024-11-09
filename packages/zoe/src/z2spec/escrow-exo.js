@@ -9,28 +9,27 @@
  * @todo likewise the resolver
  */
 
-import { assert, Fail } from '@endo/errors';
-import { E } from '@endo/far';
-import { M } from '@endo/patterns';
+import { AmountMath } from '@agoric/ertp';
 import { deeplyFulfilledObject } from '@agoric/internal';
 import { prepareDurablePublishKit } from '@agoric/notifier';
-import { isOfferSafe } from '../contractFacet/offerSafety.js';
+import { assert, bare, Fail, q } from '@endo/errors';
+import { E } from '@endo/far';
+import { M, objectMap } from '@endo/patterns';
 import {
   addToAllocation,
   subtractFromAllocation,
 } from '../contractFacet/allocationMath.js';
+import { isOfferSafe } from '../contractFacet/offerSafety.js';
 
 /**
  * @import {Zone} from '@agoric/base-zone'
- * @import {DepositFacet} from '@agoric/ertp'
  */
 
-/** @param {Promise<void>} cancellationP */
-const failOnly = cancellationP =>
-  E.when(cancellationP, cancellation => {
-    throw cancellation;
-  });
-harden(failOnly);
+const { keys, entries, fromEntries } = Object;
+const { isEmpty } = AmountMath;
+
+const objectFilter = (obj, pred) =>
+  fromEntries(entries(obj).filter(([k, v]) => pred(v, k)));
 
 /**
  * @param {Zone} zone
@@ -92,7 +91,12 @@ export const prepareSeatKit = (zone, makeDurablePublishKit) =>
           assert.fail('TODO');
         },
 
-        // TODO: how to avoid repeating the accessors?
+        readOnly() {
+          const { readOnly } = this.facets;
+          return readOnly;
+        },
+
+        // repeat accessors for compat
         hasExited() {
           return this.state.exiting;
         },
@@ -108,6 +112,10 @@ export const prepareSeatKit = (zone, makeDurablePublishKit) =>
       },
       /** The right to allocate payouts (subject to offer safety) */
       resolver: {
+        readOnly() {
+          const { readOnly } = this.facets;
+          return readOnly;
+        },
         /**
          * @param {AmountKeywordRecord} more
          * @param {AmountKeywordRecord} less
@@ -144,6 +152,7 @@ export const prepareSeatKit = (zone, makeDurablePublishKit) =>
        * then use getExitSubscriber(); on update, provide payments.
        */
       payee: {
+        /** @param {PaymentPKeywordRecord} payments */
         async receive(payments) {
           const { payoutsKit } = this.state;
           payoutsKit.publisher.finish(payments);
@@ -154,15 +163,11 @@ export const prepareSeatKit = (zone, makeDurablePublishKit) =>
     },
   );
 
-/**
- * @param {Issuer} issuer
- * @param {Payment} payment
- * @param {Amount} amount
- */
-const escrow = async (issuer, payment, amount) => {
-  const purse = E(issuer).makeEmptyPurse();
-  await E(purse).deposit(payment, amount);
-  return purse;
+const assertKeywordSubset = (partLabel, part, whole) => {
+  const wholeKeys = keys(whole);
+  const extraKeys = keys(part).filter(k => !wholeKeys.includes(k));
+  extraKeys.length === 0 ||
+    Fail`unexpected ${bare(partLabel)} keywords: ${q(extraKeys)} not in ${q(wholeKeys)}`;
 };
 
 /** @param {Zone} zone */
@@ -176,73 +181,77 @@ export const prepareEscrowExchange = zone => {
   const makeEscrowExchange = zone.exoClass(
     'EscrowExchange',
     M.interface('EscrowExchangeI', {}, { defaultGuards: 'passable' }),
-    /**
-     * @typedef {{ payment: Payment, sink: ERef<DepositFacet>, cancel: Promise<void> }} Common
-     * @param {{
-     *   a: Common & { give: {Money: Amount}, want: {Stock: Amount}};
-     *   b: Common & { give: {Stock: Amount}, want: {Money: Amount}};
-     * }} parties
-     * @param {{ Money: Issuer, Stock: Issuer }} issuers
-     */
-    (parties, issuers) => ({ parties, issuers }),
+    () => ({
+      /** @type {IssuerKeywordRecord} */
+      issuers: {},
+      /** @type {Record<Keyword, Purse>} */
+      escrowPurses: {},
+    }),
     {
-      run() {
-        const { a, b } = this.state.parties;
-        const { Money, Stock } = this.state.issuers;
+      /**
+       * TODO: use brands instead of keywords?
+       *
+       * @param {Keyword} keyword
+       * @param {Issuer} issuer
+       */
+      async addIssuer(keyword, issuer) {
+        !(keyword in this.state.issuers) ||
+          Fail`keyword alread used: ${keyword}`;
+        const purse = await E(issuer).makeEmptyPurse();
+        const { issuers, escrowPurses } = this.state;
+        !(keyword in issuers) || Fail`keyword alread used: ${keyword}`;
+        this.state.issuers = harden({ ...issuers, [keyword]: issuer });
+        this.state.escrowPurses = harden({ ...escrowPurses, [keyword]: purse });
+      },
+      getIssuers() {
+        return this.state.issuers;
+      },
+      /**
+       * TODO: with the escrow service separate from the contract host,
+       * is the exit rule relevant to the escrow service?
+       *
+       * @param {ProposalRecord} proposal
+       * @param {PaymentKeywordRecord} payments
+       */
+      async makeEscrowSeatKit(proposal, payments) {
+        const { escrowPurses } = this.state;
 
-        const escrowPurses = {
-          Money: escrow(Money, a.payment, a.give.Money),
-          Stock: escrow(Stock, b.payment, b.give.Stock),
-        };
+        assertKeywordSubset('give', proposal.give, escrowPurses);
+        assertKeywordSubset('want', proposal.want, escrowPurses);
+        assertKeywordSubset('payment', payments, escrowPurses);
+        const giveKeys = keys(proposal.give);
 
-        const exit = harden({ onDemand: null });
-        const seats = {
-          a: makeSeatKit({ give: a.give, want: a.want, exit }),
-          b: makeSeatKit({ give: b.give, want: b.want, exit }),
-        };
-        const paid = Promise.all(
-          Object.values(seats).map(async ({ readOnly, payee }) => {
-            await readOnly.getExitSubscriber().subscribeAfter();
-            const { want } = readOnly.getProposal();
-            const [wantKW] = Object.keys(want);
-            const alloc = readOnly.getCurrentAllocation(); // TODO: refund give
-            const amt = alloc[wantKW];
-            const purse = escrowPurses[wantKW];
-            const pmt = await E(purse).withdraw(amt);
-            await payee.receive({ [wantKW]: pmt });
+        // TODO: partial failure
+        await Promise.all(
+          giveKeys.map(kw => {
+            return E(escrowPurses[kw])
+              .deposit(payments[kw])
+              .then(() => {});
           }),
         );
 
-        // contract reallocates using resolver
-        const offerResults = Promise.all(
-          Object.values(seats).map(async ({ readOnly, resolver }) => {
-            const { give, want } = readOnly.getProposal();
-            // "simple exchange"
-            resolver.updateAllocation(want, give);
-            await resolver.exit('fun!');
-          }),
-        );
+        const seatKit = makeSeatKit(proposal);
 
-        // users deposit payouts
-        // TODO: move to caller
-        const deposited = Promise.all(
-          Object.entries(seats).map(async ([name, { seat }]) => {
-            const { want } = seat.getProposal();
-            const [wantKW] = Object.keys(want);
-            const pmt = await seat.getPayout(wantKW);
-            const who = this.state.parties[name];
-            await who.sink.receive(pmt);
-          }),
-        );
+        const { payee, readOnly } = seatKit;
+        const exitSubscriber = readOnly.getExitSubscriber();
+        // TODO: not prompt! save state for resume after upgrade
+        void E.when(exitSubscriber.subscribeAfter(), async () => {
+          const allocation = readOnly.getCurrentAllocation();
+          const nonEmpty = objectFilter(allocation, a => !isEmpty(a));
+          const payouts = await deeplyFulfilledObject(
+            objectMap(nonEmpty, (amt, kw) => E(escrowPurses[kw]).withdraw(amt)),
+          );
+          // TODO: failure?
+          // TODO: expose payments publisher?
+          return E.when(payee.receive(payouts), () => {});
+        });
 
-        return {
-          escrowed: Promise.all(Object.values(escrowPurses)).then(() => {}),
-          paid,
-          offerResults,
-          deposited,
-        };
+        const { seat, resolver } = seatKit;
+        return harden({ seat, resolver, readOnly });
       },
     },
   );
   return { makeEscrowExchange, makeSeatKit };
 };
+/** @typedef {ReturnType<ReturnType<typeof prepareEscrowExchange>['makeEscrowExchange']>} EscrowExchange */
+/** @typedef {Awaited<ReturnType<EscrowExchange['makeEscrowSeatKit']>>} EscrowSeatKit */

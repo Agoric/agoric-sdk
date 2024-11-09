@@ -3,11 +3,24 @@ import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
 import { makeHeapZone } from '@agoric/zone';
 import { AmountMath, makeDurableIssuerKit } from '@agoric/ertp';
-import { makePromiseKit as withResolvers } from '@endo/promise-kit';
 import { objectMap } from '@endo/patterns';
+import { E } from '@endo/far';
 import { prepareEscrowExchange } from '../../src/z2spec/escrow-exo.js';
 
-test('escrowExchange in heap zone', async t => {
+const { keys, values } = Object;
+
+/**
+ * @import {EscrowSeatKit} from '../../src/z2spec/escrow-exo.js'
+ */
+
+/** @param {EscrowSeatKit['resolver']} resolver  */
+const simpleExchange = async resolver => {
+  const { give, want } = resolver.readOnly().getProposal();
+  resolver.updateAllocation(want, give);
+  await resolver.exit('fun!');
+};
+
+test('escrowExchange: Alice and Bob do simpleExchange ', async t => {
   const z1 = makeHeapZone();
   const { makeEscrowExchange } = prepareEscrowExchange(z1);
   const kit = {
@@ -21,52 +34,80 @@ test('escrowExchange in heap zone', async t => {
   });
   const issuers = harden({ Money: kit.Money.issuer, Stock: kit.Stock.issuer });
 
+  const ex1 = makeEscrowExchange();
+
   /**
-   * @template {{ give: AmountKeywordRecord, want: AmountKeywordRecord}} P
    * @param {string} name
-   * @param {P} proposal
+   * @param {ProposalRecord} proposal
+   * @param {Payment} payment
    */
-  const makeParty = (name, proposal) => {
-    const { give, want } = proposal;
-    const [[giveKW, giveAmt]] = Object.entries(give);
+  const makeParty = (name, proposal, payment) => {
     const purses = {
       Money: issuers.Money.makeEmptyPurse(),
       Stock: issuers.Stock.makeEmptyPurse(),
     };
-    const purse = purses[giveKW];
-    purse.deposit(kit[giveKW].mint.mintPayment(giveAmt));
-    const payment = purse.withdraw(giveAmt);
+    const { give, want } = proposal;
+    const [giveKW] = keys(give);
+    const payments = { [giveKW]: payment };
     t.log(name, 'to give', { ...give, payment });
-    const [wantKW] = Object.keys(want);
-    const sink = purses[wantKW].getDepositFacet();
-    const sync = withResolvers();
-    const { promise: cancel } = sync;
-    return { detail: { ...proposal, sink, cancel, payment }, purses, sync };
-  };
-  const { a, b } = {
-    a: makeParty('Alice', {
-      give: { Money: make(Money, 100n) },
-      want: { Stock: make(Stock, 10n) },
-    }),
-    b: makeParty('Bob', {
-      give: { Stock: make(Stock, 10n) },
-      want: { Money: make(Money, 100n) },
-    }),
-  };
 
-  const ex1 = makeEscrowExchange({ a: a.detail, b: b.detail }, issuers);
-  {
-    const actual = ex1.run();
-    await t.notThrowsAsync(
-      Promise.all([actual.escrowed, actual.paid, actual.deposited]),
-    );
-  }
+    const [wantKW] = keys(want);
+    /** @type {import('@agoric/ertp').DepositFacet} */
+    const df = purses[wantKW].getDepositFacet();
 
-  {
-    const actual = {
-      a: objectMap(a.purses, p => p.getCurrentAmount()),
-      b: objectMap(b.purses, p => p.getCurrentAmount()),
+    const go = async () => {
+      const { seat, resolver } = await ex1.makeEscrowSeatKit(
+        proposal,
+        payments,
+      );
+      t.log(name, 'got seat, resolver', seat);
+      const participate = simpleExchange(resolver);
+      const deposit = E.when(seat.getPayouts(), pmts =>
+        objectMap(pmts, (pmtP, k) =>
+          E.when(pmtP, pmt => {
+            t.log(name, 'depositing', k);
+            return df.receive(pmt);
+          }),
+        ),
+      );
+
+      return Promise.all([participate, deposit]);
     };
+
+    const getBalances = () => objectMap(purses, p => p.getCurrentAmount());
+    return { go, getBalances };
+  };
+
+  const added = objectMap(issuers, (kw, i) => ex1.addIssuer(i, kw));
+  await Promise.all(values(added));
+  t.log('added issuers', ...keys(ex1.getIssuers()));
+
+  const exit = { onDemand: null };
+  const { a, b } = {
+    a: makeParty(
+      'Alice',
+      {
+        give: { Money: make(Money, 100n) },
+        want: { Stock: make(Stock, 10n) },
+        exit,
+      },
+      kit.Money.mint.mintPayment(make(Money, 100n)),
+    ),
+    b: makeParty(
+      'Bob',
+      {
+        give: { Stock: make(Stock, 10n) },
+        want: { Money: make(Money, 100n) },
+        exit,
+      },
+      kit.Stock.mint.mintPayment(make(Stock, 10n)),
+    ),
+  };
+
+  await Promise.all([a.go(), b.go()]);
+
+  {
+    const actual = { a: a.getBalances(), b: b.getBalances() };
     t.log('resulting balances', actual);
     t.deepEqual(actual, {
       a: { Money: make(Money, 0n), Stock: make(Stock, 10n) },
@@ -74,3 +115,5 @@ test('escrowExchange in heap zone', async t => {
     });
   }
 });
+
+test.todo('test in durable zone');
