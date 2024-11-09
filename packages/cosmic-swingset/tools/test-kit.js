@@ -345,22 +345,28 @@ export const makeCosmicSwingsetTestKit = async (
     });
   };
   /**
-   * @param {string | ((...args: any[]) => void)} fn
-   * @param {string} [jsonPermits] should deserialize into a BootstrapManifestPermit
+   * @param {string} fnText must evaluate to a function that will be invoked in
+   *   a core eval compartment with a "powers" argument as attenuated by
+   *   `jsonPermits` (with no attenuation by default).
+   * @param {string} [jsonPermits] must deserialize into a BootstrapManifestPermit
    * @param {InboundQueue} [queue]
    */
   const pushCoreEval = (
-    fn,
+    fnText,
     jsonPermits = 'true',
     queue = highPriorityQueue,
   ) => {
+    // Fail noisily if fnText does not evaluate to a function.
+    // This must be refactored if there is ever a need for such input.
+    const fn = new Compartment().evaluate(fnText);
+    typeof fn === 'function' || Fail`text must evaluate to a function`;
     /** @type {import('@agoric/vats/src/core/lib-boot.js').BootstrapManifestPermit} */
     // eslint-disable-next-line no-unused-vars
     const permit = JSON.parse(jsonPermits);
     /** @type {import('@agoric/cosmic-proto/swingset/swingset.js').CoreEvalSDKType} */
     const coreEvalDesc = {
       json_permits: jsonPermits,
-      js_code: String(fn),
+      js_code: fnText,
     };
     const action = {
       type: QueuedActionType.CORE_EVAL,

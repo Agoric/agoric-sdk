@@ -89,10 +89,12 @@ test('cleanup work must be limited by vat_cleanup_budget', async t => {
   };
 
   // Launch the new vat and capture its ID.
-  pushCoreEval(async powers => {
-    const { bootstrap } = powers.vats;
-    await E(bootstrap).createVat('doomed', 'puppet');
-  });
+  pushCoreEval(
+    `${async powers => {
+      const { bootstrap } = powers.vats;
+      await E(bootstrap).createVat('doomed', 'puppet');
+    }}`,
+  );
   await runNextBlock();
   const vatIDs = JSON.parse(mustGet('vat.dynamicIDs'));
   const vatID = vatIDs.at(-1);
@@ -117,39 +119,49 @@ test('cleanup work must be limited by vat_cleanup_budget', async t => {
   t.not(initialEntries.size, 0, 'initial kvStore entries must exist');
 
   // Give the vat a big footprint.
-  pushCoreEval(async powers => {
-    const { bootstrap } = powers.vats;
-    const doomed = await E(bootstrap).getVatRoot('doomed');
+  pushCoreEval(
+    `${async powers => {
+      const { bootstrap } = powers.vats;
+      const doomed = await E(bootstrap).getVatRoot('doomed');
 
-    const makeArray = (length, makeElem) => Array.from({ length }, makeElem);
+      const makeArray = (length, makeElem) => Array.from({ length }, makeElem);
 
-    // import 20 remotables and 10 promises
-    const doomedRemotableImports = await Promise.all(
-      makeArray(20, (_, i) => E(bootstrap).makeRemotable(`doomed import ${i}`)),
-    );
-    const doomedPromiseImports = (
-      await Promise.all(makeArray(10, () => E(bootstrap).makePromiseKit()))
-    ).map(kit => kit.promise);
-    const doomedImports = [...doomedRemotableImports, ...doomedPromiseImports];
-    await E(doomed).holdInHeap(doomedImports);
+      // import 20 remotables and 10 promises
+      const doomedRemotableImports = await Promise.all(
+        makeArray(20, (_, i) =>
+          E(bootstrap).makeRemotable(`doomed import ${i}`),
+        ),
+      );
+      const doomedPromiseImports = (
+        await Promise.all(makeArray(10, () => E(bootstrap).makePromiseKit()))
+      ).map(kit => kit.promise);
+      const doomedImports = [
+        ...doomedRemotableImports,
+        ...doomedPromiseImports,
+      ];
+      await E(doomed).holdInHeap(doomedImports);
 
-    // export 20 remotables and 10 promises to bootstrap
-    const doomedRemotableExports = await Promise.all(
-      makeArray(20, (_, i) => E(doomed).makeRemotable(`doomed export ${i}`)),
-    );
-    const doomedPromiseExports = (
-      await Promise.all(makeArray(10, () => E(doomed).makePromiseKit()))
-    ).map(kit => {
-      const { promise } = kit;
-      void promise.catch(() => {});
-      return promise;
-    });
-    const doomedExports = [...doomedRemotableExports, ...doomedPromiseExports];
-    await E(bootstrap).holdInHeap(doomedExports);
+      // export 20 remotables and 10 promises to bootstrap
+      const doomedRemotableExports = await Promise.all(
+        makeArray(20, (_, i) => E(doomed).makeRemotable(`doomed export ${i}`)),
+      );
+      const doomedPromiseExports = (
+        await Promise.all(makeArray(10, () => E(doomed).makePromiseKit()))
+      ).map(kit => {
+        const { promise } = kit;
+        void promise.catch(() => {});
+        return promise;
+      });
+      const doomedExports = [
+        ...doomedRemotableExports,
+        ...doomedPromiseExports,
+      ];
+      await E(bootstrap).holdInHeap(doomedExports);
 
-    // make 20 extra vatstore entries
-    await E(doomed).holdInBaggage(...makeArray(20, (_, i) => i));
-  });
+      // make 20 extra vatstore entries
+      await E(doomed).holdInBaggage(...makeArray(20, (_, i) => i));
+    }}`,
+  );
   await runNextBlock();
   t.false(
     JSON.parse(mustGet('vats.terminated')).includes(vatID),
@@ -167,11 +179,13 @@ test('cleanup work must be limited by vat_cleanup_budget', async t => {
   );
 
   // Terminate the vat and verify lack of cleanup.
-  pushCoreEval(async powers => {
-    const { bootstrap } = powers.vats;
-    const adminNode = await E(bootstrap).getVatAdminNode('doomed');
-    await E(adminNode).terminateWithFailure();
-  });
+  pushCoreEval(
+    `${async powers => {
+      const { bootstrap } = powers.vats;
+      const adminNode = await E(bootstrap).getVatAdminNode('doomed');
+      await E(adminNode).terminateWithFailure();
+    }}`,
+  );
   await runNextBlock();
   t.true(
     JSON.parse(mustGet('vats.terminated')).includes(vatID),
