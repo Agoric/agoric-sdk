@@ -176,7 +176,7 @@ export function makeSwingStoreExporter(dirPath, options = {}) {
   function getArtifactNames() {
     if (artifactMode !== 'debug') {
       // synchronously throw if this DB will not be able to yield all the desired artifacts
-      const internal = { snapStore, bundleStore, transcriptStore };
+      const internal = { dirPath, snapStore, bundleStore, transcriptStore };
       assertComplete(internal, artifactMode);
     }
     return generateArtifactNames();

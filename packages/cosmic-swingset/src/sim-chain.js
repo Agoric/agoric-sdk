@@ -56,6 +56,7 @@ async function makeMapStorage(file) {
 }
 
 export async function connectToFakeChain(basedir, GCI, delay, inbound) {
+  const env = process.env;
   const initialHeight = 0;
   const mailboxFile = path.join(basedir, `fake-chain-${GCI}-mailbox.json`);
   const bootAddress = `${GCI}-client`;
@@ -75,13 +76,13 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
   };
 
   const getVatConfig = async () => {
-    const url = await importMetaResolve(
-      process.env.CHAIN_BOOTSTRAP_VAT_CONFIG ||
+    const href = await importMetaResolve(
+      env.CHAIN_BOOTSTRAP_VAT_CONFIG ||
         argv.bootMsg.params.bootstrap_vat_config,
       import.meta.url,
     );
-    const vatconfig = new URL(url).pathname;
-    return vatconfig;
+    const { pathname } = new URL(href);
+    return pathname;
   };
   const stateDBdir = path.join(basedir, `fake-chain-${GCI}-state`);
   function replayChainSends() {
@@ -91,7 +92,6 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
     return [];
   }
 
-  const env = process.env;
   const { metricsProvider } = getTelemetryProviders({
     console,
     env,
