@@ -14,13 +14,15 @@ export const pspawn = (bin, { spawn, cwd }) => {
     const exit = new Promise((resolve, reject) => {
       // When stderr is otherwise ignored, spy on it for inclusion in error messages.
       /** @type {Promise<string> | undefined} */
-      let stderrP = Promise.resolve('');
+      let stderrP;
       // https://nodejs.org/docs/latest/api/child_process.html#optionsstdio
       let { stdio = 'pipe' } = opts;
       if (stdio === 'ignore' || stdio[2] === 'ignore') {
-        stderrP = undefined;
         stdio = typeof stdio === 'string' ? [stdio, stdio, stdio] : [...stdio];
         stdio[2] = 'pipe';
+      } else {
+        // The caller is not ignoring stderr, so we pretend it is empty here.
+        stderrP = Promise.resolve('');
       }
       const resolvedOpts = { cwd, ...opts, stdio };
       // console.debug('spawn', bin, args, resolvedOpts);
