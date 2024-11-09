@@ -7,7 +7,7 @@ import { objectMap } from '@endo/patterns';
 import { E } from '@endo/far';
 import { prepareEscrowExchange } from '../../src/z2spec/escrow-exo.js';
 
-const { keys, values } = Object;
+const { keys } = Object;
 
 /**
  * @import {EscrowSeatKit} from '../../src/z2spec/escrow-exo.js'
@@ -28,10 +28,8 @@ test('escrowExchange: Alice and Bob do simpleExchange ', async t => {
     Stock: makeDurableIssuerKit(z1.mapStore('SB'), 'Stock'),
   };
   const { make } = AmountMath;
-  const { Money, Stock } = harden({
-    Money: kit.Money.brand,
-    Stock: kit.Stock.brand,
-  });
+  const { brand: Money } = kit.Money;
+  const { brand: Stock } = kit.Stock;
   const issuers = harden({ Money: kit.Money.issuer, Stock: kit.Stock.issuer });
 
   const ex1 = makeEscrowExchange();
@@ -46,27 +44,21 @@ test('escrowExchange: Alice and Bob do simpleExchange ', async t => {
       Money: issuers.Money.makeEmptyPurse(),
       Stock: issuers.Stock.makeEmptyPurse(),
     };
-    const { give, want } = proposal;
-    const [giveKW] = keys(give);
-    const payments = { [giveKW]: payment };
+    const { give } = proposal;
     t.log(name, 'to give', { ...give, payment });
 
-    const [wantKW] = keys(want);
-    /** @type {import('@agoric/ertp').DepositFacet} */
-    const df = purses[wantKW].getDepositFacet();
-
     const go = async () => {
-      const { seat, resolver } = await ex1.makeEscrowSeatKit(
-        proposal,
-        payments,
-      );
+      const pmts = { [keys(give)[0]]: payment };
+      const { seat, resolver } = await ex1.makeEscrowSeatKit(proposal, pmts);
       t.log(name, 'got seat, resolver', seat);
+
       const participate = simpleExchange(resolver);
-      const deposit = E.when(seat.getPayouts(), pmts =>
-        objectMap(pmts, (pmtP, k) =>
+
+      const deposit = E.when(seat.getPayouts(), payouts =>
+        objectMap(payouts, (pmtP, k) =>
           E.when(pmtP, pmt => {
             t.log(name, 'depositing', k);
-            return df.receive(pmt);
+            return purses[k].deposit(pmt);
           }),
         ),
       );
@@ -78,8 +70,10 @@ test('escrowExchange: Alice and Bob do simpleExchange ', async t => {
     return { go, getBalances };
   };
 
-  const added = objectMap(issuers, (kw, i) => ex1.addIssuer(i, kw));
-  await Promise.all(values(added));
+  await Promise.all([
+    ex1.addIssuer('Money', issuers.Money),
+    ex1.addIssuer('Stock', issuers.Stock),
+  ]);
   t.log('added issuers', ...keys(ex1.getIssuers()));
 
   const exit = { onDemand: null };
