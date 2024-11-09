@@ -6,6 +6,7 @@ import { AmountMath, makeDurableIssuerKit } from '@agoric/ertp';
 import { objectMap } from '@endo/patterns';
 import { E } from '@endo/far';
 import { prepareEscrowExchange } from '../../src/z2spec/escrow-exo.js';
+import { makeHandle } from '../../src/makeHandle.js';
 
 const { keys } = Object;
 
@@ -22,7 +23,13 @@ const simpleExchange = async resolver => {
 
 test('escrowExchange: Alice and Bob do simpleExchange ', async t => {
   const z1 = makeHeapZone();
-  const { makeEscrowExchange } = prepareEscrowExchange(z1);
+  /** @type {ZCF['makeInvitation']} */
+  const makeInvitation = async (_h, description, customDetails, _p) => {
+    t.log('makeInvitation', { description, customDetails });
+    // @ts-expect-error mock
+    return makeHandle('InvitationMock');
+  };
+  const { makeEscrowExchange } = prepareEscrowExchange(z1, makeInvitation);
   const kit = {
     Money: makeDurableIssuerKit(z1.mapStore('MB'), 'Money'),
     Stock: makeDurableIssuerKit(z1.mapStore('SB'), 'Stock'),
@@ -111,3 +118,5 @@ test('escrowExchange: Alice and Bob do simpleExchange ', async t => {
 });
 
 test.todo('test in durable zone');
+
+test.todo('test makeTransferInvitation');

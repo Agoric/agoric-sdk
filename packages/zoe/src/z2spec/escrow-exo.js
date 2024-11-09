@@ -1,13 +1,7 @@
-// @ts-check
 /**
- * @file escrow exchange using exos
- *
- * @todo use ownable pattern to
- * turn the seat object into a tradable
- * guarantee-of-funds-escrowed asset.
- *
- * @todo likewise the resolver
+ * @file escrow exchange using ownable seat, resolver
  */
+// @ts-check
 
 import { AmountMath } from '@agoric/ertp';
 import { deeplyFulfilledObject } from '@agoric/internal';
@@ -20,6 +14,7 @@ import {
   subtractFromAllocation,
 } from '../contractFacet/allocationMath.js';
 import { isOfferSafe } from '../contractFacet/offerSafety.js';
+import { prepareOwnable } from '../contractSupport/prepare-ownable.js';
 
 /**
  * @import {Zone} from '@agoric/base-zone'
@@ -96,6 +91,16 @@ export const prepareSeatKit = (zone, makeDurablePublishKit) =>
           return readOnly;
         },
 
+        getInvitationCustomDetails() {
+          const { exiting, proposal, currentAllocation } = this.state;
+          !exiting || Fail`already exited`;
+
+          return harden({
+            proposal,
+            currentAllocation,
+          });
+        },
+
         // repeat accessors for compat
         hasExited() {
           return this.state.exiting;
@@ -146,6 +151,16 @@ export const prepareSeatKit = (zone, makeDurablePublishKit) =>
         fail(reason) {
           assert.fail('TODO');
         },
+
+        getInvitationCustomDetails() {
+          const { exiting, proposal, currentAllocation } = this.state;
+          !exiting || Fail`already exited`;
+
+          return harden({
+            proposal,
+            currentAllocation,
+          });
+        },
       },
       /**
        * Caller must escrow proposal.give worth of funds;
@@ -170,13 +185,42 @@ const assertKeywordSubset = (partLabel, part, whole) => {
     Fail`unexpected ${bare(partLabel)} keywords: ${q(extraKeys)} not in ${q(wholeKeys)}`;
 };
 
-/** @param {Zone} zone */
-export const prepareEscrowExchange = zone => {
+/**
+ *  @param {Zone} zone
+ * @param {ZCF['makeInvitation']} makeInvitation
+ */
+export const prepareEscrowExchange = (zone, makeInvitation) => {
   const makeDurablePublishKit = prepareDurablePublishKit(
     zone.mapStore('publish baggage'),
     'escrow publisher',
   );
   const makeSeatKit = prepareSeatKit(zone, makeDurablePublishKit);
+
+  const makeOwnableSeat = prepareOwnable(
+    zone.subZone('ownableSeat'),
+    makeInvitation,
+    'OwnableSeat',
+    /* XXX @type {(keyof EscrowSeat)[]} */
+    /** @type {const} */ ([
+      'readOnly',
+      'hasExited',
+      'getProposal',
+      'getCurrentAllocation',
+      'getExitSubscriber',
+      'getPayout',
+      'getPayouts',
+      'exit',
+      'fail',
+    ]),
+  );
+
+  const makeOwnableSeatResolver = prepareOwnable(
+    zone.subZone('ownableSeatResolver'),
+    makeInvitation,
+    'OwnableSeatResolver',
+    /* XXX @type {(keyof EscrowSeatResolver)[]} */
+    /** @type {const} */ (['readOnly', 'exit', 'fail', 'updateAllocation']),
+  );
 
   const makeEscrowExchange = zone.exoClass(
     'EscrowExchange',
@@ -247,7 +291,15 @@ export const prepareEscrowExchange = zone => {
         });
 
         const { seat, resolver } = seatKit;
-        return harden({ seat, resolver, readOnly });
+
+        const ownableSeat = makeOwnableSeat(seat);
+        const ownableResolver = makeOwnableSeatResolver(resolver);
+
+        return harden({
+          seat: ownableSeat,
+          resolver: ownableResolver,
+          readOnly,
+        });
       },
     },
   );
@@ -255,3 +307,5 @@ export const prepareEscrowExchange = zone => {
 };
 /** @typedef {ReturnType<ReturnType<typeof prepareEscrowExchange>['makeEscrowExchange']>} EscrowExchange */
 /** @typedef {Awaited<ReturnType<EscrowExchange['makeEscrowSeatKit']>>} EscrowSeatKit */
+/** @typedef {EscrowSeatKit['seat']} EscrowSeat */
+/** @typedef {EscrowSeatKit['resolver']} EscrowSeatResolver */
