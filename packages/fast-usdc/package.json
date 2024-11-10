@@ -22,6 +22,7 @@
     "lint:eslint": "eslint ."
   },
   "devDependencies": {
+    "@agoric/casting": "^0.4.2",
     "@agoric/swingset-liveslots": "^0.10.2",
     "@agoric/vats": "^0.15.1",
     "@agoric/zone": "^0.2.2",
