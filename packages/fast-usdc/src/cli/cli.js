@@ -12,7 +12,7 @@ const packageJson = JSON.parse(
   loadTextModule(nodeRequire.resolve('../../package.json'), 'utf8'),
 );
 
-const defaultHome = homedir();
+const defaultHome = homedir(); // XXX IO at module-init time (reading process.env)
 
 export const initProgram = (
   configHelpers = configLib,
