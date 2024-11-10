@@ -6,6 +6,7 @@ import { Fail, q } from '@endo/errors';
  * @typedef { import('./bundleStore.js').BundleStoreInternal } BundleStoreInternal
  *
  * @typedef {{
+ *    dirPath: string | null,
  *    transcriptStore: TranscriptStoreInternal,
  *    snapStore: SnapStoreInternal,
  *    bundleStore: BundleStoreInternal,
