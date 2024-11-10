@@ -11,7 +11,7 @@ import {
   deeplyFulfilledObject,
   deepMapObject,
   synchronizedTee,
-} from '../src/utils.js';
+} from '../src/ses-utils.js';
 
 test('deeplyFulfilledObject', async t => {
   const someFar = Far('somefar', { getAsync: () => Promise.resolve('async') });

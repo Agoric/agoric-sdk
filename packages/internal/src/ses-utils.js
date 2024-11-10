@@ -1,5 +1,9 @@
 // @ts-check
 // @jessie-check
+/**
+ * @file Utility functions that are dependent upon a hardened environment,
+ *   either directly or indirectly (e.g. by @endo imports).
+ */
 
 import { q, Fail, makeError, annotateError, X } from '@endo/errors';
 import { deeplyFulfilled, isObject } from '@endo/marshal';
