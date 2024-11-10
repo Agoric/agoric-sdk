@@ -67,11 +67,15 @@ func chargeAdmission(
 	msgs []string,
 	storageLen uint64,
 ) error {
+	// A flat charge for each transaction.
 	beans := beansPerUnit[BeansPerInboundTx]
+	// A charge for each message in the transaction.
 	beans = beans.Add(beansPerUnit[BeansPerMessage].MulUint64((uint64(len(msgs)))))
+	// A charge for the total byte length of all messages.
 	for _, msg := range msgs {
 		beans = beans.Add(beansPerUnit[BeansPerMessageByte].MulUint64(uint64(len(msg))))
 	}
+	// A charge for persistent storage.
 	beans = beans.Add(beansPerUnit[BeansPerStorageByte].MulUint64(storageLen))
 
 	return keeper.ChargeBeans(ctx, beansPerUnit, addr, beans)
