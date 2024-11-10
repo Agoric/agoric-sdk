@@ -1,17 +1,15 @@
 import '@endo/init/legacy.js';
 import { Command } from 'commander';
-import { readFileSync } from 'fs';
-import { fileURLToPath } from 'url';
-import { dirname, resolve } from 'path';
+import { readFileSync as loadTextModule } from 'fs';
+import { createRequire } from 'node:module';
 import { homedir } from 'os';
 import configLib from './config.js';
 import transferLib from './transfer.js';
 
+const nodeRequire = createRequire(import.meta.url);
+
 const packageJson = JSON.parse(
-  readFileSync(
-    resolve(dirname(fileURLToPath(import.meta.url)), '../../package.json'),
-    'utf8',
-  ),
+  loadTextModule(nodeRequire.resolve('../../package.json'), 'utf8'),
 );
 
 const defaultHome = homedir();
