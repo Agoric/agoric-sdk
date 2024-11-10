@@ -163,6 +163,7 @@ export const captureIO = fetch => {
     const key = normalizeID(JSON.stringify(args));
     const resp = await fetch(...args);
     return {
+      ok: resp.ok,
       json: async () => {
         const data = await resp.json();
         web.set(key, data);
