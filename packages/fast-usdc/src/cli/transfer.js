@@ -3,12 +3,13 @@ import {
   makeAgoricChainStorageWatcher,
 } from '@agoric/rpc';
 import axios from 'axios';
-import { readFile } from 'node:fs/promises';
+import fsp from 'node:fs/promises';
 import { DirectSecp256k1HdWallet } from '@cosmjs/proto-signing';
 import { SigningStargateClient } from '@cosmjs/stargate';
 import { Buffer } from 'node:buffer';
 import { bech32 } from 'bech32';
 import { ethers } from 'ethers';
+import { makeTendermintRpcClient } from '@agoric/casting';
 
 const createMsgRegisterAccount = (
   /** @type {string} */ signer,
@@ -28,7 +29,12 @@ const createMsgRegisterAccount = (
 export const registerFwdAccount = async (
   /** @type {import('./config').ConfigOpts} */ config,
   /** @type {string} */ recipient,
+  io,
 ) => {
+  const {
+    fetch = globalThis.fetch,
+    rpcClient = makeTendermintRpcClient(config.nobleRpc, fetch),
+  } = io;
   const wallet = await DirectSecp256k1HdWallet.fromMnemonic(config.nobleSeed, {
     prefix: 'noble',
   });
@@ -50,7 +56,7 @@ export const registerFwdAccount = async (
   };
 
   const clientWithSigner = await SigningStargateClient.connectWithSigner(
-    config.nobleRpc,
+    rpcClient,
     wallet,
   );
 
@@ -92,8 +98,14 @@ const contractAbi = [
 const depositForBurn = async (
   /** @type {import('./config').ConfigOpts} */ config,
   /** @type {string} */ mintRecipient,
-  /** @type {string} */ amount,
+  /** @type {`${bigint}`} */ amount,
+  io,
 ) => {
+  const { fetch = globalThis.fetch } = io;
+  // TODO: override ambient authority used in JsonRpcProvider constructor
+  // somehow we need to use geturl-browser.ts
+  // and override fetch here with an injected arg:
+  // https://github.com/ethers-io/ethers.js/blob/9e7e7f3e2f2d51019aaa782e6290e079c38332fb/src.ts/utils/geturl-browser.ts#L48
   const provider = new ethers.JsonRpcProvider(config.ethRpc);
   const privateKey = config.ethSeed;
   const wallet = new ethers.Wallet(privateKey, provider);
@@ -118,11 +130,12 @@ const depositForBurn = async (
 
 const transfer = async (
   /** @type {import("fs").PathLike} */ configPath,
-  /** @type {string} */ amount,
+  /** @type {`${bigint}`} */ amount,
   /** @type {string} */ destination,
   out = console,
   get = axios.get,
   /** @type {ChainStorageWatcher | undefined} */ watcher,
+  io = {},
 ) => {
   const execute = async (
     /** @type {import('./config').ConfigOpts} */ config,
@@ -154,8 +167,10 @@ const transfer = async (
 
   let config;
   await null;
+  const { readFile = fsp.readFile, contentP = readFile(configPath, 'utf-8') } =
+    io;
   try {
-    config = JSON.parse(await readFile(configPath, 'utf-8'));
+    config = JSON.parse(await contentP);
   } catch {
     out.error(
       `No config found at ${configPath}. Use "config init" to create one, or "--home" to specify config location.`,
