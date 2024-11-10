@@ -13,6 +13,7 @@ import {
 } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { makePromiseKit } from '@endo/promise-kit';
 import { commonSetup } from './supports.js';
+import type { USDCProposalShapes } from '../src/pool-share-math.js';
 
 const dirname = path.dirname(new URL(import.meta.url).pathname);
 
@@ -102,7 +103,8 @@ test('LP deposits, earns fees, withdraws', async t => {
       deposit: async (qty: bigint) => {
         const { value: shareWorth } = await E(subscriber).getUpdateSince();
         const give = { USDC: usdc.make(qty) };
-        const proposal = harden({
+
+        const proposal: USDCProposalShapes['deposit'] = harden({
           give,
           want: { PoolShare: divideBy(give.USDC, shareWorth) },
         });
