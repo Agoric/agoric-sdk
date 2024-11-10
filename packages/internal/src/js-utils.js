@@ -6,6 +6,17 @@
  */
 
 /**
+ * Deep-copy a value by round-tripping it through JSON (which drops
+ * function/symbol/undefined values and properties that are non-enumerable
+ * and/or symbol-keyed, and rejects bigint values).
+ *
+ * @template T
+ * @param {T} value
+ * @returns {T}
+ */
+export const deepCopyJsonable = value => JSON.parse(JSON.stringify(value));
+
+/**
  * @param {any} value
  * @param {string | undefined} name
  * @param {object | undefined} container
