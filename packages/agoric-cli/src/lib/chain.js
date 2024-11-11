@@ -82,7 +82,7 @@ export const execSwingsetTransaction = (swingsetArgs, opts) => {
     stdout.write('\n');
   } else {
     const yesCmd = cmd.concat(['--yes']);
-    if (verbose) console.log('Executing ', yesCmd);
+    if (verbose) console.log('Executing ', agdBinary, yesCmd);
     const out = execFileSync(agdBinary, yesCmd, { encoding: 'utf-8' });
 
     // agd puts this diagnostic on stdout rather than stderr :-/
