@@ -427,9 +427,9 @@ const extractBalance = (balances, targetDenom) => {
 
 /**
  * Checking IST balances can be tricky because of the execution fee mentioned in
- * https://github.com/Agoric/agoric-sdk/issues/6525. Here we first check with
- * whatever is passed in. If the first attempt fails we try again to see if
- * there was an execution fee charged. If still fails, we throw.
+ * https://github.com/Agoric/agoric-sdk/issues/6525. So we first check for
+ * equality, but if that fails we recheck against an assumption that a fee of
+ * the default "minFeeDebit" has been charged.
  *
  * @param {import('ava').ExecutionContext} t
  * @param {number} actualBalance
@@ -446,7 +446,10 @@ export const tryISTBalances = async (t, actualBalance, expectedBalance) => {
 
   firstTry.discard();
   t.log('tryISTBalances assuming no batched IST fee', firstTry.errors);
-  t.is(actualBalance + 200_000, expectedBalance);
+  // See golang/cosmos/x/swingset/types/default-params.go
+  // and `ChargeBeans` in golang/cosmos/x/swingset/keeper/keeper.go.
+  const minFeeDebit = 200_000;
+  t.is(actualBalance + minFeeDebit, expectedBalance);
 };
 
 /**
