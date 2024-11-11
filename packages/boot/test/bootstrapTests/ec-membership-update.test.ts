@@ -196,7 +196,7 @@ test.serial(
 
 test.serial('Update reserve metrics', async t => {
   // Need to update metrics before membership upgrade for tests related to vault params later
-  const { advanceTimeTo, setupVaults, priceFeedDrivers, readLatest } =
+  const { advanceTimeTo, setupVaults, priceFeedDrivers, readPublished } =
     t.context;
   const setup = {
     vaults: [
@@ -225,7 +225,7 @@ test.serial('Update reserve metrics', async t => {
 
   await setupVaults('ATOM', 0, setup);
   await priceFeedDrivers.ATOM.setPrice(setup.price.trigger);
-  const liveSchedule = readLatest('published.auction.schedule');
+  const liveSchedule = readPublished('auction.schedule');
   await advanceTimeTo(NonNullish(liveSchedule.nextDescendingStepTime));
   t.pass();
 });

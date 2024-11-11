@@ -9,7 +9,10 @@ import { boardSlottingMarshaller, makeVstorageKit } from './vstorage-kit.js';
  * @import {MinimalNetworkConfig} from './rpc.js';
  */
 
+// XXX this is really a SmartWalletKit
 /**
+ * Augment VstorageKit with addtional convenience methods for working with
+ * Agoric smart wallets.
  *
  * @param {object} root0
  * @param {typeof globalThis.fetch} root0.fetch
@@ -17,9 +20,9 @@ import { boardSlottingMarshaller, makeVstorageKit } from './vstorage-kit.js';
  * @param {MinimalNetworkConfig} networkConfig
  */
 export const makeWalletUtils = async ({ fetch, delay }, networkConfig) => {
-  const { agoricNames, fromBoard, marshaller, readLatestHead, vstorage } =
-    await makeVstorageKit({ fetch }, networkConfig);
-  const m = boardSlottingMarshaller(fromBoard.convertSlotToVal);
+  const vsk = await makeVstorageKit({ fetch }, networkConfig);
+
+  const m = boardSlottingMarshaller(vsk.fromBoard.convertSlotToVal);
 
   const client = await makeStargateClient(networkConfig, { fetch });
 
@@ -28,14 +31,14 @@ export const makeWalletUtils = async ({ fetch, delay }, networkConfig) => {
    * @param {number|string} [minHeight]
    */
   const storedWalletState = async (from, minHeight = undefined) => {
-    const history = await vstorage.readFully(
+    const history = await vsk.vstorage.readFully(
       `published.wallet.${from}`,
       minHeight,
     );
 
     /** @type {{ Invitation: Brand<'set'> }} */
     // @ts-expect-error XXX how to narrow AssetKind to set?
-    const { Invitation } = agoricNames.brand;
+    const { Invitation } = vsk.agoricNames.brand;
     const coalescer = makeWalletStateCoalescer(Invitation);
     // update with oldest first
     for (const txt of history.reverse()) {
@@ -86,9 +89,7 @@ export const makeWalletUtils = async ({ fetch, delay }, networkConfig) => {
    * @returns {Promise<UpdateRecord>}
    */
   const getLastUpdate = addr => {
-    return /** @type {Promise<UpdateRecord>} */ (
-      readLatestHead(`published.wallet.${addr}`)
-    );
+    return vsk.readPublished(`wallet.${addr}`);
   };
 
   /**
@@ -96,20 +97,15 @@ export const makeWalletUtils = async ({ fetch, delay }, networkConfig) => {
    * @returns {Promise<CurrentWalletRecord>}
    */
   const getCurrentWalletRecord = addr => {
-    return /** @type {Promise<CurrentWalletRecord>} */ (
-      readLatestHead(`published.wallet.${addr}.current`)
-    );
+    return vsk.readPublished(`wallet.${addr}.current`);
   };
 
   return {
+    // pass along all of VstorageKit
+    ...vsk,
     networkConfig,
-    agoricNames,
-    fromBoard,
-    marshaller,
-    vstorage,
     getLastUpdate,
     getCurrentWalletRecord,
-    readLatestHead,
     storedWalletState,
     pollOffer,
   };

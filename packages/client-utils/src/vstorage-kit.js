@@ -8,6 +8,7 @@ export { boardSlottingMarshaller };
 
 /**
  * @import {MinimalNetworkConfig} from './rpc.js';
+ * @import {TypedPublished} from './types.js';
  */
 
 /**
@@ -233,11 +234,26 @@ export const makeVstorageKit = async ({ fetch }, config) => {
     const readLatestHead = path =>
       vstorage.readLatest(path).then(unserializeHead);
 
+    /**
+     * Read latest at published path and unmarshal it.
+     *
+     * Note this does not perform a runtime check to verify the shape. The
+     * static types come from the spec of what is supposed to be written to
+     * vstorage, which is validated in testing of the chain code that is run
+     * in consensus.
+     *
+     * @type {<T extends string>(subpath: T) => Promise<TypedPublished<T>>}
+     */
+    const readPublished = subpath =>
+      // @ts-expect-error cast
+      readLatestHead(`published.${subpath}`);
+
     return {
       agoricNames,
       fromBoard,
       marshaller,
       readLatestHead,
+      readPublished,
       unserializeHead,
       vstorage,
     };

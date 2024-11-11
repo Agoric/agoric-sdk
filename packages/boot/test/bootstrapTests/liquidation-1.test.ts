@@ -146,12 +146,14 @@ const checkFlow1 = async (
     check,
     priceFeedDrivers,
     readLatest,
+    readPublished,
     walletFactoryDriver,
     setupVaults,
     placeBids,
   } = t.context;
 
-  const metricsPath = `published.vaultFactory.managers.manager${managerIndex}.metrics`;
+  const metricsSubpath =
+    `vaultFactory.managers.manager${managerIndex}.metrics` as const;
 
   await setupVaults(collateralBrandKey, managerIndex, setup);
 
@@ -166,11 +168,9 @@ const checkFlow1 = async (
     await priceFeedDrivers[collateralBrandKey].setPrice(9.99);
 
     // check nothing liquidating yet
-    const liveSchedule: ScheduleNotification = readLatest(
-      'published.auction.schedule',
-    );
+    const liveSchedule = readPublished('auction.schedule');
     t.is(liveSchedule.activeStartTime, null);
-    t.like(readLatest(metricsPath), {
+    t.like(readPublished(metricsSubpath), {
       numActiveVaults: setup.vaults.length,
       numLiquidatingVaults: 0,
     });
@@ -178,7 +178,7 @@ const checkFlow1 = async (
     // advance time to start an auction
     console.log(collateralBrandKey, 'step 1 of 10');
     await advanceTimeTo(NonNullish(liveSchedule.nextDescendingStepTime));
-    t.like(readLatest(metricsPath), {
+    t.like(readPublished(metricsSubpath), {
       numActiveVaults: 0,
       numLiquidatingVaults: setup.vaults.length,
       liquidatingCollateral: {
@@ -190,7 +190,7 @@ const checkFlow1 = async (
 
     console.log(collateralBrandKey, 'step 2 of 10');
     await advanceTimeBy(3, 'minutes');
-    t.like(readLatest(`published.auction.book${managerIndex}`), {
+    t.like(readPublished(`auction.book${managerIndex}`), {
       collateralAvailable: { value: scale6(setup.auction.start.collateral) },
       startCollateral: { value: scale6(setup.auction.start.collateral) },
       startProceedsGoal: { value: scale6(setup.auction.start.debt) },
@@ -203,7 +203,7 @@ const checkFlow1 = async (
     await advanceTimeBy(3, 'minutes');
     // XXX updates for bid1 and bid2 are appended in the same turn so readLatest gives bid2
     // NB: console output shows 8897786n payout which matches spec 8.897ATOM
-    // t.like(readLatest('published.wallet.agoric1buyer'), {
+    // t.like(readPublished('wallet.agoric1buyer'), {
     //   status: {
     //     id: `${collateralBrandKey}-bid1`,
     //     payouts: {
@@ -213,7 +213,7 @@ const checkFlow1 = async (
     //   },
     // });
 
-    t.like(readLatest('published.wallet.agoric1buyer'), {
+    t.like(readPublished('wallet.agoric1buyer'), {
       status: {
         id: `${collateralBrandKey}-bid2`,
         payouts: likePayouts(outcome.bids[1].payouts),
@@ -225,7 +225,7 @@ const checkFlow1 = async (
 
     console.log(collateralBrandKey, 'step 6 of 10');
     await advanceTimeBy(3, 'minutes');
-    t.like(readLatest(`published.auction.book${managerIndex}`), {
+    t.like(readPublished(`auction.book${managerIndex}`), {
       collateralAvailable: { value: 9659301n },
     });
 
@@ -238,7 +238,7 @@ const checkFlow1 = async (
     console.log(collateralBrandKey, 'step 9 of 10');
     await advanceTimeBy(3, 'minutes');
     // Not part of product spec
-    t.like(readLatest(metricsPath), {
+    t.like(readPublished(metricsSubpath), {
       numActiveVaults: 0,
       numLiquidationsCompleted: setup.vaults.length,
       numLiquidatingVaults: 0,
@@ -254,18 +254,17 @@ const checkFlow1 = async (
     console.log(collateralBrandKey, 'step 10 of 10');
     // continuing after now would start a new auction
     {
-      const { nextDescendingStepTime, nextStartTime } = readLatest(
-        'published.auction.schedule',
-      ) as Record<string, import('@agoric/time').TimestampRecord>;
+      const { nextDescendingStepTime, nextStartTime } =
+        readPublished('auction.schedule');
       t.is(nextDescendingStepTime.absValue, nextStartTime.absValue);
     }
 
     // bid3 still live because it's not fully satisfied
-    const { liveOffers } = readLatest('published.wallet.agoric1buyer.current');
+    const { liveOffers } = readPublished('wallet.agoric1buyer.current');
     t.is(liveOffers[0][1].id, `${collateralBrandKey}-bid3`);
     // exit to get payouts
     await buyer.tryExitOffer(`${collateralBrandKey}-bid3`);
-    t.like(readLatest('published.wallet.agoric1buyer'), {
+    t.like(readPublished('wallet.agoric1buyer'), {
       status: {
         id: `${collateralBrandKey}-bid3`,
         payouts: likePayouts(outcome.bids[2].payouts),
@@ -290,7 +289,7 @@ const checkFlow1 = async (
   }
 
   // check reserve balances
-  t.like(readLatest('published.reserve.metrics'), {
+  t.like(readPublished('reserve.metrics'), {
     allocations: {
       [collateralBrandKey]: {
         value: scale6(outcome.reserve.allocations[collateralBrandKey]),
