@@ -1,9 +1,10 @@
 /* eslint-disable no-use-before-define */
-import type { LatestTopic } from '@agoric/notifier';
 import type { ERef } from '@endo/far';
 import type { RemotableObject } from '@endo/pass-style';
 import type { CopySet, Key, Pattern } from '@endo/patterns';
-import type { AssetKind } from '@agoric/ertp';
+import type { LatestTopic } from '@agoric/notifier';
+
+import type { AssetKind, Amount, Brand, Payment } from '@agoric/ertp';
 
 export type MinOrchAccountAddress = {};
 
