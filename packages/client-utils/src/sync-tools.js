@@ -52,7 +52,8 @@ export const retryUntilCondition = async (
   {
     maxRetries = 6,
     retryIntervalMs = 3500,
-    reusePromise,
+    reusePromise = false,
+    // XXX mixes ocaps with configuration options
     log = console.log,
     setTimeout,
   },
