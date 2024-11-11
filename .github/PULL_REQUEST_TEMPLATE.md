@@ -33,3 +33,6 @@ refs: #XXXX
 
 ### Upgrade Considerations
 <!-- What aspects of this PR are relevant to upgrading live production systems, and how should they be addressed? -->
+
+### Release Verification
+<!-- What steps should be followed to verify that these changes have been included in a release (ollinet/emerynet/mainnet/etc.) and work successfully there? If the process is elaborate, consider adding a script to scripts/verification/. -->
