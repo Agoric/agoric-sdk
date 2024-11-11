@@ -1,5 +1,6 @@
 /* eslint-env node */
 
+import { getNetworkConfig } from 'agoric/src/helpers.js';
 import {
   boardSlottingMarshaller,
   makeFromBoard,
@@ -391,20 +392,67 @@ export const sendOfferAgoric = async (address, offerPromise) => {
 };
 
 /**
+ * A variant of {@link sendOfferAgoric} that uses `agd` directly to e.g.
+ * control gas calculation.
+ *
+ * @param {string} address
+ * @param {Promise<string>} offerPromise
+ * @returns {Promise<CommandResult>}
+ */
+export const sendOfferAgd = async (address, offerPromise) => {
+  const offer = await offerPromise;
+  const networkConfig = await getNetworkConfig({ env: process.env, fetch });
+  const { chainName, rpcAddrs } = networkConfig;
+  const args = [
+    `--node=${rpcAddrs[0]}`,
+    `--chain-id=${chainName}`,
+    `--keyring-backend=test`,
+    `--from=${address}`,
+    'tx',
+    'swingset',
+    'wallet-action',
+    '--allow-spend',
+    offer,
+    '-bblock',
+    '--yes',
+    '-ojson',
+  ];
+  const result = await runCommand('agd', args);
+  // Mimic --verbose
+  // https://github.com/Agoric/agoric-sdk/blob/master/packages/agoric-cli/src/lib/wallet.js
+  if (result.status === 0 && !result.signal && !result.error) {
+    const out = result.stdout.toString();
+    try {
+      const tx = JSON.parse(out);
+      if (tx.code !== 0) {
+        console.error('failed to send tx', tx);
+        return { ...result, error: Error(`code ${tx.code}`) };
+      }
+      console.log(tx);
+    } catch (err) {
+      console.error('unexpected output', JSON.stringify(out));
+      return { ...result, error: err };
+    }
+  }
+  return result;
+};
+
+/**
  * @param {string} address
  * @param {Array<any>} params
  * @param {{
  *   follow: (...params: string[]) => Promise<object>;
+ *   sendOffer?: (address: string, offerPromise: Promise<string>) => Promise<CommandResult>;
  *   setTimeout: typeof global.setTimeout;
  *   now: () => number
  * }} io
  */
 export const psmSwap = async (address, params, io) => {
-  const now = io.now();
-  const offerId = `${address}-psm-swap-${now}`;
+  const { now, sendOffer = sendOfferAgoric, ...waitIO } = io;
+  const offerId = `${address}-psm-swap-${now()}`;
   const newParams = ['psm', ...params, '--offerId', offerId];
   const offerPromise = executeCommand(agopsLocation, newParams);
-  const sendResult = await sendOfferAgoric(address, offerPromise);
+  const sendResult = await sendOffer(address, offerPromise);
   const { status, stdout, stderr, signal, error } = sendResult;
   if (status !== 0 || signal || error) {
     console.error('psmSwap tx send failed', commandResultData(sendResult));
@@ -415,7 +463,7 @@ export const psmSwap = async (address, params, io) => {
   }
   console.log('psmSwap tx send results', stdout.toString(), stderr.toString());
 
-  await waitUntilOfferResult(address, offerId, true, io, {
+  await waitUntilOfferResult(address, offerId, true, waitIO, {
     errorMessage: `${offerId} not succeeded`,
   });
 };
