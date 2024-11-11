@@ -1,12 +1,12 @@
 /* eslint-env node */
 
+import { retryUntilCondition } from '@agoric/client-utils';
 import {
   agoric,
   getContractInfo,
-  pushPrices,
   getPriceQuote,
+  pushPrices,
 } from '@agoric/synthetic-chain';
-import { retryUntilCondition } from './sync-tools.js';
 
 export const scale6 = x => BigInt(x * 1_000_000);
 

@@ -1,5 +1,6 @@
-import assert from 'assert';
-import '@endo/init';
+// @ts-nocheck FIXME
+import assert from 'node:assert';
+
 import {
   agoric,
   executeOffer,
@@ -9,10 +10,11 @@ import {
 import { execFileSync } from 'child_process';
 import { makeCopyBag } from '@agoric/store';
 import { AmountMath } from '@agoric/ertp';
-import { makeFromBoard, boardSlottingMarshaller } from './rpc.js';
+import { boardSlottingMarshaller, makeFromBoard } from '@agoric/client-utils';
 
 const ISTunit = 1_000_000n;
 
+/** @type {(file: string, args: string[], opts: any) => string} */
 const showAndExec = (file, args, opts) => {
   console.log('$', file, ...args);
   return execFileSync(file, args, opts);

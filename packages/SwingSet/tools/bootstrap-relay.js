@@ -1,3 +1,12 @@
+/**
+ * @file Source code for a bootstrap vat that runs blockchain behaviors (such as
+ *   bridge vat integration) and exposes reflective methods for use in testing.
+ *
+ * TODO: Build from ./vat-puppet.js makeReflectionMethods
+ * and share code with packages/vats/tools/vat-reflective-chain-bootstrap.js
+ * (which basically extends this for better [mock] blockchain integration).
+ */
+
 import { Fail, q } from '@endo/errors';
 import { objectMap } from '@agoric/internal';
 import { Far, E } from '@endo/far';

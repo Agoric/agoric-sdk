@@ -1,46 +1,21 @@
-/** @file copied from packages/agoric-cli */
-// TODO DRY in https://github.com/Agoric/agoric-sdk/issues/9109
-// @ts-check
 /* global Buffer */
-
-import { Fail } from '@endo/errors';
 import {
   boardSlottingMarshaller,
   makeBoardRemote,
-} from '@agoric/internal/src/marshal.js';
+} from '@agoric/vats/tools/board-utils.js';
 
 export { boardSlottingMarshaller };
 
-export const boardValToSlot = val => {
-  if ('getBoardId' in val) {
-    return val.getBoardId();
-  }
-  Fail`unknown obj in boardSlottingMarshaller.valToSlot ${val}`;
-};
-
-export const networkConfigUrl = agoricNetSubdomain =>
-  `https://${agoricNetSubdomain}.agoric.net/network-config`;
-export const rpcUrl = agoricNetSubdomain =>
-  `https://${agoricNetSubdomain}.rpc.agoric.net:443`;
-
 /**
- * @typedef {{ rpcAddrs: string[], chainName: string }} MinimalNetworkConfig
+ * @import {MinimalNetworkConfig} from './rpc.js';
  */
-
-/** @type {MinimalNetworkConfig} */
-const networkConfig = {
-  rpcAddrs: ['http://0.0.0.0:26657'],
-  chainName: 'agoriclocal',
-};
-export { networkConfig };
-// console.warn('networkConfig', networkConfig);
 
 /**
  * @param {object} powers
  * @param {typeof window.fetch} powers.fetch
  * @param {MinimalNetworkConfig} config
  */
-export const makeVStorage = (powers, config = networkConfig) => {
+export const makeVStorage = (powers, config) => {
   /** @param {string} path */
   const getJSON = path => {
     const url = config.rpcAddrs[0] + path;
@@ -130,12 +105,13 @@ export const makeVStorage = (powers, config = networkConfig) => {
           // console.debug('readAt returned', { blockHeight });
         } catch (err) {
           if (
-            // CosmosSDK ErrNotFound; there is no data at the path
-            (err.codespace === 'sdk' && err.code === 38) ||
-            // CosmosSDK ErrUnknownRequest; misrepresentation of the same until
-            // https://github.com/Agoric/agoric-sdk/commit/dafc7c1708977aaa55e245dc09a73859cf1df192
-            // TODO remove after upgrade-12
-            err.message.match(/unknown request/)
+            // CosmosSDK ErrInvalidRequest with particular message text;
+            // misrepresentation of pruned data
+            // TODO replace after incorporating a fix to
+            // https://github.com/cosmos/cosmos-sdk/issues/19992
+            err.codespace === 'sdk' &&
+            err.code === 18 &&
+            err.message.match(/pruned/)
           ) {
             // console.error(err);
             break;
@@ -153,6 +129,7 @@ export const makeVStorage = (powers, config = networkConfig) => {
 };
 /** @typedef {ReturnType<typeof makeVStorage>} VStorage */
 
+/** @deprecated */
 export const makeFromBoard = () => {
   const cache = new Map();
   const convertSlotToVal = (boardId, iface) => {
@@ -167,6 +144,7 @@ export const makeFromBoard = () => {
 };
 /** @typedef {ReturnType<typeof makeFromBoard>} IdMap */
 
+/** @deprecated */
 export const storageHelper = {
   /** @param { string } txt */
   parseCapData: txt => {
@@ -206,6 +184,7 @@ export const storageHelper = {
 harden(storageHelper);
 
 /**
+ * @deprecated
  * @param {IdMap} ctx
  * @param {VStorage} vstorage
  * @returns {Promise<import('@agoric/vats/tools/board-utils.js').AgoricNamesRemotes>}
@@ -234,7 +213,7 @@ export const makeAgoricNames = async (ctx, vstorage) => {
  * @param {{ fetch: typeof window.fetch }} io
  * @param {MinimalNetworkConfig} config
  */
-export const makeVstorageKit = async ({ fetch }, config = networkConfig) => {
+export const makeVstorageKit = async ({ fetch }, config) => {
   await null;
   try {
     const vstorage = makeVStorage({ fetch }, config);
@@ -247,7 +226,10 @@ export const makeVstorageKit = async ({ fetch }, config = networkConfig) => {
     const unserializeHead = txt =>
       storageHelper.unserializeTxt(txt, fromBoard).at(-1);
 
-    /** @type {(path: string) => Promise<unknown>} */
+    /**
+     * Read latest at path and unmarshal it
+     * @type {(path: string) => Promise<unknown>}
+     */
     const readLatestHead = path =>
       vstorage.readLatest(path).then(unserializeHead);
 
@@ -263,4 +245,4 @@ export const makeVstorageKit = async ({ fetch }, config = networkConfig) => {
     throw Error(`RPC failure (${config.rpcAddrs}): ${err.message}`);
   }
 };
-/** @typedef {Awaited<ReturnType<typeof makeVstorageKit>>} RpcUtils */
+/** @typedef {Awaited<ReturnType<typeof makeVstorageKit>>} VstorageKit */

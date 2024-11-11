@@ -2,7 +2,7 @@
 /* eslint-disable func-names */
 /* eslint-env node */
 import {
-  makeRpcUtils,
+  makeVstorageKit,
   makeWalletUtils,
   storageHelper,
 } from '@agoric/client-utils';
@@ -87,7 +87,7 @@ export const makeOracleCommand = (logger, io = {}) => {
   const rpcTools = async () => {
     // XXX pass fetch to getNetworkConfig() explicitly
     const networkConfig = await getNetworkConfig({ env: process.env, fetch });
-    const utils = await makeRpcUtils({ fetch }, networkConfig);
+    const utils = await makeVstorageKit({ fetch }, networkConfig);
 
     const lookupPriceAggregatorInstance = ([brandIn, brandOut]) => {
       const name = oracleBrandFeedName(brandIn, brandOut);

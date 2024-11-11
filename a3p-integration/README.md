@@ -108,10 +108,36 @@ Instead of relying on an automatic `submission` folder, a core-eval proposal can
 
 # Build details
 
+In the `ghcr.io/agoric/agoric-sdk` image the filesystem is:
+```
+/usr/src/agoric-sdk
+```
+
+With the proposals layered on top of the `agoric-sdk` image, the filesystem adds (for example):
+```
+/usr/src/proposals/n:upgrade-next
+/usr/src/proposals/z:acceptance
+```
+
+In agoric-sdk CI and development, we want the proposals to use the versions of the packages in the agoric-sdk source tree. To accomplish this we use `yarn link`. In Yarn 4 (berry) it uses a `portal` protocol to link to another Yarn project on the filesystem. One kink is that in development the command would,
+```
+yarn link --relative ../../.. --all
+```
+Which configures the package.json resolutions to find agoric-sdk three levels up.
+
+But in CI the proposals aren't nested under agoric-sdk and the command would be,
+```
+yarn link --relative ../../agoric-sdk --all
+```
+
+To give a consistent location, `a3p-integration` has a symlink to the `agoric-sdk` project where the proposals expect it in the Docker fileystem. (I.e. treating `a3p-integration` as `/usr/src` of the Docker image.)
+
+
 The `yarn build` script automates 3 steps:
 - Building the `unreleased` SDK image
 - Generating the `submission` folders in core proposal packages
 - Building the synthetic-chain images using the proposals
+
 
 ## Generate a docker image with the `agoric-sdk` chain software
 

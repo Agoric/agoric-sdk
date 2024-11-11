@@ -234,7 +234,7 @@ export const makeAgoricNames = async (ctx, vstorage) => {
  * @param {{ fetch: typeof window.fetch }} io
  * @param {MinimalNetworkConfig} config
  */
-export const makeRpcUtils = async ({ fetch }, config = networkConfig) => {
+export const makeVstorageKit = async ({ fetch }, config = networkConfig) => {
   await null;
   try {
     const vstorage = makeVStorage({ fetch }, config);
@@ -263,4 +263,4 @@ export const makeRpcUtils = async ({ fetch }, config = networkConfig) => {
     throw Error(`RPC failure (${config.rpcAddrs}): ${err.message}`);
   }
 };
-/** @typedef {Awaited<ReturnType<typeof makeRpcUtils>>} RpcUtils */
+/** @typedef {Awaited<ReturnType<typeof makeVstorageKit>>} RpcUtils */

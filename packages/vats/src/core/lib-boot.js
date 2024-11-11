@@ -47,7 +47,7 @@ const setDiff = (a, b) => a.filter(x => !b.includes(x));
 /**
  * @param {import('@agoric/swingset-vat').VatPowers & {
  *   D: DProxy;
- *   logger: (msg) => void;
+ *   logger?: typeof console.log;
  * }} vatPowers
  * @param {Record<string, unknown>} vatParameters
  * @param {BootstrapManifest} bootManifest

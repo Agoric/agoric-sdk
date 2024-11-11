@@ -22,13 +22,23 @@ const (
 	BeansPerXsnapComputron       = "xsnapComputron"
 	BeansPerSmartWalletProvision = "smartWalletProvision"
 
+	// PowerFlags.
+	PowerFlagSmartWallet = "SMART_WALLET"
+
 	// QueueSize keys.
-	// Keep up-to-date with updateQueueAllowed() in packanges/cosmic-swingset/src/launch-chain.js
+	// Keep up-to-date with updateQueueAllowed() in packages/cosmic-swingset/src/launch-chain.js
 	QueueInbound        = "inbound"
 	QueueInboundMempool = "inbound_mempool"
 
-	// PowerFlags.
-	PowerFlagSmartWallet = "SMART_WALLET"
+	// Vat cleanup budget keys.
+	// Keep up-to-date with CleanupBudget in packages/cosmic-swingset/src/launch-chain.js
+	VatCleanupDefault     = "default"
+	VatCleanupExports     = "exports"
+	VatCleanupImports     = "imports"
+	VatCleanupPromises    = "promises"
+	VatCleanupKv          = "kv"
+	VatCleanupSnapshots   = "snapshots"
+	VatCleanupTranscripts = "transcripts"
 )
 
 var (
@@ -62,9 +72,25 @@ var (
 	}
 
 	DefaultInboundQueueMax = int32(1_000)
-
-	DefaultQueueMax = []QueueSize{
+	DefaultQueueMax        = []QueueSize{
 		NewQueueSize(QueueInbound, DefaultInboundQueueMax),
+	}
+
+	DefaultVatCleanupDefault = sdk.NewUint(5)
+	// DefaultVatCleanupExports     = DefaultVatCleanupDefault
+	// DefaultVatCleanupImports     = DefaultVatCleanupDefault
+	// DefaultVatCleanupPromises    = DefaultVatCleanupDefault
+	DefaultVatCleanupKv = sdk.NewUint(50)
+	// DefaultVatCleanupSnapshots   = DefaultVatCleanupDefault
+	// DefaultVatCleanupTranscripts = DefaultVatCleanupDefault
+	DefaultVatCleanupBudget = []UintMapEntry{
+		UintMapEntry{VatCleanupDefault, DefaultVatCleanupDefault},
+		// UintMapEntry{VatCleanupExports, DefaultVatCleanupExports},
+		// UintMapEntry{VatCleanupImports, DefaultVatCleanupImports},
+		// UintMapEntry{VatCleanupPromises, DefaultVatCleanupPromises},
+		UintMapEntry{VatCleanupKv, DefaultVatCleanupKv},
+		// UintMapEntry{VatCleanupSnapshots, DefaultVatCleanupSnapshots},
+		// UintMapEntry{VatCleanupTranscripts, DefaultVatCleanupTranscripts},
 	}
 )
 

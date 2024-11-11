@@ -1,5 +1,3 @@
-/* eslint-env node */
-
 /**
  * @file The purpose of this file is to bring together a set of tools that
  * developers can use to synchronize operations they carry out in their tests.
@@ -18,8 +16,6 @@
  * @typedef {object} RetryOptions
  * @property {number} [maxRetries]
  * @property {number} [retryIntervalMs]
- * @property {(...arg0: string[]) => void} [log]
- * @property {(callback: Function, delay: number) => void} [setTimeout]
  *
  * @typedef {RetryOptions & {errorMessage: string}} WaitUntilOptions
  *
@@ -28,15 +24,13 @@
  * @property {number} value
  */
 
-const ambientSetTimeout = global.setTimeout;
-
 /**
  * From https://github.com/Agoric/agoric-sdk/blob/442f07c8f0af03281b52b90e90c27131eef6f331/multichain-testing/tools/sleep.ts#L10
  *
  * @param {number} ms
- * @param {*} sleepOptions
+ * @param {{log: (message: string) => void, setTimeout: typeof global.setTimeout}} io
  */
-export const sleep = (ms, { log = () => {}, setTimeout = ambientSetTimeout }) =>
+export const sleep = (ms, { log = () => {}, setTimeout }) =>
   new Promise(resolve => {
     log(`Sleeping for ${ms}ms...`);
     setTimeout(resolve, ms);
@@ -48,7 +42,7 @@ export const sleep = (ms, { log = () => {}, setTimeout = ambientSetTimeout }) =>
  * @param {() => Promise} operation
  * @param {(result: any) => boolean} condition
  * @param {string} message
- * @param {RetryOptions} options
+ * @param {RetryOptions & {log?: typeof console.log, setTimeout: typeof global.setTimeout}} options
  */
 export const retryUntilCondition = async (
   operation,
@@ -58,6 +52,8 @@ export const retryUntilCondition = async (
 ) => {
   console.log({ maxRetries, retryIntervalMs, message });
   let retries = 0;
+
+  await null; // separate sync prologue
 
   while (retries < maxRetries) {
     try {
@@ -112,7 +108,7 @@ const makeGetInstances = follow => async () => {
 /**
  *
  * @param {string} contractName
- * @param {{follow: () => object, setTimeout: (object) => void}} ambientAuthority
+ * @param {{ log: (message: string) => void, follow: () => object, setTimeout: typeof global.setTimeout }} ambientAuthority
  * @param {WaitUntilOptions} options
  */
 export const waitUntilContractDeployed = (
@@ -153,17 +149,12 @@ const checkCosmosBalance = (balances, threshold) => {
 
 /**
  * @param {string} destAcct
- * @param {{query: () => Promise<object>, setTimeout: (object) => void}} ambientAuthority
+ * @param {{ log: (message: string) => void, query: () => Promise<object>, setTimeout: typeof global.setTimeout}} io
  * @param {{denom: string, value: number}} threshold
  * @param {WaitUntilOptions} options
  */
-export const waitUntilAccountFunded = (
-  destAcct,
-  ambientAuthority,
-  threshold,
-  options,
-) => {
-  const { query, setTimeout } = ambientAuthority;
+export const waitUntilAccountFunded = (destAcct, io, threshold, options) => {
+  const { query, setTimeout } = io;
   const queryCosmosBalance = makeQueryCosmosBalance(query);
   const { maxRetries, retryIntervalMs, errorMessage, log } =
     overrideDefaultOptions(options);
@@ -208,17 +199,17 @@ const checkOfferState = (offerStatus, waitForPayouts, offerId) => {
  * @param {string} addr
  * @param {string} offerId
  * @param {boolean} waitForPayouts
- * @param {{follow: () => object, setTimeout: (callback: Function, delay: number) => void}} ambientAuthority
+ * @param {{ log: typeof console.log, follow: () => object, setTimeout: typeof global.setTimeout }} io
  * @param {WaitUntilOptions} options
  */
 export const waitUntilOfferResult = (
   addr,
   offerId,
   waitForPayouts,
-  ambientAuthority,
+  io,
   options,
 ) => {
-  const { follow, setTimeout } = ambientAuthority;
+  const { follow, setTimeout } = io;
   const queryWallet = makeQueryWallet(follow);
   const { maxRetries, retryIntervalMs, errorMessage, log } =
     overrideDefaultOptions(options);
@@ -250,15 +241,11 @@ const checkForInvitation = update => {
 /**
  *
  * @param {string} addr
- * @param {{follow: () => object, setTimeout: (object) => void}} ambientAuthority
+ * @param {{ follow: () => object, log: typeof console.log, setTimeout: typeof global.setTimeout}} io
  * @param {WaitUntilOptions} options
  */
-export const waitUntilInvitationReceived = (
-  addr,
-  ambientAuthority,
-  options,
-) => {
-  const { follow, setTimeout } = ambientAuthority;
+export const waitUntilInvitationReceived = (addr, io, options) => {
+  const { follow, setTimeout } = io;
   const queryWallet = makeQueryWallet(follow);
   const { maxRetries, retryIntervalMs, errorMessage, log } =
     overrideDefaultOptions(options);

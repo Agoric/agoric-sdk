@@ -1,6 +1,11 @@
 /* eslint-env node */
 
-import '@endo/init';
+import {
+  boardSlottingMarshaller,
+  makeFromBoard,
+  retryUntilCondition,
+} from '@agoric/client-utils';
+import { AmountMath } from '@agoric/ertp';
 import {
   agops,
   agoric,
@@ -9,14 +14,13 @@ import {
   GOV1ADDR,
   GOV2ADDR,
 } from '@agoric/synthetic-chain';
-import { AmountMath } from '@agoric/ertp';
 import {
   ceilMultiplyBy,
   makeRatio,
 } from '@agoric/zoe/src/contractSupport/ratio.js';
-import { getAgoricNamesBrands, getAgoricNamesInstances } from './utils.js';
-import { boardSlottingMarshaller, makeFromBoard } from './rpc.js';
-import { retryUntilCondition } from './sync-tools.js';
+import { E } from '@endo/far';
+import { walletUtils } from './index.js';
+import { listVaults, vstorageKitP } from './utils.js';
 
 const fromBoard = makeFromBoard();
 const marshaller = boardSlottingMarshaller(fromBoard.convertSlotToVal);
@@ -26,7 +30,7 @@ const marshaller = boardSlottingMarshaller(fromBoard.convertSlotToVal);
  * @returns {Promise<{ vaultID: string, debt: bigint, collateral: bigint, state: string }>}
  */
 export const getLastVaultFromAddress = async address => {
-  const activeVaults = await agops.vaults('list', '--from', address);
+  const activeVaults = await listVaults(address, walletUtils);
   const vaultPath = activeVaults[activeVaults.length - 1];
   const vaultID = vaultPath.split('.').pop();
 
@@ -93,7 +97,7 @@ export const getMinInitialDebt = async () => {
  * @returns {Promise<{ mintFee: import('@agoric/ertp/src/types.js').NatAmount, adjustedToMintAmount: import('@agoric/ertp/src/types.js').NatAmount }>}
  */
 export const calculateMintFee = async (toMintValue, vaultManager) => {
-  const brands = await getAgoricNamesBrands();
+  const { brand } = await E.get(vstorageKitP).agoricNames;
 
   const governancePath = `published.vaultFactory.managers.${vaultManager}.governance`;
   const governance = await getContractInfo(governancePath, {
@@ -106,27 +110,44 @@ export const calculateMintFee = async (toMintValue, vaultManager) => {
 
   const mintFeeRatio = makeRatio(
     numerator.value,
-    brands.IST,
+    brand.IST,
     denominator.value,
-    brands.IST,
+    brand.IST,
   );
 
-  const toMintAmount = AmountMath.make(brands.IST, toMintValue * 1_000_000n);
+  // @ts-expect-error XXX BoardRemote not Brand
+  const toMintAmount = AmountMath.make(brand.IST, toMintValue * 1_000_000n);
   const expectedMintFee = ceilMultiplyBy(toMintAmount, mintFeeRatio);
   const adjustedToMintAmount = AmountMath.add(toMintAmount, expectedMintFee);
 
   return { mintFee, adjustedToMintAmount };
 };
 
+/**
+ * @param {Array<string>} accounts
+ * @param {number} position
+ */
 const voteForNewParams = (accounts, position) => {
   console.log('ACTIONS voting for position', position, 'using', accounts);
   return Promise.all(
     accounts.map(account =>
-      agops.ec('vote', '--forPosition', position, '--send-from', account),
+      agops.ec(
+        'vote',
+        '--forPosition',
+        String(position),
+        '--send-from',
+        account,
+      ),
     ),
   );
 };
 
+/**
+ *
+ * @param {string} previousOfferId
+ * @param {number} voteDur
+ * @param {number} debtLimit
+ */
 const paramChangeOfferGeneration = async (
   previousOfferId,
   voteDur,
@@ -134,11 +155,11 @@ const paramChangeOfferGeneration = async (
 ) => {
   const ISTunit = 1_000_000n; // aka displayInfo: { decimalPlaces: 6 }
 
-  const brand = await getAgoricNamesBrands();
+  const { brand } = await E.get(vstorageKitP).agoricNames;
   assert(brand.IST);
   assert(brand.ATOM);
 
-  const instance = await getAgoricNamesInstances();
+  const { instance } = await E.get(vstorageKitP).agoricNames;
   assert(instance.VaultFactory);
 
   const voteDurSec = BigInt(voteDur);
@@ -181,6 +202,12 @@ const paramChangeOfferGeneration = async (
   return JSON.stringify(marshaller.toCapData(harden(body)));
 };
 
+/**
+ *
+ * @param {string} address
+ * @param {*} debtLimit
+ * @returns
+ */
 export const proposeNewDebtCeiling = async (address, debtLimit) => {
   const charterAcceptOfferId = await agops.ec(
     'find-continuing-id',
@@ -197,6 +224,12 @@ export const proposeNewDebtCeiling = async (address, debtLimit) => {
 };
 
 export const GOV4ADDR = 'agoric1c9gyu460lu70rtcdp95vummd6032psmpdx7wdy';
+
+/**
+ *
+ * @param {string} address
+ * @param {bigint} debtLimit
+ */
 export const setDebtLimit = async (address, debtLimit) => {
   const govAccounts = [GOV1ADDR, GOV2ADDR, GOV4ADDR];
 

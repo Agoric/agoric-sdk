@@ -505,6 +505,7 @@ export function makeSwingStore(dirPath, forceReset, options = {}) {
 
   /** @type {import('./internal.js').SwingStoreInternal} */
   const internal = harden({
+    dirPath,
     snapStore,
     transcriptStore,
     bundleStore,

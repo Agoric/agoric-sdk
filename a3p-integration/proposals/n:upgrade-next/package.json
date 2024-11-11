@@ -12,11 +12,11 @@
   "license": "Apache-2.0",
   "dependencies": {
     "@agoric/synthetic-chain": "^0.3.0",
-    "@endo/init": "^1.1.5",
-    "@endo/marshal": "^1.5.4",
+    "@endo/init": "^1.1.6",
+    "@endo/marshal": "^1.6.1",
     "ava": "^5.3.1",
     "better-sqlite3": "^9.6.0",
-    "execa": "^9.3.1"
+    "execa": "^9.5.1"
   },
   "ava": {
     "concurrency": 1,
@@ -28,5 +28,8 @@
   "scripts": {
     "agops": "yarn --cwd /usr/src/agoric-sdk/ --silent agops"
   },
-  "packageManager": "yarn@4.2.2"
+  "packageManager": "yarn@4.5.1",
+  "devDependencies": {
+    "typescript": "^5.6.3"
+  }
 }

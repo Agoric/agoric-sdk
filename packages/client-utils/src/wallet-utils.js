@@ -1,9 +1,11 @@
 import { makeWalletStateCoalescer } from '@agoric/smart-wallet/src/utils.js';
-import { makeStargateClient, pollBlocks } from './chain.js';
-import { boardSlottingMarshaller, makeRpcUtils } from './rpc.js';
+import { pollBlocks } from './chain.js';
+import { makeStargateClient } from './rpc.js';
+import { boardSlottingMarshaller, makeVstorageKit } from './vstorage-kit.js';
 
 /**
  * @import {Amount, Brand} from '@agoric/ertp/src/types.js'
+ * @import {CurrentWalletRecord, UpdateRecord} from '@agoric/smart-wallet/src/smartWallet.js';
  * @import {MinimalNetworkConfig} from './rpc.js';
  */
 
@@ -16,7 +18,7 @@ import { boardSlottingMarshaller, makeRpcUtils } from './rpc.js';
  */
 export const makeWalletUtils = async ({ fetch, delay }, networkConfig) => {
   const { agoricNames, fromBoard, marshaller, readLatestHead, vstorage } =
-    await makeRpcUtils({ fetch }, networkConfig);
+    await makeVstorageKit({ fetch }, networkConfig);
   const m = boardSlottingMarshaller(fromBoard.convertSlotToVal);
 
   const client = await makeStargateClient(networkConfig, { fetch });
@@ -81,11 +83,22 @@ export const makeWalletUtils = async ({ fetch, delay }, networkConfig) => {
 
   /**
    * @param {string} addr
-   * @returns {Promise<import('@agoric/smart-wallet/src/smartWallet.js').UpdateRecord>}
+   * @returns {Promise<UpdateRecord>}
    */
   const getLastUpdate = addr => {
-    // @ts-expect-error cast
-    return readLatestHead(`published.wallet.${addr}`);
+    return /** @type {Promise<UpdateRecord>} */ (
+      readLatestHead(`published.wallet.${addr}`)
+    );
+  };
+
+  /**
+   * @param {string} addr
+   * @returns {Promise<CurrentWalletRecord>}
+   */
+  const getCurrentWalletRecord = addr => {
+    return /** @type {Promise<CurrentWalletRecord>} */ (
+      readLatestHead(`published.wallet.${addr}.current`)
+    );
   };
 
   return {
@@ -95,6 +108,7 @@ export const makeWalletUtils = async ({ fetch, delay }, networkConfig) => {
     marshaller,
     vstorage,
     getLastUpdate,
+    getCurrentWalletRecord,
     readLatestHead,
     storedWalletState,
     pollOffer,

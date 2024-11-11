@@ -6,84 +6,9 @@
 // @ts-check
 /* global */
 
-import { E, Far } from '@endo/far';
 import { inspect } from 'util';
 import { execSwingsetTransaction, pollTx } from './chain.js';
-import { makeRpcUtils } from './rpc.js';
-
-/** @import {CurrentWalletRecord} from '@agoric/smart-wallet/src/smartWallet.js' */
-/** @import {AgoricNamesRemotes} from '@agoric/vats/tools/board-utils.js' */
-
-/**
- * @template T
- * @param follower
- * @param [options]
- */
-export const iterateReverse = (follower, options) =>
-  // For now, just pass through the iterable.
-  Far('iterateReverse iterable', {
-    /** @returns {AsyncIterator<T>} */
-    [Symbol.asyncIterator]: () => {
-      const eachIterable = E(follower).getReverseIterable(options);
-      const iterator = E(eachIterable)[Symbol.asyncIterator]();
-      return Far('iterateEach iterator', {
-        next: () => E(iterator).next(),
-      });
-    },
-  });
-
-/** @type {CurrentWalletRecord} */
-const emptyCurrentRecord = {
-  purses: [],
-  offerToUsedInvitation: [],
-  offerToPublicSubscriberPaths: [],
-  liveOffers: [],
-};
-
-/**
- * @param {string} addr
- * @param {Pick<import('./rpc.js').RpcUtils, 'readLatestHead'>} io
- * @returns {Promise<import('@agoric/smart-wallet/src/smartWallet.js').CurrentWalletRecord>}
- */
-export const getCurrent = async (addr, { readLatestHead }) => {
-  // Partial because older writes may not have had all properties
-  // NB: assumes changes are only additions
-  let current =
-    /** @type {Partial<import('@agoric/smart-wallet/src/smartWallet.js').CurrentWalletRecord> | undefined} */ (
-      await readLatestHead(`published.wallet.${addr}.current`)
-    );
-  if (current === undefined) {
-    throw Error(`undefined current node for ${addr}`);
-  }
-
-  // Repair a type misunderstanding seen in the wild.
-  // See https://github.com/Agoric/agoric-sdk/pull/7139
-  let offerToUsedInvitation = current.offerToUsedInvitation;
-  if (
-    offerToUsedInvitation &&
-    typeof offerToUsedInvitation === 'object' &&
-    !Array.isArray(offerToUsedInvitation)
-  ) {
-    offerToUsedInvitation = Object.entries(offerToUsedInvitation);
-    current = harden({
-      ...current,
-      offerToUsedInvitation,
-    });
-  }
-
-  // override full empty record with defined values from published one
-  return { ...emptyCurrentRecord, ...current };
-};
-
-/**
- * @param {string} addr
- * @param {Pick<import('./rpc.js').RpcUtils, 'readLatestHead'>} io
- * @returns {Promise<import('@agoric/smart-wallet/src/smartWallet.js').UpdateRecord>}
- */
-export const getLastUpdate = (addr, { readLatestHead }) => {
-  // @ts-expect-error cast
-  return readLatestHead(`published.wallet.${addr}`);
-};
+import { makeVstorageKit } from './rpc.js';
 
 /**
  * Sign and broadcast a wallet-action.
@@ -136,7 +61,7 @@ export const makeWalletUtils = async (
   networkConfig,
 ) => {
   const { agoricNames, fromBoard, marshaller, readLatestHead, vstorage } =
-    await makeRpcUtils({ fetch }, networkConfig);
+    await makeVstorageKit({ fetch }, networkConfig);
 
   /**
    *

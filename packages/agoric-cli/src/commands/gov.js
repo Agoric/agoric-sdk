@@ -1,7 +1,7 @@
 // @ts-check
 /* eslint-disable func-names */
 /* eslint-env node */
-import { makeRpcUtils } from '@agoric/client-utils';
+import { makeVstorageKit } from '@agoric/client-utils';
 import { execFileSync as execFileSyncAmbient } from 'child_process';
 import { Command, CommanderError } from 'commander';
 import { normalizeAddressWithOptions, pollBlocks } from '../lib/chain.js';
@@ -91,13 +91,13 @@ export const makeGovCommand = (_logger, io = {}) => {
    *   keyringBackend: string,
    *   instanceName?: string,
    * }} detail
-   * @param {Awaited<ReturnType<makeRpcUtils>>} [optUtils]
+   * @param {Awaited<ReturnType<makeVstorageKit>>} [optUtils]
    */
   const processOffer = async function (
     { toOffer, sendFrom, keyringBackend },
     optUtils,
   ) {
-    const utils = await (optUtils || makeRpcUtils({ fetch }, networkConfig));
+    const utils = await (optUtils || makeVstorageKit({ fetch }, networkConfig));
     const { agoricNames, readLatestHead } = utils;
 
     assert(keyringBackend, 'missing keyring-backend option');
@@ -265,7 +265,7 @@ export const makeGovCommand = (_logger, io = {}) => {
     )
     .requiredOption('--for <string>', 'description of the invitation')
     .action(async opts => {
-      const { agoricNames, readLatestHead } = await makeRpcUtils(
+      const { agoricNames, readLatestHead } = await makeVstorageKit(
         { fetch },
         networkConfig,
       );
@@ -294,7 +294,7 @@ export const makeGovCommand = (_logger, io = {}) => {
       normalizeAddress,
     )
     .action(async opts => {
-      const { agoricNames, readLatestHead } = await makeRpcUtils(
+      const { agoricNames, readLatestHead } = await makeVstorageKit(
         { fetch },
         networkConfig,
       );
@@ -333,7 +333,7 @@ export const makeGovCommand = (_logger, io = {}) => {
       normalizeAddress,
     )
     .action(async function (opts, options) {
-      const utils = await makeRpcUtils({ fetch }, networkConfig);
+      const utils = await makeVstorageKit({ fetch }, networkConfig);
       const { readLatestHead } = utils;
 
       const info = await readLatestHead(

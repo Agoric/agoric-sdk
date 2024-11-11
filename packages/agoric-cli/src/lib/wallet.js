@@ -10,7 +10,7 @@ import { execSwingsetTransaction, pollTx } from './chain.js';
 /**
  * @import {CurrentWalletRecord} from '@agoric/smart-wallet/src/smartWallet.js';
  * @import {AgoricNamesRemotes} from '@agoric/vats/tools/board-utils.js';
- * @import {MinimalNetworkConfig, RpcUtils} from '@agoric/client-utils';
+ * @import {MinimalNetworkConfig, WalletUtils} from '@agoric/client-utils';
  */
 
 const marshaller = boardSlottingMarshaller();
@@ -25,7 +25,7 @@ const emptyCurrentRecord = {
 
 /**
  * @param {string} addr
- * @param {Pick<RpcUtils, 'readLatestHead'>} io
+ * @param {Pick<WalletUtils, 'readLatestHead'>} io
  * @returns {Promise<import('@agoric/smart-wallet/src/smartWallet.js').CurrentWalletRecord>}
  */
 export const getCurrent = async (addr, { readLatestHead }) => {
@@ -60,7 +60,7 @@ export const getCurrent = async (addr, { readLatestHead }) => {
 
 /**
  * @param {string} addr
- * @param {Pick<RpcUtils, 'readLatestHead'>} io
+ * @param {Pick<WalletUtils, 'readLatestHead'>} io
  * @returns {Promise<import('@agoric/smart-wallet/src/smartWallet.js').UpdateRecord>}
  */
 export const getLastUpdate = (addr, { readLatestHead }) => {
