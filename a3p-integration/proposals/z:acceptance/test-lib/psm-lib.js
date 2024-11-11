@@ -8,6 +8,7 @@ import {
   waitUntilOfferResult,
 } from '@agoric/client-utils';
 import { AmountMath } from '@agoric/ertp';
+import { makeRunCommand, commandResultData } from '@agoric/internal';
 import {
   addUser,
   agd,
@@ -22,13 +23,19 @@ import {
   mkTemp,
   VALIDATORADDR,
 } from '@agoric/synthetic-chain';
+import { spawn } from 'node:child_process';
 import fsp from 'node:fs/promises';
+import { Readable } from 'node:stream';
 import { NonNullish } from './errors.js';
 import { getBalances } from './utils.js';
+
+/** @import {CommandResult} from '@agoric/internal'; */
 
 // Export these from synthetic-chain?
 const USDC_DENOM = NonNullish(process.env.USDC_DENOM);
 const PSM_PAIR = NonNullish(process.env.PSM_PAIR).replace('.', '-');
+
+const runCommand = makeRunCommand({ Buffer, Readable, setImmediate, spawn });
 
 /**
  * @import {Coin} from '@agoric/cosmic-proto/cosmos/base/v1beta1/coin.js';
@@ -356,27 +363,31 @@ export const initializeNewUser = async (name, fund, io) => {
 };
 
 /**
- * Similar to https://github.com/Agoric/agoric-3-proposals/blob/422b163fecfcf025d53431caebf6d476778b5db3/packages/synthetic-chain/src/lib/commonUpgradeHelpers.ts#L123-L139
- * However, in the case where "address" is not provisioned "agoric wallet send" is needed because
- * "agops perf satisfaction" tries to follow ":published.wallet.${address}" which blocks the execution because no such path exists in
- * vstorage. In situations like this "agoric wallet send" seems a better choice as it doesn't depend on following user's vstorage wallet path
+ * Similar to
+ * https://github.com/Agoric/agoric-3-proposals/blob/422b163fecfcf025d53431caebf6d476778b5db3/packages/synthetic-chain/src/lib/commonUpgradeHelpers.ts#L123-L139
+ * However, for an address that is not provisioned, `agoric wallet send` is
+ * needed because `agops perf satisfaction` hangs when trying to follow
+ * nonexistent vstorage path ":published.wallet.${address}".
  *
  * @param {string} address
  * @param {Promise<string>} offerPromise
+ * @returns {Promise<CommandResult>}
  */
 export const sendOfferAgoric = async (address, offerPromise) => {
   const offerPath = await mkTemp('agops.XXX');
   const offer = await offerPromise;
   await fsp.writeFile(offerPath, offer);
 
-  await agoric.wallet(
+  return runCommand('agoric', [
+    'wallet',
     '--keyring-backend=test',
     'send',
     '--offer',
     offerPath,
     '--from',
     address,
-  );
+    '--verbose',
+  ]);
 };
 
 /**
@@ -393,7 +404,16 @@ export const psmSwap = async (address, params, io) => {
   const offerId = `${address}-psm-swap-${now}`;
   const newParams = ['psm', ...params, '--offerId', offerId];
   const offerPromise = executeCommand(agopsLocation, newParams);
-  await sendOfferAgoric(address, offerPromise);
+  const sendResult = await sendOfferAgoric(address, offerPromise);
+  const { status, stdout, stderr, signal, error } = sendResult;
+  if (status !== 0 || signal || error) {
+    console.error('psmSwap tx send failed', commandResultData(sendResult));
+    throw Error(
+      `agoric wallet send failed: ${JSON.stringify({ status, signal })}`,
+      { cause: error },
+    );
+  }
+  console.log('psmSwap tx send results', stdout.toString(), stderr.toString());
 
   await waitUntilOfferResult(address, offerId, true, io, {
     errorMessage: `${offerId} not succeeded`,
