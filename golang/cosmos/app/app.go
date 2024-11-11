@@ -144,7 +144,13 @@ const (
 	// value is always a "swing-store" directory sibling to the exported
 	// genesis.json file.
 	// TODO: document this flag in config, likely alongside the genesis path
-	FlagSwingStoreExportDir  = "swing-store-export-dir"
+	FlagSwingStoreExportDir = "swing-store-export-dir"
+	// FlagSwingStoreExportMode defines the export mode for the swing store
+	// Alongside the default mode `operational`, there are two other modes
+	//
+	// 1- `skip` mode will skip the swing store export altogether
+	//
+	// 2- `debug` mode will export the complete store, starting from height zero
 	FlagSwingStoreExportMode = "swing-store-export-mode"
 )
 

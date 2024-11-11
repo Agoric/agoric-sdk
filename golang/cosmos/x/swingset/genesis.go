@@ -138,26 +138,28 @@ func ExportGenesis(
 	swingStoreExportMode string,
 ) *types.GenesisState {
 	gs := &types.GenesisState{
-		Params:                   k.GetParams(ctx),
-		State:                    k.GetState(ctx),
-		SwingStoreExportData:     nil,
-		SwingStoreExportDataHash: "",
+		Params:               k.GetParams(ctx),
+		State:                k.GetState(ctx),
+		SwingStoreExportData: nil,
 	}
 
+	// This will only be used in non skip mode
+	artifactMode := swingStoreExportMode
 	exportDataMode := keeper.SwingStoreExportDataModeSkip
+	hasher := sha256.New()
 	snapshotHeight := uint64(ctx.BlockHeight())
 
-	if swingStoreExportMode == keeper.SwingStoreArtifactModeDebug {
+	if artifactMode == keeper.SwingStoreArtifactModeDebug {
 		exportDataMode = keeper.SwingStoreExportDataModeAll
 		snapshotHeight = 0
 	}
 
-	if swingStoreExportMode != keeper.SwingStoreArtifactModeSkip {
+	if artifactMode != keeper.SwingStoreArtifactModeNone {
 		eventHandler := swingStoreGenesisEventHandler{
 			exportDir:      swingStoreExportDir,
 			snapshotHeight: snapshotHeight,
 			swingStore:     k.GetSwingStore(ctx),
-			hasher:         sha256.New(),
+			hasher:         hasher,
 			exportMode:     swingStoreExportMode,
 		}
 
@@ -166,7 +168,7 @@ func ExportGenesis(
 			snapshotHeight,
 			eventHandler,
 			keeper.SwingStoreExportOptions{
-				ArtifactMode:   swingStoreExportMode,
+				ArtifactMode:   artifactMode,
 				ExportDataMode: exportDataMode,
 			},
 		)
@@ -178,9 +180,9 @@ func ExportGenesis(
 		if err != nil {
 			panic(err)
 		}
-
-		gs.SwingStoreExportDataHash = fmt.Sprintf("sha256:%x", eventHandler.hasher.Sum(nil))
 	}
+
+	gs.SwingStoreExportDataHash = fmt.Sprintf("sha256:%x", hasher.Sum(nil))
 
 	return gs
 }
@@ -198,29 +200,26 @@ func (eventHandler swingStoreGenesisEventHandler) OnExportStarted(height uint64,
 }
 
 func (eventHandler swingStoreGenesisEventHandler) OnExportRetrieved(provider keeper.SwingStoreExportProvider) error {
-	if !((eventHandler.exportMode == keeper.SwingStoreArtifactModeDebug && eventHandler.snapshotHeight == 0) ||
-		eventHandler.snapshotHeight == provider.BlockHeight) {
+	if eventHandler.exportMode != keeper.SwingStoreArtifactModeDebug && eventHandler.snapshotHeight != provider.BlockHeight {
 		return fmt.Errorf("snapshot block height (%d) doesn't match requested height (%d)", provider.BlockHeight, eventHandler.snapshotHeight)
 	}
 
 	artifactsEnded := false
 
-	var getExportDataReader = func() (agoric.KVEntryReader, error) {
-		exportDataIterator := eventHandler.swingStore.Iterator(nil, nil)
-		kvReader := agoric.NewKVIteratorReader(exportDataIterator)
-		eventHandler.hasher.Reset()
-		encoder := json.NewEncoder(eventHandler.hasher)
-		encoder.SetEscapeHTML(false)
-
-		return agoric.NewKVHookingReader(kvReader, func(entry agoric.KVEntry) error {
-			return encoder.Encode(entry)
-		}, func() error {
-			return nil
-		}), nil
-	}
-
 	artifactsProvider := keeper.SwingStoreExportProvider{
-		GetExportDataReader: getExportDataReader,
+		GetExportDataReader: func() (agoric.KVEntryReader, error) {
+			exportDataIterator := eventHandler.swingStore.Iterator(nil, nil)
+			kvReader := agoric.NewKVIteratorReader(exportDataIterator)
+			eventHandler.hasher.Reset()
+			encoder := json.NewEncoder(eventHandler.hasher)
+			encoder.SetEscapeHTML(false)
+
+			return agoric.NewKVHookingReader(kvReader, func(entry agoric.KVEntry) error {
+				return encoder.Encode(entry)
+			}, func() error {
+				return nil
+			}), nil
+		},
 		ReadNextArtifact: func() (types.SwingStoreArtifact, error) {
 			var (
 				artifact          types.SwingStoreArtifact
@@ -237,7 +236,7 @@ func (eventHandler swingStoreGenesisEventHandler) OnExportRetrieved(provider kee
 			if err == io.EOF {
 				artifactsEnded = true
 				if eventHandler.exportMode == keeper.SwingStoreArtifactModeDebug {
-					exportDataReader, _ := getExportDataReader()
+					exportDataReader, _ := provider.GetExportDataReader()
 
 					defer exportDataReader.Close()
 
@@ -256,6 +255,10 @@ func (eventHandler swingStoreGenesisEventHandler) OnExportRetrieved(provider kee
 
 			return artifact, err
 		},
+	}
+
+	if eventHandler.exportMode == keeper.SwingStoreArtifactModeDebug {
+		artifactsProvider.BlockHeight = provider.BlockHeight
 	}
 
 	return keeper.WriteSwingStoreExportToDirectory(artifactsProvider, eventHandler.exportDir)
