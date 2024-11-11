@@ -43,6 +43,7 @@ harden(normalizeAddressWithOptions);
  * @param {MinimalNetworkConfig & {
  *   from: string,
  *   fees?: string,
+ *   gas?: number | 'auto' | ['auto', adjustment?: number | undefined],
  *   dryRun?: boolean,
  *   verbose?: boolean,
  *   keyring?: {home?: string, backend: string}
@@ -54,6 +55,7 @@ export const execSwingsetTransaction = (swingsetArgs, opts) => {
   const {
     from,
     fees,
+    gas = ['auto', 1.2],
     dryRun = false,
     verbose = true,
     keyring = undefined,
@@ -67,10 +69,32 @@ export const execSwingsetTransaction = (swingsetArgs, opts) => {
     ? [`--keyring-backend=${keyring.backend}`]
     : [];
   const feeOpt = fees ? ['--fees', fees] : [];
+  /** @type {string[]} */
+  const gasOpt = [];
+  if (Number.isFinite(gas) || gas === 'auto') {
+    gasOpt.push(`--gas=${gas}`);
+  } else if (Array.isArray(gas) && gas.length >= 1 && gas[0] === 'auto') {
+    gasOpt.push('--gas=auto');
+    if (gas.length > 1) {
+      const [adjustment, ...rest] = gas.slice(1);
+      const adjustmentIsValid =
+        adjustment === undefined ||
+        (Number.isFinite(adjustment) && Number(adjustment) > 0);
+      if (rest.length !== 0 || !adjustmentIsValid) {
+        throw Error('invalid gas input');
+      }
+      if (adjustment !== undefined) {
+        gasOpt.push(`--gas-adjustment=${adjustment}`);
+      }
+    }
+  } else {
+    throw Error('invalid gas input');
+  }
   const cmd = [`--node=${rpcAddrs[0]}`, `--chain-id=${chainName}`].concat(
     homeOpt,
     backendOpt,
     feeOpt,
+    gasOpt,
     [`--from=${from}`, 'tx', 'swingset'],
     swingsetArgs,
   );
