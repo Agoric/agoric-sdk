@@ -1,90 +1,10 @@
-/**
- * @file copied from packages/agoric-cli,
- * removing polling and coalescing features whose dependencies cause import problems here
- */
 // TODO DRY in https://github.com/Agoric/agoric-sdk/issues/9109
 // @ts-check
 /* global */
 
-import { E, Far } from '@endo/far';
 import { inspect } from 'util';
 import { execSwingsetTransaction, pollTx } from './chain.js';
-import { makeRpcUtils } from './rpc.js';
 import { makeTimerUtils } from './utils.js';
-
-/** @import {CurrentWalletRecord} from '@agoric/smart-wallet/src/smartWallet.js' */
-/** @import {AgoricNamesRemotes} from '@agoric/vats/tools/board-utils.js' */
-
-/**
- * @template T
- * @param follower
- * @param [options]
- */
-export const iterateReverse = (follower, options) =>
-  // For now, just pass through the iterable.
-  Far('iterateReverse iterable', {
-    /** @returns {AsyncIterator<T>} */
-    [Symbol.asyncIterator]: () => {
-      const eachIterable = E(follower).getReverseIterable(options);
-      const iterator = E(eachIterable)[Symbol.asyncIterator]();
-      return Far('iterateEach iterator', {
-        next: () => E(iterator).next(),
-      });
-    },
-  });
-
-/** @type {CurrentWalletRecord} */
-const emptyCurrentRecord = {
-  purses: [],
-  offerToUsedInvitation: [],
-  offerToPublicSubscriberPaths: [],
-  liveOffers: [],
-};
-
-/**
- * @param {string} addr
- * @param {Pick<import('./rpc.js').RpcUtils, 'readLatestHead'>} io
- * @returns {Promise<import('@agoric/smart-wallet/src/smartWallet.js').CurrentWalletRecord>}
- */
-export const getCurrent = async (addr, { readLatestHead }) => {
-  // Partial because older writes may not have had all properties
-  // NB: assumes changes are only additions
-  let current =
-    /** @type {Partial<import('@agoric/smart-wallet/src/smartWallet.js').CurrentWalletRecord> | undefined} */ (
-      await readLatestHead(`published.wallet.${addr}.current`)
-    );
-  if (current === undefined) {
-    throw Error(`undefined current node for ${addr}`);
-  }
-
-  // Repair a type misunderstanding seen in the wild.
-  // See https://github.com/Agoric/agoric-sdk/pull/7139
-  let offerToUsedInvitation = current.offerToUsedInvitation;
-  if (
-    offerToUsedInvitation &&
-    typeof offerToUsedInvitation === 'object' &&
-    !Array.isArray(offerToUsedInvitation)
-  ) {
-    offerToUsedInvitation = Object.entries(offerToUsedInvitation);
-    current = harden({
-      ...current,
-      offerToUsedInvitation,
-    });
-  }
-
-  // override full empty record with defined values from published one
-  return { ...emptyCurrentRecord, ...current };
-};
-
-/**
- * @param {string} addr
- * @param {Pick<import('./rpc.js').RpcUtils, 'readLatestHead'>} io
- * @returns {Promise<import('@agoric/smart-wallet/src/smartWallet.js').UpdateRecord>}
- */
-export const getLastUpdate = (addr, { readLatestHead }) => {
-  // @ts-expect-error cast
-  return readLatestHead(`published.wallet.${addr}`);
-};
 
 /**
  * Sign and broadcast a wallet-action.
@@ -93,7 +13,7 @@ export const getLastUpdate = (addr, { readLatestHead }) => {
  * @param {import('@agoric/smart-wallet/src/smartWallet.js').BridgeAction} bridgeAction
  * @param {import('./rpc.js').MinimalNetworkConfig & {
  *   from: string,
- *   marshaller: import('@endo/marshal').Marshal<'string'>,
+ *   marshaller: Pick<import('@endo/marshal').Marshal<string | null>, 'toCapData'>,
  *   fees?: string,
  *   verbose?: boolean,
  *   keyring?: {home?: string, backend: string},
@@ -132,12 +52,20 @@ export const sendAction = async (bridgeAction, opts) => {
   return pollTx(tx.txhash, opts);
 };
 
-export const makeWalletUtils = async (
-  { setTimeout, execFileSync, fetch },
+/**
+ * Stop-gap using execFileSync until we have a pure JS signing client.
+ *
+ * @param {object} root0
+ * @param {import('@agoric/client-utils').WalletUtils} root0.walletUtils
+ * @param {import('child_process')['execFileSync']} root0.execFileSync
+ * @param {typeof setTimeout} root0.setTimeout
+ * @param {import('@agoric/client-utils').MinimalNetworkConfig} networkConfig
+ */
+export const makeAgdWalletUtils = async (
+  { execFileSync, walletUtils, setTimeout },
   networkConfig,
 ) => {
-  const { agoricNames, fromBoard, marshaller, readLatestHead, vstorage } =
-    await makeRpcUtils({ fetch }, networkConfig);
+  const { marshaller } = walletUtils;
 
   const { delay } = await makeTimerUtils({ setTimeout });
   /**
@@ -158,11 +86,6 @@ export const makeWalletUtils = async (
   };
 
   return {
-    agoricNames,
     broadcastBridgeAction,
-    fromBoard,
-    networkConfig,
-    readLatestHead,
-    vstorage,
   };
 };

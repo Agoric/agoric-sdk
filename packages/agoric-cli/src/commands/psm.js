@@ -1,11 +1,14 @@
 // @ts-check
 /* eslint-disable func-names */
 /* eslint-env node */
-import { Command } from 'commander';
+import { makeVstorageKit, storageHelper } from '@agoric/client-utils';
 import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
-import { asPercent } from '../lib/format.js';
-import { makeRpcUtils, storageHelper } from '../lib/rpc.js';
+import { Command } from 'commander';
+import { getNetworkConfig } from '../lib/network-config.js';
 import { outputExecuteOfferAction } from '../lib/wallet.js';
+import { asPercent } from '../lib/format.js';
+
+const networkConfig = await getNetworkConfig({ env: process.env, fetch });
 
 // Adapted from https://gist.github.com/dckc/8b5b2f16395cb4d7f2ff340e0bc6b610#file-psm-tool
 
@@ -60,7 +63,7 @@ export const makePsmCommand = logger => {
   );
 
   const rpcTools = async () => {
-    const utils = await makeRpcUtils({ fetch });
+    const utils = await makeVstorageKit({ fetch }, networkConfig);
 
     const lookupPsmInstance = ([minted, anchor]) => {
       const name = `psm-${minted}-${anchor}`;

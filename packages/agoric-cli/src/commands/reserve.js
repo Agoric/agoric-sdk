@@ -1,10 +1,13 @@
 // @ts-check
 /* eslint-disable func-names */
 /* eslint-env node */
+import { makeVstorageKit } from '@agoric/client-utils';
 import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
 import { Command } from 'commander';
-import { makeRpcUtils } from '../lib/rpc.js';
+import { getNetworkConfig } from '../lib/network-config.js';
 import { outputActionAndHint } from '../lib/wallet.js';
+
+const networkConfig = await getNetworkConfig({ env: process.env, fetch });
 
 /**
  * @param {import('anylogger').Logger} _logger
@@ -29,7 +32,7 @@ export const makeReserveCommand = (_logger, io = {}) => {
        * }} opts
        */
       async ({ collateralBrand, ...opts }) => {
-        const { agoricNames } = await makeRpcUtils({ fetch });
+        const { agoricNames } = await makeVstorageKit({ fetch }, networkConfig);
 
         const offer = Offers.reserve.AddCollateral(agoricNames, {
           collateralBrandKey: collateralBrand,
@@ -63,7 +66,7 @@ export const makeReserveCommand = (_logger, io = {}) => {
       1,
     )
     .action(async function (opts) {
-      const { agoricNames } = await makeRpcUtils({ fetch });
+      const { agoricNames } = await makeVstorageKit({ fetch }, networkConfig);
 
       const reserveInstance = agoricNames.instance.reserve;
       assert(reserveInstance, 'missing reserve in names');

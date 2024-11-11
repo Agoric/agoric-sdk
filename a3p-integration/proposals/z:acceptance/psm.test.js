@@ -12,7 +12,6 @@
  * 6 - Make sure mint limit is adhered
  */
 
-import test from 'ava';
 import {
   agd,
   agoric,
@@ -20,9 +19,11 @@ import {
   GOV1ADDR,
   GOV2ADDR,
 } from '@agoric/synthetic-chain';
+import { waitUntilAccountFunded } from '@agoric/client-utils';
+import test from 'ava';
+import { NonNullish } from './test-lib/errors.js';
 import {
   adjustBalancesIfNotProvisioned,
-  psmSwap,
   bankSend,
   checkGovParams,
   checkSwapExceedMintLimit,
@@ -31,10 +32,9 @@ import {
   implementPsmGovParamChange,
   initializeNewUser,
   maxMintBelowLimit,
+  psmSwap,
 } from './test-lib/psm-lib.js';
 import { getBalances } from './test-lib/utils.js';
-import { NonNullish } from './test-lib/errors.js';
-import { waitUntilAccountFunded } from './test-lib/sync-tools.js';
 
 // Export these from synthetic-chain?
 const USDC_DENOM = NonNullish(process.env.USDC_DENOM);
@@ -227,7 +227,7 @@ test.serial('mint limit is adhered', async t => {
   await bankSend(otherAddr, `${value}${denom}`);
   await waitUntilAccountFunded(
     otherAddr,
-    { query: agd.query, setTimeout },
+    { log: t.log, query: agd.query, setTimeout },
     { denom, value: parseInt(value, 10) },
     { errorMessage: `${otherAddr} could not be funded with ${value}${denom}` },
   );

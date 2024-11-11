@@ -1,7 +1,4 @@
-// @ts-check
-/* eslint-env node */
-
-import { NonNullish } from '@agoric/internal';
+/* global Buffer */
 import {
   boardSlottingMarshaller,
   makeBoardRemote,
@@ -9,56 +6,16 @@ import {
 
 export { boardSlottingMarshaller };
 
-export const networkConfigUrl = agoricNetSubdomain =>
-  `https://${agoricNetSubdomain}.agoric.net/network-config`;
-export const rpcUrl = agoricNetSubdomain =>
-  `https://${agoricNetSubdomain}.rpc.agoric.net:443`;
-
 /**
- * @typedef {{ rpcAddrs: string[], chainName: string }} MinimalNetworkConfig
+ * @import {MinimalNetworkConfig} from './rpc.js';
  */
-
-/**
- *  @param {string} str
- * @returns {Promise<MinimalNetworkConfig>}
- */
-const fromAgoricNet = str => {
-  const [netName, chainName] = str.split(',');
-  if (chainName) {
-    return Promise.resolve({ chainName, rpcAddrs: [rpcUrl(netName)] });
-  }
-  return fetch(networkConfigUrl(netName)).then(res => res.json());
-};
-
-/**
- * @param {typeof process.env} env
- * @returns {Promise<MinimalNetworkConfig>}
- */
-export const getNetworkConfig = async env => {
-  if (!('AGORIC_NET' in env) || env.AGORIC_NET === 'local') {
-    return { rpcAddrs: ['http://0.0.0.0:26657'], chainName: 'agoriclocal' };
-  }
-
-  return fromAgoricNet(NonNullish(env.AGORIC_NET)).catch(err => {
-    throw Error(
-      `cannot get network config (${env.AGORIC_NET || 'local'}): ${
-        err.message
-      }`,
-    );
-  });
-};
-
-/** @type {MinimalNetworkConfig} */
-const networkConfig = await getNetworkConfig(process.env);
-export { networkConfig };
-// console.warn('networkConfig', networkConfig);
 
 /**
  * @param {object} powers
  * @param {typeof window.fetch} powers.fetch
  * @param {MinimalNetworkConfig} config
  */
-export const makeVStorage = (powers, config = networkConfig) => {
+export const makeVStorage = (powers, config) => {
   /** @param {string} path */
   const getJSON = path => {
     const url = config.rpcAddrs[0] + path;
@@ -172,6 +129,7 @@ export const makeVStorage = (powers, config = networkConfig) => {
 };
 /** @typedef {ReturnType<typeof makeVStorage>} VStorage */
 
+/** @deprecated */
 export const makeFromBoard = () => {
   const cache = new Map();
   const convertSlotToVal = (boardId, iface) => {
@@ -186,6 +144,7 @@ export const makeFromBoard = () => {
 };
 /** @typedef {ReturnType<typeof makeFromBoard>} IdMap */
 
+/** @deprecated */
 export const storageHelper = {
   /** @param { string } txt */
   parseCapData: txt => {
@@ -225,6 +184,7 @@ export const storageHelper = {
 harden(storageHelper);
 
 /**
+ * @deprecated
  * @param {IdMap} ctx
  * @param {VStorage} vstorage
  * @returns {Promise<import('@agoric/vats/tools/board-utils.js').AgoricNamesRemotes>}
@@ -253,33 +213,36 @@ export const makeAgoricNames = async (ctx, vstorage) => {
  * @param {{ fetch: typeof window.fetch }} io
  * @param {MinimalNetworkConfig} config
  */
-export const makeRpcUtils = async ({ fetch }, config = networkConfig) => {
+export const makeVstorageKit = async ({ fetch }, config) => {
   await null;
   try {
     const vstorage = makeVStorage({ fetch }, config);
     const fromBoard = makeFromBoard();
     const agoricNames = await makeAgoricNames(fromBoard, vstorage);
 
-    const unserializer = boardSlottingMarshaller(fromBoard.convertSlotToVal);
+    const marshaller = boardSlottingMarshaller(fromBoard.convertSlotToVal);
 
     /** @type {(txt: string) => unknown} */
     const unserializeHead = txt =>
       storageHelper.unserializeTxt(txt, fromBoard).at(-1);
 
-    /** @type {(path: string) => Promise<unknown>} */
+    /**
+     * Read latest at path and unmarshal it
+     * @type {(path: string) => Promise<unknown>}
+     */
     const readLatestHead = path =>
       vstorage.readLatest(path).then(unserializeHead);
 
     return {
       agoricNames,
       fromBoard,
+      marshaller,
       readLatestHead,
       unserializeHead,
-      unserializer,
       vstorage,
     };
   } catch (err) {
     throw Error(`RPC failure (${config.rpcAddrs}): ${err.message}`);
   }
 };
-/** @typedef {Awaited<ReturnType<typeof makeRpcUtils>>} RpcUtils */
+/** @typedef {Awaited<ReturnType<typeof makeVstorageKit>>} VstorageKit */

@@ -1,36 +1,27 @@
-/* global fetch setTimeout */
-
 // @ts-check
+/* eslint-env node */
 import test from 'ava';
 import { inspect } from 'node:util';
-import { execFileSync } from 'node:child_process';
-import '@endo/init/debug.js';
 
+import { retryUntilCondition } from '@agoric/client-utils';
 import {
   evalBundles,
   getIncarnation,
   GOV1ADDR as GETTER, // not particular to governance, just a handy wallet
-  GOV2ADDR as SETTER, // not particular to governance, just a handy wallet
+  GOV2ADDR as SETTER,
 } from '@agoric/synthetic-chain';
-import { makeWalletUtils } from './test-lib/wallet.js';
-import { networkConfig } from './test-lib/index.js';
-import { retryUntilCondition } from './test-lib/sync-tools.js';
+import { agdWalletUtils, walletUtils } from './test-lib/index.js';
 
 const START_VALUEVOW_DIR = 'start-valueVow';
 const RESTART_VALUEVOW_DIR = 'restart-valueVow';
 
 test('vow survives restart', async t => {
-  const walletUtils = await makeWalletUtils(
-    { setTimeout, execFileSync, fetch },
-    networkConfig,
-  );
-
   t.log('start valueVow');
   await evalBundles(START_VALUEVOW_DIR);
   t.is(await getIncarnation('valueVow'), 0);
 
   t.log('use wallet to get a vow');
-  await walletUtils.broadcastBridgeAction(GETTER, {
+  await agdWalletUtils.broadcastBridgeAction(GETTER, {
     method: 'executeOffer',
     offer: {
       id: 'get-value',
@@ -48,7 +39,7 @@ test('vow survives restart', async t => {
     async () => walletUtils.readLatestHead(`published.wallet.${GETTER}`),
     value => value.status.id === 'get-value' && value.updated === 'offerStatus',
     'Offer get-value not succeeded',
-    { setTimeout, retryIntervalMs: 5000, maxRetries: 15 },
+    { log: t.log, setTimeout, retryIntervalMs: 5000, maxRetries: 15 },
   );
 
   console.log('current: ', inspect(getterStatus, { depth: 10 }));
@@ -67,7 +58,7 @@ test('vow survives restart', async t => {
   const offerArgs = { value: 'Ciao, mondo!' };
 
   t.log('use wallet to set value');
-  await walletUtils.broadcastBridgeAction(SETTER, {
+  await agdWalletUtils.broadcastBridgeAction(SETTER, {
     method: 'executeOffer',
     offer: {
       id: 'set-value',

@@ -1,6 +1,11 @@
 // @ts-check
 /* eslint-disable func-names */
 /* eslint-env node */
+import {
+  makeVstorageKit,
+  makeWalletUtils,
+  storageHelper,
+} from '@agoric/client-utils';
 import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
 import { oracleBrandFeedName } from '@agoric/inter-protocol/src/proposals/utils.js';
 import { Fail } from '@endo/errors';
@@ -9,15 +14,14 @@ import * as cp from 'child_process';
 import { Command } from 'commander';
 import { inspect } from 'util';
 import { normalizeAddressWithOptions } from '../lib/chain.js';
-import { bigintReplacer } from '../lib/format.js';
-import { getNetworkConfig, makeRpcUtils, storageHelper } from '../lib/rpc.js';
+import { getNetworkConfig } from '../lib/network-config.js';
 import {
   getCurrent,
-  makeWalletUtils,
   outputAction,
   sendAction,
   sendHint,
 } from '../lib/wallet.js';
+import { bigintReplacer } from '../lib/format.js';
 
 /** @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js'; */
 
@@ -82,8 +86,8 @@ export const makeOracleCommand = (logger, io = {}) => {
 
   const rpcTools = async () => {
     // XXX pass fetch to getNetworkConfig() explicitly
-    const networkConfig = await getNetworkConfig(env);
-    const utils = await makeRpcUtils({ fetch });
+    const networkConfig = await getNetworkConfig({ env: process.env, fetch });
+    const utils = await makeVstorageKit({ fetch }, networkConfig);
 
     const lookupPriceAggregatorInstance = ([brandIn, brandOut]) => {
       const name = oracleBrandFeedName(brandIn, brandOut);
@@ -267,10 +271,7 @@ export const makeOracleCommand = (logger, io = {}) => {
       ) => {
         const { readLatestHead, networkConfig, lookupPriceAggregatorInstance } =
           await rpcTools();
-        const wutil = await makeWalletUtils(
-          { fetch, execFileSync, delay },
-          networkConfig,
-        );
+        const wutil = await makeWalletUtils({ fetch, delay }, networkConfig);
         const unitPrice = scaleDecimals(price);
 
         const feedPath = `published.priceFeed.${pair[0]}-${pair[1]}_price_feed`;

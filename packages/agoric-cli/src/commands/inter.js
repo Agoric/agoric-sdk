@@ -4,26 +4,20 @@
  */
 
 // @ts-check
-import { CommanderError, InvalidArgumentError } from 'commander';
-// TODO: should get M from endo https://github.com/Agoric/agoric-sdk/issues/7090
+import { makeWalletUtils } from '@agoric/client-utils';
 import { makeOfferSpecShape } from '@agoric/inter-protocol/src/auction/auctionBook.js';
 import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
 import { objectMap } from '@agoric/internal';
-import { M, matches } from '@agoric/store';
-
+import { M, matches } from '@endo/patterns';
+import { CommanderError, InvalidArgumentError } from 'commander';
 import { normalizeAddressWithOptions, pollBlocks } from '../lib/chain.js';
+import { getCurrent, outputActionAndHint, sendAction } from '../lib/wallet.js';
 import {
   asBoardRemote,
   bigintReplacer,
   makeAmountFormatter,
 } from '../lib/format.js';
-import { getNetworkConfig } from '../lib/rpc.js';
-import {
-  getCurrent,
-  makeWalletUtils,
-  outputActionAndHint,
-  sendAction,
-} from '../lib/wallet.js';
+import { getNetworkConfig } from '../lib/network-config.js';
 
 const { values } = Object;
 
@@ -238,8 +232,8 @@ export const makeInterCommand = (
     try {
       // XXX pass fetch to getNetworkConfig() explicitly
       // await null above makes this await safe
-      const networkConfig = await getNetworkConfig(env);
-      return makeWalletUtils({ fetch, execFileSync, delay }, networkConfig);
+      const networkConfig = await getNetworkConfig({ env, fetch });
+      return makeWalletUtils({ fetch, delay }, networkConfig);
     } catch (err) {
       // CommanderError is a class constructor, and so
       // must be invoked with `new`.
@@ -334,7 +328,7 @@ inter auction status
    * @param {string} from
    * @param {import('@agoric/smart-wallet/src/offers.js').OfferSpec} offer
    * @param {Awaited<ReturnType<tryMakeUtils>>} tools
-   * @param {boolean?} dryRun
+   * @param {boolean | undefined} dryRun
    */
   const placeBid = async (from, offer, tools, dryRun = false) => {
     const { networkConfig, agoricNames, pollOffer } = tools;

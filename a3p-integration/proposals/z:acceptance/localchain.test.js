@@ -1,11 +1,12 @@
 /* global setTimeout */
 
-import test from 'ava';
 import { agd, evalBundles } from '@agoric/synthetic-chain';
+import test from 'ava';
 import { retryUntilCondition } from './test-lib/sync-tools.js';
 
 const SUBMISSION_DIR = 'localchaintest-submission';
 
+/** @param {string} path */
 const readPublished = async path => {
   const { value } = await agd.query(
     'vstorage',

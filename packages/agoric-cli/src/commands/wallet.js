@@ -8,11 +8,10 @@ import {
   makeLeader,
   makeLeaderFromRpcAddresses,
 } from '@agoric/casting';
+import { makeVstorageKit } from '@agoric/client-utils';
+import { execFileSync } from 'child_process';
 import fs from 'fs';
 import util from 'util';
-import { execFileSync } from 'child_process';
-import { fmtRecordOfLines, summarize } from '../lib/format.js';
-import { makeRpcUtils, networkConfig } from '../lib/rpc.js';
 
 import { makeLeaderOptions } from '../lib/casting.js';
 import {
@@ -20,7 +19,11 @@ import {
   fetchSwingsetParams,
   normalizeAddressWithOptions,
 } from '../lib/chain.js';
+import { getNetworkConfig } from '../lib/network-config.js';
 import { coalesceWalletState, getCurrent } from '../lib/wallet.js';
+import { summarize, fmtRecordOfLines } from '../lib/format.js';
+
+const networkConfig = await getNetworkConfig({ env: process.env, fetch });
 
 const SLEEP_SECONDS = 3;
 
@@ -102,7 +105,7 @@ export const makeWalletCommand = async command => {
     .action(async function (opts) {
       const offerStr = fs.readFileSync(opts.file).toString();
 
-      const { unserializer } = await makeRpcUtils({ fetch });
+      const { unserializer } = await makeVstorageKit({ fetch }, networkConfig);
 
       const offerObj = unserializer.fromCapData(JSON.parse(offerStr));
       console.log(offerObj);
@@ -117,7 +120,7 @@ export const makeWalletCommand = async command => {
     .action(async function (opts) {
       const offerStr = fs.readFileSync(opts.offer).toString();
 
-      const { unserializer } = await makeRpcUtils({ fetch });
+      const { unserializer } = await makeVstorageKit({ fetch }, networkConfig);
 
       const offerObj = unserializer.fromCapData(JSON.parse(offerStr));
       console.log(offerObj.offer.id);
@@ -155,7 +158,7 @@ export const makeWalletCommand = async command => {
     .command('list')
     .description('list all wallets in vstorage')
     .action(async function () {
-      const { vstorage } = await makeRpcUtils({ fetch });
+      const { vstorage } = await makeVstorageKit({ fetch }, networkConfig);
       const wallets = await vstorage.keys('published.wallet');
       process.stdout.write(wallets.join('\n'));
     });
@@ -169,16 +172,19 @@ export const makeWalletCommand = async command => {
       normalizeAddress,
     )
     .action(async function (opts) {
-      const { agoricNames, unserializer, readLatestHead } = await makeRpcUtils({
-        fetch,
-      });
+      const { agoricNames, unserializer, readLatestHead } =
+        await makeVstorageKit(
+          {
+            fetch,
+          },
+          networkConfig,
+        );
 
       const leader = makeLeader(networkConfig.rpcAddrs[0]);
       const follower = await makeFollower(
         `:published.wallet.${opts.from}`,
         leader,
         {
-          // @ts-expect-error xxx
           unserializer,
         },
       );

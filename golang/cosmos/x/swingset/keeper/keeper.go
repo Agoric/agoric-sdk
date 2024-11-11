@@ -246,7 +246,10 @@ func (k Keeper) BlockingSend(ctx sdk.Context, action vm.Action) (string, error) 
 }
 
 func (k Keeper) GetParams(ctx sdk.Context) (params types.Params) {
-	k.paramSpace.GetParamSet(ctx, &params)
+	// Note the use of "IfExists"...
+	// migration fills in missing data with defaults,
+	// so it is the only consumer that should ever see a nil pair.
+	k.paramSpace.GetParamSetIfExists(ctx, &params)
 	return params
 }
 
@@ -304,9 +307,12 @@ func (k Keeper) SetBeansOwing(ctx sdk.Context, addr sdk.AccAddress, beans sdkmat
 // ChargeBeans charges the given address the given number of beans.  It divides
 // the beans into the number to debit immediately vs. the number to store in the
 // beansOwing.
-func (k Keeper) ChargeBeans(ctx sdk.Context, addr sdk.AccAddress, beans sdkmath.Uint) error {
-	beansPerUnit := k.GetBeansPerUnit(ctx)
-
+func (k Keeper) ChargeBeans(
+	ctx sdk.Context,
+	beansPerUnit map[string]sdkmath.Uint,
+	addr sdk.AccAddress,
+	beans sdkmath.Uint,
+) error {
 	wasOwing := k.GetBeansOwing(ctx, addr)
 	nowOwing := wasOwing.Add(beans)
 
@@ -339,10 +345,13 @@ func (k Keeper) ChargeBeans(ctx sdk.Context, addr sdk.AccAddress, beans sdkmath.
 }
 
 // ChargeForSmartWallet charges the fee for provisioning a smart wallet.
-func (k Keeper) ChargeForSmartWallet(ctx sdk.Context, addr sdk.AccAddress) error {
-	beansPerUnit := k.GetBeansPerUnit(ctx)
+func (k Keeper) ChargeForSmartWallet(
+	ctx sdk.Context,
+	beansPerUnit map[string]sdkmath.Uint,
+	addr sdk.AccAddress,
+) error {
 	beans := beansPerUnit[types.BeansPerSmartWalletProvision]
-	err := k.ChargeBeans(ctx, addr, beans)
+	err := k.ChargeBeans(ctx, beansPerUnit, addr, beans)
 	if err != nil {
 		return err
 	}

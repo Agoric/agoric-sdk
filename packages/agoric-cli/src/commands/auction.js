@@ -1,14 +1,17 @@
 // @ts-check
-
+/* eslint-env node */
 import { InvalidArgumentError } from 'commander';
 import { Fail } from '@endo/errors';
-import { makeRpcUtils } from '../lib/rpc.js';
+import { makeVstorageKit } from '@agoric/client-utils';
 import { outputActionAndHint } from '../lib/wallet.js';
+import { getNetworkConfig } from '../lib/network-config.js';
 
 /**
  * @import {ParamTypesMap, ParamTypesMapFromRecord} from '@agoric/governance/src/contractGovernance/typedParamManager.js'
  * @import {ParamValueForType} from '@agoric/governance/src/types.js'
  */
+
+const networkConfig = await getNetworkConfig({ env: process.env, fetch });
 
 /**
  * @template {ParamTypesMap} M
@@ -86,7 +89,10 @@ export const makeAuctionCommand = (
        * }} opts
        */
       async opts => {
-        const { agoricNames, readLatestHead } = await makeRpcUtils({ fetch });
+        const { agoricNames, readLatestHead } = await makeVstorageKit(
+          { fetch },
+          networkConfig,
+        );
 
         /** @type {{ current: AuctionParamRecord }} */
         // @ts-expect-error XXX should runtime check?

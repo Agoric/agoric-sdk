@@ -1,10 +1,11 @@
 // @ts-check
 /* eslint-disable func-names */
-/* global globalThis, process, setTimeout */
+/* eslint-env node */
+import { makeVstorageKit } from '@agoric/client-utils';
 import { execFileSync as execFileSyncAmbient } from 'child_process';
 import { Command, CommanderError } from 'commander';
 import { normalizeAddressWithOptions, pollBlocks } from '../lib/chain.js';
-import { getNetworkConfig, makeRpcUtils } from '../lib/rpc.js';
+import { getNetworkConfig } from '../lib/network-config.js';
 import {
   findContinuingIds,
   getCurrent,
@@ -25,6 +26,8 @@ const collectValues = (val, memo) => {
 
 const defaultKeyring = process.env.AGORIC_KEYRING_BACKEND || 'test';
 
+const networkConfig = await getNetworkConfig({ env: process.env, fetch });
+
 /**
  * @param {import('anylogger').Logger} _logger
  * @param {{
@@ -40,10 +43,9 @@ export const makeGovCommand = (_logger, io = {}) => {
   const {
     // Allow caller to provide access explicitly, but
     // default to conventional ambient IO facilities.
-    env = process.env,
     stdout = process.stdout,
     stderr = process.stderr,
-    fetch = globalThis.fetch,
+    fetch = global.fetch,
     execFileSync = execFileSyncAmbient,
     delay = ms => new Promise(resolve => setTimeout(resolve, ms)),
   } = io;
@@ -89,14 +91,13 @@ export const makeGovCommand = (_logger, io = {}) => {
    *   keyringBackend: string,
    *   instanceName?: string,
    * }} detail
-   * @param {Awaited<ReturnType<makeRpcUtils>>} [optUtils]
+   * @param {Awaited<ReturnType<makeVstorageKit>>} [optUtils]
    */
   const processOffer = async function (
     { toOffer, sendFrom, keyringBackend },
     optUtils,
   ) {
-    const networkConfig = await getNetworkConfig(env);
-    const utils = await (optUtils || makeRpcUtils({ fetch }));
+    const utils = await (optUtils || makeVstorageKit({ fetch }, networkConfig));
     const { agoricNames, readLatestHead } = utils;
 
     assert(keyringBackend, 'missing keyring-backend option');
@@ -264,7 +265,10 @@ export const makeGovCommand = (_logger, io = {}) => {
     )
     .requiredOption('--for <string>', 'description of the invitation')
     .action(async opts => {
-      const { agoricNames, readLatestHead } = await makeRpcUtils({ fetch });
+      const { agoricNames, readLatestHead } = await makeVstorageKit(
+        { fetch },
+        networkConfig,
+      );
       const current = await getCurrent(opts.from, { readLatestHead });
 
       const known = findContinuingIds(current, agoricNames);
@@ -290,7 +294,10 @@ export const makeGovCommand = (_logger, io = {}) => {
       normalizeAddress,
     )
     .action(async opts => {
-      const { agoricNames, readLatestHead } = await makeRpcUtils({ fetch });
+      const { agoricNames, readLatestHead } = await makeVstorageKit(
+        { fetch },
+        networkConfig,
+      );
       const current = await getCurrent(opts.from, { readLatestHead });
 
       const found = findContinuingIds(current, agoricNames);
@@ -326,7 +333,7 @@ export const makeGovCommand = (_logger, io = {}) => {
       normalizeAddress,
     )
     .action(async function (opts, options) {
-      const utils = await makeRpcUtils({ fetch });
+      const utils = await makeVstorageKit({ fetch }, networkConfig);
       const { readLatestHead } = utils;
 
       const info = await readLatestHead(
