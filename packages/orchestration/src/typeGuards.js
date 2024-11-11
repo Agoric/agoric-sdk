@@ -99,6 +99,7 @@ export const CosmosChainInfoShape = M.splitRecord(
     stakingTokens: M.arrayOf({ denom: M.string() }),
     // UNTIL https://github.com/Agoric/agoric-sdk/issues/9326
     icqEnabled: M.boolean(),
+    pfmEnabled: M.boolean(),
   },
 );
 
