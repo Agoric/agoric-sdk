@@ -1,18 +1,15 @@
-import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
+import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
-import { E } from '@endo/far';
-import path from 'path';
-import { makeNodeBundleCache } from '@endo/bundle-source/cache.js';
 import { AmountMath } from '@agoric/ertp/src/amountMath.js';
-import type { TestFn } from 'ava';
+import { inspectMapStore } from '@agoric/internal/src/testing-utils.js';
 import {
   divideBy,
   multiplyBy,
   parseRatio,
 } from '@agoric/zoe/src/contractSupport/ratio.js';
-import { makePromiseKit } from '@endo/promise-kit';
-import { inspectMapStore } from '@agoric/internal/src/testing-utils.js';
+import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
+import { E } from '@endo/far';
+import path from 'path';
 import { commonSetup } from './supports.js';
 
 const dirname = path.dirname(new URL(import.meta.url).pathname);
@@ -20,14 +17,6 @@ const dirname = path.dirname(new URL(import.meta.url).pathname);
 const contractName = 'fast-usdc';
 const contractFile = `${dirname}/../src/fast-usdc.contract.js`;
 type StartFn = typeof import('../src/fast-usdc.contract.js').start;
-
-const makeTestContext = async () => {
-  const bundleCache = await makeNodeBundleCache('bundles', {}, s => import(s));
-  return { bundleCache };
-};
-const test: TestFn<Awaited<ReturnType<typeof makeTestContext>>> = anyTest;
-
-test.before('cache bundles', async t => (t.context = await makeTestContext()));
 
 test('start', async t => {
   const {
@@ -37,9 +26,9 @@ test('start', async t => {
     utils,
   } = await commonSetup(t);
 
-  const { zoe } = await setUpZoeForTest();
-  const bundle = await t.context.bundleCache.load(contractFile, contractName);
-  const installation: Installation<StartFn> = await E(zoe).install(bundle);
+  const { zoe, bundleAndInstall } = await setUpZoeForTest();
+  const installation: Installation<StartFn> =
+    await bundleAndInstall(contractFile);
 
   const { creatorFacet } = await E(zoe).startInstance(
     installation,
@@ -74,9 +63,9 @@ test('LP deposits, earns fees, withdraws', async t => {
     utils,
   } = await commonSetup(t);
 
-  const { zoe } = await setUpZoeForTest();
-  const bundle = await t.context.bundleCache.load(contractFile, contractName);
-  const installation: Installation<StartFn> = await E(zoe).install(bundle);
+  const { zoe, bundleAndInstall } = await setUpZoeForTest();
+  const installation: Installation<StartFn> =
+    await bundleAndInstall(contractFile);
 
   const { creatorFacet, publicFacet, instance } = await E(zoe).startInstance(
     installation,
@@ -184,9 +173,9 @@ test('baggage', async t => {
     contractBaggage = baggage;
   };
 
-  const { zoe } = await setUpZoeForTest({ setJig });
-  const bundle = await t.context.bundleCache.load(contractFile, contractName);
-  const installation: Installation<StartFn> = await E(zoe).install(bundle);
+  const { zoe, bundleAndInstall } = await setUpZoeForTest({ setJig });
+  const installation: Installation<StartFn> =
+    await bundleAndInstall(contractFile);
 
   await E(zoe).startInstance(
     installation,
