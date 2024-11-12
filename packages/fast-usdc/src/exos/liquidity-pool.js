@@ -32,9 +32,10 @@ import { makeProposalShapes } from '../type-guards.js';
  *
  * @param {ZCFSeat} poolSeat
  * @param {ShareWorth} shareWorth
+ * @param {Brand} USDC
  */
-const checkPoolBalance = (poolSeat, shareWorth) => {
-  const available = poolSeat.getAmountAllocated('USDC');
+const checkPoolBalance = (poolSeat, shareWorth, USDC) => {
+  const available = poolSeat.getAmountAllocated('USDC', USDC);
   AmountMath.isEqual(available, shareWorth.numerator) ||
     Fail`🚨 pool balance ${q(available)} inconsistent with shareWorth ${q(shareWorth)}`;
 };
@@ -129,7 +130,7 @@ export const prepareLiquidityPoolKit = (zone, zcf, USDC, tools) => {
           /** @type {USDCProposalShapes['deposit']} */
           // @ts-expect-error ensured by proposalShape
           const proposal = lp.getProposal();
-          checkPoolBalance(poolSeat, shareWorth);
+          checkPoolBalance(poolSeat, shareWorth, USDC);
           const post = depositCalc(shareWorth, proposal);
 
           // COMMIT POINT
@@ -165,7 +166,7 @@ export const prepareLiquidityPoolKit = (zone, zcf, USDC, tools) => {
           // @ts-expect-error ensured by proposalShape
           const proposal = lp.getProposal();
           const { zcfSeat: burn } = zcf.makeEmptySeatKit();
-          checkPoolBalance(poolSeat, shareWorth);
+          checkPoolBalance(poolSeat, shareWorth, USDC);
           const post = withdrawCalc(shareWorth, proposal);
 
           // COMMIT POINT
