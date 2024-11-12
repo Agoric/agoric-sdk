@@ -390,3 +390,11 @@ export const sellCharacter = async (
 export const buyCharacter = async address => {
   return executeOffer(address, buyCharacterOffer());
 };
+
+export const installBundle = async bundlePath => {
+  return agd.tx(['swingset', 'install-bundle', `@${bundlePath}`], {
+    chainId: 'agoriclocal',
+    from: 'gov1',
+    yes: true,
+  });
+};

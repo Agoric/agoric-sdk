@@ -21,6 +21,7 @@ import {
   sellCharacter,
   sellItem,
   unequipAllItems,
+  installBundle,
 } from './test-lib/kread.js';
 import { networkConfig, agdWalletUtils } from './test-lib/index.js';
 
@@ -172,6 +173,25 @@ test.serial('Bob buys a Character on marketplace', async t => {
 });
 
 test.serial('User assets survive KREAd contract upgrade', async t => {
+  // XXX install updated KREAd contract and manifest bundles (this step should be removed)
+  const installContractBundleTX = await installBundle(
+    'kreadBundles/b1-a2b6c9a070034f9881d0d28c1532bf455ff80611d213564ac8135dd5ef84ad0f053c65c7f43863eb4fdf6e2bfc46872d563307c7ab6f22889287f7de7b686de3.json',
+  );
+  t.is(
+    installContractBundleTX.code,
+    0,
+    'Contract bundle failed to be installed',
+  );
+
+  const installManifestBundleTX = await installBundle(
+    'kreadBundles/b1-de0eab9300715acb6ef75bafde5c00afb9110b60d2c36736989e08fe12e590ed7b8d2db1174e540e7e02f56026336a76f0837d6daa4ae0ad28e3e336dbe3c559.json',
+  );
+  t.is(
+    installManifestBundleTX.code,
+    0,
+    'Contract bundle failed to be installed',
+  );
+
   const characterId = 'ephemeral_Joker';
   await mintCharacter(Alice, characterId);
 
