@@ -62,7 +62,7 @@ export const prepareLiquidityPoolKit = (zone, zcf, USDC, tools) => {
         receive: M.call(AmountShape, PaymentShape).returns(M.promise()),
       }),
       external: M.interface('external', {
-        publishShareWorth: M.call().returns(M.promise()),
+        publishShareWorth: M.call().returns(),
       }),
       depositHandler: M.interface('depositHandler', {
         handle: M.call(SeatShape, M.any()).returns(M.promise()),
@@ -114,15 +114,18 @@ export const prepareLiquidityPoolKit = (zone, zcf, USDC, tools) => {
             harden({ USDC: payment }),
           );
           this.state.shareWorth = withFees(shareWorth, amount);
-          await external.publishShareWorth();
+          external.publishShareWorth();
         },
       },
 
       external: {
-        async publishShareWorth() {
+        publishShareWorth() {
           const { shareWorth } = this.state;
           const { recorder } = this.state.shareWorthRecorderKit;
-          await recorder.write(shareWorth);
+          // Consumers of this .write() are off-chain / outside the VM.
+          // And there's no way to recover from a failed write.
+          // So don't await.
+          void recorder.write(shareWorth);
         },
       },
 
@@ -158,7 +161,7 @@ export const prepareLiquidityPoolKit = (zone, zcf, USDC, tools) => {
             console.error(reason.message, bug);
             zcf.shutdownWithFailure(reason);
           }
-          await external.publishShareWorth();
+          external.publishShareWorth();
         },
       },
       withdrawHandler: {
@@ -194,7 +197,7 @@ export const prepareLiquidityPoolKit = (zone, zcf, USDC, tools) => {
             console.error(reason.message, bug);
             zcf.shutdownWithFailure(reason);
           }
-          await external.publishShareWorth();
+          external.publishShareWorth();
         },
       },
       public: {
