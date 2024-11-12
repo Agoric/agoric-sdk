@@ -172,7 +172,7 @@ export const makeWalletCommand = async command => {
       normalizeAddress,
     )
     .action(async function (opts) {
-      const { agoricNames, unserializer, readLatestHead } =
+      const { agoricNames, unserializer, readPublished } =
         await makeVstorageKit(
           {
             fetch,
@@ -191,7 +191,7 @@ export const makeWalletCommand = async command => {
 
       const coalesced = await coalesceWalletState(follower);
 
-      const current = await getCurrent(opts.from, { readLatestHead });
+      const current = await getCurrent(opts.from, { readPublished });
 
       console.warn(
         'got coalesced',
