@@ -12,5 +12,21 @@ export const mockOut = () => {
 export const mockrl = (answer: string) => {
   return {
     question: () => Promise.resolve(answer),
+    close: () => {},
   };
+};
+
+export const mockFile = (path: string, contents = '') => {
+  const read = () => {
+    if (!contents) {
+      throw new Error();
+    }
+    return contents;
+  };
+  const write = (val: string) => {
+    contents = val;
+  };
+  const exists = () => !!contents;
+
+  return { read, write, exists, path };
 };

@@ -65,7 +65,7 @@ const mockTransfer = () => {
   };
 };
 
-test('CLI shows help when run without arguments', async t => {
+test('shows help when run without arguments', async t => {
   const output = await collectStdErr([CLI_PATH]);
   // Replace home path (e.g. "/home/samsiegart/.fast-usdc") with "~/.fast-usdc" so snapshots work on different machines.
   const regex = /"\/home\/[^/]+\/\.fast-usdc\/"/g;
@@ -74,43 +74,43 @@ test('CLI shows help when run without arguments', async t => {
   t.snapshot(result);
 });
 
-test('CLI shows help for transfer command', async t => {
+test('shows help for transfer command', async t => {
   const output = await collectStdOut([CLI_PATH, 'transfer', '-h']);
 
   t.snapshot(output);
 });
 
-test('CLI shows help for config command', async t => {
+test('shows help for config command', async t => {
   const output = await collectStdOut([CLI_PATH, 'config', '-h']);
 
   t.snapshot(output);
 });
 
-test('CLI shows help for config init command', async t => {
+test('shows help for config init command', async t => {
   const output = await collectStdOut([CLI_PATH, 'config', 'init', '-h']);
 
   t.snapshot(output);
 });
 
-test('CLI shows help for config update command', async t => {
+test('shows help for config update command', async t => {
   const output = await collectStdOut([CLI_PATH, 'config', 'update', '-h']);
 
   t.snapshot(output);
 });
 
-test('CLI shows help for config show command', async t => {
+test('shows help for config show command', async t => {
   const output = await collectStdOut([CLI_PATH, 'config', 'show', '-h']);
 
   t.snapshot(output);
 });
 
-test('CLI shows error when config init command is run without options', async t => {
+test('shows error when config init command is run without options', async t => {
   const output = await collectStdErr([CLI_PATH, 'config', 'init']);
 
   t.snapshot(output);
 });
 
-test('CLI shows error when config init command is run without eth seed', async t => {
+test('shows error when config init command is run without eth seed', async t => {
   const output = await collectStdErr([
     CLI_PATH,
     'config',
@@ -122,7 +122,7 @@ test('CLI shows error when config init command is run without eth seed', async t
   t.snapshot(output);
 });
 
-test('CLI calls config init with default args', t => {
+test('calls config init with default args', t => {
   const homeDir = './test/.fast-usdc/';
   const config = mockConfig();
   const program = initProgram(config, mockTransfer());
@@ -140,9 +140,9 @@ test('CLI calls config init with default args', t => {
     'bar',
   ]);
 
-  t.deepEqual(config.getInitArgs(), [
-    './test/.fast-usdc/',
-    './test/.fast-usdc/config.json',
+  const args = config.getInitArgs();
+  t.is(args.shift().path, `${homeDir}config.json`);
+  t.deepEqual(args, [
     {
       agoricApi: '127.0.0.1:1317',
       ethRpc: '127.0.0.1:8545',
@@ -157,7 +157,7 @@ test('CLI calls config init with default args', t => {
   ]);
 });
 
-test('CLI calls config init with optional args', t => {
+test('calls config init with optional args', t => {
   const homeDir = './test/.fast-usdc/';
   const config = mockConfig();
   const program = initProgram(config, mockTransfer());
@@ -189,9 +189,9 @@ test('CLI calls config init with optional args', t => {
     '0xtoken123',
   ]);
 
-  t.deepEqual(config.getInitArgs(), [
-    './test/.fast-usdc/',
-    './test/.fast-usdc/config.json',
+  const args = config.getInitArgs();
+  t.is(args.shift().path, `${homeDir}config.json`);
+  t.deepEqual(args, [
     {
       agoricApi: '127.0.0.1:1111',
       ethRpc: '127.0.0.1:2222',
@@ -206,7 +206,7 @@ test('CLI calls config init with optional args', t => {
   ]);
 });
 
-test('CLI calls config update with args', t => {
+test('calls config update with args', t => {
   const homeDir = './test/.fast-usdc/';
   const config = mockConfig();
   const program = initProgram(config, mockTransfer());
@@ -238,8 +238,9 @@ test('CLI calls config update with args', t => {
     '0xtoken123',
   ]);
 
-  t.deepEqual(config.getUpdateArgs(), [
-    './test/.fast-usdc/config.json',
+  const args = config.getUpdateArgs();
+  t.is(args.shift().path, `${homeDir}config.json`);
+  t.deepEqual(args, [
     {
       agoricApi: '127.0.0.1:1111',
       ethRpc: '127.0.0.1:2222',
@@ -254,17 +255,17 @@ test('CLI calls config update with args', t => {
   ]);
 });
 
-test('CLI calls config show', t => {
+test('calls config show', t => {
   const homeDir = './test/.fast-usdc/';
   const config = mockConfig();
   const program = initProgram(config, mockTransfer());
 
   program.parse(['node', CLI_PATH, '--home', homeDir, 'config', 'show']);
 
-  t.deepEqual(config.getShowArgs(), ['./test/.fast-usdc/config.json']);
+  t.is(config.getShowArgs()[0].path, './test/.fast-usdc/config.json');
 });
 
-test('CLI calls transfer with args', t => {
+test('calls transfer with args', t => {
   const homeDir = './test/.fast-usdc/';
   const transfer = mockTransfer();
   const program = initProgram(mockConfig(), transfer);
@@ -279,9 +280,7 @@ test('CLI calls transfer with args', t => {
     'dydx123456',
   ]);
 
-  t.deepEqual(transfer.getTransferArgs(), [
-    './test/.fast-usdc/config.json',
-    '450000',
-    'dydx123456',
-  ]);
+  const args = transfer.getTransferArgs();
+  t.is(args.shift().path, `${homeDir}config.json`);
+  t.deepEqual(args, ['450000', 'dydx123456']);
 });

@@ -1,11 +1,16 @@
 import '@endo/init/legacy.js';
 import { Command } from 'commander';
-import { readFileSync } from 'fs';
+import { existsSync, mkdirSync, readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, resolve } from 'path';
 import { homedir } from 'os';
+import {
+  readFile as readAsync,
+  writeFile as writeAsync,
+} from 'node:fs/promises';
 import configLib from './config.js';
 import transferLib from './transfer.js';
+import { makeFile } from '../util/file.js';
 
 const packageJson = JSON.parse(
   readFileSync(
@@ -19,6 +24,10 @@ const defaultHome = homedir();
 export const initProgram = (
   configHelpers = configLib,
   transferHelpers = transferLib,
+  readFile = readAsync,
+  writeFile = writeAsync,
+  mkdir = mkdirSync,
+  exists = existsSync,
 ) => {
   const program = new Command();
 
@@ -34,19 +43,20 @@ export const initProgram = (
 
   const config = program.command('config').description('Manage config');
 
-  const configFile = 'config.json';
+  const configFilename = 'config.json';
   const getConfigPath = () => {
     const { home: configDir } = program.opts();
-    return configDir + configFile;
+    return configDir + configFilename;
   };
+
+  const makeConfigFile = () =>
+    makeFile(getConfigPath(), readFile, writeFile, mkdir, exists);
 
   config
     .command('show')
     .description('Show current config')
     .action(async () => {
-      const configPath = getConfigPath();
-
-      await configHelpers.show(configPath);
+      await configHelpers.show(makeConfigFile());
     });
 
   config
@@ -82,10 +92,7 @@ export const initProgram = (
       '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48',
     )
     .action(async options => {
-      const { home: configDir } = program.opts();
-      const configPath = getConfigPath();
-
-      await configHelpers.init(configDir, configPath, options);
+      await configHelpers.init(makeConfigFile(), options);
     });
 
   config
@@ -116,9 +123,7 @@ export const initProgram = (
       'Address of USDC token contract',
     )
     .action(async options => {
-      const configPath = getConfigPath();
-
-      await configHelpers.update(configPath, options);
+      await configHelpers.update(makeConfigFile(), options);
     });
 
   program
@@ -147,8 +152,7 @@ export const initProgram = (
         /** @type {string} */ amount,
         /** @type {string} */ destination,
       ) => {
-        const configPath = getConfigPath();
-        await transferHelpers.transfer(configPath, amount, destination);
+        await transferHelpers.transfer(makeConfigFile(), amount, destination);
       },
     );
 

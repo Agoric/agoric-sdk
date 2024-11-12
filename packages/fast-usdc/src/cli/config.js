@@ -1,7 +1,5 @@
 import * as readline from 'node:readline/promises';
 import { stdin as input, stdout as output } from 'node:process';
-import { readFile, writeFile } from 'node:fs/promises';
-import { existsSync, mkdirSync } from 'node:fs';
 
 /**
    @typedef {{
@@ -17,17 +15,19 @@ import { existsSync, mkdirSync } from 'node:fs';
   }} ConfigOpts
  */
 
+/** @typedef {import('../util/file').file} file */
+
 const init = async (
-  /** @type {import("fs").PathLike} */ configDir,
-  /** @type {import("fs").PathLike} */ configPath,
+  /** @type {file} */ configFile,
   /** @type {ConfigOpts} */ options,
   out = console,
   rl = readline.createInterface({ input, output }),
 ) => {
   const showOverrideWarning = async () => {
     const answer = await rl.question(
-      `Config at ${configPath} already exists. Override it? (To partially update, use "update", or set "--home" to use a different config path.) y/N`,
+      `Config at ${configFile.path} already exists. Override it? (To partially update, use "update", or set "--home" to use a different config path.) y/N: `,
     );
+    rl.close();
     const confirmed = ['y', 'yes'].includes(answer.toLowerCase());
     if (!confirmed) {
       throw new Error('User cancelled');
@@ -35,20 +35,17 @@ const init = async (
   };
 
   const writeConfig = async () => {
-    if (!existsSync(configDir)) {
-      mkdirSync(configDir);
-    }
     await null;
     try {
-      await writeFile(configPath, JSON.stringify(options, null, 2));
-      out.log(`Config initialized at ${configPath}`);
+      await configFile.write(JSON.stringify(options, null, 2));
+      out.log(`Config initialized at ${configFile.path}`);
     } catch (error) {
       out.error(`An unexpected error has occurred: ${error}`);
     }
   };
 
   await null;
-  if (existsSync(configPath)) {
+  if (configFile.exists()) {
     try {
       await showOverrideWarning();
     } catch {
@@ -59,7 +56,7 @@ const init = async (
 };
 
 const update = async (
-  /** @type {import("fs").PathLike} */ configPath,
+  /** @type {file} */ configFile,
   /** @type {Partial<ConfigOpts>} */ options,
   out = console,
 ) => {
@@ -67,8 +64,8 @@ const update = async (
     await null;
     const stringified = JSON.stringify(data, null, 2);
     try {
-      await writeFile(configPath, stringified);
-      out.log(`Config updated at ${configPath}`);
+      await configFile.write(stringified);
+      out.log(`Config updated at ${configFile.path}`);
       out.log(stringified);
     } catch (error) {
       out.error(`An unexpected error has occurred: ${error}`);
@@ -78,32 +75,29 @@ const update = async (
   let file;
   await null;
   try {
-    file = await readFile(configPath, 'utf-8');
+    file = await configFile.read();
   } catch {
     out.error(
-      `No config found at ${configPath}. Use "init" to create one, or "--home" to specify config location.`,
+      `No config found at ${configFile.path}. Use "init" to create one, or "--home" to specify config location.`,
     );
     return;
   }
   await updateConfig({ ...JSON.parse(file), ...options });
 };
 
-const show = async (
-  /** @type {import("fs").PathLike} */ configPath,
-  out = console,
-) => {
-  let file;
+const show = async (/** @type {file} */ configFile, out = console) => {
+  let contents;
   await null;
   try {
-    file = await readFile(configPath, 'utf-8');
+    contents = await configFile.read();
   } catch {
     out.error(
-      `No config found at ${configPath}. Use "init" to create one, or "--home" to specify config location.`,
+      `No config found at ${configFile.path}. Use "init" to create one, or "--home" to specify config location.`,
     );
     return;
   }
-  out.log(`Config found at ${configPath}:`);
-  out.log(file);
+  out.log(`Config found at ${configFile.path}:`);
+  out.log(contents);
 };
 
 export default { init, update, show };

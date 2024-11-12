@@ -1,11 +1,12 @@
 import axios from 'axios';
-import { readFile } from 'node:fs/promises';
 import { depositForBurn } from '../util/cctp.js';
 import { queryForwardingAccount, registerFwdAccount } from '../util/noble.js';
 import { queryFastUSDCLocalChainAccount } from '../util/agoric.js';
 
+/** @typedef {import('../util/file').file} file */
+
 const transfer = async (
-  /** @type {import("fs").PathLike} */ configPath,
+  /** @type {file} */ configFile,
   /** @type {string} */ amount,
   /** @type {string} */ destination,
   out = console,
@@ -62,10 +63,10 @@ const transfer = async (
   let config;
   await null;
   try {
-    config = JSON.parse(await readFile(configPath, 'utf-8'));
+    config = JSON.parse(await configFile.read());
   } catch {
     out.error(
-      `No config found at ${configPath}. Use "config init" to create one, or "--home" to specify config location.`,
+      `No config found at ${configFile.path}. Use "config init" to create one, or "--home" to specify config location.`,
     );
     return;
   }

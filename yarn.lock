@@ -1653,13 +1653,6 @@
   dependencies:
     "@endo/env-options" "^0.1.4"
 
-"@endo/eventual-send@^1.2.6":
-  version "1.2.6"
-  resolved "https://registry.yarnpkg.com/@endo/eventual-send/-/eventual-send-1.2.6.tgz#43d0f4567e3318491b3720bd7d13eef5448f5384"
-  integrity sha512-wD2OhDDvW8y519q6B8H5jox5mXau6OdTIlYQGzI2lk7xtPasydh2SgdQsX6u1jLAXVcJuNqW7wWgLmvk42ncVA==
-  dependencies:
-    "@endo/env-options" "^1.1.7"
-
 "@endo/eventual-send@^1.2.7":
   version "1.2.7"
   resolved "https://registry.yarnpkg.com/@endo/eventual-send/-/eventual-send-1.2.7.tgz#b4f5408bba1dd1974f147ecb8c346d443b5a31f5"
@@ -1778,17 +1771,6 @@
     "@endo/promise-kit" "^0.2.60"
     "@fast-check/ava" "^1.1.5"
 
-"@endo/pass-style@^1.4.4":
-  version "1.4.4"
-  resolved "https://registry.yarnpkg.com/@endo/pass-style/-/pass-style-1.4.4.tgz#01c1d6ffc4af3e39b7c8cb8b912d9f6b28d02e55"
-  integrity sha512-RlZMt2kKQUYfrxh9G4RZ8eQs+Bb6DwT7P8TbJZGfgIRYajL5I5zAdByz9PA8P0+aj4PZpKnTUfKwlhNs+tNV0w==
-  dependencies:
-    "@endo/env-options" "^1.1.7"
-    "@endo/errors" "^1.2.6"
-    "@endo/eventual-send" "^1.2.6"
-    "@endo/promise-kit" "^1.1.6"
-    "@fast-check/ava" "^1.1.5"
-
 "@endo/pass-style@^1.4.6":
   version "1.4.6"
   resolved "https://registry.yarnpkg.com/@endo/pass-style/-/pass-style-1.4.6.tgz#75092d33ad5183be120fb662361eef44c28f7768"
@@ -1817,13 +1799,6 @@
   integrity sha512-6Zp9BqBbc3ywaG+iLRrQRmO/VLKrMnvsbgOKKPMpjEC3sUlksYA09uaH3GrKZgoGChF8m9bXK8eFW39z7wJNUw==
   dependencies:
     ses "^0.18.8"
-
-"@endo/promise-kit@^1.1.6":
-  version "1.1.6"
-  resolved "https://registry.yarnpkg.com/@endo/promise-kit/-/promise-kit-1.1.6.tgz#0357c09973fd28be0ef8cb18fbfbb3cfaf1f993b"
-  integrity sha512-14HtlfeUfm9voakcDF4hK15NlyzHtlPFBjJh42ZmWW3aGXmUJQTI/yIdv0zPXcMkogCdeBNKXpQSqIsYehAowQ==
-  dependencies:
-    ses "^1.9.0"
 
 "@endo/promise-kit@^1.1.7":
   version "1.1.7"
@@ -3938,13 +3913,6 @@
   version "1.2.2"
   resolved "https://registry.yarnpkg.com/@types/minimist/-/minimist-1.2.2.tgz#ee771e2ba4b3dc5b372935d549fd9617bf345b8c"
   integrity sha512-jhuKLIRrhvCPLqwPcx6INqmKeiA5EWrsCOPhrlFSrbrmU4ZMPjj5Ul/oLCMDO98XRUIwVm78xICz4EPCektzeQ==
-
-"@types/mock-fs@4.13.4":
-  version "4.13.4"
-  resolved "https://registry.yarnpkg.com/@types/mock-fs/-/mock-fs-4.13.4.tgz#e73edb4b4889d44d23f1ea02d6eebe50aa30b09a"
-  integrity sha512-mXmM0o6lULPI8z3XNnQCpL0BGxPwx1Ul1wXYEPBGl4efShyxW2Rln0JOPEWGyZaYZMM6OVXM/15zUuFMY52ljg==
-  dependencies:
-    "@types/node" "*"
 
 "@types/ms@*":
   version "0.7.31"
@@ -7374,6 +7342,36 @@ globrex@^0.1.2:
   resolved "https://registry.yarnpkg.com/globrex/-/globrex-0.1.2.tgz#dd5d9ec826232730cd6793a5e33a9302985e6098"
   integrity sha512-uHJgbwAMwNFf5mLst7IWLNg14x1CkeqglJb/K3doi4dw6q2IvAAmM/Y81kevy83wP+Sst+nutFTYOGg3d1lsxg==
 
+google-auth-library@^9.3.0:
+  version "9.14.2"
+  resolved "https://registry.yarnpkg.com/google-auth-library/-/google-auth-library-9.14.2.tgz#92a53ba32b3a9ff9ced8ed34129edb5a7fa7fb52"
+  integrity sha512-R+FRIfk1GBo3RdlRYWPdwk8nmtVUOn6+BkDomAC46KoU8kzXzE1HLmOasSCbWUByMMAGkknVF0G5kQ69Vj7dlA==
+  dependencies:
+    base64-js "^1.3.0"
+    ecdsa-sig-formatter "^1.0.11"
+    gaxios "^6.1.1"
+    gcp-metadata "^6.1.0"
+    gtoken "^7.0.0"
+    jws "^4.0.0"
+
+google-gax@^4.0.3:
+  version "4.4.1"
+  resolved "https://registry.yarnpkg.com/google-gax/-/google-gax-4.4.1.tgz#95a9cf7ee7777ac22d1926a45b5f886dd8beecae"
+  integrity sha512-Phyp9fMfA00J3sZbJxbbB4jC55b7DBjE3F6poyL3wKMEBVKA79q6BGuHcTiM28yOzVql0NDbRL8MLLh8Iwk9Dg==
+  dependencies:
+    "@grpc/grpc-js" "^1.10.9"
+    "@grpc/proto-loader" "^0.7.13"
+    "@types/long" "^4.0.0"
+    abort-controller "^3.0.0"
+    duplexify "^4.0.0"
+    google-auth-library "^9.3.0"
+    node-fetch "^2.7.0"
+    object-hash "^3.0.0"
+    proto3-json-serializer "^2.0.2"
+    protobufjs "^7.3.2"
+    retry-request "^7.0.0"
+    uuid "^9.0.1"
+
 gopd@^1.0.1:
   version "1.0.1"
   resolved "https://registry.yarnpkg.com/gopd/-/gopd-1.0.1.tgz#29ff76de69dac7489b7c0918a5788e56477c332c"
@@ -9460,11 +9458,6 @@ mkdirp@^3.0.1:
   resolved "https://registry.yarnpkg.com/mkdirp/-/mkdirp-3.0.1.tgz#e44e4c5607fb279c168241713cc6e0fea9adcb50"
   integrity sha512-+NsyUUAZDmo6YVHzL/stxSu3t9YS1iljliy3BSDrXJ/dkn1KYdmtZODGGjLcc9XLgVVpH4KshHB8XmZgMhaBXg==
 
-mock-fs@^5.4.1:
-  version "5.4.1"
-  resolved "https://registry.yarnpkg.com/mock-fs/-/mock-fs-5.4.1.tgz#b00abc658cb19dbbf282fde2f05bb751cd1e12a5"
-  integrity sha512-sz/Q8K1gXXXHR+qr0GZg2ysxCRr323kuN10O7CtQjraJsFDJ4SJ+0I5MzALz7aRp9lHk8Cc/YdsT95h9Ka1aFw==
-
 modify-values@^1.0.0:
   version "1.0.1"
   resolved "https://registry.yarnpkg.com/modify-values/-/modify-values-1.0.1.tgz#b3939fa605546474e3e3e3c63d64bd43b4ee6022"
@@ -11273,13 +11266,6 @@ ses@^0.18.8:
   integrity sha512-kOH1AhJc6gWDXKURKeU1w7iFUdImAegAljVvBg5EUBgNqjH4bxcEsGVUadVEPtA2PVRMyQp1fiSMDwEZkQNj1g==
   dependencies:
     "@endo/env-options" "^0.1.4"
-
-ses@^1.9.0:
-  version "1.9.0"
-  resolved "https://registry.yarnpkg.com/ses/-/ses-1.9.0.tgz#ebf2de9759a21b09550aef0645c3f9b817409381"
-  integrity sha512-ZDAkixRUIPId1oXVxDhj1sIzFUeJ3vzaJCd64Ra1owuVH6Bcd+IOGrJtiFqUTA+YC9w8jTE9XkZTwin+hkbn5Q==
-  dependencies:
-    "@endo/env-options" "^1.1.7"
 
 ses@^1.9.1:
   version "1.9.1"
