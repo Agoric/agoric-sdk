@@ -411,20 +411,14 @@ export const sendOfferAgd = async (address, offerPromise) => {
   const offer = await offerPromise;
   const networkConfig = await getNetworkConfig({ env: process.env, fetch });
   const { chainName, rpcAddrs } = networkConfig;
-  const args = [
-    `--node=${rpcAddrs[0]}`,
-    `--chain-id=${chainName}`,
-    `--keyring-backend=test`,
-    `--from=${address}`,
-    'tx',
-    'swingset',
-    'wallet-action',
-    '--allow-spend',
-    offer,
-    '-bblock',
+  const args = [].concat(
+    [`--node=${rpcAddrs[0]}`, `--chain-id=${chainName}`],
+    [`--keyring-backend=test`, `--from=${address}`],
+    ['tx', 'swingset', 'wallet-action', '--allow-spend', offer],
     '--yes',
+    '-bblock',
     '-ojson',
-  ];
+  );
 
   const [settlement] = await Promise.allSettled([
     execa('agd', args, { all: true }),
