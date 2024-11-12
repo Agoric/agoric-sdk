@@ -22,7 +22,7 @@ import { makeProposalShapes } from '../type-guards.js';
 
 /**
  * @import {Zone} from '@agoric/zone';
- * @import {TypedPattern} from '@agoric/internal'
+ * @import {Remote, TypedPattern} from '@agoric/internal'
  * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js'
  * @import {MakeRecorderKit} from '@agoric/zoe/src/contractSupport/recorder.js'
  * @import {USDCProposalShapes, ShareWorth} from '../pool-share-math.js'
@@ -78,7 +78,7 @@ export const prepareLiquidityPoolKit = (zone, zcf, USDC, tools) => {
     },
     /**
      * @param {ZCFMint<'nat'>} shareMint
-     * @param {StorageNode} node
+     * @param {Remote<StorageNode>} node
      */
     (shareMint, node) => {
       const { brand: PoolShares } = shareMint.getIssuerRecord();

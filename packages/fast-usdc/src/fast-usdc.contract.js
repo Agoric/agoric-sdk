@@ -88,7 +88,6 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
       }),
   );
   const poolKit = zone.makeOnce('Liquidity Pool kit', () =>
-    // @ts-expect-error makeLiquidityPoolKit isn't up to speed on Remote<>
     makeLiquidityPoolKit(shareMint, privateArgs.storageNode),
   );
 
