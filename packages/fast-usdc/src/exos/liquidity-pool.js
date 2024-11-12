@@ -43,7 +43,7 @@ export const prepareLiquidityPoolKit = (zone, zcf, USDC, tools) => {
         receive: M.call(AmountShape, PaymentShape).returns(M.promise()),
       }),
       external: M.interface('external', {
-        setShareWorth: M.call(RatioShape).returns(M.promise()),
+        publishShareWorth: M.call().returns(M.promise()),
       }),
       depositHandler: M.interface('depositHandler', {
         handle: M.call(SeatShape, M.any()).returns(M.promise()),
@@ -69,7 +69,7 @@ export const prepareLiquidityPoolKit = (zone, zcf, USDC, tools) => {
       const { zcfSeat: poolSeat } = zcf.makeEmptySeatKit();
       const shareWorthRecorderKit = tools.makeRecorderKit(
         node,
-        /** @type {TypedPattern<ShareWorth>} */ (RatioShape),
+        /** @type {TypedPattern<Ratio>} */ (RatioShape),
       );
       return {
         shareMint,
@@ -95,15 +95,15 @@ export const prepareLiquidityPoolKit = (zone, zcf, USDC, tools) => {
             harden({ USDC: amount }),
             harden({ USDC: payment }),
           );
-          await external.setShareWorth(withFees(shareWorth, amount));
+          this.state.shareWorth = withFees(shareWorth, amount);
+          await external.publishShareWorth();
         },
       },
 
       external: {
-        /** @param {ShareWorth} shareWorth */
-        async setShareWorth(shareWorth) {
+        async publishShareWorth() {
+          const { shareWorth } = this.state;
           const { recorder } = this.state.shareWorthRecorderKit;
-          this.state.shareWorth = shareWorth;
           await recorder.write(shareWorth);
         },
       },
@@ -128,7 +128,8 @@ export const prepareLiquidityPoolKit = (zone, zcf, USDC, tools) => {
           );
           lp.exit();
           mint.exit();
-          await external.setShareWorth(post.shareWorth);
+          this.state.shareWorth = post.shareWorth;
+          await external.publishShareWorth();
         },
       },
       withdrawHandler: {
@@ -152,7 +153,8 @@ export const prepareLiquidityPoolKit = (zone, zcf, USDC, tools) => {
           shareMint.burnLosses(proposal.give, burn);
           lp.exit();
           burn.exit();
-          await external.setShareWorth(post.shareWorth);
+          this.state.shareWorth = post.shareWorth;
+          await external.publishShareWorth();
         },
       },
       public: {
@@ -175,8 +177,8 @@ export const prepareLiquidityPoolKit = (zone, zcf, USDC, tools) => {
       },
     },
     {
-      finish: ({ state: { shareWorth }, facets: { external } }) => {
-        void external.setShareWorth(shareWorth);
+      finish: ({ facets: { external } }) => {
+        void external.publishShareWorth();
       },
     },
   );
