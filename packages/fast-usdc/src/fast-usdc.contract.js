@@ -72,7 +72,7 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
 
   const creatorFacet = zone.exo('Fast USDC Creator', undefined, {
     simulateFeesFromAdvance(amount, payment) {
-      console.log('UNTIL: advance fees are implemented');
+      console.log('🚧🚧 UNTIL: advance fees are implemented 🚧🚧');
       // eslint-disable-next-line no-use-before-define
       return poolKit.feeSink.receive(amount, payment);
     },
