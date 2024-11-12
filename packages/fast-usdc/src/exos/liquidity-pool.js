@@ -30,12 +30,12 @@ import { makeProposalShapes } from '../type-guards.js';
 /**
  * @param {Zone} zone
  * @param {ZCF} zcf
- * @param {Record<'USDC', Brand<'nat'>>} brands
+ * @param {Brand<'nat'>} USDC
  * @param {{
  *   makeRecorderKit: MakeRecorderKit;
  * }} tools
  */
-export const prepareLiquidityPoolKit = (zone, zcf, brands, tools) => {
+export const prepareLiquidityPoolKit = (zone, zcf, USDC, tools) => {
   return zone.exoClassKit(
     'Fast Liquidity Pool',
     {
@@ -63,7 +63,6 @@ export const prepareLiquidityPoolKit = (zone, zcf, brands, tools) => {
      */
     (shareMint, node) => {
       const { brand: PoolShares } = shareMint.getIssuerRecord();
-      const { USDC } = brands;
       const proposalShapes = makeProposalShapes({ USDC, PoolShares });
       const dust = AmountMath.make(USDC, 1n);
       const shareWorth = makeParity(dust, PoolShares);

@@ -65,7 +65,7 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
   const makeLiquidityPoolKit = prepareLiquidityPoolKit(
     zone,
     zcf,
-    { USDC: terms.brands.USDC },
+    terms.brands.USDC,
     { makeRecorderKit },
   );
   assertAllDefined({ feed, makeSettler, makeAdvancer, statusManager });
