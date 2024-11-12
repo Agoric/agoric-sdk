@@ -1,4 +1,3 @@
-import '@endo/init/legacy.js';
 import { Command } from 'commander';
 import { existsSync, mkdirSync, readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
@@ -70,7 +69,7 @@ export const initProgram = (
       '--eth-seed <seed>',
       'Seed phrase for Ethereum account. CAUTION: Stored unencrypted in file system',
     )
-    .option('--agoric-api [url]', 'Agoric API endpoint', '127.0.0.1:1317')
+    .option('--agoric-rpc [url]', 'Agoric RPC endpoint', '127.0.0.1:1317')
     .option('--noble-api [url]', 'Noble API endpoint', '127.0.0.1:1318')
     .option(
       '--noble-to-agoric-channel [channel]',
@@ -106,7 +105,7 @@ export const initProgram = (
       '--eth-seed [string]',
       'Seed phrase for Ethereum account. CAUTION: Stored unencrypted in file system',
     )
-    .option('--agoric-api [url]', 'Agoric API endpoint')
+    .option('--agoric-rpc [url]', 'Agoric RPC endpoint')
     .option('--noble-rpc [url]', 'Noble RPC endpoint')
     .option('--eth-rpc [url]', 'Ethereum RPC Endpoint')
     .option('--noble-api [url]', 'Noble API endpoint')

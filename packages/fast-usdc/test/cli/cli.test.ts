@@ -1,3 +1,4 @@
+import '@endo/init/legacy.js';
 import test from 'ava';
 import { spawn } from 'child_process';
 import { fileURLToPath } from 'url';
@@ -144,7 +145,7 @@ test('calls config init with default args', t => {
   t.is(args.shift().path, `${homeDir}config.json`);
   t.deepEqual(args, [
     {
-      agoricApi: '127.0.0.1:1317',
+      agoricRpc: '127.0.0.1:1317',
       ethRpc: '127.0.0.1:8545',
       ethSeed: 'bar',
       nobleRpc: '127.0.0.1:26657',
@@ -173,7 +174,7 @@ test('calls config init with optional args', t => {
     'foo',
     '--eth-seed',
     'bar',
-    '--agoric-api',
+    '--agoric-rpc',
     '127.0.0.1:1111',
     '--eth-rpc',
     '127.0.0.1:2222',
@@ -193,7 +194,7 @@ test('calls config init with optional args', t => {
   t.is(args.shift().path, `${homeDir}config.json`);
   t.deepEqual(args, [
     {
-      agoricApi: '127.0.0.1:1111',
+      agoricRpc: '127.0.0.1:1111',
       ethRpc: '127.0.0.1:2222',
       ethSeed: 'bar',
       nobleRpc: '127.0.0.1:3333',
@@ -222,7 +223,7 @@ test('calls config update with args', t => {
     'foo',
     '--eth-seed',
     'bar',
-    '--agoric-api',
+    '--agoric-rpc',
     '127.0.0.1:1111',
     '--eth-rpc',
     '127.0.0.1:2222',
@@ -242,7 +243,7 @@ test('calls config update with args', t => {
   t.is(args.shift().path, `${homeDir}config.json`);
   t.deepEqual(args, [
     {
-      agoricApi: '127.0.0.1:1111',
+      agoricRpc: '127.0.0.1:1111',
       ethRpc: '127.0.0.1:2222',
       ethSeed: 'bar',
       nobleRpc: '127.0.0.1:3333',

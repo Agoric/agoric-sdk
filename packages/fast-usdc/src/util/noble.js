@@ -1,7 +1,32 @@
+/* global globalThis */
+
 import { DirectSecp256k1HdWallet, Registry } from '@cosmjs/proto-signing';
 import { AminoTypes, SigningStargateClient } from '@cosmjs/stargate';
 import { nobleAminoConverters, nobleProtoRegistry } from '@nick134-bit/noblejs';
-import axios from 'axios';
+
+export const makeSigner = async (
+  /** @type {string} */ nobleSeed,
+  /** @type {string} */ nobleRpc,
+  out = console,
+) => {
+  const wallet = await DirectSecp256k1HdWallet.fromMnemonic(nobleSeed, {
+    prefix: 'noble',
+  });
+  out.log('got noble wallet from seed');
+  const accounts = await wallet.getAccounts();
+  const address = accounts[0].address;
+  const signer = await SigningStargateClient.connectWithSigner(
+    nobleRpc,
+    wallet,
+    {
+      aminoTypes: new AminoTypes({
+        ...nobleAminoConverters,
+      }),
+      registry: new Registry([...nobleProtoRegistry]),
+    },
+  );
+  return { address, signer };
+};
 
 const createMsgRegisterAccount = (
   /** @type {string} */ signer,
@@ -19,22 +44,15 @@ const createMsgRegisterAccount = (
 };
 
 export const registerFwdAccount = async (
-  /** @type {string} */ nobleSeed,
+  /** @type {SigningStargateClient} */ nobleSigner,
+  /** @type {string} */ nobleAddress,
   /** @type {string} */ nobleToAgoricChannel,
-  /** @type {string} */ nobleRpc,
   /** @type {string} */ recipient,
   out = console,
 ) => {
   out.log('registering fwd account on noble');
-  const wallet = await DirectSecp256k1HdWallet.fromMnemonic(nobleSeed, {
-    prefix: 'noble',
-  });
-  out.log('got noble wallet from seed');
-  const accounts = await wallet.getAccounts();
-  const signerAddress = accounts[0].address;
-  out.log(`got signer ${signerAddress}`);
   const msg = createMsgRegisterAccount(
-    signerAddress,
+    nobleAddress,
     recipient,
     nobleToAgoricChannel,
   );
@@ -48,23 +66,12 @@ export const registerFwdAccount = async (
     gas: '200000',
   };
   out.log('signing message', msg);
-  const clientWithSigner = await SigningStargateClient.connectWithSigner(
-    nobleRpc,
-    wallet,
-    {
-      aminoTypes: new AminoTypes({
-        ...nobleAminoConverters,
-      }),
-      registry: new Registry([...nobleProtoRegistry]),
-    },
-  );
-  const txResult = await clientWithSigner.signAndBroadcast(
-    signerAddress,
+  const txResult = await nobleSigner.signAndBroadcast(
+    nobleAddress,
     [msg],
     fee,
     'Register Account Transaction',
   );
-
   if (txResult.code !== undefined && txResult.code !== 0) {
     throw new Error(
       `Transaction failed with code ${txResult.code}: ${txResult.events || ''}`,
@@ -78,21 +85,21 @@ export const queryForwardingAccount = async (
   /** @type {string} */ nobleToAgoricChannel,
   /** @type {string} */ agoricAddr,
   out = console,
-  get = axios.get,
+  fetch = globalThis.fetch,
 ) => {
   const query = `${nobleApi}/noble/forwarding/v1/address/${nobleToAgoricChannel}/${agoricAddr}`;
   out.log(`querying forward address details from noble api: ${query}`);
   let forwardingAddressRes;
   await null;
   try {
-    forwardingAddressRes = await get(query);
+    forwardingAddressRes = await fetch(query).then(res => res.json());
   } catch (e) {
     out.error(`Error querying forwarding address from ${query}`);
     throw e;
   }
-  const { address, exists } = forwardingAddressRes.data;
+  const { address, exists } = forwardingAddressRes;
   out.log(
-    `got forwarding address details: ${JSON.stringify(forwardingAddressRes.data)}`,
+    `got forwarding address details: ${JSON.stringify(forwardingAddressRes)}`,
   );
   return { address, exists };
 };

@@ -1,3 +1,4 @@
+import '@endo/init/legacy.js';
 import test from 'ava';
 import config from '../../src/cli/config.js';
 import { mockOut, mockrl, mockFile } from '../../testing/mocks.js';
@@ -42,7 +43,7 @@ test('init creates the config file', async t => {
 
   t.is(out.getLogOut(), `Config initialized at ${path}\n`);
   t.is(out.getErrOut(), '');
-  t.is(file.read(), JSON.stringify(options, null, 2));
+  t.is(await file.read(), JSON.stringify(options, null, 2));
 });
 
 test('init overwrites if config exists and user says yes', async t => {
@@ -60,7 +61,7 @@ test('init overwrites if config exists and user says yes', async t => {
 
   t.is(out.getErrOut(), '');
   t.is(out.getLogOut(), `Config initialized at ${path}\n`);
-  t.is(file.read(), JSON.stringify(newVal, null, 2));
+  t.is(await file.read(), JSON.stringify(newVal, null, 2));
 });
 
 test('init does not overwrite if config exists and user says no', async t => {
@@ -78,7 +79,7 @@ test('init does not overwrite if config exists and user says no', async t => {
 
   t.is(out.getErrOut(), '');
   t.is(out.getLogOut(), '');
-  t.is(file.read(), oldVal);
+  t.is(await file.read(), oldVal);
 });
 
 test('update errors if config does not exist', async t => {
@@ -112,5 +113,5 @@ test('update can update the config partially', async t => {
 
   t.is(out.getErrOut(), '');
   t.is(out.getLogOut(), `Config updated at ${path}\n${newValString}\n`);
-  t.is(file.read(), newValString);
+  t.is(await file.read(), newValString);
 });

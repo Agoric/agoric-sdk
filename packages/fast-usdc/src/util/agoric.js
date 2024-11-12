@@ -1,21 +1,12 @@
-// import {
-//   AgoricChainStoragePathKind,
-//   makeAgoricChainStorageWatcher,
-// } from '@agoric/rpc';
+/** @typedef {import('@agoric/client-utils').VStorage} VStorage */
 
-export const queryFastUSDCLocalChainAccount = (
-  /** @type {string} */ agoricApi,
+export const queryFastUSDCLocalChainAccount = async (
+  /** @type {VStorage} */ vstorage,
   out = console,
 ) => {
-  // const watcher = makeAgoricChainStorageWatcher(agoricApi, 'agoric');
-  // out.log('made watcher');
-  // const agoricAddr = await watcher.queryOnce([
-  //   AgoricChainStoragePathKind.Data,
-  //   'published.fastUSDC.settlementAccount',
-  // ]);
-  // TODO: Find real vstorage path for settlement account address (above)
-
-  const agoricAddr = 'agoric123456789';
+  const agoricAddr = await vstorage.readLatest(
+    'published.fastUSDC.settlementAccount',
+  );
   out.log(`Got Fast USDC Local Chain Account ${agoricAddr}`);
   return agoricAddr;
 };

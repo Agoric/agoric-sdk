@@ -24,8 +24,11 @@ const contractAbi = [
   'function depositForBurn(uint256 amount, uint32 destinationDomain, bytes32 mintRecipient, address burnToken) external',
 ];
 
+export const makeProvider = (/** @type {string} */ rpc) =>
+  new ethers.JsonRpcProvider(rpc);
+
 export const depositForBurn = async (
-  /** @type {string} */ ethRpc,
+  /** @type {ethers.JsonRpcProvider} */ provider,
   /** @type {string} */ ethSeed,
   /** @type {string} */ tokenMessengerAddress,
   /** @type {string} */ tokenAddress,
@@ -33,7 +36,6 @@ export const depositForBurn = async (
   /** @type {string} */ amount,
   out = console,
 ) => {
-  const provider = new ethers.JsonRpcProvider(ethRpc);
   const privateKey = ethSeed;
   const wallet = new ethers.Wallet(privateKey, provider);
   const contractAddress = tokenMessengerAddress;

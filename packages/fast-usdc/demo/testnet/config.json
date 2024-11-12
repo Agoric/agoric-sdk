@@ -2,7 +2,7 @@
   "nobleSeed": "stamp later develop betray boss ranch abstract puzzle calm right bounce march orchard edge correct canal fault miracle void dutch lottery lucky observe armed",
   "ethSeed": "a4b7f431465df5dc1458cd8a9be10c42da8e3729e3ce53f18814f48ae2a98a08",
   "nobleToAgoricChannel": "channel-21",
-  "agoricApi": "TODO",
+  "agoricRpc": "https://main.rpc.agoric.net",
   "nobleRpc": "https://noble-rpc.polkachu.com",
   "nobleApi": "https://noble-api.polkachu.com",
   "ethRpc": "https://sepolia.drpc.org",

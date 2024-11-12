@@ -17,16 +17,50 @@ export const mockrl = (answer: string) => {
 };
 
 export const mockFile = (path: string, contents = '') => {
-  const read = () => {
+  const read = async () => {
     if (!contents) {
       throw new Error();
     }
     return contents;
   };
-  const write = (val: string) => {
+  const write = async (val: string) => {
     contents = val;
   };
   const exists = () => !!contents;
 
   return { read, write, exists, path };
+};
+
+export const makeVstorageMock = (records: { [key: string]: any }) => {
+  const queryCounts = {};
+  const vstorage = {
+    readLatest: async (path: string) => {
+      queryCounts[path] = (queryCounts[path] ?? 0) + 1;
+      return records[path];
+    },
+  };
+
+  return { vstorage, getQueryCounts: () => queryCounts };
+};
+
+export const makeFetchMock = (records: { [key: string]: any }) => {
+  const queryCounts = {};
+  const fetch = async (path: string) => {
+    queryCounts[path] = (queryCounts[path] ?? 0) + 1;
+    return { json: async () => records[path] };
+  };
+
+  return { fetch, getQueryCounts: () => queryCounts };
+};
+
+export const makeMockSigner = () => {
+  let signedArgs;
+  const signer = {
+    signAndBroadcast: async (...args) => {
+      signedArgs = args;
+      return { code: 0, transactionHash: 'SUCCESSHASH' };
+    },
+  };
+
+  return { getSigned: () => signedArgs, signer };
 };
