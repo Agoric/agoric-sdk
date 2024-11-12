@@ -193,14 +193,20 @@ export const prepareLiquidityPoolKit = (zone, zcf, USDC, tools) => {
       },
       public: {
         makeDepositInvitation() {
-          const { depositHandler: handler } = this.facets;
-          const { deposit: shape } = this.state.proposalShapes;
-          return zcf.makeInvitation(handler, 'Deposit', undefined, shape);
+          return zcf.makeInvitation(
+            this.facets.depositHandler,
+            'Deposit',
+            undefined,
+            this.state.proposalShapes.deposit,
+          );
         },
         makeWithdrawInvitation() {
-          const { withdrawHandler: handler } = this.facets;
-          const { withdraw: shape } = this.state.proposalShapes;
-          return zcf.makeInvitation(handler, 'Withdraw', undefined, shape);
+          return zcf.makeInvitation(
+            this.facets.withdrawHandler,
+            'Withdraw',
+            undefined,
+            this.state.proposalShapes.withdraw,
+          );
         },
         getPublicTopics() {
           const { shareWorthRecorderKit } = this.state;
