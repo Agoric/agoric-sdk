@@ -12,6 +12,7 @@ import {
   parseRatio,
 } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { makePromiseKit } from '@endo/promise-kit';
+import { inspectMapStore } from '@agoric/internal/src/testing-utils.js';
 import { commonSetup } from './supports.js';
 
 const dirname = path.dirname(new URL(import.meta.url).pathname);
@@ -170,4 +171,33 @@ test('LP deposits, earns fees, withdraws', async t => {
   }
 
   await Promise.all([lps.alice.withdraw(0.2), lps.bob.withdraw(0.8)]);
+});
+
+test('baggage', async t => {
+  const {
+    brands: { usdc },
+    commonPrivateArgs,
+  } = await commonSetup(t);
+
+  let contractBaggage;
+  const setJig = ({ baggage }) => {
+    contractBaggage = baggage;
+  };
+
+  const { zoe } = await setUpZoeForTest({ setJig });
+  const bundle = await t.context.bundleCache.load(contractFile, contractName);
+  const installation: Installation<StartFn> = await E(zoe).install(bundle);
+
+  await E(zoe).startInstance(
+    installation,
+    { USDC: usdc.issuer },
+    {
+      poolFee: usdc.make(1n),
+      contractFee: usdc.make(1n),
+    },
+    commonPrivateArgs,
+  );
+
+  const tree = inspectMapStore(contractBaggage);
+  t.snapshot(tree, 'contract baggage after start');
 });
