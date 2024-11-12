@@ -150,7 +150,7 @@ const (
 	//
 	// 1- `skip` mode will skip the swing store export altogether
 	//
-	// 2- `debug` mode will export the complete store, starting from height zero
+	// 2- `debug` mode will export all the available store
 	FlagSwingStoreExportMode = "swing-store-export-mode"
 )
 

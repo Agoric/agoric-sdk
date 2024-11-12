@@ -387,9 +387,9 @@ const (
 )
 
 var allowedSwingSetExportModes = map[string]bool{
-	swingsetkeeper.SwingStoreArtifactModeDebug:       true,
-	swingsetkeeper.SwingStoreArtifactModeNone:        true,
-	swingsetkeeper.SwingStoreArtifactModeOperational: true,
+	swingsetkeeper.SwingStoreExportModeDebug:       true,
+	swingsetkeeper.SwingStoreExportModeOperational: true,
+	swingsetkeeper.SwingStoreExportModeSkip:        true,
 }
 
 // extendCosmosExportCommand monkey-patches the "export" command added by
@@ -409,7 +409,7 @@ func extendCosmosExportCommand(cmd *cobra.Command) {
 
 	cmd.Flags().String(
 		gaia.FlagSwingStoreExportMode,
-		swingsetkeeper.SwingStoreArtifactModeOperational,
+		swingsetkeeper.SwingStoreExportModeOperational,
 		fmt.Sprintf(
 			"The mode for swingstore export (%s)",
 			strings.Join(keys, " | "),
@@ -433,7 +433,7 @@ func extendCosmosExportCommand(cmd *cobra.Command) {
 
 		// Since none mode doesn't perform any swing store export
 		// There is no point in creating the export directory
-		if swingStoreExportMode != swingsetkeeper.SwingStoreArtifactModeNone {
+		if swingStoreExportMode != swingsetkeeper.SwingStoreExportModeSkip {
 			swingStoreExportPath := filepath.Join(exportDir, ExportedSwingStoreDirectoryName)
 
 			err = os.MkdirAll(swingStoreExportPath, os.ModePerm)
@@ -447,7 +447,7 @@ func extendCosmosExportCommand(cmd *cobra.Command) {
 			serverCtx.Viper.Set(gaia.FlagSwingStoreExportDir, swingStoreExportPath)
 		}
 
-		if hasVMController(serverCtx) || swingStoreExportMode == swingsetkeeper.SwingStoreArtifactModeNone {
+		if hasVMController(serverCtx) || swingStoreExportMode == swingsetkeeper.SwingStoreExportModeSkip {
 			// Capture the export in the genesisPath.
 			// This will fail if a genesis.json already exists in the export-dir
 			genesisFile, err := os.OpenFile(
@@ -489,7 +489,7 @@ func (ac appCreator) appExport(
 	}
 
 	// We don't have to launch VM in case the swing store export is not required
-	if swingStoreExportMode != swingsetkeeper.SwingStoreArtifactModeNone && OnExportHook != nil {
+	if swingStoreExportMode != swingsetkeeper.SwingStoreExportModeSkip && OnExportHook != nil {
 		if err := OnExportHook(ac.agdServer, logger, appOpts); err != nil {
 			return servertypes.ExportedApp{}, err
 		}

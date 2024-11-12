@@ -149,12 +149,12 @@ func ExportGenesis(
 	hasher := sha256.New()
 	snapshotHeight := uint64(ctx.BlockHeight())
 
-	if artifactMode == keeper.SwingStoreArtifactModeDebug {
+	if swingStoreExportMode == keeper.SwingStoreExportModeDebug {
 		exportDataMode = keeper.SwingStoreExportDataModeAll
 		snapshotHeight = 0
 	}
 
-	if artifactMode != keeper.SwingStoreArtifactModeNone {
+	if swingStoreExportMode != keeper.SwingStoreExportModeSkip {
 		eventHandler := swingStoreGenesisEventHandler{
 			exportDir:      swingStoreExportDir,
 			snapshotHeight: snapshotHeight,
@@ -200,7 +200,7 @@ func (eventHandler swingStoreGenesisEventHandler) OnExportStarted(height uint64,
 }
 
 func (eventHandler swingStoreGenesisEventHandler) OnExportRetrieved(provider keeper.SwingStoreExportProvider) error {
-	if eventHandler.exportMode != keeper.SwingStoreArtifactModeDebug && eventHandler.snapshotHeight != provider.BlockHeight {
+	if eventHandler.exportMode != keeper.SwingStoreExportModeDebug && eventHandler.snapshotHeight != provider.BlockHeight {
 		return fmt.Errorf("snapshot block height (%d) doesn't match requested height (%d)", provider.BlockHeight, eventHandler.snapshotHeight)
 	}
 
@@ -235,7 +235,7 @@ func (eventHandler swingStoreGenesisEventHandler) OnExportRetrieved(provider kee
 
 			if err == io.EOF {
 				artifactsEnded = true
-				if eventHandler.exportMode == keeper.SwingStoreArtifactModeDebug {
+				if eventHandler.exportMode == keeper.SwingStoreExportModeDebug {
 					exportDataReader, _ := provider.GetExportDataReader()
 
 					defer exportDataReader.Close()
@@ -257,7 +257,7 @@ func (eventHandler swingStoreGenesisEventHandler) OnExportRetrieved(provider kee
 		},
 	}
 
-	if eventHandler.exportMode == keeper.SwingStoreArtifactModeDebug {
+	if eventHandler.exportMode == keeper.SwingStoreExportModeDebug {
 		artifactsProvider.BlockHeight = provider.BlockHeight
 	}
 
