@@ -85,7 +85,6 @@ export const prepareLiquidityPoolKit = (zone, zcf, USDC, tools) => {
       const proposalShapes = makeProposalShapes({ USDC, PoolShares });
       const shareWorth = makeParity(makeDust(USDC), PoolShares);
       const { zcfSeat: poolSeat } = zcf.makeEmptySeatKit();
-      /** @type {RecorderKit<Ratio>} */
       const shareWorthRecorderKit = tools.makeRecorderKit(node, RatioShape);
       return {
         shareMint,
