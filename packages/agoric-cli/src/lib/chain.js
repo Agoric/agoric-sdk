@@ -38,12 +38,42 @@ export const normalizeAddressWithOptions = (
 };
 harden(normalizeAddressWithOptions);
 
+/** @typedef {number | 'auto' | ['auto', adjustment?: number | undefined]} GasLimit */
+
+/**
+ * @param {GasLimit} limit
+ * @returns {string[]}
+ */
+const makeGasOpts = limit => {
+  if (Number.isFinite(limit) || limit === 'auto') {
+    return [`--gas=${limit}`];
+  }
+  if (Array.isArray(limit) && limit.length >= 1 && limit[0] === 'auto') {
+    const gasOpts = ['--gas=auto'];
+    if (limit.length > 1) {
+      const [adjustment, ...rest] = limit.slice(1);
+      const adjustmentIsValid =
+        adjustment === undefined ||
+        (Number.isFinite(adjustment) && Number(adjustment) > 0);
+      if (rest.length !== 0 || !adjustmentIsValid) {
+        throw Error('invalid gas input');
+      }
+      if (adjustment !== undefined) {
+        gasOpts.push(`--gas-adjustment=${adjustment}`);
+      }
+    }
+    return gasOpts;
+  }
+
+  throw Error('invalid gas input');
+};
+
 /**
  * @param {ReadonlyArray<string>} swingsetArgs
  * @param {MinimalNetworkConfig & {
  *   from: string,
  *   fees?: string,
- *   gas?: number | 'auto' | ['auto', adjustment?: number | undefined],
+ *   gas?: GasLimit,
  *   dryRun?: boolean,
  *   verbose?: boolean,
  *   keyring?: {home?: string, backend: string}
@@ -69,32 +99,11 @@ export const execSwingsetTransaction = (swingsetArgs, opts) => {
     ? [`--keyring-backend=${keyring.backend}`]
     : [];
   const feeOpt = fees ? ['--fees', fees] : [];
-  /** @type {string[]} */
-  const gasOpt = [];
-  if (Number.isFinite(gas) || gas === 'auto') {
-    gasOpt.push(`--gas=${gas}`);
-  } else if (Array.isArray(gas) && gas.length >= 1 && gas[0] === 'auto') {
-    gasOpt.push('--gas=auto');
-    if (gas.length > 1) {
-      const [adjustment, ...rest] = gas.slice(1);
-      const adjustmentIsValid =
-        adjustment === undefined ||
-        (Number.isFinite(adjustment) && Number(adjustment) > 0);
-      if (rest.length !== 0 || !adjustmentIsValid) {
-        throw Error('invalid gas input');
-      }
-      if (adjustment !== undefined) {
-        gasOpt.push(`--gas-adjustment=${adjustment}`);
-      }
-    }
-  } else {
-    throw Error('invalid gas input');
-  }
   const cmd = [`--node=${rpcAddrs[0]}`, `--chain-id=${chainName}`].concat(
     homeOpt,
     backendOpt,
     feeOpt,
-    gasOpt,
+    makeGasOpts(gas),
     [`--from=${from}`, 'tx', 'swingset'],
     swingsetArgs,
   );
