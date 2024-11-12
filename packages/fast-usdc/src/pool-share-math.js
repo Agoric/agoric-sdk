@@ -86,8 +86,6 @@ export const depositCalc = (shareWorth, { give, want }) => {
   });
 };
 
-const isGT = (x, y) => isGTE(x, y) && !isEqual(x, y);
-
 /**
  * Compute payout from a withdraw proposal, along with updated shareWorth
  *
@@ -103,7 +101,7 @@ export const withdrawCalc = (shareWorth, { give, want }) => {
   isGTE(payout, want.USDC) ||
     Fail`cannot withdraw ${q(want.USDC)}; ${q(give.PoolShare)} only worth ${q(payout)}`;
   const { denominator: sharesOutstanding, numerator: poolBalance } = shareWorth;
-  isGT(poolBalance, want.USDC) ||
+  !isGTE(want.USDC, poolBalance) ||
     Fail`cannot withdraw ${q(want.USDC)}; only ${q(poolBalance)} in pool`;
   const balancePost = subtract(poolBalance, payout);
   // giving more shares than are outstanding is impossible,
