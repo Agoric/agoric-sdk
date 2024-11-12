@@ -12,9 +12,9 @@ import { depositToSeat } from '@agoric/zoe/src/contractSupport/zoeHelpers.js';
 import { SeatShape } from '@agoric/zoe/src/typeGuards.js';
 import { M } from '@endo/patterns';
 import {
-  deposit as depositCalc,
+  depositCalc,
   makeParity,
-  withdraw as withdrawCalc,
+  withdrawCalc,
   withFees,
 } from '../pool-share-math.js';
 import { makeProposalShapes } from '../type-guards.js';

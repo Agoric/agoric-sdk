@@ -67,7 +67,7 @@ export const makeParity = (numerator, denominatorBrand) => {
  * @param {USDCProposalShapes['deposit']} proposal
  * @returns {{ payouts: { PoolShare: Amount<'nat'> }; shareWorth: ShareWorth }}
  */
-export const deposit = (shareWorth, { give, want }) => {
+export const depositCalc = (shareWorth, { give, want }) => {
   assert(!isEmpty(give.USDC)); // nice diagnostic provided by proposalShape
 
   const { denominator: sharesOutstanding, numerator: poolBalance } = shareWorth;
@@ -92,7 +92,7 @@ const isGT = (x, y) => isGTE(x, y) && !isEqual(x, y);
  * @param {USDCProposalShapes['withdraw']} proposal
  * @returns {{ shareWorth: ShareWorth, payouts: { USDC: Amount<'nat'> }}}
  */
-export const withdraw = (shareWorth, { give, want }) => {
+export const withdrawCalc = (shareWorth, { give, want }) => {
   assert(!isEmpty(give.PoolShare));
   assert(!isEmpty(want.USDC));
 
