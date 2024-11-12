@@ -34,7 +34,7 @@ const makeDefaultTestContext = async (
     storage,
   });
 
-  const { readLatest, runUtils } = swingsetTestKit;
+  const { readLatest, readPublished, runUtils } = swingsetTestKit;
   ({ storage } = swingsetTestKit);
   const { EV } = runUtils;
   logTiming && console.timeLog('DefaultTestContext', 'swingsetTestKit');
@@ -58,13 +58,11 @@ const makeDefaultTestContext = async (
   logTiming && console.timeEnd('DefaultTestContext');
 
   const readRewardPoolBalance = () => {
-    return readLatest('published.vaultFactory.metrics').rewardPoolAllocation
-      .Minted?.value;
+    return readPublished('vaultFactory.metrics').rewardPoolAllocation.Minted
+      ?.value;
   };
   const readCollateralMetrics = vaultManagerIndex =>
-    readLatest(
-      `published.vaultFactory.managers.manager${vaultManagerIndex}.metrics`,
-    );
+    readPublished(`vaultFactory.managers.manager${vaultManagerIndex}.metrics`);
 
   return {
     ...swingsetTestKit,
@@ -98,7 +96,7 @@ test.serial('re-bootstrap', async t => {
   t.true(wd1.isNew);
 
   const assertWalletCount = (walletsProvisioned, message) => {
-    const metrics = oldContext.readLatest('published.provisionPool.metrics');
+    const metrics = oldContext.readPublished('provisionPool.metrics');
     // FIXME make wallet provisioning use the provisionPool
     // disabled while wallet provisioning bypasses provisionPool
     // t.like(metrics, { walletsProvisioned }, message);

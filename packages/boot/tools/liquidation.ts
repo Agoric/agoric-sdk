@@ -105,8 +105,8 @@ export const makeLiquidationTestKit = async ({
     managerIndex: number;
     price: number;
   }) => {
-    const managerPath = `published.vaultFactory.managers.manager${managerIndex}`;
-    const { advanceTimeBy, readLatest } = swingsetTestKit;
+    const managerPath = `vaultFactory.managers.manager${managerIndex}`;
+    const { advanceTimeBy, readLatest, readPublished } = swingsetTestKit;
 
     await null;
     if (!priceFeedDrivers[collateralBrandKey]) {
@@ -153,7 +153,7 @@ export const makeLiquidationTestKit = async ({
     );
 
     // confirm Relevant Governance Parameter Assumptions
-    t.like(readLatest(`${managerPath}.governance`), {
+    t.like(readPublished(`${managerPath}.governance`), {
       current: {
         DebtLimit: { value: { value: DebtLimitValue } },
         InterestRate: {
@@ -178,7 +178,7 @@ export const makeLiquidationTestKit = async ({
         },
       },
     });
-    t.like(readLatest('published.auction.governance'), {
+    t.like(readPublished('auction.governance'), {
       current: {
         AuctionStartDelay: { type: 'relativeTime', value: { relValue: 2n } },
         ClockStep: {
@@ -206,10 +206,10 @@ export const makeLiquidationTestKit = async ({
       vaultIndex: number,
       partial: Record<string, any>,
     ) {
-      const { readLatest } = swingsetTestKit;
+      const { readPublished } = swingsetTestKit;
 
-      const notification = readLatest(
-        `published.vaultFactory.managers.manager${managerIndex}.vaults.vault${vaultIndex}`,
+      const notification = readPublished(
+        `vaultFactory.managers.manager${managerIndex}.vaults.vault${vaultIndex}`,
       );
       t.like(notification, partial);
     },
@@ -287,16 +287,13 @@ export const makeLiquidationTestKit = async ({
         ...setup.bids[i],
         maxBuy,
       });
-      t.like(
-        swingsetTestKit.readLatest(`published.wallet.${buyerWalletAddress}`),
-        {
-          status: {
-            id: offerId,
-            result: 'Your bid has been accepted',
-            payouts: undefined,
-          },
+      t.like(swingsetTestKit.readPublished(`wallet.${buyerWalletAddress}`), {
+        status: {
+          id: offerId,
+          result: 'Your bid has been accepted',
+          payouts: undefined,
         },
-      );
+      });
     }
   };
 
