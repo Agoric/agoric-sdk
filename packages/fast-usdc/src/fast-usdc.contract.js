@@ -78,7 +78,19 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
     },
   });
 
-  // NOTE: all kinds are defined above, before possible remote call.
+  // ^^^ Define all kinds above this line. Keep remote calls below. vvv
+
+  // NOTE: Using a ZCFMint is helpful for the usual reasons (
+  // synchronous mint/burn, keeping assets out of contract vats, ...).
+  // And there's just one pool, which suggests building it with zone.exo().
+  //
+  // But zone.exo() defines a kind and
+  // all kinds have to be defined before any remote calls,
+  // such as the one to the zoe vat as part of making a ZCFMint.
+  //
+  // So we use zone.exoClassKit above to define the liquidity pool kind
+  // and pass the shareMint into the maker / init function.
+
   const shareMint = await provideSingleton(
     zone.mapStore('mint'),
     'PoolShare',
@@ -87,6 +99,7 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
         decimalPlaces: 6,
       }),
   );
+
   const poolKit = zone.makeOnce('Liquidity Pool kit', () =>
     makeLiquidityPoolKit(shareMint, privateArgs.storageNode),
   );
