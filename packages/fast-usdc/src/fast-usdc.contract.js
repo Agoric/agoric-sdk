@@ -1,11 +1,13 @@
 import { BrandShape } from '@agoric/ertp/src/typeGuards.js';
 import { withOrchestration } from '@agoric/orchestration';
 import { M } from '@endo/patterns';
-import { assertAllDefined } from '@agoric/internal';
+import { assertAllDefined, makeTracer } from '@agoric/internal';
 import { prepareTransactionFeed } from './exos/transaction-feed.js';
 import { prepareSettler } from './exos/settler.js';
 import { prepareAdvancer } from './exos/advancer.js';
 import { prepareStatusManager } from './exos/status-manager.js';
+
+const trace = makeTracer('FastUsdc');
 
 /**
  * @import {OrchestrationPowers, OrchestrationTools} from '@agoric/orchestration/src/utils/start-helper.js';
@@ -43,9 +45,16 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
 
   const statusManager = prepareStatusManager(zone);
   const feed = prepareTransactionFeed(zone);
-  const settler = prepareSettler(zone, { statusManager });
-  const advancer = prepareAdvancer(zone, { feed, statusManager });
-  assertAllDefined({ feed, settler, advancer, statusManager });
+  const makeSettler = prepareSettler(zone, { statusManager });
+  const { chainHub, vowTools } = tools;
+  const makeAdvancer = prepareAdvancer(zone, {
+    chainHub,
+    feed,
+    log: trace,
+    statusManager,
+    vowTools,
+  });
+  assertAllDefined({ feed, makeAdvancer, makeSettler, statusManager });
 
   const creatorFacet = zone.exo('Fast USDC Creator', undefined, {});
 
