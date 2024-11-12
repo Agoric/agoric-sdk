@@ -1,24 +1,16 @@
-/**
- * @import {Zone} from '@agoric/zone';
- * @import {TypedPattern} from '@agoric/internal'
- * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js'
- * @import {MakeRecorderKit} from '@agoric/zoe/src/contractSupport/recorder.js'
- * @import {USDCProposalShapes, ShareWorth} from '../pool-share-math.js'
- */
-
-import { AmountMath } from '@agoric/ertp/src/amountMath.js';
 import {
+  AmountMath,
   AmountShape,
   PaymentShape,
   RatioShape,
-} from '@agoric/ertp/src/typeGuards.js';
-import { depositToSeat } from '@agoric/zoe/src/contractSupport/zoeHelpers.js';
-import { SeatShape } from '@agoric/zoe/src/typeGuards.js';
-import { M } from '@endo/patterns';
+} from '@agoric/ertp';
 import {
   makeRecorderTopic,
   TopicsRecordShape,
 } from '@agoric/zoe/src/contractSupport/topics.js';
+import { depositToSeat } from '@agoric/zoe/src/contractSupport/zoeHelpers.js';
+import { SeatShape } from '@agoric/zoe/src/typeGuards.js';
+import { M } from '@endo/patterns';
 import {
   deposit as depositCalc,
   makeParity,
@@ -26,6 +18,14 @@ import {
   withFees,
 } from '../pool-share-math.js';
 import { makeProposalShapes } from '../type-guards.js';
+
+/**
+ * @import {Zone} from '@agoric/zone';
+ * @import {TypedPattern} from '@agoric/internal'
+ * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js'
+ * @import {MakeRecorderKit} from '@agoric/zoe/src/contractSupport/recorder.js'
+ * @import {USDCProposalShapes, ShareWorth} from '../pool-share-math.js'
+ */
 
 /**
  * @param {Zone} zone
