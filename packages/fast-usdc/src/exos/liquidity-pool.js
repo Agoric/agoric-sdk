@@ -123,16 +123,21 @@ export const prepareLiquidityPoolKit = (zone, zcf, USDC, tools) => {
 
           const mint = shareMint.mintGains(post.payouts);
           this.state.shareWorth = post.shareWorth;
-          zcf.atomicRearrange(
-            harden([
-              // zoe guarantees lp has proposal.give allocated
-              [lp, poolSeat, proposal.give],
-              // mintGains() above establishes that mint has post.payouts
-              [mint, lp, post.payouts],
-            ]),
-          );
-          lp.exit();
-          mint.exit();
+          try {
+            zcf.atomicRearrange(
+              harden([
+                // zoe guarantees lp has proposal.give allocated
+                [lp, poolSeat, proposal.give],
+                // mintGains() above establishes that mint has post.payouts
+                [mint, lp, post.payouts],
+              ]),
+            );
+            lp.exit();
+            mint.exit();
+          } catch (bug) {
+            console.error('🚨 shutdown due to', bug);
+            zcf.shutdownWithFailure(bug);
+          }
           await external.publishShareWorth();
         },
       },
