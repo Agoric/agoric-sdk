@@ -118,7 +118,9 @@ export const prepareLiquidityPoolKit = (zone, zcf, USDC, tools) => {
           // @ts-expect-error ensured by proposalShape
           const proposal = lp.getProposal();
           const post = depositCalc(shareWorth, proposal);
+
           // COMMIT POINT
+
           const mint = shareMint.mintGains(post.payouts);
           zcf.atomicRearrange(
             harden([
@@ -143,7 +145,9 @@ export const prepareLiquidityPoolKit = (zone, zcf, USDC, tools) => {
           const proposal = lp.getProposal();
           const { zcfSeat: burn } = zcf.makeEmptySeatKit();
           const post = withdrawCalc(shareWorth, proposal);
+
           // COMMIT POINT
+
           zcf.atomicRearrange(
             harden([
               [lp, burn, proposal.give],
