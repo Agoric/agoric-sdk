@@ -7,7 +7,6 @@ export * from './debug.js';
 export * from './errors.js';
 export * from './utils.js';
 export * from './method-tools.js';
-export * from './node-utils.js';
 export * from './typeCheck.js';
 export * from './typeGuards.js';
 
