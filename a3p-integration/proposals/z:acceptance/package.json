@@ -4,7 +4,9 @@
     "sdk-generate": [
       "testing/start-valueVow.js start-valueVow",
       "vats/test-localchain.js localchaintest-submission",
-      "testing/restart-valueVow.js restart-valueVow"
+      "testing/restart-valueVow.js restart-valueVow",
+      "vats/upgrade-kread.js upgrade-kread",
+      "vats/upgrade-zoe.js upgrade-zoe"
     ]
   },
   "type": "module",
