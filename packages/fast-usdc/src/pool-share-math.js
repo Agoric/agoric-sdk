@@ -7,7 +7,7 @@ import {
 } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { Fail, q } from '@endo/errors';
 
-const { getValue, add, isEmpty, isEqual, isGTE, subtract } = AmountMath;
+const { getValue, add, isEmpty, isGTE, subtract } = AmountMath;
 
 /**
  * Invariant: shareWorth is the pool balance divided by shares outstanding.
