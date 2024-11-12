@@ -154,9 +154,9 @@ export const prepareLiquidityPoolKit = (zone, zcf, USDC, tools) => {
             );
             lp.exit();
             mint.exit();
-          } catch (bug) {
-            const reason = Error('🚨 cannot commit deposit', { cause: bug });
-            console.error(reason.message, bug);
+          } catch (cause) {
+            const reason = Error('🚨 cannot commit deposit', { cause });
+            console.error(reason.message, cause);
             zcf.shutdownWithFailure(reason);
           }
           external.publishShareWorth();
@@ -190,9 +190,9 @@ export const prepareLiquidityPoolKit = (zone, zcf, USDC, tools) => {
             shareMint.burnLosses(proposal.give, burn);
             lp.exit();
             burn.exit();
-          } catch (bug) {
-            const reason = Error('🚨 cannot commit withdraw', { cause: bug });
-            console.error(reason.message, bug);
+          } catch (cause) {
+            const reason = Error('🚨 cannot commit withdraw', { cause });
+            console.error(reason.message, cause);
             zcf.shutdownWithFailure(reason);
           }
           external.publishShareWorth();
