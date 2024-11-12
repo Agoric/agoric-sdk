@@ -1,7 +1,10 @@
 // @jessie-check
 
 import { M, matches, getInterfaceGuardPayload } from '@endo/patterns';
-/** @import {AmountValue, AssetKindForValue, AssetValueForKind, Brand, MathHelpers} from './types.js' */
+/**
+ * @import {AmountValue, Ratio} from './types.js'
+ * @import {TypedPattern} from '@agoric/internal'
+ */
 
 export const BrandShape = M.remotable('Brand');
 export const IssuerShape = M.remotable('Issuer');
@@ -90,6 +93,7 @@ export const AmountShape = harden({
  */
 export const AmountPatternShape = M.pattern();
 
+/** @type {TypedPattern<Ratio>} */
 export const RatioShape = harden({
   numerator: AmountShape,
   denominator: AmountShape,
