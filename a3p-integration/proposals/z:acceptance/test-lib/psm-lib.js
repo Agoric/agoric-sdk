@@ -1,5 +1,6 @@
 /* eslint-env node */
 
+import { execa } from 'execa';
 import { getNetworkConfig } from 'agoric/src/helpers.js';
 import {
   boardSlottingMarshaller,
@@ -9,7 +10,6 @@ import {
   waitUntilOfferResult,
 } from '@agoric/client-utils';
 import { AmountMath } from '@agoric/ertp';
-import { makeRunCommand, commandResultData } from '@agoric/internal';
 import {
   addUser,
   agd,
@@ -24,19 +24,29 @@ import {
   mkTemp,
   VALIDATORADDR,
 } from '@agoric/synthetic-chain';
-import { spawn } from 'node:child_process';
 import fsp from 'node:fs/promises';
-import { Readable } from 'node:stream';
 import { NonNullish } from './errors.js';
 import { getBalances } from './utils.js';
 
-/** @import {CommandResult} from '@agoric/internal'; */
+/** @import {Result as ExecaResult, ExecaError} from 'execa'; */
+/**
+ * @typedef {ExecaResult & { all: string } & (
+ *     | { failed: false }
+ *     | Pick<
+ *         ExecaError & { failed: true },
+ *         'failed',
+ *         | 'shortMessage'
+ *         | 'cause'
+ *         | 'exitCode'
+ *         | 'signal'
+ *         | 'signalDescription'
+ *       >
+ *   )} SendOfferResult
+ */
 
 // Export these from synthetic-chain?
 const USDC_DENOM = NonNullish(process.env.USDC_DENOM);
 const PSM_PAIR = NonNullish(process.env.PSM_PAIR).replace('.', '-');
-
-const runCommand = makeRunCommand({ Buffer, Readable, setImmediate, spawn });
 
 /**
  * @import {Coin} from '@agoric/cosmic-proto/cosmos/base/v1beta1/coin.js';
@@ -372,23 +382,21 @@ export const initializeNewUser = async (name, fund, io) => {
  *
  * @param {string} address
  * @param {Promise<string>} offerPromise
- * @returns {Promise<CommandResult>}
+ * @returns {Promise<SendOfferResult>}
  */
 export const sendOfferAgoric = async (address, offerPromise) => {
   const offerPath = await mkTemp('agops.XXX');
   const offer = await offerPromise;
   await fsp.writeFile(offerPath, offer);
 
-  return runCommand('agoric', [
-    'wallet',
-    '--keyring-backend=test',
-    'send',
-    '--offer',
-    offerPath,
-    '--from',
-    address,
-    '--verbose',
+  const [settlement] = await Promise.allSettled([
+    execa({
+      all: true,
+    })`agoric wallet --keyring-backend=test send --offer ${offerPath} --from ${address} --verbose`,
   ]);
+  return settlement.status === 'fulfilled'
+    ? settlement.value
+    : settlement.reason;
 };
 
 /**
@@ -397,7 +405,7 @@ export const sendOfferAgoric = async (address, offerPromise) => {
  *
  * @param {string} address
  * @param {Promise<string>} offerPromise
- * @returns {Promise<CommandResult>}
+ * @returns {Promise<SendOfferResult>}
  */
 export const sendOfferAgd = async (address, offerPromise) => {
   const offer = await offerPromise;
@@ -417,24 +425,33 @@ export const sendOfferAgd = async (address, offerPromise) => {
     '--yes',
     '-ojson',
   ];
-  const result = await runCommand('agd', args);
-  // Mimic --verbose
-  // https://github.com/Agoric/agoric-sdk/blob/master/packages/agoric-cli/src/lib/wallet.js
-  if (result.status === 0 && !result.signal && !result.error) {
-    const out = result.stdout.toString();
+
+  const [settlement] = await Promise.allSettled([
+    execa('agd', args, { all: true }),
+  ]);
+
+  // Upon successful exit, verify that the *output* also indicates success.
+  // cf. https://github.com/Agoric/agoric-sdk/blob/master/packages/agoric-cli/src/lib/wallet.js
+  if (settlement.status === 'fulfilled') {
+    const result = settlement.value;
     try {
-      const tx = JSON.parse(out);
+      const tx = JSON.parse(result.stdout);
       if (tx.code !== 0) {
-        console.error('failed to send tx', tx);
-        return { ...result, error: Error(`code ${tx.code}`) };
+        return { ...result, failed: true, shortMessage: `code ${tx.code}` };
       }
-      console.log(tx);
     } catch (err) {
-      console.error('unexpected output', JSON.stringify(out));
-      return { ...result, error: err };
+      return {
+        ...result,
+        failed: true,
+        shortMessage: 'unexpected output',
+        cause: err,
+      };
     }
   }
-  return result;
+
+  return settlement.status === 'fulfilled'
+    ? settlement.value
+    : settlement.reason;
 };
 
 /**
@@ -442,7 +459,7 @@ export const sendOfferAgd = async (address, offerPromise) => {
  * @param {Array<any>} params
  * @param {{
  *   follow: (...params: string[]) => Promise<object>;
- *   sendOffer?: (address: string, offerPromise: Promise<string>) => Promise<CommandResult>;
+ *   sendOffer?: (address: string, offerPromise: Promise<string>) => Promise<SendOfferResult>;
  *   setTimeout: typeof global.setTimeout;
  *   now: () => number
  * }} io
@@ -453,15 +470,34 @@ export const psmSwap = async (address, params, io) => {
   const newParams = ['psm', ...params, '--offerId', offerId];
   const offerPromise = executeCommand(agopsLocation, newParams);
   const sendResult = await sendOffer(address, offerPromise);
-  const { status, stdout, stderr, signal, error } = sendResult;
-  if (status !== 0 || signal || error) {
-    console.error('psmSwap tx send failed', commandResultData(sendResult));
+  if (sendResult.failed) {
+    const {
+      command,
+      durationMs,
+      shortMessage,
+      cause,
+      exitCode,
+      signal,
+      signalDescription,
+      all: output,
+    } = sendResult;
+    const summary = {
+      command,
+      durationMs,
+      shortMessage,
+      cause,
+      exitCode,
+      signal,
+      signalDescription,
+      output,
+    };
+    console.error('psmSwap tx send failed', summary);
     throw Error(
-      `agoric wallet send failed: ${JSON.stringify({ status, signal })}`,
-      { cause: error },
+      `psmSwap tx send failed: ${JSON.stringify({ exitCode, signal, signalDescription })}`,
+      { cause },
     );
   }
-  console.log('psmSwap tx send results', stdout.toString(), stderr.toString());
+  console.log('psmSwap tx send results', sendResult.all);
 
   await waitUntilOfferResult(address, offerId, true, waitIO, {
     errorMessage: `${offerId} not succeeded`,
