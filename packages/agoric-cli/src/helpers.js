@@ -3,6 +3,8 @@
 
 /** @import { ChildProcess } from 'child_process' */
 
+export { getNetworkConfig } from './lib/network-config.js';
+
 export const getSDKBinaries = ({
   jsPfx = '../..',
   goPfx = `${jsPfx}/../golang`,

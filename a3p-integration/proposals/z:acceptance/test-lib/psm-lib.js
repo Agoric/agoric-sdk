@@ -1,5 +1,7 @@
 /* eslint-env node */
 
+import { execa } from 'execa';
+import { getNetworkConfig } from 'agoric/src/helpers.js';
 import {
   boardSlottingMarshaller,
   makeFromBoard,
@@ -25,6 +27,22 @@ import {
 import fsp from 'node:fs/promises';
 import { NonNullish } from './errors.js';
 import { getBalances } from './utils.js';
+
+/** @import {Result as ExecaResult, ExecaError} from 'execa'; */
+/**
+ * @typedef {ExecaResult & { all: string } & (
+ *     | { failed: false }
+ *     | Pick<
+ *         ExecaError & { failed: true },
+ *         'failed',
+ *         | 'shortMessage'
+ *         | 'cause'
+ *         | 'exitCode'
+ *         | 'signal'
+ *         | 'signalDescription'
+ *       >
+ *   )} SendOfferResult
+ */
 
 // Export these from synthetic-chain?
 const USDC_DENOM = NonNullish(process.env.USDC_DENOM);
@@ -356,27 +374,78 @@ export const initializeNewUser = async (name, fund, io) => {
 };
 
 /**
- * Similar to https://github.com/Agoric/agoric-3-proposals/blob/422b163fecfcf025d53431caebf6d476778b5db3/packages/synthetic-chain/src/lib/commonUpgradeHelpers.ts#L123-L139
- * However, in the case where "address" is not provisioned "agoric wallet send" is needed because
- * "agops perf satisfaction" tries to follow ":published.wallet.${address}" which blocks the execution because no such path exists in
- * vstorage. In situations like this "agoric wallet send" seems a better choice as it doesn't depend on following user's vstorage wallet path
+ * Similar to
+ * https://github.com/Agoric/agoric-3-proposals/blob/422b163fecfcf025d53431caebf6d476778b5db3/packages/synthetic-chain/src/lib/commonUpgradeHelpers.ts#L123-L139
+ * However, for an address that is not provisioned, `agoric wallet send` is
+ * needed because `agops perf satisfaction` hangs when trying to follow
+ * nonexistent vstorage path ":published.wallet.${address}".
  *
  * @param {string} address
  * @param {Promise<string>} offerPromise
+ * @returns {Promise<SendOfferResult>}
  */
 export const sendOfferAgoric = async (address, offerPromise) => {
   const offerPath = await mkTemp('agops.XXX');
   const offer = await offerPromise;
   await fsp.writeFile(offerPath, offer);
 
-  await agoric.wallet(
-    '--keyring-backend=test',
-    'send',
-    '--offer',
-    offerPath,
-    '--from',
-    address,
+  const [settlement] = await Promise.allSettled([
+    execa({
+      all: true,
+    })`agoric wallet --keyring-backend=test send --offer ${offerPath} --from ${address} --verbose`,
+  ]);
+  return settlement.status === 'fulfilled'
+    ? settlement.value
+    : settlement.reason;
+};
+
+/**
+ * A variant of {@link sendOfferAgoric} that uses `agd` directly to e.g.
+ * control gas calculation.
+ *
+ * @param {string} address
+ * @param {Promise<string>} offerPromise
+ * @returns {Promise<SendOfferResult>}
+ */
+export const sendOfferAgd = async (address, offerPromise) => {
+  const offer = await offerPromise;
+  const networkConfig = await getNetworkConfig({ env: process.env, fetch });
+  const { chainName, rpcAddrs } = networkConfig;
+  const args = [].concat(
+    [`--node=${rpcAddrs[0]}`, `--chain-id=${chainName}`],
+    [`--keyring-backend=test`, `--from=${address}`],
+    ['tx', 'swingset', 'wallet-action', '--allow-spend', offer],
+    '--yes',
+    '-bblock',
+    '-ojson',
   );
+
+  const [settlement] = await Promise.allSettled([
+    execa('agd', args, { all: true }),
+  ]);
+
+  // Upon successful exit, verify that the *output* also indicates success.
+  // cf. https://github.com/Agoric/agoric-sdk/blob/master/packages/agoric-cli/src/lib/wallet.js
+  if (settlement.status === 'fulfilled') {
+    const result = settlement.value;
+    try {
+      const tx = JSON.parse(result.stdout);
+      if (tx.code !== 0) {
+        return { ...result, failed: true, shortMessage: `code ${tx.code}` };
+      }
+    } catch (err) {
+      return {
+        ...result,
+        failed: true,
+        shortMessage: 'unexpected output',
+        cause: err,
+      };
+    }
+  }
+
+  return settlement.status === 'fulfilled'
+    ? settlement.value
+    : settlement.reason;
 };
 
 /**
@@ -384,18 +453,47 @@ export const sendOfferAgoric = async (address, offerPromise) => {
  * @param {Array<any>} params
  * @param {{
  *   follow: (...params: string[]) => Promise<object>;
+ *   sendOffer?: (address: string, offerPromise: Promise<string>) => Promise<SendOfferResult>;
  *   setTimeout: typeof global.setTimeout;
  *   now: () => number
  * }} io
  */
 export const psmSwap = async (address, params, io) => {
-  const now = io.now();
-  const offerId = `${address}-psm-swap-${now}`;
+  const { now, sendOffer = sendOfferAgoric, ...waitIO } = io;
+  const offerId = `${address}-psm-swap-${now()}`;
   const newParams = ['psm', ...params, '--offerId', offerId];
   const offerPromise = executeCommand(agopsLocation, newParams);
-  await sendOfferAgoric(address, offerPromise);
+  const sendResult = await sendOffer(address, offerPromise);
+  if (sendResult.failed) {
+    const {
+      command,
+      durationMs,
+      shortMessage,
+      cause,
+      exitCode,
+      signal,
+      signalDescription,
+      all: output,
+    } = sendResult;
+    const summary = {
+      command,
+      durationMs,
+      shortMessage,
+      cause,
+      exitCode,
+      signal,
+      signalDescription,
+      output,
+    };
+    console.error('psmSwap tx send failed', summary);
+    throw Error(
+      `psmSwap tx send failed: ${JSON.stringify({ exitCode, signal, signalDescription })}`,
+      { cause },
+    );
+  }
+  console.log('psmSwap tx send results', sendResult.all);
 
-  await waitUntilOfferResult(address, offerId, true, io, {
+  await waitUntilOfferResult(address, offerId, true, waitIO, {
     errorMessage: `${offerId} not succeeded`,
   });
 };
@@ -427,27 +525,29 @@ const extractBalance = (balances, targetDenom) => {
 
 /**
  * Checking IST balances can be tricky because of the execution fee mentioned in
- * https://github.com/Agoric/agoric-sdk/issues/6525. Here we first check with
- * whatever is passed in. If the first attempt fails we try again to see if
- * there was an execution fee charged. If still fails, we throw.
+ * https://github.com/Agoric/agoric-sdk/issues/6525. So we first check for
+ * equality, but if that fails we recheck against an assumption that a fee of
+ * the default "minFeeDebit" has been charged.
  *
  * @param {import('ava').ExecutionContext} t
  * @param {number} actualBalance
  * @param {number} expectedBalance
  */
 export const tryISTBalances = async (t, actualBalance, expectedBalance) => {
-  const firstTry = await t.try(
-    (tt, actual, expected) => {
-      tt.deepEqual(actual, expected);
-    },
-    actualBalance,
-    expectedBalance,
-  );
+  const firstTry = await t.try(tt => {
+    tt.is(actualBalance, expectedBalance);
+  });
+  if (firstTry.passed) {
+    firstTry.commit();
+    return;
+  }
 
-  if (!firstTry.passed) {
-    firstTry.discard();
-    t.deepEqual(actualBalance + 200000, expectedBalance);
-  } else firstTry.commit();
+  firstTry.discard();
+  t.log('tryISTBalances assuming no batched IST fee', firstTry.errors);
+  // See golang/cosmos/x/swingset/types/default-params.go
+  // and `ChargeBeans` in golang/cosmos/x/swingset/keeper/keeper.go.
+  const minFeeDebit = 200_000;
+  t.is(actualBalance + minFeeDebit, expectedBalance);
 };
 
 /**

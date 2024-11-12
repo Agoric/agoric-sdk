@@ -21,7 +21,11 @@ import {
 } from '../lib/chain.js';
 import { getNetworkConfig } from '../lib/network-config.js';
 import { coalesceWalletState, getCurrent } from '../lib/wallet.js';
-import { summarize, fmtRecordOfLines } from '../lib/format.js';
+import {
+  summarize,
+  fmtRecordOfLines,
+  parseFiniteNumber,
+} from '../lib/format.js';
 
 const networkConfig = await getNetworkConfig({ env: process.env, fetch });
 
@@ -135,23 +139,60 @@ export const makeWalletCommand = async command => {
     )
     .requiredOption('--offer [filename]', 'path to file with prepared offer')
     .option('--dry-run', 'spit out the command instead of running it')
+    .option('--gas', 'gas limit; "auto" [default] to calculate automatically')
+    .option(
+      '--gas-adjustment',
+      'factor by which to multiply the --gas=auto calculation result [default 1.2]',
+    )
+    .option('--verbose', 'print command output')
     .action(function (opts) {
-      /** @typedef {{ from: string, offer: string, dryRun: boolean }} Opts */
+      /**
+       * @typedef {{
+       *   from: string,
+       *   offer: string,
+       *   dryRun: boolean,
+       *   gas: string,
+       *   gasAdjustment: string,
+       *   verbose: boolean,
+       * }} Opts
+       */
       const {
         dryRun,
         from,
+        gas = 'auto',
+        gasAdjustment = '1.2',
         offer,
         home,
+        verbose,
         keyringBackend: backend,
       } = /** @type {SharedTxOptions & Opts} */ ({ ...wallet.opts(), ...opts });
 
       const offerBody = fs.readFileSync(offer).toString();
-      execSwingsetTransaction(['wallet-action', '--allow-spend', offerBody], {
-        from,
-        dryRun,
-        keyring: { home, backend },
-        ...networkConfig,
-      });
+      const out = execSwingsetTransaction(
+        ['wallet-action', '--allow-spend', offerBody, '-ojson', '-bblock'],
+        {
+          ...networkConfig,
+          keyring: { home, backend },
+          from,
+          gas:
+            gas === 'auto' ? ['auto', parseFiniteNumber(gasAdjustment)] : gas,
+          dryRun,
+          verbose,
+        },
+      );
+
+      // see sendAction in {@link ../lib/wallet.js}
+      if (dryRun || !verbose) return;
+      try {
+        const tx = JSON.parse(/** @type {string} */ (out));
+        if (tx.code !== 0) {
+          console.error('failed to send tx', tx);
+        }
+        console.log(tx);
+      } catch (err) {
+        console.error('unexpected output', JSON.stringify(out));
+        throw err;
+      }
     });
 
   wallet
