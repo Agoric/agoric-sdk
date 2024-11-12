@@ -13,7 +13,7 @@ const trace = makeTracer('ReplaceFeeDistributer', true);
  *   options: {
  *     keywordShares: Record<string, bigint>;
  *     collectionInterval: bigint;
- *   }
+ *   };
  * }} options
  */
 export const replaceFeeDistributor = async (
@@ -158,7 +158,10 @@ export const replaceFeeDistributor = async (
 harden(replaceFeeDistributor);
 
 const t = 'replaceFeeDistributor';
-export const getManifestForReplaceFeeDistributor = async (_, feeDistributorOptions) => ({
+export const getManifestForReplaceFeeDistributor = async (
+  _,
+  feeDistributorOptions,
+) => ({
   manifest: {
     [replaceFeeDistributor.name]: {
       consume: {
