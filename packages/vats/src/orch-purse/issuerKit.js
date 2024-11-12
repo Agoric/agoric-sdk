@@ -2,7 +2,6 @@
 
 import { assert, Fail } from '@endo/errors';
 import { assertPattern } from '@endo/patterns';
-import { makeScalarBigMapStore } from '@agoric/vat-data';
 import { makeDurableZone } from '@agoric/zone/durable.js';
 
 import { AssetKind, assertAssetKind } from '@agoric/ertp';
@@ -109,7 +108,7 @@ const RECOVERY_SETS_STATE = 'recoverySetsState';
  *   and optional. See `RecoverySetsOption` for defaulting behavior.
  * @returns {IssuerKit<K>}
  */
-export const upgradeIssuerKit = (
+const upgradeIssuerKit = (
   issuerBaggage,
   optShutdownWithFailure = undefined,
   recoverySetsOption = undefined,
@@ -143,7 +142,7 @@ harden(upgradeIssuerKit);
  *
  * @param {import('@agoric/vat-data').Baggage} baggage
  */
-export const hasIssuer = baggage => baggage.has(INSTANCE_KEY);
+const hasIssuer = baggage => baggage.has(INSTANCE_KEY);
 
 /**
  * `elementShape`, may only be present for collection-style amounts. If present,
@@ -195,7 +194,7 @@ export const hasIssuer = baggage => baggage.has(INSTANCE_KEY);
  * @param {IssuerOptionsRecord} [options]
  * @returns {IssuerKit<K>}
  */
-export const makeDurableIssuerKit = (
+const makeDurableIssuerKit = (
   issuerBaggage,
   name,
   // @ts-expect-error K could be instantiated with a different subtype of AssetKind
@@ -292,55 +291,3 @@ export const prepareIssuerKit = (
   }
 };
 harden(prepareIssuerKit);
-
-/**
- * Used _only_ to make a new issuerKit that is effectively non-durable. This is
- * currently done by making a durable one in a baggage not reachable from
- * anywhere. TODO Once rebuilt on zones, this should instead just build on the
- * virtual zone. See https://github.com/Agoric/agoric-sdk/pull/7116
- *
- * Currently used for testing only. Should probably continue to be used for
- * testing only.
- *
- * @template {AssetKind} [K='nat'] The name becomes part of the brand in asset
- *   descriptions. The name is useful for debugging and double-checking
- *   assumptions, but should not be trusted wrt any external namespace. For
- *   example, anyone could create a new issuer kit with name 'BTC', but it is
- *   not bitcoin or even related. It is only the name according to that issuer
- *   and brand.
- *
- *   The assetKind will be used to import a specific mathHelpers from the
- *   mathHelpers library. For example, natMathHelpers, the default, is used for
- *   basic fungible tokens.
- *
- *   `displayInfo` gives information to the UI on how to display the amount.
- * @param {string} name
- * @param {K} [assetKind]
- * @param {AdditionalDisplayInfo} [displayInfo]
- * @param {ShutdownWithFailure} [optShutdownWithFailure] If this issuer fails in
- *   the middle of an atomic action (which btw should never happen), it
- *   potentially leaves its ledger in a corrupted state. If this function was
- *   provided, then the failed atomic action will call it, so that some larger
- *   unit of computation, like the enclosing vat, can be shutdown before
- *   anything else is corrupted by that corrupted state. See
- *   https://github.com/Agoric/agoric-sdk/issues/3434
- * @param {IssuerOptionsRecord} [options]
- * @returns {IssuerKit<K, any>}
- */
-export const makeIssuerKit = (
-  name,
-  // @ts-expect-error K could be instantiated with a different subtype of AssetKind
-  assetKind = AssetKind.NAT,
-  displayInfo = harden({}),
-  optShutdownWithFailure = undefined,
-  { elementShape = undefined, recoverySetsOption = undefined } = {},
-) =>
-  makeDurableIssuerKit(
-    makeScalarBigMapStore('dropped issuer kit', { durable: true }),
-    name,
-    assetKind,
-    displayInfo,
-    optShutdownWithFailure,
-    { elementShape, recoverySetsOption },
-  );
-harden(makeIssuerKit);

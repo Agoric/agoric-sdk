@@ -1,24 +1,68 @@
-/* eslint-disable no-use-before-define */
 import type { ERef } from '@endo/far';
-import type { RemotableObject } from '@endo/pass-style';
 import type { CopySet, Key, Pattern } from '@endo/patterns';
 import type { LatestTopic } from '@agoric/notifier';
 
-import type { AssetKind, Amount, Brand, Payment } from '@agoric/ertp';
+import type { Amount, Brand, Payment } from '@agoric/ertp';
+import type { Denom, DenomAmount, ChainAddress } from '@agoric/orchestration';
 
-export type MinOrchAccountAddress = {};
+// //////////////////////// Orchestration-like /////////////////////////////////
 
+/**
+ * @see {ChainAddress}, which actually names an account on a chain.
+ * Like a widely-held deposit-facet.
+ */
+export type MinChainAcctAddr = {
+  chainId: string;
+  value: string;
+};
+
+/**
+ * @see {OrchestrationAccount}
+ */
 export type MinOrchAccount = {
-  getFullBalance(): ERef<Amount>;
-  transfer(dest: MinOrchAccountAddress, depositAmount: Amount): ERef<void>;
-  getAddress(): MinOrchAccountAddress;
+  getAddress(): MinChainAcctAddr;
+  getBalances(): ERef<DenomAmount[]>;
+  getBalance(denom: Denom): ERef<DenomAmount>;
+  transfer(destAddr: MinChainAcctAddr, denomAmount: DenomAmount): ERef<void>;
 };
 
-export type MinOrchChain = {
-  makeAccount(brand: Brand): ERef<MinOrchAccount>;
+/**
+ * @see {ChainInfo}, which is in the intersection of the existing
+ * `ChainInfo` possibilities.
+ */
+export type MinChainInfo = {
+  chainId: string;
 };
 
-// ////////////////////////////////////////////////////////////////////////////
+/**
+ * @see {DenomInfo}
+ */
+export type MinDenomInfo = {
+  brand: Brand;
+  // eslint-disable-next-line no-use-before-define
+  chain: MinChain;
+};
+
+/**
+ * @see {Chain}
+ */
+export type MinChain = {
+  getChainInfo(): ERef<MinChainInfo>;
+  makeAccount(): ERef<MinOrchAccount>;
+
+  // In the real API, these are on Orchestrator
+  getDenomInfo(denom: Denom): MinDenomInfo;
+  asAmount(denomAmount: DenomAmount): Amount;
+};
+
+/**
+ * @see {Orchestrator}
+ */
+export type MinOrchestrator = {
+  getChain(chainName: string): ERef<MinChain>;
+};
+
+// //////////////////////// ERTP-like //////////////////////////////////////////
 
 export type OrchDepositFacetReceive = (
   payment: Payment,
@@ -44,44 +88,30 @@ export type OrchDepositFacet = {
  *   withdrawn from a Purse. The amount of digital assets in a purse can change
  *   through the action of deposit() and withdraw().
  */
-export type OrchPurse<
-  K extends AssetKind = AssetKind,
-  M extends Key = Key,
-> = RemotableObject & OrchPurseMethods<K, M>;
-
-/**
- * The primary use for Purses and Payments is for
- *   currency-like and goods-like digital assets, but they can also be used to
- *   represent other kinds of rights, such as the right to participate in a
- *   particular contract.
- */
-export type OrchPurseMethods<
-  K extends AssetKind = AssetKind,
-  M extends Key = Key,
-> = {
+export type OrchPurse = {
   /**
    * Get the alleged Brand for this
    * Purse
    */
-  getAllegedBrand: () => Brand<K>;
+  getAllegedBrand: () => Brand;
 
   /**
    * Get the amount contained in
    * this purse.
    */
-  getCurrentAmount: () => ERef<Amount<K, M>>;
+  getCurrentAmount: () => ERef<Amount>;
 
   /**
    * Get the amount contained in
    * this purse + all payments still in the recoverySet at this moment
    */
-  getCurrentFullBalance: () => ERef<Amount<K, M>>;
+  getCurrentFullBalance: () => ERef<Amount>;
 
   /**
    * Get a
    * lossy notifier for changes to this purse's balance.
    */
-  getCurrentAmountNotifier: () => LatestTopic<Amount<K, M>>;
+  getCurrentAmountNotifier: () => LatestTopic<Amount>;
 
   /**
    *   Deposit all the contents of payment into this purse, returning the amount. If
@@ -90,10 +120,7 @@ export type OrchPurseMethods<
    *
    *   If payment is a promise, throw an error.
    */
-  deposit: <P extends Payment<K, M>>(
-    payment: P,
-    optAmountShape?: Pattern,
-  ) => ERef<Amount<K, M>>;
+  deposit: (payment: Payment, optAmountShape?: Pattern) => ERef<Amount>;
 
   /**
    * Return an object whose
@@ -105,7 +132,7 @@ export type OrchPurseMethods<
    * Withdraw amount
    * from this purse into a new Payment.
    */
-  withdraw: (amount: Amount<K, M>) => Payment<K, M>;
+  withdraw: (amount: Amount) => Payment;
 
   /**
    * The set of payments
@@ -119,7 +146,7 @@ export type OrchPurseMethods<
    *
    * Returns an empty set if this issuer does not support recovery sets.
    */
-  getRecoverySet: () => CopySet<Payment<K, M>>;
+  getRecoverySet: () => CopySet<Payment>;
 
   /**
    * For use in emergencies, such as
@@ -129,5 +156,5 @@ export type OrchPurseMethods<
    *
    * Returns an empty amount if this issuer does not support recovery sets.
    */
-  recoverAll: () => Amount<K, M>;
+  recoverAll: () => Amount;
 };

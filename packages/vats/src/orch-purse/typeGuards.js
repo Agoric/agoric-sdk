@@ -1,6 +1,7 @@
 // @jessie-check
 
 import { M, getInterfaceGuardPayload } from '@endo/patterns';
+
 import {
   AmountPatternShape,
   AmountShape,
@@ -9,26 +10,72 @@ import {
   makeIssuerInterfaces,
   PaymentShape,
 } from '@agoric/ertp';
+import {
+  ChainInfoShape,
+  DenomShape,
+  DenomAmountShape,
+} from '@agoric/orchestration';
 
-export const MinOrchAccountAddressShape = M.remotable('MinOrchAccountAddress');
+// //////////////////////// Orchestration-like /////////////////////////////////
+
 export const MinOrchAccountShape = M.remotable('MinOrchAccount');
-export const MinOrchChain = M.remotable('MinOrchChain');
+export const MinChainShape = M.remotable('MinChain');
+export const MinOrchestratorShape = M.remotable('MinOrchestrator');
 
-export const MinOrchAccountAddressI = M.interface('MinOrchAccountAddress', {});
+/**
+ * @see {ChainAddressShape}
+ * @see {MinChainAcctAddr}
+ */
+export const MinChainAcctAddrShape = harden({
+  chainId: M.string(),
+  value: M.string(),
+});
 
+/**
+ * @see {orchestrationAccountMethods}
+ * @see {MinOrchAccount}
+ */
 export const MinOrchAccountI = M.interface('MinOrchAccount', {
-  getFullBalance: M.call().returns(M.eref(AmountShape)),
-  transfer: M.call(MinOrchAccountAddressShape, AmountShape).returns(
+  getAddress: M.call().returns(MinChainAcctAddrShape),
+  getBalances: M.call().returns(M.eref(M.arrayOf(DenomAmountShape))),
+  getBalance: M.call(M.string()).returns(M.eref(DenomAmountShape)),
+  transfer: M.call(MinChainAcctAddrShape, DenomAmountShape).returns(
     M.eref(M.undefined()),
   ),
-  getAddress: M.call().returns(MinOrchAccountAddressShape),
 });
 
-export const MinOrchChainI = M.interface('MinOrchChain', {
-  makeAccount: M.call(BrandShape).returns(M.eref(MinOrchAccountShape)),
+/**
+ * @see {DenomInfoShape}
+ * @see {MinDenomInfo}
+ */
+export const MinDenomInfoShape = harden({
+  brand: BrandShape,
+  chain: MinChainShape,
 });
 
-// //////////////////////// Interfaces /////////////////////////////////////////
+/**
+ * @see {chainFacadeMethods}
+ * @see {MinChain}
+ * @see {OrchestratorI}
+ */
+export const MinChainI = M.interface('MinChain', {
+  getChainInfo: M.call().returns(M.eref(ChainInfoShape)),
+  makeAccount: M.call().returns(M.eref(MinOrchAccountShape)),
+
+  // In the real API, these are on OrchestratorI
+  getDenomInfo: M.call(DenomShape).returns(MinDenomInfoShape),
+  asAmount: M.call(DenomAmountShape).returns(AmountShape),
+});
+
+/**
+ * @see {OrchestratorI}
+ * @see {MinOrchestrator}
+ */
+export const MinOrchestratorI = M.interface('MinOrchestrator', {
+  getChain: M.call(M.string()).returns(M.eref(MinChainShape)),
+});
+
+// //////////////////////// ERTP-like //////////////////////////////////////////
 
 /**
  * @param {Pattern} [brandShape]

@@ -30,6 +30,7 @@
     "@agoric/internal": "^0.3.2",
     "@agoric/network": "^0.1.0",
     "@agoric/notifier": "^0.6.2",
+    "@agoric/orchestration": "^0.1.0",
     "@agoric/store": "^0.9.2",
     "@agoric/swingset-vat": "^0.32.2",
     "@agoric/time": "^0.3.2",

@@ -3,9 +3,8 @@ import { M } from '@endo/patterns';
 
 /**
  * @import {TypedPattern} from '@agoric/internal';
- * @import {ChainAddress, CosmosAssetInfo, Chain, ChainInfo, CosmosChainInfo, DenomAmount, DenomDetail, DenomInfo, AmountArg, CosmosValidatorAddress} from './types.js';
+ * @import {ChainAddress, CosmosAssetInfo, Chain, ChainInfo, CosmosChainInfo, DenomAmount, DenomInfo, AmountArg, CosmosValidatorAddress} from './types.js';
  * @import {Any as Proto3Msg} from '@agoric/cosmic-proto/google/protobuf/any.js';
- * @import {Delegation} from '@agoric/cosmic-proto/cosmos/staking/v1beta1/staking.js';
  * @import {TxBody} from '@agoric/cosmic-proto/cosmos/tx/v1beta1/tx.js';
  * @import {TypedJson} from '@agoric/cosmic-proto';
  */
@@ -26,17 +25,17 @@ export const OutboundConnectionHandlerI = M.interface(
 );
 
 /** @type {TypedPattern<ChainAddress>} */
-export const ChainAddressShape = {
+export const ChainAddressShape = harden({
   chainId: M.string(),
   encoding: M.string(),
   value: M.string(),
-};
+});
 
 /** @type {TypedPattern<Proto3Msg>} */
-export const Proto3Shape = {
+export const Proto3Shape = harden({
   typeUrl: M.string(),
   value: M.string(),
-};
+});
 
 /** @internal */
 export const IBCTransferOptionsShape = M.splitRecord(
@@ -109,12 +108,12 @@ export const ChainInfoShape = M.splitRecord({
 export const DenomShape = M.string();
 
 /** @type {TypedPattern<DenomInfo<any, any>>} */
-export const DenomInfoShape = {
+export const DenomInfoShape = harden({
   chain: M.remotable('Chain'),
   base: M.remotable('Chain'),
   brand: M.or(M.remotable('Brand'), M.undefined()),
   baseDenom: M.string(),
-};
+});
 
 /** @type {TypedPattern<DenomAmount>} */
 export const DenomAmountShape = { denom: DenomShape, value: M.bigint() };
@@ -164,7 +163,10 @@ export const chainFacadeMethods = harden({
  * `seconds` is a big integer but since it goes through JSON it is encoded as
  * string
  */
-export const TimestampProtoShape = { seconds: M.string(), nanos: M.number() };
+export const TimestampProtoShape = harden({
+  seconds: M.string(),
+  nanos: M.number(),
+});
 
 /**
  * see {@link TxBody} for more details

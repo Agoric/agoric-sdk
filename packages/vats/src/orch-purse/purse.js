@@ -7,6 +7,8 @@ import { makeTransientNotifierKit } from '@agoric/ertp/src/transientNotifier.js'
 
 /**
  * @import {AssetKind, RecoverySetsOption, Brand, Payment} from '@agoric/ertp'
+ *
+ * @import {MinOrchChain} from './types.js'
  */
 
 const EMPTY_COPY_SET = makeCopySet([]);
@@ -14,6 +16,7 @@ const EMPTY_COPY_SET = makeCopySet([]);
 // TODO Type InterfaceGuard better than InterfaceGuard<any>
 /**
  * @param {import('@agoric/zone').Zone} issuerZone
+ * @param {MinOrchChain} orchChain
  * @param {string} name
  * @param {AssetKind} assetKind
  * @param {Brand} brand
@@ -30,6 +33,7 @@ const EMPTY_COPY_SET = makeCopySet([]);
  */
 export const prepareOrchPurseKind = (
   issuerZone,
+  orchChain,
   name,
   assetKind,
   brand,
@@ -84,13 +88,13 @@ export const prepareOrchPurseKind = (
     `${name} OrchPurse`,
     OrchPurseIKit,
     () => {
-      const currentBalance = AmountMath.makeEmpty(brand, assetKind);
+      const orchAccount = orchChain.makeAccount(brand, assetKind);
 
       /** @type {SetStore<Payment>} */
       const recoverySet = issuerZone.detached().setStore('recovery set');
 
       return {
-        currentBalance,
+        orchAccount,
         recoverySet,
       };
     },
