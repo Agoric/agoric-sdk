@@ -72,15 +72,18 @@ export const depositCalc = (shareWorth, { give, want }) => {
 
   const { denominator: sharesOutstanding, numerator: poolBalance } = shareWorth;
 
-  const PoolShare = divideBy(give.USDC, shareWorth);
+  const fairPoolShare = divideBy(give.USDC, shareWorth);
   if (want?.PoolShare) {
-    isGTE(PoolShare, want.PoolShare) ||
-      Fail`deposit cannot pay out ${q(want.PoolShare)}; ${q(give.USDC)} only gets ${q(PoolShare)}`;
+    isGTE(fairPoolShare, want.PoolShare) ||
+      Fail`deposit cannot pay out ${q(want.PoolShare)}; ${q(give.USDC)} only gets ${q(fairPoolShare)}`;
   }
-  const outstandingPost = add(sharesOutstanding, PoolShare);
+  const outstandingPost = add(sharesOutstanding, fairPoolShare);
   const balancePost = add(poolBalance, give.USDC);
   const worthPost = makeRatioFromAmounts(balancePost, outstandingPost);
-  return harden({ payouts: { PoolShare }, shareWorth: worthPost });
+  return harden({
+    payouts: { PoolShare: fairPoolShare },
+    shareWorth: worthPost,
+  });
 };
 
 const isGT = (x, y) => isGTE(x, y) && !isEqual(x, y);
