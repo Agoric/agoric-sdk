@@ -1,9 +1,14 @@
+/* global fetch setTimeout */
+
 import test from 'ava';
 import {
   provisionSmartWallet,
   USER1ADDR as Alice,
   GOV1ADDR as Bob,
+  getIncarnation,
+  evalBundles,
 } from '@agoric/synthetic-chain';
+import { makeWalletUtils, retryUntilCondition } from '@agoric/client-utils';
 import {
   buyCharacter,
   buyItem,
@@ -17,6 +22,7 @@ import {
   sellItem,
   unequipAllItems,
 } from './test-lib/kread.js';
+import { networkConfig, agdWalletUtils } from './test-lib/index.js';
 
 test.serial('Alice mints a new Character', async t => {
   await provisionSmartWallet(Alice, '200000000ubld');
@@ -162,5 +168,154 @@ test.serial('Bob buys a Character on marketplace', async t => {
     characterBalance.name,
     'ephemeral_Ace',
     'Character name should be ephemeral_Ace',
+  );
+});
+
+test.serial('User assets survive KREAd contract upgrade', async t => {
+  const characterId = 'ephemeral_Joker';
+  await mintCharacter(Alice, characterId);
+
+  const characterBalanceBefore = await getBalanceFromPurse(Alice, 'character');
+  t.is(
+    characterBalanceBefore.name,
+    characterId,
+    'Character name should be ephemeral_Joker',
+  );
+
+  const characterInventoryBefore = await getCharacterInventory(characterId);
+  t.is(
+    characterInventoryBefore.length,
+    3,
+    'Character should have 3 items in inventory',
+  );
+
+  const incarnationBefore = await getIncarnation('zcf-b1-853ac-KREAd');
+
+  await evalBundles('upgrade-kread');
+
+  const incarnationAfter = await retryUntilCondition(
+    async () => getIncarnation('zcf-b1-853ac-KREAd'),
+    value => value === incarnationBefore + 1,
+    'KREAd upgrade not processed yet',
+    { setTimeout, retryIntervalMs: 5000, maxRetries: 15 },
+  );
+
+  t.is(
+    incarnationAfter,
+    incarnationBefore + 1,
+    'KREAd vat incarnation should have increased',
+  );
+
+  const characterBalanceAfter = await getBalanceFromPurse(Alice, 'character');
+  t.is(
+    characterBalanceAfter.name,
+    characterId,
+    'Character name should be ephemeral_Joker',
+  );
+
+  const characterInventoryAfter = await getCharacterInventory(characterId);
+  t.is(
+    characterInventoryAfter.length,
+    3,
+    'Character should have 3 items in inventory',
+  );
+});
+
+test.serial('market survives zoe upgrade', async t => {
+  /** @param {number} ms */
+  const delay = ms =>
+    new Promise(resolve => setTimeout(() => resolve(undefined), ms));
+  const { getCurrentWalletRecord } = await makeWalletUtils(
+    { delay, fetch },
+    networkConfig,
+  );
+
+  /**
+   * @param {string} address
+   * @returns
+   */
+  const getWalletLiveOffers = async address =>
+    (await getCurrentWalletRecord(address)).liveOffers;
+
+  /**
+   * @param {string} offerId
+   * @param {import('@agoric/smart-wallet/src/smartWallet.js').CurrentWalletRecord['liveOffers']} liveOffers
+   * @returns {boolean}
+   */
+  const isOfferPresentInLiveOffers = (offerId, liveOffers) =>
+    liveOffers.some(element => element.includes(offerId));
+
+  // XXX the functions above should be moved to an appropriated library
+
+  const sellOfferId = 'sell-before-zoe-upgrade';
+  await sellCharacter(Alice, sellOfferId);
+
+  const characterId = 'ephemeral_Joker';
+  const marketCharacterId = 'character-ephemeral_Joker';
+  const characterListBefore = await getMarketCharactersChildren();
+  t.true(
+    characterListBefore.includes(marketCharacterId),
+    'Character should be on market after selling',
+  );
+
+  const characterBalanceBefore = await getBalanceFromPurse(Alice, 'character');
+  t.is(
+    characterBalanceBefore,
+    null,
+    'Character should not be in purse after selling',
+  );
+
+  t.is(
+    isOfferPresentInLiveOffers(sellOfferId, await getWalletLiveOffers(Alice)),
+    true,
+    'Sell offerId should be found on user wallet',
+  );
+
+  const incarnationBefore = await getIncarnation('zoe');
+
+  await evalBundles('upgrade-zoe');
+
+  const incarnationAfter = await retryUntilCondition(
+    async () => getIncarnation('zoe'),
+    value => value === incarnationBefore + 1,
+    'KREAd upgrade not processed yet',
+    { setTimeout, retryIntervalMs: 5000, maxRetries: 15 },
+  );
+
+  t.is(
+    incarnationAfter,
+    incarnationBefore + 1,
+    'Zoe vat incarnation should have increased',
+  );
+
+  await agdWalletUtils.broadcastBridgeAction(Alice, {
+    method: 'tryExitOffer',
+    offerId: sellOfferId,
+  });
+
+  const liveOfferAfter = await retryUntilCondition(
+    async () => getWalletLiveOffers(Alice),
+    value => !isOfferPresentInLiveOffers(sellOfferId, value),
+    'sell offer still present in user liveOffers',
+    { setTimeout, retryIntervalMs: 5000, maxRetries: 15 },
+  );
+
+  t.is(
+    isOfferPresentInLiveOffers(sellOfferId, liveOfferAfter),
+    false,
+    'Sell offerId should NOT be found on user wallet',
+  );
+
+  const characterListAfter = await getMarketCharactersChildren();
+  t.false(
+    characterListAfter.includes(marketCharacterId),
+    'Character should not be on market after offer exit',
+  );
+
+  const characterBalanceAfter = await getBalanceFromPurse(Alice, 'character');
+  t.is(
+    characterBalanceAfter.name,
+    characterId,
+    'Character name should be ephemeral_Joker',
   );
 });

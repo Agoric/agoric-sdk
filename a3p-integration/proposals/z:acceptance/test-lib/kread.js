@@ -133,7 +133,7 @@ export const totalAssetPriceAmount = asset => {
   const price = AmountMath.add(asset.askingPrice, fees);
   return price;
 };
-const mintCharacterOffer = async () => {
+const mintCharacterOffer = async name => {
   const body = {
     method: 'executeOffer',
     offer: {
@@ -143,7 +143,7 @@ const mintCharacterOffer = async () => {
         instancePath: ['kread'],
         callPipe: [['makeMintCharacterInvitation', []]],
       },
-      offerArgs: { name: 'ephemeral_Ace' },
+      offerArgs: { name },
       proposal: {
         give: {
           Price: {
@@ -298,7 +298,7 @@ const buyCharacterOffer = async () => {
   return JSON.stringify(marshaller.toCapData(harden(body)));
 };
 
-const sellCharacterOffer = async address => {
+const sellCharacterOffer = async (address, id) => {
   const kreadCharacter = await getBalanceFromPurse(address, 'character');
   if (!kreadCharacter) {
     throw new Error('Character not found on user purse');
@@ -312,7 +312,7 @@ const sellCharacterOffer = async address => {
   const body = {
     method: 'executeOffer',
     offer: {
-      id: 'KREAd-sell-character-acceptance-test',
+      id,
       invitationSpec: {
         source: 'agoricContract',
         instancePath: ['kread'],
@@ -335,26 +335,58 @@ const sellCharacterOffer = async address => {
   return JSON.stringify(marshaller.toCapData(harden(body)));
 };
 
-export const mintCharacter = async address => {
-  return executeOffer(address, mintCharacterOffer());
+/**
+ * @param {string} address
+ * @param {string} characterName
+ * @returns
+ */
+export const mintCharacter = async (
+  address,
+  characterName = 'ephemeral_Ace',
+) => {
+  return executeOffer(address, mintCharacterOffer(characterName));
 };
 
+/**
+ * @param {string} address
+ * @returns
+ */
 export const unequipAllItems = async address => {
   return executeOffer(address, unequipAllItemsOffer(address));
 };
 
+/**
+ * @param {string} address
+ * @returns
+ */
 export const buyItem = async address => {
   return executeOffer(address, buyItemOffer());
 };
 
+/**
+ * @param {string} address
+ * @returns
+ */
 export const sellItem = async address => {
   return executeOffer(address, sellItemOffer(address));
 };
 
-export const sellCharacter = async address => {
-  return executeOffer(address, sellCharacterOffer(address));
+/**
+ * @param {string} address
+ * @param {string} offerId
+ * @returns
+ */
+export const sellCharacter = async (
+  address,
+  offerId = 'sell-character-acceptance',
+) => {
+  return executeOffer(address, sellCharacterOffer(address, offerId));
 };
 
+/**
+ * @param {string} address
+ * @returns
+ */
 export const buyCharacter = async address => {
   return executeOffer(address, buyCharacterOffer());
 };
