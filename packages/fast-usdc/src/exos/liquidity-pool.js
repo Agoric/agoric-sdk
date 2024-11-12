@@ -11,6 +11,7 @@ import {
 import { depositToSeat } from '@agoric/zoe/src/contractSupport/zoeHelpers.js';
 import { SeatShape } from '@agoric/zoe/src/typeGuards.js';
 import { M } from '@endo/patterns';
+import { Fail, q } from '@endo/errors';
 import {
   depositCalc,
   makeParity,
@@ -26,6 +27,17 @@ import { makeProposalShapes } from '../type-guards.js';
  * @import {MakeRecorderKit} from '@agoric/zoe/src/contractSupport/recorder.js'
  * @import {USDCProposalShapes, ShareWorth} from '../pool-share-math.js'
  */
+
+/**
+ *
+ * @param {ZCFSeat} poolSeat
+ * @param {ShareWorth} shareWorth
+ */
+const checkPoolBalance = (poolSeat, shareWorth) => {
+  const available = poolSeat.getAmountAllocated('USDC');
+  AmountMath.isEqual(available, shareWorth.numerator) ||
+    Fail`🚨 pool balance ${q(available)} inconsistent with shareWorth ${q(shareWorth)}`;
+};
 
 /**
  * @param {Zone} zone
@@ -117,13 +129,14 @@ export const prepareLiquidityPoolKit = (zone, zcf, USDC, tools) => {
           /** @type {USDCProposalShapes['deposit']} */
           // @ts-expect-error ensured by proposalShape
           const proposal = lp.getProposal();
+          checkPoolBalance(poolSeat, shareWorth);
           const post = depositCalc(shareWorth, proposal);
 
           // COMMIT POINT
 
-          const mint = shareMint.mintGains(post.payouts);
-          this.state.shareWorth = post.shareWorth;
           try {
+            const mint = shareMint.mintGains(post.payouts);
+            this.state.shareWorth = post.shareWorth;
             zcf.atomicRearrange(
               harden([
                 // zoe guarantees lp has proposal.give allocated
@@ -135,8 +148,9 @@ export const prepareLiquidityPoolKit = (zone, zcf, USDC, tools) => {
             lp.exit();
             mint.exit();
           } catch (bug) {
-            console.error('🚨 shutdown due to', bug);
-            zcf.shutdownWithFailure(bug);
+            const reason = Error('🚨 cannot commit deposit', { cause: bug });
+            console.error(reason.message, bug);
+            zcf.shutdownWithFailure(reason);
           }
           await external.publishShareWorth();
         },
@@ -151,20 +165,29 @@ export const prepareLiquidityPoolKit = (zone, zcf, USDC, tools) => {
           // @ts-expect-error ensured by proposalShape
           const proposal = lp.getProposal();
           const { zcfSeat: burn } = zcf.makeEmptySeatKit();
+          checkPoolBalance(poolSeat, shareWorth);
           const post = withdrawCalc(shareWorth, proposal);
 
           // COMMIT POINT
 
-          zcf.atomicRearrange(
-            harden([
-              [lp, burn, proposal.give],
-              [poolSeat, lp, post.payouts],
-            ]),
-          );
-          shareMint.burnLosses(proposal.give, burn);
-          lp.exit();
-          burn.exit();
-          this.state.shareWorth = post.shareWorth;
+          try {
+            this.state.shareWorth = post.shareWorth;
+            zcf.atomicRearrange(
+              harden([
+                // zoe guarantees lp has proposal.give allocated
+                [lp, burn, proposal.give],
+                // checkPoolBalance() + withdrawCalc() guarantee poolSeat has enough
+                [poolSeat, lp, post.payouts],
+              ]),
+            );
+            shareMint.burnLosses(proposal.give, burn);
+            lp.exit();
+            burn.exit();
+          } catch (bug) {
+            const reason = Error('🚨 cannot commit withdraw', { cause: bug });
+            console.error(reason.message, bug);
+            zcf.shutdownWithFailure(reason);
+          }
           await external.publishShareWorth();
         },
       },
