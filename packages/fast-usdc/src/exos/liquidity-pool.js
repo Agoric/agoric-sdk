@@ -28,6 +28,11 @@ import { makeProposalShapes } from '../type-guards.js';
  * @import {USDCProposalShapes, ShareWorth} from '../pool-share-math.js'
  */
 
+const { add, isEqual } = AmountMath;
+
+/** @param {Brand} brand */
+const makeDust = brand => AmountMath.make(brand, 1n);
+
 /**
  *
  * @param {ZCFSeat} poolSeat
@@ -36,7 +41,8 @@ import { makeProposalShapes } from '../type-guards.js';
  */
 const checkPoolBalance = (poolSeat, shareWorth, USDC) => {
   const available = poolSeat.getAmountAllocated('USDC', USDC);
-  AmountMath.isEqual(available, shareWorth.numerator) ||
+  const dust = makeDust(USDC);
+  isEqual(add(available, dust), shareWorth.numerator) ||
     Fail`🚨 pool balance ${q(available)} inconsistent with shareWorth ${q(shareWorth)}`;
 };
 
@@ -77,8 +83,7 @@ export const prepareLiquidityPoolKit = (zone, zcf, USDC, tools) => {
     (shareMint, node) => {
       const { brand: PoolShares } = shareMint.getIssuerRecord();
       const proposalShapes = makeProposalShapes({ USDC, PoolShares });
-      const dust = AmountMath.make(USDC, 1n);
-      const shareWorth = makeParity(dust, PoolShares);
+      const shareWorth = makeParity(makeDust(USDC), PoolShares);
       const { zcfSeat: poolSeat } = zcf.makeEmptySeatKit();
       const shareWorthRecorderKit = tools.makeRecorderKit(
         node,
