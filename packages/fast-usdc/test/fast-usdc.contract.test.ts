@@ -56,7 +56,7 @@ test('start', async t => {
   const seat = await E(zoe).offer(inv);
   t.is(
     await E(seat).getOfferResult(),
-    'noop; evidence was pushed in the invitation maker call',
+    'inert; nothing should be expected from this offer',
   );
 });
 
