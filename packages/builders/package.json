@@ -24,6 +24,7 @@
   "license": "Apache-2.0",
   "dependencies": {
     "@agoric/ertp": "^0.16.2",
+    "@agoric/fast-usdc": "0.1.0",
     "@agoric/internal": "^0.3.2",
     "@agoric/notifier": "^0.6.2",
     "@agoric/smart-wallet": "^0.5.3",
@@ -36,6 +37,7 @@
     "@endo/far": "^1.1.8",
     "@endo/init": "^1.1.6",
     "@endo/marshal": "^1.6.1",
+    "@endo/patterns": "^1.4.6",
     "@endo/promise-kit": "^1.1.7",
     "@endo/stream": "^1.2.7",
     "import-meta-resolve": "^2.2.1"
