@@ -62,19 +62,21 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
     statusManager,
     vowTools,
   });
-  const makeLiquidityPoolKit = prepareLiquidityPoolKit(
-    zone,
+  const makeLiquidityPoolKit = prepareLiquidityPoolKit(zone, {
     zcf,
-    terms.brands.USDC,
-    { makeRecorderKit },
-  );
+    USDC: {
+      brand: terms.brands.USDC,
+      issuer: terms.issuers.USDC,
+    },
+    tools: { makeRecorderKit },
+  });
   assertAllDefined({ feed, makeSettler, makeAdvancer, statusManager });
 
   const creatorFacet = zone.exo('Fast USDC Creator', undefined, {
-    simulateFeesFromAdvance(amount, payment) {
+    simulateFeesFromAdvance(/* amount, payment */) {
       console.log('🚧🚧 UNTIL: advance fees are implemented 🚧🚧');
-      // eslint-disable-next-line no-use-before-define
-      return poolKit.feeSink.receive(amount, payment);
+      // XXX FIXME
+      // return poolKit.feeSink.receive(amount, payment);
     },
   });
 

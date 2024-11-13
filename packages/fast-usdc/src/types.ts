@@ -1,5 +1,6 @@
 import type { ChainAddress } from '@agoric/orchestration';
 import type { IBCChannelID } from '@agoric/vats';
+import type { Amount } from '@agoric/ertp';
 import type { PendingTxStatus } from './constants.js';
 
 export type EvmHash = `0x${string}`;
@@ -34,5 +35,16 @@ export type PendingTxKey = `pendingTx:${string}`;
 
 /** internal key for `StatusManager` exo */
 export type SeenTxKey = `seenTx:${string}`;
+
+export interface PoolStats {
+  totalFees: Amount<'nat'>;
+  totalBorrows: Amount<'nat'>;
+  totalReturns: Amount<'nat'>;
+}
+
+export interface PoolMetrics extends PoolStats {
+  availableBalance: Amount<'nat'>;
+  shareWorth: Ratio;
+}
 
 export type * from './constants.js';

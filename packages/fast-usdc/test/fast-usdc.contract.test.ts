@@ -82,7 +82,7 @@ test('LP deposits, earns fees, withdraws', async t => {
   const { add, isGTE, subtract } = AmountMath;
 
   const { subscriber } = E.get(
-    E.get(E(publicFacet).getPublicTopics()).shareWorth,
+    E.get(E(publicFacet).getPublicTopics()).poolMetrics,
   );
 
   const makeLP = (name, usdcPurse: ERef<Purse>) => {
@@ -90,7 +90,9 @@ test('LP deposits, earns fees, withdraws', async t => {
     let deposited = AmountMath.makeEmpty(usdc.brand);
     const me = harden({
       deposit: async (qty: bigint) => {
-        const { value: shareWorth } = await E(subscriber).getUpdateSince();
+        const {
+          value: { shareWorth },
+        } = await E(subscriber).getUpdateSince();
         const give = { USDC: usdc.make(qty) };
         const proposal = harden({
           give,
@@ -156,6 +158,7 @@ test('LP deposits, earns fees, withdraws', async t => {
     const feeAmt = usdc.make(25n);
     t.log('contract accrues some amount of fees:', ...logAmt(feeAmt));
     const feePmt = await utils.pourPayment(feeAmt);
+    // @ts-expect-error FIXME
     await E(creatorFacet).simulateFeesFromAdvance(feeAmt, feePmt);
   }
 

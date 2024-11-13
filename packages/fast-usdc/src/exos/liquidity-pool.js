@@ -1,15 +1,14 @@
-import {
-  AmountMath,
-  AmountShape,
-  PaymentShape,
-  RatioShape,
-} from '@agoric/ertp';
+import { AmountMath, AmountShape, PaymentShape } from '@agoric/ertp';
 import {
   makeRecorderTopic,
   TopicsRecordShape,
 } from '@agoric/zoe/src/contractSupport/topics.js';
-import { depositToSeat } from '@agoric/zoe/src/contractSupport/zoeHelpers.js';
+import {
+  depositToSeat,
+  withdrawFromSeat,
+} from '@agoric/zoe/src/contractSupport/zoeHelpers.js';
 import { SeatShape } from '@agoric/zoe/src/typeGuards.js';
+import { E } from '@endo/far';
 import { M } from '@endo/patterns';
 import { Fail, q } from '@endo/errors';
 import {
@@ -19,6 +18,7 @@ import {
   withFees,
 } from '../pool-share-math.js';
 import { makeProposalShapes } from '../type-guards.js';
+import { PoolMetricsShape } from '../typeGuards.js';
 
 /**
  * @import {Zone} from '@agoric/zone';
@@ -26,6 +26,7 @@ import { makeProposalShapes } from '../type-guards.js';
  * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js'
  * @import {MakeRecorderKit, RecorderKit} from '@agoric/zoe/src/contractSupport/recorder.js'
  * @import {USDCProposalShapes, ShareWorth} from '../pool-share-math.js'
+ * @import {PoolMetrics, PoolStats} from '../types.js';
  */
 
 const { add, isEqual } = AmountMath;
@@ -38,31 +39,38 @@ const makeDust = brand => AmountMath.make(brand, 1n);
  * @param {ZCFSeat} poolSeat
  * @param {ShareWorth} shareWorth
  * @param {Brand} USDC
+ * @param {Amount<'nat'>} outstandingLends
  */
-const checkPoolBalance = (poolSeat, shareWorth, USDC) => {
+const checkPoolBalance = (poolSeat, shareWorth, USDC, outstandingLends) => {
   const available = poolSeat.getAmountAllocated('USDC', USDC);
   const dust = makeDust(USDC);
-  isEqual(add(available, dust), shareWorth.numerator) ||
+  const virtualTotal = add(add(available, dust), outstandingLends);
+  isEqual(virtualTotal, shareWorth.numerator) ||
     Fail`🚨 pool balance ${q(available)} inconsistent with shareWorth ${q(shareWorth)}`;
 };
 
 /**
  * @param {Zone} zone
- * @param {ZCF} zcf
- * @param {Brand<'nat'>} USDC
+ * @param {object} caps
+ * @param {ZCF} caps.zcf
+ * @param {{brand: Brand<'nat'>; issuer: Issuer<'nat'>;}} caps.USDC
  * @param {{
  *   makeRecorderKit: MakeRecorderKit;
- * }} tools
+ * }} caps.tools
  */
-export const prepareLiquidityPoolKit = (zone, zcf, USDC, tools) => {
+export const prepareLiquidityPoolKit = (zone, { zcf, USDC, tools }) => {
   return zone.exoClassKit(
     'Fast Liquidity Pool',
     {
-      feeSink: M.interface('feeSink', {
-        receive: M.call(AmountShape, PaymentShape).returns(M.promise()),
+      assetManager: M.interface('assetManager', {
+        borrowUnderlying: M.callWhen(AmountShape).returns(PaymentShape),
+        returnUnderlying: M.call(PaymentShape, PaymentShape).returns(
+          M.promise(),
+        ),
       }),
       external: M.interface('external', {
         publishShareWorth: M.call().returns(),
+        publishPoolMetrics: M.call().returns(),
       }),
       depositHandler: M.interface('depositHandler', {
         handle: M.call(SeatShape, M.any()).returns(M.promise()),
@@ -82,60 +90,139 @@ export const prepareLiquidityPoolKit = (zone, zcf, USDC, tools) => {
      */
     (shareMint, node) => {
       const { brand: PoolShares } = shareMint.getIssuerRecord();
-      const proposalShapes = makeProposalShapes({ USDC, PoolShares });
-      const shareWorth = makeParity(makeDust(USDC), PoolShares);
+      const proposalShapes = makeProposalShapes({
+        USDC: USDC.brand,
+        PoolShares,
+      });
+      const shareWorth = makeParity(makeDust(USDC.brand), PoolShares);
       const { zcfSeat: poolSeat } = zcf.makeEmptySeatKit();
-      const shareWorthRecorderKit = tools.makeRecorderKit(node, RatioShape);
+      const poolMetricsRecorderKit = tools.makeRecorderKit(
+        node,
+        PoolMetricsShape,
+      );
+      /** used for `checkPoolBalance` invariant 🤷‍♂️ */
+      const outstandingLends = AmountMath.make(USDC.brand, 0n);
+      const poolStats = /** @type {PoolStats} */ ({
+        totalFees: AmountMath.make(USDC.brand, 0n),
+        totalBorrows: AmountMath.make(USDC.brand, 0n),
+        totalReturns: AmountMath.make(USDC.brand, 0n),
+      });
       return {
-        shareMint,
-        shareWorth,
+        outstandingLends,
+        poolStats,
+        poolMetricsRecorderKit,
         poolSeat,
         PoolShares,
         proposalShapes,
-        shareWorthRecorderKit,
+        shareMint,
+        shareWorth,
       };
     },
     {
-      feeSink: {
+      assetManager: {
         /**
          * @param {Amount<'nat'>} amount
-         * @param {Payment<'nat'>} payment
+         * @returns {Promise<PaymentPKeywordRecord>}
          */
-        async receive(amount, payment) {
-          const { poolSeat, shareWorth } = this.state;
-          const { external } = this.facets;
+        async borrowUnderlying(amount) {
+          const { poolSeat } = this.state;
+          // Validate amount is available in pool
+          const available = poolSeat.getAmountAllocated('USDC', USDC.brand);
+          AmountMath.isGTE(available, amount) ||
+            Fail`Cannot borrow ${q(amount)}, only ${q(available)} available`;
+
+          const payment = await withdrawFromSeat(zcf, poolSeat, {
+            USDC: amount,
+          });
+
+          this.state.outstandingLends = AmountMath.add(
+            this.state.outstandingLends,
+            amount,
+          );
+          this.state.poolStats.totalBorrows = AmountMath.add(
+            this.state.poolStats.totalBorrows,
+            amount,
+          );
+          this.facets.external.publishPoolMetrics();
+          return payment;
+        },
+
+        /**
+         * @param {Payment<'nat'>} principalPayment
+         * @param {Payment<'nat'>} feePayment
+         */
+        async returnUnderlying(principalPayment, feePayment) {
+          const { poolSeat } = this.state;
+
+          const [principalAmount, feeAmount] = await Promise.all([
+            E(USDC.issuer).getAmountOf(principalPayment),
+            E(USDC.issuer).getAmountOf(feePayment),
+          ]);
+
+          // Deposit principal
           await depositToSeat(
             zcf,
             poolSeat,
-            harden({ USDC: amount }),
-            harden({ USDC: payment }),
+            harden({ USDC: principalAmount }),
+            harden({ USDC: principalPayment }),
           );
-          this.state.shareWorth = withFees(shareWorth, amount);
-          external.publishShareWorth();
+          // Update outstanding lends
+          this.state.outstandingLends = AmountMath.subtract(
+            this.state.outstandingLends,
+            principalAmount,
+          );
+
+          // XXX consider a single payment
+          await depositToSeat(
+            zcf,
+            poolSeat,
+            harden({ USDC: feeAmount }),
+            harden({ USDC: feePayment }),
+          );
+          // Update share worth to include fees
+          this.state.shareWorth = withFees(this.state.shareWorth, feeAmount);
+
+          // Update metrics
+          this.state.poolStats.totalReturns = AmountMath.add(
+            this.state.poolStats.totalReturns,
+            principalAmount,
+          );
+          this.state.poolStats.totalFees = AmountMath.add(
+            this.state.poolStats.totalFees,
+            feeAmount,
+          );
+          this.facets.external.publishPoolMetrics();
         },
       },
 
       external: {
-        publishShareWorth() {
-          const { shareWorth } = this.state;
-          const { recorder } = this.state.shareWorthRecorderKit;
+        publishPoolMetrics() {
+          const { poolStats, shareWorth, poolSeat } = this.state;
+          const { recorder } = this.state.poolMetricsRecorderKit;
           // Consumers of this .write() are off-chain / outside the VM.
           // And there's no way to recover from a failed write.
           // So don't await.
-          void recorder.write(shareWorth);
+          void recorder.write(
+            /** @type {PoolMetrics} */ ({
+              availableBalance: poolSeat.getAmountAllocated('USDC', USDC.brand),
+              shareWorth,
+              ...poolStats,
+            }),
+          );
         },
       },
 
       depositHandler: {
         /** @param {ZCFSeat} lp */
         async handle(lp) {
-          const { shareWorth, shareMint, poolSeat } = this.state;
+          const { shareWorth, shareMint, poolSeat, outstandingLends } =
+            this.state;
           const { external } = this.facets;
 
           /** @type {USDCProposalShapes['deposit']} */
           // @ts-expect-error ensured by proposalShape
           const proposal = lp.getProposal();
-          checkPoolBalance(poolSeat, shareWorth, USDC);
+          checkPoolBalance(poolSeat, shareWorth, USDC.brand, outstandingLends);
           const post = depositCalc(shareWorth, proposal);
 
           // COMMIT POINT
@@ -158,20 +245,21 @@ export const prepareLiquidityPoolKit = (zone, zcf, USDC, tools) => {
             console.error(reason.message, cause);
             zcf.shutdownWithFailure(reason);
           }
-          external.publishShareWorth();
+          external.publishPoolMetrics();
         },
       },
       withdrawHandler: {
         /** @param {ZCFSeat} lp */
         async handle(lp) {
-          const { shareWorth, shareMint, poolSeat } = this.state;
+          const { shareWorth, shareMint, poolSeat, outstandingLends } =
+            this.state;
           const { external } = this.facets;
 
           /** @type {USDCProposalShapes['withdraw']} */
           // @ts-expect-error ensured by proposalShape
           const proposal = lp.getProposal();
           const { zcfSeat: burn } = zcf.makeEmptySeatKit();
-          checkPoolBalance(poolSeat, shareWorth, USDC);
+          checkPoolBalance(poolSeat, shareWorth, USDC.brand, outstandingLends);
           const post = withdrawCalc(shareWorth, proposal);
 
           // COMMIT POINT
@@ -194,7 +282,7 @@ export const prepareLiquidityPoolKit = (zone, zcf, USDC, tools) => {
             console.error(reason.message, cause);
             zcf.shutdownWithFailure(reason);
           }
-          external.publishShareWorth();
+          external.publishPoolMetrics();
         },
       },
       public: {
@@ -215,16 +303,19 @@ export const prepareLiquidityPoolKit = (zone, zcf, USDC, tools) => {
           );
         },
         getPublicTopics() {
-          const { shareWorthRecorderKit } = this.state;
+          const { poolMetricsRecorderKit } = this.state;
           return {
-            shareWorth: makeRecorderTopic('shareWorth', shareWorthRecorderKit),
+            poolMetrics: makeRecorderTopic(
+              'poolMetrics',
+              poolMetricsRecorderKit,
+            ),
           };
         },
       },
     },
     {
       finish: ({ facets: { external } }) => {
-        void external.publishShareWorth();
+        void external.publishPoolMetrics();
       },
     },
   );

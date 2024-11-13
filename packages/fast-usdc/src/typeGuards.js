@@ -1,9 +1,10 @@
 import { M } from '@endo/patterns';
+import { AmountShape, RatioShape } from '@agoric/ertp';
 import { PendingTxStatus } from './constants.js';
 
 /**
  * @import {TypedPattern} from '@agoric/internal';
- * @import {CctpTxEvidence, PendingTx} from './types.js';
+ * @import {CctpTxEvidence, PendingTx, PoolMetrics} from './types.js';
  */
 
 /** @type {TypedPattern<string>} */
@@ -37,3 +38,13 @@ export const PendingTxShape = {
   status: M.or(...Object.values(PendingTxStatus)),
 };
 harden(PendingTxShape);
+
+/** @type {TypedPattern<PoolMetrics>} */
+export const PoolMetricsShape = {
+  availableBalance: AmountShape,
+  shareWorth: RatioShape,
+  totalFees: AmountShape,
+  totalBorrows: AmountShape,
+  totalReturns: AmountShape,
+};
+harden(PoolMetricsShape);
