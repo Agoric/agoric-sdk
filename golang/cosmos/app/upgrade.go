@@ -213,6 +213,13 @@ func unreleasedUpgradeHandler(app *GaiaApp, targetUpgrade string) func(sdk.Conte
 					"@agoric/builders/scripts/smart-wallet/build-wallet-factory2-upgrade.js",
 				),
 			)
+
+			// CoreProposals for Upgrade 19
+			CoreProposalSteps = append(CoreProposalSteps,
+				vm.CoreProposalStepForModules(
+					"@agoric/builders/scripts/inter-protocol/replace-feeDistributor.js",
+				),
+			)
 		}
 
 		app.upgradeDetails = &upgradeDetails{
