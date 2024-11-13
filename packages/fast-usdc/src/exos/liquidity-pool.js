@@ -64,12 +64,11 @@ export const prepareLiquidityPoolKit = (zone, { zcf, USDC, tools }) => {
     {
       assetManager: M.interface('assetManager', {
         borrowUnderlying: M.callWhen(AmountShape).returns(PaymentShape),
-        returnUnderlying: M.call(PaymentShape, PaymentShape).returns(
-          M.promise(),
+        returnUnderlying: M.callWhen(PaymentShape, PaymentShape).returns(
+          M.undefined(),
         ),
       }),
       external: M.interface('external', {
-        publishShareWorth: M.call().returns(),
         publishPoolMetrics: M.call().returns(),
       }),
       depositHandler: M.interface('depositHandler', {
@@ -102,7 +101,7 @@ export const prepareLiquidityPoolKit = (zone, { zcf, USDC, tools }) => {
       );
       /** used for `checkPoolBalance` invariant 🤷‍♂️ */
       const outstandingLends = AmountMath.make(USDC.brand, 0n);
-      const poolStats = /** @type {PoolStats} */ ({
+      const poolStats = /** @type {PoolStats} */ harden({
         totalFees: AmountMath.make(USDC.brand, 0n),
         totalBorrows: AmountMath.make(USDC.brand, 0n),
         totalReturns: AmountMath.make(USDC.brand, 0n),

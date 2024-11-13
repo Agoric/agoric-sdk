@@ -116,7 +116,9 @@ test('LP deposits, earns fees, withdraws', async t => {
           .getCurrentAmount()
           .then(a => a as Amount<'nat'>);
         const give = { PoolShare: scaleAmount(portion, myShares) };
-        const { value: shareWorth } = await E(subscriber).getUpdateSince();
+        const {
+          value: { shareWorth },
+        } = await E(subscriber).getUpdateSince();
         const myUSDC = multiplyBy(myShares, shareWorth);
         const myFees = subtract(myUSDC, deposited);
         t.log(name, 'sees fees earned', ...logAmt(myFees));
