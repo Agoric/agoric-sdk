@@ -8,6 +8,7 @@ import { basename, join } from 'path';
 import { inspect } from 'util';
 
 import { buildSwingset } from '@agoric/cosmic-swingset/src/launch-chain.js';
+import type { TypedPublished } from '@agoric/client-utils';
 import {
   BridgeId,
   makeTracer,
@@ -336,6 +337,9 @@ export const makeSwingsetTestKit = async (
     return data;
   };
 
+  const readPublished = <T extends string>(subpath: T) =>
+    readLatest(`published.${subpath}`) as TypedPublished<T>;
+
   let lastBankNonce = 0n;
   let ibcSequenceNonce = 0;
   let lcaSequenceNonce = 0;
@@ -645,6 +649,7 @@ export const makeSwingsetTestKit = async (
     getCrankNumber,
     jumpTimeTo,
     readLatest,
+    readPublished,
     runUtils,
     shutdown,
     storage,

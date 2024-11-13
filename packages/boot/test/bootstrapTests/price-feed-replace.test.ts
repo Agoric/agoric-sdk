@@ -63,20 +63,20 @@ test.serial('setupVaults; run updatePriceFeeds proposals', async t => {
     refreshAgoricNamesRemotes,
     setupVaults,
     governanceDriver: gd,
-    readLatest,
+    readPublished,
   } = t.context;
 
   await setupVaults(collateralBrandKey, managerIndex, setup);
 
   const instancePre = agoricNamesRemotes.instance['ATOM-USD price feed'];
 
-  t.like(readLatest('published.priceFeed.ATOM-USD_price_feed.latestRound'), {
+  t.like(readPublished('priceFeed.ATOM-USD_price_feed.latestRound'), {
     roundId: 1n,
   });
 
   await priceFeedDrivers[collateralBrandKey].setPrice(15.99);
 
-  t.like(readLatest('published.priceFeed.ATOM-USD_price_feed.latestRound'), {
+  t.like(readPublished('priceFeed.ATOM-USD_price_feed.latestRound'), {
     roundId: 2n,
   });
 
@@ -124,7 +124,7 @@ test.serial('setupVaults; run updatePriceFeeds proposals', async t => {
   );
 
   // after the coreEval, the roundId will reset to 1.
-  t.like(readLatest('published.priceFeed.ATOM-USD_price_feed.latestRound'), {
+  t.like(readPublished('priceFeed.ATOM-USD_price_feed.latestRound'), {
     roundId: 1n,
   });
 
@@ -135,51 +135,48 @@ test.serial('setupVaults; run updatePriceFeeds proposals', async t => {
 });
 
 test.serial('1. place bid', async t => {
-  const { placeBids, readLatest } = t.context;
+  const { placeBids, readPublished } = t.context;
   await placeBids(collateralBrandKey, 'agoric1buyer', setup, 0);
 
-  t.like(readLatest('published.wallet.agoric1buyer.current'), {
+  t.like(readPublished('wallet.agoric1buyer.current'), {
     liveOffers: [['ATOM-bid1', { id: 'ATOM-bid1' }]],
   });
 });
 
 test.serial('2. trigger liquidation by changing price', async t => {
-  const { priceFeedDrivers, readLatest } = t.context;
+  const { priceFeedDrivers, readPublished } = t.context;
 
   // the current roundId is still 1. Round 1 is special, and you can't get to
   // round 2 until roundTimeout (10s) has elapsed.
   await priceFeedDrivers[collateralBrandKey].setPrice(9.99);
 
-  t.like(readLatest('published.priceFeed.ATOM-USD_price_feed'), {
+  t.like(readPublished('priceFeed.ATOM-USD_price_feed'), {
     // aka 9.99
     amountIn: { value: 1000000n },
     amountOut: { value: 9990000n },
   });
 
-  t.like(readLatest('published.priceFeed.ATOM-USD_price_feed.latestRound'), {
+  t.like(readPublished('priceFeed.ATOM-USD_price_feed.latestRound'), {
     roundId: 1n,
   });
 
   // check nothing liquidating yet
-  const liveSchedule: ScheduleNotification = readLatest(
-    'published.auction.schedule',
-  );
+  const liveSchedule: ScheduleNotification = readPublished('auction.schedule');
   t.is(liveSchedule.activeStartTime, null);
-  const metricsPath = `published.vaultFactory.managers.manager${managerIndex}.metrics`;
+  const metricsPath =
+    `vaultFactory.managers.manager${managerIndex}.metrics` as const;
 
-  t.like(readLatest(metricsPath), {
+  t.like(readPublished(metricsPath), {
     numActiveVaults: setup.vaults.length,
     numLiquidatingVaults: 0,
   });
 });
 
 test.serial('3. verify liquidation', async t => {
-  const { advanceTimeBy, advanceTimeTo, readLatest } = t.context;
+  const { advanceTimeBy, advanceTimeTo, readPublished } = t.context;
 
-  const liveSchedule: ScheduleNotification = readLatest(
-    'published.auction.schedule',
-  );
-  const metricsPath = `published.vaultFactory.managers.manager${managerIndex}.metrics`;
+  const liveSchedule: ScheduleNotification = readPublished('auction.schedule');
+  const metricsPath = `vaultFactory.managers.manager${managerIndex}.metrics`;
 
   // advance time to start an auction
   console.log(collateralBrandKey, 'step 1 of 10');
@@ -187,7 +184,7 @@ test.serial('3. verify liquidation', async t => {
   await eventLoopIteration(); // let promises to update vstorage settle
 
   // vaultFactory sent collateral for liquidation
-  t.like(readLatest(metricsPath), {
+  t.like(readPublished(metricsPath), {
     numActiveVaults: 0,
     numLiquidatingVaults: setup.vaults.length,
     liquidatingCollateral: {
@@ -199,7 +196,7 @@ test.serial('3. verify liquidation', async t => {
 
   console.log(collateralBrandKey, 'step 2 of 10');
   await advanceTimeBy(3, 'minutes');
-  t.like(readLatest(`published.auction.book${managerIndex}`), {
+  t.like(readPublished(`auction.book${managerIndex}`), {
     collateralAvailable: { value: scale6(setup.auction.start.collateral) },
     startCollateral: { value: scale6(setup.auction.start.collateral) },
     startProceedsGoal: { value: scale6(setup.auction.start.debt) },
@@ -216,7 +213,7 @@ test.serial('3. verify liquidation', async t => {
 
   console.log(collateralBrandKey, 'step 6 of 10');
   await advanceTimeBy(3, 'minutes');
-  t.like(readLatest(`published.auction.book${managerIndex}`), {
+  t.like(readPublished(`auction.book${managerIndex}`), {
     // 15_000_000 - ( 20_000_000 / 8.991 )
     collateralAvailable: { value: 12775554n },
   });
@@ -230,7 +227,7 @@ test.serial('3. verify liquidation', async t => {
   console.log(collateralBrandKey, 'step 9 of 10');
   await advanceTimeBy(3, 'minutes');
 
-  t.like(readLatest('published.wallet.agoric1buyer'), {
+  t.like(readPublished('wallet.agoric1buyer'), {
     status: {
       id: `${collateralBrandKey}-bid1`,
       payouts: likePayouts(outcome.bids[0].payouts),

@@ -132,12 +132,13 @@ test.serial('scenario: Flow 2b', async t => {
     check,
     priceFeedDrivers,
     readLatest,
+    readPublished,
     setupVaults,
     placeBids,
   } = t.context;
 
   const managerIndex = 0;
-  const metricPath = `published.vaultFactory.managers.manager${managerIndex}.metrics`;
+  const publishedMetrics = `vaultFactory.managers.manager${managerIndex}.metrics`;
 
   await setupVaults(collateralBrandKey, managerIndex, setup);
   await placeBids(collateralBrandKey, 'agoric1buyer', setup);
@@ -150,11 +151,9 @@ test.serial('scenario: Flow 2b', async t => {
     await priceFeedDrivers.ATOM.setPrice(setup.price.trigger);
 
     // check nothing liquidating yet
-    const liveSchedule: ScheduleNotification = readLatest(
-      'published.auction.schedule',
-    );
+    const liveSchedule = readPublished('auction.schedule');
     t.is(liveSchedule.activeStartTime, null);
-    t.like(readLatest(metricPath), {
+    t.like(readPublished(publishedMetrics), {
       numActiveVaults: setup.vaults.length,
       numLiquidatingVaults: 0,
     });
@@ -162,7 +161,7 @@ test.serial('scenario: Flow 2b', async t => {
     // advance time to start an auction
     console.log('step 0 of 10');
     await advanceTimeTo(NonNullish(liveSchedule.nextDescendingStepTime));
-    t.like(readLatest(metricPath), {
+    t.like(readPublished(publishedMetrics), {
       numActiveVaults: 0,
       numLiquidatingVaults: setup.vaults.length,
       liquidatingCollateral: {
@@ -173,7 +172,7 @@ test.serial('scenario: Flow 2b', async t => {
 
     console.log('step 1 of 10');
     await advanceTimeBy(3, 'minutes');
-    t.like(readLatest(`published.auction.book${managerIndex}`), {
+    t.like(readPublished(`auction.book${managerIndex}`), {
       collateralAvailable: { value: scale6(setup.auction.start.collateral) },
       startCollateral: { value: scale6(setup.auction.start.collateral) },
       startProceedsGoal: { value: scale6(setup.auction.start.debt) },
@@ -190,7 +189,7 @@ test.serial('scenario: Flow 2b', async t => {
 
     console.log('step 5 of 10');
     await advanceTimeBy(3, 'minutes');
-    t.like(readLatest(`published.auction.book${managerIndex}`), {
+    t.like(readPublished(`auction.book${managerIndex}`), {
       collateralAvailable: { value: scale6(45) },
     });
 
@@ -237,14 +236,14 @@ test.serial('scenario: Flow 2b', async t => {
   }
 
   // check reserve balances
-  t.like(readLatest('published.reserve.metrics'), {
+  t.like(readPublished('reserve.metrics'), {
     allocations: {
       ATOM: { value: scale6(outcome.reserve.allocations.ATOM) },
     },
     shortfallBalance: { value: scale6(outcome.reserve.shortfall) },
   });
 
-  t.like(readLatest(metricPath), {
+  t.like(readPublished(publishedMetrics), {
     // reconstituted
     numActiveVaults: 2,
     numLiquidationsCompleted: 1,

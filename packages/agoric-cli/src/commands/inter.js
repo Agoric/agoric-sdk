@@ -281,14 +281,12 @@ inter auction status
          * }}
          */ opts,
       ) => {
-        const { agoricNames, readLatestHead } = await tryMakeUtils();
+        const { agoricNames, readPublished } = await tryMakeUtils();
 
-        /** @type { [ScheduleNotification, BookDataNotification, *] } */
-        // @ts-expect-error dynamic cast
         const [schedule, book, { current: params }] = await Promise.all([
-          readLatestHead(`published.auction.schedule`),
-          readLatestHead(`published.auction.book${opts.book}`),
-          readLatestHead(`published.auction.governance`),
+          readPublished('auction.schedule'),
+          readPublished(`auction.book${opts.book}`),
+          readPublished('auction.governance'),
         ]);
 
         const fmt = makeFormatters(Object.values(agoricNames.vbankAsset));
@@ -493,9 +491,9 @@ inter auction status
           return;
         }
 
-        const { networkConfig, readLatestHead } = await tryMakeUtils();
+        const { networkConfig, readPublished } = await tryMakeUtils();
 
-        const current = await getCurrent(from, { readLatestHead });
+        const current = await getCurrent(from, { readPublished });
         const liveIds = current.liveOffers.map(([i, _s]) => i);
         if (!liveIds.includes(id)) {
           // InvalidArgumentError is a class constructor, and so
@@ -520,7 +518,7 @@ inter auction status
         show({ timestamp, height, offerId: id, txhash });
 
         const checkGone = async blockInfo => {
-          const pollResult = await getCurrent(from, { readLatestHead });
+          const pollResult = await getCurrent(from, { readPublished });
           const found = pollResult.liveOffers.find(([i, _]) => i === id);
           if (found) throw Error('retry');
           return blockInfo;
@@ -562,11 +560,11 @@ $ inter bid list --from my-acct
        * }} opts
        */
       async opts => {
-        const { agoricNames, readLatestHead, storedWalletState } =
+        const { agoricNames, readPublished, storedWalletState } =
           await tryMakeUtils();
 
         const [current, state] = await Promise.all([
-          getCurrent(opts.from, { readLatestHead }),
+          getCurrent(opts.from, { readPublished }),
           storedWalletState(opts.from),
         ]);
         const entries = opts.all

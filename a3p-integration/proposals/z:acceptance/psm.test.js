@@ -33,6 +33,7 @@ import {
   initializeNewUser,
   maxMintBelowLimit,
   psmSwap,
+  sendOfferAgd,
 } from './test-lib/psm-lib.js';
 import { getBalances } from './test-lib/utils.js';
 
@@ -128,7 +129,7 @@ test.serial('initialize new user', async t => {
   t.pass();
 });
 
-test.serial('swap into IST', async t => {
+test.serial('swap into IST using agd with default gas', async t => {
   const {
     newUser: { name },
     anchor,
@@ -161,7 +162,7 @@ test.serial('swap into IST', async t => {
       '--feePct',
       wantMintedFeeVal,
     ],
-    psmSwapIo,
+    { ...psmSwapIo, sendOffer: sendOfferAgd },
   );
 
   await checkSwapSucceeded(t, metricsBefore, balancesBefore, {

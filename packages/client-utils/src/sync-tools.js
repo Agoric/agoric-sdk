@@ -16,6 +16,7 @@
  * @typedef {object} RetryOptions
  * @property {number} [maxRetries]
  * @property {number} [retryIntervalMs]
+ * @property {boolean} [reusePromise]
  *
  * @typedef {RetryOptions & {errorMessage: string}} WaitUntilOptions
  *
@@ -48,19 +49,51 @@ export const retryUntilCondition = async (
   operation,
   condition,
   message,
-  { maxRetries = 6, retryIntervalMs = 3500, log = console.log, setTimeout },
+  {
+    maxRetries = 6,
+    retryIntervalMs = 3500,
+    reusePromise = false,
+    // XXX mixes ocaps with configuration options
+    log = console.log,
+    setTimeout,
+  },
 ) => {
-  console.log({ maxRetries, retryIntervalMs, message });
-  let retries = 0;
+  console.log({ maxRetries, retryIntervalMs, reusePromise, message });
 
   await null; // separate sync prologue
 
+  const timedOut = Symbol('timed out');
+  let retries = 0;
+  /** @type {Promise | undefined } */
+  let resultP;
   while (retries < maxRetries) {
     try {
-      const result = await operation();
-      log('RESULT', result);
-      if (condition(result)) {
-        return result;
+      if (!reusePromise || !resultP) {
+        resultP = operation();
+        const makeCleanup = ref => {
+          const cleanup = () => {
+            if (resultP === ref) {
+              resultP = undefined;
+            }
+          };
+          return cleanup;
+        };
+        // eslint-disable-next-line @typescript-eslint/no-floating-promises
+        resultP.finally(makeCleanup(resultP));
+      }
+      const result = await Promise.race([
+        resultP,
+        // Overload the retryIntervalMs to apply both *to* and *between* iterations
+        sleep(retryIntervalMs, { log() {}, setTimeout }).then(() => timedOut),
+      ]);
+      if (result === timedOut) {
+        log(`Attempt ${retries + 1} timed out`);
+        if (!reusePromise) resultP = undefined;
+      } else {
+        log('RESULT', result);
+        if (condition(result)) {
+          return result;
+        }
       }
     } catch (error) {
       if (error instanceof Error) {
@@ -82,13 +115,14 @@ export const retryUntilCondition = async (
 
 /**
  * @param {WaitUntilOptions} options
+ * @returns {WaitUntilOptions & {log?: typeof console.log}}
  */
 const overrideDefaultOptions = options => {
   const defaultValues = {
     maxRetries: 6,
     retryIntervalMs: 3500,
-    log: console.log,
     errorMessage: 'Error',
+    log: console.log,
   };
 
   return { ...defaultValues, ...options };
@@ -118,14 +152,13 @@ export const waitUntilContractDeployed = (
 ) => {
   const { follow, setTimeout } = ambientAuthority;
   const getInstances = makeGetInstances(follow);
-  const { maxRetries, retryIntervalMs, errorMessage, log } =
-    overrideDefaultOptions(options);
+  const { errorMessage, ...resolvedOptions } = overrideDefaultOptions(options);
 
   return retryUntilCondition(
     getInstances,
     instanceObject => Object.keys(instanceObject).includes(contractName),
     errorMessage,
-    { maxRetries, retryIntervalMs, log, setTimeout },
+    { setTimeout, ...resolvedOptions },
   );
 };
 
@@ -156,14 +189,13 @@ const checkCosmosBalance = (balances, threshold) => {
 export const waitUntilAccountFunded = (destAcct, io, threshold, options) => {
   const { query, setTimeout } = io;
   const queryCosmosBalance = makeQueryCosmosBalance(query);
-  const { maxRetries, retryIntervalMs, errorMessage, log } =
-    overrideDefaultOptions(options);
+  const { errorMessage, ...resolvedOptions } = overrideDefaultOptions(options);
 
   return retryUntilCondition(
     async () => queryCosmosBalance(destAcct),
     balances => checkCosmosBalance(balances, threshold),
     errorMessage,
-    { maxRetries, retryIntervalMs, log, setTimeout },
+    { setTimeout, ...resolvedOptions },
   );
 };
 
@@ -211,14 +243,13 @@ export const waitUntilOfferResult = (
 ) => {
   const { follow, setTimeout } = io;
   const queryWallet = makeQueryWallet(follow);
-  const { maxRetries, retryIntervalMs, errorMessage, log } =
-    overrideDefaultOptions(options);
+  const { errorMessage, ...resolvedOptions } = overrideDefaultOptions(options);
 
   return retryUntilCondition(
     async () => queryWallet(addr),
     status => checkOfferState(status, waitForPayouts, offerId),
     errorMessage,
-    { maxRetries, retryIntervalMs, log, setTimeout },
+    { reusePromise: true, setTimeout, ...resolvedOptions },
   );
 };
 
@@ -247,13 +278,12 @@ const checkForInvitation = update => {
 export const waitUntilInvitationReceived = (addr, io, options) => {
   const { follow, setTimeout } = io;
   const queryWallet = makeQueryWallet(follow);
-  const { maxRetries, retryIntervalMs, errorMessage, log } =
-    overrideDefaultOptions(options);
+  const { errorMessage, ...resolvedOptions } = overrideDefaultOptions(options);
 
   return retryUntilCondition(
     async () => queryWallet(addr),
     checkForInvitation,
     errorMessage,
-    { maxRetries, retryIntervalMs, log, setTimeout },
+    { reusePromise: true, setTimeout, ...resolvedOptions },
   );
 };
