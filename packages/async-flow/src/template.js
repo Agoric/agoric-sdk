@@ -2,7 +2,7 @@
  * @import {HostCall} from './types.js';
  */
 
-const { assign } = Object;
+const { assign, defineProperty } = Object;
 
 /** Doesn't need to be exhaustive, just a little prettier than JSON-quoting. */
 const BEST_GUESS_ID_REGEX = /^[a-zA-Z_$][a-zA-Z0-9_$]*$/;
@@ -11,10 +11,21 @@ const BEST_GUESS_ID_REGEX = /^[a-zA-Z_$][a-zA-Z0-9_$]*$/;
  * Return an object that mimics a template strings array.
  *
  * @param {string[]} strings
+ * @param {string[]} [raw] optional raw strings, defaults to `strings`
  * @returns {TemplateStringsArray}
  */
-export const makeTemplateStringsArray = strings =>
-  harden(assign([...strings], { raw: strings }));
+export const makeTemplateStringsArray = (strings, raw = strings) => {
+  // Get the shape of the result object to match TemplateStringsArray.
+  const result = assign([...strings], { raw });
+
+  // Make the raw property non-enumerable.
+  defineProperty(result, 'raw', {
+    value: raw,
+    enumerable: false, // not needed, but good to be explicit
+  });
+
+  return harden(result);
+};
 harden(makeTemplateStringsArray);
 
 /**
@@ -85,7 +96,7 @@ export const inlineTemplateArgs = (tmpl, ...args) => {
 
     // Could be a template and argument list.
     const argLength = Array.isArray(arg) ? arg.length : 0;
-    /** @type {string[] & { raw: string[] } | undefined} */
+    /** @type {TemplateStringsArray | undefined} */
     const t = argLength && arg[0] ? arg[0] : undefined;
     if (
       !Array.isArray(t) ||

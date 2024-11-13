@@ -1,5 +1,5 @@
 /* eslint-disable no-use-before-define */
-import type { Passable } from '@endo/pass-style';
+import type { Passable, PassableCap } from '@endo/pass-style';
 import type { Vow, VowTools } from '@agoric/vow';
 import type { LogStore } from './log-store.js';
 import type { Bijection } from './bijection.js';
@@ -23,9 +23,24 @@ export type Guest<T extends unknown = any> = T;
 export type Host<T extends Passable = Passable> = T;
 
 export type HostCall = {
+  /**
+   * The target object being called.
+   */
   target: any;
+  /**
+   * The method property being called.  Undefined for the function name.
+   */
   method: PropertyKey | undefined;
+  /**
+   * Truthy if the call was an eventual method or function.
+   */
   eventual?: boolean;
+  /**
+   * Arguments are typically omitted because they are not needed for the replay
+   * membrane to provide good errors. However, this property is included here for
+   * completeness.
+   */
+  args?: Host<Passable[]>;
 };
 
 /**
