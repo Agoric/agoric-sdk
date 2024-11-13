@@ -133,7 +133,6 @@ export function makeSwingStoreExporter(dirPath, options = {}) {
    * section
    */
   function getHostKV(key) {
-    typeof key === 'string' || Fail`key must be a string`;
     getKeyType(key) === 'host' || Fail`getHostKV requires host keys`;
     // @ts-expect-error unknown
     return sqlKVGet.get(key);
