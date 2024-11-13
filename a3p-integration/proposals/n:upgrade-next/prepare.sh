@@ -7,3 +7,5 @@ set -uxeo pipefail
 # actions are executed in the previous chain software, and the effects are
 # persisted so they can be used in the steps after the upgrade is complete,
 # such as in the "use" or "test" steps, or further proposal layers.
+
+node ./addGov4
