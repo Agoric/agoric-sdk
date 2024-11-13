@@ -44,7 +44,7 @@ test('Transfer registers the noble forwarding account if it does not exist', asy
   });
   const amount = '150';
   const destination = 'dydx1234';
-  const nobleFwdAccountQuery = `${nobleApi}/noble/forwarding/v1/address/${nobleToAgoricChannel}/${agoricSettlementAccount}+${destination}`;
+  const nobleFwdAccountQuery = `${nobleApi}/noble/forwarding/v1/address/${nobleToAgoricChannel}/${agoricSettlementAccount}?EUD=${destination}`;
   const fetchMock = makeFetchMock({
     [nobleFwdAccountQuery]: { address: 'noble123456', exists: false },
   });
@@ -64,29 +64,7 @@ test('Transfer registers the noble forwarding account if it does not exist', asy
 
   t.is(vstorageMock.getQueryCounts()[settlementAccountVstoragePath], 1);
   t.is(fetchMock.getQueryCounts()[nobleFwdAccountQuery], 1);
-  t.deepEqual(signerMock.getSigned(), [
-    nobleSignerAddress,
-    [
-      {
-        typeUrl: '/noble.forwarding.v1.MsgRegisterAccount',
-        value: {
-          channel: nobleToAgoricChannel,
-          recipient: `${agoricSettlementAccount}+${destination}`,
-          signer: nobleSignerAddress,
-        },
-      },
-    ],
-    {
-      amount: [
-        {
-          amount: '20000',
-          denom: 'uusdc',
-        },
-      ],
-      gas: '200000',
-    },
-    'Register Account Transaction',
-  ]);
+  t.snapshot(signerMock.getSigned());
 });
 
 const makeMockEthProvider = () => {
@@ -136,7 +114,7 @@ test('Transfer signs and broadcasts the depositForBurn message on Ethereum', asy
   });
   const amount = '150';
   const destination = 'dydx1234';
-  const nobleFwdAccountQuery = `${nobleApi}/noble/forwarding/v1/address/${nobleToAgoricChannel}/${agoricSettlementAccount}+${destination}`;
+  const nobleFwdAccountQuery = `${nobleApi}/noble/forwarding/v1/address/${nobleToAgoricChannel}/${agoricSettlementAccount}?EUD=${destination}`;
   const fetchMock = makeFetchMock({
     [nobleFwdAccountQuery]: {
       address: 'noble14lwerrcfzkzrv626w49pkzgna4dtga8c5x479h',

@@ -32,7 +32,7 @@ const transfer = async (
       { chainName: 'agoric', rpcAddrs: [config.agoricRpc] },
     );
     const agoricAddr = await queryFastUSDCLocalChainAccount(vstorage, out);
-    const appendedAddr = `${agoricAddr}+${destination}`;
+    const appendedAddr = `${agoricAddr}?EUD=${destination}`;
     out.log(`forwarding destination ${appendedAddr}`);
 
     const { exists, address } = await queryForwardingAccount(
