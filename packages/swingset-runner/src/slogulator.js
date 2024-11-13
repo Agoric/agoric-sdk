@@ -5,8 +5,6 @@ import yargs from 'yargs';
 
 import { Fail } from '@endo/errors';
 
-/* eslint-disable no-use-before-define */
-
 function usage() {
   console.error('usage message goes here');
 }

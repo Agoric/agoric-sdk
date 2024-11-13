@@ -1,4 +1,3 @@
-/* eslint-disable no-use-before-define */
 import { Nat, isNat } from '@endo/nat';
 import { assert, Fail } from '@endo/errors';
 import {
