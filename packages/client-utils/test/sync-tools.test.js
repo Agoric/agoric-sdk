@@ -1,7 +1,7 @@
 /* eslint-env node */
 // @ts-check
 import test from 'ava';
-import { makeMarshal, Far } from '@endo/marshal';
+import { Far } from '@endo/marshal';
 import {
   waitUntilAccountFunded,
   waitUntilContractDeployed,
@@ -15,43 +15,23 @@ import {
 const retryIntervalMs = 10;
 const DEFAULT_TIMEOUT = 30;
 
-const makeSimpleMarshaller = () => {
-  const vals = [];
-  const fromVal = val => {
-    vals.push(val);
-    return vals.length - 1;
-  };
-  const toVal = slot => vals[slot];
-  return makeMarshal(fromVal, toVal, {
-    serializeBodyFormat: 'smallcaps',
-    marshalSaveError: err => {
-      throw err;
-    },
-  });
-};
-harden(makeSimpleMarshaller);
-
-const makeFakeFollow = () => {
-  const marshaller = makeSimpleMarshaller();
+const makeFakeVstorageKit = () => {
   let value;
 
   const setValue = newValue => (value = newValue);
+  // TODO remove this when we switch all sync-tools to use client-utils's vstorageKit
   const follow = () => Promise.resolve(value);
   /**
-   *
-   * @param {any} _
    * @param {string} path Assumes the path will be something like 'published.auction.book0'
    * where value = { book0: {...} }
    */
-  const followByPath = (_, path) => {
-    const propName = path.split('.').at(-1);
-    return Promise.resolve(
-      // @ts-expect-error path will be a sequence of strings joined by "."
-      JSON.stringify(marshaller.toCapData(value[propName])),
-    );
+  const readLatestHead = path => {
+    const key = path.split('.').at(-1);
+    // @ts-expect-error path will be a string joined by "."
+    return Promise.resolve(value[key]);
   };
 
-  return { setValue, follow, followByPath, marshaller };
+  return { setValue, follow, readLatestHead };
 };
 
 const makeFakeBalanceQuery = () => {
@@ -79,7 +59,7 @@ const makeFakeBalanceQuery = () => {
 };
 
 test.serial('wait until contract is deployed', async t => {
-  const { setValue, follow } = makeFakeFollow();
+  const { setValue, follow } = makeFakeVstorageKit();
   setValue([['arbitrary', true]]);
   const waitP = waitUntilContractDeployed(
     'name',
@@ -179,7 +159,7 @@ test.serial('wait until account funded, insufficient balance', async t => {
 test.serial(
   'wait until offer result, balance update - should throw',
   async t => {
-    const { setValue, follow } = makeFakeFollow();
+    const { setValue, follow } = makeFakeVstorageKit();
     setValue({ status: {}, updated: 'balance' });
 
     const waitP = waitUntilOfferResult(
@@ -199,7 +179,7 @@ test.serial(
 );
 
 test.serial('wait until offer result, wrong id - should throw', async t => {
-  const { setValue, follow } = makeFakeFollow();
+  const { setValue, follow } = makeFakeVstorageKit();
   setValue({ status: { id: 'your-offer' }, updated: 'offerStatus' });
 
   const waitP = waitUntilOfferResult(
@@ -218,7 +198,7 @@ test.serial('wait until offer result, wrong id - should throw', async t => {
 });
 
 test.serial('wait until offer result, no "status" - should throw', async t => {
-  const { setValue, follow } = makeFakeFollow();
+  const { setValue, follow } = makeFakeVstorageKit();
   setValue({ updated: 'offerStatus' });
 
   const waitP = waitUntilOfferResult(
@@ -239,7 +219,7 @@ test.serial('wait until offer result, no "status" - should throw', async t => {
 test.serial(
   'wait until offer result, numWantsSatisfied not equals to 1 - should throw',
   async t => {
-    const { setValue, follow } = makeFakeFollow();
+    const { setValue, follow } = makeFakeVstorageKit();
     setValue({
       status: { id: 'my-offer', numWantsSatisfied: 0 },
       updated: 'offerStatus',
@@ -262,7 +242,7 @@ test.serial(
 );
 
 test.serial('wait until offer result, do not wait for "payouts"', async t => {
-  const { setValue, follow } = makeFakeFollow();
+  const { setValue, follow } = makeFakeVstorageKit();
   setValue({ status: { id: 'my-offer' }, updated: 'offerStatus' });
 
   const waitP = waitUntilOfferResult(
@@ -298,7 +278,7 @@ test.serial('wait until offer result, do not wait for "payouts"', async t => {
 });
 
 test.serial('wait until offer result, wait for "payouts"', async t => {
-  const { setValue, follow } = makeFakeFollow();
+  const { setValue, follow } = makeFakeVstorageKit();
   setValue({ status: { id: 'my-offer' }, updated: 'offerStatus' });
 
   const waitP = waitUntilOfferResult(
@@ -349,7 +329,7 @@ test.serial('wait until offer result, wait for "payouts"', async t => {
 test.serial(
   'wait until invitation recevied, wrong "updated" value',
   async t => {
-    const { setValue, follow } = makeFakeFollow();
+    const { setValue, follow } = makeFakeVstorageKit();
     setValue({ updated: 'offerStatus' });
 
     const waitP = waitUntilInvitationReceived(
@@ -369,7 +349,7 @@ test.serial(
 test.serial(
   'wait until invitation recevied, falty "currentAmount" object',
   async t => {
-    const { setValue, follow } = makeFakeFollow();
+    const { setValue, follow } = makeFakeVstorageKit();
     setValue({ updated: 'balance' });
 
     const waitP = waitUntilInvitationReceived(
@@ -394,7 +374,7 @@ test.serial(
 test.serial(
   'wait until invitation recevied, brand string do not match',
   async t => {
-    const { setValue, follow } = makeFakeFollow();
+    const { setValue, follow } = makeFakeVstorageKit();
     setValue({ updated: 'balance', currentAmount: { brand: 'foo bar foo' } });
 
     const waitP = waitUntilInvitationReceived(
@@ -412,7 +392,7 @@ test.serial(
 );
 
 test.serial('wait until invitation recevied', async t => {
-  const { setValue, follow } = makeFakeFollow();
+  const { setValue, follow } = makeFakeVstorageKit();
   setValue({});
 
   const waitP = waitUntilInvitationReceived(
@@ -438,7 +418,7 @@ test.serial('wait until invitation recevied', async t => {
 });
 
 test.serial('wait until offer exited', async t => {
-  const { setValue, follow } = makeFakeFollow();
+  const { setValue, follow } = makeFakeVstorageKit();
   setValue({});
 
   const waitP = waitUntilOfferExited(
@@ -455,11 +435,11 @@ test.serial('wait until offer exited', async t => {
   await t.throwsAsync(waitP);
 });
 
-test.serial('wait election result: question handle is adhered', async t => {
+test.serial('wait election result: question handle is respected', async t => {
   const oldQuestionHandle = Far('Question 1', {});
   const newQuestionHandle = Far('Question 2', {});
 
-  const { setValue, followByPath, marshaller } = makeFakeFollow();
+  const { setValue, readLatestHead } = makeFakeVstorageKit();
   const initState = harden({
     latestOutcome: { outcome: 'win', question: oldQuestionHandle },
     latestQuestion: {
@@ -473,8 +453,8 @@ test.serial('wait election result: question handle is adhered', async t => {
     'dummyPath',
     { outcome: 'win', deadline: 2n },
     {
-      follow: followByPath,
-      marshaller,
+      // @ts-expect-error casting
+      vstorage: { readLatestHead },
       log: console.log,
       setTimeout,
     },
@@ -492,8 +472,8 @@ test.serial('wait election result: question handle is adhered', async t => {
     'dummyPath',
     { outcome: 'win', deadline: 2n },
     {
-      follow: followByPath,
-      marshaller,
+      // @ts-expect-error casting
+      vstorage: { readLatestHead },
       log: console.log,
       setTimeout,
     },
@@ -514,10 +494,10 @@ test.serial('wait election result: question handle is adhered', async t => {
   await t.notThrowsAsync(waitHappyP);
 });
 
-test.serial('wait election result: deadline is adhered', async t => {
+test.serial('wait election result: deadline is respected', async t => {
   const questionHandle = Far('Question', {});
 
-  const { setValue, followByPath, marshaller } = makeFakeFollow();
+  const { setValue, readLatestHead } = makeFakeVstorageKit();
   const initState = harden({
     latestOutcome: { outcome: 'win', question: questionHandle },
     latestQuestion: {
@@ -531,8 +511,8 @@ test.serial('wait election result: deadline is adhered', async t => {
     'dummyPath',
     { outcome: 'win', deadline: 5n },
     {
-      follow: followByPath,
-      marshaller,
+      // @ts-expect-error casting
+      vstorage: { readLatestHead },
       log: console.log,
       setTimeout,
     },
@@ -550,8 +530,8 @@ test.serial('wait election result: deadline is adhered', async t => {
     'dummyPath',
     { outcome: 'win', deadline: 5n },
     {
-      follow: followByPath,
-      marshaller,
+      // @ts-expect-error casting
+      vstorage: { readLatestHead },
       log: console.log,
       setTimeout,
     },
@@ -575,10 +555,10 @@ test.serial('wait election result: deadline is adhered', async t => {
   await t.notThrowsAsync(waitHappyP);
 });
 
-test.serial('wait election result: outcome is adhered', async t => {
+test.serial('wait election result: outcome is respected', async t => {
   const questionHandle = Far('Question', {});
 
-  const { setValue, followByPath, marshaller } = makeFakeFollow();
+  const { setValue, readLatestHead } = makeFakeVstorageKit();
   const initState = harden({
     latestOutcome: { outcome: 'lose', question: questionHandle },
     latestQuestion: {
@@ -592,8 +572,8 @@ test.serial('wait election result: outcome is adhered', async t => {
     'dummyPath',
     { outcome: 'win', deadline: 5n },
     {
-      follow: followByPath,
-      marshaller,
+      // @ts-expect-error casting
+      vstorage: { readLatestHead },
       log: console.log,
       setTimeout,
     },
@@ -611,8 +591,8 @@ test.serial('wait election result: outcome is adhered', async t => {
     'dummyPath',
     { outcome: 'win', deadline: 5n },
     {
-      follow: followByPath,
-      marshaller,
+      // @ts-expect-error casting
+      vstorage: { readLatestHead },
       log: console.log,
       setTimeout,
     },

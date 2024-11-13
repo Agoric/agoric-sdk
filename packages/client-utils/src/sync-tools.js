@@ -326,7 +326,8 @@ export const waitUntilOfferExited = async (addr, offerId, io, options) => {
   );
 };
 
-/// ////////// Make sure an election held by a given committee (see @agoric/governance) turned out as expected /////////////
+/// ////////// Make sure an election held by a given committee //////////
+/// ////////// (see @agoric/governance) turned out as expected //////////
 
 /**
  * @typedef {{
@@ -343,20 +344,19 @@ export const waitUntilOfferExited = async (addr, offerId, io, options) => {
 
 /**
  * @param {string} basePath
- * @param {{follow: (...params: string[]) => Promise<object>; marshaller: import("@endo/marshal").Marshal<any>}} io
+ * @param {import('./vstorage-kit').VstorageKit} vstorage
  * @returns {Promise<ElectionResult>}
  */
-export const fetchLatestEcQuestion = async (basePath, io) => {
-  const { follow, marshaller } = io;
-  const pathOutcome = `:${basePath}.latestOutcome`;
-  const pathQuestion = `:${basePath}.latestQuestion`;
+const fetchLatestEcQuestion = async (basePath, vstorage) => {
+  const pathOutcome = `${basePath}.latestOutcome`;
+  const pathQuestion = `${basePath}.latestQuestion`;
 
   const [latestOutcome, latestQuestion] = await Promise.all([
-    follow('-lF', pathOutcome, '-o', 'text').then(outcomeRaw =>
-      marshaller.fromCapData(JSON.parse(outcomeRaw)),
+    /** @type {Promise<ElectionResult["latestOutcome"]>} */ (
+      vstorage.readLatestHead(pathOutcome)
     ),
-    follow('-lF', pathQuestion, '-o', 'text').then(questionRaw =>
-      marshaller.fromCapData(JSON.parse(questionRaw)),
+    /** @type {Promise<ElectionResult["latestQuestion"]>} */ (
+      vstorage.readLatestHead(pathQuestion)
     ),
   ]);
 
@@ -397,8 +397,7 @@ const checkCommitteeElectionResult = (electionResult, expectedResult) => {
  *   deadline: bigint;
  * }} expectedResult
  * @param {{
- *   follow: (...params: string[]) => Promise<object>;
- *   marshaller: import("@endo/marshal").Marshal<any>,
+ *   vstorage: import('./vstorage-kit').VstorageKit;
  *   log: typeof console.log,
  *   setTimeout: typeof global.setTimeout
  * }} io
@@ -410,13 +409,13 @@ export const waitUntilElectionResult = (
   io,
   options,
 ) => {
-  const { follow, marshaller, log, setTimeout } = io;
+  const { vstorage, log, setTimeout } = io;
 
   const { maxRetries, retryIntervalMs, errorMessage } =
     overrideDefaultOptions(options);
 
   return retryUntilCondition(
-    () => fetchLatestEcQuestion(committeePathBase, { follow, marshaller }),
+    () => fetchLatestEcQuestion(committeePathBase, vstorage),
     electionResult =>
       checkCommitteeElectionResult(electionResult, expectedResult),
     errorMessage,
