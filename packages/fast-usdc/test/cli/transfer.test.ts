@@ -15,56 +15,13 @@ test('Errors if config missing', async t => {
   const file = mockFile(path);
 
   // @ts-expect-error mocking partial Console
-  await transfer.transfer(file, '1500000', 'noble1234', out);
+  await t.throwsAsync(transfer.transfer(file, '1500000', 'noble1234', out));
 
   t.is(
     out.getErrOut(),
     `No config found at ${path}. Use "config init" to create one, or "--home" to specify config location.\n`,
   );
   t.is(out.getLogOut(), '');
-});
-
-test('Transfer registers the noble forwarding account if it does not exist', async t => {
-  const path = 'config/dir/.fast-usdc/config.json';
-  const nobleApi = 'http://api.noble.test';
-  const nobleToAgoricChannel = 'channel-test-7';
-  const config = {
-    agoricRpc: 'http://rpc.agoric.test',
-    nobleApi,
-    nobleToAgoricChannel,
-    nobleSeed: 'test noble seed',
-    ethRpc: 'http://rpc.eth.test',
-  };
-  const out = mockOut();
-  const file = mockFile(path, JSON.stringify(config));
-  const agoricSettlementAccount = 'agoric123456';
-  const settlementAccountVstoragePath = 'published.fastUSDC.settlementAccount';
-  const vstorageMock = makeVstorageMock({
-    [settlementAccountVstoragePath]: agoricSettlementAccount,
-  });
-  const amount = '150';
-  const destination = 'dydx1234';
-  const nobleFwdAccountQuery = `${nobleApi}/noble/forwarding/v1/address/${nobleToAgoricChannel}/${agoricSettlementAccount}?EUD=${destination}`;
-  const fetchMock = makeFetchMock({
-    [nobleFwdAccountQuery]: { address: 'noble123456', exists: false },
-  });
-  const nobleSignerAddress = 'noble09876';
-  const signerMock = makeMockSigner();
-
-  await transfer.transfer(
-    file,
-    amount,
-    destination,
-    // @ts-expect-error mocking console
-    out,
-    fetchMock.fetch,
-    vstorageMock.vstorage,
-    { signer: signerMock.signer, address: nobleSignerAddress },
-  );
-
-  t.is(vstorageMock.getQueryCounts()[settlementAccountVstoragePath], 1);
-  t.is(fetchMock.getQueryCounts()[nobleFwdAccountQuery], 1);
-  t.snapshot(signerMock.getSigned());
 });
 
 const makeMockEthProvider = () => {
@@ -90,6 +47,57 @@ const makeMockEthProvider = () => {
 
   return { provider, getTxnArgs: () => txnArgs };
 };
+
+test('Transfer registers the noble forwarding account if it does not exist', async t => {
+  const path = 'config/dir/.fast-usdc/config.json';
+  const nobleApi = 'http://api.noble.test';
+  const nobleToAgoricChannel = 'channel-test-7';
+  const config = {
+    agoricRpc: 'http://rpc.agoric.test',
+    nobleApi,
+    nobleToAgoricChannel,
+    nobleSeed: 'test noble seed',
+    ethRpc: 'http://rpc.eth.test',
+    ethSeed: 'a4b7f431465df5dc1458cd8a9be10c42da8e3729e3ce53f18814f48ae2a98a08',
+    tokenMessengerAddress: '0x9f3B8679c73C2Fef8b59B4f3444d4e156fb70AA5',
+    tokenAddress: '0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238',
+  };
+  const out = mockOut();
+  const file = mockFile(path, JSON.stringify(config));
+  const agoricSettlementAccount = 'agoric123456';
+  const settlementAccountVstoragePath = 'published.fastUSDC.settlementAccount';
+  const vstorageMock = makeVstorageMock({
+    [settlementAccountVstoragePath]: agoricSettlementAccount,
+  });
+  const amount = '150';
+  const destination = 'dydx1234';
+  const nobleFwdAccountQuery = `${nobleApi}/noble/forwarding/v1/address/${nobleToAgoricChannel}/${agoricSettlementAccount}?EUD=${destination}`;
+  const fetchMock = makeFetchMock({
+    [nobleFwdAccountQuery]: {
+      address: 'noble14lwerrcfzkzrv626w49pkzgna4dtga8c5x479h',
+      exists: false,
+    },
+  });
+  const nobleSignerAddress = 'noble09876';
+  const signerMock = makeMockSigner();
+  const mockEthProvider = makeMockEthProvider();
+
+  await transfer.transfer(
+    file,
+    amount,
+    destination,
+    // @ts-expect-error mocking console
+    out,
+    fetchMock.fetch,
+    vstorageMock.vstorage,
+    { signer: signerMock.signer, address: nobleSignerAddress },
+    mockEthProvider.provider,
+  );
+
+  t.is(vstorageMock.getQueryCounts()[settlementAccountVstoragePath], 1);
+  t.is(fetchMock.getQueryCounts()[nobleFwdAccountQuery], 1);
+  t.snapshot(signerMock.getSigned());
+});
 
 test('Transfer signs and broadcasts the depositForBurn message on Ethereum', async t => {
   const path = 'config/dir/.fast-usdc/config.json';

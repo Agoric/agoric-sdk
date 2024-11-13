@@ -22,7 +22,7 @@ test('show shows error if no config file', async t => {
   const file = mockFile(path);
 
   // @ts-expect-error mocking partial Console
-  await config.show(file, out);
+  await t.throwsAsync(config.show(file, out));
 
   t.is(
     out.getErrOut(),
@@ -75,7 +75,7 @@ test('init does not overwrite if config exists and user says no', async t => {
   const newVal = { hello: 'universe!' };
 
   // @ts-expect-error mock partial Console
-  await config.init(file, newVal, out, rl);
+  await t.throwsAsync(config.init(file, newVal, out, rl));
 
   t.is(out.getErrOut(), '');
   t.is(out.getLogOut(), '');
@@ -90,7 +90,7 @@ test('update errors if config does not exist', async t => {
   const newVal = { hello: 'universe!' };
 
   // @ts-expect-error mock partial Console
-  await config.update(file, newVal, out);
+  await t.throwsAsync(config.update(file, newVal, out));
 
   t.is(
     out.getErrOut(),

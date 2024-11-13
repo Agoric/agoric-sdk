@@ -56,11 +56,10 @@ const transfer = async (
         );
         out.log(res);
       } catch (e) {
-        out.error(e);
         out.error(
-          `Error noble registering forwarding account for ${appendedAddr} on channel ${config.nobleToAgoricChannel}`,
+          `Error registering noble forwarding account for ${appendedAddr} on channel ${config.nobleToAgoricChannel}`,
         );
-        return;
+        throw e;
       }
     }
 
@@ -73,7 +72,7 @@ const transfer = async (
       address,
       amount,
       out,
-    ).catch(out.error);
+    );
   };
 
   let config;
@@ -84,7 +83,7 @@ const transfer = async (
     out.error(
       `No config found at ${configFile.path}. Use "config init" to create one, or "--home" to specify config location.`,
     );
-    return;
+    throw new Error();
   }
   await execute(config);
 };

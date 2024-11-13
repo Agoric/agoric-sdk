@@ -41,16 +41,13 @@ const init = async (
       out.log(`Config initialized at ${configFile.path}`);
     } catch (error) {
       out.error(`An unexpected error has occurred: ${error}`);
+      throw error;
     }
   };
 
   await null;
   if (configFile.exists()) {
-    try {
-      await showOverrideWarning();
-    } catch {
-      return;
-    }
+    await showOverrideWarning();
   }
   await writeConfig();
 };
@@ -69,6 +66,7 @@ const update = async (
       out.log(stringified);
     } catch (error) {
       out.error(`An unexpected error has occurred: ${error}`);
+      throw error;
     }
   };
 
@@ -80,7 +78,7 @@ const update = async (
     out.error(
       `No config found at ${configFile.path}. Use "init" to create one, or "--home" to specify config location.`,
     );
-    return;
+    throw new Error();
   }
   await updateConfig({ ...JSON.parse(file), ...options });
 };
@@ -94,7 +92,7 @@ const show = async (/** @type {file} */ configFile, out = console) => {
     out.error(
       `No config found at ${configFile.path}. Use "init" to create one, or "--home" to specify config location.`,
     );
-    return;
+    throw new Error();
   }
   out.log(`Config found at ${configFile.path}:`);
   out.log(contents);
