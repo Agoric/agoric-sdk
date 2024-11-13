@@ -45,7 +45,7 @@ const makeMockEthProvider = () => {
     }),
   };
 
-  return { provider, getTxnArgs: () => txnArgs };
+  return { provider, getTxnArgs: () => harden([...txnArgs]) };
 };
 
 test('Transfer registers the noble forwarding account if it does not exist', async t => {
@@ -149,6 +149,7 @@ test('Transfer signs and broadcasts the depositForBurn message on Ethereum', asy
   t.deepEqual(mockEthProvider.getTxnArgs()[0], [
     '0xf8a4800180941c7d4b196cb0c7b01d743fbc6116a902379c723880b844095ea7b30000000000000000000000009f3b8679c73c2fef8b59b4f3444d4e156fb70aa50000000000000000000000000000000000000000000000000000000008f0d18082011aa0b2d87eeb1cb36243f95662739e2a7bd4bddc2b8afe189ac4848ec71cc314335ba068136695c644f69474e2e30ea7059f9b380fbb1a09beb3580f73d3ea349912ab',
   ]);
+  // Can be decoded using a tool like https://rawtxdecode.in/ and an ABI https://github.com/circlefin/evm-cctp-contracts/blob/e4e6e2fccd6820002eb4a5b4fabdc8ea11031ad9/docs/abis/cctp/TokenMessenger.json
   t.deepEqual(mockEthProvider.getTxnArgs()[1], [
     '0xf8e4800180949f3b8679c73c2fef8b59b4f3444d4e156fb70aa580b8846fd3504e0000000000000000000000000000000000000000000000000000000008f0d1800000000000000000000000000000000000000000000000000000000000000004000000000000000000000000afdd918f09158436695a754a1b0913ed5ab474f80000000000000000000000001c7d4b196cb0c7b01d743fbc6116a902379c723882011aa09fc97790b2ba23fbb974554dbcee00df1a1f50e9fec4fdf370454773604aa477a038a1d86afc2a7afdc78088878a912f1a7c678b10c3120d308f8260a277b135a3',
   ]);

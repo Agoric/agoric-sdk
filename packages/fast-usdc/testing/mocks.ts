@@ -57,7 +57,7 @@ export const makeMockSigner = () => {
   let signedArgs;
   const signer = {
     signAndBroadcast: async (...args) => {
-      signedArgs = args;
+      signedArgs = harden(args);
       return { code: 0, transactionHash: 'SUCCESSHASH' };
     },
   };

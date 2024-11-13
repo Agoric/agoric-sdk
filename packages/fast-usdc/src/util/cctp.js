@@ -27,6 +27,10 @@ const contractAbi = [
 export const makeProvider = (/** @type {string} */ rpc) =>
   new ethers.JsonRpcProvider(rpc);
 
+const USDC_DECIMALS = 6;
+// For CCTP, noble's domain is universally "4"
+const NOBLE_DOMAIN = 4;
+
 export const depositForBurn = async (
   /** @type {ethers.JsonRpcProvider} */ provider,
   /** @type {string} */ ethSeed,
@@ -41,7 +45,7 @@ export const depositForBurn = async (
   const contractAddress = tokenMessengerAddress;
   const token = new ethers.Contract(tokenAddress, tokenAbi, wallet);
   const contract = new ethers.Contract(contractAddress, contractAbi, wallet);
-  const parsedAmount = ethers.parseUnits(amount, 6);
+  const parsedAmount = ethers.parseUnits(amount, USDC_DECIMALS);
   out.log('approving');
   const approveTx = await token.approve(contractAddress, parsedAmount);
   out.log('Transaction sent, waiting for confirmation...');
@@ -53,7 +57,7 @@ export const depositForBurn = async (
   out.log('depositing for burn', parsedAmount, 4, mintRecipient, tokenAddress);
   const tx = await contract.depositForBurn(
     parsedAmount,
-    4, // For CCTP, noble's domain is universally "4"
+    NOBLE_DOMAIN,
     mintRecipient,
     tokenAddress,
   );
