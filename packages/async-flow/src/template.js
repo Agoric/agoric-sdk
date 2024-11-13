@@ -21,7 +21,7 @@ export const makeTemplateStringsArray = (strings, raw = strings) => {
   // Make the raw property non-enumerable.
   defineProperty(result, 'raw', {
     value: raw,
-    enumerable: false, // not needed, but good to be explicit
+    enumerable: false,
   });
 
   return harden(result);

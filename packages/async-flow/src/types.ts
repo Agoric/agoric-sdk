@@ -24,11 +24,11 @@ export type Host<T extends Passable = Passable> = T;
 
 export type HostCall = {
   /**
-   * The target object being called.
+   * The target object or function being called.
    */
   target: any;
   /**
-   * The method property being called.  Undefined for the function name.
+   * The object method property being called.  Undefined for a function target.
    */
   method: PropertyKey | undefined;
   /**
