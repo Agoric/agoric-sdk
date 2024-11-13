@@ -214,7 +214,7 @@ func unreleasedUpgradeHandler(app *GaiaApp, targetUpgrade string) func(sdk.Conte
 				),
 			)
 
-			// CoreProposals for Upgrade 9
+			// CoreProposals for Upgrade 19
 			CoreProposalSteps = append(CoreProposalSteps,
 				vm.CoreProposalStepForModules(
 					"@agoric/builders/scripts/inter-protocol/replace-feeDistributor.js",

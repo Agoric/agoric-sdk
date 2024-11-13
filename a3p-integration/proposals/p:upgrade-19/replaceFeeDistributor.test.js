@@ -3,7 +3,17 @@
 
 /**
  * @file The goal of this file is to test the new feeDistributor replacing the old one.
- * For a test scenario break down, see https://github.com/Agoric/agoric-sdk/issues/10393#issuecomment-2462481737
+ * For a test scenario break down, see https://github.com/Agoric/agoric-sdk/issues/10393#issuecomment-2462481737.
+ *
+ * As an improvement to test design explained above, we want to eliminate a scenario like this;
+ * - calling stop() on the old feeDistributor somehow does not prevent it from collecting fees
+ * - right after we produce a fee, the old feeDistributor's collection interval waker gets triggered
+ * - increase in the reserve's allocation is coming from the old feeDistributor
+ *
+ * Since we know the new feeDistributor's collection interval is much shorter than the old one,
+ * seeing consistent increases of the reserve's fee allocations makes sure the fees are coming from the newInstance.
+ * So we open multiple vaults (see config.vaultCount) and observe reserve's allocations increase in an interval
+ * that matches the new feeDistributor's collectionInterval.
  */
 
 import '@endo/init/legacy.js';
@@ -22,6 +32,19 @@ import {
 } from '@agoric/synthetic-chain';
 import { AmountMath } from '@agoric/ertp';
 import { floorMultiplyBy } from '@agoric/zoe/src/contractSupport/ratio.js';
+
+/**
+ * @typedef {import('@agoric/client-utils').VstorageKit} VstorageKit
+ * @typedef {import('@agoric/ertp').NatAmount} NatAmount
+ * @typedef {{
+ *   allocations: { Fee: NatAmount}
+ *  }} ReserveAllocations
+ * @typedef {{
+ *   current: {
+ *     MintFee: { value: Ratio }
+ *   }
+ * }} ManagerMetricsMintFee
+ */
 
 const config = {
   coreEvalDir: 'replaceFeeDistributor',
@@ -46,14 +69,19 @@ const config = {
 
 const scale6 = mintValue => BigInt(parseInt(mintValue, 10) * 1_000_000);
 
+/**
+ *
+ * @param {VstorageKit} vstorage
+ * @param {NatAmount} feeAmount
+ */
 const produceFeesAndWait = async (vstorage, feeAmount) => {
   const {
     mintValue,
     collateralValue,
     vaultOwner: { address },
   } = config;
-  const metricsBefore = await vstorage.readLatestHead(
-    'published.reserve.metrics',
+  const metricsBefore = /** @type {ReserveAllocations} */ (
+    await vstorage.readLatestHead('published.reserve.metrics')
   );
   // XXX Probably better to not rely on synthetic-chain for opening a vault as per https://github.com/Agoric/agoric-sdk/pull/10396.
   // But to make the switch also requires either copying z:acceptance/test-lib here (which is not wanted) or creating a root level
@@ -87,17 +115,20 @@ function* asyncGenerator(iteration) {
 
 /**
  * @param {number} managerIndex
- * @param vstorage
+ * @param {VstorageKit} vstorage
  * @param {bigint} mintValue
- * @param {(value: bigint, keyword: string) => import('@agoric/ertp').Amount<'nat'>} toAmount
+ * @param {(value: bigint, keyword: string) => NatAmount} toAmount
  */
 const calculateFee = async (managerIndex, vstorage, mintValue, toAmount) => {
   const path = `published.vaultFactory.managers.manager${managerIndex}.governance`;
+
   const {
     current: {
       MintFee: { value: feeRatio },
     },
-  } = await vstorage.readLatestHead(path);
+  } = /** @type {ManagerMetricsMintFee} */ (
+    await vstorage.readLatestHead(path)
+  );
   const feeAmount = floorMultiplyBy(toAmount(mintValue, 'IST'), feeRatio);
   return feeAmount;
 };
@@ -124,7 +155,7 @@ test('replace feeDistributor', async t => {
   const { collectionInterval, vaultCount, coreEvalDir } = config;
 
   await evalBundles(coreEvalDir);
-  // Wait for a whole round to give the new feeDistributor to clear out out standing fees, if any
+  // Wait for a round to give the new feeDistributor time to clear out outstanding fees, if any.
   await sleep(collectionInterval + 5000, { log: console.log, setTimeout });
 
   const feeAmount = await calculateFee(
@@ -134,8 +165,8 @@ test('replace feeDistributor', async t => {
     toAmount,
   );
 
-  for await (const _ of asyncGenerator(vaultCount)) {
-    console.log('----- Starting sequence -----');
+  for await (const i of asyncGenerator(vaultCount)) {
+    console.log('----- Starting sequence -----', i);
     await produceFeesAndWait(vstorage, feeAmount);
   }
   t.pass();
