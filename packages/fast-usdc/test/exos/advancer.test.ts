@@ -8,7 +8,7 @@ import type { Zone } from '@agoric/zone';
 import type { VowTools } from '@agoric/vow';
 import { prepareAdvancer } from '../../src/exos/advancer.js';
 import { prepareStatusManager } from '../../src/exos/status-manager.js';
-import { prepareTransactionFeed } from '../../src/exos/transaction-feed.js';
+import { prepareTransactionFeedKit } from '../../src/exos/transaction-feed.js';
 
 import { commonSetup } from '../supports.js';
 import { MockCctpTxEvidences } from '../fixtures.js';
@@ -43,10 +43,8 @@ test.beforeEach(async t => {
   const statusManager = prepareStatusManager(
     rootZone.subZone('status-manager'),
   );
-  const feed = prepareTransactionFeed(rootZone.subZone('feed'));
   const makeAdvancer = prepareAdvancer(rootZone.subZone('advancer'), {
     chainHub,
-    feed,
     statusManager,
     vowTools,
     log,

@@ -14,23 +14,22 @@ import { addressTools } from '../utils/address.js';
  * @import {Zone} from '@agoric/zone';
  * @import {CctpTxEvidence, LogFn} from '../types.js';
  * @import {StatusManager} from './status-manager.js';
- * @import {TransactionFeed} from './transaction-feed.js';
+ * @import {TransactionFeedKit} from './transaction-feed.js';
  */
 
 /**
  * @param {Zone} zone
  * @param {object} caps
  * @param {ChainHub} caps.chainHub
- * @param {TransactionFeed} caps.feed
  * @param {LogFn} caps.log
  * @param {StatusManager} caps.statusManager
  * @param {VowTools} caps.vowTools
  */
 export const prepareAdvancer = (
   zone,
-  { chainHub, feed, log, statusManager, vowTools: { watch } },
+  { chainHub, log, statusManager, vowTools: { watch } },
 ) => {
-  assertAllDefined({ feed, statusManager, watch });
+  assertAllDefined({ statusManager, watch });
 
   const transferHandler = zone.exo(
     'Fast USDC Advance Transfer Handler',

@@ -1,17 +1,19 @@
 import { BrandShape } from '@agoric/ertp/src/typeGuards.js';
+import { assertAllDefined, makeTracer } from '@agoric/internal';
+import { observeIteration, subscribeEach } from '@agoric/notifier';
 import { withOrchestration } from '@agoric/orchestration';
 import { M } from '@endo/patterns';
-import { assertAllDefined, makeTracer } from '@agoric/internal';
-import { prepareTransactionFeed } from './exos/transaction-feed.js';
-import { prepareSettler } from './exos/settler.js';
 import { prepareAdvancer } from './exos/advancer.js';
+import { prepareSettler } from './exos/settler.js';
 import { prepareStatusManager } from './exos/status-manager.js';
+import { prepareTransactionFeedKit } from './exos/transaction-feed.js';
 
 const trace = makeTracer('FastUsdc');
 
 /**
  * @import {OrchestrationPowers, OrchestrationTools} from '@agoric/orchestration/src/utils/start-helper.js';
  * @import {Zone} from '@agoric/zone';
+ * @import {CctpTxEvidence} from './types.js';
  */
 
 /**
@@ -44,21 +46,58 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
   assert('PoolShares' in terms.brands, 'no PoolShares brand');
 
   const statusManager = prepareStatusManager(zone);
-  const feed = prepareTransactionFeed(zone);
   const makeSettler = prepareSettler(zone, { statusManager });
   const { chainHub, vowTools } = tools;
   const makeAdvancer = prepareAdvancer(zone, {
     chainHub,
-    feed,
     log: trace,
     statusManager,
     vowTools,
   });
-  assertAllDefined({ feed, makeAdvancer, makeSettler, statusManager });
+  const makeFeedKit = prepareTransactionFeedKit(zone);
+  assertAllDefined({ makeFeedKit, makeAdvancer, makeSettler, statusManager });
+  const feedKit = makeFeedKit();
+  const advancer = makeAdvancer(
+    // @ts-expect-error FIXME
+    {},
+  );
+  // Connect evidence stream to advancer
+  void observeIteration(subscribeEach(feedKit.public.getEvidenceStream()), {
+    updateState(evidence) {
+      try {
+        advancer.handleTransactionEvent(evidence);
+      } catch (err) {
+        trace('🚨 Error handling transaction event', err);
+      }
+    },
+  });
 
   const creatorFacet = zone.exo('Fast USDC Creator', undefined, {});
 
-  return harden({ creatorFacet });
+  const publicFacet = zone.exo('Fast USDC Public', undefined, {
+    // XXX to be removed before production
+    /**
+     * NB: Any caller with access to this invitation maker has the ability to
+     * add evidence.
+     *
+     * Provide an API call in the form of an invitation maker, so that the
+     * capability is available in the smart-wallet bridge.
+     *
+     * @param {CctpTxEvidence} evidence
+     */
+    makeTestPushInvitation(evidence) {
+      // TODO(bootstrap integration): force this to throw and confirm that it
+      // shows up in the the smart-wallet UpdateRecord `error` property
+      feedKit.admin.submitEvidence(evidence);
+      return zcf.makeInvitation(async cSeat => {
+        trace('Offer made on noop invitation');
+        cSeat.exit();
+        return 'noop; evidence was pushed in the invitation maker call';
+      }, 'noop invitation');
+    },
+  });
+
+  return harden({ creatorFacet, publicFacet });
 };
 harden(contract);
 
