@@ -101,6 +101,7 @@ export const queryForwardingAccount = async (
     out.error(`Error querying forwarding address from ${query}`);
     throw e;
   }
+  /** @type {{ address: string, exists: boolean }} */
   const { address, exists } = forwardingAddressRes;
   out.log(
     `got forwarding address details: ${JSON.stringify(forwardingAddressRes)}`,
