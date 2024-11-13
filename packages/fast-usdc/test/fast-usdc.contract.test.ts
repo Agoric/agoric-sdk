@@ -16,9 +16,17 @@ import { commonSetup } from './supports.js';
 
 const dirname = path.dirname(new URL(import.meta.url).pathname);
 
-const contractName = 'fast-usdc';
 const contractFile = `${dirname}/../src/fast-usdc.contract.js`;
 type StartFn = typeof import('../src/fast-usdc.contract.js').start;
+
+const getInvitationProperties = async (
+  zoe: ZoeService,
+  invitation: Invitation,
+) => {
+  const invitationIssuer = E(zoe).getInvitationIssuer();
+  const amount = await E(invitationIssuer).getAmountOf(invitation);
+  return amount.value[0];
+};
 
 const startContract = async (
   common: Pick<
@@ -68,6 +76,42 @@ test('start', async t => {
     await E(seat).getOfferResult(),
     'inert; nothing should be expected from this offer',
   );
+});
+
+test('oracle operators have closely-held rights to submit evidence of CCTP transactions', async t => {
+  const common = await commonSetup(t);
+  const { creatorFacet, zoe } = await startContract(common);
+
+  const operatorId = 'operator-1';
+
+  const opInv = await E(creatorFacet).makeOperatorInvitation(operatorId);
+
+  t.like(await getInvitationProperties(zoe, opInv), {
+    description: 'oracle operator invitation',
+  });
+
+  const operatorKit = await E(E(zoe).offer(opInv)).getOfferResult();
+
+  t.deepEqual(Object.keys(operatorKit), [
+    'admin',
+    'invitationMakers',
+    'operator',
+  ]);
+
+  const e1 = MockCctpTxEvidences.AGORIC_NO_PARAMS();
+
+  {
+    const inv = await E(operatorKit.invitationMakers).SubmitEvidence(e1);
+    const res = await E(E(zoe).offer(inv)).getOfferResult();
+    t.is(res, 'inert; nothing should be expected from this offer');
+  }
+
+  // what removeOperator will do
+  await E(operatorKit.admin).disable();
+
+  await t.throwsAsync(E(operatorKit.invitationMakers).SubmitEvidence(e1), {
+    message: 'submitEvidence for disabled operator',
+  });
 });
 
 const logAmt = amt => [

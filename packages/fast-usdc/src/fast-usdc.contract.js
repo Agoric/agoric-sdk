@@ -18,6 +18,7 @@ const trace = makeTracer('FastUsdc');
 /**
  * @import {OrchestrationPowers, OrchestrationTools} from '@agoric/orchestration/src/utils/start-helper.js';
  * @import {Zone} from '@agoric/zone';
+ * @import {OperatorKit} from './exos/operator-kit.js';
  * @import {CctpTxEvidence} from './types.js';
  */
 
@@ -63,7 +64,7 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
     statusManager,
     vowTools,
   });
-  const makeFeedKit = prepareTransactionFeedKit(zone);
+  const makeFeedKit = prepareTransactionFeedKit(zone, zcf);
   assertAllDefined({ makeFeedKit, makeAdvancer, makeSettler, statusManager });
   const feedKit = makeFeedKit();
   const advancer = makeAdvancer(
@@ -71,7 +72,7 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
     {},
   );
   // Connect evidence stream to advancer
-  void observeIteration(subscribeEach(feedKit.public.getEvidenceStream()), {
+  void observeIteration(subscribeEach(feedKit.public.getEvidenceSubscriber()), {
     updateState(evidence) {
       try {
         advancer.handleTransactionEvent(evidence);
@@ -93,6 +94,10 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
   );
 
   const creatorFacet = zone.exo('Fast USDC Creator', undefined, {
+    /** @type {(operatorId: string) => Promise<Invitation<OperatorKit>>} */
+    async makeOperatorInvitation(operatorId) {
+      return feedKit.creator.makeOperatorInvitation(operatorId);
+    },
     simulateFeesFromAdvance(amount, payment) {
       console.log('🚧🚧 UNTIL: advance fees are implemented 🚧🚧');
       // eslint-disable-next-line no-use-before-define
