@@ -423,7 +423,6 @@ const doInit =
       }
 
       // Allocate the datacenters.
-      // eslint-disable-next-line no-constant-condition
       while (true) {
         const dcsWithNodeCount =
           dcs &&

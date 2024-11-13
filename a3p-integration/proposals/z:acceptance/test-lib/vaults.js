@@ -206,7 +206,7 @@ const paramChangeOfferGeneration = async (
  *
  * @param {string} address
  * @param {*} debtLimit
- * @returns
+ * @returns {Promise<void>}
  */
 export const proposeNewDebtCeiling = async (address, debtLimit) => {
   const charterAcceptOfferId = await agops.ec(

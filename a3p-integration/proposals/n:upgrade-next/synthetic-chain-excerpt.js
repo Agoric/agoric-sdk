@@ -57,7 +57,6 @@ const agdBinary = 'agd';
 
 /**
  * @param {{execFileSync: typeof import('child_process').execFileSync }} io
- * @returns
  */
 export const makeAgd = ({ execFileSync }) => {
   /**
