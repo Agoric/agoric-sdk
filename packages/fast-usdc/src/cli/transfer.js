@@ -9,10 +9,10 @@ import {
 } from '../util/noble.js';
 import { queryFastUSDCLocalChainAccount } from '../util/agoric.js';
 
-/** @typedef {import('../util/file').file} file */
-/** @typedef {import('@agoric/client-utils').VStorage} VStorage */
-/** @typedef {import('@cosmjs/stargate').SigningStargateClient} SigningStargateClient */
-/** @typedef {import('ethers').ethers.JsonRpcProvider} ethProvider */
+/** @import { file } from '../util/file' */
+/** @import { VStorage } from '@agoric/client-utils' */
+/** @import { SigningStargateClient } from '@cosmjs/stargate' */
+/** @import { JsonRpcProvider as ethProvider } from 'ethers' */
 
 const transfer = async (
   /** @type {file} */ configFile,

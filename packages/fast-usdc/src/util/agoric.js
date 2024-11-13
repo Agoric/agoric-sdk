@@ -1,4 +1,4 @@
-/** @typedef {import('@agoric/client-utils').VStorage} VStorage */
+/** @import { VStorage } from '@agoric/client-utils' */
 
 export const queryFastUSDCLocalChainAccount = async (
   /** @type {VStorage} */ vstorage,

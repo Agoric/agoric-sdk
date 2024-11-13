@@ -15,7 +15,7 @@ import { stdin as input, stdout as output } from 'node:process';
   }} ConfigOpts
  */
 
-/** @typedef {import('../util/file').file} file */
+/** @import { file } from '../util/file' */
 
 const init = async (
   /** @type {file} */ configFile,
