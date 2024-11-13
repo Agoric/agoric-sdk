@@ -1,9 +1,7 @@
 /* eslint-env node */
 // @ts-check
 import test from 'ava';
-import '@endo/init/debug.js';
-import { makeMarshal } from '@endo/marshal';
-import { Far } from '@endo/far';
+import { makeMarshal, Far } from '@endo/marshal';
 import {
   waitUntilAccountFunded,
   waitUntilContractDeployed,
@@ -82,6 +80,7 @@ const makeFakeBalanceQuery = () => {
 
 test.serial('wait until contract is deployed', async t => {
   const { setValue, follow } = makeFakeFollow();
+  setValue([['arbitrary', true]]);
   const waitP = waitUntilContractDeployed(
     'name',
     {
@@ -476,12 +475,13 @@ test.serial('wait election result: question handle is adhered', async t => {
     {
       follow: followByPath,
       marshaller,
+      log: console.log,
+      setTimeout,
     },
     {
       errorMessage: 'Oops, election did not turn out as expected',
       maxRetries: 3,
-      retryIntervalMs: 500,
-      log: console.log,
+      retryIntervalMs,
     },
   );
 
@@ -494,12 +494,13 @@ test.serial('wait election result: question handle is adhered', async t => {
     {
       follow: followByPath,
       marshaller,
+      log: console.log,
+      setTimeout,
     },
     {
       errorMessage: 'Oops, election did not turn out as expected',
       maxRetries: 5,
-      retryIntervalMs: 1000,
-      log: console.log,
+      retryIntervalMs,
     },
   );
 
@@ -508,7 +509,7 @@ test.serial('wait election result: question handle is adhered', async t => {
     ...initState,
     latestOutcome: { outcome: 'win', question: newQuestionHandle },
   });
-  setTimeout(() => setValue(updatedState), 2000);
+  setTimeout(() => setValue(updatedState), DEFAULT_TIMEOUT);
 
   await t.notThrowsAsync(waitHappyP);
 });
@@ -532,12 +533,13 @@ test.serial('wait election result: deadline is adhered', async t => {
     {
       follow: followByPath,
       marshaller,
+      log: console.log,
+      setTimeout,
     },
     {
       errorMessage: 'Oops, election did not turn out as expected',
       maxRetries: 3,
-      retryIntervalMs: 500,
-      log: console.log,
+      retryIntervalMs,
     },
   );
 
@@ -550,12 +552,13 @@ test.serial('wait election result: deadline is adhered', async t => {
     {
       follow: followByPath,
       marshaller,
+      log: console.log,
+      setTimeout,
     },
     {
       errorMessage: 'Oops, election did not turn out as expected',
       maxRetries: 5,
-      retryIntervalMs: 1000,
-      log: console.log,
+      retryIntervalMs,
     },
   );
 
@@ -567,7 +570,7 @@ test.serial('wait election result: deadline is adhered', async t => {
       questionHandle,
     },
   });
-  setTimeout(() => setValue(updatedState), 2000);
+  setTimeout(() => setValue(updatedState), DEFAULT_TIMEOUT);
 
   await t.notThrowsAsync(waitHappyP);
 });
@@ -591,12 +594,13 @@ test.serial('wait election result: outcome is adhered', async t => {
     {
       follow: followByPath,
       marshaller,
+      log: console.log,
+      setTimeout,
     },
     {
       errorMessage: 'Oops, election did not turn out as expected',
       maxRetries: 3,
-      retryIntervalMs: 500,
-      log: console.log,
+      retryIntervalMs,
     },
   );
 
@@ -609,12 +613,13 @@ test.serial('wait election result: outcome is adhered', async t => {
     {
       follow: followByPath,
       marshaller,
+      log: console.log,
+      setTimeout,
     },
     {
       errorMessage: 'Oops, election did not turn out as expected',
       maxRetries: 5,
-      retryIntervalMs: 1000,
-      log: console.log,
+      retryIntervalMs,
     },
   );
 
@@ -623,7 +628,7 @@ test.serial('wait election result: outcome is adhered', async t => {
     ...initState,
     latestOutcome: { outcome: 'win', question: questionHandle },
   });
-  setTimeout(() => setValue(updatedState), 2000);
+  setTimeout(() => setValue(updatedState), DEFAULT_TIMEOUT);
 
   await t.notThrowsAsync(waitHappyP);
 });

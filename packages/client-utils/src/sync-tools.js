@@ -396,18 +396,23 @@ const checkCommitteeElectionResult = (electionResult, expectedResult) => {
  *   outcome: string;
  *   deadline: bigint;
  * }} expectedResult
- * @param {{follow: (...params: string[]) => Promise<object>; marshaller: import("@endo/marshal").Marshal<any>}} ambientAuthority
+ * @param {{
+ *   follow: (...params: string[]) => Promise<object>;
+ *   marshaller: import("@endo/marshal").Marshal<any>,
+ *   log: typeof console.log,
+ *   setTimeout: typeof global.setTimeout
+ * }} io
  * @param {WaitUntilOptions} options
  */
 export const waitUntilElectionResult = (
   committeePathBase,
   expectedResult,
-  ambientAuthority,
+  io,
   options,
 ) => {
-  const { follow, marshaller } = ambientAuthority;
+  const { follow, marshaller, log, setTimeout } = io;
 
-  const { maxRetries, retryIntervalMs, errorMessage, log } =
+  const { maxRetries, retryIntervalMs, errorMessage } =
     overrideDefaultOptions(options);
 
   return retryUntilCondition(
