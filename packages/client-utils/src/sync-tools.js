@@ -291,14 +291,10 @@ export const waitUntilInvitationReceived = (addr, io, options) => {
 
 /// ////////// Making sure an offer was exited successfully /////////////
 
-const makeQueryWalletCurrent = follow => async (/** @type {string} */ addr) => {
-  const update = await follow('-lF', `:published.wallet.${addr}.current`);
-
-  return update;
-};
+const makeQueryWalletCurrent = follow => (/** @type {string} */ addr) =>
+  follow('-lF', `:published.wallet.${addr}.current`);
 
 /**
- *
  * @param {object} update
  * @param {string} offerId
  * @returns {boolean}
@@ -312,12 +308,10 @@ const checkLiveOffers = (update, offerId) => {
 };
 
 /**
- *
  * @param {string} addr
  * @param {string} offerId
  * @param {{ follow: () => object, log: typeof console.log, setTimeout: typeof global.setTimeout}} io
  * @param {WaitUntilOptions} options
- * @returns
  */
 export const waitUntilOfferExited = async (addr, offerId, io, options) => {
   const { follow, setTimeout } = io;
