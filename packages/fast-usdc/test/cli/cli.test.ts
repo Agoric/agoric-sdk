@@ -145,12 +145,12 @@ test('calls config init with default args', t => {
   t.is(args.shift().path, `${homeDir}config.json`);
   t.deepEqual(args, [
     {
-      agoricRpc: '127.0.0.1:1317',
-      ethRpc: '127.0.0.1:8545',
+      agoricRpc: 'http://127.0.0.1:1317',
+      ethRpc: 'http://127.0.0.1:8545',
       ethSeed: 'bar',
-      nobleRpc: '127.0.0.1:26657',
+      nobleRpc: 'http://127.0.0.1:26657',
       nobleSeed: 'foo',
-      nobleApi: '127.0.0.1:1318',
+      nobleApi: 'http://127.0.0.1:1318',
       nobleToAgoricChannel: 'channel-21',
       tokenMessengerAddress: '0xbd3fa81b58ba92a82136038b25adec7066af3155',
       tokenContractAddress: '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48',

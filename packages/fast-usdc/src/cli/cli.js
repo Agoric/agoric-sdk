@@ -69,15 +69,19 @@ export const initProgram = (
       '--eth-seed <seed>',
       'Seed phrase for Ethereum account. CAUTION: Stored unencrypted in file system',
     )
-    .option('--agoric-rpc [url]', 'Agoric RPC endpoint', '127.0.0.1:1317')
-    .option('--noble-api [url]', 'Noble API endpoint', '127.0.0.1:1318')
+    .option(
+      '--agoric-rpc [url]',
+      'Agoric RPC endpoint',
+      'http://127.0.0.1:1317',
+    )
+    .option('--noble-api [url]', 'Noble API endpoint', 'http://127.0.0.1:1318')
     .option(
       '--noble-to-agoric-channel [channel]',
       'Channel ID on Noble for Agoric',
       'channel-21',
     )
-    .option('--noble-rpc [url]', 'Noble RPC endpoint', '127.0.0.1:26657')
-    .option('--eth-rpc [url]', 'Ethereum RPC Endpoint', '127.0.0.1:8545')
+    .option('--noble-rpc [url]', 'Noble RPC endpoint', 'http://127.0.0.1:26657')
+    .option('--eth-rpc [url]', 'Ethereum RPC Endpoint', 'http://127.0.0.1:8545')
     .option(
       '--token-messenger-address [address]',
       'Address of TokenMessenger contract',

@@ -71,7 +71,7 @@ test('Transfer registers the noble forwarding account if it does not exist', asy
   });
   const amount = '150';
   const destination = 'dydx1234';
-  const nobleFwdAccountQuery = `${nobleApi}/noble/forwarding/v1/address/${nobleToAgoricChannel}/${agoricSettlementAccount}?EUD=${destination}`;
+  const nobleFwdAccountQuery = `${nobleApi}/noble/forwarding/v1/address/${nobleToAgoricChannel}/${agoricSettlementAccount}${encodeURIComponent('?EUD=')}${destination}/`;
   const fetchMock = makeFetchMock({
     [nobleFwdAccountQuery]: {
       address: 'noble14lwerrcfzkzrv626w49pkzgna4dtga8c5x479h',
@@ -122,7 +122,7 @@ test('Transfer signs and broadcasts the depositForBurn message on Ethereum', asy
   });
   const amount = '150';
   const destination = 'dydx1234';
-  const nobleFwdAccountQuery = `${nobleApi}/noble/forwarding/v1/address/${nobleToAgoricChannel}/${agoricSettlementAccount}?EUD=${destination}`;
+  const nobleFwdAccountQuery = `${nobleApi}/noble/forwarding/v1/address/${nobleToAgoricChannel}/${agoricSettlementAccount}${encodeURIComponent('?EUD=')}${destination}/`;
   const fetchMock = makeFetchMock({
     [nobleFwdAccountQuery]: {
       address: 'noble14lwerrcfzkzrv626w49pkzgna4dtga8c5x479h',

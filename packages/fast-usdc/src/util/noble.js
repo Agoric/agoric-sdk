@@ -91,7 +91,7 @@ export const queryForwardingAccount = async (
    * https://github.com/noble-assets/forwarding/blob/9d7657a/proto/noble/forwarding/v1/query.proto
    * v2.0.0 10 Nov 2024
    */
-  const query = `${nobleApi}/noble/forwarding/v1/address/${nobleToAgoricChannel}/${agoricAddr}`;
+  const query = `${nobleApi}/noble/forwarding/v1/address/${nobleToAgoricChannel}/${encodeURIComponent(agoricAddr)}/`;
   out.log(`querying forward address details from noble api: ${query}`);
   let forwardingAddressRes;
   await null;
