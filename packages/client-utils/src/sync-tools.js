@@ -9,6 +9,7 @@
  *  - operation: query dest account's balance
  *  - condition: dest account has a balance >= sent token
  * - Making sure an offer resulted successfully
+ * - Making sure an offer was exited successfully
  *
  */
 
@@ -285,5 +286,48 @@ export const waitUntilInvitationReceived = (addr, io, options) => {
     checkForInvitation,
     errorMessage,
     { reusePromise: true, setTimeout, ...resolvedOptions },
+  );
+};
+
+/// ////////// Making sure an offer was exited successfully /////////////
+
+const makeQueryWalletCurrent = follow => async (/** @type {string} */ addr) => {
+  const update = await follow('-lF', `:published.wallet.${addr}.current`);
+
+  return update;
+};
+
+/**
+ *
+ * @param {object} update
+ * @param {string} offerId
+ * @returns {boolean}
+ */
+const checkLiveOffers = (update, offerId) => {
+  const liveOffers = update.liveOffers;
+  if (!liveOffers) {
+    return false;
+  }
+  return !liveOffers.some(element => element.includes(offerId));
+};
+
+/**
+ *
+ * @param {string} addr
+ * @param {string} offerId
+ * @param {{ follow: () => object, log: typeof console.log, setTimeout: typeof global.setTimeout}} io
+ * @param {WaitUntilOptions} options
+ * @returns
+ */
+export const waitUntilOfferExited = async (addr, offerId, io, options) => {
+  const { follow, setTimeout } = io;
+  const queryWalletCurrent = makeQueryWalletCurrent(follow);
+  const { errorMessage, ...resolvedOptions } = overrideDefaultOptions(options);
+
+  return retryUntilCondition(
+    async () => queryWalletCurrent(addr),
+    update => checkLiveOffers(update, offerId),
+    errorMessage,
+    { setTimeout, ...resolvedOptions },
   );
 };
