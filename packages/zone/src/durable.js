@@ -50,7 +50,6 @@ const attachDurableStores = getBaggage => {
 
   /** @type {import('.').Stores} */
   return Far('durableStores', {
-    // eslint-disable-next-line no-use-before-define
     detached: () => detachedDurableStores,
     isStorable,
     mapStore,

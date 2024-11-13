@@ -106,7 +106,6 @@ export const makeBootstrap = (
 
     const runBehaviors = manifest => {
       return runModuleBehaviors({
-        // eslint-disable-next-line no-use-before-define
         allPowers,
         behaviors,
         manifest,
