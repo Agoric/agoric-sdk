@@ -6,6 +6,7 @@ import {
   waitUntilAccountFunded,
   waitUntilContractDeployed,
   waitUntilInvitationReceived,
+  waitUntilOfferExited,
   waitUntilOfferResult,
 } from '../src/sync-tools.js';
 
@@ -402,4 +403,22 @@ test.serial('wait until invitation recevied', async t => {
   );
 
   await t.notThrowsAsync(waitP);
+});
+
+test.serial('wait until offer exited', async t => {
+  const { setValue, follow } = makeFakeFollow();
+  setValue({});
+
+  const waitP = waitUntilOfferExited(
+    'agoric12345',
+    'my-offer',
+    { follow, log: t.log, setTimeout },
+    {
+      maxRetries: 5,
+      retryIntervalMs,
+      errorMessage: 'Offer not exited',
+    },
+  );
+
+  await t.throwsAsync(waitP);
 });
