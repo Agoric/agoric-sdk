@@ -44,9 +44,7 @@ test('resume', async t => {
 
   t.log('start sendAnywhere');
   await evalProposal(
-    buildProposal(
-      '@agoric/builders/scripts/testing/start-buggy-sendAnywhere.js',
-    ),
+    buildProposal('@agoric/builders/scripts/testing/start-send-anywhere.js'),
   );
 
   t.log('making offer');
@@ -70,15 +68,10 @@ test('resume', async t => {
 
   // XXX golden test
   const getLogged = () =>
-    JSON.parse(storage.data.get('published.sendAnywhere.log')!).values;
+    JSON.parse(storage.data.get('published.send-anywhere.log')!).values;
 
   // This log shows the flow started, but didn't get past the name lookup
   t.deepEqual(getLogged(), ['sending {0} from cosmoshub to cosmos1whatever']);
-
-  t.log('upgrade sendAnywhere with fix');
-  await evalProposal(
-    buildProposal('@agoric/builders/scripts/testing/fix-buggy-sendAnywhere.js'),
-  );
 
   t.deepEqual(getLogged(), [
     'sending {0} from cosmoshub to cosmos1whatever',
@@ -86,6 +79,11 @@ test('resume', async t => {
     'got info for chain: cosmoshub cosmoshub-4',
     'completed transfer to localAccount',
   ]);
+
+  t.log('upgrade sendAnywhere with fix');
+  await evalProposal(
+    buildProposal('@agoric/builders/scripts/testing/upgrade-send-anywhere.js'),
+  );
 
   // simulate ibc/MsgTransfer ack from remote chain, enabling `.transfer()` promise
   // to resolve

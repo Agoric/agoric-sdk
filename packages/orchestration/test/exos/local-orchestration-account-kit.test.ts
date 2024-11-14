@@ -9,6 +9,7 @@ import {
 } from '@agoric/vats/tools/fake-bridge.js';
 import { heapVowE as VE } from '@agoric/vow/vat.js';
 import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
+import type { IBCChannelID } from '@agoric/vats';
 import type { ChainAddress, AmountArg } from '../../src/orchestration-api.js';
 import { maxClockSkew } from '../../src/utils/cosmos.js';
 import { NANOSECONDS_PER_SECOND } from '../../src/utils/time.js';
@@ -16,6 +17,8 @@ import { buildVTransferEvent } from '../../tools/ibc-mocks.js';
 import { UNBOND_PERIOD_SECONDS } from '../ibc-mocks.js';
 import { commonSetup } from '../supports.js';
 import { prepareMakeTestLOAKit } from './make-test-loa-kit.js';
+import fetchedChainInfo from '../../src/fetched-chain-info.js';
+import { denomHash } from '../../src/utils/denomHash.js';
 
 test('deposit, withdraw', async t => {
   const common = await commonSetup(t);
@@ -127,7 +130,6 @@ test('transfer', async t => {
     value: 'cosmos1pleab',
     encoding: 'bech32',
   };
-  const sourceChannel = 'channel-5'; // observed in toBridge VLOCALCHAIN_EXECUTE_TX sourceChannel, confirmed via fetched-chain-info.js
 
   /** The running tally of transfer messages that were sent over the bridge */
   let lastSequence = 0n;
@@ -163,7 +165,9 @@ test('transfer', async t => {
     buildVTransferEvent({
       receiver: destination.value,
       sender,
-      sourceChannel,
+      sourceChannel:
+        fetchedChainInfo.agoric.connections[destination.chainId].transferChannel
+          .channelId,
       sequence: lastSequence,
     }),
   );
@@ -203,11 +207,13 @@ test('transfer', async t => {
    * @param amount
    * @param dest
    * @param opts
+   * @param sourceChannel
    */
   const doTransfer = async (
     amount: AmountArg,
     dest: ChainAddress,
     opts = {},
+    sourceChannel?: IBCChannelID,
   ) => {
     const { transferP: promise } = await startTransfer(amount, dest, opts);
     // simulate incoming message so that promise resolves
@@ -215,7 +221,10 @@ test('transfer', async t => {
       buildVTransferEvent({
         receiver: dest.value,
         sender,
-        sourceChannel,
+        sourceChannel:
+          sourceChannel ||
+          fetchedChainInfo.agoric.connections[dest.chainId].transferChannel
+            .channelId,
         sequence: lastSequence,
       }),
     );
@@ -243,6 +252,28 @@ test('transfer', async t => {
       timeoutHeight: { revisionHeight: 100n, revisionNumber: 1n },
     }),
     'accepts custom timeoutHeight',
+  );
+
+  t.log('Transfer handles multi-hop transfers');
+  await t.notThrowsAsync(
+    doTransfer(
+      {
+        denom: `ibc/${denomHash({
+          channelId:
+            fetchedChainInfo.agoric.connections['noble-1'].transferChannel
+              .channelId,
+          denom: 'uusdc',
+        })}`,
+        value: 100n,
+      },
+      {
+        chainId: 'dydx-mainnet-1',
+        encoding: 'bech32',
+        value: 'dydx1test',
+      },
+      {},
+      fetchedChainInfo.agoric.connections['noble-1'].transferChannel.channelId,
+    ),
   );
 });
 

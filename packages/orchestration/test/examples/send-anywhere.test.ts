@@ -18,6 +18,7 @@ import type {
 import { commonSetup } from '../supports.js';
 import { SingleNatAmountRecord } from '../../src/examples/send-anywhere.contract.js';
 import { registerChain } from '../../src/chain-info.js';
+import fetchedChainInfo from '../../src/fetched-chain-info.js';
 
 const dirname = path.dirname(new URL(import.meta.url).pathname);
 
@@ -90,7 +91,6 @@ test('send using arbitrary chain info', async t => {
   const hotChainInfo = harden({
     chainId: 'hot-new-chain-0',
     stakingTokens: [{ denom: 'uhot' }],
-    ...chainInfoDefaults,
   }) as CosmosChainInfo;
   t.log('admin adds chain using creatorFacet', hotChainInfo.chainId);
   const agoricToHotConnection = {
@@ -108,9 +108,10 @@ test('send using arbitrary chain info', async t => {
     },
   } as IBCConnectionInfo;
   const chainName = 'hot';
-  await E(sendKit.creatorFacet).registerChain(
-    chainName,
-    hotChainInfo,
+  await E(sendKit.creatorFacet).registerChain(chainName, hotChainInfo);
+  await E(sendKit.creatorFacet).registerConnection(
+    'agoric-3',
+    hotChainInfo.chainId,
     agoricToHotConnection,
   );
 

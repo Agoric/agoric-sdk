@@ -1,11 +1,13 @@
 import { InvitationShape } from '@agoric/zoe/src/typeGuards.js';
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
+import fetchedChainInfo from '../fetched-chain-info.js';
 import { prepareChainHubAdmin } from '../exos/chain-hub-admin.js';
 import { AnyNatAmountShape } from '../typeGuards.js';
 import { withOrchestration } from '../utils/start-helper.js';
 import * as flows from './send-anywhere.flows.js';
 import * as sharedFlows from './shared.flows.js';
+import { registerKnownChainsAndAssets } from '../utils/chain-hub-helper.js';
 
 /**
  * @import {Vow} from '@agoric/vow';
@@ -35,7 +37,7 @@ export const contract = async (
   zcf,
   privateArgs,
   zone,
-  { chainHub, orchestrateAll, vowTools, zoeTools },
+  { chainHub, orchestrateAll, vowTools, zoeTools, baggage },
 ) => {
   const creatorFacet = prepareChainHubAdmin(zone, chainHub);
 
@@ -64,6 +66,37 @@ export const contract = async (
     sharedLocalAccountP,
     zoeTools,
   });
+
+  const incarnationKey = 'incarnation1';
+
+  await null;
+
+  if (!baggage.has(incarnationKey)) {
+    baggage.init(incarnationKey, true);
+
+    // register assets in ChainHub ourselves,
+    // UNTIL https://github.com/Agoric/agoric-sdk/issues/9752
+    const assets =
+      /** @type {import('@agoric/vats/src/vat-bank.js').AssetInfo[]} */ (
+        await E(E(privateArgs.agoricNames).lookup('vbankAsset')).values()
+      );
+
+    /** @type {Record<string, Brand<'nat'>>} */
+    const brands = {};
+
+    for (const asset of assets) {
+      brands[asset.issuerName] = /** @type {Brand<'nat'>} */ (asset.brand);
+    }
+
+    await registerKnownChainsAndAssets(
+      {
+        vowTools,
+        chainHubAdmin: creatorFacet,
+      },
+      fetchedChainInfo,
+      brands,
+    );
+  }
 
   const publicFacet = zone.exo(
     'Send PF',

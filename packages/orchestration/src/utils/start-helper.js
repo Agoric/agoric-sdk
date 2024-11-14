@@ -170,6 +170,7 @@ export const provideOrchestration = (
     zcfTools,
     zoeTools,
     zone: zones.contract,
+    baggage,
   };
 };
 harden(provideOrchestration);

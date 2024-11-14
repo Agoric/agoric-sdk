@@ -1,6 +1,7 @@
 #!/usr/bin/env tsx
 /* eslint-env node */
 
+import '@endo/init';
 import fsp from 'node:fs/promises';
 import prettier from 'prettier';
 

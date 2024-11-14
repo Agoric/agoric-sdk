@@ -26,11 +26,24 @@ import { prepareCosmosInterchainService } from '../src/exos/cosmos-interchain-se
 import fetchedChainInfo from '../src/fetched-chain-info.js';
 import { buildVTransferEvent } from '../tools/ibc-mocks.js';
 import { setupFakeNetwork } from './network-fakes.js';
+import { denomHash } from '../src/utils/denomHash.js';
 
 export {
   makeFakeLocalchainBridge,
   makeFakeTransferBridge,
 } from '@agoric/vats/tools/fake-bridge.js';
+
+const usdcOnAgoric = `ibc/${denomHash({
+  channelId:
+    fetchedChainInfo.agoric.connections['noble-1'].transferChannel.channelId,
+  denom: 'uusdc',
+})}`;
+
+const usdcOnDydx = `ibc/${denomHash({
+  channelId:
+    fetchedChainInfo.dydx.connections['noble-1'].transferChannel.channelId,
+  denom: 'uusdc',
+})}`;
 
 export const commonSetup = async (t: ExecutionContext<any>) => {
   t.log('bootstrap vat dependencies');
@@ -45,6 +58,8 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
 
   const bld = withAmountUtils(makeIssuerKit('BLD'));
   const ist = withAmountUtils(makeIssuerKit('IST'));
+  const usdc = withAmountUtils(makeIssuerKit('USDC'));
+  const atom = withAmountUtils(makeIssuerKit('ATOM'));
   const bankBridgeMessages = [] as any[];
   const { bankManager, pourPayment } = await makeFakeBankManagerKit({
     onToBridge: obj => bankBridgeMessages.push(obj),
@@ -56,10 +71,19 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
     'Inter Stable Token',
     ist.issuerKit,
   );
+  await E(bankManager).addAsset('uatom', 'ATOM', 'ATOM', atom.issuerKit);
+  await E(bankManager).addAsset(
+    usdcOnAgoric,
+    'USDC',
+    'USD Coin',
+    usdc.issuerKit,
+  );
   // These mints no longer stay in sync with bankManager.
   // Use pourPayment() for IST.
   const { mint: _b, ...bldSansMint } = bld;
   const { mint: _i, ...istSansMint } = ist;
+  const { mint: _a, ...atomSansMint } = atom;
+  const { mint: _u, ...usdcSansMint } = usdc;
   // XXX real bankManager does this. fake should too?
   // TODO https://github.com/Agoric/agoric-sdk/issues/9966
   await makeWellKnownSpaces(agoricNamesAdmin, t.log, ['vbankAsset']);
@@ -75,6 +99,17 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
     }),
   );
   await E(E(agoricNamesAdmin).lookupAdmin('vbankAsset')).update(
+    'uatom',
+    /** @type {AssetInfo} */ harden({
+      brand: atom.brand,
+      issuer: atom.issuer,
+      issuerName: 'ATOM',
+      denom: 'uatom',
+      proposedName: 'ATOM',
+      displayInfo: { IOU: true },
+    }),
+  );
+  await E(E(agoricNamesAdmin).lookupAdmin('vbankAsset')).update(
     'ubld',
     /** @type {AssetInfo} */ harden({
       brand: bld.brand,
@@ -82,6 +117,17 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
       issuerName: 'BLD',
       denom: 'ubld',
       proposedName: 'BLD',
+      displayInfo: { IOU: true },
+    }),
+  );
+  await E(E(agoricNamesAdmin).lookupAdmin('vbankAsset')).update(
+    usdcOnAgoric,
+    /** @type {AssetInfo} */ harden({
+      brand: usdc.brand,
+      issuer: usdc.issuer,
+      issuerName: 'USDC',
+      denom: usdcOnAgoric,
+      proposedName: 'USDC',
       displayInfo: { IOU: true },
     }),
   );
@@ -173,7 +219,7 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
    * Does not work with `withOrchestration` contracts, as these have their own
    * ChainHub. Use `ChainHubAdmin` instead.
    */
-  const registerAgoricBld = () => {
+  const registerAgoricAssets = () => {
     if (!chainHub.getAsset('ubld')) {
       chainHub.registerChain('agoric', fetchedChainInfo.agoric);
       chainHub.registerAsset('ubld', {
@@ -181,6 +227,33 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
         baseName: 'agoric',
         baseDenom: 'ubld',
         brand: bld.brand,
+      });
+    }
+  };
+
+  const registerUSDC = () => {
+    if (!chainHub.getAsset('uusdc')) {
+      chainHub.registerChain('noble', fetchedChainInfo.noble);
+      chainHub.registerAsset('uusdc', {
+        chainName: 'noble',
+        baseName: 'noble',
+        baseDenom: 'uusdc',
+      });
+    }
+    if (!chainHub.getAsset(usdcOnAgoric)) {
+      chainHub.registerAsset(usdcOnAgoric, {
+        chainName: 'agoric',
+        baseName: 'noble',
+        baseDenom: 'uusdc',
+        brand: usdc.brand,
+      });
+    }
+    if (!chainHub.getAsset(usdcOnDydx)) {
+      chainHub.registerChain('dydx', fetchedChainInfo.dydx);
+      chainHub.registerAsset(usdcOnDydx, {
+        chainName: 'dydx',
+        baseName: 'noble',
+        baseDenom: 'uusdc',
       });
     }
   };
@@ -202,6 +275,8 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
     brands: {
       bld: bldSansMint,
       ist: istSansMint,
+      usdc: usdcSansMint,
+      atom: atomSansMint,
     },
     mocks: {
       ibcBridge,
@@ -227,7 +302,8 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
       inspectLocalBridge: () => harden([...localBridgeMessages]),
       inspectDibcBridge: () => E(ibcBridge).inspectDibcBridge(),
       inspectBankBridge: () => harden([...bankBridgeMessages]),
-      registerAgoricBld,
+      registerAgoricAssets,
+      registerUSDC,
       transmitTransferAck,
     },
   };

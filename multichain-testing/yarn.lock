@@ -320,7 +320,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@endo/init@npm:^1.1.2, @endo/init@npm:^1.1.4":
+"@endo/init@npm:1.1.4, @endo/init@npm:^1.1.2, @endo/init@npm:^1.1.4":
   version: 1.1.4
   resolution: "@endo/init@npm:1.1.4"
   dependencies:
@@ -3902,6 +3902,7 @@ __metadata:
     "@cosmjs/stargate": "npm:^0.32.4"
     "@endo/errors": "npm:^1.2.5"
     "@endo/far": "npm:^1.1.5"
+    "@endo/init": "npm:1.1.4"
     "@endo/nat": "npm:^5.0.10"
     "@endo/ses-ava": "npm:^1.2.5"
     "@types/eslint": "npm:^8"

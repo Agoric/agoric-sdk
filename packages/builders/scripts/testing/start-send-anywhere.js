@@ -27,6 +27,13 @@ const trace = makeTracer('StartSA', true);
  *       sendAnywhere: Installation<StartFn>;
  *     };
  *   };
+ *   issuer: {
+ *     consume: {
+ *       BLD: Brand<'nat'>;
+ *       IST: Brand<'nat'>;
+ *       USDC: Brand<'nat'>;
+ *     };
+ *   };
  * }} powers
  */
 export const startSendAnywhere = async ({

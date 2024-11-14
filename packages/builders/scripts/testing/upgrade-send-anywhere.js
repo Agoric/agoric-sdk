@@ -7,14 +7,14 @@ import {
   makeTracer,
   NonNullish,
 } from '@agoric/internal';
-import { E, Far } from '@endo/far';
+import { E } from '@endo/far';
 
 /// <reference types="@agoric/vats/src/core/types-ambient"/>
 /**
  * @import {Installation, Instance} from '@agoric/zoe/src/zoeService/utils.js';
  */
 
-const trace = makeTracer('FixBuggySA', true);
+const trace = makeTracer('UpgradeSA', true);
 
 /**
  * @import {start as StartFn} from '@agoric/orchestration/src/examples/send-anywhere.contract.js';
@@ -30,7 +30,7 @@ const trace = makeTracer('FixBuggySA', true);
  * }} powers
  * @param {...any} rest
  */
-export const fixSendAnywhere = async (
+export const upgradeSendAnywhere = async (
   {
     consume: {
       agoricNames,
@@ -45,7 +45,7 @@ export const fixSendAnywhere = async (
   },
   { options: { sendAnywhereRef } },
 ) => {
-  trace(fixSendAnywhere.name);
+  trace(upgradeSendAnywhere.name);
 
   const saInstance = await instances.consume.sendAnywhere;
   trace('saInstance', saInstance);
@@ -53,28 +53,21 @@ export const fixSendAnywhere = async (
 
   const marshaller = await E(board).getReadonlyMarshaller();
 
-  // This apparently pointless wrapper is to maintain structural parity
-  // with the buggy core-eval's wrapper to make lookup() hang.
-  const agoricNamesResolves = Far('agoricNames that resolves', {
-    lookup: async (...args) => {
-      return E(agoricNames).lookup(...args);
-    },
-  });
-
   const privateArgs = await deeplyFulfilledObject(
     harden({
-      agoricNames: agoricNamesResolves,
+      agoricNames,
       localchain,
       marshaller,
       orchestrationService: cosmosInterchainService,
       storageNode: E(NonNullish(await chainStorage)).makeChildNode(
-        'sendAnywhere',
+        'send-anywhere',
       ),
       timerService: chainTimerService,
     }),
   );
 
   trace('upgrading...');
+  trace('ref', sendAnywhereRef);
   await E(saKit.adminFacet).upgradeContract(
     sendAnywhereRef.bundleID,
     privateArgs,
@@ -82,13 +75,13 @@ export const fixSendAnywhere = async (
 
   trace('done');
 };
-harden(fixSendAnywhere);
+harden(upgradeSendAnywhere);
 
 export const getManifestForValueVow = ({ restoreRef }, { sendAnywhereRef }) => {
   console.log('sendAnywhereRef', sendAnywhereRef);
   return {
     manifest: {
-      [fixSendAnywhere.name]: {
+      [upgradeSendAnywhere.name]: {
         consume: {
           agoricNames: true,
           board: true,
@@ -120,7 +113,7 @@ export const getManifestForValueVow = ({ restoreRef }, { sendAnywhereRef }) => {
 export const defaultProposalBuilder = async ({ publishRef, install }) =>
   harden({
     // Somewhat unorthodox, source the exports from this builder module
-    sourceSpec: '@agoric/builders/scripts/testing/fix-buggy-sendAnywhere.js',
+    sourceSpec: '@agoric/builders/scripts/testing/upgrade-send-anywhere.js',
     getManifestCall: [
       'getManifestForValueVow',
       {
@@ -139,5 +132,5 @@ export default async (homeP, endowments) => {
   const dspModule = await import('@agoric/deploy-script-support');
   const { makeHelpers } = dspModule;
   const { writeCoreEval } = await makeHelpers(homeP, endowments);
-  await writeCoreEval(fixSendAnywhere.name, defaultProposalBuilder);
+  await writeCoreEval(upgradeSendAnywhere.name, defaultProposalBuilder);
 };

@@ -9,6 +9,7 @@ export default /** @type {const} } */ ({
       },
     ],
     icqEnabled: false,
+    pfmEnabled: true,
     connections: {
       'cosmoshub-4': {
         id: 'connection-8',
@@ -147,6 +148,7 @@ export default /** @type {const} } */ ({
       },
     ],
     icqEnabled: false,
+    pfmEnabled: true,
     connections: {
       'neutron-1': {
         id: 'connection-7',
@@ -249,6 +251,7 @@ export default /** @type {const} } */ ({
       },
     ],
     icqEnabled: false,
+    pfmEnabled: true,
     connections: {
       'agoric-3': {
         id: 'connection-649',
@@ -423,6 +426,7 @@ export default /** @type {const} } */ ({
       },
     ],
     icqEnabled: false,
+    pfmEnabled: false,
     connections: {
       'neutron-1': {
         id: 'connection-17',
@@ -525,6 +529,7 @@ export default /** @type {const} } */ ({
       },
     ],
     icqEnabled: false,
+    pfmEnabled: true,
     connections: {
       'cosmoshub-4': {
         id: 'connection-2',
@@ -663,6 +668,7 @@ export default /** @type {const} } */ ({
       },
     ],
     icqEnabled: false,
+    pfmEnabled: true,
     connections: {
       celestia: {
         id: 'connection-36',
@@ -832,6 +838,7 @@ export default /** @type {const} } */ ({
     bech32Prefix: 'noble',
     chainId: 'noble-1',
     icqEnabled: false,
+    pfmEnabled: true,
     connections: {
       'agoric-3': {
         id: 'connection-40',
@@ -1023,7 +1030,8 @@ export default /** @type {const} } */ ({
         denom: 'uflix',
       },
     ],
-    icqEnabled: false,
+    icqEnabled: true,
+    pfmEnabled: true,
     connections: {
       'agoric-3': {
         id: 'connection-40',
@@ -1108,6 +1116,7 @@ export default /** @type {const} } */ ({
       },
     ],
     icqEnabled: true,
+    pfmEnabled: true,
     connections: {
       'agoric-3': {
         id: 'connection-1649',
@@ -1336,6 +1345,7 @@ export default /** @type {const} } */ ({
       },
     ],
     icqEnabled: false,
+    pfmEnabled: true,
     connections: {
       'agoric-3': {
         id: 'connection-80',
@@ -1528,6 +1538,7 @@ export default /** @type {const} } */ ({
       },
     ],
     icqEnabled: false,
+    pfmEnabled: true,
     connections: {
       celestia: {
         id: 'connection-296',
@@ -1684,6 +1695,7 @@ export default /** @type {const} } */ ({
       },
     ],
     icqEnabled: false,
+    pfmEnabled: true,
     connections: {
       'agoric-3': {
         id: 'connection-118',
@@ -1876,6 +1888,7 @@ export default /** @type {const} } */ ({
       },
     ],
     icqEnabled: false,
+    pfmEnabled: true,
     connections: {
       'agoric-3': {
         id: 'connection-101',
