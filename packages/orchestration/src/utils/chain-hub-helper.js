@@ -1,9 +1,5 @@
 import { E } from '@endo/far';
-import { makeTracer } from '@agoric/internal';
 import { denomHash } from './denomHash.js';
-import { registerChain } from '../chain-info.js';
-
-const trace = makeTracer('ChainHubHelper', true);
 
 /**
  * @import {ERef} from '@endo/far';
