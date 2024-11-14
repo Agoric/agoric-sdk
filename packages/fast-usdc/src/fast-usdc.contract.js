@@ -11,12 +11,14 @@ import { prepareLiquidityPoolKit } from './exos/liquidity-pool.js';
 import { prepareSettler } from './exos/settler.js';
 import { prepareStatusManager } from './exos/status-manager.js';
 import { prepareTransactionFeedKit } from './exos/transaction-feed.js';
+import { defineInertInvitation } from './utils/zoe.js';
 
 const trace = makeTracer('FastUsdc');
 
 /**
  * @import {OrchestrationPowers, OrchestrationTools} from '@agoric/orchestration/src/utils/start-helper.js';
  * @import {Zone} from '@agoric/zone';
+ * @import {OperatorKit} from './exos/operator-kit.js';
  * @import {CctpTxEvidence} from './types.js';
  */
 
@@ -62,7 +64,7 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
     statusManager,
     vowTools,
   });
-  const makeFeedKit = prepareTransactionFeedKit(zone);
+  const makeFeedKit = prepareTransactionFeedKit(zone, zcf);
   assertAllDefined({ makeFeedKit, makeAdvancer, makeSettler, statusManager });
   const feedKit = makeFeedKit();
   const advancer = makeAdvancer(
@@ -70,7 +72,7 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
     {},
   );
   // Connect evidence stream to advancer
-  void observeIteration(subscribeEach(feedKit.public.getEvidenceStream()), {
+  void observeIteration(subscribeEach(feedKit.public.getEvidenceSubscriber()), {
     updateState(evidence) {
       try {
         advancer.handleTransactionEvent(evidence);
@@ -86,7 +88,16 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
     { makeRecorderKit },
   );
 
+  const makeTestSubmissionInvitation = defineInertInvitation(
+    zcf,
+    'test of submitting evidence',
+  );
+
   const creatorFacet = zone.exo('Fast USDC Creator', undefined, {
+    /** @type {(operatorId: string) => Promise<Invitation<OperatorKit>>} */
+    async makeOperatorInvitation(operatorId) {
+      return feedKit.creator.makeOperatorInvitation(operatorId);
+    },
     simulateFeesFromAdvance(amount, payment) {
       console.log('🚧🚧 UNTIL: advance fees are implemented 🚧🚧');
       // eslint-disable-next-line no-use-before-define
@@ -109,11 +120,7 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
       // TODO(bootstrap integration): force this to throw and confirm that it
       // shows up in the the smart-wallet UpdateRecord `error` property
       feedKit.admin.submitEvidence(evidence);
-      return zcf.makeInvitation(async cSeat => {
-        trace('Offer made on noop invitation');
-        cSeat.exit();
-        return 'noop; evidence was pushed in the invitation maker call';
-      }, 'noop invitation');
+      return makeTestSubmissionInvitation();
     },
     makeDepositInvitation() {
       // eslint-disable-next-line no-use-before-define

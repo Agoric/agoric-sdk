@@ -17,3 +17,42 @@ Over time we can update our tooling to decouple this more from the `packages` di
 2. Export bootstrap testing utilities from `@agoric/boot`, allowing this to be above `@agoric/boot` in the package graph
 3. Update CI to support packages that aren't under `packages/`, eg. a top-level `dapps` directory
 4. Move this package out of agoric-sdk
+
+# Transaction feed
+
+## Oracles interface
+
+Oracles run off-chain and interact with the contract via an Agoric smart wallet bridge.
+```mermaid
+sequenceDiagram
+    title Becoming an oracle operator
+    participant OW as Operator N<br/>Smart Wallet
+    participant FUC as Fast USDC<br/>Contract Exo
+    participant CE as Core Eval
+
+    CE->>FUC: makeOperatorInvitation()
+    FUC-->>CE: operatorInvitation
+    CE->>+OW: deposit(operatorInvitation)
+
+    Note left of FUC: Off-chain wallet accepts the operator invitation
+
+    OW->>+FUC: offer(operatorInvitation)
+    FUC-->>OW: operator invitationMakers: {SubmitEvidence}
+
+    Note left of FUC: Off-chain watcher detects evidence
+    OW->>+FUC: offer(SubmitEvidence, evidence)
+```
+
+```mermaid
+sequenceDiagram
+    title Receiving evidence
+    participant W as Operator N<br/>Smart Wallet
+    participant A as Operator N<br/>Admin Oexo
+    participant TF as Transaction<br/>Feed
+
+    W->>A: offer(SubmitEvidence, evidence)
+
+    Note left of A: Once 3 operators push the same…
+
+    A->>TF: notify(evidence)
+```
