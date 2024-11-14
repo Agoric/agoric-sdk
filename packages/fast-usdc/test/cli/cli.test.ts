@@ -69,7 +69,7 @@ const mockTransfer = () => {
 test('shows help when run without arguments', async t => {
   const output = await collectStdErr([CLI_PATH]);
   // Replace home path (e.g. "/home/samsiegart/.fast-usdc") with "~/.fast-usdc" so snapshots work on different machines.
-  const regex = /"\/home\/[^/]+\/\.fast-usdc\/"/g;
+  const regex = /"\/(.+\/)?\.fast-usdc\/"/g;
   const result = (output as string).replace(regex, '"~/.fast-usdc"');
 
   t.snapshot(result);
