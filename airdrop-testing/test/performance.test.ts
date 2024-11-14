@@ -89,50 +89,50 @@ const makeDoOfferHandler = async (
 
 const makeClaimAirdropMacro =
   accounts =>
-  async (t, addressRange = [0, 1], delay) => {
-    const [start, end] = addressRange;
-    const { provisionSmartWallet, useChain, istBrand } = t.context;
-    const durations: number[] = [];
+    async (t, addressRange = [0, 1], delay) => {
+      const [start, end] = addressRange;
+      const { provisionSmartWallet, useChain, istBrand } = t.context;
+      const durations: number[] = [];
 
-    // Make multiple API calls with the specified delay
-    for (let i = start; i < end; i++) {
-      const currentAccount = accounts[i];
-      console.log('Curren Acccount', currentAccount);
-      console.log('Current iteration::', i);
-      const wallet = await provisionSmartWallet(currentAccount.address, {
-        IST: 1000n,
-        BLD: 50n,
-      });
-      // picking off duration and address
-      // this can be used to inspect the validity of offer results, however it comes at the expense
-      // of a failing test halting execution & destroying duration data
-      const { duration, address } = await makeDoOfferHandler(
-        useChain,
-        currentAccount,
-        wallet,
-        harden({ value: 5n, brand: istBrand }),
-      );
+      // Make multiple API calls with the specified delay
+      for (let i = start; i < end; i++) {
+        const currentAccount = accounts[i];
+        console.log('Curren Acccount', currentAccount);
+        console.log('Current iteration::', i);
+        const wallet = await provisionSmartWallet(currentAccount.address, {
+          IST: 1000n,
+          BLD: 50n,
+        });
+        // picking off duration and address
+        // this can be used to inspect the validity of offer results, however it comes at the expense
+        // of a failing test halting execution & destroying duration data
+        const { duration, address } = await makeDoOfferHandler(
+          useChain,
+          currentAccount,
+          wallet,
+          harden({ value: 5n, brand: istBrand }),
+        );
 
-      durations.push(duration);
+        durations.push(duration);
 
-      // Assert that the response matches the expected output
+        // Assert that the response matches the expected output
 
-      console.log('----------------------------------');
-      console.log('currentAccount.address ::::', address);
-      console.log('----------------------------------');
+        console.log('----------------------------------');
+        console.log('currentAccount.address ::::', address);
+        console.log('----------------------------------');
 
-      // Wait for the specified delay before making the next call
-      await new Promise(resolve => setTimeout(resolve, delay));
-    }
-    return durations;
-  };
+        // Wait for the specified delay before making the next call
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+      return durations;
+    };
 
 const claimAirdropMacro = makeClaimAirdropMacro(AIRDROP_DATA.accounts);
 
 test.serial(
   'makeClaimTokensInvitation offers ### start: accounts[3] || end: accounts[4] ### offer interval: 3000ms',
   async t => {
-    const claimRange = [15, 4];
+    const claimRange = [0, 5];
     const durations = await claimAirdropMacro(t, claimRange, 3000);
     t.log('Durations for all calls', durations);
     console.group('################ START DURATIONS logger ##############');
@@ -142,14 +142,10 @@ test.serial(
     console.log('claimRange ::::', claimRange);
     console.log('--------------- END DURATIONS logger -------------------');
     console.groupEnd();
-    t.deepEqual(durations.length === 10, true);
+    t.deepEqual(durations.length === 5, true);
   },
 );
-const newLocal = provisionSmartWallet =>
-  AIRDROP_DATA.accounts.slice(5, 15).map(async accountData => {
-    const wallet = await provisionSmartWallet(accountData.address);
-    return wallet;
-  });
+
 
 test.serial(
   'makeClaimTokensInvitation offers ### start: accounts[5] || end: accounts[15] ### offer interval: 3000ms',
