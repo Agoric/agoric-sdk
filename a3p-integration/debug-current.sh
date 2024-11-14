@@ -1,8 +1,12 @@
-#!/bin/sh
+#!/bin/bash
+set -ueo pipefail
 
 # Convenience script to debug the current proposal being worked on.
 
-scripts/build-submission.sh proposals/z:acceptance testing/start-valueVow.js start-valueVow
-scripts/build-submission.sh proposals/z:acceptance testing/restart-valueVow.js restart-valueVow
+(
+  cd 'proposals/z:acceptance'
+  ../../scripts/build-submission.sh testing/start-valueVow.js start-valueVow
+  ../../scripts/build-submission.sh testing/restart-valueVow.js restart-valueVow
+)
 
 yarn test -m acceptance --debug
