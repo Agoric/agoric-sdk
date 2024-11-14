@@ -19,7 +19,7 @@ import type {
 } from '@agoric/cosmic-proto/tendermint/abci/types.js';
 import type { Brand, Purse, Payment, Amount } from '@agoric/ertp/src/types.js';
 import type { Port } from '@agoric/network';
-import type { IBCChannelID, IBCConnectionID } from '@agoric/vats';
+import type { IBCChannelID, IBCConnectionID, IBCPortID } from '@agoric/vats';
 import type {
   TargetApp,
   TargetRegistration,
@@ -334,3 +334,23 @@ export type CosmosChainAccountMethods<CCI extends CosmosChainInfo> =
 export type ICQQueryFunction = (
   msgs: JsonSafe<RequestQuery>[],
 ) => Promise<JsonSafe<ResponseQuery>[]>;
+
+/**
+ * Message structure for PFM memo
+ *
+ * @see {@link https://github.com/cosmos/chain-registry/blob/58b603bbe01f70e911e3ad2bdb6b90c4ca665735/_memo_keys/ICS20_memo_keys.json#L38-L60}
+ */
+export interface ForwardInfo {
+  forward: {
+    receiver: ChainAddress['value'];
+    port: IBCPortID;
+    channel: IBCChannelID;
+    // TODO type me better e.g. '30min'
+    timeout: string;
+    /** default is 3? */
+    retries: number;
+    next?: {
+      forward: ForwardInfo;
+    };
+  };
+}

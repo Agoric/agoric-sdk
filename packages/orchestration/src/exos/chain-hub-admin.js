@@ -1,13 +1,14 @@
 /* we expect promises to resolved promptly,  */
-/* eslint-disable no-restricted-syntax */
-import { heapVowE } from '@agoric/vow/vat.js';
+
 import { M } from '@endo/patterns';
+import { VowShape } from '@agoric/vow';
 import { CosmosChainInfoShape } from '../typeGuards.js';
 import { DenomDetailShape } from './chain-hub.js';
 
 /**
  * @import {Zone} from '@agoric/zone';
- * @import {CosmosChainInfo, Denom, IBCConnectionInfo} from '@agoric/orchestration';
+ * @import {CosmosChainInfo, Denom, IBCConnectionInfo, KnownChains} from '@agoric/orchestration';
+ *
  * @import {ChainHub, DenomDetail} from './chain-hub.js';
  */
 
@@ -20,10 +21,19 @@ import { DenomDetailShape } from './chain-hub.js';
  *
  * ```js
  * const chainHubAdmin = prepareChainHubAdmin(zone, chainHub);
- * chainHubAdmin.initChain(
+ * chainHubAdmin.registerChain(
  *   'hotNewChain',
  *   hotNewChainInfo,
- *   agoricTohotNewChainConnectionInfo,
+ * );
+ * chainHubAdmin.registerConnection(
+ *   'aWellKnownChainId'
+ *   'hotNewChainId',
+ *  'aWellKnownChainToHotNewChainConnectionInfo',
+ * );
+ * chainHubAdmin.registerAsset(
+ *   'aWellKnownChainId'
+ *   'hotNewChainId',
+ *  'aWellKnownChainToHotNewChainConnectionInfo',
  * );
  * ```
  *
@@ -35,31 +45,54 @@ export const prepareChainHubAdmin = (zone, chainHub) => {
   const makeCreatorFacet = zone.exo(
     'ChainHub Admin',
     M.interface('ChainHub Admin', {
-      registerChain: M.callWhen(
+      populateChainsAndConnection: M.call(M.string(), M.string()).returns(
+        VowShape,
+      ),
+      registerChain: M.call(M.string(), CosmosChainInfoShape).returns(
+        M.undefined(),
+      ),
+      registerConnection: M.call(
         M.string(),
-        CosmosChainInfoShape,
+        M.string(),
         ConnectionInfoShape,
       ).returns(M.undefined()),
-      registerAsset: M.call(M.string(), DenomDetailShape).returns(M.promise()),
+      registerAsset: M.call(M.string(), DenomDetailShape).returns(
+        M.undefined(),
+      ),
     }),
     {
       /**
-       * Register information for a chain
+       * Sends query that populates local ChainHub with chain and connection
+       * info.
+       *
+       * @param {keyof KnownChains} primaryName
+       * @param {keyof KnownChains} counterName
+       */
+      populateChainsAndConnection(primaryName, counterName) {
+        return chainHub.getChainsAndConnection(primaryName, counterName);
+      },
+      /**
+       * Register information for a chain.
        *
        * @param {string} chainName - must not exist in chainHub
        * @param {CosmosChainInfo} chainInfo
-       * @param {IBCConnectionInfo} connectionInfo - from Agoric chain
        */
-      async registerChain(chainName, chainInfo, connectionInfo) {
+      registerChain(chainName, chainInfo) {
         // when() because chainHub methods return vows. If this were inside
         // orchestrate() the membrane would wrap/unwrap automatically.
-        const agoricChainInfo = await heapVowE.when(
-          chainHub.getChainInfo('agoric'),
-        );
-        chainHub.registerChain(chainName, chainInfo);
-        chainHub.registerConnection(
-          agoricChainInfo.chainId,
-          chainInfo.chainId,
+        return chainHub.registerChain(chainName, chainInfo);
+      },
+      /**
+       * Register a connection between two chains.
+       *
+       * @param {string} primaryChainId
+       * @param {string} counterpartyChainId
+       * @param {IBCConnectionInfo} connectionInfo
+       */
+      registerConnection(primaryChainId, counterpartyChainId, connectionInfo) {
+        return chainHub.registerConnection(
+          primaryChainId,
+          counterpartyChainId,
           connectionInfo,
         );
       },
@@ -71,10 +104,8 @@ export const prepareChainHubAdmin = (zone, chainHub) => {
        *   `detail.chainName`
        * @param {DenomDetail} detail - chainName and baseName must be registered
        */
-      async registerAsset(denom, detail) {
-        // XXX async work necessary before the synchronous call
-        await heapVowE.when(chainHub.getChainInfo('agoric'));
-        chainHub.registerAsset(denom, detail);
+      registerAsset(denom, detail) {
+        return chainHub.registerAsset(denom, detail);
       },
     },
   );

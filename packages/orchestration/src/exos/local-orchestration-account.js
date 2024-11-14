@@ -6,14 +6,16 @@ import { Shape as NetworkShape } from '@agoric/network';
 import { M } from '@agoric/vat-data';
 import { VowShape } from '@agoric/vow';
 import { E } from '@endo/far';
-import { Fail, q } from '@endo/errors';
+import { Fail, q, makeError } from '@endo/errors';
 
 import {
   AmountArgShape,
   AnyNatAmountsRecord,
   ChainAddressShape,
+  ChainInfoShape,
   DenomAmountShape,
   DenomShape,
+  IBCConnectionInfoShape,
   IBCTransferOptionsShape,
   TimestampProtoShape,
   TypedJsonShape,
@@ -28,7 +30,7 @@ import { coerceCoin, coerceDenomAmount } from '../utils/amounts.js';
 /**
  * @import {HostOf} from '@agoric/async-flow';
  * @import {LocalChain, LocalChainAccount} from '@agoric/vats/src/localchain.js';
- * @import {AmountArg, ChainAddress, DenomAmount, IBCMsgTransferOptions, IBCConnectionInfo, OrchestrationAccountI, LocalAccountMethods} from '@agoric/orchestration';
+ * @import {AmountArg, ChainAddress, DenomAmount, IBCMsgTransferOptions, IBCConnectionInfo, OrchestrationAccountI, LocalAccountMethods, ForwardInfo, ChainInfo, CosmosChainInfo} from '@agoric/orchestration';
  * @import {RecorderKit, MakeRecorderKit} from '@agoric/zoe/src/contractSupport/recorder.js'.
  * @import {Zone} from '@agoric/zone';
  * @import {Remote} from '@agoric/internal';
@@ -38,7 +40,7 @@ import { coerceCoin, coerceDenomAmount } from '../utils/amounts.js';
  * @import {TypedJson, JsonSafe, ResponseTo} from '@agoric/cosmic-proto';
  * @import {Coin} from '@agoric/cosmic-proto/cosmos/base/v1beta1/coin.js';
  * @import {Matcher} from '@endo/patterns';
- * @import {ChainHub} from './chain-hub.js';
+ * @import {ChainHub, DenomDetail} from './chain-hub.js';
  * @import {PacketTools} from './packet-tools.js';
  * @import {ZoeTools} from '../utils/zoe-tools.js';
  */
@@ -138,7 +140,8 @@ export const prepareLocalOrchestrationAccountKit = (
           .optional({
             destination: ChainAddressShape,
             opts: M.or(M.undefined(), IBCTransferOptionsShape),
-            amount: DenomAmountShape,
+            denomAmount: DenomAmountShape,
+            isPfm: M.boolean(),
           })
           .returns(Vow$(M.record())),
       }),
@@ -166,6 +169,24 @@ export const prepareLocalOrchestrationAccountKit = (
         onFulfilled: M.call(TypedJsonShape).returns(
           M.arrayOf(DenomAmountShape),
         ),
+      }),
+      issuingChainInfoWatcher: M.interface('issuingChainInfoWatcher', {
+        onFulfilled: M.call(ChainInfoShape, {
+          baseName: M.string(),
+          denomAmount: DenomAmountShape,
+          destination: ChainAddressShape,
+          opts: M.or(IBCTransferOptionsShape, M.undefined()),
+          timeoutTimestampVowOrValue: M.any(), // TODO typeme
+        }).returns(VowShape),
+      }),
+      pfmConnectionsWatcher: M.interface('pfmConnectionsWatcher', {
+        onFulfilled: M.call([IBCConnectionInfoShape, IBCConnectionInfoShape], {
+          baseChainId: M.string(),
+          denomAmount: DenomAmountShape,
+          destination: ChainAddressShape,
+          opts: M.or(IBCTransferOptionsShape, M.undefined()),
+          timeoutTimestampVowOrValue: M.any(), // TODO typeme
+        }).returns(VowShape),
       }),
       invitationMakers: M.interface('invitationMakers', {
         CloseAccount: M.call().returns(M.promise()),
@@ -352,12 +373,13 @@ export const prepareLocalOrchestrationAccountKit = (
          * @param {{
          *   destination: ChainAddress;
          *   opts?: IBCMsgTransferOptions;
-         *   amount: DenomAmount;
+         *   denomAmount: DenomAmount;
+         *   isPfm: boolean;
          * }} ctx
          */
         onFulfilled(
           [{ transferChannel }, timeoutTimestamp],
-          { opts, amount, destination },
+          { opts, denomAmount, destination, isPfm },
         ) {
           const transferMsg = typedJson(
             '/ibc.applications.transfer.v1.MsgTransfer',
@@ -365,11 +387,11 @@ export const prepareLocalOrchestrationAccountKit = (
               sourcePort: transferChannel.portId,
               sourceChannel: transferChannel.channelId,
               token: {
-                amount: String(amount.value),
-                denom: amount.denom,
+                amount: String(denomAmount.value),
+                denom: denomAmount.denom,
               },
               sender: this.state.address.value,
-              receiver: destination.value,
+              receiver: !isPfm ? destination.value : 'pfm',
               timeoutHeight: opts?.timeoutHeight ?? {
                 revisionHeight: 0n,
                 revisionNumber: 0n,
@@ -395,9 +417,7 @@ export const prepareLocalOrchestrationAccountKit = (
        * first result
        */
       extractFirstResultWatcher: {
-        /**
-         * @param {Record<unknown, unknown>[]} results
-         */
+        /** @param {Record<unknown, unknown>[]} results */
         onFulfilled(results) {
           results.length === 1 ||
             Fail`expected exactly one result; got ${results}`;
@@ -481,6 +501,133 @@ export const prepareLocalOrchestrationAccountKit = (
           return harden(balances.map(toDenomAmount));
         },
       },
+      issuingChainInfoWatcher: {
+        /**
+         * @param {ChainInfo} chainInfo
+         * @param {{
+         *   destination: ChainAddress;
+         *   baseName: DenomDetail['baseName'];
+         *   denomAmount: DenomAmount;
+         *   opts?: IBCMsgTransferOptions;
+         *   timeoutTimestampVowOrValue: Vow<bigint> | bigint;
+         * }} ctx
+         */
+        onFulfilled(
+          chainInfo,
+          {
+            destination,
+            baseName,
+            denomAmount,
+            opts,
+            timeoutTimestampVowOrValue,
+          },
+        ) {
+          const { chainId: baseChainId, pfmEnabled } =
+            /** @type {CosmosChainInfo} */ (chainInfo);
+
+          if (baseChainId !== destination.chainId && baseName !== 'agoric') {
+            if (!pfmEnabled) {
+              throw makeError(
+                `PFM not supported on ${q(baseName)} - ${q(baseChainId)}`,
+              );
+            }
+
+            const currToIssuerV = chainHub.getConnectionInfo(
+              this.state.address.chainId,
+              baseChainId,
+            );
+            const issuerToDestV = chainHub.getConnectionInfo(
+              baseChainId,
+              destination.chainId,
+            );
+
+            return watch(
+              allVows([currToIssuerV, issuerToDestV]),
+              this.facets.pfmConnectionsWatcher,
+              {
+                baseChainId,
+                destination,
+                denomAmount,
+                opts,
+                timeoutTimestampVowOrValue,
+              },
+            );
+          }
+
+          // Direct transfer case
+          const connectionInfoV = chainHub.getConnectionInfo(
+            this.state.address.chainId,
+            destination.chainId,
+          );
+
+          return watch(
+            allVows([connectionInfoV, timeoutTimestampVowOrValue]),
+            this.facets.transferWatcher,
+            {
+              opts,
+              denomAmount,
+              destination,
+              isPfm: false,
+            },
+          );
+        },
+      },
+      pfmConnectionsWatcher: {
+        /**
+         * @param {[IBCConnectionInfo, IBCConnectionInfo]} connections
+         * @param {{
+         *   baseChainId: string;
+         *   destination: ChainAddress;
+         *   denomAmount: DenomAmount;
+         *   opts?: IBCMsgTransferOptions;
+         *   timeoutTimestampVowOrValue: Vow<bigint> | bigint;
+         * }} ctx
+         */
+        onFulfilled(
+          [currToIssuer, issuerToDest],
+          {
+            baseChainId,
+            destination,
+            denomAmount,
+            opts,
+            timeoutTimestampVowOrValue,
+          },
+        ) {
+          if (!currToIssuer.transferChannel) {
+            throw makeError(
+              `No transfer channel found between ${q(this.state.address.chainId)} and ${q(baseChainId)}`,
+            );
+          }
+
+          if (!issuerToDest.transferChannel) {
+            throw makeError(
+              `No transfer channel found between ${q(baseChainId)} and ${q(destination.chainId)}`,
+            );
+          }
+
+          /** @type {ForwardInfo} */
+          const pfmMemo = {
+            forward: {
+              receiver: destination.value,
+              port: issuerToDest.transferChannel.portId,
+              channel: issuerToDest.transferChannel.channelId,
+              timeout: '10m', // TODO const + expose in MsgTransferOpts?
+              retries: 3, // TODO const + expose in MsgTransferOpts?
+            },
+          };
+
+          return watch(
+            allVows([currToIssuer, timeoutTimestampVowOrValue]),
+            this.facets.transferWatcher,
+            {
+              opts: { ...opts, memo: JSON.stringify(pfmMemo) },
+              denomAmount,
+              destination,
+              isPfm: true,
+            },
+          );
+        },
+      },
       holder: {
         /** @type {HostOf<OrchestrationAccountI['asContinuingOffer']>} */
         asContinuingOffer() {
@@ -504,9 +651,7 @@ export const prepareLocalOrchestrationAccountKit = (
             });
           });
         },
-        /**
-         * @type {HostOf<OrchestrationAccountI['getBalance']>}
-         */
+        /** @type {HostOf<OrchestrationAccountI['getBalance']>} */
         getBalance(denomArg) {
           return asVow(() => {
             const [brand, denom] =
@@ -549,9 +694,7 @@ export const prepareLocalOrchestrationAccountKit = (
           );
         },
 
-        /**
-         * @type {HostOf<OrchestrationAccountI['getPublicTopics']>}
-         */
+        /** @type {HostOf<OrchestrationAccountI['getPublicTopics']>} */
         getPublicTopics() {
           // getStoragePath resolves promptly (same run), so we don't need a watcher
           // eslint-disable-next-line no-restricted-syntax
@@ -687,33 +830,37 @@ export const prepareLocalOrchestrationAccountKit = (
           return asVow(() => {
             trace('Transferring funds from LCA over IBC');
 
-            const connectionInfoV = watch(
-              chainHub.getConnectionInfo(
-                this.state.address.chainId,
-                destination.chainId,
-              ),
-            );
+            const denomAmount = coerceDenomAmount(chainHub, amount);
+            const denomDetail = chainHub.getAsset(denomAmount.denom);
+            if (!denomDetail) {
+              throw makeError(
+                `Unable to fetch denom detail for ${denomAmount.denom}`,
+              );
+            }
+            const { baseName, chainName } = denomDetail;
+            if (chainName !== 'agoric') {
+              throw makeError(
+                `Cannot transfer asset that's not present on ${this.state.address.chainId}. Ensure it's registered in ChainHub.`,
+              );
+            }
 
-            // set a `timeoutTimestamp` if caller does not supply either `timeoutHeight` or `timeoutTimestamp`
-            // TODO #9324 what's a reasonable default? currently 5 minutes
             const timeoutTimestampVowOrValue =
               opts?.timeoutTimestamp ??
               (opts?.timeoutHeight
                 ? 0n
-                : E(timestampHelper).getTimeoutTimestampNS());
+                : asVow(() => E(timestampHelper).getTimeoutTimestampNS()));
 
-            // don't resolve the vow until the transfer is confirmed on remote
-            // and reject vow if the transfer fails for any reason
-            const resultV = watch(
-              allVows([connectionInfoV, timeoutTimestampVowOrValue]),
-              this.facets.transferWatcher,
+            return watch(
+              chainHub.getChainInfo(baseName),
+              this.facets.issuingChainInfoWatcher,
               {
-                opts,
-                amount: coerceDenomAmount(chainHub, amount),
                 destination,
+                baseName,
+                denomAmount,
+                opts,
+                timeoutTimestampVowOrValue,
               },
             );
-            return resultV;
           });
         },
         /** @type {HostOf<OrchestrationAccountI['transferSteps']>} */
