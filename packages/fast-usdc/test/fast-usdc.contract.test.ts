@@ -20,23 +20,26 @@ const contractName = 'fast-usdc';
 const contractFile = `${dirname}/../src/fast-usdc.contract.js`;
 type StartFn = typeof import('../src/fast-usdc.contract.js').start;
 
-test('start', async t => {
+const startContract = async (
+  common: Pick<
+    Awaited<ReturnType<typeof commonSetup>>,
+    'brands' | 'commonPrivateArgs'
+  >,
+) => {
   const {
-    bootstrap,
     brands: { usdc },
     commonPrivateArgs,
-  } = await commonSetup(t);
+  } = common;
 
   const { zoe, bundleAndInstall } = await setUpZoeForTest({
     setJig: jig => {
       jig.chainHub.registerChain('osmosis', fetchedChainInfo.osmosis);
     },
   });
-
   const installation: Installation<StartFn> =
     await bundleAndInstall(contractFile);
 
-  const { creatorFacet, publicFacet } = await E(zoe).startInstance(
+  const startKit = await E(zoe).startInstance(
     installation,
     { USDC: usdc.issuer },
     {
@@ -45,7 +48,14 @@ test('start', async t => {
     },
     commonPrivateArgs,
   );
-  t.truthy(creatorFacet);
+
+  return { ...startKit, zoe };
+};
+
+test('start', async t => {
+  const common = await commonSetup(t);
+
+  const { publicFacet, zoe } = await startContract(common);
 
   const e1 = await E(MockCctpTxEvidences.AGORIC_NO_PARAMS)();
 
@@ -74,27 +84,14 @@ const scaleAmount = (frac: number, amount: Amount<'nat'>) => {
 };
 
 test('LP deposits, earns fees, withdraws', async t => {
+  const common = await commonSetup(t);
   const {
-    bootstrap,
     brands: { usdc },
-    commonPrivateArgs,
     utils,
-  } = await commonSetup(t);
+  } = common;
 
-  const { zoe, bundleAndInstall } = await setUpZoeForTest();
-  const installation: Installation<StartFn> =
-    await bundleAndInstall(contractFile);
-
-  const { creatorFacet, publicFacet, instance } = await E(zoe).startInstance(
-    installation,
-    { USDC: usdc.issuer },
-    {
-      poolFee: usdc.make(1n),
-      contractFee: usdc.make(1n),
-    },
-    commonPrivateArgs,
-  );
-  t.truthy(creatorFacet);
+  const { instance, creatorFacet, publicFacet, zoe } =
+    await startContract(common);
   const terms = await E(zoe).getTerms(instance);
 
   const { add, isGTE, subtract } = AmountMath;
