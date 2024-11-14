@@ -34,6 +34,7 @@ import {
 
 const VAULT_MANAGER = 'manager0';
 
+/** @type {(x: number) => number} */
 const scale6 = x => x * 1_000_000;
 
 // TODO produce this dynamically from an Offers object exported from a package clientSupport

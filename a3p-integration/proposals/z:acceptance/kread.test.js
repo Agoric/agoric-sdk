@@ -76,6 +76,7 @@ test.serial('Alice sells one unequipped Item', async t => {
   );
 
   const soldItemNode = itemListAfter.filter(
+    /** @param {unknown} itemNode */
     itemNode => !itemListBefore.includes(itemNode),
   );
   const soldItem = await getMarketItem(soldItemNode);
@@ -102,6 +103,7 @@ test.serial('Bob buys an Item on marketplace', async t => {
   );
 
   const boughtItemNode = itemListBefore.filter(
+    /** @param {unknown} itemNode */
     itemNode => !itemListAfter.includes(itemNode),
   );
   t.is(

@@ -17,7 +17,7 @@ import { makeTimerUtils } from './utils.js';
  *   fees?: string,
  *   verbose?: boolean,
  *   keyring?: {home?: string, backend: string},
- *   stdout: Pick<import('stream').Writable, 'write'>,
+ *   stdout?: Pick<import('stream').Writable, 'write'>,
  *   execFileSync: typeof import('child_process').execFileSync,
  *   delay: (ms: number) => Promise<void>,
  *   dryRun?: boolean,
@@ -25,6 +25,7 @@ import { makeTimerUtils } from './utils.js';
  */
 export const sendAction = async (bridgeAction, opts) => {
   const { marshaller } = opts;
+  // @ts-expect-error BridgeAction has methods disallowed by Passable
   const offerBody = JSON.stringify(marshaller.toCapData(harden(bridgeAction)));
 
   // tryExit should not require --allow-spend
@@ -80,6 +81,7 @@ export const makeAgdWalletUtils = async (
       delay,
       execFileSync,
       from,
+      // @ts-expect-error version skew in @endo/marshal and/or @endo/pass-style
       marshaller,
       keyring: { backend: 'test' },
     });

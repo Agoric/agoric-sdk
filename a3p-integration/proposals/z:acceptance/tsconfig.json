@@ -12,5 +12,6 @@
     "noImplicitAny": true,
     // XXX synthetic-chain has some errors
     "skipLibCheck": true
-  }
+  },
+  "exclude": ["restart-valueVow", "start-valueVow", "localchaintest-submission"]
 }
