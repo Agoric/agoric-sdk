@@ -6,6 +6,18 @@ import { makeBoardRemote } from '@agoric/vats/tools/board-utils.js';
  * @import {AgoricNamesRemotes, BoardRemote, VBankAssetDetail} from '@agoric/vats/tools/board-utils.js';
  */
 
+// TODO Move to packages/internal.
+/**
+ * Parses the input and returns either a finite number or NaN.
+ *
+ * @param {string} input
+ * @returns {number}
+ */
+export const parseFiniteNumber = input => {
+  const result = /[0-9]/.test(input || '') ? Number(input) : NaN;
+  return Number.isFinite(result) ? result : NaN;
+};
+
 /**
  * JSON.stringify replacer to handle bigint
  *

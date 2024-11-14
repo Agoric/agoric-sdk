@@ -98,13 +98,13 @@ export const makeGovCommand = (_logger, io = {}) => {
     optUtils,
   ) {
     const utils = await (optUtils || makeVstorageKit({ fetch }, networkConfig));
-    const { agoricNames, readLatestHead } = utils;
+    const { agoricNames, readPublished } = utils;
 
     assert(keyringBackend, 'missing keyring-backend option');
 
     let current;
     if (sendFrom) {
-      current = await getCurrent(sendFrom, { readLatestHead });
+      current = await getCurrent(sendFrom, { readPublished });
     }
 
     const offer = toOffer(agoricNames, current);
@@ -134,9 +134,9 @@ export const makeGovCommand = (_logger, io = {}) => {
     show({ timestamp, height, offerId: offer.id, txhash });
     const checkInWallet = async blockInfo => {
       const [state, update] = await Promise.all([
-        getCurrent(sendFrom, { readLatestHead }),
-        getLastUpdate(sendFrom, { readLatestHead }),
-        readLatestHead(`published.wallet.${sendFrom}`),
+        getCurrent(sendFrom, { readPublished }),
+        getLastUpdate(sendFrom, { readPublished }),
+        readPublished(`wallet.${sendFrom}`),
       ]);
       if (update.updated === 'offerStatus' && update.status.id === offer.id) {
         return blockInfo;
@@ -265,11 +265,11 @@ export const makeGovCommand = (_logger, io = {}) => {
     )
     .requiredOption('--for <string>', 'description of the invitation')
     .action(async opts => {
-      const { agoricNames, readLatestHead } = await makeVstorageKit(
+      const { agoricNames, readPublished } = await makeVstorageKit(
         { fetch },
         networkConfig,
       );
-      const current = await getCurrent(opts.from, { readLatestHead });
+      const current = await getCurrent(opts.from, { readPublished });
 
       const known = findContinuingIds(current, agoricNames);
       if (!known) {
@@ -294,11 +294,11 @@ export const makeGovCommand = (_logger, io = {}) => {
       normalizeAddress,
     )
     .action(async opts => {
-      const { agoricNames, readLatestHead } = await makeVstorageKit(
+      const { agoricNames, readPublished } = await makeVstorageKit(
         { fetch },
         networkConfig,
       );
-      const current = await getCurrent(opts.from, { readLatestHead });
+      const current = await getCurrent(opts.from, { readPublished });
 
       const found = findContinuingIds(current, agoricNames);
       for (const it of found) {
@@ -334,18 +334,15 @@ export const makeGovCommand = (_logger, io = {}) => {
     )
     .action(async function (opts, options) {
       const utils = await makeVstorageKit({ fetch }, networkConfig);
-      const { readLatestHead } = utils;
+      const { readPublished } = utils;
 
-      const info = await readLatestHead(
-        `published.committees.${opts.pathname}.latestQuestion`,
+      const questionDesc = await readPublished(
+        `committees.${opts.pathname}.latestQuestion`,
       ).catch(err => {
         // CommanderError is a class constructor, and so
         // must be invoked with `new`.
         throw new CommanderError(1, 'VSTORAGE_FAILURE', err.message);
       });
-
-      // XXX runtime shape-check
-      const questionDesc = /** @type {QuestionDetails} */ (info);
 
       // TODO support multiple position arguments
       const chosenPositions = [questionDesc.positions[opts.forPosition]];

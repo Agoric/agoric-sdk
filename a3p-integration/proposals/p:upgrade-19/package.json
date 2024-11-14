@@ -1,0 +1,33 @@
+{
+  "agoricProposal": {
+    "type": "/agoric.swingset.CoreEvalProposal",
+    "sdk-generate": [
+      "testing/replace-feeDistributor-short.js replaceFeeDistributor"
+    ]
+  },
+  "type": "module",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "@agoric/client-utils": "0.1.1-dev-02c06c4.0",
+    "@agoric/ertp": "dev",
+    "@agoric/synthetic-chain": "^0.3.0",
+    "@agoric/zoe": "dev",
+    "@endo/errors": "1.2.7",
+    "@endo/init": "^1.1.5",
+    "@endo/marshal": "^1.5.4",
+    "ava": "^5.3.1",
+    "better-sqlite3": "^9.6.0",
+    "execa": "^9.3.1"
+  },
+  "ava": {
+    "concurrency": 1,
+    "timeout": "2m",
+    "files": [
+      "!submission"
+    ]
+  },
+  "scripts": {
+    "agops": "yarn --cwd /usr/src/agoric-sdk/ --silent agops"
+  },
+  "packageManager": "yarn@4.2.2"
+}

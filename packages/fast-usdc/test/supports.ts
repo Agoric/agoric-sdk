@@ -171,7 +171,6 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
       vowTools,
     },
     brands: {
-      poolShares: withAmountUtils(makeIssuerKit('Fast USDC Pool Shares')),
       usdc: usdcSansMint,
     },
     mocks: {
@@ -188,6 +187,7 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
     },
     facadeServices: {
       agoricNames,
+      /** A chainHub for Exo tests, distinct from the one a contract makes within `withOrchestration` */
       chainHub,
       localchain,
       orchestrationService: cosmosInterchainService,

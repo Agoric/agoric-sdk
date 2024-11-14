@@ -175,8 +175,8 @@ export const makeOracleCommand = (logger, io = {}) => {
       console.warn(sendHint);
     });
 
-  const findOracleCap = async (instance, from, readLatestHead) => {
-    const current = await getCurrent(from, { readLatestHead });
+  const findOracleCap = async (instance, from, readPublished) => {
+    const current = await getCurrent(from, { readPublished });
 
     const { offerToUsedInvitation: entries } = /** @type {any} */ (current);
     Array.isArray(entries) || Fail`entries must be an array: ${entries}`;

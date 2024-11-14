@@ -39,13 +39,10 @@ export const makeVaultsCommand = logger => {
       normalizeAddress,
     )
     .action(async function (opts) {
-      const { readLatestHead } = await makeVstorageKit(
-        { fetch },
-        networkConfig,
-      );
+      const { readPublished } = await makeVstorageKit({ fetch }, networkConfig);
 
       const current = await getCurrent(opts.from, {
-        readLatestHead,
+        readPublished,
       });
 
       const vaultStoragePaths = current.offerToPublicSubscriberPaths.map(
@@ -102,14 +99,14 @@ export const makeVaultsCommand = logger => {
     .requiredOption('--vaultId <string>', 'Key of vault (e.g. vault1)')
     .action(async function (opts) {
       logger.warn('running with options', opts);
-      const { agoricNames, readLatestHead } = await makeVstorageKit(
+      const { agoricNames, readPublished } = await makeVstorageKit(
         { fetch },
         networkConfig,
       );
 
       const previousOfferId = await lookupOfferIdForVault(
         opts.vaultId,
-        getCurrent(opts.from, { readLatestHead }),
+        getCurrent(opts.from, { readPublished }),
       );
 
       const offer = Offers.vaults.AdjustBalances(
@@ -146,14 +143,14 @@ export const makeVaultsCommand = logger => {
     )
     .action(async function (opts) {
       logger.warn('running with options', opts);
-      const { agoricNames, readLatestHead } = await makeVstorageKit(
+      const { agoricNames, readPublished } = await makeVstorageKit(
         { fetch },
         networkConfig,
       );
 
       const previousOfferId = await lookupOfferIdForVault(
         opts.vaultId,
-        getCurrent(opts.from, { readLatestHead }),
+        getCurrent(opts.from, { readPublished }),
       );
 
       const offer = Offers.vaults.CloseVault(

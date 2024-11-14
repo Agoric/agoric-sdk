@@ -118,7 +118,7 @@ export const DenomInfoShape = {
 };
 
 /** @type {TypedPattern<DenomAmount>} */
-export const DenomAmountShape = { denom: DenomShape, value: M.bigint() };
+export const DenomAmountShape = { denom: DenomShape, value: M.nat() };
 
 /** @type {TypedPattern<Amount<'nat'>>} */
 export const AnyNatAmountShape = harden({
