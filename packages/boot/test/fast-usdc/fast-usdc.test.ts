@@ -44,9 +44,9 @@ test.serial(
     );
     await evalProposal(materials);
 
-    // update now that fastUSDC is instantiated
+    // update now that fastUsdc is instantiated
     refreshAgoricNamesRemotes();
-    t.truthy(agoricNamesRemotes.instance.fastUSDC);
+    t.truthy(agoricNamesRemotes.instance.fastUsdc);
     t.truthy(agoricNamesRemotes.brand.FastLP);
 
     const { EV } = t.context.runUtils;
@@ -95,6 +95,14 @@ test.serial(
     Array.isArray(details) || Fail`expected SET value`;
     t.is(details.length, 1, 'oracle wallet has 1 invitation');
     t.is(details[0].description, 'oracle operator invitation');
-    // XXX t.is(details.instance, agoricNames.instance.fastUSDC) should work
+    // XXX t.is(details.instance, agoricNames.instance.fastUsdc) should work
   },
 );
+
+test.serial('restart contract', async t => {
+  const { EV } = t.context.runUtils;
+  await null;
+  const kit = await EV.vat('bootstrap').consumeItem('fastUsdcKit');
+  const actual = await EV(kit.adminFacet).restartContract(kit.privateArgs);
+  t.deepEqual(actual, { incarnationNumber: 1 });
+});
