@@ -276,13 +276,13 @@ export default async function startMain(progname, rawArgs, powers, opts) {
       await rmVerbose(serverDir);
     }
 
+    /** @type {(args: string[], spawnOpts?: Parameters<typeof pspawn>[2], dockerArgs?: string[]) => ReturnType<pspawn>} */
     let chainSpawn;
     if (!popts.dockerTag) {
-      chainSpawn = (args, spawnOpts = undefined) => {
-        return pspawn(cosmosChain, [...args, `--home=${serverDir}`], spawnOpts);
-      };
+      chainSpawn = (args, spawnOpts) =>
+        pspawn(cosmosChain, [...args, `--home=${serverDir}`], spawnOpts);
     } else {
-      chainSpawn = (args, spawnOpts = undefined, dockerArgs = []) =>
+      chainSpawn = (args, spawnOpts, dockerArgs = []) =>
         pspawn(
           'docker',
           [
@@ -482,12 +482,12 @@ export default async function startMain(progname, rawArgs, powers, opts) {
       await rmVerbose(serverDir);
     }
 
+    /** @type {(args: string[], spawnOpts?: Parameters<typeof pspawn>[2], dockerArgs?: string[]) => ReturnType<pspawn>} */
     let soloSpawn;
     if (!popts.dockerTag) {
-      soloSpawn = (args, spawnOpts = undefined) =>
-        pspawn(agSolo, args, spawnOpts);
+      soloSpawn = (args, spawnOpts) => pspawn(agSolo, args, spawnOpts);
     } else {
-      soloSpawn = (args, spawnOpts = undefined, dockerArgs = []) =>
+      soloSpawn = (args, spawnOpts, dockerArgs = []) =>
         pspawn(
           'docker',
           [

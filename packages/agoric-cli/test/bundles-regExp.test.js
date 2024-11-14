@@ -1,6 +1,7 @@
 import test from 'ava';
 import { PACKAGE_NAME_RE } from '../src/lib/bundles.js';
 
+/** @type {Array<[name: string, spec?: string]>} */
 const goodPatterns = [
   ['@agoric/assert-v0.6.0'],
   ['@agoric/base-zone-v0.1.0/', '@agoric/base-zone-v0.1.0'],

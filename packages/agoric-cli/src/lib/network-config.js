@@ -1,5 +1,9 @@
 import { NonNullish } from '@agoric/internal';
 
+/**
+ * @import {MinimalNetworkConfig} from '@agoric/client-utils';
+ */
+
 export const networkConfigUrl = agoricNetSubdomain =>
   `https://${agoricNetSubdomain}.agoric.net/network-config`;
 export const rpcUrl = agoricNetSubdomain =>
