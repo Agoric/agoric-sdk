@@ -78,7 +78,7 @@
   },
   "ava": {
     "require": [
-      "@endo/init/legacy.js"
+      "@endo/init/debug.js"
     ],
     "concurrency": 1,
     "serial": true,
