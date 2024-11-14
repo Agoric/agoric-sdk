@@ -79,14 +79,14 @@ const contract = async (
             orchFns.depositAndDelegate(account, seat, validator),
           'Deposit and delegate',
           undefined,
-          {
+          harden({
             give: {
               Stake: AmountShape,
             },
             want: {},
             // user cannot exit their seat; contract must exit it.
             exit: { waived: M.null() },
-          },
+          }),
         );
       },
       /**
