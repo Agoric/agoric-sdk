@@ -42,9 +42,7 @@ export const DenomDetailShape = M.splitRecord(
   { brand: BrandShape },
 );
 
-/**
- * @enum {(typeof HubName)[keyof typeof HubName]}
- */
+/** @enum {(typeof HubName)[keyof typeof HubName]} */
 export const HubName = /** @type {const} */ ({
   /** agoricNames key for ChainInfo hub */
   Chain: 'chain',
