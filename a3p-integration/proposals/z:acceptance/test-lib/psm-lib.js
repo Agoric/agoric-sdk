@@ -81,118 +81,6 @@ export const bankSend = (addr, wanted, from = VALIDATORADDR) => {
 };
 
 /**
- *
- * @param {{
- *   address: string
- *   instanceName: string
- *   newParams: Params
- *   deadline: bigint
- *   offerId: string
- * }} QuestionDetails
- */
-export const buildProposePSMParamChangeOffer = async ({
-  address,
-  instanceName,
-  newParams,
-  deadline,
-  offerId,
-}) => {
-  const charterAcceptOfferId = await agops.ec(
-    'find-continuing-id',
-    '--for',
-    `${'charter\\ member\\ invitation'}`,
-    '--from',
-    address,
-  );
-  console.log('charterAcceptOfferId', charterAcceptOfferId);
-  const [brands, instances] = await Promise.all([
-    agoric
-      .follow('-lF', ':published.agoricNames.brand', '-o', 'text')
-      .then(brandsRaw =>
-        Object.fromEntries(marshaller.fromCapData(JSON.parse(brandsRaw))),
-      ),
-    agoric
-      .follow('-lF', ':published.agoricNames.instance', '-o', 'text')
-      .then(instancesRaw =>
-        Object.fromEntries(marshaller.fromCapData(JSON.parse(instancesRaw))),
-      ),
-  ]);
-
-  console.log('charterAcceptOfferId', charterAcceptOfferId);
-  console.log('BRANDS', brands);
-  console.log('INSTANCE', instances);
-
-  /**
-   * @param {bigint} numValInPercent
-   */
-  const toRatio = numValInPercent => {
-    const commonDenominator = AmountMath.make(brands.IST, 10_000n);
-    const numerator = AmountMath.make(brands.IST, numValInPercent * 100n); // Convert to bps
-
-    return {
-      numerator,
-      denominator: commonDenominator,
-    };
-  };
-
-  const params = {};
-  if (newParams.giveMintedFeeVal) {
-    params.GiveMintedFee = toRatio(newParams.giveMintedFeeVal);
-  }
-
-  if (newParams.wantMintedFeeVal) {
-    params.WantMintedFee = toRatio(newParams.wantMintedFeeVal);
-  }
-
-  if (newParams.mintLimit) {
-    params.MintLimit = AmountMath.make(brands.IST, newParams.mintLimit);
-  }
-
-  const offerSpec = /** @type {const} */ ({
-    id: offerId,
-    invitationSpec: {
-      source: 'continuing',
-      previousOffer: charterAcceptOfferId,
-      invitationMakerName: 'VoteOnParamChange',
-    },
-    proposal: {},
-    offerArgs: {
-      instance: instances[instanceName],
-      params,
-      deadline,
-    },
-  });
-
-  const spendAction = {
-    method: 'executeOffer',
-    offer: offerSpec,
-  };
-
-  // @ts-expect-error XXX Passable
-  const offer = JSON.stringify(marshaller.toCapData(harden(spendAction)));
-  console.log(offerSpec);
-  console.log(offer);
-
-  return executeOffer(address, offer);
-};
-
-/**
- *
- * @param {{
- *   committeeAddrs: Array<string>
- *   position: number | string
- * }} VotingDetails
- */
-export const voteForNewParams = ({ committeeAddrs, position }) => {
-  console.log('ACTIONS voting for position', position, 'using', committeeAddrs);
-  return Promise.all(
-    committeeAddrs.map(account =>
-      agops.ec('vote', '--forPosition', `${position}`, '--send-from', account),
-    ),
-  );
-};
-
-/**
  * @param {{follow: (...params: string[]) => Promise<object> }} io
  */
 export const fetchLatestEcQuestion = async io => {
@@ -260,17 +148,90 @@ const checkCommitteeElectionResult = (
 export const implementPsmGovParamChange = async (question, voting, io) => {
   const { now: getNow, follow } = io;
   const now = getNow();
-  const deadline = BigInt(
-    question.votingDuration * 60 + Math.round(now / 1000),
+
+  // Read current state.
+  const { address, instanceName, newParams, votingDuration } = question;
+  const deadline = BigInt(votingDuration * 60 + Math.round(now / 1000));
+  const offerId = now.toString();
+  const charterAcceptOfferId = await agops.ec(
+    'find-continuing-id',
+    '--for',
+    `${'charter\\ member\\ invitation'}`,
+    '--from',
+    address,
   );
+  console.log('charterAcceptOfferId', charterAcceptOfferId);
+  const [brands, instances] = await Promise.all([
+    agoric
+      .follow('-lF', ':published.agoricNames.brand', '-o', 'text')
+      .then(brandsRaw =>
+        Object.fromEntries(marshaller.fromCapData(JSON.parse(brandsRaw))),
+      ),
+    agoric
+      .follow('-lF', ':published.agoricNames.instance', '-o', 'text')
+      .then(instancesRaw =>
+        Object.fromEntries(marshaller.fromCapData(JSON.parse(instancesRaw))),
+      ),
+  ]);
+  console.log('charterAcceptOfferId', charterAcceptOfferId);
+  console.log('BRANDS', brands);
+  console.log('INSTANCE', instances);
 
-  await buildProposePSMParamChangeOffer({
-    ...question,
-    deadline,
-    offerId: now.toString(),
+  // Construct and execute the offer.
+  /**
+   * @param {bigint} numValInPercent
+   */
+  const toRatio = numValInPercent => {
+    const commonDenominator = AmountMath.make(brands.IST, 10_000n);
+    const numerator = AmountMath.make(brands.IST, numValInPercent * 100n); // Convert to bps
+
+    return {
+      numerator,
+      denominator: commonDenominator,
+    };
+  };
+  const params = {};
+  if (newParams.giveMintedFeeVal) {
+    params.GiveMintedFee = toRatio(newParams.giveMintedFeeVal);
+  }
+  if (newParams.wantMintedFeeVal) {
+    params.WantMintedFee = toRatio(newParams.wantMintedFeeVal);
+  }
+  if (newParams.mintLimit) {
+    params.MintLimit = AmountMath.make(brands.IST, newParams.mintLimit);
+  }
+  const offerSpec = /** @type {const} */ ({
+    id: offerId,
+    invitationSpec: {
+      source: 'continuing',
+      previousOffer: charterAcceptOfferId,
+      invitationMakerName: 'VoteOnParamChange',
+    },
+    proposal: {},
+    offerArgs: {
+      instance: instances[instanceName],
+      params,
+      deadline,
+    },
   });
-  await voteForNewParams(voting);
+  const spendAction = {
+    method: 'executeOffer',
+    offer: offerSpec,
+  };
+  // @ts-expect-error XXX Passable
+  const offer = JSON.stringify(marshaller.toCapData(harden(spendAction)));
+  console.log(offerSpec);
+  console.log(offer);
+  await executeOffer(address, offer);
 
+  // Vote on the change.
+  const { committeeAddrs, position } = voting;
+  console.log('ACTIONS voting for position', position, 'using', committeeAddrs);
+  await Promise.all(
+    committeeAddrs.map(account =>
+      agops.ec('vote', '--forPosition', `${position}`, '--send-from', account),
+    ),
+  );
   console.log('ACTIONS wait for the vote deadline to pass');
   await retryUntilCondition(
     () => fetchLatestEcQuestion({ follow }),
