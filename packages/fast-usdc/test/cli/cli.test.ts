@@ -105,8 +105,74 @@ test('shows help for config show command', async t => {
   t.snapshot(output);
 });
 
+test('shows help for deposit command', async t => {
+  const output = await collectStdOut([CLI_PATH, 'deposit', '-h']);
+
+  t.snapshot(output);
+});
+
+test('shows help for withdraw command', async t => {
+  const output = await collectStdOut([CLI_PATH, 'withdraw', '-h']);
+
+  t.snapshot(output);
+});
+
+test('shows error when deposit command is run without options', async t => {
+  const output = await collectStdErr([CLI_PATH, 'deposit']);
+
+  t.snapshot(output);
+});
+
+test('shows error when deposit command is run with invalid amount', async t => {
+  const output = await collectStdErr([CLI_PATH, 'deposit', 'not-a-number']);
+
+  t.snapshot(output);
+});
+
+test('shows error when deposit command is run with invalid fee', async t => {
+  const output = await collectStdErr([
+    CLI_PATH,
+    'deposit',
+    '50',
+    '--fee',
+    'not-a-number',
+  ]);
+
+  t.snapshot(output);
+});
+
+test('shows error when withdraw command is run without options', async t => {
+  const output = await collectStdErr([CLI_PATH, 'withdraw']);
+
+  t.snapshot(output);
+});
+
+test('shows error when withdraw command is run with invalid amount', async t => {
+  const output = await collectStdErr([CLI_PATH, 'withdraw', 'not-a-number']);
+
+  t.snapshot(output);
+});
+
+test('shows error when withdraw command is run with invalid fee', async t => {
+  const output = await collectStdErr([
+    CLI_PATH,
+    'withdraw',
+    '50',
+    '--fee',
+    'not-a-number',
+  ]);
+
+  t.snapshot(output);
+});
+
 test('shows error when config init command is run without options', async t => {
   const output = await collectStdErr([CLI_PATH, 'config', 'init']);
+
+  t.snapshot(output);
+});
+
+test('shows error when transfer command is run without options', async t => {
+  const output = await collectStdErr([CLI_PATH, 'transfer']);
 
   t.snapshot(output);
 });
@@ -118,6 +184,36 @@ test('shows error when config init command is run without eth seed', async t => 
     'init',
     '--noble-seed',
     'foo',
+    '--agoric-seed',
+    'bar',
+  ]);
+
+  t.snapshot(output);
+});
+
+test('shows error when config init command is run without agoric seed', async t => {
+  const output = await collectStdErr([
+    CLI_PATH,
+    'config',
+    'init',
+    '--noble-seed',
+    'foo',
+    '--eth-seed',
+    'bar',
+  ]);
+
+  t.snapshot(output);
+});
+
+test('shows error when config init command is run without noble seed', async t => {
+  const output = await collectStdErr([
+    CLI_PATH,
+    'config',
+    'init',
+    '--agoric-seed',
+    'foo',
+    '--eth-seed',
+    'bar',
   ]);
 
   t.snapshot(output);
@@ -139,13 +235,17 @@ test('calls config init with default args', t => {
     'foo',
     '--eth-seed',
     'bar',
+    '--agoric-seed',
+    'bazinga',
   ]);
 
   const args = config.getInitArgs();
   t.is(args.shift().path, `${homeDir}config.json`);
   t.deepEqual(args, [
     {
-      agoricRpc: 'http://127.0.0.1:1317',
+      agoricSeed: 'bazinga',
+      agoricApi: 'http://127.0.0.1:1317',
+      agoricRpc: 'http://127.0.0.1:26656',
       ethRpc: 'http://127.0.0.1:8545',
       ethSeed: 'bar',
       nobleRpc: 'http://127.0.0.1:26657',
@@ -174,6 +274,10 @@ test('calls config init with optional args', t => {
     'foo',
     '--eth-seed',
     'bar',
+    '--agoric-seed',
+    'bazinga',
+    '--agoric-api',
+    '127.0.0.1:0000',
     '--agoric-rpc',
     '127.0.0.1:1111',
     '--eth-rpc',
@@ -194,6 +298,8 @@ test('calls config init with optional args', t => {
   t.is(args.shift().path, `${homeDir}config.json`);
   t.deepEqual(args, [
     {
+      agoricApi: '127.0.0.1:0000',
+      agoricSeed: 'bazinga',
       agoricRpc: '127.0.0.1:1111',
       ethRpc: '127.0.0.1:2222',
       ethSeed: 'bar',
@@ -223,6 +329,10 @@ test('calls config update with args', t => {
     'foo',
     '--eth-seed',
     'bar',
+    '--agoric-seed',
+    'bazinga',
+    '--agoric-api',
+    '127.0.0.1:0000',
     '--agoric-rpc',
     '127.0.0.1:1111',
     '--eth-rpc',
@@ -243,6 +353,8 @@ test('calls config update with args', t => {
   t.is(args.shift().path, `${homeDir}config.json`);
   t.deepEqual(args, [
     {
+      agoricSeed: 'bazinga',
+      agoricApi: '127.0.0.1:0000',
       agoricRpc: '127.0.0.1:1111',
       ethRpc: '127.0.0.1:2222',
       ethSeed: 'bar',
