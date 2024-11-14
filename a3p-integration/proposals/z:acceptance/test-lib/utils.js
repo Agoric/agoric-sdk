@@ -77,10 +77,12 @@ export const makeTimerUtils = ({ setTimeout }) => {
    */
   const delay = ms => new Promise(resolve => setTimeout(() => resolve(), ms));
 
-  /** @param {number | bigint} timestamp */
-  const waitUntil = async timestamp => {
-    const timeDelta = Math.floor(Date.now() / 1000) - Number(timestamp);
-    await delay(timeDelta);
+  /** @param {number | bigint} secondsSinceEpoch */
+  const waitUntil = async secondsSinceEpoch => {
+    await null;
+    const waitMs = Number(secondsSinceEpoch) * 1000 - Date.now();
+    if (waitMs <= 0) return;
+    await delay(waitMs);
   };
 
   return {
