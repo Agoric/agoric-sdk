@@ -157,7 +157,7 @@ NextEvent:
 	addressToUpdate = make(map[string]sdk.Coins, len(addressToUpdate))
 	for addr, denoms := range unfilteredAddresses {
 		accAddr, err := sdk.AccAddressFromBech32(addr)
-		if err == nil && am.keeper.IsModuleAccount(ctx, accAddr) {
+		if err == nil && am.keeper.IsAllowedMonitoringAccount(ctx, accAddr) {
 			// Pass through the module account.
 			addressToUpdate[addr] = denoms
 		}

@@ -6,7 +6,6 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vbank/types"
-	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	paramtypes "github.com/cosmos/cosmos-sdk/x/params/types"
 
 	vm "github.com/Agoric/agoric-sdk/golang/cosmos/vm"
@@ -88,13 +87,9 @@ func (k Keeper) GetModuleAccountAddress(ctx sdk.Context, name string) sdk.AccAdd
 	return acct.GetAddress()
 }
 
-func (k Keeper) IsModuleAccount(ctx sdk.Context, addr sdk.AccAddress) bool {
-	acc := k.accountKeeper.GetAccount(ctx, addr)
-	if acc == nil {
-		return false
-	}
-	_, ok := acc.(authtypes.ModuleAccountI)
-	return ok
+func (k Keeper) IsAllowedMonitoringAccount(ctx sdk.Context, addr sdk.AccAddress) bool {
+	params := k.GetParams(ctx)
+	return params.IsAllowedMonitoringAccount(addr.String())
 }
 
 func (k Keeper) GetParams(ctx sdk.Context) (params types.Params) {
