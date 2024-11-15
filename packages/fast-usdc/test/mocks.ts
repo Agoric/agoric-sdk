@@ -1,3 +1,4 @@
+import type { HostInterface } from '@agoric/async-flow';
 import type {
   ChainAddress,
   DenomAmount,
@@ -5,35 +6,44 @@ import type {
 } from '@agoric/orchestration';
 import type { Zone } from '@agoric/zone';
 import type { VowTools } from '@agoric/vow';
-import type { HostInterface } from '@agoric/async-flow';
 import type { LogFn } from '../src/types.js';
 
 export const prepareMockOrchAccounts = (
   zone: Zone,
   {
-    vowTools: { makeVowKit },
+    vowTools: { makeVowKit, asVow },
     log,
-  }: { vowTools: VowTools; log: (...args: any[]) => void },
+    usdc,
+  }: {
+    vowTools: VowTools;
+    log: (...args: any[]) => void;
+    usdc: { brand: Brand<'nat'>; issuer: Issuer<'nat'> };
+  },
 ) => {
-  // can only be called once per test
-  const poolAccountTransferVK = makeVowKit();
+  // each can only be resolved/rejected once per test
+  const poolAccountTransferVK = makeVowKit<undefined>();
 
-  const mockedPoolAccount = zone.exo('Pool LocalOrchAccount', undefined, {
+  const mockedPoolAccount = zone.exo('Mock Pool LocalOrchAccount', undefined, {
     transfer(destination: ChainAddress, amount: DenomAmount) {
       log('PoolAccount.transfer() called with', destination, amount);
       return poolAccountTransferVK.vow;
     },
+    deposit(payment: Payment<'nat'>) {
+      log('PoolAccount.deposit() called with', payment);
+      // XXX consider a mock for deposit failure
+      return asVow(async () => usdc.issuer.getAmountOf(payment));
+    },
   });
 
   const poolAccount = mockedPoolAccount as unknown as HostInterface<
-    OrchestrationAccount<{
-      chainId: 'agoric';
-    }>
+    OrchestrationAccount<{ chainId: 'agoric' }>
   >;
 
   return {
-    poolAccount,
-    poolAccountTransferVResolver: poolAccountTransferVK.resolver,
+    mockPoolAccount: {
+      account: poolAccount,
+      transferVResolver: poolAccountTransferVK.resolver,
+    },
   };
 };
 

@@ -296,7 +296,7 @@ export interface LiquidStakingMethods {
 /** Methods supported only on Agoric chain accounts */
 export interface LocalAccountMethods extends StakingAccountActions {
   /** deposit payment (from zoe, for example) to the account */
-  deposit: (payment: Payment<'nat'>) => Promise<void>;
+  deposit: (payment: Payment<'nat'>) => Promise<Amount<'nat'>>;
   /** withdraw a Payment from the account */
   withdraw: (amount: Amount<'nat'>) => Promise<Payment<'nat'>>;
   /**

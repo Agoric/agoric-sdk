@@ -37,3 +37,8 @@ export const PendingTxShape = {
   status: M.or(...Object.values(PendingTxStatus)),
 };
 harden(PendingTxShape);
+
+export const EudParamShape = {
+  EUD: M.string(),
+};
+harden(EudParamShape);

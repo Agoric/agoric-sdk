@@ -1,4 +1,19 @@
 import { makeError, q } from '@endo/errors';
+import { M, mustMatch } from '@endo/patterns';
+
+/**
+ * @import {Pattern} from '@endo/patterns';
+ */
+
+/**
+ * Default pattern matcher for `getQueryParams`.
+ * Does not assert keys exist, but ensures existing keys are strings.
+ */
+const QueryParamsShape = M.splitRecord(
+  {},
+  {},
+  M.recordOf(M.string(), M.string()),
+);
 
 /**
  * Very minimal 'URL query string'-like parser that handles:
@@ -22,7 +37,7 @@ export const addressTools = {
    */
   hasQueryParams: address => {
     try {
-      const { params } = addressTools.getQueryParams(address);
+      const params = addressTools.getQueryParams(address);
       return Object.keys(params).length > 0;
     } catch {
       return false;
@@ -30,34 +45,27 @@ export const addressTools = {
   },
   /**
    * @param {string} address
-   * @returns {{ address: string, params: Record<string, string>}}
+   * @param {Pattern} [shape]
+   * @returns {Record<string, string>}
+   * @throws {Error} if the address cannot be parsed or params do not match `shape`
    */
-  getQueryParams: address => {
+  getQueryParams: (address, shape = QueryParamsShape) => {
     const parts = address.split('?');
-    if (parts.length === 0 || parts.length > 2) {
-      throw makeError(
-        `Invalid input. Must be of the form 'address?params': ${q(address)}`,
-      );
+    if (parts.length !== 2) {
+      throw makeError(`Unable to parse query params: ${q(address)}`);
     }
-    const result = {
-      address: parts[0],
-      params: {},
-    };
-
-    // no parameters, return early
-    if (parts.length === 1) {
-      return result;
-    }
-
+    /** @type {Record<string, string>} */
+    const result = {};
     const paramPairs = parts[1].split('&');
     for (const pair of paramPairs) {
       const [key, value] = pair.split('=');
       if (!key || !value) {
         throw makeError(`Invalid parameter format in pair: ${q(pair)}`);
       }
-      result.params[key] = value;
+      result[key] = value;
     }
-
+    harden(result);
+    mustMatch(result, shape);
     return result;
   },
 };
