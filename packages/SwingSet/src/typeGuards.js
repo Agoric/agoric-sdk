@@ -10,10 +10,11 @@ export const ManagerType = M.or(
 
 const Bundle = M.splitRecord({ moduleType: M.string() });
 
-const SwingsetConfigOptions = harden({
+const SwingsetConfigOptions = {
   creationOptions: M.splitRecord({}, { critical: M.boolean() }),
   parameters: M.recordOf(M.string(), M.any()),
-});
+};
+harden(SwingsetConfigOptions);
 
 const SwingSetConfigProperties = M.or(
   M.splitRecord({ sourceSpec: M.string() }, SwingsetConfigOptions),
