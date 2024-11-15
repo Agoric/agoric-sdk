@@ -17,26 +17,31 @@ export const ElectionTypeShape = M.or(
   'offer_filter',
 );
 
-export const ClosingRuleShape = harden({
+export const ClosingRuleShape = {
   timer: M.eref(TimerShape),
   deadline: TimestampShape,
-});
+};
+harden(ClosingRuleShape);
 
 // all the strings that will be in the filter after passing
-export const YesOfferFilterPositionShape = harden({
+export const YesOfferFilterPositionShape = {
   strings: M.arrayOf(M.string()),
-});
-export const NoOfferFilterPositionShape = harden({
-  dontUpdate: M.arrayOf(M.string()),
-});
-export const OfferFilterPositionsShape = harden([
+};
+harden(YesOfferFilterPositionShape);
+
+export const NoOfferFilterPositionShape = { dontUpdate: M.arrayOf(M.string()) };
+harden(NoOfferFilterPositionShape);
+
+export const OfferFilterPositionsShape = [
   YesOfferFilterPositionShape,
   NoOfferFilterPositionShape,
-]);
-export const OfferFilterIssueShape = harden({
-  strings: M.arrayOf(M.string()),
-});
-export const OfferFilterQuestionSpecShape = harden({
+];
+harden(OfferFilterPositionsShape);
+
+export const OfferFilterIssueShape = { strings: M.arrayOf(M.string()) };
+harden(OfferFilterIssueShape);
+
+export const OfferFilterQuestionSpecShape = {
   method: ChoiceMethodShape,
   issue: OfferFilterIssueShape,
   positions: OfferFilterPositionsShape,
@@ -46,34 +51,41 @@ export const OfferFilterQuestionSpecShape = harden({
   closingRule: ClosingRuleShape,
   quorumRule: QuorumRuleShape,
   tieOutcome: NoOfferFilterPositionShape,
-});
-export const OfferFilterQuestionDetailsShape = harden({
+};
+harden(OfferFilterQuestionSpecShape);
+
+export const OfferFilterQuestionDetailsShape = {
   ...OfferFilterQuestionSpecShape,
   questionHandle: makeHandleShape('Question'),
   counterInstance: InstanceHandleShape,
-});
+};
+harden(OfferFilterQuestionDetailsShape);
 
 // keys are parameter names, values are proposed values
 export const ParamChangesSpecShape = M.recordOf(M.string(), M.any());
 export const YesParamChangesPositionShape = ParamChangesSpecShape;
-export const NoParamChangesPositionShape = harden({
-  noChange: M.arrayOf(M.string()),
-});
-export const ParamChangesPositionsShape = harden([
+export const NoParamChangesPositionShape = { noChange: M.arrayOf(M.string()) };
+harden(NoParamChangesPositionShape);
+
+export const ParamChangesPositionsShape = [
   YesParamChangesPositionShape,
   NoParamChangesPositionShape,
-]);
-export const ParamPathShape = harden({
-  key: M.any(),
-});
-export const ParamChangesIssueShape = harden({
+];
+harden(ParamChangesPositionsShape);
+
+export const ParamPathShape = { key: M.any() };
+harden(ParamPathShape);
+
+export const ParamChangesIssueShape = {
   spec: {
     paramPath: ParamPathShape,
     changes: ParamChangesSpecShape,
   },
   contract: InstanceHandleShape,
-});
-export const ParamChangesQuestionSpecShape = harden({
+};
+harden(ParamChangesIssueShape);
+
+export const ParamChangesQuestionSpecShape = {
   method: 'unranked',
   issue: ParamChangesIssueShape,
   positions: ParamChangesPositionsShape,
@@ -83,27 +95,33 @@ export const ParamChangesQuestionSpecShape = harden({
   closingRule: ClosingRuleShape,
   quorumRule: 'majority',
   tieOutcome: NoParamChangesPositionShape,
-});
+};
+harden(ParamChangesQuestionSpecShape);
 
-export const ParamChangesQuestionDetailsShape = harden({
+export const ParamChangesQuestionDetailsShape = {
   ...ParamChangesQuestionSpecShape,
   questionHandle: makeHandleShape('Question'),
   counterInstance: InstanceHandleShape,
-});
+};
+harden(ParamChangesQuestionDetailsShape);
 
-const ApiInvocationSpecShape = harden({
+const ApiInvocationSpecShape = {
   apiMethodName: M.string(),
   methodArgs: M.arrayOf(M.any()),
-});
+};
+harden(ApiInvocationSpecShape);
+
 export const YesApiInvocationPositionShape = ApiInvocationSpecShape;
-export const NoApiInvocationPositionShape = harden({
-  dontInvoke: M.string(),
-});
-export const ApiInvocationPositionsShape = harden([
+export const NoApiInvocationPositionShape = { dontInvoke: M.string() };
+harden(NoApiInvocationPositionShape);
+
+export const ApiInvocationPositionsShape = [
   YesApiInvocationPositionShape,
   NoApiInvocationPositionShape,
-]);
-export const ApiInvocationQuestionSpecShape = harden({
+];
+harden(ApiInvocationPositionsShape);
+
+export const ApiInvocationQuestionSpecShape = {
   method: 'unranked',
   issue: ApiInvocationSpecShape,
   positions: ApiInvocationPositionsShape,
@@ -113,39 +131,53 @@ export const ApiInvocationQuestionSpecShape = harden({
   closingRule: ClosingRuleShape,
   quorumRule: QuorumRuleShape,
   tieOutcome: NoApiInvocationPositionShape,
-});
-export const ApiInvocationQuestionDetailsShape = harden({
+};
+harden(ApiInvocationQuestionSpecShape);
+
+export const ApiInvocationQuestionDetailsShape = {
   ...ApiInvocationQuestionSpecShape,
   questionHandle: makeHandleShape('Question'),
   counterInstance: InstanceHandleShape,
-});
+};
+harden(ApiInvocationQuestionDetailsShape);
 
-const SimpleSpecShape = harden({
-  text: M.string(),
-});
-export const YesSimplePositionShape = harden({ text: M.string() });
-export const NoSimplePositionShape = harden({ text: M.string() });
-export const SimplePositionsShape = harden([
+const SimpleSpecShape = { text: M.string() };
+harden(SimpleSpecShape);
+
+export const YesSimplePositionShape = { text: M.string() };
+harden(YesSimplePositionShape);
+
+export const NoSimplePositionShape = { text: M.string() };
+harden(NoSimplePositionShape);
+
+export const SimplePositionsShape = [
   YesSimplePositionShape,
   NoSimplePositionShape,
-]);
+];
+harden(SimplePositionsShape);
+
 export const SimpleIssueShape = SimpleSpecShape;
-export const SimpleQuestionSpecShape = harden({
+harden(SimpleIssueShape);
+
+export const SimpleQuestionSpecShape = {
   method: ChoiceMethodShape,
   issue: SimpleIssueShape,
-  positions: M.arrayOf(harden({ text: M.string() })),
+  positions: M.arrayOf({ text: M.string() }),
   electionType: M.or('election', 'survey'),
   maxChoices: M.gte(1),
   maxWinners: M.gte(1),
   closingRule: ClosingRuleShape,
   quorumRule: QuorumRuleShape,
   tieOutcome: NoSimplePositionShape,
-});
-export const SimpleQuestionDetailsShape = harden({
+};
+harden(SimpleQuestionSpecShape);
+
+export const SimpleQuestionDetailsShape = {
   ...SimpleQuestionSpecShape,
   questionHandle: makeHandleShape('Question'),
   counterInstance: InstanceHandleShape,
-});
+};
+harden(SimpleQuestionDetailsShape);
 
 export const QuestionSpecShape = M.or(
   ApiInvocationQuestionSpecShape,
@@ -199,11 +231,12 @@ export const ElectorateCreatorI = M.interface('Committee AdminFacet', {
   getPublicFacet: M.call().returns(ElectoratePublicShape),
 });
 
-export const QuestionStatsShape = harden({
+export const QuestionStatsShape = {
   spoiled: M.nat(),
   votes: M.nat(),
   results: M.arrayOf({ position: PositionShape, total: M.nat() }),
-});
+};
+harden(QuestionStatsShape);
 
 export const QuestionI = M.interface('Question', {
   getVoteCounter: M.call().returns(InstanceHandleShape),

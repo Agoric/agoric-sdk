@@ -9,7 +9,7 @@
     "src"
   ],
   "bin": {
-    "fast-usdc": "./src/cli.js"
+    "fast-usdc": "./src/cli/index.js"
   },
   "scripts": {
     "build": "exit 0",
@@ -31,6 +31,7 @@
     "ts-blank-space": "^0.4.1"
   },
   "dependencies": {
+    "@agoric/client-utils": "^0.1.0",
     "@agoric/ertp": "^0.16.2",
     "@agoric/internal": "^0.3.2",
     "@agoric/notifier": "^0.6.2",
@@ -47,7 +48,14 @@
     "@endo/pass-style": "^1.4.6",
     "@endo/patterns": "^1.4.6",
     "@endo/promise-kit": "^1.1.7",
-    "commander": "^12.1.0"
+    "@cosmjs/proto-signing": "^0.32.4",
+    "@cosmjs/stargate": "^0.32.4",
+    "@endo/init": "^1.1.6",
+    "@nick134-bit/noblejs": "0.0.2",
+    "agoric": "^0.21.1",
+    "bech32": "^2.0.0",
+    "commander": "^12.1.0",
+    "ethers": "^6.13.4"
   },
   "ava": {
     "extensions": {
@@ -60,9 +68,6 @@
     "nodeArguments": [
       "--import=ts-blank-space/register",
       "--no-warnings"
-    ],
-    "require": [
-      "@endo/init/debug.js"
     ],
     "timeout": "20m"
   }
