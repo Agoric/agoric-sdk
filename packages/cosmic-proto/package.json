@@ -135,7 +135,7 @@
     "lint-fix": "yarn lint:eslint --fix",
     "lint": "run-s --continue-on-error lint:*",
     "lint:types": "tsc",
-    "lint:eslint": "eslint $(sed 's/#.*//; /[^[:space:]]/ s/^/--ignore-pattern /' .eslintignore) .",
+    "lint:eslint": "eslint .",
     "test": "ava",
     "test:xs": "exit 0",
     "test:live": "yarn build && scripts/test-live.js"
