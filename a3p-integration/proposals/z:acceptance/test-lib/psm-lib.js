@@ -10,6 +10,7 @@ import {
   waitUntilOfferResult,
 } from '@agoric/client-utils';
 import { AmountMath } from '@agoric/ertp';
+import { deepMapObject } from '@agoric/internal';
 import {
   addUser,
   agd,
@@ -51,6 +52,93 @@ const PSM_PAIR = NonNullish(process.env.PSM_PAIR).replace('.', '-');
 /**
  * @import {Coin} from '@agoric/cosmic-proto/cosmos/base/v1beta1/coin.js';
  */
+
+/**
+ * Given either an array of [string, Value] or
+ * { [labelKey]: string, [valueKey]: Value } entries, or a
+ * Record<string, Value> object, log a concise representation similar to
+ * the latter but hiding implementation details of any embedded remotables.
+ *
+ * Sample output from any of the following input data:
+ * - { foo: { brand: FooBrand, value: '42' }, bar: { brand: BarBrand, value: '100' } }
+ * - [['foo', { brand: FooBrand, value: '42' }], ['bar', { brand: BarBrand, value: '100' }]]
+ * - [{ label: 'foo', amount: { brand: FooBrand, value: '42' } },
+ *     { label: 'bar', amount: { brand: BarBrand, value: '100' } }]
+ *
+ *     $label $shape {
+ *       foo: {
+ *         brand: Object Alleged: Foo brand {},
+ *         value: '42',
+ *       },
+ *       bar: {
+ *         brand: Object Alleged: Bar brand {},
+ *         value: '100',
+ *       },
+ *     }
+ *
+ * where $shape is `{ [label]: amount, ... }` for the third kind of input data
+ * but is otherwise empty.
+ * @deprecated should be in @agoric/client-utils?
+ *
+ * @template [Value=unknown]
+ * @param {string} label
+ * @param {Array<[string, Value] | object> | Record<string, Value>} data
+ * @param {(...args: unknown[]) => void} [log]
+ * @returns {void}
+ */
+export const logRecord = (label, data, log = console.log) => {
+  const entries = Array.isArray(data) ? [...data] : Object.entries(data);
+  /** @type {[labelKey: PropertyKey, valueKey: PropertyKey] | undefined} */
+  let shape;
+  for (let i = 0; i < entries.length; i += 1) {
+    let entry = entries[i];
+    if (!Array.isArray(entry)) {
+      // Determine which key of a two-property "entry object" (e.g.,
+      // {denom, amount} or {brand, value} is the label and which is the value
+      // (which may be of type object or number or bigint or string).
+      if (!shape) {
+        const entryKeys = Object.keys(entry);
+        if (entryKeys.length !== 2) {
+          throw Error(
+            `[INTERNAL logRecord] not shaped like a record entry: {${entryKeys}}`,
+          );
+        }
+        const valueKeyIndex = entryKeys.findIndex(
+          k =>
+            typeof entry[k] === 'object' ||
+            (entry[k].trim() !== '' && !Number.isNaN(Number(entry[k]))),
+        );
+        if (valueKeyIndex === undefined) {
+          throw Error(
+            `[INTERNAL logRecord] no value property: {${entryKeys}}={${Object.values(entry).map(String)}}`,
+          );
+        }
+        shape = /** @type {[string, string]} */ (
+          valueKeyIndex === 1 ? entryKeys : entryKeys.reverse()
+        );
+      }
+      // Convert the entry object to a [key, value] entry array.
+      entries[i] = shape.map(k => entry[k]);
+      entry = entries[i];
+    }
+    // Simplify remotables in the value.
+    entry[1] = deepMapObject(entry[1], value => {
+      const tag =
+        value && typeof value === 'object' && value[Symbol.toStringTag];
+      return tag
+        ? Object.defineProperty({}, Symbol.toStringTag, {
+            value: tag,
+            enumerable: false,
+          })
+        : value;
+    });
+  }
+  log(
+    label,
+    shape ? `{ [${String(shape[0])}]: ${String(shape[1])}, ... }` : '',
+    Object.fromEntries(entries),
+  );
+};
 
 /**
  * @typedef {object} PsmMetrics
@@ -546,8 +634,8 @@ export const checkSwapSucceeded = async (
     getBalances([tradeInfo.trader]),
   ]);
 
-  t.log('METRICS_AFTER', metricsAfter);
-  t.log('BALANCES_AFTER', balancesAfter);
+  logRecord('METRICS_AFTER', metricsAfter, t.log);
+  logRecord('BALANCES_AFTER', balancesAfter, t.log);
 
   if ('wantMinted' in tradeInfo) {
     const anchorPaid = giveAnchor(
