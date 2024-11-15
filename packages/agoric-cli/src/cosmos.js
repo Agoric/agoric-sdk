@@ -50,7 +50,7 @@ export default async function cosmosMain(progname, rawArgs, powers, opts) {
                 },
               );
               // Ensure the build doesn't mess up stdout.
-              ps.childProcess.stdout.pipe(process.stderr);
+              ps.childProcess.stdout?.pipe(process.stderr);
               return ps;
             }
             throw e;
