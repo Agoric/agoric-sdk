@@ -1,10 +1,9 @@
 import { makeTracer } from '@agoric/internal';
 import { prepareDurablePublishKit } from '@agoric/notifier';
 import { M } from '@endo/patterns';
-import { Fail } from '@endo/errors';
 import { CctpTxEvidenceShape } from '../typeGuards.js';
-import { prepareOperatorKit } from './operator-kit.js';
 import { defineInertInvitation } from '../utils/zoe.js';
+import { prepareOperatorKit } from './operator-kit.js';
 
 /**
  * @import {Zone} from '@agoric/zone';
@@ -22,7 +21,8 @@ const TransactionFeedKitI = harden({
     submitEvidence: M.call(CctpTxEvidenceShape, M.any()).returns(),
   }),
   creator: M.interface('Transaction Feed Creator', {
-    initOperator: M.call(M.string()).returns(M.promise()),
+    // TODO narrow the return shape to OperatorKit
+    initOperator: M.call(M.string()).returns(M.record()),
     makeOperatorInvitation: M.call(M.string()).returns(M.promise()),
     removeOperator: M.call(M.string()).returns(),
   }),
@@ -58,7 +58,11 @@ export const prepareTransactionFeedKit = (zone, zcf) => {
       const operators = zone.mapStore('operators', {
         durable: true,
       });
-      return { operators };
+      /** @type {MapStore<string, MapStore<string, CctpTxEvidence>>} */
+      const pending = zone.mapStore('pending', {
+        durable: true,
+      });
+      return { operators, pending };
     },
     {
       creator: {
@@ -84,8 +88,8 @@ export const prepareTransactionFeedKit = (zone, zcf) => {
           );
         },
         /** @param {string} operatorId */
-        async initOperator(operatorId) {
-          const { operators } = this.state;
+        initOperator(operatorId) {
+          const { operators, pending } = this.state;
           trace('initOperator', operatorId);
 
           const operatorKit = makeOperatorKit(
@@ -93,6 +97,10 @@ export const prepareTransactionFeedKit = (zone, zcf) => {
             this.facets.operatorPowers,
           );
           operators.init(operatorId, operatorKit);
+          pending.init(
+            operatorId,
+            zone.detached().mapStore('pending evidence'),
+          );
 
           return operatorKit;
         },
@@ -110,24 +118,54 @@ export const prepareTransactionFeedKit = (zone, zcf) => {
         /**
          * Add evidence from an operator.
          *
-         * @param {CctpTxEvidence } evidence
+         * @param {CctpTxEvidence} evidence
          * @param {OperatorKit} operatorKit
          */
         submitEvidence(evidence, operatorKit) {
-          const { operators } = this.state;
+          const { pending } = this.state;
           trace(
             'submitEvidence',
             operatorKit.operator.getStatus().operatorId,
             evidence,
           );
+          const { operatorId } = operatorKit.operator.getStatus();
 
-          // TODO verify that the operator is one made by this exo
+          // TODO should this verify that the operator is one made by this exo?
           // This doesn't work...
           // operatorKit === operators.get(operatorId) ||
           //   Fail`operatorKit mismatch`;
 
-          // TODO decentralize
-          // TODO validate that it's valid to publish
+          // TODO validate that it's a valid for Fast USDC before accepting
+          // E.g. that the `recipientAddress` is the FU settlement account and that
+          // the EUD is a chain supported by FU.
+          const { txHash } = evidence;
+
+          // accept the evidence
+          {
+            const pendingStore = pending.get(operatorId);
+            if (pendingStore.has(txHash)) {
+              trace(`operator ${operatorId} already reported ${txHash}`);
+            } else {
+              pendingStore.init(txHash, evidence);
+            }
+          }
+
+          // check agreement
+          const found = [...pending.values()].filter(store =>
+            store.has(txHash),
+          );
+          // TODO determine the real policy for checking agreement
+          if (found.length < pending.getSize()) {
+            // not all have seen it
+            return;
+          }
+
+          // TODO verify that all found deep equal
+
+          // all agree, so remove from pending and publish
+          for (const pendingStore of pending.values()) {
+            pendingStore.delete(txHash);
+          }
           publisher.publish(evidence);
         },
       },

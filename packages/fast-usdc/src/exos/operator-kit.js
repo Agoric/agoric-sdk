@@ -50,7 +50,7 @@ export const prepareOperatorKit = (zone, staticPowers) =>
     OperatorKitI,
     /**
      * @param {string} operatorId
-     * @param {OperatorPowers} powers
+     * @param {OperatorPowers} powers facet of the durable transaction feed
      * @returns {State}
      */
     (operatorId, powers) => {
