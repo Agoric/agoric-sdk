@@ -1,6 +1,7 @@
 import { makeTracer } from '@agoric/internal';
 import { prepareDurablePublishKit } from '@agoric/notifier';
 import { M } from '@endo/patterns';
+import { Fail } from '@endo/errors';
 import { CctpTxEvidenceShape } from '../typeGuards.js';
 import { prepareOperatorKit } from './operator-kit.js';
 import { defineInertInvitation } from '../utils/zoe.js';
@@ -17,8 +18,8 @@ const trace = makeTracer('TxFeed', true);
 export const INVITATION_MAKERS_DESC = 'oracle operator invitation';
 
 const TransactionFeedKitI = harden({
-  admin: M.interface('Transaction Feed Admin', {
-    submitEvidence: M.call(CctpTxEvidenceShape).returns(),
+  operatorPowers: M.interface('Transaction Feed Admin', {
+    submitEvidence: M.call(CctpTxEvidenceShape, M.any()).returns(),
   }),
   creator: M.interface('Transaction Feed Creator', {
     initOperator: M.call(M.string()).returns(M.promise()),
@@ -46,9 +47,6 @@ export const prepareTransactionFeedKit = (zone, zcf) => {
   const makeInertInvitation = defineInertInvitation(zcf, 'submitting evidence');
 
   const makeOperatorKit = prepareOperatorKit(zone, {
-    handleEvidence: (operatorId, evidence) => {
-      trace('handleEvidence', operatorId, evidence);
-    },
     makeInertInvitation,
   });
 
@@ -90,7 +88,10 @@ export const prepareTransactionFeedKit = (zone, zcf) => {
           const { operators } = this.state;
           trace('initOperator', operatorId);
 
-          const operatorKit = makeOperatorKit(operatorId);
+          const operatorKit = makeOperatorKit(
+            operatorId,
+            this.facets.operatorPowers,
+          );
           operators.init(operatorId, operatorKit);
 
           return operatorKit;
@@ -105,11 +106,26 @@ export const prepareTransactionFeedKit = (zone, zcf) => {
           operators.delete(operatorId);
         },
       },
+      operatorPowers: {
+        /**
+         * Add evidence from an operator.
+         *
+         * @param {CctpTxEvidence } evidence
+         * @param {OperatorKit} operatorKit
+         */
+        submitEvidence(evidence, operatorKit) {
+          const { operators } = this.state;
+          trace(
+            'submitEvidence',
+            operatorKit.operator.getStatus().operatorId,
+            evidence,
+          );
 
-      admin: {
-        /** @param {CctpTxEvidence } evidence */
-        submitEvidence: evidence => {
-          trace('TEMPORARY: Add evidence:', evidence);
+          // TODO verify that the operator is one made by this exo
+          // This doesn't work...
+          // operatorKit === operators.get(operatorId) ||
+          //   Fail`operatorKit mismatch`;
+
           // TODO decentralize
           // TODO validate that it's valid to publish
           publisher.publish(evidence);

@@ -11,12 +11,18 @@ const trace = makeTracer('TxOperator');
  */
 
 /**
+ * @typedef {object} OperatorPowers
+ * @property {(evidence: CctpTxEvidence, operatorKit: OperatorKit) => void} submitEvidence
+ */
+
+/**
  * @typedef {object} OperatorStatus
  * @property {boolean} [disabled]
  * @property {string} operatorId
  */
+
 /**
- * @typedef {Readonly<{ operatorId: string }> & {disabled: boolean}} State
+ * @typedef {Readonly<{ operatorId: string, powers: OperatorPowers }> & {disabled: boolean}} State
  */
 
 const OperatorKitI = {
@@ -36,19 +42,21 @@ const OperatorKitI = {
 
 /**
  * @param {Zone} zone
- * @param {{handleEvidence: Function, makeInertInvitation: Function}} powers
+ * @param {{ makeInertInvitation: Function }} staticPowers
  */
-export const prepareOperatorKit = (zone, powers) =>
+export const prepareOperatorKit = (zone, staticPowers) =>
   zone.exoClassKit(
     'Operator Kit',
     OperatorKitI,
     /**
      * @param {string} operatorId
+     * @param {OperatorPowers} powers
      * @returns {State}
      */
-    operatorId => {
+    (operatorId, powers) => {
       return {
         operatorId,
+        powers,
         disabled: false,
       };
     },
@@ -80,7 +88,7 @@ export const prepareOperatorKit = (zone, powers) =>
           // TODO(bootstrap integration): cause this call to throw and confirm that it
           // shows up in the the smart-wallet UpdateRecord `error` property
           await operator.submitEvidence(evidence);
-          return powers.makeInertInvitation(
+          return staticPowers.makeInertInvitation(
             'evidence was pushed in the invitation maker call',
           );
         },
@@ -94,12 +102,7 @@ export const prepareOperatorKit = (zone, powers) =>
         async submitEvidence(evidence) {
           const { state } = this;
           !state.disabled || Fail`submitEvidence for disabled operator`;
-          const result = await powers.handleEvidence(
-            {
-              operatorId: state.operatorId,
-            },
-            evidence,
-          );
+          const result = state.powers.submitEvidence(evidence, this.facets);
           return result;
         },
         /** @returns {OperatorStatus} */
