@@ -33,6 +33,9 @@ import {
 import { AmountMath } from '@agoric/ertp';
 import { floorMultiplyBy } from '@agoric/zoe/src/contractSupport/ratio.js';
 
+// TODO @import {Ratio} from '@agoric/zoe'
+/** @typedef {any} Ratio */
+
 /**
  * @typedef {import('@agoric/client-utils').VstorageKit} VstorageKit
  * @typedef {import('@agoric/ertp').NatAmount} NatAmount
@@ -70,7 +73,6 @@ const config = {
 const scale6 = mintValue => BigInt(parseInt(mintValue, 10) * 1_000_000);
 
 /**
- *
  * @param {VstorageKit} vstorage
  * @param {NatAmount} feeAmount
  */
