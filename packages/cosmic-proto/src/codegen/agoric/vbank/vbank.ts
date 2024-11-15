@@ -23,6 +23,12 @@ export interface Params {
    * reward_epoch_duration_blocks.
    */
   rewardSmoothingBlocks: bigint;
+  /**
+   * allowed_monitoring_accounts is an array of account addresses that can be
+   * monitored for sends and receives.  An element of `"*"` will permit any
+   * address.
+   */
+  allowedMonitoringAccounts: string[];
 }
 export interface ParamsProtoMsg {
   typeUrl: '/agoric.vbank.Params';
@@ -33,6 +39,7 @@ export interface ParamsSDKType {
   reward_epoch_duration_blocks: bigint;
   per_epoch_reward_fraction: string;
   reward_smoothing_blocks: bigint;
+  allowed_monitoring_accounts: string[];
 }
 /** The current state of the module. */
 export interface State {
@@ -67,6 +74,7 @@ function createBaseParams(): Params {
     rewardEpochDurationBlocks: BigInt(0),
     perEpochRewardFraction: '',
     rewardSmoothingBlocks: BigInt(0),
+    allowedMonitoringAccounts: [],
   };
 }
 export const Params = {
@@ -87,6 +95,9 @@ export const Params = {
     }
     if (message.rewardSmoothingBlocks !== BigInt(0)) {
       writer.uint32(24).int64(message.rewardSmoothingBlocks);
+    }
+    for (const v of message.allowedMonitoringAccounts) {
+      writer.uint32(34).string(v!);
     }
     return writer;
   },
@@ -110,6 +121,9 @@ export const Params = {
         case 3:
           message.rewardSmoothingBlocks = reader.int64();
           break;
+        case 4:
+          message.allowedMonitoringAccounts.push(reader.string());
+          break;
         default:
           reader.skipType(tag & 7);
           break;
@@ -128,6 +142,11 @@ export const Params = {
       rewardSmoothingBlocks: isSet(object.rewardSmoothingBlocks)
         ? BigInt(object.rewardSmoothingBlocks.toString())
         : BigInt(0),
+      allowedMonitoringAccounts: Array.isArray(
+        object?.allowedMonitoringAccounts,
+      )
+        ? object.allowedMonitoringAccounts.map((e: any) => String(e))
+        : [],
     };
   },
   toJSON(message: Params): JsonSafe<Params> {
@@ -142,6 +161,13 @@ export const Params = {
       (obj.rewardSmoothingBlocks = (
         message.rewardSmoothingBlocks || BigInt(0)
       ).toString());
+    if (message.allowedMonitoringAccounts) {
+      obj.allowedMonitoringAccounts = message.allowedMonitoringAccounts.map(
+        e => e,
+      );
+    } else {
+      obj.allowedMonitoringAccounts = [];
+    }
     return obj;
   },
   fromPartial(object: Partial<Params>): Params {
@@ -157,6 +183,8 @@ export const Params = {
       object.rewardSmoothingBlocks !== null
         ? BigInt(object.rewardSmoothingBlocks.toString())
         : BigInt(0);
+    message.allowedMonitoringAccounts =
+      object.allowedMonitoringAccounts?.map(e => e) || [];
     return message;
   },
   fromProtoMsg(message: ParamsProtoMsg): Params {
