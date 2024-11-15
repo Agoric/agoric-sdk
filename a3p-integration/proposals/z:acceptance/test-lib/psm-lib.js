@@ -65,6 +65,35 @@ const fromBoard = makeFromBoard();
 const marshaller = boardSlottingMarshaller(fromBoard.convertSlotToVal);
 
 /**
+ * @param {string} path
+ */
+const objectFromVstorageEntries = async path => {
+  const rawEntries = await agoric.follow('-lF', `:${path}`, '-o', 'text');
+  return Object.fromEntries(marshaller.fromCapData(JSON.parse(rawEntries)));
+};
+
+const snapshotAgoricNames = async () => {
+  const [brands, instances] = await Promise.all([
+    objectFromVstorageEntries('published.agoricNames.brand'),
+    objectFromVstorageEntries('published.agoricNames.instance'),
+  ]);
+  return { brands, instances };
+};
+
+/**
+ * @param {import('@agoric/ertp').Brand} brand
+ * @param {bigint} numValInPercent
+ */
+const toRatio = (brand, numValInPercent) => {
+  const commonDenominator = AmountMath.make(brand, 10_000n);
+  const numerator = AmountMath.make(brand, numValInPercent * 100n); // Convert to bps
+  return {
+    numerator,
+    denominator: commonDenominator,
+  };
+};
+
+/**
  *  Import from synthetic-chain once it is updated
  *
  * @param {string} addr
@@ -161,41 +190,17 @@ export const implementPsmGovParamChange = async (question, voting, io) => {
     address,
   );
   console.log('charterAcceptOfferId', charterAcceptOfferId);
-  const [brands, instances] = await Promise.all([
-    agoric
-      .follow('-lF', ':published.agoricNames.brand', '-o', 'text')
-      .then(brandsRaw =>
-        Object.fromEntries(marshaller.fromCapData(JSON.parse(brandsRaw))),
-      ),
-    agoric
-      .follow('-lF', ':published.agoricNames.instance', '-o', 'text')
-      .then(instancesRaw =>
-        Object.fromEntries(marshaller.fromCapData(JSON.parse(instancesRaw))),
-      ),
-  ]);
-  console.log('charterAcceptOfferId', charterAcceptOfferId);
+  const { brands, instances } = await snapshotAgoricNames();
   console.log('BRANDS', brands);
   console.log('INSTANCE', instances);
 
   // Construct and execute the offer.
-  /**
-   * @param {bigint} numValInPercent
-   */
-  const toRatio = numValInPercent => {
-    const commonDenominator = AmountMath.make(brands.IST, 10_000n);
-    const numerator = AmountMath.make(brands.IST, numValInPercent * 100n); // Convert to bps
-
-    return {
-      numerator,
-      denominator: commonDenominator,
-    };
-  };
   const params = {};
   if (newParams.giveMintedFeeVal) {
-    params.GiveMintedFee = toRatio(newParams.giveMintedFeeVal);
+    params.GiveMintedFee = toRatio(brands.IST, newParams.giveMintedFeeVal);
   }
   if (newParams.wantMintedFeeVal) {
-    params.WantMintedFee = toRatio(newParams.wantMintedFeeVal);
+    params.WantMintedFee = toRatio(brands.IST, newParams.wantMintedFeeVal);
   }
   if (newParams.mintLimit) {
     params.MintLimit = AmountMath.make(brands.IST, newParams.mintLimit);
