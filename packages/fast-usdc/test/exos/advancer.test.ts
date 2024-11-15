@@ -13,7 +13,11 @@ import { prepareStatusManager } from '../../src/exos/status-manager.js';
 
 import { commonSetup } from '../supports.js';
 import { MockCctpTxEvidences } from '../fixtures.js';
-import { makeTestLogger, prepareMockOrchAccounts } from '../mocks.js';
+import {
+  makeTestFeeConfig,
+  makeTestLogger,
+  prepareMockOrchAccounts,
+} from '../mocks.js';
 
 const LOCAL_DENOM = `ibc/${denomHash({
   denom: 'uusdc',
@@ -46,8 +50,10 @@ const createTestExtensions = (t, common: CommonSetup) => {
     usdc,
   });
 
+  const feeConfig = makeTestFeeConfig(usdc);
   const makeAdvancer = prepareAdvancer(rootZone.subZone('advancer'), {
     chainHub,
+    feeConfig,
     log,
     statusManager,
     usdc: harden({
@@ -90,6 +96,7 @@ const createTestExtensions = (t, common: CommonSetup) => {
   return {
     constants: {
       localDenom: LOCAL_DENOM,
+      feeConfig,
     },
     helpers: {
       inspectLogs,
@@ -187,7 +194,7 @@ test('updates status to OBSERVED on insufficient pool funds', async t => {
 
   t.deepEqual(inspectLogs(0), [
     'Insufficient pool funds',
-    'Requested {"brand":"[Alleged: USDC brand]","value":"[200000000n]"} but only have {"brand":"[Alleged: USDC brand]","value":"[1n]"}',
+    'Requested {"brand":"[Alleged: USDC brand]","value":"[195000000n]"} but only have {"brand":"[Alleged: USDC brand]","value":"[1n]"}',
   ]);
 });
 

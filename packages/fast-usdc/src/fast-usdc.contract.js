@@ -1,16 +1,20 @@
 import { AssetKind } from '@agoric/ertp';
 import { assertAllDefined, makeTracer } from '@agoric/internal';
 import { observeIteration, subscribeEach } from '@agoric/notifier';
-import { withOrchestration } from '@agoric/orchestration';
+import {
+  OrchestrationPowersShape,
+  withOrchestration,
+} from '@agoric/orchestration';
 import { provideSingleton } from '@agoric/zoe/src/contractSupport/durability.js';
 import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/recorder.js';
+import { M } from '@endo/patterns';
 import { prepareAdvancer } from './exos/advancer.js';
 import { prepareLiquidityPoolKit } from './exos/liquidity-pool.js';
 import { prepareSettler } from './exos/settler.js';
 import { prepareStatusManager } from './exos/status-manager.js';
 import { prepareTransactionFeedKit } from './exos/transaction-feed.js';
 import { defineInertInvitation } from './utils/zoe.js';
-import { FastUSDCTermsShape } from './type-guards.js';
+import { FastUSDCTermsShape, FeeConfigShape } from './type-guards.js';
 
 const trace = makeTracer('FastUsdc');
 
@@ -19,18 +23,25 @@ const trace = makeTracer('FastUsdc');
  * @import {OrchestrationPowers, OrchestrationTools} from '@agoric/orchestration/src/utils/start-helper.js';
  * @import {Zone} from '@agoric/zone';
  * @import {OperatorKit} from './exos/operator-kit.js';
- * @import {CctpTxEvidence} from './types.js';
+ * @import {CctpTxEvidence, FeeConfig} from './types.js';
  */
 
 /**
  * @typedef {{
- *   poolFee: Amount<'nat'>;
- *   contractFee: Amount<'nat'>;
  *   usdcDenom: Denom;
  * }} FastUsdcTerms
  */
+
+/** @type {ContractMeta<typeof start>} */
 export const meta = {
+  // @ts-expect-error TypedPattern not recognized as record
   customTermsShape: FastUSDCTermsShape,
+  privateArgsShape: {
+    // @ts-expect-error TypedPattern not recognized as record
+    ...OrchestrationPowersShape,
+    feeConfig: FeeConfigShape,
+    marshaller: M.remotable(),
+  },
 };
 harden(meta);
 
@@ -38,6 +49,7 @@ harden(meta);
  * @param {ZCF<FastUsdcTerms>} zcf
  * @param {OrchestrationPowers & {
  *   marshaller: Marshaller;
+ *   feeConfig: FeeConfig;
  * }} privateArgs
  * @param {Zone} zone
  * @param {OrchestrationTools} tools
@@ -47,17 +59,17 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
   const terms = zcf.getTerms();
   assert('USDC' in terms.brands, 'no USDC brand');
   assert('usdcDenom' in terms, 'no usdcDenom');
-
+  const { feeConfig, marshaller } = privateArgs;
   const { makeRecorderKit } = prepareRecorderKitMakers(
     zone.mapStore('vstorage'),
-    privateArgs.marshaller,
+    marshaller,
   );
-
   const statusManager = prepareStatusManager(zone);
   const makeSettler = prepareSettler(zone, { statusManager });
   const { chainHub, vowTools } = tools;
   const makeAdvancer = prepareAdvancer(zone, {
     chainHub,
+    feeConfig,
     log: trace,
     usdc: harden({
       brand: terms.brands.USDC,

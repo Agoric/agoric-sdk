@@ -8,6 +8,7 @@ import { E } from '@endo/far';
 import { M } from '@endo/patterns';
 import { CctpTxEvidenceShape, EudParamShape } from '../type-guards.js';
 import { addressTools } from '../utils/address.js';
+import { makeFeeTools } from '../utils/fees.js';
 
 const { isGTE } = AmountMath;
 
@@ -17,7 +18,7 @@ const { isGTE } = AmountMath;
  * @import {ChainAddress, ChainHub, Denom, DenomAmount, OrchestrationAccount} from '@agoric/orchestration';
  * @import {VowTools} from '@agoric/vow';
  * @import {Zone} from '@agoric/zone';
- * @import {CctpTxEvidence, LogFn} from '../types.js';
+ * @import {CctpTxEvidence, FeeConfig, LogFn} from '../types.js';
  * @import {StatusManager} from './status-manager.js';
  */
 
@@ -34,6 +35,7 @@ const { isGTE } = AmountMath;
 /**
  * @typedef {{
  *  chainHub: ChainHub;
+ *  feeConfig: FeeConfig;
  *  log: LogFn;
  *  statusManager: StatusManager;
  *  usdc: { brand: Brand<'nat'>; denom: Denom; };
@@ -75,15 +77,16 @@ const AdvancerKitI = harden({
  */
 export const prepareAdvancerKit = (
   zone,
-  { chainHub, log, statusManager, usdc, vowTools: { watch, when } },
+  { chainHub, feeConfig, log, statusManager, usdc, vowTools: { watch, when } },
 ) => {
   assertAllDefined({
     chainHub,
+    feeConfig,
     statusManager,
     watch,
     when,
   });
-
+  const feeTools = makeFeeTools(feeConfig);
   /** @param {bigint} value */
   const toAmount = value => AmountMath.make(usdc.brand, value);
 
@@ -123,14 +126,17 @@ export const prepareAdvancerKit = (
             // this will throw if the bech32 prefix is not found, but is handled by the catch
             const destination = chainHub.makeChainAddress(EUD);
             const requestedAmount = toAmount(evidence.tx.amount);
+            const advanceAmount = feeTools.calculateAdvance(requestedAmount);
 
             // TODO: consider skipping and using `borrow()`s internal balance check
             const poolBalance = assetManagerFacet.lookupBalance();
             if (!isGTE(poolBalance, requestedAmount)) {
               log(
                 `Insufficient pool funds`,
-                `Requested ${q(requestedAmount)} but only have ${q(poolBalance)}`,
+                `Requested ${q(advanceAmount)} but only have ${q(poolBalance)}`,
               );
+              // report `requestedAmount`, not `advancedAmount`... do we need to
+              // communicate net to `StatusManger` in case fees change in between?
               statusManager.observe(evidence);
               return;
             }
@@ -147,7 +153,7 @@ export const prepareAdvancerKit = (
             }
 
             try {
-              const payment = await assetManagerFacet.borrow(requestedAmount);
+              const payment = await assetManagerFacet.borrow(advanceAmount);
               const depositV = E(poolAccount).deposit(payment);
               void watch(depositV, this.facets.depositHandler, {
                 destination,

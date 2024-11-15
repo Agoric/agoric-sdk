@@ -1,4 +1,4 @@
-import { BrandShape } from '@agoric/ertp';
+import { BrandShape, RatioShape } from '@agoric/ertp';
 import { M } from '@endo/patterns';
 import { PendingTxStatus } from './constants.js';
 
@@ -6,7 +6,7 @@ import { PendingTxStatus } from './constants.js';
  * @import {TypedPattern} from '@agoric/internal';
  * @import {FastUsdcTerms} from './fast-usdc.contract.js';
  * @import {USDCProposalShapes} from './pool-share-math.js';
- * @import {CctpTxEvidence, PendingTx} from './types.js';
+ * @import {CctpTxEvidence, FeeConfig, PendingTx} from './types.js';
  */
 
 /**
@@ -31,11 +31,8 @@ export const makeProposalShapes = ({ PoolShares, USDC }) => {
   return harden({ deposit, withdraw });
 };
 
-const NatAmountShape = { brand: BrandShape, value: M.nat() };
 /** @type {TypedPattern<FastUsdcTerms>} */
 export const FastUSDCTermsShape = harden({
-  contractFee: NatAmountShape,
-  poolFee: NatAmountShape,
   usdcDenom: M.string(),
 });
 
@@ -64,7 +61,7 @@ export const CctpTxEvidenceShape = {
 harden(CctpTxEvidenceShape);
 
 /** @type {TypedPattern<PendingTx>} */
-// @ts-expect-error TypedPattern to support spreading shapes
+// @ts-expect-error TypedPattern not recognized as record
 export const PendingTxShape = {
   ...CctpTxEvidenceShape,
   status: M.or(...Object.values(PendingTxStatus)),
@@ -75,3 +72,13 @@ export const EudParamShape = {
   EUD: M.string(),
 };
 harden(EudParamShape);
+
+const NatAmountShape = { brand: BrandShape, value: M.nat() };
+/** @type {TypedPattern<FeeConfig>} */
+export const FeeConfigShape = {
+  flat: NatAmountShape,
+  variableRate: RatioShape,
+  maxVariable: NatAmountShape,
+  contractRate: RatioShape,
+};
+harden(FeeConfigShape);
