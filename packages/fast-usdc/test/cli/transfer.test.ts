@@ -1,4 +1,3 @@
-import '@endo/init/legacy.js';
 import test from 'ava';
 import transfer from '../../src/cli/transfer.js';
 import {
