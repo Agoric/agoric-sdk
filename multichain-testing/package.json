@@ -35,7 +35,7 @@
     "ava": "^6.1.3",
     "eslint": "^8.56.0",
     "eslint-config-prettier": "^9.1.0",
-    "execa": "^9.2.0",
+    "execa": "9.1.0",
     "fs-extra": "^11.2.0",
     "patch-package": "^8.0.0",
     "starshipjs": "2.4.1",
