@@ -6,7 +6,7 @@ import { dirname, join } from 'path';
 import { initProgram } from '../../src/cli/cli.js';
 
 const dir = dirname(fileURLToPath(import.meta.url));
-const CLI_PATH = join(dir, '../../src/cli/index.js');
+const CLI_PATH = join(dir, '../../src/cli/bin.js');
 
 const collectStdErr = (cmd: string[]) =>
   new Promise(resolve => {

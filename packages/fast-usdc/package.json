@@ -9,7 +9,7 @@
     "src"
   ],
   "bin": {
-    "fast-usdc": "./src/cli/index.js"
+    "fast-usdc": "./src/cli/bin.js"
   },
   "scripts": {
     "build": "exit 0",
