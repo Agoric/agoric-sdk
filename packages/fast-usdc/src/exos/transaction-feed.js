@@ -19,9 +19,9 @@ export const INVITATION_MAKERS_DESC = 'oracle operator invitation';
 const TransactionFeedKitI = harden({
   admin: M.interface('Transaction Feed Admin', {
     submitEvidence: M.call(CctpTxEvidenceShape).returns(),
-    initOperator: M.call(M.string()).returns(M.promise()),
   }),
   creator: M.interface('Transaction Feed Creator', {
+    initOperator: M.call(M.string()).returns(M.promise()),
     makeOperatorInvitation: M.call(M.string()).returns(M.promise()),
     removeOperator: M.call(M.string()).returns(),
   }),
@@ -73,40 +73,40 @@ export const prepareTransactionFeedKit = (zone, zcf) => {
          * @returns {Promise<Invitation<OperatorKit>>}
          */
         makeOperatorInvitation(operatorId) {
-          const { admin } = this.facets;
+          const { creator } = this.facets;
           trace('makeOperatorInvitation', operatorId);
 
           return zcf.makeInvitation(
             /** @type {OfferHandler<OperatorKit>} */
             seat => {
               seat.exit();
-              return admin.initOperator(operatorId);
+              return creator.initOperator(operatorId);
             },
             INVITATION_MAKERS_DESC,
           );
         },
         /** @param {string} operatorId */
+        async initOperator(operatorId) {
+          const { operators } = this.state;
+          trace('initOperator', operatorId);
+
+          const operatorKit = makeOperatorKit(operatorId);
+          operators.init(operatorId, operatorKit);
+
+          return operatorKit;
+        },
+
+        /** @param {string} operatorId */
         async removeOperator(operatorId) {
-          const { operators: oracles } = this.state;
+          const { operators } = this.state;
           trace('removeOperator', operatorId);
-          const kit = oracles.get(operatorId);
-          kit.admin.disable();
-          oracles.delete(operatorId);
+          const operatorKit = operators.get(operatorId);
+          operatorKit.admin.disable();
+          operators.delete(operatorId);
         },
       },
 
       admin: {
-        /** @param {string} operatorId */
-        async initOperator(operatorId) {
-          const { operators: oracles } = this.state;
-          trace('initOperator', operatorId);
-
-          const oracleKit = makeOperatorKit(operatorId);
-          oracles.init(operatorId, oracleKit);
-
-          return oracleKit;
-        },
-
         /** @param {CctpTxEvidence } evidence */
         submitEvidence: evidence => {
           trace('TEMPORARY: Add evidence:', evidence);
