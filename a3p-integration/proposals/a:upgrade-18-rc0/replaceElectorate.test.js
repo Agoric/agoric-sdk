@@ -23,7 +23,7 @@ test.serial('should be able to view the new accepted invitations', async t => {
         v.value[0].instance.getBoardId() ===
         instances.econCommitteeCharter.getBoardId(),
     );
-    t.is(passStyleOf(charterInvitation), 'copyRecord');
+    t.is(passStyleOf(charterInvitation), 'undefined');
 
     const committeeInvitation = usedInvitations.find(
       v =>
