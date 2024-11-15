@@ -11,7 +11,7 @@ const brand = argv[2];
 const price = Number(argv[3]);
 
 const BASE_ID = 'n-upgrade';
-const ROUND_ID = 2;
+const ROUND_ID = 10;
 
 const oraclesByBrand = generateOracleMap(BASE_ID, [brand]);
 await registerOraclesForBrand(brand, oraclesByBrand);
