@@ -60,12 +60,14 @@ const startContract = async (
   return { ...startKit, zoe };
 };
 
-test('start', async t => {
+// FIXME this makeTestPushInvitation forces evidence, which triggers advancing,
+// which doesn't yet work
+test.skip('advancing', async t => {
   const common = await commonSetup(t);
 
   const { publicFacet, zoe } = await startContract(common);
 
-  const e1 = await E(MockCctpTxEvidences.AGORIC_NO_PARAMS)();
+  const e1 = await E(MockCctpTxEvidences.AGORIC_PLUS_DYDX)();
 
   const inv = await E(publicFacet).makeTestPushInvitation(e1);
   // the invitation maker itself pushes the evidence

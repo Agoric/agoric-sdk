@@ -88,9 +88,9 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
     { makeRecorderKit },
   );
 
-  const makeTestSubmissionInvitation = defineInertInvitation(
+  const makeTestInvitation = defineInertInvitation(
     zcf,
-    'test of submitting evidence',
+    'test of forcing evidence',
   );
 
   const creatorFacet = zone.exo('Fast USDC Creator', undefined, {
@@ -109,18 +109,16 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
     // XXX to be removed before production
     /**
      * NB: Any caller with access to this invitation maker has the ability to
-     * add evidence.
+     * force handling of evidence.
      *
      * Provide an API call in the form of an invitation maker, so that the
-     * capability is available in the smart-wallet bridge.
+     * capability is available in the smart-wallet bridge during UI testing.
      *
      * @param {CctpTxEvidence} evidence
      */
     makeTestPushInvitation(evidence) {
-      // TODO(bootstrap integration): force this to throw and confirm that it
-      // shows up in the the smart-wallet UpdateRecord `error` property
-      feedKit.admin.submitEvidence(evidence);
-      return makeTestSubmissionInvitation();
+      advancer.handleTransactionEvent(evidence);
+      return makeTestInvitation();
     },
     makeDepositInvitation() {
       // eslint-disable-next-line no-use-before-define
