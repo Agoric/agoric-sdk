@@ -123,4 +123,4 @@ export const prepareTransactionFeedKit = (zone, zcf) => {
 };
 harden(prepareTransactionFeedKit);
 
-/** @typedef {ReturnType<typeof prepareTransactionFeedKit>} TransactionFeedKit */
+/** @typedef {ReturnType<ReturnType<typeof prepareTransactionFeedKit>>} TransactionFeedKit */
