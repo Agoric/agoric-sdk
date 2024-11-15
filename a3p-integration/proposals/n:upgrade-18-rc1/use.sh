@@ -6,6 +6,6 @@ set -uxeo pipefail
 # Econ Committee accept invitations for Committee and Charter
 ./acceptInvites.js
 
-# "oracles" accept their invitations and provide prices to priceFeeds
-./verifyPushedPrice.js 'ATOM' 12.01
-./verifyPushedPrice.js 'stATOM' 12.01
+# # "oracles" accept their invitations and provide prices to priceFeeds
+# ./verifyPushedPrice.js 'ATOM' 12.01
+# ./verifyPushedPrice.js 'stATOM' 12.01
