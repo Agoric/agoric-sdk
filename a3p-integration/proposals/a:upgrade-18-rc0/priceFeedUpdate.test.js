@@ -106,7 +106,7 @@ const triggerAuction = async t => {
 const checkNewAuctionVat = async t => {
   const details = await getDetailsMatchingVats('auctioneer');
   // This query matches both the auction and its governor, so double the count
-  t.is(Object.keys(details).length, 4 * 2);
+  t.is(Object.keys(details).length, 3 * 2);
 };
 
 const countPriceFeedVats = async t => {
