@@ -1,4 +1,9 @@
-import { Command } from 'commander';
+import { assertParsableNumber } from '@agoric/zoe/src/contractSupport/ratio.js';
+import {
+  Command,
+  InvalidArgumentError,
+  InvalidOptionArgumentError,
+} from 'commander';
 import { existsSync, mkdirSync, readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, resolve } from 'path';
@@ -69,19 +74,28 @@ export const initProgram = (
       '--eth-seed <seed>',
       'Seed phrase for Ethereum account. CAUTION: Stored unencrypted in file system',
     )
+    .requiredOption(
+      '--agoric-seed <seed>',
+      'Seed phrase for Agoric LP account. CAUTION: Stored unencrypted in file system',
+    )
     .option(
       '--agoric-rpc [url]',
       'Agoric RPC endpoint',
+      'http://127.0.0.1:26656',
+    )
+    .option(
+      '--agoric-api [url]',
+      'Agoric RPC endpoint',
       'http://127.0.0.1:1317',
     )
+    .option('--noble-rpc [url]', 'Noble RPC endpoint', 'http://127.0.0.1:26657')
     .option('--noble-api [url]', 'Noble API endpoint', 'http://127.0.0.1:1318')
+    .option('--eth-rpc [url]', 'Ethereum RPC Endpoint', 'http://127.0.0.1:8545')
     .option(
       '--noble-to-agoric-channel [channel]',
       'Channel ID on Noble for Agoric',
       'channel-21',
     )
-    .option('--noble-rpc [url]', 'Noble RPC endpoint', 'http://127.0.0.1:26657')
-    .option('--eth-rpc [url]', 'Ethereum RPC Endpoint', 'http://127.0.0.1:8545')
     .option(
       '--token-messenger-address [address]',
       'Address of TokenMessenger contract',
@@ -109,10 +123,15 @@ export const initProgram = (
       '--eth-seed [string]',
       'Seed phrase for Ethereum account. CAUTION: Stored unencrypted in file system',
     )
+    .option(
+      '--agoric-seed <seed>',
+      'Seed phrase for Agoric LP account. CAUTION: Stored unencrypted in file system',
+    )
     .option('--agoric-rpc [url]', 'Agoric RPC endpoint')
+    .option('--agoric-api [url]', 'Agoric API endpoint')
     .option('--noble-rpc [url]', 'Noble RPC endpoint')
-    .option('--eth-rpc [url]', 'Ethereum RPC Endpoint')
     .option('--noble-api [url]', 'Noble API endpoint')
+    .option('--eth-rpc [url]', 'Ethereum RPC Endpoint')
     .option(
       '--noble-to-agoric-channel [channel]',
       'Channel ID on Noble for Agoric',
@@ -129,9 +148,35 @@ export const initProgram = (
       await configHelpers.update(makeConfigFile(), options);
     });
 
+  /** @param {string} value */
+  const parseDecimal = value => {
+    try {
+      assertParsableNumber(value);
+    } catch {
+      throw new InvalidArgumentError('Not a decimal number.');
+    }
+    return value;
+  };
+
+  /**
+   * @param {string} str
+   * @returns {'auto' | number}
+   */
+  const parseFee = str => {
+    if (str === 'auto') return 'auto';
+    const num = parseFloat(str);
+    if (Number.isNaN(num)) {
+      throw new InvalidOptionArgumentError('Fee must be a number.');
+    }
+    return num;
+  };
+
   program
     .command('deposit')
     .description('Offer assets to the liquidity pool')
+    .argument('<give>', 'USDC to give', parseDecimal)
+    .option('--id [offer-id]', 'Offer ID')
+    .option('--fee [fee]', 'Cosmos fee', parseFee)
     .action(() => {
       console.error('TODO actually send deposit');
       // TODO: Implement deposit logic
@@ -140,6 +185,9 @@ export const initProgram = (
   program
     .command('withdraw')
     .description('Withdraw assets from the liquidity pool')
+    .argument('<want>', 'USDC to withdraw', parseDecimal)
+    .option('--id [offer-id]', 'Offer ID')
+    .option('--fee [fee]', 'Cosmos fee', parseFee)
     .action(() => {
       console.error('TODO actually send withdrawal');
       // TODO: Implement withdraw logic
