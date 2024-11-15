@@ -10,7 +10,7 @@
  *  - condition: dest account has a balance >= sent token
  * - Making sure an offer resulted successfully
  * - Making sure an offer was exited successfully
- *
+ * - Make sure an election held by a given committee (see @agoric/governance) turned out as expected
  */
 
 /**
@@ -98,7 +98,7 @@ export const retryUntilCondition = async (
       }
     } catch (error) {
       if (error instanceof Error) {
-        log(`Error: ${error.message}`);
+        log(`Error: ${error.message}: ${error.stack}`);
       } else {
         log(`Unknown error: ${String(error)}`);
       }
@@ -323,5 +323,102 @@ export const waitUntilOfferExited = async (addr, offerId, io, options) => {
     update => checkLiveOffers(update, offerId),
     errorMessage,
     { setTimeout, ...resolvedOptions },
+  );
+};
+
+/// ////////// Make sure an election held by a given committee //////////
+/// ////////// (see @agoric/governance) turned out as expected //////////
+
+/**
+ * @typedef {{
+ *   latestOutcome: {
+ *     outcome: string;
+ *     question: import('@endo/marshal').RemotableObject
+ *   },
+ *   latestQuestion: {
+ *     closingRule: { deadline: bigint },
+ *     questionHandle: import('@endo/marshal').RemotableObject
+ *   }
+ * }} ElectionResult
+ */
+
+/**
+ * @param {string} basePath
+ * @param {import('./vstorage-kit').VstorageKit} vstorage
+ * @returns {Promise<ElectionResult>}
+ */
+const fetchLatestEcQuestion = async (basePath, vstorage) => {
+  const pathOutcome = `${basePath}.latestOutcome`;
+  const pathQuestion = `${basePath}.latestQuestion`;
+
+  const [latestOutcome, latestQuestion] = await Promise.all([
+    /** @type {Promise<ElectionResult["latestOutcome"]>} */ (
+      vstorage.readLatestHead(pathOutcome)
+    ),
+    /** @type {Promise<ElectionResult["latestQuestion"]>} */ (
+      vstorage.readLatestHead(pathQuestion)
+    ),
+  ]);
+
+  return { latestOutcome, latestQuestion };
+};
+
+/**
+ *
+ * @param {ElectionResult} electionResult
+ * @param {{ outcome: string; deadline: bigint }} expectedResult
+ * @returns {boolean}
+ */
+const checkCommitteeElectionResult = (electionResult, expectedResult) => {
+  const {
+    latestOutcome: { outcome, question },
+    latestQuestion: {
+      closingRule: { deadline },
+      questionHandle,
+    },
+  } = electionResult;
+  const { outcome: expectedOutcome, deadline: expectedDeadline } =
+    expectedResult;
+
+  return (
+    expectedOutcome === outcome &&
+    deadline === expectedDeadline &&
+    question === questionHandle
+  );
+};
+
+/**
+ * Depends on "@agoric/governance" package's committee implementation where for a given committee
+ * there's two child nodes in vstorage named "latestOutcome" and "latestQuestion" respectively.
+ *
+ * @param {string} committeePathBase
+ * @param {{
+ *   outcome: string;
+ *   deadline: bigint;
+ * }} expectedResult
+ * @param {{
+ *   vstorage: import('./vstorage-kit').VstorageKit;
+ *   log: typeof console.log,
+ *   setTimeout: typeof global.setTimeout
+ * }} io
+ * @param {WaitUntilOptions} options
+ */
+export const waitUntilElectionResult = (
+  committeePathBase,
+  expectedResult,
+  io,
+  options,
+) => {
+  const { vstorage, log, setTimeout } = io;
+
+  const { maxRetries, retryIntervalMs, errorMessage } =
+    overrideDefaultOptions(options);
+
+  return retryUntilCondition(
+    () => fetchLatestEcQuestion(committeePathBase, vstorage),
+    electionResult =>
+      checkCommitteeElectionResult(electionResult, expectedResult),
+    errorMessage,
+    { maxRetries, retryIntervalMs, log, setTimeout },
   );
 };
