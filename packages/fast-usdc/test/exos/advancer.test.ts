@@ -324,7 +324,7 @@ test('updates status to OBSERVED if pre-condition checks fail', async t => {
 
   t.deepEqual(inspectLogs(0), [
     'Advancer error:',
-    '"[Error: recipientAddress does not contain EUD param: \\"agoric16kv2g7snfc4q24vg3pjdlnnqgngtjpwtetd2h689nz09lcklvh5s8u37ek\\"]"',
+    '"[Error: Unable to parse query params: \\"agoric16kv2g7snfc4q24vg3pjdlnnqgngtjpwtetd2h689nz09lcklvh5s8u37ek\\"]"',
   ]);
 });
 

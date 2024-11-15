@@ -3,10 +3,10 @@ import { assertAllDefined } from '@agoric/internal';
 import { ChainAddressShape } from '@agoric/orchestration';
 import { pickFacet } from '@agoric/vat-data';
 import { VowShape } from '@agoric/vow';
-import { makeError, q } from '@endo/errors';
+import { q } from '@endo/errors';
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
-import { CctpTxEvidenceShape } from '../typeGuards.js';
+import { CctpTxEvidenceShape, EudParamShape } from '../typeGuards.js';
 import { addressTools } from '../utils/address.js';
 
 const { isGTE } = AmountMath;
@@ -115,13 +115,10 @@ export const prepareAdvancerKit = (
             // TODO poolAccount might be a vow we need to unwrap
             const { assetManagerFacet, poolAccount } = this.state;
             const { recipientAddress } = evidence.aux;
-            const { EUD } =
-              addressTools.getQueryParams(recipientAddress).params;
-            if (!EUD) {
-              throw makeError(
-                `recipientAddress does not contain EUD param: ${q(recipientAddress)}`,
-              );
-            }
+            const { EUD } = addressTools.getQueryParams(
+              recipientAddress,
+              EudParamShape,
+            );
 
             // this will throw if the bech32 prefix is not found, but is handled by the catch
             const destination = chainHub.makeChainAddress(EUD);
