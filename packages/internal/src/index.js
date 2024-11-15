@@ -8,7 +8,7 @@ export * from './errors.js';
 export * from './js-utils.js';
 export { pureDataMarshaller } from './marshal.js';
 export * from './method-tools.js';
-export * from './ses-utils.js';
+export * from './ses-utils.ts';
 export * from './tmpDir.js';
 export * from './typeCheck.js';
 export * from './typeGuards.js';

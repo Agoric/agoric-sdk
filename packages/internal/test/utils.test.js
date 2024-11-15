@@ -12,7 +12,7 @@ import {
   forever,
   deeplyFulfilledObject,
   synchronizedTee,
-} from '../src/ses-utils.js';
+} from '../src/ses-utils.ts';
 
 /** @import {Permit, Attenuated} from '../src/types.js'; */
 /** @import {Arbitrary} from 'fast-check'; */

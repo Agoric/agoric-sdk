@@ -16,7 +16,7 @@ import { initSwingStore } from '@agoric/swing-store';
 import { mustMatch, M } from '@endo/patterns';
 import { checkBundle } from '@endo/check-bundle/lite.js';
 import { deepCopyJsonable } from '@agoric/internal/src/js-utils.js';
-import { makeLimitedConsole } from '@agoric/internal/src/ses-utils.js';
+import { makeLimitedConsole } from '@agoric/internal/src/ses-utils.ts';
 import engineGC from '@agoric/internal/src/lib-nodejs/engine-gc.js';
 import { startSubprocessWorker } from '@agoric/internal/src/lib-nodejs/spawnSubprocessWorker.js';
 import { waitUntilQuiescent } from '@agoric/internal/src/lib-nodejs/waitUntilQuiescent.js';
