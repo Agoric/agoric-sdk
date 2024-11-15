@@ -1,4 +1,3 @@
-import '@endo/init/legacy.js';
 import test from 'ava';
 import { execa } from 'execa';
 import { fileURLToPath } from 'url';

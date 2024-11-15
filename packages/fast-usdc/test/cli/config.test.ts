@@ -1,4 +1,3 @@
-import '@endo/init/legacy.js';
 import test from 'ava';
 import config from '../../src/cli/config.js';
 import { mockOut, mockrl, mockFile } from '../../testing/mocks.js';
