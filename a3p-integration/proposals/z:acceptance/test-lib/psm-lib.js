@@ -189,10 +189,13 @@ export const implementPsmGovParamChange = async (question, voting, io) => {
     '--from',
     address,
   );
-  console.log('charterAcceptOfferId', charterAcceptOfferId);
+  console.log(
+    'PSM change gov params charterAcceptOfferId',
+    charterAcceptOfferId,
+  );
   const { brands, instances } = await snapshotAgoricNames();
-  console.log('BRANDS', brands);
-  console.log('INSTANCE', instances);
+  console.log('PSM change gov params BRANDS', Object.keys(brands));
+  console.log('PSM change gov params INSTANCES', Object.keys(instances));
 
   // Construct and execute the offer.
   const params = {};
@@ -225,19 +228,23 @@ export const implementPsmGovParamChange = async (question, voting, io) => {
   };
   // @ts-expect-error XXX Passable
   const offer = JSON.stringify(marshaller.toCapData(harden(spendAction)));
-  console.log(offerSpec);
-  console.log(offer);
+  console.log('PSM change gov params offer', offerSpec, offer);
   await executeOffer(address, offer);
 
   // Vote on the change.
   const { committeeAddrs, position } = voting;
-  console.log('ACTIONS voting for position', position, 'using', committeeAddrs);
+  console.log(
+    'PSM change gov params voting for position',
+    position,
+    'using',
+    committeeAddrs,
+  );
   await Promise.all(
     committeeAddrs.map(account =>
       agops.ec('vote', '--forPosition', `${position}`, '--send-from', account),
     ),
   );
-  console.log('ACTIONS wait for the vote deadline to pass');
+  console.log('PSM change gov params waiting for vote deadline');
   await retryUntilCondition(
     () => fetchLatestEcQuestion({ follow }),
     electionResult =>
