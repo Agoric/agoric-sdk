@@ -91,7 +91,7 @@ func (AppModule) Name() string {
 	return ModuleName
 }
 
-func (AppModule) ConsensusVersion() uint64 { return 1 }
+func (AppModule) ConsensusVersion() uint64 { return 2 }
 
 // BeginBlock implements the AppModule interface
 func (am AppModule) BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock) {
@@ -204,6 +204,12 @@ func (am AppModule) RegisterServices(cfg module.Configurator) {
 	tx := &types.UnimplementedMsgServer{}
 	types.RegisterMsgServer(cfg.MsgServer(), tx)
 	types.RegisterQueryServer(cfg.QueryServer(), am.keeper)
+
+	m := keeper.NewMigrator(am.keeper)
+	err := cfg.RegisterMigration(types.ModuleName, 1, m.Migrate1to2)
+	if err != nil {
+		panic(err)
+	}
 }
 
 // InitGenesis performs genesis initialization for the ibc-transfer module. It returns
