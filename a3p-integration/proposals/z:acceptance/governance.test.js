@@ -87,7 +87,9 @@ test.serial(
     const latestQuestion = await readLatestHead(
       'published.committees.Economic_Committee.latestQuestion',
     );
-    await waitUntil(latestQuestion.closingRule.deadline);
+
+    const deadline = latestQuestion.closingRule.deadline;
+    await waitUntil(deadline);
 
     t.log('check if latest outcome is correct');
     const latestOutcome = await readLatestHead(
