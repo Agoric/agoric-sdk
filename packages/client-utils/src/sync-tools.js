@@ -41,10 +41,12 @@ export const sleep = (ms, { log = () => {}, setTimeout }) =>
 /**
  * From https://github.com/Agoric/agoric-sdk/blob/442f07c8f0af03281b52b90e90c27131eef6f331/multichain-testing/tools/sleep.ts#L24
  *
- * @param {() => Promise} operation
- * @param {(result: any) => boolean} condition
+ * @template [T=unknown]
+ * @param {() => Promise<T>} operation
+ * @param {(result: T) => boolean} condition
  * @param {string} message
  * @param {RetryOptions & {log?: typeof console.log, setTimeout: typeof global.setTimeout}} options
+ * @returns {Promise<T>}
  */
 export const retryUntilCondition = async (
   operation,
@@ -183,7 +185,7 @@ const checkCosmosBalance = (balances, threshold) => {
 
 /**
  * @param {string} destAcct
- * @param {{ log: (message: string) => void, query: () => Promise<object>, setTimeout: typeof global.setTimeout}} io
+ * @param {{ log?: (message: string) => void, query: () => Promise<object>, setTimeout: typeof global.setTimeout}} io
  * @param {{denom: string, value: number}} threshold
  * @param {WaitUntilOptions} options
  */
@@ -232,7 +234,7 @@ const checkOfferState = (offerStatus, waitForPayouts, offerId) => {
  * @param {string} addr
  * @param {string} offerId
  * @param {boolean} waitForPayouts
- * @param {{ log: typeof console.log, follow: () => object, setTimeout: typeof global.setTimeout }} io
+ * @param {{ log?: typeof console.log, follow: () => object, setTimeout: typeof global.setTimeout }} io
  * @param {WaitUntilOptions} options
  */
 export const waitUntilOfferResult = (

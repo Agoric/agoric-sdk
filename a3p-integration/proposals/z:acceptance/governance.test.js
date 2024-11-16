@@ -88,7 +88,10 @@ test.serial(
           'published.committees.Economic_Committee.latestQuestion',
         )
       );
-    await waitUntil(latestQuestion.closingRule.deadline);
+    /** @type {bigint} */
+    // @ts-expect-error assume POSIX seconds since epoch
+    const deadline = latestQuestion.closingRule.deadline;
+    await waitUntil(deadline);
 
     t.log('check if latest outcome is correct');
     const latestOutcome = await readLatestHead(

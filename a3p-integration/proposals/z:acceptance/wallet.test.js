@@ -15,6 +15,11 @@ import { execFileSync } from 'node:child_process';
 import { agdWalletUtils } from './test-lib/index.js';
 import { getBalances, replaceTemplateValuesInFile } from './test-lib/utils.js';
 
+/**
+ * @param {string} file
+ * @param {string[]} args
+ * @param {Parameters<typeof execFileSync>[2]} [opts]
+ */
 const showAndExec = (file, args, opts) => {
   console.log('$', file, ...args);
   return execFileSync(file, args, opts);
@@ -126,6 +131,7 @@ test.serial(`ante handler sends fee only to vbank/reserve`, async t => {
   // The reserve balances should have increased by exactly the fee (possibly
   // from zero, in which case start balances wouldn't include its denomination).
   const feeDenomIndex = vbankReserveStartBalances.findIndex(
+    /** @param {{ denom: string }} balance */
     ({ denom }) => denom === feeDenom,
   );
   const preFeeAmount =
