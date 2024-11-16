@@ -6,7 +6,7 @@ import { VowShape } from '@agoric/vow';
 import { q } from '@endo/errors';
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
-import { CctpTxEvidenceShape, EudParamShape } from '../typeGuards.js';
+import { CctpTxEvidenceShape, EudParamShape } from '../type-guards.js';
 import { addressTools } from '../utils/address.js';
 
 const { isGTE } = AmountMath;

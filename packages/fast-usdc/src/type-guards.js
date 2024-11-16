@@ -1,10 +1,12 @@
-import { M } from '@endo/patterns';
 import { BrandShape } from '@agoric/ertp';
+import { M } from '@endo/patterns';
+import { PendingTxStatus } from './constants.js';
 
 /**
- * @import {TypedPattern} from '@agoric/internal'
- * @import {USDCProposalShapes} from './pool-share-math'
- * @import {FastUsdcTerms} from './fast-usdc.contract'
+ * @import {TypedPattern} from '@agoric/internal';
+ * @import {FastUsdcTerms} from './fast-usdc.contract.js';
+ * @import {USDCProposalShapes} from './pool-share-math.js';
+ * @import {CctpTxEvidence, PendingTx} from './types.js';
  */
 
 /**
@@ -36,3 +38,40 @@ export const FastUSDCTermsShape = harden({
   poolFee: NatAmountShape,
   usdcDenom: M.string(),
 });
+
+/** @type {TypedPattern<string>} */
+export const EvmHashShape = M.string({
+  stringLengthLimit: 66,
+});
+harden(EvmHashShape);
+
+/** @type {TypedPattern<CctpTxEvidence>} */
+export const CctpTxEvidenceShape = {
+  aux: {
+    forwardingChannel: M.string(),
+    recipientAddress: M.string(),
+  },
+  blockHash: EvmHashShape,
+  blockNumber: M.bigint(),
+  blockTimestamp: M.bigint(),
+  chainId: M.number(),
+  tx: {
+    amount: M.bigint(),
+    forwardingAddress: M.string(),
+  },
+  txHash: EvmHashShape,
+};
+harden(CctpTxEvidenceShape);
+
+/** @type {TypedPattern<PendingTx>} */
+// @ts-expect-error TypedPattern to support spreading shapes
+export const PendingTxShape = {
+  ...CctpTxEvidenceShape,
+  status: M.or(...Object.values(PendingTxStatus)),
+};
+harden(PendingTxShape);
+
+export const EudParamShape = {
+  EUD: M.string(),
+};
+harden(EudParamShape);

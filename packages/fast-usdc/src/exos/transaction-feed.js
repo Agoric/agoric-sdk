@@ -1,7 +1,7 @@
 import { makeTracer } from '@agoric/internal';
 import { prepareDurablePublishKit } from '@agoric/notifier';
 import { M } from '@endo/patterns';
-import { CctpTxEvidenceShape } from '../typeGuards.js';
+import { CctpTxEvidenceShape } from '../type-guards.js';
 import { defineInertInvitation } from '../utils/zoe.js';
 import { prepareOperatorKit } from './operator-kit.js';
 

@@ -2,7 +2,7 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { M } from '@endo/patterns';
 
 import { addressTools } from '../../src/utils/address.js';
-import { EudParamShape } from '../../src/typeGuards.js';
+import { EudParamShape } from '../../src/type-guards.js';
 
 const FIXTURES = {
   AGORIC_WITH_DYDX:
