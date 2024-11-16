@@ -2128,9 +2128,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"execa@npm:^9.2.0":
-  version: 9.2.0
-  resolution: "execa@npm:9.2.0"
+"execa@npm:9.1.0":
+  version: 9.1.0
+  resolution: "execa@npm:9.1.0"
   dependencies:
     "@sindresorhus/merge-streams": "npm:^4.0.0"
     cross-spawn: "npm:^7.0.3"
@@ -2144,7 +2144,7 @@ __metadata:
     signal-exit: "npm:^4.1.0"
     strip-final-newline: "npm:^4.0.0"
     yoctocolors: "npm:^2.0.0"
-  checksum: 10c0/339e69bd01bfdc032122ef18d412ccda4386c7752b864607c2e8683a1531b4aab436744aeacee548e1be239adb2b52888da64ffd761e7e22f56f8f14cf66e4a7
+  checksum: 10c0/9a4810b93d098eb0bed48793b61c3aa3e5804867c2c5808cd2a597a6e71738151a74dc792909085ce1d38e89f4b0e078d93ffd165aaca2d9a6728f3616f8e5c0
   languageName: node
   linkType: hard
 
@@ -3912,7 +3912,7 @@ __metadata:
     ava: "npm:^6.1.3"
     eslint: "npm:^8.56.0"
     eslint-config-prettier: "npm:^9.1.0"
-    execa: "npm:^9.2.0"
+    execa: "npm:9.1.0"
     fs-extra: "npm:^11.2.0"
     patch-package: "npm:^8.0.0"
     starshipjs: "npm:2.4.1"
