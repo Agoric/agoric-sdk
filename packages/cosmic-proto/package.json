@@ -133,7 +133,9 @@
     "codegen": "./update-protos.sh && node scripts/codegen.cjs",
     "prepare": "npm run build",
     "lint-fix": "yarn lint:eslint --fix",
-    "lint": "tsc",
+    "lint": "run-s --continue-on-error lint:*",
+    "lint:types": "tsc",
+    "lint:eslint": "eslint .",
     "test": "ava",
     "test:xs": "exit 0",
     "test:live": "yarn build && scripts/test-live.js"
