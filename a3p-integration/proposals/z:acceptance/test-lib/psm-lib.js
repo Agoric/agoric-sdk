@@ -34,7 +34,7 @@ import { getBalances } from './utils.js';
  *     | { failed: false }
  *     | Pick<
  *         ExecaError & { failed: true },
- *         'failed',
+ *         | 'failed'
  *         | 'shortMessage'
  *         | 'cause'
  *         | 'exitCode'
@@ -187,8 +187,7 @@ export const voteForNewParams = ({ committeeAddrs, position }) => {
   console.log('ACTIONS voting for position', position, 'using', committeeAddrs);
   return Promise.all(
     committeeAddrs.map(account =>
-      // @ts-expect-error Casting
-      agops.ec('vote', '--forPosition', position, '--send-from', account),
+      agops.ec('vote', '--forPosition', `${position}`, '--send-from', account),
     ),
   );
 };
@@ -204,10 +203,10 @@ export const fetchLatestEcQuestion = async io => {
 
   const [latestOutcome, latestQuestion] = await Promise.all([
     follow('-lF', pathOutcome, '-o', 'text').then(outcomeRaw =>
-      marshaller.fromCapData(JSON.parse(outcomeRaw)),
+      marshaller.fromCapData(JSON.parse(/** @type {any} */ (outcomeRaw))),
     ),
     follow('-lF', pathQuestion, '-o', 'text').then(questionRaw =>
-      marshaller.fromCapData(JSON.parse(questionRaw)),
+      marshaller.fromCapData(JSON.parse(/** @type {any} */ (questionRaw))),
     ),
   ]);
 
@@ -411,13 +410,16 @@ export const sendOfferAgd = async (address, offerPromise) => {
   const offer = await offerPromise;
   const networkConfig = await getNetworkConfig({ env: process.env, fetch });
   const { chainName, rpcAddrs } = networkConfig;
-  const args = [].concat(
-    [`--node=${rpcAddrs[0]}`, `--chain-id=${chainName}`],
-    [`--keyring-backend=test`, `--from=${address}`],
-    ['tx', 'swingset', 'wallet-action', '--allow-spend', offer],
-    '--yes',
-    '-bblock',
-    '-ojson',
+  const args = /** @type {string[]} */ (
+    // @ts-expect-error heterogeneous concat
+    [].concat(
+      [`--node=${rpcAddrs[0]}`, `--chain-id=${chainName}`],
+      [`--keyring-backend=test`, `--from=${address}`],
+      ['tx', 'swingset', 'wallet-action', '--allow-spend', offer],
+      '--yes',
+      '-bblock',
+      '-ojson',
+    )
   );
 
   const [settlement] = await Promise.allSettled([

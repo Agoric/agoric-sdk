@@ -7,6 +7,7 @@ const mockScenarios = [
   'AGORIC_PLUS_OSMO',
   'AGORIC_PLUS_DYDX',
   'AGORIC_NO_PARAMS',
+  'AGORIC_UNKNOWN_EUD',
 ] as const;
 
 type MockScenario = (typeof mockScenarios)[number];
@@ -72,6 +73,25 @@ export const MockCctpTxEvidences: Record<
     },
     chainId: 1,
   }),
+  AGORIC_UNKNOWN_EUD: (receiverAddress?: string) => ({
+    blockHash:
+      '0x70d7343e04f8160892e94f02d6a9b9f255663ed0ac34caca98544c8143fee699',
+    blockNumber: 21037669n,
+    blockTimestamp: 1730762099n,
+    txHash:
+      '0xa81bc6105b60a234c7c50ac17816ebcd5561d366df8bf3be59ff387552761799',
+    tx: {
+      amount: 200000000n,
+      forwardingAddress: 'noble1x0ydg69dh6fqvr27xjvp6maqmrldam6yfelyyy',
+    },
+    aux: {
+      forwardingChannel: 'channel-21',
+      recipientAddress:
+        receiverAddress ||
+        'agoric16kv2g7snfc4q24vg3pjdlnnqgngtjpwtetd2h689nz09lcklvh5s8u37ek?EUD=random1addr',
+    },
+    chainId: 1,
+  }),
 };
 
 const nobleDefaultVTransferParams = {
@@ -114,5 +134,14 @@ export const MockVTransferEvents: Record<
       receiver:
         recieverAddress ||
         MockCctpTxEvidences.AGORIC_NO_PARAMS().aux.recipientAddress,
+    }),
+  AGORIC_UNKNOWN_EUD: (recieverAddress?: string) =>
+    buildVTransferEvent({
+      ...nobleDefaultVTransferParams,
+      amount: MockCctpTxEvidences.AGORIC_UNKNOWN_EUD().tx.amount,
+      sender: MockCctpTxEvidences.AGORIC_UNKNOWN_EUD().tx.forwardingAddress,
+      receiver:
+        recieverAddress ||
+        MockCctpTxEvidences.AGORIC_UNKNOWN_EUD().aux.recipientAddress,
     }),
 };

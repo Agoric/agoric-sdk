@@ -216,7 +216,6 @@ show-config      display the client connection parameters
       });
 
       await guardFile(`${PROVISION_DIR}/ssh_known_hosts.stamp`, async () => {
-        // eslint-disable-next-line no-constant-condition
         while (true) {
           const code = await reMain(['play', 'update_known_hosts']);
           if (code === 0) {

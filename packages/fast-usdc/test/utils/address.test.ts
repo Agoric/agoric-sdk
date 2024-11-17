@@ -1,6 +1,8 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
+import { M } from '@endo/patterns';
 
 import { addressTools } from '../../src/utils/address.js';
+import { EudParamShape } from '../../src/typeGuards.js';
 
 const FIXTURES = {
   AGORIC_WITH_DYDX:
@@ -32,31 +34,38 @@ test('hasQueryParams: returns false for invalid parameter formats', t => {
 
 // getQueryParams tests - positive cases
 test('getQueryParams: correctly parses address with single EUD parameter', t => {
-  const result = addressTools.getQueryParams(FIXTURES.AGORIC_WITH_DYDX);
+  const result = addressTools.getQueryParams(
+    FIXTURES.AGORIC_WITH_DYDX,
+    EudParamShape,
+  );
   t.deepEqual(result, {
-    address: 'agoric1bech32addr',
-    params: {
-      EUD: 'dydx183dejcnmkka5dzcu9xw6mywq0p2m5peks28men',
-    },
+    EUD: 'dydx183dejcnmkka5dzcu9xw6mywq0p2m5peks28men',
   });
 });
 
 test('getQueryParams: correctly parses address with multiple parameters', t => {
+  const pattern = harden({ EUD: M.string(), CID: M.string() });
+  const result = addressTools.getQueryParams(
+    FIXTURES.AGORIC_WITH_MULTIPLE,
+    pattern,
+  );
+  t.deepEqual(result, {
+    EUD: 'osmo183dejcnmkka5dzcu9xw6mywq0p2m5peks28men',
+    CID: 'dydx-mainnet-1',
+  });
+});
+
+test('getQueryParams: returns all parameters when no shape is provided', t => {
   const result = addressTools.getQueryParams(FIXTURES.AGORIC_WITH_MULTIPLE);
   t.deepEqual(result, {
-    address: 'agoric1bech32addr',
-    params: {
-      EUD: 'osmo183dejcnmkka5dzcu9xw6mywq0p2m5peks28men',
-      CID: 'dydx-mainnet-1',
-    },
+    EUD: 'osmo183dejcnmkka5dzcu9xw6mywq0p2m5peks28men',
+    CID: 'dydx-mainnet-1',
   });
 });
 
 test('getQueryParams: correctly handles address with no parameters', t => {
-  const result = addressTools.getQueryParams(FIXTURES.AGORIC_NO_PARAMS);
-  t.deepEqual(result, {
-    address: 'agoric1bech32addr',
-    params: {},
+  t.throws(() => addressTools.getQueryParams(FIXTURES.AGORIC_NO_PARAMS), {
+    message: 'Unable to parse query params: "agoric1bech32addr"',
   });
 });
 
@@ -66,7 +75,7 @@ test('getQueryParams: throws error for multiple question marks', t => {
     () => addressTools.getQueryParams(FIXTURES.INVALID_MULTIPLE_QUESTION),
     {
       message:
-        'Invalid input. Must be of the form \'address?params\': "agoric1bech32addr?param1=value1?param2=value2"',
+        'Unable to parse query params: "agoric1bech32addr?param1=value1?param2=value2"',
     },
   );
 });

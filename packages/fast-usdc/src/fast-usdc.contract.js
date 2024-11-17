@@ -11,12 +11,15 @@ import { prepareLiquidityPoolKit } from './exos/liquidity-pool.js';
 import { prepareSettler } from './exos/settler.js';
 import { prepareStatusManager } from './exos/status-manager.js';
 import { prepareTransactionFeedKit } from './exos/transaction-feed.js';
+import { defineInertInvitation } from './utils/zoe.js';
 
 const trace = makeTracer('FastUsdc');
 
 /**
+ * @import {Denom} from '@agoric/orchestration';
  * @import {OrchestrationPowers, OrchestrationTools} from '@agoric/orchestration/src/utils/start-helper.js';
  * @import {Zone} from '@agoric/zone';
+ * @import {OperatorKit} from './exos/operator-kit.js';
  * @import {CctpTxEvidence} from './types.js';
  */
 
@@ -24,6 +27,7 @@ const trace = makeTracer('FastUsdc');
  * @typedef {{
  *   poolFee: Amount<'nat'>;
  *   contractFee: Amount<'nat'>;
+ *   usdcDenom: Denom;
  * }} FastUsdcTerms
  */
 const NatAmountShape = { brand: BrandShape, value: M.nat() };
@@ -31,6 +35,7 @@ export const meta = {
   customTermsShape: {
     contractFee: NatAmountShape,
     poolFee: NatAmountShape,
+    usdcDenom: M.string(),
   },
 };
 harden(meta);
@@ -47,6 +52,7 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
   assert(tools, 'no tools');
   const terms = zcf.getTerms();
   assert('USDC' in terms.brands, 'no USDC brand');
+  assert('usdcDenom' in terms, 'no usdcDenom');
 
   const { makeRecorderKit } = prepareRecorderKitMakers(
     zone.mapStore('vstorage'),
@@ -59,10 +65,14 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
   const makeAdvancer = prepareAdvancer(zone, {
     chainHub,
     log: trace,
+    usdc: harden({
+      brand: terms.brands.USDC,
+      denom: terms.usdcDenom,
+    }),
     statusManager,
     vowTools,
   });
-  const makeFeedKit = prepareTransactionFeedKit(zone);
+  const makeFeedKit = prepareTransactionFeedKit(zone, zcf);
   assertAllDefined({ makeFeedKit, makeAdvancer, makeSettler, statusManager });
   const feedKit = makeFeedKit();
   const advancer = makeAdvancer(
@@ -70,10 +80,10 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
     {},
   );
   // Connect evidence stream to advancer
-  void observeIteration(subscribeEach(feedKit.public.getEvidenceStream()), {
+  void observeIteration(subscribeEach(feedKit.public.getEvidenceSubscriber()), {
     updateState(evidence) {
       try {
-        advancer.handleTransactionEvent(evidence);
+        void advancer.handleTransactionEvent(evidence);
       } catch (err) {
         trace('🚨 Error handling transaction event', err);
       }
@@ -86,7 +96,16 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
     { makeRecorderKit },
   );
 
+  const makeTestInvitation = defineInertInvitation(
+    zcf,
+    'test of forcing evidence',
+  );
+
   const creatorFacet = zone.exo('Fast USDC Creator', undefined, {
+    /** @type {(operatorId: string) => Promise<Invitation<OperatorKit>>} */
+    async makeOperatorInvitation(operatorId) {
+      return feedKit.creator.makeOperatorInvitation(operatorId);
+    },
     simulateFeesFromAdvance(amount, payment) {
       console.log('🚧🚧 UNTIL: advance fees are implemented 🚧🚧');
       // eslint-disable-next-line no-use-before-define
@@ -98,22 +117,16 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
     // XXX to be removed before production
     /**
      * NB: Any caller with access to this invitation maker has the ability to
-     * add evidence.
+     * force handling of evidence.
      *
      * Provide an API call in the form of an invitation maker, so that the
-     * capability is available in the smart-wallet bridge.
+     * capability is available in the smart-wallet bridge during UI testing.
      *
      * @param {CctpTxEvidence} evidence
      */
     makeTestPushInvitation(evidence) {
-      // TODO(bootstrap integration): force this to throw and confirm that it
-      // shows up in the the smart-wallet UpdateRecord `error` property
-      feedKit.admin.submitEvidence(evidence);
-      return zcf.makeInvitation(async cSeat => {
-        trace('Offer made on noop invitation');
-        cSeat.exit();
-        return 'noop; evidence was pushed in the invitation maker call';
-      }, 'noop invitation');
+      void advancer.handleTransactionEvent(evidence);
+      return makeTestInvitation();
     },
     makeDepositInvitation() {
       // eslint-disable-next-line no-use-before-define
