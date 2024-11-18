@@ -6,7 +6,12 @@ import type {
 } from '@agoric/orchestration';
 import type { Zone } from '@agoric/zone';
 import type { VowTools } from '@agoric/vow';
-import type { LogFn } from '../src/types.js';
+import { makeRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
+import type {
+  AmountUtils,
+  withAmountUtils,
+} from '@agoric/zoe/tools/test-utils.js';
+import type { FeeConfig, LogFn } from '../src/types.js';
 
 export const prepareMockOrchAccounts = (
   zone: Zone,
@@ -59,3 +64,11 @@ export const makeTestLogger = (logger: LogFn) => {
 };
 
 export type TestLogger = ReturnType<typeof makeTestLogger>;
+
+export const makeTestFeeConfig = (usdc: Omit<AmountUtils, 'mint'>): FeeConfig =>
+  harden({
+    flat: usdc.units(1),
+    variableRate: makeRatio(2n, usdc.brand),
+    maxVariable: usdc.units(100),
+    contractRate: makeRatio(20n, usdc.brand),
+  });

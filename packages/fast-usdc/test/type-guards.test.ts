@@ -2,7 +2,7 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { mustMatch } from '@endo/patterns';
 import { TxStatus, PendingTxStatus } from '../src/constants.js';
-import { CctpTxEvidenceShape, PendingTxShape } from '../src/typeGuards.js';
+import { CctpTxEvidenceShape, PendingTxShape } from '../src/type-guards.js';
 import type { CctpTxEvidence } from '../src/types.js';
 
 import { MockCctpTxEvidences } from './fixtures.js';

@@ -28,6 +28,7 @@ import { makeHeapZone, type Zone } from '@agoric/zone';
 import { makeDurableZone } from '@agoric/zone/durable.js';
 import { E } from '@endo/far';
 import type { ExecutionContext } from 'ava';
+import { makeTestFeeConfig } from './mocks.js';
 
 export {
   makeFakeLocalchainBridge,
@@ -184,6 +185,7 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
       storageNode: storage.rootNode,
       marshaller,
       timerService: timer,
+      feeConfig: makeTestFeeConfig(usdc),
     },
     facadeServices: {
       agoricNames,

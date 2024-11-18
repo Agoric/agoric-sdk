@@ -19,6 +19,7 @@ test('advance creates new entry with ADVANCED status', t => {
 
   t.is(entries[0]?.status, PendingTxStatus.Advanced);
 });
+test.todo('ADVANCED transactions are published to vstorage');
 
 test('observe creates new entry with OBSERVED status', t => {
   const zone = provideDurableZone('status-test');
@@ -34,6 +35,7 @@ test('observe creates new entry with OBSERVED status', t => {
 
   t.is(entries[0]?.status, PendingTxStatus.Observed);
 });
+test.todo('OBSERVED transactions are published to vstorage');
 
 test('cannot process same tx twice', t => {
   const zone = provideDurableZone('status-test');

@@ -445,6 +445,7 @@ export const makeChainHub = (zone, agoricNames, vowTools) => {
     /**
      * @param {string} address bech32 address
      * @returns {ChainAddress}
+     * @throws {Error} if chain info not found for bech32Prefix
      */
     makeChainAddress(address) {
       const prefix = getBech32Prefix(address);

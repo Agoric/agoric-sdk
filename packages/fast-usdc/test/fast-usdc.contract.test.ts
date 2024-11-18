@@ -51,8 +51,6 @@ const startContract = async (
     installation,
     { USDC: usdc.issuer },
     {
-      poolFee: usdc.make(1n),
-      contractFee: usdc.make(1n),
       usdcDenom: 'ibc/usdconagoric',
     },
     commonPrivateArgs,
@@ -243,8 +241,6 @@ test('baggage', async t => {
     installation,
     { USDC: usdc.issuer },
     {
-      poolFee: usdc.make(1n),
-      contractFee: usdc.make(1n),
       usdcDenom: 'ibc/usdconagoric',
     },
     commonPrivateArgs,
