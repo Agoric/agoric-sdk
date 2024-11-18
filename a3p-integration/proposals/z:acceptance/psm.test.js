@@ -19,7 +19,6 @@ import {
   getUser,
   GOV1ADDR,
   GOV2ADDR,
-  USER1ADDR,
 } from '@agoric/synthetic-chain';
 import {
   adjustBalancesIfNotProvisioned,
@@ -85,7 +84,7 @@ const psmTestSpecs = {
 test.serial('change gov params', async t => {
   const balances = await getBalances([GOV1ADDR, GOV2ADDR]);
   t.log('BALANCES(debug):', balances);
-  await bankSend(GOV2ADDR, '1000000uist', USER1ADDR);
+  await bankSend(GOV2ADDR, '1000000uist', GOV1ADDR);
   await implementPsmGovParamChange(
     {
       address: GOV1ADDR,
