@@ -63,7 +63,7 @@ export const retryUntilCondition = async (
     setTimeout,
   },
 ) => {
-  console.log({ maxRetries, retryIntervalMs, reusePromise, message });
+  console.log({ maxRetries, retryIntervalMs, message });
 
   await null; // separate sync prologue
 
