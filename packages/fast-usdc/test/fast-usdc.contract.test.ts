@@ -2,7 +2,10 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import type { ExecutionContext } from 'ava';
 
 import { AmountMath } from '@agoric/ertp/src/amountMath.js';
-import { inspectMapStore } from '@agoric/internal/src/testing-utils.js';
+import {
+  eventLoopIteration,
+  inspectMapStore,
+} from '@agoric/internal/src/testing-utils.js';
 import {
   divideBy,
   multiplyBy,
@@ -12,9 +15,14 @@ import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { E } from '@endo/far';
 import path from 'path';
 import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
+import { objectMap } from '@endo/patterns';
+import { deeplyFulfilledObject } from '@agoric/internal';
+import type { Subscriber } from '@agoric/notifier';
 import { MockCctpTxEvidences } from './fixtures.js';
 import { commonSetup } from './supports.js';
 import type { FastUsdcTerms } from '../src/fast-usdc.contract.js';
+import { makeFeeTools } from '../src/utils/fees.js';
+import type { PoolMetrics } from '../src/types.js';
 
 const dirname = path.dirname(new URL(import.meta.url).pathname);
 
@@ -140,7 +148,7 @@ const makeLpTools = (
     publicFacet,
   }: {
     zoe: ZoeService;
-    subscriber: ERef<Subscriber<Ratio>>;
+    subscriber: ERef<Subscriber<PoolMetrics>>;
     publicFacet: StartedInstanceKit<StartFn>['publicFacet'];
     terms: StandardTerms & FastUsdcTerms;
   },
@@ -154,7 +162,9 @@ const makeLpTools = (
     let deposited = AmountMath.makeEmpty(usdc.brand);
     const me = harden({
       deposit: async (qty: bigint) => {
-        const { value: shareWorth } = await E(subscriber).getUpdateSince();
+        const {
+          value: { shareWorth },
+        } = await E(subscriber).getUpdateSince();
         const give = { USDC: usdc.make(qty) };
         const proposal = harden({
           give,
@@ -178,7 +188,9 @@ const makeLpTools = (
           .getCurrentAmount()
           .then(a => a as Amount<'nat'>);
         const give = { PoolShare: scaleAmount(portion, myShares) };
-        const { value: shareWorth } = await E(subscriber).getUpdateSince();
+        const {
+          value: { shareWorth },
+        } = await E(subscriber).getUpdateSince();
         const myUSDC = multiplyBy(myShares, shareWorth);
         const myFees = subtract(myUSDC, deposited);
         t.log(name, 'sees fees earned', ...logAmt(myFees));
@@ -194,13 +206,12 @@ const makeLpTools = (
           .then(pmt => E(zoe).offer(toWithdraw, proposal, { PoolShare: pmt }))
           .then(seat => E(seat).getPayout('USDC'));
         const amt = await E(usdcPurse).deposit(usdcPmt);
-        t.log(name, 'withdaw payout', ...logAmt(amt));
+        t.log(name, 'withdraw payout', ...logAmt(amt));
         t.true(isGTE(amt, proposal.want.USDC));
       },
     });
     return me;
   };
-
   const purseOf = (value: bigint) =>
     E(terms.issuers.USDC)
       .makeEmptyPurse()
@@ -215,6 +226,7 @@ const makeLpTools = (
 test('LP deposits, earns fees, withdraws', async t => {
   const common = await commonSetup(t);
   const {
+    commonPrivateArgs,
     brands: { usdc },
     utils,
   } = common;
@@ -224,7 +236,7 @@ test('LP deposits, earns fees, withdraws', async t => {
   const terms = await E(zoe).getTerms(instance);
 
   const { subscriber } = E.get(
-    E.get(E(publicFacet).getPublicTopics()).shareWorth,
+    E.get(E(publicFacet).getPublicTopics()).poolMetrics,
   );
 
   const { makeLP, purseOf } = makeLpTools(t, common, {
@@ -233,21 +245,283 @@ test('LP deposits, earns fees, withdraws', async t => {
     terms,
     zoe,
   });
-
   const lps = {
     alice: makeLP('Alice', purseOf(60n)),
     bob: makeLP('Bob', purseOf(50n)),
   };
 
   await Promise.all([lps.alice.deposit(60n), lps.bob.deposit(40n)]);
+
   {
-    const feeAmt = usdc.make(25n);
-    t.log('contract accrues some amount of fees:', ...logAmt(feeAmt));
-    const feePmt = await utils.pourPayment(feeAmt);
-    await E(creatorFacet).simulateFeesFromAdvance(feeAmt, feePmt);
+    t.log('simulate borrow and repay so pool accrues fees');
+    const feeTools = makeFeeTools(commonPrivateArgs.feeConfig);
+    const requestedAmount = usdc.make(50n);
+    const splits = feeTools.calculateSplit(requestedAmount);
+
+    const amt = await E(creatorFacet).testBorrow({ USDC: splits.Principal });
+    t.deepEqual(
+      amt.USDC,
+      splits.Principal,
+      'testBorrow returns requested amount',
+    );
+    const repayPayments = await deeplyFulfilledObject(
+      objectMap(splits, utils.pourPayment),
+    );
+    const remaining = await E(creatorFacet).testRepay(splits, repayPayments);
+    for (const r of Object.values(remaining)) {
+      t.is(r.value, 0n, 'testRepay consumes all payments');
+    }
+  }
+  await Promise.all([lps.alice.withdraw(0.2), lps.bob.withdraw(0.8)]);
+});
+
+test('LP borrow', async t => {
+  const common = await commonSetup(t);
+  const {
+    brands: { usdc },
+  } = common;
+
+  const { instance, creatorFacet, publicFacet, zoe } =
+    await startContract(common);
+  const terms = await E(zoe).getTerms(instance);
+
+  const { subscriber } = E.get(
+    E.get(E(publicFacet).getPublicTopics()).poolMetrics,
+  );
+
+  const { makeLP, purseOf } = makeLpTools(t, common, {
+    publicFacet,
+    subscriber,
+    terms,
+    zoe,
+  });
+  const lps = {
+    alice: makeLP('Alice', purseOf(100n)),
+  };
+  // seed pool with funds
+  await lps.alice.deposit(100n);
+
+  const { value } = await E(subscriber).getUpdateSince();
+  const { shareWorth, encumberedBalance } = value;
+  const poolSeatAllocation = subtract(
+    subtract(shareWorth.numerator, encumberedBalance),
+    usdc.make(1n),
+  );
+  t.log('Attempting to borrow entire pool seat allocation', poolSeatAllocation);
+  await t.throwsAsync(
+    E(creatorFacet).testBorrow({ USDC: poolSeatAllocation }),
+    {
+      message: /Cannot borrow/,
+    },
+    'borrow fails when requested equals pool seat allocation',
+  );
+
+  await t.throwsAsync(
+    E(creatorFacet).testBorrow({ USDC: usdc.make(200n) }),
+    {
+      message: /Cannot borrow/,
+    },
+    'borrow fails when requested exceeds pool seat allocation',
+  );
+
+  await t.throwsAsync(E(creatorFacet).testBorrow({ USDC: usdc.make(0n) }), {
+    message: /arg 1: USDC: value: "\[0n\]" - Must be >= "\[1n\]"/,
+  });
+
+  await t.throwsAsync(
+    E(creatorFacet).testBorrow(
+      // @ts-expect-error intentionally incorrect KW
+      { Fee: usdc.make(1n) },
+    ),
+    {
+      message: /Must have missing properties \["USDC"\]/,
+    },
+  );
+
+  // LPs can still withdraw (contract did not shutdown)
+  await lps.alice.withdraw(0.5);
+
+  const amt = await E(creatorFacet).testBorrow({ USDC: usdc.make(30n) });
+  t.deepEqual(amt, { USDC: usdc.make(30n) }, 'borrow succeeds');
+
+  await eventLoopIteration();
+  t.like(await E(subscriber).getUpdateSince(), {
+    value: {
+      encumberedBalance: {
+        value: 30n,
+      },
+      totalBorrows: {
+        value: 30n,
+      },
+      totalRepays: {
+        value: 0n,
+      },
+    },
+  });
+});
+
+test('LP repay', async t => {
+  const common = await commonSetup(t);
+  const {
+    commonPrivateArgs,
+    brands: { usdc },
+    utils,
+  } = common;
+
+  const { instance, creatorFacet, publicFacet, zoe } =
+    await startContract(common);
+  const terms = await E(zoe).getTerms(instance);
+
+  const { subscriber } = E.get(
+    E.get(E(publicFacet).getPublicTopics()).poolMetrics,
+  );
+  const feeTools = makeFeeTools(commonPrivateArgs.feeConfig);
+  const { makeLP, purseOf } = makeLpTools(t, common, {
+    publicFacet,
+    subscriber,
+    terms,
+    zoe,
+  });
+  const lps = {
+    alice: makeLP('Alice', purseOf(100n)),
+  };
+  // seed pool with funds
+  await lps.alice.deposit(100n);
+
+  // borrow funds from pool to increase encumbered balance
+  await E(creatorFacet).testBorrow({ USDC: usdc.make(50n) });
+
+  {
+    t.log('cannot repay more than encumbered balance');
+    const repayAmounts = feeTools.calculateSplit(usdc.make(100n));
+    const repayPayments = await deeplyFulfilledObject(
+      objectMap(repayAmounts, utils.pourPayment),
+    );
+    await t.throwsAsync(
+      E(creatorFacet).testRepay(repayAmounts, repayPayments),
+      {
+        message: /Cannot repay. Principal .* exceeds encumberedBalance/,
+      },
+    );
   }
 
-  await Promise.all([lps.alice.withdraw(0.2), lps.bob.withdraw(0.8)]);
+  {
+    const pmt = utils.pourPayment(usdc.make(50n));
+    await t.throwsAsync(
+      E(creatorFacet).testRepay(
+        // @ts-expect-error intentionally incorrect KWR
+        { USDC: usdc.make(50n) },
+        { USDC: pmt },
+      ),
+      {
+        message:
+          /Must have missing properties \["Principal","PoolFee","ContractFee"\]/,
+      },
+    );
+  }
+  {
+    const pmt = utils.pourPayment(usdc.make(50n));
+    await t.throwsAsync(
+      E(creatorFacet).testRepay(
+        // @ts-expect-error intentionally incorrect KWR
+        { Principal: usdc.make(50n) },
+        { Principal: pmt },
+      ),
+      {
+        message: /Must have missing properties \["PoolFee","ContractFee"\]/,
+      },
+    );
+  }
+  {
+    const amts = {
+      Principal: usdc.make(0n),
+      ContractFee: usdc.make(0n),
+      PoolFee: usdc.make(0n),
+    };
+    const pmts = await deeplyFulfilledObject(
+      objectMap(amts, utils.pourPayment),
+    );
+    await t.throwsAsync(E(creatorFacet).testRepay(amts, pmts), {
+      message: /arg 1: Principal: value: "\[0n\]" - Must be >= "\[1n\]"/,
+    });
+  }
+
+  {
+    t.log('repay fails when amounts do not match seat allocation');
+    const amts = {
+      Principal: usdc.make(25n),
+      ContractFee: usdc.make(1n),
+      PoolFee: usdc.make(2n),
+    };
+    const pmts = await deeplyFulfilledObject(
+      harden({
+        Principal: utils.pourPayment(usdc.make(24n)),
+        ContractFee: utils.pourPayment(usdc.make(1n)),
+        PoolFee: utils.pourPayment(usdc.make(2n)),
+      }),
+    );
+    await t.throwsAsync(E(creatorFacet).testRepay(amts, pmts), {
+      message: /Cannot repay. From seat allocation .* does not equal amounts/,
+    });
+  }
+
+  {
+    t.log('repay succeeds with no Pool or Contract Fee');
+    const amts = {
+      Principal: usdc.make(25n),
+      ContractFee: usdc.make(0n),
+      PoolFee: usdc.make(0n),
+    };
+    const pmts = await deeplyFulfilledObject(
+      objectMap(amts, utils.pourPayment),
+    );
+    const repayResult = await E(creatorFacet).testRepay(amts, pmts);
+
+    for (const r of Object.values(repayResult)) {
+      t.is(r.value, 0n, 'testRepay consumes all payments');
+    }
+  }
+
+  const amts = {
+    Principal: usdc.make(25n),
+    ContractFee: usdc.make(1n),
+    PoolFee: usdc.make(2n),
+  };
+  const pmts = await deeplyFulfilledObject(objectMap(amts, utils.pourPayment));
+  const repayResult = await E(creatorFacet).testRepay(amts, pmts);
+
+  for (const r of Object.values(repayResult)) {
+    t.is(r.value, 0n, 'testRepay consumes all payments');
+  }
+
+  await eventLoopIteration();
+  t.like(await E(subscriber).getUpdateSince(), {
+    value: {
+      encumberedBalance: {
+        value: 0n,
+      },
+      totalBorrows: {
+        value: 50n,
+      },
+      totalRepays: {
+        value: 50n,
+      },
+      totalContractFees: {
+        value: 1n,
+      },
+      totalPoolFees: {
+        value: 2n,
+      },
+      shareWorth: {
+        numerator: {
+          value: 103n, // 100n (alice lp) + 1n (dust) + 2n (pool fees)
+        },
+      },
+    },
+  });
+
+  // LPs can still withdraw (contract did not shutdown)
+  await lps.alice.withdraw(1);
 });
 
 test('baggage', async t => {
