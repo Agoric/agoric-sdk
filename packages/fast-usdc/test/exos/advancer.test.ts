@@ -194,7 +194,7 @@ test('updates status to OBSERVED on insufficient pool funds', async t => {
 
   t.deepEqual(inspectLogs(0), [
     'Insufficient pool funds',
-    'Requested {"brand":"[Alleged: USDC brand]","value":"[195000000n]"} but only have {"brand":"[Alleged: USDC brand]","value":"[1n]"}',
+    'Requested {"brand":"[Alleged: USDC brand]","value":"[199999899n]"} but only have {"brand":"[Alleged: USDC brand]","value":"[1n]"}',
   ]);
 });
 
