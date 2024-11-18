@@ -46,15 +46,18 @@ import type { SwingsetController } from '@agoric/swingset-vat/src/controller/con
 import type { BridgeHandler, IBCMethod } from '@agoric/vats';
 import type { BootstrapRootObject } from '@agoric/vats/src/core/lib-boot.js';
 import type { EProxy } from '@endo/eventual-send';
+import type { FastUSDCCorePowers } from '@agoric/fast-usdc/src/fast-usdc.start.js';
 import { icaMocks, protoMsgMockMap, protoMsgMocks } from './ibc/mocks.js';
 
 const trace = makeTracer('BSTSupport', false);
 
 type ConsumeBootrapItem = <N extends string>(
   name: N,
-) => N extends keyof EconomyBootstrapPowers['consume']
-  ? EconomyBootstrapPowers['consume'][N]
-  : unknown;
+) => N extends keyof FastUSDCCorePowers['consume']
+  ? FastUSDCCorePowers['consume'][N]
+  : N extends keyof EconomyBootstrapPowers['consume']
+    ? EconomyBootstrapPowers['consume'][N]
+    : unknown;
 
 // XXX should satisfy EVProxy from run-utils.js but that's failing to import
 /**

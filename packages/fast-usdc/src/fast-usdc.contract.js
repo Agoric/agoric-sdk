@@ -1,17 +1,16 @@
 import { AssetKind } from '@agoric/ertp';
-import { BrandShape } from '@agoric/ertp/src/typeGuards.js';
 import { assertAllDefined, makeTracer } from '@agoric/internal';
 import { observeIteration, subscribeEach } from '@agoric/notifier';
 import { withOrchestration } from '@agoric/orchestration';
 import { provideSingleton } from '@agoric/zoe/src/contractSupport/durability.js';
 import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/recorder.js';
-import { M } from '@endo/patterns';
 import { prepareAdvancer } from './exos/advancer.js';
 import { prepareLiquidityPoolKit } from './exos/liquidity-pool.js';
 import { prepareSettler } from './exos/settler.js';
 import { prepareStatusManager } from './exos/status-manager.js';
 import { prepareTransactionFeedKit } from './exos/transaction-feed.js';
 import { defineInertInvitation } from './utils/zoe.js';
+import { FastUSDCTermsShape } from './type-guards.js';
 
 const trace = makeTracer('FastUsdc');
 
@@ -30,13 +29,8 @@ const trace = makeTracer('FastUsdc');
  *   usdcDenom: Denom;
  * }} FastUsdcTerms
  */
-const NatAmountShape = { brand: BrandShape, value: M.nat() };
 export const meta = {
-  customTermsShape: {
-    contractFee: NatAmountShape,
-    poolFee: NatAmountShape,
-    usdcDenom: M.string(),
-  },
+  customTermsShape: FastUSDCTermsShape,
 };
 harden(meta);
 

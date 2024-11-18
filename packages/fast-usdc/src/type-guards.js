@@ -1,8 +1,10 @@
 import { M } from '@endo/patterns';
+import { BrandShape } from '@agoric/ertp';
 
 /**
  * @import {TypedPattern} from '@agoric/internal'
  * @import {USDCProposalShapes} from './pool-share-math'
+ * @import {FastUsdcTerms} from './fast-usdc.contract'
  */
 
 /**
@@ -26,3 +28,11 @@ export const makeProposalShapes = ({ PoolShares, USDC }) => {
   });
   return harden({ deposit, withdraw });
 };
+
+const NatAmountShape = { brand: BrandShape, value: M.nat() };
+/** @type {TypedPattern<FastUsdcTerms>} */
+export const FastUSDCTermsShape = harden({
+  contractFee: NatAmountShape,
+  poolFee: NatAmountShape,
+  usdcDenom: M.string(),
+});
