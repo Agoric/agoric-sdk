@@ -18,6 +18,7 @@ var upgradeNamesOfThisVersion = []string{
 	"agoric-upgrade-18-devnet",
 	"agoric-upgrade-18-emerynet",
 	"agoric-upgrade-18-basic",
+	"agoric-upgrade-18-basic-2",
 	"agoric-upgrade-18-a3p",
 }
 
@@ -58,6 +59,8 @@ func isPrimaryUpgradeName(name string) bool {
 		validUpgradeName("agoric-upgrade-18-basic"),
 		validUpgradeName("agoric-upgrade-18-a3p"):
 		return true
+	case validUpgradeName("agoric-upgrade-18-basic-2"):
+		return false
 	default:
 		panic(fmt.Errorf("unexpected upgrade name %s", validUpgradeName(name)))
 	}
