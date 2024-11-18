@@ -6,7 +6,6 @@ import {
   getManifestForFastUSDC,
 } from '@agoric/fast-usdc/src/fast-usdc.start.js';
 import { toExternalConfig } from '@agoric/fast-usdc/src/utils/config-marshal.js';
-import { objectMap } from '@agoric/internal';
 import {
   multiplyBy,
   parseRatio,
@@ -22,16 +21,26 @@ import { parseArgs } from 'node:util';
 
 /** @type {ParseArgsConfig['options']} */
 const options = {
-  contractFee: { type: 'string', default: '0.01' },
-  poolFee: { type: 'string', default: '0.01' },
+  flatFee: { type: 'string', default: '0.01' },
+  variableRate: { type: 'string', default: '0.01' },
+  maxVariableFee: { type: 'string', default: '5' },
+  contractRate: { type: 'string', default: '0.2' },
   oracle: { type: 'string', multiple: true },
+  usdcDenom: {
+    type: 'string',
+    default:
+      'ibc/FE98AAD68F02F03565E9FA39A5E627946699B2B07115889ED812D8BA639576A9',
+  },
 };
 const oraclesRequiredUsage = 'use --oracle name:address ...';
 /**
  * @typedef {{
- *   contractFee: string;
- *   poolFee: string;
+ *   flatFee: string;
+ *   variableRate: string;
+ *   maxVariableFee: string;
+ *   contractRate: string;
  *   oracle?: string[];
+ *   usdcDenom: string;
  * }} FastUSDCOpts
  */
 
@@ -73,7 +82,7 @@ export default async (homeP, endowments) => {
   /** @type {{ values: FastUSDCOpts }} */
   // @ts-expect-error ensured by options
   const {
-    values: { oracle: oracleArgs, ...fees },
+    values: { oracle: oracleArgs, usdcDenom, ...fees },
   } = parseArgs({ args: scriptArgs, options });
 
   const parseOracleArgs = () => {
@@ -88,15 +97,27 @@ export default async (homeP, endowments) => {
     );
   };
 
+  /** @param {string} numeral */
+  const toAmount = numeral => multiplyBy(unit, parseRatio(numeral, USDC));
+  /** @param {string} numeral */
+  const toRatio = numeral => parseRatio(numeral, USDC);
+  const parseFeeConfigArgs = () => {
+    const { flatFee, variableRate, maxVariableFee, contractRate } = fees;
+    return {
+      flat: toAmount(flatFee),
+      variableRate: toRatio(variableRate),
+      maxVariable: toAmount(maxVariableFee),
+      contractRate: toRatio(contractRate),
+    };
+  };
+
   /** @type {FastUSDCConfig} */
   const config = harden({
     oracles: parseOracleArgs(),
     terms: {
-      ...objectMap(fees, numeral =>
-        multiplyBy(unit, parseRatio(numeral, USDC)),
-      ),
-      usdcDenom: 'ibc/usdconagoric',
+      usdcDenom,
     },
+    feeConfig: parseFeeConfigArgs(),
   });
 
   await writeCoreEval('start-fast-usdc', utils =>

@@ -2,7 +2,8 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { Far } from '@endo/pass-style';
 import { mustMatch } from '@endo/patterns';
 import { AmountMath } from '@agoric/ertp';
-import { FastUSDCTermsShape } from '../src/type-guards.js';
+import { makeRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
+import { FeeConfigShape } from '../src/type-guards.js';
 import {
   fromLegible,
   makeMarshalFromRecord,
@@ -15,7 +16,7 @@ const testMatches = (t, specimen, pattern) => {
   t.notThrows(() => mustMatch(specimen, pattern));
 };
 
-test('cross-vat configuration of Fast USDC terms', t => {
+test('cross-vat configuration of Fast USDC FeeConfig', t => {
   const context = /** @type {const} */ ({
     /** @type {Brand<'nat'>} */
     USDC: Far('USDC Brand'),
@@ -24,11 +25,12 @@ test('cross-vat configuration of Fast USDC terms', t => {
   const { USDC } = context;
   const { make } = AmountMath;
   const config = harden({
-    poolFee: make(USDC, 150n),
-    contractFee: make(USDC, 200n),
-    usdcDenom: 'ibc/usdconagoric',
+    flat: make(USDC, 100n),
+    variableRate: makeRatio(1n, USDC),
+    maxVariable: make(USDC, 100_000n),
+    contractRate: makeRatio(20n, USDC),
   });
-  testMatches(t, config, FastUSDCTermsShape);
+  testMatches(t, config, FeeConfigShape);
 
   const m = makeMarshalFromRecord(context);
   /** @type {any} */ // XXX struggling with recursive type
@@ -36,9 +38,28 @@ test('cross-vat configuration of Fast USDC terms', t => {
 
   t.deepEqual(legible, {
     structure: {
-      contractFee: { brand: '$0.Alleged: USDC Brand', value: '+200' },
-      poolFee: { brand: '$0', value: '+150' },
-      usdcDenom: 'ibc/usdconagoric',
+      contractRate: {
+        denominator: {
+          brand: '$0.Alleged: USDC Brand',
+          value: '+100',
+        },
+        numerator: {
+          brand: '$0',
+          value: '+20',
+        },
+      },
+      flat: { brand: '$0', value: '+100' },
+      maxVariable: { brand: '$0', value: '+100000' },
+      variableRate: {
+        denominator: {
+          brand: '$0',
+          value: '+100',
+        },
+        numerator: {
+          brand: '$0',
+          value: '+1',
+        },
+      },
     },
     slots: ['USDC'],
   });

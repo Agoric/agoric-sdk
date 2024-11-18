@@ -3,7 +3,7 @@ import { M } from '@endo/patterns';
 
 /**
  * @import {TypedPattern} from '@agoric/internal';
- * @import {ChainAddress, CosmosAssetInfo, Chain, ChainInfo, CosmosChainInfo, DenomAmount, DenomInfo, AmountArg, CosmosValidatorAddress} from './types.js';
+ * @import {ChainAddress, CosmosAssetInfo, Chain, ChainInfo, CosmosChainInfo, DenomAmount, DenomInfo, AmountArg, CosmosValidatorAddress, OrchestrationPowers} from './types.js';
  * @import {Any as Proto3Msg} from '@agoric/cosmic-proto/google/protobuf/any.js';
  * @import {TxBody} from '@agoric/cosmic-proto/cosmos/tx/v1beta1/tx.js';
  * @import {TypedJson} from '@agoric/cosmic-proto';
@@ -195,3 +195,13 @@ export const AnyNatAmountsRecord = M.and(
   M.recordOf(M.string(), AnyNatAmountShape),
   M.not({}),
 );
+
+/** @type {TypedPattern<OrchestrationPowers>} */
+export const OrchestrationPowersShape = {
+  agoricNames: M.remotable(),
+  localchain: M.remotable(),
+  orchestrationService: M.remotable(),
+  storageNode: M.remotable(),
+  timerService: M.remotable(),
+};
+harden(OrchestrationPowersShape);

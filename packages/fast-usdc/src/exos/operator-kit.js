@@ -1,7 +1,7 @@
 import { makeTracer } from '@agoric/internal';
 import { Fail } from '@endo/errors';
 import { M } from '@endo/patterns';
-import { CctpTxEvidenceShape } from '../typeGuards.js';
+import { CctpTxEvidenceShape } from '../type-guards.js';
 
 const trace = makeTracer('TxOperator');
 

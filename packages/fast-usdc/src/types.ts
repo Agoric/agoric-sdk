@@ -35,4 +35,11 @@ export type PendingTxKey = `pendingTx:${string}`;
 /** internal key for `StatusManager` exo */
 export type SeenTxKey = `seenTx:${string}`;
 
+export type FeeConfig = {
+  flat: Amount<'nat'>;
+  variableRate: Ratio;
+  maxVariable: Amount<'nat'>;
+  contractRate: Ratio;
+};
+
 export type * from './constants.js';

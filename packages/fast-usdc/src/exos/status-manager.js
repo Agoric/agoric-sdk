@@ -2,7 +2,7 @@ import { M } from '@endo/patterns';
 import { makeError, q } from '@endo/errors';
 
 import { appendToStoredArray } from '@agoric/store/src/stores/store-utils.js';
-import { CctpTxEvidenceShape, PendingTxShape } from '../typeGuards.js';
+import { CctpTxEvidenceShape, PendingTxShape } from '../type-guards.js';
 import { PendingTxStatus } from '../constants.js';
 
 /**

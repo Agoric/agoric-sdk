@@ -3,7 +3,7 @@ import { Fail } from '@endo/errors';
 import { E } from '@endo/far';
 import { makeMarshal } from '@endo/marshal';
 import { M } from '@endo/patterns';
-import { FastUSDCTermsShape } from './type-guards.js';
+import { FastUSDCTermsShape, FeeConfigShape } from './type-guards.js';
 import { fromExternalConfig } from './utils/config-marshal.js';
 
 /**
@@ -15,6 +15,7 @@ import { fromExternalConfig } from './utils/config-marshal.js';
  * @import {BootstrapManifest} from '@agoric/vats/src/core/lib-boot.js'
  * @import {LegibleCapData} from './utils/config-marshal.js'
  * @import {FastUsdcSF, FastUsdcTerms} from './fast-usdc.contract.js'
+ * @import {FeeConfig} from './types.js'
  */
 
 const trace = makeTracer('FUSD-Start', true);
@@ -25,12 +26,14 @@ const contractName = 'fastUsdc';
  * @typedef {{
  *   terms: FastUsdcTerms;
  *   oracles: Record<string, string>;
+ *   feeConfig: FeeConfig;
  * }} FastUSDCConfig
  */
 /** @type {TypedPattern<FastUSDCConfig>} */
 export const FastUSDCConfigShape = M.splitRecord({
   terms: FastUSDCTermsShape,
   oracles: M.recordOf(M.string(), M.string()),
+  feeConfig: FeeConfigShape,
 });
 
 /**
@@ -128,12 +131,13 @@ export const startFastUSDC = async (
     USDC: await E(USDCissuer).getBrand(),
   });
 
-  const { terms, oracles } = fromExternalConfig(
+  const { terms, oracles, feeConfig } = fromExternalConfig(
     config?.options, // just in case config is missing somehow
     brands,
     FastUSDCConfigShape,
   );
   trace('using terms', terms);
+  trace('using fee config', feeConfig);
 
   trace('look up oracle deposit facets');
   const oracleDepositFacets = await deeplyFulfilledObject(
@@ -159,6 +163,7 @@ export const startFastUSDC = async (
   const privateArgs = await deeplyFulfilledObject(
     harden({
       agoricNames,
+      feeConfig,
       localchain,
       orchestrationService: cosmosInterchainService,
       storageNode,
