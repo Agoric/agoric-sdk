@@ -55,9 +55,8 @@ export const prepareSettler = (zone, { statusManager }) => {
           return;
         }
 
-        const { params } = addressTools.getQueryParams(tx.receiver);
-        // TODO - what's the schema address parameter schema for FUSDC?
-        if (!params?.EUD) {
+        const { EUD } = addressTools.getQueryParams(tx.receiver);
+        if (!EUD) {
           // only interested in receivers with EUD parameter
           return;
         }

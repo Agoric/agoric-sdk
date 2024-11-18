@@ -141,6 +141,9 @@ module.exports = {
     // CI has a separate format check but keep this warn to maintain that "eslint --fix" prettifies
     // UNTIL https://github.com/Agoric/agoric-sdk/issues/4339
     'prettier/prettier': 'warn',
+
+    // Not a risk with our coding style
+    'no-constant-condition': 'off',
   },
   settings: {
     jsdoc: {

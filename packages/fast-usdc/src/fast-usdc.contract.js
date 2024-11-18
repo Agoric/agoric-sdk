@@ -1,8 +1,10 @@
 import { AssetKind } from '@agoric/ertp';
-import { BrandShape } from '@agoric/ertp/src/typeGuards.js';
 import { assertAllDefined, makeTracer } from '@agoric/internal';
 import { observeIteration, subscribeEach } from '@agoric/notifier';
-import { withOrchestration } from '@agoric/orchestration';
+import {
+  OrchestrationPowersShape,
+  withOrchestration,
+} from '@agoric/orchestration';
 import { provideSingleton } from '@agoric/zoe/src/contractSupport/durability.js';
 import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/recorder.js';
 import { M } from '@endo/patterns';
@@ -11,26 +13,34 @@ import { prepareLiquidityPoolKit } from './exos/liquidity-pool.js';
 import { prepareSettler } from './exos/settler.js';
 import { prepareStatusManager } from './exos/status-manager.js';
 import { prepareTransactionFeedKit } from './exos/transaction-feed.js';
+import { defineInertInvitation } from './utils/zoe.js';
+import { FastUSDCTermsShape, FeeConfigShape } from './type-guards.js';
 
 const trace = makeTracer('FastUsdc');
 
 /**
+ * @import {Denom} from '@agoric/orchestration';
  * @import {OrchestrationPowers, OrchestrationTools} from '@agoric/orchestration/src/utils/start-helper.js';
  * @import {Zone} from '@agoric/zone';
- * @import {CctpTxEvidence} from './types.js';
+ * @import {OperatorKit} from './exos/operator-kit.js';
+ * @import {CctpTxEvidence, FeeConfig} from './types.js';
  */
 
 /**
  * @typedef {{
- *   poolFee: Amount<'nat'>;
- *   contractFee: Amount<'nat'>;
+ *   usdcDenom: Denom;
  * }} FastUsdcTerms
  */
-const NatAmountShape = { brand: BrandShape, value: M.nat() };
+
+/** @type {ContractMeta<typeof start>} */
 export const meta = {
-  customTermsShape: {
-    contractFee: NatAmountShape,
-    poolFee: NatAmountShape,
+  // @ts-expect-error TypedPattern not recognized as record
+  customTermsShape: FastUSDCTermsShape,
+  privateArgsShape: {
+    // @ts-expect-error TypedPattern not recognized as record
+    ...OrchestrationPowersShape,
+    feeConfig: FeeConfigShape,
+    marshaller: M.remotable(),
   },
 };
 harden(meta);
@@ -39,6 +49,7 @@ harden(meta);
  * @param {ZCF<FastUsdcTerms>} zcf
  * @param {OrchestrationPowers & {
  *   marshaller: Marshaller;
+ *   feeConfig: FeeConfig;
  * }} privateArgs
  * @param {Zone} zone
  * @param {OrchestrationTools} tools
@@ -47,22 +58,27 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
   assert(tools, 'no tools');
   const terms = zcf.getTerms();
   assert('USDC' in terms.brands, 'no USDC brand');
-
+  assert('usdcDenom' in terms, 'no usdcDenom');
+  const { feeConfig, marshaller } = privateArgs;
   const { makeRecorderKit } = prepareRecorderKitMakers(
     zone.mapStore('vstorage'),
-    privateArgs.marshaller,
+    marshaller,
   );
-
   const statusManager = prepareStatusManager(zone);
   const makeSettler = prepareSettler(zone, { statusManager });
   const { chainHub, vowTools } = tools;
   const makeAdvancer = prepareAdvancer(zone, {
     chainHub,
+    feeConfig,
     log: trace,
+    usdc: harden({
+      brand: terms.brands.USDC,
+      denom: terms.usdcDenom,
+    }),
     statusManager,
     vowTools,
   });
-  const makeFeedKit = prepareTransactionFeedKit(zone);
+  const makeFeedKit = prepareTransactionFeedKit(zone, zcf);
   assertAllDefined({ makeFeedKit, makeAdvancer, makeSettler, statusManager });
   const feedKit = makeFeedKit();
   const advancer = makeAdvancer(
@@ -70,10 +86,10 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
     {},
   );
   // Connect evidence stream to advancer
-  void observeIteration(subscribeEach(feedKit.public.getEvidenceStream()), {
+  void observeIteration(subscribeEach(feedKit.public.getEvidenceSubscriber()), {
     updateState(evidence) {
       try {
-        advancer.handleTransactionEvent(evidence);
+        void advancer.handleTransactionEvent(evidence);
       } catch (err) {
         trace('🚨 Error handling transaction event', err);
       }
@@ -86,7 +102,16 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
     { makeRecorderKit },
   );
 
+  const makeTestInvitation = defineInertInvitation(
+    zcf,
+    'test of forcing evidence',
+  );
+
   const creatorFacet = zone.exo('Fast USDC Creator', undefined, {
+    /** @type {(operatorId: string) => Promise<Invitation<OperatorKit>>} */
+    async makeOperatorInvitation(operatorId) {
+      return feedKit.creator.makeOperatorInvitation(operatorId);
+    },
     simulateFeesFromAdvance(amount, payment) {
       console.log('🚧🚧 UNTIL: advance fees are implemented 🚧🚧');
       // eslint-disable-next-line no-use-before-define
@@ -98,22 +123,16 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
     // XXX to be removed before production
     /**
      * NB: Any caller with access to this invitation maker has the ability to
-     * add evidence.
+     * force handling of evidence.
      *
      * Provide an API call in the form of an invitation maker, so that the
-     * capability is available in the smart-wallet bridge.
+     * capability is available in the smart-wallet bridge during UI testing.
      *
      * @param {CctpTxEvidence} evidence
      */
     makeTestPushInvitation(evidence) {
-      // TODO(bootstrap integration): force this to throw and confirm that it
-      // shows up in the the smart-wallet UpdateRecord `error` property
-      feedKit.admin.submitEvidence(evidence);
-      return zcf.makeInvitation(async cSeat => {
-        trace('Offer made on noop invitation');
-        cSeat.exit();
-        return 'noop; evidence was pushed in the invitation maker call';
-      }, 'noop invitation');
+      void advancer.handleTransactionEvent(evidence);
+      return makeTestInvitation();
     },
     makeDepositInvitation() {
       // eslint-disable-next-line no-use-before-define

@@ -175,7 +175,9 @@ export const makeWalletCommand = async command => {
           keyring: { home, backend },
           from,
           gas:
-            gas === 'auto' ? ['auto', parseFiniteNumber(gasAdjustment)] : gas,
+            gas === 'auto'
+              ? ['auto', parseFiniteNumber(gasAdjustment)]
+              : parseFiniteNumber(gas),
           dryRun,
           verbose,
         },

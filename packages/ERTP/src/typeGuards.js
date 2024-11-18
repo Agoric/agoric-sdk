@@ -75,10 +75,8 @@ const AmountValueShape = M.or(
   CopyBagValueShape,
 );
 
-export const AmountShape = harden({
-  brand: BrandShape,
-  value: AmountValueShape,
-});
+export const AmountShape = { brand: BrandShape, value: AmountValueShape };
+harden(AmountShape);
 
 /**
  * To be used to guard an amount pattern argument, i.e., an argument which is a
@@ -94,10 +92,8 @@ export const AmountShape = harden({
 export const AmountPatternShape = M.pattern();
 
 /** @type {TypedPattern<Ratio>} */
-export const RatioShape = harden({
-  numerator: AmountShape,
-  denominator: AmountShape,
-});
+export const RatioShape = { numerator: AmountShape, denominator: AmountShape };
+harden(RatioShape);
 
 /**
  * Returns true if value is a Nat bigint.
@@ -158,13 +154,14 @@ export const DisplayInfoShape = M.splitRecord(
   },
 );
 
-export const IssuerKitShape = harden({
+export const IssuerKitShape = {
   brand: BrandShape,
   mint: MintShape,
   mintRecoveryPurse: PurseShape,
   issuer: IssuerShape,
   displayInfo: DisplayInfoShape,
-});
+};
+harden(IssuerKitShape);
 
 // //////////////////////// Interfaces /////////////////////////////////////////
 
@@ -235,10 +232,11 @@ export const makeIssuerInterfaces = (
     receive: getInterfaceGuardPayload(PurseI).methodGuards.deposit,
   });
 
-  const PurseIKit = harden({
+  const PurseIKit = {
     purse: PurseI,
     depositFacet: DepositFacetI,
-  });
+  };
+  harden(PurseIKit);
 
   return harden({
     IssuerI,

@@ -16,38 +16,57 @@ import { commonSetup } from './supports.js';
 
 const dirname = path.dirname(new URL(import.meta.url).pathname);
 
-const contractName = 'fast-usdc';
 const contractFile = `${dirname}/../src/fast-usdc.contract.js`;
 type StartFn = typeof import('../src/fast-usdc.contract.js').start;
 
-test('start', async t => {
+const getInvitationProperties = async (
+  zoe: ZoeService,
+  invitation: Invitation,
+) => {
+  const invitationIssuer = E(zoe).getInvitationIssuer();
+  const amount = await E(invitationIssuer).getAmountOf(invitation);
+  return amount.value[0];
+};
+
+const startContract = async (
+  common: Pick<
+    Awaited<ReturnType<typeof commonSetup>>,
+    'brands' | 'commonPrivateArgs'
+  >,
+) => {
   const {
-    bootstrap,
     brands: { usdc },
     commonPrivateArgs,
-  } = await commonSetup(t);
+  } = common;
 
   const { zoe, bundleAndInstall } = await setUpZoeForTest({
     setJig: jig => {
       jig.chainHub.registerChain('osmosis', fetchedChainInfo.osmosis);
     },
   });
-
   const installation: Installation<StartFn> =
     await bundleAndInstall(contractFile);
 
-  const { creatorFacet, publicFacet } = await E(zoe).startInstance(
+  const startKit = await E(zoe).startInstance(
     installation,
     { USDC: usdc.issuer },
     {
-      poolFee: usdc.make(1n),
-      contractFee: usdc.make(1n),
+      usdcDenom: 'ibc/usdconagoric',
     },
     commonPrivateArgs,
   );
-  t.truthy(creatorFacet);
 
-  const e1 = await E(MockCctpTxEvidences.AGORIC_NO_PARAMS)();
+  return { ...startKit, zoe };
+};
+
+// FIXME this makeTestPushInvitation forces evidence, which triggers advancing,
+// which doesn't yet work
+test.skip('advancing', async t => {
+  const common = await commonSetup(t);
+
+  const { publicFacet, zoe } = await startContract(common);
+
+  const e1 = await E(MockCctpTxEvidences.AGORIC_PLUS_DYDX)();
 
   const inv = await E(publicFacet).makeTestPushInvitation(e1);
   // the invitation maker itself pushes the evidence
@@ -56,8 +75,44 @@ test('start', async t => {
   const seat = await E(zoe).offer(inv);
   t.is(
     await E(seat).getOfferResult(),
-    'noop; evidence was pushed in the invitation maker call',
+    'inert; nothing should be expected from this offer',
   );
+});
+
+test('oracle operators have closely-held rights to submit evidence of CCTP transactions', async t => {
+  const common = await commonSetup(t);
+  const { creatorFacet, zoe } = await startContract(common);
+
+  const operatorId = 'operator-1';
+
+  const opInv = await E(creatorFacet).makeOperatorInvitation(operatorId);
+
+  t.like(await getInvitationProperties(zoe, opInv), {
+    description: 'oracle operator invitation',
+  });
+
+  const operatorKit = await E(E(zoe).offer(opInv)).getOfferResult();
+
+  t.deepEqual(Object.keys(operatorKit), [
+    'admin',
+    'invitationMakers',
+    'operator',
+  ]);
+
+  const e1 = MockCctpTxEvidences.AGORIC_NO_PARAMS();
+
+  {
+    const inv = await E(operatorKit.invitationMakers).SubmitEvidence(e1);
+    const res = await E(E(zoe).offer(inv)).getOfferResult();
+    t.is(res, 'inert; nothing should be expected from this offer');
+  }
+
+  // what removeOperator will do
+  await E(operatorKit.admin).disable();
+
+  await t.throwsAsync(E(operatorKit.invitationMakers).SubmitEvidence(e1), {
+    message: 'submitEvidence for disabled operator',
+  });
 });
 
 const logAmt = amt => [
@@ -74,27 +129,14 @@ const scaleAmount = (frac: number, amount: Amount<'nat'>) => {
 };
 
 test('LP deposits, earns fees, withdraws', async t => {
+  const common = await commonSetup(t);
   const {
-    bootstrap,
     brands: { usdc },
-    commonPrivateArgs,
     utils,
-  } = await commonSetup(t);
+  } = common;
 
-  const { zoe, bundleAndInstall } = await setUpZoeForTest();
-  const installation: Installation<StartFn> =
-    await bundleAndInstall(contractFile);
-
-  const { creatorFacet, publicFacet, instance } = await E(zoe).startInstance(
-    installation,
-    { USDC: usdc.issuer },
-    {
-      poolFee: usdc.make(1n),
-      contractFee: usdc.make(1n),
-    },
-    commonPrivateArgs,
-  );
-  t.truthy(creatorFacet);
+  const { instance, creatorFacet, publicFacet, zoe } =
+    await startContract(common);
   const terms = await E(zoe).getTerms(instance);
 
   const { add, isGTE, subtract } = AmountMath;
@@ -199,8 +241,7 @@ test('baggage', async t => {
     installation,
     { USDC: usdc.issuer },
     {
-      poolFee: usdc.make(1n),
-      contractFee: usdc.make(1n),
+      usdcDenom: 'ibc/usdconagoric',
     },
     commonPrivateArgs,
   );

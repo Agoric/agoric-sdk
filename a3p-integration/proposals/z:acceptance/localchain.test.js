@@ -2,7 +2,7 @@
 
 import { agd, evalBundles } from '@agoric/synthetic-chain';
 import test from 'ava';
-import { retryUntilCondition } from './test-lib/sync-tools.js';
+import { retryUntilCondition } from '@agoric/client-utils';
 
 const SUBMISSION_DIR = 'localchaintest-submission';
 

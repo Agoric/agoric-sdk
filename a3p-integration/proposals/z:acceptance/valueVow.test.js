@@ -36,6 +36,7 @@ test('vow survives restart', async t => {
 
   t.log('confirm the value is not in offer results');
   let getterStatus = await retryUntilCondition(
+    /** @type {() => Promise<any>} */
     async () => walletUtils.readLatestHead(`published.wallet.${GETTER}`),
     value => value.status.id === 'get-value' && value.updated === 'offerStatus',
     'Offer get-value not succeeded',

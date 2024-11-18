@@ -82,7 +82,7 @@ jobs:
   # We split the package tests into two jobs because type linting
   # is inefficient and slow https://github.com/typescript-eslint/typescript-eslint/issues/2094
   lint-primary:
-    timeout-minutes: 15
+    timeout-minutes: 20
     needs: build
     runs-on: ubuntu-latest
     steps:
@@ -91,12 +91,10 @@ jobs:
         with:
           node-version: '18.x'
 
-      # first job also does repo-level linting
       - name: lint repo format
         run: yarn lint:format
-      # eslint
-      - name: yarn lint primary
-        run: ./scripts/lint-with-types.sh primary
+      # eslint and tsc
+      - run: yarn lint:packages
       # build the API docs to verify it works
       - name: build API docs
         run: yarn docs
@@ -104,9 +102,8 @@ jobs:
       - name: build API docs in markdown
         run: yarn docs:markdown-for-agoric-documentation-repo
 
+  # A second job for what's not covered in primary
   lint-rest:
-    timeout-minutes: 15
-    needs: build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -117,8 +114,6 @@ jobs:
       # Check some of a3p-integration in this job that runs on PRs instead of
       # waiting for the slow integration test that by default only runs in the
       # master merge check
-      - name: yarn lint rest of packages/*
-        run: ./scripts/lint-with-types.sh rest
       - name: Lint a3p-integration
         run: yarn install && yarn lint && yarn doctor
         working-directory: a3p-integration

@@ -19,6 +19,7 @@ test('sanity', async t => {
   const myMain = args => {
     const oldConsole = console;
     try {
+      // @ts-expect-error
       globalThis.console = stubAnylogger();
       return main('foo', args, {
         anylogger: stubAnylogger,

@@ -2409,6 +2409,26 @@ __metadata:
   languageName: node
   linkType: hard
 
+"execa@npm:9.1.0":
+  version: 9.1.0
+  resolution: "execa@npm:9.1.0"
+  dependencies:
+    "@sindresorhus/merge-streams": "npm:^4.0.0"
+    cross-spawn: "npm:^7.0.3"
+    figures: "npm:^6.1.0"
+    get-stream: "npm:^9.0.0"
+    human-signals: "npm:^7.0.0"
+    is-plain-obj: "npm:^4.1.0"
+    is-stream: "npm:^4.0.1"
+    npm-run-path: "npm:^5.2.0"
+    pretty-ms: "npm:^9.0.0"
+    signal-exit: "npm:^4.1.0"
+    strip-final-newline: "npm:^4.0.0"
+    yoctocolors: "npm:^2.0.0"
+  checksum: 10c0/9a4810b93d098eb0bed48793b61c3aa3e5804867c2c5808cd2a597a6e71738151a74dc792909085ce1d38e89f4b0e078d93ffd165aaca2d9a6728f3616f8e5c0
+  languageName: node
+  linkType: hard
+
 "execa@npm:^9.3.1":
   version: 9.5.1
   resolution: "execa@npm:9.5.1"
@@ -2814,6 +2834,13 @@ __metadata:
     agent-base: "npm:^7.0.2"
     debug: "npm:4"
   checksum: 10c0/2490e3acec397abeb88807db52cac59102d5ed758feee6df6112ab3ccd8325e8a1ce8bce6f4b66e5470eca102d31e425ace904242e4fa28dbe0c59c4bafa7b2c
+  languageName: node
+  linkType: hard
+
+"human-signals@npm:^7.0.0":
+  version: 7.0.0
+  resolution: "human-signals@npm:7.0.0"
+  checksum: 10c0/ce0c6d62d2e9bfe529d48f7c7fdf4b8c70fce950eef7850719b4e3f5bc71795ae7d61a3699ce13262bed7847705822601cc81f1921ea6a2906852e16228a94ab
   languageName: node
   linkType: hard
 
@@ -3566,6 +3593,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"npm-run-path@npm:^5.2.0":
+  version: 5.3.0
+  resolution: "npm-run-path@npm:5.3.0"
+  dependencies:
+    path-key: "npm:^4.0.0"
+  checksum: 10c0/124df74820c40c2eb9a8612a254ea1d557ddfab1581c3e751f825e3e366d9f00b0d76a3c94ecd8398e7f3eee193018622677e95816e8491f0797b21e30b2deba
+  languageName: node
+  linkType: hard
+
 "npm-run-path@npm:^6.0.0":
   version: 6.0.0
   resolution: "npm-run-path@npm:6.0.0"
@@ -4007,7 +4043,7 @@ __metadata:
     "@endo/marshal": "npm:^1.5.4"
     ava: "npm:^5.3.1"
     better-sqlite3: "npm:^9.6.0"
-    execa: "npm:^9.3.1"
+    execa: "npm:9.1.0"
   languageName: unknown
   linkType: soft
 
