@@ -222,6 +222,9 @@ func unreleasedUpgradeHandler(app *GaiaApp, targetUpgrade string) func(sdk.Conte
 				vm.CoreProposalStepForModules(
 					"@agoric/builders/scripts/vats/upgrade-paRegistry.js",
 				),
+				vm.CoreProposalStepForModules(
+					"@agoric/builders/scripts/vats/upgrade-board.js",
+				),
 			)
 		}
 
