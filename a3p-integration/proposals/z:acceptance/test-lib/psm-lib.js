@@ -13,6 +13,7 @@ import {
   CHAINID,
   VALIDATORADDR,
   GOV1ADDR,
+  GOV2ADDR,
   mkTemp,
 } from '@agoric/synthetic-chain';
 import { AmountMath } from '@agoric/ertp';
@@ -334,6 +335,7 @@ export const initializeNewUser = async (name, fund, io) => {
   await Promise.all([
     bankSend(psmTrader, `40000000ubld,${fund.value}${fund.denom}`),
     bankSend(psmTrader, `2000000uist`, GOV1ADDR),
+    bankSend(psmTrader, `2000000uist`, GOV2ADDR)
   ]);
 
   await waitUntilAccountFunded(
