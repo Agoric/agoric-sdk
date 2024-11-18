@@ -5,9 +5,9 @@ __metadata:
   version: 8
   cacheKey: 10c0
 
-"@agoric/synthetic-chain@npm:^0.4.0":
-  version: 0.4.0
-  resolution: "@agoric/synthetic-chain@npm:0.4.0"
+"@agoric/synthetic-chain@npm:^0.4.1":
+  version: 0.4.1
+  resolution: "@agoric/synthetic-chain@npm:0.4.1"
   dependencies:
     "@endo/zip": "npm:^1.0.7"
     better-sqlite3: "npm:^9.6.0"
@@ -16,14 +16,14 @@ __metadata:
     execa: "npm:^9.3.1"
   bin:
     synthetic-chain: dist/cli/cli.js
-  checksum: 10c0/3cb31bba30f4c64ac459da39aed639a3ab0405aa1d867b4897bbad21cedd40f2142785be7f2e55b7198c58c6a31674fb534e115f7e20ebe20f4de80bfb55e7c8
+  checksum: 10c0/f50f59058369d40191b1e89380096b016bbcbe5749d0394a7fee287bba023ab316ffd6ad51c0dae7250f83dadd92fb82e5b0331173acfee3c4aca0fb24b36e68
   languageName: node
   linkType: hard
 
 "@endo/zip@npm:^1.0.7":
-  version: 1.0.7
-  resolution: "@endo/zip@npm:1.0.7"
-  checksum: 10c0/a1c0d155448ce877012b34c8fe8cd3a58de9eb807514c81cddeebb802ee8e552b27d8a9a40fab3f3e4c49e0cb7fea6902fa1dd12a23ff6f30b56161fc3edc1f8
+  version: 1.0.9
+  resolution: "@endo/zip@npm:1.0.9"
+  checksum: 10c0/3fccea31bd5dad938a3b5f531454d3c49513892d6d5aba1f0af1034ff0ae54c3e28a346a9df08bd9e5201354acccd631e45c9c0e68fa2848a876a3919f3830dc
   languageName: node
   linkType: hard
 
@@ -1034,7 +1034,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "root-workspace-0b6124@workspace:."
   dependencies:
-    "@agoric/synthetic-chain": "npm:^0.4.0"
+    "@agoric/synthetic-chain": "npm:^0.4.1"
     "@types/better-sqlite3": "npm:^7.6.11"
   languageName: unknown
   linkType: soft
