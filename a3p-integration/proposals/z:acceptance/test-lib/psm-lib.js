@@ -606,7 +606,7 @@ export const tryISTBalances = async (t, actualBalance, expectedBalance) => {
   }
 
   firstTry.discard();
-  t.log('tryISTBalances assuming no batched IST fee', firstTry.errors);
+  t.log('tryISTBalances assuming no batched IST fee', ...firstTry.errors);
   // See golang/cosmos/x/swingset/types/default-params.go
   // and `ChargeBeans` in golang/cosmos/x/swingset/keeper/keeper.go.
   const minFeeDebit = 200_000;
