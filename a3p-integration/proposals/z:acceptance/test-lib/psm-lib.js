@@ -13,7 +13,6 @@ import {
   CHAINID,
   VALIDATORADDR,
   GOV1ADDR,
-  GOV2ADDR,
   mkTemp,
 } from '@agoric/synthetic-chain';
 import { AmountMath } from '@agoric/ertp';
