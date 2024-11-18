@@ -2,15 +2,16 @@
   "agoricProposal": {
     "source": "subdir",
     "sdk-generate": [
-      "vats/init-orchestration.js",
-      "fast-usdc/init-quickSend.js"
+      "fast-usdc/init-fast-usdc.js submission --oracleSet A3P_INTEGRATION"
     ],
     "type": "/agoric.swingset.CoreEvalProposal"
   },
   "type": "module",
   "license": "Apache-2.0",
   "dependencies": {
-    "@agoric/synthetic-chain": "^0.3.0",
+    "@agoric/client-utils": "dev",
+    "@agoric/synthetic-chain": "^0.4.3",
+    "@endo/init": "^1.1.7",
     "ava": "^5.3.1"
   },
   "ava": {
