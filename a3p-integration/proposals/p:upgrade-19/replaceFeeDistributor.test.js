@@ -16,7 +16,7 @@
  * that matches the new feeDistributor's collectionInterval.
  */
 
-import '@endo/init/legacy.js';
+import '@endo/init/debug.js';
 import test from 'ava';
 import {
   retryUntilCondition,
