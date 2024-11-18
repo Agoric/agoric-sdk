@@ -82,6 +82,8 @@ const psmTestSpecs = {
 };
 
 test.serial('change gov params', async t => {
+  const balances = await getBalances([GOV1ADDR, GOV2ADDR]);
+  t.log('BALANCES(debug):', balances);
   await implementPsmGovParamChange(
     {
       address: GOV1ADDR,
