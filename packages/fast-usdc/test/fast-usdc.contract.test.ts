@@ -1,4 +1,5 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
+import type { ExecutionContext } from 'ava';
 
 import { AmountMath } from '@agoric/ertp/src/amountMath.js';
 import { inspectMapStore } from '@agoric/internal/src/testing-utils.js';
@@ -13,11 +14,14 @@ import path from 'path';
 import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
 import { MockCctpTxEvidences } from './fixtures.js';
 import { commonSetup } from './supports.js';
+import type { FastUsdcTerms } from '../src/fast-usdc.contract.js';
 
 const dirname = path.dirname(new URL(import.meta.url).pathname);
 
 const contractFile = `${dirname}/../src/fast-usdc.contract.js`;
 type StartFn = typeof import('../src/fast-usdc.contract.js').start;
+
+const { add, isGTE, subtract } = AmountMath;
 
 const getInvitationProperties = async (
   zoe: ZoeService,
@@ -28,11 +32,9 @@ const getInvitationProperties = async (
   return amount.value[0];
 };
 
+type CommonSetup = Awaited<ReturnType<typeof commonSetup>>;
 const startContract = async (
-  common: Pick<
-    Awaited<ReturnType<typeof commonSetup>>,
-    'brands' | 'commonPrivateArgs'
-  >,
+  common: Pick<CommonSetup, 'brands' | 'commonPrivateArgs'>,
 ) => {
   const {
     brands: { usdc },
@@ -128,23 +130,25 @@ const scaleAmount = (frac: number, amount: Amount<'nat'>) => {
   return multiplyBy(amount, asRatio);
 };
 
-test('LP deposits, earns fees, withdraws', async t => {
-  const common = await commonSetup(t);
+const makeLpTools = (
+  t: ExecutionContext,
+  common: Pick<CommonSetup, 'brands' | 'utils'>,
+  {
+    zoe,
+    terms,
+    subscriber,
+    publicFacet,
+  }: {
+    zoe: ZoeService;
+    subscriber: ERef<Subscriber<Ratio>>;
+    publicFacet: StartedInstanceKit<StartFn>['publicFacet'];
+    terms: StandardTerms & FastUsdcTerms;
+  },
+) => {
   const {
     brands: { usdc },
     utils,
   } = common;
-
-  const { instance, creatorFacet, publicFacet, zoe } =
-    await startContract(common);
-  const terms = await E(zoe).getTerms(instance);
-
-  const { add, isGTE, subtract } = AmountMath;
-
-  const { subscriber } = E.get(
-    E.get(E(publicFacet).getPublicTopics()).shareWorth,
-  );
-
   const makeLP = (name, usdcPurse: ERef<Purse>) => {
     const sharePurse = E(terms.issuers.PoolShares).makeEmptyPurse();
     let deposited = AmountMath.makeEmpty(usdc.brand);
@@ -205,6 +209,30 @@ test('LP deposits, earns fees, withdraws', async t => {
         await p.deposit(pmt);
         return p;
       });
+  return { makeLP, purseOf };
+};
+
+test('LP deposits, earns fees, withdraws', async t => {
+  const common = await commonSetup(t);
+  const {
+    brands: { usdc },
+    utils,
+  } = common;
+
+  const { instance, creatorFacet, publicFacet, zoe } =
+    await startContract(common);
+  const terms = await E(zoe).getTerms(instance);
+
+  const { subscriber } = E.get(
+    E.get(E(publicFacet).getPublicTopics()).shareWorth,
+  );
+
+  const { makeLP, purseOf } = makeLpTools(t, common, {
+    publicFacet,
+    subscriber,
+    terms,
+    zoe,
+  });
 
   const lps = {
     alice: makeLP('Alice', purseOf(60n)),
