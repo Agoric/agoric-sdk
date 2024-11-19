@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.6.3-u18.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/telemetry@0.6.3-u18.0...@agoric/telemetry@0.6.3-u18.1) (2024-11-19)
+
+
+### Bug Fixes
+
+* **telemetry:** add missing slog type ([6c500d4](https://github.com/Agoric/agoric-sdk/commit/6c500d4c0c5a329ffbf8a35d6e3754b58578075c))
+
+
+
 ### [0.6.3-u18.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/telemetry@0.6.2...@agoric/telemetry@0.6.3-u18.0) (2024-10-31)
 
 

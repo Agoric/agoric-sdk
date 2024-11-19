@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.17.0-u18.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/inter-protocol@0.17.0-u18.0...@agoric/inter-protocol@0.17.0-u18.1) (2024-11-19)
+
+
+### Bug Fixes
+
+* remove addInstance call from add-auction.js ([185b7d4](https://github.com/Agoric/agoric-sdk/commit/185b7d4d6a396aff50ca02c1ba4819b7db13863f))
+
+
+
 ## [0.17.0-u18.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/inter-protocol@0.16.1...@agoric/inter-protocol@0.17.0-u18.0) (2024-10-31)
 
 
