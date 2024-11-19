@@ -1,5 +1,9 @@
 import { AssetKind } from '@agoric/ertp';
-import { assertAllDefined, makeTracer } from '@agoric/internal';
+import {
+  assertAllDefined,
+  deeplyFulfilledObject,
+  makeTracer,
+} from '@agoric/internal';
 import { observeIteration, subscribeEach } from '@agoric/notifier';
 import {
   OrchestrationPowersShape,
@@ -7,7 +11,9 @@ import {
 } from '@agoric/orchestration';
 import { provideSingleton } from '@agoric/zoe/src/contractSupport/durability.js';
 import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/recorder.js';
-import { M } from '@endo/patterns';
+import { E } from '@endo/far';
+import { M, objectMap } from '@endo/patterns';
+import { depositToSeat } from '@agoric/zoe/src/contractSupport/zoeHelpers.js';
 import { prepareAdvancer } from './exos/advancer.js';
 import { prepareLiquidityPoolKit } from './exos/liquidity-pool.js';
 import { prepareSettler } from './exos/settler.js';
@@ -24,6 +30,7 @@ const trace = makeTracer('FastUsdc');
  * @import {Zone} from '@agoric/zone';
  * @import {OperatorKit} from './exos/operator-kit.js';
  * @import {CctpTxEvidence, FeeConfig} from './types.js';
+ * @import {RepayAmountKWR, RepayPaymentKWR} from './exos/liquidity-pool.js';
  */
 
 /**
@@ -112,10 +119,36 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
     async makeOperatorInvitation(operatorId) {
       return feedKit.creator.makeOperatorInvitation(operatorId);
     },
-    simulateFeesFromAdvance(amount, payment) {
-      console.log('🚧🚧 UNTIL: advance fees are implemented 🚧🚧');
+    /**
+     * @param {{ USDC: Amount<'nat'>}} amounts
+     */
+    testBorrow(amounts) {
+      console.log('🚧🚧 UNTIL: borrow is integrated 🚧🚧', amounts);
+      const { zcfSeat: tmpAssetManagerSeat } = zcf.makeEmptySeatKit();
       // eslint-disable-next-line no-use-before-define
-      return poolKit.feeSink.receive(amount, payment);
+      poolKit.borrower.borrow(tmpAssetManagerSeat, amounts);
+      return tmpAssetManagerSeat.getCurrentAllocation();
+    },
+    /**
+     *
+     * @param {RepayAmountKWR} amounts
+     * @param {RepayPaymentKWR} payments
+     * @returns {Promise<AmountKeywordRecord>}
+     */
+    async testRepay(amounts, payments) {
+      console.log('🚧🚧 UNTIL: repay is integrated 🚧🚧', amounts);
+      const { zcfSeat: tmpAssetManagerSeat } = zcf.makeEmptySeatKit();
+      await depositToSeat(
+        zcf,
+        tmpAssetManagerSeat,
+        await deeplyFulfilledObject(
+          objectMap(payments, pmt => E(terms.issuers.USDC).getAmountOf(pmt)),
+        ),
+        payments,
+      );
+      // eslint-disable-next-line no-use-before-define
+      poolKit.repayer.repay(tmpAssetManagerSeat, amounts);
+      return tmpAssetManagerSeat.getCurrentAllocation();
     },
   });
 

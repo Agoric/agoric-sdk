@@ -1,57 +1,75 @@
-import {
-  AmountMath,
-  AmountShape,
-  PaymentShape,
-  RatioShape,
-} from '@agoric/ertp';
+import { AmountMath, AmountShape } from '@agoric/ertp';
 import {
   makeRecorderTopic,
   TopicsRecordShape,
 } from '@agoric/zoe/src/contractSupport/topics.js';
-import { depositToSeat } from '@agoric/zoe/src/contractSupport/zoeHelpers.js';
 import { SeatShape } from '@agoric/zoe/src/typeGuards.js';
 import { M } from '@endo/patterns';
 import { Fail, q } from '@endo/errors';
 import {
+  borrowCalc,
   depositCalc,
   makeParity,
+  repayCalc,
   withdrawCalc,
-  withFees,
 } from '../pool-share-math.js';
-import { makeProposalShapes } from '../type-guards.js';
+import {
+  makeNatAmountShape,
+  makeProposalShapes,
+  PoolMetricsShape,
+} from '../type-guards.js';
 
 /**
  * @import {Zone} from '@agoric/zone';
- * @import {Remote, TypedPattern} from '@agoric/internal'
+ * @import {Remote} from '@agoric/internal'
  * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js'
- * @import {MakeRecorderKit, RecorderKit} from '@agoric/zoe/src/contractSupport/recorder.js'
+ * @import {MakeRecorderKit} from '@agoric/zoe/src/contractSupport/recorder.js'
  * @import {USDCProposalShapes, ShareWorth} from '../pool-share-math.js'
+ * @import {PoolStats} from '../types.js';
  */
 
-const { add, isEqual } = AmountMath;
+const { add, isEqual, makeEmpty } = AmountMath;
 
 /** @param {Brand} brand */
 const makeDust = brand => AmountMath.make(brand, 1n);
 
 /**
- * Use of pool-share-math in offer handlers below assumes that
- * the pool balance represented by the USDC allocation in poolSeat
- * is the same as the pool balance represented by the numerator
- * of shareWorth.
+ * Verifies that the total pool balance (unencumbered + encumbered) matches the
+ * shareWorth numerator. The total pool balance consists of:
+ * 1. unencumbered balance - USDC available in the pool for borrowing
+ * 2. encumbered balance - USDC currently lent out
  *
- * Well, almost: they're the same modulo the dust used
- * to initialize shareWorth with a non-zero denominator.
+ * A negligible `dust` amount is used to initialize shareWorth with a non-zero
+ * denominator. It must remain in the pool at all times.
  *
  * @param {ZCFSeat} poolSeat
  * @param {ShareWorth} shareWorth
  * @param {Brand} USDC
+ * @param {Amount<'nat'>} encumberedBalance
  */
-const checkPoolBalance = (poolSeat, shareWorth, USDC) => {
-  const available = poolSeat.getAmountAllocated('USDC', USDC);
+const checkPoolBalance = (poolSeat, shareWorth, USDC, encumberedBalance) => {
+  const unencumberedBalance = poolSeat.getAmountAllocated('USDC', USDC);
   const dust = makeDust(USDC);
-  isEqual(add(available, dust), shareWorth.numerator) ||
-    Fail`🚨 pool balance ${q(available)} inconsistent with shareWorth ${q(shareWorth)}`;
+  const grossBalance = add(add(unencumberedBalance, dust), encumberedBalance);
+  isEqual(grossBalance, shareWorth.numerator) ||
+    Fail`🚨 pool balance ${q(unencumberedBalance)} and encumbered balance ${q(encumberedBalance)} inconsistent with shareWorth ${q(shareWorth)}`;
 };
+
+/**
+ * @typedef {{
+ *  Principal: Amount<'nat'>;
+ *  PoolFee: Amount<'nat'>;
+ *  ContractFee: Amount<'nat'>;
+ * }} RepayAmountKWR
+ */
+
+/**
+ * @typedef {{
+ *  Principal: Payment<'nat'>;
+ *  PoolFee: Payment<'nat'>;
+ *  ContractFee: Payment<'nat'>;
+ * }} RepayPaymentKWR
+ */
 
 /**
  * @param {Zone} zone
@@ -65,11 +83,25 @@ export const prepareLiquidityPoolKit = (zone, zcf, USDC, tools) => {
   return zone.exoClassKit(
     'Liquidity Pool',
     {
-      feeSink: M.interface('feeSink', {
-        receive: M.call(AmountShape, PaymentShape).returns(M.promise()),
+      borrower: M.interface('borrower', {
+        getBalance: M.call().returns(AmountShape),
+        borrow: M.call(
+          SeatShape,
+          harden({ USDC: makeNatAmountShape(USDC, 1n) }),
+        ).returns(),
+      }),
+      repayer: M.interface('repayer', {
+        repay: M.call(
+          SeatShape,
+          harden({
+            Principal: makeNatAmountShape(USDC, 1n),
+            PoolFee: makeNatAmountShape(USDC, 0n),
+            ContractFee: makeNatAmountShape(USDC, 0n),
+          }),
+        ).returns(),
       }),
       external: M.interface('external', {
-        publishShareWorth: M.call().returns(),
+        publishPoolMetrics: M.call().returns(),
       }),
       depositHandler: M.interface('depositHandler', {
         handle: M.call(SeatShape, M.any()).returns(M.promise()),
@@ -92,57 +124,143 @@ export const prepareLiquidityPoolKit = (zone, zcf, USDC, tools) => {
       const proposalShapes = makeProposalShapes({ USDC, PoolShares });
       const shareWorth = makeParity(makeDust(USDC), PoolShares);
       const { zcfSeat: poolSeat } = zcf.makeEmptySeatKit();
-      const shareWorthRecorderKit = tools.makeRecorderKit(node, RatioShape);
+      const { zcfSeat: feeSeat } = zcf.makeEmptySeatKit();
+      const poolMetricsRecorderKit = tools.makeRecorderKit(
+        node,
+        PoolMetricsShape,
+      );
+      const encumberedBalance = makeEmpty(USDC);
+      /** @type {PoolStats} */
+      const poolStats = harden({
+        totalBorrows: makeEmpty(USDC),
+        totalContractFees: makeEmpty(USDC),
+        totalPoolFees: makeEmpty(USDC),
+        totalRepays: makeEmpty(USDC),
+      });
       return {
-        shareMint,
-        shareWorth,
+        /** used for `checkPoolBalance` invariant. aka 'outstanding borrows' */
+        encumberedBalance,
+        feeSeat,
+        poolStats,
+        poolMetricsRecorderKit,
         poolSeat,
         PoolShares,
         proposalShapes,
-        shareWorthRecorderKit,
+        shareMint,
+        shareWorth,
       };
     },
     {
-      feeSink: {
+      borrower: {
+        getBalance() {
+          const { poolSeat } = this.state;
+          return poolSeat.getAmountAllocated('USDC', USDC);
+        },
         /**
-         * @param {Amount<'nat'>} amount
-         * @param {Payment<'nat'>} payment
+         * @param {ZCFSeat} toSeat
+         * @param {{ USDC: Amount<'nat'>}} amountKWR
          */
-        async receive(amount, payment) {
-          const { poolSeat, shareWorth } = this.state;
-          const { external } = this.facets;
-          await depositToSeat(
-            zcf,
-            poolSeat,
-            harden({ USDC: amount }),
-            harden({ USDC: payment }),
+        borrow(toSeat, amountKWR) {
+          const { encumberedBalance, poolSeat, poolStats } = this.state;
+
+          // Validate amount is available in pool
+          const post = borrowCalc(
+            amountKWR.USDC,
+            poolSeat.getAmountAllocated('USDC', USDC),
+            encumberedBalance,
+            poolStats,
           );
-          this.state.shareWorth = withFees(shareWorth, amount);
-          external.publishShareWorth();
+
+          // COMMIT POINT
+          try {
+            zcf.atomicRearrange(harden([[poolSeat, toSeat, amountKWR]]));
+          } catch (cause) {
+            const reason = Error('🚨 cannot commit borrow', { cause });
+            console.error(reason.message, cause);
+            zcf.shutdownWithFailure(reason);
+          }
+
+          Object.assign(this.state, post);
+          this.facets.external.publishPoolMetrics();
+        },
+        // TODO method to repay failed `LOA.deposit()`
+      },
+      repayer: {
+        /**
+         * @param {ZCFSeat} fromSeat
+         * @param {RepayAmountKWR} amounts
+         */
+        repay(fromSeat, amounts) {
+          const {
+            encumberedBalance,
+            feeSeat,
+            poolSeat,
+            poolStats,
+            shareWorth,
+          } = this.state;
+          checkPoolBalance(poolSeat, shareWorth, USDC, encumberedBalance);
+
+          const fromSeatAllocation = fromSeat.getCurrentAllocation();
+          // Validate allocation equals amounts and Principal <= encumberedBalance
+          const post = repayCalc(
+            shareWorth,
+            fromSeatAllocation,
+            amounts,
+            encumberedBalance,
+            poolStats,
+          );
+
+          const { ContractFee, ...rest } = amounts;
+
+          // COMMIT POINT
+          try {
+            zcf.atomicRearrange(
+              harden([
+                [
+                  fromSeat,
+                  poolSeat,
+                  rest,
+                  { USDC: add(amounts.PoolFee, amounts.Principal) },
+                ],
+                [fromSeat, feeSeat, { ContractFee }, { USDC: ContractFee }],
+              ]),
+            );
+          } catch (cause) {
+            const reason = Error('🚨 cannot commit repay', { cause });
+            console.error(reason.message, cause);
+            zcf.shutdownWithFailure(reason);
+          }
+
+          Object.assign(this.state, post);
+          this.facets.external.publishPoolMetrics();
         },
       },
-
       external: {
-        publishShareWorth() {
-          const { shareWorth } = this.state;
-          const { recorder } = this.state.shareWorthRecorderKit;
+        publishPoolMetrics() {
+          const { poolStats, shareWorth, encumberedBalance } = this.state;
+          const { recorder } = this.state.poolMetricsRecorderKit;
           // Consumers of this .write() are off-chain / outside the VM.
           // And there's no way to recover from a failed write.
           // So don't await.
-          void recorder.write(shareWorth);
+          void recorder.write({
+            encumberedBalance,
+            shareWorth,
+            ...poolStats,
+          });
         },
       },
 
       depositHandler: {
         /** @param {ZCFSeat} lp */
         async handle(lp) {
-          const { shareWorth, shareMint, poolSeat } = this.state;
+          const { shareWorth, shareMint, poolSeat, encumberedBalance } =
+            this.state;
           const { external } = this.facets;
 
           /** @type {USDCProposalShapes['deposit']} */
           // @ts-expect-error ensured by proposalShape
           const proposal = lp.getProposal();
-          checkPoolBalance(poolSeat, shareWorth, USDC);
+          checkPoolBalance(poolSeat, shareWorth, USDC, encumberedBalance);
           const post = depositCalc(shareWorth, proposal);
 
           // COMMIT POINT
@@ -165,20 +283,21 @@ export const prepareLiquidityPoolKit = (zone, zcf, USDC, tools) => {
             console.error(reason.message, cause);
             zcf.shutdownWithFailure(reason);
           }
-          external.publishShareWorth();
+          external.publishPoolMetrics();
         },
       },
       withdrawHandler: {
         /** @param {ZCFSeat} lp */
         async handle(lp) {
-          const { shareWorth, shareMint, poolSeat } = this.state;
+          const { shareWorth, shareMint, poolSeat, encumberedBalance } =
+            this.state;
           const { external } = this.facets;
 
           /** @type {USDCProposalShapes['withdraw']} */
           // @ts-expect-error ensured by proposalShape
           const proposal = lp.getProposal();
           const { zcfSeat: burn } = zcf.makeEmptySeatKit();
-          checkPoolBalance(poolSeat, shareWorth, USDC);
+          checkPoolBalance(poolSeat, shareWorth, USDC, encumberedBalance);
           const post = withdrawCalc(shareWorth, proposal);
 
           // COMMIT POINT
@@ -201,7 +320,7 @@ export const prepareLiquidityPoolKit = (zone, zcf, USDC, tools) => {
             console.error(reason.message, cause);
             zcf.shutdownWithFailure(reason);
           }
-          external.publishShareWorth();
+          external.publishPoolMetrics();
         },
       },
       public: {
@@ -222,18 +341,25 @@ export const prepareLiquidityPoolKit = (zone, zcf, USDC, tools) => {
           );
         },
         getPublicTopics() {
-          const { shareWorthRecorderKit } = this.state;
+          const { poolMetricsRecorderKit } = this.state;
           return {
-            shareWorth: makeRecorderTopic('shareWorth', shareWorthRecorderKit),
+            poolMetrics: makeRecorderTopic(
+              'poolMetrics',
+              poolMetricsRecorderKit,
+            ),
           };
         },
       },
     },
     {
       finish: ({ facets: { external } }) => {
-        void external.publishShareWorth();
+        void external.publishPoolMetrics();
       },
     },
   );
 };
 harden(prepareLiquidityPoolKit);
+
+/**
+ * @typedef {ReturnType<ReturnType<typeof prepareLiquidityPoolKit>>} LiquidityPoolKit
+ */
