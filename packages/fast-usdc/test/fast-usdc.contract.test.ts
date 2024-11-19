@@ -23,6 +23,7 @@ import { commonSetup } from './supports.js';
 import type { FastUsdcTerms } from '../src/fast-usdc.contract.js';
 import { makeFeeTools } from '../src/utils/fees.js';
 import type { PoolMetrics } from '../src/types.js';
+import { addressTools } from '../src/utils/address.js';
 
 const dirname = path.dirname(new URL(import.meta.url).pathname);
 
@@ -52,6 +53,14 @@ const startContract = async (
   const { zoe, bundleAndInstall } = await setUpZoeForTest({
     setJig: jig => {
       jig.chainHub.registerChain('osmosis', fetchedChainInfo.osmosis);
+      jig.chainHub.registerChain('agoric', fetchedChainInfo.agoric);
+      // TODO #10445 register noble<>agoric and noble<>osmosis instead
+      // for PFM routing. also will need to call `registerAsset`
+      jig.chainHub.registerConnection(
+        fetchedChainInfo.agoric.chainId,
+        fetchedChainInfo.osmosis.chainId,
+        fetchedChainInfo.agoric.connections['osmosis-1'],
+      );
     },
   });
   const installation: Installation<StartFn> =
@@ -68,26 +77,6 @@ const startContract = async (
 
   return { ...startKit, zoe };
 };
-
-// FIXME this makeTestPushInvitation forces evidence, which triggers advancing,
-// which doesn't yet work
-test.skip('advancing', async t => {
-  const common = await commonSetup(t);
-
-  const { publicFacet, zoe } = await startContract(common);
-
-  const e1 = await E(MockCctpTxEvidences.AGORIC_PLUS_DYDX)();
-
-  const inv = await E(publicFacet).makeTestPushInvitation(e1);
-  // the invitation maker itself pushes the evidence
-
-  // the offer is still safe to make
-  const seat = await E(zoe).offer(inv);
-  t.is(
-    await E(seat).getOfferResult(),
-    'inert; nothing should be expected from this offer',
-  );
-});
 
 test('oracle operators have closely-held rights to submit evidence of CCTP transactions', async t => {
   const common = await commonSetup(t);
@@ -550,4 +539,86 @@ test('baggage', async t => {
 
   const tree = inspectMapStore(contractBaggage);
   t.snapshot(tree, 'contract baggage after start');
+});
+
+test('advancing happy path', async t => {
+  const common = await commonSetup(t);
+  const {
+    brands: { usdc },
+    commonPrivateArgs,
+    utils: { inspectLocalBridge, inspectBankBridge, transmitTransferAck },
+  } = common;
+
+  const { instance, publicFacet, zoe } = await startContract(common);
+  const terms = await E(zoe).getTerms(instance);
+  const { subscriber } = E.get(
+    E.get(E(publicFacet).getPublicTopics()).poolMetrics,
+  );
+  const feeTools = makeFeeTools(commonPrivateArgs.feeConfig);
+  const { makeLP, purseOf } = makeLpTools(t, common, {
+    publicFacet,
+    subscriber,
+    terms,
+    zoe,
+  });
+
+  const evidence = await E(MockCctpTxEvidences.AGORIC_PLUS_OSMO)();
+
+  // seed pool with funds
+  const alice = makeLP('Alice', purseOf(evidence.tx.amount));
+  await alice.deposit(evidence.tx.amount);
+
+  // the invitation maker itself pushes the evidence
+  const inv = await E(publicFacet).makeTestPushInvitation(evidence);
+  const seat = await E(zoe).offer(inv);
+  t.is(
+    await E(seat).getOfferResult(),
+    'inert; nothing should be expected from this offer',
+  );
+
+  // calculate advance net of fees
+  const expectedAdvance = feeTools.calculateAdvance(
+    usdc.make(evidence.tx.amount),
+  );
+  t.log('Expecting to observe advance of', expectedAdvance);
+
+  await eventLoopIteration(); // let Advancer do work
+
+  // advance sent from PoolSeat to PoolAccount
+  t.deepEqual(inspectBankBridge().at(-1), {
+    amount: String(expectedAdvance.value),
+    denom: 'ibc/usdconagoric',
+    recipient: 'agoric1fakeLCAAddress',
+    type: 'VBANK_GIVE',
+  });
+
+  // ibc transfer sent over localChain bridge
+  const localBridgeMsg = inspectLocalBridge().at(-1);
+  const ibcTransferMsg = localBridgeMsg.messages[0];
+  t.is(ibcTransferMsg['@type'], '/ibc.applications.transfer.v1.MsgTransfer');
+
+  const expectedReceiver = addressTools.getQueryParams(
+    evidence.aux.recipientAddress,
+  ).EUD;
+  t.is(ibcTransferMsg.receiver, expectedReceiver, 'sent to correct address');
+  t.deepEqual(ibcTransferMsg.token, {
+    amount: String(expectedAdvance.value),
+    denom: 'ibc/usdconagoric',
+  });
+
+  // TODO #10445 expect PFM memo
+  t.is(ibcTransferMsg.memo, '', 'TODO expecting PFM memo');
+
+  // TODO #10445 expect routing through noble, not osmosis
+  t.is(
+    ibcTransferMsg.sourceChannel,
+    fetchedChainInfo.agoric.connections['osmosis-1'].transferChannel.channelId,
+    'TODO expecting routing through Noble',
+  );
+
+  await transmitTransferAck();
+  // Nothing we can check here, unless we want to inspect calls to `trace`.
+  // `test/exos/advancer.test.ts` covers calls to `log: LogFn` with mocks.
+  // This is still helpful to call, so we can observe "Advance transfer
+  // fulfilled" in the test output.
 });

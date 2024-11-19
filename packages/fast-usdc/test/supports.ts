@@ -52,7 +52,7 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
     onToBridge: obj => bankBridgeMessages.push(obj),
   });
   await E(bankManager).addAsset(
-    'uusdc',
+    'ibc/usdconagoric',
     'USDC',
     'USD Circle Stablecoin',
     usdc.issuerKit,
@@ -64,13 +64,13 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
   // TODO https://github.com/Agoric/agoric-sdk/issues/9966
   await makeWellKnownSpaces(agoricNamesAdmin, t.log, ['vbankAsset']);
   await E(E(agoricNamesAdmin).lookupAdmin('vbankAsset')).update(
-    'uusdc',
+    'ibc/usdconagoric',
     /** @type {AssetInfo} */ harden({
       brand: usdc.brand,
       issuer: usdc.issuer,
-      issuerName: 'IST',
+      issuerName: 'USDC',
       denom: 'uusdc',
-      proposedName: 'IST',
+      proposedName: 'USDC',
       displayInfo: { IOU: true },
     }),
   );

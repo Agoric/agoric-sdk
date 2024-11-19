@@ -118,7 +118,7 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
      * @param {{ USDC: Amount<'nat'>}} amounts
      */
     testBorrow(amounts) {
-      console.log('🚧🚧 UNTIL: borrow is integrated 🚧🚧', amounts);
+      console.log('🚧🚧 UNTIL: borrow is integrated (#10388) 🚧🚧', amounts);
       const { zcfSeat: tmpAssetManagerSeat } = zcf.makeEmptySeatKit();
       // eslint-disable-next-line no-use-before-define
       poolKit.borrower.borrow(tmpAssetManagerSeat, amounts);
@@ -131,7 +131,7 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
      * @returns {Promise<AmountKeywordRecord>}
      */
     async testRepay(amounts, payments) {
-      console.log('🚧🚧 UNTIL: repay is integrated 🚧🚧', amounts);
+      console.log('🚧🚧 UNTIL: repay is integrated (#10388) 🚧🚧', amounts);
       const { zcfSeat: tmpAssetManagerSeat } = zcf.makeEmptySeatKit();
       await depositToSeat(
         zcf,
