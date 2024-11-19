@@ -1,6 +1,5 @@
 {
   "name": "@agoric/fast-usdc",
-  "private": true,
   "version": "0.1.0",
   "description": "CLI and library for Fast USDC product",
   "type": "module",
@@ -74,5 +73,8 @@
       "@endo/init/debug.js"
     ],
     "timeout": "20m"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }
