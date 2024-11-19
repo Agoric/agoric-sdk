@@ -71,14 +71,28 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
   const terms = zcf.getTerms();
   assert('USDC' in terms.brands, 'no USDC brand');
   assert('usdcDenom' in terms, 'no usdcDenom');
+
   const { feeConfig, marshaller } = privateArgs;
   const { makeRecorderKit } = prepareRecorderKitMakers(
     zone.mapStore('vstorage'),
     marshaller,
   );
+
   const statusManager = prepareStatusManager(zone);
-  const makeSettler = prepareSettler(zone, { statusManager });
+
+  const { USDC } = terms.brands;
+  const { withdrawToSeat } = tools.zoeTools;
   const { chainHub, orchestrateAll, vowTools } = tools;
+  const makeSettler = prepareSettler(zone, {
+    statusManager,
+    USDC,
+    withdrawToSeat,
+    feeConfig,
+    vowTools: tools.vowTools,
+    zcf,
+    chainHub,
+  });
+
   const { localTransfer } = makeZoeTools(zcf, vowTools);
   const makeAdvancer = prepareAdvancer(zone, {
     chainHub,
@@ -92,8 +106,10 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
     vowTools,
     zcf,
   });
+
   const makeFeedKit = prepareTransactionFeedKit(zone, zcf);
   assertAllDefined({ makeFeedKit, makeAdvancer, makeSettler, statusManager });
+
   const makeLiquidityPoolKit = prepareLiquidityPoolKit(
     zone,
     zcf,
@@ -111,7 +127,6 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
   const creatorFacet = zone.exo('Fast USDC Creator', undefined, {
     /** @type {(operatorId: string) => Promise<Invitation<OperatorKit>>} */
     async makeOperatorInvitation(operatorId) {
-      // eslint-disable-next-line no-use-before-define
       return feedKit.creator.makeOperatorInvitation(operatorId);
     },
     /**
@@ -157,7 +172,6 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
      * @param {CctpTxEvidence} evidence
      */
     makeTestPushInvitation(evidence) {
-      // eslint-disable-next-line no-use-before-define
       void advancer.handleTransactionEvent(evidence);
       return makeTestInvitation();
     },
@@ -225,6 +239,21 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
       }
     },
   });
+
+  const settleAccountV = zone.makeOnce('settleAccount', () =>
+    makeLocalAccount(),
+  );
+  // when() is OK here since this clearly resolves promptly.
+  /** @type {Parameters<typeof makeSettler>[0]['settlementAccount']} */
+  const settlementAccount = await tools.vowTools.when(settleAccountV);
+
+  const settler = makeSettler({
+    repayer: poolKit.repayer,
+    sourceChannel: 'channel-1234', // TODO: fix this as soon as testing needs it',
+    remoteDenom: 'uusdc',
+    settlementAccount,
+  });
+  await settler.monitorMintingDeposits();
 
   return harden({ creatorFacet, publicFacet });
 };
