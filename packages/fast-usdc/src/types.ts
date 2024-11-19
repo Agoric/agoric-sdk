@@ -73,3 +73,4 @@ export interface FeedPolicy {
 }
 
 export type * from './constants.js';
+export type { LiquidityPoolKit } from './exos/liquidity-pool.js';
