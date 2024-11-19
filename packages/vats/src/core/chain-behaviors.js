@@ -15,10 +15,10 @@ import {
 } from '@agoric/notifier';
 import { makeScalarBigMapStore } from '@agoric/vat-data';
 import { prepareRecorderKit } from '@agoric/zoe/src/contractSupport/recorder.js';
+import { PowerFlags } from '../walletFlags.js';
 import { BASIC_BOOTSTRAP_PERMITS } from './basic-behaviors.js';
 import { agoricNamesReserved, callProperties, extractPowers } from './utils.js';
 import { makeScopedBridge } from '../bridge.js';
-import { prepareProvisionBridgeHandler } from '../lib-provisioning.js';
 
 const { keys } = Object;
 
@@ -136,35 +136,53 @@ export const bridgeProvisioner = async ({
     provisioning: provisioningP,
     provisionBridgeManager: provisionBridgeManagerP,
     provisionWalletBridgeManager: provisionWalletBridgeManagerP,
-    powerStore: powerStoreP,
   },
 }) => {
-  const [
-    provisioning,
-    provisionBridgeManager,
-    provisionWalletBridgeManager,
-    powerStore,
-  ] = await Promise.all([
-    provisioningP,
-    provisionBridgeManagerP,
-    provisionWalletBridgeManagerP,
-    powerStoreP,
-  ]);
+  const [provisioning, provisionBridgeManager, provisionWalletBridgeManager] =
+    await Promise.all([
+      provisioningP,
+      provisionBridgeManagerP,
+      provisionWalletBridgeManagerP,
+    ]);
   if (!provisionBridgeManager || !provisionWalletBridgeManager) {
     return;
   }
 
-  // const baggage = makeScalarBigMapStore('provisionBridgeHandlerBaggage', { durable: true });
-  // produceProvisioningHandlerBaggage.resolve(baggage);
-  const makeProvisionBridgeHandler = prepareProvisionBridgeHandler(powerStore);
-  const provisioningHandler = makeProvisionBridgeHandler(
-    provisioning,
-    provisionWalletBridgeManager,
-  );
-
   // Register a provisioning handler over the bridge.
   const handler = provisioning
-    ? provisioningHandler
+    ? Far('provisioningHandler', {
+        async fromBridge(obj) {
+          switch (obj.type) {
+            case 'PLEASE_PROVISION': {
+              const { nickname, address, powerFlags: rawPowerFlags } = obj;
+              const powerFlags = rawPowerFlags || [];
+              let provisionP;
+              if (powerFlags.includes(PowerFlags.SMART_WALLET)) {
+                // Only provision a smart wallet.
+                provisionP = E(provisionWalletBridgeManager).fromBridge(obj);
+              } else {
+                // Provision a mailbox and REPL.
+                provisionP = E(provisioning).pleaseProvision(
+                  nickname,
+                  address,
+                  powerFlags,
+                );
+              }
+              return provisionP
+                .catch(e =>
+                  console.error(
+                    `Error provisioning ${nickname} ${address}:`,
+                    e,
+                  ),
+                )
+                .then(_ => {});
+            }
+            default: {
+              throw Fail`Unrecognized request ${obj.type}`;
+            }
+          }
+        },
+      })
     : provisionWalletBridgeManager;
   await E(provisionBridgeManager).initHandler(handler);
 };
@@ -539,10 +557,6 @@ export const SHARED_CHAIN_BOOTSTRAP_MANIFEST = {
       bridgeManager: 'bridge',
       provisionBridgeManager: 'bridge',
       provisionWalletBridgeManager: 'bridge',
-      powerStore: 'bridge',
-    },
-    produce: {
-      provisioningHandlerBaggage: true,
     },
   },
   [setupClientManager.name]: {
