@@ -3,6 +3,14 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.15.0-u18.1](https://github.com/Agoric/agoric/compare/@agoric/wallet-backend@0.15.0-u18.0...@agoric/wallet-backend@0.15.0-u18.1) (2024-11-19)
+
+**Note:** Version bump only for package @agoric/wallet-backend
+
+
+
+
+
 ## [0.15.0-u18.0](https://github.com/Agoric/agoric/compare/@agoric/wallet-backend@0.14.3...@agoric/wallet-backend@0.15.0-u18.0) (2024-10-31)
 
 
