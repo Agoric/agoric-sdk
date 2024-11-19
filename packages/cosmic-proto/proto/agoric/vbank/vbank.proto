@@ -33,6 +33,13 @@ message Params {
     int64 reward_smoothing_blocks = 3 [
       (gogoproto.moretags) = "yaml:\"reward_smoothing_blocks\""
     ];
+
+    // allowed_monitoring_accounts is an array of account addresses that can be
+    // monitored for sends and receives.  An element of `"*"` will permit any
+    // address.
+    repeated string allowed_monitoring_accounts = 4 [
+      (gogoproto.moretags) = "yaml:\"allowed_monitoring_accounts\""
+    ];
 }
 
 // The current state of the module.
