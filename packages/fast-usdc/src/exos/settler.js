@@ -1,40 +1,70 @@
-import { assertAllDefined } from '@agoric/internal';
+import { assertAllDefined, makeTracer } from '@agoric/internal';
 import { atob } from '@endo/base64';
 import { makeError, q } from '@endo/errors';
 import { M } from '@endo/patterns';
 
+import { AmountMath } from '@agoric/ertp';
 import { addressTools } from '../utils/address.js';
+import { makeFeeTools } from '../utils/fees.js';
 
 /**
  * @import {FungibleTokenPacketData} from '@agoric/cosmic-proto/ibc/applications/transfer/v2/packet.js';
- * @import {Denom} from '@agoric/orchestration';
+ * @import {Denom, OrchestrationAccount, LocalAccountMethods} from '@agoric/orchestration';
+ * @import {WithdrawToSeat} from '@agoric/orchestration/src/utils/zoe-tools'
  * @import {IBCChannelID, VTransferIBCEvent} from '@agoric/vats';
  * @import {Zone} from '@agoric/zone';
- * @import {NobleAddress} from '../types.js';
+ * @import {HostOf, HostInterface} from '@agoric/async-flow';
+ * @import {TargetRegistration} from '@agoric/vats/src/bridge-target.js';
+ * @import {NobleAddress, LiquidityPoolKit, FeeConfig} from '../types.js';
  * @import {StatusManager} from './status-manager.js';
  */
+
+const trace = makeTracer('Settler');
 
 /**
  * @param {Zone} zone
  * @param {object} caps
  * @param {StatusManager} caps.statusManager
+ * @param {Brand<'nat'>} caps.USDC
+ * @param {Pick<ZCF, 'makeEmptySeatKit' | 'atomicRearrange'>} caps.zcf
+ * @param {FeeConfig} caps.feeConfig
+ * @param {HostOf<WithdrawToSeat>} caps.withdrawToSeat
+ * @param {import('@agoric/vow').VowTools} caps.vowTools
  */
-export const prepareSettler = (zone, { statusManager }) => {
+export const prepareSettler = (
+  zone,
+  { statusManager, USDC, zcf, feeConfig, withdrawToSeat, vowTools },
+) => {
   assertAllDefined({ statusManager });
   return zone.exoClass(
     'Fast USDC Settler',
     M.interface('SettlerI', {
+      monitorTransfers: M.callWhen().returns(M.any()),
       receiveUpcall: M.call(M.record()).returns(M.promise()),
     }),
     /**
-     *
      * @param {{
      *   sourceChannel: IBCChannelID;
-     *   remoteDenom: Denom
+     *   remoteDenom: Denom;
+     *   repayer: LiquidityPoolKit['repayer'];
+     *   settlementAccount: HostInterface<OrchestrationAccount<{ chainId: 'agoric' }>>
      * }} config
      */
-    config => harden(config),
+    config => {
+      return {
+        ...config,
+        /** @type {HostInterface<TargetRegistration>|undefined} */
+        registration: undefined,
+      };
+    },
     {
+      async monitorTransfers() {
+        const { settlementAccount } = this.state;
+        const registration = await vowTools.when(
+          settlementAccount.monitorTransfers(this.self),
+        );
+        this.state.registration = registration;
+      },
       /** @param {VTransferIBCEvent} event */
       async receiveUpcall(event) {
         if (event.packet.source_channel !== this.state.sourceChannel) {
@@ -42,6 +72,7 @@ export const prepareSettler = (zone, { statusManager }) => {
           // only interested in packets from the issuing chain
           return;
         }
+        // TODO: why is it safe to cast this without a runtime check?
         const tx = /** @type {FungibleTokenPacketData} */ (
           JSON.parse(atob(event.packet.data))
         );
@@ -61,11 +92,13 @@ export const prepareSettler = (zone, { statusManager }) => {
           return;
         }
 
+        const amountInt = BigInt(tx.amount); // TODO: what if this throws?
+
         // TODO discern between SETTLED and OBSERVED; each has different fees/destinations
         const hasPendingSettlement = statusManager.hasPendingSettlement(
           // given the sourceChannel check, we can be certain of this cast
           /** @type {NobleAddress} */ (tx.sender),
-          BigInt(tx.amount),
+          amountInt,
         );
         if (!hasPendingSettlement) {
           // TODO FAILURE PATH -> put money in recovery account or .transfer to receiver
@@ -75,19 +108,43 @@ export const prepareSettler = (zone, { statusManager }) => {
           );
         }
 
-        // TODO disperse funds
-        // ~1. fee to contractFeeAccount
-        // ~2. remainder in poolAccount
+        // Disperse funds
+
+        const { repayer, settlementAccount } = this.state;
+        const received = AmountMath.make(USDC, amountInt);
+        const { zcfSeat: settlingSeat } = zcf.makeEmptySeatKit();
+        const { calculateSplit } = makeFeeTools(feeConfig);
+        const split = calculateSplit(received);
+        trace('dispersing', split);
+
+        // TODO: what if this throws?
+        // arguably, it cannot. Even if deposits
+        // and notifications get out of order,
+        // we don't ever withdraw more than has been deposited.
+        await vowTools.when(
+          withdrawToSeat(
+            settlementAccount,
+            settlingSeat,
+            harden({ In: received }),
+          ),
+        );
+        zcf.atomicRearrange(
+          harden([[settlingSeat, settlingSeat, { In: received }, split]]),
+        );
+        repayer.repay(settlingSeat, split);
 
         // update status manager, marking tx `SETTLED`
         statusManager.settle(
           /** @type {NobleAddress} */ (tx.sender),
-          BigInt(tx.amount),
+          amountInt,
         );
       },
     },
     {
       stateShape: harden({
+        repayer: M.remotable('Repayer'),
+        settlementAccount: M.remotable('Account'),
+        registration: M.or(M.undefined(), M.remotable('Registration')),
         sourceChannel: M.string(),
         remoteDenom: M.string(),
       }),
