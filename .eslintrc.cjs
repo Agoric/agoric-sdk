@@ -177,8 +177,8 @@ module.exports = {
     {
       files: [
         'packages/**/demo/**/*.js',
-        'packages/*/test/**/*.js',
-        'packages/*/test/**/*.test.js',
+        'packages/*/test/**/*.*s',
+        'packages/*/test/**/*.test.*s',
         'packages/wallet/api/test/**/*.js',
       ],
       rules: {
@@ -193,7 +193,7 @@ module.exports = {
     {
       // These tests use EV() instead of E(), which are easy to confuse.
       // Help by erroring when E() packages are imported.
-      files: ['packages/boot/test/**/*.test.*'],
+      files: ['packages/boot/test/**/*.test.*s'],
       rules: {
         'no-restricted-imports': [
           'error',
