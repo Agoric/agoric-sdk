@@ -55,11 +55,14 @@ export const prepareSettler = (
         ...config,
         /** @type {HostInterface<TargetRegistration>|undefined} */
         registration: undefined,
+        callCount: 0,
       };
     },
     {
       async monitorTransfers() {
         const { settlementAccount } = this.state;
+        this.state.callCount += 1;
+        console.log('@@@calling monitorTransfers', this.state.callCount);
         const registration = await vowTools.when(
           settlementAccount.monitorTransfers(this.self),
         );
@@ -142,6 +145,7 @@ export const prepareSettler = (
         registration: M.or(M.undefined(), M.remotable('Registration')),
         sourceChannel: M.string(),
         remoteDenom: M.string(),
+        callCount: M.number(),
       }),
     },
   );

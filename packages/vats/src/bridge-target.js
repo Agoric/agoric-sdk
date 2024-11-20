@@ -220,6 +220,9 @@ export const prepareBridgeTargetKit = (zone, makeTargetRegistration) =>
           const { targetHost } = this.facets;
           const { appTransformer, targetToApp } = this.state;
 
+          if (targetToApp.has(target)) {
+            console.log('@@@current target', targetToApp.get(target));
+          }
           // Because wrapping an app is async, we verify absence of an existing
           // registration twice (once to avoid the unnecessary invocation and
           // once inside `init`), but attempt to throw similar errors in both

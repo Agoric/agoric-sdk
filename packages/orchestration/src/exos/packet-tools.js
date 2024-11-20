@@ -141,6 +141,8 @@ export const preparePacketTools = (zone, vowTools) => {
          */
         // eslint-disable-next-line no-restricted-syntax
         async monitorTransfers(monitor) {
+          console.log('@@@inside packetTools monitorTransfers', monitor);
+          console.log('@@@ mreg', this.facets.monitorRegistration);
           // We set the monitor here, but we only ever subscribe our
           // this.facets.tap handler to transfers.
           const mreg = this.facets.monitorRegistration;
@@ -193,7 +195,9 @@ export const preparePacketTools = (zone, vowTools) => {
         /** @type {TargetRegistration['updateTargetApp']} */
         // eslint-disable-next-line no-restricted-syntax
         async updateTargetApp(tap) {
+          console.log('@@@this.state.monitor before', this.state.monitor);
           this.state.monitor = await tap;
+          console.log('@@@this.state.monitor after', this.state.monitor);
           await this.facets.utils.subscribeToTransfers();
         },
         /** @type {TargetRegistration['revoke']} */
