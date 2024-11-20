@@ -1,5 +1,5 @@
 import { AmountMath, AmountShape } from '@agoric/ertp';
-import { assertAllDefined } from '@agoric/internal';
+import { assertAllDefined, makeTracer } from '@agoric/internal';
 import { ChainAddressShape } from '@agoric/orchestration';
 import { pickFacet } from '@agoric/vat-data';
 import { VowShape } from '@agoric/vow';
@@ -29,7 +29,7 @@ const { isGTE } = AmountMath;
  *  chainHub: ChainHub;
  *  feeConfig: FeeConfig;
  *  localTransfer: ZoeTools['localTransfer'];
- *  log: LogFn;
+ *  log?: LogFn;
  *  statusManager: StatusManager;
  *  usdc: { brand: Brand<'nat'>; denom: Denom; };
  *  vowTools: VowTools;
@@ -77,12 +77,12 @@ export const prepareAdvancerKit = (
     chainHub,
     feeConfig,
     localTransfer,
-    log,
+    log = makeTracer('Advancer', true),
     statusManager,
     usdc,
     vowTools: { watch, when },
     zcf,
-  },
+  } = /** @type {AdvancerKitPowers} */ ({}),
 ) => {
   assertAllDefined({
     chainHub,
@@ -101,7 +101,7 @@ export const prepareAdvancerKit = (
     /**
      * @param {{
      *   borrowerFacet: LiquidityPoolKit['borrower'];
-     *   poolAccount: ERef<HostInterface<OrchestrationAccount<{chainId: 'agoric'}>>>;
+     *   poolAccount: HostInterface<OrchestrationAccount<{chainId: 'agoric'}>>;
      * }} config
      */
     config => harden(config),
@@ -189,7 +189,6 @@ export const prepareAdvancerKit = (
          * @param {{ amount: Amount<'nat'>; destination: ChainAddress; tmpSeat: ZCFSeat }} ctx
          */
         onFulfilled(result, { amount, destination }) {
-          // TODO do we need to ensure this isn't Vow for an LOA?
           const { poolAccount } = this.state;
           const transferV = E(poolAccount).transfer(destination, {
             denom: usdc.denom,
@@ -238,7 +237,7 @@ export const prepareAdvancerKit = (
     {
       stateShape: harden({
         borrowerFacet: M.remotable(),
-        poolAccount: M.or(VowShape, M.remotable()),
+        poolAccount: M.remotable(),
       }),
     },
   );
