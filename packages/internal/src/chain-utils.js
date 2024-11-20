@@ -25,6 +25,7 @@ import * as _ActionType from './action-types.js';
  * @typedef {BlockInfo & {
  *   type: typeof _ActionType.AG_COSMOS_INIT;
  *   chainID: string;
+ *   isBootstrap?: boolean;
  *   supplyCoins: { denom: string; amount: NatString }[];
  * }} InitMsg
  *   cosmosInitAction fields that are subject to consensus. See cosmosInitAction
