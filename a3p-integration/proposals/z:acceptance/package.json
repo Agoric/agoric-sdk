@@ -15,7 +15,7 @@
     "@agoric/inter-protocol": "dev",
     "@agoric/internal": "dev",
     "@agoric/store": "dev",
-    "@agoric/synthetic-chain": "^0.3.0",
+    "@agoric/synthetic-chain": "^0.4.3",
     "@agoric/zoe": "dev",
     "@endo/errors": "^1.2.7",
     "@endo/far": "^1.1.8",

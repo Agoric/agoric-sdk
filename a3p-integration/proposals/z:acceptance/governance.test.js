@@ -38,11 +38,11 @@ test.serial(
     );
     assert(charterInvitation, 'missing charter invitation');
 
-    t.log('proposing on param change');
     const params = {
       ChargingPeriod: 400n,
     };
     const path = { paramPath: { key: 'governedParams' } };
+    t.log('Proposing param change', { params, path });
 
     await governanceDriver.proposeVaultDirectorParamChange(
       governanceAddresses[0],
@@ -52,6 +52,7 @@ test.serial(
     );
 
     const questionUpdate = await getLastUpdate(governanceAddresses[0]);
+    t.log(questionUpdate);
     t.like(questionUpdate, {
       status: { numWantsSatisfied: 1 },
     });
@@ -70,13 +71,17 @@ test.serial(
           v[1].value[0].instance.getBoardId() ===
           instances.economicCommittee.getBoardId(),
       );
-      assert(committeeInvitationForVoter, 'missing committee invitation');
+      assert(
+        committeeInvitationForVoter,
+        `${address} must have committee invitation`,
+      );
       await governanceDriver.voteOnProposedChanges(
         address,
         committeeInvitationForVoter[0],
       );
 
       const voteUpdate = await getLastUpdate(address);
+      t.log(`${address} voted`);
       t.like(voteUpdate, {
         status: { numWantsSatisfied: 1 },
       });
@@ -88,15 +93,16 @@ test.serial(
           'published.committees.Economic_Committee.latestQuestion',
         )
       );
+    t.log('Waiting for deadline', latestQuestion);
     /** @type {bigint} */
     // @ts-expect-error assume POSIX seconds since epoch
     const deadline = latestQuestion.closingRule.deadline;
     await waitUntil(deadline);
 
-    t.log('check if latest outcome is correct');
     const latestOutcome = await readLatestHead(
       'published.committees.Economic_Committee.latestOutcome',
     );
+    t.log('Verifying latest outcome', latestOutcome);
     t.like(latestOutcome, { outcome: 'win' });
   },
 );

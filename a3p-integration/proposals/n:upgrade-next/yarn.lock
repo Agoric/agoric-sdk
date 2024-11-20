@@ -316,9 +316,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@agoric/synthetic-chain@npm:^0.3.0":
-  version: 0.3.0
-  resolution: "@agoric/synthetic-chain@npm:0.3.0"
+"@agoric/synthetic-chain@npm:^0.4.3":
+  version: 0.4.3
+  resolution: "@agoric/synthetic-chain@npm:0.4.3"
   dependencies:
     "@endo/zip": "npm:^1.0.7"
     better-sqlite3: "npm:^9.6.0"
@@ -327,7 +327,7 @@ __metadata:
     execa: "npm:^9.3.1"
   bin:
     synthetic-chain: dist/cli/cli.js
-  checksum: 10c0/17c6241bdc48b8a2a7608c9d4d7c0a0c76fb10d4ee44a31a1150104a792bcd1133f4b1a7e8ab26673a07450b3ceabccd9911999117568221b49221b6ee4306a1
+  checksum: 10c0/b904b531bf2d4066322e4b86b7653fa4fd88d52cce86d82d82ebaecedd526a83832488e1f82b5d0ece23cf5b13fa6bf4e49b4c25339a3c17a658c1302ef9321b
   languageName: node
   linkType: hard
 
@@ -4932,7 +4932,7 @@ __metadata:
   resolution: "root-workspace-0b6124@workspace:."
   dependencies:
     "@agoric/client-utils": "npm:dev"
-    "@agoric/synthetic-chain": "npm:^0.3.0"
+    "@agoric/synthetic-chain": "npm:^0.4.3"
     "@endo/init": "npm:^1.1.6"
     "@endo/marshal": "npm:^1.6.1"
     ava: "npm:^5.3.1"
