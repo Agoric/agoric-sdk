@@ -14,8 +14,8 @@ import { PendingTxStatus } from '../constants.js';
 /**
  * Create the key for the pendingTxs MapStore.
  *
- * The key is a composite of `txHash` and `chainId` and not meant to be
- * parsable.
+ * The key is a composite of Noble address `addr` and transaction `amount` and
+ * not meant to be parsable.
  *
  * @param {NobleAddress} addr
  * @param {bigint} amount
@@ -38,15 +38,14 @@ const pendingTxKeyOf = evidence => {
 /**
  * Get the key for the seenTxs SetStore.
  *
- * The key is a composite of `NobleAddress` and transaction `amount` and not
- * meant to be parsable.
+ * The key is based on `txHash` and not meant to be parsable.
  *
  * @param {CctpTxEvidence} evidence
  * @returns {SeenTxKey}
  */
 const seenTxKeyOf = evidence => {
-  const { txHash, chainId } = evidence;
-  return `seenTx:${JSON.stringify([txHash, chainId])}`;
+  const { txHash } = evidence;
+  return `seenTx:${txHash}`;
 };
 
 /**
