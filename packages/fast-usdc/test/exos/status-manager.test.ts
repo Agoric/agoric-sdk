@@ -87,7 +87,7 @@ test('cannot SETTLE without an ADVANCED or OBSERVED entry', t => {
       statusManager.settle(evidence.tx.forwardingAddress, evidence.tx.amount),
     {
       message:
-        'key "pendingTx:[\\"noble1x0ydg69dh6fqvr27xjvp6maqmrldam6yfelqkd\\",\\"150000000\\"]" not found in collection "PendingTxs"',
+        'No unsettled entry for ["noble1x0ydg69dh6fqvr27xjvp6maqmrldam6yfelqkd","[150000000n]"]',
     },
   );
 });
@@ -139,19 +139,17 @@ test('settle SETTLES first matched entry', t => {
       statusManager.settle(evidence.tx.forwardingAddress, evidence.tx.amount),
     {
       message:
-        'No unsettled entry for "pendingTx:[\\"noble1x0ydg69dh6fqvr27xjvp6maqmrldam6yfelqkd\\",\\"150000000\\"]"',
+        'No unsettled entry for ["noble1x0ydg69dh6fqvr27xjvp6maqmrldam6yfelqkd","[150000000n]"]',
     },
     'No more matches to settle',
   );
 });
 
-test('lookup throws when presented a key it has not seen', t => {
+test('lookingPending returns an empty array when presented a key it has not seen', t => {
   const zone = provideDurableZone('status-test');
   const statusManager = prepareStatusManager(zone.subZone('status-manager'));
 
-  t.throws(() => statusManager.lookupPending('noble123', 1n), {
-    message: 'Key "pendingTx:[\\"noble123\\",\\"1\\"]" not yet observed',
-  });
+  t.deepEqual(statusManager.lookupPending('noble123', 1n), []);
 });
 
 test('StatusManagerKey logic handles addresses with hyphens', async t => {
