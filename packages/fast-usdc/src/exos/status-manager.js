@@ -107,6 +107,7 @@ export const prepareStatusManager = zone => {
       /**
        * Add a new transaction with ADVANCED status
        * @param {CctpTxEvidence} evidence
+       * @throws {Error} if transaction was already seen
        */
       advance(evidence) {
         recordPendingTx(evidence, PendingTxStatus.Advanced);
@@ -115,6 +116,7 @@ export const prepareStatusManager = zone => {
       /**
        * Add a new transaction with OBSERVED status
        * @param {CctpTxEvidence} evidence
+       * @throws {Error} if transaction was already seen
        */
       observe(evidence) {
         recordPendingTx(evidence, PendingTxStatus.Observed);
@@ -135,10 +137,15 @@ export const prepareStatusManager = zone => {
       },
 
       /**
-       * Mark an `ADVANCED` or `OBSERVED` transaction as `SETTLED` and remove it
+       * Mark an `ADVANCED` or `OBSERVED` transaction as `SETTLED` and remove
+       * it.
+       *
+       * If there are multiple EDU+amt matches, we are unable to know which tx
+       * the settlement is for, but we’ll act as if it’s the earliest one.
        *
        * @param {NobleAddress} address
        * @param {bigint} amount
+       * @throws {Error} if a pending settlement was not found for the address + amount
        */
       settle(address, amount) {
         const key = makePendingTxKey(address, amount);
