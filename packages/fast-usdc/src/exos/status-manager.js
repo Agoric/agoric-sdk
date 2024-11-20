@@ -1,18 +1,19 @@
 import { M } from '@endo/patterns';
 import { Fail, makeError, q } from '@endo/errors';
-
 import { appendToStoredArray } from '@agoric/store/src/stores/store-utils.js';
+import { E } from '@endo/eventual-send';
+import { makeTracer } from '@agoric/internal';
 import {
   CctpTxEvidenceShape,
   EvmHashShape,
   PendingTxShape,
 } from '../type-guards.js';
-import { PendingTxStatus } from '../constants.js';
+import { PendingTxStatus, TxStatus } from '../constants.js';
 
 /**
  * @import {MapStore, SetStore} from '@agoric/store';
  * @import {Zone} from '@agoric/zone';
- * @import {CctpTxEvidence, NobleAddress, SeenTxKey, PendingTxKey, PendingTx, EvmHash} from '../types.js';
+ * @import {CctpTxEvidence, NobleAddress, SeenTxKey, PendingTxKey, PendingTx, EvmHash, LogFn} from '../types.js';
  */
 
 /**
@@ -54,6 +55,12 @@ const seenTxKeyOf = evidence => {
 };
 
 /**
+ * @typedef {{
+ *  log?: LogFn;
+ * }} StatusManagerPowers
+ */
+
+/**
  * The `StatusManager` keeps track of Pending and Seen Transactions
  * via {@link PendingTxStatus} states, aiding in coordination between the `Advancer`
  * and `Settler`.
@@ -61,8 +68,16 @@ const seenTxKeyOf = evidence => {
  * XXX consider separate facets for `Advancing` and `Settling` capabilities.
  *
  * @param {Zone} zone
+ * @param {() => Promise<StorageNode>} makeStatusNode
+ * @param {StatusManagerPowers} caps
  */
-export const prepareStatusManager = zone => {
+export const prepareStatusManager = (
+  zone,
+  makeStatusNode,
+  {
+    log = makeTracer('Advancer', true),
+  } = /** @type {StatusManagerPowers} */ ({}),
+) => {
   /** @type {MapStore<PendingTxKey, PendingTx[]>} */
   const pendingTxs = zone.mapStore('PendingTxs', {
     keyShape: M.string(),
@@ -73,6 +88,17 @@ export const prepareStatusManager = zone => {
   const seenTxs = zone.setStore('SeenTxs', {
     keyShape: M.string(),
   });
+
+  /**
+   * @param {CctpTxEvidence['txHash']} hash
+   * @param {TxStatus} status
+   */
+  const recordStatus = (hash, status) => {
+    const statusNodeP = makeStatusNode();
+    const txnNodeP = E(statusNodeP).makeChildNode(hash);
+    // Don't await, just writing to vstorage.
+    void E(txnNodeP).setValue(status);
+  };
 
   /**
    * Ensures that `txHash+chainId` has not been processed
@@ -95,6 +121,7 @@ export const prepareStatusManager = zone => {
       pendingTxKeyOf(evidence),
       harden({ ...evidence, status }),
     );
+    recordStatus(evidence.txHash, status);
   };
 
   return zone.exo(
@@ -118,9 +145,7 @@ export const prepareStatusManager = zone => {
           M.undefined(),
         ),
       ),
-      disbursed: M.call(EvmHashShape, M.string(), M.nat()).returns(
-        M.undefined(),
-      ),
+      disbursed: M.call(EvmHashShape).returns(M.undefined()),
       forwarded: M.call(M.opt(EvmHashShape), M.string(), M.nat()).returns(
         M.undefined(),
       ),
@@ -163,6 +188,7 @@ export const prepareStatusManager = zone => {
           : PendingTxStatus.AdvanceFailed;
         const txpost = { ...tx, status };
         pendingTxs.set(key, harden([...prefix, txpost, ...suffix]));
+        recordStatus(tx.txHash, status);
       },
 
       /**
@@ -219,12 +245,9 @@ export const prepareStatusManager = zone => {
        * Mark a transaction as `DISBURSED`
        *
        * @param {EvmHash} txHash
-       * @param {NobleAddress} address
-       * @param {bigint} amount
        */
-      disbursed(txHash, address, amount) {
-        // TODO: store txHash -> evidence for txs pending settlement?
-        console.log('TODO: vstorage update', { txHash, address, amount });
+      disbursed(txHash) {
+        recordStatus(txHash, TxStatus.Disbursed);
       },
 
       /**
@@ -235,8 +258,14 @@ export const prepareStatusManager = zone => {
        * @param {bigint} amount
        */
       forwarded(txHash, address, amount) {
-        // TODO: store txHash -> evidence for txs pending settlement?
-        console.log('TODO: vstorage update', { txHash, address, amount });
+        if (txHash) {
+          recordStatus(txHash, TxStatus.Forwarded);
+        } else {
+          // TODO store (early) `Minted` transactions to check against incoming evidence
+          log(
+            `⚠️ Forwarded minted amount ${amount} from account ${address} before it was observed.`,
+          );
+        }
       },
 
       /**

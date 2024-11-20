@@ -221,7 +221,7 @@ export const prepareSettler = (
           repayer.repay(settlingSeat, split);
 
           // update status manager, marking tx `SETTLED`
-          statusManager.disbursed(txHash, sender, amount);
+          statusManager.disbursed(txHash);
         },
         /**
          * @param {EvmHash | undefined} txHash
@@ -248,7 +248,7 @@ export const prepareSettler = (
       },
       transferHandler: {
         /**
-         * @param {unknown} result
+         * @param {unknown} _result
          * @param {SettlerTransferCtx} ctx
          *
          * @typedef {{
@@ -257,7 +257,7 @@ export const prepareSettler = (
          *   amount: NatValue;
          * }} SettlerTransferCtx
          */
-        onFulfilled(result, ctx) {
+        onFulfilled(_result, ctx) {
           const { txHash, sender, amount } = ctx;
           statusManager.forwarded(txHash, sender, amount);
         },

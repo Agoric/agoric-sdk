@@ -29,6 +29,8 @@ import * as flows from './fast-usdc.flows.js';
 
 const trace = makeTracer('FastUsdc');
 
+const STATUS_NODE = 'status';
+
 /**
  * @import {HostInterface} from '@agoric/async-flow';
  * @import {CosmosChainInfo, Denom, DenomDetail, OrchestrationAccount} from '@agoric/orchestration';
@@ -84,7 +86,9 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
     marshaller,
   );
 
-  const statusManager = prepareStatusManager(zone);
+  const makeStatusNode = () =>
+    E(privateArgs.storageNode).makeChildNode(STATUS_NODE);
+  const statusManager = prepareStatusManager(zone, makeStatusNode);
 
   const { USDC } = terms.brands;
   const { withdrawToSeat } = tools.zoeTools;

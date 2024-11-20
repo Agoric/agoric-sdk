@@ -7,10 +7,10 @@ import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { PendingTxStatus } from '../../src/constants.js';
 import { prepareSettler } from '../../src/exos/settler.js';
 import { prepareStatusManager } from '../../src/exos/status-manager.js';
-import type { CctpTxEvidence } from '../../src/types.js';
+import { commonSetup } from '../supports.js';
 import { MockCctpTxEvidences, MockVTransferEvents } from '../fixtures.js';
-import { prepareMockOrchAccounts } from '../mocks.js';
-import { commonSetup, provideDurableZone } from '../supports.js';
+import type { CctpTxEvidence } from '../../src/types.js';
+import { makeTestLogger, prepareMockOrchAccounts } from '../mocks.js';
 import { makeFeeTools } from '../../src/utils/fees.js';
 
 const mockZcf = (zone: Zone) => {
@@ -40,8 +40,12 @@ const mockZcf = (zone: Zone) => {
 const makeTestContext = async t => {
   const common = await commonSetup(t);
   const { rootZone: zone } = common.bootstrap;
-  const statusManager = prepareStatusManager(zone.subZone('status-manager'));
-
+  const { log, inspectLogs } = makeTestLogger(t.log);
+  const statusManager = prepareStatusManager(
+    zone.subZone('status-manager'),
+    async () => common.commonPrivateArgs.storageNode.makeChildNode('status'),
+    { log },
+  );
   const { zcf, callLog } = mockZcf(zone.subZone('Mock ZCF'));
 
   const { rootZone, vowTools } = common.bootstrap;
@@ -126,7 +130,9 @@ const makeTestContext = async t => {
     simulate,
     repayer,
     peekCalls: () => harden([...callLog]),
+    inspectLogs,
     accounts: mockAccounts,
+    storage: common.bootstrap.storage,
   };
 };
 
@@ -221,7 +227,12 @@ test('happy path: disburse to LPs; StatusManager removes tx', async t => {
     [],
     'SETTLED entry removed from StatusManger',
   );
-  // TODO, confirm vstorage write for TxStatus.SETTLED
+  await eventLoopIteration();
+  const vstorage = t.context.storage.data;
+  t.is(
+    vstorage.get(`mockChainStorageRoot.status.${cctpTxEvidence.txHash}`),
+    'DISBURSED',
+  );
 });
 
 test('slow path: forward to EUD; remove pending tx', async t => {
@@ -279,19 +290,22 @@ test('slow path: forward to EUD; remove pending tx', async t => {
     [],
     'SETTLED entry removed from StatusManger',
   );
-  // TODO, confirm vstorage write for TxStatus.SETTLED
+  const vstorage = t.context.storage.data;
+  t.is(
+    vstorage.get(`mockChainStorageRoot.status.${cctpTxEvidence.txHash}`),
+    'FORWARDED',
+  );
 });
 
 test('Settlement for unknown transaction', async t => {
   const {
     common,
     makeSettler,
-    statusManager,
     defaultSettlerParams,
     repayer,
-    simulate,
     accounts,
     peekCalls,
+    inspectLogs,
   } = t.context;
   const { usdc } = common.brands;
 
@@ -318,8 +332,9 @@ test('Settlement for unknown transaction', async t => {
       usdc.units(150),
     ],
   ]);
-
-  // TODO, confirm vstorage write for TxStatus.FORWARDED
+  t.deepEqual(inspectLogs(0), [
+    '⚠️ Forwarded minted amount 150000000 from account noble1x0ydg69dh6fqvr27xjvp6maqmrldam6yfelqkd before it was observed.',
+  ]);
 });
 
 test.todo("StatusManager does not receive update when we can't settle");
