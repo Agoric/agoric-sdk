@@ -13,8 +13,6 @@ export const makeGovernanceDriver = async (fetch, networkConfig) => {
 
   /** @param {string} previousOfferId */
   const generateVoteOffer = async previousOfferId => {
-    const id = `propose-${Date.now()}`;
-
     const latestQuestionRecord =
       /** @type {import('@agoric/governance/src/types.js').QuestionSpec} */ (
         await readLatestHead(
@@ -22,6 +20,7 @@ export const makeGovernanceDriver = async (fetch, networkConfig) => {
         )
       );
 
+    const id = `propose-${Date.now()}`;
     const chosenPositions = [latestQuestionRecord.positions[0]];
     const body = {
       method: 'executeOffer',
@@ -81,21 +80,21 @@ export const makeGovernanceDriver = async (fetch, networkConfig) => {
     params,
     paramsPath,
   ) => {
-    const voteDurSec = BigInt(voteDur);
-    const toSec = (/** @type {number} */ ms) => BigInt(Math.round(ms / 1000));
-
-    const id = `propose-${Date.now()}`;
-    const deadline = toSec(Date.now()) + voteDurSec;
-
-    const a = await agoric.follow(
+    const instancesRaw = await agoric.follow(
       '-lF',
       ':published.agoricNames.instance',
       '-o',
       'text',
     );
-    const instance = Object.fromEntries(marshaller.fromCapData(JSON.parse(a)));
-    assert(instance.VaultFactory);
+    const instances = Object.fromEntries(
+      marshaller.fromCapData(JSON.parse(instancesRaw)),
+    );
+    const { VaultFactory } = instances;
+    assert(VaultFactory);
 
+    const msSinceEpoch = Date.now();
+    const id = `propose-${msSinceEpoch}`;
+    const deadline = BigInt(Math.ceil(msSinceEpoch / 1000)) + BigInt(voteDur);
     const body = {
       method: 'executeOffer',
       offer: {
@@ -107,7 +106,7 @@ export const makeGovernanceDriver = async (fetch, networkConfig) => {
         },
         offerArgs: {
           deadline,
-          instance: instance.VaultFactory,
+          instance: VaultFactory,
           params,
           path: paramsPath,
         },
