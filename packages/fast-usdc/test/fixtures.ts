@@ -43,7 +43,7 @@ export const MockCctpTxEvidences: Record<
     txHash:
       '0xd81bc6105b60a234c7c50ac17816ebcd5561d366df8bf3be59ff387552761799',
     tx: {
-      amount: 200000000n,
+      amount: 300000000n,
       forwardingAddress: 'noble1x0ydg69dh6fqvr27xjvp6maqmrldam6yfelktz',
     },
     aux: {
