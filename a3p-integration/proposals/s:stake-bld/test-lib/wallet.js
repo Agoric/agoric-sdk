@@ -29,6 +29,7 @@ import { makeVstorageKit } from './rpc.js';
  */
 export const sendAction = async (bridgeAction, opts) => {
   const { marshaller } = opts;
+  // @ts-expect-error BridgeAction has methods disallowed by Passable
   const offerBody = JSON.stringify(marshaller.toCapData(harden(bridgeAction)));
 
   // tryExit should not require --allow-spend

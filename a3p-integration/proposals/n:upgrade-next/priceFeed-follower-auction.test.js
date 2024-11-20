@@ -1,4 +1,5 @@
 import test from 'ava';
+import '@endo/init/debug.js';
 import { getDetailsMatchingVats } from './vatDetails.js';
 
 test('new auction vat', async t => {

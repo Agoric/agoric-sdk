@@ -8,7 +8,10 @@
     "build:sdk": "make -C ../packages/deployment docker-build-sdk",
     "build:submissions": "scripts/build-all-submissions.sh",
     "build:synthetic-chain": "yarn synthetic-chain build",
-    "lint": "../node_modules/.bin/eslint proposals",
+    "lint-fix": "yarn lint:eslint --fix",
+    "lint": "../node_modules/.bin/run-s --continue-on-error 'lint:*'",
+    "lint:types": "find proposals -maxdepth 2 -name package.json -type f -exec ../node_modules/.bin/tsc -p '{}'/.. ';'",
+    "lint:eslint": "../node_modules/.bin/eslint .",
     "test": "yarn synthetic-chain test",
     "doctor": "yarn synthetic-chain doctor"
   },

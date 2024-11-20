@@ -30,6 +30,9 @@ test('basic', async t => {
 
   t.is((await currentDelegation()).length, 1, 'just the initial delegation');
 
+  /** @type {import('@agoric/ertp').Brand} */
+  const BLDBrand = brand.BLD;
+
   await walletUtils.broadcastBridgeAction(GOV1ADDR, {
     method: 'executeOffer',
     offer: {
@@ -41,7 +44,7 @@ test('basic', async t => {
       },
       proposal: {
         give: {
-          In: { brand: brand.BLD, value: 10n },
+          In: { brand: BLDBrand, value: 10n },
         },
       },
     },
@@ -55,11 +58,11 @@ test('basic', async t => {
         source: 'continuing',
         previousOffer: 'request-stake',
         invitationMakerName: 'Delegate',
-        invitationArgs: [VALIDATOR_ADDRESS, { brand: brand.BLD, value: 10n }],
+        invitationArgs: [VALIDATOR_ADDRESS, { brand: BLDBrand, value: 10n }],
       },
       proposal: {
         give: {
-          In: { brand: brand.BLD, value: 10n },
+          In: { brand: BLDBrand, value: 10n },
         },
       },
     },

@@ -7,7 +7,12 @@ import {
 } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { Fail, q } from '@endo/errors';
 
-const { getValue, add, isEmpty, isGTE, subtract } = AmountMath;
+const { getValue, add, isEmpty, isEqual, isGTE, subtract } = AmountMath;
+
+/**
+ * @import {PoolStats} from './types';
+ * @import {RepayAmountKWR} from './exos/liquidity-pool';
+ */
 
 /**
  * Invariant: shareWorth is the pool balance divided by shares outstanding.
@@ -119,4 +124,66 @@ export const withdrawCalc = (shareWorth, { give, want }) => {
 export const withFees = (shareWorth, fees) => {
   const balancePost = add(shareWorth.numerator, fees);
   return makeRatioFromAmounts(balancePost, shareWorth.denominator);
+};
+
+/**
+ *
+ * @param {Amount<'nat'>} requested
+ * @param {Amount<'nat'>} poolSeatAllocation
+ * @param {Amount<'nat'>} encumberedBalance
+ * @param {PoolStats} poolStats
+ * @throws {Error} if requested is not less than poolSeatAllocation
+ */
+export const borrowCalc = (
+  requested,
+  poolSeatAllocation,
+  encumberedBalance,
+  poolStats,
+) => {
+  // pool must never go empty
+  !isGTE(requested, poolSeatAllocation) ||
+    Fail`Cannot borrow. Requested ${q(requested)} must be less than pool balance ${q(poolSeatAllocation)}.`;
+
+  return harden({
+    encumberedBalance: add(encumberedBalance, requested),
+    poolStats: {
+      ...poolStats,
+      totalBorrows: add(poolStats.totalBorrows, requested),
+    },
+  });
+};
+
+/**
+ * @param {ShareWorth} shareWorth
+ * @param {Allocation} fromSeatAllocation
+ * @param {RepayAmountKWR} amounts
+ * @param {Amount<'nat'>} encumberedBalance aka 'outstanding borrows'
+ * @param {PoolStats} poolStats
+ * @throws {Error} if allocations do not match amounts or Principal exceeds encumberedBalance
+ */
+export const repayCalc = (
+  shareWorth,
+  fromSeatAllocation,
+  amounts,
+  encumberedBalance,
+  poolStats,
+) => {
+  (isEqual(fromSeatAllocation.Principal, amounts.Principal) &&
+    isEqual(fromSeatAllocation.PoolFee, amounts.PoolFee) &&
+    isEqual(fromSeatAllocation.ContractFee, amounts.ContractFee)) ||
+    Fail`Cannot repay. From seat allocation ${q(fromSeatAllocation)} does not equal amounts ${q(amounts)}.`;
+
+  isGTE(encumberedBalance, amounts.Principal) ||
+    Fail`Cannot repay. Principal ${q(amounts.Principal)} exceeds encumberedBalance ${q(encumberedBalance)}.`;
+
+  return harden({
+    shareWorth: withFees(shareWorth, amounts.PoolFee),
+    encumberedBalance: subtract(encumberedBalance, amounts.Principal),
+    poolStats: {
+      ...poolStats,
+      totalRepays: add(poolStats.totalRepays, amounts.Principal),
+      totalPoolFees: add(poolStats.totalPoolFees, amounts.PoolFee),
+      totalContractFees: add(poolStats.totalContractFees, amounts.ContractFee),
+    },
+  });
 };

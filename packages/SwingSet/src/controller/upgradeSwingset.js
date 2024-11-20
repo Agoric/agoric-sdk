@@ -10,13 +10,38 @@ import {
 import { enumeratePrefixedKeys } from '../kernel/state/storageHelper.js';
 
 /**
- * @import {RunQueueEvent} from '../types-internal.js';
+ * @import {ReapDirtThreshold, RunQueueEvent} from '../types-internal.js';
  */
 
-const upgradeVatV0toV1 = (kvStore, defaultReapDirtThreshold, vatID) => {
-  // This is called, once per vat, when upgradeSwingset migrates from
-  // v0 to v1
+/**
+ * Parse a string of decimal digits into a number.
+ *
+ * @param {string} digits
+ * @param {string} label
+ * @returns {number}
+ */
+const mustParseInt = (digits, label) => {
+  assert(
+    digits.match(/^\d+$/),
+    `expected ${label}=${digits} to be a decimal integer`,
+  );
+  return Number(digits);
+};
 
+/**
+ * Called for each vat when upgradeSwingset migrates from v0 to v1.
+ *
+ * @param {KVStore} kvStore
+ * @param {(key: string) => string} getRequired
+ * @param {ReapDirtThreshold} defaultReapDirtThreshold
+ * @param {string} vatID
+ */
+const upgradeVatV0toV1 = (
+  kvStore,
+  getRequired,
+  defaultReapDirtThreshold,
+  vatID,
+) => {
   // schema v0:
   // Each vat has a `vNN.reapInterval` and `vNN.reapCountdown`.
   // vNN.options has a `.reapInterval` property (however it was not
@@ -33,15 +58,10 @@ const upgradeVatV0toV1 = (kvStore, defaultReapDirtThreshold, vatID) => {
   // `defaultReapDirtThreshold`)
 
   const reapDirtKey = `${vatID}.reapDirt`;
-
-  assert(kvStore.has(oldReapIntervalKey), oldReapIntervalKey);
-  assert(kvStore.has(oldReapCountdownKey), oldReapCountdownKey);
   assert(!kvStore.has(reapDirtKey), reapDirtKey);
 
-  const reapIntervalString = kvStore.get(oldReapIntervalKey);
-  const reapCountdownString = kvStore.get(oldReapCountdownKey);
-  assert(reapIntervalString !== undefined);
-  assert(reapCountdownString !== undefined);
+  const reapIntervalString = getRequired(oldReapIntervalKey);
+  const reapCountdownString = getRequired(oldReapCountdownKey);
 
   const intervalIsNever = reapIntervalString === 'never';
   const countdownIsNever = reapCountdownString === 'never';
@@ -62,8 +82,11 @@ const upgradeVatV0toV1 = (kvStore, defaultReapDirtThreshold, vatID) => {
     threshold.never = true;
   } else {
     // deduce delivery count from old countdown values
-    const reapInterval = Number.parseInt(reapIntervalString, 10);
-    const reapCountdown = Number.parseInt(reapCountdownString, 10);
+    const reapInterval = mustParseInt(reapIntervalString, oldReapIntervalKey);
+    const reapCountdown = mustParseInt(
+      reapCountdownString,
+      oldReapCountdownKey,
+    );
     const deliveries = reapInterval - reapCountdown;
     reapDirt.deliveries = Math.max(deliveries, 0); // just in case
     if (reapInterval !== defaultReapDirtThreshold.deliveries) {
@@ -76,7 +99,7 @@ const upgradeVatV0toV1 = (kvStore, defaultReapDirtThreshold, vatID) => {
   kvStore.set(reapDirtKey, JSON.stringify(reapDirt));
 
   // Update options to use the new schema.
-  const options = JSON.parse(kvStore.get(vatOptionsKey));
+  const options = JSON.parse(getRequired(vatOptionsKey));
   delete options.reapInterval;
   options.reapDirtThreshold = threshold;
   kvStore.set(vatOptionsKey, JSON.stringify(options));
@@ -104,14 +127,11 @@ const upgradeVatV0toV1 = (kvStore, defaultReapDirtThreshold, vatID) => {
  */
 export const upgradeSwingset = kernelStorage => {
   const { kvStore } = kernelStorage;
-  let modified = false;
   /** @type {RunQueueEvent[]} */
   const upgradeEvents = [];
-  let vstring = kvStore.get('version');
-  if (vstring === undefined) {
-    vstring = '0';
-  }
-  let version = Number(vstring);
+  const vstring = kvStore.get('version');
+  const version = Number(vstring) || 0;
+  let newVersion;
 
   /**
    * @param {string} key
@@ -166,11 +186,7 @@ export const upgradeSwingset = kernelStorage => {
     assert(kvStore.has(oldDefaultReapIntervalKey));
     assert(!kvStore.has(DEFAULT_REAP_DIRT_THRESHOLD_KEY));
 
-    /**
-     * @typedef { import('../types-internal.js').ReapDirtThreshold } ReapDirtThreshold
-     */
-
-    /** @type ReapDirtThreshold */
+    /** @type {ReapDirtThreshold} */
     const threshold = {
       deliveries: 'never',
       gcKrefs: 'never',
@@ -179,9 +195,7 @@ export const upgradeSwingset = kernelStorage => {
 
     const oldValue = getRequired(oldDefaultReapIntervalKey);
     if (oldValue !== 'never') {
-      const value = Number.parseInt(oldValue, 10);
-      assert.typeof(value, 'number');
-      threshold.deliveries = value;
+      threshold.deliveries = mustParseInt(oldValue, oldDefaultReapIntervalKey);
       // if BOYD wasn't turned off entirely (eg
       // defaultReapInterval='never', which only happens in unit
       // tests), then pretend we wanted a gcKrefs= threshold all
@@ -196,22 +210,20 @@ export const upgradeSwingset = kernelStorage => {
 
     // now upgrade all vats
     for (const [_name, vatID] of getAllStaticVats(kvStore)) {
-      upgradeVatV0toV1(kvStore, threshold, vatID);
+      upgradeVatV0toV1(kvStore, getRequired, threshold, vatID);
     }
     for (const vatID of getAllDynamicVats(getRequired)) {
-      upgradeVatV0toV1(kvStore, threshold, vatID);
+      upgradeVatV0toV1(kvStore, getRequired, threshold, vatID);
     }
 
-    modified = true;
-    version = 1;
+    newVersion = 1;
   }
 
   if (version < 2) {
     // schema v2: add vats.terminated = []
     assert(!kvStore.has('vats.terminated'));
     kvStore.set('vats.terminated', JSON.stringify([]));
-    modified = true;
-    version = 2;
+    newVersion = 2;
   }
 
   if (version < 3) {
@@ -322,9 +334,10 @@ export const upgradeSwingset = kernelStorage => {
     }
 
     console.log(` - #9039 remediation complete, ${count} notifies to inject`);
-    modified = true;
-    version = 3;
+    newVersion = 3;
   }
+
+  const modified = newVersion !== undefined;
 
   if (upgradeEvents.length) {
     assert(modified);
@@ -335,7 +348,7 @@ export const upgradeSwingset = kernelStorage => {
   }
 
   if (modified) {
-    kvStore.set('version', `${version}`);
+    kvStore.set('version', `${newVersion}`);
   }
   return harden({ modified });
 };
