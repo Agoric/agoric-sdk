@@ -1,5 +1,9 @@
 import { AssetKind } from '@agoric/ertp';
-import { assertAllDefined, makeTracer } from '@agoric/internal';
+import {
+  assertAllDefined,
+  deeplyFulfilledObject,
+  makeTracer,
+} from '@agoric/internal';
 import { observeIteration, subscribeEach } from '@agoric/notifier';
 import {
   OrchestrationPowersShape,
@@ -7,7 +11,10 @@ import {
 } from '@agoric/orchestration';
 import { provideSingleton } from '@agoric/zoe/src/contractSupport/durability.js';
 import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/recorder.js';
-import { M } from '@endo/patterns';
+import { makeZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
+import { depositToSeat } from '@agoric/zoe/src/contractSupport/zoeHelpers.js';
+import { E } from '@endo/far';
+import { M, objectMap } from '@endo/patterns';
 import { prepareAdvancer } from './exos/advancer.js';
 import { prepareLiquidityPoolKit } from './exos/liquidity-pool.js';
 import { prepareSettler } from './exos/settler.js';
@@ -15,15 +22,20 @@ import { prepareStatusManager } from './exos/status-manager.js';
 import { prepareTransactionFeedKit } from './exos/transaction-feed.js';
 import { defineInertInvitation } from './utils/zoe.js';
 import { FastUSDCTermsShape, FeeConfigShape } from './type-guards.js';
+import * as flows from './fast-usdc.flows.js';
 
 const trace = makeTracer('FastUsdc');
 
 /**
  * @import {Denom} from '@agoric/orchestration';
+ * @import {HostInterface} from '@agoric/async-flow';
+ * @import {OrchestrationAccount} from '@agoric/orchestration';
  * @import {OrchestrationPowers, OrchestrationTools} from '@agoric/orchestration/src/utils/start-helper.js';
+ * @import {Vow} from '@agoric/vow';
  * @import {Zone} from '@agoric/zone';
  * @import {OperatorKit} from './exos/operator-kit.js';
  * @import {CctpTxEvidence, FeeConfig} from './types.js';
+ * @import {RepayAmountKWR, RepayPaymentKWR} from './exos/liquidity-pool.js';
  */
 
 /**
@@ -66,35 +78,22 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
   );
   const statusManager = prepareStatusManager(zone);
   const makeSettler = prepareSettler(zone, { statusManager });
-  const { chainHub, vowTools } = tools;
+  const { chainHub, orchestrateAll, vowTools } = tools;
+  const { localTransfer } = makeZoeTools(zcf, vowTools);
   const makeAdvancer = prepareAdvancer(zone, {
     chainHub,
     feeConfig,
-    log: trace,
+    localTransfer,
     usdc: harden({
       brand: terms.brands.USDC,
       denom: terms.usdcDenom,
     }),
     statusManager,
     vowTools,
+    zcf,
   });
   const makeFeedKit = prepareTransactionFeedKit(zone, zcf);
   assertAllDefined({ makeFeedKit, makeAdvancer, makeSettler, statusManager });
-  const feedKit = makeFeedKit();
-  const advancer = makeAdvancer(
-    // @ts-expect-error FIXME
-    {},
-  );
-  // Connect evidence stream to advancer
-  void observeIteration(subscribeEach(feedKit.public.getEvidenceSubscriber()), {
-    updateState(evidence) {
-      try {
-        void advancer.handleTransactionEvent(evidence);
-      } catch (err) {
-        trace('🚨 Error handling transaction event', err);
-      }
-    },
-  });
   const makeLiquidityPoolKit = prepareLiquidityPoolKit(
     zone,
     zcf,
@@ -107,15 +106,42 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
     'test of forcing evidence',
   );
 
+  const { makeLocalAccount } = orchestrateAll(flows, {});
+
   const creatorFacet = zone.exo('Fast USDC Creator', undefined, {
     /** @type {(operatorId: string) => Promise<Invitation<OperatorKit>>} */
     async makeOperatorInvitation(operatorId) {
+      // eslint-disable-next-line no-use-before-define
       return feedKit.creator.makeOperatorInvitation(operatorId);
     },
-    simulateFeesFromAdvance(amount, payment) {
-      console.log('🚧🚧 UNTIL: advance fees are implemented 🚧🚧');
-      // eslint-disable-next-line no-use-before-define
-      return poolKit.feeSink.receive(amount, payment);
+    /**
+     * @param {{ USDC: Amount<'nat'>}} amounts
+     */
+    testBorrow(amounts) {
+      console.log('🚧🚧 UNTIL: borrow is integrated (#10388) 🚧🚧', amounts);
+      const { zcfSeat: tmpAssetManagerSeat } = zcf.makeEmptySeatKit();
+      poolKit.borrower.borrow(tmpAssetManagerSeat, amounts);
+      return tmpAssetManagerSeat.getCurrentAllocation();
+    },
+    /**
+     *
+     * @param {RepayAmountKWR} amounts
+     * @param {RepayPaymentKWR} payments
+     * @returns {Promise<AmountKeywordRecord>}
+     */
+    async testRepay(amounts, payments) {
+      console.log('🚧🚧 UNTIL: repay is integrated (#10388) 🚧🚧', amounts);
+      const { zcfSeat: tmpAssetManagerSeat } = zcf.makeEmptySeatKit();
+      await depositToSeat(
+        zcf,
+        tmpAssetManagerSeat,
+        await deeplyFulfilledObject(
+          objectMap(payments, pmt => E(terms.issuers.USDC).getAmountOf(pmt)),
+        ),
+        payments,
+      );
+      poolKit.repayer.repay(tmpAssetManagerSeat, amounts);
+      return tmpAssetManagerSeat.getCurrentAllocation();
     },
   });
 
@@ -131,19 +157,17 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
      * @param {CctpTxEvidence} evidence
      */
     makeTestPushInvitation(evidence) {
+      // eslint-disable-next-line no-use-before-define
       void advancer.handleTransactionEvent(evidence);
       return makeTestInvitation();
     },
     makeDepositInvitation() {
-      // eslint-disable-next-line no-use-before-define
       return poolKit.public.makeDepositInvitation();
     },
     makeWithdrawInvitation() {
-      // eslint-disable-next-line no-use-before-define
       return poolKit.public.makeWithdrawInvitation();
     },
     getPublicTopics() {
-      // eslint-disable-next-line no-use-before-define
       return poolKit.public.getPublicTopics();
     },
   });
@@ -173,6 +197,34 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
   const poolKit = zone.makeOnce('Liquidity Pool kit', () =>
     makeLiquidityPoolKit(shareMint, privateArgs.storageNode),
   );
+
+  const feedKit = zone.makeOnce('Feed Kit', () => makeFeedKit());
+
+  const poolAccountV =
+    // cast to HostInterface
+    /** @type { Vow<HostInterface<OrchestrationAccount<{chainId: 'agoric';}>>>} */ (
+      /** @type {unknown}*/ (
+        zone.makeOnce('Pool Local Orch Account', () => makeLocalAccount())
+      )
+    );
+  const poolAccount = await vowTools.when(poolAccountV);
+
+  const advancer = zone.makeOnce('Advancer', () =>
+    makeAdvancer({
+      borrowerFacet: poolKit.borrower,
+      poolAccount,
+    }),
+  );
+  // Connect evidence stream to advancer
+  void observeIteration(subscribeEach(feedKit.public.getEvidenceSubscriber()), {
+    updateState(evidence) {
+      try {
+        void advancer.handleTransactionEvent(evidence);
+      } catch (err) {
+        trace('🚨 Error handling transaction event', err);
+      }
+    },
+  });
 
   return harden({ creatorFacet, publicFacet });
 };

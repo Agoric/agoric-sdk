@@ -120,7 +120,6 @@ const buildSwingset = async (
   const withInputQueue = makeWithQueue();
   const queueThunkForKernel = withInputQueue(async thunk => {
     thunk();
-    // eslint-disable-next-line no-use-before-define
     await processKernel();
   });
 

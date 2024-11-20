@@ -7,8 +7,10 @@ import {
 } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { mustMatch } from '@endo/patterns';
 import {
+  borrowCalc,
   depositCalc,
   makeParity,
+  repayCalc,
   withdrawCalc,
   withFees,
 } from '../src/pool-share-math.js';
@@ -295,3 +297,200 @@ testProp(
     );
   },
 );
+
+const makeInitialPoolStats = () => ({
+  totalBorrows: makeEmpty(brands.USDC),
+  totalRepays: makeEmpty(brands.USDC),
+  totalPoolFees: makeEmpty(brands.USDC),
+  totalContractFees: makeEmpty(brands.USDC),
+});
+
+test('basic borrow calculation', t => {
+  const { USDC } = brands;
+  const requested = make(USDC, 100n);
+  const poolSeatAllocation = make(USDC, 200n);
+  const encumberedBalance = make(USDC, 50n);
+  const poolStats = makeInitialPoolStats();
+
+  const result = borrowCalc(
+    requested,
+    poolSeatAllocation,
+    encumberedBalance,
+    poolStats,
+  );
+
+  t.deepEqual(
+    result.encumberedBalance,
+    make(USDC, 150n),
+    'Outstanding lends should increase by borrowed amount',
+  );
+  t.deepEqual(
+    result.poolStats.totalBorrows,
+    make(USDC, 100n),
+    'Total borrows should increase by borrowed amount',
+  );
+  t.deepEqual(
+    Object.keys(result.poolStats),
+    Object.keys(poolStats),
+    'borrowCalc returns all poolStats fields',
+  );
+});
+
+test('borrow fails when requested exceeds or equals pool seat allocation', t => {
+  const { USDC } = brands;
+  const requested = make(USDC, 200n);
+  const poolSeatAllocation = make(USDC, 100n);
+  const encumberedBalance = make(USDC, 0n);
+  const poolStats = makeInitialPoolStats();
+
+  t.throws(
+    () =>
+      borrowCalc(requested, poolSeatAllocation, encumberedBalance, poolStats),
+    {
+      message: /Cannot borrow/,
+    },
+  );
+  t.throws(
+    () => borrowCalc(requested, make(USDC, 200n), encumberedBalance, poolStats),
+    {
+      message: /Cannot borrow/,
+    },
+    'throw when request equals pool seat allocation',
+  );
+  t.notThrows(() =>
+    borrowCalc(requested, make(USDC, 201n), encumberedBalance, poolStats),
+  );
+});
+
+test('basic repay calculation', t => {
+  const { USDC } = brands;
+  const shareWorth = makeParity(make(USDC, 1n), brands.PoolShares);
+  const amounts = {
+    Principal: make(USDC, 100n),
+    PoolFee: make(USDC, 10n),
+    ContractFee: make(USDC, 5n),
+  };
+  const encumberedBalance = make(USDC, 200n);
+  const poolStats = makeInitialPoolStats();
+  const fromSeatAllocation = amounts;
+
+  const result = repayCalc(
+    shareWorth,
+    fromSeatAllocation,
+    amounts,
+    encumberedBalance,
+    poolStats,
+  );
+
+  t.deepEqual(
+    result.encumberedBalance,
+    make(USDC, 100n),
+    'Outstanding lends should decrease by principal',
+  );
+  t.deepEqual(
+    result.poolStats.totalRepays,
+    amounts.Principal,
+    'Total repays should increase by principal',
+  );
+  t.deepEqual(
+    result.poolStats.totalPoolFees,
+    amounts.PoolFee,
+    'Total pool fees should increase by pool fee',
+  );
+  t.deepEqual(
+    result.poolStats.totalContractFees,
+    amounts.ContractFee,
+    'Total contract fees should increase by contract fee',
+  );
+  t.deepEqual(
+    result.poolStats.totalBorrows,
+    poolStats.totalBorrows,
+    'Total borrows should remain unchanged',
+  );
+  t.deepEqual(
+    result.shareWorth.numerator,
+    make(USDC, 11n),
+    'Share worth numerator should increase by pool fee',
+  );
+  t.deepEqual(
+    Object.keys(result.poolStats),
+    Object.keys(poolStats),
+    'repayCalc returns all poolStats fields',
+  );
+});
+
+test('repay fails when principal exceeds encumbered balance', t => {
+  const { USDC } = brands;
+
+  const shareWorth = makeParity(make(USDC, 1n), brands.PoolShares);
+  const amounts = {
+    Principal: make(USDC, 200n),
+    PoolFee: make(USDC, 10n),
+    ContractFee: make(USDC, 5n),
+  };
+  const encumberedBalance = make(USDC, 100n);
+  const poolStats = {
+    ...makeInitialPoolStats(),
+    totalBorrows: make(USDC, 100n),
+  };
+
+  const fromSeatAllocation = amounts;
+
+  t.throws(
+    () =>
+      repayCalc(
+        shareWorth,
+        fromSeatAllocation,
+        amounts,
+        encumberedBalance,
+        poolStats,
+      ),
+    {
+      message: /Cannot repay. Principal .* exceeds encumberedBalance/,
+    },
+  );
+
+  t.notThrows(
+    () =>
+      repayCalc(shareWorth, fromSeatAllocation, amounts, make(USDC, 200n), {
+        ...makeInitialPoolStats(),
+        totalBorrows: make(USDC, 200n),
+      }),
+    'repay succeeds when principal equals encumbered balance',
+  );
+});
+
+test('repay fails when seat allocation does not equal amounts', t => {
+  const { USDC } = brands;
+
+  const shareWorth = makeParity(make(USDC, 1n), brands.PoolShares);
+  const amounts = {
+    Principal: make(USDC, 200n),
+    PoolFee: make(USDC, 10n),
+    ContractFee: make(USDC, 5n),
+  };
+  const encumberedBalance = make(USDC, 100n);
+  const poolStats = {
+    ...makeInitialPoolStats(),
+    totalBorrows: make(USDC, 100n),
+  };
+
+  const fromSeatAllocation = {
+    ...amounts,
+    ContractFee: make(USDC, 1n),
+  };
+
+  t.throws(
+    () =>
+      repayCalc(
+        shareWorth,
+        fromSeatAllocation,
+        amounts,
+        encumberedBalance,
+        poolStats,
+      ),
+    {
+      message: /Cannot repay. From seat allocation .* does not equal amounts/,
+    },
+  );
+});

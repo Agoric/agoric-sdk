@@ -1,4 +1,4 @@
-import { BrandShape, RatioShape } from '@agoric/ertp';
+import { AmountShape, BrandShape, RatioShape } from '@agoric/ertp';
 import { M } from '@endo/patterns';
 import { PendingTxStatus } from './constants.js';
 
@@ -6,7 +6,7 @@ import { PendingTxStatus } from './constants.js';
  * @import {TypedPattern} from '@agoric/internal';
  * @import {FastUsdcTerms} from './fast-usdc.contract.js';
  * @import {USDCProposalShapes} from './pool-share-math.js';
- * @import {CctpTxEvidence, FeeConfig, PendingTx} from './types.js';
+ * @import {CctpTxEvidence, FeeConfig, PendingTx, PoolMetrics} from './types.js';
  */
 
 /**
@@ -82,3 +82,14 @@ export const FeeConfigShape = {
   contractRate: RatioShape,
 };
 harden(FeeConfigShape);
+
+/** @type {TypedPattern<PoolMetrics>} */
+export const PoolMetricsShape = {
+  encumberedBalance: AmountShape,
+  shareWorth: RatioShape,
+  totalContractFees: AmountShape,
+  totalPoolFees: AmountShape,
+  totalBorrows: AmountShape,
+  totalRepays: AmountShape,
+};
+harden(PoolMetricsShape);

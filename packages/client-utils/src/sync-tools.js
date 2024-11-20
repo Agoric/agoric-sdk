@@ -18,6 +18,7 @@
  * @property {number} [maxRetries]
  * @property {number} [retryIntervalMs]
  * @property {boolean} [reusePromise]
+ * @property {(value: unknown) => unknown} [renderResult]
  *
  * @typedef {RetryOptions & {errorMessage: string}} WaitUntilOptions
  *
@@ -56,12 +57,13 @@ export const retryUntilCondition = async (
     maxRetries = 6,
     retryIntervalMs = 3500,
     reusePromise = false,
+    renderResult = x => x,
     // XXX mixes ocaps with configuration options
     log = console.log,
     setTimeout,
   },
 ) => {
-  console.log({ maxRetries, retryIntervalMs, reusePromise, message });
+  console.log({ maxRetries, retryIntervalMs, message });
 
   await null; // separate sync prologue
 
@@ -93,7 +95,7 @@ export const retryUntilCondition = async (
         log(`Attempt ${retries + 1} timed out`);
         if (!reusePromise) resultP = undefined;
       } else {
-        log('RESULT', result);
+        log('RESULT', renderResult(result));
         if (condition(result)) {
           return result;
         }

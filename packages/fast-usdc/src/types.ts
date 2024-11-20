@@ -1,5 +1,6 @@
 import type { ChainAddress } from '@agoric/orchestration';
 import type { IBCChannelID } from '@agoric/vats';
+import type { Amount } from '@agoric/ertp';
 import type { PendingTxStatus } from './constants.js';
 
 export type EvmHash = `0x${string}`;
@@ -41,5 +42,17 @@ export type FeeConfig = {
   maxVariable: Amount<'nat'>;
   contractRate: Ratio;
 };
+
+export interface PoolStats {
+  totalBorrows: Amount<'nat'>;
+  totalContractFees: Amount<'nat'>;
+  totalPoolFees: Amount<'nat'>;
+  totalRepays: Amount<'nat'>;
+}
+
+export interface PoolMetrics extends PoolStats {
+  encumberedBalance: Amount<'nat'>;
+  shareWorth: Ratio;
+}
 
 export type * from './constants.js';

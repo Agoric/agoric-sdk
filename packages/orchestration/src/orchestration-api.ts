@@ -1,4 +1,3 @@
-/* eslint-disable no-use-before-define */
 /**
  * @file General API of orchestration
  * - must not have chain-specific types without runtime narrowing by chain id

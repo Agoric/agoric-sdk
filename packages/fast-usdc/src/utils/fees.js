@@ -9,6 +9,7 @@ const { add, isGTE, min, subtract } = AmountMath;
 /**
  * @import {Amount} from '@agoric/ertp';
  * @import {FeeConfig} from '../types.js';
+ * @import {RepayAmountKWR} from '../exos/liquidity-pool.js';
  */
 
 /** @param {FeeConfig} feeConfig */
@@ -42,7 +43,7 @@ export const makeFeeTools = feeConfig => {
      * Calculate the split of fees between pool and contract.
      *
      * @param {Amount<'nat'>} requested
-     * @returns {{ Principal: Amount<'nat'>, PoolFee: Amount<'nat'>, ContractFee: Amount<'nat'> }} an {@link AmountKeywordRecord}
+     * @returns {RepayAmountKWR} an {@link AmountKeywordRecord}
      * @throws {Error} if requested does not exceed fees
      */
     calculateSplit(requested) {

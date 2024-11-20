@@ -16,7 +16,7 @@
  * that matches the new feeDistributor's collectionInterval.
  */
 
-import '@endo/init/legacy.js';
+import '@endo/init/debug.js';
 import test from 'ava';
 import {
   retryUntilCondition,
@@ -32,6 +32,9 @@ import {
 } from '@agoric/synthetic-chain';
 import { AmountMath } from '@agoric/ertp';
 import { floorMultiplyBy } from '@agoric/zoe/src/contractSupport/ratio.js';
+
+// TODO @import {Ratio} from '@agoric/zoe'
+/** @typedef {any} Ratio */
 
 /**
  * @typedef {import('@agoric/client-utils').VstorageKit} VstorageKit
@@ -70,7 +73,6 @@ const config = {
 const scale6 = mintValue => BigInt(parseInt(mintValue, 10) * 1_000_000);
 
 /**
- *
  * @param {VstorageKit} vstorage
  * @param {NatAmount} feeAmount
  */

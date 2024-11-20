@@ -354,7 +354,6 @@ export const makeSwingsetTestKit = async (
     ...args
   ) => {
     console.log('inbound', ...args);
-    // eslint-disable-next-line no-use-before-define
     bridgeInbound!(...args);
   };
 

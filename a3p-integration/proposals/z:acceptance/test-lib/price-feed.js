@@ -58,6 +58,6 @@ export const getPriceFeedRoundId = async brand => {
     prefix: '',
   });
 
-  console.log('latestRound: ', latestRound);
+  console.log(latestRoundPath, latestRound);
   return Number(latestRound.roundId);
 };

@@ -1,7 +1,7 @@
 /** @file copied from packages/agoric-cli */
 // TODO DRY in https://github.com/Agoric/agoric-sdk/issues/9109
 // @ts-check
-/* global Buffer */
+/* eslint-env node */
 
 import { Fail } from '@endo/errors';
 import {
