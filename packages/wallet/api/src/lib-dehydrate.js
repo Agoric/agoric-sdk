@@ -54,7 +54,6 @@ export const makeDehydrator = (initialUnnamedCount = 0) => {
     if (!isPath(strongname)) {
       return strongname;
     }
-    // eslint-disable-next-line no-use-before-define
     const { valToPetname: rootToPetname } = edgeMapping;
     const petname = rootToPetname.get(strongname[0]);
     assert(!isPath(petname));
@@ -73,7 +72,6 @@ export const makeDehydrator = (initialUnnamedCount = 0) => {
 
     // A strong path must have a root name we have mapped.
     const path = [...strongname];
-    // eslint-disable-next-line no-use-before-define
     const { petnameToVal: petnameToRoot } = edgeMapping;
     if (!petnameToRoot.has(path[0])) {
       // Avoid asserting, which fills up the logs.
@@ -163,11 +161,7 @@ export const makeDehydrator = (initialUnnamedCount = 0) => {
     const addPath = (path, val) => {
       isPath(path) || Fail`path ${q(path)} must be an array of strings`;
 
-      if (
-        !valToPetname.has(val) &&
-        // eslint-disable-next-line no-use-before-define
-        edgeMapping.valToPetname.has(path[0])
-      ) {
+      if (!valToPetname.has(val) && edgeMapping.valToPetname.has(path[0])) {
         // We have a petname for the root of the path, so use it as our
         // strongname.
         valToPetname.init(val, path);

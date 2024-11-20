@@ -120,7 +120,6 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
     testBorrow(amounts) {
       console.log('🚧🚧 UNTIL: borrow is integrated (#10388) 🚧🚧', amounts);
       const { zcfSeat: tmpAssetManagerSeat } = zcf.makeEmptySeatKit();
-      // eslint-disable-next-line no-use-before-define
       poolKit.borrower.borrow(tmpAssetManagerSeat, amounts);
       return tmpAssetManagerSeat.getCurrentAllocation();
     },
@@ -141,7 +140,6 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
         ),
         payments,
       );
-      // eslint-disable-next-line no-use-before-define
       poolKit.repayer.repay(tmpAssetManagerSeat, amounts);
       return tmpAssetManagerSeat.getCurrentAllocation();
     },
@@ -164,15 +162,12 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
       return makeTestInvitation();
     },
     makeDepositInvitation() {
-      // eslint-disable-next-line no-use-before-define
       return poolKit.public.makeDepositInvitation();
     },
     makeWithdrawInvitation() {
-      // eslint-disable-next-line no-use-before-define
       return poolKit.public.makeWithdrawInvitation();
     },
     getPublicTopics() {
-      // eslint-disable-next-line no-use-before-define
       return poolKit.public.getPublicTopics();
     },
   });

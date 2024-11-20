@@ -220,8 +220,6 @@ function generateIndirectConfig(baseConfig) {
   return config;
 }
 
-/* eslint-disable no-use-before-define */
-
 /**
  * Command line utility to run a swingset for development and testing purposes.
  */

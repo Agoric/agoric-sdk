@@ -143,7 +143,7 @@ module.exports = {
     'prettier/prettier': 'warn',
 
     // Not a risk with our coding style
-    'no-constant-condition': 'off',
+    'no-use-before-define': 'off',
   },
   settings: {
     jsdoc: {
@@ -177,8 +177,8 @@ module.exports = {
     {
       files: [
         'packages/**/demo/**/*.js',
-        'packages/*/test/**/*.js',
-        'packages/*/test/**/*.test.js',
+        'packages/*/test/**/*.*s',
+        'packages/*/test/**/*.test.*s',
         'packages/wallet/api/test/**/*.js',
       ],
       rules: {
@@ -188,12 +188,23 @@ module.exports = {
         // NOTE: This rule is enabled for the repository in general.  We turn it
         // off for test code for now.
         '@jessie.js/safe-await-separator': 'off',
+
+        // Like `'ava/no-only-test`, but works with @endo/ses-ava
+        'no-restricted-properties': [
+          'error',
+          {
+            object: 'test',
+            property: 'only',
+            message:
+              'Do not commit .only tests - they prevent other tests from running',
+          },
+        ],
       },
     },
     {
       // These tests use EV() instead of E(), which are easy to confuse.
       // Help by erroring when E() packages are imported.
-      files: ['packages/boot/test/**/*.test.*'],
+      files: ['packages/boot/test/**/*.test.*s'],
       rules: {
         'no-restricted-imports': [
           'error',
@@ -229,8 +240,6 @@ module.exports = {
     {
       files: ['*.d.ts'],
       rules: {
-        // Irrelevant in a typedef
-        'no-use-before-define': 'off',
         // Linter confuses the type declaration with value declaration
         'no-redeclare': 'off',
       },

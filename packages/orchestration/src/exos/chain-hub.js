@@ -283,7 +283,6 @@ export const makeChainHub = (zone, agoricNames, vowTools) => {
     },
   );
 
-  /* eslint-disable no-use-before-define -- chainHub defined below */
   const lookupChainsAndConnection = vowTools.retryable(
     zone,
     'lookupChainsAndConnection',

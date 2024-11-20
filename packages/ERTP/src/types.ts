@@ -1,4 +1,3 @@
-/* eslint-disable no-use-before-define */
 import type { LatestTopic } from '@agoric/notifier';
 import type { ERef } from '@endo/far';
 import type { RemotableObject } from '@endo/pass-style';

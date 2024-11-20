@@ -1,4 +1,3 @@
-/* eslint-disable no-use-before-define */
 import type { Remote } from '@agoric/internal';
 import type { Zone } from '@agoric/zone';
 import type { CopyTagged, RemotableObject } from '@endo/pass-style';
