@@ -74,8 +74,12 @@ const options = {
     default:
       'ibc/FE98AAD68F02F03565E9FA39A5E627946699B2B07115889ED812D8BA639576A9',
   },
+  feedPolicy: { type: 'string' },
 };
 const oraclesUsage = 'use --oracle name:address ...';
+
+const feedPolicyUsage = 'use --feedPolicy <policy> ...';
+
 /**
  * @typedef {{
  *   flatFee: string;
@@ -85,6 +89,7 @@ const oraclesUsage = 'use --oracle name:address ...';
  *   oracleSet?: string;
  *   oracle?: string[];
  *   usdcDenom: string;
+ *   feedPolicy?: string;
  * }} FastUSDCOpts
  */
 
@@ -126,8 +131,10 @@ export default async (homeP, endowments) => {
   /** @type {{ values: FastUSDCOpts }} */
   // @ts-expect-error ensured by options
   const {
-    values: { oracle: oracleArgs, oracleSet, usdcDenom, ...fees },
+    values: { oracle: oracleArgs, oracleSet, usdcDenom, feedPolicy, ...fees },
   } = parseArgs({ args: scriptArgs, options });
+
+  if (!feedPolicy) throw Error(feedPolicyUsage);
 
   const parseOracleArgs = () => {
     if (oracleSet) {
@@ -168,6 +175,7 @@ export default async (homeP, endowments) => {
       usdcDenom,
     },
     feeConfig: parseFeeConfigArgs(),
+    feedPolicy: JSON.parse(feedPolicy),
   });
 
   await writeCoreEval('start-fast-usdc', utils =>

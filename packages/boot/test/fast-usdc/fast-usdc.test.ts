@@ -2,6 +2,7 @@ import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import type { TestFn } from 'ava';
 import type { FastUSDCKit } from '@agoric/fast-usdc/src/fast-usdc.start.js';
+import { documentStorageSchema } from '@agoric/governance/tools/storageDoc.js';
 import { Fail } from '@endo/errors';
 import { unmarshalFromVstorage } from '@agoric/internal/src/marshal.js';
 import { makeMarshal } from '@endo/marshal';
@@ -40,7 +41,25 @@ test.serial(
 
     const materials = buildProposal(
       '@agoric/builders/scripts/fast-usdc/init-fast-usdc.js',
-      ['--oracle', 'a:agoric1watcher1'],
+      [
+        '--oracle',
+        'a:agoric1watcher1',
+        '--feedPolicy',
+        JSON.stringify({
+          nobleAgoricChannelId: 'channel-21',
+          nobleDomainId: 4,
+          chainPolicies: {
+            Arbitrum: {
+              cctpTokenMessengerAddress:
+                '0x19330d10D9Cc8751218eaf51E8885D058642E08A',
+              chainId: 42161,
+              confirmations: 1,
+              nobleContractAddress:
+                '0x19330d10D9Cc8751218eaf51E8885D058642E08A',
+            },
+          },
+        }),
+      ],
     );
     await evalProposal(materials);
 
@@ -98,6 +117,15 @@ test.serial(
     // XXX t.is(details.instance, agoricNames.instance.fastUsdc) should work
   },
 );
+
+test.serial('writes feed policy to vstorage', async t => {
+  const { storage } = t.context;
+  const doc = {
+    node: 'fastUsdc.feedPolicy',
+    owner: 'the general and chain-specific policies for the Fast USDC feed',
+  };
+  await documentStorageSchema(t, storage, doc);
+});
 
 test.serial('restart contract', async t => {
   const { EV } = t.context.runUtils;
