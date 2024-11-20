@@ -14,6 +14,7 @@ import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/record
 import { E } from '@endo/far';
 import { M, objectMap } from '@endo/patterns';
 import { depositToSeat } from '@agoric/zoe/src/contractSupport/zoeHelpers.js';
+import { makeZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
 import { prepareAdvancer } from './exos/advancer.js';
 import { prepareLiquidityPoolKit } from './exos/liquidity-pool.js';
 import { prepareSettler } from './exos/settler.js';
@@ -74,6 +75,7 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
   const statusManager = prepareStatusManager(zone);
   const makeSettler = prepareSettler(zone, { statusManager });
   const { chainHub, vowTools } = tools;
+  const zoeTools = makeZoeTools(zcf, vowTools);
   const makeAdvancer = prepareAdvancer(zone, {
     chainHub,
     feeConfig,
@@ -84,6 +86,8 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
     }),
     statusManager,
     vowTools,
+    zcf,
+    zoeTools,
   });
   const makeFeedKit = prepareTransactionFeedKit(zone, zcf);
   assertAllDefined({ makeFeedKit, makeAdvancer, makeSettler, statusManager });
