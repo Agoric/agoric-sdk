@@ -31,6 +31,7 @@ import {
   getPsmMetrics,
   implementPsmGovParamChange,
   initializeNewUser,
+  logRecord,
   maxMintBelowLimit,
   psmSwap,
   sendOfferAgd,
@@ -148,8 +149,8 @@ test.serial('swap into IST using agd with default gas', async t => {
     balances,
     psmTrader,
   );
-  t.log('METRICS', metricsBefore);
-  t.log('BALANCES', balancesBefore);
+  logRecord('METRICS', metricsBefore, t.log);
+  logRecord('BALANCES', balancesBefore, t.log);
 
   await psmSwap(
     psmTrader,
@@ -188,8 +189,8 @@ test.serial('swap out of IST', async t => {
     getBalances([psmTrader]),
   ]);
 
-  t.log('METRICS', metricsBefore);
-  t.log('BALANCES', balancesBefore);
+  logRecord('METRICS', metricsBefore, t.log);
+  logRecord('BALANCES', balancesBefore, t.log);
 
   await psmSwap(
     psmTrader,
@@ -238,8 +239,8 @@ test.serial('mint limit is adhered', async t => {
     getBalances([otherAddr]),
   ]);
 
-  t.log('METRICS', metricsBefore);
-  t.log('BALANCES', balancesBefore);
+  logRecord('METRICS', metricsBefore, t.log);
+  logRecord('BALANCES', balancesBefore, t.log);
 
   const { maxMintableValue, wantFeeValue } = await maxMintBelowLimit(anchor);
   const maxMintFeesAccounted = Math.floor(
