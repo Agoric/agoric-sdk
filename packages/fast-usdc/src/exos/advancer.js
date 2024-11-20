@@ -1,5 +1,5 @@
-import { AmountMath, AmountShape, PaymentShape } from '@agoric/ertp';
-import { assertAllDefined } from '@agoric/internal';
+import { AmountMath, AmountShape } from '@agoric/ertp';
+import { assertAllDefined, makeTracer } from '@agoric/internal';
 import { ChainAddressShape } from '@agoric/orchestration';
 import { pickFacet } from '@agoric/vat-data';
 import { VowShape } from '@agoric/vow';
@@ -15,31 +15,25 @@ const { isGTE } = AmountMath;
 /**
  * @import {HostInterface} from '@agoric/async-flow';
  * @import {NatAmount} from '@agoric/ertp';
- * @import {ChainAddress, ChainHub, Denom, DenomAmount, OrchestrationAccount} from '@agoric/orchestration';
+ * @import {ChainAddress, ChainHub, Denom, OrchestrationAccount} from '@agoric/orchestration';
+ * @import {ZoeTools} from '@agoric/orchestration/src/utils/zoe-tools.js';
  * @import {VowTools} from '@agoric/vow';
  * @import {Zone} from '@agoric/zone';
  * @import {CctpTxEvidence, FeeConfig, LogFn} from '../types.js';
  * @import {StatusManager} from './status-manager.js';
- */
-
-/**
- * Expected interface from LiquidityPool
- *
- * @typedef {{
- *   lookupBalance(): NatAmount;
- *   borrow(amount: Amount<"nat">): Promise<Payment<"nat">>;
- *   repay(payments: PaymentKeywordRecord): Promise<void>
- * }} AssetManagerFacet
+ * @import {LiquidityPoolKit} from './liquidity-pool.js';
  */
 
 /**
  * @typedef {{
  *  chainHub: ChainHub;
  *  feeConfig: FeeConfig;
- *  log: LogFn;
+ *  localTransfer: ZoeTools['localTransfer'];
+ *  log?: LogFn;
  *  statusManager: StatusManager;
  *  usdc: { brand: Brand<'nat'>; denom: Denom; };
  *  vowTools: VowTools;
+ *  zcf: ZCF;
  * }} AdvancerKitPowers
  */
 
@@ -49,13 +43,15 @@ const AdvancerKitI = harden({
     handleTransactionEvent: M.callWhen(CctpTxEvidenceShape).returns(),
   }),
   depositHandler: M.interface('DepositHandlerI', {
-    onFulfilled: M.call(AmountShape, {
+    onFulfilled: M.call(M.undefined(), {
+      amount: AmountShape,
       destination: ChainAddressShape,
-      payment: PaymentShape,
+      tmpSeat: M.remotable(),
     }).returns(VowShape),
     onRejected: M.call(M.error(), {
+      amount: AmountShape,
       destination: ChainAddressShape,
-      payment: PaymentShape,
+      tmpSeat: M.remotable(),
     }).returns(),
   }),
   transferHandler: M.interface('TransferHandlerI', {
@@ -77,7 +73,16 @@ const AdvancerKitI = harden({
  */
 export const prepareAdvancerKit = (
   zone,
-  { chainHub, feeConfig, log, statusManager, usdc, vowTools: { watch, when } },
+  {
+    chainHub,
+    feeConfig,
+    localTransfer,
+    log = makeTracer('Advancer', true),
+    statusManager,
+    usdc,
+    vowTools: { watch, when },
+    zcf,
+  } = /** @type {AdvancerKitPowers} */ ({}),
 ) => {
   assertAllDefined({
     chainHub,
@@ -95,8 +100,8 @@ export const prepareAdvancerKit = (
     AdvancerKitI,
     /**
      * @param {{
-     *   assetManagerFacet: AssetManagerFacet;
-     *   poolAccount: ERef<HostInterface<OrchestrationAccount<{chainId: 'agoric'}>>>;
+     *   borrowerFacet: LiquidityPoolKit['borrower'];
+     *   poolAccount: HostInterface<OrchestrationAccount<{chainId: 'agoric'}>>;
      * }} config
      */
     config => harden(config),
@@ -115,8 +120,7 @@ export const prepareAdvancerKit = (
         async handleTransactionEvent(evidence) {
           await null;
           try {
-            // TODO poolAccount might be a vow we need to unwrap
-            const { assetManagerFacet, poolAccount } = this.state;
+            const { borrowerFacet, poolAccount } = this.state;
             const { recipientAddress } = evidence.aux;
             const { EUD } = addressTools.getQueryParams(
               recipientAddress,
@@ -129,14 +133,12 @@ export const prepareAdvancerKit = (
             const advanceAmount = feeTools.calculateAdvance(requestedAmount);
 
             // TODO: consider skipping and using `borrow()`s internal balance check
-            const poolBalance = assetManagerFacet.lookupBalance();
+            const poolBalance = borrowerFacet.getBalance();
             if (!isGTE(poolBalance, requestedAmount)) {
               log(
                 `Insufficient pool funds`,
                 `Requested ${q(advanceAmount)} but only have ${q(poolBalance)}`,
               );
-              // report `requestedAmount`, not `advancedAmount`... do we need to
-              // communicate net to `StatusManger` in case fees change in between?
               statusManager.observe(evidence);
               return;
             }
@@ -152,19 +154,29 @@ export const prepareAdvancerKit = (
               return;
             }
 
+            const { zcfSeat: tmpSeat } = zcf.makeEmptySeatKit();
+            const amountKWR = harden({ USDC: advanceAmount });
             try {
-              const payment = await assetManagerFacet.borrow(advanceAmount);
-              const depositV = E(poolAccount).deposit(payment);
-              void watch(depositV, this.facets.depositHandler, {
-                destination,
-                payment,
-              });
+              borrowerFacet.borrow(tmpSeat, amountKWR);
             } catch (e) {
-              // `.borrow()` might fail if the balance changes since we
-              // requested it. TODO - how to handle this? change ADVANCED -> OBSERVED?
-              // Note: `depositHandler` handles the `.deposit()` failure
+              // We do not expect this to fail since there are no turn boundaries
+              // between .getBalance() and .borrow().
+              // We catch to report outside of the normal error flow since this is
+              // not expected.
               log('🚨 advance borrow failed', q(e).toString());
             }
+
+            const depositV = localTransfer(
+              tmpSeat,
+              // @ts-expect-error LocalAccountMethods vs OrchestrationAccount
+              poolAccount,
+              amountKWR,
+            );
+            void watch(depositV, this.facets.depositHandler, {
+              amount: advanceAmount,
+              destination,
+              tmpSeat,
+            });
           } catch (e) {
             log('Advancer error:', q(e).toString());
             statusManager.observe(evidence);
@@ -173,18 +185,15 @@ export const prepareAdvancerKit = (
       },
       depositHandler: {
         /**
-         * @param {NatAmount} amount amount returned from deposit
-         * @param {{ destination: ChainAddress; payment: Payment<'nat'> }} ctx
+         * @param {undefined} result
+         * @param {{ amount: Amount<'nat'>; destination: ChainAddress; tmpSeat: ZCFSeat }} ctx
          */
-        onFulfilled(amount, { destination }) {
+        onFulfilled(result, { amount, destination }) {
           const { poolAccount } = this.state;
-          const transferV = E(poolAccount).transfer(
-            destination,
-            /** @type {DenomAmount} */ ({
-              denom: usdc.denom,
-              value: amount.value,
-            }),
-          );
+          const transferV = E(poolAccount).transfer(destination, {
+            denom: usdc.denom,
+            value: amount.value,
+          });
           return watch(transferV, this.facets.transferHandler, {
             destination,
             amount,
@@ -192,12 +201,17 @@ export const prepareAdvancerKit = (
         },
         /**
          * @param {Error} error
-         * @param {{ destination: ChainAddress; payment: Payment<'nat'> }} ctx
+         * @param {{ amount: Amount<'nat'>; destination: ChainAddress; tmpSeat: ZCFSeat }} ctx
          */
-        onRejected(error, { payment }) {
-          // TODO return live payment from ctx to LP
+        onRejected(error, { tmpSeat }) {
+          // TODO return seat allocation from ctx to LP?
           log('🚨 advance deposit failed', q(error).toString());
-          log('TODO live payment to return to LP', q(payment).toString());
+          // TODO #10510 (comprehensive error testing) determine
+          // course of action here
+          log(
+            'TODO live payment on seat to return to LP',
+            q(tmpSeat).toString(),
+          );
         },
       },
       transferHandler: {
@@ -206,23 +220,24 @@ export const prepareAdvancerKit = (
          * @param {{ destination: ChainAddress; amount: NatAmount; }} ctx
          */
         onFulfilled(result, { destination, amount }) {
-          // TODO vstorage update?
+          // TODO vstorage update? We don't currently have a status for
+          // Advanced + transferV settled
           log(
             'Advance transfer fulfilled',
             q({ amount, destination, result }).toString(),
           );
         },
         onRejected(error) {
-          // XXX retry logic?
-          // What do we do if we fail, should we keep a Status?
+          // TODO #10510 (comprehensive error testing) determine
+          // course of action here. This might fail due to timeout.
           log('Advance transfer rejected', q(error).toString());
         },
       },
     },
     {
       stateShape: harden({
-        assetManagerFacet: M.remotable(),
-        poolAccount: M.or(VowShape, M.remotable()),
+        borrowerFacet: M.remotable(),
+        poolAccount: M.remotable(),
       }),
     },
   );
