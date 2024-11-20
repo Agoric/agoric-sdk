@@ -100,14 +100,15 @@ export const purseBalanceTuples = (purses, assets) => {
  */
 export const fmtRecordOfLines = record => {
   const { stringify } = JSON;
+  /** @type {Array<[string, string[]]>} */
   const groups = Object.entries(record).map(([key, items]) => [
     key,
     items.map(item => `    ${stringify(item)}`),
   ]);
-  const lineEntries = groups.map(
-    // @ts-expect-error ???
-    ([key, lines]) => `  ${stringify(key)}: [\n${lines.join(',\n')}\n  ]`,
-  );
+  const lineEntries = groups.map(([key, lines]) => {
+    const linesStr = lines.length === 0 ? `[]` : `[\n${lines.join(',\n')}\n  ]`;
+    return `  ${stringify(key)}: ${linesStr}`;
+  });
   return `{\n${lineEntries.join(',\n')}\n}`;
 };
 
