@@ -129,6 +129,7 @@ export const prepareStatusManager = zone => {
        */
       hasPendingSettlement(address, amount) {
         const key = makePendingTxKey(address, amount);
+        if (!pendingTxs.has(key)) return false;
         const pending = pendingTxs.get(key);
         return !!pending.length;
       },

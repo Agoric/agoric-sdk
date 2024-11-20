@@ -178,3 +178,24 @@ test('StatusManagerKey logic handles addresses with hyphens', async t => {
   );
   t.is(remainingEntries.length, 0, 'Entry should be settled');
 });
+
+test('hasPendingSettlement code paths', t => {
+  const zone = provideDurableZone('status-test');
+  const statusManager = prepareStatusManager(zone.subZone('status-manager'));
+  const evidence = MockCctpTxEvidences.AGORIC_PLUS_OSMO();
+  const { forwardingAddress, amount } = evidence.tx;
+
+  // Nothing in store
+  t.false(statusManager.hasPendingSettlement(forwardingAddress, amount));
+
+  // Observed in store
+  statusManager.observe(evidence);
+  t.true(statusManager.hasPendingSettlement(forwardingAddress, amount));
+  statusManager.settle(forwardingAddress, amount);
+
+  // Advanced in store
+  statusManager.advance({ ...evidence, txHash: '0xtest2' });
+  t.true(statusManager.hasPendingSettlement(forwardingAddress, amount));
+  statusManager.settle(forwardingAddress, amount);
+  t.false(statusManager.hasPendingSettlement(forwardingAddress, amount));
+});
