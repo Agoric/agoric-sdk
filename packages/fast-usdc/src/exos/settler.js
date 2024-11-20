@@ -1,15 +1,17 @@
+import { AmountMath } from '@agoric/ertp';
 import { assertAllDefined, makeTracer } from '@agoric/internal';
 import { atob } from '@endo/base64';
 import { makeError, q } from '@endo/errors';
+import { E } from '@endo/far';
 import { M } from '@endo/patterns';
 
-import { AmountMath } from '@agoric/ertp';
+import { PendingTxStatus } from '../constants.js';
 import { addressTools } from '../utils/address.js';
 import { makeFeeTools } from '../utils/fees.js';
 
 /**
  * @import {FungibleTokenPacketData} from '@agoric/cosmic-proto/ibc/applications/transfer/v2/packet.js';
- * @import {Denom, OrchestrationAccount, LocalAccountMethods} from '@agoric/orchestration';
+ * @import {Denom, OrchestrationAccount, LocalAccountMethods, ChainHub} from '@agoric/orchestration';
  * @import {WithdrawToSeat} from '@agoric/orchestration/src/utils/zoe-tools'
  * @import {IBCChannelID, VTransferIBCEvent} from '@agoric/vats';
  * @import {Zone} from '@agoric/zone';
@@ -30,10 +32,11 @@ const trace = makeTracer('Settler');
  * @param {FeeConfig} caps.feeConfig
  * @param {HostOf<WithdrawToSeat>} caps.withdrawToSeat
  * @param {import('@agoric/vow').VowTools} caps.vowTools
+ * @param {ChainHub} caps.chainHub
  */
 export const prepareSettler = (
   zone,
-  { statusManager, USDC, zcf, feeConfig, withdrawToSeat, vowTools },
+  { statusManager, USDC, zcf, feeConfig, withdrawToSeat, vowTools, chainHub },
 ) => {
   assertAllDefined({ statusManager });
   return zone.exoClass(
@@ -41,6 +44,9 @@ export const prepareSettler = (
     M.interface('SettlerI', {
       monitorTransfers: M.callWhen().returns(M.any()),
       receiveUpcall: M.call(M.record()).returns(M.promise()),
+      settleSansFees: M.call(M.string(), M.string(), M.nat()).returns(
+        M.promise(),
+      ),
     }),
     /**
      * @param {{
@@ -107,6 +113,11 @@ export const prepareSettler = (
           );
         }
 
+        const pending = statusManager.lookupPending(sender, amountInt);
+        if (pending.find(it => it.status === PendingTxStatus.Observed)) {
+          return this.self.settleSansFees(sender, EUD, amountInt);
+        }
+
         // Disperse funds
 
         const { repayer, settlementAccount } = this.state;
@@ -133,10 +144,25 @@ export const prepareSettler = (
         repayer.repay(settlingSeat, split);
 
         // update status manager, marking tx `SETTLED`
-        statusManager.settle(
-          /** @type {NobleAddress} */ (tx.sender),
-          amountInt,
+        statusManager.settle(sender, amountInt);
+      },
+      /**
+       * @param {NobleAddress} sender
+       * @param {string} EUD
+       * @param {bigint} amountInt
+       */
+      async settleSansFees(sender, EUD, amountInt) {
+        const { settlementAccount } = this.state;
+
+        const dest = chainHub.makeChainAddress(EUD);
+
+        const txfrV = E(settlementAccount).transfer(
+          dest,
+          AmountMath.make(USDC, amountInt),
         );
+        await vowTools.when(txfrV); // TODO: watch, handle failure
+
+        statusManager.settle(sender, amountInt);
       },
     },
     {

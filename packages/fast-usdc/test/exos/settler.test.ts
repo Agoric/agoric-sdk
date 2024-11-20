@@ -64,6 +64,9 @@ const makeTestContext = async t => {
     return vowTools.asVow(() => {});
   };
 
+  const { chainHub } = common.facadeServices;
+  chainHub.registerChain('dydx', fetchedChainInfo.dydx);
+  chainHub.registerChain('osmosis', fetchedChainInfo.osmosis);
   const makeSettler = prepareSettler(zone.subZone('settler'), {
     statusManager,
     USDC: usdc.brand,
@@ -71,6 +74,7 @@ const makeTestContext = async t => {
     withdrawToSeat: mockWithdrawToSeat,
     feeConfig: common.commonPrivateArgs.feeConfig,
     vowTools: common.bootstrap.vowTools,
+    chainHub,
   });
 
   const defaultSettlerParams = harden({
@@ -126,7 +130,7 @@ const makeTestContext = async t => {
 
 const test = anyTest as TestFn<Awaited<ReturnType<typeof makeTestContext>>>;
 
-test.before(async t => (t.context = await makeTestContext(t)));
+test.beforeEach(async t => (t.context = await makeTestContext(t)));
 
 test('happy path: disburse to LPs; StatusManager removes tx', async t => {
   const {
@@ -206,6 +210,65 @@ test('happy path: disburse to LPs; StatusManager removes tx', async t => {
     '3. settler called repay() on liquidity pool repayer facet',
   );
   t.is(repay.fromSeat, s1);
+
+  t.deepEqual(
+    statusManager.lookupPending(
+      cctpTxEvidence.tx.forwardingAddress,
+      cctpTxEvidence.tx.amount,
+    ),
+    [],
+    'SETTLED entry removed from StatusManger',
+  );
+  // TODO, confirm vstorage write for TxStatus.SETTLED
+});
+
+test('slow path: disburse to LPs; StatusManager removes tx', async t => {
+  const {
+    common,
+    makeSettler,
+    statusManager,
+    defaultSettlerParams,
+    repayer,
+    simulate,
+    accounts,
+    peekCalls,
+  } = t.context;
+  const { usdc } = common.brands;
+  const { feeConfig } = common.commonPrivateArgs;
+
+  const settler = makeSettler({
+    repayer,
+    settlementAccount: accounts.settlement.account,
+    ...defaultSettlerParams,
+  });
+
+  const cctpTxEvidence = simulate.observe();
+  t.deepEqual(
+    statusManager.lookupPending(
+      cctpTxEvidence.tx.forwardingAddress,
+      cctpTxEvidence.tx.amount,
+    ),
+    [{ ...cctpTxEvidence, status: PendingTxStatus.Observed }],
+    'statusManager shows this tx is only observed',
+  );
+
+  t.log('Simulate incoming IBC settlement');
+  void settler.receiveUpcall(MockVTransferEvents.AGORIC_PLUS_OSMO());
+  await eventLoopIteration();
+
+  t.log('review settler interactions with other components');
+  t.deepEqual(peekCalls(), []);
+  t.deepEqual(accounts.settlement.callLog, [
+    [
+      'transfer',
+      {
+        chainId: 'osmosis-1',
+        encoding: 'bech32',
+        value: 'osmo183dejcnmkka5dzcu9xw6mywq0p2m5peks28men',
+      },
+      usdc.units(150),
+    ],
+  ]);
 
   t.deepEqual(
     statusManager.lookupPending(
