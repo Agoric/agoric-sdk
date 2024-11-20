@@ -188,6 +188,17 @@ module.exports = {
         // NOTE: This rule is enabled for the repository in general.  We turn it
         // off for test code for now.
         '@jessie.js/safe-await-separator': 'off',
+
+        // Like `'ava/no-only-test`, but works with @endo/ses-ava
+        'no-restricted-properties': [
+          'error',
+          {
+            object: 'test',
+            property: 'only',
+            message:
+              'Do not commit .only tests - they prevent other tests from running',
+          },
+        ],
       },
     },
     {
