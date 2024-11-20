@@ -1,22 +1,28 @@
 /* eslint-disable no-use-before-define */
-import { isVow } from '@agoric/vow/src/vow-utils.js';
+import { isVow, toPassableCap } from '@agoric/vow/src/vow-utils.js';
 import { heapVowE } from '@agoric/vow/vat.js';
 import { throwLabeled } from '@endo/common/throw-labeled.js';
-import { Fail, X, b, makeError, q } from '@endo/errors';
+import { Fail, X, annotateError, b, makeError, q } from '@endo/errors';
 import { E } from '@endo/eventual-send';
 import { getMethodNames } from '@endo/eventual-send/utils.js';
 import { Far, Remotable, getInterfaceOf } from '@endo/pass-style';
 import { makeConvertKit } from './convert.js';
 import { makeEquate } from './equate.js';
+import {
+  inlineTemplateArgs,
+  hostCallToTemplateArgs,
+  idTemplateTag,
+} from './template.js';
 
 /**
  * @import {PromiseKit} from '@endo/promise-kit';
  * @import {RemotableBrand} from '@endo/eventual-send';
  * @import {Callable, Passable, PassableCap} from '@endo/pass-style';
  * @import {Vow, VowTools, VowKit} from '@agoric/vow';
+ * @import {WeakMapStore} from '@agoric/store';
  * @import {LogStore} from '../src/log-store.js';
  * @import {Bijection} from '../src/bijection.js';
- * @import {Host, HostVow, LogEntry, Outcome} from '../src/types.js';
+ * @import {Host, HostCall, HostVow, LogEntry, Outcome} from '../src/types.js';
  */
 
 const { fromEntries, defineProperties, assign } = Object;
@@ -28,6 +34,9 @@ const { fromEntries, defineProperties, assign } = Object;
  * @param {VowTools} arg.vowTools
  * @param {(vowish: Promise | Vow) => void} arg.watchWake
  * @param {(problem: Error) => never} arg.panic
+ * @param {string | Error} [arg.definitionStack]
+ * @param {string} arg.tag
+ * @param {WeakMapStore<PassableCap, HostCall>} [arg.hostVowToCall]
  */
 export const makeReplayMembrane = arg => {
   const noDunderArg = /** @type {typeof arg} */ (
@@ -43,6 +52,9 @@ export const makeReplayMembrane = arg => {
  * @param {VowTools} arg.vowTools
  * @param {(vowish: Promise | Vow) => void} arg.watchWake
  * @param {(problem: Error) => never} arg.panic
+ * @param {string | Error} [arg.definitionStack]
+ * @param {string} arg.tag
+ * @param {WeakMapStore<PassableCap, HostCall>} [arg.hostVowToCall]
  * @param {boolean} [arg.__eventualSendForTesting] CAVEAT: Only for async-flow tests
  */
 export const makeReplayMembraneForTesting = ({
@@ -51,6 +63,9 @@ export const makeReplayMembraneForTesting = ({
   vowTools,
   watchWake,
   panic,
+  definitionStack,
+  tag,
+  hostVowToCall,
   __eventualSendForTesting,
 }) => {
   const { when, makeVowKit } = vowTools;
@@ -68,6 +83,26 @@ export const makeReplayMembraneForTesting = ({
       Fail`generation expected integer; got ${generation}`;
     generation >= 0 ||
       Fail`generation expected non-negative; got ${generation}`;
+  };
+
+  const flowDescription = definitionStack
+    ? idTemplateTag`${tag} defined at ${definitionStack}`
+    : tag;
+
+  /**
+   * @param {Vow} vow
+   * @param {HostCall} hostCall
+   */
+  const initHostCall = (vow, hostCall) => {
+    harden(hostCall);
+    if (!hostVowToCall) {
+      return;
+    }
+    const key = toPassableCap(vow);
+    if (hostVowToCall.has(key)) {
+      return;
+    }
+    hostVowToCall.init(key, hostCall);
   };
 
   // ////////////// Host or Interpreter to Guest ///////////////////////////////
@@ -106,6 +141,25 @@ export const makeReplayMembraneForTesting = ({
       Fail`doReject should only be called on a registered unresolved promise`;
     }
     const guestReason = hostToGuest(hostReason);
+    if (guestReason instanceof Error) {
+      annotateError(
+        guestReason,
+        X(...inlineTemplateArgs`from flow ${flowDescription}`),
+      );
+      if (hostVowToCall) {
+        const hostVowCap = toPassableCap(hostVow);
+        if (hostVowToCall.has(hostVowCap)) {
+          const hostCall = hostVowToCall.get(hostVowCap);
+          const hostDescription = hostCallToTemplateArgs(hostCall);
+          annotateError(
+            guestReason,
+            X(
+              ...inlineTemplateArgs`host rejection from call to ${hostDescription}`,
+            ),
+          );
+        }
+      }
+    }
     status.reject(guestReason);
     guestPromiseMap.set(guestPromise, 'settled');
   };
@@ -157,9 +211,12 @@ export const makeReplayMembraneForTesting = ({
   const performCall = (hostTarget, optVerb, hostArgs, callIndex) => {
     let hostResult;
     try {
-      hostResult = optVerb
-        ? hostTarget[optVerb](...hostArgs)
-        : hostTarget(...hostArgs);
+      hostResult =
+        optVerb === undefined
+          ? hostTarget(...hostArgs)
+          : hostTarget[optVerb](...hostArgs);
+      isVow(hostResult) &&
+        initHostCall(hostResult, { target: hostTarget, method: optVerb });
       // Try converting here just to route the error correctly
       hostToGuest(hostResult, `converting ${optVerb || 'host'} result`);
     } catch (hostProblem) {
@@ -285,6 +342,11 @@ export const makeReplayMembraneForTesting = ({
       throw Panic`internal: eventual send synchronously failed ${hostProblem}`;
     }
     try {
+      initHostCall(vow, {
+        target: hostTarget,
+        method: optVerb,
+        eventual: true,
+      });
       /** @type {LogEntry} */
       const entry = harden(['doReturn', callIndex, vow]);
       log.pushEntry(entry);
@@ -568,32 +630,35 @@ export const makeReplayMembraneForTesting = ({
       hVow,
       async hostFulfillment => {
         await log.promiseReplayDone(); // should never reject
-        if (!stopped && guestPromiseMap.get(promiseKey) !== 'settled') {
-          /** @type {LogEntry} */
-          const entry = harden(['doFulfill', hVow, hostFulfillment]);
-          log.pushEntry(entry);
-          try {
-            interpretOne(topDispatch, entry);
-          } catch {
-            // interpretOne does its own try/catch/panic, so failure would
-            // already be registered. Here, just return to avoid the
-            // Unhandled rejection.
-          }
+        if (stopped || guestPromiseMap.get(promiseKey) === 'settled') {
+          return;
+        }
+        /** @type {LogEntry} */
+        const entry = harden(['doFulfill', hVow, hostFulfillment]);
+        log.pushEntry(entry);
+        try {
+          interpretOne(topDispatch, entry);
+        } catch {
+          // interpretOne does its own try/catch/panic, so failure would
+          // already be registered. Here, just return to avoid the
+          // Unhandled rejection.
         }
       },
       async hostReason => {
         await log.promiseReplayDone(); // should never reject
-        if (!stopped && guestPromiseMap.get(promiseKey) !== 'settled') {
-          /** @type {LogEntry} */
-          const entry = harden(['doReject', hVow, hostReason]);
-          log.pushEntry(entry);
-          try {
-            interpretOne(topDispatch, entry);
-          } catch {
-            // interpretOne does its own try/catch/panic, so failure would
-            // already be registered. Here, just return to avoid the
-            // Unhandled rejection.
-          }
+        if (stopped || guestPromiseMap.get(promiseKey) === 'settled') {
+          return;
+        }
+
+        /** @type {LogEntry} */
+        const entry = harden(['doReject', hVow, hostReason]);
+        log.pushEntry(entry);
+        try {
+          interpretOne(topDispatch, entry);
+        } catch {
+          // interpretOne does its own try/catch/panic, so failure would
+          // already be registered. Here, just return to avoid the
+          // Unhandled rejection.
         }
       },
     );

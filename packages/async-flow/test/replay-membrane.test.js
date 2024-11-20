@@ -77,6 +77,7 @@ const testFirstPlay = async (t, zone, showOnConsole = false) => {
     vowTools,
     watchWake,
     panic,
+    tag: 'firstPlay',
   });
 
   const g1 = mem.hostToGuest(v1);
@@ -165,6 +166,7 @@ const testBadReplay = async (t, zone) => {
     vowTools,
     watchWake,
     panic,
+    tag: 'badReplay',
   });
 
   const g1 = mem.hostToGuest(v1);
@@ -219,6 +221,7 @@ const testGoodReplay = async (t, zone) => {
     vowTools,
     watchWake,
     panic,
+    tag: 'goodReplay',
   });
 
   const g1 = mem.hostToGuest(v1);

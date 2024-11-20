@@ -44,6 +44,7 @@ const testMissingStop = async (t, zone) => {
     vowTools,
     watchWake,
     panic,
+    tag: 'missingStopA',
   });
 
   const { vow: v1, resolver: r1 } = makeVowKit();
@@ -66,6 +67,7 @@ const testMissingStop = async (t, zone) => {
     vowTools,
     watchWake,
     panic,
+    tag: 'missingStopB',
   });
 
   const p1B = memB.hostToGuest(v1);
@@ -106,6 +108,7 @@ const testProperStop = async (t, zone) => {
     vowTools,
     watchWake,
     panic,
+    tag: 'properStopA',
   });
 
   const { vow: v1, resolver: r1 } = makeVowKit();
@@ -129,6 +132,7 @@ const testProperStop = async (t, zone) => {
     vowTools,
     watchWake,
     panic,
+    tag: 'properStopB',
   });
 
   const p1B = memB.hostToGuest(v1);

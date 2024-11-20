@@ -70,6 +70,7 @@ const testFirstPlay = async (t, zone, mode = testMode.normal) => {
     vowTools,
     watchWake,
     panic,
+    tag: 'firstPlay',
     __eventualSendForTesting: mode !== testMode.noEventualSend,
   });
 
@@ -180,6 +181,7 @@ const testReplay = async (t, zone, mode = testMode.normal) => {
     vowTools,
     watchWake,
     panic,
+    tag: 'replay',
     __eventualSendForTesting: mode !== testMode.noEventualSend,
   });
   t.true(log.isReplaying());

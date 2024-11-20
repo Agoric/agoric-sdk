@@ -18,7 +18,6 @@ import { prepareBijection } from '../src/bijection.js';
 import { makeReplayMembrane } from '../src/replay-membrane.js';
 
 /**
- * @import {PromiseKit} from '@endo/promise-kit'
  * @import {Zone} from '@agoric/base-zone'
  * @import {LogStore} from '../src/log-store.js';
  * @import {Bijection} from '../src/bijection.js';
@@ -57,6 +56,7 @@ const testFirstPlay = async (t, zone) => {
     vowTools,
     watchWake,
     panic,
+    tag: 'firstPlay',
   });
 
   const p1 = mem.hostToGuest(v1);
@@ -116,6 +116,7 @@ const testReplay = async (t, zone) => {
     vowTools,
     watchWake,
     panic,
+    tag: 'replay',
   });
   t.true(log.isReplaying());
   t.is(log.getIndex(), 0);
