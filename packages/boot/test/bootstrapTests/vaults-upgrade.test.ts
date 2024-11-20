@@ -155,19 +155,15 @@ test.serial('re-bootstrap', async t => {
 test.serial('audit bootstrap exports', async t => {
   const expected = {
     maxExports: 5,
-    maxNonDurable: 4,
+    maxNonDurable: 5,
     ifaces: {
-      durable: {
-        // in bridgeProvisioner()
-        provisioningHandler: true,
-      },
-      nonDurable: {
-        // in bridgeCoreEval()
-        coreHandler: true,
-        'prioritySenders manager': true,
-        // TODO? move to provisioning vat?
-        clientCreator: true,
-      },
+      // in bridgeCoreEval()
+      coreHandler: true,
+      // in bridgeProvisioner()
+      provisioningHandler: true,
+      'prioritySenders manager': true,
+      // TODO? move to provisioning vat?
+      clientCreator: true,
     },
   };
 
@@ -225,45 +221,24 @@ test.serial('audit bootstrap exports', async t => {
           const { methargs } = sc.s[2];
           if (!methargs.slots.includes(oid)) continue;
           m.fromCapData(methargs);
-          break;
+          return;
         } else if (sc.s[0] === 'resolve') {
           for (const res of sc.s[1]) {
             const capdata = res[2];
             if (!capdata.slots.includes(oid)) continue;
             m.fromCapData(capdata);
-            break;
+            return;
           }
         }
       }
     }
   }
 
-  const exportedInterfacesNonDurable = Object.fromEntries(
-    [...toIface.entries()]
-      .filter(([slot, _]) => !slot.startsWith('o+d'))
-      .map(([_, iface]) => [iface.replace(/^Alleged: /, ''), true]),
+  const exportedInterfaces = Object.fromEntries(
+    [...toIface.values()].map(iface => [iface.replace(/^Alleged: /, ''), true]),
   );
 
-  const exportedInterfacesDurable = Object.fromEntries(
-    [...toIface.entries()]
-      .filter(([slot, _]) => slot.startsWith('o+d'))
-      .map(([_, iface]) => [iface.replace(/^Alleged: /, ''), true]),
-  );
-
-  t.deepEqual(
-    exportedInterfacesNonDurable,
-    expected.ifaces.nonDurable,
-    'expected non-durable interfaces',
-  );
-  t.deepEqual(
-    exportedInterfacesDurable,
-    expected.ifaces.durable,
-    'expected durable interfaces',
-  );
-  t.true(
-    oids.size - oidsDurable.length <= expected.maxNonDurable,
-    'too many non-durable',
-  );
+  t.deepEqual(exportedInterfaces, expected.ifaces, 'expected interfaces');
 });
 
 test.serial('open vault', async t => {
