@@ -247,13 +247,14 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
   /** @type {Parameters<typeof makeSettler>[0]['settlementAccount']} */
   const settlementAccount = await tools.vowTools.when(settleAccountV);
 
-  const settler = makeSettler({
+  const { creator: settlerCreator } = makeSettler({
     repayer: poolKit.repayer,
     sourceChannel: 'channel-1234', // TODO: fix this as soon as testing needs it',
     remoteDenom: 'uusdc',
     settlementAccount,
   });
-  await settler.monitorMintingDeposits();
+
+  await settlerCreator.monitorMintingDeposits();
 
   return harden({ creatorFacet, publicFacet });
 };

@@ -165,7 +165,7 @@ test('happy path: disburse to LPs; StatusManager removes tx', async t => {
   );
 
   t.log('Simulate incoming IBC settlement');
-  void settler.receiveUpcall(MockVTransferEvents.AGORIC_PLUS_OSMO());
+  void settler.tap.receiveUpcall(MockVTransferEvents.AGORIC_PLUS_OSMO());
   await eventLoopIteration();
 
   t.log('review settler interactions with other components');
@@ -254,7 +254,7 @@ test('slow path: forward to EUD; remove pending tx', async t => {
   );
 
   t.log('Simulate incoming IBC settlement');
-  void settler.receiveUpcall(MockVTransferEvents.AGORIC_PLUS_OSMO());
+  void settler.tap.receiveUpcall(MockVTransferEvents.AGORIC_PLUS_OSMO());
   await eventLoopIteration();
 
   t.log('review settler interactions with other components');

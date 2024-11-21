@@ -48,17 +48,31 @@ export const prepareSettler = (
   { statusManager, USDC, zcf, feeConfig, withdrawToSeat, vowTools, chainHub },
 ) => {
   assertAllDefined({ statusManager });
-  return zone.exoClass(
+  return zone.exoClassKit(
     'Fast USDC Settler',
-    M.interface('SettlerI', {
-      monitorMintingDeposits: M.callWhen().returns(M.any()),
-      receiveUpcall: M.call(M.record()).returns(M.promise()),
-      notifyAdvancingResult: M.call(M.string(), M.nat(), M.boolean()).returns(),
-      disburse: M.call(EvmHashShape, M.string(), M.nat()).returns(M.promise()),
-      forward: M.call(EvmHashShape, M.string(), M.nat(), M.string()).returns(
-        M.promise(),
-      ),
-    }),
+    {
+      creator: M.interface('SettlerCreatorI', {
+        monitorMintingDeposits: M.callWhen().returns(M.any()),
+      }),
+      tap: M.interface('SettlerTapI', {
+        receiveUpcall: M.call(M.record()).returns(M.promise()),
+      }),
+      notify: M.interface('SettlerNotifyI', {
+        notifyAdvancingResult: M.call(
+          M.string(),
+          M.nat(),
+          M.boolean(),
+        ).returns(),
+      }),
+      self: M.interface('SettlerSelfI', {
+        disburse: M.call(EvmHashShape, M.string(), M.nat()).returns(
+          M.promise(),
+        ),
+        forward: M.call(EvmHashShape, M.string(), M.nat(), M.string()).returns(
+          M.promise(),
+        ),
+      }),
+    },
     /**
      * @param {{
      *   sourceChannel: IBCChannelID;
@@ -77,138 +91,147 @@ export const prepareSettler = (
       };
     },
     {
-      async monitorMintingDeposits() {
-        const { settlementAccount } = this.state;
-        const registration = await vowTools.when(
-          settlementAccount.monitorTransfers(this.self),
-        );
-        assert.typeof(registration, 'object');
-        this.state.registration = registration;
+      creator: {
+        async monitorMintingDeposits() {
+          const { settlementAccount } = this.state;
+          const registration = await vowTools.when(
+            settlementAccount.monitorTransfers(this.facets.tap),
+          );
+          assert.typeof(registration, 'object');
+          this.state.registration = registration;
+        },
       },
-      /** @param {VTransferIBCEvent} event */
-      async receiveUpcall(event) {
-        if (event.packet.source_channel !== this.state.sourceChannel) {
-          // TODO #10390 log all early returns
-          // only interested in packets from the issuing chain
-          return;
-        }
-
-        // TODO: why is it safe to cast this without a runtime check?
-        const tx = /** @type {FungibleTokenPacketData} */ (
-          JSON.parse(atob(event.packet.data))
-        );
-
-        // given the sourceChannel check, we can be certain of this cast
-        const sender = /** @type {NobleAddress} */ (tx.sender);
-
-        if (tx.denom !== this.state.remoteDenom) {
-          // only interested in uusdc
-          return;
-        }
-
-        if (!addressTools.hasQueryParams(tx.receiver)) {
-          // only interested in receivers with query params
-          return;
-        }
-
-        const { EUD } = addressTools.getQueryParams(tx.receiver);
-        if (!EUD) {
-          // only interested in receivers with EUD parameter
-          return;
-        }
-
-        const amount = BigInt(tx.amount); // TODO: what if this throws?
-
-        const found = statusManager.dequeueStatus(sender, amount);
-        switch (found?.status) {
-          case undefined:
-          case PendingTxStatus.Observed:
-            return this.self.forward(found?.txHash, sender, amount, EUD);
-
-          case PendingTxStatus.Advancing:
-            this.state.mintedEarly.add(makeMintedEarlyKey(sender, amount));
+      tap: {
+        /** @param {VTransferIBCEvent} event */
+        async receiveUpcall(event) {
+          if (event.packet.source_channel !== this.state.sourceChannel) {
+            // TODO #10390 log all early returns
+            // only interested in packets from the issuing chain
             return;
-
-          case PendingTxStatus.Advanced:
-            return this.self.disburse(found.txHash, sender, amount);
-
-          default:
-            throw Error('TODO: think harder');
-        }
-      },
-      /**
-       * @param {EvmHash} txHash
-       * @param {NobleAddress} sender
-       * @param {NatValue} amount
-       * @param {string} EUD
-       * @param {boolean} success
-       * @returns {void}
-       */
-      notifyAdvancingResult(txHash, sender, amount, EUD, success) {
-        const { mintedEarly } = this.state;
-        const key = makeMintedEarlyKey(sender, amount);
-        if (mintedEarly.has(key)) {
-          mintedEarly.delete(key);
-          if (success) {
-            void this.self.disburse(txHash, sender, amount);
-          } else {
-            void this.self.forward(txHash, sender, amount, EUD);
           }
-        } else {
-          statusManager.advanceOutcome(sender, amount, success);
-        }
+
+          // TODO: why is it safe to cast this without a runtime check?
+          const tx = /** @type {FungibleTokenPacketData} */ (
+            JSON.parse(atob(event.packet.data))
+          );
+
+          // given the sourceChannel check, we can be certain of this cast
+          const sender = /** @type {NobleAddress} */ (tx.sender);
+
+          if (tx.denom !== this.state.remoteDenom) {
+            // only interested in uusdc
+            return;
+          }
+
+          if (!addressTools.hasQueryParams(tx.receiver)) {
+            // only interested in receivers with query params
+            return;
+          }
+
+          const { EUD } = addressTools.getQueryParams(tx.receiver);
+          if (!EUD) {
+            // only interested in receivers with EUD parameter
+            return;
+          }
+
+          const amount = BigInt(tx.amount); // TODO: what if this throws?
+
+          const { self } = this.facets;
+          const found = statusManager.dequeueStatus(sender, amount);
+          switch (found?.status) {
+            case undefined:
+            case PendingTxStatus.Observed:
+              return self.forward(found?.txHash, sender, amount, EUD);
+
+            case PendingTxStatus.Advancing:
+              this.state.mintedEarly.add(makeMintedEarlyKey(sender, amount));
+              return;
+
+            case PendingTxStatus.Advanced:
+              return self.disburse(found.txHash, sender, amount);
+
+            default:
+              throw Error('TODO: think harder');
+          }
+        },
       },
-      /**
-       * @param {EvmHash} txHash
-       * @param {NobleAddress} sender
-       * @param {NatValue} amount
-       */
-      async disburse(txHash, sender, amount) {
-        const { repayer, settlementAccount } = this.state;
-        const received = AmountMath.make(USDC, amount);
-        const { zcfSeat: settlingSeat } = zcf.makeEmptySeatKit();
-        const { calculateSplit } = makeFeeTools(feeConfig);
-        const split = calculateSplit(received);
-        trace('disbursing', split);
-
-        // TODO: what if this throws?
-        // arguably, it cannot. Even if deposits
-        // and notifications get out of order,
-        // we don't ever withdraw more than has been deposited.
-        await vowTools.when(
-          withdrawToSeat(
-            // @ts-expect-error Vow vs. Promise stuff. TODO: is this OK???
-            settlementAccount,
-            settlingSeat,
-            harden({ In: received }),
-          ),
-        );
-        zcf.atomicRearrange(
-          harden([[settlingSeat, settlingSeat, { In: received }, split]]),
-        );
-        repayer.repay(settlingSeat, split);
-
-        // update status manager, marking tx `SETTLED`
-        statusManager.disbursed(txHash, sender, amount);
+      notify: {
+        /**
+         * @param {EvmHash} txHash
+         * @param {NobleAddress} sender
+         * @param {NatValue} amount
+         * @param {string} EUD
+         * @param {boolean} success
+         * @returns {void}
+         */
+        notifyAdvancingResult(txHash, sender, amount, EUD, success) {
+          const { mintedEarly } = this.state;
+          const key = makeMintedEarlyKey(sender, amount);
+          if (mintedEarly.has(key)) {
+            mintedEarly.delete(key);
+            if (success) {
+              void this.facets.self.disburse(txHash, sender, amount);
+            } else {
+              void this.facets.self.forward(txHash, sender, amount, EUD);
+            }
+          } else {
+            statusManager.advanceOutcome(sender, amount, success);
+          }
+        },
       },
-      /**
-       * @param {EvmHash | undefined} txHash
-       * @param {NobleAddress} sender
-       * @param {NatValue} amount
-       * @param {string} EUD
-       */
-      async forward(txHash, sender, amount, EUD) {
-        const { settlementAccount } = this.state;
+      self: {
+        /**
+         * @param {EvmHash} txHash
+         * @param {NobleAddress} sender
+         * @param {NatValue} amount
+         */
+        async disburse(txHash, sender, amount) {
+          const { repayer, settlementAccount } = this.state;
+          const received = AmountMath.make(USDC, amount);
+          const { zcfSeat: settlingSeat } = zcf.makeEmptySeatKit();
+          const { calculateSplit } = makeFeeTools(feeConfig);
+          const split = calculateSplit(received);
+          trace('disbursing', split);
 
-        const dest = chainHub.makeChainAddress(EUD);
+          // TODO: what if this throws?
+          // arguably, it cannot. Even if deposits
+          // and notifications get out of order,
+          // we don't ever withdraw more than has been deposited.
+          await vowTools.when(
+            withdrawToSeat(
+              // @ts-expect-error Vow vs. Promise stuff. TODO: is this OK???
+              settlementAccount,
+              settlingSeat,
+              harden({ In: received }),
+            ),
+          );
+          zcf.atomicRearrange(
+            harden([[settlingSeat, settlingSeat, { In: received }, split]]),
+          );
+          repayer.repay(settlingSeat, split);
 
-        const txfrV = E(settlementAccount).transfer(
-          dest,
-          AmountMath.make(USDC, amount),
-        );
-        await vowTools.when(txfrV); // TODO: watch, handle failure
+          // update status manager, marking tx `SETTLED`
+          statusManager.disbursed(txHash, sender, amount);
+        },
+        /**
+         * @param {EvmHash | undefined} txHash
+         * @param {NobleAddress} sender
+         * @param {NatValue} amount
+         * @param {string} EUD
+         */
+        async forward(txHash, sender, amount, EUD) {
+          const { settlementAccount } = this.state;
 
-        statusManager.forwarded(txHash, sender, amount);
+          const dest = chainHub.makeChainAddress(EUD);
+
+          const txfrV = E(settlementAccount).transfer(
+            dest,
+            AmountMath.make(USDC, amount),
+          );
+          await vowTools.when(txfrV); // TODO: watch, handle failure
+
+          statusManager.forwarded(txHash, sender, amount);
+        },
       },
     },
     {
@@ -224,3 +247,8 @@ export const prepareSettler = (
   );
 };
 harden(prepareSettler);
+
+/**
+ * XXX consider using pickFacet (do we have pickFacets?)
+ * @typedef {ReturnType<ReturnType<typeof prepareSettler>>} SettlerKit
+ */
