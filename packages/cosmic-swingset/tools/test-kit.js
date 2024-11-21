@@ -35,6 +35,7 @@ const stripUndefined = obj =>
     Object.entries(obj).filter(([_key, value]) => value !== undefined),
   );
 
+/** @type {InitMsg} */
 export const defaultInitMessage = harden(
   makeInitMsg({
     type: SwingsetMessageType.AG_COSMOS_INIT,
@@ -59,6 +60,7 @@ export const defaultInitMessage = harden(
     ),
   }),
 );
+/** @type {InitMsg} */
 export const defaultBootstrapMessage = harden({
   ...deepCopyJsonable(defaultInitMessage),
   blockHeight: 1,

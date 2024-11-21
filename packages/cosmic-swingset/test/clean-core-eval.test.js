@@ -5,6 +5,8 @@ import {
 } from '../scripts/clean-core-eval.js';
 
 test('defangEvaluableCode is working', t => {
+  /** @typedef {import('ava').ThrowsExpectation<Error>} EvaluationExpectation */
+  /** @type {Array<[string, string?, EvaluationExpectation?, EvaluationExpectation?]>} */
   const samples = [
     [''],
     [

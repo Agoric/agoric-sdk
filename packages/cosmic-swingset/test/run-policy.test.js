@@ -15,6 +15,7 @@ import {
   makeVatCleanupBudgetFromKeywords,
 } from '../src/sim-params.js';
 
+/** @import { ManagerType, SwingSetConfig } from '@agoric/swingset-vat' */
 /** @import { KVStore } from '../src/helpers/bufferedStorage.js' */
 
 /**
@@ -59,6 +60,7 @@ test('cleanup work must be limited by vat_cleanup_budget', async t => {
     bundles: makeSourceDescriptors({
       puppet: '@agoric/swingset-vat/tools/vat-puppet.js',
     }),
+    /** @type {Partial<SwingSetConfig>} */
     configOverrides: {
       // Aggressive GC.
       defaultReapInterval: 1,
