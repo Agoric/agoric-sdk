@@ -80,17 +80,31 @@ const makeTestContext = async t => {
     remoteDenom: 'uusdc',
   });
 
-  const simulateAdvance = (evidence?: CctpTxEvidence) => {
-    const cctpTxEvidence: CctpTxEvidence = {
-      ...MockCctpTxEvidences.AGORIC_PLUS_OSMO(),
-      ...evidence,
-    };
-    t.log('Mock CCTP Evidence:', cctpTxEvidence);
-    t.log('Pretend we initiated advance, mark as `ADVANCED`');
-    statusManager.advance(cctpTxEvidence);
+  const simulate = harden({
+    advance: (evidence?: CctpTxEvidence) => {
+      const cctpTxEvidence: CctpTxEvidence = {
+        ...MockCctpTxEvidences.AGORIC_PLUS_OSMO(),
+        ...evidence,
+      };
+      t.log('Mock CCTP Evidence:', cctpTxEvidence);
+      t.log('Pretend we initiated advance, mark as `ADVANCED`');
+      statusManager.advance(cctpTxEvidence);
 
-    return cctpTxEvidence;
-  };
+      return cctpTxEvidence;
+    },
+
+    observe: (evidence?: CctpTxEvidence) => {
+      const cctpTxEvidence: CctpTxEvidence = {
+        ...MockCctpTxEvidences.AGORIC_PLUS_OSMO(),
+        ...evidence,
+      };
+      t.log('Mock CCTP Evidence:', cctpTxEvidence);
+      t.log('Pretend we `OBSERVED`');
+      statusManager.observe(cctpTxEvidence);
+
+      return cctpTxEvidence;
+    },
+  });
 
   const repayer = zone.exo('Repayer Mock', undefined, {
     repay(fromSeat: ZCFSeat, amounts: AmountKeywordRecord) {
@@ -103,7 +117,7 @@ const makeTestContext = async t => {
     makeSettler,
     statusManager,
     defaultSettlerParams,
-    simulateAdvance,
+    simulate,
     repayer,
     peekCalls: () => harden([...callLog]),
     accounts: mockAccounts,
@@ -121,7 +135,7 @@ test('happy path: disburse to LPs; StatusManager removes tx', async t => {
     statusManager,
     defaultSettlerParams,
     repayer,
-    simulateAdvance,
+    simulate,
     accounts,
     peekCalls,
   } = t.context;
@@ -134,7 +148,7 @@ test('happy path: disburse to LPs; StatusManager removes tx', async t => {
     ...defaultSettlerParams,
   });
 
-  const cctpTxEvidence = simulateAdvance();
+  const cctpTxEvidence = simulate.advance();
   t.deepEqual(
     statusManager.lookupPending(
       cctpTxEvidence.tx.forwardingAddress,

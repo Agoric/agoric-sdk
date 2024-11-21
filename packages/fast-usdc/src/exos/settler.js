@@ -72,10 +72,15 @@ export const prepareSettler = (
           // only interested in packets from the issuing chain
           return;
         }
+
         // TODO: why is it safe to cast this without a runtime check?
         const tx = /** @type {FungibleTokenPacketData} */ (
           JSON.parse(atob(event.packet.data))
         );
+
+        // given the sourceChannel check, we can be certain of this cast
+        const sender = /** @type {NobleAddress} */ (tx.sender);
+
         if (tx.denom !== this.state.remoteDenom) {
           // only interested in uusdc
           return;
@@ -94,13 +99,7 @@ export const prepareSettler = (
 
         const amountInt = BigInt(tx.amount); // TODO: what if this throws?
 
-        // TODO discern between SETTLED and OBSERVED; each has different fees/destinations
-        const hasPendingSettlement = statusManager.hasPendingSettlement(
-          // given the sourceChannel check, we can be certain of this cast
-          /** @type {NobleAddress} */ (tx.sender),
-          amountInt,
-        );
-        if (!hasPendingSettlement) {
+        if (!statusManager.hasPendingSettlement(sender, amountInt)) {
           // TODO FAILURE PATH -> put money in recovery account or .transfer to receiver
           // TODO should we have an ORPHANED TxStatus for this?
           throw makeError(
