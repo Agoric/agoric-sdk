@@ -1,13 +1,13 @@
 import { AmountMath } from '@agoric/ertp';
 import { assertAllDefined, makeTracer } from '@agoric/internal';
 import { atob } from '@endo/base64';
-import { makeError, q } from '@endo/errors';
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
 
 import { PendingTxStatus } from '../constants.js';
 import { addressTools } from '../utils/address.js';
 import { makeFeeTools } from '../utils/fees.js';
+import { EvmHashShape } from '../type-guards.js';
 
 /**
  * @import {FungibleTokenPacketData} from '@agoric/cosmic-proto/ibc/applications/transfer/v2/packet.js';
@@ -17,11 +17,20 @@ import { makeFeeTools } from '../utils/fees.js';
  * @import {Zone} from '@agoric/zone';
  * @import {HostOf, HostInterface} from '@agoric/async-flow';
  * @import {TargetRegistration} from '@agoric/vats/src/bridge-target.js';
- * @import {NobleAddress, LiquidityPoolKit, FeeConfig} from '../types.js';
+ * @import {NobleAddress, LiquidityPoolKit, FeeConfig, EvmHash} from '../types.js';
  * @import {StatusManager} from './status-manager.js';
  */
 
 const trace = makeTracer('Settler');
+
+/**
+ * NOTE: not meant to be parsable.
+ *
+ * @param {NobleAddress} addr
+ * @param {bigint} amount
+ */
+const makeMintedEarlyKey = (addr, amount) =>
+  `pendingTx:${JSON.stringify([addr, String(amount)])}`;
 
 /**
  * @param {Zone} zone
@@ -42,9 +51,11 @@ export const prepareSettler = (
   return zone.exoClass(
     'Fast USDC Settler',
     M.interface('SettlerI', {
-      monitorTransfers: M.callWhen().returns(M.any()),
+      monitorMintingDeposits: M.callWhen().returns(M.any()),
       receiveUpcall: M.call(M.record()).returns(M.promise()),
-      settleSansFees: M.call(M.string(), M.string(), M.nat()).returns(
+      notifyAdvancingResult: M.call(M.string(), M.nat(), M.boolean()).returns(),
+      disburse: M.call(EvmHashShape, M.string(), M.nat()).returns(M.promise()),
+      forward: M.call(EvmHashShape, M.string(), M.nat(), M.string()).returns(
         M.promise(),
       ),
     }),
@@ -61,14 +72,17 @@ export const prepareSettler = (
         ...config,
         /** @type {HostInterface<TargetRegistration>|undefined} */
         registration: undefined,
+        /** @type {SetStore<ReturnType<typeof makeMintedEarlyKey>>} */
+        mintedEarly: zone.detached().setStore('mintedEarly'),
       };
     },
     {
-      async monitorTransfers() {
+      async monitorMintingDeposits() {
         const { settlementAccount } = this.state;
         const registration = await vowTools.when(
           settlementAccount.monitorTransfers(this.self),
         );
+        assert.typeof(registration, 'object');
         this.state.registration = registration;
       },
       /** @param {VTransferIBCEvent} event */
@@ -103,29 +117,59 @@ export const prepareSettler = (
           return;
         }
 
-        const amountInt = BigInt(tx.amount); // TODO: what if this throws?
+        const amount = BigInt(tx.amount); // TODO: what if this throws?
 
-        if (!statusManager.hasPendingSettlement(sender, amountInt)) {
-          // TODO FAILURE PATH -> put money in recovery account or .transfer to receiver
-          // TODO should we have an ORPHANED TxStatus for this?
-          throw makeError(
-            `🚨 No pending settlement found for ${q(tx.sender)} ${q(tx.amount)}`,
-          );
+        const found = statusManager.dequeueStatus(sender, amount);
+        switch (found?.status) {
+          case undefined:
+          case PendingTxStatus.Observed:
+            return this.self.forward(found?.txHash, sender, amount, EUD);
+
+          case PendingTxStatus.Advancing:
+            this.state.mintedEarly.add(makeMintedEarlyKey(sender, amount));
+            return;
+
+          case PendingTxStatus.Advanced:
+            return this.self.disburse(found.txHash, sender, amount);
+
+          default:
+            throw Error('TODO: think harder');
         }
-
-        const pending = statusManager.lookupPending(sender, amountInt);
-        if (pending.find(it => it.status === PendingTxStatus.Observed)) {
-          return this.self.settleSansFees(sender, EUD, amountInt);
+      },
+      /**
+       * @param {EvmHash} txHash
+       * @param {NobleAddress} sender
+       * @param {NatValue} amount
+       * @param {string} EUD
+       * @param {boolean} success
+       * @returns {void}
+       */
+      notifyAdvancingResult(txHash, sender, amount, EUD, success) {
+        const { mintedEarly } = this.state;
+        const key = makeMintedEarlyKey(sender, amount);
+        if (mintedEarly.has(key)) {
+          mintedEarly.delete(key);
+          if (success) {
+            void this.self.disburse(txHash, sender, amount);
+          } else {
+            void this.self.forward(txHash, sender, amount, EUD);
+          }
+        } else {
+          statusManager.advanceOutcome(sender, amount, success);
         }
-
-        // Disperse funds
-
+      },
+      /**
+       * @param {EvmHash} txHash
+       * @param {NobleAddress} sender
+       * @param {NatValue} amount
+       */
+      async disburse(txHash, sender, amount) {
         const { repayer, settlementAccount } = this.state;
-        const received = AmountMath.make(USDC, amountInt);
+        const received = AmountMath.make(USDC, amount);
         const { zcfSeat: settlingSeat } = zcf.makeEmptySeatKit();
         const { calculateSplit } = makeFeeTools(feeConfig);
         const split = calculateSplit(received);
-        trace('dispersing', split);
+        trace('disbursing', split);
 
         // TODO: what if this throws?
         // arguably, it cannot. Even if deposits
@@ -133,6 +177,7 @@ export const prepareSettler = (
         // we don't ever withdraw more than has been deposited.
         await vowTools.when(
           withdrawToSeat(
+            // @ts-expect-error Vow vs. Promise stuff. TODO: is this OK???
             settlementAccount,
             settlingSeat,
             harden({ In: received }),
@@ -144,25 +189,26 @@ export const prepareSettler = (
         repayer.repay(settlingSeat, split);
 
         // update status manager, marking tx `SETTLED`
-        statusManager.settle(sender, amountInt);
+        statusManager.disbursed(txHash, sender, amount);
       },
       /**
+       * @param {EvmHash | undefined} txHash
        * @param {NobleAddress} sender
+       * @param {NatValue} amount
        * @param {string} EUD
-       * @param {bigint} amountInt
        */
-      async settleSansFees(sender, EUD, amountInt) {
+      async forward(txHash, sender, amount, EUD) {
         const { settlementAccount } = this.state;
 
         const dest = chainHub.makeChainAddress(EUD);
 
         const txfrV = E(settlementAccount).transfer(
           dest,
-          AmountMath.make(USDC, amountInt),
+          AmountMath.make(USDC, amount),
         );
         await vowTools.when(txfrV); // TODO: watch, handle failure
 
-        statusManager.settle(sender, amountInt);
+        statusManager.forwarded(txHash, sender, amount);
       },
     },
     {
@@ -172,6 +218,7 @@ export const prepareSettler = (
         registration: M.or(M.undefined(), M.remotable('Registration')),
         sourceChannel: M.string(),
         remoteDenom: M.string(),
+        mintedEarly: M.remotable('mintedEarly'),
       }),
     },
   );

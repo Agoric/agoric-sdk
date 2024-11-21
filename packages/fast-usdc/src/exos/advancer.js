@@ -146,7 +146,7 @@ export const prepareAdvancerKit = (
             try {
               // Mark as Advanced since `transferV` initiates the advance.
               // Will throw if we've already .skipped or .advanced this evidence.
-              statusManager.advance(evidence);
+              statusManager.advancing(evidence);
             } catch (e) {
               // Only anticipated error is `assertNotSeen`, so intercept the
               // catch so we don't call .skip which also performs this check

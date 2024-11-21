@@ -92,7 +92,9 @@ const makeTestContext = async t => {
       };
       t.log('Mock CCTP Evidence:', cctpTxEvidence);
       t.log('Pretend we initiated advance, mark as `ADVANCED`');
-      statusManager.advance(cctpTxEvidence);
+      statusManager.advancing(cctpTxEvidence);
+      const { forwardingAddress, amount } = cctpTxEvidence.tx;
+      statusManager.advanceOutcome(forwardingAddress, BigInt(amount), true);
 
       return cctpTxEvidence;
     },
@@ -222,7 +224,7 @@ test('happy path: disburse to LPs; StatusManager removes tx', async t => {
   // TODO, confirm vstorage write for TxStatus.SETTLED
 });
 
-test('slow path: disburse to LPs; StatusManager removes tx', async t => {
+test('slow path: forward to EUD; remove pending tx', async t => {
   const {
     common,
     makeSettler,
@@ -234,7 +236,6 @@ test('slow path: disburse to LPs; StatusManager removes tx', async t => {
     peekCalls,
   } = t.context;
   const { usdc } = common.brands;
-  const { feeConfig } = common.commonPrivateArgs;
 
   const settler = makeSettler({
     repayer,

@@ -10,7 +10,7 @@ test('advance creates new entry with ADVANCED status', t => {
   const statusManager = prepareStatusManager(zone.subZone('status-manager'));
 
   const evidence = MockCctpTxEvidences.AGORIC_PLUS_OSMO();
-  statusManager.advance(evidence);
+  statusManager.advancing(evidence);
 
   const entries = statusManager.lookupPending(
     evidence.tx.forwardingAddress,
@@ -42,9 +42,9 @@ test('cannot process same tx twice', t => {
   const statusManager = prepareStatusManager(zone.subZone('status-manager'));
 
   const evidence = MockCctpTxEvidences.AGORIC_PLUS_OSMO();
-  statusManager.advance(evidence);
+  statusManager.advancing(evidence);
 
-  t.throws(() => statusManager.advance(evidence), {
+  t.throws(() => statusManager.advancing(evidence), {
     message:
       'Transaction already seen: "seenTx:[\\"0xc81bc6105b60a234c7c50ac17816ebcd5561d366df8bf3be59ff387552761702\\",1]"',
   });
@@ -55,9 +55,11 @@ test('cannot process same tx twice', t => {
   });
 
   // new txHash should not throw
-  t.notThrows(() => statusManager.advance({ ...evidence, txHash: '0xtest2' }));
+  t.notThrows(() =>
+    statusManager.advancing({ ...evidence, txHash: '0xtest2' }),
+  );
   // new chainId with existing txHash should not throw
-  t.notThrows(() => statusManager.advance({ ...evidence, chainId: 9999 }));
+  t.notThrows(() => statusManager.advancing({ ...evidence, chainId: 9999 }));
 });
 
 test('settle removes entries from PendingTxs', t => {
@@ -65,7 +67,7 @@ test('settle removes entries from PendingTxs', t => {
   const statusManager = prepareStatusManager(zone.subZone('status-manager'));
 
   const evidence = MockCctpTxEvidences.AGORIC_PLUS_OSMO();
-  statusManager.advance(evidence);
+  statusManager.advancing(evidence);
   statusManager.observe({ ...evidence, txHash: '0xtest1' });
 
   statusManager.settle(evidence.tx.forwardingAddress, evidence.tx.amount);
@@ -101,8 +103,8 @@ test('settle SETTLES first matched entry', t => {
   const evidence = MockCctpTxEvidences.AGORIC_PLUS_OSMO();
 
   // advance two
-  statusManager.advance(evidence);
-  statusManager.advance({ ...evidence, txHash: '0xtest2' });
+  statusManager.advancing(evidence);
+  statusManager.advancing({ ...evidence, txHash: '0xtest2' });
   // also settles OBSERVED statuses
   statusManager.observe({ ...evidence, txHash: '0xtest3' });
 
@@ -163,7 +165,7 @@ test('StatusManagerKey logic handles addresses with hyphens', async t => {
   const evidence: CctpTxEvidence = MockCctpTxEvidences.AGORIC_PLUS_OSMO();
   evidence.tx.forwardingAddress = 'noble1-foo';
 
-  statusManager.advance(evidence);
+  statusManager.advancing(evidence);
 
   const entries = statusManager.lookupPending(
     evidence.tx.forwardingAddress,

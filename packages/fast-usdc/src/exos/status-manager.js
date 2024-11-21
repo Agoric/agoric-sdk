@@ -1,14 +1,18 @@
 import { M } from '@endo/patterns';
-import { makeError, q } from '@endo/errors';
+import { Fail, makeError, q } from '@endo/errors';
 
 import { appendToStoredArray } from '@agoric/store/src/stores/store-utils.js';
-import { CctpTxEvidenceShape, PendingTxShape } from '../type-guards.js';
+import {
+  CctpTxEvidenceShape,
+  EvmHashShape,
+  PendingTxShape,
+} from '../type-guards.js';
 import { PendingTxStatus } from '../constants.js';
 
 /**
  * @import {MapStore, SetStore} from '@agoric/store';
  * @import {Zone} from '@agoric/zone';
- * @import {CctpTxEvidence, NobleAddress, SeenTxKey, PendingTxKey, PendingTx} from '../types.js';
+ * @import {CctpTxEvidence, NobleAddress, SeenTxKey, PendingTxKey, PendingTx, EvmHash} from '../types.js';
  */
 
 /**
@@ -96,10 +100,20 @@ export const prepareStatusManager = zone => {
   return zone.exo(
     'Fast USDC Status Manager',
     M.interface('StatusManagerI', {
-      advance: M.call(CctpTxEvidenceShape).returns(M.undefined()),
+      advancing: M.call(CctpTxEvidenceShape).returns(M.undefined()),
+      advanceOutcome: M.call(M.string(), M.nat(), M.boolean()).returns(),
       observe: M.call(CctpTxEvidenceShape).returns(M.undefined()),
       hasPendingSettlement: M.call(M.string(), M.bigint()).returns(M.boolean()),
-      settle: M.call(M.string(), M.bigint()).returns(M.undefined()),
+      dequeueStatus: M.call(M.string(), M.bigint()).returns({
+        txHash: EvmHashShape,
+        status: M.string(), // TODO: named shape?
+      }),
+      disbursed: M.call(EvmHashShape, M.string(), M.nat()).returns(
+        M.undefined(),
+      ),
+      forwarded: M.call(M.opt(EvmHashShape), M.string(), M.nat()).returns(
+        M.undefined(),
+      ),
       lookupPending: M.call(M.string(), M.bigint()).returns(
         M.arrayOf(PendingTxShape),
       ),
@@ -109,8 +123,32 @@ export const prepareStatusManager = zone => {
        * Add a new transaction with ADVANCED status
        * @param {CctpTxEvidence} evidence
        */
-      advance(evidence) {
-        recordPendingTx(evidence, PendingTxStatus.Advanced);
+      advancing(evidence) {
+        recordPendingTx(evidence, PendingTxStatus.Advancing);
+      },
+
+      /**
+       * @param {NobleAddress} sender
+       * @param {import('@agoric/ertp').NatValue} amount
+       * @param {boolean} success
+       */
+      advanceOutcome(sender, amount, success) {
+        const key = makePendingTxKey(sender, amount);
+        const pending = pendingTxs.get(key);
+        const ix = pending.findIndex(
+          tx => tx.status === PendingTxStatus.Advancing,
+        );
+        ix >= 0 || Fail`no advancing tx with ${{ sender, amount }}`;
+        const [pre, tx, post] = [
+          pending.slice(0, ix),
+          pending[ix],
+          pending.slice(ix + 1),
+        ];
+        const status = success
+          ? PendingTxStatus.Advanced
+          : PendingTxStatus.AdvanceFailed;
+        const txpost = { ...tx, status };
+        pendingTxs.set(key, harden([...pre, txpost, ...post]));
       },
 
       /**
@@ -135,23 +173,48 @@ export const prepareStatusManager = zone => {
       },
 
       /**
-       * Mark an `ADVANCED` or `OBSERVED` transaction as `SETTLED` and remove it
+       * Remove and return an `ADVANCED` or `OBSERVED` tx waiting to be `SETTLED`.
        *
        * @param {NobleAddress} address
        * @param {bigint} amount
        */
-      settle(address, amount) {
+      dequeueStatus(address, amount) {
         const key = makePendingTxKey(address, amount);
         const pending = pendingTxs.get(key);
 
         if (!pending.length) {
-          throw makeError(`No unsettled entry for ${q(key)}`);
+          return undefined;
         }
 
-        const pendingCopy = [...pending];
-        pendingCopy.shift();
-        // TODO, vstorage update for `TxStatus.Settled`
-        pendingTxs.set(key, harden(pendingCopy));
+        const [tx0, ...rest] = pending;
+        pendingTxs.set(key, harden(rest));
+        const { status, txHash } = tx0;
+        // TODO: store txHash -> evidence for txs pending settlement?
+        return harden({ status, txHash });
+      },
+
+      /**
+       * Mark a transaction as `DISBURSED`
+       *
+       * @param {EvmHash} txHash
+       * @param {NobleAddress} address
+       * @param {bigint} amount
+       */
+      disbursed(txHash, address, amount) {
+        // TODO: store txHash -> evidence for txs pending settlement?
+        console.log('TODO: vstorage update', { txHash, address, amount });
+      },
+
+      /**
+       * Mark a transaction as `FORWARDED`
+       *
+       * @param {EvmHash | undefined} txHash - undefined in case mint before observed
+       * @param {NobleAddress} address
+       * @param {bigint} amount
+       */
+      forwarded(txHash, address, amount) {
+        // TODO: store txHash -> evidence for txs pending settlement?
+        console.log('TODO: vstorage update', { txHash, address, amount });
       },
 
       /**
