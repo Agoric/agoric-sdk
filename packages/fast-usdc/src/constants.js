@@ -7,9 +7,17 @@ export const TxStatus = /** @type {const} */ ({
   /** tx was observed but not advanced */
   Observed: 'OBSERVED',
   /** IBC transfer is initiated */
+  Advancing: 'ADVANCING',
+  /** IBC transfer is complete */
   Advanced: 'ADVANCED',
-  /** settlement for matching advance received and funds dispersed */
-  Settled: 'SETTLED',
+  /** IBC transfer failed (timed out) */
+  AdvanceFailed: 'ADVANCE_FAILED',
+  /** settlement for matching advance received and funds disbursed */
+  Disbursed: 'DISBURSED',
+  /** fallback: do not collect fees */
+  Forwarded: 'FORWARDED',
+  /** failed to forward to EUD */
+  ForwardFailed: 'FORWARD_FAILED',
 });
 harden(TxStatus);
 
@@ -22,6 +30,10 @@ export const PendingTxStatus = /** @type {const} */ ({
   /** tx was observed but not advanced */
   Observed: 'OBSERVED',
   /** IBC transfer is initiated */
+  Advancing: 'ADVANCING',
+  /** IBC transfer failed (timed out) */
+  AdvanceFailed: 'ADVANCE_FAILED',
+  /** IBC transfer is complete */
   Advanced: 'ADVANCED',
 });
 harden(PendingTxStatus);
