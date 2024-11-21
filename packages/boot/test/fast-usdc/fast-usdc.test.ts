@@ -37,29 +37,17 @@ test.serial(
       walletFactoryDriver: wd,
     } = t.context;
 
-    const watcherWallet = await wd.provideSmartWallet('agoric1watcher1');
+    const [watcherWallet] = await Promise.all([
+      wd.provideSmartWallet('agoric144rrhh4m09mh7aaffhm6xy223ym76gve2x7y78'),
+      wd.provideSmartWallet('agoric19d6gnr9fyp6hev4tlrg87zjrzsd5gzr5qlfq2p'),
+      wd.provideSmartWallet('agoric19uscwxdac6cf6z7d5e26e0jm0lgwstc47cpll8'),
+      wd.provideSmartWallet('agoric1krunjcqfrf7la48zrvdfeeqtls5r00ep68mzkr'),
+      wd.provideSmartWallet('agoric1n4fcxsnkxe4gj6e24naec99hzmc4pjfdccy5nj'),
+    ]);
 
     const materials = buildProposal(
       '@agoric/builders/scripts/fast-usdc/init-fast-usdc.js',
-      [
-        '--oracle',
-        'a:agoric1watcher1',
-        '--feedPolicy',
-        JSON.stringify({
-          nobleAgoricChannelId: 'channel-21',
-          nobleDomainId: 4,
-          chainPolicies: {
-            Arbitrum: {
-              cctpTokenMessengerAddress:
-                '0x19330d10D9Cc8751218eaf51E8885D058642E08A',
-              chainId: 42161,
-              confirmations: 1,
-              nobleContractAddress:
-                '0x19330d10D9Cc8751218eaf51E8885D058642E08A',
-            },
-          },
-        }),
-      ],
+      ['--net', 'MAINNET'],
     );
     await evalProposal(materials);
 

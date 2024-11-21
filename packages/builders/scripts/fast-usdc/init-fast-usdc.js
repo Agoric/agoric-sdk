@@ -22,7 +22,7 @@ import { parseArgs } from 'node:util';
 const { keys } = Object;
 
 /**
- * @type {Record<string, Pick<FastUSDCConfig, 'oracles'>>}
+ * @type {Record<string, Pick<FastUSDCConfig, 'oracles' | 'feedPolicy'>>}
  *
  * TODO: determine OCW operator addresses
  * meanwhile, use price oracle addresses (from updatePriceFeeds.js).
@@ -34,6 +34,19 @@ const configurations = {
       gov2: 'agoric1wrfh296eu2z34p6pah7q04jjuyj3mxu9v98277',
       gov3: 'agoric1ydzxwh6f893jvpaslmaz6l8j2ulup9a7x8qvvq',
     },
+    feedPolicy: {
+      nobleAgoricChannelId: 'TODO',
+      nobleDomainId: 4,
+      chainPolicies: {
+        Arbitrum: {
+          cctpTokenMessengerAddress:
+            '0x19330d10D9Cc8751218eaf51E8885D058642E08A',
+          chainId: 42161,
+          confirmations: 2,
+          nobleContractAddress: '0x19330d10D9Cc8751218eaf51E8885D058642E08A',
+        },
+      },
+    },
   },
   MAINNET: {
     oracles: {
@@ -42,6 +55,19 @@ const configurations = {
       '01node': 'agoric19uscwxdac6cf6z7d5e26e0jm0lgwstc47cpll8',
       'Simply Staking': 'agoric1krunjcqfrf7la48zrvdfeeqtls5r00ep68mzkr',
       P2P: 'agoric1n4fcxsnkxe4gj6e24naec99hzmc4pjfdccy5nj',
+    },
+    feedPolicy: {
+      nobleAgoricChannelId: 'channel-21',
+      nobleDomainId: 4,
+      chainPolicies: {
+        Arbitrum: {
+          cctpTokenMessengerAddress:
+            '0x19330d10D9Cc8751218eaf51E8885D058642E08A',
+          chainId: 42161,
+          confirmations: 2,
+          nobleContractAddress: '0x19330d10D9Cc8751218eaf51E8885D058642E08A',
+        },
+      },
     },
   },
   DEVNET: {
@@ -52,11 +78,35 @@ const configurations = {
       'Simply Staking': 'agoric1qj07c7vfk3knqdral0sej7fa6eavkdn8vd8etf',
       P2P: 'agoric10vjkvkmpp9e356xeh6qqlhrny2htyzp8hf88fk',
     },
+    feedPolicy: {
+      nobleAgoricChannelId: 'TODO',
+      nobleDomainId: 4,
+      chainPolicies: {
+        Arbitrum: {
+          cctpTokenMessengerAddress: '0xTODO',
+          chainId: 421614,
+          confirmations: 2,
+          nobleContractAddress: '0xTODO',
+        },
+      },
+    },
   },
   EMERYNET: {
     oracles: {
       gov1: 'agoric1ldmtatp24qlllgxmrsjzcpe20fvlkp448zcuce',
       gov2: 'agoric140dmkrz2e42ergjj7gyvejhzmjzurvqeq82ang',
+    },
+    feedPolicy: {
+      nobleAgoricChannelId: 'TODO',
+      nobleDomainId: 4,
+      chainPolicies: {
+        Arbitrum: {
+          cctpTokenMessengerAddress: '0xTODO',
+          chainId: 421614,
+          confirmations: 2,
+          nobleContractAddress: '0xTODO',
+        },
+      },
     },
   },
 };
@@ -67,14 +117,13 @@ const options = {
   variableRate: { type: 'string', default: '0.01' },
   maxVariableFee: { type: 'string', default: '5' },
   contractRate: { type: 'string', default: '0.2' },
-  oracleSet: { type: 'string' },
+  net: { type: 'string' },
   oracle: { type: 'string', multiple: true },
   usdcDenom: {
     type: 'string',
     default:
       'ibc/FE98AAD68F02F03565E9FA39A5E627946699B2B07115889ED812D8BA639576A9',
   },
-  feedPolicy: { type: 'string' },
 };
 const oraclesUsage = 'use --oracle name:address ...';
 
@@ -86,7 +135,7 @@ const feedPolicyUsage = 'use --feedPolicy <policy> ...';
  *   variableRate: string;
  *   maxVariableFee: string;
  *   contractRate: string;
- *   oracleSet?: string;
+ *   net?: string;
  *   oracle?: string[];
  *   usdcDenom: string;
  *   feedPolicy?: string;
@@ -131,17 +180,26 @@ export default async (homeP, endowments) => {
   /** @type {{ values: FastUSDCOpts }} */
   // @ts-expect-error ensured by options
   const {
-    values: { oracle: oracleArgs, oracleSet, usdcDenom, feedPolicy, ...fees },
+    values: { oracle: oracleArgs, net, usdcDenom, feedPolicy, ...fees },
   } = parseArgs({ args: scriptArgs, options });
 
-  if (!feedPolicy) throw Error(feedPolicyUsage);
+  const parseFeedPolicy = () => {
+    if (net) {
+      if (!(net in configurations)) {
+        throw Error(`${net} not in ${keys(configurations)}`);
+      }
+      return configurations[net].feedPolicy;
+    }
+    if (!feedPolicy) throw Error(feedPolicyUsage);
+    return JSON.parse(feedPolicy);
+  };
 
   const parseOracleArgs = () => {
-    if (oracleSet) {
-      if (!(oracleSet in configurations)) {
-        throw Error(`${oracleSet} not in ${keys(configurations)}`);
+    if (net) {
+      if (!(net in configurations)) {
+        throw Error(`${net} not in ${keys(configurations)}`);
       }
-      return configurations[oracleSet].oracles;
+      return configurations[net].oracles;
     }
     if (!oracleArgs) throw Error(oraclesUsage);
     return Object.fromEntries(
@@ -175,7 +233,7 @@ export default async (homeP, endowments) => {
       usdcDenom,
     },
     feeConfig: parseFeeConfigArgs(),
-    feedPolicy: JSON.parse(feedPolicy),
+    feedPolicy: parseFeedPolicy(),
   });
 
   await writeCoreEval('start-fast-usdc', utils =>
