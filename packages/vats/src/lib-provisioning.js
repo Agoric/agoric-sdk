@@ -1,17 +1,23 @@
-import { prepareExoClass } from '@agoric/vat-data';
 import { Fail } from '@endo/errors';
 import { E } from '@endo/far';
-import { BridgeHandlerI } from './bridge.js';
+import { getInterfaceGuardPayload } from '@endo/patterns';
+import { M } from '@agoric/store';
 import { PowerFlags } from './walletFlags.js';
+import { makeDurableZone } from '@agoric/zone/durable.js';
+import { BridgeHandlerI } from './bridge.js';
+
+const BridgeHandlerAdjustedI = M.interface('BridgeHandlerTest', {
+  ...getInterfaceGuardPayload(BridgeHandlerI).methodGuards
+});
 
 /**
  * @param {import('@agoric/store').MapStore} baggage
  */
 export const prepareProvisionBridgeHandler = baggage => {
-  const makeProvisionBridgeHandler = prepareExoClass(
-    baggage,
-    'provisioningHandler',
-    BridgeHandlerI,
+  const zone = makeDurableZone(baggage);
+  const makeProvisionBridgeHandler = zone.exoClass(
+    'provisioningHandlerDurable',
+    BridgeHandlerAdjustedI,
     (provisioning, provisionWalletBridgeManager) => ({
       provisioning,
       provisionWalletBridgeManager,
@@ -19,7 +25,7 @@ export const prepareProvisionBridgeHandler = baggage => {
     {
       async fromBridge(obj) {
         const { provisionWalletBridgeManager, provisioning } = this.state;
-        switch (obj.type) {
+        switch (obj && obj.type) {
           case 'PLEASE_PROVISION': {
             const { nickname, address, powerFlags: rawPowerFlags } = obj;
             const powerFlags = rawPowerFlags || [];

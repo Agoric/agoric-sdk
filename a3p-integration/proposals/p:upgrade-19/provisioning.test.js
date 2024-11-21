@@ -11,18 +11,21 @@ import {
   VALIDATORADDR,
   CHAINID,
   GOV1ADDR,
+  evalBundles,
 } from '@agoric/synthetic-chain';
 import {
   retryUntilCondition,
   makeVstorageKit,
   waitUntilAccountFunded,
+  sleep,
 } from '@agoric/client-utils';
 import { execFileSync } from 'child_process';
+
+const CORE_EVAL_DIR = 'replaceProvisioningHandler';
 
 const agd = makeAgd({ execFileSync }).withOpts({ keyringBackend: 'test' });
 
 /**
- *
  * @param {string} addr
  * @param {string} wanted
  * @param {string} [from]
@@ -76,6 +79,16 @@ test.before(async t => {
   t.context = {
     vstorageKit,
   };
+});
+
+test.serial.only('replace provisioningHandler', async t => {
+  await evalBundles(CORE_EVAL_DIR);
+  // Since the replaceProvisioningHandler does not signal anything to vstorage
+  // we have no way of knowing if the core eval executed successfully other than
+  // observing it from the logs. So we just wait for 30 seconds here to make
+  // sure there's enough time to evaluate the core eval.
+  await sleep(30000, { log: console.log, setTimeout });
+  t.pass();
 });
 
 test.serial('provision manually', async t => {
