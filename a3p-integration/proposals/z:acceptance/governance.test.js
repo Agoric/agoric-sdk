@@ -3,7 +3,7 @@
 import test from 'ava';
 
 import { makeWalletUtils } from '@agoric/client-utils';
-import { GOV1ADDR, GOV2ADDR } from '@agoric/synthetic-chain';
+import { evalBundles, getDetailsMatchingVats, GOV1ADDR, GOV2ADDR, waitForBlock } from '@agoric/synthetic-chain';
 import { makeGovernanceDriver } from './test-lib/governance.js';
 import { networkConfig } from './test-lib/index.js';
 import { makeTimerUtils } from './test-lib/utils.js';
@@ -106,3 +106,16 @@ test.serial(
     t.like(latestOutcome, { outcome: 'win' });
   },
 );
+
+test.only('dummy Reserve', async t => {
+
+  console.log('Log: Before ', await getDetailsMatchingVats('reserve'));
+
+  await evalBundles('upgrade-reserve');
+
+  await waitForBlock(10);
+
+  console.log('Log: After ', await getDetailsMatchingVats('reserve'));
+
+  t.pass();
+});
