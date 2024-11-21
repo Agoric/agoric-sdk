@@ -36,13 +36,19 @@ test('vow survives restart', async t => {
 
   t.log('confirm the value is not in offer results');
   let getterStatus = await retryUntilCondition(
+    /** @type {() => Promise<any>} */
     async () => walletUtils.readLatestHead(`published.wallet.${GETTER}`),
     value => value.status.id === 'get-value' && value.updated === 'offerStatus',
     'Offer get-value not succeeded',
-    { log: t.log, setTimeout, retryIntervalMs: 5000, maxRetries: 15 },
+    {
+      retryIntervalMs: 5000,
+      maxRetries: 15,
+      renderResult: status => inspect(status, { depth: 10 }),
+      log: t.log,
+      setTimeout,
+    },
   );
 
-  console.log('current: ', inspect(getterStatus, { depth: 10 }));
   t.like(getterStatus, {
     status: {
       id: 'get-value',

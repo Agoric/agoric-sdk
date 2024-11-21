@@ -229,6 +229,14 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
+      - name: update job environment
+        run: |
+          if [ ":$HOME" = : ]; then
+            # Keep the first two path components, e.g. /home/runner.
+            HOME="(pwd | sed -E 's#^(/[^/]+/[^/]+).*#\1#')"
+            echo "HOME=$HOME" >> "$GITHUB_ENV"
+          fi
+          echo "SLOGFILE=$HOME/test.slog" >> "$GITHUB_ENV"
       - name: free up disk space
         run: |
           # Workaround to provide additional free space for testing.
@@ -279,30 +287,28 @@ jobs:
       - name: run proposals tests
         run: yarn test
         working-directory: a3p-integration
-      - name: collect all core eval scripts
-        # Core eval scripts will be copied under /tmp/core_eval_scripts directory
-        # colons in the parent directory name will be replaced with dashes
+      - name: copy a3p-integration
+        if: (success() || failure())
         run: |
-          find . -type d -path "./a3p-integration/proposals/*/submission" | while read -r dir; do
-            # Get the parent directory name
-            parent_dir=$(basename "$(dirname "$dir")")
-            # Replace colons with dashes in the parent directory name
-            sanitized_parent_dir=${parent_dir//:/-}
-            # Create the destination directory under /tmp/core_eval_scripts if it doesn't exist
-            destination_dir="/tmp/core_eval_scripts/$sanitized_parent_dir"
-            mkdir -p "$destination_dir"
-            # Copy everything from the $dir to the destination directory
-            cp -r "$dir"/* "$destination_dir/"
-            echo "Copied contents of $dir to $destination_dir"
-          done
-      - name: archive core eval scripts
-        # The core eval scripts can be found at the bottom of `Summary` page of
-        # `Integration tests` workflow once the workflow is completed.
-        # Ref: https://github.com/actions/upload-artifact?tab=readme-ov-file#where-does-the-upload-go
+          dir='/tmp/export/a3p-integration'
+          rm -rf "$dir"
+          scripts/ci/export-a3p.sh a3p-integration "$dir"
+      # Artifacts can be found at the bottom of `Summary` page of
+      # `Integration tests` workflow once the workflow is completed.
+      # Ref: https://github.com/actions/upload-artifact?tab=readme-ov-file#where-does-the-upload-go
+      - name: archive a3p-integration
+        if: (success() || failure())
         uses: actions/upload-artifact@v4
         with:
-          name: core-eval-scripts
-          path: /tmp/core_eval_scripts
+          name: a3p-integration
+          path: /tmp/export/a3p-integration
+      - name: archive slogfile
+        if: (success() || failure())
+        uses: actions/upload-artifact@v4
+        with:
+          name: slogfile
+          path: ${{ env.SLOGFILE }}
+          retention-days: 10
       - name: notify on failure
         if: failure() && github.event_name != 'pull_request'
         uses: ./.github/actions/notify-status

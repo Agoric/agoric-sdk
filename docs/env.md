@@ -164,55 +164,6 @@ for the Prometheus scrape endpoint to export telemetry.
 
 Lifetime: until we decide not to support Prometheus for metrics export
 
-## SOLO_BRIDGE_TARGET
-
-Affects: solo
-
-This enables a proxy so that the solo bridge interface (/wallet-bridge.html) is backed by the smart wallet (/wallet/bridge.html). Dapps designed for the solo bridge can enable this until they connect to the smart wallet directly.
-
-```sh
-BRIDGE_TARGET=http://localhost:3001 make BASE_PORT=8002 scenario3-run
-```
-
-Lifetime: smart wallet transition period
-
-## SOLO_MNEMONIC
-
-Affects: solo init
-
-Seed phrase for HD key derivation.
-
-## SOLO_OTEL_EXPORTER_PROMETHEUS_PORT
-
-Affects: solo
-
-Same as `OTEL_EXPORTER_PROMETHEUS_PORT`, but for solo instead of chain.
-
-Lifetime: ?
-
-## SOLO_SLOGFILE
-
-Same as `SLOGFILE`, but for solo instead of chain.
-
-Lifetime: ?
-
-## SOLO_SLOGSENDER
-
-Same as `SLOGSENDER`, but for solo instead of chain.
-
-Lifetime: ?
-
-## SOLO_MAX_DEBUG_LENGTH
-
-Affects: solo
-
-Purpose: reduce the size of each individual `console.debug` output
-
-Description: defaults to no limit, set to a decimal byte count to reduce the
-output
-
-Lifetime: Until CI no longer balks on long output, or our source bundles aren't delivered via messages to the sim-chain
-
 ## SLOGFILE
 
 Affects: cosmic-swingset
@@ -264,6 +215,55 @@ validate during tests that complex slog senders like the otel converter do not
 have any unexpected errors.
 
 The default is `undefined`.
+
+## SOLO_BRIDGE_TARGET
+
+Affects: solo
+
+This enables a proxy so that the solo bridge interface (/wallet-bridge.html) is backed by the smart wallet (/wallet/bridge.html). Dapps designed for the solo bridge can enable this until they connect to the smart wallet directly.
+
+```sh
+BRIDGE_TARGET=http://localhost:3001 make BASE_PORT=8002 scenario3-run
+```
+
+Lifetime: smart wallet transition period
+
+## SOLO_MAX_DEBUG_LENGTH
+
+Affects: solo
+
+Purpose: reduce the size of each individual `console.debug` output
+
+Description: defaults to no limit, set to a decimal byte count to reduce the
+output
+
+Lifetime: Until CI no longer balks on long output, or our source bundles aren't delivered via messages to the sim-chain
+
+## SOLO_MNEMONIC
+
+Affects: solo init
+
+Seed phrase for HD key derivation.
+
+## SOLO_OTEL_EXPORTER_PROMETHEUS_PORT
+
+Affects: solo
+
+Same as `OTEL_EXPORTER_PROMETHEUS_PORT`, but for solo instead of chain.
+
+Lifetime: ?
+
+## SOLO_SLOGFILE
+
+Same as `SLOGFILE`, but for solo instead of chain.
+
+Lifetime: ?
+
+## SOLO_SLOGSENDER
+
+Same as `SLOGSENDER`, but for solo instead of chain.
+
+Lifetime: ?
 
 ## SWINGSET_WORKER_TYPE
 

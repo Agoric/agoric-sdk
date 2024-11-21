@@ -8,6 +8,7 @@ import {
   pushPrices,
 } from '@agoric/synthetic-chain';
 
+/** @type {(x: number) => bigint} */
 export const scale6 = x => BigInt(x * 1_000_000);
 
 /**
@@ -57,6 +58,6 @@ export const getPriceFeedRoundId = async brand => {
     prefix: '',
   });
 
-  console.log('latestRound: ', latestRound);
+  console.log(latestRoundPath, latestRound);
   return Number(latestRound.roundId);
 };

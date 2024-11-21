@@ -409,7 +409,6 @@ export function makeWalletRoot({
         Object.entries(pursePetnameValueKeywordRecord).map(
           ([keyword, { pursePetname, value, amount, purse }]) => {
             if (!amount) {
-              // eslint-disable-next-line no-use-before-define
               purse = getPurse(pursePetname);
               amount = { value };
             } else {
@@ -642,7 +641,6 @@ export function makeWalletRoot({
 
           // Now send it back to the purse.
           try {
-            // eslint-disable-next-line no-use-before-define
             return addPayment(payment, purse);
           } finally {
             // Once we've called addPayment, mark this one as done.
@@ -688,7 +686,6 @@ export function makeWalletRoot({
             // we still make it a normal incoming payment.
             const purseOrUndefined = purseKeywordRecord[keyword];
 
-            // eslint-disable-next-line no-use-before-define
             return addPayment(payoutP, purseOrUndefined);
           }),
         );
@@ -718,7 +715,6 @@ export function makeWalletRoot({
       const already = brandMapping.valToPetname.has(brand);
       petnameForBrand = brandMapping.suggestPetname(petnameForBrand, brand);
       if (!already && makePurse) {
-        // eslint-disable-next-line no-use-before-define
         p = makeEmptyPurse(petnameForBrand, petnameForBrand, true);
       } else {
         p = Promise.resolve(undefined);
@@ -821,7 +817,6 @@ export function makeWalletRoot({
     if (defaultAutoDeposit && !brandToAutoDepositPurse.has(brand)) {
       // Try to initialize the autodeposit purse for this brand.
       // Don't do state updates, since we'll do that next.
-      // eslint-disable-next-line no-use-before-define
       await doEnableAutoDeposit(petnameForPurse, false);
     }
 
@@ -943,7 +938,6 @@ export function makeWalletRoot({
       arguments: args,
     } = compileProposal(offer.proposalTemplate);
 
-    // eslint-disable-next-line no-use-before-define
     const zoeIssuer = issuerManager.get(ZOE_INVITE_BRAND_PETNAME);
     const { brand: invitationBrand } = brandTable.getByIssuer(zoeIssuer);
     const invitationP = findOrMakeInvitation(
@@ -1158,7 +1152,6 @@ export function makeWalletRoot({
       return;
     }
 
-    // eslint-disable-next-line no-use-before-define
     await addPayment(E.get(compiledOfferP).inviteP).catch(console.error);
   }
 
@@ -1481,7 +1474,6 @@ export function makeWalletRoot({
     // suggestion can be rejected and the suggested petname can be
     // changed
     return acceptPetname(
-      // eslint-disable-next-line no-use-before-define
       installationManager.add,
       suggestedPetname,
       installationHandleBoardId,

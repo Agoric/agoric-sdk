@@ -1,5 +1,9 @@
 // @ts-check
 // @jessie-check
+/**
+ * @file Utility functions that are dependent upon a hardened environment,
+ *   either directly or indirectly (e.g. by @endo imports).
+ */
 
 import { q, Fail, makeError, annotateError, X } from '@endo/errors';
 import { deeplyFulfilled, isObject } from '@endo/marshal';
@@ -8,8 +12,6 @@ import { makeQueue } from '@endo/stream';
 import { asyncGenerate } from 'jessie.js';
 
 const { fromEntries, keys, values } = Object;
-
-export const BASIS_POINTS = 10_000n;
 
 /** @import {ERef} from '@endo/far' */
 
@@ -51,55 +53,6 @@ export const deeplyFulfilledObject = async obj => {
   isObject(obj) || Fail`param must be an object`;
   return deeplyFulfilled(obj);
 };
-
-/**
- * @param {any} value
- * @param {string | undefined} name
- * @param {object | undefined} container
- * @param {(value: any, name: string, record: object) => any} mapper
- * @returns {any}
- */
-const deepMapObjectInternal = (value, name, container, mapper) => {
-  if (container && typeof name === 'string') {
-    const mapped = mapper(value, name, container);
-    if (mapped !== value) {
-      return mapped;
-    }
-  }
-
-  if (typeof value !== 'object' || !value) {
-    return value;
-  }
-
-  let wasMapped = false;
-  const mappedEntries = Object.entries(value).map(([innerName, innerValue]) => {
-    const mappedInnerValue = deepMapObjectInternal(
-      innerValue,
-      innerName,
-      value,
-      mapper,
-    );
-    wasMapped ||= mappedInnerValue !== innerValue;
-    return [innerName, mappedInnerValue];
-  });
-
-  return wasMapped ? Object.fromEntries(mappedEntries) : value;
-};
-
-/**
- * Traverses a record object structure deeply, calling a replacer for each
- * enumerable string property values of an object. If none of the values are
- * changed, the original object is used as-is, maintaining its identity.
- *
- * When an object is found as a property value, the replacer is first called on
- * it. If not replaced, the object is then traversed.
- *
- * @param {object} obj
- * @param {(value: any, name: string, record: object) => any} mapper
- * @returns {object}
- */
-export const deepMapObject = (obj, mapper) =>
-  deepMapObjectInternal(obj, undefined, undefined, mapper);
 
 /**
  * Tolerate absence of AggregateError in e.g. xsnap.
@@ -182,27 +135,6 @@ export const withDeferredCleanup = async fn => {
     await PromiseAllOrErrors(cleanupResults);
   };
   return aggregateTryFinally(() => fn(addCleanup), finalizer);
-};
-
-/**
- * Returns a function that uses a millisecond-based time-since-epoch capability
- * (such as `performance.now`) to measure execution time of an async function
- * and report the result in seconds to match our telemetry standard.
- *
- * @param {typeof import('perf_hooks').performance.now} currentTimeMillisec
- * @returns {<T>(
- *   fn: () => Promise<T>,
- * ) => Promise<{ result: T; duration: number }>}
- */
-export const makeMeasureSeconds = currentTimeMillisec => {
-  /** @param {() => any} fn */
-  const measureSeconds = async fn => {
-    const t0 = currentTimeMillisec();
-    const result = await fn();
-    const durationMillisec = currentTimeMillisec() - t0;
-    return { result, duration: durationMillisec / 1000 };
-  };
-  return measureSeconds;
 };
 
 /**

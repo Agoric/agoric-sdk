@@ -160,7 +160,7 @@ test('toward asset info in agoricNames (#9572)', async t => {
   }
 });
 
-test('getChainInfoByAddress', async t => {
+test('makeChainAddress', async t => {
   const { chainHub, nameAdmin, vt } = setup();
   // use fetched chain info
   await registerKnownChains(nameAdmin);
@@ -170,24 +170,24 @@ test('getChainInfoByAddress', async t => {
 
   const MOCK_ICA_ADDRESS =
     'osmo1ht7u569vpuryp6utadsydcne9ckeh2v8dkd38v5hptjl3u2ewppqc6kzgd';
-  t.like(chainHub.getChainInfoByAddress(MOCK_ICA_ADDRESS), {
+  t.deepEqual(chainHub.makeChainAddress(MOCK_ICA_ADDRESS), {
     chainId: 'osmosis-1',
-    bech32Prefix: 'osmo',
+    value: MOCK_ICA_ADDRESS,
+    encoding: 'bech32',
   });
 
   t.throws(
-    () =>
-      chainHub.getChainInfoByAddress(MOCK_ICA_ADDRESS.replace('osmo1', 'foo1')),
+    () => chainHub.makeChainAddress(MOCK_ICA_ADDRESS.replace('osmo1', 'foo1')),
     {
       message: 'Chain info not found for bech32Prefix "foo"',
     },
   );
 
-  t.throws(() => chainHub.getChainInfoByAddress('notbech32'), {
+  t.throws(() => chainHub.makeChainAddress('notbech32'), {
     message: 'No separator character for "notbech32"',
   });
 
-  t.throws(() => chainHub.getChainInfoByAddress('1notbech32'), {
+  t.throws(() => chainHub.makeChainAddress('1notbech32'), {
     message: 'Missing prefix for "1notbech32"',
   });
 });

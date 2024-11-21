@@ -33,6 +33,12 @@ import {
   QueryDelegationRewardsResponse,
   QueryDelegationTotalRewardsResponse,
 } from '@agoric/cosmic-proto/cosmos/distribution/v1beta1/query.js';
+import { Any } from '@agoric/cosmic-proto/google/protobuf/any.js';
+import {
+  MsgDelegate,
+  MsgDelegateResponse,
+} from '@agoric/cosmic-proto/cosmos/staking/v1beta1/tx.js';
+import { decodeBase64 } from '@endo/base64';
 import { commonSetup } from '../supports.js';
 import type {
   AmountArg,
@@ -48,6 +54,7 @@ import {
   parseOutgoingTxPacket,
 } from '../../tools/ibc-mocks.js';
 import type { CosmosValidatorAddress } from '../../src/cosmos-api.js';
+import { protoMsgMocks } from '../ibc-mocks.js';
 
 type TestContext = Awaited<ReturnType<typeof commonSetup>>;
 
@@ -815,4 +822,39 @@ test('not yet implemented', async t => {
   await t.throwsAsync(E(account).withdrawRewards(), {
     message: 'Not Implemented. Try using withdrawReward.',
   });
+});
+
+test('executeEncodedTx', async t => {
+  const makeTestCOAKit = prepareMakeTestCOAKit(t, t.context);
+  const account = await makeTestCOAKit();
+
+  const delegateMsgSuccess = Any.toJSON(
+    MsgDelegate.toProtoMsg({
+      delegatorAddress: 'cosmos1test',
+      validatorAddress: 'cosmosvaloper1test',
+      amount: { denom: 'uatom', amount: '10' },
+    }),
+  );
+
+  const res = await E(account).executeEncodedTx([delegateMsgSuccess]);
+  t.is(
+    res,
+    'Ei0KKy9jb3Ntb3Muc3Rha2luZy52MWJldGExLk1zZ0RlbGVnYXRlUmVzcG9uc2U=', // cosmos.staking.v1beta1.MsgDelegateResponse
+    'delegateMsgSuccess',
+  );
+  const decodedRes = MsgDelegateResponse.decode(decodeBase64(res));
+  t.deepEqual(decodedRes, {}, 'MsgDelegate returns MsgDelegateResponse');
+
+  t.context.mocks.ibcBridge.addMockAck(
+    // Delegate 100 ubld from cosmos1test to cosmosvaloper1test observed in console, timeoutHeight: 6n
+    'eyJ0eXBlIjoxLCJkYXRhIjoiQ2xVS0l5OWpiM050YjNNdWMzUmhhMmx1Wnk1Mk1XSmxkR0V4TGsxelowUmxiR1ZuWVhSbEVpNEtDMk52YzIxdmN6RjBaWE4wRWhKamIzTnRiM04yWVd4dmNHVnlNWFJsYzNRYUN3b0ZkV0YwYjIwU0FqRXdHQVk9IiwibWVtbyI6IiJ9',
+    protoMsgMocks.delegate.ack,
+  );
+  t.is(
+    await E(account).executeEncodedTx([delegateMsgSuccess], {
+      timeoutHeight: 6n,
+    }),
+    'Ei0KKy9jb3Ntb3Muc3Rha2luZy52MWJldGExLk1zZ0RlbGVnYXRlUmVzcG9uc2U=', // cosmos.staking.v1beta1.MsgDelegateResponse
+    'delegateMsgSuccess',
+  );
 });

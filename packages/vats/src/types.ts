@@ -1,4 +1,3 @@
-/* eslint-disable no-use-before-define */
 import type { FungibleTokenPacketData } from '@agoric/cosmic-proto/ibc/applications/transfer/v2/packet.js';
 import type { BridgeId, Remote } from '@agoric/internal';
 import type { Bytes } from '@agoric/network';

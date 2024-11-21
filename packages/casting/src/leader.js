@@ -31,7 +31,6 @@ export const makeRoundRobinLeader = (endpoints, leaderOptions = {}) => {
       }
       throw err;
     },
-    // eslint-disable-next-line no-use-before-define
     watchCasting: _castingSpecP => pollingChangeFollower,
     /**
      * @template T
@@ -55,10 +54,7 @@ export const makeRoundRobinLeader = (endpoints, leaderOptions = {}) => {
               });
           }
 
-          retrying
-            .then(() => jitter && jitter(where))
-            // eslint-disable-next-line no-use-before-define
-            .then(applyOne, reject);
+          retrying.then(() => jitter && jitter(where)).then(applyOne, reject);
           thisAttempt += 1;
         };
 

@@ -31,8 +31,10 @@ import {
   getPsmMetrics,
   implementPsmGovParamChange,
   initializeNewUser,
+  logRecord,
   maxMintBelowLimit,
   psmSwap,
+  sendOfferAgd,
 } from './test-lib/psm-lib.js';
 import { getBalances } from './test-lib/utils.js';
 
@@ -128,7 +130,7 @@ test.serial('initialize new user', async t => {
   t.pass();
 });
 
-test.serial('swap into IST', async t => {
+test.serial('swap into IST using agd with default gas', async t => {
   const {
     newUser: { name },
     anchor,
@@ -147,8 +149,8 @@ test.serial('swap into IST', async t => {
     balances,
     psmTrader,
   );
-  t.log('METRICS', metricsBefore);
-  t.log('BALANCES', balancesBefore);
+  logRecord('METRICS', metricsBefore, t.log);
+  logRecord('BALANCES', balancesBefore, t.log);
 
   await psmSwap(
     psmTrader,
@@ -161,7 +163,7 @@ test.serial('swap into IST', async t => {
       '--feePct',
       wantMintedFeeVal,
     ],
-    psmSwapIo,
+    { ...psmSwapIo, sendOffer: sendOfferAgd },
   );
 
   await checkSwapSucceeded(t, metricsBefore, balancesBefore, {
@@ -187,8 +189,8 @@ test.serial('swap out of IST', async t => {
     getBalances([psmTrader]),
   ]);
 
-  t.log('METRICS', metricsBefore);
-  t.log('BALANCES', balancesBefore);
+  logRecord('METRICS', metricsBefore, t.log);
+  logRecord('BALANCES', balancesBefore, t.log);
 
   await psmSwap(
     psmTrader,
@@ -237,8 +239,8 @@ test.serial('mint limit is adhered', async t => {
     getBalances([otherAddr]),
   ]);
 
-  t.log('METRICS', metricsBefore);
-  t.log('BALANCES', balancesBefore);
+  logRecord('METRICS', metricsBefore, t.log);
+  logRecord('BALANCES', balancesBefore, t.log);
 
   const { maxMintableValue, wantFeeValue } = await maxMintBelowLimit(anchor);
   const maxMintFeesAccounted = Math.floor(

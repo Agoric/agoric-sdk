@@ -82,7 +82,7 @@ test('resume', async t => {
 
   t.deepEqual(getLogged(), [
     'sending {0} from cosmoshub to cosmos1whatever',
-    'got info for denoms: ibc/toyatom, ibc/toyusdc, ubld, uist',
+    'got info for denoms: ibc/FE98AAD68F02F03565E9FA39A5E627946699B2B07115889ED812D8BA639576A9, ibc/toyatom, ibc/toyusdc, ubld, uist',
     'got info for chain: cosmoshub cosmoshub-4',
     'completed transfer to localAccount',
   ]);
@@ -99,7 +99,7 @@ test('resume', async t => {
 
   t.deepEqual(getLogged(), [
     'sending {0} from cosmoshub to cosmos1whatever',
-    'got info for denoms: ibc/toyatom, ibc/toyusdc, ubld, uist',
+    'got info for denoms: ibc/FE98AAD68F02F03565E9FA39A5E627946699B2B07115889ED812D8BA639576A9, ibc/toyatom, ibc/toyusdc, ubld, uist',
     'got info for chain: cosmoshub cosmoshub-4',
     'completed transfer to localAccount',
     'completed transfer to cosmos1whatever',
