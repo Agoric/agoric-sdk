@@ -80,10 +80,18 @@ type AppModule struct {
 	setBootstrapNeeded       func()
 	ensureControllerInited   func(sdk.Context)
 	swingStoreExportDir      string
+	swingStoreExportMode     string
 }
 
 // NewAppModule creates a new AppModule Object
-func NewAppModule(k Keeper, swingStoreExportsHandler *SwingStoreExportsHandler, setBootstrapNeeded func(), ensureControllerInited func(sdk.Context), swingStoreExportDir string) AppModule {
+func NewAppModule(
+	k Keeper,
+	swingStoreExportsHandler *SwingStoreExportsHandler,
+	setBootstrapNeeded func(),
+	ensureControllerInited func(sdk.Context),
+	swingStoreExportDir string,
+	swingStoreExportMode string,
+) AppModule {
 	am := AppModule{
 		AppModuleBasic:           AppModuleBasic{},
 		keeper:                   k,
@@ -91,6 +99,7 @@ func NewAppModule(k Keeper, swingStoreExportsHandler *SwingStoreExportsHandler, 
 		setBootstrapNeeded:       setBootstrapNeeded,
 		ensureControllerInited:   ensureControllerInited,
 		swingStoreExportDir:      swingStoreExportDir,
+		swingStoreExportMode:     swingStoreExportMode,
 	}
 	return am
 }
@@ -173,6 +182,12 @@ func (am AppModule) InitGenesis(ctx sdk.Context, cdc codec.JSONCodec, data json.
 
 func (am AppModule) ExportGenesis(ctx sdk.Context, cdc codec.JSONCodec) json.RawMessage {
 	am.checkSwingStoreExportSetup()
-	gs := ExportGenesis(ctx, am.keeper, am.swingStoreExportsHandler, am.swingStoreExportDir)
+	gs := ExportGenesis(
+		ctx,
+		am.keeper,
+		am.swingStoreExportsHandler,
+		am.swingStoreExportDir,
+		am.swingStoreExportMode,
+	)
 	return cdc.MustMarshalJSON(gs)
 }
