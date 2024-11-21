@@ -2,6 +2,7 @@ import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import type { TestFn } from 'ava';
 import type { FastUSDCKit } from '@agoric/fast-usdc/src/fast-usdc.start.js';
+import { documentStorageSchema } from '@agoric/governance/tools/storageDoc.js';
 import { Fail } from '@endo/errors';
 import { unmarshalFromVstorage } from '@agoric/internal/src/marshal.js';
 import { makeMarshal } from '@endo/marshal';
@@ -36,11 +37,17 @@ test.serial(
       walletFactoryDriver: wd,
     } = t.context;
 
-    const watcherWallet = await wd.provideSmartWallet('agoric1watcher1');
+    const [watcherWallet] = await Promise.all([
+      wd.provideSmartWallet('agoric144rrhh4m09mh7aaffhm6xy223ym76gve2x7y78'),
+      wd.provideSmartWallet('agoric19d6gnr9fyp6hev4tlrg87zjrzsd5gzr5qlfq2p'),
+      wd.provideSmartWallet('agoric19uscwxdac6cf6z7d5e26e0jm0lgwstc47cpll8'),
+      wd.provideSmartWallet('agoric1krunjcqfrf7la48zrvdfeeqtls5r00ep68mzkr'),
+      wd.provideSmartWallet('agoric1n4fcxsnkxe4gj6e24naec99hzmc4pjfdccy5nj'),
+    ]);
 
     const materials = buildProposal(
       '@agoric/builders/scripts/fast-usdc/init-fast-usdc.js',
-      ['--oracle', 'a:agoric1watcher1'],
+      ['--net', 'MAINNET'],
     );
     await evalProposal(materials);
 
@@ -98,6 +105,15 @@ test.serial(
     // XXX t.is(details.instance, agoricNames.instance.fastUsdc) should work
   },
 );
+
+test.serial('writes feed policy to vstorage', async t => {
+  const { storage } = t.context;
+  const doc = {
+    node: 'fastUsdc.feedPolicy',
+    owner: 'the general and chain-specific policies for the Fast USDC feed',
+  };
+  await documentStorageSchema(t, storage, doc);
+});
 
 test.serial('restart contract', async t => {
   const { EV } = t.context.runUtils;

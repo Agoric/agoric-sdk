@@ -68,7 +68,7 @@ export const prepareTransactionFeedKit = (zone, zcf) => {
       creator: {
         /**
          * An "operator invitation" is an invitation to be an operator in the
-         * oracle netowrk, with the able to submit data to submit evidence of
+         * oracle network, with the able to submit data to submit evidence of
          * CCTP transactions.
          *
          * @param {string} operatorId unique per contract instance
