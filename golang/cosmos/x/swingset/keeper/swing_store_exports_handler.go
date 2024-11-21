@@ -195,20 +195,6 @@ const (
 	SwingStoreExportDataModeAll = "all"
 )
 
-const (
-	// SwingStoreExportModeSkip indicates swing store data should be
-	// excluded from the export.
-	SwingStoreExportModeSkip = "skip"
-
-	// SwingStoreExportModeOperational (default) indicates export should
-	// have the minimal set of artifacts needed to operate a node.
-	SwingStoreExportModeOperational = "operational"
-
-	// SwingStoreExportModeDebug indicates export should have the maximal
-	// set of artifacts available in the JS swing-store.
-	SwingStoreExportModeDebug = "debug"
-)
-
 // SwingStoreExportOptions are configurable options provided to the JS swing-store export
 type SwingStoreExportOptions struct {
 	// ArtifactMode controls the set of artifacts that should be included in the

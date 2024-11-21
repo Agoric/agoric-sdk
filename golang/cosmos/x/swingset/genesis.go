@@ -16,6 +16,20 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
+const (
+	// SwingStoreExportModeSkip indicates swing store data should be
+	// excluded from the export.
+	SwingStoreExportModeSkip = "skip"
+
+	// SwingStoreExportModeOperational (default) indicates export should
+	// have the minimal set of artifacts needed to operate a node.
+	SwingStoreExportModeOperational = "operational"
+
+	// SwingStoreExportModeDebug indicates export should have the maximal
+	// set of artifacts available in the JS swing-store.
+	SwingStoreExportModeDebug = "debug"
+)
+
 func ValidateGenesis(data *types.GenesisState) error {
 	if data == nil {
 		return fmt.Errorf("swingset genesis data cannot be nil")
@@ -149,12 +163,12 @@ func ExportGenesis(
 	hasher := sha256.New()
 	snapshotHeight := uint64(ctx.BlockHeight())
 
-	if swingStoreExportMode == keeper.SwingStoreExportModeDebug {
+	if swingStoreExportMode == SwingStoreExportModeDebug {
 		exportDataMode = keeper.SwingStoreExportDataModeAll
 		snapshotHeight = 0
 	}
 
-	if swingStoreExportMode != keeper.SwingStoreExportModeSkip {
+	if swingStoreExportMode != SwingStoreExportModeSkip {
 		eventHandler := swingStoreGenesisEventHandler{
 			exportDir:      swingStoreExportDir,
 			snapshotHeight: snapshotHeight,
@@ -200,7 +214,7 @@ func (eventHandler swingStoreGenesisEventHandler) OnExportStarted(height uint64,
 }
 
 func (eventHandler swingStoreGenesisEventHandler) OnExportRetrieved(provider keeper.SwingStoreExportProvider) error {
-	if eventHandler.exportMode != keeper.SwingStoreExportModeDebug && eventHandler.snapshotHeight != provider.BlockHeight {
+	if eventHandler.exportMode != SwingStoreExportModeDebug && eventHandler.snapshotHeight != provider.BlockHeight {
 		return fmt.Errorf("snapshot block height (%d) doesn't match requested height (%d)", provider.BlockHeight, eventHandler.snapshotHeight)
 	}
 
@@ -235,7 +249,7 @@ func (eventHandler swingStoreGenesisEventHandler) OnExportRetrieved(provider kee
 
 			if err == io.EOF {
 				artifactsEnded = true
-				if eventHandler.exportMode == keeper.SwingStoreExportModeDebug {
+				if eventHandler.exportMode == SwingStoreExportModeDebug {
 					exportDataReader, _ := provider.GetExportDataReader()
 
 					defer exportDataReader.Close()
@@ -257,7 +271,7 @@ func (eventHandler swingStoreGenesisEventHandler) OnExportRetrieved(provider kee
 		},
 	}
 
-	if eventHandler.exportMode == keeper.SwingStoreExportModeDebug {
+	if eventHandler.exportMode == SwingStoreExportModeDebug {
 		artifactsProvider.BlockHeight = provider.BlockHeight
 	}
 
