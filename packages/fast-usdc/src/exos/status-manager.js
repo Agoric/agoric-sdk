@@ -103,7 +103,7 @@ export const prepareStatusManager = zone => {
       advancing: M.call(CctpTxEvidenceShape).returns(M.undefined()),
       advanceOutcome: M.call(M.string(), M.nat(), M.boolean()).returns(),
       observe: M.call(CctpTxEvidenceShape).returns(M.undefined()),
-      hasPendingSettlement: M.call(M.string(), M.bigint()).returns(M.boolean()),
+      isSeen: M.call(CctpTxEvidenceShape).returns(M.boolean()),
       dequeueStatus: M.call(M.string(), M.bigint()).returns({
         txHash: EvmHashShape,
         status: M.string(), // TODO: named shape?
@@ -131,6 +131,7 @@ export const prepareStatusManager = zone => {
        * @param {NobleAddress} sender
        * @param {import('@agoric/ertp').NatValue} amount
        * @param {boolean} success
+       * @throws {Error} if nothing to advance
        */
       advanceOutcome(sender, amount, success) {
         const key = makePendingTxKey(sender, amount);
@@ -160,16 +161,11 @@ export const prepareStatusManager = zone => {
       },
 
       /**
-       * Find an `ADVANCED` or `OBSERVED` tx waiting to be `SETTLED`
-       *
-       * @param {NobleAddress} address
-       * @param {bigint} amount
-       * @returns {boolean}
+       * @param {CctpTxEvidence} evidence
        */
-      hasPendingSettlement(address, amount) {
-        const key = makePendingTxKey(address, amount);
-        const pending = pendingTxs.get(key);
-        return !!pending.length;
+      isSeen(evidence) {
+        const seenKey = seenTxKeyOf(evidence);
+        return seenTxs.has(seenKey);
       },
 
       /**
@@ -177,6 +173,7 @@ export const prepareStatusManager = zone => {
        *
        * @param {NobleAddress} address
        * @param {bigint} amount
+       * @returns {Pick<PendingTx, 'status' | 'txHash'> | undefined} undefined if nothing is settleable
        */
       dequeueStatus(address, amount) {
         const key = makePendingTxKey(address, amount);
