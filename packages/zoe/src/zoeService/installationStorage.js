@@ -101,7 +101,6 @@ export const makeInstallationStorage = (getBundleCapForID, zoeBaggage) => {
     InstallationStorageI,
     {
       async installBundle(allegedBundle, bundleLabel) {
-        // @ts-expect-error TS doesn't understand context
         const { self } = this;
         // Bundle is a very open-ended type and we must decide here whether to
         // treat it as either a HashBundle or SourceBundle. So we have to
@@ -149,7 +148,6 @@ export const makeInstallationStorage = (getBundleCapForID, zoeBaggage) => {
         }
       },
       async getBundleIDFromInstallation(allegedInstallation) {
-        // @ts-expect-error TS doesn't understand context
         const { self } = this;
         const { bundleID } = await self.unwrapInstallation(allegedInstallation);
         // AWAIT
