@@ -1,4 +1,4 @@
-import { AmountMath, AmountShape } from '@agoric/ertp';
+import { AmountMath } from '@agoric/ertp';
 import {
   makeRecorderTopic,
   TopicsRecordShape,
@@ -84,7 +84,6 @@ export const prepareLiquidityPoolKit = (zone, zcf, USDC, tools) => {
     'Liquidity Pool',
     {
       borrower: M.interface('borrower', {
-        getBalance: M.call().returns(AmountShape),
         borrow: M.call(
           SeatShape,
           harden({ USDC: makeNatAmountShape(USDC, 1n) }),
@@ -152,10 +151,6 @@ export const prepareLiquidityPoolKit = (zone, zcf, USDC, tools) => {
     },
     {
       borrower: {
-        getBalance() {
-          const { poolSeat } = this.state;
-          return poolSeat.getAmountAllocated('USDC', USDC);
-        },
         /**
          * @param {ZCFSeat} toSeat
          * @param {{ USDC: Amount<'nat'>}} amountKWR
