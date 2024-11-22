@@ -104,10 +104,19 @@ export const prepareStatusManager = zone => {
       advanceOutcome: M.call(M.string(), M.nat(), M.boolean()).returns(),
       observe: M.call(CctpTxEvidenceShape).returns(M.undefined()),
       isSeen: M.call(CctpTxEvidenceShape).returns(M.boolean()),
-      dequeueStatus: M.call(M.string(), M.bigint()).returns({
-        txHash: EvmHashShape,
-        status: M.string(), // TODO: named shape?
-      }),
+      dequeueStatus: M.call(M.string(), M.bigint()).returns(
+        M.or(
+          {
+            txHash: EvmHashShape,
+            status: M.or(
+              PendingTxStatus.Advanced,
+              PendingTxStatus.AdvanceFailed,
+              PendingTxStatus.Observed,
+            ),
+          },
+          M.undefined(),
+        ),
+      ),
       disbursed: M.call(EvmHashShape, M.string(), M.nat()).returns(
         M.undefined(),
       ),
@@ -135,6 +144,7 @@ export const prepareStatusManager = zone => {
        */
       advanceOutcome(sender, amount, success) {
         const key = makePendingTxKey(sender, amount);
+        pendingTxs.has(key) || Fail`no advancing tx with ${{ sender, amount }}`;
         const pending = pendingTxs.get(key);
         const ix = pending.findIndex(
           tx => tx.status === PendingTxStatus.Advancing,
@@ -177,15 +187,24 @@ export const prepareStatusManager = zone => {
        */
       dequeueStatus(address, amount) {
         const key = makePendingTxKey(address, amount);
+        if (!pendingTxs.has(key)) return undefined;
         const pending = pendingTxs.get(key);
+        if (!pending.length) return undefined;
 
-        if (!pending.length) {
-          return undefined;
+        const dequeueIdx = pending.findIndex(
+          x => x.status !== PendingTxStatus.Advancing,
+        );
+        if (dequeueIdx < 0) return undefined;
+
+        if (pending.length > 1) {
+          const pendingCopy = [...pending];
+          pendingCopy.splice(dequeueIdx, 1);
+          pendingTxs.set(key, harden(pendingCopy));
+        } else {
+          pendingTxs.delete(key);
         }
 
-        const [tx0, ...rest] = pending;
-        pendingTxs.set(key, harden(rest));
-        const { status, txHash } = tx0;
+        const { status, txHash } = pending[dequeueIdx];
         // TODO: store txHash -> evidence for txs pending settlement?
         return harden({ status, txHash });
       },
@@ -217,6 +236,8 @@ export const prepareStatusManager = zone => {
       /**
        * Lookup all pending entries for a given address and amount
        *
+       * XXX only used in tests. should we remove?
+       *
        * @param {NobleAddress} address
        * @param {bigint} amount
        * @returns {PendingTx[]}
@@ -224,7 +245,7 @@ export const prepareStatusManager = zone => {
       lookupPending(address, amount) {
         const key = makePendingTxKey(address, amount);
         if (!pendingTxs.has(key)) {
-          throw makeError(`Key ${q(key)} not yet observed`);
+          return [];
         }
         return pendingTxs.get(key);
       },
