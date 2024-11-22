@@ -16,7 +16,7 @@
     "lint:types": "tsc",
     "lint-fix": "eslint --fix 'src/**/*.js' 'lib/**/*.js' 'scripts/**/*.js' 'test/**/*.js'",
     "test": "ava",
-    "test:c8": "c8 ava",
+    "test:c8": "c8 --all ava",
     "test:xs": "exit 0"
   },
   "devDependencies": {
