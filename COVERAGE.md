@@ -11,13 +11,18 @@ source-to-source transforms (such as `@endo/bundle-source`,
 Coverage reports for the current main branch are
 published by CI to: https://agoric-sdk-coverage.netlify.app
 
-You can create a report in any package (including the top-level directory):
+You can create a report in any package:
 
+```sh
+yarn test:c8
+```
+
+For more flexibility:
 ```sh
 # Get options available for coverage:
 yarn c8 --help
-# Run ava under Node.js coverage and display a summary:
-yarn c8 -a ava
+# Run a particular test
+yarn c8 -a ava test/foo.test.js
 # Generate a nice, detailed HTML report:
 yarn c8 report --reporter=html-spa
 open coverage/html/index.html
