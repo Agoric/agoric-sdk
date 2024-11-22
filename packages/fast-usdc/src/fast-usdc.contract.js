@@ -214,18 +214,27 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
 
   const feedKit = zone.makeOnce('Feed Kit', () => makeFeedKit());
 
-  const poolAccountV =
-    // cast to HostInterface
-    /** @type { Vow<HostInterface<OrchestrationAccount<{chainId: 'agoric';}>>>} */ (
-      /** @type {unknown}*/ (
-        zone.makeOnce('Pool Local Orch Account', () => makeLocalAccount())
-      )
-    );
-  const poolAccount = await vowTools.when(poolAccountV);
+  const poolAccountV = zone.makeOnce('PoolAccount', () => makeLocalAccount());
+  const settleAccountV = zone.makeOnce('SettleAccount', () =>
+    makeLocalAccount(),
+  );
+  // when() is OK here since this clearly resolves promptly.
+  /** @type {HostInterface<OrchestrationAccount<{chainId: 'agoric';}>>[]} */
+  const [poolAccount, settlementAccount] = await vowTools.when(
+    vowTools.all([poolAccountV, settleAccountV]),
+  );
+
+  const settlerKit = makeSettler({
+    repayer: poolKit.repayer,
+    sourceChannel: 'channel-1234', // TODO: fix this as soon as testing needs it',
+    remoteDenom: 'uusdc',
+    settlementAccount,
+  });
 
   const advancer = zone.makeOnce('Advancer', () =>
     makeAdvancer({
       borrowerFacet: poolKit.borrower,
+      notifyFacet: settlerKit.notify,
       poolAccount,
     }),
   );
@@ -240,21 +249,7 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
     },
   });
 
-  const settleAccountV = zone.makeOnce('settleAccount', () =>
-    makeLocalAccount(),
-  );
-  // when() is OK here since this clearly resolves promptly.
-  /** @type {Parameters<typeof makeSettler>[0]['settlementAccount']} */
-  const settlementAccount = await tools.vowTools.when(settleAccountV);
-
-  const { creator: settlerCreator } = makeSettler({
-    repayer: poolKit.repayer,
-    sourceChannel: 'channel-1234', // TODO: fix this as soon as testing needs it',
-    remoteDenom: 'uusdc',
-    settlementAccount,
-  });
-
-  await settlerCreator.monitorMintingDeposits();
+  await settlerKit.creator.monitorMintingDeposits();
 
   return harden({ creatorFacet, publicFacet });
 };

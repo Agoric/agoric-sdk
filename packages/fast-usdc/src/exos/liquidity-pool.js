@@ -1,4 +1,4 @@
-import { AmountMath, AmountShape } from '@agoric/ertp';
+import { AmountMath } from '@agoric/ertp';
 import {
   makeRecorderTopic,
   TopicsRecordShape,
