@@ -20,7 +20,7 @@
   "scripts": {
     "build": "node ./scripts/get-sdk-package-names.js > src/sdk-package-names.js",
     "test": "ava",
-    "test:c8": "c8 $C8_OPTIONS ava --config=ava-nesm.config.js",
+    "test:c8": "c8 ava",
     "test:xs": "exit 0",
     "integration-test": "ava --config .ava-integration-test.config.js",
     "lint-fix": "yarn lint:eslint --fix",
