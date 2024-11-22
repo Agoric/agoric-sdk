@@ -289,7 +289,10 @@ export const makeExoUtils = VatData => {
    * @param {Baggage} baggage
    * @param {string} kindName
    * @param {InterfaceGuard | undefined} interfaceGuard
-   * @param {M} methods
+   * @param {M &
+   *   ThisType<{
+   *     self: RemotableObject & M;
+   *   }>} methods
    * @param {DefineKindOptions<{ self: M }>} [options]
    * @returns {import('@endo/exo').Guarded<M>}
    */
