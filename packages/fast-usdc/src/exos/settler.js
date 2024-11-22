@@ -11,7 +11,7 @@ import { EvmHashShape } from '../type-guards.js';
 
 /**
  * @import {FungibleTokenPacketData} from '@agoric/cosmic-proto/ibc/applications/transfer/v2/packet.js';
- * @import {Denom, OrchestrationAccount, LocalAccountMethods, ChainHub} from '@agoric/orchestration';
+ * @import {Denom, OrchestrationAccount, ChainHub} from '@agoric/orchestration';
  * @import {WithdrawToSeat} from '@agoric/orchestration/src/utils/zoe-tools'
  * @import {IBCChannelID, VTransferIBCEvent} from '@agoric/vats';
  * @import {Zone} from '@agoric/zone';

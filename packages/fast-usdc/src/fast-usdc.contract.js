@@ -249,6 +249,14 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
     },
   });
 
+  // populate local ChainHub
+  await vowTools.when(
+    vowTools.all([
+      tools.chainHub.getChainsAndConnection('agoric', 'noble'),
+      tools.chainHub.getChainsAndConnection('dydx', 'noble'),
+      tools.chainHub.getChainsAndConnection('osmosis', 'noble'),
+    ]),
+  );
   await settlerKit.creator.monitorMintingDeposits();
 
   return harden({ creatorFacet, publicFacet });
