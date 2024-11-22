@@ -59,26 +59,41 @@ sequenceDiagram
 
 # Status Manager
 
-### Contract state diagram
+### Pending Advance State Diagram
 
 *Transactions are qualified by the OCW and EventFeed before arriving to the Advancer.*
 
 ```mermaid
 stateDiagram-v2
-  [*] --> Advanced: Advancer .advance()
-  Advanced --> Settled: Settler .settle() after fees
-  [*] --> Observed: Advancer .observed()
-  Observed --> Settled: Settler .settle() sans fees
-  Settled --> [*]
+  [*] --> Observed: observe()
+  [*] --> Advancing: advancing()
+
+  Advancing --> Advanced: advanceOutcome(...true)
+  Advancing --> AdvanceFailed: advanceOutcome(...false)
+
+  Observed --> [*]: dequeueStatus()
+  Advanced --> [*]: dequeueStatus()
+  AdvanceFailed --> [*]: dequeueStatus()
+
+  note right of [*]
+    After dequeueStatus():
+    Transaction is removed 
+    from pendingTxs store.
+    Settler will .disburse()
+    or .forward()
+  end note
 ```
 
-### Complete state diagram (starting from OCW)
+### Complete state diagram (starting from Transaction Feed into Advancer)
 
 ```mermaid
 stateDiagram-v2
-  Observed --> Qualified
-  Observed --> Unqualified
-  Qualified --> Advanced
-  Advanced --> Settled
-  Qualified --> Settled
+  Observed --> Advancing
+  Observed --> Forwarding:Minted
+  Forwarding --> Forwarded
+  Advancing --> Advanced
+  Advanced --> Disbursed
+  AdvanceFailed --> Forwarding
+  Advancing --> AdvanceFailed
+  Forwarding --> ForwardFailed
 ```
