@@ -58,7 +58,7 @@
     "@agoric/ertp": "^0.16.2",
     "@endo/bundle-source": "^3.5.0",
     "ava": "^5.3.0",
-    "c8": "^9.1.0"
+    "c8": "^10.1.2"
   },
   "publishConfig": {
     "access": "public"
