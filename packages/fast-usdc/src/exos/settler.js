@@ -262,10 +262,11 @@ export const prepareSettler = (
           statusManager.forwarded(txHash, sender, amount);
         },
         /**
-         * @param {unknown} _result
-         * @param {SettlerTransferCtx} _ctx
+         * @param {unknown} reason
+         * @param {SettlerTransferCtx} ctx
          */
-        onRejected(_result, _ctx) {
+        onRejected(reason, ctx) {
+          trace('transfer rejected!', reason, ctx);
           // const { txHash, sender, amount } = ctx;
           // TODO: statusManager.forwardFailed(txHash, sender, amount);
         },
