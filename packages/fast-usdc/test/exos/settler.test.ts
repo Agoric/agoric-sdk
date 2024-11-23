@@ -1,17 +1,17 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import type { TestFn } from 'ava';
 
+import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
 import type { Zone } from '@agoric/zone';
-import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { PendingTxStatus } from '../../src/constants.js';
 import { prepareSettler } from '../../src/exos/settler.js';
 import { prepareStatusManager } from '../../src/exos/status-manager.js';
-import { commonSetup } from '../supports.js';
-import { MockCctpTxEvidences, MockVTransferEvents } from '../fixtures.js';
 import type { CctpTxEvidence } from '../../src/types.js';
-import { makeTestLogger, prepareMockOrchAccounts } from '../mocks.js';
 import { makeFeeTools } from '../../src/utils/fees.js';
+import { MockCctpTxEvidences, MockVTransferEvents } from '../fixtures.js';
+import { makeTestLogger, prepareMockOrchAccounts } from '../mocks.js';
+import { commonSetup } from '../supports.js';
 
 const mockZcf = (zone: Zone) => {
   const callLog = [] as any[];
