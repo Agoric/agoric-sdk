@@ -105,10 +105,8 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
 
-      - name: generate coverage for all tests
-        run: 'yarn test:c8-all || :'
-      - name: generate coverage/html reports
-        run: mkdir -p coverage/tmp && yarn c8 report --all --include 'packages/*/{src,tools}' --reporter=html-spa --reports-dir=coverage/html --temp-directory=coverage/tmp
+      - name: generate test coverage report
+        run: ./scripts/ci/generage-test-coverage-report.sh
       - uses: actions/upload-artifact@v4
         with:
           name: coverage
