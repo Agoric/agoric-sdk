@@ -10,7 +10,7 @@
   "scripts": {
     "build": "exit 0",
     "test": "ava",
-    "test:c8": "c8 $C8_OPTIONS ava --config=ava-nesm.config.js",
+    "test:c8": "c8 --all ava",
     "test:xs": "exit 0",
     "lint": "run-s --continue-on-error lint:*",
     "lint-fix": "yarn lint:eslint --fix",
@@ -26,7 +26,7 @@
     "@types/n-readlines": "^1.0.3",
     "@types/proper-lockfile": "^4.1.2",
     "ava": "^5.3.0",
-    "c8": "^9.1.0"
+    "c8": "^10.1.2"
   },
   "publishConfig": {
     "access": "public"

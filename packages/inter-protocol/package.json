@@ -13,7 +13,7 @@
     "prepack": "tsc --build tsconfig.build.json",
     "postpack": "git clean -f '*.d.ts*' '*.tsbuildinfo'",
     "test": "ava",
-    "test:c8": "c8 $C8_OPTIONS ava --config=ava-nesm.config.js",
+    "test:c8": "c8 --all ava",
     "test:xs": "exit 0",
     "lint-fix": "yarn lint:eslint --fix",
     "lint": "run-s --continue-on-error lint:*",
@@ -59,7 +59,7 @@
     "@endo/promise-kit": "^1.1.8",
     "@fast-check/ava": "^1.1.5",
     "ava": "^5.3.0",
-    "c8": "^9.1.0",
+    "c8": "^10.1.2",
     "deep-object-diff": "^1.1.9",
     "import-meta-resolve": "^2.2.1"
   },

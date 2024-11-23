@@ -11,7 +11,7 @@
     "postpack": "git clean -f '*.d.ts*' '*.tsbuildinfo'",
     "demo": "node -e 'import(\"./test/fake-rpc-server.js\").then(ns => ns.develop())'",
     "test": "ava",
-    "test:c8": "c8 $C8_OPTIONS ava --config=ava-nesm.config.js",
+    "test:c8": "c8 --all ava",
     "test:xs": "exit 0",
     "lint-fix": "yarn lint:eslint --fix",
     "lint": "run-s --continue-on-error lint:*",
@@ -40,7 +40,7 @@
     "@agoric/cosmic-proto": "^0.4.0",
     "@endo/ses-ava": "^1.2.8",
     "ava": "^5.3.0",
-    "c8": "^9.1.0",
+    "c8": "^10.1.2",
     "express": "^5.0.1",
     "ws": "^7.2.0"
   },
