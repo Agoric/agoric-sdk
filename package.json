@@ -65,7 +65,6 @@
     "lint": "run-s --continue-on-error lint:*",
     "lint:packages": "yarn lerna run --no-bail lint",
     "test": "yarn lerna run --no-bail test",
-    "test:c8-all": "rm -rf coverage/tmp && C8_OPTIONS=\"--clean=false --temp-directory=$PWD/coverage/tmp\" lerna run test:c8",
     "test:xs": "yarn workspaces run test:xs",
     "build": "yarn workspaces run build && scripts/agd-builder.sh stamp yarn-built",
     "postinstall": "patch-package && scripts/agd-builder.sh stamp yarn-installed",
