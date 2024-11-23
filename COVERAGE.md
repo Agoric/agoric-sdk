@@ -8,9 +8,16 @@ source-to-source transforms (such as `@endo/bundle-source`,
 
 ## Reports
 
+### Whole repo
 Coverage reports for the current main branch are
 published by CI to: https://agoric-sdk-coverage.netlify.app
 
+It's made by a CI job calling `test:c8-all` in the project root. That in turn
+calls `test:c8` in each package, with `$C8_OPTIONS` set to a common coverage
+directory and to leave temp files so they can accumulate. The job then uses that
+output in another call to c8 to generate a report.
+
+## Per package
 You can create a report in any package:
 
 ```sh
