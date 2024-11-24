@@ -106,7 +106,7 @@ jobs:
           node-version: ${{ matrix.node-version }}
 
       - name: generate test coverage report
-        run: ./scripts/ci/generage-test-coverage-report.sh
+        run: ./scripts/ci/generate-test-coverage-report.sh
       - uses: actions/upload-artifact@v4
         with:
           name: coverage
