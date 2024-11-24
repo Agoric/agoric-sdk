@@ -100,11 +100,11 @@ const meterControl = makeMeterControl();
 /**
  * Wrap byte-level protocols with tagged array codec.
  *
- * @param {(cmd: ArrayBuffer) => ArrayBuffer} issueCommand as from xsnap
+ * @param {(cmd: ArrayBufferLike) => ArrayBuffer} issueCommand as from xsnap
  * @typedef { [unknown, ...unknown[]] } Tagged tagged array
  */
 function managerPort(issueCommand) {
-  /** @type { (item: Tagged) => ArrayBuffer } */
+  /** @type { (item: Tagged) => ArrayBufferLike } */
   const encode = item => {
     let txt;
     try {
