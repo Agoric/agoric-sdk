@@ -100,8 +100,8 @@ export const setupPsm = async (
   brand.produce.IST.resolve(istBrand);
   issuer.produce.IST.resolve(istIssuer);
 
+  // @ts-expect-error mock
   space.produce.provisionPoolStartResult.resolve({
-    // @ts-expect-error mock
     creatorFacet: Far('dummy', {
       initPSM: () => {
         t.log('dummy provisionPool.initPSM');
