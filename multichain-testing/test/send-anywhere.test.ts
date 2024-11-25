@@ -10,6 +10,8 @@ import { createWallet } from '../tools/wallet.js';
 import { AmountMath } from '@agoric/ertp';
 import { makeQueryClient } from '../tools/query.js';
 import type { Amount } from '@agoric/ertp/src/types.js';
+import chainInfo from '../starship-chain-info.js';
+import { denomHash, withChainCapabilities } from '@agoric/orchestration';
 
 const test = anyTest as TestFn<SetupContextWithWallets>;
 
@@ -17,7 +19,7 @@ const accounts = ['osmosis1', 'osmosis2', 'cosmoshub1', 'cosmoshub2'];
 
 const contractName = 'sendAnywhere';
 const contractBuilder =
-  '../packages/builders/scripts/testing/start-send-anywhere.js';
+  '../packages/builders/scripts/testing/init-send-anywhere.js';
 
 test.before(async t => {
   const { deleteTestKeys, setupTestKeys, ...rest } = await commonSetup(t);
@@ -25,7 +27,36 @@ test.before(async t => {
   const wallets = await setupTestKeys(accounts);
   t.context = { ...rest, wallets, deleteTestKeys };
   const { startContract } = rest;
-  await startContract(contractName, contractBuilder);
+
+  const assetInfo = {
+    uosmo: {
+      baseName: 'osmosis',
+      chainName: 'osmosis',
+      baseDenom: 'uosmo',
+    },
+    [`ibc/${denomHash({ denom: 'uosmo', channelId: chainInfo.agoric.connections['osmosislocal'].transferChannel.channelId })}`]:
+      {
+        baseName: 'osmosis',
+        chainName: 'agoric',
+        baseDenom: 'uosmo',
+      },
+    uatom: {
+      baseName: 'cosmoshub',
+      chainName: 'cosmoshub',
+      baseDenom: 'uatom',
+    },
+    [`ibc/${denomHash({ denom: 'uatom', channelId: chainInfo.agoric.connections['gaialocal'].transferChannel.channelId })}`]:
+      {
+        baseName: 'cosmoshub',
+        chainName: 'agoric',
+        baseDenom: 'uatom',
+      },
+  };
+
+  await startContract(contractName, contractBuilder, {
+    chainInfo: JSON.stringify(withChainCapabilities(chainInfo)),
+    assetInfo: JSON.stringify(assetInfo),
+  });
 });
 
 test.after(async t => {
