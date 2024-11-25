@@ -9,6 +9,7 @@ export { boardSlottingMarshaller };
 /**
  * @import {MinimalNetworkConfig} from './rpc.js';
  * @import {TypedPublished} from './types.js';
+ * @import {VStorage} from './vstorage.js';
  */
 
 /** @deprecated */

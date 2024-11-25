@@ -1,12 +1,15 @@
 /* eslint-env node */
 // @ts-check
 import test from 'ava';
-import { makeVStorage } from '../src/vstorage-kit.js';
+import { makeVStorage } from '../src/vstorage.js';
+
+/** @type {any} */
+const fetch = () => Promise.resolve({});
 
 test('readFully can be used without instance binding', async t => {
-  const vstorage = makeVStorage({ fetch: () => {} }, { rpcAddrs: [''] });
+  const vstorage = makeVStorage({ fetch }, { chainName: '', rpcAddrs: [''] });
   const { readFully } = vstorage;
-  
+
   // Mock implementation to avoid actual network calls
   vstorage.readAt = async () => ({ blockHeight: 0, values: ['test'] });
 
