@@ -126,7 +126,7 @@ export const preparePacketTools = (zone, vowTools) => {
       const resolverToPattern = zone.detached().mapStore('resolverToPattern');
       return {
         lca,
-        reg: /** @type {Remote<TargetRegistration> | null} */ (null),
+        reg: /** @type {Vow<TargetRegistration> | null} */ (null),
         resolverToPattern,
         upcallQueue: /** @type {any[] | null} */ (null),
         pending: 0,
@@ -331,17 +331,15 @@ export const preparePacketTools = (zone, vowTools) => {
         },
         subscribeToTransfers() {
           // Subscribe to the transfers for this account.
-          const { lca, reg } = this.state;
-          if (reg) {
-            return when(reg);
+          const { lca, reg: cachedReg } = this.state;
+          if (cachedReg) {
+            return when(cachedReg);
           }
+          // Atomically update the registration.
           const { tap } = this.facets;
-          // XXX racy; fails if subscribeToTransfers is called while this promise is in flight
-          // e.g. 'Target "agoric1fakeLCAAddress" already registered'
-          return when(E(lca).monitorTransfers(tap), r => {
-            this.state.reg = r;
-            return r;
-          });
+          const reg = watch(E(lca).monitorTransfers(tap));
+          this.state.reg = reg;
+          return when(reg);
         },
         unsubscribeFromTransfers() {
           const { reg, monitor } = this.state;
