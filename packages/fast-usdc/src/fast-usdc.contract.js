@@ -7,6 +7,7 @@ import {
 import { observeIteration, subscribeEach } from '@agoric/notifier';
 import {
   OrchestrationPowersShape,
+  registerKnownChainsAndAssets,
   withOrchestration,
 } from '@agoric/orchestration';
 import { provideSingleton } from '@agoric/zoe/src/contractSupport/durability.js';
@@ -53,6 +54,8 @@ export const meta = {
     ...OrchestrationPowersShape,
     feeConfig: FeeConfigShape,
     marshaller: M.remotable(),
+    chainInfo: M.record(), // TODO narrow
+    assetInfo: M.record(), // TODO narrow
   },
 };
 harden(meta);
@@ -62,6 +65,8 @@ harden(meta);
  * @param {OrchestrationPowers & {
  *   marshaller: Marshaller;
  *   feeConfig: FeeConfig;
+ *   chainInfo: Record<string, import('@agoric/orchestration').ChainInfo>;
+ *   assetInfo: Record<Denom, import('@agoric/orchestration').DenomDetail & { brandKey?: string}>;
  * }} privateArgs
  * @param {Zone} zone
  * @param {OrchestrationTools} tools
@@ -250,6 +255,13 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
   });
 
   await settlerKit.creator.monitorMintingDeposits();
+
+  registerKnownChainsAndAssets(
+    chainHub,
+    terms.brands,
+    privateArgs.chainInfo,
+    privateArgs.assetInfo,
+  );
 
   return harden({ creatorFacet, publicFacet });
 };
