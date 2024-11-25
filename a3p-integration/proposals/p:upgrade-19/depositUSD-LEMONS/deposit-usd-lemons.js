@@ -1,3 +1,4 @@
+// @ts-nocheck
 /* eslint-disable no-undef */
 const PROVISIONING_POOL_ADDR = 'agoric1megzytg65cyrgzs6fvzxgrcqvwwl7ugpt62346';
 

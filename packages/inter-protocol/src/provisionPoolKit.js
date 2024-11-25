@@ -1,7 +1,6 @@
 // @ts-check
 import { X, q, Fail } from '@endo/errors';
 import { E } from '@endo/far';
-import { Far } from '@endo/marshal';
 
 import { AmountMath, BrandShape } from '@agoric/ertp';
 import { deeplyFulfilledObject, makeTracer } from '@agoric/internal';
@@ -15,7 +14,6 @@ import {
   M,
   makeScalarBigMapStore,
   makeScalarBigSetStore,
-  prepareExoClassKit,
 } from '@agoric/vat-data';
 import { PowerFlags } from '@agoric/vats/src/walletFlags.js';
 import {
@@ -75,18 +73,22 @@ const FIRST_LOWER_NEAR_KEYWORD = /^[a-z][a-zA-Z0-9_$]*$/;
  * Given attenuated access to the funding purse, handle requests to provision
  * smart wallets.
  *
- * @param {(depositBank: ERef<Bank>) => Promise<void>} sendInitialPayment
- * @param {() => void} onProvisioned
+ * @param {import('@agoric/zone').Zone} zone
  */
-export const makeBridgeProvisionTool = (sendInitialPayment, onProvisioned) => {
-  /** @param {ProvisionPoolKitReferences} refs */
-  const makeBridgeHandler = ({
-    bankManager,
-    namesByAddressAdmin,
-    walletFactory,
-  }) =>
-    Far('provisioningHandler', {
-      fromBridge: async obj => {
+export const prepareBridgeProvisionTool = zone =>
+  zone.exoClass(
+    'smartWalletProvisioningHandler',
+    M.interface('ProvisionBridgeHandlerMaker', {
+      fromBridge: M.callWhen(M.record()).returns(),
+    }),
+    (bankManager, walletFactory, namesByAddressAdmin, forHandler) => ({
+      bankManager,
+      walletFactory,
+      namesByAddressAdmin,
+      forHandler,
+    }),
+    {
+      async fromBridge(obj) {
         obj.type === 'PLEASE_PROVISION' ||
           Fail`Unrecognized request ${obj.type}`;
         trace('PLEASE_PROVISION', obj);
@@ -94,9 +96,12 @@ export const makeBridgeProvisionTool = (sendInitialPayment, onProvisioned) => {
         powerFlags.includes(PowerFlags.SMART_WALLET) ||
           Fail`missing SMART_WALLET in powerFlags`;
 
+        const { bankManager, walletFactory, namesByAddressAdmin, forHandler } =
+          this.state;
+
         const bank = E(bankManager).getBankForAddress(address);
         // only proceed if we can provide funds
-        await sendInitialPayment(bank);
+        await forHandler.sendInitialPayment(bank);
 
         const [_, created] = await E(walletFactory).provideSmartWallet(
           address,
@@ -104,31 +109,30 @@ export const makeBridgeProvisionTool = (sendInitialPayment, onProvisioned) => {
           namesByAddressAdmin,
         );
         if (created) {
-          onProvisioned();
+          forHandler.onProvisioned();
         }
         trace(created ? 'provisioned' : 're-provisioned', address);
       },
-    });
-  return makeBridgeHandler;
-};
+    },
+  );
 
 /**
- * @param {import('@agoric/vat-data').Baggage} baggage
+ * @param {import('@agoric/zone').Zone} zone
  * @param {{
  *   makeRecorderKit: import('@agoric/zoe/src/contractSupport/recorder.js').MakeRecorderKit;
  *   params: any;
  *   poolBank: import('@endo/far').ERef<Bank>;
  *   zcf: ZCF;
+ *   makeBridgeProvisionTool: ReturnType<typeof prepareBridgeProvisionTool>;
  * }} powers
  */
 export const prepareProvisionPoolKit = (
-  baggage,
-  { makeRecorderKit, params, poolBank, zcf },
+  zone,
+  { makeRecorderKit, params, poolBank, zcf, makeBridgeProvisionTool },
 ) => {
   const zoe = zcf.getZoeService();
 
-  const makeProvisionPoolKitInternal = prepareExoClassKit(
-    baggage,
+  const makeProvisionPoolKitInternal = zone.exoClassKit(
     'ProvisionPoolKit',
     {
       machine: M.interface('ProvisionPoolKit machine', {
@@ -151,6 +155,7 @@ export const prepareProvisionPoolKit = (
         ackWallet: M.call(M.string()).returns(M.boolean()),
       }),
       helper: UnguardedHelperI,
+      forHandler: UnguardedHelperI,
       public: M.interface('ProvisionPoolKit public', {
         getPublicTopics: M.call().returns({ metrics: PublicTopicShape }),
       }),
@@ -217,23 +222,24 @@ export const prepareProvisionPoolKit = (
           const refs = await deeplyFulfilledObject(obj);
           Object.assign(this.state, refs);
         },
+        /** @returns {import('@agoric/vats').BridgeHandler} */
         makeHandler() {
           const { bankManager, namesByAddressAdmin, walletFactory } =
             this.state;
           if (!bankManager || !namesByAddressAdmin || !walletFactory) {
             throw Fail`must set references before handling requests`;
           }
-          const { helper } = this.facets;
-          // a bit obtuse but leave for backwards compatibility with tests
-          const innerMaker = makeBridgeProvisionTool(
-            bank => helper.sendInitialPayment(bank),
-            () => helper.onProvisioned(),
-          );
-          return innerMaker({
+
+          const { forHandler } = this.facets;
+
+          const provisionHandler = makeBridgeProvisionTool(
             bankManager,
-            namesByAddressAdmin,
             walletFactory,
-          });
+            namesByAddressAdmin,
+            forHandler,
+          );
+
+          return provisionHandler;
         },
         /**
          * @param {Brand} brand
@@ -310,37 +316,6 @@ export const prepareProvisionPoolKit = (
             provided,
           );
           facets.helper.publishMetrics();
-        },
-        onProvisioned() {
-          const { state, facets } = this;
-          state.walletsProvisioned += 1n;
-          facets.helper.publishMetrics();
-        },
-        /** @param {ERef<Bank>} destBank */
-        async sendInitialPayment(destBank) {
-          const {
-            facets: { helper },
-            state: { fundPurse, poolBrand },
-          } = this;
-          const perAccountInitialAmount = /** @type {Amount<'nat'>} */ (
-            params.getPerAccountInitialAmount()
-          );
-          const initialPmt = await E(fundPurse).withdraw(
-            perAccountInitialAmount,
-          );
-
-          const destPurse = E(destBank).getPurse(poolBrand);
-          return E(destPurse)
-            .deposit(initialPmt)
-            .then(amt => {
-              helper.onSendFunds(perAccountInitialAmount);
-              trace('provisionPool sent', amt);
-            })
-            .catch(reason => {
-              console.error(X`initial deposit failed: ${q(reason)}`);
-              void E(fundPurse).deposit(initialPmt);
-              throw reason;
-            });
         },
         /**
          * @param {ERef<Purse>} exchangePurse
@@ -489,6 +464,39 @@ export const prepareProvisionPoolKit = (
           const rxd = await E(fundPurse).deposit(payout);
           helper.onTrade(rxd);
           return rxd;
+        },
+      },
+      forHandler: {
+        onProvisioned() {
+          const { state, facets } = this;
+          state.walletsProvisioned += 1n;
+          facets.helper.publishMetrics();
+        },
+        /** @param {ERef<Bank>} destBank */
+        async sendInitialPayment(destBank) {
+          const {
+            facets: { helper },
+            state: { fundPurse, poolBrand },
+          } = this;
+          const perAccountInitialAmount = /** @type {Amount<'nat'>} */ (
+            params.getPerAccountInitialAmount()
+          );
+          const initialPmt = await E(fundPurse).withdraw(
+            perAccountInitialAmount,
+          );
+
+          const destPurse = E(destBank).getPurse(poolBrand);
+          return E(destPurse)
+            .deposit(initialPmt)
+            .then(amt => {
+              helper.onSendFunds(perAccountInitialAmount);
+              trace('provisionPool sent', amt);
+            })
+            .catch(reason => {
+              console.error(X`initial deposit failed: ${q(reason)}`);
+              void E(fundPurse).deposit(initialPmt);
+              throw reason;
+            });
         },
       },
       public: {

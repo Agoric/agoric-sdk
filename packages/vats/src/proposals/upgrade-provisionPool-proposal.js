@@ -1,5 +1,8 @@
 import { E } from '@endo/far';
 import { deeplyFulfilled } from '@endo/marshal';
+import { makeTracer } from '@agoric/internal';
+
+const tracer = makeTracer('UpgradeProvisionPool');
 
 /**
  * @param {BootstrapPowers & {
@@ -27,7 +30,7 @@ export const upgradeProvisionPool = async (
   const { provisionPoolRef } = options.options;
 
   assert(provisionPoolRef.bundleID);
-  console.log(`PROVISION POOL BUNDLE ID: `, provisionPoolRef.bundleID);
+  tracer(`PROVISION POOL BUNDLE ID: `, provisionPoolRef);
 
   const [
     provisionPoolStartResult,
@@ -66,7 +69,7 @@ export const upgradeProvisionPool = async (
     newPrivateArgs,
   );
 
-  console.log('ProvisionPool upgraded: ', upgradeResult);
+  tracer('ProvisionPool upgraded: ', upgradeResult);
 
   const references = {
     bankManager,
@@ -74,17 +77,17 @@ export const upgradeProvisionPool = async (
     walletFactory: wfCreatorFacet,
   };
 
-  console.log('Calling setReferences with: ', references);
+  tracer('Calling setReferences with: ', references);
   await E(ppCreatorFacet).setReferences(references);
 
-  console.log('Creating bridgeHandler...');
+  tracer('Creating bridgeHandler...');
   const bridgeHandler = await E(ppCreatorFacet).makeHandler();
 
-  console.log('Setting new bridgeHandler...');
+  tracer('Setting new bridgeHandler...');
   // @ts-expect-error casting
   await E(provisionWalletBridgeManager).setHandler(bridgeHandler);
 
-  console.log('Done.');
+  tracer('Done.');
 };
 
 export const getManifestForUpgradingProvisionPool = (

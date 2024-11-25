@@ -6,124 +6,181 @@
  * - https://github.com/Agoric/agoric-sdk/issues/8724
  *
  * The test scenario is as follows;
- * - Prerequisite: provisionPool and bank are already upgraded. See `upgrade.go`
- * 1. Add a new account and successfully provision it
- *  - Observe new account's address under `published.wallet.${address}`
- * 2. Send some USDC_axl to provisionPoolAddress and observe its IST balances increases accordingly
- * 3. Introduce a new asset to the chain and start a PSM instance for the new asset
- * 3a. Deposit some of that asset to provisionPoolAddress
- * 3b. Observe provisionPoolAddress' IST balance increase by the amount deposited in step 3a
+ * 1. Upgrade provisionPool. This upgrade overrides provisionWalletBridgerManager with a durable one
+ * 2. Add a new account and successfully provision it
+ *   - Observe new account's address under `published.wallet.${address}`
+ * 3. Send some USDC_axl to provisionPoolAddress and observe its IST balances increases accordingly
+ * 4. Introduce a new asset to the chain and start a PSM instance for the new asset
+ *   4a. Deposit some of that asset to provisionPoolAddress
+ *   4b. Observe provisionPoolAddress' IST balance increase by the amount deposited in step 4a
+ * 5. Perform a null upgrade for provisionPool. This upgrade does NOT override provisionWalletBridgerManager
+ *   - The goal here is to allow testing the bridgeHandler from the first upgrade is in fact durable
+ * 6. Auto provision
+ *   6a. Introduce a new account
+ *   6b. Fund it with IST and ATOM to be able to open a vault
+ *   6c. Try to open a vault WITHOUT provisioning the newly introduced account
+ *   6d. Observe the new account's address under `published.wallet`
+ * 7. Same as step 2. Checks manual provision works after null upgrade
  */
 
 import '@endo/init';
 import test from 'ava';
-import { execFileSync } from 'node:child_process';
 import {
   addUser,
-  makeAgd,
   evalBundles,
   agd as agdAmbient,
   agoric,
-  bankSend,
   getISTBalance,
+  getDetailsMatchingVats,
+  GOV1ADDR,
+  openVault,
+  ATOM_DENOM,
 } from '@agoric/synthetic-chain';
-import { NonNullish } from './test-lib/errors.js';
 import {
-  retryUntilCondition,
+  makeVstorageKit,
   waitUntilAccountFunded,
   waitUntilContractDeployed,
-} from './test-lib/sync-tools.js';
+} from '@agoric/client-utils';
+import { NonNullish } from '@agoric/internal';
+import {
+  bankSend,
+  checkUserProvisioned,
+  introduceAndProvision,
+  provision,
+} from './test-lib/provision-helpers.js';
 
 const PROVISIONING_POOL_ADDR = 'agoric1megzytg65cyrgzs6fvzxgrcqvwwl7ugpt62346';
 
 const ADD_PSM_DIR = 'addUsdLemons';
 const DEPOSIT_USD_LEMONS_DIR = 'depositUSD-LEMONS';
+const UPGRADE_PP_DIR = 'upgradeProvisionPool';
+const NULL_UPGRADE_PP_DIR = 'nullUpgradePP';
 
 const USDC_DENOM = NonNullish(process.env.USDC_DENOM);
-
-const agd = makeAgd({ execFileSync }).withOpts({ keyringBackend: 'test' });
 
 const ambientAuthority = {
   query: agdAmbient.query,
   follow: agoric.follow,
   setTimeout,
+  log: console.log,
 };
 
-const provision = (name, address) =>
-  agd.tx(['swingset', 'provision-one', name, address, 'SMART_WALLET'], {
-    chainId: 'agoriclocal',
-    from: 'validator',
-    yes: true,
-  });
-
-const introduceAndProvision = async name => {
-  const address = await addUser(name);
-  console.log('ADDR', name, address);
-
-  const provisionP = provision(name, address);
-
-  return { provisionP, address };
-};
-
-const getProvisionedAddresses = async () => {
-  const { children } = await agd.query([
-    'vstorage',
-    'children',
-    'published.wallet',
-  ]);
-  return children;
-};
-
-const checkUserProvisioned = addr =>
-  retryUntilCondition(
-    getProvisionedAddresses,
-    children => children.includes(addr),
-    'Account not provisioned',
-    { maxRetries: 5, retryIntervalMs: 1000, log: console.log, setTimeout },
+test.before(async t => {
+  const vstorageKit = await makeVstorageKit(
+    { fetch },
+    { rpcAddrs: ['http://localhost:26657'], chainName: 'agoriclocal' },
   );
 
-test(`upgrade provision pool`, async t => {
-  // Introduce new user then provision
-  const { address } = await introduceAndProvision('provisionTester');
-  await checkUserProvisioned(address);
+  t.context = {
+    vstorageKit,
+  };
+});
 
-  // Send USDC_axl to pp
-  const istBalanceBefore = await getISTBalance(PROVISIONING_POOL_ADDR);
-  await bankSend(PROVISIONING_POOL_ADDR, `500000${USDC_DENOM}`);
+test.serial('upgrade provisionPool', async t => {
+  await evalBundles(UPGRADE_PP_DIR);
 
-  // Check IST balance
+  const vatDetailsAfter = await getDetailsMatchingVats('provisionPool');
+  const { incarnation } = vatDetailsAfter.find(vat =>
+    vat.vatName.endsWith('provisionPool'),
+  );
+
+  t.log(vatDetailsAfter);
+  t.is(incarnation, 1, 'incorrect incarnation');
+  t.pass();
+});
+
+test.serial(
+  `check provisionPool can recover purse and asset subscribers after upgrade`,
+  async t => {
+    // @ts-expect-error casting
+    const { vstorageKit } = t.context;
+
+    // Introduce new user then provision
+    const { address } = await introduceAndProvision('provisionTester');
+    await checkUserProvisioned(address, vstorageKit);
+
+    // Send USDC_axl to pp
+    const istBalanceBefore = await getISTBalance(PROVISIONING_POOL_ADDR);
+    await bankSend(PROVISIONING_POOL_ADDR, `500000${USDC_DENOM}`);
+
+    // Check IST balance
+    await waitUntilAccountFunded(
+      PROVISIONING_POOL_ADDR,
+      ambientAuthority,
+      { denom: 'uist', value: istBalanceBefore + 500000 },
+      { errorMessage: 'Provision pool not able to swap USDC_axl for IST.' },
+    );
+
+    // Introduce USD_LEMONS
+    await evalBundles(ADD_PSM_DIR);
+    await waitUntilContractDeployed('psm-IST-USD_LEMONS', ambientAuthority, {
+      errorMessage: 'psm-IST-USD_LEMONS instance not observed.',
+    });
+
+    // Provision the provisionPoolAddress. This is a workaround of provisionPoolAddress
+    // not having a depositFacet published to namesByAddress. Shouldn't be a problem since
+    // vat-bank keeps track of virtual purses per address basis. We need there to be
+    // depositFacet for provisionPoolAddress since we'll fund it with USD_LEMONS
+    await provision('provisionPoolAddress', PROVISIONING_POOL_ADDR);
+    await checkUserProvisioned(PROVISIONING_POOL_ADDR, vstorageKit);
+
+    // Send USD_LEMONS to provisionPoolAddress
+    const istBalanceBeforeLemonsSent = await getISTBalance(
+      PROVISIONING_POOL_ADDR,
+    );
+    await evalBundles(DEPOSIT_USD_LEMONS_DIR);
+
+    // Check balance again
+    await waitUntilAccountFunded(
+      PROVISIONING_POOL_ADDR,
+      ambientAuthority,
+      { denom: 'uist', value: istBalanceBeforeLemonsSent + 500000 },
+      { errorMessage: 'Provision pool not able to swap USDC_axl for IST.' },
+    );
+    t.pass();
+  },
+);
+
+test.serial('null upgrade', async t => {
+  await evalBundles(NULL_UPGRADE_PP_DIR);
+
+  const vatDetailsAfter = await getDetailsMatchingVats('provisionPool');
+  const { incarnation } = vatDetailsAfter.find(vat => vat.vatID === 'v28'); // provisionPool is v28
+
+  t.log(vatDetailsAfter);
+  t.is(incarnation, 2, 'incorrect incarnation');
+  t.pass();
+});
+
+test.serial('auto provision', async t => {
+  // @ts-expect-error casting
+  const { vstorageKit } = t.context;
+
+  const address = await addUser('automaticallyProvisioned');
+  console.log('ADDR', 'automaticallyProvisioned', address);
+
+  await bankSend(address, `50000000${ATOM_DENOM}`);
+  // some ist is needed for opening a new vault
+  await bankSend(address, `10000000uist`, GOV1ADDR);
   await waitUntilAccountFunded(
-    PROVISIONING_POOL_ADDR,
-    ambientAuthority,
-    { denom: 'uist', value: istBalanceBefore + 500000 },
-    { errorMessage: 'Provision pool not able to swap USDC_axl for IST.' },
+    address,
+    // TODO: drop agd.query and switch to vstorgeKit
+    { log: console.log, setTimeout, query: agdAmbient.query },
+    { denom: ATOM_DENOM, value: 50_000_000 },
+    { errorMessage: `not able to fund ${address}` },
   );
 
-  // Introduce USD_LEMONS
-  await evalBundles(ADD_PSM_DIR);
-  await waitUntilContractDeployed('psm-IST-USD_LEMONS', ambientAuthority, {
-    errorMessage: 'psm-IST-USD_LEMONS instance not observed.',
-  });
+  await openVault(address, '10.0', '20.0');
+  await checkUserProvisioned(address, vstorageKit);
+  t.pass();
+});
 
-  // Provision the provisionPoolAddress. This is a workaround of provisionPoolAddress
-  // not having a depositFacet published to namesByAddress. Shouldn't be a problem since
-  // vat-bank keeps track of virtual purses per address basis. We need there to be
-  // depositFacet for provisionPoolAddress since we'll fund it with USD_LEMONS
-  await provision('provisionPoolAddress', PROVISIONING_POOL_ADDR);
-  await checkUserProvisioned(PROVISIONING_POOL_ADDR);
+test.serial('manual provision', async t => {
+  // @ts-expect-error casting
+  const { vstorageKit } = t.context;
 
-  // Send USD_LEMONS to provisionPoolAddress
-  const istBalanceBeforeLemonsSent = await getISTBalance(
-    PROVISIONING_POOL_ADDR,
-  );
-  await evalBundles(DEPOSIT_USD_LEMONS_DIR);
-
-  // Check balance again
-  await waitUntilAccountFunded(
-    PROVISIONING_POOL_ADDR,
-    ambientAuthority,
-    { denom: 'uist', value: istBalanceBeforeLemonsSent + 500000 },
-    { errorMessage: 'Provision pool not bale swap USDC_axl for IST.' },
-  );
+  const { address } = await introduceAndProvision('manuallyProvisioned');
+  await checkUserProvisioned(address, vstorageKit);
+  t.log('manuallyProvisioned address:', address);
   t.pass();
 });
