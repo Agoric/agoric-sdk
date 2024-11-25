@@ -327,8 +327,6 @@ export const preparePacketTools = (zone, vowTools) => {
           }
           this.state.pending = 0;
           this.state.upcallQueue = null;
-          // FIXME when it returns undefined this causes an error:
-          // In "unsubscribeFromTransfers" method of (PacketToolsKit utils): result: undefined "[undefined]" - Must be a promise
           return watch(this.facets.utils.unsubscribeFromTransfers());
         },
         subscribeToTransfers() {
