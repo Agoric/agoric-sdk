@@ -186,6 +186,8 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
       marshaller,
       timerService: timer,
       feeConfig: makeTestFeeConfig(usdc),
+      chainInfo: {},
+      assetInfo: {},
     },
     facadeServices: {
       agoricNames,

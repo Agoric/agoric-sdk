@@ -129,6 +129,8 @@ const oraclesUsage = 'use --oracle name:address ...';
 
 const feedPolicyUsage = 'use --feedPolicy <policy> ...';
 
+const chainInfoUsage = 'use --chainInfo chainName:CosmosChainInfo ...';
+
 /**
  * @typedef {{
  *   flatFee: string;
@@ -139,6 +141,8 @@ const feedPolicyUsage = 'use --feedPolicy <policy> ...';
  *   oracle?: string[];
  *   usdcDenom: string;
  *   feedPolicy?: string;
+ *   chainInfo: string;
+ *   assetInfo: string;
  * }} FastUSDCOpts
  */
 
@@ -180,7 +184,15 @@ export default async (homeP, endowments) => {
   /** @type {{ values: FastUSDCOpts }} */
   // @ts-expect-error ensured by options
   const {
-    values: { oracle: oracleArgs, net, usdcDenom, feedPolicy, ...fees },
+    values: {
+      oracle: oracleArgs,
+      net,
+      usdcDenom,
+      feedPolicy,
+      chainInfo,
+      assetInfo,
+      ...fees
+    },
   } = parseArgs({ args: scriptArgs, options });
 
   const parseFeedPolicy = () => {
@@ -226,6 +238,15 @@ export default async (homeP, endowments) => {
     };
   };
 
+  const parseChainInfo = () => {
+    if (!chainInfo) throw Error(chainInfoUsage);
+    return JSON.parse(chainInfo);
+  };
+  const parseAssetInfo = () => {
+    if (!assetInfo) throw Error(chainInfoUsage);
+    return JSON.parse(assetInfo);
+  };
+
   /** @type {FastUSDCConfig} */
   const config = harden({
     oracles: parseOracleArgs(),
@@ -234,6 +255,8 @@ export default async (homeP, endowments) => {
     },
     feeConfig: parseFeeConfigArgs(),
     feedPolicy: parseFeedPolicy(),
+    chainInfo: parseChainInfo(),
+    assetInfo: parseAssetInfo(),
   });
 
   await writeCoreEval('start-fast-usdc', utils =>

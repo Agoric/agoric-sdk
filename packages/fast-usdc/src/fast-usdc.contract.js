@@ -7,6 +7,7 @@ import {
 import { observeIteration, subscribeEach } from '@agoric/notifier';
 import {
   OrchestrationPowersShape,
+  registerKnownChainsAndAssets,
   withOrchestration,
 } from '@agoric/orchestration';
 import { provideSingleton } from '@agoric/zoe/src/contractSupport/durability.js';
@@ -53,6 +54,8 @@ export const meta = {
     ...OrchestrationPowersShape,
     feeConfig: FeeConfigShape,
     marshaller: M.remotable(),
+    chainInfo: M.record(), // TODO narrow
+    assetInfo: M.record(), // TODO narrow
   },
 };
 harden(meta);
@@ -62,6 +65,8 @@ harden(meta);
  * @param {OrchestrationPowers & {
  *   marshaller: Marshaller;
  *   feeConfig: FeeConfig;
+ *   chainInfo: Record<string, import('@agoric/orchestration').ChainInfo>;
+ *   assetInfo: Record<Denom, import('@agoric/orchestration').DenomDetail & { brandKey?: string}>;
  * }} privateArgs
  * @param {Zone} zone
  * @param {OrchestrationTools} tools
@@ -111,7 +116,6 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
   const creatorFacet = zone.exo('Fast USDC Creator', undefined, {
     /** @type {(operatorId: string) => Promise<Invitation<OperatorKit>>} */
     async makeOperatorInvitation(operatorId) {
-      // eslint-disable-next-line no-use-before-define
       return feedKit.creator.makeOperatorInvitation(operatorId);
     },
     /**
@@ -157,7 +161,6 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
      * @param {CctpTxEvidence} evidence
      */
     makeTestPushInvitation(evidence) {
-      // eslint-disable-next-line no-use-before-define
       void advancer.handleTransactionEvent(evidence);
       return makeTestInvitation();
     },
@@ -225,6 +228,13 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
       }
     },
   });
+
+  registerKnownChainsAndAssets(
+    chainHub,
+    terms.brands,
+    privateArgs.chainInfo,
+    privateArgs.assetInfo,
+  );
 
   return harden({ creatorFacet, publicFacet });
 };
