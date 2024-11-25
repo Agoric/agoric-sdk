@@ -48,7 +48,7 @@ export const makeVStorage = (powers, config) => {
         return data;
       });
 
-  return {
+  const vstorage = {
     url,
     decode({ result: { response } }) {
       const { code } = response;
@@ -65,11 +65,11 @@ export const makeVStorage = (powers, config) => {
      */
     async readLatest(path = 'published') {
       const raw = await readStorage(path, { kind: 'data' });
-      return this.decode(raw);
+      return vstorage.decode(raw);
     },
     async keys(path = 'published') {
       const raw = await readStorage(path, { kind: 'children' });
-      return JSON.parse(this.decode(raw)).children;
+      return JSON.parse(vstorage.decode(raw)).children;
     },
     /**
      * @param {string} path
@@ -78,7 +78,7 @@ export const makeVStorage = (powers, config) => {
      */
     async readAt(path, height = undefined) {
       const raw = await readStorage(path, { kind: 'data', height });
-      const txt = this.decode(raw);
+      const txt = vstorage.decode(raw);
       /** @type {{ value: string }} */
       const { value } = JSON.parse(txt);
       return JSON.parse(value);
@@ -99,7 +99,7 @@ export const makeVStorage = (powers, config) => {
         // console.debug('READING', { blockHeight });
         let values;
         try {
-          ({ blockHeight, values } = await this.readAt(
+          ({ blockHeight, values } = await vstorage.readAt(
             path,
             blockHeight && Number(blockHeight) - 1,
           ));
@@ -127,6 +127,7 @@ export const makeVStorage = (powers, config) => {
       return parts.flat();
     },
   };
+  return vstorage;
 };
 /** @typedef {ReturnType<typeof makeVStorage>} VStorage */
 
