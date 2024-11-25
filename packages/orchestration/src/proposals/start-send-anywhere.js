@@ -1,7 +1,3 @@
-/**
- * @file This is for use in tests in a3p-integration
- * Unlike most builder scripts, this one includes the proposal exports as well.
- */
 import {
   deeplyFulfilledObject,
   makeTracer,
@@ -12,6 +8,7 @@ import { E } from '@endo/far';
 /// <reference types="@agoric/vats/src/core/types-ambient"/>
 /**
  * @import {Installation} from '@agoric/zoe/src/zoeService/utils.js';
+ * @import {CosmosChainInfo, Denom, DenomDetail} from '@agoric/orchestration';
  */
 
 const trace = makeTracer('StartSA', true);
@@ -28,28 +25,37 @@ const trace = makeTracer('StartSA', true);
  *     };
  *   };
  * }} powers
+ * @param {{
+ *   options: {
+ *     chainInfo: Record<string, CosmosChainInfo>;
+ *     assetInfo: Record<Denom, DenomDetail & { brandKey?: string }>;
+ *   };
+ * }} config
  */
-export const startSendAnywhere = async ({
-  consume: {
-    agoricNames,
-    board,
-    chainStorage,
-    chainTimerService,
-    cosmosInterchainService,
-    localchain,
-    startUpgradable,
+export const startSendAnywhere = async (
+  {
+    consume: {
+      agoricNames,
+      board,
+      chainStorage,
+      chainTimerService,
+      cosmosInterchainService,
+      localchain,
+      startUpgradable,
+    },
+    installation: {
+      consume: { sendAnywhere },
+    },
+    instance: {
+      // @ts-expect-error unknown instance
+      produce: { sendAnywhere: produceInstance },
+    },
+    issuer: {
+      consume: { IST },
+    },
   },
-  installation: {
-    consume: { sendAnywhere },
-  },
-  instance: {
-    // @ts-expect-error unknown instance
-    produce: { sendAnywhere: produceInstance },
-  },
-  issuer: {
-    consume: { IST },
-  },
-}) => {
+  { options: { chainInfo, assetInfo } },
+) => {
   trace(startSendAnywhere.name);
 
   const marshaller = await E(board).getReadonlyMarshaller();
@@ -64,6 +70,8 @@ export const startSendAnywhere = async ({
         'send-anywhere',
       ),
       timerService: chainTimerService,
+      chainInfo,
+      assetInfo,
     }),
   );
 
@@ -78,7 +86,7 @@ export const startSendAnywhere = async ({
 };
 harden(startSendAnywhere);
 
-export const getManifest = ({ restoreRef }, { installationRef }) => {
+export const getManifest = ({ restoreRef }, { installationRef, options }) => {
   return {
     manifest: {
       [startSendAnywhere.name]: {
@@ -106,31 +114,6 @@ export const getManifest = ({ restoreRef }, { installationRef }) => {
     installations: {
       sendAnywhere: restoreRef(installationRef),
     },
+    options,
   };
-};
-
-/** @type {import('@agoric/deploy-script-support/src/externalTypes.js').CoreEvalBuilder} */
-export const defaultProposalBuilder = async ({ publishRef, install }) =>
-  harden({
-    // Somewhat unorthodox, source the exports from this builder module
-    sourceSpec: '@agoric/builders/scripts/testing/start-send-anywhere.js',
-    getManifestCall: [
-      getManifest.name,
-      {
-        installationRef: publishRef(
-          install(
-            '@agoric/orchestration/src/examples/send-anywhere.contract.js',
-          ),
-        ),
-      },
-    ],
-  });
-
-/** @type {import('@agoric/deploy-script-support/src/externalTypes.js').DeployScriptFunction} */
-export default async (homeP, endowments) => {
-  // import dynamically so the module can work in CoreEval environment
-  const dspModule = await import('@agoric/deploy-script-support');
-  const { makeHelpers } = dspModule;
-  const { writeCoreEval } = await makeHelpers(homeP, endowments);
-  await writeCoreEval(startSendAnywhere.name, defaultProposalBuilder);
 };

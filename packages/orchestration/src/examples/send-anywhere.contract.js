@@ -4,6 +4,7 @@ import { M } from '@endo/patterns';
 import { prepareChainHubAdmin } from '../exos/chain-hub-admin.js';
 import { AnyNatAmountShape } from '../typeGuards.js';
 import { withOrchestration } from '../utils/start-helper.js';
+import { registerKnownChainsAndAssets } from '../utils/chain-hub-helper.js';
 import * as flows from './send-anywhere.flows.js';
 import * as sharedFlows from './shared.flows.js';
 
@@ -11,6 +12,7 @@ import * as sharedFlows from './shared.flows.js';
  * @import {Vow} from '@agoric/vow';
  * @import {Zone} from '@agoric/zone';
  * @import {OrchestrationPowers, OrchestrationTools} from '../utils/start-helper.js';
+ * @import {CosmosChainInfo, Denom, DenomDetail} from '@agoric/orchestration';
  */
 
 export const SingleNatAmountRecord = M.and(
@@ -27,6 +29,8 @@ harden(SingleNatAmountRecord);
  * @param {ZCF} zcf
  * @param {OrchestrationPowers & {
  *   marshaller: Marshaller;
+ *   chainInfo: Record<string, CosmosChainInfo>;
+ *   assetInfo: Record<Denom, DenomDetail & { brandKey?: string }>;
  * }} privateArgs
  * @param {Zone} zone
  * @param {OrchestrationTools} tools
@@ -80,6 +84,13 @@ export const contract = async (
         );
       },
     },
+  );
+
+  registerKnownChainsAndAssets(
+    chainHub,
+    zcf.getTerms().brands,
+    privateArgs.chainInfo,
+    privateArgs.assetInfo,
   );
 
   return { publicFacet, creatorFacet };
