@@ -46,18 +46,16 @@ test('cannot process same tx twice', t => {
 
   t.throws(() => statusManager.advance(evidence), {
     message:
-      'Transaction already seen: "seenTx:[\\"0xc81bc6105b60a234c7c50ac17816ebcd5561d366df8bf3be59ff387552761702\\",1]"',
+      'Transaction already seen: "seenTx:0xc81bc6105b60a234c7c50ac17816ebcd5561d366df8bf3be59ff387552761702"',
   });
 
   t.throws(() => statusManager.observe(evidence), {
     message:
-      'Transaction already seen: "seenTx:[\\"0xc81bc6105b60a234c7c50ac17816ebcd5561d366df8bf3be59ff387552761702\\",1]"',
+      'Transaction already seen: "seenTx:0xc81bc6105b60a234c7c50ac17816ebcd5561d366df8bf3be59ff387552761702"',
   });
 
   // new txHash should not throw
   t.notThrows(() => statusManager.advance({ ...evidence, txHash: '0xtest2' }));
-  // new chainId with existing txHash should not throw
-  t.notThrows(() => statusManager.advance({ ...evidence, chainId: 9999 }));
 });
 
 test('settle removes entries from PendingTxs', t => {
@@ -89,7 +87,7 @@ test('cannot SETTLE without an ADVANCED or OBSERVED entry', t => {
       statusManager.settle(evidence.tx.forwardingAddress, evidence.tx.amount),
     {
       message:
-        'key "pendingTx:[\\"noble1x0ydg69dh6fqvr27xjvp6maqmrldam6yfelqkd\\",\\"150000000\\"]" not found in collection "PendingTxs"',
+        'No unsettled entry for ["noble1x0ydg69dh6fqvr27xjvp6maqmrldam6yfelqkd","[150000000n]"]',
     },
   );
 });
@@ -141,19 +139,17 @@ test('settle SETTLES first matched entry', t => {
       statusManager.settle(evidence.tx.forwardingAddress, evidence.tx.amount),
     {
       message:
-        'No unsettled entry for "pendingTx:[\\"noble1x0ydg69dh6fqvr27xjvp6maqmrldam6yfelqkd\\",\\"150000000\\"]"',
+        'No unsettled entry for ["noble1x0ydg69dh6fqvr27xjvp6maqmrldam6yfelqkd","[150000000n]"]',
     },
     'No more matches to settle',
   );
 });
 
-test('lookup throws when presented a key it has not seen', t => {
+test('lookingPending returns an empty array when presented a key it has not seen', t => {
   const zone = provideDurableZone('status-test');
   const statusManager = prepareStatusManager(zone.subZone('status-manager'));
 
-  t.throws(() => statusManager.lookupPending('noble123', 1n), {
-    message: 'Key "pendingTx:[\\"noble123\\",\\"1\\"]" not yet observed',
-  });
+  t.deepEqual(statusManager.lookupPending('noble123', 1n), []);
 });
 
 test('StatusManagerKey logic handles addresses with hyphens', async t => {
@@ -179,4 +175,25 @@ test('StatusManagerKey logic handles addresses with hyphens', async t => {
     evidence.tx.amount,
   );
   t.is(remainingEntries.length, 0, 'Entry should be settled');
+});
+
+test('hasPendingSettlement code paths', t => {
+  const zone = provideDurableZone('status-test');
+  const statusManager = prepareStatusManager(zone.subZone('status-manager'));
+  const evidence = MockCctpTxEvidences.AGORIC_PLUS_OSMO();
+  const { forwardingAddress, amount } = evidence.tx;
+
+  // Nothing in store
+  t.false(statusManager.hasPendingSettlement(forwardingAddress, amount));
+
+  // Observed in store
+  statusManager.observe(evidence);
+  t.true(statusManager.hasPendingSettlement(forwardingAddress, amount));
+  statusManager.settle(forwardingAddress, amount);
+
+  // Advanced in store
+  statusManager.advance({ ...evidence, txHash: '0xtest2' });
+  t.true(statusManager.hasPendingSettlement(forwardingAddress, amount));
+  statusManager.settle(forwardingAddress, amount);
+  t.false(statusManager.hasPendingSettlement(forwardingAddress, amount));
 });

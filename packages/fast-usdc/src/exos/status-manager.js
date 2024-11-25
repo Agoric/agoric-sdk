@@ -14,8 +14,8 @@ import { PendingTxStatus } from '../constants.js';
 /**
  * Create the key for the pendingTxs MapStore.
  *
- * The key is a composite of `txHash` and `chainId` and not meant to be
- * parsable.
+ * The key is a composite of Noble address `addr` and transaction `amount` and
+ * not meant to be parsable.
  *
  * @param {NobleAddress} addr
  * @param {bigint} amount
@@ -38,15 +38,14 @@ const pendingTxKeyOf = evidence => {
 /**
  * Get the key for the seenTxs SetStore.
  *
- * The key is a composite of `NobleAddress` and transaction `amount` and not
- * meant to be parsable.
+ * The key is based on `txHash` and not meant to be parsable.
  *
  * @param {CctpTxEvidence} evidence
  * @returns {SeenTxKey}
  */
 const seenTxKeyOf = evidence => {
-  const { txHash, chainId } = evidence;
-  return `seenTx:${JSON.stringify([txHash, chainId])}`;
+  const { txHash } = evidence;
+  return `seenTx:${txHash}`;
 };
 
 /**
@@ -108,6 +107,7 @@ export const prepareStatusManager = zone => {
       /**
        * Add a new transaction with ADVANCED status
        * @param {CctpTxEvidence} evidence
+       * @throws {Error} if transaction was already seen
        */
       advance(evidence) {
         recordPendingTx(evidence, PendingTxStatus.Advanced);
@@ -116,6 +116,7 @@ export const prepareStatusManager = zone => {
       /**
        * Add a new transaction with OBSERVED status
        * @param {CctpTxEvidence} evidence
+       * @throws {Error} if transaction was already seen
        */
       observe(evidence) {
         recordPendingTx(evidence, PendingTxStatus.Observed);
@@ -130,41 +131,51 @@ export const prepareStatusManager = zone => {
        */
       hasPendingSettlement(address, amount) {
         const key = makePendingTxKey(address, amount);
+        if (!pendingTxs.has(key)) return false;
         const pending = pendingTxs.get(key);
         return !!pending.length;
       },
 
       /**
-       * Mark an `ADVANCED` or `OBSERVED` transaction as `SETTLED` and remove it
+       * Mark an `ADVANCED` or `OBSERVED` transaction as `SETTLED` and remove
+       * it.
+       *
+       * If there are multiple EDU+amt matches, we are unable to know which tx
+       * the settlement is for, but we’ll act as if it’s the earliest one.
        *
        * @param {NobleAddress} address
        * @param {bigint} amount
+       * @throws {Error} if a pending settlement was not found for the address + amount
        */
       settle(address, amount) {
-        const key = makePendingTxKey(address, amount);
-        const pending = pendingTxs.get(key);
-
+        // @ts-expect-error this.self not recognized
+        const pending = this.self.lookupPending(address, amount);
         if (!pending.length) {
-          throw makeError(`No unsettled entry for ${q(key)}`);
+          throw makeError(`No unsettled entry for ${q([address, amount])}`);
         }
 
         const pendingCopy = [...pending];
         pendingCopy.shift();
         // TODO, vstorage update for `TxStatus.Settled`
-        pendingTxs.set(key, harden(pendingCopy));
+
+        const key = makePendingTxKey(address, amount);
+        if (pendingCopy.length) {
+          return pendingTxs.set(key, harden(pendingCopy));
+        }
+        return pendingTxs.delete(key);
       },
 
       /**
-       * Lookup all pending entries for a given address and amount
+       * Lookup all pending entries for a given address and amount.
        *
        * @param {NobleAddress} address
        * @param {bigint} amount
-       * @returns {PendingTx[]}
+       * @returns {PendingTx[]} pendingTxs or empty array if nothing is found
        */
       lookupPending(address, amount) {
         const key = makePendingTxKey(address, amount);
         if (!pendingTxs.has(key)) {
-          throw makeError(`Key ${q(key)} not yet observed`);
+          return harden([]);
         }
         return pendingTxs.get(key);
       },

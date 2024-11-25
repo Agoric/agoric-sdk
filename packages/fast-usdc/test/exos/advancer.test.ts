@@ -399,7 +399,7 @@ test('will not advance same txHash:chainId evidence twice', async t => {
 
   t.deepEqual(inspectLogs(1), [
     'Advancer error:',
-    '"[Error: Transaction already seen: \\"seenTx:[\\\\\\"0xc81bc6105b60a234c7c50ac17816ebcd5561d366df8bf3be59ff387552761702\\\\\\",1]\\"]"',
+    '"[Error: Transaction already seen: \\"seenTx:0xc81bc6105b60a234c7c50ac17816ebcd5561d366df8bf3be59ff387552761702\\"]"',
   ]);
 });
 

@@ -111,7 +111,6 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
   const creatorFacet = zone.exo('Fast USDC Creator', undefined, {
     /** @type {(operatorId: string) => Promise<Invitation<OperatorKit>>} */
     async makeOperatorInvitation(operatorId) {
-      // eslint-disable-next-line no-use-before-define
       return feedKit.creator.makeOperatorInvitation(operatorId);
     },
     /**
@@ -157,7 +156,6 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
      * @param {CctpTxEvidence} evidence
      */
     makeTestPushInvitation(evidence) {
-      // eslint-disable-next-line no-use-before-define
       void advancer.handleTransactionEvent(evidence);
       return makeTestInvitation();
     },
