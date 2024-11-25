@@ -17,11 +17,9 @@ import { EvmHashShape } from '../type-guards.js';
  * @import {Zone} from '@agoric/zone';
  * @import {HostOf, HostInterface} from '@agoric/async-flow';
  * @import {TargetRegistration} from '@agoric/vats/src/bridge-target.js';
- * @import {NobleAddress, LiquidityPoolKit, FeeConfig, EvmHash} from '../types.js';
+ * @import {NobleAddress, LiquidityPoolKit, FeeConfig, EvmHash, LogFn} from '../types.js';
  * @import {StatusManager} from './status-manager.js';
  */
-
-const trace = makeTracer('Settler');
 
 /**
  * NOTE: not meant to be parsable.
@@ -42,10 +40,20 @@ const makeMintedEarlyKey = (addr, amount) =>
  * @param {HostOf<WithdrawToSeat>} caps.withdrawToSeat
  * @param {import('@agoric/vow').VowTools} caps.vowTools
  * @param {ChainHub} caps.chainHub
+ * @param {LogFn} [caps.log]
  */
 export const prepareSettler = (
   zone,
-  { statusManager, USDC, zcf, feeConfig, withdrawToSeat, vowTools, chainHub },
+  {
+    chainHub,
+    feeConfig,
+    log = makeTracer('Settler', true),
+    statusManager,
+    USDC,
+    vowTools,
+    withdrawToSeat,
+    zcf,
+  },
 ) => {
   assertAllDefined({ statusManager });
   return zone.exoClassKit(
@@ -89,6 +97,7 @@ export const prepareSettler = (
      * }} config
      */
     config => {
+      log('config', config);
       return {
         ...config,
         /** @type {HostInterface<TargetRegistration>|undefined} */
@@ -111,11 +120,12 @@ export const prepareSettler = (
       tap: {
         /** @param {VTransferIBCEvent} event */
         async receiveUpcall(event) {
+          log('upcall event', event.packet.sequence, event.blockTime);
           const { sourceChannel, remoteDenom } = this.state;
           const { packet } = event;
           if (packet.source_channel !== sourceChannel) {
             const { source_channel: actual } = packet;
-            trace('unexpected channel', { actual, expected: sourceChannel });
+            log('unexpected channel', { actual, expected: sourceChannel });
             return;
           }
 
@@ -129,7 +139,7 @@ export const prepareSettler = (
 
           if (tx.denom !== remoteDenom) {
             const { denom: actual } = tx;
-            trace('unexpected denom', { actual, expected: remoteDenom });
+            log('unexpected denom', { actual, expected: remoteDenom });
             return;
           }
 
@@ -148,7 +158,7 @@ export const prepareSettler = (
 
           const { self } = this.facets;
           const found = statusManager.dequeueStatus(sender, amount);
-          trace('dequeued', found, 'for', sender, amount);
+          log('dequeued', found, 'for', sender, amount);
           switch (found?.status) {
             case PendingTxStatus.Advanced:
               return self.disburse(found.txHash, sender, amount);
@@ -201,7 +211,7 @@ export const prepareSettler = (
           const { zcfSeat: settlingSeat } = zcf.makeEmptySeatKit();
           const { calculateSplit } = makeFeeTools(feeConfig);
           const split = calculateSplit(received);
-          trace('disbursing', split);
+          log('disbursing', split);
 
           // TODO: what if this throws?
           // arguably, it cannot. Even if deposits
@@ -266,9 +276,9 @@ export const prepareSettler = (
          * @param {SettlerTransferCtx} ctx
          */
         onRejected(reason, ctx) {
-          trace('transfer rejected!', reason, ctx);
+          log('⚠️ transfer rejected!', reason, ctx);
           // const { txHash, sender, amount } = ctx;
-          // TODO: statusManager.forwardFailed(txHash, sender, amount);
+          // TODO(#10510): statusManager.forwardFailed(txHash, sender, amount);
         },
       },
     },
