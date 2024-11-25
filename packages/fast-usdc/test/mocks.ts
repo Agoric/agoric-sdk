@@ -44,10 +44,23 @@ export const prepareMockOrchAccounts = (
     OrchestrationAccount<{ chainId: 'agoric' }>
   >;
 
+  const settlementCallLog = [] as any[];
+  const settlementAccountMock = zone.exo('Mock Settlement Account', undefined, {
+    transfer(...args) {
+      settlementCallLog.push(harden(['transfer', ...args]));
+    },
+  });
+  const settlementAccount = settlementAccountMock as unknown as HostInterface<
+    OrchestrationAccount<{ chainId: 'agoric' }>
+  >;
   return {
     mockPoolAccount: {
       account: poolAccount,
       transferVResolver: poolAccountTransferVK.resolver,
+    },
+    settlement: {
+      account: settlementAccount,
+      callLog: settlementCallLog,
     },
   };
 };

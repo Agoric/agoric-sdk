@@ -5,7 +5,7 @@ import { provideDurableZone } from '../supports.js';
 import { MockCctpTxEvidences } from '../fixtures.js';
 import type { CctpTxEvidence } from '../../src/types.js';
 
-test('advance creates new entry with ADVANCED status', t => {
+test('advancing creates new entry with ADVANCING status', t => {
   const zone = provideDurableZone('status-test');
   const statusManager = prepareStatusManager(zone.subZone('status-manager'));
 
@@ -17,9 +17,9 @@ test('advance creates new entry with ADVANCED status', t => {
     evidence.tx.amount,
   );
 
-  t.is(entries[0]?.status, PendingTxStatus.Advanced);
+  t.is(entries[0]?.status, PendingTxStatus.Advancing);
 });
-test.todo('ADVANCED transactions are published to vstorage');
+test.todo('ADVANCING transactions are published to vstorage');
 
 test('observe creates new entry with OBSERVED status', t => {
   const zone = provideDurableZone('status-test');
@@ -60,54 +60,176 @@ test('cannot process same tx twice', t => {
   t.notThrows(() => statusManager.advance({ ...evidence, chainId: 9999 }));
 });
 
-test('settle removes entries from PendingTxs', t => {
+test('isSeen checks if a tx has been processed', t => {
   const zone = provideDurableZone('status-test');
   const statusManager = prepareStatusManager(zone.subZone('status-manager'));
 
-  const evidence = MockCctpTxEvidences.AGORIC_PLUS_OSMO();
-  statusManager.advance(evidence);
-  statusManager.observe({ ...evidence, txHash: '0xtest1' });
+  const e1 = MockCctpTxEvidences.AGORIC_PLUS_OSMO();
+  t.false(statusManager.hasBeenObserved(e1));
+  statusManager.advance(e1);
+  t.true(statusManager.hasBeenObserved(e1));
 
-  statusManager.settle(evidence.tx.forwardingAddress, evidence.tx.amount);
-  statusManager.settle(evidence.tx.forwardingAddress, evidence.tx.amount);
-
-  const entries = statusManager.lookupPending(
-    evidence.tx.forwardingAddress,
-    evidence.tx.amount,
-  );
-  t.is(entries.length, 0, 'Settled entry should be deleted');
+  const e2 = MockCctpTxEvidences.AGORIC_PLUS_DYDX();
+  t.false(statusManager.hasBeenObserved(e2));
+  statusManager.observe(e2);
+  t.true(statusManager.hasBeenObserved(e2));
 });
 
-test('cannot SETTLE without an ADVANCED or OBSERVED entry', t => {
+test('dequeueStatus removes entries from PendingTxs', t => {
   const zone = provideDurableZone('status-test');
   const statusManager = prepareStatusManager(zone.subZone('status-manager'));
 
-  const evidence = MockCctpTxEvidences.AGORIC_PLUS_OSMO();
+  const e1 = MockCctpTxEvidences.AGORIC_PLUS_OSMO();
+  const e2 = MockCctpTxEvidences.AGORIC_PLUS_DYDX();
 
-  t.throws(
-    () =>
-      statusManager.settle(evidence.tx.forwardingAddress, evidence.tx.amount),
+  statusManager.advance(e1);
+  statusManager.advanceOutcome(e1.tx.forwardingAddress, e1.tx.amount, true);
+  statusManager.advance(e2);
+  statusManager.advanceOutcome(e2.tx.forwardingAddress, e2.tx.amount, false);
+  statusManager.observe({ ...e1, txHash: '0xtest1' });
+
+  t.deepEqual(
+    statusManager.dequeueStatus(e1.tx.forwardingAddress, e1.tx.amount),
     {
-      message:
-        'key "pendingTx:[\\"noble1x0ydg69dh6fqvr27xjvp6maqmrldam6yfelqkd\\",\\"150000000\\"]" not found in collection "PendingTxs"',
+      txHash: e1.txHash,
+      status: PendingTxStatus.Advanced,
     },
   );
+
+  t.deepEqual(
+    statusManager.dequeueStatus(e2.tx.forwardingAddress, e2.tx.amount),
+    {
+      txHash: e2.txHash,
+      status: PendingTxStatus.AdvanceFailed,
+    },
+  );
+
+  t.deepEqual(
+    statusManager.dequeueStatus(e1.tx.forwardingAddress, e1.tx.amount),
+    {
+      txHash: '0xtest1',
+      status: PendingTxStatus.Observed,
+    },
+  );
+
+  t.is(
+    statusManager.lookupPending(e1.tx.forwardingAddress, e1.tx.amount).length,
+    0,
+    'Settled entries should be deleted',
+  );
+
+  t.is(
+    statusManager.lookupPending(e2.tx.forwardingAddress, e2.tx.amount).length,
+    0,
+    'Settled entry should be deleted',
+  );
 });
 
-test('settle SETTLES first matched entry', t => {
+test('cannot advanceOutcome without ADVANCING entry', t => {
+  const zone = provideDurableZone('status-test');
+  const statusManager = prepareStatusManager(zone.subZone('status-manager'));
+
+  const e1 = MockCctpTxEvidences.AGORIC_PLUS_OSMO();
+  const advanceOutcomeFn = () =>
+    statusManager.advanceOutcome(e1.tx.forwardingAddress, e1.tx.amount, true);
+  const expectedErrMsg =
+    'no advancing tx with {"amount":"[150000000n]","sender":"noble1x0ydg69dh6fqvr27xjvp6maqmrldam6yfelqkd"}';
+
+  t.throws(advanceOutcomeFn, {
+    message: expectedErrMsg,
+  });
+
+  statusManager.observe(e1);
+  t.throws(advanceOutcomeFn, {
+    message: expectedErrMsg,
+  });
+
+  const e2 = MockCctpTxEvidences.AGORIC_PLUS_DYDX();
+  statusManager.advance(e2);
+  t.notThrows(() =>
+    statusManager.advanceOutcome(e2.tx.forwardingAddress, e2.tx.amount, true),
+  );
+});
+
+test('advanceOutcome transitions to ADVANCED and ADVANCE_FAILED', t => {
+  const zone = provideDurableZone('status-test');
+  const statusManager = prepareStatusManager(zone.subZone('status-manager'));
+  const e1 = MockCctpTxEvidences.AGORIC_PLUS_OSMO();
+  const e2 = MockCctpTxEvidences.AGORIC_PLUS_DYDX();
+
+  statusManager.advance(e1);
+  statusManager.advanceOutcome(e1.tx.forwardingAddress, e1.tx.amount, true);
+  t.like(statusManager.lookupPending(e1.tx.forwardingAddress, e1.tx.amount), [
+    {
+      status: PendingTxStatus.Advanced,
+    },
+  ]);
+
+  statusManager.advance(e2);
+  statusManager.advanceOutcome(e2.tx.forwardingAddress, e2.tx.amount, false);
+  t.like(statusManager.lookupPending(e2.tx.forwardingAddress, e2.tx.amount), [
+    {
+      status: PendingTxStatus.AdvanceFailed,
+    },
+  ]);
+});
+test.todo('ADVANCED transactions are published to vstorage');
+
+test('dequeueStatus returns undefined when nothing is settleable', t => {
+  const zone = provideDurableZone('status-test');
+  const statusManager = prepareStatusManager(zone.subZone('status-manager'));
+
+  const e1 = MockCctpTxEvidences.AGORIC_PLUS_OSMO();
+
+  t.is(
+    statusManager.dequeueStatus(e1.tx.forwardingAddress, e1.tx.amount),
+    undefined,
+  );
+});
+
+test('dequeueStatus returns first (earliest) matched entry', t => {
   const zone = provideDurableZone('status-test');
   const statusManager = prepareStatusManager(zone.subZone('status-manager'));
 
   const evidence = MockCctpTxEvidences.AGORIC_PLUS_OSMO();
 
-  // advance two
+  // advance two txs
   statusManager.advance(evidence);
   statusManager.advance({ ...evidence, txHash: '0xtest2' });
-  // also settles OBSERVED statuses
+
+  // cannot dequeue ADVANCING pendingTx
+  t.is(
+    statusManager.dequeueStatus(
+      evidence.tx.forwardingAddress,
+      evidence.tx.amount,
+    ),
+    undefined,
+  );
+
+  statusManager.advanceOutcome(
+    evidence.tx.forwardingAddress,
+    evidence.tx.amount,
+    true,
+  );
+  statusManager.advanceOutcome(
+    evidence.tx.forwardingAddress,
+    evidence.tx.amount,
+    true,
+  );
+
+  // also can dequeue OBSERVED statuses
   statusManager.observe({ ...evidence, txHash: '0xtest3' });
 
-  // settle will settle the first match
-  statusManager.settle(evidence.tx.forwardingAddress, evidence.tx.amount);
+  // dequeue will return the first match
+  t.like(
+    statusManager.dequeueStatus(
+      evidence.tx.forwardingAddress,
+      evidence.tx.amount,
+    ),
+    {
+      status: PendingTxStatus.Advanced,
+    },
+  );
   const entries0 = statusManager.lookupPending(
     evidence.tx.forwardingAddress,
     evidence.tx.amount,
@@ -125,10 +247,26 @@ test('settle SETTLES first matched entry', t => {
     'order of remaining entries preserved',
   );
 
-  // settle again wih same args settles 2nd advance
-  statusManager.settle(evidence.tx.forwardingAddress, evidence.tx.amount);
-  // settle again wih same args settles remaining observe
-  statusManager.settle(evidence.tx.forwardingAddress, evidence.tx.amount);
+  // dequeue again wih same args to settle 2nd advance
+  t.like(
+    statusManager.dequeueStatus(
+      evidence.tx.forwardingAddress,
+      evidence.tx.amount,
+    ),
+    {
+      status: 'ADVANCED',
+    },
+  );
+  // dequeue again wih same ags to settle remaining observe
+  t.like(
+    statusManager.dequeueStatus(
+      evidence.tx.forwardingAddress,
+      evidence.tx.amount,
+    ),
+    {
+      status: 'OBSERVED',
+    },
+  );
   const entries1 = statusManager.lookupPending(
     evidence.tx.forwardingAddress,
     evidence.tx.amount,
@@ -136,26 +274,24 @@ test('settle SETTLES first matched entry', t => {
   // TODO, check vstorage for TxStatus.Settled
   t.is(entries1?.length, 0, 'settled entries are deleted');
 
-  t.throws(
-    () =>
-      statusManager.settle(evidence.tx.forwardingAddress, evidence.tx.amount),
-    {
-      message:
-        'No unsettled entry for "pendingTx:[\\"noble1x0ydg69dh6fqvr27xjvp6maqmrldam6yfelqkd\\",\\"150000000\\"]"',
-    },
+  t.is(
+    statusManager.dequeueStatus(
+      evidence.tx.forwardingAddress,
+      evidence.tx.amount,
+    ),
+    undefined,
     'No more matches to settle',
   );
 });
 
-test('lookup throws when presented a key it has not seen', t => {
+test('lookupPending returns empty array when presented a key it has not seen', t => {
   const zone = provideDurableZone('status-test');
   const statusManager = prepareStatusManager(zone.subZone('status-manager'));
 
-  t.throws(() => statusManager.lookupPending('noble123', 1n), {
-    message: 'Key "pendingTx:[\\"noble123\\",\\"1\\"]" not yet observed',
-  });
+  t.deepEqual(statusManager.lookupPending('noble123', 1n), []);
 });
 
+// TODO: remove? this doesn't seem to hold it's weight
 test('StatusManagerKey logic handles addresses with hyphens', async t => {
   const zone = provideDurableZone('status-test');
   const statusManager = prepareStatusManager(zone.subZone('status-manager'));
@@ -171,12 +307,23 @@ test('StatusManagerKey logic handles addresses with hyphens', async t => {
   );
 
   t.is(entries.length, 1);
-  t.is(entries[0]?.status, PendingTxStatus.Advanced);
+  t.is(entries[0]?.status, PendingTxStatus.Advancing);
 
-  statusManager.settle(evidence.tx.forwardingAddress, evidence.tx.amount);
+  statusManager.advanceOutcome(
+    evidence.tx.forwardingAddress,
+    evidence.tx.amount,
+    true,
+  );
+
+  statusManager.dequeueStatus(
+    evidence.tx.forwardingAddress,
+    evidence.tx.amount,
+  );
   const remainingEntries = statusManager.lookupPending(
     evidence.tx.forwardingAddress,
     evidence.tx.amount,
   );
-  t.is(remainingEntries.length, 0, 'Entry should be settled');
+  t.is(remainingEntries.length, 0, 'Entry should be dequeued from pending');
 });
+
+test.todo('ADVANCE_FAILED -> FORWARDED transition');

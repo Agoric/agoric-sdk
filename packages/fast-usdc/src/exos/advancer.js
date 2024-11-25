@@ -6,11 +6,13 @@ import { VowShape } from '@agoric/vow';
 import { q } from '@endo/errors';
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
-import { CctpTxEvidenceShape, EudParamShape } from '../type-guards.js';
+import {
+  CctpTxEvidenceShape,
+  EudParamShape,
+  EvmHashShape,
+} from '../type-guards.js';
 import { addressTools } from '../utils/address.js';
 import { makeFeeTools } from '../utils/fees.js';
-
-const { isGTE } = AmountMath;
 
 /**
  * @import {HostInterface} from '@agoric/async-flow';
@@ -19,7 +21,7 @@ const { isGTE } = AmountMath;
  * @import {ZoeTools} from '@agoric/orchestration/src/utils/zoe-tools.js';
  * @import {VowTools} from '@agoric/vow';
  * @import {Zone} from '@agoric/zone';
- * @import {CctpTxEvidence, FeeConfig, LogFn} from '../types.js';
+ * @import {CctpTxEvidence, EvmHash, FeeConfig, LogFn, NobleAddress} from '../types.js';
  * @import {StatusManager} from './status-manager.js';
  * @import {LiquidityPoolKit} from './liquidity-pool.js';
  */
@@ -46,12 +48,16 @@ const AdvancerKitI = harden({
     onFulfilled: M.call(M.undefined(), {
       amount: AmountShape,
       destination: ChainAddressShape,
+      forwardingAddress: M.string(),
       tmpSeat: M.remotable(),
+      txHash: EvmHashShape,
     }).returns(VowShape),
     onRejected: M.call(M.error(), {
       amount: AmountShape,
       destination: ChainAddressShape,
+      forwardingAddress: M.string(),
       tmpSeat: M.remotable(),
+      txHash: EvmHashShape,
     }).returns(),
   }),
   transferHandler: M.interface('TransferHandlerI', {
@@ -59,13 +65,26 @@ const AdvancerKitI = harden({
     onFulfilled: M.call(M.undefined(), {
       amount: AmountShape,
       destination: ChainAddressShape,
+      forwardingAddress: M.string(),
+      txHash: EvmHashShape,
     }).returns(M.undefined()),
     onRejected: M.call(M.error(), {
       amount: AmountShape,
       destination: ChainAddressShape,
+      forwardingAddress: M.string(),
+      txHash: EvmHashShape,
     }).returns(M.undefined()),
   }),
 });
+
+/**
+ * @typedef {{
+ *  amount: NatAmount;
+ *  destination: ChainAddress;
+ *  forwardingAddress: NobleAddress;
+ *  txHash: EvmHash;
+ * }} AdvancerVowCtx
+ */
 
 /**
  * @param {Zone} zone
@@ -100,6 +119,7 @@ export const prepareAdvancerKit = (
     AdvancerKitI,
     /**
      * @param {{
+     *   notifyFacet: import('./settler.js').SettlerKit['notify'];
      *   borrowerFacet: LiquidityPoolKit['borrower'];
      *   poolAccount: HostInterface<OrchestrationAccount<{chainId: 'agoric'}>>;
      * }} config
@@ -120,51 +140,32 @@ export const prepareAdvancerKit = (
         async handleTransactionEvent(evidence) {
           await null;
           try {
+            if (statusManager.hasBeenObserved(evidence)) {
+              log('txHash already seen:', evidence.txHash);
+              return;
+            }
+
             const { borrowerFacet, poolAccount } = this.state;
             const { recipientAddress } = evidence.aux;
+            // throws if EUD is not found
             const { EUD } = addressTools.getQueryParams(
               recipientAddress,
               EudParamShape,
             );
-
-            // this will throw if the bech32 prefix is not found, but is handled by the catch
+            // throws if the bech32 prefix is not found
             const destination = chainHub.makeChainAddress(EUD);
+
             const requestedAmount = toAmount(evidence.tx.amount);
+            // throws if requested does not exceed fees
             const advanceAmount = feeTools.calculateAdvance(requestedAmount);
-
-            // TODO: consider skipping and using `borrow()`s internal balance check
-            const poolBalance = borrowerFacet.getBalance();
-            if (!isGTE(poolBalance, requestedAmount)) {
-              log(
-                `Insufficient pool funds`,
-                `Requested ${q(advanceAmount)} but only have ${q(poolBalance)}`,
-              );
-              statusManager.observe(evidence);
-              return;
-            }
-
-            try {
-              // Mark as Advanced since `transferV` initiates the advance.
-              // Will throw if we've already .skipped or .advanced this evidence.
-              statusManager.advance(evidence);
-            } catch (e) {
-              // Only anticipated error is `assertNotSeen`, so intercept the
-              // catch so we don't call .skip which also performs this check
-              log('Advancer error:', q(e).toString());
-              return;
-            }
 
             const { zcfSeat: tmpSeat } = zcf.makeEmptySeatKit();
             const amountKWR = harden({ USDC: advanceAmount });
-            try {
-              borrowerFacet.borrow(tmpSeat, amountKWR);
-            } catch (e) {
-              // We do not expect this to fail since there are no turn boundaries
-              // between .getBalance() and .borrow().
-              // We catch to report outside of the normal error flow since this is
-              // not expected.
-              log('🚨 advance borrow failed', q(e).toString());
-            }
+            // throws if the pool has insufficient funds
+            borrowerFacet.borrow(tmpSeat, amountKWR);
+
+            // this cannot throw since `.isSeen()` is called in the same turn
+            statusManager.advance(evidence);
 
             const depositV = localTransfer(
               tmpSeat,
@@ -175,7 +176,9 @@ export const prepareAdvancerKit = (
             void watch(depositV, this.facets.depositHandler, {
               amount: advanceAmount,
               destination,
+              forwardingAddress: evidence.tx.forwardingAddress,
               tmpSeat,
+              txHash: evidence.txHash,
             });
           } catch (e) {
             log('Advancer error:', q(e).toString());
@@ -186,10 +189,11 @@ export const prepareAdvancerKit = (
       depositHandler: {
         /**
          * @param {undefined} result
-         * @param {{ amount: Amount<'nat'>; destination: ChainAddress; tmpSeat: ZCFSeat }} ctx
+         * @param {AdvancerVowCtx & { tmpSeat: ZCFSeat }} ctx
          */
-        onFulfilled(result, { amount, destination }) {
+        onFulfilled(result, ctx) {
           const { poolAccount } = this.state;
+          const { amount, destination, forwardingAddress, txHash } = ctx;
           const transferV = E(poolAccount).transfer(destination, {
             denom: usdc.denom,
             value: amount.value,
@@ -197,11 +201,13 @@ export const prepareAdvancerKit = (
           return watch(transferV, this.facets.transferHandler, {
             destination,
             amount,
+            forwardingAddress,
+            txHash,
           });
         },
         /**
          * @param {Error} error
-         * @param {{ amount: Amount<'nat'>; destination: ChainAddress; tmpSeat: ZCFSeat }} ctx
+         * @param {AdvancerVowCtx & { tmpSeat: ZCFSeat }} ctx
          */
         onRejected(error, { tmpSeat }) {
           // TODO return seat allocation from ctx to LP?
@@ -217,25 +223,44 @@ export const prepareAdvancerKit = (
       transferHandler: {
         /**
          * @param {undefined} result TODO confirm this is not a bigint (sequence)
-         * @param {{ destination: ChainAddress; amount: NatAmount; }} ctx
+         * @param {AdvancerVowCtx} ctx
          */
-        onFulfilled(result, { destination, amount }) {
-          // TODO vstorage update? We don't currently have a status for
-          // Advanced + transferV settled
+        onFulfilled(result, ctx) {
+          const { notifyFacet } = this.state;
+          const { amount, destination, forwardingAddress, txHash } = ctx;
           log(
             'Advance transfer fulfilled',
             q({ amount, destination, result }).toString(),
           );
+          notifyFacet.notifyAdvancingResult(
+            txHash,
+            forwardingAddress,
+            amount.value,
+            destination.value,
+            true,
+          );
         },
-        onRejected(error) {
-          // TODO #10510 (comprehensive error testing) determine
-          // course of action here. This might fail due to timeout.
+        /**
+         * @param {Error} error
+         * @param {AdvancerVowCtx} ctx
+         */
+        onRejected(error, ctx) {
+          const { notifyFacet } = this.state;
+          const { amount, destination, forwardingAddress, txHash } = ctx;
           log('Advance transfer rejected', q(error).toString());
+          notifyFacet.notifyAdvancingResult(
+            txHash,
+            forwardingAddress,
+            amount.value,
+            destination.value,
+            false,
+          );
         },
       },
     },
     {
       stateShape: harden({
+        notifyFacet: M.remotable(),
         borrowerFacet: M.remotable(),
         poolAccount: M.remotable(),
       }),
