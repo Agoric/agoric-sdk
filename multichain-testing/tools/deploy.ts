@@ -2,6 +2,7 @@
 import { createRequire } from 'module';
 import type { AgdTools } from './agd-tools.js';
 import type { CoreEvalPlan } from '@agoric/deploy-script-support/src/writeCoreEvalParts.js';
+import { flags } from './agd-lib.js';
 
 const nodeRequire = createRequire(import.meta.url);
 
@@ -10,10 +11,16 @@ export const makeDeployBuilder = (
   readJSON: typeof import('fs-extra').readJSON,
   execa: typeof import('execa').execa,
 ) =>
-  async function deployBuilder(builder: string) {
+  async function deployBuilder(
+    builder: string,
+    builderOpts?: Record<string, string>,
+  ) {
     console.log(`building plan: ${builder}`);
-    // build the plan
-    const { stdout } = await execa`agoric run ${builder}`;
+    const args = ['run', builder];
+    if (builderOpts) {
+      args.push(...flags(builderOpts));
+    }
+    const { stdout } = await execa('agoric', args);
     const match = stdout.match(/ (?<name>[-\w]+)-permit.json/);
     if (!(match && match.groups)) {
       throw Error('no permit found');
