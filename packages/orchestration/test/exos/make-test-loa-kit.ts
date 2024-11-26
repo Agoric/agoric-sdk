@@ -65,7 +65,7 @@ export const prepareMakeTestLOAKit = (
     });
 
     t.log('register Agoric chain and BLD in ChainHub');
-    utils.registerAgoricBld();
+    utils.registerAgoricAssets();
     t.log('register Noble and DYDX chains and USDC in ChainHub');
     utils.registerUSDC();
     return account;

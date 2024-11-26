@@ -27,6 +27,7 @@ import fetchedChainInfo from '../src/fetched-chain-info.js';
 import { buildVTransferEvent } from '../tools/ibc-mocks.js';
 import { setupFakeNetwork } from './network-fakes.js';
 import { denomHash } from '../src/utils/denomHash.js';
+import { withChainCapabilities } from '../src/chain-capabilities.js';
 
 export {
   makeFakeLocalchainBridge,
@@ -37,6 +38,13 @@ const usdcOnAgoric = `ibc/${denomHash({
   channelId:
     fetchedChainInfo.agoric.connections['noble-1'].transferChannel.channelId,
   denom: 'uusdc',
+})}`;
+
+const atomOnAgoric = `ibc/${denomHash({
+  channelId:
+    fetchedChainInfo.agoric.connections['cosmoshub-4'].transferChannel
+      .channelId,
+  denom: 'uatom',
 })}`;
 
 const usdcOnDydx = `ibc/${denomHash({
@@ -200,47 +208,74 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
     vowTools,
   );
 
+  // add `pfmEnabled` to chainInfo
+  const chainInfoWithCaps = withChainCapabilities(fetchedChainInfo);
+
+  // for registration with `ChainHub`
+  const commonAssetInfo = harden({
+    ubld: {
+      chainName: 'agoric',
+      baseName: 'agoric',
+      baseDenom: 'ubld',
+      brand: bld.brand,
+    },
+    uist: {
+      chainName: 'agoric',
+      baseName: 'agoric',
+      baseDenom: 'uist',
+      brand: ist.brand,
+    },
+    uusdc: {
+      chainName: 'noble',
+      baseName: 'noble',
+      baseDenom: 'uusdc',
+    },
+    [usdcOnAgoric]: {
+      chainName: 'agoric',
+      baseName: 'noble',
+      baseDenom: 'uusdc',
+      brand: usdc.brand,
+    },
+    [atomOnAgoric]: {
+      chainName: 'agoric',
+      baseName: 'cosmoshub',
+      baseDenom: 'uatom',
+    },
+    [usdcOnDydx]: {
+      chainName: 'dydx',
+      baseName: 'noble',
+      baseDenom: 'uusdc',
+    },
+  });
+
   /**
-   * Register BLD if it's not already registered.
-   * Does not work with `withOrchestration` contracts, as these have their own
-   * ChainHub. Use `ChainHubAdmin` instead.
+   * Register BLD if it's not already registered for exo unit tests.
+   *
+   * For contract tests with contracts that use `withOrchestration`, access
+   * `chainInfo` and `assetInfo` from `commonPrivateArgs` and register in the
+   * contract's ChainHub with `registerChainsAndAssets`.
    */
-  const registerAgoricBld = () => {
+  const registerAgoricAssets = () => {
     if (!chainHub.getAsset('ubld')) {
-      chainHub.registerChain('agoric', fetchedChainInfo.agoric);
-      chainHub.registerAsset('ubld', {
-        chainName: 'agoric',
-        baseName: 'agoric',
-        baseDenom: 'ubld',
-        brand: bld.brand,
-      });
+      chainHub.registerChain('agoric', chainInfoWithCaps.agoric);
+      chainHub.registerAsset('ubld', commonAssetInfo.ubld);
+    }
+    if (!chainHub.getAsset('uist')) {
+      chainHub.registerAsset('uist', commonAssetInfo.uist);
     }
   };
 
   const registerUSDC = () => {
     if (!chainHub.getAsset('uusdc')) {
-      chainHub.registerChain('noble', fetchedChainInfo.noble);
-      chainHub.registerAsset('uusdc', {
-        chainName: 'noble',
-        baseName: 'noble',
-        baseDenom: 'uusdc',
-      });
+      chainHub.registerChain('noble', chainInfoWithCaps.noble);
+      chainHub.registerAsset('uusdc', commonAssetInfo.uusdc);
     }
     if (!chainHub.getAsset(usdcOnAgoric)) {
-      chainHub.registerAsset(usdcOnAgoric, {
-        chainName: 'agoric',
-        baseName: 'noble',
-        baseDenom: 'uusdc',
-        brand: usdc.brand,
-      });
+      chainHub.registerAsset(usdcOnAgoric, commonAssetInfo[usdcOnAgoric]);
     }
     if (!chainHub.getAsset(usdcOnDydx)) {
-      chainHub.registerChain('dydx', fetchedChainInfo.dydx);
-      chainHub.registerAsset(usdcOnDydx, {
-        chainName: 'dydx',
-        baseName: 'noble',
-        baseDenom: 'uusdc',
-      });
+      chainHub.registerChain('dydx', chainInfoWithCaps.dydx);
+      chainHub.registerAsset(usdcOnDydx, commonAssetInfo[usdcOnDydx]);
     }
   };
 
@@ -274,6 +309,8 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
       storageNode: storage.rootNode,
       marshaller,
       timerService: timer,
+      chainInfo: withChainCapabilities(fetchedChainInfo),
+      assetInfo: harden(commonAssetInfo),
     },
     facadeServices: {
       agoricNames,
@@ -287,7 +324,7 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
       inspectLocalBridge: () => harden([...localBridgeMessages]),
       inspectDibcBridge: () => E(ibcBridge).inspectDibcBridge(),
       inspectBankBridge: () => harden([...bankBridgeMessages]),
-      registerAgoricBld,
+      registerAgoricAssets,
       registerUSDC,
       transmitTransferAck,
     },
