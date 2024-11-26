@@ -11,6 +11,7 @@ import { deeplyFulfilled } from '@endo/marshal';
 
 /**
  * @import {AutoStakeItSF} from '@agoric/orchestration/src/examples/auto-stake-it.contract.js';
+ * @import {CosmosChainInfo, Denom, DenomDetail} from '@agoric/orchestration';
  */
 
 const contractName = 'autoAutoStakeIt';
@@ -18,26 +19,35 @@ const trace = makeTracer(contractName, true);
 
 /**
  * @param {BootstrapPowers} powers
+ * @param {{
+ *   options: {
+ *     chainInfo: Record<string, CosmosChainInfo>;
+ *     assetInfo: Record<Denom, DenomDetail & { brandKey?: string }>;
+ *   };
+ * }} config
  */
-export const startAutoStakeIt = async ({
-  consume: {
-    agoricNames,
-    board,
-    chainStorage,
-    chainTimerService,
-    cosmosInterchainService,
-    localchain,
-    startUpgradable,
+export const startAutoStakeIt = async (
+  {
+    consume: {
+      agoricNames,
+      board,
+      chainStorage,
+      chainTimerService,
+      cosmosInterchainService,
+      localchain,
+      startUpgradable,
+    },
+    installation: {
+      // @ts-expect-error not a WellKnownName
+      consume: { [contractName]: installation },
+    },
+    instance: {
+      // @ts-expect-error not a WellKnownName
+      produce: { [contractName]: produceInstance },
+    },
   },
-  installation: {
-    // @ts-expect-error not a WellKnownName
-    consume: { [contractName]: installation },
-  },
-  instance: {
-    // @ts-expect-error not a WellKnownName
-    produce: { [contractName]: produceInstance },
-  },
-}) => {
+  { options: { chainInfo, assetInfo } },
+) => {
   trace(`start ${contractName}`);
   await null;
 
@@ -58,6 +68,8 @@ export const startAutoStakeIt = async ({
         storageNode,
         marshaller,
         timerService: chainTimerService,
+        chainInfo,
+        assetInfo,
       }),
     ),
   };
@@ -67,10 +79,7 @@ export const startAutoStakeIt = async ({
 };
 harden(startAutoStakeIt);
 
-export const getManifestForContract = (
-  { restoreRef },
-  { installKeys, ...options },
-) => {
+export const getManifest = ({ restoreRef }, { installKeys, options }) => {
   return {
     manifest: {
       [startAutoStakeIt.name]: {
@@ -96,33 +105,4 @@ export const getManifestForContract = (
     },
     options,
   };
-};
-
-/** @type {import('@agoric/deploy-script-support/src/externalTypes.js').CoreEvalBuilder} */
-export const defaultProposalBuilder = async ({ publishRef, install }) => {
-  return harden({
-    // Somewhat unorthodox, source the exports from this builder module
-    sourceSpec: '@agoric/builders/scripts/testing/start-auto-stake-it.js',
-    getManifestCall: [
-      'getManifestForContract',
-      {
-        installKeys: {
-          autoAutoStakeIt: publishRef(
-            install(
-              '@agoric/orchestration/src/examples/auto-stake-it.contract.js',
-            ),
-          ),
-        },
-      },
-    ],
-  });
-};
-
-/** @type {import('@agoric/deploy-script-support/src/externalTypes.js').DeployScriptFunction} */
-export default async (homeP, endowments) => {
-  // import dynamically so the module can work in CoreEval environment
-  const dspModule = await import('@agoric/deploy-script-support');
-  const { makeHelpers } = dspModule;
-  const { writeCoreEval } = await makeHelpers(homeP, endowments);
-  await writeCoreEval(startAutoStakeIt.name, defaultProposalBuilder);
 };

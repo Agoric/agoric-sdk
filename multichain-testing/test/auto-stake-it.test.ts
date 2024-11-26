@@ -1,7 +1,10 @@
-import type { CosmosChainInfo } from '@agoric/orchestration';
+import {
+  withChainCapabilities,
+  type CosmosChainInfo,
+} from '@agoric/orchestration';
 import anyTest from '@endo/ses-ava/prepare-endo.js';
 import type { ExecutionContext, TestFn } from 'ava';
-import chainInfo from '../starship-chain-info.js';
+import starshipChainInfo from '../starship-chain-info.js';
 import { makeDoOffer } from '../tools/e2e-tools.js';
 import {
   createFundedWalletAndClient,
@@ -18,15 +21,18 @@ const accounts = ['agoricAdmin', 'cosmoshub', 'osmosis'];
 
 const contractName = 'autoAutoStakeIt';
 const contractBuilder =
-  '../packages/builders/scripts/testing/start-auto-stake-it.js';
+  '../packages/builders/scripts/testing/init-auto-stake-it.js';
 
 test.before(async t => {
-  const { deleteTestKeys, setupTestKeys, ...rest } = await commonSetup(t);
+  const { setupTestKeys, ...common } = await commonSetup(t);
+  const { commonAssetInfo, deleteTestKeys, startContract } = common;
   deleteTestKeys(accounts).catch();
   const wallets = await setupTestKeys(accounts);
-  t.context = { ...rest, wallets, deleteTestKeys };
-  const { startContract } = rest;
-  await startContract(contractName, contractBuilder);
+  t.context = { ...common, wallets };
+  await startContract(contractName, contractBuilder, {
+    chainInfo: JSON.stringify(withChainCapabilities(starshipChainInfo)),
+    assetInfo: JSON.stringify(commonAssetInfo),
+  });
 });
 
 test.after(async t => {
@@ -96,9 +102,9 @@ const autoStakeItScenario = test.macro({
     const fundAndTransfer = makeFundAndTransfer(t);
 
     // 2. Find 'stakingDenom' denom on agoric
-    const remoteChainInfo = (chainInfo as Record<string, CosmosChainInfo>)[
-      chainName
-    ];
+    const remoteChainInfo = (
+      starshipChainInfo as Record<string, CosmosChainInfo>
+    )[chainName];
     const stakingDenom = remoteChainInfo?.stakingTokens?.[0].denom;
     if (!stakingDenom) throw Error(`staking denom found for ${chainName}`);
 
