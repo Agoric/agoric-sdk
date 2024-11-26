@@ -68,7 +68,9 @@ export const prepareSettler = (
       notify: M.interface('SettlerNotifyI', {
         notifyAdvancingResult: M.call(
           M.string(),
+          M.string(),
           M.nat(),
+          M.string(),
           M.boolean(),
         ).returns(),
       }),
