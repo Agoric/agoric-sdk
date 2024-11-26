@@ -1,5 +1,14 @@
-import { Command } from 'commander';
-
+/**
+ * @import {Command} from 'commander';
+ * @import {File} from '../util/file.js';
+ * @import * as ConfigHelpers from './config.js';
+ */
+/**
+ *
+ * @param {Command} program
+ * @param {ConfigHelpers} configHelpers
+ * @param {() => File} makeConfigFile
+ */
 export const addConfigCommands = (program, configHelpers, makeConfigFile) => {
   const config = program.command('config').description('Manage config');
 

@@ -1,5 +1,4 @@
 import { assertParsableNumber } from '@agoric/zoe/src/contractSupport/ratio.js';
-import { addConfigCommands } from './config-commands.js';
 import {
   Command,
   InvalidArgumentError,
@@ -13,7 +12,8 @@ import {
   readFile as readAsync,
   writeFile as writeAsync,
 } from 'node:fs/promises';
-import configLib from './config.js';
+import { addConfigCommands } from './config-commands.js';
+import * as configLib from './config.js';
 import transferLib from './transfer.js';
 import { makeFile } from '../util/file.js';
 
@@ -49,7 +49,7 @@ export const initProgram = (
   const makeConfigFile = () => {
     const getConfigPath = () => {
       const { home: configDir } = program.opts();
-      return configDir + 'config.json';
+      return `${configDir}config.json`;
     };
     return makeFile(getConfigPath(), readFile, writeFile, mkdir, exists);
   };
