@@ -1,4 +1,5 @@
 import { deeplyFulfilledObject, makeTracer, objectMap } from '@agoric/internal';
+import { CosmosChainInfoShape, DenomDetailShape } from '@agoric/orchestration';
 import { Fail } from '@endo/errors';
 import { E } from '@endo/far';
 import { makeMarshal } from '@endo/marshal';
@@ -13,6 +14,7 @@ import { fromExternalConfig } from './utils/config-marshal.js';
 /**
  * @import {DepositFacet} from '@agoric/ertp/src/types.js'
  * @import {TypedPattern} from '@agoric/internal'
+ * @import {CosmosChainInfo, Denom, DenomDetail} from '@agoric/orchestration';
  * @import {Instance, StartParams} from '@agoric/zoe/src/zoeService/utils'
  * @import {Board} from '@agoric/vats'
  * @import {ManifestBundleRef} from '@agoric/deploy-script-support/src/externalTypes.js'
@@ -33,6 +35,8 @@ const contractName = 'fastUsdc';
  *   oracles: Record<string, string>;
  *   feeConfig: FeeConfig;
  *   feedPolicy: FeedPolicy & Passable;
+ *   chainInfo: Record<string, CosmosChainInfo & Passable>;
+ *   assetInfo: Record<Denom, DenomDetail & {brandKey?: string}>;
  * }} FastUSDCConfig
  */
 /** @type {TypedPattern<FastUSDCConfig>} */
@@ -41,6 +45,8 @@ export const FastUSDCConfigShape = M.splitRecord({
   oracles: M.recordOf(M.string(), M.string()),
   feeConfig: FeeConfigShape,
   feedPolicy: FeedPolicyShape,
+  chainInfo: M.recordOf(M.string(), CosmosChainInfoShape),
+  assetInfo: M.recordOf(M.string(), DenomDetailShape),
 });
 
 /**
@@ -149,11 +155,12 @@ export const startFastUSDC = async (
     USDC: await E(USDCissuer).getBrand(),
   });
 
-  const { terms, oracles, feeConfig, feedPolicy } = fromExternalConfig(
-    config?.options, // just in case config is missing somehow
-    brands,
-    FastUSDCConfigShape,
-  );
+  const { terms, oracles, feeConfig, feedPolicy, chainInfo, assetInfo } =
+    fromExternalConfig(
+      config?.options, // just in case config is missing somehow
+      brands,
+      FastUSDCConfigShape,
+    );
   trace('using terms', terms);
   trace('using fee config', feeConfig);
 
@@ -187,6 +194,8 @@ export const startFastUSDC = async (
       storageNode,
       timerService,
       marshaller,
+      chainInfo,
+      assetInfo,
     }),
   );
 
