@@ -3,6 +3,7 @@ import { TimerServiceShape } from '@agoric/time';
 import { M } from '@endo/patterns';
 import { withOrchestration } from '../utils/start-helper.js';
 import * as flows from './swap.flows.js';
+import { CosmosChainInfoShape, DenomDetailShape } from '../typeGuards.js';
 
 /**
  * @import {TimerService} from '@agoric/time';
@@ -12,6 +13,7 @@ import * as flows from './swap.flows.js';
  * @import {NameHub} from '@agoric/vats';
  * @import {Zone} from '@agoric/zone';
  * @import {OrchestrationTools} from '../utils/start-helper.js';
+ * @import {CosmosChainInfo, Denom, DenomDetail} from '@agoric/orchestration';
  */
 
 /** @type {ContractMeta<typeof start>} */
@@ -23,6 +25,8 @@ export const meta = {
     storageNode: StorageNodeShape,
     marshaller: M.remotable('marshaller'),
     timerService: M.or(TimerServiceShape, null),
+    chainInfo: M.recordOf(M.string(), CosmosChainInfoShape),
+    assetInfo: M.recordOf(M.string(), DenomDetailShape),
   },
   upgradability: 'canUpgrade',
 };
@@ -49,6 +53,8 @@ harden(makeNatAmountShape);
  *   storageNode: Remote<StorageNode>;
  *   timerService: Remote<TimerService>;
  *   marshaller: Marshaller;
+ *   chainInfo: Record<string, CosmosChainInfo>;
+ *   assetInfo: Record<Denom, DenomDetail & { brandKey?: string }>;
  * }} privateArgs
  * @param {Zone} zone
  * @param {OrchestrationTools} tools
