@@ -24,6 +24,13 @@ const trace = makeTracer('StartSA', true);
  *       sendAnywhere: Installation<StartFn>;
  *     };
  *   };
+ *   issuer: {
+ *     consume: {
+ *       BLD: Issuer<'nat'>;
+ *       IST: Issuer<'nat'>;
+ *       USDC: Issuer<'nat'>;
+ *     };
+ *   };
  * }} powers
  * @param {{
  *   options: {
@@ -51,7 +58,7 @@ export const startSendAnywhere = async (
       produce: { sendAnywhere: produceInstance },
     },
     issuer: {
-      consume: { IST },
+      consume: { BLD, IST },
     },
   },
   { options: { chainInfo, assetInfo } },
@@ -78,7 +85,10 @@ export const startSendAnywhere = async (
   const { instance } = await E(startUpgradable)({
     label: 'send-anywhere',
     installation: sendAnywhere,
-    issuerKeywordRecord: { Stable: await IST },
+    issuerKeywordRecord: {
+      Stable: await IST,
+      Stake: await BLD,
+    },
     privateArgs,
   });
   produceInstance.resolve(instance);
@@ -107,7 +117,7 @@ export const getManifest = ({ restoreRef }, { installationRef, options }) => {
           produce: { sendAnywhere: true },
         },
         issuer: {
-          consume: { IST: true },
+          consume: { BLD: true, IST: true },
         },
       },
     },
