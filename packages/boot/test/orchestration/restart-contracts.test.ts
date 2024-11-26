@@ -32,7 +32,7 @@ test.serial('send-anywhere', async t => {
 
   t.log('start send-anywhere');
   await evalProposal(
-    buildProposal('@agoric/builders/scripts/testing/start-send-anywhere.js'),
+    buildProposal('@agoric/builders/scripts/testing/init-send-anywhere.js'),
   );
 
   t.log('making offer');

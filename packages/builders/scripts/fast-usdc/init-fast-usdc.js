@@ -6,6 +6,8 @@ import {
   getManifestForFastUSDC,
 } from '@agoric/fast-usdc/src/fast-usdc.start.js';
 import { toExternalConfig } from '@agoric/fast-usdc/src/utils/config-marshal.js';
+import { denomHash, withChainCapabilities } from '@agoric/orchestration';
+import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
 import {
   multiplyBy,
   parseRatio,
@@ -17,12 +19,35 @@ import { parseArgs } from 'node:util';
  * @import {CoreEvalBuilder, DeployScriptFunction} from '@agoric/deploy-script-support/src/externalTypes.js'
  * @import {ParseArgsConfig} from 'node:util'
  * @import {FastUSDCConfig} from '@agoric/fast-usdc/src/fast-usdc.start.js'
+ * @import {Passable} from '@endo/marshal';
+ * @import {CosmosChainInfo} from '@agoric/orchestration';
  */
 
 const { keys } = Object;
 
+const defaultAssetInfo = {
+  uusdc: {
+    baseName: 'noble',
+    chainName: 'noble',
+    baseDenom: 'uusdc',
+  },
+  [`ibc/${denomHash({ denom: 'uusdc', channelId: fetchedChainInfo.agoric.connections['noble-1'].transferChannel.channelId })}`]:
+    {
+      baseName: 'noble',
+      chainName: 'agoric',
+      baseDenom: 'uusdc',
+      brandKey: 'USDC',
+    },
+  [`ibc/${denomHash({ denom: 'uusdc', channelId: fetchedChainInfo.osmosis.connections['noble-1'].transferChannel.channelId })}`]:
+    {
+      baseName: 'noble',
+      chainName: 'osmosis',
+      baseDenom: 'uusdc',
+    },
+};
+
 /**
- * @type {Record<string, Pick<FastUSDCConfig, 'oracles' | 'feedPolicy'>>}
+ * @type {Record<string, Pick<FastUSDCConfig, 'oracles' | 'feedPolicy' | 'chainInfo' | 'assetInfo' >>}
  *
  * TODO: determine OCW operator addresses
  * meanwhile, use price oracle addresses (from updatePriceFeeds.js).
@@ -47,6 +72,10 @@ const configurations = {
         },
       },
     },
+    chainInfo: /** @type {Record<string, CosmosChainInfo & Passable>} */ (
+      withChainCapabilities(fetchedChainInfo)
+    ),
+    assetInfo: defaultAssetInfo,
   },
   MAINNET: {
     oracles: {
@@ -69,6 +98,10 @@ const configurations = {
         },
       },
     },
+    chainInfo: /** @type {Record<string, CosmosChainInfo & Passable>} */ (
+      withChainCapabilities(fetchedChainInfo)
+    ),
+    assetInfo: defaultAssetInfo,
   },
   DEVNET: {
     oracles: {
@@ -90,6 +123,10 @@ const configurations = {
         },
       },
     },
+    chainInfo: /** @type {Record<string, CosmosChainInfo & Passable>} */ (
+      withChainCapabilities(fetchedChainInfo) // TODO: use devnet values
+    ),
+    assetInfo: defaultAssetInfo, // TODO: use emerynet values
   },
   EMERYNET: {
     oracles: {
@@ -108,6 +145,10 @@ const configurations = {
         },
       },
     },
+    chainInfo: /** @type {Record<string, CosmosChainInfo & Passable>} */ (
+      withChainCapabilities(fetchedChainInfo) // TODO: use emerynet values
+    ),
+    assetInfo: defaultAssetInfo, // TODO: use emerynet values
   },
 };
 
@@ -124,10 +165,16 @@ const options = {
     default:
       'ibc/FE98AAD68F02F03565E9FA39A5E627946699B2B07115889ED812D8BA639576A9',
   },
+  chainInfo: { type: 'string' },
+  assetInfo: { type: 'string' },
 };
 const oraclesUsage = 'use --oracle name:address ...';
 
 const feedPolicyUsage = 'use --feedPolicy <policy> ...';
+
+const chainInfoUsage = 'use --chainInfo chainName:CosmosChainInfo ...';
+const assetInfoUsage =
+  'use --assetInfo denom:DenomInfo & {brandKey?: string} ...';
 
 /**
  * @typedef {{
@@ -139,6 +186,8 @@ const feedPolicyUsage = 'use --feedPolicy <policy> ...';
  *   oracle?: string[];
  *   usdcDenom: string;
  *   feedPolicy?: string;
+ *   chainInfo: string;
+ *   assetInfo: string;
  * }} FastUSDCOpts
  */
 
@@ -180,7 +229,15 @@ export default async (homeP, endowments) => {
   /** @type {{ values: FastUSDCOpts }} */
   // @ts-expect-error ensured by options
   const {
-    values: { oracle: oracleArgs, net, usdcDenom, feedPolicy, ...fees },
+    values: {
+      oracle: oracleArgs,
+      net,
+      usdcDenom,
+      feedPolicy,
+      chainInfo,
+      assetInfo,
+      ...fees
+    },
   } = parseArgs({ args: scriptArgs, options });
 
   const parseFeedPolicy = () => {
@@ -226,6 +283,27 @@ export default async (homeP, endowments) => {
     };
   };
 
+  const parseChainInfo = () => {
+    if (net) {
+      if (!(net in configurations)) {
+        throw Error(`${net} not in ${keys(configurations)}`);
+      }
+      return configurations[net].chainInfo;
+    }
+    if (!chainInfo) throw Error(chainInfoUsage);
+    return JSON.parse(chainInfo);
+  };
+  const parseAssetInfo = () => {
+    if (net) {
+      if (!(net in configurations)) {
+        throw Error(`${net} not in ${keys(configurations)}`);
+      }
+      return configurations[net].assetInfo;
+    }
+    if (!assetInfo) throw Error(assetInfoUsage);
+    return JSON.parse(assetInfo);
+  };
+
   /** @type {FastUSDCConfig} */
   const config = harden({
     oracles: parseOracleArgs(),
@@ -234,6 +312,8 @@ export default async (homeP, endowments) => {
     },
     feeConfig: parseFeeConfigArgs(),
     feedPolicy: parseFeedPolicy(),
+    chainInfo: parseChainInfo(),
+    assetInfo: parseAssetInfo(),
   });
 
   await writeCoreEval('start-fast-usdc', utils =>

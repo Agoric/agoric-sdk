@@ -10,3 +10,5 @@ export * from './src/typeGuards.js';
 export * from './src/utils/denomHash.js';
 
 export { withOrchestration } from './src/utils/start-helper.js';
+export { withChainCapabilities } from './src/chain-capabilities.js';
+export { registerChainsAndAssets } from './src/utils/chain-hub-helper.js';

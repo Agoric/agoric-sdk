@@ -6,7 +6,10 @@ import {
 } from '@agoric/internal';
 import { observeIteration, subscribeEach } from '@agoric/notifier';
 import {
+  CosmosChainInfoShape,
+  DenomDetailShape,
   OrchestrationPowersShape,
+  registerChainsAndAssets,
   withOrchestration,
 } from '@agoric/orchestration';
 import { provideSingleton } from '@agoric/zoe/src/contractSupport/durability.js';
@@ -27,9 +30,8 @@ import * as flows from './fast-usdc.flows.js';
 const trace = makeTracer('FastUsdc');
 
 /**
- * @import {Denom} from '@agoric/orchestration';
  * @import {HostInterface} from '@agoric/async-flow';
- * @import {OrchestrationAccount} from '@agoric/orchestration';
+ * @import {CosmosChainInfo, Denom, DenomDetail, OrchestrationAccount} from '@agoric/orchestration';
  * @import {OrchestrationPowers, OrchestrationTools} from '@agoric/orchestration/src/utils/start-helper.js';
  * @import {Vow} from '@agoric/vow';
  * @import {Zone} from '@agoric/zone';
@@ -53,6 +55,8 @@ export const meta = {
     ...OrchestrationPowersShape,
     feeConfig: FeeConfigShape,
     marshaller: M.remotable(),
+    chainInfo: M.recordOf(M.string(), CosmosChainInfoShape),
+    assetInfo: M.recordOf(M.string(), DenomDetailShape),
   },
 };
 harden(meta);
@@ -62,6 +66,8 @@ harden(meta);
  * @param {OrchestrationPowers & {
  *   marshaller: Marshaller;
  *   feeConfig: FeeConfig;
+ *   chainInfo: Record<string, CosmosChainInfo>;
+ *   assetInfo: Record<Denom, DenomDetail & { brandKey?: string}>;
  * }} privateArgs
  * @param {Zone} zone
  * @param {OrchestrationTools} tools
@@ -82,7 +88,7 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
 
   const { USDC } = terms.brands;
   const { withdrawToSeat } = tools.zoeTools;
-  const { chainHub, orchestrateAll, vowTools } = tools;
+  const { baggage, chainHub, orchestrateAll, vowTools } = tools;
   const makeSettler = prepareSettler(zone, {
     statusManager,
     USDC,
@@ -211,6 +217,18 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
   const poolKit = zone.makeOnce('Liquidity Pool kit', () =>
     makeLiquidityPoolKit(shareMint, privateArgs.storageNode),
   );
+
+  /** Chain, connection, and asset info can only be registered once */
+  const firstIncarnationKey = 'firstIncarnationKey';
+  if (!baggage.has(firstIncarnationKey)) {
+    baggage.init(firstIncarnationKey, true);
+    registerChainsAndAssets(
+      chainHub,
+      terms.brands,
+      privateArgs.chainInfo,
+      privateArgs.assetInfo,
+    );
+  }
 
   const feedKit = zone.makeOnce('Feed Kit', () => makeFeedKit());
 
