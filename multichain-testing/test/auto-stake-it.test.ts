@@ -1,7 +1,6 @@
-import type { CosmosChainInfo } from '@agoric/orchestration';
 import anyTest from '@endo/ses-ava/prepare-endo.js';
 import type { ExecutionContext, TestFn } from 'ava';
-import chainInfo from '../starship-chain-info.js';
+import starshipChainInfo from '../starship-chain-info.js';
 import { makeDoOffer } from '../tools/e2e-tools.js';
 import {
   createFundedWalletAndClient,
@@ -96,9 +95,7 @@ const autoStakeItScenario = test.macro({
     const fundAndTransfer = makeFundAndTransfer(t);
 
     // 2. Find 'stakingDenom' denom on agoric
-    const remoteChainInfo = (chainInfo as Record<string, CosmosChainInfo>)[
-      chainName
-    ];
+    const remoteChainInfo = starshipChainInfo[chainName];
     const stakingDenom = remoteChainInfo?.stakingTokens?.[0].denom;
     if (!stakingDenom) throw Error(`staking denom found for ${chainName}`);
 
