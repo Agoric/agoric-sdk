@@ -19,6 +19,6 @@
     "@agoric/synthetic-chain": "^0.4.3",
     "@types/better-sqlite3": "^7.6.11"
   },
-  "packageManager": "yarn@4.5.1",
+  "packageManager": "yarn@4.5.3",
   "license": "Apache-2.0"
 }
