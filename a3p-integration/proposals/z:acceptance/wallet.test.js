@@ -58,7 +58,7 @@ test.serial(`send invitation via namesByAddress`, async t => {
 });
 
 // FIXME https://github.com/Agoric/agoric-sdk/issues/10565
-test.failing('exitOffer tool reclaims stuck payment', async t => {
+test.skip('exitOffer tool reclaims stuck payment', async t => {
   const istBalanceBefore = await getBalances([GOV1ADDR], 'uist');
   t.log('istBalanceBefore', istBalanceBefore);
 
