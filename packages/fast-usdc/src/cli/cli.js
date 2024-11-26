@@ -13,6 +13,7 @@ import {
   writeFile as writeAsync,
 } from 'node:fs/promises';
 import { addConfigCommands } from './config-commands.js';
+import { addOperatorCommands } from './operator-commands.js';
 import * as configLib from './config.js';
 import transferLib from './transfer.js';
 import { makeFile } from '../util/file.js';
@@ -55,6 +56,7 @@ export const initProgram = (
   };
 
   addConfigCommands(program, configHelpers, makeConfigFile);
+  addOperatorCommands(program);
 
   /** @param {string} value */
   const parseDecimal = value => {
