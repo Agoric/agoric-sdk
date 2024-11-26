@@ -6,22 +6,32 @@ import {
 import { E } from '@endo/far';
 
 /// <reference types="@agoric/vats/src/core/types-ambient"/>
+
 /**
  * @import {Installation} from '@agoric/zoe/src/zoeService/utils.js';
  * @import {CosmosChainInfo, Denom, DenomDetail} from '@agoric/orchestration';
+ * @import {start as StartFn} from '@agoric/orchestration/src/examples/send-anywhere.contract.js';
  */
 
 const trace = makeTracer('StartSA', true);
-
-/**
- * @import {start as StartFn} from '@agoric/orchestration/src/examples/send-anywhere.contract.js';
- */
 
 /**
  * @param {BootstrapPowers & {
  *   installation: {
  *     consume: {
  *       sendAnywhere: Installation<StartFn>;
+ *     };
+ *   };
+ *   instance: {
+ *     produce: {
+ *       sendAnywhere: Producer<Instance>;
+ *     };
+ *   };
+ *   issuer: {
+ *     consume: {
+ *       BLD: Issuer<'nat'>;
+ *       IST: Issuer<'nat'>;
+ *       USDC: Issuer<'nat'>;
  *     };
  *   };
  * }} powers
@@ -47,11 +57,10 @@ export const startSendAnywhere = async (
       consume: { sendAnywhere },
     },
     instance: {
-      // @ts-expect-error unknown instance
       produce: { sendAnywhere: produceInstance },
     },
     issuer: {
-      consume: { IST },
+      consume: { BLD, IST },
     },
   },
   { options: { chainInfo, assetInfo } },
@@ -78,7 +87,10 @@ export const startSendAnywhere = async (
   const { instance } = await E(startUpgradable)({
     label: 'send-anywhere',
     installation: sendAnywhere,
-    issuerKeywordRecord: { Stable: await IST },
+    issuerKeywordRecord: {
+      Stable: await IST,
+      Stake: await BLD,
+    },
     privateArgs,
   });
   produceInstance.resolve(instance);
@@ -107,7 +119,7 @@ export const getManifest = ({ restoreRef }, { installationRef, options }) => {
           produce: { sendAnywhere: true },
         },
         issuer: {
-          consume: { IST: true },
+          consume: { BLD: true, IST: true },
         },
       },
     },
