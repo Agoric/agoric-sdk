@@ -8,10 +8,12 @@ import { preparePortfolioHolder } from '../exos/portfolio-holder-kit.js';
 import { withOrchestration } from '../utils/start-helper.js';
 import { prepareStakingTap } from './auto-stake-it-tap-kit.js';
 import * as flows from './auto-stake-it.flows.js';
+import { registerChainsAndAssets } from '../utils/chain-hub-helper.js';
 
 /**
  * @import {Zone} from '@agoric/zone';
  * @import {OrchestrationPowers, OrchestrationTools} from '../utils/start-helper.js';
+ * @import {CosmosChainInfo, Denom, DenomDetail} from '../types.js';
  */
 
 /**
@@ -23,13 +25,15 @@ import * as flows from './auto-stake-it.flows.js';
  * @param {ZCF} zcf
  * @param {OrchestrationPowers & {
  *   marshaller: Marshaller;
- * }} _privateArgs
+ *   chainInfo?: Record<string, CosmosChainInfo>;
+ *   assetInfo?: Record<Denom, DenomDetail & { brandKey?: string }>;
+ * }} privateArgs
  * @param {Zone} zone
  * @param {OrchestrationTools} tools
  */
 const contract = async (
   zcf,
-  _privateArgs,
+  privateArgs,
   zone,
   { chainHub, orchestrateAll, vowTools },
 ) => {
@@ -66,6 +70,13 @@ const contract = async (
   );
 
   const creatorFacet = prepareChainHubAdmin(zone, chainHub);
+
+  registerChainsAndAssets(
+    chainHub,
+    zcf.getTerms().brands,
+    privateArgs.chainInfo,
+    privateArgs.assetInfo,
+  );
 
   return { publicFacet, creatorFacet };
 };
