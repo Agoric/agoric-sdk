@@ -3,9 +3,13 @@ import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import type { TestFn } from 'ava';
 
 import { BridgeId } from '@agoric/internal';
-import type { CosmosValidatorAddress } from '@agoric/orchestration';
+import {
+  withChainCapabilities,
+  type CosmosValidatorAddress,
+} from '@agoric/orchestration';
 import { buildVTransferEvent } from '@agoric/orchestration/tools/ibc-mocks.js';
 import type { UpdateRecord } from '@agoric/smart-wallet/src/smartWallet.js';
+import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
 import {
   makeWalletFactoryContext,
   type WalletFactoryTestContext,
@@ -32,7 +36,19 @@ test.serial('send-anywhere', async t => {
 
   t.log('start send-anywhere');
   await evalProposal(
-    buildProposal('@agoric/builders/scripts/testing/init-send-anywhere.js'),
+    buildProposal('@agoric/builders/scripts/testing/init-send-anywhere.js', [
+      '--chainInfo',
+      JSON.stringify(withChainCapabilities(fetchedChainInfo)),
+      '--assetInfo',
+      JSON.stringify({
+        uist: {
+          chainName: 'agoric',
+          baseName: 'agoric',
+          baseDenom: 'uist',
+          brandKey: 'Stable',
+        },
+      }),
+    ]),
   );
 
   t.log('making offer');
