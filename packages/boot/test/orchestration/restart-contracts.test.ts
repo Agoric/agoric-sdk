@@ -113,9 +113,12 @@ test.serial('send-anywhere', async t => {
       id: 'send-somewhere',
       numWantsSatisfied: 1,
       error: undefined,
-      result: undefined,
     },
   });
+  if (conclusion.updated !== 'offerStatus') {
+    throw new Error('expected offerStatus');
+  }
+  t.true('result' in conclusion.status, 'transfer vow settled');
 });
 
 const validatorAddress: CosmosValidatorAddress = {
