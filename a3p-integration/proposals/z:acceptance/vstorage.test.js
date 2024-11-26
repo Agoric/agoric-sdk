@@ -12,10 +12,10 @@ test('readFully should vstorage node history', async t => {
   const nodePath = 'published.committees.Economic_Committee.latestQuestion';
 
   console.log('readLatest: ', await readLatest(nodePath));
-  console.log('readLatest: ', await readAt(nodePath));
+  console.log('readAt: ', await readAt(nodePath));
 
   // Return a rejected promise
-  console.log('readLatest: ', await readFully(nodePath));
+  console.log('readFully: ', await readFully(nodePath));
 
   t.pass();
 });
