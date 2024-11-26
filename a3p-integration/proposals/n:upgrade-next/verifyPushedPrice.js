@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+import '@endo/init/debug.js';
 import {
   registerOraclesForBrand,
   generateOracleMap,

@@ -25,7 +25,7 @@ import { prepareICQConnectionKit } from './icq-connection-kit.js';
 
 const { Vow$ } = NetworkShape; // TODO #9611
 /**
- * @typedef {object} OrchestrationPowers
+ * @typedef {object} CosmosOrchestrationPowers
  * @property {Remote<PortAllocator>} portAllocator
  * @property {undefined} reserved reserve a state key for future use. can hold
  *   an additional power or a record of powers
@@ -39,7 +39,7 @@ const { Vow$ } = NetworkShape; // TODO #9611
  * @typedef {{
  *   icqConnections: ICQConnectionStore;
  *   sharedICQPort: Remote<Port> | undefined;
- * } & OrchestrationPowers} OrchestrationState
+ * } & CosmosOrchestrationPowers} OrchestrationState
  */
 
 /**
@@ -101,7 +101,7 @@ const prepareCosmosOrchestrationServiceKit = (
           .returns(Vow$(M.remotable('ICQConnection'))),
       }),
     },
-    /** @param {Partial<OrchestrationPowers>} powers */
+    /** @param {Partial<CosmosOrchestrationPowers>} powers */
     powers => {
       mustMatch(powers?.portAllocator, M.remotable('PortAllocator'));
       const icqConnections = zone.detached().mapStore('ICQConnections');

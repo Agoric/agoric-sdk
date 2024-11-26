@@ -3,7 +3,7 @@ import fs from 'fs';
 import path from 'path';
 
 import { assert, b, Fail } from '@endo/errors';
-import { makeTracer } from '@agoric/internal';
+import { deepCopyJsonable, makeTracer } from '@agoric/internal';
 import { mustMatch } from '@agoric/store';
 import bundleSource from '@endo/bundle-source';
 import { resolve as resolveModuleSpecifier } from 'import-meta-resolve';
@@ -323,7 +323,7 @@ export async function initializeSwingset(
   } = runtimeOptions;
 
   // copy config so we can safely mess with it even if it's shared or hardened
-  config = JSON.parse(JSON.stringify(config));
+  config = deepCopyJsonable(config);
   if (!config.bundles) {
     config.bundles = {};
   }

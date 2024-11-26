@@ -1,7 +1,7 @@
 /* eslint-disable @jessie.js/safe-await-separator -- test */
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
-import { BridgeId } from '@agoric/internal';
+import { BridgeId, deepCopyJsonable } from '@agoric/internal';
 import { buildVatController } from '@agoric/swingset-vat';
 import { makeRunUtils } from '@agoric/swingset-vat/tools/run-utils.js';
 import { Fail } from '@endo/errors';
@@ -434,8 +434,6 @@ test('upgrade vat-priceAuthority', async t => {
   matchRef(t, reincarnatedRegistry.adminFacet, registry.adminFacet);
 });
 
-const dataOnly = obj => JSON.parse(JSON.stringify(obj));
-
 test('upgrade vat-vow', async t => {
   const bundles = {
     vow: {
@@ -483,7 +481,7 @@ test('upgrade vat-vow', async t => {
   };
   await EV(vowRoot).makeLocalPromiseWatchers(localPromises);
   await EV(vowRoot).makeLocalVowWatchers(localVows);
-  t.deepEqual(dataOnly(await EV(vowRoot).getWatcherResults()), {
+  t.deepEqual(deepCopyJsonable(await EV(vowRoot).getWatcherResults()), {
     promiseForever: { status: 'unsettled' },
     promiseFulfilled: { status: 'fulfilled', value: 'hello' },
     promiseRejected: { status: 'rejected', reason: 'goodbye' },
@@ -533,7 +531,7 @@ test('upgrade vat-vow', async t => {
   });
   await EV(fakeVowKit.resolver).reject(upgradeRejection.reason);
   t.timeout(600_000); // t.timeout.clear() not yet available in our ava version
-  t.deepEqual(dataOnly(await EV(vowRoot).getWatcherResults()), {
+  t.deepEqual(deepCopyJsonable(await EV(vowRoot).getWatcherResults()), {
     promiseForever: upgradeRejection,
     promiseFulfilled: { status: 'fulfilled', value: 'hello' },
     promiseRejected: { status: 'rejected', reason: 'goodbye' },

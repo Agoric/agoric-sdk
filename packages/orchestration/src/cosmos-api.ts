@@ -8,6 +8,7 @@ import type {
 } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/staking.js';
 import type { TxBody } from '@agoric/cosmic-proto/cosmos/tx/v1beta1/tx.js';
 import type { MsgTransfer } from '@agoric/cosmic-proto/ibc/applications/transfer/v1/tx.js';
+import type { FungibleTokenPacketData } from '@agoric/cosmic-proto/ibc/applications/transfer/v2/packet.js';
 import type {
   State as IBCChannelState,
   Order,
@@ -19,7 +20,11 @@ import type {
 } from '@agoric/cosmic-proto/tendermint/abci/types.js';
 import type { Brand, Purse, Payment, Amount } from '@agoric/ertp/src/types.js';
 import type { Port } from '@agoric/network';
-import type { IBCChannelID, IBCConnectionID } from '@agoric/vats';
+import type {
+  IBCChannelID,
+  IBCConnectionID,
+  VTransferIBCEvent,
+} from '@agoric/vats';
 import type {
   TargetApp,
   TargetRegistration,
@@ -92,7 +97,11 @@ export type CosmosChainInfo = Readonly<{
   connections?: Record<string, IBCConnectionInfo>; // chainId or wellKnownName
   // UNTIL https://github.com/Agoric/agoric-sdk/issues/9326
   icqEnabled?: boolean;
-
+  /**
+   * Note: developers must provide this value themselves for `.transfer` to work
+   * as expected. Please see examples for details.
+   */
+  pfmEnabled?: boolean;
   /**
    * cf https://github.com/cosmos/chain-registry/blob/master/chain.schema.json#L117
    */
@@ -226,20 +235,10 @@ export interface StakingAccountActions {
 }
 
 /**
- * Low level object that supports queries and operations for an account on a remote chain.
+ * Low level methods from IcaAccount that we pass through to CosmosOrchestrationAccount
  */
-export interface IcaAccount {
-  /**
-   * @returns the address of the account on the remote chain
-   */
-  getAddress: () => ChainAddress;
 
-  /**
-   * Submit a transaction on behalf of the remote account for execution on the remote chain.
-   * @param msgs - records for the transaction
-   * @returns acknowledgement string
-   */
-  executeTx: (msgs: TypedJson[]) => Promise<string>;
+export interface IcaAccountMethods {
   /**
    * Submit a transaction on behalf of the remote account for execution on the remote chain.
    * @param msgs - records for the transaction
@@ -267,6 +266,23 @@ export interface IcaAccount {
    * @throws {Error} if connection is currently active
    */
   reactivate: () => Promise<void>;
+}
+
+/**
+ * Low level object that supports queries and operations for an account on a remote chain.
+ */
+export interface IcaAccount extends IcaAccountMethods {
+  /**
+   * @returns the address of the account on the remote chain
+   */
+  getAddress: () => ChainAddress;
+
+  /**
+   * Submit a transaction on behalf of the remote account for execution on the remote chain.
+   * @param msgs - records for the transaction
+   * @returns acknowledgement string
+   */
+  executeTx: (msgs: TypedJson[]) => Promise<string>;
   /** @returns the address of the remote channel */
   getRemoteAddress: () => RemoteIbcAddress;
   /** @returns the address of the local channel */
@@ -280,16 +296,22 @@ export interface LiquidStakingMethods {
   liquidStake: (amount: AmountArg) => Promise<void>;
 }
 
+// TODO support StakingAccountQueries
 /** Methods supported only on Agoric chain accounts */
-export interface LocalAccountMethods {
+export interface LocalAccountMethods extends StakingAccountActions {
   /** deposit payment (from zoe, for example) to the account */
-  deposit: (payment: Payment<'nat'>) => Promise<void>;
+  deposit: (payment: Payment<'nat'>) => Promise<Amount<'nat'>>;
   /** withdraw a Payment from the account */
   withdraw: (amount: Amount<'nat'>) => Promise<Payment<'nat'>>;
   /**
    * Register a handler that receives an event each time ICS-20 transfers are
-   * sent or received by the underlying account. Each account may be associated
-   * with at most one handler at a given time.
+   * sent or received by the underlying account.
+   *
+   * Handler includes {@link VTransferIBCEvent} and
+   * {@link FungibleTokenPacketData} that can be used for application logic.
+   *
+   * Each account may be associated with at most one handler at a given time.
+   *
    * Does not grant the handler the ability to intercept a transfer. For a
    * blocking handler, aka 'IBC Hooks', leverage `registerActiveTap` from
    * `transferMiddleware` directly.
@@ -320,16 +342,12 @@ export interface IBCMsgTransferOptions {
  * @see {OrchestrationAccountI}
  */
 export type CosmosChainAccountMethods<CCI extends CosmosChainInfo> =
-  (CCI extends {
-    icaEnabled: true;
-  }
-    ? IcaAccount
-    : {}) &
-    CCI extends {
-    stakingTokens: {};
-  }
-    ? StakingAccountActions & StakingAccountQueries
-    : {};
+  IcaAccountMethods &
+    (CCI extends {
+      stakingTokens: {};
+    }
+      ? StakingAccountActions & StakingAccountQueries
+      : {});
 
 export type ICQQueryFunction = (
   msgs: JsonSafe<RequestQuery>[],

@@ -33,7 +33,6 @@ export const addAuction = async (
       chainStorage,
       chainTimerService,
       economicCommitteeCreatorFacet: electorateCreatorFacet,
-      econCharterKit,
       governedContractKits: governedContractKitsP,
       priceAuthority8400,
       zoe,
@@ -183,14 +182,6 @@ export const addAuction = async (
   });
   produceAuctioneerKit.reset();
   produceAuctioneerKit.resolve(kit);
-
-  // introduce economic committee charter to new auctioneer
-  // cf addGovernorsToEconCharter() in committee-proposal.js
-  await E(E.get(econCharterKit).creatorFacet).addInstance(
-    kit.instance,
-    kit.governorCreatorFacet,
-    kit.label,
-  );
 
   auctionInstance.reset();
   await auctionInstance.resolve(governedInstance);

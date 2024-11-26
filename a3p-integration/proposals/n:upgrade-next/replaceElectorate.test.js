@@ -1,5 +1,5 @@
 import test from 'ava';
-import '@endo/init';
+import '@endo/init/debug.js';
 import { GOV1ADDR, GOV2ADDR } from '@agoric/synthetic-chain';
 import { passStyleOf } from '@endo/marshal';
 import { GOV4ADDR, queryVstorageFormatted } from './agoric-tools.js';

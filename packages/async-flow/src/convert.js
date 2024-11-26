@@ -22,11 +22,9 @@ const makeConvert = (convertRemotable, convertPromiseOrVow, convertError) => {
     // to keep track of the error labeling.
     // See https://github.com/endojs/endo/pull/1795#issuecomment-1756093032
     if (label === undefined) {
-      // eslint-disable-next-line no-use-before-define
       return innerConvert(specimen);
     }
     try {
-      // eslint-disable-next-line no-use-before-define
       return innerConvert(specimen);
     } catch (err) {
       throwLabeled(err, label);

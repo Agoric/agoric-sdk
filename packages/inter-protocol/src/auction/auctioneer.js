@@ -6,7 +6,7 @@ import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import { AmountMath, AmountShape, BrandShape } from '@agoric/ertp';
 import { handleParamGovernance } from '@agoric/governance';
-import { BASIS_POINTS, makeTracer } from '@agoric/internal';
+import { makeTracer } from '@agoric/internal';
 import { prepareDurablePublishKit } from '@agoric/notifier';
 import { mustMatch } from '@agoric/store';
 import { appendToStoredArray } from '@agoric/store/src/stores/store-utils.js';
@@ -39,6 +39,8 @@ import { AuctionState } from './util.js';
  * @import {Baggage} from '@agoric/vat-data';
  * @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js';
  */
+
+const BASIS_POINTS = 10_000n;
 
 const { add, multiply } = natSafeMath;
 
@@ -584,7 +586,6 @@ export const start = async (zcf, privateArgs, baggage) => {
     },
   });
 
-  // eslint-disable-next-line no-use-before-define
   const isActive = () => scheduler.getAuctionState() === AuctionState.ACTIVE;
 
   /**
@@ -651,7 +652,6 @@ export const start = async (zcf, privateArgs, baggage) => {
         );
       },
       getSchedules() {
-        // eslint-disable-next-line no-use-before-define
         return scheduler.getSchedule();
       },
       getScheduleUpdates() {

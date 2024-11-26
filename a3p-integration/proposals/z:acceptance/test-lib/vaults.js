@@ -98,6 +98,9 @@ export const getMinInitialDebt = async () => {
  */
 export const calculateMintFee = async (toMintValue, vaultManager) => {
   const { brand } = await E.get(vstorageKitP).agoricNames;
+  /** @type {import('@agoric/ertp').Brand} */
+  // @ts-expect-error let this BoardRemote masquerade as a Brand
+  const ISTBrand = brand.IST;
 
   const governancePath = `published.vaultFactory.managers.${vaultManager}.governance`;
   const governance = await getContractInfo(governancePath, {
@@ -110,13 +113,12 @@ export const calculateMintFee = async (toMintValue, vaultManager) => {
 
   const mintFeeRatio = makeRatio(
     numerator.value,
-    brand.IST,
+    ISTBrand,
     denominator.value,
-    brand.IST,
+    ISTBrand,
   );
 
-  // @ts-expect-error XXX BoardRemote not Brand
-  const toMintAmount = AmountMath.make(brand.IST, toMintValue * 1_000_000n);
+  const toMintAmount = AmountMath.make(ISTBrand, toMintValue * 1_000_000n);
   const expectedMintFee = ceilMultiplyBy(toMintAmount, mintFeeRatio);
   const adjustedToMintAmount = AmountMath.add(toMintAmount, expectedMintFee);
 
@@ -164,6 +166,7 @@ const paramChangeOfferGeneration = async (
 
   const voteDurSec = BigInt(voteDur);
   const debtLimitValue = BigInt(debtLimit) * ISTunit;
+  /** @type {(ms: number) => bigint} */
   const toSec = ms => BigInt(Math.round(ms / 1000));
 
   const id = `propose-${Date.now()}`;
@@ -199,6 +202,7 @@ const paramChangeOfferGeneration = async (
     },
   };
 
+  // @ts-expect-error tolerate BoardRemote instances with getBoardId methods
   return JSON.stringify(marshaller.toCapData(harden(body)));
 };
 
@@ -206,7 +210,7 @@ const paramChangeOfferGeneration = async (
  *
  * @param {string} address
  * @param {*} debtLimit
- * @returns
+ * @returns {Promise<void>}
  */
 export const proposeNewDebtCeiling = async (address, debtLimit) => {
   const charterAcceptOfferId = await agops.ec(

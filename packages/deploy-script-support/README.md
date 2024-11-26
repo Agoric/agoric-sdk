@@ -19,7 +19,10 @@ the proposal.
 
 Here's a simple example:
 
-```
+```js
+import { makeHelpers } from '@agoric/deploy-script-support';
+import { getManifestForGame1 } from '@agoric/smart-wallet/test/start-game1-proposal.js';
+
 /** @type {import('@agoric/deploy-script-support/src/externalTypes.js').CoreEvalBuilder} */
 const game1ProposalBuilder = async ({ publishRef, install }) => {
   return harden({
@@ -45,28 +48,42 @@ export default async (homeP, endowments) => {
 };
 ```
 
-The first element of `getManifestCall` is interpreted as the name of a function
-defining a behavior. The second element of `getManifestCall` produces the
-`options` argument passed to the function (`{ game1Red }` in the example
-above). A common thing to want to pass in `options` is a reference to code to be
-installed on-chain. The example above shows how. `publishRef(install(<path>))`
-is built from sources in agoric-sdk, and passed as a `bundleRef`, which contains
-a `bundleID` suitable for passing to Zoe (for contracts) or `vatAdminService`
-(for non-contract vat code).
+This CoreEvalBuilder returns an object whose "sourceSpec" indicates that the
+proposal to run is "@agoric/smart-wallet/test/start-game1-proposal.js" and whose
+"getManifestCall" is a [functionName, ...args] array describing an invocation of
+`getManifestForGame1` exported from that file which is expected to return an
+object including a "manifest" as described below (but the actual invocation will
+insert as the first argument a "powers" object that includes functions such as
+`restoreRef`). A common thing to want to pass in `args` is a reference to code
+to be installed on-chain, and the example above shows how.
+`publishRef(install(...))` is built from sources in agoric-sdk, and passed as a
+`bundleRef`, which contains a `bundleID` suitable for passing to Zoe (for
+contracts) or `vatAdminService` (for non-contract vat code).
 
-The CoreEvalBuilder says the proposal to run is
-'@agoric/smart-wallet/test/start-game1-proposal.js'. It says the manifest can be
-produced by running `getManifestForGame1`, and directs the creation of bundles
-from `@agoric/smart-wallet/test/gameAssetContract.js` which will be made
-available to the proposal as `game1Ref` in `options`.
+The manifest from such an invocation is a JSON-serializable object in which each
+key is the name of a function to itself be invoked and the corresponding value
+is a "permit" describing an attenuation of the core-eval promise space to be
+provided as its first argument. A permit is either `true` or a string (_both
+meaning no attenuation of the respective subtree of the promise space, with a
+string serving as a grouping label for convenience and/or diagram generation_),
+or an object whose keys identify child properties and whose corresponding values
+are theirselves (recursive) permits. See `BootstrapManifiest` in
+[lib-boot.js](../vats/src/core/lib-boot.js).
 
-The manifest gives permissions for accessing objects in promise space, and
-passes installations to the proposalBuilder. Notice that `game1Ref` from the
-proposalBuilder is passed to `getManifestForGame1`, which adds it to
-`installations`, with the name `game1`. The name provided for installations will
-also be used to register the installation in `agoricNames`.
+The object returned from a "getManifestCall" invocation may also include
+"installations" to register in `agoricNames`, as is done here with name "game1"
+using the reference passed in via the invocation argument:
+```js
+/** @type {import('@agoric/vats/src/core/lib-boot').BootstrapManifest} */
+const gameManifest = harden({
+  [startGameContract.name]: {
+    consume: {...},
+    brand: {...},
+    issuer: {...},
+    ...
+  },
+});
 
-```
 export const getManifestForGame1 = ({ restoreRef }, { game1Ref }) => {
   return harden({
     manifest: gameManifest,

@@ -5,7 +5,7 @@ import { assert, Fail } from '@endo/errors';
 // XXX Do these "StorageAPI" functions belong in their own package?
 
 /**
- * @template {unknown} [T=unknown]
+ * @template [T=unknown]
  * @typedef {{
  *   has: (key: string) => boolean,
  *   get: (key: string) => T | undefined,
@@ -16,7 +16,7 @@ import { assert, Fail } from '@endo/errors';
  */
 
 /**
- * @template {unknown} [T=unknown]
+ * @template [T=unknown]
  * @typedef {KVStore<T> & {commit: () => void, abort: () => void}} BufferedKVStore
  */
 
@@ -210,15 +210,13 @@ export function provideEnhancedKVStore(mapOrKvStore = new Map()) {
  * until told to commit (or abort) them.
  *
  * @template [T=unknown]
- * @param {KVStore<T>} kvStore  The StorageAPI object to wrap
- * @param {{
- *   onGet?: (key: string, value: T | undefined) => void, // a callback invoked after getting a value from kvStore
- *   onPendingSet?: (key: string, value: T) => void, // a callback invoked after a new uncommitted value is set
- *   onPendingDelete?: (key: string) => void, // a callback invoked after a new uncommitted delete
- *   onCommit?: () => void, // a callback invoked after pending operations have been committed
- *   onAbort?: () => void, // a callback invoked after pending operations have been aborted
- * }} listeners  Optional callbacks to be invoked when respective events occur
- *
+ * @param {KVStore<T>} kvStore the StorageAPI object to wrap
+ * @param {object} [listeners] optional callbacks to be invoked when respective events occur
+ * @param {(key: string, value: T | undefined) => void} [listeners.onGet] a callback invoked after getting a value from kvStore
+ * @param {(key: string, value: T) => void} [listeners.onPendingSet] a callback invoked after a new uncommitted value is set
+ * @param {(key: string) => void} [listeners.onPendingDelete] a callback invoked after a new uncommitted delete
+ * @param {() => void} [listeners.onCommit] a callback invoked after pending operations have been committed
+ * @param {() => void} [listeners.onAbort] a callback invoked after pending operations have been aborted
  * @returns {{kvStore: KVStore<T>} & Pick<BufferedKVStore<T>, 'commit' | 'abort'>}
  */
 export function makeBufferedStorage(kvStore, listeners = {}) {

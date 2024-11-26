@@ -1,4 +1,4 @@
-import '@endo/init';
+import '@endo/init/debug.js';
 import { execFileSync } from 'node:child_process';
 import { makeAgd } from './synthetic-chain-excerpt.js';
 import { GOV4ADDR } from './agoric-tools.js';

@@ -37,6 +37,15 @@ const FIRST_LOWER_NEAR_KEYWORD = /^[a-z][a-zA-Z0-9_$]*$/;
  * @import {Bank, BankManager} from '@agoric/vats/src/vat-bank.js'
  */
 
+// XXX when inferred, error TS2742: cannot be named without a reference to '../../../node_modules/@endo/exo/src/get-interface.js'. This is likely not portable. A type annotation is necessary.
+/**
+ * @typedef {{
+ *   machine: any;
+ *   helper: any;
+ *   public: any;
+ * }} ProvisionPoolKit
+ */
+
 /**
  * @typedef {import('@agoric/zoe/src/zoeService/utils.js').Instance<
  *   import('@agoric/inter-protocol/src/psm/psm.js').start
@@ -506,6 +515,7 @@ export const prepareProvisionPoolKit = (
    * @param {object} opts
    * @param {Brand<'nat'>} opts.poolBrand
    * @param {ERef<StorageNode>} opts.storageNode
+   * @returns {Promise<ProvisionPoolKit>}
    */
   const makeProvisionPoolKit = async ({ poolBrand, storageNode }) => {
     const fundPurse = await E(poolBank).getPurse(poolBrand);

@@ -22,7 +22,6 @@ export const makeFreshShutdown = (verbose = true) => {
     process.off('SIGINT', shutdown);
     process.off('SIGTERM', shutdown);
     process.off('beforeExit', shutdown);
-    // eslint-disable-next-line no-use-before-define
     process.off('uncaughtException', uncaughtShutdown);
     verbose && console.error(`Shutting down cleanly...`);
     const shutdowners = [...shutdownThunks.keys()];

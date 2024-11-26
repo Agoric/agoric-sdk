@@ -976,6 +976,11 @@ export const makeSlogToOtelKit = (tracer, overrideAttrs = {}) => {
         spans.pop('timer-poll');
         break;
       }
+      case 'cosmic-swingset-inject-kernel-upgrade-events': {
+        spans.push('kernel-upgrade-events');
+        spans.pop('kernel-upgrade-events');
+        break;
+      }
       case 'cosmic-swingset-install-bundle': {
         spans.push(['install-bundle', slogAttrs.endoZipBase64Sha512]);
         spans.pop('install-bundle');

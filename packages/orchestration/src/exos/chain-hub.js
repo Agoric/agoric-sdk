@@ -4,7 +4,12 @@ import { M } from '@endo/patterns';
 import { BrandShape } from '@agoric/ertp/src/typeGuards.js';
 
 import { VowShape } from '@agoric/vow';
-import { CosmosChainInfoShape, IBCConnectionInfoShape } from '../typeGuards.js';
+import {
+  ChainAddressShape,
+  CosmosChainInfoShape,
+  DenomDetailShape,
+  IBCConnectionInfoShape,
+} from '../typeGuards.js';
 import { getBech32Prefix } from '../utils/address.js';
 
 /**
@@ -13,9 +18,8 @@ import { getBech32Prefix } from '../utils/address.js';
  * @import {Zone} from '@agoric/zone';
  * @import {CosmosAssetInfo, CosmosChainInfo, IBCConnectionInfo} from '../cosmos-api.js';
  * @import {ChainInfo, KnownChains} from '../chain-info.js';
- * @import {Denom} from '../orchestration-api.js';
+ * @import {ChainAddress, Denom} from '../orchestration-api.js';
  * @import {Remote} from '@agoric/internal';
- * @import {TypedPattern} from '@agoric/internal';
  */
 
 /**
@@ -36,11 +40,6 @@ import { getBech32Prefix } from '../utils/address.js';
  * @property {Brand<'nat'>} [brand] - vbank brand, if registered
  * @see {ChainHub} `registerAsset` method
  */
-/** @type {TypedPattern<DenomDetail>} */
-export const DenomDetailShape = M.splitRecord(
-  { chainName: M.string(), baseName: M.string(), baseDenom: M.string() },
-  { brand: BrandShape },
-);
 
 /**
  * @enum {(typeof HubName)[keyof typeof HubName]}
@@ -181,7 +180,7 @@ const ChainHubI = M.interface('ChainHub', {
   registerAsset: M.call(M.string(), DenomDetailShape).returns(),
   getAsset: M.call(M.string()).returns(M.or(DenomDetailShape, M.undefined())),
   getDenom: M.call(BrandShape).returns(M.or(M.string(), M.undefined())),
-  getChainInfoByAddress: M.call(M.string()).returns(CosmosChainInfoShape),
+  makeChainAddress: M.call(M.string()).returns(ChainAddressShape),
 });
 
 /**
@@ -279,7 +278,6 @@ export const makeChainHub = (zone, agoricNames, vowTools) => {
     },
   );
 
-  /* eslint-disable no-use-before-define -- chainHub defined below */
   const lookupChainsAndConnection = vowTools.retryable(
     zone,
     'lookupChainsAndConnection',
@@ -440,15 +438,21 @@ export const makeChainHub = (zone, agoricNames, vowTools) => {
     },
     /**
      * @param {string} address bech32 address
-     * @returns {CosmosChainInfo}
+     * @returns {ChainAddress}
+     * @throws {Error} if chain info not found for bech32Prefix
      */
-    getChainInfoByAddress(address) {
+    makeChainAddress(address) {
       const prefix = getBech32Prefix(address);
       if (!bech32PrefixToChainName.has(prefix)) {
         throw makeError(`Chain info not found for bech32Prefix ${q(prefix)}`);
       }
       const chainName = bech32PrefixToChainName.get(prefix);
-      return chainInfos.get(chainName);
+      const { chainId } = chainInfos.get(chainName);
+      return harden({
+        chainId,
+        value: address,
+        encoding: /** @type {const} */ ('bech32'),
+      });
     },
   });
 

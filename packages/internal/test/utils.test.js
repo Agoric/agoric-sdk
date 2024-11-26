@@ -2,16 +2,15 @@
 import test from 'ava';
 
 import { Far } from '@endo/far';
+import { deepMapObject, makeMeasureSeconds } from '../src/js-utils.js';
 import {
-  makeMeasureSeconds,
   assertAllDefined,
   whileTrue,
   untilTrue,
   forever,
   deeplyFulfilledObject,
-  deepMapObject,
   synchronizedTee,
-} from '../src/utils.js';
+} from '../src/ses-utils.js';
 
 test('deeplyFulfilledObject', async t => {
   const someFar = Far('somefar', { getAsync: () => Promise.resolve('async') });

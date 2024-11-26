@@ -8,6 +8,7 @@ import { basename, join } from 'path';
 import { inspect } from 'util';
 
 import { buildSwingset } from '@agoric/cosmic-swingset/src/launch-chain.js';
+import type { TypedPublished } from '@agoric/client-utils';
 import {
   BridgeId,
   makeTracer,
@@ -45,15 +46,18 @@ import type { SwingsetController } from '@agoric/swingset-vat/src/controller/con
 import type { BridgeHandler, IBCMethod } from '@agoric/vats';
 import type { BootstrapRootObject } from '@agoric/vats/src/core/lib-boot.js';
 import type { EProxy } from '@endo/eventual-send';
+import type { FastUSDCCorePowers } from '@agoric/fast-usdc/src/fast-usdc.start.js';
 import { icaMocks, protoMsgMockMap, protoMsgMocks } from './ibc/mocks.js';
 
 const trace = makeTracer('BSTSupport', false);
 
 type ConsumeBootrapItem = <N extends string>(
   name: N,
-) => N extends keyof EconomyBootstrapPowers['consume']
-  ? EconomyBootstrapPowers['consume'][N]
-  : unknown;
+) => N extends keyof FastUSDCCorePowers['consume']
+  ? FastUSDCCorePowers['consume'][N]
+  : N extends keyof EconomyBootstrapPowers['consume']
+    ? EconomyBootstrapPowers['consume'][N]
+    : unknown;
 
 // XXX should satisfy EVProxy from run-utils.js but that's failing to import
 /**
@@ -336,6 +340,9 @@ export const makeSwingsetTestKit = async (
     return data;
   };
 
+  const readPublished = <T extends string>(subpath: T) =>
+    readLatest(`published.${subpath}`) as TypedPublished<T>;
+
   let lastBankNonce = 0n;
   let ibcSequenceNonce = 0;
   let lcaSequenceNonce = 0;
@@ -347,7 +354,6 @@ export const makeSwingsetTestKit = async (
     ...args
   ) => {
     console.log('inbound', ...args);
-    // eslint-disable-next-line no-use-before-define
     bridgeInbound!(...args);
   };
 
@@ -645,6 +651,7 @@ export const makeSwingsetTestKit = async (
     getCrankNumber,
     jumpTimeTo,
     readLatest,
+    readPublished,
     runUtils,
     shutdown,
     storage,

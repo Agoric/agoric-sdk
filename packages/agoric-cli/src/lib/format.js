@@ -6,6 +6,18 @@ import { makeBoardRemote } from '@agoric/vats/tools/board-utils.js';
  * @import {AgoricNamesRemotes, BoardRemote, VBankAssetDetail} from '@agoric/vats/tools/board-utils.js';
  */
 
+// TODO Move to packages/internal.
+/**
+ * Parses the input and returns either a finite number or NaN.
+ *
+ * @param {string} input
+ * @returns {number}
+ */
+export const parseFiniteNumber = input => {
+  const result = /[0-9]/.test(input || '') ? Number(input) : NaN;
+  return Number.isFinite(result) ? result : NaN;
+};
+
 /**
  * JSON.stringify replacer to handle bigint
  *
@@ -88,14 +100,15 @@ export const purseBalanceTuples = (purses, assets) => {
  */
 export const fmtRecordOfLines = record => {
   const { stringify } = JSON;
+  /** @type {Array<[string, string[]]>} */
   const groups = Object.entries(record).map(([key, items]) => [
     key,
     items.map(item => `    ${stringify(item)}`),
   ]);
-  const lineEntries = groups.map(
-    // @ts-expect-error ???
-    ([key, lines]) => `  ${stringify(key)}: [\n${lines.join(',\n')}\n  ]`,
-  );
+  const lineEntries = groups.map(([key, lines]) => {
+    const linesStr = lines.length === 0 ? `[]` : `[\n${lines.join(',\n')}\n  ]`;
+    return `  ${stringify(key)}: ${linesStr}`;
+  });
   return `{\n${lineEntries.join(',\n')}\n}`;
 };
 

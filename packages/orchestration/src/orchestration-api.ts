@@ -1,4 +1,3 @@
-/* eslint-disable no-use-before-define */
 /**
  * @file General API of orchestration
  * - must not have chain-specific types without runtime narrowing by chain id
@@ -7,10 +6,7 @@
 import type { Amount, Brand, NatAmount } from '@agoric/ertp/src/types.js';
 import type { CurrentWalletRecord } from '@agoric/smart-wallet/src/smartWallet.js';
 import type { Timestamp } from '@agoric/time';
-import type {
-  LocalChainAccount,
-  QueryManyFn,
-} from '@agoric/vats/src/localchain.js';
+import type { QueryManyFn } from '@agoric/vats/src/localchain.js';
 import type { ResolvedPublicTopic } from '@agoric/zoe/src/contractSupport/topics.js';
 import type { Passable } from '@endo/marshal';
 import type {
@@ -76,7 +72,7 @@ export type ChainAddress = {
 export type OrchestrationAccount<CI extends ChainInfo> = OrchestrationAccountI &
   (CI extends CosmosChainInfo
     ? CI['chainId'] extends `agoric${string}`
-      ? CosmosChainAccountMethods<CI> & LocalAccountMethods
+      ? LocalAccountMethods
       : CosmosChainAccountMethods<CI>
     : {});
 
@@ -106,6 +102,9 @@ export interface Chain<CI extends ChainInfo> {
   // TODO provide a way to get the local denom/brand/whatever for this chain
 }
 
+/**
+ * Used with `orch.getDenomInfo('ibc/1234')`. See {@link Orchestrator.getDenomInfo}
+ */
 export interface DenomInfo<
   HoldingChain extends keyof KnownChains,
   IssuingChain extends keyof KnownChains,

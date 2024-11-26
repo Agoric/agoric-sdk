@@ -89,6 +89,7 @@ export const commonSetup = async (t: ExecutionContext) => {
   const startContract = async (
     contractName: string,
     contractBuilder: string,
+    builderOpts?: Record<string, string>,
   ) => {
     const { vstorageClient } = tools;
     const instances = Object.fromEntries(
@@ -98,7 +99,7 @@ export const commonSetup = async (t: ExecutionContext) => {
       return t.log('Contract found. Skipping installation...');
     }
     t.log('bundle and install contract', contractName);
-    await deployBuilder(contractBuilder);
+    await deployBuilder(contractBuilder, builderOpts);
     await retryUntilCondition(
       () => vstorageClient.queryData(`published.agoricNames.instance`),
       res => contractName in Object.fromEntries(res),

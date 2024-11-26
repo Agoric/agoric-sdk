@@ -8,6 +8,7 @@ import {
   QueuedActionType,
 } from '@agoric/internal/src/action-types.js';
 import { makeInitMsg } from '@agoric/internal/src/chain-utils.js';
+import { deepCopyJsonable } from '@agoric/internal/src/js-utils.js';
 import { initSwingStore } from '@agoric/swing-store';
 import { makeSlogSender } from '@agoric/telemetry';
 import { launch } from '../src/launch-chain.js';
@@ -29,14 +30,12 @@ import { makeQueue, makeQueueStorageMock } from '../src/helpers/make-queue.js';
  */
 
 /** @type {Replacer<object>} */
-const deepCopyData = obj => JSON.parse(JSON.stringify(obj));
-
-/** @type {Replacer<object>} */
 const stripUndefined = obj =>
   Object.fromEntries(
     Object.entries(obj).filter(([_key, value]) => value !== undefined),
   );
 
+/** @type {InitMsg} */
 export const defaultInitMessage = harden(
   makeInitMsg({
     type: SwingsetMessageType.AG_COSMOS_INIT,
@@ -61,8 +60,9 @@ export const defaultInitMessage = harden(
     ),
   }),
 );
+/** @type {InitMsg} */
 export const defaultBootstrapMessage = harden({
-  ...deepCopyData(defaultInitMessage),
+  ...deepCopyJsonable(defaultInitMessage),
   blockHeight: 1,
   blockTime: Math.floor(Date.parse('2010-01-01T00:00Z') / 1000),
   isBootstrap: true,
@@ -184,7 +184,7 @@ export const makeCosmicSwingsetTestKit = async (
   await null;
   /** @type {SwingSetConfig} */
   let config = {
-    ...deepCopyData(baseConfig),
+    ...deepCopyJsonable(baseConfig),
     ...configOverrides,
     ...stripUndefined({ defaultManagerType }),
   };
@@ -209,7 +209,7 @@ export const makeCosmicSwingsetTestKit = async (
 
   if (fixupConfig) config = fixupConfig(config);
 
-  let initMessage = deepCopyData(defaultInitMessage);
+  let initMessage = deepCopyJsonable(defaultInitMessage);
   if (fixupInitMessage) initMessage = fixupInitMessage(initMessage);
   initMessage?.type === SwingsetMessageType.AG_COSMOS_INIT ||
     Fail`initMessage must be AG_COSMOS_INIT`;

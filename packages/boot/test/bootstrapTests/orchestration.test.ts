@@ -36,7 +36,7 @@ test.after.always(t => t.context.shutdown?.());
 test.serial('config', async t => {
   const {
     storage,
-    readLatest,
+    readPublished,
     runUtils: { EV },
   } = t.context;
 
@@ -48,10 +48,7 @@ test.serial('config', async t => {
       chainId: 'cosmoshub-4',
       stakingTokens: [{ denom: ATOM_DENOM }],
     });
-    t.deepEqual(
-      readLatest(`published.agoricNames.chain.cosmoshub`),
-      cosmosChainInfo,
-    );
+    t.deepEqual(readPublished(`agoricNames.chain.cosmoshub`), cosmosChainInfo);
     await documentStorageSchema(t, storage, {
       note: 'Chain info for Orchestration',
       node: 'agoricNames.chain',
@@ -69,7 +66,7 @@ test.serial('config', async t => {
     });
 
     t.deepEqual(
-      readLatest(`published.agoricNames.chainConnection.cosmoshub-4_juno-1`),
+      readPublished(`agoricNames.chainConnection.cosmoshub-4_juno-1`),
       connection,
     );
 
@@ -140,7 +137,7 @@ test.serial('stakeAtom - smart wallet', async t => {
     evalProposal,
     agoricNamesRemotes,
     bridgeUtils: { flushInboundQueue },
-    readLatest,
+    readPublished,
   } = t.context;
 
   await evalProposal(
@@ -174,7 +171,7 @@ test.serial('stakeAtom - smart wallet', async t => {
   t.like(wd.getLatestUpdateRecord(), {
     status: { id: 'request-account', numWantsSatisfied: 1 },
   });
-  t.deepEqual(readLatest('published.stakeAtom.accounts.cosmos1test'), {
+  t.deepEqual(readPublished('stakeAtom.accounts.cosmos1test'), {
     localAddress:
       '/ibc-port/icacontroller-1/ordered/{"version":"ics27-1","controllerConnectionId":"connection-8","hostConnectionId":"connection-649","address":"cosmos1test","encoding":"proto3","txType":"sdk_multi_msg"}/ibc-channel/channel-1',
     remoteAddress:
@@ -287,7 +284,7 @@ test('basic-flows', async t => {
     buildProposal,
     evalProposal,
     agoricNamesRemotes,
-    readLatest,
+    readPublished,
     bridgeUtils: { flushInboundQueue },
   } = t.context;
 
@@ -325,7 +322,7 @@ test('basic-flows', async t => {
   t.like(wd.getLatestUpdateRecord(), {
     status: { id: 'request-coa', numWantsSatisfied: 1 },
   });
-  t.deepEqual(readLatest('published.basicFlows.cosmos1test'), {
+  t.deepEqual(readPublished('basicFlows.cosmos1test'), {
     localAddress:
       '/ibc-port/icacontroller-4/ordered/{"version":"ics27-1","controllerConnectionId":"connection-8","hostConnectionId":"connection-649","address":"cosmos1test","encoding":"proto3","txType":"sdk_multi_msg"}/ibc-channel/channel-4',
     remoteAddress:
@@ -355,7 +352,7 @@ test('basic-flows', async t => {
   t.like(wd.getLatestUpdateRecord(), {
     status: { id: 'request-loa', numWantsSatisfied: 1 },
   });
-  t.is(readLatest('published.basicFlows.agoric1fakeLCAAddress'), '');
+  t.is(readPublished('basicFlows.agoric1fakeLCAAddress'), '');
 
   await wd.sendOffer({
     id: 'transfer-to-noble-from-cosmos',
@@ -465,7 +462,7 @@ test.serial('basic-flows - portfolio holder', async t => {
   const {
     buildProposal,
     evalProposal,
-    readLatest,
+    readPublished,
     agoricNamesRemotes,
     bridgeUtils: { flushInboundQueue },
   } = t.context;
@@ -515,14 +512,14 @@ test.serial('basic-flows - portfolio holder', async t => {
     status: { id: 'request-portfolio-acct', numWantsSatisfied: 1 },
   });
   // XXX this overrides a previous account, since mocks only provide one address
-  t.deepEqual(readLatest('published.basicFlows.cosmos1test'), {
+  t.deepEqual(readPublished('basicFlows.cosmos1test'), {
     localAddress:
       '/ibc-port/icacontroller-3/ordered/{"version":"ics27-1","controllerConnectionId":"connection-1","hostConnectionId":"connection-1649","address":"cosmos1test","encoding":"proto3","txType":"sdk_multi_msg"}/ibc-channel/channel-3',
     remoteAddress:
       '/ibc-hop/connection-1/ibc-port/icahost/ordered/{"version":"ics27-1","controllerConnectionId":"connection-1","hostConnectionId":"connection-1649","address":"cosmos1test","encoding":"proto3","txType":"sdk_multi_msg"}/ibc-channel/channel-3',
   });
   // XXX this overrides a previous account, since mocks only provide one address
-  t.is(readLatest('published.basicFlows.agoric1fakeLCAAddress'), '');
+  t.is(readPublished('basicFlows.agoric1fakeLCAAddress'), '');
 
   const { BLD } = agoricNamesRemotes.brand;
   BLD || Fail`BLD missing from agoricNames`;

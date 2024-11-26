@@ -2,7 +2,7 @@
 import test from 'ava';
 import { assert, q, Fail } from '@endo/errors';
 import { E } from '@endo/far';
-import { BridgeId, objectMap } from '@agoric/internal';
+import { BridgeId, deepCopyJsonable, objectMap } from '@agoric/internal';
 import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
 import {
   defaultBootstrapMessage,
@@ -15,6 +15,7 @@ import {
   makeVatCleanupBudgetFromKeywords,
 } from '../src/sim-params.js';
 
+/** @import { ManagerType, SwingSetConfig } from '@agoric/swingset-vat' */
 /** @import { KVStore } from '../src/helpers/bufferedStorage.js' */
 
 /**
@@ -26,7 +27,7 @@ import {
  */
 const makeSourceDescriptors = src => {
   const hardened = objectMap(src, sourceSpec => ({ sourceSpec }));
-  return JSON.parse(JSON.stringify(hardened));
+  return deepCopyJsonable(hardened);
 };
 
 /**
@@ -59,6 +60,7 @@ test('cleanup work must be limited by vat_cleanup_budget', async t => {
     bundles: makeSourceDescriptors({
       puppet: '@agoric/swingset-vat/tools/vat-puppet.js',
     }),
+    /** @type {Partial<SwingSetConfig>} */
     configOverrides: {
       // Aggressive GC.
       defaultReapInterval: 1,

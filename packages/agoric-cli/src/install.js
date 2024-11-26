@@ -37,7 +37,7 @@ export default async function installMain(progname, rawArgs, powers, opts) {
       stdio: ['inherit', 'pipe', 'inherit'],
     });
     const stdout = [];
-    p.childProcess.stdout.on('data', out => stdout.push(out));
+    p.childProcess.stdout?.on('data', out => stdout.push(out));
     await p;
     const d = JSON.parse(Buffer.concat(stdout).toString('utf-8'));
     for (const [name, { location }] of Object.entries(d)) {
@@ -49,7 +49,7 @@ export default async function installMain(progname, rawArgs, powers, opts) {
   let subdirs;
   const workTrees = ['.'];
   let sdkWorktree;
-  /** @type {Map<string, string>} */
+  /** @type {Map<string, string | null>} */
   const sdkPackageToPath = new Map();
   const linkFolder = path.resolve(`_agstate/yarn-links`);
   const linkFlags = [];
@@ -131,7 +131,6 @@ export default async function installMain(progname, rawArgs, powers, opts) {
         // Ensure we update the package.json before exiting.
         const updatePackageJson = async () => {
           // Don't update on exit anymore.
-          // eslint-disable-next-line no-use-before-define
           process.off('beforeExit', updatePackageJsonOnExit);
           log.info(`updating ${pjson}`);
           await fs.writeFile(
@@ -170,7 +169,7 @@ export default async function installMain(progname, rawArgs, powers, opts) {
         .then(results => {
           // After all have settled, throw any errors.
           const failures = results.filter(
-            ({ status }) => status !== 'fulfilled',
+            result => result.status !== 'fulfilled',
           );
           if (failures.length) {
             throw AggregateError(
@@ -284,6 +283,10 @@ export default async function installMain(progname, rawArgs, powers, opts) {
   // Create symlinks to the SDK packages.
   await Promise.all(
     [...sdkPackageToPath.entries()].map(async ([pjName, dir]) => {
+      if (typeof dir !== 'string') {
+        throw Error(`unexpected incomplete package mapping: ${pjName}`);
+      }
+
       const SUBOPTIMAL = false;
       await null;
       if (SUBOPTIMAL) {
@@ -301,7 +304,7 @@ export default async function installMain(progname, rawArgs, powers, opts) {
       log('linking', linkName);
       return fs
         .mkdir(linkDir, { recursive: true })
-        .then(_ => fs.symlink(path.relative(linkDir, dir), linkName));
+        .then(() => fs.symlink(path.relative(linkDir, dir), linkName));
     }),
   );
 

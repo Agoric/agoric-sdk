@@ -11,15 +11,18 @@ import { Fail } from '@endo/errors';
 
 export { boardSlottingMarshaller };
 
+/** @type {(val: any) => string} */
 export const boardValToSlot = val => {
   if ('getBoardId' in val) {
     return val.getBoardId();
   }
-  Fail`unknown obj in boardSlottingMarshaller.valToSlot ${val}`;
+  throw Fail`unknown obj in boardSlottingMarshaller.valToSlot ${val}`;
 };
 
+/** @param {string} agoricNetSubdomain */
 export const networkConfigUrl = agoricNetSubdomain =>
   `https://${agoricNetSubdomain}.agoric.net/network-config`;
+/** @param {string} agoricNetSubdomain */
 export const rpcUrl = agoricNetSubdomain =>
   `https://${agoricNetSubdomain}.rpc.agoric.net:443`;
 
@@ -74,6 +77,7 @@ export const makeVStorage = (powers, config = networkConfig) => {
 
   return {
     url,
+    /** @param {{ result: { response: { code: number, value: string } } }} rawResponse */
     decode({ result: { response } }) {
       const { code } = response;
       if (code !== 0) {
@@ -155,6 +159,7 @@ export const makeVStorage = (powers, config = networkConfig) => {
 
 export const makeFromBoard = () => {
   const cache = new Map();
+  /** @type {(boardId: string, iface?: string) => ReturnType<typeof makeBoardRemote>} */
   const convertSlotToVal = (boardId, iface) => {
     if (cache.has(boardId)) {
       return cache.get(boardId);
@@ -211,6 +216,7 @@ harden(storageHelper);
  * @returns {Promise<import('@agoric/vats/tools/board-utils.js').AgoricNamesRemotes>}
  */
 export const makeAgoricNames = async (ctx, vstorage) => {
+  /** @type {Record<string, string>} */
   const reverse = {};
   const entries = await Promise.all(
     ['brand', 'instance', 'vbankAsset'].map(async kind => {
@@ -221,7 +227,7 @@ export const makeAgoricNames = async (ctx, vstorage) => {
       const parts = storageHelper.unserializeTxt(content, ctx).at(-1);
       for (const [name, remote] of parts) {
         if ('getBoardId' in remote) {
-          reverse[remote.getBoardId()] = name;
+          reverse[/** @type {string} */ (remote.getBoardId())] = name;
         }
       }
       return [kind, Object.fromEntries(parts)];

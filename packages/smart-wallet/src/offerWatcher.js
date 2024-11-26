@@ -72,13 +72,18 @@ const watchForPayout = ({ paymentWatcher }, seat) => {
 /** @param {VowTools} vowTools */
 export const makeWatchOfferOutcomes = vowTools => {
   const watchForOfferResult = makeWatchForOfferResult(vowTools);
-  const { asPromise, allVows } = vowTools;
+  const { when, allVows } = vowTools;
   /**
    * @param {OutcomeWatchers} watchers
    * @param {UserSeat} seat
    */
   const watchOfferOutcomes = (watchers, seat) => {
-    return asPromise(
+    // Use `when` to get a promise from the vow.
+    // Unlike `asPromise` this doesn't warn in case of disconnections, which is
+    // fine since we actually handle the outcome durably through the watchers.
+    // Only the `executeOffer` caller relies on the settlement of this promise,
+    // and only in tests.
+    return when(
       allVows([
         watchForOfferResult(watchers, seat),
         watchForNumWants(watchers, seat),

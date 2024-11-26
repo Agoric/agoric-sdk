@@ -30,7 +30,7 @@ runs:
         DATADOG_SITE: ${{ inputs.datadog-site }}
       continue-on-error: true
       run: |
-        ./scripts/ci-collect-testruns.sh
+        ./scripts/ci/collect-testruns.sh
         if [ "${{ inputs.datadog-token }}" != "" ]; then
           export DATADOG_API_KEY="${{ inputs.datadog-token }}"
           export DD_ENV="ci"

@@ -9,13 +9,16 @@
  *  - operation: query dest account's balance
  *  - condition: dest account has a balance >= sent token
  * - Making sure an offer resulted successfully
- *
+ * - Making sure an offer was exited successfully
+ * - Make sure an election held by a given committee (see @agoric/governance) turned out as expected
  */
 
 /**
  * @typedef {object} RetryOptions
  * @property {number} [maxRetries]
  * @property {number} [retryIntervalMs]
+ * @property {boolean} [reusePromise]
+ * @property {(value: unknown) => unknown} [renderResult]
  *
  * @typedef {RetryOptions & {errorMessage: string}} WaitUntilOptions
  *
@@ -39,32 +42,67 @@ export const sleep = (ms, { log = () => {}, setTimeout }) =>
 /**
  * From https://github.com/Agoric/agoric-sdk/blob/442f07c8f0af03281b52b90e90c27131eef6f331/multichain-testing/tools/sleep.ts#L24
  *
- * @param {() => Promise} operation
- * @param {(result: any) => boolean} condition
+ * @template [T=unknown]
+ * @param {() => Promise<T>} operation
+ * @param {(result: T) => boolean} condition
  * @param {string} message
  * @param {RetryOptions & {log?: typeof console.log, setTimeout: typeof global.setTimeout}} options
+ * @returns {Promise<T>}
  */
 export const retryUntilCondition = async (
   operation,
   condition,
   message,
-  { maxRetries = 6, retryIntervalMs = 3500, log = console.log, setTimeout },
+  {
+    maxRetries = 6,
+    retryIntervalMs = 3500,
+    reusePromise = false,
+    renderResult = x => x,
+    // XXX mixes ocaps with configuration options
+    log = console.log,
+    setTimeout,
+  },
 ) => {
   console.log({ maxRetries, retryIntervalMs, message });
-  let retries = 0;
 
   await null; // separate sync prologue
 
+  const timedOut = Symbol('timed out');
+  let retries = 0;
+  /** @type {Promise | undefined } */
+  let resultP;
   while (retries < maxRetries) {
     try {
-      const result = await operation();
-      log('RESULT', result);
-      if (condition(result)) {
-        return result;
+      if (!reusePromise || !resultP) {
+        resultP = operation();
+        const makeCleanup = ref => {
+          const cleanup = () => {
+            if (resultP === ref) {
+              resultP = undefined;
+            }
+          };
+          return cleanup;
+        };
+        // eslint-disable-next-line @typescript-eslint/no-floating-promises
+        resultP.finally(makeCleanup(resultP));
+      }
+      const result = await Promise.race([
+        resultP,
+        // Overload the retryIntervalMs to apply both *to* and *between* iterations
+        sleep(retryIntervalMs, { log() {}, setTimeout }).then(() => timedOut),
+      ]);
+      if (result === timedOut) {
+        log(`Attempt ${retries + 1} timed out`);
+        if (!reusePromise) resultP = undefined;
+      } else {
+        log('RESULT', renderResult(result));
+        if (condition(result)) {
+          return result;
+        }
       }
     } catch (error) {
       if (error instanceof Error) {
-        log(`Error: ${error.message}`);
+        log(`Error: ${error.message}: ${error.stack}`);
       } else {
         log(`Unknown error: ${String(error)}`);
       }
@@ -82,13 +120,14 @@ export const retryUntilCondition = async (
 
 /**
  * @param {WaitUntilOptions} options
+ * @returns {WaitUntilOptions & {log?: typeof console.log}}
  */
 const overrideDefaultOptions = options => {
   const defaultValues = {
     maxRetries: 6,
     retryIntervalMs: 3500,
-    log: console.log,
     errorMessage: 'Error',
+    log: console.log,
   };
 
   return { ...defaultValues, ...options };
@@ -118,14 +157,13 @@ export const waitUntilContractDeployed = (
 ) => {
   const { follow, setTimeout } = ambientAuthority;
   const getInstances = makeGetInstances(follow);
-  const { maxRetries, retryIntervalMs, errorMessage, log } =
-    overrideDefaultOptions(options);
+  const { errorMessage, ...resolvedOptions } = overrideDefaultOptions(options);
 
   return retryUntilCondition(
     getInstances,
     instanceObject => Object.keys(instanceObject).includes(contractName),
     errorMessage,
-    { maxRetries, retryIntervalMs, log, setTimeout },
+    { setTimeout, ...resolvedOptions },
   );
 };
 
@@ -149,21 +187,20 @@ const checkCosmosBalance = (balances, threshold) => {
 
 /**
  * @param {string} destAcct
- * @param {{ log: (message: string) => void, query: () => Promise<object>, setTimeout: typeof global.setTimeout}} io
+ * @param {{ log?: (message: string) => void, query: () => Promise<object>, setTimeout: typeof global.setTimeout}} io
  * @param {{denom: string, value: number}} threshold
  * @param {WaitUntilOptions} options
  */
 export const waitUntilAccountFunded = (destAcct, io, threshold, options) => {
   const { query, setTimeout } = io;
   const queryCosmosBalance = makeQueryCosmosBalance(query);
-  const { maxRetries, retryIntervalMs, errorMessage, log } =
-    overrideDefaultOptions(options);
+  const { errorMessage, ...resolvedOptions } = overrideDefaultOptions(options);
 
   return retryUntilCondition(
     async () => queryCosmosBalance(destAcct),
     balances => checkCosmosBalance(balances, threshold),
     errorMessage,
-    { maxRetries, retryIntervalMs, log, setTimeout },
+    { setTimeout, ...resolvedOptions },
   );
 };
 
@@ -199,7 +236,7 @@ const checkOfferState = (offerStatus, waitForPayouts, offerId) => {
  * @param {string} addr
  * @param {string} offerId
  * @param {boolean} waitForPayouts
- * @param {{ log: typeof console.log, follow: () => object, setTimeout: typeof global.setTimeout }} io
+ * @param {{ log?: typeof console.log, follow: () => object, setTimeout: typeof global.setTimeout }} io
  * @param {WaitUntilOptions} options
  */
 export const waitUntilOfferResult = (
@@ -211,14 +248,13 @@ export const waitUntilOfferResult = (
 ) => {
   const { follow, setTimeout } = io;
   const queryWallet = makeQueryWallet(follow);
-  const { maxRetries, retryIntervalMs, errorMessage, log } =
-    overrideDefaultOptions(options);
+  const { errorMessage, ...resolvedOptions } = overrideDefaultOptions(options);
 
   return retryUntilCondition(
     async () => queryWallet(addr),
     status => checkOfferState(status, waitForPayouts, offerId),
     errorMessage,
-    { maxRetries, retryIntervalMs, log, setTimeout },
+    { reusePromise: true, setTimeout, ...resolvedOptions },
   );
 };
 
@@ -247,12 +283,145 @@ const checkForInvitation = update => {
 export const waitUntilInvitationReceived = (addr, io, options) => {
   const { follow, setTimeout } = io;
   const queryWallet = makeQueryWallet(follow);
-  const { maxRetries, retryIntervalMs, errorMessage, log } =
-    overrideDefaultOptions(options);
+  const { errorMessage, ...resolvedOptions } = overrideDefaultOptions(options);
 
   return retryUntilCondition(
     async () => queryWallet(addr),
     checkForInvitation,
+    errorMessage,
+    { reusePromise: true, setTimeout, ...resolvedOptions },
+  );
+};
+
+/// ////////// Making sure an offer was exited successfully /////////////
+
+const makeQueryWalletCurrent = follow => (/** @type {string} */ addr) =>
+  follow('-lF', `:published.wallet.${addr}.current`);
+
+/**
+ * @param {object} update
+ * @param {string} offerId
+ * @returns {boolean}
+ */
+const checkLiveOffers = (update, offerId) => {
+  const liveOffers = update.liveOffers;
+  if (!liveOffers) {
+    return false;
+  }
+  return !liveOffers.some(element => element.includes(offerId));
+};
+
+/**
+ * @param {string} addr
+ * @param {string} offerId
+ * @param {{ follow: () => object, log: typeof console.log, setTimeout: typeof global.setTimeout}} io
+ * @param {WaitUntilOptions} options
+ */
+export const waitUntilOfferExited = async (addr, offerId, io, options) => {
+  const { follow, setTimeout } = io;
+  const queryWalletCurrent = makeQueryWalletCurrent(follow);
+  const { errorMessage, ...resolvedOptions } = overrideDefaultOptions(options);
+
+  return retryUntilCondition(
+    async () => queryWalletCurrent(addr),
+    update => checkLiveOffers(update, offerId),
+    errorMessage,
+    { setTimeout, ...resolvedOptions },
+  );
+};
+
+/// ////////// Make sure an election held by a given committee //////////
+/// ////////// (see @agoric/governance) turned out as expected //////////
+
+/**
+ * @typedef {{
+ *   latestOutcome: {
+ *     outcome: string;
+ *     question: import('@endo/marshal').RemotableObject
+ *   },
+ *   latestQuestion: {
+ *     closingRule: { deadline: bigint },
+ *     questionHandle: import('@endo/marshal').RemotableObject
+ *   }
+ * }} ElectionResult
+ */
+
+/**
+ * @param {string} basePath
+ * @param {import('./vstorage-kit').VstorageKit} vstorage
+ * @returns {Promise<ElectionResult>}
+ */
+const fetchLatestEcQuestion = async (basePath, vstorage) => {
+  const pathOutcome = `${basePath}.latestOutcome`;
+  const pathQuestion = `${basePath}.latestQuestion`;
+
+  const [latestOutcome, latestQuestion] = await Promise.all([
+    /** @type {Promise<ElectionResult["latestOutcome"]>} */ (
+      vstorage.readLatestHead(pathOutcome)
+    ),
+    /** @type {Promise<ElectionResult["latestQuestion"]>} */ (
+      vstorage.readLatestHead(pathQuestion)
+    ),
+  ]);
+
+  return { latestOutcome, latestQuestion };
+};
+
+/**
+ *
+ * @param {ElectionResult} electionResult
+ * @param {{ outcome: string; deadline: bigint }} expectedResult
+ * @returns {boolean}
+ */
+const checkCommitteeElectionResult = (electionResult, expectedResult) => {
+  const {
+    latestOutcome: { outcome, question },
+    latestQuestion: {
+      closingRule: { deadline },
+      questionHandle,
+    },
+  } = electionResult;
+  const { outcome: expectedOutcome, deadline: expectedDeadline } =
+    expectedResult;
+
+  return (
+    expectedOutcome === outcome &&
+    deadline === expectedDeadline &&
+    question === questionHandle
+  );
+};
+
+/**
+ * Depends on "@agoric/governance" package's committee implementation where for a given committee
+ * there's two child nodes in vstorage named "latestOutcome" and "latestQuestion" respectively.
+ *
+ * @param {string} committeePathBase
+ * @param {{
+ *   outcome: string;
+ *   deadline: bigint;
+ * }} expectedResult
+ * @param {{
+ *   vstorage: import('./vstorage-kit').VstorageKit;
+ *   log: typeof console.log,
+ *   setTimeout: typeof global.setTimeout
+ * }} io
+ * @param {WaitUntilOptions} options
+ */
+export const waitUntilElectionResult = (
+  committeePathBase,
+  expectedResult,
+  io,
+  options,
+) => {
+  const { vstorage, log, setTimeout } = io;
+
+  const { maxRetries, retryIntervalMs, errorMessage } =
+    overrideDefaultOptions(options);
+
+  return retryUntilCondition(
+    () => fetchLatestEcQuestion(committeePathBase, vstorage),
+    electionResult =>
+      checkCommitteeElectionResult(electionResult, expectedResult),
     errorMessage,
     { maxRetries, retryIntervalMs, log, setTimeout },
   );

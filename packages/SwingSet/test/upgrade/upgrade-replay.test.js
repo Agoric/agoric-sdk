@@ -4,6 +4,7 @@ import { test } from '../../tools/prepare-test-env-ava.js';
 
 import { assert } from '@endo/errors';
 import { kser } from '@agoric/kmarshal';
+import { deepCopyJsonable } from '@agoric/internal/src/js-utils.js';
 import { initSwingStore } from '@agoric/swing-store';
 import {
   buildKernelBundles,
@@ -14,10 +15,6 @@ import { bundleOpts } from '../util.js';
 
 function bfile(name) {
   return new URL(name, import.meta.url).pathname;
-}
-
-function copy(data) {
-  return JSON.parse(JSON.stringify(data));
 }
 
 async function run(c, method, args = []) {
@@ -49,7 +46,12 @@ test('replay after upgrade', async t => {
 
   const ss1 = initSwingStore();
   {
-    await initializeSwingset(copy(config), [], ss1.kernelStorage, initOpts);
+    await initializeSwingset(
+      deepCopyJsonable(config),
+      [],
+      ss1.kernelStorage,
+      initOpts,
+    );
     const c1 = await makeSwingsetController(ss1.kernelStorage, {}, runtimeOpts);
     t.teardown(c1.shutdown);
     c1.pinVatRoot('bootstrap');

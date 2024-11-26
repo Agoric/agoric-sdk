@@ -342,7 +342,7 @@ const voteLatestProposalAndWait = async ({
   }
 
   // @ts-expect-error cast
-  return info;
+  return { ...info, proposal_id: lastProposalId };
 };
 
 /**
@@ -399,7 +399,10 @@ const runCoreEval = async (
   log(detail.proposal_id, detail.voting_end_time, detail.status);
 
   // TODO: how long is long enough? poll?
-  await blockTool.waitForBlock(5, { step: 'run', propsal: detail.proposal_id });
+  await blockTool.waitForBlock(5, {
+    step: 'run',
+    proposal: detail.proposal_id,
+  });
 
   assert(detail.status, 'PROPOSAL_STATUS_PASSED');
   return detail;

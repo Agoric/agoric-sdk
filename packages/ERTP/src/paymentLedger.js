@@ -2,7 +2,6 @@
 
 /// <reference types="@agoric/store/exported.js" />
 
-/* eslint-disable no-use-before-define */
 import { X, q, Fail, annotateError } from '@endo/errors';
 import { isPromise } from '@endo/promise-kit';
 import { mustMatch, M, keyEQ } from '@agoric/store';

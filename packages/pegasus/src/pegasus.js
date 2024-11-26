@@ -361,7 +361,6 @@ export const makePegasus = ({ zcf, board, namesByAddress, when }) => {
             receiveDenomPublication,
             remoteDenomSubscription,
             abort: reason => {
-              // eslint-disable-next-line no-use-before-define
               actions.abort(reason);
             },
           };

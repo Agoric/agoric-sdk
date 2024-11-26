@@ -1,5 +1,7 @@
 /* eslint-env node */
 
+import { execa } from 'execa';
+import { getNetworkConfig } from 'agoric/src/helpers.js';
 import {
   boardSlottingMarshaller,
   makeFromBoard,
@@ -8,6 +10,7 @@ import {
   waitUntilOfferResult,
 } from '@agoric/client-utils';
 import { AmountMath } from '@agoric/ertp';
+import { deepMapObject } from '@agoric/internal';
 import {
   addUser,
   agd,
@@ -26,6 +29,22 @@ import fsp from 'node:fs/promises';
 import { NonNullish } from './errors.js';
 import { getBalances } from './utils.js';
 
+/** @import {Result as ExecaResult, ExecaError} from 'execa'; */
+/**
+ * @typedef {ExecaResult & { all: string } & (
+ *     | { failed: false }
+ *     | Pick<
+ *         ExecaError & { failed: true },
+ *         | 'failed'
+ *         | 'shortMessage'
+ *         | 'cause'
+ *         | 'exitCode'
+ *         | 'signal'
+ *         | 'signalDescription'
+ *       >
+ *   )} SendOfferResult
+ */
+
 // Export these from synthetic-chain?
 const USDC_DENOM = NonNullish(process.env.USDC_DENOM);
 const PSM_PAIR = NonNullish(process.env.PSM_PAIR).replace('.', '-');
@@ -33,6 +52,93 @@ const PSM_PAIR = NonNullish(process.env.PSM_PAIR).replace('.', '-');
 /**
  * @import {Coin} from '@agoric/cosmic-proto/cosmos/base/v1beta1/coin.js';
  */
+
+/**
+ * Given either an array of [string, Value] or
+ * { [labelKey]: string, [valueKey]: Value } entries, or a
+ * Record<string, Value> object, log a concise representation similar to
+ * the latter but hiding implementation details of any embedded remotables.
+ *
+ * Sample output from any of the following input data:
+ * - { foo: { brand: FooBrand, value: '42' }, bar: { brand: BarBrand, value: '100' } }
+ * - [['foo', { brand: FooBrand, value: '42' }], ['bar', { brand: BarBrand, value: '100' }]]
+ * - [{ label: 'foo', amount: { brand: FooBrand, value: '42' } },
+ *     { label: 'bar', amount: { brand: BarBrand, value: '100' } }]
+ *
+ *     $label $shape {
+ *       foo: {
+ *         brand: Object Alleged: Foo brand {},
+ *         value: '42',
+ *       },
+ *       bar: {
+ *         brand: Object Alleged: Bar brand {},
+ *         value: '100',
+ *       },
+ *     }
+ *
+ * where $shape is `{ [label]: amount, ... }` for the third kind of input data
+ * but is otherwise empty.
+ * @deprecated should be in @agoric/client-utils?
+ *
+ * @template [Value=unknown]
+ * @param {string} label
+ * @param {Array<[string, Value] | object> | Record<string, Value>} data
+ * @param {(...args: unknown[]) => void} [log]
+ * @returns {void}
+ */
+export const logRecord = (label, data, log = console.log) => {
+  const entries = Array.isArray(data) ? [...data] : Object.entries(data);
+  /** @type {[labelKey: PropertyKey, valueKey: PropertyKey] | undefined} */
+  let shape;
+  for (let i = 0; i < entries.length; i += 1) {
+    let entry = entries[i];
+    if (!Array.isArray(entry)) {
+      // Determine which key of a two-property "entry object" (e.g.,
+      // {denom, amount} or {brand, value} is the label and which is the value
+      // (which may be of type object or number or bigint or string).
+      if (!shape) {
+        const entryKeys = Object.keys(entry);
+        if (entryKeys.length !== 2) {
+          throw Error(
+            `[INTERNAL logRecord] not shaped like a record entry: {${entryKeys}}`,
+          );
+        }
+        const valueKeyIndex = entryKeys.findIndex(
+          k =>
+            typeof entry[k] === 'object' ||
+            (entry[k].trim() !== '' && !Number.isNaN(Number(entry[k]))),
+        );
+        if (valueKeyIndex === undefined) {
+          throw Error(
+            `[INTERNAL logRecord] no value property: {${entryKeys}}={${Object.values(entry).map(String)}}`,
+          );
+        }
+        shape = /** @type {[string, string]} */ (
+          valueKeyIndex === 1 ? entryKeys : entryKeys.reverse()
+        );
+      }
+      // Convert the entry object to a [key, value] entry array.
+      entries[i] = shape.map(k => entry[k]);
+      entry = entries[i];
+    }
+    // Simplify remotables in the value.
+    entry[1] = deepMapObject(entry[1], value => {
+      const tag =
+        value && typeof value === 'object' && value[Symbol.toStringTag];
+      return tag
+        ? Object.defineProperty({}, Symbol.toStringTag, {
+            value: tag,
+            enumerable: false,
+          })
+        : value;
+    });
+  }
+  log(
+    label,
+    shape ? `{ [${String(shape[0])}]: ${String(shape[1])}, ... }` : '',
+    Object.fromEntries(entries),
+  );
+};
 
 /**
  * @typedef {object} PsmMetrics
@@ -45,6 +151,35 @@ const PSM_PAIR = NonNullish(process.env.PSM_PAIR).replace('.', '-');
 
 const fromBoard = makeFromBoard();
 const marshaller = boardSlottingMarshaller(fromBoard.convertSlotToVal);
+
+/**
+ * @param {string} path
+ */
+const objectFromVstorageEntries = async path => {
+  const rawEntries = await agoric.follow('-lF', `:${path}`, '-o', 'text');
+  return Object.fromEntries(marshaller.fromCapData(JSON.parse(rawEntries)));
+};
+
+const snapshotAgoricNames = async () => {
+  const [brands, instances] = await Promise.all([
+    objectFromVstorageEntries('published.agoricNames.brand'),
+    objectFromVstorageEntries('published.agoricNames.instance'),
+  ]);
+  return { brands, instances };
+};
+
+/**
+ * @param {import('@agoric/ertp').Brand} brand
+ * @param {bigint} numValInPercent
+ */
+const toRatio = (brand, numValInPercent) => {
+  const commonDenominator = AmountMath.make(brand, 10_000n);
+  const numerator = AmountMath.make(brand, numValInPercent * 100n); // Convert to bps
+  return {
+    numerator,
+    denominator: commonDenominator,
+  };
+};
 
 /**
  *  Import from synthetic-chain once it is updated
@@ -63,119 +198,6 @@ export const bankSend = (addr, wanted, from = VALIDATORADDR) => {
 };
 
 /**
- *
- * @param {{
- *   address: string
- *   instanceName: string
- *   newParams: Params
- *   deadline: bigint
- *   offerId: string
- * }} QuestionDetails
- */
-export const buildProposePSMParamChangeOffer = async ({
-  address,
-  instanceName,
-  newParams,
-  deadline,
-  offerId,
-}) => {
-  const charterAcceptOfferId = await agops.ec(
-    'find-continuing-id',
-    '--for',
-    `${'charter\\ member\\ invitation'}`,
-    '--from',
-    address,
-  );
-  console.log('charterAcceptOfferId', charterAcceptOfferId);
-  const [brands, instances] = await Promise.all([
-    agoric
-      .follow('-lF', ':published.agoricNames.brand', '-o', 'text')
-      .then(brandsRaw =>
-        Object.fromEntries(marshaller.fromCapData(JSON.parse(brandsRaw))),
-      ),
-    agoric
-      .follow('-lF', ':published.agoricNames.instance', '-o', 'text')
-      .then(instancesRaw =>
-        Object.fromEntries(marshaller.fromCapData(JSON.parse(instancesRaw))),
-      ),
-  ]);
-
-  console.log('charterAcceptOfferId', charterAcceptOfferId);
-  console.log('BRANDS', brands);
-  console.log('INSTANCE', instances);
-
-  /**
-   * @param {bigint} numValInPercent
-   */
-  const toRatio = numValInPercent => {
-    const commonDenominator = AmountMath.make(brands.IST, 10_000n);
-    const numerator = AmountMath.make(brands.IST, numValInPercent * 100n); // Convert to bps
-
-    return {
-      numerator,
-      denominator: commonDenominator,
-    };
-  };
-
-  const params = {};
-  if (newParams.giveMintedFeeVal) {
-    params.GiveMintedFee = toRatio(newParams.giveMintedFeeVal);
-  }
-
-  if (newParams.wantMintedFeeVal) {
-    params.WantMintedFee = toRatio(newParams.wantMintedFeeVal);
-  }
-
-  if (newParams.mintLimit) {
-    params.MintLimit = AmountMath.make(brands.IST, newParams.mintLimit);
-  }
-
-  const offerSpec = /** @type {const} */ ({
-    id: offerId,
-    invitationSpec: {
-      source: 'continuing',
-      previousOffer: charterAcceptOfferId,
-      invitationMakerName: 'VoteOnParamChange',
-    },
-    proposal: {},
-    offerArgs: {
-      instance: instances[instanceName],
-      params,
-      deadline,
-    },
-  });
-
-  const spendAction = {
-    method: 'executeOffer',
-    offer: offerSpec,
-  };
-
-  // @ts-expect-error XXX Passable
-  const offer = JSON.stringify(marshaller.toCapData(harden(spendAction)));
-  console.log(offerSpec);
-  console.log(offer);
-
-  return executeOffer(address, offer);
-};
-
-/**
- *
- * @param {{
- *   committeeAddrs: Array<string>
- *   position: number | string
- * }} VotingDetails
- */
-export const voteForNewParams = ({ committeeAddrs, position }) => {
-  console.log('ACTIONS voting for position', position, 'using', committeeAddrs);
-  return Promise.all(
-    committeeAddrs.map(account =>
-      // @ts-expect-error Casting
-      agops.ec('vote', '--forPosition', position, '--send-from', account),
-    ),
-  );
-};
-
-/**
  * @param {{follow: (...params: string[]) => Promise<object> }} io
  */
 export const fetchLatestEcQuestion = async io => {
@@ -186,10 +208,10 @@ export const fetchLatestEcQuestion = async io => {
 
   const [latestOutcome, latestQuestion] = await Promise.all([
     follow('-lF', pathOutcome, '-o', 'text').then(outcomeRaw =>
-      marshaller.fromCapData(JSON.parse(outcomeRaw)),
+      marshaller.fromCapData(JSON.parse(/** @type {any} */ (outcomeRaw))),
     ),
     follow('-lF', pathQuestion, '-o', 'text').then(questionRaw =>
-      marshaller.fromCapData(JSON.parse(questionRaw)),
+      marshaller.fromCapData(JSON.parse(/** @type {any} */ (questionRaw))),
     ),
   ]);
 
@@ -243,18 +265,74 @@ const checkCommitteeElectionResult = (
 export const implementPsmGovParamChange = async (question, voting, io) => {
   const { now: getNow, follow } = io;
   const now = getNow();
-  const deadline = BigInt(
-    question.votingDuration * 60 + Math.round(now / 1000),
+
+  // Read current state.
+  const { address, instanceName, newParams, votingDuration } = question;
+  const deadline = BigInt(votingDuration * 60 + Math.round(now / 1000));
+  const offerId = now.toString();
+  const charterAcceptOfferId = await agops.ec(
+    'find-continuing-id',
+    '--for',
+    `${'charter\\ member\\ invitation'}`,
+    '--from',
+    address,
   );
+  console.log(
+    'PSM change gov params charterAcceptOfferId',
+    charterAcceptOfferId,
+  );
+  const { brands, instances } = await snapshotAgoricNames();
+  console.log('PSM change gov params BRANDS', Object.keys(brands));
+  console.log('PSM change gov params INSTANCES', Object.keys(instances));
 
-  await buildProposePSMParamChangeOffer({
-    ...question,
-    deadline,
-    offerId: now.toString(),
+  // Construct and execute the offer.
+  const params = {};
+  if (newParams.giveMintedFeeVal) {
+    params.GiveMintedFee = toRatio(brands.IST, newParams.giveMintedFeeVal);
+  }
+  if (newParams.wantMintedFeeVal) {
+    params.WantMintedFee = toRatio(brands.IST, newParams.wantMintedFeeVal);
+  }
+  if (newParams.mintLimit) {
+    params.MintLimit = AmountMath.make(brands.IST, newParams.mintLimit);
+  }
+  const offerSpec = /** @type {const} */ ({
+    id: offerId,
+    invitationSpec: {
+      source: 'continuing',
+      previousOffer: charterAcceptOfferId,
+      invitationMakerName: 'VoteOnParamChange',
+    },
+    proposal: {},
+    offerArgs: {
+      instance: instances[instanceName],
+      params,
+      deadline,
+    },
   });
-  await voteForNewParams(voting);
+  const spendAction = {
+    method: 'executeOffer',
+    offer: offerSpec,
+  };
+  // @ts-expect-error XXX Passable
+  const offer = JSON.stringify(marshaller.toCapData(harden(spendAction)));
+  console.log('PSM change gov params offer', offerSpec, offer);
+  await executeOffer(address, offer);
 
-  console.log('ACTIONS wait for the vote deadline to pass');
+  // Vote on the change.
+  const { committeeAddrs, position } = voting;
+  console.log(
+    'PSM change gov params voting for position',
+    position,
+    'using',
+    committeeAddrs,
+  );
+  await Promise.all(
+    committeeAddrs.map(account =>
+      agops.ec('vote', '--forPosition', `${position}`, '--send-from', account),
+    ),
+  );
+  console.log('PSM change gov params waiting for vote deadline');
   await retryUntilCondition(
     () => fetchLatestEcQuestion({ follow }),
     electionResult =>
@@ -356,27 +434,81 @@ export const initializeNewUser = async (name, fund, io) => {
 };
 
 /**
- * Similar to https://github.com/Agoric/agoric-3-proposals/blob/422b163fecfcf025d53431caebf6d476778b5db3/packages/synthetic-chain/src/lib/commonUpgradeHelpers.ts#L123-L139
- * However, in the case where "address" is not provisioned "agoric wallet send" is needed because
- * "agops perf satisfaction" tries to follow ":published.wallet.${address}" which blocks the execution because no such path exists in
- * vstorage. In situations like this "agoric wallet send" seems a better choice as it doesn't depend on following user's vstorage wallet path
+ * Similar to
+ * https://github.com/Agoric/agoric-3-proposals/blob/422b163fecfcf025d53431caebf6d476778b5db3/packages/synthetic-chain/src/lib/commonUpgradeHelpers.ts#L123-L139
+ * However, for an address that is not provisioned, `agoric wallet send` is
+ * needed because `agops perf satisfaction` hangs when trying to follow
+ * nonexistent vstorage path ":published.wallet.${address}".
  *
  * @param {string} address
  * @param {Promise<string>} offerPromise
+ * @returns {Promise<SendOfferResult>}
  */
 export const sendOfferAgoric = async (address, offerPromise) => {
   const offerPath = await mkTemp('agops.XXX');
   const offer = await offerPromise;
   await fsp.writeFile(offerPath, offer);
 
-  await agoric.wallet(
-    '--keyring-backend=test',
-    'send',
-    '--offer',
-    offerPath,
-    '--from',
-    address,
+  const [settlement] = await Promise.allSettled([
+    execa({
+      all: true,
+    })`agoric wallet --keyring-backend=test send --offer ${offerPath} --from ${address} --verbose`,
+  ]);
+  return settlement.status === 'fulfilled'
+    ? settlement.value
+    : settlement.reason;
+};
+
+/**
+ * A variant of {@link sendOfferAgoric} that uses `agd` directly to e.g.
+ * control gas calculation.
+ *
+ * @param {string} address
+ * @param {Promise<string>} offerPromise
+ * @returns {Promise<SendOfferResult>}
+ */
+export const sendOfferAgd = async (address, offerPromise) => {
+  const offer = await offerPromise;
+  const networkConfig = await getNetworkConfig({ env: process.env, fetch });
+  const { chainName, rpcAddrs } = networkConfig;
+  const args = /** @type {string[]} */ (
+    // @ts-expect-error heterogeneous concat
+    [].concat(
+      [`--node=${rpcAddrs[0]}`, `--chain-id=${chainName}`],
+      [`--keyring-backend=test`, `--from=${address}`],
+      ['tx', 'swingset', 'wallet-action', '--allow-spend', offer],
+      '--yes',
+      '-bblock',
+      '-ojson',
+    )
   );
+
+  const [settlement] = await Promise.allSettled([
+    execa('agd', args, { all: true }),
+  ]);
+
+  // Upon successful exit, verify that the *output* also indicates success.
+  // cf. https://github.com/Agoric/agoric-sdk/blob/master/packages/agoric-cli/src/lib/wallet.js
+  if (settlement.status === 'fulfilled') {
+    const result = settlement.value;
+    try {
+      const tx = JSON.parse(result.stdout);
+      if (tx.code !== 0) {
+        return { ...result, failed: true, shortMessage: `code ${tx.code}` };
+      }
+    } catch (err) {
+      return {
+        ...result,
+        failed: true,
+        shortMessage: 'unexpected output',
+        cause: err,
+      };
+    }
+  }
+
+  return settlement.status === 'fulfilled'
+    ? settlement.value
+    : settlement.reason;
 };
 
 /**
@@ -384,18 +516,47 @@ export const sendOfferAgoric = async (address, offerPromise) => {
  * @param {Array<any>} params
  * @param {{
  *   follow: (...params: string[]) => Promise<object>;
+ *   sendOffer?: (address: string, offerPromise: Promise<string>) => Promise<SendOfferResult>;
  *   setTimeout: typeof global.setTimeout;
  *   now: () => number
  * }} io
  */
 export const psmSwap = async (address, params, io) => {
-  const now = io.now();
-  const offerId = `${address}-psm-swap-${now}`;
+  const { now, sendOffer = sendOfferAgoric, ...waitIO } = io;
+  const offerId = `${address}-psm-swap-${now()}`;
   const newParams = ['psm', ...params, '--offerId', offerId];
   const offerPromise = executeCommand(agopsLocation, newParams);
-  await sendOfferAgoric(address, offerPromise);
+  const sendResult = await sendOffer(address, offerPromise);
+  if (sendResult.failed) {
+    const {
+      command,
+      durationMs,
+      shortMessage,
+      cause,
+      exitCode,
+      signal,
+      signalDescription,
+      all: output,
+    } = sendResult;
+    const summary = {
+      command,
+      durationMs,
+      shortMessage,
+      cause,
+      exitCode,
+      signal,
+      signalDescription,
+      output,
+    };
+    console.error('psmSwap tx send failed', summary);
+    throw Error(
+      `psmSwap tx send failed: ${JSON.stringify({ exitCode, signal, signalDescription })}`,
+      { cause },
+    );
+  }
+  console.log('psmSwap tx send results', sendResult.all);
 
-  await waitUntilOfferResult(address, offerId, true, io, {
+  await waitUntilOfferResult(address, offerId, true, waitIO, {
     errorMessage: `${offerId} not succeeded`,
   });
 };
@@ -427,27 +588,29 @@ const extractBalance = (balances, targetDenom) => {
 
 /**
  * Checking IST balances can be tricky because of the execution fee mentioned in
- * https://github.com/Agoric/agoric-sdk/issues/6525. Here we first check with
- * whatever is passed in. If the first attempt fails we try again to see if
- * there was an execution fee charged. If still fails, we throw.
+ * https://github.com/Agoric/agoric-sdk/issues/6525. So we first check for
+ * equality, but if that fails we recheck against an assumption that a fee of
+ * the default "minFeeDebit" has been charged.
  *
  * @param {import('ava').ExecutionContext} t
  * @param {number} actualBalance
  * @param {number} expectedBalance
  */
 export const tryISTBalances = async (t, actualBalance, expectedBalance) => {
-  const firstTry = await t.try(
-    (tt, actual, expected) => {
-      tt.deepEqual(actual, expected);
-    },
-    actualBalance,
-    expectedBalance,
-  );
+  const firstTry = await t.try(tt => {
+    tt.is(actualBalance, expectedBalance);
+  });
+  if (firstTry.passed) {
+    firstTry.commit();
+    return;
+  }
 
-  if (!firstTry.passed) {
-    firstTry.discard();
-    t.deepEqual(actualBalance + 200000, expectedBalance);
-  } else firstTry.commit();
+  firstTry.discard();
+  t.log('tryISTBalances assuming no batched IST fee', ...firstTry.errors);
+  // See golang/cosmos/x/swingset/types/default-params.go
+  // and `ChargeBeans` in golang/cosmos/x/swingset/keeper/keeper.go.
+  const minFeeDebit = 200_000;
+  t.is(actualBalance + minFeeDebit, expectedBalance);
 };
 
 /**
@@ -471,8 +634,8 @@ export const checkSwapSucceeded = async (
     getBalances([tradeInfo.trader]),
   ]);
 
-  t.log('METRICS_AFTER', metricsAfter);
-  t.log('BALANCES_AFTER', balancesAfter);
+  logRecord('METRICS_AFTER', metricsAfter, t.log);
+  logRecord('BALANCES_AFTER', balancesAfter, t.log);
 
   if ('wantMinted' in tradeInfo) {
     const anchorPaid = giveAnchor(

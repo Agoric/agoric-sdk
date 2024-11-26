@@ -40,7 +40,7 @@ test.before(async t => {
   const io = { spawn: ambientSpawn, cwd: makefileDir };
   const pspawnMake = pspawn('make', io);
   const pspawnAgd = pspawn('bin/ag-chain-cosmos', io);
-  const scenario2 = makeScenario2({ pspawnMake, pspawnAgd, delay, log: t.log });
+  const scenario2 = makeScenario2({ pspawnMake, pspawnAgd, log: t.log });
   const walletTool = makeWalletTool({
     runMake: scenario2.runMake,
     pspawnAgd,
@@ -65,6 +65,7 @@ test.before(async t => {
 // if run with the test above.
 // TODO: https://github.com/Agoric/agoric-sdk/issues/6766
 test.skip('integration test: smart wallet provision', async t => {
+  // @ts-expect-error context has unknown type
   const { scenario2, walletTool, soloAddr } = t.context;
 
   const enoughBlocksToProvision = 7;
