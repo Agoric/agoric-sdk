@@ -7,6 +7,7 @@ import { VowShape } from '@agoric/vow';
 import {
   ChainAddressShape,
   CosmosChainInfoShape,
+  DenomDetailShape,
   IBCConnectionInfoShape,
 } from '../typeGuards.js';
 import { getBech32Prefix } from '../utils/address.js';
@@ -19,7 +20,6 @@ import { getBech32Prefix } from '../utils/address.js';
  * @import {ChainInfo, KnownChains} from '../chain-info.js';
  * @import {ChainAddress, Denom} from '../orchestration-api.js';
  * @import {Remote} from '@agoric/internal';
- * @import {TypedPattern} from '@agoric/internal';
  */
 
 /**
@@ -40,11 +40,6 @@ import { getBech32Prefix } from '../utils/address.js';
  * @property {Brand<'nat'>} [brand] - vbank brand, if registered
  * @see {ChainHub} `registerAsset` method
  */
-/** @type {TypedPattern<DenomDetail>} */
-export const DenomDetailShape = M.splitRecord(
-  { chainName: M.string(), baseName: M.string(), baseDenom: M.string() },
-  { brand: BrandShape },
-);
 
 /**
  * @enum {(typeof HubName)[keyof typeof HubName]}

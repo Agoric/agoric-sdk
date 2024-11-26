@@ -1,3 +1,4 @@
+import { BrandShape } from '@agoric/ertp/src/typeGuards.js';
 import { VowShape } from '@agoric/vow';
 import { M } from '@endo/patterns';
 
@@ -7,6 +8,7 @@ import { M } from '@endo/patterns';
  * @import {Any as Proto3Msg} from '@agoric/cosmic-proto/google/protobuf/any.js';
  * @import {TxBody} from '@agoric/cosmic-proto/cosmos/tx/v1beta1/tx.js';
  * @import {TypedJson} from '@agoric/cosmic-proto';
+ * @import {DenomDetail} from './exos/chain-hub.js';
  */
 
 /**
@@ -118,6 +120,13 @@ export const DenomInfoShape = {
   baseDenom: M.string(),
 };
 harden(DenomInfoShape);
+
+/** @type {TypedPattern<DenomDetail>} */
+export const DenomDetailShape = M.splitRecord(
+  { chainName: M.string(), baseName: M.string(), baseDenom: M.string() },
+  { brand: BrandShape },
+);
+harden(DenomDetailShape);
 
 /** @type {TypedPattern<DenomAmount>} */
 export const DenomAmountShape = { denom: DenomShape, value: M.nat() };

@@ -102,6 +102,9 @@ export interface Chain<CI extends ChainInfo> {
   // TODO provide a way to get the local denom/brand/whatever for this chain
 }
 
+/**
+ * Used with `orch.getDenomInfo('ibc/1234')`. See {@link Orchestrator.getDenomInfo}
+ */
 export interface DenomInfo<
   HoldingChain extends keyof KnownChains,
   IssuingChain extends keyof KnownChains,
