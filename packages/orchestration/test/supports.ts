@@ -178,6 +178,7 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
   const commonAssetInfo = harden([
     assetOn('ubld', 'agoric', bldSansMint.brand),
     assetOn('uist', 'agoric', istSansMint.brand),
+    assetOn('uist', 'agoric', undefined, 'cosmoshub', chainInfoWithCaps),
     assetOn('uusdc', 'noble', undefined, 'agoric', chainInfoWithCaps),
     assetOn('uatom', 'cosmoshub', undefined, 'agoric', chainInfoWithCaps),
     assetOn('uusdc', 'noble', undefined, 'dydx', chainInfoWithCaps),

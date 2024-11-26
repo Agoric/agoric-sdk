@@ -266,7 +266,9 @@ test.serial('stakeAtom - smart wallet', async t => {
       proposal: {},
     }),
     {
-      message: 'No denom for brand [object Alleged: ATOM brand]',
+      // TODO #10449
+      message:
+        "'amountToCoin' not working for \"[Alleged: ATOM brand]\" until #10449; use 'DenomAmount' for now",
     },
   );
 });
