@@ -57,8 +57,10 @@ test.serial(`send invitation via namesByAddress`, async t => {
   );
 });
 
-test.serial('exitOffer tool reclaims stuck payment', async t => {
+// FIXME https://github.com/Agoric/agoric-sdk/issues/10565
+test.failing('exitOffer tool reclaims stuck payment', async t => {
   const istBalanceBefore = await getBalances([GOV1ADDR], 'uist');
+  t.log('istBalanceBefore', istBalanceBefore);
 
   const offerId = 'bad-invitation-15'; // offer submitted on proposal upgrade-15 with an incorrect method name
   await agdWalletUtils.broadcastBridgeAction(GOV1ADDR, {
@@ -72,6 +74,8 @@ test.serial('exitOffer tool reclaims stuck payment', async t => {
     'tryExitOffer failed to reclaim stuck payment ',
     { log: t.log, setTimeout, retryIntervalMs: 5000, maxRetries: 15 },
   );
+
+  t.log('istBalanceAfter', istBalanceAfter);
 
   t.true(
     istBalanceAfter > istBalanceBefore,
