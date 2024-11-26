@@ -46,7 +46,15 @@ export const initProgram = (
       `${defaultHome}/.fast-usdc/`,
     );
 
-  addConfigCommands(program, configHelpers, readFile, writeFile, mkdir, exists);
+  const makeConfigFile = () => {
+    const getConfigPath = () => {
+      const { home: configDir } = program.opts();
+      return configDir + 'config.json';
+    };
+    return makeFile(getConfigPath(), readFile, writeFile, mkdir, exists);
+  };
+
+  addConfigCommands(program, configHelpers, makeConfigFile);
 
   /** @param {string} value */
   const parseDecimal = value => {

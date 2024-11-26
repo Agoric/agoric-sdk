@@ -1,17 +1,7 @@
 import { Command } from 'commander';
-import { makeFile } from '../util/file.js';
 
-export const addConfigCommands = (program, configHelpers, readFile, writeFile, mkdir, exists) => {
+export const addConfigCommands = (program, configHelpers, makeConfigFile) => {
   const config = program.command('config').description('Manage config');
-
-  const configFilename = 'config.json';
-  const getConfigPath = () => {
-    const { home: configDir } = program.opts();
-    return configDir + configFilename;
-  };
-
-  const makeConfigFile = () =>
-    makeFile(getConfigPath(), readFile, writeFile, mkdir, exists);
 
   config
     .command('show')
