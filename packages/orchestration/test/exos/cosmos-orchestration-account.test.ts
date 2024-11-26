@@ -14,6 +14,10 @@ import {
   QueryBalanceRequest,
   QueryBalanceResponse,
 } from '@agoric/cosmic-proto/cosmos/bank/v1beta1/query.js';
+import {
+  MsgSend,
+  MsgSendResponse,
+} from '@agoric/cosmic-proto/cosmos/bank/v1beta1/tx.js';
 import { Coin } from '@agoric/cosmic-proto/cosmos/base/v1beta1/coin.js';
 import {
   QueryDelegationRequest,
@@ -38,6 +42,8 @@ import {
   MsgDelegate,
   MsgDelegateResponse,
 } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/tx.js';
+import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
+import { makeIssuerKit } from '@agoric/ertp';
 import { decodeBase64 } from '@endo/base64';
 import { commonSetup } from '../supports.js';
 import type {
@@ -67,6 +73,7 @@ test.beforeEach(async t => {
 test('send (to addr on same chain)', async t => {
   const {
     brands: { ist },
+    mocks: { ibcBridge },
     utils: { inspectDibcBridge, populateChainHub },
   } = t.context;
   populateChainHub();
@@ -89,6 +96,31 @@ test('send (to addr on same chain)', async t => {
     undefined,
   );
 
+  // register handler for ist bank send
+  ibcBridge.addMockAck(
+    buildTxPacketString([
+      MsgSend.toProtoMsg({
+        fromAddress: 'cosmos1test',
+        toAddress: 'cosmos99test',
+        amount: [
+          {
+            // FIXME #10449, coerceDenom should not use local denom.
+            denom: 'uist',
+            // denom: 'ibc/uisthash',
+            amount: '10',
+          },
+        ],
+      }),
+    ]),
+    buildMsgResponseString(MsgSendResponse, {}),
+  );
+
+  t.is(
+    await E(account).send(toAddress, ist.make(10n) as AmountArg),
+    undefined,
+    'send accepts Amount',
+  );
+
   // simulate timeout error
   await t.throwsAsync(
     E(account).send(toAddress, { value: 504n, denom: 'uatom' } as AmountArg),
@@ -96,10 +128,14 @@ test('send (to addr on same chain)', async t => {
     { message: 'ABCI code: 5: error handling packet: see events for details' },
   );
 
-  // IST not registered
-  await t.throwsAsync(E(account).send(toAddress, ist.make(10n) as AmountArg), {
-    message: 'No denom for brand [object Alleged: IST brand]',
-  });
+  // MOO brand not registered
+  const moolah = withAmountUtils(makeIssuerKit('MOO'));
+  await t.throwsAsync(
+    E(account).send(toAddress, moolah.make(10n) as AmountArg),
+    {
+      message: 'No denom for brand [object Alleged: MOO brand]',
+    },
+  );
 
   // multi-send (sendAll)
   t.is(
@@ -111,11 +147,10 @@ test('send (to addr on same chain)', async t => {
   );
 
   const { bridgeDowncalls } = await inspectDibcBridge();
-
   t.is(
     bridgeDowncalls.filter(d => d.method === 'sendPacket').length,
-    3,
-    'sent 2 successful txs and 1 failed. 1 rejected before sending',
+    4,
+    'sent 3 successful txs and 1 failed. 1 rejected before sending',
   );
 });
 
@@ -186,6 +221,14 @@ test('transfer', async t => {
       },
     });
 
+    const umooTransfer = toTransferTxPacket({
+      ...mockIbcTransfer,
+      token: {
+        denom: 'umoo',
+        amount: '10',
+      },
+    });
+
     return {
       [defaultTransfer]: transferResp,
       [customTimeoutHeight]: transferResp,
@@ -193,6 +236,7 @@ test('transfer', async t => {
       [customTimeout]: transferResp,
       [customMemo]: transferResp,
       [uistTransfer]: transferResp,
+      [umooTransfer]: transferResp,
     };
   };
   ibcBridge.setMockAck(buildMocks());
@@ -309,14 +353,15 @@ test('transfer', async t => {
     },
   );
 
+  const moolah = withAmountUtils(makeIssuerKit('MOO'));
   t.log('transfer throws if asset is not in its chainHub');
-  await t.throwsAsync(E(account).transfer(mockDestination, ist.make(10n)), {
-    message: 'No denom for brand [object Alleged: IST brand]',
+  await t.throwsAsync(E(account).transfer(mockDestination, moolah.make(10n)), {
+    message: 'No denom for brand [object Alleged: MOO brand]',
   });
-  chainHub.registerAsset('uist', {
-    baseDenom: 'uist',
+  chainHub.registerAsset('umoo', {
+    baseDenom: 'umoo',
     baseName: 'agoric',
-    brand: ist.brand,
+    brand: moolah.brand,
     chainName: 'agoric',
   });
   // uses uistTransfer mock above

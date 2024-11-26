@@ -340,6 +340,11 @@ export const prepareCosmosOrchestrationAccountKit = (
          * @returns {Coin}
          */
         amountToCoin(amount) {
+          if ('brand' in amount) {
+            console.warn(
+              '⚠️ `amountToCoin` not working until #10449; use `DenomAmount` for now',
+            );
+          }
           return coerceCoin(chainHub, amount);
         },
       },
