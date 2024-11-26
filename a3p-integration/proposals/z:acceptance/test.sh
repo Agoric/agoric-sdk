@@ -4,6 +4,11 @@ set -ueo pipefail
 # Place here any test that should be executed using the executed proposal.
 # The effects of this step are not persisted in further proposal layers.
 
+# test readFully method
+# XXX to be removed
+echo ACCEPTANCE TESTING vstorage
+yarn ava vstorage.test.js
+
 # test the state right after the previous proposals
 yarn ava initial.test.js
 
