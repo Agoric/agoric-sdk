@@ -35,7 +35,9 @@ import type {
   RemoteIbcAddress,
 } from '@agoric/vats/tools/ibc-utils.js';
 import type { QueryDelegationTotalRewardsResponse } from '@agoric/cosmic-proto/cosmos/distribution/v1beta1/query.js';
+import type { Coin } from '@agoric/cosmic-proto/cosmos/base/v1beta1/coin.js';
 import type { AmountArg, ChainAddress, Denom, DenomAmount } from './types.js';
+import { PFM_RECEIVER } from './exos/chain-hub.js';
 
 /** An address for a validator on some blockchain, e.g., cosmos, eth, etc. */
 export type CosmosValidatorAddress = ChainAddress & {
@@ -373,3 +375,27 @@ export interface ForwardInfo {
     };
   };
 }
+
+/**
+ * Object used to help build MsgTransfer parameters for IBC transfers.
+ *
+ * If `forwardInfo` is present:
+ * - it must be stringified and provided as the `memo` field value for
+ * use with `MsgTransfer`.
+ * - `receiver` will be set to `"pfm"` - purposely invalid bech32. see {@link https://github.com/cosmos/ibc-apps/blob/26f3ad8f58e4ffc7769c6766cb42b954181dc100/middleware/packet-forward-middleware/README.md#minimal-example---chain-forward-a-b-c}
+ */
+export type TransferRoute = {
+  /** typically, `transfer` */
+  sourcePort: string;
+  sourceChannel: IBCChannelID;
+  token: Coin;
+} & (
+  | {
+      receiver: typeof PFM_RECEIVER;
+      /** contains PFM forwarding info */
+      forwardInfo: ForwardInfo;
+    }
+  | {
+      receiver: string;
+    }
+);
