@@ -458,7 +458,7 @@ test.serial('auto-stake-it - proposal', async t => {
 
   await t.notThrowsAsync(
     evalProposal(
-      buildProposal('@agoric/builders/scripts/testing/start-auto-stake-it.js'),
+      buildProposal('@agoric/builders/scripts/testing/init-auto-stake-it.js'),
     ),
   );
 });
