@@ -7,7 +7,9 @@ import { VowShape } from '@agoric/vow';
 import {
   ChainAddressShape,
   CosmosChainInfoShape,
+  DenomAmountShape,
   DenomDetailShape,
+  ForwardInfoShape,
   IBCConnectionInfoShape,
 } from '../typeGuards.js';
 import { getBech32Prefix } from '../utils/address.js';
@@ -16,9 +18,9 @@ import { getBech32Prefix } from '../utils/address.js';
  * @import {NameHub} from '@agoric/vats';
  * @import {Vow, VowTools} from '@agoric/vow';
  * @import {Zone} from '@agoric/zone';
- * @import {CosmosAssetInfo, CosmosChainInfo, IBCConnectionInfo} from '../cosmos-api.js';
+ * @import {CosmosAssetInfo, CosmosChainInfo, ForwardInfo, IBCConnectionInfo} from '../cosmos-api.js';
  * @import {ChainInfo, KnownChains} from '../chain-info.js';
- * @import {ChainAddress, Denom} from '../orchestration-api.js';
+ * @import {ChainAddress, Denom, DenomAmount} from '../orchestration-api.js';
  * @import {Remote} from '@agoric/internal';
  */
 
@@ -167,6 +169,27 @@ const ChainIdArgShape = M.or(
   ),
 );
 
+// TODO #9324 determine defaults
+const DefaultPfmTimeoutOpts = harden(
+  /** @type {const} */ ({
+    retries: 3,
+    timeout: '10min',
+  }),
+);
+
+const TransferRouteShape = M.splitRecord(
+  {
+    sourcePort: M.string(),
+    sourceChannel: M.string(),
+    token: {
+      amount: M.string(),
+      denom: M.string(),
+    },
+    receiver: M.string(),
+  },
+  { pfmMemo: M.or(M.undefined(), ForwardInfoShape) },
+);
+
 const ChainHubI = M.interface('ChainHub', {
   registerChain: M.call(M.string(), CosmosChainInfoShape).returns(),
   getChainInfo: M.call(M.string()).returns(VowShape),
@@ -181,6 +204,12 @@ const ChainHubI = M.interface('ChainHub', {
   getAsset: M.call(M.string()).returns(M.or(DenomDetailShape, M.undefined())),
   getDenom: M.call(BrandShape).returns(M.or(M.string(), M.undefined())),
   makeChainAddress: M.call(M.string()).returns(ChainAddressShape),
+  getTransferRoute: M.call(ChainAddressShape, DenomAmountShape, M.string())
+    .optional({
+      timeout: M.string(),
+      retries: M.number(),
+    })
+    .returns(M.or(M.undefined(), TransferRouteShape)),
 });
 
 /**
@@ -194,8 +223,10 @@ const ChainHubI = M.interface('ChainHub', {
  * @param {Zone} zone
  * @param {Remote<NameHub>} agoricNames
  * @param {VowTools} vowTools
+ * @param {(...args: unknown[]) => void} [log] TODO - only for tests - should we
+ *   update withOrchestration so we can observe these?
  */
-export const makeChainHub = (zone, agoricNames, vowTools) => {
+export const makeChainHub = (zone, agoricNames, vowTools, log = () => {}) => {
   /** @type {MapStore<string, CosmosChainInfo>} */
   const chainInfos = zone.mapStore('chainInfos', {
     keyShape: M.string(),
@@ -452,6 +483,116 @@ export const makeChainHub = (zone, agoricNames, vowTools) => {
         chainId,
         value: address,
         encoding: /** @type {const} */ ('bech32'),
+      });
+    },
+    /**
+     * @param {ChainAddress} destination
+     * @param {DenomAmount} denomAmount
+     * @param {string} holdingChainName
+     * @param {Pick<ForwardInfo['forward'], 'retries' | 'timeout'>} [pfmOpts]
+     */
+    getTransferRoute(destination, denomAmount, holdingChainName, pfmOpts) {
+      const denomDetail = chainHub.getAsset(denomAmount.denom);
+      if (!chainInfos.has(holdingChainName)) {
+        log(`chain info not found for holding chain: ${q(holdingChainName)}`);
+        return undefined;
+      }
+      if (!denomDetail) {
+        log(`no denom detail for: ${denomAmount.denom}`);
+        return undefined;
+      }
+      const { baseName, chainName } = denomDetail;
+      if (chainName !== holdingChainName) {
+        log(
+          `cannot transfer asset that's not present on ${q(holdingChainName)}. Ensure it's registered in ChainHub.`,
+        );
+        return undefined;
+      }
+      if (!chainInfos.has(baseName)) {
+        log(`chain info not found for issuing chain: ${q(baseName)}`);
+        return undefined;
+      }
+      const { chainId: baseChainId, pfmEnabled } = chainInfos.get(baseName);
+
+      const holdingChainId = chainInfos.get(holdingChainName).chainId;
+
+      // asset is transferring to or from the issuing chain, return direct route
+      if (
+        baseChainId === destination.chainId &&
+        baseName === holdingChainName
+      ) {
+        // manually look up connection info from mapStore so calls are sync
+        const connKey = connectionKey(baseChainId, holdingChainId);
+        if (!connectionInfos.has(connKey)) {
+          log(`no connection info found for ${q(connKey)}`);
+          return undefined;
+        }
+        const { transferChannel } = denormalizeConnectionInfo(
+          baseChainId,
+          holdingChainId,
+          connectionInfos.get(connKey),
+        );
+        return harden({
+          sourcePort: transferChannel.portId,
+          sourceChannel: transferChannel.channelId,
+          token: {
+            amount: String(denomAmount.value),
+            denom: denomAmount.denom,
+          },
+          receiver: destination.value,
+        });
+      }
+
+      // asset is issued on a 3rd chain, attempt pfm route
+      if (!pfmEnabled) {
+        log(`pfm not enabled on issuing chain: ${q(baseName)}`);
+        return undefined;
+      }
+
+      // manually look up connection info from mapStore so calls are sync
+      const currToIssuerKey = connectionKey(holdingChainId, baseChainId);
+      if (!connectionInfos.has(currToIssuerKey)) {
+        log(`no connection info found for ${q(currToIssuerKey)}`);
+        return undefined;
+      }
+      const issuerToDestKey = connectionKey(baseChainId, destination.chainId);
+      if (!connectionInfos.has(issuerToDestKey)) {
+        log(`no connection info found for ${q(issuerToDestKey)}`);
+        return undefined;
+      }
+
+      const currToIssuer = denormalizeConnectionInfo(
+        holdingChainId,
+        baseChainId,
+        connectionInfos.get(currToIssuerKey),
+      );
+      const issuerToDest = denormalizeConnectionInfo(
+        baseChainId,
+        destination.chainId,
+        connectionInfos.get(issuerToDestKey),
+      );
+
+      /** @type {ForwardInfo} */
+      const pfmMemo = harden({
+        forward: {
+          receiver: destination.value,
+          port: issuerToDest.transferChannel.portId,
+          channel: issuerToDest.transferChannel.channelId,
+          ...{
+            ...DefaultPfmTimeoutOpts,
+            ...pfmOpts,
+          },
+        },
+      });
+      return harden({
+        sourcePort: currToIssuer.transferChannel.portId,
+        sourceChannel: currToIssuer.transferChannel.channelId,
+        token: {
+          amount: String(denomAmount.value),
+          denom: denomAmount.denom,
+        },
+        receiver: 'pfm',
+        pfmMemo,
       });
     },
   });

@@ -4,7 +4,7 @@ import { M } from '@endo/patterns';
 
 /**
  * @import {TypedPattern} from '@agoric/internal';
- * @import {ChainAddress, CosmosAssetInfo, Chain, ChainInfo, CosmosChainInfo, DenomAmount, DenomInfo, AmountArg, CosmosValidatorAddress, OrchestrationPowers} from './types.js';
+ * @import {ChainAddress, CosmosAssetInfo, Chain, ChainInfo, CosmosChainInfo, DenomAmount, DenomInfo, AmountArg, CosmosValidatorAddress, OrchestrationPowers, ForwardInfo} from './types.js';
  * @import {Any as Proto3Msg} from '@agoric/cosmic-proto/google/protobuf/any.js';
  * @import {TxBody} from '@agoric/cosmic-proto/cosmos/tx/v1beta1/tx.js';
  * @import {TypedJson} from '@agoric/cosmic-proto';
@@ -215,3 +215,27 @@ export const OrchestrationPowersShape = {
   timerService: M.remotable(),
 };
 harden(OrchestrationPowersShape);
+
+const ForwardArgsShape = {
+  receiver: M.string(),
+  port: 'transfer',
+  channel: M.string(),
+  timeout: M.string(),
+  retries: M.number(),
+};
+harden(ForwardArgsShape);
+
+/** @type {TypedPattern<ForwardInfo>} */
+export const ForwardInfoShape = {
+  forward: M.splitRecord(
+    {
+      ForwardArgsShape,
+    },
+    {
+      next: {
+        forward: ForwardArgsShape,
+      },
+    },
+  ),
+};
+harden(ForwardInfoShape);
