@@ -4,20 +4,19 @@
  */
 
 // @ts-check
-import { makeWalletUtils } from '@agoric/client-utils';
+import { fetchEnvNetworkConfig, makeWalletUtils } from '@agoric/client-utils';
 import { makeOfferSpecShape } from '@agoric/inter-protocol/src/auction/auctionBook.js';
 import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
 import { objectMap } from '@agoric/internal';
 import { M, matches } from '@endo/patterns';
 import { CommanderError, InvalidArgumentError } from 'commander';
 import { normalizeAddressWithOptions, pollBlocks } from '../lib/chain.js';
-import { getCurrent, outputActionAndHint, sendAction } from '../lib/wallet.js';
 import {
   asBoardRemote,
   bigintReplacer,
   makeAmountFormatter,
 } from '../lib/format.js';
-import { getNetworkConfig } from '../lib/network-config.js';
+import { getCurrent, outputActionAndHint, sendAction } from '../lib/wallet.js';
 
 const { values } = Object;
 
@@ -232,7 +231,7 @@ export const makeInterCommand = (
     try {
       // XXX pass fetch to getNetworkConfig() explicitly
       // await null above makes this await safe
-      const networkConfig = await getNetworkConfig({ env, fetch });
+      const networkConfig = await fetchEnvNetworkConfig({ env, fetch });
       return makeWalletUtils({ fetch, delay }, networkConfig);
     } catch (err) {
       // CommanderError is a class constructor, and so

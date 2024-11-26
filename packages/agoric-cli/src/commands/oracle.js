@@ -2,6 +2,7 @@
 /* eslint-disable func-names */
 /* eslint-env node */
 import {
+  fetchEnvNetworkConfig,
   makeVstorageKit,
   makeWalletUtils,
   storageHelper,
@@ -14,14 +15,13 @@ import * as cp from 'child_process';
 import { Command } from 'commander';
 import { inspect } from 'util';
 import { normalizeAddressWithOptions } from '../lib/chain.js';
-import { getNetworkConfig } from '../lib/network-config.js';
+import { bigintReplacer } from '../lib/format.js';
 import {
   getCurrent,
   outputAction,
   sendAction,
   sendHint,
 } from '../lib/wallet.js';
-import { bigintReplacer } from '../lib/format.js';
 
 /** @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js'; */
 
@@ -86,7 +86,10 @@ export const makeOracleCommand = (logger, io = {}) => {
 
   const rpcTools = async () => {
     // XXX pass fetch to getNetworkConfig() explicitly
-    const networkConfig = await getNetworkConfig({ env: process.env, fetch });
+    const networkConfig = await fetchEnvNetworkConfig({
+      env: process.env,
+      fetch,
+    });
     const utils = await makeVstorageKit({ fetch }, networkConfig);
 
     const lookupPriceAggregatorInstance = ([brandIn, brandOut]) => {

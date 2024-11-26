@@ -6,7 +6,7 @@ import { boardSlottingMarshaller, makeVstorageKit } from './vstorage-kit.js';
 /**
  * @import {Amount, Brand} from '@agoric/ertp/src/types.js'
  * @import {CurrentWalletRecord, UpdateRecord} from '@agoric/smart-wallet/src/smartWallet.js';
- * @import {MinimalNetworkConfig} from './rpc.js';
+ * @import {MinimalNetworkConfig} from './network-config.js';
  */
 
 // XXX this is really a SmartWalletKit

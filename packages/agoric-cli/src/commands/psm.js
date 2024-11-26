@@ -1,14 +1,17 @@
 // @ts-check
 /* eslint-disable func-names */
 /* eslint-env node */
-import { makeVstorageKit, storageHelper } from '@agoric/client-utils';
+import {
+  fetchEnvNetworkConfig,
+  makeVstorageKit,
+  storageHelper,
+} from '@agoric/client-utils';
 import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
 import { Command } from 'commander';
-import { getNetworkConfig } from '../lib/network-config.js';
-import { outputExecuteOfferAction } from '../lib/wallet.js';
 import { asPercent } from '../lib/format.js';
+import { outputExecuteOfferAction } from '../lib/wallet.js';
 
-const networkConfig = await getNetworkConfig({ env: process.env, fetch });
+const networkConfig = await fetchEnvNetworkConfig({ env: process.env, fetch });
 
 // Adapted from https://gist.github.com/dckc/8b5b2f16395cb4d7f2ff340e0bc6b610#file-psm-tool
 

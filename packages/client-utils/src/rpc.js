@@ -3,7 +3,7 @@ import { StargateClient } from '@cosmjs/stargate';
 import { Tendermint34Client } from '@cosmjs/tendermint-rpc';
 
 /**
- * @typedef {{ rpcAddrs: string[], chainName: string }} MinimalNetworkConfig
+ * @import {MinimalNetworkConfig} from './network-config.js';
  */
 
 // TODO distribute load
