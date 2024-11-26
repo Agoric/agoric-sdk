@@ -11,7 +11,7 @@ import { EvmHashShape } from '../type-guards.js';
 
 /**
  * @import {FungibleTokenPacketData} from '@agoric/cosmic-proto/ibc/applications/transfer/v2/packet.js';
- * @import {Denom, OrchestrationAccount, ChainHub} from '@agoric/orchestration';
+ * @import {Denom, OrchestrationAccount, ChainHub, ChainAddress} from '@agoric/orchestration';
  * @import {WithdrawToSeat} from '@agoric/orchestration/src/utils/zoe-tools'
  * @import {IBCChannelID, VTransferIBCEvent} from '@agoric/vats';
  * @import {Zone} from '@agoric/zone';
@@ -67,10 +67,7 @@ export const prepareSettler = (
       }),
       notify: M.interface('SettlerNotifyI', {
         notifyAdvancingResult: M.call(
-          M.string(),
-          M.string(),
-          M.nat(),
-          M.string(),
+          M.record(), // XXX fill in details TODO
           M.boolean(),
         ).returns(),
       }),
@@ -179,25 +176,39 @@ export const prepareSettler = (
       },
       notify: {
         /**
-         * @param {EvmHash} txHash
-         * @param {NobleAddress} sender
-         * @param {NatValue} amount
-         * @param {string} EUD
+         * @param {object} ctx
+         * @param {EvmHash} ctx.txHash
+         * @param {NobleAddress} ctx.forwardingAddress
+         * @param {Amount<'nat'>} ctx.fullAmount
+         * @param {ChainAddress} ctx.destination
          * @param {boolean} success
          * @returns {void}
          */
-        notifyAdvancingResult(txHash, sender, amount, EUD, success) {
+        notifyAdvancingResult(
+          { txHash, forwardingAddress, fullAmount, destination },
+          success,
+        ) {
           const { mintedEarly } = this.state;
-          const key = makeMintedEarlyKey(sender, amount);
+          const { value: fullValue } = fullAmount;
+          const key = makeMintedEarlyKey(forwardingAddress, fullValue);
           if (mintedEarly.has(key)) {
             mintedEarly.delete(key);
             if (success) {
-              void this.facets.self.disburse(txHash, sender, amount);
+              void this.facets.self.disburse(
+                txHash,
+                forwardingAddress,
+                fullValue,
+              );
             } else {
-              void this.facets.self.forward(txHash, sender, amount, EUD);
+              void this.facets.self.forward(
+                txHash,
+                forwardingAddress,
+                fullValue,
+                destination.value,
+              );
             }
           } else {
-            statusManager.advanceOutcome(sender, amount, success);
+            statusManager.advanceOutcome(forwardingAddress, fullValue, success);
           }
         },
       },
@@ -205,11 +216,11 @@ export const prepareSettler = (
         /**
          * @param {EvmHash} txHash
          * @param {NobleAddress} sender
-         * @param {NatValue} amount
+         * @param {NatValue} fullValue
          */
-        async disburse(txHash, sender, amount) {
+        async disburse(txHash, sender, fullValue) {
           const { repayer, settlementAccount } = this.state;
-          const received = AmountMath.make(USDC, amount);
+          const received = AmountMath.make(USDC, fullValue);
           const { zcfSeat: settlingSeat } = zcf.makeEmptySeatKit();
           const { calculateSplit } = makeFeeTools(feeConfig);
           const split = calculateSplit(received);
@@ -238,10 +249,10 @@ export const prepareSettler = (
         /**
          * @param {EvmHash | undefined} txHash
          * @param {NobleAddress} sender
-         * @param {NatValue} amount
+         * @param {NatValue} fullValue
          * @param {string} EUD
          */
-        forward(txHash, sender, amount, EUD) {
+        forward(txHash, sender, fullValue, EUD) {
           const { settlementAccount } = this.state;
 
           const dest = chainHub.makeChainAddress(EUD);
@@ -249,12 +260,12 @@ export const prepareSettler = (
           // TODO? statusManager.forwarding(txHash, sender, amount);
           const txfrV = E(settlementAccount).transfer(
             dest,
-            AmountMath.make(USDC, amount),
+            AmountMath.make(USDC, fullValue),
           );
           void vowTools.watch(txfrV, this.facets.transferHandler, {
             txHash,
             sender,
-            amount,
+            fullValue,
           });
         },
       },
@@ -264,14 +275,14 @@ export const prepareSettler = (
          * @param {SettlerTransferCtx} ctx
          *
          * @typedef {{
-         *   txHash: EvmHash;
+         *   txHash: EvmHash | undefined;
          *   sender: NobleAddress;
-         *   amount: NatValue;
+         *   fullValue: NatValue;
          * }} SettlerTransferCtx
          */
         onFulfilled(_result, ctx) {
-          const { txHash, sender, amount } = ctx;
-          statusManager.forwarded(txHash, sender, amount);
+          const { txHash, sender, fullValue } = ctx;
+          statusManager.forwarded(txHash, sender, fullValue);
         },
         /**
          * @param {unknown} reason
