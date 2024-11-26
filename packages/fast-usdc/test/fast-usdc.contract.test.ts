@@ -50,19 +50,7 @@ const startContract = async (
     commonPrivateArgs,
   } = common;
 
-  const { zoe, bundleAndInstall } = await setUpZoeForTest({
-    setJig: jig => {
-      jig.chainHub.registerChain('osmosis', fetchedChainInfo.osmosis);
-      jig.chainHub.registerChain('agoric', fetchedChainInfo.agoric);
-      // TODO #10445 register noble<>agoric and noble<>osmosis instead
-      // for PFM routing. also will need to call `registerAsset`
-      jig.chainHub.registerConnection(
-        fetchedChainInfo.agoric.chainId,
-        fetchedChainInfo.osmosis.chainId,
-        fetchedChainInfo.agoric.connections['osmosis-1'],
-      );
-    },
-  });
+  const { zoe, bundleAndInstall } = await setUpZoeForTest();
   const installation: Installation<StartFn> =
     await bundleAndInstall(contractFile);
 
@@ -600,20 +588,27 @@ test('advancing happy path', async t => {
   const expectedReceiver = addressTools.getQueryParams(
     evidence.aux.recipientAddress,
   ).EUD;
-  t.is(ibcTransferMsg.receiver, expectedReceiver, 'sent to correct address');
+  t.is(ibcTransferMsg.receiver, 'pfm', 'sent to pfm address');
   t.deepEqual(ibcTransferMsg.token, {
     amount: String(expectedAdvance.value),
     denom: 'ibc/usdconagoric',
   });
 
-  // TODO #10445 expect PFM memo
-  t.is(ibcTransferMsg.memo, '', 'TODO expecting PFM memo');
+  // check pfm memo
+  t.like(JSON.parse(ibcTransferMsg.memo), {
+    forward: {
+      receiver: expectedReceiver,
+      port: 'transfer',
+      channel: 'channel-1',
+      timeout: '10m',
+      retries: 3,
+    },
+  });
 
-  // TODO #10445 expect routing through noble, not osmosis
   t.is(
     ibcTransferMsg.sourceChannel,
-    fetchedChainInfo.agoric.connections['osmosis-1'].transferChannel.channelId,
-    'TODO expecting routing through Noble',
+    fetchedChainInfo.agoric.connections['noble-1'].transferChannel.channelId,
+    'routes through noble',
   );
 
   await transmitTransferAck();

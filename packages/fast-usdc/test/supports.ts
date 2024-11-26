@@ -3,7 +3,10 @@ import { VTRANSFER_IBC_EVENT } from '@agoric/internal/src/action-types.js';
 import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { registerKnownChains } from '@agoric/orchestration/src/chain-info.js';
-import { makeChainHub } from '@agoric/orchestration/src/exos/chain-hub.js';
+import {
+  makeChainHub,
+  type DenomDetail,
+} from '@agoric/orchestration/src/exos/chain-hub.js';
 import { prepareCosmosInterchainService } from '@agoric/orchestration/src/exos/cosmos-interchain-service.js';
 import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
 import { setupFakeNetwork } from '@agoric/orchestration/test/network-fakes.js';
@@ -28,6 +31,7 @@ import { makeHeapZone, type Zone } from '@agoric/zone';
 import { makeDurableZone } from '@agoric/zone/durable.js';
 import { E } from '@endo/far';
 import type { ExecutionContext } from 'ava';
+import { withChainCapabilities } from '@agoric/orchestration';
 import { makeTestFeeConfig } from './mocks.js';
 
 export {
@@ -157,6 +161,34 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
     vowTools,
   );
 
+  // only load some chain info for testing
+  const { agoric, dydx, osmosis, noble } = fetchedChainInfo;
+
+  // variants of usdc on agoric, noble, osmosis, dydx
+  const commonAssetInfo: Record<string, DenomDetail> = harden({
+    'ibc/usdconagoric': {
+      chainName: 'agoric',
+      baseName: 'noble',
+      baseDenom: 'uusdc',
+      brand: usdc.brand,
+    },
+    uusdc: {
+      chainName: 'noble',
+      baseName: 'noble',
+      baseDenom: 'uusdc',
+    },
+    'ibc/usdconosmosis': {
+      chainName: 'dydx',
+      baseName: 'noble',
+      baseDenom: 'uusdc',
+    },
+    'ibc/usdcondydx': {
+      chainName: 'dydx',
+      baseName: 'noble',
+      baseDenom: 'uusdc',
+    },
+  });
+
   return {
     bootstrap: {
       agoricNames,
@@ -186,8 +218,10 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
       marshaller,
       timerService: timer,
       feeConfig: makeTestFeeConfig(usdc),
-      chainInfo: {},
-      assetInfo: {},
+      chainInfo: withChainCapabilities(
+        harden({ agoric, dydx, osmosis, noble }),
+      ),
+      assetInfo: commonAssetInfo,
     },
     facadeServices: {
       agoricNames,
