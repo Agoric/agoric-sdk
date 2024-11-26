@@ -3,7 +3,7 @@ import { getManifestForReplaceFeeDistributor } from '@agoric/inter-protocol/src/
 
 /** @type {import('@agoric/deploy-script-support/src/externalTypes.js').CoreEvalBuilder} */
 export const defaultProposalBuilder = async (_, opts) => {
-  console.log('OPTS', opts);
+  console.log('feeDist  OPTS', opts);
   return harden({
     sourceSpec:
       '@agoric/inter-protocol/src/proposals/replace-fee-distributor.js',
