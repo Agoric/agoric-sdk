@@ -79,6 +79,7 @@ const makeTestContext = async t => {
     feeConfig: common.commonPrivateArgs.feeConfig,
     vowTools: common.bootstrap.vowTools,
     chainHub,
+    log,
   });
 
   const defaultSettlerParams = harden({
@@ -307,7 +308,6 @@ test('Settlement for unknown transaction', async t => {
     peekCalls,
     inspectLogs,
   } = t.context;
-  const { usdc } = common.brands;
 
   const settler = makeSettler({
     repayer,
@@ -319,21 +319,18 @@ test('Settlement for unknown transaction', async t => {
   void settler.tap.receiveUpcall(MockVTransferEvents.AGORIC_PLUS_OSMO());
   await eventLoopIteration();
 
-  t.log('USDC was forwarded');
+  t.log('Nothing was transferrred');
   t.deepEqual(peekCalls(), []);
-  t.deepEqual(accounts.settlement.callLog, [
+  t.deepEqual(accounts.settlement.callLog, []);
+  t.like(inspectLogs(), [
+    ['config', { sourceChannel: 'channel-21' }],
+    ['upcall event'],
+    ['dequeued', undefined],
     [
-      'transfer',
-      {
-        chainId: 'osmosis-1',
-        encoding: 'bech32',
-        value: 'osmo183dejcnmkka5dzcu9xw6mywq0p2m5peks28men',
-      },
-      usdc.units(150),
+      '⚠️ tap: no status for ',
+      'noble1x0ydg69dh6fqvr27xjvp6maqmrldam6yfelqkd',
+      150000000n,
     ],
-  ]);
-  t.deepEqual(inspectLogs(0), [
-    '⚠️ Forwarded minted amount 150000000 from account noble1x0ydg69dh6fqvr27xjvp6maqmrldam6yfelqkd before it was observed.',
   ]);
 });
 

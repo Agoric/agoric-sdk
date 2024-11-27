@@ -166,11 +166,13 @@ export const prepareSettler = (
               this.state.mintedEarly.add(makeMintedEarlyKey(sender, amount));
               return;
 
-            case undefined:
             case PendingTxStatus.Observed:
             case PendingTxStatus.AdvanceFailed:
+              return self.forward(found.txHash, sender, amount, EUD);
+
+            case undefined:
             default:
-              return self.forward(found?.txHash, sender, amount, EUD);
+              log('⚠️ tap: no status for ', sender, amount);
           }
         },
       },
@@ -247,7 +249,7 @@ export const prepareSettler = (
           statusManager.disbursed(txHash);
         },
         /**
-         * @param {EvmHash | undefined} txHash
+         * @param {EvmHash} txHash
          * @param {NobleAddress} sender
          * @param {NatValue} fullValue
          * @param {string} EUD
@@ -275,7 +277,7 @@ export const prepareSettler = (
          * @param {SettlerTransferCtx} ctx
          *
          * @typedef {{
-         *   txHash: EvmHash | undefined;
+         *   txHash: EvmHash;
          *   sender: NobleAddress;
          *   fullValue: NatValue;
          * }} SettlerTransferCtx
