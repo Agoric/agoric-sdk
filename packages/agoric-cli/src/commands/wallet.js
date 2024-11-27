@@ -8,7 +8,7 @@ import {
   makeLeader,
   makeLeaderFromRpcAddresses,
 } from '@agoric/casting';
-import { makeVstorageKit } from '@agoric/client-utils';
+import { makeVstorageKit, fetchEnvNetworkConfig } from '@agoric/client-utils';
 import { execFileSync } from 'child_process';
 import fs from 'fs';
 import util from 'util';
@@ -19,15 +19,14 @@ import {
   fetchSwingsetParams,
   normalizeAddressWithOptions,
 } from '../lib/chain.js';
-import { getNetworkConfig } from '../lib/network-config.js';
-import { coalesceWalletState, getCurrent } from '../lib/wallet.js';
 import {
-  summarize,
   fmtRecordOfLines,
   parseFiniteNumber,
+  summarize,
 } from '../lib/format.js';
+import { coalesceWalletState, getCurrent } from '../lib/wallet.js';
 
-const networkConfig = await getNetworkConfig({ env: process.env, fetch });
+const networkConfig = await fetchEnvNetworkConfig({ env: process.env, fetch });
 
 const SLEEP_SECONDS = 3;
 

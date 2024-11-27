@@ -1,13 +1,12 @@
 // @ts-check
 /* eslint-disable func-names */
 /* eslint-env node */
-import { makeVstorageKit } from '@agoric/client-utils';
+import { fetchEnvNetworkConfig, makeVstorageKit } from '@agoric/client-utils';
 import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
 import { Command } from 'commander';
-import { getNetworkConfig } from '../lib/network-config.js';
 import { outputActionAndHint } from '../lib/wallet.js';
 
-const networkConfig = await getNetworkConfig({ env: process.env, fetch });
+const networkConfig = await fetchEnvNetworkConfig({ env: process.env, fetch });
 
 /**
  * @param {import('anylogger').Logger} _logger

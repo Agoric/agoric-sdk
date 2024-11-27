@@ -9,13 +9,13 @@ import {
 } from '../util/noble.js';
 import { queryFastUSDCLocalChainAccount } from '../util/agoric.js';
 
-/** @import { file } from '../util/file' */
+/** @import { File } from '../util/file' */
 /** @import { VStorage } from '@agoric/client-utils' */
 /** @import { SigningStargateClient } from '@cosmjs/stargate' */
 /** @import { JsonRpcProvider as ethProvider } from 'ethers' */
 
 const transfer = async (
-  /** @type {file} */ configFile,
+  /** @type {File} */ configFile,
   /** @type {string} */ amount,
   /** @type {string} */ destination,
   out = console,

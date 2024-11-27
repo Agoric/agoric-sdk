@@ -7,6 +7,7 @@ import {
   makeFollower,
   makeLeaderFromRpcAddresses,
 } from '@agoric/casting';
+import { fetchEnvNetworkConfig } from '@agoric/client-utils';
 import { slotToRemotable } from '@agoric/internal/src/storage-test-utils.js';
 import { boardSlottingMarshaller } from '@agoric/vats/tools/board-utils.js';
 import { Command } from 'commander';
@@ -17,12 +18,11 @@ import {
   execSwingsetTransaction,
   normalizeAddressWithOptions,
 } from '../lib/chain.js';
-import { getNetworkConfig } from '../lib/network-config.js';
 
 // tight for perf testing but less than this tends to hang.
 const SLEEP_SECONDS = 0.1;
 
-const networkConfig = await getNetworkConfig({ env: process.env, fetch });
+const networkConfig = await fetchEnvNetworkConfig({ env: process.env, fetch });
 
 /**
  * @param {import('anylogger').Logger} logger
