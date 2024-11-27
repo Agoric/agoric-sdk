@@ -1,7 +1,7 @@
 /* global Buffer */
 
 /**
- * @import {MinimalNetworkConfig} from './rpc.js';
+ * @import {MinimalNetworkConfig} from './network-config.js';
  */
 
 /**

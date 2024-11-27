@@ -15,10 +15,10 @@ import { stdin as input, stdout as output } from 'node:process';
   }} ConfigOpts
  */
 
-/** @import { file } from '../util/file' */
+/** @import { File } from '../util/file' */
 
-const init = async (
-  /** @type {file} */ configFile,
+export const init = async (
+  /** @type {File} */ configFile,
   /** @type {ConfigOpts} */ options,
   out = console,
   rl = readline.createInterface({ input, output }),
@@ -52,8 +52,8 @@ const init = async (
   await writeConfig();
 };
 
-const update = async (
-  /** @type {file} */ configFile,
+export const update = async (
+  /** @type {File} */ configFile,
   /** @type {Partial<ConfigOpts>} */ options,
   out = console,
 ) => {
@@ -83,7 +83,7 @@ const update = async (
   await updateConfig({ ...JSON.parse(file), ...options });
 };
 
-const show = async (/** @type {file} */ configFile, out = console) => {
+export const show = async (/** @type {File} */ configFile, out = console) => {
   let contents;
   await null;
   try {
@@ -97,5 +97,3 @@ const show = async (/** @type {file} */ configFile, out = console) => {
   out.log(`Config found at ${configFile.path}:`);
   out.log(contents);
 };
-
-export default { init, update, show };
