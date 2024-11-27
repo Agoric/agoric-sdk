@@ -219,6 +219,9 @@ func unreleasedUpgradeHandler(app *GaiaApp, targetUpgrade string) func(sdk.Conte
 				vm.CoreProposalStepForModules(
 					"@agoric/builders/scripts/inter-protocol/replace-feeDistributor.js",
 				),
+				vm.CoreProposalStepForModules(
+					"@agoric/builders/scripts/vats/upgrade-paRegistry.js",
+				),
 			)
 		}
 
