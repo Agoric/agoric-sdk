@@ -1,6 +1,6 @@
-import { AmountMath, AmountShape } from '@agoric/ertp';
+import { AmountMath } from '@agoric/ertp';
 import { assertAllDefined, makeTracer } from '@agoric/internal';
-import { ChainAddressShape } from '@agoric/orchestration';
+import { AnyNatAmountShape, ChainAddressShape } from '@agoric/orchestration';
 import { pickFacet } from '@agoric/vat-data';
 import { VowShape } from '@agoric/vow';
 import { q } from '@endo/errors';
@@ -16,6 +16,7 @@ import { makeFeeTools } from '../utils/fees.js';
 
 /**
  * @import {HostInterface} from '@agoric/async-flow';
+ * @import {TypedPattern} from '@agoric/internal'
  * @import {NatAmount} from '@agoric/ertp';
  * @import {ChainAddress, ChainHub, Denom, OrchestrationAccount} from '@agoric/orchestration';
  * @import {ZoeTools} from '@agoric/orchestration/src/utils/zoe-tools.js';
@@ -39,47 +40,40 @@ import { makeFeeTools } from '../utils/fees.js';
  * }} AdvancerKitPowers
  */
 
+/** @type {TypedPattern<AdvancerVowCtx>} */
+const AdvancerVowCtxShape = M.splitRecord(
+  {
+    fullAmount: AnyNatAmountShape,
+    advanceAmount: AnyNatAmountShape,
+    destination: ChainAddressShape,
+    forwardingAddress: M.string(),
+    txHash: EvmHashShape,
+  },
+  { tmpSeat: M.remotable() },
+);
+
 /** type guards internal to the AdvancerKit */
 const AdvancerKitI = harden({
   advancer: M.interface('AdvancerI', {
     handleTransactionEvent: M.callWhen(CctpTxEvidenceShape).returns(),
   }),
   depositHandler: M.interface('DepositHandlerI', {
-    onFulfilled: M.call(M.undefined(), {
-      amount: AmountShape,
-      destination: ChainAddressShape,
-      forwardingAddress: M.string(),
-      tmpSeat: M.remotable(),
-      txHash: EvmHashShape,
-    }).returns(VowShape),
-    onRejected: M.call(M.error(), {
-      amount: AmountShape,
-      destination: ChainAddressShape,
-      forwardingAddress: M.string(),
-      tmpSeat: M.remotable(),
-      txHash: EvmHashShape,
-    }).returns(),
+    onFulfilled: M.call(M.undefined(), AdvancerVowCtxShape).returns(VowShape),
+    onRejected: M.call(M.error(), AdvancerVowCtxShape).returns(),
   }),
   transferHandler: M.interface('TransferHandlerI', {
     // TODO confirm undefined, and not bigint (sequence)
-    onFulfilled: M.call(M.undefined(), {
-      amount: AmountShape,
-      destination: ChainAddressShape,
-      forwardingAddress: M.string(),
-      txHash: EvmHashShape,
-    }).returns(M.undefined()),
-    onRejected: M.call(M.error(), {
-      amount: AmountShape,
-      destination: ChainAddressShape,
-      forwardingAddress: M.string(),
-      txHash: EvmHashShape,
-    }).returns(M.undefined()),
+    onFulfilled: M.call(M.undefined(), AdvancerVowCtxShape).returns(
+      M.undefined(),
+    ),
+    onRejected: M.call(M.error(), AdvancerVowCtxShape).returns(M.undefined()),
   }),
 });
 
 /**
  * @typedef {{
- *  amount: NatAmount;
+ *  fullAmount: NatAmount;
+ *  advanceAmount: NatAmount;
  *  destination: ChainAddress;
  *  forwardingAddress: NobleAddress;
  *  txHash: EvmHash;
@@ -155,9 +149,9 @@ export const prepareAdvancerKit = (
             // throws if the bech32 prefix is not found
             const destination = chainHub.makeChainAddress(EUD);
 
-            const requestedAmount = toAmount(evidence.tx.amount);
+            const fullAmount = toAmount(evidence.tx.amount);
             // throws if requested does not exceed fees
-            const advanceAmount = feeTools.calculateAdvance(requestedAmount);
+            const advanceAmount = feeTools.calculateAdvance(fullAmount);
 
             const { zcfSeat: tmpSeat } = zcf.makeEmptySeatKit();
             const amountKWR = harden({ USDC: advanceAmount });
@@ -174,7 +168,8 @@ export const prepareAdvancerKit = (
               amountKWR,
             );
             void watch(depositV, this.facets.depositHandler, {
-              amount: advanceAmount,
+              fullAmount,
+              advanceAmount,
               destination,
               forwardingAddress: evidence.tx.forwardingAddress,
               tmpSeat,
@@ -193,16 +188,15 @@ export const prepareAdvancerKit = (
          */
         onFulfilled(result, ctx) {
           const { poolAccount } = this.state;
-          const { amount, destination, forwardingAddress, txHash } = ctx;
+          const { destination, advanceAmount, ...detail } = ctx;
           const transferV = E(poolAccount).transfer(destination, {
             denom: usdc.denom,
-            value: amount.value,
+            value: advanceAmount.value,
           });
           return watch(transferV, this.facets.transferHandler, {
             destination,
-            amount,
-            forwardingAddress,
-            txHash,
+            advanceAmount,
+            ...detail,
           });
         },
         /**
@@ -222,23 +216,23 @@ export const prepareAdvancerKit = (
       },
       transferHandler: {
         /**
-         * @param {undefined} result TODO confirm this is not a bigint (sequence)
+         * @param {unknown} result TODO confirm this is not a bigint (sequence)
          * @param {AdvancerVowCtx} ctx
          */
         onFulfilled(result, ctx) {
           const { notifyFacet } = this.state;
-          const { amount, destination, forwardingAddress, txHash } = ctx;
+          const { advanceAmount, destination, ...detail } = ctx;
           log(
             'Advance transfer fulfilled',
-            q({ amount, destination, result }).toString(),
+            q({ advanceAmount, destination, result }).toString(),
           );
-          notifyFacet.notifyAdvancingResult(
-            txHash,
-            forwardingAddress,
-            amount.value,
-            destination.value,
-            true,
-          );
+          // During development, due to a bug, this call threw.
+          // The failure was silent (no diagnostics) due to:
+          //  - #10576 Vows do not report unhandled rejections
+          // For now, the advancer kit relies on consistency between
+          // notifyFacet, statusManager, and callers of handleTransactionEvent().
+          // TODO: revisit #10576 during #10510
+          notifyFacet.notifyAdvancingResult({ destination, ...detail }, true);
         },
         /**
          * @param {Error} error
@@ -246,15 +240,8 @@ export const prepareAdvancerKit = (
          */
         onRejected(error, ctx) {
           const { notifyFacet } = this.state;
-          const { amount, destination, forwardingAddress, txHash } = ctx;
           log('Advance transfer rejected', q(error).toString());
-          notifyFacet.notifyAdvancingResult(
-            txHash,
-            forwardingAddress,
-            amount.value,
-            destination.value,
-            false,
-          );
+          notifyFacet.notifyAdvancingResult(ctx, false);
         },
       },
     },

@@ -186,17 +186,22 @@ test('updates status to ADVANCING in happy path', async t => {
 
   t.deepEqual(inspectLogs(0), [
     'Advance transfer fulfilled',
-    '{"amount":{"brand":"[Alleged: USDC brand]","value":"[146999999n]"},"destination":{"chainId":"osmosis-1","encoding":"bech32","value":"osmo183dejcnmkka5dzcu9xw6mywq0p2m5peks28men"},"result":"[undefined]"}',
+    '{"advanceAmount":{"brand":"[Alleged: USDC brand]","value":"[146999999n]"},"destination":{"chainId":"osmosis-1","encoding":"bech32","value":"osmo183dejcnmkka5dzcu9xw6mywq0p2m5peks28men"},"result":"[undefined]"}',
   ]);
 
   // We expect to see an `Advanced` update, but that is now Settler's job.
   // but we can ensure it's called
-  t.deepEqual(inspectNotifyCalls(), [
+  t.like(inspectNotifyCalls(), [
     [
-      mockEvidence.txHash,
-      mockEvidence.tx.forwardingAddress,
-      feeTools.calculateAdvance(usdc.make(mockEvidence.tx.amount)).value,
-      addressTools.getQueryParams(mockEvidence.aux.recipientAddress).EUD,
+      {
+        txHash: mockEvidence.txHash,
+        forwardingAddress: mockEvidence.tx.forwardingAddress,
+        fullAmount: usdc.make(mockEvidence.tx.amount),
+        destination: {
+          value: addressTools.getQueryParams(mockEvidence.aux.recipientAddress)
+            .EUD,
+        },
+      },
       true, // indicates transfer succeeded
     ],
   ]);
@@ -305,13 +310,21 @@ test('calls notifyAdvancingResult (AdvancedFailed) on failed transfer', async t 
 
   // We expect to see an `AdvancedFailed` update, but that is now Settler's job.
   // but we can ensure it's called
-  t.deepEqual(inspectNotifyCalls(), [
+  t.like(inspectNotifyCalls(), [
     [
-      mockEvidence.txHash,
-      mockEvidence.tx.forwardingAddress,
-      feeTools.calculateAdvance(usdc.make(mockEvidence.tx.amount)).value,
-      addressTools.getQueryParams(mockEvidence.aux.recipientAddress).EUD,
-      false, // this indicates transfer succeeded
+      {
+        txHash: mockEvidence.txHash,
+        forwardingAddress: mockEvidence.tx.forwardingAddress,
+        fullAmount: usdc.make(mockEvidence.tx.amount),
+        advanceAmount: feeTools.calculateAdvance(
+          usdc.make(mockEvidence.tx.amount),
+        ),
+        destination: {
+          value: addressTools.getQueryParams(mockEvidence.aux.recipientAddress)
+            .EUD,
+        },
+      },
+      false, // this indicates transfer failed
     ],
   ]);
 });
@@ -364,7 +377,7 @@ test('will not advance same txHash:chainId evidence twice', async t => {
 
   t.deepEqual(inspectLogs(0), [
     'Advance transfer fulfilled',
-    '{"amount":{"brand":"[Alleged: USDC brand]","value":"[146999999n]"},"destination":{"chainId":"osmosis-1","encoding":"bech32","value":"osmo183dejcnmkka5dzcu9xw6mywq0p2m5peks28men"},"result":"[undefined]"}',
+    '{"advanceAmount":{"brand":"[Alleged: USDC brand]","value":"[146999999n]"},"destination":{"chainId":"osmosis-1","encoding":"bech32","value":"osmo183dejcnmkka5dzcu9xw6mywq0p2m5peks28men"},"result":"[undefined]"}',
   ]);
 
   // Second attempt

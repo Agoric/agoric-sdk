@@ -98,7 +98,7 @@ export const connectionKey = (chainId1, chainId2) => {
  */
 const reverseConnInfo = connInfo => {
   const { transferChannel } = connInfo;
-  return {
+  return harden({
     id: connInfo.counterparty.connection_id,
     client_id: connInfo.counterparty.client_id,
     counterparty: {
@@ -113,7 +113,7 @@ const reverseConnInfo = connInfo => {
       portId: transferChannel.counterPartyPortId,
       counterPartyPortId: transferChannel.portId,
     },
-  };
+  });
 };
 
 /**

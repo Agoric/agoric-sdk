@@ -246,9 +246,12 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
     vowTools.all([poolAccountV, settleAccountV]),
   );
 
+  const [_agoric, _noble, agToNoble] = await vowTools.when(
+    chainHub.getChainsAndConnection('agoric', 'noble'),
+  );
   const settlerKit = makeSettler({
     repayer: poolKit.repayer,
-    sourceChannel: 'channel-1234', // TODO: fix this as soon as testing needs it',
+    sourceChannel: agToNoble.transferChannel.counterPartyChannelId,
     remoteDenom: 'uusdc',
     settlementAccount,
   });

@@ -11,17 +11,15 @@ import { EvmHashShape } from '../type-guards.js';
 
 /**
  * @import {FungibleTokenPacketData} from '@agoric/cosmic-proto/ibc/applications/transfer/v2/packet.js';
- * @import {Denom, OrchestrationAccount, ChainHub} from '@agoric/orchestration';
+ * @import {Denom, OrchestrationAccount, ChainHub, ChainAddress} from '@agoric/orchestration';
  * @import {WithdrawToSeat} from '@agoric/orchestration/src/utils/zoe-tools'
  * @import {IBCChannelID, VTransferIBCEvent} from '@agoric/vats';
  * @import {Zone} from '@agoric/zone';
  * @import {HostOf, HostInterface} from '@agoric/async-flow';
  * @import {TargetRegistration} from '@agoric/vats/src/bridge-target.js';
- * @import {NobleAddress, LiquidityPoolKit, FeeConfig, EvmHash} from '../types.js';
+ * @import {NobleAddress, LiquidityPoolKit, FeeConfig, EvmHash, LogFn} from '../types.js';
  * @import {StatusManager} from './status-manager.js';
  */
-
-const trace = makeTracer('Settler');
 
 /**
  * NOTE: not meant to be parsable.
@@ -42,10 +40,20 @@ const makeMintedEarlyKey = (addr, amount) =>
  * @param {HostOf<WithdrawToSeat>} caps.withdrawToSeat
  * @param {import('@agoric/vow').VowTools} caps.vowTools
  * @param {ChainHub} caps.chainHub
+ * @param {LogFn} [caps.log]
  */
 export const prepareSettler = (
   zone,
-  { statusManager, USDC, zcf, feeConfig, withdrawToSeat, vowTools, chainHub },
+  {
+    chainHub,
+    feeConfig,
+    log = makeTracer('Settler', true),
+    statusManager,
+    USDC,
+    vowTools,
+    withdrawToSeat,
+    zcf,
+  },
 ) => {
   assertAllDefined({ statusManager });
   return zone.exoClassKit(
@@ -59,8 +67,7 @@ export const prepareSettler = (
       }),
       notify: M.interface('SettlerNotifyI', {
         notifyAdvancingResult: M.call(
-          M.string(),
-          M.nat(),
+          M.record(), // XXX fill in details TODO
           M.boolean(),
         ).returns(),
       }),
@@ -89,6 +96,7 @@ export const prepareSettler = (
      * }} config
      */
     config => {
+      log('config', config);
       return {
         ...config,
         /** @type {HostInterface<TargetRegistration>|undefined} */
@@ -111,11 +119,12 @@ export const prepareSettler = (
       tap: {
         /** @param {VTransferIBCEvent} event */
         async receiveUpcall(event) {
+          log('upcall event', event.packet.sequence, event.blockTime);
           const { sourceChannel, remoteDenom } = this.state;
           const { packet } = event;
           if (packet.source_channel !== sourceChannel) {
             const { source_channel: actual } = packet;
-            trace('unexpected channel', { actual, expected: sourceChannel });
+            log('unexpected channel', { actual, expected: sourceChannel });
             return;
           }
 
@@ -129,7 +138,7 @@ export const prepareSettler = (
 
           if (tx.denom !== remoteDenom) {
             const { denom: actual } = tx;
-            trace('unexpected denom', { actual, expected: remoteDenom });
+            log('unexpected denom', { actual, expected: remoteDenom });
             return;
           }
 
@@ -148,7 +157,7 @@ export const prepareSettler = (
 
           const { self } = this.facets;
           const found = statusManager.dequeueStatus(sender, amount);
-          trace('dequeued', found, 'for', sender, amount);
+          log('dequeued', found, 'for', sender, amount);
           switch (found?.status) {
             case PendingTxStatus.Advanced:
               return self.disburse(found.txHash, sender, amount);
@@ -157,35 +166,51 @@ export const prepareSettler = (
               this.state.mintedEarly.add(makeMintedEarlyKey(sender, amount));
               return;
 
-            case undefined:
             case PendingTxStatus.Observed:
             case PendingTxStatus.AdvanceFailed:
+              return self.forward(found.txHash, sender, amount, EUD);
+
+            case undefined:
             default:
-              return self.forward(found?.txHash, sender, amount, EUD);
+              log('⚠️ tap: no status for ', sender, amount);
           }
         },
       },
       notify: {
         /**
-         * @param {EvmHash} txHash
-         * @param {NobleAddress} sender
-         * @param {NatValue} amount
-         * @param {string} EUD
+         * @param {object} ctx
+         * @param {EvmHash} ctx.txHash
+         * @param {NobleAddress} ctx.forwardingAddress
+         * @param {Amount<'nat'>} ctx.fullAmount
+         * @param {ChainAddress} ctx.destination
          * @param {boolean} success
          * @returns {void}
          */
-        notifyAdvancingResult(txHash, sender, amount, EUD, success) {
+        notifyAdvancingResult(
+          { txHash, forwardingAddress, fullAmount, destination },
+          success,
+        ) {
           const { mintedEarly } = this.state;
-          const key = makeMintedEarlyKey(sender, amount);
+          const { value: fullValue } = fullAmount;
+          const key = makeMintedEarlyKey(forwardingAddress, fullValue);
           if (mintedEarly.has(key)) {
             mintedEarly.delete(key);
             if (success) {
-              void this.facets.self.disburse(txHash, sender, amount);
+              void this.facets.self.disburse(
+                txHash,
+                forwardingAddress,
+                fullValue,
+              );
             } else {
-              void this.facets.self.forward(txHash, sender, amount, EUD);
+              void this.facets.self.forward(
+                txHash,
+                forwardingAddress,
+                fullValue,
+                destination.value,
+              );
             }
           } else {
-            statusManager.advanceOutcome(sender, amount, success);
+            statusManager.advanceOutcome(forwardingAddress, fullValue, success);
           }
         },
       },
@@ -193,15 +218,15 @@ export const prepareSettler = (
         /**
          * @param {EvmHash} txHash
          * @param {NobleAddress} sender
-         * @param {NatValue} amount
+         * @param {NatValue} fullValue
          */
-        async disburse(txHash, sender, amount) {
+        async disburse(txHash, sender, fullValue) {
           const { repayer, settlementAccount } = this.state;
-          const received = AmountMath.make(USDC, amount);
+          const received = AmountMath.make(USDC, fullValue);
           const { zcfSeat: settlingSeat } = zcf.makeEmptySeatKit();
           const { calculateSplit } = makeFeeTools(feeConfig);
           const split = calculateSplit(received);
-          trace('disbursing', split);
+          log('disbursing', split);
 
           // TODO: what if this throws?
           // arguably, it cannot. Even if deposits
@@ -224,12 +249,12 @@ export const prepareSettler = (
           statusManager.disbursed(txHash);
         },
         /**
-         * @param {EvmHash | undefined} txHash
+         * @param {EvmHash} txHash
          * @param {NobleAddress} sender
-         * @param {NatValue} amount
+         * @param {NatValue} fullValue
          * @param {string} EUD
          */
-        forward(txHash, sender, amount, EUD) {
+        forward(txHash, sender, fullValue, EUD) {
           const { settlementAccount } = this.state;
 
           const dest = chainHub.makeChainAddress(EUD);
@@ -237,12 +262,12 @@ export const prepareSettler = (
           // TODO? statusManager.forwarding(txHash, sender, amount);
           const txfrV = E(settlementAccount).transfer(
             dest,
-            AmountMath.make(USDC, amount),
+            AmountMath.make(USDC, fullValue),
           );
           void vowTools.watch(txfrV, this.facets.transferHandler, {
             txHash,
             sender,
-            amount,
+            fullValue,
           });
         },
       },
@@ -254,20 +279,21 @@ export const prepareSettler = (
          * @typedef {{
          *   txHash: EvmHash;
          *   sender: NobleAddress;
-         *   amount: NatValue;
+         *   fullValue: NatValue;
          * }} SettlerTransferCtx
          */
         onFulfilled(_result, ctx) {
-          const { txHash, sender, amount } = ctx;
-          statusManager.forwarded(txHash, sender, amount);
+          const { txHash, sender, fullValue } = ctx;
+          statusManager.forwarded(txHash, sender, fullValue);
         },
         /**
-         * @param {unknown} _result
-         * @param {SettlerTransferCtx} _ctx
+         * @param {unknown} reason
+         * @param {SettlerTransferCtx} ctx
          */
-        onRejected(_result, _ctx) {
+        onRejected(reason, ctx) {
+          log('⚠️ transfer rejected!', reason, ctx);
           // const { txHash, sender, amount } = ctx;
-          // TODO: statusManager.forwardFailed(txHash, sender, amount);
+          // TODO(#10510): statusManager.forwardFailed(txHash, sender, amount);
         },
       },
     },

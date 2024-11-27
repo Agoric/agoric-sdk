@@ -18,8 +18,8 @@ export const registerChainsAndAssets = (
   chainInfo,
   assetInfo,
 ) => {
+  console.log('chainHub: registering chains', Object.keys(chainInfo || {}));
   if (!chainInfo) {
-    console.log('No chain info provided, returning early.');
     return;
   }
 
@@ -32,16 +32,17 @@ export const registerChainsAndAssets = (
   const registeredPairs = new Set();
   for (const [pChainId, connInfos] of Object.entries(conns)) {
     for (const [cChainId, connInfo] of Object.entries(connInfos)) {
-      const pair = [pChainId, cChainId].sort().join('');
+      const pair = [pChainId, cChainId].sort().join('<->');
       if (!registeredPairs.has(pair)) {
         chainHub.registerConnection(pChainId, cChainId, connInfo);
         registeredPairs.add(pair);
       }
     }
   }
+  console.log('chainHub: registered connections', [...registeredPairs].sort());
 
+  console.log('chainHub: registering assets', Object.keys(assetInfo || {}));
   if (!assetInfo) {
-    console.log('No asset info provided, returning early.');
     return;
   }
   for (const [denom, info] of Object.entries(assetInfo)) {
