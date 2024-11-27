@@ -8,7 +8,7 @@ import test from 'ava';
 import { evalBundles } from '@agoric/synthetic-chain';
 
 test('test upgraded board', async t => {
-  await evalBundles('submission');
+  await evalBundles('testUpgradedBoard');
 
   t.pass();
 });
