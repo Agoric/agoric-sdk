@@ -117,6 +117,15 @@ test.serial('writes feed policy to vstorage', async t => {
   await documentStorageSchema(t, storage, doc);
 });
 
+test.serial('writes fee config to vstorage', async t => {
+  const { storage } = t.context;
+  const doc = {
+    node: 'fastUsdc.feeConfig',
+    owner: 'the fee configuration for Fast USDC',
+  };
+  await documentStorageSchema(t, storage, doc);
+});
+
 test.serial('writes status updates to vstorage', async t => {
   const { walletFactoryDriver: wd, storage } = t.context;
   const wallet = await wd.provideSmartWallet(
