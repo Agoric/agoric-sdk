@@ -2,6 +2,8 @@ import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import type { TestFn } from 'ava';
 import type { FastUSDCKit } from '@agoric/fast-usdc/src/fast-usdc.start.js';
+import type { CctpTxEvidence } from '@agoric/fast-usdc/src/types.js';
+import { MockCctpTxEvidences } from '@agoric/fast-usdc/test/fixtures.js';
 import { documentStorageSchema } from '@agoric/governance/tools/storageDoc.js';
 import { Fail } from '@endo/errors';
 import { unmarshalFromVstorage } from '@agoric/internal/src/marshal.js';
@@ -111,6 +113,34 @@ test.serial('writes feed policy to vstorage', async t => {
   const doc = {
     node: 'fastUsdc.feedPolicy',
     owner: 'the general and chain-specific policies for the Fast USDC feed',
+  };
+  await documentStorageSchema(t, storage, doc);
+});
+
+test.serial('writes status updates to vstorage', async t => {
+  const { walletFactoryDriver: wd, storage } = t.context;
+  const wallet = await wd.provideSmartWallet(
+    'agoric144rrhh4m09mh7aaffhm6xy223ym76gve2x7y78',
+  );
+  const submitMockEvidence = (mockEvidence: CctpTxEvidence) =>
+    wallet.sendOffer({
+      id: 'submit-mock-evidence',
+      invitationSpec: {
+        source: 'agoricContract',
+        instancePath: ['fastUsdc'],
+        callPipe: [['makeTestPushInvitation', [mockEvidence]]],
+      },
+      proposal: {},
+    });
+  const mockEvidence1 = MockCctpTxEvidences.AGORIC_PLUS_OSMO();
+  const mockEvidence2 = MockCctpTxEvidences.AGORIC_PLUS_DYDX();
+
+  await submitMockEvidence(mockEvidence1);
+  await submitMockEvidence(mockEvidence2);
+
+  const doc = {
+    node: `fastUsdc.status`,
+    owner: `the statuses of fast USDC transfers identified by their tx hashes`,
   };
   await documentStorageSchema(t, storage, doc);
 });

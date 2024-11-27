@@ -1,11 +1,9 @@
 import type { TestFn } from 'ava';
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
-
 import { denomHash } from '@agoric/orchestration';
 import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
 import { Far } from '@endo/pass-style';
-import { makePromiseKit } from '@endo/promise-kit';
 import type { NatAmount } from '@agoric/ertp';
 import { type ZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
 import { q } from '@endo/errors';
@@ -36,6 +34,7 @@ const createTestExtensions = (t, common: CommonSetup) => {
     bootstrap: { rootZone, vowTools },
     facadeServices: { chainHub },
     brands: { usdc },
+    commonPrivateArgs: { storageNode },
   } = common;
 
   const { log, inspectLogs } = makeTestLogger(t.log);
@@ -45,6 +44,7 @@ const createTestExtensions = (t, common: CommonSetup) => {
 
   const statusManager = prepareStatusManager(
     rootZone.subZone('status-manager'),
+    async () => storageNode.makeChildNode('status'),
   );
 
   const mockAccounts = prepareMockOrchAccounts(rootZone.subZone('accounts'), {
