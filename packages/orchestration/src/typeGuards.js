@@ -4,7 +4,7 @@ import { M } from '@endo/patterns';
 
 /**
  * @import {TypedPattern} from '@agoric/internal';
- * @import {ChainAddress, CosmosAssetInfo, Chain, ChainInfo, CosmosChainInfo, DenomAmount, DenomInfo, AmountArg, CosmosValidatorAddress, OrchestrationPowers, ForwardInfo} from './types.js';
+ * @import {ChainAddress, CosmosAssetInfo, Chain, ChainInfo, CosmosChainInfo, DenomAmount, DenomInfo, AmountArg, CosmosValidatorAddress, OrchestrationPowers, ForwardInfo, IBCMsgTransferOptions} from './types.js';
  * @import {Any as Proto3Msg} from '@agoric/cosmic-proto/google/protobuf/any.js';
  * @import {TxBody} from '@agoric/cosmic-proto/cosmos/tx/v1beta1/tx.js';
  * @import {Coin} from '@agoric/cosmic-proto/cosmos/base/v1beta1/coin.js';
@@ -38,19 +38,6 @@ harden(ChainAddressShape);
 /** @type {TypedPattern<Proto3Msg>} */
 export const Proto3Shape = { typeUrl: M.string(), value: M.string() };
 harden(ChainAddressShape);
-
-/** @internal */
-export const IBCTransferOptionsShape = M.splitRecord(
-  {},
-  {
-    timeoutTimestamp: M.bigint(),
-    timeoutHeight: {
-      revisionHeight: M.bigint(),
-      revisionNumber: M.bigint(),
-    },
-    memo: M.string(),
-  },
-);
 
 /** @internal */
 export const IBCChannelIDShape = M.string();
@@ -247,3 +234,34 @@ export const ForwardInfoShape = {
   }),
 };
 harden(ForwardInfoShape);
+
+/**
+ * Caller configurable values of {@link ForwardInfo}
+ *
+ * @type {TypedPattern<IBCMsgTransferOptions['forwardOpts']>}
+ */
+export const ForwardOptsShape = M.splitRecord(
+  {},
+  {
+    timeout: M.string(),
+    retries: M.number(),
+  },
+  {},
+);
+
+/**
+ * @type {TypedPattern<IBCMsgTransferOptions>}
+ * @internal
+ */
+export const IBCTransferOptionsShape = M.splitRecord(
+  {},
+  {
+    timeoutTimestamp: M.bigint(),
+    timeoutHeight: {
+      revisionHeight: M.bigint(),
+      revisionNumber: M.bigint(),
+    },
+    memo: M.string(),
+    forwardOpts: ForwardOptsShape,
+  },
+);
