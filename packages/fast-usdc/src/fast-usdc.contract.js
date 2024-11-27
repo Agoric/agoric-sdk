@@ -30,12 +30,14 @@ import * as flows from './fast-usdc.flows.js';
 const trace = makeTracer('FastUsdc');
 
 const STATUS_NODE = 'status';
+const FEE_NODE = 'feeConfig';
 
 /**
  * @import {HostInterface} from '@agoric/async-flow';
  * @import {CosmosChainInfo, Denom, DenomDetail, OrchestrationAccount} from '@agoric/orchestration';
  * @import {OrchestrationPowers, OrchestrationTools} from '@agoric/orchestration/src/utils/start-helper.js';
- * @import {Vow} from '@agoric/vow';
+ * @import {Remote} from '@agoric/internal';
+ * @import {Marshaller, StorageNode} from '@agoric/internal/src/lib-chainStorage.js'
  * @import {Zone} from '@agoric/zone';
  * @import {OperatorKit} from './exos/operator-kit.js';
  * @import {CctpTxEvidence, FeeConfig} from './types.js';
@@ -64,6 +66,17 @@ export const meta = {
 harden(meta);
 
 /**
+ * @param {Remote<StorageNode>} node
+ * @param {ERef<Marshaller>} marshaller
+ * @param {FeeConfig} feeConfig
+ */
+const publishFeeConfig = async (node, marshaller, feeConfig) => {
+  const feeNode = E(node).makeChildNode(FEE_NODE);
+  const value = await E(marshaller).toCapData(feeConfig);
+  return E(feeNode).setValue(JSON.stringify(value));
+};
+
+/**
  * @param {ZCF<FastUsdcTerms>} zcf
  * @param {OrchestrationPowers & {
  *   marshaller: Marshaller;
@@ -80,14 +93,13 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
   assert('USDC' in terms.brands, 'no USDC brand');
   assert('usdcDenom' in terms, 'no usdcDenom');
 
-  const { feeConfig, marshaller } = privateArgs;
+  const { feeConfig, marshaller, storageNode } = privateArgs;
   const { makeRecorderKit } = prepareRecorderKitMakers(
     zone.mapStore('vstorage'),
     marshaller,
   );
 
-  const makeStatusNode = () =>
-    E(privateArgs.storageNode).makeChildNode(STATUS_NODE);
+  const makeStatusNode = () => E(storageNode).makeChildNode(STATUS_NODE);
   const statusManager = prepareStatusManager(zone, makeStatusNode);
 
   const { USDC } = terms.brands;
@@ -208,6 +220,8 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
   //
   // So we use zone.exoClassKit above to define the liquidity pool kind
   // and pass the shareMint into the maker / init function.
+
+  void publishFeeConfig(storageNode, marshaller, feeConfig);
 
   const shareMint = await provideSingleton(
     zone.mapStore('mint'),
