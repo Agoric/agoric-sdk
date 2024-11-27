@@ -1,7 +1,10 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { Fail } from '@endo/errors';
-import { documentStorageSchema } from '@agoric/internal/src/storage-test-utils.js';
+import {
+  defaultMarshaller,
+  documentStorageSchema,
+} from '@agoric/internal/src/storage-test-utils.js';
 import type { CosmosValidatorAddress } from '@agoric/orchestration';
 import type { start as startStakeIca } from '@agoric/orchestration/src/examples/stake-ica.contract.js';
 import type { Instance } from '@agoric/zoe/src/zoeService/utils.js';
@@ -52,6 +55,7 @@ test.serial('config', async t => {
     await documentStorageSchema(t, storage, {
       note: 'Chain info for Orchestration',
       node: 'agoricNames.chain',
+      showValue: v => defaultMarshaller.fromCapData(JSON.parse(v)),
     });
   }
 
@@ -73,6 +77,7 @@ test.serial('config', async t => {
     await documentStorageSchema(t, storage, {
       note: 'Chain connections for Orchestration',
       node: 'agoricNames.chainConnection',
+      showValue: v => defaultMarshaller.fromCapData(JSON.parse(v)),
     });
   }
   {
