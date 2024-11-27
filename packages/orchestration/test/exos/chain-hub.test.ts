@@ -329,7 +329,7 @@ test('makeTransferRoute - through issuing chain', async t => {
   });
 
   // use TransferRoute to build a MsgTransfer
-  if (!route || !('forwardInfo' in route)) {
+  if (!('forwardInfo' in route)) {
     throw new Error('forwardInfo not returned'); // appease tsc...
   }
 
@@ -383,6 +383,18 @@ test('makeTransferRoute - takes forwardOpts', t => {
     },
   });
 
+  t.like(
+    chainHub.makeTransferRoute(dest, amt, 'osmosis', { timeout: '99min' }),
+    {
+      forwardInfo: {
+        forward: {
+          timeout: '99min',
+        },
+      },
+    },
+    'each field is optional',
+  );
+
   // test that typeGuard works
   t.throws(
     () =>
@@ -395,7 +407,7 @@ test('makeTransferRoute - takes forwardOpts', t => {
           forward: JSON.stringify('stringified nested forward data'),
         }),
       ),
-    { message: /Must not have unexpected properties/ },
+    { message: /In "makeTransferRoute" method of/ },
   );
 });
 

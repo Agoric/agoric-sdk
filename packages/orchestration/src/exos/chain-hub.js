@@ -11,6 +11,7 @@ import {
   DenomAmountShape,
   DenomDetailShape,
   ForwardInfoShape,
+  ForwardOptsShape,
   IBCChannelIDShape,
   IBCConnectionInfoShape,
 } from '../typeGuards.js';
@@ -20,7 +21,7 @@ import { getBech32Prefix } from '../utils/address.js';
  * @import {NameHub} from '@agoric/vats';
  * @import {Vow, VowTools} from '@agoric/vow';
  * @import {Zone} from '@agoric/zone';
- * @import {CosmosAssetInfo, CosmosChainInfo, ForwardInfo, IBCConnectionInfo, TransferRoute} from '../cosmos-api.js';
+ * @import {CosmosAssetInfo, CosmosChainInfo, ForwardInfo, IBCConnectionInfo, IBCMsgTransferOptions, TransferRoute} from '../cosmos-api.js';
  * @import {ChainInfo, KnownChains} from '../chain-info.js';
  * @import {ChainAddress, Denom, DenomAmount} from '../orchestration-api.js';
  * @import {Remote, TypedPattern} from '@agoric/internal';
@@ -211,10 +212,7 @@ const ChainHubI = M.interface('ChainHub', {
   getDenom: M.call(BrandShape).returns(M.or(M.string(), M.undefined())),
   makeChainAddress: M.call(M.string()).returns(ChainAddressShape),
   makeTransferRoute: M.call(ChainAddressShape, DenomAmountShape, M.string())
-    .optional({
-      timeout: M.string(),
-      retries: M.number(),
-    })
+    .optional(ForwardOptsShape)
     .returns(M.or(M.undefined(), TransferRouteShape)),
 });
 
@@ -515,7 +513,7 @@ export const makeChainHub = (zone, agoricNames, vowTools) => {
      * @param {ChainAddress} destination
      * @param {DenomAmount} denomAmount
      * @param {string} srcChainName
-     * @param {Pick<ForwardInfo['forward'], 'retries' | 'timeout'>} [forwardOpts]
+     * @param {IBCMsgTransferOptions['forwardOpts']} [forwardOpts]
      * @returns {TransferRoute} single hop, multi hop
      * @throws {Error} if unable to determine route
      */
