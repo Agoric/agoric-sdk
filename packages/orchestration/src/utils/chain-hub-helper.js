@@ -7,6 +7,8 @@
  *
  * If either is not provided, registration will be skipped.
  *
+ * TODO #10580 remove 'brandKey' in favor of `LegibleCapData`
+ *
  * @param {ChainHub} chainHub
  * @param {Record<string, Brand<'nat'>>} brands
  * @param {Record<string, CosmosChainInfo> | undefined} chainInfo
