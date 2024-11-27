@@ -8,6 +8,7 @@ import test from 'ava';
 import { evalBundles } from '@agoric/synthetic-chain';
 
 test('test upgraded board', async t => {
+  // agoricProposal.sdk-generate in package.json generates this proposal
   await evalBundles('testUpgradedBoard');
 
   t.pass();

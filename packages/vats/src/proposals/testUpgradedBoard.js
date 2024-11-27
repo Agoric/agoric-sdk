@@ -12,13 +12,13 @@ export const testUpgradedBoard = async ({
   const thing1Id = await E(board).getId(thing1);
   assert(thing1Id.match(/^board0[0-9]+$/));
 
-  // /////// can we retrieve something stored long ago?  ////////
   const marshaller = await E(board).getReadonlyMarshaller();
   assert(marshaller, 'expected a marshaller');
 
   const stableBrand = await stableBrandP;
   // /////// can we retrieve a well-known object via its ID?  ////////
   const stableID = await E(board).getId(stableBrand);
+  // /////// can we retrieve something stored long ago?  ////////
   const stableBrandRetrieved = await E(board).getValue(stableID);
   assert(stableBrandRetrieved === stableBrand, 'retrieved matching brand');
 };
