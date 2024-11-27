@@ -7,6 +7,7 @@ import { makeTracer } from './debug.js';
 import { isStreamCell, makeChainStorageRoot } from './lib-chainStorage.js';
 import { bindAllMethods } from './method-tools.js';
 import { eventLoopIteration } from './testing-utils.js';
+import { NonNullish } from './errors.js';
 
 /**
  * @import {TotalMap} from './types.js';
@@ -250,29 +251,47 @@ export const makeMockChainStorageRoot = () => {
  * @param {import('ava').ExecutionContext<unknown>} t
  * @param {MockChainStorageRoot | FakeStorageKit} storage
  * @param {({ note: string } | { node: string; owner: string }) &
- *   ({ pattern: string; replacement: string } | {})} opts
+ *   ({ pattern: string; replacement: string } | {}) & {
+ *     showValue?: (v: string) => unknown;
+ *   }} opts
  */
 export const documentStorageSchema = async (t, storage, opts) => {
   // chainStorage publication is unsynchronized
   await eventLoopIteration();
 
+  const getLast = (/** @type {string} */ cell) =>
+    JSON.parse(cell).values.at(-1) || assert.fail();
+  const { showValue = s => s } = opts;
+  /** @type {(d: Map<string, string>, k: string) => unknown} */
+  const getBodyDefault = (d, k) => showValue(getLast(NonNullish(d.get(k))));
+
   const [keys, getBody] =
     'keys' in storage
       ? [storage.keys(), (/** @type {string} */ k) => storage.getBody(k)]
-      : [storage.data.keys(), (/** @type {string} */ k) => storage.data.get(k)];
+      : [
+          storage.data.keys(),
+          (/** @type {string} */ k) => getBodyDefault(storage.data, k),
+        ];
 
   const { pattern, replacement } =
     'pattern' in opts
       ? opts
       : { pattern: 'mockChainStorageRoot.', replacement: 'published.' };
-  const illustration = [...keys].sort().map(
+
+  const pruned = [...keys]
+    .sort()
+    .filter(
+      'node' in opts
+        ? key =>
+            key
+              .replace(pattern, replacement)
+              .startsWith(`published.${opts.node}`)
+        : _entry => true,
+    );
+
+  const illustration = pruned.map(
     /** @type {(k: string) => [string, unknown]} */
     key => [key.replace(pattern, replacement), getBody(key)],
-  );
-  const pruned = illustration.filter(
-    'node' in opts
-      ? ([key, _]) => key.startsWith(`published.${opts.node}`)
-      : _entry => true,
   );
 
   const note =
@@ -283,5 +302,5 @@ export const documentStorageSchema = async (t, storage, opts) => {
 The example below illustrates the schema of the data published there.
 
 See also board marshalling conventions (_to appear_).`;
-  t.snapshot(pruned, note + boilerplate);
+  t.snapshot(illustration, note + boilerplate);
 };
