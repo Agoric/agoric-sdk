@@ -2,7 +2,10 @@
   "agoricProposal": {
     "type": "/agoric.swingset.CoreEvalProposal",
     "sdk-generate": [
-      "testing/replace-feeDistributor-short.js replaceFeeDistributor"
+      "testing/replace-feeDistributor-short.js replaceFeeDistributor",
+      "vats/upgrade-paRegistry.js",
+      "vats/upgrade-board.js",
+      "testing/test-upgraded-board.js testUpgradedBoard"
     ]
   },
   "type": "module",
