@@ -103,10 +103,10 @@ export const prepareLiquidityPoolKit = (zone, zcf, USDC, tools) => {
         publishPoolMetrics: M.call().returns(),
       }),
       depositHandler: M.interface('depositHandler', {
-        handle: M.call(SeatShape, M.any()).returns(M.promise()),
+        handle: M.call(SeatShape, M.any()).returns(),
       }),
       withdrawHandler: M.interface('withdrawHandler', {
-        handle: M.call(SeatShape, M.any()).returns(M.promise()),
+        handle: M.call(SeatShape, M.any()).returns(),
       }),
       public: M.interface('public', {
         makeDepositInvitation: M.call().returns(M.promise()),
@@ -246,8 +246,11 @@ export const prepareLiquidityPoolKit = (zone, zcf, USDC, tools) => {
       },
 
       depositHandler: {
-        /** @param {ZCFSeat} lp */
-        async handle(lp) {
+        /**
+         * @param {ZCFSeat} lp
+         * @param {unknown} _offerArgs
+         */
+        handle(lp, _offerArgs) {
           const { shareWorth, shareMint, poolSeat, encumberedBalance } =
             this.state;
           const { external } = this.facets;
@@ -282,8 +285,11 @@ export const prepareLiquidityPoolKit = (zone, zcf, USDC, tools) => {
         },
       },
       withdrawHandler: {
-        /** @param {ZCFSeat} lp */
-        async handle(lp) {
+        /**
+         * @param {ZCFSeat} lp
+         * @param {unknown} _offerArgs
+         */
+        handle(lp, _offerArgs) {
           const { shareWorth, shareMint, poolSeat, encumberedBalance } =
             this.state;
           const { external } = this.facets;
