@@ -4,9 +4,10 @@ import { M } from '@endo/patterns';
 
 /**
  * @import {TypedPattern} from '@agoric/internal';
- * @import {ChainAddress, CosmosAssetInfo, Chain, ChainInfo, CosmosChainInfo, DenomAmount, DenomInfo, AmountArg, CosmosValidatorAddress, OrchestrationPowers} from './types.js';
+ * @import {ChainAddress, CosmosAssetInfo, Chain, ChainInfo, CosmosChainInfo, DenomAmount, DenomInfo, AmountArg, CosmosValidatorAddress, OrchestrationPowers, ForwardInfo} from './types.js';
  * @import {Any as Proto3Msg} from '@agoric/cosmic-proto/google/protobuf/any.js';
  * @import {TxBody} from '@agoric/cosmic-proto/cosmos/tx/v1beta1/tx.js';
+ * @import {Coin} from '@agoric/cosmic-proto/cosmos/base/v1beta1/coin.js';
  * @import {TypedJson} from '@agoric/cosmic-proto';
  * @import {DenomDetail} from './exos/chain-hub.js';
  */
@@ -112,6 +113,14 @@ export const ChainInfoShape = M.splitRecord({
 });
 export const DenomShape = M.string();
 
+/** @type {TypedPattern<Coin>} */
+export const CoinShape = {
+  /** json-safe stringified bigint */
+  amount: M.string(),
+  denom: DenomShape,
+};
+harden(CoinShape);
+
 /** @type {TypedPattern<DenomInfo<any, any>>} */
 export const DenomInfoShape = {
   chain: M.remotable('Chain'),
@@ -215,3 +224,26 @@ export const OrchestrationPowersShape = {
   timerService: M.remotable(),
 };
 harden(OrchestrationPowersShape);
+
+const ForwardArgsShape = {
+  receiver: M.string(),
+  port: 'transfer',
+  channel: M.string(),
+  timeout: M.string(),
+  retries: M.number(),
+};
+harden(ForwardArgsShape);
+
+/** @type {TypedPattern<ForwardInfo>} */
+export const ForwardInfoShape = {
+  forward: M.splitRecord(ForwardArgsShape, {
+    /**
+     * Protocol allows us to recursively include `next` keys, but this only
+     * supports one. In practice, this is all we currently need.
+     */
+    next: {
+      forward: ForwardArgsShape,
+    },
+  }),
+};
+harden(ForwardInfoShape);
