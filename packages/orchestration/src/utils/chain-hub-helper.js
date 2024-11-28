@@ -29,7 +29,7 @@ export const registerChainsAndAssets = (
   for (const [chainName, allInfo] of Object.entries(chainInfo)) {
     const { connections, ...info } = allInfo;
     chainHub.registerChain(chainName, info);
-    conns[info.chainId] = connections;
+    if (connections) conns[info.chainId] = connections;
   }
   const registeredPairs = new Set();
   for (const [pChainId, connInfos] of Object.entries(conns)) {
@@ -48,9 +48,10 @@ export const registerChainsAndAssets = (
     return;
   }
   for (const [denom, info] of Object.entries(assetInfo)) {
-    const infoWithBrand = info.brandKey
-      ? { ...info, brand: brands[info.brandKey] }
-      : info;
+    const { brandKey, ...rest } = info;
+    const infoWithBrand = brandKey
+      ? { ...rest, brand: brands[brandKey] }
+      : rest;
     chainHub.registerAsset(denom, infoWithBrand);
   }
 };
