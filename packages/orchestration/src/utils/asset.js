@@ -8,19 +8,18 @@ import { denomHash } from './denomHash.js';
  * Helper function for creating {@link DenomDetail} data for {@link ChainHub}
  * asset registration.
  *
- * TODO #10580 remove 'brandKey' in favor of `LegibleCapData`
- *
  * @param {Denom} baseDenom
  * @param {string} baseName
+ * @param {Brand<'nat'>} [brand]
  * @param {string} [chainName]
  * @param {Record<string, CosmosChainInfo>} [infoOf]
- * @param {string} [brandKey]
- * @returns {[string, DenomDetail & { brandKey?: string }]}
+ * @returns {[string, DenomDetail]}
  */
-export const assetOn = (baseDenom, baseName, chainName, infoOf, brandKey) => {
-  if (!chainName) {
-    return [baseDenom, { baseName, chainName: baseName, baseDenom }];
-  }
+export const assetOn = (baseDenom, baseName, brand, chainName, infoOf) => {
+  const baseDetail = { baseName, chainName: chainName || baseName, baseDenom };
+  const detail = brand ? { ...baseDetail, brand } : baseDetail;
+  if (!chainName) return harden([baseDenom, detail]);
+
   if (!infoOf) throw Error(`must provide infoOf`);
   const issuerInfo = infoOf[baseName];
   const holdingInfo = infoOf[chainName];
@@ -30,5 +29,5 @@ export const assetOn = (baseDenom, baseName, chainName, infoOf, brandKey) => {
   const { channelId } =
     holdingInfo.connections[issuerInfo.chainId].transferChannel;
   const denom = `ibc/${denomHash({ denom: baseDenom, channelId })}`;
-  return [denom, { baseName, chainName, baseDenom, brandKey }];
+  return harden([denom, detail]);
 };

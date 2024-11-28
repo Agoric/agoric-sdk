@@ -26,6 +26,9 @@ import { prepareCosmosInterchainService } from '../src/exos/cosmos-interchain-se
 import fetchedChainInfo from '../src/fetched-chain-info.js';
 import { buildVTransferEvent } from '../tools/ibc-mocks.js';
 import { setupFakeNetwork } from './network-fakes.js';
+import { withChainCapabilities } from '../src/chain-capabilities.js';
+import { registerChainsAndAssets } from '../src/utils/chain-hub-helper.js';
+import { assetOn } from '../src/utils/asset.js';
 
 export {
   makeFakeLocalchainBridge,
@@ -168,22 +171,32 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
     vowTools,
   );
 
+  /** add `pfmEnabled` to chainInfo */
+  const chainInfoWithCaps = withChainCapabilities(fetchedChainInfo);
+
+  /** for registration with `ChainHub` */
+  const commonAssetInfo = harden([
+    assetOn('ubld', 'agoric', bldSansMint.brand),
+    assetOn('uist', 'agoric', istSansMint.brand),
+    assetOn('uusdc', 'noble', undefined, 'agoric', chainInfoWithCaps),
+    assetOn('uatom', 'cosmoshub', undefined, 'agoric', chainInfoWithCaps),
+    assetOn('uusdc', 'noble', undefined, 'dydx', chainInfoWithCaps),
+  ]);
+
   /**
-   * Register BLD if it's not already registered.
-   * Does not work with `withOrchestration` contracts, as these have their own
-   * ChainHub. Use `ChainHubAdmin` instead.
+   * Register known chains an assets into the test context's `ChainHub`.
+   *
+   * For contract tests with contracts that use `withOrchestration`, access
+   * `chainInfo` and `assetInfo` from `commonPrivateArgs` and register in the
+   * contract's ChainHub with `registerChainsAndAssets`.
    */
-  const registerAgoricBld = () => {
-    if (!chainHub.getAsset('ubld', 'agoric')) {
-      chainHub.registerChain('agoric', fetchedChainInfo.agoric);
-      chainHub.registerAsset('ubld', {
-        chainName: 'agoric',
-        baseName: 'agoric',
-        baseDenom: 'ubld',
-        brand: bld.brand,
-      });
-    }
-  };
+  const populateChainHub = () =>
+    registerChainsAndAssets(
+      chainHub,
+      harden({ BLD: bldSansMint.brand, IST: istSansMint.brand }),
+      chainInfoWithCaps,
+      commonAssetInfo,
+    );
 
   return {
     bootstrap: {
@@ -214,6 +227,8 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
       storageNode: storage.rootNode,
       marshaller,
       timerService: timer,
+      chainInfo: withChainCapabilities(fetchedChainInfo),
+      assetInfo: harden(commonAssetInfo),
     },
     facadeServices: {
       agoricNames,
@@ -227,7 +242,7 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
       inspectLocalBridge: () => harden([...localBridgeMessages]),
       inspectDibcBridge: () => E(ibcBridge).inspectDibcBridge(),
       inspectBankBridge: () => harden([...bankBridgeMessages]),
-      registerAgoricBld,
+      populateChainHub,
       transmitTransferAck,
     },
   };
