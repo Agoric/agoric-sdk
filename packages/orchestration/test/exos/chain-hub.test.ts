@@ -488,7 +488,7 @@ test('makeTransferRoute - no connection info single hop', t => {
         harden({ denom: uusdcOnAgoric, value: 100n }),
         'agoric',
       ),
-    { message: 'no connection info found for "agoric-3_noble-1"' },
+    { message: 'no connection info found for "agoric-3"<->"noble-1"' },
   );
 });
 
@@ -517,7 +517,7 @@ test('makeTransferRoute - no connection info multi hop', t => {
         harden({ denom: uusdcOnAgoric, value: 100n }),
         'agoric',
       ),
-    { message: 'no connection info found for "noble-1_osmosis-1"' },
+    { message: 'no connection info found for "noble-1"<->"osmosis-1"' },
   );
 
   // transfer USDC on osmosis to agoric
@@ -528,7 +528,7 @@ test('makeTransferRoute - no connection info multi hop', t => {
         harden({ denom: uusdcOnOsmosis, value: 100n }),
         'osmosis',
       ),
-    { message: 'no connection info found for "noble-1_osmosis-1"' },
+    { message: 'no connection info found for "osmosis-1"<->"noble-1"' },
   );
 });
 

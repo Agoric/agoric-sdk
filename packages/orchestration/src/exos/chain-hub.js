@@ -544,7 +544,7 @@ export const makeChainHub = (zone, agoricNames, vowTools) => {
         // TODO use getConnectionInfo once its sync
         const connKey = connectionKey(holdingChainId, destination.chainId);
         connectionInfos.has(connKey) ||
-          Fail`no connection info found for ${q(connKey)}`;
+          Fail`no connection info found for ${holdingChainId}<->${destination.chainId}`;
 
         const { transferChannel } = denormalizeConnectionInfo(
           holdingChainId, // from chain (primary)
@@ -568,11 +568,11 @@ export const makeChainHub = (zone, agoricNames, vowTools) => {
       // TODO use getConnectionInfo once its sync
       const currToIssuerKey = connectionKey(holdingChainId, baseChainId);
       connectionInfos.has(currToIssuerKey) ||
-        Fail`no connection info found for ${q(currToIssuerKey)}`;
+        Fail`no connection info found for ${holdingChainId}<->${baseChainId}`;
 
       const issuerToDestKey = connectionKey(baseChainId, destination.chainId);
       connectionInfos.has(issuerToDestKey) ||
-        Fail`no connection info found for ${q(issuerToDestKey)}`;
+        Fail`no connection info found for ${baseChainId}<->${destination.chainId}`;
 
       const currToIssuer = denormalizeConnectionInfo(
         holdingChainId,
