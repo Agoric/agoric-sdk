@@ -11,7 +11,6 @@ import { Fail, q } from '@endo/errors';
 import {
   AmountArgShape,
   AnyNatAmountsRecord,
-  ChainAddressShape,
   DenomAmountShape,
   DenomShape,
   IBCTransferOptionsShape,
@@ -24,11 +23,12 @@ import { makeTimestampHelper } from '../utils/time.js';
 import { preparePacketTools } from './packet-tools.js';
 import { prepareIBCTools } from './ibc-packet.js';
 import { coerceCoin, coerceDenomAmount } from '../utils/amounts.js';
+import { TransferRouteShape } from './chain-hub.js';
 
 /**
  * @import {HostOf} from '@agoric/async-flow';
  * @import {LocalChain, LocalChainAccount} from '@agoric/vats/src/localchain.js';
- * @import {AmountArg, ChainAddress, DenomAmount, IBCMsgTransferOptions, IBCConnectionInfo, OrchestrationAccountI, LocalAccountMethods} from '@agoric/orchestration';
+ * @import {AmountArg, ChainAddress, DenomAmount, IBCMsgTransferOptions, IBCConnectionInfo, OrchestrationAccountI, LocalAccountMethods, TransferRoute} from '@agoric/orchestration';
  * @import {RecorderKit, MakeRecorderKit} from '@agoric/zoe/src/contractSupport/recorder.js'.
  * @import {Zone} from '@agoric/zone';
  * @import {Remote} from '@agoric/internal';
@@ -107,7 +107,7 @@ export const prepareLocalOrchestrationAccountKit = (
     zoeTools,
   },
 ) => {
-  const { watch, allVows, asVow, when } = vowTools;
+  const { watch, asVow, when } = vowTools;
   const { makeIBCTransferSender } = prepareIBCTools(
     zone.subZone('ibcTools'),
     vowTools,
@@ -134,11 +134,10 @@ export const prepareLocalOrchestrationAccountKit = (
           .returns(VowShape),
       }),
       transferWatcher: M.interface('transferWatcher', {
-        onFulfilled: M.call([M.record(), M.nat()])
+        onFulfilled: M.call(M.nat())
           .optional({
-            destination: ChainAddressShape,
             opts: M.or(M.undefined(), IBCTransferOptionsShape),
-            amount: DenomAmountShape,
+            route: TransferRouteShape,
           })
           .returns(Vow$(M.record())),
       }),
@@ -345,37 +344,34 @@ export const prepareLocalOrchestrationAccountKit = (
       },
       transferWatcher: {
         /**
-         * @param {[
-         *   { transferChannel: IBCConnectionInfo['transferChannel'] },
-         *   bigint,
-         * ]} results
+         * @param {bigint} timeoutTimestamp
          * @param {{
-         *   destination: ChainAddress;
-         *   opts?: IBCMsgTransferOptions;
-         *   amount: DenomAmount;
+         *   opts?: Omit<IBCMsgTransferOptions, 'forwardOpts'>;
+         *   route: TransferRoute;
          * }} ctx
          */
-        onFulfilled(
-          [{ transferChannel }, timeoutTimestamp],
-          { opts, amount, destination },
-        ) {
+        onFulfilled(timeoutTimestamp, { opts, route }) {
+          const { forwardInfo, ...transferDetails } = route;
+          /** @type {string | undefined} */
+          let memo;
+          if (opts && 'memo' in opts) {
+            memo = opts.memo;
+          }
+          if (forwardInfo) {
+            // forward memo takes precedence
+            memo = JSON.stringify(forwardInfo);
+          }
           const transferMsg = typedJson(
             '/ibc.applications.transfer.v1.MsgTransfer',
             {
-              sourcePort: transferChannel.portId,
-              sourceChannel: transferChannel.channelId,
-              token: {
-                amount: String(amount.value),
-                denom: amount.denom,
-              },
+              ...transferDetails,
               sender: this.state.address.value,
-              receiver: destination.value,
               timeoutHeight: opts?.timeoutHeight ?? {
                 revisionHeight: 0n,
                 revisionNumber: 0n,
               },
               timeoutTimestamp,
-              memo: opts?.memo ?? '',
+              memo: memo ?? '',
             },
           );
 
@@ -686,12 +682,16 @@ export const prepareLocalOrchestrationAccountKit = (
         transfer(destination, amount, opts) {
           return asVow(() => {
             trace('Transferring funds from LCA over IBC');
+            const denomAmount = coerceDenomAmount(chainHub, amount);
 
-            const connectionInfoV = watch(
-              chainHub.getConnectionInfo(
-                this.state.address.chainId,
-                destination.chainId,
-              ),
+            const { forwardOpts, ...rest } = opts ?? {};
+
+            // throws if route is not determinable
+            const route = chainHub.makeTransferRoute(
+              destination,
+              denomAmount,
+              'agoric',
+              forwardOpts,
             );
 
             // set a `timeoutTimestamp` if caller does not supply either `timeoutHeight` or `timeoutTimestamp`
@@ -705,12 +705,11 @@ export const prepareLocalOrchestrationAccountKit = (
             // don't resolve the vow until the transfer is confirmed on remote
             // and reject vow if the transfer fails for any reason
             const resultV = watch(
-              allVows([connectionInfoV, timeoutTimestampVowOrValue]),
+              timeoutTimestampVowOrValue,
               this.facets.transferWatcher,
               {
-                opts,
-                amount: coerceDenomAmount(chainHub, amount),
-                destination,
+                opts: rest,
+                route,
               },
             );
             return resultV;

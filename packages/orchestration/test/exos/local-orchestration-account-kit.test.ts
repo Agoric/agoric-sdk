@@ -9,13 +9,22 @@ import {
 } from '@agoric/vats/tools/fake-bridge.js';
 import { heapVowE as VE } from '@agoric/vow/vat.js';
 import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
-import type { ChainAddress, AmountArg } from '../../src/orchestration-api.js';
+import type { IBCChannelID } from '@agoric/vats';
+import type {
+  ChainAddress,
+  AmountArg,
+  DenomAmount,
+} from '../../src/orchestration-api.js';
 import { maxClockSkew } from '../../src/utils/cosmos.js';
 import { NANOSECONDS_PER_SECOND } from '../../src/utils/time.js';
 import { buildVTransferEvent } from '../../tools/ibc-mocks.js';
 import { UNBOND_PERIOD_SECONDS } from '../ibc-mocks.js';
 import { commonSetup } from '../supports.js';
 import { prepareMakeTestLOAKit } from './make-test-loa-kit.js';
+import fetchedChainInfo from '../../src/fetched-chain-info.js';
+import type { IBCMsgTransferOptions } from '../../src/cosmos-api.js';
+import { PFM_RECEIVER } from '../../src/exos/chain-hub.js';
+import { assetOn } from '../../src/utils/asset.js';
 
 test('deposit, withdraw', async t => {
   const common = await commonSetup(t);
@@ -108,12 +117,12 @@ test('transfer', async t => {
   const {
     brands: { bld: stake },
     mocks: { transferBridge },
-    utils,
+    utils: { inspectLocalBridge, pourPayment },
   } = common;
 
   t.truthy(account, 'account is returned');
 
-  const oneHundredStakePmt = await utils.pourPayment(stake.units(100));
+  const oneHundredStakePmt = await pourPayment(stake.units(100));
 
   t.log('deposit 100 bld to account');
   await VE(account).deposit(oneHundredStakePmt);
@@ -127,7 +136,6 @@ test('transfer', async t => {
     value: 'cosmos1pleab',
     encoding: 'bech32',
   };
-  const sourceChannel = 'channel-5'; // observed in toBridge VLOCALCHAIN_EXECUTE_TX sourceChannel, confirmed via fetched-chain-info.js
 
   /** The running tally of transfer messages that were sent over the bridge */
   let lastSequence = 0n;
@@ -142,7 +150,7 @@ test('transfer', async t => {
   const startTransfer = async (
     amount: AmountArg,
     dest: ChainAddress,
-    opts = {},
+    opts: IBCMsgTransferOptions = {},
   ) => {
     const transferP = VE(account).transfer(dest, amount, opts);
     lastSequence += 1n;
@@ -163,16 +171,15 @@ test('transfer', async t => {
     buildVTransferEvent({
       receiver: destination.value,
       sender,
-      sourceChannel,
+      sourceChannel:
+        fetchedChainInfo.agoric.connections[destination.chainId].transferChannel
+          .channelId,
       sequence: lastSequence,
     }),
   );
 
   const transferRes = await transferP;
-  t.true(
-    transferRes === undefined,
-    'Successful transfer returns Promise<void>.',
-  );
+  t.true(transferRes === undefined, 'Successful transfer returns Vow<void>.');
 
   await t.throwsAsync(
     (
@@ -194,7 +201,7 @@ test('transfer', async t => {
   // XXX dev has to know not to startTransfer here
   await t.throwsAsync(
     VE(account).transfer(unknownDestination, { denom: 'ubld', value: 1n }),
-    { message: /connection not found: agoric-3<->fakenet/ },
+    { message: 'no connection info found for "agoric-3_fakenet"' },
     'cannot create transfer msg with unknown chainId',
   );
 
@@ -203,11 +210,13 @@ test('transfer', async t => {
    * @param amount
    * @param dest
    * @param opts
+   * @param sourceChannel
    */
   const doTransfer = async (
     amount: AmountArg,
     dest: ChainAddress,
-    opts = {},
+    opts: IBCMsgTransferOptions = {},
+    sourceChannel?: IBCChannelID,
   ) => {
     const { transferP: promise } = await startTransfer(amount, dest, opts);
     // simulate incoming message so that promise resolves
@@ -215,11 +224,22 @@ test('transfer', async t => {
       buildVTransferEvent({
         receiver: dest.value,
         sender,
-        sourceChannel,
+        sourceChannel:
+          sourceChannel ||
+          fetchedChainInfo.agoric.connections[dest.chainId].transferChannel
+            .channelId,
         sequence: lastSequence,
       }),
     );
     return promise;
+  };
+
+  const lastestTxMsg = () => {
+    const tx = inspectLocalBridge().at(-1);
+    if (tx.type !== 'VLOCALCHAIN_EXECUTE_TX') {
+      throw new Error('last message was not VLOCALCHAIN_EXECUTE_TX');
+    }
+    return tx.messages[0];
   };
 
   await t.notThrowsAsync(
@@ -228,7 +248,9 @@ test('transfer', async t => {
     }),
     'can create transfer msg with memo',
   );
-  // TODO, intercept/spy the bridge message to see that it has a memo
+  t.like(lastestTxMsg(), {
+    memo: 'hello',
+  });
 
   await t.notThrowsAsync(
     doTransfer({ denom: 'ubld', value: 10n }, destination, {
@@ -244,6 +266,52 @@ test('transfer', async t => {
     }),
     'accepts custom timeoutHeight',
   );
+
+  const [uusdcOnAgoric] = assetOn('uusdc', 'noble', 'agoric', fetchedChainInfo);
+  const dydxDest: ChainAddress = {
+    chainId: 'dydx-mainnet-1',
+    encoding: 'bech32',
+    value: 'dydx1test',
+  };
+  const aDenomAmount: DenomAmount = {
+    denom: uusdcOnAgoric,
+    value: 100n,
+  };
+
+  t.log('Transfer handles multi-hop transfers');
+  await t.notThrowsAsync(
+    doTransfer(
+      aDenomAmount,
+      dydxDest,
+      {},
+      fetchedChainInfo.agoric.connections['noble-1'].transferChannel.channelId,
+    ),
+  );
+
+  t.like(lastestTxMsg(), {
+    receiver: PFM_RECEIVER,
+    memo: '{"forward":{"receiver":"dydx1test","port":"transfer","channel":"channel-33","retries":3,"timeout":"10min"}}',
+  });
+
+  t.log('accepts pfm `forwardOpts`');
+  await t.notThrowsAsync(
+    doTransfer(
+      aDenomAmount,
+      dydxDest,
+      {
+        forwardOpts: {
+          timeout: '999min',
+        },
+      },
+      fetchedChainInfo.agoric.connections['noble-1'].transferChannel.channelId,
+    ),
+  );
+
+  t.like(JSON.parse(lastestTxMsg().memo), {
+    forward: {
+      timeout: '999min',
+    },
+  });
 });
 
 test('monitor transfers', async t => {

@@ -401,5 +401,6 @@ export type TransferRoute = {
     }
   | {
       receiver: string;
+      forwardInfo?: never;
     }
 );
