@@ -67,8 +67,9 @@ test.beforeEach(async t => {
 test('send (to addr on same chain)', async t => {
   const {
     brands: { ist },
-    utils: { inspectDibcBridge },
+    utils: { inspectDibcBridge, populateChainHub },
   } = t.context;
+  populateChainHub();
   const makeTestCOAKit = prepareMakeTestCOAKit(t, t.context);
   const account = await makeTestCOAKit();
   t.assert(account, 'account is returned');
@@ -122,9 +123,10 @@ test('transfer', async t => {
   const {
     brands: { ist },
     facadeServices: { chainHub },
-    utils: { inspectDibcBridge },
+    utils: { inspectDibcBridge, populateChainHub },
     mocks: { ibcBridge },
   } = t.context;
+  populateChainHub();
 
   const mockIbcTransfer = {
     sourcePort: 'transfer',

@@ -201,12 +201,14 @@ test('makeChainAddress', async t => {
 const [uusdcOnAgoric, agDetail] = assetOn(
   'uusdc',
   'noble',
+  undefined,
   'agoric',
   knownChains,
 );
 const [uusdcOnOsmosis, osDetail] = assetOn(
   'uusdc',
   'noble',
+  undefined,
   'osmosis',
   knownChains,
 );

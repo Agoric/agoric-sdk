@@ -28,6 +28,7 @@ import { assetOn } from '../../src/utils/asset.js';
 
 test('deposit, withdraw', async t => {
   const common = await commonSetup(t);
+  common.utils.populateChainHub();
   const makeTestLOAKit = prepareMakeTestLOAKit(t, common);
   const account = await makeTestLOAKit();
 
@@ -73,6 +74,7 @@ test('deposit, withdraw', async t => {
 
 test('delegate, undelegate', async t => {
   const common = await commonSetup(t);
+  common.utils.populateChainHub();
   const makeTestLOAKit = prepareMakeTestLOAKit(t, common);
   const account = await makeTestLOAKit();
 
@@ -109,6 +111,7 @@ test('delegate, undelegate', async t => {
 
 test('transfer', async t => {
   const common = await commonSetup(t);
+  common.utils.populateChainHub();
   const makeTestLOAKit = prepareMakeTestLOAKit(t, common);
   const account = await makeTestLOAKit();
 
@@ -267,7 +270,13 @@ test('transfer', async t => {
     'accepts custom timeoutHeight',
   );
 
-  const [uusdcOnAgoric] = assetOn('uusdc', 'noble', 'agoric', fetchedChainInfo);
+  const [uusdcOnAgoric] = assetOn(
+    'uusdc',
+    'noble',
+    undefined,
+    'agoric',
+    fetchedChainInfo,
+  );
   const dydxDest: ChainAddress = {
     chainId: 'dydx-mainnet-1',
     encoding: 'bech32',
@@ -316,6 +325,7 @@ test('transfer', async t => {
 
 test('monitor transfers', async t => {
   const common = await commonSetup(t);
+  common.utils.populateChainHub();
   const makeTestLOAKit = prepareMakeTestLOAKit(t, common);
   const account = await makeTestLOAKit();
   const {
@@ -360,6 +370,7 @@ test('monitor transfers', async t => {
 
 test('send', async t => {
   const common = await commonSetup(t);
+  common.utils.populateChainHub();
   const makeTestLOAKit = prepareMakeTestLOAKit(t, common);
   const account = await makeTestLOAKit();
   t.truthy(account, 'account is returned');
@@ -420,6 +431,7 @@ test('send', async t => {
 
 test('getBalance', async t => {
   const common = await commonSetup(t);
+  common.utils.populateChainHub();
   const makeTestLOAKit = prepareMakeTestLOAKit(t, common);
   const account = await makeTestLOAKit();
   t.truthy(account, 'account is returned');
@@ -474,6 +486,7 @@ test('getBalance', async t => {
 
 test('getBalances', async t => {
   const common = await commonSetup(t);
+  common.utils.populateChainHub();
   const makeTestLOAKit = prepareMakeTestLOAKit(t, common);
   const account = await makeTestLOAKit();
   t.truthy(account, 'account is returned');
