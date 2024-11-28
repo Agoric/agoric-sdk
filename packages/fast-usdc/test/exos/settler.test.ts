@@ -3,39 +3,14 @@ import type { TestFn } from 'ava';
 
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
-import type { Zone } from '@agoric/zone';
 import { PendingTxStatus } from '../../src/constants.js';
 import { prepareSettler } from '../../src/exos/settler.js';
 import { prepareStatusManager } from '../../src/exos/status-manager.js';
 import type { CctpTxEvidence } from '../../src/types.js';
 import { makeFeeTools } from '../../src/utils/fees.js';
 import { MockCctpTxEvidences, MockVTransferEvents } from '../fixtures.js';
-import { makeTestLogger, prepareMockOrchAccounts } from '../mocks.js';
+import { makeTestLogger, mockZcf, prepareMockOrchAccounts } from '../mocks.js';
 import { commonSetup } from '../supports.js';
-
-const mockZcf = (zone: Zone) => {
-  const callLog = [] as any[];
-
-  const makeSeatKit = zone.exoClassKit('MockSeatKit', undefined, () => ({}), {
-    zcfSeat: {
-      getCurrentAllocation() {
-        return {};
-      },
-    },
-    userSeat: {},
-  });
-
-  const zcf = zone.exo('MockZCF', undefined, {
-    atomicRearrange(parts) {
-      callLog.push({ method: 'atomicRearrange', parts });
-    },
-    makeEmptySeatKit() {
-      const kit = makeSeatKit() as unknown as ZcfSeatKit;
-      return kit;
-    },
-  });
-  return { zcf, callLog };
-};
 
 const makeTestContext = async t => {
   const common = await commonSetup(t);
