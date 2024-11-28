@@ -633,10 +633,14 @@ const makeCustomer = (
       const myMsg = local.find(lm => {
         if (lm.type !== 'VLOCALCHAIN_EXECUTE_TX') return false;
         const [ibcTransferMsg] = lm.messages;
+        // support advances to noble + other chains
+        const receiver =
+          ibcTransferMsg.receiver === 'pfm'
+            ? JSON.parse(ibcTransferMsg.memo).forward.receiver
+            : ibcTransferMsg.receiver;
         return (
           ibcTransferMsg['@type'] ===
-            '/ibc.applications.transfer.v1.MsgTransfer' &&
-          ibcTransferMsg.receiver === EUD
+            '/ibc.applications.transfer.v1.MsgTransfer' && receiver === EUD
         );
       });
       if (!myMsg) {
@@ -652,17 +656,24 @@ const makeCustomer = (
         { amount: String(toReceive.value), denom: uusdcOnAgoric },
         'C4',
       );
-
-      t.log(who, 'sees', ibcTransferMsg.token, 'sent to', EUD);
-      // TODO #10445 expect PFM memo
-      t.is(ibcTransferMsg.memo, '', 'TODO expecting PFM memo');
-
-      // TODO #10445 expect routing through noble, not osmosis
+      if (!EUD.startsWith('noble')) {
+        t.like(
+          JSON.parse(ibcTransferMsg.memo),
+          {
+            forward: {
+              receiver: EUD,
+            },
+          },
+          'PFM receiver is EUD',
+        );
+      } else {
+        t.like(ibcTransferMsg, { receiver: EUD });
+      }
       t.is(
         ibcTransferMsg.sourceChannel,
-        fetchedChainInfo.agoric.connections['osmosis-1'].transferChannel
+        fetchedChainInfo.agoric.connections['noble-1'].transferChannel
           .channelId,
-        'TODO expecting routing through Noble',
+        'expect routing through Noble',
       );
     },
   });
