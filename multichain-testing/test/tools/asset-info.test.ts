@@ -80,6 +80,7 @@ test('makeAssetInfo', async t => {
       {
         baseDenom: 'uist',
         baseName: 'agoric',
+        brandKey: 'IST',
         chainName: 'agoric',
       },
     ],
@@ -88,6 +89,7 @@ test('makeAssetInfo', async t => {
       {
         baseDenom: 'ubld',
         baseName: 'agoric',
+        brandKey: 'BLD',
         chainName: 'agoric',
       },
     ],

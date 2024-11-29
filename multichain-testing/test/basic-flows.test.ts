@@ -16,12 +16,15 @@ const contractBuilder =
   '../packages/builders/scripts/orchestration/init-basic-flows.js';
 
 test.before(async t => {
-  const { deleteTestKeys, setupTestKeys, ...rest } = await commonSetup(t);
+  const { setupTestKeys, ...common } = await commonSetup(t);
+  const { assetInfo, chainInfo, deleteTestKeys, startContract } = common;
   deleteTestKeys(accounts).catch();
   const wallets = await setupTestKeys(accounts);
-  t.context = { ...rest, wallets, deleteTestKeys };
-  const { startContract } = rest;
-  await startContract(contractName, contractBuilder);
+  t.context = { ...common, wallets };
+  await startContract(contractName, contractBuilder, {
+    chainInfo: JSON.stringify(chainInfo),
+    assetInfo: JSON.stringify(assetInfo),
+  });
 });
 
 test.after(async t => {
