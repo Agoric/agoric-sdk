@@ -28,7 +28,7 @@ const trace = makeTracer('StartSA', true);
  * @param {{
  *   options: {
  *     chainInfo: Record<string, CosmosChainInfo>;
- *     assetInfo: Record<Denom, DenomDetail & { brandKey?: string }>;
+ *     assetInfo: [Denom, DenomDetail & { brandKey?: string }][];
  *   };
  * }} config
  */

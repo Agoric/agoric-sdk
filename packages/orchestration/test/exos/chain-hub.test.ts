@@ -216,7 +216,10 @@ test('makeTransferRoute - to issuing chain', async t => {
     chainHub,
     {},
     withChainCapabilities(knownChains), // adds pfmEnabled
-    harden({ [uusdcOnAgoric]: agDetail, [uusdcOnOsmosis]: osDetail }),
+    harden([
+      [uusdcOnAgoric, agDetail],
+      [uusdcOnOsmosis, osDetail],
+    ]),
   );
 
   const dest: ChainAddress = chainHub.makeChainAddress('noble1234');
@@ -257,12 +260,7 @@ test('makeTransferRoute - from issuing chain', async t => {
     chainHub,
     {},
     withChainCapabilities(knownChains), // adds pfmEnabled
-    harden(
-      Object.fromEntries([
-        assetOn('uist', 'agoric'),
-        assetOn('uosmo', 'osmosis'),
-      ]),
-    ),
+    harden([assetOn('uist', 'agoric'), assetOn('uosmo', 'osmosis')]),
   );
 
   const dest: ChainAddress = chainHub.makeChainAddress('noble1234');
@@ -301,7 +299,7 @@ test('makeTransferRoute - through issuing chain', async t => {
     chainHub,
     {},
     withChainCapabilities(knownChains), // adds pfmEnabled
-    harden({ [uusdcOnAgoric]: agDetail }),
+    harden([[uusdcOnAgoric, agDetail]]),
   );
 
   const dest: ChainAddress = chainHub.makeChainAddress('osmo1234');
@@ -359,7 +357,7 @@ test('makeTransferRoute - takes forwardOpts', t => {
     chainHub,
     {},
     withChainCapabilities(knownChains), // adds pfmEnabled
-    harden({ [uusdcOnOsmosis]: osDetail }),
+    harden([[uusdcOnOsmosis, osDetail]]),
   );
 
   const dest: ChainAddress = chainHub.makeChainAddress('agoric1234');
@@ -464,7 +462,10 @@ test('makeTransferRoute - no connection info single hop', t => {
     chainHub,
     {},
     knownChainsSansConns, // omit connections
-    harden({ [uusdcOnAgoric]: agDetail }),
+    harden([
+      [uusdcOnAgoric, agDetail],
+      [uusdcOnOsmosis, osDetail],
+    ]),
   );
 
   t.throws(
@@ -487,7 +488,10 @@ test('makeTransferRoute - no connection info multi hop', t => {
     chainHub,
     {},
     harden(chainInfo),
-    harden({ [uusdcOnAgoric]: agDetail, [uusdcOnOsmosis]: osDetail }),
+    harden([
+      [uusdcOnAgoric, agDetail],
+      [uusdcOnOsmosis, osDetail],
+    ]),
   );
 
   const osmoDest = chainHub.makeChainAddress('osmo1234');
@@ -522,7 +526,7 @@ test('makeTransferRoute - asset not on holding chain', t => {
     chainHub,
     {},
     withChainCapabilities(knownChains),
-    harden({ [uusdcOnAgoric]: agDetail }),
+    harden([[uusdcOnAgoric, agDetail]]),
   );
 
   // transfer USDC on agoric from osmosis to noble (impossible)
@@ -547,7 +551,7 @@ test('makeTransferRoute - no PFM path', t => {
     chainHub,
     {},
     knownChains, // intentionally omit pfmEnabled
-    harden({ [uusdcOnAgoric]: agDetail }),
+    harden([[uusdcOnAgoric, agDetail]]),
   );
 
   // transfer USDC on agoric to osmosis
