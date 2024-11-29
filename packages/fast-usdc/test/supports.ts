@@ -200,13 +200,11 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
     return { agoric, osmosis, noble };
   })();
 
-  const assetInfo = harden(
-    Object.fromEntries([
-      assetOn('uusdc', 'noble'),
-      [uusdcOnAgoric, agUSDCDetail],
-      assetOn('uusdc', 'noble', 'osmosis', fetchedChainInfo),
-    ]),
-  );
+  const assetInfo: [Denom, DenomDetail & { brandKey?: string }][] = harden([
+    assetOn('uusdc', 'noble'),
+    [uusdcOnAgoric, agUSDCDetail],
+    assetOn('uusdc', 'noble', 'osmosis', fetchedChainInfo),
+  ]);
 
   return {
     bootstrap: {
