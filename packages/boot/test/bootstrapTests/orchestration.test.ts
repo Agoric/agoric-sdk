@@ -5,11 +5,17 @@ import {
   defaultMarshaller,
   documentStorageSchema,
 } from '@agoric/internal/src/storage-test-utils.js';
-import type { CosmosValidatorAddress } from '@agoric/orchestration';
+import {
+  withChainCapabilities,
+  type CosmosValidatorAddress,
+} from '@agoric/orchestration';
 import type { start as startStakeIca } from '@agoric/orchestration/src/examples/stake-ica.contract.js';
 import type { Instance } from '@agoric/zoe/src/zoeService/utils.js';
 import type { TestFn } from 'ava';
 import { SIMULATED_ERRORS } from '@agoric/vats/tools/fake-bridge.js';
+import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
+import { buildVTransferEvent } from '@agoric/orchestration/tools/ibc-mocks.js';
+import { BridgeId } from '@agoric/internal';
 import {
   makeWalletFactoryContext,
   type WalletFactoryTestContext,
@@ -290,11 +296,38 @@ test.serial('basic-flows', async t => {
     evalProposal,
     agoricNamesRemotes,
     readPublished,
-    bridgeUtils: { flushInboundQueue },
+    bridgeUtils: { flushInboundQueue, runInbound },
   } = t.context;
 
   await evalProposal(
-    buildProposal('@agoric/builders/scripts/orchestration/init-basic-flows.js'),
+    buildProposal(
+      '@agoric/builders/scripts/orchestration/init-basic-flows.js',
+      [
+        '--chainInfo',
+        JSON.stringify(withChainCapabilities(fetchedChainInfo)),
+        '--assetInfo',
+        JSON.stringify([
+          [
+            'ibc/uusdconagoric',
+            {
+              chainName: 'agoric',
+              baseName: 'noble',
+              baseDenom: 'uusdc',
+            },
+          ],
+          // not tested until #10006. consider renaming to ibc/uusdconcosmos
+          // and updating boot/tools/ibc/mocks.ts
+          [
+            'ibc/uusdchash',
+            {
+              chainName: 'cosmoshub',
+              baseName: 'noble',
+              baseDenom: 'uusdc',
+            },
+          ],
+        ]),
+      ],
+    ),
   );
 
   const wd =
@@ -416,7 +449,7 @@ test.serial('basic-flows', async t => {
     },
     proposal: {},
     offerArgs: {
-      amount: { denom: 'ibc/uusdchash', value: 10n },
+      amount: { denom: 'ibc/uusdconagoric', value: 10n },
       destination: {
         chainId: 'noble-1',
         value: 'noble1test',
@@ -424,12 +457,29 @@ test.serial('basic-flows', async t => {
       },
     },
   });
-  t.like(wd.getLatestUpdateRecord(), {
-    status: {
-      id: 'transfer-to-noble-from-agoric',
-      error: undefined,
-    },
+
+  await runInbound(
+    BridgeId.VTRANSFER,
+    buildVTransferEvent({
+      sourceChannel: 'channel-62',
+      sequence: '1',
+    }),
+  );
+
+  const latestOfferStatus = () => {
+    const curr = wd.getLatestUpdateRecord();
+    if (curr.updated === 'offerStatus') {
+      return curr.status;
+    }
+    throw new Error('expected updated to be "offerStatus"');
+  };
+
+  const offerResult = latestOfferStatus();
+  t.like(offerResult, {
+    id: 'transfer-to-noble-from-agoric',
+    error: undefined,
   });
+  t.true('result' in offerResult, 'transfer vow settled');
 
   await t.throwsAsync(
     wd.executeOffer({
@@ -441,7 +491,7 @@ test.serial('basic-flows', async t => {
       },
       proposal: {},
       offerArgs: {
-        amount: { denom: 'ibc/uusdchash', value: SIMULATED_ERRORS.TIMEOUT },
+        amount: { denom: 'ibc/uusdconagoric', value: SIMULATED_ERRORS.TIMEOUT },
         destination: {
           chainId: 'noble-1',
           value: 'noble1test',
@@ -472,7 +522,25 @@ test.serial('basic-flows - portfolio holder', async t => {
   } = t.context;
 
   await evalProposal(
-    buildProposal('@agoric/builders/scripts/orchestration/init-basic-flows.js'),
+    buildProposal(
+      '@agoric/builders/scripts/orchestration/init-basic-flows.js',
+      [
+        '--chainInfo',
+        JSON.stringify(withChainCapabilities(fetchedChainInfo)),
+        '--assetInfo',
+        JSON.stringify([
+          [
+            'ubld',
+            {
+              baseDenom: 'ubld',
+              baseName: 'agoric',
+              chainName: 'agoric',
+              brandKey: 'BLD',
+            },
+          ],
+        ]),
+      ],
+    ),
   );
 
   const wd =

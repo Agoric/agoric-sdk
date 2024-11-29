@@ -6,6 +6,7 @@ import { makeStorageNodeChild } from '@agoric/internal/src/lib-chainStorage.js';
 import { E } from '@endo/far';
 
 /**
+ * @import {CosmosChainInfo, Denom, DenomDetail} from '@agoric/orchestration';
  * @import {BasicFlowsSF} from '../examples/basic-flows.contract.js';
  */
 
@@ -15,30 +16,43 @@ const contractName = 'basicFlows';
 /**
  * See `@agoric/builders/builders/scripts/orchestration/init-basic-flows.js` for
  * the accompanying proposal builder. Run `agoric run
- * packages/builders/scripts/orchestration/init-basic-flows.js` to build the
+ * packages/builders/scripts/orchestration/init-basic-flows.js --chainInfo
+ * 'chainName:CosmosChainInfo' --assetInfo 'denom:DenomDetail'` to build the
  * contract and proposal files.
  *
  * @param {BootstrapPowers} powers
+ * @param {{
+ *   options: {
+ *     chainInfo: Record<string, CosmosChainInfo>;
+ *     assetInfo: [Denom, DenomDetail & { brandKey?: string }][];
+ *   };
+ * }} config
  */
-export const startBasicFlows = async ({
-  consume: {
-    agoricNames,
-    board,
-    chainStorage,
-    chainTimerService,
-    cosmosInterchainService,
-    localchain,
-    startUpgradable,
+export const startBasicFlows = async (
+  {
+    consume: {
+      agoricNames,
+      board,
+      chainStorage,
+      chainTimerService,
+      cosmosInterchainService,
+      localchain,
+      startUpgradable,
+    },
+    installation: {
+      // @ts-expect-error not a WellKnownName
+      consume: { [contractName]: installation },
+    },
+    instance: {
+      // @ts-expect-error not a WellKnownName
+      produce: { [contractName]: produceInstance },
+    },
+    issuer: {
+      consume: { BLD, IST },
+    },
   },
-  installation: {
-    // @ts-expect-error not a WellKnownName
-    consume: { [contractName]: installation },
-  },
-  instance: {
-    // @ts-expect-error not a WellKnownName
-    produce: { [contractName]: produceInstance },
-  },
-}) => {
+  { options: { chainInfo, assetInfo } },
+) => {
   trace(`start ${contractName}`);
   await null;
 
@@ -49,6 +63,10 @@ export const startBasicFlows = async ({
   const startOpts = {
     label: 'basicFlows',
     installation,
+    issuerKeywordRecord: {
+      BLD: await BLD,
+      IST: await IST,
+    },
     terms: undefined,
     privateArgs: {
       agoricNames: await agoricNames,
@@ -57,6 +75,8 @@ export const startBasicFlows = async ({
       storageNode,
       marshaller,
       timerService: await chainTimerService,
+      chainInfo,
+      assetInfo,
     },
   };
 
@@ -67,7 +87,7 @@ harden(startBasicFlows);
 
 export const getManifestForContract = (
   { restoreRef },
-  { installKeys, ...options },
+  { installKeys, options },
 ) => {
   return {
     manifest: {
@@ -86,6 +106,9 @@ export const getManifestForContract = (
         },
         instance: {
           produce: { [contractName]: true },
+        },
+        issuer: {
+          consume: { BLD: true, IST: true },
         },
       },
     },

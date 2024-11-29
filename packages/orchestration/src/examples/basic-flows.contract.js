@@ -6,10 +6,12 @@ import { InvitationShape } from '@agoric/zoe/src/typeGuards.js';
 import { M } from '@endo/patterns';
 import { preparePortfolioHolder } from '../exos/portfolio-holder-kit.js';
 import { withOrchestration } from '../utils/start-helper.js';
+import { registerChainsAndAssets } from '../utils/chain-hub-helper.js';
 import * as flows from './basic-flows.flows.js';
 
 /**
  * @import {Zone} from '@agoric/zone';
+ * @import {CosmosChainInfo, Denom, DenomDetail} from '@agoric/orchestration';
  * @import {OrchestrationPowers, OrchestrationTools} from '../utils/start-helper.js';
  */
 
@@ -17,15 +19,17 @@ import * as flows from './basic-flows.flows.js';
  * @param {ZCF} zcf
  * @param {OrchestrationPowers & {
  *   marshaller: Marshaller;
- * }} _privateArgs
+ *   chainInfo?: Record<string, CosmosChainInfo>;
+ *   assetInfo?: [Denom, DenomDetail & { brandKey?: string }][];
+ * }} privateArgs
  * @param {Zone} zone
  * @param {OrchestrationTools} tools
  */
 const contract = async (
   zcf,
-  _privateArgs,
+  privateArgs,
   zone,
-  { orchestrateAll, vowTools },
+  { chainHub, orchestrateAll, vowTools },
 ) => {
   const makePortfolioHolder = preparePortfolioHolder(
     zone.subZone('portfolio'),
@@ -54,6 +58,13 @@ const contract = async (
         );
       },
     },
+  );
+
+  registerChainsAndAssets(
+    chainHub,
+    zcf.getTerms().brands,
+    privateArgs.chainInfo,
+    privateArgs.assetInfo,
   );
 
   return { publicFacet };
