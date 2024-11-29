@@ -284,7 +284,7 @@ test.serial('revise chain info', async t => {
   });
 });
 
-test('basic-flows', async t => {
+test.serial('basic-flows', async t => {
   const {
     buildProposal,
     evalProposal,
@@ -329,9 +329,9 @@ test('basic-flows', async t => {
   });
   t.deepEqual(readPublished('basicFlows.cosmos1test'), {
     localAddress:
-      '/ibc-port/icacontroller-4/ordered/{"version":"ics27-1","controllerConnectionId":"connection-8","hostConnectionId":"connection-649","address":"cosmos1test","encoding":"proto3","txType":"sdk_multi_msg"}/ibc-channel/channel-4',
+      '/ibc-port/icacontroller-2/ordered/{"version":"ics27-1","controllerConnectionId":"connection-8","hostConnectionId":"connection-649","address":"cosmos1test","encoding":"proto3","txType":"sdk_multi_msg"}/ibc-channel/channel-2',
     remoteAddress:
-      '/ibc-hop/connection-8/ibc-port/icahost/ordered/{"version":"ics27-1","controllerConnectionId":"connection-8","hostConnectionId":"connection-649","address":"cosmos1test","encoding":"proto3","txType":"sdk_multi_msg"}/ibc-channel/channel-4',
+      '/ibc-hop/connection-8/ibc-port/icahost/ordered/{"version":"ics27-1","controllerConnectionId":"connection-8","hostConnectionId":"connection-649","address":"cosmos1test","encoding":"proto3","txType":"sdk_multi_msg"}/ibc-channel/channel-2',
   });
 
   // create a local orchestration account
@@ -352,12 +352,11 @@ test('basic-flows', async t => {
     wd.getCurrentWalletRecord().offerToPublicSubscriberPaths,
   );
   t.deepEqual(publicSubscriberPaths['request-loa'], {
-    account: 'published.basicFlows.agoric1fakeLCAAddress1',
+    account: 'published.basicFlows.agoric1fakeLCAAddress',
   });
   t.like(wd.getLatestUpdateRecord(), {
     status: { id: 'request-loa', numWantsSatisfied: 1 },
   });
-  t.is(readPublished('basicFlows.agoric1fakeLCAAddress'), '');
 
   await wd.sendOffer({
     id: 'transfer-to-noble-from-cosmos',
@@ -505,7 +504,7 @@ test.serial('basic-flows - portfolio holder', async t => {
       [
         'request-portfolio-acct',
         {
-          agoric: 'published.basicFlows.agoric1fakeLCAAddress',
+          agoric: 'published.basicFlows.agoric1fakeLCAAddress1',
           cosmoshub: 'published.basicFlows.cosmos1test',
           // XXX support multiple chain addresses in ibc mocks
           osmosis: 'published.basicFlows.cosmos1test',
@@ -519,9 +518,9 @@ test.serial('basic-flows - portfolio holder', async t => {
   // XXX this overrides a previous account, since mocks only provide one address
   t.deepEqual(readPublished('basicFlows.cosmos1test'), {
     localAddress:
-      '/ibc-port/icacontroller-3/ordered/{"version":"ics27-1","controllerConnectionId":"connection-1","hostConnectionId":"connection-1649","address":"cosmos1test","encoding":"proto3","txType":"sdk_multi_msg"}/ibc-channel/channel-3',
+      '/ibc-port/icacontroller-4/ordered/{"version":"ics27-1","controllerConnectionId":"connection-1","hostConnectionId":"connection-1649","address":"cosmos1test","encoding":"proto3","txType":"sdk_multi_msg"}/ibc-channel/channel-4',
     remoteAddress:
-      '/ibc-hop/connection-1/ibc-port/icahost/ordered/{"version":"ics27-1","controllerConnectionId":"connection-1","hostConnectionId":"connection-1649","address":"cosmos1test","encoding":"proto3","txType":"sdk_multi_msg"}/ibc-channel/channel-3',
+      '/ibc-hop/connection-1/ibc-port/icahost/ordered/{"version":"ics27-1","controllerConnectionId":"connection-1","hostConnectionId":"connection-1649","address":"cosmos1test","encoding":"proto3","txType":"sdk_multi_msg"}/ibc-channel/channel-4',
   });
   // XXX this overrides a previous account, since mocks only provide one address
   t.is(readPublished('basicFlows.agoric1fakeLCAAddress'), '');
