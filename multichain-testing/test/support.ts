@@ -3,6 +3,7 @@ import { dirname, join } from 'path';
 import { execa } from 'execa';
 import fse from 'fs-extra';
 import childProcess from 'node:child_process';
+import { withChainCapabilities } from '@agoric/orchestration';
 import { makeAgdTools } from '../tools/agd-tools.js';
 import { type E2ETools } from '../tools/e2e-tools.js';
 import {
@@ -15,6 +16,8 @@ import { makeRetryUntilCondition } from '../tools/sleep.js';
 import { makeDeployBuilder } from '../tools/deploy.js';
 import { makeHermes } from '../tools/hermes-tools.js';
 import { makeNobleTools } from '../tools/noble-tools.js';
+import { makeAssetInfo } from '../tools/asset-info.js';
+import starshipChainInfo from '../starship-chain-info.js';
 
 export const FAUCET_POUR = 10_000n * 1_000_000n;
 
@@ -78,6 +81,8 @@ export const commonSetup = async (t: ExecutionContext) => {
   });
   const hermes = makeHermes(childProcess);
   const nobleTools = makeNobleTools(childProcess);
+  const assetInfo = makeAssetInfo(starshipChainInfo);
+  const chainInfo = withChainCapabilities(starshipChainInfo);
 
   /**
    * Starts a contract if instance not found. Takes care of installing
@@ -116,6 +121,8 @@ export const commonSetup = async (t: ExecutionContext) => {
     hermes,
     nobleTools,
     startContract,
+    assetInfo,
+    chainInfo,
   };
 };
 
