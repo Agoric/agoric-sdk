@@ -110,7 +110,7 @@ expectNotType<CosmosValidatorAddress>(chainAddr);
   expectNotType<() => Promise<number>>(vowFn);
 
   const getDenomInfo: HostOf<Orchestrator['getDenomInfo']> = null as any;
-  const chainHostOf = getDenomInfo('uatom').chain;
+  const chainHostOf = getDenomInfo('uatom', 'cosmoshub').chain;
   expectType<Vow<any>>(chainHostOf.getChainInfo());
 }
 

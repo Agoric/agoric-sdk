@@ -174,7 +174,7 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
    * ChainHub. Use `ChainHubAdmin` instead.
    */
   const registerAgoricBld = () => {
-    if (!chainHub.getAsset('ubld')) {
+    if (!chainHub.getAsset('ubld', 'agoric')) {
       chainHub.registerChain('agoric', fetchedChainInfo.agoric);
       chainHub.registerAsset('ubld', {
         chainName: 'agoric',
