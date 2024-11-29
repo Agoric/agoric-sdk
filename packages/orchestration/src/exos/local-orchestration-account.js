@@ -511,7 +511,7 @@ export const prepareLocalOrchestrationAccountKit = (
           return asVow(() => {
             const [brand, denom] =
               typeof denomArg === 'string'
-                ? [chainHub.getAsset(denomArg)?.brand, denomArg]
+                ? [chainHub.getAsset(denomArg, 'agoric')?.brand, denomArg]
                 : [denomArg, chainHub.getDenom(denomArg)];
 
             if (!denom) {

@@ -205,7 +205,9 @@ const ChainHubI = M.interface('ChainHub', {
   getConnectionInfo: M.call(ChainIdArgShape, ChainIdArgShape).returns(VowShape),
   getChainsAndConnection: M.call(M.string(), M.string()).returns(VowShape),
   registerAsset: M.call(M.string(), DenomDetailShape).returns(),
-  getAsset: M.call(M.string()).returns(M.or(DenomDetailShape, M.undefined())),
+  getAsset: M.call(M.string(), M.string()).returns(
+    M.or(DenomDetailShape, M.undefined()),
+  ),
   getDenom: M.call(BrandShape).returns(M.or(M.string(), M.undefined())),
   makeChainAddress: M.call(M.string()).returns(ChainAddressShape),
   makeTransferRoute: M.call(ChainAddressShape, DenomAmountShape, M.string())
@@ -255,6 +257,14 @@ export const makeChainHub = (zone, agoricNames, vowTools) => {
     keyShape: M.string(),
     valueShape: M.string(),
   });
+
+  /**
+   * @param {Denom} denom - on the holding chain, whose name is given in
+   *   `detail.chainName`
+   * @param {DenomDetail['chainName']} holdingChainName
+   */
+  const makeDenomKey = (denom, holdingChainName) =>
+    `${holdingChainName}:${denom}`;
 
   const lookupChainInfo = vowTools.retryable(
     zone,
@@ -440,8 +450,14 @@ export const makeChainHub = (zone, agoricNames, vowTools) => {
         Fail`must register chain ${q(chainName)} first`;
       chainInfos.has(baseName) ||
         Fail`must register chain ${q(baseName)} first`;
-      denomDetails.init(denom, detail);
+
+      const denomKey = makeDenomKey(denom, detail.chainName);
+      denomDetails.has(denomKey) &&
+        Fail`already registered ${q(denom)} on ${q(chainName)}`;
+      denomDetails.init(denomKey, detail);
       if (detail.brand) {
+        chainName === 'agoric' ||
+          Fail`brands only registerable for agoric-held assets`;
         brandDenoms.init(detail.brand, denom);
       }
     },
@@ -449,11 +465,13 @@ export const makeChainHub = (zone, agoricNames, vowTools) => {
      * Retrieve holding, issuing chain names etc. for a denom.
      *
      * @param {Denom} denom
+     * @param {string} holdingChainName - the chainName the denom is held on
      * @returns {DenomDetail | undefined}
      */
-    getAsset(denom) {
-      if (denomDetails.has(denom)) {
-        return denomDetails.get(denom);
+    getAsset(denom, holdingChainName) {
+      const denomKey = makeDenomKey(denom, holdingChainName);
+      if (denomDetails.has(denomKey)) {
+        return denomDetails.get(denomKey);
       }
       return undefined;
     },
@@ -504,11 +522,16 @@ export const makeChainHub = (zone, agoricNames, vowTools) => {
       chainInfos.has(holdingChainName) ||
         Fail`chain info not found for holding chain: ${q(holdingChainName)}`;
 
-      const denomDetail = chainHub.getAsset(denomAmount.denom);
+      const denomDetail = chainHub.getAsset(
+        denomAmount.denom,
+        holdingChainName,
+      );
       denomDetail ||
-        Fail`no denom detail for: ${q(denomAmount.denom)}. ensure it is registered in chainHub.`;
+        Fail`no denom detail for: ${q(denomAmount.denom)} on ${q(holdingChainName)}. ensure it is registered in chainHub.`;
 
       const { baseName, chainName } = /** @type {DenomDetail} */ (denomDetail);
+
+      // currently unreachable since assets are registered with holdingChainName
       chainName === holdingChainName ||
         Fail`cannot transfer asset ${q(denomAmount.denom)}. held on ${q(chainName)} not ${q(holdingChainName)}.`;
 

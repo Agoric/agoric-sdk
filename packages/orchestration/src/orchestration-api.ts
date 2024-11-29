@@ -146,6 +146,7 @@ export interface Orchestrator {
     IssuingChain extends keyof KnownChains,
   >(
     denom: Denom,
+    holdingChainName: HoldingChain,
   ) => DenomInfo<HoldingChain, IssuingChain>;
 
   /**

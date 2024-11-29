@@ -86,28 +86,28 @@ test('denom info support via getAsset and getDenom', async t => {
   const denom = 'utok1';
   const info1: CosmosChainInfo = {
     bech32Prefix: 'chain',
-    chainId: 'chain1',
+    chainId: 'agoric',
     stakingTokens: [{ denom }],
   };
   const tok1 = withAmountUtils(makeIssuerKit('Tok1'));
 
-  chainHub.registerChain('chain1', info1);
+  chainHub.registerChain('agoric', info1);
   const info = {
-    chainName: 'chain1',
-    baseName: 'chain1',
+    chainName: 'agoric',
+    baseName: 'agoric',
     baseDenom: denom,
     brand: tok1.brand,
   };
   chainHub.registerAsset('utok1', info);
 
   t.deepEqual(
-    chainHub.getAsset('utok1'),
+    chainHub.getAsset('utok1', 'agoric'),
     info,
     'getAsset(denom) returns denom info',
   );
 
   t.is(
-    chainHub.getAsset('utok404'),
+    chainHub.getAsset('utok404', 'agoric'),
     undefined,
     'getAsset returns undefined when denom not registered',
   );
@@ -145,7 +145,7 @@ test('toward asset info in agoricNames (#9572)', async t => {
   registerAssets(chainHub, 'cosmoshub', details);
 
   {
-    const actual = chainHub.getAsset('uatom');
+    const actual = chainHub.getAsset('uatom', 'cosmoshub');
     t.deepEqual(actual, {
       chainName: 'cosmoshub',
       baseName: 'cosmoshub',
@@ -156,6 +156,7 @@ test('toward asset info in agoricNames (#9572)', async t => {
   {
     const actual = chainHub.getAsset(
       'ibc/F04D72CF9B5D9C849BB278B691CDFA2241813327430EC9CDC83F8F4CA4CDC2B0',
+      'cosmoshub',
     );
     t.deepEqual(actual, {
       chainName: 'cosmoshub',
@@ -432,7 +433,7 @@ test('makeTransferRoute - no asset info', t => {
       ),
     {
       message:
-        'no denom detail for: "uist". ensure it is registered in chainHub.',
+        'no denom detail for: "uist" on "agoric". ensure it is registered in chainHub.',
     },
   );
 
@@ -445,7 +446,7 @@ test('makeTransferRoute - no asset info', t => {
       ),
     {
       message:
-        'no denom detail for: "ibc/FE98AAD68F02F03565E9FA39A5E627946699B2B07115889ED812D8BA639576A9". ensure it is registered in chainHub.',
+        'no denom detail for: "ibc/FE98AAD68F02F03565E9FA39A5E627946699B2B07115889ED812D8BA639576A9" on "agoric". ensure it is registered in chainHub.',
     },
   );
 });
@@ -539,7 +540,7 @@ test('makeTransferRoute - asset not on holding chain', t => {
       ),
     {
       message:
-        'cannot transfer asset "ibc/FE98AAD68F02F03565E9FA39A5E627946699B2B07115889ED812D8BA639576A9". held on "agoric" not "osmosis".',
+        'no denom detail for: "ibc/FE98AAD68F02F03565E9FA39A5E627946699B2B07115889ED812D8BA639576A9" on "osmosis". ensure it is registered in chainHub.',
     },
   );
 });

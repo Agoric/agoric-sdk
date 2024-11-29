@@ -34,7 +34,7 @@ const trace = makeTracer('Orchestrator');
 /** @see {Orchestrator} */
 export const OrchestratorI = M.interface('Orchestrator', {
   getChain: M.call(M.string()).returns(Vow$(ChainInfoShape)),
-  getDenomInfo: M.call(DenomShape).returns(DenomInfoShape),
+  getDenomInfo: M.call(DenomShape, M.string()).returns(DenomInfoShape),
   asAmount: M.call(DenomAmountShape).returns(AmountShape),
 });
 
@@ -138,8 +138,8 @@ const prepareOrchestratorKit = (
           });
         },
         /** @type {HostOf<Orchestrator['getDenomInfo']>} */
-        getDenomInfo(denom) {
-          const denomDetail = chainHub.getAsset(denom);
+        getDenomInfo(denom, holdingChainName) {
+          const denomDetail = chainHub.getAsset(denom, holdingChainName);
           if (!denomDetail) throw Fail`No denom detail for ${q(denom)}`;
           const { chainName, baseName, baseDenom, brand } = denomDetail;
           chainByName.has(chainName) ||
