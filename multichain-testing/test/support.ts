@@ -19,6 +19,7 @@ import { makeHermes } from '../tools/hermes-tools.js';
 import { makeNobleTools } from '../tools/noble-tools.js';
 import { makeAssetInfo } from '../tools/asset-info.js';
 import starshipChainInfo from '../starship-chain-info.js';
+import { makeFaucetTools } from '../tools/faucet-tools.js';
 
 export const FAUCET_POUR = 10_000n * 1_000_000n;
 
@@ -84,6 +85,12 @@ export const commonSetup = async (t: ExecutionContext) => {
   const nobleTools = makeNobleTools(childProcess);
   const assetInfo = makeAssetInfo(starshipChainInfo);
   const chainInfo = withChainCapabilities(starshipChainInfo);
+  const faucetTools = makeFaucetTools(
+    t,
+    tools.agd,
+    retryUntilCondition,
+    useChain,
+  );
 
   /**
    * Starts a contract if instance not found. Takes care of installing
@@ -135,6 +142,7 @@ export const commonSetup = async (t: ExecutionContext) => {
     startContract,
     assetInfo,
     chainInfo,
+    faucetTools,
   };
 };
 

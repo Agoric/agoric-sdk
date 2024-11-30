@@ -16,6 +16,7 @@ import { MsgTransfer } from '@agoric/cosmic-proto/ibc/applications/transfer/v1/t
 import { createWallet } from './wallet.js';
 import chainInfo from '../starship-chain-info.js';
 import type { MultichainRegistry } from './registry.js';
+import type { RetryUntilCondition } from './sleep.js';
 
 interface MakeFeeObjectArgs {
   denom?: string;
@@ -118,14 +119,15 @@ export const makeIBCTransferMsg = (
 };
 
 export const createFundedWalletAndClient = async (
-  t: ExecutionContext,
+  log: (...args: unknown[]) => void,
   chainName: string,
   useChain: MultichainRegistry['useChain'],
+  mnemonic?: string,
 ) => {
   const { chain, creditFromFaucet, getRpcEndpoint } = useChain(chainName);
-  const wallet = await createWallet(chain.bech32_prefix);
+  const wallet = await createWallet(chain.bech32_prefix, mnemonic);
   const address = (await wallet.getAccounts())[0].address;
-  t.log(`Requesting faucet funds for ${address}`);
+  log(`Requesting faucet funds for ${address}`);
   await creditFromFaucet(address);
   // TODO use telescope generated rpc client from @agoric/cosmic-proto
   // https://github.com/Agoric/agoric-sdk/issues/9200
@@ -134,4 +136,58 @@ export const createFundedWalletAndClient = async (
     wallet,
   );
   return { client, wallet, address };
+};
+
+export const makeFundAndTransfer = (
+  t: ExecutionContext,
+  retryUntilCondition: RetryUntilCondition,
+  useChain: MultichainRegistry['useChain'],
+) => {
+  return async (
+    chainName: string,
+    agoricAddr: string,
+    amount = 100n,
+    denom?: string,
+  ) => {
+    const { staking } = useChain(chainName).chainInfo.chain;
+    const denomToTransfer = denom || staking?.staking_tokens?.[0].denom;
+    if (!denomToTransfer) throw Error(`no denom for ${chainName}`);
+
+    const { client, address, wallet } = await createFundedWalletAndClient(
+      t.log,
+      chainName,
+      useChain,
+    );
+    const balancesResult = await retryUntilCondition(
+      () => client.getAllBalances(address),
+      coins => !!coins?.length,
+      `Faucet balances found for ${address}`,
+    );
+    console.log('Balances:', balancesResult);
+
+    const transferArgs = makeIBCTransferMsg(
+      { denom: denomToTransfer, value: amount },
+      { address: agoricAddr, chainName: 'agoric' },
+      { address: address, chainName },
+      Date.now(),
+      useChain,
+    );
+    console.log('Transfer Args:', transferArgs);
+    // TODO #9200 `sendIbcTokens` does not support `memo`
+    // @ts-expect-error spread argument for concise code
+    const txRes = await client.sendIbcTokens(...transferArgs);
+    if (txRes && txRes.code !== 0) {
+      console.error(txRes);
+      throw Error(`failed to ibc transfer funds to ${chainName}`);
+    }
+    const { events: _events, ...txRest } = txRes;
+    console.log(txRest);
+    t.is(txRes.code, 0, `Transaction succeeded`);
+    t.log(`Funds transferred to ${agoricAddr}`);
+    return {
+      client,
+      address,
+      wallet,
+    };
+  };
 };
