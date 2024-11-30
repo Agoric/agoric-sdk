@@ -169,7 +169,7 @@ export const provisionSmartWallet = async (
   for await (const [name, qty] of Object.entries(balances)) {
     const info = byName[name];
     if (!info) {
-      throw Error(name);
+      throw Error(`${name} not found in vbank assets`);
     }
     const { denom, displayInfo } = info;
     const { decimalPlaces } = displayInfo;

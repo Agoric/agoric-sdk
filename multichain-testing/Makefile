@@ -79,6 +79,11 @@ override-chain-registry:
 	scripts/fetch-starship-chain-info.ts && \
 	scripts/deploy-cli.ts src/revise-chain-info.builder.js
 
+register-bank-assets:
+	scripts/fetch-starship-chain-info.ts && \
+	scripts/deploy-cli.ts src/register-interchain-bank-assets.builder.js \
+		assets="$$(scripts/make-bank-asset-info.ts)"
+
 ADDR=agoric1ldmtatp24qlllgxmrsjzcpe20fvlkp448zcuce
 COIN=1000000000uist
 
@@ -101,5 +106,5 @@ wait-for-pods:
 	scripts/pod-readiness.ts
 
 .PHONY: start
-start: install wait-for-pods port-forward fund-provision-pool override-chain-registry
+start: install wait-for-pods port-forward fund-provision-pool override-chain-registry register-bank-assets
 

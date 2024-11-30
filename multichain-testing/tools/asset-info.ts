@@ -6,7 +6,12 @@ import {
 } from '@agoric/orchestration';
 import type { IBCChannelID } from '@agoric/vats';
 
-/** make asset info for current env */
+/**
+ * Make asset info for the current environment.
+ *
+ * until #10580, the contract's `issuerKeywordRecord` must include 'ATOM',
+ * 'OSMO', 'IST', etc. for the local `chainHub` to know about brands.
+ */
 export const makeAssetInfo = (
   chainInfo: Record<string, CosmosChainInfo>,
   tokenMap: Record<string, Denom[]> = {
@@ -37,13 +42,6 @@ export const makeAssetInfo = (
     return `ibc/${denomHash({ denom, channelId })}`;
   };
 
-  // `brandKey` instead of `brand` until #10580
-  // only BLD, IST until #9966
-  const BRAND_KEY_MAP: Record<string, string> = {
-    ubld: 'BLD',
-    uist: 'IST',
-  };
-
   // only include chains present in `chainInfo`
   const tokens = Object.entries(tokenMap)
     .filter(([chain]) => chain in chainInfo)
@@ -62,7 +60,11 @@ export const makeAssetInfo = (
       {
         ...baseDetails,
         chainName: chain,
-        ...(BRAND_KEY_MAP[denom] && { brandKey: BRAND_KEY_MAP[denom] }),
+        ...(chain === 'agoric' && {
+          // `brandKey` instead of `brand` until #10580
+          // assumes issuerKeywordRecord includes brand keywords like `IST`, `OSMO`
+          brandKey: denom.replace(/^u/, '').toUpperCase(),
+        }),
       },
     ]);
 
@@ -70,14 +72,15 @@ export const makeAssetInfo = (
     const issuingChainId = chainInfo[chain].chainId;
     for (const holdingChain of Object.keys(chainInfo)) {
       if (holdingChain === chain) continue;
-      const denomHash = toDenomHash(denom, issuingChainId, holdingChain);
       assetInfo.push([
-        denomHash,
+        toDenomHash(denom, issuingChainId, holdingChain),
         {
           ...baseDetails,
           chainName: holdingChain,
-          ...(BRAND_KEY_MAP[denomHash] && {
-            brandKey: BRAND_KEY_MAP[denomHash],
+          ...(holdingChain === 'agoric' && {
+            // `brandKey` instead of `brand` until #10580
+            // assumes issuerKeywordRecord includes brand keywords like `IST`, `OSMO`
+            brandKey: denom.replace(/^u/, '').toUpperCase(),
           }),
         },
       ]);
