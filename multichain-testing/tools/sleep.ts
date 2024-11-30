@@ -75,3 +75,5 @@ export const makeRetryUntilCondition = (defaultOptions: RetryOptions = {}) => {
       ...options,
     });
 };
+
+export type RetryUntilCondition = ReturnType<typeof makeRetryUntilCondition>;

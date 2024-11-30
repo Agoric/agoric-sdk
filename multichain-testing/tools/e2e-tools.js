@@ -142,7 +142,11 @@ export const provisionSmartWallet = async (
   // TODO: skip this query if balances is {}
   const vbankEntries = await q.queryData('published.agoricNames.vbankAsset');
   const byName = Object.fromEntries(
-    vbankEntries.map(([_denom, info]) => [info.issuerName, info]),
+    vbankEntries.map(([denom, info]) => {
+      /// XXX better way to filter out old ATOM denom?
+      if (denom === 'ibc/toyatom') return [undefined, undefined];
+      return [info.issuerName, info];
+    }),
   );
   progress({ send: balances, to: address });
 
@@ -540,6 +544,7 @@ export const makeE2ETools = async (
     /** @param {string} name */
     deleteKey: async name => agd.keys.delete(name),
     copyFiles,
+    agd,
   };
 };
 
