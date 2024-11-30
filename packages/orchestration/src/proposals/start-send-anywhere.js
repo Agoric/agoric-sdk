@@ -28,7 +28,6 @@ const trace = makeTracer('StartSA', true);
  *     consume: {
  *       BLD: Issuer<'nat'>;
  *       IST: Issuer<'nat'>;
- *       USDC: Issuer<'nat'>;
  *     };
  *   };
  * }} powers
@@ -82,13 +81,32 @@ export const startSendAnywhere = async (
     }),
   );
 
+  const safeLookup = async p =>
+    E.when(
+      p(),
+      i => i,
+      () => undefined,
+    );
+
+  const atomIssuer = await safeLookup(() =>
+    E(agoricNames).lookup('issuer', 'ATOM'),
+  );
+  const osmoIssuer = await safeLookup(() =>
+    E(agoricNames).lookup('issuer', 'OSMO'),
+  );
+
+  const issuerKeywordRecord = harden({
+    BLD: await BLD,
+    IST: await IST,
+    ...(atomIssuer && { ATOM: atomIssuer }),
+    ...(osmoIssuer && { OSMO: osmoIssuer }),
+  });
+  trace('issuerKeywordRecord', issuerKeywordRecord);
+
   const { instance } = await E(startUpgradable)({
     label: 'send-anywhere',
     installation: sendAnywhere,
-    issuerKeywordRecord: {
-      Stable: await IST,
-      Stake: await BLD,
-    },
+    issuerKeywordRecord,
     privateArgs,
   });
   produceInstance.resolve(instance);
