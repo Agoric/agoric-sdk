@@ -59,7 +59,7 @@ make wait-for-pods
 make port-forward
 
 # set up Agoric testing environment
-make fund-provision-pool override-chain-registry
+make fund-provision-pool override-chain-registry register-bank-assets
 ```
 
 If you get an error like "connection refused", you need to wait longer, until all the pods are Running.

@@ -3,6 +3,7 @@
 !.yarn/patches/*
 # fetched chain info from running starship
 starship-chain-info*
-# output of build script to get update running chain info
-revise-chain-info*
+# builder prefix for contract starters
 start*
+# builder prefix for core evals
+eval-*

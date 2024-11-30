@@ -106,6 +106,7 @@ test('makeAssetInfo', async t => {
       {
         baseDenom: 'uosmo',
         baseName: 'osmosis',
+        brandKey: 'OSMO',
         chainName: 'agoric',
       },
     ],
@@ -138,6 +139,7 @@ test('makeAssetInfo', async t => {
       {
         baseDenom: 'uatom',
         baseName: 'cosmoshub',
+        brandKey: 'ATOM',
         chainName: 'agoric',
       },
     ],
