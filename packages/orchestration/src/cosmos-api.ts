@@ -370,8 +370,8 @@ export interface ForwardInfo {
     receiver: ChainAddress['value'];
     port: IBCPortID;
     channel: IBCChannelID;
-    /** e.g. '10min' */
-    timeout: string;
+    /** e.g. '10m' */
+    timeout: GoDuration;
     /** default is 3? */
     retries: number;
     next?: {
@@ -404,3 +404,16 @@ export type TransferRoute = {
       forwardInfo?: never;
     }
 );
+
+/** Single units allowed in Go time duration strings */
+type GoDurationUnit = 'h' | 'm' | 's' | 'ms' | 'us' | 'ns';
+
+/**
+ * Type for a time duration string in Go (cosmos-sdk). For example, "1h", "3m".
+ *
+ * Note: this does not support composite values like "1h30m", "1m30s",
+ * which are allowed in Go.
+ *
+ * @see https://pkg.go.dev/time#ParseDuration
+ */
+export type GoDuration = `${number}${GoDurationUnit}`;
