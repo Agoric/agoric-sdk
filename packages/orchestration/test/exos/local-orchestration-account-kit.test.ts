@@ -299,7 +299,7 @@ test('transfer', async t => {
 
   t.like(lastestTxMsg(), {
     receiver: PFM_RECEIVER,
-    memo: '{"forward":{"receiver":"dydx1test","port":"transfer","channel":"channel-33","retries":3,"timeout":"10min"}}',
+    memo: '{"forward":{"receiver":"dydx1test","port":"transfer","channel":"channel-33","retries":3,"timeout":"10m"}}',
   });
 
   t.log('accepts pfm `forwardOpts`');
@@ -309,7 +309,7 @@ test('transfer', async t => {
       dydxDest,
       {
         forwardOpts: {
-          timeout: '999min',
+          timeout: '999m',
         },
       },
       fetchedChainInfo.agoric.connections['noble-1'].transferChannel.channelId,
@@ -318,7 +318,7 @@ test('transfer', async t => {
 
   t.like(JSON.parse(lastestTxMsg().memo), {
     forward: {
-      timeout: '999min',
+      timeout: '999m',
     },
   });
 });

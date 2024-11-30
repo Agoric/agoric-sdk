@@ -21,7 +21,7 @@ import { getBech32Prefix } from '../utils/address.js';
  * @import {NameHub} from '@agoric/vats';
  * @import {Vow, VowTools} from '@agoric/vow';
  * @import {Zone} from '@agoric/zone';
- * @import {CosmosAssetInfo, CosmosChainInfo, ForwardInfo, IBCConnectionInfo, IBCMsgTransferOptions, TransferRoute} from '../cosmos-api.js';
+ * @import {CosmosAssetInfo, CosmosChainInfo, ForwardInfo, IBCConnectionInfo, IBCMsgTransferOptions, TransferRoute, GoDuration} from '../cosmos-api.js';
  * @import {ChainInfo, KnownChains} from '../chain-info.js';
  * @import {ChainAddress, Denom, DenomAmount} from '../orchestration-api.js';
  * @import {Remote, TypedPattern} from '@agoric/internal';
@@ -179,7 +179,7 @@ const ChainIdArgShape = M.or(
 const DefaultPfmTimeoutOpts = harden(
   /** @type {const} */ ({
     retries: 3,
-    timeout: '10min',
+    timeout: /** @type {GoDuration} */ ('10m'),
   }),
 );
 
