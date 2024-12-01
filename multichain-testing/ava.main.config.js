@@ -1,4 +1,7 @@
 export default {
+  environmentVariables: {
+    LOCKDOWN_OVERRIDE_TAMING: 'severe',
+  },
   extensions: {
     ts: 'module',
   },
