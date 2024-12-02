@@ -272,7 +272,7 @@ CMD="agd tx gov submit-proposal software-upgrade $(q "$UPGRADE_NAME") \\
   $([ -z "${opts##* --from *}" ] || echo "--from '<WALLET>'") \\
   $([ -z "${opts##* --upgrade-height *}" ] || printf '%s "%s(%s)"' --upgrade-height '$' "$get_height") \\
 "
-CMD="$(echo "$CMD" | grep -v '^\(   [\\]\|\)$' | sed '$s/ [\\]$//')"
+CMD="$(echo "$CMD" | grep -v '^   [\\]$\|^$' | sed '$s/ [\\]$//')"
 
 # Incorporate remaining arguments.
 skip=
