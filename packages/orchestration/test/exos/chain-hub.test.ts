@@ -580,3 +580,177 @@ test('makeTransferRoute - no PFM path', t => {
     { message: 'pfm not enabled on issuing chain: "noble"' },
   );
 });
+
+test('makeTransferRoute - agoric:uatom -> neutron', async t => {
+  const { chainHub } = setup();
+
+  const [uatomOnAgoric, uatomDetail] = assetOn(
+    'uatom',
+    'cosmoshub',
+    undefined,
+    'agoric',
+    knownChains,
+  );
+
+  registerChainsAndAssets(
+    chainHub,
+    {},
+    withChainCapabilities(knownChains), // adds pfmEnabled
+    harden([
+      [uatomOnAgoric, uatomDetail],
+      assetOn('uatom', 'cosmoshub', undefined, 'neutron', knownChains),
+    ]),
+  );
+
+  const dest: ChainAddress = chainHub.makeChainAddress('neutron1234');
+  const amt: DenomAmount = harden({ denom: uatomOnAgoric, value: 100n });
+
+  // 100 ATOM on agoric -> neutron
+  const route = chainHub.makeTransferRoute(dest, amt, 'agoric');
+  t.deepEqual(route, {
+    forwardInfo: {
+      forward: {
+        channel: 'channel-569',
+        port: 'transfer',
+        receiver: 'neutron1234',
+        retries: 3,
+        timeout: '10m',
+      },
+    },
+    receiver: 'pfm',
+    sourceChannel: 'channel-5',
+    sourcePort: 'transfer',
+    token: {
+      amount: '100',
+      denom:
+        'ibc/BA313C4A19DFBF943586C0387E6B11286F9E416B4DD27574E6909CABE0E342FA',
+    },
+  });
+
+  // use TransferRoute to build a MsgTransfer
+  if (!('forwardInfo' in route)) {
+    throw new Error('forwardInfo not returned'); // appease tsc...
+  }
+
+  const { forwardInfo, ...rest } = route;
+  const transferMsg = typedJson('/ibc.applications.transfer.v1.MsgTransfer', {
+    ...rest,
+    memo: JSON.stringify(forwardInfo),
+    // callers of `.makeTransferRoute` will provide these fields themselves:
+    sender: 'agoric123',
+    timeoutHeight: {
+      revisionHeight: 0n,
+      revisionNumber: 0n,
+    },
+    timeoutTimestamp: 0n,
+  });
+  t.deepEqual(
+    transferMsg,
+    {
+      '@type': '/ibc.applications.transfer.v1.MsgTransfer',
+      memo: '{"forward":{"receiver":"neutron1234","port":"transfer","channel":"channel-569","retries":3,"timeout":"10m"}}',
+      receiver: 'pfm',
+      sender: 'agoric123',
+      sourceChannel: 'channel-5',
+      sourcePort: 'transfer',
+      timeoutHeight: {
+        revisionHeight: 0n,
+        revisionNumber: 0n,
+      },
+      timeoutTimestamp: 0n,
+      token: {
+        amount: '100',
+        denom:
+          'ibc/BA313C4A19DFBF943586C0387E6B11286F9E416B4DD27574E6909CABE0E342FA',
+      },
+    },
+    'uatom on agoric to neutron',
+  );
+});
+
+test('makeTransferRoute - agoric:stuatom -> neutron', async t => {
+  const { chainHub } = setup();
+
+  const [stuatomOnAgoric, stuatomDetail] = assetOn(
+    'stuatom',
+    'stride',
+    undefined,
+    'agoric',
+    knownChains,
+  );
+
+  registerChainsAndAssets(
+    chainHub,
+    {},
+    withChainCapabilities(knownChains), // adds pfmEnabled
+    harden([
+      [stuatomOnAgoric, stuatomDetail],
+      assetOn('stuatom', 'stride', undefined, 'neutron', knownChains),
+    ]),
+  );
+
+  const dest: ChainAddress = chainHub.makeChainAddress('neutron1234');
+  const amt: DenomAmount = harden({ denom: stuatomOnAgoric, value: 100n });
+
+  // 100 stATOM on agoric -> neutron
+  const route = chainHub.makeTransferRoute(dest, amt, 'agoric');
+  t.deepEqual(route, {
+    forwardInfo: {
+      forward: {
+        channel: 'channel-123',
+        port: 'transfer',
+        receiver: 'neutron1234',
+        retries: 3,
+        timeout: '10m',
+      },
+    },
+    receiver: 'pfm',
+    sourceChannel: 'channel-59',
+    sourcePort: 'transfer',
+    token: {
+      amount: '100',
+      denom:
+        'ibc/B1E6288B5A0224565D915D1F66716486F16D8A44BF33A9EC323DD6BA30764C35',
+    },
+  });
+
+  // use TransferRoute to build a MsgTransfer
+  if (!('forwardInfo' in route)) {
+    throw new Error('forwardInfo not returned'); // appease tsc...
+  }
+
+  const { forwardInfo, ...rest } = route;
+  const transferMsg = typedJson('/ibc.applications.transfer.v1.MsgTransfer', {
+    ...rest,
+    memo: JSON.stringify(forwardInfo),
+    // callers of `.makeTransferRoute` will provide these fields themselves:
+    sender: 'agoric123',
+    timeoutHeight: {
+      revisionHeight: 0n,
+      revisionNumber: 0n,
+    },
+    timeoutTimestamp: 0n,
+  });
+  t.deepEqual(
+    transferMsg,
+    {
+      '@type': '/ibc.applications.transfer.v1.MsgTransfer',
+      memo: '{"forward":{"receiver":"neutron1234","port":"transfer","channel":"channel-123","retries":3,"timeout":"10m"}}',
+      receiver: 'pfm',
+      sender: 'agoric123',
+      sourceChannel: 'channel-59',
+      sourcePort: 'transfer',
+      timeoutHeight: {
+        revisionHeight: 0n,
+        revisionNumber: 0n,
+      },
+      timeoutTimestamp: 0n,
+      token: {
+        amount: '100',
+        denom:
+          'ibc/B1E6288B5A0224565D915D1F66716486F16D8A44BF33A9EC323DD6BA30764C35',
+      },
+    },
+    'stuatom on agoric to neutron',
+  );
+});
