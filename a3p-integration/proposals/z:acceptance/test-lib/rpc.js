@@ -1,13 +1,14 @@
 /** @file copied from packages/agoric-cli */
 // TODO DRY in https://github.com/Agoric/agoric-sdk/issues/9109
 // @ts-check
-/* global Buffer */
 
 import {
   boardSlottingMarshaller,
   makeBoardRemote,
 } from '@agoric/internal/src/marshal.js';
 import { Fail } from '@endo/errors';
+import { E } from '@endo/far';
+import { makeAPI } from './makeHttpClient.js';
 
 export { boardSlottingMarshaller };
 
@@ -39,123 +40,95 @@ export { networkConfig };
 // console.warn('networkConfig', networkConfig);
 
 /**
- * @param {object} powers
- * @param {typeof window.fetch} powers.fetch
- * @param {MinimalNetworkConfig} config
+ * @template T
+ * @param {(value: string) => T} f
+ * @param {AsyncGenerator<string[], void, unknown>} chunks
  */
-export const makeVStorage = (powers, config = networkConfig) => {
-  /** @param {string} path */
-  const getJSON = path => {
-    const url = config.rpcAddrs[0] + path;
-    // console.warn('fetching', url);
-    return powers.fetch(url, { keepalive: true }).then(res => res.json());
-  };
-  // height=0 is the same as omitting height and implies the highest block
-  const url = (path = 'published', { kind = 'children', height = 0 } = {}) =>
-    `/abci_query?path=%22/custom/vstorage/${kind}/${path}%22&height=${height}`;
+async function* mapHistory(f, chunks) {
+  for await (const chunk of chunks) {
+    if (chunk === undefined) continue;
+    for (const value of chunk.reverse()) {
+      yield f(value);
+    }
+  }
+}
 
-  const readStorage = (path = 'published', { kind = 'children', height = 0 }) =>
-    getJSON(url(path, { kind, height }))
-      .catch(err => {
-        throw Error(`cannot read ${kind} of ${path}: ${err.message}`);
-      })
-      .then(data => {
-        const {
-          result: { response },
-        } = data;
-        if (response?.code !== 0) {
-          /** @type {any} */
-          const err = Error(
-            `error code ${response?.code} reading ${kind} of ${path}: ${response.log}`,
-          );
-          err.code = response?.code;
-          err.codespace = response?.codespace;
-          throw err;
+/**
+ * @param {ERef<import('./makeHttpClient').LCD>} lcd
+ */
+export const makeVStorage = lcd => {
+  const getJSON = (href, options) => E(lcd).getJSON(href, options);
+
+  // height=0 is the same as omitting height and implies the highest block
+  const href = (path = 'published', { kind = 'data' } = {}) =>
+    `/agoric/vstorage/${kind}/${path}`;
+  const headers = height =>
+    height ? { 'x-cosmos-block-height': `${height}` } : undefined;
+
+  const readStorage = (
+    path = 'published',
+    { kind = 'data', height = 0 } = {},
+  ) =>
+    getJSON(href(path, { kind }), { headers: headers(height) }).catch(err => {
+      throw Error(`cannot read ${kind} of ${path}: ${err.message}`);
+    });
+  const readCell = (path, opts) =>
+    readStorage(path, opts)
+      .then(data => data.value)
+      .then(s => (s === '' ? {} : JSON.parse(s)));
+
+  /**
+   * Read values going back as far as available
+   *
+   * @param {string} path
+   * @param {number | string} [minHeight]
+   */
+  async function* readHistory(path, minHeight = undefined) {
+    // undefined the first iteration, to query at the highest
+    let blockHeight;
+    await null;
+    do {
+      // console.debug('READING', { blockHeight });
+      /** @type {string[]} */
+      let values = [];
+      try {
+        ({ blockHeight, values } = await readCell(path, {
+          kind: 'data',
+          height: blockHeight && Number(blockHeight) - 1,
+        }));
+        // console.debug('readAt returned', { blockHeight });
+      } catch (err) {
+        if (err.message.match(/unknown request/)) {
+          // XXX FIXME
+          // console.error(err);
+          break;
         }
-        return data;
-      });
+        throw err;
+      }
+      yield values;
+      // console.debug('PUSHED', values);
+      // console.debug('NEW', { blockHeight, minHeight });
+      if (minHeight && Number(blockHeight) <= Number(minHeight)) break;
+    } while (blockHeight > 0);
+  }
+
+  /**
+   * @template T
+   * @param {(value: string) => T} f
+   * @param {string} path
+   * @param {number | string} [minHeight]
+   */
+  const readHistoryBy = (f, path, minHeight) =>
+    mapHistory(f, readHistory(path, minHeight));
 
   return {
-    url,
-    /** @param {{ result: { response: { code: number, value: string } } }} rawResponse */
-    decode({ result: { response } }) {
-      const { code } = response;
-      if (code !== 0) {
-        throw response;
-      }
-      const { value } = response;
-      return Buffer.from(value, 'base64').toString();
-    },
-    /**
-     *
-     * @param {string} path
-     * @returns {Promise<string>} latest vstorage value at path
-     */
-    async readLatest(path = 'published') {
-      const raw = await readStorage(path, { kind: 'data' });
-      return this.decode(raw);
-    },
-    async keys(path = 'published') {
-      const raw = await readStorage(path, { kind: 'children' });
-      return JSON.parse(this.decode(raw)).children;
-    },
-    /**
-     * @param {string} path
-     * @param {number} [height] default is highest
-     * @returns {Promise<{blockHeight: number, values: string[]}>}
-     */
-    async readAt(path, height = undefined) {
-      const raw = await readStorage(path, { kind: 'data', height });
-      const txt = this.decode(raw);
-      /** @type {{ value: string }} */
-      const { value } = JSON.parse(txt);
-      return JSON.parse(value);
-    },
-    /**
-     * Read values going back as far as available
-     *
-     * @param {string} path
-     * @param {number | string} [minHeight]
-     * @returns {Promise<string[]>}
-     */
-    async readFully(path, minHeight = undefined) {
-      const parts = [];
-      // undefined the first iteration, to query at the highest
-      let blockHeight;
-      await null;
-      do {
-        // console.debug('READING', { blockHeight });
-        let values;
-        try {
-          ({ blockHeight, values } = await this.readAt(
-            path,
-            blockHeight && Number(blockHeight) - 1,
-          ));
-          // console.debug('readAt returned', { blockHeight });
-        } catch (err) {
-          if (
-            // CosmosSDK ErrNotFound; there is no data at the path
-            (err.codespace === 'sdk' && err.code === 38) ||
-            // CosmosSDK ErrUnknownRequest; misrepresentation of the same until
-            // https://github.com/Agoric/agoric-sdk/commit/dafc7c1708977aaa55e245dc09a73859cf1df192
-            // TODO remove after upgrade-12
-            err.message.match(/unknown request/)
-          ) {
-            // console.error(err);
-            break;
-          }
-          throw err;
-        }
-        parts.push(values);
-        // console.debug('PUSHED', values);
-        // console.debug('NEW', { blockHeight, minHeight });
-        if (minHeight && Number(blockHeight) <= Number(minHeight)) break;
-      } while (blockHeight > 0);
-      return parts.flat();
-    },
+    lcd,
+    readStorage,
+    readLatest: readCell,
+    readHistory,
+    readHistoryBy,
   };
 };
-/** @typedef {ReturnType<typeof makeVStorage>} VStorage */
 
 export const makeFromBoard = () => {
   const cache = new Map();
@@ -243,7 +216,10 @@ export const makeAgoricNames = async (ctx, vstorage) => {
 export const makeVstorageKit = async ({ fetch }, config = networkConfig) => {
   await null;
   try {
-    const vstorage = makeVStorage({ fetch }, config);
+    const apiAddress = 'http://0.0.0.0:1317';
+    const lcd = makeAPI(apiAddress, { fetch });
+    const vstorage = makeVStorage(lcd);
+
     const fromBoard = makeFromBoard();
     const agoricNames = await makeAgoricNames(fromBoard, vstorage);
 
