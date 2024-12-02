@@ -207,11 +207,10 @@ export const makeOracleCommand = (logger, io = {}) => {
       s => s.split('.'),
     )
     .action(async opts => {
-      const { readLatestHead, lookupPriceAggregatorInstance } =
-        await rpcTools();
+      const { readPublished, lookupPriceAggregatorInstance } = await rpcTools();
       const instance = lookupPriceAggregatorInstance(opts.pair);
 
-      const offerId = await findOracleCap(instance, opts.from, readLatestHead);
+      const offerId = await findOracleCap(instance, opts.from, readPublished);
       if (!offerId) {
         console.error('No continuing ids found');
       }
@@ -272,8 +271,12 @@ export const makeOracleCommand = (logger, io = {}) => {
          * }}
          */ { pair, keys, price },
       ) => {
-        const { readLatestHead, networkConfig, lookupPriceAggregatorInstance } =
-          await rpcTools();
+        const {
+          readLatestHead,
+          readPublished,
+          networkConfig,
+          lookupPriceAggregatorInstance,
+        } = await rpcTools();
         const wutil = await makeWalletUtils({ fetch, delay }, networkConfig);
         const unitPrice = scaleDecimals(price);
 
@@ -338,7 +341,7 @@ export const makeOracleCommand = (logger, io = {}) => {
           adminOfferIds[from] = await findOracleCap(
             instance,
             from,
-            readLatestHead,
+            readPublished,
           );
           if (!adminOfferIds[from]) {
             console.error(
