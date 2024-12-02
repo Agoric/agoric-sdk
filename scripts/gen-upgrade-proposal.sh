@@ -206,7 +206,7 @@ if [ "$UPGRADE_NAME_COUNT" -gt 0 ]; then
 fi
 if [ -n "$FORCE_UPGRADE_NAME" ]; then
   UPGRADE_NAME="$FORCE_UPGRADE_NAME"
-elif [ -t 0 ] && [ -t 1 ] && [ -t 2 ] && [ "$UPGRADE_NAME_COUNT" -ne 1 ]; then
+elif [[ -t 0 && -t 1 && -t 2 && "$UPGRADE_NAME_COUNT" -ne 1 ]]; then
   hint="$(printf '%s' "$UPGRADE_NAME" | sed 's/\(..*\)/ (\1)/')"
   found=0
   printf '\n' 1>&2
