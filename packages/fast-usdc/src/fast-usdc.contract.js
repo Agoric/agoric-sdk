@@ -1,9 +1,5 @@
 import { AssetKind } from '@agoric/ertp';
-import {
-  assertAllDefined,
-  deeplyFulfilledObject,
-  makeTracer,
-} from '@agoric/internal';
+import { assertAllDefined, makeTracer } from '@agoric/internal';
 import { observeIteration, subscribeEach } from '@agoric/notifier';
 import {
   CosmosChainInfoShape,
@@ -12,20 +8,19 @@ import {
   registerChainsAndAssets,
   withOrchestration,
 } from '@agoric/orchestration';
+import { makeZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
 import { provideSingleton } from '@agoric/zoe/src/contractSupport/durability.js';
 import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/recorder.js';
-import { makeZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
-import { depositToSeat } from '@agoric/zoe/src/contractSupport/zoeHelpers.js';
 import { E } from '@endo/far';
-import { M, objectMap } from '@endo/patterns';
+import { M } from '@endo/patterns';
 import { prepareAdvancer } from './exos/advancer.js';
 import { prepareLiquidityPoolKit } from './exos/liquidity-pool.js';
 import { prepareSettler } from './exos/settler.js';
 import { prepareStatusManager } from './exos/status-manager.js';
 import { prepareTransactionFeedKit } from './exos/transaction-feed.js';
-import { defineInertInvitation } from './utils/zoe.js';
-import { FastUSDCTermsShape, FeeConfigShape } from './type-guards.js';
 import * as flows from './fast-usdc.flows.js';
+import { FastUSDCTermsShape, FeeConfigShape } from './type-guards.js';
+import { defineInertInvitation } from './utils/zoe.js';
 
 const trace = makeTracer('FastUsdc');
 
@@ -150,35 +145,6 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
     /** @type {(operatorId: string) => Promise<Invitation<OperatorKit>>} */
     async makeOperatorInvitation(operatorId) {
       return feedKit.creator.makeOperatorInvitation(operatorId);
-    },
-    /**
-     * @param {{ USDC: Amount<'nat'>}} amounts
-     */
-    testBorrow(amounts) {
-      console.log('🚧🚧 UNTIL: borrow is integrated (#10388) 🚧🚧', amounts);
-      const { zcfSeat: tmpAssetManagerSeat } = zcf.makeEmptySeatKit();
-      poolKit.borrower.borrow(tmpAssetManagerSeat, amounts);
-      return tmpAssetManagerSeat.getCurrentAllocation();
-    },
-    /**
-     *
-     * @param {RepayAmountKWR} amounts
-     * @param {RepayPaymentKWR} payments
-     * @returns {Promise<AmountKeywordRecord>}
-     */
-    async testRepay(amounts, payments) {
-      console.log('🚧🚧 UNTIL: repay is integrated (#10388) 🚧🚧', amounts);
-      const { zcfSeat: tmpAssetManagerSeat } = zcf.makeEmptySeatKit();
-      await depositToSeat(
-        zcf,
-        tmpAssetManagerSeat,
-        await deeplyFulfilledObject(
-          objectMap(payments, pmt => E(terms.issuers.USDC).getAmountOf(pmt)),
-        ),
-        payments,
-      );
-      poolKit.repayer.repay(tmpAssetManagerSeat, amounts);
-      return tmpAssetManagerSeat.getCurrentAllocation();
     },
   });
 
