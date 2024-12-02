@@ -43,19 +43,19 @@ ENVIRONMENT VARIABLES
 Past proposals for mainnet can be reviewed at https://ping.pub/agoric/gov
 '
 # usage [<exit code>]
-usage () {
+usage() {
   printf '%s' "$USAGE"
   exit ${1:-64} # EX_USAGE from BSD sysexits
 }
 # fail <error message> [<exit code>]
-fail () {
+fail() {
   printf '%s\n\n' "$1"
   usage "${2:-}"
 } 1>&2
 # q <string>
-q () {
+q() {
   if [ -z "$1" ] || printf '%s' "$1" | grep -q '[^a-zA-Z0-9_,./:=-]'; then
-    printf '%s' "$1" | sed "s/'/'\\\\''/g; 1s/^/'/; \$s/\$/'/";
+    printf '%s' "$1" | sed "s/'/'\\\\''/g; 1s/^/'/; \$s/\$/'/"
   else
     printf '%s' "$1"
   fi
@@ -73,7 +73,6 @@ gh_repo_curl() {
 }
 NET_CONFIG_URL="${CONFIG_URL:-https://main.agoric.net/network-config}"
 
-
 # Consume script arguments (but not agd arguments).
 MODE=any
 SEND=
@@ -83,9 +82,12 @@ ARG_COUNT=0
 while [ $# -ge 1 ]; do
   o="$1"
   case "$1" in
-    --) shift; break ;;
-    -h*|--help) usage ;;
-    -m*|--mode=*|--mode)
+    --)
+      shift
+      break
+      ;;
+    -h* | --help) usage ;;
+    -m* | --mode=* | --mode)
       # consume the argument, then push back a value from -x... or --xxx=...
       shift
       if [ -n "${o##--*}" ]; then
@@ -96,12 +98,12 @@ while [ $# -ge 1 ]; do
       # consume the value
       [ $# -ge 1 ] || fail "$o requires a value"
       case "$1" in
-        local|remote|any) MODE="$1" ;;
+        local | remote | any) MODE="$1" ;;
         *) fail 'mode must be "local", "remote", or "any"' ;;
       esac
       shift
       ;;
-    -s*|--send)
+    -s* | --send)
       # consume the argument, then push back any following [short] options
       SEND=1
       shift
@@ -109,7 +111,7 @@ while [ $# -ge 1 ]; do
         [ ${#o} -ge 3 ] && set -- "-${o#-?}" "$@"
       fi
       ;;
-    -u*|--upgrade-name=*|--upgrade-name)
+    -u* | --upgrade-name=* | --upgrade-name)
       # consume the argument, then push back a value from -x... or --xxx=...
       shift
       if [ -n "${o##--*}" ]; then
@@ -129,6 +131,7 @@ while [ $# -ge 1 ]; do
       esac
       ARG_COUNT=$((ARG_COUNT + 1))
       shift
+      ;;
   esac
 done
 
@@ -217,7 +220,7 @@ elif [ -t 0 -a -t 1 -a -t 2 -a "${#UPGRADE_NAMES[@]}" -ne 1 ]; then
       printf 'use unknown upgrade name %s (y/n)? ' "$(q "$UPGRADE_NAME")"
       read ok
       case "$(printf '%s' "$ok" | tr A-Z a-z)" in
-        y|yes) found=1 ;;
+        y | yes) found=1 ;;
       esac
     fi
   done
@@ -249,8 +252,8 @@ opts=' '
 skip=
 for arg in "$@"; do
   [ -n "$skip" -o "${arg#-}" = "$arg" ] && skip= && continue
-  opts="$opts ${arg%%=*} " # exclude trailing `=...`
-  skip="${arg##*=*}" # skip next arg as an option value if $arg has no `=`
+  opts="$opts ${arg%%=*} "                          # exclude trailing `=...`
+  skip="${arg##*=*}"                                # skip next arg as an option value if $arg has no `=`
   [ "${flags/ ${arg%%=*} /}" != "$flags" ] && skip= # ...and is not a flag
 done
 
@@ -272,7 +275,7 @@ skip=
 for arg in "$@"; do
   CMD="$CMD$(printf " $([ -n "$skip" ] || printf '%s' '\\\n  ')%s" "$(q "$arg")")"
   [ -n "$skip" -o "${arg#-}" = "$arg" ] && skip= && continue
-  skip="${arg##*=*}" # next arg is an option value if $arg has no `=`
+  skip="${arg##*=*}"                                # next arg is an option value if $arg has no `=`
   [ "${flags/ ${arg%%=*} /}" != "$flags" ] && skip= # ...and is not a flag
 done
 
