@@ -681,19 +681,19 @@ export const makeRunPolicyProvider = () => {
 
   /** @type {ReturnType<typeof computronCounter> | undefined} */
   let policy;
-  let counting = false;
+  let policyEnabled = false;
 
   const meter = harden({
     provideRunPolicy: () => {
-      if (counting && !policy) {
+      if (policyEnabled && !policy) {
         policy = computronCounter({ beansPerUnit });
       }
       return policy;
     },
-    /** @param {boolean} x */
-    usePolicy: x => {
-      counting = x;
-      if (!counting) {
+    /** @param {boolean} forceEnabled */
+    usePolicy: forceEnabled => {
+      policyEnabled = forceEnabled;
+      if (!policyEnabled) {
         policy = undefined;
       }
     },
