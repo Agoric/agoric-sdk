@@ -1,4 +1,4 @@
-#!/usr/bin/env tsx
+#!/usr/bin/env node --import ts-blank-space/register
 /* eslint-env node */
 
 import fsp from 'node:fs/promises';
