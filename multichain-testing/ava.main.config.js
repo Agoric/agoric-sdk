@@ -1,9 +1,12 @@
 export default {
+  environmentVariables: {
+    LOCKDOWN_OVERRIDE_TAMING: 'severe',
+  },
   extensions: {
     ts: 'module',
   },
   require: ['@endo/init/debug.js'],
-  nodeArguments: ['--import=tsimp/import'],
+  nodeArguments: ['--import=ts-blank-space/register'],
   files: ['test/**/*.test.ts', '!test/fast-usdc/**/*.test.ts'],
   concurrency: 1,
   serial: true,
