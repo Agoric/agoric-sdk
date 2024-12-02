@@ -193,26 +193,29 @@ SOURCE_URL="$ZIP_URL?checksum=$CHECKSUM"
 UPGRADE_INFO="{\"binaries\":{\"any\":\"$BINARY_URL\"},\"source\":\"$SOURCE_URL\"}"
 
 # Determine the Cosmos upgrade name, prompting to resolve ambiguity (if possible).
+UPGRADE_NAME_COUNT=${#UPGRADE_NAMES[@]}
+LAST_UPGRADE_NAME=
+[ "$UPGRADE_NAME_COUNT" -gt 0 ] && LAST_UPGRADE_NAME="${UPGRADE_NAMES[$UPGRADE_NAME_COUNT - 1]}"
 UPGRADE_NAME=
-if [ "${#UPGRADE_NAMES[@]}" -ge 1 ]; then
+if [ "$UPGRADE_NAME_COUNT" -gt 0 ]; then
   echo 'Found upgrade names:' 1>&2
   for name in "${UPGRADE_NAMES[@]}"; do
     printf '* %s\n' "$name" 1>&2
   done
-  UPGRADE_NAME="${UPGRADE_NAMES[-1]}" # default to the last upgrade name
+  UPGRADE_NAME="$LAST_UPGRADE_NAME"
 fi
 if [ -n "$FORCE_UPGRADE_NAME" ]; then
   UPGRADE_NAME="$FORCE_UPGRADE_NAME"
-elif [ -t 0 ] && [ -t 1 ] && [ -t 2 ] && [ "${#UPGRADE_NAMES[@]}" -ne 1 ]; then
+elif [ -t 0 ] && [ -t 1 ] && [ -t 2 ] && [ "$UPGRADE_NAME_COUNT" -ne 1 ]; then
   hint="$(printf '%s' "$UPGRADE_NAME" | sed 's/\(..*\)/ (\1)/')"
   found=0
   printf '\n' 1>&2
   while [ $found -eq 0 ]; do
     printf 'upgrade name%s: ' "$hint" 1>&2
     read -r UPGRADE_NAME
-    [ -n "$UPGRADE_NAME" ] || UPGRADE_NAME="${UPGRADE_NAMES[-1]}"
+    [ -n "$UPGRADE_NAME" ] || UPGRADE_NAME="$LAST_UPGRADE_NAME"
     if [ -n "$UPGRADE_NAME" ]; then
-      found=$((${#UPGRADE_NAMES[@]} == 0))
+      found=$((UPGRADE_NAME_COUNT == 0))
       for name in "${UPGRADE_NAMES[@]}"; do
         [[ -n "$name" && "$UPGRADE_NAME" = "$name" ]] && found=1
       done
