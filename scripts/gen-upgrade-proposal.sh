@@ -1,6 +1,7 @@
 #! /bin/bash
 set -ueo pipefail
-declare -r USAGE='Usage: '"$0"' \
+# shellcheck disable=SC2016 # intentionally escape `agd tx`
+declare -r USAGE="Usage: $0"' \
   [<option>]... [--send] \
   [<target ref>] \
   [--] [<agd tx argument>]...
@@ -45,7 +46,7 @@ Past proposals for mainnet can be reviewed at https://ping.pub/agoric/gov
 # usage [<exit code>]
 usage() {
   printf '%s' "$USAGE"
-  exit ${1:-64} # EX_USAGE from BSD sysexits
+  exit "${1:-64}" # EX_USAGE from BSD sysexits
 }
 # fail <error message> [<exit code>]
 fail() {
@@ -139,7 +140,7 @@ done
 COMMIT_ID=
 RELEASE_NAME=
 UPGRADE_NAMES=()
-if [ -z "$COMMIT_ID" -a $MODE != local -a -n "$TARGET_REF" ]; then
+if [[ -z "$COMMIT_ID" && "$MODE" != local && -n "$TARGET_REF" ]]; then
   echo "Checking $GH_API/repos/$GH_REPO for $TARGET_REF..." 1>&2
   tag_name=
   if [ "$TARGET_REF" = latest ]; then
@@ -168,7 +169,7 @@ if [ -z "$COMMIT_ID" -a $MODE != local -a -n "$TARGET_REF" ]; then
     COMMIT_ID="$(printf '%s\n' "$commit_json" | jq -r .sha)"
   fi
 fi
-if [ -z "$COMMIT_ID" -a $MODE != remote ]; then
+if [[ -z "$COMMIT_ID" && "$MODE" != remote ]]; then
   echo "Checking $(pwd) for ${TARGET_REF:-HEAD}..." 1>&2
   COMMIT_ID="$(git rev-parse "${TARGET_REF:-HEAD}")"
 fi
@@ -202,24 +203,24 @@ if [ "${#UPGRADE_NAMES[@]}" -ge 1 ]; then
 fi
 if [ -n "$FORCE_UPGRADE_NAME" ]; then
   UPGRADE_NAME="$FORCE_UPGRADE_NAME"
-elif [ -t 0 -a -t 1 -a -t 2 -a "${#UPGRADE_NAMES[@]}" -ne 1 ]; then
+elif [ -t 0 ] && [ -t 1 ] && [ -t 2 ] && [ "${#UPGRADE_NAMES[@]}" -ne 1 ]; then
   hint="$(printf '%s' "$UPGRADE_NAME" | sed 's/\(..*\)/ (\1)/')"
   found=0
   printf '\n' 1>&2
   while [ $found -eq 0 ]; do
     printf 'upgrade name%s: ' "$hint" 1>&2
-    read UPGRADE_NAME
+    read -r UPGRADE_NAME
     [ -n "$UPGRADE_NAME" ] || UPGRADE_NAME="${UPGRADE_NAMES[-1]}"
     if [ -n "$UPGRADE_NAME" ]; then
       found=$((${#UPGRADE_NAMES[@]} == 0))
       for name in "${UPGRADE_NAMES[@]}"; do
-        [ -n "$name" -a "$UPGRADE_NAME" = "$name" ] && found=1
+        [[ -n "$name" && "$UPGRADE_NAME" = "$name" ]] && found=1
       done
     fi
     if [ "$found" -eq 0 ]; then
       printf 'use unknown upgrade name %s (y/n)? ' "$(q "$UPGRADE_NAME")"
-      read ok
-      case "$(printf '%s' "$ok" | tr A-Z a-z)" in
+      read -r ok
+      case "$(printf '%s' "$ok" | tr '[:upper:]' '[:lower:]')" in
         y | yes) found=1 ;;
       esac
     fi
@@ -251,7 +252,7 @@ flags="${flags:-' --aux --dry-run --generate-only -h --help --ledger --no-valida
 opts=' '
 skip=
 for arg in "$@"; do
-  [ -n "$skip" -o "${arg#-}" = "$arg" ] && skip= && continue
+  [[ -n "$skip" || "${arg#-}" = "$arg" ]] && skip= && continue
   opts="$opts ${arg%%=*} "                          # exclude trailing `=...`
   skip="${arg##*=*}"                                # skip next arg as an option value if $arg has no `=`
   [ "${flags/ ${arg%%=*} /}" != "$flags" ] && skip= # ...and is not a flag
@@ -264,9 +265,9 @@ CMD="agd tx gov submit-proposal software-upgrade $(q "$UPGRADE_NAME") \\
   --upgrade-info $(q "$UPGRADE_INFO") \\
   $([ -z "${opts##* --title *}" ] || printf '%s %s' --title "$(q "$DEFAULT_TITLE")") \\
   $([ -z "${opts##* --description *}" ] || printf '%s %s' --description "$(q "$DEFAULT_DESC")") \\
-  $([ -z "${opts##* --chain-id *}" ] || printf '%s "$(%s)"' --chain-id "$get_chain_id") \\
+  $([ -z "${opts##* --chain-id *}" ] || printf '%s "%s(%s)"' --chain-id '$' "$get_chain_id") \\
   $([ -z "${opts##* --from *}" ] || echo "--from '<WALLET>'") \\
-  $([ -z "${opts##* --upgrade-height *}" ] || printf '%s "$(%s)"' --upgrade-height "$get_height") \\
+  $([ -z "${opts##* --upgrade-height *}" ] || printf '%s "%s(%s)"' --upgrade-height '$' "$get_height") \\
 "
 CMD="$(echo "$CMD" | grep -v '^\(   [\\]\|\)$' | sed '$s/ [\\]$//')"
 
@@ -274,7 +275,7 @@ CMD="$(echo "$CMD" | grep -v '^\(   [\\]\|\)$' | sed '$s/ [\\]$//')"
 skip=
 for arg in "$@"; do
   CMD="$CMD$(printf " $([ -n "$skip" ] || printf '%s' '\\\n  ')%s" "$(q "$arg")")"
-  [ -n "$skip" -o "${arg#-}" = "$arg" ] && skip= && continue
+  [[ -n "$skip" || "${arg#-}" = "$arg" ]] && skip= && continue
   skip="${arg##*=*}"                                # next arg is an option value if $arg has no `=`
   [ "${flags/ ${arg%%=*} /}" != "$flags" ] && skip= # ...and is not a flag
 done
