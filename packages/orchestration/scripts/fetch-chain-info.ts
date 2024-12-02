@@ -1,4 +1,4 @@
-#!/usr/bin/env TS_BLANK_SPACE_EMIT=false node --import ts-blank-space/register
+#!/usr/bin/env node --import ts-blank-space/register
 /** @file Fetch canonical chain info to generate the minimum needed for agoricNames */
 import { ChainRegistryClient } from '@chain-registry/client';
 import fsp from 'node:fs/promises';
