@@ -1,4 +1,4 @@
-#!/usr/bin/env node --import ts-blank-space/register
+#!/usr/bin/env -S node --import ts-blank-space/register
 import '@endo/init/debug.js';
 
 import { execa } from 'execa';

@@ -1,4 +1,4 @@
-#!/usr/bin/env node --import ts-blank-space/register
+#!/usr/bin/env -S node --import ts-blank-space/register
 /* eslint-disable -- hacky script for irregular reports */
 
 /**
