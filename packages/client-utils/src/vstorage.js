@@ -13,7 +13,7 @@ export const makeVStorage = (powers, config) => {
   /** @param {string} path */
   const getJSON = path => {
     const url = config.rpcAddrs[0] + path;
-    // console.warn('fetching', url);
+    console.warn('fetching', url);
     return powers.fetch(url, { keepalive: true }).then(res => res.json());
   };
   // height=0 is the same as omitting height and implies the highest block
@@ -89,14 +89,14 @@ export const makeVStorage = (powers, config) => {
       let blockHeight;
       await null;
       do {
-        // console.debug('READING', { blockHeight });
+        console.debug('READING', { blockHeight });
         let values;
         try {
           ({ blockHeight, values } = await vstorage.readAt(
             path,
             blockHeight && Number(blockHeight) - 1,
           ));
-          // console.debug('readAt returned', { blockHeight });
+          console.debug('readAt returned', { blockHeight });
         } catch (err) {
           if (
             // CosmosSDK ErrInvalidRequest with particular message text;
@@ -107,14 +107,14 @@ export const makeVStorage = (powers, config) => {
             err.code === 18 &&
             err.message.match(/pruned/)
           ) {
-            // console.error(err);
+            console.error(err);
             break;
           }
           throw err;
         }
         parts.push(values);
-        // console.debug('PUSHED', values);
-        // console.debug('NEW', { blockHeight, minHeight });
+        console.debug('PUSHED', values);
+        console.debug('NEW', { blockHeight, minHeight });
         if (minHeight && Number(blockHeight) <= Number(minHeight)) break;
       } while (blockHeight > 0);
       return parts.flat();
