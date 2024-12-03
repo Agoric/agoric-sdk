@@ -1,9 +1,9 @@
-import type { Passable } from '@endo/pass-style';
 import test from 'ava';
 import { Command } from 'commander';
 import { addOperatorCommands } from '../../src/cli/operator-commands.js';
 import { MockCctpTxEvidences } from '../fixtures.js';
 import { makeMarshal } from '@endo/marshal';
+import type { Writable } from 'node:stream';
 
 export const flags = (
   record: Record<string, string | number | bigint | undefined>,
@@ -17,20 +17,17 @@ export const flags = (
 
 const marshalData = makeMarshal(_v => assert.fail('data only'));
 
+const mockStream = <T extends Writable>(buf: string[]): T =>
+  ({ write: txt => (buf.push(txt), true) }) as T;
+
 test('fast-usdc operator attest sub-command', async t => {
   const evidence = harden(MockCctpTxEvidences.AGORIC_PLUS_DYDX());
   const { aux, tx, ...flat } = evidence;
   const argv = [
     ...`node fast-usdc operator attest`.split(' '),
-    ...flags({
-      previousOfferId: 123,
-      forwardingChannel: aux.forwardingChannel,
-      recipientAddress: aux.recipientAddress,
-      amount: tx.amount,
-      forwardingAddress: tx.forwardingAddress,
-      ...flat,
-    }),
+    ...flags({ previousOfferId: 123, ...aux, ...tx, ...flat }),
   ];
+  t.log(...argv);
   const program = new Command();
   program.exitOverride();
   const out = [] as string[];
@@ -38,18 +35,8 @@ test('fast-usdc operator attest sub-command', async t => {
 
   addOperatorCommands(program, {
     fetch: null as unknown as Window['fetch'],
-    stdout: {
-      write: txt => {
-        out.push(txt);
-        return true;
-      },
-    } as unknown as typeof process.stdout,
-    stderr: {
-      write: txt => {
-        err.push(txt);
-        return true;
-      },
-    } as unknown as typeof process.stderr,
+    stdout: mockStream<typeof process.stdout>(out),
+    stderr: mockStream<typeof process.stderr>(err),
     env: {},
     now: () => 1234,
   });
