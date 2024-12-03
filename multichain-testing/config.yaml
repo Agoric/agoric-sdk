@@ -17,9 +17,6 @@ chains:
         swingset:
           params:
             bootstrap_vat_config: '@agoric/vm-config/decentral-itest-orchestration-config.json'
-    scripts:
-      updateConfig:
-        file: scripts/update-config.sh
     faucet:
       enabled: false
     ports:
