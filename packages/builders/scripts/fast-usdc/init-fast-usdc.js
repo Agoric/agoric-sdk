@@ -79,8 +79,6 @@ const configurations = {
   },
   MAINNET: {
     oracles: {
-      DSRV: 'agoric144rrhh4m09mh7aaffhm6xy223ym76gve2x7y78',
-      Stakin: 'agoric19d6gnr9fyp6hev4tlrg87zjrzsd5gzr5qlfq2p',
       '01node': 'agoric19uscwxdac6cf6z7d5e26e0jm0lgwstc47cpll8',
       'Simply Staking': 'agoric1krunjcqfrf7la48zrvdfeeqtls5r00ep68mzkr',
       P2P: 'agoric1n4fcxsnkxe4gj6e24naec99hzmc4pjfdccy5nj',
