@@ -3,6 +3,8 @@
     "type": "/agoric.swingset.CoreEvalProposal",
     "sdk-generate": [
       "testing/replace-feeDistributor-short.js replaceFeeDistributor",
+      "testing/add-USD-LEMONS.js addUsdLemons",
+      "vats/upgrade-provisionPool.js upgradeProvisionPool",
       "vats/upgrade-paRegistry.js",
       "vats/upgrade-board.js",
       "testing/test-upgraded-board.js testUpgradedBoard"
@@ -13,6 +15,7 @@
   "dependencies": {
     "@agoric/client-utils": "0.1.1-dev-02c06c4.0",
     "@agoric/ertp": "dev",
+    "@agoric/internal": "dev",
     "@agoric/synthetic-chain": "^0.4.3",
     "@agoric/zoe": "dev",
     "@endo/errors": "1.2.7",

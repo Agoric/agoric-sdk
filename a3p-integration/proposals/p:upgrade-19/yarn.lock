@@ -31,6 +31,21 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@agoric/base-zone@npm:0.1.1-dev-1dd4589.0+1dd4589":
+  version: 0.1.1-dev-1dd4589.0
+  resolution: "@agoric/base-zone@npm:0.1.1-dev-1dd4589.0"
+  dependencies:
+    "@agoric/store": "npm:0.9.3-dev-1dd4589.0+1dd4589"
+    "@endo/common": "npm:^1.2.8"
+    "@endo/errors": "npm:^1.2.8"
+    "@endo/exo": "npm:^1.5.7"
+    "@endo/far": "npm:^1.1.9"
+    "@endo/pass-style": "npm:^1.4.7"
+    "@endo/patterns": "npm:^1.4.7"
+  checksum: 10c0/d0c214a7e69b427df1632d1ac10bc97f977823d723e4696ad8cf92a0eb9dd6297142ce4b98ae211c994547c43380c9a6487959a1719f7ee90fb128a00e5ff669
+  languageName: node
+  linkType: hard
+
 "@agoric/base-zone@npm:0.1.1-dev-3b799b8.0+3b799b8":
   version: 0.1.1-dev-3b799b8.0
   resolution: "@agoric/base-zone@npm:0.1.1-dev-3b799b8.0"
@@ -200,6 +215,26 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@agoric/internal@npm:dev":
+  version: 0.3.3-dev-1dd4589.0
+  resolution: "@agoric/internal@npm:0.3.3-dev-1dd4589.0"
+  dependencies:
+    "@agoric/base-zone": "npm:0.1.1-dev-1dd4589.0+1dd4589"
+    "@endo/common": "npm:^1.2.8"
+    "@endo/errors": "npm:^1.2.8"
+    "@endo/far": "npm:^1.1.9"
+    "@endo/init": "npm:^1.1.7"
+    "@endo/marshal": "npm:^1.6.2"
+    "@endo/pass-style": "npm:^1.4.7"
+    "@endo/patterns": "npm:^1.4.7"
+    "@endo/promise-kit": "npm:^1.1.8"
+    "@endo/stream": "npm:^1.2.8"
+    anylogger: "npm:^0.21.0"
+    jessie.js: "npm:^0.3.4"
+  checksum: 10c0/eb261f7bde265f168698c9da04af7458e2747fd54e945cdef82b822af5749e8a9443bb827bbace959269a04ae58d33c4ea465c31b580bf8d07b15fa87cb80ca3
+  languageName: node
+  linkType: hard
+
 "@agoric/kmarshal@npm:0.1.1-dev-02c06c4.0+02c06c4":
   version: 0.1.1-dev-02c06c4.0
   resolution: "@agoric/kmarshal@npm:0.1.1-dev-02c06c4.0"
@@ -302,6 +337,19 @@ __metadata:
     "@endo/pass-style": "npm:^1.4.6"
     "@endo/patterns": "npm:^1.4.6"
   checksum: 10c0/975d6d7f72bc3e0bb9087a1998c4c6092504cf084d1615a74d7bd7ea10d9032d5a0845e24399f787a7a9b1974e00a61a995f73d47bf8a8444ac1d9ed8aeb94a6
+  languageName: node
+  linkType: hard
+
+"@agoric/store@npm:0.9.3-dev-1dd4589.0+1dd4589":
+  version: 0.9.3-dev-1dd4589.0
+  resolution: "@agoric/store@npm:0.9.3-dev-1dd4589.0"
+  dependencies:
+    "@endo/errors": "npm:^1.2.8"
+    "@endo/exo": "npm:^1.5.7"
+    "@endo/marshal": "npm:^1.6.2"
+    "@endo/pass-style": "npm:^1.4.7"
+    "@endo/patterns": "npm:^1.4.7"
+  checksum: 10c0/72d2c3ff3cb0d8b48f06146e4deb0967273e10a86ec7c01e7bc176c5e1ab31d016b909bde1230c8f031ba60552c31ee7d0eccb5791985fc12330fdb6dcda5edb
   languageName: node
   linkType: hard
 
@@ -1096,7 +1144,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@endo/exo@npm:^1.5.6":
+"@endo/exo@npm:^1.5.6, @endo/exo@npm:^1.5.7":
   version: 1.5.7
   resolution: "@endo/exo@npm:1.5.7"
   dependencies:
@@ -1238,7 +1286,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@endo/stream@npm:^1.2.7":
+"@endo/stream@npm:^1.2.7, @endo/stream@npm:^1.2.8":
   version: 1.2.8
   resolution: "@endo/stream@npm:1.2.8"
   dependencies:
@@ -5203,6 +5251,7 @@ __metadata:
   dependencies:
     "@agoric/client-utils": "npm:0.1.1-dev-02c06c4.0"
     "@agoric/ertp": "npm:dev"
+    "@agoric/internal": "npm:dev"
     "@agoric/synthetic-chain": "npm:^0.4.3"
     "@agoric/zoe": "npm:dev"
     "@endo/errors": "npm:1.2.7"

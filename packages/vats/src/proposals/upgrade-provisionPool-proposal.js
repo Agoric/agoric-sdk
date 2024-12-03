@@ -1,5 +1,8 @@
 import { E } from '@endo/far';
 import { deeplyFulfilled } from '@endo/marshal';
+import { makeTracer } from '@agoric/internal';
+
+const tracer = makeTracer('UpgradeProvisionPool');
 
 /**
  * @param {BootstrapPowers & {
@@ -16,6 +19,10 @@ export const upgradeProvisionPool = async (
       economicCommitteeCreatorFacet: electorateCreatorFacet,
       instancePrivateArgs: instancePrivateArgsP,
       provisionPoolStartResult: provisionPoolStartResultP,
+      bankManager,
+      namesByAddressAdmin: namesByAddressAdminP,
+      walletFactoryStartResult: walletFactoryStartResultP,
+      provisionWalletBridgeManager: provisionWalletBridgeManagerP,
     },
   },
   options,
@@ -23,13 +30,27 @@ export const upgradeProvisionPool = async (
   const { provisionPoolRef } = options.options;
 
   assert(provisionPoolRef.bundleID);
-  console.log(`PROVISION POOL BUNDLE ID: `, provisionPoolRef.bundleID);
+  tracer(`PROVISION POOL BUNDLE ID: `, provisionPoolRef);
 
-  const [provisionPoolStartResult, instancePrivateArgs] = await Promise.all([
+  const [
+    provisionPoolStartResult,
+    instancePrivateArgs,
+    namesByAddressAdmin,
+    walletFactoryStartResult,
+    provisionWalletBridgeManager,
+  ] = await Promise.all([
     provisionPoolStartResultP,
     instancePrivateArgsP,
+    namesByAddressAdminP,
+    walletFactoryStartResultP,
+    provisionWalletBridgeManagerP,
   ]);
-  const { adminFacet, instance } = provisionPoolStartResult;
+  const {
+    adminFacet,
+    instance,
+    creatorFacet: ppCreatorFacet,
+  } = provisionPoolStartResult;
+  const { creatorFacet: wfCreatorFacet } = walletFactoryStartResult;
 
   const [originalPrivateArgs, poserInvitation] = await Promise.all([
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
@@ -48,7 +69,25 @@ export const upgradeProvisionPool = async (
     newPrivateArgs,
   );
 
-  console.log('ProvisionPool upgraded: ', upgradeResult);
+  tracer('ProvisionPool upgraded: ', upgradeResult);
+
+  const references = {
+    bankManager,
+    namesByAddressAdmin,
+    walletFactory: wfCreatorFacet,
+  };
+
+  tracer('Calling setReferences with: ', references);
+  await E(ppCreatorFacet).setReferences(references);
+
+  tracer('Creating bridgeHandler...');
+  const bridgeHandler = await E(ppCreatorFacet).makeHandler();
+
+  tracer('Setting new bridgeHandler...');
+  // @ts-expect-error casting
+  await E(provisionWalletBridgeManager).setHandler(bridgeHandler);
+
+  tracer('Done.');
 };
 
 export const getManifestForUpgradingProvisionPool = (
@@ -61,6 +100,10 @@ export const getManifestForUpgradingProvisionPool = (
         economicCommitteeCreatorFacet: true,
         instancePrivateArgs: true,
         provisionPoolStartResult: true,
+        bankManager: true,
+        namesByAddressAdmin: true,
+        walletFactoryStartResult: true,
+        provisionWalletBridgeManager: true,
       },
       produce: {},
     },
