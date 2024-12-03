@@ -7,13 +7,13 @@ import { makeQueue } from '@endo/stream';
  * @import { RunPolicy } from '../src/types-external.js'
  */
 
-/** @typedef {{ provideRunPolicy: () => RunPolicy | undefined }} RunPolicyMaker */
+/** @typedef {{ provideRunPolicy: () => RunPolicy | undefined }} RunHarness */
 
 /**
  * @param {import('../src/controller/controller.js').SwingsetController} controller
- * @param {RunPolicyMaker} [perfTool]
+ * @param {RunHarness} [harness]
  */
-export const makeRunUtils = (controller, perfTool) => {
+export const makeRunUtils = (controller, harness) => {
   const mutex = makeQueue();
   const logRunFailure = reason =>
     console.log('controller.run() failure', reason);
@@ -31,7 +31,7 @@ export const makeRunUtils = (controller, perfTool) => {
   const queueAndRun = async (deliveryThunk, voidResult = false) => {
     await mutex.get();
     const kpid = await deliveryThunk();
-    const runPolicy = perfTool && perfTool.provideRunPolicy();
+    const runPolicy = harness && harness.provideRunPolicy();
     const runResultP = controller.run(runPolicy);
     mutex.put(runResultP.catch(logRunFailure));
     await runResultP;

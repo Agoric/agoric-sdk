@@ -16,12 +16,12 @@ import {
 } from './walletFactory.js';
 import {
   insistManagerType,
-  makeRunPolicyProvider,
+  makeSwingsetHarness,
 } from '../../tools/supports.js';
 
 const test: TestFn<
   WalletFactoryTestContext & {
-    perfTool?: ReturnType<typeof makeRunPolicyProvider>;
+    harness?: ReturnType<typeof makeSwingsetHarness>;
   }
 > = anyTest;
 
@@ -40,14 +40,14 @@ const {
 
 test.before(async t => {
   insistManagerType(defaultManagerType);
-  const perfTool =
-    defaultManagerType === 'xsnap' ? makeRunPolicyProvider() : undefined;
+  const harness =
+    defaultManagerType === 'xsnap' ? makeSwingsetHarness() : undefined;
   const ctx = await makeWalletFactoryContext(
     t,
     '@agoric/vm-config/decentral-itest-orchestration-config.json',
-    { slogFile, defaultManagerType, perfTool },
+    { slogFile, defaultManagerType, harness },
   );
-  t.context = { ...ctx, perfTool };
+  t.context = { ...ctx, harness };
 });
 test.after.always(t => t.context.shutdown?.());
 
@@ -123,7 +123,7 @@ test.skip('stakeOsmo - queries', async t => {
     buildProposal,
     evalProposal,
     runUtils: { EV },
-    perfTool,
+    harness,
   } = t.context;
   await evalProposal(
     buildProposal('@agoric/builders/scripts/orchestration/init-stakeOsmo.js'),
@@ -162,7 +162,7 @@ test.serial('stakeAtom - smart wallet', async t => {
     agoricNamesRemotes,
     bridgeUtils: { flushInboundQueue },
     readPublished,
-    perfTool,
+    harness,
   } = t.context;
 
   await evalProposal(
@@ -173,7 +173,7 @@ test.serial('stakeAtom - smart wallet', async t => {
     'agoric1testStakAtom',
   );
 
-  perfTool?.usePolicy(true);
+  harness?.useRunPolicy(true);
   await wd.sendOffer({
     id: 'request-account',
     invitationSpec: {
@@ -183,8 +183,8 @@ test.serial('stakeAtom - smart wallet', async t => {
     },
     proposal: {},
   });
-  perfTool && t.log('makeAccount computrons', perfTool.totalCount());
-  perfTool?.usePolicy(false);
+  harness && t.log('makeAccount computrons', harness.totalComputronCount());
+  harness?.useRunPolicy(false);
 
   await flushInboundQueue();
   t.like(wd.getCurrentWalletRecord(), {
