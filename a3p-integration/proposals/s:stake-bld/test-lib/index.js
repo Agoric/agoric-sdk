@@ -1,11 +1,9 @@
 /* eslint-env node */
 import { execFileSync } from 'child_process';
+import { LOCAL_CONFIG as networkConfig } from '@agoric/client-utils';
 import { makeWalletUtils } from './wallet.js';
 
-export const networkConfig = {
-  rpcAddrs: ['http://0.0.0.0:26657'],
-  chainName: 'agoriclocal',
-};
+export { networkConfig };
 
 /**
  * Resolve after a delay in milliseconds.
