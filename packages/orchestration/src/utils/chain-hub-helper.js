@@ -12,7 +12,7 @@
  * @param {ChainHub} chainHub
  * @param {Record<string, Brand<'nat'>>} brands
  * @param {Record<string, CosmosChainInfo> | undefined} chainInfo
- * @param {Record<Denom, DenomDetail & { brandKey?: string }> | undefined} assetInfo
+ * @param {[Denom, DenomDetail & { brandKey?: string }][] | undefined} assetInfo
  */
 export const registerChainsAndAssets = (
   chainHub,
@@ -43,11 +43,14 @@ export const registerChainsAndAssets = (
   }
   console.log('chainHub: registered connections', [...registeredPairs].sort());
 
-  console.log('chainHub: registering assets', Object.keys(assetInfo || {}));
+  console.log(
+    'chainHub: registering assets',
+    assetInfo?.map(([denom, { chainName }]) => `${chainName}: ${denom}`),
+  );
   if (!assetInfo) {
     return;
   }
-  for (const [denom, info] of Object.entries(assetInfo)) {
+  for (const [denom, info] of assetInfo) {
     const { brandKey, ...rest } = info;
     const infoWithBrand = brandKey
       ? { ...rest, brand: brands[brandKey] }

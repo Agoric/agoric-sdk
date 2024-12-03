@@ -4,6 +4,7 @@ import { observeIteration, subscribeEach } from '@agoric/notifier';
 import {
   CosmosChainInfoShape,
   DenomDetailShape,
+  DenomShape,
   OrchestrationPowersShape,
   registerChainsAndAssets,
   withOrchestration,
@@ -55,7 +56,7 @@ export const meta = {
     feeConfig: FeeConfigShape,
     marshaller: M.remotable(),
     chainInfo: M.recordOf(M.string(), CosmosChainInfoShape),
-    assetInfo: M.recordOf(M.string(), DenomDetailShape),
+    assetInfo: M.arrayOf([DenomShape, DenomDetailShape]),
   },
 };
 harden(meta);
@@ -77,7 +78,7 @@ const publishFeeConfig = async (node, marshaller, feeConfig) => {
  *   marshaller: Marshaller;
  *   feeConfig: FeeConfig;
  *   chainInfo: Record<string, CosmosChainInfo>;
- *   assetInfo: Record<Denom, DenomDetail & { brandKey?: string}>;
+ *   assetInfo: [Denom, DenomDetail & { brandKey?: string}][];
  * }} privateArgs
  * @param {Zone} zone
  * @param {OrchestrationTools} tools
