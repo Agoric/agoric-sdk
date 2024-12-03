@@ -62,6 +62,19 @@ export const initProgram = (
     return makeFile(getConfigPath(), readFile, writeFile, mkdir, exists);
   };
 
+  program.addHelpText(
+    'afterAll',
+    `
+  Agoric test networks provide configuration info at, for example,
+
+  https://devnet.agoric.net/network-config
+
+  To use RPC endpoints from such a configuration, use:
+  export AGORIC_NET=devnet
+
+  Use AGORIC_NET=local or leave it unset to use localhost and chain id agoriclocal.
+  `,
+  );
   addConfigCommands(program, configHelpers, makeConfigFile);
   addOperatorCommands(program, {
     fetch,
