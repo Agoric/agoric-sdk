@@ -494,3 +494,33 @@ test('repay fails when seat allocation does not equal amounts', t => {
     },
   );
 });
+
+test('repay succeeds with no Pool or Contract Fee', t => {
+  const { USDC } = brands;
+  const encumberedBalance = make(USDC, 100n);
+  const shareWorth = makeParity(make(USDC, 1n), brands.PoolShares);
+
+  const amounts = {
+    Principal: make(USDC, 25n),
+    ContractFee: make(USDC, 0n),
+    PoolFee: make(USDC, 0n),
+  };
+  const poolStats = {
+    ...makeInitialPoolStats(),
+    totalBorrows: make(USDC, 100n),
+  };
+  const fromSeatAllocation = amounts;
+  const actual = repayCalc(
+    shareWorth,
+    fromSeatAllocation,
+    amounts,
+    encumberedBalance,
+    poolStats,
+  );
+  t.like(actual, {
+    shareWorth,
+    encumberedBalance: {
+      value: 75n,
+    },
+  });
+});
