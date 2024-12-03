@@ -166,6 +166,7 @@ const options = {
   contractRate: { type: 'string', default: '0.2' },
   net: { type: 'string' },
   oracle: { type: 'string', multiple: true },
+  feedPolicy: { type: 'string' },
   usdcDenom: {
     type: 'string',
     default:
@@ -178,9 +179,9 @@ const oraclesUsage = 'use --oracle name:address ...';
 
 const feedPolicyUsage = 'use --feedPolicy <policy> ...';
 
-const chainInfoUsage = 'use --chainInfo chainName:CosmosChainInfo ...';
+const chainInfoUsage = 'use --chainInfo {chainName:CosmosChainInfo, ...}';
 const assetInfoUsage =
-  'use --assetInfo denom:DenomInfo & {brandKey?: string} ...';
+  'use --assetInfo { denom:DenomInfo & {brandKey?: string} ... }';
 
 /**
  * @typedef {{
