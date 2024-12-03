@@ -1,3 +1,5 @@
+/* eslint-env node */
+/* global globalThis */
 import { assertParsableNumber } from '@agoric/zoe/src/contractSupport/ratio.js';
 import {
   Command,
@@ -34,6 +36,11 @@ export const initProgram = (
   writeFile = writeAsync,
   mkdir = mkdirSync,
   exists = existsSync,
+  fetch = globalThis.fetch,
+  stdout = process.stdout,
+  stderr = process.stderr,
+  env = process.env,
+  now = () => Date.now(),
 ) => {
   const program = new Command();
 
@@ -56,7 +63,13 @@ export const initProgram = (
   };
 
   addConfigCommands(program, configHelpers, makeConfigFile);
-  addOperatorCommands(program);
+  addOperatorCommands(program, {
+    fetch,
+    stdout,
+    stderr,
+    env,
+    now,
+  });
 
   /** @param {string} value */
   const parseDecimal = value => {
