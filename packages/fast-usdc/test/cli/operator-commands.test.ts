@@ -2,18 +2,9 @@ import { makeMarshal } from '@endo/marshal';
 import test from 'ava';
 import { Command } from 'commander';
 import { addOperatorCommands } from '../../src/cli/operator-commands.js';
+import { flags } from '../../tools/cli-tools.js';
 import { mockStream } from '../../tools/mock-io.js';
 import { MockCctpTxEvidences } from '../fixtures.js';
-
-export const flags = (
-  record: Record<string, string | number | bigint | undefined>,
-): string[] => {
-  // @ts-expect-error undefined is filtered out
-  const skipUndef: [string, string][] = Object.entries(record).filter(
-    ([_k, v]) => v !== undefined,
-  );
-  return skipUndef.map(([k, v]) => [`--${k}`, `${v}`]).flat();
-};
 
 const marshalData = makeMarshal(_v => assert.fail('data only'));
 
