@@ -1,9 +1,9 @@
+import { makeMarshal } from '@endo/marshal';
 import test from 'ava';
 import { Command } from 'commander';
 import { addOperatorCommands } from '../../src/cli/operator-commands.js';
+import { mockStream } from '../../tools/mock-io.js';
 import { MockCctpTxEvidences } from '../fixtures.js';
-import { makeMarshal } from '@endo/marshal';
-import type { Writable } from 'node:stream';
 
 export const flags = (
   record: Record<string, string | number | bigint | undefined>,
@@ -16,9 +16,6 @@ export const flags = (
 };
 
 const marshalData = makeMarshal(_v => assert.fail('data only'));
-
-const mockStream = <T extends Writable>(buf: string[]): T =>
-  ({ write: txt => (buf.push(txt), true) }) as T;
 
 test('fast-usdc operator attest sub-command', async t => {
   const evidence = harden(MockCctpTxEvidences.AGORIC_PLUS_DYDX());

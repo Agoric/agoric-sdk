@@ -5,7 +5,8 @@
   "type": "module",
   "files": [
     "contract",
-    "src"
+    "src",
+    "tools"
   ],
   "bin": {
     "fast-usdc": "./src/cli/bin.js"
