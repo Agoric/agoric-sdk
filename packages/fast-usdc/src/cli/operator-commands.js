@@ -7,16 +7,22 @@
 
 import { fetchEnvNetworkConfig, makeVstorageKit } from '@agoric/client-utils';
 import { mustMatch } from '@agoric/internal';
+import { Nat } from '@endo/nat';
+import { InvalidArgumentError } from 'commander';
 import { INVITATION_MAKERS_DESC } from '../exos/transaction-feed.js';
 import { CctpTxEvidenceShape } from '../type-guards.js';
 import { outputActionAndHint } from './bridge-action.js';
-import { fromExternalConfig } from '../utils/config-marshal.js';
 
 /** @param {string} arg */
-const parseCCTPEvidence = arg => {
-  const evidence = fromExternalConfig(JSON.parse(arg), {});
-  mustMatch(evidence, CctpTxEvidenceShape);
-  return evidence;
+const parseNat = arg => {
+  const n = Nat(BigInt(arg));
+  return n;
+};
+
+/** @param {string} arg */
+const parseHex = arg => {
+  if (!arg.startsWith('0x')) throw new InvalidArgumentError('not a hex string');
+  return arg;
 };
 
 /**
@@ -75,14 +81,37 @@ export const addOperatorCommands = (
     .command('attest')
     .description('Attest to an observed Fast USDC transfer')
     .requiredOption('--previousOfferId <string>', 'Offer id', String)
-    .requiredOption('--evidence <json>', 'CCTP evidence', parseCCTPEvidence)
+    .requiredOption('--forwardingChannel <string>', 'Channel id', String)
+    .requiredOption('--recipientAddress <string>', 'bech32 address', String)
+    .requiredOption('--blockHash <0xhex>', 'hex hash', parseHex)
+    .requiredOption('--blockNumber <number>', 'number', parseNat)
+    .requiredOption('--blockTimestamp <number>', 'number', parseNat)
+    .requiredOption('--chainId <string>', 'chain id', Number)
+    .requiredOption('--amount <number>', 'number', parseNat)
+    .requiredOption('--forwardingAddress <string>', 'bech32 address', String)
+    .requiredOption('--txHash <0xhexo>', 'hex hash', parseHex)
     .option('--offerId <string>', 'Offer id', String, `operatorAttest-${now()}`)
     .action(async opts => {
-      const { previousOfferId, evidence } = opts;
+      const {
+        offerId,
+        previousOfferId,
+        forwardingChannel,
+        recipientAddress,
+        amount,
+        forwardingAddress,
+        ...flat
+      } = opts;
+
+      const evidence = harden({
+        aux: { forwardingChannel, recipientAddress },
+        tx: { amount, forwardingAddress },
+        ...flat,
+      });
+      mustMatch(evidence, CctpTxEvidenceShape);
 
       /** @type {OfferSpec} */
       const offer = {
-        id: opts.offerId,
+        id: offerId,
         invitationSpec: {
           source: 'continuing',
           previousOffer: previousOfferId,

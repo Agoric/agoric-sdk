@@ -1,9 +1,8 @@
+import type { Passable } from '@endo/pass-style';
 import test from 'ava';
 import { Command } from 'commander';
-import type { Passable } from '@endo/pass-style';
 import { addOperatorCommands } from '../../src/cli/operator-commands.js';
 import { MockCctpTxEvidences } from '../fixtures.js';
-import { toExternalConfig } from '../../src/utils/config-marshal.js';
 
 export const flags = (
   record: Record<string, string | number | undefined>,
@@ -23,7 +22,18 @@ test('fast-usdc operator attest sub-command', async t => {
     ...`node fast-usdc operator attest`.split(' '),
     ...flags({
       previousOfferId: 123,
-      evidence: JSON.stringify(toExternalConfig(evidence, {})),
+      forwardingChannel: 'channel-21',
+      recipientAddress:
+        'agoric16kv2g7snfc4q24vg3pjdlnnqgngtjpwtetd2h689nz09lcklvh5s8u37ek?EUD=dydx183dejcnmkka5dzcu9xw6mywq0p2m5peks28men',
+      blockHash:
+        '0x80d7343e04f8160892e94f02d6a9b9f255663ed0ac34caca98544c8143fee699',
+      blockNumber: 21037669,
+      blockTimestamp: 1730762099,
+      chainId: 1,
+      amount: 300000000,
+      forwardingAddress: 'noble1x0ydg69dh6fqvr27xjvp6maqmrldam6yfelktz',
+      txHash:
+        '0xd81bc6105b60a234c7c50ac17816ebcd5561d366df8bf3be59ff387552761799',
     }),
   ];
   const program = new Command();
