@@ -22,8 +22,8 @@ test.before(async t => {
   const wallets = await setupTestKeys(accounts);
   t.context = { ...common, wallets };
   await startContract(contractName, contractBuilder, {
-    chainInfo: JSON.stringify(chainInfo),
-    assetInfo: JSON.stringify(assetInfo),
+    chainInfo,
+    assetInfo,
   });
 });
 

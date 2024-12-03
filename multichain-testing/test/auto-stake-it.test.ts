@@ -27,8 +27,8 @@ test.before(async t => {
   t.context = { ...common, wallets };
 
   await startContract(contractName, contractBuilder, {
-    chainInfo: JSON.stringify(chainInfo),
-    assetInfo: JSON.stringify(assetInfo),
+    chainInfo,
+    assetInfo,
   });
 });
 

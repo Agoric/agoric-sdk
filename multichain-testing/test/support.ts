@@ -4,6 +4,7 @@ import { execa } from 'execa';
 import fse from 'fs-extra';
 import childProcess from 'node:child_process';
 import { withChainCapabilities } from '@agoric/orchestration';
+import { objectMap } from '@endo/patterns';
 import { makeAgdTools } from '../tools/agd-tools.js';
 import { type E2ETools } from '../tools/e2e-tools.js';
 import {
@@ -94,7 +95,7 @@ export const commonSetup = async (t: ExecutionContext) => {
   const startContract = async (
     contractName: string,
     contractBuilder: string,
-    builderOpts?: Record<string, string>,
+    builderOpts?: Record<string, unknown>,
   ) => {
     const { vstorageClient } = tools;
     const instances = Object.fromEntries(
@@ -104,7 +105,18 @@ export const commonSetup = async (t: ExecutionContext) => {
       return t.log('Contract found. Skipping installation...');
     }
     t.log('bundle and install contract', contractName);
-    await deployBuilder(contractBuilder, builderOpts);
+
+    const formattedOpts = builderOpts
+      ? objectMap(
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          builderOpts as Record<string, any>,
+          value => {
+            if (typeof value === 'string') return value;
+            return JSON.stringify(value);
+          },
+        )
+      : undefined;
+    await deployBuilder(contractBuilder, formattedOpts);
     await retryUntilCondition(
       () => vstorageClient.queryData(`published.agoricNames.instance`),
       res => contractName in Object.fromEntries(res),
