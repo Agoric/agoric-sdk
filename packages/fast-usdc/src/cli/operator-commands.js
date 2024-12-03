@@ -2,11 +2,22 @@
  * @import {Command} from 'commander';
  * @import {OfferSpec} from '@agoric/smart-wallet/src/offers.js';
  * @import {ExecuteOfferAction} from '@agoric/smart-wallet/src/smartWallet.js';
+ * @import {OperatorKit} from '../exos/operator-kit.js';
  */
 
 import { fetchEnvNetworkConfig, makeVstorageKit } from '@agoric/client-utils';
+import { mustMatch } from '@agoric/internal';
 import { INVITATION_MAKERS_DESC } from '../exos/transaction-feed.js';
+import { CctpTxEvidenceShape } from '../type-guards.js';
 import { outputActionAndHint } from './bridge-action.js';
+import { fromExternalConfig } from '../utils/config-marshal.js';
+
+/** @param {string} arg */
+const parseCCTPEvidence = arg => {
+  const evidence = fromExternalConfig(JSON.parse(arg), {});
+  mustMatch(evidence, CctpTxEvidenceShape);
+  return evidence;
+};
 
 /**
  * @param {Command} program
@@ -64,11 +75,28 @@ export const addOperatorCommands = (
     .command('attest')
     .description('Attest to an observed Fast USDC transfer')
     .requiredOption('--previousOfferId <string>', 'Offer id', String)
-    .action(async options => {
-      const { previousOfferId } = options;
-      console.error(
-        'TODO: Implement attest logic for request:',
-        previousOfferId,
+    .requiredOption('--evidence <json>', 'CCTP evidence', parseCCTPEvidence)
+    .option('--offerId <string>', 'Offer id', String, `operatorAttest-${now()}`)
+    .action(async opts => {
+      const { previousOfferId, evidence } = opts;
+
+      /** @type {OfferSpec} */
+      const offer = {
+        id: opts.offerId,
+        invitationSpec: {
+          source: 'continuing',
+          previousOffer: previousOfferId,
+          /** @type {string & keyof OperatorKit['invitationMakers'] } */
+          invitationMakerName: 'SubmitEvidence',
+          /** @type {Parameters<OperatorKit['invitationMakers']['SubmitEvidence']> } */
+          invitationArgs: [evidence],
+        },
+        proposal: {},
+      };
+
+      outputActionAndHint(
+        { method: 'executeOffer', offer },
+        { stderr, stdout },
       );
     });
 
