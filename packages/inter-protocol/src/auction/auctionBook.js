@@ -6,7 +6,11 @@ import { Fail } from '@endo/errors';
 import { E } from '@endo/captp';
 import { AmountMath, RatioShape } from '@agoric/ertp';
 import { mustMatch } from '@agoric/store';
-import { M, prepareExoClassKit } from '@agoric/vat-data';
+import {
+  M,
+  prepareExoClassKit,
+  provideDurableMapStore,
+} from '@agoric/vat-data';
 
 import { assertAllDefined, makeTracer } from '@agoric/internal';
 import {
@@ -36,7 +40,6 @@ import {
 const { makeEmpty } = AmountMath;
 
 const QUOTE_SCALE = 10n ** 9n;
-const QUOTE_NOTIFIER = 'quoteNotifier';
 
 /**
  * @file The book represents the collateral-specific state of an ongoing
@@ -119,6 +122,12 @@ export const makeOfferSpecShape = (bidBrand, collateralBrand) => {
 export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
   const makeScaledBidBook = prepareScaledBidBook(baggage);
   const makePriceBook = preparePriceBook(baggage);
+  // a map from collateralBrand to true when the quoteNotifier has an observer
+  // the brand is absent when there's no observer.
+  const quoteNotifierFlags = provideDurableMapStore(
+    baggage,
+    'quoteNotifierFlags',
+  );
 
   const AuctionBookStateShape = harden({
     collateralBrand: M.any(),
@@ -462,10 +471,10 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
           const { state, facets } = this;
           const { collateralBrand, bidBrand, priceAuthority } = state;
 
-          if (baggage.has(QUOTE_NOTIFIER)) {
+          if (quoteNotifierFlags.has(collateralBrand)) {
             return;
           }
-          baggage.set(QUOTE_NOTIFIER, true);
+          quoteNotifierFlags.init(collateralBrand, true);
           trace('observing');
 
           const quoteNotifierP = E(priceAuthority).makeQuoteNotifier(
@@ -491,7 +500,7 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
                   );
                   // lack of quote will trigger restart
                   state.updatingOracleQuote = null;
-                  baggage.delete(QUOTE_NOTIFIER);
+                  quoteNotifierFlags.delete(collateralBrand);
                 },
                 finish: done => {
                   trace(
@@ -499,13 +508,13 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
                   );
                   // lack of quote will trigger restart
                   state.updatingOracleQuote = null;
-                  baggage.delete(QUOTE_NOTIFIER);
+                  quoteNotifierFlags.delete(collateralBrand);
                 },
               }),
             e => {
               trace('makeQuoteNotifier failed, resetting', e);
               state.updatingOracleQuote = null;
-              baggage.delete(QUOTE_NOTIFIER);
+              quoteNotifierFlags.delete(collateralBrand);
             },
           );
 
