@@ -333,6 +333,10 @@ export interface IBCMsgTransferOptions {
   timeoutHeight?: MsgTransfer['timeoutHeight'];
   timeoutTimestamp?: MsgTransfer['timeoutTimestamp'];
   memo?: string;
+  forwardOpts?: {
+    timeout?: ForwardInfo['forward']['timeout'];
+    retries?: ForwardInfo['forward']['retries'];
+  };
 }
 
 /**
@@ -397,5 +401,6 @@ export type TransferRoute = {
     }
   | {
       receiver: string;
+      forwardInfo?: never;
     }
 );

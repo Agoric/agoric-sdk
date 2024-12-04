@@ -1,4 +1,4 @@
-#!/usr/bin/env tsx
+#!/usr/bin/env -S node --import ts-blank-space/register
 /* eslint-disable @jessie.js/safe-await-separator */
 
 import {
@@ -13,7 +13,7 @@ import {
   ISTunit,
   provisionWallet,
   setDebtLimit,
-} from '../lib/vaults.mjs';
+} from '../lib/vaults.ts';
 
 const START_FREQUENCY = 600; // StartFrequency: 600s (auction runs every 10m)
 const CLOCK_STEP = 20; // ClockStep: 20s (ensures auction completes in time)

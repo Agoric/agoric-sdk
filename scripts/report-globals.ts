@@ -1,4 +1,4 @@
-#!/usr/bin/env tsx
+#!/usr/bin/env -S node --import ts-blank-space/register
 /* eslint-disable -- hacky script for irregular reports */
 
 /**
@@ -79,6 +79,7 @@ const report = () => {
   console.log(counts);
 };
 
+console.log('Gathering globals...');
 // Feel free to disable this while debugging
 runEslint();
 report();

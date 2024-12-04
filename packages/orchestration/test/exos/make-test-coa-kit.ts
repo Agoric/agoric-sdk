@@ -83,10 +83,6 @@ export const prepareMakeTestCOAKit = (
         timer,
       },
     );
-
-    t.log('register Agoric chain and BLD in ChainHub');
-    utils.registerAgoricBld();
-
     return holder;
   };
 };

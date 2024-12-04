@@ -1,9 +1,7 @@
 {
   "agoricProposal": {
     "source": "subdir",
-    "$UNTIL": "write-chain-info to agoricNames until #10445 and chainHub setup",
     "sdk-generate": [
-      "orchestration/write-chain-info.js",
       "fast-usdc/init-fast-usdc.js submission --net A3P_INTEGRATION"
     ],
     "type": "/agoric.swingset.CoreEvalProposal"

@@ -7,14 +7,14 @@ import {
   makeTracer,
   NonNullish,
 } from '@agoric/internal';
-import { E, Far } from '@endo/far';
+import { E } from '@endo/far';
 
 /// <reference types="@agoric/vats/src/core/types-ambient"/>
 /**
- * @import {Installation} from '@agoric/zoe/src/zoeService/utils.js';
+ * @import {Installation, Instance} from '@agoric/zoe/src/zoeService/utils.js';
  */
 
-const trace = makeTracer('StartBuggySA', true);
+const trace = makeTracer('UpgradeSA', true);
 
 /**
  * @import {start as StartFn} from '@agoric/orchestration/src/examples/send-anywhere.contract.js';
@@ -22,32 +22,34 @@ const trace = makeTracer('StartBuggySA', true);
 
 /**
  * @param {BootstrapPowers & {
- *   installation: {
+ *   instance: {
  *     consume: {
- *       sendAnywhere: Installation<StartFn>;
+ *       sendAnywhere: Instance<StartFn>;
  *     };
  *   };
  * }} powers
+ * @param {...any} rest
  */
-export const startSendAnywhere = async ({
-  consume: {
-    agoricNames,
-    board,
-    chainStorage,
-    chainTimerService,
-    cosmosInterchainService,
-    localchain,
-    startUpgradable,
+export const upgradeSendAnywhere = async (
+  {
+    consume: {
+      agoricNames,
+      board,
+      chainStorage,
+      chainTimerService,
+      contractKits,
+      cosmosInterchainService,
+      localchain,
+    },
+    instance: instances,
   },
-  installation: {
-    consume: { sendAnywhere },
-  },
-  instance: {
-    // @ts-expect-error unknown instance
-    produce: { sendAnywhere: produceInstance },
-  },
-}) => {
-  trace(startSendAnywhere.name);
+  { options: { sendAnywhereRef } },
+) => {
+  trace(upgradeSendAnywhere.name);
+
+  const saInstance = await instances.consume.sendAnywhere;
+  trace('saInstance', saInstance);
+  const saKit = await E(contractKits).get(saInstance);
 
   const marshaller = await E(board).getReadonlyMarshaller();
 
@@ -58,40 +60,31 @@ export const startSendAnywhere = async ({
       marshaller,
       orchestrationService: cosmosInterchainService,
       storageNode: E(NonNullish(await chainStorage)).makeChildNode(
-        'sendAnywhere',
+        'send-anywhere',
       ),
       timerService: chainTimerService,
+      // undefined so `registerKnownChainsAndAssets` does not run again
+      chainInfo: undefined,
+      assetInfo: undefined,
     }),
   );
 
-  /** @type {import('@agoric/vats').NameHub} */
-  // @ts-expect-error intentional fake
-  const agoricNamesHangs = Far('agoricNames that hangs', {
-    lookup: async () => {
-      trace('agoricNames.lookup being called that will never resolve');
-      // BUG: this never resolves
-      return new Promise(() => {});
-    },
-  });
+  trace('upgrading...');
+  trace('ref', sendAnywhereRef);
+  await E(saKit.adminFacet).upgradeContract(
+    sendAnywhereRef.bundleID,
+    privateArgs,
+  );
 
-  const { instance } = await E(startUpgradable)({
-    label: 'sendAnywhere',
-    installation: sendAnywhere,
-    privateArgs: {
-      ...privateArgs,
-      agoricNames: agoricNamesHangs,
-    },
-  });
-  produceInstance.resolve(instance);
   trace('done');
 };
-harden(startSendAnywhere);
+harden(upgradeSendAnywhere);
 
 export const getManifestForValueVow = ({ restoreRef }, { sendAnywhereRef }) => {
-  trace('sendAnywhereRef', sendAnywhereRef);
+  console.log('sendAnywhereRef', sendAnywhereRef);
   return {
     manifest: {
-      [startSendAnywhere.name]: {
+      [upgradeSendAnywhere.name]: {
         consume: {
           agoricNames: true,
           board: true,
@@ -100,18 +93,21 @@ export const getManifestForValueVow = ({ restoreRef }, { sendAnywhereRef }) => {
           cosmosInterchainService: true,
           localchain: true,
 
-          startUpgradable: true,
+          contractKits: true,
         },
         installation: {
           consume: { sendAnywhere: true },
         },
         instance: {
-          produce: { sendAnywhere: true },
+          consume: { sendAnywhere: true },
         },
       },
     },
     installations: {
       sendAnywhere: restoreRef(sendAnywhereRef),
+    },
+    options: {
+      sendAnywhereRef,
     },
   };
 };
@@ -120,7 +116,7 @@ export const getManifestForValueVow = ({ restoreRef }, { sendAnywhereRef }) => {
 export const defaultProposalBuilder = async ({ publishRef, install }) =>
   harden({
     // Somewhat unorthodox, source the exports from this builder module
-    sourceSpec: '@agoric/builders/scripts/testing/start-buggy-sendAnywhere.js',
+    sourceSpec: '@agoric/builders/scripts/testing/upgrade-send-anywhere.js',
     getManifestCall: [
       'getManifestForValueVow',
       {
@@ -139,5 +135,5 @@ export default async (homeP, endowments) => {
   const dspModule = await import('@agoric/deploy-script-support');
   const { makeHelpers } = dspModule;
   const { writeCoreEval } = await makeHelpers(homeP, endowments);
-  await writeCoreEval(startSendAnywhere.name, defaultProposalBuilder);
+  await writeCoreEval(upgradeSendAnywhere.name, defaultProposalBuilder);
 };

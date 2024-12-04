@@ -20,31 +20,39 @@ import { parseArgs } from 'node:util';
  * @import {ParseArgsConfig} from 'node:util'
  * @import {FastUSDCConfig} from '@agoric/fast-usdc/src/fast-usdc.start.js'
  * @import {Passable} from '@endo/marshal';
- * @import {CosmosChainInfo} from '@agoric/orchestration';
+ * @import {CosmosChainInfo, Denom, DenomDetail} from '@agoric/orchestration';
  */
 
 const { keys } = Object;
 
-const defaultAssetInfo = {
-  uusdc: {
-    baseName: 'noble',
-    chainName: 'noble',
-    baseDenom: 'uusdc',
-  },
-  [`ibc/${denomHash({ denom: 'uusdc', channelId: fetchedChainInfo.agoric.connections['noble-1'].transferChannel.channelId })}`]:
+/** @type {[Denom, DenomDetail & { brandKey?: string}][]} */
+const defaultAssetInfo = [
+  [
+    'uusdc',
+    {
+      baseName: 'noble',
+      chainName: 'noble',
+      baseDenom: 'uusdc',
+    },
+  ],
+  [
+    `ibc/${denomHash({ denom: 'uusdc', channelId: fetchedChainInfo.agoric.connections['noble-1'].transferChannel.channelId })}`,
     {
       baseName: 'noble',
       chainName: 'agoric',
       baseDenom: 'uusdc',
       brandKey: 'USDC',
     },
-  [`ibc/${denomHash({ denom: 'uusdc', channelId: fetchedChainInfo.osmosis.connections['noble-1'].transferChannel.channelId })}`]:
+  ],
+  [
+    `ibc/${denomHash({ denom: 'uusdc', channelId: fetchedChainInfo.osmosis.connections['noble-1'].transferChannel.channelId })}`,
     {
       baseName: 'noble',
       chainName: 'osmosis',
       baseDenom: 'uusdc',
     },
-};
+  ],
+];
 
 /**
  * @type {Record<string, Pick<FastUSDCConfig, 'oracles' | 'feedPolicy' | 'chainInfo' | 'assetInfo' >>}

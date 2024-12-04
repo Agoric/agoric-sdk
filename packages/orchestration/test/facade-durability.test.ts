@@ -184,7 +184,7 @@ test('asset / denom info', async t => {
   const { chainHub, orchestrate } = orchKit;
 
   chainHub.registerChain('agoric', fetchedChainInfo.agoric);
-  chainHub.registerChain(mockChainInfo.chainId, mockChainInfo);
+  chainHub.registerChain('mock', mockChainInfo);
   chainHub.registerConnection(
     'agoric-3',
     mockChainInfo.chainId,
@@ -192,8 +192,8 @@ test('asset / denom info', async t => {
   );
 
   chainHub.registerAsset('utoken1', {
-    chainName: mockChainInfo.chainId,
-    baseName: mockChainInfo.chainId,
+    chainName: 'mock',
+    baseName: 'mock',
     baseDenom: 'utoken1',
   });
 
@@ -203,7 +203,7 @@ test('asset / denom info', async t => {
   t.log(`utoken1 over ${channelId}: ${agDenom}`);
   chainHub.registerAsset(agDenom, {
     chainName: 'agoric',
-    baseName: mockChainInfo.chainId,
+    baseName: 'mock',
     baseDenom: 'utoken1',
     brand,
   });
@@ -213,10 +213,14 @@ test('asset / denom info', async t => {
     { brand },
     // eslint-disable-next-line no-shadow
     async (orc, { brand }) => {
-      const c1 = await orc.getChain(mockChainInfo.chainId);
+      const c1 = await orc.getChain('mock');
 
       {
-        const actual = orc.getDenomInfo('utoken1');
+        const actual = orc.getDenomInfo(
+          'utoken1',
+          // @ts-expect-error 'mock' not a KnownChain
+          'mock',
+        );
         console.log('actual', actual);
         const info = await actual.chain.getChainInfo();
         t.deepEqual(info, mockChainInfo);
@@ -230,12 +234,12 @@ test('asset / denom info', async t => {
       }
 
       const agP = orc.getChain('agoric');
-      t.throws(() => orc.getDenomInfo(agDenom), {
+      t.throws(() => orc.getDenomInfo(agDenom, 'agoric'), {
         message: /^wait until getChain\("agoric"\) completes/,
       });
       const ag = await agP;
       {
-        const actual = orc.getDenomInfo(agDenom);
+        const actual = orc.getDenomInfo(agDenom, 'agoric');
 
         t.deepEqual(actual, {
           chain: ag,
@@ -258,7 +262,11 @@ test('asset / denom info', async t => {
   });
 
   const missingGetChain = orchestrate('missing getChain', {}, async orc => {
-    const actual = orc.getDenomInfo('utoken2');
+    const actual = orc.getDenomInfo(
+      'utoken2',
+      // @ts-expect-error 'mock' not a KnownChain
+      'anotherChain',
+    );
   });
 
   await t.throwsAsync(vt.when(missingGetChain()), {

@@ -4,6 +4,7 @@ import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import {
   denomHash,
+  withChainCapabilities,
   type CosmosChainInfo,
   type Denom,
 } from '@agoric/orchestration';
@@ -196,17 +197,15 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
   );
 
   const chainInfo = harden(() => {
-    const { agoric, osmosis, noble } = fetchedChainInfo;
+    const { agoric, osmosis, noble } = withChainCapabilities(fetchedChainInfo);
     return { agoric, osmosis, noble };
   })();
 
-  const assetInfo = harden(
-    Object.fromEntries([
-      assetOn('uusdc', 'noble'),
-      [uusdcOnAgoric, agUSDCDetail],
-      assetOn('uusdc', 'noble', 'osmosis', fetchedChainInfo),
-    ]),
-  );
+  const assetInfo: [Denom, DenomDetail & { brandKey?: string }][] = harden([
+    assetOn('uusdc', 'noble'),
+    [uusdcOnAgoric, agUSDCDetail],
+    assetOn('uusdc', 'noble', 'osmosis', fetchedChainInfo),
+  ]);
 
   return {
     bootstrap: {

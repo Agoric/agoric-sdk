@@ -50,10 +50,7 @@ export function computronCounter(
   const defaultCleanupBudget = remainingCleanups.default;
   let cleanupStarted = false;
   let cleanupDone = false;
-  const cleanupPossible =
-    Object.values(remainingCleanups).length > 0
-      ? Object.values(remainingCleanups).some(n => n > 0)
-      : defaultCleanupBudget > 0;
+  const cleanupPossible = Object.values(remainingCleanups).some(n => n > 0);
   if (!cleanupPossible) cleanupDone = true;
   /** @type {() => (false | import('@agoric/swingset-vat').CleanupBudget)} */
   const allowCleanup = () =>

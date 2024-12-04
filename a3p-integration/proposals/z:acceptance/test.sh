@@ -10,8 +10,7 @@ yarn ava initial.test.js
 # XXX some of these tests have path dependencies so no globs
 yarn ava core-eval.test.js
 
-npm install -g tsx
-scripts/test-vaults.mts
+scripts/test-vaults.ts
 
 echo ACCEPTANCE TESTING kread
 yarn ava kread.test.js
