@@ -42,13 +42,19 @@ const makeKeyring = async (
   e2eTools: Pick<E2ETools, 'addKey' | 'deleteKey'>,
 ) => {
   let _keys = ['user1'];
-  const setupTestKeys = async (keys = ['user1']) => {
+  const setupTestKeys = async (
+    keys = ['user1'],
+    mnemonics?: (string | undefined)[],
+  ) => {
     _keys = keys;
     const wallets: Record<string, string> = {};
-    for (const name of keys) {
-      const res = await e2eTools.addKey(name, generateMnemonic());
+    for (const i in keys) {
+      const res = await e2eTools.addKey(
+        keys[i],
+        mnemonics?.[i] || generateMnemonic(),
+      );
       const { address } = JSON.parse(res);
-      wallets[name] = address;
+      wallets[keys[i]] = address;
     }
     return wallets;
   };
@@ -117,10 +123,7 @@ export const commonSetup = async (t: ExecutionContext) => {
       ? objectMap(
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           builderOpts as Record<string, any>,
-          value => {
-            if (typeof value === 'string') return value;
-            return JSON.stringify(value);
-          },
+          value => (typeof value === 'string' ? value : JSON.stringify(value)),
         )
       : undefined;
     await deployBuilder(contractBuilder, formattedOpts);
