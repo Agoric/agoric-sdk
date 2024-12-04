@@ -277,24 +277,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@endo/base64@npm:^1.0.5, @endo/base64@npm:^1.0.7":
-  version: 1.0.7
-  resolution: "@endo/base64@npm:1.0.7"
-  checksum: 10c0/aab10f433f8ea588ebd1786188b6660c0be3a743c119ef2df52ee23afd4ce3844b1d954028952569a747f6657287aeced875afe8e136ea8bff4ba146a60578bd
-  languageName: node
-  linkType: hard
-
-"@endo/base64@npm:^1.0.9":
+"@endo/base64@npm:^1.0.5, @endo/base64@npm:^1.0.9":
   version: 1.0.9
   resolution: "@endo/base64@npm:1.0.9"
   checksum: 10c0/63e487cf59b50a080fab389a8ab24d66264910ecf375dc19677c2ee7421d92a4be9c85e435b216b4adc9983384073a7eb753223f85ba77aec8d9fd3e0c1fe090
-  languageName: node
-  linkType: hard
-
-"@endo/env-options@npm:^1.1.7":
-  version: 1.1.7
-  resolution: "@endo/env-options@npm:1.1.7"
-  checksum: 10c0/5784bd68790041b08d9ead4f6c29cc7871d2e554c23fc44fff38cb20b6b4e55cdba2f78d844ba5ad4b0818185c32475ff318c1b77890d628690d7c7a6ede9475
   languageName: node
   linkType: hard
 
@@ -311,15 +297,6 @@ __metadata:
   dependencies:
     ses: "npm:^1.10.0"
   checksum: 10c0/3f33fc7119ab840ad0f5bdfb70e73cc99630f09593c31928e30de4d9c8e898c85397c5170964d54c819a757a74d3b005f6275480ff8d0f1aa2aa8ef872852e97
-  languageName: node
-  linkType: hard
-
-"@endo/eventual-send@npm:^1.2.5":
-  version: 1.2.6
-  resolution: "@endo/eventual-send@npm:1.2.6"
-  dependencies:
-    "@endo/env-options": "npm:^1.1.7"
-  checksum: 10c0/6983d6b88bf4e99f6c469d4ca037793582b06cc0bfa2da085b5bc7ad67333a1fba6e5e7077b7f279be23ccfba1dff9e06c7f85f9980b09fd002227f89a673c11
   languageName: node
   linkType: hard
 
@@ -343,19 +320,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@endo/init@npm:^1.1.2":
-  version: 1.1.4
-  resolution: "@endo/init@npm:1.1.4"
-  dependencies:
-    "@endo/base64": "npm:^1.0.7"
-    "@endo/eventual-send": "npm:^1.2.5"
-    "@endo/lockdown": "npm:^1.0.10"
-    "@endo/promise-kit": "npm:^1.1.5"
-  checksum: 10c0/9e915b3b888b7a9f1d563d532ad180dea987253d71e79eda1fcda8d287391611bcca369f2d9b89c59b9f24b3adc548816954e8eaefa4f7402c68585245a686a5
-  languageName: node
-  linkType: hard
-
-"@endo/init@npm:^1.1.7":
+"@endo/init@npm:^1.1.2, @endo/init@npm:^1.1.7":
   version: 1.1.7
   resolution: "@endo/init@npm:1.1.7"
   dependencies:
@@ -364,15 +329,6 @@ __metadata:
     "@endo/lockdown": "npm:^1.0.13"
     "@endo/promise-kit": "npm:^1.1.8"
   checksum: 10c0/6cfcc244f02da9883f65a8f34da9483a628d5350192983c53d5116b12403dc5693145c6349b6c3ca381b6b8d9590cee16f90440dc0e2da5f525e13079d6c9a2f
-  languageName: node
-  linkType: hard
-
-"@endo/lockdown@npm:^1.0.10":
-  version: 1.0.10
-  resolution: "@endo/lockdown@npm:1.0.10"
-  dependencies:
-    ses: "npm:^1.8.0"
-  checksum: 10c0/94be0c1b14cacb2d8088dcc17998e901159a028c51170d78a8cc6a820ae76cabc7d2694f1a1956cb4eab70a8c9a0c8254d88ea4c3f3d9725b739aacf6db83d5b
   languageName: node
   linkType: hard
 
@@ -402,15 +358,6 @@ __metadata:
     "@endo/promise-kit": "npm:^1.1.8"
     "@fast-check/ava": "npm:^1.1.5"
   checksum: 10c0/ee30e011fb08c292718a315f2ebd5ee2da6d918bf2cdaf2b269e123207c642fa1525493c41180db8c941e1a1959369730114b116656c99e8bb107ca5917f3f4e
-  languageName: node
-  linkType: hard
-
-"@endo/promise-kit@npm:^1.1.5":
-  version: 1.1.6
-  resolution: "@endo/promise-kit@npm:1.1.6"
-  dependencies:
-    ses: "npm:^1.9.0"
-  checksum: 10c0/d60de663e58f9de32b6705268c62c63c4721f1874813d3c10cae7846e921e4ea8a60c8622ef8c937741a3387fbc60110076b25304afedf270727af7b0c3fecb3
   languageName: node
   linkType: hard
 
@@ -3300,15 +3247,6 @@ __metadata:
   dependencies:
     "@endo/env-options": "npm:^1.1.8"
   checksum: 10c0/83b92bc49e27af04eeb7ee01a2196a0c4b0906e4de51e70403aa9ffc82be1d27a0c3506f2d54da8d6d260be0855f2123a13a7e2c6896e81ec85899df1a428609
-  languageName: node
-  linkType: hard
-
-"ses@npm:^1.8.0, ses@npm:^1.9.0":
-  version: 1.9.0
-  resolution: "ses@npm:1.9.0"
-  dependencies:
-    "@endo/env-options": "npm:^1.1.7"
-  checksum: 10c0/356f9601b04a87f33403a15fc627caf0c649d86d8d7ee1f4b3c75b947ab05c31b254c94c0aa26e9904862787c73950d5a60f3435deebe5dba23017e20c40b0cb
   languageName: node
   linkType: hard
 
