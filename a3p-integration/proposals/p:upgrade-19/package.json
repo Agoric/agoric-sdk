@@ -7,7 +7,8 @@
       "vats/upgrade-provisionPool.js upgradeProvisionPool",
       "vats/upgrade-paRegistry.js",
       "vats/upgrade-board.js",
-      "testing/test-upgraded-board.js testUpgradedBoard"
+      "testing/test-upgraded-board.js testUpgradedBoard",
+      "vats/upgrade-agoricNames.js upgradeAgoricNames"
     ]
   },
   "type": "module",
