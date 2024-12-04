@@ -1,3 +1,5 @@
+/* eslint-env node */
+/* global globalThis */
 import { assertParsableNumber } from '@agoric/zoe/src/contractSupport/ratio.js';
 import {
   Command,
@@ -34,6 +36,11 @@ export const initProgram = (
   writeFile = writeAsync,
   mkdir = mkdirSync,
   exists = existsSync,
+  fetch = globalThis.fetch,
+  stdout = process.stdout,
+  stderr = process.stderr,
+  env = process.env,
+  now = () => Date.now(),
 ) => {
   const program = new Command();
 
@@ -55,8 +62,27 @@ export const initProgram = (
     return makeFile(getConfigPath(), readFile, writeFile, mkdir, exists);
   };
 
+  program.addHelpText(
+    'afterAll',
+    `
+  Agoric test networks provide configuration info at, for example,
+
+  https://devnet.agoric.net/network-config
+
+  To use RPC endpoints from such a configuration, use:
+  export AGORIC_NET=devnet
+
+  Use AGORIC_NET=local or leave it unset to use localhost and chain id agoriclocal.
+  `,
+  );
   addConfigCommands(program, configHelpers, makeConfigFile);
-  addOperatorCommands(program);
+  addOperatorCommands(program, {
+    fetch,
+    stdout,
+    stderr,
+    env,
+    now,
+  });
 
   /** @param {string} value */
   const parseDecimal = value => {

@@ -1,18 +1,44 @@
-/* eslint-env node */
 /**
  * @import {Command} from 'commander';
  * @import {OfferSpec} from '@agoric/smart-wallet/src/offers.js';
  * @import {ExecuteOfferAction} from '@agoric/smart-wallet/src/smartWallet.js';
+ * @import {OperatorKit} from '../exos/operator-kit.js';
  */
 
 import { fetchEnvNetworkConfig, makeVstorageKit } from '@agoric/client-utils';
+import { mustMatch } from '@agoric/internal';
+import { Nat } from '@endo/nat';
+import { InvalidArgumentError } from 'commander';
 import { INVITATION_MAKERS_DESC } from '../exos/transaction-feed.js';
+import { CctpTxEvidenceShape } from '../type-guards.js';
 import { outputActionAndHint } from './bridge-action.js';
+
+/** @param {string} arg */
+const parseNat = arg => {
+  const n = Nat(BigInt(arg));
+  return n;
+};
+
+/** @param {string} arg */
+const parseHex = arg => {
+  if (!arg.startsWith('0x')) throw new InvalidArgumentError('not a hex string');
+  return arg;
+};
 
 /**
  * @param {Command} program
+ * @param {{
+ *   fetch: Window['fetch'];
+ *   stdout: typeof process.stdout;
+ *   stderr: typeof process.stderr;
+ *   env: typeof process.env;
+ *   now: typeof Date.now;
+ * }} io
  */
-export const addOperatorCommands = program => {
+export const addOperatorCommands = (
+  program,
+  { fetch, stderr, stdout, env, now },
+) => {
   const operator = program
     .command('operator')
     .description('Oracle operator commands');
@@ -24,17 +50,9 @@ export const addOperatorCommands = program => {
       'after',
       '\nPipe the STDOUT to a file such as accept.json, then use the Agoric CLI to broadcast it:\n  agoric wallet send --offer accept.json --from gov1 --keyring-backend="test"',
     )
-    .option(
-      '--offerId <string>',
-      'Offer id',
-      String,
-      `operatorAccept-${Date.now()}`,
-    )
+    .option('--offerId <string>', 'Offer id', String, `operatorAccept-${now()}`)
     .action(async opts => {
-      const networkConfig = await fetchEnvNetworkConfig({
-        env: process.env,
-        fetch,
-      });
+      const networkConfig = await fetchEnvNetworkConfig({ env, fetch });
       const vsk = await makeVstorageKit({ fetch }, networkConfig);
       const instance = vsk.agoricNames.instance.fastUsdc;
       assert(instance, 'fastUsdc instance not in agoricNames');
@@ -56,21 +74,58 @@ export const addOperatorCommands = program => {
         offer,
       };
 
-      outputActionAndHint(bridgeAction, {
-        stderr: process.stderr,
-        stdout: process.stdout,
-      });
+      outputActionAndHint(bridgeAction, { stderr, stdout });
     });
 
   operator
     .command('attest')
     .description('Attest to an observed Fast USDC transfer')
     .requiredOption('--previousOfferId <string>', 'Offer id', String)
-    .action(async options => {
-      const { previousOfferId } = options;
-      console.error(
-        'TODO: Implement attest logic for request:',
+    .requiredOption('--forwardingChannel <string>', 'Channel id', String)
+    .requiredOption('--recipientAddress <string>', 'bech32 address', String)
+    .requiredOption('--blockHash <0xhex>', 'hex hash', parseHex)
+    .requiredOption('--blockNumber <number>', 'number', parseNat)
+    .requiredOption('--blockTimestamp <number>', 'number', parseNat)
+    .requiredOption('--chainId <string>', 'chain id', Number)
+    .requiredOption('--amount <number>', 'number', parseNat)
+    .requiredOption('--forwardingAddress <string>', 'bech32 address', String)
+    .requiredOption('--txHash <0xhexo>', 'hex hash', parseHex)
+    .option('--offerId <string>', 'Offer id', String, `operatorAttest-${now()}`)
+    .action(async opts => {
+      const {
+        offerId,
         previousOfferId,
+        forwardingChannel,
+        recipientAddress,
+        amount,
+        forwardingAddress,
+        ...flat
+      } = opts;
+
+      const evidence = harden({
+        aux: { forwardingChannel, recipientAddress },
+        tx: { amount, forwardingAddress },
+        ...flat,
+      });
+      mustMatch(evidence, CctpTxEvidenceShape);
+
+      /** @type {OfferSpec} */
+      const offer = {
+        id: offerId,
+        invitationSpec: {
+          source: 'continuing',
+          previousOffer: previousOfferId,
+          /** @type {string & keyof OperatorKit['invitationMakers'] } */
+          invitationMakerName: 'SubmitEvidence',
+          /** @type {Parameters<OperatorKit['invitationMakers']['SubmitEvidence']> } */
+          invitationArgs: [evidence],
+        },
+        proposal: {},
+      };
+
+      outputActionAndHint(
+        { method: 'executeOffer', offer },
+        { stderr, stdout },
       );
     });
 
