@@ -18,6 +18,9 @@ yarn ava kread.test.js
 echo ACCEPTANCE TESTING valueVow
 yarn ava valueVow.test.js
 
+echo ACCEPTANCE TESTING mintHolder
+yarn ava mintHolder.test.js
+
 echo ACCEPTANCE TESTING state sync
 ./state-sync-snapshots-test.sh
 ./genesis-test.sh
@@ -33,6 +36,3 @@ yarn ava governance.test.js
 
 echo ACCEPTANCE TESTING vaults
 yarn ava vaults.test.js
-
-echo ACCEPTANCE TESTING mintHolder
-yarn ava mintHolder.test.js
