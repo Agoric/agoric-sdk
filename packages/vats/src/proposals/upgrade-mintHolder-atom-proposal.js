@@ -22,12 +22,12 @@ export const upgradeMintHolder = async (
     instancePrivateArgsP,
   ]);
 
-  const kit = Array.from(contractKits.values()).filter(
+  const mintHolderKit = Array.from(contractKits.values()).filter(
     kit => kit.label && kit.label.match(/ATOM/),
   );
-  assert(kit, ',mintHolder contract kit not found');
+  assert(mintHolderKit, ',mintHolder contract kit not found');
 
-  const { adminFacet, instance } = kit[0];
+  const { adminFacet, instance } = mintHolderKit[0];
 
   const privateArgs = instancePrivateArgs.get(instance);
 
