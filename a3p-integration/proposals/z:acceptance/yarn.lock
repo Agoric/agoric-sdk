@@ -156,7 +156,6 @@ __metadata:
     "@agoric/vat-data": "npm:^0.5.2"
     "@agoric/vats": "npm:^0.15.1"
     "@agoric/zoe": "npm:^0.26.2"
-    "@agoric/zone": "npm:^0.2.2"
     "@endo/captp": "npm:^4.4.3"
     "@endo/errors": "npm:^1.2.8"
     "@endo/eventual-send": "npm:^1.2.8"
