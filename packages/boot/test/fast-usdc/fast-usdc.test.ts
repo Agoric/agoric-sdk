@@ -3,13 +3,17 @@ import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import type { TestFn } from 'ava';
 import type { FastUSDCKit } from '@agoric/fast-usdc/src/fast-usdc.start.js';
 import type { CctpTxEvidence } from '@agoric/fast-usdc/src/types.js';
-import { MockCctpTxEvidences } from '@agoric/fast-usdc/test/fixtures.js';
+import {
+  MockCctpTxEvidences,
+  MockVTransferEvents,
+} from '@agoric/fast-usdc/test/fixtures.js';
 import { documentStorageSchema } from '@agoric/governance/tools/storageDoc.js';
 import { Fail } from '@endo/errors';
 import { unmarshalFromVstorage } from '@agoric/internal/src/marshal.js';
 import { makeMarshal } from '@endo/marshal';
 import { defaultMarshaller } from '@agoric/internal/src/storage-test-utils.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
+import { BridgeId } from '@agoric/internal';
 import {
   makeWalletFactoryContext,
   type WalletFactoryTestContext,
@@ -215,6 +219,33 @@ test.serial('makes usdc advance', async t => {
       `fusdc advance computrons (${oracles.length} oracles)`,
       harness.totalComputronCount(),
     );
+  harness?.resetRunPolicy();
+
+  const doc = {
+    node: `fastUsdc.status`,
+    owner: `the statuses of fast USDC transfers identified by their tx hashes`,
+  };
+  await documentStorageSchema(t, storage, doc);
+});
+
+test.serial('disburses usdc after advance', async t => {
+  const {
+    storage,
+    harness,
+    bridgeUtils: { runInbound },
+  } = t.context;
+  const mockVTransferEvent = MockVTransferEvents.AGORIC_PLUS_OSMO();
+  t.log(mockVTransferEvent);
+  // @ts-expect-error
+  mockVTransferEvent.packet.sequence = String(
+    mockVTransferEvent.packet.sequence,
+  );
+
+  harness?.useRunPolicy(true);
+  await runInbound(BridgeId.VTRANSFER, mockVTransferEvent);
+  await eventLoopIteration();
+  harness &&
+    t.log(`fusdc disbursement computrons`, harness.totalComputronCount());
   harness?.resetRunPolicy();
 
   const doc = {

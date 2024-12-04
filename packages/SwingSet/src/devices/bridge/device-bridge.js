@@ -33,6 +33,8 @@ export function buildRootDeviceNode(tools) {
 
   function inboundCallback(...args) {
     inboundHandler || Fail`inboundHandler not yet registered`;
+    console.log('args');
+    console.log(args);
     const safeArgs = deepCopyJsonable(args);
     try {
       SO(inboundHandler).inbound(...harden(safeArgs));
