@@ -19,11 +19,14 @@ const makeKubeArgs = () => {
   ];
 };
 
-export const makeNobleTools = ({
-  execFileSync,
-}: {
-  execFileSync: ExecSync;
-}) => {
+export const makeNobleTools = (
+  {
+    execFileSync,
+  }: {
+    execFileSync: ExecSync;
+  },
+  log: (...args: unknown[]) => void = console.log,
+) => {
   const exec = (
     args: string[],
     opts = { encoding: 'utf-8' as const, stdio: ['ignore', 'pipe', 'ignore'] },
@@ -38,8 +41,9 @@ export const makeNobleTools = ({
   const registerForwardingAcct = (
     channelId: IBCChannelID,
     address: ChainAddress['value'],
-  ) => {
+  ): { txhash: string; code: number; data: string; height: string } => {
     checkEnv();
+    log('creating forwarding address', address, channelId);
     return JSON.parse(
       exec([
         'tx',
@@ -57,6 +61,8 @@ export const makeNobleTools = ({
 
   const mockCctpMint = (amount: bigint, destination: ChainAddress['value']) => {
     checkEnv();
+    const denomAmount = `${Number(amount)}uusdc`;
+    log('mock cctp mint', destination, denomAmount);
     return JSON.parse(
       exec([
         'tx',
@@ -64,7 +70,7 @@ export const makeNobleTools = ({
         'send',
         'faucet',
         destination,
-        `${Number(amount)}uusdc`,
+        denomAmount,
         '--from=faucet',
         '-y',
         '-b',
@@ -76,8 +82,9 @@ export const makeNobleTools = ({
   const queryForwardingAddress = (
     channelId: IBCChannelID,
     address: ChainAddress['value'],
-  ) => {
+  ): { address: string; exists: boolean } => {
     checkEnv();
+    log('querying forwarding address', address, channelId);
     return JSON.parse(
       exec([
         'query',
