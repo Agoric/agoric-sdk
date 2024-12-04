@@ -38,7 +38,7 @@ export const makeNobleTools = ({
   const registerForwardingAcct = (
     channelId: IBCChannelID,
     address: ChainAddress['value'],
-  ) => {
+  ): { txhash: string; code: number; data: string; height: string } => {
     checkEnv();
     return JSON.parse(
       exec([
@@ -76,7 +76,7 @@ export const makeNobleTools = ({
   const queryForwardingAddress = (
     channelId: IBCChannelID,
     address: ChainAddress['value'],
-  ) => {
+  ): { address: string; exists: boolean } => {
     checkEnv();
     return JSON.parse(
       exec([
