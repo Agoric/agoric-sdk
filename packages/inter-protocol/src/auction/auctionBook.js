@@ -668,7 +668,8 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
 
           trace(`capturing oracle price `, state.updatingOracleQuote);
           if (!state.updatingOracleQuote) {
-            // if the price feed has died, restart it.
+            // if the price feed has died (or hasn't been started for this
+            // incarnation), (re)start it.
             facets.helper.ensureQuoteNotifierObserved();
             return;
           }
