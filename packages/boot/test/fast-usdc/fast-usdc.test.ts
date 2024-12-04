@@ -1,8 +1,6 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import type { TestFn } from 'ava';
-import type { FastUSDCKit } from '@agoric/fast-usdc/src/fast-usdc.start.js';
-import type { CctpTxEvidence } from '@agoric/fast-usdc/src/types.js';
 import { MockCctpTxEvidences } from '@agoric/fast-usdc/test/fixtures.js';
 import { documentStorageSchema } from '@agoric/governance/tools/storageDoc.js';
 import { Fail } from '@endo/errors';
