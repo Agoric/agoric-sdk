@@ -1,5 +1,11 @@
+/**
+ * @file A proposal to start the auto-stake-it contract.
+ *
+ *   AutoStakeIt allows users to to create an auto-forwarding address that
+ *   transfers and stakes tokens on a remote chain when received.
+ */
 import { makeHelpers } from '@agoric/deploy-script-support';
-import { startBasicFlows } from '@agoric/orchestration/src/proposals/start-basic-flows.js';
+import { startAutoStakeIt } from '@agoric/orchestration/src/proposals/start-auto-stake-it.js';
 import { parseArgs } from 'node:util';
 
 /**
@@ -18,14 +24,14 @@ export const defaultProposalBuilder = async (
   options,
 ) => {
   return harden({
-    sourceSpec: '@agoric/orchestration/src/proposals/start-basic-flows.js',
+    sourceSpec: '@agoric/orchestration/src/proposals/start-auto-stake-it.js',
     getManifestCall: [
-      'getManifestForContract',
+      'getManifest',
       {
         installKeys: {
-          basicFlows: publishRef(
+          autoAutoStakeIt: publishRef(
             install(
-              '@agoric/orchestration/src/examples/basic-flows.contract.js',
+              '@agoric/orchestration/src/examples/auto-stake-it.contract.js',
             ),
           ),
         },
@@ -61,7 +67,7 @@ export default async (homeP, endowments) => {
 
   const { writeCoreEval } = await makeHelpers(homeP, endowments);
 
-  await writeCoreEval(startBasicFlows.name, utils =>
+  await writeCoreEval(startAutoStakeIt.name, utils =>
     defaultProposalBuilder(utils, opts),
   );
 };

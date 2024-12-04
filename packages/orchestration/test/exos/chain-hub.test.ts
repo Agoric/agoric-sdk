@@ -201,12 +201,14 @@ test('makeChainAddress', async t => {
 const [uusdcOnAgoric, agDetail] = assetOn(
   'uusdc',
   'noble',
+  undefined,
   'agoric',
   knownChains,
 );
 const [uusdcOnOsmosis, osDetail] = assetOn(
   'uusdc',
   'noble',
+  undefined,
   'osmosis',
   knownChains,
 );
@@ -329,7 +331,7 @@ test('makeTransferRoute - through issuing chain', async t => {
   });
 
   // use TransferRoute to build a MsgTransfer
-  if (!route || !('forwardInfo' in route)) {
+  if (!('forwardInfo' in route)) {
     throw new Error('forwardInfo not returned'); // appease tsc...
   }
 
@@ -383,6 +385,18 @@ test('makeTransferRoute - takes forwardOpts', t => {
     },
   });
 
+  t.like(
+    chainHub.makeTransferRoute(dest, amt, 'osmosis', { timeout: '99min' }),
+    {
+      forwardInfo: {
+        forward: {
+          timeout: '99min',
+        },
+      },
+    },
+    'each field is optional',
+  );
+
   // test that typeGuard works
   t.throws(
     () =>
@@ -395,7 +409,7 @@ test('makeTransferRoute - takes forwardOpts', t => {
           forward: JSON.stringify('stringified nested forward data'),
         }),
       ),
-    { message: /Must not have unexpected properties/ },
+    { message: /In "makeTransferRoute" method of/ },
   );
 });
 
@@ -476,7 +490,7 @@ test('makeTransferRoute - no connection info single hop', t => {
         harden({ denom: uusdcOnAgoric, value: 100n }),
         'agoric',
       ),
-    { message: 'no connection info found for "agoric-3_noble-1"' },
+    { message: 'no connection info found for "agoric-3"<->"noble-1"' },
   );
 });
 
@@ -505,7 +519,7 @@ test('makeTransferRoute - no connection info multi hop', t => {
         harden({ denom: uusdcOnAgoric, value: 100n }),
         'agoric',
       ),
-    { message: 'no connection info found for "noble-1_osmosis-1"' },
+    { message: 'no connection info found for "noble-1"<->"osmosis-1"' },
   );
 
   // transfer USDC on osmosis to agoric
@@ -516,7 +530,7 @@ test('makeTransferRoute - no connection info multi hop', t => {
         harden({ denom: uusdcOnOsmosis, value: 100n }),
         'osmosis',
       ),
-    { message: 'no connection info found for "noble-1_osmosis-1"' },
+    { message: 'no connection info found for "osmosis-1"<->"noble-1"' },
   );
 });
 

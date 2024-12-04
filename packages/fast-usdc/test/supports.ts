@@ -4,6 +4,7 @@ import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import {
   denomHash,
+  withChainCapabilities,
   type CosmosChainInfo,
   type Denom,
 } from '@agoric/orchestration';
@@ -196,7 +197,7 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
   );
 
   const chainInfo = harden(() => {
-    const { agoric, osmosis, noble } = fetchedChainInfo;
+    const { agoric, osmosis, noble } = withChainCapabilities(fetchedChainInfo);
     return { agoric, osmosis, noble };
   })();
 

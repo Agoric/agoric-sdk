@@ -63,9 +63,6 @@ export const prepareMakeTestLOAKit = (
       }),
       storageNode: storageNode.makeChildNode(address),
     });
-
-    t.log('register Agoric chain and BLD in ChainHub');
-    utils.registerAgoricBld();
     return account;
   };
 };
