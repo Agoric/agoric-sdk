@@ -245,6 +245,7 @@ export const ForwardOptsShape = M.splitRecord(
   {
     timeout: M.string(),
     retries: M.number(),
+    intermediateRecipient: ChainAddressShape,
   },
   {},
 );

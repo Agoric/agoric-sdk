@@ -377,6 +377,7 @@ test('makeTransferRoute - takes forwardOpts', t => {
     token: {
       denom: uusdcOnOsmosis,
     },
+    receiver: 'pfm',
     forwardInfo: {
       forward: {
         channel: 'channel-21',
@@ -385,9 +386,19 @@ test('makeTransferRoute - takes forwardOpts', t => {
     },
   });
 
+  const nobleAddr = harden({
+    value: 'noble1234',
+    encoding: 'bech32' as const,
+    chainId: 'noble-1',
+  });
+
   t.like(
-    chainHub.makeTransferRoute(dest, amt, 'osmosis', { timeout: '99m' }),
+    chainHub.makeTransferRoute(dest, amt, 'osmosis', {
+      timeout: '99m',
+      intermediateRecipient: nobleAddr,
+    }),
     {
+      receiver: nobleAddr.value,
       forwardInfo: {
         forward: {
           timeout: '99m' as const,
