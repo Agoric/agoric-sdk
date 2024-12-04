@@ -325,7 +325,7 @@ test('makeTransferRoute - through issuing chain', async t => {
         port: 'transfer',
         channel: 'channel-1',
         retries: 3,
-        timeout: '10min',
+        timeout: '10m',
       },
     },
   });
@@ -348,7 +348,7 @@ test('makeTransferRoute - through issuing chain', async t => {
     timeoutTimestamp: 0n,
   });
   t.like(transferMsg, {
-    memo: '{"forward":{"receiver":"osmo1234","port":"transfer","channel":"channel-1","retries":3,"timeout":"10min"}}',
+    memo: '{"forward":{"receiver":"osmo1234","port":"transfer","channel":"channel-1","retries":3,"timeout":"10m"}}',
     receiver: 'pfm',
   });
 });
@@ -367,7 +367,7 @@ test('makeTransferRoute - takes forwardOpts', t => {
   const amt: DenomAmount = harden({ denom: uusdcOnOsmosis, value: 100n });
   const forwardOpts = harden({
     retries: 1,
-    timeout: '3min',
+    timeout: '3m' as const,
   });
 
   // 100 USDC on osmosis -> agoric
@@ -386,11 +386,11 @@ test('makeTransferRoute - takes forwardOpts', t => {
   });
 
   t.like(
-    chainHub.makeTransferRoute(dest, amt, 'osmosis', { timeout: '99min' }),
+    chainHub.makeTransferRoute(dest, amt, 'osmosis', { timeout: '99m' }),
     {
       forwardInfo: {
         forward: {
-          timeout: '99min',
+          timeout: '99m' as const,
         },
       },
     },
