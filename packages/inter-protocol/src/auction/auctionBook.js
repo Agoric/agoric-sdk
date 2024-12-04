@@ -36,6 +36,7 @@ import {
 const { makeEmpty } = AmountMath;
 
 const QUOTE_SCALE = 10n ** 9n;
+const QUOTE_NOTIFIER = 'quoteNotifier';
 
 /**
  * @file The book represents the collateral-specific state of an ongoing
@@ -464,6 +465,8 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
             AmountMath.make(collateralBrand, QUOTE_SCALE),
             bidBrand,
           );
+          baggage.set(QUOTE_NOTIFIER, quoteNotifier);
+
           void observeNotifier(quoteNotifier, {
             updateState: quote => {
               trace(
@@ -477,6 +480,7 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
               trace(`Failure from quoteNotifier (${reason}) setting to null`);
               // lack of quote will trigger restart
               state.updatingOracleQuote = null;
+              baggage.set(QUOTE_NOTIFIER, undefined);
             },
             finish: done => {
               trace(
@@ -484,6 +488,7 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
               );
               // lack of quote will trigger restart
               state.updatingOracleQuote = null;
+              baggage.set(QUOTE_NOTIFIER, undefined);
             },
           });
 
@@ -645,8 +650,10 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
 
           trace(`capturing oracle price `, state.updatingOracleQuote);
           if (!state.updatingOracleQuote) {
-            // if the price has feed has died, try restarting it.
-            facets.helper.observeQuoteNotifier();
+            // if the price feed has died, restart it.
+            if (!baggage.has(QUOTE_NOTIFIER)) {
+              facets.helper.observeQuoteNotifier();
+            }
             return;
           }
 
