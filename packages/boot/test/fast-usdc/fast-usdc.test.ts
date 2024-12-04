@@ -1,8 +1,6 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import type { TestFn } from 'ava';
-import type { FastUSDCKit } from '@agoric/fast-usdc/src/fast-usdc.start.js';
-import type { CctpTxEvidence } from '@agoric/fast-usdc/src/types.js';
 import { MockCctpTxEvidences } from '@agoric/fast-usdc/test/fixtures.js';
 import { documentStorageSchema } from '@agoric/governance/tools/storageDoc.js';
 import { Fail } from '@endo/errors';
@@ -14,12 +12,34 @@ import {
   makeWalletFactoryContext,
   type WalletFactoryTestContext,
 } from '../bootstrapTests/walletFactory.js';
+import {
+  makeSwingsetHarness,
+  insistManagerType,
+} from '../../tools/supports.js';
 
-const test: TestFn<WalletFactoryTestContext> = anyTest;
+const test: TestFn<
+  WalletFactoryTestContext & {
+    harness?: ReturnType<typeof makeSwingsetHarness>;
+  }
+> = anyTest;
+
+const {
+  SLOGFILE: slogFile,
+  SWINGSET_WORKER_TYPE: defaultManagerType = 'local',
+} = process.env;
 
 test.before('bootstrap', async t => {
   const config = '@agoric/vm-config/decentral-itest-orchestration-config.json';
-  t.context = await makeWalletFactoryContext(t, config);
+  insistManagerType(defaultManagerType);
+  const harness = ['xs-worker', 'xsnap'].includes(defaultManagerType)
+    ? makeSwingsetHarness()
+    : undefined;
+  const ctx = await makeWalletFactoryContext(t, config, {
+    slogFile,
+    defaultManagerType,
+    harness,
+  });
+  t.context = { ...ctx, harness };
 });
 test.after.always(t => t.context.shutdown?.());
 
@@ -129,7 +149,12 @@ test.serial('writes fee config to vstorage', async t => {
 });
 
 test.serial('makes usdc advance', async t => {
-  const { walletFactoryDriver: wd, storage, agoricNamesRemotes } = t.context;
+  const {
+    walletFactoryDriver: wd,
+    storage,
+    agoricNamesRemotes,
+    harness,
+  } = t.context;
   const oracles = await Promise.all([
     wd.provideSmartWallet('agoric19uscwxdac6cf6z7d5e26e0jm0lgwstc47cpll8'),
     wd.provideSmartWallet('agoric1krunjcqfrf7la48zrvdfeeqtls5r00ep68mzkr'),
@@ -167,7 +192,8 @@ test.serial('makes usdc advance', async t => {
   await eventLoopIteration();
 
   const evidence = MockCctpTxEvidences.AGORIC_PLUS_OSMO();
-  // TODO - start counting computrons
+
+  harness?.useRunPolicy(true);
   await Promise.all(
     oracles.map(wallet =>
       wallet.sendOffer({
@@ -183,7 +209,12 @@ test.serial('makes usdc advance', async t => {
     ),
   );
   await eventLoopIteration();
-  // TODO - stop counting computrons
+  harness &&
+    t.log(
+      `fusdc advance computrons (${oracles.length} oracles)`,
+      harness.totalComputronCount(),
+    );
+  harness?.resetRunPolicy();
 
   const doc = {
     node: `fastUsdc.status`,
