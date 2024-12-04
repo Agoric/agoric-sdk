@@ -1,6 +1,7 @@
 replaceFeeDistributor/
 testUpgradedBoard/
 addUsdLemons/
+addUsdOlives/
 upgradeProvisionPool/
 upgradeAgoricNames/
-
+appendChainInfo/
