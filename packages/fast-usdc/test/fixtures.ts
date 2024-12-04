@@ -20,7 +20,6 @@ export const MockCctpTxEvidences: Record<
     blockHash:
       '0x90d7343e04f8160892e94f02d6a9b9f255663ed0ac34caca98544c8143fee665',
     blockNumber: 21037663n,
-    blockTimestamp: 1730762090n,
     txHash:
       '0xc81bc6105b60a234c7c50ac17816ebcd5561d366df8bf3be59ff387552761702',
     tx: {
@@ -39,7 +38,6 @@ export const MockCctpTxEvidences: Record<
     blockHash:
       '0x80d7343e04f8160892e94f02d6a9b9f255663ed0ac34caca98544c8143fee699',
     blockNumber: 21037669n,
-    blockTimestamp: 1730762099n,
     txHash:
       '0xd81bc6105b60a234c7c50ac17816ebcd5561d366df8bf3be59ff387552761799',
     tx: {
@@ -58,7 +56,6 @@ export const MockCctpTxEvidences: Record<
     blockHash:
       '0x70d7343e04f8160892e94f02d6a9b9f255663ed0ac34caca98544c8143fee699',
     blockNumber: 21037669n,
-    blockTimestamp: 1730762099n,
     txHash:
       '0xa81bc6105b60a234c7c50ac17816ebcd5561d366df8bf3be59ff387552761799',
     tx: {
@@ -77,7 +74,6 @@ export const MockCctpTxEvidences: Record<
     blockHash:
       '0x70d7343e04f8160892e94f02d6a9b9f255663ed0ac34caca98544c8143fee699',
     blockNumber: 21037669n,
-    blockTimestamp: 1730762099n,
     txHash:
       '0xa81bc6105b60a234c7c50ac17816ebcd5561d366df8bf3be59ff387552761799',
     tx: {

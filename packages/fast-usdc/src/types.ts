@@ -16,7 +16,6 @@ export interface CctpTxEvidence {
   };
   blockHash: EvmHash;
   blockNumber: bigint;
-  blockTimestamp: bigint;
   chainId: number;
   /** data covered by signature (aka txHash) */
   tx: {

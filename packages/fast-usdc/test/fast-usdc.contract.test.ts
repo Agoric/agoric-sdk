@@ -328,7 +328,6 @@ const makeEVM = (template = MockCctpTxEvidences.AGORIC_PLUS_OSMO()) => {
       ...template,
       txHash: `0x00000${nonce}`,
       blockNumber: template.blockNumber + BigInt(nonce),
-      blockTimestamp: template.blockTimestamp + BigInt(nonce * 3),
       tx: { ...template.tx, amount },
       // KLUDGE: CCTP doesn't know about aux; it would be added by OCW
       aux: { ...template.aux, recipientAddress },
