@@ -455,42 +455,59 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
           });
           return state.bookDataKit.recorder.write(bookData);
         },
-        observeQuoteNotifier() {
+        // Ensure that there is an observer monitoring the quoteNotifier. We
+        // assume that all failure modes for quoteNotifier eventually lead to
+        // fail or finish.
+        ensureQuoteNotifierObserved() {
           const { state, facets } = this;
           const { collateralBrand, bidBrand, priceAuthority } = state;
 
+          if (baggage.has(QUOTE_NOTIFIER)) {
+            return;
+          }
+          baggage.set(QUOTE_NOTIFIER, true);
           trace('observing');
 
-          const quoteNotifier = E(priceAuthority).makeQuoteNotifier(
+          const quoteNotifierP = E(priceAuthority).makeQuoteNotifier(
             AmountMath.make(collateralBrand, QUOTE_SCALE),
             bidBrand,
           );
-          baggage.set(QUOTE_NOTIFIER, quoteNotifier);
 
-          void observeNotifier(quoteNotifier, {
-            updateState: quote => {
-              trace(
-                `BOOK notifier ${priceFrom(quote).numerator.value}/${
-                  priceFrom(quote).denominator.value
-                }`,
-              );
-              state.updatingOracleQuote = priceFrom(quote);
-            },
-            fail: reason => {
-              trace(`Failure from quoteNotifier (${reason}) setting to null`);
-              // lack of quote will trigger restart
+          void E.when(
+            quoteNotifierP,
+            quoteNotifier =>
+              observeNotifier(quoteNotifier, {
+                updateState: quote => {
+                  trace(
+                    `BOOK notifier ${priceFrom(quote).numerator.value}/${
+                      priceFrom(quote).denominator.value
+                    }`,
+                  );
+                  state.updatingOracleQuote = priceFrom(quote);
+                },
+                fail: reason => {
+                  trace(
+                    `Failure from quoteNotifier (${reason}) setting to null`,
+                  );
+                  // lack of quote will trigger restart
+                  state.updatingOracleQuote = null;
+                  baggage.delete(QUOTE_NOTIFIER);
+                },
+                finish: done => {
+                  trace(
+                    `quoteNotifier invoked finish(${done}). setting quote to null`,
+                  );
+                  // lack of quote will trigger restart
+                  state.updatingOracleQuote = null;
+                  baggage.delete(QUOTE_NOTIFIER);
+                },
+              }),
+            e => {
+              trace('makeQuoteNotifier failed, resetting', e);
               state.updatingOracleQuote = null;
-              baggage.set(QUOTE_NOTIFIER, undefined);
+              baggage.delete(QUOTE_NOTIFIER);
             },
-            finish: done => {
-              trace(
-                `quoteNotifier invoked finish(${done}). setting quote to null`,
-              );
-              // lack of quote will trigger restart
-              state.updatingOracleQuote = null;
-              baggage.set(QUOTE_NOTIFIER, undefined);
-            },
-          });
+          );
 
           void facets.helper.publishBookData();
         },
@@ -651,9 +668,7 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
           trace(`capturing oracle price `, state.updatingOracleQuote);
           if (!state.updatingOracleQuote) {
             // if the price feed has died, restart it.
-            if (!baggage.has(QUOTE_NOTIFIER)) {
-              facets.helper.observeQuoteNotifier();
-            }
+            facets.helper.ensureQuoteNotifierObserved();
             return;
           }
 
@@ -757,7 +772,7 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
         const { collateralBrand, bidBrand, priceAuthority } = state;
         assertAllDefined({ collateralBrand, bidBrand, priceAuthority });
 
-        facets.helper.observeQuoteNotifier();
+        facets.helper.ensureQuoteNotifierObserved();
       },
       stateShape: AuctionBookStateShape,
     },
