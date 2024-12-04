@@ -33,3 +33,6 @@ yarn ava governance.test.js
 
 echo ACCEPTANCE TESTING vaults
 yarn ava vaults.test.js
+
+echo ACCEPTANCE TESTING mintHolder
+yarn ava mintHolder.test.js
