@@ -6,11 +6,7 @@ import { Fail } from '@endo/errors';
 import { E } from '@endo/captp';
 import { AmountMath, RatioShape } from '@agoric/ertp';
 import { mustMatch } from '@agoric/store';
-import {
-  M,
-  prepareExoClassKit,
-  provideDurableMapStore,
-} from '@agoric/vat-data';
+import { M, prepareExoClassKit } from '@agoric/vat-data';
 
 import { assertAllDefined, makeTracer } from '@agoric/internal';
 import {
@@ -122,12 +118,6 @@ export const makeOfferSpecShape = (bidBrand, collateralBrand) => {
 export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
   const makeScaledBidBook = prepareScaledBidBook(baggage);
   const makePriceBook = preparePriceBook(baggage);
-  // a map from collateralBrand to true when the quoteNotifier has an observer
-  // the brand is absent when there's no observer.
-  const quoteNotifierFlags = provideDurableMapStore(
-    baggage,
-    'quoteNotifierFlags',
-  );
 
   const AuctionBookStateShape = harden({
     collateralBrand: M.any(),
@@ -146,6 +136,7 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
     capturedPriceForRound: M.any(),
     curAuctionPrice: M.any(),
     remainingProceedsGoal: M.any(),
+    isQuoteNotifierObserved: M.boolean(),
   });
 
   const makeAuctionBookKit = prepareExoClassKit(
@@ -238,6 +229,13 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
          * @type {Amount<'nat'> | null}
          */
         remainingProceedsGoal: null,
+
+        /**
+         * Is the observer for the quoteNotifier active?
+         *
+         * @type {boolean}
+         */
+        isQuoteNotifierObserved: false,
       };
     },
     {
@@ -470,11 +468,12 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
         ensureQuoteNotifierObserved() {
           const { state, facets } = this;
           const { collateralBrand, bidBrand, priceAuthority } = state;
+          let { isQuoteNotifierObserved } = state;
 
-          if (quoteNotifierFlags.has(collateralBrand)) {
+          if (isQuoteNotifierObserved) {
             return;
           }
-          quoteNotifierFlags.init(collateralBrand, true);
+          isQuoteNotifierObserved = true;
           trace('observing');
 
           const quoteNotifierP = E(priceAuthority).makeQuoteNotifier(
@@ -500,7 +499,7 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
                   );
                   // lack of quote will trigger restart
                   state.updatingOracleQuote = null;
-                  quoteNotifierFlags.delete(collateralBrand);
+                  isQuoteNotifierObserved = false;
                 },
                 finish: done => {
                   trace(
@@ -508,13 +507,13 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
                   );
                   // lack of quote will trigger restart
                   state.updatingOracleQuote = null;
-                  quoteNotifierFlags.delete(collateralBrand);
+                  isQuoteNotifierObserved = false;
                 },
               }),
             e => {
               trace('makeQuoteNotifier failed, resetting', e);
               state.updatingOracleQuote = null;
-              quoteNotifierFlags.delete(collateralBrand);
+              isQuoteNotifierObserved = false;
             },
           );
 
