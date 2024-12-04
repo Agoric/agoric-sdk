@@ -9,7 +9,11 @@ import { prepareSettler } from '../../src/exos/settler.js';
 import { prepareStatusManager } from '../../src/exos/status-manager.js';
 import type { CctpTxEvidence } from '../../src/types.js';
 import { makeFeeTools } from '../../src/utils/fees.js';
-import { MockCctpTxEvidences, MockVTransferEvents } from '../fixtures.js';
+import {
+  MockCctpTxEvidences,
+  MockVTransferEvents,
+  intermediateRecipient,
+} from '../fixtures.js';
 import { makeTestLogger, prepareMockOrchAccounts } from '../mocks.js';
 import { commonSetup } from '../supports.js';
 
@@ -87,6 +91,7 @@ const makeTestContext = async t => {
       fetchedChainInfo.agoric.connections['noble-1'].transferChannel
         .counterPartyChannelId,
     remoteDenom: 'uusdc',
+    intermediateRecipient,
   });
 
   const simulate = harden({
@@ -280,6 +285,15 @@ test('slow path: forward to EUD; remove pending tx', async t => {
         value: 'osmo183dejcnmkka5dzcu9xw6mywq0p2m5peks28men',
       },
       usdc.units(150),
+      {
+        forwardOpts: {
+          intermediateRecipient: {
+            chainId: 'noble-1',
+            encoding: 'bech32',
+            value: 'noble1test',
+          },
+        },
+      },
     ],
   ]);
 

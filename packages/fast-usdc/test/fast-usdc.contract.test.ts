@@ -97,6 +97,7 @@ const startContract = async (
 
 const makeTestContext = async (t: ExecutionContext) => {
   const common = await commonSetup(t);
+  await E(common.mocks.ibcBridge).setAddressPrefix('noble');
 
   const startKit = await startContract(common, 2);
 
@@ -405,7 +406,7 @@ const makeCustomer = (
         const [ibcTransferMsg] = lm.messages;
         // support advances to noble + other chains
         const receiver =
-          ibcTransferMsg.receiver === 'pfm'
+          ibcTransferMsg.receiver === 'noble1test' // intermediateRecipient value
             ? JSON.parse(ibcTransferMsg.memo).forward.receiver
             : ibcTransferMsg.receiver;
         return (

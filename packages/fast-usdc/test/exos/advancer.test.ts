@@ -14,7 +14,7 @@ import { prepareStatusManager } from '../../src/exos/status-manager.js';
 import { makeFeeTools } from '../../src/utils/fees.js';
 import { addressTools } from '../../src/utils/address.js';
 import { commonSetup } from '../supports.js';
-import { MockCctpTxEvidences } from '../fixtures.js';
+import { MockCctpTxEvidences, intermediateRecipient } from '../fixtures.js';
 import {
   makeTestFeeConfig,
   makeTestLogger,
@@ -113,6 +113,7 @@ const createTestExtensions = (t, common: CommonSetup) => {
     borrowerFacet: mockBorrowerF,
     notifyFacet: mockNotifyF,
     poolAccount: mockAccounts.mockPoolAccount.account,
+    intermediateRecipient,
   });
 
   return {
@@ -221,6 +222,7 @@ test('updates status to OBSERVED on insufficient pool funds', async t => {
     borrowerFacet: mockBorrowerErrorF,
     notifyFacet: mockNotifyF,
     poolAccount: mockPoolAccount.account,
+    intermediateRecipient,
   });
 
   const mockEvidence = MockCctpTxEvidences.AGORIC_PLUS_DYDX();

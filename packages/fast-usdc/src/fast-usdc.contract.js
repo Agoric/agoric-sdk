@@ -140,7 +140,7 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
     'test of forcing evidence',
   );
 
-  const { makeLocalAccount } = orchestrateAll(flows, {});
+  const { makeLocalAccount, makeNobleAccount } = orchestrateAll(flows, {});
 
   const creatorFacet = zone.exo('Fast USDC Creator', undefined, {
     /** @type {(operatorId: string) => Promise<Invitation<OperatorKit>>} */
@@ -214,7 +214,7 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
       privateArgs.assetInfo,
     );
   }
-
+  const nobleAccountV = zone.makeOnce('NobleAccount', () => makeNobleAccount());
   const feedKit = zone.makeOnce('Feed Kit', () => makeFeedKit());
 
   const poolAccountV = zone.makeOnce('PoolAccount', () => makeLocalAccount());
@@ -222,10 +222,18 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
     makeLocalAccount(),
   );
   // when() is OK here since this clearly resolves promptly.
-  /** @type {HostInterface<OrchestrationAccount<{chainId: 'agoric';}>>[]} */
-  const [poolAccount, settlementAccount] = await vowTools.when(
-    vowTools.all([poolAccountV, settleAccountV]),
+  /** @type {[HostInterface<OrchestrationAccount<{chainId: 'noble-1';}>>, HostInterface<OrchestrationAccount<{chainId: 'agoric-3';}>>, HostInterface<OrchestrationAccount<{chainId: 'agoric-3';}>>]} */
+  const [nobleAccount, poolAccount, settlementAccount] = await vowTools.when(
+    vowTools.all([nobleAccountV, poolAccountV, settleAccountV]),
   );
+  trace('settlementAccount', settlementAccount);
+  trace('poolAccount', poolAccount);
+  trace('nobleAccount', nobleAccount);
+
+  const intermediateRecipient = await vowTools.when(
+    E(nobleAccount).getAddress(),
+  );
+  trace('intermediateRecipient', intermediateRecipient);
 
   const [_agoric, _noble, agToNoble] = await vowTools.when(
     chainHub.getChainsAndConnection('agoric', 'noble'),
@@ -235,6 +243,7 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
     sourceChannel: agToNoble.transferChannel.counterPartyChannelId,
     remoteDenom: 'uusdc',
     settlementAccount,
+    intermediateRecipient,
   });
 
   const advancer = zone.makeOnce('Advancer', () =>
@@ -242,6 +251,7 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
       borrowerFacet: poolKit.borrower,
       notifyFacet: settlerKit.notify,
       poolAccount,
+      intermediateRecipient,
     }),
   );
   // Connect evidence stream to advancer
