@@ -297,6 +297,8 @@ export const provisionSmartWallet = async (
   return { offers, deposit, peek, query: q };
 };
 
+/** @typedef {Awaited<ReturnType<typeof provisionSmartWallet>>} WalletDriver */
+
 /**
  * @param {{
  *   agd: import('./agd-lib.js').Agd;
