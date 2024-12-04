@@ -164,6 +164,19 @@ export const makeAgd = ({ execFileSync }) => {
             },
           ).toString();
         },
+        /** @param {string} name key name in keyring */
+        showAddress: name => {
+          return execFileSync(
+            kubectlBinary,
+            [...binaryArgs, 'keys', 'show', name, '-a', ...keyringArgs],
+            {
+              encoding: 'utf-8',
+              stdio: ['pipe', 'pipe', 'ignore'],
+            },
+          )
+            .toString()
+            .trim();
+        },
         /** @param {string} name */
         delete: name => {
           return exec([...keyringArgs, 'keys', 'delete', name, '-y'], {
@@ -181,7 +194,7 @@ export const makeAgd = ({ execFileSync }) => {
   return make();
 };
 
-/** @typedef {ReturnType<makeAgd>} Agd */
+/** @typedef {ReturnType<typeof makeAgd>} Agd */
 
 /** @param {{ execFileSync: typeof import('child_process').execFileSync, log: typeof console.log }} powers */
 export const makeCopyFiles = (

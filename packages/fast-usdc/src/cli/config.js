@@ -6,7 +6,6 @@ import { stdin as input, stdout as output } from 'node:process';
     nobleSeed: string,
     ethSeed: string,
     nobleToAgoricChannel: string,
-    agoricRpc: string,
     nobleApi: string,
     nobleRpc: string,
     ethRpc: string,

@@ -1,5 +1,9 @@
 import { deeplyFulfilledObject, makeTracer, objectMap } from '@agoric/internal';
-import { CosmosChainInfoShape, DenomDetailShape } from '@agoric/orchestration';
+import {
+  CosmosChainInfoShape,
+  DenomDetailShape,
+  DenomShape,
+} from '@agoric/orchestration';
 import { Fail } from '@endo/errors';
 import { E } from '@endo/far';
 import { makeMarshal } from '@endo/marshal';
@@ -36,7 +40,7 @@ const contractName = 'fastUsdc';
  *   feeConfig: FeeConfig;
  *   feedPolicy: FeedPolicy & Passable;
  *   chainInfo: Record<string, CosmosChainInfo & Passable>;
- *   assetInfo: Record<Denom, DenomDetail & {brandKey?: string}>;
+ *   assetInfo: [Denom, DenomDetail & {brandKey?: string}][];
  * }} FastUSDCConfig
  */
 /** @type {TypedPattern<FastUSDCConfig>} */
@@ -46,7 +50,7 @@ export const FastUSDCConfigShape = M.splitRecord({
   feeConfig: FeeConfigShape,
   feedPolicy: FeedPolicyShape,
   chainInfo: M.recordOf(M.string(), CosmosChainInfoShape),
-  assetInfo: M.recordOf(M.string(), DenomDetailShape),
+  assetInfo: M.arrayOf([DenomShape, DenomDetailShape]),
 });
 
 /**

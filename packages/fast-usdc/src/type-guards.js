@@ -21,7 +21,7 @@ export const makeProposalShapes = ({ PoolShares, USDC }) => {
   /** @type {TypedPattern<USDCProposalShapes['deposit']>} */
   const deposit = M.splitRecord(
     { give: { USDC: makeNatAmountShape(USDC, 1n) } },
-    { want: { PoolShare: makeNatAmountShape(PoolShares) } },
+    { want: M.splitRecord({}, { PoolShare: makeNatAmountShape(PoolShares) }) },
   );
   /** @type {TypedPattern<USDCProposalShapes['withdraw']>} */
   const withdraw = M.splitRecord({

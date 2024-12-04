@@ -26,14 +26,14 @@ clean: stop clean-kind
 
 .PHONY: check
 setup-deps:
-	bash $(CURDIR)/scripts/dev-setup.sh
+	$(CURDIR)/scripts/dev-setup.sh
 
 ###############################################################################
 ###                              Helm Charts                                ###
 ###############################################################################
 
 install:
-	bash $(CURDIR)/scripts/install.sh --config $(FILE) --name $(NAME) --version $(HELM_VERSION)
+	$(CURDIR)/scripts/install.sh --config $(FILE) --name $(NAME) --version $(HELM_VERSION)
 
 delete:
 	-helm delete $(NAME)
@@ -44,7 +44,7 @@ delete:
 
 .PHONY: port-forward
 port-forward:
-	bash $(CURDIR)/scripts/port-forward.sh --config=$(FILE)
+	$(CURDIR)/scripts/port-forward.sh --config=$(FILE)
 
 .PHONY: stop-forward
 stop-forward:
@@ -76,8 +76,13 @@ fund-provision-pool:
 	kubectl exec -i agoriclocal-genesis-0 -c validator -- agd tx bank send faucet $(PROVISION_POOL_ADDR) 1000000000uist -y -b block
 
 override-chain-registry:
-	node_modules/.bin/tsx scripts/fetch-starship-chain-info.ts && \
-	node_modules/.bin/tsx scripts/deploy-cli.ts src/revise-chain-info.builder.js
+	scripts/fetch-starship-chain-info.ts && \
+	scripts/deploy-cli.ts src/revise-chain-info.builder.js
+
+register-bank-assets:
+	scripts/fetch-starship-chain-info.ts && \
+	scripts/deploy-cli.ts src/register-interchain-bank-assets.builder.js \
+		assets="$$(scripts/make-bank-asset-info.ts)"
 
 ADDR=agoric1ldmtatp24qlllgxmrsjzcpe20fvlkp448zcuce
 COIN=1000000000uist
@@ -98,8 +103,8 @@ tail-slog:
 
 .PHONY: wait-for-pods
 wait-for-pods:
-	node_modules/.bin/tsx scripts/pod-readiness.ts
+	scripts/pod-readiness.ts
 
 .PHONY: start
-start: install wait-for-pods port-forward fund-provision-pool override-chain-registry
+start: install wait-for-pods port-forward fund-provision-pool override-chain-registry register-bank-assets
 

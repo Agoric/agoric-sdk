@@ -32,7 +32,7 @@ import { Fail } from '@endo/errors';
 import {
   makeRunUtils,
   type RunUtils,
-  type RunPolicyMaker,
+  type RunHarness,
 } from '@agoric/swingset-vat/tools/run-utils.js';
 import {
   boardSlottingMarshaller,
@@ -83,7 +83,7 @@ type BootstrapEV = EProxy & {
 
 const makeBootstrapRunUtils = makeRunUtils as (
   controller: SwingsetController,
-  perfTool?: RunPolicyMaker,
+  harness?: RunHarness,
 ) => Omit<RunUtils, 'EV'> & { EV: BootstrapEV };
 
 const keysToObject = <K extends PropertyKey, V>(
@@ -315,7 +315,7 @@ export const matchIter = (t: AvaT, iter, valueRef) => {
  * @param [options.profileVats]
  * @param [options.debugVats]
  * @param [options.defaultManagerType]
- * @param [options.perfTool]
+ * @param [options.harness]
  */
 export const makeSwingsetTestKit = async (
   log: (..._: any[]) => void,
@@ -329,7 +329,7 @@ export const makeSwingsetTestKit = async (
     profileVats = [] as string[],
     debugVats = [] as string[],
     defaultManagerType = 'local' as ManagerType,
-    perfTool = undefined as RunPolicyMaker | undefined,
+    harness = undefined as RunHarness | undefined,
   } = {},
 ) => {
   console.time('makeBaseSwingsetTestKit');
@@ -547,7 +547,7 @@ export const makeSwingsetTestKit = async (
 
   console.timeLog('makeBaseSwingsetTestKit', 'buildSwingset');
 
-  const runUtils = makeBootstrapRunUtils(controller, perfTool);
+  const runUtils = makeBootstrapRunUtils(controller, harness);
 
   const buildProposal = makeProposalExtractor({
     childProcess: childProcessAmbient,
@@ -670,7 +670,12 @@ export const makeSwingsetTestKit = async (
 };
 export type SwingsetTestKit = Awaited<ReturnType<typeof makeSwingsetTestKit>>;
 
-export const makeRunPolicyProvider = () => {
+/**
+ * Return a harness that can be dynamically configured to provide a computron-
+ * counting run policy (and queried for the count of computrons recorded since
+ * the last reset).
+ */
+export const makeSwingsetHarness = () => {
   const c2b = defaultBeansPerXsnapComputron;
   const beansPerUnit = {
     // see https://cosgov.org/agoric?msgType=parameterChangeProposal&network=main
@@ -681,24 +686,24 @@ export const makeRunPolicyProvider = () => {
 
   /** @type {ReturnType<typeof computronCounter> | undefined} */
   let policy;
-  let counting = false;
+  let policyEnabled = false;
 
   const meter = harden({
     provideRunPolicy: () => {
-      if (counting && !policy) {
+      if (policyEnabled && !policy) {
         policy = computronCounter({ beansPerUnit });
       }
       return policy;
     },
-    /** @param {boolean} x */
-    usePolicy: x => {
-      counting = x;
-      if (!counting) {
+    /** @param {boolean} forceEnabled */
+    useRunPolicy: forceEnabled => {
+      policyEnabled = forceEnabled;
+      if (!policyEnabled) {
         policy = undefined;
       }
     },
-    totalCount: () => (policy?.totalBeans() || 0n) / c2b,
-    resetPolicy: () => (policy = undefined),
+    totalComputronCount: () => (policy?.totalBeans() || 0n) / c2b,
+    resetRunPolicy: () => (policy = undefined),
   });
   return meter;
 };
