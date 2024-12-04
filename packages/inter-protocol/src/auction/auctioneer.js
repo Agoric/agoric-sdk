@@ -384,14 +384,6 @@ export const distributeProportionalSharesWithLimits = (
   return transfers;
 };
 
-// auctionBook changed to create a sub-baggage for each book (to distinguish
-// their quoteNotifier flags) so older auctions will not be upgradable to this
-// version. We believe this version is saving all the necesary state to be
-// upgraded, but that hasn't been verified, so we don't mark it as `canUpgrade'.
-export const meta = {
-  upgradable: 'canBeUpgraded',
-};
-
 /**
  * @param {ZCF<
  *   GovernanceTerms<typeof auctioneerParamTypes> & {
