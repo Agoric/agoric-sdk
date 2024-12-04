@@ -9,6 +9,7 @@ import { Fail } from '@endo/errors';
 import { unmarshalFromVstorage } from '@agoric/internal/src/marshal.js';
 import { makeMarshal } from '@endo/marshal';
 import { defaultMarshaller } from '@agoric/internal/src/storage-test-utils.js';
+import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import {
   makeWalletFactoryContext,
   type WalletFactoryTestContext,
@@ -41,8 +42,6 @@ test.serial(
     } = t.context;
 
     const [watcherWallet] = await Promise.all([
-      wd.provideSmartWallet('agoric144rrhh4m09mh7aaffhm6xy223ym76gve2x7y78'),
-      wd.provideSmartWallet('agoric19d6gnr9fyp6hev4tlrg87zjrzsd5gzr5qlfq2p'),
       wd.provideSmartWallet('agoric19uscwxdac6cf6z7d5e26e0jm0lgwstc47cpll8'),
       wd.provideSmartWallet('agoric1krunjcqfrf7la48zrvdfeeqtls5r00ep68mzkr'),
       wd.provideSmartWallet('agoric1n4fcxsnkxe4gj6e24naec99hzmc4pjfdccy5nj'),
@@ -129,26 +128,62 @@ test.serial('writes fee config to vstorage', async t => {
   await documentStorageSchema(t, storage, doc);
 });
 
-test.serial('writes status updates to vstorage', async t => {
-  const { walletFactoryDriver: wd, storage } = t.context;
-  const wallet = await wd.provideSmartWallet(
-    'agoric144rrhh4m09mh7aaffhm6xy223ym76gve2x7y78',
+test.serial('makes usdc advance', async t => {
+  const { walletFactoryDriver: wd, storage, agoricNamesRemotes } = t.context;
+  const oracles = await Promise.all([
+    wd.provideSmartWallet('agoric19uscwxdac6cf6z7d5e26e0jm0lgwstc47cpll8'),
+    wd.provideSmartWallet('agoric1krunjcqfrf7la48zrvdfeeqtls5r00ep68mzkr'),
+    wd.provideSmartWallet('agoric1n4fcxsnkxe4gj6e24naec99hzmc4pjfdccy5nj'),
+  ]);
+  await Promise.all(
+    oracles.map(wallet =>
+      wallet.sendOffer({
+        id: 'claim-oracle-invitation',
+        invitationSpec: {
+          source: 'purse',
+          instance: agoricNamesRemotes.instance.fastUsdc,
+          description: 'oracle operator invitation',
+        },
+        proposal: {},
+      }),
+    ),
   );
-  const submitMockEvidence = (mockEvidence: CctpTxEvidence) =>
-    wallet.sendOffer({
-      id: 'submit-mock-evidence',
-      invitationSpec: {
-        source: 'agoricContract',
-        instancePath: ['fastUsdc'],
-        callPipe: [['makeTestPushInvitation', [mockEvidence]]],
-      },
-      proposal: {},
-    });
-  const mockEvidence1 = MockCctpTxEvidences.AGORIC_PLUS_OSMO();
-  const mockEvidence2 = MockCctpTxEvidences.AGORIC_PLUS_DYDX();
 
-  await submitMockEvidence(mockEvidence1);
-  await submitMockEvidence(mockEvidence2);
+  // @ts-expect-error it doesnt recognize usdc as a Brand type
+  const usdc = agoricNamesRemotes.vbankAsset.USDC.brand as Brand<'nat'>;
+  await oracles[0].sendOffer({
+    id: 'deposit-lp-0',
+    invitationSpec: {
+      source: 'agoricContract',
+      instancePath: ['fastUsdc'],
+      callPipe: [['makeDepositInvitation', []]],
+    },
+    proposal: {
+      give: {
+        USDC: { brand: usdc, value: 150_000_000n },
+      },
+    },
+  });
+  await eventLoopIteration();
+
+  const evidence = MockCctpTxEvidences.AGORIC_PLUS_OSMO();
+  // TODO - start counting computrons
+  await Promise.all(
+    oracles.map(wallet =>
+      wallet.sendOffer({
+        id: 'submit-mock-evidence-osmo',
+        invitationSpec: {
+          source: 'continuing',
+          previousOffer: 'claim-oracle-invitation',
+          invitationMakerName: 'SubmitEvidence',
+          invitationArgs: [evidence],
+        },
+        proposal: {},
+      }),
+    ),
+  );
+  await eventLoopIteration();
+  // TODO - stop counting computrons
 
   const doc = {
     node: `fastUsdc.status`,
