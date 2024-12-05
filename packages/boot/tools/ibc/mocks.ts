@@ -66,6 +66,11 @@ export const protoMsgMocks = {
     msg: 'eyJ0eXBlIjoxLCJkYXRhIjoiQ25zS0tTOXBZbU11WVhCd2JHbGpZWFJwYjI1ekxuUnlZVzV6Wm1WeUxuWXhMazF6WjFSeVlXNXpabVZ5RWs0S0NIUnlZVzV6Wm1WeUVndGphR0Z1Ym1Wc0xUVXpOaG9UQ2cxcFltTXZkWFZ6WkdOb1lYTm9FZ0l4TUNJTFkyOXpiVzl6TVhSbGMzUXFDbTV2WW14bE1YUmxjM1F5QURpQThKTEwzUWc9IiwibWVtbyI6IiJ9',
     ack: responses.ibcTransfer,
   },
+  // MsgTransfer 10 ibc/uusdchash from cosmos1test1 to noble1test through channel-536
+  ibcTransfer2: {
+    msg: 'eyJ0eXBlIjoxLCJkYXRhIjoiQ253S0tTOXBZbU11WVhCd2JHbGpZWFJwYjI1ekxuUnlZVzV6Wm1WeUxuWXhMazF6WjFSeVlXNXpabVZ5RWs4S0NIUnlZVzV6Wm1WeUVndGphR0Z1Ym1Wc0xUVXpOaG9UQ2cxcFltTXZkWFZ6WkdOb1lYTm9FZ0l4TUNJTVkyOXpiVzl6TVhSbGMzUXhLZ3B1YjJKc1pURjBaWE4wTWdBNGdQQ1N5OTBJIiwibWVtbyI6IiJ9',
+    ack: responses.ibcTransfer,
+  },
   error: {
     msg: '',
     ack: responses.error5,
@@ -127,7 +132,8 @@ export const icaMocks = {
         channel_id: mockRemoteChannelID,
       },
       counterpartyVersion: addParamsIfJsonVersion(obj.version, {
-        address: `${bech32Prefix}1test`,
+        // mockID expected to increase monotonically since icacontroller ports are sequential
+        address: `${bech32Prefix}1test${mocklID < 2 ? '' : mocklID - 1}`,
       }),
       connectionHops: obj.hops,
       order: obj.order,
