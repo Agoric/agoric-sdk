@@ -1,84 +1,31 @@
 /* eslint-env node */
 
 import test from 'ava';
+import { addUser, provisionSmartWallet } from '@agoric/synthetic-chain';
+import { upgradeContract } from './test-lib/utils.js';
 import {
-  addUser,
-  getUser,
-  evalBundles,
-  getISTBalance,
-  provisionSmartWallet,
-  ATOM_DENOM,
-} from '@agoric/synthetic-chain';
-import { NonNullish } from '@agoric/internal';
-import {
-  replaceTemplateValuesInFile,
-  upgradeContract,
-} from './test-lib/utils.js';
+  mintPayment,
+  getAssetList,
+  swap,
+  getPSMChildren,
+} from './test-lib/mint-holder.js';
+import { networkConfig } from './test-lib/index.js';
 
-const USDC_DENOM = NonNullish(process.env.USDC_DENOM);
-const SUBMISSION_DIR = 'mint-test-submission';
-
-test.serial('mintHolder BLD contract is upgraded', async t => {
+test('mintHolder BLD contract is upgraded', async t => {
   const receiver = await addUser('receiver');
-  const label = 'BLD';
+  await provisionSmartWallet(receiver, `20000000ubld`);
 
-  await provisionSmartWallet(
-    receiver,
-    `20000000ubld,10000000${ATOM_DENOM},10000000${USDC_DENOM}`,
-  );
+  const labelList = await getPSMChildren(fetch, networkConfig);
+  const assetList = await getAssetList(labelList.slice(3));
+  t.log(`labelList: `, labelList);
+  t.log(`assetList: `, assetList);
 
-  const balanceBefore = await getISTBalance(receiver, 'ubld');
-  t.is(balanceBefore, 10, 'receiver balance should have 20 BLD');
+  for (const asset of assetList) {
+    const { label, denom, mintHolderVat } = asset;
+    t.log(`testing ${label} mintHolder contract upgrade`);
 
-  await upgradeContract('upgrade-mintHolder-bld', label);
-
-  await replaceTemplateValuesInFile(`${SUBMISSION_DIR}/send-script`, {
-    ADDRESS: receiver,
-    LABEL: label,
-  });
-
-  await evalBundles(SUBMISSION_DIR);
-
-  const balanceAfter = await getISTBalance(receiver, 'ubld');
-  t.is(balanceAfter, 20, 'receiver balance should have 20 BLD');
-});
-
-test.serial('mintHolder ATOM contract is upgraded', async t => {
-  const receiver = await getUser('receiver');
-  const label = 'ATOM';
-
-  const balanceBefore = await getISTBalance(receiver, ATOM_DENOM);
-  t.is(balanceBefore, 10, 'receiver balance should have 10 ATOM');
-
-  await upgradeContract('upgrade-mintHolder-atom', label);
-
-  await replaceTemplateValuesInFile(`${SUBMISSION_DIR}/send-script`, {
-    ADDRESS: receiver,
-    LABEL: label,
-  });
-
-  await evalBundles(SUBMISSION_DIR);
-
-  const balanceAfter = await getISTBalance(receiver, ATOM_DENOM);
-  t.is(balanceAfter, 20, 'receiver balance should have 20 ATOM');
-});
-
-test.serial('mintHolder USDC contract is upgraded', async t => {
-  const receiver = await getUser('receiver');
-  const label = 'USDC';
-
-  const balanceBefore = await getISTBalance(receiver, USDC_DENOM);
-  t.is(balanceBefore, 10, 'receiver balance should have 10 USDC');
-
-  await upgradeContract('upgrade-mintHolder-usdc', label);
-
-  await replaceTemplateValuesInFile(`${SUBMISSION_DIR}/send-script`, {
-    ADDRESS: receiver,
-    LABEL: label,
-  });
-
-  await evalBundles(SUBMISSION_DIR);
-
-  const balanceAfter = await getISTBalance(receiver, USDC_DENOM);
-  t.is(balanceAfter, 20, 'receiver balance should have 20 USDC');
+    await upgradeContract(`upgrade-mintHolder-${label}`, mintHolderVat);
+    await mintPayment(t, receiver, label, denom);
+    await swap(t, receiver, label, denom, 5);
+  }
 });
