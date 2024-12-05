@@ -16,12 +16,19 @@ import { buildRootObject as networkBuildRootObject } from '../src/vat-network.js
 import { makeFakeIbcBridge } from '../tools/fake-bridge.js';
 
 import { registerNetworkProtocols } from '../src/proposals/network-proposal.js';
+import { DEFAULT_CHANNEL_HANDSHAKE_PIPELINING } from '../src/ibc.js';
 
 const { fakeVomKit } = reincarnate({ relaxDurabilityRules: false });
 const provideBaggage = key => {
   const root = fakeVomKit.cm.provideBaggage();
   const zone = makeDurableZone(root);
   return zone.mapStore(`${key} baggage`);
+};
+
+let baggageCount = 0n;
+const provideVatBaggage = vatName => {
+  baggageCount += 1n;
+  return provideBaggage(`${vatName}${baggageCount}`);
 };
 
 const preparePlusOneConnectionHandler = (zone, { makeVowKit }, log) => {
@@ -72,14 +79,17 @@ const prepareIBCListener = (zone, makePlusOne) => {
   return makeIBCListener;
 };
 
-test('network - ibc', async t => {
+/**
+ * @param {boolean | undefined} pipelining
+ */
+const testIBC = pipelining => async t => {
   const networkVat = E(networkBuildRootObject)(
     null,
     null,
-    provideBaggage('network'),
+    provideVatBaggage('network'),
   );
-  const ibcVat = E(ibcBuildRootObject)(null, null, provideBaggage('ibc'));
-  const baggage = provideBaggage('network - ibc');
+  const ibcVat = E(ibcBuildRootObject)(null, null, provideVatBaggage('ibc'));
+  const baggage = provideVatBaggage('network - ibc');
   const zone = makeDurableZone(baggage);
   const vowTools = prepareVowTools(zone);
   const powers = prepareNetworkPowers(zone, vowTools);
@@ -144,20 +154,27 @@ test('network - ibc', async t => {
 
     t.log('Connecting to a Remote Port');
     const [hopName, portName, version] = ['connection-11', 'port-98', 'bar'];
-    const remoteEndpoint = `/ibc-hop/${hopName}/ibc-port/${portName}/unordered/${version}`;
+    const pipeliningStr =
+      pipelining === undefined ? '' : `/pipelining/${pipelining}`;
+    const remoteEndpoint = `/ibc-hop/${hopName}/ibc-port/${portName}${pipeliningStr}/unordered/${version}`;
     const cP = E(p).connect(remoteEndpoint);
 
-    const ev2 = await events.next();
-    t.assert(!ev2.done);
-    t.deepEqual(ev2.value, [
-      'startChannelOpenInit',
-      {
-        packet: { source_port: 'port-1', destination_port: 'port-98' },
-        order: 'UNORDERED',
-        hops: ['connection-11'],
-        version: 'bar',
-      },
-    ]);
+    t.log('Sending Data - transfer');
+    const ack = E(when(cP)).send('some-transfer-message');
+
+    {
+      const ev2a = await events.next();
+      t.assert(!ev2a.done);
+      t.deepEqual(ev2a.value, [
+        'startChannelOpenInit',
+        {
+          packet: { source_port: 'port-1', destination_port: 'port-98' },
+          order: 'UNORDERED',
+          hops: ['connection-11'],
+          version: 'bar',
+        },
+      ]);
+    }
 
     await E(ibcBridge).fromBridge({
       event: 'channelOpenAck',
@@ -171,10 +188,42 @@ test('network - ibc', async t => {
     t.log('Waiting for Connection');
     const c = await when(cP);
 
+    // Pipelining causes a WriteOpenConfirmChannel to be called in advance.
+    // Non-pipelined channel opening will wait for the OpenAck to be received.
+    let pipelined = false;
+    const ev2b = await events.next();
+    t.assert(!ev2b.done);
+    if (ev2b.value[0] === 'confirmOpenExecuted') {
+      pipelined = true;
+      t.deepEqual(ev2b.value, [
+        'confirmOpenExecuted',
+        {
+          packet: {
+            source_channel: 'channel-1',
+            source_port: 'port-1',
+          },
+        },
+      ]);
+    }
+
+    const ev2c = pipelined ? await events.next() : ev2b;
+    t.assert(!ev2c.done);
+    t.deepEqual(ev2c.value, [
+      'sendPacket',
+      {
+        packet: {
+          data: 'c29tZS10cmFuc2Zlci1tZXNzYWdl',
+          source_channel: 'channel-1',
+          source_port: 'port-1',
+        },
+        relativeTimeoutNs: 600_000_000_000n, // 10 minutes in nanoseconds.
+      },
+    ]);
+
     t.log('Waiting for events');
 
-    const remoteAddress = c.getRemoteAddress();
-    const localAddress = c.getLocalAddress();
+    const remoteAddress = await when(c.getRemoteAddress());
+    const localAddress = await when(c.getLocalAddress());
     t.is(
       remoteAddress,
       '/ibc-hop/connection-11/ibc-port/port-98/unordered/bar-negotiated/ibc-channel/channel-22',
@@ -183,25 +232,6 @@ test('network - ibc', async t => {
       localAddress,
       '/ibc-port/port-1/unordered/bar-negotiated/ibc-channel/channel-1',
     );
-
-    t.log('Sending Data - transfer');
-    const ack = E(c).send('some-transfer-message');
-
-    const ev3 = await events.next();
-    t.assert(!ev3.done);
-    t.deepEqual(ev3.value, [
-      'sendPacket',
-      {
-        packet: {
-          data: 'c29tZS10cmFuc2Zlci1tZXNzYWdl',
-          destination_channel: 'channel-22',
-          destination_port: 'port-98',
-          source_channel: 'channel-1',
-          source_port: 'port-1',
-        },
-        relativeTimeoutNs: 3_600_000_000_000n, // 60 minutes in nanoseconds.
-      },
-    ]);
 
     await E(ibcBridge).fromBridge({
       event: 'acknowledgementPacket',
@@ -245,7 +275,6 @@ test('network - ibc', async t => {
       counterparty: { port_id: 'port-99', channel_id: 'channel-23' },
       connectionHops: ['connection-12'],
       order: 'ORDERED',
-      version: 'bazi',
       counterpartyVersion: 'bazo',
     });
 
@@ -260,7 +289,7 @@ test('network - ibc', async t => {
     t.deepEqual(evopen.value, [
       'plusOne-open',
       {
-        localAddr: '/ibc-port/port-1/ordered/bazi/ibc-channel/channel-2',
+        localAddr: '/ibc-port/port-1/ordered/bazo/ibc-channel/channel-2',
         remoteAddr:
           '/ibc-hop/connection-12/ibc-port/port-99/ordered/bazo/ibc-channel/channel-23',
       },
@@ -301,4 +330,11 @@ test('network - ibc', async t => {
   const evend = await events.next();
   t.assert(evend.done);
   t.deepEqual(evend.value, []);
-});
+};
+
+test('ibc pipelining', testIBC(true));
+test('ibc non-pipelining', testIBC(false));
+test(
+  `ibc pipelined undefined (${DEFAULT_CHANNEL_HANDSHAKE_PIPELINING})`,
+  testIBC(undefined),
+);

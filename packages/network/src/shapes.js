@@ -43,8 +43,11 @@ export const Shape = /** @type {const} */ harden({
         .optional(Shape2.Opts)
         .returns(Shape2.Vow$(Shape2.Bytes)),
       close: M.callWhen().returns(Shape2.Vow$(M.undefined())),
-      getLocalAddress: M.call().returns(Shape2.Endpoint),
-      getRemoteAddress: M.call().returns(Shape2.Endpoint),
+      getLocalAddress: M.callWhen().returns(Shape2.Vow$(Shape2.Endpoint)),
+      getRemoteAddress: M.callWhen().returns(Shape2.Vow$(Shape2.Endpoint)),
+    }),
+    memoizeAddressWatcher: M.interface('MemoizeAddressWatcher', {
+      onFulfilled: M.call(M.any()).rest(M.any()).returns(M.any()),
     }),
     openConnectionAckWatcher: M.interface('OpenConnectionAckWatcher', {
       onFulfilled: M.call(M.any()).rest(M.any()).returns(M.any()),

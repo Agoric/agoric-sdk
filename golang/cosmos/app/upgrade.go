@@ -197,6 +197,19 @@ func unreleasedUpgradeHandler(app *GaiaApp, targetUpgrade string) func(sdk.Conte
 				)
 			}
 
+			// Upgrade for pieces of Orch to provide channel open pipelining.
+			pipelineOrchStep, err := buildProposalStepWithArgs(
+				"@agoric/builders/scripts/vats/upgrade-orch-core.js",
+				"defaultProposalBuilder",
+				map[string]any{
+					"bundleFilter": []string{"ibc", "network", "orchestration"},
+				},
+			)
+			if err != nil {
+				return nil, err
+			}
+			CoreProposalSteps = append(CoreProposalSteps, pipelineOrchStep)
+
 			// Each CoreProposalStep runs sequentially, and can be constructed from
 			// one or more modules executing in parallel within the step.
 			CoreProposalSteps = append(CoreProposalSteps,

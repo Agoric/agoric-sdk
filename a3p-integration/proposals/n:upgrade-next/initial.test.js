@@ -4,10 +4,10 @@ import '@endo/init/debug.js';
 import { getVatDetails } from '@agoric/synthetic-chain';
 
 const vats = {
-  network: { incarnation: 1 },
-  ibc: { incarnation: 1 },
+  network: { incarnation: 2 },
+  ibc: { incarnation: 2 },
   localchain: { incarnation: 1 },
-  orchestration: { incarnation: 0 },
+  orchestration: { incarnation: 1 },
   transfer: { incarnation: 1 },
   walletFactory: { incarnation: 5 },
   zoe: { incarnation: 3 },

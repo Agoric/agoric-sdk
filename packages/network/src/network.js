@@ -77,7 +77,7 @@ function throwIfInvalidPortName(specifiedName) {
  * @typedef {object} ConnectionOpts
  * @property {Endpoint[]} addrs
  * @property {Remote<Required<ConnectionHandler>>[]} handlers
- * @property {MapStore<number, Connection>} conns
+ * @property {MapStore<0 | 1, Connection>} conns
  * @property {WeakSetStore<Closable>} current
  * @property {0|1} l
  * @property {0|1} r
@@ -106,13 +106,19 @@ const prepareHalfConnection = (zone, { watch, allVows, finalizer }) => {
     },
     {
       connection: {
-        getLocalAddress() {
+        async getLocalAddress() {
           const { addrs, l } = this.state;
-          return addrs[l];
+          if (typeof addrs[l] === 'string') {
+            return addrs[l];
+          }
+          return watch(addrs[l], this.facets.memoizeAddressWatcher, l);
         },
-        getRemoteAddress() {
+        async getRemoteAddress() {
           const { addrs, r } = this.state;
-          return addrs[r];
+          if (typeof addrs[r] === 'string') {
+            return addrs[r];
+          }
+          return watch(addrs[r], this.facets.memoizeAddressWatcher, r);
         },
         /** @param {Bytes} packetBytes */
         async send(packetBytes) {
@@ -150,6 +156,18 @@ const prepareHalfConnection = (zone, { watch, allVows, finalizer }) => {
           );
 
           return watch(innerVow, this.facets.rethrowUnlessMissingWatcher);
+        },
+      },
+      memoizeAddressWatcher: {
+        /**
+         * @param {Endpoint} addr
+         * @param {0 | 1} side
+         */
+        onFulfilled(addr, side) {
+          const addrs = [...this.state.addrs];
+          addrs[side] = addr;
+          this.state.addrs = harden(addrs);
+          return addr;
         },
       },
       openConnectionAckWatcher: {
@@ -207,7 +225,7 @@ export const crossoverConnection = (
 ) => {
   const detached = zone.detached();
 
-  /** @type {MapStore<number, Connection>} */
+  /** @type {MapStore<0 | 1, Connection>} */
   const conns = detached.mapStore('addrToConnections');
 
   /** @type {Remote<Required<ConnectionHandler>>[]} */
@@ -224,8 +242,8 @@ export const crossoverConnection = (
   };
 
   /**
-   * @param {number} l local side of the connection
-   * @param {number} r remote side of the connection
+   * @param {0|1} l local side of the connection
+   * @param {0|1} r remote side of the connection
    */
   const openHalfConnection = (l, r) => {
     const lconn = conns.get(l);

@@ -86,27 +86,29 @@ func (k Keeper) GetChannel(ctx sdk.Context, portID, channelID string) (channelty
 // ReceiveChanOpenInit wraps the keeper's ChanOpenInit function.
 func (k Keeper) ReceiveChanOpenInit(ctx sdk.Context, order channeltypes.Order, connectionHops []string,
 	portID, rPortID, version string,
-) error {
+) (string, error) {
 	capName := host.PortPath(portID)
 	portCap, ok := k.GetCapability(ctx, capName)
 	if !ok {
-		return sdkioerrors.Wrapf(porttypes.ErrInvalidPort, "could not retrieve port capability at: %s", capName)
+		return "", sdkioerrors.Wrapf(porttypes.ErrInvalidPort, "could not retrieve port capability at: %s", capName)
 	}
 	counterparty := channeltypes.Counterparty{
 		PortId: rPortID,
 	}
 	channelID, chanCap, err := k.channelKeeper.ChanOpenInit(ctx, order, connectionHops, portID, portCap, counterparty, version)
 	if err != nil {
-		return err
+		return "", err
 	}
 	chanCapName := host.ChannelCapabilityPath(portID, channelID)
 	err = k.ClaimCapability(ctx, chanCap, chanCapName)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	k.channelKeeper.WriteOpenInitChannel(ctx, portID, channelID, order, connectionHops, counterparty, version)
-	return nil
+
+	// Return the fresh local channel ID in order to enable the caller to pipeline.
+	return channelID, nil
 }
 
 // ReceiveSendPacket wraps the keeper's SendPacket function.
@@ -158,6 +160,11 @@ func (k Keeper) ReceiveWriteAcknowledgement(ctx sdk.Context, packet ibcexported.
 // in order to expose it to the vibc IBC handler.
 func (k Keeper) WriteAcknowledgement(ctx sdk.Context, chanCap *capability.Capability, packet ibcexported.PacketI, ack ibcexported.Acknowledgement) error {
 	return k.channelKeeper.WriteAcknowledgement(ctx, chanCap, packet, ack)
+}
+
+func (k Keeper) ReceiveWriteOpenConfirmChannel(ctx sdk.Context, portID, channelID string) error {
+	k.channelKeeper.WriteOpenConfirmChannel(ctx, portID, channelID)
+	return nil
 }
 
 // ReceiveWriteOpenTryChannel wraps the keeper's WriteOpenTryChannel function.

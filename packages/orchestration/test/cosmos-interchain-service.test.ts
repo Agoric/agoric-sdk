@@ -252,6 +252,7 @@ test.serial(
       { version: 'ics27-2', ordering: 'unordered', encoding: 'json' },
     );
 
+    await eventLoopIteration(); // propagate channelOpenAck
     const { bridgeEvents: bridgeEvents0, bridgeDowncalls: bridgeDowncalls0 } =
       await inspectDibcBridge();
 
@@ -278,7 +279,8 @@ test.serial(
     const { event, ...channelInfo } = bridgeEvents0[0];
     // simulate channel closing from remote chain
     await E(ibcBridge).fromBridge(buildChannelCloseConfirmEvent(channelInfo));
-    await eventLoopIteration();
+    await eventLoopIteration(); // To propagate channelCloseConfirm
+    await eventLoopIteration(); // To propagate automatic channelOpenInit
 
     const { bridgeEvents: bridgeEvents1, bridgeDowncalls: bridgeDowncalls1 } =
       await inspectDibcBridge();

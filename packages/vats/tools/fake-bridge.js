@@ -130,6 +130,8 @@ export const makeFakeBankBridge = (
  * @returns {ScopedBridgeManager<'dibc'>}
  */
 export const makeFakeIbcBridge = (zone, onToBridge) => {
+  let lastChannelNum = 0n;
+
   /** @type {Remote<BridgeHandler>} */
   let hndlr;
   return zone.exo('Fake IBC Bridge Manager', undefined, {
@@ -138,7 +140,11 @@ export const makeFakeIbcBridge = (zone, onToBridge) => {
       onToBridge(obj);
       const { method, type, ...params } = obj;
       assert.equal(type, 'IBC_METHOD');
-      if (method === 'sendPacket') {
+      if (method === 'startChannelOpenInit') {
+        lastChannelNum += 1n;
+        const channelId = `channel-${lastChannelNum}`;
+        return channelId;
+      } else if (method === 'sendPacket') {
         const { packet } = params;
         return { ...packet, sequence: '39' };
       } else if (method === 'startChannelCloseInit') {

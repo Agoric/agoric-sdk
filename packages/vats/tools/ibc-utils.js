@@ -1,5 +1,5 @@
 export const REMOTE_ADDR_RE =
-  /^(?<hops>\/ibc-hop\/[^/]+)*\/ibc-port\/(?<portID>[^/]+)\/(?<order>ordered|unordered)\/(?<version>[^/]+)$/s;
+  /^(?<hops>\/ibc-hop\/[^/]+)*\/ibc-port\/(?<portID>[^/]+)\/(?<pipelining>pipelining\/(true|false)\/)?(?<order>ordered|unordered)\/(?<version>[^/]+)$/s;
 harden(REMOTE_ADDR_RE);
 /** @typedef {`/${string}ibc-port/${string}/${'ordered' | 'unordered'}/${string}`} RemoteIbcAddress */
 
@@ -30,7 +30,7 @@ export const validateRemoteIbcAddress = (remoteAddr, returnMatch = false) => {
   // .groups is to inform TS https://github.com/microsoft/TypeScript/issues/32098
   if (!(match && match.groups)) {
     throw TypeError(
-      `Remote address ${remoteAddr} must be '(/ibc-hop/CONNECTION)*/ibc-port/PORT/(ordered|unordered)/VERSION'`,
+      `Remote address ${remoteAddr} must be '(/ibc-hop/CONNECTION)*/ibc-port/PORT/(pipelining/(true|false)/)?(ordered|unordered)/VERSION'`,
     );
   }
   return returnMatch ? match : true;
@@ -61,7 +61,18 @@ export const decodeRemoteIbcAddress = remoteAddr => {
   const { portID: rPortID, version } = match.groups;
   /** @type {import('../src/types.js').IBCChannelOrdering} */
   const order = match.groups.order === 'ordered' ? 'ORDERED' : 'UNORDERED';
-  return { rPortID, hops, order, version };
+  const result = { rPortID, hops, order, version };
+  switch (match.groups.pipelining) {
+    case 'true':
+      result.pipelining = true;
+      break;
+    case 'false':
+      result.pipelining = false;
+      break;
+    default:
+      break;
+  }
+  return harden(result);
 };
 harden(decodeRemoteIbcAddress);
 

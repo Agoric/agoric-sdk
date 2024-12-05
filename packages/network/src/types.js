@@ -5,7 +5,7 @@ export {};
 
 /**
  * @import {Passable, RemotableObject} from '@endo/pass-style';
- * @import {PromiseVow, Remote} from '@agoric/vow';
+ * @import {PromiseVow, Remote, Vow} from '@agoric/vow';
  */
 
 /**
@@ -86,9 +86,9 @@ export {};
  * ) => PromiseVow<Bytes>} send
  *   Send a packet on the connection
  * @property {() => PromiseVow<void>} close Close both ends of the connection
- * @property {() => Endpoint} getLocalAddress Get the locally bound name of this
+ * @property {() => PromiseVow<Endpoint>} getLocalAddress Get the locally bound name of this
  *   connection
- * @property {() => Endpoint} getRemoteAddress Get the name of the counterparty
+ * @property {() => PromiseVow<Endpoint>} getRemoteAddress Get the name of the counterparty
  */
 /**
  * @typedef {RemotableObject & ConnectionI} Connection
@@ -123,8 +123,8 @@ export {};
 /**
  * @typedef {object} AttemptDescription
  * @property {Remote<ConnectionHandler>} handler
- * @property {Endpoint} [remoteAddress]
- * @property {Endpoint} [localAddress]
+ * @property {Endpoint | Vow<Endpoint>} [remoteAddress]
+ * @property {Endpoint | Vow<Endpoint>} [localAddress]
  */
 
 /**
