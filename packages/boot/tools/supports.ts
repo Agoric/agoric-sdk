@@ -44,7 +44,7 @@ import type { ExecutionContext as AvaT } from 'ava';
 import type { CoreEvalSDKType } from '@agoric/cosmic-proto/swingset/swingset.js';
 import type { EconomyBootstrapPowers } from '@agoric/inter-protocol/src/proposals/econ-behaviors.js';
 import type { SwingsetController } from '@agoric/swingset-vat/src/controller/controller.js';
-import type { BridgeHandler, IBCMethod } from '@agoric/vats';
+import type { BridgeHandler, IBCDowncallMethod, IBCMethod } from '@agoric/vats';
 import type { BootstrapRootObject } from '@agoric/vats/src/core/lib-boot.js';
 import type { EProxy } from '@endo/eventual-send';
 import type { FastUSDCCorePowers } from '@agoric/fast-usdc/src/fast-usdc.start.js';
@@ -289,6 +289,14 @@ export const matchIter = (t: AvaT, iter, valueRef) => {
   matchValue(t, iter.value, valueRef);
 };
 
+export const AckBehavior = {
+  /** inbound responses are queued. use `flushInboundQueue()` to simulate the remote response */
+  Queued: 'QUEUED',
+  /** inbound messages are delivered immediately */
+  Immediate: 'IMMEDIATE',
+} as const;
+type AckBehaviorType = (typeof AckBehavior)[keyof typeof AckBehavior];
+
 /**
  * Start a SwingSet kernel to be used by tests and benchmarks.
  *
@@ -365,6 +373,24 @@ export const makeSwingsetTestKit = async (
     console.log('inbound', ...args);
     bridgeInbound!(...args);
   };
+  /**
+   * Config DIBC bridge behavior.
+   * Defaults to `Queued` unless specified.
+   * Current only configured for `channelOpenInit` but can be
+   * extended to support `sendPacket`.
+   */
+  const ackBehaviors: Partial<
+    Record<BridgeId, Partial<Record<IBCDowncallMethod, AckBehaviorType>>>
+  > = {
+    [BridgeId.DIBC]: {
+      startChannelOpenInit: AckBehavior.Queued,
+    },
+  };
+
+  const shouldAckImmediately = (
+    bridgeId: BridgeId,
+    method: IBCDowncallMethod,
+  ) => ackBehaviors?.[bridgeId]?.[method] === AckBehavior.Immediate;
 
   /**
    * Adds the sequence so the bridge knows what response to connect it to.
@@ -404,7 +430,7 @@ export const makeSwingsetTestKit = async (
    * Mock the bridge outbound handler. The real one is implemented in Golang so
    * changes there will sometimes require changes here.
    */
-  const bridgeOutbound = (bridgeId: string, obj: any) => {
+  const bridgeOutbound = (bridgeId: BridgeId, obj: any) => {
     // store all messages for querying by tests
     if (!outboundMessages.has(bridgeId)) {
       outboundMessages.set(bridgeId, []);
@@ -476,9 +502,17 @@ export const makeSwingsetTestKit = async (
       case `${BridgeId.DIBC}:IBC_METHOD`:
       case `${BridgeId.VTRANSFER}:IBC_METHOD`: {
         switch (obj.method) {
-          case 'startChannelOpenInit':
-            pushInbound(BridgeId.DIBC, icaMocks.channelOpenAck(obj));
+          case 'startChannelOpenInit': {
+            const message = icaMocks.channelOpenAck(obj);
+            const handle = shouldAckImmediately(
+              bridgeId,
+              'startChannelOpenInit',
+            )
+              ? inbound
+              : pushInbound;
+            handle(BridgeId.DIBC, message);
             return undefined;
+          }
           case 'sendPacket': {
             if (protoMsgMockMap[obj.packet.data]) {
               return ackLater(obj, protoMsgMockMap[obj.packet.data]);
@@ -629,6 +663,24 @@ export const makeSwingsetTestKit = async (
     getOutboundMessages: (bridgeId: string) =>
       harden([...outboundMessages.get(bridgeId)]),
     getInboundQueueLength: () => inboundQueue.length,
+    setAckBehavior(
+      bridgeId: BridgeId,
+      method: IBCDowncallMethod,
+      behavior: AckBehaviorType,
+    ): void {
+      if (!ackBehaviors?.[bridgeId]?.[method])
+        throw Fail`ack behavior not yet configurable for ${bridgeId} ${method}`;
+      console.log('setting', bridgeId, method, 'ack behavior to', behavior);
+      ackBehaviors[bridgeId][method] = behavior;
+    },
+    lookupAckBehavior(
+      bridgeId: BridgeId,
+      method: IBCDowncallMethod,
+    ): AckBehaviorType {
+      if (!ackBehaviors?.[bridgeId]?.[method])
+        throw Fail`ack behavior not yet configurable for ${bridgeId} ${method}`;
+      return ackBehaviors[bridgeId][method];
+    },
     /**
      * @param {number} max the max number of messages to flush
      * @returns {Promise<number>} the number of messages flushed
