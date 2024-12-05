@@ -72,6 +72,9 @@ const publishFeeConfig = async (node, marshaller, feeConfig) => {
   return E(feeNode).setValue(JSON.stringify(value));
 };
 
+/** storage path for PoolMetrics */
+const POOL_METRICS = 'poolMetrics';
+
 /**
  * @param {ZCF<FastUsdcTerms>} zcf
  * @param {OrchestrationPowers & {
@@ -199,8 +202,9 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
       }),
   );
 
+  const poolMetricsNode = await E(storageNode).makeChildNode(POOL_METRICS);
   const poolKit = zone.makeOnce('Liquidity Pool kit', () =>
-    makeLiquidityPoolKit(shareMint, privateArgs.storageNode),
+    makeLiquidityPoolKit(shareMint, poolMetricsNode),
   );
 
   /** Chain, connection, and asset info can only be registered once */
