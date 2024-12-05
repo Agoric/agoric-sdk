@@ -171,6 +171,7 @@ const options = {
     default:
       'ibc/FE98AAD68F02F03565E9FA39A5E627946699B2B07115889ED812D8BA639576A9',
   },
+  feedPolicy: { type: 'string' },
   chainInfo: { type: 'string' },
   assetInfo: { type: 'string' },
 };
