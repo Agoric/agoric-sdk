@@ -160,12 +160,13 @@ const objectFromVstorageEntries = async path => {
   return Object.fromEntries(marshaller.fromCapData(JSON.parse(rawEntries)));
 };
 
-const snapshotAgoricNames = async () => {
-  const [brands, instances] = await Promise.all([
+export const snapshotAgoricNames = async () => {
+  const [brands, instances, vbankAssets] = await Promise.all([
     objectFromVstorageEntries('published.agoricNames.brand'),
     objectFromVstorageEntries('published.agoricNames.instance'),
+    objectFromVstorageEntries('published.agoricNames.vbankAsset'),
   ]);
-  return { brands, instances };
+  return { brands, instances, vbankAssets };
 };
 
 /**
