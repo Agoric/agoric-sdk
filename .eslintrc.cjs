@@ -242,6 +242,12 @@ module.exports = {
       },
     },
     {
+      // disable type-aware linting for these files that have can have a .d.ts twin
+      // because it can't go into tsconfig (because that would cause tsc build to overwrite the .d.ts twin)
+      files: ['exported.*', 'types-index.*', 'types-ambient.*', 'types.*'],
+      extends: ['plugin:@typescript-eslint/disable-type-checked'],
+    },
+    {
       // disable type-aware linting in HTML
       files: ['*.html'],
       parserOptions: {
