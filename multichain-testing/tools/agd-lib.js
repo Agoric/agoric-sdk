@@ -16,7 +16,7 @@ const binaryArgs = [
 ];
 
 /**
- * @param {Record<string, string | undefined>} record - e.g. { color: 'blue' }
+ * @param {Record<string, string | string[] | undefined>} record - e.g. { color: 'blue' }
  * @returns {string[]} - e.g. ['--color', 'blue']
  */
 export const flags = record => {
@@ -25,7 +25,12 @@ export const flags = record => {
   /** @type {[string, string][]} */
   // @ts-expect-error undefined is filtered out
   const skipUndef = Object.entries(record).filter(([_k, v]) => v !== undefined);
-  return skipUndef.map(([k, v]) => [`--${k}`, v]).flat();
+  return skipUndef.flatMap(([key, value]) => {
+    if (Array.isArray(value)) {
+      return value.flatMap(v => [`--${key}`, v]);
+    }
+    return [`--${key}`, value];
+  });
 };
 
 /**
