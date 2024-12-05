@@ -62,15 +62,12 @@ module.exports = {
   root: true,
   parser: '@typescript-eslint/parser',
   parserOptions: {
-    // Works for us!
-    EXPERIMENTAL_useProjectService: true,
+    useProjectService: true,
     sourceType: 'module',
-    project: [
-      './packages/*/tsconfig.json',
-      './packages/*/tsconfig.json',
-      './packages/wallet/*/tsconfig.json',
-      './tsconfig.json',
-    ],
+    projectService: {
+      allowDefaultProject: ['*.js'],
+      defaultProject: 'tsconfig.json',
+    },
     tsconfigRootDir: __dirname,
     extraFileExtensions: ['.cjs'],
   },
@@ -255,7 +252,7 @@ module.exports = {
       files: ['a3p-integration/**'],
       extends: ['plugin:@typescript-eslint/disable-type-checked'],
       parserOptions: {
-        EXPERIMENTAL_useProjectService: false,
+        useProjectService: false,
         project: false,
       },
       rules: {
