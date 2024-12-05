@@ -1,18 +1,20 @@
 // @jessie-check
 // @ts-check
 
+import { ParamTypes } from '@agoric/governance';
 import {
-  handleParamGovernance,
-  ParamTypes,
-  publicMixinAPI,
-} from '@agoric/governance';
-import { InvitationShape } from '@agoric/governance/src/typeGuards.js';
+  GovernorFacetShape,
+  InvitationShape,
+} from '@agoric/governance/src/typeGuards.js';
+import { Far } from '@endo/marshal';
 import { M } from '@agoric/store';
 import { prepareExo } from '@agoric/vat-data';
 import { provideSingleton } from '@agoric/zoe/src/contractSupport/durability.js';
 import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/recorder.js';
 import { TopicsRecordShape } from '@agoric/zoe/src/contractSupport/topics.js';
 import { makeDurableZone } from '@agoric/zone/durable.js';
+import { makeStoredPublisherKit, SubscriberShape } from '@agoric/notifier';
+import { makeParamManagerFromTerms } from '@agoric/governance/src/contractGovernance/typedParamManager.js';
 import {
   prepareBridgeProvisionTool,
   prepareProvisionPoolKit,
@@ -52,6 +54,7 @@ harden(meta);
  *   initialPoserInvitation: Invitation;
  *   storageNode: StorageNode;
  *   marshaller: Marshal<any>;
+ *   governedParamOverrides?: Record<string, Amount>;
  *   metricsOverride?: import('./provisionPoolKit.js').MetricsNotification;
  * }} privateArgs
  * @param {import('@agoric/vat-data').Baggage} baggage
@@ -64,17 +67,22 @@ export const start = async (zcf, privateArgs, baggage) => {
     privateArgs.marshaller,
   );
 
-  // Governance
-  const { publicMixin, makeDurableGovernorFacet, params } =
-    await handleParamGovernance(
-      zcf,
-      privateArgs.initialPoserInvitation,
-      {
-        PerAccountInitialAmount: ParamTypes.AMOUNT,
-      },
-      privateArgs.storageNode,
-      privateArgs.marshaller,
-    );
+  /** @type {import('@agoric/notifier').StoredPublisherKit<GovernanceSubscriptionState>} */
+  const publisherKit = makeStoredPublisherKit(
+    privateArgs.storageNode,
+    privateArgs.marshaller,
+    'governance',
+  );
+  const paramManager = makeParamManagerFromTerms(
+    publisherKit,
+    zcf,
+    { Electorate: privateArgs.initialPoserInvitation },
+    {
+      PerAccountInitialAmount: ParamTypes.AMOUNT,
+    },
+    privateArgs.governedParamOverrides,
+  );
+  const params = paramManager.readonly();
 
   const zone = makeDurableZone(baggage);
 
@@ -107,22 +115,37 @@ export const start = async (zcf, privateArgs, baggage) => {
     M.interface('ProvisionPool', {
       getMetrics: M.call().returns(M.remotable('MetricsSubscriber')),
       getPublicTopics: M.call().returns(TopicsRecordShape),
-      ...publicMixinAPI,
+      getSubscription: M.call().returns(M.remotable('StoredSubscription')),
+      getGovernedParams: M.call().returns(M.or(M.record(), M.promise())),
+      getElectorateSubscription: M.call().returns(SubscriberShape),
     }),
     {
-      getMetrics() {
-        return provisionPoolKit.public.getPublicTopics().metrics.subscriber;
-      },
-      getPublicTopics() {
-        return provisionPoolKit.public.getPublicTopics();
-      },
-      ...publicMixin,
+      getMetrics: () =>
+        provisionPoolKit.public.getPublicTopics().metrics.subscriber,
+      getPublicTopics: () => provisionPoolKit.public.getPublicTopics(),
+      getSubscription: () => paramManager.getSubscription(),
+      getGovernedParams: () => paramManager.getParams(),
+      getElectorateSubscription: () => paramManager.getSubscription(),
+    },
+  );
+
+  const creatorFacet = prepareExo(
+    baggage,
+    'governorFacet',
+    M.interface('governorFacet', GovernorFacetShape),
+    {
+      getParamMgrRetriever: () =>
+        Far('paramRetriever', { get: () => paramManager }),
+      getInvitation: name => paramManager.getInternalParamValue(name),
+      getLimitedCreatorFacet: () => provisionPoolKit.machine,
+      getGovernedApis: () => Far('governedAPIs', {}),
+      getGovernedApiNames: () => Object.keys({}),
+      setOfferFilter: strings => zcf.setOfferFilter(strings),
     },
   );
 
   return harden({
-    creatorFacet: makeDurableGovernorFacet(baggage, provisionPoolKit.machine)
-      .governorFacet,
+    creatorFacet,
     publicFacet,
   });
 };
