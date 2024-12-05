@@ -1,7 +1,7 @@
 import { makeTracer } from '@agoric/internal';
 import { E } from '@endo/far';
 
-const trace = makeTracer('upgrade mintHolder BLD', true);
+const trace = makeTracer('upgrade mintHolder', true);
 
 export const upgradeMintHolder = async (
   {
@@ -12,10 +12,11 @@ export const upgradeMintHolder = async (
   },
   options,
 ) => {
-  trace('Start contract upgrade');
-
-  const { contractRef } = options.options;
+  const { contractRef, label } = options.options;
   assert(contractRef.bundleID, 'mintHolder bundleID not found');
+  assert(label, 'mintHolder bank asset label not found');
+
+  trace(`Start ${label} mintHolder contract upgrade`);
 
   const [contractKits, instancePrivateArgs] = await Promise.all([
     contractKitsP,
@@ -23,12 +24,11 @@ export const upgradeMintHolder = async (
   ]);
 
   const mintHolderKit = Array.from(contractKits.values()).filter(
-    kit => kit.label && kit.label.match(/BLD/),
+    kit => kit.label && kit.label === label,
   );
-  assert(mintHolderKit, ',mintHolder contract kit not found');
+  trace('mintHolderKit: ', mintHolderKit);
 
   const { adminFacet, instance } = mintHolderKit[0];
-
   const privateArgs = instancePrivateArgs.get(instance);
 
   const upgradeResult = await E(adminFacet).upgradeContract(
@@ -37,12 +37,12 @@ export const upgradeMintHolder = async (
   );
   trace('upgradeResult: ', upgradeResult);
 
-  trace('Finished contract upgrade');
+  trace(`Finished ${label} mintHolder contract upgrade`);
 };
 
 export const getManifestForUpgradingMintHolder = (
   _powers,
-  { contractRef },
+  { contractRef, label },
 ) => ({
   manifest: {
     [upgradeMintHolder.name]: {
@@ -52,5 +52,5 @@ export const getManifestForUpgradingMintHolder = (
       },
     },
   },
-  options: { contractRef },
+  options: { contractRef, label },
 });
