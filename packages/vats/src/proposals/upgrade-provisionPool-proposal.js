@@ -2,7 +2,7 @@ import { E } from '@endo/far';
 import { deeplyFulfilled } from '@endo/marshal';
 import { makeTracer } from '@agoric/internal';
 
-const tracer = makeTracer('UpgradeProvisionPool');
+const trace = makeTracer('UpgradeProvisionPool');
 
 /**
  * @param {BootstrapPowers & {
@@ -30,7 +30,7 @@ export const upgradeProvisionPool = async (
   const { provisionPoolRef } = options.options;
 
   assert(provisionPoolRef.bundleID);
-  tracer(`PROVISION POOL BUNDLE ID: `, provisionPoolRef);
+  trace(`PROVISION POOL BUNDLE ID: `, provisionPoolRef);
 
   const [
     provisionPoolStartResult,
@@ -45,9 +45,11 @@ export const upgradeProvisionPool = async (
     walletFactoryStartResultP,
     provisionWalletBridgeManagerP,
   ]);
+
   const {
     adminFacet,
     instance,
+    publicFacet: ppPublicFacet,
     creatorFacet: ppCreatorFacet,
   } = provisionPoolStartResult;
   const { creatorFacet: wfCreatorFacet } = walletFactoryStartResult;
@@ -59,9 +61,21 @@ export const upgradeProvisionPool = async (
     E(electorateCreatorFacet).getPoserInvitation(),
   ]);
 
+  const readCurrentGovernedParams = async () => {
+    await null;
+
+    const params = await E(ppPublicFacet).getGovernedParams();
+    return harden({
+      PerAccountInitialAmount: params.PerAccountInitialAmount.value,
+    });
+  };
+  const governedParamOverrides = await readCurrentGovernedParams();
+  trace('governedParamOverrides: ', { governedParamOverrides });
+
   const newPrivateArgs = harden({
     ...originalPrivateArgs,
     initialPoserInvitation: poserInvitation,
+    governedParamOverrides,
   });
 
   const upgradeResult = await E(adminFacet).upgradeContract(
@@ -69,7 +83,7 @@ export const upgradeProvisionPool = async (
     newPrivateArgs,
   );
 
-  tracer('ProvisionPool upgraded: ', upgradeResult);
+  trace('ProvisionPool upgraded: ', upgradeResult);
 
   const references = {
     bankManager,
@@ -77,17 +91,17 @@ export const upgradeProvisionPool = async (
     walletFactory: wfCreatorFacet,
   };
 
-  tracer('Calling setReferences with: ', references);
+  trace('Calling setReferences with: ', references);
   await E(ppCreatorFacet).setReferences(references);
 
-  tracer('Creating bridgeHandler...');
+  trace('Creating bridgeHandler...');
   const bridgeHandler = await E(ppCreatorFacet).makeHandler();
 
-  tracer('Setting new bridgeHandler...');
+  trace('Setting new bridgeHandler...');
   // @ts-expect-error casting
   await E(provisionWalletBridgeManager).setHandler(bridgeHandler);
 
-  tracer('Done.');
+  trace('Done.');
 };
 
 export const getManifestForUpgradingProvisionPool = (
