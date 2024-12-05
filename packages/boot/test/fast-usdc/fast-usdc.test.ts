@@ -77,6 +77,7 @@ test.serial(
       'startChannelOpenInit',
       AckBehavior.Immediate,
     );
+    bridgeUtils.setBech32Prefix('noble');
 
     const materials = buildProposal(
       '@agoric/builders/scripts/fast-usdc/init-fast-usdc.js',

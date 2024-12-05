@@ -393,6 +393,11 @@ export const makeSwingsetTestKit = async (
   ) => ackBehaviors?.[bridgeId]?.[method] === AckBehavior.Immediate;
 
   /**
+   * configurable `bech32Prefix` for DIBC bridge
+   * messages that involve creating an ICA.
+   */
+  let bech32Prefix = 'cosmos';
+  /**
    * Adds the sequence so the bridge knows what response to connect it to.
    * Then queue it send it over the bridge over this returns.
    * Finally return the packet that will be sent.
@@ -503,7 +508,7 @@ export const makeSwingsetTestKit = async (
       case `${BridgeId.VTRANSFER}:IBC_METHOD`: {
         switch (obj.method) {
           case 'startChannelOpenInit': {
-            const message = icaMocks.channelOpenAck(obj);
+            const message = icaMocks.channelOpenAck(obj, bech32Prefix);
             const handle = shouldAckImmediately(
               bridgeId,
               'startChannelOpenInit',
@@ -680,6 +685,9 @@ export const makeSwingsetTestKit = async (
       if (!ackBehaviors?.[bridgeId]?.[method])
         throw Fail`ack behavior not yet configurable for ${bridgeId} ${method}`;
       return ackBehaviors[bridgeId][method];
+    },
+    setBech32Prefix(prefix: string): void {
+      bech32Prefix = prefix;
     },
     /**
      * @param {number} max the max number of messages to flush

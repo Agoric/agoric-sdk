@@ -1,5 +1,6 @@
 // @ts-check
 import { createMockAckMap } from '@agoric/orchestration/tools/ibc-mocks.js';
+import type { IBCChannelID, IBCEvent, IBCMethod } from '@agoric/vats';
 
 /** @import { IBCChannelID, IBCMethod, IBCEvent } from '@agoric/vats'; */
 
@@ -101,17 +102,18 @@ export const addParamsIfJsonVersion = (version, params) => {
 export const icaMocks = {
   /**
    * ICA Channel Creation
-   * @param {IBCMethod<'startChannelOpenInit'>} obj
-   * @returns {IBCEvent<'channelOpenAck'>}
+   * @param obj
+   * @param bech32Prefix
    */
-  channelOpenAck: obj => {
+  channelOpenAck: (
+    obj: IBCMethod<'startChannelOpenInit'>,
+    bech32Prefix: string = 'cosmos',
+  ): IBCEvent<'channelOpenAck'> => {
     // Fake a channel IDs from port suffixes. _Ports have no relation to channels, and hosts
     // and controllers will likely have different channel IDs for the same channel._
     const mocklID = Number(obj.packet.source_port.split('-').at(-1));
-    /** @type {IBCChannelID} */
-    const mockLocalChannelID = `channel-${mocklID}`;
-    /** @type {IBCChannelID} */
-    const mockRemoteChannelID = `channel-${mocklID}`;
+    const mockLocalChannelID: IBCChannelID = `channel-${mocklID}`;
+    const mockRemoteChannelID: IBCChannelID = `channel-${mocklID}`;
 
     return {
       type: 'IBC_EVENT',
@@ -125,8 +127,7 @@ export const icaMocks = {
         channel_id: mockRemoteChannelID,
       },
       counterpartyVersion: addParamsIfJsonVersion(obj.version, {
-        // TODO, parameterize
-        address: 'cosmos1test',
+        address: `${bech32Prefix}1test`,
       }),
       connectionHops: obj.hops,
       order: obj.order,
