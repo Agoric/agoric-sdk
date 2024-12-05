@@ -21,16 +21,12 @@ const contractBuilder =
 
 test.before(async t => {
   const { setupTestKeys, ...common } = await commonSetup(t);
-  const { assetInfo, chainInfo, deleteTestKeys, faucetTools, startContract } =
+  const { commonBuilderOpts, deleteTestKeys, faucetTools, startContract } =
     common;
   deleteTestKeys(accounts).catch();
   const wallets = await setupTestKeys(accounts);
   t.context = { ...common, wallets };
-
-  await startContract(contractName, contractBuilder, {
-    chainInfo,
-    assetInfo,
-  });
+  await startContract(contractName, contractBuilder, commonBuilderOpts);
 
   await faucetTools.fundFaucet([
     ['cosmoshub', 'uatom'],
