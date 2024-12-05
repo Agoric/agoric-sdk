@@ -2,6 +2,10 @@
 restart-valueVow
 start-valueVow
 localchaintest-submission
-upgrade-mintHolder-bld
-upgrade-mintHolder-atom
-upgrade-mintHolder-usdc
+upgrade-mintHolder-USDC
+upgrade-mintHolder-USDC_axl
+upgrade-mintHolder-USDC_grv
+upgrade-mintHolder-USDT_axl
+upgrade-mintHolder-USDT_grv
+upgrade-mintHolder-DAI_axl 
+upgrade-mintHolder-DAI_grv 

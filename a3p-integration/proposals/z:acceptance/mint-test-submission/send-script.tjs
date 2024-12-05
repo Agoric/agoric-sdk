@@ -15,21 +15,19 @@
  * @param {BootstrapPowers} powers
  */
 const sendBankAsset = async powers => {
-  console.log('Starting sendBankAsset');
-
   const {
     consume: { namesByAddress, contractKits: contractKitsP },
   } = powers;
 
   const receiverAddress = '{{ADDRESS}}';
-  const kitLabel = '{{LABEL}}';
+  const label = '{{LABEL}}';
+
+  console.log(`Start sendBankAsset for ${label}`);
 
   const contractKits = await contractKitsP;
-  const regex = new RegExp(kitLabel);
   const mintHolderKit = Array.from(contractKits.values()).filter(
-    kit => kit.label && kit.label.match(regex),
+    kit => kit.label && kit.label === label,
   );
-  assert(mintHolderKit, ',mintHolder contract kit not found');
 
   const { creatorFacet: mint, publicFacet: issuer } = mintHolderKit[0];
 
@@ -44,7 +42,7 @@ const sendBankAsset = async powers => {
 
   await E(receiverDepositFacet).receive(payment);
 
-  console.log('Finished sendBankAsset');
+  console.log(`Finished sendBankAsset for ${label}`);
 };
 
 sendBankAsset;
