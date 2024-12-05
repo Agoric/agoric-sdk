@@ -4,7 +4,6 @@ import { execa } from 'execa';
 import fse from 'fs-extra';
 import childProcess from 'node:child_process';
 import { withChainCapabilities } from '@agoric/orchestration';
-import { objectMap } from '@endo/patterns';
 import { makeAgdTools } from '../tools/agd-tools.js';
 import { type E2ETools } from '../tools/e2e-tools.js';
 import {
@@ -97,6 +96,10 @@ export const commonSetup = async (t: ExecutionContext) => {
     retryUntilCondition,
     useChain,
   );
+  const commonBuilderOpts = harden({
+    assetInfo: JSON.stringify(assetInfo),
+    chainInfo: JSON.stringify(chainInfo),
+  });
 
   /**
    * Starts a contract if instance not found. Takes care of installing
@@ -108,7 +111,7 @@ export const commonSetup = async (t: ExecutionContext) => {
   const startContract = async (
     contractName: string,
     contractBuilder: string,
-    builderOpts?: Record<string, unknown>,
+    builderOpts?: Record<string, string | string[]>,
   ) => {
     const { vstorageClient } = tools;
     const instances = Object.fromEntries(
@@ -118,15 +121,7 @@ export const commonSetup = async (t: ExecutionContext) => {
       return t.log('Contract found. Skipping installation...');
     }
     t.log('bundle and install contract', contractName);
-
-    const formattedOpts = builderOpts
-      ? objectMap(
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          builderOpts as Record<string, any>,
-          value => (typeof value === 'string' ? value : JSON.stringify(value)),
-        )
-      : undefined;
-    await deployBuilder(contractBuilder, formattedOpts);
+    await deployBuilder(contractBuilder, builderOpts);
     await retryUntilCondition(
       () => vstorageClient.queryData(`published.agoricNames.instance`),
       res => contractName in Object.fromEntries(res),
@@ -145,6 +140,7 @@ export const commonSetup = async (t: ExecutionContext) => {
     startContract,
     assetInfo,
     chainInfo,
+    commonBuilderOpts,
     faucetTools,
   };
 };
