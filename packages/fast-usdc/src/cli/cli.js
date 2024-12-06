@@ -1,11 +1,6 @@
 /* eslint-env node */
 /* global globalThis */
-import { assertParsableNumber } from '@agoric/zoe/src/contractSupport/ratio.js';
-import {
-  Command,
-  InvalidArgumentError,
-  InvalidOptionArgumentError,
-} from 'commander';
+import { Command } from 'commander';
 import { existsSync, mkdirSync, readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, resolve } from 'path';
@@ -19,6 +14,7 @@ import { addOperatorCommands } from './operator-commands.js';
 import * as configLib from './config.js';
 import transferLib from './transfer.js';
 import { makeFile } from '../util/file.js';
+import { addLPCommands } from './lp-commands.js';
 
 const packageJson = JSON.parse(
   readFileSync(
@@ -83,51 +79,7 @@ export const initProgram = (
     env,
     now,
   });
-
-  /** @param {string} value */
-  const parseDecimal = value => {
-    try {
-      assertParsableNumber(value);
-    } catch {
-      throw new InvalidArgumentError('Not a decimal number.');
-    }
-    return value;
-  };
-
-  /**
-   * @param {string} str
-   * @returns {'auto' | number}
-   */
-  const parseFee = str => {
-    if (str === 'auto') return 'auto';
-    const num = parseFloat(str);
-    if (Number.isNaN(num)) {
-      throw new InvalidOptionArgumentError('Fee must be a number.');
-    }
-    return num;
-  };
-
-  program
-    .command('deposit')
-    .description('Offer assets to the liquidity pool')
-    .argument('<give>', 'USDC to give', parseDecimal)
-    .option('--id [offer-id]', 'Offer ID')
-    .option('--fee [fee]', 'Cosmos fee', parseFee)
-    .action(() => {
-      console.error('TODO actually send deposit');
-      // TODO: Implement deposit logic
-    });
-
-  program
-    .command('withdraw')
-    .description('Withdraw assets from the liquidity pool')
-    .argument('<want>', 'USDC to withdraw', parseDecimal)
-    .option('--id [offer-id]', 'Offer ID')
-    .option('--fee [fee]', 'Cosmos fee', parseFee)
-    .action(() => {
-      console.error('TODO actually send withdrawal');
-      // TODO: Implement withdraw logic
-    });
+  addLPCommands(program, { fetch, stdout, stderr, env, now });
 
   program
     .command('transfer')
