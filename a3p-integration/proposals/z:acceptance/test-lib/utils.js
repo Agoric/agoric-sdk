@@ -1,6 +1,11 @@
 /* eslint-env node */
-import { makeStargateClient, makeVstorageKit } from '@agoric/client-utils';
+import {
+  makeStargateClient,
+  makeVstorageKit,
+  retryUntilCondition,
+} from '@agoric/client-utils';
 import { readFile, writeFile } from 'node:fs/promises';
+import { evalBundles, getIncarnation } from '@agoric/synthetic-chain';
 import { networkConfig } from './rpc.js';
 
 export const stargateClientP = makeStargateClient(networkConfig, { fetch });
@@ -89,4 +94,16 @@ export const makeTimerUtils = ({ setTimeout }) => {
     delay,
     waitUntil,
   };
+};
+
+export const upgradeContract = async (submissionPath, vatName) => {
+  const incarnationBefore = await getIncarnation(vatName);
+  await evalBundles(submissionPath);
+
+  return retryUntilCondition(
+    async () => getIncarnation(vatName),
+    value => value === incarnationBefore + 1,
+    `${vatName} upgrade not processed yet`,
+    { setTimeout, retryIntervalMs: 5000, maxRetries: 15 },
+  );
 };
