@@ -91,7 +91,7 @@ export const prepareStatusManager = (
    * @param {CctpTxEvidence['txHash']} hash
    * @param {TxStatus} status
    */
-  const recordStatus = (hash, status) => {
+  const publishStatus = (hash, status) => {
     const txnNodeP = E(transactionsNode).makeChildNode(hash);
     // Don't await, just writing to vstorage.
     void E(txnNodeP).setValue(status);
@@ -118,7 +118,7 @@ export const prepareStatusManager = (
       pendingTxKeyOf(evidence),
       harden({ ...evidence, status }),
     );
-    recordStatus(evidence.txHash, status);
+    publishStatus(evidence.txHash, status);
   };
 
   return zone.exo(
@@ -185,7 +185,7 @@ export const prepareStatusManager = (
           : PendingTxStatus.AdvanceFailed;
         const txpost = { ...tx, status };
         pendingTxs.set(key, harden([...prefix, txpost, ...suffix]));
-        recordStatus(tx.txHash, status);
+        publishStatus(tx.txHash, status);
       },
 
       /**
@@ -244,7 +244,7 @@ export const prepareStatusManager = (
        * @param {EvmHash} txHash
        */
       disbursed(txHash) {
-        recordStatus(txHash, TxStatus.Disbursed);
+        publishStatus(txHash, TxStatus.Disbursed);
       },
 
       /**
@@ -256,7 +256,7 @@ export const prepareStatusManager = (
        */
       forwarded(txHash, address, amount) {
         if (txHash) {
-          recordStatus(txHash, TxStatus.Forwarded);
+          publishStatus(txHash, TxStatus.Forwarded);
         } else {
           // TODO store (early) `Minted` transactions to check against incoming evidence
           log(
