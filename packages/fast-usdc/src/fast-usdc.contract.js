@@ -25,7 +25,7 @@ import { defineInertInvitation } from './utils/zoe.js';
 
 const trace = makeTracer('FastUsdc');
 
-const STATUS_NODE = 'status';
+const TRANSACTIONS_NODE = 'transactions';
 const FEE_NODE = 'feeConfig';
 
 /**
@@ -95,8 +95,8 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
     marshaller,
   );
 
-  const statusNode = E(storageNode).makeChildNode(STATUS_NODE);
-  const statusManager = prepareStatusManager(zone, statusNode);
+  const transactionsNode = E(storageNode).makeChildNode(TRANSACTIONS_NODE);
+  const statusManager = prepareStatusManager(zone, transactionsNode);
 
   const { USDC } = terms.brands;
   const { withdrawToSeat } = tools.zoeTools;
