@@ -29,10 +29,10 @@ export const makeSlogSender = async options => {
    * @param {import('./context-aware-slog.js').Slog} slog
    */
   const slogSender = slog => {
-    const contextualizedSlog = contextualSlogProcessor(slog);
+    const { timestamp: time, ...rest } = contextualSlogProcessor(slog);
 
     // eslint-disable-next-line prefer-template
-    stream.write(serializeSlogObj(contextualizedSlog) + '\n').catch(() => {});
+    stream.write(serializeSlogObj({ time, ...rest }) + '\n').catch(() => {});
   };
 
   return Object.assign(slogSender, {
