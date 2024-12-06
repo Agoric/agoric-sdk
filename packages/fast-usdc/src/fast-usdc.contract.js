@@ -30,7 +30,7 @@ const FEE_NODE = 'feeConfig';
 
 /**
  * @import {HostInterface} from '@agoric/async-flow';
- * @import {CosmosChainInfo, Denom, DenomDetail, OrchestrationAccount} from '@agoric/orchestration';
+ * @import {ChainAddress, CosmosChainInfo, Denom, DenomDetail, OrchestrationAccount} from '@agoric/orchestration';
  * @import {OrchestrationPowers, OrchestrationTools} from '@agoric/orchestration/src/utils/start-helper.js';
  * @import {Remote} from '@agoric/internal';
  * @import {Marshaller, StorageNode} from '@agoric/internal/src/lib-chainStorage.js'
@@ -71,6 +71,20 @@ const publishFeeConfig = async (node, marshaller, feeConfig) => {
   const value = await E(marshaller).toCapData(feeConfig);
   return E(feeNode).setValue(JSON.stringify(value));
 };
+
+/**
+ * @param {Remote<StorageNode>} contractNode
+ * @param {{
+ *  poolAccount: ChainAddress['value'];
+ *  settlementAccount: ChainAddress['value'];
+ * }} addresses
+ */
+const publishAddresses = (contractNode, addresses) => {
+  return E(contractNode).setValue(JSON.stringify(addresses));
+};
+
+/** storage path for PoolMetrics */
+const POOL_METRICS = 'poolMetrics';
 
 /**
  * @param {ZCF<FastUsdcTerms>} zcf
@@ -199,14 +213,14 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
       }),
   );
 
+  const poolMetricsNode = await E(storageNode).makeChildNode(POOL_METRICS);
   const poolKit = zone.makeOnce('Liquidity Pool kit', () =>
-    makeLiquidityPoolKit(shareMint, privateArgs.storageNode),
+    makeLiquidityPoolKit(shareMint, poolMetricsNode),
   );
 
   /** Chain, connection, and asset info can only be registered once */
   const firstIncarnationKey = 'firstIncarnationKey';
   if (!baggage.has(firstIncarnationKey)) {
-    baggage.init(firstIncarnationKey, true);
     registerChainsAndAssets(
       chainHub,
       terms.brands,
@@ -265,7 +279,22 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
     },
   });
 
+  if (!baggage.has(firstIncarnationKey)) {
+    const [poolAccountAddress, settlementAccountAddress] = await vowTools.when(
+      vowTools.all([
+        E(poolAccount).getAddress(),
+        E(settlementAccount).getAddress(),
+      ]),
+    );
+    await publishAddresses(storageNode, {
+      poolAccount: poolAccountAddress.value,
+      settlementAccount: settlementAccountAddress.value,
+    });
+  }
+
   await settlerKit.creator.monitorMintingDeposits();
+
+  baggage.has(firstIncarnationKey) || baggage.init(firstIncarnationKey, true);
 
   return harden({ creatorFacet, publicFacet });
 };
