@@ -4,7 +4,6 @@ import { execa } from 'execa';
 import fse from 'fs-extra';
 import childProcess from 'node:child_process';
 import { withChainCapabilities } from '@agoric/orchestration';
-import { objectMap } from '@endo/patterns';
 import { makeAgdTools } from '../tools/agd-tools.js';
 import { type E2ETools } from '../tools/e2e-tools.js';
 import {
@@ -42,13 +41,19 @@ const makeKeyring = async (
   e2eTools: Pick<E2ETools, 'addKey' | 'deleteKey'>,
 ) => {
   let _keys = ['user1'];
-  const setupTestKeys = async (keys = ['user1']) => {
+  const setupTestKeys = async (
+    keys = ['user1'],
+    mnemonics?: (string | undefined)[],
+  ) => {
     _keys = keys;
     const wallets: Record<string, string> = {};
-    for (const name of keys) {
-      const res = await e2eTools.addKey(name, generateMnemonic());
+    for (const i in keys) {
+      const res = await e2eTools.addKey(
+        keys[i],
+        mnemonics?.[i] || generateMnemonic(),
+      );
       const { address } = JSON.parse(res);
-      wallets[name] = address;
+      wallets[keys[i]] = address;
     }
     return wallets;
   };
@@ -91,6 +96,10 @@ export const commonSetup = async (t: ExecutionContext) => {
     retryUntilCondition,
     useChain,
   );
+  const commonBuilderOpts = harden({
+    assetInfo: JSON.stringify(assetInfo),
+    chainInfo: JSON.stringify(chainInfo),
+  });
 
   /**
    * Starts a contract if instance not found. Takes care of installing
@@ -102,7 +111,7 @@ export const commonSetup = async (t: ExecutionContext) => {
   const startContract = async (
     contractName: string,
     contractBuilder: string,
-    builderOpts?: Record<string, unknown>,
+    builderOpts?: Record<string, string | string[]>,
   ) => {
     const { vstorageClient } = tools;
     const instances = Object.fromEntries(
@@ -112,18 +121,7 @@ export const commonSetup = async (t: ExecutionContext) => {
       return t.log('Contract found. Skipping installation...');
     }
     t.log('bundle and install contract', contractName);
-
-    const formattedOpts = builderOpts
-      ? objectMap(
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          builderOpts as Record<string, any>,
-          value => {
-            if (typeof value === 'string') return value;
-            return JSON.stringify(value);
-          },
-        )
-      : undefined;
-    await deployBuilder(contractBuilder, formattedOpts);
+    await deployBuilder(contractBuilder, builderOpts);
     await retryUntilCondition(
       () => vstorageClient.queryData(`published.agoricNames.instance`),
       res => contractName in Object.fromEntries(res),
@@ -142,6 +140,7 @@ export const commonSetup = async (t: ExecutionContext) => {
     startContract,
     assetInfo,
     chainInfo,
+    commonBuilderOpts,
     faucetTools,
   };
 };

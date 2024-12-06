@@ -6,6 +6,31 @@ import {
 } from '@agoric/orchestration';
 import type { IBCChannelID } from '@agoric/vats';
 
+export const makeDenomTools = (chainInfo: Record<string, CosmosChainInfo>) => {
+  const getTransferChannelId = (
+    destChainId: string,
+    fromChainName: string,
+  ): IBCChannelID | undefined =>
+    chainInfo[fromChainName]?.connections?.[destChainId]?.transferChannel
+      .channelId;
+
+  const toDenomHash = (
+    denom: Denom,
+    destChainId: string,
+    fromChainName: string,
+  ): Denom => {
+    const channelId = getTransferChannelId(destChainId, fromChainName);
+    if (!channelId) {
+      throw new Error(
+        `No channel found for ${destChainId} -> ${fromChainName}`,
+      );
+    }
+    return `ibc/${denomHash({ denom, channelId })}`;
+  };
+
+  return harden({ getTransferChannelId, toDenomHash });
+};
+
 /**
  * Make asset info for the current environment.
  *
@@ -21,26 +46,7 @@ export const makeAssetInfo = (
     osmosis: ['uosmo', 'uion'],
   },
 ): [Denom, DenomDetail][] => {
-  const getChannelId = (
-    issuingChainId: string,
-    holdingChainName: string,
-  ): IBCChannelID | undefined =>
-    chainInfo[holdingChainName]?.connections?.[issuingChainId]?.transferChannel
-      .channelId;
-
-  const toDenomHash = (
-    denom: Denom,
-    issuingChainId: string,
-    holdingChainName: string,
-  ): Denom => {
-    const channelId = getChannelId(issuingChainId, holdingChainName);
-    if (!channelId) {
-      throw new Error(
-        `No channel found for ${issuingChainId} -> ${holdingChainName}`,
-      );
-    }
-    return `ibc/${denomHash({ denom, channelId })}`;
-  };
+  const { toDenomHash } = makeDenomTools(chainInfo);
 
   // only include chains present in `chainInfo`
   const tokens = Object.entries(tokenMap)
