@@ -82,9 +82,9 @@ export const makeSlogSender = async options => {
    * @param {import('./context-aware-slog.js').Slog} slog
    */
   const slogSender = slog => {
-    const { timestamp, ...logRecord } = contextualSlogProcessor(slog);
+    const { time, ...logRecord } = contextualSlogProcessor(slog);
 
-    const [secondsStr, fractionStr] = String(timestamp).split('.');
+    const [secondsStr, fractionStr] = String(time).split('.');
     const seconds = parseInt(secondsStr, 10);
     const nanoSeconds = parseInt(
       (fractionStr || String(0)).padEnd(9, String(0)).slice(0, 9),
