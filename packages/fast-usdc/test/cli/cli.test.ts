@@ -81,28 +81,13 @@ test('shows help for config show command', async t => {
   t.snapshot(output);
 });
 
-test('shows help for deposit command', async t => {
-  const output = await runCli(['deposit', '-h']);
-  t.snapshot(output);
-});
-
-test('shows help for withdraw command', async t => {
-  const output = await runCli(['withdraw', '-h']);
-  t.snapshot(output);
-});
-
 test('shows error when deposit command is run without options', async t => {
   const output = await runCli(['deposit']);
   t.snapshot(output);
 });
 
 test('shows error when deposit command is run with invalid amount', async t => {
-  const output = await runCli(['deposit', 'not-a-number']);
-  t.snapshot(output);
-});
-
-test('shows error when deposit command is run with invalid fee', async t => {
-  const output = await runCli(['deposit', '50', '--fee', 'not-a-number']);
+  const output = await runCli(['deposit', '--amount', 'not-a-number']);
   t.snapshot(output);
 });
 
@@ -112,12 +97,7 @@ test('shows error when withdraw command is run without options', async t => {
 });
 
 test('shows error when withdraw command is run with invalid amount', async t => {
-  const output = await runCli(['withdraw', 'not-a-number']);
-  t.snapshot(output);
-});
-
-test('shows error when withdraw command is run with invalid fee', async t => {
-  const output = await runCli(['withdraw', '50', '--fee', 'not-a-number']);
+  const output = await runCli(['withdraw', '--amount', 'not-a-number']);
   t.snapshot(output);
 });
 

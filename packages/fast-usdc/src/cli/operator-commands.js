@@ -80,6 +80,10 @@ export const addOperatorCommands = (
   operator
     .command('attest')
     .description('Attest to an observed Fast USDC transfer')
+    .addHelpText(
+      'after',
+      '\nPipe the STDOUT to a file such as attest.json, then use the Agoric CLI to broadcast it:\n  agoric wallet send --offer attest.json --from gov1 --keyring-backend="test"',
+    )
     .requiredOption('--previousOfferId <string>', 'Offer id', String)
     .requiredOption('--forwardingChannel <string>', 'Channel id', String)
     .requiredOption('--recipientAddress <string>', 'bech32 address', String)
