@@ -44,7 +44,7 @@ const createTestExtensions = (t, common: CommonSetup) => {
 
   const statusManager = prepareStatusManager(
     rootZone.subZone('status-manager'),
-    async () => storageNode.makeChildNode('status'),
+    storageNode.makeChildNode('status'),
   );
 
   const mockAccounts = prepareMockOrchAccounts(rootZone.subZone('accounts'), {

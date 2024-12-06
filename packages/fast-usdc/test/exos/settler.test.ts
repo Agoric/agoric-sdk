@@ -47,7 +47,7 @@ const makeTestContext = async t => {
   const { log, inspectLogs } = makeTestLogger(t.log);
   const statusManager = prepareStatusManager(
     zone.subZone('status-manager'),
-    async () => common.commonPrivateArgs.storageNode.makeChildNode('status'),
+    common.commonPrivateArgs.storageNode.makeChildNode('status'),
     { log },
   );
   const { zcf, callLog } = mockZcf(zone.subZone('Mock ZCF'));
