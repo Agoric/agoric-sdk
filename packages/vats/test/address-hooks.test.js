@@ -1,19 +1,45 @@
-import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
+import { test as rawTest } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
-import {
-  encodeHookedAddress,
-  decodeHookedAddress,
-  encodeBech32,
-} from '../src/address-hooks.js';
+import bundleSourceAmbient from '@endo/bundle-source';
+import { importBundle } from '@endo/import-bundle';
+
+/**
+ * @type {import('ava').TestFn<{
+ *   addressHooks: import('../src/address-hooks.js');
+ * }>}
+ */
+const test = rawTest;
+
+const makeTestContext = async () => {
+  const bundleSource = bundleSourceAmbient;
+  const loadBundle = async specifier => {
+    const modulePath = new URL(specifier, import.meta.url).pathname;
+    const bundle = await bundleSource(modulePath);
+    return bundle;
+  };
+
+  const evaluateBundle = async (bundle, endowments = {}) => {
+    return importBundle(bundle, endowments);
+  };
+
+  const importSpecifier = async (specifier, endowments = {}) => {
+    const bundle = await loadBundle(specifier);
+    return evaluateBundle(bundle, endowments);
+  };
+
+  const addressHooks = await importSpecifier('../src/address-hooks.js');
+
+  return { addressHooks };
+};
+
+test.before(async t => {
+  t.context = await makeTestContext();
+});
 
 /**
  * @type {import('ava').Macro<
- *   [
- *     string,
- *     ArrayLike<number> | undefined,
- *     ArrayLike<number> | undefined,
- *     string,
- *   ]
+ *   [string, ArrayLike<number> | undefined, ArrayLike<number>, string],
+ *   { addressHooks: import('../src/address-hooks.js') }
  * >}
  */
 const roundtripMacro = test.macro({
@@ -22,10 +48,12 @@ const roundtripMacro = test.macro({
     return `${providedTitle}${space}prefix: ${prefix}, addrBytes: ${addrBytes}, hookData: ${hookData}`;
   },
   exec(t, prefix, addrBytes, hookData, expected) {
+    const { encodeBech32, joinHookedAddress, splitHookedAddress } =
+      t.context.addressHooks;
     const baseAddress = encodeBech32(prefix, addrBytes || []);
-    const encoded = encodeHookedAddress(baseAddress, hookData);
+    const encoded = joinHookedAddress(baseAddress, hookData);
     t.deepEqual(encoded, expected);
-    const decoded = decodeHookedAddress(encoded);
+    const decoded = splitHookedAddress(encoded);
     t.deepEqual(decoded, {
       baseAddress,
       hookData: new Uint8Array(hookData || []),
@@ -90,15 +118,17 @@ const lengthCheckMacro = test.macro({
     return `${providedTitle}${limitDesc}${throwsDesc}`;
   },
   exec(t, prefix, addrBytes, hookData, charLimit, throws) {
+    const { encodeBech32, joinHookedAddress, splitHookedAddress } =
+      t.context.addressHooks;
     const baseAddress = encodeBech32(prefix, addrBytes, charLimit);
-    const make = () => encodeHookedAddress(baseAddress, hookData, charLimit);
+    const make = () => joinHookedAddress(baseAddress, hookData, charLimit);
     if (throws) {
       t.throws(make, throws);
       return;
     }
     const encoded = make();
     t.log('encoded', encoded, addrBytes);
-    const decoded = decodeHookedAddress(encoded, charLimit);
+    const decoded = splitHookedAddress(encoded, charLimit);
     t.deepEqual(decoded, {
       baseAddress,
       hookData,
@@ -130,3 +160,55 @@ const lengthCheckMacro = test.macro({
     );
   }
 }
+
+/**
+ * @type {import('ava').Macro<
+ *   [
+ *     baseAddress: string,
+ *     query: import('../src/address-hooks.js').HookQuery,
+ *     expected: string,
+ *   ]
+ * >}
+ */
+const addressHookMacro = test.macro({
+  title(providedTitle = '', baseAddress, query) {
+    return `${providedTitle} ${baseAddress} ${JSON.stringify(query)}`;
+  },
+  exec(t, baseAddress, query, expected) {
+    const { encodeAddressHook, splitHookedAddress, decodeAddressHook } =
+      t.context.addressHooks;
+    const encoded = encodeAddressHook(baseAddress, query);
+    t.log('encoded', encoded);
+    t.is(encoded, expected);
+
+    const { baseAddress: ba1, hookData } = splitHookedAddress(encoded);
+    t.is(ba1, baseAddress);
+
+    const td = new TextDecoder();
+    t.log('splitHookedAddress', ba1 + td.decode(hookData));
+
+    const { baseAddress: decodedBaseAddress, query: decodedQuery } =
+      decodeAddressHook(encoded);
+    t.is(decodedBaseAddress, baseAddress);
+    t.deepEqual(decodedQuery, query);
+  },
+});
+
+test(
+  'agoric hook',
+  addressHookMacro,
+  'agoric1qqp0e5ys',
+  { d: null, a: 'b', c: ['d', 'd2'] },
+  'agoric-hook1qqlkz0tzye3n6epxvv7kgv3xvsqqz6cpcpc',
+);
+
+test(
+  'cosmos hook',
+  addressHookMacro,
+  'cosmos1qqxuevtt',
+  {
+    everything: null,
+    dst: ['a', 'b', 'c'],
+  },
+  'cosmos-hook1qqlkgum584sjvernws7kyfnywd6r6cexv4mx2unew35xjmn8qqqsf5mhsw',
+);

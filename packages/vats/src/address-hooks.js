@@ -1,15 +1,36 @@
 /**
  * @module address-hooks
- * @file This module provides functions for encoding and decoding bech32
- *   addresses, and hooked addresses which attach a bech32 base address with
- *   arbitrary hookData bytes.
+ * @file This module provides functions for encoding and decoding address hooks
+ *   which are comprised of a bech32 base address with an HTTP query string, all
+ *   wrapped in a bech32 envelope.
+ * @example
+ *
+ *     import {
+ *       encodeAddressHook,
+ *       decodeAddressHook,
+ *     } from '@agoric/vat/src/address-hooks.js';
+ *
+ *     const baseAddress = 'agoric1qqp0e5ys';
+ *     const query = { key: 'value', foo: ['bar', 'baz'] };
+ *
+ *     const addressHook = encodeAddressHook(baseAddress, query);
+ *
+ *     // 'agoric-hook1qqlkvmm0843xzu3xvehk70tzv9azv6m90y7hvctvw4jsqqg6g6dxe'
+ *     const decoded = decodeAddressHook(addressHook);
+ *
+ *     // { baseAddress: 'agoric1qqp0e5ys', query: { key: 'value', foo: ['bar', 'baz'] } }
  */
 
 /* eslint-disable no-bitwise */
 import { bech32 } from 'bech32';
+import queryString from 'query-string';
 
 // The default maximum number of characters in a bech32-encoded hooked address.
 export const DEFAULT_HOOKED_ADDRESS_CHAR_LIMIT = 1000;
+
+/**
+ * @typedef {Record<string, string | (string | null)[] | null>} HookQuery
+ */
 
 /**
  * @typedef {`${string}${ADDRESS_HOOK_HUMAN_READABLE_SUFFIX}`} HookPrefix
@@ -52,20 +73,20 @@ export const encodeBech32 = (
 };
 
 /**
- * Encode a base address and hook data into a bech32-encoded hooked address. The
+ * Join a base address and hook data into a bech32-encoded hooked address. The
  * bech32-payload is:
  *
- *     | 0..ba        | ba..-2    | 2  |
- *     | baseAddress  | hookData  | ba |
+ *     | 0..ba             | ba..-2    | 2  |
+ *     | baseAddressBytes  | hookData  | ba |
  *
  * @param {string} baseAddress
- * @param {ArrayLike<number>} [hookData]
+ * @param {ArrayLike<number>} hookData
  * @param {number} [charLimit]
  * @returns {string}
  */
-export const encodeHookedAddress = (
+export const joinHookedAddress = (
   baseAddress,
-  hookData = [],
+  hookData,
   charLimit = DEFAULT_HOOKED_ADDRESS_CHAR_LIMIT,
 ) => {
   const { prefix: innerPrefix, bytes } = decodeBech32(baseAddress, charLimit);
@@ -99,17 +120,45 @@ export const encodeHookedAddress = (
 };
 
 /**
+ * @param {string} baseAddress
+ * @param {HookQuery} query
+ */
+export const encodeAddressHook = (baseAddress, query) => {
+  const queryStr = queryString.stringify(query);
+
+  const te = new TextEncoder();
+  const hookData = te.encode(`?${queryStr}`);
+  return joinHookedAddress(baseAddress, hookData);
+};
+
+/**
+ * @param {string} addressHook
+ * @returns {{ baseAddress: string; query: HookQuery }}
+ */
+export const decodeAddressHook = addressHook => {
+  const { baseAddress, hookData } = splitHookedAddress(addressHook);
+  const hookStr = new TextDecoder().decode(hookData);
+  if (hookStr && !hookStr.startsWith('?')) {
+    throw Error(`Hook data does not start with '?': ${hookStr}`);
+  }
+
+  /** @type {HookQuery} */
+  const query = queryString.parse(hookStr);
+  return { baseAddress, query };
+};
+
+/**
  * @param {string} specimen
  * @param {number} [charLimit]
- * @returns {string | { baseAddress: string; hookData?: ArrayLike<number> }}
+ * @returns {string | { baseAddress: string; hookData: Uint8Array }}
  */
-export const decodeHookedAddressUnsafe = (
+export const splitHookedAddressUnsafe = (
   specimen,
   charLimit = DEFAULT_HOOKED_ADDRESS_CHAR_LIMIT,
 ) => {
   const { prefix: outerPrefix, bytes } = decodeBech32(specimen, charLimit);
   if (!outerPrefix.endsWith(ADDRESS_HOOK_HUMAN_READABLE_SUFFIX)) {
-    return { baseAddress: specimen, hookData: undefined };
+    return { baseAddress: specimen, hookData: new Uint8Array() };
   }
 
   const innerPrefix = outerPrefix.slice(
@@ -145,11 +194,11 @@ export const decodeHookedAddressUnsafe = (
  * @param {number} [charLimit]
  * @returns {{
  *   baseAddress: string;
- *   hookData?: ArrayLike<number>;
+ *   hookData: Uint8Array;
  * }}
  */
-export const decodeHookedAddress = (specimen, charLimit) => {
-  const result = decodeHookedAddressUnsafe(specimen, charLimit);
+export const splitHookedAddress = (specimen, charLimit) => {
+  const result = splitHookedAddressUnsafe(specimen, charLimit);
   if (typeof result === 'object') {
     return result;
   }
