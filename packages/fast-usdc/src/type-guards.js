@@ -49,11 +49,10 @@ export const CctpTxEvidenceShape = {
     recipientAddress: M.string(),
   },
   blockHash: EvmHashShape,
-  blockNumber: M.bigint(),
-  blockTimestamp: M.bigint(),
+  blockNumber: M.nat(),
   chainId: M.number(),
   tx: {
-    amount: M.bigint(),
+    amount: M.nat(),
     forwardingAddress: M.string(),
   },
   txHash: EvmHashShape,

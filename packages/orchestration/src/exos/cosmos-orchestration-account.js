@@ -82,7 +82,7 @@ import { makeTimestampHelper } from '../utils/time.js';
  * @import {LocalIbcAddress, RemoteIbcAddress} from '@agoric/vats/tools/ibc-utils.js';
  */
 
-const trace = makeTracer('ComosOrchestrationAccountHolder');
+const trace = makeTracer('CosmosOrchAccount');
 
 const { Vow$ } = NetworkShape; // TODO #9611
 

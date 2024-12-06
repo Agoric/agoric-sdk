@@ -1,5 +1,6 @@
 import { AmountMath } from '@agoric/ertp';
 import { assertAllDefined, makeTracer } from '@agoric/internal';
+import { ChainAddressShape } from '@agoric/orchestration';
 import { atob } from '@endo/base64';
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
@@ -93,6 +94,7 @@ export const prepareSettler = (
      *   remoteDenom: Denom;
      *   repayer: LiquidityPoolKit['repayer'];
      *   settlementAccount: HostInterface<OrchestrationAccount<{ chainId: 'agoric' }>>
+     *   intermediateRecipient: ChainAddress;
      * }} config
      */
     config => {
@@ -255,7 +257,7 @@ export const prepareSettler = (
          * @param {string} EUD
          */
         forward(txHash, sender, fullValue, EUD) {
-          const { settlementAccount } = this.state;
+          const { settlementAccount, intermediateRecipient } = this.state;
 
           const dest = chainHub.makeChainAddress(EUD);
 
@@ -263,6 +265,11 @@ export const prepareSettler = (
           const txfrV = E(settlementAccount).transfer(
             dest,
             AmountMath.make(USDC, fullValue),
+            {
+              forwardOpts: {
+                intermediateRecipient,
+              },
+            },
           );
           void vowTools.watch(txfrV, this.facets.transferHandler, {
             txHash,
@@ -305,6 +312,7 @@ export const prepareSettler = (
         sourceChannel: M.string(),
         remoteDenom: M.string(),
         mintedEarly: M.remotable('mintedEarly'),
+        intermediateRecipient: ChainAddressShape,
       }),
     },
   );

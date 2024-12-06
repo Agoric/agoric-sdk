@@ -80,7 +80,7 @@ test('chain info', async t => {
   t.deepEqual(await vt.when(result.getChainInfo()), mockChainInfo);
 });
 
-test('faulty chain info', async t => {
+test('missing chain info', async t => {
   const { facadeServices, commonPrivateArgs } = await commonSetup(t);
 
   const zone = provideFreshRootZone();
@@ -99,16 +99,7 @@ test('faulty chain info', async t => {
     commonPrivateArgs.marshaller,
   );
 
-  const { chainHub, orchestrate } = orchKit;
-
-  const { stakingTokens, ...sansStakingTokens } = mockChainInfo;
-
-  chainHub.registerChain('mock', sansStakingTokens);
-  chainHub.registerConnection(
-    'agoric-3',
-    mockChainInfo.chainId,
-    mockChainConnection,
-  );
+  const { orchestrate } = orchKit;
 
   const handle = orchestrate('mock', {}, async orc => {
     const chain = await orc.getChain('mock');
@@ -117,7 +108,7 @@ test('faulty chain info', async t => {
   });
 
   await t.throwsAsync(vt.when(handle()), {
-    message: 'chain info lacks staking denom',
+    message: 'chain not found:mock',
   });
 });
 

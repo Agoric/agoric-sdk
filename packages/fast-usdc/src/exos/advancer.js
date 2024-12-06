@@ -116,6 +116,7 @@ export const prepareAdvancerKit = (
      *   notifyFacet: import('./settler.js').SettlerKit['notify'];
      *   borrowerFacet: LiquidityPoolKit['borrower'];
      *   poolAccount: HostInterface<OrchestrationAccount<{chainId: 'agoric'}>>;
+     *   intermediateRecipient: ChainAddress;
      * }} config
      */
     config => harden(config),
@@ -187,12 +188,20 @@ export const prepareAdvancerKit = (
          * @param {AdvancerVowCtx & { tmpSeat: ZCFSeat }} ctx
          */
         onFulfilled(result, ctx) {
-          const { poolAccount } = this.state;
+          const { poolAccount, intermediateRecipient } = this.state;
           const { destination, advanceAmount, ...detail } = ctx;
-          const transferV = E(poolAccount).transfer(destination, {
-            denom: usdc.denom,
-            value: advanceAmount.value,
-          });
+          const transferV = E(poolAccount).transfer(
+            destination,
+            {
+              denom: usdc.denom,
+              value: advanceAmount.value,
+            },
+            {
+              forwardOpts: {
+                intermediateRecipient,
+              },
+            },
+          );
           return watch(transferV, this.facets.transferHandler, {
             destination,
             advanceAmount,
@@ -250,6 +259,7 @@ export const prepareAdvancerKit = (
         notifyFacet: M.remotable(),
         borrowerFacet: M.remotable(),
         poolAccount: M.remotable(),
+        intermediateRecipient: ChainAddressShape,
       }),
     },
   );

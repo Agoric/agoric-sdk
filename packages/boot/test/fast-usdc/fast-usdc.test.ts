@@ -8,6 +8,7 @@ import { unmarshalFromVstorage } from '@agoric/internal/src/marshal.js';
 import { makeMarshal } from '@endo/marshal';
 import { defaultMarshaller } from '@agoric/internal/src/storage-test-utils.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
+import { BridgeId } from '@agoric/internal';
 import {
   makeWalletFactoryContext,
   type WalletFactoryTestContext,
@@ -15,6 +16,7 @@ import {
 import {
   makeSwingsetHarness,
   insistManagerType,
+  AckBehavior,
 } from '../../tools/supports.js';
 
 const test: TestFn<
@@ -54,8 +56,9 @@ test.serial(
   async t => {
     const {
       agoricNamesRemotes,
-      evalProposal,
+      bridgeUtils,
       buildProposal,
+      evalProposal,
       refreshAgoricNamesRemotes,
       storage,
       walletFactoryDriver: wd,
@@ -66,6 +69,15 @@ test.serial(
       wd.provideSmartWallet('agoric1krunjcqfrf7la48zrvdfeeqtls5r00ep68mzkr'),
       wd.provideSmartWallet('agoric1n4fcxsnkxe4gj6e24naec99hzmc4pjfdccy5nj'),
     ]);
+
+    // inbound `startChannelOpenInit` responses immediately.
+    // needed since the Fusdc StartFn relies on an ICA being created
+    bridgeUtils.setAckBehavior(
+      BridgeId.DIBC,
+      'startChannelOpenInit',
+      AckBehavior.Immediate,
+    );
+    bridgeUtils.setBech32Prefix('noble');
 
     const materials = buildProposal(
       '@agoric/builders/scripts/fast-usdc/init-fast-usdc.js',

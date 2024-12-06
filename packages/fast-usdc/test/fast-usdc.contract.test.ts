@@ -97,6 +97,7 @@ const startContract = async (
 
 const makeTestContext = async (t: ExecutionContext) => {
   const common = await commonSetup(t);
+  await E(common.mocks.ibcBridge).setAddressPrefix('noble');
 
   const startKit = await startContract(common, 2);
 
@@ -328,7 +329,6 @@ const makeEVM = (template = MockCctpTxEvidences.AGORIC_PLUS_OSMO()) => {
       ...template,
       txHash: `0x00000${nonce}`,
       blockNumber: template.blockNumber + BigInt(nonce),
-      blockTimestamp: template.blockTimestamp + BigInt(nonce * 3),
       tx: { ...template.tx, amount },
       // KLUDGE: CCTP doesn't know about aux; it would be added by OCW
       aux: { ...template.aux, recipientAddress },
@@ -406,7 +406,7 @@ const makeCustomer = (
         const [ibcTransferMsg] = lm.messages;
         // support advances to noble + other chains
         const receiver =
-          ibcTransferMsg.receiver === 'pfm'
+          ibcTransferMsg.receiver === 'noble1test' // intermediateRecipient value
             ? JSON.parse(ibcTransferMsg.memo).forward.receiver
             : ibcTransferMsg.receiver;
         return (
