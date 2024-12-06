@@ -1,0 +1,7 @@
+{
+    "consume": {
+      "reserveKit": true,
+      "namesByAddressAdmin": true,
+      "agoricNames": true
+    }
+}
