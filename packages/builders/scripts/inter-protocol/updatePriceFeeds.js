@@ -32,7 +32,7 @@ const configurations = {
       'agoric1qj07c7vfk3knqdral0sej7fa6eavkdn8vd8etf', // Simply Staking
       'agoric10vjkvkmpp9e356xeh6qqlhrny2htyzp8hf88fk', // P2P
     ],
-    inBrandNames: ['ATOM', 'stTIA', 'stkATOM'],
+    inBrandNames: ['ATOM', 'stTIA', 'stkATOM', 'dATOM'],
   },
   EMERYNET: {
     oracleAddresses: [
