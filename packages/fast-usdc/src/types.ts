@@ -5,6 +5,8 @@ import type { PendingTxStatus } from './constants.js';
 
 export type EvmHash = `0x${string}`;
 export type NobleAddress = `noble1${string}`;
+export type EvmChainID = number;
+export type EvmChainName = string;
 
 export interface CctpTxEvidence {
   /** from Noble RPC */
@@ -55,4 +57,20 @@ export interface PoolMetrics extends PoolStats {
   shareWorth: Ratio;
 }
 
+export interface ChainPolicy {
+  nobleContractAddress: EvmHash;
+  cctpTokenMessengerAddress: EvmHash;
+  confirmations: number;
+  chainId: EvmChainID;
+  chainType?: number;
+}
+
+export interface FeedPolicy {
+  nobleDomainId: number;
+  nobleAgoricChannelId: string;
+  chainPolicies: Record<EvmChainName, ChainPolicy>;
+  eventFilter?: string;
+}
+
 export type * from './constants.js';
+export type { LiquidityPoolKit } from './exos/liquidity-pool.js';

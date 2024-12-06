@@ -1,4 +1,5 @@
 /* global E */
+/// <reference types="@agoric/vats/src/core/core-eval-env" />
 /**
  * This file, along with the companion `gov-permit.json`, are used to test "big
  * hammer" chain governance.  They don't have a functional purpose outside of

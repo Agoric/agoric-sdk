@@ -142,6 +142,7 @@ test('Transfer signs and broadcasts the depositForBurn message on Ethereum', asy
     vstorageMock.vstorage,
     { signer: signerMock.signer, address: nobleSignerAddress },
     mockEthProvider.provider,
+    {},
   );
 
   t.is(signerMock.getSigned(), undefined);

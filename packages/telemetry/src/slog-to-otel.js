@@ -976,7 +976,7 @@ export const makeSlogToOtelKit = (tracer, overrideAttrs = {}) => {
         spans.pop('timer-poll');
         break;
       }
-      case 'cosmic-swinget-inject-kernel-upgrade-events': {
+      case 'cosmic-swingset-inject-kernel-upgrade-events': {
         spans.push('kernel-upgrade-events');
         spans.pop('kernel-upgrade-events');
         break;

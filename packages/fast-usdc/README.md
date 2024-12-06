@@ -56,3 +56,44 @@ sequenceDiagram
 
     A->>TF: notify(evidence)
 ```
+
+# Status Manager
+
+### Pending Advance State Diagram
+
+*Transactions are qualified by the OCW and EventFeed before arriving to the Advancer.*
+
+```mermaid
+stateDiagram-v2
+  [*] --> Observed: observe()
+  [*] --> Advancing: advancing()
+
+  Advancing --> Advanced: advanceOutcome(...true)
+  Advancing --> AdvanceFailed: advanceOutcome(...false)
+
+  Observed --> [*]: dequeueStatus()
+  Advanced --> [*]: dequeueStatus()
+  AdvanceFailed --> [*]: dequeueStatus()
+
+  note right of [*]
+    After dequeueStatus():
+    Transaction is removed 
+    from pendingTxs store.
+    Settler will .disburse()
+    or .forward()
+  end note
+```
+
+### Complete state diagram (starting from Transaction Feed into Advancer)
+
+```mermaid
+stateDiagram-v2
+  Observed --> Advancing
+  Observed --> Forwarding:Minted
+  Forwarding --> Forwarded
+  Advancing --> Advanced
+  Advanced --> Disbursed
+  AdvanceFailed --> Forwarding
+  Advancing --> AdvanceFailed
+  Forwarding --> ForwardFailed
+```

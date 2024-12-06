@@ -1,3 +1,4 @@
+// @ts-check
 /**
  * @file marshal tools for vstorage clients
  *

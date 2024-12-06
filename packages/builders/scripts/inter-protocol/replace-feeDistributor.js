@@ -4,7 +4,7 @@ import { SECONDS_PER_HOUR } from '@agoric/inter-protocol/src/proposals/econ-beha
 
 /** @type {import('@agoric/deploy-script-support/src/externalTypes.js').CoreEvalBuilder} */
 export const defaultProposalBuilder = async (_, opts) => {
-  console.log('OPTS', opts);
+  console.log('feeDist OPTS', opts);
   return harden({
     sourceSpec:
       '@agoric/inter-protocol/src/proposals/replace-fee-distributor.js',
@@ -16,7 +16,7 @@ export const defaultProposalBuilder = async (_, opts) => {
 export default async (homeP, endowments) => {
   const { writeCoreEval } = await makeHelpers(homeP, endowments);
 
-  await writeCoreEval('replace-feeDistributor-testing', utils =>
+  await writeCoreEval('replace-feeDistributor', utils =>
     defaultProposalBuilder(utils, {
       collectionInterval: 1n * SECONDS_PER_HOUR,
       keywordShares: {

@@ -27,4 +27,4 @@ export const makeFile = (
   return { read, write, exists, path };
 };
 
-/** @typedef {ReturnType<typeof makeFile>} file */
+/** @typedef {ReturnType<typeof makeFile>} File */

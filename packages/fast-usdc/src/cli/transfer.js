@@ -1,21 +1,26 @@
+/* eslint-env node */
 /* global globalThis */
 
-import { makeVStorage } from '@agoric/client-utils';
+import {
+  fetchEnvNetworkConfig,
+  makeVStorage,
+  pickEndpoint,
+} from '@agoric/client-utils';
+import { queryFastUSDCLocalChainAccount } from '../util/agoric.js';
 import { depositForBurn, makeProvider } from '../util/cctp.js';
 import {
   makeSigner,
   queryForwardingAccount,
   registerFwdAccount,
 } from '../util/noble.js';
-import { queryFastUSDCLocalChainAccount } from '../util/agoric.js';
 
-/** @import { file } from '../util/file' */
+/** @import { File } from '../util/file' */
 /** @import { VStorage } from '@agoric/client-utils' */
 /** @import { SigningStargateClient } from '@cosmjs/stargate' */
 /** @import { JsonRpcProvider as ethProvider } from 'ethers' */
 
 const transfer = async (
-  /** @type {file} */ configFile,
+  /** @type {File} */ configFile,
   /** @type {string} */ amount,
   /** @type {string} */ destination,
   out = console,
@@ -23,13 +28,15 @@ const transfer = async (
   /** @type {VStorage | undefined} */ vstorage,
   /** @type {{signer: SigningStargateClient, address: string} | undefined} */ nobleSigner,
   /** @type {ethProvider | undefined} */ ethProvider,
+  env = process.env,
 ) => {
   const execute = async (
     /** @type {import('./config').ConfigOpts} */ config,
   ) => {
+    const netConfig = await fetchEnvNetworkConfig({ env, fetch });
     vstorage ||= makeVStorage(
       { fetch },
-      { chainName: 'agoric', rpcAddrs: [config.agoricRpc] },
+      { chainName: 'agoric', rpcAddrs: [pickEndpoint(netConfig)] },
     );
     const agoricAddr = await queryFastUSDCLocalChainAccount(vstorage, out);
     const appendedAddr = `${agoricAddr}?EUD=${destination}`;

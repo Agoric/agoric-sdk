@@ -1319,7 +1319,7 @@ function build(
 
   /**
    * @param {import('./types.js').VatDeliveryObject} delivery
-   * @returns {void | Promise<void>}
+   * @returns {undefined | ReturnType<startVat>}
    */
   function dispatchToUserspace(delivery) {
     let result;

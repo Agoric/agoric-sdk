@@ -1,6 +1,6 @@
 // @ts-check
 
-import path from 'node:path';
+import nativePath from 'node:path';
 import v8 from 'node:v8';
 import process from 'node:process';
 import fs from 'node:fs';
@@ -167,7 +167,11 @@ const makePrefixedBridgeStorage = (
   });
 };
 
-export default async function main(progname, args, { env, homedir, agcc }) {
+export default async function main(
+  progname,
+  args,
+  { env, homedir, path = nativePath, agcc },
+) {
   const portNums = {};
 
   // TODO: use the 'basedir' pattern

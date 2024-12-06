@@ -1,8 +1,12 @@
-# Overview
+# a3p-integration overview
 
 This directory contains an end-to-end integration test executed against a synthetic agoric-3 chain. The test performs a chain software upgrade to the software contained in the enclosing `agoric-sdk` repository, then executes a series of functional tests verifying the upgrade accomplished its goal.
 
-# How to run
+## Quick-Start: How to Get a Chain Running
+
+To get a chain running with an existing proposal such as `f:fast-usdc`, run `yarn test -m fast-usdc --debug`; likewise `yarn test -m <proposal-name-substring> --debug` for any other proposal name.
+
+## How to run
 
 The synthetic chain testing infrastructure relies on Docker, Docker Buildx extended build capabilities, and the experimental Buildx Bake extension. Make sure you have a recent Docker engine installed for your system.
 

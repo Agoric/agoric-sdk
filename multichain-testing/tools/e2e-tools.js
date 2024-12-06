@@ -1,3 +1,4 @@
+// @ts-check
 /** global harden */
 import { assert } from '@endo/errors';
 import { E, Far } from '@endo/far';
@@ -123,6 +124,7 @@ const installBundle = async (fullPath, opts) => {
  *   chainId?: string;
  *   whale?: string;
  *   progress?: typeof console.log;
+ *   q?: import('./queryKit.js').QueryTool;
  * }} opts
  */
 export const provisionSmartWallet = async (
@@ -142,7 +144,11 @@ export const provisionSmartWallet = async (
   // TODO: skip this query if balances is {}
   const vbankEntries = await q.queryData('published.agoricNames.vbankAsset');
   const byName = Object.fromEntries(
-    vbankEntries.map(([_denom, info]) => [info.issuerName, info]),
+    vbankEntries.map(([denom, info]) => {
+      /// XXX better way to filter out old ATOM denom?
+      if (denom === 'ibc/toyatom') return [undefined, undefined];
+      return [info.issuerName, info];
+    }),
   );
   progress({ send: balances, to: address });
 
@@ -167,7 +173,7 @@ export const provisionSmartWallet = async (
   for await (const [name, qty] of Object.entries(balances)) {
     const info = byName[name];
     if (!info) {
-      throw Error(name);
+      throw Error(`${name} not found in vbank assets`);
     }
     const { denom, displayInfo } = info;
     const { decimalPlaces } = displayInfo;
@@ -474,6 +480,7 @@ export const makeE2ETools = async (
         // name,
         id: fullPath,
         installHeight: tx.height,
+        // @ts-expect-error confirm is a boolean?
         installed: confirm.installed,
       });
     }
@@ -540,6 +547,7 @@ export const makeE2ETools = async (
     /** @param {string} name */
     deleteKey: async name => agd.keys.delete(name),
     copyFiles,
+    agd,
   };
 };
 

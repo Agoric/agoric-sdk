@@ -1,12 +1,8 @@
-import type { CosmosChainInfo } from '@agoric/orchestration';
 import anyTest from '@endo/ses-ava/prepare-endo.js';
-import type { ExecutionContext, TestFn } from 'ava';
-import chainInfo from '../starship-chain-info.js';
+import type { TestFn } from 'ava';
+import starshipChainInfo from '../starship-chain-info.js';
 import { makeDoOffer } from '../tools/e2e-tools.js';
-import {
-  createFundedWalletAndClient,
-  makeIBCTransferMsg,
-} from '../tools/ibc-transfer.js';
+import { makeFundAndTransfer } from '../tools/ibc-transfer.js';
 import { makeQueryClient } from '../tools/query.js';
 import type { SetupContextWithWallets } from './support.js';
 import { chainConfig, commonSetup } from './support.js';
@@ -18,68 +14,25 @@ const accounts = ['agoricAdmin', 'cosmoshub', 'osmosis'];
 
 const contractName = 'autoAutoStakeIt';
 const contractBuilder =
-  '../packages/builders/scripts/testing/start-auto-stake-it.js';
+  '../packages/builders/scripts/testing/init-auto-stake-it.js';
 
 test.before(async t => {
-  const { deleteTestKeys, setupTestKeys, ...rest } = await commonSetup(t);
+  const { setupTestKeys, ...common } = await commonSetup(t);
+  const { assetInfo, chainInfo, deleteTestKeys, startContract } = common;
   deleteTestKeys(accounts).catch();
   const wallets = await setupTestKeys(accounts);
-  t.context = { ...rest, wallets, deleteTestKeys };
-  const { startContract } = rest;
-  await startContract(contractName, contractBuilder);
+  t.context = { ...common, wallets };
+
+  await startContract(contractName, contractBuilder, {
+    chainInfo,
+    assetInfo,
+  });
 });
 
 test.after(async t => {
   const { deleteTestKeys } = t.context;
   deleteTestKeys(accounts);
 });
-
-const makeFundAndTransfer = (t: ExecutionContext<SetupContextWithWallets>) => {
-  const { retryUntilCondition, useChain } = t.context;
-  return async (chainName: string, agoricAddr: string, amount = 100n) => {
-    const { staking } = useChain(chainName).chainInfo.chain;
-    const denom = staking?.staking_tokens?.[0].denom;
-    if (!denom) throw Error(`no denom for ${chainName}`);
-
-    const { client, address, wallet } = await createFundedWalletAndClient(
-      t,
-      chainName,
-      useChain,
-    );
-    const balancesResult = await retryUntilCondition(
-      () => client.getAllBalances(address),
-      coins => !!coins?.length,
-      `Faucet balances found for ${address}`,
-    );
-
-    console.log('Balances:', balancesResult);
-
-    const transferArgs = makeIBCTransferMsg(
-      { denom, value: amount },
-      { address: agoricAddr, chainName: 'agoric' },
-      { address: address, chainName },
-      Date.now(),
-      useChain,
-    );
-    console.log('Transfer Args:', transferArgs);
-    // TODO #9200 `sendIbcTokens` does not support `memo`
-    // @ts-expect-error spread argument for concise code
-    const txRes = await client.sendIbcTokens(...transferArgs);
-    if (txRes && txRes.code !== 0) {
-      console.error(txRes);
-      throw Error(`failed to ibc transfer funds to ${chainName}`);
-    }
-    const { events: _events, ...txRest } = txRes;
-    console.log(txRest);
-    t.is(txRes.code, 0, `Transaction succeeded`);
-    t.log(`Funds transferred to ${agoricAddr}`);
-    return {
-      client,
-      address,
-      wallet,
-    };
-  };
-};
 
 const autoStakeItScenario = test.macro({
   title: (_, chainName: string) => `auto-stake-it on ${chainName}`,
@@ -93,12 +46,14 @@ const autoStakeItScenario = test.macro({
       useChain,
     } = t.context;
 
-    const fundAndTransfer = makeFundAndTransfer(t);
+    const fundAndTransfer = makeFundAndTransfer(
+      t,
+      retryUntilCondition,
+      useChain,
+    );
 
     // 2. Find 'stakingDenom' denom on agoric
-    const remoteChainInfo = (chainInfo as Record<string, CosmosChainInfo>)[
-      chainName
-    ];
+    const remoteChainInfo = starshipChainInfo[chainName];
     const stakingDenom = remoteChainInfo?.stakingTokens?.[0].denom;
     if (!stakingDenom) throw Error(`staking denom found for ${chainName}`);
 

@@ -19,7 +19,10 @@ import { launch } from './launch-chain.js';
 import { getTelemetryProviders } from './kernel-stats.js';
 import { DEFAULT_SIM_SWINGSET_PARAMS, QueueInbound } from './sim-params.js';
 import { parseQueueSizes } from './params.js';
+import { makeKVStoreFromMap } from './helpers/bufferedStorage.js';
 import { makeQueue, makeQueueStorageMock } from './helpers/make-queue.js';
+
+/** @import { Mailbox } from '@agoric/swingset-vat' */
 
 const console = anylogger('fake-chain');
 
@@ -28,10 +31,11 @@ const TELEMETRY_SERVICE_NAME = 'sim-cosmos';
 const PRETEND_BLOCK_DELAY = 5;
 const scaleBlockTime = ms => Math.floor(ms / 1000);
 
-async function makeMapStorage(file) {
-  let content;
+async function makeMailboxStorageFromFile(file) {
+  /** @type {Map<string, Mailbox>} */
   const map = new Map();
-  map.commit = async () => {
+  const kvStore = makeKVStoreFromMap(map);
+  const commit = async () => {
     const obj = {};
     for (const [k, v] of map.entries()) {
       obj[k] = exportMailbox(v);
@@ -39,20 +43,24 @@ async function makeMapStorage(file) {
     const json = stringify(obj);
     await fs.promises.writeFile(file, json);
   };
-
-  await (async () => {
-    content = await fs.promises.readFile(file);
+  const read = async () => {
+    const content = await fs.promises.readFile(file, 'utf8');
     return JSON.parse(content);
-  })().then(
-    obj => {
-      for (const [k, v] of Object.entries(obj)) {
-        map.set(k, importMailbox(v));
-      }
-    },
-    () => {},
-  );
+  };
+  const load = async obj => {
+    map.clear();
+    for (const [k, v] of Object.entries(obj)) {
+      map.set(k, importMailbox(v));
+    }
+  };
+  const reset = async () => {
+    const obj = await read();
+    await load(obj);
+  };
 
-  return map;
+  await read().then(load, () => {});
+
+  return { ...kvStore, commit, abort: reset };
 }
 
 export async function connectToFakeChain(basedir, GCI, delay, inbound) {
@@ -61,7 +69,7 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
   const mailboxFile = path.join(basedir, `fake-chain-${GCI}-mailbox.json`);
   const bootAddress = `${GCI}-client`;
 
-  const mailboxStorage = await makeMapStorage(mailboxFile);
+  const mailboxStorage = await makeMailboxStorageFromFile(mailboxFile);
 
   const argv = {
     giveMeAllTheAgoricPowers: true,
@@ -109,6 +117,7 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
   const actionQueue = makeQueue(actionQueueStorage);
 
   const s = await launch({
+    bridgeOutbound: /** @type {any} */ (undefined),
     actionQueueStorage,
     highPriorityQueueStorage,
     kernelStateDBDir: stateDBdir,
@@ -120,13 +129,20 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
     debugName: GCI,
     metricsProvider,
     slogSender,
+    swingsetConfig: {},
   });
 
   const { blockingSend, savedHeight } = s;
 
   let blockHeight = savedHeight;
   const intoChain = [];
-  let nextBlockTimeout = 0;
+  /** @type {undefined | ReturnType<typeof setTimeout>} */
+  let nextBlockTimeout;
+  const resetNextBlockTimeout = () => {
+    if (nextBlockTimeout === undefined) return;
+    clearTimeout(nextBlockTimeout);
+    nextBlockTimeout = undefined;
+  };
 
   const maximumDelay = (delay || PRETEND_BLOCK_DELAY) * 1000;
 
@@ -172,7 +188,7 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
       // Done processing, "commit the block".
       await blockingSend({ type: 'COMMIT_BLOCK', blockHeight, blockTime });
 
-      clearTimeout(nextBlockTimeout);
+      resetNextBlockTimeout();
       nextBlockTimeout = setTimeout(simulateBlock, maximumDelay);
 
       // TODO: maybe add latency to the inbound messages.
@@ -197,7 +213,7 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
     // Only actually simulate a block if we're not in bootstrap.
     let p;
     if (blockHeight && !delay) {
-      clearTimeout(nextBlockTimeout);
+      resetNextBlockTimeout();
       p = simulateBlock();
     }
     await p;

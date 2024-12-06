@@ -64,6 +64,7 @@ test.serial('setupVaults; run updatePriceFeeds proposals', async t => {
     setupVaults,
     governanceDriver: gd,
     readPublished,
+    harness,
   } = t.context;
 
   await setupVaults(collateralBrandKey, managerIndex, setup);
@@ -74,7 +75,10 @@ test.serial('setupVaults; run updatePriceFeeds proposals', async t => {
     roundId: 1n,
   });
 
+  harness && harness.useRunPolicy(true);
   await priceFeedDrivers[collateralBrandKey].setPrice(15.99);
+  harness && t.log('setPrice computrons', harness.totalComputronCount());
+  harness && harness.useRunPolicy(false);
 
   t.like(readPublished('priceFeed.ATOM-USD_price_feed.latestRound'), {
     roundId: 2n,

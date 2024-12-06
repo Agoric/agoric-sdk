@@ -32,6 +32,7 @@ import { Fail } from '@endo/errors';
 import {
   makeRunUtils,
   type RunUtils,
+  type RunHarness,
 } from '@agoric/swingset-vat/tools/run-utils.js';
 import {
   boardSlottingMarshaller,
@@ -47,6 +48,11 @@ import type { BridgeHandler, IBCMethod } from '@agoric/vats';
 import type { BootstrapRootObject } from '@agoric/vats/src/core/lib-boot.js';
 import type { EProxy } from '@endo/eventual-send';
 import type { FastUSDCCorePowers } from '@agoric/fast-usdc/src/fast-usdc.start.js';
+import {
+  defaultBeansPerVatCreation,
+  defaultBeansPerXsnapComputron,
+} from '@agoric/cosmic-swingset/src/sim-params.js';
+import { computronCounter } from '@agoric/cosmic-swingset/src/computron-counter.js';
 import { icaMocks, protoMsgMockMap, protoMsgMocks } from './ibc/mocks.js';
 
 const trace = makeTracer('BSTSupport', false);
@@ -77,6 +83,7 @@ type BootstrapEV = EProxy & {
 
 const makeBootstrapRunUtils = makeRunUtils as (
   controller: SwingsetController,
+  harness?: RunHarness,
 ) => Omit<RunUtils, 'EV'> & { EV: BootstrapEV };
 
 const keysToObject = <K extends PropertyKey, V>(
@@ -308,6 +315,7 @@ export const matchIter = (t: AvaT, iter, valueRef) => {
  * @param [options.profileVats]
  * @param [options.debugVats]
  * @param [options.defaultManagerType]
+ * @param [options.harness]
  */
 export const makeSwingsetTestKit = async (
   log: (..._: any[]) => void,
@@ -321,6 +329,7 @@ export const makeSwingsetTestKit = async (
     profileVats = [] as string[],
     debugVats = [] as string[],
     defaultManagerType = 'local' as ManagerType,
+    harness = undefined as RunHarness | undefined,
   } = {},
 ) => {
   console.time('makeBaseSwingsetTestKit');
@@ -538,7 +547,7 @@ export const makeSwingsetTestKit = async (
 
   console.timeLog('makeBaseSwingsetTestKit', 'buildSwingset');
 
-  const runUtils = makeBootstrapRunUtils(controller);
+  const runUtils = makeBootstrapRunUtils(controller, harness);
 
   const buildProposal = makeProposalExtractor({
     childProcess: childProcessAmbient,
@@ -660,3 +669,50 @@ export const makeSwingsetTestKit = async (
   };
 };
 export type SwingsetTestKit = Awaited<ReturnType<typeof makeSwingsetTestKit>>;
+
+/**
+ * Return a harness that can be dynamically configured to provide a computron-
+ * counting run policy (and queried for the count of computrons recorded since
+ * the last reset).
+ */
+export const makeSwingsetHarness = () => {
+  const c2b = defaultBeansPerXsnapComputron;
+  const beansPerUnit = {
+    // see https://cosgov.org/agoric?msgType=parameterChangeProposal&network=main
+    blockComputeLimit: 65_000_000n * c2b,
+    vatCreation: defaultBeansPerVatCreation,
+    xsnapComputron: c2b,
+  };
+
+  /** @type {ReturnType<typeof computronCounter> | undefined} */
+  let policy;
+  let policyEnabled = false;
+
+  const meter = harden({
+    provideRunPolicy: () => {
+      if (policyEnabled && !policy) {
+        policy = computronCounter({ beansPerUnit });
+      }
+      return policy;
+    },
+    /** @param {boolean} forceEnabled */
+    useRunPolicy: forceEnabled => {
+      policyEnabled = forceEnabled;
+      if (!policyEnabled) {
+        policy = undefined;
+      }
+    },
+    totalComputronCount: () => (policy?.totalBeans() || 0n) / c2b,
+    resetRunPolicy: () => (policy = undefined),
+  });
+  return meter;
+};
+
+/**
+ *
+ * @param {string} mt
+ * @returns {asserts mt is ManagerType}
+ */
+export function insistManagerType(mt) {
+  assert(['local', 'node-subprocess', 'xsnap', 'xs-worker'].includes(mt));
+}

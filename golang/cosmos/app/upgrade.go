@@ -214,12 +214,25 @@ func unreleasedUpgradeHandler(app *GaiaApp, targetUpgrade string) func(sdk.Conte
 				),
 			)
 
-			// CoreProposals for Upgrade 19
-			CoreProposalSteps = append(CoreProposalSteps,
-				vm.CoreProposalStepForModules(
-					"@agoric/builders/scripts/inter-protocol/replace-feeDistributor.js",
-				),
-			)
+			// CoreProposals for Upgrade 19. These should not be introduced
+			// before upgrade 18 is done because they would be run in n:upgrade-next
+			// CoreProposalSteps = append(CoreProposalSteps,
+			// 	vm.CoreProposalStepForModules(
+			// 		"@agoric/builders/scripts/inter-protocol/replace-feeDistributor.js",
+			// 	),
+			// 	vm.CoreProposalStepForModules(
+			// 		"@agoric/builders/scripts/vats/upgrade-paRegistry.js",
+			// 	),
+			// 	vm.CoreProposalStepForModules(
+			// 		"@agoric/builders/scripts/vats/upgrade-board.js",
+			// 	),
+			// 	vm.CoreProposalStepForModules(
+			// 		"@agoric/builders/scripts/vats/upgrade-provisionPool.js",
+			// 	),
+			// 	vm.CoreProposalStepForModules(
+			// 		"@agoric/builders/scripts/vats/upgrade-bank.js",
+			// 	),
+			// )
 		}
 
 		app.upgradeDetails = &upgradeDetails{

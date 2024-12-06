@@ -1,11 +1,10 @@
 // @ts-check
 /* eslint-disable func-names */
 /* eslint-env node */
-import { makeVstorageKit } from '@agoric/client-utils';
+import { fetchEnvNetworkConfig, makeVstorageKit } from '@agoric/client-utils';
 import { execFileSync as execFileSyncAmbient } from 'child_process';
 import { Command, CommanderError } from 'commander';
 import { normalizeAddressWithOptions, pollBlocks } from '../lib/chain.js';
-import { getNetworkConfig } from '../lib/network-config.js';
 import {
   findContinuingIds,
   getCurrent,
@@ -26,7 +25,7 @@ const collectValues = (val, memo) => {
 
 const defaultKeyring = process.env.AGORIC_KEYRING_BACKEND || 'test';
 
-const networkConfig = await getNetworkConfig({ env: process.env, fetch });
+const networkConfig = await fetchEnvNetworkConfig({ env: process.env, fetch });
 
 /**
  * @param {import('anylogger').Logger} _logger

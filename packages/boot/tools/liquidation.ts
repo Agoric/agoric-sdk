@@ -9,6 +9,7 @@ import {
 } from '@agoric/vats/tools/board-utils.js';
 import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
 import type { ExecutionContext } from 'ava';
+import { insistManagerType, makeSwingsetHarness } from './supports.js';
 import { type SwingsetTestKit, makeSwingsetTestKit } from './supports.js';
 import {
   type GovernanceDriver,
@@ -305,13 +306,28 @@ export const makeLiquidationTestKit = async ({
   };
 };
 
+// asserts x is type doesn't work when using arrow functions
+// https://github.com/microsoft/TypeScript/issues/34523
+function assertManagerType(specimen: string): asserts specimen is ManagerType {
+  insistManagerType(specimen);
+}
+
 export const makeLiquidationTestContext = async (
   t,
   io: { env?: Record<string, string | undefined> } = {},
 ) => {
   const { env = {} } = io;
+  const {
+    SLOGFILE: slogFile,
+    SWINGSET_WORKER_TYPE: defaultManagerType = 'local',
+  } = env;
+  assertManagerType(defaultManagerType);
+  const harness =
+    defaultManagerType === 'xsnap' ? makeSwingsetHarness() : undefined;
   const swingsetTestKit = await makeSwingsetTestKit(t.log, undefined, {
-    slogFile: env.SLOGFILE,
+    slogFile,
+    defaultManagerType,
+    harness,
   });
   console.time('DefaultTestContext');
 
@@ -369,6 +385,7 @@ export const makeLiquidationTestContext = async (
     refreshAgoricNamesRemotes,
     walletFactoryDriver,
     governanceDriver,
+    harness,
   };
 };
 

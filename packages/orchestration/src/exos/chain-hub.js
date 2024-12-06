@@ -6,7 +6,13 @@ import { BrandShape } from '@agoric/ertp/src/typeGuards.js';
 import { VowShape } from '@agoric/vow';
 import {
   ChainAddressShape,
+  CoinShape,
   CosmosChainInfoShape,
+  DenomAmountShape,
+  DenomDetailShape,
+  ForwardInfoShape,
+  ForwardOptsShape,
+  IBCChannelIDShape,
   IBCConnectionInfoShape,
 } from '../typeGuards.js';
 import { getBech32Prefix } from '../utils/address.js';
@@ -15,12 +21,14 @@ import { getBech32Prefix } from '../utils/address.js';
  * @import {NameHub} from '@agoric/vats';
  * @import {Vow, VowTools} from '@agoric/vow';
  * @import {Zone} from '@agoric/zone';
- * @import {CosmosAssetInfo, CosmosChainInfo, IBCConnectionInfo} from '../cosmos-api.js';
+ * @import {CosmosAssetInfo, CosmosChainInfo, ForwardInfo, IBCConnectionInfo, IBCMsgTransferOptions, TransferRoute, GoDuration} from '../cosmos-api.js';
  * @import {ChainInfo, KnownChains} from '../chain-info.js';
- * @import {ChainAddress, Denom} from '../orchestration-api.js';
- * @import {Remote} from '@agoric/internal';
- * @import {TypedPattern} from '@agoric/internal';
+ * @import {ChainAddress, Denom, DenomAmount} from '../orchestration-api.js';
+ * @import {Remote, TypedPattern} from '@agoric/internal';
  */
+
+/** receiver address value for ibc transfers that involve PFM */
+export const PFM_RECEIVER = /** @type {const} */ ('pfm');
 
 /**
  * If K matches a known chain, narrow the type from generic ChainInfo
@@ -40,11 +48,6 @@ import { getBech32Prefix } from '../utils/address.js';
  * @property {Brand<'nat'>} [brand] - vbank brand, if registered
  * @see {ChainHub} `registerAsset` method
  */
-/** @type {TypedPattern<DenomDetail>} */
-export const DenomDetailShape = M.splitRecord(
-  { chainName: M.string(), baseName: M.string(), baseDenom: M.string() },
-  { brand: BrandShape },
-);
 
 /**
  * @enum {(typeof HubName)[keyof typeof HubName]}
@@ -103,7 +106,7 @@ export const connectionKey = (chainId1, chainId2) => {
  */
 const reverseConnInfo = connInfo => {
   const { transferChannel } = connInfo;
-  return {
+  return harden({
     id: connInfo.counterparty.connection_id,
     client_id: connInfo.counterparty.client_id,
     counterparty: {
@@ -118,7 +121,7 @@ const reverseConnInfo = connInfo => {
       portId: transferChannel.counterPartyPortId,
       counterPartyPortId: transferChannel.portId,
     },
-  };
+  });
 };
 
 /**
@@ -172,6 +175,26 @@ const ChainIdArgShape = M.or(
   ),
 );
 
+// TODO #9324 determine timeout defaults
+const DefaultPfmTimeoutOpts = harden(
+  /** @type {const} */ ({
+    retries: 3,
+    timeout: /** @type {const} */ ('10m'),
+  }),
+);
+
+/** @type {TypedPattern<TransferRoute>} */
+export const TransferRouteShape = M.splitRecord(
+  {
+    sourcePort: M.string(),
+    sourceChannel: IBCChannelIDShape,
+    token: CoinShape,
+    receiver: M.string(),
+  },
+  { forwardInfo: ForwardInfoShape },
+  {},
+);
+
 const ChainHubI = M.interface('ChainHub', {
   registerChain: M.call(M.string(), CosmosChainInfoShape).returns(),
   getChainInfo: M.call(M.string()).returns(VowShape),
@@ -183,9 +206,14 @@ const ChainHubI = M.interface('ChainHub', {
   getConnectionInfo: M.call(ChainIdArgShape, ChainIdArgShape).returns(VowShape),
   getChainsAndConnection: M.call(M.string(), M.string()).returns(VowShape),
   registerAsset: M.call(M.string(), DenomDetailShape).returns(),
-  getAsset: M.call(M.string()).returns(M.or(DenomDetailShape, M.undefined())),
+  getAsset: M.call(M.string(), M.string()).returns(
+    M.or(DenomDetailShape, M.undefined()),
+  ),
   getDenom: M.call(BrandShape).returns(M.or(M.string(), M.undefined())),
   makeChainAddress: M.call(M.string()).returns(ChainAddressShape),
+  makeTransferRoute: M.call(ChainAddressShape, DenomAmountShape, M.string())
+    .optional(ForwardOptsShape)
+    .returns(M.or(M.undefined(), TransferRouteShape)),
 });
 
 /**
@@ -227,6 +255,12 @@ export const makeChainHub = (zone, agoricNames, vowTools) => {
     keyShape: M.string(),
     valueShape: M.string(),
   });
+
+  /**
+   * @param {Denom} denom - from perspective of the src/holding chain
+   * @param {DenomDetail['chainName']} srcChainName
+   */
+  const makeDenomKey = (denom, srcChainName) => `${srcChainName}:${denom}`;
 
   const lookupChainInfo = vowTools.retryable(
     zone,
@@ -412,8 +446,14 @@ export const makeChainHub = (zone, agoricNames, vowTools) => {
         Fail`must register chain ${q(chainName)} first`;
       chainInfos.has(baseName) ||
         Fail`must register chain ${q(baseName)} first`;
-      denomDetails.init(denom, detail);
+
+      const denomKey = makeDenomKey(denom, detail.chainName);
+      denomDetails.has(denomKey) &&
+        Fail`already registered ${q(denom)} on ${q(chainName)}`;
+      denomDetails.init(denomKey, detail);
       if (detail.brand) {
+        chainName === 'agoric' ||
+          Fail`brands only registerable for agoric-held assets`;
         brandDenoms.init(detail.brand, denom);
       }
     },
@@ -421,11 +461,13 @@ export const makeChainHub = (zone, agoricNames, vowTools) => {
      * Retrieve holding, issuing chain names etc. for a denom.
      *
      * @param {Denom} denom
+     * @param {string} srcChainName - the chainName the denom is held on
      * @returns {DenomDetail | undefined}
      */
-    getAsset(denom) {
-      if (denomDetails.has(denom)) {
-        return denomDetails.get(denom);
+    getAsset(denom, srcChainName) {
+      const denomKey = makeDenomKey(denom, srcChainName);
+      if (denomDetails.has(denomKey)) {
+        return denomDetails.get(denomKey);
       }
       return undefined;
     },
@@ -457,6 +499,115 @@ export const makeChainHub = (zone, agoricNames, vowTools) => {
         chainId,
         value: address,
         encoding: /** @type {const} */ ('bech32'),
+      });
+    },
+    /**
+     * Determine the transfer route for a destination and amount given the
+     * current holding chain.
+     *
+     * Does not account for routes with more than 1 intermediary hop - that is,
+     * it can't unwrap denoms that were incorrectly routed.
+     *
+     * XXX consider accepting AmountArg #10449
+     *
+     * @param {ChainAddress} destination
+     * @param {DenomAmount} denomAmount
+     * @param {string} srcChainName
+     * @param {IBCMsgTransferOptions['forwardOpts']} [forwardOpts]
+     * @returns {TransferRoute} single hop, multi hop
+     * @throws {Error} if unable to determine route
+     */
+    makeTransferRoute(destination, denomAmount, srcChainName, forwardOpts) {
+      chainInfos.has(srcChainName) ||
+        Fail`chain info not found for holding chain: ${q(srcChainName)}`;
+
+      const denomDetail = chainHub.getAsset(denomAmount.denom, srcChainName);
+      denomDetail ||
+        Fail`no denom detail for: ${q(denomAmount.denom)} on ${q(srcChainName)}. ensure it is registered in chainHub.`;
+
+      const { baseName, chainName } = /** @type {DenomDetail} */ (denomDetail);
+
+      // currently unreachable since assets are registered with holdingChainName
+      chainName === srcChainName ||
+        Fail`cannot transfer asset ${q(denomAmount.denom)}. held on ${q(chainName)} not ${q(srcChainName)}.`;
+
+      // currently unreachable since we can't register an asset before a chain
+      chainInfos.has(baseName) ||
+        Fail`chain info not found for issuing chain: ${q(baseName)}`;
+
+      const { chainId: baseChainId, pfmEnabled } = chainInfos.get(baseName);
+
+      const holdingChainId = chainInfos.get(srcChainName).chainId;
+
+      // asset is transferring to or from the issuing chain, return direct route
+      if (baseChainId === destination.chainId || baseName === srcChainName) {
+        // TODO use getConnectionInfo once its sync
+        const connKey = connectionKey(holdingChainId, destination.chainId);
+        connectionInfos.has(connKey) ||
+          Fail`no connection info found for ${holdingChainId}<->${destination.chainId}`;
+
+        const { transferChannel } = denormalizeConnectionInfo(
+          holdingChainId, // from chain (primary)
+          destination.chainId, // to chain (counterparty)
+          connectionInfos.get(connKey),
+        );
+        return harden({
+          sourcePort: transferChannel.portId,
+          sourceChannel: transferChannel.channelId,
+          token: {
+            amount: String(denomAmount.value),
+            denom: denomAmount.denom,
+          },
+          receiver: destination.value,
+        });
+      }
+
+      // asset is issued on a 3rd chain, attempt pfm route
+      pfmEnabled || Fail`pfm not enabled on issuing chain: ${q(baseName)}`;
+
+      // TODO use getConnectionInfo once its sync
+      const currToIssuerKey = connectionKey(holdingChainId, baseChainId);
+      connectionInfos.has(currToIssuerKey) ||
+        Fail`no connection info found for ${holdingChainId}<->${baseChainId}`;
+
+      const issuerToDestKey = connectionKey(baseChainId, destination.chainId);
+      connectionInfos.has(issuerToDestKey) ||
+        Fail`no connection info found for ${baseChainId}<->${destination.chainId}`;
+
+      const currToIssuer = denormalizeConnectionInfo(
+        holdingChainId,
+        baseChainId,
+        connectionInfos.get(currToIssuerKey),
+      );
+      const issuerToDest = denormalizeConnectionInfo(
+        baseChainId,
+        destination.chainId,
+        connectionInfos.get(issuerToDestKey),
+      );
+
+      /** @type {ForwardInfo} */
+      const forwardInfo = harden({
+        forward: {
+          receiver: destination.value,
+          port: issuerToDest.transferChannel.portId,
+          channel: issuerToDest.transferChannel.channelId,
+          ...DefaultPfmTimeoutOpts,
+          ...forwardOpts,
+        },
+      });
+      return harden({
+        sourcePort: currToIssuer.transferChannel.portId,
+        sourceChannel: currToIssuer.transferChannel.channelId,
+        token: {
+          amount: String(denomAmount.value),
+          denom: denomAmount.denom,
+        },
+        /**
+         * purposely using invalid bech32
+         * {@link https://github.com/cosmos/ibc-apps/blob/26f3ad8f58e4ffc7769c6766cb42b954181dc100/middleware/packet-forward-middleware/README.md#minimal-example---chain-forward-a-b-c}
+         */
+        receiver: PFM_RECEIVER,
+        forwardInfo,
       });
     },
   });

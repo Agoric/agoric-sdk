@@ -1,21 +1,32 @@
 import { deeplyFulfilledObject, makeTracer, objectMap } from '@agoric/internal';
+import {
+  CosmosChainInfoShape,
+  DenomDetailShape,
+  DenomShape,
+} from '@agoric/orchestration';
 import { Fail } from '@endo/errors';
 import { E } from '@endo/far';
 import { makeMarshal } from '@endo/marshal';
 import { M } from '@endo/patterns';
-import { FastUSDCTermsShape, FeeConfigShape } from './type-guards.js';
+import {
+  FastUSDCTermsShape,
+  FeeConfigShape,
+  FeedPolicyShape,
+} from './type-guards.js';
 import { fromExternalConfig } from './utils/config-marshal.js';
 
 /**
  * @import {DepositFacet} from '@agoric/ertp/src/types.js'
  * @import {TypedPattern} from '@agoric/internal'
+ * @import {CosmosChainInfo, Denom, DenomDetail} from '@agoric/orchestration';
  * @import {Instance, StartParams} from '@agoric/zoe/src/zoeService/utils'
  * @import {Board} from '@agoric/vats'
  * @import {ManifestBundleRef} from '@agoric/deploy-script-support/src/externalTypes.js'
  * @import {BootstrapManifest} from '@agoric/vats/src/core/lib-boot.js'
+ * @import {Passable} from '@endo/marshal';
  * @import {LegibleCapData} from './utils/config-marshal.js'
  * @import {FastUsdcSF, FastUsdcTerms} from './fast-usdc.contract.js'
- * @import {FeeConfig} from './types.js'
+ * @import {FeeConfig, FeedPolicy} from './types.js'
  */
 
 const trace = makeTracer('FUSD-Start', true);
@@ -27,6 +38,9 @@ const contractName = 'fastUsdc';
  *   terms: FastUsdcTerms;
  *   oracles: Record<string, string>;
  *   feeConfig: FeeConfig;
+ *   feedPolicy: FeedPolicy & Passable;
+ *   chainInfo: Record<string, CosmosChainInfo & Passable>;
+ *   assetInfo: [Denom, DenomDetail & {brandKey?: string}][];
  * }} FastUSDCConfig
  */
 /** @type {TypedPattern<FastUSDCConfig>} */
@@ -34,6 +48,9 @@ export const FastUSDCConfigShape = M.splitRecord({
   terms: FastUSDCTermsShape,
   oracles: M.recordOf(M.string(), M.string()),
   feeConfig: FeeConfigShape,
+  feedPolicy: FeedPolicyShape,
+  chainInfo: M.recordOf(M.string(), CosmosChainInfoShape),
+  assetInfo: M.arrayOf([DenomShape, DenomDetailShape]),
 });
 
 /**
@@ -70,6 +87,17 @@ const publishDisplayInfo = async (brand, { board, chainStorage }) => {
   const node = E(boardAux).makeChildNode(id);
   const aux = marshalData.toCapData(harden({ allegedName, displayInfo }));
   await E(node).setValue(JSON.stringify(aux));
+};
+
+const FEED_POLICY = 'feedPolicy';
+
+/**
+ * @param {ERef<StorageNode>} node
+ * @param {FeedPolicy} policy
+ */
+const publishFeedPolicy = async (node, policy) => {
+  const feedPolicy = E(node).makeChildNode(FEED_POLICY);
+  await E(feedPolicy).setValue(JSON.stringify(policy));
 };
 
 /**
@@ -131,11 +159,12 @@ export const startFastUSDC = async (
     USDC: await E(USDCissuer).getBrand(),
   });
 
-  const { terms, oracles, feeConfig } = fromExternalConfig(
-    config?.options, // just in case config is missing somehow
-    brands,
-    FastUSDCConfigShape,
-  );
+  const { terms, oracles, feeConfig, feedPolicy, chainInfo, assetInfo } =
+    fromExternalConfig(
+      config?.options, // just in case config is missing somehow
+      brands,
+      FastUSDCConfigShape,
+    );
   trace('using terms', terms);
   trace('using fee config', feeConfig);
 
@@ -169,6 +198,8 @@ export const startFastUSDC = async (
       storageNode,
       timerService,
       marshaller,
+      chainInfo,
+      assetInfo,
     }),
   );
 
@@ -181,6 +212,8 @@ export const startFastUSDC = async (
   });
   fastUsdcKit.resolve(harden({ ...kit, privateArgs }));
   const { instance, creatorFacet } = kit;
+
+  await publishFeedPolicy(storageNode, feedPolicy);
 
   const {
     issuers: { PoolShares: shareIssuer },

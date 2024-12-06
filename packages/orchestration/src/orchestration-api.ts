@@ -102,6 +102,9 @@ export interface Chain<CI extends ChainInfo> {
   // TODO provide a way to get the local denom/brand/whatever for this chain
 }
 
+/**
+ * Used with `orch.getDenomInfo('ibc/1234')`. See {@link Orchestrator.getDenomInfo}
+ */
 export interface DenomInfo<
   HoldingChain extends keyof KnownChains,
   IssuingChain extends keyof KnownChains,
@@ -143,6 +146,7 @@ export interface Orchestrator {
     IssuingChain extends keyof KnownChains,
   >(
     denom: Denom,
+    srcChainName: HoldingChain,
   ) => DenomInfo<HoldingChain, IssuingChain>;
 
   /**
@@ -191,8 +195,8 @@ export interface OrchestrationAccountI {
    * @param destination - the account to transfer the amount to.
    * @param [opts] - an optional memo to include with the transfer, which could drive custom PFM behavior, and timeout parameters
    * @returns void
-   *
-   * TODO document the mapping from the address to the destination chain.
+   * @throws {Error} if route is not determinable, asset is not recognized, or
+   * the transfer is rejected (insufficient funds, timeout)
    */
   transfer: (
     destination: ChainAddress,

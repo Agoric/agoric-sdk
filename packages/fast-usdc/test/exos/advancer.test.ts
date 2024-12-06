@@ -1,17 +1,18 @@
 import type { TestFn } from 'ava';
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
-
 import { denomHash } from '@agoric/orchestration';
 import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
 import { Far } from '@endo/pass-style';
-import { makePromiseKit } from '@endo/promise-kit';
 import type { NatAmount } from '@agoric/ertp';
 import { type ZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
+import { q } from '@endo/errors';
 import { PendingTxStatus } from '../../src/constants.js';
 import { prepareAdvancer } from '../../src/exos/advancer.js';
+import type { SettlerKit } from '../../src/exos/settler.js';
 import { prepareStatusManager } from '../../src/exos/status-manager.js';
-
+import { makeFeeTools } from '../../src/utils/fees.js';
+import { addressTools } from '../../src/utils/address.js';
 import { commonSetup } from '../supports.js';
 import { MockCctpTxEvidences } from '../fixtures.js';
 import {
@@ -33,7 +34,7 @@ const createTestExtensions = (t, common: CommonSetup) => {
     bootstrap: { rootZone, vowTools },
     facadeServices: { chainHub },
     brands: { usdc },
-    utils: { pourPayment },
+    commonPrivateArgs: { storageNode },
   } = common;
 
   const { log, inspectLogs } = makeTestLogger(t.log);
@@ -43,6 +44,7 @@ const createTestExtensions = (t, common: CommonSetup) => {
 
   const statusManager = prepareStatusManager(
     rootZone.subZone('status-manager'),
+    async () => storageNode.makeChildNode('status'),
   );
 
   const mockAccounts = prepareMockOrchAccounts(rootZone.subZone('accounts'), {
@@ -83,33 +85,33 @@ const createTestExtensions = (t, common: CommonSetup) => {
     zcf: mockZCF,
   });
 
-  /** pretend we have 1M USDC in pool deposits */
-  let mockPoolBalance = usdc.units(1_000_000);
-  /**
-   * adjust balance from 1M default to test insufficient funds
-   * @param value
-   */
-  const setMockPoolBalance = (value: bigint) => {
-    mockPoolBalance = usdc.make(value);
-  };
+  type NotifyArgs = Parameters<SettlerKit['notify']['notifyAdvancingResult']>;
+  const notifyAdvancingResultCalls: NotifyArgs[] = [];
+  const mockNotifyF = Far('Settler Notify Facet', {
+    notifyAdvancingResult: (...args: NotifyArgs) => {
+      console.log('Settler.notifyAdvancingResult called with', args);
+      notifyAdvancingResultCalls.push(args);
+    },
+  });
 
-  const borrowUnderlyingPK = makePromiseKit<void>();
-  const resolveBorrowUnderlyingP = () => {
-    // pretend funds are allocated to tmpSeat provided to borrow
-    return borrowUnderlyingPK.resolve();
-  };
-  const rejectBorrowUnderlyingP = () =>
-    borrowUnderlyingPK.reject('Mock unable to borrow.');
+  const mockBorrowerF = Far('LiquidityPool Borrow Facet', {
+    borrow: (seat: ZCFSeat, amounts: { USDC: NatAmount }) => {
+      console.log('LP.borrow called with', amounts);
+    },
+  });
+
+  const mockBorrowerErrorF = Far('LiquidityPool Borrow Facet', {
+    borrow: (seat: ZCFSeat, amounts: { USDC: NatAmount }) => {
+      console.log('LP.borrow called with', amounts);
+      throw new Error(
+        `Cannot borrow. Requested ${q(amounts.USDC)} must be less than pool balance ${q(usdc.make(1n))}.`,
+      );
+    },
+  });
 
   const advancer = makeAdvancer({
-    borrowerFacet: Far('LiquidityPool Borrow Facet', {
-      getBalance: () => mockPoolBalance,
-      borrow: (seat: ZCFSeat, amounts: { USDC: NatAmount }) => {
-        t.log('borrowUnderlying called with', amounts);
-        return borrowUnderlyingPK.promise;
-      },
-      repay: () => Promise.resolve(),
-    }),
+    borrowerFacet: mockBorrowerF,
+    notifyFacet: mockNotifyF,
     poolAccount: mockAccounts.mockPoolAccount.account,
   });
 
@@ -120,18 +122,19 @@ const createTestExtensions = (t, common: CommonSetup) => {
     },
     helpers: {
       inspectLogs,
+      inspectNotifyCalls: () => harden(notifyAdvancingResultCalls),
     },
     mocks: {
       ...mockAccounts,
-      setMockPoolBalance,
-      resolveBorrowUnderlyingP,
-      rejectBorrowUnderlyingP,
+      mockBorrowerErrorF,
+      mockNotifyF,
       resolveLocalTransferV,
     },
     services: {
       advancer,
       makeAdvancer,
       statusManager,
+      feeTools: makeFeeTools(feeConfig),
     },
   } as const;
 };
@@ -150,29 +153,24 @@ test.beforeEach(async t => {
   };
 });
 
-test('updates status to ADVANCED in happy path', async t => {
+test('updates status to ADVANCING in happy path', async t => {
   const {
     extensions: {
-      services: { advancer, statusManager },
-      helpers: { inspectLogs },
-      mocks: {
-        mockPoolAccount,
-        resolveBorrowUnderlyingP,
-        resolveLocalTransferV,
-      },
+      services: { advancer, feeTools, statusManager },
+      helpers: { inspectLogs, inspectNotifyCalls },
+      mocks: { mockPoolAccount, resolveLocalTransferV },
     },
     brands: { usdc },
   } = t.context;
 
   const mockEvidence = MockCctpTxEvidences.AGORIC_PLUS_OSMO();
-  const handleTxP = advancer.handleTransactionEvent(mockEvidence);
+  void advancer.handleTransactionEvent(mockEvidence);
 
-  resolveBorrowUnderlyingP();
+  // pretend borrow succeeded and funds were depositing to the LCA
   resolveLocalTransferV();
-  await eventLoopIteration();
+  // pretend the IBC Transfer settled
   mockPoolAccount.transferVResolver.resolve();
-
-  await handleTxP;
+  // wait for handleTransactionEvent to do work
   await eventLoopIteration();
 
   const entries = statusManager.lookupPending(
@@ -182,30 +180,52 @@ test('updates status to ADVANCED in happy path', async t => {
 
   t.deepEqual(
     entries,
-    [{ ...mockEvidence, status: PendingTxStatus.Advanced }],
+    [{ ...mockEvidence, status: PendingTxStatus.Advancing }],
     'ADVANCED status in happy path',
   );
 
   t.deepEqual(inspectLogs(0), [
     'Advance transfer fulfilled',
-    '{"amount":{"brand":"[Alleged: USDC brand]","value":"[146999999n]"},"destination":{"chainId":"osmosis-1","encoding":"bech32","value":"osmo183dejcnmkka5dzcu9xw6mywq0p2m5peks28men"},"result":"[undefined]"}',
+    '{"advanceAmount":{"brand":"[Alleged: USDC brand]","value":"[146999999n]"},"destination":{"chainId":"osmosis-1","encoding":"bech32","value":"osmo183dejcnmkka5dzcu9xw6mywq0p2m5peks28men"},"result":"[undefined]"}',
+  ]);
+
+  // We expect to see an `Advanced` update, but that is now Settler's job.
+  // but we can ensure it's called
+  t.like(inspectNotifyCalls(), [
+    [
+      {
+        txHash: mockEvidence.txHash,
+        forwardingAddress: mockEvidence.tx.forwardingAddress,
+        fullAmount: usdc.make(mockEvidence.tx.amount),
+        destination: {
+          value: addressTools.getQueryParams(mockEvidence.aux.recipientAddress)
+            .EUD,
+        },
+      },
+      true, // indicates transfer succeeded
+    ],
   ]);
 });
 
 test('updates status to OBSERVED on insufficient pool funds', async t => {
   const {
     extensions: {
-      services: { advancer, statusManager },
+      services: { makeAdvancer, statusManager },
       helpers: { inspectLogs },
-      mocks: { setMockPoolBalance },
+      mocks: { mockPoolAccount, mockBorrowerErrorF, mockNotifyF },
     },
   } = t.context;
 
-  const mockEvidence = MockCctpTxEvidences.AGORIC_PLUS_DYDX();
-  const handleTxP = advancer.handleTransactionEvent(mockEvidence);
+  // make a new advancer that intentionally throws
+  const advancer = makeAdvancer({
+    borrowerFacet: mockBorrowerErrorF,
+    notifyFacet: mockNotifyF,
+    poolAccount: mockPoolAccount.account,
+  });
 
-  setMockPoolBalance(1n);
-  await handleTxP;
+  const mockEvidence = MockCctpTxEvidences.AGORIC_PLUS_DYDX();
+  void advancer.handleTransactionEvent(mockEvidence);
+  await eventLoopIteration();
 
   const entries = statusManager.lookupPending(
     mockEvidence.tx.forwardingAddress,
@@ -219,49 +239,8 @@ test('updates status to OBSERVED on insufficient pool funds', async t => {
   );
 
   t.deepEqual(inspectLogs(0), [
-    'Insufficient pool funds',
-    'Requested {"brand":"[Alleged: USDC brand]","value":"[294999999n]"} but only have {"brand":"[Alleged: USDC brand]","value":"[1n]"}',
-  ]);
-});
-
-test('updates status to OBSERVED if balance query fails', async t => {
-  const {
-    extensions: {
-      services: { makeAdvancer, statusManager },
-      helpers: { inspectLogs },
-      mocks: { mockPoolAccount },
-    },
-    brands: { usdc },
-  } = t.context;
-
-  // make a new advancer that intentionally throws
-  const advancer = makeAdvancer({
-    // @ts-expect-error mock
-    borrowerFacet: Far('LiquidityPool Borrow Facet', {
-      getBalance: () => {
-        throw new Error('lookupBalance failed');
-      },
-    }),
-    poolAccount: mockPoolAccount.account,
-  });
-
-  const mockEvidence = MockCctpTxEvidences.AGORIC_PLUS_DYDX();
-  await advancer.handleTransactionEvent(mockEvidence);
-
-  const entries = statusManager.lookupPending(
-    mockEvidence.tx.forwardingAddress,
-    mockEvidence.tx.amount,
-  );
-
-  t.deepEqual(
-    entries,
-    [{ ...mockEvidence, status: PendingTxStatus.Observed }],
-    'OBSERVED status on balance query failure',
-  );
-
-  t.deepEqual(inspectLogs(0), [
     'Advancer error:',
-    '"[Error: lookupBalance failed]"',
+    '"[Error: Cannot borrow. Requested {\\"brand\\":\\"[Alleged: USDC brand]\\",\\"value\\":\\"[294999999n]\\"} must be less than pool balance {\\"brand\\":\\"[Alleged: USDC brand]\\",\\"value\\":\\"[1n]\\"}.]"',
   ]);
 });
 
@@ -293,29 +272,21 @@ test('updates status to OBSERVED if makeChainAddress fails', async t => {
   ]);
 });
 
-// TODO #10510 this failure should be handled differently
-test('does not update status on failed transfer', async t => {
+test('calls notifyAdvancingResult (AdvancedFailed) on failed transfer', async t => {
   const {
     extensions: {
-      services: { advancer, statusManager },
-      helpers: { inspectLogs },
-      mocks: {
-        mockPoolAccount,
-        resolveBorrowUnderlyingP,
-        resolveLocalTransferV,
-      },
+      services: { advancer, feeTools, statusManager },
+      helpers: { inspectLogs, inspectNotifyCalls },
+      mocks: { mockPoolAccount, resolveLocalTransferV },
     },
     brands: { usdc },
   } = t.context;
 
   const mockEvidence = MockCctpTxEvidences.AGORIC_PLUS_DYDX();
-  const handleTxP = advancer.handleTransactionEvent(mockEvidence);
+  void advancer.handleTransactionEvent(mockEvidence);
 
-  resolveBorrowUnderlyingP();
+  // pretend borrow and deposit to LCA succeed
   resolveLocalTransferV();
-  mockPoolAccount.transferVResolver.reject(new Error('simulated error'));
-
-  await handleTxP;
   await eventLoopIteration();
 
   const entries = statusManager.lookupPending(
@@ -323,20 +294,41 @@ test('does not update status on failed transfer', async t => {
     mockEvidence.tx.amount,
   );
 
-  // TODO, this failure should be handled differently
   t.deepEqual(
     entries,
-    [{ ...mockEvidence, status: PendingTxStatus.Advanced }],
-    'tx status is still ADVANCED even though advance failed',
+    [{ ...mockEvidence, status: PendingTxStatus.Advancing }],
+    'tx is Advancing',
   );
+
+  mockPoolAccount.transferVResolver.reject(new Error('simulated error'));
+  await eventLoopIteration();
 
   t.deepEqual(inspectLogs(0), [
     'Advance transfer rejected',
     '"[Error: simulated error]"',
   ]);
+
+  // We expect to see an `AdvancedFailed` update, but that is now Settler's job.
+  // but we can ensure it's called
+  t.like(inspectNotifyCalls(), [
+    [
+      {
+        txHash: mockEvidence.txHash,
+        forwardingAddress: mockEvidence.tx.forwardingAddress,
+        fullAmount: usdc.make(mockEvidence.tx.amount),
+        advanceAmount: feeTools.calculateAdvance(
+          usdc.make(mockEvidence.tx.amount),
+        ),
+        destination: {
+          value: addressTools.getQueryParams(mockEvidence.aux.recipientAddress)
+            .EUD,
+        },
+      },
+      false, // this indicates transfer failed
+    ],
+  ]);
 });
 
-// TODO: might be consideration of `EventFeed`
 test('updates status to OBSERVED if pre-condition checks fail', async t => {
   const {
     extensions: {
@@ -371,36 +363,32 @@ test('will not advance same txHash:chainId evidence twice', async t => {
     extensions: {
       services: { advancer },
       helpers: { inspectLogs },
-      mocks: {
-        mockPoolAccount,
-        resolveBorrowUnderlyingP,
-        resolveLocalTransferV,
-      },
+      mocks: { mockPoolAccount, resolveLocalTransferV },
     },
   } = t.context;
 
   const mockEvidence = MockCctpTxEvidences.AGORIC_PLUS_OSMO();
 
   // First attempt
-  const handleTxP = advancer.handleTransactionEvent(mockEvidence);
-  resolveBorrowUnderlyingP();
+  void advancer.handleTransactionEvent(mockEvidence);
   resolveLocalTransferV();
   mockPoolAccount.transferVResolver.resolve();
-  await handleTxP;
   await eventLoopIteration();
 
   t.deepEqual(inspectLogs(0), [
     'Advance transfer fulfilled',
-    '{"amount":{"brand":"[Alleged: USDC brand]","value":"[146999999n]"},"destination":{"chainId":"osmosis-1","encoding":"bech32","value":"osmo183dejcnmkka5dzcu9xw6mywq0p2m5peks28men"},"result":"[undefined]"}',
+    '{"advanceAmount":{"brand":"[Alleged: USDC brand]","value":"[146999999n]"},"destination":{"chainId":"osmosis-1","encoding":"bech32","value":"osmo183dejcnmkka5dzcu9xw6mywq0p2m5peks28men"},"result":"[undefined]"}',
   ]);
 
   // Second attempt
-  await advancer.handleTransactionEvent(mockEvidence);
-
+  void advancer.handleTransactionEvent(mockEvidence);
+  await eventLoopIteration();
   t.deepEqual(inspectLogs(1), [
-    'Advancer error:',
-    '"[Error: Transaction already seen: \\"seenTx:[\\\\\\"0xc81bc6105b60a234c7c50ac17816ebcd5561d366df8bf3be59ff387552761702\\\\\\",1]\\"]"',
+    'txHash already seen:',
+    '0xc81bc6105b60a234c7c50ac17816ebcd5561d366df8bf3be59ff387552761702',
   ]);
 });
 
-test.todo('zoeTools.localTransfer fails to deposit borrowed USDC to LOA');
+test.todo(
+  '#10510 zoeTools.localTransfer fails to deposit borrowed USDC to LOA',
+);

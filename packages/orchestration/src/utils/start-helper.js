@@ -164,6 +164,7 @@ export const provideOrchestration = (
   return {
     ...defaultOrchestrateKit,
     makeOrchestrateKit,
+    baggage,
     chainHub,
     vowTools,
     asyncFlowTools,

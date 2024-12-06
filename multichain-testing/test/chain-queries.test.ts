@@ -247,6 +247,7 @@ test.serial('Send Local Query from chain object', async t => {
     },
   );
   const balanceProto3JsonQuery = typedJson(
+    // @ts-expect-error outdated cosmic-proto dep
     '/cosmos.bank.v1beta1.QueryBalanceRequest',
     {
       address: agoricAddr,

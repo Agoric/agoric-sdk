@@ -32,8 +32,8 @@ const selectedCode = anylogger.levels[selectedLevel];
 const globalCode = selectedCode === undefined ? -Infinity : selectedCode;
 
 const oldExt = anylogger.ext;
-anylogger.ext = (l, o) => {
-  l = oldExt(l, o);
+anylogger.ext = logger => {
+  const l = oldExt(logger);
   l.enabledFor = lvl => globalCode >= anylogger.levels[lvl];
 
   const prefix = l.name.replace(/:/g, ': ');

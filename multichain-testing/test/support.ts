@@ -3,6 +3,8 @@ import { dirname, join } from 'path';
 import { execa } from 'execa';
 import fse from 'fs-extra';
 import childProcess from 'node:child_process';
+import { withChainCapabilities } from '@agoric/orchestration';
+import { objectMap } from '@endo/patterns';
 import { makeAgdTools } from '../tools/agd-tools.js';
 import { type E2ETools } from '../tools/e2e-tools.js';
 import {
@@ -15,6 +17,9 @@ import { makeRetryUntilCondition } from '../tools/sleep.js';
 import { makeDeployBuilder } from '../tools/deploy.js';
 import { makeHermes } from '../tools/hermes-tools.js';
 import { makeNobleTools } from '../tools/noble-tools.js';
+import { makeAssetInfo } from '../tools/asset-info.js';
+import starshipChainInfo from '../starship-chain-info.js';
+import { makeFaucetTools } from '../tools/faucet-tools.js';
 
 export const FAUCET_POUR = 10_000n * 1_000_000n;
 
@@ -78,6 +83,14 @@ export const commonSetup = async (t: ExecutionContext) => {
   });
   const hermes = makeHermes(childProcess);
   const nobleTools = makeNobleTools(childProcess);
+  const assetInfo = makeAssetInfo(starshipChainInfo);
+  const chainInfo = withChainCapabilities(starshipChainInfo);
+  const faucetTools = makeFaucetTools(
+    t,
+    tools.agd,
+    retryUntilCondition,
+    useChain,
+  );
 
   /**
    * Starts a contract if instance not found. Takes care of installing
@@ -89,6 +102,7 @@ export const commonSetup = async (t: ExecutionContext) => {
   const startContract = async (
     contractName: string,
     contractBuilder: string,
+    builderOpts?: Record<string, unknown>,
   ) => {
     const { vstorageClient } = tools;
     const instances = Object.fromEntries(
@@ -98,7 +112,18 @@ export const commonSetup = async (t: ExecutionContext) => {
       return t.log('Contract found. Skipping installation...');
     }
     t.log('bundle and install contract', contractName);
-    await deployBuilder(contractBuilder);
+
+    const formattedOpts = builderOpts
+      ? objectMap(
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          builderOpts as Record<string, any>,
+          value => {
+            if (typeof value === 'string') return value;
+            return JSON.stringify(value);
+          },
+        )
+      : undefined;
+    await deployBuilder(contractBuilder, formattedOpts);
     await retryUntilCondition(
       () => vstorageClient.queryData(`published.agoricNames.instance`),
       res => contractName in Object.fromEntries(res),
@@ -115,6 +140,9 @@ export const commonSetup = async (t: ExecutionContext) => {
     hermes,
     nobleTools,
     startContract,
+    assetInfo,
+    chainInfo,
+    faucetTools,
   };
 };
 

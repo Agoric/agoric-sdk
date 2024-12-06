@@ -1,6 +1,6 @@
 /**
  * @import {GuestInterface} from '@agoric/async-flow';
- * @import {Orchestrator, OrchestrationFlow, AmountArg, CosmosValidatorAddress, ChainAddress, LocalAccountMethods, OrchestrationAccountI} from '../types.js'
+ * @import {Orchestrator, OrchestrationFlow, AmountArg, CosmosValidatorAddress, ChainAddress, LocalAccountMethods, OrchestrationAccountI, ChainHub} from '../types.js'
  * @import {ContinuingOfferResult, InvitationMakers} from '@agoric/smart-wallet/src/types.js';
  * @import {LocalOrchestrationAccountKit} from '../exos/local-orchestration-account.js';
  * @import {MakeCombineInvitationMakers} from '../exos/combine-invitation-makers.js';
@@ -9,7 +9,7 @@
  */
 
 import { mustMatch } from '@endo/patterns';
-import { makeError, q } from '@endo/errors';
+import { Fail, makeError, q } from '@endo/errors';
 import { makeTracer } from '@agoric/internal';
 import { ChainAddressShape } from '../typeGuards.js';
 
@@ -48,6 +48,7 @@ harden(makeAccount);
  * @satisfies {OrchestrationFlow}
  * @param {Orchestrator} orch
  * @param {object} ctx
+ * @param {GuestInterface<ChainHub>} ctx.chainHub
  * @param {Promise<GuestInterface<LocalOrchestrationAccountKit['holder']>>} ctx.sharedLocalAccountP
  * @param {GuestInterface<ZoeTools>} ctx.zoeTools
  * @param {GuestInterface<CosmosOrchestrationAccount>} account
@@ -57,7 +58,7 @@ harden(makeAccount);
  */
 export const depositAndDelegate = async (
   orch,
-  { sharedLocalAccountP, zoeTools },
+  { chainHub, sharedLocalAccountP, zoeTools },
   account,
   seat,
   validator,
@@ -84,7 +85,11 @@ export const depositAndDelegate = async (
     throw errMsg;
   }
   seat.exit();
-  await account.delegate(validator, give.Stake);
+  const denom = chainHub.getDenom(give.Stake.brand);
+  if (!denom) throw Fail`unknown brand ${q(give.Stake.brand)}`;
+  // TODO #10449 amountToCoin accepts brands
+  const denomAmount = harden({ denom, value: give.Stake.value });
+  await account.delegate(validator, denomAmount);
 };
 harden(depositAndDelegate);
 

@@ -2,8 +2,17 @@ import { makeIssuerKit } from '@agoric/ertp';
 import { VTRANSFER_IBC_EVENT } from '@agoric/internal/src/action-types.js';
 import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
+import {
+  denomHash,
+  withChainCapabilities,
+  type CosmosChainInfo,
+  type Denom,
+} from '@agoric/orchestration';
 import { registerKnownChains } from '@agoric/orchestration/src/chain-info.js';
-import { makeChainHub } from '@agoric/orchestration/src/exos/chain-hub.js';
+import {
+  makeChainHub,
+  type DenomDetail,
+} from '@agoric/orchestration/src/exos/chain-hub.js';
 import { prepareCosmosInterchainService } from '@agoric/orchestration/src/exos/cosmos-interchain-service.js';
 import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
 import { setupFakeNetwork } from '@agoric/orchestration/test/network-fakes.js';
@@ -35,6 +44,36 @@ export {
   makeFakeTransferBridge,
 } from '@agoric/vats/tools/fake-bridge.js';
 
+const assetOn = (
+  baseDenom: Denom,
+  baseName: string,
+  chainName?: string,
+  infoOf?: Record<string, CosmosChainInfo>,
+  brandKey?: string,
+): [string, DenomDetail & { brandKey?: string }] => {
+  if (!chainName) {
+    return [baseDenom, { baseName, chainName: baseName, baseDenom }];
+  }
+  if (!infoOf) throw Error(`must provide infoOf`);
+  const issuerInfo = infoOf[baseName];
+  const holdingInfo = infoOf[chainName];
+  if (!holdingInfo) throw Error(`${chainName} missing`);
+  if (!holdingInfo.connections)
+    throw Error(`connections missing for ${chainName}`);
+  const { channelId } =
+    holdingInfo.connections[issuerInfo.chainId].transferChannel;
+  const denom = `ibc/${denomHash({ denom: baseDenom, channelId })}`;
+  return [denom, { baseName, chainName, baseDenom, brandKey }];
+};
+
+export const [uusdcOnAgoric, agUSDCDetail] = assetOn(
+  'uusdc',
+  'noble',
+  'agoric',
+  fetchedChainInfo,
+  'USDC',
+);
+
 export const commonSetup = async (t: ExecutionContext<any>) => {
   t.log('bootstrap vat dependencies');
   // The common setup cannot support a durable zone because many of the fakes are not durable.
@@ -52,7 +91,7 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
     onToBridge: obj => bankBridgeMessages.push(obj),
   });
   await E(bankManager).addAsset(
-    'ibc/usdconagoric',
+    uusdcOnAgoric,
     'USDC',
     'USD Circle Stablecoin',
     usdc.issuerKit,
@@ -64,7 +103,7 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
   // TODO https://github.com/Agoric/agoric-sdk/issues/9966
   await makeWellKnownSpaces(agoricNamesAdmin, t.log, ['vbankAsset']);
   await E(E(agoricNamesAdmin).lookupAdmin('vbankAsset')).update(
-    'ibc/usdconagoric',
+    uusdcOnAgoric,
     /** @type {AssetInfo} */ harden({
       brand: usdc.brand,
       issuer: usdc.issuer,
@@ -157,6 +196,17 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
     vowTools,
   );
 
+  const chainInfo = harden(() => {
+    const { agoric, osmosis, noble } = withChainCapabilities(fetchedChainInfo);
+    return { agoric, osmosis, noble };
+  })();
+
+  const assetInfo: [Denom, DenomDetail & { brandKey?: string }][] = harden([
+    assetOn('uusdc', 'noble'),
+    [uusdcOnAgoric, agUSDCDetail],
+    assetOn('uusdc', 'noble', 'osmosis', fetchedChainInfo),
+  ]);
+
   return {
     bootstrap: {
       agoricNames,
@@ -186,6 +236,8 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
       marshaller,
       timerService: timer,
       feeConfig: makeTestFeeConfig(usdc),
+      chainInfo,
+      assetInfo,
     },
     facadeServices: {
       agoricNames,

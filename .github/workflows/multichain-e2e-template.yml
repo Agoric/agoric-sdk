@@ -92,6 +92,10 @@ jobs:
         run: make override-chain-registry
         working-directory: ./agoric-sdk/multichain-testing
 
+      - name: Register Interchain Bank Assets
+        run: make register-bank-assets
+        working-directory: ./agoric-sdk/multichain-testing
+
       - name: Run @agoric/multichain-testing E2E Tests
         run: yarn ${{ inputs.test_command }}
         working-directory: ./agoric-sdk/multichain-testing

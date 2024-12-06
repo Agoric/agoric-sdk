@@ -2,12 +2,18 @@ import { Fail, q } from '@endo/errors';
 import { kunser } from '@agoric/kmarshal';
 import { makeQueue } from '@endo/stream';
 
-/** @import { ERef } from '@endo/far' */
+/**
+ * @import { ERef } from '@endo/far'
+ * @import { RunPolicy } from '../src/types-external.js'
+ */
+
+/** @typedef {{ provideRunPolicy: () => RunPolicy | undefined }} RunHarness */
 
 /**
  * @param {import('../src/controller/controller.js').SwingsetController} controller
+ * @param {RunHarness} [harness]
  */
-export const makeRunUtils = controller => {
+export const makeRunUtils = (controller, harness) => {
   const mutex = makeQueue();
   const logRunFailure = reason =>
     console.log('controller.run() failure', reason);
@@ -17,7 +23,7 @@ export const makeRunUtils = controller => {
    * Wait for exclusive access to the controller, then before relinquishing that access,
    * enqueue and process a delivery and return the result.
    *
-   * @param {() => ERef<void | ReturnType<controller['queueToVatObject']>>} deliveryThunk
+   * @param {() => ERef<void | ReturnType<typeof controller['queueToVatObject']>>} deliveryThunk
    * function for enqueueing a delivery and returning the result kpid (if any)
    * @param {boolean} [voidResult] whether to ignore the result
    * @returns {Promise<any>}
@@ -25,7 +31,8 @@ export const makeRunUtils = controller => {
   const queueAndRun = async (deliveryThunk, voidResult = false) => {
     await mutex.get();
     const kpid = await deliveryThunk();
-    const runResultP = controller.run();
+    const runPolicy = harness && harness.provideRunPolicy();
+    const runResultP = controller.run(runPolicy);
     mutex.put(runResultP.catch(logRunFailure));
     await runResultP;
 

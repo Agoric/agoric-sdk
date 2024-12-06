@@ -6,7 +6,7 @@ import { PendingTxStatus } from './constants.js';
  * @import {TypedPattern} from '@agoric/internal';
  * @import {FastUsdcTerms} from './fast-usdc.contract.js';
  * @import {USDCProposalShapes} from './pool-share-math.js';
- * @import {CctpTxEvidence, FeeConfig, PendingTx, PoolMetrics} from './types.js';
+ * @import {CctpTxEvidence, FeeConfig, PendingTx, PoolMetrics, ChainPolicy, FeedPolicy} from './types.js';
  */
 
 /**
@@ -21,7 +21,7 @@ export const makeProposalShapes = ({ PoolShares, USDC }) => {
   /** @type {TypedPattern<USDCProposalShapes['deposit']>} */
   const deposit = M.splitRecord(
     { give: { USDC: makeNatAmountShape(USDC, 1n) } },
-    { want: { PoolShare: makeNatAmountShape(PoolShares) } },
+    { want: M.splitRecord({}, { PoolShare: makeNatAmountShape(PoolShares) }) },
   );
   /** @type {TypedPattern<USDCProposalShapes['withdraw']>} */
   const withdraw = M.splitRecord({
@@ -93,3 +93,31 @@ export const PoolMetricsShape = {
   totalRepays: AmountShape,
 };
 harden(PoolMetricsShape);
+
+/** @type {TypedPattern<ChainPolicy>} */
+export const ChainPoliciesShape = M.splitRecord(
+  {
+    nobleContractAddress: EvmHashShape,
+    cctpTokenMessengerAddress: EvmHashShape,
+    confirmations: M.number(),
+    chainId: M.number(),
+  },
+  { chainType: M.number() },
+);
+harden(ChainPoliciesShape);
+
+/**
+ * @type {TypedPattern<FeedPolicy>}
+ *
+ * Should be JSON serializable so CLI can specify policy. E.g. no bigint,
+ * undefined, remotable, etc.
+ */
+export const FeedPolicyShape = M.splitRecord(
+  {
+    nobleDomainId: M.number(),
+    nobleAgoricChannelId: M.string(),
+    chainPolicies: M.recordOf(M.string(), ChainPoliciesShape),
+  },
+  { eventFilter: M.string() },
+);
+harden(FeedPolicyShape);
