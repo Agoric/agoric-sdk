@@ -223,6 +223,8 @@ export const startFastUSDC = async (
   produceShareBrand.resolve(shareBrand);
   await publishDisplayInfo(shareBrand, { board, chainStorage });
 
+  await E(creatorFacet).finishInit();
+
   await Promise.all(
     Object.entries(oracleDepositFacets).map(async ([name, depositFacet]) => {
       const address = oracles[name];

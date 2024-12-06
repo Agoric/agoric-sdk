@@ -14,6 +14,7 @@ import { provideSingleton } from '@agoric/zoe/src/contractSupport/durability.js'
 import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/recorder.js';
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
+import { Fail } from '@endo/errors';
 import { prepareAdvancer } from './exos/advancer.js';
 import { prepareLiquidityPoolKit } from './exos/liquidity-pool.js';
 import { prepareSettler } from './exos/settler.js';
@@ -103,7 +104,8 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
   assert('USDC' in terms.brands, 'no USDC brand');
   assert('usdcDenom' in terms, 'no usdcDenom');
 
-  const { feeConfig, marshaller, storageNode } = privateArgs;
+  const { assetInfo, chainInfo, feeConfig, marshaller, storageNode } =
+    privateArgs;
   const { makeRecorderKit } = prepareRecorderKitMakers(
     zone.mapStore('vstorage'),
     marshaller,
@@ -160,6 +162,21 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
     /** @type {(operatorId: string) => Promise<Invitation<OperatorKit>>} */
     async makeOperatorInvitation(operatorId) {
       return feedKit.creator.makeOperatorInvitation(operatorId);
+    },
+    async finishInit() {
+      const [poolAccountAddress, settlementAccountAddress] =
+        await vowTools.when(
+          vowTools.all([
+            E(poolAccount).getAddress(),
+            E(settlementAccount).getAddress(),
+          ]),
+        );
+      await publishAddresses(storageNode, {
+        poolAccount: poolAccountAddress.value,
+        settlementAccount: settlementAccountAddress.value,
+      });
+
+      await settlerKit.creator.monitorMintingDeposits();
     },
   });
 
@@ -221,12 +238,8 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
   /** Chain, connection, and asset info can only be registered once */
   const firstIncarnationKey = 'firstIncarnationKey';
   if (!baggage.has(firstIncarnationKey)) {
-    registerChainsAndAssets(
-      chainHub,
-      terms.brands,
-      privateArgs.chainInfo,
-      privateArgs.assetInfo,
-    );
+    baggage.init(firstIncarnationKey, true);
+    registerChainsAndAssets(chainHub, terms.brands, chainInfo, assetInfo);
   }
   const nobleAccountV = zone.makeOnce('NobleAccount', () => makeNobleAccount());
   const feedKit = zone.makeOnce('Feed Kit', () => makeFeedKit());
@@ -249,9 +262,11 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
   );
   trace('intermediateRecipient', intermediateRecipient);
 
-  const [_agoric, _noble, agToNoble] = await vowTools.when(
-    chainHub.getChainsAndConnection('agoric', 'noble'),
-  );
+  const agToNoble =
+    chainInfo?.agoric.connections?.[intermediateRecipient.chainId];
+  if (!agToNoble?.transferChannel?.counterPartyChannelId)
+    throw Fail`no connection to ${intermediateRecipient.chainId}`;
+
   const settlerKit = makeSettler({
     repayer: poolKit.repayer,
     sourceChannel: agToNoble.transferChannel.counterPartyChannelId,
@@ -278,23 +293,6 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
       }
     },
   });
-
-  if (!baggage.has(firstIncarnationKey)) {
-    const [poolAccountAddress, settlementAccountAddress] = await vowTools.when(
-      vowTools.all([
-        E(poolAccount).getAddress(),
-        E(settlementAccount).getAddress(),
-      ]),
-    );
-    await publishAddresses(storageNode, {
-      poolAccount: poolAccountAddress.value,
-      settlementAccount: settlementAccountAddress.value,
-    });
-  }
-
-  await settlerKit.creator.monitorMintingDeposits();
-
-  baggage.has(firstIncarnationKey) || baggage.init(firstIncarnationKey, true);
 
   return harden({ creatorFacet, publicFacet });
 };
