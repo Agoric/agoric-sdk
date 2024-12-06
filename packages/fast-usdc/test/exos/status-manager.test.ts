@@ -56,7 +56,7 @@ test('ADVANCED transactions are published to vstorage', async t => {
 
   const vstorage = t.context.storage.data;
   t.is(
-    vstorage.get(`mockChainStorageRoot.transactions.${evidence.txHash}`),
+    vstorage.get(`mockChainStorageRoot.transactions.${evidence.txHash}.status`),
     'ADVANCING',
   );
 });
@@ -91,7 +91,7 @@ test('OBSERVED transactions are published to vstorage', async t => {
 
   const vstorage = t.context.storage.data;
   t.is(
-    vstorage.get(`mockChainStorageRoot.transactions.${evidence.txHash}`),
+    vstorage.get(`mockChainStorageRoot.transactions.${evidence.txHash}.status`),
     'OBSERVED',
   );
 });
@@ -238,7 +238,7 @@ test('advanceOutcome transitions to ADVANCED and ADVANCE_FAILED', async t => {
   ]);
   await eventLoopIteration();
   t.is(
-    vstorage.get(`mockChainStorageRoot.transactions.${e1.txHash}`),
+    vstorage.get(`mockChainStorageRoot.transactions.${e1.txHash}.status`),
     PendingTxStatus.Advanced,
   );
 
@@ -251,7 +251,7 @@ test('advanceOutcome transitions to ADVANCED and ADVANCE_FAILED', async t => {
   ]);
   await eventLoopIteration();
   t.is(
-    vstorage.get(`mockChainStorageRoot.transactions.${e2.txHash}`),
+    vstorage.get(`mockChainStorageRoot.transactions.${e2.txHash}.status`),
     PendingTxStatus.AdvanceFailed,
   );
 });

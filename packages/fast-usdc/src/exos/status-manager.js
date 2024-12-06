@@ -24,6 +24,8 @@ import { PendingTxStatus, TxStatus } from '../constants.js';
  * The string template is for developer visibility but not meant to ever be parsed.
  */
 
+const STATUS_NODE = 'status';
+
 /**
  * Create the key for the pendingTxs MapStore.
  *
@@ -102,9 +104,11 @@ export const prepareStatusManager = (
    * @param {TxStatus} status
    */
   const publishStatus = (hash, status) => {
-    const txnNodeP = E(transactionsNode).makeChildNode(hash);
+    const statusNode = E(E(transactionsNode).makeChildNode(hash)).makeChildNode(
+      STATUS_NODE,
+    );
     // Don't await, just writing to vstorage.
-    void E(txnNodeP).setValue(status);
+    void E(statusNode).setValue(status);
   };
 
   /**

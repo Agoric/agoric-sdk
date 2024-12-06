@@ -177,7 +177,7 @@ test('updates status to ADVANCING in happy path', async t => {
 
   t.deepEqual(
     storage.data.get(
-      `mockChainStorageRoot.transactions.${mockEvidence.txHash}`,
+      `mockChainStorageRoot.transactions.${mockEvidence.txHash}.status`,
     ),
     PendingTxStatus.Advancing,
     'ADVANCED status in happy path',
@@ -230,7 +230,7 @@ test('updates status to OBSERVED on insufficient pool funds', async t => {
 
   t.deepEqual(
     storage.data.get(
-      `mockChainStorageRoot.transactions.${mockEvidence.txHash}`,
+      `mockChainStorageRoot.transactions.${mockEvidence.txHash}.status`,
     ),
     PendingTxStatus.Observed,
     'OBSERVED status on insufficient pool funds',
@@ -253,10 +253,11 @@ test('updates status to OBSERVED if makeChainAddress fails', async t => {
 
   const mockEvidence = MockCctpTxEvidences.AGORIC_UNKNOWN_EUD();
   await advancer.handleTransactionEvent(mockEvidence);
+  await eventLoopIteration();
 
   t.deepEqual(
     storage.data.get(
-      `mockChainStorageRoot.transactions.${mockEvidence.txHash}`,
+      `mockChainStorageRoot.transactions.${mockEvidence.txHash}.status`,
     ),
     PendingTxStatus.Observed,
     'OBSERVED status on makeChainAddress failure',
@@ -288,7 +289,7 @@ test('calls notifyAdvancingResult (AdvancedFailed) on failed transfer', async t 
 
   t.deepEqual(
     storage.data.get(
-      `mockChainStorageRoot.transactions.${mockEvidence.txHash}`,
+      `mockChainStorageRoot.transactions.${mockEvidence.txHash}.status`,
     ),
     PendingTxStatus.Advancing,
     'tx is Advancing',
@@ -335,10 +336,11 @@ test('updates status to OBSERVED if pre-condition checks fail', async t => {
   const mockEvidence = MockCctpTxEvidences.AGORIC_NO_PARAMS();
 
   await advancer.handleTransactionEvent(mockEvidence);
+  await eventLoopIteration();
 
   t.deepEqual(
     storage.data.get(
-      `mockChainStorageRoot.transactions.${mockEvidence.txHash}`,
+      `mockChainStorageRoot.transactions.${mockEvidence.txHash}.status`,
     ),
     PendingTxStatus.Observed,
     'tx is recorded as OBSERVED',

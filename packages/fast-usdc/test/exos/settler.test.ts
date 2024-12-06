@@ -236,7 +236,9 @@ test('happy path: disburse to LPs; StatusManager removes tx', async t => {
   await eventLoopIteration();
   const vstorage = t.context.storage.data;
   t.is(
-    vstorage.get(`mockChainStorageRoot.transactions.${cctpTxEvidence.txHash}`),
+    vstorage.get(
+      `mockChainStorageRoot.transactions.${cctpTxEvidence.txHash}.status`,
+    ),
     'DISBURSED',
   );
 });
@@ -307,7 +309,9 @@ test('slow path: forward to EUD; remove pending tx', async t => {
   );
   const vstorage = t.context.storage.data;
   t.is(
-    vstorage.get(`mockChainStorageRoot.transactions.${cctpTxEvidence.txHash}`),
+    vstorage.get(
+      `mockChainStorageRoot.transactions.${cctpTxEvidence.txHash}.status`,
+    ),
     'FORWARDED',
   );
 });
