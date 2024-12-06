@@ -308,7 +308,7 @@ const advanceAndSettleScenario = test.macro({
 
     const queryTxStatus = async () =>
       vstorageClient.queryData(
-        `published.${contractName}.status.${evidence.txHash}`,
+        `published.${contractName}.txns.${evidence.txHash}`,
       );
 
     const assertTxStatus = async (status: string) =>

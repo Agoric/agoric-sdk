@@ -47,7 +47,7 @@ const makeTestContext = async t => {
   const { log, inspectLogs } = makeTestLogger(t.log);
   const statusManager = prepareStatusManager(
     zone.subZone('status-manager'),
-    common.commonPrivateArgs.storageNode.makeChildNode('status'),
+    common.commonPrivateArgs.storageNode.makeChildNode('txns'),
     { log },
   );
   const { zcf, callLog } = mockZcf(zone.subZone('Mock ZCF'));
@@ -236,7 +236,7 @@ test('happy path: disburse to LPs; StatusManager removes tx', async t => {
   await eventLoopIteration();
   const vstorage = t.context.storage.data;
   t.is(
-    vstorage.get(`mockChainStorageRoot.status.${cctpTxEvidence.txHash}`),
+    vstorage.get(`mockChainStorageRoot.txns.${cctpTxEvidence.txHash}`),
     'DISBURSED',
   );
 });
@@ -307,7 +307,7 @@ test('slow path: forward to EUD; remove pending tx', async t => {
   );
   const vstorage = t.context.storage.data;
   t.is(
-    vstorage.get(`mockChainStorageRoot.status.${cctpTxEvidence.txHash}`),
+    vstorage.get(`mockChainStorageRoot.txns.${cctpTxEvidence.txHash}`),
     'FORWARDED',
   );
 });

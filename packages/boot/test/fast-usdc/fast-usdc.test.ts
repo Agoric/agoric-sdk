@@ -256,8 +256,8 @@ test.serial('makes usdc advance', async t => {
   harness?.resetRunPolicy();
 
   const doc = {
-    node: `fastUsdc.status`,
-    owner: `the statuses of fast USDC transfers identified by their tx hashes`,
+    node: `fastUsdc.txns`,
+    owner: `the Ethereum transactions upon which Fast USDC is acting`,
   };
   await documentStorageSchema(t, storage, doc);
 });
