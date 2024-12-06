@@ -1,4 +1,6 @@
 #!/bin/bash
+set -euo pipefail
+
 yarn ava
 
 # TODO get CLI test passing and part of CI
