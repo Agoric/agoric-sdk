@@ -68,12 +68,12 @@ const seenTxKeyOf = evidence => {
  * XXX consider separate facets for `Advancing` and `Settling` capabilities.
  *
  * @param {Zone} zone
- * @param {() => Promise<StorageNode>} makeStatusNode
+ * @param {ERef<StorageNode>} transactionsNode
  * @param {StatusManagerPowers} caps
  */
 export const prepareStatusManager = (
   zone,
-  makeStatusNode,
+  transactionsNode,
   {
     log = makeTracer('Advancer', true),
   } = /** @type {StatusManagerPowers} */ ({}),
@@ -94,8 +94,7 @@ export const prepareStatusManager = (
    * @param {TxStatus} status
    */
   const recordStatus = (hash, status) => {
-    const statusNodeP = makeStatusNode();
-    const txnNodeP = E(statusNodeP).makeChildNode(hash);
+    const txnNodeP = E(transactionsNode).makeChildNode(hash);
     // Don't await, just writing to vstorage.
     void E(txnNodeP).setValue(status);
   };
