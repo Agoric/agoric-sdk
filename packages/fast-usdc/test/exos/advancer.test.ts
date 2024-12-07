@@ -7,6 +7,7 @@ import { Far } from '@endo/pass-style';
 import type { NatAmount } from '@agoric/ertp';
 import { type ZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
 import { q } from '@endo/errors';
+import { stringifyWithBigint } from '@agoric/internal';
 import { PendingTxStatus } from '../../src/constants.js';
 import { prepareAdvancer } from '../../src/exos/advancer.js';
 import type { SettlerKit } from '../../src/exos/settler.js';
@@ -177,6 +178,12 @@ test('updates status to ADVANCING in happy path', async t => {
 
   t.deepEqual(
     storage.data.get(
+      `mockChainStorageRoot.transactions.${mockEvidence.txHash}`,
+    ),
+    stringifyWithBigint(mockEvidence),
+  );
+  t.deepEqual(
+    storage.data.get(
       `mockChainStorageRoot.transactions.${mockEvidence.txHash}.status`,
     ),
     PendingTxStatus.Advancing,
@@ -230,6 +237,12 @@ test('updates status to OBSERVED on insufficient pool funds', async t => {
 
   t.deepEqual(
     storage.data.get(
+      `mockChainStorageRoot.transactions.${mockEvidence.txHash}`,
+    ),
+    stringifyWithBigint(mockEvidence),
+  );
+  t.deepEqual(
+    storage.data.get(
       `mockChainStorageRoot.transactions.${mockEvidence.txHash}.status`,
     ),
     PendingTxStatus.Observed,
@@ -255,6 +268,12 @@ test('updates status to OBSERVED if makeChainAddress fails', async t => {
   await advancer.handleTransactionEvent(mockEvidence);
   await eventLoopIteration();
 
+  t.deepEqual(
+    storage.data.get(
+      `mockChainStorageRoot.transactions.${mockEvidence.txHash}`,
+    ),
+    stringifyWithBigint(mockEvidence),
+  );
   t.deepEqual(
     storage.data.get(
       `mockChainStorageRoot.transactions.${mockEvidence.txHash}.status`,
@@ -287,6 +306,12 @@ test('calls notifyAdvancingResult (AdvancedFailed) on failed transfer', async t 
   resolveLocalTransferV();
   await eventLoopIteration();
 
+  t.deepEqual(
+    storage.data.get(
+      `mockChainStorageRoot.transactions.${mockEvidence.txHash}`,
+    ),
+    stringifyWithBigint(mockEvidence),
+  );
   t.deepEqual(
     storage.data.get(
       `mockChainStorageRoot.transactions.${mockEvidence.txHash}.status`,
@@ -338,6 +363,12 @@ test('updates status to OBSERVED if pre-condition checks fail', async t => {
   await advancer.handleTransactionEvent(mockEvidence);
   await eventLoopIteration();
 
+  t.deepEqual(
+    storage.data.get(
+      `mockChainStorageRoot.transactions.${mockEvidence.txHash}`,
+    ),
+    stringifyWithBigint(mockEvidence),
+  );
   t.deepEqual(
     storage.data.get(
       `mockChainStorageRoot.transactions.${mockEvidence.txHash}.status`,

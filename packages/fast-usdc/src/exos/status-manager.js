@@ -2,7 +2,7 @@ import { M } from '@endo/patterns';
 import { Fail, makeError, q } from '@endo/errors';
 import { appendToStoredArray } from '@agoric/store/src/stores/store-utils.js';
 import { E } from '@endo/eventual-send';
-import { makeTracer } from '@agoric/internal';
+import { makeTracer, stringifyWithBigint } from '@agoric/internal';
 import {
   CctpTxEvidenceShape,
   EvmHashShape,
@@ -101,6 +101,16 @@ export const prepareStatusManager = (
 
   /**
    * @param {CctpTxEvidence['txHash']} hash
+   * @param {CctpTxEvidence} evidence
+   */
+  const publishEvidence = (hash, evidence) => {
+    const txNode = E(transactionsNode).makeChildNode(hash);
+    // Don't await, just writing to vstorage.
+    void E(txNode).setValue(stringifyWithBigint(evidence));
+  };
+
+  /**
+   * @param {CctpTxEvidence['txHash']} hash
    * @param {TxStatus} status
    */
   const publishStatus = (hash, status) => {
@@ -132,6 +142,7 @@ export const prepareStatusManager = (
       pendingTxKeyOf(evidence),
       harden({ ...evidence, status }),
     );
+    publishEvidence(evidence.txHash, evidence);
     publishStatus(evidence.txHash, status);
   };
 
