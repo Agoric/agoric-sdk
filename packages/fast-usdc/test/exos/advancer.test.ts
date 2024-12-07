@@ -1,29 +1,30 @@
-import type { TestFn } from 'ava';
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
-import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
-import { denomHash } from '@agoric/orchestration';
-import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
-import { Far } from '@endo/pass-style';
-import type { NatAmount } from '@agoric/ertp';
-import { type ZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
-import { q } from '@endo/errors';
+
 import {
   decodeAddressHook,
   encodeAddressHook,
 } from '@agoric/cosmic-proto/address-hooks.js';
+import type { NatAmount } from '@agoric/ertp';
+import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
+import { denomHash } from '@agoric/orchestration';
+import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
+import { type ZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
+import { q } from '@endo/errors';
+import { Far } from '@endo/pass-style';
+import type { TestFn } from 'ava';
 import { PendingTxStatus } from '../../src/constants.js';
 import { prepareAdvancer } from '../../src/exos/advancer.js';
 import type { SettlerKit } from '../../src/exos/settler.js';
 import { prepareStatusManager } from '../../src/exos/status-manager.js';
+import type { LiquidityPoolKit } from '../../src/types.js';
 import { makeFeeTools } from '../../src/utils/fees.js';
-import { commonSetup } from '../supports.js';
 import { MockCctpTxEvidences, intermediateRecipient } from '../fixtures.js';
 import {
   makeTestFeeConfig,
   makeTestLogger,
   prepareMockOrchAccounts,
 } from '../mocks.js';
-import type { LiquidityPoolKit } from '../../src/types.js';
+import { commonSetup } from '../supports.js';
 
 const LOCAL_DENOM = `ibc/${denomHash({
   denom: 'uusdc',
