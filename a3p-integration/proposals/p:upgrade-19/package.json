@@ -9,8 +9,8 @@
       "vats/upgrade-board.js",
       "testing/test-upgraded-board.js testUpgradedBoard",
       "vats/upgrade-agoricNames.js agoricNamesCoreEvals/upgradeAgoricNames",
-      "testing/append-chain-info agoricNamesCoreEvals/appendChainInfo",
-      "testing/add-USD-OLIVES.js agoricNamesCoreEvals/addUsdOlives"
+      "testing/add-USD-OLIVES.js agoricNamesCoreEvals/addUsdOlives",
+      "testing/publish-test-info.js agoricNamesCoreEvals/publishTestInfo"
     ]
   },
   "type": "module",
