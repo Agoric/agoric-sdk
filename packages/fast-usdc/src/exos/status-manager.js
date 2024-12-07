@@ -106,7 +106,7 @@ export const prepareStatusManager = (
    * @param {CctpTxEvidence} evidence
    * @param {PendingTxStatus} status
    */
-  const recordPendingTx = (evidence, status) => {
+  const initPendingTx = (evidence, status) => {
     const seenKey = seenTxKeyOf(evidence);
     if (seenTxs.has(seenKey)) {
       throw makeError(`Transaction already seen: ${q(seenKey)}`);
@@ -120,6 +120,28 @@ export const prepareStatusManager = (
     );
     publishStatus(evidence.txHash, status);
   };
+
+  /**
+   * Update the pending transaction status.
+   *
+   * @param {{sender: NobleAddress, amount: bigint}} keyParts
+   * @param {PendingTxStatus} status
+   */
+  function setPendingTxStatus({ sender, amount }, status) {
+    const key = makePendingTxKey(sender, amount);
+    pendingTxs.has(key) || Fail`no advancing tx with ${{ sender, amount }}`;
+    const pending = pendingTxs.get(key);
+    const ix = pending.findIndex(tx => tx.status === PendingTxStatus.Advancing);
+    ix >= 0 || Fail`no advancing tx with ${{ sender, amount }}`;
+    const [prefix, tx, suffix] = [
+      pending.slice(0, ix),
+      pending[ix],
+      pending.slice(ix + 1),
+    ];
+    const txpost = { ...tx, status };
+    pendingTxs.set(key, harden([...prefix, txpost, ...suffix]));
+    publishStatus(tx.txHash, status);
+  }
 
   return zone.exo(
     'Fast USDC Status Manager',
@@ -159,7 +181,7 @@ export const prepareStatusManager = (
        * @param {CctpTxEvidence} evidence
        */
       advance(evidence) {
-        recordPendingTx(evidence, PendingTxStatus.Advancing);
+        initPendingTx(evidence, PendingTxStatus.Advancing);
       },
 
       /**
@@ -171,24 +193,10 @@ export const prepareStatusManager = (
        * @throws {Error} if nothing to advance
        */
       advanceOutcome(sender, amount, success) {
-        const key = makePendingTxKey(sender, amount);
-        pendingTxs.has(key) || Fail`no advancing tx with ${{ sender, amount }}`;
-        const pending = pendingTxs.get(key);
-        const ix = pending.findIndex(
-          tx => tx.status === PendingTxStatus.Advancing,
+        setPendingTxStatus(
+          { sender, amount },
+          success ? PendingTxStatus.Advanced : PendingTxStatus.AdvanceFailed,
         );
-        ix >= 0 || Fail`no advancing tx with ${{ sender, amount }}`;
-        const [prefix, tx, suffix] = [
-          pending.slice(0, ix),
-          pending[ix],
-          pending.slice(ix + 1),
-        ];
-        const status = success
-          ? PendingTxStatus.Advanced
-          : PendingTxStatus.AdvanceFailed;
-        const txpost = { ...tx, status };
-        pendingTxs.set(key, harden([...prefix, txpost, ...suffix]));
-        publishStatus(tx.txHash, status);
       },
 
       /**
@@ -196,7 +204,7 @@ export const prepareStatusManager = (
        * @param {CctpTxEvidence} evidence
        */
       observe(evidence) {
-        recordPendingTx(evidence, PendingTxStatus.Observed);
+        initPendingTx(evidence, PendingTxStatus.Observed);
       },
 
       /**
