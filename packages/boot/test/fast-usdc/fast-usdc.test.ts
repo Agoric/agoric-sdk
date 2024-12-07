@@ -1,23 +1,24 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-import type { TestFn } from 'ava';
+import { configurations } from '@agoric/fast-usdc/src/utils/deploy-config.js';
 import { MockCctpTxEvidences } from '@agoric/fast-usdc/test/fixtures.js';
 import { documentStorageSchema } from '@agoric/governance/tools/storageDoc.js';
-import { Fail } from '@endo/errors';
+import { BridgeId } from '@agoric/internal';
 import { unmarshalFromVstorage } from '@agoric/internal/src/marshal.js';
-import { makeMarshal } from '@endo/marshal';
 import { defaultMarshaller } from '@agoric/internal/src/storage-test-utils.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
-import { BridgeId } from '@agoric/internal';
+import { Fail } from '@endo/errors';
+import { makeMarshal } from '@endo/marshal';
+import type { TestFn } from 'ava';
+import {
+  AckBehavior,
+  insistManagerType,
+  makeSwingsetHarness,
+} from '../../tools/supports.js';
 import {
   makeWalletFactoryContext,
   type WalletFactoryTestContext,
 } from '../bootstrapTests/walletFactory.js';
-import {
-  makeSwingsetHarness,
-  insistManagerType,
-  AckBehavior,
-} from '../../tools/supports.js';
 
 const test: TestFn<
   WalletFactoryTestContext & {
@@ -233,6 +234,33 @@ test.serial('makes usdc advance', async t => {
     owner: `the statuses of fast USDC transfers identified by their tx hashes`,
   };
   await documentStorageSchema(t, storage, doc);
+});
+
+test.serial('core-eval to change feedPolicy', async t => {
+  const { buildProposal, evalProposal, storage } = t.context;
+
+  const { feedPolicy } = configurations.MAINNET;
+  const arbitrum3 = harden({
+    // @ts-expect-error FeedPolicy & Passable is not recognized as an object type?!
+    ...feedPolicy,
+    chainPolicies: {
+      ...feedPolicy.chainPolicies,
+      Arbitrum: { ...feedPolicy.chainPolicies.Arbitrum, confirmations: 3 },
+    },
+  });
+  const materials = buildProposal(
+    '@agoric/builders/scripts/fast-usdc/fast-usdc-update.build.js',
+    ['--feedPolicy', JSON.stringify(arbitrum3)],
+  );
+  await evalProposal(materials);
+
+  const raw = storage.data.get('published.fastUsdc.feedPolicy');
+
+  const getLast = (/** @type {string} */ cell) =>
+    JSON.parse(cell).values.at(-1) || assert.fail();
+  const actual = JSON.parse(getLast(raw));
+  t.log('updated', actual.chainPolicies);
+  t.like(actual, { chainPolicies: { Arbitrum: { confirmations: 3 } } });
 });
 
 test.serial('restart contract', async t => {
