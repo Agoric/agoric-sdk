@@ -12,7 +12,7 @@ import { EvmHashShape } from '../type-guards.js';
 
 /**
  * @import {FungibleTokenPacketData} from '@agoric/cosmic-proto/ibc/applications/transfer/v2/packet.js';
- * @import {Denom, OrchestrationAccount, ChainHub, ChainAddress} from '@agoric/orchestration';
+ * @import {Denom, OrchestrationAccount, ChainHub, ChainAddress, IBCMsgTransferOptions} from '@agoric/orchestration';
  * @import {WithdrawToSeat} from '@agoric/orchestration/src/utils/zoe-tools'
  * @import {IBCChannelID, VTransferIBCEvent} from '@agoric/vats';
  * @import {Zone} from '@agoric/zone';
@@ -30,6 +30,19 @@ import { EvmHashShape } from '../type-guards.js';
  */
 const makeMintedEarlyKey = (addr, amount) =>
   `pendingTx:${JSON.stringify([addr, String(amount)])}`;
+
+/**
+ * @param {ChainAddress|undefined} intermediateRecipient
+ * @returns {IBCMsgTransferOptions | undefined}
+ */
+const ibcOpts = intermediateRecipient =>
+  intermediateRecipient
+    ? {
+        forwardOpts: {
+          intermediateRecipient,
+        },
+      }
+    : undefined;
 
 /**
  * @param {Zone} zone
@@ -62,6 +75,7 @@ export const prepareSettler = (
     {
       creator: M.interface('SettlerCreatorI', {
         monitorMintingDeposits: M.callWhen().returns(M.any()),
+        setIntermediateRecipient: M.call(ChainAddressShape).returns(),
       }),
       tap: M.interface('SettlerTapI', {
         receiveUpcall: M.call(M.record()).returns(M.promise()),
@@ -94,13 +108,14 @@ export const prepareSettler = (
      *   remoteDenom: Denom;
      *   repayer: LiquidityPoolKit['repayer'];
      *   settlementAccount: HostInterface<OrchestrationAccount<{ chainId: 'agoric' }>>
-     *   intermediateRecipient: ChainAddress;
+     *   intermediateRecipient?: ChainAddress;
      * }} config
      */
     config => {
       log('config', config);
       return {
         ...config,
+        intermediateRecipient: config.intermediateRecipient,
         /** @type {HostInterface<TargetRegistration>|undefined} */
         registration: undefined,
         /** @type {SetStore<ReturnType<typeof makeMintedEarlyKey>>} */
@@ -116,6 +131,10 @@ export const prepareSettler = (
           );
           assert.typeof(registration, 'object');
           this.state.registration = registration;
+        },
+        /** @param {ChainAddress} intermediateRecipient */
+        setIntermediateRecipient(intermediateRecipient) {
+          this.state.intermediateRecipient = intermediateRecipient;
         },
       },
       tap: {
@@ -265,11 +284,7 @@ export const prepareSettler = (
           const txfrV = E(settlementAccount).transfer(
             dest,
             AmountMath.make(USDC, fullValue),
-            {
-              forwardOpts: {
-                intermediateRecipient,
-              },
-            },
+            ibcOpts(intermediateRecipient),
           );
           void vowTools.watch(txfrV, this.facets.transferHandler, {
             txHash,
@@ -312,7 +327,7 @@ export const prepareSettler = (
         sourceChannel: M.string(),
         remoteDenom: M.string(),
         mintedEarly: M.remotable('mintedEarly'),
-        intermediateRecipient: ChainAddressShape,
+        intermediateRecipient: M.opt(ChainAddressShape),
       }),
     },
   );
