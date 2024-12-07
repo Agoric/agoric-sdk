@@ -13,7 +13,12 @@ import { PendingTxStatus, TxStatus } from '../constants.js';
 /**
  * @import {MapStore, SetStore} from '@agoric/store';
  * @import {Zone} from '@agoric/zone';
- * @import {CctpTxEvidence, NobleAddress, SeenTxKey, PendingTxKey, PendingTx, EvmHash, LogFn} from '../types.js';
+ * @import {CctpTxEvidence, NobleAddress, PendingTx, EvmHash, LogFn} from '../types.js';
+ */
+
+/**
+ * @typedef {`pendingTx:${string}`} PendingTxKey
+ * @typedef {`seenTx:${string}`} SeenTxKey
  */
 
 /**
