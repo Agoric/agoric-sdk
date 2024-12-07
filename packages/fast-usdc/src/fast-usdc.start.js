@@ -236,6 +236,11 @@ export const startFastUSDC = async (
 
   produceInstance.reset();
   produceInstance.resolve(instance);
+
+  if ('uusdc' in assetInfo) {
+    const addr = await E(kit.creatorFacet).connectToNoble();
+    trace('noble intermediate recipient', addr);
+  }
   trace('startFastUSDC done', instance);
 };
 harden(startFastUSDC);

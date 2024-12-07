@@ -53,6 +53,9 @@ const defaultAssetInfo = [
     },
   ],
 ];
+const agoricAssetInfo = defaultAssetInfo.filter(
+  ([_d, i]) => i.chainName === 'agoric',
+);
 
 /**
  * @type {Record<string, Pick<FastUSDCConfig, 'oracles' | 'feedPolicy' | 'chainInfo' | 'assetInfo' >>}
@@ -81,9 +84,12 @@ const configurations = {
       },
     },
     chainInfo: /** @type {Record<string, CosmosChainInfo & Passable>} */ (
-      withChainCapabilities(fetchedChainInfo)
+      withChainCapabilities({
+        agoric: fetchedChainInfo.agoric,
+        noble: fetchedChainInfo.noble,
+      })
     ),
-    assetInfo: defaultAssetInfo,
+    assetInfo: agoricAssetInfo,
   },
   MAINNET: {
     oracles: {

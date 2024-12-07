@@ -18,7 +18,7 @@ import { makeFeeTools } from '../utils/fees.js';
  * @import {HostInterface} from '@agoric/async-flow';
  * @import {TypedPattern} from '@agoric/internal'
  * @import {NatAmount} from '@agoric/ertp';
- * @import {ChainAddress, ChainHub, Denom, OrchestrationAccount} from '@agoric/orchestration';
+ * @import {ChainAddress, ChainHub, Denom, OrchestrationAccount, IBCMsgTransferOptions} from '@agoric/orchestration';
  * @import {ZoeTools} from '@agoric/orchestration/src/utils/zoe-tools.js';
  * @import {VowTools} from '@agoric/vow';
  * @import {Zone} from '@agoric/zone';
@@ -54,6 +54,9 @@ const AdvancerVowCtxShape = M.splitRecord(
 
 /** type guards internal to the AdvancerKit */
 const AdvancerKitI = harden({
+  admin: M.interface('AdminI', {
+    setIntermediateRecipient: M.call(ChainAddressShape).returns(),
+  }),
   advancer: M.interface('AdvancerI', {
     handleTransactionEvent: M.callWhen(CctpTxEvidenceShape).returns(),
   }),
@@ -69,6 +72,19 @@ const AdvancerKitI = harden({
     onRejected: M.call(M.error(), AdvancerVowCtxShape).returns(M.undefined()),
   }),
 });
+
+/**
+ * @param {ChainAddress|undefined} intermediateRecipient
+ * @returns {IBCMsgTransferOptions | undefined}
+ */
+const ibcOpts = intermediateRecipient =>
+  intermediateRecipient
+    ? {
+        forwardOpts: {
+          intermediateRecipient,
+        },
+      }
+    : undefined;
 
 /**
  * @typedef {{
@@ -116,11 +132,21 @@ export const prepareAdvancerKit = (
      *   notifyFacet: import('./settler.js').SettlerKit['notify'];
      *   borrowerFacet: LiquidityPoolKit['borrower'];
      *   poolAccount: HostInterface<OrchestrationAccount<{chainId: 'agoric'}>>;
-     *   intermediateRecipient: ChainAddress;
+     *   intermediateRecipient?: ChainAddress;
      * }} config
      */
-    config => harden(config),
+    config =>
+      harden({
+        ...config,
+        intermediateRecipient: config.intermediateRecipient,
+      }),
     {
+      admin: {
+        /** @param {ChainAddress} intermediateRecipient */
+        setIntermediateRecipient(intermediateRecipient) {
+          this.state.intermediateRecipient = intermediateRecipient;
+        },
+      },
       advancer: {
         /**
          * Must perform a status update for every observed transaction.
@@ -196,11 +222,7 @@ export const prepareAdvancerKit = (
               denom: usdc.denom,
               value: advanceAmount.value,
             },
-            {
-              forwardOpts: {
-                intermediateRecipient,
-              },
-            },
+            ibcOpts(intermediateRecipient),
           );
           return watch(transferV, this.facets.transferHandler, {
             destination,
@@ -259,7 +281,7 @@ export const prepareAdvancerKit = (
         notifyFacet: M.remotable(),
         borrowerFacet: M.remotable(),
         poolAccount: M.remotable(),
-        intermediateRecipient: ChainAddressShape,
+        intermediateRecipient: M.opt(ChainAddressShape),
       }),
     },
   );
