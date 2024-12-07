@@ -3,17 +3,21 @@
 /**
  * @file The goal of this file is to test different aspects of agoricNames to make sure
  * everything works after an upgrade. Here's the test plan;
- * 1. upgrade agoricNames
- * 2. send a core-eval that writes into children of agoricNames (brand, issuer, instance...)
- *   2b. expect a child nameHub of agoricNames will publish ALL its entries when a new item is written to it
- *   2c. check the values in the vstorage match before and after the upgrade
- *   2d. also check that new items are in the vstorage as well
- * 3. append new chain
+ * 1. publish a new node called 'testInfo' under agoricNames
+ *    CONTEXT: onUpdate callback of testInfo nameAdmin is registered in a core-eval. Which means it is
+ *    both ephemeral and lives in bootstrap vat. We create a scenario like this to make sure any ephemeral
+ *    onUpdate keeps working after an agoricNames upgrade.
+ * 2. upgrade agoricNames
+ * 3. send a core-eval that writes into children of agoricNames (brand, issuer, instance...)
+ *   3b. expect a child nameHub of agoricNames will publish ALL its entries when a new item is written to it
+ *   3c. check the values in the vstorage match before and after the upgrade
+ *   3d. also check that new items are in the vstorage as well
+ * 4. append new chain
  *    CONTEXT: there are two new children introduced to agoricNames by orchestration and their
  *    onUpdate callback isn't durable. So we must check that if we write a new chain info to those child
  *    nameHubs, we should observe the new value in vstorage.
- *   3b. send a core-eval that writes new chain info to published.agoricNames.chain and published.agoricNames.chainConnection
- *   3c. wait until the expected data observed in vstorage
+ *   4b. send a core-eval that writes new chain info to published.agoricNames.chain and published.agoricNames.chainConnection
+ *   4c. wait until the expected data observed in vstorage
  *
  *
  * TESTING CODE THAT HOLDS ONTO 'agoricNames': smartWallet is one of the vats that depend on agoricNames to work properly the most.
@@ -29,19 +33,19 @@
  * and agoricNames.issuer returned correct values
  *
  *
- * 4. add a new PSM and swap against it
- * 4b. adding the new PSM requires introducing a new asset to the chain and writing
- * the PSM instance to agoricNames.instance
- * 4c. being able to deposit the new asset to a user means that smartWallet created a purse
- * for the new brand
- * 4d. being able to send the offer to the PSM instance means smartWallet can find the instance
- * in agoricNames.instance
+ * 5. add a new PSM and swap against it
+ *   5b. adding the new PSM requires introducing a new asset to the chain and writing
+ *       the PSM instance to agoricNames.instance
+ *   5c. being able to deposit the new asset to a user means that smartWallet created a purse
+ *       for the new brand
+ *   5d. being able to send the offer to the PSM instance means smartWallet can find the instance
+ *       in agoricNames.instance
  *
- * 5. we want to make sure objects that were already in agoricNames works as well, so open a vault
- * in an existing collateralManager
- * 5a. fund GOV1 with ATOM
- * 5b. open a vault
- * 5c. check the vault is opened successfully
+ * 6. we want to make sure objects that were already in agoricNames works as well, so open a vault
+ *    in an existing collateralManager
+ *   6a. fund GOV1 with ATOM
+ *   6b. open a vault
+ *   6c. check the vault is opened successfully
  *
  */
 
@@ -67,9 +71,10 @@ import { walletUtils } from './test-lib/index.js';
 
 const AGORIC_NAMES_UPGRADE_DIR = 'agoricNamesCoreEvals/upgradeAgoricNames';
 const WRITE_AGORIC_NAMES_DIR = 'agoricNamesCoreEvals/writeToAgoricNames';
-const APPEND_CHAIN_DIR = 'agoricNamesCoreEvals/appendChainInfo';
 const ADD_USD_OLIVES_DIR = 'agoricNamesCoreEvals/addUsdOlives';
 const DEPOSIT_USD_OLIVES_DIR = 'agoricNamesCoreEvals/depositUsdOlives';
+const PUBLISH_TEST_INFO_DIR = 'agoricNamesCoreEvals/publishTestInfo';
+const WRITE_TEST_INFO_DIR = 'agoricNamesCoreEvals/writeToTestInfo';
 
 const makeWaitUntilKeyFound = (keyFinder, vstorage) => (path, targetKey) =>
   retryUntilCondition(
@@ -90,6 +95,29 @@ test.before(async t => {
   };
 });
 
+test.serial('publish test info', async t => {
+  // @ts-expect-error casting
+  const { vstorageKit } = t.context;
+
+  const waitUntilKeyFound = makeWaitUntilKeyFound(
+    (keys, targetKey) => keys.includes(targetKey),
+    vstorageKit.vstorage,
+  );
+
+  await evalBundles(PUBLISH_TEST_INFO_DIR);
+  await waitUntilKeyFound('published.agoricNames', 'testInfo');
+
+  const testInfo = await vstorageKit.readLatestHead(
+    'published.agoricNames.testInfo',
+  );
+  t.deepEqual(Object.fromEntries(testInfo), {
+    agoric: {
+      isAwesome: 'yes',
+      tech: ['HardenedJs', 'Orchestration', 'Async_Execution'],
+    },
+  });
+});
+
 test.serial('upgrade agoricNames', async t => {
   await evalBundles(AGORIC_NAMES_UPGRADE_DIR);
 
@@ -98,7 +126,7 @@ test.serial('upgrade agoricNames', async t => {
 });
 
 test.serial('check all existing values are preserved', async t => {
-  // @ts-expect-error
+  // @ts-expect-error casting
   const { vstorageKit } = t.context;
   const agoricNamesChildren = [
     'brand',
@@ -135,59 +163,28 @@ test.serial('check all existing values are preserved', async t => {
   );
 });
 
-test.serial('check we can add new chains', async t => {
-  // @ts-expect-error
+test.serial('check testInfo still works', async t => {
+  // @ts-expect-error casting
   const { vstorageKit } = t.context;
-  await evalBundles(APPEND_CHAIN_DIR);
+  await evalBundles(WRITE_TEST_INFO_DIR);
 
-  const waitUntilKeyFound = makeWaitUntilKeyFound(
-    (keys, targetKey) => keys.includes(targetKey),
-    vstorageKit.vstorage,
+  const testInfo = await vstorageKit.readLatestHead(
+    'published.agoricNames.testInfo',
   );
-  await Promise.all([
-    waitUntilKeyFound('published.agoricNames.chain', 'hot'),
-    waitUntilKeyFound(
-      'published.agoricNames.chainConnection',
-      'cosmoshub-4_hot-1',
-    ),
-  ]);
-
-  const [chainInfo, connectionInfo] = await Promise.all([
-    vstorageKit.readLatestHead('published.agoricNames.chain.hot'),
-    vstorageKit.readLatestHead(
-      'published.agoricNames.chainConnection.cosmoshub-4_hot-1',
-    ),
-  ]);
-
-  t.log({
-    chainInfo,
-    connectionInfo,
-  });
-
-  t.deepEqual(chainInfo, { allegedName: 'Hot New Chain', chainId: 'hot-1' });
-  t.deepEqual(connectionInfo, {
-    client_id: '07-tendermint-2',
-    counterparty: {
-      client_id: '07-tendermint-3',
-      connection_id: 'connection-99',
+  t.deepEqual(Object.fromEntries(testInfo), {
+    agoric: {
+      isAwesome: 'yes',
+      tech: ['HardenedJs', 'Orchestration', 'Async_Execution'],
     },
-    id: 'connection-1',
-    state: 3,
-    transferChannel: {
-      channelId: 'channel-1',
-      counterPartyChannelId: 'channel-1',
-      counterPartyPortId: 'transfer',
-      ordering: 1,
-      portId: 'transfer',
-      state: 3,
-      version: 'ics20-1',
+    ethereum: {
+      isAwesome: 'yes',
+      tech: ['Solidity', 'EVM'],
     },
   });
 });
 
 test.serial('check contracts depend on agoricNames are not broken', async t => {
   await evalBundles(ADD_USD_OLIVES_DIR);
-
   await evalBundles(DEPOSIT_USD_OLIVES_DIR);
 
   const psmSwapIo = {
