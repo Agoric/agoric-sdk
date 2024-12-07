@@ -17,8 +17,11 @@ import { PendingTxStatus, TxStatus } from '../constants.js';
  */
 
 /**
- * @typedef {`pendingTx:${string}`} PendingTxKey
- * @typedef {`seenTx:${string}`} SeenTxKey
+ * @typedef {`pendingTx:${bigint}:${NobleAddress}`} PendingTxKey
+ * The string template is for developer visibility but not meant to ever be parsed.
+ *
+ * @typedef {`seenTx:${string}:${EvmHash}`} SeenTxKey
+ * The string template is for developer visibility but not meant to ever be parsed.
  */
 
 /**
@@ -31,7 +34,8 @@ import { PendingTxStatus, TxStatus } from '../constants.js';
  * @returns {PendingTxKey}
  */
 const makePendingTxKey = (addr, amount) =>
-  `pendingTx:${JSON.stringify([addr, String(amount)])}`;
+  // amount can't contain colon
+  `pendingTx:${amount}:${addr}`;
 
 /**
  * Get the key for the pendingTxs MapStore.
@@ -54,7 +58,8 @@ const pendingTxKeyOf = evidence => {
  */
 const seenTxKeyOf = evidence => {
   const { txHash, chainId } = evidence;
-  return `seenTx:${JSON.stringify([txHash, chainId])}`;
+  // chainId can't contain colon
+  return `seenTx:${chainId}:${txHash}`;
 };
 
 /**
