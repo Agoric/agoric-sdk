@@ -153,6 +153,9 @@ export const prepareStatusManager = (
     {
       /**
        * Add a new transaction with ADVANCING status
+       *
+       * NB: this acts like observe() but skips recording the OBSERVED state
+       *
        * @param {CctpTxEvidence} evidence
        */
       advance(evidence) {
