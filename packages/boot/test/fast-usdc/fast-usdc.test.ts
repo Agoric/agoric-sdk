@@ -1,6 +1,7 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import type { TestFn } from 'ava';
+import { configurations } from '@agoric/fast-usdc/src/utils/deploy-config.js';
 import { MockCctpTxEvidences } from '@agoric/fast-usdc/test/fixtures.js';
 import { documentStorageSchema } from '@agoric/governance/tools/storageDoc.js';
 import { Fail } from '@endo/errors';
@@ -64,11 +65,10 @@ test.serial(
       walletFactoryDriver: wd,
     } = t.context;
 
-    const [watcherWallet] = await Promise.all([
-      wd.provideSmartWallet('agoric19uscwxdac6cf6z7d5e26e0jm0lgwstc47cpll8'),
-      wd.provideSmartWallet('agoric1krunjcqfrf7la48zrvdfeeqtls5r00ep68mzkr'),
-      wd.provideSmartWallet('agoric1n4fcxsnkxe4gj6e24naec99hzmc4pjfdccy5nj'),
-    ]);
+    const { oracles } = configurations.MAINNET;
+    const [watcherWallet] = await Promise.all(
+      Object.values(oracles).map(addr => wd.provideSmartWallet(addr)),
+    );
 
     // inbound `startChannelOpenInit` responses immediately.
     // needed since the Fusdc StartFn relies on an ICA being created

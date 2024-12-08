@@ -1,7 +1,14 @@
-import type { ChainAddress } from '@agoric/orchestration';
+import type {
+  ChainAddress,
+  CosmosChainInfo,
+  Denom,
+  DenomDetail,
+} from '@agoric/orchestration';
 import type { IBCChannelID } from '@agoric/vats';
 import type { Amount } from '@agoric/ertp';
+import type { Passable } from '@endo/pass-style';
 import type { PendingTxStatus } from './constants.js';
+import type { FastUsdcTerms } from './fast-usdc.contract.js';
 
 export type EvmHash = `0x${string}`;
 export type NobleAddress = `noble1${string}`;
@@ -70,6 +77,15 @@ export interface FeedPolicy {
   chainPolicies: Record<EvmChainName, ChainPolicy>;
   eventFilter?: string;
 }
+
+export type FastUSDCConfig = Passable & {
+  terms: FastUsdcTerms;
+  oracles: Record<string, string>;
+  feeConfig: FeeConfig;
+  feedPolicy: FeedPolicy & Passable;
+  chainInfo: Record<string, CosmosChainInfo & Passable>;
+  assetInfo: [Denom, DenomDetail & { brandKey?: string }][];
+};
 
 export type * from './constants.js';
 export type { LiquidityPoolKit } from './exos/liquidity-pool.js';
