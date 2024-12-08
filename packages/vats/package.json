@@ -43,8 +43,10 @@
     "@endo/pass-style": "^1.4.7",
     "@endo/patterns": "^1.4.7",
     "@endo/promise-kit": "^1.1.8",
+    "bech32": "^2.0.0",
     "import-meta-resolve": "^2.2.1",
-    "jessie.js": "^0.3.4"
+    "jessie.js": "^0.3.4",
+    "query-string": "^9.1.1"
   },
   "devDependencies": {
     "@agoric/swingset-liveslots": "^0.10.2",
