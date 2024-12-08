@@ -2,10 +2,10 @@ package types
 
 import (
 	"fmt"
-	"net/url"
 	"strings"
 
 	"github.com/cosmos/cosmos-sdk/codec"
+	"github.com/cosmos/cosmos-sdk/types/bech32"
 
 	transfertypes "github.com/cosmos/ibc-go/v6/modules/apps/transfer/types"
 	clienttypes "github.com/cosmos/ibc-go/v6/modules/core/02-client/types"
@@ -18,48 +18,83 @@ type AddressRole string
 const (
 	RoleSender   AddressRole = "Sender"
 	RoleReceiver AddressRole = "Receiver"
-)
 
-func trimSlashPrefix(s string) string {
-	return strings.TrimPrefix(s, "/")
-}
+	AddressHookHumanReadableSuffix = "-hook"
+	BaseAddressLengthBytes         = 2
+)
 
 // ExtractBaseAddress extracts the base address from a parameterized address.
 // It removes all subpath and query components from addr.
 func ExtractBaseAddress(addr string) (string, error) {
-	parsed, err := url.Parse(addr)
+	baseAddr, _, err := SplitHookedAddress(addr)
+	if err != nil {
+		return "", err
+	}
+	return baseAddr, nil
+}
+
+// SplitHookedAddress splits a hooked address into its base address and hook data.
+// For the JS implementation, look at address-hooks.js.
+func SplitHookedAddress(addr string) (string, []byte, error) {
+	outerPrefix, bz, err := bech32.DecodeAndConvert(addr)
+	if err != nil {
+		return "", []byte{}, err
+	}
+
+	innerPrefix := strings.TrimSuffix(outerPrefix, AddressHookHumanReadableSuffix)
+	if len(outerPrefix) == len(innerPrefix) {
+		// Return an unhooked address.
+		return addr, []byte{}, nil
+	}
+
+	if len(bz) < BaseAddressLengthBytes {
+		return "", []byte{}, fmt.Errorf("hooked address must have at least %d bytes", BaseAddressLengthBytes)
+	}
+
+	b := 0
+	for i := BaseAddressLengthBytes - 1; i >= 0; i -= 1 {
+		by := bz[len(bz)-1-i]
+		b <<= 8
+		b |= int(by)
+	}
+
+	if b > len(bz)-BaseAddressLengthBytes {
+		return "", []byte{}, fmt.Errorf("base address length 0x%x is longer than specimen length 0x%x", b, len(bz)-BaseAddressLengthBytes)
+	}
+
+	baseAddressBuf := bz[0:b]
+	baseAddress, err := bech32.ConvertAndEncode(innerPrefix, baseAddressBuf)
+	if err != nil {
+		return "", []byte{}, err
+	}
+
+	return baseAddress, bz[b:], nil
+}
+
+// JoinHookedAddress joins a base bech32 address with hook data to create a
+// hooked bech32 address.
+// For the JS implementation, look at address-hooks.js.
+func JoinHookedAddress(baseAddr string, hookData []byte) (string, error) {
+	innerPrefix, bz, err := bech32.DecodeAndConvert(baseAddr)
 	if err != nil {
 		return "", err
 	}
 
-	// Specify the fields and values we expect.  Unspecified fields will only
-	// match if they are zero values in order to be robust against extensions to
-	// the url.URL struct.
-	//
-	// Remove leading slashes from the path fields so that only parsed relative
-	// paths match the expected test.
-	expected := url.URL{
-		Path:        trimSlashPrefix(parsed.Path),
-		RawPath:     trimSlashPrefix(parsed.RawPath),
-		RawQuery:    parsed.RawQuery,
-		Fragment:    parsed.Fragment,
-		RawFragment: parsed.RawFragment,
-
-		// Skip over parsing control flags.
-		ForceQuery: parsed.ForceQuery,
-		OmitHost:   parsed.OmitHost,
+	outerPrefix := innerPrefix + AddressHookHumanReadableSuffix
+	if len(outerPrefix) == len(innerPrefix) {
+		// Return an unhooked address.
+		return baseAddr, nil
 	}
 
-	if *parsed != expected {
-		return "", fmt.Errorf("address must be relative path with optional query and fragment, got %s", addr)
+	b := len(bz)
+	if b > 0xffff {
+		return "", fmt.Errorf("base address length 0x%x is longer than the maximum 0x%x", b, 1<<(8*BaseAddressLengthBytes-1)+1)
 	}
 
-	baseAddr, _, _ := strings.Cut(expected.Path, "/")
-	if baseAddr == "" {
-		return "", fmt.Errorf("base address cannot be empty")
-	}
+	bz = append(bz, hookData...)
+	bz = append(bz, byte(b>>8), byte(b))
 
-	return baseAddr, nil
+	return bech32.ConvertAndEncode(outerPrefix, bz)
 }
 
 // extractBaseTransferData returns the base address from the transferData.Sender
