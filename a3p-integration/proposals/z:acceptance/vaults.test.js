@@ -226,8 +226,7 @@ test.serial('user cannot open a vault above debt limit', async t => {
   );
 });
 
-// TODO #10599. marked as `skip` since several flakes were observed
-test.skip('user can open a vault under debt limit', async t => {
+test.serial('user can open a vault under debt limit', async t => {
   const istBalanceBefore = await getISTBalance(GOV1ADDR);
   const activeVaultsBefore = await listVaults(GOV1ADDR, walletUtils);
 
@@ -241,11 +240,12 @@ test.skip('user can open a vault under debt limit', async t => {
   const istBalanceAfter = await getISTBalance(GOV1ADDR);
   const activeVaultsAfter = await listVaults(GOV1ADDR, walletUtils);
 
-  t.is(
-    istBalanceBefore + Number(mint),
-    istBalanceAfter,
-    'The IST balance should increase by the minted amount',
+  await tryISTBalances(
+    t,
+    scale6(istBalanceAfter),
+    scale6(istBalanceBefore + Number(mint)),
   );
+
   t.is(
     activeVaultsAfter.length,
     activeVaultsBefore.length + 1,
