@@ -88,6 +88,10 @@ export const prepareLiquidityPoolKit = (zone, zcf, USDC, tools) => {
           SeatShape,
           harden({ USDC: makeNatAmountShape(USDC, 1n) }),
         ).returns(),
+        repay: M.call(
+          SeatShape,
+          harden({ USDC: makeNatAmountShape(USDC, 1n) }),
+        ).returns(),
       }),
       repayer: M.interface('repayer', {
         repay: M.call(
@@ -178,7 +182,25 @@ export const prepareLiquidityPoolKit = (zone, zcf, USDC, tools) => {
           Object.assign(this.state, post);
           this.facets.external.publishPoolMetrics();
         },
-        // TODO method to repay failed `LOA.deposit()`
+        /**
+         * If something fails during advance, return funds to the pool.
+         *
+         * @param {ZCFSeat} borrowSeat
+         * @param {{ USDC: Amount<'nat'>}} amountKWR
+         */
+        repay(borrowSeat, amountKWR) {
+          const { zcfSeat: repaySeat } = zcf.makeEmptySeatKit();
+          const returnAmounts = harden({
+            Principal: amountKWR.USDC,
+            PoolFee: makeEmpty(USDC),
+            ContractFee: makeEmpty(USDC),
+          });
+          // arrange payments in a format repay is expecting
+          zcf.atomicRearrange(
+            harden([[borrowSeat, repaySeat, amountKWR, returnAmounts]]),
+          );
+          return this.facets.repayer.repay(repaySeat, returnAmounts);
+        },
       },
       repayer: {
         /**
