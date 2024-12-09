@@ -4,7 +4,14 @@
     "sdk-generate": [
       "testing/start-valueVow.js start-valueVow",
       "vats/test-localchain.js localchaintest-submission",
-      "testing/restart-valueVow.js restart-valueVow"
+      "testing/restart-valueVow.js restart-valueVow",
+      "vats/upgrade-mintHolder.js upgrade-mintHolder-USDC USDC",
+      "vats/upgrade-mintHolder.js upgrade-mintHolder-USDC_axl USDC_axl",
+      "vats/upgrade-mintHolder.js upgrade-mintHolder-USDC_grv USDC_grv",
+      "vats/upgrade-mintHolder.js upgrade-mintHolder-USDT_axl USDT_axl",
+      "vats/upgrade-mintHolder.js upgrade-mintHolder-USDT_grv USDT_grv",
+      "vats/upgrade-mintHolder.js upgrade-mintHolder-DAI_axl DAI_axl",
+      "vats/upgrade-mintHolder.js upgrade-mintHolder-DAI_grv DAI_grv"
     ]
   },
   "type": "module",
