@@ -4,10 +4,10 @@
 /// <reference types="@agoric/vats/src/core/types-ambient"/>
 
 /**
- * The primary purpose of this script is to mint a payment of a certain 
+ * The primary purpose of this script is to mint a payment of a certain
  * bankAsset and deposit in an user wallet.
  *
- * The {{ADDRESS}} and {{LABEL}} placeholders should be replaced with 
+ * The receiverAddress and label placeholders should be replaced with
  * the desired address and asset name during the execution of each test case.
  *
  * See z:acceptance/mintHolder.test.js
@@ -30,6 +30,12 @@ const sendBankAsset = async powers => {
   );
 
   const { creatorFacet: mint, publicFacet: issuer } = mintHolderKit[0];
+
+  /**
+   * Ensure that publicFacet holds an issuer by calling makeEmptyPurse, the
+   * core-eval will throw if otherwise.
+   */
+  await E(issuer).makeEmptyPurse();
 
   const brand = await E(issuer).getBrand();
   const amount = harden({ value: 10_000_000n, brand });

@@ -28,7 +28,14 @@ export const upgradeMintHolder = async (
   );
   trace('mintHolderKit: ', mintHolderKit);
 
-  const { adminFacet, instance } = mintHolderKit[0];
+  const { publicFacet, adminFacet, instance } = mintHolderKit[0];
+
+  /**
+   * Ensure that publicFacet holds an issuer by calling makeEmptyPurse, the
+   * core-eval will throw if otherwise.
+   */
+  await E(publicFacet).makeEmptyPurse();
+
   const privateArgs = instancePrivateArgs.get(instance);
 
   const upgradeResult = await E(adminFacet).upgradeContract(
