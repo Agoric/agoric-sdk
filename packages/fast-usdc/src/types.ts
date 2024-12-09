@@ -6,7 +6,7 @@ import type {
 } from '@agoric/orchestration';
 import type { IBCChannelID } from '@agoric/vats';
 import type { Amount } from '@agoric/ertp';
-import type { Passable } from '@endo/pass-style';
+import type { CopyRecord, Passable } from '@endo/pass-style';
 import type { PendingTxStatus } from './constants.js';
 import type { FastUsdcTerms } from './fast-usdc.contract.js';
 
@@ -78,14 +78,15 @@ export interface FeedPolicy {
   eventFilter?: string;
 }
 
-export type FastUSDCConfig = Passable & {
+export type FastUSDCConfig = {
   terms: FastUsdcTerms;
   oracles: Record<string, string>;
   feeConfig: FeeConfig;
   feedPolicy: FeedPolicy & Passable;
+  noNoble: boolean; // support a3p-integration, which has no noble chain
   chainInfo: Record<string, CosmosChainInfo & Passable>;
   assetInfo: [Denom, DenomDetail & { brandKey?: string }][];
-};
+} & CopyRecord;
 
 export type * from './constants.js';
 export type { LiquidityPoolKit } from './exos/liquidity-pool.js';

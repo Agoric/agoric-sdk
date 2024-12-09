@@ -56,6 +56,7 @@ const AdvancerVowCtxShape = M.splitRecord(
 const AdvancerKitI = harden({
   advancer: M.interface('AdvancerI', {
     handleTransactionEvent: M.callWhen(CctpTxEvidenceShape).returns(),
+    setIntermediateRecipient: M.call(ChainAddressShape).returns(),
   }),
   depositHandler: M.interface('DepositHandlerI', {
     onFulfilled: M.call(M.undefined(), AdvancerVowCtxShape).returns(VowShape),
@@ -95,7 +96,7 @@ export const prepareAdvancerKit = (
     usdc,
     vowTools: { watch, when },
     zcf,
-  } = /** @type {AdvancerKitPowers} */ ({}),
+  },
 ) => {
   assertAllDefined({
     chainHub,
@@ -116,10 +117,15 @@ export const prepareAdvancerKit = (
      *   notifyFacet: import('./settler.js').SettlerKit['notify'];
      *   borrowerFacet: LiquidityPoolKit['borrower'];
      *   poolAccount: HostInterface<OrchestrationAccount<{chainId: 'agoric'}>>;
-     *   intermediateRecipient: ChainAddress;
+     *   intermediateRecipient?: ChainAddress;
      * }} config
      */
-    config => harden(config),
+    config =>
+      harden({
+        ...config,
+        // make sure the state record has this property, perhaps with an undefined value
+        intermediateRecipient: config.intermediateRecipient,
+      }),
     {
       advancer: {
         /**
@@ -181,6 +187,10 @@ export const prepareAdvancerKit = (
             statusManager.observe(evidence);
           }
         },
+        /** @param {ChainAddress} intermediateRecipient */
+        setIntermediateRecipient(intermediateRecipient) {
+          this.state.intermediateRecipient = intermediateRecipient;
+        },
       },
       depositHandler: {
         /**
@@ -192,15 +202,8 @@ export const prepareAdvancerKit = (
           const { destination, advanceAmount, ...detail } = ctx;
           const transferV = E(poolAccount).transfer(
             destination,
-            {
-              denom: usdc.denom,
-              value: advanceAmount.value,
-            },
-            {
-              forwardOpts: {
-                intermediateRecipient,
-              },
-            },
+            { denom: usdc.denom, value: advanceAmount.value },
+            { forwardOpts: { intermediateRecipient } },
           );
           return watch(transferV, this.facets.transferHandler, {
             destination,
@@ -259,7 +262,7 @@ export const prepareAdvancerKit = (
         notifyFacet: M.remotable(),
         borrowerFacet: M.remotable(),
         poolAccount: M.remotable(),
-        intermediateRecipient: ChainAddressShape,
+        intermediateRecipient: M.opt(ChainAddressShape),
       }),
     },
   );

@@ -85,6 +85,7 @@ const startContract = async (
       E(startKit.creatorFacet).makeOperatorInvitation(`operator-${opIx}`),
     ),
   );
+  await E(startKit.creatorFacet).connectToNoble();
 
   return {
     ...startKit,
