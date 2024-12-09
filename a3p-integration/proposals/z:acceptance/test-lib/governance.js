@@ -1,5 +1,18 @@
+/* global fetch setTimeout */
+
 import { agops, agoric, executeOffer } from '@agoric/synthetic-chain';
-import { makeVstorageKit } from '@agoric/client-utils';
+import {
+  boardSlottingMarshaller,
+  makeFromBoard,
+  makeVstorageKit,
+  retryUntilCondition,
+} from '@agoric/client-utils';
+import { makeVStorage } from './rpc.js';
+import { walletUtils } from './index.js';
+import {
+  checkCommitteeElectionResult,
+  fetchLatestEcQuestion,
+} from './psm-lib.js';
 
 /**
  * @param {typeof window.fetch} fetch
@@ -10,6 +23,8 @@ export const makeGovernanceDriver = async (fetch, networkConfig) => {
     { fetch },
     networkConfig,
   );
+
+  let deadline;
 
   /** @param {string} previousOfferId */
   const generateVoteOffer = async previousOfferId => {
@@ -63,7 +78,7 @@ export const makeGovernanceDriver = async (fetch, networkConfig) => {
   };
 
   /**
-   * Generates a vault director parameter change proposal as a `executeOffer` message
+   * Generates a parameter change proposal as a `executeOffer` message
    * body.
    *
    * @param {string} previousOfferId - the `id` of the offer that this proposal is
@@ -72,13 +87,15 @@ export const makeGovernanceDriver = async (fetch, networkConfig) => {
    *   be open for (in seconds)
    * @param {any} params
    * @param {{ paramPath: any; }} paramsPath
+   * @param {string} instanceName
    * @returns {Promise<string>} - the `executeOffer` message body as a JSON string
    */
-  const generateVaultDirectorParamChange = async (
+  const generateParamChange = async (
     previousOfferId,
     voteDur,
     params,
     paramsPath,
+    instanceName,
   ) => {
     const instancesRaw = await agoric.follow(
       '-lF',
@@ -89,12 +106,12 @@ export const makeGovernanceDriver = async (fetch, networkConfig) => {
     const instances = Object.fromEntries(
       marshaller.fromCapData(JSON.parse(instancesRaw)),
     );
-    const { VaultFactory } = instances;
-    assert(VaultFactory);
+    const instance = instances[instanceName];
+    assert(instance);
 
     const msSinceEpoch = Date.now();
     const id = `propose-${msSinceEpoch}`;
-    const deadline = BigInt(Math.ceil(msSinceEpoch / 1000)) + BigInt(voteDur);
+    deadline = BigInt(Math.ceil(msSinceEpoch / 1000)) + BigInt(voteDur);
     const body = {
       method: 'executeOffer',
       offer: {
@@ -106,7 +123,7 @@ export const makeGovernanceDriver = async (fetch, networkConfig) => {
         },
         offerArgs: {
           deadline,
-          instance: VaultFactory,
+          instance,
           params,
           path: paramsPath,
         },
@@ -123,12 +140,14 @@ export const makeGovernanceDriver = async (fetch, networkConfig) => {
    * @param {string} address
    * @param {any} params
    * @param {{paramPath: any}} path
+   * @param {string} instanceName
    * @param {string} charterAcceptOfferId
    */
-  const proposeVaultDirectorParamChange = async (
+  const proposeParamChange = async (
     address,
     params,
     path,
+    instanceName,
     charterAcceptOfferId,
   ) => {
     await null;
@@ -144,12 +163,75 @@ export const makeGovernanceDriver = async (fetch, networkConfig) => {
 
     return executeOffer(
       address,
-      generateVaultDirectorParamChange(offerId, 10, params, path),
+      generateParamChange(offerId, 30, params, path, instanceName),
     );
+  };
+
+  const getCharterInvitation = async address => {
+    const { getCurrentWalletRecord } = walletUtils;
+
+    /** @type {any} */
+    const instance = await readLatestHead(`published.agoricNames.instance`);
+    const instances = Object.fromEntries(instance);
+
+    const wallet = await getCurrentWalletRecord(address);
+    const usedInvitations = wallet.offerToUsedInvitation;
+
+    const charterInvitation = usedInvitations.find(
+      v =>
+        v[1].value[0].instance.getBoardId() ===
+        instances.econCommitteeCharter.getBoardId(),
+    );
+    assert(charterInvitation, 'missing charter invitation');
+
+    return charterInvitation;
+  };
+
+  const getCommitteeInvitation = async address => {
+    /** @type {any} */
+    const instance = await readLatestHead(`published.agoricNames.instance`);
+    const instances = Object.fromEntries(instance);
+
+    const voteWallet =
+      /** @type {import('@agoric/smart-wallet/src/smartWallet.js').CurrentWalletRecord} */ (
+        await readLatestHead(`published.wallet.${address}.current`)
+      );
+
+    const usedInvitationsForVoter = voteWallet.offerToUsedInvitation;
+
+    const committeeInvitationForVoter = usedInvitationsForVoter.find(
+      v =>
+        v[1].value[0].instance.getBoardId() ===
+        instances.economicCommittee.getBoardId(),
+    );
+    assert(
+      committeeInvitationForVoter,
+      `${address} must have committee invitation`,
+    );
+
+    return committeeInvitationForVoter;
+  };
+
+  const getLatestQuestion = async () => {
+    const { latestOutcome, latestQuestion } = await await retryUntilCondition(
+      () => fetchLatestEcQuestion({ follow: agoric.follow }),
+      electionResult =>
+        checkCommitteeElectionResult(electionResult, {
+          outcome: 'win',
+          deadline,
+        }),
+      'Governed param change election failed',
+      { setTimeout, retryIntervalMs: 5000, maxRetries: 15 },
+    );
+
+    return { latestOutcome, latestQuestion };
   };
 
   return {
     voteOnProposedChanges,
-    proposeVaultDirectorParamChange,
+    proposeParamChange,
+    getCharterInvitation,
+    getCommitteeInvitation,
+    getLatestQuestion,
   };
 };
