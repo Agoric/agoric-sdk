@@ -38,6 +38,7 @@ const options = {
   },
   chainInfo: { type: 'string' },
   assetInfo: { type: 'string' },
+  noNoble: { type: 'boolean', default: false },
 };
 const oraclesUsage = 'use --oracle name:address ...';
 
@@ -57,8 +58,9 @@ const assetInfoUsage =
  *   oracle?: string[];
  *   usdcDenom: string;
  *   feedPolicy?: string;
- *   chainInfo: string;
- *   assetInfo: string;
+ *   chainInfo?: string;
+ *   assetInfo?: string;
+ *   noNoble: boolean;
  * }} FastUSDCOpts
  */
 
@@ -107,6 +109,7 @@ export default async (homeP, endowments) => {
       feedPolicy,
       chainInfo,
       assetInfo,
+      noNoble,
       ...fees
     },
   } = parseArgs({ args: scriptArgs, options });
@@ -185,6 +188,7 @@ export default async (homeP, endowments) => {
     feedPolicy: parseFeedPolicy(),
     chainInfo: parseChainInfo(),
     assetInfo: parseAssetInfo(),
+    noNoble,
   });
 
   await writeCoreEval('start-fast-usdc', utils =>
