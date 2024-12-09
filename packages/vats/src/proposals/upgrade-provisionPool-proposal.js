@@ -60,15 +60,10 @@ export const upgradeProvisionPool = async (
     E(electorateCreatorFacet).getPoserInvitation(),
   ]);
 
-  const readCurrentGovernedParams = async () => {
-    await null;
-
-    const params = await E(ppPublicFacet).getGovernedParams();
-    return harden({
-      PerAccountInitialAmount: params.PerAccountInitialAmount.value,
-    });
-  };
-  const governedParamOverrides = await readCurrentGovernedParams();
+  const params = await E(ppPublicFacet).getGovernedParams();
+  const governedParamOverrides = harden({
+    PerAccountInitialAmount: params.PerAccountInitialAmount.value,
+  });
   trace('governedParamOverrides: ', { governedParamOverrides });
 
   const newPrivateArgs = harden({
