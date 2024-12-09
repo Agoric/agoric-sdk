@@ -1,6 +1,6 @@
 {
   "name": "@agoric/smart-wallet",
-  "version": "0.5.4-u18.2",
+  "version": "0.5.4-u18.3",
   "description": "Wallet contract",
   "type": "module",
   "main": "src/index.js",
@@ -17,7 +17,7 @@
     "lint:eslint": "eslint ."
   },
   "devDependencies": {
-    "@agoric/cosmic-proto": "^0.5.0-u18.2",
+    "@agoric/cosmic-proto": "^0.5.0-u18.3",
     "@agoric/swingset-vat": "^0.33.0-u18.0",
     "@endo/bundle-source": "^3.4.2",
     "@endo/captp": "^4.4.2",
@@ -26,13 +26,13 @@
     "import-meta-resolve": "^2.2.1"
   },
   "dependencies": {
-    "@agoric/casting": "^0.4.3-u18.2",
+    "@agoric/casting": "^0.4.3-u18.3",
     "@agoric/ertp": "^0.16.3-u18.0",
     "@agoric/internal": "^0.4.0-u18.0",
     "@agoric/notifier": "^0.7.0-u18.0",
     "@agoric/store": "^0.9.3-u18.0",
     "@agoric/vat-data": "^0.5.3-u18.0",
-    "@agoric/vats": "^0.16.0-u18.2",
+    "@agoric/vats": "^0.16.0-u18.3",
     "@agoric/vow": "^0.2.0-u18.0",
     "@agoric/zoe": "^0.26.3-u18.0",
     "@agoric/zone": "^0.3.0-u18.0",
