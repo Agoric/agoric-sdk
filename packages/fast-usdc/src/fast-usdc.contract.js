@@ -1,5 +1,5 @@
 import { AssetKind } from '@agoric/ertp';
-import { assertAllDefined, makeTracer } from '@agoric/internal';
+import { makeTracer } from '@agoric/internal';
 import { observeIteration, subscribeEach } from '@agoric/notifier';
 import {
   CosmosChainInfoShape,
@@ -126,7 +126,6 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
   });
 
   const makeFeedKit = prepareTransactionFeedKit(zone, zcf);
-  assertAllDefined({ makeFeedKit, makeAdvancer, makeSettler, statusManager });
 
   const makeLiquidityPoolKit = prepareLiquidityPoolKit(
     zone,
@@ -146,6 +145,20 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
     /** @type {(operatorId: string) => Promise<Invitation<OperatorKit>>} */
     async makeOperatorInvitation(operatorId) {
       return feedKit.creator.makeOperatorInvitation(operatorId);
+    },
+    async connectToNoble() {
+      return vowTools.when(nobleAccountV, nobleAccount => {
+        trace('nobleAccount', nobleAccount);
+        return vowTools.when(
+          E(nobleAccount).getAddress(),
+          intermediateRecipient => {
+            trace('intermediateRecipient', intermediateRecipient);
+            advancer.setIntermediateRecipient(intermediateRecipient);
+            settlerKit.creator.setIntermediateRecipient(intermediateRecipient);
+            return intermediateRecipient;
+          },
+        );
+      });
     },
   });
 
@@ -214,7 +227,9 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
       privateArgs.assetInfo,
     );
   }
+
   const nobleAccountV = zone.makeOnce('NobleAccount', () => makeNobleAccount());
+
   const feedKit = zone.makeOnce('Feed Kit', () => makeFeedKit());
 
   const poolAccountV = zone.makeOnce('PoolAccount', () => makeLocalAccount());
@@ -222,18 +237,12 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
     makeLocalAccount(),
   );
   // when() is OK here since this clearly resolves promptly.
-  /** @type {[HostInterface<OrchestrationAccount<{chainId: 'noble-1';}>>, HostInterface<OrchestrationAccount<{chainId: 'agoric-3';}>>, HostInterface<OrchestrationAccount<{chainId: 'agoric-3';}>>]} */
-  const [nobleAccount, poolAccount, settlementAccount] = await vowTools.when(
-    vowTools.all([nobleAccountV, poolAccountV, settleAccountV]),
+  /** @type {[HostInterface<OrchestrationAccount<{chainId: 'agoric-3';}>>, HostInterface<OrchestrationAccount<{chainId: 'agoric-3';}>>]} */
+  const [poolAccount, settlementAccount] = await vowTools.when(
+    vowTools.all([poolAccountV, settleAccountV]),
   );
   trace('settlementAccount', settlementAccount);
   trace('poolAccount', poolAccount);
-  trace('nobleAccount', nobleAccount);
-
-  const intermediateRecipient = await vowTools.when(
-    E(nobleAccount).getAddress(),
-  );
-  trace('intermediateRecipient', intermediateRecipient);
 
   const [_agoric, _noble, agToNoble] = await vowTools.when(
     chainHub.getChainsAndConnection('agoric', 'noble'),
@@ -243,7 +252,6 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
     sourceChannel: agToNoble.transferChannel.counterPartyChannelId,
     remoteDenom: 'uusdc',
     settlementAccount,
-    intermediateRecipient,
   });
 
   const advancer = zone.makeOnce('Advancer', () =>
@@ -251,7 +259,6 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
       borrowerFacet: poolKit.borrower,
       notifyFacet: settlerKit.notify,
       poolAccount,
-      intermediateRecipient,
     }),
   );
   // Connect evidence stream to advancer
