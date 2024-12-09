@@ -16,8 +16,7 @@ test('mintHolder BLD contract is upgraded', async t => {
   await provisionSmartWallet(receiver, `20000000ubld`);
 
   const labelList = await getPSMChildren(fetch, networkConfig);
-  // TODO: remove slice after fixing issue #10655
-  const assetList = await getAssetList(labelList.slice(2));
+  const assetList = await getAssetList(labelList);
   t.log(`labelList: `, labelList);
   t.log(`assetList: `, assetList);
 
@@ -27,6 +26,10 @@ test('mintHolder BLD contract is upgraded', async t => {
 
     await upgradeContract(`upgrade-mintHolder-${label}`, mintHolderVat);
     await mintPayment(t, receiver, label, denom);
-    await swap(t, receiver, label, denom, 5);
+
+    // TODO: remove condition after fixing issue #10655
+    if (!/^DAI/.test(label)) {
+      await swap(t, receiver, label, denom, 5);
+    }
   }
 });
