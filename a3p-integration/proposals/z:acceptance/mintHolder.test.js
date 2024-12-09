@@ -16,6 +16,7 @@ test('mintHolder BLD contract is upgraded', async t => {
   await provisionSmartWallet(receiver, `20000000ubld`);
 
   const labelList = await getPSMChildren(fetch, networkConfig);
+  // TODO: remove slice after fixing issue #10655
   const assetList = await getAssetList(labelList.slice(2));
   t.log(`labelList: `, labelList);
   t.log(`assetList: `, assetList);
