@@ -1,0 +1,7 @@
+{
+    "consume": {
+      "contractKits": true,
+      "namesByAddressAdmin": true,
+      "agoricNames": true
+    }
+}
