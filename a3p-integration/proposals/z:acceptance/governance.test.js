@@ -1,20 +1,16 @@
-/* global fetch setTimeout */
+/* global fetch */
 
 import test from 'ava';
 
-import { makeWalletUtils } from '@agoric/client-utils';
 import { GOV1ADDR, GOV2ADDR } from '@agoric/synthetic-chain';
 import { makeGovernanceDriver } from './test-lib/governance.js';
-import { networkConfig } from './test-lib/index.js';
-import { makeTimerUtils } from './test-lib/utils.js';
+import { networkConfig, walletUtils } from './test-lib/index.js';
 
 const GOV4ADDR = 'agoric1c9gyu460lu70rtcdp95vummd6032psmpdx7wdy';
 const governanceAddresses = [GOV4ADDR, GOV2ADDR, GOV1ADDR];
 
-// TODO test-lib export `walletUtils` with this ambient authority like s:stake-bld has
-/** @param {number} ms */
-const delay = ms =>
-  new Promise(resolve => setTimeout(() => resolve(undefined), ms));
+const { getLastUpdate } = walletUtils;
+const governanceDriver = await makeGovernanceDriver(fetch, networkConfig);
 
 const testSkipXXX = test.skip; // same lenth as test.serial to avoid reformatting all lines
 
@@ -22,35 +18,22 @@ const testSkipXXX = test.skip; // same lenth as test.serial to avoid reformattin
 testSkipXXX(
   'economic committee can make governance proposal and vote on it',
   async t => {
-    const { waitUntil } = makeTimerUtils({ setTimeout });
-    const { readLatestHead, getLastUpdate, getCurrentWalletRecord } =
-      await makeWalletUtils({ delay, fetch }, networkConfig);
-    const governanceDriver = await makeGovernanceDriver(fetch, networkConfig);
-
-    /** @type {any} */
-    const instance = await readLatestHead(`published.agoricNames.instance`);
-    const instances = Object.fromEntries(instance);
-
-    const wallet = await getCurrentWalletRecord(governanceAddresses[0]);
-    const usedInvitations = wallet.offerToUsedInvitation;
-
-    const charterInvitation = usedInvitations.find(
-      v =>
-        v[1].value[0].instance.getBoardId() ===
-        instances.econCommitteeCharter.getBoardId(),
+    const charterInvitation = await governanceDriver.getCharterInvitation(
+      governanceAddresses[0],
     );
-    assert(charterInvitation, 'missing charter invitation');
 
     const params = {
       ChargingPeriod: 400n,
     };
     const path = { paramPath: { key: 'governedParams' } };
     t.log('Proposing param change', { params, path });
+    const instanceName = 'VaultFactory';
 
-    await governanceDriver.proposeVaultDirectorParamChange(
+    await governanceDriver.proposeParamChange(
       governanceAddresses[0],
       params,
       path,
+      instanceName,
       charterInvitation[0],
     );
 
@@ -62,22 +45,9 @@ testSkipXXX(
 
     t.log('Voting on param change');
     for (const address of governanceAddresses) {
-      const voteWallet =
-        /** @type {import('@agoric/smart-wallet/src/smartWallet.js').CurrentWalletRecord} */ (
-          await readLatestHead(`published.wallet.${address}.current`)
-        );
+      const committeeInvitationForVoter =
+        await governanceDriver.getCommitteeInvitation(address);
 
-      const usedInvitationsForVoter = voteWallet.offerToUsedInvitation;
-
-      const committeeInvitationForVoter = usedInvitationsForVoter.find(
-        v =>
-          v[1].value[0].instance.getBoardId() ===
-          instances.economicCommittee.getBoardId(),
-      );
-      assert(
-        committeeInvitationForVoter,
-        `${address} must have committee invitation`,
-      );
       await governanceDriver.voteOnProposedChanges(
         address,
         committeeInvitationForVoter[0],
@@ -90,21 +60,7 @@ testSkipXXX(
       });
     }
 
-    const latestQuestion =
-      /** @type {import('@agoric/governance/src/types.js').QuestionSpec} */ (
-        await readLatestHead(
-          'published.committees.Economic_Committee.latestQuestion',
-        )
-      );
-    t.log('Waiting for deadline', latestQuestion);
-    /** @type {bigint} */
-    // @ts-expect-error assume POSIX seconds since epoch
-    const deadline = latestQuestion.closingRule.deadline;
-    await waitUntil(deadline);
-
-    const latestOutcome = await readLatestHead(
-      'published.committees.Economic_Committee.latestOutcome',
-    );
+    const { latestOutcome } = await governanceDriver.getLatestQuestion();
     t.log('Verifying latest outcome', latestOutcome);
     t.like(latestOutcome, { outcome: 'win' });
   },
