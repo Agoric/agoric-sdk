@@ -6,6 +6,7 @@ import { M } from '@endo/patterns';
 import {
   AmountArgShape,
   ChainAddressShape,
+  DelegationShape,
   DenomAmountShape,
   IBCTransferOptionsShape,
 } from '../typeGuards.js';
@@ -37,4 +38,21 @@ export const orchestrationAccountMethods = {
     }),
   ),
   getPublicTopics: M.call().returns(Vow$(TopicsRecordShape)),
+};
+
+export const orchestrationAccountInvitationMakers = {
+  Delegate: M.call(ChainAddressShape, AmountArgShape).returns(M.promise()),
+  Redelegate: M.call(
+    ChainAddressShape,
+    ChainAddressShape,
+    AmountArgShape,
+  ).returns(M.promise()),
+  WithdrawReward: M.call(ChainAddressShape).returns(M.promise()),
+  Undelegate: M.call(M.arrayOf(DelegationShape)).returns(M.promise()),
+  DeactivateAccount: M.call().returns(M.promise()),
+  ReactivateAccount: M.call().returns(M.promise()),
+  TransferAccount: M.call().returns(M.promise()),
+  Send: M.call().returns(M.promise()),
+  SendAll: M.call().returns(M.promise()),
+  Transfer: M.call().returns(M.promise()),
 };
