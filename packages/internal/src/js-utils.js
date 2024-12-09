@@ -87,3 +87,12 @@ export const makeMeasureSeconds = currentTimeMillisec => {
   };
   return measureSeconds;
 };
+
+/**
+ * @param {import('@endo/pass-style').CopyRecord} obj
+ * @returns {string}
+ */
+export const stringifyWithBigint = obj =>
+  JSON.stringify(obj, (key, value) => {
+    return typeof value === 'bigint' ? value.toString() : value;
+  });
