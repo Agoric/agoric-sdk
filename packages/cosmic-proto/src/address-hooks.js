@@ -1,8 +1,9 @@
 /**
- * @module address-hooks
- * @file This module provides functions for encoding and decoding address hooks
- *   which are comprised of a bech32 base address with an HTTP query string, all
- *   wrapped in a bech32 envelope.
+ * This module provides functions for encoding and decoding address hooks
+ * which are comprised of a bech32 base address with an HTTP query string, all
+ * wrapped in a bech32 envelope.
+ *
+ * @module address-hooks.js
  * @example
  *
  *     import {
