@@ -22,6 +22,7 @@ import { prepareTransactionFeedKit } from './exos/transaction-feed.js';
 import * as flows from './fast-usdc.flows.js';
 import { FastUSDCTermsShape, FeeConfigShape } from './type-guards.js';
 import { defineInertInvitation } from './utils/zoe.js';
+import { organizeMakers } from './utils/make-helpers.js';
 
 const trace = makeTracer('FastUsdc');
 
@@ -139,7 +140,9 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
     'test of forcing evidence',
   );
 
-  const { makeLocalAccount, makeNobleAccount } = orchestrateAll(flows, {});
+  const { make: { LocalAccount, NobleAccount } } = organizeMakers(
+    orchestrateAll(flows, {})
+  );
 
   const creatorFacet = zone.exo('Fast USDC Creator', undefined, {
     /** @type {(operatorId: string) => Promise<Invitation<OperatorKit>>} */
@@ -228,13 +231,13 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
     );
   }
 
-  const nobleAccountV = zone.makeOnce('NobleAccount', () => makeNobleAccount());
+  const nobleAccountV = zone.makeOnce('NobleAccount', () => NobleAccount());
 
   const feedKit = zone.makeOnce('Feed Kit', () => makeFeedKit());
 
-  const poolAccountV = zone.makeOnce('PoolAccount', () => makeLocalAccount());
+  const poolAccountV = zone.makeOnce('PoolAccount', () => LocalAccount());
   const settleAccountV = zone.makeOnce('SettleAccount', () =>
-    makeLocalAccount(),
+    LocalAccount(),
   );
   // when() is OK here since this clearly resolves promptly.
   /** @type {[HostInterface<OrchestrationAccount<{chainId: 'agoric-3';}>>, HostInterface<OrchestrationAccount<{chainId: 'agoric-3';}>>]} */
