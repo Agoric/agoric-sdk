@@ -2,8 +2,9 @@
  * Takes an object of make* functions and returns an object with a single 'make' property
  * containing those functions renamed without the 'make' prefix.
  *
- * @param {Record<string, Function>} makers - Object containing make* functions
- * @returns {{ make: Record<string, Function> }} Transformed object
+ * @template {Record<`make${string}`, Function>} T
+ * @param {T} makers - Object containing make* functions
+ * @returns {{ make: { [K in keyof T as K extends `make${infer R}` ? R : never]: T[K] } }} Transformed object
  */
 export const organizeMakers = makers => {
   const make = {};
