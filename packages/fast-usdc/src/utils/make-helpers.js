@@ -9,10 +9,12 @@
 export const organizeMakers = makers => {
   const make = {};
   for (const [key, fn] of Object.entries(makers)) {
-    if (key.startsWith('make')) {
-      const newKey = key.slice(4); // Remove 'make'
-      make[newKey] = fn;
+    if (!key.startsWith('make')) {
+      throw new Error(`Unexpected key ${key}`);
     }
+    const newKey = key.slice(4); // Remove 'make'
+    make[newKey] = fn;
   }
+  // @ts-expect-error cast
   return harden({ make });
 };
