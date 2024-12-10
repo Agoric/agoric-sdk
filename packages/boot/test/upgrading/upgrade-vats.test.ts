@@ -1,4 +1,3 @@
-/* eslint-disable @jessie.js/safe-await-separator -- test */
 import { test } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
 
 import { BridgeId, deepCopyJsonable } from '@agoric/internal';
