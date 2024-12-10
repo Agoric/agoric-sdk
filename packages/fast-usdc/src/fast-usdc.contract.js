@@ -140,9 +140,9 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
     'test of forcing evidence',
   );
 
-  const { make: { LocalAccount, NobleAccount } } = organizeMakers(
-    orchestrateAll(flows, {})
-  );
+  const {
+    make: { LocalAccount, NobleAccount },
+  } = organizeMakers(orchestrateAll(flows, {}));
 
   const creatorFacet = zone.exo('Fast USDC Creator', undefined, {
     /** @type {(operatorId: string) => Promise<Invitation<OperatorKit>>} */
@@ -236,9 +236,7 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
   const feedKit = zone.makeOnce('Feed Kit', () => makeFeedKit());
 
   const poolAccountV = zone.makeOnce('PoolAccount', () => LocalAccount());
-  const settleAccountV = zone.makeOnce('SettleAccount', () =>
-    LocalAccount(),
-  );
+  const settleAccountV = zone.makeOnce('SettleAccount', () => LocalAccount());
   // when() is OK here since this clearly resolves promptly.
   /** @type {[HostInterface<OrchestrationAccount<{chainId: 'agoric-3';}>>, HostInterface<OrchestrationAccount<{chainId: 'agoric-3';}>>]} */
   const [poolAccount, settlementAccount] = await vowTools.when(
