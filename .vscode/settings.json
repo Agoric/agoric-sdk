@@ -1,0 +1,8 @@
+{
+  "githubPullRequests.ignoredPullRequestBranches": [
+    "master"
+  ],
+  "prettier.arrowParens": "avoid",
+  "prettier.singleQuote": true,
+  "prettier.trailingComma": "all"
+}

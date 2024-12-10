@@ -302,6 +302,7 @@ export default async function main(
     const swingsetConfig = harden(initAction.resolvedConfig || {});
     validateSwingsetConfig(swingsetConfig);
     const {
+      maxVatsOnline,
       slogfile,
       vatSnapshotRetention,
       vatTranscriptRetention,
@@ -558,7 +559,7 @@ export default async function main(
       archiveSnapshot,
       archiveTranscript,
       afterCommitCallback,
-      swingsetConfig,
+      maxVatsOnline,
     });
 
     const { blockingSend, shutdown } = s;
