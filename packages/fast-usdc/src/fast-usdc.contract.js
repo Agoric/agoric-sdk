@@ -12,6 +12,7 @@ import {
 import { makeZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
 import { provideSingleton } from '@agoric/zoe/src/contractSupport/durability.js';
 import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/recorder.js';
+import { Fail } from '@endo/errors';
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
 import { prepareAdvancer } from './exos/advancer.js';
@@ -27,6 +28,7 @@ const trace = makeTracer('FastUsdc');
 
 const STATUS_NODE = 'status';
 const FEE_NODE = 'feeConfig';
+const ADDRESSES_BAGGAGE_KEY = 'addresses';
 
 /**
  * @import {HostInterface} from '@agoric/async-flow';
@@ -174,6 +176,7 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
       });
     },
     async publishAddresses() {
+      !baggage.has(ADDRESSES_BAGGAGE_KEY) || Fail`Addresses already published`;
       const [poolAccountAddress, settlementAccountAddress] =
         await vowTools.when(
           vowTools.all([
@@ -181,10 +184,13 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
             E(settlementAccount).getAddress(),
           ]),
         );
-      await publishAddresses(storageNode, {
+      const addresses = harden({
         poolAccount: poolAccountAddress.value,
         settlementAccount: settlementAccountAddress.value,
       });
+      baggage.init(ADDRESSES_BAGGAGE_KEY, addresses);
+      await publishAddresses(storageNode, addresses);
+      return addresses;
     },
   });
 
@@ -211,6 +217,13 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
     },
     getPublicTopics() {
       return poolKit.public.getPublicTopics();
+    },
+    getStaticInfo() {
+      baggage.has(ADDRESSES_BAGGAGE_KEY) ||
+        Fail`no addresses. creator must 'publishAddresses' first`;
+      return harden({
+        [ADDRESSES_BAGGAGE_KEY]: baggage.get(ADDRESSES_BAGGAGE_KEY),
+      });
     },
   });
 

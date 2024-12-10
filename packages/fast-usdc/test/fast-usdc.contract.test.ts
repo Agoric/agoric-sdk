@@ -86,6 +86,7 @@ const startContract = async (
     ),
   );
   await E(startKit.creatorFacet).connectToNoble();
+  await E(startKit.creatorFacet).publishAddresses();
 
   return {
     ...startKit,
@@ -177,6 +178,18 @@ test('baggage', async t => {
 
   const tree = inspectMapStore(contractBaggage);
   t.snapshot(tree, 'contract baggage after start');
+});
+
+test('getStaticInfo', async t => {
+  const { startKit } = t.context;
+  const { publicFacet } = startKit;
+
+  t.deepEqual(await E(publicFacet).getStaticInfo(), {
+    addresses: {
+      poolAccount: 'agoric1fakeLCAAddress',
+      settlementAccount: 'agoric1fakeLCAAddress1',
+    },
+  });
 });
 
 const purseOf =

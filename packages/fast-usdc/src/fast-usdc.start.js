@@ -227,7 +227,8 @@ export const startFastUSDC = async (
   produceInstance.reset();
   produceInstance.resolve(instance);
 
-  await E(kit.creatorFacet).publishAddresses();
+  const addresses = await E(kit.creatorFacet).publishAddresses();
+  trace('contract orch account addresses', addresses);
   if (!net.noNoble) {
     const addr = await E(kit.creatorFacet).connectToNoble();
     trace('noble intermediate recipient', addr);
