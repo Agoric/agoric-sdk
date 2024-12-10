@@ -30,7 +30,7 @@ const FEE_NODE = 'feeConfig';
 
 /**
  * @import {HostInterface} from '@agoric/async-flow';
- * @import {CosmosChainInfo, Denom, DenomDetail, OrchestrationAccount} from '@agoric/orchestration';
+ * @import {ChainAddress, CosmosChainInfo, Denom, DenomDetail, OrchestrationAccount} from '@agoric/orchestration';
  * @import {OrchestrationPowers, OrchestrationTools} from '@agoric/orchestration/src/utils/start-helper.js';
  * @import {Remote} from '@agoric/internal';
  * @import {Marshaller, StorageNode} from '@agoric/internal/src/lib-chainStorage.js'
@@ -70,6 +70,17 @@ const publishFeeConfig = async (node, marshaller, feeConfig) => {
   const feeNode = E(node).makeChildNode(FEE_NODE);
   const value = await E(marshaller).toCapData(feeConfig);
   return E(feeNode).setValue(JSON.stringify(value));
+};
+
+/**
+ * @param {Remote<StorageNode>} contractNode
+ * @param {{
+ *  poolAccount: ChainAddress['value'];
+ *  settlementAccount: ChainAddress['value'];
+ * }} addresses
+ */
+const publishAddresses = (contractNode, addresses) => {
+  return E(contractNode).setValue(JSON.stringify(addresses));
 };
 
 /**
@@ -158,6 +169,19 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
             return intermediateRecipient;
           },
         );
+      });
+    },
+    async publishAddresses() {
+      const [poolAccountAddress, settlementAccountAddress] =
+        await vowTools.when(
+          vowTools.all([
+            E(poolAccount).getAddress(),
+            E(settlementAccount).getAddress(),
+          ]),
+        );
+      await publishAddresses(storageNode, {
+        poolAccount: poolAccountAddress.value,
+        settlementAccount: settlementAccountAddress.value,
       });
     },
   });

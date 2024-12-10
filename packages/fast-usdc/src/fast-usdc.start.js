@@ -224,6 +224,7 @@ export const startFastUSDC = async (
   produceInstance.reset();
   produceInstance.resolve(instance);
 
+  await E(kit.creatorFacet).publishAddresses();
   if (!net.noNoble) {
     const addr = await E(kit.creatorFacet).connectToNoble();
     trace('noble intermediate recipient', addr);
