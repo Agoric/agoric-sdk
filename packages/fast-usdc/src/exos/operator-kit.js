@@ -86,7 +86,7 @@ export const prepareOperatorKit = (zone, staticPowers) =>
         async SubmitEvidence(evidence) {
           const { operator } = this.facets;
           // TODO(bootstrap integration): cause this call to throw and confirm that it
-          // shows up in the the smart-wallet UpdateRecord `error` property
+          // shows up in the smart-wallet UpdateRecord `error` property
           await operator.submitEvidence(evidence);
           return staticPowers.makeInertInvitation(
             'evidence was pushed in the invitation maker call',
