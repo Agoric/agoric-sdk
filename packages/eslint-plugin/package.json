@@ -1,0 +1,27 @@
+{
+  "name": "@agoric/eslint-plugin",
+  "version": "0.1.0",
+  "description": "ESLint plugin for Agoric best practices",
+  "main": "src/index.js",
+  "type": "module",
+  "files": [
+    "src"
+  ],
+  "keywords": [
+    "eslint",
+    "eslintplugin",
+    "eslint-plugin"
+  ],
+  "scripts": {
+    "build": "exit 0",
+    "test": "node --test **/*.test.*"
+  },
+  "peerDependencies": {
+    "eslint": "^8.57.1"
+  },
+  "devDependencies": {
+    "eslint": "^8.57.1",
+    "eslint-plugin-eslint-plugin": "^6.3.2"
+  },
+  "license": "Apache-2.0"
+}
