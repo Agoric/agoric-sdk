@@ -308,6 +308,7 @@ export async function buildSwingset(
  * @property {ReturnType<typeof import('@agoric/swing-store').makeArchiveTranscript>} [archiveTranscript]
  * @property {() => object | Promise<object>} [afterCommitCallback]
  * @property {number} [maxVatsOnline]
+ * @property {boolean} [restartWorkerOnSnapshot]
  */
 
 /**
@@ -338,6 +339,7 @@ export async function launch({
   archiveTranscript,
   afterCommitCallback = async () => ({}),
   maxVatsOnline,
+  restartWorkerOnSnapshot,
 }) {
   console.info('Launching SwingSet kernel');
 
@@ -415,8 +417,10 @@ export async function launch({
   });
 
   console.debug(`buildSwingset`);
+  /** @type {import('@agoric/swingset-vat').VatWarehousePolicy} */
   const warehousePolicy = {
     maxVatsOnline,
+    restartWorkerOnSnapshot,
   };
   const {
     coreProposals: bootstrapCoreProposals,

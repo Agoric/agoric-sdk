@@ -316,6 +316,10 @@ export default async function main(
       ? vatTranscriptRetention !== 'operational'
       : false;
 
+    const restartWorkerOnSnapshot = processValue.getBoolean({
+      envName: 'XSNAP_RESTART_ON_SNAPSHOT',
+    });
+
     // As a kludge, back-propagate selected configuration into environment variables.
     // eslint-disable-next-line dot-notation
     if (slogfile) env['SLOGFILE'] = slogfile;
@@ -560,6 +564,7 @@ export default async function main(
       archiveTranscript,
       afterCommitCallback,
       maxVatsOnline,
+      restartWorkerOnSnapshot,
     });
 
     const { blockingSend, shutdown } = s;
