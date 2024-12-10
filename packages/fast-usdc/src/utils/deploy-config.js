@@ -35,6 +35,11 @@ export const defaultAssetInfo = [
     },
   ],
 ];
+harden(defaultAssetInfo);
+
+const agoricAssetInfo = defaultAssetInfo.filter(
+  ([_d, i]) => i.chainName === 'agoric',
+);
 
 /**
  * @type {Record<string, Pick<FastUSDCConfig, 'oracles' | 'feedPolicy' | 'chainInfo' | 'assetInfo' >>}
@@ -43,6 +48,11 @@ export const defaultAssetInfo = [
  * meanwhile, use price oracle addresses (from updatePriceFeeds.js).
  */
 export const configurations = {
+  /**
+   * NOTE: The a3p-integration runtime does _not_ include
+   * a noble chain; this limits functionality to advancing
+   * to the Agoric chain.
+   */
   A3P_INTEGRATION: {
     oracles: {
       gov1: 'agoric1ee9hr0jyrxhy999y755mp862ljgycmwyp4pl7q',
@@ -50,7 +60,7 @@ export const configurations = {
       gov3: 'agoric1ydzxwh6f893jvpaslmaz6l8j2ulup9a7x8qvvq',
     },
     feedPolicy: {
-      nobleAgoricChannelId: 'TODO',
+      nobleAgoricChannelId: 'channel-does-not-exist',
       nobleDomainId: 4,
       chainPolicies: {
         Arbitrum: {
@@ -63,9 +73,13 @@ export const configurations = {
       },
     },
     chainInfo: /** @type {Record<string, CosmosChainInfo & Passable>} */ (
-      withChainCapabilities(fetchedChainInfo)
+      withChainCapabilities({
+        agoric: fetchedChainInfo.agoric,
+        // registering USDC-on-agoric requires registering the noble chain
+        noble: fetchedChainInfo.noble,
+      })
     ),
-    assetInfo: defaultAssetInfo,
+    assetInfo: agoricAssetInfo,
   },
   MAINNET: {
     oracles: {
@@ -139,3 +153,4 @@ export const configurations = {
     assetInfo: defaultAssetInfo, // TODO: use emerynet values
   },
 };
+harden(configurations);

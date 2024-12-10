@@ -147,12 +147,11 @@ export const startFastUSDC = async (
     USDC: await E(USDCissuer).getBrand(),
   });
 
-  const { terms, oracles, feeConfig, feedPolicy, chainInfo, assetInfo } =
-    fromExternalConfig(
-      config?.options, // just in case config is missing somehow
-      brands,
-      FastUSDCConfigShape,
-    );
+  const { terms, oracles, feeConfig, feedPolicy, ...net } = fromExternalConfig(
+    config.options,
+    brands,
+    FastUSDCConfigShape,
+  );
   trace('using terms', terms);
   trace('using fee config', feeConfig);
 
@@ -186,8 +185,8 @@ export const startFastUSDC = async (
       storageNode,
       timerService,
       marshaller,
-      chainInfo,
-      assetInfo,
+      chainInfo: net.chainInfo,
+      assetInfo: net.assetInfo,
     }),
   );
 
@@ -224,6 +223,11 @@ export const startFastUSDC = async (
 
   produceInstance.reset();
   produceInstance.resolve(instance);
+
+  if (!net.noNoble) {
+    const addr = await E(kit.creatorFacet).connectToNoble();
+    trace('noble intermediate recipient', addr);
+  }
   trace('startFastUSDC done', instance);
 };
 harden(startFastUSDC);
