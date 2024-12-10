@@ -102,47 +102,41 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
   const { USDC } = terms.brands;
   const { withdrawToSeat } = tools.zoeTools;
   const { baggage, chainHub, orchestrateAll, vowTools } = tools;
-  const makeSettler = prepareSettler(zone, {
-    statusManager,
-    USDC,
-    withdrawToSeat,
-    feeConfig,
-    vowTools: tools.vowTools,
-    zcf,
-    chainHub,
-  });
 
   const { localTransfer } = makeZoeTools(zcf, vowTools);
-  const makeAdvancer = prepareAdvancer(zone, {
-    chainHub,
-    feeConfig,
-    localTransfer,
-    usdc: harden({
-      brand: terms.brands.USDC,
-      denom: terms.usdcDenom,
+
+  const { make } = organizeMakers({
+    ...orchestrateAll(flows, {}),
+    makeSettler: prepareSettler(zone, {
+      statusManager,
+      USDC,
+      withdrawToSeat,
+      feeConfig,
+      vowTools: tools.vowTools,
+      zcf,
+      chainHub,
     }),
-    statusManager,
-    vowTools,
-    zcf,
+    makeAdvancer: prepareAdvancer(zone, {
+      chainHub,
+      feeConfig,
+      localTransfer,
+      usdc: harden({
+        brand: terms.brands.USDC,
+        denom: terms.usdcDenom,
+      }),
+      statusManager,
+      vowTools,
+      zcf,
+    }),
+    makeFeedKit: prepareTransactionFeedKit(zone, zcf),
+    makeLiquidityPoolKit: prepareLiquidityPoolKit(
+      zone,
+      zcf,
+      terms.brands.USDC,
+      { makeRecorderKit },
+    ),
+    makeTestInvitation: defineInertInvitation(zcf, 'test of forcing evidence'),
   });
-
-  const makeFeedKit = prepareTransactionFeedKit(zone, zcf);
-
-  const makeLiquidityPoolKit = prepareLiquidityPoolKit(
-    zone,
-    zcf,
-    terms.brands.USDC,
-    { makeRecorderKit },
-  );
-
-  const makeTestInvitation = defineInertInvitation(
-    zcf,
-    'test of forcing evidence',
-  );
-
-  const {
-    make: { LocalAccount, NobleAccount },
-  } = organizeMakers(orchestrateAll(flows, {}));
 
   const creatorFacet = zone.exo('Fast USDC Creator', undefined, {
     /** @type {(operatorId: string) => Promise<Invitation<OperatorKit>>} */
@@ -178,7 +172,7 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
      */
     makeTestPushInvitation(evidence) {
       void advancer.handleTransactionEvent(evidence);
-      return makeTestInvitation();
+      return make.TestInvitation();
     },
     makeDepositInvitation() {
       return poolKit.public.makeDepositInvitation();
@@ -216,7 +210,7 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
   );
 
   const poolKit = zone.makeOnce('Liquidity Pool kit', () =>
-    makeLiquidityPoolKit(shareMint, privateArgs.storageNode),
+    make.LiquidityPoolKit(shareMint, privateArgs.storageNode),
   );
 
   /** Chain, connection, and asset info can only be registered once */
@@ -231,12 +225,16 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
     );
   }
 
-  const nobleAccountV = zone.makeOnce('NobleAccount', () => NobleAccount());
+  const nobleAccountV = zone.makeOnce('NobleAccount', () =>
+    make.NobleAccount(),
+  );
 
-  const feedKit = zone.makeOnce('Feed Kit', () => makeFeedKit());
+  const feedKit = zone.makeOnce('Feed Kit', () => make.FeedKit());
 
-  const poolAccountV = zone.makeOnce('PoolAccount', () => LocalAccount());
-  const settleAccountV = zone.makeOnce('SettleAccount', () => LocalAccount());
+  const poolAccountV = zone.makeOnce('PoolAccount', () => make.LocalAccount());
+  const settleAccountV = zone.makeOnce('SettleAccount', () =>
+    make.LocalAccount(),
+  );
   // when() is OK here since this clearly resolves promptly.
   /** @type {[HostInterface<OrchestrationAccount<{chainId: 'agoric-3';}>>, HostInterface<OrchestrationAccount<{chainId: 'agoric-3';}>>]} */
   const [poolAccount, settlementAccount] = await vowTools.when(
@@ -248,7 +246,7 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
   const [_agoric, _noble, agToNoble] = await vowTools.when(
     chainHub.getChainsAndConnection('agoric', 'noble'),
   );
-  const settlerKit = makeSettler({
+  const settlerKit = make.Settler({
     repayer: poolKit.repayer,
     sourceChannel: agToNoble.transferChannel.counterPartyChannelId,
     remoteDenom: 'uusdc',
@@ -256,7 +254,7 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
   });
 
   const advancer = zone.makeOnce('Advancer', () =>
-    makeAdvancer({
+    make.Advancer({
       borrowerFacet: poolKit.borrower,
       notifyFacet: settlerKit.notify,
       poolAccount,
