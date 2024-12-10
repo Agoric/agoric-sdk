@@ -21,6 +21,7 @@ export default [
   "@agoric/deploy-script-support",
   "@agoric/ertp",
   "@agoric/eslint-config",
+  "@agoric/eslint-plugin",
   "@agoric/fast-usdc",
   "@agoric/governance",
   "@agoric/import-manager",
