@@ -30,7 +30,7 @@ const FEE_NODE = 'feeConfig';
 
 /**
  * @import {HostInterface} from '@agoric/async-flow';
- * @import {CosmosChainInfo, Denom, DenomDetail, OrchestrationAccount} from '@agoric/orchestration';
+ * @import {ChainAddress, CosmosChainInfo, Denom, DenomDetail, OrchestrationAccount} from '@agoric/orchestration';
  * @import {OrchestrationPowers, OrchestrationTools} from '@agoric/orchestration/src/utils/start-helper.js';
  * @import {Remote} from '@agoric/internal';
  * @import {Marshaller, StorageNode} from '@agoric/internal/src/lib-chainStorage.js'
@@ -53,10 +53,11 @@ export const meta = {
   privateArgsShape: {
     // @ts-expect-error TypedPattern not recognized as record
     ...OrchestrationPowersShape,
+    assetInfo: M.arrayOf([DenomShape, DenomDetailShape]),
+    chainInfo: M.recordOf(M.string(), CosmosChainInfoShape),
     feeConfig: FeeConfigShape,
     marshaller: M.remotable(),
-    chainInfo: M.recordOf(M.string(), CosmosChainInfoShape),
-    assetInfo: M.arrayOf([DenomShape, DenomDetailShape]),
+    poolMetricsNode: M.remotable(),
   },
 };
 harden(meta);
@@ -73,12 +74,24 @@ const publishFeeConfig = async (node, marshaller, feeConfig) => {
 };
 
 /**
+ * @param {Remote<StorageNode>} contractNode
+ * @param {{
+ *  poolAccount: ChainAddress['value'];
+ *  settlementAccount: ChainAddress['value'];
+ * }} addresses
+ */
+const publishAddresses = (contractNode, addresses) => {
+  return E(contractNode).setValue(JSON.stringify(addresses));
+};
+
+/**
  * @param {ZCF<FastUsdcTerms>} zcf
  * @param {OrchestrationPowers & {
- *   marshaller: Marshaller;
- *   feeConfig: FeeConfig;
- *   chainInfo: Record<string, CosmosChainInfo>;
  *   assetInfo: [Denom, DenomDetail & { brandKey?: string}][];
+ *   chainInfo: Record<string, CosmosChainInfo>;
+ *   feeConfig: FeeConfig;
+ *   marshaller: Marshaller;
+ *   poolMetricsNode: Remote<StorageNode>;
  * }} privateArgs
  * @param {Zone} zone
  * @param {OrchestrationTools} tools
@@ -160,6 +173,19 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
         );
       });
     },
+    async publishAddresses() {
+      const [poolAccountAddress, settlementAccountAddress] =
+        await vowTools.when(
+          vowTools.all([
+            E(poolAccount).getAddress(),
+            E(settlementAccount).getAddress(),
+          ]),
+        );
+      await publishAddresses(storageNode, {
+        poolAccount: poolAccountAddress.value,
+        settlementAccount: settlementAccountAddress.value,
+      });
+    },
   });
 
   const publicFacet = zone.exo('Fast USDC Public', undefined, {
@@ -213,7 +239,7 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
   );
 
   const poolKit = zone.makeOnce('Liquidity Pool kit', () =>
-    makeLiquidityPoolKit(shareMint, privateArgs.storageNode),
+    makeLiquidityPoolKit(shareMint, privateArgs.poolMetricsNode),
   );
 
   /** Chain, connection, and asset info can only be registered once */
