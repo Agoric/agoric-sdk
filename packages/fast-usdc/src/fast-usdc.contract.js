@@ -53,10 +53,11 @@ export const meta = {
   privateArgsShape: {
     // @ts-expect-error TypedPattern not recognized as record
     ...OrchestrationPowersShape,
+    assetInfo: M.arrayOf([DenomShape, DenomDetailShape]),
+    chainInfo: M.recordOf(M.string(), CosmosChainInfoShape),
     feeConfig: FeeConfigShape,
     marshaller: M.remotable(),
-    chainInfo: M.recordOf(M.string(), CosmosChainInfoShape),
-    assetInfo: M.arrayOf([DenomShape, DenomDetailShape]),
+    poolMetricsNode: M.remotable(),
   },
 };
 harden(meta);
@@ -86,10 +87,11 @@ const publishAddresses = (contractNode, addresses) => {
 /**
  * @param {ZCF<FastUsdcTerms>} zcf
  * @param {OrchestrationPowers & {
- *   marshaller: Marshaller;
- *   feeConfig: FeeConfig;
- *   chainInfo: Record<string, CosmosChainInfo>;
  *   assetInfo: [Denom, DenomDetail & { brandKey?: string}][];
+ *   chainInfo: Record<string, CosmosChainInfo>;
+ *   feeConfig: FeeConfig;
+ *   marshaller: Marshaller;
+ *   poolMetricsNode: Remote<StorageNode>;
  * }} privateArgs
  * @param {Zone} zone
  * @param {OrchestrationTools} tools
@@ -237,7 +239,7 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
   );
 
   const poolKit = zone.makeOnce('Liquidity Pool kit', () =>
-    makeLiquidityPoolKit(shareMint, privateArgs.storageNode),
+    makeLiquidityPoolKit(shareMint, privateArgs.poolMetricsNode),
   );
 
   /** Chain, connection, and asset info can only be registered once */

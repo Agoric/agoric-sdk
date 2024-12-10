@@ -78,6 +78,7 @@ const publishDisplayInfo = async (brand, { board, chainStorage }) => {
 };
 
 const FEED_POLICY = 'feedPolicy';
+const POOL_METRICS = 'poolMetrics';
 
 /**
  * @param {ERef<StorageNode>} node
@@ -175,6 +176,7 @@ export const startFastUSDC = async (
       chainStorage,
     },
   );
+  const poolMetricsNode = await E(storageNode).makeChildNode(POOL_METRICS);
 
   const privateArgs = await deeplyFulfilledObject(
     harden({
@@ -182,6 +184,7 @@ export const startFastUSDC = async (
       feeConfig,
       localchain,
       orchestrationService: cosmosInterchainService,
+      poolMetricsNode,
       storageNode,
       timerService,
       marshaller,
