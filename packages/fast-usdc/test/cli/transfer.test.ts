@@ -64,7 +64,7 @@ test('Transfer registers the noble forwarding account if it does not exist', asy
   const out = mockOut();
   const file = mockFile(path, JSON.stringify(config));
   const agoricSettlementAccount = 'agoric123456';
-  const settlementAccountVstoragePath = 'published.fastUSDC.settlementAccount';
+  const settlementAccountVstoragePath = 'published.fastUsdc.settlementAccount';
   const vstorageMock = makeVstorageMock({
     [settlementAccountVstoragePath]: agoricSettlementAccount,
   });
@@ -115,7 +115,7 @@ test('Transfer signs and broadcasts the depositForBurn message on Ethereum', asy
   const out = mockOut();
   const file = mockFile(path, JSON.stringify(config));
   const agoricSettlementAccount = 'agoric123456';
-  const settlementAccountVstoragePath = 'published.fastUSDC.settlementAccount';
+  const settlementAccountVstoragePath = 'published.fastUsdc.settlementAccount';
   const vstorageMock = makeVstorageMock({
     [settlementAccountVstoragePath]: agoricSettlementAccount,
   });

@@ -44,7 +44,7 @@ const createTestExtensions = (t, common: CommonSetup) => {
 
   const statusManager = prepareStatusManager(
     rootZone.subZone('status-manager'),
-    async () => storageNode.makeChildNode('status'),
+    storageNode.makeChildNode('status'),
   );
 
   const mockAccounts = prepareMockOrchAccounts(rootZone.subZone('accounts'), {
@@ -162,6 +162,7 @@ test('updates status to ADVANCING in happy path', async t => {
       mocks: { mockPoolAccount, resolveLocalTransferV },
     },
     brands: { usdc },
+    bootstrap: { storage },
   } = t.context;
 
   const mockEvidence = MockCctpTxEvidences.AGORIC_PLUS_OSMO();
@@ -174,14 +175,9 @@ test('updates status to ADVANCING in happy path', async t => {
   // wait for handleTransactionEvent to do work
   await eventLoopIteration();
 
-  const entries = statusManager.lookupPending(
-    mockEvidence.tx.forwardingAddress,
-    mockEvidence.tx.amount,
-  );
-
   t.deepEqual(
-    entries,
-    [{ ...mockEvidence, status: PendingTxStatus.Advancing }],
+    storage.data.get(`mockChainStorageRoot.status.${mockEvidence.txHash}`),
+    PendingTxStatus.Advancing,
     'ADVANCED status in happy path',
   );
 
@@ -210,6 +206,7 @@ test('updates status to ADVANCING in happy path', async t => {
 
 test('updates status to OBSERVED on insufficient pool funds', async t => {
   const {
+    bootstrap: { storage },
     extensions: {
       services: { makeAdvancer, statusManager },
       helpers: { inspectLogs },
@@ -229,14 +226,9 @@ test('updates status to OBSERVED on insufficient pool funds', async t => {
   void advancer.handleTransactionEvent(mockEvidence);
   await eventLoopIteration();
 
-  const entries = statusManager.lookupPending(
-    mockEvidence.tx.forwardingAddress,
-    mockEvidence.tx.amount,
-  );
-
   t.deepEqual(
-    entries,
-    [{ ...mockEvidence, status: PendingTxStatus.Observed }],
+    storage.data.get(`mockChainStorageRoot.status.${mockEvidence.txHash}`),
+    PendingTxStatus.Observed,
     'OBSERVED status on insufficient pool funds',
   );
 
@@ -248,6 +240,7 @@ test('updates status to OBSERVED on insufficient pool funds', async t => {
 
 test('updates status to OBSERVED if makeChainAddress fails', async t => {
   const {
+    bootstrap: { storage },
     extensions: {
       services: { advancer, statusManager },
       helpers: { inspectLogs },
@@ -257,14 +250,9 @@ test('updates status to OBSERVED if makeChainAddress fails', async t => {
   const mockEvidence = MockCctpTxEvidences.AGORIC_UNKNOWN_EUD();
   await advancer.handleTransactionEvent(mockEvidence);
 
-  const entries = statusManager.lookupPending(
-    mockEvidence.tx.forwardingAddress,
-    mockEvidence.tx.amount,
-  );
-
   t.deepEqual(
-    entries,
-    [{ ...mockEvidence, status: PendingTxStatus.Observed }],
+    storage.data.get(`mockChainStorageRoot.status.${mockEvidence.txHash}`),
+    PendingTxStatus.Observed,
     'OBSERVED status on makeChainAddress failure',
   );
 
@@ -276,6 +264,7 @@ test('updates status to OBSERVED if makeChainAddress fails', async t => {
 
 test('calls notifyAdvancingResult (AdvancedFailed) on failed transfer', async t => {
   const {
+    bootstrap: { storage },
     extensions: {
       services: { advancer, feeTools, statusManager },
       helpers: { inspectLogs, inspectNotifyCalls },
@@ -291,14 +280,9 @@ test('calls notifyAdvancingResult (AdvancedFailed) on failed transfer', async t 
   resolveLocalTransferV();
   await eventLoopIteration();
 
-  const entries = statusManager.lookupPending(
-    mockEvidence.tx.forwardingAddress,
-    mockEvidence.tx.amount,
-  );
-
   t.deepEqual(
-    entries,
-    [{ ...mockEvidence, status: PendingTxStatus.Advancing }],
+    storage.data.get(`mockChainStorageRoot.status.${mockEvidence.txHash}`),
+    PendingTxStatus.Advancing,
     'tx is Advancing',
   );
 
@@ -333,6 +317,7 @@ test('calls notifyAdvancingResult (AdvancedFailed) on failed transfer', async t 
 
 test('updates status to OBSERVED if pre-condition checks fail', async t => {
   const {
+    bootstrap: { storage },
     extensions: {
       services: { advancer, statusManager },
       helpers: { inspectLogs },
@@ -343,14 +328,9 @@ test('updates status to OBSERVED if pre-condition checks fail', async t => {
 
   await advancer.handleTransactionEvent(mockEvidence);
 
-  const entries = statusManager.lookupPending(
-    mockEvidence.tx.forwardingAddress,
-    mockEvidence.tx.amount,
-  );
-
   t.deepEqual(
-    entries,
-    [{ ...mockEvidence, status: PendingTxStatus.Observed }],
+    storage.data.get(`mockChainStorageRoot.status.${mockEvidence.txHash}`),
+    PendingTxStatus.Observed,
     'tx is recorded as OBSERVED',
   );
 

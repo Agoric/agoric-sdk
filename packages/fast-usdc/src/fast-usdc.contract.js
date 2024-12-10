@@ -95,8 +95,8 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
     marshaller,
   );
 
-  const makeStatusNode = () => E(storageNode).makeChildNode(STATUS_NODE);
-  const statusManager = prepareStatusManager(zone, makeStatusNode);
+  const statusNode = E(storageNode).makeChildNode(STATUS_NODE);
+  const statusManager = prepareStatusManager(zone, statusNode);
 
   const { USDC } = terms.brands;
   const { withdrawToSeat } = tools.zoeTools;
