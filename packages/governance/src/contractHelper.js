@@ -250,6 +250,7 @@ const facetHelpers = (zcf, paramManager) => {
  * @param {M} paramTypesMap
  * @param {ERef<StorageNode>} [storageNode]
  * @param {ERef<Marshaller>} [marshaller]
+ * @param {object} [overrides]
  */
 const handleParamGovernance = (
   zcf,
@@ -257,6 +258,7 @@ const handleParamGovernance = (
   paramTypesMap,
   storageNode,
   marshaller,
+  overrides,
 ) => {
   /** @type {import('@agoric/notifier').StoredPublisherKit<GovernanceSubscriptionState>} */
   const publisherKit = makeStoredPublisherKit(
@@ -269,6 +271,7 @@ const handleParamGovernance = (
     zcf,
     { Electorate: initialPoserInvitation },
     paramTypesMap,
+    overrides,
   );
 
   return facetHelpers(zcf, paramManager);
