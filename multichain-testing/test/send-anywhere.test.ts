@@ -23,7 +23,7 @@ test.before(async t => {
   const { setupTestKeys, ...common } = await commonSetup(t);
   const { commonBuilderOpts, deleteTestKeys, faucetTools, startContract } =
     common;
-  deleteTestKeys(accounts).catch();
+  await deleteTestKeys(accounts).catch();
   const wallets = await setupTestKeys(accounts);
   t.context = { ...common, wallets };
   await startContract(contractName, contractBuilder, commonBuilderOpts);

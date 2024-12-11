@@ -46,7 +46,7 @@ test.before(async t => {
     provisionSmartWallet,
     startContract,
   } = common;
-  deleteTestKeys(accounts).catch();
+  await deleteTestKeys(accounts).catch();
   const wallets = await setupTestKeys(accounts, values(oracleMnemonics));
 
   // provision oracle wallets first so invitation deposits don't fail

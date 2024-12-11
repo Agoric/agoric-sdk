@@ -18,7 +18,7 @@ test.before(async t => {
   const { deleteTestKeys, setupTestKeys, ...rest } = await commonSetup(t);
   // XXX not necessary for CI, but helpful for unexpected failures in
   // active development (test.after cleanup doesn't run).
-  deleteTestKeys(accounts).catch();
+  await deleteTestKeys(accounts).catch();
   const wallets = await setupTestKeys(accounts);
   t.context = { ...rest, wallets, deleteTestKeys };
 });
