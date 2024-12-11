@@ -1,3 +1,4 @@
+/* eslint-env node */
 /**
  * @import {Command} from 'commander';
  * @import {OfferSpec} from '@agoric/smart-wallet/src/offers.js';
@@ -5,13 +6,18 @@
  * @import {OperatorKit} from '../exos/operator-kit.js';
  */
 
-import { fetchEnvNetworkConfig, makeVstorageKit } from '@agoric/client-utils';
+import {
+  fetchEnvNetworkConfig,
+  makeSmartWalletKit,
+} from '@agoric/client-utils';
 import { mustMatch } from '@agoric/internal';
 import { Nat } from '@endo/nat';
 import { InvalidArgumentError } from 'commander';
 import { INVITATION_MAKERS_DESC } from '../exos/transaction-feed.js';
 import { CctpTxEvidenceShape } from '../type-guards.js';
 import { outputActionAndHint } from './bridge-action.js';
+
+export const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 
 /** @param {string} arg */
 const parseNat = arg => {
@@ -53,8 +59,9 @@ export const addOperatorCommands = (
     .option('--offerId <string>', 'Offer id', String, `operatorAccept-${now()}`)
     .action(async opts => {
       const networkConfig = await fetchEnvNetworkConfig({ env, fetch });
-      const vsk = await makeVstorageKit({ fetch }, networkConfig);
-      const instance = vsk.agoricNames.instance.fastUsdc;
+
+      const swk = await makeSmartWalletKit({ delay, fetch }, networkConfig);
+      const instance = swk.agoricNames.instance.fastUsdc;
       assert(instance, 'fastUsdc instance not in agoricNames');
 
       /** @type {OfferSpec} */
