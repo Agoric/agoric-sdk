@@ -1,7 +1,14 @@
-import type { ChainAddress } from '@agoric/orchestration';
+import type {
+  ChainAddress,
+  CosmosChainInfo,
+  Denom,
+  DenomDetail,
+} from '@agoric/orchestration';
 import type { IBCChannelID } from '@agoric/vats';
 import type { Amount } from '@agoric/ertp';
+import type { CopyRecord, Passable } from '@endo/pass-style';
 import type { PendingTxStatus } from './constants.js';
+import type { FastUsdcTerms } from './fast-usdc.contract.js';
 
 export type EvmHash = `0x${string}`;
 export type NobleAddress = `noble1${string}`;
@@ -16,7 +23,6 @@ export interface CctpTxEvidence {
   };
   blockHash: EvmHash;
   blockNumber: bigint;
-  blockTimestamp: bigint;
   chainId: number;
   /** data covered by signature (aka txHash) */
   tx: {
@@ -31,12 +37,6 @@ export type LogFn = (...args: unknown[]) => void;
 export interface PendingTx extends CctpTxEvidence {
   status: PendingTxStatus;
 }
-
-/** internal key for `StatusManager` exo */
-export type PendingTxKey = `pendingTx:${string}`;
-
-/** internal key for `StatusManager` exo */
-export type SeenTxKey = `seenTx:${string}`;
 
 export type FeeConfig = {
   flat: Amount<'nat'>;
@@ -71,6 +71,16 @@ export interface FeedPolicy {
   chainPolicies: Record<EvmChainName, ChainPolicy>;
   eventFilter?: string;
 }
+
+export type FastUSDCConfig = {
+  terms: FastUsdcTerms;
+  oracles: Record<string, string>;
+  feeConfig: FeeConfig;
+  feedPolicy: FeedPolicy & Passable;
+  noNoble: boolean; // support a3p-integration, which has no noble chain
+  chainInfo: Record<string, CosmosChainInfo & Passable>;
+  assetInfo: [Denom, DenomDetail & { brandKey?: string }][];
+} & CopyRecord;
 
 export type * from './constants.js';
 export type { LiquidityPoolKit } from './exos/liquidity-pool.js';

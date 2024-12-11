@@ -18,31 +18,19 @@ import { fromExternalConfig } from './utils/config-marshal.js';
 /**
  * @import {DepositFacet} from '@agoric/ertp/src/types.js'
  * @import {TypedPattern} from '@agoric/internal'
- * @import {CosmosChainInfo, Denom, DenomDetail} from '@agoric/orchestration';
  * @import {Instance, StartParams} from '@agoric/zoe/src/zoeService/utils'
  * @import {Board} from '@agoric/vats'
  * @import {ManifestBundleRef} from '@agoric/deploy-script-support/src/externalTypes.js'
  * @import {BootstrapManifest} from '@agoric/vats/src/core/lib-boot.js'
- * @import {Passable} from '@endo/marshal';
  * @import {LegibleCapData} from './utils/config-marshal.js'
- * @import {FastUsdcSF, FastUsdcTerms} from './fast-usdc.contract.js'
- * @import {FeeConfig, FeedPolicy} from './types.js'
+ * @import {FastUsdcSF} from './fast-usdc.contract.js'
+ * @import {FeedPolicy, FastUSDCConfig} from './types.js'
  */
 
 const trace = makeTracer('FUSD-Start', true);
 
 const contractName = 'fastUsdc';
 
-/**
- * @typedef {{
- *   terms: FastUsdcTerms;
- *   oracles: Record<string, string>;
- *   feeConfig: FeeConfig;
- *   feedPolicy: FeedPolicy & Passable;
- *   chainInfo: Record<string, CosmosChainInfo & Passable>;
- *   assetInfo: [Denom, DenomDetail & {brandKey?: string}][];
- * }} FastUSDCConfig
- */
 /** @type {TypedPattern<FastUSDCConfig>} */
 export const FastUSDCConfigShape = M.splitRecord({
   terms: FastUSDCTermsShape,
@@ -159,12 +147,11 @@ export const startFastUSDC = async (
     USDC: await E(USDCissuer).getBrand(),
   });
 
-  const { terms, oracles, feeConfig, feedPolicy, chainInfo, assetInfo } =
-    fromExternalConfig(
-      config?.options, // just in case config is missing somehow
-      brands,
-      FastUSDCConfigShape,
-    );
+  const { terms, oracles, feeConfig, feedPolicy, ...net } = fromExternalConfig(
+    config.options,
+    brands,
+    FastUSDCConfigShape,
+  );
   trace('using terms', terms);
   trace('using fee config', feeConfig);
 
@@ -198,8 +185,8 @@ export const startFastUSDC = async (
       storageNode,
       timerService,
       marshaller,
-      chainInfo,
-      assetInfo,
+      chainInfo: net.chainInfo,
+      assetInfo: net.assetInfo,
     }),
   );
 
@@ -236,6 +223,11 @@ export const startFastUSDC = async (
 
   produceInstance.reset();
   produceInstance.resolve(instance);
+
+  if (!net.noNoble) {
+    const addr = await E(kit.creatorFacet).connectToNoble();
+    trace('noble intermediate recipient', addr);
+  }
   trace('startFastUSDC done', instance);
 };
 harden(startFastUSDC);

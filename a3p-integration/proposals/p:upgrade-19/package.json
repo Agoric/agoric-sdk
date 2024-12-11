@@ -8,7 +8,10 @@
       "vats/upgrade-asset-reserve.js upgradeAssetReserve",
       "vats/upgrade-paRegistry.js",
       "vats/upgrade-board.js",
-      "testing/test-upgraded-board.js testUpgradedBoard"
+      "testing/test-upgraded-board.js testUpgradedBoard",
+      "vats/upgrade-agoricNames.js agoricNamesCoreEvals/upgradeAgoricNames",
+      "testing/add-USD-OLIVES.js agoricNamesCoreEvals/addUsdOlives",
+      "testing/publish-test-info.js agoricNamesCoreEvals/publishTestInfo"
     ]
   },
   "type": "module",
@@ -22,6 +25,7 @@
     "@endo/errors": "1.2.7",
     "@endo/init": "^1.1.5",
     "@endo/marshal": "^1.5.4",
+    "agoric": "dev",
     "ava": "^5.3.1",
     "better-sqlite3": "^9.6.0",
     "execa": "9.1.0"

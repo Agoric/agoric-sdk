@@ -334,6 +334,8 @@ export interface IBCMsgTransferOptions {
   timeoutTimestamp?: MsgTransfer['timeoutTimestamp'];
   memo?: string;
   forwardOpts?: {
+    /** The recipient address for the intermediate transfer. Defaults to 'pfm' unless specified */
+    intermediateRecipient?: ChainAddress;
     timeout?: ForwardInfo['forward']['timeout'];
     retries?: ForwardInfo['forward']['retries'];
   };
@@ -395,7 +397,7 @@ export type TransferRoute = {
   token: Coin;
 } & (
   | {
-      receiver: typeof PFM_RECEIVER;
+      receiver: typeof PFM_RECEIVER | ChainAddress['value'];
       /** contains PFM forwarding info */
       forwardInfo: ForwardInfo;
     }

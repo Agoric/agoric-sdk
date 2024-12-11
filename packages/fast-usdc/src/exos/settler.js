@@ -1,5 +1,6 @@
 import { AmountMath } from '@agoric/ertp';
 import { assertAllDefined, makeTracer } from '@agoric/internal';
+import { ChainAddressShape } from '@agoric/orchestration';
 import { atob } from '@endo/base64';
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
@@ -61,6 +62,7 @@ export const prepareSettler = (
     {
       creator: M.interface('SettlerCreatorI', {
         monitorMintingDeposits: M.callWhen().returns(M.any()),
+        setIntermediateRecipient: M.call(ChainAddressShape).returns(),
       }),
       tap: M.interface('SettlerTapI', {
         receiveUpcall: M.call(M.record()).returns(M.promise()),
@@ -93,12 +95,15 @@ export const prepareSettler = (
      *   remoteDenom: Denom;
      *   repayer: LiquidityPoolKit['repayer'];
      *   settlementAccount: HostInterface<OrchestrationAccount<{ chainId: 'agoric' }>>
+     *   intermediateRecipient?: ChainAddress;
      * }} config
      */
     config => {
       log('config', config);
       return {
         ...config,
+        // make sure the state record has this property, perhaps with an undefined value
+        intermediateRecipient: config.intermediateRecipient,
         /** @type {HostInterface<TargetRegistration>|undefined} */
         registration: undefined,
         /** @type {SetStore<ReturnType<typeof makeMintedEarlyKey>>} */
@@ -114,6 +119,10 @@ export const prepareSettler = (
           );
           assert.typeof(registration, 'object');
           this.state.registration = registration;
+        },
+        /** @param {ChainAddress} intermediateRecipient */
+        setIntermediateRecipient(intermediateRecipient) {
+          this.state.intermediateRecipient = intermediateRecipient;
         },
       },
       tap: {
@@ -255,7 +264,7 @@ export const prepareSettler = (
          * @param {string} EUD
          */
         forward(txHash, sender, fullValue, EUD) {
-          const { settlementAccount } = this.state;
+          const { settlementAccount, intermediateRecipient } = this.state;
 
           const dest = chainHub.makeChainAddress(EUD);
 
@@ -263,6 +272,7 @@ export const prepareSettler = (
           const txfrV = E(settlementAccount).transfer(
             dest,
             AmountMath.make(USDC, fullValue),
+            { forwardOpts: { intermediateRecipient } },
           );
           void vowTools.watch(txfrV, this.facets.transferHandler, {
             txHash,
@@ -305,6 +315,7 @@ export const prepareSettler = (
         sourceChannel: M.string(),
         remoteDenom: M.string(),
         mintedEarly: M.remotable('mintedEarly'),
+        intermediateRecipient: M.opt(ChainAddressShape),
       }),
     },
   );

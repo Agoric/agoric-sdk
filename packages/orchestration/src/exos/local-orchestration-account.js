@@ -43,7 +43,7 @@ import { TransferRouteShape } from './chain-hub.js';
  * @import {ZoeTools} from '../utils/zoe-tools.js';
  */
 
-const trace = makeTracer('LOA');
+const trace = makeTracer('LocalOrchAccount');
 
 const { Vow$ } = NetworkShape; // TODO #9611
 
@@ -678,7 +678,7 @@ export const prepareLocalOrchestrationAccountKit = (
          */
         transfer(destination, amount, opts) {
           return asVow(() => {
-            trace('Transferring funds from LCA over IBC');
+            trace('Transferring funds over IBC');
             const denomAmount = coerceDenomAmount(chainHub, amount);
 
             const { forwardOpts, ...rest } = opts ?? {};
@@ -690,6 +690,7 @@ export const prepareLocalOrchestrationAccountKit = (
               'agoric',
               forwardOpts,
             );
+            trace('got transfer route', q(route).toString());
 
             // set a `timeoutTimestamp` if caller does not supply either `timeoutHeight` or `timeoutTimestamp`
             // TODO #9324 what's a reasonable default? currently 5 minutes

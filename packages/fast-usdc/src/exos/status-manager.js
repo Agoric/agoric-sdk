@@ -13,21 +13,29 @@ import { PendingTxStatus, TxStatus } from '../constants.js';
 /**
  * @import {MapStore, SetStore} from '@agoric/store';
  * @import {Zone} from '@agoric/zone';
- * @import {CctpTxEvidence, NobleAddress, SeenTxKey, PendingTxKey, PendingTx, EvmHash, LogFn} from '../types.js';
+ * @import {CctpTxEvidence, NobleAddress, PendingTx, EvmHash, LogFn} from '../types.js';
+ */
+
+/**
+ * @typedef {`pendingTx:${bigint}:${NobleAddress}`} PendingTxKey
+ * The string template is for developer visibility but not meant to ever be parsed.
+ *
+ * @typedef {`seenTx:${string}:${EvmHash}`} SeenTxKey
+ * The string template is for developer visibility but not meant to ever be parsed.
  */
 
 /**
  * Create the key for the pendingTxs MapStore.
  *
- * The key is a composite of `txHash` and `chainId` and not meant to be
- * parsable.
+ * The key is a composite but not meant to be parsable.
  *
  * @param {NobleAddress} addr
  * @param {bigint} amount
  * @returns {PendingTxKey}
  */
 const makePendingTxKey = (addr, amount) =>
-  `pendingTx:${JSON.stringify([addr, String(amount)])}`;
+  // amount can't contain colon
+  `pendingTx:${amount}:${addr}`;
 
 /**
  * Get the key for the pendingTxs MapStore.
@@ -43,15 +51,15 @@ const pendingTxKeyOf = evidence => {
 /**
  * Get the key for the seenTxs SetStore.
  *
- * The key is a composite of `NobleAddress` and transaction `amount` and not
- * meant to be parsable.
+ * The key is a composite but not meant to be parsable.
  *
  * @param {CctpTxEvidence} evidence
  * @returns {SeenTxKey}
  */
 const seenTxKeyOf = evidence => {
   const { txHash, chainId } = evidence;
-  return `seenTx:${JSON.stringify([txHash, chainId])}`;
+  // chainId can't contain colon
+  return `seenTx:${chainId}:${txHash}`;
 };
 
 /**
@@ -68,12 +76,12 @@ const seenTxKeyOf = evidence => {
  * XXX consider separate facets for `Advancing` and `Settling` capabilities.
  *
  * @param {Zone} zone
- * @param {() => Promise<StorageNode>} makeStatusNode
+ * @param {ERef<StorageNode>} transactionsNode
  * @param {StatusManagerPowers} caps
  */
 export const prepareStatusManager = (
   zone,
-  makeStatusNode,
+  transactionsNode,
   {
     log = makeTracer('Advancer', true),
   } = /** @type {StatusManagerPowers} */ ({}),
@@ -93,9 +101,8 @@ export const prepareStatusManager = (
    * @param {CctpTxEvidence['txHash']} hash
    * @param {TxStatus} status
    */
-  const recordStatus = (hash, status) => {
-    const statusNodeP = makeStatusNode();
-    const txnNodeP = E(statusNodeP).makeChildNode(hash);
+  const publishStatus = (hash, status) => {
+    const txnNodeP = E(transactionsNode).makeChildNode(hash);
     // Don't await, just writing to vstorage.
     void E(txnNodeP).setValue(status);
   };
@@ -109,7 +116,7 @@ export const prepareStatusManager = (
    * @param {CctpTxEvidence} evidence
    * @param {PendingTxStatus} status
    */
-  const recordPendingTx = (evidence, status) => {
+  const initPendingTx = (evidence, status) => {
     const seenKey = seenTxKeyOf(evidence);
     if (seenTxs.has(seenKey)) {
       throw makeError(`Transaction already seen: ${q(seenKey)}`);
@@ -121,8 +128,30 @@ export const prepareStatusManager = (
       pendingTxKeyOf(evidence),
       harden({ ...evidence, status }),
     );
-    recordStatus(evidence.txHash, status);
+    publishStatus(evidence.txHash, status);
   };
+
+  /**
+   * Update the pending transaction status.
+   *
+   * @param {{sender: NobleAddress, amount: bigint}} keyParts
+   * @param {PendingTxStatus} status
+   */
+  function setPendingTxStatus({ sender, amount }, status) {
+    const key = makePendingTxKey(sender, amount);
+    pendingTxs.has(key) || Fail`no advancing tx with ${{ sender, amount }}`;
+    const pending = pendingTxs.get(key);
+    const ix = pending.findIndex(tx => tx.status === PendingTxStatus.Advancing);
+    ix >= 0 || Fail`no advancing tx with ${{ sender, amount }}`;
+    const [prefix, tx, suffix] = [
+      pending.slice(0, ix),
+      pending[ix],
+      pending.slice(ix + 1),
+    ];
+    const txpost = { ...tx, status };
+    pendingTxs.set(key, harden([...prefix, txpost, ...suffix]));
+    publishStatus(tx.txHash, status);
+  }
 
   return zone.exo(
     'Fast USDC Status Manager',
@@ -156,10 +185,13 @@ export const prepareStatusManager = (
     {
       /**
        * Add a new transaction with ADVANCING status
+       *
+       * NB: this acts like observe() but skips recording the OBSERVED state
+       *
        * @param {CctpTxEvidence} evidence
        */
       advance(evidence) {
-        recordPendingTx(evidence, PendingTxStatus.Advancing);
+        initPendingTx(evidence, PendingTxStatus.Advancing);
       },
 
       /**
@@ -171,24 +203,10 @@ export const prepareStatusManager = (
        * @throws {Error} if nothing to advance
        */
       advanceOutcome(sender, amount, success) {
-        const key = makePendingTxKey(sender, amount);
-        pendingTxs.has(key) || Fail`no advancing tx with ${{ sender, amount }}`;
-        const pending = pendingTxs.get(key);
-        const ix = pending.findIndex(
-          tx => tx.status === PendingTxStatus.Advancing,
+        setPendingTxStatus(
+          { sender, amount },
+          success ? PendingTxStatus.Advanced : PendingTxStatus.AdvanceFailed,
         );
-        ix >= 0 || Fail`no advancing tx with ${{ sender, amount }}`;
-        const [prefix, tx, suffix] = [
-          pending.slice(0, ix),
-          pending[ix],
-          pending.slice(ix + 1),
-        ];
-        const status = success
-          ? PendingTxStatus.Advanced
-          : PendingTxStatus.AdvanceFailed;
-        const txpost = { ...tx, status };
-        pendingTxs.set(key, harden([...prefix, txpost, ...suffix]));
-        recordStatus(tx.txHash, status);
       },
 
       /**
@@ -196,7 +214,7 @@ export const prepareStatusManager = (
        * @param {CctpTxEvidence} evidence
        */
       observe(evidence) {
-        recordPendingTx(evidence, PendingTxStatus.Observed);
+        initPendingTx(evidence, PendingTxStatus.Observed);
       },
 
       /**
@@ -247,7 +265,7 @@ export const prepareStatusManager = (
        * @param {EvmHash} txHash
        */
       disbursed(txHash) {
-        recordStatus(txHash, TxStatus.Disbursed);
+        publishStatus(txHash, TxStatus.Disbursed);
       },
 
       /**
@@ -259,7 +277,7 @@ export const prepareStatusManager = (
        */
       forwarded(txHash, address, amount) {
         if (txHash) {
-          recordStatus(txHash, TxStatus.Forwarded);
+          publishStatus(txHash, TxStatus.Forwarded);
         } else {
           // TODO store (early) `Minted` transactions to check against incoming evidence
           log(

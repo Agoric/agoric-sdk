@@ -1,5 +1,5 @@
 import { AssetKind } from '@agoric/ertp';
-import { assertAllDefined, makeTracer } from '@agoric/internal';
+import { makeTracer } from '@agoric/internal';
 import { observeIteration, subscribeEach } from '@agoric/notifier';
 import {
   CosmosChainInfoShape,
@@ -95,8 +95,8 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
     marshaller,
   );
 
-  const makeStatusNode = () => E(storageNode).makeChildNode(STATUS_NODE);
-  const statusManager = prepareStatusManager(zone, makeStatusNode);
+  const statusNode = E(storageNode).makeChildNode(STATUS_NODE);
+  const statusManager = prepareStatusManager(zone, statusNode);
 
   const { USDC } = terms.brands;
   const { withdrawToSeat } = tools.zoeTools;
@@ -126,7 +126,6 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
   });
 
   const makeFeedKit = prepareTransactionFeedKit(zone, zcf);
-  assertAllDefined({ makeFeedKit, makeAdvancer, makeSettler, statusManager });
 
   const makeLiquidityPoolKit = prepareLiquidityPoolKit(
     zone,
@@ -140,12 +139,26 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
     'test of forcing evidence',
   );
 
-  const { makeLocalAccount } = orchestrateAll(flows, {});
+  const { makeLocalAccount, makeNobleAccount } = orchestrateAll(flows, {});
 
   const creatorFacet = zone.exo('Fast USDC Creator', undefined, {
     /** @type {(operatorId: string) => Promise<Invitation<OperatorKit>>} */
     async makeOperatorInvitation(operatorId) {
       return feedKit.creator.makeOperatorInvitation(operatorId);
+    },
+    async connectToNoble() {
+      return vowTools.when(nobleAccountV, nobleAccount => {
+        trace('nobleAccount', nobleAccount);
+        return vowTools.when(
+          E(nobleAccount).getAddress(),
+          intermediateRecipient => {
+            trace('intermediateRecipient', intermediateRecipient);
+            advancer.setIntermediateRecipient(intermediateRecipient);
+            settlerKit.creator.setIntermediateRecipient(intermediateRecipient);
+            return intermediateRecipient;
+          },
+        );
+      });
     },
   });
 
@@ -215,6 +228,8 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
     );
   }
 
+  const nobleAccountV = zone.makeOnce('NobleAccount', () => makeNobleAccount());
+
   const feedKit = zone.makeOnce('Feed Kit', () => makeFeedKit());
 
   const poolAccountV = zone.makeOnce('PoolAccount', () => makeLocalAccount());
@@ -222,10 +237,12 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
     makeLocalAccount(),
   );
   // when() is OK here since this clearly resolves promptly.
-  /** @type {HostInterface<OrchestrationAccount<{chainId: 'agoric';}>>[]} */
+  /** @type {[HostInterface<OrchestrationAccount<{chainId: 'agoric-3';}>>, HostInterface<OrchestrationAccount<{chainId: 'agoric-3';}>>]} */
   const [poolAccount, settlementAccount] = await vowTools.when(
     vowTools.all([poolAccountV, settleAccountV]),
   );
+  trace('settlementAccount', settlementAccount);
+  trace('poolAccount', poolAccount);
 
   const [_agoric, _noble, agToNoble] = await vowTools.when(
     chainHub.getChainsAndConnection('agoric', 'noble'),
