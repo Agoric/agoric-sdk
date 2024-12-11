@@ -15,6 +15,7 @@ import {
   assertPathSegment,
   makeStorageNodeChild,
 } from '@agoric/internal/src/lib-chainStorage.js';
+import { makeScalarBigMapStore } from '@agoric/vat-data';
 import { reserveThenDeposit } from './utils.js';
 
 /** @import {EconomyBootstrapPowers} from './econ-behaviors.js' */
@@ -181,8 +182,10 @@ const inviteToEconCharter = async (
  * Starts a new Economic Committee (EC) by creating an instance with the
  * provided committee specifications.
  *
- * @param {EconomyBootstrapPowers} powers - The resources and capabilities
- *   required to start the committee.
+ * @param {EconomyBootstrapPowers &
+ *   PromiseSpaceOf<{ retiredContractInstances: MapStore<string, Instance> }>} powers
+ *   - The resources and capabilities required to start the committee.
+ *
  * @param {{
  *   options: {
  *     committeeName: string;
@@ -197,11 +200,16 @@ const inviteToEconCharter = async (
 const startNewEconomicCommittee = async (
   {
     consume: { board, chainStorage, startUpgradable },
-    produce: { economicCommitteeKit, economicCommitteeCreatorFacet },
+    produce: {
+      economicCommitteeKit,
+      economicCommitteeCreatorFacet,
+      retiredContractInstances,
+    },
     installation: {
       consume: { committee },
     },
     instance: {
+      consume: { economicCommittee: economicCommitteeOriginalP },
       produce: { economicCommittee },
     },
   },
@@ -213,6 +221,15 @@ const startNewEconomicCommittee = async (
 
   trace(`committeeName ${committeeName}`);
   trace(`committeeSize ${committeeSize}`);
+
+  // Record the retired electorate vat so we can manage it later.
+  const contractInstanceMap = makeScalarBigMapStore(
+    'retiredContractInstances',
+    { durable: true },
+  );
+  const econeconomicCommitteeOriginal = await economicCommitteeOriginalP;
+  contractInstanceMap.init('electorate-v24', econeconomicCommitteeOriginal);
+  retiredContractInstances.resolve(contractInstanceMap);
 
   const committeesNode = await makeStorageNodeChild(
     chainStorage,
@@ -309,6 +326,7 @@ const startNewEconCharter = async ({
  * @typedef {PromiseSpaceOf<{
  *   auctionUpgradeNewInstance: Instance;
  *   auctionUpgradeNewGovCreator: any;
+ *   retiredContractInstances: MapStore<string, Instance>;
  * }>} interlockPowers
  */
 
@@ -501,6 +519,7 @@ export const getManifestForReplaceAllElectorates = async (
         economicCommitteeKit: true,
         economicCommitteeCreatorFacet: true,
         auctionUpgradeNewGovCreator: true,
+        retiredContractInstances: true,
       },
       installation: {
         consume: {
@@ -514,6 +533,7 @@ export const getManifestForReplaceAllElectorates = async (
           economicCommittee: true,
           econCommitteeCharter: true,
         },
+        consume: { economicCommittee: true },
       },
     },
   },

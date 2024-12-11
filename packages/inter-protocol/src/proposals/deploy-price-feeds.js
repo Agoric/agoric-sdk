@@ -84,7 +84,8 @@ export const ensureOracleBrand = async (
 };
 
 /**
- * @param {EconomyBootstrapPowers} powers
+ * @param {EconomyBootstrapPowers &
+ *   PromiseSpaceOf<{ retiredContractInstances: MapStore<string, Instance> }>} powers
  * @param {{
  *   AGORIC_INSTANCE_NAME: string;
  *   contractTerms: import('@agoric/inter-protocol/src/price/fluxAggregatorKit.js').ChainlinkConfig;
@@ -103,8 +104,9 @@ const startPriceAggregatorInstance = async (
       highPrioritySendersManager,
       namesByAddressAdmin,
       startGovernedUpgradable,
+      retiredContractInstances: retiredContractInstancesP,
     },
-    instance: { produce: produceInstance },
+    instance: { produce: produceInstance, consume: consumeInstance },
   },
   { AGORIC_INSTANCE_NAME, contractTerms, brandIn, brandOut },
   installation,
@@ -139,6 +141,15 @@ const startPriceAggregatorInstance = async (
     // @ts-expect-error GovernableStartFn vs. fluxAggregatorContract.js start
     installation,
   });
+  const retiringInstance = consumeInstance[AGORIC_INSTANCE_NAME];
+  const retiredContractInstances = await retiredContractInstancesP;
+  retiredContractInstances.init(
+    // XXX tail of label needs to vary with upgrade. BundleId would be different
+    // from previous, but is not necessarily unique.
+    `priceFeed-${AGORIC_INSTANCE_NAME}-u18`,
+    retiringInstance,
+  );
+
   produceInstance[AGORIC_INSTANCE_NAME].reset();
   produceInstance[AGORIC_INSTANCE_NAME].resolve(governedKit.instance);
   trace(
@@ -191,7 +202,9 @@ const distributeInvitations = async (
 };
 
 /**
- * @param {EconomyBootstrapPowers & NamedVatPowers} powers
+ * @param {EconomyBootstrapPowers &
+ *   NamedVatPowers &
+ *   PromiseSpaceOf<{ retiredContractInstances: MapStore<string, Instance> }>} powers
  * @param {{
  *   options: PriceFeedConfig & {
  *     priceAggregatorRef: { bundleID: string };
@@ -300,6 +313,7 @@ export const getManifestForPriceFeeds = async (
         namesByAddressAdmin: t,
         priceAuthority: t,
         priceAuthorityAdmin: t,
+        retiredContractInstances: t,
         startGovernedUpgradable: t,
         startUpgradable: t,
         zoe: t,
@@ -307,6 +321,7 @@ export const getManifestForPriceFeeds = async (
       installation: { produce: { priceAggregator: t } },
       instance: {
         produce: t,
+        consume: t,
       },
       oracleBrand: { produce: t },
       produce: { priceAuthority8400: t },
