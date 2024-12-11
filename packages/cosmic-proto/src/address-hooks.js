@@ -192,6 +192,7 @@ harden(encodeAddressHook);
  * @param {string} addressHook
  * @param {number} [charLimit]
  * @returns {{ baseAddress: string; query: HookQuery }}
+ * @throws {Error} if no hook string or hook string does not start with `?`
  */
 export const decodeAddressHook = (addressHook, charLimit) => {
   const { baseAddress, hookData } = splitHookedAddress(addressHook, charLimit);
