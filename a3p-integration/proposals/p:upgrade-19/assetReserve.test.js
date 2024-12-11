@@ -1,26 +1,12 @@
 /* eslint-env node */
 /**
- * @file The goal of this file is to make sure v28-provisionPool and v14-bank can be successfully
- * upgraded. These vats are related because of the issues below;
- * - https://github.com/Agoric/agoric-sdk/issues/8722
- * - https://github.com/Agoric/agoric-sdk/issues/8724
+ * @file The goal of this file is to make sure v36-reserve upgraded.
  *
  * The test scenario is as follows;
- * 1. Upgrade provisionPool. This upgrade overrides provisionWalletBridgerManager with a durable one
- * 2. Add a new account and successfully provision it
- *   - Observe new account's address under `published.wallet.${address}`
- * 3. Send some USDC_axl to provisionPoolAddress and observe its IST balances increases accordingly
- * 4. Introduce a new asset to the chain and start a PSM instance for the new asset
- *   4a. Deposit some of that asset to provisionPoolAddress
- *   4b. Observe provisionPoolAddress' IST balance increase by the amount deposited in step 4a
- * 5. Perform a null upgrade for provisionPool. This upgrade does NOT override provisionWalletBridgerManager
- *   - The goal here is to allow testing the bridgeHandler from the first upgrade is in fact durable
- * 6. Auto provision
- *   6a. Introduce a new account
- *   6b. Fund it with IST and ATOM to be able to open a vault
- *   6c. Try to open a vault WITHOUT provisioning the newly introduced account
- *   6d. Observe the new account's address under `published.wallet`
- * 7. Same as step 2. Checks manual provision works after null upgrade
+ * 1. Add asset USD_LEMONS
+ * 2. Add collateral to the reserve
+ * 3. Upgrade reserve
+ * 4. Ensure that the collateral is still in the reserve
  */
 
 import '@endo/init';
