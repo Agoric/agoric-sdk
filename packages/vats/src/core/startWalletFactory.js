@@ -198,7 +198,7 @@ export const startWalletFactory = async (
     },
   });
   provisionPoolStartResult.resolve(ppFacets);
-  instanceProduce.reserve. .provisionPool.resolve(ppFacets.instance);
+  instanceProduce.provisionPool.resolve(ppFacets.instance);
 
   const terms = await deeplyFulfilled(
     harden({

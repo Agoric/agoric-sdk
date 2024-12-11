@@ -33,7 +33,7 @@ export const upgradeAssetReserve = async (
     reserveKitP,
     instancePrivateArgsP,
   ]);
-  const { adminFacet, instance } = reserveKit;
+  const { governorCreatorFacet, instance } = reserveKit;
 
   const [originalPrivateArgs, poserInvitation] = await Promise.all([
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
@@ -46,6 +46,8 @@ export const upgradeAssetReserve = async (
     ...originalPrivateArgs,
     initialPoserInvitation: poserInvitation,
   });
+
+  const adminFacet = await E(governorCreatorFacet).getAdminFacet();
 
   const upgradeResult = await E(adminFacet).upgradeContract(
     assetReserveRef.bundleID,

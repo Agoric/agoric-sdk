@@ -1,0 +1,17 @@
+{
+  "name": "upgrade-asset-reserve",
+  "script": "upgrade-asset-reserve.js",
+  "permit": "upgrade-asset-reserve-permit.json",
+  "bundles": [
+    {
+      "entrypoint": "@agoric/inter-protocol/src/reserve/assetReserve.js",
+      "bundleID": "b1-a9adfae0bee502a8efe82385afcc2a89fd29616be0576c5b6410ee26e232a7619459f8c8bc385aa38fe82e4fb128d1f72e61559ab4159ec2965cfc36822c9a16",
+      "fileName": "/Users/iomekam/.agoric/cache/b1-a9adfae0bee502a8efe82385afcc2a89fd29616be0576c5b6410ee26e232a7619459f8c8bc385aa38fe82e4fb128d1f72e61559ab4159ec2965cfc36822c9a16.json"
+    },
+    {
+      "entrypoint": "@agoric/vats/src/proposals/upgrade-asset-reserve-proposal.js",
+      "bundleID": "b1-039b1ae0ba5cadb98d212721f601f028d9cf5fbbbbd1011f62195255ccbe2c33e80b4f5a90079ef13c509e534a706966d59ee28b5fc373ecfb50b377c36a7af5",
+      "fileName": "/Users/iomekam/.agoric/cache/b1-039b1ae0ba5cadb98d212721f601f028d9cf5fbbbbd1011f62195255ccbe2c33e80b4f5a90079ef13c509e534a706966d59ee28b5fc373ecfb50b377c36a7af5.json"
+    }
+  ]
+}

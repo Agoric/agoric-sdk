@@ -26,37 +26,19 @@
 import '@endo/init';
 import test from 'ava';
 import {
-  addUser,
   evalBundles,
   agd as agdAmbient,
   agoric,
-  getISTBalance,
   getDetailsMatchingVats,
-  GOV1ADDR,
-  openVault,
-  ATOM_DENOM,
 } from '@agoric/synthetic-chain';
 import {
   makeVstorageKit,
-  waitUntilAccountFunded,
   waitUntilContractDeployed,
 } from '@agoric/client-utils';
-import { NonNullish } from '@agoric/internal';
-import {
-  bankSend,
-  checkUserProvisioned,
-  introduceAndProvision,
-  provision,
-} from './test-lib/provision-helpers.js';
-
-const PROVISIONING_POOL_ADDR = 'agoric1megzytg65cyrgzs6fvzxgrcqvwwl7ugpt62346';
 
 const ADD_PSM_DIR = 'addUsdLemons';
-const DEPOSIT_USD_LEMONS_DIR = 'depositUSD-LEMONS';
-const UPGRADE_PP_DIR = 'upgradeProvisionPool';
-const NULL_UPGRADE_PP_DIR = 'nullUpgradePP';
-
-const USDC_DENOM = NonNullish(process.env.USDC_DENOM);
+const UPGRADE_AR_DIR = 'upgradeAssetReserve';
+const ADD_COLLAOTRAL_DIR = 'addCollateral';
 
 const ambientAuthority = {
   query: agdAmbient.query,
@@ -64,6 +46,13 @@ const ambientAuthority = {
   setTimeout,
   log: console.log,
 };
+
+/**
+ * @typedef {import('@agoric/ertp').NatAmount} NatAmount
+ * @typedef {{
+ *   allocations: { Fee: NatAmount, USD_LEMONS: NatAmount },
+ *  }} ReserveAllocations
+ */
 
 test.before(async t => {
   const vstorageKit = await makeVstorageKit(
@@ -76,111 +65,44 @@ test.before(async t => {
   };
 });
 
-test.serial('upgrade provisionPool', async t => {
-  await evalBundles(UPGRADE_PP_DIR);
+test.serial('add collatoral to reserve', async t => {
+  // @ts-expect-error casting
+  const { vstorageKit } = t.context;
 
-  const vatDetailsAfter = await getDetailsMatchingVats('provisionPool');
-  const { incarnation } = vatDetailsAfter.find(vat =>
-    vat.vatName.endsWith('provisionPool'),
+  // Introduce USD_LEMONS
+  await evalBundles(ADD_PSM_DIR);
+  await waitUntilContractDeployed('psm-IST-USD_LEMONS', ambientAuthority, {
+    errorMessage: 'psm-IST-USD_LEMONS instance not observed.',
+  });
+
+  await evalBundles(ADD_COLLAOTRAL_DIR);
+  // await evalBundles(UPGRADE_AR_DIR);
+
+  const metrics = /** @type {ReserveAllocations} */ (
+    await vstorageKit.readLatestHead('published.reserve.metrics')
   );
+
+  t.truthy(Object.keys(metrics.allocations).includes('USD_LEMONS'));
+  t.is(metrics.allocations.USD_LEMONS.value, 500000n);
+});
+
+test.serial('upgrade', async t => {
+  // @ts-expect-error casting
+  const { vstorageKit } = t.context;
+
+  await evalBundles(UPGRADE_AR_DIR);
+
+  const vatDetailsAfter = await getDetailsMatchingVats('reserve');
+  const { incarnation } = vatDetailsAfter.find(vat => vat.vatID === 'v36'); // assetReserve is v36
 
   t.log(vatDetailsAfter);
   t.is(incarnation, 1, 'incorrect incarnation');
   t.pass();
-});
 
-test.serial(
-  `check provisionPool can recover purse and asset subscribers after upgrade`,
-  async t => {
-    // @ts-expect-error casting
-    const { vstorageKit } = t.context;
-
-    // Introduce new user then provision
-    const { address } = await introduceAndProvision('provisionTester');
-    await checkUserProvisioned(address, vstorageKit);
-
-    // Send USDC_axl to pp
-    const istBalanceBefore = await getISTBalance(PROVISIONING_POOL_ADDR);
-    await bankSend(PROVISIONING_POOL_ADDR, `500000${USDC_DENOM}`);
-
-    // Check IST balance
-    await waitUntilAccountFunded(
-      PROVISIONING_POOL_ADDR,
-      ambientAuthority,
-      { denom: 'uist', value: istBalanceBefore + 500000 },
-      { errorMessage: 'Provision pool not able to swap USDC_axl for IST.' },
-    );
-
-    // Introduce USD_LEMONS
-    await evalBundles(ADD_PSM_DIR);
-    await waitUntilContractDeployed('psm-IST-USD_LEMONS', ambientAuthority, {
-      errorMessage: 'psm-IST-USD_LEMONS instance not observed.',
-    });
-
-    // Provision the provisionPoolAddress. This is a workaround of provisionPoolAddress
-    // not having a depositFacet published to namesByAddress. Shouldn't be a problem since
-    // vat-bank keeps track of virtual purses per address basis. We need there to be
-    // depositFacet for provisionPoolAddress since we'll fund it with USD_LEMONS
-    await provision('provisionPoolAddress', PROVISIONING_POOL_ADDR);
-    await checkUserProvisioned(PROVISIONING_POOL_ADDR, vstorageKit);
-
-    // Send USD_LEMONS to provisionPoolAddress
-    const istBalanceBeforeLemonsSent = await getISTBalance(
-      PROVISIONING_POOL_ADDR,
-    );
-    await evalBundles(DEPOSIT_USD_LEMONS_DIR);
-
-    // Check balance again
-    await waitUntilAccountFunded(
-      PROVISIONING_POOL_ADDR,
-      ambientAuthority,
-      { denom: 'uist', value: istBalanceBeforeLemonsSent + 500000 },
-      { errorMessage: 'Provision pool not able to swap USDC_axl for IST.' },
-    );
-    t.pass();
-  },
-);
-
-test.serial('null upgrade', async t => {
-  await evalBundles(NULL_UPGRADE_PP_DIR);
-
-  const vatDetailsAfter = await getDetailsMatchingVats('provisionPool');
-  const { incarnation } = vatDetailsAfter.find(vat => vat.vatID === 'v28'); // provisionPool is v28
-
-  t.log(vatDetailsAfter);
-  t.is(incarnation, 2, 'incorrect incarnation');
-  t.pass();
-});
-
-test.serial('auto provision', async t => {
-  // @ts-expect-error casting
-  const { vstorageKit } = t.context;
-
-  const address = await addUser('automaticallyProvisioned');
-  console.log('ADDR', 'automaticallyProvisioned', address);
-
-  await bankSend(address, `50000000${ATOM_DENOM}`);
-  // some ist is needed for opening a new vault
-  await bankSend(address, `10000000uist`, GOV1ADDR);
-  await waitUntilAccountFunded(
-    address,
-    // TODO: drop agd.query and switch to vstorgeKit
-    { log: console.log, setTimeout, query: agdAmbient.query },
-    { denom: ATOM_DENOM, value: 50_000_000 },
-    { errorMessage: `not able to fund ${address}` },
+  const metrics = /** @type {ReserveAllocations} */ (
+    await vstorageKit.readLatestHead('published.reserve.metrics')
   );
 
-  await openVault(address, '10.0', '20.0');
-  await checkUserProvisioned(address, vstorageKit);
-  t.pass();
-});
-
-test.serial('manual provision', async t => {
-  // @ts-expect-error casting
-  const { vstorageKit } = t.context;
-
-  const { address } = await introduceAndProvision('manuallyProvisioned');
-  await checkUserProvisioned(address, vstorageKit);
-  t.log('manuallyProvisioned address:', address);
-  t.pass();
+  t.truthy(Object.keys(metrics.allocations).includes('USD_LEMONS'));
+  t.is(metrics.allocations.USD_LEMONS.value, 500000n);
 });
