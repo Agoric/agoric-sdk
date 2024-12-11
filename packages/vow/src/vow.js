@@ -9,12 +9,9 @@ const { details: X } = assert;
 /**
  * @import {PromiseKit} from '@endo/promise-kit';
  * @import {Zone} from '@agoric/base-zone';
- * @import {MapStore} from '@agoric/store';
  * @import {VowResolver, VowKit} from './types.js';
+ * @import {VowRejectionTracker} from './rejection-tracker.js';
  */
-
-const sink = () => {};
-harden(sink);
 
 /**
  * @typedef {Partial<PromiseKit<any>> &
@@ -23,8 +20,9 @@ harden(sink);
 
 /**
  * @param {Zone} zone
+ * @param {VowRejectionTracker} [vowRejectionTracker]
  */
-export const prepareVowKit = zone => {
+export const prepareVowKit = (zone, vowRejectionTracker) => {
   /** @type {WeakMap<VowResolver, VowEphemera>} */
   const resolverToEphemera = new WeakMap();
 
@@ -43,7 +41,6 @@ export const prepareVowKit = zone => {
     }
 
     pk = makePromiseKit();
-    pk.promise.catch(sink); // silence unhandled rejection
     resolverToEphemera.set(resolver, pk);
     return pk;
   };
@@ -79,11 +76,7 @@ export const prepareVowKit = zone => {
         null
       ),
       isStoredValue: /** @type {boolean} */ (false),
-      /**
-       * Map for future properties that aren't in the schema.
-       * UNTIL https://github.com/Agoric/agoric-sdk/issues/7407
-       * @type {MapStore<any, any> | undefined}
-       */
+      vowIsHandled: /** @type {boolean} */ (false),
       extra: undefined,
     }),
     {
@@ -92,11 +85,14 @@ export const prepareVowKit = zone => {
          * @returns {Promise<any>}
          */
         async shorten() {
-          const { stepStatus, isStoredValue, value } = this.state;
-          const { resolver } = this.facets;
+          const { stepStatus, isStoredValue, value, vowIsHandled } = this.state;
+          const { resolver, vowV0 } = this.facets;
 
           switch (stepStatus) {
             case 'fulfilled': {
+              if (vowIsHandled === false) {
+                this.state.vowIsHandled = true;
+              }
               if (isStoredValue) {
                 // Always return a stored fulfilled value.
                 return value;
@@ -109,12 +105,15 @@ export const prepareVowKit = zone => {
               throw value;
             }
             case 'rejected': {
-              if (!isStoredValue && resolverToNonStoredValue.has(resolver)) {
-                // Non-stored reason is available.
-                throw resolverToNonStoredValue.get(resolver);
+              if (vowIsHandled === false) {
+                this.state.vowIsHandled = true;
+                vowRejectionTracker?.handle(vowV0);
               }
-              // Always throw a stored rejection reason.
-              throw value;
+              const reason = resolverToNonStoredValue.has(resolver)
+                ? resolverToNonStoredValue.get(resolver)
+                : value;
+
+              throw reason;
             }
             case null:
             case 'pending':
@@ -178,22 +177,25 @@ export const prepareVowKit = zone => {
           }
         },
         onRejected(reason) {
-          const { resolver } = this.facets;
-          const { reject } = getPromiseKitForResolution(resolver);
+          const { resolver, vowV0 } = this.facets;
+          const { reject, promise } = getPromiseKitForResolution(resolver);
           harden(reason);
           if (reject) {
             reject(reason);
+          }
+          if (this.state.vowIsHandled === false) {
+            vowRejectionTracker?.reject(vowV0, reason, promise);
           }
           this.state.stepStatus = 'rejected';
           this.state.isStoredValue = zone.isStorable(reason);
           if (this.state.isStoredValue) {
             this.state.value = reason;
           } else {
-            resolverToNonStoredValue.set(resolver, reason);
             this.state.value = assert.error(
               X`Vow rejection reason was not stored: ${reason}`,
             );
           }
+          resolverToNonStoredValue.set(resolver, reason);
         },
       },
     },
