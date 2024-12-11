@@ -10,8 +10,6 @@ yarn ava initial.test.js
 # XXX some of these tests have path dependencies so no globs
 yarn ava core-eval.test.js
 
-scripts/test-vaults.ts
-
 echo ACCEPTANCE TESTING kread
 yarn ava kread.test.js
 
@@ -21,6 +19,9 @@ yarn ava valueVow.test.js
 echo ACCEPTANCE TESTING state sync
 ./state-sync-snapshots-test.sh
 ./genesis-test.sh
+
+echo ACCEPTANCE TESTING install bundle
+yarn ava bundle.test.js
 
 echo ACCEPTANCE TESTING wallet
 yarn ava wallet.test.js
