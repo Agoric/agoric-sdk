@@ -1,3 +1,4 @@
+/* eslint-env node */
 /**
  * @import {Command} from 'commander';
  * @import {OfferSpec} from '@agoric/smart-wallet/src/offers.js';
@@ -7,18 +8,19 @@
 
 import {
   fetchEnvNetworkConfig,
-  makeAgoricNames,
-  makeVstorageKit,
+  makeSmartWalletKit,
 } from '@agoric/client-utils';
-import { InvalidArgumentError } from 'commander';
+import { AmountMath } from '@agoric/ertp';
 import {
   assertParsableNumber,
   ceilDivideBy,
   multiplyBy,
   parseRatio,
 } from '@agoric/zoe/src/contractSupport/ratio.js';
-import { AmountMath } from '@agoric/ertp';
+import { InvalidArgumentError } from 'commander';
 import { outputActionAndHint } from './bridge-action.js';
+
+export const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 
 /** @param {string} arg */
 const parseDecimal = arg => {
@@ -45,8 +47,7 @@ const parseUSDCAmount = (amountString, usdc) => {
  * @param {Command} program
  * @param {{
  *   fetch?: Window['fetch'];
- *    agoricNames?: import('@agoric/vats/tools/board-utils.js').AgoricNamesRemotes;
- *    vstorageKit?: import('@agoric/client-utils').VstorageKit;
+ *    smartWalletKit?: import('@agoric/client-utils').SmartWalletKit;
  *   stdout: typeof process.stdout;
  *   stderr: typeof process.stderr;
  *   env: typeof process.env;
@@ -55,18 +56,18 @@ const parseUSDCAmount = (amountString, usdc) => {
  */
 export const addLPCommands = (
   program,
-  { fetch, agoricNames, vstorageKit, stderr, stdout, env, now },
+  { fetch, smartWalletKit, stderr, stdout, env, now },
 ) => {
-  const loadVsk = async () => {
-    if (vstorageKit) {
-      return vstorageKit;
+  const loadSwk = async () => {
+    if (smartWalletKit) {
+      return smartWalletKit;
     }
     assert(fetch);
     const networkConfig = await fetchEnvNetworkConfig({ env, fetch });
-    return makeVstorageKit({ fetch }, networkConfig);
+    return makeSmartWalletKit({ delay, fetch }, networkConfig);
   };
-  /** @type {undefined | ReturnType<typeof loadVsk>} */
-  let vskP;
+  /** @type {undefined | ReturnType<typeof loadSwk>} */
+  let swkP;
 
   program
     .command('deposit')
@@ -78,12 +79,11 @@ export const addLPCommands = (
     .requiredOption('--amount <number>', 'USDC amount', parseDecimal)
     .option('--offerId <string>', 'Offer id', String, `lpDeposit-${now()}`)
     .action(async opts => {
-      vskP ||= loadVsk();
-      const vsk = await vskP;
-      agoricNames ||= await makeAgoricNames(vsk.fromBoard, vsk.vstorage);
+      swkP ||= loadSwk();
+      const swk = await swkP;
       /** @type {Brand<'nat'>} */
       // @ts-expect-error it doesnt recognize usdc as a Brand type
-      const usdc = agoricNames.brand.USDC;
+      const usdc = swk.agoricNames.brand.USDC;
       assert(usdc, 'USDC brand not in agoricNames');
 
       const usdcAmount = parseUSDCAmount(opts.amount, usdc);
@@ -112,7 +112,7 @@ export const addLPCommands = (
         offer,
       };
 
-      outputActionAndHint(bridgeAction, { stderr, stdout }, vsk.marshaller);
+      outputActionAndHint(bridgeAction, { stderr, stdout }, swk.marshaller);
     });
 
   program
@@ -125,25 +125,25 @@ export const addLPCommands = (
     .requiredOption('--amount <number>', 'USDC amount', parseDecimal)
     .option('--offerId <string>', 'Offer id', String, `lpWithdraw-${now()}`)
     .action(async opts => {
-      vskP ||= loadVsk();
-      const vsk = await vskP;
-      agoricNames ||= await makeAgoricNames(vsk.fromBoard, vsk.vstorage);
+      swkP ||= loadSwk();
+      swkP ||= loadSwk();
+      const swk = await swkP;
 
       /** @type {Brand<'nat'>} */
       // @ts-expect-error it doesnt recognize FastLP as a Brand type
-      const poolShare = agoricNames.brand.FastLP;
+      const poolShare = swk.agoricNames.brand.FastLP;
       assert(poolShare, 'FastLP brand not in agoricNames');
 
       /** @type {Brand<'nat'>} */
       // @ts-expect-error it doesnt recognize usdc as a Brand type
-      const usdc = agoricNames.brand.USDC;
+      const usdc = swk.agoricNames.brand.USDC;
       assert(usdc, 'USDC brand not in agoricNames');
 
       const usdcAmount = parseUSDCAmount(opts.amount, usdc);
 
       /** @type {import('../types.js').PoolMetrics} */
       // @ts-expect-error it treats this as "unknown"
-      const metrics = await vsk.readPublished('fastUsdc.poolMetrics');
+      const metrics = await swk.readPublished('fastUsdc.poolMetrics');
       const fastLPAmount = ceilDivideBy(usdcAmount, metrics.shareWorth);
 
       /** @type {USDCProposalShapes['withdraw']} */
@@ -170,7 +170,7 @@ export const addLPCommands = (
       outputActionAndHint(
         { method: 'executeOffer', offer },
         { stderr, stdout },
-        vsk.marshaller,
+        swk.marshaller,
       );
     });
 
