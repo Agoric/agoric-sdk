@@ -219,7 +219,7 @@ export const makeContextualSlogProcessor = (
 
         triggerContext = {
           'run.num': undefined,
-          'run.id': `${triggerType}-${finalBody.inboundNum}`,
+          'run.id': `${triggerType}-${finalBody.blockHeight}`,
           'run.trigger.type': triggerType,
           'run.trigger.time': finalBody.blockTime,
           'run.trigger.blockHeight': finalBody.blockHeight,

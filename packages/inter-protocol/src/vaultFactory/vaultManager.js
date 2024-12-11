@@ -227,6 +227,7 @@ export const prepareVaultManagerKit = (
   { zcf, marshaller, makeRecorderKit, factoryPowers },
 ) => {
   const { priceAuthority, timerService, reservePublicFacet } = zcf.getTerms();
+  const watchedBrands = new Set();
 
   const makeVault = prepareVault(baggage, makeRecorderKit, zcf);
 
@@ -424,52 +425,69 @@ export const prepareVaultManagerKit = (
             },
           });
 
-          void facets.helper.observeQuoteNotifier();
+          void facets.helper.ensureQuoteNotifierWatched();
 
           trace('helper.start() done');
         },
-        observeQuoteNotifier() {
+        ensureQuoteNotifierWatched() {
           const { state } = this;
 
           const { collateralBrand, collateralUnit, debtBrand, storageNode } =
             state;
+          if (watchedBrands.has(collateralBrand)) {
+            return;
+          }
+          watchedBrands.add(collateralBrand);
+
           const ephemera = collateralEphemera(collateralBrand);
 
-          const quoteNotifier = E(priceAuthority).makeQuoteNotifier(
+          const quoteNotifierP = E(priceAuthority).makeQuoteNotifier(
             collateralUnit,
             debtBrand,
           );
-          // @ts-expect-error XXX quotes
-          ephemera.storedQuotesNotifier = makeStoredNotifier(
-            // @ts-expect-error XXX quotes
-            quoteNotifier,
-            E(storageNode).makeChildNode('quotes'),
-            marshaller,
-          );
-          trace(
-            'helper.start() awaiting observe storedQuotesNotifier',
-            collateralBrand,
-          );
-          // NB: upon restart, there may not be a price for a while. If manager
-          // operations are permitted, ones that depend on price information
-          // will throw. See https://github.com/Agoric/agoric-sdk/issues/4317
-          const quoteWatcher = harden({
-            onFulfilled(value) {
-              trace('watcher updated price', value);
-              ephemera.storedCollateralQuote = value;
-            },
-            onRejected() {
-              // NOTE: drastic action, if the quoteNotifier fails, we don't know
-              // the value of the asset, nor do we know how long we'll be in
-              // ignorance. Best choice is to disable actions that require
-              // prices and restart when we have a new price. If we restart the
-              // notifier immediately, we'll trigger an infinite loop, so try
-              // to restart each time we get a request.
 
-              ephemera.storedCollateralQuote = null;
+          void E.when(
+            quoteNotifierP,
+            quoteNotifier => {
+              // @ts-expect-error XXX quotes
+              ephemera.storedQuotesNotifier = makeStoredNotifier(
+                // @ts-expect-error XXX quotes
+                quoteNotifier,
+                E(storageNode).makeChildNode('quotes'),
+                marshaller,
+              );
+              trace(
+                'helper.start() awaiting observe storedQuotesNotifier',
+                collateralBrand,
+              );
+              // NB: upon restart, there may not be a price for a while. If manager
+              // operations are permitted, ones that depend on price information
+              // will throw. See https://github.com/Agoric/agoric-sdk/issues/4317
+              const quoteWatcher = harden({
+                onFulfilled(value) {
+                  trace('watcher updated price', value);
+                  ephemera.storedCollateralQuote = value;
+                },
+                onRejected() {
+                  // NOTE: drastic action, if the quoteNotifier fails, we don't know
+                  // the value of the asset, nor do we know how long we'll be in
+                  // ignorance. Best choice is to disable actions that require
+                  // prices and restart when we have a new price. If we restart the
+                  // notifier immediately, we'll trigger an infinite loop, so try
+                  // to restart each time we get a request.
+
+                  ephemera.storedCollateralQuote = null;
+                  watchedBrands.delete(collateralBrand);
+                },
+              });
+              void watchQuoteNotifier(quoteNotifier, quoteWatcher);
             },
-          });
-          void watchQuoteNotifier(quoteNotifier, quoteWatcher);
+            e => {
+              trace('makeQuoteNotifier failed, resetting', e);
+              ephemera.storedCollateralQuote = null;
+              watchedBrands.delete(collateralBrand);
+            },
+          );
         },
         /** @param {Timestamp} updateTime */
         async chargeAllVaults(updateTime) {
@@ -841,7 +859,7 @@ export const prepareVaultManagerKit = (
           const { collateralBrand } = state;
           const { storedCollateralQuote } = collateralEphemera(collateralBrand);
           if (!storedCollateralQuote) {
-            facets.helper.observeQuoteNotifier();
+            facets.helper.ensureQuoteNotifierWatched();
 
             // it might take an arbitrary amount of time to get a new quote
             throw Fail`maxDebtFor called before a collateral quote was available for ${collateralBrand}`;
@@ -1088,7 +1106,7 @@ export const prepareVaultManagerKit = (
             state.collateralBrand,
           );
           if (!storedCollateralQuote) {
-            facets.helper.observeQuoteNotifier();
+            facets.helper.ensureQuoteNotifierWatched();
 
             // it might take an arbitrary amount of time to get a new quote
             throw Fail`getCollateralQuote called before a collateral quote was available`;
@@ -1107,7 +1125,7 @@ export const prepareVaultManagerKit = (
             state.collateralBrand,
           );
           if (!storedCollateralQuote) {
-            facets.helper.observeQuoteNotifier();
+            facets.helper.ensureQuoteNotifierWatched();
 
             // it might take an arbitrary amount of time to get a new quote
             throw Fail`lockOraclePrices called before a collateral quote was available for ${state.collateralBrand}`;
