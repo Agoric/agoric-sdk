@@ -6,13 +6,16 @@ import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
 import { Far } from '@endo/pass-style';
 import type { NatAmount } from '@agoric/ertp';
 import { type ZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
-import { Fail, q } from '@endo/errors';
+import { q } from '@endo/errors';
+import {
+  decodeAddressHook,
+  encodeAddressHook,
+} from '@agoric/cosmic-proto/address-hooks.js';
 import { PendingTxStatus } from '../../src/constants.js';
 import { prepareAdvancer } from '../../src/exos/advancer.js';
 import type { SettlerKit } from '../../src/exos/settler.js';
 import { prepareStatusManager } from '../../src/exos/status-manager.js';
 import { makeFeeTools } from '../../src/utils/fees.js';
-import { addressTools } from '../../src/utils/address.js';
 import { commonSetup } from '../supports.js';
 import { MockCctpTxEvidences, intermediateRecipient } from '../fixtures.js';
 import {
@@ -215,8 +218,7 @@ test('updates status to ADVANCING in happy path', async t => {
         forwardingAddress: mockEvidence.tx.forwardingAddress,
         fullAmount: usdc.make(mockEvidence.tx.amount),
         destination: {
-          value: addressTools.getQueryParams(mockEvidence.aux.recipientAddress)
-            .EUD,
+          value: decodeAddressHook(mockEvidence.aux.recipientAddress).query.EUD,
         },
       },
       true, // indicates transfer succeeded
@@ -344,8 +346,7 @@ test('calls notifyAdvancingResult (AdvancedFailed) on failed transfer', async t 
           usdc.make(mockEvidence.tx.amount),
         ),
         destination: {
-          value: addressTools.getQueryParams(mockEvidence.aux.recipientAddress)
-            .EUD,
+          value: decodeAddressHook(mockEvidence.aux.recipientAddress).query.EUD,
         },
       },
       false, // this indicates transfer failed
@@ -375,8 +376,27 @@ test('updates status to OBSERVED if pre-condition checks fail', async t => {
   t.deepEqual(inspectLogs(), [
     [
       'Advancer error:',
+      Error('query: {} - Must have missing properties ["EUD"]'),
+    ],
+  ]);
+
+  await advancer.handleTransactionEvent({
+    ...MockCctpTxEvidences.AGORIC_NO_PARAMS(
+      encodeAddressHook(
+        'agoric16kv2g7snfc4q24vg3pjdlnnqgngtjpwtetd2h689nz09lcklvh5s8u37ek',
+        { EUD: 'osmo1234', extra: 'value' },
+      ),
+    ),
+    txHash:
+      '0xc81bc6105b60a234c7c50ac17816ebcd5561d366df8bf3be59ff387552761799',
+  });
+
+  const [, ...remainingLogs] = inspectLogs();
+  t.deepEqual(remainingLogs, [
+    [
+      'Advancer error:',
       Error(
-        'Unable to parse query params: "agoric16kv2g7snfc4q24vg3pjdlnnqgngtjpwtetd2h689nz09lcklvh5s8u37ek"',
+        'query: {"EUD":"osmo1234","extra":"value"} - Must not have unexpected properties: ["extra"]',
       ),
     ],
   ]);
