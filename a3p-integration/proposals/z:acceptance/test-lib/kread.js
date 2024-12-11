@@ -1,4 +1,5 @@
 // @ts-nocheck FIXME
+// XXX uses agoric.follow to read data through spawned processes; replace with VstorageKit
 import assert from 'node:assert';
 
 import {
