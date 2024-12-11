@@ -1,10 +1,6 @@
 /* eslint-env node */
 
-import {
-  boardSlottingMarshaller,
-  makeFromBoard,
-  retryUntilCondition,
-} from '@agoric/client-utils';
+import { makeAgoricNames, retryUntilCondition } from '@agoric/client-utils';
 import { AmountMath } from '@agoric/ertp';
 import {
   agops,
@@ -18,12 +14,8 @@ import {
   ceilMultiplyBy,
   makeRatio,
 } from '@agoric/zoe/src/contractSupport/ratio.js';
-import { E } from '@endo/far';
 import { walletUtils } from './index.js';
-import { listVaults, vstorageKitP } from './utils.js';
-
-const fromBoard = makeFromBoard();
-const marshaller = boardSlottingMarshaller(fromBoard.convertSlotToVal);
+import { listVaults, vstorageKit } from './utils.js';
 
 /**
  * @param {string} address
@@ -97,7 +89,10 @@ export const getMinInitialDebt = async () => {
  * @returns {Promise<{ mintFee: import('@agoric/ertp/src/types.js').NatAmount, adjustedToMintAmount: import('@agoric/ertp/src/types.js').NatAmount }>}
  */
 export const calculateMintFee = async (toMintValue, vaultManager) => {
-  const { brand } = await E.get(vstorageKitP).agoricNames;
+  const { brand } = await makeAgoricNames(
+    vstorageKit.fromBoard,
+    vstorageKit.vstorage,
+  );
   /** @type {import('@agoric/ertp').Brand} */
   // @ts-expect-error let this BoardRemote masquerade as a Brand
   const ISTBrand = brand.IST;
@@ -157,11 +152,16 @@ const paramChangeOfferGeneration = async (
 ) => {
   const ISTunit = 1_000_000n; // aka displayInfo: { decimalPlaces: 6 }
 
-  const { brand } = await E.get(vstorageKitP).agoricNames;
+  const agoricNames = await makeAgoricNames(
+    vstorageKit.fromBoard,
+    vstorageKit.vstorage,
+  );
+
+  const { brand } = agoricNames;
   assert(brand.IST);
   assert(brand.ATOM);
 
-  const { instance } = await E.get(vstorageKitP).agoricNames;
+  const { instance } = agoricNames;
   assert(instance.VaultFactory);
 
   const voteDurSec = BigInt(voteDur);
@@ -203,7 +203,7 @@ const paramChangeOfferGeneration = async (
   };
 
   // @ts-expect-error tolerate BoardRemote instances with getBoardId methods
-  return JSON.stringify(marshaller.toCapData(harden(body)));
+  return JSON.stringify(vstorageKit.marshaller.toCapData(harden(body)));
 };
 
 /**

@@ -3,6 +3,7 @@
 /* eslint-env node */
 import {
   fetchEnvNetworkConfig,
+  makeAgoricNames,
   makeVstorageKit,
   makeWalletUtils,
   storageHelper,
@@ -90,19 +91,20 @@ export const makeOracleCommand = (logger, io = {}) => {
       env: process.env,
       fetch,
     });
-    const utils = await makeVstorageKit({ fetch }, networkConfig);
+    const vsk = makeVstorageKit({ fetch }, networkConfig);
+    const agoricNames = await makeAgoricNames(vsk.fromBoard, vsk.vstorage);
 
     const lookupPriceAggregatorInstance = ([brandIn, brandOut]) => {
       const name = oracleBrandFeedName(brandIn, brandOut);
-      const instance = utils.agoricNames.instance[name];
+      const instance = agoricNames.instance[name];
       if (!instance) {
-        logger.debug('known instances:', utils.agoricNames.instance);
+        logger.debug('known instances:', agoricNames.instance);
         throw Error(`Unknown instance ${name}`);
       }
       return instance;
     };
 
-    return { ...utils, networkConfig, lookupPriceAggregatorInstance };
+    return { ...vsk, networkConfig, lookupPriceAggregatorInstance };
   };
 
   oracle

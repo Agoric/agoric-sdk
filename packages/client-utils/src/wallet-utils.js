@@ -1,7 +1,7 @@
 import { makeWalletStateCoalescer } from '@agoric/smart-wallet/src/utils.js';
 import { pollBlocks } from './chain.js';
 import { makeStargateClient } from './rpc.js';
-import { boardSlottingMarshaller, makeVstorageKit } from './vstorage-kit.js';
+import { makeAgoricNames, makeVstorageKit } from './vstorage-kit.js';
 
 /**
  * @import {Amount, Brand} from '@agoric/ertp/src/types.js'
@@ -20,11 +20,11 @@ import { boardSlottingMarshaller, makeVstorageKit } from './vstorage-kit.js';
  * @param {MinimalNetworkConfig} networkConfig
  */
 export const makeWalletUtils = async ({ fetch, delay }, networkConfig) => {
-  const vsk = await makeVstorageKit({ fetch }, networkConfig);
-
-  const m = boardSlottingMarshaller(vsk.fromBoard.convertSlotToVal);
+  const vsk = makeVstorageKit({ fetch }, networkConfig);
 
   const client = await makeStargateClient(networkConfig, { fetch });
+
+  const agoricNames = await makeAgoricNames(vsk.fromBoard, vsk.vstorage);
 
   /**
    * @param {string} from
@@ -38,12 +38,12 @@ export const makeWalletUtils = async ({ fetch, delay }, networkConfig) => {
 
     /** @type {{ Invitation: Brand<'set'> }} */
     // @ts-expect-error XXX how to narrow AssetKind to set?
-    const { Invitation } = vsk.agoricNames.brand;
+    const { Invitation } = agoricNames.brand;
     const coalescer = makeWalletStateCoalescer(Invitation);
     // update with oldest first
     for (const txt of history.reverse()) {
       const { body, slots } = JSON.parse(txt);
-      const record = m.fromCapData({ body, slots });
+      const record = vsk.marshaller.fromCapData({ body, slots });
       coalescer.update(record);
     }
     const coalesced = coalescer.state;
@@ -103,6 +103,7 @@ export const makeWalletUtils = async ({ fetch, delay }, networkConfig) => {
   return {
     // pass along all of VstorageKit
     ...vsk,
+    agoricNames,
     networkConfig,
     getLastUpdate,
     getCurrentWalletRecord,

@@ -5,7 +5,11 @@
  * @import {OperatorKit} from '../exos/operator-kit.js';
  */
 
-import { fetchEnvNetworkConfig, makeVstorageKit } from '@agoric/client-utils';
+import {
+  fetchEnvNetworkConfig,
+  makeAgoricNames,
+  makeVstorageKit,
+} from '@agoric/client-utils';
 import { mustMatch } from '@agoric/internal';
 import { Nat } from '@endo/nat';
 import { InvalidArgumentError } from 'commander';
@@ -53,8 +57,9 @@ export const addOperatorCommands = (
     .option('--offerId <string>', 'Offer id', String, `operatorAccept-${now()}`)
     .action(async opts => {
       const networkConfig = await fetchEnvNetworkConfig({ env, fetch });
-      const vsk = await makeVstorageKit({ fetch }, networkConfig);
-      const instance = vsk.agoricNames.instance.fastUsdc;
+      const vsk = makeVstorageKit({ fetch }, networkConfig);
+      const agoricNames = await makeAgoricNames(vsk.fromBoard, vsk.vstorage);
+      const instance = agoricNames.instance.fastUsdc;
       assert(instance, 'fastUsdc instance not in agoricNames');
 
       /** @type {OfferSpec} */

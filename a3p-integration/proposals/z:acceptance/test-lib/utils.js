@@ -4,7 +4,7 @@ import { readFile, writeFile } from 'node:fs/promises';
 import { networkConfig } from './rpc.js';
 
 export const stargateClientP = makeStargateClient(networkConfig, { fetch });
-export const vstorageKitP = makeVstorageKit({ fetch }, networkConfig);
+export const vstorageKit = makeVstorageKit({ fetch }, networkConfig);
 
 /**
  * @import {WalletUtils} from '@agoric/client-utils';

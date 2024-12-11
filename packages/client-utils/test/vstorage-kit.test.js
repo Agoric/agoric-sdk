@@ -1,6 +1,6 @@
 /* eslint-env node */
 import test from 'ava';
-import { makeVstorageKit } from '../src/vstorage-kit.js';
+import { makeAgoricNames, makeVstorageKit } from '../src/vstorage-kit.js';
 
 const makeMockFetch = (responses = {}) => {
   return async url => {
@@ -73,9 +73,13 @@ test('agoricNames contains expected structure', async t => {
       },
   });
 
-  const vstorageKit = await makeVstorageKit({ fetch }, makeTestConfig());
+  const vstorageKit = makeVstorageKit({ fetch }, makeTestConfig());
+  const agoricNames = await makeAgoricNames(
+    vstorageKit.fromBoard,
+    vstorageKit.vstorage,
+  );
 
-  t.snapshot(vstorageKit.agoricNames, 'agoricnNames from A3P');
+  t.snapshot(agoricNames, 'agoricNames from A3P');
 
   const priceFeed = await vstorageKit.readPublished(
     'priceFeed.ATOM-USD_price_feed',

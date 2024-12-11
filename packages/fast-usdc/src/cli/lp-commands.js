@@ -5,7 +5,11 @@
  * @import {USDCProposalShapes} from '../pool-share-math.js';
  */
 
-import { fetchEnvNetworkConfig, makeVstorageKit } from '@agoric/client-utils';
+import {
+  fetchEnvNetworkConfig,
+  makeAgoricNames,
+  makeVstorageKit,
+} from '@agoric/client-utils';
 import { InvalidArgumentError } from 'commander';
 import {
   assertParsableNumber,
@@ -41,7 +45,8 @@ const parseUSDCAmount = (amountString, usdc) => {
  * @param {Command} program
  * @param {{
  *   fetch?: Window['fetch'];
- *   vstorageKit?: Awaited<ReturnType<typeof makeVstorageKit>>;
+ *    agoricNames?: import('@agoric/vats/tools/board-utils.js').AgoricNamesRemotes;
+ *    vstorageKit?: import('@agoric/client-utils').VstorageKit;
  *   stdout: typeof process.stdout;
  *   stderr: typeof process.stderr;
  *   env: typeof process.env;
@@ -50,7 +55,7 @@ const parseUSDCAmount = (amountString, usdc) => {
  */
 export const addLPCommands = (
   program,
-  { fetch, vstorageKit, stderr, stdout, env, now },
+  { fetch, agoricNames, vstorageKit, stderr, stdout, env, now },
 ) => {
   const loadVsk = async () => {
     if (vstorageKit) {
@@ -75,9 +80,10 @@ export const addLPCommands = (
     .action(async opts => {
       vskP ||= loadVsk();
       const vsk = await vskP;
+      agoricNames ||= await makeAgoricNames(vsk.fromBoard, vsk.vstorage);
       /** @type {Brand<'nat'>} */
       // @ts-expect-error it doesnt recognize usdc as a Brand type
-      const usdc = vsk.agoricNames.brand.USDC;
+      const usdc = agoricNames.brand.USDC;
       assert(usdc, 'USDC brand not in agoricNames');
 
       const usdcAmount = parseUSDCAmount(opts.amount, usdc);
@@ -121,15 +127,16 @@ export const addLPCommands = (
     .action(async opts => {
       vskP ||= loadVsk();
       const vsk = await vskP;
+      agoricNames ||= await makeAgoricNames(vsk.fromBoard, vsk.vstorage);
 
       /** @type {Brand<'nat'>} */
       // @ts-expect-error it doesnt recognize FastLP as a Brand type
-      const poolShare = vsk.agoricNames.brand.FastLP;
+      const poolShare = agoricNames.brand.FastLP;
       assert(poolShare, 'FastLP brand not in agoricNames');
 
       /** @type {Brand<'nat'>} */
       // @ts-expect-error it doesnt recognize usdc as a Brand type
-      const usdc = vsk.agoricNames.brand.USDC;
+      const usdc = agoricNames.brand.USDC;
       assert(usdc, 'USDC brand not in agoricNames');
 
       const usdcAmount = parseUSDCAmount(opts.amount, usdc);

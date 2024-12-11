@@ -8,7 +8,11 @@ import {
   makeLeader,
   makeLeaderFromRpcAddresses,
 } from '@agoric/casting';
-import { makeVstorageKit, fetchEnvNetworkConfig } from '@agoric/client-utils';
+import {
+  makeVstorageKit,
+  fetchEnvNetworkConfig,
+  makeAgoricNames,
+} from '@agoric/client-utils';
 import { execFileSync } from 'child_process';
 import fs from 'fs';
 import util from 'util';
@@ -214,13 +218,11 @@ export const makeWalletCommand = async command => {
       normalizeAddress,
     )
     .action(async function (opts) {
-      const { agoricNames, unserializer, readPublished } =
-        await makeVstorageKit(
-          {
-            fetch,
-          },
-          networkConfig,
-        );
+      const { readPublished, unserializer, ...vsk } = makeVstorageKit(
+        { fetch },
+        networkConfig,
+      );
+      const agoricNames = await makeAgoricNames(vsk.fromBoard, vsk.vstorage);
 
       const leader = makeLeader(networkConfig.rpcAddrs[0]);
       const follower = await makeFollower(

@@ -32,9 +32,9 @@ const makeTestContext = () => {
   const now = () => 1234;
 
   addLPCommands(program, {
+    // @ts-expect-error fake brands
+    agoricNames: { brand: { FastLP, USDC } },
     vstorageKit: {
-      // @ts-expect-error fake brands
-      agoricNames: { brand: { FastLP, USDC } },
       marshaller,
       // @ts-expect-error ignore fancy return type
       readPublished: async (path: string) => {
