@@ -7,7 +7,9 @@
     "vatAdminSvc": "makeCoreProposalBehavior",
     "zoe": "makeCoreProposalBehavior"
   },
-  "produce": {},
+  "produce": {
+    "reserveKit": true
+  },
   "evaluateBundleCap": "makeCoreProposalBehavior",
   "installation": {
     "produce": "makeCoreProposalBehavior"

@@ -10,8 +10,8 @@
     },
     {
       "entrypoint": "@agoric/vats/src/proposals/upgrade-asset-reserve-proposal.js",
-      "bundleID": "b1-039b1ae0ba5cadb98d212721f601f028d9cf5fbbbbd1011f62195255ccbe2c33e80b4f5a90079ef13c509e534a706966d59ee28b5fc373ecfb50b377c36a7af5",
-      "fileName": "/Users/iomekam/.agoric/cache/b1-039b1ae0ba5cadb98d212721f601f028d9cf5fbbbbd1011f62195255ccbe2c33e80b4f5a90079ef13c509e534a706966d59ee28b5fc373ecfb50b377c36a7af5.json"
+      "bundleID": "b1-657fd7ea522d21b58ce7dfa4df94e9ffe5c9877e6e4eb2b4d1df10502da8c608b3e6c926d2752103c8182f776501222d2c62bc04d88ede9dbf0818360b1c38d0",
+      "fileName": "/Users/iomekam/.agoric/cache/b1-657fd7ea522d21b58ce7dfa4df94e9ffe5c9877e6e4eb2b4d1df10502da8c608b3e6c926d2752103c8182f776501222d2c62bc04d88ede9dbf0818360b1c38d0.json"
     }
   ]
 }

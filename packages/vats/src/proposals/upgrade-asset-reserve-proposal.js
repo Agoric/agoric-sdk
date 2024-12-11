@@ -10,6 +10,9 @@ const tracer = makeTracer('UpgradeAssetReserve');
  *     economicCommitteeCreatorFacet: any;
  *     reserveKit: any;
  *   };
+ *   produce: {
+ *     reserveKit: any;
+ *   };
  * }} powers
  * @param {object} options
  * @param {{ assetReserveRef: VatSourceRef }} options.options
@@ -21,6 +24,7 @@ export const upgradeAssetReserve = async (
       reserveKit: reserveKitP,
       instancePrivateArgs: instancePrivateArgsP,
     },
+    produce: { reserveKit: reserveKitWriter },
   },
   options,
 ) => {
@@ -49,6 +53,14 @@ export const upgradeAssetReserve = async (
 
   const adminFacet = await E(governorCreatorFacet).getAdminFacet();
 
+  reserveKitWriter.reset();
+  reserveKitWriter.resolve(
+    harden({
+      ...reserveKit,
+      adminFacet,
+    }),
+  );
+
   const upgradeResult = await E(adminFacet).upgradeContract(
     assetReserveRef.bundleID,
     newPrivateArgs,
@@ -69,7 +81,9 @@ export const getManifestForUpgradingAssetReserve = (
         instancePrivateArgs: true,
         reserveKit: true,
       },
-      produce: {},
+      produce: {
+        reserveKit: true,
+      },
     },
   },
   options: { assetReserveRef },

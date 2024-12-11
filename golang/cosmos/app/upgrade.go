@@ -232,6 +232,9 @@ func unreleasedUpgradeHandler(app *GaiaApp, targetUpgrade string) func(sdk.Conte
 			// 	vm.CoreProposalStepForModules(
 			// 		"@agoric/builders/scripts/vats/upgrade-bank.js",
 			// 	),
+			// 	vm.CoreProposalStepForModules(
+			// 		"@agoric/builders/scripts/vats/upgrade-asset-reserve.js",
+			// 	),
 			// )
 		}
 
