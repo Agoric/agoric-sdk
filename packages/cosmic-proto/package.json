@@ -28,6 +28,14 @@
       "types": "./dist/codegen/cosmos/*.d.ts",
       "default": "./dist/codegen/cosmos/*.js"
     },
+    "./cosmos/authz/v1beta1/query.js": {
+      "types": "./dist/codegen/cosmos/authz/v1beta1/query.d.ts",
+      "default": "./dist/codegen/cosmos/authz/v1beta1/query.js"
+    },
+    "./cosmos/authz/v1beta1/tx.js": {
+      "types": "./dist/codegen/cosmos/authz/v1beta1/tx.d.ts",
+      "default": "./dist/codegen/cosmos/authz/v1beta1/tx.js"
+    },
     "./cosmos/bank/v1beta1/query.js": {
       "types": "./dist/codegen/cosmos/bank/v1beta1/query.d.ts",
       "default": "./dist/codegen/cosmos/bank/v1beta1/query.js"

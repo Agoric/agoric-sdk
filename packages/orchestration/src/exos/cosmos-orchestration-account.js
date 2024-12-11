@@ -44,6 +44,7 @@ import { VowShape } from '@agoric/vow';
 import { decodeBase64 } from '@endo/base64';
 import { Fail, makeError, q } from '@endo/errors';
 import { E } from '@endo/far';
+import { MsgExec } from '@agoric/cosmic-proto/cosmos/authz/v1beta1/tx.js';
 import {
   AmountArgShape,
   ChainAddressShape,
@@ -148,6 +149,7 @@ export const IcaAccountHolderI = M.interface('IcaAccountHolder', {
   executeEncodedTx: M.call(M.arrayOf(Proto3Shape))
     .optional(TxBodyOptsShape)
     .returns(VowShape),
+  exec: M.call(M.arrayOf(M.record()), ChainAddressShape).returns(VowShape),
 });
 
 /** @type {{ [name: string]: [description: string, valueShape: Matcher] }} */
@@ -842,6 +844,28 @@ export const prepareCosmosOrchestrationAccountKit = (
               ),
             ]);
             return watch(results, this.facets.allBalancesQueryWatcher);
+          });
+        },
+
+        /**
+         * Requires an existing authorization from the `grantee` via `MsgGrant`.
+         *
+         * @param {Any[]} msgs
+         * @param {ChainAddress} grantee
+         * @returns {Vow<void>}
+         */
+        exec(msgs, grantee) {
+          return asVow(() => {
+            const { helper } = this.facets;
+            const results = E(helper.owned()).executeEncodedTx([
+              Any.toJSON(
+                MsgExec.toProtoMsg({
+                  grantee: grantee.value,
+                  msgs,
+                }),
+              ),
+            ]);
+            return watch(results, this.facets.returnVoidWatcher);
           });
         },
 

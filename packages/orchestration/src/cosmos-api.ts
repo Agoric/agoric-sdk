@@ -36,6 +36,7 @@ import type {
 } from '@agoric/vats/tools/ibc-utils.js';
 import type { QueryDelegationTotalRewardsResponse } from '@agoric/cosmic-proto/cosmos/distribution/v1beta1/query.js';
 import type { Coin } from '@agoric/cosmic-proto/cosmos/base/v1beta1/coin.js';
+import type { Any } from '@agoric/cosmic-proto/google/protobuf/any.js';
 import type { AmountArg, ChainAddress, Denom, DenomAmount } from './types.js';
 import { PFM_RECEIVER } from './exos/chain-hub.js';
 
@@ -297,6 +298,11 @@ export interface IcaAccount extends IcaAccountMethods {
 /** Methods on chains that support Liquid Staking */
 export interface LiquidStakingMethods {
   liquidStake: (amount: AmountArg) => Promise<void>;
+}
+
+export interface AuthzMethods {
+  /** use `MsgExec` to submit transactions on behalf of another account */
+  exec: (msgs: Any[], grantee: ChainAddress) => Promise<void>;
 }
 
 // TODO support StakingAccountQueries
