@@ -15,6 +15,53 @@ import (
 	"github.com/Agoric/agoric-sdk/golang/cosmos/types"
 )
 
+func TestSplitHookedAddress(t *testing.T) {
+	cases := []struct {
+		name     string
+		hook     string
+		baseAddr string
+		hookData []byte
+		err      string
+	}{
+		{"empty", "", "", []byte{}, "decoding bech32 failed: invalid bech32 string length 0"},
+		{"no hook", "agoric1qqp0e5ys", "agoric1qqp0e5ys", []byte{}, ""},
+		{"Fast USDC", "agoric10rchp4vc53apxn32q42c3zryml8xq3xshyzuhjk6405wtxy7tl3d7e0f8az423padaek6me38qekget2vdhx66mtvy6kg7nrw5uhsaekd4uhwufswqex6dtsv44hxv3cd4jkuqpqvduyhf",
+			"agoric16kv2g7snfc4q24vg3pjdlnnqgngtjpwtetd2h689nz09lcklvh5s8u37ek",
+			[]byte("?EUD=osmo183dejcnmkka5dzcu9xw6mywq0p2m5peks28men"),
+			""},
+		{"version 0",
+			"agoric10rchqqqpqgpsgpgxquyqjzstpsxsurcszyfpxpqrqgqsq9qx0p9wp",
+			"agoric1qqqsyqcyq5rqwzqfpg9scrgwpugpzysn3tn9p0",
+			[]byte{4, 3, 2, 1},
+			""},
+		{"version 1 reject",
+			"agoric10rchzqqpqgpsgpgxquyqjzstpsxsurcszyfpxpqrqgqsq9q04n2fg",
+			"",
+			[]byte{},
+			"unsupported address hook version 1"},
+		{"version 15 reject",
+			"agoric10rch7qqpqgpsgpgxquyqjzstpsxsurcszyfpxpqrqgqsq9q25ez2d",
+			"",
+			[]byte{},
+			"unsupported address hook version 15"},
+	}
+
+	for _, tc := range cases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			baseAddr, hookData, err := types.SplitHookedAddress(tc.hook)
+			if len(tc.err) > 0 {
+				require.Error(t, err)
+				require.Equal(t, tc.err, err.Error())
+			} else {
+				require.NoError(t, err)
+				require.Equal(t, tc.baseAddr, baseAddr)
+				require.Equal(t, string(tc.hookData), string(hookData))
+			}
+		})
+	}
+}
+
 func TestExtractBaseAddress(t *testing.T) {
 	bases := []struct {
 		name string

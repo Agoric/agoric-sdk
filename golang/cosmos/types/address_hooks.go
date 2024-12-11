@@ -25,7 +25,7 @@ const (
 
 // AddressHookMagic is a magic byte prefix that identifies a hooked address.
 // Chosen to make bech32 address hooks that look like "agoric10rch..."
-var AddressHookMagic = []byte{0x78, 0xf1, 0x70 | AddressHookVersion}
+var AddressHookMagic = []byte{0x78, 0xf1, 0x70 /* | AddressHookVersion */}
 
 func init() {
 	if AddressHookVersion&0x0f != AddressHookVersion {
@@ -51,10 +51,17 @@ func SplitHookedAddress(addr string) (string, []byte, error) {
 		return "", []byte{}, err
 	}
 
-	bz := bytes.TrimPrefix(payload, AddressHookMagic)
-	if len(bz) == len(payload) {
+	lastMagicHighNibble := AddressHookMagic[len(AddressHookMagic)-1]
+	bz := bytes.TrimPrefix(payload, AddressHookMagic[:len(AddressHookMagic)-1])
+	if len(bz) == len(payload) || len(bz) == 0 || bz[0]&0xf0 != lastMagicHighNibble {
 		// Return an unhooked address.
 		return addr, []byte{}, nil
+	}
+
+	version := bz[0] & 0x0f
+	bz = bz[1:]
+	if version != AddressHookVersion {
+		return "", []byte{}, fmt.Errorf("unsupported address hook version %d", version)
 	}
 
 	if len(bz) < BaseAddressLengthBytes {
@@ -99,6 +106,7 @@ func JoinHookedAddress(baseAddr string, hookData []byte) (string, error) {
 
 	payload := make([]byte, 0, len(AddressHookMagic)+b+len(hookData)+BaseAddressLengthBytes)
 	payload = append(payload, AddressHookMagic...)
+	payload[len(payload)-1] |= byte(AddressHookVersion)
 	payload = append(payload, bz...)
 	payload = append(payload, hookData...)
 	baLen := make([]byte, BaseAddressLengthBytes)
