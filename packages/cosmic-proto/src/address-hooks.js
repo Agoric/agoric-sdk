@@ -44,7 +44,7 @@ if ((ADDRESS_HOOK_VERSION & 0x0f) !== ADDRESS_HOOK_VERSION) {
 const ADDRESS_HOOK_MAGIC = new Uint8Array([
   0x78,
   0xf1,
-  0x70 | ADDRESS_HOOK_VERSION,
+  0x70, // | ADDRESS_HOOK_VERSION
 ]);
 
 /**
@@ -145,6 +145,7 @@ export const joinHookedAddress = (
     magicLength + b + hd + BASE_ADDRESS_LENGTH_BYTES,
   );
   hookBuf.set(ADDRESS_HOOK_MAGIC, 0);
+  hookBuf[magicLength - 1] |= ADDRESS_HOOK_VERSION;
   hookBuf.set(bytes, magicLength);
   hookBuf.set(hookData, magicLength + b);
 
@@ -204,10 +205,21 @@ export const splitHookedAddressUnsafe = (
   const { prefix, bytes } = decodeBech32(specimen, charLimit);
 
   const magicLength = ADDRESS_HOOK_MAGIC.length;
+  let version = 0xff;
   for (let i = 0; i < magicLength; i += 1) {
-    if (bytes[i] !== ADDRESS_HOOK_MAGIC[i]) {
+    let maybeMagicByte = bytes[i];
+    if (i === magicLength - 1) {
+      // Final byte has a low version nibble and a high magic nibble.
+      version = maybeMagicByte & 0x0f;
+      maybeMagicByte &= 0xf0;
+    }
+    if (maybeMagicByte !== ADDRESS_HOOK_MAGIC[i]) {
       return { baseAddress: specimen, hookData: new Uint8Array() };
     }
+  }
+
+  if (version !== ADDRESS_HOOK_VERSION) {
+    return `Unsupported address hook version ${version}`;
   }
 
   let len = 0;
