@@ -39,7 +39,6 @@ const options = {
   chainInfo: { type: 'string' },
   assetInfo: { type: 'string' },
   noNoble: { type: 'boolean', default: false },
-  usdcIssuer: { type: 'string', default: 'USDC' },
 };
 const oraclesUsage = 'use --oracle name:address ...';
 
@@ -62,7 +61,6 @@ const assetInfoUsage =
  *   chainInfo?: string;
  *   assetInfo?: string;
  *   noNoble: boolean;
- *   usdcIssuer: string;
  * }} FastUSDCOpts
  */
 
@@ -116,7 +114,6 @@ export default async (homeP, endowments) => {
       chainInfo,
       assetInfo,
       noNoble,
-      usdcIssuer: issuerName,
       ...fees
     },
   } = parseArgs({ args: scriptArgs, options });
@@ -185,13 +182,6 @@ export default async (homeP, endowments) => {
     return JSON.parse(assetInfo);
   };
 
-  const parseIssuer = () => {
-    const name = `issuer.${issuerName}`;
-    if (!(name === 'issuer.USDC' || name === 'issuer.USDC_axl'))
-      throw Error(`unknown issuer ${issuerName}`);
-    return crossVatContext[name];
-  };
-
   /** @type {FastUSDCConfig} */
   const config = harden({
     oracles: parseOracleArgs(),
@@ -203,7 +193,7 @@ export default async (homeP, endowments) => {
     chainInfo: parseChainInfo(),
     assetInfo: parseAssetInfo(),
     noNoble,
-    usdcIssuer: parseIssuer(),
+    usdcIssuer: crossVatContext[noNoble ? `issuer.USDC_axl` : 'issuer.USDC'],
   });
 
   await writeCoreEval('start-fast-usdc', utils =>
