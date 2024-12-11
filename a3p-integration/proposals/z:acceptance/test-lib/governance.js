@@ -1,13 +1,7 @@
-/* global fetch setTimeout */
+/* global setTimeout */
 
 import { agops, agoric, executeOffer } from '@agoric/synthetic-chain';
-import {
-  boardSlottingMarshaller,
-  makeFromBoard,
-  makeVstorageKit,
-  retryUntilCondition,
-} from '@agoric/client-utils';
-import { makeVStorage } from './rpc.js';
+import { makeVstorageKit, retryUntilCondition } from '@agoric/client-utils';
 import { walletUtils } from './index.js';
 import {
   checkCommitteeElectionResult,
