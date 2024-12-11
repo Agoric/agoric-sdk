@@ -14,7 +14,7 @@ import {
   ceilMultiplyBy,
   makeRatio,
 } from '@agoric/zoe/src/contractSupport/ratio.js';
-import { walletUtils } from './index.js';
+import { smartWalletKit } from './index.js';
 import { listVaults, vstorageKit } from './utils.js';
 
 /**
@@ -22,7 +22,7 @@ import { listVaults, vstorageKit } from './utils.js';
  * @returns {Promise<{ vaultID: string, debt: bigint, collateral: bigint, state: string }>}
  */
 export const getLastVaultFromAddress = async address => {
-  const activeVaults = await listVaults(address, walletUtils);
+  const activeVaults = await listVaults(address, smartWalletKit);
   const vaultPath = activeVaults[activeVaults.length - 1];
   const vaultID = vaultPath.split('.').pop();
 
