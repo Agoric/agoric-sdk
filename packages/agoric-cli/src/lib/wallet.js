@@ -149,7 +149,7 @@ export const coalesceWalletState = async (follower, invitationBrand) => {
  *   fees?: string,
  *   verbose?: boolean,
  *   keyring?: {home?: string, backend: string},
- *   stdout: Pick<import('stream').Writable, 'write'>,
+ *   stdout?: Pick<import('stream').Writable, 'write'>,
  *   execFileSync: typeof import('child_process').execFileSync,
  *   delay: (ms: number) => Promise<void>,
  *   dryRun?: boolean,
