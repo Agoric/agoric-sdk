@@ -1,10 +1,13 @@
 /* eslint-env node */
-import { makeStargateClient, makeVstorageKit } from '@agoric/client-utils';
+import {
+  LOCAL_CONFIG,
+  makeStargateClient,
+  makeVstorageKit,
+} from '@agoric/client-utils';
 import { readFile, writeFile } from 'node:fs/promises';
-import { networkConfig } from './rpc.js';
 
-export const stargateClientP = makeStargateClient(networkConfig, { fetch });
-export const vstorageKit = makeVstorageKit({ fetch }, networkConfig);
+export const stargateClientP = makeStargateClient(LOCAL_CONFIG, { fetch });
+export const vstorageKit = makeVstorageKit({ fetch }, LOCAL_CONFIG);
 
 /**
  * @import {WalletUtils} from '@agoric/client-utils';

@@ -11,7 +11,7 @@ import { makeTimerUtils } from './utils.js';
  *
  * @throws { Error & { code: number } } if transaction fails
  * @param {import('@agoric/smart-wallet/src/smartWallet.js').BridgeAction} bridgeAction
- * @param {import('./rpc.js').MinimalNetworkConfig & {
+ * @param {import('@agoric/client-utils').MinimalNetworkConfig & {
  *   from: string,
  *   marshaller: Pick<import('@endo/marshal').Marshal<string | null>, 'toCapData'>,
  *   fees?: string,
@@ -25,7 +25,6 @@ import { makeTimerUtils } from './utils.js';
  */
 export const sendAction = async (bridgeAction, opts) => {
   const { marshaller } = opts;
-  // @ts-expect-error BridgeAction has methods disallowed by Passable
   const offerBody = JSON.stringify(marshaller.toCapData(harden(bridgeAction)));
 
   // tryExit should not require --allow-spend
@@ -81,7 +80,6 @@ export const makeAgdWalletUtils = async (
       delay,
       execFileSync,
       from,
-      // @ts-expect-error version skew in @endo/marshal and/or @endo/pass-style
       marshaller,
       keyring: { backend: 'test' },
     });
