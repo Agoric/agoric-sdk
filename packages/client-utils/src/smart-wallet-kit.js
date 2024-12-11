@@ -9,7 +9,6 @@ import { makeAgoricNames, makeVstorageKit } from './vstorage-kit.js';
  * @import {MinimalNetworkConfig} from './network-config.js';
  */
 
-// XXX this is really a SmartWalletKit
 /**
  * Augment VstorageKit with addtional convenience methods for working with
  * Agoric smart wallets.
@@ -19,7 +18,7 @@ import { makeAgoricNames, makeVstorageKit } from './vstorage-kit.js';
  * @param {(ms: number) => Promise<void>} root0.delay
  * @param {MinimalNetworkConfig} networkConfig
  */
-export const makeWalletUtils = async ({ fetch, delay }, networkConfig) => {
+export const makeSmartWalletKit = async ({ fetch, delay }, networkConfig) => {
   const vsk = makeVstorageKit({ fetch }, networkConfig);
 
   const client = await makeStargateClient(networkConfig, { fetch });
@@ -111,4 +110,4 @@ export const makeWalletUtils = async ({ fetch, delay }, networkConfig) => {
     pollOffer,
   };
 };
-/** @typedef {Awaited<ReturnType<typeof makeWalletUtils>>} WalletUtils */
+/** @typedef {Awaited<ReturnType<typeof makeSmartWalletKit>>} SmartWalletKit */
