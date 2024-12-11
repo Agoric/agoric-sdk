@@ -12,6 +12,7 @@ import {
 import { makeZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
 import { provideSingleton } from '@agoric/zoe/src/contractSupport/durability.js';
 import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/recorder.js';
+import { Fail } from '@endo/errors';
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
 import { prepareAdvancer } from './exos/advancer.js';
@@ -27,10 +28,11 @@ const trace = makeTracer('FastUsdc');
 
 const STATUS_NODE = 'status';
 const FEE_NODE = 'feeConfig';
+const ADDRESSES_BAGGAGE_KEY = 'addresses';
 
 /**
  * @import {HostInterface} from '@agoric/async-flow';
- * @import {CosmosChainInfo, Denom, DenomDetail, OrchestrationAccount} from '@agoric/orchestration';
+ * @import {ChainAddress, CosmosChainInfo, Denom, DenomDetail, OrchestrationAccount} from '@agoric/orchestration';
  * @import {OrchestrationPowers, OrchestrationTools} from '@agoric/orchestration/src/utils/start-helper.js';
  * @import {Remote} from '@agoric/internal';
  * @import {Marshaller, StorageNode} from '@agoric/internal/src/lib-chainStorage.js'
@@ -53,10 +55,11 @@ export const meta = {
   privateArgsShape: {
     // @ts-expect-error TypedPattern not recognized as record
     ...OrchestrationPowersShape,
+    assetInfo: M.arrayOf([DenomShape, DenomDetailShape]),
+    chainInfo: M.recordOf(M.string(), CosmosChainInfoShape),
     feeConfig: FeeConfigShape,
     marshaller: M.remotable(),
-    chainInfo: M.recordOf(M.string(), CosmosChainInfoShape),
-    assetInfo: M.arrayOf([DenomShape, DenomDetailShape]),
+    poolMetricsNode: M.remotable(),
   },
 };
 harden(meta);
@@ -73,12 +76,24 @@ const publishFeeConfig = async (node, marshaller, feeConfig) => {
 };
 
 /**
+ * @param {Remote<StorageNode>} contractNode
+ * @param {{
+ *  poolAccount: ChainAddress['value'];
+ *  settlementAccount: ChainAddress['value'];
+ * }} addresses
+ */
+const publishAddresses = (contractNode, addresses) => {
+  return E(contractNode).setValue(JSON.stringify(addresses));
+};
+
+/**
  * @param {ZCF<FastUsdcTerms>} zcf
  * @param {OrchestrationPowers & {
- *   marshaller: Marshaller;
- *   feeConfig: FeeConfig;
- *   chainInfo: Record<string, CosmosChainInfo>;
  *   assetInfo: [Denom, DenomDetail & { brandKey?: string}][];
+ *   chainInfo: Record<string, CosmosChainInfo>;
+ *   feeConfig: FeeConfig;
+ *   marshaller: Marshaller;
+ *   poolMetricsNode: Remote<StorageNode>;
  * }} privateArgs
  * @param {Zone} zone
  * @param {OrchestrationTools} tools
@@ -160,6 +175,23 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
         );
       });
     },
+    async publishAddresses() {
+      !baggage.has(ADDRESSES_BAGGAGE_KEY) || Fail`Addresses already published`;
+      const [poolAccountAddress, settlementAccountAddress] =
+        await vowTools.when(
+          vowTools.all([
+            E(poolAccount).getAddress(),
+            E(settlementAccount).getAddress(),
+          ]),
+        );
+      const addresses = harden({
+        poolAccount: poolAccountAddress.value,
+        settlementAccount: settlementAccountAddress.value,
+      });
+      baggage.init(ADDRESSES_BAGGAGE_KEY, addresses);
+      await publishAddresses(storageNode, addresses);
+      return addresses;
+    },
   });
 
   const publicFacet = zone.exo('Fast USDC Public', undefined, {
@@ -185,6 +217,13 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
     },
     getPublicTopics() {
       return poolKit.public.getPublicTopics();
+    },
+    getStaticInfo() {
+      baggage.has(ADDRESSES_BAGGAGE_KEY) ||
+        Fail`no addresses. creator must 'publishAddresses' first`;
+      return harden({
+        [ADDRESSES_BAGGAGE_KEY]: baggage.get(ADDRESSES_BAGGAGE_KEY),
+      });
     },
   });
 
@@ -213,7 +252,7 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
   );
 
   const poolKit = zone.makeOnce('Liquidity Pool kit', () =>
-    makeLiquidityPoolKit(shareMint, privateArgs.storageNode),
+    makeLiquidityPoolKit(shareMint, privateArgs.poolMetricsNode),
   );
 
   /** Chain, connection, and asset info can only be registered once */
