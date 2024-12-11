@@ -1,5 +1,10 @@
 /* eslint-env node */
-import { makeStargateClient, makeVstorageKit } from '@agoric/client-utils';
+import {
+  makeStargateClient,
+  makeVstorageKit,
+  retryUntilCondition,
+} from '@agoric/client-utils';
+import { evalBundles, getDetailsMatchingVats } from '@agoric/synthetic-chain';
 import { readFile, writeFile } from 'node:fs/promises';
 import { networkConfig } from './rpc.js';
 
@@ -89,4 +94,30 @@ export const makeTimerUtils = ({ setTimeout }) => {
     delay,
     waitUntil,
   };
+};
+
+/**
+ * This function solves the limitation of getIncarnation when multiple Vats
+ * are returned for the provided vatName and does not return the incarnation
+ * of the desired Vat (e.g. zcf-mintHolder-USDC)
+ * @param {string} vatName
+ * @returns {Promise<number>}
+ */
+const getIncarnationFromDetails = async vatName => {
+  const matchingVats = await getDetailsMatchingVats(vatName);
+  const expectedVat = matchingVats.find(vat => vat.vatName === vatName);
+  console.log('Vat: ', expectedVat);
+  return expectedVat.incarnation;
+};
+
+export const upgradeContract = async (submissionPath, vatName) => {
+  const incarnationBefore = await getIncarnationFromDetails(vatName);
+  await evalBundles(submissionPath);
+
+  return retryUntilCondition(
+    async () => getIncarnationFromDetails(vatName),
+    value => value === incarnationBefore + 1,
+    `${vatName} upgrade not processed yet`,
+    { setTimeout, retryIntervalMs: 5000, maxRetries: 15 },
+  );
 };
