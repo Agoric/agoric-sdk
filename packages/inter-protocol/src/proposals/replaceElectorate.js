@@ -15,7 +15,7 @@ import {
   assertPathSegment,
   makeStorageNodeChild,
 } from '@agoric/internal/src/lib-chainStorage.js';
-import { reserveThenDeposit } from './utils.js';
+import { parallelCreateMap, reserveThenDeposit } from './utils.js';
 
 /** @import {EconomyBootstrapPowers} from './econ-behaviors.js' */
 /** @import {EconCharterStartResult} from './econ-behaviors.js' */
@@ -181,8 +181,10 @@ const inviteToEconCharter = async (
  * Starts a new Economic Committee (EC) by creating an instance with the
  * provided committee specifications.
  *
- * @param {EconomyBootstrapPowers} powers - The resources and capabilities
- *   required to start the committee.
+ * @param {EconomyBootstrapPowers &
+ *   PromiseSpaceOf<{ retiredContractInstances: MapStore<string, Instance> }>} powers
+ *   - The resources and capabilities required to start the committee.
+ *
  * @param {{
  *   options: {
  *     committeeName: string;
@@ -196,12 +198,22 @@ const inviteToEconCharter = async (
  */
 const startNewEconomicCommittee = async (
   {
-    consume: { board, chainStorage, startUpgradable },
-    produce: { economicCommitteeKit, economicCommitteeCreatorFacet },
+    consume: {
+      board,
+      chainStorage,
+      startUpgradable,
+      retiredContractInstances: retiredInstancesP,
+    },
+    produce: {
+      economicCommitteeKit,
+      economicCommitteeCreatorFacet,
+      retiredContractInstances: produceRetiredInstances,
+    },
     installation: {
       consume: { committee },
     },
     instance: {
+      consume: { economicCommittee: economicCommitteeOriginalP },
       produce: { economicCommittee },
     },
   },
@@ -213,6 +225,18 @@ const startNewEconomicCommittee = async (
 
   trace(`committeeName ${committeeName}`);
   trace(`committeeSize ${committeeSize}`);
+
+  await parallelCreateMap(produceRetiredInstances, 'retiredContractInstances');
+
+  // get the actual retiredContractInstances
+  const retiredInstances = await retiredInstancesP;
+  // Record the retired electorate instance so we can manage it later.
+  const economicCommitteeOriginal = await economicCommitteeOriginalP;
+  const boardID = await E(board).getId(economicCommitteeOriginal);
+  await E(retiredInstances).init(
+    `economicCommittee-${boardID}`,
+    economicCommitteeOriginal,
+  );
 
   const committeesNode = await makeStorageNodeChild(
     chainStorage,
@@ -309,6 +333,7 @@ const startNewEconCharter = async ({
  * @typedef {PromiseSpaceOf<{
  *   auctionUpgradeNewInstance: Instance;
  *   auctionUpgradeNewGovCreator: any;
+ *   retiredContractInstances: MapStore<string, Instance>;
  * }>} interlockPowers
  */
 
@@ -485,6 +510,7 @@ export const getManifestForReplaceAllElectorates = async (
   manifest: {
     [replaceAllElectorates.name]: {
       consume: {
+        agoricNames: true,
         auctionUpgradeNewGovCreator: true,
         auctionUpgradeNewInstance: true,
         psmKit: true,
@@ -492,6 +518,7 @@ export const getManifestForReplaceAllElectorates = async (
         chainStorage: true,
         highPrioritySendersManager: true,
         namesByAddressAdmin: true,
+        retiredContractInstances: true,
         // Rest of these are designed to be widely shared
         board: true,
         startUpgradable: true,
@@ -501,6 +528,7 @@ export const getManifestForReplaceAllElectorates = async (
         economicCommitteeKit: true,
         economicCommitteeCreatorFacet: true,
         auctionUpgradeNewGovCreator: true,
+        retiredContractInstances: true,
       },
       installation: {
         consume: {
@@ -514,6 +542,7 @@ export const getManifestForReplaceAllElectorates = async (
           economicCommittee: true,
           econCommitteeCharter: true,
         },
+        consume: { economicCommittee: true },
       },
     },
   },

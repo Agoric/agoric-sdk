@@ -3,6 +3,7 @@ import { E } from '@endo/far';
 import { WalletName } from '@agoric/internal';
 import { getCopyMapEntries, makeCopyMap } from '@agoric/store';
 import { assertPathSegment } from '@agoric/internal/src/lib-chainStorage.js';
+import { makeScalarBigMapStore } from '@agoric/vat-data';
 
 /** @import {CopyMap} from '@endo/patterns'; */
 
@@ -170,4 +171,17 @@ export const sanitizePathSegment = name => {
   const candidate = name.replace(/ /g, '_');
   assertPathSegment(candidate);
   return candidate;
+};
+
+/**
+ * Idempotently create and store a durable MapStore for the promise space.
+ * `resolve()` silently fails if called again after a successful call, so it's
+ * safe for multiple proposals to call in parallel, as long as they all use the
+ * value from consume rather than the value they produced.
+ *
+ * @param {Producer<MapStore>} producer
+ * @param {string} [name]
+ */
+export const parallelCreateMap = async (producer, name = 'mapStore') => {
+  await producer.resolve(makeScalarBigMapStore(name, { durable: true }));
 };

@@ -5,6 +5,7 @@ import { E } from '@endo/far';
 import { unitAmount } from '@agoric/zoe/src/contractSupport/priceQuote.js';
 import {
   oracleBrandFeedName,
+  parallelCreateMap,
   reserveThenDeposit,
   sanitizePathSegment,
 } from './utils.js';
@@ -84,7 +85,8 @@ export const ensureOracleBrand = async (
 };
 
 /**
- * @param {EconomyBootstrapPowers} powers
+ * @param {EconomyBootstrapPowers &
+ *   PromiseSpaceOf<{ retiredContractInstances: MapStore<string, Instance> }>} powers
  * @param {{
  *   AGORIC_INSTANCE_NAME: string;
  *   contractTerms: import('@agoric/inter-protocol/src/price/fluxAggregatorKit.js').ChainlinkConfig;
@@ -96,6 +98,7 @@ export const ensureOracleBrand = async (
 const startPriceAggregatorInstance = async (
   {
     consume: {
+      agoricNames,
       board,
       chainStorage,
       chainTimerService,
@@ -103,6 +106,7 @@ const startPriceAggregatorInstance = async (
       highPrioritySendersManager,
       namesByAddressAdmin,
       startGovernedUpgradable,
+      retiredContractInstances: retiredContractInstancesP,
     },
     instance: { produce: produceInstance },
   },
@@ -139,6 +143,19 @@ const startPriceAggregatorInstance = async (
     // @ts-expect-error GovernableStartFn vs. fluxAggregatorContract.js start
     installation,
   });
+  const retiredContractInstances = await retiredContractInstancesP;
+
+  // save the instance so we can manage it later
+  const retiringInstance = await E(agoricNames).lookup(
+    'instance',
+    AGORIC_INSTANCE_NAME,
+  );
+  const boardID = await E(board).getId(retiringInstance);
+  retiredContractInstances.init(
+    `priceFeed-${AGORIC_INSTANCE_NAME}-${boardID}`,
+    retiringInstance,
+  );
+
   produceInstance[AGORIC_INSTANCE_NAME].reset();
   produceInstance[AGORIC_INSTANCE_NAME].resolve(governedKit.instance);
   trace(
@@ -191,7 +208,9 @@ const distributeInvitations = async (
 };
 
 /**
- * @param {EconomyBootstrapPowers & NamedVatPowers} powers
+ * @param {EconomyBootstrapPowers &
+ *   NamedVatPowers &
+ *   PromiseSpaceOf<{ retiredContractInstances: MapStore<string, Instance> }>} powers
  * @param {{
  *   options: PriceFeedConfig & {
  *     priceAggregatorRef: { bundleID: string };
@@ -219,6 +238,11 @@ export const deployPriceFeeds = async (powers, config) => {
   const installation = await installPriceAggregator(
     powers,
     priceAggregatorRef.bundleID,
+  );
+
+  await parallelCreateMap(
+    powers.produce.retiredContractInstances,
+    'retiredContractInstances',
   );
 
   const { priceAuthorityAdmin, priceAuthority } = powers.consume;
@@ -300,6 +324,7 @@ export const getManifestForPriceFeeds = async (
         namesByAddressAdmin: t,
         priceAuthority: t,
         priceAuthorityAdmin: t,
+        retiredContractInstances: t,
         startGovernedUpgradable: t,
         startUpgradable: t,
         zoe: t,
@@ -307,9 +332,10 @@ export const getManifestForPriceFeeds = async (
       installation: { produce: { priceAggregator: t } },
       instance: {
         produce: t,
+        consume: t,
       },
       oracleBrand: { produce: t },
-      produce: { priceAuthority8400: t },
+      produce: { priceAuthority8400: t, retiredContractInstances: t },
     },
   },
   options: { ...priceFeedOptions },
