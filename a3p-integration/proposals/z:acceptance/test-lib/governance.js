@@ -1,19 +1,20 @@
 /* global setTimeout */
 
 import { agops, agoric, executeOffer } from '@agoric/synthetic-chain';
-import { makeVstorageKit, retryUntilCondition } from '@agoric/client-utils';
+import { retryUntilCondition } from '@agoric/client-utils';
 import { walletUtils } from './index.js';
 import {
   checkCommitteeElectionResult,
   fetchLatestEcQuestion,
 } from './psm-lib.js';
+import { makeVstorageKit } from './rpc.js';
 
 /**
  * @param {typeof window.fetch} fetch
- * @param {import('@agoric/client-utils').MinimalNetworkConfig} networkConfig
+ * @param {import('./rpc.js').MinimalNetworkConfig} networkConfig
  */
 export const makeGovernanceDriver = async (fetch, networkConfig) => {
-  const { readLatestHead, marshaller } = await makeVstorageKit(
+  const { readLatestHead, marshaller, vstorage } = await makeVstorageKit(
     { fetch },
     networkConfig,
   );
@@ -221,11 +222,29 @@ export const makeGovernanceDriver = async (fetch, networkConfig) => {
     return { latestOutcome, latestQuestion };
   };
 
+  const getLatestQuestionHistory = async () => {
+    const nodePath = 'published.committees.Economic_Committee.latestQuestion';
+
+    const historyIterator = await vstorage.readHistory(nodePath);
+    const history = [];
+
+    for await (const data of historyIterator) {
+      if (data) {
+        const question = marshaller.fromCapData(JSON.parse(data[0]));
+        const changes = question.positions[0].changes;
+        history.push(changes);
+      }
+    }
+
+    return history;
+  };
+
   return {
     voteOnProposedChanges,
     proposeParamChange,
     getCharterInvitation,
     getCommitteeInvitation,
     getLatestQuestion,
+    getLatestQuestionHistory,
   };
 };
