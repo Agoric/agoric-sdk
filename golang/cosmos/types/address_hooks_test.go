@@ -12,7 +12,7 @@ import (
 	clienttypes "github.com/cosmos/ibc-go/v6/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v6/modules/core/04-channel/types"
 
-	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vtransfer/types"
+	"github.com/Agoric/agoric-sdk/golang/cosmos/types"
 )
 
 func TestExtractBaseAddress(t *testing.T) {
@@ -20,28 +20,12 @@ func TestExtractBaseAddress(t *testing.T) {
 		name string
 		addr string
 	}{
-		{"agoric address", "agoric1abcdefghiteaneas"},
-		{"cosmos address", "cosmos1abcdeffiharceuht"},
-		{"hex address", "0xabcdef198189818c93839ibia"},
-	}
-
-	prefixes := []struct {
-		prefix      string
-		baseIsWrong bool
-		isErr       bool
-	}{
-		{"", false, false},
-		{"/", false, true},
-		{"orch:/", false, true},
-		{"unexpected", true, false},
-		{"norch:/", false, true},
-		{"orch:", false, true},
-		{"norch:", false, true},
-		{"\x01", false, true},
+		{"agoric address", "agoric1qqp0e5ys"},
+		{"cosmos address", "cosmos1qqxuevtt"},
 	}
 
 	suffixes := []struct {
-		suffix      string
+		hookStr     string
 		baseIsWrong bool
 		isErr       bool
 	}{
@@ -50,31 +34,33 @@ func TestExtractBaseAddress(t *testing.T) {
 		{"/sub/account", false, false},
 		{"?query=something&k=v&k2=v2", false, false},
 		{"?query=something&k=v&k2=v2#fragment", false, false},
-		{"unexpected", true, false},
-		{"\x01", false, true},
+		{"unexpected", false, false},
+		{"\x01", false, false},
 	}
 
 	for _, b := range bases {
 		b := b
-		for _, p := range prefixes {
-			p := p
-			for _, s := range suffixes {
-				s := s
-				t.Run(b.name+" "+p.prefix+" "+s.suffix, func(t *testing.T) {
-					addr := p.prefix + b.addr + s.suffix
-					addr, err := types.ExtractBaseAddress(addr)
-					if p.isErr || s.isErr {
-						require.Error(t, err)
+		for _, s := range suffixes {
+			s := s
+			t.Run(b.name+" "+s.hookStr, func(t *testing.T) {
+				addrHook, err := types.JoinHookedAddress(b.addr, []byte(s.hookStr))
+				require.NoError(t, err)
+				addr, err := types.ExtractBaseAddress(addrHook)
+				if s.isErr {
+					require.Error(t, err)
+				} else {
+					require.NoError(t, err)
+					if s.baseIsWrong {
+						require.NotEqual(t, b.addr, addr)
 					} else {
+						require.Equal(t, b.addr, addr)
+						addr, hookData, err := types.SplitHookedAddress(addrHook)
 						require.NoError(t, err)
-						if p.baseIsWrong || s.baseIsWrong {
-							require.NotEqual(t, b.addr, addr)
-						} else {
-							require.Equal(t, b.addr, addr)
-						}
+						require.Equal(t, b.addr, addr)
+						require.Equal(t, s.hookStr, string(hookData))
 					}
-				})
-			}
+				}
+			})
 		}
 	}
 }
@@ -86,32 +72,50 @@ func TestExtractBaseAddressFromPacket(t *testing.T) {
 	channeltypes.RegisterInterfaces(ir)
 	clienttypes.RegisterInterfaces(ir)
 
+	cosmosAddr := "cosmos1qqxuevtt"
+	cosmosHookStr := "?foo=bar&baz=bot#fragment"
+	cosmosHook, err := types.JoinHookedAddress(cosmosAddr, []byte(cosmosHookStr))
+	require.NoError(t, err)
+	addr, hookData, err := types.SplitHookedAddress(cosmosHook)
+	require.NoError(t, err)
+	require.Equal(t, cosmosAddr, addr)
+	require.Equal(t, cosmosHookStr, string(hookData))
+
+	agoricAddr := "agoric1qqp0e5ys"
+	agoricHookStr := "?bingo=again"
+	agoricHook, err := types.JoinHookedAddress(agoricAddr, []byte(agoricHookStr))
+	require.NoError(t, err)
+	addr, hookData, err = types.SplitHookedAddress(agoricHook)
+	require.NoError(t, err)
+	require.Equal(t, agoricAddr, addr)
+	require.Equal(t, agoricHookStr, string(hookData))
+
 	cases := []struct {
 		name  string
 		addrs map[types.AddressRole]struct{ addr, baseAddr string }
 	}{
 		{"sender has params",
 			map[types.AddressRole]struct{ addr, baseAddr string }{
-				types.RoleSender:   {"cosmos1abcdeffiharceuht?foo=bar&baz=bot#fragment", "cosmos1abcdeffiharceuht"},
-				types.RoleReceiver: {"agoric1abcdefghiteaneas", "agoric1abcdefghiteaneas"},
+				types.RoleSender:   {cosmosHook, "cosmos1qqxuevtt"},
+				types.RoleReceiver: {"agoric1qqp0e5ys", "agoric1qqp0e5ys"},
 			},
 		},
 		{"receiver has params",
 			map[types.AddressRole]struct{ addr, baseAddr string }{
-				types.RoleSender:   {"cosmos1abcdeffiharceuht", "cosmos1abcdeffiharceuht"},
-				types.RoleReceiver: {"agoric1abcdefghiteaneas?bingo=again", "agoric1abcdefghiteaneas"},
+				types.RoleSender:   {"cosmos1qqxuevtt", "cosmos1qqxuevtt"},
+				types.RoleReceiver: {agoricHook, "agoric1qqp0e5ys"},
 			},
 		},
 		{"both are base",
 			map[types.AddressRole]struct{ addr, baseAddr string }{
-				types.RoleSender:   {"cosmos1abcdeffiharceuht", "cosmos1abcdeffiharceuht"},
-				types.RoleReceiver: {"agoric1abcdefghiteaneas", "agoric1abcdefghiteaneas"},
+				types.RoleSender:   {"cosmos1qqxuevtt", "cosmos1qqxuevtt"},
+				types.RoleReceiver: {"agoric1qqp0e5ys", "agoric1qqp0e5ys"},
 			},
 		},
 		{"both have params",
 			map[types.AddressRole]struct{ addr, baseAddr string }{
-				types.RoleSender:   {"agoric1abcdefghiteaneas?bingo=again", "agoric1abcdefghiteaneas"},
-				types.RoleReceiver: {"cosmos1abcdeffiharceuht?foo=bar&baz=bot#fragment", "cosmos1abcdeffiharceuht"},
+				types.RoleSender:   {agoricHook, "agoric1qqp0e5ys"},
+				types.RoleReceiver: {cosmosHook, "cosmos1qqxuevtt"},
 			},
 		},
 	}
