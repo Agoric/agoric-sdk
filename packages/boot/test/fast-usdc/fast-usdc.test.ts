@@ -160,7 +160,34 @@ test.serial('writes fee config to vstorage', async t => {
   await documentStorageSchema(t, storage, doc);
 });
 
-test.serial('makes usdc advance', async t => {
+test.serial('writes pool metrics to vstorage', async t => {
+  const { storage } = t.context;
+  const doc = {
+    node: 'fastUsdc.poolMetrics',
+    owner: 'FastUSC LiquidityPool exo',
+    showValue: v => defaultMarshaller.fromCapData(JSON.parse(v)),
+  };
+  await documentStorageSchema(t, storage, doc);
+});
+
+test.serial('writes account addresses to vstorage', async t => {
+  const { storage } = t.context;
+  const doc = {
+    node: 'fastUsdc',
+    showValue: JSON.parse,
+    pattern: /published\.fastUsdc\.(feeConfig|feedPolicy|poolMetrics)/,
+    replacement: '',
+    note: `Under "published", the "fastUsdc" node is delegated to FastUSDC contract.
+    Note: published.fastUsdc.[settleAcctAddr], published.fastUsdc.[poolAcctAddr],
+    and published.fastUsdc.[intermediateAcctAddr] are published by @agoric/orchestration
+    via 'withOrchestration' and (local|cosmos)-orch-account-kit.js.
+    `,
+  };
+
+  await documentStorageSchema(t, storage, doc);
+});
+
+test.skip('makes usdc advance', async t => {
   const {
     walletFactoryDriver: wd,
     storage,

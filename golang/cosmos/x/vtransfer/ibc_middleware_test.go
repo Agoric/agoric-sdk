@@ -16,6 +16,7 @@ import (
 	"github.com/tendermint/tendermint/libs/log"
 	dbm "github.com/tendermint/tm-db"
 
+	"github.com/Agoric/agoric-sdk/golang/cosmos/types"
 	swingsettesting "github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/testing"
 	swingsettypes "github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/types"
 	vibckeeper "github.com/Agoric/agoric-sdk/golang/cosmos/x/vibc/keeper"
@@ -332,11 +333,13 @@ func (s *IntegrationTestSuite) TestTransferFromAgdToAgd() {
 	s.Run("TransferFromAgdToAgd", func() {
 		// create a transfer packet's data contents
 		baseReceiver := s.chainB.SenderAccounts[1].SenderAccount.GetAddress().String()
+		receiverHook, err := types.JoinHookedAddress(baseReceiver, []byte("?what=arbitrary-data&why=to-test-bridge-targets"))
+		s.Require().NoError(err)
 		transferData := ibctransfertypes.NewFungibleTokenPacketData(
 			"uosmo",
 			"1000000",
 			s.chainA.SenderAccount.GetAddress().String(),
-			baseReceiver+"?what=arbitrary-data&why=to-test-bridge-targets",
+			receiverHook,
 			`"This is a JSON memo"`,
 		)
 
