@@ -171,13 +171,8 @@ export const prepareLiquidityPoolKit = (zone, zcf, USDC, tools) => {
           );
 
           // COMMIT POINT
-          try {
-            zcf.atomicRearrange(harden([[poolSeat, toSeat, amountKWR]]));
-          } catch (cause) {
-            const reason = Error('🚨 cannot commit borrow', { cause });
-            console.error(reason.message, cause);
-            zcf.shutdownWithFailure(reason);
-          }
+          // UNTIL #10684: ability to terminate an incarnation w/o terminating the contract
+          zcf.atomicRearrange(harden([[poolSeat, toSeat, amountKWR]]));
 
           Object.assign(this.state, post);
           this.facets.external.publishPoolMetrics();
@@ -233,23 +228,18 @@ export const prepareLiquidityPoolKit = (zone, zcf, USDC, tools) => {
           const { ContractFee, ...rest } = amounts;
 
           // COMMIT POINT
-          try {
-            zcf.atomicRearrange(
-              harden([
-                [
-                  fromSeat,
-                  poolSeat,
-                  rest,
-                  { USDC: add(amounts.PoolFee, amounts.Principal) },
-                ],
-                [fromSeat, feeSeat, { ContractFee }, { USDC: ContractFee }],
-              ]),
-            );
-          } catch (cause) {
-            const reason = Error('🚨 cannot commit repay', { cause });
-            console.error(reason.message, cause);
-            zcf.shutdownWithFailure(reason);
-          }
+          // UNTIL #10684: ability to terminate an incarnation w/o terminating the contract
+          zcf.atomicRearrange(
+            harden([
+              [
+                fromSeat,
+                poolSeat,
+                rest,
+                { USDC: add(amounts.PoolFee, amounts.Principal) },
+              ],
+              [fromSeat, feeSeat, { ContractFee }, { USDC: ContractFee }],
+            ]),
+          );
 
           Object.assign(this.state, post);
           this.facets.external.publishPoolMetrics();
@@ -284,9 +274,8 @@ export const prepareLiquidityPoolKit = (zone, zcf, USDC, tools) => {
           const post = depositCalc(shareWorth, proposal);
 
           // COMMIT POINT
-
+          const mint = shareMint.mintGains(post.payouts);
           try {
-            const mint = shareMint.mintGains(post.payouts);
             this.state.shareWorth = post.shareWorth;
             zcf.atomicRearrange(
               harden([
@@ -296,12 +285,12 @@ export const prepareLiquidityPoolKit = (zone, zcf, USDC, tools) => {
                 [mint, lp, post.payouts],
               ]),
             );
+          } catch (cause) {
+            // UNTIL #10684: ability to terminate an incarnation w/o terminating the contract
+            throw new Error('🚨 cannot commit deposit', { cause });
+          } finally {
             lp.exit();
             mint.exit();
-          } catch (cause) {
-            const reason = Error('🚨 cannot commit deposit', { cause });
-            console.error(reason.message, cause);
-            zcf.shutdownWithFailure(reason);
           }
           external.publishPoolMetrics();
         },
@@ -321,7 +310,6 @@ export const prepareLiquidityPoolKit = (zone, zcf, USDC, tools) => {
           const post = withdrawCalc(shareWorth, proposal);
 
           // COMMIT POINT
-
           try {
             this.state.shareWorth = post.shareWorth;
             zcf.atomicRearrange(
@@ -333,12 +321,12 @@ export const prepareLiquidityPoolKit = (zone, zcf, USDC, tools) => {
               ]),
             );
             shareMint.burnLosses(proposal.give, burn);
+          } catch (cause) {
+            // UNTIL #10684: ability to terminate an incarnation w/o terminating the contract
+            throw new Error('🚨 cannot commit withdraw', { cause });
+          } finally {
             lp.exit();
             burn.exit();
-          } catch (cause) {
-            const reason = Error('🚨 cannot commit withdraw', { cause });
-            console.error(reason.message, cause);
-            zcf.shutdownWithFailure(reason);
           }
           external.publishPoolMetrics();
         },
