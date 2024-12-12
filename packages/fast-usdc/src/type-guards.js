@@ -94,16 +94,13 @@ export const PoolMetricsShape = {
 harden(PoolMetricsShape);
 
 /** @type {TypedPattern<ChainPolicy>} */
-export const ChainPoliciesShape = M.splitRecord(
-  {
-    nobleContractAddress: EvmHashShape,
-    cctpTokenMessengerAddress: EvmHashShape,
-    confirmations: M.number(),
-    chainId: M.number(),
-  },
-  { chainType: M.number() },
-);
-harden(ChainPoliciesShape);
+export const ChainPolicyShape = {
+  attenuatedCttpBridgeAddress: EvmHashShape,
+  cctpTokenMessengerAddress: EvmHashShape,
+  confirmations: M.number(),
+  chainId: M.number(),
+};
+harden(ChainPolicyShape);
 
 /**
  * @type {TypedPattern<FeedPolicy>}
@@ -115,7 +112,7 @@ export const FeedPolicyShape = M.splitRecord(
   {
     nobleDomainId: M.number(),
     nobleAgoricChannelId: M.string(),
-    chainPolicies: M.recordOf(M.string(), ChainPoliciesShape),
+    chainPolicies: M.recordOf(M.string(), ChainPolicyShape),
   },
   { eventFilter: M.string() },
 );

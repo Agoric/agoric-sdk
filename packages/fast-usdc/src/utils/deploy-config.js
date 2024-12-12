@@ -64,11 +64,12 @@ export const configurations = {
       nobleDomainId: 4,
       chainPolicies: {
         Arbitrum: {
+          attenuatedCttpBridgeAddress:
+            '0xe298b93ffB5eA1FB628e0C0D55A43aeaC268e347',
           cctpTokenMessengerAddress:
             '0x19330d10D9Cc8751218eaf51E8885D058642E08A',
           chainId: 42161,
           confirmations: 2,
-          nobleContractAddress: '0x19330d10D9Cc8751218eaf51E8885D058642E08A',
         },
       },
     },
@@ -92,11 +93,12 @@ export const configurations = {
       nobleDomainId: 4,
       chainPolicies: {
         Arbitrum: {
+          attenuatedCttpBridgeAddress:
+            '0xe298b93ffB5eA1FB628e0C0D55A43aeaC268e347',
           cctpTokenMessengerAddress:
             '0x19330d10D9Cc8751218eaf51E8885D058642E08A',
           chainId: 42161,
           confirmations: 2,
-          nobleContractAddress: '0x19330d10D9Cc8751218eaf51E8885D058642E08A',
         },
       },
     },
@@ -118,10 +120,10 @@ export const configurations = {
       nobleDomainId: 4,
       chainPolicies: {
         Arbitrum: {
+          attenuatedCttpBridgeAddress: '0xTODO',
           cctpTokenMessengerAddress: '0xTODO',
           chainId: 421614,
           confirmations: 2,
-          nobleContractAddress: '0xTODO',
         },
       },
     },
@@ -140,10 +142,10 @@ export const configurations = {
       nobleDomainId: 4,
       chainPolicies: {
         Arbitrum: {
+          attenuatedCttpBridgeAddress: '0xTODO',
           cctpTokenMessengerAddress: '0xTODO',
           chainId: 421614,
           confirmations: 2,
-          nobleContractAddress: '0xTODO',
         },
       },
     },
