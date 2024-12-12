@@ -8,7 +8,7 @@ import {
 } from '@agoric/synthetic-chain';
 import { makeVstorageKit, retryUntilCondition } from '@agoric/client-utils';
 import { readFile, writeFile } from 'node:fs/promises';
-import { sendOfferAgd, psmSwap, snapshotAgoricNames } from './psm-helpers.js';
+import { psmSwap, snapshotAgoricNames } from './psm-lib.js';
 
 /**
  * @param {string} fileName base file name without .tjs extension
@@ -103,12 +103,18 @@ export const swap = async (t, address, assetList, want) => {
     const istBalanceBefore = await getISTBalance(address, 'uist');
     const anchorBalanceBefore = await getISTBalance(address, denom);
 
-    await psmSwap(address, ['swap', '--pair', pair, '--wantMinted', want], {
+    const psmSwapIo = {
       now: Date.now,
       follow: agoric.follow,
       setTimeout,
-      sendOffer: sendOfferAgd,
-    });
+      log: console.log,
+    };
+
+    await psmSwap(
+      address,
+      ['swap', '--pair', pair, '--wantMinted', want],
+      psmSwapIo,
+    );
 
     const istBalanceAfter = await getISTBalance(address, 'uist');
     const anchorBalanceAfter = await getISTBalance(address, denom);

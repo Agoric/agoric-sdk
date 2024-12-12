@@ -10,11 +10,7 @@ import {
   getPSMChildren,
   upgradeMintHolder,
 } from './test-lib/mintHolder-helpers.js';
-
-const networkConfig = {
-  rpcAddrs: ['http://0.0.0.0:26657'],
-  chainName: 'agoriclocal',
-};
+import { networkConfig } from './test-lib/index.js';
 
 test('mintHolder contract is upgraded', async t => {
   const receiver = await addUser('receiver');
