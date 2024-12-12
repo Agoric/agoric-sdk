@@ -237,13 +237,13 @@ export const prepareSettler = (
           const split = calculateSplit(received);
           log('disbursing', split);
 
-          // TODO: what if this throws?
-          // arguably, it cannot. Even if deposits
-          // and notifications get out of order,
-          // we don't ever withdraw more than has been deposited.
+          // If this throws, which arguably can't occur since we don't ever
+          // withdraw more than has been deposited (as denoted by
+          // `FungibleTokenPacketData`), funds will remain in the
+          // `settlementAccount`. A remediation can occur in a future upgrade.
           await vowTools.when(
             withdrawToSeat(
-              // @ts-expect-error Vow vs. Promise stuff. TODO: is this OK???
+              // @ts-expect-error LocalAccountMethods vs OrchestrationAccount
               settlementAccount,
               settlingSeat,
               harden({ In: received }),
