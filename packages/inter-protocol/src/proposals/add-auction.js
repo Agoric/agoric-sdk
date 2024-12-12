@@ -1,9 +1,9 @@
 import { deeplyFulfilledObject, makeTracer } from '@agoric/internal';
 import { makeStorageNodeChild } from '@agoric/internal/src/lib-chainStorage.js';
-import { E } from '@endo/far';
 import { Stable } from '@agoric/internal/src/tokens.js';
+import { E } from '@endo/far';
 import { makeGovernedTerms as makeGovernedATerms } from '../auction/params.js';
-import { parallelCreateMap } from './utils.js';
+import { provideRetiredInstances } from './utils.js';
 
 const trace = makeTracer('NewAuction', true);
 
@@ -83,12 +83,15 @@ export const addAuction = async (
     auctioneerInstallationP,
   ]);
 
-  await parallelCreateMap(produceRetiredInstances, 'retiredContractInstances');
+  const retiredInstances = await provideRetiredInstances(
+    retiredContractInstancesP,
+    produceRetiredInstances,
+  );
 
   // save the auctioneer instance so we can manage it later
   const boardID = await E(board).getId(legacyKit.instance);
   const identifier = `auctioneer-${boardID}`;
-  await E(retiredContractInstancesP).init(identifier, legacyKit.instance);
+  retiredInstances.init(identifier, legacyKit.instance);
 
   // Each field has an extra layer of type +  value:
   // AuctionStartDelay: { type: 'relativeTime', value: { relValue: 2n, timerBrand: Object [Alleged: timerBrand] {} } }
