@@ -200,7 +200,6 @@ const inviteToEconCharter = async (
 const startNewEconomicCommittee = async (
   {
     consume: {
-      agoricNames,
       board,
       chainStorage,
       startUpgradable,
@@ -236,11 +235,11 @@ const startNewEconomicCommittee = async (
   retiredInstanceWriter.resolve(contractInstanceMap);
 
   // get the actual retiredContractInstances
-  const retiredInstancesWriter = await retiredInstancesP;
+  const retiredInstances = await retiredInstancesP;
   // Record the retired electorate vat so we can manage it later.
   const econeconomicCommitteeOriginal = await economicCommitteeOriginalP;
   const boardID = await E(board).getId(econeconomicCommitteeOriginal);
-  retiredInstancesWriter.init(
+  retiredInstances.init(
     `economicCommittee-${boardID}`,
     econeconomicCommitteeOriginal,
   );

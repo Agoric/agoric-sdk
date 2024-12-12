@@ -3,13 +3,13 @@ import { makeStorageNodeChild } from '@agoric/internal/src/lib-chainStorage.js';
 import { E } from '@endo/far';
 
 import { unitAmount } from '@agoric/zoe/src/contractSupport/priceQuote.js';
+import { makeScalarBigMapStore } from '@agoric/vat-data';
 import {
   oracleBrandFeedName,
   reserveThenDeposit,
   sanitizePathSegment,
 } from './utils.js';
 import { replaceScaledPriceAuthorities } from './replace-scaledPriceAuthorities.js';
-import { makeScalarBigMapStore } from "@agoric/vat-data";
 
 const STORAGE_PATH = 'priceFeed';
 
@@ -108,7 +108,7 @@ const startPriceAggregatorInstance = async (
       startGovernedUpgradable,
       retiredContractInstances: retiredContractInstancesP,
     },
-    instance: { produce: produceInstance, consume: consumeInstance },
+    instance: { produce: produceInstance },
   },
   { AGORIC_INSTANCE_NAME, contractTerms, brandIn, brandOut },
   installation,
@@ -145,7 +145,10 @@ const startPriceAggregatorInstance = async (
   });
   const retiredContractInstances = await retiredContractInstancesP;
 
-  const retiringInstance = await E(agoricNames).lookup('instance', AGORIC_INSTANCE_NAME);
+  const retiringInstance = await E(agoricNames).lookup(
+    'instance',
+    AGORIC_INSTANCE_NAME,
+  );
   const boardID = await E(board).getId(retiringInstance);
   retiredContractInstances.init(
     `priceFeed-${AGORIC_INSTANCE_NAME}-${boardID}`,

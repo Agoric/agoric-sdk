@@ -28,7 +28,6 @@ const trace = makeTracer('NewAuction', true);
 export const addAuction = async (
   {
     consume: {
-      agoricNames,
       agoricNamesAdmin,
       auctioneerKit: legacyKitP,
       board,
