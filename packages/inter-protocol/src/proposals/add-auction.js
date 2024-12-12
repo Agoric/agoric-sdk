@@ -84,6 +84,8 @@ export const addAuction = async (
   // save the auctioneer instance so we can manage it later
   const retiredContractInstances = await retiredContractInstancesP;
   const legacyInstance = legacyKit.instance;
+
+  // XXX The suffix must be changed each time this proposal is used.
   retiredContractInstances.init('auction-vat157', legacyInstance);
 
   // Each field has an extra layer of type +  value:
