@@ -83,7 +83,8 @@ export const addAuction = async (
 
   // save the auctioneer instance so we can manage it later
   const retiredContractInstances = await retiredContractInstancesP;
-  retiredContractInstances.init('auction-vat157', legacyKit.instance);
+  const legacyInstance = legacyKit.instance;
+  retiredContractInstances.init('auction-vat157', legacyInstance);
 
   // Each field has an extra layer of type +  value:
   // AuctionStartDelay: { type: 'relativeTime', value: { relValue: 2n, timerBrand: Object [Alleged: timerBrand] {} } }

@@ -141,7 +141,7 @@ const startPriceAggregatorInstance = async (
     // @ts-expect-error GovernableStartFn vs. fluxAggregatorContract.js start
     installation,
   });
-  const retiringInstance = consumeInstance[AGORIC_INSTANCE_NAME];
+  const retiringInstance = await consumeInstance[AGORIC_INSTANCE_NAME];
   const retiredContractInstances = await retiredContractInstancesP;
   retiredContractInstances.init(
     // XXX tail of label needs to vary with upgrade. BundleId would be different
