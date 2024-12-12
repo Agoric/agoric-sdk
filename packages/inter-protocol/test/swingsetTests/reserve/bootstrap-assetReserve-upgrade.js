@@ -271,6 +271,11 @@ export const buildRootObject = async () => {
 
       metricsRecord = await E(metrics).getUpdateSince();
 
+      // verify allocations
+      const allocations = await E(arLimitedFacet).getAllocations();
+      assert.equal(allocations.Moola.value, moola.make(100_000n).value);
+      assert.equal(allocations.Moola.brand, moola.make(100_000n).brand);
+
       // same as last
       assert.equal(metricsRecord.updateCount, 2n);
 
