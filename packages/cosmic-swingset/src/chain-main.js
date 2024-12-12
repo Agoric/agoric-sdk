@@ -302,6 +302,7 @@ export default async function main(
     const swingsetConfig = harden(initAction.resolvedConfig || {});
     validateSwingsetConfig(swingsetConfig);
     const {
+      maxVatsOnline,
       slogfile,
       vatSnapshotRetention,
       vatTranscriptRetention,
@@ -314,6 +315,10 @@ export default async function main(
     const keepTranscripts = vatTranscriptRetention
       ? vatTranscriptRetention !== 'operational'
       : false;
+
+    const restartWorkerOnSnapshot = processValue.getBoolean({
+      envName: 'XSNAP_RESTART_ON_SNAPSHOT',
+    });
 
     // As a kludge, back-propagate selected configuration into environment variables.
     // eslint-disable-next-line dot-notation
@@ -558,7 +563,8 @@ export default async function main(
       archiveSnapshot,
       archiveTranscript,
       afterCommitCallback,
-      swingsetConfig,
+      maxVatsOnline,
+      restartWorkerOnSnapshot,
     });
 
     const { blockingSend, shutdown } = s;
