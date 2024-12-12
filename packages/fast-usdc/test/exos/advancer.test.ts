@@ -62,6 +62,11 @@ const createTestExtensions = (t, common: CommonSetup) => {
     // pretend funds move from tmpSeat to poolAccount
     localTransferVK.resolver.resolve();
   };
+  const rejectLocalTransfeferV = () => {
+    localTransferVK.resolver.reject(
+      new Error('One or more deposits failed: simulated error'),
+    );
+  };
   const mockZoeTools = Far('MockZoeTools', {
     localTransfer(...args: Parameters<ZoeTools['localTransfer']>) {
       console.log('ZoeTools.localTransfer called with', args);
@@ -94,18 +99,29 @@ const createTestExtensions = (t, common: CommonSetup) => {
     },
   });
 
+  const mockBorrowerFacetCalls: unknown[][] = [];
+
   const mockBorrowerF = Far('LiquidityPool Borrow Facet', {
     borrow: (seat: ZCFSeat, amounts: { USDC: NatAmount }) => {
-      console.log('LP.borrow called with', amounts);
+      console.log('LpBorrowFacet.borrow called with', amounts);
+      mockBorrowerFacetCalls.push(['borrow', seat, amounts]);
+    },
+    repay: (seat: ZCFSeat, amounts: { USDC: NatAmount }) => {
+      console.log('LpBorrowFacet.repay called with', amounts);
+      mockBorrowerFacetCalls.push(['repay', seat, amounts]);
     },
   });
 
   const mockBorrowerErrorF = Far('LiquidityPool Borrow Facet', {
     borrow: (seat: ZCFSeat, amounts: { USDC: NatAmount }) => {
-      console.log('LP.borrow called with', amounts);
+      console.log('LpBorrowFacet.borrow called with', amounts);
       throw new Error(
         `Cannot borrow. Requested ${q(amounts.USDC)} must be less than pool balance ${q(usdc.make(1n))}.`,
       );
+    },
+    repay: (seat: ZCFSeat, amounts: { USDC: NatAmount }) => {
+      console.log('LpBorrowFacet.repay called with', amounts);
+      throw new Error('Mock Cannot repay. Contract will shut down.');
     },
   });
 
@@ -124,12 +140,14 @@ const createTestExtensions = (t, common: CommonSetup) => {
     helpers: {
       inspectLogs,
       inspectNotifyCalls: () => harden(notifyAdvancingResultCalls),
+      inspectBorrowerFacetCalls: () => harden(mockBorrowerFacetCalls),
     },
     mocks: {
       ...mockAccounts,
       mockBorrowerErrorF,
       mockNotifyF,
       resolveLocalTransferV,
+      rejectLocalTransfeferV,
     },
     services: {
       advancer,
@@ -371,6 +389,57 @@ test('will not advance same txHash:chainId evidence twice', async t => {
   ]);
 });
 
-test.todo(
-  '#10510 zoeTools.localTransfer fails to deposit borrowed USDC to LOA',
-);
+test('returns payment to LP if zoeTools.localTransfer fails', async t => {
+  const {
+    extensions: {
+      services: { advancer },
+      helpers: { inspectLogs, inspectBorrowerFacetCalls, inspectNotifyCalls },
+      mocks: { rejectLocalTransfeferV },
+    },
+    brands: { usdc },
+  } = t.context;
+  const mockEvidence = MockCctpTxEvidences.AGORIC_PLUS_OSMO();
+
+  void advancer.handleTransactionEvent(mockEvidence);
+  rejectLocalTransfeferV();
+
+  await eventLoopIteration();
+
+  t.deepEqual(
+    inspectLogs(0),
+    [
+      '⚠️ deposit to localOrchAccount failed, attempting to return payment to LP',
+      '"[Error: One or more deposits failed: simulated error]"',
+    ],
+    'contract logs report error',
+  );
+
+  const [borrowCall, repayCall] = inspectBorrowerFacetCalls();
+
+  t.is(borrowCall[0], 'borrow');
+  t.like(borrowCall[2], {
+    USDC: {
+      brand: usdc.brand,
+    },
+  });
+
+  t.is(repayCall[0], 'repay', 'repay is called when zt.localTransfer fails');
+  t.is(
+    repayCall[1],
+    borrowCall[1],
+    'same temp borrowSeat is supplied to LP during repay',
+  );
+  t.deepEqual(repayCall[2], borrowCall[2], 'advance amount is returned to LP');
+
+  t.like(
+    inspectNotifyCalls()[0],
+    [
+      {
+        txHash: mockEvidence.txHash,
+        forwardingAddress: mockEvidence.tx.forwardingAddress,
+      },
+      false, // indicates advance failed
+    ],
+    'Advancing tx is recorded as AdvanceFailed',
+  );
+});

@@ -215,15 +215,22 @@ export const prepareAdvancerKit = (
          * @param {Error} error
          * @param {AdvancerVowCtx & { tmpSeat: ZCFSeat }} ctx
          */
-        onRejected(error, { tmpSeat }) {
-          // TODO return seat allocation from ctx to LP?
-          log('🚨 advance deposit failed', q(error).toString());
-          // TODO #10510 (comprehensive error testing) determine
-          // course of action here
+        onRejected(error, { tmpSeat, advanceAmount, ...restCtx }) {
+          // we don't expect this to be a common failure. if it happens, return funds to LP
           log(
-            'TODO live payment on seat to return to LP',
-            q(tmpSeat).toString(),
+            '⚠️ deposit to localOrchAccount failed, attempting to return payment to LP',
+            q(error).toString(),
           );
+          try {
+            const { borrowerFacet, notifyFacet } = this.state;
+            notifyFacet.notifyAdvancingResult(restCtx, false);
+            borrowerFacet.repay(tmpSeat, harden({ USDC: advanceAmount }));
+          } catch (e) {
+            log(
+              '🚨 deposit to localOrchAccount failure recovery failed',
+              q(error).toString(),
+            );
+          }
         },
       },
       transferHandler: {
