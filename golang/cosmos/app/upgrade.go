@@ -157,6 +157,22 @@ func replacePriceFeedsCoreProposal(upgradeName string) (vm.CoreProposalStep, err
 	)
 }
 
+// func upgradeMintHolderCoreProposal(upgradeName string) (vm.CoreProposalStep, error) {
+// 	variant := getVariantFromUpgradeName(upgradeName)
+
+// 	if variant == "" {
+// 		return nil, nil
+// 	}
+
+// 	return buildProposalStepWithArgs(
+// 		"@agoric/builders/scripts/vats/upgrade-mintHolder.js",
+// 		"defaultProposalBuilder",
+// 		map[string]any{
+// 			"variant": variant,
+// 		},
+// 	)
+// }
+
 // unreleasedUpgradeHandler performs standard upgrade actions plus custom actions for the unreleased upgrade.
 func unreleasedUpgradeHandler(app *GaiaApp, targetUpgrade string) func(sdk.Context, upgradetypes.Plan, module.VersionMap) (module.VersionMap, error) {
 	return func(ctx sdk.Context, plan upgradetypes.Plan, fromVm module.VersionMap) (module.VersionMap, error) {
@@ -216,6 +232,14 @@ func unreleasedUpgradeHandler(app *GaiaApp, targetUpgrade string) func(sdk.Conte
 
 			// CoreProposals for Upgrade 19. These should not be introduced
 			// before upgrade 18 is done because they would be run in n:upgrade-next
+			//
+			// upgradeMintHolderStep, err := upgradeMintHolderCoreProposal(targetUpgrade)
+			// if err != nil {
+			// 	return nil, err
+			// } else if upgradeMintHolderStep != nil {
+			// 	CoreProposalSteps = append(CoreProposalSteps, upgradeMintHolderStep)
+			// }
+			//
 			// CoreProposalSteps = append(CoreProposalSteps,
 			// 	vm.CoreProposalStepForModules(
 			// 		"@agoric/builders/scripts/inter-protocol/replace-feeDistributor.js",

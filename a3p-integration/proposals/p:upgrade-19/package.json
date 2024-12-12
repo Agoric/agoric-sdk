@@ -10,13 +10,14 @@
       "testing/test-upgraded-board.js testUpgradedBoard",
       "vats/upgrade-agoricNames.js agoricNamesCoreEvals/upgradeAgoricNames",
       "testing/add-USD-OLIVES.js agoricNamesCoreEvals/addUsdOlives",
-      "testing/publish-test-info.js agoricNamesCoreEvals/publishTestInfo"
+      "testing/publish-test-info.js agoricNamesCoreEvals/publishTestInfo",
+      "vats/upgrade-mintHolder.js upgrade-mintHolder A3P_INTEGRATION"
     ]
   },
   "type": "module",
   "license": "Apache-2.0",
   "dependencies": {
-    "@agoric/client-utils": "0.1.1-dev-02c06c4.0",
+    "@agoric/client-utils": "dev",
     "@agoric/ertp": "dev",
     "@agoric/internal": "dev",
     "@agoric/synthetic-chain": "^0.4.3",
