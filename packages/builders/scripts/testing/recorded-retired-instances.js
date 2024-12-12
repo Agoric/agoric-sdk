@@ -18,18 +18,20 @@ export const testRecordedRetiredInstances = async ({
   trace('Start');
   const retiredContractInstances = await retiredContractInstancesP;
 
-  trace(retiredContractInstances.keys());
+  trace(Array.from(retiredContractInstances.keys()));
 
   const auctionID = Array.from(retiredContractInstances.keys()).find(k =>
-    k.startsWith('auctioneer'),
+    k.startsWith('auction'),
   );
-  // @ts-expect-error might be null
-  assert(await E(contractKits).has(retiredContractInstances.get(auctionID)));
+  assert(auctionID);
+  assert(auctionID.length === 1);
+  assert(await E(contractKits).has(retiredContractInstances.get(auctionID[0])));
 
   const committeeID = Array.from(retiredContractInstances.keys()).find(k =>
     k.startsWith('economicCommittee'),
   );
-  // @ts-expect-error might be null
+  assert(committeeID);
+  assert(committeeID.length === 1);
   assert(await E(contractKits).has(retiredContractInstances.get(committeeID)));
 
   trace('done');

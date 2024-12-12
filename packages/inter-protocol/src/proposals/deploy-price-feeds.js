@@ -3,9 +3,9 @@ import { makeStorageNodeChild } from '@agoric/internal/src/lib-chainStorage.js';
 import { E } from '@endo/far';
 
 import { unitAmount } from '@agoric/zoe/src/contractSupport/priceQuote.js';
-import { makeScalarBigMapStore } from '@agoric/vat-data';
 import {
   oracleBrandFeedName,
+  parallelCreateMap,
   reserveThenDeposit,
   sanitizePathSegment,
 } from './utils.js';
@@ -145,6 +145,7 @@ const startPriceAggregatorInstance = async (
   });
   const retiredContractInstances = await retiredContractInstancesP;
 
+  // save the instance so we can manage it later
   const retiringInstance = await E(agoricNames).lookup(
     'instance',
     AGORIC_INSTANCE_NAME,
@@ -239,13 +240,10 @@ export const deployPriceFeeds = async (powers, config) => {
     priceAggregatorRef.bundleID,
   );
 
-  // if retiredContractInstances doesn't exist, create it.
-  const { retiredContractInstances: retiredInstanceWriter } = powers.produce;
-  const contractInstanceMap = makeScalarBigMapStore(
+  await parallelCreateMap(
+    powers.produce.retiredContractInstances,
     'retiredContractInstances',
-    { durable: true },
   );
-  retiredInstanceWriter.resolve(contractInstanceMap);
 
   const { priceAuthorityAdmin, priceAuthority } = powers.consume;
 

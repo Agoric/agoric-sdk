@@ -15,8 +15,7 @@ import {
   assertPathSegment,
   makeStorageNodeChild,
 } from '@agoric/internal/src/lib-chainStorage.js';
-import { makeScalarBigMapStore } from '@agoric/vat-data';
-import { reserveThenDeposit } from './utils.js';
+import { parallelCreateMap, reserveThenDeposit } from './utils.js';
 
 /** @import {EconomyBootstrapPowers} from './econ-behaviors.js' */
 /** @import {EconCharterStartResult} from './econ-behaviors.js' */
@@ -208,7 +207,7 @@ const startNewEconomicCommittee = async (
     produce: {
       economicCommitteeKit,
       economicCommitteeCreatorFacet,
-      retiredContractInstances: retiredInstanceWriter,
+      retiredContractInstances: produceRetiredInstances,
     },
     installation: {
       consume: { committee },
@@ -227,21 +226,16 @@ const startNewEconomicCommittee = async (
   trace(`committeeName ${committeeName}`);
   trace(`committeeSize ${committeeSize}`);
 
-  // if retiredContractInstances doesn't exist, create it.
-  const contractInstanceMap = makeScalarBigMapStore(
-    'retiredContractInstances',
-    { durable: true },
-  );
-  retiredInstanceWriter.resolve(contractInstanceMap);
+  await parallelCreateMap(produceRetiredInstances, 'retiredContractInstances');
 
   // get the actual retiredContractInstances
   const retiredInstances = await retiredInstancesP;
-  // Record the retired electorate vat so we can manage it later.
-  const econeconomicCommitteeOriginal = await economicCommitteeOriginalP;
-  const boardID = await E(board).getId(econeconomicCommitteeOriginal);
-  retiredInstances.init(
+  // Record the retired electorate instance so we can manage it later.
+  const economicCommitteeOriginal = await economicCommitteeOriginalP;
+  const boardID = await E(board).getId(economicCommitteeOriginal);
+  await E(retiredInstances).init(
     `economicCommittee-${boardID}`,
-    econeconomicCommitteeOriginal,
+    economicCommitteeOriginal,
   );
 
   const committeesNode = await makeStorageNodeChild(
