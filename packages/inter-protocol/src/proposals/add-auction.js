@@ -11,6 +11,7 @@ const trace = makeTracer('NewAuction', true);
  *   auctionUpgradeNewInstance: Instance;
  *   auctionUpgradeNewGovCreator: any;
  *   newContractGovBundleId: string;
+ *   retiredContractInstances: MapStore<string, Instance>;
  * }>} interlockPowers
  */
 
@@ -35,6 +36,7 @@ export const addAuction = async (
       economicCommitteeCreatorFacet: electorateCreatorFacet,
       governedContractKits: governedContractKitsP,
       priceAuthority8400,
+      retiredContractInstances: retiredContractInstancesP,
       zoe,
     },
     produce: {
@@ -78,6 +80,13 @@ export const addAuction = async (
     legacyKitP,
     auctioneerInstallationP,
   ]);
+
+  // save the auctioneer instance so we can manage it later
+  const retiredContractInstances = await retiredContractInstancesP;
+  const legacyInstance = legacyKit.instance;
+
+  // XXX The suffix must be changed each time this proposal is used.
+  retiredContractInstances.init('auction-vat157', legacyInstance);
 
   // Each field has an extra layer of type +  value:
   // AuctionStartDelay: { type: 'relativeTime', value: { relValue: 2n, timerBrand: Object [Alleged: timerBrand] {} } }
@@ -210,6 +219,7 @@ export const ADD_AUCTION_MANIFEST = harden({
       economicCommitteeCreatorFacet: true,
       governedContractKits: true,
       priceAuthority8400: true,
+      retiredContractInstances: true,
       zoe: true,
     },
     produce: {
