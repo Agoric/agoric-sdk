@@ -3,7 +3,6 @@ import { assertAllDefined, makeTracer } from '@agoric/internal';
 import { AnyNatAmountShape, ChainAddressShape } from '@agoric/orchestration';
 import { pickFacet } from '@agoric/vat-data';
 import { VowShape } from '@agoric/vow';
-import { q } from '@endo/errors';
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
 import {
@@ -153,6 +152,7 @@ export const prepareAdvancerKit = (
               recipientAddress,
               EudParamShape,
             );
+            log(`decoded EUD: ${EUD}`);
             // throws if the bech32 prefix is not found
             const destination = chainHub.makeChainAddress(EUD);
 
@@ -182,8 +182,8 @@ export const prepareAdvancerKit = (
               tmpSeat,
               txHash: evidence.txHash,
             });
-          } catch (e) {
-            log('Advancer error:', q(e).toString());
+          } catch (error) {
+            log('Advancer error:', error);
             statusManager.observe(evidence);
           }
         },
@@ -217,13 +217,13 @@ export const prepareAdvancerKit = (
          */
         onRejected(error, { tmpSeat }) {
           // TODO return seat allocation from ctx to LP?
-          log('🚨 advance deposit failed', q(error).toString());
+          log(
+            '⚠️ deposit to localOrchAccount failed, attempting to return payment to LP',
+            error,
+          );
           // TODO #10510 (comprehensive error testing) determine
           // course of action here
-          log(
-            'TODO live payment on seat to return to LP',
-            q(tmpSeat).toString(),
-          );
+          log('TODO live payment on seat to return to LP', tmpSeat);
         },
       },
       transferHandler: {
@@ -234,10 +234,11 @@ export const prepareAdvancerKit = (
         onFulfilled(result, ctx) {
           const { notifyFacet } = this.state;
           const { advanceAmount, destination, ...detail } = ctx;
-          log(
-            'Advance transfer fulfilled',
-            q({ advanceAmount, destination, result }).toString(),
-          );
+          log('Advance transfer fulfilled', {
+            advanceAmount,
+            destination,
+            result,
+          });
           // During development, due to a bug, this call threw.
           // The failure was silent (no diagnostics) due to:
           //  - #10576 Vows do not report unhandled rejections
@@ -252,7 +253,7 @@ export const prepareAdvancerKit = (
          */
         onRejected(error, ctx) {
           const { notifyFacet } = this.state;
-          log('Advance transfer rejected', q(error).toString());
+          log('Advance transfer rejected', error);
           notifyFacet.notifyAdvancingResult(ctx, false);
         },
       },
