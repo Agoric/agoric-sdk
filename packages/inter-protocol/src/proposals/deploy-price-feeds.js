@@ -5,7 +5,7 @@ import { E } from '@endo/far';
 import { unitAmount } from '@agoric/zoe/src/contractSupport/priceQuote.js';
 import {
   oracleBrandFeedName,
-  parallelCreateMap,
+  provideRetiredInstances,
   reserveThenDeposit,
   sanitizePathSegment,
 } from './utils.js';
@@ -109,6 +109,7 @@ const startPriceAggregatorInstance = async (
       retiredContractInstances: retiredContractInstancesP,
     },
     instance: { produce: produceInstance },
+    produce: { retiredContractInstances: produceRetiredInstances },
   },
   { AGORIC_INSTANCE_NAME, contractTerms, brandIn, brandOut },
   installation,
@@ -143,7 +144,10 @@ const startPriceAggregatorInstance = async (
     // @ts-expect-error GovernableStartFn vs. fluxAggregatorContract.js start
     installation,
   });
-  const retiredContractInstances = await retiredContractInstancesP;
+  const retiredContractInstances = await provideRetiredInstances(
+    retiredContractInstancesP,
+    produceRetiredInstances,
+  );
 
   // save the instance so we can manage it later
   const retiringInstance = await E(agoricNames).lookup(
@@ -238,11 +242,6 @@ export const deployPriceFeeds = async (powers, config) => {
   const installation = await installPriceAggregator(
     powers,
     priceAggregatorRef.bundleID,
-  );
-
-  await parallelCreateMap(
-    powers.produce.retiredContractInstances,
-    'retiredContractInstances',
   );
 
   const { priceAuthorityAdmin, priceAuthority } = powers.consume;

@@ -15,7 +15,7 @@ import {
   assertPathSegment,
   makeStorageNodeChild,
 } from '@agoric/internal/src/lib-chainStorage.js';
-import { parallelCreateMap, reserveThenDeposit } from './utils.js';
+import { provideRetiredInstances, reserveThenDeposit } from './utils.js';
 
 /** @import {EconomyBootstrapPowers} from './econ-behaviors.js' */
 /** @import {EconCharterStartResult} from './econ-behaviors.js' */
@@ -226,14 +226,15 @@ const startNewEconomicCommittee = async (
   trace(`committeeName ${committeeName}`);
   trace(`committeeSize ${committeeSize}`);
 
-  await parallelCreateMap(produceRetiredInstances, 'retiredContractInstances');
+  const retiredInstances = await provideRetiredInstances(
+    retiredInstancesP,
+    produceRetiredInstances,
+  );
 
-  // get the actual retiredContractInstances
-  const retiredInstances = await retiredInstancesP;
   // Record the retired electorate instance so we can manage it later.
   const economicCommitteeOriginal = await economicCommitteeOriginalP;
   const boardID = await E(board).getId(economicCommitteeOriginal);
-  await E(retiredInstances).init(
+  retiredInstances.init(
     `economicCommittee-${boardID}`,
     economicCommitteeOriginal,
   );
