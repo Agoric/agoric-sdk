@@ -1,10 +1,7 @@
 // @ts-check
-/* globals globalThis */
 import { E as basicE } from '@endo/eventual-send';
 import { isPassable } from '@endo/pass-style';
 import { M, matches } from '@endo/patterns';
-
-import { getEnvironmentOption } from '@endo/env-options';
 
 /**
  * @import {PassableCap} from '@endo/pass-style';
@@ -12,23 +9,8 @@ import { getEnvironmentOption } from '@endo/env-options';
  * @import {MakeVowKit} from './vow.js';
  */
 
-export const SINK_UNHANDLED_VOW_REJECTIONS =
-  getEnvironmentOption('SINK_UNHANDLED_VOW_REJECTIONS', 'unset') !== 'unset';
-
-if (SINK_UNHANDLED_VOW_REJECTIONS) {
-  globalThis?.process?.on('unhandledRejection', (reason, promise) => {
-    sinkUnhandledRejection(reason);
-    promise.catch(sink);
-  });
-}
-
 export const sink = () => {};
 harden(sink);
-
-export const sinkUnhandledRejection = e => {
-  console.error('UNHANDLED_VOW_REJECTION:', e);
-};
-harden(sinkUnhandledRejection);
 
 export { basicE };
 

@@ -94,6 +94,68 @@ index 7630baa..78ced77 100644
  
  		notifyOfPeerFailure() {
  			send({type: 'peer-failed'});
+diff --git a/node_modules/ava/lib/reporters/default.js b/node_modules/ava/lib/reporters/default.js
+index 804e285..330164c 100644
+--- a/node_modules/ava/lib/reporters/default.js
++++ b/node_modules/ava/lib/reporters/default.js
+@@ -679,7 +679,9 @@ export default class Reporter {
+ 		}
+ 
+ 		if (this.stats.unhandledRejections > 0) {
+-			this.lineWriter.writeLine(colors.error(`${this.stats.unhandledRejections} unhandled ${plur('rejection', this.stats.unhandledRejections)}`));
++      const allowed = Number(process.env.AGORIC_AVA_ALLOW_UNHANDLED_REJECTIONS)
++      const color = this.stats.unhandledRejections <= allowed ? 'skip' : 'error';
++			this.lineWriter.writeLine(colors[color](`${this.stats.unhandledRejections} unhandled ${plur('rejection', this.stats.unhandledRejections)} (AGORIC_AVA_ALLOW_UNHANDLED_REJECTIONS=${allowed})`));
+ 		}
+ 
+ 		if (this.stats.uncaughtExceptions > 0) {
+diff --git a/node_modules/ava/lib/reporters/tap.js b/node_modules/ava/lib/reporters/tap.js
+index b1989a4..fa1617f 100644
+--- a/node_modules/ava/lib/reporters/tap.js
++++ b/node_modules/ava/lib/reporters/tap.js
+@@ -45,6 +45,10 @@ function dumpError(error) {
+ 	return object;
+ }
+ 
++function durationOut(dur) {
++	return dur ? ` %ava-dur=${dur}ms` : '';
++}
++
+ export default class TapReporter {
+ 	constructor(options) {
+ 		this.i = 0;
+@@ -96,6 +100,7 @@ export default class TapReporter {
+ 	}
+ 
+ 	writeTest(evt, flags) {
++ 		evt.title += durationOut(evt.duration);
+ 		this.reportStream.write(supertap.test(this.prefixTitle(evt.testFile, evt.title), {
+ 			comment: evt.logs,
+ 			error: evt.err ? dumpError(evt.err) : null,
+@@ -108,7 +113,7 @@ export default class TapReporter {
+ 
+ 	writeCrash(evt, title) {
+ 		this.crashCount++;
+-		this.reportStream.write(supertap.test(title || evt.err.summary || evt.type, {
++		this.reportStream.write(supertap.test((title || evt.err.summary || evt.type) + durationOut(evt.duration), {
+ 			comment: evt.logs,
+ 			error: evt.err ? dumpError(evt.err) : null,
+ 			index: ++this.i,
+diff --git a/node_modules/ava/lib/run-status.js b/node_modules/ava/lib/run-status.js
+index 8471345..3110074 100644
+--- a/node_modules/ava/lib/run-status.js
++++ b/node_modules/ava/lib/run-status.js
+@@ -230,6 +230,10 @@ export default class RunStatus extends Emittery {
+ 			|| this.stats.uncaughtExceptions > 0
+ 			|| this.stats.unhandledRejections > 0
+ 		) {
++      const allowed = Number(process.env.AGORIC_AVA_ALLOW_UNHANDLED_REJECTIONS);
++      if (this.stats.unhandledRejections <= allowed) {
++        return 0;
++      }
+ 			return 1;
+ 		}
+ 
 diff --git a/node_modules/ava/lib/worker/base.js b/node_modules/ava/lib/worker/base.js
 index cdd3c4a..4302a4a 100644
 --- a/node_modules/ava/lib/worker/base.js
