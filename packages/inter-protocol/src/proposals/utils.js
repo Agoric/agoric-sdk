@@ -174,14 +174,20 @@ export const sanitizePathSegment = name => {
 };
 
 /**
- * Idempotently create and store a durable MapStore for the promise space.
- * `resolve()` silently fails if called again after a successful call, so it's
- * safe for multiple proposals to call in parallel, as long as they all use the
- * value from consume rather than the value they produced.
+ * Idempotently provide an empty MapStore for the `retiredContractInstances`
+ * value in promise space
  *
- * @param {Producer<MapStore>} producer
- * @param {string} [name]
+ * @param {Promise<MapStore>} consume
+ * @param {Producer<MapStore>} produce
+ * @returns {Promise<MapStore>}
  */
-export const parallelCreateMap = async (producer, name = 'mapStore') => {
-  await producer.resolve(makeScalarBigMapStore(name, { durable: true }));
+export const provideRetiredInstances = async (consume, produce) => {
+  // Promise space has no way to look for an existing value other than awaiting a promise,
+  // but it does allow extra production so it's safe to do this redundantly.
+  produce.resolve(
+    makeScalarBigMapStore('retiredContractInstances', {
+      durable: true,
+    }),
+  );
+  return consume;
 };
