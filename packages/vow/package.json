@@ -12,6 +12,7 @@
     "prepack": "tsc --build tsconfig.build.json",
     "postpack": "git clean -f '*.d.ts*' '*.tsbuildinfo'",
     "test": "ava",
+    "test:rejection": "TEST_UNHANDLED_REJECTION=1 yarn test",
     "test:xs": "exit 0",
     "lint-fix": "yarn lint:eslint --fix",
     "lint": "run-s --continue-on-error lint:*",
