@@ -239,7 +239,7 @@ const startNewEconomicCommittee = async (
   const retiredInstancesWriter = await retiredInstancesP;
   // Record the retired electorate vat so we can manage it later.
   const econeconomicCommitteeOriginal = await economicCommitteeOriginalP;
-  const boardID = await E(agoricNames).lookup('instance', 'economicCommittee');
+  const boardID = await E(board).getId(econeconomicCommitteeOriginal);
   retiredInstancesWriter.init(
     `economicCommittee-${boardID}`,
     econeconomicCommitteeOriginal,

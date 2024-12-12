@@ -143,10 +143,10 @@ const startPriceAggregatorInstance = async (
     // @ts-expect-error GovernableStartFn vs. fluxAggregatorContract.js start
     installation,
   });
-  const retiringInstance = await consumeInstance[AGORIC_INSTANCE_NAME];
   const retiredContractInstances = await retiredContractInstancesP;
 
-  const boardID = await E(agoricNames).lookup('instance', AGORIC_INSTANCE_NAME);
+  const retiringInstance = await E(agoricNames).lookup('instance', AGORIC_INSTANCE_NAME);
+  const boardID = await E(board).getId(retiringInstance);
   retiredContractInstances.init(
     `priceFeed-${AGORIC_INSTANCE_NAME}-${boardID}`,
     retiringInstance,

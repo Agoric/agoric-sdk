@@ -86,7 +86,7 @@ export const addAuction = async (
   const retiredContractInstances = await retiredContractInstancesP;
   const legacyInstance = legacyKit.instance;
 
-  const boardID = await E(agoricNames).lookup('instance', 'auctioneer');
+  const boardID = await E(board).getId(legacyInstance);
   retiredContractInstances.init(`auction-${boardID}`, legacyInstance);
 
   // Each field has an extra layer of type +  value:

@@ -23,11 +23,13 @@ export const testRecordedRetiredInstances = async ({
   const auctionID = Array.from(retiredContractInstances.keys()).find(k =>
     k.startsWith('auctioneer'),
   );
+  // @ts-expect-error might be null
   assert(await E(contractKits).has(retiredContractInstances.get(auctionID)));
 
   const committeeID = Array.from(retiredContractInstances.keys()).find(k =>
     k.startsWith('economicCommittee'),
   );
+  // @ts-expect-error might be null
   assert(await E(contractKits).has(retiredContractInstances.get(committeeID)));
 
   trace('done');
