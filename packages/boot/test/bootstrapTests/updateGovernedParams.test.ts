@@ -134,9 +134,6 @@ test('modify manager & director params; update vats, check', async t => {
   const priceFeedBuilder =
     '@agoric/builders/scripts/inter-protocol/updatePriceFeeds.js';
   const coreEvals = await Promise.all([
-    buildProposal(
-      '@agoric/builders/scripts/testing/provide-retired-instances.js',
-    ),
     buildProposal(priceFeedBuilder, ['BOOT_TEST']),
     buildProposal('@agoric/builders/scripts/vats/upgradeVaults.js'),
     buildProposal('@agoric/builders/scripts/vats/add-auction.js'),

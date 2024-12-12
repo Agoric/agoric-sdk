@@ -9,6 +9,7 @@ import {
   sanitizePathSegment,
 } from './utils.js';
 import { replaceScaledPriceAuthorities } from './replace-scaledPriceAuthorities.js';
+import { makeScalarBigMapStore } from "@agoric/vat-data";
 
 const STORAGE_PATH = 'priceFeed';
 
@@ -97,6 +98,7 @@ export const ensureOracleBrand = async (
 const startPriceAggregatorInstance = async (
   {
     consume: {
+      agoricNames,
       board,
       chainStorage,
       chainTimerService,
@@ -143,10 +145,10 @@ const startPriceAggregatorInstance = async (
   });
   const retiringInstance = await consumeInstance[AGORIC_INSTANCE_NAME];
   const retiredContractInstances = await retiredContractInstancesP;
+
+  const boardID = await E(agoricNames).lookup('instance', AGORIC_INSTANCE_NAME);
   retiredContractInstances.init(
-    // XXX tail of label needs to vary with upgrade. BundleId would be different
-    // from previous, but is not necessarily unique.
-    `priceFeed-${AGORIC_INSTANCE_NAME}-u18`,
+    `priceFeed-${AGORIC_INSTANCE_NAME}-${boardID}`,
     retiringInstance,
   );
 
@@ -233,6 +235,14 @@ export const deployPriceFeeds = async (powers, config) => {
     powers,
     priceAggregatorRef.bundleID,
   );
+
+  // if retiredContractInstances doesn't exist, create it.
+  const { retiredContractInstances: retiredInstanceWriter } = powers.produce;
+  const contractInstanceMap = makeScalarBigMapStore(
+    'retiredContractInstances',
+    { durable: true },
+  );
+  retiredInstanceWriter.resolve(contractInstanceMap);
 
   const { priceAuthorityAdmin, priceAuthority } = powers.consume;
 
@@ -324,7 +334,7 @@ export const getManifestForPriceFeeds = async (
         consume: t,
       },
       oracleBrand: { produce: t },
-      produce: { priceAuthority8400: t },
+      produce: { priceAuthority8400: t, retiredContractInstances: t },
     },
   },
   options: { ...priceFeedOptions },

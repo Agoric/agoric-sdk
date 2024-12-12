@@ -199,11 +199,17 @@ const inviteToEconCharter = async (
  */
 const startNewEconomicCommittee = async (
   {
-    consume: { board, chainStorage, startUpgradable },
+    consume: {
+      agoricNames,
+      board,
+      chainStorage,
+      startUpgradable,
+      retiredContractInstances: retiredInstancesP,
+    },
     produce: {
       economicCommitteeKit,
       economicCommitteeCreatorFacet,
-      retiredContractInstances,
+      retiredContractInstances: retiredInstanceWriter,
     },
     installation: {
       consume: { committee },
@@ -222,14 +228,22 @@ const startNewEconomicCommittee = async (
   trace(`committeeName ${committeeName}`);
   trace(`committeeSize ${committeeSize}`);
 
-  // Record the retired electorate vat so we can manage it later.
+  // if retiredContractInstances doesn't exist, create it.
   const contractInstanceMap = makeScalarBigMapStore(
     'retiredContractInstances',
     { durable: true },
   );
+  retiredInstanceWriter.resolve(contractInstanceMap);
+
+  // get the actual retiredContractInstances
+  const retiredInstancesWriter = await retiredInstancesP;
+  // Record the retired electorate vat so we can manage it later.
   const econeconomicCommitteeOriginal = await economicCommitteeOriginalP;
-  contractInstanceMap.init('electorate-v24', econeconomicCommitteeOriginal);
-  retiredContractInstances.resolve(contractInstanceMap);
+  const boardID = await E(agoricNames).lookup('instance', 'economicCommittee');
+  retiredInstancesWriter.init(
+    `economicCommittee-${boardID}`,
+    econeconomicCommitteeOriginal,
+  );
 
   const committeesNode = await makeStorageNodeChild(
     chainStorage,
@@ -503,6 +517,7 @@ export const getManifestForReplaceAllElectorates = async (
   manifest: {
     [replaceAllElectorates.name]: {
       consume: {
+        agoricNames: true,
         auctionUpgradeNewGovCreator: true,
         auctionUpgradeNewInstance: true,
         psmKit: true,
@@ -510,6 +525,7 @@ export const getManifestForReplaceAllElectorates = async (
         chainStorage: true,
         highPrioritySendersManager: true,
         namesByAddressAdmin: true,
+        retiredContractInstances: true,
         // Rest of these are designed to be widely shared
         board: true,
         startUpgradable: true,

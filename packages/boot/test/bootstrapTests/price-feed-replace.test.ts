@@ -105,9 +105,6 @@ test.serial('setupVaults; run updatePriceFeeds proposals', async t => {
 
   t.log('building all relevant CoreEvals');
   const coreEvals = await Promise.all([
-    buildProposal(
-      '@agoric/builders/scripts/testing/provide-retired-instances.js',
-    ),
     buildProposal(priceFeedBuilder, ['BOOT_TEST']),
     buildProposal('@agoric/builders/scripts/vats/upgradeVaults.js'),
     buildProposal('@agoric/builders/scripts/vats/add-auction.js'),

@@ -18,11 +18,17 @@ export const testRecordedRetiredInstances = async ({
   trace('Start');
   const retiredContractInstances = await retiredContractInstancesP;
 
-  const auctioneer = retiredContractInstances.get('auction-vat157');
-  assert(await E(contractKits).has(auctioneer));
+  trace(retiredContractInstances.keys());
 
-  const electorate = retiredContractInstances.get('electorate-v24');
-  assert(await E(contractKits).has(electorate));
+  const auctionID = Array.from(retiredContractInstances.keys()).find(k =>
+    k.startsWith('auctioneer'),
+  );
+  assert(await E(contractKits).has(retiredContractInstances.get(auctionID)));
+
+  const committeeID = Array.from(retiredContractInstances.keys()).find(k =>
+    k.startsWith('economicCommittee'),
+  );
+  assert(await E(contractKits).has(retiredContractInstances.get(committeeID)));
 
   trace('done');
 };

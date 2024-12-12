@@ -28,6 +28,7 @@ const trace = makeTracer('NewAuction', true);
 export const addAuction = async (
   {
     consume: {
+      agoricNames,
       agoricNamesAdmin,
       auctioneerKit: legacyKitP,
       board,
@@ -85,8 +86,8 @@ export const addAuction = async (
   const retiredContractInstances = await retiredContractInstancesP;
   const legacyInstance = legacyKit.instance;
 
-  // XXX The suffix must be changed each time this proposal is used.
-  retiredContractInstances.init('auction-vat157', legacyInstance);
+  const boardID = await E(agoricNames).lookup('instance', 'auctioneer');
+  retiredContractInstances.init(`auction-${boardID}`, legacyInstance);
 
   // Each field has an extra layer of type +  value:
   // AuctionStartDelay: { type: 'relativeTime', value: { relValue: 2n, timerBrand: Object [Alleged: timerBrand] {} } }
@@ -210,6 +211,7 @@ export const addAuction = async (
 export const ADD_AUCTION_MANIFEST = harden({
   [addAuction.name]: {
     consume: {
+      agoricNames: true,
       agoricNamesAdmin: true,
       auctioneerKit: true,
       board: true,
