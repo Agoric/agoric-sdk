@@ -13,7 +13,7 @@ export const makeDeployBuilder = (
 ) =>
   async function deployBuilder(
     builder: string,
-    builderOpts?: Record<string, string>,
+    builderOpts?: Record<string, string | string[]>,
   ) {
     console.log(`building plan: ${builder}`);
     const args = ['run', builder];

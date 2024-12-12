@@ -144,9 +144,9 @@ export const provisionSmartWallet = async (
   // TODO: skip this query if balances is {}
   const vbankEntries = await q.queryData('published.agoricNames.vbankAsset');
   const byName = Object.fromEntries(
-    vbankEntries.map(([denom, info]) => {
-      /// XXX better way to filter out old ATOM denom?
-      if (denom === 'ibc/toyatom') return [undefined, undefined];
+    // reverse entries, so we get the latest view on the denom since there are
+    // multiple entries in the testing environment
+    [...vbankEntries].reverse().map(([_, info]) => {
       return [info.issuerName, info];
     }),
   );
@@ -296,6 +296,8 @@ export const provisionSmartWallet = async (
 
   return { offers, deposit, peek, query: q };
 };
+
+/** @typedef {Awaited<ReturnType<typeof provisionSmartWallet>>} WalletDriver */
 
 /**
  * @param {{

@@ -9,4 +9,5 @@ export default {
   concurrency: 1,
   serial: true,
   timeout: '125s',
+  failFast: true,
 };
