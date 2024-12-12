@@ -3,10 +3,15 @@
 
 import { execa } from 'execa';
 import { getNetworkConfig } from 'agoric/src/helpers.js';
-import { waitUntilOfferResult } from '@agoric/client-utils';
+import {
+  waitUntilOfferResult,
+  makeFromBoard,
+  boardSlottingMarshaller,
+} from '@agoric/client-utils';
 import { deepMapObject } from '@agoric/internal';
 import {
   agd,
+  agoric,
   agopsLocation,
   CHAINID,
   executeCommand,
@@ -284,4 +289,24 @@ export const tryISTBalances = async (t, actualBalance, expectedBalance) => {
   // and `ChargeBeans` in golang/cosmos/x/swingset/keeper/keeper.go.
   const minFeeDebit = 200_000;
   t.is(actualBalance + minFeeDebit, expectedBalance);
+};
+
+const fromBoard = makeFromBoard();
+const marshaller = boardSlottingMarshaller(fromBoard.convertSlotToVal);
+
+/**
+ * @param {string} path
+ */
+const objectFromVstorageEntries = async path => {
+  const rawEntries = await agoric.follow('-lF', `:${path}`, '-o', 'text');
+  return Object.fromEntries(marshaller.fromCapData(JSON.parse(rawEntries)));
+};
+
+export const snapshotAgoricNames = async () => {
+  const [brands, instances, vbankAssets] = await Promise.all([
+    objectFromVstorageEntries('published.agoricNames.brand'),
+    objectFromVstorageEntries('published.agoricNames.instance'),
+    objectFromVstorageEntries('published.agoricNames.vbankAsset'),
+  ]);
+  return { brands, instances, vbankAssets };
 };
