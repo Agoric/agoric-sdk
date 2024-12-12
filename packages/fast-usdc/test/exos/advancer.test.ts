@@ -6,7 +6,7 @@ import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
 import { Far } from '@endo/pass-style';
 import type { NatAmount } from '@agoric/ertp';
 import { type ZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
-import { q } from '@endo/errors';
+import { Fail, q } from '@endo/errors';
 import { PendingTxStatus } from '../../src/constants.js';
 import { prepareAdvancer } from '../../src/exos/advancer.js';
 import type { SettlerKit } from '../../src/exos/settler.js';
@@ -20,6 +20,7 @@ import {
   makeTestLogger,
   prepareMockOrchAccounts,
 } from '../mocks.js';
+import type { LiquidityPoolKit } from '../../src/types.js';
 
 const LOCAL_DENOM = `ibc/${denomHash({
   denom: 'uusdc',
@@ -62,6 +63,11 @@ const createTestExtensions = (t, common: CommonSetup) => {
     // pretend funds move from tmpSeat to poolAccount
     localTransferVK.resolver.resolve();
   };
+  const rejectLocalTransfeferV = () => {
+    localTransferVK.resolver.reject(
+      new Error('One or more deposits failed: simulated error'),
+    );
+  };
   const mockZoeTools = Far('MockZoeTools', {
     localTransfer(...args: Parameters<ZoeTools['localTransfer']>) {
       console.log('ZoeTools.localTransfer called with', args);
@@ -94,18 +100,17 @@ const createTestExtensions = (t, common: CommonSetup) => {
     },
   });
 
+  const mockBorrowerFacetCalls: {
+    borrow: Parameters<LiquidityPoolKit['borrower']['borrow']>[];
+    returnToPool: Parameters<LiquidityPoolKit['borrower']['returnToPool']>[];
+  } = { borrow: [], returnToPool: [] };
+
   const mockBorrowerF = Far('LiquidityPool Borrow Facet', {
     borrow: (seat: ZCFSeat, amounts: { USDC: NatAmount }) => {
-      console.log('LP.borrow called with', amounts);
+      mockBorrowerFacetCalls.borrow.push([seat, amounts]);
     },
-  });
-
-  const mockBorrowerErrorF = Far('LiquidityPool Borrow Facet', {
-    borrow: (seat: ZCFSeat, amounts: { USDC: NatAmount }) => {
-      console.log('LP.borrow called with', amounts);
-      throw new Error(
-        `Cannot borrow. Requested ${q(amounts.USDC)} must be less than pool balance ${q(usdc.make(1n))}.`,
-      );
+    returnToPool: (seat: ZCFSeat, amounts: { USDC: NatAmount }) => {
+      mockBorrowerFacetCalls.returnToPool.push([seat, amounts]);
     },
   });
 
@@ -124,12 +129,13 @@ const createTestExtensions = (t, common: CommonSetup) => {
     helpers: {
       inspectLogs,
       inspectNotifyCalls: () => harden(notifyAdvancingResultCalls),
+      inspectBorrowerFacetCalls: () => harden(mockBorrowerFacetCalls),
     },
     mocks: {
       ...mockAccounts,
-      mockBorrowerErrorF,
       mockNotifyF,
       resolveLocalTransferV,
+      rejectLocalTransfeferV,
     },
     services: {
       advancer,
@@ -220,17 +226,27 @@ test('updates status to ADVANCING in happy path', async t => {
 
 test('updates status to OBSERVED on insufficient pool funds', async t => {
   const {
+    brands: { usdc },
     bootstrap: { storage },
     extensions: {
       services: { makeAdvancer, statusManager },
       helpers: { inspectLogs },
-      mocks: { mockPoolAccount, mockBorrowerErrorF, mockNotifyF },
+      mocks: { mockPoolAccount, mockNotifyF },
     },
   } = t.context;
 
+  const mockBorrowerFacet = Far('LiquidityPool Borrow Facet', {
+    borrow: (seat: ZCFSeat, amounts: { USDC: NatAmount }) => {
+      throw new Error(
+        `Cannot borrow. Requested ${q(amounts.USDC)} must be less than pool balance ${q(usdc.make(1n))}.`,
+      );
+    },
+    returnToPool: () => {}, // not expecting this to be called
+  });
+
   // make a new advancer that intentionally throws
   const advancer = makeAdvancer({
-    borrowerFacet: mockBorrowerErrorF,
+    borrowerFacet: mockBorrowerFacet,
     notifyFacet: mockNotifyF,
     poolAccount: mockPoolAccount.account,
     intermediateRecipient,
@@ -251,8 +267,7 @@ test('updates status to OBSERVED on insufficient pool funds', async t => {
     [
       'Advancer error:',
       Error(
-        'Cannot borrow. Requested {"brand":"[Alleged: USDC brand]","value":"[294999999n]"} ' +
-          'must be less than pool balance {"brand":"[Alleged: USDC brand]","value":"[1n]"}.',
+        `Cannot borrow. Requested ${q(usdc.make(294999999n))} must be less than pool balance ${q(usdc.make(1n))}.`,
       ),
     ],
   ]);
@@ -413,6 +428,132 @@ test('will not advance same txHash:chainId evidence twice', async t => {
   ]);
 });
 
-test.todo(
-  '#10510 zoeTools.localTransfer fails to deposit borrowed USDC to LOA',
-);
+test('returns payment to LP if zoeTools.localTransfer fails', async t => {
+  const {
+    extensions: {
+      services: { advancer },
+      helpers: { inspectLogs, inspectBorrowerFacetCalls, inspectNotifyCalls },
+      mocks: { rejectLocalTransfeferV },
+    },
+    brands: { usdc },
+  } = t.context;
+  const mockEvidence = MockCctpTxEvidences.AGORIC_PLUS_OSMO();
+
+  void advancer.handleTransactionEvent(mockEvidence);
+  rejectLocalTransfeferV();
+
+  await eventLoopIteration();
+
+  t.deepEqual(
+    inspectLogs(),
+    [
+      ['decoded EUD: osmo183dejcnmkka5dzcu9xw6mywq0p2m5peks28men'],
+      [
+        '⚠️ deposit to localOrchAccount failed, attempting to return payment to LP',
+        Error('One or more deposits failed: simulated error'),
+      ],
+    ],
+    'contract logs report error',
+  );
+
+  const { borrow, returnToPool } = inspectBorrowerFacetCalls();
+
+  const expectedArguments = [
+    Far('MockZCFSeat', {}),
+    { USDC: usdc.make(146999999n) }, // net of fees
+  ];
+
+  t.is(borrow.length, 1, 'borrow is called before zt.localTransfer fails');
+  t.deepEqual(borrow[0], expectedArguments, 'borrow arguments match expected');
+
+  t.is(
+    returnToPool.length,
+    1,
+    'returnToPool is called after zt.localTransfer fails',
+  );
+  t.deepEqual(
+    returnToPool[0],
+    expectedArguments,
+    'same amount borrowed is returned to LP',
+  );
+
+  t.like(
+    inspectNotifyCalls(),
+    [
+      [
+        {
+          txHash: mockEvidence.txHash,
+          forwardingAddress: mockEvidence.tx.forwardingAddress,
+        },
+        false, // indicates advance failed
+      ],
+    ],
+    'Advancing tx is recorded as AdvanceFailed',
+  );
+});
+
+test('alerts if `returnToPool` fallback fails', async t => {
+  const {
+    brands: { usdc },
+    extensions: {
+      services: { makeAdvancer },
+      helpers: { inspectLogs, inspectNotifyCalls },
+      mocks: { mockPoolAccount, mockNotifyF, rejectLocalTransfeferV },
+    },
+  } = t.context;
+
+  const mockBorrowerFacet = Far('LiquidityPool Borrow Facet', {
+    borrow: (seat: ZCFSeat, amounts: { USDC: NatAmount }) => {
+      // note: will not be tracked by `inspectBorrowerFacetCalls`
+    },
+    returnToPool: (seat: ZCFSeat, amounts: { USDC: NatAmount }) => {
+      throw new Error(
+        `⚠️ borrowSeatAllocation ${q({ USDC: usdc.make(0n) })} less than amountKWR ${q(amounts)}`,
+      );
+    },
+  });
+
+  // make a new advancer that intentionally throws during returnToPool
+  const advancer = makeAdvancer({
+    borrowerFacet: mockBorrowerFacet,
+    notifyFacet: mockNotifyF,
+    poolAccount: mockPoolAccount.account,
+    intermediateRecipient,
+  });
+
+  const mockEvidence = MockCctpTxEvidences.AGORIC_PLUS_OSMO();
+  void advancer.handleTransactionEvent(mockEvidence);
+  rejectLocalTransfeferV();
+
+  await eventLoopIteration();
+
+  t.deepEqual(inspectLogs(), [
+    ['decoded EUD: osmo183dejcnmkka5dzcu9xw6mywq0p2m5peks28men'],
+    [
+      '⚠️ deposit to localOrchAccount failed, attempting to return payment to LP',
+      Error('One or more deposits failed: simulated error'),
+    ],
+    [
+      '🚨 deposit to localOrchAccount failure recovery failed',
+      Error(
+        `⚠️ borrowSeatAllocation ${q({ USDC: usdc.make(0n) })} less than amountKWR ${q({ USDC: usdc.make(146999999n) })}`,
+      ),
+    ],
+  ]);
+
+  await eventLoopIteration();
+
+  t.like(
+    inspectNotifyCalls(),
+    [
+      [
+        {
+          txHash: mockEvidence.txHash,
+          forwardingAddress: mockEvidence.tx.forwardingAddress,
+        },
+        false, // indicates advance failed
+      ],
+    ],
+    'Advancing tx is recorded as AdvanceFailed',
+  );
+});

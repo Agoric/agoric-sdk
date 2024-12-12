@@ -28,7 +28,7 @@ import {
  * @import {PoolStats} from '../types.js';
  */
 
-const { add, isEqual, makeEmpty } = AmountMath;
+const { add, isEqual, isGTE, makeEmpty } = AmountMath;
 
 /** @param {Brand} brand */
 const makeDust = brand => AmountMath.make(brand, 1n);
@@ -85,6 +85,10 @@ export const prepareLiquidityPoolKit = (zone, zcf, USDC, tools) => {
     {
       borrower: M.interface('borrower', {
         borrow: M.call(
+          SeatShape,
+          harden({ USDC: makeNatAmountShape(USDC, 1n) }),
+        ).returns(),
+        returnToPool: M.call(
           SeatShape,
           harden({ USDC: makeNatAmountShape(USDC, 1n) }),
         ).returns(),
@@ -178,7 +182,28 @@ export const prepareLiquidityPoolKit = (zone, zcf, USDC, tools) => {
           Object.assign(this.state, post);
           this.facets.external.publishPoolMetrics();
         },
-        // TODO method to repay failed `LOA.deposit()`
+        /**
+         * If something fails during advance, return funds to the pool.
+         *
+         * @param {ZCFSeat} borrowSeat
+         * @param {{ USDC: Amount<'nat'>}} amountKWR
+         */
+        returnToPool(borrowSeat, amountKWR) {
+          const { zcfSeat: repaySeat } = zcf.makeEmptySeatKit();
+          const returnAmounts = harden({
+            Principal: amountKWR.USDC,
+            PoolFee: makeEmpty(USDC),
+            ContractFee: makeEmpty(USDC),
+          });
+          const borrowSeatAllocation = borrowSeat.getCurrentAllocation();
+          isGTE(borrowSeatAllocation.USDC, amountKWR.USDC) ||
+            Fail`⚠️ borrowSeatAllocation ${q(borrowSeatAllocation)} less than amountKWR ${q(amountKWR)}`;
+          // arrange payments in a format repay is expecting
+          zcf.atomicRearrange(
+            harden([[borrowSeat, repaySeat, amountKWR, returnAmounts]]),
+          );
+          return this.facets.repayer.repay(repaySeat, returnAmounts);
+        },
       },
       repayer: {
         /**

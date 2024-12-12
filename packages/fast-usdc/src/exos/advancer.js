@@ -212,18 +212,31 @@ export const prepareAdvancerKit = (
           });
         },
         /**
+         * We do not expect this to be a common failure. it should only occur
+         * if USDC is not registered in vbank or the tmpSeat has less than
+         * `advanceAmount`.
+         *
+         * If we do hit this path, we return funds to the Liquidity Pool and
+         * notify of Advancing failure.
+         *
          * @param {Error} error
          * @param {AdvancerVowCtx & { tmpSeat: ZCFSeat }} ctx
          */
-        onRejected(error, { tmpSeat }) {
-          // TODO return seat allocation from ctx to LP?
+        onRejected(error, { tmpSeat, advanceAmount, ...restCtx }) {
           log(
             '⚠️ deposit to localOrchAccount failed, attempting to return payment to LP',
             error,
           );
-          // TODO #10510 (comprehensive error testing) determine
-          // course of action here
-          log('TODO live payment on seat to return to LP', tmpSeat);
+          try {
+            const { borrowerFacet, notifyFacet } = this.state;
+            notifyFacet.notifyAdvancingResult(restCtx, false);
+            borrowerFacet.returnToPool(
+              tmpSeat,
+              harden({ USDC: advanceAmount }),
+            );
+          } catch (e) {
+            log('🚨 deposit to localOrchAccount failure recovery failed', e);
+          }
         },
       },
       transferHandler: {
