@@ -5,8 +5,8 @@ import { atob } from '@endo/base64';
 import { E } from '@endo/far';
 import { M } from '@endo/patterns';
 
+import { decodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
 import { PendingTxStatus } from '../constants.js';
-import { addressTools } from '../utils/address.js';
 import { makeFeeTools } from '../utils/fees.js';
 import { EvmHashShape } from '../type-guards.js';
 
@@ -151,14 +151,19 @@ export const prepareSettler = (
             return;
           }
 
-          if (!addressTools.hasQueryParams(tx.receiver)) {
-            console.log('not query params', tx.receiver);
-            return;
-          }
-
-          const { EUD } = addressTools.getQueryParams(tx.receiver);
-          if (!EUD) {
-            console.log('no EUD parameter', tx.receiver);
+          let EUD;
+          try {
+            ({ EUD } = decodeAddressHook(tx.receiver).query);
+            if (!EUD) {
+              log('no EUD parameter', tx.receiver);
+              return;
+            }
+            if (typeof EUD !== 'string') {
+              log('EUD is not a string', EUD);
+              return;
+            }
+          } catch (e) {
+            log('no query params', tx.receiver);
             return;
           }
 

@@ -27,11 +27,14 @@ import { E } from '@endo/far';
 import { matches, objectMap } from '@endo/patterns';
 import { makePromiseKit } from '@endo/promise-kit';
 import path from 'path';
+import {
+  decodeAddressHook,
+  encodeAddressHook,
+} from '@agoric/cosmic-proto/address-hooks.js';
 import type { OperatorKit } from '../src/exos/operator-kit.js';
 import type { FastUsdcSF } from '../src/fast-usdc.contract.js';
 import { PoolMetricsShape } from '../src/type-guards.js';
 import type { CctpTxEvidence, FeeConfig, PoolMetrics } from '../src/types.js';
-import { addressTools } from '../src/utils/address.js';
 import { makeFeeTools } from '../src/utils/fees.js';
 import { MockCctpTxEvidences } from './fixtures.js';
 import { commonSetup, uusdcOnAgoric } from './supports.js';
@@ -382,7 +385,7 @@ const makeCustomer = (
       return enough;
     },
     sendFast: async (t: ExecutionContext, amount: bigint, EUD: string) => {
-      const recipientAddress = `${settleAddr}?EUD=${EUD}`;
+      const recipientAddress = encodeAddressHook(settleAddr, { EUD });
       // KLUDGE: UI would ask noble for a forwardingAddress
       // "cctp" here has some noble stuff mixed in.
       const tx = cctp.makeTx(amount, recipientAddress);
@@ -411,9 +414,7 @@ const makeCustomer = (
         t.deepEqual(bank, []); // no vbank GIVE / GRAB
       }
 
-      const { EUD } = addressTools.getQueryParams(
-        evidence.aux.recipientAddress,
-      );
+      const { EUD } = decodeAddressHook(evidence.aux.recipientAddress).query;
 
       const myMsg = local.find(lm => {
         if (lm.type !== 'VLOCALCHAIN_EXECUTE_TX') return false;
@@ -442,7 +443,7 @@ const makeCustomer = (
         'C4',
       );
       t.log(who, 'sees', ibcTransferMsg.token, 'sent to', EUD);
-      if (!EUD.startsWith('noble')) {
+      if (!(EUD as string).startsWith('noble')) {
         t.like(
           JSON.parse(ibcTransferMsg.memo),
           {

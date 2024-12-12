@@ -7,12 +7,15 @@ import { Far } from '@endo/pass-style';
 import type { NatAmount } from '@agoric/ertp';
 import { type ZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
 import { q } from '@endo/errors';
+import {
+  decodeAddressHook,
+  encodeAddressHook,
+} from '@agoric/cosmic-proto/address-hooks.js';
 import { PendingTxStatus } from '../../src/constants.js';
 import { prepareAdvancer } from '../../src/exos/advancer.js';
 import type { SettlerKit } from '../../src/exos/settler.js';
 import { prepareStatusManager } from '../../src/exos/status-manager.js';
 import { makeFeeTools } from '../../src/utils/fees.js';
-import { addressTools } from '../../src/utils/address.js';
 import { commonSetup } from '../supports.js';
 import { MockCctpTxEvidences, intermediateRecipient } from '../fixtures.js';
 import {
@@ -180,10 +183,12 @@ test('updates status to ADVANCING in happy path', async t => {
     PendingTxStatus.Advancing,
     'ADVANCED status in happy path',
   );
-
-  t.deepEqual(inspectLogs(0), [
-    'Advance transfer fulfilled',
-    '{"advanceAmount":{"brand":"[Alleged: USDC brand]","value":"[146999999n]"},"destination":{"chainId":"osmosis-1","encoding":"bech32","value":"osmo183dejcnmkka5dzcu9xw6mywq0p2m5peks28men"},"result":"[undefined]"}',
+  t.deepEqual(inspectLogs(), [
+    ['decoded EUD: osmo183dejcnmkka5dzcu9xw6mywq0p2m5peks28men'],
+    [
+      'Advance transfer fulfilled',
+      '{"advanceAmount":{"brand":"[Alleged: USDC brand]","value":"[146999999n]"},"destination":{"chainId":"osmosis-1","encoding":"bech32","value":"osmo183dejcnmkka5dzcu9xw6mywq0p2m5peks28men"},"result":"[undefined]"}',
+    ],
   ]);
 
   // We expect to see an `Advanced` update, but that is now Settler's job.
@@ -195,8 +200,7 @@ test('updates status to ADVANCING in happy path', async t => {
         forwardingAddress: mockEvidence.tx.forwardingAddress,
         fullAmount: usdc.make(mockEvidence.tx.amount),
         destination: {
-          value: addressTools.getQueryParams(mockEvidence.aux.recipientAddress)
-            .EUD,
+          value: decodeAddressHook(mockEvidence.aux.recipientAddress).query.EUD,
         },
       },
       true, // indicates transfer succeeded
@@ -232,9 +236,12 @@ test('updates status to OBSERVED on insufficient pool funds', async t => {
     'OBSERVED status on insufficient pool funds',
   );
 
-  t.deepEqual(inspectLogs(0), [
-    'Advancer error:',
-    '"[Error: Cannot borrow. Requested {\\"brand\\":\\"[Alleged: USDC brand]\\",\\"value\\":\\"[294999999n]\\"} must be less than pool balance {\\"brand\\":\\"[Alleged: USDC brand]\\",\\"value\\":\\"[1n]\\"}.]"',
+  t.deepEqual(inspectLogs(), [
+    ['decoded EUD: dydx183dejcnmkka5dzcu9xw6mywq0p2m5peks28men'],
+    [
+      'Advancer error:',
+      '"[Error: Cannot borrow. Requested {\\"brand\\":\\"[Alleged: USDC brand]\\",\\"value\\":\\"[294999999n]\\"} must be less than pool balance {\\"brand\\":\\"[Alleged: USDC brand]\\",\\"value\\":\\"[1n]\\"}.]"',
+    ],
   ]);
 });
 
@@ -256,9 +263,12 @@ test('updates status to OBSERVED if makeChainAddress fails', async t => {
     'OBSERVED status on makeChainAddress failure',
   );
 
-  t.deepEqual(inspectLogs(0), [
-    'Advancer error:',
-    '"[Error: Chain info not found for bech32Prefix \\"random\\"]"',
+  t.deepEqual(inspectLogs(), [
+    ['decoded EUD: random1addr'],
+    [
+      'Advancer error:',
+      '"[Error: Chain info not found for bech32Prefix \\"random\\"]"',
+    ],
   ]);
 });
 
@@ -289,9 +299,9 @@ test('calls notifyAdvancingResult (AdvancedFailed) on failed transfer', async t 
   mockPoolAccount.transferVResolver.reject(new Error('simulated error'));
   await eventLoopIteration();
 
-  t.deepEqual(inspectLogs(0), [
-    'Advance transfer rejected',
-    '"[Error: simulated error]"',
+  t.deepEqual(inspectLogs(), [
+    ['decoded EUD: dydx183dejcnmkka5dzcu9xw6mywq0p2m5peks28men'],
+    ['Advance transfer rejected', '"[Error: simulated error]"'],
   ]);
 
   // We expect to see an `AdvancedFailed` update, but that is now Settler's job.
@@ -306,8 +316,7 @@ test('calls notifyAdvancingResult (AdvancedFailed) on failed transfer', async t 
           usdc.make(mockEvidence.tx.amount),
         ),
         destination: {
-          value: addressTools.getQueryParams(mockEvidence.aux.recipientAddress)
-            .EUD,
+          value: decodeAddressHook(mockEvidence.aux.recipientAddress).query.EUD,
         },
       },
       false, // this indicates transfer failed
@@ -334,9 +343,30 @@ test('updates status to OBSERVED if pre-condition checks fail', async t => {
     'tx is recorded as OBSERVED',
   );
 
-  t.deepEqual(inspectLogs(0), [
-    'Advancer error:',
-    '"[Error: Unable to parse query params: \\"agoric16kv2g7snfc4q24vg3pjdlnnqgngtjpwtetd2h689nz09lcklvh5s8u37ek\\"]"',
+  t.deepEqual(inspectLogs(), [
+    [
+      'Advancer error:',
+      '"[Error: query: {} - Must have missing properties [\\"EUD\\"]]"',
+    ],
+  ]);
+
+  await advancer.handleTransactionEvent({
+    ...MockCctpTxEvidences.AGORIC_NO_PARAMS(
+      encodeAddressHook(
+        'agoric16kv2g7snfc4q24vg3pjdlnnqgngtjpwtetd2h689nz09lcklvh5s8u37ek',
+        { EUD: 'osmo1234', extra: 'value' },
+      ),
+    ),
+    txHash:
+      '0xc81bc6105b60a234c7c50ac17816ebcd5561d366df8bf3be59ff387552761799',
+  });
+
+  const [, ...remainingLogs] = inspectLogs();
+  t.deepEqual(remainingLogs, [
+    [
+      'Advancer error:',
+      '"[Error: query: {\\"EUD\\":\\"osmo1234\\",\\"extra\\":\\"value\\"} - Must not have unexpected properties: [\\"extra\\"]]"',
+    ],
   ]);
 });
 
@@ -356,18 +386,23 @@ test('will not advance same txHash:chainId evidence twice', async t => {
   resolveLocalTransferV();
   mockPoolAccount.transferVResolver.resolve();
   await eventLoopIteration();
-
-  t.deepEqual(inspectLogs(0), [
-    'Advance transfer fulfilled',
-    '{"advanceAmount":{"brand":"[Alleged: USDC brand]","value":"[146999999n]"},"destination":{"chainId":"osmosis-1","encoding":"bech32","value":"osmo183dejcnmkka5dzcu9xw6mywq0p2m5peks28men"},"result":"[undefined]"}',
+  t.deepEqual(inspectLogs(), [
+    ['decoded EUD: osmo183dejcnmkka5dzcu9xw6mywq0p2m5peks28men'],
+    [
+      'Advance transfer fulfilled',
+      '{"advanceAmount":{"brand":"[Alleged: USDC brand]","value":"[146999999n]"},"destination":{"chainId":"osmosis-1","encoding":"bech32","value":"osmo183dejcnmkka5dzcu9xw6mywq0p2m5peks28men"},"result":"[undefined]"}',
+    ],
   ]);
 
   // Second attempt
   void advancer.handleTransactionEvent(mockEvidence);
   await eventLoopIteration();
-  t.deepEqual(inspectLogs(1), [
-    'txHash already seen:',
-    '0xc81bc6105b60a234c7c50ac17816ebcd5561d366df8bf3be59ff387552761702',
+  const [, , ...remainingLogs] = inspectLogs();
+  t.deepEqual(remainingLogs, [
+    [
+      'txHash already seen:',
+      '0xc81bc6105b60a234c7c50ac17816ebcd5561d366df8bf3be59ff387552761702',
+    ],
   ]);
 });
 

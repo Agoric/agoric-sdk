@@ -1,7 +1,8 @@
-import type { VTransferIBCEvent } from '@agoric/vats';
+import { encodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
 import { buildVTransferEvent } from '@agoric/orchestration/tools/ibc-mocks.js';
 import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
 import type { ChainAddress } from '@agoric/orchestration';
+import type { VTransferIBCEvent } from '@agoric/vats';
 import type { CctpTxEvidence } from '../src/types.js';
 
 const mockScenarios = [
@@ -31,7 +32,10 @@ export const MockCctpTxEvidences: Record<
       forwardingChannel: 'channel-21',
       recipientAddress:
         receiverAddress ||
-        'agoric16kv2g7snfc4q24vg3pjdlnnqgngtjpwtetd2h689nz09lcklvh5s8u37ek?EUD=osmo183dejcnmkka5dzcu9xw6mywq0p2m5peks28men',
+        encodeAddressHook(
+          'agoric16kv2g7snfc4q24vg3pjdlnnqgngtjpwtetd2h689nz09lcklvh5s8u37ek',
+          { EUD: 'osmo183dejcnmkka5dzcu9xw6mywq0p2m5peks28men' },
+        ),
     },
     chainId: 1,
   }),
@@ -49,7 +53,10 @@ export const MockCctpTxEvidences: Record<
       forwardingChannel: 'channel-21',
       recipientAddress:
         receiverAddress ||
-        'agoric16kv2g7snfc4q24vg3pjdlnnqgngtjpwtetd2h689nz09lcklvh5s8u37ek?EUD=dydx183dejcnmkka5dzcu9xw6mywq0p2m5peks28men',
+        encodeAddressHook(
+          'agoric16kv2g7snfc4q24vg3pjdlnnqgngtjpwtetd2h689nz09lcklvh5s8u37ek',
+          { EUD: 'dydx183dejcnmkka5dzcu9xw6mywq0p2m5peks28men' },
+        ),
     },
     chainId: 1,
   }),
@@ -85,7 +92,10 @@ export const MockCctpTxEvidences: Record<
       forwardingChannel: 'channel-21',
       recipientAddress:
         receiverAddress ||
-        'agoric16kv2g7snfc4q24vg3pjdlnnqgngtjpwtetd2h689nz09lcklvh5s8u37ek?EUD=random1addr',
+        encodeAddressHook(
+          'agoric16kv2g7snfc4q24vg3pjdlnnqgngtjpwtetd2h689nz09lcklvh5s8u37ek',
+          { EUD: 'random1addr' },
+        ),
     },
     chainId: 1,
   }),
