@@ -84,14 +84,8 @@ export const prepareLiquidityPoolKit = (zone, zcf, USDC, tools) => {
     'Liquidity Pool',
     {
       borrower: M.interface('borrower', {
-        borrow: M.call(
-          SeatShape,
-          harden({ USDC: makeNatAmountShape(USDC, 1n) }),
-        ).returns(),
-        returnToPool: M.call(
-          SeatShape,
-          harden({ USDC: makeNatAmountShape(USDC, 1n) }),
-        ).returns(),
+        borrow: M.call(SeatShape, makeNatAmountShape(USDC, 1n)).returns(),
+        returnToPool: M.call(SeatShape, makeNatAmountShape(USDC, 1n)).returns(),
       }),
       repayer: M.interface('repayer', {
         repay: M.call(
@@ -157,14 +151,14 @@ export const prepareLiquidityPoolKit = (zone, zcf, USDC, tools) => {
       borrower: {
         /**
          * @param {ZCFSeat} toSeat
-         * @param {{ USDC: Amount<'nat'>}} amountKWR
+         * @param {Amount<'nat'>} amount
          */
-        borrow(toSeat, amountKWR) {
+        borrow(toSeat, amount) {
           const { encumberedBalance, poolSeat, poolStats } = this.state;
 
           // Validate amount is available in pool
           const post = borrowCalc(
-            amountKWR.USDC,
+            amount,
             poolSeat.getAmountAllocated('USDC', USDC),
             encumberedBalance,
             poolStats,
@@ -172,7 +166,7 @@ export const prepareLiquidityPoolKit = (zone, zcf, USDC, tools) => {
 
           // COMMIT POINT
           // UNTIL #10684: ability to terminate an incarnation w/o terminating the contract
-          zcf.atomicRearrange(harden([[poolSeat, toSeat, amountKWR]]));
+          zcf.atomicRearrange(harden([[poolSeat, toSeat, { USDC: amount }]]));
 
           Object.assign(this.state, post);
           this.facets.external.publishPoolMetrics();
@@ -181,21 +175,21 @@ export const prepareLiquidityPoolKit = (zone, zcf, USDC, tools) => {
          * If something fails during advance, return funds to the pool.
          *
          * @param {ZCFSeat} borrowSeat
-         * @param {{ USDC: Amount<'nat'>}} amountKWR
+         * @param {Amount<'nat'>} amount
          */
-        returnToPool(borrowSeat, amountKWR) {
+        returnToPool(borrowSeat, amount) {
           const { zcfSeat: repaySeat } = zcf.makeEmptySeatKit();
           const returnAmounts = harden({
-            Principal: amountKWR.USDC,
+            Principal: amount,
             PoolFee: makeEmpty(USDC),
             ContractFee: makeEmpty(USDC),
           });
           const borrowSeatAllocation = borrowSeat.getCurrentAllocation();
-          isGTE(borrowSeatAllocation.USDC, amountKWR.USDC) ||
-            Fail`⚠️ borrowSeatAllocation ${q(borrowSeatAllocation)} less than amountKWR ${q(amountKWR)}`;
+          isGTE(borrowSeatAllocation.USDC, amount) ||
+            Fail`⚠️ borrowSeatAllocation ${q(borrowSeatAllocation)} less than amountKWR ${q(amount)}`;
           // arrange payments in a format repay is expecting
           zcf.atomicRearrange(
-            harden([[borrowSeat, repaySeat, amountKWR, returnAmounts]]),
+            harden([[borrowSeat, repaySeat, { USDC: amount }, returnAmounts]]),
           );
           return this.facets.repayer.repay(repaySeat, returnAmounts);
         },

@@ -106,11 +106,11 @@ const createTestExtensions = (t, common: CommonSetup) => {
   } = { borrow: [], returnToPool: [] };
 
   const mockBorrowerF = Far('LiquidityPool Borrow Facet', {
-    borrow: (seat: ZCFSeat, amounts: { USDC: NatAmount }) => {
-      mockBorrowerFacetCalls.borrow.push([seat, amounts]);
+    borrow: (seat: ZCFSeat, amount: NatAmount) => {
+      mockBorrowerFacetCalls.borrow.push([seat, amount]);
     },
-    returnToPool: (seat: ZCFSeat, amounts: { USDC: NatAmount }) => {
-      mockBorrowerFacetCalls.returnToPool.push([seat, amounts]);
+    returnToPool: (seat: ZCFSeat, amount: NatAmount) => {
+      mockBorrowerFacetCalls.returnToPool.push([seat, amount]);
     },
   });
 
@@ -236,9 +236,9 @@ test('updates status to OBSERVED on insufficient pool funds', async t => {
   } = t.context;
 
   const mockBorrowerFacet = Far('LiquidityPool Borrow Facet', {
-    borrow: (seat: ZCFSeat, amounts: { USDC: NatAmount }) => {
+    borrow: (seat: ZCFSeat, amount: NatAmount) => {
       throw new Error(
-        `Cannot borrow. Requested ${q(amounts.USDC)} must be less than pool balance ${q(usdc.make(1n))}.`,
+        `Cannot borrow. Requested ${q(amount)} must be less than pool balance ${q(usdc.make(1n))}.`,
       );
     },
     returnToPool: () => {}, // not expecting this to be called
@@ -460,7 +460,7 @@ test('returns payment to LP if zoeTools.localTransfer fails', async t => {
 
   const expectedArguments = [
     Far('MockZCFSeat', {}),
-    { USDC: usdc.make(146999999n) }, // net of fees
+    usdc.make(146999999n), // net of fees
   ];
 
   t.is(borrow.length, 1, 'borrow is called before zt.localTransfer fails');
@@ -503,12 +503,12 @@ test('alerts if `returnToPool` fallback fails', async t => {
   } = t.context;
 
   const mockBorrowerFacet = Far('LiquidityPool Borrow Facet', {
-    borrow: (seat: ZCFSeat, amounts: { USDC: NatAmount }) => {
+    borrow: (seat: ZCFSeat, amount: NatAmount) => {
       // note: will not be tracked by `inspectBorrowerFacetCalls`
     },
-    returnToPool: (seat: ZCFSeat, amounts: { USDC: NatAmount }) => {
+    returnToPool: (seat: ZCFSeat, amount: NatAmount) => {
       throw new Error(
-        `⚠️ borrowSeatAllocation ${q({ USDC: usdc.make(0n) })} less than amountKWR ${q(amounts)}`,
+        `⚠️ borrowSeatAllocation ${q({ USDC: usdc.make(0n) })} less than amountKWR ${q(amount)}`,
       );
     },
   });
@@ -536,7 +536,7 @@ test('alerts if `returnToPool` fallback fails', async t => {
     [
       '🚨 deposit to localOrchAccount failure recovery failed',
       Error(
-        `⚠️ borrowSeatAllocation ${q({ USDC: usdc.make(0n) })} less than amountKWR ${q({ USDC: usdc.make(146999999n) })}`,
+        `⚠️ borrowSeatAllocation ${q({ USDC: usdc.make(0n) })} less than amountKWR ${q(usdc.make(146999999n))}`,
       ),
     ],
   ]);

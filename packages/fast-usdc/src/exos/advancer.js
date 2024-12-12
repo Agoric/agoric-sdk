@@ -161,9 +161,8 @@ export const prepareAdvancerKit = (
             const advanceAmount = feeTools.calculateAdvance(fullAmount);
 
             const { zcfSeat: tmpSeat } = zcf.makeEmptySeatKit();
-            const amountKWR = harden({ USDC: advanceAmount });
             // throws if the pool has insufficient funds
-            borrowerFacet.borrow(tmpSeat, amountKWR);
+            borrowerFacet.borrow(tmpSeat, advanceAmount);
 
             // this cannot throw since `.isSeen()` is called in the same turn
             statusManager.advance(evidence);
@@ -172,7 +171,7 @@ export const prepareAdvancerKit = (
               tmpSeat,
               // @ts-expect-error LocalAccountMethods vs OrchestrationAccount
               poolAccount,
-              amountKWR,
+              harden({ USDC: advanceAmount }),
             );
             void watch(depositV, this.facets.depositHandler, {
               fullAmount,
@@ -230,10 +229,7 @@ export const prepareAdvancerKit = (
           try {
             const { borrowerFacet, notifyFacet } = this.state;
             notifyFacet.notifyAdvancingResult(restCtx, false);
-            borrowerFacet.returnToPool(
-              tmpSeat,
-              harden({ USDC: advanceAmount }),
-            );
+            borrowerFacet.returnToPool(tmpSeat, advanceAmount);
           } catch (e) {
             log('🚨 deposit to localOrchAccount failure recovery failed', e);
           }
