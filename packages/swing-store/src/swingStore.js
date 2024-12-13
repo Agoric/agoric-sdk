@@ -120,6 +120,18 @@ import { doRepairMetadata } from './repairMetadata.js';
  */
 
 /**
+ * @typedef {object} SwingStoreOptions
+ * @property {Buffer} [serialized]  Binary data to load in memory
+ * @property {boolean} [unsafeFastMode]  Disable SQLite safeties for e.g. fast import
+ * @property {string} [traceFile]  Path at which to record KVStore set/delete activity
+ * @property {boolean} [keepSnapshots]  Retain old heap snapshots
+ * @property {boolean} [keepTranscripts]  Retain old transcript span items
+ * @property {import('./snapStore.js').SnapshotCallback} [archiveSnapshot]  Called after creation of a new heap snapshot
+ * @property {import('./transcriptStore.js').TranscriptCallback} [archiveTranscript]  Called after a formerly-current transcript span is finalized
+ * @property {(pendingExports: Iterable<[key: string, value: string | null]>) => void} [exportCallback]
+ */
+
+/**
  * Do the work of `initSwingStore` and `openSwingStore`.
  *
  * @param {string|null} dirPath  Path to a directory in which database files may
@@ -127,8 +139,7 @@ import { doRepairMetadata } from './repairMetadata.js';
  *   database that evaporates when the process exits, which is useful for testing.
  * @param {boolean} forceReset  If true, initialize the database to an empty
  *   state if it already exists
- * @param {object} options  Configuration options
- *
+ * @param {SwingStoreOptions} [options]
  * @returns {SwingStore}
  */
 export function makeSwingStore(dirPath, forceReset, options = {}) {
@@ -616,13 +627,12 @@ export function makeSwingStore(dirPath, forceReset, options = {}) {
  * undefined, a memory-only ephemeral store will be created that will evaporate
  * on program exit.
  *
- * @param {string|null} dirPath Path to a directory in which database files may
+ * @param {string|null} [dirPath] Path to a directory in which database files may
  *   be kept.  This directory need not actually exist yet (if it doesn't it will
  *   be created) but it is reserved (by the caller) for the exclusive use of
  *   this swing store instance.  If null, an ephemeral (memory only) store will
  *   be created.
- * @param {object?} options  Optional configuration options
- *
+ * @param {SwingStoreOptions} [options]
  * @returns {SwingStore}
  */
 export function initSwingStore(dirPath = null, options = {}) {
@@ -640,8 +650,7 @@ export function initSwingStore(dirPath = null, options = {}) {
  *   This directory need not actually exist yet (if it doesn't it will be
  *   created) but it is reserved (by the caller) for the exclusive use of this
  *   swing store instance.
- * @param {object?} options  Optional configuration options
- *
+ * @param {SwingStoreOptions} [options]
  * @returns {SwingStore}
  */
 export function openSwingStore(dirPath, options = {}) {
