@@ -242,6 +242,11 @@ test('happy path: disburse to LPs; StatusManager removes tx', async t => {
     'ADVANCED',
     'DISBURSED',
   ]);
+
+  // Check deletion of DISBURSED transactions
+  statusManager.deleteCompletedTxs();
+  await eventLoopIteration();
+  t.is(storage.data.get(`fun.txns.${cctpTxEvidence.txHash}`), undefined);
 });
 
 test('slow path: forward to EUD; remove pending tx', async t => {
@@ -314,6 +319,11 @@ test('slow path: forward to EUD; remove pending tx', async t => {
     'OBSERVED',
     'FORWARDED',
   ]);
+
+  // Check deletion of FORWARDED transactions
+  statusManager.deleteCompletedTxs();
+  await eventLoopIteration();
+  t.is(storage.data.get(`fun.txns.${cctpTxEvidence.txHash}`), undefined);
 });
 
 test('Settlement for unknown transaction', async t => {

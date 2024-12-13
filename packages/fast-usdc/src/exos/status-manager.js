@@ -8,7 +8,7 @@ import {
   EvmHashShape,
   PendingTxShape,
 } from '../type-guards.js';
-import { PendingTxStatus, TxStatus } from '../constants.js';
+import { PendingTxStatus, TerminalTxStatus, TxStatus } from '../constants.js';
 
 /**
  * @import {MapStore, SetStore} from '@agoric/store';
@@ -78,8 +78,24 @@ export const prepareStatusManager = (
     valueShape: M.arrayOf(PendingTxShape),
   });
 
-  /** @type {SetStore<EvmHash>} */
+  /**
+   * Transactions seen *ever* by the contract.
+   *
+   * Note that like all durable stores, this SetStore is stored in IAVL. It
+   * grows without bound (though the amount of growth per incoming message to
+   * the contract is bounded). At some point in the future we may want to prune.
+   * @type {SetStore<EvmHash>}
+   */
   const seenTxs = zone.setStore('SeenTxs', {
+    keyShape: M.string(),
+  });
+
+  /**
+   * Transactions that have completed, but are still in vstorage.
+   *
+   * @type {SetStore<EvmHash>}
+   */
+  const storedCompletedTxs = zone.setStore('StoredCompletedTxs', {
     keyShape: M.string(),
   });
 
@@ -104,6 +120,13 @@ export const prepareStatusManager = (
     const txnNodeP = E(txnsNode).makeChildNode(hash);
     // Don't await, just writing to vstorage.
     void E(txnNodeP).setValue(status);
+    if (TerminalTxStatus[status]) {
+      // UNTIL https://github.com/Agoric/agoric-sdk/issues/7405
+      // Queue it for deletion later because if we deleted it now the earlier
+      // writes in this block would be wiped. For now we keep track of what to
+      // delete when we know it'll be another block.
+      storedCompletedTxs.add(hash);
+    }
   };
 
   /**
@@ -161,6 +184,7 @@ export const prepareStatusManager = (
       advanceOutcome: M.call(M.string(), M.nat(), M.boolean()).returns(),
       observe: M.call(CctpTxEvidenceShape).returns(M.undefined()),
       hasBeenObserved: M.call(CctpTxEvidenceShape).returns(M.boolean()),
+      deleteCompletedTxs: M.call().returns(M.undefined()),
       dequeueStatus: M.call(M.string(), M.bigint()).returns(
         M.or(
           {
@@ -224,6 +248,19 @@ export const prepareStatusManager = (
        */
       hasBeenObserved(evidence) {
         return seenTxs.has(evidence.txHash);
+      },
+
+      // UNTIL https://github.com/Agoric/agoric-sdk/issues/7405
+      deleteCompletedTxs() {
+        for (const txHash of storedCompletedTxs.values()) {
+          // As of now, setValue('') on a non-sequence node will delete it
+          const txNode = E(transactionsNode).makeChildNode(txHash, {
+            sequence: false,
+          });
+          void E(txNode)
+            .setValue('')
+            .then(() => storedCompletedTxs.delete(txHash));
+        }
       },
 
       /**
