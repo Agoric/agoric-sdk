@@ -6,13 +6,11 @@ import BufferLineTransform from '@agoric/internal/src/node/buffer-line-transform
 import { createSHA256 } from './hasher.js';
 
 /**
- * @template T
- *  @typedef  { IterableIterator<T> | AsyncIterableIterator<T> } AnyIterableIterator<T>
+ * @import { AnyIterable, AnyIterableIterator } from './exporter.js';
+ * @import { ArtifactMode } from './internal.js';
  */
 
 /**
- * @typedef { import('./internal.js').ArtifactMode } ArtifactMode
- *
  * @typedef {{
  *   initTranscript: (vatID: string) => void,
  *   rolloverSpan: (vatID: string) => Promise<number>,
@@ -39,6 +37,11 @@ import { createSHA256 } from './hasher.js';
  *   dumpTranscripts: (includeHistorical?: boolean) => {[vatID: string]: {[position: number]: string}}
  * }} TranscriptStoreDebug
  *
+ * @callback TranscriptCallback
+ * Called with the entries of a newly-finalized transcript span.
+ * @param {string} spanName  e.g., `transcript.${vatID}.${startPos}.${endPos}`
+ * @param {AnyIterable<Uint8Array>} entries  as from `exportSpan`
+ * @returns {Promise<void>}
  */
 
 function* empty() {
@@ -62,7 +65,7 @@ function insistTranscriptPosition(position) {
  * @param {(key: string, value: string | undefined ) => void} noteExport
  * @param {object} [options]
  * @param {boolean} [options.keepTranscripts]
- * @param {(spanName: string, entries: ReturnType<exportSpan>) => Promise<void>} [options.archiveTranscript]
+ * @param {TranscriptCallback} [options.archiveTranscript]
  * @returns { TranscriptStore & TranscriptStoreInternal & TranscriptStoreDebug }
  */
 export function makeTranscriptStore(
