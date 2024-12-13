@@ -12,6 +12,7 @@ import { type ZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
 import { q } from '@endo/errors';
 import { Far } from '@endo/pass-style';
 import type { TestFn } from 'ava';
+import { stringifyWithBigint } from '@agoric/internal';
 import { PendingTxStatus } from '../../src/constants.js';
 import { prepareAdvancer } from '../../src/exos/advancer.js';
 import type { SettlerKit } from '../../src/exos/settler.js';
@@ -186,8 +187,8 @@ test('updates status to ADVANCING in happy path', async t => {
   await eventLoopIteration();
 
   t.deepEqual(
-    storage.data.get(`fun.txns.${mockEvidence.txHash}`),
-    PendingTxStatus.Advancing,
+    storage.getValues(`fun.txns.${mockEvidence.txHash}`),
+    [stringifyWithBigint(mockEvidence), PendingTxStatus.Advancing],
     'ADVANCED status in happy path',
   );
 
@@ -260,8 +261,8 @@ test('updates status to OBSERVED on insufficient pool funds', async t => {
   await eventLoopIteration();
 
   t.deepEqual(
-    storage.data.get(`fun.txns.${mockEvidence.txHash}`),
-    PendingTxStatus.Observed,
+    storage.getValues(`fun.txns.${mockEvidence.txHash}`),
+    [stringifyWithBigint(mockEvidence), PendingTxStatus.Observed],
     'OBSERVED status on insufficient pool funds',
   );
 
@@ -289,8 +290,8 @@ test('updates status to OBSERVED if makeChainAddress fails', async t => {
   await advancer.handleTransactionEvent(mockEvidence);
 
   t.deepEqual(
-    storage.data.get(`fun.txns.${mockEvidence.txHash}`),
-    PendingTxStatus.Observed,
+    storage.getValues(`fun.txns.${mockEvidence.txHash}`),
+    [stringifyWithBigint(mockEvidence), PendingTxStatus.Observed],
     'OBSERVED status on makeChainAddress failure',
   );
 
@@ -322,8 +323,8 @@ test('calls notifyAdvancingResult (AdvancedFailed) on failed transfer', async t 
   await eventLoopIteration();
 
   t.deepEqual(
-    storage.data.get(`fun.txns.${mockEvidence.txHash}`),
-    PendingTxStatus.Advancing,
+    storage.getValues(`fun.txns.${mockEvidence.txHash}`),
+    [stringifyWithBigint(mockEvidence), PendingTxStatus.Advancing],
     'tx is Advancing',
   );
 
@@ -369,8 +370,8 @@ test('updates status to OBSERVED if pre-condition checks fail', async t => {
   await advancer.handleTransactionEvent(mockEvidence);
 
   t.deepEqual(
-    storage.data.get(`fun.txns.${mockEvidence.txHash}`),
-    PendingTxStatus.Observed,
+    storage.getValues(`fun.txns.${mockEvidence.txHash}`),
+    [stringifyWithBigint(mockEvidence), PendingTxStatus.Observed],
     'tx is recorded as OBSERVED',
   );
 

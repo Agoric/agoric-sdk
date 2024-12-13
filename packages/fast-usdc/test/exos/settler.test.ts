@@ -4,6 +4,7 @@ import type { TestFn } from 'ava';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
 import type { Zone } from '@agoric/zone';
+import { stringifyWithBigint } from '@agoric/internal';
 import { PendingTxStatus } from '../../src/constants.js';
 import { prepareSettler } from '../../src/exos/settler.js';
 import { prepareStatusManager } from '../../src/exos/status-manager.js';
@@ -234,8 +235,13 @@ test('happy path: disburse to LPs; StatusManager removes tx', async t => {
     'SETTLED entry removed from StatusManger',
   );
   await eventLoopIteration();
-  const vstorage = t.context.storage.data;
-  t.is(vstorage.get(`fun.txns.${cctpTxEvidence.txHash}`), 'DISBURSED');
+  const { storage } = t.context;
+  t.deepEqual(storage.getValues(`fun.txns.${cctpTxEvidence.txHash}`), [
+    stringifyWithBigint(cctpTxEvidence),
+    'ADVANCING',
+    'ADVANCED',
+    'DISBURSED',
+  ]);
 });
 
 test('slow path: forward to EUD; remove pending tx', async t => {
@@ -302,8 +308,12 @@ test('slow path: forward to EUD; remove pending tx', async t => {
     [],
     'SETTLED entry removed from StatusManger',
   );
-  const vstorage = t.context.storage.data;
-  t.is(vstorage.get(`fun.txns.${cctpTxEvidence.txHash}`), 'FORWARDED');
+  const { storage } = t.context;
+  t.deepEqual(storage.getValues(`fun.txns.${cctpTxEvidence.txHash}`), [
+    stringifyWithBigint(cctpTxEvidence),
+    'OBSERVED',
+    'FORWARDED',
+  ]);
 });
 
 test('Settlement for unknown transaction', async t => {

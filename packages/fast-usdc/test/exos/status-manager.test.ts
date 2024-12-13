@@ -2,6 +2,7 @@ import type { TestFn } from 'ava';
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import type { StorageNode } from '@agoric/internal/src/lib-chainStorage.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
+import { stringifyWithBigint } from '@agoric/internal';
 import { PendingTxStatus } from '../../src/constants.js';
 import { prepareStatusManager } from '../../src/exos/status-manager.js';
 import { commonSetup, provideDurableZone } from '../supports.js';
@@ -53,8 +54,11 @@ test('ADVANCED transactions are published to vstorage', async t => {
   statusManager.advance(evidence);
   await eventLoopIteration();
 
-  const vstorage = t.context.storage.data;
-  t.is(vstorage.get(`fun.txns.${evidence.txHash}`), 'ADVANCING');
+  const { storage } = t.context;
+  t.deepEqual(storage.getValues(`fun.txns.${evidence.txHash}`), [
+    stringifyWithBigint(evidence),
+    'ADVANCING',
+  ]);
 });
 
 test('observe creates new entry with OBSERVED status', t => {
@@ -85,8 +89,11 @@ test('OBSERVED transactions are published to vstorage', async t => {
   statusManager.observe(evidence);
   await eventLoopIteration();
 
-  const vstorage = t.context.storage.data;
-  t.is(vstorage.get(`fun.txns.${evidence.txHash}`), 'OBSERVED');
+  const { storage } = t.context;
+  t.deepEqual(storage.getValues(`fun.txns.${evidence.txHash}`), [
+    stringifyWithBigint(evidence),
+    'OBSERVED',
+  ]);
 });
 
 test('cannot process same tx twice', t => {
@@ -211,7 +218,7 @@ test('cannot advanceOutcome without ADVANCING entry', t => {
 });
 
 test('advanceOutcome transitions to ADVANCED and ADVANCE_FAILED', async t => {
-  const vstorage = t.context.storage.data;
+  const { storage } = t.context;
   const zone = provideDurableZone('status-test');
   const statusManager = prepareStatusManager(
     zone.subZone('status-manager'),
@@ -228,7 +235,11 @@ test('advanceOutcome transitions to ADVANCED and ADVANCE_FAILED', async t => {
     },
   ]);
   await eventLoopIteration();
-  t.is(vstorage.get(`fun.txns.${e1.txHash}`), PendingTxStatus.Advanced);
+  t.deepEqual(storage.getValues(`fun.txns.${e1.txHash}`), [
+    stringifyWithBigint(e1),
+    PendingTxStatus.Advancing,
+    PendingTxStatus.Advanced,
+  ]);
 
   statusManager.advance(e2);
   statusManager.advanceOutcome(e2.tx.forwardingAddress, e2.tx.amount, false);
@@ -238,7 +249,11 @@ test('advanceOutcome transitions to ADVANCED and ADVANCE_FAILED', async t => {
     },
   ]);
   await eventLoopIteration();
-  t.is(vstorage.get(`fun.txns.${e2.txHash}`), PendingTxStatus.AdvanceFailed);
+  t.deepEqual(storage.getValues(`fun.txns.${e2.txHash}`), [
+    stringifyWithBigint(e2),
+    PendingTxStatus.Advancing,
+    PendingTxStatus.AdvanceFailed,
+  ]);
 });
 
 test('dequeueStatus returns undefined when nothing is settleable', t => {

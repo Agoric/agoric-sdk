@@ -158,7 +158,6 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
   const marshaller = makeFakeBoard().getReadonlyMarshaller();
   const storage = makeFakeStorageKit(
     'fun', // Fast USDC Node
-    { sequence: false },
   );
   /**
    * Read pure data (CapData that has no slots) from the storage path
