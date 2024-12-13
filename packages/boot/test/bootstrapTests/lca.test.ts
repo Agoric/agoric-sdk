@@ -57,7 +57,6 @@ test.serial('stakeBld', async t => {
     },
     proposal: {
       give: {
-        // @ts-expect-error XXX BoardRemote
         In: { brand: BLD, value: 10n },
       },
     },
@@ -85,7 +84,6 @@ test.serial('stakeBld', async t => {
     },
     proposal: {
       give: {
-        // @ts-expect-error XXX BoardRemote
         In: { brand: BLD, value: 10n },
       },
     },
@@ -108,7 +106,6 @@ test.serial('stakeBld', async t => {
       },
       proposal: {
         give: {
-          // @ts-expect-error XXX BoardRemote
           In: { brand: BLD, value: SIMULATED_ERRORS.TIMEOUT },
         },
       },

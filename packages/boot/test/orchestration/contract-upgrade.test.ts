@@ -72,7 +72,6 @@ test('resume', async t => {
       callPipe: [['makeSendInvitation']],
     },
     proposal: {
-      // @ts-expect-error XXX BoardRemote
       give: { Send: zero },
     },
     offerArgs: { destAddr: 'cosmos1whatever', chainName: 'cosmoshub' },

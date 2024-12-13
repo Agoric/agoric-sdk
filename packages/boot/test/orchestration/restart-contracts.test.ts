@@ -66,7 +66,6 @@ test.serial('send-anywhere', async t => {
       callPipe: [['makeSendInvitation']],
     },
     proposal: {
-      // @ts-expect-error XXX BoardRemote
       give: { Send: zero },
     },
     offerArgs: {

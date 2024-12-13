@@ -25,8 +25,12 @@ export const makeWalletFactoryContext = async (
   console.timeLog('DefaultTestContext', 'vaultFactoryKit');
 
   // has to be late enough for agoricNames data to have been published
-  const agoricNamesRemotes: AgoricNamesRemotes =
-    makeAgoricNamesRemotesFromFakeStorage(swingsetTestKit.storage);
+  const agoricNamesRemotes = makeAgoricNamesRemotesFromFakeStorage(
+    swingsetTestKit.storage,
+  ) as AgoricNamesRemotes & {
+    // XXX #10167 BoardRemote type is awkward
+    brand: Record<string, Brand>;
+  };
   const refreshAgoricNamesRemotes = () => {
     Object.assign(
       agoricNamesRemotes,
