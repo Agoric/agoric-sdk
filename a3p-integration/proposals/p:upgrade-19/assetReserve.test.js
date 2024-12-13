@@ -24,7 +24,7 @@ import {
 
 const ADD_PSM_DIR = 'addUsdLemons';
 const UPGRADE_AR_DIR = 'upgradeAssetReserve';
-const ADD_COLLAOTRAL_DIR = 'addCollateral';
+const ADD_COLLATERAL = 'addCollateral';
 
 const ambientAuthority = {
   query: agdAmbient.query,
@@ -61,8 +61,7 @@ test.serial('add collatoral to reserve', async t => {
     errorMessage: 'psm-IST-USD_LEMONS instance not observed.',
   });
 
-  await evalBundles(ADD_COLLAOTRAL_DIR);
-  // await evalBundles(UPGRADE_AR_DIR);
+  await evalBundles(ADD_COLLATERAL);
 
   const metrics = /** @type {ReserveAllocations} */ (
     await vstorageKit.readLatestHead('published.reserve.metrics')
