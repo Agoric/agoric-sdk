@@ -103,13 +103,33 @@ const toOracleOfferId = (idx: number) => `oracle${idx + 1}-accept`;
 
 test.serial('oracles accept', async t => {
   const { oracleWds, retryUntilCondition, vstorageClient, wallets } = t.context;
+  const brands = await vstorageClient.queryData('published.agoricNames.brand');
+  const { Invitation } = Object.fromEntries(brands);
 
-  const instances = await vstorageClient.queryData(
-    'published.agoricNames.instance',
-  );
-  const instance = fromEntries(instances)[contractName];
+  const description = 'oracle operator invitation';
+
+  // ensure we have an unused (or used) oracle invitation in each purse
+  let hasAccepted = false;
+  for (const name of keys(oracleMnemonics)) {
+    const { offerToUsedInvitation, purses } = await vstorageClient.queryData(
+      `published.wallet.${wallets[name]}.current`,
+    );
+    const { value: invitations } = balancesFromPurses(purses)[Invitation];
+    const hasInvitation = invitations.some(x => x.description === description);
+    const usedInvitation = offerToUsedInvitation?.[0]?.[0] === `${name}-accept`;
+    t.log({ name, hasInvitation, usedInvitation });
+    t.true(hasInvitation || usedInvitation, 'has or accepted invitation');
+    if (usedInvitation) hasAccepted = true;
+  }
+  // if the oracles have already accepted, skip the rest of the test this is
+  // primarily to facilitate active development but could support testing on
+  // images where operator invs are already accepted
+  if (hasAccepted) return t.pass();
 
   // accept oracle operator invitations
+  const instance = fromEntries(
+    await vstorageClient.queryData('published.agoricNames.instance'),
+  )[contractName];
   await Promise.all(
     oracleWds.map(makeDoOffer).map((doOffer, i) =>
       doOffer({
@@ -117,7 +137,7 @@ test.serial('oracles accept', async t => {
         invitationSpec: {
           source: 'purse',
           instance,
-          description: 'oracle operator invitation', // TODO export/import INVITATION_MAKERS_DESC
+          description,
         },
         proposal: {},
       }),
@@ -387,3 +407,7 @@ test.serial('lp withdraws', async t => {
     ),
   );
 });
+
+test.todo('insufficient LP funds; forward path');
+test.todo('mint while Advancing; still Disbursed');
+test.todo('transfer failed (e.g. to cosmos, not in env)');
