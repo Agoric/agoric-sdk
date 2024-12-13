@@ -6,7 +6,7 @@ import BufferLineTransform from '@agoric/internal/src/node/buffer-line-transform
 import { createSHA256 } from './hasher.js';
 
 /**
- * @import { AnyIterable, AnyIterableIterator } from './exporter.js';
+ * @import { AnyIterable } from './exporter.js';
  * @import { ArtifactMode } from './internal.js';
  */
 
@@ -27,7 +27,7 @@ import { createSHA256 } from './hasher.js';
  *   getExportRecords: (includeHistorical: boolean) => IterableIterator<readonly [key: string, value: string]>,
  *   getArtifactNames: (artifactMode: ArtifactMode) => AsyncIterableIterator<string>,
  *   importTranscriptSpanRecord: (key: string, value: string) => void,
- *   populateTranscriptSpan: (name: string, makeChunkIterator: () => AnyIterableIterator<Uint8Array>, options: { artifactMode: ArtifactMode }) => Promise<void>,
+ *   populateTranscriptSpan: (name: string, makeChunkIterator: () => AnyIterable<Uint8Array>, options: { artifactMode: ArtifactMode }) => Promise<void>,
  *   assertComplete: (checkMode: Omit<ArtifactMode, 'debug'>) => void,
  *   repairTranscriptSpanRecord: (key: string, value: string) => void,
  *   readFullVatTranscript: (vatID: string) => Iterable<{position: number, item: string}>
@@ -778,7 +778,7 @@ export function makeTranscriptStore(
    * Import a transcript span from another store.
    *
    * @param {string} name  Artifact Name of the transcript span
-   * @param {() => AnyIterableIterator<Uint8Array>} makeChunkIterator  get an iterator of transcript byte chunks
+   * @param {() => AnyIterable<Uint8Array>} makeChunkIterator  get an iterator of transcript byte chunks
    * @param {object} options
    * @param {ArtifactMode} options.artifactMode
    *

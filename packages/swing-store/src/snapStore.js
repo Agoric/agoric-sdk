@@ -8,7 +8,7 @@ import { withDeferredCleanup } from '@agoric/internal';
 import { buffer } from './util.js';
 
 /**
- * @import { AnyIterableIterator, SwingStoreExporter } from './exporter.js';
+ * @import { AnyIterable, SwingStoreExporter } from './exporter.js';
  * @import { ArtifactMode } from './internal.js';
  */
 
@@ -45,7 +45,7 @@ import { buffer } from './util.js';
  *   getExportRecords: (includeHistorical: boolean) => IterableIterator<readonly [key: string, value: string]>,
  *   getArtifactNames: (artifactMode: ArtifactMode) => AsyncIterableIterator<string>,
  *   importSnapshotRecord: (key: string, value: string) => void,
- *   populateSnapshot: (name: string, makeChunkIterator: () => AnyIterableIterator<Uint8Array>, options: { artifactMode: ArtifactMode }) => Promise<void>,
+ *   populateSnapshot: (name: string, makeChunkIterator: () => AnyIterable<Uint8Array>, options: { artifactMode: ArtifactMode }) => Promise<void>,
  *   assertComplete: (checkMode: Omit<ArtifactMode, 'debug'>) => void,
  *   repairSnapshotRecord: (key: string, value: string) => void,
  * }} SnapStoreInternal
@@ -609,7 +609,7 @@ export function makeSnapStore(
 
   /**
    * @param {string} name  Artifact name of the snapshot
-   * @param {() => AnyIterableIterator<Uint8Array>} makeChunkIterator  get an iterator of snapshot byte chunks
+   * @param {() => AnyIterable<Uint8Array>} makeChunkIterator  get an iterator of snapshot byte chunks
    * @param {object} options
    * @param {ArtifactMode} options.artifactMode
    * @returns {Promise<void>}
