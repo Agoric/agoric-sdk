@@ -1,16 +1,16 @@
+import { decodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
 import { AmountMath } from '@agoric/ertp';
 import { assertAllDefined, makeTracer } from '@agoric/internal';
 import { AnyNatAmountShape, ChainAddressShape } from '@agoric/orchestration';
 import { pickFacet } from '@agoric/vat-data';
 import { VowShape } from '@agoric/vow';
 import { E } from '@endo/far';
-import { M } from '@endo/patterns';
+import { M, mustMatch } from '@endo/patterns';
 import {
   CctpTxEvidenceShape,
-  EudParamShape,
+  AddressHookShape,
   EvmHashShape,
 } from '../type-guards.js';
-import { addressTools } from '../utils/address.js';
 import { makeFeeTools } from '../utils/fees.js';
 
 /**
@@ -21,7 +21,7 @@ import { makeFeeTools } from '../utils/fees.js';
  * @import {ZoeTools} from '@agoric/orchestration/src/utils/zoe-tools.js';
  * @import {VowTools} from '@agoric/vow';
  * @import {Zone} from '@agoric/zone';
- * @import {CctpTxEvidence, EvmHash, FeeConfig, LogFn, NobleAddress} from '../types.js';
+ * @import {CctpTxEvidence, AddressHook, EvmHash, FeeConfig, LogFn, NobleAddress} from '../types.js';
  * @import {StatusManager} from './status-manager.js';
  * @import {LiquidityPoolKit} from './liquidity-pool.js';
  */
@@ -147,11 +147,9 @@ export const prepareAdvancerKit = (
 
             const { borrowerFacet, poolAccount } = this.state;
             const { recipientAddress } = evidence.aux;
-            // throws if EUD is not found
-            const { EUD } = addressTools.getQueryParams(
-              recipientAddress,
-              EudParamShape,
-            );
+            const decoded = decodeAddressHook(recipientAddress);
+            mustMatch(decoded, AddressHookShape);
+            const { EUD } = /** @type {AddressHook['query']} */ (decoded.query);
             log(`decoded EUD: ${EUD}`);
             // throws if the bech32 prefix is not found
             const destination = chainHub.makeChainAddress(EUD);

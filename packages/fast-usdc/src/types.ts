@@ -85,5 +85,14 @@ export type FastUSDCConfig = {
   assetInfo: [Denom, DenomDetail & { brandKey?: string }][];
 } & CopyRecord;
 
+/** decoded address hook parameters */
+export type AddressHook = {
+  baseAddress: string;
+  query: {
+    /** end user destination address */
+    EUD: string;
+  };
+};
+
 export type * from './constants.js';
 export type { LiquidityPoolKit } from './exos/liquidity-pool.js';
