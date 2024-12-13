@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.6.3-u18.3](https://github.com/Agoric/agoric-sdk/compare/@agoric/telemetry@0.6.3-u18.2...@agoric/telemetry@0.6.3-u18.3) (2024-12-13)
+
+
+### Bug Fixes
+
+* **telemetry:** timer-poll run.id ([#10672](https://github.com/Agoric/agoric-sdk/issues/10672)) ([4185e77](https://github.com/Agoric/agoric-sdk/commit/4185e77aec0babcb00057ff35ea7d8ec3f631976)), closes [#10357](https://github.com/Agoric/agoric-sdk/issues/10357) [#10357](https://github.com/Agoric/agoric-sdk/issues/10357)
+
+
+
 ### [0.6.3-u18.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/telemetry@0.6.3-u18.1...@agoric/telemetry@0.6.3-u18.2) (2024-12-09)
 
 

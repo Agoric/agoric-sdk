@@ -1,6 +1,6 @@
 {
   "name": "@agoric/benchmark",
-  "version": "0.1.1-u18.3",
+  "version": "0.1.1-u18.4",
   "private": true,
   "description": "Benchmark support",
   "type": "module",
@@ -22,9 +22,9 @@
   "author": "Agoric",
   "license": "Apache-2.0",
   "dependencies": {
-    "@agoric/boot": "^0.2.0-u18.3",
-    "@agoric/cosmic-swingset": "^0.42.0-u18.3",
-    "@agoric/inter-protocol": "^0.17.0-u18.3",
+    "@agoric/boot": "^0.2.0-u18.4",
+    "@agoric/cosmic-swingset": "^0.42.0-u18.4",
+    "@agoric/inter-protocol": "^0.17.0-u18.4",
     "@agoric/internal": "^0.4.0-u18.0",
     "@agoric/vats": "^0.16.0-u18.3",
     "@agoric/zoe": "^0.26.3-u18.0",
