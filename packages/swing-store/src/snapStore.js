@@ -8,6 +8,11 @@ import { withDeferredCleanup } from '@agoric/internal';
 import { buffer } from './util.js';
 
 /**
+ * @import { AnyIterableIterator, SwingStoreExporter } from './exporter.js';
+ * @import { ArtifactMode } from './internal.js';
+ */
+
+/**
  * @typedef {object} SnapshotResult
  * @property {string} hash sha256 hash of (uncompressed) snapshot
  * @property {number} uncompressedSize size of (uncompressed) snapshot
@@ -26,13 +31,6 @@ import { buffer } from './util.js';
  */
 
 /**
- * @import {AnyIterableIterator} from './exporter.js'
- */
-
-/**
- * @typedef { import('./exporter.js').SwingStoreExporter } SwingStoreExporter
- * @typedef { import('./internal.js').ArtifactMode } ArtifactMode
- *
  * @typedef {{
  *   loadSnapshot: (vatID: string) => AsyncIterableIterator<Uint8Array>,
  *   saveSnapshot: (vatID: string, snapPos: number, snapshotStream: AsyncIterable<Uint8Array>) => Promise<SnapshotResult>,
@@ -59,6 +57,11 @@ import { buffer } from './util.js';
  *   deleteSnapshotByHash: (vatID: string, hash: string) => void,
  * }} SnapStoreDebug
  *
+ * @callback SnapshotCallback
+ * Called with the gzipped contents of a new heap snapshot.
+ * @param {string} name  an export key, e.g. `snapshot.${vatID}.${deliveryCount}`
+ * @param {Parameters<import('stream').Readable.from>[0]} compressedData
+ * @returns {Promise<void>}
  */
 
 const finished = promisify(finishedCallback);
@@ -72,7 +75,7 @@ const finished = promisify(finishedCallback);
  * @param {(key: string, value: string | undefined) => void} noteExport
  * @param {object} [options]
  * @param {boolean | undefined} [options.keepSnapshots]
- * @param {(name: string, compressedData: Parameters<import('stream').Readable.from>[0]) => Promise<void>} [options.archiveSnapshot]
+ * @param {SnapshotCallback} [options.archiveSnapshot]
  * @returns {SnapStore & SnapStoreInternal & SnapStoreDebug}
  */
 export function makeSnapStore(
