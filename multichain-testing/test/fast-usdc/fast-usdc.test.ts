@@ -50,17 +50,13 @@ test.before(async t => {
   const wallets = await setupTestKeys(accounts, values(oracleMnemonics));
 
   // provision oracle wallets first so invitation deposits don't fail
-  const oracleWdPs = keys(oracleMnemonics).map(n =>
-    provisionSmartWallet(wallets[n], {
-      BLD: 100n,
-    }),
+  const oracleWds = await Promise.all(
+    keys(oracleMnemonics).map(n =>
+      provisionSmartWallet(wallets[n], {
+        BLD: 100n,
+      }),
+    ),
   );
-  // execute sequentially, to avoid "published.wallet.${addr}.current: fetch failed"
-  const oracleWds: WalletDriver[] = [];
-  for (const p of oracleWdPs) {
-    const wd = await p;
-    oracleWds.push(wd);
-  }
 
   // calculate denomHash and channelId for privateArgs / builder opts
   const { getTransferChannelId, toDenomHash } = makeDenomTools(chainInfo);
