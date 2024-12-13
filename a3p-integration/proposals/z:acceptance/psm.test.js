@@ -21,7 +21,7 @@ import {
 } from '@agoric/synthetic-chain';
 import { waitUntilAccountFunded } from '@agoric/client-utils';
 import test from 'ava';
-import { NonNullish } from './test-lib/errors.js';
+import { NonNullish } from '@agoric/internal/src/errors.js';
 import {
   adjustBalancesIfNotProvisioned,
   bankSend,

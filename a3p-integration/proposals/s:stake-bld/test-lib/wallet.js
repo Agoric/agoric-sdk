@@ -1,16 +1,21 @@
 // @ts-check
 
-import { makeVstorageKit } from '@agoric/client-utils';
 import { sendAction } from 'agoric/src/lib/index.js';
 import { inspect } from 'util';
 
-export const makeWalletUtils = async (
-  { delay, execFileSync, fetch },
+/**
+ * Stop-gap using execFileSync until we have a pure JS signing client.
+ *
+ * @param {object} root0
+ * @param {import('child_process')['execFileSync']} root0.execFileSync
+ * @param {import('@agoric/client-utils').SmartWalletKit} root0.smartWalletKit
+ * @param {any} root0.delay
+ * @param {import('@agoric/client-utils').MinimalNetworkConfig} networkConfig
+ */
+export const makeAgdWalletKit = async (
+  { execFileSync, smartWalletKit, delay },
   networkConfig,
 ) => {
-  const { agoricNames, fromBoard, marshaller, readLatestHead, vstorage } =
-    await makeVstorageKit({ fetch }, networkConfig);
-
   /**
    *
    * @param {string} from
@@ -23,17 +28,12 @@ export const makeWalletUtils = async (
       delay,
       execFileSync,
       from,
-      marshaller,
       keyring: { backend: 'test' },
     });
   };
 
   return {
-    agoricNames,
+    ...smartWalletKit,
     broadcastBridgeAction,
-    fromBoard,
-    networkConfig,
-    readLatestHead,
-    vstorage,
   };
 };

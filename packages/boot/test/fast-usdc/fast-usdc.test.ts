@@ -187,7 +187,7 @@ test.serial('writes account addresses to vstorage', async t => {
   await documentStorageSchema(t, storage, doc);
 });
 
-test.skip('makes usdc advance', async t => {
+test.serial('makes usdc advance', async t => {
   const {
     walletFactoryDriver: wd,
     storage,

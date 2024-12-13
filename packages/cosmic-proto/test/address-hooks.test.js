@@ -44,6 +44,62 @@ test.before(async t => {
 
 /**
  * @type {import('ava').Macro<
+ *  [addressHook: string, baseAddress: string, hookDataStr: string, error?: any],
+ *   { addressHooks: import('../src/address-hooks.js') }
+ * >}
+ */
+const splitMacro = test.macro({
+  title(providedTitle = '', addressHook, _baseAddress, _hookDataStr, _error) {
+    return `${providedTitle} split ${addressHook}`;
+  },
+  exec(t, addressHook, baseAddress, hookDataStr, error) {
+    const { splitHookedAddress } = t.context.addressHooks;
+    if (error) {
+      t.throws(() => splitHookedAddress(addressHook), error);
+      return;
+    }
+    const { baseAddress: ba, hookData: hd } = splitHookedAddress(addressHook);
+    t.is(ba, baseAddress);
+    const hookData = new TextEncoder().encode(hookDataStr);
+    t.deepEqual(hd, hookData);
+  },
+});
+
+test('empty', splitMacro, '', '', '', { message: ' too short' });
+test('no hook', splitMacro, 'agoric1qqp0e5ys', 'agoric1qqp0e5ys', '', '');
+test(
+  'Fast USDC',
+  splitMacro,
+  'agoric10rchp4vc53apxn32q42c3zryml8xq3xshyzuhjk6405wtxy7tl3d7e0f8az423padaek6me38qekget2vdhx66mtvy6kg7nrw5uhsaekd4uhwufswqex6dtsv44hxv3cd4jkuqpqvduyhf',
+  'agoric16kv2g7snfc4q24vg3pjdlnnqgngtjpwtetd2h689nz09lcklvh5s8u37ek',
+  '?EUD=osmo183dejcnmkka5dzcu9xw6mywq0p2m5peks28men',
+);
+test(
+  'version 0',
+  splitMacro,
+  'agoric10rchqqqpqgpsgpgxquyqjzstpsxsurcszyfpxpqrqgqsq9qx0p9wp',
+  'agoric1qqqsyqcyq5rqwzqfpg9scrgwpugpzysn3tn9p0',
+  '\x04\x03\x02\x01',
+);
+test(
+  'version 1 reject',
+  splitMacro,
+  'agoric10rchzqqpqgpsgpgxquyqjzstpsxsurcszyfpxpqrqgqsq9q04n2fg',
+  '',
+  '',
+  { message: 'Unsupported address hook version 1' },
+);
+test(
+  'version 15 reject',
+  splitMacro,
+  'agoric10rch7qqpqgpsgpgxquyqjzstpsxsurcszyfpxpqrqgqsq9q25ez2d',
+  '',
+  '',
+  { message: 'Unsupported address hook version 15' },
+);
+
+/**
+ * @type {import('ava').Macro<
  *   [string, ArrayLike<number> | undefined, ArrayLike<number>, string],
  *   { addressHooks: import('../src/address-hooks.js') }
  * >}

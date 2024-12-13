@@ -10,7 +10,7 @@ import {
   GOV1ADDR as GETTER, // not particular to governance, just a handy wallet
   GOV2ADDR as SETTER,
 } from '@agoric/synthetic-chain';
-import { agdWalletUtils, walletUtils } from './test-lib/index.js';
+import { agdWalletUtils } from './test-lib/index.js';
 
 const START_VALUEVOW_DIR = 'start-valueVow';
 const RESTART_VALUEVOW_DIR = 'restart-valueVow';
@@ -37,7 +37,7 @@ test('vow survives restart', async t => {
   t.log('confirm the value is not in offer results');
   let getterStatus = await retryUntilCondition(
     /** @type {() => Promise<any>} */
-    async () => walletUtils.readLatestHead(`published.wallet.${GETTER}`),
+    async () => agdWalletUtils.readLatestHead(`published.wallet.${GETTER}`),
     value => value.status.id === 'get-value' && value.updated === 'offerStatus',
     'Offer get-value not succeeded',
     {
@@ -79,7 +79,9 @@ test('vow survives restart', async t => {
   });
 
   t.log('confirm the value is now in offer results');
-  getterStatus = await walletUtils.readLatestHead(`published.wallet.${GETTER}`);
+  getterStatus = await agdWalletUtils.readLatestHead(
+    `published.wallet.${GETTER}`,
+  );
 
   t.like(getterStatus, { status: { result: offerArgs.value } });
 });

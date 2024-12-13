@@ -32,7 +32,7 @@ const makeTestContext = () => {
   const now = () => 1234;
 
   addLPCommands(program, {
-    vstorageKit: {
+    smartWalletKit: {
       // @ts-expect-error fake brands
       agoricNames: { brand: { FastLP, USDC } },
       marshaller,
