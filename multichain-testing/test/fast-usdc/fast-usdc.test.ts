@@ -34,7 +34,7 @@ const accounts = [...keys(oracleMnemonics), 'lp'];
 const contractName = 'fastUsdc';
 const contractBuilder =
   '../packages/builders/scripts/fast-usdc/init-fast-usdc.js';
-const LP_DEPOSIT_AMOUNT = 10_000_000n;
+const LP_DEPOSIT_AMOUNT = 8_000n * 10n ** 6n;
 
 test.before(async t => {
   const { setupTestKeys, ...common } = await commonSetup(t);
@@ -79,7 +79,7 @@ test.before(async t => {
 
   // save an LP in test context
   const lpUser = await provisionSmartWallet(wallets['lp'], {
-    USDC: 100n,
+    USDC: 8_000n,
     BLD: 100n,
   });
 
@@ -187,128 +187,135 @@ test.serial('lp deposits', async t => {
   );
 });
 
-test.serial('advance and settlement', async t => {
-  const {
-    nobleTools,
-    nobleAgoricChannelId,
-    oracleWds,
-    retryUntilCondition,
-    useChain,
-    usdcOnOsmosis,
-    vstorageClient,
-  } = t.context;
+const advanceAndSettleScenario = test.macro({
+  title: (_, mintAmt: bigint, eudChain: string) =>
+    `advance ${mintAmt} uusdc to ${eudChain} and settle`,
+  exec: async (t, mintAmt: bigint, eudChain: string) => {
+    const {
+      nobleTools,
+      nobleAgoricChannelId,
+      oracleWds,
+      retryUntilCondition,
+      useChain,
+      usdcOnOsmosis,
+      vstorageClient,
+    } = t.context;
 
-  // EUD wallet on osmosis
-  const eudWallet = await createWallet(useChain('osmosis').chain.bech32_prefix);
-  const EUD = (await eudWallet.getAccounts())[0].address;
-
-  // parameterize agoric address
-  const { settlementAccount } = await vstorageClient.queryData(
-    `published.${contractName}`,
-  );
-  t.log('settlementAccount address', settlementAccount);
-
-  const recipientAddress = encodeAddressHook(settlementAccount, { EUD });
-  t.log('recipientAddress', recipientAddress);
-
-  // register forwarding address on noble
-  const txRes = nobleTools.registerForwardingAcct(
-    nobleAgoricChannelId,
-    recipientAddress,
-  );
-  t.is(txRes?.code, 0, 'registered forwarding account');
-
-  const { address: userForwardingAddr } = nobleTools.queryForwardingAddress(
-    nobleAgoricChannelId,
-    recipientAddress,
-  );
-  t.log('got forwardingAddress', userForwardingAddr);
-
-  const mintAmount = 800_000n;
-
-  // TODO export CctpTxEvidence type
-  const evidence = harden({
-    blockHash:
-      '0x90d7343e04f8160892e94f02d6a9b9f255663ed0ac34caca98544c8143fee665',
-    blockNumber: 21037663n,
-    txHash: `0xc81bc6105b60a234c7c50ac17816ebcd5561d366df8bf3be59ff3875527617${makeRandomDigits(makeRandomNumber(), 2n)}`,
-    tx: {
-      amount: mintAmount,
-      forwardingAddress: userForwardingAddr,
-    },
-    aux: {
-      forwardingChannel: nobleAgoricChannelId,
-      recipientAddress,
-    },
-    chainId: 42161,
-  });
-
-  console.log('User initiates evm mint', evidence.txHash);
-
-  // submit evidences
-  await Promise.all(
-    oracleWds.map(makeDoOffer).map((doOffer, i) =>
-      doOffer({
-        id: `${Date.now()}-evm-evidence`,
-        invitationSpec: {
-          source: 'continuing',
-          previousOffer: toOracleOfferId(i),
-          invitationMakerName: 'SubmitEvidence',
-          invitationArgs: [evidence],
-        },
-        proposal: {},
-      }),
-    ),
-  );
-
-  const queryClient = makeQueryClient(
-    await useChain('osmosis').getRestEndpoint(),
-  );
-
-  await t.notThrowsAsync(() =>
-    retryUntilCondition(
-      () => queryClient.queryBalance(EUD, usdcOnOsmosis),
-      ({ balance }) => !!balance?.amount && BigInt(balance.amount) < mintAmount,
-      `${EUD} advance available from fast-usdc`,
-      {
-        // this resolves quickly, so _decrease_ the interval so the timing is more apparent
-        retryIntervalMs: 500,
-      },
-    ),
-  );
-
-  const queryTxStatus = async () =>
-    vstorageClient.queryData(
-      `published.${contractName}.status.${evidence.txHash}`,
+    // EUD wallet on the specified chain
+    const eudWallet = await createWallet(
+      useChain(eudChain).chain.bech32_prefix,
     );
+    const EUD = (await eudWallet.getAccounts())[0].address;
+    t.log(`EUD wallet created: ${EUD}`);
 
-  const assertTxStatus = async (status: string) =>
-    t.notThrowsAsync(() =>
-      retryUntilCondition(
-        () => queryTxStatus(),
-        txStatus => {
-          console.log('tx status', txStatus);
-          return txStatus === status;
-        },
-        `${evidence.txHash} is ${status}`,
+    // parameterize agoric address
+    const { settlementAccount } = await vstorageClient.queryData(
+      `published.${contractName}`,
+    );
+    t.log('settlementAccount address', settlementAccount);
+
+    const recipientAddress = encodeAddressHook(settlementAccount, { EUD });
+    t.log('recipientAddress', recipientAddress);
+
+    // register forwarding address on noble
+    const txRes = nobleTools.registerForwardingAcct(
+      nobleAgoricChannelId,
+      recipientAddress,
+    );
+    t.is(txRes?.code, 0, 'registered forwarding account');
+
+    const { address: userForwardingAddr } = nobleTools.queryForwardingAddress(
+      nobleAgoricChannelId,
+      recipientAddress,
+    );
+    t.log('got forwardingAddress', userForwardingAddr);
+
+    // TODO export CctpTxEvidence type
+    const evidence = harden({
+      blockHash:
+        '0x90d7343e04f8160892e94f02d6a9b9f255663ed0ac34caca98544c8143fee665',
+      blockNumber: 21037663n,
+      txHash: `0xc81bc6105b60a234c7c50ac17816ebcd5561d366df8bf3be59ff3875527617${makeRandomDigits(makeRandomNumber(), 2n)}`,
+      tx: {
+        amount: mintAmt,
+        forwardingAddress: userForwardingAddr,
+      },
+      aux: {
+        forwardingChannel: nobleAgoricChannelId,
+        recipientAddress,
+      },
+      chainId: 42161,
+    });
+
+    console.log('User initiates evm mint:', evidence.txHash);
+
+    // submit evidences
+    await Promise.all(
+      oracleWds.map(makeDoOffer).map((doOffer, i) =>
+        doOffer({
+          id: `${Date.now()}-evm-evidence`,
+          invitationSpec: {
+            source: 'continuing',
+            previousOffer: toOracleOfferId(i),
+            invitationMakerName: 'SubmitEvidence',
+            invitationArgs: [evidence],
+          },
+          proposal: {},
+        }),
       ),
     );
 
-  await assertTxStatus('ADVANCED');
-  console.log('Advance completed, waiting for mint...');
+    const queryClient = makeQueryClient(
+      await useChain(eudChain).getRestEndpoint(),
+    );
 
-  nobleTools.mockCctpMint(mintAmount, userForwardingAddr);
-  await t.notThrowsAsync(() =>
-    retryUntilCondition(
-      () => vstorageClient.queryData(`published.${contractName}.poolMetrics`),
-      ({ encumberedBalance }) =>
-        encumberedBalance && isEmpty(encumberedBalance),
-      'encumberedBalance returns to 0',
-    ),
-  );
+    await t.notThrowsAsync(() =>
+      retryUntilCondition(
+        () => queryClient.queryBalance(EUD, usdcOnOsmosis),
+        ({ balance }) => !!balance?.amount && BigInt(balance.amount) < mintAmt,
+        `${EUD} advance available from fast-usdc`,
+        // this resolves quickly, so _decrease_ the interval so the timing is more apparent
+        { retryIntervalMs: 500 },
+      ),
+    );
 
-  await assertTxStatus('DISBURSED');
+    const queryTxStatus = async () =>
+      vstorageClient.queryData(
+        `published.${contractName}.status.${evidence.txHash}`,
+      );
+
+    const assertTxStatus = async (status: string) =>
+      t.notThrowsAsync(() =>
+        retryUntilCondition(
+          () => queryTxStatus(),
+          txStatus => {
+            console.log('tx status', txStatus);
+            return txStatus === status;
+          },
+          `${evidence.txHash} is ${status}`,
+        ),
+      );
+
+    await assertTxStatus('ADVANCED');
+    console.log('Advance completed, waiting for mint...');
+
+    nobleTools.mockCctpMint(mintAmt, userForwardingAddr);
+    await t.notThrowsAsync(() =>
+      retryUntilCondition(
+        () => vstorageClient.queryData(`published.${contractName}.poolMetrics`),
+        ({ encumberedBalance }) =>
+          encumberedBalance && isEmpty(encumberedBalance),
+        'encumberedBalance returns to 0',
+      ),
+    );
+
+    await assertTxStatus('DISBURSED');
+  },
 });
+
+test.serial(advanceAndSettleScenario, LP_DEPOSIT_AMOUNT / 4n, 'osmosis');
+test.serial(advanceAndSettleScenario, LP_DEPOSIT_AMOUNT / 8n, 'noble');
+test.serial(advanceAndSettleScenario, LP_DEPOSIT_AMOUNT / 5n, 'agoric');
 
 test.serial('lp withdraws', async t => {
   const {
