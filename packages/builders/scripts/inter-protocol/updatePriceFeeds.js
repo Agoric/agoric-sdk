@@ -41,6 +41,16 @@ const configurations = {
     ],
     inBrandNames: ['ATOM', 'stATOM', 'stOSMO', 'stTIA', 'stkATOM'],
   },
+  BOOT_TEST: {
+    oracleAddresses: [
+      'agoric144rrhh4m09mh7aaffhm6xy223ym76gve2x7y78', // DSRV
+      'agoric19d6gnr9fyp6hev4tlrg87zjrzsd5gzr5qlfq2p', // Stakin
+      'agoric19uscwxdac6cf6z7d5e26e0jm0lgwstc47cpll8', // 01node
+      'agoric1krunjcqfrf7la48zrvdfeeqtls5r00ep68mzkr', // Simply Staking
+      'agoric1n4fcxsnkxe4gj6e24naec99hzmc4pjfdccy5nj', // P2P
+    ],
+    inBrandNames: ['ATOM'],
+  },
 };
 
 const { keys } = Object;

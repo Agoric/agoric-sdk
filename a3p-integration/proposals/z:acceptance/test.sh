@@ -13,6 +13,9 @@ yarn ava core-eval.test.js
 npm install -g tsx
 scripts/test-vaults.mts
 
+echo ACCEPTANCE TESTING recorded instances
+yarn ava recorded-retired.test.js
+
 echo ACCEPTANCE TESTING kread
 ./create-kread-item-test.sh
 
