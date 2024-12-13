@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.2.0-u18.4](https://github.com/Agoric/agoric-sdk/compare/@agoric/boot@0.2.0-u18.3...@agoric/boot@0.2.0-u18.4) (2024-12-13)
+
+
+### Features
+
+* record instances that will be replaced so we can manage them ([3b1a35d](https://github.com/Agoric/agoric-sdk/commit/3b1a35d31a7bf20fab6b80af3091079f6307cb29))
+
+
+
 ## [0.2.0-u18.3](https://github.com/Agoric/agoric-sdk/compare/@agoric/boot@0.2.0-u18.2...@agoric/boot@0.2.0-u18.3) (2024-12-09)
 
 **Note:** Version bump only for package @agoric/boot

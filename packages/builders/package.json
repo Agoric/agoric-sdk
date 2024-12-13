@@ -1,6 +1,6 @@
 {
   "name": "@agoric/builders",
-  "version": "0.2.0-u18.3",
+  "version": "0.2.0-u18.4",
   "description": "Build scripts for proposals to an Agoric chain",
   "type": "module",
   "main": "./index.js",
@@ -43,7 +43,7 @@
   "devDependencies": {
     "@agoric/deploy-script-support": "^0.10.4-u18.3",
     "@agoric/governance": "^0.10.4-u18.0",
-    "@agoric/inter-protocol": "^0.17.0-u18.3",
+    "@agoric/inter-protocol": "^0.17.0-u18.4",
     "@agoric/orchestration": "^0.2.0-u18.3",
     "@agoric/store": "^0.9.3-u18.0",
     "@agoric/swing-store": "^0.10.0-u18.0",
