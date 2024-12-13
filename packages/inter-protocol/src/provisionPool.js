@@ -53,6 +53,7 @@ harden(meta);
  *   storageNode: StorageNode;
  *   marshaller: Marshal<any>;
  *   metricsOverride?: import('./provisionPoolKit.js').MetricsNotification;
+ *   governedParamOverrides?: Record<string, Amount | undefined>;
  * }} privateArgs
  * @param {import('@agoric/vat-data').Baggage} baggage
  */
@@ -74,6 +75,7 @@ export const start = async (zcf, privateArgs, baggage) => {
       },
       privateArgs.storageNode,
       privateArgs.marshaller,
+      privateArgs.governedParamOverrides,
     );
 
   const zone = makeDurableZone(baggage);
