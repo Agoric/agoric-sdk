@@ -265,6 +265,7 @@ const advanceAndSettleScenario = test.macro({
       tx: {
         amount: mintAmt,
         forwardingAddress: userForwardingAddr,
+        sender: '0x9a9eE9e9e9e9e9e9e9e9e9e9e9e9e9e9e9e9e9e9',
       },
       aux: {
         forwardingChannel: nobleAgoricChannelId,

@@ -11,6 +11,7 @@ import type { PendingTxStatus } from './constants.js';
 import type { FastUsdcTerms } from './fast-usdc.contract.js';
 
 export type EvmHash = `0x${string}`;
+export type EvmAddress = `0x${string & { length: 40 }}`;
 export type NobleAddress = `noble1${string}`;
 export type EvmChainID = number;
 export type EvmChainName = string;
@@ -28,6 +29,7 @@ export interface CctpTxEvidence {
   tx: {
     amount: bigint;
     forwardingAddress: NobleAddress;
+    sender: EvmAddress;
   };
   txHash: EvmHash;
 }
