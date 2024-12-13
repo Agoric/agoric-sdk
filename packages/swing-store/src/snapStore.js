@@ -54,7 +54,8 @@ import { buffer } from './util.js';
  *
  * @typedef {{
  *   hasHash: (vatID: string, hash: string) => boolean,
- *   dumpSnapshots: (includeHistorical?: boolean) => {},
+ *   listAllSnapshots: () => Iterable<{}>,
+ *   dumpSnapshots: (includeHistorical?: boolean) => Record<string, Array<{snapPos: number, hash: string, compressedSnapshot: Buffer, inUse: (null | 0 | 1)}>>,
  *   deleteSnapshotByHash: (vatID: string, hash: string) => void,
  * }} SnapStoreDebug
  *
@@ -677,7 +678,6 @@ export function makeSnapStore(
 
   /**
    * debug function to list all snapshots
-   *
    */
   function* listAllSnapshots() {
     yield* sqlListAllSnapshots.iterate();
@@ -706,6 +706,7 @@ export function makeSnapStore(
     const sql = includeHistorical
       ? sqlDumpAllSnapshots
       : sqlDumpCurrentSnapshots;
+    /** @type {Record<string, Array<{snapPos: number, hash: string, compressedSnapshot: Buffer, inUse: (null | 0 | 1)}>>} */
     const dump = {};
     for (const row of sql.iterate()) {
       const { vatID, snapPos, hash, compressedSnapshot, inUse } = row;
