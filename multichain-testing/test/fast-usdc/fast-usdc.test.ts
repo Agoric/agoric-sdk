@@ -1,18 +1,18 @@
-import anyTest from '@endo/ses-ava/prepare-endo.js';
-import type { TestFn } from 'ava';
 import { encodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
 import { AmountMath } from '@agoric/ertp';
 import type { Denom } from '@agoric/orchestration';
-import { divideBy, multiplyBy } from '@agoric/zoe/src/contractSupport/ratio.js';
 import type { IBCChannelID } from '@agoric/vats';
-import { makeDoOffer, type WalletDriver } from '../../tools/e2e-tools.js';
+import { divideBy, multiplyBy } from '@agoric/zoe/src/contractSupport/ratio.js';
+import anyTest from '@endo/ses-ava/prepare-endo.js';
+import type { TestFn } from 'ava';
 import { makeDenomTools } from '../../tools/asset-info.js';
-import { createWallet } from '../../tools/wallet.js';
+import { makeDoOffer, type WalletDriver } from '../../tools/e2e-tools.js';
+import { balancesFromPurses } from '../../tools/purse.js';
 import { makeQueryClient } from '../../tools/query.js';
+import { makeRandomDigits } from '../../tools/random.js';
+import { createWallet } from '../../tools/wallet.js';
 import { commonSetup, type SetupContextWithWallets } from '../support.js';
 import { makeFeedPolicy, oracleMnemonics } from './config.js';
-import { makeRandomDigits } from '../../tools/random.js';
-import { balancesFromPurses } from '../../tools/purse.js';
 
 const { keys, values, fromEntries } = Object;
 const { isGTE, isEmpty, make } = AmountMath;
