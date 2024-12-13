@@ -23,13 +23,17 @@
  *     const decoded = decodeAddressHook(addressHook);
  *     // {
  *     //   baseAddress: 'agoric1qqp0e5ys',
- *     //   query: [Object: null prototype] { foo: [ 'bar', 'baz' ], key: 'value' }
+ *     //   query: { foo: [ 'bar', 'baz' ], key: 'value' }
  *     // }
  */
 
 /* eslint-disable no-bitwise */
 import { bech32 } from 'bech32';
 import queryString from 'query-string';
+
+/* global globalThis */
+/** @type {<T>(x: T) => T} */
+const harden = globalThis.harden || Object.freeze;
 
 // ADDRESS_HOOK_VERSION is the version of the address hook format used in this
 // module.
@@ -39,13 +43,14 @@ if ((ADDRESS_HOOK_VERSION & 0x0f) !== ADDRESS_HOOK_VERSION) {
   throw Error(`ADDRESS_HOOK_VERSION ${ADDRESS_HOOK_VERSION} exceeds 0x0f`);
 }
 
-// AddressHookMagic is a magic byte prefix that identifies a hooked address.
+// ADDRESS_HOOK_BYTE_PREFIX is a magic prefix that identifies a hooked address.
 // Chosen to make bech32 address hooks that look like "agoric10rch..."
-const ADDRESS_HOOK_MAGIC = new Uint8Array([
+const ADDRESS_HOOK_BYTE_PREFIX = [
   0x78,
   0xf1,
-  0x70 | ADDRESS_HOOK_VERSION,
-]);
+  0x70, // | ADDRESS_HOOK_VERSION
+];
+harden(ADDRESS_HOOK_BYTE_PREFIX);
 
 /**
  * The default maximum number of characters in a bech32-encoded hooked address.
@@ -63,6 +68,9 @@ export const DEFAULT_HOOKED_ADDRESS_CHAR_LIMIT = 1024;
  *      { key: ['value1', null, 'value3'] } // '?key=value1&key&key=value3'
  */
 
+/**
+ * How many bytes are used to store the length of the base address.
+ */
 export const BASE_ADDRESS_LENGTH_BYTES = 2;
 
 /**
@@ -78,8 +86,9 @@ export const decodeBech32 = (
   const rawBytes = bech32.fromWords(words);
 
   const bytes = new Uint8Array(rawBytes);
-  return { prefix, bytes };
+  return harden({ prefix, bytes });
 };
+harden(decodeBech32);
 
 /**
  * @param {string} humanReadablePart
@@ -95,6 +104,7 @@ export const encodeBech32 = (
   const words = bech32.toWords(bytes);
   return bech32.encode(humanReadablePart, words, charLimit);
 };
+harden(encodeBech32);
 
 /**
  * Join raw base address bytes and hook data into a bech32-encoded hooked
@@ -140,13 +150,14 @@ export const joinHookedAddress = (
     throw RangeError(`Hook data length ${hd} is not a non-negative integer`);
   }
 
-  const magicLength = ADDRESS_HOOK_MAGIC.length;
+  const prefixLength = ADDRESS_HOOK_BYTE_PREFIX.length;
   const hookBuf = new Uint8Array(
-    magicLength + b + hd + BASE_ADDRESS_LENGTH_BYTES,
+    prefixLength + b + hd + BASE_ADDRESS_LENGTH_BYTES,
   );
-  hookBuf.set(ADDRESS_HOOK_MAGIC, 0);
-  hookBuf.set(bytes, magicLength);
-  hookBuf.set(hookData, magicLength + b);
+  hookBuf.set(ADDRESS_HOOK_BYTE_PREFIX, 0);
+  hookBuf[prefixLength - 1] |= ADDRESS_HOOK_VERSION;
+  hookBuf.set(bytes, prefixLength);
+  hookBuf.set(hookData, prefixLength + b);
 
   // Append the address length bytes, since we've already ensured these do not
   // exceed maxBaseAddressLength above.  These are big-endian because the length
@@ -161,6 +172,7 @@ export const joinHookedAddress = (
 
   return encodeBech32(prefix, hookBuf, charLimit);
 };
+harden(joinHookedAddress);
 
 /**
  * @param {string} baseAddress
@@ -174,6 +186,7 @@ export const encodeAddressHook = (baseAddress, query, charLimit) => {
   const hookData = te.encode(`?${queryStr}`);
   return joinHookedAddress(baseAddress, hookData, charLimit);
 };
+harden(encodeAddressHook);
 
 /**
  * @param {string} addressHook
@@ -187,64 +200,69 @@ export const decodeAddressHook = (addressHook, charLimit) => {
     throw Error(`Hook data does not start with '?': ${hookStr}`);
   }
 
-  /** @type {HookQuery} */
-  const query = queryString.parse(hookStr);
-  return { baseAddress, query };
+  const parsedQuery = queryString.parse(hookStr);
+
+  /**
+   * @type {HookQuery}
+   */
+  const query = harden({ ...parsedQuery });
+  return harden({ baseAddress, query });
 };
+harden(decodeAddressHook);
 
 /**
  * @param {string} specimen
  * @param {number} [charLimit]
- * @returns {string | { baseAddress: string; hookData: Uint8Array }}
+ * @returns {{ baseAddress: string; hookData: Uint8Array }}
  */
-export const splitHookedAddressUnsafe = (
+export const splitHookedAddress = (
   specimen,
   charLimit = DEFAULT_HOOKED_ADDRESS_CHAR_LIMIT,
 ) => {
   const { prefix, bytes } = decodeBech32(specimen, charLimit);
 
-  const magicLength = ADDRESS_HOOK_MAGIC.length;
-  for (let i = 0; i < magicLength; i += 1) {
-    if (bytes[i] !== ADDRESS_HOOK_MAGIC[i]) {
-      return { baseAddress: specimen, hookData: new Uint8Array() };
+  const prefixLength = ADDRESS_HOOK_BYTE_PREFIX.length;
+  let version = 0xff;
+  for (let i = 0; i < prefixLength; i += 1) {
+    let maybeMagicByte = bytes[i];
+    if (i === prefixLength - 1) {
+      // Final byte has a low version nibble and a high magic nibble.
+      version = maybeMagicByte & 0x0f;
+      maybeMagicByte &= 0xf0;
     }
+    if (maybeMagicByte !== ADDRESS_HOOK_BYTE_PREFIX[i]) {
+      return harden({ baseAddress: specimen, hookData: new Uint8Array() });
+    }
+  }
+
+  if (version !== ADDRESS_HOOK_VERSION) {
+    throw TypeError(`Unsupported address hook version ${version}`);
   }
 
   let len = 0;
   for (let i = BASE_ADDRESS_LENGTH_BYTES - 1; i >= 0; i -= 1) {
     const byte = bytes.at(-i - 1);
     if (byte === undefined) {
-      return `Cannot get base address length from byte ${-i - 1} of ${bytes.length}`;
+      throw TypeError(
+        `Cannot get base address length from byte ${-i - 1} of ${bytes.length}`,
+      );
     }
     len <<= 8;
     len |= byte;
   }
 
   const b = len;
-  if (b > bytes.length - BASE_ADDRESS_LENGTH_BYTES - magicLength) {
-    return `Base address length 0x${b.toString(16)} is longer than specimen length ${bytes.length - BASE_ADDRESS_LENGTH_BYTES - magicLength}`;
+  if (b > bytes.length - BASE_ADDRESS_LENGTH_BYTES - prefixLength) {
+    throw TypeError(
+      `Base address length 0x${b.toString(16)} is longer than specimen length ${bytes.length - BASE_ADDRESS_LENGTH_BYTES - prefixLength}`,
+    );
   }
 
-  const baseAddressBuf = bytes.subarray(magicLength, magicLength + b);
+  const baseAddressBuf = bytes.subarray(prefixLength, prefixLength + b);
   const baseAddress = encodeBech32(prefix, baseAddressBuf, charLimit);
 
-  const hookData = bytes.subarray(magicLength + b, -BASE_ADDRESS_LENGTH_BYTES);
+  const hookData = bytes.subarray(prefixLength + b, -BASE_ADDRESS_LENGTH_BYTES);
 
-  return { baseAddress, hookData };
+  return harden({ baseAddress, hookData });
 };
-
-/**
- * @param {string} specimen
- * @param {number} [charLimit]
- * @returns {{
- *   baseAddress: string;
- *   hookData: Uint8Array;
- * }}
- */
-export const splitHookedAddress = (specimen, charLimit) => {
-  const result = splitHookedAddressUnsafe(specimen, charLimit);
-  if (typeof result === 'object') {
-    return result;
-  }
-  throw Error(result);
-};
+harden(splitHookedAddress);
