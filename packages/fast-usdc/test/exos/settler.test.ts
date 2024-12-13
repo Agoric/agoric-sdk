@@ -235,10 +235,7 @@ test('happy path: disburse to LPs; StatusManager removes tx', async t => {
   );
   await eventLoopIteration();
   const vstorage = t.context.storage.data;
-  t.is(
-    vstorage.get(`mockChainStorageRoot.txns.${cctpTxEvidence.txHash}`),
-    'DISBURSED',
-  );
+  t.is(vstorage.get(`fun.txns.${cctpTxEvidence.txHash}`), 'DISBURSED');
 });
 
 test('slow path: forward to EUD; remove pending tx', async t => {
@@ -306,10 +303,7 @@ test('slow path: forward to EUD; remove pending tx', async t => {
     'SETTLED entry removed from StatusManger',
   );
   const vstorage = t.context.storage.data;
-  t.is(
-    vstorage.get(`mockChainStorageRoot.txns.${cctpTxEvidence.txHash}`),
-    'FORWARDED',
-  );
+  t.is(vstorage.get(`fun.txns.${cctpTxEvidence.txHash}`), 'FORWARDED');
 });
 
 test('Settlement for unknown transaction', async t => {

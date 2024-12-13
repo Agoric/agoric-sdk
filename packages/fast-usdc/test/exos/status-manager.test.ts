@@ -54,10 +54,7 @@ test('ADVANCED transactions are published to vstorage', async t => {
   await eventLoopIteration();
 
   const vstorage = t.context.storage.data;
-  t.is(
-    vstorage.get(`mockChainStorageRoot.txns.${evidence.txHash}`),
-    'ADVANCING',
-  );
+  t.is(vstorage.get(`fun.txns.${evidence.txHash}`), 'ADVANCING');
 });
 
 test('observe creates new entry with OBSERVED status', t => {
@@ -89,10 +86,7 @@ test('OBSERVED transactions are published to vstorage', async t => {
   await eventLoopIteration();
 
   const vstorage = t.context.storage.data;
-  t.is(
-    vstorage.get(`mockChainStorageRoot.txns.${evidence.txHash}`),
-    'OBSERVED',
-  );
+  t.is(vstorage.get(`fun.txns.${evidence.txHash}`), 'OBSERVED');
 });
 
 test('cannot process same tx twice', t => {
@@ -234,10 +228,7 @@ test('advanceOutcome transitions to ADVANCED and ADVANCE_FAILED', async t => {
     },
   ]);
   await eventLoopIteration();
-  t.is(
-    vstorage.get(`mockChainStorageRoot.txns.${e1.txHash}`),
-    PendingTxStatus.Advanced,
-  );
+  t.is(vstorage.get(`fun.txns.${e1.txHash}`), PendingTxStatus.Advanced);
 
   statusManager.advance(e2);
   statusManager.advanceOutcome(e2.tx.forwardingAddress, e2.tx.amount, false);
@@ -247,10 +238,7 @@ test('advanceOutcome transitions to ADVANCED and ADVANCE_FAILED', async t => {
     },
   ]);
   await eventLoopIteration();
-  t.is(
-    vstorage.get(`mockChainStorageRoot.txns.${e2.txHash}`),
-    PendingTxStatus.AdvanceFailed,
-  );
+  t.is(vstorage.get(`fun.txns.${e2.txHash}`), PendingTxStatus.AdvanceFailed);
 });
 
 test('dequeueStatus returns undefined when nothing is settleable', t => {

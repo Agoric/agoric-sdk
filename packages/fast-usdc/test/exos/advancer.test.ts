@@ -48,7 +48,7 @@ const createTestExtensions = (t, common: CommonSetup) => {
 
   const statusManager = prepareStatusManager(
     rootZone.subZone('status-manager'),
-    storageNode.makeChildNode('transactions'),
+    storageNode.makeChildNode('txns'),
   );
 
   const mockAccounts = prepareMockOrchAccounts(rootZone.subZone('accounts'), {
@@ -185,7 +185,7 @@ test('updates status to ADVANCING in happy path', async t => {
   await eventLoopIteration();
 
   t.deepEqual(
-    storage.data.get(`mockChainStorageRoot.txns.${mockEvidence.txHash}`),
+    storage.data.get(`fun.txns.${mockEvidence.txHash}`),
     PendingTxStatus.Advancing,
     'ADVANCED status in happy path',
   );
@@ -259,7 +259,7 @@ test('updates status to OBSERVED on insufficient pool funds', async t => {
   await eventLoopIteration();
 
   t.deepEqual(
-    storage.data.get(`mockChainStorageRoot.txns.${mockEvidence.txHash}`),
+    storage.data.get(`fun.txns.${mockEvidence.txHash}`),
     PendingTxStatus.Observed,
     'OBSERVED status on insufficient pool funds',
   );
@@ -288,7 +288,7 @@ test('updates status to OBSERVED if makeChainAddress fails', async t => {
   await advancer.handleTransactionEvent(mockEvidence);
 
   t.deepEqual(
-    storage.data.get(`mockChainStorageRoot.txns.${mockEvidence.txHash}`),
+    storage.data.get(`fun.txns.${mockEvidence.txHash}`),
     PendingTxStatus.Observed,
     'OBSERVED status on makeChainAddress failure',
   );
@@ -321,7 +321,7 @@ test('calls notifyAdvancingResult (AdvancedFailed) on failed transfer', async t 
   await eventLoopIteration();
 
   t.deepEqual(
-    storage.data.get(`mockChainStorageRoot.txns.${mockEvidence.txHash}`),
+    storage.data.get(`fun.txns.${mockEvidence.txHash}`),
     PendingTxStatus.Advancing,
     'tx is Advancing',
   );
@@ -368,7 +368,7 @@ test('updates status to OBSERVED if pre-condition checks fail', async t => {
   await advancer.handleTransactionEvent(mockEvidence);
 
   t.deepEqual(
-    storage.data.get(`mockChainStorageRoot.txns.${mockEvidence.txHash}`),
+    storage.data.get(`fun.txns.${mockEvidence.txHash}`),
     PendingTxStatus.Observed,
     'tx is recorded as OBSERVED',
   );

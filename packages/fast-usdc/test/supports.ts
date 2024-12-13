@@ -156,9 +156,10 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
   });
   const timer = buildZoeManualTimer(t.log);
   const marshaller = makeFakeBoard().getReadonlyMarshaller();
-  const storage = makeFakeStorageKit('mockChainStorageRoot', {
-    sequence: false,
-  });
+  const storage = makeFakeStorageKit(
+    'fun', // Fast USDC Node
+    { sequence: false },
+  );
   /**
    * Read pure data (CapData that has no slots) from the storage path
    * @param path
