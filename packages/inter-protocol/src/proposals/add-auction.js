@@ -206,6 +206,9 @@ export const addAuction = async (
   );
 
   const governedContractKits = await governedContractKitsP;
+  // @ts-expect-error The original auctioneerKit had everything it needs
+  await governedContractKits.init(legacyKit.instance, legacyKit);
+
   governedContractKits.init(kit.instance, kit);
   auctionUpgradeNewInstance.resolve(governedInstance);
   auctionUpgradeNewGovCreator.resolve(kit.governorCreatorFacet);
