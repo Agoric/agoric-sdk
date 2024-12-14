@@ -88,6 +88,10 @@ export const addAuction = async (
     produceRetiredInstances,
   );
 
+  const governedContractKits = await governedContractKitsP;
+  // @ts-expect-error The original auctioneerKit had everything it needs
+  governedContractKits.init(legacyKit.instance, legacyKit);
+
   // save the auctioneer instance so we can manage it later
   const boardID = await E(board).getId(legacyKit.instance);
   const identifier = `auctioneer-${boardID}`;
@@ -204,10 +208,6 @@ export const addAuction = async (
     'auctioneer',
     governedInstance,
   );
-
-  const governedContractKits = await governedContractKitsP;
-  // @ts-expect-error The original auctioneerKit had everything it needs
-  await governedContractKits.init(legacyKit.instance, legacyKit);
 
   governedContractKits.init(kit.instance, kit);
   auctionUpgradeNewInstance.resolve(governedInstance);
