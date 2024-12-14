@@ -29,13 +29,13 @@ import { PendingTxStatus, TxStatus } from '../constants.js';
  *
  * The key is a composite but not meant to be parsable.
  *
- * @param {NobleAddress} addr
+ * @param {NobleAddress} nfa Noble Forwarding Account (implies EUD)
  * @param {bigint} amount
  * @returns {PendingTxKey}
  */
-const makePendingTxKey = (addr, amount) =>
+const makePendingTxKey = (nfa, amount) =>
   // amount can't contain colon
-  `pendingTx:${amount}:${addr}`;
+  `pendingTx:${amount}:${nfa}`;
 
 /**
  * Get the key for the pendingTxs MapStore.
@@ -86,7 +86,10 @@ export const prepareStatusManager = (
     log = makeTracer('Advancer', true),
   } = /** @type {StatusManagerPowers} */ ({}),
 ) => {
-  /** @type {MapStore<PendingTxKey, PendingTx[]>} */
+  /**
+   * Keyed by a tuple of the Noble Forwarding Account and amount.
+   * @type {MapStore<PendingTxKey, PendingTx[]>}
+   */
   const pendingTxs = zone.mapStore('PendingTxs', {
     keyShape: M.string(),
     valueShape: M.arrayOf(PendingTxShape),
@@ -134,15 +137,15 @@ export const prepareStatusManager = (
   /**
    * Update the pending transaction status.
    *
-   * @param {{sender: NobleAddress, amount: bigint}} keyParts
+   * @param {{nfa: NobleAddress, amount: bigint}} keyParts
    * @param {PendingTxStatus} status
    */
-  function setPendingTxStatus({ sender, amount }, status) {
-    const key = makePendingTxKey(sender, amount);
-    pendingTxs.has(key) || Fail`no advancing tx with ${{ sender, amount }}`;
+  function setPendingTxStatus({ nfa, amount }, status) {
+    const key = makePendingTxKey(nfa, amount);
+    pendingTxs.has(key) || Fail`no advancing tx with ${{ nfa, amount }}`;
     const pending = pendingTxs.get(key);
     const ix = pending.findIndex(tx => tx.status === PendingTxStatus.Advancing);
-    ix >= 0 || Fail`no advancing tx with ${{ sender, amount }}`;
+    ix >= 0 || Fail`no advancing tx with ${{ nfa, amount }}`;
     const [prefix, tx, suffix] = [
       pending.slice(0, ix),
       pending[ix],
@@ -197,14 +200,14 @@ export const prepareStatusManager = (
       /**
        * Record result of ADVANCING
        *
-       * @param {NobleAddress} sender
+       * @param {NobleAddress} nfa Noble Forwarding Account
        * @param {import('@agoric/ertp').NatValue} amount
        * @param {boolean} success - Advanced vs. AdvanceFailed
        * @throws {Error} if nothing to advance
        */
-      advanceOutcome(sender, amount, success) {
+      advanceOutcome(nfa, amount, success) {
         setPendingTxStatus(
-          { sender, amount },
+          { nfa, amount },
           success ? PendingTxStatus.Advanced : PendingTxStatus.AdvanceFailed,
         );
       },
@@ -230,13 +233,13 @@ export const prepareStatusManager = (
       /**
        * Remove and return an `ADVANCED` or `OBSERVED` tx waiting to be `SETTLED`.
        *
-       * @param {NobleAddress} address
+       * @param {NobleAddress} nfa
        * @param {bigint} amount
        * @returns {Pick<PendingTx, 'status' | 'txHash'> | undefined} undefined if nothing
        *   with this address and amount has been marked pending.
        */
-      dequeueStatus(address, amount) {
-        const key = makePendingTxKey(address, amount);
+      dequeueStatus(nfa, amount) {
+        const key = makePendingTxKey(nfa, amount);
         if (!pendingTxs.has(key)) return undefined;
         const pending = pendingTxs.get(key);
 
@@ -272,16 +275,16 @@ export const prepareStatusManager = (
        * Mark a transaction as `FORWARDED`
        *
        * @param {EvmHash | undefined} txHash - undefined in case mint before observed
-       * @param {NobleAddress} address
+       * @param {NobleAddress} nfa
        * @param {bigint} amount
        */
-      forwarded(txHash, address, amount) {
+      forwarded(txHash, nfa, amount) {
         if (txHash) {
           publishStatus(txHash, TxStatus.Forwarded);
         } else {
           // TODO store (early) `Minted` transactions to check against incoming evidence
           log(
-            `⚠️ Forwarded minted amount ${amount} from account ${address} before it was observed.`,
+            `⚠️ Forwarded minted amount ${amount} from account ${nfa} before it was observed.`,
           );
         }
       },
@@ -291,12 +294,12 @@ export const prepareStatusManager = (
        *
        * XXX only used in tests. should we remove?
        *
-       * @param {NobleAddress} address
+       * @param {NobleAddress} nfa
        * @param {bigint} amount
        * @returns {PendingTx[]}
        */
-      lookupPending(address, amount) {
-        const key = makePendingTxKey(address, amount);
+      lookupPending(nfa, amount) {
+        const key = makePendingTxKey(nfa, amount);
         if (!pendingTxs.has(key)) {
           return harden([]);
         }
