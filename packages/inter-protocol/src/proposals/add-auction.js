@@ -88,6 +88,20 @@ export const addAuction = async (
     produceRetiredInstances,
   );
 
+  const governedContractKits = await governedContractKitsP;
+  trace('has', governedContractKits.has(legacyKit.instance));
+  if (governedContractKits.has(legacyKit.instance)) {
+    // bootstrap tests start having already run this upgrade. Actual upgrades on
+    // mainNet or testnets should start with the promiseSpace post upgrade-17,
+    // which doesn't have this entry in the map.
+    trace(
+      '⚠️ WARNING: not expected during chain upgrade.  It IS normal during bootstrap tests',
+    );
+  } else {
+    // @ts-expect-error The original auctioneerKit had everything it needs
+    governedContractKits.init(legacyKit.instance, legacyKit);
+  }
+
   // save the auctioneer instance so we can manage it later
   const boardID = await E(board).getId(legacyKit.instance);
   const identifier = `auctioneer-${boardID}`;
@@ -205,7 +219,6 @@ export const addAuction = async (
     governedInstance,
   );
 
-  const governedContractKits = await governedContractKitsP;
   governedContractKits.init(kit.instance, kit);
   auctionUpgradeNewInstance.resolve(governedInstance);
   auctionUpgradeNewGovCreator.resolve(kit.governorCreatorFacet);
