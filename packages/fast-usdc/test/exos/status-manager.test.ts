@@ -106,18 +106,16 @@ test('cannot process same tx twice', t => {
 
   t.throws(() => statusManager.advance(evidence), {
     message:
-      'Transaction already seen: "seenTx:1:0xc81bc6105b60a234c7c50ac17816ebcd5561d366df8bf3be59ff387552761702"',
+      'Transaction already seen: "0xc81bc6105b60a234c7c50ac17816ebcd5561d366df8bf3be59ff387552761702"',
   });
 
   t.throws(() => statusManager.observe(evidence), {
     message:
-      'Transaction already seen: "seenTx:1:0xc81bc6105b60a234c7c50ac17816ebcd5561d366df8bf3be59ff387552761702"',
+      'Transaction already seen: "0xc81bc6105b60a234c7c50ac17816ebcd5561d366df8bf3be59ff387552761702"',
   });
 
   // new txHash should not throw
   t.notThrows(() => statusManager.advance({ ...evidence, txHash: '0xtest2' }));
-  // new chainId with existing txHash should not throw
-  t.notThrows(() => statusManager.advance({ ...evidence, chainId: 9999 }));
 });
 
 test('isSeen checks if a tx has been processed', t => {

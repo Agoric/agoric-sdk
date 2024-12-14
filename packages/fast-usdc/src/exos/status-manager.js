@@ -19,9 +19,6 @@ import { PendingTxStatus, TxStatus } from '../constants.js';
 /**
  * @typedef {`pendingTx:${bigint}:${NobleAddress}`} PendingTxKey
  * The string template is for developer visibility but not meant to ever be parsed.
- *
- * @typedef {`seenTx:${string}:${EvmHash}`} SeenTxKey
- * The string template is for developer visibility but not meant to ever be parsed.
  */
 
 /**
@@ -46,20 +43,6 @@ const makePendingTxKey = (nfa, amount) =>
 const pendingTxKeyOf = evidence => {
   const { amount, forwardingAddress } = evidence.tx;
   return makePendingTxKey(forwardingAddress, amount);
-};
-
-/**
- * Get the key for the seenTxs SetStore.
- *
- * The key is a composite but not meant to be parsable.
- *
- * @param {CctpTxEvidence} evidence
- * @returns {SeenTxKey}
- */
-const seenTxKeyOf = evidence => {
-  const { txHash, chainId } = evidence;
-  // chainId can't contain colon
-  return `seenTx:${chainId}:${txHash}`;
 };
 
 /**
@@ -95,7 +78,7 @@ export const prepareStatusManager = (
     valueShape: M.arrayOf(PendingTxShape),
   });
 
-  /** @type {SetStore<SeenTxKey>} */
+  /** @type {SetStore<EvmHash>} */
   const seenTxs = zone.setStore('SeenTxs', {
     keyShape: M.string(),
   });
@@ -120,18 +103,18 @@ export const prepareStatusManager = (
    * @param {PendingTxStatus} status
    */
   const initPendingTx = (evidence, status) => {
-    const seenKey = seenTxKeyOf(evidence);
-    if (seenTxs.has(seenKey)) {
-      throw makeError(`Transaction already seen: ${q(seenKey)}`);
+    const { txHash } = evidence;
+    if (seenTxs.has(txHash)) {
+      throw makeError(`Transaction already seen: ${q(txHash)}`);
     }
-    seenTxs.add(seenKey);
+    seenTxs.add(txHash);
 
     appendToStoredArray(
       pendingTxs,
       pendingTxKeyOf(evidence),
       harden({ ...evidence, status }),
     );
-    publishStatus(evidence.txHash, status);
+    publishStatus(txHash, status);
   };
 
   /**
@@ -226,8 +209,7 @@ export const prepareStatusManager = (
        * @param {CctpTxEvidence} evidence
        */
       hasBeenObserved(evidence) {
-        const seenKey = seenTxKeyOf(evidence);
-        return seenTxs.has(seenKey);
+        return seenTxs.has(evidence.txHash);
       },
 
       /**
