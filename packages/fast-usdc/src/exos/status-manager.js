@@ -14,6 +14,7 @@ import { PendingTxStatus, TerminalTxStatus, TxStatus } from '../constants.js';
  * @import {MapStore, SetStore} from '@agoric/store';
  * @import {Zone} from '@agoric/zone';
  * @import {CctpTxEvidence, NobleAddress, PendingTx, EvmHash, LogFn} from '../types.js';
+ * @import {CopyRecord} from '@endo/pass-style';
  */
 
 /**
@@ -100,16 +101,25 @@ export const prepareStatusManager = (
   });
 
   /**
+   * @param {EvmHash} txId
+   * @param {CopyRecord} record
+   */
+  const publishTxnRecord = (txId, record) => {
+    const txNode = E(txnsNode).makeChildNode(txId, {
+      sequence: true, // avoid overwriting other output in the block
+    });
+    void E(txNode).setValue(
+      JSON.stringify(pureDataMarshaller.toCapData(harden(record))),
+    );
+  };
+
+  /**
    * @param {CctpTxEvidence['txHash']} hash
    * @param {CctpTxEvidence} evidence
    */
   const publishEvidence = (hash, evidence) => {
-    const txNode = E(transactionsNode).makeChildNode(hash);
     // Don't await, just writing to vstorage.
-    void E(txNode).setValue(
-      // @ts-expect-error XXX CopyRecordI expects an index signature
-      JSON.stringify(pureDataMarshaller.toCapData(evidence)),
-    );
+    void publishTxnRecord(hash, evidence);
   };
 
   /**
@@ -117,9 +127,8 @@ export const prepareStatusManager = (
    * @param {TxStatus} status
    */
   const publishStatus = (hash, status) => {
-    const txnNodeP = E(txnsNode).makeChildNode(hash);
     // Don't await, just writing to vstorage.
-    void E(txnNodeP).setValue(status);
+    void publishTxnRecord(hash, { status });
     if (TerminalTxStatus[status]) {
       // UNTIL https://github.com/Agoric/agoric-sdk/issues/7405
       // Queue it for deletion later because if we deleted it now the earlier
@@ -254,7 +263,7 @@ export const prepareStatusManager = (
       deleteCompletedTxs() {
         for (const txHash of storedCompletedTxs.values()) {
           // As of now, setValue('') on a non-sequence node will delete it
-          const txNode = E(transactionsNode).makeChildNode(txHash, {
+          const txNode = E(txnsNode).makeChildNode(txHash, {
             sequence: false,
           });
           void E(txNode)

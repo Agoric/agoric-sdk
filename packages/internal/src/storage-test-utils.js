@@ -195,7 +195,7 @@ export const makeFakeStorageKit = (rootPath, rootOptions) => {
    * Get the values at a sequence node
    *
    * @param {string} path
-   * @returns {unknown[]}
+   * @returns {string[]}
    */
   const getValues = path => {
     assert(resolvedOptions.sequence);

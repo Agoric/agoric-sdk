@@ -2,7 +2,6 @@ import type { TestFn } from 'ava';
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import type { StorageNode } from '@agoric/internal/src/lib-chainStorage.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
-import { stringifyWithBigint } from '@agoric/internal';
 import { PendingTxStatus } from '../../src/constants.js';
 import { prepareStatusManager } from '../../src/exos/status-manager.js';
 import { commonSetup, provideDurableZone } from '../supports.js';
@@ -55,9 +54,9 @@ test('ADVANCED transactions are published to vstorage', async t => {
   await eventLoopIteration();
 
   const { storage } = t.context;
-  t.deepEqual(storage.getValues(`fun.txns.${evidence.txHash}`), [
-    stringifyWithBigint(evidence),
-    'ADVANCING',
+  t.deepEqual(storage.getPureData(`fun.txns.${evidence.txHash}`), [
+    evidence,
+    { status: 'ADVANCING' },
   ]);
 });
 
@@ -90,9 +89,9 @@ test('OBSERVED transactions are published to vstorage', async t => {
   await eventLoopIteration();
 
   const { storage } = t.context;
-  t.deepEqual(storage.getValues(`fun.txns.${evidence.txHash}`), [
-    stringifyWithBigint(evidence),
-    'OBSERVED',
+  t.deepEqual(storage.getPureData(`fun.txns.${evidence.txHash}`), [
+    evidence,
+    { status: 'OBSERVED' },
   ]);
 });
 
@@ -235,10 +234,10 @@ test('advanceOutcome transitions to ADVANCED and ADVANCE_FAILED', async t => {
     },
   ]);
   await eventLoopIteration();
-  t.deepEqual(storage.getValues(`fun.txns.${e1.txHash}`), [
-    stringifyWithBigint(e1),
-    PendingTxStatus.Advancing,
-    PendingTxStatus.Advanced,
+  t.deepEqual(storage.getPureData(`fun.txns.${e1.txHash}`), [
+    e1,
+    { status: 'ADVANCING' },
+    { status: 'ADVANCED' },
   ]);
 
   statusManager.advance(e2);
@@ -249,10 +248,10 @@ test('advanceOutcome transitions to ADVANCED and ADVANCE_FAILED', async t => {
     },
   ]);
   await eventLoopIteration();
-  t.deepEqual(storage.getValues(`fun.txns.${e2.txHash}`), [
-    stringifyWithBigint(e2),
-    PendingTxStatus.Advancing,
-    PendingTxStatus.AdvanceFailed,
+  t.deepEqual(storage.getPureData(`fun.txns.${e2.txHash}`), [
+    e2,
+    { status: 'ADVANCING' },
+    { status: 'ADVANCE_FAILED' },
   ]);
 });
 
@@ -325,7 +324,7 @@ test('dequeueStatus returns first (earliest) matched entry', async t => {
     PendingTxStatus.Advanced,
     'first settled entry deleted',
   );
-  t.is(
+  t.deepEqual(
     entries0?.[1].status,
     PendingTxStatus.Observed,
     'order of remaining entries preserved',

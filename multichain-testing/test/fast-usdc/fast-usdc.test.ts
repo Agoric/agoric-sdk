@@ -1,4 +1,5 @@
 import anyTest from '@endo/ses-ava/prepare-endo.js';
+
 import type { TestFn } from 'ava';
 import { encodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
 import { AmountMath } from '@agoric/ertp';
@@ -222,6 +223,7 @@ const advanceAndSettleScenario = test.macro({
       nobleAgoricChannelId,
       oracleWds,
       retryUntilCondition,
+      smartWalletKit,
       useChain,
       usdcOnOsmosis,
       vstorageClient,
@@ -306,10 +308,20 @@ const advanceAndSettleScenario = test.macro({
       ),
     );
 
-    const queryTxStatus = async () =>
-      vstorageClient.queryData(
-        `published.${contractName}.txns.${evidence.txHash}`,
+    const queryTxStatus = async () => {
+      const record = await smartWalletKit.readPublished(
+        `fastUsdc.txns.${evidence.txHash}`,
       );
+      if (!record) {
+        throw new Error(`no record for ${evidence.txHash}`);
+      }
+      // @ts-expect-error unknown may not have 'status'
+      if (!record.status) {
+        throw new Error(`no status for ${evidence.txHash}`);
+      }
+      // @ts-expect-error still unknown?
+      return record.status;
+    };
 
     const assertTxStatus = async (status: string) =>
       t.notThrowsAsync(() =>
