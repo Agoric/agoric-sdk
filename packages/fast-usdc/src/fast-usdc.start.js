@@ -21,7 +21,7 @@ const { entries, fromEntries, keys, values } = Object; // XXX move up
 
 const trace = makeTracer('FUSD-Start', true);
 
-const contractName = 'fastUsdc';
+const contractName = meta.name;
 
 /**
  * XXX Shouldn't the bridge or board vat handle this?

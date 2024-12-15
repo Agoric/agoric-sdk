@@ -30,7 +30,8 @@ export const FastUSDCConfigShape = M.splitRecord({
 });
 
 /** @satisfies {ContractMeta<FastUsdcSF>} */
-export const meta = {
+export const meta = /** @type {const} */ ({
+  name: 'fastUsdc',
   // @ts-expect-error TypedPattern not recognized as record
   customTermsShape: FastUSDCTermsShape,
   privateArgsShape: {
@@ -46,7 +47,7 @@ export const meta = {
   adminRoles: {
     oracles: 'makeOperatorInvitation',
   },
-};
+});
 harden(meta);
 
 /** @satisfies {BootstrapManifestPermit} */
