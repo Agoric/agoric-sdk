@@ -32,6 +32,7 @@ export const FastUSDCConfigShape = M.splitRecord({
 /** @satisfies {ContractMeta<FastUsdcSF>} */
 export const meta = /** @type {const} */ ({
   name: 'fastUsdc',
+  abbr: 'FUSD', // for tracer(s)
   // @ts-expect-error TypedPattern not recognized as record
   customTermsShape: FastUSDCTermsShape,
   privateArgsShape: {

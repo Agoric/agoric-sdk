@@ -19,9 +19,9 @@ import { meta, permit } from './fast-usdc.contract.meta.js';
 
 const { entries, fromEntries, keys, values } = Object; // XXX move up
 
-const trace = makeTracer('FUSD-Start', true);
-
 const contractName = meta.name;
+
+const trace = makeTracer(`${meta.abbr}-Start`, true);
 
 /**
  * XXX Shouldn't the bridge or board vat handle this?
