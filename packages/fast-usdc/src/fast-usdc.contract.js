@@ -2,10 +2,6 @@ import { AssetKind } from '@agoric/ertp';
 import { makeTracer } from '@agoric/internal';
 import { observeIteration, subscribeEach } from '@agoric/notifier';
 import {
-  CosmosChainInfoShape,
-  DenomDetailShape,
-  DenomShape,
-  OrchestrationPowersShape,
   registerChainsAndAssets,
   withOrchestration,
 } from '@agoric/orchestration';
@@ -14,14 +10,13 @@ import { provideSingleton } from '@agoric/zoe/src/contractSupport/durability.js'
 import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/recorder.js';
 import { Fail } from '@endo/errors';
 import { E } from '@endo/far';
-import { M } from '@endo/patterns';
 import { prepareAdvancer } from './exos/advancer.js';
 import { prepareLiquidityPoolKit } from './exos/liquidity-pool.js';
 import { prepareSettler } from './exos/settler.js';
 import { prepareStatusManager } from './exos/status-manager.js';
 import { prepareTransactionFeedKit } from './exos/transaction-feed.js';
+import { meta } from './fast-usdc.contract.meta.js';
 import * as flows from './fast-usdc.flows.js';
-import { FastUSDCTermsShape, FeeConfigShape } from './type-guards.js';
 import { defineInertInvitation } from './utils/zoe.js';
 
 const trace = makeTracer('FastUsdc');
@@ -48,20 +43,7 @@ const ADDRESSES_BAGGAGE_KEY = 'addresses';
  * }} FastUsdcTerms
  */
 
-/** @type {ContractMeta<typeof start>} */
-export const meta = {
-  // @ts-expect-error TypedPattern not recognized as record
-  customTermsShape: FastUSDCTermsShape,
-  privateArgsShape: {
-    // @ts-expect-error TypedPattern not recognized as record
-    ...OrchestrationPowersShape,
-    assetInfo: M.arrayOf([DenomShape, DenomDetailShape]),
-    chainInfo: M.recordOf(M.string(), CosmosChainInfoShape),
-    feeConfig: FeeConfigShape,
-    marshaller: M.remotable(),
-    poolMetricsNode: M.remotable(),
-  },
-};
+export { meta };
 harden(meta);
 
 /**

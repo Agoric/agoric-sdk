@@ -14,6 +14,7 @@ import {
   FeedPolicyShape,
 } from './type-guards.js';
 import { fromExternalConfig } from './utils/config-marshal.js';
+import { permit } from './fast-usdc.contract.meta.js';
 
 /**
  * @import {DepositFacet} from '@agoric/ertp/src/types.js'
@@ -252,43 +253,8 @@ export const getManifestForFastUSDC = (
 ) => {
   return {
     /** @type {BootstrapManifest} */
-    manifest: {
-      [startFastUSDC.name]: {
-        produce: {
-          fastUsdcKit: true,
-        },
-        consume: {
-          chainStorage: true,
-          chainTimerService: true,
-          localchain: true,
-          cosmosInterchainService: true,
-
-          // limited distribution durin MN2: contract installation
-          startUpgradable: true,
-          zoe: true, // only getTerms() is needed. XXX should be split?
-
-          // widely shared: name services
-          agoricNames: true,
-          namesByAddress: true,
-          board: true,
-        },
-        issuer: {
-          produce: { FastLP: true }, // UNTIL #10432
-        },
-        brand: {
-          produce: { FastLP: true }, // UNTIL #10432
-        },
-        instance: {
-          produce: { fastUsdc: true },
-        },
-        installation: {
-          consume: { fastUsdc: true },
-        },
-      },
-    },
-    installations: {
-      fastUsdc: restoreRef(installKeys.fastUsdc),
-    },
+    manifest: { [startFastUSDC.name]: permit },
+    installations: { [contractName]: restoreRef(installKeys[contractName]) },
     options,
   };
 };
