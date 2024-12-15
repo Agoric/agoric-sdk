@@ -7,14 +7,14 @@ import {
 import { Fail } from '@endo/errors';
 import { E } from '@endo/far';
 import { makeMarshal } from '@endo/marshal';
-import { M } from '@endo/patterns';
+import { M, mustMatch } from '@endo/patterns';
 import {
   FastUSDCTermsShape,
   FeeConfigShape,
   FeedPolicyShape,
 } from './type-guards.js';
 import { fromExternalConfig } from './utils/config-marshal.js';
-import { permit } from './fast-usdc.contract.meta.js';
+import { meta, permit } from './fast-usdc.contract.meta.js';
 
 /**
  * @import {DepositFacet} from '@agoric/ertp/src/types.js'
@@ -27,6 +27,8 @@ import { permit } from './fast-usdc.contract.meta.js';
  * @import {FastUsdcSF} from './fast-usdc.contract.js'
  * @import {FeedPolicy, FastUSDCConfig} from './types.js'
  */
+
+const { entries, fromEntries, keys, values } = Object; // XXX move up
 
 const trace = makeTracer('FUSD-Start', true);
 
@@ -91,6 +93,46 @@ const publishFeedPolicy = async (node, policy) => {
 };
 
 /**
+ * @param {string} role
+ * @param {ERef<BootstrapPowers['consume']['namesByAddress']>} namesByAddress
+ * @param {Record<string, string>} nameToAddress
+ */
+const makeAdminRole = (role, namesByAddress, nameToAddress) => {
+  const lookup = async () => {
+    trace('look up deposit facets for', role);
+    return deeplyFulfilledObject(
+      objectMap(nameToAddress, async address => {
+        /** @type {DepositFacet} */
+        const depositFacet = await E(namesByAddress).lookup(
+          address,
+          'depositFacet',
+        );
+        return depositFacet;
+      }),
+    );
+  };
+  const lookupP = lookup();
+
+  return harden({
+    lookup: () => lookupP,
+    /** @param {(addr: string) => Promise<Invitation>} makeInvitation */
+    send: async makeInvitation => {
+      const oracleDepositFacets = await lookupP;
+      await Promise.all(
+        entries(oracleDepositFacets).map(async ([name, depositFacet]) => {
+          const address = nameToAddress[name];
+          trace('making invitation for', role, name, address);
+          const toWatch = await makeInvitation(address);
+
+          const amt = await E(depositFacet).receive(toWatch);
+          trace('sent', amt, 'to', role, name);
+        }),
+      );
+    },
+  });
+};
+
+/**
  * @typedef { PromiseSpaceOf<{
  *   fastUsdcKit: FastUSDCKit
  *  }> & {
@@ -106,7 +148,7 @@ const publishFeedPolicy = async (node, policy) => {
  */
 
 /**
- * @throws if oracle smart wallets are not yet provisioned
+ * @throws if admin role smart wallets are not yet provisioned
  *
  * @param {BootstrapPowers & FastUSDCCorePowers } powers
  * @param {{ options: LegibleCapData<FastUSDCConfig> }} config
@@ -142,32 +184,25 @@ export const startFastUSDC = async (
 ) => {
   trace('startFastUSDC');
 
-  await null;
   /** @type {Issuer<'nat'>} */
   const USDCissuer = await E(agoricNames).lookup('issuer', 'USDC');
-  const brands = harden({
-    USDC: await E(USDCissuer).getBrand(),
-  });
-
-  const { terms, oracles, feeConfig, feedPolicy, ...net } = fromExternalConfig(
+  const xVatContext = await E(E(agoricNames).lookup('brand')).entries();
+  const internalConfig = fromExternalConfig(
     config.options,
-    brands,
+    xVatContext,
     FastUSDCConfigShape,
   );
+  const { terms, feeConfig, feedPolicy, ...net } = internalConfig;
   trace('using terms', terms);
   trace('using fee config', feeConfig);
 
-  trace('look up oracle deposit facets');
-  const oracleDepositFacets = await deeplyFulfilledObject(
-    objectMap(oracles, async address => {
-      /** @type {DepositFacet} */
-      const depositFacet = await E(namesByAddress).lookup(
-        address,
-        'depositFacet',
-      );
-      return depositFacet;
-    }),
-  );
+  const adminRoles = objectMap(meta?.adminRoles || {}, (_method, role) => {
+    const nameToAddress = internalConfig[role];
+    mustMatch(nameToAddress, M.recordOf(M.string(), M.string()));
+    return makeAdminRole(role, namesByAddress, nameToAddress);
+  });
+
+  await Promise.all(values(adminRoles).map(r => r.lookup()));
 
   const { storageNode, marshaller } = await makePublishingStorageKit(
     contractName,
@@ -214,16 +249,9 @@ export const startFastUSDC = async (
   produceShareBrand.resolve(shareBrand);
   await publishDisplayInfo(shareBrand, { board, chainStorage });
 
-  await Promise.all(
-    Object.entries(oracleDepositFacets).map(async ([name, depositFacet]) => {
-      const address = oracles[name];
-      trace('making invitation for', name, address);
-      const toWatch = await E(creatorFacet).makeOperatorInvitation(address);
-
-      const amt = await E(depositFacet).receive(toWatch);
-      trace('sent', amt, 'to', name);
-    }),
-  );
+  for (const [role, method] of entries(meta.adminRoles)) {
+    await adminRoles[role].send(addr => E(creatorFacet)[method](addr));
+  }
 
   produceInstance.reset();
   produceInstance.resolve(instance);

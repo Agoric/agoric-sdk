@@ -12,7 +12,7 @@ import { FastUSDCTermsShape, FeeConfigShape } from './type-guards.js';
  * @import {FastUsdcSF} from './fast-usdc.contract.js';
  */
 
-/** @type {ContractMeta<FastUsdcSF>} */
+/** @satisfies {ContractMeta<FastUsdcSF>} */
 export const meta = {
   // @ts-expect-error TypedPattern not recognized as record
   customTermsShape: FastUSDCTermsShape,
@@ -24,6 +24,9 @@ export const meta = {
     feeConfig: FeeConfigShape,
     marshaller: M.remotable(),
     poolMetricsNode: M.remotable(),
+  },
+  adminRoles: {
+    oracles: 'makeOperatorInvitation',
   },
 };
 harden(meta);
