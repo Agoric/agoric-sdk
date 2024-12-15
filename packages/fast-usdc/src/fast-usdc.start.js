@@ -14,7 +14,7 @@ import { meta, permit } from './fast-usdc.contract.meta.js';
  * @import {BootstrapManifest} from '@agoric/vats/src/core/lib-boot.js'
  * @import {LegibleCapData} from './utils/config-marshal.js'
  * @import {FastUsdcSF} from './fast-usdc.contract.js'
- * @import {FeedPolicy, FastUSDCConfig} from './types.js'
+ * @import {FeedPolicy, FastUSDCConfig as ContractConfig} from './types.js'
  */
 
 const { entries, fromEntries, keys, values } = Object; // XXX move up
@@ -130,7 +130,7 @@ const makeAdminRole = (role, namesByAddress, nameToAddress) => {
  * @throws if admin role smart wallets are not yet provisioned
  *
  * @param {BootstrapPowers & FastUSDCCorePowers } powers
- * @param {{ options: LegibleCapData<FastUSDCConfig> }} config
+ * @param {{ options: LegibleCapData<ContractConfig> }} config
  */
 export const startFastUSDC = async (
   {
@@ -258,7 +258,7 @@ harden(startFastUSDC);
  * }} utils
  * @param {{
  *   installKeys: { fastUsdc: ERef<ManifestBundleRef> };
- *   options: LegibleCapData<FastUSDCConfig>;
+ *   options: LegibleCapData<ContractConfig>;
  * }} param1
  */
 export const getManifestForFastUSDC = (
