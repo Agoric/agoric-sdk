@@ -167,25 +167,19 @@ export const startFastUSDC = async (
       startUpgradable,
       zoe,
     },
-    issuer: {
-      produce: { FastLP: produceShareIssuer },
-    },
-    brand: {
-      produce: { FastLP: produceShareBrand },
-    },
+    issuer: { produce: produceIssuer },
+    brand: { produce: produceBrand },
     installation: {
-      consume: { fastUsdc },
+      consume: { [contractName]: installation },
     },
     instance: {
-      produce: { fastUsdc: produceInstance },
+      produce: { [contractName]: produceInstance },
     },
   },
   config,
 ) => {
   trace('startFastUSDC');
 
-  /** @type {Issuer<'nat'>} */
-  const USDCissuer = await E(agoricNames).lookup('issuer', 'USDC');
   const xVatContext = await E(E(agoricNames).lookup('brand')).entries();
   const internalConfig = fromExternalConfig(
     config.options,
@@ -229,10 +223,16 @@ export const startFastUSDC = async (
     }),
   );
 
+  const permittedIssuers = keys(permit?.issuer?.consume || {});
+  const agoricIssuers = await E(E(agoricNames).lookup('issuer')).entries();
+  const issuerKeywordRecord = fromEntries(
+    agoricIssuers.filter(([n, _v]) => permittedIssuers.includes(n)),
+  );
+
   const kit = await E(startUpgradable)({
     label: contractName,
-    installation: fastUsdc,
-    issuerKeywordRecord: harden({ USDC: USDCissuer }),
+    installation,
+    issuerKeywordRecord,
     terms,
     privateArgs,
   });
@@ -241,13 +241,20 @@ export const startFastUSDC = async (
 
   await publishFeedPolicy(storageNode, feedPolicy);
 
-  const {
-    issuers: { PoolShares: shareIssuer },
-    brands: { PoolShares: shareBrand },
-  } = await E(zoe).getTerms(instance);
-  produceShareIssuer.resolve(shareIssuer);
-  produceShareBrand.resolve(shareBrand);
-  await publishDisplayInfo(shareBrand, { board, chainStorage });
+  const newIssuerNames = keys(permit?.issuer?.produce || {}).filter(
+    n => permit?.brand?.produce?.[n],
+  );
+  if (newIssuerNames.length > 0) {
+    const { issuers, brands } = await E(zoe).getTerms(instance);
+    for (const name of newIssuerNames) {
+      console.log('new well-known Issuer, Brand:', name);
+      produceIssuer[name].reset();
+      produceIssuer[name].resolve(issuers[name]);
+      produceBrand[name].reset();
+      produceBrand[name].resolve(brands[name]);
+      await publishDisplayInfo(brands[name], { board, chainStorage });
+    }
+  }
 
   for (const [role, method] of entries(meta.adminRoles)) {
     await adminRoles[role].send(addr => E(creatorFacet)[method](addr));

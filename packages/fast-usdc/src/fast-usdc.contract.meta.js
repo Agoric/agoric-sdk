@@ -56,6 +56,7 @@ export const permit = {
     board: true,
   },
   issuer: {
+    consume: { USDC: true },
     produce: { FastLP: true }, // UNTIL #10432
   },
   brand: {
