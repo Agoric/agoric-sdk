@@ -1,24 +1,13 @@
 import { deeplyFulfilledObject, makeTracer, objectMap } from '@agoric/internal';
-import {
-  CosmosChainInfoShape,
-  DenomDetailShape,
-  DenomShape,
-} from '@agoric/orchestration';
 import { Fail } from '@endo/errors';
 import { E } from '@endo/far';
 import { makeMarshal } from '@endo/marshal';
 import { M, mustMatch } from '@endo/patterns';
-import {
-  FastUSDCTermsShape,
-  FeeConfigShape,
-  FeedPolicyShape,
-} from './type-guards.js';
 import { fromExternalConfig } from './utils/config-marshal.js';
 import { meta, permit } from './fast-usdc.contract.meta.js';
 
 /**
  * @import {DepositFacet} from '@agoric/ertp/src/types.js'
- * @import {TypedPattern} from '@agoric/internal'
  * @import {Instance, StartParams} from '@agoric/zoe/src/zoeService/utils'
  * @import {Board} from '@agoric/vats'
  * @import {ManifestBundleRef} from '@agoric/deploy-script-support/src/externalTypes.js'
@@ -33,16 +22,6 @@ const { entries, fromEntries, keys, values } = Object; // XXX move up
 const trace = makeTracer('FUSD-Start', true);
 
 const contractName = 'fastUsdc';
-
-/** @type {TypedPattern<FastUSDCConfig>} */
-export const FastUSDCConfigShape = M.splitRecord({
-  terms: FastUSDCTermsShape,
-  oracles: M.recordOf(M.string(), M.string()),
-  feeConfig: FeeConfigShape,
-  feedPolicy: FeedPolicyShape,
-  chainInfo: M.recordOf(M.string(), CosmosChainInfoShape),
-  assetInfo: M.arrayOf([DenomShape, DenomDetailShape]),
-});
 
 /**
  * XXX Shouldn't the bridge or board vat handle this?
@@ -184,7 +163,7 @@ export const startFastUSDC = async (
   const internalConfig = fromExternalConfig(
     config.options,
     xVatContext,
-    FastUSDCConfigShape,
+    meta.deployConfigShape,
   );
   const { terms, feeConfig, feedPolicy, ...net } = internalConfig;
   trace('using terms', terms);

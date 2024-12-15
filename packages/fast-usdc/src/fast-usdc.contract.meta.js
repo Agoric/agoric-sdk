@@ -6,11 +6,28 @@ import {
   OrchestrationPowersShape,
 } from '@agoric/orchestration';
 import { M } from '@endo/patterns';
-import { FastUSDCTermsShape, FeeConfigShape } from './type-guards.js';
+import {
+  FastUSDCTermsShape,
+  FeeConfigShape,
+  FeedPolicyShape,
+} from './type-guards.js';
 
 /**
+ * @import {BootstrapManifestPermit} from '@agoric/vats/src/core/lib-boot.js';
+ * @import {TypedPattern} from '@agoric/internal'
  * @import {FastUsdcSF} from './fast-usdc.contract.js';
+ * @import {FastUSDCConfig} from './types.js'
  */
+
+/** @type {TypedPattern<FastUSDCConfig>} */
+export const FastUSDCConfigShape = M.splitRecord({
+  terms: FastUSDCTermsShape,
+  oracles: M.recordOf(M.string(), M.string()),
+  feeConfig: FeeConfigShape,
+  feedPolicy: FeedPolicyShape,
+  chainInfo: M.recordOf(M.string(), CosmosChainInfoShape),
+  assetInfo: M.arrayOf([DenomShape, DenomDetailShape]),
+});
 
 /** @satisfies {ContractMeta<FastUsdcSF>} */
 export const meta = {
@@ -25,15 +42,12 @@ export const meta = {
     marshaller: M.remotable(),
     poolMetricsNode: M.remotable(),
   },
+  deployConfigShape: FastUSDCConfigShape,
   adminRoles: {
     oracles: 'makeOperatorInvitation',
   },
 };
 harden(meta);
-
-/**
- * @import {BootstrapManifestPermit} from '@agoric/vats/src/core/lib-boot.js';
- */
 
 /** @satisfies {BootstrapManifestPermit} */
 export const permit = {
