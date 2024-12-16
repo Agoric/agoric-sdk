@@ -1,7 +1,8 @@
 {
     "consume": {
-      "reserveKit": true,
-      "namesByAddressAdmin": true,
-      "agoricNames": true
+      "contractKits": true,
+      "zoe": true,
+      "agoricNames": true,
+      "reserveKit": true
     }
 }

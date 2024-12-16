@@ -1,44 +1,58 @@
 // @ts-nocheck
 /* eslint-disable no-undef */
-const PROVISIONING_POOL_ADDR = 'agoric1megzytg65cyrgzs6fvzxgrcqvwwl7ugpt62346';
 
 const addCollateral = async powers => {
   const {
     consume: {
+      contractKits: contractKitsP,
       reserveKit: reserveKitP,
-      namesByAddressAdmin: namesByAddressAdminP,
+      zoe,
       agoricNames,
     },
   } = powers;
 
-  const namesByAddressAdmin = await namesByAddressAdminP;
+  const [contractKits, reserveKit, usdLemonsIssuer, usdLemonsBrand] =
+    await Promise.all([
+      contractKitsP,
+      reserveKitP,
+      E(agoricNames).lookup('issuer', 'USD_LEMONS'),
+      E(agoricNames).lookup('brand', 'USD_LEMONS'),
+    ]);
 
-  const getDepositFacet = async address => {
-    const hub = E(E(namesByAddressAdmin).lookupAdmin(address)).readonly();
-    return E(hub).lookup('depositFacet');
-  };
+  console.log('[CONTRACT_KITS]', contractKits);
+  console.log('[ISSUER]', usdLemonsIssuer);
 
-  const [reserveKit] = await Promise.all([reserveKitP]);
+  const { governorCreatorFacet } = reserveKit;
 
-  const { adminFacet, instance } = reserveKit;
+  const arPublicFacet = await E(governorCreatorFacet).getPublicFacet();
+  const arLimitedFacet = await E(governorCreatorFacet).getCreatorFacet();
 
   let usdLemonsMint;
   for (const { publicFacet, creatorFacet: mint } of contractKits.values()) {
     if (publicFacet === usdLemonsIssuer) {
       usdLemonsMint = mint;
-      console.log('BINGO', mint);
+      console.log('USD_LEMONS found', mint);
       break;
     }
   }
 
+  await E(arLimitedFacet).addIssuer(usdLemonsIssuer, 'USD_LEMONS');
+
   console.log('Minting USD_LEMONS');
-  const helloPayment = await E(usdLemonsMint).mintPayment(
-    harden({ brand: usdLemonsBrand, value: 500000n }),
+  const amt = harden({ brand: usdLemonsBrand, value: 500000n });
+  const helloPayment = await E(usdLemonsMint).mintPayment(amt);
+
+  console.log('Adding to the reserve...');
+
+  const seat = E(zoe).offer(
+    E(arPublicFacet).makeAddCollateralInvitation(),
+    harden({
+      give: { Collateral: amt },
+    }),
+    harden({ Collateral: helloPayment }),
   );
 
-  console.log('Funding provision pool...');
-  await E(ppDepositFacet).receive(helloPayment);
-
+  console.log(await E(seat).getOfferResult());
   console.log('Done.');
 };
 
