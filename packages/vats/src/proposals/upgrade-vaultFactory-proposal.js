@@ -1,3 +1,9 @@
+/**
+ * @file this core-eval proposal is a generic and reusable script for executing
+ *   a Vault Factory null upgrade. In contrast, upgrade-vaults.js is a specific
+ *   implementation tailored to the upgrade-18.
+ */
+
 import { E } from '@endo/far';
 import { makeTracer } from '@agoric/internal/src/index.js';
 import { makeNotifierFromAsyncIterable } from '@agoric/notifier';
