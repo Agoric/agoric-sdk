@@ -1,5 +1,6 @@
 // @ts-check
 /** global harden */
+import { makeSmartWalletKit, LOCAL_CONFIG } from '@agoric/client-utils';
 import { assert } from '@endo/errors';
 import { E, Far } from '@endo/far';
 import { Nat } from '@endo/nat';
@@ -432,6 +433,8 @@ const runCoreEval = async (
 };
 
 /**
+ * @deprecated use `@agoric/client-utils` instead
+ *
  * @param {typeof console.log} log
  * @param {import('@agoric/swingset-vat/tools/bundleTool.js').BundleCache} bundleCache
  * @param {object} io
@@ -535,10 +538,23 @@ export const makeE2ETools = async (
 
   const copyFiles = makeCopyFiles({ execFileSync, log });
 
+  /**
+   * @deprecated use `@agoric/client-utils` instead
+   */
   const vstorageClient = makeQueryKit(vstorage).query;
+
+  /** @type {import('@agoric/client-utils').SmartWalletKit} */
+  const smartWalletKit = await makeSmartWalletKit(
+    {
+      fetch,
+      delay,
+    },
+    LOCAL_CONFIG,
+  );
 
   return {
     vstorageClient,
+    smartWalletKit,
     installBundles,
     runCoreEval: buildAndRunCoreEval,
     /**
