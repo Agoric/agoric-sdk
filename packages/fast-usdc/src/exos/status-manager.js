@@ -109,7 +109,7 @@ export const prepareStatusManager = (
       sequence: true, // avoid overwriting other output in the block
     });
     void E(txNode).setValue(
-      JSON.stringify(pureDataMarshaller.toCapData(harden(record))),
+      JSON.stringify(pureDataMarshaller.toCapData(record)),
     );
   };
 
@@ -119,7 +119,10 @@ export const prepareStatusManager = (
    */
   const publishEvidence = (hash, evidence) => {
     // Don't await, just writing to vstorage.
-    void publishTxnRecord(hash, evidence);
+    void publishTxnRecord(
+      hash,
+      harden({ evidence, status: TxStatus.Observed }),
+    );
   };
 
   /**
@@ -128,7 +131,7 @@ export const prepareStatusManager = (
    */
   const publishStatus = (hash, status) => {
     // Don't await, just writing to vstorage.
-    void publishTxnRecord(hash, { status });
+    void publishTxnRecord(hash, harden({ status }));
     if (TerminalTxStatus[status]) {
       // UNTIL https://github.com/Agoric/agoric-sdk/issues/7405
       // Queue it for deletion later because if we deleted it now the earlier
@@ -160,7 +163,10 @@ export const prepareStatusManager = (
       harden({ ...evidence, status }),
     );
     publishEvidence(txHash, evidence);
-    publishStatus(txHash, status);
+    if (status !== PendingTxStatus.Observed) {
+      // publishEvidence publishes Observed
+      publishStatus(txHash, status);
+    }
   };
 
   /**

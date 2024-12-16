@@ -258,6 +258,16 @@ test.serial('makes usdc advance', async t => {
     );
   harness?.resetRunPolicy();
 
+  t.deepEqual(
+    storage
+      .getValues(`published.fastUsdc.txns.${evidence.txHash}`)
+      .map(defaultSerializer.parse),
+    [
+      { evidence, status: 'OBSERVED' }, // observation includes evidence observed
+      { status: 'ADVANCING' },
+    ],
+  );
+
   const doc = {
     node: `fastUsdc.txns`,
     owner: `the Ethereum transactions upon which Fast USDC is acting`,
