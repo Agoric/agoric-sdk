@@ -82,7 +82,6 @@ test.serial('upgrade', async t => {
 
   t.log(vatDetailsAfter);
   t.is(incarnation, 1, 'incorrect incarnation');
-  t.pass();
 
   const metrics = /** @type {ReserveAllocations} */ (
     await vstorageKit.readLatestHead('published.reserve.metrics')
