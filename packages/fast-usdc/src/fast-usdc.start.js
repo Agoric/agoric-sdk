@@ -117,7 +117,7 @@ const makeAdminRole = (role, namesByAddress, nameToAddress) => {
  */
 export const startFastUSDC = async (
   {
-    produce: { fastUsdcKit },
+    produce,
     consume: {
       agoricNames,
       namesByAddress,
@@ -197,7 +197,7 @@ export const startFastUSDC = async (
     terms,
     privateArgs,
   });
-  fastUsdcKit.resolve(harden({ ...kit, privateArgs }));
+  produce[`${contractName}Kit`].resolve(harden({ ...kit, privateArgs }));
   const { instance, creatorFacet } = kit;
 
   await publishFeedPolicy(storageNode, feedPolicy);
