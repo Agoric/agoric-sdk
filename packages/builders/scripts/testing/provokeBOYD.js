@@ -1,6 +1,11 @@
 /**
- * @file call getTimerBrand() 300 times in hopes of provoking BOYD.
+ * @file call getTimerBrand() 300 times in hopes of provoking BOYD. This is
+ * intended for tests on mainFork for upgrade-18. If there's a similar need in
+ * other tests, it can be included there as well. There would be no value in
+ * including it in an upgrade of MainNet; it just spins cycles to provoke
+ * garbage collection.
  */
+
 import { makeTracer } from '@agoric/internal';
 import { E } from '@endo/far';
 
