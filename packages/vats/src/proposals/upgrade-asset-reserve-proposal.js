@@ -53,8 +53,8 @@ export const upgradeAssetReserve = async (
 
   const adminFacet = await E(governorCreatorFacet).getAdminFacet();
 
-  // We need to reset the kit and produce a new adminFacet because the 
-  // original contract is producing an admin facet that is for the 
+  // We need to reset the kit and produce a new adminFacet because the
+  // original contract is producing an admin facet that is for the
   // governor, not the reserve.
   reserveKitWriter.reset();
   reserveKitWriter.resolve(
