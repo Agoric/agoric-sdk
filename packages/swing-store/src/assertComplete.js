@@ -1,5 +1,5 @@
 /**
- * @param {import('./internal.js').SwingStoreInternal} internal
+ * @param {Pick<import('./internal.js').SwingStoreInternal, 'bundleStore' | 'transcriptStore' | 'snapStore'>} internal
  * @param {Exclude<import('./internal.js').ArtifactMode, 'debug'>} checkMode
  * @returns {void}
  */
