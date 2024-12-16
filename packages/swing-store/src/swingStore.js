@@ -145,11 +145,26 @@ import { doRepairMetadata } from './repairMetadata.js';
  * @returns {SwingStore}
  */
 export function makeSwingStore(dirPath, forceReset, options = {}) {
-  const { serialized } = options;
+  const {
+    serialized,
+    unsafeFastMode,
+
+    traceFile,
+    keepSnapshots,
+    keepTranscripts,
+    archiveSnapshot,
+    archiveTranscript,
+    exportCallback,
+  } = options;
+
   if (serialized) {
     Buffer.isBuffer(serialized) || Fail`options.serialized must be Buffer`;
     dirPath === null || Fail`options.serialized makes :memory: DB`;
   }
+  exportCallback === undefined ||
+    typeof exportCallback === 'function' ||
+    Fail`export callback must be a function`;
+
   let crankhasher;
   function resetCrankhash() {
     crankhasher = createSHA256();
@@ -180,14 +195,6 @@ export function makeSwingStore(dirPath, forceReset, options = {}) {
   } else {
     filePath = ':memory:';
   }
-
-  const {
-    traceFile,
-    keepSnapshots,
-    keepTranscripts,
-    archiveSnapshot,
-    archiveTranscript,
-  } = options;
 
   let traceOutput = traceFile
     ? fs.createWriteStream(path.resolve(traceFile), {
@@ -243,7 +250,7 @@ export function makeSwingStore(dirPath, forceReset, options = {}) {
   }
 
   // PRAGMAs have to happen outside a transaction
-  setUnsafeFastMode(options.unsafeFastMode);
+  setUnsafeFastMode(unsafeFastMode);
 
   // We use IMMEDIATE because the kernel is supposed to be the sole writer of
   // the DB, and if some other process is holding a write lock, we want to find
@@ -285,11 +292,6 @@ export function makeSwingStore(dirPath, forceReset, options = {}) {
       PRIMARY KEY (key)
     )
   `);
-
-  const { exportCallback } = options;
-  exportCallback === undefined ||
-    typeof exportCallback === 'function' ||
-    Fail`export callback must be a function`;
 
   const sqlAddPendingExport = db.prepare(`
     INSERT INTO pendingExports (key, value)
