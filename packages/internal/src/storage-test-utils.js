@@ -35,6 +35,16 @@ export const defaultMarshaller = makeMarshal(undefined, slotToRemotable, {
 });
 
 /**
+ * Serialize/deserialize functions using {@link defaultMarshaller}
+ */
+export const defaultSerializer = {
+  /** @type {(text: string) => unknown} */
+  parse: txt => defaultMarshaller.fromCapData(JSON.parse(txt)),
+  /** @type {(obj: any) => string} */
+  stringify: obj => JSON.stringify(defaultMarshaller.toCapData(obj)),
+};
+
+/**
  * A deserializer which produces slot strings instead of Remotables, so if `a =
  * Far('iface')`, and serializing `{ a }` into `capData` assigned it slot
  * `board123`, then `slotStringUnserialize(capData)` would produce `{ a:
