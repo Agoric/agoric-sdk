@@ -3,8 +3,8 @@ import { Fail } from '@endo/errors';
 import { E } from '@endo/far';
 import { makeMarshal } from '@endo/marshal';
 import { M, mustMatch } from '@endo/patterns';
+import { makePrivateArgs, meta, permit } from './fast-usdc.contract.meta.js';
 import { fromExternalConfig } from './utils/config-marshal.js';
-import { meta, permit } from './fast-usdc.contract.meta.js';
 
 /**
  * @import {DepositFacet} from '@agoric/ertp/src/types.js'
@@ -60,7 +60,6 @@ const publishDisplayInfo = async (brand, { board, chainStorage }) => {
 };
 
 const FEED_POLICY = 'feedPolicy';
-const POOL_METRICS = 'poolMetrics';
 
 /**
  * @param {ERef<StorageNode>} node
@@ -165,9 +164,8 @@ export const startFastUSDC = async (
     xVatContext,
     meta.deployConfigShape,
   );
-  const { terms, feeConfig, feedPolicy, ...net } = internalConfig;
+  const { terms, feedPolicy, ...net } = internalConfig;
   trace('using terms', terms);
-  trace('using fee config', feeConfig);
 
   const adminRoles = objectMap(meta?.adminRoles || {}, (_method, role) => {
     const nameToAddress = internalConfig[role];
@@ -185,21 +183,21 @@ export const startFastUSDC = async (
       chainStorage,
     },
   );
-  const poolMetricsNode = await E(storageNode).makeChildNode(POOL_METRICS);
 
-  const privateArgs = await deeplyFulfilledObject(
+  const orchestrationPowers = await deeplyFulfilledObject(
     harden({
-      agoricNames,
-      feeConfig,
       localchain,
       orchestrationService: cosmosInterchainService,
-      poolMetricsNode,
       storageNode,
       timerService,
-      marshaller,
-      chainInfo: net.chainInfo,
-      assetInfo: net.assetInfo,
+      agoricNames,
     }),
+  );
+  const privateArgs = await makePrivateArgs(
+    orchestrationPowers,
+    marshaller,
+    internalConfig,
+    trace,
   );
 
   const permittedIssuers = keys(permit?.issuer?.consume || {});

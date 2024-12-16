@@ -5,6 +5,7 @@ import {
   DenomShape,
   OrchestrationPowersShape,
 } from '@agoric/orchestration';
+import { E } from '@endo/far';
 import { M } from '@endo/patterns';
 import {
   FastUSDCTermsShape,
@@ -15,6 +16,8 @@ import {
 /**
  * @import {BootstrapManifestPermit} from '@agoric/vats/src/core/lib-boot.js';
  * @import {TypedPattern} from '@agoric/internal'
+ * @import {Marshaller} from '@agoric/internal/src/lib-chainStorage.js'
+ * @import {OrchestrationPowers} from '@agoric/orchestration';
  * @import {FastUsdcSF} from './fast-usdc.contract.js';
  * @import {FastUSDCConfig} from './types.js'
  */
@@ -86,3 +89,67 @@ export const permit = {
   },
 };
 harden(permit);
+
+const POOL_METRICS = 'poolMetrics';
+
+/**
+ *
+ * @param {OrchestrationPowers} orchestrationPowers
+ * @param {Marshaller} marshaller
+ * @param {FastUSDCConfig} config
+ * @param {(...args: any[]) => void} trace
+ * @returns {Promise<Parameters<FastUsdcSF>['1']>}
+ */
+export const makePrivateArgs = async (
+  orchestrationPowers,
+  marshaller,
+  config,
+  trace,
+) => {
+  const { storageNode } = orchestrationPowers;
+  const poolMetricsNode = await E(storageNode).makeChildNode(POOL_METRICS);
+  const { feeConfig } = config;
+  trace('using fee config', feeConfig);
+
+  return harden({
+    ...orchestrationPowers,
+    feeConfig,
+    poolMetricsNode,
+    marshaller,
+    chainInfo: config.chainInfo,
+    assetInfo: config.assetInfo,
+  });
+};
+harden(makePrivateArgs);
+
+const { fromEntries, keys } = Object;
+
+/**
+ * possible generic form of makePrivateArgs
+ *
+ * TODO: figure out type safety
+ *
+ * @param {OrchestrationPowers} orchestrationPowers
+ * @param {import('@endo/pass-style').CopyRecord} internalConfig
+ */
+export const customPrivateArgs = (orchestrationPowers, internalConfig) => {
+  const extraNodeKeys = keys(meta.privateArgsShape).filter(
+    prop => prop !== 'storageNode' && prop.endsWith('Node'),
+  );
+  const { storageNode } = orchestrationPowers;
+  const extraNodeArgs = fromEntries(
+    extraNodeKeys.map(key => [
+      key,
+      E(storageNode).makeChildNode(key.slice(0, -'Node'.length)),
+    ]),
+  );
+  const configKeys = keys(meta.privateArgsShape).filter(
+    key =>
+      key in internalConfig &&
+      !(key in orchestrationPowers || key in extraNodeArgs),
+  );
+  const configArgs = fromEntries(
+    configKeys.map(key => [key, internalConfig[key]]),
+  );
+  return harden({ ...extraNodeArgs, ...configArgs });
+};
