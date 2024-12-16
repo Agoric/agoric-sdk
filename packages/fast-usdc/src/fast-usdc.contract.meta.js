@@ -14,6 +14,7 @@ import {
 } from './type-guards.js';
 
 /**
+ * @import {Instance, StartParams} from '@agoric/zoe/src/zoeService/utils'
  * @import {BootstrapManifestPermit} from '@agoric/vats/src/core/lib-boot.js';
  * @import {TypedPattern} from '@agoric/internal'
  * @import {Marshaller} from '@agoric/internal/src/lib-chainStorage.js'
@@ -53,6 +54,21 @@ export const meta = /** @type {const} */ ({
   },
 });
 harden(meta);
+
+/**
+ * @typedef { PromiseSpaceOf<{
+ *   fastUsdcKit: FastUSDCKit
+ *  }> & {
+ *   installation: PromiseSpaceOf<{ fastUsdc: Installation<FastUsdcSF> }>;
+ *   instance: PromiseSpaceOf<{ fastUsdc: Instance<FastUsdcSF> }>;
+ *   issuer: PromiseSpaceOf<{ FastLP: Issuer }>;
+ *   brand: PromiseSpaceOf<{ FastLP: Brand }>;
+ * }} FastUSDCCorePowers
+ *
+ * @typedef {StartedInstanceKitWithLabel & {
+ *   privateArgs: StartParams<FastUsdcSF>['privateArgs'];
+ * }} FastUSDCKit
+ */
 
 /** @satisfies {BootstrapManifestPermit} */
 export const permit = {

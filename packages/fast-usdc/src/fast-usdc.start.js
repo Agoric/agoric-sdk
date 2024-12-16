@@ -8,13 +8,12 @@ import { fromExternalConfig } from './utils/config-marshal.js';
 
 /**
  * @import {DepositFacet} from '@agoric/ertp/src/types.js'
- * @import {Instance, StartParams} from '@agoric/zoe/src/zoeService/utils'
  * @import {Board} from '@agoric/vats'
  * @import {ManifestBundleRef} from '@agoric/deploy-script-support/src/externalTypes.js'
  * @import {BootstrapManifest} from '@agoric/vats/src/core/lib-boot.js'
  * @import {LegibleCapData} from './utils/config-marshal.js'
- * @import {FastUsdcSF} from './fast-usdc.contract.js'
  * @import {FeedPolicy, FastUSDCConfig as ContractConfig} from './types.js'
+ * @import {FastUSDCCorePowers as CorePowers} from './fast-usdc.contract.meta.js';
  */
 
 const { entries, fromEntries, keys, values } = Object; // XXX move up
@@ -111,24 +110,9 @@ const makeAdminRole = (role, namesByAddress, nameToAddress) => {
 };
 
 /**
- * @typedef { PromiseSpaceOf<{
- *   fastUsdcKit: FastUSDCKit
- *  }> & {
- *   installation: PromiseSpaceOf<{ fastUsdc: Installation<FastUsdcSF> }>;
- *   instance: PromiseSpaceOf<{ fastUsdc: Instance<FastUsdcSF> }>;
- *   issuer: PromiseSpaceOf<{ FastLP: Issuer }>;
- *   brand: PromiseSpaceOf<{ FastLP: Brand }>;
- * }} FastUSDCCorePowers
- *
- * @typedef {StartedInstanceKitWithLabel & {
- *   privateArgs: StartParams<FastUsdcSF>['privateArgs'];
- * }} FastUSDCKit
- */
-
-/**
  * @throws if admin role smart wallets are not yet provisioned
  *
- * @param {BootstrapPowers & FastUSDCCorePowers } powers
+ * @param {BootstrapPowers & CorePowers } powers
  * @param {{ options: LegibleCapData<ContractConfig> }} config
  */
 export const startFastUSDC = async (
