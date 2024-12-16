@@ -115,7 +115,7 @@ const makeAdminRole = (role, namesByAddress, nameToAddress) => {
  * @param {BootstrapPowers & CorePowers } powers
  * @param {{ options: LegibleCapData<ContractConfig> }} config
  */
-export const startFastUSDC = async (
+export const startOrchContract = async (
   {
     produce,
     consume: {
@@ -140,7 +140,7 @@ export const startFastUSDC = async (
   },
   config,
 ) => {
-  trace('startFastUSDC');
+  trace('startOrchContract');
 
   const xVatContext = await E(E(agoricNames).lookup('brand')).entries();
   const internalConfig = fromExternalConfig(
@@ -230,9 +230,9 @@ export const startFastUSDC = async (
     const addr = await E(creatorFacet).connectToNoble();
     trace('noble intermediate recipient', addr);
   }
-  trace('startFastUSDC done', instance);
+  trace('startOrchContract done', instance);
 };
-harden(startFastUSDC);
+harden(startOrchContract);
 
 /**
  * @param {{
@@ -249,7 +249,7 @@ export const getManifestForFastUSDC = (
 ) => {
   return {
     /** @type {BootstrapManifest} */
-    manifest: { [startFastUSDC.name]: permit },
+    manifest: { [startOrchContract.name]: permit },
     installations: { [contractName]: restoreRef(installKeys[contractName]) },
     options,
   };
