@@ -66,7 +66,7 @@ GH_URL="${GITHUB_SERVER_URL:-https://github.com}"
 GH_REPO="${GITHUB_REPOSITORY:-Agoric/agoric-sdk}"
 # gh_repo_curl /path/to/repo_resource
 gh_repo_curl() {
-  curl -sSL \
+  curl -sSLf \
     -H 'Accept: application/vnd.github+json' \
     -H 'X-GitHub-Api-Version: 2022-11-28' \
     "${GH_API}/repos/${GH_REPO}$1"
