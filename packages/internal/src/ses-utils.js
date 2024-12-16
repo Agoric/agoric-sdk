@@ -5,14 +5,21 @@
  *   either directly or indirectly (e.g. by @endo imports).
  */
 
+import { objectMap } from '@endo/common/object-map.js';
+import { objectMetaMap } from '@endo/common/object-meta-map.js';
+import { fromUniqueEntries } from '@endo/common/from-unique-entries.js';
 import { q, Fail, makeError, annotateError, X } from '@endo/errors';
 import { deeplyFulfilled, isObject } from '@endo/marshal';
 import { makePromiseKit } from '@endo/promise-kit';
 import { makeQueue } from '@endo/stream';
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore TS7016 The 'jessie.js' library may need to update its package.json or typings
 import { asyncGenerate } from 'jessie.js';
 import { logLevels } from './js-utils.js';
 
 /** @import {LimitedConsole} from './js-utils.js'; */
+
+export { objectMap, objectMetaMap, fromUniqueEntries };
 
 const { fromEntries, keys, values } = Object;
 
@@ -173,6 +180,28 @@ export const assertAllDefined = obj => {
   if (missing.length > 0) {
     Fail`missing ${q(missing)}`;
   }
+};
+
+/**
+ * @template {Record<PropertyKey, unknown>} T
+ * @template {Partial<{ [K in keyof T]: true }>} U
+ * @param {T} target
+ * @param {U} [permits]
+ * @returns {keyof U extends keyof T ? Pick<T, keyof U> : never}
+ */
+export const pick = (
+  target,
+  permits = /** @type {U} */ (objectMap(target, () => true)),
+) => {
+  const attenuation = objectMap(permits, (permit, key) => {
+    permit === true || Fail`internal: ${q(key)} permit must be true`;
+    // eslint-disable-next-line no-restricted-syntax
+    key in target || Fail`internal: target is missing ${q(key)}`;
+    // eslint-disable-next-line no-restricted-syntax
+    return target[key];
+  });
+  // @ts-expect-error cast
+  return attenuation;
 };
 
 /** @type {IteratorResult<undefined, never>} */
