@@ -14,13 +14,13 @@ import {
 } from './type-guards.js';
 
 /**
- * @import {Instance, StartParams} from '@agoric/zoe/src/zoeService/utils'
+ * @import {StartParams} from '@agoric/zoe/src/zoeService/utils'
  * @import {BootstrapManifestPermit} from '@agoric/vats/src/core/lib-boot.js';
- * @import {TypedPattern} from '@agoric/internal'
+ * @import {TypedPattern, Remote} from '@agoric/internal'
  * @import {Marshaller} from '@agoric/internal/src/lib-chainStorage.js'
  * @import {OrchestrationPowers} from '@agoric/orchestration';
  * @import {FastUsdcSF} from './fast-usdc.contract.js';
- * @import {FastUSDCConfig} from './types.js'
+ * @import {FeedPolicy, FastUSDCConfig} from './types.js'
  */
 
 /** @type {TypedPattern<FastUSDCConfig>} */
@@ -55,23 +55,8 @@ export const meta = /** @type {const} */ ({
 });
 harden(meta);
 
-/**
- * @typedef { PromiseSpaceOf<{
- *   fastUsdcKit: FastUSDCKit
- *  }> & {
- *   installation: PromiseSpaceOf<{ fastUsdc: Installation<FastUsdcSF> }>;
- *   instance: PromiseSpaceOf<{ fastUsdc: Instance<FastUsdcSF> }>;
- *   issuer: PromiseSpaceOf<{ FastLP: Issuer }>;
- *   brand: PromiseSpaceOf<{ FastLP: Brand }>;
- * }} FastUSDCCorePowers
- *
- * @typedef {StartedInstanceKitWithLabel & {
- *   privateArgs: StartParams<FastUsdcSF>['privateArgs'];
- * }} FastUSDCKit
- */
-
 /** @satisfies {BootstrapManifestPermit} */
-export const permit = {
+export const permit = /** @type {const} */ ({
   produce: {
     fastUsdcKit: true,
   },
@@ -103,7 +88,7 @@ export const permit = {
   installation: {
     consume: { fastUsdc: true },
   },
-};
+});
 harden(permit);
 
 const POOL_METRICS = 'poolMetrics';
@@ -114,7 +99,7 @@ const POOL_METRICS = 'poolMetrics';
  * @param {Marshaller} marshaller
  * @param {FastUSDCConfig} config
  * @param {(...args: any[]) => void} trace
- * @returns {Promise<Parameters<FastUsdcSF>['1']>}
+ * @returns {Promise<StartParams<FastUsdcSF>['privateArgs']>}
  */
 export const makePrivateArgs = async (
   orchestrationPowers,
@@ -137,3 +122,35 @@ export const makePrivateArgs = async (
   });
 };
 harden(makePrivateArgs);
+
+const FEED_POLICY = 'feedPolicy';
+
+/**
+ * @param {Remote<StorageNode>} node
+ * @param {FeedPolicy} policy
+ */
+const publishFeedPolicy = async (node, policy) => {
+  const feedPolicy = E(node).makeChildNode(FEED_POLICY);
+  await E(feedPolicy).setValue(JSON.stringify(policy));
+};
+
+/**
+ * @param {FastUSDCConfig} config
+ * @param {StartedInstanceKit<FastUsdcSF> &
+ *  { privateArgs: StartParams<FastUsdcSF>['privateArgs'] }
+ * } kit
+ * @param {(...args: any[]) => void} trace
+ */
+export const finishDeploy = async (config, kit, trace) => {
+  const { storageNode } = kit.privateArgs;
+  const { feedPolicy } = config;
+  await publishFeedPolicy(storageNode, feedPolicy);
+
+  const { creatorFacet } = kit;
+  const addresses = await E(creatorFacet).publishAddresses();
+  trace('contract orch account addresses', addresses);
+  if (!config.noNoble) {
+    const addr = await E(creatorFacet).connectToNoble();
+    trace('noble intermediate recipient', addr);
+  }
+};

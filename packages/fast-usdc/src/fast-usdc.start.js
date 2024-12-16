@@ -3,22 +3,31 @@ import { Fail } from '@endo/errors';
 import { E } from '@endo/far';
 import { makeMarshal } from '@endo/marshal';
 import { M, mustMatch } from '@endo/patterns';
-import { makePrivateArgs, meta, permit } from './fast-usdc.contract.meta.js';
+import {
+  finishDeploy,
+  makePrivateArgs,
+  meta,
+  permit,
+} from './fast-usdc.contract.meta.js';
 import { fromExternalConfig } from './utils/config-marshal.js';
 
 /**
+ * @import {Instance, StartParams, StartedInstanceKit} from '@agoric/zoe/src/zoeService/utils'
  * @import {DepositFacet} from '@agoric/ertp/src/types.js'
  * @import {Board} from '@agoric/vats'
  * @import {ManifestBundleRef} from '@agoric/deploy-script-support/src/externalTypes.js'
  * @import {BootstrapManifest} from '@agoric/vats/src/core/lib-boot.js'
  * @import {LegibleCapData} from './utils/config-marshal.js'
- * @import {FeedPolicy, FastUSDCConfig as ContractConfig} from './types.js'
- * @import {FastUSDCCorePowers as CorePowers} from './fast-usdc.contract.meta.js';
+ *
+ * TODO: re-export these from .meta with generic names
+ * @import {FastUSDCConfig as ContractConfig} from './types.js'
+ * @import {FastUsdcSF as TheSF} from './fast-usdc.contract.js';
  */
 
 const { entries, fromEntries, keys, values } = Object; // XXX move up
 
 const contractName = meta.name;
+/** @typedef {typeof meta.name} TheContractName */
 
 const trace = makeTracer(`${meta.abbr}-Start`, true);
 
@@ -56,17 +65,6 @@ const publishDisplayInfo = async (brand, { board, chainStorage }) => {
   const node = E(boardAux).makeChildNode(id);
   const aux = marshalData.toCapData(harden({ allegedName, displayInfo }));
   await E(node).setValue(JSON.stringify(aux));
-};
-
-const FEED_POLICY = 'feedPolicy';
-
-/**
- * @param {ERef<StorageNode>} node
- * @param {FeedPolicy} policy
- */
-const publishFeedPolicy = async (node, policy) => {
-  const feedPolicy = E(node).makeChildNode(FEED_POLICY);
-  await E(feedPolicy).setValue(JSON.stringify(policy));
 };
 
 /**
@@ -110,9 +108,24 @@ const makeAdminRole = (role, namesByAddress, nameToAddress) => {
 };
 
 /**
+ * @typedef { typeof permit.issuer.produce } PermittedIssuers
+ * @typedef { PromiseSpaceOf<Record<`${TheContractName}Kit`, TheContractKit>> & {
+ *   installation: PromiseSpaceOf<Record<TheContractName, Installation<TheSF>>>;
+ *   instance: PromiseSpaceOf<Record<TheContractName, Instance<TheSF>>>;
+ *   issuer: PromiseSpaceOf<Record<keyof typeof permit.issuer.produce, Issuer>>;
+ *   brand: PromiseSpaceOf<Record<keyof typeof permit.brand.produce, Brand>>;
+ * }} ExtraCorePowers
+ *
+ * @typedef {StartedInstanceKit<TheSF> & {
+ *   label: string,
+ *   privateArgs: StartParams<TheSF>['privateArgs'];
+ * }} TheContractKit
+ */
+
+/**
  * @throws if admin role smart wallets are not yet provisioned
  *
- * @param {BootstrapPowers & CorePowers } powers
+ * @param {BootstrapPowers & ExtraCorePowers } powers
  * @param {{ options: LegibleCapData<ContractConfig> }} config
  */
 export const startOrchContract = async (
@@ -148,7 +161,7 @@ export const startOrchContract = async (
     xVatContext,
     meta.deployConfigShape,
   );
-  const { terms, feedPolicy, ...net } = internalConfig;
+  const { terms } = internalConfig;
   trace('using terms', terms);
 
   const adminRoles = objectMap(meta?.adminRoles || {}, (_method, role) => {
@@ -197,10 +210,10 @@ export const startOrchContract = async (
     terms,
     privateArgs,
   });
-  produce[`${contractName}Kit`].resolve(harden({ ...kit, privateArgs }));
   const { instance, creatorFacet } = kit;
-
-  await publishFeedPolicy(storageNode, feedPolicy);
+  /** @type {TheContractKit} */
+  const fullKit = harden({ ...kit, privateArgs });
+  produce[`${contractName}Kit`].resolve(fullKit);
 
   const newIssuerNames = keys(permit?.issuer?.produce || {}).filter(
     n => permit?.brand?.produce?.[n],
@@ -221,15 +234,11 @@ export const startOrchContract = async (
     await adminRoles[role].send(addr => E(creatorFacet)[method](addr));
   }
 
+  await finishDeploy(internalConfig, fullKit, trace);
+
   produceInstance.reset();
   produceInstance.resolve(instance);
 
-  const addresses = await E(creatorFacet).publishAddresses();
-  trace('contract orch account addresses', addresses);
-  if (!net.noNoble) {
-    const addr = await E(creatorFacet).connectToNoble();
-    trace('noble intermediate recipient', addr);
-  }
   trace('startOrchContract done', instance);
 };
 harden(startOrchContract);
@@ -239,10 +248,11 @@ harden(startOrchContract);
  *   restoreRef: (b: ERef<ManifestBundleRef>) => Promise<Installation>;
  * }} utils
  * @param {{
- *   installKeys: { fastUsdc: ERef<ManifestBundleRef> };
+ *   installKeys: Record<TheContractName, ERef<ManifestBundleRef>>;
  *   options: LegibleCapData<ContractConfig>;
  * }} param1
  */
+// TODO: rename to getManifestForOrchContract
 export const getManifestForFastUSDC = (
   { restoreRef },
   { installKeys, options },
