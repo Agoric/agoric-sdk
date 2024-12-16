@@ -271,6 +271,7 @@ test.serial('makes usdc advance', async t => {
   const doc = {
     node: `fastUsdc.txns`,
     owner: `the Ethereum transactions upon which Fast USDC is acting`,
+    showValue: defaultSerializer.parse,
   };
   await documentStorageSchema(t, storage, doc);
 });

@@ -13,8 +13,7 @@ import { PendingTxStatus, TerminalTxStatus, TxStatus } from '../constants.js';
 /**
  * @import {MapStore, SetStore} from '@agoric/store';
  * @import {Zone} from '@agoric/zone';
- * @import {CctpTxEvidence, NobleAddress, PendingTx, EvmHash, LogFn} from '../types.js';
- * @import {CopyRecord} from '@endo/pass-style';
+ * @import {CctpTxEvidence, NobleAddress, PendingTx, EvmHash, LogFn, TransactionRecord} from '../types.js';
  */
 
 /**
@@ -102,7 +101,7 @@ export const prepareStatusManager = (
 
   /**
    * @param {EvmHash} txId
-   * @param {CopyRecord} record
+   * @param {TransactionRecord} record
    */
   const publishTxnRecord = (txId, record) => {
     const txNode = E(txnsNode).makeChildNode(txId, {
