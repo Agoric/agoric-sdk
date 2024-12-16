@@ -106,7 +106,7 @@ export const makeTimerUtils = ({ setTimeout }) => {
 const getIncarnationFromDetails = async vatName => {
   const matchingVats = await getDetailsMatchingVats(vatName);
   const expectedVat = matchingVats.find(vat => vat.vatName === vatName);
-  console.log('Vat: ', expectedVat);
+  assert(expectedVat, `No matching Vat was found for ${vatName}`);
   return expectedVat.incarnation;
 };
 

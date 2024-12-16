@@ -1,5 +1,14 @@
-/** @file copied from packages/agoric-cli */
-// TODO DRY in https://github.com/Agoric/agoric-sdk/issues/9109
+/**
+ * @file This file implements methods currently available in
+ * packages/client-utils .
+ *
+ * With the exceptions of:
+ * - makeVstorage and mapHistory: copied from `multichain-testing/tools/batchQuery.js`.
+ * - makeAPI: copied from `multichain-testing/tools/makeHttpClient.js`.
+ *
+ * These modifications were made to address the issue described in #10574.
+ */
+
 // @ts-check
 
 import {

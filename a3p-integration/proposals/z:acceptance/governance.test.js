@@ -190,7 +190,7 @@ test.serial(
 
 test.serial('Governance proposals history is visible', async t => {
   /*
-   * List ordered from most recent to latest of Economic Committee
+   * List ordered from most recent to earliest of Economic Committee
    * parameter changes proposed prior to the execution of this test.
    *
    * XXX a dynamic solution should replace this hardcoded list to ensure
