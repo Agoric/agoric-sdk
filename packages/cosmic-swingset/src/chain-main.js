@@ -47,7 +47,7 @@ import {
   makeReadCachingStorage,
 } from './helpers/bufferedStorage.js';
 import stringify from './helpers/json-stable-stringify.js';
-import { launch } from './launch-chain.js';
+import { launch, launchAndShareInternals } from './launch-chain.js';
 import { makeProcessValue } from './helpers/process-value.js';
 import {
   spawnSwingStoreExport,
@@ -228,6 +228,7 @@ export const makeQueueStorage = (call, queuePath) => {
  *   slogSender?: ERef<EReturn<typeof makeSlogSender>>,
  *   swingStore?: import('@agoric/swing-store').SwingStore,
  *   vatconfig?: Parameters<typeof launch>[0]['vatconfig'],
+ *   withInternals?: boolean,
  * }} [options.testingOverrides]
  */
 export const makeLaunchChain = (
@@ -523,7 +524,10 @@ export const makeLaunchChain = (
       ? makeArchiveTranscript(vatTranscriptArchiveDir, fsPowers)
       : undefined;
 
-    const s = await launch({
+    const launcher = testingOverrides.withInternals
+      ? launchAndShareInternals
+      : launch;
+    const s = await launcher({
       actionQueueStorage,
       highPriorityQueueStorage,
       swingStore: testingOverrides.swingStore,
