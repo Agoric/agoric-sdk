@@ -121,35 +121,3 @@ export const makePrivateArgs = async (
   });
 };
 harden(makePrivateArgs);
-
-const { fromEntries, keys } = Object;
-
-/**
- * possible generic form of makePrivateArgs
- *
- * TODO: figure out type safety
- *
- * @param {OrchestrationPowers} orchestrationPowers
- * @param {import('@endo/pass-style').CopyRecord} internalConfig
- */
-export const customPrivateArgs = (orchestrationPowers, internalConfig) => {
-  const extraNodeKeys = keys(meta.privateArgsShape).filter(
-    prop => prop !== 'storageNode' && prop.endsWith('Node'),
-  );
-  const { storageNode } = orchestrationPowers;
-  const extraNodeArgs = fromEntries(
-    extraNodeKeys.map(key => [
-      key,
-      E(storageNode).makeChildNode(key.slice(0, -'Node'.length)),
-    ]),
-  );
-  const configKeys = keys(meta.privateArgsShape).filter(
-    key =>
-      key in internalConfig &&
-      !(key in orchestrationPowers || key in extraNodeArgs),
-  );
-  const configArgs = fromEntries(
-    configKeys.map(key => [key, internalConfig[key]]),
-  );
-  return harden({ ...extraNodeArgs, ...configArgs });
-};
