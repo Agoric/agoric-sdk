@@ -57,37 +57,42 @@ export const meta = /** @type {const} */ ({
 harden(meta);
 
 /** @satisfies {BootstrapManifestPermit} */
+const orchPermit = /** @type {const} */ ({
+  localchain: true,
+  cosmosInterchainService: true,
+  chainStorage: true,
+  chainTimerService: true,
+  agoricNames: true,
+
+  // for publishing Brands and other remote object references
+  board: true,
+
+  // limited distribution durin MN2: contract installation
+  startUpgradable: true,
+  zoe: true, // only getTerms() is needed. XXX should be split?
+});
+
+/**
+ * to find deposit facets for admin invitations
+ *
+ * @satisfies {BootstrapManifestPermit}
+ */
+const adminPermit = /** @type {const} */ ({
+  namesByAddress: true,
+});
+
+/** @satisfies {BootstrapManifestPermit} */
 export const permit = /** @type {const} */ ({
-  produce: {
-    fastUsdcKit: true,
-  },
-  consume: {
-    chainStorage: true,
-    chainTimerService: true,
-    localchain: true,
-    cosmosInterchainService: true,
-
-    // limited distribution durin MN2: contract installation
-    startUpgradable: true,
-    zoe: true, // only getTerms() is needed. XXX should be split?
-
-    // widely shared: name services
-    agoricNames: true,
-    namesByAddress: true,
-    board: true,
-  },
+  produce: { [`${meta.name}Kit`]: true },
+  consume: { ...orchPermit, ...adminPermit },
+  instance: { produce: { [meta.name]: true } },
+  installation: { consume: { [meta.name]: true } },
   issuer: {
     consume: { USDC: true },
     produce: { FastLP: true }, // UNTIL #10432
   },
   brand: {
     produce: { FastLP: true }, // UNTIL #10432
-  },
-  instance: {
-    produce: { fastUsdc: true },
-  },
-  installation: {
-    consume: { fastUsdc: true },
   },
 });
 harden(permit);
