@@ -5,6 +5,8 @@
  *   dependent upon a hardened environment.
  */
 
+const { defineProperty } = Object;
+
 /**
  * Deep-copy a value by round-tripping it through JSON (which drops
  * function/symbol/undefined values and properties that are non-enumerable
@@ -65,6 +67,23 @@ const deepMapObjectInternal = (value, name, container, mapper) => {
  */
 export const deepMapObject = (obj, mapper) =>
   deepMapObjectInternal(obj, undefined, undefined, mapper);
+
+/**
+ * Explicitly set a function's name, supporting use of arrow functions for which
+ * source text doesn't include a name and no initial name is set by
+ * NamedEvaluation
+ * https://tc39.es/ecma262/multipage/syntax-directed-operations.html#sec-runtime-semantics-namedevaluation
+ *
+ * `name` is the first parameter for readability at call sites (e.g., `return
+ * defineName('foo', () => { ... })`).
+ *
+ * @template {Function} T
+ * @param {string} name
+ * @param {T} fn
+ * @returns {T}
+ */
+export const defineName = (name, fn) =>
+  defineProperty(fn, 'name', { value: name });
 
 /**
  * Returns a function that uses a millisecond-based current-time capability
