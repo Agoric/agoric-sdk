@@ -49,6 +49,7 @@ export const meta = /** @type {const} */ ({
     poolMetricsNode: M.remotable(),
   },
   deployConfigShape: FastUSDCConfigShape,
+  /** @type {Record<keyof FastUSDCConfig, keyof StartedInstanceKit<FastUsdcSF>['creatorFacet']>} */
   adminRoles: {
     oracles: 'makeOperatorInvitation',
   },
