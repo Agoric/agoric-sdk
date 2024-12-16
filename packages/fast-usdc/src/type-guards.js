@@ -6,7 +6,7 @@ import { PendingTxStatus } from './constants.js';
  * @import {TypedPattern} from '@agoric/internal';
  * @import {FastUsdcTerms} from './fast-usdc.contract.js';
  * @import {USDCProposalShapes} from './pool-share-math.js';
- * @import {CctpTxEvidence, FeeConfig, PendingTx, PoolMetrics, ChainPolicy, FeedPolicy} from './types.js';
+ * @import {CctpTxEvidence, FeeConfig, PendingTx, PoolMetrics, ChainPolicy, FeedPolicy, AddressHook} from './types.js';
  */
 
 /**
@@ -67,10 +67,12 @@ export const PendingTxShape = {
 };
 harden(PendingTxShape);
 
-export const EudParamShape = {
-  EUD: M.string(),
+/** @type {TypedPattern<AddressHook>} */
+export const AddressHookShape = {
+  baseAddress: M.string(),
+  query: { EUD: M.string() },
 };
-harden(EudParamShape);
+harden(AddressHookShape);
 
 const NatAmountShape = { brand: BrandShape, value: M.nat() };
 /** @type {TypedPattern<FeeConfig>} */
@@ -94,16 +96,13 @@ export const PoolMetricsShape = {
 harden(PoolMetricsShape);
 
 /** @type {TypedPattern<ChainPolicy>} */
-export const ChainPoliciesShape = M.splitRecord(
-  {
-    nobleContractAddress: EvmHashShape,
-    cctpTokenMessengerAddress: EvmHashShape,
-    confirmations: M.number(),
-    chainId: M.number(),
-  },
-  { chainType: M.number() },
-);
-harden(ChainPoliciesShape);
+export const ChainPolicyShape = {
+  attenuatedCttpBridgeAddress: EvmHashShape,
+  cctpTokenMessengerAddress: EvmHashShape,
+  confirmations: M.number(),
+  chainId: M.number(),
+};
+harden(ChainPolicyShape);
 
 /**
  * @type {TypedPattern<FeedPolicy>}
@@ -115,7 +114,7 @@ export const FeedPolicyShape = M.splitRecord(
   {
     nobleDomainId: M.number(),
     nobleAgoricChannelId: M.string(),
-    chainPolicies: M.recordOf(M.string(), ChainPoliciesShape),
+    chainPolicies: M.recordOf(M.string(), ChainPolicyShape),
   },
   { eventFilter: M.string() },
 );

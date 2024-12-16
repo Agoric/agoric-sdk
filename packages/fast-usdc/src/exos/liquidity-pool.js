@@ -28,7 +28,7 @@ import {
  * @import {PoolStats} from '../types.js';
  */
 
-const { add, isEqual, makeEmpty } = AmountMath;
+const { add, isEqual, isGTE, makeEmpty } = AmountMath;
 
 /** @param {Brand} brand */
 const makeDust = brand => AmountMath.make(brand, 1n);
@@ -84,10 +84,8 @@ export const prepareLiquidityPoolKit = (zone, zcf, USDC, tools) => {
     'Liquidity Pool',
     {
       borrower: M.interface('borrower', {
-        borrow: M.call(
-          SeatShape,
-          harden({ USDC: makeNatAmountShape(USDC, 1n) }),
-        ).returns(),
+        borrow: M.call(SeatShape, makeNatAmountShape(USDC, 1n)).returns(),
+        returnToPool: M.call(SeatShape, makeNatAmountShape(USDC, 1n)).returns(),
       }),
       repayer: M.interface('repayer', {
         repay: M.call(
@@ -153,32 +151,48 @@ export const prepareLiquidityPoolKit = (zone, zcf, USDC, tools) => {
       borrower: {
         /**
          * @param {ZCFSeat} toSeat
-         * @param {{ USDC: Amount<'nat'>}} amountKWR
+         * @param {Amount<'nat'>} amount
          */
-        borrow(toSeat, amountKWR) {
+        borrow(toSeat, amount) {
           const { encumberedBalance, poolSeat, poolStats } = this.state;
 
           // Validate amount is available in pool
           const post = borrowCalc(
-            amountKWR.USDC,
+            amount,
             poolSeat.getAmountAllocated('USDC', USDC),
             encumberedBalance,
             poolStats,
           );
 
           // COMMIT POINT
-          try {
-            zcf.atomicRearrange(harden([[poolSeat, toSeat, amountKWR]]));
-          } catch (cause) {
-            const reason = Error('🚨 cannot commit borrow', { cause });
-            console.error(reason.message, cause);
-            zcf.shutdownWithFailure(reason);
-          }
+          // UNTIL #10684: ability to terminate an incarnation w/o terminating the contract
+          zcf.atomicRearrange(harden([[poolSeat, toSeat, { USDC: amount }]]));
 
           Object.assign(this.state, post);
           this.facets.external.publishPoolMetrics();
         },
-        // TODO method to repay failed `LOA.deposit()`
+        /**
+         * If something fails during advance, return funds to the pool.
+         *
+         * @param {ZCFSeat} borrowSeat
+         * @param {Amount<'nat'>} amount
+         */
+        returnToPool(borrowSeat, amount) {
+          const { zcfSeat: repaySeat } = zcf.makeEmptySeatKit();
+          const returnAmounts = harden({
+            Principal: amount,
+            PoolFee: makeEmpty(USDC),
+            ContractFee: makeEmpty(USDC),
+          });
+          const borrowSeatAllocation = borrowSeat.getCurrentAllocation();
+          isGTE(borrowSeatAllocation.USDC, amount) ||
+            Fail`⚠️ borrowSeatAllocation ${q(borrowSeatAllocation)} less than amountKWR ${q(amount)}`;
+          // arrange payments in a format repay is expecting
+          zcf.atomicRearrange(
+            harden([[borrowSeat, repaySeat, { USDC: amount }, returnAmounts]]),
+          );
+          return this.facets.repayer.repay(repaySeat, returnAmounts);
+        },
       },
       repayer: {
         /**
@@ -208,23 +222,18 @@ export const prepareLiquidityPoolKit = (zone, zcf, USDC, tools) => {
           const { ContractFee, ...rest } = amounts;
 
           // COMMIT POINT
-          try {
-            zcf.atomicRearrange(
-              harden([
-                [
-                  fromSeat,
-                  poolSeat,
-                  rest,
-                  { USDC: add(amounts.PoolFee, amounts.Principal) },
-                ],
-                [fromSeat, feeSeat, { ContractFee }, { USDC: ContractFee }],
-              ]),
-            );
-          } catch (cause) {
-            const reason = Error('🚨 cannot commit repay', { cause });
-            console.error(reason.message, cause);
-            zcf.shutdownWithFailure(reason);
-          }
+          // UNTIL #10684: ability to terminate an incarnation w/o terminating the contract
+          zcf.atomicRearrange(
+            harden([
+              [
+                fromSeat,
+                poolSeat,
+                rest,
+                { USDC: add(amounts.PoolFee, amounts.Principal) },
+              ],
+              [fromSeat, feeSeat, { ContractFee }, { USDC: ContractFee }],
+            ]),
+          );
 
           Object.assign(this.state, post);
           this.facets.external.publishPoolMetrics();
@@ -259,9 +268,8 @@ export const prepareLiquidityPoolKit = (zone, zcf, USDC, tools) => {
           const post = depositCalc(shareWorth, proposal);
 
           // COMMIT POINT
-
+          const mint = shareMint.mintGains(post.payouts);
           try {
-            const mint = shareMint.mintGains(post.payouts);
             this.state.shareWorth = post.shareWorth;
             zcf.atomicRearrange(
               harden([
@@ -271,12 +279,12 @@ export const prepareLiquidityPoolKit = (zone, zcf, USDC, tools) => {
                 [mint, lp, post.payouts],
               ]),
             );
+          } catch (cause) {
+            // UNTIL #10684: ability to terminate an incarnation w/o terminating the contract
+            throw new Error('🚨 cannot commit deposit', { cause });
+          } finally {
             lp.exit();
             mint.exit();
-          } catch (cause) {
-            const reason = Error('🚨 cannot commit deposit', { cause });
-            console.error(reason.message, cause);
-            zcf.shutdownWithFailure(reason);
           }
           external.publishPoolMetrics();
         },
@@ -296,7 +304,6 @@ export const prepareLiquidityPoolKit = (zone, zcf, USDC, tools) => {
           const post = withdrawCalc(shareWorth, proposal);
 
           // COMMIT POINT
-
           try {
             this.state.shareWorth = post.shareWorth;
             zcf.atomicRearrange(
@@ -308,12 +315,12 @@ export const prepareLiquidityPoolKit = (zone, zcf, USDC, tools) => {
               ]),
             );
             shareMint.burnLosses(proposal.give, burn);
+          } catch (cause) {
+            // UNTIL #10684: ability to terminate an incarnation w/o terminating the contract
+            throw new Error('🚨 cannot commit withdraw', { cause });
+          } finally {
             lp.exit();
             burn.exit();
-          } catch (cause) {
-            const reason = Error('🚨 cannot commit withdraw', { cause });
-            console.error(reason.message, cause);
-            zcf.shutdownWithFailure(reason);
           }
           external.publishPoolMetrics();
         },

@@ -1,6 +1,10 @@
 // @ts-check
 /* eslint-env node */
-import { fetchEnvNetworkConfig, makeVstorageKit } from '@agoric/client-utils';
+import {
+  fetchEnvNetworkConfig,
+  makeAgoricNames,
+  makeVstorageKit,
+} from '@agoric/client-utils';
 import { Fail } from '@endo/errors';
 import { InvalidArgumentError } from 'commander';
 import { outputActionAndHint } from '../lib/wallet.js';
@@ -88,10 +92,11 @@ export const makeAuctionCommand = (
        * }} opts
        */
       async opts => {
-        const { agoricNames, readPublished } = await makeVstorageKit(
+        const { readPublished, ...vsk } = makeVstorageKit(
           { fetch },
           networkConfig,
         );
+        const agoricNames = await makeAgoricNames(vsk.fromBoard, vsk.vstorage);
 
         const { current } = await readPublished(`auction.governance`);
 

@@ -1,17 +1,16 @@
+import { decodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
 import { AmountMath } from '@agoric/ertp';
 import { assertAllDefined, makeTracer } from '@agoric/internal';
 import { AnyNatAmountShape, ChainAddressShape } from '@agoric/orchestration';
 import { pickFacet } from '@agoric/vat-data';
 import { VowShape } from '@agoric/vow';
-import { q } from '@endo/errors';
 import { E } from '@endo/far';
-import { M } from '@endo/patterns';
+import { M, mustMatch } from '@endo/patterns';
 import {
   CctpTxEvidenceShape,
-  EudParamShape,
+  AddressHookShape,
   EvmHashShape,
 } from '../type-guards.js';
-import { addressTools } from '../utils/address.js';
 import { makeFeeTools } from '../utils/fees.js';
 
 /**
@@ -22,7 +21,7 @@ import { makeFeeTools } from '../utils/fees.js';
  * @import {ZoeTools} from '@agoric/orchestration/src/utils/zoe-tools.js';
  * @import {VowTools} from '@agoric/vow';
  * @import {Zone} from '@agoric/zone';
- * @import {CctpTxEvidence, EvmHash, FeeConfig, LogFn, NobleAddress} from '../types.js';
+ * @import {CctpTxEvidence, AddressHook, EvmHash, FeeConfig, LogFn, NobleAddress} from '../types.js';
  * @import {StatusManager} from './status-manager.js';
  * @import {LiquidityPoolKit} from './liquidity-pool.js';
  */
@@ -148,11 +147,10 @@ export const prepareAdvancerKit = (
 
             const { borrowerFacet, poolAccount } = this.state;
             const { recipientAddress } = evidence.aux;
-            // throws if EUD is not found
-            const { EUD } = addressTools.getQueryParams(
-              recipientAddress,
-              EudParamShape,
-            );
+            const decoded = decodeAddressHook(recipientAddress);
+            mustMatch(decoded, AddressHookShape);
+            const { EUD } = /** @type {AddressHook['query']} */ (decoded.query);
+            log(`decoded EUD: ${EUD}`);
             // throws if the bech32 prefix is not found
             const destination = chainHub.makeChainAddress(EUD);
 
@@ -161,9 +159,8 @@ export const prepareAdvancerKit = (
             const advanceAmount = feeTools.calculateAdvance(fullAmount);
 
             const { zcfSeat: tmpSeat } = zcf.makeEmptySeatKit();
-            const amountKWR = harden({ USDC: advanceAmount });
             // throws if the pool has insufficient funds
-            borrowerFacet.borrow(tmpSeat, amountKWR);
+            borrowerFacet.borrow(tmpSeat, advanceAmount);
 
             // this cannot throw since `.isSeen()` is called in the same turn
             statusManager.advance(evidence);
@@ -172,7 +169,7 @@ export const prepareAdvancerKit = (
               tmpSeat,
               // @ts-expect-error LocalAccountMethods vs OrchestrationAccount
               poolAccount,
-              amountKWR,
+              harden({ USDC: advanceAmount }),
             );
             void watch(depositV, this.facets.depositHandler, {
               fullAmount,
@@ -182,8 +179,8 @@ export const prepareAdvancerKit = (
               tmpSeat,
               txHash: evidence.txHash,
             });
-          } catch (e) {
-            log('Advancer error:', q(e).toString());
+          } catch (error) {
+            log('Advancer error:', error);
             statusManager.observe(evidence);
           }
         },
@@ -212,18 +209,28 @@ export const prepareAdvancerKit = (
           });
         },
         /**
+         * We do not expect this to be a common failure. it should only occur
+         * if USDC is not registered in vbank or the tmpSeat has less than
+         * `advanceAmount`.
+         *
+         * If we do hit this path, we return funds to the Liquidity Pool and
+         * notify of Advancing failure.
+         *
          * @param {Error} error
          * @param {AdvancerVowCtx & { tmpSeat: ZCFSeat }} ctx
          */
-        onRejected(error, { tmpSeat }) {
-          // TODO return seat allocation from ctx to LP?
-          log('🚨 advance deposit failed', q(error).toString());
-          // TODO #10510 (comprehensive error testing) determine
-          // course of action here
+        onRejected(error, { tmpSeat, advanceAmount, ...restCtx }) {
           log(
-            'TODO live payment on seat to return to LP',
-            q(tmpSeat).toString(),
+            '⚠️ deposit to localOrchAccount failed, attempting to return payment to LP',
+            error,
           );
+          try {
+            const { borrowerFacet, notifyFacet } = this.state;
+            notifyFacet.notifyAdvancingResult(restCtx, false);
+            borrowerFacet.returnToPool(tmpSeat, advanceAmount);
+          } catch (e) {
+            log('🚨 deposit to localOrchAccount failure recovery failed', e);
+          }
         },
       },
       transferHandler: {
@@ -234,10 +241,11 @@ export const prepareAdvancerKit = (
         onFulfilled(result, ctx) {
           const { notifyFacet } = this.state;
           const { advanceAmount, destination, ...detail } = ctx;
-          log(
-            'Advance transfer fulfilled',
-            q({ advanceAmount, destination, result }).toString(),
-          );
+          log('Advance transfer fulfilled', {
+            advanceAmount,
+            destination,
+            result,
+          });
           // During development, due to a bug, this call threw.
           // The failure was silent (no diagnostics) due to:
           //  - #10576 Vows do not report unhandled rejections
@@ -252,7 +260,7 @@ export const prepareAdvancerKit = (
          */
         onRejected(error, ctx) {
           const { notifyFacet } = this.state;
-          log('Advance transfer rejected', q(error).toString());
+          log('Advance transfer rejected', error);
           notifyFacet.notifyAdvancingResult(ctx, false);
         },
       },

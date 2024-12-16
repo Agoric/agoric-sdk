@@ -690,7 +690,7 @@ export const prepareLocalOrchestrationAccountKit = (
               'agoric',
               forwardOpts,
             );
-            trace('got transfer route', q(route).toString());
+            trace('got transfer route', route);
 
             // set a `timeoutTimestamp` if caller does not supply either `timeoutHeight` or `timeoutTimestamp`
             // TODO #9324 what's a reasonable default? currently 5 minutes

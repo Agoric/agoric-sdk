@@ -26,7 +26,7 @@ import {
   VALIDATORADDR,
 } from '@agoric/synthetic-chain';
 import fsp from 'node:fs/promises';
-import { NonNullish } from './errors.js';
+import { NonNullish } from '@agoric/internal/src/errors.js';
 import { getBalances } from './utils.js';
 
 /** @import {Result as ExecaResult, ExecaError} from 'execa'; */

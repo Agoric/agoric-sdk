@@ -8,8 +8,12 @@ import { flags, makeAgd, makeCopyFiles } from './agd-lib.js';
 import { makeHttpClient, makeAPI } from './makeHttpClient.js';
 import { dedup, makeQueryKit, poll } from './queryKit.js';
 import { makeVStorage } from './batchQuery.js';
+import { makeRetryUntilCondition } from './sleep.js';
 
-/** @import { EnglishMnemonic } from '@cosmjs/crypto'; */
+/**
+ * @import { EnglishMnemonic } from '@cosmjs/crypto';
+ * @import { RetryUntilCondition } from './sleep.js';
+ */
 
 const BLD = '000000ubld';
 
@@ -121,6 +125,7 @@ const installBundle = async (fullPath, opts) => {
  *   blockTool: BlockTool;
  *   lcd: import('./makeHttpClient.js').LCD;
  *   delay: (ms: number) => Promise<void>;
+ *   retryUntilCondition: RetryUntilCondition;
  *   chainId?: string;
  *   whale?: string;
  *   progress?: typeof console.log;
@@ -139,14 +144,15 @@ export const provisionSmartWallet = async (
     whale = 'faucet',
     progress = console.log,
     q = makeQueryKit(makeVStorage(lcd)).query,
+    retryUntilCondition,
   },
 ) => {
   // TODO: skip this query if balances is {}
   const vbankEntries = await q.queryData('published.agoricNames.vbankAsset');
   const byName = Object.fromEntries(
-    vbankEntries.map(([denom, info]) => {
-      /// XXX better way to filter out old ATOM denom?
-      if (denom === 'ibc/toyatom') return [undefined, undefined];
+    // reverse entries, so we get the latest view on the denom since there are
+    // multiple entries in the testing environment
+    [...vbankEntries].reverse().map(([_, info]) => {
       return [info.issuerName, info];
     }),
   );
@@ -187,7 +193,12 @@ export const provisionSmartWallet = async (
     { chainId, from: address, yes: true },
   );
 
-  const info = await q.queryData(`published.wallet.${address}.current`);
+  const info = await retryUntilCondition(
+    () => q.queryData(`published.wallet.${address}.current`),
+    result => !!result,
+    `wallet in vstorage ${address}`,
+    { log: () => {} }, // suppress logs as this is already noisy
+  );
   progress({
     provisioned: address,
     purses: info.purses.length,
@@ -296,6 +307,8 @@ export const provisionSmartWallet = async (
 
   return { offers, deposit, peek, query: q };
 };
+
+/** @typedef {Awaited<ReturnType<typeof provisionSmartWallet>>} WalletDriver */
 
 /**
  * @param {{
@@ -426,6 +439,7 @@ const runCoreEval = async (
  * @param {string} [io.rpcAddress]
  * @param {string} [io.apiAddress]
  * @param {(...parts: string[]) => string} [io.join]
+ * * @param {RetryUntilCondition} [io.retryUntilCondition]
  */
 export const makeE2ETools = async (
   log,
@@ -436,6 +450,7 @@ export const makeE2ETools = async (
     setTimeout,
     rpcAddress = 'http://localhost:26657',
     apiAddress = 'http://localhost:1317',
+    retryUntilCondition = makeRetryUntilCondition({ log, setTimeout }),
   },
 ) => {
   const agd = makeAgd({ execFileSync }).withOpts({ keyringBackend: 'test' });
@@ -533,6 +548,7 @@ export const makeE2ETools = async (
         lcd,
         delay,
         q: vstorageClient,
+        retryUntilCondition,
       }),
     /**
      * @param {string} name

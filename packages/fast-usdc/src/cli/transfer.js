@@ -6,6 +6,7 @@ import {
   makeVStorage,
   pickEndpoint,
 } from '@agoric/client-utils';
+import { encodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
 import { queryFastUSDCLocalChainAccount } from '../util/agoric.js';
 import { depositForBurn, makeProvider } from '../util/cctp.js';
 import {
@@ -22,7 +23,7 @@ import {
 const transfer = async (
   /** @type {File} */ configFile,
   /** @type {string} */ amount,
-  /** @type {string} */ destination,
+  /** @type {string} */ EUD,
   out = console,
   fetch = globalThis.fetch,
   /** @type {VStorage | undefined} */ vstorage,
@@ -39,13 +40,13 @@ const transfer = async (
       { chainName: 'agoric', rpcAddrs: [pickEndpoint(netConfig)] },
     );
     const agoricAddr = await queryFastUSDCLocalChainAccount(vstorage, out);
-    const appendedAddr = `${agoricAddr}?EUD=${destination}`;
-    out.log(`forwarding destination ${appendedAddr}`);
+    const encodedAddr = encodeAddressHook(agoricAddr, { EUD });
+    out.log(`forwarding destination ${encodedAddr}`);
 
     const { exists, address } = await queryForwardingAccount(
       config.nobleApi,
       config.nobleToAgoricChannel,
-      appendedAddr,
+      encodedAddr,
       out,
       fetch,
     );
@@ -58,13 +59,13 @@ const transfer = async (
           signer,
           signerAddress,
           config.nobleToAgoricChannel,
-          appendedAddr,
+          encodedAddr,
           out,
         );
         out.log(res);
       } catch (e) {
         out.error(
-          `Error registering noble forwarding account for ${appendedAddr} on channel ${config.nobleToAgoricChannel}`,
+          `Error registering noble forwarding account for ${encodedAddr} on channel ${config.nobleToAgoricChannel}`,
         );
         throw e;
       }

@@ -1,12 +1,9 @@
 /* eslint-env node */
-import { makeWalletUtils } from '@agoric/client-utils';
+import { makeSmartWalletKit, LOCAL_CONFIG } from '@agoric/client-utils';
 import { execFileSync } from 'child_process';
-import { makeAgdWalletUtils } from './wallet.js';
+import { makeAgdWalletKit } from './wallet.js';
 
-export const networkConfig = {
-  rpcAddrs: ['http://0.0.0.0:26657'],
-  chainName: 'agoriclocal',
-};
+export const networkConfig = LOCAL_CONFIG;
 
 /**
  * Resolve after a delay in milliseconds.
@@ -16,12 +13,12 @@ export const networkConfig = {
  */
 const delay = ms => new Promise(resolve => setTimeout(() => resolve(), ms));
 
-export const walletUtils = await makeWalletUtils(
+export const smartWalletKit = await makeSmartWalletKit(
   { delay, fetch },
   networkConfig,
 );
 
-export const agdWalletUtils = await makeAgdWalletUtils(
-  { execFileSync, setTimeout, walletUtils },
+export const agdWalletUtils = await makeAgdWalletKit(
+  { execFileSync, smartWalletKit, delay },
   networkConfig,
 );

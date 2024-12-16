@@ -58,11 +58,14 @@ export interface PoolMetrics extends PoolStats {
 }
 
 export interface ChainPolicy {
-  nobleContractAddress: EvmHash;
+  /** `msg.sender` of DepositAndBurn to TokenMessenger must be an attenuated wrapper contract that does not contain `replaceDepositForBurn` */
+  attenuatedCttpBridgeAddress: EvmHash;
+  /** @see {@link https://developers.circle.com/stablecoins/evm-smart-contracts} */
   cctpTokenMessengerAddress: EvmHash;
-  confirmations: number;
+  /** e.g., `1` for ETH mainnet 42161 for Arbitrum One. @see {@link https://chainlist.org/} */
   chainId: EvmChainID;
-  chainType?: number;
+  /** the number of block confirmations to observe before reporting */
+  confirmations: number;
 }
 
 export interface FeedPolicy {
@@ -81,6 +84,15 @@ export type FastUSDCConfig = {
   chainInfo: Record<string, CosmosChainInfo & Passable>;
   assetInfo: [Denom, DenomDetail & { brandKey?: string }][];
 } & CopyRecord;
+
+/** decoded address hook parameters */
+export type AddressHook = {
+  baseAddress: string;
+  query: {
+    /** end user destination address */
+    EUD: string;
+  };
+};
 
 export type * from './constants.js';
 export type { LiquidityPoolKit } from './exos/liquidity-pool.js';
