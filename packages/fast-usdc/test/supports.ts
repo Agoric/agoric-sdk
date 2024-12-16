@@ -24,7 +24,10 @@ import { makeWellKnownSpaces } from '@agoric/vats/src/core/utils.js';
 import { prepareLocalChainTools } from '@agoric/vats/src/localchain.js';
 import { prepareTransferTools } from '@agoric/vats/src/transfer.js';
 import { makeFakeBankManagerKit } from '@agoric/vats/tools/bank-utils.js';
-import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
+import {
+  makeFakeBoard,
+  pureDataMarshaller,
+} from '@agoric/vats/tools/board-utils.js';
 import {
   makeFakeLocalchainBridge,
   makeFakeTransferBridge,
@@ -37,12 +40,16 @@ import { makeHeapZone, type Zone } from '@agoric/zone';
 import { makeDurableZone } from '@agoric/zone/durable.js';
 import { E } from '@endo/far';
 import type { ExecutionContext } from 'ava';
+import type { PureData } from '@endo/pass-style';
 import { makeTestFeeConfig } from './mocks.js';
 
 export {
   makeFakeLocalchainBridge,
   makeFakeTransferBridge,
 } from '@agoric/vats/tools/fake-bridge.js';
+
+const unserializePureData = data =>
+  pureDataMarshaller.fromCapData(JSON.parse(data));
 
 const assetOn = (
   baseDenom: Denom,
@@ -152,6 +159,12 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
   const storage = makeFakeStorageKit('mockChainStorageRoot', {
     sequence: false,
   });
+  /**
+   * Read pure data (CapData that has no slots) from the storage path
+   * @param path
+   */
+  storage.getPureData = (path: string): PureData =>
+    storage.getValues(path).map(unserializePureData);
 
   const { portAllocator, setupIBCProtocol, ibcBridge } = setupFakeNetwork(
     rootZone.subZone('network'),
