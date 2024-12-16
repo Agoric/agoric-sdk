@@ -186,7 +186,7 @@ test('updates status to ADVANCING in happy path', async t => {
   await eventLoopIteration();
 
   t.deepEqual(
-    storage.getPureData(`fun.txns.${mockEvidence.txHash}`),
+    storage.getDeserialized(`fun.txns.${mockEvidence.txHash}`),
     [mockEvidence, { status: PendingTxStatus.Advancing }],
     'ADVANCED status in happy path',
   );
@@ -260,7 +260,7 @@ test('updates status to OBSERVED on insufficient pool funds', async t => {
   await eventLoopIteration();
 
   t.deepEqual(
-    storage.getPureData(`fun.txns.${mockEvidence.txHash}`),
+    storage.getDeserialized(`fun.txns.${mockEvidence.txHash}`),
     [mockEvidence, { status: PendingTxStatus.Observed }],
     'OBSERVED status on insufficient pool funds',
   );
@@ -289,7 +289,7 @@ test('updates status to OBSERVED if makeChainAddress fails', async t => {
   await advancer.handleTransactionEvent(mockEvidence);
 
   t.deepEqual(
-    storage.getPureData(`fun.txns.${mockEvidence.txHash}`),
+    storage.getDeserialized(`fun.txns.${mockEvidence.txHash}`),
     [mockEvidence, { status: PendingTxStatus.Observed }],
     'OBSERVED status on makeChainAddress failure',
   );
@@ -322,7 +322,7 @@ test('calls notifyAdvancingResult (AdvancedFailed) on failed transfer', async t 
   await eventLoopIteration();
 
   t.deepEqual(
-    storage.getPureData(`fun.txns.${mockEvidence.txHash}`),
+    storage.getDeserialized(`fun.txns.${mockEvidence.txHash}`),
     [mockEvidence, { status: PendingTxStatus.Advancing }],
     'tx is Advancing',
   );
@@ -369,7 +369,7 @@ test('updates status to OBSERVED if pre-condition checks fail', async t => {
   await advancer.handleTransactionEvent(mockEvidence);
 
   t.deepEqual(
-    storage.getPureData(`fun.txns.${mockEvidence.txHash}`),
+    storage.getDeserialized(`fun.txns.${mockEvidence.txHash}`),
     [mockEvidence, { status: PendingTxStatus.Observed }],
     'tx is recorded as OBSERVED',
   );

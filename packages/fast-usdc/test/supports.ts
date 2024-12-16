@@ -1,6 +1,10 @@
 import { makeIssuerKit } from '@agoric/ertp';
 import { VTRANSFER_IBC_EVENT } from '@agoric/internal/src/action-types.js';
-import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
+import {
+  defaultMarshaller,
+  defaultSerializer,
+  makeFakeStorageKit,
+} from '@agoric/internal/src/storage-test-utils.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import {
   denomHash,
@@ -47,9 +51,6 @@ export {
   makeFakeLocalchainBridge,
   makeFakeTransferBridge,
 } from '@agoric/vats/tools/fake-bridge.js';
-
-const unserializePureData = data =>
-  pureDataMarshaller.fromCapData(JSON.parse(data));
 
 const assetOn = (
   baseDenom: Denom,
@@ -163,8 +164,8 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
    * Read pure data (CapData that has no slots) from the storage path
    * @param path
    */
-  storage.getPureData = (path: string): PureData =>
-    storage.getValues(path).map(unserializePureData);
+  storage.getDeserialized = (path: string): unknown =>
+    storage.getValues(path).map(defaultSerializer.parse);
 
   const { portAllocator, setupIBCProtocol, ibcBridge } = setupFakeNetwork(
     rootZone.subZone('network'),

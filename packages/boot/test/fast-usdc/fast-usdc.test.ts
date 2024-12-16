@@ -7,7 +7,10 @@ import { documentStorageSchema } from '@agoric/governance/tools/storageDoc.js';
 import { Fail } from '@endo/errors';
 import { unmarshalFromVstorage } from '@agoric/internal/src/marshal.js';
 import { makeMarshal } from '@endo/marshal';
-import { defaultMarshaller } from '@agoric/internal/src/storage-test-utils.js';
+import {
+  defaultMarshaller,
+  defaultSerializer,
+} from '@agoric/internal/src/storage-test-utils.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { BridgeId } from '@agoric/internal';
 import {
@@ -155,7 +158,7 @@ test.serial('writes fee config to vstorage', async t => {
   const doc = {
     node: 'fastUsdc.feeConfig',
     owner: 'the fee configuration for Fast USDC',
-    showValue: v => defaultMarshaller.fromCapData(JSON.parse(v)),
+    showValue: defaultSerializer.parse,
   };
   await documentStorageSchema(t, storage, doc);
 });
@@ -165,7 +168,7 @@ test.serial('writes pool metrics to vstorage', async t => {
   const doc = {
     node: 'fastUsdc.poolMetrics',
     owner: 'FastUSC LiquidityPool exo',
-    showValue: v => defaultMarshaller.fromCapData(JSON.parse(v)),
+    showValue: defaultSerializer.parse,
   };
   await documentStorageSchema(t, storage, doc);
 });

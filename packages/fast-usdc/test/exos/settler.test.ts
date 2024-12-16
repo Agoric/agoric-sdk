@@ -235,7 +235,7 @@ test('happy path: disburse to LPs; StatusManager removes tx', async t => {
   );
   await eventLoopIteration();
   const { storage } = t.context;
-  t.deepEqual(storage.getPureData(`fun.txns.${cctpTxEvidence.txHash}`), [
+  t.deepEqual(storage.getDeserialized(`fun.txns.${cctpTxEvidence.txHash}`), [
     cctpTxEvidence,
     { status: 'ADVANCING' },
     { status: 'ADVANCED' },
@@ -313,7 +313,7 @@ test('slow path: forward to EUD; remove pending tx', async t => {
     'SETTLED entry removed from StatusManger',
   );
   const { storage } = t.context;
-  t.deepEqual(storage.getPureData(`fun.txns.${cctpTxEvidence.txHash}`), [
+  t.deepEqual(storage.getDeserialized(`fun.txns.${cctpTxEvidence.txHash}`), [
     cctpTxEvidence,
     { status: 'OBSERVED' },
     { status: 'FORWARDED' },
