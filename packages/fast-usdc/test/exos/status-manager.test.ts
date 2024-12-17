@@ -10,7 +10,7 @@ import type { CctpTxEvidence } from '../../src/types.js';
 
 type Common = Awaited<ReturnType<typeof commonSetup>>;
 type TestContext = {
-  transactionsNode: ERef<StorageNode>;
+  txnsNode: ERef<StorageNode>;
   storage: Common['bootstrap']['storage'];
 };
 
@@ -19,8 +19,7 @@ const test = anyTest as TestFn<TestContext>;
 test.beforeEach(async t => {
   const common = await commonSetup(t);
   t.context = {
-    transactionsNode:
-      common.commonPrivateArgs.storageNode.makeChildNode('txns'),
+    txnsNode: common.commonPrivateArgs.storageNode.makeChildNode('txns'),
     storage: common.bootstrap.storage,
   };
 });
@@ -29,7 +28,7 @@ test('advance creates new entry with ADVANCED status', t => {
   const zone = provideDurableZone('status-test');
   const statusManager = prepareStatusManager(
     zone.subZone('status-manager'),
-    t.context.transactionsNode,
+    t.context.txnsNode,
   );
 
   const evidence = MockCctpTxEvidences.AGORIC_PLUS_OSMO();
@@ -47,7 +46,7 @@ test('ADVANCED transactions are published to vstorage', async t => {
   const zone = provideDurableZone('status-test');
   const statusManager = prepareStatusManager(
     zone.subZone('status-manager'),
-    t.context.transactionsNode,
+    t.context.txnsNode,
   );
 
   const evidence = MockCctpTxEvidences.AGORIC_PLUS_OSMO();
@@ -65,7 +64,7 @@ test('observe creates new entry with OBSERVED status', t => {
   const zone = provideDurableZone('status-test');
   const statusManager = prepareStatusManager(
     zone.subZone('status-manager'),
-    t.context.transactionsNode,
+    t.context.txnsNode,
   );
   const evidence = MockCctpTxEvidences.AGORIC_PLUS_OSMO();
   statusManager.observe(evidence);
@@ -82,7 +81,7 @@ test('OBSERVED transactions are published to vstorage', async t => {
   const zone = provideDurableZone('status-test');
   const statusManager = prepareStatusManager(
     zone.subZone('status-manager'),
-    t.context.transactionsNode,
+    t.context.txnsNode,
   );
 
   const evidence = MockCctpTxEvidences.AGORIC_PLUS_OSMO();
@@ -100,7 +99,7 @@ test('cannot process same tx twice', t => {
   const zone = provideDurableZone('status-test');
   const statusManager = prepareStatusManager(
     zone.subZone('status-manager'),
-    t.context.transactionsNode,
+    t.context.txnsNode,
   );
   const evidence = MockCctpTxEvidences.AGORIC_PLUS_OSMO();
   statusManager.advance(evidence);
@@ -123,7 +122,7 @@ test('isSeen checks if a tx has been processed', t => {
   const zone = provideDurableZone('status-test');
   const statusManager = prepareStatusManager(
     zone.subZone('status-manager'),
-    t.context.transactionsNode,
+    t.context.txnsNode,
   );
 
   const e1 = MockCctpTxEvidences.AGORIC_PLUS_OSMO();
@@ -141,7 +140,7 @@ test('dequeueStatus removes entries from PendingTxs', t => {
   const zone = provideDurableZone('status-test');
   const statusManager = prepareStatusManager(
     zone.subZone('status-manager'),
-    t.context.transactionsNode,
+    t.context.txnsNode,
   );
   const e1 = MockCctpTxEvidences.AGORIC_PLUS_OSMO();
   const e2 = MockCctpTxEvidences.AGORIC_PLUS_DYDX();
@@ -193,7 +192,7 @@ test('cannot advanceOutcome without ADVANCING entry', t => {
   const zone = provideDurableZone('status-test');
   const statusManager = prepareStatusManager(
     zone.subZone('status-manager'),
-    t.context.transactionsNode,
+    t.context.txnsNode,
   );
   const e1 = MockCctpTxEvidences.AGORIC_PLUS_OSMO();
   const advanceOutcomeFn = () =>
@@ -222,7 +221,7 @@ test('advanceOutcome transitions to ADVANCED and ADVANCE_FAILED', async t => {
   const zone = provideDurableZone('status-test');
   const statusManager = prepareStatusManager(
     zone.subZone('status-manager'),
-    t.context.transactionsNode,
+    t.context.txnsNode,
   );
   const e1 = MockCctpTxEvidences.AGORIC_PLUS_OSMO();
   const e2 = MockCctpTxEvidences.AGORIC_PLUS_DYDX();
@@ -258,7 +257,7 @@ test('dequeueStatus returns undefined when nothing is settleable', t => {
   const zone = provideDurableZone('status-test');
   const statusManager = prepareStatusManager(
     zone.subZone('status-manager'),
-    t.context.transactionsNode,
+    t.context.txnsNode,
   );
   const e1 = MockCctpTxEvidences.AGORIC_PLUS_OSMO();
 
@@ -272,7 +271,7 @@ test('dequeueStatus returns first (earliest) matched entry', async t => {
   const zone = provideDurableZone('status-test');
   const statusManager = prepareStatusManager(
     zone.subZone('status-manager'),
-    t.context.transactionsNode,
+    t.context.txnsNode,
   );
   const evidence = MockCctpTxEvidences.AGORIC_PLUS_OSMO();
 
@@ -369,7 +368,7 @@ test('lookupPending returns empty array when presented a key it has not seen', t
   const zone = provideDurableZone('status-test');
   const statusManager = prepareStatusManager(
     zone.subZone('status-manager'),
-    t.context.transactionsNode,
+    t.context.txnsNode,
   );
   t.deepEqual(statusManager.lookupPending('noble123', 1n), []);
 });
@@ -378,7 +377,7 @@ test('StatusManagerKey logic handles addresses with hyphens', t => {
   const zone = provideDurableZone('status-test');
   const statusManager = prepareStatusManager(
     zone.subZone('status-manager'),
-    t.context.transactionsNode,
+    t.context.txnsNode,
   );
   const evidence: CctpTxEvidence = MockCctpTxEvidences.AGORIC_PLUS_OSMO();
   evidence.tx.forwardingAddress = 'noble1-foo';

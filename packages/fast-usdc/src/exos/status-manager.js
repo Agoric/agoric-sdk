@@ -59,12 +59,12 @@ const pendingTxKeyOf = evidence => {
  * XXX consider separate facets for `Advancing` and `Settling` capabilities.
  *
  * @param {Zone} zone
- * @param {ERef<StorageNode>} transactionsNode
+ * @param {ERef<StorageNode>} txnsNode
  * @param {StatusManagerPowers} caps
  */
 export const prepareStatusManager = (
   zone,
-  transactionsNode,
+  txnsNode,
   {
     log = makeTracer('Advancer', true),
   } = /** @type {StatusManagerPowers} */ ({}),
@@ -88,7 +88,7 @@ export const prepareStatusManager = (
    * @param {TxStatus} status
    */
   const publishStatus = (hash, status) => {
-    const txnNodeP = E(transactionsNode).makeChildNode(hash);
+    const txnNodeP = E(txnsNode).makeChildNode(hash);
     // Don't await, just writing to vstorage.
     void E(txnNodeP).setValue(status);
   };
