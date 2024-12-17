@@ -209,7 +209,9 @@ export const makeFakeStorageKit = (rootPath, rootOptions) => {
    */
   const getValues = path => {
     assert(resolvedOptions.sequence);
-    const wrapper = JSON.parse(data.get(path));
+    const nodeData = data.get(path);
+    assert(nodeData, `no data at path ${path}`);
+    const wrapper = JSON.parse(nodeData);
     return wrapper.values;
   };
 
