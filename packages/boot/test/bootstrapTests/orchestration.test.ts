@@ -16,6 +16,7 @@ import { SIMULATED_ERRORS } from '@agoric/vats/tools/fake-bridge.js';
 import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
 import { buildVTransferEvent } from '@agoric/orchestration/tools/ibc-mocks.js';
 import { BridgeId } from '@agoric/internal';
+import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
 import {
   makeWalletFactoryContext,
   type WalletFactoryTestContext,
@@ -410,8 +411,9 @@ test.serial('basic-flows', async t => {
   const publicSubscriberPaths = Object.fromEntries(
     wd.getCurrentWalletRecord().offerToPublicSubscriberPaths,
   );
+  const expectedAddress = makeTestAddress();
   t.deepEqual(publicSubscriberPaths['request-loa'], {
-    account: 'published.basicFlows.agoric1fakeLCAAddress',
+    account: `published.basicFlows.${expectedAddress}`,
   });
   t.like(wd.getLatestUpdateRecord(), {
     status: { id: 'request-loa', numWantsSatisfied: 1 },
@@ -487,6 +489,8 @@ test.serial('basic-flows', async t => {
   await runInbound(
     BridgeId.VTRANSFER,
     buildVTransferEvent({
+      sender: expectedAddress,
+      target: expectedAddress,
       sourceChannel: 'channel-62',
       sequence: '1',
     }),
@@ -598,7 +602,8 @@ test.serial('basic-flows - portfolio holder', async t => {
       [
         'request-portfolio-acct',
         {
-          agoric: 'published.basicFlows.agoric1fakeLCAAddress1',
+          agoric:
+            'published.basicFlows.agoric1qyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqc09z0g',
           cosmoshub: 'published.basicFlows.cosmos1test2',
           osmosis: 'published.basicFlows.cosmos1test3',
         },
@@ -615,7 +620,10 @@ test.serial('basic-flows - portfolio holder', async t => {
     remoteAddress:
       '/ibc-hop/connection-1/ibc-port/icahost/ordered/{"version":"ics27-1","controllerConnectionId":"connection-1","hostConnectionId":"connection-1649","address":"cosmos1test3","encoding":"proto3","txType":"sdk_multi_msg"}/ibc-channel/channel-4',
   });
-  t.is(readPublished('basicFlows.agoric1fakeLCAAddress1'), '');
+  t.is(
+    readPublished('basicFlows.agoric1qyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqc09z0g'),
+    '',
+  );
 
   const { BLD } = agoricNamesRemotes.brand;
   BLD || Fail`BLD missing from agoricNames`;
