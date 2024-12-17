@@ -12,7 +12,7 @@ import { fromExternalConfig } from './utils/config-marshal.js';
  * @import {OrchestrationPowers} from '@agoric/orchestration';
  * @import {ContractStartFunction, Instance, StartedInstanceKit} from '@agoric/zoe/src/zoeService/utils'
  * @import {DepositFacet} from '@agoric/ertp/src/types.js'
- * @import {Board} from '@agoric/vats'
+ * @import {Board, NameHub} from '@agoric/vats'
  * @import {BootstrapManifest} from '@agoric/vats/src/core/lib-boot.js'
  * @import {BootstrapManifestPermit} from '@agoric/vats/src/core/lib-boot.js';
  * @import {LegibleCapData} from './utils/config-marshal.js'
@@ -207,10 +207,12 @@ export const startOrchContract = async (
   const { agoricNames } = consume;
   const issuerKeywordRecord = await permittedIssuers(agoricNames, permitG);
 
-  const xVatContext = await E(E(agoricNames).lookup('brand')).entries();
+  /** @type {Promise<NameHub>} */
+  const brandHub = E(agoricNames).lookup('brand');
+  const xVatEntries = await E(brandHub).entries();
   const config = fromExternalConfig(
     configStruct.options,
-    xVatContext,
+    fromEntries(xVatEntries),
     metaG.deployConfigShape,
   );
   const { terms } = config;
@@ -274,14 +276,18 @@ export const startOrchContract = async (
     n => permitG?.brand?.produce?.[n],
   );
   if (newIssuerNames.length > 0) {
+    const nameToKeyword = permitG.issuer.produce;
     const { issuers, brands } = await E(zoe).getTerms(instance);
     for (const name of newIssuerNames) {
-      console.log('new well-known Issuer, Brand:', name);
+      const keyword = nameToKeyword[name];
+      keyword in issuers ||
+        Fail`${name} not in contract issuers: ${keys(issuers)}`;
+      console.log('new well-known Issuer, Brand:', name, 'from', keyword);
       produceIssuer[name].reset();
-      produceIssuer[name].resolve(issuers[name]);
+      produceIssuer[name].resolve(issuers[keyword]);
       produceBrand[name].reset();
-      produceBrand[name].resolve(brands[name]);
-      await publishDisplayInfo(brands[name], { board, chainStorage });
+      produceBrand[name].resolve(brands[keyword]);
+      await publishDisplayInfo(brands[keyword], { board, chainStorage });
     }
   }
 

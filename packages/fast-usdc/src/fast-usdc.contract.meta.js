@@ -68,7 +68,7 @@ export const permit = /** @type {const} */ ({
   consume: { ...orchPermit, ...adminPermit },
   instance: { produce: { [meta.name]: true } },
   installation: { consume: { [meta.name]: true } },
-  issuer: { produce: { FastLP: true }, consume: { USDC: true } },
-  brand: { produce: { FastLP: true } },
+  issuer: { produce: { FastLP: 'PoolShares' }, consume: { USDC: true } },
+  brand: { produce: { FastLP: 'PoolShares' } },
 });
 harden(permit);
