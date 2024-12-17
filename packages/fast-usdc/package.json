@@ -1,7 +1,7 @@
 {
   "name": "fast-usdc",
   "private": true,
-  "version": "0.1.1-u18.4",
+  "version": "0.1.1-u18.5",
   "description": "Create an Agoric Javascript smart contract application",
   "type": "module",
   "files": [
@@ -27,7 +27,7 @@
     "ts-blank-space": "^0.4.1"
   },
   "dependencies": {
-    "agoric": "^0.22.0-u18.4",
+    "agoric": "^0.22.0-u18.5",
     "commander": "^12.1.0"
   },
   "ava": {

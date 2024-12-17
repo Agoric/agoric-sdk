@@ -3,6 +3,14 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.2.0-u18.4](https://github.com/Agoric/agoric-sdk/compare/@agoric/orchestration@0.2.0-u18.3...@agoric/orchestration@0.2.0-u18.4) (2024-12-17)
+
+**Note:** Version bump only for package @agoric/orchestration
+
+
+
+
+
 ## [0.2.0-u18.3](https://github.com/Agoric/agoric-sdk/compare/@agoric/orchestration@0.2.0-u18.2...@agoric/orchestration@0.2.0-u18.3) (2024-12-09)
 
 **Note:** Version bump only for package @agoric/orchestration
