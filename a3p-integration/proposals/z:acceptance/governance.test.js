@@ -14,16 +14,9 @@ const governanceAddresses = [GOV4ADDR, GOV2ADDR, GOV1ADDR];
 const { getLastUpdate, readLatestHead } = agdWalletUtils;
 const governanceDriver = await makeGovernanceDriver(fetch, networkConfig);
 
-const testSkipXXX = test.skip; // same lenth as test.serial to avoid reformatting all lines
-
-// z:acceptance governance fails/flakes: No quorum #10708
-testSkipXXX(
+test.serial(
   'economic committee can make governance proposal and vote on it',
   async t => {
-    const charterInvitation = await governanceDriver.getCharterInvitation(
-      governanceAddresses[0],
-    );
-
     const params = {
       ChargingPeriod: 400n,
     };
@@ -36,7 +29,7 @@ testSkipXXX(
       params,
       path,
       instanceName,
-      charterInvitation[0],
+      30,
     );
 
     const questionUpdate = await getLastUpdate(governanceAddresses[0]);
@@ -62,9 +55,7 @@ testSkipXXX(
       });
     }
 
-    const { latestOutcome } = await governanceDriver.getLatestQuestion();
-    t.log('Verifying latest outcome', latestOutcome);
-    t.like(latestOutcome, { outcome: 'win' });
+    await governanceDriver.waitForElection();
   },
 );
 
@@ -104,10 +95,6 @@ test.serial(
 test.serial(
   'economic committee can make governance proposal for ProvisionPool',
   async t => {
-    const charterInvitation = await governanceDriver.getCharterInvitation(
-      governanceAddresses[0],
-    );
-
     /** @type {any} */
     const brand = await readLatestHead(`published.agoricNames.brand`);
     const brands = Object.fromEntries(brand);
@@ -123,7 +110,7 @@ test.serial(
       params,
       path,
       instanceName,
-      charterInvitation[0],
+      30,
     );
 
     const questionUpdate = await getLastUpdate(governanceAddresses[0]);
@@ -146,8 +133,7 @@ test.serial(
       });
     }
 
-    const { latestOutcome } = await governanceDriver.getLatestQuestion();
-    t.like(latestOutcome, { outcome: 'win' });
+    await governanceDriver.waitForElection();
   },
 );
 

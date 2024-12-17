@@ -1,7 +1,10 @@
 /* global setTimeout */
 
 import { agops, agoric, executeOffer } from '@agoric/synthetic-chain';
-import { retryUntilCondition } from '@agoric/client-utils';
+import {
+  retryUntilCondition,
+  waitUntilElectionResult,
+} from '@agoric/client-utils';
 import { agdWalletUtils } from './index.js';
 import {
   checkCommitteeElectionResult,
@@ -136,13 +139,15 @@ export const makeGovernanceDriver = async (fetch, networkConfig) => {
    * @param {any} params
    * @param {{paramPath: any}} path
    * @param {string} instanceName
-   * @param {string} charterAcceptOfferId
+   * @param {number} votingDuration
+   * @param {string} [charterAcceptOfferId]
    */
   const proposeParamChange = async (
     address,
     params,
     path,
     instanceName,
+    votingDuration,
     charterAcceptOfferId,
   ) => {
     await null;
@@ -158,7 +163,7 @@ export const makeGovernanceDriver = async (fetch, networkConfig) => {
 
     return executeOffer(
       address,
-      generateParamChange(offerId, 30, params, path, instanceName),
+      generateParamChange(offerId, votingDuration, params, path, instanceName),
     );
   };
 
@@ -222,6 +227,19 @@ export const makeGovernanceDriver = async (fetch, networkConfig) => {
     return { latestOutcome, latestQuestion };
   };
 
+  const waitForElection = () =>
+    waitUntilElectionResult(
+      'published.committees.Economic_Committee',
+      { outcome: 'win', deadline },
+      // @ts-expect-error vstorage casting
+      { vstorage: { readLatestHead }, log: console.log, setTimeout },
+      {
+        errorMessage: 'Governed param change election failed',
+        retryIntervalMs: 5000,
+        maxRetries: 15,
+      },
+    );
+
   const getLatestQuestionHistory = async () => {
     const nodePath = 'published.committees.Economic_Committee.latestQuestion';
 
@@ -245,6 +263,7 @@ export const makeGovernanceDriver = async (fetch, networkConfig) => {
     getCharterInvitation,
     getCommitteeInvitation,
     getLatestQuestion,
+    waitForElection,
     getLatestQuestionHistory,
   };
 };
