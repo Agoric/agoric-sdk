@@ -43,7 +43,7 @@ const stakeScenario = test.macro(async (t, scenario: StakeIcaScenario) => {
   const {
     wallets,
     provisionSmartWallet,
-    vstorageClient,
+    smartWalletKit,
     retryUntilCondition,
     useChain,
     startContract,
@@ -77,8 +77,8 @@ const stakeScenario = test.macro(async (t, scenario: StakeIcaScenario) => {
   const { offerToPublicSubscriberPaths: makeAccountPublicSubscriberPaths } =
     await retryUntilCondition(
       () =>
-        vstorageClient.queryData(
-          `published.wallet.${wallets[scenario.wallet]}.current`,
+        smartWalletKit.readPublished(
+          `wallet.${wallets[scenario.wallet]}.current`,
         ),
       ({ offerToPublicSubscriberPaths }) =>
         !!offerToPublicSubscriberPaths.length,
@@ -92,6 +92,7 @@ const stakeScenario = test.macro(async (t, scenario: StakeIcaScenario) => {
     .split('.')
     .pop();
   t.log('Got address:', address);
+  assert(address);
   t.regex(
     address,
     new RegExp(`^${scenario.expectedAddressPrefix}1`),
@@ -142,11 +143,12 @@ const stakeScenario = test.macro(async (t, scenario: StakeIcaScenario) => {
     proposal: {},
   });
 
-  const latestWalletUpdate = await vstorageClient.queryData(
-    `published.wallet.${wallets[scenario.wallet]}`,
+  const latestWalletUpdate = await smartWalletKit.readPublished(
+    `wallet.${wallets[scenario.wallet]}`,
   );
   t.log('latest wallet update', latestWalletUpdate);
   t.like(
+    // @ts-expect-error UpdateRecord may not have 'status'
     latestWalletUpdate.status,
     {
       id: delegateOfferId,

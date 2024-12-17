@@ -8,7 +8,7 @@ import { makeQueryClient } from '../../tools/query.js';
 const test = anyTest as TestFn<SetupContext>;
 
 test('noble forwarding', async t => {
-  const { nobleTools, retryUntilCondition, useChain, vstorageClient } =
+  const { nobleTools, retryUntilCondition, useChain, smartWalletKit } =
     await commonSetup(t, { config: '../config.fusdc.yaml' });
 
   const agoricWallet = await createWallet('agoric');
@@ -21,7 +21,7 @@ test('noble forwarding', async t => {
   const connInfoPath = `published.agoricNames.chainConnection.${agoricChainId}_${nobleChainId}`;
   const {
     transferChannel: { counterPartyChannelId, channelId },
-  }: IBCConnectionInfo = await vstorageClient.queryData(connInfoPath);
+  } = (await smartWalletKit.readLatestHead(connInfoPath)) as IBCConnectionInfo;
 
   t.regex(
     counterPartyChannelId,
