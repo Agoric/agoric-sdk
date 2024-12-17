@@ -8,7 +8,7 @@ import type { ExecutionContext } from 'ava';
 import { encodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
 import { AmountMath, type Brand } from '@agoric/ertp';
 import type { USDCProposalShapes } from '@agoric/fast-usdc/src/pool-share-math.js';
-import type { PoolMetrics } from '@agoric/fast-usdc/src/types.js';
+import type { PoolMetrics } from '@agoric/fast-usdc';
 import { divideBy } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { makeDenomTools } from '../tools/asset-info.js';
 import { makeDoOffer } from '../tools/e2e-tools.js';
