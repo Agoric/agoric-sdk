@@ -2,6 +2,9 @@
 
 import { makeFsStreamWriter } from '@agoric/internal/src/node/fs-stream.js';
 import { makeContextualSlogProcessor } from './context-aware-slog.js';
+import getContextFilePersistenceUtils, {
+  DEFAULT_CONTEXT_FILE,
+} from './context-aware-slog-persistent-util.js';
 import { serializeSlogObj } from './serialize-slog-obj.js';
 
 /**
@@ -21,9 +24,17 @@ export const makeSlogSender = async options => {
       `Couldn't create a write stream on file "${CONTEXTUAL_SLOGFILE}"`,
     );
 
-  const contextualSlogProcessor = makeContextualSlogProcessor({
-    'chain-id': CHAIN_ID,
-  });
+  const persistenceUtils = getContextFilePersistenceUtils(
+    process.env.SLOG_CONTEXT_FILE_PATH ||
+      `${options.stateDir}/${DEFAULT_CONTEXT_FILE}`,
+  );
+
+  const contextualSlogProcessor = makeContextualSlogProcessor(
+    {
+      'chain-id': CHAIN_ID,
+    },
+    persistenceUtils,
+  );
 
   /**
    * @param {import('./context-aware-slog.js').Slog} slog
