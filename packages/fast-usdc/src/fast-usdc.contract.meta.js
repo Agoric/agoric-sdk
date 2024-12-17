@@ -12,6 +12,7 @@ import {
   FeeConfigShape,
   FeedPolicyShape,
 } from './type-guards.js';
+import { startOrchContractG } from './fast-usdc.start.js';
 
 /**
  * @import {StartParams} from '@agoric/zoe/src/zoeService/utils'
@@ -21,6 +22,11 @@ import {
  * @import {OrchestrationPowers} from '@agoric/orchestration';
  * @import {FastUsdcSF} from './fast-usdc.contract.js';
  * @import {FeedPolicy, FastUSDCConfig} from './types.js'
+ */
+
+/**
+ * @import {LegibleCapData} from './utils/config-marshal.js'
+ * @import {CorePowersG} from './fast-usdc.start.js';
  */
 
 /** @type {TypedPattern<FastUSDCConfig>} */
@@ -147,7 +153,7 @@ const publishFeedPolicy = async (node, policy) => {
  * } kit
  * @param {(...args: any[]) => void} trace
  */
-export const finishDeploy = async (config, kit, trace) => {
+export const finishDeploy = async (config, kit, trace = console.log) => {
   const { storageNode } = kit.privateArgs;
   const { feedPolicy } = config;
   await publishFeedPolicy(storageNode, feedPolicy);
@@ -159,4 +165,21 @@ export const finishDeploy = async (config, kit, trace) => {
     const addr = await E(creatorFacet).connectToNoble();
     trace('noble intermediate recipient', addr);
   }
+};
+
+/**
+ * @param {BootstrapPowers & CorePowersG<'fastUsdc', FastUsdcSF, typeof permit>} permitted
+ * @param {{ options: LegibleCapData<FastUSDCConfig> }} config
+ */
+const startFastUSDC = async (permitted, config) => {
+  const { config: conf, kit } = await startOrchContractG(
+    meta,
+    permit,
+    makePrivateArgs,
+    permitted,
+    config,
+  );
+  // TODO: inline finishDeploy?
+  // TODO: make a tracer?
+  await finishDeploy(conf, kit);
 };
