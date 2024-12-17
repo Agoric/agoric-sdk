@@ -21,6 +21,8 @@ Install the relevant dependencies:
 yarn install
 ```
 
+(Note that the '@agoric/*' deps will come from the parent directory due to `yarn link --relative .. --all`)
+
 Ensure you have Kubernetes available. See https://docs.cosmology.zone/starship/get-started/step-2.
 
 The following will install `kubectl`, `kind`, `helm`, and `yq` as needed:

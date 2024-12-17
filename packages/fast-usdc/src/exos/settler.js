@@ -143,7 +143,7 @@ export const prepareSettler = (
           );
 
           // given the sourceChannel check, we can be certain of this cast
-          const sender = /** @type {NobleAddress} */ (tx.sender);
+          const nfa = /** @type {NobleAddress} */ (tx.sender);
 
           if (tx.denom !== remoteDenom) {
             const { denom: actual } = tx;
@@ -170,23 +170,23 @@ export const prepareSettler = (
           const amount = BigInt(tx.amount); // TODO: what if this throws?
 
           const { self } = this.facets;
-          const found = statusManager.dequeueStatus(sender, amount);
-          log('dequeued', found, 'for', sender, amount);
+          const found = statusManager.dequeueStatus(nfa, amount);
+          log('dequeued', found, 'for', nfa, amount);
           switch (found?.status) {
             case PendingTxStatus.Advanced:
-              return self.disburse(found.txHash, sender, amount);
+              return self.disburse(found.txHash, nfa, amount);
 
             case PendingTxStatus.Advancing:
-              this.state.mintedEarly.add(makeMintedEarlyKey(sender, amount));
+              this.state.mintedEarly.add(makeMintedEarlyKey(nfa, amount));
               return;
 
             case PendingTxStatus.Observed:
             case PendingTxStatus.AdvanceFailed:
-              return self.forward(found.txHash, sender, amount, EUD);
+              return self.forward(found.txHash, nfa, amount, EUD);
 
             case undefined:
             default:
-              log('⚠️ tap: no status for ', sender, amount);
+              log('⚠️ tap: no status for ', nfa, amount);
           }
         },
       },
@@ -231,10 +231,10 @@ export const prepareSettler = (
       self: {
         /**
          * @param {EvmHash} txHash
-         * @param {NobleAddress} sender
+         * @param {NobleAddress} nfa
          * @param {NatValue} fullValue
          */
-        async disburse(txHash, sender, fullValue) {
+        async disburse(txHash, nfa, fullValue) {
           const { repayer, settlementAccount } = this.state;
           const received = AmountMath.make(USDC, fullValue);
           const { zcfSeat: settlingSeat } = zcf.makeEmptySeatKit();
@@ -264,11 +264,11 @@ export const prepareSettler = (
         },
         /**
          * @param {EvmHash} txHash
-         * @param {NobleAddress} sender
+         * @param {NobleAddress} nfa
          * @param {NatValue} fullValue
          * @param {string} EUD
          */
-        forward(txHash, sender, fullValue, EUD) {
+        forward(txHash, nfa, fullValue, EUD) {
           const { settlementAccount, intermediateRecipient } = this.state;
 
           const dest = chainHub.makeChainAddress(EUD);
@@ -281,7 +281,7 @@ export const prepareSettler = (
           );
           void vowTools.watch(txfrV, this.facets.transferHandler, {
             txHash,
-            sender,
+            nfa,
             fullValue,
           });
         },
@@ -293,13 +293,13 @@ export const prepareSettler = (
          *
          * @typedef {{
          *   txHash: EvmHash;
-         *   sender: NobleAddress;
+         *   nfa: NobleAddress;
          *   fullValue: NatValue;
          * }} SettlerTransferCtx
          */
         onFulfilled(_result, ctx) {
-          const { txHash, sender, fullValue } = ctx;
-          statusManager.forwarded(txHash, sender, fullValue);
+          const { txHash, nfa, fullValue } = ctx;
+          statusManager.forwarded(txHash, nfa, fullValue);
         },
         /**
          * @param {unknown} reason
@@ -307,8 +307,8 @@ export const prepareSettler = (
          */
         onRejected(reason, ctx) {
           log('⚠️ transfer rejected!', reason, ctx);
-          // const { txHash, sender, amount } = ctx;
-          // TODO(#10510): statusManager.forwardFailed(txHash, sender, amount);
+          // const { txHash, nfa, amount } = ctx;
+          // TODO(#10510): statusManager.forwardFailed(txHash, nfa, amount);
         },
       },
     },

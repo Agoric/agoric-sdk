@@ -1,54 +1,35 @@
-/* global fetch setTimeout */
+/* global fetch */
 
 import test from 'ava';
 
-import { makeWalletUtils } from '@agoric/client-utils';
 import { GOV1ADDR, GOV2ADDR } from '@agoric/synthetic-chain';
 import { makeGovernanceDriver } from './test-lib/governance.js';
-import { networkConfig } from './test-lib/index.js';
-import { makeTimerUtils } from './test-lib/utils.js';
+import { agdWalletUtils } from './test-lib/index.js';
+import { upgradeContract } from './test-lib/utils.js';
+import { networkConfig } from './test-lib/rpc.js';
 
 const GOV4ADDR = 'agoric1c9gyu460lu70rtcdp95vummd6032psmpdx7wdy';
 const governanceAddresses = [GOV4ADDR, GOV2ADDR, GOV1ADDR];
 
-// TODO test-lib export `walletUtils` with this ambient authority like s:stake-bld has
-/** @param {number} ms */
-const delay = ms =>
-  new Promise(resolve => setTimeout(() => resolve(undefined), ms));
+const { getLastUpdate, readLatestHead } = agdWalletUtils;
+const governanceDriver = await makeGovernanceDriver(fetch, networkConfig);
 
 test.serial(
   'economic committee can make governance proposal and vote on it',
   async t => {
-    const { waitUntil } = makeTimerUtils({ setTimeout });
-    const { readLatestHead, getLastUpdate, getCurrentWalletRecord } =
-      await makeWalletUtils({ delay, fetch }, networkConfig);
-    const governanceDriver = await makeGovernanceDriver(fetch, networkConfig);
-
-    /** @type {any} */
-    const instance = await readLatestHead(`published.agoricNames.instance`);
-    const instances = Object.fromEntries(instance);
-
-    const wallet = await getCurrentWalletRecord(governanceAddresses[0]);
-    const usedInvitations = wallet.offerToUsedInvitation;
-
-    const charterInvitation = usedInvitations.find(
-      v =>
-        v[1].value[0].instance.getBoardId() ===
-        instances.econCommitteeCharter.getBoardId(),
-    );
-    assert(charterInvitation, 'missing charter invitation');
-
     const params = {
       ChargingPeriod: 400n,
     };
     const path = { paramPath: { key: 'governedParams' } };
     t.log('Proposing param change', { params, path });
+    const instanceName = 'VaultFactory';
 
-    await governanceDriver.proposeVaultDirectorParamChange(
+    await governanceDriver.proposeParamChange(
       governanceAddresses[0],
       params,
       path,
-      charterInvitation[0],
+      instanceName,
+      30,
     );
 
     const questionUpdate = await getLastUpdate(governanceAddresses[0]);
@@ -59,22 +40,9 @@ test.serial(
 
     t.log('Voting on param change');
     for (const address of governanceAddresses) {
-      const voteWallet =
-        /** @type {import('@agoric/smart-wallet/src/smartWallet.js').CurrentWalletRecord} */ (
-          await readLatestHead(`published.wallet.${address}.current`)
-        );
+      const committeeInvitationForVoter =
+        await governanceDriver.getCommitteeInvitation(address);
 
-      const usedInvitationsForVoter = voteWallet.offerToUsedInvitation;
-
-      const committeeInvitationForVoter = usedInvitationsForVoter.find(
-        v =>
-          v[1].value[0].instance.getBoardId() ===
-          instances.economicCommittee.getBoardId(),
-      );
-      assert(
-        committeeInvitationForVoter,
-        `${address} must have committee invitation`,
-      );
       await governanceDriver.voteOnProposedChanges(
         address,
         committeeInvitationForVoter[0],
@@ -87,22 +55,168 @@ test.serial(
       });
     }
 
-    const latestQuestion =
-      /** @type {import('@agoric/governance/src/types.js').QuestionSpec} */ (
-        await readLatestHead(
-          'published.committees.Economic_Committee.latestQuestion',
-        )
-      );
-    t.log('Waiting for deadline', latestQuestion);
-    /** @type {bigint} */
-    // @ts-expect-error assume POSIX seconds since epoch
-    const deadline = latestQuestion.closingRule.deadline;
-    await waitUntil(deadline);
-
-    const latestOutcome = await readLatestHead(
-      'published.committees.Economic_Committee.latestOutcome',
-    );
-    t.log('Verifying latest outcome', latestOutcome);
-    t.like(latestOutcome, { outcome: 'win' });
+    await governanceDriver.waitForElection();
   },
 );
+
+test.serial(
+  'VaultFactory governed parameters are intact following contract upgrade',
+  async t => {
+    /** @type {any} */
+    const vaultFactoryParamsBefore = await readLatestHead(
+      'published.vaultFactory.governance',
+    );
+
+    /*
+     * At the previous test ('economic committee can make governance proposal and vote on it')
+     * The value of ChargingPeriod was updated to 400
+     * The 'published.vaultFactory.governance' node should reflect that change.
+     */
+    t.is(
+      vaultFactoryParamsBefore.current.ChargingPeriod.value,
+      400n,
+      'vaultFactory ChargingPeriod parameter value is not the expected ',
+    );
+
+    await upgradeContract('upgrade-vaultFactory', 'zcf-b1-6c08a-vaultFactory');
+
+    const vaultFactoryParamsAfter = await readLatestHead(
+      'published.vaultFactory.governance',
+    );
+
+    t.deepEqual(
+      vaultFactoryParamsAfter,
+      vaultFactoryParamsBefore,
+      'vaultFactory governed parameters did not match',
+    );
+  },
+);
+
+test.serial(
+  'economic committee can make governance proposal for ProvisionPool',
+  async t => {
+    /** @type {any} */
+    const brand = await readLatestHead(`published.agoricNames.brand`);
+    const brands = Object.fromEntries(brand);
+
+    const params = {
+      PerAccountInitialAmount: { brand: brands.IST, value: 100_000n },
+    };
+    const path = { paramPath: { key: 'governedParams' } };
+    const instanceName = 'provisionPool';
+
+    await governanceDriver.proposeParamChange(
+      governanceAddresses[0],
+      params,
+      path,
+      instanceName,
+      30,
+    );
+
+    const questionUpdate = await getLastUpdate(governanceAddresses[0]);
+    t.like(questionUpdate, {
+      status: { numWantsSatisfied: 1 },
+    });
+
+    for (const address of governanceAddresses) {
+      const committeeInvitationForVoter =
+        await governanceDriver.getCommitteeInvitation(address);
+
+      await governanceDriver.voteOnProposedChanges(
+        address,
+        committeeInvitationForVoter[0],
+      );
+
+      const voteUpdate = await getLastUpdate(address);
+      t.like(voteUpdate, {
+        status: { numWantsSatisfied: 1 },
+      });
+    }
+
+    await governanceDriver.waitForElection();
+  },
+);
+
+test.serial(
+  'ProvisionPool governed parameters are intact following contract upgrade',
+  async t => {
+    /** @type {any} */
+    const provisionPoolParamsBefore = await readLatestHead(
+      'published.provisionPool.governance',
+    );
+
+    /*
+     * At the previous test ('economic committee can make governance proposal and vote on it')
+     * The value of ChargingPeriod was updated to 400
+     * The 'published.vaultFactory.governance' node should reflect that change.
+     */
+    t.is(
+      provisionPoolParamsBefore.current.PerAccountInitialAmount.value.value,
+      100_000n,
+      'provisionPool PerAccountInitialAmount parameter value is not the expected ',
+    );
+
+    await upgradeContract(
+      'upgrade-provisionPool',
+      'zcf-b1-db93f-provisionPool',
+    );
+
+    /** @type {any} */
+    const provisionPoolParamsAfter = await readLatestHead(
+      'published.provisionPool.governance',
+    );
+
+    t.deepEqual(
+      provisionPoolParamsAfter.current.PerAccountInitialAmount,
+      provisionPoolParamsBefore.current.PerAccountInitialAmount,
+      'provisionPool governed parameters did not match',
+    );
+  },
+);
+
+test.serial('Governance proposals history is visible', async t => {
+  /*
+   * List ordered from most recent to earliest of Economic Committee
+   * parameter changes proposed prior to the execution of this test.
+   *
+   * XXX a dynamic solution should replace this hardcoded list to ensure
+   * the acceptance tests scalability
+   */
+  const expectedParametersChanges = [
+    ['PerAccountInitialAmount'], // z:acceptance/governance.test.js
+    ['ChargingPeriod'], // z:acceptance/governance.test.js
+    ['DebtLimit'], // z:acceptance/vaults.test.js
+    ['GiveMintedFee', 'MintLimit', 'WantMintedFee'], // z:acceptance/psm.test.js
+    ['DebtLimit'], // z:acceptance/scripts/test-vaults.mts
+    ['ClockStep', 'PriceLockPeriod', 'StartFrequency'], // z:acceptance/scripts/test-vaults.mts
+    ['DebtLimit'], // agoric-3-proposals/proposals/34:upgrade-10/performActions.js
+    ['ClockStep', 'PriceLockPeriod', 'StartFrequency'], // agoric-3-proposals/proposals/34:upgrade-10/performActions.js
+  ];
+
+  // history of Economic Committee parameters changes proposed since block height 0
+  const history = await governanceDriver.getLatestQuestionHistory();
+  t.true(
+    history.length > 0,
+    'published.committees.Economic_Committee.latestQuestion node should not be empty',
+  );
+
+  const changedParameters = history.map(changes => Object.keys(changes));
+
+  /*
+   * In case you see the error message bellow and you
+   * executed an VoteOnParamChange offer prior to this test,
+   * please make sure to update the expectedParametersChanges list.
+   */
+  if (
+    !(
+      JSON.stringify(changedParameters) ===
+      JSON.stringify(expectedParametersChanges)
+    )
+  ) {
+    console.error(
+      `ERROR: Economic_Committee parameters changes history does not match with the expected list`,
+    );
+    t.log('Economic_Committee parameters changes history: ', changedParameters);
+    t.log('Expected parameters changes history: ', expectedParametersChanges);
+  }
+});

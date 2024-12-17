@@ -26,7 +26,7 @@ import { defineInertInvitation } from './utils/zoe.js';
 
 const trace = makeTracer('FastUsdc');
 
-const STATUS_NODE = 'status';
+const TXNS_NODE = 'txns';
 const FEE_NODE = 'feeConfig';
 const ADDRESSES_BAGGAGE_KEY = 'addresses';
 
@@ -39,7 +39,6 @@ const ADDRESSES_BAGGAGE_KEY = 'addresses';
  * @import {Zone} from '@agoric/zone';
  * @import {OperatorKit} from './exos/operator-kit.js';
  * @import {CctpTxEvidence, FeeConfig} from './types.js';
- * @import {RepayAmountKWR, RepayPaymentKWR} from './exos/liquidity-pool.js';
  */
 
 /**
@@ -110,8 +109,10 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
     marshaller,
   );
 
-  const statusNode = E(storageNode).makeChildNode(STATUS_NODE);
-  const statusManager = prepareStatusManager(zone, statusNode);
+  const statusManager = prepareStatusManager(
+    zone,
+    E(storageNode).makeChildNode(TXNS_NODE),
+  );
 
   const { USDC } = terms.brands;
   const { withdrawToSeat } = tools.zoeTools;

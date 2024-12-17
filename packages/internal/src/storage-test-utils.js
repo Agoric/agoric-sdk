@@ -2,12 +2,12 @@
 import { Fail } from '@endo/errors';
 import { Far } from '@endo/far';
 import { makeMarshal, Remotable } from '@endo/marshal';
-import { unmarshalFromVstorage } from './marshal.js';
 import { makeTracer } from './debug.js';
+import { NonNullish } from './errors.js';
 import { isStreamCell, makeChainStorageRoot } from './lib-chainStorage.js';
+import { unmarshalFromVstorage } from './marshal.js';
 import { bindAllMethods } from './method-tools.js';
 import { eventLoopIteration } from './testing-utils.js';
-import { NonNullish } from './errors.js';
 
 /**
  * @import {TotalMap} from './types.js';
@@ -33,6 +33,16 @@ export const slotToRemotable = (_slotId, iface = 'Remotable') =>
 export const defaultMarshaller = makeMarshal(undefined, slotToRemotable, {
   serializeBodyFormat: 'smallcaps',
 });
+
+/**
+ * Serialize/deserialize functions using {@link defaultMarshaller}
+ */
+export const defaultSerializer = {
+  /** @type {(text: string) => unknown} */
+  parse: txt => defaultMarshaller.fromCapData(JSON.parse(txt)),
+  /** @type {(obj: any) => string} */
+  stringify: obj => JSON.stringify(defaultMarshaller.toCapData(obj)),
+};
 
 /**
  * A deserializer which produces slot strings instead of Remotables, so if `a =
@@ -190,10 +200,24 @@ export const makeFakeStorageKit = (rootPath, rootOptions) => {
     },
   );
   const rootNode = makeChainStorageRoot(toStorage, rootPath, resolvedOptions);
+
+  /**
+   * Get the values at a sequence node
+   *
+   * @param {string} path
+   * @returns {string[]}
+   */
+  const getValues = path => {
+    assert(resolvedOptions.sequence);
+    const wrapper = JSON.parse(data.get(path));
+    return wrapper.values;
+  };
+
   return {
     rootNode,
     // eslint-disable-next-line object-shorthand
     data: /** @type {Map<string, string>} */ (data),
+    getValues,
     messages,
     toStorage,
   };

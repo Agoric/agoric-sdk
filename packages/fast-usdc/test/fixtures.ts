@@ -3,7 +3,7 @@ import { buildVTransferEvent } from '@agoric/orchestration/tools/ibc-mocks.js';
 import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
 import type { ChainAddress } from '@agoric/orchestration';
 import type { VTransferIBCEvent } from '@agoric/vats';
-import type { CctpTxEvidence } from '../src/types.js';
+import type { CctpTxEvidence, EvmAddress } from '../src/types.js';
 
 const mockScenarios = [
   'AGORIC_PLUS_OSMO',
@@ -13,6 +13,10 @@ const mockScenarios = [
 ] as const;
 
 type MockScenario = (typeof mockScenarios)[number];
+
+export const Senders = {
+  default: '0xDefaultFakeEthereumAddress',
+} as unknown as Record<string, EvmAddress>;
 
 export const MockCctpTxEvidences: Record<
   MockScenario,
@@ -27,6 +31,7 @@ export const MockCctpTxEvidences: Record<
     tx: {
       amount: 150000000n,
       forwardingAddress: 'noble1x0ydg69dh6fqvr27xjvp6maqmrldam6yfelqkd',
+      sender: Senders.default,
     },
     aux: {
       forwardingChannel: 'channel-21',
@@ -48,6 +53,7 @@ export const MockCctpTxEvidences: Record<
     tx: {
       amount: 300000000n,
       forwardingAddress: 'noble1x0ydg69dh6fqvr27xjvp6maqmrldam6yfelktz',
+      sender: Senders.default,
     },
     aux: {
       forwardingChannel: 'channel-21',
@@ -69,6 +75,7 @@ export const MockCctpTxEvidences: Record<
     tx: {
       amount: 200000000n,
       forwardingAddress: 'noble1x0ydg69dh6fqvr27xjvp6maqmrldam6yfelyyy',
+      sender: Senders.default,
     },
     aux: {
       forwardingChannel: 'channel-21',
@@ -87,6 +94,7 @@ export const MockCctpTxEvidences: Record<
     tx: {
       amount: 200000000n,
       forwardingAddress: 'noble1x0ydg69dh6fqvr27xjvp6maqmrldam6yfelyyy',
+      sender: Senders.default,
     },
     aux: {
       forwardingChannel: 'channel-21',

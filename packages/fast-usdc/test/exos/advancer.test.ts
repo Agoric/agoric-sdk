@@ -1,29 +1,30 @@
-import type { TestFn } from 'ava';
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
-import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
-import { denomHash } from '@agoric/orchestration';
-import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
-import { Far } from '@endo/pass-style';
-import type { NatAmount } from '@agoric/ertp';
-import { type ZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
-import { q } from '@endo/errors';
+
 import {
   decodeAddressHook,
   encodeAddressHook,
 } from '@agoric/cosmic-proto/address-hooks.js';
+import type { NatAmount } from '@agoric/ertp';
+import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
+import { denomHash } from '@agoric/orchestration';
+import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
+import { type ZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
+import { q } from '@endo/errors';
+import { Far } from '@endo/pass-style';
+import type { TestFn } from 'ava';
 import { PendingTxStatus } from '../../src/constants.js';
 import { prepareAdvancer } from '../../src/exos/advancer.js';
 import type { SettlerKit } from '../../src/exos/settler.js';
 import { prepareStatusManager } from '../../src/exos/status-manager.js';
+import type { LiquidityPoolKit } from '../../src/types.js';
 import { makeFeeTools } from '../../src/utils/fees.js';
-import { commonSetup } from '../supports.js';
 import { MockCctpTxEvidences, intermediateRecipient } from '../fixtures.js';
 import {
   makeTestFeeConfig,
   makeTestLogger,
   prepareMockOrchAccounts,
 } from '../mocks.js';
-import type { LiquidityPoolKit } from '../../src/types.js';
+import { commonSetup } from '../supports.js';
 
 const LOCAL_DENOM = `ibc/${denomHash({
   denom: 'uusdc',
@@ -48,7 +49,7 @@ const createTestExtensions = (t, common: CommonSetup) => {
 
   const statusManager = prepareStatusManager(
     rootZone.subZone('status-manager'),
-    storageNode.makeChildNode('status'),
+    storageNode.makeChildNode('txns'),
   );
 
   const mockAccounts = prepareMockOrchAccounts(rootZone.subZone('accounts'), {
@@ -174,8 +175,8 @@ test('updates status to ADVANCING in happy path', async t => {
     bootstrap: { storage },
   } = t.context;
 
-  const mockEvidence = MockCctpTxEvidences.AGORIC_PLUS_OSMO();
-  void advancer.handleTransactionEvent(mockEvidence);
+  const evidence = MockCctpTxEvidences.AGORIC_PLUS_OSMO();
+  void advancer.handleTransactionEvent(evidence);
 
   // pretend borrow succeeded and funds were depositing to the LCA
   resolveLocalTransferV();
@@ -185,8 +186,11 @@ test('updates status to ADVANCING in happy path', async t => {
   await eventLoopIteration();
 
   t.deepEqual(
-    storage.data.get(`mockChainStorageRoot.status.${mockEvidence.txHash}`),
-    PendingTxStatus.Advancing,
+    storage.getDeserialized(`fun.txns.${evidence.txHash}`),
+    [
+      { evidence, status: PendingTxStatus.Observed },
+      { status: PendingTxStatus.Advancing },
+    ],
     'ADVANCED status in happy path',
   );
 
@@ -214,11 +218,11 @@ test('updates status to ADVANCING in happy path', async t => {
   t.like(inspectNotifyCalls(), [
     [
       {
-        txHash: mockEvidence.txHash,
-        forwardingAddress: mockEvidence.tx.forwardingAddress,
-        fullAmount: usdc.make(mockEvidence.tx.amount),
+        txHash: evidence.txHash,
+        forwardingAddress: evidence.tx.forwardingAddress,
+        fullAmount: usdc.make(evidence.tx.amount),
         destination: {
-          value: decodeAddressHook(mockEvidence.aux.recipientAddress).query.EUD,
+          value: decodeAddressHook(evidence.aux.recipientAddress).query.EUD,
         },
       },
       true, // indicates transfer succeeded
@@ -254,13 +258,13 @@ test('updates status to OBSERVED on insufficient pool funds', async t => {
     intermediateRecipient,
   });
 
-  const mockEvidence = MockCctpTxEvidences.AGORIC_PLUS_DYDX();
-  void advancer.handleTransactionEvent(mockEvidence);
+  const evidence = MockCctpTxEvidences.AGORIC_PLUS_DYDX();
+  void advancer.handleTransactionEvent(evidence);
   await eventLoopIteration();
 
   t.deepEqual(
-    storage.data.get(`mockChainStorageRoot.status.${mockEvidence.txHash}`),
-    PendingTxStatus.Observed,
+    storage.getDeserialized(`fun.txns.${evidence.txHash}`),
+    [{ evidence, status: PendingTxStatus.Observed }],
     'OBSERVED status on insufficient pool funds',
   );
 
@@ -284,12 +288,12 @@ test('updates status to OBSERVED if makeChainAddress fails', async t => {
     },
   } = t.context;
 
-  const mockEvidence = MockCctpTxEvidences.AGORIC_UNKNOWN_EUD();
-  await advancer.handleTransactionEvent(mockEvidence);
+  const evidence = MockCctpTxEvidences.AGORIC_UNKNOWN_EUD();
+  await advancer.handleTransactionEvent(evidence);
 
   t.deepEqual(
-    storage.data.get(`mockChainStorageRoot.status.${mockEvidence.txHash}`),
-    PendingTxStatus.Observed,
+    storage.getDeserialized(`fun.txns.${evidence.txHash}`),
+    [{ evidence, status: PendingTxStatus.Observed }],
     'OBSERVED status on makeChainAddress failure',
   );
 
@@ -313,16 +317,19 @@ test('calls notifyAdvancingResult (AdvancedFailed) on failed transfer', async t 
     brands: { usdc },
   } = t.context;
 
-  const mockEvidence = MockCctpTxEvidences.AGORIC_PLUS_DYDX();
-  void advancer.handleTransactionEvent(mockEvidence);
+  const evidence = MockCctpTxEvidences.AGORIC_PLUS_DYDX();
+  void advancer.handleTransactionEvent(evidence);
 
   // pretend borrow and deposit to LCA succeed
   resolveLocalTransferV();
   await eventLoopIteration();
 
   t.deepEqual(
-    storage.data.get(`mockChainStorageRoot.status.${mockEvidence.txHash}`),
-    PendingTxStatus.Advancing,
+    storage.getDeserialized(`fun.txns.${evidence.txHash}`),
+    [
+      { evidence, status: PendingTxStatus.Observed },
+      { status: PendingTxStatus.Advancing },
+    ],
     'tx is Advancing',
   );
 
@@ -339,14 +346,12 @@ test('calls notifyAdvancingResult (AdvancedFailed) on failed transfer', async t 
   t.like(inspectNotifyCalls(), [
     [
       {
-        txHash: mockEvidence.txHash,
-        forwardingAddress: mockEvidence.tx.forwardingAddress,
-        fullAmount: usdc.make(mockEvidence.tx.amount),
-        advanceAmount: feeTools.calculateAdvance(
-          usdc.make(mockEvidence.tx.amount),
-        ),
+        txHash: evidence.txHash,
+        forwardingAddress: evidence.tx.forwardingAddress,
+        fullAmount: usdc.make(evidence.tx.amount),
+        advanceAmount: feeTools.calculateAdvance(usdc.make(evidence.tx.amount)),
         destination: {
-          value: decodeAddressHook(mockEvidence.aux.recipientAddress).query.EUD,
+          value: decodeAddressHook(evidence.aux.recipientAddress).query.EUD,
         },
       },
       false, // this indicates transfer failed
@@ -363,13 +368,13 @@ test('updates status to OBSERVED if pre-condition checks fail', async t => {
     },
   } = t.context;
 
-  const mockEvidence = MockCctpTxEvidences.AGORIC_NO_PARAMS();
+  const evidence = MockCctpTxEvidences.AGORIC_NO_PARAMS();
 
-  await advancer.handleTransactionEvent(mockEvidence);
+  await advancer.handleTransactionEvent(evidence);
 
   t.deepEqual(
-    storage.data.get(`mockChainStorageRoot.status.${mockEvidence.txHash}`),
-    PendingTxStatus.Observed,
+    storage.getDeserialized(`fun.txns.${evidence.txHash}`),
+    [{ evidence, status: PendingTxStatus.Observed }],
     'tx is recorded as OBSERVED',
   );
 

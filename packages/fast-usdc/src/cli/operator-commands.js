@@ -99,6 +99,7 @@ export const addOperatorCommands = (
     .requiredOption('--chainId <string>', 'chain id', Number)
     .requiredOption('--amount <number>', 'number', parseNat)
     .requiredOption('--forwardingAddress <string>', 'bech32 address', String)
+    .requiredOption('--sender <string>', 'Ethereum address initiating', String)
     .requiredOption('--txHash <0xhexo>', 'hex hash', parseHex)
     .option('--offerId <string>', 'Offer id', String, `operatorAttest-${now()}`)
     .action(async opts => {
@@ -109,12 +110,13 @@ export const addOperatorCommands = (
         recipientAddress,
         amount,
         forwardingAddress,
+        sender,
         ...flat
       } = opts;
 
       const evidence = harden({
         aux: { forwardingChannel, recipientAddress },
-        tx: { amount, forwardingAddress },
+        tx: { amount, forwardingAddress, sender },
         ...flat,
       });
       mustMatch(evidence, CctpTxEvidenceShape);

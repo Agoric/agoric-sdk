@@ -5,7 +5,9 @@
       "testing/start-valueVow.js start-valueVow",
       "testing/recorded-retired-instances.js recorded-instances-submission",
       "vats/test-localchain.js localchaintest-submission",
-      "testing/restart-valueVow.js restart-valueVow"
+      "testing/restart-valueVow.js restart-valueVow",
+      "testing/upgrade-vaultFactory.js upgrade-vaultFactory",
+      "vats/upgrade-provisionPool.js upgrade-provisionPool"
     ]
   },
   "type": "module",

@@ -135,3 +135,10 @@ export const makeHistoryReviver = (entries, slotToVal = undefined) => {
 
   return harden({ getItem, children, has });
 };
+
+/** @param {import('@endo/marshal').CapData<unknown>} cap */
+const rejectOCap = cap => Fail`${cap} is not pure data`;
+export const pureDataMarshaller = makeMarshal(rejectOCap, rejectOCap, {
+  serializeBodyFormat: 'smallcaps',
+});
+harden(pureDataMarshaller);

@@ -1,6 +1,10 @@
 import { makeIssuerKit } from '@agoric/ertp';
 import { VTRANSFER_IBC_EVENT } from '@agoric/internal/src/action-types.js';
-import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
+import {
+  defaultMarshaller,
+  defaultSerializer,
+  makeFakeStorageKit,
+} from '@agoric/internal/src/storage-test-utils.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import {
   denomHash,
@@ -24,7 +28,10 @@ import { makeWellKnownSpaces } from '@agoric/vats/src/core/utils.js';
 import { prepareLocalChainTools } from '@agoric/vats/src/localchain.js';
 import { prepareTransferTools } from '@agoric/vats/src/transfer.js';
 import { makeFakeBankManagerKit } from '@agoric/vats/tools/bank-utils.js';
-import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
+import {
+  makeFakeBoard,
+  pureDataMarshaller,
+} from '@agoric/vats/tools/board-utils.js';
 import {
   makeFakeLocalchainBridge,
   makeFakeTransferBridge,
@@ -37,6 +44,7 @@ import { makeHeapZone, type Zone } from '@agoric/zone';
 import { makeDurableZone } from '@agoric/zone/durable.js';
 import { E } from '@endo/far';
 import type { ExecutionContext } from 'ava';
+import type { PureData } from '@endo/pass-style';
 import { makeTestFeeConfig } from './mocks.js';
 
 export {
@@ -149,9 +157,15 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
   });
   const timer = buildZoeManualTimer(t.log);
   const marshaller = makeFakeBoard().getReadonlyMarshaller();
-  const storage = makeFakeStorageKit('mockChainStorageRoot', {
-    sequence: false,
-  });
+  const storage = makeFakeStorageKit(
+    'fun', // Fast USDC Node
+  );
+  /**
+   * Read pure data (CapData that has no slots) from the storage path
+   * @param path
+   */
+  storage.getDeserialized = (path: string): unknown =>
+    storage.getValues(path).map(defaultSerializer.parse);
 
   const { portAllocator, setupIBCProtocol, ibcBridge } = setupFakeNetwork(
     rootZone.subZone('network'),
