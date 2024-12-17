@@ -99,19 +99,6 @@ const makeAdminRole = (role, namesByAddress, nameToAddress) => {
 };
 
 /**
- * @template {{}} T
- * @param {T} obj
- * @param {<K extends keyof T>(entry: [k: K, v: T[K]], index: number, es: [PropertyKey, unknown][]) => Partial<T>} pred
- * @returns {Partial<T>}
- */
-const objectFilter = (obj, pred) => {
-  /** @type {Partial<T>} */
-  // @ts-expect-error pred type too narrow
-  const found = harden(fromEntries(entries(obj).filter(pred)));
-  return found;
-};
-
-/**
  * @template {PermitG} P
  * @param {BootstrapPowers['consume']['agoricNames']} agoricNames
  * @param {P} permitG
