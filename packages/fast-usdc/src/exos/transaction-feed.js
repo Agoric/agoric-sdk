@@ -124,7 +124,7 @@ export const prepareTransactionFeedKit = (zone, zcf) => {
          * @param {string} operatorId
          */
         attest(evidence, operatorId) {
-          const { pending } = this.state;
+          const { operators, pending } = this.state;
           trace('submitEvidence', operatorId, evidence);
 
           // TODO validate that it's a valid for Fast USDC before accepting
@@ -146,18 +146,27 @@ export const prepareTransactionFeedKit = (zone, zcf) => {
           const found = [...pending.values()].filter(store =>
             store.has(txHash),
           );
-          // TODO determine the real policy for checking agreement
-          if (found.length < pending.getSize()) {
-            // not all have seen it
+          const minAttestations = Math.ceil(operators.getSize() / 2);
+          trace(
+            'transaction',
+            txHash,
+            'has',
+            found.length,
+            'of',
+            minAttestations,
+            'necessary attestations',
+          );
+          if (found.length < minAttestations) {
             return;
           }
 
           // TODO verify that all found deep equal
 
-          // all agree, so remove from pending and publish
-          for (const pendingStore of pending.values()) {
-            pendingStore.delete(txHash);
+          // sufficient agreement, so remove from pending and publish
+          for (const store of found) {
+            store.delete(txHash);
           }
+          trace('publishing evidence', evidence);
           publisher.publish(evidence);
         },
       },

@@ -47,31 +47,30 @@ test('happy aggregation', async t => {
   const evidenceSubscriber = feedKit.public.getEvidenceSubscriber();
 
   const { op1, op2, op3 } = await makeOperators(feedKit);
-  const evidence = MockCctpTxEvidences.AGORIC_PLUS_OSMO();
-  op1.operator.submitEvidence(evidence);
-  op2.operator.submitEvidence(evidence);
-  op3.operator.submitEvidence(evidence);
+  const e1 = MockCctpTxEvidences.AGORIC_PLUS_OSMO();
+  op1.operator.submitEvidence(e1);
+  op2.operator.submitEvidence(e1);
 
+  // Publishes with 2 of 3
   const accepted = await evidenceSubscriber.getUpdateSince(0);
   t.deepEqual(accepted, {
-    value: evidence,
+    value: e1,
     updateCount: 1n,
   });
 
-  // verify that it doesn't publish until three match
-  // once it publishes, it doesn't remember that it already saw these
-  op1.operator.submitEvidence(evidence);
-  op2.operator.submitEvidence(evidence);
-  // but this time the third is different
-  op3.operator.submitEvidence(MockCctpTxEvidences.AGORIC_PLUS_DYDX());
-
+  // Now third operator catches up with same evidence already published
+  op3.operator.submitEvidence(e1);
   t.like(await evidenceSubscriber.getUpdateSince(0), {
-    // Update count is still 1
+    // The confirming evidence doesn't change anything
     updateCount: 1n,
   });
-  op3.operator.submitEvidence(evidence);
+
+  const e2 = MockCctpTxEvidences.AGORIC_PLUS_DYDX();
+  assert(e1.txHash !== e2.txHash);
+  op1.operator.submitEvidence(e2);
   t.like(await evidenceSubscriber.getUpdateSince(0), {
-    updateCount: 2n,
+    // op1 attestation insufficient
+    updateCount: 1n,
   });
 });
 
