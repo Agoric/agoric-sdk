@@ -12,6 +12,7 @@ import { type ZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
 import { q } from '@endo/errors';
 import { Far } from '@endo/pass-style';
 import type { TestFn } from 'ava';
+import { makeTracer } from '@agoric/internal';
 import { PendingTxStatus } from '../../src/constants.js';
 import { prepareAdvancer } from '../../src/exos/advancer.js';
 import type { SettlerKit } from '../../src/exos/settler.js';
@@ -25,6 +26,8 @@ import {
   prepareMockOrchAccounts,
 } from '../mocks.js';
 import { commonSetup } from '../supports.js';
+
+const trace = makeTracer('AdvancerTest', false);
 
 const LOCAL_DENOM = `ibc/${denomHash({
   denom: 'uusdc',
@@ -74,7 +77,7 @@ const createTestExtensions = (t, common: CommonSetup) => {
   };
   const mockZoeTools = Far('MockZoeTools', {
     localTransfer(...args: Parameters<ZoeTools['localTransfer']>) {
-      console.log('ZoeTools.localTransfer called with', args);
+      trace('ZoeTools.localTransfer called with', args);
       return localTransferVK.vow;
     },
   });
@@ -99,7 +102,7 @@ const createTestExtensions = (t, common: CommonSetup) => {
   const notifyAdvancingResultCalls: NotifyArgs[] = [];
   const mockNotifyF = Far('Settler Notify Facet', {
     notifyAdvancingResult: (...args: NotifyArgs) => {
-      console.log('Settler.notifyAdvancingResult called with', args);
+      trace('Settler.notifyAdvancingResult called with', args);
       notifyAdvancingResultCalls.push(args);
     },
   });
