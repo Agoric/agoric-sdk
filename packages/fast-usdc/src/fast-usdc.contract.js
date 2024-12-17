@@ -270,8 +270,6 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
 
   const nobleAccountV = zone.makeOnce('NobleAccount', () => makeNobleAccount());
 
-  const feedKit = zone.makeOnce('Feed Kit', () => makeFeedKit());
-
   const poolAccountV = zone.makeOnce('PoolAccount', () => makeLocalAccount());
   const settleAccountV = zone.makeOnce('SettleAccount', () =>
     makeLocalAccount(),
@@ -283,6 +281,10 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
   );
   trace('settlementAccount', settlementAccount);
   trace('poolAccount', poolAccount);
+
+  const feedKit = zone.makeOnce('Feed Kit', () =>
+    makeFeedKit(settlementAccount.getAddress()),
+  );
 
   const [_agoric, _noble, agToNoble] = await vowTools.when(
     chainHub.getChainsAndConnection('agoric', 'noble'),

@@ -14,6 +14,9 @@ const mockScenarios = [
 
 type MockScenario = (typeof mockScenarios)[number];
 
+export const mockSettlementAccountAddress =
+  'agoric16kv2g7snfc4q24vg3pjdlnnqgngtjpwtetd2h689nz09lcklvh5s8u37ek';
+
 export const Senders = {
   default: '0xDefaultFakeEthereumAddress',
 } as unknown as Record<string, EvmAddress>;
@@ -37,10 +40,9 @@ export const MockCctpTxEvidences: Record<
       forwardingChannel: 'channel-21',
       recipientAddress:
         receiverAddress ||
-        encodeAddressHook(
-          'agoric16kv2g7snfc4q24vg3pjdlnnqgngtjpwtetd2h689nz09lcklvh5s8u37ek',
-          { EUD: 'osmo183dejcnmkka5dzcu9xw6mywq0p2m5peks28men' },
-        ),
+        encodeAddressHook(mockSettlementAccountAddress, {
+          EUD: 'osmo183dejcnmkka5dzcu9xw6mywq0p2m5peks28men',
+        }),
     },
     chainId: 1,
   }),
@@ -59,10 +61,9 @@ export const MockCctpTxEvidences: Record<
       forwardingChannel: 'channel-21',
       recipientAddress:
         receiverAddress ||
-        encodeAddressHook(
-          'agoric16kv2g7snfc4q24vg3pjdlnnqgngtjpwtetd2h689nz09lcklvh5s8u37ek',
-          { EUD: 'dydx183dejcnmkka5dzcu9xw6mywq0p2m5peks28men' },
-        ),
+        encodeAddressHook(mockSettlementAccountAddress, {
+          EUD: 'dydx183dejcnmkka5dzcu9xw6mywq0p2m5peks28men',
+        }),
     },
     chainId: 1,
   }),
@@ -79,9 +80,7 @@ export const MockCctpTxEvidences: Record<
     },
     aux: {
       forwardingChannel: 'channel-21',
-      recipientAddress:
-        receiverAddress ||
-        'agoric16kv2g7snfc4q24vg3pjdlnnqgngtjpwtetd2h689nz09lcklvh5s8u37ek',
+      recipientAddress: receiverAddress || mockSettlementAccountAddress,
     },
     chainId: 1,
   }),
@@ -100,10 +99,7 @@ export const MockCctpTxEvidences: Record<
       forwardingChannel: 'channel-21',
       recipientAddress:
         receiverAddress ||
-        encodeAddressHook(
-          'agoric16kv2g7snfc4q24vg3pjdlnnqgngtjpwtetd2h689nz09lcklvh5s8u37ek',
-          { EUD: 'random1addr' },
-        ),
+        encodeAddressHook(mockSettlementAccountAddress, { EUD: 'random1addr' }),
     },
     chainId: 1,
   }),

@@ -36,7 +36,10 @@ import type { FastUsdcSF } from '../src/fast-usdc.contract.js';
 import { PoolMetricsShape } from '../src/type-guards.js';
 import type { CctpTxEvidence, FeeConfig, PoolMetrics } from '../src/types.js';
 import { makeFeeTools } from '../src/utils/fees.js';
-import { MockCctpTxEvidences } from './fixtures.js';
+import {
+  MockCctpTxEvidences,
+  mockSettlementAccountAddress,
+} from './fixtures.js';
 import { commonSetup, uusdcOnAgoric } from './supports.js';
 
 const dirname = path.dirname(new URL(import.meta.url).pathname);
@@ -135,7 +138,7 @@ const makeTestContext = async (t: ExecutionContext) => {
   };
 
   const mint = async (e: CctpTxEvidence) => {
-    const settlerAddr = 'agoric1fakeLCAAddress1'; // TODO: get from contract
+    const settlerAddr = mockSettlementAccountAddress; // TODO: get from contract
     const rxd = await receiveUSDCAt(settlerAddr, e.tx.amount);
     await VE(transferBridge).fromBridge(
       buildVTransferEvent({
@@ -190,7 +193,7 @@ test('getStaticInfo', async t => {
   t.deepEqual(await E(publicFacet).getStaticInfo(), {
     addresses: {
       poolAccount: 'agoric1fakeLCAAddress',
-      settlementAccount: 'agoric1fakeLCAAddress1',
+      settlementAccount: mockSettlementAccountAddress,
     },
   });
 });
@@ -549,7 +552,7 @@ test.serial('STORY01: advancing happy path for 100 USDC', async t => {
   t.deepEqual(inspectBankBridge().at(-1), {
     amount: String(expectedAdvance.value),
     denom: uusdcOnAgoric,
-    recipient: 'agoric1fakeLCAAddress',
+    recipient: mockSettlementAccountAddress,
     type: 'VBANK_GIVE',
   });
 
@@ -779,7 +782,7 @@ test.serial('Settlement for unknown transaction (operator down)', async t => {
       },
       {
         amount: '20000000',
-        recipient: 'agoric1fakeLCAAddress1',
+        recipient: mockSettlementAccountAddress,
         type: 'VBANK_GIVE',
       },
     ],

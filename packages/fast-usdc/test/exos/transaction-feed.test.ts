@@ -3,18 +3,27 @@ import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { deeplyFulfilledObject } from '@agoric/internal';
 import { makeHeapZone } from '@agoric/zone';
+import type { ChainAddress } from '@agoric/orchestration';
 import {
   prepareTransactionFeedKit,
   type TransactionFeedKit,
 } from '../../src/exos/transaction-feed.js';
-import { MockCctpTxEvidences } from '../fixtures.js';
+import {
+  MockCctpTxEvidences,
+  mockSettlementAccountAddress,
+} from '../fixtures.js';
 
 const nullZcf = null as any;
+const settlementAccountAddress: ChainAddress = {
+  chainId: 'agoric',
+  value: mockSettlementAccountAddress,
+  encoding: 'bech32',
+};
 
 const makeFeedKit = () => {
   const zone = makeHeapZone();
   const makeKit = prepareTransactionFeedKit(zone, nullZcf);
-  return makeKit();
+  return makeKit(settlementAccountAddress);
 };
 
 const makeOperators = (feedKit: TransactionFeedKit) => {

@@ -2,6 +2,7 @@ import { makeTracer } from '@agoric/internal';
 import { prepareDurablePublishKit } from '@agoric/notifier';
 import { keyEQ, M } from '@endo/patterns';
 import { Fail } from '@endo/errors';
+import { decodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
 import { CctpTxEvidenceShape } from '../type-guards.js';
 import { defineInertInvitation } from '../utils/zoe.js';
 import { prepareOperatorKit } from './operator-kit.js';
@@ -54,7 +55,11 @@ export const prepareTransactionFeedKit = (zone, zcf) => {
   return zone.exoClassKit(
     'Fast USDC Feed',
     TransactionFeedKitI,
-    () => {
+    /**
+     * @param {import('@agoric/orchestration').ChainAddress} settlementAccountAddress
+     */
+    settlementAccountAddress => {
+      assert(settlementAccountAddress, 'missing settlementAccountAddress');
       /** @type {MapStore<string, OperatorKit>} */
       const operators = zone.mapStore('operators', {
         durable: true,
@@ -63,7 +68,7 @@ export const prepareTransactionFeedKit = (zone, zcf) => {
       const pending = zone.mapStore('pending', {
         durable: true,
       });
-      return { operators, pending };
+      return { operators, pending, settlementAccountAddress };
     },
     {
       creator: {
@@ -125,13 +130,27 @@ export const prepareTransactionFeedKit = (zone, zcf) => {
          * @param {string} operatorId
          */
         attest(evidence, operatorId) {
-          const { operators, pending } = this.state;
+          const { operators, pending, settlementAccountAddress } = this.state;
           trace('submitEvidence', operatorId, evidence);
 
-          // TODO validate that it's a valid for Fast USDC before accepting
-          // E.g. that the `recipientAddress` is the FU settlement account and that
-          // the EUD is a chain supported by FU.
-          const { txHash } = evidence;
+          const {
+            aux: { recipientAddress },
+            tx: { forwardingAddress },
+            txHash,
+          } = evidence;
+          assert(
+            forwardingAddress.startsWith('noble'),
+            'only Noble forwarding supported',
+          );
+          const hook = decodeAddressHook(recipientAddress);
+          assert.equal(
+            hook.baseAddress,
+            settlementAccountAddress.value,
+            'only Fast USDC settlementAccount supported as recipient',
+          );
+          // We could also verify that hook.query.EUD is chain officially
+          // supported by Fast USDC. We filter upstream to give the on-chain
+          // contract more flexibility.
 
           // accept the evidence
           {
