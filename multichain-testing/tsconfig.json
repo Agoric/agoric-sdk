@@ -1,11 +1,8 @@
 {
   "extends": "../tsconfig.json",
   "include": [
-      "src",
-      "tools",
-      "test"
-  ],
-  "compilerOptions": {
-    "checkJs": false
-  }
+    "src",
+    "tools",
+    "test"
+  ]
 }

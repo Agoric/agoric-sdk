@@ -1,4 +1,5 @@
 import anyTest from '@endo/ses-ava/prepare-endo.js';
+
 import type { TestFn } from 'ava';
 import { encodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
 import { AmountMath } from '@agoric/ertp';
@@ -13,6 +14,13 @@ import { commonSetup, type SetupContextWithWallets } from '../support.js';
 import { makeFeedPolicy, oracleMnemonics } from './config.js';
 import { makeRandomDigits } from '../../tools/random.js';
 import { balancesFromPurses } from '../../tools/purse.js';
+import { makeTracer } from '@agoric/internal';
+import type {
+  CctpTxEvidence,
+  EvmAddress,
+} from '@agoric/fast-usdc/src/types.js';
+
+const log = makeTracer('MCFU');
 
 const { keys, values, fromEntries } = Object;
 const { isGTE, isEmpty, make } = AmountMath;
@@ -153,6 +161,7 @@ test.serial('oracles accept', async t => {
           return offerToUsedInvitation[0][0] === `${name}-accept`;
         },
         `${name} invitation used`,
+        { log },
       ),
     );
   }
@@ -191,6 +200,7 @@ test.serial('lp deposits', async t => {
       ({ shareWorth }) =>
         !isGTE(currShareWorth.numerator, shareWorth.numerator),
       'share worth numerator increases from deposit',
+      { log },
     ),
   );
 
@@ -203,6 +213,7 @@ test.serial('lp deposits', async t => {
         return currentPoolShares && isGTE(currentPoolShares, poolSharesWanted);
       },
       'lp has pool shares',
+      { log },
     ),
   );
 });
@@ -216,6 +227,7 @@ const advanceAndSettleScenario = test.macro({
       nobleAgoricChannelId,
       oracleWds,
       retryUntilCondition,
+      smartWalletKit,
       useChain,
       usdcOnOsmosis,
       vstorageClient,
@@ -250,8 +262,7 @@ const advanceAndSettleScenario = test.macro({
     );
     t.log('got forwardingAddress', userForwardingAddr);
 
-    // TODO export CctpTxEvidence type
-    const evidence = harden({
+    const evidence: CctpTxEvidence = harden({
       blockHash:
         '0x90d7343e04f8160892e94f02d6a9b9f255663ed0ac34caca98544c8143fee665',
       blockNumber: 21037663n,
@@ -259,6 +270,7 @@ const advanceAndSettleScenario = test.macro({
       tx: {
         amount: mintAmt,
         forwardingAddress: userForwardingAddr,
+        sender: '0x9a9eE9e9e9e9e9e9e9e9e9e9e9e9e9e9e9e9e9e9' as EvmAddress,
       },
       aux: {
         forwardingChannel: nobleAgoricChannelId,
@@ -267,7 +279,7 @@ const advanceAndSettleScenario = test.macro({
       chainId: 42161,
     });
 
-    console.log('User initiates evm mint:', evidence.txHash);
+    log('User initiates evm mint:', evidence.txHash);
 
     // submit evidences
     await Promise.all(
@@ -299,17 +311,27 @@ const advanceAndSettleScenario = test.macro({
       ),
     );
 
-    const queryTxStatus = async () =>
-      vstorageClient.queryData(
-        `published.${contractName}.status.${evidence.txHash}`,
+    const queryTxStatus = async () => {
+      const record = await smartWalletKit.readPublished(
+        `fastUsdc.txns.${evidence.txHash}`,
       );
+      if (!record) {
+        throw new Error(`no record for ${evidence.txHash}`);
+      }
+      // @ts-expect-error unknown may not have 'status'
+      if (!record.status) {
+        throw new Error(`no status for ${evidence.txHash}`);
+      }
+      // @ts-expect-error still unknown?
+      return record.status;
+    };
 
     const assertTxStatus = async (status: string) =>
       t.notThrowsAsync(() =>
         retryUntilCondition(
           () => queryTxStatus(),
           txStatus => {
-            console.log('tx status', txStatus);
+            log('tx status', txStatus);
             return txStatus === status;
           },
           `${evidence.txHash} is ${status}`,
@@ -317,7 +339,7 @@ const advanceAndSettleScenario = test.macro({
       );
 
     await assertTxStatus('ADVANCED');
-    console.log('Advance completed, waiting for mint...');
+    log('Advance completed, waiting for mint...');
 
     nobleTools.mockCctpMint(mintAmt, userForwardingAddr);
     await t.notThrowsAsync(() =>
@@ -393,6 +415,7 @@ test.serial('lp withdraws', async t => {
         return !currentPoolShares || isEmpty(currentPoolShares);
       },
       'lp no longer has pool shares',
+      { log },
     ),
   );
 
@@ -404,6 +427,7 @@ test.serial('lp withdraws', async t => {
         BigInt(balance.amount) - BigInt(currentUSDCBalance!.amount!) >
           LP_DEPOSIT_AMOUNT,
       "lp's USDC balance increases",
+      { log },
     ),
   );
 });
