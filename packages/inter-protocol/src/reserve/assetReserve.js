@@ -57,22 +57,13 @@ export const start = async (zcf, privateArgs, baggage) => {
     privateArgs.marshaller,
   );
 
-  /** @type {() => Promise<ZCFMint<'nat'>>} */
-  const takeFeeMint = async () => {
-    if (baggage.has('feeMint')) {
-      return baggage.get('feeMint');
-    }
-
-    const feeMintTemp = await zcf.registerFeeMint(
-      'Fee',
-      privateArgs.feeMintAccess,
-    );
-    baggage.init('feeMint', feeMintTemp);
-    return feeMintTemp;
-  };
-  trace('awaiting takeFeeMint');
-  const feeMint = await takeFeeMint();
   const storageNode = await privateArgs.storageNode;
+
+  trace('awaiting feeMint');
+  const { feeMint } = await provideAll(baggage, {
+    feeMint: () => zcf.registerFeeMint('Fee', privateArgs.feeMintAccess),
+  });
+
   const makeAssetReserveKit = await prepareAssetReserveKit(baggage, {
     feeMint,
     makeRecorderKit,

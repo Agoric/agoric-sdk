@@ -5,6 +5,7 @@
       "testing/replace-feeDistributor-short.js replaceFeeDistributor",
       "testing/add-USD-LEMONS.js addUsdLemons",
       "vats/upgrade-provisionPool.js upgradeProvisionPool",
+      "vats/upgrade-asset-reserve.js upgradeAssetReserve",
       "vats/upgrade-paRegistry.js",
       "vats/upgrade-board.js",
       "testing/test-upgraded-board.js testUpgradedBoard",
