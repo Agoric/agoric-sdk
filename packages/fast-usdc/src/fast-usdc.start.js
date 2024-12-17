@@ -27,6 +27,13 @@ import { fromExternalConfig } from './utils/config-marshal.js';
  * @import {FeedPolicy, FastUSDCConfig} from './types.js'
  */
 
+const ShareAssetInfo = /** @type {const} */ harden({
+  issuerName: 'FastLP',
+  denom: 'ufastlp',
+  assetKind: 'nat',
+  decimalPlaces: 6,
+});
+
 const trace = makeTracer('FUSD-Start', true);
 
 const contractName = 'fastUsdc';
@@ -116,6 +123,7 @@ export const startFastUSDC = async (
     consume: {
       agoricNames,
       namesByAddress,
+      bankManager,
       board,
       chainStorage,
       chainTimerService: timerService,
@@ -206,12 +214,22 @@ export const startFastUSDC = async (
   await publishFeedPolicy(storageNode, feedPolicy);
 
   const {
-    issuers: { PoolShares: shareIssuer },
+    issuers: fastUsdcIssuers,
     brands: { PoolShares: shareBrand },
   } = await E(zoe).getTerms(instance);
+  /** @type {{ PoolShares: Issuer<'nat'> }} */
+  // @ts-expect-error see zcf.makeZCFMint(...) in fast-usdc.contract.js
+  const { PoolShares: shareIssuer } = fastUsdcIssuers;
   produceShareIssuer.resolve(shareIssuer);
   produceShareBrand.resolve(shareBrand);
   await publishDisplayInfo(shareBrand, { board, chainStorage });
+
+  const { denom, issuerName } = ShareAssetInfo;
+  trace('addAsset', denom, shareBrand);
+  await E(bankManager).addAsset(denom, issuerName, issuerName, {
+    issuer: shareIssuer,
+    brand: shareBrand,
+  });
 
   await Promise.all(
     Object.entries(oracleDepositFacets).map(async ([name, depositFacet]) => {
@@ -258,6 +276,8 @@ export const getManifestForFastUSDC = (
           fastUsdcKit: true,
         },
         consume: {
+          bankManager: true, // to add FastLP as vbank asset
+
           chainStorage: true,
           chainTimerService: true,
           localchain: true,
