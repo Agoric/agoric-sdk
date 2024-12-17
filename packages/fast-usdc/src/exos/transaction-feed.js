@@ -18,7 +18,7 @@ export const INVITATION_MAKERS_DESC = 'oracle operator invitation';
 
 const TransactionFeedKitI = harden({
   operatorPowers: M.interface('Transaction Feed Admin', {
-    submitEvidence: M.call(CctpTxEvidenceShape, M.any()).returns(),
+    attest: M.call(CctpTxEvidenceShape, M.any()).returns(),
   }),
   creator: M.interface('Transaction Feed Creator', {
     // TODO narrow the return shape to OperatorKit
@@ -118,10 +118,12 @@ export const prepareTransactionFeedKit = (zone, zcf) => {
         /**
          * Add evidence from an operator.
          *
+         * NB: the operatorKit is responsible for
+         *
          * @param {CctpTxEvidence} evidence
          * @param {OperatorKit} operatorKit
          */
-        submitEvidence(evidence, operatorKit) {
+        attest(evidence, operatorKit) {
           const { pending } = this.state;
           trace(
             'submitEvidence',

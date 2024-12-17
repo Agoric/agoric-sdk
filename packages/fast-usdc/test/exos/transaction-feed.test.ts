@@ -102,7 +102,7 @@ test.skip('forged source', async t => {
 
   // op1 is different than the facets object the evidence must come from
   t.throws(() =>
-    feedKit.operatorPowers.submitEvidence(
+    feedKit.operatorPowers.attest(
       evidence,
       // @ts-expect-error XXX Types of property '[GET_INTERFACE_GUARD]' are incompatible.
       op1,
