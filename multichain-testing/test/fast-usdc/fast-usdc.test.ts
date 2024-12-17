@@ -13,6 +13,9 @@ import { commonSetup, type SetupContextWithWallets } from '../support.js';
 import { makeFeedPolicy, oracleMnemonics } from './config.js';
 import { makeRandomDigits } from '../../tools/random.js';
 import { balancesFromPurses } from '../../tools/purse.js';
+import { makeTracer } from '@agoric/internal';
+
+const log = makeTracer('MCFU');
 
 const { keys, values, fromEntries } = Object;
 const { isGTE, isEmpty, make } = AmountMath;
@@ -153,6 +156,7 @@ test.serial('oracles accept', async t => {
           return offerToUsedInvitation[0][0] === `${name}-accept`;
         },
         `${name} invitation used`,
+        { log },
       ),
     );
   }
@@ -191,6 +195,7 @@ test.serial('lp deposits', async t => {
       ({ shareWorth }) =>
         !isGTE(currShareWorth.numerator, shareWorth.numerator),
       'share worth numerator increases from deposit',
+      { log },
     ),
   );
 
@@ -203,6 +208,7 @@ test.serial('lp deposits', async t => {
         return currentPoolShares && isGTE(currentPoolShares, poolSharesWanted);
       },
       'lp has pool shares',
+      { log },
     ),
   );
 });
@@ -267,7 +273,7 @@ const advanceAndSettleScenario = test.macro({
       chainId: 42161,
     });
 
-    console.log('User initiates evm mint:', evidence.txHash);
+    log('User initiates evm mint:', evidence.txHash);
 
     // submit evidences
     await Promise.all(
@@ -309,7 +315,7 @@ const advanceAndSettleScenario = test.macro({
         retryUntilCondition(
           () => queryTxStatus(),
           txStatus => {
-            console.log('tx status', txStatus);
+            log('tx status', txStatus);
             return txStatus === status;
           },
           `${evidence.txHash} is ${status}`,
@@ -317,7 +323,7 @@ const advanceAndSettleScenario = test.macro({
       );
 
     await assertTxStatus('ADVANCED');
-    console.log('Advance completed, waiting for mint...');
+    log('Advance completed, waiting for mint...');
 
     nobleTools.mockCctpMint(mintAmt, userForwardingAddr);
     await t.notThrowsAsync(() =>
@@ -393,6 +399,7 @@ test.serial('lp withdraws', async t => {
         return !currentPoolShares || isEmpty(currentPoolShares);
       },
       'lp no longer has pool shares',
+      { log },
     ),
   );
 
@@ -404,6 +411,7 @@ test.serial('lp withdraws', async t => {
         BigInt(balance.amount) - BigInt(currentUSDCBalance!.amount!) >
           LP_DEPOSIT_AMOUNT,
       "lp's USDC balance increases",
+      { log },
     ),
   );
 });

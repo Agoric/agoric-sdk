@@ -9,11 +9,15 @@ import { makeHttpClient, makeAPI } from './makeHttpClient.js';
 import { dedup, makeQueryKit, poll } from './queryKit.js';
 import { makeVStorage } from './batchQuery.js';
 import { makeRetryUntilCondition } from './sleep.js';
+import { makeTracer } from '@agoric/internal';
 
 /**
+ * @import {OfferSpec} from '@agoric/smart-wallet/src/offers.js';
  * @import { EnglishMnemonic } from '@cosmjs/crypto';
  * @import { RetryUntilCondition } from './sleep.js';
  */
+
+const trace = makeTracer('E2ET');
 
 const BLD = '000000ubld';
 
@@ -223,7 +227,7 @@ export const provisionSmartWallet = async (
     const txInfo = await sendAction({ method: 'executeOffer', offer });
     console.debug('spendAction', txInfo);
     for await (const update of updates) {
-      //   console.log('update', address, update);
+      trace('update', address, update);
       if (update.updated !== 'offerStatus' || update.status.id !== offer.id) {
         continue;
       }
@@ -355,7 +359,7 @@ const voteLatestProposalAndWait = async ({
     await blockTool.waitForBlock(1, { step: `voting`, on: lastProposalId })
   ) {
     info = await agd.query(['gov', 'proposal', lastProposalId]);
-    console.log(
+    trace(
       `Waiting for proposal ${lastProposalId} to pass (status=${info.status})`,
     );
   }
@@ -398,7 +402,7 @@ const runCoreEval = async (
 
   const evalPaths = evals.map(e => [e.permit, e.code]).flat();
   log(evalPaths);
-  console.log('await tx', evalPaths);
+  trace('await tx', evalPaths);
   const result = await agd.tx(
     [
       'gov',
@@ -413,7 +417,7 @@ const runCoreEval = async (
   // FIXME TypeError#1: unrecognized details 0
   // assert(result.code, 0);
 
-  console.log('await voteLatestProposalAndWait', evalPaths);
+  trace('await voteLatestProposalAndWait', evalPaths);
   const detail = await voteLatestProposalAndWait({ agd, blockTool });
   log(detail.proposal_id, detail.voting_end_time, detail.status);
 
@@ -462,7 +466,7 @@ export const makeE2ETools = async (
     if (typeof info === 'object' && Object.keys(info).length > 0) {
       // XXX normally we have the caller pass in the log function
       // later, but the way blockTool is factored, we have to supply it early.
-      console.log({ ...info, delay: ms / 1000 }, '...');
+      trace({ ...info, delay: ms / 1000 }, '...');
     }
     return delay(ms);
   };
@@ -605,8 +609,9 @@ export const seatLike = updates => {
   });
 };
 
-/** @param {Awaited<ReturnType<provisionSmartWallet>>} wallet */
+/** @param {Awaited<ReturnType<typeof provisionSmartWallet>>} wallet */
 export const makeDoOffer = wallet => {
+  /** @type {(offer: OfferSpec) => Promise<void>} */
   const doOffer = async offer => {
     const updates = wallet.offers.executeOffer(offer);
     // const seat = seatLike(updates);
