@@ -318,6 +318,6 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
 };
 harden(contract);
 
-export const start = withOrchestration(contract);
+export const start = withOrchestration(contract, { disableStorageNode: true });
 harden(start);
 /** @typedef {typeof start} FastUsdcSF */
