@@ -15,6 +15,10 @@ import { makeFeedPolicy, oracleMnemonics } from './config.js';
 import { makeRandomDigits } from '../../tools/random.js';
 import { balancesFromPurses } from '../../tools/purse.js';
 import { makeTracer } from '@agoric/internal';
+import type {
+  CctpTxEvidence,
+  EvmAddress,
+} from '@agoric/fast-usdc/src/types.js';
 
 const log = makeTracer('MCFU');
 
@@ -258,8 +262,7 @@ const advanceAndSettleScenario = test.macro({
     );
     t.log('got forwardingAddress', userForwardingAddr);
 
-    // TODO export CctpTxEvidence type
-    const evidence = harden({
+    const evidence: CctpTxEvidence = harden({
       blockHash:
         '0x90d7343e04f8160892e94f02d6a9b9f255663ed0ac34caca98544c8143fee665',
       blockNumber: 21037663n,
@@ -267,7 +270,7 @@ const advanceAndSettleScenario = test.macro({
       tx: {
         amount: mintAmt,
         forwardingAddress: userForwardingAddr,
-        sender: '0x9a9eE9e9e9e9e9e9e9e9e9e9e9e9e9e9e9e9e9e9',
+        sender: '0x9a9eE9e9e9e9e9e9e9e9e9e9e9e9e9e9e9e9e9e9' as EvmAddress,
       },
       aux: {
         forwardingChannel: nobleAgoricChannelId,

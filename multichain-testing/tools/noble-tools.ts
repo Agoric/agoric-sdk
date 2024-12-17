@@ -1,6 +1,7 @@
 import type { IBCChannelID } from '@agoric/vats';
 import type { ExecSync } from './agd-lib.js';
 import type { ChainAddress } from '@agoric/orchestration';
+import type { NobleAddress } from '@agoric/fast-usdc/src/types.js';
 
 const kubectlBinary = 'kubectl';
 const noblePod = 'noblelocal-genesis-0';
@@ -82,7 +83,7 @@ export const makeNobleTools = (
   const queryForwardingAddress = (
     channelId: IBCChannelID,
     address: ChainAddress['value'],
-  ): { address: string; exists: boolean } => {
+  ): { address: NobleAddress; exists: boolean } => {
     checkEnv();
     log('querying forwarding address', address, channelId);
     return JSON.parse(
