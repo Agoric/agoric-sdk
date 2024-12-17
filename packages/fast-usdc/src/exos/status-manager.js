@@ -102,12 +102,23 @@ export const prepareStatusManager = (
   /**
    * @param {EvmHash} txId
    * @param {TransactionRecord} record
+   * @returns {Promise<void>}
    */
-  const publishTxnRecord = (txId, record) => {
+  const publishTxnRecord = async (txId, record) => {
     const txNode = E(txnsNode).makeChildNode(txId, {
       sequence: true, // avoid overwriting other output in the block
     });
-    void E(txNode).setValue(
+
+    // XXX awkward for publish* to update a store, but it's temporary
+    if (record.status && TerminalTxStatus[record.status]) {
+      // UNTIL https://github.com/Agoric/agoric-sdk/issues/7405
+      // Queue it for deletion later because if we deleted it now the earlier
+      // writes in this block would be wiped. For now we keep track of what to
+      // delete when we know it'll be another block.
+      storedCompletedTxs.add(txId);
+    }
+
+    await E(txNode).setValue(
       JSON.stringify(pureDataMarshaller.toCapData(record)),
     );
   };
@@ -122,22 +133,6 @@ export const prepareStatusManager = (
       hash,
       harden({ evidence, status: TxStatus.Observed }),
     );
-  };
-
-  /**
-   * @param {CctpTxEvidence['txHash']} hash
-   * @param {TxStatus} status
-   */
-  const publishStatus = (hash, status) => {
-    // Don't await, just writing to vstorage.
-    void publishTxnRecord(hash, harden({ status }));
-    if (TerminalTxStatus[status]) {
-      // UNTIL https://github.com/Agoric/agoric-sdk/issues/7405
-      // Queue it for deletion later because if we deleted it now the earlier
-      // writes in this block would be wiped. For now we keep track of what to
-      // delete when we know it'll be another block.
-      storedCompletedTxs.add(hash);
-    }
   };
 
   /**
@@ -164,7 +159,7 @@ export const prepareStatusManager = (
     publishEvidence(txHash, evidence);
     if (status !== PendingTxStatus.Observed) {
       // publishEvidence publishes Observed
-      publishStatus(txHash, status);
+      void publishTxnRecord(txHash, harden({ status }));
     }
   };
 
@@ -187,7 +182,7 @@ export const prepareStatusManager = (
     ];
     const txpost = { ...tx, status };
     pendingTxs.set(key, harden([...prefix, txpost, ...suffix]));
-    publishStatus(tx.txHash, status);
+    void publishTxnRecord(tx.txHash, harden({ status }));
   }
 
   return zone.exo(
@@ -315,7 +310,7 @@ export const prepareStatusManager = (
        * @param {EvmHash} txHash
        */
       disbursed(txHash) {
-        publishStatus(txHash, TxStatus.Disbursed);
+        void publishTxnRecord(txHash, harden({ status: TxStatus.Disbursed }));
       },
 
       /**
@@ -327,7 +322,7 @@ export const prepareStatusManager = (
        */
       forwarded(txHash, nfa, amount) {
         if (txHash) {
-          publishStatus(txHash, TxStatus.Forwarded);
+          void publishTxnRecord(txHash, harden({ status: TxStatus.Forwarded }));
         } else {
           // TODO store (early) `Minted` transactions to check against incoming evidence
           log(
