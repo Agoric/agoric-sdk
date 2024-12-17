@@ -15,10 +15,7 @@ import { makeFeedPolicy, oracleMnemonics } from './config.js';
 import { makeRandomDigits } from '../../tools/random.js';
 import { balancesFromPurses } from '../../tools/purse.js';
 import { makeTracer } from '@agoric/internal';
-import type {
-  CctpTxEvidence,
-  EvmAddress,
-} from '@agoric/fast-usdc/src/types.js';
+import type { CctpTxEvidence, EvmAddress } from '@agoric/fast-usdc';
 
 const log = makeTracer('MCFU');
 
