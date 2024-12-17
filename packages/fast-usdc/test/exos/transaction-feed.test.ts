@@ -48,12 +48,9 @@ test('happy aggregation', async t => {
 
   const { op1, op2, op3 } = await makeOperators(feedKit);
   const evidence = MockCctpTxEvidences.AGORIC_PLUS_OSMO();
-  const results = await Promise.all([
-    op1.operator.submitEvidence(evidence),
-    op2.operator.submitEvidence(evidence),
-    op3.operator.submitEvidence(evidence),
-  ]);
-  t.deepEqual(results, [undefined, undefined, undefined]);
+  op1.operator.submitEvidence(evidence);
+  op2.operator.submitEvidence(evidence);
+  op3.operator.submitEvidence(evidence);
 
   const accepted = await evidenceSubscriber.getUpdateSince(0);
   t.deepEqual(accepted, {
@@ -62,18 +59,17 @@ test('happy aggregation', async t => {
   });
 
   // verify that it doesn't publish until three match
-  await Promise.all([
-    // once it publishes, it doesn't remember that it already saw these
-    op1.operator.submitEvidence(evidence),
-    op2.operator.submitEvidence(evidence),
-    // but this time the third is different
-    op3.operator.submitEvidence(MockCctpTxEvidences.AGORIC_PLUS_DYDX()),
-  ]);
+  // once it publishes, it doesn't remember that it already saw these
+  op1.operator.submitEvidence(evidence);
+  op2.operator.submitEvidence(evidence);
+  // but this time the third is different
+  op3.operator.submitEvidence(MockCctpTxEvidences.AGORIC_PLUS_DYDX());
+
   t.like(await evidenceSubscriber.getUpdateSince(0), {
     // Update count is still 1
     updateCount: 1n,
   });
-  await op3.operator.submitEvidence(evidence);
+  op3.operator.submitEvidence(evidence);
   t.like(await evidenceSubscriber.getUpdateSince(0), {
     updateCount: 2n,
   });
@@ -85,11 +81,11 @@ test('disabled operator', async t => {
   const evidence = MockCctpTxEvidences.AGORIC_PLUS_OSMO();
 
   // works before disabling
-  await op1.operator.submitEvidence(evidence);
+  op1.operator.submitEvidence(evidence);
 
   op1.admin.disable();
 
-  await t.throwsAsync(() => op1.operator.submitEvidence(evidence), {
+  t.throws(() => op1.operator.submitEvidence(evidence), {
     message: 'submitEvidence for disabled operator',
   });
 });
