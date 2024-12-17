@@ -4,6 +4,7 @@ import type { TestFn } from 'ava';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
 import type { Zone } from '@agoric/zone';
+import { defaultMarshaller } from '@agoric/internal/src/storage-test-utils.js';
 import { PendingTxStatus } from '../../src/constants.js';
 import { prepareSettler } from '../../src/exos/settler.js';
 import { prepareStatusManager } from '../../src/exos/status-manager.js';
@@ -48,7 +49,7 @@ const makeTestContext = async t => {
   const statusManager = prepareStatusManager(
     zone.subZone('status-manager'),
     common.commonPrivateArgs.storageNode.makeChildNode('txns'),
-    { log },
+    { marshaller: defaultMarshaller, log },
   );
   const { zcf, callLog } = mockZcf(zone.subZone('Mock ZCF'));
 
@@ -239,7 +240,7 @@ test('happy path: disburse to LPs; StatusManager removes tx', async t => {
     { evidence: cctpTxEvidence, status: 'OBSERVED' },
     { status: 'ADVANCING' },
     { status: 'ADVANCED' },
-    { status: 'DISBURSED' },
+    { split: expectedSplit, status: 'DISBURSED' },
   ]);
 
   // Check deletion of DISBURSED transactions

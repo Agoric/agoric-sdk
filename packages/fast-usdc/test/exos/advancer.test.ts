@@ -12,6 +12,7 @@ import { type ZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
 import { q } from '@endo/errors';
 import { Far } from '@endo/pass-style';
 import type { TestFn } from 'ava';
+import { makeTracer } from '@agoric/internal';
 import { PendingTxStatus } from '../../src/constants.js';
 import { prepareAdvancer } from '../../src/exos/advancer.js';
 import type { SettlerKit } from '../../src/exos/settler.js';
@@ -25,6 +26,8 @@ import {
   prepareMockOrchAccounts,
 } from '../mocks.js';
 import { commonSetup } from '../supports.js';
+
+const trace = makeTracer('AdvancerTest', false);
 
 const LOCAL_DENOM = `ibc/${denomHash({
   denom: 'uusdc',
@@ -50,6 +53,7 @@ const createTestExtensions = (t, common: CommonSetup) => {
   const statusManager = prepareStatusManager(
     rootZone.subZone('status-manager'),
     storageNode.makeChildNode('txns'),
+    { marshaller: common.commonPrivateArgs.marshaller },
   );
 
   const mockAccounts = prepareMockOrchAccounts(rootZone.subZone('accounts'), {
@@ -74,7 +78,7 @@ const createTestExtensions = (t, common: CommonSetup) => {
   };
   const mockZoeTools = Far('MockZoeTools', {
     localTransfer(...args: Parameters<ZoeTools['localTransfer']>) {
-      console.log('ZoeTools.localTransfer called with', args);
+      trace('ZoeTools.localTransfer called with', args);
       return localTransferVK.vow;
     },
   });
@@ -99,7 +103,7 @@ const createTestExtensions = (t, common: CommonSetup) => {
   const notifyAdvancingResultCalls: NotifyArgs[] = [];
   const mockNotifyF = Far('Settler Notify Facet', {
     notifyAdvancingResult: (...args: NotifyArgs) => {
-      console.log('Settler.notifyAdvancingResult called with', args);
+      trace('Settler.notifyAdvancingResult called with', args);
       notifyAdvancingResultCalls.push(args);
     },
   });
@@ -167,7 +171,7 @@ test.beforeEach(async t => {
 test('updates status to ADVANCING in happy path', async t => {
   const {
     extensions: {
-      services: { advancer, feeTools, statusManager },
+      services: { advancer, feeTools },
       helpers: { inspectLogs, inspectNotifyCalls },
       mocks: { mockPoolAccount, resolveLocalTransferV },
     },
@@ -235,7 +239,7 @@ test('updates status to OBSERVED on insufficient pool funds', async t => {
     brands: { usdc },
     bootstrap: { storage },
     extensions: {
-      services: { makeAdvancer, statusManager },
+      services: { makeAdvancer },
       helpers: { inspectLogs },
       mocks: { mockPoolAccount, mockNotifyF },
     },
@@ -283,13 +287,14 @@ test('updates status to OBSERVED if makeChainAddress fails', async t => {
   const {
     bootstrap: { storage },
     extensions: {
-      services: { advancer, statusManager },
+      services: { advancer },
       helpers: { inspectLogs },
     },
   } = t.context;
 
   const evidence = MockCctpTxEvidences.AGORIC_UNKNOWN_EUD();
   await advancer.handleTransactionEvent(evidence);
+  await eventLoopIteration();
 
   t.deepEqual(
     storage.getDeserialized(`fun.txns.${evidence.txHash}`),
@@ -310,7 +315,7 @@ test('calls notifyAdvancingResult (AdvancedFailed) on failed transfer', async t 
   const {
     bootstrap: { storage },
     extensions: {
-      services: { advancer, feeTools, statusManager },
+      services: { advancer, feeTools },
       helpers: { inspectLogs, inspectNotifyCalls },
       mocks: { mockPoolAccount, resolveLocalTransferV },
     },
@@ -363,7 +368,7 @@ test('updates status to OBSERVED if pre-condition checks fail', async t => {
   const {
     bootstrap: { storage },
     extensions: {
-      services: { advancer, statusManager },
+      services: { advancer },
       helpers: { inspectLogs },
     },
   } = t.context;
@@ -371,6 +376,7 @@ test('updates status to OBSERVED if pre-condition checks fail', async t => {
   const evidence = MockCctpTxEvidences.AGORIC_NO_PARAMS();
 
   await advancer.handleTransactionEvent(evidence);
+  await eventLoopIteration();
 
   t.deepEqual(
     storage.getDeserialized(`fun.txns.${evidence.txHash}`),

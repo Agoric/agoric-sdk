@@ -9,6 +9,7 @@ import type { Amount } from '@agoric/ertp';
 import type { CopyRecord, Passable } from '@endo/pass-style';
 import type { PendingTxStatus, TxStatus } from './constants.js';
 import type { FastUsdcTerms } from './fast-usdc.contract.js';
+import type { RepayAmountKWR } from './exos/liquidity-pool.js';
 
 export type EvmHash = `0x${string}`;
 export type EvmAddress = `0x${string & { length: 40 }}`;
@@ -40,6 +41,7 @@ export interface CctpTxEvidence {
  */
 export interface TransactionRecord extends CopyRecord {
   evidence?: CctpTxEvidence;
+  split?: RepayAmountKWR;
   status: TxStatus;
 }
 

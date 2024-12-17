@@ -1,7 +1,6 @@
 import { makeIssuerKit } from '@agoric/ertp';
 import { VTRANSFER_IBC_EVENT } from '@agoric/internal/src/action-types.js';
 import {
-  defaultMarshaller,
   defaultSerializer,
   makeFakeStorageKit,
 } from '@agoric/internal/src/storage-test-utils.js';
@@ -28,10 +27,7 @@ import { makeWellKnownSpaces } from '@agoric/vats/src/core/utils.js';
 import { prepareLocalChainTools } from '@agoric/vats/src/localchain.js';
 import { prepareTransferTools } from '@agoric/vats/src/transfer.js';
 import { makeFakeBankManagerKit } from '@agoric/vats/tools/bank-utils.js';
-import {
-  makeFakeBoard,
-  pureDataMarshaller,
-} from '@agoric/vats/tools/board-utils.js';
+import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
 import {
   makeFakeLocalchainBridge,
   makeFakeTransferBridge,
@@ -44,7 +40,6 @@ import { makeHeapZone, type Zone } from '@agoric/zone';
 import { makeDurableZone } from '@agoric/zone/durable.js';
 import { E } from '@endo/far';
 import type { ExecutionContext } from 'ava';
-import type { PureData } from '@endo/pass-style';
 import { makeTestFeeConfig } from './mocks.js';
 
 export {
@@ -156,7 +151,7 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
     transfer: transferMiddleware,
   });
   const timer = buildZoeManualTimer(t.log);
-  const marshaller = makeFakeBoard().getReadonlyMarshaller();
+  const marshaller = makeFakeBoard().getPublishingMarshaller();
   const storage = makeFakeStorageKit(
     'fun', // Fast USDC Node
   );

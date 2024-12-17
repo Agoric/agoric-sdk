@@ -260,7 +260,7 @@ export const prepareSettler = (
           repayer.repay(settlingSeat, split);
 
           // update status manager, marking tx `SETTLED`
-          statusManager.disbursed(txHash);
+          statusManager.disbursed(txHash, split);
         },
         /**
          * @param {EvmHash} txHash

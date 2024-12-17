@@ -1,14 +1,15 @@
-import { M } from '@endo/patterns';
-import { Fail, makeError, q } from '@endo/errors';
+import { makeTracer } from '@agoric/internal';
 import { appendToStoredArray } from '@agoric/store/src/stores/store-utils.js';
+import { AmountKeywordRecordShape } from '@agoric/zoe/src/typeGuards.js';
+import { Fail, makeError, q } from '@endo/errors';
 import { E } from '@endo/eventual-send';
-import { makeTracer, pureDataMarshaller } from '@agoric/internal';
+import { M } from '@endo/patterns';
+import { PendingTxStatus, TerminalTxStatus, TxStatus } from '../constants.js';
 import {
   CctpTxEvidenceShape,
   EvmHashShape,
   PendingTxShape,
 } from '../type-guards.js';
-import { PendingTxStatus, TerminalTxStatus, TxStatus } from '../constants.js';
 
 /**
  * @import {MapStore, SetStore} from '@agoric/store';
@@ -48,6 +49,7 @@ const pendingTxKeyOf = evidence => {
 /**
  * @typedef {{
  *  log?: LogFn;
+ *  marshaller: ERef<Marshaller>;
  * }} StatusManagerPowers
  */
 
@@ -66,6 +68,7 @@ export const prepareStatusManager = (
   zone,
   txnsNode,
   {
+    marshaller,
     log = makeTracer('Advancer', true),
   } = /** @type {StatusManagerPowers} */ ({}),
 ) => {
@@ -102,14 +105,25 @@ export const prepareStatusManager = (
   /**
    * @param {EvmHash} txId
    * @param {TransactionRecord} record
+   * @returns {Promise<void>}
    */
-  const publishTxnRecord = (txId, record) => {
+  const publishTxnRecord = async (txId, record) => {
     const txNode = E(txnsNode).makeChildNode(txId, {
       sequence: true, // avoid overwriting other output in the block
     });
-    void E(txNode).setValue(
-      JSON.stringify(pureDataMarshaller.toCapData(record)),
-    );
+
+    // XXX awkward for publish* to update a store, but it's temporary
+    if (record.status && TerminalTxStatus[record.status]) {
+      // UNTIL https://github.com/Agoric/agoric-sdk/issues/7405
+      // Queue it for deletion later because if we deleted it now the earlier
+      // writes in this block would be wiped. For now we keep track of what to
+      // delete when we know it'll be another block.
+      storedCompletedTxs.add(txId);
+    }
+
+    const capData = await E(marshaller).toCapData(record);
+
+    await E(txNode).setValue(JSON.stringify(capData));
   };
 
   /**
@@ -122,22 +136,6 @@ export const prepareStatusManager = (
       hash,
       harden({ evidence, status: TxStatus.Observed }),
     );
-  };
-
-  /**
-   * @param {CctpTxEvidence['txHash']} hash
-   * @param {TxStatus} status
-   */
-  const publishStatus = (hash, status) => {
-    // Don't await, just writing to vstorage.
-    void publishTxnRecord(hash, harden({ status }));
-    if (TerminalTxStatus[status]) {
-      // UNTIL https://github.com/Agoric/agoric-sdk/issues/7405
-      // Queue it for deletion later because if we deleted it now the earlier
-      // writes in this block would be wiped. For now we keep track of what to
-      // delete when we know it'll be another block.
-      storedCompletedTxs.add(hash);
-    }
   };
 
   /**
@@ -164,7 +162,7 @@ export const prepareStatusManager = (
     publishEvidence(txHash, evidence);
     if (status !== PendingTxStatus.Observed) {
       // publishEvidence publishes Observed
-      publishStatus(txHash, status);
+      void publishTxnRecord(txHash, harden({ status }));
     }
   };
 
@@ -187,7 +185,7 @@ export const prepareStatusManager = (
     ];
     const txpost = { ...tx, status };
     pendingTxs.set(key, harden([...prefix, txpost, ...suffix]));
-    publishStatus(tx.txHash, status);
+    void publishTxnRecord(tx.txHash, harden({ status }));
   }
 
   return zone.exo(
@@ -212,7 +210,9 @@ export const prepareStatusManager = (
           M.undefined(),
         ),
       ),
-      disbursed: M.call(EvmHashShape).returns(M.undefined()),
+      disbursed: M.call(EvmHashShape, AmountKeywordRecordShape).returns(
+        M.undefined(),
+      ),
       forwarded: M.call(M.opt(EvmHashShape), M.string(), M.nat()).returns(
         M.undefined(),
       ),
@@ -313,9 +313,13 @@ export const prepareStatusManager = (
        * Mark a transaction as `DISBURSED`
        *
        * @param {EvmHash} txHash
+       * @param {import('./liquidity-pool.js').RepayAmountKWR} split
        */
-      disbursed(txHash) {
-        publishStatus(txHash, TxStatus.Disbursed);
+      disbursed(txHash, split) {
+        void publishTxnRecord(
+          txHash,
+          harden({ split, status: TxStatus.Disbursed }),
+        );
       },
 
       /**
@@ -327,7 +331,7 @@ export const prepareStatusManager = (
        */
       forwarded(txHash, nfa, amount) {
         if (txHash) {
-          publishStatus(txHash, TxStatus.Forwarded);
+          void publishTxnRecord(txHash, harden({ status: TxStatus.Forwarded }));
         } else {
           // TODO store (early) `Minted` transactions to check against incoming evidence
           log(
