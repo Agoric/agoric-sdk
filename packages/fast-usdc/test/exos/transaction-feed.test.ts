@@ -89,19 +89,3 @@ test('disabled operator', async t => {
     message: 'submitEvidence for disabled operator',
   });
 });
-
-// TODO: find a way to get this working
-test.skip('forged source', async t => {
-  const feedKit = makeFeedKit();
-  const { op1 } = await makeOperators(feedKit);
-  const evidence = MockCctpTxEvidences.AGORIC_PLUS_OSMO();
-
-  // op1 is different than the facets object the evidence must come from
-  t.throws(() =>
-    feedKit.operatorPowers.attest(
-      evidence,
-      // @ts-expect-error XXX Types of property '[GET_INTERFACE_GUARD]' are incompatible.
-      op1,
-    ),
-  );
-});
