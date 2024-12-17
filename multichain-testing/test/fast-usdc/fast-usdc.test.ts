@@ -430,12 +430,14 @@ test.serial('lp withdraws', async t => {
   const give = { PoolShare: toAmt(FastLP, lpCoins) };
   t.log('give', give, lpCoins);
 
-  const { balance: usdcCoins } = await queryClient.queryBalance(
+  const { balance: usdcCoinsPre } = await queryClient.queryBalance(
     wallets['lp'],
     usdcDenom,
   );
+  t.log('usdc coins pre', usdcCoinsPre);
+
   const want = { USDC: multiplyBy(give.PoolShare, metricsPre.shareWorth) };
-  t.log('want', want, usdcCoins);
+  t.log('want', want);
 
   const proposal: USDCProposalShapes['withdraw'] = harden({ give, want });
   await lpDoOffer({
@@ -464,7 +466,7 @@ test.serial('lp withdraws', async t => {
       ({ balance }) =>
         !isGTE(
           make(USDC, LP_DEPOSIT_AMOUNT),
-          subtract(toAmt(USDC, balance), want.USDC),
+          subtract(toAmt(USDC, balance), toAmt(USDC, usdcCoinsPre)),
         ),
       "lp's USDC balance increases",
       { log },
