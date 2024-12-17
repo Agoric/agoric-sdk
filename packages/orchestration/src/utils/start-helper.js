@@ -33,6 +33,12 @@ import { makeZcfTools } from './zcf-tools.js';
  */
 
 /**
+ * @typedef {{
+ *   disableStorageNode?: boolean;
+ * }} WithOrchestrationOpts
+ */
+
+/**
  * Helper that a contract start function can use to set up the objects needed
  * for orchestration.
  *
@@ -42,6 +48,7 @@ import { makeZcfTools } from './zcf-tools.js';
  * @param {Baggage} baggage
  * @param {OrchestrationPowers} remotePowers
  * @param {Marshaller} marshaller
+ * @param {WithOrchestrationOpts} [opts]
  * @internal
  */
 export const provideOrchestration = (
@@ -49,6 +56,7 @@ export const provideOrchestration = (
   baggage,
   remotePowers,
   marshaller,
+  opts,
 ) => {
   // separate zones
   const zones = (() => {
@@ -76,6 +84,10 @@ export const provideOrchestration = (
   const zoeTools = makeZoeTools(zcf, vowTools);
 
   const zcfTools = makeZcfTools(zcf, vowTools);
+
+  const storageNode = opts?.disableStorageNode
+    ? undefined
+    : remotePowers.storageNode;
 
   const { makeRecorderKit } = prepareRecorderKitMakers(baggage, marshaller);
   const makeLocalOrchestrationAccountKit = prepareLocalOrchestrationAccountKit(
@@ -109,7 +121,7 @@ export const provideOrchestration = (
   const makeRemoteChainFacade = prepareRemoteChainFacade(zones.orchestration, {
     makeCosmosOrchestrationAccount,
     orchestration: remotePowers.orchestrationService,
-    storageNode: remotePowers.storageNode,
+    storageNode,
     timer: remotePowers.timerService,
     vowTools,
   });
@@ -118,7 +130,7 @@ export const provideOrchestration = (
     makeLocalOrchestrationAccountKit,
     localchain: remotePowers.localchain,
     // FIXME what path?
-    storageNode: remotePowers.storageNode,
+    storageNode,
     agoricNames,
     orchestration: remotePowers.orchestrationService,
     timer: remotePowers.timerService,
@@ -199,16 +211,18 @@ harden(provideOrchestration);
  *   zone: Zone,
  *   tools: OrchestrationTools,
  * ) => Promise<R>} contractFn
+ * @param {WithOrchestrationOpts} [opts]
  * @returns {(zcf: ZCF<CT>, privateArgs: PA, baggage: Baggage) => Promise<R>} a
  *   Zoe start function
  */
 export const withOrchestration =
-  contractFn => async (zcf, privateArgs, baggage) => {
+  (contractFn, opts) => async (zcf, privateArgs, baggage) => {
     const { zone, ...tools } = provideOrchestration(
       zcf,
       baggage,
       privateArgs,
       privateArgs.marshaller,
+      opts,
     );
     return contractFn(zcf, privateArgs, zone, tools);
   };

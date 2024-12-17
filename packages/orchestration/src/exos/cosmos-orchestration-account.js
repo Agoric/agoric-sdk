@@ -94,7 +94,7 @@ const { Vow$ } = NetworkShape; // TODO #9611
 /**
  * @private
  * @typedef {{
- *   topicKit: RecorderKit<ComosOrchestrationAccountNotification>;
+ *   topicKit: RecorderKit<ComosOrchestrationAccountNotification> | undefined;
  *   account: IcaAccount;
  *   chainAddress: ChainAddress;
  *   localAddress: LocalIbcAddress;
@@ -291,26 +291,28 @@ export const prepareCosmosOrchestrationAccountKit = (
      * @param {RemoteIbcAddress} info.remoteAddress
      * @param {object} io
      * @param {IcaAccount} io.account
-     * @param {Remote<StorageNode>} io.storageNode
+     * @param {Remote<StorageNode> | undefined} io.storageNode
      * @param {ICQConnection | undefined} io.icqConnection
      * @param {Remote<TimerService>} io.timer
      * @returns {State}
      */
     ({ chainAddress, localAddress, remoteAddress }, io) => {
       const { storageNode } = io;
-      // must be the fully synchronous maker because the kit is held in durable state
-      const topicKit = makeRecorderKit(storageNode, PUBLIC_TOPICS.account[1]);
-      // TODO determine what goes in vstorage https://github.com/Agoric/agoric-sdk/issues/9066
-      // XXX consider parsing local/remoteAddr to portId, channelId, counterpartyPortId, counterpartyChannelId, connectionId, counterpartyConnectionId
-      // FIXME these values will not update if IcaAccount gets new values after reopening.
-      // consider having IcaAccount responsible for the owning the writer. It might choose to share it with COA.
-      void E(topicKit.recorder).write(
-        /** @type {CosmosOrchestrationAccountStorageState} */ ({
-          localAddress,
-          remoteAddress,
-        }),
-      );
-
+      let topicKit;
+      if (storageNode) {
+        // must be the fully synchronous maker because the kit is held in durable state
+        topicKit = makeRecorderKit(storageNode, PUBLIC_TOPICS.account[1]);
+        // TODO determine what goes in vstorage https://github.com/Agoric/agoric-sdk/issues/9066
+        // XXX consider parsing local/remoteAddr to portId, channelId, counterpartyPortId, counterpartyChannelId, connectionId, counterpartyConnectionId
+        // FIXME these values will not update if IcaAccount gets new values after reopening.
+        // consider having IcaAccount responsible for the owning the writer. It might choose to share it with COA.
+        void E(topicKit.recorder).write(
+          /** @type {CosmosOrchestrationAccountStorageState} */ ({
+            localAddress,
+            remoteAddress,
+          }),
+        );
+      }
       const { account, icqConnection, timer } = io;
       return {
         account,
@@ -333,6 +335,8 @@ export const prepareCosmosOrchestrationAccountKit = (
           return account;
         },
         getUpdater() {
+          if (!this.state.topicKit)
+            throw Fail`No topicKit; storageNode not provided`;
           return this.state.topicKit.recorder;
         },
         /**
@@ -731,6 +735,7 @@ export const prepareCosmosOrchestrationAccountKit = (
           return asVow(async () => {
             await null;
             const { topicKit } = this.state;
+            if (!topicKit) throw Fail`No topicKit; storageNode not provided`;
             return harden({
               account: {
                 description: PUBLIC_TOPICS.account[0],
@@ -1005,7 +1010,9 @@ export const prepareCosmosOrchestrationAccountKit = (
             return watch(results, this.facets.delegationsQueryWatcher);
           });
         },
-        /** @type {HostOf<StakingAccountQueries['getUnbondingDelegation']>} */
+        /**
+         * @type {HostOf<StakingAccountQueries['getUnbondingDelegation']>}
+         */
         getUnbondingDelegation(validator) {
           return asVow(() => {
             trace('getUnbondingDelegation', validator);
@@ -1024,7 +1031,9 @@ export const prepareCosmosOrchestrationAccountKit = (
             return watch(results, this.facets.unbondingDelegationQueryWatcher);
           });
         },
-        /** @type {HostOf<StakingAccountQueries['getUnbondingDelegations']>} */
+        /**
+         * @type {HostOf<StakingAccountQueries['getUnbondingDelegations']>}
+         */
         getUnbondingDelegations() {
           return asVow(() => {
             trace('getUnbondingDelegations');

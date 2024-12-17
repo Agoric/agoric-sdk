@@ -57,7 +57,7 @@ const EVow$ = shape => M.or(Vow$(shape), M.promise(/* shape */));
 /**
  * @private
  * @typedef {{
- *   topicKit: RecorderKit<LocalChainAccountNotification>;
+ *   topicKit: RecorderKit<LocalChainAccountNotification> | undefined;
  *   packetTools: PacketTools;
  *   account: LocalChainAccount;
  *   address: ChainAddress;
@@ -181,14 +181,18 @@ export const prepareLocalOrchestrationAccountKit = (
      * @param {object} initState
      * @param {LocalChainAccount} initState.account
      * @param {ChainAddress} initState.address
-     * @param {Remote<StorageNode>} initState.storageNode
+     * @param {Remote<StorageNode> | undefined} initState.storageNode
      * @returns {State}
      */
     ({ account, address, storageNode }) => {
-      // must be the fully synchronous maker because the kit is held in durable state
-      const topicKit = makeRecorderKit(storageNode, PUBLIC_TOPICS.account[1]);
-      // TODO determine what goes in vstorage https://github.com/Agoric/agoric-sdk/issues/9066
-      void E(topicKit.recorder).write('');
+      let topicKit;
+      if (storageNode) {
+        // must be the fully synchronous maker because the kit is held in durable state
+        topicKit = makeRecorderKit(storageNode, PUBLIC_TOPICS.account[1]);
+        // TODO determine what goes in vstorage https://github.com/Agoric/agoric-sdk/issues/9066
+        void E(topicKit.recorder).write('');
+      }
+
       const packetTools = makePacketTools(account);
 
       return { account, address, topicKit, packetTools };
@@ -548,6 +552,7 @@ export const prepareLocalOrchestrationAccountKit = (
           return asVow(async () => {
             await null;
             const { topicKit } = this.state;
+            if (!topicKit) throw Fail`No topicKit; storageNode not provided`;
             return harden({
               account: {
                 description: PUBLIC_TOPICS.account[0],
