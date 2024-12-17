@@ -1,6 +1,7 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import type { TestFn } from 'ava';
+import { encodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
 import { configurations } from '@agoric/fast-usdc/src/utils/deploy-config.js';
 import { MockCctpTxEvidences } from '@agoric/fast-usdc/test/fixtures.js';
 import { documentStorageSchema } from '@agoric/governance/tools/storageDoc.js';
@@ -12,7 +13,7 @@ import {
   defaultSerializer,
 } from '@agoric/internal/src/storage-test-utils.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
-import { BridgeId } from '@agoric/internal';
+import { BridgeId, NonNullish } from '@agoric/internal';
 import {
   makeWalletFactoryContext,
   type WalletFactoryTestContext,
@@ -261,7 +262,13 @@ test.serial('makes usdc advance', async t => {
     'FastLP balance not in wallet record',
   );
 
-  const evidence = MockCctpTxEvidences.AGORIC_PLUS_OSMO();
+  const EUD = 'dydx1anything';
+  const lastNodeValue = storage.getValues('published.fastUsdc').at(-1);
+  const { settlementAccount } = JSON.parse(NonNullish(lastNodeValue));
+  const evidence = MockCctpTxEvidences.AGORIC_PLUS_OSMO(
+    // mock with the read settlementAccount address
+    encodeAddressHook(settlementAccount, { EUD }),
+  );
 
   harness?.useRunPolicy(true);
   await Promise.all(
