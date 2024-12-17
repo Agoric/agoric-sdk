@@ -1,5 +1,6 @@
 import { makeTracer } from '@agoric/internal';
 import { appendToStoredArray } from '@agoric/store/src/stores/store-utils.js';
+import { AmountKeywordRecordShape } from '@agoric/zoe/src/typeGuards.js';
 import { Fail, makeError, q } from '@endo/errors';
 import { E } from '@endo/eventual-send';
 import { M } from '@endo/patterns';
@@ -209,7 +210,9 @@ export const prepareStatusManager = (
           M.undefined(),
         ),
       ),
-      disbursed: M.call(EvmHashShape).returns(M.undefined()),
+      disbursed: M.call(EvmHashShape, AmountKeywordRecordShape).returns(
+        M.undefined(),
+      ),
       forwarded: M.call(M.opt(EvmHashShape), M.string(), M.nat()).returns(
         M.undefined(),
       ),
@@ -310,9 +313,13 @@ export const prepareStatusManager = (
        * Mark a transaction as `DISBURSED`
        *
        * @param {EvmHash} txHash
+       * @param {import('./liquidity-pool.js').RepayAmountKWR} split
        */
-      disbursed(txHash) {
-        void publishTxnRecord(txHash, harden({ status: TxStatus.Disbursed }));
+      disbursed(txHash, split) {
+        void publishTxnRecord(
+          txHash,
+          harden({ split, status: TxStatus.Disbursed }),
+        );
       },
 
       /**
