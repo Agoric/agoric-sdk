@@ -12,7 +12,7 @@ const trace = makeTracer('TxOperator');
 
 /**
  * @typedef {object} OperatorPowers
- * @property {(evidence: CctpTxEvidence, operatorKit: OperatorKit) => void} attest
+ * @property {(evidence: CctpTxEvidence, operatorId: string) => void} attest
  */
 
 /**
@@ -103,7 +103,7 @@ export const prepareOperatorKit = (zone, staticPowers) =>
         submitEvidence(evidence) {
           const { state } = this;
           !state.disabled || Fail`submitEvidence for disabled operator`;
-          state.powers.attest(evidence, this.facets);
+          state.powers.attest(evidence, state.operatorId);
         },
         /** @returns {OperatorStatus} */
         getStatus() {

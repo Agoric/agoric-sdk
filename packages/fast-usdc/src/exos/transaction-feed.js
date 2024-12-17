@@ -18,7 +18,7 @@ export const INVITATION_MAKERS_DESC = 'oracle operator invitation';
 
 const TransactionFeedKitI = harden({
   operatorPowers: M.interface('Transaction Feed Admin', {
-    attest: M.call(CctpTxEvidenceShape, M.any()).returns(),
+    attest: M.call(CctpTxEvidenceShape, M.string()).returns(),
   }),
   creator: M.interface('Transaction Feed Creator', {
     // TODO narrow the return shape to OperatorKit
@@ -121,21 +121,11 @@ export const prepareTransactionFeedKit = (zone, zcf) => {
          * NB: the operatorKit is responsible for
          *
          * @param {CctpTxEvidence} evidence
-         * @param {OperatorKit} operatorKit
+         * @param {string} operatorId
          */
-        attest(evidence, operatorKit) {
+        attest(evidence, operatorId) {
           const { pending } = this.state;
-          trace(
-            'submitEvidence',
-            operatorKit.operator.getStatus().operatorId,
-            evidence,
-          );
-          const { operatorId } = operatorKit.operator.getStatus();
-
-          // TODO should this verify that the operator is one made by this exo?
-          // This doesn't work...
-          // operatorKit === operators.get(operatorId) ||
-          //   Fail`operatorKit mismatch`;
+          trace('submitEvidence', operatorId, evidence);
 
           // TODO validate that it's a valid for Fast USDC before accepting
           // E.g. that the `recipientAddress` is the FU settlement account and that
