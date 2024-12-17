@@ -1,14 +1,14 @@
-import { M } from '@endo/patterns';
-import { Fail, makeError, q } from '@endo/errors';
+import { makeTracer } from '@agoric/internal';
 import { appendToStoredArray } from '@agoric/store/src/stores/store-utils.js';
+import { Fail, makeError, q } from '@endo/errors';
 import { E } from '@endo/eventual-send';
-import { makeTracer, pureDataMarshaller } from '@agoric/internal';
+import { M } from '@endo/patterns';
+import { PendingTxStatus, TerminalTxStatus, TxStatus } from '../constants.js';
 import {
   CctpTxEvidenceShape,
   EvmHashShape,
   PendingTxShape,
 } from '../type-guards.js';
-import { PendingTxStatus, TerminalTxStatus, TxStatus } from '../constants.js';
 
 /**
  * @import {MapStore, SetStore} from '@agoric/store';
@@ -48,6 +48,7 @@ const pendingTxKeyOf = evidence => {
 /**
  * @typedef {{
  *  log?: LogFn;
+ *  marshaller: ERef<Marshaller>;
  * }} StatusManagerPowers
  */
 
@@ -66,6 +67,7 @@ export const prepareStatusManager = (
   zone,
   txnsNode,
   {
+    marshaller,
     log = makeTracer('Advancer', true),
   } = /** @type {StatusManagerPowers} */ ({}),
 ) => {
@@ -118,9 +120,9 @@ export const prepareStatusManager = (
       storedCompletedTxs.add(txId);
     }
 
-    await E(txNode).setValue(
-      JSON.stringify(pureDataMarshaller.toCapData(record)),
-    );
+    const capData = await E(marshaller).toCapData(record);
+
+    await E(txNode).setValue(JSON.stringify(capData));
   };
 
   /**

@@ -53,6 +53,7 @@ const createTestExtensions = (t, common: CommonSetup) => {
   const statusManager = prepareStatusManager(
     rootZone.subZone('status-manager'),
     storageNode.makeChildNode('txns'),
+    { marshaller: common.commonPrivateArgs.marshaller },
   );
 
   const mockAccounts = prepareMockOrchAccounts(rootZone.subZone('accounts'), {
@@ -170,7 +171,7 @@ test.beforeEach(async t => {
 test('updates status to ADVANCING in happy path', async t => {
   const {
     extensions: {
-      services: { advancer, feeTools, statusManager },
+      services: { advancer, feeTools },
       helpers: { inspectLogs, inspectNotifyCalls },
       mocks: { mockPoolAccount, resolveLocalTransferV },
     },
@@ -238,7 +239,7 @@ test('updates status to OBSERVED on insufficient pool funds', async t => {
     brands: { usdc },
     bootstrap: { storage },
     extensions: {
-      services: { makeAdvancer, statusManager },
+      services: { makeAdvancer },
       helpers: { inspectLogs },
       mocks: { mockPoolAccount, mockNotifyF },
     },
@@ -286,13 +287,14 @@ test('updates status to OBSERVED if makeChainAddress fails', async t => {
   const {
     bootstrap: { storage },
     extensions: {
-      services: { advancer, statusManager },
+      services: { advancer },
       helpers: { inspectLogs },
     },
   } = t.context;
 
   const evidence = MockCctpTxEvidences.AGORIC_UNKNOWN_EUD();
   await advancer.handleTransactionEvent(evidence);
+  await eventLoopIteration();
 
   t.deepEqual(
     storage.getDeserialized(`fun.txns.${evidence.txHash}`),
@@ -313,7 +315,7 @@ test('calls notifyAdvancingResult (AdvancedFailed) on failed transfer', async t 
   const {
     bootstrap: { storage },
     extensions: {
-      services: { advancer, feeTools, statusManager },
+      services: { advancer, feeTools },
       helpers: { inspectLogs, inspectNotifyCalls },
       mocks: { mockPoolAccount, resolveLocalTransferV },
     },
@@ -366,7 +368,7 @@ test('updates status to OBSERVED if pre-condition checks fail', async t => {
   const {
     bootstrap: { storage },
     extensions: {
-      services: { advancer, statusManager },
+      services: { advancer },
       helpers: { inspectLogs },
     },
   } = t.context;
@@ -374,6 +376,7 @@ test('updates status to OBSERVED if pre-condition checks fail', async t => {
   const evidence = MockCctpTxEvidences.AGORIC_NO_PARAMS();
 
   await advancer.handleTransactionEvent(evidence);
+  await eventLoopIteration();
 
   t.deepEqual(
     storage.getDeserialized(`fun.txns.${evidence.txHash}`),

@@ -112,6 +112,7 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
   const statusManager = prepareStatusManager(
     zone,
     E(storageNode).makeChildNode(TXNS_NODE),
+    { marshaller },
   );
 
   const { USDC } = terms.brands;
