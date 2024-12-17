@@ -208,7 +208,7 @@ export const makeGovernanceDriver = async (fetch, networkConfig) => {
   };
 
   const getLatestQuestion = async () => {
-    const { latestOutcome, latestQuestion } = await await retryUntilCondition(
+    const { latestOutcome, latestQuestion } = await retryUntilCondition(
       () => fetchLatestEcQuestion({ follow: agoric.follow }),
       electionResult =>
         checkCommitteeElectionResult(electionResult, {
