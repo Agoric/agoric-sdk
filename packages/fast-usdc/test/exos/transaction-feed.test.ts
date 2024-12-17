@@ -47,6 +47,7 @@ test('happy aggregation', async t => {
   const evidenceSubscriber = feedKit.public.getEvidenceSubscriber();
 
   const { op1, op2, op3 } = await makeOperators(feedKit);
+
   const e1 = MockCctpTxEvidences.AGORIC_PLUS_OSMO();
   op1.operator.submitEvidence(e1);
   op2.operator.submitEvidence(e1);
@@ -71,6 +72,48 @@ test('happy aggregation', async t => {
   t.like(await evidenceSubscriber.getUpdateSince(0), {
     // op1 attestation insufficient
     updateCount: 1n,
+  });
+});
+
+test('disagreement', async t => {
+  const feedKit = makeFeedKit();
+  const { op1, op2 } = await makeOperators(feedKit);
+  const e1 = MockCctpTxEvidences.AGORIC_PLUS_OSMO();
+  const e1bad = { ...e1, tx: { ...e1.tx, amount: 999_999_999n } };
+  assert(e1.txHash === e1bad.txHash);
+  op1.operator.submitEvidence(e1);
+
+  t.throws(() => op2.operator.submitEvidence(e1bad), {
+    message:
+      'conflicting evidence for "0xc81bc6105b60a234c7c50ac17816ebcd5561d366df8bf3be59ff387552761702"',
+  });
+});
+
+test('disagreement after publishing', async t => {
+  const feedKit = makeFeedKit();
+  const evidenceSubscriber = feedKit.public.getEvidenceSubscriber();
+  const { op1, op2, op3 } = await makeOperators(feedKit);
+  const e1 = MockCctpTxEvidences.AGORIC_PLUS_OSMO();
+  const e1bad = { ...e1, tx: { ...e1.tx, amount: 999_999_999n } };
+  assert(e1.txHash === e1bad.txHash);
+  op1.operator.submitEvidence(e1);
+  op2.operator.submitEvidence(e1);
+
+  t.like(await evidenceSubscriber.getUpdateSince(0), {
+    updateCount: 1n,
+  });
+
+  // it's simply ignored
+  t.notThrows(() => op3.operator.submitEvidence(e1bad));
+  t.like(await evidenceSubscriber.getUpdateSince(0), {
+    updateCount: 1n,
+  });
+
+  // now another op repeats the bad evidence, so it's published to the stream.
+  // It's the responsibility of the Advancer to fail because it has already processed that tx hash.
+  op1.operator.submitEvidence(e1bad);
+  t.like(await evidenceSubscriber.getUpdateSince(0), {
+    updateCount: 2n,
   });
 });
 

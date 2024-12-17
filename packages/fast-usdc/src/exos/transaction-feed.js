@@ -1,6 +1,7 @@
 import { makeTracer } from '@agoric/internal';
 import { prepareDurablePublishKit } from '@agoric/notifier';
-import { M } from '@endo/patterns';
+import { keyEQ, M } from '@endo/patterns';
+import { Fail } from '@endo/errors';
 import { CctpTxEvidenceShape } from '../type-guards.js';
 import { defineInertInvitation } from '../utils/zoe.js';
 import { prepareOperatorKit } from './operator-kit.js';
@@ -161,7 +162,26 @@ export const prepareTransactionFeedKit = (zone, zcf) => {
             return;
           }
 
-          // TODO verify that all found deep equal
+          let lastEvidence;
+          for (const store of found) {
+            const next = store.get(txHash);
+            if (lastEvidence) {
+              if (keyEQ(lastEvidence, next)) {
+                lastEvidence = next;
+              } else {
+                trace(
+                  '🚨 conflicting evidence for',
+                  txHash,
+                  ':',
+                  lastEvidence,
+                  '!=',
+                  next,
+                );
+                Fail`conflicting evidence for ${txHash}`;
+              }
+            }
+            lastEvidence = next;
+          }
 
           // sufficient agreement, so remove from pending and publish
           for (const store of found) {
