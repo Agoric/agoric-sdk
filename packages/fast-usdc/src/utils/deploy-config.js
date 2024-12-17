@@ -156,3 +156,11 @@ export const configurations = {
   },
 };
 harden(configurations);
+
+// Constraints on the configurations
+const MAINNET_EXPECTED_ORACLES = 3;
+assert(
+  new Set(Object.values(configurations.MAINNET.oracles)).size ===
+    MAINNET_EXPECTED_ORACLES,
+  `Mainnet must have exactly ${MAINNET_EXPECTED_ORACLES} oracles`,
+);
