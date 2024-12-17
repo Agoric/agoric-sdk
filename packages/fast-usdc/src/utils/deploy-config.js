@@ -2,7 +2,7 @@ import { denomHash, withChainCapabilities } from '@agoric/orchestration';
 import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
 
 /**
- * @import {FastUSDCConfig} from '@agoric/fast-usdc/src/types.js'
+ * @import {FastUSDCConfig} from '@agoric/fast-usdc';
  * @import {Passable} from '@endo/marshal';
  * @import {CosmosChainInfo, Denom, DenomDetail} from '@agoric/orchestration';
  */
