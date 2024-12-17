@@ -115,12 +115,6 @@
  */
 
 /**
- * @callback GetProposalShapeForInvitation
- * @param {InvitationHandle} invitationHandle
- * @returns {Pattern | undefined}
- */
-
-/**
  * @typedef ZoeStorageManager
  * @property {MakeZoeInstanceStorageManager} makeZoeInstanceStorageManager
  * @property {GetAssetKindByBrand} getAssetKindByBrand
@@ -138,7 +132,7 @@
  * @property {GetInstallationForInstance} getInstallationForInstance
  * @property {GetInstanceAdmin} getInstanceAdmin
  * @property {UnwrapInstallation} unwrapInstallation
- * @property {GetProposalShapeForInvitation} getProposalShapeForInvitation
+ * @property {(invitationHandle: InvitationHandle) => Pattern | undefined} getProposalShapeForInvitation
  */
 
 /**

@@ -4,7 +4,7 @@ import path from 'path';
 
 import bundleSource from '@endo/bundle-source';
 import { E } from '@endo/eventual-send';
-import { Far } from '@endo/marshal';
+import { deeplyFulfilled, Far } from '@endo/marshal';
 import { AmountMath, AssetKind } from '@agoric/ertp';
 import { claim } from '@agoric/ertp/src/legacy-payment-helpers.js';
 import { keyEQ } from '@agoric/store';
@@ -1071,4 +1071,50 @@ test('zoe - coveredCall non-fungible', async t => {
   t.deepEqual(aliceRpgPurse.getCurrentAmount().value, aGloriousShield);
   t.deepEqual(bobCcPurse.getCurrentAmount().value, ['GrowlTiger']);
   t.deepEqual(bobRpgPurse.getCurrentAmount().value, []);
+});
+
+test('zoe - coveredCall - bad proposal shape', async t => {
+  const { moolaKit, simoleanKit, moola, zoe, vatAdminState } = setup();
+
+  // Bundle and install the contract.
+  const bundle = await bundleSource(coveredCallRoot);
+  vatAdminState.installBundle('b1-coveredcall', bundle);
+  const coveredCallInstallation =
+    await E(zoe).installBundleID('b1-coveredcall');
+
+  // Start an instance.
+  const issuerKeywordRecord = harden({
+    UnderlyingAsset: moolaKit.issuer,
+    StrikePrice: simoleanKit.issuer,
+  });
+  const { creatorInvitation } = await E(zoe).startInstance(
+    coveredCallInstallation,
+    issuerKeywordRecord,
+  );
+
+  // Make an unacceptable proposal.
+  const badProposal = harden({
+    give: { UnderlyingAsset: moola(3n) },
+    exit: { waived: null },
+  });
+  const payments = harden({
+    UnderlyingAsset: moolaKit.mint.mintPayment(moola(3n)),
+  });
+  const badSeat = await E(zoe).offer(creatorInvitation, badProposal, payments);
+  await t.throwsAsync(
+    () => E(badSeat).getOfferResult(),
+    {
+      message:
+        /the seller must have an afterDeadline exitRule, but instead had {"waived":null}/,
+    },
+    'A bad proposal shape must be rejected',
+  );
+
+  // The payment must be returned.
+  const payouts = await deeplyFulfilled(E(badSeat).getPayouts());
+  t.deepEqual(payouts, payments);
+  t.deepEqual(
+    await moolaKit.issuer.getAmountOf(payouts.UnderlyingAsset),
+    moola(3n),
+  );
 });
