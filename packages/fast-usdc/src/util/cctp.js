@@ -67,5 +67,5 @@ export const depositForBurn = async (
 
   out.log('Transaction confirmed in block', receipt.blockNumber);
   out.log('Transaction hash:', receipt.hash);
-  out.log('USDC transfer initiated successfully, our work here is done.');
+  out.log('USDC transfer initiated successfully');
 };
