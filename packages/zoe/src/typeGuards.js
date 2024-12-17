@@ -367,7 +367,7 @@ export const ZoeServiceI = M.interface('ZoeService', {
   }),
   getInvitationDetails: M.call(M.eref(InvitationShape)).returns(M.any()),
   getProposalShapeForInvitation: M.call(InvitationHandleShape).returns(
-    M.opt(ProposalShape),
+    M.opt(M.pattern()),
   ),
 });
 
