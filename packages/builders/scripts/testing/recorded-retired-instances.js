@@ -12,7 +12,7 @@ const trace = makeTracer('RecordedRetired', true);
 export const testRecordedRetiredInstances = async ({
   consume: {
     contractKits,
-    // governedContractKits,
+    governedContractKits,
     retiredContractInstances: retiredContractInstancesP,
   },
 }) => {
@@ -26,8 +26,7 @@ export const testRecordedRetiredInstances = async ({
   assert(auctionIDs.length === 1);
   const auctionInstance = retiredContractInstances.get(auctionIDs[0]);
   trace({ auctionInstance });
-  // I don't know why it's neither in governedContractKits nor contractKits
-  // assert(await E(governedContractKits).get(auctionInstance));
+  assert(await E(governedContractKits).get(auctionInstance));
 
   const committeeIDs = Array.from(retiredContractInstances.keys()).filter(k =>
     k.startsWith('economicCommittee'),
@@ -47,7 +46,7 @@ export const getManifestForRecordedRetiredInstances = () => {
       [testRecordedRetiredInstances.name]: {
         consume: {
           contractKits: true,
-          // governedContractKits: true,
+          governedContractKits: true,
           retiredContractInstances: true,
         },
       },

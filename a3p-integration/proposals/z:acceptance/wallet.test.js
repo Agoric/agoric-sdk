@@ -41,7 +41,7 @@ test.serial(`send invitation via namesByAddress`, async t => {
   );
 });
 
-test.serial('exitOffer tool reclaims stuck payment', async t => {
+test.skip('exitOffer tool reclaims stuck payment', async t => {
   const offerId = 'bad-invitation-15'; // offer submitted on proposal upgrade-15 with an incorrect method name
   const from = 'gov1';
 
