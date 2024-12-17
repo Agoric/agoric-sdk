@@ -553,7 +553,6 @@ export const makeE2ETools = async (
   );
 
   return {
-    vstorageClient,
     smartWalletKit,
     installBundles,
     runCoreEval: buildAndRunCoreEval,

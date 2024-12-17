@@ -113,9 +113,9 @@ export const commonSetup = async (t: ExecutionContext) => {
     contractBuilder: string,
     builderOpts?: Record<string, string | string[]>,
   ) => {
-    const { vstorageClient } = tools;
+    const { smartWalletKit } = tools;
     const instances = Object.fromEntries(
-      await vstorageClient.queryData(`published.agoricNames.instance`),
+      await smartWalletKit.readPublished(`agoricNames.instance`),
     );
     if (contractName in instances) {
       return t.log('Contract found. Skipping installation...');
@@ -123,7 +123,7 @@ export const commonSetup = async (t: ExecutionContext) => {
     t.log('bundle and install contract', contractName);
     await deployBuilder(contractBuilder, builderOpts);
     await retryUntilCondition(
-      () => vstorageClient.queryData(`published.agoricNames.instance`),
+      () => smartWalletKit.readPublished(`agoricNames.instance`),
       res => contractName in Object.fromEntries(res),
       `${contractName} instance is available`,
     );

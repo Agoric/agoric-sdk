@@ -61,7 +61,7 @@ const intentionalCloseAccountScenario = test.macro({
     const {
       wallets,
       provisionSmartWallet,
-      vstorageClient,
+      smartWalletKit,
       retryUntilCondition,
       useChain,
     } = t.context;
@@ -88,8 +88,9 @@ const intentionalCloseAccountScenario = test.macro({
       proposal: {},
     });
     const currentWalletRecord = await retryUntilCondition(
-      () => vstorageClient.queryData(`published.wallet.${agoricAddr}.current`),
+      () => smartWalletKit.readPublished(`wallet.${agoricAddr}.current`),
       ({ offerToPublicSubscriberPaths }) =>
+        // @ts-expect-error retryUntilCondition expects a boolean return
         Object.fromEntries(offerToPublicSubscriberPaths)[offerId],
       `${offerId} continuing invitation is in vstorage`,
     );
@@ -102,11 +103,10 @@ const intentionalCloseAccountScenario = test.macro({
     const address = accountStoragePath.split('.').pop();
     t.log('Got address:', address);
 
-    const {
-      remoteAddress,
-      localAddress,
-    }: CosmosOrchestrationAccountStorageState =
-      await vstorageClient.queryData(accountStoragePath);
+    const { remoteAddress, localAddress } =
+      (await smartWalletKit.readLatestHead(
+        accountStoragePath,
+      )) as CosmosOrchestrationAccountStorageState;
     const { rPortID, rChannelID } = parseRemoteAddress(remoteAddress);
 
     const remoteQueryClient = makeQueryClient(
@@ -214,7 +214,7 @@ const channelCloseInitScenario = test.macro({
     const {
       wallets,
       provisionSmartWallet,
-      vstorageClient,
+      smartWalletKit,
       retryUntilCondition,
       useChain,
       hermes,
@@ -241,8 +241,9 @@ const channelCloseInitScenario = test.macro({
       proposal: {},
     });
     const currentWalletRecord = await retryUntilCondition(
-      () => vstorageClient.queryData(`published.wallet.${agoricAddr}.current`),
+      () => smartWalletKit.readPublished(`wallet.${agoricAddr}.current`),
       ({ offerToPublicSubscriberPaths }) =>
+        // @ts-expect-error retryUntilCondition expects boolean return
         Object.fromEntries(offerToPublicSubscriberPaths)[offerId],
       `${offerId} continuing invitation is in vstorage`,
     );
@@ -255,11 +256,10 @@ const channelCloseInitScenario = test.macro({
     const address = accountStoragePath.split('.').pop();
     t.log('Got address:', address);
 
-    const {
-      remoteAddress,
-      localAddress,
-    }: CosmosOrchestrationAccountStorageState =
-      await vstorageClient.queryData(accountStoragePath);
+    const { remoteAddress, localAddress } =
+      (await smartWalletKit.readLatestHead(
+        accountStoragePath,
+      )) as CosmosOrchestrationAccountStorageState;
     const { rPortID, rChannelID, rConnectionID } =
       parseRemoteAddress(remoteAddress);
     const { lPortID, lChannelID, lConnectionID } =
