@@ -60,7 +60,7 @@ const publishDisplayInfo = async (brand, { board, chainStorage }) => {
 
 /**
  * @param {string} role
- * @param {ERef<BootstrapPowers['consume']['namesByAddress']>} namesByAddress
+ * @param {BootstrapPowers['consume']['namesByAddress']} namesByAddress
  * @param {Record<string, string>} nameToAddress
  */
 const makeAdminRole = (role, namesByAddress, nameToAddress) => {
