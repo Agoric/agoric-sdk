@@ -130,7 +130,7 @@ test.serial(
 
     const current = watcherWallet.getCurrentWalletRecord();
 
-    // XXX We should be able to compare objects by identity like this:
+    // XXX #10491 We should be able to compare objects by identity like this:
     //
     // const invitationPurse = current.purses.find(
     //   p => p.brand === agoricNamesRemotes.brand.Invitation,
@@ -241,6 +241,13 @@ test.serial('makes usdc advance', async t => {
     },
   });
   await eventLoopIteration();
+
+  const { purses } = oracles[0].getCurrentWalletRecord();
+  // XXX #10491 should not need to resort to string match on brand
+  t.falsy(
+    purses.find(p => `${p.brand}`.match(/FastLP/)),
+    'FastLP balance not in wallet record',
+  );
 
   const evidence = MockCctpTxEvidences.AGORIC_PLUS_OSMO();
 
