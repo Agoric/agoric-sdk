@@ -92,6 +92,14 @@ test.serial(
     refreshAgoricNamesRemotes();
     t.truthy(agoricNamesRemotes.instance.fastUsdc);
     t.truthy(agoricNamesRemotes.brand.FastLP);
+    const lpAsset = agoricNamesRemotes.vbankAsset.FastLP;
+    t.like(lpAsset, {
+      issuerName: 'FastLP',
+      denom: 'ufastlp',
+      displayInfo: { assetKind: 'nat', decimalPlaces: 6 },
+    });
+    const lpId = lpAsset.brand.getBoardId();
+    t.is(agoricNamesRemotes.brand.FastLP.getBoardId(), lpId);
 
     const { EV } = t.context.runUtils;
     const agoricNames = await EV.vat('bootstrap').consumeItem('agoricNames');
@@ -99,6 +107,7 @@ test.serial(
     const getBoardAux = async name => {
       const brand = await EV(agoricNames).lookup('brand', name);
       const id = await EV(board).getId(brand);
+      t.is(id || null, lpId);
       t.truthy(storage.data.get(`published.boardAux.${id}`));
       return unmarshalFromVstorage(
         storage.data,
