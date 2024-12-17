@@ -6,7 +6,7 @@ import { PendingTxStatus } from './constants.js';
  * @import {TypedPattern} from '@agoric/internal';
  * @import {FastUsdcTerms} from './fast-usdc.contract.js';
  * @import {USDCProposalShapes} from './pool-share-math.js';
- * @import {CctpTxEvidence, FeeConfig, PendingTx, PoolMetrics, ChainPolicy, FeedPolicy, AddressHook} from './types.js';
+ * @import {CctpTxEvidence, FeeConfig, PendingTx, PoolMetrics, ChainPolicy, FeedPolicy, AddressHook, EvmAddress, EvmHash} from './types.js';
  */
 
 /**
@@ -36,7 +36,14 @@ export const FastUSDCTermsShape = harden({
   usdcDenom: M.string(),
 });
 
-/** @type {TypedPattern<string>} */
+/** @type {TypedPattern<EvmAddress>} */
+export const EvmAddressShape = M.string({
+  // 0x + 40 hex digits
+  stringLengthLimit: 42,
+});
+harden(EvmAddressShape);
+
+/** @type {TypedPattern<EvmHash>} */
 export const EvmHashShape = M.string({
   stringLengthLimit: 66,
 });
@@ -54,6 +61,7 @@ export const CctpTxEvidenceShape = {
   tx: {
     amount: M.nat(),
     forwardingAddress: M.string(),
+    sender: EvmAddressShape,
   },
   txHash: EvmHashShape,
 };

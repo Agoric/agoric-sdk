@@ -7,10 +7,11 @@ import type {
 import type { IBCChannelID } from '@agoric/vats';
 import type { Amount } from '@agoric/ertp';
 import type { CopyRecord, Passable } from '@endo/pass-style';
-import type { PendingTxStatus } from './constants.js';
+import type { PendingTxStatus, TxStatus } from './constants.js';
 import type { FastUsdcTerms } from './fast-usdc.contract.js';
 
 export type EvmHash = `0x${string}`;
+export type EvmAddress = `0x${string & { length: 40 }}`;
 export type NobleAddress = `noble1${string}`;
 export type EvmChainID = number;
 export type EvmChainName = string;
@@ -28,8 +29,18 @@ export interface CctpTxEvidence {
   tx: {
     amount: bigint;
     forwardingAddress: NobleAddress;
+    sender: EvmAddress;
   };
   txHash: EvmHash;
+}
+
+/**
+ * 'evidence' only available when it's first observed and not in subsequent
+ * updates.
+ */
+export interface TransactionRecord extends CopyRecord {
+  evidence?: CctpTxEvidence;
+  status: TxStatus;
 }
 
 export type LogFn = (...args: unknown[]) => void;

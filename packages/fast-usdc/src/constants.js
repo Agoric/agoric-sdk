@@ -21,7 +21,12 @@ export const TxStatus = /** @type {const} */ ({
 });
 harden(TxStatus);
 
-// TODO: define valid state transitions
+// According to the state diagram
+export const TerminalTxStatus = {
+  [TxStatus.Forwarded]: true,
+  [TxStatus.ForwardFailed]: true,
+  [TxStatus.Disbursed]: true,
+};
 
 /**
  * Status values for the StatusManager.
