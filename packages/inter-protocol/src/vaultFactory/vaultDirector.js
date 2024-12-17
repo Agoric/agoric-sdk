@@ -325,6 +325,7 @@ const prepareVaultDirector = (
         getGovernedParams: M.callWhen({ collateralBrand: BrandShape }).returns(
           M.record(),
         ),
+        getDirectorGovernedParams: M.call().returns(M.promise()),
         getInvitationAmount: M.call(M.string()).returns(AmountShape),
         getPublicTopics: M.call().returns(TopicsRecordShape),
       }),
@@ -492,13 +493,16 @@ const prepareVaultDirector = (
         },
         /**
          * Note this works only for a collateral manager. For the director use,
-         * `getElectorateSubscription`
+         * `getDirectorGovernedParams`
          *
          * @param {{ collateralBrand: Brand }} selector
          */
         getGovernedParams({ collateralBrand }) {
           // TODO use named getters of TypedParamManager
           return vaultParamManagers.get(collateralBrand).getParams();
+        },
+        getDirectorGovernedParams() {
+          return directorParamManager.getParams();
         },
         /** @param {string} name */
         getInvitationAmount(name) {

@@ -2049,4 +2049,39 @@ test('governance publisher', async t => {
     LiquidationPenalty: { type: 'ratio' },
     MintFee: { type: 'ratio' },
   });
+
+  const params = await E(vfPublic).getDirectorGovernedParams();
+  t.like(params, {
+    ChargingPeriod: { type: 'nat', value: 2n },
+    Electorate: { type: 'invitation' },
+    MinInitialDebt: { type: 'amount' },
+    RecordingPeriod: { type: 'nat' },
+    ReferencedUI: { value: 'abracadabra' },
+    ShortfallInvitation: { type: 'invitation' },
+  });
+});
+
+test('access to director params', async t => {
+  const { aeth } = t.context;
+
+  t.context.referencedUi = 'hocus pocus';
+  const services = await setupServices(
+    t,
+    [500n, 15n],
+    aeth.make(900n),
+    undefined,
+    undefined,
+    500n,
+  );
+  const { vfPublic } = services.vaultFactory;
+
+  const params = await E(vfPublic).getDirectorGovernedParams();
+  t.like(params, {
+    ChargingPeriod: { type: 'nat', value: 2n },
+    Electorate: { type: 'invitation' },
+    MinInitialDebt: { type: 'amount' },
+    RecordingPeriod: { type: 'nat' },
+    ReferencedUI: { value: 'hocus pocus' },
+    ShortfallInvitation: { type: 'invitation' },
+  });
 });
