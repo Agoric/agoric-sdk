@@ -55,6 +55,11 @@ export interface TransactionRecord extends CopyRecord {
   status: TxStatus;
 }
 
+export interface ContractRecord extends CopyRecord {
+  poolAccount: ChainAddress['value'];
+  settlementAccount: ChainAddress['value'];
+}
+
 export type LogFn = (...args: unknown[]) => void;
 
 export interface PendingTx extends CctpTxEvidence {
