@@ -13,9 +13,9 @@ import { Far } from '@endo/far';
 import { parseArgs } from 'node:util';
 
 /**
- * @import {CoreEvalBuilder, DeployScriptFunction} from '@agoric/deploy-script-support/src/externalTypes.js'
- * @import {ParseArgsConfig} from 'node:util'
- * @import {FastUSDCConfig, FeedPolicy} from '@agoric/fast-usdc/src/types.js'
+ * @import {CoreEvalBuilder, DeployScriptFunction} from '@agoric/deploy-script-support/src/externalTypes.js';
+ * @import {ParseArgsConfig} from 'node:util';
+ * @import {FastUSDCConfig, FeedPolicy} from '@agoric/fast-usdc';
  */
 
 const { keys } = Object;
