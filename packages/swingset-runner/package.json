@@ -1,6 +1,6 @@
 {
   "name": "@agoric/swingset-runner",
-  "version": "0.22.3-u18.4",
+  "version": "0.22.3-u18.5",
   "private": true,
   "description": "Application to launch SwingSet instances for development and testing",
   "type": "module",
@@ -19,9 +19,9 @@
     "ci:autobench": "./autobench.js"
   },
   "dependencies": {
-    "@agoric/deploy-script-support": "^0.10.4-u18.3",
+    "@agoric/deploy-script-support": "^0.10.4-u18.4",
     "@agoric/ertp": "^0.16.3-u18.0",
-    "@agoric/inter-protocol": "^0.17.0-u18.4",
+    "@agoric/inter-protocol": "^0.17.0-u18.5",
     "@agoric/internal": "^0.4.0-u18.0",
     "@agoric/kmarshal": "^0.1.1-u18.0",
     "@agoric/stat-logger": "^0.4.29-u18.0",
