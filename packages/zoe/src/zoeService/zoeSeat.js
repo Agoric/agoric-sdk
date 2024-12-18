@@ -83,6 +83,11 @@ export const makeZoeSeatAdminFactory = baggage => {
    */
   const ephemeralOfferResultStore = new WeakMap();
 
+  const getPayoutOrThrow = (state, keyword) => {
+    state.payouts[keyword] || Fail`No payout for ${keyword}`;
+    return state.payouts[keyword];
+  };
+
   const makeZoeSeatAdmin = prepareExoClassKit(
     baggage,
     'ZoeSeatAdmin',
@@ -143,8 +148,8 @@ export const makeZoeSeatAdminFactory = baggage => {
           // doExit(), which ensures that finalPayouts() has set state.payouts.
           return E.when(
             state.subscriber.subscribeAfter(),
-            () => state.payouts[keyword],
-            () => state.payouts[keyword],
+            () => getPayoutOrThrow(state, keyword),
+            () => getPayoutOrThrow(state, keyword),
           );
         },
 

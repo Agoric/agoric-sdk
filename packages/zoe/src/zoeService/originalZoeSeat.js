@@ -55,6 +55,11 @@ const assertHasNotExited = (c, msg) => {
     assert(!c.state.instanceAdminHelper.hasExited(c.facets.zoeSeatAdmin), msg);
 };
 
+const getPayoutOrThrow = (state, keyword) => {
+  state.payouts[keyword] || Fail`No payout for ${keyword}`;
+  return state.payouts[keyword];
+};
+
 /**
  * declareOldZoeSeatAdminKind declares an exo for the original kind of ZoeSeatKit.
  * This version creates a reference cycle that garbage collection can't remove
@@ -289,8 +294,8 @@ export const declareOldZoeSeatAdminKind = (baggage, makeDurablePublishKit) => {
           // doExit(), which ensures that finalPayouts() has set state.payouts.
           return E.when(
             state.subscriber.subscribeAfter(),
-            () => state.payouts[keyword],
-            () => state.payouts[keyword],
+            () => getPayoutOrThrow(state, keyword),
+            () => getPayoutOrThrow(state, keyword),
           );
         },
 
