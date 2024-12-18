@@ -477,7 +477,7 @@ export async function makeSwingsetController(
      *
      * The first `controller.run()` after this call will delete all
      * the old vat's state at once, unless you use a
-     * [`runPolicy`](../docs/run-policy.md) to rate-limit cleanups.
+     * [`runPolicy`](../../docs/run-policy.md) to rate-limit cleanups.
      *
      * @param {VatID} vatID
      * @param {SwingSetCapData} reasonCD
