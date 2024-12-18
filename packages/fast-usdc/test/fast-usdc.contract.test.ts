@@ -810,7 +810,13 @@ test.serial('Settlement for unknown transaction (operator down)', async t => {
   t.deepEqual(bridgeTraffic.local, [], 'no IBC transfers');
 
   await transmitTransferAck();
+
+  // TODO oracle wakes up and reports; Settler should forward.
 });
+
+test.todo('settlement for ADVANCING tx');
+// Settler should `disburse` on Transfer success
+// Settler should `forward` on Transfer failure
 
 test.todo(
   'fee levels MUST be visible to external parties - i.e., written to public storage',

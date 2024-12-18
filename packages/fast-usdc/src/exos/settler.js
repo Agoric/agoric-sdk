@@ -8,7 +8,7 @@ import { M } from '@endo/patterns';
 import { decodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
 import { PendingTxStatus } from '../constants.js';
 import { makeFeeTools } from '../utils/fees.js';
-import { EvmHashShape } from '../type-guards.js';
+import { EvmHashShape, makeNatAmountShape } from '../type-guards.js';
 
 /**
  * @import {FungibleTokenPacketData} from '@agoric/cosmic-proto/ibc/applications/transfer/v2/packet.js';
@@ -30,6 +30,15 @@ import { EvmHashShape } from '../type-guards.js';
  */
 const makeMintedEarlyKey = (addr, amount) =>
   `pendingTx:${JSON.stringify([addr, String(amount)])}`;
+
+/** @param {Brand<'nat'>} USDC */
+export const makeAdvanceDetailsShape = USDC =>
+  harden({
+    destination: ChainAddressShape,
+    forwardingAddress: M.string(),
+    fullAmount: makeNatAmountShape(USDC),
+    txHash: EvmHashShape,
+  });
 
 /**
  * @param {Zone} zone
@@ -69,24 +78,22 @@ export const prepareSettler = (
       }),
       notify: M.interface('SettlerNotifyI', {
         notifyAdvancingResult: M.call(
-          M.record(), // XXX fill in details TODO
+          makeAdvanceDetailsShape(USDC),
           M.boolean(),
         ).returns(),
+        forwardIfMinted: M.call(
+          ...Object.values(makeAdvanceDetailsShape(USDC)),
+        ).returns(M.boolean()),
       }),
       self: M.interface('SettlerSelfI', {
         disburse: M.call(EvmHashShape, M.string(), M.nat()).returns(
           M.promise(),
         ),
-        forward: M.call(
-          M.opt(EvmHashShape),
-          M.string(),
-          M.nat(),
-          M.string(),
-        ).returns(),
+        forward: M.call(EvmHashShape, M.nat(), M.string()).returns(),
       }),
       transferHandler: M.interface('SettlerTransferI', {
-        onFulfilled: M.call(M.any(), M.record()).returns(),
-        onRejected: M.call(M.any(), M.record()).returns(),
+        onFulfilled: M.call(M.undefined(), M.string()).returns(),
+        onRejected: M.call(M.error(), M.string()).returns(),
       }),
     },
     /**
@@ -177,16 +184,21 @@ export const prepareSettler = (
               return self.disburse(found.txHash, nfa, amount);
 
             case PendingTxStatus.Advancing:
+              log('⚠️ tap: minted while advancing', nfa, amount);
               this.state.mintedEarly.add(makeMintedEarlyKey(nfa, amount));
               return;
 
             case PendingTxStatus.Observed:
             case PendingTxStatus.AdvanceFailed:
-              return self.forward(found.txHash, nfa, amount, EUD);
+              return self.forward(found.txHash, amount, EUD);
 
             case undefined:
             default:
-              log('⚠️ tap: no status for ', nfa, amount);
+              log('⚠️ tap: minted before observed', nfa, amount);
+              // how do we make a status update with no `txHash`.
+              // TODO - worth its own state? this will not be recorded in vstorage until Observed
+              // ['FORWARDED'] | ['FORWARD_FAILED']; no `OBSERVED`
+              this.state.mintedEarly.add(makeMintedEarlyKey(nfa, amount));
           }
         },
       },
@@ -218,7 +230,6 @@ export const prepareSettler = (
             } else {
               void this.facets.self.forward(
                 txHash,
-                forwardingAddress,
                 fullValue,
                 destination.value,
               );
@@ -226,6 +237,25 @@ export const prepareSettler = (
           } else {
             statusManager.advanceOutcome(forwardingAddress, fullValue, success);
           }
+        },
+        /**
+         * @param {ChainAddress} destination
+         * @param {NobleAddress} forwardingAddress
+         * @param {Amount<'nat'>} fullAmount
+         * @param {EvmHash} txHash
+         * @returns {boolean}
+         * @throws {Error} if minted early, so advancer doesn't advance
+         */
+        forwardIfMinted(destination, forwardingAddress, fullAmount, txHash) {
+          const { value: fullValue } = fullAmount;
+          const key = makeMintedEarlyKey(forwardingAddress, fullValue);
+          const { mintedEarly } = this.state;
+          if (mintedEarly.has(key)) {
+            mintedEarly.delete(key);
+            void this.facets.self.forward(txHash, fullValue, destination.value);
+            return true;
+          }
+          return false;
         },
       },
       self: {
@@ -264,11 +294,10 @@ export const prepareSettler = (
         },
         /**
          * @param {EvmHash} txHash
-         * @param {NobleAddress} nfa
          * @param {NatValue} fullValue
          * @param {string} EUD
          */
-        forward(txHash, nfa, fullValue, EUD) {
+        forward(txHash, fullValue, EUD) {
           const { settlementAccount, intermediateRecipient } = this.state;
 
           const dest = chainHub.makeChainAddress(EUD);
@@ -279,36 +308,24 @@ export const prepareSettler = (
             AmountMath.make(USDC, fullValue),
             { forwardOpts: { intermediateRecipient } },
           );
-          void vowTools.watch(txfrV, this.facets.transferHandler, {
-            txHash,
-            nfa,
-            fullValue,
-          });
+          void vowTools.watch(txfrV, this.facets.transferHandler, txHash);
         },
       },
       transferHandler: {
         /**
          * @param {unknown} _result
-         * @param {SettlerTransferCtx} ctx
-         *
-         * @typedef {{
-         *   txHash: EvmHash;
-         *   nfa: NobleAddress;
-         *   fullValue: NatValue;
-         * }} SettlerTransferCtx
+         * @param {EvmHash} txHash
          */
-        onFulfilled(_result, ctx) {
-          const { txHash, nfa, fullValue } = ctx;
-          statusManager.forwarded(txHash, nfa, fullValue);
+        onFulfilled(_result, txHash) {
+          statusManager.forwarded(txHash, true);
         },
         /**
          * @param {unknown} reason
-         * @param {SettlerTransferCtx} ctx
+         * @param {EvmHash} txHash
          */
-        onRejected(reason, ctx) {
-          log('⚠️ transfer rejected!', reason, ctx);
-          // const { txHash, nfa, amount } = ctx;
-          // TODO(#10510): statusManager.forwardFailed(txHash, nfa, amount);
+        onRejected(reason, txHash) {
+          log('⚠️ forward transfer rejected!', reason, txHash);
+          statusManager.forwarded(txHash, false);
         },
       },
     },

@@ -96,20 +96,24 @@ const makeTestContext = async t => {
   });
 
   const simulate = harden({
-    advance: (evidence?: CctpTxEvidence) => {
+    startAdvance: (evidence?: CctpTxEvidence) => {
       const cctpTxEvidence: CctpTxEvidence = {
         ...MockCctpTxEvidences.AGORIC_PLUS_OSMO(),
         ...evidence,
       };
       t.log('Mock CCTP Evidence:', cctpTxEvidence);
-      t.log('Pretend we initiated advance, mark as `ADVANCED`');
+      t.log('Pretend we initiated advance, mark as `ADVANCING`');
       statusManager.advance(cctpTxEvidence);
-      const { forwardingAddress, amount } = cctpTxEvidence.tx;
-      statusManager.advanceOutcome(forwardingAddress, BigInt(amount), true);
-
       return cctpTxEvidence;
     },
-
+    advance: (evidence?: CctpTxEvidence) => {
+      const cctpTxEvidence = simulate.startAdvance(evidence);
+      const { forwardingAddress, amount } = cctpTxEvidence.tx;
+      t.log('Pretend advance succeeded, mark as `ADVANCED`');
+      mockAccounts.settlement.transferVResolver.resolve(undefined);
+      statusManager.advanceOutcome(forwardingAddress, BigInt(amount), true);
+      return cctpTxEvidence;
+    },
     observe: (evidence?: CctpTxEvidence) => {
       const cctpTxEvidence: CctpTxEvidence = {
         ...MockCctpTxEvidences.AGORIC_PLUS_OSMO(),
@@ -311,9 +315,11 @@ test('slow path: forward to EUD; remove pending tx', async t => {
       cctpTxEvidence.tx.amount,
     ),
     [],
-    'SETTLED entry removed from StatusManger',
+    'dequeueStatus entry removed from StatusManger',
   );
   const { storage } = t.context;
+  accounts.settlement.transferVResolver.resolve(undefined);
+  await eventLoopIteration();
   t.deepEqual(storage.getDeserialized(`fun.txns.${cctpTxEvidence.txHash}`), [
     { evidence: cctpTxEvidence, status: 'OBSERVED' },
     { status: 'FORWARDED' },
@@ -346,19 +352,62 @@ test('Settlement for unknown transaction', async t => {
   void settler.tap.receiveUpcall(MockVTransferEvents.AGORIC_PLUS_OSMO());
   await eventLoopIteration();
 
-  t.log('Nothing was transferrred');
+  t.log('Nothing was transferred');
   t.deepEqual(peekCalls(), []);
   t.deepEqual(accounts.settlement.callLog, []);
   t.like(inspectLogs(), [
     ['config', { sourceChannel: 'channel-21' }],
     ['upcall event'],
     ['dequeued', undefined],
-    [
-      '⚠️ tap: no status for ',
-      'noble1x0ydg69dh6fqvr27xjvp6maqmrldam6yfelqkd',
-      150000000n,
-    ],
+    ['⚠️ tap: minted before observed'],
   ]);
 });
+
+test('Settlement for Advancing transaction', async t => {
+  const {
+    accounts,
+    defaultSettlerParams,
+    inspectLogs,
+    makeSettler,
+    peekCalls,
+    repayer,
+    simulate,
+    statusManager,
+  } = t.context;
+
+  const settler = makeSettler({
+    repayer,
+    settlementAccount: accounts.settlement.account,
+    ...defaultSettlerParams,
+  });
+
+  const cctpTxEvidence = simulate.startAdvance();
+  t.deepEqual(
+    statusManager.lookupPending(
+      cctpTxEvidence.tx.forwardingAddress,
+      cctpTxEvidence.tx.amount,
+    ),
+    [{ ...cctpTxEvidence, status: PendingTxStatus.Advancing }],
+    'statusManager shows this tx is Advancing',
+  );
+
+  t.log('Simulate incoming IBC settlement');
+  void settler.tap.receiveUpcall(MockVTransferEvents.AGORIC_PLUS_OSMO());
+  await eventLoopIteration();
+
+  t.log('Transfer was started');
+  t.deepEqual(peekCalls(), []);
+  t.deepEqual(accounts.settlement.callLog, []);
+  t.like(inspectLogs(), [
+    ['config', { sourceChannel: 'channel-21' }],
+    ['upcall event'],
+    ['dequeued', { status: PendingTxStatus.Advancing }],
+    ['⚠️ tap: minted while advancing'],
+  ]);
+
+  // TODO: show this going to Forwarded with notifyAdvancingResult
+});
+
+test.todo('ForwardFailed, like "slow path: forward to EUD"');
 
 test.todo("StatusManager does not receive update when we can't settle");

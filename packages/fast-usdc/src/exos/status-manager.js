@@ -69,6 +69,7 @@ export const prepareStatusManager = (
   txnsNode,
   {
     marshaller,
+    // eslint-disable-next-line no-unused-vars
     log = makeTracer('Advancer', true),
   } = /** @type {StatusManagerPowers} */ ({}),
 ) => {
@@ -201,11 +202,7 @@ export const prepareStatusManager = (
         M.or(
           {
             txHash: EvmHashShape,
-            status: M.or(
-              PendingTxStatus.Advanced,
-              PendingTxStatus.AdvanceFailed,
-              PendingTxStatus.Observed,
-            ),
+            status: M.or(...Object.values(PendingTxStatus)),
           },
           M.undefined(),
         ),
@@ -213,9 +210,7 @@ export const prepareStatusManager = (
       disbursed: M.call(EvmHashShape, AmountKeywordRecordShape).returns(
         M.undefined(),
       ),
-      forwarded: M.call(M.opt(EvmHashShape), M.string(), M.nat()).returns(
-        M.undefined(),
-      ),
+      forwarded: M.call(EvmHashShape, M.boolean()).returns(M.undefined()),
       lookupPending: M.call(M.string(), M.bigint()).returns(
         M.arrayOf(PendingTxShape),
       ),
@@ -233,7 +228,7 @@ export const prepareStatusManager = (
       },
 
       /**
-       * Record result of ADVANCING
+       * Record result of an ADVANCING transaction
        *
        * @param {NobleAddress} nfa Noble Forwarding Account
        * @param {import('@agoric/ertp').NatValue} amount
@@ -278,7 +273,10 @@ export const prepareStatusManager = (
       },
 
       /**
-       * Remove and return an `ADVANCED` or `OBSERVED` tx waiting to be `SETTLED`.
+       * Remove and return the _first_ `PendingSettleTx` that matches the observed
+       * settlement. This is not necessarily an exact match with the original
+       * transaction, but it does guarantee it's for the same forwarding account and
+       * amount.
        *
        * @param {NobleAddress} nfa
        * @param {bigint} amount
@@ -290,22 +288,21 @@ export const prepareStatusManager = (
         if (!pendingSettleTxs.has(key)) return undefined;
         const pending = pendingSettleTxs.get(key);
 
-        const dequeueIdx = pending.findIndex(
-          x => x.status !== PendingTxStatus.Advancing,
-        );
-        if (dequeueIdx < 0) return undefined;
+        if (pending.length === 0) {
+          return undefined;
+        }
+        // extract first item
+        const { status, txHash } = pending[0];
 
+        // Update the pendingSettleTxs map
         if (pending.length > 1) {
           const pendingCopy = [...pending];
-          pendingCopy.splice(dequeueIdx, 1);
+          pendingCopy.shift(); // Remove first element
           pendingSettleTxs.set(key, harden(pendingCopy));
         } else {
           pendingSettleTxs.delete(key);
         }
 
-        const { status, txHash } = pending[dequeueIdx];
-        // TODO: store txHash -> evidence for txs pending settlement?
-        // If necessary for vstorage writes in `forwarded` and `settled`
         return harden({ status, txHash });
       },
 
@@ -323,21 +320,18 @@ export const prepareStatusManager = (
       },
 
       /**
-       * Mark a transaction as `FORWARDED`
+       * Mark a transaction as `FORWARDED` or `FORWARD_FAILED`
        *
-       * @param {EvmHash | undefined} txHash - undefined in case mint before observed
-       * @param {NobleAddress} nfa
-       * @param {bigint} amount
+       * @param {EvmHash} txHash
+       * @param {boolean} success
        */
-      forwarded(txHash, nfa, amount) {
-        if (txHash) {
-          void publishTxnRecord(txHash, harden({ status: TxStatus.Forwarded }));
-        } else {
-          // TODO store (early) `Minted` transactions to check against incoming evidence
-          log(
-            `⚠️ Forwarded minted amount ${amount} from account ${nfa} before it was observed.`,
-          );
-        }
+      forwarded(txHash, success) {
+        void publishTxnRecord(
+          txHash,
+          harden({
+            status: success ? TxStatus.Forwarded : TxStatus.ForwardFailed,
+          }),
+        );
       },
 
       /**
