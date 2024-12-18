@@ -29,7 +29,6 @@ export {};
  * @typedef { string } MeterID
  * @typedef { { meterID?: MeterID } } OptMeterID
  * @typedef { import('./types-external.js').BaseVatOptions } BaseVatOptions
- * @typedef { import('./types-external.js').OptManagerType } OptManagerType
  * @typedef { import('@agoric/swingset-liveslots').VatDeliveryObject } VatDeliveryObject
  * @typedef { import('@agoric/swingset-liveslots').VatDeliveryResult } VatDeliveryResult
  * @typedef { import('@agoric/swingset-liveslots').VatSyscallObject } VatSyscallObject
@@ -38,7 +37,7 @@ export {};
  *
  * // used by vatKeeper.setSourceAndOptions(source, RecordedVatOptions)
  *
- * @typedef { BaseVatOptions & OptMeterID & OptManagerType } InternalDynamicVatOptions
+ * @typedef { BaseVatOptions & OptMeterID } InternalDynamicVatOptions
  *
  * RecordedVatOptions is fully-specified, no optional fields
  *
