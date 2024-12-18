@@ -461,6 +461,7 @@ export const prepareProvisionPoolKit = (
           const invitation = E(psmPub).makeWantMintedInvitation();
           const seat = E(zoe).offer(invitation, proposal, { In: payIn });
           const payout = await E(seat).getPayout('Out');
+          assert(payout, 'deposit requires a payment');
           const rxd = await E(fundPurse).deposit(payout);
           helper.onTrade(rxd);
           return rxd;

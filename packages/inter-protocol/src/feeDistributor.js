@@ -26,7 +26,7 @@ harden(meta);
 
 /**
  * @typedef {object} FeeCollector
- * @property {() => ERef<Payment<'nat'>>} collectFees
+ * @property {() => ERef<void | Payment<'nat'>>} collectFees
  */
 
 /**
@@ -252,6 +252,7 @@ export const makeFeeDistributor = (feeIssuer, terms) => {
             return;
           }
           const payment = await E(collector).collectFees();
+          assert(payment, 'collectFees must return a Payment');
           await distributeFees(payment);
         },
         stop: () => {

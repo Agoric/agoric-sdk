@@ -197,7 +197,7 @@
  * @property {() => Promise<PaymentPKeywordRecord>} getPayouts
  * returns a promise for a KeywordPaymentRecord containing all the payouts from
  * this seat. The promise will resolve after the seat has exited.
- * @property {(keyword: Keyword) => Promise<Payment<any>>} getPayout
+ * @property {(keyword: Keyword) => Promise<Payment<any> | void>} getPayout
  * returns a promise for the Payment corresponding to the indicated keyword.
  * The promise will resolve after the seat has exited.
  * @property {() => Promise<OR>} getOfferResult

@@ -176,6 +176,7 @@ const setupReserveAndElectorate = async t => {
 /**
  * @param {import('ava').ExecutionContext<DriverContext>} t
  * @param {Amount<'nat'>} amt
+ * @returns {Promise<Payment<'nat'>>}
  */
 const getRunFromFaucet = async (t, amt) => {
   const {
@@ -200,6 +201,8 @@ const getRunFromFaucet = async (t, amt) => {
     }),
   );
 
+  /** @type {Payment<'nat'>} */
+  // @ts-expect-error Known to be a payment.
   const runPayment = await E(faucetSeat).getPayout('RUN');
   return runPayment;
 };

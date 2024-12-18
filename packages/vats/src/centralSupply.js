@@ -25,6 +25,8 @@ export const start = async (zcf, { feeMintAccess }) => {
     zcfSeat,
   );
   zcfSeat.exit();
+  /** @type {Payment<any>} */
+  // @ts-expect-error known to be a Payment
   const bootstrapPayment = await E(userSeat).getPayout('Bootstrap');
 
   return {
