@@ -55,6 +55,7 @@ export const makeWalletFactoryDriver = async (
     isNew: boolean,
   ) => ({
     isNew,
+    getAddress: () => walletAddress,
 
     executeOffer(offer: OfferSpec): Promise<void> {
       const offerCapData = marshaller.toCapData(
