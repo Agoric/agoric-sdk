@@ -225,9 +225,11 @@ test.serial('makes usdc advance', async t => {
     ),
   );
 
+  const lp = oracles[0]; // somewhat arbitrary
+
   // @ts-expect-error it doesnt recognize usdc as a Brand type
   const usdc = agoricNamesRemotes.vbankAsset.USDC.brand as Brand<'nat'>;
-  await oracles[0].sendOffer({
+  await lp.sendOffer({
     id: 'deposit-lp-0',
     invitationSpec: {
       source: 'agoricContract',
@@ -242,7 +244,17 @@ test.serial('makes usdc advance', async t => {
   });
   await eventLoopIteration();
 
-  const { purses } = oracles[0].getCurrentWalletRecord();
+  const { getOutboundMessages } = t.context.bridgeUtils;
+  const lpBankDeposit = getOutboundMessages(BridgeId.BANK).find(
+    obj =>
+      obj.type === 'VBANK_GIVE' &&
+      obj.denom === 'ufastlp' &&
+      obj.recipient === lp.getAddress(),
+  );
+  t.log('LP vbank deposit', lpBankDeposit);
+  t.true(BigInt(lpBankDeposit.amount) > 1_000_000n, 'vbank GIVEs shares to LP');
+
+  const { purses } = lp.getCurrentWalletRecord();
   // XXX #10491 should not need to resort to string match on brand
   t.falsy(
     purses.find(p => `${p.brand}`.match(/FastLP/)),
