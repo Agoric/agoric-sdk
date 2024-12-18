@@ -19,7 +19,11 @@ import type { SettlerKit } from '../../src/exos/settler.js';
 import { prepareStatusManager } from '../../src/exos/status-manager.js';
 import type { LiquidityPoolKit } from '../../src/types.js';
 import { makeFeeTools } from '../../src/utils/fees.js';
-import { MockCctpTxEvidences, intermediateRecipient } from '../fixtures.js';
+import {
+  MockCctpTxEvidences,
+  settlementAddress,
+  intermediateRecipient,
+} from '../fixtures.js';
 import {
   makeTestFeeConfig,
   makeTestLogger,
@@ -127,6 +131,7 @@ const createTestExtensions = (t, common: CommonSetup) => {
     notifyFacet: mockNotifyF,
     poolAccount: mockAccounts.mockPoolAccount.account,
     intermediateRecipient,
+    settlementAddress,
   });
 
   return {
@@ -141,6 +146,7 @@ const createTestExtensions = (t, common: CommonSetup) => {
     },
     mocks: {
       ...mockAccounts,
+      mockBorrowerF,
       mockNotifyF,
       resolveLocalTransferV,
       rejectLocalTransfeferV,
@@ -260,6 +266,7 @@ test('updates status to OBSERVED on insufficient pool funds', async t => {
     notifyFacet: mockNotifyF,
     poolAccount: mockPoolAccount.account,
     intermediateRecipient,
+    settlementAddress,
   });
 
   const evidence = MockCctpTxEvidences.AGORIC_PLUS_DYDX();
@@ -393,10 +400,10 @@ test('updates status to OBSERVED if pre-condition checks fail', async t => {
 
   await advancer.handleTransactionEvent({
     ...MockCctpTxEvidences.AGORIC_NO_PARAMS(
-      encodeAddressHook(
-        'agoric16kv2g7snfc4q24vg3pjdlnnqgngtjpwtetd2h689nz09lcklvh5s8u37ek',
-        { EUD: 'osmo1234', extra: 'value' },
-      ),
+      encodeAddressHook(settlementAddress.value, {
+        EUD: 'osmo1234',
+        extra: 'value',
+      }),
     ),
     txHash:
       '0xc81bc6105b60a234c7c50ac17816ebcd5561d366df8bf3be59ff387552761799',
@@ -550,6 +557,7 @@ test('alerts if `returnToPool` fallback fails', async t => {
     notifyFacet: mockNotifyF,
     poolAccount: mockPoolAccount.account,
     intermediateRecipient,
+    settlementAddress,
   });
 
   const mockEvidence = MockCctpTxEvidences.AGORIC_PLUS_OSMO();
@@ -587,4 +595,33 @@ test('alerts if `returnToPool` fallback fails', async t => {
     ],
     'Advancing tx is recorded as AdvanceFailed',
   );
+});
+
+test('rejects advances to unknown settlementAccount', async t => {
+  const {
+    extensions: {
+      services: { advancer },
+      helpers: { inspectLogs },
+    },
+  } = t.context;
+
+  const invalidSettlementAcct =
+    'agoric1ax7hmw49tmqrdld7emc5xw3wf43a49rtkacr9d5nfpqa0y7k6n0sl8v94h';
+  t.not(settlementAddress.value, invalidSettlementAcct);
+  const mockEvidence = MockCctpTxEvidences.AGORIC_PLUS_OSMO(
+    encodeAddressHook(invalidSettlementAcct, {
+      EUD: 'osmo183dejcnmkka5dzcu9xw6mywq0p2m5peks28men',
+    }),
+  );
+
+  void advancer.handleTransactionEvent(mockEvidence);
+  await eventLoopIteration();
+  t.deepEqual(inspectLogs(), [
+    [
+      'Advancer error:',
+      Error(
+        '⚠️ baseAddress of address hook "agoric1ax7hmw49tmqrdld7emc5xw3wf43a49rtkacr9d5nfpqa0y7k6n0sl8v94h" does not match the expected address "agoric16kv2g7snfc4q24vg3pjdlnnqgngtjpwtetd2h689nz09lcklvh5s8u37ek"',
+      ),
+    ],
+  ]);
 });

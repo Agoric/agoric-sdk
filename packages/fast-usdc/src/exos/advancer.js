@@ -6,6 +6,7 @@ import { pickFacet } from '@agoric/vat-data';
 import { VowShape } from '@agoric/vow';
 import { E } from '@endo/far';
 import { M, mustMatch } from '@endo/patterns';
+import { Fail, q } from '@endo/errors';
 import {
   CctpTxEvidenceShape,
   AddressHookShape,
@@ -116,6 +117,7 @@ export const prepareAdvancerKit = (
      *   notifyFacet: import('./settler.js').SettlerKit['notify'];
      *   borrowerFacet: LiquidityPoolKit['borrower'];
      *   poolAccount: HostInterface<OrchestrationAccount<{chainId: 'agoric'}>>;
+     *   settlementAddress: ChainAddress;
      *   intermediateRecipient?: ChainAddress;
      * }} config
      */
@@ -145,10 +147,14 @@ export const prepareAdvancerKit = (
               return;
             }
 
-            const { borrowerFacet, poolAccount } = this.state;
+            const { borrowerFacet, poolAccount, settlementAddress } =
+              this.state;
             const { recipientAddress } = evidence.aux;
             const decoded = decodeAddressHook(recipientAddress);
             mustMatch(decoded, AddressHookShape);
+            if (decoded.baseAddress !== settlementAddress.value) {
+              throw Fail`⚠️ baseAddress of address hook ${q(decoded.baseAddress)} does not match the expected address ${q(settlementAddress.value)}`;
+            }
             const { EUD } = /** @type {AddressHook['query']} */ (decoded.query);
             log(`decoded EUD: ${EUD}`);
             // throws if the bech32 prefix is not found
@@ -172,10 +178,10 @@ export const prepareAdvancerKit = (
               harden({ USDC: advanceAmount }),
             );
             void watch(depositV, this.facets.depositHandler, {
-              fullAmount,
               advanceAmount,
               destination,
               forwardingAddress: evidence.tx.forwardingAddress,
+              fullAmount,
               tmpSeat,
               txHash: evidence.txHash,
             });
@@ -271,6 +277,7 @@ export const prepareAdvancerKit = (
         borrowerFacet: M.remotable(),
         poolAccount: M.remotable(),
         intermediateRecipient: M.opt(ChainAddressShape),
+        settlementAddress: M.opt(ChainAddressShape),
       }),
     },
   );

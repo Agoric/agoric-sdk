@@ -6,6 +6,7 @@ import {
   encodeAddressHook,
 } from '@agoric/cosmic-proto/address-hooks.js';
 import { AmountMath } from '@agoric/ertp/src/amountMath.js';
+import type { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
 import {
   eventLoopIteration,
   inspectMapStore,
@@ -18,6 +19,7 @@ import {
 } from '@agoric/notifier';
 import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
 import { buildVTransferEvent } from '@agoric/orchestration/tools/ibc-mocks.js';
+import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
 import { heapVowE as VE } from '@agoric/vow/vat.js';
 import {
   divideBy,
@@ -136,12 +138,15 @@ const makeTestContext = async (t: ExecutionContext) => {
   };
 
   const mint = async (e: CctpTxEvidence) => {
-    const settlerAddr = 'agoric1fakeLCAAddress1'; // TODO: get from contract
-    const rxd = await receiveUSDCAt(settlerAddr, e.tx.amount);
+    const accountsData = common.bootstrap.storage.data.get('fun');
+    const { settlementAccount } = JSON.parse(
+      JSON.parse(accountsData!).values[0],
+    );
+    const rxd = await receiveUSDCAt(settlementAccount, e.tx.amount);
     await VE(transferBridge).fromBridge(
       buildVTransferEvent({
         receiver: e.aux.recipientAddress,
-        target: settlerAddr,
+        target: settlementAccount,
         sourceChannel: agToNoble.transferChannel.counterPartyChannelId,
         denom: 'uusdc',
         amount: e.tx.amount,
@@ -155,7 +160,8 @@ const makeTestContext = async (t: ExecutionContext) => {
   return { bridges: { snapshot, since }, common, evm, mint, startKit, sync };
 };
 
-const test = anyTest as TestFn<Awaited<ReturnType<typeof makeTestContext>>>;
+type FucContext = Awaited<ReturnType<typeof makeTestContext>>;
+const test = anyTest as TestFn<FucContext>;
 test.before(async t => (t.context = await makeTestContext(t)));
 
 test('baggage', async t => {
@@ -190,8 +196,8 @@ test('getStaticInfo', async t => {
 
   t.deepEqual(await E(publicFacet).getStaticInfo(), {
     addresses: {
-      poolAccount: 'agoric1fakeLCAAddress',
-      settlementAccount: 'agoric1fakeLCAAddress1',
+      poolAccount: makeTestAddress(),
+      settlementAccount: makeTestAddress(1),
     },
   });
 });
@@ -346,7 +352,6 @@ const makeLP = async (
 };
 
 const makeEVM = (template = MockCctpTxEvidences.AGORIC_PLUS_OSMO()) => {
-  const [settleAddr] = template.aux.recipientAddress.split('?');
   let nonce = 0;
 
   const makeTx = (amount: bigint, recipientAddress: string): CctpTxEvidence => {
@@ -378,10 +383,6 @@ const makeCustomer = (
   const feeTools = makeFeeTools(feeConfig);
   const sent = [] as CctpTxEvidence[];
 
-  // TODO: get settlerAddr from vstorage
-  const [settleAddr] =
-    MockCctpTxEvidences.AGORIC_PLUS_OSMO().aux.recipientAddress.split('?');
-
   const me = harden({
     checkPoolAvailable: async (
       t: ExecutionContext,
@@ -394,8 +395,17 @@ const makeCustomer = (
       t.log(who, 'sees', poolBalance.value, enough ? '>' : 'NOT >', want);
       return enough;
     },
-    sendFast: async (t: ExecutionContext, amount: bigint, EUD: string) => {
-      const recipientAddress = encodeAddressHook(settleAddr, { EUD });
+    sendFast: async (
+      t: ExecutionContext<FucContext>,
+      amount: bigint,
+      EUD: string,
+    ) => {
+      const { storage } = t.context.common.bootstrap;
+      const accountsData = storage.data.get('fun');
+      const { settlementAccount } = JSON.parse(
+        JSON.parse(accountsData!).values[0],
+      );
+      const recipientAddress = encodeAddressHook(settlementAccount, { EUD });
       // KLUDGE: UI would ask noble for a forwardingAddress
       // "cctp" here has some noble stuff mixed in.
       const tx = cctp.makeTx(amount, recipientAddress);
@@ -559,7 +569,7 @@ test.serial('STORY01: advancing happy path for 100 USDC', async t => {
   t.deepEqual(inspectBankBridge().at(-1), {
     amount: String(expectedAdvance.value),
     denom: uusdcOnAgoric,
-    recipient: 'agoric1fakeLCAAddress',
+    recipient: makeTestAddress(),
     type: 'VBANK_GIVE',
   });
 
@@ -791,7 +801,7 @@ test.serial('Settlement for unknown transaction (operator down)', async t => {
       },
       {
         amount: '20000000',
-        recipient: 'agoric1fakeLCAAddress1',
+        recipient: 'agoric1qyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqc09z0g',
         type: 'VBANK_GIVE',
       },
     ],

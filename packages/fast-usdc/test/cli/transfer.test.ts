@@ -8,6 +8,7 @@ import {
   makeFetchMock,
   makeMockSigner,
 } from '../../testing/mocks.js';
+import { settlementAddress } from '../fixtures.js';
 
 test('Errors if config missing', async t => {
   const path = 'config/dir/.fast-usdc/config.json';
@@ -73,8 +74,7 @@ test('Transfer registers the noble forwarding account if it does not exist', asy
   };
   const out = mockOut();
   const file = mockFile(path, JSON.stringify(config));
-  const agoricSettlementAccount =
-    'agoric16kv2g7snfc4q24vg3pjdlnnqgngtjpwtetd2h689nz09lcklvh5s8u37ek';
+  const agoricSettlementAccount = settlementAddress.value;
   const settlementAccountVstoragePath = 'published.fastUsdc.settlementAccount';
   const vstorageMock = makeVstorageMock({
     [settlementAccountVstoragePath]: agoricSettlementAccount,
@@ -150,8 +150,7 @@ test('Transfer signs and broadcasts the depositForBurn message on Ethereum', asy
   };
   const out = mockOut();
   const file = mockFile(path, JSON.stringify(config));
-  const agoricSettlementAccount =
-    'agoric16kv2g7snfc4q24vg3pjdlnnqgngtjpwtetd2h689nz09lcklvh5s8u37ek';
+  const agoricSettlementAccount = settlementAddress.value;
   const settlementAccountVstoragePath = 'published.fastUsdc.settlementAccount';
   const vstorageMock = makeVstorageMock({
     [settlementAccountVstoragePath]: agoricSettlementAccount,
