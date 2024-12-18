@@ -140,9 +140,7 @@ const walletQ = (vsc: VStorageClient) => {
 const fastLPQ = (vsc: VStorageClient) =>
   harden({
     metrics: () =>
-      vsc.queryData(
-        `published.${contractName}.poolMetrics`,
-      ) as Promise<PoolMetrics>,
+      vsc.queryData(`published.fastUsdc.poolMetrics`) as Promise<PoolMetrics>,
     info: () =>
       vsc.queryData(`published.${contractName}`) as Promise<{
         poolAccount: string;
