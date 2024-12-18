@@ -1,8 +1,11 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import type { ExecutionContext, TestFn } from 'ava';
 
+import {
+  decodeAddressHook,
+  encodeAddressHook,
+} from '@agoric/cosmic-proto/address-hooks.js';
 import { AmountMath } from '@agoric/ertp/src/amountMath.js';
-import { deeplyFulfilledObject } from '@agoric/internal';
 import {
   eventLoopIteration,
   inspectMapStore,
@@ -24,13 +27,9 @@ import {
 import type { Instance } from '@agoric/zoe/src/zoeService/utils.js';
 import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { E } from '@endo/far';
-import { matches, objectMap } from '@endo/patterns';
+import { matches } from '@endo/patterns';
 import { makePromiseKit } from '@endo/promise-kit';
 import path from 'path';
-import {
-  decodeAddressHook,
-  encodeAddressHook,
-} from '@agoric/cosmic-proto/address-hooks.js';
 import type { OperatorKit } from '../src/exos/operator-kit.js';
 import type { FastUsdcSF } from '../src/fast-usdc.contract.js';
 import { PoolMetricsShape } from '../src/type-guards.js';
@@ -56,10 +55,12 @@ const getInvitationProperties = async (
   return amount.value[0];
 };
 
+// Spec for Mainnet. Other values are covered in unit tests of TransactionFeed.
+const operatorQty = 3;
+
 type CommonSetup = Awaited<ReturnType<typeof commonSetup>>;
 const startContract = async (
   common: Pick<CommonSetup, 'brands' | 'commonPrivateArgs' | 'utils'>,
-  operatorQty = 1,
 ) => {
   const {
     brands: { usdc },
@@ -104,7 +105,7 @@ const makeTestContext = async (t: ExecutionContext) => {
   const common = await commonSetup(t);
   await E(common.mocks.ibcBridge).setAddressPrefix('noble');
 
-  const startKit = await startContract(common, 2);
+  const startKit = await startContract(common);
 
   const { transferBridge } = common.mocks;
   const evm = makeEVM();
@@ -227,12 +228,17 @@ const makeOracleOperator = async (
   ]);
   const { invitationMakers } = operatorKit;
 
+  let active = true;
+
   return harden({
     watch: () => {
       void observeIteration(subscribeEach(txSubscriber), {
-        updateState: tx =>
+        updateState: tx => {
+          if (!active) {
+            return;
+          }
           // KLUDGE: tx wouldn't include aux. OCW looks it up
-          E.when(
+          return E.when(
             E(invitationMakers).SubmitEvidence(tx),
             inv =>
               E.when(E(E(zoe).offer(inv)).getOfferResult(), res => {
@@ -242,13 +248,17 @@ const makeOracleOperator = async (
             reason => {
               failures.push(reason.message);
             },
-          ),
+          );
+        },
       });
     },
     getDone: () => done,
     getFailures: () => harden([...failures]),
     // operator only gets .invitationMakers
     getKit: () => operatorKit,
+    setActive: flag => {
+      active = flag;
+    },
   });
 };
 
@@ -760,10 +770,12 @@ test.serial('Settlement for unknown transaction (operator down)', async t => {
   } = t.context;
   const operators = await sync.ocw.promise;
 
+  // Simulate 2 of 3 operators being unavailable
+  operators[0].setActive(false);
+  operators[1].setActive(false);
+
   const opDown = makeCustomer('Otto', cctp, txPub.publisher, feeConfig);
 
-  // what removeOperator will do
-  await E(E.get(E(operators[1]).getKit()).admin).disable();
   const bridgePos = snapshot();
   const sent = await opDown.sendFast(t, 20_000_000n, 'osmo12345');
   await mint(sent);
@@ -788,9 +800,6 @@ test.serial('Settlement for unknown transaction (operator down)', async t => {
   t.deepEqual(bridgeTraffic.local, [], 'no IBC transfers');
 
   await transmitTransferAck();
-  t.deepEqual(await E(operators[1]).getFailures(), [
-    'submitEvidence for disabled operator',
-  ]);
 });
 
 test.todo(
