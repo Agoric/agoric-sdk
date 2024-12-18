@@ -98,7 +98,7 @@ test.serial(
       denom: 'ufastlp',
       displayInfo: { assetKind: 'nat', decimalPlaces: 6 },
     });
-    const lpId = lpAsset.brand.getBoardId();
+    const lpId = lpAsset.brand.getBoardId() || assert.fail('impossible');
     t.is(agoricNamesRemotes.brand.FastLP.getBoardId(), lpId);
 
     const { EV } = t.context.runUtils;
@@ -107,7 +107,7 @@ test.serial(
     const getBoardAux = async name => {
       const brand = await EV(agoricNames).lookup('brand', name);
       const id = await EV(board).getId(brand);
-      t.is(id || null, lpId);
+      t.is(id, lpId);
       t.truthy(storage.data.get(`published.boardAux.${id}`));
       return unmarshalFromVstorage(
         storage.data,
