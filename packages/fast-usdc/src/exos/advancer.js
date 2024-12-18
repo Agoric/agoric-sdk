@@ -291,8 +291,8 @@ export const prepareAdvancerKit = (
         notifyFacet: M.remotable(),
         borrowerFacet: M.remotable(),
         poolAccount: M.remotable(),
+        settlementAddress: ChainAddressShape,
         intermediateRecipient: M.opt(ChainAddressShape),
-        settlementAddress: M.opt(ChainAddressShape),
       }),
     },
   );
