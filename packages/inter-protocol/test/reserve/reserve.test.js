@@ -37,6 +37,8 @@ const getRunFromFaucet = async (
     }),
   );
 
+  /** @type {Payment<any>} */
+  // @ts-expect-error cast
   const runPayment = await E(faucetSeat).getPayout('RUN');
   return runPayment;
 };
@@ -230,6 +232,7 @@ test('reserve burn IST, with snapshot', async t => {
   ).makeAddCollateralInvitation();
 
   const proposal = { give: { Collateral: oneK } };
+  /** @type {PaymentPKeywordRecord} */
   const payments = { Collateral: runPayment };
   const collateralSeat = E(zoe).offer(invitation, proposal, payments);
 

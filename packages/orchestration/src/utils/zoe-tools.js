@@ -88,6 +88,8 @@ export const makeZoeTools = (zcf, { when, allVows, allSettled, asVow }) => {
       // );
 
       // Now all the `amounts` are accessible, so we can move them to the localAccount
+      /** @type {Payment<any>[]} */
+      // @ts-expect-error keywords of amountKeywordRecord
       const payments = await Promise.all(
         keys(amounts).map(kw => E(userSeat).getPayout(kw)),
       );
