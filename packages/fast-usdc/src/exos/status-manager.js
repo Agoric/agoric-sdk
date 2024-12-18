@@ -76,7 +76,7 @@ export const prepareStatusManager = (
    * Keyed by a tuple of the Noble Forwarding Account and amount.
    * @type {MapStore<PendingTxKey, PendingTx[]>}
    */
-  const pendingTxs = zone.mapStore('PendingTxs', {
+  const pendingSettleTxs = zone.mapStore('PendingSettleTxs', {
     keyShape: M.string(),
     valueShape: M.arrayOf(PendingTxShape),
   });
@@ -155,7 +155,7 @@ export const prepareStatusManager = (
     seenTxs.add(txHash);
 
     appendToStoredArray(
-      pendingTxs,
+      pendingSettleTxs,
       pendingTxKeyOf(evidence),
       harden({ ...evidence, status }),
     );
@@ -174,8 +174,8 @@ export const prepareStatusManager = (
    */
   function setPendingTxStatus({ nfa, amount }, status) {
     const key = makePendingTxKey(nfa, amount);
-    pendingTxs.has(key) || Fail`no advancing tx with ${{ nfa, amount }}`;
-    const pending = pendingTxs.get(key);
+    pendingSettleTxs.has(key) || Fail`no advancing tx with ${{ nfa, amount }}`;
+    const pending = pendingSettleTxs.get(key);
     const ix = pending.findIndex(tx => tx.status === PendingTxStatus.Advancing);
     ix >= 0 || Fail`no advancing tx with ${{ nfa, amount }}`;
     const [prefix, tx, suffix] = [
@@ -184,7 +184,7 @@ export const prepareStatusManager = (
       pending.slice(ix + 1),
     ];
     const txpost = { ...tx, status };
-    pendingTxs.set(key, harden([...prefix, txpost, ...suffix]));
+    pendingSettleTxs.set(key, harden([...prefix, txpost, ...suffix]));
     void publishTxnRecord(tx.txHash, harden({ status }));
   }
 
@@ -287,8 +287,8 @@ export const prepareStatusManager = (
        */
       dequeueStatus(nfa, amount) {
         const key = makePendingTxKey(nfa, amount);
-        if (!pendingTxs.has(key)) return undefined;
-        const pending = pendingTxs.get(key);
+        if (!pendingSettleTxs.has(key)) return undefined;
+        const pending = pendingSettleTxs.get(key);
 
         const dequeueIdx = pending.findIndex(
           x => x.status !== PendingTxStatus.Advancing,
@@ -298,9 +298,9 @@ export const prepareStatusManager = (
         if (pending.length > 1) {
           const pendingCopy = [...pending];
           pendingCopy.splice(dequeueIdx, 1);
-          pendingTxs.set(key, harden(pendingCopy));
+          pendingSettleTxs.set(key, harden(pendingCopy));
         } else {
-          pendingTxs.delete(key);
+          pendingSettleTxs.delete(key);
         }
 
         const { status, txHash } = pending[dequeueIdx];
@@ -351,10 +351,10 @@ export const prepareStatusManager = (
        */
       lookupPending(nfa, amount) {
         const key = makePendingTxKey(nfa, amount);
-        if (!pendingTxs.has(key)) {
+        if (!pendingSettleTxs.has(key)) {
           return harden([]);
         }
-        return pendingTxs.get(key);
+        return pendingSettleTxs.get(key);
       },
     },
   );
