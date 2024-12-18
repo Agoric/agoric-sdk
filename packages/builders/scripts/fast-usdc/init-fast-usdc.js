@@ -1,10 +1,8 @@
 // @ts-check
 import { makeHelpers } from '@agoric/deploy-script-support';
 import { AmountMath } from '@agoric/ertp';
-import {
-  FastUSDCConfigShape,
-  getManifestForFastUSDC,
-} from '@agoric/fast-usdc/src/fast-usdc.start.js';
+import { getManifestForFastUSDC } from '@agoric/fast-usdc/src/fast-usdc.start.js';
+import { FastUSDCConfigShape } from '@agoric/fast-usdc/src/fast-usdc.contract.meta.js';
 import { toExternalConfig } from '@agoric/fast-usdc/src/utils/config-marshal.js';
 import { configurations } from '@agoric/fast-usdc/src/utils/deploy-config.js';
 import {

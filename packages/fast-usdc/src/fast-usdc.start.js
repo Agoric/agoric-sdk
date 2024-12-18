@@ -1,294 +1,82 @@
-import { deeplyFulfilledObject, makeTracer, objectMap } from '@agoric/internal';
-import {
-  CosmosChainInfoShape,
-  DenomDetailShape,
-  DenomShape,
-} from '@agoric/orchestration';
-import { Fail } from '@endo/errors';
+/** ContractMeta, Permit for Fast USDC */
 import { E } from '@endo/far';
-import { makeMarshal } from '@endo/marshal';
-import { M } from '@endo/patterns';
-import {
-  FastUSDCTermsShape,
-  FeeConfigShape,
-  FeedPolicyShape,
-} from './type-guards.js';
-import { fromExternalConfig } from './utils/config-marshal.js';
+import { makeTracer } from '@agoric/internal/src/debug.js';
+import { meta, permit } from './fast-usdc.contract.meta.js';
+import { makeGetManifest, startOrchContract } from './orch.start.js';
 
 /**
- * @import {DepositFacet} from '@agoric/ertp/src/types.js'
- * @import {TypedPattern} from '@agoric/internal'
- * @import {Instance, StartParams} from '@agoric/zoe/src/zoeService/utils'
- * @import {Board} from '@agoric/vats'
- * @import {ManifestBundleRef} from '@agoric/deploy-script-support/src/externalTypes.js'
- * @import {BootstrapManifest} from '@agoric/vats/src/core/lib-boot.js'
+ * @import {Marshaller} from '@agoric/internal/src/lib-chainStorage.js'
+ * @import {OrchestrationPowers} from '@agoric/orchestration';
+ *
+ * XXX these 2 could/should be down in the platform somewhere
  * @import {LegibleCapData} from './utils/config-marshal.js'
- * @import {FastUsdcSF} from './fast-usdc.contract.js'
- * @import {FeedPolicy, FastUSDCConfig} from './types.js'
- */
-
-const trace = makeTracer('FUSD-Start', true);
-
-const contractName = 'fastUsdc';
-
-/** @type {TypedPattern<FastUSDCConfig>} */
-export const FastUSDCConfigShape = M.splitRecord({
-  terms: FastUSDCTermsShape,
-  oracles: M.recordOf(M.string(), M.string()),
-  feeConfig: FeeConfigShape,
-  feedPolicy: FeedPolicyShape,
-  chainInfo: M.recordOf(M.string(), CosmosChainInfoShape),
-  assetInfo: M.arrayOf([DenomShape, DenomDetailShape]),
-});
-
-/**
- * XXX Shouldn't the bridge or board vat handle this?
+ * @import {CorePowersG} from './orch.start.js';
  *
- * @param {string} path
- * @param {{
- *   chainStorage: ERef<StorageNode>;
- *   board: ERef<Board>;
- * }} io
+ * @import {FastUsdcSF} from './fast-usdc.contract.js';
+ * @import {FastUSDCConfig} from './types.js'
  */
-const makePublishingStorageKit = async (path, { chainStorage, board }) => {
-  const storageNode = await E(chainStorage).makeChildNode(path);
 
-  const marshaller = await E(board).getPublishingMarshaller();
-  return { storageNode, marshaller };
-};
-
-const BOARD_AUX = 'boardAux';
-const marshalData = makeMarshal(_val => Fail`data only`);
-/**
- * @param {Brand} brand
- * @param {Pick<BootstrapPowers['consume'], 'board' | 'chainStorage'>} powers
- */
-const publishDisplayInfo = async (brand, { board, chainStorage }) => {
-  // chainStorage type includes undefined, which doesn't apply here.
-  // @ts-expect-error UNTIL https://github.com/Agoric/agoric-sdk/issues/8247
-  const boardAux = E(chainStorage).makeChildNode(BOARD_AUX);
-  const [id, displayInfo, allegedName] = await Promise.all([
-    E(board).getId(brand),
-    E(brand).getDisplayInfo(),
-    E(brand).getAllegedName(),
-  ]);
-  const node = E(boardAux).makeChildNode(id);
-  const aux = marshalData.toCapData(harden({ allegedName, displayInfo }));
-  await E(node).setValue(JSON.stringify(aux));
-};
-
-const FEED_POLICY = 'feedPolicy';
 const POOL_METRICS = 'poolMetrics';
+const FEED_POLICY = 'feedPolicy';
+
+const trace = makeTracer(`FUSDC-Start`, true);
 
 /**
- * @param {ERef<StorageNode>} node
- * @param {FeedPolicy} policy
- */
-const publishFeedPolicy = async (node, policy) => {
-  const feedPolicy = E(node).makeChildNode(FEED_POLICY);
-  await E(feedPolicy).setValue(JSON.stringify(policy));
-};
-
-/**
- * @typedef { PromiseSpaceOf<{
- *   fastUsdcKit: FastUSDCKit
- *  }> & {
- *   installation: PromiseSpaceOf<{ fastUsdc: Installation<FastUsdcSF> }>;
- *   instance: PromiseSpaceOf<{ fastUsdc: Instance<FastUsdcSF> }>;
- *   issuer: PromiseSpaceOf<{ FastLP: Issuer }>;
- *   brand: PromiseSpaceOf<{ FastLP: Brand }>;
- * }} FastUSDCCorePowers
  *
- * @typedef {StartedInstanceKitWithLabel & {
- *   privateArgs: StartParams<FastUsdcSF>['privateArgs'];
- * }} FastUSDCKit
+ * @param {OrchestrationPowers} orchestrationPowers
+ * @param {Marshaller} marshaller
+ * @param {FastUSDCConfig} config
+ * @returns {Promise<Parameters<FastUsdcSF>[1]>}
  */
-
-/**
- * @throws if oracle smart wallets are not yet provisioned
- *
- * @param {BootstrapPowers & FastUSDCCorePowers } powers
- * @param {{ options: LegibleCapData<FastUSDCConfig> }} config
- */
-export const startFastUSDC = async (
-  {
-    produce: { fastUsdcKit },
-    consume: {
-      agoricNames,
-      namesByAddress,
-      board,
-      chainStorage,
-      chainTimerService: timerService,
-      localchain,
-      cosmosInterchainService,
-      startUpgradable,
-      zoe,
-    },
-    issuer: {
-      produce: { FastLP: produceShareIssuer },
-    },
-    brand: {
-      produce: { FastLP: produceShareBrand },
-    },
-    installation: {
-      consume: { fastUsdc },
-    },
-    instance: {
-      produce: { fastUsdc: produceInstance },
-    },
-  },
+export const makePrivateArgs = async (
+  orchestrationPowers,
+  marshaller,
   config,
 ) => {
-  trace('startFastUSDC');
-
-  await null;
-  /** @type {Issuer<'nat'>} */
-  const USDCissuer = await E(agoricNames).lookup('issuer', 'USDC');
-  const brands = harden({
-    USDC: await E(USDCissuer).getBrand(),
-  });
-
-  const { terms, oracles, feeConfig, feedPolicy, ...net } = fromExternalConfig(
-    config.options,
-    brands,
-    FastUSDCConfigShape,
-  );
-  trace('using terms', terms);
+  const { feeConfig, chainInfo, assetInfo } = config;
   trace('using fee config', feeConfig);
 
-  trace('look up oracle deposit facets');
-  const oracleDepositFacets = await deeplyFulfilledObject(
-    objectMap(oracles, async address => {
-      /** @type {DepositFacet} */
-      const depositFacet = await E(namesByAddress).lookup(
-        address,
-        'depositFacet',
-      );
-      return depositFacet;
-    }),
-  );
-
-  const { storageNode, marshaller } = await makePublishingStorageKit(
-    contractName,
-    {
-      board,
-      // @ts-expect-error Promise<null> case is vestigial
-      chainStorage,
-    },
-  );
+  const { storageNode } = orchestrationPowers;
   const poolMetricsNode = await E(storageNode).makeChildNode(POOL_METRICS);
 
-  const privateArgs = await deeplyFulfilledObject(
-    harden({
-      agoricNames,
-      feeConfig,
-      localchain,
-      orchestrationService: cosmosInterchainService,
-      poolMetricsNode,
-      storageNode,
-      timerService,
-      marshaller,
-      chainInfo: net.chainInfo,
-      assetInfo: net.assetInfo,
-    }),
-  );
-
-  const kit = await E(startUpgradable)({
-    label: contractName,
-    installation: fastUsdc,
-    issuerKeywordRecord: harden({ USDC: USDCissuer }),
-    terms,
-    privateArgs,
+  return harden({
+    ...orchestrationPowers,
+    feeConfig,
+    poolMetricsNode,
+    marshaller,
+    chainInfo,
+    assetInfo,
   });
-  fastUsdcKit.resolve(harden({ ...kit, privateArgs }));
-  const { instance, creatorFacet } = kit;
-
-  await publishFeedPolicy(storageNode, feedPolicy);
-
-  const {
-    issuers: { PoolShares: shareIssuer },
-    brands: { PoolShares: shareBrand },
-  } = await E(zoe).getTerms(instance);
-  produceShareIssuer.resolve(shareIssuer);
-  produceShareBrand.resolve(shareBrand);
-  await publishDisplayInfo(shareBrand, { board, chainStorage });
-
-  await Promise.all(
-    Object.entries(oracleDepositFacets).map(async ([name, depositFacet]) => {
-      const address = oracles[name];
-      trace('making invitation for', name, address);
-      const toWatch = await E(creatorFacet).makeOperatorInvitation(address);
-
-      const amt = await E(depositFacet).receive(toWatch);
-      trace('sent', amt, 'to', name);
-    }),
-  );
-
-  produceInstance.reset();
-  produceInstance.resolve(instance);
-
-  const addresses = await E(kit.creatorFacet).publishAddresses();
-  trace('contract orch account addresses', addresses);
-  if (!net.noNoble) {
-    const addr = await E(kit.creatorFacet).connectToNoble();
-    trace('noble intermediate recipient', addr);
-  }
-  trace('startFastUSDC done', instance);
 };
-harden(startFastUSDC);
+harden(makePrivateArgs);
 
 /**
- * @param {{
- *   restoreRef: (b: ERef<ManifestBundleRef>) => Promise<Installation>;
- * }} utils
- * @param {{
- *   installKeys: { fastUsdc: ERef<ManifestBundleRef> };
- *   options: LegibleCapData<FastUSDCConfig>;
- * }} param1
+ * @param {BootstrapPowers & CorePowersG<'fastUsdc', FastUsdcSF, typeof permit>} permitted
+ * @param {{ options: LegibleCapData<FastUSDCConfig> }} configStruct
  */
-export const getManifestForFastUSDC = (
-  { restoreRef },
-  { installKeys, options },
-) => {
-  return {
-    /** @type {BootstrapManifest} */
-    manifest: {
-      [startFastUSDC.name]: {
-        produce: {
-          fastUsdcKit: true,
-        },
-        consume: {
-          chainStorage: true,
-          chainTimerService: true,
-          localchain: true,
-          cosmosInterchainService: true,
+export const startFastUSDC = async (permitted, configStruct) => {
+  const { config, kit } = await startOrchContract(
+    meta,
+    permit,
+    makePrivateArgs,
+    permitted,
+    configStruct,
+  );
 
-          // limited distribution durin MN2: contract installation
-          startUpgradable: true,
-          zoe: true, // only getTerms() is needed. XXX should be split?
+  const { storageNode } = kit.privateArgs;
+  const { feedPolicy } = config;
+  const policyNode = E(storageNode).makeChildNode(FEED_POLICY);
+  await E(policyNode).setValue(JSON.stringify(feedPolicy));
 
-          // widely shared: name services
-          agoricNames: true,
-          namesByAddress: true,
-          board: true,
-        },
-        issuer: {
-          produce: { FastLP: true }, // UNTIL #10432
-        },
-        brand: {
-          produce: { FastLP: true }, // UNTIL #10432
-        },
-        instance: {
-          produce: { fastUsdc: true },
-        },
-        installation: {
-          consume: { fastUsdc: true },
-        },
-      },
-    },
-    installations: {
-      fastUsdc: restoreRef(installKeys.fastUsdc),
-    },
-    options,
-  };
+  const { creatorFacet } = kit;
+  const addresses = await E(creatorFacet).publishAddresses();
+  trace('contract orch account addresses', addresses);
+  if (!config.noNoble) {
+    const addr = await E(creatorFacet).connectToNoble();
+    trace('noble intermediate recipient', addr);
+  }
 };
+
+// XXX hm... we need to preserve the function name.
+export const getManifestForFastUSDC = (u, d) =>
+  makeGetManifest(startFastUSDC, permit, meta.name)(u, d);
