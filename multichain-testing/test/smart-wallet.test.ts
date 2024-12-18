@@ -17,13 +17,13 @@ test.after(async t => {
 });
 
 test('provision smart wallet', async t => {
-  const { wallets, provisionSmartWallet, vstorageClient, useChain } = t.context;
+  const { wallets, provisionSmartWallet, smartWalletKit, useChain } = t.context;
 
   const wallet = await provisionSmartWallet(wallets.user1, { BLD: 100n });
   t.log('wallet', wallet);
 
-  const walletCurrent = await vstorageClient.queryData(
-    `published.wallet.${wallets.user1}.current`,
+  const walletCurrent = await smartWalletKit.readPublished(
+    `wallet.${wallets.user1}.current`,
   );
   t.like(walletCurrent, { liveOffers: [], offerToPublicSubscriberPaths: [] });
 

@@ -38,7 +38,7 @@ const ADDRESSES_BAGGAGE_KEY = 'addresses';
  * @import {Marshaller, StorageNode} from '@agoric/internal/src/lib-chainStorage.js'
  * @import {Zone} from '@agoric/zone';
  * @import {OperatorKit} from './exos/operator-kit.js';
- * @import {CctpTxEvidence, FeeConfig} from './types.js';
+ * @import {CctpTxEvidence, ContractRecord, FeeConfig} from './types.js';
  */
 
 /**
@@ -76,10 +76,7 @@ const publishFeeConfig = async (node, marshaller, feeConfig) => {
 
 /**
  * @param {Remote<StorageNode>} contractNode
- * @param {{
- *  poolAccount: ChainAddress['value'];
- *  settlementAccount: ChainAddress['value'];
- * }} addresses
+ * @param {ContractRecord} addresses
  */
 const publishAddresses = (contractNode, addresses) => {
   return E(contractNode).setValue(JSON.stringify(addresses));

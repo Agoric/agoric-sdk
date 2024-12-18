@@ -15,10 +15,7 @@ import { makeFeedPolicy, oracleMnemonics } from './config.js';
 import { makeRandomDigits } from '../../tools/random.js';
 import { balancesFromPurses } from '../../tools/purse.js';
 import { makeTracer } from '@agoric/internal';
-import type {
-  CctpTxEvidence,
-  EvmAddress,
-} from '@agoric/fast-usdc/src/types.js';
+import type { CctpTxEvidence, EvmAddress } from '@agoric/fast-usdc';
 
 const log = makeTracer('MCFU');
 
@@ -110,8 +107,8 @@ test.after(async t => {
 const toOracleOfferId = (idx: number) => `oracle${idx + 1}-accept`;
 
 test.serial('oracles accept', async t => {
-  const { oracleWds, retryUntilCondition, vstorageClient, wallets } = t.context;
-  const brands = await vstorageClient.queryData('published.agoricNames.brand');
+  const { oracleWds, retryUntilCondition, smartWalletKit, wallets } = t.context;
+  const brands = await smartWalletKit.readPublished('agoricNames.brand');
   const { Invitation } = Object.fromEntries(brands);
 
   const description = 'oracle operator invitation';
@@ -119,9 +116,9 @@ test.serial('oracles accept', async t => {
   // ensure we have an unused (or used) oracle invitation in each purse
   let hasAccepted = false;
   for (const name of keys(oracleMnemonics)) {
-    const { offerToUsedInvitation, purses } = await vstorageClient.queryData(
-      `published.wallet.${wallets[name]}.current`,
-    );
+    const { offerToUsedInvitation, purses } =
+      await smartWalletKit.readPublished(`wallet.${wallets[name]}.current`);
+    // @ts-expect-error Brand cannot be used as an index type
     const { value: invitations } = balancesFromPurses(purses)[Invitation];
     const hasInvitation = invitations.some(x => x.description === description);
     const usedInvitation = offerToUsedInvitation?.[0]?.[0] === `${name}-accept`;
@@ -136,7 +133,7 @@ test.serial('oracles accept', async t => {
 
   // accept oracle operator invitations
   const instance = fromEntries(
-    await vstorageClient.queryData('published.agoricNames.instance'),
+    await smartWalletKit.readPublished('agoricNames.instance'),
   )[contractName];
   await Promise.all(
     oracleWds.map(makeDoOffer).map((doOffer, i) =>
@@ -156,7 +153,7 @@ test.serial('oracles accept', async t => {
     const addr = wallets[name];
     await t.notThrowsAsync(() =>
       retryUntilCondition(
-        () => vstorageClient.queryData(`published.wallet.${addr}.current`),
+        () => smartWalletKit.readPublished(`wallet.${addr}.current`),
         ({ offerToUsedInvitation }) => {
           return offerToUsedInvitation[0][0] === `${name}-accept`;
         },
@@ -168,16 +165,16 @@ test.serial('oracles accept', async t => {
 });
 
 test.serial('lp deposits', async t => {
-  const { lpUser, retryUntilCondition, vstorageClient, wallets } = t.context;
+  const { lpUser, retryUntilCondition, smartWalletKit, wallets } = t.context;
 
   const lpDoOffer = makeDoOffer(lpUser);
-  const brands = await vstorageClient.queryData('published.agoricNames.brand');
+  const brands = await smartWalletKit.readPublished('agoricNames.brand');
   const { USDC, FastLP } = Object.fromEntries(brands);
 
   const usdcToGive = make(USDC, LP_DEPOSIT_AMOUNT);
 
-  const { shareWorth: currShareWorth } = await vstorageClient.queryData(
-    `published.${contractName}.poolMetrics`,
+  const { shareWorth: currShareWorth } = await smartWalletKit.readPublished(
+    `${contractName}.poolMetrics`,
   );
   const poolSharesWanted = divideBy(usdcToGive, currShareWorth);
 
@@ -196,7 +193,7 @@ test.serial('lp deposits', async t => {
 
   await t.notThrowsAsync(() =>
     retryUntilCondition(
-      () => vstorageClient.queryData(`published.${contractName}.poolMetrics`),
+      () => smartWalletKit.readPublished(`${contractName}.poolMetrics`),
       ({ shareWorth }) =>
         !isGTE(currShareWorth.numerator, shareWorth.numerator),
       'share worth numerator increases from deposit',
@@ -206,9 +203,9 @@ test.serial('lp deposits', async t => {
 
   await t.notThrowsAsync(() =>
     retryUntilCondition(
-      () =>
-        vstorageClient.queryData(`published.wallet.${wallets['lp']}.current`),
+      () => smartWalletKit.readPublished(`wallet.${wallets['lp']}.current`),
       ({ purses }) => {
+        // @ts-expect-error Brand cannot be used as an index type
         const currentPoolShares = balancesFromPurses(purses)[FastLP];
         return currentPoolShares && isGTE(currentPoolShares, poolSharesWanted);
       },
@@ -230,7 +227,6 @@ const advanceAndSettleScenario = test.macro({
       smartWalletKit,
       useChain,
       usdcOnOsmosis,
-      vstorageClient,
     } = t.context;
 
     // EUD wallet on the specified chain
@@ -241,8 +237,8 @@ const advanceAndSettleScenario = test.macro({
     t.log(`EUD wallet created: ${EUD}`);
 
     // parameterize agoric address
-    const { settlementAccount } = await vstorageClient.queryData(
-      `published.${contractName}`,
+    const { settlementAccount } = await smartWalletKit.readPublished(
+      `${contractName}`,
     );
     t.log('settlementAccount address', settlementAccount);
 
@@ -344,7 +340,7 @@ const advanceAndSettleScenario = test.macro({
     nobleTools.mockCctpMint(mintAmt, userForwardingAddr);
     await t.notThrowsAsync(() =>
       retryUntilCondition(
-        () => vstorageClient.queryData(`published.${contractName}.poolMetrics`),
+        () => smartWalletKit.readPublished(`${contractName}.poolMetrics`),
         ({ encumberedBalance }) =>
           encumberedBalance && isEmpty(encumberedBalance),
         'encumberedBalance returns to 0',
@@ -365,23 +361,24 @@ test.serial('lp withdraws', async t => {
     retryUntilCondition,
     useChain,
     usdcDenom,
-    vstorageClient,
+    smartWalletKit,
     wallets,
   } = t.context;
   const queryClient = makeQueryClient(
     await useChain('agoric').getRestEndpoint(),
   );
   const lpDoOffer = makeDoOffer(lpUser);
-  const brands = await vstorageClient.queryData('published.agoricNames.brand');
+  const brands = await smartWalletKit.readPublished('agoricNames.brand');
   const { FastLP } = Object.fromEntries(brands);
   t.log('FastLP brand', FastLP);
 
-  const { shareWorth: currShareWorth } = await vstorageClient.queryData(
-    `published.${contractName}.poolMetrics`,
+  const { shareWorth: currShareWorth } = await smartWalletKit.readPublished(
+    `${contractName}.poolMetrics`,
   );
-  const { purses } = await vstorageClient.queryData(
-    `published.wallet.${wallets['lp']}.current`,
+  const { purses } = await smartWalletKit.readPublished(
+    `wallet.${wallets['lp']}.current`,
   );
+  // @ts-expect-error Brand cannot be used as an index type
   const currentPoolShares = balancesFromPurses(purses)[FastLP];
   t.log('currentPoolShares', currentPoolShares);
   const usdcWanted = multiplyBy(currentPoolShares, currShareWorth);
@@ -408,9 +405,9 @@ test.serial('lp withdraws', async t => {
 
   await t.notThrowsAsync(() =>
     retryUntilCondition(
-      () =>
-        vstorageClient.queryData(`published.wallet.${wallets['lp']}.current`),
+      () => smartWalletKit.readPublished(`wallet.${wallets['lp']}.current`),
       ({ purses }) => {
+        // @ts-expect-error Brand cannot be used as an index type
         const currentPoolShares = balancesFromPurses(purses)[FastLP];
         return !currentPoolShares || isEmpty(currentPoolShares);
       },

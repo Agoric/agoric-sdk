@@ -36,7 +36,7 @@ const autoStakeItScenario = test.macro({
     // 1. setup
     const {
       wallets,
-      vstorageClient,
+      smartWalletKit,
       provisionSmartWallet,
       retryUntilCondition,
       useChain,
@@ -98,9 +98,9 @@ const autoStakeItScenario = test.macro({
 
     // FIXME https://github.com/Agoric/agoric-sdk/issues/9643
     const currentWalletRecord = await retryUntilCondition(
-      () =>
-        vstorageClient.queryData(`published.wallet.${agoricUserAddr}.current`),
+      () => smartWalletKit.readPublished(`wallet.${agoricUserAddr}.current`),
       ({ offerToPublicSubscriberPaths }) =>
+        // @ts-expect-error retryUntilCondition expects a boolean return
         Object.fromEntries(offerToPublicSubscriberPaths)[offerId],
       `${offerId} continuing invitation is in vstorage`,
     );
@@ -118,6 +118,7 @@ const autoStakeItScenario = test.macro({
       .split('.')
       .pop();
     console.log({ lcaAddress, icaAddress });
+    assert(lcaAddress && icaAddress);
     t.regex(lcaAddress, /^agoric1/, 'LOA address is valid');
     t.regex(
       icaAddress,
