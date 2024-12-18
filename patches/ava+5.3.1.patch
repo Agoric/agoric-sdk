@@ -94,6 +94,20 @@ index 7630baa..78ced77 100644
  
  		notifyOfPeerFailure() {
  			send({type: 'peer-failed'});
+diff --git a/node_modules/ava/lib/reporters/default.js b/node_modules/ava/lib/reporters/default.js
+index 804e285..acef9f7 100644
+--- a/node_modules/ava/lib/reporters/default.js
++++ b/node_modules/ava/lib/reporters/default.js
+@@ -679,7 +679,8 @@ export default class Reporter {
+ 		}
+ 
+ 		if (this.stats.unhandledRejections > 0) {
+-			this.lineWriter.writeLine(colors.error(`${this.stats.unhandledRejections} unhandled ${plur('rejection', this.stats.unhandledRejections)}`));
++      const color = process.env.AGORIC_AVA_ALLOW_UNHANDLED_REJECTIONS ? 'skip' : 'error';
++			this.lineWriter.writeLine(colors[color](`${this.stats.unhandledRejections} unhandled ${plur('rejection', this.stats.unhandledRejections)}`));
+ 		}
+ 
+ 		if (this.stats.uncaughtExceptions > 0) {
 diff --git a/node_modules/ava/lib/reporters/tap.js b/node_modules/ava/lib/reporters/tap.js
 index b1989a4..fa1617f 100644
 --- a/node_modules/ava/lib/reporters/tap.js
@@ -126,6 +140,19 @@ index b1989a4..fa1617f 100644
  			comment: evt.logs,
  			error: evt.err ? dumpError(evt.err) : null,
  			index: ++this.i,
+diff --git a/node_modules/ava/lib/run-status.js b/node_modules/ava/lib/run-status.js
+index 8471345..5d07de3 100644
+--- a/node_modules/ava/lib/run-status.js
++++ b/node_modules/ava/lib/run-status.js
+@@ -228,7 +228,7 @@ export default class RunStatus extends Emittery {
+ 			|| this.stats.sharedWorkerErrors > 0
+ 			|| this.stats.timeouts > 0
+ 			|| this.stats.uncaughtExceptions > 0
+-			|| this.stats.unhandledRejections > 0
++			|| (!process.env.AGORIC_AVA_ALLOW_UNHANDLED_REJECTIONS && this.stats.unhandledRejections > 0)
+ 		) {
+ 			return 1;
+ 		}
 diff --git a/node_modules/ava/lib/worker/base.js b/node_modules/ava/lib/worker/base.js
 index cdd3c4a..4302a4a 100644
 --- a/node_modules/ava/lib/worker/base.js
