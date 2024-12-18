@@ -52,6 +52,8 @@ test('Transfer registers the noble forwarding account if it does not exist', asy
   const path = 'config/dir/.fast-usdc/config.json';
   const nobleApi = 'http://api.noble.test';
   const nobleToAgoricChannel = 'channel-test-7';
+  const destinationChainApi = 'http://api.dydx.fake-test';
+  const destinationUSDCDenom = 'ibc/USDCDENOM';
   const config = {
     agoricRpc: 'http://rpc.agoric.test',
     nobleApi,
@@ -61,6 +63,13 @@ test('Transfer registers the noble forwarding account if it does not exist', asy
     ethSeed: 'a4b7f431465df5dc1458cd8a9be10c42da8e3729e3ce53f18814f48ae2a98a08',
     tokenMessengerAddress: '0x9f3B8679c73C2Fef8b59B4f3444d4e156fb70AA5',
     tokenAddress: '0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238',
+    destinationChains: [
+      {
+        bech32Prefix: 'dydx',
+        api: destinationChainApi,
+        USDCDenom: destinationUSDCDenom,
+      },
+    ],
   };
   const out = mockOut();
   const file = mockFile(path, JSON.stringify(config));
@@ -76,11 +85,25 @@ test('Transfer registers the noble forwarding account if it does not exist', asy
     agoricSettlementAccount,
     { EUD },
   )}/`;
-  const fetchMock = makeFetchMock({
-    [nobleFwdAccountQuery]: {
-      address: 'noble14lwerrcfzkzrv626w49pkzgna4dtga8c5x479h',
-      exists: false,
-    },
+  const destinationBankQuery = `${destinationChainApi}/cosmos/bank/v1beta1/balances/${EUD}`;
+  let balanceQueryCount = 0;
+  const fetchMock = makeFetchMock((query: string) => {
+    if (query === nobleFwdAccountQuery) {
+      return {
+        address: 'noble14lwerrcfzkzrv626w49pkzgna4dtga8c5x479h',
+        exists: false,
+      };
+    }
+    if (query === destinationBankQuery) {
+      if (balanceQueryCount > 1) {
+        return {
+          balances: [{ denom: destinationUSDCDenom, amount }],
+        };
+      } else {
+        balanceQueryCount += 1;
+        return {};
+      }
+    }
   });
   const nobleSignerAddress = 'noble09876';
   const signerMock = makeMockSigner();
@@ -97,7 +120,6 @@ test('Transfer registers the noble forwarding account if it does not exist', asy
     { signer: signerMock.signer, address: nobleSignerAddress },
     mockEthProvider.provider,
   );
-
   t.is(vstorageMock.getQueryCounts()[settlementAccountVstoragePath], 1);
   t.is(fetchMock.getQueryCounts()[nobleFwdAccountQuery], 1);
   t.snapshot(signerMock.getSigned());
@@ -107,6 +129,8 @@ test('Transfer signs and broadcasts the depositForBurn message on Ethereum', asy
   const path = 'config/dir/.fast-usdc/config.json';
   const nobleApi = 'http://api.noble.test';
   const nobleToAgoricChannel = 'channel-test-7';
+  const destinationChainApi = 'http://api.dydx.fake-test';
+  const destinationUSDCDenom = 'ibc/USDCDENOM';
   const config = {
     agoricRpc: 'http://rpc.agoric.test',
     nobleApi,
@@ -116,6 +140,13 @@ test('Transfer signs and broadcasts the depositForBurn message on Ethereum', asy
     ethSeed: 'a4b7f431465df5dc1458cd8a9be10c42da8e3729e3ce53f18814f48ae2a98a08',
     tokenMessengerAddress: '0x9f3B8679c73C2Fef8b59B4f3444d4e156fb70AA5',
     tokenAddress: '0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238',
+    destinationChains: [
+      {
+        bech32Prefix: 'dydx',
+        api: destinationChainApi,
+        USDCDenom: destinationUSDCDenom,
+      },
+    ],
   };
   const out = mockOut();
   const file = mockFile(path, JSON.stringify(config));
@@ -131,11 +162,25 @@ test('Transfer signs and broadcasts the depositForBurn message on Ethereum', asy
     agoricSettlementAccount,
     { EUD },
   )}/`;
-  const fetchMock = makeFetchMock({
-    [nobleFwdAccountQuery]: {
-      address: 'noble14lwerrcfzkzrv626w49pkzgna4dtga8c5x479h',
-      exists: true,
-    },
+  const destinationBankQuery = `${destinationChainApi}/cosmos/bank/v1beta1/balances/${EUD}`;
+  let balanceQueryCount = 0;
+  const fetchMock = makeFetchMock((query: string) => {
+    if (query === nobleFwdAccountQuery) {
+      return {
+        address: 'noble14lwerrcfzkzrv626w49pkzgna4dtga8c5x479h',
+        exists: true,
+      };
+    }
+    if (query === destinationBankQuery) {
+      if (balanceQueryCount > 1) {
+        return {
+          balances: [{ denom: destinationUSDCDenom, amount }],
+        };
+      } else {
+        balanceQueryCount += 1;
+        return {};
+      }
+    }
   });
   const nobleSignerAddress = 'noble09876';
   const signerMock = makeMockSigner();
@@ -162,4 +207,5 @@ test('Transfer signs and broadcasts the depositForBurn message on Ethereum', asy
   t.deepEqual(mockEthProvider.getTxnArgs()[1], [
     '0xf8e4800180949f3b8679c73c2fef8b59b4f3444d4e156fb70aa580b8846fd3504e0000000000000000000000000000000000000000000000000000000008f0d1800000000000000000000000000000000000000000000000000000000000000004000000000000000000000000afdd918f09158436695a754a1b0913ed5ab474f80000000000000000000000001c7d4b196cb0c7b01d743fbc6116a902379c723882011aa09fc97790b2ba23fbb974554dbcee00df1a1f50e9fec4fdf370454773604aa477a038a1d86afc2a7afdc78088878a912f1a7c678b10c3120d308f8260a277b135a3',
   ]);
+  t.is(fetchMock.getQueryCounts()[destinationBankQuery], 3);
 });
