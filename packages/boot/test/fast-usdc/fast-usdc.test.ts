@@ -92,6 +92,14 @@ test.serial(
     refreshAgoricNamesRemotes();
     t.truthy(agoricNamesRemotes.instance.fastUsdc);
     t.truthy(agoricNamesRemotes.brand.FastLP);
+    const lpAsset = agoricNamesRemotes.vbankAsset.FastLP;
+    t.like(lpAsset, {
+      issuerName: 'FastLP',
+      denom: 'ufastlp',
+      displayInfo: { assetKind: 'nat', decimalPlaces: 6 },
+    });
+    const lpId = lpAsset.brand.getBoardId() || assert.fail('impossible');
+    t.is(agoricNamesRemotes.brand.FastLP.getBoardId(), lpId);
 
     const { EV } = t.context.runUtils;
     const agoricNames = await EV.vat('bootstrap').consumeItem('agoricNames');
@@ -99,6 +107,7 @@ test.serial(
     const getBoardAux = async name => {
       const brand = await EV(agoricNames).lookup('brand', name);
       const id = await EV(board).getId(brand);
+      t.is(id, lpId);
       t.truthy(storage.data.get(`published.boardAux.${id}`));
       return unmarshalFromVstorage(
         storage.data,
@@ -121,7 +130,7 @@ test.serial(
 
     const current = watcherWallet.getCurrentWalletRecord();
 
-    // XXX We should be able to compare objects by identity like this:
+    // XXX #10491 We should be able to compare objects by identity like this:
     //
     // const invitationPurse = current.purses.find(
     //   p => p.brand === agoricNamesRemotes.brand.Invitation,
@@ -216,9 +225,11 @@ test.serial('makes usdc advance', async t => {
     ),
   );
 
+  const lp = oracles[0]; // somewhat arbitrary
+
   // @ts-expect-error it doesnt recognize usdc as a Brand type
   const usdc = agoricNamesRemotes.vbankAsset.USDC.brand as Brand<'nat'>;
-  await oracles[0].sendOffer({
+  await lp.sendOffer({
     id: 'deposit-lp-0',
     invitationSpec: {
       source: 'agoricContract',
@@ -232,6 +243,23 @@ test.serial('makes usdc advance', async t => {
     },
   });
   await eventLoopIteration();
+
+  const { getOutboundMessages } = t.context.bridgeUtils;
+  const lpBankDeposit = getOutboundMessages(BridgeId.BANK).find(
+    obj =>
+      obj.type === 'VBANK_GIVE' &&
+      obj.denom === 'ufastlp' &&
+      obj.recipient === lp.getAddress(),
+  );
+  t.log('LP vbank deposit', lpBankDeposit);
+  t.true(BigInt(lpBankDeposit.amount) > 1_000_000n, 'vbank GIVEs shares to LP');
+
+  const { purses } = lp.getCurrentWalletRecord();
+  // XXX #10491 should not need to resort to string match on brand
+  t.falsy(
+    purses.find(p => `${p.brand}`.match(/FastLP/)),
+    'FastLP balance not in wallet record',
+  );
 
   const evidence = MockCctpTxEvidences.AGORIC_PLUS_OSMO();
 
