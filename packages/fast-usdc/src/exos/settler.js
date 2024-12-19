@@ -86,9 +86,7 @@ export const prepareSettler = (
         ).returns(M.boolean()),
       }),
       self: M.interface('SettlerSelfI', {
-        disburse: M.call(EvmHashShape, M.string(), M.nat()).returns(
-          M.promise(),
-        ),
+        disburse: M.call(EvmHashShape, M.nat()).returns(M.promise()),
         forward: M.call(EvmHashShape, M.nat(), M.string()).returns(),
       }),
       transferHandler: M.interface('SettlerTransferI', {
@@ -181,7 +179,7 @@ export const prepareSettler = (
           log('dequeued', found, 'for', nfa, amount);
           switch (found?.status) {
             case PendingTxStatus.Advanced:
-              return self.disburse(found.txHash, nfa, amount);
+              return self.disburse(found.txHash, amount);
 
             case PendingTxStatus.Advancing:
               log('⚠️ tap: minted while advancing', nfa, amount);
@@ -220,15 +218,16 @@ export const prepareSettler = (
           // XXX i think this only contains Advancing txs - should this be a separate store?
           const key = makeMintedEarlyKey(forwardingAddress, fullValue);
           if (mintedEarly.has(key)) {
+            console.log('@@@notifyAdvancingResult minted early', {
+              txHash,
+              destination,
+              success,
+            });
             mintedEarly.delete(key);
             if (success) {
               // TODO: does not write `ADVANCED` to vstorage
               // this is the "slow" experience, but we've already earmarked fees so disburse
-              void this.facets.self.disburse(
-                txHash,
-                forwardingAddress,
-                fullValue,
-              );
+              void this.facets.self.disburse(txHash, fullValue);
             } else {
               // TODO: does not write `ADVANCE_FAILED` to vstorage
               // if advance fails, attempt to forward (no fees)
@@ -271,10 +270,10 @@ export const prepareSettler = (
       self: {
         /**
          * @param {EvmHash} txHash
-         * @param {NobleAddress} nfa
          * @param {NatValue} fullValue
          */
-        async disburse(txHash, nfa, fullValue) {
+        async disburse(txHash, fullValue) {
+          console.log('@@@disburse', txHash, fullValue);
           const { repayer, settlementAccount } = this.state;
           const received = AmountMath.make(USDC, fullValue);
           const { zcfSeat: settlingSeat } = zcf.makeEmptySeatKit();
