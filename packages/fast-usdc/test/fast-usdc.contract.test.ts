@@ -6,7 +6,6 @@ import {
   encodeAddressHook,
 } from '@agoric/cosmic-proto/address-hooks.js';
 import { AmountMath } from '@agoric/ertp/src/amountMath.js';
-import type { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
 import {
   eventLoopIteration,
   inspectMapStore,
@@ -137,11 +136,13 @@ const makeTestContext = async (t: ExecutionContext) => {
     return E(purse).deposit(pmt);
   };
 
+  const accountsData = common.bootstrap.storage.data.get('fun');
+  const { settlementAccount, poolAccount } = JSON.parse(
+    JSON.parse(accountsData!).values[0],
+  );
+  t.is(settlementAccount, 'agoric1qyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqc09z0g');
+  t.is(poolAccount, 'agoric1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqp7zqht');
   const mint = async (e: CctpTxEvidence) => {
-    const accountsData = common.bootstrap.storage.data.get('fun');
-    const { settlementAccount } = JSON.parse(
-      JSON.parse(accountsData!).values[0],
-    );
     const rxd = await receiveUSDCAt(settlementAccount, e.tx.amount);
     await VE(transferBridge).fromBridge(
       buildVTransferEvent({
@@ -157,7 +158,15 @@ const makeTestContext = async (t: ExecutionContext) => {
     return rxd;
   };
 
-  return { bridges: { snapshot, since }, common, evm, mint, startKit, sync };
+  return {
+    bridges: { snapshot, since },
+    common,
+    evm,
+    mint,
+    startKit,
+    sync,
+    addresses: { settlementAccount, poolAccount },
+  };
 };
 
 type FucContext = Awaited<ReturnType<typeof makeTestContext>>;
@@ -429,7 +438,7 @@ const makeCustomer = (
       return tx;
     },
     checkSent: (
-      t: ExecutionContext,
+      t: ExecutionContext<FucContext>,
       { bank = [] as any[], local = [] as any[] } = {},
       forward?: unknown,
     ) => {
@@ -467,6 +476,8 @@ const makeCustomer = (
         if (forward) return;
         throw t.fail(`no MsgTransfer to ${EUD}`);
       }
+      const { poolAccount } = t.context.addresses;
+      t.is(myMsg.address, poolAccount, 'advance sent from pool account');
       const [ibcTransferMsg] = myMsg.messages;
       // C4 - Contract MUST release funds to the end user destination address
       // in response to invocation by the off-chain watcher that
@@ -476,7 +487,7 @@ const makeCustomer = (
         { amount: String(toReceive.value), denom: uusdcOnAgoric },
         'C4',
       );
-      t.log(who, 'sees', ibcTransferMsg.token, 'sent to', EUD);
+      t.log(who, 'sees', ibcTransferMsg.token, 'sending to', EUD);
       if (!(EUD as string).startsWith('noble')) {
         t.like(
           JSON.parse(ibcTransferMsg.memo),
@@ -579,6 +590,7 @@ test.serial('Contract skips advance when risks identified', async t => {
 test.serial('STORY01: advancing happy path for 100 USDC', async t => {
   const {
     common: {
+      bootstrap: { storage },
       brands: { usdc },
       commonPrivateArgs: { feeConfig },
       utils: { inspectBankBridge, transmitTransferAck },
@@ -593,10 +605,15 @@ test.serial('STORY01: advancing happy path for 100 USDC', async t => {
   const bridgePos = snapshot();
   const sent1 = await cust1.sendFast(t, 108_000_000n, 'osmo1234advanceHappy');
   await transmitTransferAck(); // ack IBC transfer for advance
-  // Nothing we can check here, unless we want to inspect calls to `trace`.
-  // `test/exos/advancer.test.ts` covers calls to `log: LogFn` with mocks.
-  // This is still helpful to call, so we can observe "Advance transfer
-  // fulfilled" in the test output.
+  const expectedTransitions = [
+    { evidence: sent1, status: 'OBSERVED' },
+    { status: 'ADVANCING' },
+    { status: 'ADVANCED' },
+  ];
+  t.deepEqual(
+    storage.getDeserialized(`fun.txns.${sent1.txHash}`),
+    expectedTransitions,
+  );
 
   const { calculateAdvance, calculateSplit } = makeFeeTools(feeConfig);
   const expectedAdvance = calculateAdvance(usdc.make(sent1.tx.amount));
@@ -663,6 +680,11 @@ test.serial('STORY01: advancing happy path for 100 USDC', async t => {
     },
     'metrics after advancing',
   );
+
+  t.deepEqual(storage.getDeserialized(`fun.txns.${sent1.txHash}`), [
+    ...expectedTransitions,
+    { split, status: 'DISBURSED' },
+  ]);
 });
 
 // most likely in exo unit tests
@@ -781,7 +803,6 @@ test.serial('C20 - Contract MUST function with an empty pool', async t => {
       utils: { transmitTransferAck },
     },
     evm: { cctp, txPub },
-    startKit: { metricsSub },
     bridges: { snapshot, since },
     mint,
   } = t.context;
