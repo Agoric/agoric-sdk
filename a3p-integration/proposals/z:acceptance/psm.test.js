@@ -34,7 +34,6 @@ import {
   logRecord,
   maxMintBelowLimit,
   psmSwap,
-  sendOfferAgd,
 } from './test-lib/psm-lib.js';
 import { getBalances } from './test-lib/utils.js';
 
@@ -163,7 +162,7 @@ test.serial('swap into IST using agd with default gas', async t => {
       '--feePct',
       wantMintedFeeVal,
     ],
-    { ...psmSwapIo, sendOffer: sendOfferAgd },
+    psmSwapIo,
   );
 
   await checkSwapSucceeded(t, metricsBefore, balancesBefore, {
