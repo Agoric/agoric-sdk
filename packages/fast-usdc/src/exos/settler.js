@@ -271,10 +271,7 @@ export const prepareSettler = (
          */
         forward(txHash, fullValue, EUD) {
           const { settlementAccount, intermediateRecipient } = this.state;
-
           const dest = chainHub.makeChainAddress(EUD);
-
-          // TODO? statusManager.forwarding(txHash, sender, amount);
           const txfrV = E(settlementAccount).transfer(
             dest,
             AmountMath.make(USDC, fullValue),
@@ -289,15 +286,18 @@ export const prepareSettler = (
          * @param {EvmHash} txHash
          */
         onFulfilled(_result, txHash) {
-          statusManager.forwarded(txHash);
+          // update status manager, marking tx `FORWARDED` without fee split
+          statusManager.forwarded(txHash, true);
         },
         /**
          * @param {unknown} reason
          * @param {EvmHash} txHash
          */
         onRejected(reason, txHash) {
-          log('⚠️ transfer rejected!', reason, txHash);
-          // TODO(#10510): statusManager.forwardFailed(txHash, nfa, amount);
+          log('⚠️ forward transfer rejected!', reason, txHash);
+          // update status manager, flagging a terminal state that needs to be
+          // manual intervention or a code update to remediate
+          statusManager.forwarded(txHash, false);
         },
       },
     },

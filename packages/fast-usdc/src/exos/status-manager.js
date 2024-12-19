@@ -210,7 +210,7 @@ export const prepareStatusManager = (
       disbursed: M.call(EvmHashShape, AmountKeywordRecordShape).returns(
         M.undefined(),
       ),
-      forwarded: M.call(EvmHashShape).returns(M.undefined()),
+      forwarded: M.call(EvmHashShape, M.boolean()).returns(M.undefined()),
       lookupPending: M.call(M.string(), M.bigint()).returns(
         M.arrayOf(PendingTxShape),
       ),
@@ -320,12 +320,18 @@ export const prepareStatusManager = (
       },
 
       /**
-       * Mark a transaction as `FORWARDED`
+       * Mark a transaction as `FORWARDED` or `FORWARD_FAILED`
        *
-       * @param {EvmHash} txHash - undefined in case mint before observed
+       * @param {EvmHash} txHash
+       * @param {boolean} success
        */
-      forwarded(txHash) {
-        void publishTxnRecord(txHash, harden({ status: TxStatus.Forwarded }));
+      forwarded(txHash, success) {
+        void publishTxnRecord(
+          txHash,
+          harden({
+            status: success ? TxStatus.Forwarded : TxStatus.ForwardFailed,
+          }),
+        );
       },
 
       /**
