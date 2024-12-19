@@ -868,6 +868,47 @@ test.serial('Settlement for unknown transaction (operator down)', async t => {
   await transmitTransferAck();
 });
 
+test.failing('mint received why ADVANCING', async t => {
+  // Settler should `disburse` on Transfer success
+  const {
+    bridges: { snapshot, since },
+    common: {
+      commonPrivateArgs: { feeConfig },
+      utils,
+      brands: { usdc },
+      bootstrap: { storage },
+    },
+    evm: { cctp, txPub },
+    mint,
+    startKit: { zoe, instance, metricsSub },
+  } = t.context;
+
+  t.log('top of liquidity pool');
+  const usdcPurse = purseOf(usdc.issuer, utils);
+  const lp999 = makeLP('Leo ', usdcPurse(999_000_000n), zoe, instance);
+  await E(lp999).deposit(t, 999_000_000n);
+
+  const earlySettle = makeCustomer('Earl E.', cctp, txPub.publisher, feeConfig);
+  const bridgePos = snapshot();
+
+  await earlySettle.checkPoolAvailable(t, 5_000_000n, metricsSub);
+  const sent = await earlySettle.sendFast(t, 5_000_000n, 'osmo1earl3');
+  await eventLoopIteration();
+  earlySettle.checkSent(t, since(bridgePos));
+
+  await mint(sent);
+  // mint received before Advance transfer settles
+  await utils.transmitTransferAck();
+
+  const split = makeFeeTools(feeConfig).calculateSplit(usdc.make(5_000_000n));
+  t.deepEqual(storage.getDeserialized(`fun.txns.${sent.txHash}`), [
+    { evidence: sent, status: 'OBSERVED' },
+    { status: 'ADVANCING' },
+    // { status: 'ADVANCED' }, TODO: not reported by notifyAdvancingResult
+    { split, status: 'DISBURSED' },
+  ]);
+});
+
 test.todo(
   'fee levels MUST be visible to external parties - i.e., written to public storage',
 );
