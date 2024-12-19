@@ -8,7 +8,7 @@ import { M } from '@endo/patterns';
 import { decodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
 import { PendingTxStatus } from '../constants.js';
 import { makeFeeTools } from '../utils/fees.js';
-import { EvmHashShape } from '../type-guards.js';
+import { EvmHashShape, makeNatAmountShape } from '../type-guards.js';
 
 /**
  * @import {FungibleTokenPacketData} from '@agoric/cosmic-proto/ibc/applications/transfer/v2/packet.js';
@@ -30,6 +30,15 @@ import { EvmHashShape } from '../type-guards.js';
  */
 const makeMintedEarlyKey = (addr, amount) =>
   `pendingTx:${JSON.stringify([addr, String(amount)])}`;
+
+/** @param {Brand<'nat'>} USDC */
+export const makeAdvanceDetailsShape = USDC =>
+  harden({
+    destination: ChainAddressShape,
+    forwardingAddress: M.string(),
+    fullAmount: makeNatAmountShape(USDC),
+    txHash: EvmHashShape,
+  });
 
 /**
  * @param {Zone} zone
@@ -69,7 +78,7 @@ export const prepareSettler = (
       }),
       notify: M.interface('SettlerNotifyI', {
         notifyAdvancingResult: M.call(
-          M.record(), // XXX fill in details TODO
+          makeAdvanceDetailsShape(USDC),
           M.boolean(),
         ).returns(),
       }),
@@ -170,6 +179,7 @@ export const prepareSettler = (
               return self.disburse(found.txHash, amount);
 
             case PendingTxStatus.Advancing:
+              log('⚠️ tap: minted while advancing', nfa, amount);
               this.state.mintedEarly.add(makeMintedEarlyKey(nfa, amount));
               return;
 
@@ -200,12 +210,17 @@ export const prepareSettler = (
         ) {
           const { mintedEarly } = this.state;
           const { value: fullValue } = fullAmount;
+          // XXX i think this only contains Advancing txs - should this be a separate store?
           const key = makeMintedEarlyKey(forwardingAddress, fullValue);
           if (mintedEarly.has(key)) {
             mintedEarly.delete(key);
             if (success) {
+              // TODO: does not write `ADVANCED` to vstorage
+              // this is the "slow" experience, but we've already earmarked fees so disburse
               void this.facets.self.disburse(txHash, fullValue);
             } else {
+              // TODO: does not write `ADVANCE_FAILED` to vstorage
+              // if advance fails, attempt to forward (no fees)
               void this.facets.self.forward(
                 txHash,
                 fullValue,
