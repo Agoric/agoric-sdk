@@ -70,7 +70,7 @@ export const prepareStatusManager = (
   {
     marshaller,
     // eslint-disable-next-line no-unused-vars
-    log = makeTracer('Advancer', true),
+    log = makeTracer('StatusManager', true),
   } = /** @type {StatusManagerPowers} */ ({}),
 ) => {
   /**
@@ -208,12 +208,7 @@ export const prepareStatusManager = (
         M.or(
           {
             txHash: EvmHashShape,
-            status: M.or(
-              PendingTxStatus.Advanced,
-              PendingTxStatus.AdvanceSkipped,
-              PendingTxStatus.AdvanceFailed,
-              PendingTxStatus.Observed,
-            ),
+            status: M.or(...Object.values(PendingTxStatus)),
           },
           M.undefined(),
         ),
@@ -257,7 +252,7 @@ export const prepareStatusManager = (
       },
 
       /**
-       * Record result of ADVANCING
+       * Record result of an ADVANCING transaction
        *
        * @param {NobleAddress} nfa Noble Forwarding Account
        * @param {import('@agoric/ertp').NatValue} amount
@@ -302,34 +297,32 @@ export const prepareStatusManager = (
       },
 
       /**
-       * Remove and return an `ADVANCED` or `OBSERVED` tx waiting to be `SETTLED`.
+       * Remove and return the oldest pending settlement transaction that matches the given
+       * forwarding account and amount. Since multiple pending transactions may exist with
+       * identical (account, amount) pairs, we process them in FIFO order.
        *
        * @param {NobleAddress} nfa
        * @param {bigint} amount
-       * @returns {Pick<PendingTx, 'status' | 'txHash'> | undefined} undefined if nothing
-       *   with this address and amount has been marked pending.
+       * @returns {Pick<PendingTx, 'status' | 'txHash'> | undefined} undefined if no pending
+       *   transactions exist for this address and amount combination.
        */
       dequeueStatus(nfa, amount) {
         const key = makePendingTxKey(nfa, amount);
         if (!pendingSettleTxs.has(key)) return undefined;
         const pending = pendingSettleTxs.get(key);
 
-        const dequeueIdx = pending.findIndex(
-          x => x.status !== PendingTxStatus.Advancing,
-        );
-        if (dequeueIdx < 0) return undefined;
+        if (pending.length === 0) {
+          return undefined;
+        }
+        // extract first item
+        const [{ status, txHash }, ...remaining] = pending;
 
-        if (pending.length > 1) {
-          const pendingCopy = [...pending];
-          pendingCopy.splice(dequeueIdx, 1);
-          pendingSettleTxs.set(key, harden(pendingCopy));
+        if (remaining.length) {
+          pendingSettleTxs.set(key, harden(remaining));
         } else {
           pendingSettleTxs.delete(key);
         }
 
-        const { status, txHash } = pending[dequeueIdx];
-        // TODO: store txHash -> evidence for txs pending settlement?
-        // If necessary for vstorage writes in `forwarded` and `settled`
         return harden({ status, txHash });
       },
 
