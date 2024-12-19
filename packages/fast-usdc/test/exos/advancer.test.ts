@@ -6,10 +6,10 @@ import {
 } from '@agoric/cosmic-proto/address-hooks.js';
 import type { NatAmount } from '@agoric/ertp';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
-import { denomHash } from '@agoric/orchestration';
+import { ChainAddressShape, denomHash } from '@agoric/orchestration';
 import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
 import { type ZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
-import { Fail, q } from '@endo/errors';
+import { q } from '@endo/errors';
 import { Far } from '@endo/pass-style';
 import type { TestFn } from 'ava';
 import { makeTracer } from '@agoric/internal';
@@ -34,6 +34,7 @@ import {
   prepareMockOrchAccounts,
 } from '../mocks.js';
 import { commonSetup } from '../supports.js';
+import { CctpTxEvidenceShape } from '../../src/type-guards.js';
 
 const trace = makeTracer('AdvancerTest', false);
 
@@ -118,11 +119,9 @@ const createTestExtensions = (t, common: CommonSetup) => {
       notifyAdvancingResultCalls.push(args);
     },
     // assume this never returns true for most tests
-    forwardIfMinted: (...args) => {
-      mustMatch(
-        harden(args),
-        harden([...Object.values(makeAdvanceDetailsShape(usdc.brand))]),
-      );
+    checkMintedEarly: (evidence, destination) => {
+      mustMatch(harden(evidence), CctpTxEvidenceShape);
+      mustMatch(destination, ChainAddressShape);
       return false;
     },
   });
@@ -674,7 +673,7 @@ test('rejects advances to unknown settlementAccount', async t => {
   ]);
 });
 
-test('no status update if `forwardIfMinted` returns true', async t => {
+test('no status update if `checkMintedEarly` returns true', async t => {
   const {
     brands: { usdc },
     bootstrap: { storage },
@@ -687,7 +686,7 @@ test('no status update if `forwardIfMinted` returns true', async t => {
 
   const mockNotifyF = Far('Settler Notify Facet', {
     notifyAdvancingResult: () => {},
-    forwardIfMinted: (destination, forwardingAddress, fullAmount, txHash) => {
+    checkMintedEarly: (evidence, destination) => {
       return true;
     },
   });
@@ -712,6 +711,6 @@ test('no status update if `forwardIfMinted` returns true', async t => {
 
   t.deepEqual(inspectLogs(), [
     ['decoded EUD: dydx183dejcnmkka5dzcu9xw6mywq0p2m5peks28men'],
-    ['⚠️ minted before Observed'],
+    // no add'l logs as we return early
   ]);
 });

@@ -164,25 +164,13 @@ export const prepareAdvancerKit = (
             const destination = chainHub.makeChainAddress(EUD);
 
             const fullAmount = toAmount(evidence.tx.amount);
-            const {
-              tx: { forwardingAddress },
-              txHash,
-            } = evidence;
-
             const { borrowerFacet, notifyFacet, poolAccount } = this.state;
-            if (
-              notifyFacet.forwardIfMinted(
-                destination,
-                forwardingAddress,
-                fullAmount,
-                txHash,
-              )
-            ) {
-              // settlement already received; tx will Forward.
-              // do not add to `pendingSettleTxs` by calling `.observe()`
-              log('⚠️ minted before Observed');
-              return;
-            }
+            // do not advance if we've already received a mint/settlement
+            const mintedEarly = notifyFacet.checkMintedEarly(
+              evidence,
+              destination,
+            );
+            if (mintedEarly) return;
 
             // throws if requested does not exceed fees
             const advanceAmount = feeTools.calculateAdvance(fullAmount);
@@ -206,7 +194,7 @@ export const prepareAdvancerKit = (
               forwardingAddress: evidence.tx.forwardingAddress,
               fullAmount,
               tmpSeat,
-              txHash,
+              txHash: evidence.txHash,
             });
           } catch (error) {
             log('Advancer error:', error);
@@ -225,13 +213,7 @@ export const prepareAdvancerKit = (
          */
         onFulfilled(result, ctx) {
           const { poolAccount, intermediateRecipient } = this.state;
-          const {
-            destination,
-            advanceAmount,
-            // eslint-disable-next-line no-unused-vars
-            tmpSeat,
-            ...detail
-          } = ctx;
+          const { destination, advanceAmount, tmpSeat: _, ...detail } = ctx;
           const transferV = E(poolAccount).transfer(
             destination,
             { denom: usdc.denom, value: advanceAmount.value },
@@ -296,11 +278,7 @@ export const prepareAdvancerKit = (
         onRejected(error, ctx) {
           const { notifyFacet } = this.state;
           log('Advance transfer rejected', error);
-          const {
-            // eslint-disable-next-line no-unused-vars
-            advanceAmount,
-            ...restCtx
-          } = ctx;
+          const { advanceAmount: _, ...restCtx } = ctx;
           notifyFacet.notifyAdvancingResult(restCtx, false);
         },
       },
