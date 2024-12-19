@@ -69,6 +69,7 @@ export const prepareStatusManager = (
   txnsNode,
   {
     marshaller,
+    // eslint-disable-next-line no-unused-vars
     log = makeTracer('Advancer', true),
   } = /** @type {StatusManagerPowers} */ ({}),
 ) => {
@@ -213,9 +214,7 @@ export const prepareStatusManager = (
       disbursed: M.call(EvmHashShape, AmountKeywordRecordShape).returns(
         M.undefined(),
       ),
-      forwarded: M.call(M.opt(EvmHashShape), M.string(), M.nat()).returns(
-        M.undefined(),
-      ),
+      forwarded: M.call(EvmHashShape).returns(M.undefined()),
       lookupPending: M.call(M.string(), M.bigint()).returns(
         M.arrayOf(PendingTxShape),
       ),
@@ -325,19 +324,10 @@ export const prepareStatusManager = (
       /**
        * Mark a transaction as `FORWARDED`
        *
-       * @param {EvmHash | undefined} txHash - undefined in case mint before observed
-       * @param {NobleAddress} nfa
-       * @param {bigint} amount
+       * @param {EvmHash} txHash - undefined in case mint before observed
        */
-      forwarded(txHash, nfa, amount) {
-        if (txHash) {
-          void publishTxnRecord(txHash, harden({ status: TxStatus.Forwarded }));
-        } else {
-          // TODO store (early) `Minted` transactions to check against incoming evidence
-          log(
-            `⚠️ Forwarded minted amount ${amount} from account ${nfa} before it was observed.`,
-          );
-        }
+      forwarded(txHash) {
+        void publishTxnRecord(txHash, harden({ status: TxStatus.Forwarded }));
       },
 
       /**

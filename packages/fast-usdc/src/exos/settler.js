@@ -74,19 +74,12 @@ export const prepareSettler = (
         ).returns(),
       }),
       self: M.interface('SettlerSelfI', {
-        disburse: M.call(EvmHashShape, M.string(), M.nat()).returns(
-          M.promise(),
-        ),
-        forward: M.call(
-          M.opt(EvmHashShape),
-          M.string(),
-          M.nat(),
-          M.string(),
-        ).returns(),
+        disburse: M.call(EvmHashShape, M.nat()).returns(M.promise()),
+        forward: M.call(EvmHashShape, M.nat(), M.string()).returns(),
       }),
       transferHandler: M.interface('SettlerTransferI', {
-        onFulfilled: M.call(M.any(), M.record()).returns(),
-        onRejected: M.call(M.any(), M.record()).returns(),
+        onFulfilled: M.call(M.undefined(), M.string()).returns(),
+        onRejected: M.call(M.error(), M.string()).returns(),
       }),
     },
     /**
@@ -174,7 +167,7 @@ export const prepareSettler = (
           log('dequeued', found, 'for', nfa, amount);
           switch (found?.status) {
             case PendingTxStatus.Advanced:
-              return self.disburse(found.txHash, nfa, amount);
+              return self.disburse(found.txHash, amount);
 
             case PendingTxStatus.Advancing:
               this.state.mintedEarly.add(makeMintedEarlyKey(nfa, amount));
@@ -182,7 +175,7 @@ export const prepareSettler = (
 
             case PendingTxStatus.Observed:
             case PendingTxStatus.AdvanceFailed:
-              return self.forward(found.txHash, nfa, amount, EUD);
+              return self.forward(found.txHash, amount, EUD);
 
             case undefined:
             default:
@@ -210,15 +203,10 @@ export const prepareSettler = (
           if (mintedEarly.has(key)) {
             mintedEarly.delete(key);
             if (success) {
-              void this.facets.self.disburse(
-                txHash,
-                forwardingAddress,
-                fullValue,
-              );
+              void this.facets.self.disburse(txHash, fullValue);
             } else {
               void this.facets.self.forward(
                 txHash,
-                forwardingAddress,
                 fullValue,
                 destination.value,
               );
@@ -231,10 +219,9 @@ export const prepareSettler = (
       self: {
         /**
          * @param {EvmHash} txHash
-         * @param {NobleAddress} nfa
          * @param {NatValue} fullValue
          */
-        async disburse(txHash, nfa, fullValue) {
+        async disburse(txHash, fullValue) {
           const { repayer, settlementAccount } = this.state;
           const received = AmountMath.make(USDC, fullValue);
           const { zcfSeat: settlingSeat } = zcf.makeEmptySeatKit();
@@ -259,16 +246,15 @@ export const prepareSettler = (
           );
           repayer.repay(settlingSeat, split);
 
-          // update status manager, marking tx `SETTLED`
+          // update status manager, marking tx `DISBURSED`
           statusManager.disbursed(txHash, split);
         },
         /**
          * @param {EvmHash} txHash
-         * @param {NobleAddress} nfa
          * @param {NatValue} fullValue
          * @param {string} EUD
          */
-        forward(txHash, nfa, fullValue, EUD) {
+        forward(txHash, fullValue, EUD) {
           const { settlementAccount, intermediateRecipient } = this.state;
 
           const dest = chainHub.makeChainAddress(EUD);
@@ -279,35 +265,23 @@ export const prepareSettler = (
             AmountMath.make(USDC, fullValue),
             { forwardOpts: { intermediateRecipient } },
           );
-          void vowTools.watch(txfrV, this.facets.transferHandler, {
-            txHash,
-            nfa,
-            fullValue,
-          });
+          void vowTools.watch(txfrV, this.facets.transferHandler, txHash);
         },
       },
       transferHandler: {
         /**
          * @param {unknown} _result
-         * @param {SettlerTransferCtx} ctx
-         *
-         * @typedef {{
-         *   txHash: EvmHash;
-         *   nfa: NobleAddress;
-         *   fullValue: NatValue;
-         * }} SettlerTransferCtx
+         * @param {EvmHash} txHash
          */
-        onFulfilled(_result, ctx) {
-          const { txHash, nfa, fullValue } = ctx;
-          statusManager.forwarded(txHash, nfa, fullValue);
+        onFulfilled(_result, txHash) {
+          statusManager.forwarded(txHash);
         },
         /**
          * @param {unknown} reason
-         * @param {SettlerTransferCtx} ctx
+         * @param {EvmHash} txHash
          */
-        onRejected(reason, ctx) {
-          log('⚠️ transfer rejected!', reason, ctx);
-          // const { txHash, nfa, amount } = ctx;
+        onRejected(reason, txHash) {
+          log('⚠️ transfer rejected!', reason, txHash);
           // TODO(#10510): statusManager.forwardFailed(txHash, nfa, amount);
         },
       },
