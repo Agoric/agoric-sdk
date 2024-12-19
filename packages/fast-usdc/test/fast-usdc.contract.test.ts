@@ -833,7 +833,7 @@ test.serial('Settlement for unknown transaction (operator down)', async t => {
   await transmitTransferAck();
 });
 
-test.failing('mint received why ADVANCING', async t => {
+test.serial('mint received why ADVANCING', async t => {
   // Settler should `disburse` on Transfer success
   const {
     bridges: { snapshot, since },

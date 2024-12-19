@@ -249,13 +249,15 @@ test('dequeueStatus returns first (earliest) matched entry', async t => {
   statusManager.advance(evidence);
   statusManager.advance({ ...evidence, txHash: '0xtest2' });
 
-  // cannot dequeue ADVANCING pendingTx
-  t.is(
+  t.like(
     statusManager.dequeueStatus(
       evidence.tx.forwardingAddress,
       evidence.tx.amount,
     ),
-    undefined,
+    {
+      status: PendingTxStatus.Advancing,
+    },
+    'can dequeue Tx at any stage',
   );
 
   statusManager.advanceOutcome(
@@ -263,13 +265,8 @@ test('dequeueStatus returns first (earliest) matched entry', async t => {
     evidence.tx.amount,
     true,
   );
-  statusManager.advanceOutcome(
-    evidence.tx.forwardingAddress,
-    evidence.tx.amount,
-    true,
-  );
 
-  // also can dequeue OBSERVED statuses
+  // can dequeue OBSERVED statuses
   statusManager.observe({ ...evidence, txHash: '0xtest3' });
 
   // dequeue will return the first match
@@ -286,28 +283,13 @@ test('dequeueStatus returns first (earliest) matched entry', async t => {
     evidence.tx.forwardingAddress,
     evidence.tx.amount,
   );
-  t.is(entries0.length, 2);
-  t.is(
-    entries0?.[0].status,
-    PendingTxStatus.Advanced,
-    'first settled entry deleted',
-  );
+  t.is(entries0.length, 1);
   t.deepEqual(
-    entries0?.[1].status,
+    entries0?.[0].status,
     PendingTxStatus.Observed,
     'order of remaining entries preserved',
   );
 
-  // dequeue again wih same args to settle 2nd advance
-  t.like(
-    statusManager.dequeueStatus(
-      evidence.tx.forwardingAddress,
-      evidence.tx.amount,
-    ),
-    {
-      status: 'ADVANCED',
-    },
-  );
   // dequeue again wih same ags to settle remaining observe
   t.like(
     statusManager.dequeueStatus(

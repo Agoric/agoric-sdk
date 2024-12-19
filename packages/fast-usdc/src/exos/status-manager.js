@@ -202,11 +202,7 @@ export const prepareStatusManager = (
         M.or(
           {
             txHash: EvmHashShape,
-            status: M.or(
-              PendingTxStatus.Advanced,
-              PendingTxStatus.AdvanceFailed,
-              PendingTxStatus.Observed,
-            ),
+            status: M.or(...Object.values(PendingTxStatus)),
           },
           M.undefined(),
         ),
@@ -232,7 +228,7 @@ export const prepareStatusManager = (
       },
 
       /**
-       * Record result of ADVANCING
+       * Record result of an ADVANCING transaction
        *
        * @param {NobleAddress} nfa Noble Forwarding Account
        * @param {import('@agoric/ertp').NatValue} amount
@@ -277,7 +273,10 @@ export const prepareStatusManager = (
       },
 
       /**
-       * Remove and return an `ADVANCED` or `OBSERVED` tx waiting to be `SETTLED`.
+       * Remove and return the _first_ `PendingSettleTx` that matches the observed
+       * settlement. This is not necessarily an exact match with the original
+       * transaction, but it does guarantee it's for the same forwarding account and
+       * amount.
        *
        * @param {NobleAddress} nfa
        * @param {bigint} amount
@@ -289,22 +288,21 @@ export const prepareStatusManager = (
         if (!pendingSettleTxs.has(key)) return undefined;
         const pending = pendingSettleTxs.get(key);
 
-        const dequeueIdx = pending.findIndex(
-          x => x.status !== PendingTxStatus.Advancing,
-        );
-        if (dequeueIdx < 0) return undefined;
+        if (pending.length === 0) {
+          return undefined;
+        }
+        // extract first item
+        const { status, txHash } = pending[0];
 
+        // Update the pendingSettleTxs map
         if (pending.length > 1) {
           const pendingCopy = [...pending];
-          pendingCopy.splice(dequeueIdx, 1);
+          pendingCopy.shift(); // Remove first element
           pendingSettleTxs.set(key, harden(pendingCopy));
         } else {
           pendingSettleTxs.delete(key);
         }
 
-        const { status, txHash } = pending[dequeueIdx];
-        // TODO: store txHash -> evidence for txs pending settlement?
-        // If necessary for vstorage writes in `forwarded` and `settled`
         return harden({ status, txHash });
       },
 
