@@ -9,13 +9,17 @@ import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { denomHash } from '@agoric/orchestration';
 import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
 import { type ZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
-import { q } from '@endo/errors';
+import { Fail, q } from '@endo/errors';
 import { Far } from '@endo/pass-style';
 import type { TestFn } from 'ava';
 import { makeTracer } from '@agoric/internal';
+import { M, mustMatch } from '@endo/patterns';
 import { PendingTxStatus } from '../../src/constants.js';
 import { prepareAdvancer } from '../../src/exos/advancer.js';
-import type { SettlerKit } from '../../src/exos/settler.js';
+import {
+  makeAdvanceDetailsShape,
+  type SettlerKit,
+} from '../../src/exos/settler.js';
 import { prepareStatusManager } from '../../src/exos/status-manager.js';
 import type { LiquidityPoolKit } from '../../src/types.js';
 import { makeFeeTools } from '../../src/utils/fees.js';
@@ -108,7 +112,18 @@ const createTestExtensions = (t, common: CommonSetup) => {
   const mockNotifyF = Far('Settler Notify Facet', {
     notifyAdvancingResult: (...args: NotifyArgs) => {
       trace('Settler.notifyAdvancingResult called with', args);
+      const [advanceDetails, success] = args;
+      mustMatch(harden(advanceDetails), makeAdvanceDetailsShape(usdc.brand));
+      mustMatch(success, M.boolean());
       notifyAdvancingResultCalls.push(args);
+    },
+    // assume this never returns true for most tests
+    forwardIfMinted: (...args) => {
+      mustMatch(
+        harden(args),
+        harden([...Object.values(makeAdvanceDetailsShape(usdc.brand))]),
+      );
+      return false;
     },
   });
 
@@ -361,7 +376,6 @@ test('calls notifyAdvancingResult (AdvancedFailed) on failed transfer', async t 
         txHash: evidence.txHash,
         forwardingAddress: evidence.tx.forwardingAddress,
         fullAmount: usdc.make(evidence.tx.amount),
-        advanceAmount: feeTools.calculateAdvance(usdc.make(evidence.tx.amount)),
         destination: {
           value: decodeAddressHook(evidence.aux.recipientAddress).query.EUD,
         },
@@ -657,5 +671,47 @@ test('rejects advances to unknown settlementAccount', async t => {
         '⚠️ baseAddress of address hook "agoric1ax7hmw49tmqrdld7emc5xw3wf43a49rtkacr9d5nfpqa0y7k6n0sl8v94h" does not match the expected address "agoric16kv2g7snfc4q24vg3pjdlnnqgngtjpwtetd2h689nz09lcklvh5s8u37ek"',
       ),
     ],
+  ]);
+});
+
+test('no status update if `forwardIfMinted` returns true', async t => {
+  const {
+    brands: { usdc },
+    bootstrap: { storage },
+    extensions: {
+      services: { makeAdvancer },
+      helpers: { inspectLogs },
+      mocks: { mockPoolAccount, mockBorrowerF },
+    },
+  } = t.context;
+
+  const mockNotifyF = Far('Settler Notify Facet', {
+    notifyAdvancingResult: () => {},
+    forwardIfMinted: (destination, forwardingAddress, fullAmount, txHash) => {
+      return true;
+    },
+  });
+
+  const advancer = makeAdvancer({
+    borrowerFacet: mockBorrowerF,
+    notifyFacet: mockNotifyF,
+    poolAccount: mockPoolAccount.account,
+    intermediateRecipient,
+    settlementAddress,
+  });
+
+  const evidence = MockCctpTxEvidences.AGORIC_PLUS_DYDX();
+  void advancer.handleTransactionEvent({ evidence, risk: {} });
+  await eventLoopIteration();
+
+  // advancer does not post a tx status; settler will Forward and
+  // communicate Forwarded/ForwardFailed status'
+  t.throws(() => storage.getDeserialized(`fun.txns.${evidence.txHash}`), {
+    message: /no data at path fun.txns.0x/,
+  });
+
+  t.deepEqual(inspectLogs(), [
+    ['decoded EUD: dydx183dejcnmkka5dzcu9xw6mywq0p2m5peks28men'],
+    ['⚠️ minted before Observed'],
   ]);
 });
