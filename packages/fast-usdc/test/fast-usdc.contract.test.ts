@@ -137,11 +137,11 @@ const makeTestContext = async (t: ExecutionContext) => {
     return E(purse).deposit(pmt);
   };
 
+  const accountsData = common.bootstrap.storage.data.get('fun');
+  const { settlementAccount, poolAccount } = JSON.parse(
+    JSON.parse(accountsData!).values[0],
+  );
   const mint = async (e: CctpTxEvidence) => {
-    const accountsData = common.bootstrap.storage.data.get('fun');
-    const { settlementAccount } = JSON.parse(
-      JSON.parse(accountsData!).values[0],
-    );
     const rxd = await receiveUSDCAt(settlementAccount, e.tx.amount);
     await VE(transferBridge).fromBridge(
       buildVTransferEvent({
@@ -157,14 +157,22 @@ const makeTestContext = async (t: ExecutionContext) => {
     return rxd;
   };
 
-  return { bridges: { snapshot, since }, common, evm, mint, startKit, sync };
+  return {
+    bridges: { snapshot, since },
+    common,
+    evm,
+    mint,
+    startKit,
+    sync,
+    addresses: { settlementAccount, poolAccount },
+  };
 };
 
 type FucContext = Awaited<ReturnType<typeof makeTestContext>>;
 const test = anyTest as TestFn<FucContext>;
 test.before(async t => (t.context = await makeTestContext(t)));
 
-test('baggage', async t => {
+test.serial('baggage', async t => {
   const {
     brands: { usdc },
     commonPrivateArgs,
@@ -190,7 +198,7 @@ test('baggage', async t => {
   t.snapshot(tree, 'contract baggage after start');
 });
 
-test('getStaticInfo', async t => {
+test.serial('getStaticInfo', async t => {
   const { startKit } = t.context;
   const { publicFacet } = startKit;
 
@@ -416,7 +424,7 @@ const makeCustomer = (
       return tx;
     },
     checkSent: (
-      t: ExecutionContext,
+      t: ExecutionContext<FucContext>,
       { bank = [] as any[], local = [] as any[] } = {},
       forward?: unknown,
     ) => {
@@ -453,6 +461,8 @@ const makeCustomer = (
         if (forward) return;
         throw t.fail(`no MsgTransfer to ${EUD}`);
       }
+      const { poolAccount } = t.context.addresses;
+      t.is(myMsg.address, poolAccount, 'advance sent from pool account');
       const [ibcTransferMsg] = myMsg.messages;
       // C4 - Contract MUST release funds to the end user destination address
       // in response to invocation by the off-chain watcher that
@@ -746,7 +756,6 @@ test.serial('C20 - Contract MUST function with an empty pool', async t => {
       utils: { transmitTransferAck },
     },
     evm: { cctp, txPub },
-    startKit: { metricsSub },
     bridges: { snapshot, since },
     mint,
   } = t.context;
@@ -760,11 +769,6 @@ test.serial('C20 - Contract MUST function with an empty pool', async t => {
   await transmitTransferAck(); // ack IBC transfer for forward
 });
 
-// advancedEarly stuff
-test.todo(
-  'C12 - Contract MUST only pay back the Pool only if they started the advance before USDC is minted',
-);
-
 test.todo('C18 - forward - MUST log and alert these incidents');
 
 test.serial('Settlement for unknown transaction (operator down)', async t => {
@@ -777,6 +781,7 @@ test.serial('Settlement for unknown transaction (operator down)', async t => {
       utils: { transmitTransferAck },
     },
     mint,
+    addresses,
   } = t.context;
   const operators = await sync.ocw.promise;
 
@@ -787,7 +792,9 @@ test.serial('Settlement for unknown transaction (operator down)', async t => {
   const opDown = makeCustomer('Otto', cctp, txPub.publisher, feeConfig);
 
   const bridgePos = snapshot();
-  const sent = await opDown.sendFast(t, 20_000_000n, 'osmo12345');
+  const EUD = 'osmo12345';
+  const mintAmt = 5_000_000n;
+  const sent = await opDown.sendFast(t, mintAmt, EUD);
   await mint(sent);
   const bridgeTraffic = since(bridgePos);
 
@@ -795,28 +802,91 @@ test.serial('Settlement for unknown transaction (operator down)', async t => {
     bridgeTraffic.bank,
     [
       {
-        amount: '20000000',
+        amount: String(mintAmt),
         sender: 'faucet',
         type: 'VBANK_GRAB',
       },
       {
-        amount: '20000000',
+        amount: String(mintAmt),
         recipient: 'agoric1qyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqc09z0g',
         type: 'VBANK_GIVE',
       },
     ],
     '20 USDC arrive at the settlement account',
   );
-  t.deepEqual(bridgeTraffic.local, [], 'no IBC transfers');
 
   await transmitTransferAck();
+  t.deepEqual(bridgeTraffic.local, [], 'no IBC transfers');
 
-  // TODO oracle wakes up and reports; Settler should forward.
+  // activate oracles and submit evidence; expect Settler to forward (slow path)
+  // 'C12 - Contract MUST only pay back the Pool (fees) only if they started the advance before USDC is minted',
+  operators[0].setActive(true);
+  operators[1].setActive(true);
+  await opDown.sendFast(t, mintAmt, EUD);
+
+  await transmitTransferAck();
+  const [outgoingForward] = since(bridgePos).local;
+  t.like(outgoingForward, {
+    type: 'VLOCALCHAIN_EXECUTE_TX',
+    address: addresses.settlementAccount,
+    messages: [
+      {
+        '@type': '/ibc.applications.transfer.v1.MsgTransfer',
+      },
+    ],
+  });
+
+  const [outgoingForwardMessage] = outgoingForward.messages;
+  t.is(
+    outgoingForwardMessage.token.amount,
+    String(sent.tx.amount),
+    'full amount is transferred via `.forward()`',
+  );
+
+  const forwardInfo = JSON.parse(outgoingForwardMessage.memo).forward;
+  t.is(forwardInfo.receiver, EUD, 'receiver is osmo12345');
 });
 
-test.todo('settlement for ADVANCING tx');
-// Settler should `disburse` on Transfer success
-// Settler should `forward` on Transfer failure
+test.serial('mint received why ADVANCING', async t => {
+  // Settler should `disburse` on Transfer success
+  const {
+    bridges: { snapshot, since },
+    common: {
+      commonPrivateArgs: { feeConfig },
+      utils,
+      brands: { usdc },
+      bootstrap: { storage },
+    },
+    evm: { cctp, txPub },
+    mint,
+    startKit: { zoe, instance, metricsSub },
+  } = t.context;
+
+  t.log('top of liquidity pool');
+  const usdcPurse = purseOf(usdc.issuer, utils);
+  const lp999 = makeLP('Leo ', usdcPurse(999_000_000n), zoe, instance);
+  await E(lp999).deposit(t, 999_000_000n);
+
+  const earlySettle = makeCustomer('Earl E.', cctp, txPub.publisher, feeConfig);
+  const bridgePos = snapshot();
+
+  await earlySettle.checkPoolAvailable(t, 5_000_000n, metricsSub);
+  const sent = await earlySettle.sendFast(t, 5_000_000n, 'osmo1earl3');
+  await eventLoopIteration();
+  earlySettle.checkSent(t, since(bridgePos));
+
+  // mint received before Advance transfer settles
+  await mint(sent);
+
+  // await utils.transmitTransferAck();
+  // await eventLoopIteration();
+  // t.deepEqual(storage.getDeserialized(`fun.txns.${sent.txHash}`), [
+  //   { evidence: sent, status: 'OBSERVED' },
+  //   { status: 'ADVANCING' },
+  //   // { status: 'ADVANCED' }, TODO: not reported by notifyAdvancingResult
+  //   { split: {}, status: 'DISBURSED' },
+  // ]);
+});
 
 test.todo(
   'fee levels MUST be visible to external parties - i.e., written to public storage',
