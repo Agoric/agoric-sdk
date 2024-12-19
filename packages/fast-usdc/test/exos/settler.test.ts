@@ -180,12 +180,7 @@ const makeTestContext = async t => {
         const cctpTxEvidence = makeEvidence(evidence);
         const { destination, forwardingAddress, fullAmount, txHash } =
           makeNotifyInfo(cctpTxEvidence);
-        notifyFacet.forwardIfMinted(
-          destination,
-          forwardingAddress,
-          fullAmount,
-          txHash,
-        );
+        notifyFacet.checkMintedEarly(cctpTxEvidence, destination);
         return cctpTxEvidence;
       },
     });
@@ -542,7 +537,7 @@ test('Settlement for unknown transaction (minted early)', async t => {
   accounts.settlement.transferVResolver.resolve(undefined);
   await eventLoopIteration();
   t.deepEqual(storage.getDeserialized(`fun.txns.${evidence.txHash}`), [
-    /// TODO with no observed / evidence, does this break reporting reqs?
+    { evidence, status: 'OBSERVED' },
     { status: 'FORWARDED' },
   ]);
 });
@@ -598,7 +593,7 @@ test('Settlement for Advancing transaction (advance succeeds)', async t => {
   t.deepEqual(storage.getDeserialized(`fun.txns.${cctpTxEvidence.txHash}`), [
     { evidence: cctpTxEvidence, status: 'OBSERVED' },
     { status: 'ADVANCING' },
-    // { status: 'ADVANCED' }, TODO: not reported by notifyAdvancingResult
+    { status: 'ADVANCED' },
     { split: expectedSplit, status: 'DISBURSED' },
   ]);
 });
@@ -664,7 +659,7 @@ test('Settlement for Advancing transaction (advance fails)', async t => {
   t.deepEqual(storage.getDeserialized(`fun.txns.${cctpTxEvidence.txHash}`), [
     { evidence: cctpTxEvidence, status: 'OBSERVED' },
     { status: 'ADVANCING' },
-    // { status: 'ADVANCE_FAILED' }, TODO: not reported by notifyAdvancingResult
+    { status: 'ADVANCE_FAILED' },
     { status: 'FORWARDED' },
   ]);
 });

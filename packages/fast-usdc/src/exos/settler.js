@@ -8,7 +8,11 @@ import { M } from '@endo/patterns';
 import { decodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
 import { PendingTxStatus } from '../constants.js';
 import { makeFeeTools } from '../utils/fees.js';
-import { EvmHashShape, makeNatAmountShape } from '../type-guards.js';
+import {
+  CctpTxEvidenceShape,
+  EvmHashShape,
+  makeNatAmountShape,
+} from '../type-guards.js';
 
 /**
  * @import {FungibleTokenPacketData} from '@agoric/cosmic-proto/ibc/applications/transfer/v2/packet.js';
@@ -18,7 +22,7 @@ import { EvmHashShape, makeNatAmountShape } from '../type-guards.js';
  * @import {Zone} from '@agoric/zone';
  * @import {HostOf, HostInterface} from '@agoric/async-flow';
  * @import {TargetRegistration} from '@agoric/vats/src/bridge-target.js';
- * @import {NobleAddress, LiquidityPoolKit, FeeConfig, EvmHash, LogFn} from '../types.js';
+ * @import {NobleAddress, LiquidityPoolKit, FeeConfig, EvmHash, LogFn, CctpTxEvidence} from '../types.js';
  * @import {StatusManager} from './status-manager.js';
  */
 
@@ -81,8 +85,9 @@ export const prepareSettler = (
           makeAdvanceDetailsShape(USDC),
           M.boolean(),
         ).returns(),
-        forwardIfMinted: M.call(
-          ...Object.values(makeAdvanceDetailsShape(USDC)),
+        checkMintedEarly: M.call(
+          CctpTxEvidenceShape,
+          ChainAddressShape,
         ).returns(M.boolean()),
       }),
       self: M.interface('SettlerSelfI', {
@@ -216,17 +221,13 @@ export const prepareSettler = (
         ) {
           const { mintedEarly } = this.state;
           const { value: fullValue } = fullAmount;
-          // XXX i think this only contains Advancing txs - should this be a separate store?
           const key = makeMintedEarlyKey(forwardingAddress, fullValue);
           if (mintedEarly.has(key)) {
             mintedEarly.delete(key);
+            statusManager.advanceOutcomeForMintedEarly(txHash, success);
             if (success) {
-              // TODO: does not write `ADVANCED` to vstorage
-              // this is the "slow" experience, but we've already earmarked fees so disburse
               void this.facets.self.disburse(txHash, fullValue);
             } else {
-              // TODO: does not write `ADVANCE_FAILED` to vstorage
-              // if advance fails, attempt to forward (no fees)
               void this.facets.self.forward(
                 txHash,
                 fullValue,
@@ -238,26 +239,27 @@ export const prepareSettler = (
           }
         },
         /**
+         * @param {CctpTxEvidence} evidence
          * @param {ChainAddress} destination
-         * @param {NobleAddress} forwardingAddress
-         * @param {Amount<'nat'>} fullAmount
-         * @param {EvmHash} txHash
          * @returns {boolean}
          * @throws {Error} if minted early, so advancer doesn't advance
          */
-        forwardIfMinted(destination, forwardingAddress, fullAmount, txHash) {
-          const { value: fullValue } = fullAmount;
-          const key = makeMintedEarlyKey(forwardingAddress, fullValue);
+        checkMintedEarly(evidence, destination) {
+          const {
+            tx: { forwardingAddress, amount },
+            txHash,
+          } = evidence;
+          const key = makeMintedEarlyKey(forwardingAddress, amount);
           const { mintedEarly } = this.state;
           if (mintedEarly.has(key)) {
             log(
               'matched minted early key, initiating forward',
               forwardingAddress,
-              fullValue,
+              amount,
             );
             mintedEarly.delete(key);
-            // TODO: does not write `OBSERVED` to vstorage
-            void this.facets.self.forward(txHash, fullValue, destination.value);
+            statusManager.advanceOutcomeForUnknownMint(evidence);
+            void this.facets.self.forward(txHash, amount, destination.value);
             return true;
           }
           return false;

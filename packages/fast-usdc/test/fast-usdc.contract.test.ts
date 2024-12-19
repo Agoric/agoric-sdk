@@ -918,7 +918,7 @@ test.serial('Settlement for unknown transaction (operator down)', async t => {
   await eventLoopIteration();
 
   t.deepEqual(storage.getDeserialized(`fun.txns.${sent.txHash}`), [
-    // { evidence: sent, status: 'OBSERVED' }, // no OBSERVED state recorded
+    { evidence: sent, status: 'OBSERVED' },
     { status: 'FORWARDED' },
   ]);
 });
@@ -959,7 +959,7 @@ test.serial('mint received while ADVANCING', async t => {
   t.deepEqual(storage.getDeserialized(`fun.txns.${sent.txHash}`), [
     { evidence: sent, status: 'OBSERVED' },
     { status: 'ADVANCING' },
-    // { status: 'ADVANCED' }, TODO: not reported by notifyAdvancingResult
+    { status: 'ADVANCED' },
     { split, status: 'DISBURSED' },
   ]);
 });
