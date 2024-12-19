@@ -581,3 +581,69 @@ test('Settlement for Advancing transaction (advance fails)', async t => {
     { status: 'FORWARDED' },
   ]);
 });
+
+test('slow path, and forward fails (terminal state)', async t => {
+  const {
+    common,
+    makeSettler,
+    statusManager,
+    defaultSettlerParams,
+    repayer,
+    makeSimulate,
+    accounts,
+    peekCalls,
+    storage,
+  } = t.context;
+  const { usdc } = common.brands;
+
+  const settler = makeSettler({
+    repayer,
+    settlementAccount: accounts.settlement.account,
+    ...defaultSettlerParams,
+  });
+  const simulate = makeSimulate(settler.notify);
+  const cctpTxEvidence = simulate.observe();
+  t.deepEqual(
+    statusManager.lookupPending(
+      cctpTxEvidence.tx.forwardingAddress,
+      cctpTxEvidence.tx.amount,
+    ),
+    [{ ...cctpTxEvidence, status: PendingTxStatus.Observed }],
+    'statusManager shows this tx is only observed',
+  );
+
+  t.log('Simulate incoming IBC settlement');
+  void settler.tap.receiveUpcall(MockVTransferEvents.AGORIC_PLUS_OSMO());
+  await eventLoopIteration();
+
+  t.log('funds are forwarded; no interaction with LP');
+  t.like(accounts.settlement.callLog, [
+    [
+      'transfer',
+      {
+        value: 'osmo183dejcnmkka5dzcu9xw6mywq0p2m5peks28men',
+      },
+      usdc.units(150),
+      {
+        forwardOpts: {
+          intermediateRecipient: {
+            value: 'noble1test',
+          },
+        },
+      },
+    ],
+  ]);
+
+  t.log('simulating forward failure (e.g. unknown route)');
+  const mockE = Error('no connection info found');
+  accounts.settlement.transferVResolver.reject(mockE);
+  await eventLoopIteration();
+  t.deepEqual(storage.getDeserialized(`fun.txns.${cctpTxEvidence.txHash}`), [
+    { evidence: cctpTxEvidence, status: 'OBSERVED' },
+    { status: 'FORWARD_FAILED' },
+  ]);
+});
+
+test.todo('creator facet methods');
+
+test.todo('ignored packets');
