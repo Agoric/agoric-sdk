@@ -193,9 +193,11 @@ export const prepareStatusManager = (
     'Fast USDC Status Manager',
     M.interface('StatusManagerI', {
       // TODO: naming scheme for transition events
-      advance: M.call(CctpTxEvidenceShape).returns(M.undefined()),
+      advance: M.call(CctpTxEvidenceShape).returns(),
       advanceOutcome: M.call(M.string(), M.nat(), M.boolean()).returns(),
-      observe: M.call(CctpTxEvidenceShape).returns(M.undefined()),
+      notifyAdvanceOutcome: M.call(EvmHashShape, M.boolean()).returns(),
+      notifyObserved: M.call(CctpTxEvidenceShape).returns(),
+      observe: M.call(CctpTxEvidenceShape).returns(),
       hasBeenObserved: M.call(CctpTxEvidenceShape).returns(M.boolean()),
       deleteCompletedTxs: M.call().returns(M.undefined()),
       dequeueStatus: M.call(M.string(), M.bigint()).returns(
@@ -210,7 +212,7 @@ export const prepareStatusManager = (
       disbursed: M.call(EvmHashShape, AmountKeywordRecordShape).returns(
         M.undefined(),
       ),
-      forwarded: M.call(EvmHashShape, M.boolean()).returns(M.undefined()),
+      forwarded: M.call(EvmHashShape, M.boolean()).returns(),
       lookupPending: M.call(M.string(), M.bigint()).returns(
         M.arrayOf(PendingTxShape),
       ),
@@ -240,6 +242,43 @@ export const prepareStatusManager = (
           { nfa, amount },
           success ? PendingTxStatus.Advanced : PendingTxStatus.AdvanceFailed,
         );
+      },
+
+      /**
+       * If minted while advancing, publish a status update for the advance
+       * to vstorage.
+       *
+       * Does not add or amend `pendingSettleTxs` as this has
+       * already settled.
+       *
+       * @param {EvmHash} txHash
+       * @param {boolean} success whether the Transfer succeeded
+       */
+      notifyAdvanceOutcome(txHash, success) {
+        void publishTxnRecord(
+          txHash,
+          harden({
+            status: success
+              ? PendingTxStatus.Advanced
+              : PendingTxStatus.AdvanceFailed,
+          }),
+        );
+      },
+
+      /**
+       * If minted before observed and the evidence is eventually
+       * reported, publish the evidence without adding to `pendingSettleTxs`
+       *
+       * @param {CctpTxEvidence} evidence
+       */
+      notifyObserved(evidence) {
+        const { txHash } = evidence;
+        // unexpected path, since `hasBeenObserved` will be called before this
+        if (seenTxs.has(txHash)) {
+          throw makeError(`Transaction already seen: ${q(txHash)}`);
+        }
+        seenTxs.add(txHash);
+        publishEvidence(txHash, evidence);
       },
 
       /**

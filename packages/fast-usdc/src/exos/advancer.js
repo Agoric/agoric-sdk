@@ -158,20 +158,9 @@ export const prepareAdvancerKit = (
             const destination = chainHub.makeChainAddress(EUD);
 
             const fullAmount = toAmount(evidence.tx.amount);
-            const {
-              tx: { forwardingAddress },
-              txHash,
-            } = evidence;
 
             const { borrowerFacet, notifyFacet, poolAccount } = this.state;
-            if (
-              notifyFacet.forwardIfMinted(
-                destination,
-                forwardingAddress,
-                fullAmount,
-                txHash,
-              )
-            ) {
+            if (notifyFacet.forwardIfMinted(evidence, destination)) {
               // settlement already received; tx will Forward.
               // do not add to `pendingSettleTxs` by calling `.observe()`
               log('⚠️ minted before Observed');
@@ -200,7 +189,7 @@ export const prepareAdvancerKit = (
               forwardingAddress: evidence.tx.forwardingAddress,
               fullAmount,
               tmpSeat,
-              txHash,
+              txHash: evidence.txHash,
             });
           } catch (error) {
             log('Advancer error:', error);
