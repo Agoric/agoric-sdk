@@ -28,7 +28,7 @@ import { TransferRouteShape } from './chain-hub.js';
 /**
  * @import {HostOf} from '@agoric/async-flow';
  * @import {LocalChain, LocalChainAccount} from '@agoric/vats/src/localchain.js';
- * @import {AmountArg, ChainAddress, DenomAmount, IBCMsgTransferOptions, IBCConnectionInfo, OrchestrationAccountI, LocalAccountMethods, TransferRoute} from '@agoric/orchestration';
+ * @import {AmountArg, ChainAddress, DenomAmount, IBCMsgTransferOptions, IBCConnectionInfo, OrchestrationAccountCommon, LocalAccountMethods, TransferRoute} from '@agoric/orchestration';
  * @import {RecorderKit, MakeRecorderKit} from '@agoric/zoe/src/contractSupport/recorder.js'.
  * @import {Zone} from '@agoric/zone';
  * @import {Remote} from '@agoric/internal';
@@ -476,7 +476,7 @@ export const prepareLocalOrchestrationAccountKit = (
         },
       },
       holder: {
-        /** @type {HostOf<OrchestrationAccountI['asContinuingOffer']>} */
+        /** @type {HostOf<OrchestrationAccountCommon['asContinuingOffer']>} */
         asContinuingOffer() {
           // @ts-expect-error XXX invitationMakers
           // getPublicTopics resolves promptly (same run), so we don't need a watcher
@@ -498,7 +498,7 @@ export const prepareLocalOrchestrationAccountKit = (
             });
           });
         },
-        /** @type {HostOf<OrchestrationAccountI['getBalance']>} */
+        /** @type {HostOf<OrchestrationAccountCommon['getBalance']>} */
         getBalance(denomArg) {
           return asVow(() => {
             const [brand, denom] =
@@ -529,7 +529,7 @@ export const prepareLocalOrchestrationAccountKit = (
             );
           });
         },
-        /** @type {HostOf<OrchestrationAccountI['getBalances']>} */
+        /** @type {HostOf<OrchestrationAccountCommon['getBalances']>} */
         getBalances() {
           return watch(
             E(localchain).query(
@@ -541,7 +541,7 @@ export const prepareLocalOrchestrationAccountKit = (
           );
         },
 
-        /** @type {HostOf<OrchestrationAccountI['getPublicTopics']>} */
+        /** @type {HostOf<OrchestrationAccountCommon['getPublicTopics']>} */
         getPublicTopics() {
           // getStoragePath resolves promptly (same run), so we don't need a watcher
           // eslint-disable-next-line no-restricted-syntax
@@ -618,14 +618,14 @@ export const prepareLocalOrchestrationAccountKit = (
         executeTx(messages) {
           return watch(E(this.state.account).executeTx(messages));
         },
-        /** @type {OrchestrationAccountI['getAddress']} */
+        /** @type {OrchestrationAccountCommon['getAddress']} */
         getAddress() {
           return this.state.address;
         },
         /**
          * XXX consider using ERTP to send if it's vbank asset
          *
-         * @type {HostOf<OrchestrationAccountI['send']>}
+         * @type {HostOf<OrchestrationAccountCommon['send']>}
          */
         send(toAccount, amount) {
           return asVow(() => {
@@ -646,7 +646,7 @@ export const prepareLocalOrchestrationAccountKit = (
         /**
          * XXX consider using ERTP to send if it's vbank asset
          *
-         * @type {HostOf<OrchestrationAccountI['sendAll']>}
+         * @type {HostOf<OrchestrationAccountCommon['sendAll']>}
          */
         sendAll(toAccount, amounts) {
           return asVow(() => {
@@ -713,7 +713,7 @@ export const prepareLocalOrchestrationAccountKit = (
             return resultV;
           });
         },
-        /** @type {HostOf<OrchestrationAccountI['transferSteps']>} */
+        /** @type {HostOf<OrchestrationAccountCommon['transferSteps']>} */
         transferSteps(amount, msg) {
           return asVow(() => {
             console.log('transferSteps got', amount, msg);

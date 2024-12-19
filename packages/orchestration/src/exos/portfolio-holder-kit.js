@@ -13,7 +13,7 @@ const { fromEntries } = Object;
  * @import {VowTools} from '@agoric/vow';
  * @import {ResolvedPublicTopic} from '@agoric/zoe/src/contractSupport/topics.js';
  * @import {Zone} from '@agoric/zone';
- * @import {OrchestrationAccount, OrchestrationAccountI, MakeCombineInvitationMakers} from '@agoric/orchestration';
+ * @import {OrchestrationAccount, OrchestrationAccountCommon, MakeCombineInvitationMakers} from '@agoric/orchestration';
  */
 
 /**
