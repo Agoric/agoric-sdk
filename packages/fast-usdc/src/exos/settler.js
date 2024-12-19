@@ -195,9 +195,8 @@ export const prepareSettler = (
             case undefined:
             default:
               log('⚠️ tap: minted before observed', nfa, amount);
-              // how do we make a status update with no `txHash`.
-              // TODO - worth its own state? this will not be recorded in vstorage until Observed
-              // ['FORWARDED'] | ['FORWARD_FAILED']; no `OBSERVED`
+              // XXX consider capturing in vstorage
+              // we would need a new key, as this does not have a txHash
               this.state.mintedEarly.add(makeMintedEarlyKey(nfa, amount));
           }
         },
@@ -218,16 +217,21 @@ export const prepareSettler = (
         ) {
           const { mintedEarly } = this.state;
           const { value: fullValue } = fullAmount;
+          // XXX i think this only contains Advancing txs - should this be a separate store?
           const key = makeMintedEarlyKey(forwardingAddress, fullValue);
           if (mintedEarly.has(key)) {
             mintedEarly.delete(key);
             if (success) {
+              // TODO: does not write `ADVANCED` to vstorage
+              // this is the "slow" experience, but we've already earmarked fees so disburse
               void this.facets.self.disburse(
                 txHash,
                 forwardingAddress,
                 fullValue,
               );
             } else {
+              // TODO: does not write `ADVANCE_FAILED` to vstorage
+              // if advance fails, attempt to forward (no fees)
               void this.facets.self.forward(
                 txHash,
                 fullValue,
@@ -251,7 +255,13 @@ export const prepareSettler = (
           const key = makeMintedEarlyKey(forwardingAddress, fullValue);
           const { mintedEarly } = this.state;
           if (mintedEarly.has(key)) {
+            log(
+              'matched minted early key, initiating forward',
+              forwardingAddress,
+              fullValue,
+            );
             mintedEarly.delete(key);
+            // TODO: does not write `OBSERVED` to vstorage
             void this.facets.self.forward(txHash, fullValue, destination.value);
             return true;
           }
@@ -289,7 +299,7 @@ export const prepareSettler = (
           );
           repayer.repay(settlingSeat, split);
 
-          // update status manager, marking tx `SETTLED`
+          // update status manager, marking tx `DISBURSED`
           statusManager.disbursed(txHash, split);
         },
         /**
@@ -299,10 +309,7 @@ export const prepareSettler = (
          */
         forward(txHash, fullValue, EUD) {
           const { settlementAccount, intermediateRecipient } = this.state;
-
           const dest = chainHub.makeChainAddress(EUD);
-
-          // TODO? statusManager.forwarding(txHash, sender, amount);
           const txfrV = E(settlementAccount).transfer(
             dest,
             AmountMath.make(USDC, fullValue),
@@ -317,6 +324,7 @@ export const prepareSettler = (
          * @param {EvmHash} txHash
          */
         onFulfilled(_result, txHash) {
+          // update status manager, marking tx `FORWARDED` without fee split
           statusManager.forwarded(txHash, true);
         },
         /**
@@ -325,6 +333,8 @@ export const prepareSettler = (
          */
         onRejected(reason, txHash) {
           log('⚠️ forward transfer rejected!', reason, txHash);
+          // update status manager, flagging a terminal state that needs to be
+          // manual intervention or a code update to remediate
           statusManager.forwarded(txHash, false);
         },
       },
