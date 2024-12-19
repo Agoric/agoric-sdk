@@ -164,6 +164,22 @@ const makeTestContext = async t => {
 
         return cctpTxEvidence;
       },
+      /**
+       * mint early path. caller must simulate tap before calling
+       * @param evidence
+       */
+      observeLate: (evidence?: CctpTxEvidence) => {
+        const cctpTxEvidence = makeEvidence(evidence);
+        const { destination, forwardingAddress, fullAmount, txHash } =
+          makeNotifyInfo(cctpTxEvidence);
+        notifyFacet.forwardIfMinted(
+          destination,
+          forwardingAddress,
+          fullAmount,
+          txHash,
+        );
+        return cctpTxEvidence;
+      },
     });
     return simulate;
   };
@@ -370,6 +386,77 @@ test('slow path: forward to EUD; remove pending tx', async t => {
   statusManager.deleteCompletedTxs();
   await eventLoopIteration();
   t.is(storage.data.get(`fun.txns.${cctpTxEvidence.txHash}`), undefined);
+});
+
+test('Settlement for unknown transaction (minted early)', async t => {
+  const {
+    common: {
+      brands: { usdc },
+    },
+    makeSettler,
+    defaultSettlerParams,
+    repayer,
+    accounts,
+    peekCalls,
+    inspectLogs,
+    makeSimulate,
+    storage,
+  } = t.context;
+
+  const settler = makeSettler({
+    repayer,
+    settlementAccount: accounts.settlement.account,
+    ...defaultSettlerParams,
+  });
+  const simulate = makeSimulate(settler.notify);
+
+  t.log('Simulate incoming IBC settlement');
+  void settler.tap.receiveUpcall(MockVTransferEvents.AGORIC_PLUS_OSMO());
+  await eventLoopIteration();
+
+  t.log('Nothing was transferred');
+  t.deepEqual(peekCalls(), []);
+  t.deepEqual(accounts.settlement.callLog, []);
+  const tapLogs = inspectLogs();
+  t.like(tapLogs, [
+    ['config', { sourceChannel: 'channel-21' }],
+    ['upcall event'],
+    ['dequeued', undefined],
+    ['⚠️ tap: minted before observed'],
+  ]);
+
+  t.log('Oracle operators eventually report...');
+  const evidence = simulate.observeLate();
+  t.deepEqual(inspectLogs().slice(tapLogs.length - 1), [
+    [
+      'matched minted early key, initiating forward',
+      'noble1x0ydg69dh6fqvr27xjvp6maqmrldam6yfelqkd',
+      150000000n,
+    ],
+  ]);
+  await eventLoopIteration();
+  t.like(accounts.settlement.callLog, [
+    [
+      'transfer',
+      {
+        value: 'osmo183dejcnmkka5dzcu9xw6mywq0p2m5peks28men',
+      },
+      usdc.units(150),
+      {
+        forwardOpts: {
+          intermediateRecipient: {
+            value: 'noble1test',
+          },
+        },
+      },
+    ],
+  ]);
+  accounts.settlement.transferVResolver.resolve(undefined);
+  await eventLoopIteration();
+  t.deepEqual(storage.getDeserialized(`fun.txns.${evidence.txHash}`), [
+    /// TODO with no observed / evidence, does this break reporting reqs?
+    { status: 'FORWARDED' },
+  ]);
 });
 
 test('Settlement for Advancing transaction (advance succeeds)', async t => {

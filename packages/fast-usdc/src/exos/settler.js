@@ -81,6 +81,9 @@ export const prepareSettler = (
           makeAdvanceDetailsShape(USDC),
           M.boolean(),
         ).returns(),
+        forwardIfMinted: M.call(
+          ...Object.values(makeAdvanceDetailsShape(USDC)),
+        ).returns(M.boolean()),
       }),
       self: M.interface('SettlerSelfI', {
         disburse: M.call(EvmHashShape, M.nat()).returns(M.promise()),
@@ -189,7 +192,10 @@ export const prepareSettler = (
 
             case undefined:
             default:
-              log('⚠️ tap: no status for ', nfa, amount);
+              log('⚠️ tap: minted before observed', nfa, amount);
+              // XXX consider capturing in vstorage
+              // we would need a new key, as this does not have a txHash
+              this.state.mintedEarly.add(makeMintedEarlyKey(nfa, amount));
           }
         },
       },
@@ -229,6 +235,31 @@ export const prepareSettler = (
           } else {
             statusManager.advanceOutcome(forwardingAddress, fullValue, success);
           }
+        },
+        /**
+         * @param {ChainAddress} destination
+         * @param {NobleAddress} forwardingAddress
+         * @param {Amount<'nat'>} fullAmount
+         * @param {EvmHash} txHash
+         * @returns {boolean}
+         * @throws {Error} if minted early, so advancer doesn't advance
+         */
+        forwardIfMinted(destination, forwardingAddress, fullAmount, txHash) {
+          const { value: fullValue } = fullAmount;
+          const key = makeMintedEarlyKey(forwardingAddress, fullValue);
+          const { mintedEarly } = this.state;
+          if (mintedEarly.has(key)) {
+            log(
+              'matched minted early key, initiating forward',
+              forwardingAddress,
+              fullValue,
+            );
+            mintedEarly.delete(key);
+            // TODO: does not write `OBSERVED` to vstorage
+            void this.facets.self.forward(txHash, fullValue, destination.value);
+            return true;
+          }
+          return false;
         },
       },
       self: {
