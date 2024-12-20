@@ -33,14 +33,17 @@ export const testRecordedRetiredInstances = async ({
   );
   assert(committeeIDs);
   assert(committeeIDs.length === 1);
+  trace('found committeeIDs', committeeIDs);
+
   const committeeInstance = retiredContractInstances.get(committeeIDs[0]);
   assert(await E(contractKits).get(committeeInstance));
 
-  const charterIDs = Array.from(retiredContractInstances.keys()).filter(k =>
+  const charterIDs = [...retiredContractInstances.keys()].filter(k =>
     k.startsWith('econCommitteeCharter'),
   );
   assert(charterIDs);
   assert(charterIDs.length === 1);
+  trace('found charterID', charterIDs);
 
   trace('done');
 };

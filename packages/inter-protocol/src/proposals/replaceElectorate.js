@@ -333,7 +333,7 @@ const startNewEconCharter = async ({
   ]);
 
   const label = 'econCommitteeCharter';
-  const previousCharterKit = { label, ...econCharterKit };
+  const previousCharterKit = { ...econCharterKit, label };
 
   const boardID = await E(board).getId(previousCharterKit.instance);
   const identifier = `${label}-${boardID}`;
@@ -365,7 +365,7 @@ const startNewEconCharter = async ({
 
   trace('Starting new EC Charter Instance');
 
-  const terms = await harden({
+  const terms = harden({
     binaryVoteCounterInstallation: counterInstall,
   });
   const startResult = await E(startUpgradable)({
