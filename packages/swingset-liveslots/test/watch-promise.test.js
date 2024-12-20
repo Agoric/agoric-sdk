@@ -26,7 +26,7 @@ const build = vatPowers => {
   });
 };
 
-test.failing('watched local promises should not leak slotToVal entries', async t => {
+test('watched local promises should not leak slotToVal entries', async t => {
   const { dispatchMessage, testHooks } = await setupTestLiveslots(
     t,
     build,
