@@ -117,7 +117,7 @@ test('disagreement after publishing', async t => {
   });
 });
 
-test('disabled operator', async t => {
+test('remove operator', async t => {
   const feedKit = makeFeedKit();
   const { op1 } = await makeOperators(feedKit);
   const evidence = MockCctpTxEvidences.AGORIC_PLUS_OSMO();
@@ -125,7 +125,7 @@ test('disabled operator', async t => {
   // works before disabling
   op1.operator.submitEvidence(evidence);
 
-  op1.admin.disable();
+  await feedKit.creator.removeOperator('op1');
 
   t.throws(() => op1.operator.submitEvidence(evidence), {
     message: 'submitEvidence for disabled operator',
