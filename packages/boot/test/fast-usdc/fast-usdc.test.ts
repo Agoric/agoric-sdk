@@ -311,6 +311,56 @@ test.serial('makes usdc advance', async t => {
   await documentStorageSchema(t, storage, doc);
 });
 
+test.serial('skips usdc advance when risks identified', async t => {
+  const { walletFactoryDriver: wd, storage } = t.context;
+  const oracles = await Promise.all([
+    wd.provideSmartWallet('agoric19uscwxdac6cf6z7d5e26e0jm0lgwstc47cpll8'),
+    wd.provideSmartWallet('agoric1krunjcqfrf7la48zrvdfeeqtls5r00ep68mzkr'),
+    wd.provideSmartWallet('agoric1n4fcxsnkxe4gj6e24naec99hzmc4pjfdccy5nj'),
+  ]);
+
+  const EUD = 'dydx1riskyeud';
+  const lastNodeValue = storage.getValues('published.fastUsdc').at(-1);
+  const { settlementAccount } = JSON.parse(NonNullish(lastNodeValue));
+  const evidence = MockCctpTxEvidences.AGORIC_PLUS_DYDX(
+    // mock with the read settlementAccount address
+    encodeAddressHook(settlementAccount, { EUD }),
+  );
+
+  await Promise.all(
+    oracles.map(wallet =>
+      wallet.sendOffer({
+        id: 'submit-mock-evidence-dydx-risky',
+        invitationSpec: {
+          source: 'continuing',
+          previousOffer: 'claim-oracle-invitation',
+          invitationMakerName: 'SubmitEvidence',
+          invitationArgs: [evidence, { risksIdentified: ['TOO_LARGE_AMOUNT'] }],
+        },
+        proposal: {},
+      }),
+    ),
+  );
+  await eventLoopIteration();
+
+  t.deepEqual(
+    storage
+      .getValues(`published.fastUsdc.txns.${evidence.txHash}`)
+      .map(defaultSerializer.parse),
+    [
+      { evidence, status: 'OBSERVED' }, // observation includes evidence observed
+      { status: 'ADVANCE_SKIPPED', risksIdentified: ['TOO_LARGE_AMOUNT'] },
+    ],
+  );
+
+  const doc = {
+    node: `fastUsdc.txns`,
+    owner: `the Ethereum transactions upon which Fast USDC is acting`,
+    showValue: defaultSerializer.parse,
+  };
+  await documentStorageSchema(t, storage, doc);
+});
+
 test.serial('restart contract', async t => {
   const { EV } = t.context.runUtils;
   await null;

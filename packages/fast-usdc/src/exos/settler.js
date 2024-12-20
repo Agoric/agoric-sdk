@@ -181,6 +181,7 @@ export const prepareSettler = (
               return;
 
             case PendingTxStatus.Observed:
+            case PendingTxStatus.AdvanceSkipped:
             case PendingTxStatus.AdvanceFailed:
               return self.forward(found.txHash, nfa, amount, EUD);
 

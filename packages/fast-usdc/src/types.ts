@@ -17,6 +17,10 @@ export type NobleAddress = `noble1${string}`;
 export type EvmChainID = number;
 export type EvmChainName = string;
 
+export interface RiskAssessment {
+  risksIdentified?: string[];
+}
+
 export interface CctpTxEvidence {
   /** from Noble RPC */
   aux: {
@@ -35,6 +39,11 @@ export interface CctpTxEvidence {
   txHash: EvmHash;
 }
 
+export interface EvidenceWithRisk {
+  evidence: CctpTxEvidence;
+  risk: RiskAssessment;
+}
+
 /**
  * 'evidence' only available when it's first observed and not in subsequent
  * updates.
@@ -42,6 +51,7 @@ export interface CctpTxEvidence {
 export interface TransactionRecord extends CopyRecord {
   evidence?: CctpTxEvidence;
   split?: RepayAmountKWR;
+  risksIdentified?: string[];
   status: TxStatus;
 }
 

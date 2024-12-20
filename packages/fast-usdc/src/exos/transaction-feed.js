@@ -2,14 +2,15 @@ import { makeTracer } from '@agoric/internal';
 import { prepareDurablePublishKit } from '@agoric/notifier';
 import { keyEQ, M } from '@endo/patterns';
 import { Fail } from '@endo/errors';
-import { CctpTxEvidenceShape } from '../type-guards.js';
+import { CctpTxEvidenceShape, RiskAssessmentShape } from '../type-guards.js';
 import { defineInertInvitation } from '../utils/zoe.js';
 import { prepareOperatorKit } from './operator-kit.js';
 
 /**
  * @import {Zone} from '@agoric/zone';
+ * @import {MapStore} from '@agoric/store';
  * @import {OperatorKit} from './operator-kit.js';
- * @import {CctpTxEvidence} from '../types.js';
+ * @import {CctpTxEvidence, EvidenceWithRisk, RiskAssessment} from '../types.js';
  */
 
 const trace = makeTracer('TxFeed', true);
@@ -19,7 +20,11 @@ export const INVITATION_MAKERS_DESC = 'oracle operator invitation';
 
 const TransactionFeedKitI = harden({
   operatorPowers: M.interface('Transaction Feed Admin', {
-    attest: M.call(CctpTxEvidenceShape, M.string()).returns(),
+    attest: M.call(
+      CctpTxEvidenceShape,
+      RiskAssessmentShape,
+      M.string(),
+    ).returns(),
   }),
   creator: M.interface('Transaction Feed Creator', {
     // TODO narrow the return shape to OperatorKit
@@ -33,6 +38,22 @@ const TransactionFeedKitI = harden({
 });
 
 /**
+ * @param {MapStore<string, RiskAssessment>[]} riskStores
+ * @param {string} txHash
+ */
+const allRisksIdentified = (riskStores, txHash) => {
+  /**  @type {Set<string>} */
+  const setOfRisks = new Set();
+  for (const store of riskStores) {
+    const next = store.get(txHash);
+    for (const risk of next.risksIdentified ?? []) {
+      setOfRisks.add(risk);
+    }
+  }
+  return [...setOfRisks.values()].sort();
+};
+
+/**
  * @param {Zone} zone
  * @param {ZCF} zcf
  */
@@ -42,7 +63,7 @@ export const prepareTransactionFeedKit = (zone, zcf) => {
     kinds,
     'Transaction Feed',
   );
-  /** @type {PublishKit<CctpTxEvidence>} */
+  /** @type {PublishKit<EvidenceWithRisk>} */
   const { publisher, subscriber } = makeDurablePublishKit();
 
   const makeInertInvitation = defineInertInvitation(zcf, 'submitting evidence');
@@ -56,14 +77,12 @@ export const prepareTransactionFeedKit = (zone, zcf) => {
     TransactionFeedKitI,
     () => {
       /** @type {MapStore<string, OperatorKit>} */
-      const operators = zone.mapStore('operators', {
-        durable: true,
-      });
+      const operators = zone.mapStore('operators');
       /** @type {MapStore<string, MapStore<string, CctpTxEvidence>>} */
-      const pending = zone.mapStore('pending', {
-        durable: true,
-      });
-      return { operators, pending };
+      const pending = zone.mapStore('pending');
+      /** @type {MapStore<string, MapStore<string, RiskAssessment>>} */
+      const risks = zone.mapStore('risks');
+      return { operators, pending, risks };
     },
     {
       creator: {
@@ -90,7 +109,7 @@ export const prepareTransactionFeedKit = (zone, zcf) => {
         },
         /** @param {string} operatorId */
         initOperator(operatorId) {
-          const { operators, pending } = this.state;
+          const { operators, pending, risks } = this.state;
           trace('initOperator', operatorId);
 
           const operatorKit = makeOperatorKit(
@@ -102,6 +121,7 @@ export const prepareTransactionFeedKit = (zone, zcf) => {
             operatorId,
             zone.detached().mapStore('pending evidence'),
           );
+          risks.init(operatorId, zone.detached().mapStore('risk assessments'));
 
           return operatorKit;
         },
@@ -122,11 +142,12 @@ export const prepareTransactionFeedKit = (zone, zcf) => {
          * NB: the operatorKit is responsible for
          *
          * @param {CctpTxEvidence} evidence
+         * @param {RiskAssessment} riskAssessment
          * @param {string} operatorId
          */
-        attest(evidence, operatorId) {
-          const { operators, pending } = this.state;
-          trace('submitEvidence', operatorId, evidence);
+        attest(evidence, riskAssessment, operatorId) {
+          const { operators, pending, risks } = this.state;
+          trace('attest', operatorId, evidence);
 
           // TODO https://github.com/Agoric/agoric-sdk/pull/10720
           // TODO validate that it's a valid for Fast USDC before accepting
@@ -141,6 +162,9 @@ export const prepareTransactionFeedKit = (zone, zcf) => {
               trace(`operator ${operatorId} already reported ${txHash}`);
             } else {
               pendingStore.init(txHash, evidence);
+              // accept the risk assessment as well
+              const riskStore = risks.get(operatorId);
+              riskStore.init(txHash, riskAssessment);
             }
           }
 
@@ -183,12 +207,24 @@ export const prepareTransactionFeedKit = (zone, zcf) => {
             lastEvidence = next;
           }
 
-          // sufficient agreement, so remove from pending and publish
+          const riskStores = [...risks.values()].filter(store =>
+            store.has(txHash),
+          );
+          // take the union of risks identified from all operators
+          const risksIdentified = allRisksIdentified(riskStores, txHash);
+
+          // sufficient agreement, so remove from pending risks, then publish
           for (const store of found) {
             store.delete(txHash);
           }
-          trace('publishing evidence', evidence);
-          publisher.publish(evidence);
+          for (const store of riskStores) {
+            store.delete(txHash);
+          }
+          trace('publishing evidence', evidence, risksIdentified);
+          publisher.publish({
+            evidence,
+            risk: { risksIdentified },
+          });
         },
       },
       public: {

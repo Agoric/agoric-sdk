@@ -55,7 +55,7 @@ test('happy aggregation', async t => {
   // Publishes with 2 of 3
   const accepted = await evidenceSubscriber.getUpdateSince(0);
   t.deepEqual(accepted, {
-    value: e1,
+    value: { evidence: e1, risk: { risksIdentified: [] } },
     updateCount: 1n,
   });
 
@@ -71,6 +71,78 @@ test('happy aggregation', async t => {
   op1.operator.submitEvidence(e2);
   t.like(await evidenceSubscriber.getUpdateSince(0), {
     // op1 attestation insufficient
+    updateCount: 1n,
+  });
+});
+
+test('takes union of risk assessments', async t => {
+  const feedKit = makeFeedKit();
+  const evidenceSubscriber = feedKit.public.getEvidenceSubscriber();
+
+  const { op1, op2 } = await makeOperators(feedKit);
+
+  const e1 = MockCctpTxEvidences.AGORIC_PLUS_OSMO();
+  op1.operator.submitEvidence(e1, { risksIdentified: ['RISK1'] });
+  op2.operator.submitEvidence(e1, { risksIdentified: ['RISK2'] });
+
+  // Publishes with 2 of 3
+  const accepted = await evidenceSubscriber.getUpdateSince(0);
+  t.deepEqual(accepted, {
+    value: { evidence: e1, risk: { risksIdentified: ['RISK1', 'RISK2'] } },
+    updateCount: 1n,
+  });
+});
+
+test('takes union of risk assessments pt. 2', async t => {
+  const feedKit = makeFeedKit();
+  const evidenceSubscriber = feedKit.public.getEvidenceSubscriber();
+
+  const { op1, op2 } = await makeOperators(feedKit);
+
+  const e1 = MockCctpTxEvidences.AGORIC_PLUS_OSMO();
+  op1.operator.submitEvidence(e1, { risksIdentified: ['RISK1'] });
+  op2.operator.submitEvidence(e1);
+
+  // Publishes with 2 of 3
+  const accepted = await evidenceSubscriber.getUpdateSince(0);
+  t.deepEqual(accepted, {
+    value: { evidence: e1, risk: { risksIdentified: ['RISK1'] } },
+    updateCount: 1n,
+  });
+});
+
+test('takes union of risk assessments pt. 3', async t => {
+  const feedKit = makeFeedKit();
+  const evidenceSubscriber = feedKit.public.getEvidenceSubscriber();
+
+  const { op1, op2 } = await makeOperators(feedKit);
+
+  const e1 = MockCctpTxEvidences.AGORIC_PLUS_OSMO();
+  op1.operator.submitEvidence(e1, { risksIdentified: ['RISK1'] });
+  op2.operator.submitEvidence(e1, { risksIdentified: ['RISK1'] });
+
+  // Publishes with 2 of 3
+  const accepted = await evidenceSubscriber.getUpdateSince(0);
+  t.deepEqual(accepted, {
+    value: { evidence: e1, risk: { risksIdentified: ['RISK1'] } },
+    updateCount: 1n,
+  });
+});
+
+test('takes union of risk assessments pt. 4', async t => {
+  const feedKit = makeFeedKit();
+  const evidenceSubscriber = feedKit.public.getEvidenceSubscriber();
+
+  const { op1, op2 } = await makeOperators(feedKit);
+
+  const e1 = MockCctpTxEvidences.AGORIC_PLUS_OSMO();
+  op1.operator.submitEvidence(e1);
+  op2.operator.submitEvidence(e1);
+
+  // Publishes with 2 of 3
+  const accepted = await evidenceSubscriber.getUpdateSince(0);
+  t.deepEqual(accepted, {
+    value: { evidence: e1, risk: { risksIdentified: [] } },
     updateCount: 1n,
   });
 });

@@ -34,7 +34,7 @@ import { makePromiseKit } from '@endo/promise-kit';
 import path from 'path';
 import type { OperatorKit } from '../src/exos/operator-kit.js';
 import type { FastUsdcSF } from '../src/fast-usdc.contract.js';
-import { PoolMetricsShape } from '../src/type-guards.js';
+import { CctpTxEvidenceShape, PoolMetricsShape } from '../src/type-guards.js';
 import type { CctpTxEvidence, FeeConfig, PoolMetrics } from '../src/types.js';
 import { makeFeeTools } from '../src/utils/fees.js';
 import { MockCctpTxEvidences } from './fixtures.js';
@@ -214,7 +214,7 @@ const purseOf =
 
 const makeOracleOperator = async (
   opInv: Invitation<OperatorKit>,
-  txSubscriber: Subscriber<CctpTxEvidence>,
+  txSubscriber: Subscriber<TxWithRisk>,
   zoe: ZoeService,
   t: ExecutionContext,
 ) => {
@@ -239,13 +239,16 @@ const makeOracleOperator = async (
   return harden({
     watch: () => {
       void observeIteration(subscribeEach(txSubscriber), {
-        updateState: tx => {
+        updateState: ({ evidence, isRisk }) => {
           if (!active) {
             return;
           }
           // KLUDGE: tx wouldn't include aux. OCW looks it up
           return E.when(
-            E(invitationMakers).SubmitEvidence(tx),
+            E(invitationMakers).SubmitEvidence(
+              evidence,
+              isRisk ? { risksIdentified: ['RISK1'] } : {},
+            ),
             inv =>
               E.when(E(E(zoe).offer(inv)).getOfferResult(), res => {
                 t.is(res, 'inert; nothing should be expected from this offer');
@@ -368,20 +371,29 @@ const makeEVM = (template = MockCctpTxEvidences.AGORIC_PLUS_OSMO()) => {
     return tx;
   };
 
-  const txPub = makePublishKit<CctpTxEvidence>();
+  const txPub = makePublishKit<TxWithRisk>();
 
   return harden({ cctp: { makeTx }, txPub });
 };
 
+/**
+ * We pass around evidence along with a flag to indicate whether it should be
+ * treated as risky for testing purposes.
+ */
+interface TxWithRisk {
+  evidence: CctpTxEvidence;
+  isRisk: boolean;
+}
+
 const makeCustomer = (
   who: string,
   cctp: ReturnType<typeof makeEVM>['cctp'],
-  txPublisher: Publisher<CctpTxEvidence>,
+  txPublisher: Publisher<TxWithRisk>,
   feeConfig: FeeConfig, // TODO: get from vstorage (or at least: a subscriber)
 ) => {
   const USDC = feeConfig.flat.brand;
   const feeTools = makeFeeTools(feeConfig);
-  const sent = [] as CctpTxEvidence[];
+  const sent = [] as TxWithRisk[];
 
   const me = harden({
     checkPoolAvailable: async (
@@ -399,6 +411,7 @@ const makeCustomer = (
       t: ExecutionContext<FucContext>,
       amount: bigint,
       EUD: string,
+      isRisk = false,
     ) => {
       const { storage } = t.context.common.bootstrap;
       const accountsData = storage.data.get('fun');
@@ -410,8 +423,8 @@ const makeCustomer = (
       // "cctp" here has some noble stuff mixed in.
       const tx = cctp.makeTx(amount, recipientAddress);
       t.log(who, 'signs CCTP for', amount, 'uusdc w/EUD:', EUD);
-      txPublisher.publish(tx);
-      sent.push(tx);
+      txPublisher.publish({ evidence: tx, isRisk });
+      sent.push({ evidence: tx, isRisk });
       await eventLoopIteration();
       return tx;
     },
@@ -420,8 +433,9 @@ const makeCustomer = (
       { bank = [] as any[], local = [] as any[] } = {},
       forward?: unknown,
     ) => {
-      const evidence = sent.shift();
-      if (!evidence) throw t.fail('nothing sent');
+      const next = sent.shift();
+      if (!next) throw t.fail('nothing sent');
+      const { evidence } = next;
 
       // C3 - Contract MUST calculate AdvanceAmount by ...
       // Mostly, see unit tests for calculateAdvance, calculateSplit
@@ -539,6 +553,27 @@ test.serial('C25 - LPs can deposit USDC', async t => {
     },
   } = await E(metricsSub).getUpdateSince();
   t.deepEqual(poolBalance, make(usdc.brand, 250_000_000n + balance0.value));
+});
+
+test.serial('Contract skips advance when risks identified', async t => {
+  const {
+    common: {
+      commonPrivateArgs: { feeConfig },
+      utils: { transmitTransferAck },
+    },
+    evm: { cctp, txPub },
+    startKit: { metricsSub },
+    bridges: { snapshot, since },
+    mint,
+  } = t.context;
+  const custEmpty = makeCustomer('Skippy', cctp, txPub.publisher, feeConfig);
+  const bridgePos = snapshot();
+  const sent = await custEmpty.sendFast(t, 1_000_000n, 'osmo123', true);
+  const bridgeTraffic = since(bridgePos);
+  await mint(sent);
+  custEmpty.checkSent(t, bridgeTraffic, 'forward');
+  t.log('No advancement, just settlement');
+  await transmitTransferAck(); // ack IBC transfer for forward
 });
 
 test.serial('STORY01: advancing happy path for 100 USDC', async t => {
