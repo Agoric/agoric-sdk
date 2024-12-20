@@ -12,8 +12,8 @@ const trace = makeTracer('UpgradePSM');
  *   };
  * }} powers
  * @param {object} options
- * @param {{ 
- *  psmRef: VatSourceRef;
+ * @param {{
+ *   psmRef: VatSourceRef;
  * }} options.options
  */
 export const upgradePSMProposal = async (
@@ -30,10 +30,7 @@ export const upgradePSMProposal = async (
 
   trace(`PSM BUNDLE ID: `, psmRef);
 
-  const [
-    psmKitMap,
-    instancePrivateArgs,
-  ] = await Promise.all([
+  const [psmKitMap, instancePrivateArgs] = await Promise.all([
     psmKitP,
     instancePrivateArgsP,
   ]);
@@ -50,22 +47,19 @@ export const upgradePSMProposal = async (
       ...originalPrivateArgs,
       initialPoserInvitation: poserInvitation,
     });
-  
+
     const upgradeResult = await E(psmAdminFacet).upgradeContract(
       psmRef.bundleID,
       newPrivateArgs,
     );
-  
+
     trace(`PSM ${label} upgraded: `, upgradeResult);
   }
 
   trace('Done.');
 };
 
-export const getManifestForUpgradingPSM = (
-  _powers,
-  { psmRef },
-) => ({
+export const getManifestForUpgradingPSM = (_powers, { psmRef }) => ({
   manifest: {
     [upgradePSMProposal.name]: {
       consume: {

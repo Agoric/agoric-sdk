@@ -7,9 +7,7 @@ export const defaultProposalBuilder = async ({ publishRef, install }) =>
     getManifestCall: [
       'getManifestForUpgradingPSM',
       {
-        psmRef: publishRef(
-          install('@agoric/inter-protocol/src/psm/psm.js'),
-        ),
+        psmRef: publishRef(install('@agoric/inter-protocol/src/psm/psm.js')),
       },
     ],
   });
