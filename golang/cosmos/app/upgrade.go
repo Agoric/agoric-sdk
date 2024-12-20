@@ -177,6 +177,8 @@ func terminateGovernorCoreProposal(upgradeName string) (vm.CoreProposalStep, err
 	switch getVariantFromUpgradeName(upgradeName) {
 		case "MAINNET":
 			targets = []string{"board052184:stkATOM-USD_price_feed"}
+		case "A3P_INTEGRATION":
+			targets = []string{"board04091:stATOM-USD_price_feed"}
 		default:
 			return nil, nil
 	}
