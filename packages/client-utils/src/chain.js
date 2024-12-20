@@ -1,5 +1,4 @@
 import { intervalAsyncGenerator } from './clock-timer.js';
-import { makeAPI } from './grpc-rest-api.js';
 
 const { freeze } = Object;
 
