@@ -14,7 +14,7 @@ import {
 /**
  * @import {MapStore, SetStore} from '@agoric/store';
  * @import {Zone} from '@agoric/zone';
- * @import {CctpTxEvidence, NobleAddress, PendingTx, EvmHash, LogFn, TransactionRecord} from '../types.js';
+ * @import {CctpTxEvidence, NobleAddress, PendingTx, EvmHash, LogFn, TransactionRecord, EvidenceWithRisk, RiskAssessment} from '../types.js';
  */
 
 /**
@@ -146,8 +146,9 @@ export const prepareStatusManager = (
    *
    * @param {CctpTxEvidence} evidence
    * @param {PendingTxStatus} status
+   * @param {string[]} [risksIdentified]
    */
-  const initPendingTx = (evidence, status) => {
+  const initPendingTx = (evidence, status, risksIdentified) => {
     const { txHash } = evidence;
     if (seenTxs.has(txHash)) {
       throw makeError(`Transaction already seen: ${q(txHash)}`);
@@ -160,7 +161,9 @@ export const prepareStatusManager = (
       harden({ ...evidence, status }),
     );
     publishEvidence(txHash, evidence);
-    if (status !== PendingTxStatus.Observed) {
+    if (status === PendingTxStatus.AdvanceSkipped) {
+      void publishTxnRecord(txHash, harden({ status, risksIdentified }));
+    } else if (status !== PendingTxStatus.Observed) {
       // publishEvidence publishes Observed
       void publishTxnRecord(txHash, harden({ status }));
     }
@@ -194,6 +197,9 @@ export const prepareStatusManager = (
       // TODO: naming scheme for transition events
       advance: M.call(CctpTxEvidenceShape).returns(M.undefined()),
       advanceOutcome: M.call(M.string(), M.nat(), M.boolean()).returns(),
+      skipAdvance: M.call(CctpTxEvidenceShape, M.arrayOf(M.string())).returns(
+        M.undefined(),
+      ),
       observe: M.call(CctpTxEvidenceShape).returns(M.undefined()),
       hasBeenObserved: M.call(CctpTxEvidenceShape).returns(M.boolean()),
       deleteCompletedTxs: M.call().returns(M.undefined()),
@@ -203,6 +209,7 @@ export const prepareStatusManager = (
             txHash: EvmHashShape,
             status: M.or(
               PendingTxStatus.Advanced,
+              PendingTxStatus.AdvanceSkipped,
               PendingTxStatus.AdvanceFailed,
               PendingTxStatus.Observed,
             ),
@@ -224,12 +231,30 @@ export const prepareStatusManager = (
       /**
        * Add a new transaction with ADVANCING status
        *
-       * NB: this acts like observe() but skips recording the OBSERVED state
+       * NB: this acts like observe() but subsequently records an ADVANCING
+       * state
        *
        * @param {CctpTxEvidence} evidence
        */
       advance(evidence) {
         initPendingTx(evidence, PendingTxStatus.Advancing);
+      },
+
+      /**
+       * Add a new transaction with ADVANCE_SKIPPED status
+       *
+       * NB: this acts like observe() but subsequently records an
+       * ADVANCE_SKIPPED state along with risks identified
+       *
+       * @param {CctpTxEvidence} evidence
+       * @param {string[]} risksIdentified
+       */
+      skipAdvance(evidence, risksIdentified) {
+        initPendingTx(
+          evidence,
+          PendingTxStatus.AdvanceSkipped,
+          risksIdentified,
+        );
       },
 
       /**

@@ -6,7 +6,7 @@ import { PendingTxStatus } from './constants.js';
  * @import {TypedPattern} from '@agoric/internal';
  * @import {FastUsdcTerms} from './fast-usdc.contract.js';
  * @import {USDCProposalShapes} from './pool-share-math.js';
- * @import {CctpTxEvidence, FeeConfig, PendingTx, PoolMetrics, ChainPolicy, FeedPolicy, AddressHook, EvmAddress, EvmHash} from './types.js';
+ * @import {CctpTxEvidence, FeeConfig, PendingTx, PoolMetrics, ChainPolicy, FeedPolicy, AddressHook, EvmAddress, EvmHash, RiskAssessment, EvidenceWithRisk} from './types.js';
  */
 
 /**
@@ -49,6 +49,15 @@ export const EvmHashShape = M.string({
 });
 harden(EvmHashShape);
 
+/** @type {TypedPattern<RiskAssessment>} */
+export const RiskAssessmentShape = M.splitRecord(
+  {},
+  {
+    risksIdentified: M.arrayOf(M.string()),
+  },
+);
+harden(RiskAssessmentShape);
+
 /** @type {TypedPattern<CctpTxEvidence>} */
 export const CctpTxEvidenceShape = {
   aux: {
@@ -66,6 +75,13 @@ export const CctpTxEvidenceShape = {
   txHash: EvmHashShape,
 };
 harden(CctpTxEvidenceShape);
+
+/** @type {TypedPattern<EvidenceWithRisk>} */
+export const EvidenceWithRiskShape = {
+  evidence: CctpTxEvidenceShape,
+  risk: RiskAssessmentShape,
+};
+harden(EvidenceWithRiskShape);
 
 /** @type {TypedPattern<PendingTx>} */
 // @ts-expect-error TypedPattern not recognized as record
