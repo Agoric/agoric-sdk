@@ -141,7 +141,7 @@ export const prepareTransactionFeedKit = (zone, zcf) => {
         },
 
         /** @param {string} operatorId */
-        async removeOperator(operatorId) {
+        removeOperator(operatorId) {
           const { operators } = this.state;
           trace('removeOperator', operatorId);
           const operatorKit = operators.get(operatorId);
