@@ -47,50 +47,87 @@ test('happy aggregation', async t => {
   const evidenceSubscriber = feedKit.public.getEvidenceSubscriber();
 
   const { op1, op2, op3 } = await makeOperators(feedKit);
-  const evidence = MockCctpTxEvidences.AGORIC_PLUS_OSMO();
-  const results = await Promise.all([
-    op1.operator.submitEvidence(evidence),
-    op2.operator.submitEvidence(evidence),
-    op3.operator.submitEvidence(evidence),
-  ]);
-  t.deepEqual(results, [undefined, undefined, undefined]);
 
+  const e1 = MockCctpTxEvidences.AGORIC_PLUS_OSMO();
+  op1.operator.submitEvidence(e1);
+  op2.operator.submitEvidence(e1);
+
+  // Publishes with 2 of 3
   const accepted = await evidenceSubscriber.getUpdateSince(0);
   t.deepEqual(accepted, {
-    value: evidence,
+    value: e1,
     updateCount: 1n,
   });
 
-  // verify that it doesn't publish until three match
-  await Promise.all([
-    // once it publishes, it doesn't remember that it already saw these
-    op1.operator.submitEvidence(evidence),
-    op2.operator.submitEvidence(evidence),
-    // but this time the third is different
-    op3.operator.submitEvidence(MockCctpTxEvidences.AGORIC_PLUS_DYDX()),
-  ]);
+  // Now third operator catches up with same evidence already published
+  op3.operator.submitEvidence(e1);
   t.like(await evidenceSubscriber.getUpdateSince(0), {
-    // Update count is still 1
+    // The confirming evidence doesn't change anything
     updateCount: 1n,
   });
-  await op3.operator.submitEvidence(evidence);
+
+  const e2 = MockCctpTxEvidences.AGORIC_PLUS_DYDX();
+  assert(e1.txHash !== e2.txHash);
+  op1.operator.submitEvidence(e2);
+  t.like(await evidenceSubscriber.getUpdateSince(0), {
+    // op1 attestation insufficient
+    updateCount: 1n,
+  });
+});
+
+test('disagreement', async t => {
+  const feedKit = makeFeedKit();
+  const { op1, op2 } = await makeOperators(feedKit);
+  const e1 = MockCctpTxEvidences.AGORIC_PLUS_OSMO();
+  const e1bad = { ...e1, tx: { ...e1.tx, amount: 999_999_999n } };
+  assert(e1.txHash === e1bad.txHash);
+  op1.operator.submitEvidence(e1);
+
+  t.throws(() => op2.operator.submitEvidence(e1bad), {
+    message:
+      'conflicting evidence for "0xc81bc6105b60a234c7c50ac17816ebcd5561d366df8bf3be59ff387552761702"',
+  });
+});
+
+test('disagreement after publishing', async t => {
+  const feedKit = makeFeedKit();
+  const evidenceSubscriber = feedKit.public.getEvidenceSubscriber();
+  const { op1, op2, op3 } = await makeOperators(feedKit);
+  const e1 = MockCctpTxEvidences.AGORIC_PLUS_OSMO();
+  const e1bad = { ...e1, tx: { ...e1.tx, amount: 999_999_999n } };
+  assert(e1.txHash === e1bad.txHash);
+  op1.operator.submitEvidence(e1);
+  op2.operator.submitEvidence(e1);
+
+  t.like(await evidenceSubscriber.getUpdateSince(0), {
+    updateCount: 1n,
+  });
+
+  // it's simply ignored
+  t.notThrows(() => op3.operator.submitEvidence(e1bad));
+  t.like(await evidenceSubscriber.getUpdateSince(0), {
+    updateCount: 1n,
+  });
+
+  // now another op repeats the bad evidence, so it's published to the stream.
+  // It's the responsibility of the Advancer to fail because it has already processed that tx hash.
+  op1.operator.submitEvidence(e1bad);
   t.like(await evidenceSubscriber.getUpdateSince(0), {
     updateCount: 2n,
   });
 });
 
-// TODO: find a way to get this working
-test.skip('forged source', async t => {
+test('disabled operator', async t => {
   const feedKit = makeFeedKit();
   const { op1 } = await makeOperators(feedKit);
   const evidence = MockCctpTxEvidences.AGORIC_PLUS_OSMO();
 
-  // op1 is different than the facets object the evidence must come from
-  t.throws(() =>
-    feedKit.operatorPowers.submitEvidence(
-      evidence,
-      // @ts-expect-error XXX Types of property '[GET_INTERFACE_GUARD]' are incompatible.
-      op1,
-    ),
-  );
+  // works before disabling
+  op1.operator.submitEvidence(evidence);
+
+  op1.admin.disable();
+
+  t.throws(() => op1.operator.submitEvidence(evidence), {
+    message: 'submitEvidence for disabled operator',
+  });
 });

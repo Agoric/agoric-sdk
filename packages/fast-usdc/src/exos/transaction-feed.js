@@ -1,6 +1,7 @@
 import { makeTracer } from '@agoric/internal';
 import { prepareDurablePublishKit } from '@agoric/notifier';
-import { M } from '@endo/patterns';
+import { keyEQ, M } from '@endo/patterns';
+import { Fail } from '@endo/errors';
 import { CctpTxEvidenceShape } from '../type-guards.js';
 import { defineInertInvitation } from '../utils/zoe.js';
 import { prepareOperatorKit } from './operator-kit.js';
@@ -18,7 +19,7 @@ export const INVITATION_MAKERS_DESC = 'oracle operator invitation';
 
 const TransactionFeedKitI = harden({
   operatorPowers: M.interface('Transaction Feed Admin', {
-    submitEvidence: M.call(CctpTxEvidenceShape, M.any()).returns(),
+    attest: M.call(CctpTxEvidenceShape, M.string()).returns(),
   }),
   creator: M.interface('Transaction Feed Creator', {
     // TODO narrow the return shape to OperatorKit
@@ -118,23 +119,16 @@ export const prepareTransactionFeedKit = (zone, zcf) => {
         /**
          * Add evidence from an operator.
          *
+         * NB: the operatorKit is responsible for
+         *
          * @param {CctpTxEvidence} evidence
-         * @param {OperatorKit} operatorKit
+         * @param {string} operatorId
          */
-        submitEvidence(evidence, operatorKit) {
-          const { pending } = this.state;
-          trace(
-            'submitEvidence',
-            operatorKit.operator.getStatus().operatorId,
-            evidence,
-          );
-          const { operatorId } = operatorKit.operator.getStatus();
+        attest(evidence, operatorId) {
+          const { operators, pending } = this.state;
+          trace('submitEvidence', operatorId, evidence);
 
-          // TODO should this verify that the operator is one made by this exo?
-          // This doesn't work...
-          // operatorKit === operators.get(operatorId) ||
-          //   Fail`operatorKit mismatch`;
-
+          // TODO https://github.com/Agoric/agoric-sdk/pull/10720
           // TODO validate that it's a valid for Fast USDC before accepting
           // E.g. that the `recipientAddress` is the FU settlement account and that
           // the EUD is a chain supported by FU.
@@ -154,18 +148,46 @@ export const prepareTransactionFeedKit = (zone, zcf) => {
           const found = [...pending.values()].filter(store =>
             store.has(txHash),
           );
-          // TODO determine the real policy for checking agreement
-          if (found.length < pending.getSize()) {
-            // not all have seen it
+          const minAttestations = Math.ceil(operators.getSize() / 2);
+          trace(
+            'transaction',
+            txHash,
+            'has',
+            found.length,
+            'of',
+            minAttestations,
+            'necessary attestations',
+          );
+          if (found.length < minAttestations) {
             return;
           }
 
-          // TODO verify that all found deep equal
-
-          // all agree, so remove from pending and publish
-          for (const pendingStore of pending.values()) {
-            pendingStore.delete(txHash);
+          let lastEvidence;
+          for (const store of found) {
+            const next = store.get(txHash);
+            if (lastEvidence) {
+              if (keyEQ(lastEvidence, next)) {
+                lastEvidence = next;
+              } else {
+                trace(
+                  '🚨 conflicting evidence for',
+                  txHash,
+                  ':',
+                  lastEvidence,
+                  '!=',
+                  next,
+                );
+                Fail`conflicting evidence for ${txHash}`;
+              }
+            }
+            lastEvidence = next;
           }
+
+          // sufficient agreement, so remove from pending and publish
+          for (const store of found) {
+            store.delete(txHash);
+          }
+          trace('publishing evidence', evidence);
           publisher.publish(evidence);
         },
       },

@@ -218,7 +218,7 @@ export const fetchLatestEcQuestion = async io => {
   return { latestOutcome, latestQuestion };
 };
 
-const checkCommitteeElectionResult = (
+export const checkCommitteeElectionResult = (
   /** @type {{ latestOutcome: { outcome: any; question: any; }; latestQuestion: { closingRule: { deadline: any; }; questionHandle: any; }; }} */ electionResult,
   /** @type {{ outcome: any; deadline: any; }} */ expectedResult,
 ) => {

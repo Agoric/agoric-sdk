@@ -10,6 +10,7 @@ import {
 import { buildVTransferEvent } from '@agoric/orchestration/tools/ibc-mocks.js';
 import type { UpdateRecord } from '@agoric/smart-wallet/src/smartWallet.js';
 import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
+import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
 import {
   makeWalletFactoryContext,
   type WalletFactoryTestContext,
@@ -101,6 +102,8 @@ test.serial('send-anywhere', async t => {
   await runInbound(
     BridgeId.VTRANSFER,
     buildVTransferEvent({
+      sender: makeTestAddress(),
+      target: makeTestAddress(),
       sourceChannel: 'channel-5',
       sequence: '1',
     }),

@@ -4,6 +4,7 @@ import type { TestFn } from 'ava';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
 import type { Zone } from '@agoric/zone';
+import { defaultMarshaller } from '@agoric/internal/src/storage-test-utils.js';
 import { PendingTxStatus } from '../../src/constants.js';
 import { prepareSettler } from '../../src/exos/settler.js';
 import { prepareStatusManager } from '../../src/exos/status-manager.js';
@@ -47,8 +48,8 @@ const makeTestContext = async t => {
   const { log, inspectLogs } = makeTestLogger(t.log);
   const statusManager = prepareStatusManager(
     zone.subZone('status-manager'),
-    common.commonPrivateArgs.storageNode.makeChildNode('status'),
-    { log },
+    common.commonPrivateArgs.storageNode.makeChildNode('txns'),
+    { marshaller: defaultMarshaller, log },
   );
   const { zcf, callLog } = mockZcf(zone.subZone('Mock ZCF'));
 
@@ -234,11 +235,18 @@ test('happy path: disburse to LPs; StatusManager removes tx', async t => {
     'SETTLED entry removed from StatusManger',
   );
   await eventLoopIteration();
-  const vstorage = t.context.storage.data;
-  t.is(
-    vstorage.get(`mockChainStorageRoot.status.${cctpTxEvidence.txHash}`),
-    'DISBURSED',
-  );
+  const { storage } = t.context;
+  t.deepEqual(storage.getDeserialized(`fun.txns.${cctpTxEvidence.txHash}`), [
+    { evidence: cctpTxEvidence, status: 'OBSERVED' },
+    { status: 'ADVANCING' },
+    { status: 'ADVANCED' },
+    { split: expectedSplit, status: 'DISBURSED' },
+  ]);
+
+  // Check deletion of DISBURSED transactions
+  statusManager.deleteCompletedTxs();
+  await eventLoopIteration();
+  t.is(storage.data.get(`fun.txns.${cctpTxEvidence.txHash}`), undefined);
 });
 
 test('slow path: forward to EUD; remove pending tx', async t => {
@@ -305,11 +313,16 @@ test('slow path: forward to EUD; remove pending tx', async t => {
     [],
     'SETTLED entry removed from StatusManger',
   );
-  const vstorage = t.context.storage.data;
-  t.is(
-    vstorage.get(`mockChainStorageRoot.status.${cctpTxEvidence.txHash}`),
-    'FORWARDED',
-  );
+  const { storage } = t.context;
+  t.deepEqual(storage.getDeserialized(`fun.txns.${cctpTxEvidence.txHash}`), [
+    { evidence: cctpTxEvidence, status: 'OBSERVED' },
+    { status: 'FORWARDED' },
+  ]);
+
+  // Check deletion of FORWARDED transactions
+  statusManager.deleteCompletedTxs();
+  await eventLoopIteration();
+  t.is(storage.data.get(`fun.txns.${cctpTxEvidence.txHash}`), undefined);
 });
 
 test('Settlement for unknown transaction', async t => {

@@ -3,6 +3,14 @@ import { stdin as input, stdout as output } from 'node:process';
 
 /**
    @typedef {{
+    bech32Prefix: string,
+    api: string,
+    USDCDenom: string
+  }} DestinationChain
+ */
+
+/**
+   @typedef {{
     nobleSeed: string,
     ethSeed: string,
     nobleToAgoricChannel: string,
@@ -11,6 +19,7 @@ import { stdin as input, stdout as output } from 'node:process';
     ethRpc: string,
     tokenMessengerAddress: string,
     tokenAddress: string
+    destinationChains?: DestinationChain[]
   }} ConfigOpts
  */
 

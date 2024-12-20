@@ -1,8 +1,12 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import type { ExecutionContext, TestFn } from 'ava';
 
+import {
+  decodeAddressHook,
+  encodeAddressHook,
+} from '@agoric/cosmic-proto/address-hooks.js';
 import { AmountMath } from '@agoric/ertp/src/amountMath.js';
-import { deeplyFulfilledObject } from '@agoric/internal';
+import type { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
 import {
   eventLoopIteration,
   inspectMapStore,
@@ -15,6 +19,7 @@ import {
 } from '@agoric/notifier';
 import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
 import { buildVTransferEvent } from '@agoric/orchestration/tools/ibc-mocks.js';
+import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
 import { heapVowE as VE } from '@agoric/vow/vat.js';
 import {
   divideBy,
@@ -24,13 +29,9 @@ import {
 import type { Instance } from '@agoric/zoe/src/zoeService/utils.js';
 import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { E } from '@endo/far';
-import { matches, objectMap } from '@endo/patterns';
+import { matches } from '@endo/patterns';
 import { makePromiseKit } from '@endo/promise-kit';
 import path from 'path';
-import {
-  decodeAddressHook,
-  encodeAddressHook,
-} from '@agoric/cosmic-proto/address-hooks.js';
 import type { OperatorKit } from '../src/exos/operator-kit.js';
 import type { FastUsdcSF } from '../src/fast-usdc.contract.js';
 import { PoolMetricsShape } from '../src/type-guards.js';
@@ -56,10 +57,12 @@ const getInvitationProperties = async (
   return amount.value[0];
 };
 
+// Spec for Mainnet. Other values are covered in unit tests of TransactionFeed.
+const operatorQty = 3;
+
 type CommonSetup = Awaited<ReturnType<typeof commonSetup>>;
 const startContract = async (
   common: Pick<CommonSetup, 'brands' | 'commonPrivateArgs' | 'utils'>,
-  operatorQty = 1,
 ) => {
   const {
     brands: { usdc },
@@ -104,7 +107,7 @@ const makeTestContext = async (t: ExecutionContext) => {
   const common = await commonSetup(t);
   await E(common.mocks.ibcBridge).setAddressPrefix('noble');
 
-  const startKit = await startContract(common, 2);
+  const startKit = await startContract(common);
 
   const { transferBridge } = common.mocks;
   const evm = makeEVM();
@@ -135,12 +138,15 @@ const makeTestContext = async (t: ExecutionContext) => {
   };
 
   const mint = async (e: CctpTxEvidence) => {
-    const settlerAddr = 'agoric1fakeLCAAddress1'; // TODO: get from contract
-    const rxd = await receiveUSDCAt(settlerAddr, e.tx.amount);
+    const accountsData = common.bootstrap.storage.data.get('fun');
+    const { settlementAccount } = JSON.parse(
+      JSON.parse(accountsData!).values[0],
+    );
+    const rxd = await receiveUSDCAt(settlementAccount, e.tx.amount);
     await VE(transferBridge).fromBridge(
       buildVTransferEvent({
         receiver: e.aux.recipientAddress,
-        target: settlerAddr,
+        target: settlementAccount,
         sourceChannel: agToNoble.transferChannel.counterPartyChannelId,
         denom: 'uusdc',
         amount: e.tx.amount,
@@ -154,7 +160,8 @@ const makeTestContext = async (t: ExecutionContext) => {
   return { bridges: { snapshot, since }, common, evm, mint, startKit, sync };
 };
 
-const test = anyTest as TestFn<Awaited<ReturnType<typeof makeTestContext>>>;
+type FucContext = Awaited<ReturnType<typeof makeTestContext>>;
+const test = anyTest as TestFn<FucContext>;
 test.before(async t => (t.context = await makeTestContext(t)));
 
 test('baggage', async t => {
@@ -189,8 +196,8 @@ test('getStaticInfo', async t => {
 
   t.deepEqual(await E(publicFacet).getStaticInfo(), {
     addresses: {
-      poolAccount: 'agoric1fakeLCAAddress',
-      settlementAccount: 'agoric1fakeLCAAddress1',
+      poolAccount: makeTestAddress(),
+      settlementAccount: makeTestAddress(1),
     },
   });
 });
@@ -227,12 +234,17 @@ const makeOracleOperator = async (
   ]);
   const { invitationMakers } = operatorKit;
 
+  let active = true;
+
   return harden({
     watch: () => {
       void observeIteration(subscribeEach(txSubscriber), {
-        updateState: tx =>
+        updateState: tx => {
+          if (!active) {
+            return;
+          }
           // KLUDGE: tx wouldn't include aux. OCW looks it up
-          E.when(
+          return E.when(
             E(invitationMakers).SubmitEvidence(tx),
             inv =>
               E.when(E(E(zoe).offer(inv)).getOfferResult(), res => {
@@ -242,13 +254,17 @@ const makeOracleOperator = async (
             reason => {
               failures.push(reason.message);
             },
-          ),
+          );
+        },
       });
     },
     getDone: () => done,
     getFailures: () => harden([...failures]),
     // operator only gets .invitationMakers
     getKit: () => operatorKit,
+    setActive: flag => {
+      active = flag;
+    },
   });
 };
 
@@ -336,7 +352,6 @@ const makeLP = async (
 };
 
 const makeEVM = (template = MockCctpTxEvidences.AGORIC_PLUS_OSMO()) => {
-  const [settleAddr] = template.aux.recipientAddress.split('?');
   let nonce = 0;
 
   const makeTx = (amount: bigint, recipientAddress: string): CctpTxEvidence => {
@@ -368,10 +383,6 @@ const makeCustomer = (
   const feeTools = makeFeeTools(feeConfig);
   const sent = [] as CctpTxEvidence[];
 
-  // TODO: get settlerAddr from vstorage
-  const [settleAddr] =
-    MockCctpTxEvidences.AGORIC_PLUS_OSMO().aux.recipientAddress.split('?');
-
   const me = harden({
     checkPoolAvailable: async (
       t: ExecutionContext,
@@ -384,8 +395,17 @@ const makeCustomer = (
       t.log(who, 'sees', poolBalance.value, enough ? '>' : 'NOT >', want);
       return enough;
     },
-    sendFast: async (t: ExecutionContext, amount: bigint, EUD: string) => {
-      const recipientAddress = encodeAddressHook(settleAddr, { EUD });
+    sendFast: async (
+      t: ExecutionContext<FucContext>,
+      amount: bigint,
+      EUD: string,
+    ) => {
+      const { storage } = t.context.common.bootstrap;
+      const accountsData = storage.data.get('fun');
+      const { settlementAccount } = JSON.parse(
+        JSON.parse(accountsData!).values[0],
+      );
+      const recipientAddress = encodeAddressHook(settlementAccount, { EUD });
       // KLUDGE: UI would ask noble for a forwardingAddress
       // "cctp" here has some noble stuff mixed in.
       const tx = cctp.makeTx(amount, recipientAddress);
@@ -549,7 +569,7 @@ test.serial('STORY01: advancing happy path for 100 USDC', async t => {
   t.deepEqual(inspectBankBridge().at(-1), {
     amount: String(expectedAdvance.value),
     denom: uusdcOnAgoric,
-    recipient: 'agoric1fakeLCAAddress',
+    recipient: makeTestAddress(),
     type: 'VBANK_GIVE',
   });
 
@@ -760,10 +780,12 @@ test.serial('Settlement for unknown transaction (operator down)', async t => {
   } = t.context;
   const operators = await sync.ocw.promise;
 
+  // Simulate 2 of 3 operators being unavailable
+  operators[0].setActive(false);
+  operators[1].setActive(false);
+
   const opDown = makeCustomer('Otto', cctp, txPub.publisher, feeConfig);
 
-  // what removeOperator will do
-  await E(E.get(E(operators[1]).getKit()).admin).disable();
   const bridgePos = snapshot();
   const sent = await opDown.sendFast(t, 20_000_000n, 'osmo12345');
   await mint(sent);
@@ -779,7 +801,7 @@ test.serial('Settlement for unknown transaction (operator down)', async t => {
       },
       {
         amount: '20000000',
-        recipient: 'agoric1fakeLCAAddress1',
+        recipient: 'agoric1qyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqc09z0g',
         type: 'VBANK_GIVE',
       },
     ],
@@ -788,9 +810,6 @@ test.serial('Settlement for unknown transaction (operator down)', async t => {
   t.deepEqual(bridgeTraffic.local, [], 'no IBC transfers');
 
   await transmitTransferAck();
-  t.deepEqual(await E(operators[1]).getFailures(), [
-    'submitEvidence for disabled operator',
-  ]);
 });
 
 test.todo(

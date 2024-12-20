@@ -1,29 +1,37 @@
-import type { TestFn } from 'ava';
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
-import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
-import { denomHash } from '@agoric/orchestration';
-import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
-import { Far } from '@endo/pass-style';
-import type { NatAmount } from '@agoric/ertp';
-import { type ZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
-import { q } from '@endo/errors';
+
 import {
   decodeAddressHook,
   encodeAddressHook,
 } from '@agoric/cosmic-proto/address-hooks.js';
+import type { NatAmount } from '@agoric/ertp';
+import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
+import { denomHash } from '@agoric/orchestration';
+import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
+import { type ZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
+import { q } from '@endo/errors';
+import { Far } from '@endo/pass-style';
+import type { TestFn } from 'ava';
+import { makeTracer } from '@agoric/internal';
 import { PendingTxStatus } from '../../src/constants.js';
 import { prepareAdvancer } from '../../src/exos/advancer.js';
 import type { SettlerKit } from '../../src/exos/settler.js';
 import { prepareStatusManager } from '../../src/exos/status-manager.js';
+import type { LiquidityPoolKit } from '../../src/types.js';
 import { makeFeeTools } from '../../src/utils/fees.js';
-import { commonSetup } from '../supports.js';
-import { MockCctpTxEvidences, intermediateRecipient } from '../fixtures.js';
+import {
+  MockCctpTxEvidences,
+  settlementAddress,
+  intermediateRecipient,
+} from '../fixtures.js';
 import {
   makeTestFeeConfig,
   makeTestLogger,
   prepareMockOrchAccounts,
 } from '../mocks.js';
-import type { LiquidityPoolKit } from '../../src/types.js';
+import { commonSetup } from '../supports.js';
+
+const trace = makeTracer('AdvancerTest', false);
 
 const LOCAL_DENOM = `ibc/${denomHash({
   denom: 'uusdc',
@@ -48,7 +56,8 @@ const createTestExtensions = (t, common: CommonSetup) => {
 
   const statusManager = prepareStatusManager(
     rootZone.subZone('status-manager'),
-    storageNode.makeChildNode('status'),
+    storageNode.makeChildNode('txns'),
+    { marshaller: common.commonPrivateArgs.marshaller },
   );
 
   const mockAccounts = prepareMockOrchAccounts(rootZone.subZone('accounts'), {
@@ -73,7 +82,7 @@ const createTestExtensions = (t, common: CommonSetup) => {
   };
   const mockZoeTools = Far('MockZoeTools', {
     localTransfer(...args: Parameters<ZoeTools['localTransfer']>) {
-      console.log('ZoeTools.localTransfer called with', args);
+      trace('ZoeTools.localTransfer called with', args);
       return localTransferVK.vow;
     },
   });
@@ -98,7 +107,7 @@ const createTestExtensions = (t, common: CommonSetup) => {
   const notifyAdvancingResultCalls: NotifyArgs[] = [];
   const mockNotifyF = Far('Settler Notify Facet', {
     notifyAdvancingResult: (...args: NotifyArgs) => {
-      console.log('Settler.notifyAdvancingResult called with', args);
+      trace('Settler.notifyAdvancingResult called with', args);
       notifyAdvancingResultCalls.push(args);
     },
   });
@@ -122,6 +131,7 @@ const createTestExtensions = (t, common: CommonSetup) => {
     notifyFacet: mockNotifyF,
     poolAccount: mockAccounts.mockPoolAccount.account,
     intermediateRecipient,
+    settlementAddress,
   });
 
   return {
@@ -136,6 +146,7 @@ const createTestExtensions = (t, common: CommonSetup) => {
     },
     mocks: {
       ...mockAccounts,
+      mockBorrowerF,
       mockNotifyF,
       resolveLocalTransferV,
       rejectLocalTransfeferV,
@@ -166,7 +177,7 @@ test.beforeEach(async t => {
 test('updates status to ADVANCING in happy path', async t => {
   const {
     extensions: {
-      services: { advancer, feeTools, statusManager },
+      services: { advancer, feeTools },
       helpers: { inspectLogs, inspectNotifyCalls },
       mocks: { mockPoolAccount, resolveLocalTransferV },
     },
@@ -174,8 +185,8 @@ test('updates status to ADVANCING in happy path', async t => {
     bootstrap: { storage },
   } = t.context;
 
-  const mockEvidence = MockCctpTxEvidences.AGORIC_PLUS_OSMO();
-  void advancer.handleTransactionEvent(mockEvidence);
+  const evidence = MockCctpTxEvidences.AGORIC_PLUS_OSMO();
+  void advancer.handleTransactionEvent(evidence);
 
   // pretend borrow succeeded and funds were depositing to the LCA
   resolveLocalTransferV();
@@ -185,8 +196,11 @@ test('updates status to ADVANCING in happy path', async t => {
   await eventLoopIteration();
 
   t.deepEqual(
-    storage.data.get(`mockChainStorageRoot.status.${mockEvidence.txHash}`),
-    PendingTxStatus.Advancing,
+    storage.getDeserialized(`fun.txns.${evidence.txHash}`),
+    [
+      { evidence, status: PendingTxStatus.Observed },
+      { status: PendingTxStatus.Advancing },
+    ],
     'ADVANCED status in happy path',
   );
 
@@ -214,11 +228,11 @@ test('updates status to ADVANCING in happy path', async t => {
   t.like(inspectNotifyCalls(), [
     [
       {
-        txHash: mockEvidence.txHash,
-        forwardingAddress: mockEvidence.tx.forwardingAddress,
-        fullAmount: usdc.make(mockEvidence.tx.amount),
+        txHash: evidence.txHash,
+        forwardingAddress: evidence.tx.forwardingAddress,
+        fullAmount: usdc.make(evidence.tx.amount),
         destination: {
-          value: decodeAddressHook(mockEvidence.aux.recipientAddress).query.EUD,
+          value: decodeAddressHook(evidence.aux.recipientAddress).query.EUD,
         },
       },
       true, // indicates transfer succeeded
@@ -231,7 +245,7 @@ test('updates status to OBSERVED on insufficient pool funds', async t => {
     brands: { usdc },
     bootstrap: { storage },
     extensions: {
-      services: { makeAdvancer, statusManager },
+      services: { makeAdvancer },
       helpers: { inspectLogs },
       mocks: { mockPoolAccount, mockNotifyF },
     },
@@ -252,15 +266,16 @@ test('updates status to OBSERVED on insufficient pool funds', async t => {
     notifyFacet: mockNotifyF,
     poolAccount: mockPoolAccount.account,
     intermediateRecipient,
+    settlementAddress,
   });
 
-  const mockEvidence = MockCctpTxEvidences.AGORIC_PLUS_DYDX();
-  void advancer.handleTransactionEvent(mockEvidence);
+  const evidence = MockCctpTxEvidences.AGORIC_PLUS_DYDX();
+  void advancer.handleTransactionEvent(evidence);
   await eventLoopIteration();
 
   t.deepEqual(
-    storage.data.get(`mockChainStorageRoot.status.${mockEvidence.txHash}`),
-    PendingTxStatus.Observed,
+    storage.getDeserialized(`fun.txns.${evidence.txHash}`),
+    [{ evidence, status: PendingTxStatus.Observed }],
     'OBSERVED status on insufficient pool funds',
   );
 
@@ -279,17 +294,18 @@ test('updates status to OBSERVED if makeChainAddress fails', async t => {
   const {
     bootstrap: { storage },
     extensions: {
-      services: { advancer, statusManager },
+      services: { advancer },
       helpers: { inspectLogs },
     },
   } = t.context;
 
-  const mockEvidence = MockCctpTxEvidences.AGORIC_UNKNOWN_EUD();
-  await advancer.handleTransactionEvent(mockEvidence);
+  const evidence = MockCctpTxEvidences.AGORIC_UNKNOWN_EUD();
+  await advancer.handleTransactionEvent(evidence);
+  await eventLoopIteration();
 
   t.deepEqual(
-    storage.data.get(`mockChainStorageRoot.status.${mockEvidence.txHash}`),
-    PendingTxStatus.Observed,
+    storage.getDeserialized(`fun.txns.${evidence.txHash}`),
+    [{ evidence, status: PendingTxStatus.Observed }],
     'OBSERVED status on makeChainAddress failure',
   );
 
@@ -306,23 +322,26 @@ test('calls notifyAdvancingResult (AdvancedFailed) on failed transfer', async t 
   const {
     bootstrap: { storage },
     extensions: {
-      services: { advancer, feeTools, statusManager },
+      services: { advancer, feeTools },
       helpers: { inspectLogs, inspectNotifyCalls },
       mocks: { mockPoolAccount, resolveLocalTransferV },
     },
     brands: { usdc },
   } = t.context;
 
-  const mockEvidence = MockCctpTxEvidences.AGORIC_PLUS_DYDX();
-  void advancer.handleTransactionEvent(mockEvidence);
+  const evidence = MockCctpTxEvidences.AGORIC_PLUS_DYDX();
+  void advancer.handleTransactionEvent(evidence);
 
   // pretend borrow and deposit to LCA succeed
   resolveLocalTransferV();
   await eventLoopIteration();
 
   t.deepEqual(
-    storage.data.get(`mockChainStorageRoot.status.${mockEvidence.txHash}`),
-    PendingTxStatus.Advancing,
+    storage.getDeserialized(`fun.txns.${evidence.txHash}`),
+    [
+      { evidence, status: PendingTxStatus.Observed },
+      { status: PendingTxStatus.Advancing },
+    ],
     'tx is Advancing',
   );
 
@@ -339,14 +358,12 @@ test('calls notifyAdvancingResult (AdvancedFailed) on failed transfer', async t 
   t.like(inspectNotifyCalls(), [
     [
       {
-        txHash: mockEvidence.txHash,
-        forwardingAddress: mockEvidence.tx.forwardingAddress,
-        fullAmount: usdc.make(mockEvidence.tx.amount),
-        advanceAmount: feeTools.calculateAdvance(
-          usdc.make(mockEvidence.tx.amount),
-        ),
+        txHash: evidence.txHash,
+        forwardingAddress: evidence.tx.forwardingAddress,
+        fullAmount: usdc.make(evidence.tx.amount),
+        advanceAmount: feeTools.calculateAdvance(usdc.make(evidence.tx.amount)),
         destination: {
-          value: decodeAddressHook(mockEvidence.aux.recipientAddress).query.EUD,
+          value: decodeAddressHook(evidence.aux.recipientAddress).query.EUD,
         },
       },
       false, // this indicates transfer failed
@@ -358,18 +375,19 @@ test('updates status to OBSERVED if pre-condition checks fail', async t => {
   const {
     bootstrap: { storage },
     extensions: {
-      services: { advancer, statusManager },
+      services: { advancer },
       helpers: { inspectLogs },
     },
   } = t.context;
 
-  const mockEvidence = MockCctpTxEvidences.AGORIC_NO_PARAMS();
+  const evidence = MockCctpTxEvidences.AGORIC_NO_PARAMS();
 
-  await advancer.handleTransactionEvent(mockEvidence);
+  await advancer.handleTransactionEvent(evidence);
+  await eventLoopIteration();
 
   t.deepEqual(
-    storage.data.get(`mockChainStorageRoot.status.${mockEvidence.txHash}`),
-    PendingTxStatus.Observed,
+    storage.getDeserialized(`fun.txns.${evidence.txHash}`),
+    [{ evidence, status: PendingTxStatus.Observed }],
     'tx is recorded as OBSERVED',
   );
 
@@ -382,10 +400,10 @@ test('updates status to OBSERVED if pre-condition checks fail', async t => {
 
   await advancer.handleTransactionEvent({
     ...MockCctpTxEvidences.AGORIC_NO_PARAMS(
-      encodeAddressHook(
-        'agoric16kv2g7snfc4q24vg3pjdlnnqgngtjpwtetd2h689nz09lcklvh5s8u37ek',
-        { EUD: 'osmo1234', extra: 'value' },
-      ),
+      encodeAddressHook(settlementAddress.value, {
+        EUD: 'osmo1234',
+        extra: 'value',
+      }),
     ),
     txHash:
       '0xc81bc6105b60a234c7c50ac17816ebcd5561d366df8bf3be59ff387552761799',
@@ -539,6 +557,7 @@ test('alerts if `returnToPool` fallback fails', async t => {
     notifyFacet: mockNotifyF,
     poolAccount: mockPoolAccount.account,
     intermediateRecipient,
+    settlementAddress,
   });
 
   const mockEvidence = MockCctpTxEvidences.AGORIC_PLUS_OSMO();
@@ -576,4 +595,33 @@ test('alerts if `returnToPool` fallback fails', async t => {
     ],
     'Advancing tx is recorded as AdvanceFailed',
   );
+});
+
+test('rejects advances to unknown settlementAccount', async t => {
+  const {
+    extensions: {
+      services: { advancer },
+      helpers: { inspectLogs },
+    },
+  } = t.context;
+
+  const invalidSettlementAcct =
+    'agoric1ax7hmw49tmqrdld7emc5xw3wf43a49rtkacr9d5nfpqa0y7k6n0sl8v94h';
+  t.not(settlementAddress.value, invalidSettlementAcct);
+  const mockEvidence = MockCctpTxEvidences.AGORIC_PLUS_OSMO(
+    encodeAddressHook(invalidSettlementAcct, {
+      EUD: 'osmo183dejcnmkka5dzcu9xw6mywq0p2m5peks28men',
+    }),
+  );
+
+  void advancer.handleTransactionEvent(mockEvidence);
+  await eventLoopIteration();
+  t.deepEqual(inspectLogs(), [
+    [
+      'Advancer error:',
+      Error(
+        '⚠️ baseAddress of address hook "agoric1ax7hmw49tmqrdld7emc5xw3wf43a49rtkacr9d5nfpqa0y7k6n0sl8v94h" does not match the expected address "agoric16kv2g7snfc4q24vg3pjdlnnqgngtjpwtetd2h689nz09lcklvh5s8u37ek"',
+      ),
+    ],
+  ]);
 });

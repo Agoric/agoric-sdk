@@ -12,7 +12,7 @@ const trace = makeTracer('TxOperator');
 
 /**
  * @typedef {object} OperatorPowers
- * @property {(evidence: CctpTxEvidence, operatorKit: OperatorKit) => void} submitEvidence
+ * @property {(evidence: CctpTxEvidence, operatorId: string) => void} attest
  */
 
 /**
@@ -35,7 +35,7 @@ const OperatorKitI = {
   }),
 
   operator: M.interface('Operator', {
-    submitEvidence: M.call(CctpTxEvidenceShape).returns(M.promise()),
+    submitEvidence: M.call(CctpTxEvidenceShape).returns(),
     getStatus: M.call().returns(M.record()),
   }),
 };
@@ -87,7 +87,7 @@ export const prepareOperatorKit = (zone, staticPowers) =>
           const { operator } = this.facets;
           // TODO(bootstrap integration): cause this call to throw and confirm that it
           // shows up in the the smart-wallet UpdateRecord `error` property
-          await operator.submitEvidence(evidence);
+          operator.submitEvidence(evidence);
           return staticPowers.makeInertInvitation(
             'evidence was pushed in the invitation maker call',
           );
@@ -98,12 +98,12 @@ export const prepareOperatorKit = (zone, staticPowers) =>
          * submit evidence from this operator
          *
          * @param {CctpTxEvidence} evidence
+         * @returns {void}
          */
-        async submitEvidence(evidence) {
+        submitEvidence(evidence) {
           const { state } = this;
           !state.disabled || Fail`submitEvidence for disabled operator`;
-          const result = state.powers.submitEvidence(evidence, this.facets);
-          return result;
+          state.powers.attest(evidence, state.operatorId);
         },
         /** @returns {OperatorStatus} */
         getStatus() {

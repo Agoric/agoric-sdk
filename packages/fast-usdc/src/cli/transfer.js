@@ -14,6 +14,7 @@ import {
   queryForwardingAccount,
   registerFwdAccount,
 } from '../util/noble.js';
+import { queryUSDCBalance } from '../util/bank.js';
 
 /** @import { File } from '../util/file' */
 /** @import { VStorage } from '@agoric/client-utils' */
@@ -30,6 +31,7 @@ const transfer = async (
   /** @type {{signer: SigningStargateClient, address: string} | undefined} */ nobleSigner,
   /** @type {ethProvider | undefined} */ ethProvider,
   env = process.env,
+  setTimeout = globalThis.setTimeout,
 ) => {
   const execute = async (
     /** @type {import('./config').ConfigOpts} */ config,
@@ -71,6 +73,18 @@ const transfer = async (
       }
     }
 
+    const destChain = config.destinationChains?.find(chain =>
+      EUD.startsWith(chain.bech32Prefix),
+    );
+    if (!destChain) {
+      out.error(
+        `No destination chain found in config with matching bech32 prefix for ${EUD}, cannot query destination address`,
+      );
+      throw new Error();
+    }
+    const { api, USDCDenom } = destChain;
+    const startingBalance = await queryUSDCBalance(EUD, api, USDCDenom, fetch);
+
     ethProvider ||= makeProvider(config.ethRpc);
     await depositForBurn(
       ethProvider,
@@ -81,6 +95,34 @@ const transfer = async (
       amount,
       out,
     );
+
+    const refreshDelayMS = 1200;
+    const completeP = /** @type {Promise<void>} */ (
+      new Promise((res, rej) => {
+        const refreshUSDCBalance = async () => {
+          out.log('polling usdc balance');
+          const currentBalance = await queryUSDCBalance(
+            EUD,
+            api,
+            USDCDenom,
+            fetch,
+          );
+          if (currentBalance !== startingBalance) {
+            res();
+          } else {
+            setTimeout(() => refreshUSDCBalance().catch(rej), refreshDelayMS);
+          }
+        };
+        refreshUSDCBalance().catch(rej);
+      })
+    ).catch(e => {
+      out.error(
+        'Error checking destination address balance, could not detect completion of transfer.',
+      );
+      out.error(e.message);
+    });
+
+    await completeP;
   };
 
   let config;

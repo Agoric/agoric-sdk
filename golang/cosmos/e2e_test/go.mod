@@ -6,7 +6,7 @@ require (
 	github.com/agoric-labs/interchaintest/v6 v6.0.1-agoriclabs
 	github.com/cosmos/cosmos-sdk v0.46.13
 	github.com/cosmos/ibc-go/v6 v6.2.0
-	github.com/stretchr/testify v1.8.4
+	github.com/stretchr/testify v1.9.0
 	go.uber.org/zap v1.26.0
 )
 
@@ -17,7 +17,7 @@ require (
 	cloud.google.com/go/iam v1.1.1 // indirect
 	cloud.google.com/go/storage v1.30.1 // indirect
 	cosmossdk.io/errors v1.0.0-beta.7 // indirect
-	cosmossdk.io/math v1.0.0-rc.0 // indirect
+	cosmossdk.io/math v1.4.0 // indirect
 	filippo.io/edwards25519 v1.0.0-rc.1 // indirect
 	github.com/99designs/go-keychain v0.0.0-20191008050251-8e49817e8af4 // indirect
 	github.com/99designs/keyring v1.2.2 // indirect
@@ -200,7 +200,7 @@ require (
 	modernc.org/sqlite v1.23.1 // indirect
 	modernc.org/strutil v1.1.3 // indirect
 	modernc.org/token v1.0.1 // indirect
-	sigs.k8s.io/yaml v1.3.0 // indirect
+	sigs.k8s.io/yaml v1.4.0 // indirect
 )
 
 // Some replace copied from https://github.com/gjermundgaraba/ibctest/blob/110aa579a5a889b2af760bed4f3d90e0d2475e7a/go.mod
@@ -214,4 +214,26 @@ replace (
 
 	github.com/tendermint/tendermint => github.com/cometbft/cometbft v0.34.27
 	github.com/vedhavyas/go-subkey => github.com/strangelove-ventures/go-subkey v1.0.7
+)
+
+// Agoric-specific replacements:
+replace (
+	// We need a fork of cosmos-sdk until all of the differences are merged.
+	github.com/cosmos/cosmos-sdk => github.com/agoric-labs/cosmos-sdk v0.46.16-alpha.agoric.2.5
+
+	// Pick up an IAVL race fix.
+	github.com/cosmos/iavl => github.com/cosmos/iavl v0.19.7
+
+	// Use a version of ibc-go that is compatible with the above forks.
+	github.com/cosmos/ibc-go/v6 => github.com/agoric-labs/ibc-go/v6 v6.3.1-alpha.agoric.2
+
+// use cometbft
+// Use our fork at least until post-v0.34.14 is released with
+// https://github.com/tendermint/tendermint/issue/6899 resolved.
+// github.com/tendermint/tendermint => github.com/agoric-labs/cometbft v0.34.30-alpha.agoric.1
+
+// For testing against a local cosmos-sdk, ibc-go, or cometbft
+// github.com/cosmos/cosmos-sdk => ../../../forks/cosmos-sdk
+// github.com/cosmos/ibc-go/v6 => ../../../forks/ibc-go/v6
+// github.com/tendermint/tendermint => ../../../forks/cometbft
 )

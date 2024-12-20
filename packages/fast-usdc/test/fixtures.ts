@@ -3,7 +3,7 @@ import { buildVTransferEvent } from '@agoric/orchestration/tools/ibc-mocks.js';
 import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
 import type { ChainAddress } from '@agoric/orchestration';
 import type { VTransferIBCEvent } from '@agoric/vats';
-import type { CctpTxEvidence } from '../src/types.js';
+import type { CctpTxEvidence, EvmAddress } from '../src/types.js';
 
 const mockScenarios = [
   'AGORIC_PLUS_OSMO',
@@ -13,6 +13,10 @@ const mockScenarios = [
 ] as const;
 
 type MockScenario = (typeof mockScenarios)[number];
+
+export const Senders = {
+  default: '0xDefaultFakeEthereumAddress',
+} as unknown as Record<string, EvmAddress>;
 
 export const MockCctpTxEvidences: Record<
   MockScenario,
@@ -27,15 +31,15 @@ export const MockCctpTxEvidences: Record<
     tx: {
       amount: 150000000n,
       forwardingAddress: 'noble1x0ydg69dh6fqvr27xjvp6maqmrldam6yfelqkd',
+      sender: Senders.default,
     },
     aux: {
       forwardingChannel: 'channel-21',
       recipientAddress:
         receiverAddress ||
-        encodeAddressHook(
-          'agoric16kv2g7snfc4q24vg3pjdlnnqgngtjpwtetd2h689nz09lcklvh5s8u37ek',
-          { EUD: 'osmo183dejcnmkka5dzcu9xw6mywq0p2m5peks28men' },
-        ),
+        encodeAddressHook(settlementAddress.value, {
+          EUD: 'osmo183dejcnmkka5dzcu9xw6mywq0p2m5peks28men',
+        }),
     },
     chainId: 1,
   }),
@@ -48,15 +52,15 @@ export const MockCctpTxEvidences: Record<
     tx: {
       amount: 300000000n,
       forwardingAddress: 'noble1x0ydg69dh6fqvr27xjvp6maqmrldam6yfelktz',
+      sender: Senders.default,
     },
     aux: {
       forwardingChannel: 'channel-21',
       recipientAddress:
         receiverAddress ||
-        encodeAddressHook(
-          'agoric16kv2g7snfc4q24vg3pjdlnnqgngtjpwtetd2h689nz09lcklvh5s8u37ek',
-          { EUD: 'dydx183dejcnmkka5dzcu9xw6mywq0p2m5peks28men' },
-        ),
+        encodeAddressHook(settlementAddress.value, {
+          EUD: 'dydx183dejcnmkka5dzcu9xw6mywq0p2m5peks28men',
+        }),
     },
     chainId: 1,
   }),
@@ -69,12 +73,11 @@ export const MockCctpTxEvidences: Record<
     tx: {
       amount: 200000000n,
       forwardingAddress: 'noble1x0ydg69dh6fqvr27xjvp6maqmrldam6yfelyyy',
+      sender: Senders.default,
     },
     aux: {
       forwardingChannel: 'channel-21',
-      recipientAddress:
-        receiverAddress ||
-        'agoric16kv2g7snfc4q24vg3pjdlnnqgngtjpwtetd2h689nz09lcklvh5s8u37ek',
+      recipientAddress: receiverAddress || settlementAddress.value,
     },
     chainId: 1,
   }),
@@ -87,15 +90,15 @@ export const MockCctpTxEvidences: Record<
     tx: {
       amount: 200000000n,
       forwardingAddress: 'noble1x0ydg69dh6fqvr27xjvp6maqmrldam6yfelyyy',
+      sender: Senders.default,
     },
     aux: {
       forwardingChannel: 'channel-21',
       recipientAddress:
         receiverAddress ||
-        encodeAddressHook(
-          'agoric16kv2g7snfc4q24vg3pjdlnnqgngtjpwtetd2h689nz09lcklvh5s8u37ek',
-          { EUD: 'random1addr' },
-        ),
+        encodeAddressHook(settlementAddress.value, {
+          EUD: 'random1addr',
+        }),
     },
     chainId: 1,
   }),
@@ -157,4 +160,11 @@ export const intermediateRecipient: ChainAddress = harden({
   chainId: 'noble-1',
   value: 'noble1test',
   encoding: 'bech32',
+});
+
+export const settlementAddress: ChainAddress = harden({
+  chainId: 'agoric-3',
+  encoding: 'bech32' as const,
+  // Random value, copied from tests of address hooks
+  value: 'agoric16kv2g7snfc4q24vg3pjdlnnqgngtjpwtetd2h689nz09lcklvh5s8u37ek',
 });

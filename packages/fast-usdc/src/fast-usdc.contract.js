@@ -26,7 +26,7 @@ import { defineInertInvitation } from './utils/zoe.js';
 
 const trace = makeTracer('FastUsdc');
 
-const STATUS_NODE = 'status';
+const TXNS_NODE = 'txns';
 const FEE_NODE = 'feeConfig';
 const ADDRESSES_BAGGAGE_KEY = 'addresses';
 
@@ -39,7 +39,6 @@ const ADDRESSES_BAGGAGE_KEY = 'addresses';
  * @import {Zone} from '@agoric/zone';
  * @import {OperatorKit} from './exos/operator-kit.js';
  * @import {CctpTxEvidence, FeeConfig} from './types.js';
- * @import {RepayAmountKWR, RepayPaymentKWR} from './exos/liquidity-pool.js';
  */
 
 /**
@@ -110,8 +109,11 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
     marshaller,
   );
 
-  const statusNode = E(storageNode).makeChildNode(STATUS_NODE);
-  const statusManager = prepareStatusManager(zone, statusNode);
+  const statusManager = prepareStatusManager(
+    zone,
+    E(storageNode).makeChildNode(TXNS_NODE),
+    { marshaller },
+  );
 
   const { USDC } = terms.brands;
   const { withdrawToSeat } = tools.zoeTools;
@@ -177,16 +179,12 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
     },
     async publishAddresses() {
       !baggage.has(ADDRESSES_BAGGAGE_KEY) || Fail`Addresses already published`;
-      const [poolAccountAddress, settlementAccountAddress] =
-        await vowTools.when(
-          vowTools.all([
-            E(poolAccount).getAddress(),
-            E(settlementAccount).getAddress(),
-          ]),
-        );
+      const [poolAccountAddress] = await vowTools.when(
+        vowTools.all([E(poolAccount).getAddress()]),
+      );
       const addresses = harden({
         poolAccount: poolAccountAddress.value,
-        settlementAccount: settlementAccountAddress.value,
+        settlementAccount: settlementAddress.value,
       });
       baggage.init(ADDRESSES_BAGGAGE_KEY, addresses);
       await publishAddresses(storageNode, addresses);
@@ -282,6 +280,8 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
   );
   trace('settlementAccount', settlementAccount);
   trace('poolAccount', poolAccount);
+  const settlementAddress = await E(settlementAccount).getAddress();
+  trace('settlementAddress', settlementAddress);
 
   const [_agoric, _noble, agToNoble] = await vowTools.when(
     chainHub.getChainsAndConnection('agoric', 'noble'),
@@ -298,6 +298,7 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
       borrowerFacet: poolKit.borrower,
       notifyFacet: settlerKit.notify,
       poolAccount,
+      settlementAddress,
     }),
   );
   // Connect evidence stream to advancer
