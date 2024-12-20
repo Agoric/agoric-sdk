@@ -7,7 +7,6 @@
       "vats/upgrade-provisionPool.js upgradeProvisionPool",
       "vats/upgrade-asset-reserve.js upgradeAssetReserve",
       "vats/upgrade-paRegistry.js",
-      "vats/upgrade-board.js",
       "testing/test-upgraded-board.js testUpgradedBoard",
       "vats/upgrade-agoricNames.js agoricNamesCoreEvals/upgradeAgoricNames",
       "testing/add-USD-OLIVES.js agoricNamesCoreEvals/addUsdOlives",
