@@ -228,6 +228,9 @@ func unreleasedUpgradeHandler(app *GaiaApp, targetUpgrade string) func(sdk.Conte
 					// Upgrade to include a cleanup from https://github.com/Agoric/agoric-sdk/pull/10319
 					"@agoric/builders/scripts/smart-wallet/build-wallet-factory2-upgrade.js",
 				),
+				vm.CoreProposalStepForModules(
+					"@agoric/builders/scripts/vats/upgrade-board.js",
+				),
 			)
 
 			// CoreProposals for Upgrade 19. These should not be introduced
@@ -246,9 +249,6 @@ func unreleasedUpgradeHandler(app *GaiaApp, targetUpgrade string) func(sdk.Conte
 			// 	),
 			// 	vm.CoreProposalStepForModules(
 			// 		"@agoric/builders/scripts/vats/upgrade-paRegistry.js",
-			// 	),
-			// 	vm.CoreProposalStepForModules(
-			// 		"@agoric/builders/scripts/vats/upgrade-board.js",
 			// 	),
 			// 	vm.CoreProposalStepForModules(
 			// 		"@agoric/builders/scripts/vats/upgrade-provisionPool.js",
