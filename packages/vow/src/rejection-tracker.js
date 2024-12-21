@@ -8,7 +8,7 @@ import { sink } from './vow-utils.js';
 /**
  * @import {PromiseKit} from '@endo/promise-kit';
  * @import {Zone} from '@agoric/base-zone';
- * @import {VowV0} from './types.js';
+ * @import {VowPayloadV0} from './types.js';
  */
 
 /**
@@ -38,7 +38,7 @@ const VowRejectionTrackerKitI = {
 
 /** @param {Zone} zone */
 export const prepareVowRejectionTracker = zone => {
-  /** @type {WeakMap<VowV0, () => void>} */
+  /** @type {WeakMap<VowPayloadV0, () => void>} */
   const vowToCancelUnhandledRejection = new WeakMap();
 
   const makeVowRejectionTrackerKit = zone.exoClassKit(
@@ -56,7 +56,7 @@ export const prepareVowRejectionTracker = zone => {
         },
         /**
          *
-         * @param {VowV0} vowV0
+         * @param {VowPayloadV0} vowV0
          * @param {any} reason
          * @param {Promise<void>} [rejected]
          */
