@@ -27,6 +27,7 @@ export const prepareMockOrchAccounts = (
 ) => {
   // each can only be resolved/rejected once per test
   const poolAccountTransferVK = makeVowKit<undefined>();
+  const settleAccountTransferVK = makeVowKit<undefined>();
 
   const mockedPoolAccount = zone.exo('Mock Pool LocalOrchAccount', undefined, {
     transfer(destination: ChainAddress, amount: DenomAmount) {
@@ -48,6 +49,7 @@ export const prepareMockOrchAccounts = (
   const settlementAccountMock = zone.exo('Mock Settlement Account', undefined, {
     transfer(...args) {
       settlementCallLog.push(harden(['transfer', ...args]));
+      return settleAccountTransferVK.vow;
     },
   });
   const settlementAccount = settlementAccountMock as unknown as HostInterface<
@@ -61,6 +63,7 @@ export const prepareMockOrchAccounts = (
     settlement: {
       account: settlementAccount,
       callLog: settlementCallLog,
+      transferVResolver: settleAccountTransferVK.resolver,
     },
   };
 };

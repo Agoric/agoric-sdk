@@ -63,7 +63,6 @@ const AdvancerKitI = harden({
     onRejected: M.call(M.error(), AdvancerVowCtxShape).returns(),
   }),
   transferHandler: M.interface('TransferHandlerI', {
-    // TODO confirm undefined, and not bigint (sequence)
     onFulfilled: M.call(M.undefined(), AdvancerVowCtxShape).returns(
       M.undefined(),
     ),
@@ -152,9 +151,7 @@ export const prepareAdvancerKit = (
               statusManager.skipAdvance(evidence, risk.risksIdentified);
               return;
             }
-
-            const { borrowerFacet, poolAccount, settlementAddress } =
-              this.state;
+            const { settlementAddress } = this.state;
             const { recipientAddress } = evidence.aux;
             const decoded = decodeAddressHook(recipientAddress);
             mustMatch(decoded, AddressHookShape);
@@ -167,6 +164,14 @@ export const prepareAdvancerKit = (
             const destination = chainHub.makeChainAddress(EUD);
 
             const fullAmount = toAmount(evidence.tx.amount);
+            const { borrowerFacet, notifyFacet, poolAccount } = this.state;
+            // do not advance if we've already received a mint/settlement
+            const mintedEarly = notifyFacet.checkMintedEarly(
+              evidence,
+              destination,
+            );
+            if (mintedEarly) return;
+
             // throws if requested does not exceed fees
             const advanceAmount = feeTools.calculateAdvance(fullAmount);
 
@@ -208,7 +213,7 @@ export const prepareAdvancerKit = (
          */
         onFulfilled(result, ctx) {
           const { poolAccount, intermediateRecipient } = this.state;
-          const { destination, advanceAmount, ...detail } = ctx;
+          const { destination, advanceAmount, tmpSeat: _, ...detail } = ctx;
           const transferV = E(poolAccount).transfer(
             destination,
             { denom: usdc.denom, value: advanceAmount.value },
@@ -273,7 +278,8 @@ export const prepareAdvancerKit = (
         onRejected(error, ctx) {
           const { notifyFacet } = this.state;
           log('Advance transfer rejected', error);
-          notifyFacet.notifyAdvancingResult(ctx, false);
+          const { advanceAmount: _, ...restCtx } = ctx;
+          notifyFacet.notifyAdvancingResult(restCtx, false);
         },
       },
     },
