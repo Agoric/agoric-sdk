@@ -13,8 +13,8 @@ const swapAnchorForMintedSeat = async powers => {
     E(agoricNames).lookup('brand', 'USDC'),
   ]);
 
-  console.log('[CONTRACT_KITS]', contractKits);
-  console.log('[ISSUER]', usdcIssuer);
+  console.log('CONTRACT_KITS', contractKits);
+  console.log('ISSUER', usdcIssuer);
 
   let govCreatorFacet;
   for (const { psmGovernorCreatorFacet, label } of psmKit.values()) {
@@ -36,6 +36,8 @@ const swapAnchorForMintedSeat = async powers => {
   }
 
   console.log('Minting USDC');
+  assert(usdcMint, 'USDC mint not found');
+
   const amt = harden({ brand: usdcBrand, value: 500000n });
   const payment = await E(usdcMint).mintPayment(amt);
 
@@ -48,6 +50,9 @@ const swapAnchorForMintedSeat = async powers => {
   );
 
   console.log(await E(seat).getPayouts());
+
+  // We'll check for success in the tests that run this proposal by validating the metric values in
+  // vstorage
   console.log('Done.');
 };
 
