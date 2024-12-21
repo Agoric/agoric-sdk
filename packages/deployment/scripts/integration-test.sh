@@ -72,6 +72,7 @@ if [ -n "$LOADGEN" ]; then
     "$AG_SETUP_COSMOS_HOME/faucet-helper.sh" add-egress loadgen "$SOLO_ADDR"
   SLOGSENDER=@agoric/telemetry/src/otel-trace.js SOLO_SLOGSENDER="" \
     SLOGSENDER_FAIL_ON_ERROR=1 SLOGSENDER_AGENT=process \
+    XSNAP_RESTART_ON_SNAPSHOT=false \
     AG_CHAIN_COSMOS_HOME=$HOME/.agoric \
     SDK_BUILD=0 MUST_USE_PUBLISH_BUNDLE=1 SDK_SRC=$SDK_SRC OUTPUT_DIR="$RESULTSDIR" ./start.sh \
     --no-stage.save-storage \
