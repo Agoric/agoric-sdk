@@ -15,7 +15,7 @@ vatID = sys.argv[2] if len(sys.argv) > 2 else None
 
 deliveries = parse_file(fn, vatID)
 
-print("cranknum,deliver_monotime,gc_time")
+print("cranknum,deliverynum,deliver_monotime,gc_time")
 for d in deliveries:
     if d.vd[0] == "bringOutYourDead":
         # BOYD does the forced GC between receipt of the delivery and
@@ -23,4 +23,4 @@ for d in deliveries:
         # results)
         elapsed = d.firsttime()
         if elapsed is not None:
-            print("%d,%.6f,%.6f" % (d.cranknum, d.tx_delivery_monotime, elapsed))
+            print("%d,%d,%.6f,%.6f" % (d.cranknum, d.deliverynum, d.tx_delivery_monotime, elapsed))
