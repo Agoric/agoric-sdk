@@ -14,6 +14,8 @@ import { makeTracer } from '@agoric/internal';
 
 /**
  * @import {OfferSpec} from '@agoric/smart-wallet/src/offers.js';
+ * @import {UpdateRecord} from '@agoric/smart-wallet/src/smartWallet.js';
+ *
  * @import { EnglishMnemonic } from '@cosmjs/crypto';
  * @import { RetryUntilCondition } from './sleep.js';
  */
@@ -222,8 +224,9 @@ export const provisionSmartWallet = async (
     return txInfo;
   };
 
-  /** @param {import('@agoric/smart-wallet/src/offers.js').OfferSpec} offer */
+  /** @param {OfferSpec} offer */
   async function* executeOffer(offer) {
+    /** @type {AsyncGenerator<UpdateRecord, void, void>} */
     const updates = q.follow(`published.wallet.${address}`, { delay });
     const txInfo = await sendAction({ method: 'executeOffer', offer });
     console.debug('spendAction', txInfo);
