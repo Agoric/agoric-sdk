@@ -31,6 +31,7 @@
     "@agoric/zoe": "^0.26.3-u18.0",
     "@endo/init": "^1.1.7"
   },
+  "devDependencies": {},
   "files": [
     "CHANGELOG.md",
     "src/",

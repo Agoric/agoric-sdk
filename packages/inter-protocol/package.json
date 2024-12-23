@@ -54,7 +54,6 @@
     "@agoric/smart-wallet": "^0.5.4-u18.4",
     "@agoric/swingset-liveslots": "^0.10.3-u18.0",
     "@agoric/swingset-vat": "^0.33.0-u18.0",
-    "@agoric/zone": "^0.3.0-u18.0",
     "@endo/bundle-source": "^3.5.0",
     "@endo/init": "^1.1.7",
     "@endo/promise-kit": "^1.1.8",

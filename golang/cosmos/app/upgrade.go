@@ -158,6 +158,22 @@ func replacePriceFeedsCoreProposal(upgradeName string) (vm.CoreProposalStep, err
 	)
 }
 
+// func upgradeMintHolderCoreProposal(upgradeName string) (vm.CoreProposalStep, error) {
+// 	variant := getVariantFromUpgradeName(upgradeName)
+
+// 	if variant == "" {
+// 		return nil, nil
+// 	}
+
+// 	return buildProposalStepWithArgs(
+// 		"@agoric/builders/scripts/vats/upgrade-mintHolder.js",
+// 		"defaultProposalBuilder",
+// 		map[string]any{
+// 			"variant": variant,
+// 		},
+// 	)
+// }
+
 // upgrade18Handler performs standard upgrade actions plus custom actions for upgrade-18.
 func upgrade18Handler(app *GaiaApp, targetUpgrade string) func(sdk.Context, upgradetypes.Plan, module.VersionMap) (module.VersionMap, error) {
 	return func(ctx sdk.Context, plan upgradetypes.Plan, fromVm module.VersionMap) (module.VersionMap, error) {
