@@ -479,6 +479,7 @@ export async function launch({
         type: 'cosmic-swingset-run-start',
         blockHeight,
         runNum,
+        phase,
         startBeans,
         remainingBeans: runPolicy.remainingBeans(),
       });
@@ -495,6 +496,7 @@ export async function launch({
         type: 'cosmic-swingset-run-finish',
         blockHeight,
         runNum,
+        phase,
         startBeans,
         finishBeans,
         usedBeans: finishBeans - startBeans,
