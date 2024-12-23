@@ -20,12 +20,11 @@
   "dependencies": {
     "@endo/errors": "^1.2.8",
     "@endo/nat": "^5.0.13",
-    "@endo/patterns": "^1.4.7"
+    "@endo/patterns": "^1.4.7",
     "@agoric/base-zone": "^0.1.1-u18.0",
     "@agoric/store": "^0.9.3-u18.0",
     "@agoric/swingset-liveslots": "^0.10.3-u18.0",
-    "@endo/exo": "^1.5.7",
-    "@endo/patterns": "^1.4.7"
+    "@endo/exo": "^1.5.7"
   },
   "devDependencies": {
     "@endo/init": "^1.1.7",
