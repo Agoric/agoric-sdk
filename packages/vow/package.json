@@ -29,7 +29,7 @@
     "@endo/promise-kit": "^1.1.8"
   },
   "devDependencies": {
-    "@agoric/internal": "^0.3.2",
+    "@agoric/internal": "^0.4.0-u18.0",
     "@agoric/swingset-vat": "^0.33.0-u18.0",
     "@agoric/zone": "^0.3.0-u18.0",
     "@endo/far": "^1.1.9",
