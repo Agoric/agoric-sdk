@@ -36,7 +36,6 @@
     "@agoric/vow": "^0.2.0-u18.0",
     "@agoric/zoe": "^0.26.3-u18.0",
     "@agoric/zone": "^0.3.0-u18.0",
-    "@endo/errors": "^1.2.7",
     "@endo/far": "^1.1.9",
     "@endo/import-bundle": "^1.3.2",
     "@endo/marshal": "^1.6.2",
