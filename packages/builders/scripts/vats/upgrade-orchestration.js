@@ -3,9 +3,9 @@ import { makeHelpers } from '@agoric/deploy-script-support';
 /** @type {import('@agoric/deploy-script-support/src/externalTypes.js').CoreEvalBuilder} */
 export const defaultProposalBuilder = async ({ publishRef, install }) =>
   harden({
-    sourceSpec: '@agoric/vats/src/proposals/upgrade-orch-core-proposal.js',
+    sourceSpec: '@agoric/vats/src/proposals/upgrade-vats-generic-proposal.js',
     getManifestCall: [
-      'getManifestForUpgradingOrchCore',
+      'getManifestForUpgradingVats',
       {
         bundleRefs: {
           ibc: publishRef(install('@agoric/vats/src/vat-ibc.js')),
