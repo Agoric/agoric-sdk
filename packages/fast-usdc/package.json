@@ -22,7 +22,7 @@
     "lint:eslint": "eslint ."
   },
   "devDependencies": {
-    "@agoric/swingset-liveslots": "^0.10.2",
+    "@agoric/swingset-liveslots": "^0.10.3-u18.0",
     "@agoric/vats": "^0.16.0-u18.4",
     "@agoric/zone": "^0.3.0-u18.0",
     "@fast-check/ava": "^2.0.1",
