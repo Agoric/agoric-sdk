@@ -10,6 +10,7 @@ on:
       - 'release-*'
       - 'dev-*'
       - beta
+      - 'usman/*'
     tags:
       - '@agoric/sdk@*'
   pull_request:
@@ -225,7 +226,7 @@ jobs:
 
   test-docker-build:
     needs: pre_check
-    if: needs.pre_check.outputs.should_run == 'true'
+    # if: needs.pre_check.outputs.should_run == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
