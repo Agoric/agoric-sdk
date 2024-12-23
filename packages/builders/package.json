@@ -24,7 +24,7 @@
   "license": "Apache-2.0",
   "dependencies": {
     "@agoric/ertp": "^0.16.3-u18.0",
-    "@agoric/fast-usdc": "0.1.0",
+    "@agoric/fast-usdc": "0.1.1-u18.2",
     "@agoric/internal": "^0.4.0-u18.0",
     "@agoric/notifier": "^0.7.0-u18.0",
     "@agoric/smart-wallet": "^0.5.4-u18.4",

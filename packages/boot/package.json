@@ -25,7 +25,7 @@
     "@agoric/cosmic-proto": "^0.5.0-u18.4",
     "@agoric/cosmic-swingset": "^0.42.0-u18.5",
     "@agoric/ertp": "^0.16.3-u18.0",
-    "@agoric/fast-usdc": "0.1.0",
+    "@agoric/fast-usdc": "0.1.1-u18.2",
     "@agoric/inter-protocol": "^0.17.0-u18.2",
     "@agoric/internal": "^0.4.0-u18.0",
     "@agoric/kmarshal": "^0.1.1-u18.0",
