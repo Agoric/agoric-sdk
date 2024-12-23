@@ -1,1 +1,27 @@
 # Change Log
+
+All notable changes to this project will be documented in this file.
+See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
+
+### [0.1.1-u18.2](https://github.com/Agoric/agoric-sdk/compare/fast-usdc@0.1.1-u18.1...fast-usdc@0.1.1-u18.2) (2024-11-21)
+
+**Note:** Version bump only for package fast-usdc
+
+
+
+
+
+### [0.1.1-u18.1](https://github.com/Agoric/agoric-sdk/compare/fast-usdc@0.1.1-u18.0...fast-usdc@0.1.1-u18.1) (2024-11-19)
+
+**Note:** Version bump only for package fast-usdc
+
+
+
+
+
+### 0.1.1-u18.0 (2024-10-31)
+
+
+### Features
+
+* add CLI for fast-usdc package ([92bc5b1](https://github.com/Agoric/agoric-sdk/commit/92bc5b127e1cf1806da79589bd6e9d9e87cd5944))

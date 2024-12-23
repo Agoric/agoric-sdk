@@ -1,0 +1,111 @@
+# Change Log
+
+All notable changes to this project will be documented in this file.
+See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
+
+## [0.2.0-u18.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/boot@0.2.0-u18.1...@agoric/boot@0.2.0-u18.2) (2024-11-21)
+
+**Note:** Version bump only for package @agoric/boot
+
+
+
+
+
+## [0.2.0-u18.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/boot@0.2.0-u18.0...@agoric/boot@0.2.0-u18.1) (2024-11-19)
+
+**Note:** Version bump only for package @agoric/boot
+
+
+
+
+
+## 0.2.0-u18.0 (2024-10-31)
+
+
+### ⚠ BREAKING CHANGES
+
+* make Network and IBC vats durable (#8721)
+
+### Features
+
+*  smartWallet verstion 2 with watchedPromises ([5ed5107](https://github.com/Agoric/agoric-sdk/commit/5ed51078d39e643d91b572d9c50fad4a276d7ded))
+* add slog file output to benchmark tool ([3f9f8ba](https://github.com/Agoric/agoric-sdk/commit/3f9f8badf351ec94e2ea6763eb89a6d358b6a4c4))
+* Add tooling for standalone performance benchmarks ([058e54a](https://github.com/Agoric/agoric-sdk/commit/058e54aad93c04b57dfb3a411bff85c223ab5dd7))
+* add transfer method to CosmosOrchestrationAccount ([b1fdde1](https://github.com/Agoric/agoric-sdk/commit/b1fdde18b33237d1a2ea6f02938d998f55ce4d01))
+* amountToCoin accepts any denom ([99b1704](https://github.com/Agoric/agoric-sdk/commit/99b1704f9d3b1f72e14780b4e17c6a119a3e8817)), closes [#9211](https://github.com/Agoric/agoric-sdk/issues/9211)
+* coreEval to update priceFeeds, auction, and vaultManager ([fd91f78](https://github.com/Agoric/agoric-sdk/commit/fd91f781ad721033d67485d1732272af0c689ae7))
+* defer inbound bridge messages ([ef23bdd](https://github.com/Agoric/agoric-sdk/commit/ef23bddb2198fc17a1b246772a21da0996a92194))
+* delete tmp dir after proposal build ([5ab79b7](https://github.com/Agoric/agoric-sdk/commit/5ab79b778fd540454a727486849580ea6efe1789))
+* ensure mock lca address is unique ([1e5f500](https://github.com/Agoric/agoric-sdk/commit/1e5f500a7a74ad1e508ad67e6daf35a789dc852e))
+* examples/auto-stake-it.contract.js ([b87ecba](https://github.com/Agoric/agoric-sdk/commit/b87ecba0ea41f1397dbd513d8e4c541f1299fd3f)), closes [#9042](https://github.com/Agoric/agoric-sdk/issues/9042)
+* getBridgeId on ScopedBridgeManager ([aec4dea](https://github.com/Agoric/agoric-sdk/commit/aec4dea4f4d6baca3ea32c33551ba00658eab31b))
+* getInboundQueueLength ([e1d7dd2](https://github.com/Agoric/agoric-sdk/commit/e1d7dd2aba831e8addde69fc14d81dc3c63ffa41))
+* implement benchmarks for price feeds with and without liquidation. ([d864b66](https://github.com/Agoric/agoric-sdk/commit/d864b666104beccf5f5ccad222f7a5d23a5ad7d5)), closes [#8496](https://github.com/Agoric/agoric-sdk/issues/8496)
+* implement swingset-runner based version of the vaults benchmark ([6593570](https://github.com/Agoric/agoric-sdk/commit/659357022f339d8aae32e6600a2bf00e5a30d474))
+* initChainInfo in orchestration setup eval ([5913d8f](https://github.com/Agoric/agoric-sdk/commit/5913d8f85831cda6cabcff2aa4304c7b42ade70e))
+* **internal:** fakeStorage.getBody() supports index other than -1 ([eda89cc](https://github.com/Agoric/agoric-sdk/commit/eda89cc7ec56b44f33f8552811c267d01bbf29b0))
+* LCA looks up denoms ([6755cac](https://github.com/Agoric/agoric-sdk/commit/6755cac4ff92c9b211feb70f9caaca5e9e0b911c))
+* LocalOrchestrationAccount send and sendAll ([26f284d](https://github.com/Agoric/agoric-sdk/commit/26f284d1574fe42434916cb45f197e52020d0786))
+* LocalOrchestrationAccount Transfer invitation ([b88db1e](https://github.com/Agoric/agoric-sdk/commit/b88db1eea791a4ea95abf727838fc2bd58c6a0c9))
+* make Network and IBC vats durable ([#8721](https://github.com/Agoric/agoric-sdk/issues/8721)) ([3d13c09](https://github.com/Agoric/agoric-sdk/commit/3d13c09363013e23726c2ac5fa299a8e5344fd8c))
+* new 'boot' package with bootstrap configs ([8e3173b](https://github.com/Agoric/agoric-sdk/commit/8e3173b0b86a3dc90b31164bc4272c54e46a6641))
+* **orch:** `waitForIBCAck` ([a7d198e](https://github.com/Agoric/agoric-sdk/commit/a7d198e57871ac4d7a8eb17872e1f7e08b98dde1))
+* **orchestration:** add init-stakeOsmo.js to support .query tests ([b6df6c2](https://github.com/Agoric/agoric-sdk/commit/b6df6c230a902288f11f6217dbd1ca9701a9a8b6))
+* **orchestration:** add stakeAtom example contract ([82f1901](https://github.com/Agoric/agoric-sdk/commit/82f1901ec6ecf5a802a72023d033609deeb053e1))
+* **orchestration:** add support for queries (icq/v1) ([79b5d0f](https://github.com/Agoric/agoric-sdk/commit/79b5d0f61f0c11b00e51832b7edf3922df8f51c6))
+* **orchestration:** align ChainAccount spec with current implementation ([678f21f](https://github.com/Agoric/agoric-sdk/commit/678f21f51b8ad94f9064dcd8b4b3bbad707b6996))
+* **orchestration:** create ChainAccount ([ba75ed6](https://github.com/Agoric/agoric-sdk/commit/ba75ed692a565aae5c5124ad5220f6901576532e))
+* **orchestration:** send message from ica ([764e4a8](https://github.com/Agoric/agoric-sdk/commit/764e4a86a5f27ca5a1478e6111b3440dcc2de3f2))
+* **orchestration:** stakeAtom delegate ([54d830f](https://github.com/Agoric/agoric-sdk/commit/54d830fd53420d3395a5d9ca3bc11e8a55a2773b))
+* **orchestration:** stakeAtom query balance ([9f0ae09](https://github.com/Agoric/agoric-sdk/commit/9f0ae09e389f1750c9e550d5e6893460d1e21d07))
+* publish local and remote ibc addresses to vstorage ([b1b6a03](https://github.com/Agoric/agoric-sdk/commit/b1b6a0392467fda9cb6e51392756ff5ffff75256)), closes [#9066](https://github.com/Agoric/agoric-sdk/issues/9066)
+* refresh slogulator to account for smallcaps and improve UX ([73aa6d6](https://github.com/Agoric/agoric-sdk/commit/73aa6d6554651a4897fa19ae223abbe8a8491320)), closes [#8647](https://github.com/Agoric/agoric-sdk/issues/8647)
+* **registry:** add umee ([954b359](https://github.com/Agoric/agoric-sdk/commit/954b359fe55d8ada586a0878d44b2ef9602acbf5))
+* **smart-wallet:** accept `Vow` for offerResult ([933ab29](https://github.com/Agoric/agoric-sdk/commit/933ab299ee30c14530f92a9548fd79a35de3d0ff)), closes [#9308](https://github.com/Agoric/agoric-sdk/issues/9308)
+* **stakeAtom:** publish address to vstorage ([c2021ba](https://github.com/Agoric/agoric-sdk/commit/c2021ba0e59de5942c1286b2db70f8becb201730))
+* stakeBld contract ([a7e30a4](https://github.com/Agoric/agoric-sdk/commit/a7e30a4e43c00b2916d2d57c70063650e726321f))
+* stub Orchestration API ([1e054ac](https://github.com/Agoric/agoric-sdk/commit/1e054ac972ddfff5fb03738747c69eecd125c463))
+* support `coreProposals.steps` ([80fa3d1](https://github.com/Agoric/agoric-sdk/commit/80fa3d14494706d825f51ac22e1bbf4ec68ce404))
+* **types:** BootstrapEV ([d8caa34](https://github.com/Agoric/agoric-sdk/commit/d8caa3425d2791ab935a9a889027b7193fd3a94e))
+* **types:** ContractMeta ([9d02dfa](https://github.com/Agoric/agoric-sdk/commit/9d02dfab2cc2c24ed9b15a6aa8bc5fba7d6c9fe0))
+* **types:** readLatest returns any ([7a9982b](https://github.com/Agoric/agoric-sdk/commit/7a9982bf8572f43ce8670ed6e73ee4c8fad858b5))
+* **undelegate:** use Timestamp instead of Date ([3d4ab30](https://github.com/Agoric/agoric-sdk/commit/3d4ab30008da2200c39426e4dcb07701d7999f99))
+* update connectionInfo once per undirected edge ([a6133fc](https://github.com/Agoric/agoric-sdk/commit/a6133fc02d3d800663d804f3806546b1debbc6ee))
+* use fakeLocalChainBridgeTxHandler to mock responses ([c459214](https://github.com/Agoric/agoric-sdk/commit/c4592140d2e055ab9105d90d614388b24f2b672c))
+* use fetched chain info ([6fbdeae](https://github.com/Agoric/agoric-sdk/commit/6fbdeae46a71512cbd95603a71b406867a37511c))
+* **vats:** `BRIDGE_TARGET_REGISTER` and `BRIDGE_TARGET_UNREGISTER` ([badf695](https://github.com/Agoric/agoric-sdk/commit/badf6958dcfb602cf5992afd4ba1f0dc602fccd5))
+* vm-config package ([8b1ecad](https://github.com/Agoric/agoric-sdk/commit/8b1ecad8ab50db777bc11c3ee6fcdb37d6cb38b6))
+* WithdrawReward on StakingAccountHolder ([8cbe1b6](https://github.com/Agoric/agoric-sdk/commit/8cbe1b60de03aeeffe8ffef433e4e35e4f900911))
+* Zoe use watchPromise() to wait for contract finish ([#8453](https://github.com/Agoric/agoric-sdk/issues/8453)) ([6388a00](https://github.com/Agoric/agoric-sdk/commit/6388a002b53593f17a8d936d4e937efb7d065d97))
+
+
+### Bug Fixes
+
+* adopt `VTRANSFER_IBC_EVENT` as an action-type ([#9671](https://github.com/Agoric/agoric-sdk/issues/9671)) ([217005a](https://github.com/Agoric/agoric-sdk/commit/217005a921dcac6928c999e6bfe06330a5947ac5)), closes [#9670](https://github.com/Agoric/agoric-sdk/issues/9670)
+* **boot:** import ambient types from Zoe ([e9d24cd](https://github.com/Agoric/agoric-sdk/commit/e9d24cdfa94d3761419bc91e8203fbb3f66bcad4))
+* chain-hub transfer channel conversion ([80186ac](https://github.com/Agoric/agoric-sdk/commit/80186acd1f1800a8bcbcad31152a61a0e3067d1a))
+* **chain-info:** Normalize IBC connection info storage ([444f3d6](https://github.com/Agoric/agoric-sdk/commit/444f3d638b9ff38dcbb43ef473e9f5508f6c8146))
+* chainId in connection tuple ([7f15f0a](https://github.com/Agoric/agoric-sdk/commit/7f15f0a4b8f9f7908773c336d5ae4f4452f0bd48))
+* **chainInfo:** ensure icqEnabled is present ([76537e5](https://github.com/Agoric/agoric-sdk/commit/76537e598a7f748697af71874309fd6d9fbf81bb))
+* contractGovernor can change params after contract is upgraded ([e747531](https://github.com/Agoric/agoric-sdk/commit/e747531b7a00ec91b47b96a3321e7f6e9502582f))
+* eliminate the `passableEncoding` hack ([87dbbda](https://github.com/Agoric/agoric-sdk/commit/87dbbda8484c6fe3fe542eb847647fd1540c11e6)), closes [#8327](https://github.com/Agoric/agoric-sdk/issues/8327)
+* fetch agoric connections ([f8bcd92](https://github.com/Agoric/agoric-sdk/commit/f8bcd921dca3e03e112f03a0b2975a2b82f959c9))
+* **lint:** addressing lint errors ([bfe10d9](https://github.com/Agoric/agoric-sdk/commit/bfe10d9cc3878c322ca624a3a603e80f94dc6970))
+* make tests work again after some (bogus) awaits were removed from bootstrap ([ca0a3aa](https://github.com/Agoric/agoric-sdk/commit/ca0a3aab3f31ac0e97e55cd63709000fbb46f2ca))
+* minor fixes and cleanups in preparation for benchmark support ([1277176](https://github.com/Agoric/agoric-sdk/commit/127717677287cc825e34b6326be3e11a165dce27))
+* **network:** use new `ERef` and `FarRef` ([3027adf](https://github.com/Agoric/agoric-sdk/commit/3027adf8613154dec167c5fccf5f207f6d2af701))
+* **orchestration:** disable type casts in skipped boot tests ([6f6b891](https://github.com/Agoric/agoric-sdk/commit/6f6b8917f5145ad5d81ed761f88e7c9142b1ef79))
+* **orchestration:** rename `.getAccountAddress` -> `.getAddress` ([f951cde](https://github.com/Agoric/agoric-sdk/commit/f951cde10ee6618660938b2e5b404f797231d8e2))
+* parseQueryPacket bigint handling ([916af0f](https://github.com/Agoric/agoric-sdk/commit/916af0f2b59539384324575afd547d031a15ba92))
+* **provisioning:** don't use disconnected namesByAddress ([84d74dd](https://github.com/Agoric/agoric-sdk/commit/84d74dd22a8fb2ec274c293d5de0078e0a9359a0))
+* real chainId in chainAccountKit ([521dfd0](https://github.com/Agoric/agoric-sdk/commit/521dfd0db134ef74ce78afb0f6ae9ba83315ce67))
+* **types:** board ([c73f4f9](https://github.com/Agoric/agoric-sdk/commit/c73f4f9686215a37e8c5f82ce8dbe4742886a02b))
+* **vats:** `vtransfer` code cleanup ([8ac8197](https://github.com/Agoric/agoric-sdk/commit/8ac819709ef9ced0badee25e6715a5847b1e3f4c))
+* **vow:** allow resolving vow to external promise ([44a6d16](https://github.com/Agoric/agoric-sdk/commit/44a6d16b9ff99fe9a3222cb4a32a34d3ad456fed))
+* write-chain-info after u17 ([fc1f3ce](https://github.com/Agoric/agoric-sdk/commit/fc1f3ce1fe03bb2018edd4eb55d6561312d5fbe8))
+
+
+### Reverts
+
+* Revert "test: temporarily remove addAssets test" ([ad0df91](https://github.com/Agoric/agoric-sdk/commit/ad0df91027ebe6ade220c99053bd2ff598478f9a))
+* Revert "test(boot): skip `basicFlows` test until #9939 is fixed" ([c045163](https://github.com/Agoric/agoric-sdk/commit/c04516352292d263ead3641720606a8141de17d5)), closes [#9939](https://github.com/Agoric/agoric-sdk/issues/9939)
