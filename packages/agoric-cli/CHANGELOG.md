@@ -3,6 +3,30 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.22.0-u18.5](https://github.com/Agoric/agoric-sdk/compare/agoric@0.22.0-u18.4...agoric@0.22.0-u18.5) (2024-12-17)
+
+**Note:** Version bump only for package agoric
+
+
+
+
+
+## [0.22.0-u18.4](https://github.com/Agoric/agoric-sdk/compare/agoric@0.22.0-u18.3...agoric@0.22.0-u18.4) (2024-12-13)
+
+**Note:** Version bump only for package agoric
+
+
+
+
+
+## [0.22.0-u18.3](https://github.com/Agoric/agoric-sdk/compare/agoric@0.22.0-u18.2...agoric@0.22.0-u18.3) (2024-12-09)
+
+**Note:** Version bump only for package agoric
+
+
+
+
+
 ## [0.22.0-u18.2](https://github.com/Agoric/agoric-sdk/compare/agoric@0.22.0-u18.1...agoric@0.22.0-u18.2) (2024-11-21)
 
 **Note:** Version bump only for package agoric

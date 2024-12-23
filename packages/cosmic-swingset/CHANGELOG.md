@@ -3,6 +3,31 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.42.0-u18.5](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.42.0-u18.4...@agoric/cosmic-swingset@0.42.0-u18.5) (2024-12-17)
+
+
+### Bug Fixes
+
+* **cosmic-swingset:** expect chain --halt-height exit status > 1 ([56a550a](https://github.com/Agoric/agoric-sdk/commit/56a550a9f728ac21a748529003a8c4da70991dbc))
+
+
+
+## [0.42.0-u18.4](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.42.0-u18.3...@agoric/cosmic-swingset@0.42.0-u18.4) (2024-12-13)
+
+**Note:** Version bump only for package @agoric/cosmic-swingset
+
+
+
+
+
+## [0.42.0-u18.3](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.42.0-u18.2...@agoric/cosmic-swingset@0.42.0-u18.3) (2024-12-09)
+
+**Note:** Version bump only for package @agoric/cosmic-swingset
+
+
+
+
+
 ## [0.42.0-u18.2](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.42.0-u18.1...@agoric/cosmic-swingset@0.42.0-u18.2) (2024-11-21)
 
 **Note:** Version bump only for package @agoric/cosmic-swingset
