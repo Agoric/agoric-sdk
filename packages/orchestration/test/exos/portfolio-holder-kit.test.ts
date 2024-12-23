@@ -8,6 +8,7 @@ import { prepareMakeTestCOAKit } from './make-test-coa-kit.js';
 
 test('portfolio holder kit behaviors', async t => {
   const common = await commonSetup(t);
+  common.utils.populateChainHub();
   const { rootZone, storage, vowTools } = common.bootstrap;
   const storageNode = storage.rootNode.makeChildNode('accounts');
 

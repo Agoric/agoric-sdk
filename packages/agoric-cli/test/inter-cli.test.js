@@ -2,11 +2,11 @@
 /* eslint-env node */
 import '@endo/init';
 import test from 'ava';
-import { createCommand, CommanderError } from 'commander';
+import { CommanderError, createCommand } from 'commander';
 
-import { Far } from '@endo/far';
 import { makeParseAmount } from '@agoric/inter-protocol/src/clientSupport.js';
-import { boardSlottingMarshaller, makeFromBoard } from '../src/lib/rpc.js';
+import { Far } from '@endo/far';
+import { boardSlottingMarshaller, makeFromBoard } from '@agoric/client-utils';
 
 import { fmtBid, makeInterCommand } from '../src/commands/inter.js';
 
@@ -599,7 +599,7 @@ test('README ex1: inter bid place by-price: printed offer is correct', async t =
   const expected = [
     'Run this interactive command in shell:\n\n',
     'agd ',
-    '--node=http://0.0.0.0:26657 --chain-id=agoriclocal --from=agoric18jr9nlvp300feu726y3v4n07ykfjwup3twnlyn tx swingset wallet-action --allow-spend {"body":"#{\\"method\\":\\"executeOffer\\",\\"offer\\":{\\"id\\":\\"bid-1680241587424\\",\\"invitationSpec\\":{\\"callPipe\\":[[\\"makeBidInvitation\\",[\\"$0.Alleged: BoardRemoteBrand\\"]]],\\"instancePath\\":[\\"auctioneer\\"],\\"source\\":\\"agoricContract\\"},\\"offerArgs\\":{\\"maxBuy\\":{\\"brand\\":\\"$0\\",\\"value\\":\\"+1000000000000\\"},\\"offerPrice\\":{\\"denominator\\":{\\"brand\\":\\"$0\\",\\"value\\":\\"+100\\"},\\"numerator\\":{\\"brand\\":\\"$1.Alleged: BoardRemoteBrand\\",\\"value\\":\\"+855\\"}}},\\"proposal\\":{\\"give\\":{\\"Bid\\":{\\"brand\\":\\"$1\\",\\"value\\":\\"+85000000\\"}}}}}","slots":["board03446","board0566"]} --output json',
+    '--node=http://0.0.0.0:26657 --chain-id=agoriclocal --gas=auto --gas-adjustment=1.2 --from=agoric18jr9nlvp300feu726y3v4n07ykfjwup3twnlyn tx swingset wallet-action --allow-spend {"body":"#{\\"method\\":\\"executeOffer\\",\\"offer\\":{\\"id\\":\\"bid-1680241587424\\",\\"invitationSpec\\":{\\"callPipe\\":[[\\"makeBidInvitation\\",[\\"$0.Alleged: BoardRemoteBrand\\"]]],\\"instancePath\\":[\\"auctioneer\\"],\\"source\\":\\"agoricContract\\"},\\"offerArgs\\":{\\"maxBuy\\":{\\"brand\\":\\"$0\\",\\"value\\":\\"+1000000000000\\"},\\"offerPrice\\":{\\"denominator\\":{\\"brand\\":\\"$0\\",\\"value\\":\\"+100\\"},\\"numerator\\":{\\"brand\\":\\"$1.Alleged: BoardRemoteBrand\\",\\"value\\":\\"+855\\"}}},\\"proposal\\":{\\"give\\":{\\"Bid\\":{\\"brand\\":\\"$1\\",\\"value\\":\\"+85000000\\"}}}}}","slots":["board03446","board0566"]} --output json',
   ].join('');
   t.deepEqual(txt, expected);
 });

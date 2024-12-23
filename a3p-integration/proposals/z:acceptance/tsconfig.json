@@ -2,14 +2,20 @@
   "compilerOptions": {
     "noEmit": true,
     "target": "esnext",
-    "module": "NodeNext",
-    "moduleResolution": "NodeNext",
+    "module": "esnext",
+    "moduleResolution": "bundler",
     "allowJs": true,
     "checkJs": true,
+    "allowImportingTsExtensions": true,
     "strict": false,
     "strictNullChecks": true,
     "noImplicitThis": true,
     // XXX synthetic-chain has some errors
     "skipLibCheck": true
-  }
+  },
+  "exclude": [
+    "restart-valueVow",
+    "start-valueVow",
+    "localchaintest-submission"
+  ]
 }

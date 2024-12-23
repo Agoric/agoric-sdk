@@ -386,6 +386,12 @@ const (
 	ExportedSwingStoreDirectoryName = "swing-store"
 )
 
+var allowedSwingSetExportModes = map[string]bool{
+	swingset.SwingStoreExportModeDebug:       true,
+	swingset.SwingStoreExportModeOperational: true,
+	swingset.SwingStoreExportModeSkip:        true,
+}
+
 // extendCosmosExportCommand monkey-patches the "export" command added by
 // cosmos-sdk to add a required "export-dir" command-line flag, and create the
 // genesis export in the specified directory if the VM is running.
@@ -396,31 +402,52 @@ func extendCosmosExportCommand(cmd *cobra.Command) {
 		panic(err)
 	}
 
+	var keys []string
+	for key := range allowedSwingSetExportModes {
+		keys = append(keys, key)
+	}
+
+	cmd.Flags().String(
+		gaia.FlagSwingStoreExportMode,
+		swingset.SwingStoreExportModeOperational,
+		fmt.Sprintf(
+			"The mode for swingstore export (%s)",
+			strings.Join(keys, " | "),
+		),
+	)
+
 	originalRunE := cmd.RunE
 
 	extendedRunE := func(cmd *cobra.Command, args []string) error {
 		serverCtx := server.GetServerContextFromCmd(cmd)
 
 		exportDir, _ := cmd.Flags().GetString(FlagExportDir)
+		swingStoreExportMode, _ := cmd.Flags().GetString(gaia.FlagSwingStoreExportMode)
+
 		err := os.MkdirAll(exportDir, os.ModePerm)
 		if err != nil {
 			return err
 		}
 
 		genesisPath := filepath.Join(exportDir, ExportedGenesisFileName)
-		swingStoreExportPath := filepath.Join(exportDir, ExportedSwingStoreDirectoryName)
 
-		err = os.MkdirAll(swingStoreExportPath, os.ModePerm)
-		if err != nil {
-			return err
+		// Since none mode doesn't perform any swing store export
+		// There is no point in creating the export directory
+		if swingStoreExportMode != swingset.SwingStoreExportModeSkip {
+			swingStoreExportPath := filepath.Join(exportDir, ExportedSwingStoreDirectoryName)
+
+			err = os.MkdirAll(swingStoreExportPath, os.ModePerm)
+			if err != nil {
+				return err
+			}
+			// We unconditionally set FlagSwingStoreExportDir as for export, it makes
+			// little sense for users to control this location separately, and we don't
+			// want to override any swing-store artifacts that may be associated to the
+			// current genesis.
+			serverCtx.Viper.Set(gaia.FlagSwingStoreExportDir, swingStoreExportPath)
 		}
-		// We unconditionally set FlagSwingStoreExportDir as for export, it makes
-		// little sense for users to control this location separately, and we don't
-		// want to override any swing-store artifacts that may be associated to the
-		// current genesis.
-		serverCtx.Viper.Set(gaia.FlagSwingStoreExportDir, swingStoreExportPath)
 
-		if hasVMController(serverCtx) {
+		if hasVMController(serverCtx) || swingStoreExportMode == swingset.SwingStoreExportModeSkip {
 			// Capture the export in the genesisPath.
 			// This will fail if a genesis.json already exists in the export-dir
 			genesisFile, err := os.OpenFile(
@@ -453,7 +480,16 @@ func (ac appCreator) appExport(
 	jailAllowedAddrs []string,
 	appOpts servertypes.AppOptions,
 ) (servertypes.ExportedApp, error) {
-	if OnExportHook != nil {
+	swingStoreExportMode, ok := appOpts.Get(gaia.FlagSwingStoreExportMode).(string)
+	if !(ok && allowedSwingSetExportModes[swingStoreExportMode]) {
+		return servertypes.ExportedApp{}, fmt.Errorf(
+			"export mode '%s' is not supported",
+			swingStoreExportMode,
+		)
+	}
+
+	// We don't have to launch VM in case the swing store export is not required
+	if swingStoreExportMode != swingset.SwingStoreExportModeSkip && OnExportHook != nil {
 		if err := OnExportHook(ac.agdServer, logger, appOpts); err != nil {
 			return servertypes.ExportedApp{}, err
 		}
@@ -464,10 +500,7 @@ func (ac appCreator) appExport(
 		return servertypes.ExportedApp{}, errors.New("application home is not set")
 	}
 
-	var loadLatest bool
-	if height == -1 {
-		loadLatest = true
-	}
+	loadLatest := height == -1
 
 	gaiaApp := gaia.NewAgoricApp(
 		ac.sender, ac.agdServer,

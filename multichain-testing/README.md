@@ -21,6 +21,8 @@ Install the relevant dependencies:
 yarn install
 ```
 
+(Note that the '@agoric/*' deps will come from the parent directory due to `yarn link --relative .. --all`)
+
 Ensure you have Kubernetes available. See https://docs.cosmology.zone/starship/get-started/step-2.
 
 The following will install `kubectl`, `kind`, `helm`, and `yq` as needed:
@@ -59,7 +61,7 @@ make wait-for-pods
 make port-forward
 
 # set up Agoric testing environment
-make fund-provision-pool override-chain-registry
+make fund-provision-pool override-chain-registry register-bank-assets
 ```
 
 If you get an error like "connection refused", you need to wait longer, until all the pods are Running.

@@ -1,10 +1,14 @@
 // @ts-check
 /* eslint-disable func-names */
-/* global globalThis, process, setTimeout */
+/* eslint-env node */
+import {
+  fetchEnvNetworkConfig,
+  makeAgoricNames,
+  makeVstorageKit,
+} from '@agoric/client-utils';
 import { execFileSync as execFileSyncAmbient } from 'child_process';
 import { Command, CommanderError } from 'commander';
 import { normalizeAddressWithOptions, pollBlocks } from '../lib/chain.js';
-import { getNetworkConfig, makeRpcUtils } from '../lib/rpc.js';
 import {
   findContinuingIds,
   getCurrent,
@@ -14,8 +18,10 @@ import {
 } from '../lib/wallet.js';
 
 /**
- * @import {OfferSpec} from '@agoric/smart-wallet/src/offers.js'
- * @import {QuestionDetails} from '@agoric/governance/src/types.js'
+ * @import {OfferSpec} from '@agoric/smart-wallet/src/offers.js';
+ * @import {AgoricNamesRemotes} from '@agoric/vats/tools/board-utils.js';
+ * @import {CurrentWalletRecord} from '@agoric/smart-wallet/src/smartWallet.js';
+ * @import {VstorageKit} from '@agoric/client-utils';
  */
 
 const collectValues = (val, memo) => {
@@ -24,6 +30,8 @@ const collectValues = (val, memo) => {
 };
 
 const defaultKeyring = process.env.AGORIC_KEYRING_BACKEND || 'test';
+
+const networkConfig = await fetchEnvNetworkConfig({ env: process.env, fetch });
 
 /**
  * @param {import('anylogger').Logger} _logger
@@ -40,10 +48,9 @@ export const makeGovCommand = (_logger, io = {}) => {
   const {
     // Allow caller to provide access explicitly, but
     // default to conventional ambient IO facilities.
-    env = process.env,
     stdout = process.stdout,
     stderr = process.stderr,
-    fetch = globalThis.fetch,
+    fetch = global.fetch,
     execFileSync = execFileSyncAmbient,
     delay = ms => new Promise(resolve => setTimeout(resolve, ms)),
   } = io;
@@ -84,26 +91,27 @@ export const makeGovCommand = (_logger, io = {}) => {
    * given a sendFrom address; else print it.
    *
    * @param {{
-   *   toOffer: (agoricNames: *, current: import('@agoric/smart-wallet/src/smartWallet.js').CurrentWalletRecord | undefined) => OfferSpec,
+   *   toOffer: (agoricNames: AgoricNamesRemotes, current: CurrentWalletRecord | undefined) => OfferSpec,
    *   sendFrom?: string | undefined,
    *   keyringBackend: string,
    *   instanceName?: string,
    * }} detail
-   * @param {Awaited<ReturnType<makeRpcUtils>>} [optUtils]
+   * @param {VstorageKit} [vsk]
    */
   const processOffer = async function (
     { toOffer, sendFrom, keyringBackend },
-    optUtils,
+    vsk,
   ) {
-    const networkConfig = await getNetworkConfig(env);
-    const utils = await (optUtils || makeRpcUtils({ fetch }));
-    const { agoricNames, readLatestHead } = utils;
+    await null;
+    vsk ||= makeVstorageKit({ fetch }, networkConfig);
+    const { readPublished } = vsk;
+    const agoricNames = await makeAgoricNames(vsk.fromBoard, vsk.vstorage);
 
     assert(keyringBackend, 'missing keyring-backend option');
 
     let current;
     if (sendFrom) {
-      current = await getCurrent(sendFrom, { readLatestHead });
+      current = await getCurrent(sendFrom, { readPublished });
     }
 
     const offer = toOffer(agoricNames, current);
@@ -133,9 +141,9 @@ export const makeGovCommand = (_logger, io = {}) => {
     show({ timestamp, height, offerId: offer.id, txhash });
     const checkInWallet = async blockInfo => {
       const [state, update] = await Promise.all([
-        getCurrent(sendFrom, { readLatestHead }),
-        getLastUpdate(sendFrom, { readLatestHead }),
-        readLatestHead(`published.wallet.${sendFrom}`),
+        getCurrent(sendFrom, { readPublished }),
+        getLastUpdate(sendFrom, { readPublished }),
+        readPublished(`wallet.${sendFrom}`),
       ]);
       if (update.updated === 'offerStatus' && update.status.id === offer.id) {
         return blockInfo;
@@ -264,8 +272,12 @@ export const makeGovCommand = (_logger, io = {}) => {
     )
     .requiredOption('--for <string>', 'description of the invitation')
     .action(async opts => {
-      const { agoricNames, readLatestHead } = await makeRpcUtils({ fetch });
-      const current = await getCurrent(opts.from, { readLatestHead });
+      const { readPublished, ...vsk } = makeVstorageKit(
+        { fetch },
+        networkConfig,
+      );
+      const agoricNames = await makeAgoricNames(vsk.fromBoard, vsk.vstorage);
+      const current = await getCurrent(opts.from, { readPublished });
 
       const known = findContinuingIds(current, agoricNames);
       if (!known) {
@@ -290,8 +302,12 @@ export const makeGovCommand = (_logger, io = {}) => {
       normalizeAddress,
     )
     .action(async opts => {
-      const { agoricNames, readLatestHead } = await makeRpcUtils({ fetch });
-      const current = await getCurrent(opts.from, { readLatestHead });
+      const { readPublished, ...vsk } = makeVstorageKit(
+        { fetch },
+        networkConfig,
+      );
+      const agoricNames = await makeAgoricNames(vsk.fromBoard, vsk.vstorage);
+      const current = await getCurrent(opts.from, { readPublished });
 
       const found = findContinuingIds(current, agoricNames);
       for (const it of found) {
@@ -326,19 +342,16 @@ export const makeGovCommand = (_logger, io = {}) => {
       normalizeAddress,
     )
     .action(async function (opts, options) {
-      const utils = await makeRpcUtils({ fetch });
-      const { readLatestHead } = utils;
+      const vsk = makeVstorageKit({ fetch }, networkConfig);
+      const { readPublished } = vsk;
 
-      const info = await readLatestHead(
-        `published.committees.${opts.pathname}.latestQuestion`,
+      const questionDesc = await readPublished(
+        `committees.${opts.pathname}.latestQuestion`,
       ).catch(err => {
         // CommanderError is a class constructor, and so
         // must be invoked with `new`.
         throw new CommanderError(1, 'VSTORAGE_FAILURE', err.message);
       });
-
-      // XXX runtime shape-check
-      const questionDesc = /** @type {QuestionDetails} */ (info);
 
       // TODO support multiple position arguments
       const chosenPositions = [questionDesc.positions[opts.forPosition]];
@@ -380,7 +393,7 @@ export const makeGovCommand = (_logger, io = {}) => {
           sendFrom: opts.sendFrom,
           keyringBackend: options.optsWithGlobals().keyringBackend,
         },
-        utils,
+        vsk,
       );
     });
 

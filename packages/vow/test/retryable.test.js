@@ -174,7 +174,6 @@ test('restart', async t => {
     await eventLoopIteration();
     if (currentRun < 3) {
       // Trigger our own invocation restart
-      // eslint-disable-next-line no-use-before-define
       flow.restart();
     }
     if (currentRun === 2) {

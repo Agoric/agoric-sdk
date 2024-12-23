@@ -19,5 +19,5 @@ export const defaultProposalBuilder = async () =>
 /** @type {import('@agoric/deploy-script-support/src/externalTypes.js').DeployScriptFunction} */
 export default async (homeP, endowments) => {
   const { writeCoreEval } = await makeHelpers(homeP, endowments);
-  await writeCoreEval('revise-chain-info', defaultProposalBuilder);
+  await writeCoreEval('eval-revise-chain-info', defaultProposalBuilder);
 };

@@ -205,6 +205,7 @@ test.serial(
       check,
       priceFeedDrivers,
       readLatest,
+      readPublished,
       setupVaults,
       placeBids,
     } = t.context;
@@ -266,7 +267,7 @@ test.serial(
       setups[collateralBrandKeySt].price.trigger,
     );
 
-    const liveSchedule = readLatest('published.auction.schedule');
+    const liveSchedule = readPublished('auction.schedule');
 
     for (const { collateralBrandKey, managerIndex } of cases) {
       // check nothing liquidating yet
@@ -298,7 +299,7 @@ test.serial(
     await advanceTimeBy(3, 'minutes');
 
     for (const { collateralBrandKey, managerIndex } of cases) {
-      t.like(readLatest(`published.auction.book${managerIndex}`), {
+      t.like(readPublished(`auction.book${managerIndex}`), {
         collateralAvailable: {
           value: scale6(setups[collateralBrandKey].auction.start.collateral),
         },
@@ -324,7 +325,7 @@ test.serial(
     await advanceTimeBy(3, 'minutes');
 
     for (const { collateralBrandKey, managerIndex } of cases) {
-      t.like(readLatest(`published.auction.book${managerIndex}`), {
+      t.like(readPublished(`auction.book${managerIndex}`), {
         collateralAvailable: {
           value: scale6(setups[collateralBrandKey].auction.start.collateral),
         },

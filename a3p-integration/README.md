@@ -1,8 +1,12 @@
-# Overview
+# a3p-integration overview
 
 This directory contains an end-to-end integration test executed against a synthetic agoric-3 chain. The test performs a chain software upgrade to the software contained in the enclosing `agoric-sdk` repository, then executes a series of functional tests verifying the upgrade accomplished its goal.
 
-# How to run
+## Quick-Start: How to Get a Chain Running
+
+To get a chain running with an existing proposal such as `f:fast-usdc`, run `yarn test -m fast-usdc --debug`; likewise `yarn test -m <proposal-name-substring> --debug` for any other proposal name.
+
+## How to run
 
 The synthetic chain testing infrastructure relies on Docker, Docker Buildx extended build capabilities, and the experimental Buildx Bake extension. Make sure you have a recent Docker engine installed for your system.
 
@@ -108,10 +112,36 @@ Instead of relying on an automatic `submission` folder, a core-eval proposal can
 
 # Build details
 
+In the `ghcr.io/agoric/agoric-sdk` image the filesystem is:
+```
+/usr/src/agoric-sdk
+```
+
+With the proposals layered on top of the `agoric-sdk` image, the filesystem adds (for example):
+```
+/usr/src/proposals/n:upgrade-next
+/usr/src/proposals/z:acceptance
+```
+
+In agoric-sdk CI and development, we want the proposals to use the versions of the packages in the agoric-sdk source tree. To accomplish this we use `yarn link`. In Yarn 4 (berry) it uses a `portal` protocol to link to another Yarn project on the filesystem. One kink is that in development the command would,
+```
+yarn link --relative ../../.. --all
+```
+Which configures the package.json resolutions to find agoric-sdk three levels up.
+
+But in CI the proposals aren't nested under agoric-sdk and the command would be,
+```
+yarn link --relative ../../agoric-sdk --all
+```
+
+To give a consistent location, `a3p-integration` has a symlink to the `agoric-sdk` project where the proposals expect it in the Docker fileystem. (I.e. treating `a3p-integration` as `/usr/src` of the Docker image.)
+
+
 The `yarn build` script automates 3 steps:
 - Building the `unreleased` SDK image
 - Generating the `submission` folders in core proposal packages
 - Building the synthetic-chain images using the proposals
+
 
 ## Generate a docker image with the `agoric-sdk` chain software
 
@@ -127,12 +157,12 @@ make -C ../packages/deployment docker-build-sdk
 
 In a3p-integration, many core-eval proposals' `submission` content has to be
 generated from the local `agoric-sdk`, and must be rebuilt every time there is a
-change. The `scripts/build-all-submissions.sh` script contains commands to
-generate the core-eval content and move it to the expected proposal package's
-submission directory. The generation is executed as part of `a3p-integration`'s
-`build:submissions` step. Each proposal that requires such a build step should
-add an entry to the `sdk-generate` array in the `agoricProposal` section of
-`package.json`.
+change. This package's package.json `build:submissions` script runs
+`scripts/build-all-submissions.sh` to generate that content and move it into
+submission subdirectories under the corresponding [proposal
+directories](#package-layering). Each proposal that requires such a build step
+should have a corresponding entry in the `sdk-generate` array of its proposal
+directory's package.json `agoricProposal` section.
 
 Submissions that don't need to pass in options or generate references to source
 bundles can be written directly in a `foo-submission` subdirectory of the
@@ -146,15 +176,17 @@ provided, it should be written as two parts: a core eval (in one of the
 `.../proposals` directories) and a builder for it (under `.../builders/scripts`).
 
 The `build-all-submissions.sh` script reads instructions from
-`agoricProposal.sdk-generate` in `package.json`. That field contains a list of
-strings, each of which describes a single submission. If there is only one
-submission, it can use the default directory name `submission` by specifying
-only the name of the script file in `builders/scripts/vars`:
+`agoricProposal.sdk-generate` in package.json. That field contains a list of
+strings, each of which describes a single submission as a list of
+space-separated fields. If there is only one submission, it can use the default
+directory name `submission` by specifying just one field, containing the path of
+a builder script file relative to
+[packages/builders/scripts](../packages/builders/scripts):
 ```json
 "sdk-generate": ["test-localchain"],
 ```
-If there are multiple submissions, each entry has to specify the script name and
-a distinct directory name.
+If there are multiple submissions, each entry has to specify a distinct
+directory name in the second field:
 ```json
 "sdk-generate": [
   "probe-zcf-bundle probe-submission",
@@ -162,8 +194,7 @@ a distinct directory name.
   "add-auction newAuction-submission"
 ],
 ```
-A third argument can be used to provide additional parameters to the
-build script.
+Any remaining fields provide additional arguments to the build script:
 ```json
 "sdk-generate": [
   "inter-protocol/updatePriceFeeds.js submission/main main",

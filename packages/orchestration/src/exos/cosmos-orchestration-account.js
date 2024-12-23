@@ -50,6 +50,8 @@ import {
   DelegationShape,
   DenomAmountShape,
   IBCTransferOptionsShape,
+  Proto3Shape,
+  TxBodyOptsShape,
 } from '../typeGuards.js';
 import { coerceCoin, coerceDenom } from '../utils/amounts.js';
 import {
@@ -80,7 +82,7 @@ import { makeTimestampHelper } from '../utils/time.js';
  * @import {LocalIbcAddress, RemoteIbcAddress} from '@agoric/vats/tools/ibc-utils.js';
  */
 
-const trace = makeTracer('ComosOrchestrationAccountHolder');
+const trace = makeTracer('CosmosOrchAccount');
 
 const { Vow$ } = NetworkShape; // TODO #9611
 
@@ -143,6 +145,9 @@ export const IcaAccountHolderI = M.interface('IcaAccountHolder', {
   ...stakingAccountQueriesMethods,
   deactivate: M.call().returns(VowShape),
   reactivate: M.call().returns(VowShape),
+  executeEncodedTx: M.call(M.arrayOf(Proto3Shape))
+    .optional(TxBodyOptsShape)
+    .returns(VowShape),
 });
 
 /** @type {{ [name: string]: [description: string, valueShape: Matcher] }} */
@@ -335,6 +340,8 @@ export const prepareCosmosOrchestrationAccountKit = (
          * @returns {Coin}
          */
         amountToCoin(amount) {
+          !('brand' in amount) ||
+            Fail`'amountToCoin' not working for ${q(amount.brand)} until #10449; use 'DenomAmount' for now`;
           return coerceCoin(chainHub, amount);
         },
       },
@@ -955,11 +962,11 @@ export const prepareCosmosOrchestrationAccountKit = (
         },
         /** @type {HostOf<IcaAccount['deactivate']>} */
         deactivate() {
-          return watch(E(this.facets.helper.owned()).deactivate());
+          return asVow(() => watch(E(this.facets.helper.owned()).deactivate()));
         },
         /** @type {HostOf<IcaAccount['reactivate']>} */
         reactivate() {
-          return watch(E(this.facets.helper.owned()).reactivate());
+          return asVow(() => watch(E(this.facets.helper.owned()).reactivate()));
         },
         /** @type {HostOf<StakingAccountQueries['getDelegation']>} */
         getDelegation(validator) {
@@ -1092,6 +1099,12 @@ export const prepareCosmosOrchestrationAccountKit = (
             ]);
             return watch(results, this.facets.rewardsQueryWatcher);
           });
+        },
+        /** @type {HostOf<IcaAccount['executeEncodedTx']>} */
+        executeEncodedTx(msgs, opts) {
+          return asVow(() =>
+            watch(E(this.facets.helper.owned()).executeEncodedTx(msgs, opts)),
+          );
         },
       },
     },

@@ -12,12 +12,13 @@
   "type": "module",
   "license": "Apache-2.0",
   "dependencies": {
-    "@agoric/synthetic-chain": "^0.3.0",
-    "@endo/init": "^1.1.5",
-    "@endo/marshal": "^1.5.4",
+    "@agoric/client-utils": "dev",
+    "@agoric/synthetic-chain": "^0.4.3",
+    "@endo/init": "^1.1.6",
+    "@endo/marshal": "^1.6.1",
     "ava": "^5.3.1",
     "better-sqlite3": "^9.6.0",
-    "execa": "^9.3.1"
+    "execa": "9.1.0"
   },
   "ava": {
     "concurrency": 1,
@@ -29,5 +30,14 @@
   "scripts": {
     "agops": "yarn --cwd /usr/src/agoric-sdk/ --silent agops"
   },
-  "packageManager": "yarn@4.2.2"
+  "packageManager": "yarn@4.5.3",
+  "devDependencies": {
+    "eslint": "^8.57.0",
+    "npm-run-all": "^4.1.5",
+    "typescript": "^5.6.3"
+  },
+  "resolutions": {
+    "axios@npm:^1.6.0": "patch:axios@npm%3A1.7.7#~/.yarn/patches/axios-npm-1.7.7-cfbedc233d.patch",
+    "protobufjs@npm:^6.8.8": "patch:protobufjs@npm%3A6.11.4#~/.yarn/patches/protobufjs-npm-6.11.4-af11968b80.patch"
+  }
 }

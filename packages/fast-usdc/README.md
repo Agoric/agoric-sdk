@@ -3,12 +3,6 @@
 Development package for the Fast USDC product.
 Here in agoric-sdk as a convenience for integration testing and iterating on the SDK affordances required for the product.
 
-# Naming
-
-The package is `fast-usdc`, not `@agoric/fast-usdc`, because it's not part of the SDK.
-
-It should not appear in the NPM directory. To this end the package is marked as private.
-
 # Factoring
 
 This package is meant to contain all the code for the Fast USDC product. However there are some constraints:
@@ -23,3 +17,83 @@ Over time we can update our tooling to decouple this more from the `packages` di
 2. Export bootstrap testing utilities from `@agoric/boot`, allowing this to be above `@agoric/boot` in the package graph
 3. Update CI to support packages that aren't under `packages/`, eg. a top-level `dapps` directory
 4. Move this package out of agoric-sdk
+
+# Transaction feed
+
+## Oracles interface
+
+Oracles run off-chain and interact with the contract via an Agoric smart wallet bridge.
+```mermaid
+sequenceDiagram
+    title Becoming an oracle operator
+    participant OW as Operator N<br/>Smart Wallet
+    participant FUC as Fast USDC<br/>Contract Exo
+    participant CE as Core Eval
+
+    CE->>FUC: makeOperatorInvitation()
+    FUC-->>CE: operatorInvitation
+    CE->>+OW: deposit(operatorInvitation)
+
+    Note left of FUC: Off-chain wallet accepts the operator invitation
+
+    OW->>+FUC: offer(operatorInvitation)
+    FUC-->>OW: operator invitationMakers: {SubmitEvidence}
+
+    Note left of FUC: Off-chain watcher detects evidence
+    OW->>+FUC: offer(SubmitEvidence, evidence)
+```
+
+```mermaid
+sequenceDiagram
+    title Receiving evidence
+    participant W as Operator N<br/>Smart Wallet
+    participant A as Operator N<br/>Admin Oexo
+    participant TF as Transaction<br/>Feed
+
+    W->>A: offer(SubmitEvidence, evidence)
+
+    Note left of A: Once 3 operators push the same…
+
+    A->>TF: notify(evidence)
+```
+
+# Status Manager
+
+### Pending Advance State Diagram
+
+*Transactions are qualified by the OCW and EventFeed before arriving to the Advancer.*
+
+```mermaid
+stateDiagram-v2
+  [*] --> Observed: observe()
+  [*] --> Advancing: advancing()
+
+  Advancing --> Advanced: advanceOutcome(...true)
+  Advancing --> AdvanceFailed: advanceOutcome(...false)
+
+  Observed --> [*]: dequeueStatus()
+  Advanced --> [*]: dequeueStatus()
+  AdvanceFailed --> [*]: dequeueStatus()
+
+  note right of [*]
+    After dequeueStatus():
+    Transaction is removed 
+    from pendingTxs store.
+    Settler will .disburse()
+    or .forward()
+  end note
+```
+
+### Complete state diagram (starting from Transaction Feed into Advancer)
+
+```mermaid
+stateDiagram-v2
+  Observed --> Advancing
+  Observed --> Forwarding:Minted
+  Forwarding --> Forwarded
+  Advancing --> Advanced
+  Advanced --> Disbursed
+  AdvanceFailed --> Forwarding
+  Advancing --> AdvanceFailed
+  Forwarding --> ForwardFailed
+```

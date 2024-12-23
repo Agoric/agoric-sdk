@@ -15,6 +15,7 @@ import { initSwingStore } from '@agoric/swing-store';
 
 import { mustMatch, M } from '@endo/patterns';
 import { checkBundle } from '@endo/check-bundle/lite.js';
+import { deepCopyJsonable } from '@agoric/internal/src/js-utils.js';
 import engineGC from '@agoric/internal/src/lib-nodejs/engine-gc.js';
 import { startSubprocessWorker } from '@agoric/internal/src/lib-nodejs/spawnSubprocessWorker.js';
 import { waitUntilQuiescent } from '@agoric/internal/src/lib-nodejs/waitUntilQuiescent.js';
@@ -264,13 +265,6 @@ export async function makeSwingsetController(
   await kernel.start();
 
   /**
-   * @param {T} x
-   * @returns {T}
-   * @template T
-   */
-  const defensiveCopy = x => JSON.parse(JSON.stringify(x));
-
-  /**
    * Validate and install a code bundle.
    *
    * @param {EndoZipBase64Bundle} bundle
@@ -304,7 +298,7 @@ export async function makeSwingsetController(
     writeSlogObject,
 
     dump() {
-      return defensiveCopy(kernel.dump());
+      return deepCopyJsonable(kernel.dump());
     },
 
     verboseDebugMode(flag) {
@@ -340,11 +334,11 @@ export async function makeSwingsetController(
     },
 
     getStats() {
-      return defensiveCopy(kernel.getStats());
+      return deepCopyJsonable(kernel.getStats());
     },
 
     getStatus() {
-      return defensiveCopy(kernel.getStatus());
+      return deepCopyJsonable(kernel.getStatus());
     },
 
     getActivityhash() {

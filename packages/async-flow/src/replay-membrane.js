@@ -1,4 +1,3 @@
-/* eslint-disable no-use-before-define */
 import { isVow } from '@agoric/vow/src/vow-utils.js';
 import { heapVowE } from '@agoric/vow/vat.js';
 import { throwLabeled } from '@endo/common/throw-labeled.js';

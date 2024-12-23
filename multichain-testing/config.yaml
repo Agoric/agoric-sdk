@@ -1,3 +1,6 @@
+name: agoric-multichain-testing
+version: 0.2.20
+
 chains:
   - id: agoriclocal
     name: agoric

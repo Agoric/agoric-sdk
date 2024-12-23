@@ -1,4 +1,3 @@
-/* eslint-disable no-use-before-define */
 import type { LatestTopic } from '@agoric/notifier';
 import type { ERef } from '@endo/far';
 import type { RemotableObject } from '@endo/pass-style';
@@ -99,6 +98,9 @@ export type AssetKindForValue<V extends AmountValue> = V extends NatValue
       : V extends import('@endo/patterns').CopyBag
         ? 'copyBag'
         : never;
+
+export type Ratio = { numerator: Amount<'nat'>; denominator: Amount<'nat'> };
+
 /** @deprecated */
 export type DisplayInfo<K extends AssetKind = AssetKind> = {
   /**

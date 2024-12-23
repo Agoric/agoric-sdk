@@ -9,8 +9,9 @@
  * types.js file.
  */
 import { E } from '@endo/eventual-send';
-import { makeNotifierKit, observeIteration } from '@agoric/notifier';
 import { Far } from '@endo/marshal';
+import { deepCopyJsonable } from '@agoric/internal/src/js-utils.js';
+import { makeNotifierKit, observeIteration } from '@agoric/notifier';
 
 import { makeWalletRoot } from './lib-wallet.js';
 import pubsub from './pubsub.js';
@@ -54,7 +55,7 @@ export function buildRootObject(vatPowers) {
   const offerSubscriptions = new Map();
 
   const httpSend = (obj, channelHandles) =>
-    E(http).send(JSON.parse(JSON.stringify(obj)), channelHandles);
+    E(http).send(deepCopyJsonable(obj), channelHandles);
 
   const pushOfferSubscriptions = (channelHandle, offers) => {
     const subs = offerSubscriptions.get(channelHandle);

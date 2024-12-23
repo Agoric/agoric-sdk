@@ -50,10 +50,6 @@ export const provideOrchestration = (
   remotePowers,
   marshaller,
 ) => {
-  zcf.setTestJig(() => ({
-    baggage,
-  }));
-
   // separate zones
   const zones = (() => {
     const zone = makeDurableZone(baggage);
@@ -160,9 +156,15 @@ export const provideOrchestration = (
     zones.contract.subZone('orchestration'),
   );
 
+  zcf.setTestJig(() => ({
+    baggage,
+    chainHub,
+  }));
+
   return {
     ...defaultOrchestrateKit,
     makeOrchestrateKit,
+    baggage,
     chainHub,
     vowTools,
     asyncFlowTools,

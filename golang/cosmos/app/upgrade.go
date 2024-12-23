@@ -158,6 +158,22 @@ func replacePriceFeedsCoreProposal(upgradeName string) (vm.CoreProposalStep, err
 	)
 }
 
+// func upgradeMintHolderCoreProposal(upgradeName string) (vm.CoreProposalStep, error) {
+// 	variant := getVariantFromUpgradeName(upgradeName)
+
+// 	if variant == "" {
+// 		return nil, nil
+// 	}
+
+// 	return buildProposalStepWithArgs(
+// 		"@agoric/builders/scripts/vats/upgrade-mintHolder.js",
+// 		"defaultProposalBuilder",
+// 		map[string]any{
+// 			"variant": variant,
+// 		},
+// 	)
+// }
+
 // upgrade18Handler performs standard upgrade actions plus custom actions for upgrade-18.
 func upgrade18Handler(app *GaiaApp, targetUpgrade string) func(sdk.Context, upgradetypes.Plan, module.VersionMap) (module.VersionMap, error) {
 	return func(ctx sdk.Context, plan upgradetypes.Plan, fromVm module.VersionMap) (module.VersionMap, error) {
@@ -214,6 +230,40 @@ func upgrade18Handler(app *GaiaApp, targetUpgrade string) func(sdk.Context, upgr
 					"@agoric/builders/scripts/smart-wallet/build-wallet-factory2-upgrade.js",
 				),
 			)
+
+			// CoreProposals for Upgrade 19. These should not be introduced
+			// before upgrade 18 is done because they would be run in n:upgrade-next
+			//
+			// upgradeMintHolderStep, err := upgradeMintHolderCoreProposal(targetUpgrade)
+			// if err != nil {
+			// 	return nil, err
+			// } else if upgradeMintHolderStep != nil {
+			// 	CoreProposalSteps = append(CoreProposalSteps, upgradeMintHolderStep)
+			// }
+			//
+			// CoreProposalSteps = append(CoreProposalSteps,
+			// 	vm.CoreProposalStepForModules(
+			// 		"@agoric/builders/scripts/inter-protocol/replace-feeDistributor.js",
+			// 	),
+			// 	vm.CoreProposalStepForModules(
+			// 		"@agoric/builders/scripts/vats/upgrade-paRegistry.js",
+			// 	),
+			// 	vm.CoreProposalStepForModules(
+			// 		"@agoric/builders/scripts/vats/upgrade-board.js",
+			// 	),
+			// 	vm.CoreProposalStepForModules(
+			// 		"@agoric/builders/scripts/vats/upgrade-provisionPool.js",
+			// 	),
+			// 	vm.CoreProposalStepForModules(
+			// 		"@agoric/builders/scripts/vats/upgrade-bank.js",
+			// 	),
+			// 	vm.CoreProposalStepForModules(
+			// 		"@agoric/builders/scripts/vats/upgrade-agoricNames.js",
+			// 	),
+			// 	vm.CoreProposalStepForModules(
+			// 		"@agoric/builders/scripts/vats/upgrade-asset-reserve.js",
+			// 	),
+			// )
 		}
 
 		app.upgradeDetails = &upgradeDetails{

@@ -244,7 +244,6 @@ export const makeScheduler = async (
           try {
             setTimeMonotonically(time);
             auctionDriver.capturePrices();
-            // eslint-disable-next-line no-use-before-define
             return startAuction();
           } catch (e) {
             console.error(`⚠️ Auction threw ${e}. Caught in SchedulerWaker.`);

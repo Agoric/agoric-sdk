@@ -1,4 +1,3 @@
-/* eslint-disable no-use-before-define */
 import { Nat, isNat } from '@endo/nat';
 import { assert, Fail } from '@endo/errors';
 import {
@@ -43,6 +42,7 @@ const enableKernelGC = true;
  * @typedef { import('../../types-external.js').SnapStore } SnapStore
  * @typedef { import('../../types-external.js').TranscriptStore } TranscriptStore
  * @typedef { import('../../types-external.js').VatKeeper } VatKeeper
+ * @typedef { Pick<VatKeeper, 'deleteCListEntry' | 'deleteSnapshots' | 'deleteTranscripts'> } VatUndertaker
  * @typedef { import('../../types-internal.js').InternalKernelOptions } InternalKernelOptions
  * @typedef { import('../../types-internal.js').ReapDirtThreshold } ReapDirtThreshold
  * @import {PromiseRecord} from '../../types-internal.js';
@@ -422,6 +422,8 @@ export default function makeKernelKeeper(
   const ephemeral = harden({
     /** @type { Map<string, VatKeeper> } */
     vatKeepers: new Map(),
+    /** @type { Map<string, VatUndertaker> } */
+    vatUndertakers: new Map(),
     deviceKeepers: new Map(), // deviceID -> deviceKeeper
   });
 
@@ -1044,7 +1046,7 @@ export default function makeKernelKeeper(
     // first or vref first), and delete the other one in the same
     // call, so we don't wind up with half an entry.
 
-    const vatKeeper = provideVatKeeper(vatID);
+    const undertaker = provideVatUndertaker(vatID);
     const clistPrefix = `${vatID}.c.`;
     const exportPrefix = `${clistPrefix}o+`;
     const importPrefix = `${clistPrefix}o-`;
@@ -1092,7 +1094,7 @@ export default function makeKernelKeeper(
       // drop+retire
       const kref = kvStore.get(k) || Fail`getNextKey ensures get`;
       const vref = stripPrefix(clistPrefix, k);
-      vatKeeper.deleteCListEntry(kref, vref);
+      undertaker.deleteCListEntry(kref, vref);
       // that will also delete both db keys
       work.imports += 1;
       remaining -= 1;
@@ -1109,7 +1111,7 @@ export default function makeKernelKeeper(
     for (const k of enumeratePrefixedKeys(kvStore, promisePrefix)) {
       const kref = kvStore.get(k) || Fail`getNextKey ensures get`;
       const vref = stripPrefix(clistPrefix, k);
-      vatKeeper.deleteCListEntry(kref, vref);
+      undertaker.deleteCListEntry(kref, vref);
       // that will also delete both db keys
       work.promises += 1;
       remaining -= 1;
@@ -1131,7 +1133,7 @@ export default function makeKernelKeeper(
 
     // this will internally loop through 'budget' deletions
     remaining = budget.snapshots ?? budget.default;
-    const dsc = vatKeeper.deleteSnapshots(remaining);
+    const dsc = undertaker.deleteSnapshots(remaining);
     work.snapshots += dsc.cleanups;
     remaining -= dsc.cleanups;
     if (remaining <= 0) {
@@ -1140,7 +1142,7 @@ export default function makeKernelKeeper(
 
     // same
     remaining = budget.transcripts ?? budget.default;
-    const dts = vatKeeper.deleteTranscripts(remaining);
+    const dts = undertaker.deleteTranscripts(remaining);
     work.transcripts += dts.cleanups;
     remaining -= dts.cleanups;
     // last task, so increment cleanups, but dc.done is authoritative
@@ -1697,6 +1699,26 @@ export default function makeKernelKeeper(
     initializeVatState(kvStore, transcriptStore, vatID, source, options);
   }
 
+  /** @type {import('./vatKeeper.js').VatKeeperPowers} */
+  const vatKeeperPowers = {
+    transcriptStore,
+    kernelSlog,
+    addKernelObject,
+    addKernelPromiseForVat,
+    kernelObjectExists,
+    incrementRefCount,
+    decrementRefCount,
+    getObjectRefCount,
+    setObjectRefCount,
+    getReachableAndVatSlot,
+    addMaybeFreeKref,
+    incStat,
+    decStat,
+    getCrankNumber,
+    scheduleReap,
+    snapStore,
+  };
+
   function provideVatKeeper(vatID) {
     insistVatID(vatID);
     const found = ephemeral.vatKeepers.get(vatID);
@@ -1704,28 +1726,34 @@ export default function makeKernelKeeper(
       return found;
     }
     assert(kvStore.has(`${vatID}.o.nextID`), `${vatID} was not initialized`);
-    const vk = makeVatKeeper(
-      kvStore,
-      transcriptStore,
-      kernelSlog,
-      vatID,
-      addKernelObject,
-      addKernelPromiseForVat,
-      kernelObjectExists,
-      incrementRefCount,
-      decrementRefCount,
-      getObjectRefCount,
-      setObjectRefCount,
-      getReachableAndVatSlot,
-      addMaybeFreeKref,
-      incStat,
-      decStat,
-      getCrankNumber,
-      scheduleReap,
-      snapStore,
-    );
+    const vk = makeVatKeeper(vatID, kvStore, vatKeeperPowers);
     ephemeral.vatKeepers.set(vatID, vk);
     return vk;
+  }
+
+  /**
+   * Produce an attenuated vatKeeper for slow vat termination (and that
+   * therefore does not insist on liveness, unlike provideVatKeeper).
+   *
+   * @param {string} vatID
+   */
+  function provideVatUndertaker(vatID) {
+    insistVatID(vatID);
+    const found = ephemeral.vatUndertakers.get(vatID);
+    if (found !== undefined) {
+      return found;
+    }
+    const { deleteCListEntry, deleteSnapshots, deleteTranscripts } =
+      ephemeral.vatKeepers.get(vatID) ||
+      makeVatKeeper(vatID, kvStore, vatKeeperPowers);
+    /** @type {VatUndertaker} */
+    const undertaker = harden({
+      deleteCListEntry,
+      deleteSnapshots,
+      deleteTranscripts,
+    });
+    ephemeral.vatUndertakers.set(vatID, undertaker);
+    return undertaker;
   }
 
   function vatIsAlive(vatID) {

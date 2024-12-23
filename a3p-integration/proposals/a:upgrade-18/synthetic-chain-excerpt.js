@@ -32,22 +32,20 @@ const waitForBootstrap = async () => {
   }
 };
 
-export const waitForBlock = async (times = 1) => {
-  console.log(times);
-  let time = 0;
-  while (time < times) {
-    const block1 = await waitForBootstrap();
+export const waitForBlock = async (n = 1) => {
+  console.log(`waitForBlock waiting for ${n} new block(s)...`);
+  const h0 = await waitForBootstrap();
+  let lastHeight = h0;
+  for (let i = 0; i < n; i += 1) {
     while (true) {
-      const block2 = await waitForBootstrap();
-
-      if (block1 !== block2) {
-        console.log('block produced');
+      await new Promise(r => setTimeout(r, 1000));
+      const currentHeight = await waitForBootstrap();
+      if (currentHeight !== lastHeight) {
+        console.log(`waitForBlock saw new height ${currentHeight}`);
+        lastHeight = currentHeight;
         break;
       }
-
-      await new Promise(r => setTimeout(r, 1000));
     }
-    time += 1;
   }
 };
 
@@ -57,7 +55,6 @@ const agdBinary = 'agd';
 
 /**
  * @param {{execFileSync: typeof import('child_process').execFileSync }} io
- * @returns
  */
 export const makeAgd = ({ execFileSync }) => {
   /**

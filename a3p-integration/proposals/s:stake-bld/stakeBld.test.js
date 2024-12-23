@@ -8,7 +8,7 @@ import { GOV1ADDR } from '@agoric/synthetic-chain';
 import { Tendermint34Client } from '@cosmjs/tendermint-rpc';
 import assert from 'node:assert';
 import process from 'node:process';
-import { networkConfig, walletUtils } from './test-lib/index.js';
+import { networkConfig, agdWalletUtils } from './test-lib/index.js';
 
 // XXX not the same as VALIDATOR_ADDRESS, which is actually the delegator
 const VALIDATOR_ADDRESS = process.env.VALIDATOR_ADDRESS;
@@ -26,11 +26,15 @@ const currentDelegation = async () => {
 test('basic', async t => {
   assert(GOV1ADDR);
 
-  const { brand } = walletUtils.agoricNames;
+  const { brand } = agdWalletUtils.agoricNames;
 
   t.is((await currentDelegation()).length, 1, 'just the initial delegation');
 
-  await walletUtils.broadcastBridgeAction(GOV1ADDR, {
+  /** @type {import('@agoric/ertp').Brand} */
+  // @ts-expect-error actually a BoardRemote
+  const BLDBrand = brand.BLD;
+
+  await agdWalletUtils.broadcastBridgeAction(GOV1ADDR, {
     method: 'executeOffer',
     offer: {
       id: 'request-stake',
@@ -41,13 +45,13 @@ test('basic', async t => {
       },
       proposal: {
         give: {
-          In: { brand: brand.BLD, value: 10n },
+          In: { brand: BLDBrand, value: 10n },
         },
       },
     },
   });
 
-  await walletUtils.broadcastBridgeAction(GOV1ADDR, {
+  await agdWalletUtils.broadcastBridgeAction(GOV1ADDR, {
     method: 'executeOffer',
     offer: {
       id: 'request-delegate-6',
@@ -55,11 +59,11 @@ test('basic', async t => {
         source: 'continuing',
         previousOffer: 'request-stake',
         invitationMakerName: 'Delegate',
-        invitationArgs: [VALIDATOR_ADDRESS, { brand: brand.BLD, value: 10n }],
+        invitationArgs: [VALIDATOR_ADDRESS, { brand: BLDBrand, value: 10n }],
       },
       proposal: {
         give: {
-          In: { brand: brand.BLD, value: 10n },
+          In: { brand: BLDBrand, value: 10n },
         },
       },
     },
@@ -72,7 +76,7 @@ test('basic', async t => {
     // omit 'delegation' because it has 'delegatorAddress' which is different every test run
   });
 
-  await walletUtils.broadcastBridgeAction(GOV1ADDR, {
+  await agdWalletUtils.broadcastBridgeAction(GOV1ADDR, {
     method: 'executeOffer',
     offer: {
       id: 'request-undelegate',

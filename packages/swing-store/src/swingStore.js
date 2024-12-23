@@ -337,7 +337,6 @@ export function makeSwingStore(dirPath, forceReset, options = {}) {
   const kernelKVStore = {
     ...kvStore,
     set(key, value) {
-      typeof key === 'string' || Fail`key must be a string`;
       const keyType = getKeyType(key);
       keyType !== 'host' || Fail`kernelKVStore refuses host keys`;
       kvStore.set(key, value);
@@ -352,7 +351,6 @@ export function makeSwingStore(dirPath, forceReset, options = {}) {
       }
     },
     delete(key) {
-      typeof key === 'string' || Fail`key must be a string`;
       const keyType = getKeyType(key);
       keyType !== 'host' || Fail`kernelKVStore refuses host keys`;
       kvStore.delete(key);
@@ -505,6 +503,7 @@ export function makeSwingStore(dirPath, forceReset, options = {}) {
 
   /** @type {import('./internal.js').SwingStoreInternal} */
   const internal = harden({
+    dirPath,
     snapStore,
     transcriptStore,
     bundleStore,

@@ -4,26 +4,19 @@
  */
 
 // @ts-check
-import { CommanderError, InvalidArgumentError } from 'commander';
-// TODO: should get M from endo https://github.com/Agoric/agoric-sdk/issues/7090
+import { fetchEnvNetworkConfig, makeWalletUtils } from '@agoric/client-utils';
 import { makeOfferSpecShape } from '@agoric/inter-protocol/src/auction/auctionBook.js';
 import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
 import { objectMap } from '@agoric/internal';
-import { M, matches } from '@agoric/store';
-
+import { M, matches } from '@endo/patterns';
+import { CommanderError, InvalidArgumentError } from 'commander';
 import { normalizeAddressWithOptions, pollBlocks } from '../lib/chain.js';
 import {
   asBoardRemote,
   bigintReplacer,
   makeAmountFormatter,
 } from '../lib/format.js';
-import { getNetworkConfig } from '../lib/rpc.js';
-import {
-  getCurrent,
-  makeWalletUtils,
-  outputActionAndHint,
-  sendAction,
-} from '../lib/wallet.js';
+import { getCurrent, outputActionAndHint, sendAction } from '../lib/wallet.js';
 
 const { values } = Object;
 
@@ -238,8 +231,8 @@ export const makeInterCommand = (
     try {
       // XXX pass fetch to getNetworkConfig() explicitly
       // await null above makes this await safe
-      const networkConfig = await getNetworkConfig(env);
-      return makeWalletUtils({ fetch, execFileSync, delay }, networkConfig);
+      const networkConfig = await fetchEnvNetworkConfig({ env, fetch });
+      return makeWalletUtils({ fetch, delay }, networkConfig);
     } catch (err) {
       // CommanderError is a class constructor, and so
       // must be invoked with `new`.
@@ -287,14 +280,12 @@ inter auction status
          * }}
          */ opts,
       ) => {
-        const { agoricNames, readLatestHead } = await tryMakeUtils();
+        const { agoricNames, readPublished } = await tryMakeUtils();
 
-        /** @type { [ScheduleNotification, BookDataNotification, *] } */
-        // @ts-expect-error dynamic cast
         const [schedule, book, { current: params }] = await Promise.all([
-          readLatestHead(`published.auction.schedule`),
-          readLatestHead(`published.auction.book${opts.book}`),
-          readLatestHead(`published.auction.governance`),
+          readPublished('auction.schedule'),
+          readPublished(`auction.book${opts.book}`),
+          readPublished('auction.governance'),
         ]);
 
         const fmt = makeFormatters(Object.values(agoricNames.vbankAsset));
@@ -334,7 +325,7 @@ inter auction status
    * @param {string} from
    * @param {import('@agoric/smart-wallet/src/offers.js').OfferSpec} offer
    * @param {Awaited<ReturnType<tryMakeUtils>>} tools
-   * @param {boolean?} dryRun
+   * @param {boolean | undefined} dryRun
    */
   const placeBid = async (from, offer, tools, dryRun = false) => {
     const { networkConfig, agoricNames, pollOffer } = tools;
@@ -499,9 +490,9 @@ inter auction status
           return;
         }
 
-        const { networkConfig, readLatestHead } = await tryMakeUtils();
+        const { networkConfig, readPublished } = await tryMakeUtils();
 
-        const current = await getCurrent(from, { readLatestHead });
+        const current = await getCurrent(from, { readPublished });
         const liveIds = current.liveOffers.map(([i, _s]) => i);
         if (!liveIds.includes(id)) {
           // InvalidArgumentError is a class constructor, and so
@@ -526,7 +517,7 @@ inter auction status
         show({ timestamp, height, offerId: id, txhash });
 
         const checkGone = async blockInfo => {
-          const pollResult = await getCurrent(from, { readLatestHead });
+          const pollResult = await getCurrent(from, { readPublished });
           const found = pollResult.liveOffers.find(([i, _]) => i === id);
           if (found) throw Error('retry');
           return blockInfo;
@@ -568,11 +559,11 @@ $ inter bid list --from my-acct
        * }} opts
        */
       async opts => {
-        const { agoricNames, readLatestHead, storedWalletState } =
+        const { agoricNames, readPublished, storedWalletState } =
           await tryMakeUtils();
 
         const [current, state] = await Promise.all([
-          getCurrent(opts.from, { readLatestHead }),
+          getCurrent(opts.from, { readPublished }),
           storedWalletState(opts.from),
         ]);
         const entries = opts.all

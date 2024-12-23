@@ -1,4 +1,3 @@
-/* eslint-disable no-use-before-define */
 import type { Passable } from '@endo/pass-style';
 import type { Vow, VowTools } from '@agoric/vow';
 import type { LogStore } from './log-store.js';

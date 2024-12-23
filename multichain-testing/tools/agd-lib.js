@@ -16,7 +16,7 @@ const binaryArgs = [
 ];
 
 /**
- * @param {Record<string, string | undefined>} record - e.g. { color: 'blue' }
+ * @param {Record<string, string | string[] | undefined>} record - e.g. { color: 'blue' }
  * @returns {string[]} - e.g. ['--color', 'blue']
  */
 export const flags = record => {
@@ -25,7 +25,12 @@ export const flags = record => {
   /** @type {[string, string][]} */
   // @ts-expect-error undefined is filtered out
   const skipUndef = Object.entries(record).filter(([_k, v]) => v !== undefined);
-  return skipUndef.map(([k, v]) => [`--${k}`, v]).flat();
+  return skipUndef.flatMap(([key, value]) => {
+    if (Array.isArray(value)) {
+      return value.flatMap(v => [`--${key}`, v]);
+    }
+    return [`--${key}`, value];
+  });
 };
 
 /**
@@ -164,6 +169,19 @@ export const makeAgd = ({ execFileSync }) => {
             },
           ).toString();
         },
+        /** @param {string} name key name in keyring */
+        showAddress: name => {
+          return execFileSync(
+            kubectlBinary,
+            [...binaryArgs, 'keys', 'show', name, '-a', ...keyringArgs],
+            {
+              encoding: 'utf-8',
+              stdio: ['pipe', 'pipe', 'ignore'],
+            },
+          )
+            .toString()
+            .trim();
+        },
         /** @param {string} name */
         delete: name => {
           return exec([...keyringArgs, 'keys', 'delete', name, '-y'], {
@@ -181,7 +199,7 @@ export const makeAgd = ({ execFileSync }) => {
   return make();
 };
 
-/** @typedef {ReturnType<makeAgd>} Agd */
+/** @typedef {ReturnType<typeof makeAgd>} Agd */
 
 /** @param {{ execFileSync: typeof import('child_process').execFileSync, log: typeof console.log }} powers */
 export const makeCopyFiles = (

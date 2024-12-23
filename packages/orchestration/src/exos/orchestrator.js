@@ -25,7 +25,7 @@ import {
  * @import {CosmosInterchainService} from './exo-interfaces.js';
  * @import {MakeLocalChainFacade} from './local-chain-facade.js';
  * @import {MakeRemoteChainFacade} from './remote-chain-facade.js';
- * @import {Chain, ChainInfo, IBCConnectionInfo, Orchestrator} from '../types.js';
+ * @import {Chain, ChainInfo, IBCConnectionInfo, KnownChains, Orchestrator} from '../types.js';
  */
 
 const { Vow$ } = NetworkShape; // TODO #9611
@@ -34,7 +34,7 @@ const trace = makeTracer('Orchestrator');
 /** @see {Orchestrator} */
 export const OrchestratorI = M.interface('Orchestrator', {
   getChain: M.call(M.string()).returns(Vow$(ChainInfoShape)),
-  getDenomInfo: M.call(DenomShape).returns(DenomInfoShape),
+  getDenomInfo: M.call(DenomShape, M.string()).returns(DenomInfoShape),
   asAmount: M.call(DenomAmountShape).returns(AmountShape),
 });
 
@@ -138,8 +138,8 @@ const prepareOrchestratorKit = (
           });
         },
         /** @type {HostOf<Orchestrator['getDenomInfo']>} */
-        getDenomInfo(denom) {
-          const denomDetail = chainHub.getAsset(denom);
+        getDenomInfo(denom, holdingChainName) {
+          const denomDetail = chainHub.getAsset(denom, holdingChainName);
           if (!denomDetail) throw Fail`No denom detail for ${q(denom)}`;
           const { chainName, baseName, baseDenom, brand } = denomDetail;
           chainByName.has(chainName) ||
@@ -148,14 +148,20 @@ const prepareOrchestratorKit = (
           if (maybeChain.pending) {
             throw Fail`wait until getChain(${q(chainName)}) completes before getDenomInfo(${q(denom)})`;
           }
-          const chain = maybeChain.value;
+          const chain =
+            /** @type {HostInterface<Chain<KnownChains[keyof KnownChains]>>} */ (
+              maybeChain.value
+            );
           chainByName.has(baseName) ||
             Fail`use getChain(${q(baseName)}) before getDenomInfo(${q(denom)})`;
           const maybeBase = chainByName.get(baseName);
           if (maybeBase.pending) {
             throw Fail`wait until getChain(${q(baseName)}) completes before getDenomInfo(${q(denom)})`;
           }
-          const base = maybeBase.value;
+          const base =
+            /** @type {HostInterface<Chain<KnownChains[keyof KnownChains]>>} */ (
+              maybeBase.value
+            );
           return harden({ chain, base, brand, baseDenom });
         },
         /** @type {HostOf<Orchestrator['asAmount']>} */

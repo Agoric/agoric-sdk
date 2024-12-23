@@ -75,7 +75,6 @@ test('makeNotifierFromSubscriber(finishes) - getUpdateSince', async t => {
 
   const results = [];
   let updateCount;
-  // eslint-disable-next-line no-constant-condition
   while (true) {
     const result = await notifier.getUpdateSince(updateCount);
     ({ updateCount } = result);
@@ -137,7 +136,6 @@ test('makeNotifierFromSubscriber(fails) - getUpdateSince', async t => {
   const results = [];
   let updateCount;
   try {
-    // eslint-disable-next-line no-constant-condition
     while (true) {
       const result = await notifier.getUpdateSince(updateCount);
       ({ updateCount } = result);

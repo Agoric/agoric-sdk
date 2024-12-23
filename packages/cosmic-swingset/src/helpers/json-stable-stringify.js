@@ -47,12 +47,18 @@ export default function stableStringify(obj, opts) {
     })(opts.cmp);
 
   const seen = [];
-  return (function stringify(parent, key, node, level) {
+  /**
+   * @param {object | unknown[]} parent
+   * @param {PropertyKey} key
+   * @param {unknown} node
+   * @param {number} level
+   */
+  const stringify = (parent, key, node, level) => {
     const indent = space ? `\n${new Array(level + 1).join(space)}` : '';
     const colonSeparator = space ? ': ' : ':';
 
-    if (node && node.toJSON && typeof node.toJSON === 'function') {
-      node = node.toJSON();
+    if (node && typeof node === 'object' && 'toJSON' in node) {
+      if (typeof node.toJSON === 'function') node = node.toJSON();
     }
 
     node = replacer.call(parent, key, node);
@@ -90,5 +96,6 @@ export default function stableStringify(obj, opts) {
     }
     seen.splice(seen.indexOf(node), 1);
     return `{${out.join(',')}${indent}}`;
-  })({ '': obj }, '', obj, 0);
+  };
+  return stringify({ '': obj }, '', obj, 0);
 }

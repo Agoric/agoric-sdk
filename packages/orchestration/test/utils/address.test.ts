@@ -4,6 +4,7 @@ import {
   makeICAChannelAddress,
   makeICQChannelAddress,
   findAddressField,
+  getBech32Prefix,
 } from '../../src/utils/address.js';
 
 test('makeICAChannelAddress', t => {
@@ -107,3 +108,33 @@ test('makeICQChannelAddress', t => {
     'makeICQChannelAddress not hardened against malformed version. use `validateRemoteIbcAddress` to detect this, or expect IBC ProtocolImpl to throw',
   );
 });
+
+const bech32 = test.macro({
+  title: (_, input: string, expected: string | null) =>
+    expected !== null
+      ? `can extract ${expected} prefix from ${input}`
+      : `throws error for invalid address ${input}`,
+  exec: (t, input: string, expected: string | null, error?: string) => {
+    if (expected !== null) {
+      t.is(getBech32Prefix(input), expected);
+    } else {
+      t.throws(() => getBech32Prefix(input), { message: error });
+    }
+  },
+});
+
+test(bech32, 'bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4', 'bc');
+test(bech32, 'cosmos1n4f2eqt2gm5mh6gevf8aw2wrf75q25yru09yvn', 'cosmos');
+test(bech32, '111qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4', '11');
+test(
+  bech32,
+  'qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4',
+  null,
+  'No separator character for "qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4"',
+);
+test(
+  bech32,
+  '1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4',
+  null,
+  'Missing prefix for "1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4"',
+);

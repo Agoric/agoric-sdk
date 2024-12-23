@@ -24,7 +24,6 @@ export function buildSerializationTools(syscall, deviceName) {
       send(method, args) {
         assert.typeof(method, 'string');
         assert(Array.isArray(args), args);
-        // eslint-disable-next-line no-use-before-define
         const capdata = serialize([method, args]);
         syscall.sendOnly(slot, capdata);
       },

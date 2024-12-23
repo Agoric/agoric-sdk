@@ -12,7 +12,6 @@
  * 6 - Make sure mint limit is adhered
  */
 
-import test from 'ava';
 import {
   agd,
   agoric,
@@ -20,9 +19,11 @@ import {
   GOV1ADDR,
   GOV2ADDR,
 } from '@agoric/synthetic-chain';
+import { waitUntilAccountFunded } from '@agoric/client-utils';
+import test from 'ava';
+import { NonNullish } from '@agoric/internal/src/errors.js';
 import {
   adjustBalancesIfNotProvisioned,
-  psmSwap,
   bankSend,
   checkGovParams,
   checkSwapExceedMintLimit,
@@ -30,11 +31,12 @@ import {
   getPsmMetrics,
   implementPsmGovParamChange,
   initializeNewUser,
+  logRecord,
   maxMintBelowLimit,
+  psmSwap,
+  sendOfferAgd,
 } from './test-lib/psm-lib.js';
 import { getBalances } from './test-lib/utils.js';
-import { NonNullish } from './test-lib/errors.js';
-import { waitUntilAccountFunded } from './test-lib/sync-tools.js';
 
 // Export these from synthetic-chain?
 const USDC_DENOM = NonNullish(process.env.USDC_DENOM);
@@ -128,7 +130,7 @@ test.serial('initialize new user', async t => {
   t.pass();
 });
 
-test.serial('swap into IST', async t => {
+test.serial('swap into IST using agd with default gas', async t => {
   const {
     newUser: { name },
     anchor,
@@ -147,8 +149,8 @@ test.serial('swap into IST', async t => {
     balances,
     psmTrader,
   );
-  t.log('METRICS', metricsBefore);
-  t.log('BALANCES', balancesBefore);
+  logRecord('METRICS', metricsBefore, t.log);
+  logRecord('BALANCES', balancesBefore, t.log);
 
   await psmSwap(
     psmTrader,
@@ -161,7 +163,7 @@ test.serial('swap into IST', async t => {
       '--feePct',
       wantMintedFeeVal,
     ],
-    psmSwapIo,
+    { ...psmSwapIo, sendOffer: sendOfferAgd },
   );
 
   await checkSwapSucceeded(t, metricsBefore, balancesBefore, {
@@ -187,8 +189,8 @@ test.serial('swap out of IST', async t => {
     getBalances([psmTrader]),
   ]);
 
-  t.log('METRICS', metricsBefore);
-  t.log('BALANCES', balancesBefore);
+  logRecord('METRICS', metricsBefore, t.log);
+  logRecord('BALANCES', balancesBefore, t.log);
 
   await psmSwap(
     psmTrader,
@@ -227,7 +229,7 @@ test.serial('mint limit is adhered', async t => {
   await bankSend(otherAddr, `${value}${denom}`);
   await waitUntilAccountFunded(
     otherAddr,
-    { query: agd.query, setTimeout },
+    { log: t.log, query: agd.query, setTimeout },
     { denom, value: parseInt(value, 10) },
     { errorMessage: `${otherAddr} could not be funded with ${value}${denom}` },
   );
@@ -237,8 +239,8 @@ test.serial('mint limit is adhered', async t => {
     getBalances([otherAddr]),
   ]);
 
-  t.log('METRICS', metricsBefore);
-  t.log('BALANCES', balancesBefore);
+  logRecord('METRICS', metricsBefore, t.log);
+  logRecord('BALANCES', balancesBefore, t.log);
 
   const { maxMintableValue, wantFeeValue } = await maxMintBelowLimit(anchor);
   const maxMintFeesAccounted = Math.floor(

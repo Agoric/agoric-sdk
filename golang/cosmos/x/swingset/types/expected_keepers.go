@@ -23,8 +23,8 @@ type AccountKeeper interface {
 
 type SwingSetKeeper interface {
 	GetBeansPerUnit(ctx sdk.Context) map[string]sdkmath.Uint
-	ChargeBeans(ctx sdk.Context, addr sdk.AccAddress, beans sdkmath.Uint) error
+	ChargeBeans(ctx sdk.Context, beansPerUnit map[string]sdkmath.Uint, addr sdk.AccAddress, beans sdkmath.Uint) error
 	IsHighPriorityAddress(ctx sdk.Context, addr sdk.AccAddress) (bool, error)
 	GetSmartWalletState(ctx sdk.Context, addr sdk.AccAddress) SmartWalletState
-	ChargeForSmartWallet(ctx sdk.Context, addr sdk.AccAddress) error
+	ChargeForSmartWallet(ctx sdk.Context, beansPerUnit map[string]sdkmath.Uint, addr sdk.AccAddress) error
 }

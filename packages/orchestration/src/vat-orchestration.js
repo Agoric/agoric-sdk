@@ -5,7 +5,7 @@ import { prepareCosmosInterchainService } from './exos/cosmos-interchain-service
 
 /**
  * @import {Baggage} from '@agoric/vat-data';
- * @import {OrchestrationPowers} from './exos/cosmos-interchain-service.js';
+ * @import {CosmosOrchestrationPowers} from './exos/cosmos-interchain-service.js';
  */
 
 /**
@@ -26,7 +26,7 @@ export const buildRootObject = (vatPowers, vatParameters, baggage) => {
   );
 
   return Far('OrchestrationVat', {
-    /** @param {Partial<OrchestrationPowers>} [initialPowers] */
+    /** @param {Partial<CosmosOrchestrationPowers>} [initialPowers] */
     makeCosmosInterchainService(initialPowers = {}) {
       return makeCosmosInterchainService(initialPowers);
     },

@@ -1,0 +1,61 @@
+{
+  "name": "@agoric/client-utils",
+  "version": "0.1.0",
+  "description": "Utilities for building Agoric clients",
+  "license": "Apache-2.0",
+  "publishConfig": {
+    "access": "public"
+  },
+  "type": "module",
+  "main": "src/main.js",
+  "files": [
+    "src"
+  ],
+  "scripts": {
+    "build": "exit 0",
+    "test": "ava",
+    "test:c8": "c8 --all $C8_OPTIONS ava",
+    "test:xs": "exit 0",
+    "lint-fix": "yarn lint:eslint --fix",
+    "lint": "run-s --continue-on-error lint:*",
+    "lint:types": "tsc",
+    "lint:eslint": "eslint ."
+  },
+  "devDependencies": {
+    "ava": "^5.3.0",
+    "c8": "^10.1.2",
+    "ts-blank-space": "^0.4.4"
+  },
+  "dependencies": {
+    "@agoric/casting": "^0.4.3-u18.4",
+    "@agoric/ertp": "^0.16.3-u18.0",
+    "@agoric/internal": "^0.4.0-u18.0",
+    "@agoric/smart-wallet": "^0.5.4-u18.4",
+    "@agoric/vats": "^0.16.0-u18.4",
+    "@cosmjs/stargate": "^0.32.3",
+    "@cosmjs/tendermint-rpc": "^0.32.3",
+    "@endo/common": "^1.2.8",
+    "@endo/errors": "^1.2.8",
+    "@endo/marshal": "^1.6.2",
+    "@endo/pass-style": "^1.4.7",
+    "@endo/patterns": "^1.4.7",
+    "@endo/promise-kit": "^1.1.8"
+  },
+  "ava": {
+    "extensions": {
+      "js": true,
+      "ts": "module"
+    },
+    "files": [
+      "test/**/*.test.*"
+    ],
+    "nodeArguments": [
+      "--import=ts-blank-space/register",
+      "--no-warnings"
+    ],
+    "require": [
+      "@endo/init/legacy.js"
+    ],
+    "timeout": "20m"
+  }
+}

@@ -8,11 +8,14 @@ import {
   makeLeader,
   makeLeaderFromRpcAddresses,
 } from '@agoric/casting';
+import {
+  makeVstorageKit,
+  fetchEnvNetworkConfig,
+  makeAgoricNames,
+} from '@agoric/client-utils';
+import { execFileSync } from 'child_process';
 import fs from 'fs';
 import util from 'util';
-import { execFileSync } from 'child_process';
-import { fmtRecordOfLines, summarize } from '../lib/format.js';
-import { makeRpcUtils, networkConfig } from '../lib/rpc.js';
 
 import { makeLeaderOptions } from '../lib/casting.js';
 import {
@@ -20,7 +23,14 @@ import {
   fetchSwingsetParams,
   normalizeAddressWithOptions,
 } from '../lib/chain.js';
+import {
+  fmtRecordOfLines,
+  parseFiniteNumber,
+  summarize,
+} from '../lib/format.js';
 import { coalesceWalletState, getCurrent } from '../lib/wallet.js';
+
+const networkConfig = await fetchEnvNetworkConfig({ env: process.env, fetch });
 
 const SLEEP_SECONDS = 3;
 
@@ -102,7 +112,7 @@ export const makeWalletCommand = async command => {
     .action(async function (opts) {
       const offerStr = fs.readFileSync(opts.file).toString();
 
-      const { unserializer } = await makeRpcUtils({ fetch });
+      const { unserializer } = await makeVstorageKit({ fetch }, networkConfig);
 
       const offerObj = unserializer.fromCapData(JSON.parse(offerStr));
       console.log(offerObj);
@@ -117,7 +127,7 @@ export const makeWalletCommand = async command => {
     .action(async function (opts) {
       const offerStr = fs.readFileSync(opts.offer).toString();
 
-      const { unserializer } = await makeRpcUtils({ fetch });
+      const { unserializer } = await makeVstorageKit({ fetch }, networkConfig);
 
       const offerObj = unserializer.fromCapData(JSON.parse(offerStr));
       console.log(offerObj.offer.id);
@@ -132,30 +142,69 @@ export const makeWalletCommand = async command => {
     )
     .requiredOption('--offer [filename]', 'path to file with prepared offer')
     .option('--dry-run', 'spit out the command instead of running it')
+    .option('--gas', 'gas limit; "auto" [default] to calculate automatically')
+    .option(
+      '--gas-adjustment',
+      'factor by which to multiply the --gas=auto calculation result [default 1.2]',
+    )
+    .option('--verbose', 'print command output')
     .action(function (opts) {
-      /** @typedef {{ from: string, offer: string, dryRun: boolean }} Opts */
+      /**
+       * @typedef {{
+       *   from: string,
+       *   offer: string,
+       *   dryRun: boolean,
+       *   gas: string,
+       *   gasAdjustment: string,
+       *   verbose: boolean,
+       * }} Opts
+       */
       const {
         dryRun,
         from,
+        gas = 'auto',
+        gasAdjustment = '1.2',
         offer,
         home,
+        verbose,
         keyringBackend: backend,
       } = /** @type {SharedTxOptions & Opts} */ ({ ...wallet.opts(), ...opts });
 
       const offerBody = fs.readFileSync(offer).toString();
-      execSwingsetTransaction(['wallet-action', '--allow-spend', offerBody], {
-        from,
-        dryRun,
-        keyring: { home, backend },
-        ...networkConfig,
-      });
+      const out = execSwingsetTransaction(
+        ['wallet-action', '--allow-spend', offerBody, '-ojson', '-bblock'],
+        {
+          ...networkConfig,
+          keyring: { home, backend },
+          from,
+          gas:
+            gas === 'auto'
+              ? ['auto', parseFiniteNumber(gasAdjustment)]
+              : parseFiniteNumber(gas),
+          dryRun,
+          verbose,
+        },
+      );
+
+      // see sendAction in {@link ../lib/wallet.js}
+      if (dryRun || !verbose) return;
+      try {
+        const tx = JSON.parse(/** @type {string} */ (out));
+        if (tx.code !== 0) {
+          console.error('failed to send tx', tx);
+        }
+        console.log(tx);
+      } catch (err) {
+        console.error('unexpected output', JSON.stringify(out));
+        throw err;
+      }
     });
 
   wallet
     .command('list')
     .description('list all wallets in vstorage')
     .action(async function () {
-      const { vstorage } = await makeRpcUtils({ fetch });
+      const { vstorage } = await makeVstorageKit({ fetch }, networkConfig);
       const wallets = await vstorage.keys('published.wallet');
       process.stdout.write(wallets.join('\n'));
     });
@@ -169,23 +218,24 @@ export const makeWalletCommand = async command => {
       normalizeAddress,
     )
     .action(async function (opts) {
-      const { agoricNames, unserializer, readLatestHead } = await makeRpcUtils({
-        fetch,
-      });
+      const { readPublished, unserializer, ...vsk } = makeVstorageKit(
+        { fetch },
+        networkConfig,
+      );
+      const agoricNames = await makeAgoricNames(vsk.fromBoard, vsk.vstorage);
 
       const leader = makeLeader(networkConfig.rpcAddrs[0]);
       const follower = await makeFollower(
         `:published.wallet.${opts.from}`,
         leader,
         {
-          // @ts-expect-error xxx
           unserializer,
         },
       );
 
       const coalesced = await coalesceWalletState(follower);
 
-      const current = await getCurrent(opts.from, { readLatestHead });
+      const current = await getCurrent(opts.from, { readPublished });
 
       console.warn(
         'got coalesced',
