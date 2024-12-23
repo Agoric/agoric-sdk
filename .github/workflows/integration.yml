@@ -285,7 +285,23 @@ jobs:
         run: yarn build
         working-directory: a3p-integration
       - name: run proposals tests
-        run: yarn test
+        run: |
+          BRANCH_NAME="usman/prepare-test-hook"
+          FILES=("env_setup.sh" "run_test.sh" "run_use.sh")
+          FOLDER_NAME="upgrade-test-scripts"
+          ORG="Agoric"
+          REPO="agoric-3-proposals"
+
+          for file in "${FILES[@]}"
+          do
+            curl \
+             "https://github.com/$ORG/$REPO/raw/refs/heads/$BRANCH_NAME/packages/synthetic-chain/public/$FOLDER_NAME/$file" \
+             --location \
+             --output "node_modules/@agoric/synthetic-chain/dist/$FOLDER_NAME/$file" \
+             --silent
+          done
+
+          yarn test
         working-directory: a3p-integration
       - name: copy a3p-integration
         if: (success() || failure())
