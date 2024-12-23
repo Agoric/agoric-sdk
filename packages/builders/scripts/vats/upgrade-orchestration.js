@@ -12,6 +12,9 @@ export const defaultProposalBuilder = async ({ publishRef, install }) =>
           network: publishRef(install('@agoric/vats/src/vat-network.js')),
           localchain: publishRef(install('@agoric/vats/src/vat-localchain.js')),
           transfer: publishRef(install('@agoric/vats/src/vat-transfer.js')),
+          orchestration: publishRef(
+            install('@agoric/orchestration/src/vat-orchestration.js'),
+          ),
         },
       },
     ],

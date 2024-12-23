@@ -247,6 +247,14 @@ func unreleasedUpgradeHandler(app *GaiaApp, targetUpgrade string) func(sdk.Conte
 				),
 			)
 
+			// Upgrade vats using Vows in Upgrade 18 in order to use a new liveslots that
+			// avoids a memory leak in watchPromise.
+			CoreProposalSteps = append(CoreProposalSteps,
+				vm.CoreProposalStepForModules(
+					"@agoric/builders/scripts/vats/upgrade-orchestration.js",
+				),
+			)
+
 			// CoreProposals for Upgrade 19. These should not be introduced
 			// before upgrade 18 is done because they would be run in n:upgrade-next
 			//
