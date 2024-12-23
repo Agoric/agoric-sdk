@@ -1,5 +1,6 @@
 #!/bin/bash
 
+yarn ava terminateGovernor.test.js
 yarn ava replaceFeeDistributor.test.js
 yarn ava mintHolder.test.js
 yarn ava provisionPool.test.js
