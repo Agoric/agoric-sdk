@@ -3,6 +3,7 @@ package gaia
 import (
 	"encoding/json"
 	"fmt"
+	"reflect"
 	"strings"
 	"text/template"
 
@@ -77,14 +78,27 @@ func isFirstTimeUpgradeOfThisVersion(app *GaiaApp, ctx sdk.Context) bool {
 	return true
 }
 
-func buildProposalStepWithArgs(moduleName string, entrypoint string, opts map[string]any) (vm.CoreProposalStep, error) {
+func buildProposalStepWithArgs(moduleName string, entrypoint string, extra any) (vm.CoreProposalStep, error) {
 	t := template.Must(template.New("").Parse(`{
-		"module": "{{.moduleName}}",
-		"entrypoint": "{{.entrypoint}}",
-		"args": [ {{.optsArg}} ]
-	}`))
+  "module": "{{.moduleName}}",
+  "entrypoint": "{{.entrypoint}}",
+  "args": {{.args}}
+}`))
 
-	optsArg, err := json.Marshal(opts)
+	var args []byte
+	var err error
+	if extra == nil {
+		// The specified entrypoint will be called with no extra arguments after powers.
+		args = []byte(`[]`)
+	} else if reflect.TypeOf(extra).Kind() == reflect.Map && reflect.TypeOf(extra).Key().Kind() == reflect.String {
+		// The specified entrypoint will be called with this options argument after powers.
+		args, err = json.Marshal([]any{extra})
+	} else if reflect.TypeOf(extra).Kind() == reflect.Slice {
+		// The specified entrypoint will be called with each of these arguments after powers.
+		args, err = json.Marshal(extra)
+	} else {
+		return nil, fmt.Errorf("proposal extra must be nil, array, or string map, not %v", extra)
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -93,7 +107,7 @@ func buildProposalStepWithArgs(moduleName string, entrypoint string, opts map[st
 	err = t.Execute(&result, map[string]any{
 		"moduleName": moduleName,
 		"entrypoint": entrypoint,
-		"optsArg":    string(optsArg),
+		"args":       string(args),
 	})
 	if err != nil {
 		return nil, err
