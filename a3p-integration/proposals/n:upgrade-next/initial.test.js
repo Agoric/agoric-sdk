@@ -11,6 +11,8 @@ const vats = {
   transfer: { incarnation: 2 },
   walletFactory: { incarnation: 5 },
   zoe: { incarnation: 3 },
+  // Terminated in a future proposal.
+  '-ATOM-USD_price_feed-governor': { incarnation: 0 },
 };
 
 test(`vat details`, async t => {
