@@ -300,8 +300,6 @@ jobs:
           done
 
           yarn build
-
-          cat "$FOLDER_NAME/env_setup.sh"
         working-directory: a3p-integration
       - name: run proposals tests
         run: yarn test
