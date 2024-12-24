@@ -42,7 +42,7 @@ jobs:
   # https://docs.agoric.com/guides/getting-started/
   getting-started:
     needs: pre_check
-    if: needs.pre_check.outputs.should_run == 'true'
+    if: needs.pre_check.outputs.should_run == 'never'
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -120,7 +120,7 @@ jobs:
 
   deployment-test:
     needs: pre_check
-    if: needs.pre_check.outputs.should_run == 'true'
+    if: needs.pre_check.outputs.should_run == 'never'
 
     runs-on: ubuntu-22.04 # jammy (LTS)
     steps:
@@ -272,7 +272,7 @@ jobs:
       - name: verify SDK image didn't change
         # In the future when we can rebuild the SDK image with resolved endo packages, it would
         # be expected that the SDK image previously built has changed
-        if: steps.restore-node.outputs.endo-branch == 'NOPE'
+        if: steps.restore-node.outputs.endo-branch == 'never'
         run: |
           original=$(docker inspect --format "{{.ID}}" ghcr.io/agoric/agoric-sdk:unreleased)
           yarn build:sdk
@@ -343,7 +343,7 @@ jobs:
 
   test-multichain-e2e:
     needs: pre_check
-    if: needs.pre_check.outputs.should_run == 'true'
+    if: needs.pre_check.outputs.should_run == 'never'
     uses: ./.github/workflows/multichain-e2e.yml
 
   finalize-integration-result:
