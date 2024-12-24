@@ -198,7 +198,6 @@ const testInterruption = test.macro(
    */
   async (t, beforeWait, onRequest, afterWait, verifyResults) => {
     const handleCommand = message => {
-      // eslint-disable-next-line no-use-before-define
       return onRequest(worker, message);
     };
     const worker = await spawnReflectiveWorker(handleCommand);

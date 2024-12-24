@@ -1,6 +1,6 @@
 // @ts-check
 
-import path from 'node:path';
+import nativePath from 'node:path';
 import v8 from 'node:v8';
 import process from 'node:process';
 import fs from 'node:fs';
@@ -30,6 +30,7 @@ import {
 } from '@agoric/internal/src/lib-chainStorage.js';
 import { makeShutdown } from '@agoric/internal/src/node/shutdown.js';
 
+import { makeInitMsg } from '@agoric/internal/src/chain-utils.js';
 import * as STORAGE_PATH from '@agoric/internal/src/chain-storage-paths.js';
 import * as ActionType from '@agoric/internal/src/action-types.js';
 import { BridgeId, CosmosInitKeyToBridgeId } from '@agoric/internal';
@@ -105,32 +106,6 @@ const validateSwingsetConfig = swingsetConfig => {
 };
 
 /**
- * A boot message consists of cosmosInitAction fields that are subject to
- * consensus. See cosmosInitAction in {@link ../../../golang/cosmos/app/app.go}.
- *
- * @param {any} initAction
- */
-const makeBootMsg = initAction => {
-  const {
-    type,
-    blockTime,
-    blockHeight,
-    chainID,
-    params,
-    // NB: resolvedConfig is independent of consensus and MUST NOT be included
-    supplyCoins,
-  } = initAction;
-  return {
-    type,
-    blockTime,
-    blockHeight,
-    chainID,
-    params,
-    supplyCoins,
-  };
-};
-
-/**
  * @template {unknown} [T=unknown]
  * @param {(req: string) => string} call
  * @param {string} prefix
@@ -192,7 +167,11 @@ const makePrefixedBridgeStorage = (
   });
 };
 
-export default async function main(progname, args, { env, homedir, agcc }) {
+export default async function main(
+  progname,
+  args,
+  { env, homedir, path = nativePath, agcc },
+) {
   const portNums = {};
 
   // TODO: use the 'basedir' pattern
@@ -247,7 +226,6 @@ export default async function main(progname, args, { env, homedir, agcc }) {
 
   // Actually run the main ag-chain-cosmos program.  Before we start the daemon,
   // there will be a call to nodePort/AG_COSMOS_INIT, otherwise exit.
-  // eslint-disable-next-line no-use-before-define
   const nodePort = registerPortHandler(toSwingSet);
 
   // Need to keep the process alive until Go exits.
@@ -454,16 +432,16 @@ export default async function main(progname, args, { env, homedir, agcc }) {
     };
 
     const argv = {
-      bootMsg: makeBootMsg(initAction),
+      bootMsg: makeInitMsg(initAction),
     };
     const getVatConfig = async () => {
-      const vatHref = await importMetaResolve(
+      const href = await importMetaResolve(
         env.CHAIN_BOOTSTRAP_VAT_CONFIG ||
           argv.bootMsg.params.bootstrap_vat_config,
         import.meta.url,
       );
-      const vatconfig = new URL(vatHref).pathname;
-      return vatconfig;
+      const { pathname } = new URL(href);
+      return pathname;
     };
 
     // Delay makeShutdown to override the golang interrupts

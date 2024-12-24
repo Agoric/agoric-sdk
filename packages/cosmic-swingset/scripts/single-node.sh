@@ -29,18 +29,7 @@ $DAEMON gentx --name validator $STAKE --keyring-backend="test"
 $DAEMON collect-gentxs
 
 # Silly old Darwin
-case $(sed --help 2>&1 | sed -n 2p) in
-  "usage: sed script"*"[-i extension]"*)
-    sedi() {
-      sed -i '' ${1+"$@"}
-    }
-    ;;
-  *)
-    sedi() {
-      sed -i ${1+"$@"}
-    }
-    ;;
-esac
+alias sedi="sed -i $(sed --help 2>&1 | sed 2q | grep -qe '-i ' && echo "''")"
 
 case $DAEMON in
   ag-chain-cosmos)

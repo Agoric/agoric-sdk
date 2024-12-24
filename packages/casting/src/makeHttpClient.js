@@ -25,7 +25,7 @@ const filterBadStatus = res => {
  * @param {typeof window.fetch} fetch
  * @returns {import('@cosmjs/tendermint-rpc').RpcClient}
  */
-export const makeHttpClient = (url, fetch) => {
+export const makeTendermintRpcClient = (url, fetch) => {
   const headers = {}; // XXX needed?
 
   // based on cosmjs 0.30.1:
@@ -54,3 +54,6 @@ export const makeHttpClient = (url, fetch) => {
     },
   });
 };
+
+/** @deprecated use makeTendermintRpcClient */
+export const makeHttpClient = makeTendermintRpcClient;

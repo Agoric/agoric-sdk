@@ -1,9 +1,12 @@
-import test from 'ava';
+/* global setTimeout */
 
-import { agd, evalBundles, waitForBlock } from '@agoric/synthetic-chain';
+import { agd, evalBundles } from '@agoric/synthetic-chain';
+import test from 'ava';
+import { retryUntilCondition } from '@agoric/client-utils';
 
 const SUBMISSION_DIR = 'localchaintest-submission';
 
+/** @param {string} path */
 const readPublished = async path => {
   const { value } = await agd.query(
     'vstorage',
@@ -27,7 +30,12 @@ test(`localchain passes tests`, async t => {
   const nodePath = 'test.localchain';
   const nodeValue = JSON.stringify({ success: true });
 
-  await waitForBlock(2); // enough time for core eval to execute ?
+  const actualValue = await retryUntilCondition(
+    async () => readPublished(nodePath),
+    value => value === nodeValue,
+    'core eval not processed yet',
+    { setTimeout, retryIntervalMs: 5000, maxRetries: 15 },
+  );
 
-  t.is(await readPublished(nodePath), nodeValue);
+  t.is(actualValue, nodeValue);
 });

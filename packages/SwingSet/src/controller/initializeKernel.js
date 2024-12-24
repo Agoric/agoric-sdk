@@ -1,5 +1,3 @@
-/* eslint-disable no-use-before-define */
-
 import { assert, Fail } from '@endo/errors';
 import { makeMarshal } from '@endo/marshal';
 import { Far } from '@endo/far';

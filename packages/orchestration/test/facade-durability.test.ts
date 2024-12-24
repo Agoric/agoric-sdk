@@ -1,15 +1,14 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { makeIssuerKit } from '@agoric/ertp';
-import { reincarnate } from '@agoric/swingset-liveslots/tools/setup-vat-data.js';
 import { prepareSwingsetVowTools } from '@agoric/vow/vat.js';
-import { setupZCFTest } from '@agoric/zoe/test/unitTests/zcf/setupZcfTest.js';
 import type { CosmosChainInfo, IBCConnectionInfo } from '../src/cosmos-api.js';
 import fetchedChainInfo from '../src/fetched-chain-info.js'; // Refresh with scripts/refresh-chain-info.ts
 import type { Chain } from '../src/orchestration-api.js';
 import { denomHash } from '../src/utils/denomHash.js';
 import { provideOrchestration } from '../src/utils/start-helper.js';
-import { commonSetup, provideDurableZone } from './supports.js';
+import { commonSetup } from './supports.js';
+import { provideDurableZone, provideFreshRootZone } from './durability.js';
 
 const test = anyTest;
 
@@ -40,18 +39,19 @@ const mockChainConnection: IBCConnectionInfo = {
   },
 };
 
-test.serial('chain info', async t => {
-  const { bootstrap, facadeServices, commonPrivateArgs } = await commonSetup(t);
+// @ts-expect-error mock
+const mockZcf: ZCF = {
+  setTestJig: () => {},
+};
 
-  const { zcf } = await setupZCFTest();
+test('chain info', async t => {
+  const { facadeServices, commonPrivateArgs } = await commonSetup(t);
 
-  // After setupZCFTest because this disables relaxDurabilityRules
-  // which breaks Zoe test setup's fakeVatAdmin
-  const zone = provideDurableZone('test');
+  const zone = provideFreshRootZone();
   const vt = prepareSwingsetVowTools(zone);
 
   const orchKit = provideOrchestration(
-    zcf,
+    mockZcf,
     zone.mapStore('test'),
     {
       agoricNames: facadeServices.agoricNames,
@@ -80,20 +80,14 @@ test.serial('chain info', async t => {
   t.deepEqual(await vt.when(result.getChainInfo()), mockChainInfo);
 });
 
-test.serial('faulty chain info', async t => {
+test('missing chain info', async t => {
   const { facadeServices, commonPrivateArgs } = await commonSetup(t);
 
-  // XXX relax again so setupZCFTest can run. This is also why the tests are serial.
-  reincarnate({ relaxDurabilityRules: true });
-  const { zcf } = await setupZCFTest();
-
-  // After setupZCFTest because this disables relaxDurabilityRules
-  // which breaks Zoe test setup's fakeVatAdmin
-  const zone = provideDurableZone('test');
+  const zone = provideFreshRootZone();
   const vt = prepareSwingsetVowTools(zone);
 
   const orchKit = provideOrchestration(
-    zcf,
+    mockZcf,
     zone.mapStore('test'),
     {
       agoricNames: facadeServices.agoricNames,
@@ -105,16 +99,7 @@ test.serial('faulty chain info', async t => {
     commonPrivateArgs.marshaller,
   );
 
-  const { chainHub, orchestrate } = orchKit;
-
-  const { stakingTokens, ...sansStakingTokens } = mockChainInfo;
-
-  chainHub.registerChain('mock', sansStakingTokens);
-  chainHub.registerConnection(
-    'agoric-3',
-    mockChainInfo.chainId,
-    mockChainConnection,
-  );
+  const { orchestrate } = orchKit;
 
   const handle = orchestrate('mock', {}, async orc => {
     const chain = await orc.getChain('mock');
@@ -123,24 +108,18 @@ test.serial('faulty chain info', async t => {
   });
 
   await t.throwsAsync(vt.when(handle()), {
-    message: 'chain info lacks staking denom',
+    message: 'chain not found:mock',
   });
 });
 
-test.serial('racy chain info', async t => {
+test('racy chain info', async t => {
   const { facadeServices, commonPrivateArgs } = await commonSetup(t);
 
-  // XXX relax again
-  reincarnate({ relaxDurabilityRules: true });
-  const { zcf } = await setupZCFTest();
-
-  // After setupZCFTest because this disables relaxDurabilityRules
-  // which breaks Zoe test setup's fakeVatAdmin
-  const zone = provideDurableZone('test');
+  const zone = provideFreshRootZone();
   const vt = prepareSwingsetVowTools(zone);
 
   const orchKit = provideOrchestration(
-    zcf,
+    mockZcf,
     zone.mapStore('test'),
     {
       agoricNames: facadeServices.agoricNames,
@@ -176,16 +155,13 @@ test.serial('racy chain info', async t => {
   t.deepEqual(await chainInfos[1], mockChainInfo);
 });
 
-test.serial('asset / denom info', async t => {
+test('asset / denom info', async t => {
   const { facadeServices, commonPrivateArgs } = await commonSetup(t);
 
-  // XXX relax again
-  reincarnate({ relaxDurabilityRules: true });
-  const { zcf } = await setupZCFTest();
-  const zone = provideDurableZone('test');
+  const zone = provideFreshRootZone();
   const vt = prepareSwingsetVowTools(zone);
   const orchKit = provideOrchestration(
-    zcf,
+    mockZcf,
     zone.mapStore('test'),
     {
       agoricNames: facadeServices.agoricNames,
@@ -199,7 +175,7 @@ test.serial('asset / denom info', async t => {
   const { chainHub, orchestrate } = orchKit;
 
   chainHub.registerChain('agoric', fetchedChainInfo.agoric);
-  chainHub.registerChain(mockChainInfo.chainId, mockChainInfo);
+  chainHub.registerChain('mock', mockChainInfo);
   chainHub.registerConnection(
     'agoric-3',
     mockChainInfo.chainId,
@@ -207,8 +183,8 @@ test.serial('asset / denom info', async t => {
   );
 
   chainHub.registerAsset('utoken1', {
-    chainName: mockChainInfo.chainId,
-    baseName: mockChainInfo.chainId,
+    chainName: 'mock',
+    baseName: 'mock',
     baseDenom: 'utoken1',
   });
 
@@ -218,7 +194,7 @@ test.serial('asset / denom info', async t => {
   t.log(`utoken1 over ${channelId}: ${agDenom}`);
   chainHub.registerAsset(agDenom, {
     chainName: 'agoric',
-    baseName: mockChainInfo.chainId,
+    baseName: 'mock',
     baseDenom: 'utoken1',
     brand,
   });
@@ -228,10 +204,14 @@ test.serial('asset / denom info', async t => {
     { brand },
     // eslint-disable-next-line no-shadow
     async (orc, { brand }) => {
-      const c1 = await orc.getChain(mockChainInfo.chainId);
+      const c1 = await orc.getChain('mock');
 
       {
-        const actual = orc.getDenomInfo('utoken1');
+        const actual = orc.getDenomInfo(
+          'utoken1',
+          // @ts-expect-error 'mock' not a KnownChain
+          'mock',
+        );
         console.log('actual', actual);
         const info = await actual.chain.getChainInfo();
         t.deepEqual(info, mockChainInfo);
@@ -245,12 +225,12 @@ test.serial('asset / denom info', async t => {
       }
 
       const agP = orc.getChain('agoric');
-      t.throws(() => orc.getDenomInfo(agDenom), {
+      t.throws(() => orc.getDenomInfo(agDenom, 'agoric'), {
         message: /^wait until getChain\("agoric"\) completes/,
       });
       const ag = await agP;
       {
-        const actual = orc.getDenomInfo(agDenom);
+        const actual = orc.getDenomInfo(agDenom, 'agoric');
 
         t.deepEqual(actual, {
           chain: ag,
@@ -273,7 +253,11 @@ test.serial('asset / denom info', async t => {
   });
 
   const missingGetChain = orchestrate('missing getChain', {}, async orc => {
-    const actual = orc.getDenomInfo('utoken2');
+    const actual = orc.getDenomInfo(
+      'utoken2',
+      // @ts-expect-error 'mock' not a KnownChain
+      'anotherChain',
+    );
   });
 
   await t.throwsAsync(vt.when(missingGetChain()), {

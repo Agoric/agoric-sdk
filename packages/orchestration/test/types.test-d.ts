@@ -3,7 +3,7 @@
  */
 
 import type { HostInterface, HostOf } from '@agoric/async-flow';
-import { type JsonSafe, typedJson } from '@agoric/cosmic-proto';
+import { type AnyJson, type JsonSafe, typedJson } from '@agoric/cosmic-proto';
 import type {
   QueryAllBalancesResponse,
   QueryBalanceResponse,
@@ -14,10 +14,16 @@ import type { Vow, VowTools } from '@agoric/vow';
 import type { ResolvedPublicTopic } from '@agoric/zoe/src/contractSupport/topics.js';
 import type { Passable } from '@endo/marshal';
 import { expectAssignable, expectNotType, expectType } from 'tsd';
+import type { TxBody } from '@agoric/cosmic-proto/cosmos/tx/v1beta1/tx.js';
+import type {
+  TargetApp,
+  TargetRegistration,
+} from '@agoric/vats/src/bridge-target.js';
 import { prepareCosmosOrchestrationAccount } from '../src/exos/cosmos-orchestration-account.js';
 import type { LocalOrchestrationAccountKit } from '../src/exos/local-orchestration-account.js';
 import type { OrchestrationFacade } from '../src/facade.js';
 import type {
+  AmountArg,
   Chain,
   ChainAddress,
   ChainInfo,
@@ -104,7 +110,7 @@ expectNotType<CosmosValidatorAddress>(chainAddr);
   expectNotType<() => Promise<number>>(vowFn);
 
   const getDenomInfo: HostOf<Orchestrator['getDenomInfo']> = null as any;
-  const chainHostOf = getDenomInfo('uatom').chain;
+  const chainHostOf = getDenomInfo('uatom', 'cosmoshub').chain;
   expectType<Vow<any>>(chainHostOf.getChainInfo());
 }
 
@@ -266,4 +272,51 @@ expectNotType<CosmosValidatorAddress>(chainAddr);
   // TODO https://github.com/Agoric/agoric-sdk/issues/9822
   expectAssignable<Passable>(addr as CosmosValidatorAddress);
   expectAssignable<Passable>(denomAmount as DenomAmount);
+}
+
+// Test LocalAccountMethods
+{
+  type ChainFacade = Chain<CosmosChainInfo & { chainId: 'agoric-3' }>;
+  const remoteChain: ChainFacade = null as any;
+
+  const account = await remoteChain.makeAccount();
+
+  // Verify monitorTransfers is available
+  expectType<(tap: TargetApp) => Promise<TargetRegistration>>(
+    account.monitorTransfers,
+  );
+
+  // Verify StakingAccountActions are available (StakingAccountQueries not yet supported)
+  expectType<
+    (validator: CosmosValidatorAddress, amount: AmountArg) => Promise<void>
+  >(account.delegate);
+
+  // @ts-expect-error executeEncodedTx not available on localAccount
+  expectType<() => Promise<string>>(account.executeEncodedTx);
+}
+
+// Test CosmosChainAccountMethods
+{
+  type ChainFacade = Chain<
+    CosmosChainInfo & {
+      chainId: 'cosmoshub-4';
+      stakingTokens: [{ denom: 'uatom' }];
+    }
+  >;
+  const remoteChain: ChainFacade = null as any;
+
+  const account = await remoteChain.makeAccount();
+
+  // Verify executeEncodedTx is available
+  expectType<
+    (
+      msgs: AnyJson[],
+      opts?: Partial<Omit<TxBody, 'messages'>>,
+    ) => Promise<string>
+  >(account.executeEncodedTx);
+
+  // Verify delegate is available via stakingTokens parameter
+  expectType<
+    (validator: CosmosValidatorAddress, amount: AmountArg) => Promise<void>
+  >(account.delegate);
 }

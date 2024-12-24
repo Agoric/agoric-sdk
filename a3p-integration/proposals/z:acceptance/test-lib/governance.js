@@ -1,22 +1,39 @@
-import { agops, agoric, executeOffer } from '@agoric/synthetic-chain';
-import { makeRpcUtils } from './rpc.js';
+/* global setTimeout */
 
+import { agops, agoric, executeOffer } from '@agoric/synthetic-chain';
+import {
+  retryUntilCondition,
+  waitUntilElectionResult,
+} from '@agoric/client-utils';
+import { agdWalletUtils } from './index.js';
+import {
+  checkCommitteeElectionResult,
+  fetchLatestEcQuestion,
+} from './psm-lib.js';
+import { makeVstorageKit } from './rpc.js';
+
+/**
+ * @param {typeof window.fetch} fetch
+ * @param {import('./rpc.js').MinimalNetworkConfig} networkConfig
+ */
 export const makeGovernanceDriver = async (fetch, networkConfig) => {
-  const { readLatestHead, marshaller } = await makeRpcUtils(
+  const { readLatestHead, marshaller, vstorage } = await makeVstorageKit(
     { fetch },
     networkConfig,
   );
 
+  let deadline;
+
+  /** @param {string} previousOfferId */
   const generateVoteOffer = async previousOfferId => {
+    const latestQuestionRecord =
+      /** @type {import('@agoric/governance/src/types.js').QuestionSpec} */ (
+        await readLatestHead(
+          'published.committees.Economic_Committee.latestQuestion',
+        )
+      );
+
     const id = `propose-${Date.now()}`;
-
-    /**
-     * @type {object}
-     */
-    const latestQuestionRecord = await readLatestHead(
-      'published.committees.Economic_Committee.latestQuestion',
-    );
-
     const chosenPositions = [latestQuestionRecord.positions[0]];
     const body = {
       method: 'executeOffer',
@@ -28,6 +45,7 @@ export const makeGovernanceDriver = async (fetch, networkConfig) => {
           source: 'continuing',
           invitationArgs: harden([
             chosenPositions,
+            // @ts-expect-error narrowing
             latestQuestionRecord.questionHandle,
           ]),
         },
@@ -39,7 +57,10 @@ export const makeGovernanceDriver = async (fetch, networkConfig) => {
     return JSON.stringify(capData);
   };
 
-  const voteOnProposedChanges = async (address, committeeAcceptOfferId) => {
+  const voteOnProposedChanges = async (
+    /** @type {string} */ address,
+    /** @type {string} */ committeeAcceptOfferId,
+  ) => {
     await null;
     const offerId =
       committeeAcceptOfferId ||
@@ -54,27 +75,41 @@ export const makeGovernanceDriver = async (fetch, networkConfig) => {
     return executeOffer(address, generateVoteOffer(offerId));
   };
 
-  const generateVaultDirectorParamChange = async (
+  /**
+   * Generates a parameter change proposal as a `executeOffer` message
+   * body.
+   *
+   * @param {string} previousOfferId - the `id` of the offer that this proposal is
+   *   responding to
+   * @param {string | number | bigint | boolean} voteDur - how long the vote should
+   *   be open for (in seconds)
+   * @param {any} params
+   * @param {{ paramPath: any; }} paramsPath
+   * @param {string} instanceName
+   * @returns {Promise<string>} - the `executeOffer` message body as a JSON string
+   */
+  const generateParamChange = async (
     previousOfferId,
     voteDur,
     params,
     paramsPath,
+    instanceName,
   ) => {
-    const voteDurSec = BigInt(voteDur);
-    const toSec = ms => BigInt(Math.round(ms / 1000));
-
-    const id = `propose-${Date.now()}`;
-    const deadline = toSec(Date.now()) + voteDurSec;
-
-    const a = await agoric.follow(
+    const instancesRaw = await agoric.follow(
       '-lF',
       ':published.agoricNames.instance',
       '-o',
       'text',
     );
-    const instance = Object.fromEntries(marshaller.fromCapData(JSON.parse(a)));
-    assert(instance.VaultFactory);
+    const instances = Object.fromEntries(
+      marshaller.fromCapData(JSON.parse(instancesRaw)),
+    );
+    const instance = instances[instanceName];
+    assert(instance);
 
+    const msSinceEpoch = Date.now();
+    const id = `propose-${msSinceEpoch}`;
+    deadline = BigInt(Math.ceil(msSinceEpoch / 1000)) + BigInt(voteDur);
     const body = {
       method: 'executeOffer',
       offer: {
@@ -86,7 +121,7 @@ export const makeGovernanceDriver = async (fetch, networkConfig) => {
         },
         offerArgs: {
           deadline,
-          instance: instance.VaultFactory,
+          instance,
           params,
           path: paramsPath,
         },
@@ -98,10 +133,21 @@ export const makeGovernanceDriver = async (fetch, networkConfig) => {
     return JSON.stringify(capData);
   };
 
-  const proposeVaultDirectorParamChange = async (
+  /**
+   *
+   * @param {string} address
+   * @param {any} params
+   * @param {{paramPath: any}} path
+   * @param {string} instanceName
+   * @param {number} votingDuration
+   * @param {string} [charterAcceptOfferId]
+   */
+  const proposeParamChange = async (
     address,
     params,
     path,
+    instanceName,
+    votingDuration,
     charterAcceptOfferId,
   ) => {
     await null;
@@ -117,12 +163,107 @@ export const makeGovernanceDriver = async (fetch, networkConfig) => {
 
     return executeOffer(
       address,
-      generateVaultDirectorParamChange(offerId, 10, params, path),
+      generateParamChange(offerId, votingDuration, params, path, instanceName),
     );
+  };
+
+  const getCharterInvitation = async address => {
+    const { getCurrentWalletRecord } = agdWalletUtils;
+
+    /** @type {any} */
+    const instance = await readLatestHead(`published.agoricNames.instance`);
+    const instances = Object.fromEntries(instance);
+
+    const wallet = await getCurrentWalletRecord(address);
+    const usedInvitations = wallet.offerToUsedInvitation;
+
+    const charterInvitation = usedInvitations.find(
+      v =>
+        v[1].value[0].instance.getBoardId() ===
+        instances.econCommitteeCharter.getBoardId(),
+    );
+    assert(charterInvitation, 'missing charter invitation');
+
+    return charterInvitation;
+  };
+
+  const getCommitteeInvitation = async address => {
+    /** @type {any} */
+    const instance = await readLatestHead(`published.agoricNames.instance`);
+    const instances = Object.fromEntries(instance);
+
+    const voteWallet =
+      /** @type {import('@agoric/smart-wallet/src/smartWallet.js').CurrentWalletRecord} */ (
+        await readLatestHead(`published.wallet.${address}.current`)
+      );
+
+    const usedInvitationsForVoter = voteWallet.offerToUsedInvitation;
+
+    const committeeInvitationForVoter = usedInvitationsForVoter.find(
+      v =>
+        v[1].value[0].instance.getBoardId() ===
+        instances.economicCommittee.getBoardId(),
+    );
+    assert(
+      committeeInvitationForVoter,
+      `${address} must have committee invitation`,
+    );
+
+    return committeeInvitationForVoter;
+  };
+
+  const getLatestQuestion = async () => {
+    const { latestOutcome, latestQuestion } = await retryUntilCondition(
+      () => fetchLatestEcQuestion({ follow: agoric.follow }),
+      electionResult =>
+        checkCommitteeElectionResult(electionResult, {
+          outcome: 'win',
+          deadline,
+        }),
+      'Governed param change election failed',
+      { setTimeout, retryIntervalMs: 5000, maxRetries: 15 },
+    );
+
+    return { latestOutcome, latestQuestion };
+  };
+
+  const waitForElection = () =>
+    waitUntilElectionResult(
+      'published.committees.Economic_Committee',
+      { outcome: 'win', deadline },
+      // @ts-expect-error vstorage casting
+      { vstorage: { readLatestHead }, log: console.log, setTimeout },
+      {
+        errorMessage: 'Governed param change election failed',
+        retryIntervalMs: 5000,
+        maxRetries: 15,
+      },
+    );
+
+  const getLatestQuestionHistory = async () => {
+    const nodePath = 'published.committees.Economic_Committee.latestQuestion';
+
+    const historyIterator = await vstorage.readHistory(nodePath);
+    const history = [];
+
+    for await (const data of historyIterator) {
+      if (data) {
+        const question = marshaller.fromCapData(JSON.parse(data[0]));
+        const changes = question.positions[0].changes;
+        history.push(changes);
+      }
+    }
+
+    return history;
   };
 
   return {
     voteOnProposedChanges,
-    proposeVaultDirectorParamChange,
+    proposeParamChange,
+    getCharterInvitation,
+    getCommitteeInvitation,
+    getLatestQuestion,
+    waitForElection,
+    getLatestQuestionHistory,
   };
 };

@@ -30,6 +30,7 @@ import type { RunUtils } from '@agoric/swingset-vat/tools/run-utils.js';
 import { makeMarshal } from '@endo/marshal';
 import type { SwingsetTestKit } from './supports.js';
 
+// XXX SwingsetTestKit would simplify this
 export const makeWalletFactoryDriver = async (
   runUtils: RunUtils,
   storage: FakeStorageKit,
@@ -54,6 +55,7 @@ export const makeWalletFactoryDriver = async (
     isNew: boolean,
   ) => ({
     isNew,
+    getAddress: () => walletAddress,
 
     executeOffer(offer: OfferSpec): Promise<void> {
       const offerCapData = marshaller.toCapData(
@@ -283,9 +285,9 @@ export const makeGovernanceDriver = async (
       voteId = 'voteInNewLimit',
       committeeId = committeeMembershipId,
     ) => {
-      const latestQuestionRecord = testKit.readLatest(
-        'published.committees.Economic_Committee.latestQuestion',
-      ) as any;
+      const latestQuestionRecord = testKit.readPublished(
+        'committees.Economic_Committee.latestQuestion',
+      );
 
       const chosenPositions = [latestQuestionRecord.positions[0]];
 
@@ -389,14 +391,8 @@ export const makeGovernanceDriver = async (
     await Promise.all(promises);
   };
 
-  const getLatestOutcome = async () => {
-    return unmarshalFromVstorage(
-      testKit.storage.data,
-      'published.committees.Economic_Committee.latestOutcome',
-      fromCapData,
-      -1,
-    );
-  };
+  const getLatestOutcome = () =>
+    testKit.readPublished('committees.Economic_Committee.latestOutcome');
 
   return {
     proposeParams,

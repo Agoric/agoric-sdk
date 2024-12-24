@@ -7,7 +7,9 @@ import { resolve as importMetaResolve } from 'import-meta-resolve';
 import { basename, join } from 'path';
 import { inspect } from 'util';
 
+import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
 import { buildSwingset } from '@agoric/cosmic-swingset/src/launch-chain.js';
+import type { TypedPublished } from '@agoric/client-utils';
 import {
   BridgeId,
   makeTracer,
@@ -31,6 +33,7 @@ import { Fail } from '@endo/errors';
 import {
   makeRunUtils,
   type RunUtils,
+  type RunHarness,
 } from '@agoric/swingset-vat/tools/run-utils.js';
 import {
   boardSlottingMarshaller,
@@ -42,18 +45,26 @@ import type { ExecutionContext as AvaT } from 'ava';
 import type { CoreEvalSDKType } from '@agoric/cosmic-proto/swingset/swingset.js';
 import type { EconomyBootstrapPowers } from '@agoric/inter-protocol/src/proposals/econ-behaviors.js';
 import type { SwingsetController } from '@agoric/swingset-vat/src/controller/controller.js';
-import type { BridgeHandler, IBCMethod } from '@agoric/vats';
+import type { BridgeHandler, IBCDowncallMethod, IBCMethod } from '@agoric/vats';
 import type { BootstrapRootObject } from '@agoric/vats/src/core/lib-boot.js';
 import type { EProxy } from '@endo/eventual-send';
+import type { FastUSDCCorePowers } from '@agoric/fast-usdc/src/fast-usdc.start.js';
+import {
+  defaultBeansPerVatCreation,
+  defaultBeansPerXsnapComputron,
+} from '@agoric/cosmic-swingset/src/sim-params.js';
+import { computronCounter } from '@agoric/cosmic-swingset/src/computron-counter.js';
 import { icaMocks, protoMsgMockMap, protoMsgMocks } from './ibc/mocks.js';
 
 const trace = makeTracer('BSTSupport', false);
 
 type ConsumeBootrapItem = <N extends string>(
   name: N,
-) => N extends keyof EconomyBootstrapPowers['consume']
-  ? EconomyBootstrapPowers['consume'][N]
-  : unknown;
+) => N extends keyof FastUSDCCorePowers['consume']
+  ? FastUSDCCorePowers['consume'][N]
+  : N extends keyof EconomyBootstrapPowers['consume']
+    ? EconomyBootstrapPowers['consume'][N]
+    : unknown;
 
 // XXX should satisfy EVProxy from run-utils.js but that's failing to import
 /**
@@ -73,6 +84,7 @@ type BootstrapEV = EProxy & {
 
 const makeBootstrapRunUtils = makeRunUtils as (
   controller: SwingsetController,
+  harness?: RunHarness,
 ) => Omit<RunUtils, 'EV'> & { EV: BootstrapEV };
 
 const keysToObject = <K extends PropertyKey, V>(
@@ -278,6 +290,14 @@ export const matchIter = (t: AvaT, iter, valueRef) => {
   matchValue(t, iter.value, valueRef);
 };
 
+export const AckBehavior = {
+  /** inbound responses are queued. use `flushInboundQueue()` to simulate the remote response */
+  Queued: 'QUEUED',
+  /** inbound messages are delivered immediately */
+  Immediate: 'IMMEDIATE',
+} as const;
+type AckBehaviorType = (typeof AckBehavior)[keyof typeof AckBehavior];
+
 /**
  * Start a SwingSet kernel to be used by tests and benchmarks.
  *
@@ -304,6 +324,7 @@ export const matchIter = (t: AvaT, iter, valueRef) => {
  * @param [options.profileVats]
  * @param [options.debugVats]
  * @param [options.defaultManagerType]
+ * @param [options.harness]
  */
 export const makeSwingsetTestKit = async (
   log: (..._: any[]) => void,
@@ -317,6 +338,7 @@ export const makeSwingsetTestKit = async (
     profileVats = [] as string[],
     debugVats = [] as string[],
     defaultManagerType = 'local' as ManagerType,
+    harness = undefined as RunHarness | undefined,
   } = {},
 ) => {
   console.time('makeBaseSwingsetTestKit');
@@ -336,6 +358,9 @@ export const makeSwingsetTestKit = async (
     return data;
   };
 
+  const readPublished = <T extends string>(subpath: T) =>
+    readLatest(`published.${subpath}`) as TypedPublished<T>;
+
   let lastBankNonce = 0n;
   let ibcSequenceNonce = 0;
   let lcaSequenceNonce = 0;
@@ -347,10 +372,32 @@ export const makeSwingsetTestKit = async (
     ...args
   ) => {
     console.log('inbound', ...args);
-    // eslint-disable-next-line no-use-before-define
     bridgeInbound!(...args);
   };
+  /**
+   * Config DIBC bridge behavior.
+   * Defaults to `Queued` unless specified.
+   * Current only configured for `channelOpenInit` but can be
+   * extended to support `sendPacket`.
+   */
+  const ackBehaviors: Partial<
+    Record<BridgeId, Partial<Record<IBCDowncallMethod, AckBehaviorType>>>
+  > = {
+    [BridgeId.DIBC]: {
+      startChannelOpenInit: AckBehavior.Queued,
+    },
+  };
 
+  const shouldAckImmediately = (
+    bridgeId: BridgeId,
+    method: IBCDowncallMethod,
+  ) => ackBehaviors?.[bridgeId]?.[method] === AckBehavior.Immediate;
+
+  /**
+   * configurable `bech32Prefix` for DIBC bridge
+   * messages that involve creating an ICA.
+   */
+  let bech32Prefix = 'cosmos';
   /**
    * Adds the sequence so the bridge knows what response to connect it to.
    * Then queue it send it over the bridge over this returns.
@@ -389,7 +436,7 @@ export const makeSwingsetTestKit = async (
    * Mock the bridge outbound handler. The real one is implemented in Golang so
    * changes there will sometimes require changes here.
    */
-  const bridgeOutbound = (bridgeId: string, obj: any) => {
+  const bridgeOutbound = (bridgeId: BridgeId, obj: any) => {
     // store all messages for querying by tests
     if (!outboundMessages.has(bridgeId)) {
       outboundMessages.set(bridgeId, []);
@@ -461,9 +508,17 @@ export const makeSwingsetTestKit = async (
       case `${BridgeId.DIBC}:IBC_METHOD`:
       case `${BridgeId.VTRANSFER}:IBC_METHOD`: {
         switch (obj.method) {
-          case 'startChannelOpenInit':
-            pushInbound(BridgeId.DIBC, icaMocks.channelOpenAck(obj));
+          case 'startChannelOpenInit': {
+            const message = icaMocks.channelOpenAck(obj, bech32Prefix);
+            const handle = shouldAckImmediately(
+              bridgeId,
+              'startChannelOpenInit',
+            )
+              ? inbound
+              : pushInbound;
+            handle(BridgeId.DIBC, message);
             return undefined;
+          }
           case 'sendPacket': {
             if (protoMsgMockMap[obj.packet.data]) {
               return ackLater(obj, protoMsgMockMap[obj.packet.data]);
@@ -484,7 +539,7 @@ export const makeSwingsetTestKit = async (
         return undefined;
       }
       case `${BridgeId.VLOCALCHAIN}:VLOCALCHAIN_ALLOCATE_ADDRESS`: {
-        const address = `${LOCALCHAIN_DEFAULT_ADDRESS}${lcaAccountsCreated || ''}`;
+        const address = makeTestAddress(lcaAccountsCreated);
         lcaAccountsCreated += 1;
         return address;
       }
@@ -532,7 +587,7 @@ export const makeSwingsetTestKit = async (
 
   console.timeLog('makeBaseSwingsetTestKit', 'buildSwingset');
 
-  const runUtils = makeBootstrapRunUtils(controller);
+  const runUtils = makeBootstrapRunUtils(controller, harness);
 
   const buildProposal = makeProposalExtractor({
     childProcess: childProcessAmbient,
@@ -614,6 +669,27 @@ export const makeSwingsetTestKit = async (
     getOutboundMessages: (bridgeId: string) =>
       harden([...outboundMessages.get(bridgeId)]),
     getInboundQueueLength: () => inboundQueue.length,
+    setAckBehavior(
+      bridgeId: BridgeId,
+      method: IBCDowncallMethod,
+      behavior: AckBehaviorType,
+    ): void {
+      if (!ackBehaviors?.[bridgeId]?.[method])
+        throw Fail`ack behavior not yet configurable for ${bridgeId} ${method}`;
+      console.log('setting', bridgeId, method, 'ack behavior to', behavior);
+      ackBehaviors[bridgeId][method] = behavior;
+    },
+    lookupAckBehavior(
+      bridgeId: BridgeId,
+      method: IBCDowncallMethod,
+    ): AckBehaviorType {
+      if (!ackBehaviors?.[bridgeId]?.[method])
+        throw Fail`ack behavior not yet configurable for ${bridgeId} ${method}`;
+      return ackBehaviors[bridgeId][method];
+    },
+    setBech32Prefix(prefix: string): void {
+      bech32Prefix = prefix;
+    },
     /**
      * @param {number} max the max number of messages to flush
      * @returns {Promise<number>} the number of messages flushed
@@ -645,6 +721,7 @@ export const makeSwingsetTestKit = async (
     getCrankNumber,
     jumpTimeTo,
     readLatest,
+    readPublished,
     runUtils,
     shutdown,
     storage,
@@ -653,3 +730,50 @@ export const makeSwingsetTestKit = async (
   };
 };
 export type SwingsetTestKit = Awaited<ReturnType<typeof makeSwingsetTestKit>>;
+
+/**
+ * Return a harness that can be dynamically configured to provide a computron-
+ * counting run policy (and queried for the count of computrons recorded since
+ * the last reset).
+ */
+export const makeSwingsetHarness = () => {
+  const c2b = defaultBeansPerXsnapComputron;
+  const beansPerUnit = {
+    // see https://cosgov.org/agoric?msgType=parameterChangeProposal&network=main
+    blockComputeLimit: 65_000_000n * c2b,
+    vatCreation: defaultBeansPerVatCreation,
+    xsnapComputron: c2b,
+  };
+
+  /** @type {ReturnType<typeof computronCounter> | undefined} */
+  let policy;
+  let policyEnabled = false;
+
+  const meter = harden({
+    provideRunPolicy: () => {
+      if (policyEnabled && !policy) {
+        policy = computronCounter({ beansPerUnit });
+      }
+      return policy;
+    },
+    /** @param {boolean} forceEnabled */
+    useRunPolicy: forceEnabled => {
+      policyEnabled = forceEnabled;
+      if (!policyEnabled) {
+        policy = undefined;
+      }
+    },
+    totalComputronCount: () => (policy?.totalBeans() || 0n) / c2b,
+    resetRunPolicy: () => (policy = undefined),
+  });
+  return meter;
+};
+
+/**
+ *
+ * @param {string} mt
+ * @returns {asserts mt is ManagerType}
+ */
+export function insistManagerType(mt) {
+  assert(['local', 'node-subprocess', 'xsnap', 'xs-worker'].includes(mt));
+}

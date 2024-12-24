@@ -3,6 +3,10 @@
 import { normalizeBech32 } from '@cosmjs/encoding';
 import { execFileSync as execFileSyncAmbient } from 'child_process';
 
+/**
+ * @import {MinimalNetworkConfig} from '@agoric/client-utils';
+ */
+
 const agdBinary = 'agd';
 
 /**
@@ -34,11 +38,42 @@ export const normalizeAddressWithOptions = (
 };
 harden(normalizeAddressWithOptions);
 
+/** @typedef {number | 'auto' | ['auto', adjustment?: number | undefined]} GasLimit */
+
+/**
+ * @param {GasLimit} limit
+ * @returns {string[]}
+ */
+const makeGasOpts = limit => {
+  if (Number.isFinite(limit) || limit === 'auto') {
+    return [`--gas=${limit}`];
+  }
+  if (Array.isArray(limit) && limit.length >= 1 && limit[0] === 'auto') {
+    const gasOpts = ['--gas=auto'];
+    if (limit.length > 1) {
+      const [adjustment, ...rest] = limit.slice(1);
+      const adjustmentIsValid =
+        adjustment === undefined ||
+        (Number.isFinite(adjustment) && Number(adjustment) > 0);
+      if (rest.length !== 0 || !adjustmentIsValid) {
+        throw Error('invalid gas input');
+      }
+      if (adjustment !== undefined) {
+        gasOpts.push(`--gas-adjustment=${adjustment}`);
+      }
+    }
+    return gasOpts;
+  }
+
+  throw Error('invalid gas input');
+};
+
 /**
  * @param {ReadonlyArray<string>} swingsetArgs
- * @param {import('./rpc.js').MinimalNetworkConfig & {
+ * @param {MinimalNetworkConfig & {
  *   from: string,
  *   fees?: string,
+ *   gas?: GasLimit,
  *   dryRun?: boolean,
  *   verbose?: boolean,
  *   keyring?: {home?: string, backend: string}
@@ -50,6 +85,7 @@ export const execSwingsetTransaction = (swingsetArgs, opts) => {
   const {
     from,
     fees,
+    gas = ['auto', 1.2],
     dryRun = false,
     verbose = true,
     keyring = undefined,
@@ -67,6 +103,7 @@ export const execSwingsetTransaction = (swingsetArgs, opts) => {
     homeOpt,
     backendOpt,
     feeOpt,
+    makeGasOpts(gas),
     [`--from=${from}`, 'tx', 'swingset'],
     swingsetArgs,
   );
@@ -78,7 +115,7 @@ export const execSwingsetTransaction = (swingsetArgs, opts) => {
     stdout.write('\n');
   } else {
     const yesCmd = cmd.concat(['--yes']);
-    if (verbose) console.log('Executing ', yesCmd);
+    if (verbose) console.log('Executing ', agdBinary, yesCmd);
     const out = execFileSync(agdBinary, yesCmd, { encoding: 'utf-8' });
 
     // agd puts this diagnostic on stdout rather than stderr :-/
@@ -94,7 +131,7 @@ harden(execSwingsetTransaction);
 
 /**
  *
- * @param {import('./rpc.js').MinimalNetworkConfig} net
+ * @param {MinimalNetworkConfig} net
  */
 // TODO fetch by HTTP instead of shelling out https://github.com/Agoric/agoric-sdk/issues/9200
 export const fetchSwingsetParams = net => {
@@ -114,7 +151,7 @@ export const fetchSwingsetParams = net => {
 harden(fetchSwingsetParams);
 
 /**
- * @param {import('./rpc.js').MinimalNetworkConfig & {
+ * @param {MinimalNetworkConfig & {
  *   execFileSync: typeof import('child_process').execFileSync,
  *   delay: (ms: number) => Promise<void>,
  *   period?: number,
@@ -154,7 +191,7 @@ export const pollBlocks = opts => async lookup => {
 
 /**
  * @param {string} txhash
- * @param {import('./rpc.js').MinimalNetworkConfig & {
+ * @param {MinimalNetworkConfig & {
  *   execFileSync: typeof import('child_process').execFileSync,
  *   delay: (ms: number) => Promise<void>,
  *   period?: number,

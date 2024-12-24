@@ -3,13 +3,22 @@ import { dirname, join } from 'path';
 import { execa } from 'execa';
 import fse from 'fs-extra';
 import childProcess from 'node:child_process';
+import { withChainCapabilities } from '@agoric/orchestration';
 import { makeAgdTools } from '../tools/agd-tools.js';
 import { type E2ETools } from '../tools/e2e-tools.js';
-import { makeGetFile, makeSetupRegistry } from '../tools/registry.js';
+import {
+  makeGetFile,
+  makeSetupRegistry,
+  type MultichainRegistry,
+} from '../tools/registry.js';
 import { generateMnemonic } from '../tools/wallet.js';
 import { makeRetryUntilCondition } from '../tools/sleep.js';
 import { makeDeployBuilder } from '../tools/deploy.js';
 import { makeHermes } from '../tools/hermes-tools.js';
+import { makeNobleTools } from '../tools/noble-tools.js';
+import { makeAssetInfo } from '../tools/asset-info.js';
+import starshipChainInfo from '../starship-chain-info.js';
+import { makeFaucetTools } from '../tools/faucet-tools.js';
 
 export const FAUCET_POUR = 10_000n * 1_000_000n;
 
@@ -32,13 +41,19 @@ const makeKeyring = async (
   e2eTools: Pick<E2ETools, 'addKey' | 'deleteKey'>,
 ) => {
   let _keys = ['user1'];
-  const setupTestKeys = async (keys = ['user1']) => {
+  const setupTestKeys = async (
+    keys = ['user1'],
+    mnemonics?: (string | undefined)[],
+  ) => {
     _keys = keys;
     const wallets: Record<string, string> = {};
-    for (const name of keys) {
-      const res = await e2eTools.addKey(name, generateMnemonic());
+    for (const i in keys) {
+      const res = await e2eTools.addKey(
+        keys[i],
+        mnemonics?.[i] || generateMnemonic(),
+      );
       const { address } = JSON.parse(res);
-      wallets[name] = address;
+      wallets[keys[i]] = address;
     }
     return wallets;
   };
@@ -54,7 +69,16 @@ const makeKeyring = async (
 };
 
 export const commonSetup = async (t: ExecutionContext) => {
-  const { useChain } = await setupRegistry();
+  let useChain: MultichainRegistry['useChain'];
+  try {
+    const registry = await setupRegistry({
+      config: `../${process.env.FILE || 'config.yaml'}`,
+    });
+    useChain = registry.useChain;
+  } catch (e) {
+    console.error('setupRegistry failed', e);
+    throw e;
+  }
   const tools = await makeAgdTools(t.log, childProcess);
   const keyring = await makeKeyring(tools);
   const deployBuilder = makeDeployBuilder(tools, fse.readJSON, execa);
@@ -63,6 +87,19 @@ export const commonSetup = async (t: ExecutionContext) => {
     setTimeout: globalThis.setTimeout,
   });
   const hermes = makeHermes(childProcess);
+  const nobleTools = makeNobleTools(childProcess);
+  const assetInfo = makeAssetInfo(starshipChainInfo);
+  const chainInfo = withChainCapabilities(starshipChainInfo);
+  const faucetTools = makeFaucetTools(
+    t,
+    tools.agd,
+    retryUntilCondition,
+    useChain,
+  );
+  const commonBuilderOpts = harden({
+    assetInfo: JSON.stringify(assetInfo),
+    chainInfo: JSON.stringify(chainInfo),
+  });
 
   /**
    * Starts a contract if instance not found. Takes care of installing
@@ -74,6 +111,7 @@ export const commonSetup = async (t: ExecutionContext) => {
   const startContract = async (
     contractName: string,
     contractBuilder: string,
+    builderOpts?: Record<string, string | string[]>,
   ) => {
     const { vstorageClient } = tools;
     const instances = Object.fromEntries(
@@ -83,7 +121,7 @@ export const commonSetup = async (t: ExecutionContext) => {
       return t.log('Contract found. Skipping installation...');
     }
     t.log('bundle and install contract', contractName);
-    await deployBuilder(contractBuilder);
+    await deployBuilder(contractBuilder, builderOpts);
     await retryUntilCondition(
       () => vstorageClient.queryData(`published.agoricNames.instance`),
       res => contractName in Object.fromEntries(res),
@@ -98,7 +136,12 @@ export const commonSetup = async (t: ExecutionContext) => {
     retryUntilCondition,
     deployBuilder,
     hermes,
+    nobleTools,
     startContract,
+    assetInfo,
+    chainInfo,
+    commonBuilderOpts,
+    faucetTools,
   };
 };
 

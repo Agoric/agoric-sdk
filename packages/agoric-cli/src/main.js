@@ -66,7 +66,9 @@ const main = async (progname, rawArgs, powers) => {
       'verbosity that can be increased',
       (_value, _previous) => (cmdOpts.verbose += 1),
     );
-  const baseCmd = (...args) => addCmdOpts(program.command(...args));
+  /** @type {typeof program.command} */
+  const baseCmd = (nameAndParams, ...rest) =>
+    addCmdOpts(program.command(nameAndParams, ...rest));
 
   addCmdOpts(
     program

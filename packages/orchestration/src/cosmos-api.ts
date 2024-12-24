@@ -8,6 +8,7 @@ import type {
 } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/staking.js';
 import type { TxBody } from '@agoric/cosmic-proto/cosmos/tx/v1beta1/tx.js';
 import type { MsgTransfer } from '@agoric/cosmic-proto/ibc/applications/transfer/v1/tx.js';
+import type { FungibleTokenPacketData } from '@agoric/cosmic-proto/ibc/applications/transfer/v2/packet.js';
 import type {
   State as IBCChannelState,
   Order,
@@ -19,7 +20,12 @@ import type {
 } from '@agoric/cosmic-proto/tendermint/abci/types.js';
 import type { Brand, Purse, Payment, Amount } from '@agoric/ertp/src/types.js';
 import type { Port } from '@agoric/network';
-import type { IBCChannelID, IBCConnectionID } from '@agoric/vats';
+import type {
+  IBCChannelID,
+  IBCConnectionID,
+  IBCPortID,
+  VTransferIBCEvent,
+} from '@agoric/vats';
 import type {
   TargetApp,
   TargetRegistration,
@@ -29,7 +35,9 @@ import type {
   RemoteIbcAddress,
 } from '@agoric/vats/tools/ibc-utils.js';
 import type { QueryDelegationTotalRewardsResponse } from '@agoric/cosmic-proto/cosmos/distribution/v1beta1/query.js';
+import type { Coin } from '@agoric/cosmic-proto/cosmos/base/v1beta1/coin.js';
 import type { AmountArg, ChainAddress, Denom, DenomAmount } from './types.js';
+import { PFM_RECEIVER } from './exos/chain-hub.js';
 
 /** An address for a validator on some blockchain, e.g., cosmos, eth, etc. */
 export type CosmosValidatorAddress = ChainAddress & {
@@ -85,12 +93,18 @@ export interface CosmosAssetInfo extends Record<string, unknown> {
  * Info for a Cosmos-based chain.
  */
 export type CosmosChainInfo = Readonly<{
+  /** can be used to lookup chainInfo (chainId) from an address value */
+  bech32Prefix?: string;
   chainId: string;
 
   connections?: Record<string, IBCConnectionInfo>; // chainId or wellKnownName
   // UNTIL https://github.com/Agoric/agoric-sdk/issues/9326
   icqEnabled?: boolean;
-
+  /**
+   * Note: developers must provide this value themselves for `.transfer` to work
+   * as expected. Please see examples for details.
+   */
+  pfmEnabled?: boolean;
   /**
    * cf https://github.com/cosmos/chain-registry/blob/master/chain.schema.json#L117
    */
@@ -224,20 +238,10 @@ export interface StakingAccountActions {
 }
 
 /**
- * Low level object that supports queries and operations for an account on a remote chain.
+ * Low level methods from IcaAccount that we pass through to CosmosOrchestrationAccount
  */
-export interface IcaAccount {
-  /**
-   * @returns the address of the account on the remote chain
-   */
-  getAddress: () => ChainAddress;
 
-  /**
-   * Submit a transaction on behalf of the remote account for execution on the remote chain.
-   * @param msgs - records for the transaction
-   * @returns acknowledgement string
-   */
-  executeTx: (msgs: TypedJson[]) => Promise<string>;
+export interface IcaAccountMethods {
   /**
    * Submit a transaction on behalf of the remote account for execution on the remote chain.
    * @param msgs - records for the transaction
@@ -265,6 +269,23 @@ export interface IcaAccount {
    * @throws {Error} if connection is currently active
    */
   reactivate: () => Promise<void>;
+}
+
+/**
+ * Low level object that supports queries and operations for an account on a remote chain.
+ */
+export interface IcaAccount extends IcaAccountMethods {
+  /**
+   * @returns the address of the account on the remote chain
+   */
+  getAddress: () => ChainAddress;
+
+  /**
+   * Submit a transaction on behalf of the remote account for execution on the remote chain.
+   * @param msgs - records for the transaction
+   * @returns acknowledgement string
+   */
+  executeTx: (msgs: TypedJson[]) => Promise<string>;
   /** @returns the address of the remote channel */
   getRemoteAddress: () => RemoteIbcAddress;
   /** @returns the address of the local channel */
@@ -278,16 +299,22 @@ export interface LiquidStakingMethods {
   liquidStake: (amount: AmountArg) => Promise<void>;
 }
 
+// TODO support StakingAccountQueries
 /** Methods supported only on Agoric chain accounts */
-export interface LocalAccountMethods {
+export interface LocalAccountMethods extends StakingAccountActions {
   /** deposit payment (from zoe, for example) to the account */
-  deposit: (payment: Payment<'nat'>) => Promise<void>;
+  deposit: (payment: Payment<'nat'>) => Promise<Amount<'nat'>>;
   /** withdraw a Payment from the account */
   withdraw: (amount: Amount<'nat'>) => Promise<Payment<'nat'>>;
   /**
    * Register a handler that receives an event each time ICS-20 transfers are
-   * sent or received by the underlying account. Each account may be associated
-   * with at most one handler at a given time.
+   * sent or received by the underlying account.
+   *
+   * Handler includes {@link VTransferIBCEvent} and
+   * {@link FungibleTokenPacketData} that can be used for application logic.
+   *
+   * Each account may be associated with at most one handler at a given time.
+   *
    * Does not grant the handler the ability to intercept a transfer. For a
    * blocking handler, aka 'IBC Hooks', leverage `registerActiveTap` from
    * `transferMiddleware` directly.
@@ -306,6 +333,12 @@ export interface IBCMsgTransferOptions {
   timeoutHeight?: MsgTransfer['timeoutHeight'];
   timeoutTimestamp?: MsgTransfer['timeoutTimestamp'];
   memo?: string;
+  forwardOpts?: {
+    /** The recipient address for the intermediate transfer. Defaults to 'pfm' unless specified */
+    intermediateRecipient?: ChainAddress;
+    timeout?: ForwardInfo['forward']['timeout'];
+    retries?: ForwardInfo['forward']['retries'];
+  };
 }
 
 /**
@@ -318,17 +351,71 @@ export interface IBCMsgTransferOptions {
  * @see {OrchestrationAccountI}
  */
 export type CosmosChainAccountMethods<CCI extends CosmosChainInfo> =
-  (CCI extends {
-    icaEnabled: true;
-  }
-    ? IcaAccount
-    : {}) &
-    CCI extends {
-    stakingTokens: {};
-  }
-    ? StakingAccountActions & StakingAccountQueries
-    : {};
+  IcaAccountMethods &
+    (CCI extends {
+      stakingTokens: {};
+    }
+      ? StakingAccountActions & StakingAccountQueries
+      : {});
 
 export type ICQQueryFunction = (
   msgs: JsonSafe<RequestQuery>[],
 ) => Promise<JsonSafe<ResponseQuery>[]>;
+
+/**
+ * Message structure for PFM memo
+ *
+ * @see {@link https://github.com/cosmos/chain-registry/blob/58b603bbe01f70e911e3ad2bdb6b90c4ca665735/_memo_keys/ICS20_memo_keys.json#L38-L60}
+ */
+export interface ForwardInfo {
+  forward: {
+    receiver: ChainAddress['value'];
+    port: IBCPortID;
+    channel: IBCChannelID;
+    /** e.g. '10m' */
+    timeout: GoDuration;
+    /** default is 3? */
+    retries: number;
+    next?: {
+      forward: ForwardInfo;
+    };
+  };
+}
+
+/**
+ * Object used to help build MsgTransfer parameters for IBC transfers.
+ *
+ * If `forwardInfo` is present:
+ * - it must be stringified and provided as the `memo` field value for
+ * use with `MsgTransfer`.
+ * - `receiver` will be set to `"pfm"` - purposely invalid bech32. see {@link https://github.com/cosmos/ibc-apps/blob/26f3ad8f58e4ffc7769c6766cb42b954181dc100/middleware/packet-forward-middleware/README.md#minimal-example---chain-forward-a-b-c}
+ */
+export type TransferRoute = {
+  /** typically, `transfer` */
+  sourcePort: string;
+  sourceChannel: IBCChannelID;
+  token: Coin;
+} & (
+  | {
+      receiver: typeof PFM_RECEIVER | ChainAddress['value'];
+      /** contains PFM forwarding info */
+      forwardInfo: ForwardInfo;
+    }
+  | {
+      receiver: string;
+      forwardInfo?: never;
+    }
+);
+
+/** Single units allowed in Go time duration strings */
+type GoDurationUnit = 'h' | 'm' | 's' | 'ms' | 'us' | 'ns';
+
+/**
+ * Type for a time duration string in Go (cosmos-sdk). For example, "1h", "3m".
+ *
+ * Note: this does not support composite values like "1h30m", "1m30s",
+ * which are allowed in Go.
+ *
+ * @see https://pkg.go.dev/time#ParseDuration
+ */
+export type GoDuration = `${number}${GoDurationUnit}`;

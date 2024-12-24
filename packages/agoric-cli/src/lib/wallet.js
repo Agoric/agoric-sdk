@@ -1,14 +1,17 @@
 // @ts-check
 /* eslint-env node */
 
-import { Fail } from '@endo/errors';
 import { iterateReverse } from '@agoric/casting';
+import { boardSlottingMarshaller } from '@agoric/client-utils';
 import { makeWalletStateCoalescer } from '@agoric/smart-wallet/src/utils.js';
-import { execSwingsetTransaction, pollBlocks, pollTx } from './chain.js';
-import { boardSlottingMarshaller, makeRpcUtils } from './rpc.js';
+import { Fail } from '@endo/errors';
+import { execSwingsetTransaction, pollTx } from './chain.js';
 
-/** @import {CurrentWalletRecord} from '@agoric/smart-wallet/src/smartWallet.js' */
-/** @import {AgoricNamesRemotes} from '@agoric/vats/tools/board-utils.js' */
+/**
+ * @import {CurrentWalletRecord} from '@agoric/smart-wallet/src/smartWallet.js';
+ * @import {AgoricNamesRemotes} from '@agoric/vats/tools/board-utils.js';
+ * @import {MinimalNetworkConfig, VstorageKit} from '@agoric/client-utils';
+ */
 
 const marshaller = boardSlottingMarshaller();
 
@@ -22,15 +25,15 @@ const emptyCurrentRecord = {
 
 /**
  * @param {string} addr
- * @param {Pick<import('./rpc.js').RpcUtils, 'readLatestHead'>} io
+ * @param {Pick<VstorageKit, 'readPublished'>} io
  * @returns {Promise<import('@agoric/smart-wallet/src/smartWallet.js').CurrentWalletRecord>}
  */
-export const getCurrent = async (addr, { readLatestHead }) => {
+export const getCurrent = async (addr, { readPublished }) => {
   // Partial because older writes may not have had all properties
   // NB: assumes changes are only additions
   let current =
     /** @type {Partial<import('@agoric/smart-wallet/src/smartWallet.js').CurrentWalletRecord> | undefined} */ (
-      await readLatestHead(`published.wallet.${addr}.current`)
+      await readPublished(`wallet.${addr}.current`)
     );
   if (current === undefined) {
     throw Error(`undefined current node for ${addr}`);
@@ -57,12 +60,11 @@ export const getCurrent = async (addr, { readLatestHead }) => {
 
 /**
  * @param {string} addr
- * @param {Pick<import('./rpc.js').RpcUtils, 'readLatestHead'>} io
+ * @param {Pick<VstorageKit, 'readPublished'>} io
  * @returns {Promise<import('@agoric/smart-wallet/src/smartWallet.js').UpdateRecord>}
  */
-export const getLastUpdate = (addr, { readLatestHead }) => {
-  // @ts-expect-error cast
-  return readLatestHead(`published.wallet.${addr}`);
+export const getLastUpdate = (addr, { readPublished }) => {
+  return readPublished(`wallet.${addr}`);
 };
 
 /**
@@ -142,12 +144,12 @@ export const coalesceWalletState = async (follower, invitationBrand) => {
  *
  * @throws { Error & { code: number } } if transaction fails
  * @param {import('@agoric/smart-wallet/src/smartWallet.js').BridgeAction} bridgeAction
- * @param {import('./rpc.js').MinimalNetworkConfig & {
+ * @param {MinimalNetworkConfig & {
  *   from: string,
  *   fees?: string,
  *   verbose?: boolean,
  *   keyring?: {home?: string, backend: string},
- *   stdout: Pick<import('stream').Writable, 'write'>,
+ *   stdout?: Pick<import('stream').Writable, 'write'>,
  *   execFileSync: typeof import('child_process').execFileSync,
  *   delay: (ms: number) => Promise<void>,
  *   dryRun?: boolean,
@@ -210,77 +212,4 @@ export const findContinuingIds = (current, agoricNames) => {
     }
   }
   return found;
-};
-
-export const makeWalletUtils = async (
-  { fetch, execFileSync, delay },
-  networkConfig,
-) => {
-  const { agoricNames, fromBoard, readLatestHead, vstorage } =
-    await makeRpcUtils({ fetch }, networkConfig);
-  /**
-   * @param {string} from
-   * @param {number|string} [minHeight]
-   */
-  const storedWalletState = async (from, minHeight = undefined) => {
-    const m = boardSlottingMarshaller(fromBoard.convertSlotToVal);
-
-    const history = await vstorage.readFully(
-      `published.wallet.${from}`,
-      minHeight,
-    );
-
-    /** @type {{ Invitation: Brand<'set'> }} */
-    // @ts-expect-error XXX how to narrow AssetKind to set?
-    const { Invitation } = agoricNames.brand;
-    const coalescer = makeWalletStateCoalescer(Invitation);
-    // update with oldest first
-    for (const txt of history.reverse()) {
-      const { body, slots } = JSON.parse(txt);
-      const record = m.fromCapData({ body, slots });
-      coalescer.update(record);
-    }
-    const coalesced = coalescer.state;
-    harden(coalesced);
-    return coalesced;
-  };
-
-  /**
-   * Get OfferStatus by id, polling until available.
-   *
-   * @param {string} from
-   * @param {string|number} id
-   * @param {number|string} minHeight
-   * @param {boolean} [untilNumWantsSatisfied]
-   */
-  const pollOffer = async (
-    from,
-    id,
-    minHeight,
-    untilNumWantsSatisfied = false,
-  ) => {
-    const lookup = async () => {
-      const { offerStatuses } = await storedWalletState(from, minHeight);
-      const offerStatus = [...offerStatuses.values()].find(s => s.id === id);
-      if (!offerStatus) throw Error('retry');
-      harden(offerStatus);
-      if (untilNumWantsSatisfied && !('numWantsSatisfied' in offerStatus)) {
-        throw Error('retry (no numWantsSatisfied yet)');
-      }
-      return offerStatus;
-    };
-    const retryMessage = 'offer not in wallet at block';
-    const opts = { ...networkConfig, execFileSync, delay, retryMessage };
-    return pollBlocks(opts)(lookup);
-  };
-
-  return {
-    networkConfig,
-    agoricNames,
-    fromBoard,
-    vstorage,
-    readLatestHead,
-    storedWalletState,
-    pollOffer,
-  };
 };

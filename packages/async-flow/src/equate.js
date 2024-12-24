@@ -13,11 +13,9 @@ export const makeEquate = bijection => {
     // TODO switch to Richard Gibson's suggestion for a better way
     // to keep track of the error labeling.
     if (label === undefined) {
-      // eslint-disable-next-line no-use-before-define
       innerEquate(g, h);
     }
     try {
-      // eslint-disable-next-line no-use-before-define
       innerEquate(g, h);
     } catch (err) {
       throwLabeled(err, label);

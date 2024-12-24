@@ -1,23 +1,21 @@
-// @ts-check
-
 import { Fail, q } from '@endo/errors';
 import { makeBoardRemote } from '@agoric/vats/tools/board-utils.js';
 
-/** @import {BoardRemote} from '@agoric/vats/tools/board-utils.js' */
-/** @import {VBankAssetDetail} from '@agoric/vats/tools/board-utils.js'; */
-
 /**
- * Like @endo/nat but coerces
- *
- * @param {string} str
- * @returns {bigint}
+ * @import {Amount, Brand} from '@agoric/ertp'
+ * @import {AgoricNamesRemotes, BoardRemote, VBankAssetDetail} from '@agoric/vats/tools/board-utils.js';
  */
-export const Natural = str => {
-  const b = BigInt(str);
-  if (b < 0) {
-    throw RangeError(`${b} is negative`);
-  }
-  return b;
+
+// TODO Move to packages/internal.
+/**
+ * Parses the input and returns either a finite number or NaN.
+ *
+ * @param {string} input
+ * @returns {number}
+ */
+export const parseFiniteNumber = input => {
+  const result = /[0-9]/.test(input || '') ? Number(input) : NaN;
+  return Number.isFinite(result) ? result : NaN;
 };
 
 /**
@@ -102,14 +100,15 @@ export const purseBalanceTuples = (purses, assets) => {
  */
 export const fmtRecordOfLines = record => {
   const { stringify } = JSON;
+  /** @type {Array<[string, string[]]>} */
   const groups = Object.entries(record).map(([key, items]) => [
     key,
     items.map(item => `    ${stringify(item)}`),
   ]);
-  const lineEntries = groups.map(
-    // @ts-expect-error ???
-    ([key, lines]) => `  ${stringify(key)}: [\n${lines.join(',\n')}\n  ]`,
-  );
+  const lineEntries = groups.map(([key, lines]) => {
+    const linesStr = lines.length === 0 ? `[]` : `[\n${lines.join(',\n')}\n  ]`;
+    return `  ${stringify(key)}: ${linesStr}`;
+  });
   return `{\n${lineEntries.join(',\n')}\n}`;
 };
 
@@ -117,7 +116,7 @@ export const fmtRecordOfLines = record => {
  * Summarize the offerStatuses of the state as user-facing informative tuples
  *
  * @param {import('@agoric/smart-wallet/src/utils.js').CoalescedWalletState} state
- * @param {import('@agoric/vats/tools/board-utils.js').AgoricNamesRemotes} agoricNames
+ * @param {AgoricNamesRemotes} agoricNames
  */
 export const offerStatusTuples = (state, agoricNames) => {
   const { offerStatuses } = state;
@@ -174,7 +173,7 @@ export const offerStatusTuples = (state, agoricNames) => {
 /**
  * @param {import('@agoric/smart-wallet/src/smartWallet.js').CurrentWalletRecord} current
  * @param {ReturnType<import('@agoric/smart-wallet/src/utils.js').makeWalletStateCoalescer>['state']} coalesced
- * @param {import('@agoric/vats/tools/board-utils.js').AgoricNamesRemotes} agoricNames
+ * @param {AgoricNamesRemotes} agoricNames
  */
 export const summarize = (current, coalesced, agoricNames) => {
   return {

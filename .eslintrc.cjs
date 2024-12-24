@@ -62,15 +62,12 @@ module.exports = {
   root: true,
   parser: '@typescript-eslint/parser',
   parserOptions: {
-    // Works for us!
-    EXPERIMENTAL_useProjectService: true,
+    useProjectService: true,
     sourceType: 'module',
-    project: [
-      './packages/*/tsconfig.json',
-      './packages/*/tsconfig.json',
-      './packages/wallet/*/tsconfig.json',
-      './tsconfig.json',
-    ],
+    projectService: {
+      allowDefaultProject: ['*.js'],
+      defaultProject: 'tsconfig.json',
+    },
     tsconfigRootDir: __dirname,
     extraFileExtensions: ['.cjs'],
   },
@@ -141,6 +138,9 @@ module.exports = {
     // CI has a separate format check but keep this warn to maintain that "eslint --fix" prettifies
     // UNTIL https://github.com/Agoric/agoric-sdk/issues/4339
     'prettier/prettier': 'warn',
+
+    // Not a risk with our coding style
+    'no-use-before-define': 'off',
   },
   settings: {
     jsdoc: {
@@ -174,8 +174,8 @@ module.exports = {
     {
       files: [
         'packages/**/demo/**/*.js',
-        'packages/*/test/**/*.js',
-        'packages/*/test/**/*.test.js',
+        'packages/*/test/**/*.*s',
+        'packages/*/test/**/*.test.*s',
         'packages/wallet/api/test/**/*.js',
       ],
       rules: {
@@ -185,12 +185,23 @@ module.exports = {
         // NOTE: This rule is enabled for the repository in general.  We turn it
         // off for test code for now.
         '@jessie.js/safe-await-separator': 'off',
+
+        // Like `'ava/no-only-test`, but works with @endo/ses-ava
+        'no-restricted-properties': [
+          'error',
+          {
+            object: 'test',
+            property: 'only',
+            message:
+              'Do not commit .only tests - they prevent other tests from running',
+          },
+        ],
       },
     },
     {
       // These tests use EV() instead of E(), which are easy to confuse.
       // Help by erroring when E() packages are imported.
-      files: ['packages/boot/test/**/*.test.*'],
+      files: ['packages/boot/test/**/*.test.*s'],
       rules: {
         'no-restricted-imports': [
           'error',
@@ -226,11 +237,15 @@ module.exports = {
     {
       files: ['*.d.ts'],
       rules: {
-        // Irrelevant in a typedef
-        'no-use-before-define': 'off',
         // Linter confuses the type declaration with value declaration
         'no-redeclare': 'off',
       },
+    },
+    {
+      // disable type-aware linting for these files that have can have a .d.ts twin
+      // because it can't go into tsconfig (because that would cause tsc build to overwrite the .d.ts twin)
+      files: ['exported.*', 'types-index.*', 'types-ambient.*', 'types.*'],
+      extends: ['plugin:@typescript-eslint/disable-type-checked'],
     },
     {
       // disable type-aware linting in HTML
@@ -243,7 +258,7 @@ module.exports = {
       files: ['a3p-integration/**'],
       extends: ['plugin:@typescript-eslint/disable-type-checked'],
       parserOptions: {
-        EXPERIMENTAL_useProjectService: false,
+        useProjectService: false,
         project: false,
       },
       rules: {

@@ -2,8 +2,7 @@
 /* eslint-disable no-restricted-syntax */
 import { heapVowE } from '@agoric/vow/vat.js';
 import { M } from '@endo/patterns';
-import { CosmosChainInfoShape } from '../typeGuards.js';
-import { DenomDetailShape } from './chain-hub.js';
+import { CosmosChainInfoShape, DenomDetailShape } from '../typeGuards.js';
 
 /**
  * @import {Zone} from '@agoric/zone';

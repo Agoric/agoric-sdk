@@ -1,6 +1,6 @@
 # Exo structure
 
-Last verified 2024-09-06
+Last verified 2024-10-30
 
 ```mermaid
 classDiagram
@@ -52,9 +52,9 @@ classDiagram
 
 %% In other vats
     class Port {
-      getLocalAddress()
       addListener()
       connect()
+      getLocalAddress()
       removeListener()
       revoke()
     }
@@ -76,9 +76,8 @@ classDiagram
       deposit()
       executeTx()
       getBalance()
-      withdraw()
-      executeTx()
       monitorTransfers()
+      withdraw()
     }
 
 %% In api consumer vats
@@ -113,12 +112,14 @@ classDiagram
       timer: Timer
       topicKit: RecorderKit<OrchestrationAccountNotification>
       asContinuingOffer()
+      deactivate()
       delegate()
       executeEncodedTx()
       getAddress()
       getBalance()
       getBalances()
       getPublicTopics()
+      reactivate()
       redelegate()
       send()
       sendAll()

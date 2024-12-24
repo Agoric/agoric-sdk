@@ -82,6 +82,18 @@ message Params {
     repeated QueueSize queue_max = 5 [
       (gogoproto.nullable) = false
     ];
+
+    // Vat cleanup budget values.
+    // These values are used by SwingSet to control the pace of removing data
+    // associated with a terminated vat as described at
+    // https://github.com/Agoric/agoric-sdk/blob/master/packages/SwingSet/docs/run-policy.md#terminated-vat-cleanup
+    //
+    // There is no required order to this list of entries, but all the chain
+    // nodes must all serialize and deserialize the existing order without
+    // permuting it.
+    repeated UintMapEntry vat_cleanup_budget = 6 [
+      (gogoproto.nullable) = false
+    ];
 }
 
 // The current state of the module.
@@ -119,6 +131,7 @@ message PowerFlagFee {
 }
 
 // Map element of a string key to a size.
+// TODO: Replace with UintMapEntry?
 message QueueSize {
   option (gogoproto.equal) = true;
 
@@ -127,6 +140,18 @@ message QueueSize {
 
   // The actual size value.
   int32 size = 2;
+}
+
+// Map element of a string key to an unsigned integer.
+// The value uses cosmos-sdk Uint rather than a native Go type to ensure that
+// zeroes survive "omitempty" JSON serialization.
+message UintMapEntry {
+  option (gogoproto.equal) = true;
+  string key = 1;
+  string value = 2 [
+    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Uint",
+    (gogoproto.nullable) = false
+  ];
 }
 
 // Egress is the format for a swingset egress.

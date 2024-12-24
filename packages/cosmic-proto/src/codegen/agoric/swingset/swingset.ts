@@ -103,6 +103,17 @@ export interface Params {
    * permuting it.
    */
   queueMax: QueueSize[];
+  /**
+   * Vat cleanup budget values.
+   * These values are used by SwingSet to control the pace of removing data
+   * associated with a terminated vat as described at
+   * https://github.com/Agoric/agoric-sdk/blob/master/packages/SwingSet/docs/run-policy.md#terminated-vat-cleanup
+   *
+   * There is no required order to this list of entries, but all the chain
+   * nodes must all serialize and deserialize the existing order without
+   * permuting it.
+   */
+  vatCleanupBudget: UintMapEntry[];
 }
 export interface ParamsProtoMsg {
   typeUrl: '/agoric.swingset.Params';
@@ -115,6 +126,7 @@ export interface ParamsSDKType {
   bootstrap_vat_config: string;
   power_flag_fees: PowerFlagFeeSDKType[];
   queue_max: QueueSizeSDKType[];
+  vat_cleanup_budget: UintMapEntrySDKType[];
 }
 /** The current state of the module. */
 export interface State {
@@ -162,7 +174,10 @@ export interface PowerFlagFeeSDKType {
   power_flag: string;
   fee: CoinSDKType[];
 }
-/** Map element of a string key to a size. */
+/**
+ * Map element of a string key to a size.
+ * TODO: Replace with UintMapEntry?
+ */
 export interface QueueSize {
   /** What the size is for. */
   key: string;
@@ -173,10 +188,35 @@ export interface QueueSizeProtoMsg {
   typeUrl: '/agoric.swingset.QueueSize';
   value: Uint8Array;
 }
-/** Map element of a string key to a size. */
+/**
+ * Map element of a string key to a size.
+ * TODO: Replace with UintMapEntry?
+ */
 export interface QueueSizeSDKType {
   key: string;
   size: number;
+}
+/**
+ * Map element of a string key to an unsigned integer.
+ * The value uses cosmos-sdk Uint rather than a native Go type to ensure that
+ * zeroes survive "omitempty" JSON serialization.
+ */
+export interface UintMapEntry {
+  key: string;
+  value: string;
+}
+export interface UintMapEntryProtoMsg {
+  typeUrl: '/agoric.swingset.UintMapEntry';
+  value: Uint8Array;
+}
+/**
+ * Map element of a string key to an unsigned integer.
+ * The value uses cosmos-sdk Uint rather than a native Go type to ensure that
+ * zeroes survive "omitempty" JSON serialization.
+ */
+export interface UintMapEntrySDKType {
+  key: string;
+  value: string;
 }
 /** Egress is the format for a swingset egress. */
 export interface Egress {
@@ -388,6 +428,7 @@ function createBaseParams(): Params {
     bootstrapVatConfig: '',
     powerFlagFees: [],
     queueMax: [],
+    vatCleanupBudget: [],
   };
 }
 export const Params = {
@@ -410,6 +451,9 @@ export const Params = {
     }
     for (const v of message.queueMax) {
       QueueSize.encode(v!, writer.uint32(42).fork()).ldelim();
+    }
+    for (const v of message.vatCleanupBudget) {
+      UintMapEntry.encode(v!, writer.uint32(50).fork()).ldelim();
     }
     return writer;
   },
@@ -440,6 +484,11 @@ export const Params = {
         case 5:
           message.queueMax.push(QueueSize.decode(reader, reader.uint32()));
           break;
+        case 6:
+          message.vatCleanupBudget.push(
+            UintMapEntry.decode(reader, reader.uint32()),
+          );
+          break;
         default:
           reader.skipType(tag & 7);
           break;
@@ -463,6 +512,9 @@ export const Params = {
         : [],
       queueMax: Array.isArray(object?.queueMax)
         ? object.queueMax.map((e: any) => QueueSize.fromJSON(e))
+        : [],
+      vatCleanupBudget: Array.isArray(object?.vatCleanupBudget)
+        ? object.vatCleanupBudget.map((e: any) => UintMapEntry.fromJSON(e))
         : [],
     };
   },
@@ -498,6 +550,13 @@ export const Params = {
     } else {
       obj.queueMax = [];
     }
+    if (message.vatCleanupBudget) {
+      obj.vatCleanupBudget = message.vatCleanupBudget.map(e =>
+        e ? UintMapEntry.toJSON(e) : undefined,
+      );
+    } else {
+      obj.vatCleanupBudget = [];
+    }
     return obj;
   },
   fromPartial(object: Partial<Params>): Params {
@@ -511,6 +570,8 @@ export const Params = {
       object.powerFlagFees?.map(e => PowerFlagFee.fromPartial(e)) || [];
     message.queueMax =
       object.queueMax?.map(e => QueueSize.fromPartial(e)) || [];
+    message.vatCleanupBudget =
+      object.vatCleanupBudget?.map(e => UintMapEntry.fromPartial(e)) || [];
     return message;
   },
   fromProtoMsg(message: ParamsProtoMsg): Params {
@@ -816,6 +877,78 @@ export const QueueSize = {
     return {
       typeUrl: '/agoric.swingset.QueueSize',
       value: QueueSize.encode(message).finish(),
+    };
+  },
+};
+function createBaseUintMapEntry(): UintMapEntry {
+  return {
+    key: '',
+    value: '',
+  };
+}
+export const UintMapEntry = {
+  typeUrl: '/agoric.swingset.UintMapEntry',
+  encode(
+    message: UintMapEntry,
+    writer: BinaryWriter = BinaryWriter.create(),
+  ): BinaryWriter {
+    if (message.key !== '') {
+      writer.uint32(10).string(message.key);
+    }
+    if (message.value !== '') {
+      writer.uint32(18).string(message.value);
+    }
+    return writer;
+  },
+  decode(input: BinaryReader | Uint8Array, length?: number): UintMapEntry {
+    const reader =
+      input instanceof BinaryReader ? input : new BinaryReader(input);
+    let end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseUintMapEntry();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1:
+          message.key = reader.string();
+          break;
+        case 2:
+          message.value = reader.string();
+          break;
+        default:
+          reader.skipType(tag & 7);
+          break;
+      }
+    }
+    return message;
+  },
+  fromJSON(object: any): UintMapEntry {
+    return {
+      key: isSet(object.key) ? String(object.key) : '',
+      value: isSet(object.value) ? String(object.value) : '',
+    };
+  },
+  toJSON(message: UintMapEntry): JsonSafe<UintMapEntry> {
+    const obj: any = {};
+    message.key !== undefined && (obj.key = message.key);
+    message.value !== undefined && (obj.value = message.value);
+    return obj;
+  },
+  fromPartial(object: Partial<UintMapEntry>): UintMapEntry {
+    const message = createBaseUintMapEntry();
+    message.key = object.key ?? '';
+    message.value = object.value ?? '';
+    return message;
+  },
+  fromProtoMsg(message: UintMapEntryProtoMsg): UintMapEntry {
+    return UintMapEntry.decode(message.value);
+  },
+  toProto(message: UintMapEntry): Uint8Array {
+    return UintMapEntry.encode(message).finish();
+  },
+  toProtoMsg(message: UintMapEntry): UintMapEntryProtoMsg {
+    return {
+      typeUrl: '/agoric.swingset.UintMapEntry',
+      value: UintMapEntry.encode(message).finish(),
     };
   },
 };

@@ -1,3 +1,4 @@
+// @ts-check
 import { assert } from '@endo/errors';
 import { Far } from '@endo/far';
 

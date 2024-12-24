@@ -439,6 +439,7 @@ func Test_Receive_GiveToRewardDistributor(t *testing.T) {
 			params := types.DefaultParams()
 			params.RewardEpochDurationBlocks = 0
 			params.RewardSmoothingBlocks = tt.duration
+			params.AllowedMonitoringAccounts = []string{"*"}
 
 			keeper.SetParams(ctx, params)
 			keeper.SetState(ctx, types.State{RewardPool: tt.rewardPool})
@@ -524,7 +525,7 @@ func Test_EndBlock_Events(t *testing.T) {
 	}
 	keeper, ctx := makeTestKit(acct, bank)
 	// Turn off rewards.
-	keeper.SetParams(ctx, types.Params{PerEpochRewardFraction: sdk.ZeroDec()})
+	keeper.SetParams(ctx, types.Params{PerEpochRewardFraction: sdk.ZeroDec(), AllowedMonitoringAccounts: []string{"*"}})
 	msgsSent := []string{}
 	keeper.PushAction = func(ctx sdk.Context, action vm.Action) error {
 		bz, err := json.Marshal(action)
@@ -804,15 +805,19 @@ func Test_Module_Account(t *testing.T) {
 	}
 
 	modAddr := sdk.MustAccAddressFromBech32(moduleBech32)
-	if !keeper.IsModuleAccount(ctx, modAddr) {
-		t.Errorf("got IsModuleAccount modAddr = false, want true")
+	if keeper.IsAllowedMonitoringAccount(ctx, modAddr) {
+		t.Errorf("got IsAllowedMonitoringAccount modAddr = true, want false")
+	}
+	provisionPool := authtypes.NewModuleAddress("vbank/provision")
+	if !keeper.IsAllowedMonitoringAccount(ctx, provisionPool) {
+		t.Errorf("got IsAllowedMonitoringAccount provisionPool = false, want true")
 	}
 	notModAddr := sdk.MustAccAddressFromBech32(addr1)
-	if keeper.IsModuleAccount(ctx, notModAddr) {
-		t.Errorf("got IsModuleAccount notModAddr = true, want false")
+	if keeper.IsAllowedMonitoringAccount(ctx, notModAddr) {
+		t.Errorf("got IsAllowedMonitoringAccount notModAddr = true, want false")
 	}
 	missingAddr := sdk.MustAccAddressFromBech32(addr2)
-	if keeper.IsModuleAccount(ctx, missingAddr) {
-		t.Errorf("got IsModuleAccount missingAddr = false, want true")
+	if keeper.IsAllowedMonitoringAccount(ctx, missingAddr) {
+		t.Errorf("got IsAllowedMonitoringAccount missingAddr = false, want true")
 	}
 }

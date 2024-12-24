@@ -1,3 +1,9 @@
+/**
+ * @file this core-eval proposal is specific to the upgrade-18 scenario,
+ *   handling tasks beyond generic Vault Factory null upgrade. For a reusable
+ *   proposal, see upgrade-vaultFactory-proposal.js.
+ */
+
 import { E } from '@endo/far';
 import { makeNotifierFromAsyncIterable } from '@agoric/notifier';
 import { makeTracer } from '@agoric/internal/src/index.js';

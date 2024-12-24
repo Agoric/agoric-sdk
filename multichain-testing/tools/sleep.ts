@@ -28,11 +28,11 @@ const retryUntilCondition = async <T>(
   {
     maxRetries = 6,
     retryIntervalMs = 3500,
-    log = () => {},
+    log = console.log,
     setTimeout = ambientSetTimeout,
   }: RetryOptions = {},
 ): Promise<T> => {
-  console.log({ maxRetries, retryIntervalMs, message });
+  log({ maxRetries, retryIntervalMs, message });
   let retries = 0;
 
   while (retries < maxRetries) {
@@ -50,7 +50,7 @@ const retryUntilCondition = async <T>(
     }
 
     retries++;
-    console.log(
+    log(
       `Retry ${retries}/${maxRetries} - Waiting for ${retryIntervalMs}ms for ${message}...`,
     );
     await sleep(retryIntervalMs, { log, setTimeout });
@@ -75,3 +75,5 @@ export const makeRetryUntilCondition = (defaultOptions: RetryOptions = {}) => {
       ...options,
     });
 };
+
+export type RetryUntilCondition = ReturnType<typeof makeRetryUntilCondition>;

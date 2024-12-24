@@ -2,13 +2,10 @@
 // eslint-disable-next-line import/order
 import { test } from '../../tools/prepare-test-env-ava.js';
 
+import { deepCopyJsonable } from '@agoric/internal/src/js-utils.js';
 import { kser } from '@agoric/kmarshal';
 import { initSwingStore } from '@agoric/swing-store';
 import { buildKernelBundles, buildVatController } from '../../src/index.js';
-
-function copy(data) {
-  return JSON.parse(JSON.stringify(data));
-}
 
 test.before(async t => {
   const kernelBundles = await buildKernelBundles();
@@ -34,7 +31,7 @@ test.serial('replay dynamic vat', async t => {
 
   const ss1 = initSwingStore();
   {
-    const c1 = await buildVatController(copy(config), [], {
+    const c1 = await buildVatController(deepCopyJsonable(config), [], {
       kernelStorage: ss1.kernelStorage,
       kernelBundles: t.context.data.kernelBundles,
     });
@@ -52,7 +49,7 @@ test.serial('replay dynamic vat', async t => {
   const serialized = ss1.debug.serialize();
   const ss2 = initSwingStore(null, { serialized });
   {
-    const c2 = await buildVatController(copy(config), [], {
+    const c2 = await buildVatController(deepCopyJsonable(config), [], {
       kernelStorage: ss2.kernelStorage,
     });
     t.teardown(c2.shutdown);

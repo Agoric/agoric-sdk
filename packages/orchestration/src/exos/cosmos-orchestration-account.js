@@ -50,6 +50,8 @@ import {
   DelegationShape,
   DenomAmountShape,
   IBCTransferOptionsShape,
+  Proto3Shape,
+  TxBodyOptsShape,
 } from '../typeGuards.js';
 import { coerceCoin, coerceDenom } from '../utils/amounts.js';
 import {
@@ -65,7 +67,7 @@ import { makeTimestampHelper } from '../utils/time.js';
 
 /**
  * @import {HostOf} from '@agoric/async-flow';
- * @import {AmountArg, IcaAccount, ChainAddress, CosmosValidatorAddress, ICQConnection, StakingAccountActions, StakingAccountQueries, OrchestrationAccountI, CosmosRewardsResponse, IBCConnectionInfo, IBCMsgTransferOptions, ChainHub, CosmosDelegationResponse} from '../types.js';
+ * @import {AmountArg, IcaAccount, ChainAddress, CosmosValidatorAddress, ICQConnection, StakingAccountActions, StakingAccountQueries, OrchestrationAccountCommon, CosmosRewardsResponse, IBCConnectionInfo, IBCMsgTransferOptions, ChainHub, CosmosDelegationResponse} from '../types.js';
  * @import {RecorderKit, MakeRecorderKit} from '@agoric/zoe/src/contractSupport/recorder.js';
  * @import {Coin} from '@agoric/cosmic-proto/cosmos/base/v1beta1/coin.js';
  * @import {Remote} from '@agoric/internal';
@@ -80,7 +82,7 @@ import { makeTimestampHelper } from '../utils/time.js';
  * @import {LocalIbcAddress, RemoteIbcAddress} from '@agoric/vats/tools/ibc-utils.js';
  */
 
-const trace = makeTracer('ComosOrchestrationAccountHolder');
+const trace = makeTracer('CosmosOrchAccount');
 
 const { Vow$ } = NetworkShape; // TODO #9611
 
@@ -136,13 +138,16 @@ const stakingAccountQueriesMethods = {
   getRewards: M.call().returns(VowShape),
 };
 
-/** @see {OrchestrationAccountI} */
+/** @see {OrchestrationAccountCommon} */
 export const IcaAccountHolderI = M.interface('IcaAccountHolder', {
   ...orchestrationAccountMethods,
   ...stakingAccountActionsMethods,
   ...stakingAccountQueriesMethods,
   deactivate: M.call().returns(VowShape),
   reactivate: M.call().returns(VowShape),
+  executeEncodedTx: M.call(M.arrayOf(Proto3Shape))
+    .optional(TxBodyOptsShape)
+    .returns(VowShape),
 });
 
 /** @type {{ [name: string]: [description: string, valueShape: Matcher] }} */
@@ -335,6 +340,8 @@ export const prepareCosmosOrchestrationAccountKit = (
          * @returns {Coin}
          */
         amountToCoin(amount) {
+          !('brand' in amount) ||
+            Fail`'amountToCoin' not working for ${q(amount.brand)} until #10449; use 'DenomAmount' for now`;
           return coerceCoin(chainHub, amount);
         },
       },
@@ -695,7 +702,7 @@ export const prepareCosmosOrchestrationAccountKit = (
         },
       },
       holder: {
-        /** @type {HostOf<OrchestrationAccountI['asContinuingOffer']>} */
+        /** @type {HostOf<OrchestrationAccountCommon['asContinuingOffer']>} */
         asContinuingOffer() {
           // @ts-expect-error XXX invitationMakers
           // getPublicTopics resolves promptly (same run), so we don't need a watcher
@@ -717,7 +724,7 @@ export const prepareCosmosOrchestrationAccountKit = (
             });
           });
         },
-        /** @type {HostOf<OrchestrationAccountI['getPublicTopics']>} */
+        /** @type {HostOf<OrchestrationAccountCommon['getPublicTopics']>} */
         getPublicTopics() {
           // getStoragePath resolves promptly (same run), so we don't need a watcher
           // eslint-disable-next-line no-restricted-syntax
@@ -734,7 +741,7 @@ export const prepareCosmosOrchestrationAccountKit = (
           });
         },
 
-        /** @type {HostOf<OrchestrationAccountI['getAddress']>} */
+        /** @type {HostOf<OrchestrationAccountCommon['getAddress']>} */
         getAddress() {
           return this.state.chainAddress;
         },
@@ -801,7 +808,7 @@ export const prepareCosmosOrchestrationAccountKit = (
             return watch(results, this.facets.withdrawRewardWatcher);
           });
         },
-        /** @type {HostOf<OrchestrationAccountI['getBalance']>} */
+        /** @type {HostOf<OrchestrationAccountCommon['getBalance']>} */
         getBalance(denom) {
           return asVow(() => {
             const { chainAddress, icqConnection } = this.state;
@@ -820,7 +827,7 @@ export const prepareCosmosOrchestrationAccountKit = (
           });
         },
 
-        /** @type {HostOf<OrchestrationAccountI['getBalances']>} */
+        /** @type {HostOf<OrchestrationAccountCommon['getBalances']>} */
         getBalances() {
           return asVow(() => {
             const { chainAddress, icqConnection } = this.state;
@@ -838,7 +845,7 @@ export const prepareCosmosOrchestrationAccountKit = (
           });
         },
 
-        /** @type {HostOf<OrchestrationAccountI['send']>} */
+        /** @type {HostOf<OrchestrationAccountCommon['send']>} */
         send(toAccount, amount) {
           return asVow(() => {
             trace('send', toAccount, amount);
@@ -859,7 +866,7 @@ export const prepareCosmosOrchestrationAccountKit = (
           });
         },
 
-        /** @type {HostOf<OrchestrationAccountI['sendAll']>} */
+        /** @type {HostOf<OrchestrationAccountCommon['sendAll']>} */
         sendAll(toAccount, amounts) {
           return asVow(() => {
             trace('sendAll', toAccount, amounts);
@@ -880,7 +887,7 @@ export const prepareCosmosOrchestrationAccountKit = (
           });
         },
 
-        /** @type {HostOf<OrchestrationAccountI['transfer']>} */
+        /** @type {HostOf<OrchestrationAccountCommon['transfer']>} */
         transfer(destination, amount, opts) {
           trace('transfer', destination, amount, opts);
           return asVow(() => {
@@ -914,7 +921,7 @@ export const prepareCosmosOrchestrationAccountKit = (
           });
         },
 
-        /** @type {HostOf<OrchestrationAccountI['transferSteps']>} */
+        /** @type {HostOf<OrchestrationAccountCommon['transferSteps']>} */
         transferSteps(amount, msg) {
           console.log('transferSteps got', amount, msg);
           return asVow(() => Fail`not yet implemented`);
@@ -955,11 +962,11 @@ export const prepareCosmosOrchestrationAccountKit = (
         },
         /** @type {HostOf<IcaAccount['deactivate']>} */
         deactivate() {
-          return watch(E(this.facets.helper.owned()).deactivate());
+          return asVow(() => watch(E(this.facets.helper.owned()).deactivate()));
         },
         /** @type {HostOf<IcaAccount['reactivate']>} */
         reactivate() {
-          return watch(E(this.facets.helper.owned()).reactivate());
+          return asVow(() => watch(E(this.facets.helper.owned()).reactivate()));
         },
         /** @type {HostOf<StakingAccountQueries['getDelegation']>} */
         getDelegation(validator) {
@@ -1092,6 +1099,12 @@ export const prepareCosmosOrchestrationAccountKit = (
             ]);
             return watch(results, this.facets.rewardsQueryWatcher);
           });
+        },
+        /** @type {HostOf<IcaAccount['executeEncodedTx']>} */
+        executeEncodedTx(msgs, opts) {
+          return asVow(() =>
+            watch(E(this.facets.helper.owned()).executeEncodedTx(msgs, opts)),
+          );
         },
       },
     },

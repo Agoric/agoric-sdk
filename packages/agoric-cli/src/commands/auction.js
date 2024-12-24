@@ -1,14 +1,20 @@
 // @ts-check
-
-import { InvalidArgumentError } from 'commander';
+/* eslint-env node */
+import {
+  fetchEnvNetworkConfig,
+  makeAgoricNames,
+  makeVstorageKit,
+} from '@agoric/client-utils';
 import { Fail } from '@endo/errors';
-import { makeRpcUtils } from '../lib/rpc.js';
+import { InvalidArgumentError } from 'commander';
 import { outputActionAndHint } from '../lib/wallet.js';
 
 /**
  * @import {ParamTypesMap, ParamTypesMapFromRecord} from '@agoric/governance/src/contractGovernance/typedParamManager.js'
  * @import {ParamValueForType} from '@agoric/governance/src/types.js'
  */
+
+const networkConfig = await fetchEnvNetworkConfig({ env: process.env, fetch });
 
 /**
  * @template {ParamTypesMap} M
@@ -59,11 +65,6 @@ export const makeAuctionCommand = (
       'descending clock step size',
       BigInt,
     )
-    .option(
-      '--discount-step <integer>',
-      'proposed value (basis points)',
-      BigInt,
-    )
     .requiredOption(
       '--charterAcceptOfferId <string>',
       'offer that had continuing invitation result',
@@ -91,13 +92,13 @@ export const makeAuctionCommand = (
        * }} opts
        */
       async opts => {
-        const { agoricNames, readLatestHead } = await makeRpcUtils({ fetch });
-
-        /** @type {{ current: AuctionParamRecord }} */
-        // @ts-expect-error XXX should runtime check?
-        const { current } = await readLatestHead(
-          `published.auction.governance`,
+        const { readPublished, ...vsk } = makeVstorageKit(
+          { fetch },
+          networkConfig,
         );
+        const agoricNames = await makeAgoricNames(vsk.fromBoard, vsk.vstorage);
+
+        const { current } = await readPublished(`auction.governance`);
 
         const {
           AuctionStartDelay: {

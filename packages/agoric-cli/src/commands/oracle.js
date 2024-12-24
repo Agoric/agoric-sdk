@@ -1,6 +1,13 @@
 // @ts-check
 /* eslint-disable func-names */
 /* eslint-env node */
+import {
+  fetchEnvNetworkConfig,
+  makeAgoricNames,
+  makeVstorageKit,
+  makeWalletUtils,
+  storageHelper,
+} from '@agoric/client-utils';
 import { Offers } from '@agoric/inter-protocol/src/clientSupport.js';
 import { oracleBrandFeedName } from '@agoric/inter-protocol/src/proposals/utils.js';
 import { Fail } from '@endo/errors';
@@ -10,10 +17,8 @@ import { Command } from 'commander';
 import { inspect } from 'util';
 import { normalizeAddressWithOptions } from '../lib/chain.js';
 import { bigintReplacer } from '../lib/format.js';
-import { getNetworkConfig, makeRpcUtils, storageHelper } from '../lib/rpc.js';
 import {
   getCurrent,
-  makeWalletUtils,
   outputAction,
   sendAction,
   sendHint,
@@ -82,20 +87,24 @@ export const makeOracleCommand = (logger, io = {}) => {
 
   const rpcTools = async () => {
     // XXX pass fetch to getNetworkConfig() explicitly
-    const networkConfig = await getNetworkConfig(env);
-    const utils = await makeRpcUtils({ fetch });
+    const networkConfig = await fetchEnvNetworkConfig({
+      env: process.env,
+      fetch,
+    });
+    const vsk = makeVstorageKit({ fetch }, networkConfig);
+    const agoricNames = await makeAgoricNames(vsk.fromBoard, vsk.vstorage);
 
     const lookupPriceAggregatorInstance = ([brandIn, brandOut]) => {
       const name = oracleBrandFeedName(brandIn, brandOut);
-      const instance = utils.agoricNames.instance[name];
+      const instance = agoricNames.instance[name];
       if (!instance) {
-        logger.debug('known instances:', utils.agoricNames.instance);
+        logger.debug('known instances:', agoricNames.instance);
         throw Error(`Unknown instance ${name}`);
       }
       return instance;
     };
 
-    return { ...utils, networkConfig, lookupPriceAggregatorInstance };
+    return { ...vsk, networkConfig, lookupPriceAggregatorInstance };
   };
 
   oracle
@@ -171,8 +180,8 @@ export const makeOracleCommand = (logger, io = {}) => {
       console.warn(sendHint);
     });
 
-  const findOracleCap = async (instance, from, readLatestHead) => {
-    const current = await getCurrent(from, { readLatestHead });
+  const findOracleCap = async (instance, from, readPublished) => {
+    const current = await getCurrent(from, { readPublished });
 
     const { offerToUsedInvitation: entries } = /** @type {any} */ (current);
     Array.isArray(entries) || Fail`entries must be an array: ${entries}`;
@@ -200,11 +209,10 @@ export const makeOracleCommand = (logger, io = {}) => {
       s => s.split('.'),
     )
     .action(async opts => {
-      const { readLatestHead, lookupPriceAggregatorInstance } =
-        await rpcTools();
+      const { readPublished, lookupPriceAggregatorInstance } = await rpcTools();
       const instance = lookupPriceAggregatorInstance(opts.pair);
 
-      const offerId = await findOracleCap(instance, opts.from, readLatestHead);
+      const offerId = await findOracleCap(instance, opts.from, readPublished);
       if (!offerId) {
         console.error('No continuing ids found');
       }
@@ -265,12 +273,13 @@ export const makeOracleCommand = (logger, io = {}) => {
          * }}
          */ { pair, keys, price },
       ) => {
-        const { readLatestHead, networkConfig, lookupPriceAggregatorInstance } =
-          await rpcTools();
-        const wutil = await makeWalletUtils(
-          { fetch, execFileSync, delay },
+        const {
+          readLatestHead,
+          readPublished,
           networkConfig,
-        );
+          lookupPriceAggregatorInstance,
+        } = await rpcTools();
+        const wutil = await makeWalletUtils({ fetch, delay }, networkConfig);
         const unitPrice = scaleDecimals(price);
 
         const feedPath = `published.priceFeed.${pair[0]}-${pair[1]}_price_feed`;
@@ -334,7 +343,7 @@ export const makeOracleCommand = (logger, io = {}) => {
           adminOfferIds[from] = await findOracleCap(
             instance,
             from,
-            readLatestHead,
+            readPublished,
           );
           if (!adminOfferIds[from]) {
             console.error(

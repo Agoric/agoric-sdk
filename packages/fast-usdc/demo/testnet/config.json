@@ -1,0 +1,18 @@
+{
+  "nobleSeed": "stamp later develop betray boss ranch abstract puzzle calm right bounce march orchard edge correct canal fault miracle void dutch lottery lucky observe armed",
+  "ethSeed": "a4b7f431465df5dc1458cd8a9be10c42da8e3729e3ce53f18814f48ae2a98a08",
+  "nobleToAgoricChannel": "channel-21",
+  "agoricRpc": "https://main.rpc.agoric.net",
+  "nobleRpc": "https://noble-rpc.polkachu.com",
+  "nobleApi": "https://noble-api.polkachu.com",
+  "ethRpc": "https://sepolia.drpc.org",
+  "tokenMessengerAddress": "0x9f3B8679c73C2Fef8b59B4f3444d4e156fb70AA5",
+  "tokenAddress": "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238",
+  "destinationChains": [
+    {
+      "bech32prefix": "osmo",
+      "api": "https://lcd.osmosis.zone",
+      "USDCDenom": "ibc/498A0751C798A0D9A389AA3691123DADA57DAA4FE165D5C75894505B876BA6E4"
+    }
+  ]
+}

@@ -1,18 +1,36 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { Fail } from '@endo/errors';
-import { documentStorageSchema } from '@agoric/internal/src/storage-test-utils.js';
-import type { CosmosValidatorAddress } from '@agoric/orchestration';
+import {
+  defaultMarshaller,
+  documentStorageSchema,
+} from '@agoric/internal/src/storage-test-utils.js';
+import {
+  withChainCapabilities,
+  type CosmosValidatorAddress,
+} from '@agoric/orchestration';
 import type { start as startStakeIca } from '@agoric/orchestration/src/examples/stake-ica.contract.js';
 import type { Instance } from '@agoric/zoe/src/zoeService/utils.js';
 import type { TestFn } from 'ava';
 import { SIMULATED_ERRORS } from '@agoric/vats/tools/fake-bridge.js';
+import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
+import { buildVTransferEvent } from '@agoric/orchestration/tools/ibc-mocks.js';
+import { BridgeId } from '@agoric/internal';
+import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
 import {
   makeWalletFactoryContext,
   type WalletFactoryTestContext,
 } from './walletFactory.js';
+import {
+  insistManagerType,
+  makeSwingsetHarness,
+} from '../../tools/supports.js';
 
-const test: TestFn<WalletFactoryTestContext> = anyTest;
+const test: TestFn<
+  WalletFactoryTestContext & {
+    harness?: ReturnType<typeof makeSwingsetHarness>;
+  }
+> = anyTest;
 
 const validatorAddress: CosmosValidatorAddress = {
   value: 'cosmosvaloper1test',
@@ -22,11 +40,21 @@ const validatorAddress: CosmosValidatorAddress = {
 
 const ATOM_DENOM = 'uatom';
 
+const {
+  SLOGFILE: slogFile,
+  SWINGSET_WORKER_TYPE: defaultManagerType = 'local',
+} = process.env;
+
 test.before(async t => {
-  t.context = await makeWalletFactoryContext(
+  insistManagerType(defaultManagerType);
+  const harness =
+    defaultManagerType === 'xsnap' ? makeSwingsetHarness() : undefined;
+  const ctx = await makeWalletFactoryContext(
     t,
     '@agoric/vm-config/decentral-itest-orchestration-config.json',
+    { slogFile, defaultManagerType, harness },
   );
+  t.context = { ...ctx, harness };
 });
 test.after.always(t => t.context.shutdown?.());
 
@@ -36,7 +64,7 @@ test.after.always(t => t.context.shutdown?.());
 test.serial('config', async t => {
   const {
     storage,
-    readLatest,
+    readPublished,
     runUtils: { EV },
   } = t.context;
 
@@ -48,13 +76,11 @@ test.serial('config', async t => {
       chainId: 'cosmoshub-4',
       stakingTokens: [{ denom: ATOM_DENOM }],
     });
-    t.deepEqual(
-      readLatest(`published.agoricNames.chain.cosmoshub`),
-      cosmosChainInfo,
-    );
+    t.deepEqual(readPublished(`agoricNames.chain.cosmoshub`), cosmosChainInfo);
     await documentStorageSchema(t, storage, {
       note: 'Chain info for Orchestration',
       node: 'agoricNames.chain',
+      showValue: v => defaultMarshaller.fromCapData(JSON.parse(v)),
     });
   }
 
@@ -69,13 +95,14 @@ test.serial('config', async t => {
     });
 
     t.deepEqual(
-      readLatest(`published.agoricNames.chainConnection.cosmoshub-4_juno-1`),
+      readPublished(`agoricNames.chainConnection.cosmoshub-4_juno-1`),
       connection,
     );
 
     await documentStorageSchema(t, storage, {
       note: 'Chain connections for Orchestration',
       node: 'agoricNames.chainConnection',
+      showValue: v => defaultMarshaller.fromCapData(JSON.parse(v)),
     });
   }
   {
@@ -103,6 +130,7 @@ test.skip('stakeOsmo - queries', async t => {
     buildProposal,
     evalProposal,
     runUtils: { EV },
+    harness,
   } = t.context;
   await evalProposal(
     buildProposal('@agoric/builders/scripts/orchestration/init-stakeOsmo.js'),
@@ -140,7 +168,8 @@ test.serial('stakeAtom - smart wallet', async t => {
     evalProposal,
     agoricNamesRemotes,
     bridgeUtils: { flushInboundQueue },
-    readLatest,
+    readPublished,
+    harness,
   } = t.context;
 
   await evalProposal(
@@ -151,6 +180,7 @@ test.serial('stakeAtom - smart wallet', async t => {
     'agoric1testStakAtom',
   );
 
+  harness?.useRunPolicy(true);
   await wd.sendOffer({
     id: 'request-account',
     invitationSpec: {
@@ -160,6 +190,9 @@ test.serial('stakeAtom - smart wallet', async t => {
     },
     proposal: {},
   });
+  harness && t.log('makeAccount computrons', harness.totalComputronCount());
+  harness?.useRunPolicy(false);
+
   await flushInboundQueue();
   t.like(wd.getCurrentWalletRecord(), {
     offerToPublicSubscriberPaths: [
@@ -174,7 +207,7 @@ test.serial('stakeAtom - smart wallet', async t => {
   t.like(wd.getLatestUpdateRecord(), {
     status: { id: 'request-account', numWantsSatisfied: 1 },
   });
-  t.deepEqual(readLatest('published.stakeAtom.accounts.cosmos1test'), {
+  t.deepEqual(readPublished('stakeAtom.accounts.cosmos1test'), {
     localAddress:
       '/ibc-port/icacontroller-1/ordered/{"version":"ics27-1","controllerConnectionId":"connection-8","hostConnectionId":"connection-649","address":"cosmos1test","encoding":"proto3","txType":"sdk_multi_msg"}/ibc-channel/channel-1',
     remoteAddress:
@@ -240,7 +273,9 @@ test.serial('stakeAtom - smart wallet', async t => {
       proposal: {},
     }),
     {
-      message: 'No denom for brand [object Alleged: ATOM brand]',
+      // TODO #10449
+      message:
+        "'amountToCoin' not working for \"[Alleged: ATOM brand]\" until #10449; use 'DenomAmount' for now",
     },
   );
 });
@@ -282,17 +317,44 @@ test.serial('revise chain info', async t => {
   });
 });
 
-test('basic-flows', async t => {
+test.serial('basic-flows', async t => {
   const {
     buildProposal,
     evalProposal,
     agoricNamesRemotes,
-    readLatest,
-    bridgeUtils: { flushInboundQueue },
+    readPublished,
+    bridgeUtils: { flushInboundQueue, runInbound },
   } = t.context;
 
   await evalProposal(
-    buildProposal('@agoric/builders/scripts/orchestration/init-basic-flows.js'),
+    buildProposal(
+      '@agoric/builders/scripts/orchestration/init-basic-flows.js',
+      [
+        '--chainInfo',
+        JSON.stringify(withChainCapabilities(fetchedChainInfo)),
+        '--assetInfo',
+        JSON.stringify([
+          [
+            'ibc/uusdconagoric',
+            {
+              chainName: 'agoric',
+              baseName: 'noble',
+              baseDenom: 'uusdc',
+            },
+          ],
+          // not tested until #10006. consider renaming to ibc/uusdconcosmos
+          // and updating boot/tools/ibc/mocks.ts
+          [
+            'ibc/uusdchash',
+            {
+              chainName: 'cosmoshub',
+              baseName: 'noble',
+              baseDenom: 'uusdc',
+            },
+          ],
+        ]),
+      ],
+    ),
   );
 
   const wd =
@@ -317,7 +379,7 @@ test('basic-flows', async t => {
       [
         'request-coa',
         {
-          account: 'published.basicFlows.cosmos1test',
+          account: 'published.basicFlows.cosmos1test1',
         },
       ],
     ],
@@ -325,11 +387,11 @@ test('basic-flows', async t => {
   t.like(wd.getLatestUpdateRecord(), {
     status: { id: 'request-coa', numWantsSatisfied: 1 },
   });
-  t.deepEqual(readLatest('published.basicFlows.cosmos1test'), {
+  t.deepEqual(readPublished('basicFlows.cosmos1test1'), {
     localAddress:
-      '/ibc-port/icacontroller-4/ordered/{"version":"ics27-1","controllerConnectionId":"connection-8","hostConnectionId":"connection-649","address":"cosmos1test","encoding":"proto3","txType":"sdk_multi_msg"}/ibc-channel/channel-4',
+      '/ibc-port/icacontroller-2/ordered/{"version":"ics27-1","controllerConnectionId":"connection-8","hostConnectionId":"connection-649","address":"cosmos1test1","encoding":"proto3","txType":"sdk_multi_msg"}/ibc-channel/channel-2',
     remoteAddress:
-      '/ibc-hop/connection-8/ibc-port/icahost/ordered/{"version":"ics27-1","controllerConnectionId":"connection-8","hostConnectionId":"connection-649","address":"cosmos1test","encoding":"proto3","txType":"sdk_multi_msg"}/ibc-channel/channel-4',
+      '/ibc-hop/connection-8/ibc-port/icahost/ordered/{"version":"ics27-1","controllerConnectionId":"connection-8","hostConnectionId":"connection-649","address":"cosmos1test1","encoding":"proto3","txType":"sdk_multi_msg"}/ibc-channel/channel-2',
   });
 
   // create a local orchestration account
@@ -349,13 +411,13 @@ test('basic-flows', async t => {
   const publicSubscriberPaths = Object.fromEntries(
     wd.getCurrentWalletRecord().offerToPublicSubscriberPaths,
   );
+  const expectedAddress = makeTestAddress();
   t.deepEqual(publicSubscriberPaths['request-loa'], {
-    account: 'published.basicFlows.agoric1fakeLCAAddress1',
+    account: `published.basicFlows.${expectedAddress}`,
   });
   t.like(wd.getLatestUpdateRecord(), {
     status: { id: 'request-loa', numWantsSatisfied: 1 },
   });
-  t.is(readLatest('published.basicFlows.agoric1fakeLCAAddress'), '');
 
   await wd.sendOffer({
     id: 'transfer-to-noble-from-cosmos',
@@ -415,7 +477,7 @@ test('basic-flows', async t => {
     },
     proposal: {},
     offerArgs: {
-      amount: { denom: 'ibc/uusdchash', value: 10n },
+      amount: { denom: 'ibc/uusdconagoric', value: 10n },
       destination: {
         chainId: 'noble-1',
         value: 'noble1test',
@@ -423,12 +485,31 @@ test('basic-flows', async t => {
       },
     },
   });
-  t.like(wd.getLatestUpdateRecord(), {
-    status: {
-      id: 'transfer-to-noble-from-agoric',
-      error: undefined,
-    },
+
+  await runInbound(
+    BridgeId.VTRANSFER,
+    buildVTransferEvent({
+      sender: expectedAddress,
+      target: expectedAddress,
+      sourceChannel: 'channel-62',
+      sequence: '1',
+    }),
+  );
+
+  const latestOfferStatus = () => {
+    const curr = wd.getLatestUpdateRecord();
+    if (curr.updated === 'offerStatus') {
+      return curr.status;
+    }
+    throw new Error('expected updated to be "offerStatus"');
+  };
+
+  const offerResult = latestOfferStatus();
+  t.like(offerResult, {
+    id: 'transfer-to-noble-from-agoric',
+    error: undefined,
   });
+  t.true('result' in offerResult, 'transfer vow settled');
 
   await t.throwsAsync(
     wd.executeOffer({
@@ -440,7 +521,7 @@ test('basic-flows', async t => {
       },
       proposal: {},
       offerArgs: {
-        amount: { denom: 'ibc/uusdchash', value: SIMULATED_ERRORS.TIMEOUT },
+        amount: { denom: 'ibc/uusdconagoric', value: SIMULATED_ERRORS.TIMEOUT },
         destination: {
           chainId: 'noble-1',
           value: 'noble1test',
@@ -456,7 +537,7 @@ test.serial('auto-stake-it - proposal', async t => {
 
   await t.notThrowsAsync(
     evalProposal(
-      buildProposal('@agoric/builders/scripts/testing/start-auto-stake-it.js'),
+      buildProposal('@agoric/builders/scripts/testing/init-auto-stake-it.js'),
     ),
   );
 });
@@ -465,13 +546,31 @@ test.serial('basic-flows - portfolio holder', async t => {
   const {
     buildProposal,
     evalProposal,
-    readLatest,
+    readPublished,
     agoricNamesRemotes,
     bridgeUtils: { flushInboundQueue },
   } = t.context;
 
   await evalProposal(
-    buildProposal('@agoric/builders/scripts/orchestration/init-basic-flows.js'),
+    buildProposal(
+      '@agoric/builders/scripts/orchestration/init-basic-flows.js',
+      [
+        '--chainInfo',
+        JSON.stringify(withChainCapabilities(fetchedChainInfo)),
+        '--assetInfo',
+        JSON.stringify([
+          [
+            'ubld',
+            {
+              baseDenom: 'ubld',
+              baseName: 'agoric',
+              chainName: 'agoric',
+              brandKey: 'BLD',
+            },
+          ],
+        ]),
+      ],
+    ),
   );
 
   const wd =
@@ -503,10 +602,10 @@ test.serial('basic-flows - portfolio holder', async t => {
       [
         'request-portfolio-acct',
         {
-          agoric: 'published.basicFlows.agoric1fakeLCAAddress',
-          cosmoshub: 'published.basicFlows.cosmos1test',
-          // XXX support multiple chain addresses in ibc mocks
-          osmosis: 'published.basicFlows.cosmos1test',
+          agoric:
+            'published.basicFlows.agoric1qyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqc09z0g',
+          cosmoshub: 'published.basicFlows.cosmos1test2',
+          osmosis: 'published.basicFlows.cosmos1test3',
         },
       ],
     ],
@@ -514,15 +613,17 @@ test.serial('basic-flows - portfolio holder', async t => {
   t.like(wd.getLatestUpdateRecord(), {
     status: { id: 'request-portfolio-acct', numWantsSatisfied: 1 },
   });
-  // XXX this overrides a previous account, since mocks only provide one address
-  t.deepEqual(readLatest('published.basicFlows.cosmos1test'), {
+
+  t.deepEqual(readPublished('basicFlows.cosmos1test3'), {
     localAddress:
-      '/ibc-port/icacontroller-3/ordered/{"version":"ics27-1","controllerConnectionId":"connection-1","hostConnectionId":"connection-1649","address":"cosmos1test","encoding":"proto3","txType":"sdk_multi_msg"}/ibc-channel/channel-3',
+      '/ibc-port/icacontroller-4/ordered/{"version":"ics27-1","controllerConnectionId":"connection-1","hostConnectionId":"connection-1649","address":"cosmos1test3","encoding":"proto3","txType":"sdk_multi_msg"}/ibc-channel/channel-4',
     remoteAddress:
-      '/ibc-hop/connection-1/ibc-port/icahost/ordered/{"version":"ics27-1","controllerConnectionId":"connection-1","hostConnectionId":"connection-1649","address":"cosmos1test","encoding":"proto3","txType":"sdk_multi_msg"}/ibc-channel/channel-3',
+      '/ibc-hop/connection-1/ibc-port/icahost/ordered/{"version":"ics27-1","controllerConnectionId":"connection-1","hostConnectionId":"connection-1649","address":"cosmos1test3","encoding":"proto3","txType":"sdk_multi_msg"}/ibc-channel/channel-4',
   });
-  // XXX this overrides a previous account, since mocks only provide one address
-  t.is(readLatest('published.basicFlows.agoric1fakeLCAAddress'), '');
+  t.is(
+    readPublished('basicFlows.agoric1qyqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqc09z0g'),
+    '',
+  );
 
   const { BLD } = agoricNamesRemotes.brand;
   BLD || Fail`BLD missing from agoricNames`;

@@ -1,13 +1,15 @@
+import { BrandShape } from '@agoric/ertp/src/typeGuards.js';
 import { VowShape } from '@agoric/vow';
 import { M } from '@endo/patterns';
 
 /**
  * @import {TypedPattern} from '@agoric/internal';
- * @import {ChainAddress, CosmosAssetInfo, Chain, ChainInfo, CosmosChainInfo, DenomAmount, DenomDetail, DenomInfo, AmountArg, CosmosValidatorAddress} from './types.js';
+ * @import {ChainAddress, CosmosAssetInfo, Chain, ChainInfo, CosmosChainInfo, DenomAmount, DenomInfo, AmountArg, CosmosValidatorAddress, OrchestrationPowers, ForwardInfo, IBCMsgTransferOptions} from './types.js';
  * @import {Any as Proto3Msg} from '@agoric/cosmic-proto/google/protobuf/any.js';
- * @import {Delegation} from '@agoric/cosmic-proto/cosmos/staking/v1beta1/staking.js';
  * @import {TxBody} from '@agoric/cosmic-proto/cosmos/tx/v1beta1/tx.js';
+ * @import {Coin} from '@agoric/cosmic-proto/cosmos/base/v1beta1/coin.js';
  * @import {TypedJson} from '@agoric/cosmic-proto';
+ * @import {DenomDetail} from './exos/chain-hub.js';
  */
 
 /**
@@ -31,28 +33,15 @@ export const ChainAddressShape = {
   encoding: M.string(),
   value: M.string(),
 };
+harden(ChainAddressShape);
 
 /** @type {TypedPattern<Proto3Msg>} */
-export const Proto3Shape = {
-  typeUrl: M.string(),
-  value: M.string(),
-};
-
-/** @internal */
-export const IBCTransferOptionsShape = M.splitRecord(
-  {},
-  {
-    timeoutTimestamp: M.bigint(),
-    timeoutHeight: {
-      revisionHeight: M.bigint(),
-      revisionNumber: M.bigint(),
-    },
-    memo: M.string(),
-  },
-);
+export const Proto3Shape = { typeUrl: M.string(), value: M.string() };
+harden(ChainAddressShape);
 
 /** @internal */
 export const IBCChannelIDShape = M.string();
+
 /** @internal */
 export const IBCChannelInfoShape = M.splitRecord({
   portId: M.string(),
@@ -63,8 +52,10 @@ export const IBCChannelInfoShape = M.splitRecord({
   state: M.scalar(), // XXX
   version: M.string(),
 });
+
 /** @internal */
 export const IBCConnectionIDShape = M.string();
+
 /** @internal */
 export const IBCConnectionInfoShape = M.splitRecord({
   id: IBCConnectionIDShape,
@@ -94,10 +85,12 @@ export const CosmosChainInfoShape = M.splitRecord(
     chainId: M.string(),
   },
   {
+    bech32Prefix: M.string(),
     connections: M.record(),
     stakingTokens: M.arrayOf({ denom: M.string() }),
     // UNTIL https://github.com/Agoric/agoric-sdk/issues/9326
     icqEnabled: M.boolean(),
+    pfmEnabled: M.boolean(),
   },
 );
 
@@ -107,6 +100,14 @@ export const ChainInfoShape = M.splitRecord({
 });
 export const DenomShape = M.string();
 
+/** @type {TypedPattern<Coin>} */
+export const CoinShape = {
+  /** json-safe stringified bigint */
+  amount: M.string(),
+  denom: DenomShape,
+};
+harden(CoinShape);
+
 /** @type {TypedPattern<DenomInfo<any, any>>} */
 export const DenomInfoShape = {
   chain: M.remotable('Chain'),
@@ -114,15 +115,25 @@ export const DenomInfoShape = {
   brand: M.or(M.remotable('Brand'), M.undefined()),
   baseDenom: M.string(),
 };
+harden(DenomInfoShape);
+
+/** @type {TypedPattern<DenomDetail>} */
+export const DenomDetailShape = M.splitRecord(
+  { chainName: M.string(), baseName: M.string(), baseDenom: M.string() },
+  { brand: BrandShape },
+);
+harden(DenomDetailShape);
 
 /** @type {TypedPattern<DenomAmount>} */
-export const DenomAmountShape = { denom: DenomShape, value: M.bigint() };
+export const DenomAmountShape = { denom: DenomShape, value: M.nat() };
+harden(DenomAmountShape);
 
 /** @type {TypedPattern<Amount<'nat'>>} */
-export const AnyNatAmountShape = harden({
+export const AnyNatAmountShape = {
   brand: M.remotable('Brand'),
   value: M.nat(),
-});
+};
+harden(AnyNatAmountShape);
 
 /** @type {TypedPattern<AmountArg>} */
 export const AmountArgShape = M.or(AnyNatAmountShape, DenomAmountShape);
@@ -151,10 +162,11 @@ export const ICQMsgShape = M.splitRecord(
 export const TypedJsonShape = M.splitRecord({ '@type': M.string() });
 
 /** @see {Chain} */
-export const chainFacadeMethods = harden({
+export const chainFacadeMethods = {
   getChainInfo: M.call().returns(VowShape),
   makeAccount: M.call().returns(VowShape),
-});
+};
+harden(chainFacadeMethods);
 
 /**
  * for google/protobuf/timestamp.proto, not to be confused with TimestampShape
@@ -164,6 +176,7 @@ export const chainFacadeMethods = harden({
  * string
  */
 export const TimestampProtoShape = { seconds: M.string(), nanos: M.number() };
+harden(TimestampProtoShape);
 
 /**
  * see {@link TxBody} for more details
@@ -186,6 +199,70 @@ export const TxBodyOptsShape = M.splitRecord(
  */
 export const AnyNatAmountsRecord = M.and(
   M.recordOf(M.string(), AnyNatAmountShape),
-  M.not(harden({})),
+  M.not({}),
 );
-harden(AnyNatAmountsRecord);
+
+/** @type {TypedPattern<OrchestrationPowers>} */
+export const OrchestrationPowersShape = {
+  agoricNames: M.remotable(),
+  localchain: M.remotable(),
+  orchestrationService: M.remotable(),
+  storageNode: M.remotable(),
+  timerService: M.remotable(),
+};
+harden(OrchestrationPowersShape);
+
+const ForwardArgsShape = {
+  receiver: M.string(),
+  port: 'transfer',
+  channel: M.string(),
+  timeout: M.string(),
+  retries: M.number(),
+};
+harden(ForwardArgsShape);
+
+/** @type {TypedPattern<ForwardInfo>} */
+export const ForwardInfoShape = {
+  forward: M.splitRecord(ForwardArgsShape, {
+    /**
+     * Protocol allows us to recursively include `next` keys, but this only
+     * supports one. In practice, this is all we currently need.
+     */
+    next: {
+      forward: ForwardArgsShape,
+    },
+  }),
+};
+harden(ForwardInfoShape);
+
+/**
+ * Caller configurable values of {@link ForwardInfo}
+ *
+ * @type {TypedPattern<IBCMsgTransferOptions['forwardOpts']>}
+ */
+export const ForwardOptsShape = M.splitRecord(
+  {},
+  {
+    timeout: M.string(),
+    retries: M.number(),
+    intermediateRecipient: ChainAddressShape,
+  },
+  {},
+);
+
+/**
+ * @type {TypedPattern<IBCMsgTransferOptions>}
+ * @internal
+ */
+export const IBCTransferOptionsShape = M.splitRecord(
+  {},
+  {
+    timeoutTimestamp: M.bigint(),
+    timeoutHeight: {
+      revisionHeight: M.bigint(),
+      revisionNumber: M.bigint(),
+    },
+    memo: M.string(),
+    forwardOpts: ForwardOptsShape,
+  },
+);

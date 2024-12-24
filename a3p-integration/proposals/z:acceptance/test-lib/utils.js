@@ -1,6 +1,20 @@
-import { makeAgd, agops } from '@agoric/synthetic-chain';
-import { execFileSync } from 'node:child_process';
+/* eslint-env node */
+import {
+  LOCAL_CONFIG,
+  makeStargateClient,
+  makeVstorageKit,
+  retryUntilCondition,
+} from '@agoric/client-utils';
+import { evalBundles, getDetailsMatchingVats } from '@agoric/synthetic-chain';
 import { readFile, writeFile } from 'node:fs/promises';
+
+export const stargateClientP = makeStargateClient(LOCAL_CONFIG, { fetch });
+export const vstorageKit = makeVstorageKit({ fetch }, LOCAL_CONFIG);
+
+/**
+ * @import {WalletUtils} from '@agoric/client-utils';
+ * @import {CurrentWalletRecord} from '@agoric/smart-wallet/src/smartWallet.js';
+ */
 
 /**
  * @param {string} fileName base file name without .tjs extension
@@ -14,24 +28,17 @@ export const replaceTemplateValuesInFile = async (fileName, replacements) => {
   await writeFile(`${fileName}.js`, script);
 };
 
-const showAndExec = (file, args, opts) => {
-  console.log('$', file, ...args);
-  return execFileSync(file, args, opts);
-};
-
-// @ts-expect-error string is not assignable to Buffer
-export const agd = makeAgd({ execFileSync: showAndExec }).withOpts({
-  keyringBackend: 'test',
-});
-
+// FIXME this return type depends on its arguments in surprising ways
 /**
  * @param {string[]} addresses
  * @param {string} [targetDenom]
+ * @returns {Promise<any>}
  */
 export const getBalances = async (addresses, targetDenom = undefined) => {
+  const client = await stargateClientP;
   const balancesList = await Promise.all(
     addresses.map(async address => {
-      const { balances } = await agd.query(['bank', 'balances', address]);
+      const balances = await client.getAllBalances(address);
 
       if (targetDenom) {
         const balance = balances.find(({ denom }) => denom === targetDenom);
@@ -45,8 +52,27 @@ export const getBalances = async (addresses, targetDenom = undefined) => {
   return addresses.length === 1 ? balancesList[0] : balancesList;
 };
 
-export const agopsVaults = addr => agops.vaults('list', '--from', addr);
+// TODO move this out of testing. To inter-protocol?
+// "vaults" is an Inter thing, but vstorage shape is a full chain (client) thing
+// Maybe a plugin architecture where the truth is in inter-protocol and the
+// client-lib rolls up the exports of many packages?
+/**
+ * @param {string} addr
+ * @param {WalletUtils} walletUtils
+ * @returns {Promise<string[]>}
+ */
+export const listVaults = async (addr, { getCurrentWalletRecord }) => {
+  const current = await getCurrentWalletRecord(addr);
+  const vaultStoragePaths = current.offerToPublicSubscriberPaths.map(
+    ([_offerId, pathmap]) => pathmap.vault,
+  );
 
+  return vaultStoragePaths;
+};
+
+/**
+ * @param {{setTimeout: typeof setTimeout}} io
+ */
 export const makeTimerUtils = ({ setTimeout }) => {
   /**
    * Resolve after a delay in milliseconds.
@@ -56,13 +82,42 @@ export const makeTimerUtils = ({ setTimeout }) => {
    */
   const delay = ms => new Promise(resolve => setTimeout(() => resolve(), ms));
 
-  const waitUntil = async timestamp => {
-    const timeDelta = Math.floor(Date.now() / 1000) - Number(timestamp);
-    await delay(timeDelta);
+  /** @param {number | bigint} secondsSinceEpoch */
+  const waitUntil = async secondsSinceEpoch => {
+    await null;
+    const waitMs = Number(secondsSinceEpoch) * 1000 - Date.now();
+    if (waitMs <= 0) return;
+    await delay(waitMs);
   };
 
   return {
     delay,
     waitUntil,
   };
+};
+
+/**
+ * This function solves the limitation of getIncarnation when multiple Vats
+ * are returned for the provided vatName and does not return the incarnation
+ * of the desired Vat (e.g. zcf-mintHolder-USDC)
+ * @param {string} vatName
+ * @returns {Promise<number>}
+ */
+const getIncarnationFromDetails = async vatName => {
+  const matchingVats = await getDetailsMatchingVats(vatName);
+  const expectedVat = matchingVats.find(vat => vat.vatName === vatName);
+  assert(expectedVat, `No matching Vat was found for ${vatName}`);
+  return expectedVat.incarnation;
+};
+
+export const upgradeContract = async (submissionPath, vatName) => {
+  const incarnationBefore = await getIncarnationFromDetails(vatName);
+  await evalBundles(submissionPath);
+
+  return retryUntilCondition(
+    async () => getIncarnationFromDetails(vatName),
+    value => value === incarnationBefore + 1,
+    `${vatName} upgrade not processed yet`,
+    { setTimeout, retryIntervalMs: 5000, maxRetries: 15 },
+  );
 };

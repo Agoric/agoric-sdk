@@ -1,160 +1,192 @@
-/** @file copied from packages/agoric-cli */
-// TODO DRY in https://github.com/Agoric/agoric-sdk/issues/9109
+/**
+ * @file This file implements methods currently available in
+ * packages/client-utils .
+ *
+ * With the exceptions of:
+ * - makeVstorage and mapHistory: copied from `multichain-testing/tools/batchQuery.js`.
+ * - makeAPI: copied from `multichain-testing/tools/makeHttpClient.js`.
+ *
+ * These modifications were made to address the issue described in #10574.
+ */
+
 // @ts-check
-/* global Buffer */
 
 import {
   boardSlottingMarshaller,
   makeBoardRemote,
 } from '@agoric/internal/src/marshal.js';
+import { E, Far } from '@endo/far';
 import { Fail } from '@endo/errors';
 
 export { boardSlottingMarshaller };
 
+/** @type {(val: any) => string} */
 export const boardValToSlot = val => {
   if ('getBoardId' in val) {
     return val.getBoardId();
   }
-  Fail`unknown obj in boardSlottingMarshaller.valToSlot ${val}`;
+  throw Fail`unknown obj in boardSlottingMarshaller.valToSlot ${val}`;
 };
 
+/** @param {string} agoricNetSubdomain */
 export const networkConfigUrl = agoricNetSubdomain =>
   `https://${agoricNetSubdomain}.agoric.net/network-config`;
+/** @param {string} agoricNetSubdomain */
 export const rpcUrl = agoricNetSubdomain =>
   `https://${agoricNetSubdomain}.rpc.agoric.net:443`;
 
 /**
- * @typedef {{ rpcAddrs: string[], chainName: string }} MinimalNetworkConfig
+ * @typedef {{ rpcAddrs: string[], chainName: string, apiAddress: string }} MinimalNetworkConfig
  */
 
 /** @type {MinimalNetworkConfig} */
 const networkConfig = {
   rpcAddrs: ['http://0.0.0.0:26657'],
   chainName: 'agoriclocal',
+  apiAddress: 'http://localhost:1317',
 };
 export { networkConfig };
 // console.warn('networkConfig', networkConfig);
 
 /**
- * @param {object} powers
- * @param {typeof window.fetch} powers.fetch
- * @param {MinimalNetworkConfig} config
+ * gRPC-gateway REST API access
+ *
+ * @see {@link https://docs.cosmos.network/v0.45/core/grpc_rest.html#rest-server Cosmos SDK REST Server}
+ *
+ * Note: avoid Legacy REST routes, per
+ * {@link https://docs.cosmos.network/v0.45/migrations/rest.html Cosmos SDK REST Endpoints Migration}.
+ *
+ * @param {string} apiAddress nodes default to port 1317
+ * @param {object} io
+ * @param {typeof fetch} io.fetch
  */
-export const makeVStorage = (powers, config = networkConfig) => {
-  /** @param {string} path */
-  const getJSON = path => {
-    const url = config.rpcAddrs[0] + path;
-    // console.warn('fetching', url);
-    return powers.fetch(url, { keepalive: true }).then(res => res.json());
-  };
-  // height=0 is the same as omitting height and implies the highest block
-  const url = (path = 'published', { kind = 'children', height = 0 } = {}) =>
-    `/abci_query?path=%22/custom/vstorage/${kind}/${path}%22&height=${height}`;
+const makeAPI = (apiAddress, { fetch }) => {
+  assert.typeof(apiAddress, 'string');
 
-  const readStorage = (path = 'published', { kind = 'children', height = 0 }) =>
-    getJSON(url(path, { kind, height }))
-      .catch(err => {
-        throw Error(`cannot read ${kind} of ${path}: ${err.message}`);
-      })
-      .then(data => {
-        const {
-          result: { response },
-        } = data;
-        if (response?.code !== 0) {
-          /** @type {any} */
-          const err = Error(
-            `error code ${response?.code} reading ${kind} of ${path}: ${response.log}`,
-          );
-          err.code = response?.code;
-          err.codespace = response?.codespace;
-          throw err;
-        }
+  /**
+   * @param {string} href
+   * @param {object} [options]
+   * @param {Record<string, string>} [options.headers]
+   */
+  const getJSON = (href, options = {}) => {
+    const opts = {
+      keepalive: true,
+      headers: {
+        'Content-Type': 'application/json',
+        ...options.headers,
+      },
+    };
+    const url = `${apiAddress}${href}`;
+    return fetch(url, opts).then(r => {
+      if (!r.ok) throw Error(r.statusText);
+      return r.json().then(data => {
         return data;
       });
+    });
+  };
+
+  return Far('LCD', {
+    getJSON,
+    latestBlock: () => getJSON(`/cosmos/base/tendermint/v1beta1/blocks/latest`),
+  });
+};
+/** @typedef {ReturnType<typeof makeAPI>} LCD */
+
+/**
+ * @template T
+ * @param {(value: string) => T} f
+ * @param {AsyncGenerator<string[], void, unknown>} chunks
+ */
+async function* mapHistory(f, chunks) {
+  for await (const chunk of chunks) {
+    if (chunk === undefined) continue;
+    for (const value of chunk.reverse()) {
+      yield f(value);
+    }
+  }
+}
+
+/**
+ * @param {LCD} lcd
+ */
+export const makeVStorage = lcd => {
+  const getJSON = (href, options) => E(lcd).getJSON(href, options);
+
+  // height=0 is the same as omitting height and implies the highest block
+  const href = (path = 'published', { kind = 'data' } = {}) =>
+    `/agoric/vstorage/${kind}/${path}`;
+  const headers = height =>
+    height ? { 'x-cosmos-block-height': `${height}` } : undefined;
+
+  const readStorage = (
+    path = 'published',
+    { kind = 'data', height = 0 } = {},
+  ) =>
+    getJSON(href(path, { kind }), { headers: headers(height) }).catch(err => {
+      throw Error(`cannot read ${kind} of ${path}: ${err.message}`);
+    });
+  const readCell = (path, opts) =>
+    readStorage(path, opts)
+      .then(data => data.value)
+      .then(s => (s === '' ? {} : JSON.parse(s)));
+
+  /**
+   * Read values going back as far as available
+   *
+   * @param {string} path
+   * @param {number | string} [minHeight]
+   */
+  async function* readHistory(path, minHeight = undefined) {
+    // undefined the first iteration, to query at the highest
+    let blockHeight;
+    await null;
+    do {
+      // console.debug('READING', { blockHeight });
+      /** @type {string[]} */
+      let values = [];
+      try {
+        ({ blockHeight, values } = await readCell(path, {
+          kind: 'data',
+          height: blockHeight && Number(blockHeight) - 1,
+        }));
+        // console.debug('readAt returned', { blockHeight });
+      } catch (err) {
+        if (err.message.match(/unknown request/)) {
+          // XXX FIXME
+          // console.error(err);
+          break;
+        }
+        throw err;
+      }
+      yield values;
+      // console.debug('PUSHED', values);
+      // console.debug('NEW', { blockHeight, minHeight });
+      if (minHeight && Number(blockHeight) <= Number(minHeight)) break;
+    } while (blockHeight > 0);
+  }
+
+  /**
+   * @template T
+   * @param {(value: string) => T} f
+   * @param {string} path
+   * @param {number | string} [minHeight]
+   */
+  const readHistoryBy = (f, path, minHeight) =>
+    mapHistory(f, readHistory(path, minHeight));
 
   return {
-    url,
-    decode({ result: { response } }) {
-      const { code } = response;
-      if (code !== 0) {
-        throw response;
-      }
-      const { value } = response;
-      return Buffer.from(value, 'base64').toString();
-    },
-    /**
-     *
-     * @param {string} path
-     * @returns {Promise<string>} latest vstorage value at path
-     */
-    async readLatest(path = 'published') {
-      const raw = await readStorage(path, { kind: 'data' });
-      return this.decode(raw);
-    },
-    async keys(path = 'published') {
-      const raw = await readStorage(path, { kind: 'children' });
-      return JSON.parse(this.decode(raw)).children;
-    },
-    /**
-     * @param {string} path
-     * @param {number} [height] default is highest
-     * @returns {Promise<{blockHeight: number, values: string[]}>}
-     */
-    async readAt(path, height = undefined) {
-      const raw = await readStorage(path, { kind: 'data', height });
-      const txt = this.decode(raw);
-      /** @type {{ value: string }} */
-      const { value } = JSON.parse(txt);
-      return JSON.parse(value);
-    },
-    /**
-     * Read values going back as far as available
-     *
-     * @param {string} path
-     * @param {number | string} [minHeight]
-     * @returns {Promise<string[]>}
-     */
-    async readFully(path, minHeight = undefined) {
-      const parts = [];
-      // undefined the first iteration, to query at the highest
-      let blockHeight;
-      await null;
-      do {
-        // console.debug('READING', { blockHeight });
-        let values;
-        try {
-          ({ blockHeight, values } = await this.readAt(
-            path,
-            blockHeight && Number(blockHeight) - 1,
-          ));
-          // console.debug('readAt returned', { blockHeight });
-        } catch (err) {
-          if (
-            // CosmosSDK ErrNotFound; there is no data at the path
-            (err.codespace === 'sdk' && err.code === 38) ||
-            // CosmosSDK ErrUnknownRequest; misrepresentation of the same until
-            // https://github.com/Agoric/agoric-sdk/commit/dafc7c1708977aaa55e245dc09a73859cf1df192
-            // TODO remove after upgrade-12
-            err.message.match(/unknown request/)
-          ) {
-            // console.error(err);
-            break;
-          }
-          throw err;
-        }
-        parts.push(values);
-        // console.debug('PUSHED', values);
-        // console.debug('NEW', { blockHeight, minHeight });
-        if (minHeight && Number(blockHeight) <= Number(minHeight)) break;
-      } while (blockHeight > 0);
-      return parts.flat();
-    },
+    lcd,
+    readLatest: readStorage,
+    readCell,
+    readHistory,
+    readHistoryBy,
   };
 };
 /** @typedef {ReturnType<typeof makeVStorage>} VStorage */
 
 export const makeFromBoard = () => {
   const cache = new Map();
+  /** @type {(boardId: string, iface?: string) => ReturnType<typeof makeBoardRemote>} */
   const convertSlotToVal = (boardId, iface) => {
     if (cache.has(boardId)) {
       return cache.get(boardId);
@@ -168,11 +200,10 @@ export const makeFromBoard = () => {
 /** @typedef {ReturnType<typeof makeFromBoard>} IdMap */
 
 export const storageHelper = {
-  /** @param { string } txt */
   parseCapData: txt => {
-    assert(typeof txt === 'string', typeof txt);
     /** @type {{ value: string }} */
-    const { value } = JSON.parse(txt);
+    const { value } = txt;
+    assert(typeof value === 'string', typeof value);
     const specimen = JSON.parse(value);
     const { blockHeight, values } = specimen;
     assert(values, `empty values in specimen ${value}`);
@@ -211,6 +242,7 @@ harden(storageHelper);
  * @returns {Promise<import('@agoric/vats/tools/board-utils.js').AgoricNamesRemotes>}
  */
 export const makeAgoricNames = async (ctx, vstorage) => {
+  /** @type {Record<string, string>} */
   const reverse = {};
   const entries = await Promise.all(
     ['brand', 'instance', 'vbankAsset'].map(async kind => {
@@ -221,7 +253,7 @@ export const makeAgoricNames = async (ctx, vstorage) => {
       const parts = storageHelper.unserializeTxt(content, ctx).at(-1);
       for (const [name, remote] of parts) {
         if ('getBoardId' in remote) {
-          reverse[remote.getBoardId()] = name;
+          reverse[/** @type {string} */ (remote.getBoardId())] = name;
         }
       }
       return [kind, Object.fromEntries(parts)];
@@ -234,10 +266,12 @@ export const makeAgoricNames = async (ctx, vstorage) => {
  * @param {{ fetch: typeof window.fetch }} io
  * @param {MinimalNetworkConfig} config
  */
-export const makeRpcUtils = async ({ fetch }, config = networkConfig) => {
+export const makeVstorageKit = async ({ fetch }, config = networkConfig) => {
   await null;
   try {
-    const vstorage = makeVStorage({ fetch }, config);
+    const lcd = await makeAPI(networkConfig.apiAddress, { fetch });
+    const vstorage = makeVStorage(lcd);
+
     const fromBoard = makeFromBoard();
     const agoricNames = await makeAgoricNames(fromBoard, vstorage);
 
@@ -263,4 +297,4 @@ export const makeRpcUtils = async ({ fetch }, config = networkConfig) => {
     throw Error(`RPC failure (${config.rpcAddrs}): ${err.message}`);
   }
 };
-/** @typedef {Awaited<ReturnType<typeof makeRpcUtils>>} RpcUtils */
+/** @typedef {Awaited<ReturnType<typeof makeVstorageKit>>} RpcUtils */

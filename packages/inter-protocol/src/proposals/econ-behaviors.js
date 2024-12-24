@@ -157,9 +157,10 @@ export const setupReserve = async ({
     'reserve.governor',
   );
 
-  const [creatorFacet, publicFacet, instance] = await Promise.all([
+  const [creatorFacet, publicFacet, adminFacet, instance] = await Promise.all([
     E(g.creatorFacet).getCreatorFacet(),
     E(g.creatorFacet).getPublicFacet(),
+    E(g.creatorFacet).getAdminFacet(),
     E(g.publicFacet).getGovernedContract(),
   ]);
 
@@ -169,7 +170,7 @@ export const setupReserve = async ({
       instance,
       publicFacet,
       creatorFacet,
-      adminFacet: g.adminFacet,
+      adminFacet,
 
       governor: g.instance,
       governorCreatorFacet: g.creatorFacet,

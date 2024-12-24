@@ -62,6 +62,13 @@ const getLatestBlockHeight = url =>
     req.end();
   });
 
+/**
+ * Test the "getting started" workflow. Note that this function may be imported
+ * by external repositories.
+ *
+ * @param {import('ava').ExecutionContext} t
+ * @param {{ init?: string[], install?: string[] }} [options]
+ */
 export const gettingStartedWorkflowTest = async (t, options = {}) => {
   const { init: initOptions = [], install: installOptions = [] } = options;
   const pspawn = makePspawn({ spawn });

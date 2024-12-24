@@ -119,7 +119,6 @@ export const makeOrchestrationFacade = ({
     const mappedFlows = new Map(
       Object.entries(guestFns).map(([name, guestFn]) => [
         guestFn,
-        // eslint-disable-next-line no-use-before-define
         (...args) => orcFns[name](...args),
       ]),
     );

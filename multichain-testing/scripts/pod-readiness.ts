@@ -1,3 +1,4 @@
+#!/usr/bin/env -S node --import ts-blank-space/register
 import { execa } from 'execa';
 import { sleep } from '../tools/sleep.js';
 

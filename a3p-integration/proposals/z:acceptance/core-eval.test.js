@@ -1,7 +1,10 @@
+/* global setTimeout */
+
 import test from 'ava';
 import { readFile, writeFile } from 'node:fs/promises';
 
-import { agd, evalBundles, waitForBlock } from '@agoric/synthetic-chain';
+import { agd, evalBundles } from '@agoric/synthetic-chain';
+import { retryUntilCondition } from '@agoric/client-utils';
 
 const SUBMISSION_DIR = 'core-eval-test-submission';
 
@@ -17,6 +20,7 @@ const replaceTemplateValuesInFile = async (fileName, replacements) => {
   await writeFile(`${fileName}.js`, script);
 };
 
+/** @param {string} path */
 const readPublished = async path => {
   const { value } = await agd.query(
     'vstorage',
@@ -45,7 +49,12 @@ test(`core eval works`, async t => {
 
   await evalBundles(SUBMISSION_DIR);
 
-  await waitForBlock(2); // enough time for core eval to execute ?
+  const actualValue = await retryUntilCondition(
+    async () => readPublished(nodePath),
+    value => value === nodeValue,
+    'core eval not processed yet',
+    { setTimeout, retryIntervalMs: 5000, maxRetries: 15 },
+  );
 
-  t.is(await readPublished(nodePath), nodeValue);
+  t.is(actualValue, nodeValue);
 });

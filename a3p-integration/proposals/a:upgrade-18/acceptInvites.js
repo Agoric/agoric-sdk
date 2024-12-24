@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import '@endo/init';
+import '@endo/init/debug.js';
 import { agops, GOV1ADDR, GOV2ADDR } from '@agoric/synthetic-chain';
 import { GOV4ADDR } from './agoric-tools.js';
 

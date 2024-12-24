@@ -75,7 +75,6 @@ const contract = async (
            * @param {{ validator: CosmosValidatorAddress }} offerArgs
            */
           (seat, { validator }) =>
-            // eslint-disable-next-line no-use-before-define -- defined by orchestrateAll, necessarily after this
             orchFns.depositAndDelegate(account, seat, validator),
           'Deposit and delegate',
           undefined,
@@ -98,7 +97,6 @@ const contract = async (
 
         return zcf.makeInvitation(
           () =>
-            // eslint-disable-next-line no-use-before-define -- defined by orchestrateAll, necessarily after this
             orchFns.undelegateAndTransfer(account, {
               delegations,
               destination,
@@ -133,6 +131,7 @@ const contract = async (
   );
 
   const orchFns = orchestrateAll(flows, {
+    chainHub,
     sharedLocalAccountP,
     makeCombineInvitationMakers,
     makeExtraInvitationMaker,

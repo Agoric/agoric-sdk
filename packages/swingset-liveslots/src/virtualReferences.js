@@ -1,4 +1,4 @@
-/* eslint-disable no-use-before-define, jsdoc/require-returns-type */
+/* eslint-disable jsdoc/require-returns-type */
 
 import { assert, Fail } from '@endo/errors';
 import { Nat } from '@endo/nat';

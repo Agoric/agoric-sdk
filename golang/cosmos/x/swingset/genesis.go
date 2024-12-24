@@ -1,19 +1,33 @@
 package swingset
 
 import (
-	// "os"
 	"bytes"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"hash"
+	"io"
 	"strings"
 
 	agoric "github.com/Agoric/agoric-sdk/golang/cosmos/types"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/keeper"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+)
+
+const (
+	// SwingStoreExportModeSkip indicates swing store data should be
+	// excluded from the export.
+	SwingStoreExportModeSkip = "skip"
+
+	// SwingStoreExportModeOperational (default) indicates export should
+	// have the minimal set of artifacts needed to operate a node.
+	SwingStoreExportModeOperational = "operational"
+
+	// SwingStoreExportModeDebug indicates export should have the maximal
+	// set of artifacts available in the JS swing-store.
+	SwingStoreExportModeDebug = "debug"
 )
 
 func ValidateGenesis(data *types.GenesisState) error {
@@ -130,36 +144,59 @@ func InitGenesis(ctx sdk.Context, k Keeper, swingStoreExportsHandler *SwingStore
 	return false
 }
 
-func ExportGenesis(ctx sdk.Context, k Keeper, swingStoreExportsHandler *SwingStoreExportsHandler, swingStoreExportDir string) *types.GenesisState {
+func ExportGenesis(
+	ctx sdk.Context,
+	k Keeper,
+	swingStoreExportsHandler *SwingStoreExportsHandler,
+	swingStoreExportDir string,
+	swingStoreExportMode string,
+) *types.GenesisState {
 	gs := &types.GenesisState{
 		Params:               k.GetParams(ctx),
 		State:                k.GetState(ctx),
 		SwingStoreExportData: nil,
 	}
 
+	// This will only be used in non skip mode
+	artifactMode := swingStoreExportMode
+	exportDataMode := keeper.SwingStoreExportDataModeSkip
+	hasher := sha256.New()
 	snapshotHeight := uint64(ctx.BlockHeight())
 
-	eventHandler := swingStoreGenesisEventHandler{exportDir: swingStoreExportDir, snapshotHeight: snapshotHeight, swingStore: k.GetSwingStore(ctx), hasher: sha256.New()}
-
-	err := swingStoreExportsHandler.InitiateExport(
-		// The export will fail if the export of a historical height was requested
-		snapshotHeight,
-		eventHandler,
-		keeper.SwingStoreExportOptions{
-			ArtifactMode:   keeper.SwingStoreArtifactModeOperational,
-			ExportDataMode: keeper.SwingStoreExportDataModeSkip,
-		},
-	)
-	if err != nil {
-		panic(err)
+	if swingStoreExportMode == SwingStoreExportModeDebug {
+		exportDataMode = keeper.SwingStoreExportDataModeAll
+		snapshotHeight = 0
 	}
 
-	err = keeper.WaitUntilSwingStoreExportDone()
-	if err != nil {
-		panic(err)
+	if swingStoreExportMode != SwingStoreExportModeSkip {
+		eventHandler := swingStoreGenesisEventHandler{
+			exportDir:      swingStoreExportDir,
+			snapshotHeight: snapshotHeight,
+			swingStore:     k.GetSwingStore(ctx),
+			hasher:         hasher,
+			exportMode:     swingStoreExportMode,
+		}
+
+		err := swingStoreExportsHandler.InitiateExport(
+			// The export will fail if the export of a historical height was requested outside of debug mode
+			snapshotHeight,
+			eventHandler,
+			keeper.SwingStoreExportOptions{
+				ArtifactMode:   artifactMode,
+				ExportDataMode: exportDataMode,
+			},
+		)
+		if err != nil {
+			panic(err)
+		}
+
+		err = keeper.WaitUntilSwingStoreExportDone()
+		if err != nil {
+			panic(err)
+		}
 	}
 
-	gs.SwingStoreExportDataHash = fmt.Sprintf("sha256:%x", eventHandler.hasher.Sum(nil))
+	gs.SwingStoreExportDataHash = fmt.Sprintf("sha256:%x", hasher.Sum(nil))
 
 	return gs
 }
@@ -169,6 +206,7 @@ type swingStoreGenesisEventHandler struct {
 	snapshotHeight uint64
 	swingStore     sdk.KVStore
 	hasher         hash.Hash
+	exportMode     string
 }
 
 func (eventHandler swingStoreGenesisEventHandler) OnExportStarted(height uint64, retrieveSwingStoreExport func() error) error {
@@ -176,9 +214,11 @@ func (eventHandler swingStoreGenesisEventHandler) OnExportStarted(height uint64,
 }
 
 func (eventHandler swingStoreGenesisEventHandler) OnExportRetrieved(provider keeper.SwingStoreExportProvider) error {
-	if eventHandler.snapshotHeight != provider.BlockHeight {
+	if eventHandler.exportMode != SwingStoreExportModeDebug && eventHandler.snapshotHeight != provider.BlockHeight {
 		return fmt.Errorf("snapshot block height (%d) doesn't match requested height (%d)", provider.BlockHeight, eventHandler.snapshotHeight)
 	}
+
+	artifactsEnded := false
 
 	artifactsProvider := keeper.SwingStoreExportProvider{
 		GetExportDataReader: func() (agoric.KVEntryReader, error) {
@@ -194,7 +234,45 @@ func (eventHandler swingStoreGenesisEventHandler) OnExportRetrieved(provider kee
 				return nil
 			}), nil
 		},
-		ReadNextArtifact: provider.ReadNextArtifact,
+		ReadNextArtifact: func() (types.SwingStoreArtifact, error) {
+			var (
+				artifact          types.SwingStoreArtifact
+				err               error
+				encodedExportData bytes.Buffer
+			)
+
+			if !artifactsEnded {
+				artifact, err = provider.ReadNextArtifact()
+			} else {
+				return types.SwingStoreArtifact{}, io.EOF
+			}
+
+			if err == io.EOF {
+				artifactsEnded = true
+				if eventHandler.exportMode == SwingStoreExportModeDebug {
+					exportDataReader, _ := provider.GetExportDataReader()
+
+					defer exportDataReader.Close()
+
+					err = agoric.EncodeKVEntryReaderToJsonl(
+						exportDataReader,
+						&encodedExportData,
+					)
+					if err == nil {
+						artifact = types.SwingStoreArtifact{
+							Data: encodedExportData.Bytes(),
+							Name: keeper.UntrustedExportDataArtifactName,
+						}
+					}
+				}
+			}
+
+			return artifact, err
+		},
+	}
+
+	if eventHandler.exportMode == SwingStoreExportModeDebug {
+		artifactsProvider.BlockHeight = provider.BlockHeight
 	}
 
 	return keeper.WriteSwingStoreExportToDirectory(artifactsProvider, eventHandler.exportDir)
