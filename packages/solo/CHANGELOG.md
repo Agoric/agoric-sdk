@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.11.0-u18.6](https://github.com/Agoric/agoric-sdk/compare/@agoric/solo@0.11.0-u18.5...@agoric/solo@0.11.0-u18.6) (2024-12-24)
+
+
+### Features
+
+* **internal:** Introduce deepCopyJsonable ([f875bb0](https://github.com/Agoric/agoric-sdk/commit/f875bb0923323d019396c605ea9bb4d1382f7f79))
+
+
+
 ## [0.11.0-u18.5](https://github.com/Agoric/agoric-sdk/compare/@agoric/solo@0.11.0-u18.4...@agoric/solo@0.11.0-u18.5) (2024-12-17)
 
 **Note:** Version bump only for package @agoric/solo

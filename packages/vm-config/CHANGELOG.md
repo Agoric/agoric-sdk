@@ -3,6 +3,14 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.1.1-u18.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/vm-config@0.1.1-u18.0...@agoric/vm-config@0.1.1-u18.1) (2024-12-24)
+
+**Note:** Version bump only for package @agoric/vm-config
+
+
+
+
+
 ### 0.1.1-u18.0 (2024-10-31)
 
 

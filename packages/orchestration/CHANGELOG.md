@@ -3,6 +3,48 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.2.0-u18.5](https://github.com/Agoric/agoric-sdk/compare/@agoric/orchestration@0.2.0-u18.4...@agoric/orchestration@0.2.0-u18.5) (2024-12-24)
+
+
+### ⚠ BREAKING CHANGES
+
+* `getAsset` and `getDenomInfo` require `srcChainName` param
+
+### Features
+
+* `assetOn` `DenomDetail` helper ([05fe515](https://github.com/Agoric/agoric-sdk/commit/05fe5154de7cccb0c606dcc76c058badc5526cdb))
+* `chainHub.makeTransferRoute` ([0215b6f](https://github.com/Agoric/agoric-sdk/commit/0215b6f172e523a813bfbf6234991856ec60601c))
+* `ForwardOpts` accepts `intermediateRecipient` ([eb975f1](https://github.com/Agoric/agoric-sdk/commit/eb975f1df1587bc9307b27c20b7b236cc7fe386e))
+* `ForwardOptsShape` ([50b1717](https://github.com/Agoric/agoric-sdk/commit/50b1717c1e40ed67a5e69810961ad8d0144c5f9e))
+* `getAsset` and `getDenomInfo` require `srcChainName` param ([fc802ad](https://github.com/Agoric/agoric-sdk/commit/fc802adc06082eb0618f4a2d58d91ac380512352))
+* `withOrchestration` returns `baggage` ([e4a6c6d](https://github.com/Agoric/agoric-sdk/commit/e4a6c6d77e50339b74d34ad90967373e8ec77e51))
+* add `bech32Prefix?: string` to `CosmosChainInfo` ([cb9e1ee](https://github.com/Agoric/agoric-sdk/commit/cb9e1eeab9295b44ec009b82d73c457299e8d6f4))
+* assetInfo as array of entries ([51e7a9c](https://github.com/Agoric/agoric-sdk/commit/51e7a9c3e3fb2cde44db2ffce817f353a17e76a3))
+* chain-capabilities.js constants ([52ff70a](https://github.com/Agoric/agoric-sdk/commit/52ff70a187df1fadc89ccc506228bc6d0ca48da6))
+* **chainHub:** `getChainInfoByAddress` helper ([d6c487c](https://github.com/Agoric/agoric-sdk/commit/d6c487c1aca11b2287253b8885778dff9fd27a55))
+* **cosmos-orch-account:** expose `.executeEncodedTx` ([9d10be1](https://github.com/Agoric/agoric-sdk/commit/9d10be13d5d023e3d0254fef163fe84cd4b7796b))
+* CosmosChainInfo includes `pfmEnabled?: boolean` ([e1c35da](https://github.com/Agoric/agoric-sdk/commit/e1c35da96da8e12ea79a99aafad6163b3993e238))
+* export `DenomDetailShape` ([2dfddb3](https://github.com/Agoric/agoric-sdk/commit/2dfddb3fb2018d769b1acc1b32f4ff3b4c7f67b7))
+* export `OrchestrationPowersShape` ([34b61ea](https://github.com/Agoric/agoric-sdk/commit/34b61eae918a5f02ba6e06ac7e15b24750494821))
+* **local-orchestration-account:** support multi-hop pfm transfers ([c35fac7](https://github.com/Agoric/agoric-sdk/commit/c35fac7e82e6b66d2ffdc62ded1ba29a7d7388ff))
+* registerChainsAndAssets ([e72782d](https://github.com/Agoric/agoric-sdk/commit/e72782dcc748b9e6a2879179cccf9866718f4e00))
+* send-anywhere inits chainHub ([2fa2f75](https://github.com/Agoric/agoric-sdk/commit/2fa2f7512b2a1a19d47f47b59e3206619794be18))
+
+
+### Bug Fixes
+
+* `brandKey` not part of `DenomDetail` ([9a65478](https://github.com/Agoric/agoric-sdk/commit/9a654781d53576ae0b3d1fa37f7a96579bfda848))
+* `convertChainInfo` connection sorting ([8ba4699](https://github.com/Agoric/agoric-sdk/commit/8ba46990756d94571f2591fc1c85f37baab828b8))
+* do not stringify logs ([d04c5ea](https://github.com/Agoric/agoric-sdk/commit/d04c5eac94e1954456cd23e9006e9f4daabb3759))
+* **orchestration:** denomAmounts must be non-negative ([#10458](https://github.com/Agoric/agoric-sdk/issues/10458)) ([40e0e4e](https://github.com/Agoric/agoric-sdk/commit/40e0e4e37503b611609d1752389477d8f14f1a8e))
+* **orchestration:** harden exported patterns ([#10470](https://github.com/Agoric/agoric-sdk/issues/10470)) ([47bebb8](https://github.com/Agoric/agoric-sdk/commit/47bebb8357715f60a699a6f7627dac3d2cf26db7)), closes [#10456](https://github.com/Agoric/agoric-sdk/issues/10456)
+* **orchestration:** harden result of reverseConnInfo ([5c1219c](https://github.com/Agoric/agoric-sdk/commit/5c1219c58862959ba7f4d4cf57674ad61f10c32a))
+* subscribeToTransfers atomically ([7b77993](https://github.com/Agoric/agoric-sdk/commit/7b7799389018aa0536711a091502b4b28b59572b))
+* use `asVow` in case `owned()` throws ([e67e86b](https://github.com/Agoric/agoric-sdk/commit/e67e86b7c49b332c8e2d1fdc4b078f558f95adbc))
+* yarn codegen script ([9eea3fd](https://github.com/Agoric/agoric-sdk/commit/9eea3fd6da2624fc787336c5d735de5ae7da885d))
+
+
+
 ## [0.2.0-u18.4](https://github.com/Agoric/agoric-sdk/compare/@agoric/orchestration@0.2.0-u18.3...@agoric/orchestration@0.2.0-u18.4) (2024-12-17)
 
 **Note:** Version bump only for package @agoric/orchestration

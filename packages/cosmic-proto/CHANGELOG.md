@@ -3,6 +3,21 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.5.0-u18.5](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-proto@0.5.0-u18.4...@agoric/cosmic-proto@0.5.0-u18.5) (2024-12-24)
+
+
+### Features
+
+* **vats:** first cut of Address Hooks in JS ([dbad30b](https://github.com/Agoric/agoric-sdk/commit/dbad30b11b5af70f585b31194caf6e46c78a73bf))
+
+
+### Bug Fixes
+
+* **address-hooks:** throw if the version is unsupported ([e3c2665](https://github.com/Agoric/agoric-sdk/commit/e3c26655258f43c639c6b5e3e66c49e5cb6f0afd))
+* **address-hooks:** use `harden` (or `freeze`) ([80fee60](https://github.com/Agoric/agoric-sdk/commit/80fee6036eb186c8479ec5ddb66d34e09ba20f2b))
+
+
+
 ## [0.5.0-u18.4](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-proto@0.5.0-u18.3...@agoric/cosmic-proto@0.5.0-u18.4) (2024-12-17)
 
 **Note:** Version bump only for package @agoric/cosmic-proto

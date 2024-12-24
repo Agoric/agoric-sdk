@@ -3,6 +3,23 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.19.0-u18.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/wallet@0.19.0-u18.0...@agoric/wallet@0.19.0-u18.1) (2024-12-24)
+
+## 0.35.0-u18.4 (2024-12-17)
+
+## 0.35.0-u18.3 (2024-12-09)
+
+## 0.35.0-u18.2 (2024-11-21)
+
+## 0.35.0-u18.1 (2024-11-19)
+
+
+### Features
+
+* **internal:** Introduce deepCopyJsonable ([f875bb0](https://github.com/Agoric/agoric-sdk/commit/f875bb0923323d019396c605ea9bb4d1382f7f79))
+
+
+
 ## [0.19.0-u18.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/wallet@0.18.3...@agoric/wallet@0.19.0-u18.0) (2024-10-31)
 
 

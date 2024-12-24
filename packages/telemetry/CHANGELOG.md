@@ -3,6 +3,18 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.6.3-u18.4](https://github.com/Agoric/agoric-sdk/compare/@agoric/telemetry@0.6.3-u18.3...@agoric/telemetry@0.6.3-u18.4) (2024-12-24)
+
+
+### Bug Fixes
+
+* **telemetry:** add missing slog type ([1aec8d0](https://github.com/Agoric/agoric-sdk/commit/1aec8d05036f6b3c3e3730339d1829da6b4a9051))
+* **telemetry:** Empty context persisted when remaining beans are negative after run finish ([#10635](https://github.com/Agoric/agoric-sdk/issues/10635)) ([ad4e83e](https://github.com/Agoric/agoric-sdk/commit/ad4e83e0b6dff9716da91fd65d367d3acad1772e))
+* **telemetry:** event name typo ([9e19321](https://github.com/Agoric/agoric-sdk/commit/9e19321ea8fed32d445d44169b32f5d94a93d61e))
+* **telemetry:** timer-poll run.id ([#10672](https://github.com/Agoric/agoric-sdk/issues/10672)) ([3b478fb](https://github.com/Agoric/agoric-sdk/commit/3b478fb9e3fe7ded8dec1e83bab68760571f9071)), closes [#10357](https://github.com/Agoric/agoric-sdk/issues/10357) [#10357](https://github.com/Agoric/agoric-sdk/issues/10357)
+
+
+
 ### [0.6.3-u18.3](https://github.com/Agoric/agoric-sdk/compare/@agoric/telemetry@0.6.3-u18.2...@agoric/telemetry@0.6.3-u18.3) (2024-12-13)
 
 

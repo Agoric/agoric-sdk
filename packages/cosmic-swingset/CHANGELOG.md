@@ -3,6 +3,25 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.42.0-u18.6](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.42.0-u18.5...@agoric/cosmic-swingset@0.42.0-u18.6) (2024-12-24)
+
+
+### Features
+
+* **cosmic-swingset:** Add support for testing blocks of a mock chain ([48b6405](https://github.com/Agoric/agoric-sdk/commit/48b6405d23dc3dc051e3a9aea66ffb3f9749a82e))
+* **cosmic-swingset:** Allow `launch` to accept an already-open swingStore ([c65e5b1](https://github.com/Agoric/agoric-sdk/commit/c65e5b1c531c08026f5f11cf5d5dcdbe238b05ee))
+* **cosmic-swingset:** Update parseParams to read and validate vat cleanup budget data ([80bcca0](https://github.com/Agoric/agoric-sdk/commit/80bcca0745ac037d31a45e017b171212efaf282a)), closes [#8928](https://github.com/Agoric/agoric-sdk/issues/8928)
+* **cosmic-swingset:** Use vat cleanup budget values to allow slow cleanup ([508ea8e](https://github.com/Agoric/agoric-sdk/commit/508ea8e7fe4b7f92512973199c5aa85b17093694)), closes [#8928](https://github.com/Agoric/agoric-sdk/issues/8928)
+* **internal:** Introduce deepCopyJsonable ([f875bb0](https://github.com/Agoric/agoric-sdk/commit/f875bb0923323d019396c605ea9bb4d1382f7f79))
+* **x/swingset:** Define default vat cleanup budget as { default: 5, kv: 50 } ([d86ee6d](https://github.com/Agoric/agoric-sdk/commit/d86ee6d5cf0882a53ac3a6e3b802e4002c4c1d12))
+
+
+### Bug Fixes
+
+* **cosmic-swingset:** expect chain --halt-height exit status > 1 ([c025cb7](https://github.com/Agoric/agoric-sdk/commit/c025cb7fad64b8bff26b35000cee1846a0b3ae20))
+
+
+
 ## [0.42.0-u18.5](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmic-swingset@0.42.0-u18.4...@agoric/cosmic-swingset@0.42.0-u18.5) (2024-12-17)
 
 

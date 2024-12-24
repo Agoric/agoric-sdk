@@ -3,6 +3,41 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.2.0-u18.6](https://github.com/Agoric/agoric-sdk/compare/@agoric/builders@0.2.0-u18.5...@agoric/builders@0.2.0-u18.6) (2024-12-24)
+
+
+### Features
+
+* `ForwardOpts` accepts `intermediateRecipient` ([eb975f1](https://github.com/Agoric/agoric-sdk/commit/eb975f1df1587bc9307b27c20b7b236cc7fe386e))
+* `ForwardOptsShape` ([50b1717](https://github.com/Agoric/agoric-sdk/commit/50b1717c1e40ed67a5e69810961ad8d0144c5f9e))
+* add `bech32Prefix?: string` to `CosmosChainInfo` ([cb9e1ee](https://github.com/Agoric/agoric-sdk/commit/cb9e1eeab9295b44ec009b82d73c457299e8d6f4))
+* advancer with fees ([087f3a8](https://github.com/Agoric/agoric-sdk/commit/087f3a84a266fd0061f6d35c7b51f193de308f95))
+* assetInfo as array of entries ([51e7a9c](https://github.com/Agoric/agoric-sdk/commit/51e7a9c3e3fb2cde44db2ffce817f353a17e76a3))
+* **builders:** --noNoble option for init-fast-usdc ([508a3e0](https://github.com/Agoric/agoric-sdk/commit/508a3e0876d0fadac0e4a2fc1fa64b86ff8e5c2d))
+* **builders:** fast-usdc builder w/CLI config ([9f45a05](https://github.com/Agoric/agoric-sdk/commit/9f45a0572777cfe26012b5f48ad4140eaea96dad))
+* **builders:** fast-usdc oracleSet option for MAINNET, ... ([3bf01a2](https://github.com/Agoric/agoric-sdk/commit/3bf01a279e5b2c72d6667704a07056501012260e))
+* **builders:** fast-usdc policy update builder ([8ded3d8](https://github.com/Agoric/agoric-sdk/commit/8ded3d8be612a6944b80f3f63ab6fb727c76d179))
+* chain-capabilities.js constants ([52ff70a](https://github.com/Agoric/agoric-sdk/commit/52ff70a187df1fadc89ccc506228bc6d0ca48da6))
+* export `DenomDetailShape` ([2dfddb3](https://github.com/Agoric/agoric-sdk/commit/2dfddb3fb2018d769b1acc1b32f4ff3b4c7f67b7))
+* export `OrchestrationPowersShape` ([34b61ea](https://github.com/Agoric/agoric-sdk/commit/34b61eae918a5f02ba6e06ac7e15b24750494821))
+* **fast-usdc:** write chain policies to vstorage ([#10532](https://github.com/Agoric/agoric-sdk/issues/10532)) ([9d6cff1](https://github.com/Agoric/agoric-sdk/commit/9d6cff17bb95ce5557758da242ca4646a87ac5b0))
+* fusdc assetInfo and chainInfo by netname ([afb4f34](https://github.com/Agoric/agoric-sdk/commit/afb4f34518124b3809d1df07ea706743fa47f2b1))
+* parameterize fusdc with chainInfo and assetInfo ([e5a8b64](https://github.com/Agoric/agoric-sdk/commit/e5a8b6489368f0bf3a099ce4c5ddf9607a6192c1))
+* record instances that will be replaced so we can manage them ([c883c39](https://github.com/Agoric/agoric-sdk/commit/c883c39bbe4ec236a758030508fdf9f4fbd3ba9b))
+* register interchain bank assets proposal ([0e20707](https://github.com/Agoric/agoric-sdk/commit/0e2070754d6811acd40cb026792d4295189ae771))
+* registerChainsAndAssets ([e72782d](https://github.com/Agoric/agoric-sdk/commit/e72782dcc748b9e6a2879179cccf9866718f4e00))
+* save the outgoing EC Charter instance and kit ([c2c9be3](https://github.com/Agoric/agoric-sdk/commit/c2c9be3785f50e3b2cae3585d0e05d8b0a918283))
+* send-anywhere inits chainHub ([2fa2f75](https://github.com/Agoric/agoric-sdk/commit/2fa2f7512b2a1a19d47f47b59e3206619794be18))
+* upgrade v7-board and test it ([#10516](https://github.com/Agoric/agoric-sdk/issues/10516)) ([d8a109e](https://github.com/Agoric/agoric-sdk/commit/d8a109edcc78c977ef856131b52dd449e6a9d724)), closes [#10394](https://github.com/Agoric/agoric-sdk/issues/10394)
+
+
+### Bug Fixes
+
+* **agd:** upgrade all orchestration vats to new liveslots ([59fa82c](https://github.com/Agoric/agoric-sdk/commit/59fa82c4740e1ddace28e1389e3c7c875bcdf93e))
+* **orchestration:** denomAmounts must be non-negative ([#10458](https://github.com/Agoric/agoric-sdk/issues/10458)) ([40e0e4e](https://github.com/Agoric/agoric-sdk/commit/40e0e4e37503b611609d1752389477d8f14f1a8e))
+
+
+
 ## [0.2.0-u18.5](https://github.com/Agoric/agoric-sdk/compare/@agoric/builders@0.2.0-u18.4...@agoric/builders@0.2.0-u18.5) (2024-12-17)
 
 **Note:** Version bump only for package @agoric/builders

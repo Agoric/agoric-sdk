@@ -3,6 +3,37 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.22.0-u18.6](https://github.com/Agoric/agoric-sdk/compare/agoric@0.22.0-u18.5...agoric@0.22.0-u18.6) (2024-12-24)
+
+
+### ⚠ BREAKING CHANGES
+
+* remove agoricNames from VstorageKit
+
+### Features
+
+* **agoric-cli:** Add `agoric wallet send` gas limit options ([21a03f8](https://github.com/Agoric/agoric-sdk/commit/21a03f816e392a25c197b692905b2d0388632ee9))
+* **agoric-cli:** Block `agoric wallet send` on tx inclusion ([0389a21](https://github.com/Agoric/agoric-sdk/commit/0389a21b85c783f70f4a2af30d5ee96ccea5cb47))
+* client-utils package ([50af71f](https://github.com/Agoric/agoric-sdk/commit/50af71f2b2c3a1eee9da62dbd87c9cda0521979b))
+* export cli lib ([0d2d4aa](https://github.com/Agoric/agoric-sdk/commit/0d2d4aa7886cc424e64a121821fc1373912aff82))
+* fetchEnvNetworkConfig ([9bdba57](https://github.com/Agoric/agoric-sdk/commit/9bdba57d18672ef8d40b8a38cb54a082e1b89e50))
+* makeWalletUtils wo/spawn ([bc10509](https://github.com/Agoric/agoric-sdk/commit/bc105094afdafebed090313e849998b132b50172))
+* makeWalletUtils wo/spawn ([20083ae](https://github.com/Agoric/agoric-sdk/commit/20083ae6cf3b479ca68aa7b81415157aceca38fe))
+* VstorageKit ([71486d7](https://github.com/Agoric/agoric-sdk/commit/71486d714cfa8f0393fbec7731dca71d1a342a1c))
+
+
+### Bug Fixes
+
+* **agoric-cli:** use readPublished consistently in agops oracle ([e8f6de2](https://github.com/Agoric/agoric-sdk/commit/e8f6de2aaf1fa5457f4a31bcaa7a742e4634eeb8))
+* proposeParamChange options ([202ba1e](https://github.com/Agoric/agoric-sdk/commit/202ba1e1924c30f65edefa7584b484f580ce5386))
+
+
+### Miscellaneous Chores
+
+* remove agoricNames from VstorageKit ([1c69d39](https://github.com/Agoric/agoric-sdk/commit/1c69d39c6b5571e8501cd4be8d32e3d1bd9d3844))
+
+
+
 ## [0.22.0-u18.5](https://github.com/Agoric/agoric-sdk/compare/agoric@0.22.0-u18.4...agoric@0.22.0-u18.5) (2024-12-17)
 
 **Note:** Version bump only for package agoric
