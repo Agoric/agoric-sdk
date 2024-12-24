@@ -3,6 +3,16 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.16.3-u18.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/ertp@0.16.3-u18.0...@agoric/ertp@0.16.3-u18.1) (2024-12-24)
+
+
+### Bug Fixes
+
+* **ertp:** remove unneeded ertp type imports ([#10467](https://github.com/Agoric/agoric-sdk/issues/10467)) ([e96ff82](https://github.com/Agoric/agoric-sdk/commit/e96ff8256e1072d0d7e08e04c82960489b04e205)), closes [#10456](https://github.com/Agoric/agoric-sdk/issues/10456)
+* **orchestration:** harden exported patterns ([#10470](https://github.com/Agoric/agoric-sdk/issues/10470)) ([47bebb8](https://github.com/Agoric/agoric-sdk/commit/47bebb8357715f60a699a6f7627dac3d2cf26db7)), closes [#10456](https://github.com/Agoric/agoric-sdk/issues/10456)
+
+
+
 ### [0.16.3-u18.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/ertp@0.16.2...@agoric/ertp@0.16.3-u18.0) (2024-10-31)
 
 

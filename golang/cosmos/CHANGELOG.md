@@ -3,6 +3,32 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.35.0-u18.5](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmos@0.35.0-u18.4...@agoric/cosmos@0.35.0-u18.5) (2024-12-24)
+
+
+### Features
+
+* **cosmos:** Support arbitrary core eval builder arguments ([#10767](https://github.com/Agoric/agoric-sdk/issues/10767)) ([a944f4c](https://github.com/Agoric/agoric-sdk/commit/a944f4cdf36012e8c07fe0804de5e9f3532db3ce)), closes [#10752](https://github.com/Agoric/agoric-sdk/issues/10752) [#10752](https://github.com/Agoric/agoric-sdk/issues/10752)
+* **cosmos:** use `x/vbank` ConsensusVersion to upgrade monitoring ([0e367d3](https://github.com/Agoric/agoric-sdk/commit/0e367d3e9870622acc8a38afe57c2b6cbe629341))
+* migrate upgrade of v7-board from  upgrade 19 to upgrade 18 ([#10761](https://github.com/Agoric/agoric-sdk/issues/10761)) ([837776e](https://github.com/Agoric/agoric-sdk/commit/837776e6eb693603bce4ed3f9af5c659c9a19d2d)), closes [#10760](https://github.com/Agoric/agoric-sdk/issues/10760)
+* upgrade v7-board and test it ([#10516](https://github.com/Agoric/agoric-sdk/issues/10516)) ([d8a109e](https://github.com/Agoric/agoric-sdk/commit/d8a109edcc78c977ef856131b52dd449e6a9d724)), closes [#10394](https://github.com/Agoric/agoric-sdk/issues/10394)
+* **vbank:** new param `allowed_monitoring_accounts` ([5ac4c52](https://github.com/Agoric/agoric-sdk/commit/5ac4c527b5a3e85bb14ba91a32bcbb6beb0097c9))
+* **vtransfer:** extract base address from parameterized address ([3d44b53](https://github.com/Agoric/agoric-sdk/commit/3d44b5363324baa803a2d9523ce11ded7cce1ed1))
+* **vtransfer:** port some `address-hooks.js` functions to Go ([159098b](https://github.com/Agoric/agoric-sdk/commit/159098bbfaddf4448da4778aa29fbc072aed80a9))
+* **x/swingset:** Add parameters for controlling vat cleanup budget ([02c8138](https://github.com/Agoric/agoric-sdk/commit/02c8138bb2090bc995bfe517bc52952014458984)), closes [#8928](https://github.com/Agoric/agoric-sdk/issues/8928)
+* **x/swingset:** Define default vat cleanup budget as { default: 5, kv: 50 } ([d86ee6d](https://github.com/Agoric/agoric-sdk/commit/d86ee6d5cf0882a53ac3a6e3b802e4002c4c1d12))
+* **x/swingset:** Read beansPerUnit in each message handler and pass down to helpers ([55b9b49](https://github.com/Agoric/agoric-sdk/commit/55b9b49d5f77be9db33ae132a8f7b7017a90d0a9))
+* **x/swingset:** Require a non-empty vat cleanup budget to include `default` ([28c4d8b](https://github.com/Agoric/agoric-sdk/commit/28c4d8bf9897f1ff744e64ea0e681ee41064aafd))
+
+
+### Bug Fixes
+
+* **agd:** upgrade all orchestration vats to new liveslots ([59fa82c](https://github.com/Agoric/agoric-sdk/commit/59fa82c4740e1ddace28e1389e3c7c875bcdf93e))
+* **cosmos:** return an error if version is unsupported ([d17e55b](https://github.com/Agoric/agoric-sdk/commit/d17e55b5d5c0a178e49ed9a0402ed52827074426))
+* **x/swingset:** Let migration see incomplete Params structs ([315cdd5](https://github.com/Agoric/agoric-sdk/commit/315cdd56e0955ba26d624ca3a4997888abc1d635))
+
+
+
 ## [0.35.0-u18.4](https://github.com/Agoric/agoric-sdk/compare/@agoric/cosmos@0.35.0-u18.3...@agoric/cosmos@0.35.0-u18.4) (2024-12-17)
 
 **Note:** Version bump only for package @agoric/cosmos

@@ -3,6 +3,23 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.17.0-u18.6](https://github.com/Agoric/agoric-sdk/compare/@agoric/inter-protocol@0.17.0-u18.5...@agoric/inter-protocol@0.17.0-u18.6) (2024-12-24)
+
+
+### Features
+
+* add an accessor for the vaultDirector's parameters ([32f1398](https://github.com/Agoric/agoric-sdk/commit/32f13984751a5404aad3e9f3dc72b056292a78a3))
+* record instances that will be replaced so we can manage them ([c883c39](https://github.com/Agoric/agoric-sdk/commit/c883c39bbe4ec236a758030508fdf9f4fbd3ba9b))
+* save the outgoing EC Charter instance and kit ([c2c9be3](https://github.com/Agoric/agoric-sdk/commit/c2c9be3785f50e3b2cae3585d0e05d8b0a918283))
+
+
+### Bug Fixes
+
+* makeReserveTerms ([27ce0b0](https://github.com/Agoric/agoric-sdk/commit/27ce0b0c5bc7543dca4d86ef644ce6e87f151d6c))
+* remove addInstance call from add-auction.js ([d16781f](https://github.com/Agoric/agoric-sdk/commit/d16781f0100b831638b3032837da28c23beabb7b))
+
+
+
 ## [0.17.0-u18.5](https://github.com/Agoric/agoric-sdk/compare/@agoric/inter-protocol@0.17.0-u18.4...@agoric/inter-protocol@0.17.0-u18.5) (2024-12-17)
 
 **Note:** Version bump only for package @agoric/inter-protocol

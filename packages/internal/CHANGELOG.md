@@ -3,6 +3,21 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.4.0-u18.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/internal@0.4.0-u18.0...@agoric/internal@0.4.0-u18.1) (2024-12-24)
+
+
+### Features
+
+* consistent publishTxnRecord (record) ([dbf3934](https://github.com/Agoric/agoric-sdk/commit/dbf39340c75d9e01af2ee9ceccac327660af94a6))
+* defaultSerializer util ([19d5e03](https://github.com/Agoric/agoric-sdk/commit/19d5e03b426e74b8a19d11b425634a0a83e929a1))
+* getValues for sequence nodes ([b5698ce](https://github.com/Agoric/agoric-sdk/commit/b5698cee87068656cf6cfcbed25925d19fe025fd))
+* **internal:** Introduce deepCopyJsonable ([f875bb0](https://github.com/Agoric/agoric-sdk/commit/f875bb0923323d019396c605ea9bb4d1382f7f79))
+* pureDataMarshaller ([6df7f1f](https://github.com/Agoric/agoric-sdk/commit/6df7f1fa33bc0ac3f979663db97859c90af94e6c))
+* showValue option for documentStorageSchema ([07d12d4](https://github.com/Agoric/agoric-sdk/commit/07d12d489208735a8304866e3c59e9dc0cd19f13))
+* storage-test-utils report missing data ([02c111b](https://github.com/Agoric/agoric-sdk/commit/02c111b7e6a54528186e37f5408d1a41462e5526))
+
+
+
 ## [0.4.0-u18.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/internal@0.3.2...@agoric/internal@0.4.0-u18.0) (2024-10-31)
 
 

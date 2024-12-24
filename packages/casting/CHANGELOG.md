@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.4.3-u18.5](https://github.com/Agoric/agoric-sdk/compare/@agoric/casting@0.4.3-u18.4...@agoric/casting@0.4.3-u18.5) (2024-12-24)
+
+
+### Features
+
+* makeTendermintRpcClient ([129516a](https://github.com/Agoric/agoric-sdk/commit/129516a8f3ae58f16d17460f58d2c69ee215a584))
+
+
+
 ### [0.4.3-u18.4](https://github.com/Agoric/agoric-sdk/compare/@agoric/casting@0.4.3-u18.3...@agoric/casting@0.4.3-u18.4) (2024-12-17)
 
 **Note:** Version bump only for package @agoric/casting

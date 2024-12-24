@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.10.0-u18.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/swing-store@0.10.0-u18.0...@agoric/swing-store@0.10.0-u18.1) (2024-12-24)
+
+
+### Features
+
+* **cosmic-swingset:** Allow `launch` to accept an already-open swingStore ([c65e5b1](https://github.com/Agoric/agoric-sdk/commit/c65e5b1c531c08026f5f11cf5d5dcdbe238b05ee))
+
+
+
 ## [0.10.0-u18.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/swing-store@0.9.1...@agoric/swing-store@0.10.0-u18.0) (2024-10-31)
 
 

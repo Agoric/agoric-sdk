@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.10.3-u18.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-liveslots@0.10.3-u18.0...@agoric/swingset-liveslots@0.10.3-u18.1) (2024-12-24)
+
+
+### Bug Fixes
+
+* **liveslots:** avoid slotToVal memory leak for watched promises ([874196c](https://github.com/Agoric/agoric-sdk/commit/874196c477036964634b5e3b8af93fb57279ef18)), closes [#10757](https://github.com/Agoric/agoric-sdk/issues/10757) [#10756](https://github.com/Agoric/agoric-sdk/issues/10756) [#10706](https://github.com/Agoric/agoric-sdk/issues/10706)
+
+
+
 ### [0.10.3-u18.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/swingset-liveslots@0.10.2...@agoric/swingset-liveslots@0.10.3-u18.0) (2024-10-31)
 
 

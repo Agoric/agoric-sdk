@@ -3,6 +3,22 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.16.0-u18.5](https://github.com/Agoric/agoric-sdk/compare/@agoric/vats@0.16.0-u18.4...@agoric/vats@0.16.0-u18.5) (2024-12-24)
+
+
+### Features
+
+* **cosmic-swingset:** Add support for testing blocks of a mock chain ([48b6405](https://github.com/Agoric/agoric-sdk/commit/48b6405d23dc3dc051e3a9aea66ffb3f9749a82e))
+* upgrade v7-board and test it ([#10516](https://github.com/Agoric/agoric-sdk/issues/10516)) ([d8a109e](https://github.com/Agoric/agoric-sdk/commit/d8a109edcc78c977ef856131b52dd449e6a9d724)), closes [#10394](https://github.com/Agoric/agoric-sdk/issues/10394)
+
+
+### Bug Fixes
+
+* **ERTP,vats:** fix 9407 AmountPatternShape ([#9863](https://github.com/Agoric/agoric-sdk/issues/9863)) ([59b1a9f](https://github.com/Agoric/agoric-sdk/commit/59b1a9f2961eaf3107e2c733da1bd67466bb2f94)), closes [#9410](https://github.com/Agoric/agoric-sdk/issues/9410) [#9407](https://github.com/Agoric/agoric-sdk/issues/9407) [#9410](https://github.com/Agoric/agoric-sdk/issues/9410) [#9407](https://github.com/Agoric/agoric-sdk/issues/9407) [#9410](https://github.com/Agoric/agoric-sdk/issues/9410) [#9407](https://github.com/Agoric/agoric-sdk/issues/9407) [#9410](https://github.com/Agoric/agoric-sdk/issues/9410)
+* **vaultFactory:** fix proposal description ([bc1f87a](https://github.com/Agoric/agoric-sdk/commit/bc1f87a802f68d629972874c6bb60339c3933de4))
+
+
+
 ## [0.16.0-u18.4](https://github.com/Agoric/agoric-sdk/compare/@agoric/vats@0.16.0-u18.3...@agoric/vats@0.16.0-u18.4) (2024-12-17)
 
 **Note:** Version bump only for package @agoric/vats

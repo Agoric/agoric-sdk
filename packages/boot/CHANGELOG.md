@@ -3,6 +3,27 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [0.2.0-u18.6](https://github.com/Agoric/agoric-sdk/compare/@agoric/boot@0.2.0-u18.5...@agoric/boot@0.2.0-u18.6) (2024-12-24)
+
+
+### Features
+
+* add `bech32Prefix?: string` to `CosmosChainInfo` ([cb9e1ee](https://github.com/Agoric/agoric-sdk/commit/cb9e1eeab9295b44ec009b82d73c457299e8d6f4))
+* consistent publishTxnRecord (record) ([dbf3934](https://github.com/Agoric/agoric-sdk/commit/dbf39340c75d9e01af2ee9ceccac327660af94a6))
+* **fast-usdc:** publish feeConfig to vstorage ([08b2e13](https://github.com/Agoric/agoric-sdk/commit/08b2e13921514258de566c52aeda737a28ed44c7))
+* **fast-usdc:** support risk assessment arg ([ff6737a](https://github.com/Agoric/agoric-sdk/commit/ff6737a574e4a2efccda226780ed09e3fb4076b3))
+* **fast-usdc:** write chain policies to vstorage ([#10532](https://github.com/Agoric/agoric-sdk/issues/10532)) ([9d6cff1](https://github.com/Agoric/agoric-sdk/commit/9d6cff17bb95ce5557758da242ca4646a87ac5b0))
+* **fast-usdc:** write status updates to vstorage ([#10552](https://github.com/Agoric/agoric-sdk/issues/10552)) ([419df4e](https://github.com/Agoric/agoric-sdk/commit/419df4ee7ce03499f30e7327c74e95a338201023))
+* **internal:** Introduce deepCopyJsonable ([f875bb0](https://github.com/Agoric/agoric-sdk/commit/f875bb0923323d019396c605ea9bb4d1382f7f79))
+* publish OBSERVED with first evidence ([7e62d8f](https://github.com/Agoric/agoric-sdk/commit/7e62d8f811e212f8160c36a3b954aee8c0e1fb90))
+* readPublished in SwingsetTestKit ([0b383c9](https://github.com/Agoric/agoric-sdk/commit/0b383c909002dea7fe72fd890601e86966ae2222))
+* record instances that will be replaced so we can manage them ([c883c39](https://github.com/Agoric/agoric-sdk/commit/c883c39bbe4ec236a758030508fdf9f4fbd3ba9b))
+* send-anywhere inits chainHub ([2fa2f75](https://github.com/Agoric/agoric-sdk/commit/2fa2f7512b2a1a19d47f47b59e3206619794be18))
+* **types:** TransactionRecord ([ccb9e28](https://github.com/Agoric/agoric-sdk/commit/ccb9e28a92c17ce3362ac5898acb80128614edab))
+* vstorage status --> txns ([aebb4d7](https://github.com/Agoric/agoric-sdk/commit/aebb4d792317f6964a8150324548b69cec2eb505))
+
+
+
 ## [0.2.0-u18.5](https://github.com/Agoric/agoric-sdk/compare/@agoric/boot@0.2.0-u18.4...@agoric/boot@0.2.0-u18.5) (2024-12-17)
 
 **Note:** Version bump only for package @agoric/boot

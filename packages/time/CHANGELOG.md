@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.3.3-u18.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/time@0.3.3-u18.0...@agoric/time@0.3.3-u18.1) (2024-12-24)
+
+
+### Bug Fixes
+
+* **orchestration:** harden exported patterns ([#10470](https://github.com/Agoric/agoric-sdk/issues/10470)) ([47bebb8](https://github.com/Agoric/agoric-sdk/commit/47bebb8357715f60a699a6f7627dac3d2cf26db7)), closes [#10456](https://github.com/Agoric/agoric-sdk/issues/10456)
+
+
+
 ### [0.3.3-u18.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/time@0.3.2...@agoric/time@0.3.3-u18.0) (2024-10-31)
 
 

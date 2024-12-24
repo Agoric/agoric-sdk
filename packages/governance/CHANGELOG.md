@@ -3,6 +3,15 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+### [0.10.4-u18.1](https://github.com/Agoric/agoric-sdk/compare/@agoric/governance@0.10.4-u18.0...@agoric/governance@0.10.4-u18.1) (2024-12-24)
+
+
+### Bug Fixes
+
+* **orchestration:** harden exported patterns ([#10470](https://github.com/Agoric/agoric-sdk/issues/10470)) ([47bebb8](https://github.com/Agoric/agoric-sdk/commit/47bebb8357715f60a699a6f7627dac3d2cf26db7)), closes [#10456](https://github.com/Agoric/agoric-sdk/issues/10456)
+
+
+
 ### [0.10.4-u18.0](https://github.com/Agoric/agoric-sdk/compare/@agoric/governance@0.10.3...@agoric/governance@0.10.4-u18.0) (2024-10-31)
 
 
