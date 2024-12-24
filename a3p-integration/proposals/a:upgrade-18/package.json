@@ -2,9 +2,10 @@
   "agoricProposal": {
     "releaseNotes": false,
     "sdkImageTag": "unreleased",
-    "planName": "UNRELEASED_A3P_INTEGRATION",
+    "planName": "agoric-upgrade-18-a3p",
     "upgradeInfo": {
-      "coreProposals": []
+      "coreProposals": [],
+      "releaseNotes": false
     },
     "sdk-generate": [
       "testing/test-upgraded-board.js testUpgradedBoard"
