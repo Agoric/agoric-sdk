@@ -6,7 +6,6 @@ const pkg = JSON.parse(
 );
 
 // Import rules
-import dollarSign from './rules/dollar-sign.js';
 import startFunctionPrelude from './rules/start-function-prelude.js';
 
 const plugin = {
@@ -17,7 +16,6 @@ const plugin = {
 
   // Rule definitions
   rules: {
-    'dollar-sign': dollarSign,
     'start-function-prelude': startFunctionPrelude,
   },
 
