@@ -6,7 +6,6 @@ const pkg = JSON.parse(
 );
 
 // Import rules
-import dollarSign from './rules/dollar-sign.js';
 
 const plugin = {
   meta: {
@@ -16,7 +15,7 @@ const plugin = {
 
   // Rule definitions
   rules: {
-    'dollar-sign': dollarSign,
+
   },
 
   // Recommended config
@@ -28,8 +27,7 @@ const plugin = {
           '@agoric': plugin,
         },
         rules: {
-          '@agoric/dollar-sign': 'error',
-          '@agoric/start-function-prelude': 'error',
+          
         },
       },
     ],
