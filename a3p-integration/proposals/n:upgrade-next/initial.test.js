@@ -4,13 +4,15 @@ import '@endo/init/debug.js';
 import { getVatDetails } from '@agoric/synthetic-chain';
 
 const vats = {
-  network: { incarnation: 1 },
-  ibc: { incarnation: 1 },
-  localchain: { incarnation: 1 },
-  orchestration: { incarnation: 0 },
-  transfer: { incarnation: 1 },
+  network: { incarnation: 2 },
+  ibc: { incarnation: 2 },
+  localchain: { incarnation: 2 },
+  orchestration: { incarnation: 1 },
+  transfer: { incarnation: 2 },
   walletFactory: { incarnation: 5 },
   zoe: { incarnation: 3 },
+  // Terminated in a future proposal.
+  '-ATOM-USD_price_feed-governor': { incarnation: 0 },
 };
 
 test(`vat details`, async t => {

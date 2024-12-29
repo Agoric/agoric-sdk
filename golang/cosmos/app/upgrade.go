@@ -171,6 +171,26 @@ func replacePriceFeedsCoreProposal(upgradeName string) (vm.CoreProposalStep, err
 	)
 }
 
+func terminateGovernorCoreProposal(upgradeName string) (vm.CoreProposalStep, error) {
+	// targets is a slice of "$boardID:$instanceKitLabel" strings.
+	var targets []string
+	switch getVariantFromUpgradeName(upgradeName) {
+		case "MAINNET":
+			targets = []string{"board052184:stkATOM-USD_price_feed"}
+		case "A3P_INTEGRATION":
+			targets = []string{"board04091:stATOM-USD_price_feed"}
+		default:
+			return nil, nil
+	}
+
+	return buildProposalStepWithArgs(
+		"@agoric/builders/scripts/vats/terminate-governor-instance.js",
+		// Request `defaultProposalBuilder(powers, targets)`.
+		"defaultProposalBuilder",
+		[]any{targets},
+	)
+}
+
 // func upgradeMintHolderCoreProposal(upgradeName string) (vm.CoreProposalStep, error) {
 // 	variant := getVariantFromUpgradeName(upgradeName)
 
@@ -247,6 +267,14 @@ func unreleasedUpgradeHandler(app *GaiaApp, targetUpgrade string) func(sdk.Conte
 				),
 			)
 
+			// Upgrade vats using Vows in Upgrade 18 in order to use a new liveslots that
+			// avoids a memory leak in watchPromise.
+			CoreProposalSteps = append(CoreProposalSteps,
+				vm.CoreProposalStepForModules(
+					"@agoric/builders/scripts/vats/upgrade-orchestration.js",
+				),
+			)
+
 			// CoreProposals for Upgrade 19. These should not be introduced
 			// before upgrade 18 is done because they would be run in n:upgrade-next
 			//
@@ -277,6 +305,13 @@ func unreleasedUpgradeHandler(app *GaiaApp, targetUpgrade string) func(sdk.Conte
 			// 		"@agoric/builders/scripts/vats/upgrade-asset-reserve.js",
 			// 	),
 			// )
+
+			terminateOldGovernor, err := terminateGovernorCoreProposal(targetUpgrade)
+			if err != nil {
+				return nil, err
+			} else if terminateOldGovernor != nil {
+				CoreProposalSteps = append(CoreProposalSteps, terminateOldGovernor)
+			}
 		}
 
 		app.upgradeDetails = &upgradeDetails{
