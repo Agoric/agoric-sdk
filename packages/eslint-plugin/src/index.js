@@ -1,14 +1,15 @@
-import fs from 'node:fs';
+const fs = require('node:fs');
+const path = require('path');
 
 const pkg = JSON.parse(
-  fs.readFileSync(new URL('../package.json', import.meta.url), 'utf8'),
+  fs.readFileSync(path.join(__dirname, '../package.json'), 'utf8'),
 );
 
 // Import rules
-import startFunctionPrelude from './rules/start-function-prelude.js';
-import groupJsdocImports from './rules/group-jsdoc-imports.js';
+const startFunctionPrelude = require('./rules/start-function-prelude.js');
+const groupJsdocImports = require('./rules/group-jsdoc-imports.js');
 
-const plugin = {
+module.exports = {
   meta: {
     name: pkg.name,
     version: pkg.version,
@@ -31,5 +32,3 @@ const plugin = {
     },
   },
 };
-
-export default plugin;

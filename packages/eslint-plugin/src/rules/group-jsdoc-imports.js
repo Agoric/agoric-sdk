@@ -20,7 +20,7 @@
  * ESLint rule: group-jsdoc-imports (one-fix-per-inline-import version)
  */
 
-export default {
+module.exports = {
   meta: {
     type: 'suggestion',
     docs: {

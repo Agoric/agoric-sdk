@@ -1,5 +1,5 @@
-import { RuleTester } from 'eslint';
-import rule from '../../src/rules/start-function-prelude.js';
+const { RuleTester } = require('eslint');
+const rule = require('../../src/rules/start-function-prelude.js');
 
 const ruleTester = new RuleTester({
   parserOptions: { ecmaVersion: 2022, sourceType: 'module' },
