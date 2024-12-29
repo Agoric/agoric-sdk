@@ -70,9 +70,10 @@ or an object whose keys identify child properties and whose corresponding values
 are theirselves (recursive) permits. See `BootstrapManifiest` in
 [lib-boot.js](../vats/src/core/lib-boot.js).
 
-The object returned from a "getManifestCall" invocation may also include
-"installations" to register in `agoricNames`, as is done here with name "game1"
-using the reference passed in via the invocation argument:
+The manifest object returned from a "getManifestCall" invocation may also
+include "installations" to register in `agoricNames` and/or "options" to be
+provided as the "options" property of the second argument for each call of the
+manifest's functions:
 ```js
 /** @type {import('@agoric/vats/src/core/lib-boot').BootstrapManifest} */
 const gameManifest = harden({
@@ -87,9 +88,12 @@ const gameManifest = harden({
 export const getManifestForGame1 = ({ restoreRef }, { game1Ref }) => {
   return harden({
     manifest: gameManifest,
+    // a reference to the game1 bundle will be published in agoricNames as "game1"
     installations: {
       game1: restoreRef(game1Ref),
     },
+    // the second argument of `startGameContract` will be `{ options: ["foo"] }`
+    options: ["foo"],
   });
 };
 ```
