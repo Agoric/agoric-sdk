@@ -642,6 +642,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@agoric/eslint-config@workspace:packages/eslint-config"
   peerDependencies:
+    "@agoric/eslint-plugin": ^0.1.0
     "@endo/eslint-plugin": ^2.4.0
     "@jessie.js/eslint-plugin": ^0.4.2
     eslint: ^9.0.0
