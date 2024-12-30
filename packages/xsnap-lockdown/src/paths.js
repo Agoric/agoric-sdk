@@ -5,6 +5,7 @@ export const bundlePaths = {
   lockdown: new URL('../dist/lockdown.bundle', import.meta.url).pathname,
   lockdownDebug: new URL('../dist/lockdown-debug.bundle', import.meta.url)
     .pathname,
+  objectInspect: new URL('../dist/object-inspect.js', import.meta.url).pathname,
 };
 
 export const hashPaths = {
@@ -18,4 +19,5 @@ export const hashPaths = {
 export const entryPaths = {
   lockdown: new URL('../lib/ses-boot.js', import.meta.url).pathname,
   lockdownDebug: new URL('../lib/ses-boot-debug.js', import.meta.url).pathname,
+  objectInspect: new URL('../lib/object-inspect.js', import.meta.url).pathname,
 };
