@@ -19,10 +19,10 @@ export const makeNatAmountShape = (brand, min) =>
 /** @param {Record<'PoolShares' | 'USDC', Brand<'nat'>>} brands */
 export const makeProposalShapes = ({ PoolShares, USDC }) => {
   /** @type {TypedPattern<USDCProposalShapes['deposit']>} */
-  const deposit = M.splitRecord(
-    { give: { USDC: makeNatAmountShape(USDC, 1n) } },
-    { want: M.splitRecord({}, { PoolShare: makeNatAmountShape(PoolShares) }) },
-  );
+  const deposit = M.splitRecord({
+    give: { USDC: makeNatAmountShape(USDC, 1n) },
+    want: { PoolShare: makeNatAmountShape(PoolShares) },
+  });
   /** @type {TypedPattern<USDCProposalShapes['withdraw']>} */
   const withdraw = M.splitRecord({
     give: { PoolShare: makeNatAmountShape(PoolShares, 1n) },

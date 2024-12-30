@@ -58,7 +58,7 @@ const test = anyTest as TestFn<Awaited<ReturnType<typeof makeTestContext>>>;
 test.beforeEach(async t => (t.context = await makeTestContext()));
 
 test('fast-usdc deposit command', async t => {
-  const { program, marshaller, out, err, USDC } = t.context;
+  const { program, marshaller, out, err, USDC, FastLP } = t.context;
   const amount = 100.05;
   const argv = [...`node fast-usdc deposit`.split(' '), ...flags({ amount })];
   t.log(...argv);
@@ -77,6 +77,9 @@ test('fast-usdc deposit command', async t => {
       proposal: {
         give: {
           USDC: { brand: USDC, value: 100_050_000n },
+        },
+        want: {
+          PoolShare: { brand: FastLP, value: 90_954_545n },
         },
       },
     },
