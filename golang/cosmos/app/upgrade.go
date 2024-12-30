@@ -304,6 +304,9 @@ func unreleasedUpgradeHandler(app *GaiaApp, targetUpgrade string) func(sdk.Conte
 			// 	vm.CoreProposalStepForModules(
 			// 		"@agoric/builders/scripts/vats/upgrade-asset-reserve.js",
 			// 	),
+			// 	vm.CoreProposalStepForModules(
+			// 		"@agoric/builders/scripts/vats/upgrade-psm.js",
+			// 	),
 			// )
 
 			terminateOldGovernor, err := terminateGovernorCoreProposal(targetUpgrade)
