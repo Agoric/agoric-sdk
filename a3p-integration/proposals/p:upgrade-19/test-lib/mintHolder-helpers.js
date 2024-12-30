@@ -8,7 +8,10 @@ import {
 } from '@agoric/synthetic-chain';
 import { makeVstorageKit, retryUntilCondition } from '@agoric/client-utils';
 import { readFile, writeFile } from 'node:fs/promises';
-import { psmSwap, snapshotAgoricNames } from './psm-lib.js';
+import { psmSwap, snapshotAgoricNames, tryISTBalances } from './psm-lib.js';
+
+/** @type {(x: number) => number} */
+const scale6 = x => x * 1_000_000;
 
 /**
  * @param {string} fileName base file name without .tjs extension
@@ -89,6 +92,13 @@ export const mintPayment = async (t, address, assetList, value) => {
   }
 };
 
+/**
+ *
+ * @param {import('ava').ExecutionContext} t
+ * @param {string} address
+ * @param {Array<{ label: string, denom: string, mintHolderVat: string}>} assetList
+ * @param {number} want in IST
+ */
 export const swap = async (t, address, assetList, want) => {
   for (const asset of assetList) {
     const { label, denom } = asset;
@@ -100,7 +110,7 @@ export const swap = async (t, address, assetList, want) => {
 
     const pair = `IST.${label}`;
 
-    const istBalanceBefore = await getISTBalance(address, 'uist');
+    const istBalanceBefore = await getISTBalance(address, 'uist', 1); // we want uist not IST
     const anchorBalanceBefore = await getISTBalance(address, denom);
 
     const psmSwapIo = {
@@ -116,10 +126,14 @@ export const swap = async (t, address, assetList, want) => {
       psmSwapIo,
     );
 
-    const istBalanceAfter = await getISTBalance(address, 'uist');
+    const istBalanceAfter = await getISTBalance(address, 'uist', 1); // we want uist not IST
     const anchorBalanceAfter = await getISTBalance(address, denom);
 
-    t.is(istBalanceAfter, istBalanceBefore + want);
+    await tryISTBalances(
+      t,
+      istBalanceAfter,
+      istBalanceBefore + scale6(want), // scale "want" to uist
+    );
     t.is(anchorBalanceAfter, anchorBalanceBefore - want);
   }
 };
