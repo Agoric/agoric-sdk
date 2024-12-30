@@ -18,7 +18,10 @@ const computeSha256 = bytes => {
 const run = async () => {
   fs.mkdirSync(path.dirname(bundlePaths.supervisor), { recursive: true });
   const format = 'nestedEvaluate';
-  const bundle = await bundleSource(entryPaths.supervisor, { format });
+  const bundle = await bundleSource(entryPaths.supervisor, {
+    format,
+    conditions: new Set(['development']),
+  });
   const bundleString = JSON.stringify(bundle);
   const sha256 = computeSha256(bundleString);
   fs.writeFileSync(bundlePaths.supervisor, bundleString);
