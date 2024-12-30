@@ -128,7 +128,7 @@ type ClientManager = {
  * @template C - Consume only
  * @template P - Produce only
  */
-type PromiseSpaceOf<B, C = {}, P = {}> = {
+type PromiseSpaceOf<B, C = object, P = object> = {
   consume: { [K in keyof (B & C)]: Promise<(B & C)[K]> };
   produce: { [K in keyof (B & P)]: Producer<(B & P)[K]> };
 };
@@ -449,7 +449,7 @@ type BootstrapSpace = WellKnownSpaces &
       loadVat: VatLoader;
       loadCriticalVat: VatLoader;
     },
-    {}
+    object
   >;
 
 type LocalChainVat = ERef<

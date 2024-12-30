@@ -24,7 +24,7 @@ const mock = null as any;
   kit.notInKit;
   void E(kit.publicFacet).getPriceAuthority();
 
-  expectType<{}>(kit.creatorFacet);
+  expectType<object>(kit.creatorFacet);
 
   const validIssuers = {};
 
