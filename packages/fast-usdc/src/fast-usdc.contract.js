@@ -38,7 +38,7 @@ const ADDRESSES_BAGGAGE_KEY = 'addresses';
  * @import {Marshaller, StorageNode} from '@agoric/internal/src/lib-chainStorage.js'
  * @import {Zone} from '@agoric/zone';
  * @import {OperatorKit} from './exos/operator-kit.js';
- * @import {CctpTxEvidence, FeeConfig} from './types.js';
+ * @import {CctpTxEvidence, FeeConfig, RiskAssessment} from './types.js';
  */
 
 /**
@@ -202,9 +202,10 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
      * capability is available in the smart-wallet bridge during UI testing.
      *
      * @param {CctpTxEvidence} evidence
+     * @param {RiskAssessment} [risk]
      */
-    makeTestPushInvitation(evidence) {
-      void advancer.handleTransactionEvent(evidence);
+    makeTestPushInvitation(evidence, risk = {}) {
+      void advancer.handleTransactionEvent({ evidence, risk });
       return makeTestInvitation();
     },
     makeDepositInvitation() {
@@ -303,9 +304,9 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
   );
   // Connect evidence stream to advancer
   void observeIteration(subscribeEach(feedKit.public.getEvidenceSubscriber()), {
-    updateState(evidence) {
+    updateState(evidenceWithRisk) {
       try {
-        void advancer.handleTransactionEvent(evidence);
+        void advancer.handleTransactionEvent(evidenceWithRisk);
       } catch (err) {
         trace('🚨 Error handling transaction event', err);
       }

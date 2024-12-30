@@ -8,12 +8,11 @@
       "vats/upgrade-asset-reserve.js upgradeAssetReserve",
       "vats/upgrade-psm.js upgradePSM",
       "vats/upgrade-paRegistry.js",
-      "vats/upgrade-board.js",
-      "testing/test-upgraded-board.js testUpgradedBoard",
       "vats/upgrade-agoricNames.js agoricNamesCoreEvals/upgradeAgoricNames",
       "testing/add-USD-OLIVES.js agoricNamesCoreEvals/addUsdOlives",
       "testing/publish-test-info.js agoricNamesCoreEvals/publishTestInfo",
-      "vats/upgrade-mintHolder.js upgrade-mintHolder A3P_INTEGRATION"
+      "vats/upgrade-mintHolder.js upgrade-mintHolder A3P_INTEGRATION",
+      "vats/terminate-governor-instance.js terminate-governor board02963:ATOM-USD_price_feed"
     ]
   },
   "type": "module",

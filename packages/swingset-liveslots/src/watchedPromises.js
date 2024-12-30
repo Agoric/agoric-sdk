@@ -235,13 +235,23 @@ export function makeWatchedPromiseManager({
       } else {
         watchedPromiseTable.init(vpid, harden([[watcher, ...args]]));
 
+        promiseRegistrations.init(vpid, p);
+
+        // pseudoThen registers a settlement callback that will remove
+        // this promise from promiseRegistrations and
+        // watchedPromiseTable. To avoid triggering
+        // https://github.com/Agoric/agoric-sdk/issues/10757 and
+        // preventing slotToVal cleanup, the `pseudoThen()` should
+        // precede `maybeExportPromise()`. This isn't foolproof, but
+        // does mitigate in advance of a proper fix. See #10756 for
+        // details of this particular mitigation, and #10757 for the
+        // deeper bug.
+        pseudoThen(p, vpid);
+
         // Ensure that this vat's promises are rejected at termination.
         if (maybeExportPromise(vpid)) {
           syscall.subscribe(vpid);
         }
-
-        promiseRegistrations.init(vpid, p);
-        pseudoThen(p, vpid);
       }
     });
   }

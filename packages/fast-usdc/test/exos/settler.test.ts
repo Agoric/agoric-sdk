@@ -110,6 +110,18 @@ const makeTestContext = async t => {
       return cctpTxEvidence;
     },
 
+    skipAdvance: (risksIdentified: string[], evidence?: CctpTxEvidence) => {
+      const cctpTxEvidence: CctpTxEvidence = {
+        ...MockCctpTxEvidences.AGORIC_PLUS_OSMO(),
+        ...evidence,
+      };
+      t.log('Mock CCTP Evidence:', cctpTxEvidence);
+      t.log('Mark as `ADVANCE_SKIPPED`');
+      statusManager.skipAdvance(cctpTxEvidence, risksIdentified ?? []);
+
+      return cctpTxEvidence;
+    },
+
     observe: (evidence?: CctpTxEvidence) => {
       const cctpTxEvidence: CctpTxEvidence = {
         ...MockCctpTxEvidences.AGORIC_PLUS_OSMO(),
@@ -316,6 +328,83 @@ test('slow path: forward to EUD; remove pending tx', async t => {
   const { storage } = t.context;
   t.deepEqual(storage.getDeserialized(`fun.txns.${cctpTxEvidence.txHash}`), [
     { evidence: cctpTxEvidence, status: 'OBSERVED' },
+    { status: 'FORWARDED' },
+  ]);
+
+  // Check deletion of FORWARDED transactions
+  statusManager.deleteCompletedTxs();
+  await eventLoopIteration();
+  t.is(storage.data.get(`fun.txns.${cctpTxEvidence.txHash}`), undefined);
+});
+
+test('skip advance: forward to EUD; remove pending tx', async t => {
+  const {
+    common,
+    makeSettler,
+    statusManager,
+    defaultSettlerParams,
+    repayer,
+    simulate,
+    accounts,
+    peekCalls,
+  } = t.context;
+  const { usdc } = common.brands;
+
+  const settler = makeSettler({
+    repayer,
+    settlementAccount: accounts.settlement.account,
+    ...defaultSettlerParams,
+  });
+
+  const cctpTxEvidence = simulate.skipAdvance(['TOO_LARGE_AMOUNT']);
+  t.deepEqual(
+    statusManager.lookupPending(
+      cctpTxEvidence.tx.forwardingAddress,
+      cctpTxEvidence.tx.amount,
+    ),
+    [{ ...cctpTxEvidence, status: PendingTxStatus.AdvanceSkipped }],
+    'statusManager shows this tx is skipped',
+  );
+
+  t.log('Simulate incoming IBC settlement');
+  void settler.tap.receiveUpcall(MockVTransferEvents.AGORIC_PLUS_OSMO());
+  await eventLoopIteration();
+
+  t.log('funds are forwarded; no interaction with LP');
+  t.deepEqual(peekCalls(), []);
+  t.deepEqual(accounts.settlement.callLog, [
+    [
+      'transfer',
+      {
+        chainId: 'osmosis-1',
+        encoding: 'bech32',
+        value: 'osmo183dejcnmkka5dzcu9xw6mywq0p2m5peks28men',
+      },
+      usdc.units(150),
+      {
+        forwardOpts: {
+          intermediateRecipient: {
+            chainId: 'noble-1',
+            encoding: 'bech32',
+            value: 'noble1test',
+          },
+        },
+      },
+    ],
+  ]);
+
+  t.deepEqual(
+    statusManager.lookupPending(
+      cctpTxEvidence.tx.forwardingAddress,
+      cctpTxEvidence.tx.amount,
+    ),
+    [],
+    'FORWARDED entry removed from StatusManger',
+  );
+  const { storage } = t.context;
+  t.deepEqual(storage.getDeserialized(`fun.txns.${cctpTxEvidence.txHash}`), [
+    { evidence: cctpTxEvidence, status: 'OBSERVED' },
+    { status: 'ADVANCE_SKIPPED', risksIdentified: ['TOO_LARGE_AMOUNT'] },
     { status: 'FORWARDED' },
   ]);
 

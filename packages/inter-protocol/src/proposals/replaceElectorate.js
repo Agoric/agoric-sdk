@@ -289,33 +289,87 @@ const startNewEconomicCommittee = async (
  * Starts a new Economic Committee Charter by creating an instance with the
  * provided committee specifications.
  *
- * @param {EconomyBootstrapPowers} powers - The resources and capabilities
- *   required to start the committee.
+ * @param {EconomyBootstrapPowers &
+ *   PromiseSpaceOf<{ retiredContractInstances: MapStore<string, Instance> }>} powers
+ *   - The resources and capabilities required to start the committee.
+ *
  * @returns {Promise<EconCharterStartResult>} A promise that resolves to the
  *   charter kit result.
  */
 const startNewEconCharter = async ({
-  consume: { startUpgradable },
-  produce: { econCharterKit },
+  consume: {
+    board,
+    startUpgradable,
+    contractKits: contractKitsP,
+    econCharterKit: econCharterKitP,
+    retiredContractInstances: retiredContractInstancesP,
+  },
+  produce: {
+    econCharterKit: produceEconCharterKit,
+    retiredContractInstances: produceRetiredInstances,
+  },
   installation: {
     consume: { binaryVoteCounter: counterP, econCommitteeCharter: installP },
   },
   instance: {
     produce: { econCommitteeCharter },
+    consume: { econCommitteeCharter: previousInstanceP },
   },
 }) => {
-  const [charterInstall, counterInstall] = await Promise.all([
+  const [
+    charterInstall,
+    counterInstall,
+    previousInstance,
+    contractKits,
+    econCharterKit,
+    retiredInstances,
+  ] = await Promise.all([
     installP,
     counterP,
+    previousInstanceP,
+    contractKitsP,
+    econCharterKitP,
+    provideRetiredInstances(retiredContractInstancesP, produceRetiredInstances),
   ]);
-  const terms = await harden({
-    binaryVoteCounterInstallation: counterInstall,
-  });
+
+  const label = 'econCommitteeCharter';
+  const previousCharterKit = { ...econCharterKit, label };
+
+  const boardID = await E(board).getId(previousCharterKit.instance);
+  const identifier = `${label}-${boardID}`;
+  trace('Saving previous EC Charter Instance', label);
+
+  // save the old charter instance kit so we can manage it later
+  if (retiredInstances.has(identifier)) {
+    // bootstrap tests start having already run this upgrade. Actual upgrades on
+    // mainNet or testnets should start with the promiseSpace post upgrade-17,
+    // which doesn't have this entry in the map.
+    trace(
+      '⚠️ WARNING: collision on storing Charter in retireInstances not' +
+        ' expected during chain upgrade.   It IS normal during bootstrap tests',
+    );
+  } else {
+    retiredInstances.init(identifier, previousCharterKit.instance);
+  }
+  if (contractKits.has(previousInstance)) {
+    // bootstrap tests start having already run this upgrade. Actual upgrades on
+    // mainNet or testnets should start with the promiseSpace post upgrade-17,
+    // which doesn't have this entry in the map.
+    trace(
+      '⚠️ WARNING: collision on storing Charter in contractKits not' +
+        ' expected during chain upgrade.   It IS normal during bootstrap tests',
+    );
+  } else {
+    contractKits.init(previousInstance, previousCharterKit);
+  }
 
   trace('Starting new EC Charter Instance');
 
+  const terms = harden({
+    binaryVoteCounterInstallation: counterInstall,
+  });
   const startResult = await E(startUpgradable)({
-    label: 'econCommitteeCharter',
+    label,
     installation: charterInstall,
     terms,
   });
@@ -325,8 +379,8 @@ const startNewEconCharter = async ({
   econCommitteeCharter.reset();
   econCommitteeCharter.resolve(E.get(startResult).instance);
 
-  econCharterKit.reset();
-  econCharterKit.resolve(startResult);
+  produceEconCharterKit.reset();
+  produceEconCharterKit.resolve(startResult);
   return startResult;
 };
 
@@ -515,6 +569,8 @@ export const getManifestForReplaceAllElectorates = async (
         auctionUpgradeNewGovCreator: true,
         auctionUpgradeNewInstance: true,
         psmKit: true,
+        contractKits: true,
+        econCharterKit: true,
         governedContractKits: true,
         chainStorage: true,
         highPrioritySendersManager: true,
@@ -543,7 +599,10 @@ export const getManifestForReplaceAllElectorates = async (
           economicCommittee: true,
           econCommitteeCharter: true,
         },
-        consume: { economicCommittee: true },
+        consume: {
+          economicCommittee: true,
+          econCommitteeCharter: true,
+        },
       },
     },
   },

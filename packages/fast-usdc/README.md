@@ -88,12 +88,14 @@ stateDiagram-v2
 
 ```mermaid
 stateDiagram-v2
-  Observed --> Advancing
-  Observed --> Forwarding:Minted
+  Observed --> AdvanceSkipped : Risks identified
+  Observed --> Advancing : No risks, can advance
+  Observed --> Forwarding : No risks, Mint deposited before advance
   Forwarding --> Forwarded
   Advancing --> Advanced
   Advanced --> Disbursed
-  AdvanceFailed --> Forwarding
+  AdvanceSkipped --> Forwarding : Mint deposited
+  AdvanceFailed --> Forwarding : Mint deposited
   Advancing --> AdvanceFailed
   Forwarding --> ForwardFailed
 ```

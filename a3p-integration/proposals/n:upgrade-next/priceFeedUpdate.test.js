@@ -112,9 +112,10 @@ const checkNewAuctionVat = async t => {
 };
 
 const countPriceFeedVats = async t => {
-  // price_feed and governor, old and new for two tokens
+  // price_feed and governor, old and new for two tokens,
+  // minus governor v110 (terminated by core-eval)
   const priceFeedDetails = await getDetailsMatchingVats('price_feed');
-  t.is(Object.keys(priceFeedDetails).length, 8);
+  t.is(Object.keys(priceFeedDetails).length, 7);
 
   // Two old SPAs, and two new ones
   const details = await getDetailsMatchingVats('scaledPriceAuthority');

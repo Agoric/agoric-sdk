@@ -24,7 +24,7 @@ import { atob, btoa, decodeBase64, encodeBase64 } from '@endo/base64';
 import type { ChainAddress } from '../src/orchestration-api.js';
 import { makeQueryPacket, makeTxPacket } from '../src/utils/packet.js';
 
-interface EncoderI<T> {
+interface EncoderCommon<T> {
   encode: (message: T) => {
     finish: () => Uint8Array;
   };
@@ -45,7 +45,7 @@ const toPacket = (obj: Record<string, any>): string =>
  * @param message
  */
 export function buildMsgResponseString<T>(
-  Encoder: EncoderI<T>,
+  Encoder: EncoderCommon<T>,
   message: Partial<T>,
 ): string {
   const encodedMsg = Encoder.encode(Encoder.fromPartial(message)).finish();
@@ -90,7 +90,7 @@ export function buildMsgErrorString(
  * @param opts
  */
 export function buildQueryResponseString<T>(
-  Encoder: EncoderI<T>,
+  Encoder: EncoderCommon<T>,
   query: Partial<T>,
   opts: Omit<ResponseQuery, 'key'> = {
     value: new Uint8Array(),
