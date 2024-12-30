@@ -1,5 +1,5 @@
 #! /usr/bin/env node
-import '@endo/init';
+import '@endo/init/debug.js';
 import path from 'path';
 import fs from 'fs';
 import crypto from 'crypto';
