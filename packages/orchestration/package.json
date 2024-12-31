@@ -76,7 +76,7 @@
       "test/**/*.test.*"
     ],
     "nodeArguments": [
-      "--loader=ts-blank-space/register",
+      "--import=ts-blank-space/register",
       "--no-warnings"
     ],
     "require": [
