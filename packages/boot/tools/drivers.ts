@@ -399,7 +399,7 @@ export const makeGovernanceDriver = async (
     proposeApiCall,
     enactLatestProposal,
     getLatestOutcome,
-    async changeParams(instance: Instance, params: Object, path?: object) {
+    async changeParams(instance: Instance, params: object, path?: object) {
       instance || Fail`missing instance`;
       await ensureInvitationsAccepted();
       await proposeParams(instance, params, path);

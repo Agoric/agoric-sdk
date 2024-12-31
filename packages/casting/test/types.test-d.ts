@@ -1,4 +1,3 @@
-/* eslint-disable */
 import { E } from '@endo/far';
 import { expectType } from 'tsd';
 import type { ValueFollower } from '../src/follower-cosmjs.js';
