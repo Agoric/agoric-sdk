@@ -107,7 +107,7 @@ export const makeLiquidationTestKit = async ({
     price: number;
   }) => {
     const managerPath = `vaultFactory.managers.manager${managerIndex}`;
-    const { advanceTimeBy, readLatest, readPublished } = swingsetTestKit;
+    const { advanceTimeBy, readPublished } = swingsetTestKit;
 
     await null;
     if (!priceFeedDrivers[collateralBrandKey]) {
@@ -124,13 +124,23 @@ export const makeLiquidationTestKit = async ({
 
     await priceFeedDrivers[collateralBrandKey].setPrice(price);
 
-    // raise the VaultFactory DebtLimit
+    // set the manager's values to what the tests expect
     await governanceDriver.changeParams(
       agoricNamesRemotes.instance.VaultFactory,
       {
         DebtLimit: {
           brand: agoricNamesRemotes.brand.IST,
           value: DebtLimitValue,
+        },
+        InterestRate: {
+          numerator: {
+            brand: agoricNamesRemotes.brand.IST,
+            value: 1n,
+          },
+          denominator: {
+            brand: agoricNamesRemotes.brand.IST,
+            value: 100n,
+          },
         },
       },
       {
