@@ -56,8 +56,7 @@
     "require": [
       "@endo/init/debug.js"
     ],
-    "timeout": "2m",
-    "workerThreads": false
+    "timeout": "2m"
   },
   "publishConfig": {
     "access": "public"
