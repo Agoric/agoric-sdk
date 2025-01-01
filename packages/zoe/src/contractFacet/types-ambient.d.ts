@@ -19,7 +19,7 @@ type InvitationAmount = Amount<'set', InvitationDetails>;
  * synchronously from within the contract, and usually is referred to
  * in code as zcf.
  */
-type ZCF<CT extends unknown = Record<string, unknown>> = {
+type ZCF<CT = Record<string, unknown>> = {
   /**
    * - atomically reallocate amounts among seats.
    */
@@ -214,8 +214,8 @@ type ZcfSeatKit = {
   zcfSeat: ZCFSeat;
   userSeat: Promise<UserSeat>;
 };
-type HandleOffer<OR extends unknown, OA> = (seat: ZCFSeat, offerArgs: OA) => OR;
-type OfferHandler<OR extends unknown = unknown, OA = never> =
+type HandleOffer<OR, OA> = (seat: ZCFSeat, offerArgs: OA) => OR;
+type OfferHandler<OR = unknown, OA = never> =
   | HandleOffer<OR, OA>
   | {
       handle: HandleOffer<OR, OA>;
@@ -241,12 +241,7 @@ type ContractMeta<
  *
  * CAVEAT: assumes synchronous
  */
-type ContractStartFn<
-  PF extends unknown = any,
-  CF extends unknown = any,
-  CT extends unknown = any,
-  PA extends unknown = any,
-> = (
+type ContractStartFn<PF = any, CF = any, CT = any, PA = any> = (
   zcf: ZCF<CT>,
   privateArgs: PA,
   baggage: import('@agoric/vat-data').Baggage,

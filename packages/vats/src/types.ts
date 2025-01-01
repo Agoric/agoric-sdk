@@ -221,11 +221,18 @@ export type IBCDowncallMethod =
 type IBCMethodEvents = {
   sendPacket: SendPacketDownCall;
   tryOpenExecuted: ChannelOpenAckDowncall;
-  receiveExecuted: {}; // TODO update
+  receiveExecuted: {
+    packet: IBCPacket;
+    ack: Bytes;
+  };
   startChannelOpenInit: ChannelOpenInitDowncall;
-  startChannelCloseInit: {}; // TODO update
+  startChannelCloseInit: {
+    packet: Pick<IBCPacket, 'source_port' | 'source_channel'>;
+  };
   bindPort: { packet: { source_port: IBCPortID } };
-  timeoutExecuted: {}; // TODO update
+  timeoutExecuted: {
+    packet: IBCPacket;
+  };
   // XXX why isn't this in receiver.go?
   initOpenExecuted: ChannelOpenAckDowncall;
 };

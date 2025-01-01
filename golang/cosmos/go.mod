@@ -198,7 +198,7 @@ replace (
 	// use cometbft
 	// Use our fork at least until post-v0.34.14 is released with
 	// https://github.com/tendermint/tendermint/issue/6899 resolved.
-	github.com/tendermint/tendermint => github.com/agoric-labs/cometbft v0.34.30-alpha.agoric.1
+	github.com/tendermint/tendermint => github.com/agoric-labs/cometbft v0.34.30-alpha.agoric.2
 
 // For testing against a local cosmos-sdk, ibc-go, or cometbft
 // github.com/cosmos/cosmos-sdk => ../../../forks/cosmos-sdk
