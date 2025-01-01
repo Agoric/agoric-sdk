@@ -133,9 +133,9 @@ start_follower() {
         --env "RPC_PORT=$FOLLOWER_RPC_PORT" \
         --env "TRUSTED_BLOCK_HASH=$TRUSTED_BLOCK_HASH" \
         --env "TRUSTED_BLOCK_HEIGHT=$TRUSTED_BLOCK_HEIGHT" \
-        --mount "source=$MESSAGE_FILE_PATH,target=$MESSAGE_FILE_PATH,type=bind" \
-        --mount "source=$OUTPUT_DIRECTORY,target=$OUTPUT_DIRECTORY,type=bind" \
-        --mount "source=$NETWORK_CONFIG_FILE_PATH,target=$NETWORK_CONFIG_FILE_PATH/network-config,type=bind"
+        --volume "$MESSAGE_FILE_PATH:$MESSAGE_FILE_PATH" \
+        --volume "$OUTPUT_DIRECTORY:$OUTPUT_DIRECTORY" \
+        --volume "$NETWORK_CONFIG_FILE_PATH:$NETWORK_CONFIG_FILE_PATH/network-config"
 }
 
 write_network_config() {
