@@ -37,7 +37,7 @@ type OmitFirstArg<F> = F extends (x: any, ...args: infer P) => infer R
 
 // The type of a passable local object with methods.
 // An internal helper to avoid having to repeat `O`.
-type PrimaryRemotable<O> = O & RemotableObject & RemotableBrand<{}, O>;
+type PrimaryRemotable<O> = O & RemotableObject & RemotableBrand<object, O>;
 
 export type KindFacet<O> = PrimaryRemotable<{
   [K in keyof O]: OmitFirstArg<O[K]>; // omit the 'context' parameter

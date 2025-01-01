@@ -18,7 +18,7 @@ export type FlowState =
  * but since they still could not be made durable, in this context
  * it'd be pointless.)
  */
-export type Guest<T extends unknown = any> = T;
+export type Guest<T = any> = T;
 export type Host<T extends Passable = Passable> = T;
 
 /**
@@ -109,7 +109,7 @@ export type Outcome =
       problem: any;
     };
 
-export type Ephemera<S extends WeakKey = WeakKey, V extends unknown = any> = {
+export type Ephemera<S extends WeakKey = WeakKey, V = any> = {
   for: (self: S) => V;
   resetFor: (self: S) => void;
 };

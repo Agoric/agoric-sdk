@@ -75,7 +75,7 @@ export type OrchestrationAccount<CI extends ChainInfo> =
       ? CI['chainId'] extends `agoric${string}`
         ? LocalAccountMethods
         : CosmosChainAccountMethods<CI>
-      : {});
+      : object);
 
 /**
  * An object for access the core functions of a remote chain.
@@ -133,7 +133,7 @@ export interface Orchestrator {
     chainName: C,
   ) => Promise<
     Chain<C extends keyof KnownChains ? KnownChains[C] : any> &
-      (C extends 'agoric' ? AgoricChainMethods : {})
+      (C extends 'agoric' ? AgoricChainMethods : object)
   >;
 
   /**

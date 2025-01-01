@@ -6,6 +6,7 @@
       "testing/add-USD-LEMONS.js addUsdLemons",
       "vats/upgrade-provisionPool.js upgradeProvisionPool",
       "vats/upgrade-asset-reserve.js upgradeAssetReserve",
+      "vats/upgrade-psm.js upgradePSM",
       "vats/upgrade-paRegistry.js",
       "vats/upgrade-agoricNames.js agoricNamesCoreEvals/upgradeAgoricNames",
       "testing/add-USD-OLIVES.js agoricNamesCoreEvals/addUsdOlives",

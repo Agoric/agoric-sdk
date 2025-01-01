@@ -182,7 +182,7 @@ export interface TimerServiceCommon {
 // XXX copied from Remotable helper return type
 export type TimerService = TimerServiceCommon &
   RemotableObject<'TimerService'> &
-  RemotableBrand<{}, TimerServiceCommon>;
+  RemotableBrand<object, TimerServiceCommon>;
 
 /**
  * Read-only access to a TimeService's current time. This allows reading the

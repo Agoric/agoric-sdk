@@ -1,4 +1,3 @@
-/* eslint-disable @jessie.js/safe-await-separator */
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import type { VowTools } from '@agoric/vow';

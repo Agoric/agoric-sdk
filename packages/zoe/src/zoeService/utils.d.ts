@@ -30,9 +30,9 @@ export type InstallationStart<I> =
 
 export type ContractStartFunction = (
   zcf?: ZCF,
-  privateArgs?: {},
+  privateArgs?: object,
   baggage?: Baggage,
-) => ERef<{ creatorFacet?: {}; publicFacet?: {} }>;
+) => ERef<{ creatorFacet?: object; publicFacet?: object }>;
 
 export type AdminFacet<SF extends ContractStartFunction> = FarRef<{
   // Completion, which is currently any
@@ -76,8 +76,8 @@ export type StartedInstanceKit<SF extends ContractStartFunction> = {
   instance: Instance<SF>;
   adminFacet: AdminFacet<SF>;
   // theses are empty by default. the return type will override
-  creatorFacet: {};
-  publicFacet: {};
+  creatorFacet: object;
+  publicFacet: object;
 } & (SF extends ContractStartFunction
   ? // override if the start function specfies the types
     Awaited<ReturnType<SF>>
@@ -120,7 +120,7 @@ export type GetPublicFacet = <SF>(
 
 export type GetTerms = <SF>(instance: Instance<SF>) => Promise<
   // only type if 'terms' info is available
-  StartParams<SF>['terms'] extends {}
+  StartParams<SF>['terms'] extends object
     ? StartParams<SF>['terms']
     : // XXX returning `any` in this case
       any

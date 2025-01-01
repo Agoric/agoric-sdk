@@ -158,7 +158,7 @@ export type VowTools = {
    * coerces the result of a function to a Vow. Helpful for scenarios like a
    * synchronously thrown error.
    */
-  asVow: <T extends unknown>(
+  asVow: <T>(
     fn: (...args: any[]) => Vow<Awaited<T>> | Awaited<T> | PromiseVow<T>,
   ) => Vow<Awaited<T>>;
   makeVowKit: <T>() => VowKit<T>;
