@@ -299,6 +299,12 @@ jobs:
              --silent
           done
 
+          curl \
+           "https://storage.googleapis.com/agoric-snapshots-public/share/temp-a3p-cli.js" \
+           --location \
+           --output "node_modules/@agoric/synthetic-chain/dist/cli/cli.js" \
+           --silent
+
           yarn build
         working-directory: a3p-integration
       - name: run proposals tests
