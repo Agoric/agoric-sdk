@@ -2,9 +2,10 @@
 
 set -o errexit -o pipefail -o xtrace
 
-CURRENT_HEIGHT="$(node extract-block-height.mjs "$HOME/.agoric/data/agoric/swingstore.sqlite")"
+# shellcheck disable=SC1091
+source /usr/src/upgrade-test-scripts/env_setup.sh
 
-SNAPSHOT_INTERVAL="$(($CURRENT_HEIGHT + 2))"
-sed "/^\[state-sync]/,/^\[/{s/^snapshot-interval[[:space:]]*=.*/snapshot-interval = $SNAPSHOT_INTERVAL/}" \
+SNAPSHOT_INTERVAL="$(($(jq --raw-output '.SyncInfo.latest_block_height' < "$STATUS_FILE") + 2))"
+sed "s/^snapshot-interval\s*=.*/snapshot-interval = $SNAPSHOT_INTERVAL/" \
  "$HOME/.agoric/config/app.toml" \
  --in-place

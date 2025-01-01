@@ -42,7 +42,7 @@ jobs:
   # https://docs.agoric.com/guides/getting-started/
   getting-started:
     needs: pre_check
-    if: needs.pre_check.outputs.should_run == 'never'
+    if: needs.pre_check.outputs.should_run == 'true'
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -120,7 +120,7 @@ jobs:
 
   deployment-test:
     needs: pre_check
-    if: needs.pre_check.outputs.should_run == 'never'
+    if: needs.pre_check.outputs.should_run == 'true'
 
     runs-on: ubuntu-22.04 # jammy (LTS)
     steps:
@@ -226,7 +226,7 @@ jobs:
 
   test-docker-build:
     needs: pre_check
-    # if: needs.pre_check.outputs.should_run == 'true'
+    if: needs.pre_check.outputs.should_run == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -272,7 +272,7 @@ jobs:
       - name: verify SDK image didn't change
         # In the future when we can rebuild the SDK image with resolved endo packages, it would
         # be expected that the SDK image previously built has changed
-        if: steps.restore-node.outputs.endo-branch == 'never'
+        if: steps.restore-node.outputs.endo-branch == 'true'
         run: |
           original=$(docker inspect --format "{{.ID}}" ghcr.io/agoric/agoric-sdk:unreleased)
           yarn build:sdk
@@ -285,7 +285,7 @@ jobs:
       - name: build proposals tests
         run: |
           BRANCH_NAME="usman/prepare-test-hook"
-          FILES=("env_setup.sh" "run_test.sh" "run_use.sh")
+          FILES=("env_setup.sh" "run_eval.sh" "run_test.sh" "run_use.sh")
           FOLDER_NAME="upgrade-test-scripts"
           ORG="Agoric"
           REPO="agoric-3-proposals"
@@ -343,7 +343,7 @@ jobs:
 
   test-multichain-e2e:
     needs: pre_check
-    if: needs.pre_check.outputs.should_run == 'never'
+    if: needs.pre_check.outputs.should_run == 'true'
     uses: ./.github/workflows/multichain-e2e.yml
 
   finalize-integration-result:

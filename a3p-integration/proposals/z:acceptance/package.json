@@ -26,8 +26,7 @@
     "@endo/marshal": "^1.6.1",
     "agoric": "dev",
     "ava": "^6.1.2",
-    "execa": "9.1.0",
-    "sqlite3": "5.1.7"
+    "execa": "9.1.0"
   },
   "$comment": "UNTIL https://github.com/Agoric/agoric-sdk/issues/10259",
   "resolutions": {
