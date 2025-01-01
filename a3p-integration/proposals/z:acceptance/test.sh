@@ -1,5 +1,5 @@
 #!/bin/bash
-set -ueo pipefail
+set -o errexit -o nounset -o pipefail
 
 # Place here any test that should be executed using the executed proposal.
 # The effects of this step are not persisted in further proposal layers.
@@ -32,6 +32,11 @@ yarn ava vaults.test.js
 
 echo ACCEPTANCE TESTING governance
 yarn ava governance.test.js
+
+if ! test -z "$MESSAGE_FILE_PATH"; then
+    echo -n "stop at $(agd status | jq --raw-output '.SyncInfo.latest_block_height')" >>"$MESSAGE_FILE_PATH"
+    node ./wait-for-follower.mjs
+fi
 
 echo ACCEPTANCE TESTING state sync
 ./state-sync-snapshots-test.sh
