@@ -200,6 +200,74 @@ test.serial('writes account addresses to vstorage', async t => {
   await documentStorageSchema(t, storage, doc);
 });
 
+test.serial('LP deposits', async t => {
+  const { walletFactoryDriver: wd, agoricNamesRemotes } = t.context;
+  const lp = await wd.provideSmartWallet(
+    'agoric19uscwxdac6cf6z7d5e26e0jm0lgwstc47cpll8',
+  );
+
+  // @ts-expect-error it doesnt recognize USDC as a Brand type
+  const usdc = agoricNamesRemotes.vbankAsset.USDC.brand as Brand<'nat'>;
+  // @ts-expect-error it doesnt recognize FastLP as a Brand type
+  const fastLP = agoricNamesRemotes.vbankAsset.FastLP.brand as Brand<'nat'>;
+
+  // Send a bad proposal first to make sure it's recoverable.
+  await lp.sendOffer({
+    id: 'deposit-lp-0',
+    invitationSpec: {
+      source: 'agoricContract',
+      instancePath: ['fastUsdc'],
+      callPipe: [['makeDepositInvitation', []]],
+    },
+    proposal: {
+      give: {
+        USDC: { brand: usdc, value: 98_000_000n },
+      },
+      want: {
+        BADPROPOSAL: { brand: fastLP, value: 567_000_000n },
+      },
+    },
+  });
+
+  await lp.sendOffer({
+    id: 'deposit-lp-1',
+    invitationSpec: {
+      source: 'agoricContract',
+      instancePath: ['fastUsdc'],
+      callPipe: [['makeDepositInvitation', []]],
+    },
+    proposal: {
+      give: {
+        USDC: { brand: usdc, value: 150_000_000n },
+      },
+      want: {
+        PoolShare: { brand: fastLP, value: 150_000_000n },
+      },
+    },
+  });
+  await eventLoopIteration();
+
+  const { getOutboundMessages } = t.context.bridgeUtils;
+  const lpBankDeposit = getOutboundMessages(BridgeId.BANK).find(
+    obj =>
+      obj.type === 'VBANK_GIVE' &&
+      obj.denom === 'ufastlp' &&
+      obj.recipient === lp.getAddress(),
+  );
+  t.log('LP vbank deposits', lpBankDeposit);
+  t.true(
+    BigInt(lpBankDeposit.amount) === 150_000_000n,
+    'vbank GIVEs shares to LP',
+  );
+
+  const { purses } = lp.getCurrentWalletRecord();
+  // XXX #10491 should not need to resort to string match on brand
+  t.falsy(
+    purses.find(p => `${p.brand}`.match(/FastLP/)),
+    'FastLP balance not in wallet record',
+  );
+});
+
 test.serial('makes usdc advance', async t => {
   const {
     walletFactoryDriver: wd,
@@ -224,42 +292,6 @@ test.serial('makes usdc advance', async t => {
         proposal: {},
       }),
     ),
-  );
-
-  const lp = oracles[0]; // somewhat arbitrary
-
-  // @ts-expect-error it doesnt recognize usdc as a Brand type
-  const usdc = agoricNamesRemotes.vbankAsset.USDC.brand as Brand<'nat'>;
-  await lp.sendOffer({
-    id: 'deposit-lp-0',
-    invitationSpec: {
-      source: 'agoricContract',
-      instancePath: ['fastUsdc'],
-      callPipe: [['makeDepositInvitation', []]],
-    },
-    proposal: {
-      give: {
-        USDC: { brand: usdc, value: 150_000_000n },
-      },
-    },
-  });
-  await eventLoopIteration();
-
-  const { getOutboundMessages } = t.context.bridgeUtils;
-  const lpBankDeposit = getOutboundMessages(BridgeId.BANK).find(
-    obj =>
-      obj.type === 'VBANK_GIVE' &&
-      obj.denom === 'ufastlp' &&
-      obj.recipient === lp.getAddress(),
-  );
-  t.log('LP vbank deposit', lpBankDeposit);
-  t.true(BigInt(lpBankDeposit.amount) > 1_000_000n, 'vbank GIVEs shares to LP');
-
-  const { purses } = lp.getCurrentWalletRecord();
-  // XXX #10491 should not need to resort to string match on brand
-  t.falsy(
-    purses.find(p => `${p.brand}`.match(/FastLP/)),
-    'FastLP balance not in wallet record',
   );
 
   const EUD = 'dydx1anything';
@@ -359,6 +391,69 @@ test.serial('skips usdc advance when risks identified', async t => {
     showValue: defaultSerializer.parse,
   };
   await documentStorageSchema(t, storage, doc);
+});
+
+test.serial('LP withdraws', async t => {
+  const { walletFactoryDriver: wd, agoricNamesRemotes } = t.context;
+  const lp = await wd.provideSmartWallet(
+    'agoric19uscwxdac6cf6z7d5e26e0jm0lgwstc47cpll8',
+  );
+
+  // @ts-expect-error it doesnt recognize USDC as a Brand type
+  const usdc = agoricNamesRemotes.vbankAsset.USDC.brand as Brand<'nat'>;
+  // @ts-expect-error it doesnt recognize FastLP as a Brand type
+  const fastLP = agoricNamesRemotes.vbankAsset.FastLP.brand as Brand<'nat'>;
+
+  // Send a bad proposal first to make sure it's recoverable.
+  await lp.sendOffer({
+    id: 'withdraw-lp-bad-shape',
+    invitationSpec: {
+      source: 'agoricContract',
+      instancePath: ['fastUsdc'],
+      callPipe: [['makeWithdrawInvitation', []]],
+    },
+    proposal: {
+      give: {
+        PoolShare: { brand: fastLP, value: 777_000n },
+      },
+      want: {
+        BADPROPOSALSHAPE: { brand: usdc, value: 777_000n },
+      },
+    },
+  });
+
+  await lp.sendOffer({
+    id: 'withdraw-lp-1',
+    invitationSpec: {
+      source: 'agoricContract',
+      instancePath: ['fastUsdc'],
+      callPipe: [['makeWithdrawInvitation', []]],
+    },
+    proposal: {
+      give: {
+        PoolShare: { brand: fastLP, value: 369_000n },
+      },
+      want: {
+        USDC: { brand: usdc, value: 369_000n },
+      },
+    },
+  });
+  await eventLoopIteration();
+
+  const { denom: usdcDenom } = agoricNamesRemotes.vbankAsset.USDC;
+  const { getOutboundMessages } = t.context.bridgeUtils;
+  const lpBankDeposits = getOutboundMessages(BridgeId.BANK).filter(
+    obj =>
+      obj.type === 'VBANK_GIVE' &&
+      obj.denom === usdcDenom &&
+      obj.recipient === lp.getAddress(),
+  );
+  t.log('LP vbank deposits', lpBankDeposits);
+  // Check index 2. Indexes 0 and 1 would be from the deposit offers in prior testcase.
+  t.true(
+    BigInt(lpBankDeposits[2].amount) >= 369_000n,
+    'vbank GIVEs USDC back to LP',
+  );
 });
 
 test.serial('restart contract', async t => {

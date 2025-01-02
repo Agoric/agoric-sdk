@@ -14,6 +14,7 @@ import { AmountMath } from '@agoric/ertp';
 import {
   assertParsableNumber,
   ceilDivideBy,
+  floorDivideBy,
   multiplyBy,
   parseRatio,
 } from '@agoric/zoe/src/contractSupport/ratio.js';
@@ -81,17 +82,31 @@ export const addLPCommands = (
     .action(async opts => {
       swkP ||= loadSwk();
       const swk = await swkP;
+
       /** @type {Brand<'nat'>} */
       // @ts-expect-error it doesnt recognize usdc as a Brand type
       const usdc = swk.agoricNames.brand.USDC;
       assert(usdc, 'USDC brand not in agoricNames');
 
+      /** @type {Brand<'nat'>} */
+      // @ts-expect-error it doesnt recognize FastLP as a Brand type
+      const poolShare = swk.agoricNames.brand.FastLP;
+      assert(poolShare, 'FastLP brand not in agoricNames');
+
       const usdcAmount = parseUSDCAmount(opts.amount, usdc);
+
+      /** @type {import('../types.js').PoolMetrics} */
+      // @ts-expect-error it treats this as "unknown"
+      const metrics = await swk.readPublished('fastUsdc.poolMetrics');
+      const fastLPAmount = floorDivideBy(usdcAmount, metrics.shareWorth);
 
       /** @type {USDCProposalShapes['deposit']} */
       const proposal = {
         give: {
           USDC: usdcAmount,
+        },
+        want: {
+          PoolShare: fastLPAmount,
         },
       };
 
@@ -125,7 +140,6 @@ export const addLPCommands = (
     .requiredOption('--amount <number>', 'USDC amount', parseDecimal)
     .option('--offerId <string>', 'Offer id', String, `lpWithdraw-${now()}`)
     .action(async opts => {
-      swkP ||= loadSwk();
       swkP ||= loadSwk();
       const swk = await swkP;
 
