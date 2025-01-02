@@ -9,6 +9,7 @@ const FILE_PATH = process.env.MESSAGE_FILE_PATH;
  * @param {string} filePath
  */
 const watchSharedFile = async filePath => {
+  console.log('Starting waiting for follower signal, current file contents: ', (await readFile(filePath, FILE_ENCODING));
   for await (const { eventType } of watch(filePath)) {
     if (eventType === 'change') {
       const fileContent = (await readFile(filePath, FILE_ENCODING)).trim();
