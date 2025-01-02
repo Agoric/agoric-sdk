@@ -55,7 +55,8 @@ set_node_id() {
     VALIDATOR_NODE_ID="$(
         run_command_inside_container \
             "agd tendermint show-node-id" \
-            "$FOLLOWER_CONTAINER_NAME"
+            "$FOLLOWER_CONTAINER_NAME" \
+            --rm
     )"
 }
 
