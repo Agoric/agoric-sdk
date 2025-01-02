@@ -196,6 +196,8 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
         target: lastMsgTransfer.sender,
         sourceChannel: lastMsgTransfer.sourceChannel,
         sequence: ibcSequenceNonce,
+        denom: lastMsgTransfer.token.denom,
+        amount: BigInt(lastMsgTransfer.token.amount),
       }),
     );
     // let the bridge handler finish
