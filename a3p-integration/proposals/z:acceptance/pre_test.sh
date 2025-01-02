@@ -66,7 +66,9 @@ set_trusted_block_data() {
 
     entrypoint="
             #! /bin/bash
-            source /usr/src/upgrade-test-scripts/env_setup.sh
+            set -o errexit -o errtrace -o pipefail
+
+            source /usr/src/upgrade-test-scripts/env_setup.sh > /dev/null 2>&1
             cat \$STATUS_FILE
         "
     last_block_info="$(
