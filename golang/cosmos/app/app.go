@@ -221,6 +221,11 @@ var (
 // GaiaApp extends an ABCI application, but with most of its parameters exported.
 // They are exported for convenience in creating helper functions, as object
 // capabilities aren't needed for testing.
+// GaiaApp implements the core functionality of the Agoric chain, including:
+// - State management through various keepers
+// - IBC (Inter-Blockchain Communication) functionality
+// - SwingSet VM integration
+// - Virtual bank and storage operations
 type GaiaApp struct { // nolint: golint
 	*baseapp.BaseApp
 	resolvedConfig    servertypes.AppOptions
@@ -969,12 +974,13 @@ type cosmosInitAction struct {
 	UpgradeDetails  *upgradeDetails          `json:"upgradeDetails,omitempty"`
 	// CAVEAT: Every property ending in "Port" is saved in chain-main.js/portNums
 	// with a key consisting of this name with the "Port" stripped.
-	StoragePort     int `json:"storagePort"`
-	SwingsetPort    int `json:"swingsetPort"`
-	VbankPort       int `json:"vbankPort"`
-	VibcPort        int `json:"vibcPort"`
-	VlocalchainPort int `json:"vlocalchainPort"`
-	VtransferPort   int `json:"vtransferPort"`
+	// Port assignments for different components:
+	StoragePort     int `json:"storagePort"`     // Port for virtual storage operations
+	SwingsetPort    int `json:"swingsetPort"`    // Port for SwingSet VM communication
+	VbankPort       int `json:"vbankPort"`       // Port for virtual bank operations
+	VibcPort        int `json:"vibcPort"`        // Port for IBC virtual operations
+	VlocalchainPort int `json:"vlocalchainPort"` // Port for local chain operations
+	VtransferPort   int `json:"vtransferPort"`   // Port for virtual transfer operations
 }
 
 // Name returns the name of the App
