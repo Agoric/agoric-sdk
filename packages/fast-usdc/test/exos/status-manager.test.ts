@@ -64,6 +64,34 @@ test('ADVANCED transactions are published to vstorage', async t => {
   ]);
 });
 
+test('skipAdvance creates new entry with ADVANCE_SKIPPED status', t => {
+  const { statusManager } = t.context;
+
+  const evidence = MockCctpTxEvidences.AGORIC_PLUS_OSMO();
+  statusManager.skipAdvance(evidence, ['RISK1']);
+
+  const entries = statusManager.lookupPending(
+    evidence.tx.forwardingAddress,
+    evidence.tx.amount,
+  );
+
+  t.is(entries[0]?.status, PendingTxStatus.AdvanceSkipped);
+});
+
+test('ADVANCE_SKIPPED transactions are published to vstorage', async t => {
+  const { statusManager } = t.context;
+
+  const evidence = MockCctpTxEvidences.AGORIC_PLUS_OSMO();
+  statusManager.skipAdvance(evidence, ['RISK1']);
+  await eventLoopIteration();
+
+  const { storage } = t.context;
+  t.deepEqual(storage.getDeserialized(`fun.txns.${evidence.txHash}`), [
+    { evidence, status: 'OBSERVED' },
+    { status: 'ADVANCE_SKIPPED', risksIdentified: ['RISK1'] },
+  ]);
+});
+
 test('observe creates new entry with OBSERVED status', t => {
   const { statusManager } = t.context;
   const evidence = MockCctpTxEvidences.AGORIC_PLUS_OSMO();

@@ -19,6 +19,7 @@ import {
 } from '@agoric/synthetic-chain';
 import {
   getPriceFeedRoundId,
+  tryISTBalances,
   verifyPushedPrice,
 } from './test-lib/price-feed.js';
 
@@ -79,16 +80,19 @@ const createNewBid = async t => {
 };
 
 const openMarginalVault = async t => {
-  let user1IST = await getISTBalance(USER1ADDR);
+  const istBalanceBeforeVaultOpen = await getISTBalance(USER1ADDR, 'uist', 1);
   await bankSend(USER1ADDR, `20000000${ATOM_DENOM}`);
   const currentVaults = await agops.vaults('list', '--from', USER1ADDR);
 
   t.log('opening a vault');
   // @ts-expect-error bad typedef
   await openVault(USER1ADDR, 5, 10);
-  user1IST += 5;
-  const istBalanceAfterVaultOpen = await getISTBalance(USER1ADDR);
-  t.is(istBalanceAfterVaultOpen, user1IST);
+  const istBalanceAfterVaultOpen = await getISTBalance(USER1ADDR, 'uist', 1);
+  await tryISTBalances(
+    t,
+    istBalanceAfterVaultOpen,
+    istBalanceBeforeVaultOpen + 5_000_000, // in uist
+  );
 
   const activeVaultsAfter = await agops.vaults('list', '--from', USER1ADDR);
   t.log(currentVaults, activeVaultsAfter);
@@ -112,9 +116,10 @@ const checkNewAuctionVat = async t => {
 };
 
 const countPriceFeedVats = async t => {
-  // price_feed and governor, old and new for two tokens
+  // price_feed and governor, old and new for two tokens,
+  // minus governor v110 (terminated by core-eval)
   const priceFeedDetails = await getDetailsMatchingVats('price_feed');
-  t.is(Object.keys(priceFeedDetails).length, 8);
+  t.is(Object.keys(priceFeedDetails).length, 7);
 
   // Two old SPAs, and two new ones
   const details = await getDetailsMatchingVats('scaledPriceAuthority');

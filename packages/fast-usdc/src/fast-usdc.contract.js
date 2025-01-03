@@ -38,7 +38,7 @@ const ADDRESSES_BAGGAGE_KEY = 'addresses';
  * @import {Marshaller, StorageNode} from '@agoric/internal/src/lib-chainStorage.js'
  * @import {Zone} from '@agoric/zone';
  * @import {OperatorKit} from './exos/operator-kit.js';
- * @import {CctpTxEvidence, FeeConfig} from './types.js';
+ * @import {CctpTxEvidence, FeeConfig, RiskAssessment} from './types.js';
  */
 
 /**
@@ -179,16 +179,12 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
     },
     async publishAddresses() {
       !baggage.has(ADDRESSES_BAGGAGE_KEY) || Fail`Addresses already published`;
-      const [poolAccountAddress, settlementAccountAddress] =
-        await vowTools.when(
-          vowTools.all([
-            E(poolAccount).getAddress(),
-            E(settlementAccount).getAddress(),
-          ]),
-        );
+      const [poolAccountAddress] = await vowTools.when(
+        vowTools.all([E(poolAccount).getAddress()]),
+      );
       const addresses = harden({
         poolAccount: poolAccountAddress.value,
-        settlementAccount: settlementAccountAddress.value,
+        settlementAccount: settlementAddress.value,
       });
       baggage.init(ADDRESSES_BAGGAGE_KEY, addresses);
       await publishAddresses(storageNode, addresses);
@@ -206,9 +202,10 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
      * capability is available in the smart-wallet bridge during UI testing.
      *
      * @param {CctpTxEvidence} evidence
+     * @param {RiskAssessment} [risk]
      */
-    makeTestPushInvitation(evidence) {
-      void advancer.handleTransactionEvent(evidence);
+    makeTestPushInvitation(evidence, risk = {}) {
+      void advancer.handleTransactionEvent({ evidence, risk });
       return makeTestInvitation();
     },
     makeDepositInvitation() {
@@ -284,6 +281,8 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
   );
   trace('settlementAccount', settlementAccount);
   trace('poolAccount', poolAccount);
+  const settlementAddress = await E(settlementAccount).getAddress();
+  trace('settlementAddress', settlementAddress);
 
   const [_agoric, _noble, agToNoble] = await vowTools.when(
     chainHub.getChainsAndConnection('agoric', 'noble'),
@@ -300,13 +299,14 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
       borrowerFacet: poolKit.borrower,
       notifyFacet: settlerKit.notify,
       poolAccount,
+      settlementAddress,
     }),
   );
   // Connect evidence stream to advancer
   void observeIteration(subscribeEach(feedKit.public.getEvidenceSubscriber()), {
-    updateState(evidence) {
+    updateState(evidenceWithRisk) {
       try {
-        void advancer.handleTransactionEvent(evidence);
+        void advancer.handleTransactionEvent(evidenceWithRisk);
       } catch (err) {
         trace('🚨 Error handling transaction event', err);
       }

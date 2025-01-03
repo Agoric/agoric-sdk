@@ -55,6 +55,7 @@ export const makeWalletFactoryDriver = async (
     isNew: boolean,
   ) => ({
     isNew,
+    getAddress: () => walletAddress,
 
     executeOffer(offer: OfferSpec): Promise<void> {
       const offerCapData = marshaller.toCapData(
@@ -398,7 +399,7 @@ export const makeGovernanceDriver = async (
     proposeApiCall,
     enactLatestProposal,
     getLatestOutcome,
-    async changeParams(instance: Instance, params: Object, path?: object) {
+    async changeParams(instance: Instance, params: object, path?: object) {
       instance || Fail`missing instance`;
       await ensureInvitationsAccepted();
       await proposeParams(instance, params, path);

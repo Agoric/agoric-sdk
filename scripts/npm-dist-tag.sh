@@ -85,7 +85,7 @@ CMD="${1-"--help"}"
 # Read current-directory package.json fields "name"/"version"/"private" into shell variables
 # by evaluating single-quoted assignments like `<name>='...'`.
 eval "$(jq < package.json -r --arg Q "'" '
-  pick(.name, .version, .private)
+  { name: .name, version: .version, private: .private }
   | to_entries
   | .[]
   # Replace a null/false value with empty string.

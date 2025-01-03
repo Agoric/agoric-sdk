@@ -6,6 +6,9 @@
     "upgradeInfo": {
       "coreProposals": []
     },
+    "sdk-generate": [
+      "testing/test-upgraded-board.js testUpgradedBoard"
+    ],
     "type": "Software Upgrade Proposal"
   },
   "type": "module",

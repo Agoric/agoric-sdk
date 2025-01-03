@@ -1,6 +1,6 @@
 /**
  * @import {GuestInterface} from '@agoric/async-flow';
- * @import {Orchestrator, OrchestrationFlow, AmountArg, CosmosValidatorAddress, ChainAddress, LocalAccountMethods, OrchestrationAccountI, ChainHub} from '../types.js'
+ * @import {Orchestrator, OrchestrationFlow, AmountArg, CosmosValidatorAddress, ChainAddress, LocalAccountMethods, OrchestrationAccountCommon, ChainHub} from '../types.js'
  * @import {ContinuingOfferResult, InvitationMakers} from '@agoric/smart-wallet/src/types.js';
  * @import {LocalOrchestrationAccountKit} from '../exos/local-orchestration-account.js';
  * @import {MakeCombineInvitationMakers} from '../exos/combine-invitation-makers.js';

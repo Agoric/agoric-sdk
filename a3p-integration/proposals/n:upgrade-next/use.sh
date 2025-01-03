@@ -3,8 +3,6 @@
 # Exit when any command fails
 set -uxeo pipefail
 
-node ./addGov4
-
 # Econ Committee accept invitations for Committee and Charter
 ./acceptInvites.js
 

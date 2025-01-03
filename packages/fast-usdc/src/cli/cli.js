@@ -91,7 +91,12 @@ export const initProgram = (
         /** @type {string} */ amount,
         /** @type {string} */ destination,
       ) => {
+        const start = now();
         await transferHelpers.transfer(makeConfigFile(), amount, destination);
+        const duration = now() - start;
+        stdout.write(
+          `Transfer finished in ${(duration / 1000).toFixed(1)} seconds`,
+        );
       },
     );
 

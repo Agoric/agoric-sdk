@@ -13,7 +13,7 @@ const { values } = Object;
  * @import {GuestInterface} from '@agoric/async-flow';
  * @import {AtomicProvider} from '@agoric/store/src/stores/store-utils.js';
  * @import {LocalOrchestrationAccountKit} from '../../src/exos/local-orchestration-account.js';
- * @import {Orchestrator, LocalAccountMethods, OrchestrationAccountI, OrchestrationFlow, ChainAddress} from '@agoric/orchestration';
+ * @import {Orchestrator, LocalAccountMethods, OrchestrationAccountCommon, OrchestrationFlow, ChainAddress} from '@agoric/orchestration';
  * @import {ZoeTools} from '../../src/utils/zoe-tools.js';
  */
 

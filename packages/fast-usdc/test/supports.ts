@@ -20,6 +20,7 @@ import { prepareCosmosInterchainService } from '@agoric/orchestration/src/exos/c
 import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
 import { setupFakeNetwork } from '@agoric/orchestration/test/network-fakes.js';
 import { buildVTransferEvent } from '@agoric/orchestration/tools/ibc-mocks.js';
+import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
 import { reincarnate } from '@agoric/swingset-liveslots/tools/setup-vat-data.js';
 import { makeNameHubKit } from '@agoric/vats';
 import { prepareBridgeTargetModule } from '@agoric/vats/src/bridge-target.js';
@@ -139,8 +140,10 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
   await E(transferBridge).initHandler(bridgeTargetKit.bridgeHandler);
 
   const localBridgeMessages = [] as any[];
-  const localchainBridge = makeFakeLocalchainBridge(rootZone, obj =>
-    localBridgeMessages.push(obj),
+  const localchainBridge = makeFakeLocalchainBridge(
+    rootZone,
+    obj => localBridgeMessages.push(obj),
+    makeTestAddress,
   );
   const localchain = prepareLocalChainTools(
     rootZone.subZone('localchain'),

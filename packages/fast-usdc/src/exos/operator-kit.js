@@ -1,18 +1,18 @@
 import { makeTracer } from '@agoric/internal';
 import { Fail } from '@endo/errors';
 import { M } from '@endo/patterns';
-import { CctpTxEvidenceShape } from '../type-guards.js';
+import { CctpTxEvidenceShape, RiskAssessmentShape } from '../type-guards.js';
 
 const trace = makeTracer('TxOperator');
 
 /**
  * @import {Zone} from '@agoric/zone';
- * @import {CctpTxEvidence} from '../types.js';
+ * @import {CctpTxEvidence, RiskAssessment} from '../types.js';
  */
 
 /**
  * @typedef {object} OperatorPowers
- * @property {(evidence: CctpTxEvidence, operatorKit: OperatorKit) => void} submitEvidence
+ * @property {(evidence: CctpTxEvidence, riskAssessment: RiskAssessment, operatorId: string) => void} attest
  */
 
 /**
@@ -31,11 +31,15 @@ const OperatorKitI = {
   }),
 
   invitationMakers: M.interface('InvitationMakers', {
-    SubmitEvidence: M.call(CctpTxEvidenceShape).returns(M.promise()),
+    SubmitEvidence: M.call(CctpTxEvidenceShape)
+      .optional(RiskAssessmentShape)
+      .returns(M.promise()),
   }),
 
   operator: M.interface('Operator', {
-    submitEvidence: M.call(CctpTxEvidenceShape).returns(M.promise()),
+    submitEvidence: M.call(CctpTxEvidenceShape)
+      .optional(RiskAssessmentShape)
+      .returns(),
     getStatus: M.call().returns(M.record()),
   }),
 };
@@ -81,13 +85,14 @@ export const prepareOperatorKit = (zone, staticPowers) =>
          * fluxAggregator contract used for price oracles.
          *
          * @param {CctpTxEvidence} evidence
+         * @param {RiskAssessment} [riskAssessment]
          * @returns {Promise<Invitation>}
          */
-        async SubmitEvidence(evidence) {
+        async SubmitEvidence(evidence, riskAssessment) {
           const { operator } = this.facets;
           // TODO(bootstrap integration): cause this call to throw and confirm that it
           // shows up in the the smart-wallet UpdateRecord `error` property
-          await operator.submitEvidence(evidence);
+          operator.submitEvidence(evidence, riskAssessment);
           return staticPowers.makeInertInvitation(
             'evidence was pushed in the invitation maker call',
           );
@@ -98,12 +103,13 @@ export const prepareOperatorKit = (zone, staticPowers) =>
          * submit evidence from this operator
          *
          * @param {CctpTxEvidence} evidence
+         * @param {RiskAssessment} [riskAssessment]
+         * @returns {void}
          */
-        async submitEvidence(evidence) {
+        submitEvidence(evidence, riskAssessment = {}) {
           const { state } = this;
           !state.disabled || Fail`submitEvidence for disabled operator`;
-          const result = state.powers.submitEvidence(evidence, this.facets);
-          return result;
+          state.powers.attest(evidence, riskAssessment, state.operatorId);
         },
         /** @returns {OperatorStatus} */
         getStatus() {
