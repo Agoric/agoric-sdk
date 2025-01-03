@@ -1,6 +1,6 @@
 import { intervalAsyncGenerator } from './clock-timer.js';
 
-const { freeze } = Object;
+const { assign, freeze } = Object;
 
 /**
  * @import {StargateClient} from '@cosmjs/stargate';
@@ -79,19 +79,21 @@ const recentBlockRate = async (api, delta = 2) => {
 export const iterateBlocks = ({ api, delta = 2, ...io }) => {
   /** @type {Awaited<ReturnType<intervalAsyncGenerator>>} */
   let ticks;
-  async function* iterate() {
-    const { period } = await recentBlockRate(api, delta);
-    const nyquist = period / 2;
-    let prev;
-    ticks = intervalAsyncGenerator(nyquist, io);
-    for await (const tick of ticks) {
-      const { block } = await queryBlock(api);
-      const current = Number(block.header.height);
-      if (current === prev) continue;
-      prev = current;
-      const { time } = block.header;
-      yield freeze({ tick, height: current, time });
-    }
-  }
-  return freeze({ ...iterate(), cancel: () => ticks.cancel() });
+  return freeze({
+    cancel: () => ticks?.cancel(),
+    async *[Symbol.asyncIterator]() {
+      const { period } = await recentBlockRate(api, delta);
+      const nyquist = period / 2;
+      let prev;
+      ticks = intervalAsyncGenerator(nyquist, io);
+      for await (const tick of ticks) {
+        const { block } = await queryBlock(api);
+        const current = Number(block.header.height);
+        if (current === prev) continue;
+        prev = current;
+        const { time } = block.header;
+        yield freeze({ tick, height: current, time });
+      }
+    },
+  });
 };
