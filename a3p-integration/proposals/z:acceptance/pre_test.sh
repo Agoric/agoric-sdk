@@ -11,7 +11,7 @@ FOLLOWER_P2P_PORT="36656"
 FOLLOWER_PPROF_PORT="7060"
 FOLLOWER_RPC_PORT="36657"
 LOADGEN_REPOSITORY_NAME="testnet-load-generator"
-MESSAGE_FILE_PATH="/tmp/message-file-path.tmp"
+MESSAGE_FILE_NAME='message-file-path.tmp'
 ORGANIZATION_NAME="agoric"
 TIMESTAMP="$(date '+%s')"
 VALIDATOR_NODE_ID=""
@@ -19,6 +19,8 @@ VALIDATOR_P2P_PORT="26656"
 VALIDATOR_RPC_PORT="26657"
 
 CONTAINER_IMAGE_NAME="ghcr.io/$ORGANIZATION_NAME/agoric-3-proposals"
+CONTAINER_MESSAGE_FILE_PATH="/root/$MESSAGE_FILE_NAME"
+HOST_MESSAGE_FILE_PATH="$HOME/$MESSAGE_FILE_NAME"
 LOADGEN_REPOSITORY_LINK="https://github.com/$ORGANIZATION_NAME/$LOADGEN_REPOSITORY_NAME.git"
 NETWORK_CONFIG_FILE_PATH="/tmp/network-config-$TIMESTAMP"
 OUTPUT_DIRECTORY="/tmp/loadgen-output"
@@ -28,6 +30,7 @@ FOLLOWER_CONTAINER_NAME="$PROPOSAL_NAME-follower"
 FOLLOWER_LOGS_FILE="/tmp/loadgen-follower-logs"
 
 create_volume_assets() {
+    touch "$HOST_MESSAGE_FILE_PATH"
     mkdir --parents "$OUTPUT_DIRECTORY"
 }
 
@@ -129,16 +132,16 @@ start_follower() {
         "$FOLLOWER_CONTAINER_NAME" \
         --env "API_PORT=$FOLLOWER_API_PORT" \
         --env "GRPC_PORT=$FOLLOWER_GRPC_PORT" \
-        --env "MESSAGE_FILE_PATH=$MESSAGE_FILE_PATH" \
+        --env "MESSAGE_FILE_PATH=$CONTAINER_MESSAGE_FILE_PATH" \
         --env "OUTPUT_DIR=$OUTPUT_DIRECTORY" \
         --env "P2P_PORT=$FOLLOWER_P2P_PORT" \
         --env "PPROF_PORT=$FOLLOWER_PPROF_PORT" \
         --env "RPC_PORT=$FOLLOWER_RPC_PORT" \
         --env "TRUSTED_BLOCK_HASH=$TRUSTED_BLOCK_HASH" \
         --env "TRUSTED_BLOCK_HEIGHT=$TRUSTED_BLOCK_HEIGHT" \
-        --volume "$MESSAGE_FILE_PATH:$MESSAGE_FILE_PATH" \
-        --volume "$OUTPUT_DIRECTORY:$OUTPUT_DIRECTORY" \
-        --volume "$NETWORK_CONFIG_FILE_PATH:$NETWORK_CONFIG_FILE_PATH/network-config" > "$FOLLOWER_LOGS_FILE" &
+        --mount "source=$HOST_MESSAGE_FILE_PATH,target=$CONTAINER_MESSAGE_FILE_PATH,type=bind" \
+        --mount "source=$OUTPUT_DIRECTORY,target=$OUTPUT_DIRECTORY,type=bind" \
+        --mount "source=$NETWORK_CONFIG_FILE_PATH,target=$NETWORK_CONFIG_FILE_PATH/network-config,type=bind" >"$FOLLOWER_LOGS_FILE" &
 }
 
 write_network_config() {
