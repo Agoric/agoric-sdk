@@ -37,30 +37,23 @@ create_volume_assets() {
 run_command_inside_container() {
     local entrypoint="$1"
     shift
-    local name="$1"
-    shift
 
-    if test -z "$(docker container ls --all --filter "name=$name" --format "json")"; then
-        docker container run \
-            --entrypoint "/bin/bash" \
-            --name "$name" \
-            --network "host" \
-            --quiet \
-            --user "root" \
-            "$@" \
-            "$CONTAINER_IMAGE_NAME:test-$PROPOSAL_NAME" \
-            -c "$entrypoint"
-    else
-        docker container start "$name"
-    fi
+    docker container run \
+        --entrypoint "/bin/bash" \
+        --name "$FOLLOWER_CONTAINER_NAME" \
+        --network "host" \
+        --quiet \
+        --rm \
+        --user "root" \
+        "$@" \
+        "$CONTAINER_IMAGE_NAME:test-$PROPOSAL_NAME" \
+        -c "$entrypoint"
 }
 
 set_node_id() {
     VALIDATOR_NODE_ID="$(
         run_command_inside_container \
-            "agd tendermint show-node-id" \
-            "$FOLLOWER_CONTAINER_NAME" \
-            --rm
+            "agd tendermint show-node-id"
     )"
 }
 
@@ -77,9 +70,7 @@ set_trusted_block_data() {
         "
     last_block_info="$(
         run_command_inside_container \
-            "$entrypoint" \
-            "$FOLLOWER_CONTAINER_NAME" \
-            --rm
+            "$entrypoint"
     )"
 
     TRUSTED_BLOCK_HASH="$(echo "$last_block_info" | jq '.SyncInfo.latest_block_hash' --raw-output)"
@@ -129,7 +120,6 @@ start_follower() {
         "
     run_command_inside_container \
         "$entrypoint" \
-        "$FOLLOWER_CONTAINER_NAME" \
         --env "API_PORT=$FOLLOWER_API_PORT" \
         --env "GRPC_PORT=$FOLLOWER_GRPC_PORT" \
         --env "MESSAGE_FILE_PATH=$CONTAINER_MESSAGE_FILE_PATH" \
@@ -146,13 +136,13 @@ start_follower() {
 
 write_network_config() {
     echo "
-                {
-                        \"chainName\": \"$CHAIN_ID\",
-                        \"rpcAddrs\": [\"http://localhost:$VALIDATOR_RPC_PORT\"],
-                        \"gci\": \"http://localhost:$VALIDATOR_RPC_PORT/genesis\",
-                        \"peers\":[\"$VALIDATOR_NODE_ID@localhost:$VALIDATOR_P2P_PORT\"],
-                        \"seeds\":[]
-                }
+            {
+                    \"chainName\": \"$CHAIN_ID\",
+                    \"rpcAddrs\": [\"http://localhost:$VALIDATOR_RPC_PORT\"],
+                    \"gci\": \"http://localhost:$VALIDATOR_RPC_PORT/genesis\",
+                    \"peers\":[\"$VALIDATOR_NODE_ID@localhost:$VALIDATOR_P2P_PORT\"],
+                    \"seeds\":[]
+            }
         " >"$NETWORK_CONFIG_FILE_PATH"
 }
 
