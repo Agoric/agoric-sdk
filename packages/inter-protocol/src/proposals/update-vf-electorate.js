@@ -1,9 +1,14 @@
-const trace = (...args) => console.log('ReplaceFeeDistributer', ...args);
+/**
+ * @import {EconomyBootstrapPowers} from './econ-behaviors'
+ */
+
+/* global E */
+const trace = (...args) => console.log('VF Electorate', ...args);
 
 /**
  * Replace the vaultFactory's electorate with the current one.
  *
- * @param {import('./econ-behaviors').EconomyBootstrapPowers} powers
+ * @param {EconomyBootstrapPowers} powers
  */
 const updateVaultFactoryElectorate = async ({
   consume: {
@@ -17,7 +22,7 @@ const updateVaultFactoryElectorate = async ({
 
   const creatorFacet = await E.get(vaultFactoryKit).governorCreatorFacet;
   await E(creatorFacet).replaceElectorate(poserInvitation);
-  trace('donee');
+  trace('done');
 };
 harden(updateVaultFactoryElectorate);
 
