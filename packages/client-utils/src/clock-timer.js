@@ -47,7 +47,7 @@ export const intervalAsyncGenerator = (
     async *[Symbol.asyncIterator]() {
       intervalId = setInterval(() => {
         if (resolveNext) {
-          resolveNext({ value: Date.now(), done: false });
+          resolveNext({ value: now(), done: false });
           resolveNext = null;
         }
       }, intervalMs);
@@ -60,7 +60,7 @@ export const intervalAsyncGenerator = (
           );
         }
       } finally {
-        this.cancel(); // Ensure cleanup on completion
+        self.cancel(); // Ensure cleanup on completion
       }
     },
   });

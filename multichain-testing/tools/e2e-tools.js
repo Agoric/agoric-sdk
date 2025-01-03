@@ -248,6 +248,7 @@ export const provisionSmartWallet = async (
 
   // XXX  /** @type {import('../test/wallet-tools.js').MockWallet['deposit']} */
   const deposit = Far('DepositFacet', {
+    getAddress: () => address,
     receive: async payment => {
       const brand = await E(payment).getAllegedBrand();
       const asset = vbankEntries.find(([_denom, a]) => a.brand === brand);
