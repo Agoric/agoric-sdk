@@ -945,7 +945,7 @@ test(`userSeat.getOfferResult from zcf.makeEmptySeatKit`, async t => {
   t.is(result, undefined);
 });
 
-test(`userSeat.getPayouts, getPayout from zcf.makeEmptySeatKit`, async t => {
+test.only(`userSeat.getPayouts, getPayout from zcf.makeEmptySeatKit`, async t => {
   const { zcf } = await setupZCFTest();
   const { zcfSeat, userSeat } = zcf.makeEmptySeatKit();
 

@@ -4,6 +4,7 @@ import { E } from '@endo/eventual-send';
 import { M, prepareExoClassKit } from '@agoric/vat-data';
 import { deeplyFulfilled } from '@endo/marshal';
 import { makePromiseKit } from '@endo/promise-kit';
+import { NonNullish } from '@agoric/internal';
 
 import { satisfiesWant } from '../contractFacet/offerSafety.js';
 import '../types-ambient.js';
@@ -83,11 +84,6 @@ export const makeZoeSeatAdminFactory = baggage => {
    */
   const ephemeralOfferResultStore = new WeakMap();
 
-  const getPayoutOrThrow = (state, keyword) => {
-    state.payouts[keyword] || Fail`No payout for ${keyword}`;
-    return state.payouts[keyword];
-  };
-
   const makeZoeSeatAdmin = prepareExoClassKit(
     baggage,
     'ZoeSeatAdmin',
@@ -148,8 +144,10 @@ export const makeZoeSeatAdminFactory = baggage => {
           // doExit(), which ensures that finalPayouts() has set state.payouts.
           return E.when(
             state.subscriber.subscribeAfter(),
-            () => getPayoutOrThrow(state, keyword),
-            () => getPayoutOrThrow(state, keyword),
+            () =>
+              NonNullish(state.payouts[keyword], `No payout for "${keyword}"`),
+            () =>
+              NonNullish(state.payouts[keyword], `No payout for "${keyword}"`),
           );
         },
 
