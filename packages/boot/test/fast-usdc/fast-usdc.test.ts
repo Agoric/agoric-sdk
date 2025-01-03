@@ -463,3 +463,7 @@ test.serial('restart contract', async t => {
   const actual = await EV(kit.adminFacet).restartContract(kit.privateArgs);
   t.deepEqual(actual, { incarnationNumber: 1 });
 });
+
+test.serial('replace operators', async t => {
+  // TODO https://github.com/Agoric/agoric-sdk/issues/10754
+});
