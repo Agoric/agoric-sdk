@@ -1,14 +1,11 @@
-import { makeTracer } from '@agoric/internal';
-import { E } from '@endo/far';
-
-const trace = makeTracer('ReplaceFeeDistributer', true);
+const trace = (...args) => console.log('ReplaceFeeDistributer', ...args);
 
 /**
  * Replace the vaultFactory's electorate with the current one.
  *
  * @param {import('./econ-behaviors').EconomyBootstrapPowers} powers
  */
-export const updateVaultFactoryElectorate = async ({
+const updateVaultFactoryElectorate = async ({
   consume: {
     economicCommitteeCreatorFacet: electorateCreatorFacet,
     vaultFactoryKit,
@@ -20,16 +17,8 @@ export const updateVaultFactoryElectorate = async ({
 
   const creatorFacet = await E.get(vaultFactoryKit).governorCreatorFacet;
   await E(creatorFacet).replaceElectorate(poserInvitation);
+  trace('donee');
 };
 harden(updateVaultFactoryElectorate);
 
-export const getManifestForUpdateVaultFactoryElectorate = async () => ({
-  manifest: {
-    [updateVaultFactoryElectorate.name]: {
-      consume: {
-        economicCommitteeCreatorFacet: true,
-        vaultFactoryKit: true,
-      },
-    },
-  },
-});
+updateVaultFactoryElectorate; // completion value a la "export"
