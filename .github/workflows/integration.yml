@@ -324,7 +324,10 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: a3p-integration
-          path: /tmp/export/a3p-integration
+          path: |
+            /tmp/export/a3p-integration
+            /tmp/loadgen-follower-logs
+            /tmp/loadgen-output
       - name: archive slogfile
         if: (success() || failure())
         uses: actions/upload-artifact@v4

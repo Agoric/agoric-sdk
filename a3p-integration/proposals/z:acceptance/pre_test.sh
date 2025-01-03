@@ -1,6 +1,6 @@
 #! /bin/bash
 
-set -o errexit -o errtrace -o pipefail -o xtrace
+set -o errexit -o errtrace -o pipefail
 
 DIRECTORY_PATH="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
 BRANCH_NAME="usman/testing-loadgen-follower"
@@ -21,10 +21,11 @@ VALIDATOR_RPC_PORT="26657"
 CONTAINER_IMAGE_NAME="ghcr.io/$ORGANIZATION_NAME/agoric-3-proposals"
 LOADGEN_REPOSITORY_LINK="https://github.com/$ORGANIZATION_NAME/$LOADGEN_REPOSITORY_NAME.git"
 NETWORK_CONFIG_FILE_PATH="/tmp/network-config-$TIMESTAMP"
-OUTPUT_DIRECTORY="/tmp/loadgen-output-$TIMESTAMP"
+OUTPUT_DIRECTORY="/tmp/loadgen-output"
 PROPOSAL_NAME="$(echo "$DIRECTORY_PATH" | cut --delimiter ':' --fields '2')"
 
 FOLLOWER_CONTAINER_NAME="$PROPOSAL_NAME-follower"
+FOLLOWER_LOGS_FILE="/tmp/loadgen-follower-logs"
 
 create_volume_assets() {
     mkdir --parents "$OUTPUT_DIRECTORY"
@@ -126,7 +127,6 @@ start_follower() {
     run_command_inside_container \
         "$entrypoint" \
         "$FOLLOWER_CONTAINER_NAME" \
-        --detach \
         --env "API_PORT=$FOLLOWER_API_PORT" \
         --env "GRPC_PORT=$FOLLOWER_GRPC_PORT" \
         --env "MESSAGE_FILE_PATH=$MESSAGE_FILE_PATH" \
@@ -138,7 +138,7 @@ start_follower() {
         --env "TRUSTED_BLOCK_HEIGHT=$TRUSTED_BLOCK_HEIGHT" \
         --volume "$MESSAGE_FILE_PATH:$MESSAGE_FILE_PATH" \
         --volume "$OUTPUT_DIRECTORY:$OUTPUT_DIRECTORY" \
-        --volume "$NETWORK_CONFIG_FILE_PATH:$NETWORK_CONFIG_FILE_PATH/network-config"
+        --volume "$NETWORK_CONFIG_FILE_PATH:$NETWORK_CONFIG_FILE_PATH/network-config" > "$FOLLOWER_LOGS_FILE" &
 }
 
 write_network_config() {
