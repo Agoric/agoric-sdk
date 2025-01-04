@@ -19,7 +19,7 @@ import { X, q, Fail, makeError } from '@endo/errors';
 import { trackTurns } from './track-turns.js';
 import { makeMessageBreakpointTester } from './message-breakpoints.js';
 
-const { assign, create } = Object;
+const { assign, create, freeze } = Object;
 
 const onSend = makeMessageBreakpointTester('ENDO_SEND_BREAKPOINTS');
 
@@ -201,6 +201,24 @@ const makeEGetProxyHandler = (x, HandledPromise, unwrap) =>
 const resolve = x => HandledPromise.resolve(x);
 
 /**
+ * `freeze` but not `harden` the proxy target so it remains trapping.
+ * Although a frozen-only object will not be defensive, since it could still
+ * be made non-trapping, these are encapsulated only within proxies that
+ * will refuse to be made non-trapping, and so can safely be shared.
+ * @see https://github.com/endojs/endo/blob/master/packages/ses/docs/preparing-for-stabilize.md
+ */
+const objTarget = freeze(create(null));
+
+/**
+ * `freeze` but not `harden` the proxy target so it remains trapping.
+ * Although a frozen-only object will not be defensive, since it could still
+ * be made non-trapping, these are encapsulated only within proxies that
+ * will refuse to be made non-trapping, and so can safely be shared.
+ * @see https://github.com/endojs/endo/blob/master/packages/ses/docs/preparing-for-stabilize.md
+ */
+const funcTarget = freeze(() => {});
+
+/**
  * @template [A={}]
  * @param {HandledPromiseConstructor} HandledPromise
  * @param {object} [powers]
@@ -224,10 +242,7 @@ const makeE = (HandledPromise, powers = {}) => {
        * @param {T} x target for method/function call
        * @returns {ECallableOrMethods<RemoteFunctions<T>>} method/function call proxy
        */
-      x =>
-        harden(
-          new Proxy(() => {}, makeEProxyHandler(x, HandledPromise, unwrap)),
-        ),
+      x => new Proxy(funcTarget, makeEProxyHandler(x, HandledPromise, unwrap)),
       {
         /**
          * E.get(x) returns a proxy on which you can get arbitrary properties.
@@ -241,12 +256,7 @@ const makeE = (HandledPromise, powers = {}) => {
          * @readonly
          */
         get: x =>
-          harden(
-            new Proxy(
-              create(null),
-              makeEGetProxyHandler(x, HandledPromise, unwrap),
-            ),
-          ),
+          new Proxy(objTarget, makeEGetProxyHandler(x, HandledPromise, unwrap)),
 
         /**
          * E.resolve(x) converts x to a handled promise. It is
@@ -269,11 +279,9 @@ const makeE = (HandledPromise, powers = {}) => {
          * @readonly
          */
         sendOnly: x =>
-          harden(
-            new Proxy(
-              () => {},
-              makeESendOnlyProxyHandler(x, HandledPromise, unwrap),
-            ),
+          new Proxy(
+            funcTarget,
+            makeESendOnlyProxyHandler(x, HandledPromise, unwrap),
           ),
 
         /**
