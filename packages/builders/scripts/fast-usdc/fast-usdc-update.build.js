@@ -3,6 +3,7 @@ import { getManifestForUpdateFastUsdcPolicy } from '@agoric/fast-usdc/src/fast-u
 import { toExternalConfig } from '@agoric/fast-usdc/src/utils/config-marshal.js';
 import { FeedPolicyShape } from '@agoric/fast-usdc/src/type-guards.js';
 import { makeHelpers } from '@agoric/deploy-script-support';
+import { mustMatch } from '@endo/patterns';
 
 /**
  * @import {CoreEvalBuilder, DeployScriptFunction} from '@agoric/deploy-script-support/src/externalTypes.js'
@@ -22,10 +23,10 @@ const feedPolicyUsage = 'use --feedPolicy <policy> ...';
  * }} FastUSDCUpdateOpts
  */
 
-/** @type {CoreEvalBuilder} */
+/** @satisfies {CoreEvalBuilder} */
 export const updateProposalBuilder = async (
   _utils,
-  /** @type {FastUSDCConfig} */ config,
+  /** @type {Pick<FastUSDCConfig, 'feedPolicy'>} */ config,
 ) => {
   return harden({
     sourceSpec: '@agoric/fast-usdc/src/fast-usdc-policy.core.js',
@@ -52,7 +53,9 @@ export default async (homeP, endowments) => {
 
   const parseFeedPolicy = () => {
     if (typeof feedPolicy !== 'string') throw Error(feedPolicyUsage);
-    return JSON.parse(feedPolicy);
+    const policy = JSON.parse(feedPolicy);
+    mustMatch(policy, FeedPolicyShape);
+    return policy;
   };
   const config = harden({ feedPolicy: parseFeedPolicy() });
   await writeCoreEval('eval-fast-usdc-policy-update', utils =>
