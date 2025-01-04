@@ -10,7 +10,7 @@ import { makeLogHooks, makePromiseSpace } from './promise-space.js';
 
 import './types-ambient.js';
 
-const { entries, fromEntries, keys } = Object;
+const { entries, fromEntries, keys, freeze } = Object;
 
 /**
  * Used in bootstrap to reserve names in the agoricNames namespace before any
@@ -130,7 +130,12 @@ export const extract = (template, specimen, path = []) => {
         specimen,
       )}`;
     }
-    const target = harden(
+    /**
+     * `freeze` but not `harden` the proxy target so it remains trapping.
+     *
+     * @see https://github.com/endojs/endo/blob/master/packages/ses/docs/preparing-for-stabilize.md
+     */
+    const target = freeze(
       fromEntries(
         entries(template).map(([propName, subTemplate]) => [
           propName,
