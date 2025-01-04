@@ -3,6 +3,8 @@ import { assertKey } from '@agoric/store';
 import { canBeDurable } from '@agoric/vat-data';
 import { makePromiseKit } from '@endo/promise-kit';
 
+const { freeze } = Object;
+
 /**
  * @typedef {{
  *   onAddKey: (key: string) => void;
@@ -13,6 +15,16 @@ import { makePromiseKit } from '@endo/promise-kit';
  */
 
 const noop = harden(() => {});
+
+/**
+ * `freeze` but not `harden` the proxy target so it remains trapping. Although a
+ * frozen-only object will not be defensive, since it could still be made
+ * non-trapping, these are encapsulated only within proxies that will refuse to
+ * be made non-trapping, and so can safely be shared.
+ *
+ * @see https://github.com/endojs/endo/blob/master/packages/ses/docs/preparing-for-stabilize.md
+ */
+const target = freeze({});
 
 /**
  * @param {typeof console.log} log
@@ -167,7 +179,7 @@ export const makePromiseSpace = (optsOrLog = {}) => {
 
   /** @type {PromiseSpaceOf<T>['consume']} */
   // @ts-expect-error cast
-  const consume = new Proxy(harden({}), {
+  const consume = new Proxy(target, {
     get: (_target, name) => {
       assert.typeof(name, 'string');
       return provideState(name).pk.promise;
@@ -176,7 +188,7 @@ export const makePromiseSpace = (optsOrLog = {}) => {
 
   /** @type {PromiseSpaceOf<T>['produce']} */
   // @ts-expect-error cast
-  const produce = new Proxy(harden({}), {
+  const produce = new Proxy(target, {
     get: (_target, name) => {
       assert.typeof(name, 'string');
       return makeProducer(name);
