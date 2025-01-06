@@ -314,7 +314,7 @@ async function testExportImport(
   t.deepEqual(artifactNames, expectedArtifactNames);
 
   const beforeDump = debug.dump(keepSnapshots);
-  function doImport() {
+  async function doImport() {
     return importSwingStore(exporter, null, { artifactMode: importMode });
   }
 

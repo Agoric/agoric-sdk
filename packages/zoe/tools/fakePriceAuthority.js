@@ -242,7 +242,7 @@ export async function makeFakePriceAuthority(options) {
     latestTick = timestamp;
   }
 
-  function resolveQuoteWhen(operator, amountIn, amountOutLimit) {
+  async function resolveQuoteWhen(operator, amountIn, amountOutLimit) {
     assertBrands(amountIn.brand, amountOutLimit.brand);
     const promiseKit = makePromiseKit();
     const req = {

@@ -706,7 +706,7 @@ function build(
     };
   }
 
-  function queueMessage(targetSlot, prop, args, returnedP) {
+  async function queueMessage(targetSlot, prop, args, returnedP) {
     const methargs = [prop, args];
 
     meterControl.assertIsMetered(); // else userspace getters could escape
@@ -1321,7 +1321,7 @@ function build(
    * @param {import('./types.js').VatDeliveryObject} delivery
    * @returns {undefined | ReturnType<startVat>}
    */
-  function dispatchToUserspace(delivery) {
+  async function dispatchToUserspace(delivery) {
     let result;
     const [type, ...args] = delivery;
     switch (type) {

@@ -77,7 +77,7 @@ export const gettingStartedWorkflowTest = async (t, options = {}) => {
   const pkill = (cp, signal = 'SIGINT') => process.kill(-cp.pid, signal);
 
   /** @param {Parameters<typeof pspawn>} args */
-  function pspawnStdout(...args) {
+  async function pspawnStdout(...args) {
     const ps = pspawn(...args);
     const { stdout } = ps.childProcess;
     if (stdout) {
@@ -99,7 +99,7 @@ export const gettingStartedWorkflowTest = async (t, options = {}) => {
   };
   const { AGORIC_CMD = JSON.stringify(defaultAgoricCmd()) } = process.env;
   const agoricCmd = JSON.parse(AGORIC_CMD);
-  function myMain(args, opts = {}) {
+  async function myMain(args, opts = {}) {
     return pspawnStdout(agoricCmd[0], [...agoricCmd.slice(1), ...args], {
       stdio: ['ignore', 'pipe', 'inherit'],
       env: { ...process.env, DEBUG: 'agoric:debug' },
@@ -108,7 +108,7 @@ export const gettingStartedWorkflowTest = async (t, options = {}) => {
     });
   }
 
-  function yarn(args) {
+  async function yarn(args) {
     return pspawnStdout('yarn', args, {
       stdio: ['ignore', 'pipe', 'inherit'],
       env: { ...process.env },

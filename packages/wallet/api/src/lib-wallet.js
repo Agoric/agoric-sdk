@@ -586,7 +586,7 @@ export function makeWalletRoot({
    * @param {string} id
    * @param {ERef<UserSeat>} seat
    */
-  function subscribeToUpdates(id, seat) {
+  async function subscribeToUpdates(id, seat) {
     return E(E(seat).getExitSubscriber())
       .subscribeAfter()
       .then(update => updateOrResubscribe(id, seat, update));
@@ -1392,7 +1392,7 @@ export function makeWalletRoot({
    * @param {string} boardId
    * @param {string} [dappOrigin]
    */
-  function acceptPetname(
+  async function acceptPetname(
     acceptFn,
     suggestedPetname,
     boardId,

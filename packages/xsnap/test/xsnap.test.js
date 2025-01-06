@@ -381,7 +381,7 @@ test('execute immediately after makeSnapshotStream', async t => {
   t.deepEqual(messages, ['before']);
 });
 
-function delay(ms) {
+async function delay(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 

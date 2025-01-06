@@ -816,7 +816,7 @@ export async function launch({
    * @param {() => Promise<T>} fn
    * @param {() => void} onSettled
    */
-  function withErrorLogging(label, fn, onSettled) {
+  async function withErrorLogging(label, fn, onSettled) {
     const p = fn();
     void E.when(p, onSettled, err => {
       blockManagerConsole.error(label, 'error:', err);
