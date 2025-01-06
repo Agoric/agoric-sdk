@@ -34,7 +34,7 @@ const dirname = new URL('./', import.meta.url).pathname;
  * @param {string} url
  * @returns {Promise<bigint>}
  */
-const getLatestBlockHeight = url =>
+const getLatestBlockHeight = async url =>
   new Promise((resolve, reject) => {
     const req = request(url, res => {
       if (!res) {

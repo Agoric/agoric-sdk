@@ -1453,7 +1453,9 @@ function build(
     if (delivery[0] === 'bringOutYourDead') {
       return meterControl.runWithoutMeteringAsync(bringOutYourDead);
     } else if (delivery[0] === 'stopVat') {
-      return meterControl.runWithoutMeteringAsync(() => stopVat(delivery[1]));
+      return meterControl.runWithoutMeteringAsync(async () =>
+        stopVat(delivery[1]),
+      );
     } else {
       // Start user code running, record any internal liveslots errors. We do
       // *not* directly wait for the userspace function to complete, nor for
@@ -1466,7 +1468,7 @@ function build(
       // unmeteredDispatch (or a 'buildRootObject' that fails to
       // complete in time) will be reported to the supervisor (but
       // only after userspace is idle).
-      return gcTools.waitUntilQuiescent().then(() => {
+      return gcTools.waitUntilQuiescent().then(async () => {
         afterDispatchActions();
         // eslint-disable-next-line prefer-promise-reject-errors
         return Promise.race([p, Promise.reject('buildRootObject unresolved')]);

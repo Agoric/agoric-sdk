@@ -85,7 +85,7 @@ module.exports = {
     '@typescript-eslint/promise-function-async': [
       // so throw in promise-returning function still returns a promise
       'warn',
-      { checkArrowFunctions: false, checkFunctionExpressions: false },
+      { checkFunctionExpressions: false },
     ],
     '@typescript-eslint/no-empty-object-type': 'warn',
     '@typescript-eslint/no-unnecessary-type-constraint': 'warn',

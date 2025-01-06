@@ -687,7 +687,7 @@ export function makeVatWarehouse({
 
   // mostly used by tests, only needed with thread/process-based workers
   async function shutdown() {
-    const work = Array.from(ephemeral.vats.values(), ({ manager }) =>
+    const work = Array.from(ephemeral.vats.values(), async ({ manager }) =>
       manager.shutdown(),
     );
     return Promise.all(work).then(() => {});
