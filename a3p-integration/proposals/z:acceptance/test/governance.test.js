@@ -31,6 +31,42 @@ test.serial(
       { instanceName, duration: 30, governanceAddresses, params },
       { getLastUpdate },
     );
+
+    const questionUpdate = await getLastUpdate(governanceAddresses[0]);
+    t.log(questionUpdate);
+    t.like(questionUpdate, {
+      status: { numWantsSatisfied: 1 },
+    });
+
+    t.log('Voting on param change');
+    for (const address of governanceAddresses) {
+      const committeeInvitationForVoter =
+        await governanceDriver.getCommitteeInvitation(address);
+
+      await governanceDriver.voteOnProposedChanges(
+        address,
+        committeeInvitationForVoter[0],
+      );
+
+      const voteUpdate = await getLastUpdate(address);
+      t.log(`${address} voted`);
+      t.like(voteUpdate, {
+        status: { numWantsSatisfied: 1 },
+      });
+    }
+
+    await governanceDriver.waitForElection();
+
+    const vaultFactoryParamsAfter = await readLatestHead(
+      'published.vaultFactory.governance',
+    );
+
+    t.is(
+      // @ts-expect-error it's a record
+      vaultFactoryParamsAfter.current.ChargingPeriod.value,
+      400n,
+      'vaultFactory governed parameters did not match',
+    );
   },
 );
 
@@ -163,7 +199,6 @@ test.serial('Governance proposals history is visible', async t => {
    * the acceptance tests scalability
    */
   const expectedParametersChanges = [
-    ['PerAccountInitialAmount'], // z:acceptance/governance.test.js
     ['PerAccountInitialAmount'], // z:acceptance/governance.test.js
     ['ChargingPeriod'], // z:acceptance/governance.test.js
     ['DebtLimit'], // z:acceptance/vaults.test.js
