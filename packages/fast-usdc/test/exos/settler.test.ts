@@ -1,17 +1,22 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import type { TestFn } from 'ava';
 
+import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
 import type { Zone } from '@agoric/zone';
-import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
+import { defaultMarshaller } from '@agoric/internal/src/storage-test-utils.js';
 import { PendingTxStatus } from '../../src/constants.js';
 import { prepareSettler } from '../../src/exos/settler.js';
 import { prepareStatusManager } from '../../src/exos/status-manager.js';
 import type { CctpTxEvidence } from '../../src/types.js';
-import { MockCctpTxEvidences, MockVTransferEvents } from '../fixtures.js';
-import { prepareMockOrchAccounts } from '../mocks.js';
-import { commonSetup, provideDurableZone } from '../supports.js';
 import { makeFeeTools } from '../../src/utils/fees.js';
+import {
+  MockCctpTxEvidences,
+  MockVTransferEvents,
+  intermediateRecipient,
+} from '../fixtures.js';
+import { makeTestLogger, prepareMockOrchAccounts } from '../mocks.js';
+import { commonSetup } from '../supports.js';
 
 const mockZcf = (zone: Zone) => {
   const callLog = [] as any[];
@@ -40,8 +45,12 @@ const mockZcf = (zone: Zone) => {
 const makeTestContext = async t => {
   const common = await commonSetup(t);
   const { rootZone: zone } = common.bootstrap;
-  const statusManager = prepareStatusManager(zone.subZone('status-manager'));
-
+  const { log, inspectLogs } = makeTestLogger(t.log);
+  const statusManager = prepareStatusManager(
+    zone.subZone('status-manager'),
+    common.commonPrivateArgs.storageNode.makeChildNode('txns'),
+    { marshaller: defaultMarshaller, log },
+  );
   const { zcf, callLog } = mockZcf(zone.subZone('Mock ZCF'));
 
   const { rootZone, vowTools } = common.bootstrap;
@@ -75,6 +84,7 @@ const makeTestContext = async t => {
     feeConfig: common.commonPrivateArgs.feeConfig,
     vowTools: common.bootstrap.vowTools,
     chainHub,
+    log,
   });
 
   const defaultSettlerParams = harden({
@@ -82,6 +92,7 @@ const makeTestContext = async t => {
       fetchedChainInfo.agoric.connections['noble-1'].transferChannel
         .counterPartyChannelId,
     remoteDenom: 'uusdc',
+    intermediateRecipient,
   });
 
   const simulate = harden({
@@ -95,6 +106,18 @@ const makeTestContext = async t => {
       statusManager.advance(cctpTxEvidence);
       const { forwardingAddress, amount } = cctpTxEvidence.tx;
       statusManager.advanceOutcome(forwardingAddress, BigInt(amount), true);
+
+      return cctpTxEvidence;
+    },
+
+    skipAdvance: (risksIdentified: string[], evidence?: CctpTxEvidence) => {
+      const cctpTxEvidence: CctpTxEvidence = {
+        ...MockCctpTxEvidences.AGORIC_PLUS_OSMO(),
+        ...evidence,
+      };
+      t.log('Mock CCTP Evidence:', cctpTxEvidence);
+      t.log('Mark as `ADVANCE_SKIPPED`');
+      statusManager.skipAdvance(cctpTxEvidence, risksIdentified ?? []);
 
       return cctpTxEvidence;
     },
@@ -126,7 +149,9 @@ const makeTestContext = async t => {
     simulate,
     repayer,
     peekCalls: () => harden([...callLog]),
+    inspectLogs,
     accounts: mockAccounts,
+    storage: common.bootstrap.storage,
   };
 };
 
@@ -221,7 +246,19 @@ test('happy path: disburse to LPs; StatusManager removes tx', async t => {
     [],
     'SETTLED entry removed from StatusManger',
   );
-  // TODO, confirm vstorage write for TxStatus.SETTLED
+  await eventLoopIteration();
+  const { storage } = t.context;
+  t.deepEqual(storage.getDeserialized(`fun.txns.${cctpTxEvidence.txHash}`), [
+    { evidence: cctpTxEvidence, status: 'OBSERVED' },
+    { status: 'ADVANCING' },
+    { status: 'ADVANCED' },
+    { split: expectedSplit, status: 'DISBURSED' },
+  ]);
+
+  // Check deletion of DISBURSED transactions
+  statusManager.deleteCompletedTxs();
+  await eventLoopIteration();
+  t.is(storage.data.get(`fun.txns.${cctpTxEvidence.txHash}`), undefined);
 });
 
 test('slow path: forward to EUD; remove pending tx', async t => {
@@ -268,6 +305,15 @@ test('slow path: forward to EUD; remove pending tx', async t => {
         value: 'osmo183dejcnmkka5dzcu9xw6mywq0p2m5peks28men',
       },
       usdc.units(150),
+      {
+        forwardOpts: {
+          intermediateRecipient: {
+            chainId: 'noble-1',
+            encoding: 'bech32',
+            value: 'noble1test',
+          },
+        },
+      },
     ],
   ]);
 
@@ -279,10 +325,19 @@ test('slow path: forward to EUD; remove pending tx', async t => {
     [],
     'SETTLED entry removed from StatusManger',
   );
-  // TODO, confirm vstorage write for TxStatus.SETTLED
+  const { storage } = t.context;
+  t.deepEqual(storage.getDeserialized(`fun.txns.${cctpTxEvidence.txHash}`), [
+    { evidence: cctpTxEvidence, status: 'OBSERVED' },
+    { status: 'FORWARDED' },
+  ]);
+
+  // Check deletion of FORWARDED transactions
+  statusManager.deleteCompletedTxs();
+  await eventLoopIteration();
+  t.is(storage.data.get(`fun.txns.${cctpTxEvidence.txHash}`), undefined);
 });
 
-test('Settlement for unknown transaction', async t => {
+test('skip advance: forward to EUD; remove pending tx', async t => {
   const {
     common,
     makeSettler,
@@ -301,11 +356,21 @@ test('Settlement for unknown transaction', async t => {
     ...defaultSettlerParams,
   });
 
+  const cctpTxEvidence = simulate.skipAdvance(['TOO_LARGE_AMOUNT']);
+  t.deepEqual(
+    statusManager.lookupPending(
+      cctpTxEvidence.tx.forwardingAddress,
+      cctpTxEvidence.tx.amount,
+    ),
+    [{ ...cctpTxEvidence, status: PendingTxStatus.AdvanceSkipped }],
+    'statusManager shows this tx is skipped',
+  );
+
   t.log('Simulate incoming IBC settlement');
   void settler.tap.receiveUpcall(MockVTransferEvents.AGORIC_PLUS_OSMO());
   await eventLoopIteration();
 
-  t.log('USDC was forwarded');
+  t.log('funds are forwarded; no interaction with LP');
   t.deepEqual(peekCalls(), []);
   t.deepEqual(accounts.settlement.callLog, [
     [
@@ -316,10 +381,73 @@ test('Settlement for unknown transaction', async t => {
         value: 'osmo183dejcnmkka5dzcu9xw6mywq0p2m5peks28men',
       },
       usdc.units(150),
+      {
+        forwardOpts: {
+          intermediateRecipient: {
+            chainId: 'noble-1',
+            encoding: 'bech32',
+            value: 'noble1test',
+          },
+        },
+      },
     ],
   ]);
 
-  // TODO, confirm vstorage write for TxStatus.FORWARDED
+  t.deepEqual(
+    statusManager.lookupPending(
+      cctpTxEvidence.tx.forwardingAddress,
+      cctpTxEvidence.tx.amount,
+    ),
+    [],
+    'FORWARDED entry removed from StatusManger',
+  );
+  const { storage } = t.context;
+  t.deepEqual(storage.getDeserialized(`fun.txns.${cctpTxEvidence.txHash}`), [
+    { evidence: cctpTxEvidence, status: 'OBSERVED' },
+    { status: 'ADVANCE_SKIPPED', risksIdentified: ['TOO_LARGE_AMOUNT'] },
+    { status: 'FORWARDED' },
+  ]);
+
+  // Check deletion of FORWARDED transactions
+  statusManager.deleteCompletedTxs();
+  await eventLoopIteration();
+  t.is(storage.data.get(`fun.txns.${cctpTxEvidence.txHash}`), undefined);
+});
+
+test('Settlement for unknown transaction', async t => {
+  const {
+    common,
+    makeSettler,
+    defaultSettlerParams,
+    repayer,
+    accounts,
+    peekCalls,
+    inspectLogs,
+  } = t.context;
+
+  const settler = makeSettler({
+    repayer,
+    settlementAccount: accounts.settlement.account,
+    ...defaultSettlerParams,
+  });
+
+  t.log('Simulate incoming IBC settlement');
+  void settler.tap.receiveUpcall(MockVTransferEvents.AGORIC_PLUS_OSMO());
+  await eventLoopIteration();
+
+  t.log('Nothing was transferrred');
+  t.deepEqual(peekCalls(), []);
+  t.deepEqual(accounts.settlement.callLog, []);
+  t.like(inspectLogs(), [
+    ['config', { sourceChannel: 'channel-21' }],
+    ['upcall event'],
+    ['dequeued', undefined],
+    [
+      '⚠️ tap: no status for ',
+      'noble1x0ydg69dh6fqvr27xjvp6maqmrldam6yfelqkd',
+      150000000n,
+    ],
+  ]);
 });
 
 test.todo("StatusManager does not receive update when we can't settle");

@@ -97,6 +97,7 @@ export function makeSyscallSimulator(
   deliveryNum,
   transcriptEntry,
 ) {
+  const context = `anachrophobia in ${vatID} delivery d${deliveryNum}`;
   const syscallsExpected = [...transcriptEntry.sc]; // copy
   const syscallsMade = [];
   // syscallStatus's length will be max(syscallsExpected,
@@ -107,31 +108,36 @@ export function makeSyscallSimulator(
   let replayError; // sticky
 
   const explain = () => {
-    console.log(`anachrophobia strikes ${vatID} on delivery ${deliveryNum}`);
+    console.log(
+      `anachrophobia strikes ${vatID} delivery d${deliveryNum} syscalls`,
+    );
     for (const [idx, status] of syscallStatus.entries()) {
       const expected = syscallsExpected[idx];
       const got = syscallsMade[idx];
       switch (status) {
         case 'ok': {
-          console.log(`sc[${idx}]: ok: ${djson.stringify(got)}`);
+          console.log(`sc${idx}: ok: ${djson.stringify(got)}`);
           break;
         }
         case 'wrong': {
-          console.log(`sc[${idx}]: wrong`);
-          console.log(`  expected: ${djson.stringify(expected.s)}`);
-          console.log(`  got     : ${djson.stringify(got)}`);
+          console.log(
+            `
+sc${idx}: WRONG
+  expected: ${djson.stringify(expected.s)}
+  got     : ${djson.stringify(got)}`.trimStart(),
+          );
           break;
         }
         case 'extra': {
-          console.log(`sc[${idx}]: extra: ${djson.stringify(got)}`);
+          console.log(`sc${idx}: EXTRA: ${djson.stringify(got)}`);
           break;
         }
         case 'missing': {
-          console.log(`sc[${idx}]: missing: ${djson.stringify(expected.s)}`);
+          console.log(`sc${idx}: MISSING: ${djson.stringify(expected.s)}`);
           break;
         }
         default:
-          Fail`bad ${status}`;
+          Fail`sc${idx}: bad status ${status}`;
       }
     }
   };
@@ -140,16 +146,16 @@ export function makeSyscallSimulator(
     // slog entries have no kernel-translated kso/ksr
     const finish = kernelSlog.syscall(vatID, undefined, vso);
     const expected = syscallsExpected[syscallsMade.length];
-    syscallsMade.push(vso);
+    const idx = syscallsMade.push(vso) - 1;
     if (!expected) {
       syscallStatus.push('extra');
-      const error = Error(`anachrophobia in ${vatID}: extra syscall`);
+      const error = Error(`${context}: extra syscall at index sc${idx}`);
       replayError ||= error;
       throw error;
     }
     if (!syscallsAreIdentical(expected.s, vso)) {
       syscallStatus.push('wrong');
-      const error = Error(`anachrophobia in ${vatID}: wrong syscall`);
+      const error = Error(`${context}: wrong syscall at index sc${idx}`);
       replayError ||= error;
       throw error;
     }
@@ -159,12 +165,14 @@ export function makeSyscallSimulator(
   };
 
   const finishSimulation = () => {
-    if (syscallsMade.length < syscallsExpected.length) {
-      const missing = syscallsExpected.length - syscallsMade.length;
+    const missing = syscallsExpected.length - syscallsMade.length;
+    if (missing > 0) {
       for (let i = 0; i < missing; i += 1) {
         syscallStatus.push('missing');
       }
-      const error = Error(`anachrophobia in ${vatID}: missing syscalls`);
+      const error = Error(
+        `${context}: missing ${missing} syscall(s) at index sc${syscallsMade.length}`,
+      );
       replayError ||= error;
     }
 

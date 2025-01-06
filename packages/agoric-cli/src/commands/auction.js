@@ -1,17 +1,20 @@
 // @ts-check
 /* eslint-env node */
-import { InvalidArgumentError } from 'commander';
+import {
+  fetchEnvNetworkConfig,
+  makeAgoricNames,
+  makeVstorageKit,
+} from '@agoric/client-utils';
 import { Fail } from '@endo/errors';
-import { makeVstorageKit } from '@agoric/client-utils';
+import { InvalidArgumentError } from 'commander';
 import { outputActionAndHint } from '../lib/wallet.js';
-import { getNetworkConfig } from '../lib/network-config.js';
 
 /**
  * @import {ParamTypesMap, ParamTypesMapFromRecord} from '@agoric/governance/src/contractGovernance/typedParamManager.js'
  * @import {ParamValueForType} from '@agoric/governance/src/types.js'
  */
 
-const networkConfig = await getNetworkConfig({ env: process.env, fetch });
+const networkConfig = await fetchEnvNetworkConfig({ env: process.env, fetch });
 
 /**
  * @template {ParamTypesMap} M
@@ -89,10 +92,11 @@ export const makeAuctionCommand = (
        * }} opts
        */
       async opts => {
-        const { agoricNames, readPublished } = await makeVstorageKit(
+        const { readPublished, ...vsk } = makeVstorageKit(
           { fetch },
           networkConfig,
         );
+        const agoricNames = await makeAgoricNames(vsk.fromBoard, vsk.vstorage);
 
         const { current } = await readPublished(`auction.governance`);
 

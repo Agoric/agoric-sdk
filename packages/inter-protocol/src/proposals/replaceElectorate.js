@@ -15,7 +15,7 @@ import {
   assertPathSegment,
   makeStorageNodeChild,
 } from '@agoric/internal/src/lib-chainStorage.js';
-import { reserveThenDeposit } from './utils.js';
+import { provideRetiredInstances, reserveThenDeposit } from './utils.js';
 
 /** @import {EconomyBootstrapPowers} from './econ-behaviors.js' */
 /** @import {EconCharterStartResult} from './econ-behaviors.js' */
@@ -181,8 +181,10 @@ const inviteToEconCharter = async (
  * Starts a new Economic Committee (EC) by creating an instance with the
  * provided committee specifications.
  *
- * @param {EconomyBootstrapPowers} powers - The resources and capabilities
- *   required to start the committee.
+ * @param {EconomyBootstrapPowers &
+ *   PromiseSpaceOf<{ retiredContractInstances: MapStore<string, Instance> }>} powers
+ *   - The resources and capabilities required to start the committee.
+ *
  * @param {{
  *   options: {
  *     committeeName: string;
@@ -196,12 +198,22 @@ const inviteToEconCharter = async (
  */
 const startNewEconomicCommittee = async (
   {
-    consume: { board, chainStorage, startUpgradable },
-    produce: { economicCommitteeKit, economicCommitteeCreatorFacet },
+    consume: {
+      board,
+      chainStorage,
+      startUpgradable,
+      retiredContractInstances: retiredInstancesP,
+    },
+    produce: {
+      economicCommitteeKit,
+      economicCommitteeCreatorFacet,
+      retiredContractInstances: produceRetiredInstances,
+    },
     installation: {
       consume: { committee },
     },
     instance: {
+      consume: { economicCommittee: economicCommitteeOriginalP },
       produce: { economicCommittee },
     },
   },
@@ -213,6 +225,19 @@ const startNewEconomicCommittee = async (
 
   trace(`committeeName ${committeeName}`);
   trace(`committeeSize ${committeeSize}`);
+
+  const retiredInstances = await provideRetiredInstances(
+    retiredInstancesP,
+    produceRetiredInstances,
+  );
+
+  // Record the retired electorate instance so we can manage it later.
+  const economicCommitteeOriginal = await economicCommitteeOriginalP;
+  const boardID = await E(board).getId(economicCommitteeOriginal);
+  retiredInstances.init(
+    `economicCommittee-${boardID}`,
+    economicCommitteeOriginal,
+  );
 
   const committeesNode = await makeStorageNodeChild(
     chainStorage,
@@ -264,33 +289,87 @@ const startNewEconomicCommittee = async (
  * Starts a new Economic Committee Charter by creating an instance with the
  * provided committee specifications.
  *
- * @param {EconomyBootstrapPowers} powers - The resources and capabilities
- *   required to start the committee.
+ * @param {EconomyBootstrapPowers &
+ *   PromiseSpaceOf<{ retiredContractInstances: MapStore<string, Instance> }>} powers
+ *   - The resources and capabilities required to start the committee.
+ *
  * @returns {Promise<EconCharterStartResult>} A promise that resolves to the
  *   charter kit result.
  */
 const startNewEconCharter = async ({
-  consume: { startUpgradable },
-  produce: { econCharterKit },
+  consume: {
+    board,
+    startUpgradable,
+    contractKits: contractKitsP,
+    econCharterKit: econCharterKitP,
+    retiredContractInstances: retiredContractInstancesP,
+  },
+  produce: {
+    econCharterKit: produceEconCharterKit,
+    retiredContractInstances: produceRetiredInstances,
+  },
   installation: {
     consume: { binaryVoteCounter: counterP, econCommitteeCharter: installP },
   },
   instance: {
     produce: { econCommitteeCharter },
+    consume: { econCommitteeCharter: previousInstanceP },
   },
 }) => {
-  const [charterInstall, counterInstall] = await Promise.all([
+  const [
+    charterInstall,
+    counterInstall,
+    previousInstance,
+    contractKits,
+    econCharterKit,
+    retiredInstances,
+  ] = await Promise.all([
     installP,
     counterP,
+    previousInstanceP,
+    contractKitsP,
+    econCharterKitP,
+    provideRetiredInstances(retiredContractInstancesP, produceRetiredInstances),
   ]);
-  const terms = await harden({
-    binaryVoteCounterInstallation: counterInstall,
-  });
+
+  const label = 'econCommitteeCharter';
+  const previousCharterKit = { ...econCharterKit, label };
+
+  const boardID = await E(board).getId(previousCharterKit.instance);
+  const identifier = `${label}-${boardID}`;
+  trace('Saving previous EC Charter Instance', label);
+
+  // save the old charter instance kit so we can manage it later
+  if (retiredInstances.has(identifier)) {
+    // bootstrap tests start having already run this upgrade. Actual upgrades on
+    // mainNet or testnets should start with the promiseSpace post upgrade-17,
+    // which doesn't have this entry in the map.
+    trace(
+      '⚠️ WARNING: collision on storing Charter in retireInstances not' +
+        ' expected during chain upgrade.   It IS normal during bootstrap tests',
+    );
+  } else {
+    retiredInstances.init(identifier, previousCharterKit.instance);
+  }
+  if (contractKits.has(previousInstance)) {
+    // bootstrap tests start having already run this upgrade. Actual upgrades on
+    // mainNet or testnets should start with the promiseSpace post upgrade-17,
+    // which doesn't have this entry in the map.
+    trace(
+      '⚠️ WARNING: collision on storing Charter in contractKits not' +
+        ' expected during chain upgrade.   It IS normal during bootstrap tests',
+    );
+  } else {
+    contractKits.init(previousInstance, previousCharterKit);
+  }
 
   trace('Starting new EC Charter Instance');
 
+  const terms = harden({
+    binaryVoteCounterInstallation: counterInstall,
+  });
   const startResult = await E(startUpgradable)({
-    label: 'econCommitteeCharter',
+    label,
     installation: charterInstall,
     terms,
   });
@@ -300,8 +379,8 @@ const startNewEconCharter = async ({
   econCommitteeCharter.reset();
   econCommitteeCharter.resolve(E.get(startResult).instance);
 
-  econCharterKit.reset();
-  econCharterKit.resolve(startResult);
+  produceEconCharterKit.reset();
+  produceEconCharterKit.resolve(startResult);
   return startResult;
 };
 
@@ -309,6 +388,7 @@ const startNewEconCharter = async ({
  * @typedef {PromiseSpaceOf<{
  *   auctionUpgradeNewInstance: Instance;
  *   auctionUpgradeNewGovCreator: any;
+ *   retiredContractInstances: MapStore<string, Instance>;
  * }>} interlockPowers
  */
 
@@ -485,13 +565,17 @@ export const getManifestForReplaceAllElectorates = async (
   manifest: {
     [replaceAllElectorates.name]: {
       consume: {
+        agoricNames: true,
         auctionUpgradeNewGovCreator: true,
         auctionUpgradeNewInstance: true,
         psmKit: true,
+        contractKits: true,
+        econCharterKit: true,
         governedContractKits: true,
         chainStorage: true,
         highPrioritySendersManager: true,
         namesByAddressAdmin: true,
+        retiredContractInstances: true,
         // Rest of these are designed to be widely shared
         board: true,
         startUpgradable: true,
@@ -501,6 +585,7 @@ export const getManifestForReplaceAllElectorates = async (
         economicCommitteeKit: true,
         economicCommitteeCreatorFacet: true,
         auctionUpgradeNewGovCreator: true,
+        retiredContractInstances: true,
       },
       installation: {
         consume: {
@@ -511,6 +596,10 @@ export const getManifestForReplaceAllElectorates = async (
       },
       instance: {
         produce: {
+          economicCommittee: true,
+          econCommitteeCharter: true,
+        },
+        consume: {
           economicCommittee: true,
           econCommitteeCharter: true,
         },

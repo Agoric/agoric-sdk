@@ -10,11 +10,11 @@ import {
   IBCTransferOptionsShape,
 } from '../typeGuards.js';
 
-/** @import {OrchestrationAccountI} from '../orchestration-api.js'; */
+/** @import {OrchestrationAccountCommon} from '../orchestration-api.js'; */
 
 const { Vow$ } = NetworkShape; // TODO #9611
 
-/** @see {OrchestrationAccountI} */
+/** @see {OrchestrationAccountCommon} */
 export const orchestrationAccountMethods = {
   getAddress: M.call().returns(ChainAddressShape),
   getBalance: M.call(M.or(BrandShape, M.string())).returns(

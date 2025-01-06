@@ -1,5 +1,4 @@
 // @ts-check
-/* eslint-disable import/no-extraneous-dependencies -- requiring the package itself to check exports map */
 import test from '@endo/ses-ava/prepare-endo.js';
 
 import { MsgDelegate } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/tx.js';

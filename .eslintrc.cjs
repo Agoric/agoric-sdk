@@ -62,15 +62,12 @@ module.exports = {
   root: true,
   parser: '@typescript-eslint/parser',
   parserOptions: {
-    // Works for us!
-    EXPERIMENTAL_useProjectService: true,
+    useProjectService: true,
     sourceType: 'module',
-    project: [
-      './packages/*/tsconfig.json',
-      './packages/*/tsconfig.json',
-      './packages/wallet/*/tsconfig.json',
-      './tsconfig.json',
-    ],
+    projectService: {
+      allowDefaultProject: ['*.js'],
+      defaultProject: 'tsconfig.json',
+    },
     tsconfigRootDir: __dirname,
     extraFileExtensions: ['.cjs'],
   },
@@ -84,6 +81,11 @@ module.exports = {
   reportUnusedDisableDirectives: true,
 
   rules: {
+    '@typescript-eslint/no-unused-expressions': 'off', // we use `cond || Fail`
+    '@typescript-eslint/no-empty-object-type': 'warn',
+    '@typescript-eslint/no-unnecessary-type-constraint': 'warn',
+    '@typescript-eslint/no-unsafe-function-type': 'warn',
+    '@typescript-eslint/no-wrapper-object-types': 'warn',
     '@typescript-eslint/ban-ts-comment': [
       'error',
       {
@@ -245,6 +247,12 @@ module.exports = {
       },
     },
     {
+      // disable type-aware linting for these files that have can have a .d.ts twin
+      // because it can't go into tsconfig (because that would cause tsc build to overwrite the .d.ts twin)
+      files: ['exported.*', 'types-index.*', 'types-ambient.*', 'types.*'],
+      extends: ['plugin:@typescript-eslint/disable-type-checked'],
+    },
+    {
       // disable type-aware linting in HTML
       files: ['*.html'],
       parserOptions: {
@@ -255,7 +263,7 @@ module.exports = {
       files: ['a3p-integration/**'],
       extends: ['plugin:@typescript-eslint/disable-type-checked'],
       parserOptions: {
-        EXPERIMENTAL_useProjectService: false,
+        useProjectService: false,
         project: false,
       },
       rules: {

@@ -3,7 +3,8 @@
 
 /** @import { ChildProcess } from 'child_process' */
 
-export { getNetworkConfig } from './lib/network-config.js';
+// Backwards compatibility
+export { fetchEnvNetworkConfig as getNetworkConfig } from '@agoric/client-utils';
 
 export const getSDKBinaries = ({
   jsPfx = '../..',

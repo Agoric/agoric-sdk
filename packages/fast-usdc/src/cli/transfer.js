@@ -1,44 +1,54 @@
+/* eslint-env node */
 /* global globalThis */
 
-import { makeVStorage } from '@agoric/client-utils';
+import {
+  fetchEnvNetworkConfig,
+  makeVStorage,
+  pickEndpoint,
+} from '@agoric/client-utils';
+import { encodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
+import { queryFastUSDCLocalChainAccount } from '../util/agoric.js';
 import { depositForBurn, makeProvider } from '../util/cctp.js';
 import {
   makeSigner,
   queryForwardingAccount,
   registerFwdAccount,
 } from '../util/noble.js';
-import { queryFastUSDCLocalChainAccount } from '../util/agoric.js';
+import { queryUSDCBalance } from '../util/bank.js';
 
-/** @import { file } from '../util/file' */
+/** @import { File } from '../util/file' */
 /** @import { VStorage } from '@agoric/client-utils' */
 /** @import { SigningStargateClient } from '@cosmjs/stargate' */
 /** @import { JsonRpcProvider as ethProvider } from 'ethers' */
 
 const transfer = async (
-  /** @type {file} */ configFile,
+  /** @type {File} */ configFile,
   /** @type {string} */ amount,
-  /** @type {string} */ destination,
+  /** @type {string} */ EUD,
   out = console,
   fetch = globalThis.fetch,
   /** @type {VStorage | undefined} */ vstorage,
   /** @type {{signer: SigningStargateClient, address: string} | undefined} */ nobleSigner,
   /** @type {ethProvider | undefined} */ ethProvider,
+  env = process.env,
+  setTimeout = globalThis.setTimeout,
 ) => {
   const execute = async (
     /** @type {import('./config').ConfigOpts} */ config,
   ) => {
+    const netConfig = await fetchEnvNetworkConfig({ env, fetch });
     vstorage ||= makeVStorage(
       { fetch },
-      { chainName: 'agoric', rpcAddrs: [config.agoricRpc] },
+      { chainName: 'agoric', rpcAddrs: [pickEndpoint(netConfig)] },
     );
     const agoricAddr = await queryFastUSDCLocalChainAccount(vstorage, out);
-    const appendedAddr = `${agoricAddr}?EUD=${destination}`;
-    out.log(`forwarding destination ${appendedAddr}`);
+    const encodedAddr = encodeAddressHook(agoricAddr, { EUD });
+    out.log(`forwarding destination ${encodedAddr}`);
 
     const { exists, address } = await queryForwardingAccount(
       config.nobleApi,
       config.nobleToAgoricChannel,
-      appendedAddr,
+      encodedAddr,
       out,
       fetch,
     );
@@ -51,17 +61,29 @@ const transfer = async (
           signer,
           signerAddress,
           config.nobleToAgoricChannel,
-          appendedAddr,
+          encodedAddr,
           out,
         );
         out.log(res);
       } catch (e) {
         out.error(
-          `Error registering noble forwarding account for ${appendedAddr} on channel ${config.nobleToAgoricChannel}`,
+          `Error registering noble forwarding account for ${encodedAddr} on channel ${config.nobleToAgoricChannel}`,
         );
         throw e;
       }
     }
+
+    const destChain = config.destinationChains?.find(chain =>
+      EUD.startsWith(chain.bech32Prefix),
+    );
+    if (!destChain) {
+      out.error(
+        `No destination chain found in config with matching bech32 prefix for ${EUD}, cannot query destination address`,
+      );
+      throw new Error();
+    }
+    const { api, USDCDenom } = destChain;
+    const startingBalance = await queryUSDCBalance(EUD, api, USDCDenom, fetch);
 
     ethProvider ||= makeProvider(config.ethRpc);
     await depositForBurn(
@@ -73,6 +95,34 @@ const transfer = async (
       amount,
       out,
     );
+
+    const refreshDelayMS = 1200;
+    const completeP = /** @type {Promise<void>} */ (
+      new Promise((res, rej) => {
+        const refreshUSDCBalance = async () => {
+          out.log('polling usdc balance');
+          const currentBalance = await queryUSDCBalance(
+            EUD,
+            api,
+            USDCDenom,
+            fetch,
+          );
+          if (currentBalance !== startingBalance) {
+            res();
+          } else {
+            setTimeout(() => refreshUSDCBalance().catch(rej), refreshDelayMS);
+          }
+        };
+        refreshUSDCBalance().catch(rej);
+      })
+    ).catch(e => {
+      out.error(
+        'Error checking destination address balance, could not detect completion of transfer.',
+      );
+      out.error(e.message);
+    });
+
+    await completeP;
   };
 
   let config;

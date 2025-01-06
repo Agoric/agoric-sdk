@@ -38,7 +38,7 @@ export const makeParity = (numerator, denominatorBrand) => {
  * @typedef {{
  *   deposit: {
  *     give: { USDC: Amount<'nat'> },
- *     want?: { PoolShare: Amount<'nat'> }
+ *     want: { PoolShare: Amount<'nat'> }
  *   },
  *   withdraw: {
  *     give: { PoolShare: Amount<'nat'> }

@@ -79,3 +79,5 @@ _testoutput.txt
 junit.xml
 endo-sha.txt
 .aider*
+!.aiderignore
+

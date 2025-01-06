@@ -7,10 +7,12 @@
  *
  * If either is not provided, registration will be skipped.
  *
+ * TODO #10580 remove 'brandKey' in favor of `LegibleCapData`
+ *
  * @param {ChainHub} chainHub
  * @param {Record<string, Brand<'nat'>>} brands
  * @param {Record<string, CosmosChainInfo> | undefined} chainInfo
- * @param {Record<Denom, DenomDetail & { brandKey?: string }> | undefined} assetInfo
+ * @param {[Denom, DenomDetail & { brandKey?: string }][] | undefined} assetInfo
  */
 export const registerChainsAndAssets = (
   chainHub,
@@ -18,8 +20,8 @@ export const registerChainsAndAssets = (
   chainInfo,
   assetInfo,
 ) => {
+  console.log('chainHub: registering chains', Object.keys(chainInfo || {}));
   if (!chainInfo) {
-    console.log('No chain info provided, returning early.');
     return;
   }
 
@@ -27,27 +29,32 @@ export const registerChainsAndAssets = (
   for (const [chainName, allInfo] of Object.entries(chainInfo)) {
     const { connections, ...info } = allInfo;
     chainHub.registerChain(chainName, info);
-    conns[info.chainId] = connections;
+    if (connections) conns[info.chainId] = connections;
   }
   const registeredPairs = new Set();
   for (const [pChainId, connInfos] of Object.entries(conns)) {
     for (const [cChainId, connInfo] of Object.entries(connInfos)) {
-      const pair = [pChainId, cChainId].sort().join('');
+      const pair = [pChainId, cChainId].sort().join('<->');
       if (!registeredPairs.has(pair)) {
         chainHub.registerConnection(pChainId, cChainId, connInfo);
         registeredPairs.add(pair);
       }
     }
   }
+  console.log('chainHub: registered connections', [...registeredPairs].sort());
 
+  console.log(
+    'chainHub: registering assets',
+    assetInfo?.map(([denom, { chainName }]) => `${chainName}: ${denom}`),
+  );
   if (!assetInfo) {
-    console.log('No asset info provided, returning early.');
     return;
   }
-  for (const [denom, info] of Object.entries(assetInfo)) {
-    const infoWithBrand = info.brandKey
-      ? { ...info, brand: brands[info.brandKey] }
-      : info;
+  for (const [denom, info] of assetInfo) {
+    const { brandKey, ...rest } = info;
+    const infoWithBrand = brandKey
+      ? { ...rest, brand: brands[brandKey] }
+      : rest;
     chainHub.registerAsset(denom, infoWithBrand);
   }
 };

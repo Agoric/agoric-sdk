@@ -131,6 +131,7 @@ const contract = async (
   );
 
   const orchFns = orchestrateAll(flows, {
+    chainHub,
     sharedLocalAccountP,
     makeCombineInvitationMakers,
     makeExtraInvitationMaker,

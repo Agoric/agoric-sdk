@@ -1,7 +1,7 @@
 /* global Buffer */
 
 /**
- * @import {MinimalNetworkConfig} from './rpc.js';
+ * @import {MinimalNetworkConfig} from './network-config.js';
  */
 
 /**
@@ -9,12 +9,12 @@
  * @param {typeof window.fetch} powers.fetch
  * @param {MinimalNetworkConfig} config
  */
-export const makeVStorage = (powers, config) => {
+export const makeVStorage = ({ fetch }, config) => {
   /** @param {string} path */
   const getJSON = path => {
     const url = config.rpcAddrs[0] + path;
     // console.warn('fetching', url);
-    return powers.fetch(url, { keepalive: true }).then(res => res.json());
+    return fetch(url, { keepalive: true }).then(res => res.json());
   };
   // height=0 is the same as omitting height and implies the highest block
   const url = (path = 'published', { kind = 'children', height = 0 } = {}) =>

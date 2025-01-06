@@ -19,7 +19,8 @@ import { makeFakeBoard } from '@agoric/vats/tools/board-utils.js';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { E, Far } from '@endo/far';
 import path from 'path';
-import { makeBridgeProvisionTool } from '../src/provisionPoolKit.js';
+import { makeHeapZone } from '@agoric/zone';
+import { prepareBridgeProvisionTool } from '../src/provisionPoolKit.js';
 import {
   makeMockChainStorageRoot,
   setUpZoeForTest,
@@ -364,15 +365,14 @@ test('makeBridgeProvisionTool handles duplicate requests', async t => {
   const { nameHub: namesByAddress, nameAdmin: namesByAddressAdmin } =
     makeNameHubKit();
   const publishMetrics = () => {};
-  const makeHandler = makeBridgeProvisionTool(
-    sendInitialPayment,
-    publishMetrics,
-  );
-  const handler = makeHandler({
+  const zone = makeHeapZone();
+  const makeBridgeProvisionTool = prepareBridgeProvisionTool(zone);
+  const handler = makeBridgeProvisionTool(
     bankManager,
-    namesByAddressAdmin,
     walletFactory,
-  });
+    namesByAddressAdmin,
+    Far('helpers', { sendInitialPayment, onProvisioned: publishMetrics }),
+  );
 
   t.log('1st request to provision a SMART_WALLET for', address);
   await handler.fromBridge({

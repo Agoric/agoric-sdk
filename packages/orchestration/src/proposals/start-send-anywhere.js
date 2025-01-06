@@ -6,16 +6,14 @@ import {
 import { E } from '@endo/far';
 
 /// <reference types="@agoric/vats/src/core/types-ambient"/>
+
 /**
  * @import {Installation} from '@agoric/zoe/src/zoeService/utils.js';
  * @import {CosmosChainInfo, Denom, DenomDetail} from '@agoric/orchestration';
+ * @import {start as StartFn} from '@agoric/orchestration/src/examples/send-anywhere.contract.js';
  */
 
 const trace = makeTracer('StartSA', true);
-
-/**
- * @import {start as StartFn} from '@agoric/orchestration/src/examples/send-anywhere.contract.js';
- */
 
 /**
  * @param {BootstrapPowers & {
@@ -24,11 +22,22 @@ const trace = makeTracer('StartSA', true);
  *       sendAnywhere: Installation<StartFn>;
  *     };
  *   };
+ *   instance: {
+ *     produce: {
+ *       sendAnywhere: Producer<Instance>;
+ *     };
+ *   };
+ *   issuer: {
+ *     consume: {
+ *       BLD: Issuer<'nat'>;
+ *       IST: Issuer<'nat'>;
+ *     };
+ *   };
  * }} powers
  * @param {{
  *   options: {
  *     chainInfo: Record<string, CosmosChainInfo>;
- *     assetInfo: Record<Denom, DenomDetail & { brandKey?: string }>;
+ *     assetInfo: [Denom, DenomDetail & { brandKey?: string }][];
  *   };
  * }} config
  */
@@ -47,11 +56,10 @@ export const startSendAnywhere = async (
       consume: { sendAnywhere },
     },
     instance: {
-      // @ts-expect-error unknown instance
       produce: { sendAnywhere: produceInstance },
     },
     issuer: {
-      consume: { IST },
+      consume: { BLD, IST },
     },
   },
   { options: { chainInfo, assetInfo } },
@@ -75,10 +83,33 @@ export const startSendAnywhere = async (
     }),
   );
 
+  /** @param {() => Promise<Issuer>} p */
+  const safeFulfill = async p =>
+    E.when(
+      p(),
+      i => i,
+      () => undefined,
+    );
+
+  const atomIssuer = await safeFulfill(() =>
+    E(agoricNames).lookup('issuer', 'ATOM'),
+  );
+  const osmoIssuer = await safeFulfill(() =>
+    E(agoricNames).lookup('issuer', 'OSMO'),
+  );
+
+  const issuerKeywordRecord = harden({
+    BLD: await BLD,
+    IST: await IST,
+    ...(atomIssuer && { ATOM: atomIssuer }),
+    ...(osmoIssuer && { OSMO: osmoIssuer }),
+  });
+  trace('issuerKeywordRecord', issuerKeywordRecord);
+
   const { instance } = await E(startUpgradable)({
     label: 'send-anywhere',
     installation: sendAnywhere,
-    issuerKeywordRecord: { Stable: await IST },
+    issuerKeywordRecord,
     privateArgs,
   });
   produceInstance.resolve(instance);
@@ -107,7 +138,7 @@ export const getManifest = ({ restoreRef }, { installationRef, options }) => {
           produce: { sendAnywhere: true },
         },
         issuer: {
-          consume: { IST: true },
+          consume: { BLD: true, IST: true },
         },
       },
     },

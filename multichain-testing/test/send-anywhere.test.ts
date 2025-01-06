@@ -10,8 +10,6 @@ import { createWallet } from '../tools/wallet.js';
 import { AmountMath } from '@agoric/ertp';
 import { makeQueryClient } from '../tools/query.js';
 import type { Amount } from '@agoric/ertp/src/types.js';
-import chainInfo from '../starship-chain-info.js';
-import { denomHash, withChainCapabilities } from '@agoric/orchestration';
 
 const test = anyTest as TestFn<SetupContextWithWallets>;
 
@@ -22,41 +20,18 @@ const contractBuilder =
   '../packages/builders/scripts/testing/init-send-anywhere.js';
 
 test.before(async t => {
-  const { deleteTestKeys, setupTestKeys, ...rest } = await commonSetup(t);
-  deleteTestKeys(accounts).catch();
+  const { setupTestKeys, ...common } = await commonSetup(t);
+  const { commonBuilderOpts, deleteTestKeys, faucetTools, startContract } =
+    common;
+  await deleteTestKeys(accounts).catch();
   const wallets = await setupTestKeys(accounts);
-  t.context = { ...rest, wallets, deleteTestKeys };
-  const { startContract } = rest;
+  t.context = { ...common, wallets };
+  await startContract(contractName, contractBuilder, commonBuilderOpts);
 
-  const assetInfo = {
-    uosmo: {
-      baseName: 'osmosis',
-      chainName: 'osmosis',
-      baseDenom: 'uosmo',
-    },
-    [`ibc/${denomHash({ denom: 'uosmo', channelId: chainInfo.agoric.connections['osmosislocal'].transferChannel.channelId })}`]:
-      {
-        baseName: 'osmosis',
-        chainName: 'agoric',
-        baseDenom: 'uosmo',
-      },
-    uatom: {
-      baseName: 'cosmoshub',
-      chainName: 'cosmoshub',
-      baseDenom: 'uatom',
-    },
-    [`ibc/${denomHash({ denom: 'uatom', channelId: chainInfo.agoric.connections['gaialocal'].transferChannel.channelId })}`]:
-      {
-        baseName: 'cosmoshub',
-        chainName: 'agoric',
-        baseDenom: 'uatom',
-      },
-  };
-
-  await startContract(contractName, contractBuilder, {
-    chainInfo: JSON.stringify(withChainCapabilities(chainInfo)),
-    assetInfo: JSON.stringify(assetInfo),
-  });
+  await faucetTools.fundFaucet([
+    ['cosmoshub', 'uatom'],
+    ['osmosis', 'uosmo'],
+  ]);
 });
 
 test.after(async t => {
@@ -64,12 +39,14 @@ test.after(async t => {
   deleteTestKeys(accounts);
 });
 
+type BrandKW = 'IST' | 'OSMO' | 'ATOM';
+
 const sendAnywhereScenario = test.macro({
-  title: (_, chainName: string, acctIdx: number) =>
-    `send-anywhere ${chainName}${acctIdx}`,
-  exec: async (t, chainName: string, acctIdx: number) => {
-    const config = chainConfig[chainName];
-    if (!config) return t.fail(`Unknown chain: ${chainName}`);
+  title: (_, destChainName: string, acctIdx: number, brandKw: BrandKW) =>
+    `send-anywhere ${brandKw} from agoric to ${destChainName}${acctIdx}`,
+  exec: async (t, destChainName: string, acctIdx: number, brandKw: BrandKW) => {
+    const config = chainConfig[destChainName];
+    if (!config) return t.fail(`Unknown chain: ${destChainName}`);
 
     const {
       wallets,
@@ -80,13 +57,13 @@ const sendAnywhereScenario = test.macro({
     } = t.context;
 
     t.log('Create a receiving wallet for the send-anywhere transfer');
-    const chain = useChain(chainName).chain;
+    const chain = useChain(destChainName).chain;
 
     t.log('Create an agoric smart wallet to initiate send-anywhere transfer');
-    const agoricAddr = wallets[`${chainName}${acctIdx}`];
+    const agoricAddr = wallets[`${destChainName}${acctIdx}`];
     const wdUser1 = await provisionSmartWallet(agoricAddr, {
-      BLD: 100_000n,
-      IST: 100_000n,
+      BLD: 1_000n,
+      [brandKw]: 1_000n,
     });
     t.log(`provisioning agoric smart wallet for ${agoricAddr}`);
 
@@ -95,11 +72,11 @@ const sendAnywhereScenario = test.macro({
     const brands = await vstorageClient.queryData(
       'published.agoricNames.brand',
     );
-    const istBrand = Object.fromEntries(brands).IST;
+    const brand = Object.fromEntries(brands)[brandKw];
 
-    const apiUrl = await useChain(chainName).getRestEndpoint();
+    const apiUrl = await useChain(destChainName).getRestEndpoint();
     const queryClient = makeQueryClient(apiUrl);
-    t.log(`Made ${chainName} query client`);
+    t.log(`Made ${destChainName} query client`);
 
     const doSendAnywhere = async (amount: Amount) => {
       t.log(`Sending ${amount.value} ${amount.brand}.`);
@@ -110,8 +87,8 @@ const sendAnywhereScenario = test.macro({
         encoding: 'bech32',
       };
       t.log('Will send payment to:', receiver);
-      t.log(`${chainName}  offer`);
-      const offerId = `${chainName}-makeSendInvitation-${Date.now()}`;
+      t.log(`${destChainName} offer`);
+      const offerId = `${destChainName}-makeSendInvitation-${Date.now()}`;
       await doOffer({
         id: offerId,
         invitationSpec: {
@@ -119,7 +96,7 @@ const sendAnywhereScenario = test.macro({
           instancePath: [contractName],
           callPipe: [['makeSendInvitation']],
         },
-        offerArgs: { destAddr: receiver.value, chainName },
+        offerArgs: { destAddr: receiver.value, chainName: destChainName },
         proposal: { give: { Send: amount } },
       });
 
@@ -150,12 +127,12 @@ const sendAnywhereScenario = test.macro({
     console.log(`${agoricAddr} offer amounts:`, offerAmounts);
 
     for (const value of offerAmounts) {
-      await doSendAnywhere(AmountMath.make(istBrand, value));
+      await doSendAnywhere(AmountMath.make(brand, value));
     }
   },
 });
 
-test.serial(sendAnywhereScenario, 'osmosis', 1);
-test.serial(sendAnywhereScenario, 'osmosis', 2);
-test.serial(sendAnywhereScenario, 'cosmoshub', 1);
-test.serial(sendAnywhereScenario, 'cosmoshub', 2);
+test.serial(sendAnywhereScenario, 'osmosis', 1, 'IST');
+test.serial(sendAnywhereScenario, 'osmosis', 2, 'ATOM'); // exercises PFM (agoric -> cosmoshub -> osmosis)
+test.serial(sendAnywhereScenario, 'cosmoshub', 1, 'IST');
+test.serial(sendAnywhereScenario, 'cosmoshub', 2, 'OSMO'); // exercises PFM (agoric -> osmosis -> cosmoshub)

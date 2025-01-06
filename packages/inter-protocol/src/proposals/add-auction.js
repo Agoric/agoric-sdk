@@ -1,8 +1,9 @@
 import { deeplyFulfilledObject, makeTracer } from '@agoric/internal';
 import { makeStorageNodeChild } from '@agoric/internal/src/lib-chainStorage.js';
-import { E } from '@endo/far';
 import { Stable } from '@agoric/internal/src/tokens.js';
+import { E } from '@endo/far';
 import { makeGovernedTerms as makeGovernedATerms } from '../auction/params.js';
+import { provideRetiredInstances } from './utils.js';
 
 const trace = makeTracer('NewAuction', true);
 
@@ -11,6 +12,7 @@ const trace = makeTracer('NewAuction', true);
  *   auctionUpgradeNewInstance: Instance;
  *   auctionUpgradeNewGovCreator: any;
  *   newContractGovBundleId: string;
+ *   retiredContractInstances: MapStore<string, Instance>;
  * }>} interlockPowers
  */
 
@@ -35,6 +37,7 @@ export const addAuction = async (
       economicCommitteeCreatorFacet: electorateCreatorFacet,
       governedContractKits: governedContractKitsP,
       priceAuthority8400,
+      retiredContractInstances: retiredContractInstancesP,
       zoe,
     },
     produce: {
@@ -42,6 +45,7 @@ export const addAuction = async (
       auctionUpgradeNewInstance,
       auctionUpgradeNewGovCreator,
       newContractGovBundleId,
+      retiredContractInstances: produceRetiredInstances,
     },
     instance: {
       consume: { reserve: reserveInstance },
@@ -78,6 +82,30 @@ export const addAuction = async (
     legacyKitP,
     auctioneerInstallationP,
   ]);
+
+  const retiredInstances = await provideRetiredInstances(
+    retiredContractInstancesP,
+    produceRetiredInstances,
+  );
+
+  const governedContractKits = await governedContractKitsP;
+  trace('has', governedContractKits.has(legacyKit.instance));
+  if (governedContractKits.has(legacyKit.instance)) {
+    // bootstrap tests start having already run this upgrade. Actual upgrades on
+    // mainNet or testnets should start with the promiseSpace post upgrade-17,
+    // which doesn't have this entry in the map.
+    trace(
+      '⚠️ WARNING: not expected during chain upgrade.  It IS normal during bootstrap tests',
+    );
+  } else {
+    // @ts-expect-error The original auctioneerKit had everything it needs
+    governedContractKits.init(legacyKit.instance, legacyKit);
+  }
+
+  // save the auctioneer instance so we can manage it later
+  const boardID = await E(board).getId(legacyKit.instance);
+  const identifier = `auctioneer-${boardID}`;
+  retiredInstances.init(identifier, legacyKit.instance);
 
   // Each field has an extra layer of type +  value:
   // AuctionStartDelay: { type: 'relativeTime', value: { relValue: 2n, timerBrand: Object [Alleged: timerBrand] {} } }
@@ -191,7 +219,6 @@ export const addAuction = async (
     governedInstance,
   );
 
-  const governedContractKits = await governedContractKitsP;
   governedContractKits.init(kit.instance, kit);
   auctionUpgradeNewInstance.resolve(governedInstance);
   auctionUpgradeNewGovCreator.resolve(kit.governorCreatorFacet);
@@ -210,6 +237,7 @@ export const ADD_AUCTION_MANIFEST = harden({
       economicCommitteeCreatorFacet: true,
       governedContractKits: true,
       priceAuthority8400: true,
+      retiredContractInstances: true,
       zoe: true,
     },
     produce: {
@@ -217,6 +245,7 @@ export const ADD_AUCTION_MANIFEST = harden({
       auctionUpgradeNewInstance: true,
       auctionUpgradeNewGovCreator: true,
       newContractGovBundleId: true,
+      retiredContractInstances: true,
     },
     instance: {
       consume: { reserve: true },

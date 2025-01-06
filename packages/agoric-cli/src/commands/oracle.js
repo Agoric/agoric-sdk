@@ -2,6 +2,8 @@
 /* eslint-disable func-names */
 /* eslint-env node */
 import {
+  fetchEnvNetworkConfig,
+  makeAgoricNames,
   makeVstorageKit,
   makeWalletUtils,
   storageHelper,
@@ -14,14 +16,13 @@ import * as cp from 'child_process';
 import { Command } from 'commander';
 import { inspect } from 'util';
 import { normalizeAddressWithOptions } from '../lib/chain.js';
-import { getNetworkConfig } from '../lib/network-config.js';
+import { bigintReplacer } from '../lib/format.js';
 import {
   getCurrent,
   outputAction,
   sendAction,
   sendHint,
 } from '../lib/wallet.js';
-import { bigintReplacer } from '../lib/format.js';
 
 /** @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js'; */
 
@@ -86,20 +87,24 @@ export const makeOracleCommand = (logger, io = {}) => {
 
   const rpcTools = async () => {
     // XXX pass fetch to getNetworkConfig() explicitly
-    const networkConfig = await getNetworkConfig({ env: process.env, fetch });
-    const utils = await makeVstorageKit({ fetch }, networkConfig);
+    const networkConfig = await fetchEnvNetworkConfig({
+      env: process.env,
+      fetch,
+    });
+    const vsk = makeVstorageKit({ fetch }, networkConfig);
+    const agoricNames = await makeAgoricNames(vsk.fromBoard, vsk.vstorage);
 
     const lookupPriceAggregatorInstance = ([brandIn, brandOut]) => {
       const name = oracleBrandFeedName(brandIn, brandOut);
-      const instance = utils.agoricNames.instance[name];
+      const instance = agoricNames.instance[name];
       if (!instance) {
-        logger.debug('known instances:', utils.agoricNames.instance);
+        logger.debug('known instances:', agoricNames.instance);
         throw Error(`Unknown instance ${name}`);
       }
       return instance;
     };
 
-    return { ...utils, networkConfig, lookupPriceAggregatorInstance };
+    return { ...vsk, networkConfig, lookupPriceAggregatorInstance };
   };
 
   oracle
@@ -204,11 +209,10 @@ export const makeOracleCommand = (logger, io = {}) => {
       s => s.split('.'),
     )
     .action(async opts => {
-      const { readLatestHead, lookupPriceAggregatorInstance } =
-        await rpcTools();
+      const { readPublished, lookupPriceAggregatorInstance } = await rpcTools();
       const instance = lookupPriceAggregatorInstance(opts.pair);
 
-      const offerId = await findOracleCap(instance, opts.from, readLatestHead);
+      const offerId = await findOracleCap(instance, opts.from, readPublished);
       if (!offerId) {
         console.error('No continuing ids found');
       }
@@ -269,8 +273,12 @@ export const makeOracleCommand = (logger, io = {}) => {
          * }}
          */ { pair, keys, price },
       ) => {
-        const { readLatestHead, networkConfig, lookupPriceAggregatorInstance } =
-          await rpcTools();
+        const {
+          readLatestHead,
+          readPublished,
+          networkConfig,
+          lookupPriceAggregatorInstance,
+        } = await rpcTools();
         const wutil = await makeWalletUtils({ fetch, delay }, networkConfig);
         const unitPrice = scaleDecimals(price);
 
@@ -335,7 +343,7 @@ export const makeOracleCommand = (logger, io = {}) => {
           adminOfferIds[from] = await findOracleCap(
             instance,
             from,
-            readLatestHead,
+            readPublished,
           );
           if (!adminOfferIds[from]) {
             console.error(

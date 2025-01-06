@@ -22,12 +22,12 @@ const contractBuilder =
   '../packages/builders/scripts/orchestration/init-basic-flows.js';
 
 test.before(async t => {
-  const { deleteTestKeys, setupTestKeys, ...rest } = await commonSetup(t);
-  deleteTestKeys(accounts).catch();
+  const { setupTestKeys, ...common } = await commonSetup(t);
+  const { commonBuilderOpts, deleteTestKeys, startContract } = common;
+  await deleteTestKeys(accounts).catch();
   const wallets = await setupTestKeys(accounts);
-  t.context = { ...rest, wallets, deleteTestKeys };
-  const { startContract } = rest;
-  await startContract(contractName, contractBuilder);
+  t.context = { ...common, wallets };
+  await startContract(contractName, contractBuilder, commonBuilderOpts);
 });
 
 test.after(async t => {

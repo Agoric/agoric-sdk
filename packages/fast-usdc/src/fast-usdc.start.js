@@ -1,5 +1,9 @@
 import { deeplyFulfilledObject, makeTracer, objectMap } from '@agoric/internal';
-import { CosmosChainInfoShape, DenomDetailShape } from '@agoric/orchestration';
+import {
+  CosmosChainInfoShape,
+  DenomDetailShape,
+  DenomShape,
+} from '@agoric/orchestration';
 import { Fail } from '@endo/errors';
 import { E } from '@endo/far';
 import { makeMarshal } from '@endo/marshal';
@@ -14,31 +18,26 @@ import { fromExternalConfig } from './utils/config-marshal.js';
 /**
  * @import {DepositFacet} from '@agoric/ertp/src/types.js'
  * @import {TypedPattern} from '@agoric/internal'
- * @import {CosmosChainInfo, Denom, DenomDetail} from '@agoric/orchestration';
  * @import {Instance, StartParams} from '@agoric/zoe/src/zoeService/utils'
  * @import {Board} from '@agoric/vats'
  * @import {ManifestBundleRef} from '@agoric/deploy-script-support/src/externalTypes.js'
  * @import {BootstrapManifest} from '@agoric/vats/src/core/lib-boot.js'
- * @import {Passable} from '@endo/marshal';
  * @import {LegibleCapData} from './utils/config-marshal.js'
- * @import {FastUsdcSF, FastUsdcTerms} from './fast-usdc.contract.js'
- * @import {FeeConfig, FeedPolicy} from './types.js'
+ * @import {FastUsdcSF} from './fast-usdc.contract.js'
+ * @import {FeedPolicy, FastUSDCConfig} from './types.js'
  */
+
+const ShareAssetInfo = /** @type {const} */ harden({
+  issuerName: 'FastLP',
+  denom: 'ufastlp',
+  assetKind: 'nat',
+  decimalPlaces: 6,
+});
 
 const trace = makeTracer('FUSD-Start', true);
 
 const contractName = 'fastUsdc';
 
-/**
- * @typedef {{
- *   terms: FastUsdcTerms;
- *   oracles: Record<string, string>;
- *   feeConfig: FeeConfig;
- *   feedPolicy: FeedPolicy & Passable;
- *   chainInfo: Record<string, CosmosChainInfo & Passable>;
- *   assetInfo: Record<Denom, DenomDetail & {brandKey?: string}>;
- * }} FastUSDCConfig
- */
 /** @type {TypedPattern<FastUSDCConfig>} */
 export const FastUSDCConfigShape = M.splitRecord({
   terms: FastUSDCTermsShape,
@@ -46,7 +45,7 @@ export const FastUSDCConfigShape = M.splitRecord({
   feeConfig: FeeConfigShape,
   feedPolicy: FeedPolicyShape,
   chainInfo: M.recordOf(M.string(), CosmosChainInfoShape),
-  assetInfo: M.recordOf(M.string(), DenomDetailShape),
+  assetInfo: M.arrayOf([DenomShape, DenomDetailShape]),
 });
 
 /**
@@ -86,6 +85,7 @@ const publishDisplayInfo = async (brand, { board, chainStorage }) => {
 };
 
 const FEED_POLICY = 'feedPolicy';
+const POOL_METRICS = 'poolMetrics';
 
 /**
  * @param {ERef<StorageNode>} node
@@ -123,6 +123,7 @@ export const startFastUSDC = async (
     consume: {
       agoricNames,
       namesByAddress,
+      bankManager,
       board,
       chainStorage,
       chainTimerService: timerService,
@@ -155,12 +156,11 @@ export const startFastUSDC = async (
     USDC: await E(USDCissuer).getBrand(),
   });
 
-  const { terms, oracles, feeConfig, feedPolicy, chainInfo, assetInfo } =
-    fromExternalConfig(
-      config?.options, // just in case config is missing somehow
-      brands,
-      FastUSDCConfigShape,
-    );
+  const { terms, oracles, feeConfig, feedPolicy, ...net } = fromExternalConfig(
+    config.options,
+    brands,
+    FastUSDCConfigShape,
+  );
   trace('using terms', terms);
   trace('using fee config', feeConfig);
 
@@ -184,6 +184,7 @@ export const startFastUSDC = async (
       chainStorage,
     },
   );
+  const poolMetricsNode = await E(storageNode).makeChildNode(POOL_METRICS);
 
   const privateArgs = await deeplyFulfilledObject(
     harden({
@@ -191,11 +192,12 @@ export const startFastUSDC = async (
       feeConfig,
       localchain,
       orchestrationService: cosmosInterchainService,
+      poolMetricsNode,
       storageNode,
       timerService,
       marshaller,
-      chainInfo,
-      assetInfo,
+      chainInfo: net.chainInfo,
+      assetInfo: net.assetInfo,
     }),
   );
 
@@ -212,12 +214,22 @@ export const startFastUSDC = async (
   await publishFeedPolicy(storageNode, feedPolicy);
 
   const {
-    issuers: { PoolShares: shareIssuer },
+    issuers: fastUsdcIssuers,
     brands: { PoolShares: shareBrand },
   } = await E(zoe).getTerms(instance);
+  /** @type {{ PoolShares: Issuer<'nat'> }} */
+  // @ts-expect-error see zcf.makeZCFMint(...) in fast-usdc.contract.js
+  const { PoolShares: shareIssuer } = fastUsdcIssuers;
   produceShareIssuer.resolve(shareIssuer);
   produceShareBrand.resolve(shareBrand);
   await publishDisplayInfo(shareBrand, { board, chainStorage });
+
+  const { denom, issuerName } = ShareAssetInfo;
+  trace('addAsset', denom, shareBrand);
+  await E(bankManager).addAsset(denom, issuerName, issuerName, {
+    issuer: shareIssuer,
+    brand: shareBrand,
+  });
 
   await Promise.all(
     Object.entries(oracleDepositFacets).map(async ([name, depositFacet]) => {
@@ -232,6 +244,13 @@ export const startFastUSDC = async (
 
   produceInstance.reset();
   produceInstance.resolve(instance);
+
+  const addresses = await E(kit.creatorFacet).publishAddresses();
+  trace('contract orch account addresses', addresses);
+  if (!net.noNoble) {
+    const addr = await E(kit.creatorFacet).connectToNoble();
+    trace('noble intermediate recipient', addr);
+  }
   trace('startFastUSDC done', instance);
 };
 harden(startFastUSDC);
@@ -257,6 +276,8 @@ export const getManifestForFastUSDC = (
           fastUsdcKit: true,
         },
         consume: {
+          bankManager: true, // to add FastLP as vbank asset
+
           chainStorage: true,
           chainTimerService: true,
           localchain: true,

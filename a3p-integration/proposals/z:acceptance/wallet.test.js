@@ -14,6 +14,7 @@ import {
 import { execFileSync } from 'node:child_process';
 import { agdWalletUtils } from './test-lib/index.js';
 import { getBalances, replaceTemplateValuesInFile } from './test-lib/utils.js';
+import { tryISTBalances } from './test-lib/psm-lib.js';
 
 /**
  * @param {string} file
@@ -57,10 +58,12 @@ test.serial(`send invitation via namesByAddress`, async t => {
   );
 });
 
-// FIXME https://github.com/Agoric/agoric-sdk/issues/10565
-test.skip('exitOffer tool reclaims stuck payment', async t => {
+test.serial('exitOffer tool reclaims stuck payment', async t => {
   const istBalanceBefore = await getBalances([GOV1ADDR], 'uist');
-  t.log('istBalanceBefore', istBalanceBefore);
+
+  // Using console.log here because t.log is inconsistent
+  // when a test fails in CI. See https://github.com/Agoric/agoric-sdk/issues/10565#issuecomment-2561923537
+  console.log('istBalanceBefore', istBalanceBefore);
 
   const offerId = 'bad-invitation-15'; // offer submitted on proposal upgrade-15 with an incorrect method name
   await agdWalletUtils.broadcastBridgeAction(GOV1ADDR, {
@@ -70,16 +73,20 @@ test.skip('exitOffer tool reclaims stuck payment', async t => {
 
   const istBalanceAfter = await retryUntilCondition(
     async () => getBalances([GOV1ADDR], 'uist'),
-    istBalance => istBalance > istBalanceBefore,
-    'tryExitOffer failed to reclaim stuck payment ',
+    // We only check gov1's IST balance is changed.
+    // Because the reclaimed amount (0,015 IST) is less than execution fee (0,2 IST)
+    // we might end up with less IST than the one before reclaiming the stuck payment.
+    istBalance => istBalance !== istBalanceBefore,
+    'tryExitOffer did not end up changing the IST balance',
     { log: t.log, setTimeout, retryIntervalMs: 5000, maxRetries: 15 },
   );
 
-  t.log('istBalanceAfter', istBalanceAfter);
+  console.log('istBalanceAfter', istBalanceAfter);
 
-  t.true(
-    istBalanceAfter > istBalanceBefore,
-    'The IST balance should increase after reclaiming the stuck payment',
+  await tryISTBalances(
+    t,
+    Number(istBalanceAfter),
+    Number(istBalanceBefore + 15_000n),
   );
 });
 

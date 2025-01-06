@@ -3,6 +3,7 @@ import { E } from '@endo/far';
 import { WalletName } from '@agoric/internal';
 import { getCopyMapEntries, makeCopyMap } from '@agoric/store';
 import { assertPathSegment } from '@agoric/internal/src/lib-chainStorage.js';
+import { makeScalarBigMapStore } from '@agoric/vat-data';
 
 /** @import {CopyMap} from '@endo/patterns'; */
 
@@ -170,4 +171,23 @@ export const sanitizePathSegment = name => {
   const candidate = name.replace(/ /g, '_');
   assertPathSegment(candidate);
   return candidate;
+};
+
+/**
+ * Idempotently provide an empty MapStore for the `retiredContractInstances`
+ * value in promise space
+ *
+ * @param {Promise<MapStore>} consume
+ * @param {Producer<MapStore>} produce
+ * @returns {Promise<MapStore>}
+ */
+export const provideRetiredInstances = async (consume, produce) => {
+  // Promise space has no way to look for an existing value other than awaiting a promise,
+  // but it does allow extra production so it's safe to do this redundantly.
+  produce.resolve(
+    makeScalarBigMapStore('retiredContractInstances', {
+      durable: true,
+    }),
+  );
+  return consume;
 };

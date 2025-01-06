@@ -12,6 +12,8 @@ export const TxStatus = /** @type {const} */ ({
   Advanced: 'ADVANCED',
   /** IBC transfer failed (timed out) */
   AdvanceFailed: 'ADVANCE_FAILED',
+  /** Advance skipped and waiting for forward */
+  AdvanceSkipped: 'ADVANCE_SKIPPED',
   /** settlement for matching advance received and funds disbursed */
   Disbursed: 'DISBURSED',
   /** fallback: do not collect fees */
@@ -21,7 +23,12 @@ export const TxStatus = /** @type {const} */ ({
 });
 harden(TxStatus);
 
-// TODO: define valid state transitions
+// According to the state diagram
+export const TerminalTxStatus = {
+  [TxStatus.Forwarded]: true,
+  [TxStatus.ForwardFailed]: true,
+  [TxStatus.Disbursed]: true,
+};
 
 /**
  * Status values for the StatusManager.
@@ -37,5 +44,7 @@ export const PendingTxStatus = /** @type {const} */ ({
   AdvanceFailed: 'ADVANCE_FAILED',
   /** IBC transfer is complete */
   Advanced: 'ADVANCED',
+  /** Advance skipped and waiting for forward */
+  AdvanceSkipped: 'ADVANCE_SKIPPED',
 });
 harden(PendingTxStatus);

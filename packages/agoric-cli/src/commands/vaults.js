@@ -1,7 +1,11 @@
 // @ts-check
 /* eslint-disable func-names */
 /* eslint-env node */
-import { makeVstorageKit } from '@agoric/client-utils';
+import {
+  fetchEnvNetworkConfig,
+  makeAgoricNames,
+  makeVstorageKit,
+} from '@agoric/client-utils';
 import {
   lookupOfferIdForVault,
   Offers,
@@ -9,9 +13,8 @@ import {
 import { Command } from 'commander';
 import { normalizeAddressWithOptions } from '../lib/chain.js';
 import { getCurrent, outputExecuteOfferAction } from '../lib/wallet.js';
-import { getNetworkConfig } from '../lib/network-config.js';
 
-const networkConfig = await getNetworkConfig({ env: process.env, fetch });
+const networkConfig = await fetchEnvNetworkConfig({ env: process.env, fetch });
 
 /**
  * @param {import('anylogger').Logger} logger
@@ -64,7 +67,8 @@ export const makeVaultsCommand = logger => {
     .option('--collateralBrand <string>', 'Collateral brand key', 'ATOM')
     .action(async function (opts) {
       logger.warn('running with options', opts);
-      const { agoricNames } = await makeVstorageKit({ fetch }, networkConfig);
+      const vsk = makeVstorageKit({ fetch }, networkConfig);
+      const agoricNames = await makeAgoricNames(vsk.fromBoard, vsk.vstorage);
 
       const offer = Offers.vaults.OpenVault(agoricNames, {
         giveCollateral: opts.giveCollateral,
@@ -99,10 +103,11 @@ export const makeVaultsCommand = logger => {
     .requiredOption('--vaultId <string>', 'Key of vault (e.g. vault1)')
     .action(async function (opts) {
       logger.warn('running with options', opts);
-      const { agoricNames, readPublished } = await makeVstorageKit(
+      const { readPublished, ...vsk } = makeVstorageKit(
         { fetch },
         networkConfig,
       );
+      const agoricNames = await makeAgoricNames(vsk.fromBoard, vsk.vstorage);
 
       const previousOfferId = await lookupOfferIdForVault(
         opts.vaultId,
@@ -143,10 +148,11 @@ export const makeVaultsCommand = logger => {
     )
     .action(async function (opts) {
       logger.warn('running with options', opts);
-      const { agoricNames, readPublished } = await makeVstorageKit(
+      const { readPublished, ...vsk } = makeVstorageKit(
         { fetch },
         networkConfig,
       );
+      const agoricNames = await makeAgoricNames(vsk.fromBoard, vsk.vstorage);
 
       const previousOfferId = await lookupOfferIdForVault(
         opts.vaultId,

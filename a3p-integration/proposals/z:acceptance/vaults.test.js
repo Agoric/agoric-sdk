@@ -17,7 +17,7 @@ import {
   openVault,
   USER1ADDR,
 } from '@agoric/synthetic-chain';
-import { agdWalletUtils, walletUtils } from './test-lib/index.js';
+import { agdWalletUtils } from './test-lib/index.js';
 import {
   getPriceFeedRoundId,
   verifyPushedPrice,
@@ -55,7 +55,7 @@ const exec = {
       offerId = `openVault-${Date.now()}`,
       collateralBrandKey = 'ATOM',
     ) => {
-      const offer = Offers.vaults.OpenVault(walletUtils.agoricNames, {
+      const offer = Offers.vaults.OpenVault(agdWalletUtils.agoricNames, {
         giveCollateral,
         wantMinted,
         offerId,
@@ -73,14 +73,14 @@ test.serial('open new vault', async t => {
   await bankSend(USER1ADDR, `20000000${ATOM_DENOM}`);
 
   const istBalanceBefore = await getISTBalance(USER1ADDR);
-  const activeVaultsBefore = await listVaults(USER1ADDR, walletUtils);
+  const activeVaultsBefore = await listVaults(USER1ADDR, agdWalletUtils);
 
   const mint = 5.0;
   const collateral = 10.0;
   await exec.vaults.OpenVault(USER1ADDR, mint, collateral);
 
   const istBalanceAfter = await getISTBalance(USER1ADDR);
-  const activeVaultsAfter = await listVaults(USER1ADDR, walletUtils);
+  const activeVaultsAfter = await listVaults(USER1ADDR, agdWalletUtils);
 
   await tryISTBalances(
     t,
@@ -178,7 +178,7 @@ test.serial(
   'user cannot open a vault under the minimum initial debt',
   async t => {
     await bankSend(GOV1ADDR, `200000000000000000${ATOM_DENOM}`);
-    const activeVaultsBefore = await listVaults(GOV1ADDR, walletUtils);
+    const activeVaultsBefore = await listVaults(GOV1ADDR, agdWalletUtils);
 
     const minInitialDebt = await getMinInitialDebt();
 
@@ -192,7 +192,7 @@ test.serial(
       },
     );
 
-    const activeVaultsAfter = await listVaults(GOV1ADDR, walletUtils);
+    const activeVaultsAfter = await listVaults(GOV1ADDR, agdWalletUtils);
 
     t.is(
       activeVaultsAfter.length,
@@ -203,7 +203,7 @@ test.serial(
 );
 
 test.serial('user cannot open a vault above debt limit', async t => {
-  const activeVaultsBefore = await listVaults(GOV1ADDR, walletUtils);
+  const activeVaultsBefore = await listVaults(GOV1ADDR, agdWalletUtils);
 
   const { availableDebtForMint } = await getAvailableDebtForMint(VAULT_MANAGER);
 
@@ -217,7 +217,7 @@ test.serial('user cannot open a vault above debt limit', async t => {
     },
   );
 
-  const activeVaultsAfter = await listVaults(GOV1ADDR, walletUtils);
+  const activeVaultsAfter = await listVaults(GOV1ADDR, agdWalletUtils);
 
   t.is(
     activeVaultsAfter.length,
@@ -228,7 +228,7 @@ test.serial('user cannot open a vault above debt limit', async t => {
 
 test.serial('user can open a vault under debt limit', async t => {
   const istBalanceBefore = await getISTBalance(GOV1ADDR);
-  const activeVaultsBefore = await listVaults(GOV1ADDR, walletUtils);
+  const activeVaultsBefore = await listVaults(GOV1ADDR, agdWalletUtils);
 
   const { availableDebtForMint } = await getAvailableDebtForMint(VAULT_MANAGER);
 
@@ -238,13 +238,14 @@ test.serial('user can open a vault under debt limit', async t => {
   await openVault(GOV1ADDR, mint.toString(), collateral.toString());
 
   const istBalanceAfter = await getISTBalance(GOV1ADDR);
-  const activeVaultsAfter = await listVaults(GOV1ADDR, walletUtils);
+  const activeVaultsAfter = await listVaults(GOV1ADDR, agdWalletUtils);
 
-  t.is(
-    istBalanceBefore + Number(mint),
-    istBalanceAfter,
-    'The IST balance should increase by the minted amount',
+  await tryISTBalances(
+    t,
+    scale6(istBalanceAfter),
+    scale6(istBalanceBefore + Number(mint)),
   );
+
   t.is(
     activeVaultsAfter.length,
     activeVaultsBefore.length + 1,

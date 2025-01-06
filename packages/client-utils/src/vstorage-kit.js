@@ -2,12 +2,13 @@ import {
   boardSlottingMarshaller,
   makeBoardRemote,
 } from '@agoric/vats/tools/board-utils.js';
+import { assertAllDefined } from '@agoric/internal';
 import { makeVStorage } from './vstorage.js';
 
 export { boardSlottingMarshaller };
 
 /**
- * @import {MinimalNetworkConfig} from './rpc.js';
+ * @import {MinimalNetworkConfig} from './network-config.js';
  * @import {TypedPublished} from './types.js';
  * @import {VStorage} from './vstorage.js';
  */
@@ -73,6 +74,7 @@ harden(storageHelper);
  * @returns {Promise<import('@agoric/vats/tools/board-utils.js').AgoricNamesRemotes>}
  */
 export const makeAgoricNames = async (ctx, vstorage) => {
+  assertAllDefined({ ctx, vstorage });
   const reverse = {};
   const entries = await Promise.all(
     ['brand', 'instance', 'vbankAsset'].map(async kind => {
@@ -96,12 +98,10 @@ export const makeAgoricNames = async (ctx, vstorage) => {
  * @param {{ fetch: typeof window.fetch }} io
  * @param {MinimalNetworkConfig} config
  */
-export const makeVstorageKit = async ({ fetch }, config) => {
-  await null;
+export const makeVstorageKit = ({ fetch }, config) => {
   try {
     const vstorage = makeVStorage({ fetch }, config);
     const fromBoard = makeFromBoard();
-    const agoricNames = await makeAgoricNames(fromBoard, vstorage);
 
     const marshaller = boardSlottingMarshaller(fromBoard.convertSlotToVal);
 
@@ -131,7 +131,6 @@ export const makeVstorageKit = async ({ fetch }, config) => {
       readLatestHead(`published.${subpath}`);
 
     return {
-      agoricNames,
       fromBoard,
       marshaller,
       readLatestHead,
@@ -143,4 +142,4 @@ export const makeVstorageKit = async ({ fetch }, config) => {
     throw Error(`RPC failure (${config.rpcAddrs}): ${err.message}`);
   }
 };
-/** @typedef {Awaited<ReturnType<typeof makeVstorageKit>>} VstorageKit */
+/** @typedef {ReturnType<typeof makeVstorageKit>} VstorageKit */

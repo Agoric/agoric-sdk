@@ -1,11 +1,14 @@
 // @ts-check
 /* eslint-disable func-names */
 /* eslint-env node */
-import { makeVstorageKit } from '@agoric/client-utils';
+import {
+  fetchEnvNetworkConfig,
+  makeAgoricNames,
+  makeVstorageKit,
+} from '@agoric/client-utils';
 import { execFileSync as execFileSyncAmbient } from 'child_process';
 import { Command, CommanderError } from 'commander';
 import { normalizeAddressWithOptions, pollBlocks } from '../lib/chain.js';
-import { getNetworkConfig } from '../lib/network-config.js';
 import {
   findContinuingIds,
   getCurrent,
@@ -15,8 +18,10 @@ import {
 } from '../lib/wallet.js';
 
 /**
- * @import {OfferSpec} from '@agoric/smart-wallet/src/offers.js'
- * @import {QuestionDetails} from '@agoric/governance/src/types.js'
+ * @import {OfferSpec} from '@agoric/smart-wallet/src/offers.js';
+ * @import {AgoricNamesRemotes} from '@agoric/vats/tools/board-utils.js';
+ * @import {CurrentWalletRecord} from '@agoric/smart-wallet/src/smartWallet.js';
+ * @import {VstorageKit} from '@agoric/client-utils';
  */
 
 const collectValues = (val, memo) => {
@@ -26,7 +31,7 @@ const collectValues = (val, memo) => {
 
 const defaultKeyring = process.env.AGORIC_KEYRING_BACKEND || 'test';
 
-const networkConfig = await getNetworkConfig({ env: process.env, fetch });
+const networkConfig = await fetchEnvNetworkConfig({ env: process.env, fetch });
 
 /**
  * @param {import('anylogger').Logger} _logger
@@ -86,19 +91,21 @@ export const makeGovCommand = (_logger, io = {}) => {
    * given a sendFrom address; else print it.
    *
    * @param {{
-   *   toOffer: (agoricNames: *, current: import('@agoric/smart-wallet/src/smartWallet.js').CurrentWalletRecord | undefined) => OfferSpec,
+   *   toOffer: (agoricNames: AgoricNamesRemotes, current: CurrentWalletRecord | undefined) => OfferSpec,
    *   sendFrom?: string | undefined,
    *   keyringBackend: string,
    *   instanceName?: string,
    * }} detail
-   * @param {Awaited<ReturnType<makeVstorageKit>>} [optUtils]
+   * @param {VstorageKit} [vsk]
    */
   const processOffer = async function (
     { toOffer, sendFrom, keyringBackend },
-    optUtils,
+    vsk,
   ) {
-    const utils = await (optUtils || makeVstorageKit({ fetch }, networkConfig));
-    const { agoricNames, readPublished } = utils;
+    await null;
+    vsk ||= makeVstorageKit({ fetch }, networkConfig);
+    const { readPublished } = vsk;
+    const agoricNames = await makeAgoricNames(vsk.fromBoard, vsk.vstorage);
 
     assert(keyringBackend, 'missing keyring-backend option');
 
@@ -265,10 +272,11 @@ export const makeGovCommand = (_logger, io = {}) => {
     )
     .requiredOption('--for <string>', 'description of the invitation')
     .action(async opts => {
-      const { agoricNames, readPublished } = await makeVstorageKit(
+      const { readPublished, ...vsk } = makeVstorageKit(
         { fetch },
         networkConfig,
       );
+      const agoricNames = await makeAgoricNames(vsk.fromBoard, vsk.vstorage);
       const current = await getCurrent(opts.from, { readPublished });
 
       const known = findContinuingIds(current, agoricNames);
@@ -294,10 +302,11 @@ export const makeGovCommand = (_logger, io = {}) => {
       normalizeAddress,
     )
     .action(async opts => {
-      const { agoricNames, readPublished } = await makeVstorageKit(
+      const { readPublished, ...vsk } = makeVstorageKit(
         { fetch },
         networkConfig,
       );
+      const agoricNames = await makeAgoricNames(vsk.fromBoard, vsk.vstorage);
       const current = await getCurrent(opts.from, { readPublished });
 
       const found = findContinuingIds(current, agoricNames);
@@ -333,8 +342,8 @@ export const makeGovCommand = (_logger, io = {}) => {
       normalizeAddress,
     )
     .action(async function (opts, options) {
-      const utils = await makeVstorageKit({ fetch }, networkConfig);
-      const { readPublished } = utils;
+      const vsk = makeVstorageKit({ fetch }, networkConfig);
+      const { readPublished } = vsk;
 
       const questionDesc = await readPublished(
         `committees.${opts.pathname}.latestQuestion`,
@@ -384,7 +393,7 @@ export const makeGovCommand = (_logger, io = {}) => {
           sendFrom: opts.sendFrom,
           keyringBackend: options.optsWithGlobals().keyringBackend,
         },
-        utils,
+        vsk,
       );
     });
 

@@ -1,4 +1,3 @@
-/* eslint-disable @jessie.js/safe-await-separator */
 /**
  * @file Bootstrap test integration vaults with smart-wallet. The tests in this
  *   file are NOT independent; a single `test.before()` handler creates shared

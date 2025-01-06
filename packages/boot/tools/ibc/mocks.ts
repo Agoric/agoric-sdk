@@ -1,5 +1,6 @@
 // @ts-check
 import { createMockAckMap } from '@agoric/orchestration/tools/ibc-mocks.js';
+import type { IBCChannelID, IBCEvent, IBCMethod } from '@agoric/vats';
 
 /** @import { IBCChannelID, IBCMethod, IBCEvent } from '@agoric/vats'; */
 
@@ -65,6 +66,11 @@ export const protoMsgMocks = {
     msg: 'eyJ0eXBlIjoxLCJkYXRhIjoiQ25zS0tTOXBZbU11WVhCd2JHbGpZWFJwYjI1ekxuUnlZVzV6Wm1WeUxuWXhMazF6WjFSeVlXNXpabVZ5RWs0S0NIUnlZVzV6Wm1WeUVndGphR0Z1Ym1Wc0xUVXpOaG9UQ2cxcFltTXZkWFZ6WkdOb1lYTm9FZ0l4TUNJTFkyOXpiVzl6TVhSbGMzUXFDbTV2WW14bE1YUmxjM1F5QURpQThKTEwzUWc9IiwibWVtbyI6IiJ9',
     ack: responses.ibcTransfer,
   },
+  // MsgTransfer 10 ibc/uusdchash from cosmos1test1 to noble1test through channel-536
+  ibcTransfer2: {
+    msg: 'eyJ0eXBlIjoxLCJkYXRhIjoiQ253S0tTOXBZbU11WVhCd2JHbGpZWFJwYjI1ekxuUnlZVzV6Wm1WeUxuWXhMazF6WjFSeVlXNXpabVZ5RWs4S0NIUnlZVzV6Wm1WeUVndGphR0Z1Ym1Wc0xUVXpOaG9UQ2cxcFltTXZkWFZ6WkdOb1lYTm9FZ0l4TUNJTVkyOXpiVzl6TVhSbGMzUXhLZ3B1YjJKc1pURjBaWE4wTWdBNGdQQ1N5OTBJIiwibWVtbyI6IiJ9',
+    ack: responses.ibcTransfer,
+  },
   error: {
     msg: '',
     ack: responses.error5,
@@ -101,17 +107,18 @@ export const addParamsIfJsonVersion = (version, params) => {
 export const icaMocks = {
   /**
    * ICA Channel Creation
-   * @param {IBCMethod<'startChannelOpenInit'>} obj
-   * @returns {IBCEvent<'channelOpenAck'>}
+   * @param obj
+   * @param bech32Prefix
    */
-  channelOpenAck: obj => {
+  channelOpenAck: (
+    obj: IBCMethod<'startChannelOpenInit'>,
+    bech32Prefix: string = 'cosmos',
+  ): IBCEvent<'channelOpenAck'> => {
     // Fake a channel IDs from port suffixes. _Ports have no relation to channels, and hosts
     // and controllers will likely have different channel IDs for the same channel._
     const mocklID = Number(obj.packet.source_port.split('-').at(-1));
-    /** @type {IBCChannelID} */
-    const mockLocalChannelID = `channel-${mocklID}`;
-    /** @type {IBCChannelID} */
-    const mockRemoteChannelID = `channel-${mocklID}`;
+    const mockLocalChannelID: IBCChannelID = `channel-${mocklID}`;
+    const mockRemoteChannelID: IBCChannelID = `channel-${mocklID}`;
 
     return {
       type: 'IBC_EVENT',
@@ -125,8 +132,8 @@ export const icaMocks = {
         channel_id: mockRemoteChannelID,
       },
       counterpartyVersion: addParamsIfJsonVersion(obj.version, {
-        // TODO, parameterize
-        address: 'cosmos1test',
+        // mockID expected to increase monotonically since icacontroller ports are sequential
+        address: `${bech32Prefix}1test${mocklID < 2 ? '' : mocklID - 1}`,
       }),
       connectionHops: obj.hops,
       order: obj.order,

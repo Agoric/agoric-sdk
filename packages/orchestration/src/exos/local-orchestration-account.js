@@ -11,7 +11,6 @@ import { Fail, q } from '@endo/errors';
 import {
   AmountArgShape,
   AnyNatAmountsRecord,
-  ChainAddressShape,
   DenomAmountShape,
   DenomShape,
   IBCTransferOptionsShape,
@@ -24,11 +23,12 @@ import { makeTimestampHelper } from '../utils/time.js';
 import { preparePacketTools } from './packet-tools.js';
 import { prepareIBCTools } from './ibc-packet.js';
 import { coerceCoin, coerceDenomAmount } from '../utils/amounts.js';
+import { TransferRouteShape } from './chain-hub.js';
 
 /**
  * @import {HostOf} from '@agoric/async-flow';
  * @import {LocalChain, LocalChainAccount} from '@agoric/vats/src/localchain.js';
- * @import {AmountArg, ChainAddress, DenomAmount, IBCMsgTransferOptions, IBCConnectionInfo, OrchestrationAccountI, LocalAccountMethods} from '@agoric/orchestration';
+ * @import {AmountArg, ChainAddress, DenomAmount, IBCMsgTransferOptions, IBCConnectionInfo, OrchestrationAccountCommon, LocalAccountMethods, TransferRoute} from '@agoric/orchestration';
  * @import {RecorderKit, MakeRecorderKit} from '@agoric/zoe/src/contractSupport/recorder.js'.
  * @import {Zone} from '@agoric/zone';
  * @import {Remote} from '@agoric/internal';
@@ -43,7 +43,7 @@ import { coerceCoin, coerceDenomAmount } from '../utils/amounts.js';
  * @import {ZoeTools} from '../utils/zoe-tools.js';
  */
 
-const trace = makeTracer('LOA');
+const trace = makeTracer('LocalOrchAccount');
 
 const { Vow$ } = NetworkShape; // TODO #9611
 
@@ -107,7 +107,7 @@ export const prepareLocalOrchestrationAccountKit = (
     zoeTools,
   },
 ) => {
-  const { watch, allVows, asVow, when } = vowTools;
+  const { watch, asVow, when } = vowTools;
   const { makeIBCTransferSender } = prepareIBCTools(
     zone.subZone('ibcTools'),
     vowTools,
@@ -134,11 +134,10 @@ export const prepareLocalOrchestrationAccountKit = (
           .returns(VowShape),
       }),
       transferWatcher: M.interface('transferWatcher', {
-        onFulfilled: M.call([M.record(), M.nat()])
+        onFulfilled: M.call(M.nat())
           .optional({
-            destination: ChainAddressShape,
             opts: M.or(M.undefined(), IBCTransferOptionsShape),
-            amount: DenomAmountShape,
+            route: TransferRouteShape,
           })
           .returns(Vow$(M.record())),
       }),
@@ -345,37 +344,34 @@ export const prepareLocalOrchestrationAccountKit = (
       },
       transferWatcher: {
         /**
-         * @param {[
-         *   { transferChannel: IBCConnectionInfo['transferChannel'] },
-         *   bigint,
-         * ]} results
+         * @param {bigint} timeoutTimestamp
          * @param {{
-         *   destination: ChainAddress;
-         *   opts?: IBCMsgTransferOptions;
-         *   amount: DenomAmount;
+         *   opts?: Omit<IBCMsgTransferOptions, 'forwardOpts'>;
+         *   route: TransferRoute;
          * }} ctx
          */
-        onFulfilled(
-          [{ transferChannel }, timeoutTimestamp],
-          { opts, amount, destination },
-        ) {
+        onFulfilled(timeoutTimestamp, { opts, route }) {
+          const { forwardInfo, ...transferDetails } = route;
+          /** @type {string | undefined} */
+          let memo;
+          if (opts && 'memo' in opts) {
+            memo = opts.memo;
+          }
+          if (forwardInfo) {
+            // forward memo takes precedence
+            memo = JSON.stringify(forwardInfo);
+          }
           const transferMsg = typedJson(
             '/ibc.applications.transfer.v1.MsgTransfer',
             {
-              sourcePort: transferChannel.portId,
-              sourceChannel: transferChannel.channelId,
-              token: {
-                amount: String(amount.value),
-                denom: amount.denom,
-              },
+              ...transferDetails,
               sender: this.state.address.value,
-              receiver: destination.value,
               timeoutHeight: opts?.timeoutHeight ?? {
                 revisionHeight: 0n,
                 revisionNumber: 0n,
               },
               timeoutTimestamp,
-              memo: opts?.memo ?? '',
+              memo: memo ?? '',
             },
           );
 
@@ -395,9 +391,7 @@ export const prepareLocalOrchestrationAccountKit = (
        * first result
        */
       extractFirstResultWatcher: {
-        /**
-         * @param {Record<unknown, unknown>[]} results
-         */
+        /** @param {Record<unknown, unknown>[]} results */
         onFulfilled(results) {
           results.length === 1 ||
             Fail`expected exactly one result; got ${results}`;
@@ -482,7 +476,7 @@ export const prepareLocalOrchestrationAccountKit = (
         },
       },
       holder: {
-        /** @type {HostOf<OrchestrationAccountI['asContinuingOffer']>} */
+        /** @type {HostOf<OrchestrationAccountCommon['asContinuingOffer']>} */
         asContinuingOffer() {
           // @ts-expect-error XXX invitationMakers
           // getPublicTopics resolves promptly (same run), so we don't need a watcher
@@ -504,14 +498,12 @@ export const prepareLocalOrchestrationAccountKit = (
             });
           });
         },
-        /**
-         * @type {HostOf<OrchestrationAccountI['getBalance']>}
-         */
+        /** @type {HostOf<OrchestrationAccountCommon['getBalance']>} */
         getBalance(denomArg) {
           return asVow(() => {
             const [brand, denom] =
               typeof denomArg === 'string'
-                ? [chainHub.getAsset(denomArg)?.brand, denomArg]
+                ? [chainHub.getAsset(denomArg, 'agoric')?.brand, denomArg]
                 : [denomArg, chainHub.getDenom(denomArg)];
 
             if (!denom) {
@@ -537,7 +529,7 @@ export const prepareLocalOrchestrationAccountKit = (
             );
           });
         },
-        /** @type {HostOf<OrchestrationAccountI['getBalances']>} */
+        /** @type {HostOf<OrchestrationAccountCommon['getBalances']>} */
         getBalances() {
           return watch(
             E(localchain).query(
@@ -549,9 +541,7 @@ export const prepareLocalOrchestrationAccountKit = (
           );
         },
 
-        /**
-         * @type {HostOf<OrchestrationAccountI['getPublicTopics']>}
-         */
+        /** @type {HostOf<OrchestrationAccountCommon['getPublicTopics']>} */
         getPublicTopics() {
           // getStoragePath resolves promptly (same run), so we don't need a watcher
           // eslint-disable-next-line no-restricted-syntax
@@ -628,14 +618,14 @@ export const prepareLocalOrchestrationAccountKit = (
         executeTx(messages) {
           return watch(E(this.state.account).executeTx(messages));
         },
-        /** @type {OrchestrationAccountI['getAddress']} */
+        /** @type {OrchestrationAccountCommon['getAddress']} */
         getAddress() {
           return this.state.address;
         },
         /**
          * XXX consider using ERTP to send if it's vbank asset
          *
-         * @type {HostOf<OrchestrationAccountI['send']>}
+         * @type {HostOf<OrchestrationAccountCommon['send']>}
          */
         send(toAccount, amount) {
           return asVow(() => {
@@ -656,7 +646,7 @@ export const prepareLocalOrchestrationAccountKit = (
         /**
          * XXX consider using ERTP to send if it's vbank asset
          *
-         * @type {HostOf<OrchestrationAccountI['sendAll']>}
+         * @type {HostOf<OrchestrationAccountCommon['sendAll']>}
          */
         sendAll(toAccount, amounts) {
           return asVow(() => {
@@ -682,17 +672,25 @@ export const prepareLocalOrchestrationAccountKit = (
          *   timeoutTimestamp are not supplied, a default timeoutTimestamp will
          *   be set for 5 minutes in the future
          * @returns {Vow<any>}
+         * @throws {Error} if route is not determinable, asset is not
+         *   recognized, or the transfer is rejected (insufficient funds,
+         *   timeout)
          */
         transfer(destination, amount, opts) {
           return asVow(() => {
-            trace('Transferring funds from LCA over IBC');
+            trace('Transferring funds over IBC');
+            const denomAmount = coerceDenomAmount(chainHub, amount);
 
-            const connectionInfoV = watch(
-              chainHub.getConnectionInfo(
-                this.state.address.chainId,
-                destination.chainId,
-              ),
+            const { forwardOpts, ...rest } = opts ?? {};
+
+            // throws if route is not determinable
+            const route = chainHub.makeTransferRoute(
+              destination,
+              denomAmount,
+              'agoric',
+              forwardOpts,
             );
+            trace('got transfer route', route);
 
             // set a `timeoutTimestamp` if caller does not supply either `timeoutHeight` or `timeoutTimestamp`
             // TODO #9324 what's a reasonable default? currently 5 minutes
@@ -700,23 +698,22 @@ export const prepareLocalOrchestrationAccountKit = (
               opts?.timeoutTimestamp ??
               (opts?.timeoutHeight
                 ? 0n
-                : E(timestampHelper).getTimeoutTimestampNS());
+                : asVow(() => E(timestampHelper).getTimeoutTimestampNS()));
 
             // don't resolve the vow until the transfer is confirmed on remote
             // and reject vow if the transfer fails for any reason
             const resultV = watch(
-              allVows([connectionInfoV, timeoutTimestampVowOrValue]),
+              timeoutTimestampVowOrValue,
               this.facets.transferWatcher,
               {
-                opts,
-                amount: coerceDenomAmount(chainHub, amount),
-                destination,
+                opts: rest,
+                route,
               },
             );
             return resultV;
           });
         },
-        /** @type {HostOf<OrchestrationAccountI['transferSteps']>} */
+        /** @type {HostOf<OrchestrationAccountCommon['transferSteps']>} */
         transferSteps(amount, msg) {
           return asVow(() => {
             console.log('transferSteps got', amount, msg);

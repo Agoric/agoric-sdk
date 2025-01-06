@@ -135,9 +135,9 @@ export const makeContextualSlogProcessor = (
 
   /**
    * @param {Slog} slog
-   * @returns {{ attributes: T & LogAttributes, body: Partial<Slog>; timestamp: Slog['time'] }}
+   * @returns {{ attributes: T & LogAttributes, body: Partial<Slog>; time: Slog['time'] }}
    */
-  const slogProcessor = ({ monotime, time: timestamp, ...body }) => {
+  const slogProcessor = ({ monotime, time, ...body }) => {
     const finalBody = { ...body };
 
     /** @type {{'crank.syscallNum'?: Slog['syscallNum']}} */
@@ -219,7 +219,7 @@ export const makeContextualSlogProcessor = (
 
         triggerContext = {
           'run.num': undefined,
-          'run.id': `${triggerType}-${finalBody.inboundNum}`,
+          'run.id': `${triggerType}-${finalBody.blockHeight}`,
           'run.trigger.type': triggerType,
           'run.trigger.time': finalBody.blockTime,
           'run.trigger.blockHeight': finalBody.blockHeight,
@@ -321,13 +321,13 @@ export const makeContextualSlogProcessor = (
 
     const logAttributes = {
       ...staticContext,
-      'process.uptime': monotime,
       ...initContext, // Optional prelude
       ...blockContext, // Block is the first level of execution nesting
       ...triggerContext, // run and trigger info is nested next
       ...crankContext, // Finally cranks are the last level of nesting
       ...replayContext, // Replay is a substitute for crank context during vat page in
       ...eventLogAttributes,
+      'process.uptime': monotime,
     };
 
     /**
@@ -356,7 +356,11 @@ export const makeContextualSlogProcessor = (
       // eslint-disable-next-line no-restricted-syntax
       case SLOG_TYPES.COSMIC_SWINGSET.RUN.FINISH: {
         assert(!!triggerContext);
-        persistContext(finalBody.remainingBeans ? {} : triggerContext);
+        persistContext(
+          finalBody.remainingBeans && finalBody.remainingBeans > 0
+            ? {}
+            : triggerContext,
+        );
         triggerContext = null;
         break;
       }
@@ -373,9 +377,9 @@ export const makeContextualSlogProcessor = (
     }
 
     return {
-      attributes: /** @type {T & LogAttributes} */ (logAttributes),
       body: finalBody,
-      timestamp,
+      attributes: /** @type {T & LogAttributes} */ (logAttributes),
+      time,
     };
   };
 

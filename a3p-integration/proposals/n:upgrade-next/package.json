@@ -6,6 +6,9 @@
     "upgradeInfo": {
       "coreProposals": []
     },
+    "sdk-generate": [
+      "testing/test-upgraded-board.js testUpgradedBoard"
+    ],
     "type": "Software Upgrade Proposal"
   },
   "type": "module",
@@ -29,7 +32,7 @@
   "scripts": {
     "agops": "yarn --cwd /usr/src/agoric-sdk/ --silent agops"
   },
-  "packageManager": "yarn@4.5.1",
+  "packageManager": "yarn@4.5.3",
   "devDependencies": {
     "eslint": "^8.57.0",
     "npm-run-all": "^4.1.5",

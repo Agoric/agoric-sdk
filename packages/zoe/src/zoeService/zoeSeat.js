@@ -4,6 +4,7 @@ import { E } from '@endo/eventual-send';
 import { M, prepareExoClassKit } from '@agoric/vat-data';
 import { deeplyFulfilled } from '@endo/marshal';
 import { makePromiseKit } from '@endo/promise-kit';
+import { NonNullish } from '@agoric/internal';
 
 import { satisfiesWant } from '../contractFacet/offerSafety.js';
 import '../types-ambient.js';
@@ -143,8 +144,10 @@ export const makeZoeSeatAdminFactory = baggage => {
           // doExit(), which ensures that finalPayouts() has set state.payouts.
           return E.when(
             state.subscriber.subscribeAfter(),
-            () => state.payouts[keyword],
-            () => state.payouts[keyword],
+            () =>
+              NonNullish(state.payouts[keyword], `No payout for "${keyword}"`),
+            () =>
+              NonNullish(state.payouts[keyword], `No payout for "${keyword}"`),
           );
         },
 

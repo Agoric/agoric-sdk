@@ -125,8 +125,6 @@ const prepareRemoteChainFacadeKit = (
         makeAccount() {
           return asVow(() => {
             const { remoteChainInfo, connectionInfo } = this.state;
-            const stakingDenom = remoteChainInfo.stakingTokens?.[0]?.denom;
-            if (!stakingDenom) throw Fail`chain info lacks staking denom`;
 
             // icqConnection is ultimately retrieved from state, but let's
             // create a connection if it doesn't exist

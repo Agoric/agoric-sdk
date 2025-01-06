@@ -1,11 +1,6 @@
+import mainConfig from './ava.main.config.js';
+
 export default {
-  extensions: {
-    ts: 'module',
-  },
-  require: ['@endo/init/debug.js'],
-  nodeArguments: ['--import=tsimp/import'],
+  ...mainConfig,
   files: ['test/fast-usdc/**/*.test.ts'],
-  concurrency: 1,
-  serial: true,
-  timeout: '125s',
 };

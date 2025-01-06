@@ -6,7 +6,7 @@ import { PendingTxStatus } from './constants.js';
  * @import {TypedPattern} from '@agoric/internal';
  * @import {FastUsdcTerms} from './fast-usdc.contract.js';
  * @import {USDCProposalShapes} from './pool-share-math.js';
- * @import {CctpTxEvidence, FeeConfig, PendingTx, PoolMetrics, ChainPolicy, FeedPolicy} from './types.js';
+ * @import {CctpTxEvidence, FeeConfig, PendingTx, PoolMetrics, ChainPolicy, FeedPolicy, AddressHook, EvmAddress, EvmHash, RiskAssessment, EvidenceWithRisk} from './types.js';
  */
 
 /**
@@ -19,10 +19,10 @@ export const makeNatAmountShape = (brand, min) =>
 /** @param {Record<'PoolShares' | 'USDC', Brand<'nat'>>} brands */
 export const makeProposalShapes = ({ PoolShares, USDC }) => {
   /** @type {TypedPattern<USDCProposalShapes['deposit']>} */
-  const deposit = M.splitRecord(
-    { give: { USDC: makeNatAmountShape(USDC, 1n) } },
-    { want: { PoolShare: makeNatAmountShape(PoolShares) } },
-  );
+  const deposit = M.splitRecord({
+    give: { USDC: makeNatAmountShape(USDC, 1n) },
+    want: { PoolShare: makeNatAmountShape(PoolShares) },
+  });
   /** @type {TypedPattern<USDCProposalShapes['withdraw']>} */
   const withdraw = M.splitRecord({
     give: { PoolShare: makeNatAmountShape(PoolShares, 1n) },
@@ -36,11 +36,27 @@ export const FastUSDCTermsShape = harden({
   usdcDenom: M.string(),
 });
 
-/** @type {TypedPattern<string>} */
+/** @type {TypedPattern<EvmAddress>} */
+export const EvmAddressShape = M.string({
+  // 0x + 40 hex digits
+  stringLengthLimit: 42,
+});
+harden(EvmAddressShape);
+
+/** @type {TypedPattern<EvmHash>} */
 export const EvmHashShape = M.string({
   stringLengthLimit: 66,
 });
 harden(EvmHashShape);
+
+/** @type {TypedPattern<RiskAssessment>} */
+export const RiskAssessmentShape = M.splitRecord(
+  {},
+  {
+    risksIdentified: M.arrayOf(M.string()),
+  },
+);
+harden(RiskAssessmentShape);
 
 /** @type {TypedPattern<CctpTxEvidence>} */
 export const CctpTxEvidenceShape = {
@@ -49,16 +65,23 @@ export const CctpTxEvidenceShape = {
     recipientAddress: M.string(),
   },
   blockHash: EvmHashShape,
-  blockNumber: M.bigint(),
-  blockTimestamp: M.bigint(),
+  blockNumber: M.nat(),
   chainId: M.number(),
   tx: {
-    amount: M.bigint(),
+    amount: M.nat(),
     forwardingAddress: M.string(),
+    sender: EvmAddressShape,
   },
   txHash: EvmHashShape,
 };
 harden(CctpTxEvidenceShape);
+
+/** @type {TypedPattern<EvidenceWithRisk>} */
+export const EvidenceWithRiskShape = {
+  evidence: CctpTxEvidenceShape,
+  risk: RiskAssessmentShape,
+};
+harden(EvidenceWithRiskShape);
 
 /** @type {TypedPattern<PendingTx>} */
 // @ts-expect-error TypedPattern not recognized as record
@@ -68,10 +91,12 @@ export const PendingTxShape = {
 };
 harden(PendingTxShape);
 
-export const EudParamShape = {
-  EUD: M.string(),
+/** @type {TypedPattern<AddressHook>} */
+export const AddressHookShape = {
+  baseAddress: M.string(),
+  query: { EUD: M.string() },
 };
-harden(EudParamShape);
+harden(AddressHookShape);
 
 const NatAmountShape = { brand: BrandShape, value: M.nat() };
 /** @type {TypedPattern<FeeConfig>} */
@@ -95,16 +120,13 @@ export const PoolMetricsShape = {
 harden(PoolMetricsShape);
 
 /** @type {TypedPattern<ChainPolicy>} */
-export const ChainPoliciesShape = M.splitRecord(
-  {
-    nobleContractAddress: EvmHashShape,
-    cctpTokenMessengerAddress: EvmHashShape,
-    confirmations: M.number(),
-    chainId: M.number(),
-  },
-  { chainType: M.number() },
-);
-harden(ChainPoliciesShape);
+export const ChainPolicyShape = {
+  attenuatedCttpBridgeAddress: EvmHashShape,
+  cctpTokenMessengerAddress: EvmHashShape,
+  confirmations: M.number(),
+  chainId: M.number(),
+};
+harden(ChainPolicyShape);
 
 /**
  * @type {TypedPattern<FeedPolicy>}
@@ -116,7 +138,7 @@ export const FeedPolicyShape = M.splitRecord(
   {
     nobleDomainId: M.number(),
     nobleAgoricChannelId: M.string(),
-    chainPolicies: M.recordOf(M.string(), ChainPoliciesShape),
+    chainPolicies: M.recordOf(M.string(), ChainPolicyShape),
   },
   { eventFilter: M.string() },
 );

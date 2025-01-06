@@ -9,7 +9,7 @@
     "build": "exit 0",
     "clean": "rm -rf bundles/config.*",
     "test": "ava",
-    "test:xs": "SWINGSET_WORKER_TYPE=xs-worker ava test/bootstrapTests test/upgrading",
+    "test:xs": "SWINGSET_WORKER_TYPE=xs-worker ava test/bootstrapTests test/upgrading test/fast-usdc",
     "lint-fix": "yarn lint:eslint --fix",
     "lint": "run-s --continue-on-error lint:*",
     "lint:types": "tsc",
@@ -25,6 +25,7 @@
     "@agoric/cosmic-proto": "^0.4.0",
     "@agoric/cosmic-swingset": "^0.41.3",
     "@agoric/ertp": "^0.16.2",
+    "@agoric/fast-usdc": "0.1.0",
     "@agoric/inter-protocol": "^0.16.1",
     "@agoric/internal": "^0.3.2",
     "@agoric/kmarshal": "^0.1.0",
@@ -59,7 +60,7 @@
     "@endo/patterns": "^1.4.7",
     "ava": "^5.3.0",
     "c8": "^10.1.2",
-    "ts-blank-space": "^0.4.1"
+    "ts-blank-space": "^0.4.4"
   },
   "files": [
     "CHANGELOG.md",
@@ -92,6 +93,6 @@
     "workerThreads": false
   },
   "typeCoverage": {
-    "atLeast": 91.11
+    "atLeast": 91.37
   }
 }

@@ -14,6 +14,10 @@ import {
   QueryBalanceRequest,
   QueryBalanceResponse,
 } from '@agoric/cosmic-proto/cosmos/bank/v1beta1/query.js';
+import {
+  MsgSend,
+  MsgSendResponse,
+} from '@agoric/cosmic-proto/cosmos/bank/v1beta1/tx.js';
 import { Coin } from '@agoric/cosmic-proto/cosmos/base/v1beta1/coin.js';
 import {
   QueryDelegationRequest,
@@ -38,6 +42,8 @@ import {
   MsgDelegate,
   MsgDelegateResponse,
 } from '@agoric/cosmic-proto/cosmos/staking/v1beta1/tx.js';
+import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
+import { makeIssuerKit } from '@agoric/ertp';
 import { decodeBase64 } from '@endo/base64';
 import { commonSetup } from '../supports.js';
 import type {
@@ -55,6 +61,8 @@ import {
 } from '../../tools/ibc-mocks.js';
 import type { CosmosValidatorAddress } from '../../src/cosmos-api.js';
 import { protoMsgMocks } from '../ibc-mocks.js';
+import fetchedChainInfo from '../../src/fetched-chain-info.js';
+import { assetOn } from '../../src/utils/asset.js';
 
 type TestContext = Awaited<ReturnType<typeof commonSetup>>;
 
@@ -64,11 +72,21 @@ test.beforeEach(async t => {
   t.context = await commonSetup(t);
 });
 
+const [uistOnCosmos] = assetOn(
+  'uist',
+  'agoric',
+  undefined,
+  'cosmoshub',
+  fetchedChainInfo,
+);
+
 test('send (to addr on same chain)', async t => {
   const {
     brands: { ist },
-    utils: { inspectDibcBridge },
+    mocks: { ibcBridge },
+    utils: { inspectDibcBridge, populateChainHub },
   } = t.context;
+  populateChainHub();
   const makeTestCOAKit = prepareMakeTestCOAKit(t, t.context);
   const account = await makeTestCOAKit();
   t.assert(account, 'account is returned');
@@ -88,6 +106,42 @@ test('send (to addr on same chain)', async t => {
     undefined,
   );
 
+  // register handler for ist bank send
+  ibcBridge.addMockAck(
+    buildTxPacketString([
+      MsgSend.toProtoMsg({
+        fromAddress: 'cosmos1test',
+        toAddress: 'cosmos99test',
+        amount: [
+          {
+            denom: uistOnCosmos,
+            // denom: 'ibc/uisthash',
+            amount: '10',
+          },
+        ],
+      }),
+    ]),
+    buildMsgResponseString(MsgSendResponse, {}),
+  );
+
+  t.is(
+    await E(account).send(toAddress, {
+      denom: uistOnCosmos,
+      value: 10n,
+    } as AmountArg),
+    undefined,
+    'send accepts Amount',
+  );
+
+  await t.throwsAsync(
+    () => E(account).send(toAddress, ist.make(10n) as AmountArg),
+    {
+      message:
+        "'amountToCoin' not working for \"[Alleged: IST brand]\" until #10449; use 'DenomAmount' for now",
+    },
+    'TODO #10449 amountToCoin for CosmosOrchestrationAccount',
+  );
+
   // simulate timeout error
   await t.throwsAsync(
     E(account).send(toAddress, { value: 504n, denom: 'uatom' } as AmountArg),
@@ -95,10 +149,17 @@ test('send (to addr on same chain)', async t => {
     { message: 'ABCI code: 5: error handling packet: see events for details' },
   );
 
-  // IST not registered
-  await t.throwsAsync(E(account).send(toAddress, ist.make(10n) as AmountArg), {
-    message: 'No denom for brand [object Alleged: IST brand]',
-  });
+  // MOO brand not registered
+  const moolah = withAmountUtils(makeIssuerKit('MOO'));
+  await t.throwsAsync(
+    E(account).send(toAddress, moolah.make(10n) as AmountArg),
+    {
+      // TODO #10449
+      // message: 'No denom for brand [object Alleged: MOO brand]',
+      message:
+        "'amountToCoin' not working for \"[Alleged: MOO brand]\" until #10449; use 'DenomAmount' for now",
+    },
+  );
 
   // multi-send (sendAll)
   t.is(
@@ -110,11 +171,10 @@ test('send (to addr on same chain)', async t => {
   );
 
   const { bridgeDowncalls } = await inspectDibcBridge();
-
   t.is(
     bridgeDowncalls.filter(d => d.method === 'sendPacket').length,
-    3,
-    'sent 2 successful txs and 1 failed. 1 rejected before sending',
+    4,
+    'sent 3 successful txs and 1 failed. 1 rejected before sending',
   );
 });
 
@@ -122,9 +182,10 @@ test('transfer', async t => {
   const {
     brands: { ist },
     facadeServices: { chainHub },
-    utils: { inspectDibcBridge },
+    utils: { inspectDibcBridge, populateChainHub },
     mocks: { ibcBridge },
   } = t.context;
+  populateChainHub();
 
   const mockIbcTransfer = {
     sourcePort: 'transfer',
@@ -184,6 +245,14 @@ test('transfer', async t => {
       },
     });
 
+    const umooTransfer = toTransferTxPacket({
+      ...mockIbcTransfer,
+      token: {
+        denom: 'umoo',
+        amount: '10',
+      },
+    });
+
     return {
       [defaultTransfer]: transferResp,
       [customTimeoutHeight]: transferResp,
@@ -191,6 +260,7 @@ test('transfer', async t => {
       [customTimeout]: transferResp,
       [customMemo]: transferResp,
       [uistTransfer]: transferResp,
+      [umooTransfer]: transferResp,
     };
   };
   ibcBridge.setMockAck(buildMocks());
@@ -307,18 +377,26 @@ test('transfer', async t => {
     },
   );
 
+  const moolah = withAmountUtils(makeIssuerKit('MOO'));
   t.log('transfer throws if asset is not in its chainHub');
-  await t.throwsAsync(E(account).transfer(mockDestination, ist.make(10n)), {
-    message: 'No denom for brand [object Alleged: IST brand]',
+  await t.throwsAsync(E(account).transfer(mockDestination, moolah.make(10n)), {
+    // TODO #10449
+    // message: 'No denom for brand [object Alleged: MOO brand]',
+    message:
+      "'amountToCoin' not working for \"[Alleged: MOO brand]\" until #10449; use 'DenomAmount' for now",
   });
-  chainHub.registerAsset('uist', {
-    baseDenom: 'uist',
+  chainHub.registerAsset('umoo', {
+    baseDenom: 'umoo',
     baseName: 'agoric',
-    brand: ist.brand,
+    brand: moolah.brand,
     chainName: 'agoric',
   });
-  // uses uistTransfer mock above
-  await E(account).transfer(mockDestination, ist.make(10n));
+  // uses umooTransfer mock above
+  await E(account).transfer(
+    mockDestination,
+    // moolah.make(10n), // TODO #10449 restore
+    { denom: 'umoo', value: 10n },
+  );
 
   t.log('transfer timeout error recieved and handled from the bridge');
   await t.throwsAsync(

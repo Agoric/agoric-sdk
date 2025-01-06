@@ -1,3 +1,4 @@
+// @ts-check
 import { E, Far } from '@endo/far';
 import { batchVstorageQuery } from './batchQuery.js';
 import { makeClientMarshaller } from './marshalTables.js';

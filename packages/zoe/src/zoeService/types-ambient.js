@@ -199,7 +199,9 @@
  * this seat. The promise will resolve after the seat has exited.
  * @property {(keyword: Keyword) => Promise<Payment<any>>} getPayout
  * returns a promise for the Payment corresponding to the indicated keyword.
- * The promise will resolve after the seat has exited.
+ * The promise will resolve after the seat has exited. If there is no payment
+ * corresponding to the keyword, an error will be thrown. (It used to return
+ * undefined.)
  * @property {() => Promise<OR>} getOfferResult
  * @property {() => void} [tryExit]
  * Note: Only works if the seat's `proposal` has an `OnDemand` `exit` clause. Zoe's
