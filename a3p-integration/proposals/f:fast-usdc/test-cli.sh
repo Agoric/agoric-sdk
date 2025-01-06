@@ -1,15 +1,21 @@
 #!/bin/bash
+set -euo pipefail
 
-# FIXME these commands are run against the `@agoric/fast-usdc` pulled from NPM
-# but should be run against the local SDK. The `yarn link` command described in
-# a3p-integration/README.md is supposed to make that work but it's not working.
+# XXX the from address is gov1 but using that causes:
+# Error: gov1 is not a valid name or address: decoding bech32 failed: invalid bech32 string length 4
+# Usage:
+#   agd keys show [name_or_address [name_or_address...]] [flags]
 
-yarn @agoric/fast-usdc operator accept >| accept.json
+yarn fast-usdc operator accept >| accept.json
 cat accept.json
-yarn agoric wallet send --offer accept.json --from gov1 --keyring-backend="test"
+yarn agoric wallet send --offer accept.json --from agoric1ee9hr0jyrxhy999y755mp862ljgycmwyp4pl7q --keyring-backend test
 ACCEPT_OFFER_ID=$(agoric wallet extract-id --offer accept.json)
 
-# FIXME attest something
-yarn @agoric/fast-usdc operator attest --previousOfferId "$ACCEPT_OFFER_ID" >| attest.json
+yarn fast-usdc operator attest --previousOfferId="$ACCEPT_OFFER_ID" --forwardingChannel=foo --recipientAddress=agoric1foo --blockHash=0xfoo --blockNumber=1 --chainId=3 --amount=123 --forwardingAddress=noble1foo --sender 0xfoo --txHash=0xtx >| attest.json
 cat attest.json
-yarn agoric wallet send --offer attest.json --from gov1 --keyring-backend="test"
+yarn agoric wallet send --offer attest.json --from agoric1ee9hr0jyrxhy999y755mp862ljgycmwyp4pl7q --keyring-backend test
+
+# The data above are bogus and result in errors in the logs:
+# SwingSet: vat: v72: ----- TxFeed.11  8 publishing evidence { aux: { forwardingChannel: 'foo', recipientAddress: 'agoric1foo' }, blockHash: '0xfoo', blockNumber: 1n, chainId: 3, tx: { amount: 123n, forwardingAddress: 'noble1foo', sender: '0xfoo' }, txHash: '0xtx' } []
+# SwingSet: vat: v72: ----- Advancer.15  2 Advancer error: (Error#4)
+# SwingSet: vat: v72: Error#4: Data too short
