@@ -4,8 +4,8 @@ go 1.20
 
 require (
 	github.com/agoric-labs/interchaintest/v6 v6.0.1-agoriclabs
-	github.com/cosmos/cosmos-sdk v0.46.13
-	github.com/cosmos/ibc-go/v6 v6.2.0
+	github.com/cosmos/cosmos-sdk v0.50.9
+	github.com/cosmos/ibc-go/v8 v8.5.2
 	github.com/stretchr/testify v1.9.0
 	go.uber.org/zap v1.26.0
 )
@@ -219,13 +219,13 @@ replace (
 // Agoric-specific replacements:
 replace (
 	// We need a fork of cosmos-sdk until all of the differences are merged.
-	github.com/cosmos/cosmos-sdk => github.com/agoric-labs/cosmos-sdk v0.46.16-alpha.agoric.2.5
+	github.com/cosmos/cosmos-sdk => github.com/agoric-labs/cosmos-sdk v0.46.16-alpha.agoric.2.4.0.20241231161927-03ea5e469b71
 
 	// Pick up an IAVL race fix.
 	github.com/cosmos/iavl => github.com/cosmos/iavl v0.19.7
 
 	// Use a version of ibc-go that is compatible with the above forks.
-	github.com/cosmos/ibc-go/v6 => github.com/agoric-labs/ibc-go/v6 v6.3.1-alpha.agoric.2
+	github.com/cosmos/ibc-go/v8 => github.com/agoric-labs/ibc-go/v8 v8.0.0-20250106120251-131babedfe63
 
 // use cometbft
 // Use our fork at least until post-v0.34.14 is released with

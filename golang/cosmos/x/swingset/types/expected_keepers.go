@@ -2,8 +2,8 @@ package types
 
 import (
 	sdkmath "cosmossdk.io/math"
+	authtypes "cosmossdk.io/x/auth/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 )
 
 type SmartWalletState uint8

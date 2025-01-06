@@ -1,9 +1,9 @@
 package ante
 
 import (
+	authtypes "cosmossdk.io/x/auth/types"
 	swingtypes "github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 )
 
 // AccountKeeper defines the contract needed for AccountKeeper related APIs.

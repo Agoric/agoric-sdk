@@ -12,7 +12,7 @@ import (
 	"github.com/agoric-labs/interchaintest/v6/ibc"
 	"github.com/agoric-labs/interchaintest/v6/testreporter"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	transfertypes "github.com/cosmos/ibc-go/v6/modules/apps/transfer/types"
+	transfertypes "github.com/cosmos/ibc-go/v8/modules/apps/transfer/types"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap/zaptest"
 )
