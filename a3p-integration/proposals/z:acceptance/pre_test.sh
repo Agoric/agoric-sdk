@@ -3,7 +3,7 @@
 set -o errexit -o errtrace -o pipefail
 
 DIRECTORY_PATH="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
-BRANCH_NAME="usman/testing-loadgen-follower"
+BRANCH_NAME="usman/monitoring-follower"
 CHAIN_ID="agoriclocal"
 FOLLOWER_API_PORT="2317"
 FOLLOWER_GRPC_PORT="10090"
@@ -108,7 +108,7 @@ start_follower() {
                 ##################################################################################
 
                 start_loadgen() {
-                        cd \$HOME/$LOADGEN_REPOSITORY_NAME
+                        cd \$HOME/$LOADGEN_REPOSITORY_NAME/monitor
                         ./start.sh \
                          --testnet-origin file://$NETWORK_CONFIG_FILE_PATH --use-state-sync
                 }
