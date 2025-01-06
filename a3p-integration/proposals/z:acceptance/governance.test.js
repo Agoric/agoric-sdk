@@ -56,6 +56,17 @@ test.serial(
     }
 
     await governanceDriver.waitForElection();
+
+    const vaultFactoryParamsAfter = await readLatestHead(
+      'published.vaultFactory.governance',
+    );
+
+    t.is(
+      // @ts-expect-error it's a record
+      vaultFactoryParamsAfter.current.ChargingPeriod.value,
+      400n,
+      'vaultFactory governed parameters did not match',
+    );
   },
 );
 
