@@ -5,5 +5,7 @@
     "calc-*.js",
     "src/**/*.js",
     "test/**/*.js",
+    "tools/**/*.js",
+    "tools/**/*.mjs",
   ],
 }

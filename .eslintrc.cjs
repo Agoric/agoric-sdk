@@ -69,7 +69,7 @@ module.exports = {
       defaultProject: 'tsconfig.json',
     },
     tsconfigRootDir: __dirname,
-    extraFileExtensions: ['.cjs'],
+    extraFileExtensions: ['.cjs', '.mjs'],
   },
   plugins: ['@typescript-eslint', 'prettier', 'require-extensions'],
   extends: [
@@ -164,6 +164,7 @@ module.exports = {
       files: [
         'packages/*/src/**/*.js',
         'packages/*/tools/**/*.js',
+        'packages/*/tools/**/*.mjs',
         'packages/*/*.js',
         'packages/wallet/api/src/**/*.js',
       ],
