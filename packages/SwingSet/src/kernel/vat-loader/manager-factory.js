@@ -4,7 +4,7 @@ import { makeLocalVatManagerFactory } from './manager-local.js';
 import { makeNodeSubprocessFactory } from './manager-subprocess-node.js';
 import { makeXsSubprocessFactory } from './manager-subprocess-xsnap.js';
 
-export function makeVatManagerFactory({
+export function makeVatManagerMaker({
   allVatPowers,
   kernelKeeper,
   vatEndowments,
@@ -67,7 +67,7 @@ export function makeVatManagerFactory({
    * @param {import('@agoric/swingset-liveslots').LiveSlotsOptions} options.liveSlotsOptions
    * @returns { Promise<import('../../types-internal.js').VatManager> }
    */
-  async function vatManagerFactory(vatID, options) {
+  async function makeVatManager(vatID, options) {
     const { managerOptions, liveSlotsOptions } = options;
     validateManagerOptions(managerOptions);
     const { workerOptions, enableSetup } = managerOptions;
@@ -103,5 +103,5 @@ export function makeVatManagerFactory({
     );
   }
 
-  return harden(vatManagerFactory);
+  return harden(makeVatManager);
 }
