@@ -1,5 +1,5 @@
 import { Fail, q } from '@endo/errors';
-import { M, mustMatch } from '@agoric/store';
+
 // Eventually will be importable from '@agoric/zoe-contract-support'
 import { swapExact } from '../contractSupport/index.js';
 import { isAfterDeadlineExitRule } from '../typeGuards.js';
@@ -69,11 +69,6 @@ const start = zcf => {
 
   /** @type {OfferHandler} */
   const makeOption = sellSeat => {
-    mustMatch(
-      sellSeat.getProposal(),
-      M.splitRecord({ exit: { afterDeadline: M.any() } }),
-      'exit afterDeadline',
-    );
     const sellSeatExitRule = sellSeat.getProposal().exit;
     if (!isAfterDeadlineExitRule(sellSeatExitRule)) {
       throw Fail`the seller must have an afterDeadline exitRule, but instead had ${q(
