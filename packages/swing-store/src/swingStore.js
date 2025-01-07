@@ -22,6 +22,11 @@ import { doRepairMetadata } from './repairMetadata.js';
 const IN_MEMORY = ':memory:';
 
 /**
+ * @template T
+ * @typedef {(input: T) => T} Replacer
+ */
+
+/**
  * @typedef { import('./kvStore.js').KVStore } KVStore
  *
  * @typedef { import('./snapStore.js').SnapStore } SnapStore
@@ -136,6 +141,10 @@ const IN_MEMORY = ':memory:';
  * @property {import('./snapStore.js').SnapshotCallback} [archiveSnapshot]  Called after creation of a new heap snapshot
  * @property {import('./transcriptStore.js').TranscriptCallback} [archiveTranscript]  Called after a formerly-current transcript span is finalized
  * @property {(pendingExports: Iterable<[key: string, value: string | null]>) => void} [exportCallback]
+ * @property {Replacer<ReturnType<makeKVStore>>} [wrapKvStore]
+ * @property {Replacer<ReturnType<makeTranscriptStore>>} [wrapTranscriptStore]
+ * @property {Replacer<ReturnType<makeSnapStore>>} [wrapSnapStore]
+ * @property {Replacer<ReturnType<makeBundleStore>>} [wrapBundleStore]
  */
 
 /**
@@ -163,6 +172,10 @@ export function makeSwingStore(path, forceReset, options = {}) {
     archiveSnapshot,
     archiveTranscript,
     exportCallback,
+    wrapKvStore = x => x,
+    wrapTranscriptStore = x => x,
+    wrapSnapStore = x => x,
+    wrapBundleStore = x => x,
   } = options;
 
   if (serialized) {
@@ -303,31 +316,22 @@ export function makeSwingStore(path, forceReset, options = {}) {
     }
   }
 
-  const kvStore = makeKVStore(db, ensureTxn, trace);
+  const kvStore = wrapKvStore(makeKVStore(db, ensureTxn, trace));
 
-  const { dumpTranscripts, ...transcriptStoreInternal } = makeTranscriptStore(
-    db,
-    ensureTxn,
-    noteExport,
-    {
+  const { dumpTranscripts, ...transcriptStoreInternal } = wrapTranscriptStore(
+    makeTranscriptStore(db, ensureTxn, noteExport, {
       keepTranscripts,
       archiveTranscript,
-    },
+    }),
   );
-  const { dumpSnapshots, ...snapStoreInternal } = makeSnapStore(
-    db,
-    ensureTxn,
-    makeSnapStoreIO(),
-    noteExport,
-    {
+  const { dumpSnapshots, ...snapStoreInternal } = wrapSnapStore(
+    makeSnapStore(db, ensureTxn, makeSnapStoreIO(), noteExport, {
       keepSnapshots,
       archiveSnapshot,
-    },
+    }),
   );
-  const { dumpBundles, ...bundleStoreInternal } = makeBundleStore(
-    db,
-    ensureTxn,
-    noteExport,
+  const { dumpBundles, ...bundleStoreInternal } = wrapBundleStore(
+    makeBundleStore(db, ensureTxn, noteExport),
   );
 
   const sqlCommit = db.prepare('COMMIT');
@@ -514,6 +518,8 @@ export function makeSwingStore(path, forceReset, options = {}) {
   const internal = harden({
     dirPath: asFile ? null : path,
     asFile,
+    db,
+    kvStore,
     snapStore: snapStoreInternal,
     transcriptStore: transcriptStoreInternal,
     bundleStore: bundleStoreInternal,
