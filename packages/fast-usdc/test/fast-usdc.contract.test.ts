@@ -38,6 +38,7 @@ import type { CctpTxEvidence, FeeConfig, PoolMetrics } from '../src/types.js';
 import { makeFeeTools } from '../src/utils/fees.js';
 import { MockCctpTxEvidences } from './fixtures.js';
 import { commonSetup, uusdcOnAgoric } from './supports.js';
+import type { USDCProposalShapes } from '../src/pool-share-math.js';
 
 const dirname = path.dirname(new URL(import.meta.url).pathname);
 
@@ -782,6 +783,46 @@ test.serial('STORY05(cont): LPs withdraw all liquidity', async t => {
   t.log({ a, b, sum: add(a, b) });
   t.truthy(a);
   t.truthy(b);
+});
+
+test.serial('withdraw fees using creatorFacet', async t => {
+  const {
+    startKit: { zoe, creatorFacet },
+    common: {
+      brands: { usdc },
+    },
+  } = t.context;
+  const proposal: USDCProposalShapes['withdrawFees'] = {
+    want: { USDC: usdc.units(1.25) },
+  };
+
+  const usdPurse = await E(usdc.issuer).makeEmptyPurse();
+  {
+    const balancePre = await E(creatorFacet).getContractFeeBalance();
+    t.log('contract fee balance before withdrawal', balancePre);
+    const toWithdraw = await E(creatorFacet).makeWithdrawFeesInvitation();
+    const seat = E(zoe).offer(toWithdraw, proposal);
+    await t.notThrowsAsync(E(seat).getOfferResult());
+    const payout = await E(seat).getPayout('USDC');
+    const amt = await E(usdPurse).deposit(payout);
+    t.log('withdrew fees', amt);
+    t.deepEqual(amt, usdc.units(1.25));
+    const balancePost = await E(creatorFacet).getContractFeeBalance();
+    t.log('contract fee balance after withdrawal', balancePost);
+    t.deepEqual(AmountMath.subtract(balancePre, usdc.units(1.25)), balancePost);
+  }
+
+  {
+    const toWithdraw = await E(creatorFacet).makeWithdrawFeesInvitation();
+    const tooMuch = { USDC: usdc.units(20) };
+    const seat = E(zoe).offer(toWithdraw, { want: tooMuch });
+    await t.throwsAsync(E(seat).getOfferResult(), {
+      message: /cannot withdraw {.*}; only {.*} available/,
+    });
+    const payout = await E(seat).getPayout('USDC');
+    const amt = await E(usdPurse).deposit(payout);
+    t.deepEqual(amt, usdc.units(0));
+  }
 });
 
 test.serial('STORY09: insufficient liquidity: no FastUSDC option', async t => {
