@@ -1,4 +1,4 @@
-import { intervalAsyncGenerator } from './clock-timer.js';
+import { makeIntervalIterable } from './clock-timer.js';
 
 const { assign, freeze } = Object;
 
@@ -76,16 +76,13 @@ const recentBlockRate = async (api, delta = 2) => {
 /**
  * @param {IntervalIO & { api: CosmosAPI, delta?: number }} io
  */
-export const iterateBlocks = ({ api, delta = 2, ...io }) => {
-  /** @type {Awaited<ReturnType<intervalAsyncGenerator>>} */
-  let ticks;
+export const makeBlocksIterable = ({ api, delta = 2, ...io }) => {
   return freeze({
-    cancel: () => ticks?.cancel(),
     async *[Symbol.asyncIterator]() {
       const { period } = await recentBlockRate(api, delta);
       const nyquist = period / 2;
       let prev;
-      ticks = intervalAsyncGenerator(nyquist, io);
+      const ticks = makeIntervalIterable(nyquist, io);
       for await (const tick of ticks) {
         const { block } = await queryBlock(api);
         const current = Number(block.header.height);

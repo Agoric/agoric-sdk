@@ -66,7 +66,7 @@ export const makeTxOracle = (
   io: {
     wd: WalletDriver;
     vstorageClient: VStorageClient;
-    blockIter: AsyncGenerator<{ height: number }, void, void>;
+    blockIter: AsyncIterable<{ height: number }, void, void>;
     now: () => number;
   },
 ) => {

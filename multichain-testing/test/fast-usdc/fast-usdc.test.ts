@@ -1,6 +1,6 @@
 import anyTest from '@endo/ses-ava/prepare-endo.js';
 
-import { iterateBlocks } from '@agoric/client-utils/src/chain.js';
+import { makeBlocksIterable } from '@agoric/client-utils/src/chain.js';
 import { makeAPI } from '@agoric/client-utils/src/grpc-rest-api.js';
 import { encodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
 import type { QueryBalanceResponseSDKType } from '@agoric/cosmic-proto/cosmos/bank/v1beta1/query.js';
@@ -118,7 +118,12 @@ test.serial('oracles accept', async t => {
 
   const api = makeAPI({ fetch });
   const now = () => Date.now();
-  const blockIter = iterateBlocks({ api, setInterval, clearInterval, now });
+  const blockIter = makeBlocksIterable({
+    api,
+    setTimeout,
+    clearTimeout,
+    now,
+  });
   const txOracles = await Promise.all(
     oracleWds.map(async (wd, ix) =>
       makeTxOracle(`oracle${ix}`, { wd, vstorageClient, blockIter, now }),
