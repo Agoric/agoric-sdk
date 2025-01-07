@@ -9,7 +9,7 @@ import { makeUpgradeDisconnection } from '@agoric/internal/src/upgrade-api.js';
 import { kser, kslot, makeError } from '@agoric/kmarshal';
 import { assertKnownOptions } from '../lib/assertOptions.js';
 import { foreverPolicy } from '../lib/runPolicies.js';
-import { makeVatManagerFactory } from './vat-loader/manager-factory.js';
+import { makeVatManagerMaker } from './vat-loader/manager-factory.js';
 import { makeVatWarehouse } from './vat-warehouse.js';
 import makeDeviceManager from './deviceManager.js';
 import makeKernelKeeper, {
@@ -1557,7 +1557,7 @@ export default function buildKernel(
     gcAndFinalize,
     meterControl: makeDummyMeterControl(),
   });
-  const vatManagerFactory = makeVatManagerFactory({
+  const makeVatManager = makeVatManagerMaker({
     allVatPowers,
     kernelKeeper,
     vatEndowments,
@@ -1652,7 +1652,7 @@ export default function buildKernel(
   }
 
   const vatLoader = makeVatLoader({
-    vatManagerFactory,
+    makeVatManager,
     kernelSlog,
     makeSourcedConsole,
     kernelKeeper,
