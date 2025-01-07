@@ -20,7 +20,8 @@
     "postpack": "git clean -f git-revision.txt",
     "build": "exit 0",
     "lint-fix": "yarn lint:eslint --fix",
-    "lint": "exit 0"
+    "lint": "exit 0",
+    "lint:eslint": "eslint ."
   },
   "dependencies": {
     "bindings": "^1.2.1",
