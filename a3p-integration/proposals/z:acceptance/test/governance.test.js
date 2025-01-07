@@ -20,8 +20,17 @@ const governanceDriver = await makeGovernanceDriver(fetch, networkConfig);
 test.serial(
   'economic committee can make governance proposal and vote on it',
   async t => {
+    const vaultFactoryParamsBefore = await readLatestHead(
+      'published.vaultFactory.governance',
+    );
+    const newChargingPeriod =
+      // @ts-expect-error it's a record
+      vaultFactoryParamsBefore.current.ChargingPeriod.value === 400n
+        ? 300n
+        : 400n;
+
     const params = {
-      ChargingPeriod: 400n,
+      ChargingPeriod: newChargingPeriod,
     };
     const instanceName = 'VaultFactory';
 
@@ -64,7 +73,7 @@ test.serial(
     t.is(
       // @ts-expect-error it's a record
       vaultFactoryParamsAfter.current.ChargingPeriod.value,
-      400n,
+      newChargingPeriod,
       'vaultFactory governed parameters did not match',
     );
   },
