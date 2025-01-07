@@ -34,7 +34,11 @@ export const makeProposalShapes = ({ PoolShares, USDC }) => {
     give: { PoolShare: makeNatAmountShape(PoolShares, 1n) },
     want: { USDC: makeNatAmountShape(USDC, 1n) },
   });
-  return harden({ deposit, withdraw });
+  /** @type {TypedPattern<USDCProposalShapes['withdrawFees']>} */
+  const withdrawFees = M.splitRecord({
+    want: { USDC: makeNatAmountShape(USDC, 1n) },
+  });
+  return harden({ deposit, withdraw, withdrawFees });
 };
 
 /** @type {TypedPattern<FastUsdcTerms>} */
