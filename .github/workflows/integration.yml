@@ -10,7 +10,6 @@ on:
       - 'release-*'
       - 'dev-*'
       - beta
-      - 'usman/*'
     tags:
       - '@agoric/sdk@*'
   pull_request:
@@ -228,7 +227,7 @@ jobs:
     needs: pre_check
     if: needs.pre_check.outputs.should_run == 'true'
     runs-on: ubuntu-latest
-    # timeout-minutes: 60
+    timeout-minutes: 60
     steps:
       - name: update job environment
         run: |
@@ -309,7 +308,6 @@ jobs:
         working-directory: a3p-integration
       - name: run proposals tests
         run: yarn test
-        timeout-minutes: 40
         working-directory: a3p-integration
       - name: copy a3p-integration
         if: (success() || failure())
