@@ -192,12 +192,13 @@ replace (
 	github.com/cosmos/iavl => github.com/cosmos/iavl v0.19.7
 
 	// Use a version of ibc-go that is compatible with the above forks.
-	github.com/cosmos/ibc-go/v6 => github.com/agoric-labs/ibc-go/v6 v6.3.1-alpha.agoric.2
+	github.com/cosmos/ibc-go/v8 => github.com/agoric-labs/ibc-go/v8 v8.0.0-20250108053659-640b1f5094da
 
 	// use cometbft
 	// Use our fork at least until post-v0.34.14 is released with
 	// https://github.com/tendermint/tendermint/issue/6899 resolved.
 	github.com/tendermint/tendermint => github.com/agoric-labs/cometbft v0.34.30-alpha.agoric.2
+	github.com/cosmos/cosmos-sdk/store => cosmossdk.io/store v1.1.1
 
 // For testing against a local cosmos-sdk, ibc-go, or cometbft
 // github.com/cosmos/cosmos-sdk => ../../../forks/cosmos-sdk
