@@ -36,6 +36,7 @@ import sqlite3 from 'better-sqlite3';
 import { Fail, b, q } from '@endo/errors';
 import { makePromiseKit } from '@endo/promise-kit';
 import { objectMap, BridgeId } from '@agoric/internal';
+import { QueuedActionType } from '@agoric/internal/src/action-types.js';
 import { defineName } from '@agoric/internal/src/js-utils.js';
 import { makeFakeStorageKit } from '@agoric/internal/src/storage-test-utils.js';
 // eslint-disable-next-line import/no-extraneous-dependencies
@@ -62,6 +63,7 @@ const useColors = process.stdout?.hasColors?.();
 const inspectDepth = 6;
 
 const noop = () => {};
+const empty = Object.create(null);
 const dataProp = { writable: true, enumerable: true, configurable: true };
 
 // cf. packages/swing-store/src/exporter.js
@@ -84,14 +86,14 @@ const makeLogDeep = (log, outStream, options = {}) => {
   return (...args) => log(...args.map(maybeInspect));
 };
 
-// TODO: Helpers for finding vats and tracking references, e.g.
-//   * getVatAdminNode('v112') # scan the vatAdmin vom v2.vs.vom.* vrefs for value matching /\b${vatID}\b/
-const makeHelpers = ({ db }) => {
+// TODO: getVatAdminNode('v112') # scan the vatAdmin vom v2.vs.vom.* vrefs for value matching /\b${vatID}\b/
+const makeHelpers = ({ db, EV }) => {
   const sqlKVGet = db
     .prepare('SELECT value FROM kvStore WHERE key = ?')
     .pluck();
   const kvGet = key => sqlKVGet.get(key);
   const kvGetJSON = key => JSON.parse(kvGet(key));
+
   const sqlKVByRange = db.prepare(
     `SELECT key, value FROM kvStore WHERE key >= :a AND key < :b AND ${[
       '(:keySuffix IS NULL OR substr(key, -length(:keySuffix)) = :keySuffix)',
@@ -129,6 +131,7 @@ const makeHelpers = ({ db }) => {
     }
     return lazy ? sql.iterate(args) : sql.all(args);
   };
+
   let vatsByID = new Map();
   let vatsByName = new Map();
   try {
@@ -189,45 +192,97 @@ const makeHelpers = ({ db }) => {
     // @ts-expect-error
     vatsByName = undefined;
   }
+
   const vatIDPatt = /^v[1-9][0-9]*$/;
+  // @see {@link ../../SwingSet/docs/c-lists.md}
+  // @see {@link ../../swingset-liveslots/src/vatstore-usage.md}
   const refPatt =
-    /^(?:(k[opd][1-9][0-9]*)|[opd][+-][1-9][0-9]*|o[+]d[1-9][0-9]*\/[1-9][0-9]*)$/;
-  const vrefValuePatt = /^([R_]) ([^ ]+)$/;
+    /(?<kref>^k[opd][1-9][0-9]*$)|(?<vref>^[opd][+-][1-9][0-9]*$|^(?<baseref>o[+][vd]?(?<kindID>[1-9][0-9]*)\/[1-9][0-9]*)(?<facetSuffix>:(?<facetID>0|[1-9][0-9]*))?)/;
+  const krefToVrefValuePatt = /^([R_]) ([^ ]+)$/;
+  const getKindMeta = (vatID, kindID) => {
+    const kindMetaJSON =
+      kvGet(`${vatID}.vs.vom.dkind.${kindID}.descriptor`) ||
+      kvGet(`${vatID}.vs.vom.vkind.${kindID}.descriptor`);
+    return JSON.parse(kindMetaJSON);
+  };
+
   /**
    * @param {string} refID kref or vref
    * @param {string} [contextVatID]
-   * @returns {Array<Record<string, {vatID: string, kref: string, vref: string}>>}
+   * @returns {Array<{vatID: string, kref: string, vref: string, kind?: string, facet?: string}>}
    */
   const getRefs = (refID, contextVatID = undefined) => {
-    const refParts =
-      refID.match(refPatt) || Fail`unknown kref or vref format in ${refID}`;
-    const isKref = !!refParts[1];
+    const refParts = refID.match(refPatt)?.groups;
+    if (!refParts) throw Fail`unknown kref or vref format in ${refID}`;
+    const isKref = !!refParts.kref;
     contextVatID === undefined ||
       contextVatID.match(vatIDPatt) ||
       Fail`invalid contextVatID ${contextVatID}`;
 
-    // Search for rows like (`v${vatID}.c.${vref}`, kref) or
-    // (`v${vatID}.c.${kref}`, `${flag} ${vref}`).
+    // Search for rows like (`v${vatID}.c.${kref}`, `${flag} ${vref}`), where
+    // kref might be exracted from rows like (`v${vatID}.c.${vref}`, kref).
     // @see {@link ../../SwingSet/docs/c-lists.md}
-    const kref = isKref
-      ? refID
-      : (contextVatID || Fail`contextVatID is required to interpret a vref`) &&
-        kvGet(`${contextVatID}.c.${refID}`);
-    if (!kref) return [];
-    const results = [];
+    const krefs = [];
+    let kindMeta;
+    if (isKref) {
+      krefs.push(refID);
+    } else {
+      const maybeKref = kref => kref && krefs.push(kref);
+      maybeKref(kvGet(`${contextVatID}.c.${refID}`));
+      const { baseref, kindID, facetID } = refParts;
+      if (kindID && !facetID) {
+        // Each facet might have its own kref.
+        kindMeta = getKindMeta(contextVatID, kindID);
+        const facetNames = kindMeta?.facets;
+        for (let i = 0; i < (facetNames?.length ?? 0); i += 1) {
+          maybeKref(kvGet(`${contextVatID}.c.${baseref}:${i}`));
+        }
+      }
+    }
     // Don't scan when we can enumerate keys.
-    // TODO: ..but maybe still do this in sqlite, e.g.
-    // `INNER JOIN kvStore AS entry ON entry.key = vat.vatID || '.c.' || :kref`
+    const results = [];
     for (const vatID of vatsByID.keys()) {
-      const value = kvGet(`${vatID}.c.${kref}`);
-      if (!value) continue;
-      const valueParts =
-        value.match(vrefValuePatt) || Fail`unexpected c-list value ${value}`;
-      results.push({ vatID, kref, vref: valueParts[2] });
+      for (const kref of krefs) {
+        const value = kvGet(`${vatID}.c.${kref}`);
+        if (!value) continue;
+        const [_value, _reachabilityFlag, vref] =
+          value.match(krefToVrefValuePatt) ||
+          Fail`unexpected c-list value ${value}`;
+        const result = { vatID, kref, vref };
+        const { kindID, facetID } = vref.match(refPatt)?.groups || empty;
+        if (kindID) {
+          // kindID appears only in vrefs for the exporting vat, where we either
+          // get metadata on the first try or not at all.
+          if (kindMeta !== null) {
+            kindMeta ||= getKindMeta(vatID, kindID) || null;
+          }
+          result.kind = kindMeta?.tag;
+          if (facetID) result.facet = kindMeta?.facets?.[facetID];
+        }
+        results.push(result);
+      }
     }
     return results;
   };
+
+  const runCoreEval = async (jsCode, permits = true) => {
+    const coreEvalDesc = {
+      json_permits: JSON.stringify(permits),
+      js_code: `${jsCode}`,
+    };
+    const coreEvalAction = {
+      type: QueuedActionType.CORE_EVAL,
+      evals: [coreEvalDesc],
+    };
+    // Assume a path to the coreEvalBridgeHandler.
+    const coreEvalBridgeHandler = await EV.vat('bootstrap').consumeItem(
+      'coreEvalBridgeHandler',
+    );
+    return EV(coreEvalBridgeHandler).fromBridge(coreEvalAction);
+  };
+
   return harden({
+    runCoreEval,
     immutable: { db, getRefs, kvGet, kvGetJSON, kvGlob, vatsByID, vatsByName },
   });
 };
@@ -592,7 +647,7 @@ const main = async (argv, options = {}, powers = {}) => {
   const testKit = await makeCosmicSwingsetTestKit(receiveBridgeSend, config);
 
   const { EV, controller, shutdown } = testKit;
-  const helpers = makeHelpers({ db });
+  const helpers = makeHelpers({ db, EV });
   const endowments = {
     // Raw access to overlay data.
     ...{ kvStore: provideEnhancedKVStore(kvStore), swingStore },
@@ -602,7 +657,7 @@ const main = async (argv, options = {}, powers = {}) => {
     ...{ mutations, ...helpers },
   };
   const contextDescriptors = objectMap(
-    { console, ...endowments, shutdown },
+    { console, endowments, ...endowments, shutdown },
     (value, name) => {
       // For final cleanup, `shutdown` must be preserved.
       if (name === 'shutdown') {
@@ -619,8 +674,8 @@ const main = async (argv, options = {}, powers = {}) => {
 
   const truthyKeys = obj =>
     Object.entries(obj).flatMap(([key, value]) => (value ? [key] : []));
-  console.warn('globals:', ...truthyKeys(endowments));
-  console.warn('globals.immutable:', ...truthyKeys(endowments.immutable));
+  console.warn('endowments:', ...truthyKeys(endowments));
+  console.warn('endowments.immutable:', ...truthyKeys(endowments.immutable));
   const replServer = repl.start({
     useGlobal: true,
     // @ts-expect-error TS2322 REPLWriter really is allowed to return an Error
@@ -725,18 +780,11 @@ Example commands:
   * immutable.getRefs('o+10', 'v1');
   * board = await EV.vat('bootstrap').consumeItem('board');
   * obj = await EV(board).getValue('board02963');
-  * await EV(kslot(kvStore.get('v1.c.o+10'))).fromBridge({
-      type: 'CORE_EVAL',
-      evals: [{
-        json_permits: true,
-        js_code: \`(async powers => {
-          const ref = await E.get(powers.consume.auctioneerKit).governorAdminFacet;
-          console.log(ref);
-          powers.produce.ref.resolve(ref);
-          console.log('OK');
-        })\`,
-      }],
-    });
+  * await runCoreEval(\`async powers => {
+      const ref = await E.get(powers.consume.auctioneerKit).governorAdminFacet;
+      console.log(ref);
+      powers.produce.ref.resolve(ref);
+    }\`);
   * (await EV.vat('bootstrap').consumeItem('ref')).getKref()
 
 May be used interactively, or as a recipient of piped commands, or as a module.`);
