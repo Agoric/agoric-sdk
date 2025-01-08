@@ -716,8 +716,7 @@ const main = async (argv, options = {}, powers = {}) => {
 const isImport =
   fs.realpathSync(process.argv[1]) !== fileURLToPath(import.meta.url);
 const isCLIEntryPoint = !isImport && !process.send && isMainThread !== false;
-const interactive =
-  process.stdin.isTTY && !process.env.AGORIC_INTERROGATOR_NO_REPL;
+const interactive = process.stdin.isTTY && !process.env.INQUISITOR_NO_REPL;
 if (isCLIEntryPoint && !interactive) {
   // When directly invoked with non-interactive stdin, defer to a child process
   // that will read stdin as module statements in the global environment with
@@ -729,7 +728,7 @@ if (isCLIEntryPoint && !interactive) {
     ...process.argv.slice(2),
   ];
   const child = spawn(process.argv[0], args, {
-    env: { ...process.env, AGORIC_INTERROGATOR_NO_REPL: '1' },
+    env: { ...process.env, INQUISITOR_NO_REPL: '1' },
     stdio: ['pipe', 'inherit', 'inherit', 'ipc'],
   });
   const { promise: childDoneP, resolve: finishChild } = makePromiseKit();
@@ -753,7 +752,7 @@ if (isCLIEntryPoint && !interactive) {
     const cleanup = `\n; try { await shutdown(); } catch (_err) {}`;
     stream.Readable.from([cleanup]).pipe(childInput);
   });
-} else if (isCLIEntryPoint || process.env.AGORIC_INTERROGATOR_NO_REPL) {
+} else if (isCLIEntryPoint || process.env.INQUISITOR_NO_REPL) {
   // When directly invoked with interactive stdin OR as a worker above, parse
   // CLI arguments and use `main` to setup the environment for either a REPL or
   // evaluating stdin as module statements (respectively).
@@ -781,28 +780,33 @@ if (isCLIEntryPoint && !interactive) {
     args.length === 1 || Fail`extra arguments`;
   } catch (err) {
     const log = options.help ? console.log : console.error;
-    if (!options.help) log(err.message);
+    if (!options.help) log(`Error: ${err.message}`);
     const self = pathlib.relative(process.cwd(), process.argv[1]);
-    log(`Usage: ${self} swingstore.sqlite
+    log(`Usage: ${self} swingstore.sqlite \\
   [--history-file PATH (default ${cliOptions['history-file'].default})]
 
 Loads an ephemeral environment in which one or more vats may be probed
 via \`EV\`/\`controller\`/\`kvStore\`/\`mutations\`/etc. without persisting changes.
+May be used interactively, or as a recipient of piped commands, or as a module.
 Example commands:
-  * immutable.db.prepare("SELECT name FROM sqlite_schema WHERE type='table'").pluck().all();
-  * immutable.db.pragma("table_info(transcriptSpans)");
-  * [vatAdminNodeRow] = immutable.db.kvGlob('v2.vs.*', '*v100*');
-  * immutable.getRefs('o+10', 'v1');
-  * board = await EV.vat('bootstrap').consumeItem('board');
-  * obj = await EV(board).getValue('board02963');
-  * await runCoreEval(\`async powers => {
-      const ref = await E.get(powers.consume.auctioneerKit).governorAdminFacet;
-      console.log(ref);
-      powers.produce.ref.resolve(ref);
-    }\`);
-  * (await EV.vat('bootstrap').consumeItem('ref')).getKref()
+* immutable.db.prepare("SELECT name FROM sqlite_schema WHERE type='table'").pluck().all();
+* immutable.db.pragma("table_info(transcriptSpans)");
+* [vatAdminNodeRow] = immutable.db.kvGlob('v2.vs.*', '*v100*');
+* immutable.getRefs('o+10', 'v1');
+* board = await EV.vat('bootstrap').consumeItem('board');
+* obj = await EV(board).getValue('board02963');
+* await runCoreEval(\`async powers => {
+    const ref = await E.get(powers.consume.auctioneerKit).governorAdminFacet;
+    console.log(ref);
+    powers.produce.ref.resolve(ref);
+  }\`);
+* (await EV.vat('bootstrap').consumeItem('ref')).getKref()
 
-May be used interactively, or as a recipient of piped commands, or as a module.`);
+ENVIRONMENT VARIABLES
+  CONSOLE_INSPECT_DEPTH
+    The number of times to recurse while formatting an object (default 6).
+  INQUISITOR_MAX_VATS_ONLINE
+    The maximum number of vats to have in memory at any given time (default 3).`);
     process.exit(64);
   }
   const camelizedOptions = Object.fromEntries(
