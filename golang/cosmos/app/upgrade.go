@@ -198,8 +198,8 @@ func upgradeGovernorExecutorCoreProposal(upgradeName string) (vm.CoreProposalSte
 	switch getVariantFromUpgradeName(upgradeName) {
 	case "EMERYNET":
 		targets = []string{"board04149:auctioneer"} // v38: governor for v39
-		//"boardXXXYYY:autioneer",
-		// fixme: need some targets here
+		// "boardXXXYYY:auctioneer",
+		// fixme: need more targets here
 	default:
 		return nil, nil
 	}
