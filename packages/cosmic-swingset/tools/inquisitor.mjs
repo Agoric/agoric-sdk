@@ -1,10 +1,14 @@
 #!/usr/bin/env node
+/**
+ * @file Interact with the database and/or vats of a swingstore.sqlite in an
+ *   ephemeral environment. This file functions as both an importable module and
+ *   as a standalone interactive or non-interactive script. See
+ *   "Check for CLI invocation" below for usage detail about the latter.
+ */
 /* eslint-env node */
 /* global globalThis */
 /* eslint-disable no-empty */
 
-// This file functions as both an importable module and a standalone script.
-// See below for usage detail about the latter.
 // eslint-disable-next-line import/no-extraneous-dependencies
 import 'ses';
 // eslint-disable-next-line import/no-extraneous-dependencies
