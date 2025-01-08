@@ -973,6 +973,10 @@ test(`userSeat.getPayouts, getPayout from zcf.makeEmptySeatKit`, async t => {
   const payoutAP = E(userSeat).getPayout('A');
   const payoutBP = E(userSeat).getPayout('B');
 
+  await t.throwsAsync(() => E(userSeat).getPayout('C'), {
+    message: /No payout for "C"/,
+  });
+
   t.deepEqual(await payoutPs.A, await payoutAP);
   t.deepEqual(await payoutPs.B, await payoutBP);
 
