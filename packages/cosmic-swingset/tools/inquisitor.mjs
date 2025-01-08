@@ -62,9 +62,10 @@ import { makeCosmicSwingsetTestKit } from './test-kit.js';
 const useColors = process.stdout?.hasColors?.();
 const inspectDepth = 6;
 
-const noop = () => {};
-const empty = Object.create(null);
 const dataProp = { writable: true, enumerable: true, configurable: true };
+const empty = Object.create(null);
+const noop = () => {};
+const parseNumber = input => (input.match(/[0-9]/) ? Number(input) : NaN);
 
 // cf. packages/swing-store/src/exporter.js
 const storeExportAPI = ['getExportRecords', 'getArtifactNames'];
@@ -265,10 +266,23 @@ const makeHelpers = ({ db, EV }) => {
     return results;
   };
 
-  const runCoreEval = async (jsCode, permits = true) => {
+  /**
+   * Run a core-eval directly through the controller (i.e., without a block).
+   *
+   * @param {string} fnText must evaluate to a function that will be invoked in
+   *   a core eval compartment with a "powers" argument as attenuated by
+   *   `permits` (with no attenuation by default).
+   * @param {import('@agoric/vats/src/core/lib-boot.js').BootstrapManifestPermit} [permits]
+   */
+  const runCoreEval = async (fnText, permits = true) => {
+    // Fail noisily if fnText does not evaluate to a function.
+    // This must be refactored if there is ever a need for such input.
+    const fn = new Compartment().evaluate(fnText);
+    typeof fn === 'function' || Fail`text must evaluate to a function`;
+    /** @type {import('@agoric/cosmic-proto/swingset/swingset.js').CoreEvalSDKType} */
     const coreEvalDesc = {
       json_permits: JSON.stringify(permits),
-      js_code: `${jsCode}`,
+      js_code: fnText,
     };
     const coreEvalAction = {
       type: QueuedActionType.CORE_EVAL,
@@ -605,6 +619,9 @@ harden(makeSwingStoreOverlay);
 const main = async (argv, options = {}, powers = {}) => {
   const { interactive, historyFile } = options;
   const { console = globalThis.console, process = globalThis.process } = powers;
+  const { env } = process;
+  const maxVatsOnline = parseNumber(env.INQUISITOR_MAX_VATS_ONLINE || '3');
+
   const logDeep = makeLogDeep(console.log, process.stdout);
 
   const { swingStore, mutations } = makeSwingStoreOverlay(argv[0]);
@@ -622,7 +639,7 @@ const main = async (argv, options = {}, powers = {}) => {
     }
   };
   const config = {
-    swingsetConfig: { maxVatsOnline: 3 },
+    swingsetConfig: { maxVatsOnline },
     swingStore,
     /** @type {Partial<SwingSetConfig>} */
     configOverrides: {
@@ -646,11 +663,21 @@ const main = async (argv, options = {}, powers = {}) => {
   };
   const testKit = await makeCosmicSwingsetTestKit(receiveBridgeSend, config);
 
-  const { EV, controller, shutdown } = testKit;
+  const {
+    EV,
+    controller,
+    shutdown,
+    getLastBlockInfo,
+    pushQueueRecord,
+    pushCoreEval,
+    runNextBlock,
+  } = testKit;
   const helpers = makeHelpers({ db, EV });
   const endowments = {
     // Raw access to overlay data.
     ...{ kvStore: provideEnhancedKVStore(kvStore), swingStore },
+    // Block interactions
+    ...{ getLastBlockInfo, pushQueueRecord, pushCoreEval, runNextBlock },
     // Vat interactions.
     ...{ EV, controller, krefOf, kser, kslot, kunser },
     // Inquisitor API.
