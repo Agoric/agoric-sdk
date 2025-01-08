@@ -79,7 +79,7 @@ const POOL_METRICS = 'poolMetrics';
  * }} FastUSDCCorePowers
  *
  * @typedef {StartedInstanceKitWithLabel & {
- *   creatorFacet: Awaited<ReturnType<FastUsdcSF>>['creatorFacet'];
+ *   creatorFacet: StartedInstanceKit<FastUsdcSF>['creatorFacet'];
  *   privateArgs: StartParams<FastUsdcSF>['privateArgs'];
  * }} FastUSDCKit
  */
