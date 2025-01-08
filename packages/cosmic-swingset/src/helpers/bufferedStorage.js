@@ -99,14 +99,16 @@ export const makeKVStoreFromMap = map => {
       assert.typeof(priorKey, 'string');
       ensureSorted();
       const start =
-        priorKeyReturned !== undefined &&
-        compareByCodePoints(priorKeyReturned, priorKey) <= 0
-          ? // priorKeyReturned <= priorKey; start at the next index
-            priorKeyIndex + 1
-          : priorKeyIndex > 0 && sortedKeys.at(priorKeyIndex - 1) === priorKey
-            ? // priorKey immediately precedes priorKeyIndex; start at the latter
-              priorKeyIndex
-            : 0;
+        priorKeyReturned === undefined
+          ? 0
+          : // If priorKeyReturned <= priorKey, start just after it.
+            (compareByCodePoints(priorKeyReturned, priorKey) <= 0 &&
+              priorKeyIndex + 1) ||
+            // Else if priorKeyReturned immediately follows priorKey, start at
+            // its index (and expect to return it again).
+            (sortedKeys.at(priorKeyIndex - 1) === priorKey && priorKeyIndex) ||
+            // Otherwise, start at the beginning.
+            0;
       for (let i = start; i < sortedKeys.length; i += 1) {
         const key = sortedKeys[i];
         if (compareByCodePoints(key, priorKey) <= 0) continue;
