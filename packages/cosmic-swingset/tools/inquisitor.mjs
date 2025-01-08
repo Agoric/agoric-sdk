@@ -288,7 +288,7 @@ const makeHelpers = ({ db, EV }) => {
 
   return harden({
     runCoreEval,
-    immutable: { db, getRefs, kvGet, kvGetJSON, kvGlob, vatsByID, vatsByName },
+    stable: { db, getRefs, kvGet, kvGetJSON, kvGlob, vatsByID, vatsByName },
   });
 };
 
@@ -691,7 +691,7 @@ const main = async (argv, options = {}, powers = {}) => {
   const truthyKeys = obj =>
     Object.entries(obj).flatMap(([key, value]) => (value ? [key] : []));
   console.warn('endowments:', ...truthyKeys(endowments));
-  console.warn('endowments.immutable:', ...truthyKeys(endowments.immutable));
+  console.warn('endowments.stable:', ...truthyKeys(endowments.stable));
   const replServer = repl.start({
     useGlobal: true,
     // @ts-expect-error TS2322 REPLWriter really is allowed to return an Error
@@ -790,10 +790,10 @@ Loads an ephemeral environment in which one or more vats may be probed
 via \`EV\`/\`controller\`/\`kvStore\`/\`mutations\`/etc. without persisting changes.
 May be used interactively, or as a recipient of piped commands, or as a module.
 Example commands:
-* immutable.db.prepare("SELECT name FROM sqlite_schema WHERE type='table'").pluck().all();
-* immutable.db.pragma("table_info(transcriptSpans)");
-* [vatAdminNodeRow] = immutable.db.kvGlob('v2.vs.*', '*v100*');
-* immutable.getRefs('o+10', 'v1');
+* stable.db.prepare("SELECT name FROM sqlite_schema WHERE type='table'").pluck().all();
+* stable.db.pragma("table_info(transcriptSpans)");
+* [vatAdminNodeRow] = stable.db.kvGlob('v2.vs.*', '*v100*');
+* stable.getRefs('o+10', 'v1');
 * board = await EV.vat('bootstrap').consumeItem('board');
 * obj = await EV(board).getValue('board02963');
 * await runCoreEval(\`async powers => {
