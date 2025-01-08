@@ -152,11 +152,12 @@ test.serial('null upgrade', async t => {
   await evalBundles(NULL_UPGRADE_PP_DIR);
 
   const vatDetailsAfter = await getDetailsMatchingVats('provisionPool');
-  const { incarnation } = vatDetailsAfter.find(vat => vat.vatID === 'v28'); // provisionPool is v28
+  const { incarnation } = vatDetailsAfter.find(vat =>
+    vat.vatName.endsWith('provisionPool'),
+  );
 
   t.log(vatDetailsAfter);
   t.is(incarnation, 2, 'incorrect incarnation');
-  t.pass();
 });
 
 test.serial('auto provision', async t => {
