@@ -5,6 +5,7 @@ import { fromExternalConfig } from './utils/config-marshal.js';
 import { FeedPolicyShape } from './type-guards.js';
 
 /**
+ * @import {Issuer} from '@agoric/ertp';
  * @import {Passable} from '@endo/pass-style'
  * @import {BootstrapManifest} from '@agoric/vats/src/core/lib-boot.js'
  * @import {LegibleCapData} from './utils/config-marshal.js'

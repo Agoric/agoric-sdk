@@ -1,6 +1,7 @@
 /* eslint-env node */
 /**
  * @import {Command} from 'commander';
+ * @import {Amount, Brand} from '@agoric/ertp';
  * @import {OfferSpec} from '@agoric/smart-wallet/src/offers.js';
  * @import {ExecuteOfferAction} from '@agoric/smart-wallet/src/smartWallet.js';
  * @import {USDCProposalShapes} from '../pool-share-math.js';

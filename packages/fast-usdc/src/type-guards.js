@@ -3,6 +3,7 @@ import { M } from '@endo/patterns';
 import { PendingTxStatus } from './constants.js';
 
 /**
+ * @import {Amount, Brand, NatValue, Payment} from '@agoric/ertp';
  * @import {TypedPattern} from '@agoric/internal';
  * @import {FastUsdcTerms} from './fast-usdc.contract.js';
  * @import {USDCProposalShapes} from './pool-share-math.js';
