@@ -5,10 +5,10 @@ import (
 	"reflect"
 	"testing"
 
+	"cosmossdk.io/store"
+	prefixstore "cosmossdk.io/store/prefix"
+	storetypes "cosmossdk.io/store/types"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/types"
-	"github.com/cosmos/cosmos-sdk/store"
-	prefixstore "github.com/cosmos/cosmos-sdk/store/prefix"
-	storetypes "github.com/cosmos/cosmos-sdk/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	dbm "github.com/cometbft/cometbft-db"
