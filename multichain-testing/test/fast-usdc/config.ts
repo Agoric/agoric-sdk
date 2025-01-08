@@ -1,4 +1,5 @@
 import type { IBCChannelID } from '@agoric/vats';
+import type { FeedPolicy } from '@agoric/fast-usdc/src/types.js';
 
 export const oracleMnemonics = {
   oracle1:
@@ -10,19 +11,12 @@ export const oracleMnemonics = {
 };
 harden(oracleMnemonics);
 
-export const makeFeedPolicy = (nobleAgoricChannelId: IBCChannelID) => {
+export const makeFeedPolicy = (
+  nobleAgoricChannelId: IBCChannelID,
+): Omit<FeedPolicy, 'chainPolicies'> => {
   return {
     nobleAgoricChannelId,
     nobleDomainId: 4,
-    chainPolicies: {
-      Arbitrum: {
-        attenuatedCttpBridgeAddress:
-          '0xe298b93ffB5eA1FB628e0C0D55A43aeaC268e347',
-        cctpTokenMessengerAddress: '0x19330d10D9Cc8751218eaf51E8885D058642E08A',
-        chainId: 42161,
-        confirmations: 2,
-      },
-    },
   };
 };
 harden(makeFeedPolicy);

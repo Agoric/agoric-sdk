@@ -122,7 +122,15 @@ export default async (homeP, endowments) => {
       return configurations[net].feedPolicy;
     }
     if (!feedPolicy) throw Error(feedPolicyUsage);
-    return JSON.parse(feedPolicy);
+    const parsed = JSON.parse(feedPolicy);
+    if (!parsed.chainPolicies) {
+      // chainPolicies contain bigints which can't be stringified
+      return {
+        // @ts-expect-error spreading CopyRecord & Passable
+        ...configurations.MAINNET.feedPolicy,
+        ...parsed,
+      };
+    }
   };
 
   const parseOracleArgs = () => {

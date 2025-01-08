@@ -153,7 +153,7 @@ test.serial(
   },
 );
 
-test.serial('writes feed policy to vstorage', async t => {
+test.serial('writes chain policy to vstorage', async t => {
   const { storage } = t.context;
   const opts = {
     node: 'fastUsdc.feedPolicy',

@@ -3,6 +3,7 @@
 import { E } from '@endo/far';
 import { fromExternalConfig } from './utils/config-marshal.js';
 import { FeedPolicyShape } from './type-guards.js';
+import { makePublishingStorageKit } from './fast-usdc.start.js';
 
 /**
  * @import {Passable} from '@endo/pass-style'
@@ -18,11 +19,13 @@ const FEED_POLICY = 'feedPolicy';
  * XXX copied from fast-usdc.start.js
  *
  * @param {ERef<StorageNode>} node
- * @param {FeedPolicy} policy
+ * @param {ERef<Marshaller>} marshaller
+ * @param {FeedPolicy & Passable} policy
  */
-const publishFeedPolicy = async (node, policy) => {
+const publishFeedPolicy = async (node, marshaller, policy) => {
   const feedPolicy = E(node).makeChildNode(FEED_POLICY);
-  await E(feedPolicy).setValue(JSON.stringify(policy));
+  const value = await E(marshaller).toCapData(policy);
+  await E(feedPolicy).setValue(JSON.stringify(value));
 };
 
 /**
@@ -32,7 +35,7 @@ const publishFeedPolicy = async (node, policy) => {
  * @param {{ options: LegibleCapData<{feedPolicy: FeedPolicy & Passable}> }} config
  */
 export const updateFastUsdcPolicy = async (
-  { consume: { agoricNames, chainStorage } },
+  { consume: { agoricNames, board, chainStorage } },
   config,
 ) => {
   /** @type {Issuer<'nat'>} */
@@ -46,9 +49,12 @@ export const updateFastUsdcPolicy = async (
     harden({ feedPolicy: FeedPolicyShape }),
   );
 
-  const storageNode = await E(chainStorage).makeChildNode(contractName);
+  const { storageNode, marshaller } = await makePublishingStorageKit(
+    contractName,
+    { board, chainStorage },
+  );
 
-  await publishFeedPolicy(storageNode, feedPolicy);
+  await publishFeedPolicy(storageNode, marshaller, feedPolicy);
 };
 
 /**
@@ -67,6 +73,7 @@ export const getManifestForUpdateFastUsdcPolicy = (_utils, { options }) => {
 
           // widely shared: name services
           agoricNames: true,
+          board: true,
         },
       },
     },

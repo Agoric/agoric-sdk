@@ -22,6 +22,7 @@ import { fromExternalConfig } from './utils/config-marshal.js';
  * @import {Board} from '@agoric/vats'
  * @import {ManifestBundleRef} from '@agoric/deploy-script-support/src/externalTypes.js'
  * @import {BootstrapManifest} from '@agoric/vats/src/core/lib-boot.js'
+ * @import {Passable} from '@endo/pass-style'
  * @import {LegibleCapData} from './utils/config-marshal.js'
  * @import {FastUsdcSF} from './fast-usdc.contract.js'
  * @import {FeedPolicy, FastUSDCConfig} from './types.js'
@@ -57,7 +58,10 @@ export const FastUSDCConfigShape = M.splitRecord({
  *   board: ERef<Board>;
  * }} io
  */
-const makePublishingStorageKit = async (path, { chainStorage, board }) => {
+export const makePublishingStorageKit = async (
+  path,
+  { chainStorage, board },
+) => {
   const storageNode = await E(chainStorage).makeChildNode(path);
 
   const marshaller = await E(board).getPublishingMarshaller();
@@ -89,11 +93,13 @@ const POOL_METRICS = 'poolMetrics';
 
 /**
  * @param {ERef<StorageNode>} node
- * @param {FeedPolicy} policy
+ * @param {ERef<Marshaller>} marshaller
+ * @param {FeedPolicy & Passable} policy
  */
-const publishFeedPolicy = async (node, policy) => {
+const publishFeedPolicy = async (node, marshaller, policy) => {
   const feedPolicy = E(node).makeChildNode(FEED_POLICY);
-  await E(feedPolicy).setValue(JSON.stringify(policy));
+  const value = await E(marshaller).toCapData(policy);
+  await E(feedPolicy).setValue(JSON.stringify(value));
 };
 
 /**
@@ -211,7 +217,7 @@ export const startFastUSDC = async (
   fastUsdcKit.resolve(harden({ ...kit, privateArgs }));
   const { instance, creatorFacet } = kit;
 
-  await publishFeedPolicy(storageNode, feedPolicy);
+  await publishFeedPolicy(storageNode, marshaller, feedPolicy);
 
   const {
     issuers: fastUsdcIssuers,

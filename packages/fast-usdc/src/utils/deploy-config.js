@@ -2,7 +2,7 @@ import { denomHash, withChainCapabilities } from '@agoric/orchestration';
 import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
 
 /**
- * @import {FastUSDCConfig} from '@agoric/fast-usdc/src/types.js'
+ * @import {ChainPolicy, FastUSDCConfig} from '@agoric/fast-usdc/src/types.js'
  * @import {Passable} from '@endo/marshal';
  * @import {CosmosChainInfo, Denom, DenomDetail} from '@agoric/orchestration';
  */
@@ -37,6 +37,13 @@ export const defaultAssetInfo = [
 ];
 harden(defaultAssetInfo);
 
+/** @type {Pick<ChainPolicy, 'blockWindowSize' | 'maxAmountPerBlockWindow'>} */
+export const defaultThresholdsAndLimits = {
+  blockWindowSize: 10,
+  maxAmountPerBlockWindow: 20_000_000_000n,
+};
+harden(defaultThresholdsAndLimits);
+
 const agoricAssetInfo = defaultAssetInfo.filter(
   ([_d, i]) => i.chainName === 'agoric',
 );
@@ -70,6 +77,7 @@ export const configurations = {
             '0x19330d10D9Cc8751218eaf51E8885D058642E08A',
           chainId: 42161,
           confirmations: 2,
+          ...defaultThresholdsAndLimits,
         },
       },
     },
@@ -99,6 +107,7 @@ export const configurations = {
             '0x19330d10D9Cc8751218eaf51E8885D058642E08A',
           chainId: 42161,
           confirmations: 2,
+          ...defaultThresholdsAndLimits,
         },
       },
     },
@@ -124,6 +133,7 @@ export const configurations = {
           cctpTokenMessengerAddress: '0xTODO',
           chainId: 421614,
           confirmations: 2,
+          ...defaultThresholdsAndLimits,
         },
       },
     },
@@ -146,6 +156,7 @@ export const configurations = {
           cctpTokenMessengerAddress: '0xTODO',
           chainId: 421614,
           confirmations: 2,
+          ...defaultThresholdsAndLimits,
         },
       },
     },
