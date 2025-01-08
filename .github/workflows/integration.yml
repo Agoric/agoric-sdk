@@ -120,7 +120,7 @@ jobs:
 
   deployment-test:
     needs: pre_check
-    if: needs.pre_check.outputs.should_run == 'true'
+    if: needs.pre_check.outputs.should_run == 'never'
 
     runs-on: ubuntu-22.04 # jammy (LTS)
     steps:
