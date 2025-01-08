@@ -14,8 +14,8 @@ import (
 	"github.com/tendermint/tendermint/libs/log"
 	"github.com/tendermint/tendermint/libs/rand"
 
+	"cosmossdk.io/simapp"
 	"cosmossdk.io/store"
-	"cosmossdk.io/x/simapp"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	simulation2 "github.com/cosmos/cosmos-sdk/types/simulation"
 	"github.com/cosmos/cosmos-sdk/x/simulation"
