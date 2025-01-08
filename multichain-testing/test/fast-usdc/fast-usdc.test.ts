@@ -11,7 +11,7 @@ import { makeDenomTools } from '../../tools/asset-info.js';
 import { createWallet } from '../../tools/wallet.js';
 import { makeQueryClient } from '../../tools/query.js';
 import { commonSetup, type SetupContextWithWallets } from '../support.js';
-import { makeFeedPolicy, oracleMnemonics } from './config.js';
+import { makeFeedPolicyPartial, oracleMnemonics } from './config.js';
 import { makeRandomDigits } from '../../tools/random.js';
 import { makeTracer } from '@agoric/internal';
 import type {
@@ -48,7 +48,9 @@ const contractBuilder =
 const LP_DEPOSIT_AMOUNT = 8_000n * 10n ** 6n;
 
 test.before(async t => {
-  const { setupTestKeys, ...common } = await commonSetup(t);
+  const { setupTestKeys, ...common } = await commonSetup(t, {
+    config: '../config.fusdc.yaml',
+  });
   const {
     chainInfo,
     commonBuilderOpts,
@@ -81,7 +83,7 @@ test.before(async t => {
   await startContract(contractName, contractBuilder, {
     oracle: keys(oracleMnemonics).map(n => `${n}:${wallets[n]}`),
     usdcDenom,
-    feedPolicy: JSON.stringify(makeFeedPolicy(nobleAgoricChannelId)),
+    feedPolicy: JSON.stringify(makeFeedPolicyPartial(nobleAgoricChannelId)),
     ...commonBuilderOpts,
   });
 

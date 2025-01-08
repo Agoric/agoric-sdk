@@ -1,4 +1,5 @@
 import type { IBCChannelID } from '@agoric/vats';
+import type { FeedPolicy } from '@agoric/fast-usdc/src/types.js';
 
 export const oracleMnemonics = {
   oracle1:
@@ -10,7 +11,9 @@ export const oracleMnemonics = {
 };
 harden(oracleMnemonics);
 
-export const makeFeedPolicy = (nobleAgoricChannelId: IBCChannelID) => {
+export const makeFeedPolicyPartial = (
+  nobleAgoricChannelId: IBCChannelID,
+): Omit<FeedPolicy, 'chainPolicies'> => {
   return {
     nobleAgoricChannelId,
     nobleDomainId: 4,
@@ -25,4 +28,4 @@ export const makeFeedPolicy = (nobleAgoricChannelId: IBCChannelID) => {
     },
   };
 };
-harden(makeFeedPolicy);
+harden(makeFeedPolicyPartial);

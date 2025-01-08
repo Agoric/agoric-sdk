@@ -9,7 +9,7 @@ const test = anyTest as TestFn<SetupContext>;
 
 test('noble forwarding', async t => {
   const { nobleTools, retryUntilCondition, useChain, vstorageClient } =
-    await commonSetup(t);
+    await commonSetup(t, { config: '../config.fusdc.yaml' });
 
   const agoricWallet = await createWallet('agoric');
   const agoricAddr = (await agoricWallet.getAccounts())[0].address;

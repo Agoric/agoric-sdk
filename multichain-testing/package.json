@@ -8,7 +8,7 @@
     "lint-fix": "yarn lint:eslint --fix",
     "test": "echo 'Run specific test suites:\nyarn test:main (needs `make start`)\nyarn test:fast-usdc (needs `make start FILE=config.fusdc.yaml`)'",
     "test:main": "ava --config ava.main.config.js",
-    "test:fast-usdc": "FILE=config.fusdc.yaml ava --config ava.fusdc.config.js",
+    "test:fast-usdc": "ava --config ava.fusdc.config.js",
     "starship:setup": "make setup-deps setup-kind",
     "starship:install": "make install",
     "starship:port-forward": "make port-forward",
