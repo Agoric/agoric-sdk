@@ -1,6 +1,6 @@
 module github.com/Agoric/agoric-sdk/golang/cosmos/e2etest
 
-go 1.20
+go 1.21
 
 require (
 	github.com/agoric-labs/interchaintest/v6 v6.0.1-agoriclabs
