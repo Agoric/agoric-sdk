@@ -21,6 +21,9 @@
  *   6c. Try to open a vault WITHOUT provisioning the newly introduced account
  *   6d. Observe the new account's address under `published.wallet`
  * 7. Same as step 2. Checks manual provision works after null upgrade
+ *
+ * Note: We are also upgrading provisionPool's governor to meet https://github.com/Agoric/agoric-sdk/issues/10411.
+ * THe governor's behavior is tested at https://github.com/Agoric/agoric-sdk/blob/master/a3p-integration/proposals/z%3Aacceptance/governance.test.js
  */
 
 import '@endo/init';
@@ -35,6 +38,7 @@ import {
   GOV1ADDR,
   openVault,
   ATOM_DENOM,
+  getVatDetails,
 } from '@agoric/synthetic-chain';
 import {
   makeVstorageKit,
@@ -65,6 +69,11 @@ const ambientAuthority = {
   log: console.log,
 };
 
+const vats = {
+  provisionPool: { incarnation: 1 },
+  'provisionPool-governor': { incarnation: 1 },
+};
+
 test.before(async t => {
   const vstorageKit = await makeVstorageKit(
     { fetch },
@@ -78,15 +87,13 @@ test.before(async t => {
 
 test.serial('upgrade provisionPool', async t => {
   await evalBundles(UPGRADE_PP_DIR);
+  const actual = {};
 
-  const vatDetailsAfter = await getDetailsMatchingVats('provisionPool');
-  const { incarnation } = vatDetailsAfter.find(vat =>
-    vat.vatName.endsWith('provisionPool'),
-  );
-
-  t.log(vatDetailsAfter);
-  t.is(incarnation, 1, 'incorrect incarnation');
-  t.pass();
+  for await (const vatName of Object.keys(vats)) {
+    actual[vatName] = await getVatDetails(vatName);
+  }
+  t.like(actual, vats);
+  t.log(actual);
 });
 
 test.serial(
