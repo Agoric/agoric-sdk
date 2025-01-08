@@ -7,6 +7,8 @@ import (
 	"sort"
 	"testing"
 
+	"cosmossdk.io/store"
+	storetypes "cosmossdk.io/store"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/app/params"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vbank/types"

@@ -12,6 +12,8 @@ import (
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vlocalchain"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vlocalchain/types"
 
+	"cosmossdk.io/store"
+	storetypes "cosmossdk.io/store/types"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/store"
 	storetypes "github.com/cosmos/cosmos-sdk/store/types"
