@@ -108,8 +108,9 @@ const makeHelpers = ({ db }) => {
   );
   const kvGlob = (keyGlob, valueGlob = undefined, lazy = false) => {
     const [_keyPattern, keyPrefix, keyTail, keySuffix] =
-      /^([^*?]*)((?:[*?]([^*?]*))*)$/.exec(keyGlob);
+      /** @type {string[]} */ (/^([^*?]*)((?:[*?]([^*?]*))*)$/.exec(keyGlob));
     let sql = sqlKVByHalfRange;
+    /** @type {Record<'a' | 'b' | 'keySuffix' | 'keyGlob' | 'valueGlob', string | null>} */
     const args = {
       a: keyPrefix,
       b: null,
@@ -117,11 +118,12 @@ const makeHelpers = ({ db }) => {
       keyGlob: keyTail && keyTail !== '*' ? keyGlob : null,
       valueGlob: valueGlob ?? null,
     };
-    const cps = [...keyPrefix].map(ch => ch.codePointAt(0));
-    const i = cps.findLastIndex(cp => cp < 0x10ffff);
+    const chars = [...keyPrefix];
+    const i = chars.findLastIndex(ch => ch < '\u{10FFFF}');
     if (i !== -1) {
       sql = sqlKVByRange;
-      args.b = String.fromCodePoint(...cps.slice(0, i), cps[i] + 1);
+      const newLastCP = /** @type {number} */ (chars[i].codePointAt(0)) + 1;
+      args.b = chars.slice(0, i).join('') + String.fromCodePoint(newLastCP);
     } else {
       console.warn('Warning: Unprefixed searches can be slow');
     }
@@ -182,7 +184,9 @@ const makeHelpers = ({ db }) => {
     }
   } catch (err) {
     console.warn('Warning: Could not build vat maps', err);
+    // @ts-expect-error
     vatsByID = undefined;
+    // @ts-expect-error
     vatsByName = undefined;
   }
   const vatIDPatt = /^v[1-9][0-9]*$/;
@@ -191,22 +195,24 @@ const makeHelpers = ({ db }) => {
   const vrefValuePatt = /^([R_]) ([^ ]+)$/;
   /**
    * @param {string} refID kref or vref
-   * @param {string} [vatID]
-   * @returns {Record<string, {vatID: string, kref: string, vref: string}>}
+   * @param {string} [contextVatID]
+   * @returns {Array<Record<string, {vatID: string, kref: string, vref: string}>>}
    */
-  const getRefs = (refID, vatID = undefined) => {
+  const getRefs = (refID, contextVatID = undefined) => {
     const refParts =
       refID.match(refPatt) || Fail`unknown kref or vref format in ${refID}`;
     const isKref = !!refParts[1];
-    vatID == null || vatID.match(vatIDPatt) || Fail`invalid vatID ${vatID}`;
+    contextVatID === undefined ||
+      contextVatID.match(vatIDPatt) ||
+      Fail`invalid contextVatID ${contextVatID}`;
 
     // Search for rows like (`v${vatID}.c.${vref}`, kref) or
     // (`v${vatID}.c.${kref}`, `${flag} ${vref}`).
     // @see {@link ../../SwingSet/docs/c-lists.md}
     const kref = isKref
       ? refID
-      : (vatID || Fail`vatID is required to interpret a vref`) &&
-        kvGet(`${vatID}.c.${refID}`);
+      : (contextVatID || Fail`contextVatID is required to interpret a vref`) &&
+        kvGet(`${contextVatID}.c.${refID}`);
     if (!kref) return [];
     const results = [];
     // Don't scan when we can enumerate keys.
@@ -291,7 +297,7 @@ export const wrapSubstore = (storeName, store, options = {}) => {
           return fn(key, ...rest);
         });
       } else if (logAndMarkMap.has(name)) {
-        const makeResult = logAndMarkMap.get(name);
+        const makeResult = /** @type {Function} */ (logAndMarkMap.get(name));
         return defineName(name, (key, ...rest) => {
           markStale(key);
           log(storeName, name, key, ...rest);
@@ -617,6 +623,7 @@ const main = async (argv, options = {}, powers = {}) => {
   console.warn('globals.immutable:', ...truthyKeys(endowments.immutable));
   const replServer = repl.start({
     useGlobal: true,
+    // @ts-expect-error TS2322 REPLWriter really is allowed to return an Error
     writer: value => {
       if (value instanceof Error) {
         // Use the SES console.
@@ -711,26 +718,26 @@ if (isCLIEntryPoint && !interactive) {
 
 Loads an ephemeral environment in which one or more vats may be probed
 via \`EV\`/\`controller\`/\`kvStore\`/\`mutations\`/etc. without persisting changes.
-For example:
-  immutable.db.prepare("SELECT name FROM sqlite_schema WHERE type='table'").pluck().all();
-  immutable.db.pragma("table_info(transcriptSpans)");
-  [vatAdminNodeRow] = immutable.db.kvGlob('v2.vs.*', '*v100*');
-  immutable.db.getRefs('o+10', 'v1');
-  board = await EV.vat('bootstrap').consumeItem('board');
-  obj = await EV(board).getValue('board02963');
-  await EV(kslot(kvStore.get('v1.c.o+10'))).fromBridge({
-    type: 'CORE_EVAL',
-    evals: [{
-      json_permits: true,
-      js_code: \`(async powers => {
-        const ref = await E.get(powers.consume.auctioneerKit).governorAdminFacet;
-        console.log(ref);
-        powers.produce.ref.resolve(ref);
-        console.log('OK');
-      })\`,
-    }],
-  });
-  (await EV.vat('bootstrap').consumeItem('ref')).getKref()
+Example commands:
+  * immutable.db.prepare("SELECT name FROM sqlite_schema WHERE type='table'").pluck().all();
+  * immutable.db.pragma("table_info(transcriptSpans)");
+  * [vatAdminNodeRow] = immutable.db.kvGlob('v2.vs.*', '*v100*');
+  * immutable.getRefs('o+10', 'v1');
+  * board = await EV.vat('bootstrap').consumeItem('board');
+  * obj = await EV(board).getValue('board02963');
+  * await EV(kslot(kvStore.get('v1.c.o+10'))).fromBridge({
+      type: 'CORE_EVAL',
+      evals: [{
+        json_permits: true,
+        js_code: \`(async powers => {
+          const ref = await E.get(powers.consume.auctioneerKit).governorAdminFacet;
+          console.log(ref);
+          powers.produce.ref.resolve(ref);
+          console.log('OK');
+        })\`,
+      }],
+    });
+  * (await EV.vat('bootstrap').consumeItem('ref')).getKref()
 
 May be used interactively, or as a recipient of piped commands, or as a module.`);
     process.exit(64);
