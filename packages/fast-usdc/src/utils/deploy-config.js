@@ -1,5 +1,6 @@
 import { denomHash, withChainCapabilities } from '@agoric/orchestration';
 import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
+import { ChainPolicies } from './chain-policies.js';
 
 /**
  * @import {FastUSDCConfig} from '@agoric/fast-usdc/src/types.js'
@@ -62,16 +63,7 @@ export const configurations = {
     feedPolicy: {
       nobleAgoricChannelId: 'channel-does-not-exist',
       nobleDomainId: 4,
-      chainPolicies: {
-        Arbitrum: {
-          attenuatedCttpBridgeAddress:
-            '0xe298b93ffB5eA1FB628e0C0D55A43aeaC268e347',
-          cctpTokenMessengerAddress:
-            '0x19330d10D9Cc8751218eaf51E8885D058642E08A',
-          chainId: 42161,
-          confirmations: 2,
-        },
-      },
+      chainPolicies: ChainPolicies.TESTNET,
     },
     chainInfo: /** @type {Record<string, CosmosChainInfo & Passable>} */ (
       withChainCapabilities({
@@ -91,16 +83,7 @@ export const configurations = {
     feedPolicy: {
       nobleAgoricChannelId: 'channel-21',
       nobleDomainId: 4,
-      chainPolicies: {
-        Arbitrum: {
-          attenuatedCttpBridgeAddress:
-            '0xe298b93ffB5eA1FB628e0C0D55A43aeaC268e347',
-          cctpTokenMessengerAddress:
-            '0x19330d10D9Cc8751218eaf51E8885D058642E08A',
-          chainId: 42161,
-          confirmations: 2,
-        },
-      },
+      chainPolicies: ChainPolicies.MAINNET,
     },
     chainInfo: /** @type {Record<string, CosmosChainInfo & Passable>} */ (
       withChainCapabilities(fetchedChainInfo)
@@ -118,14 +101,7 @@ export const configurations = {
     feedPolicy: {
       nobleAgoricChannelId: 'TODO',
       nobleDomainId: 4,
-      chainPolicies: {
-        Arbitrum: {
-          attenuatedCttpBridgeAddress: '0xTODO',
-          cctpTokenMessengerAddress: '0xTODO',
-          chainId: 421614,
-          confirmations: 2,
-        },
-      },
+      chainPolicies: ChainPolicies.TESTNET,
     },
     chainInfo: /** @type {Record<string, CosmosChainInfo & Passable>} */ (
       withChainCapabilities(fetchedChainInfo) // TODO: use devnet values
@@ -140,14 +116,7 @@ export const configurations = {
     feedPolicy: {
       nobleAgoricChannelId: 'TODO',
       nobleDomainId: 4,
-      chainPolicies: {
-        Arbitrum: {
-          attenuatedCttpBridgeAddress: '0xTODO',
-          cctpTokenMessengerAddress: '0xTODO',
-          chainId: 421614,
-          confirmations: 2,
-        },
-      },
+      chainPolicies: ChainPolicies.TESTNET,
     },
     chainInfo: /** @type {Record<string, CosmosChainInfo & Passable>} */ (
       withChainCapabilities(fetchedChainInfo) // TODO: use emerynet values
