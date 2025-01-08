@@ -187,8 +187,7 @@ replace (
 // Agoric-specific replacements:
 replace (
 	// We need a fork of cosmos-sdk until all of the differences are merged.
-	github.com/cosmos/cosmos-sdk => github.com/agoric-labs/cosmos-sdk v0.46.16-alpha.agoric.2.5
-
+	github.com/cosmos/cosmos-sdk => github.com/agoric-labs/cosmos-sdk v0.46.16-alpha.agoric.2.4.0.20250107165624-dc1f8695204c
 	// Pick up an IAVL race fix.
 	github.com/cosmos/iavl => github.com/cosmos/iavl v0.19.7
 
