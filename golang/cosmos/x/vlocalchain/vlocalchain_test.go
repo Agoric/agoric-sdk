@@ -22,8 +22,8 @@ import (
 	transfertypes "github.com/cosmos/ibc-go/v6/modules/apps/transfer/types"
 	"github.com/tendermint/tendermint/libs/log"
 
-	"github.com/gogo/protobuf/jsonpb"
-	"github.com/gogo/protobuf/proto"
+	"github.com/cosmos/gogoproto/jsonpb"
+	"github.com/cosmos/gogoproto/proto"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 	dbm "github.com/tendermint/tm-db"
 )
