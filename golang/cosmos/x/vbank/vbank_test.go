@@ -12,7 +12,6 @@ import (
 	"github.com/Agoric/agoric-sdk/golang/cosmos/app/params"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vbank/types"
-	dbm "github.com/cometbft/cometbft-db"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	paramskeeper "github.com/cosmos/cosmos-sdk/x/params/keeper"
@@ -21,6 +20,7 @@ import (
 	"github.com/tendermint/tendermint/crypto/secp256k1"
 	"github.com/tendermint/tendermint/libs/log"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
+	dbm "github.com/tendermint/tm-db"
 )
 
 var (

@@ -12,8 +12,8 @@ import (
 
 	sdkmath "cosmossdk.io/math"
 	storetypes "cosmossdk.io/store"
-	db "github.com/cometbft/cometbft-db"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	db "github.com/tendermint/tm-db"
 
 	agoric "github.com/Agoric/agoric-sdk/golang/cosmos/types"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vstorage/types"

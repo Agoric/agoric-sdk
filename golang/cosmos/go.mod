@@ -21,7 +21,7 @@ require (
 	github.com/spf13/viper v1.14.0
 	github.com/stretchr/testify v1.9.0
 	github.com/tendermint/tendermint v0.34.29
-	github.com/cometbft/cometbft-db v0.6.7
+	github.com/tendermint/tm-db v0.6.7
 	google.golang.org/genproto/googleapis/api v0.0.0-20230711160842-782d3b101e98
 	google.golang.org/grpc v1.58.3
 	gopkg.in/yaml.v2 v2.4.0
