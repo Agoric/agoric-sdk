@@ -11,10 +11,9 @@ import (
 
 	app "github.com/Agoric/agoric-sdk/golang/cosmos/app"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
-	"github.com/cosmos/cosmos-sdk/store"
+	dbm "github.com/cometbft/cometbft-db"
 	"github.com/stretchr/testify/suite"
 	"github.com/tendermint/tendermint/libs/log"
-	dbm "github.com/tendermint/tm-db"
 
 	"github.com/Agoric/agoric-sdk/golang/cosmos/types"
 	swingsettesting "github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/testing"
