@@ -9,6 +9,9 @@
 /* global globalThis */
 /* eslint-disable no-empty */
 
+// Overwrite the global console for deeper inspection.
+import 'data:text/javascript,import { Console } from "node:console"; const { stdout, stderr, env } = process; const inspectOptions = { depth: Number(env.CONSOLE_INSPECT_DEPTH) || 6 }; globalThis.console = new Console({ stdout, stderr, inspectOptions });';
+
 // eslint-disable-next-line import/no-extraneous-dependencies
 import 'ses';
 // eslint-disable-next-line import/no-extraneous-dependencies
@@ -73,23 +76,6 @@ const parseNumber = input => (input.match(/[0-9]/) ? Number(input) : NaN);
 
 // cf. packages/swing-store/src/exporter.js
 const storeExportAPI = ['getExportRecords', 'getArtifactNames'];
-
-/**
- * @param {(...args: unknown[]) => void} log
- * @param {import('tty').WriteStream | import('stream').Writable} [outStream]
- * @param {{ colors?: boolean, depth?: number }} [options]
- * @returns {(...args: unknown[]) => void}
- */
-const makeLogDeep = (log, outStream, options = {}) => {
-  // @ts-expect-error Property 'hasColors' does not exist on type 'Writable'
-  const { colors = !!outStream?.hasColors?.() } = options;
-  const { depth = inspectDepth } = options;
-  const maybeInspect = val => {
-    if (val === null || typeof val !== 'object') return val;
-    return inspect(val, { colors, depth });
-  };
-  return (...args) => log(...args.map(maybeInspect));
-};
 
 // TODO: getVatAdminNode('v112') # scan the vatAdmin vom v2.vs.vom.* vrefs for value matching /\b${vatID}\b/
 const makeHelpers = ({ db, EV }) => {
@@ -626,14 +612,12 @@ const main = async (argv, options = {}, powers = {}) => {
   const { env } = process;
   const maxVatsOnline = parseNumber(env.INQUISITOR_MAX_VATS_ONLINE || '3');
 
-  const logDeep = makeLogDeep(console.log, process.stdout);
-
   const { swingStore, mutations } = makeSwingStoreOverlay(argv[0]);
   const { db, kvStore } = swingStore.internal;
   const fakeStorageKit = makeFakeStorageKit('');
   const { toStorage: handleVstorage } = fakeStorageKit;
   const receiveBridgeSend = (destPort, msg) => {
-    logDeep('[bridge] received', msg);
+    console.log('[bridge] received', msg);
     switch (destPort) {
       case BridgeId.STORAGE: {
         return handleVstorage(msg);
