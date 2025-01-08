@@ -10,6 +10,7 @@
 /* eslint-disable no-empty */
 
 // Overwrite the global console for deeper inspection.
+// @ts-expect-error TS2307 Cannot find module
 import 'data:text/javascript,import { Console } from "node:console"; const { stdout, stderr, env } = process; const inspectOptions = { depth: Number(env.CONSOLE_INSPECT_DEPTH) || 6 }; globalThis.console = new Console({ stdout, stderr, inspectOptions });';
 
 // eslint-disable-next-line import/no-extraneous-dependencies
@@ -22,7 +23,7 @@ import '@endo/init/pre.js';
 // emitters (e.g., `Readable.from(...)`) because initialization is vulnerable to
 // the property assignment override mistake w.r.t. _events/_eventsCount/etc.
 // https://github.com/nodejs/node/blob/v22.12.0/lib/events.js#L347
-// @ts-expect-error Cannot find module
+// @ts-expect-error TS2307 Cannot find module
 import 'data:text/javascript,try { lockdown({ domainTaming: "unsafe", errorTaming: "unsafe-debug", __hardenTaming__: "unsafe" }); } catch (_err) {}';
 
 import { spawn } from 'node:child_process';
