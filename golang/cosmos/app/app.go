@@ -394,26 +394,30 @@ func NewAgoricApp(
 	// add keepers
 	app.AccountKeeper = authkeeper.NewAccountKeeper(
 		appCodec,
-		keys[authtypes.StoreKey],
-		app.GetSubspace(authtypes.ModuleName),
+		runtime.NewKVStoreService(keys[authtypes.StoreKey]),
 		authtypes.ProtoBaseAccount,
 		maccPerms,
-		appName,
+		addresscodec.NewBech32Codec(sdk.GetConfig().GetBech32AccountAddrPrefix()),
+		AccountAddressPrefix,
+		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 	)
 
 	app.BankKeeper = bankkeeper.NewBaseKeeper(
 		appCodec,
-		keys[banktypes.StoreKey],
+		runtime.NewKVStoreService(keys[banktypes.StoreKey]),
 		app.AccountKeeper,
-		app.GetSubspace(banktypes.ModuleName),
 		app.BlockedAddrs(),
+		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
+		bApp.Logger(),
 	)
+
 	app.AuthzKeeper = authzkeeper.NewKeeper(
-		keys[authzkeeper.StoreKey],
+		runtime.NewKVStoreService(keys[authzkeeper.StoreKey]),
 		appCodec,
 		app.BaseApp.MsgServiceRouter(),
 		app.AccountKeeper,
 	)
+
 	app.FeeGrantKeeper = feegrantkeeper.NewKeeper(
 		appCodec,
 		keys[feegrant.StoreKey],
