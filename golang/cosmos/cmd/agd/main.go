@@ -10,8 +10,8 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/cometbft/cometbft/libs/log"
 	"github.com/spf13/cast"
-	"github.com/tendermint/tendermint/libs/log"
 
 	gaia "github.com/Agoric/agoric-sdk/golang/cosmos/app"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/daemon"

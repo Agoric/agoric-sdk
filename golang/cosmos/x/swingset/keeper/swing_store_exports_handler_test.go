@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
-	"github.com/tendermint/tendermint/libs/log"
+	"github.com/cometbft/cometbft/libs/log"
 )
 
 func newTestSwingStoreExportsHandler() *SwingStoreExportsHandler {

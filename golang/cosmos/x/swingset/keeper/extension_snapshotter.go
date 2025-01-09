@@ -10,8 +10,8 @@ import (
 	snapshots "cosmossdk.io/store/snapshots/types"
 	agoric "github.com/Agoric/agoric-sdk/golang/cosmos/types"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/types"
+	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cosmos/cosmos-sdk/baseapp"
-	"github.com/tendermint/tendermint/libs/log"
 )
 
 // This module implements a Cosmos ExtensionSnapshotter to capture and restore
