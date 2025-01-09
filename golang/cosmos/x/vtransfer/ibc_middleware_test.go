@@ -9,9 +9,9 @@ import (
 	"testing"
 	"text/template"
 
+	"cosmossdk.io/store"
 	app "github.com/Agoric/agoric-sdk/golang/cosmos/app"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
-	"github.com/cosmos/cosmos-sdk/store"
 	"github.com/stretchr/testify/suite"
 	"github.com/tendermint/tendermint/libs/log"
 	dbm "github.com/tendermint/tm-db"
