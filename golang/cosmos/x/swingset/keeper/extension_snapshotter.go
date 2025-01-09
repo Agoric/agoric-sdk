@@ -7,10 +7,10 @@ import (
 	"io"
 	"math"
 
+	snapshots "cosmossdk.io/store/snapshots/types"
 	agoric "github.com/Agoric/agoric-sdk/golang/cosmos/types"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/types"
 	"github.com/cosmos/cosmos-sdk/baseapp"
-	snapshots "github.com/cosmos/cosmos-sdk/snapshots/types"
 	"github.com/tendermint/tendermint/libs/log"
 )
 

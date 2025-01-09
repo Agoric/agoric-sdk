@@ -1,6 +1,6 @@
 module github.com/Agoric/agoric-sdk/golang/cosmos
 
-go 1.20
+go 1.21
 
 require (
 	cosmossdk.io/errors v1.0.0-beta.7
@@ -187,19 +187,17 @@ replace (
 // Agoric-specific replacements:
 replace (
 	// We need a fork of cosmos-sdk until all of the differences are merged.
-	github.com/cosmos/cosmos-sdk => github.com/agoric-labs/cosmos-sdk v0.46.16-alpha.agoric.2.5
-
+	github.com/cosmos/cosmos-sdk => github.com/agoric-labs/cosmos-sdk v0.46.16-alpha.agoric.2.4.0.20250107165624-dc1f8695204c
 	// Pick up an IAVL race fix.
 	github.com/cosmos/iavl => github.com/cosmos/iavl v0.19.7
 
 	// Use a version of ibc-go that is compatible with the above forks.
-	github.com/cosmos/ibc-go/v6 => github.com/agoric-labs/ibc-go/v6 v6.3.1-alpha.agoric.2
+	github.com/cosmos/ibc-go/v8 => github.com/agoric-labs/ibc-go/v8 v8.0.0-20250108053659-640b1f5094da
 
 	// use cometbft
 	// Use our fork at least until post-v0.34.14 is released with
 	// https://github.com/tendermint/tendermint/issue/6899 resolved.
 	github.com/tendermint/tendermint => github.com/agoric-labs/cometbft v0.34.30-alpha.agoric.2
-
 // For testing against a local cosmos-sdk, ibc-go, or cometbft
 // github.com/cosmos/cosmos-sdk => ../../../forks/cosmos-sdk
 // github.com/cosmos/ibc-go/v6 => ../../../forks/ibc-go/v6

@@ -7,11 +7,11 @@ import (
 	"strings"
 	"text/template"
 
+	upgradetypes "cosmossdk.io/x/upgrade/types"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	swingsetkeeper "github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/keeper"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
-	upgradetypes "github.com/cosmos/cosmos-sdk/x/upgrade/types"
 )
 
 var upgradeNamesOfThisVersion = []string{
@@ -175,12 +175,12 @@ func terminateGovernorCoreProposal(upgradeName string) (vm.CoreProposalStep, err
 	// targets is a slice of "$boardID:$instanceKitLabel" strings.
 	var targets []string
 	switch getVariantFromUpgradeName(upgradeName) {
-		case "MAINNET":
-			targets = []string{"board052184:stkATOM-USD_price_feed"}
-		case "A3P_INTEGRATION":
-			targets = []string{"board04091:stATOM-USD_price_feed"}
-		default:
-			return nil, nil
+	case "MAINNET":
+		targets = []string{"board052184:stkATOM-USD_price_feed"}
+	case "A3P_INTEGRATION":
+		targets = []string{"board04091:stATOM-USD_price_feed"}
+	default:
+		return nil, nil
 	}
 
 	return buildProposalStepWithArgs(
