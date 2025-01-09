@@ -44,6 +44,9 @@ export const makeParity = (numerator, denominatorBrand) => {
  *   withdraw: {
  *     give: { PoolShare: Amount<'nat'> }
  *     want: { USDC: Amount<'nat'> },
+ *   },
+ *   withdrawFees: {
+ *     want: { USDC: Amount<'nat'> }
  *   }
  * }} USDCProposalShapes
  */

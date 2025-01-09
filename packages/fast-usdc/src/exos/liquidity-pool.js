@@ -6,6 +6,7 @@ import {
 import { SeatShape } from '@agoric/zoe/src/typeGuards.js';
 import { M } from '@endo/patterns';
 import { Fail, q } from '@endo/errors';
+import { satisfiesWant } from '@agoric/zoe/src/contractFacet/offerSafety.js';
 import {
   borrowCalc,
   depositCalc,
@@ -107,10 +108,16 @@ export const prepareLiquidityPoolKit = (zone, zcf, USDC, tools) => {
       withdrawHandler: M.interface('withdrawHandler', {
         handle: M.call(SeatShape, M.any()).returns(M.promise()),
       }),
+      withdrawFeesHandler: M.interface('withdrawFeesHandler', {
+        handle: M.call(SeatShape, M.any()).returns(M.promise()),
+      }),
       public: M.interface('public', {
         makeDepositInvitation: M.call().returns(M.promise()),
         makeWithdrawInvitation: M.call().returns(M.promise()),
         getPublicTopics: M.call().returns(TopicsRecordShape),
+      }),
+      feeRecipient: M.interface('feeRecipient', {
+        makeWithdrawFeesInvitation: M.call().returns(M.promise()),
       }),
     },
     /**
@@ -132,6 +139,7 @@ export const prepareLiquidityPoolKit = (zone, zcf, USDC, tools) => {
       const poolStats = harden({
         totalBorrows: makeEmpty(USDC),
         totalContractFees: makeEmpty(USDC),
+        // TODO? availableContractFees: makeEmpty(USDC)
         totalPoolFees: makeEmpty(USDC),
         totalRepays: makeEmpty(USDC),
       });
@@ -326,6 +334,23 @@ export const prepareLiquidityPoolKit = (zone, zcf, USDC, tools) => {
           external.publishPoolMetrics();
         },
       },
+      withdrawFeesHandler: {
+        /** @param {ZCFSeat} seat */
+        async handle(seat) {
+          const { feeSeat } = this.state;
+
+          const proposal = seat.getProposal();
+          const { want } = proposal;
+          const available = feeSeat.getAmountAllocated('USDC', want.USDC.brand);
+          isGTE(available, want.USDC) ||
+            Fail`cannot withdraw ${want.USDC}; only ${available} available`;
+
+          // COMMIT POINT
+          zcf.atomicRearrange(harden([[feeSeat, seat, proposal.want]]));
+          seat.exit();
+          // TODO?  external.publishPoolMetrics();
+        },
+      },
       public: {
         makeDepositInvitation() {
           return zcf.makeInvitation(
@@ -351,6 +376,16 @@ export const prepareLiquidityPoolKit = (zone, zcf, USDC, tools) => {
               poolMetricsRecorderKit,
             ),
           };
+        },
+      },
+      feeRecipient: {
+        makeWithdrawFeesInvitation() {
+          return zcf.makeInvitation(
+            this.facets.withdrawFeesHandler,
+            'Withdraw Fees',
+            undefined,
+            this.state.proposalShapes.withdrawFees,
+          );
         },
       },
     },
