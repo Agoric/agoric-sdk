@@ -1325,3 +1325,4 @@ func (app *GaiaApp) SetSwingStoreExportDir(dir string) {
 	module := app.mm.Modules[swingset.ModuleName].(swingset.AppModule)
 	module.SetSwingStoreExportDir(dir)
 }
+
