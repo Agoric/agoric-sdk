@@ -1,6 +1,6 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { testProp, fc } from '@fast-check/ava';
-import { AmountMath, makeIssuerKit } from '@agoric/ertp';
+import { AmountMath, makeIssuerKit, type Amount } from '@agoric/ertp';
 import {
   multiplyBy,
   parseRatio,

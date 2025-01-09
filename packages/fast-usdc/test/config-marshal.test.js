@@ -10,7 +10,9 @@ import {
   toLegible,
 } from '../src/utils/config-marshal.js';
 
-/** @import {SmallCapsStructureOf} from '../src/utils/config-marshal.js' */
+/**
+ * @import {Amount, Brand, DepositFacet, NatValue, Payment} from '@agoric/ertp';
+ */
 
 const testMatches = (t, specimen, pattern) => {
   t.notThrows(() => mustMatch(specimen, pattern));

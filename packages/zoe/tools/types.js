@@ -2,6 +2,10 @@
 export {};
 
 /**
+ * @import {Amount, Brand, DepositFacet, Issuer, IssuerKit, Payment} from '@agoric/ertp';
+ */
+
+/**
  * @typedef {object} PriceQuote
  * @property {Amount<'set', PriceDescription>} quoteAmount
  * Amount whose value is a PriceQuoteValue

@@ -20,6 +20,7 @@ import {
 } from '../type-guards.js';
 
 /**
+ * @import {Amount, Brand, Payment} from '@agoric/ertp';
  * @import {Zone} from '@agoric/zone';
  * @import {Remote} from '@agoric/internal'
  * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js'

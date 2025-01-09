@@ -16,7 +16,7 @@ import {
 import { fromExternalConfig } from './utils/config-marshal.js';
 
 /**
- * @import {DepositFacet} from '@agoric/ertp/src/types.js'
+ * @import {Amount, Brand, DepositFacet, Issuer, Payment} from '@agoric/ertp';
  * @import {TypedPattern} from '@agoric/internal'
  * @import {Instance, StartParams} from '@agoric/zoe/src/zoeService/utils'
  * @import {Board} from '@agoric/vats'

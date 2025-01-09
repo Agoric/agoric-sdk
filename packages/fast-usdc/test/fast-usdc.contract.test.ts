@@ -31,6 +31,7 @@ import { E } from '@endo/far';
 import { matches } from '@endo/patterns';
 import { makePromiseKit } from '@endo/promise-kit';
 import path from 'path';
+import type { Amount, Issuer, NatValue, Purse } from '@agoric/ertp';
 import type { OperatorKit } from '../src/exos/operator-kit.js';
 import type { FastUsdcSF } from '../src/fast-usdc.contract.js';
 import { CctpTxEvidenceShape, PoolMetricsShape } from '../src/type-guards.js';

@@ -16,6 +16,7 @@ import { makeFeeTools } from '../utils/fees.js';
 
 /**
  * @import {HostInterface} from '@agoric/async-flow';
+ * @import {Amount, Brand} from '@agoric/ertp';
  * @import {TypedPattern} from '@agoric/internal'
  * @import {NatAmount} from '@agoric/ertp';
  * @import {ChainAddress, ChainHub, Denom, OrchestrationAccount} from '@agoric/orchestration';

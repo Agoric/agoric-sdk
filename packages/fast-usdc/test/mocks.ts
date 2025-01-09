@@ -1,16 +1,14 @@
 import type { HostInterface } from '@agoric/async-flow';
+import type { Brand, Issuer, Payment } from '@agoric/ertp';
 import type {
   ChainAddress,
   DenomAmount,
   OrchestrationAccount,
 } from '@agoric/orchestration';
-import type { Zone } from '@agoric/zone';
 import type { VowTools } from '@agoric/vow';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
-import type {
-  AmountUtils,
-  withAmountUtils,
-} from '@agoric/zoe/tools/test-utils.js';
+import type { AmountUtils } from '@agoric/zoe/tools/test-utils.js';
+import type { Zone } from '@agoric/zone';
 import type { FeeConfig, LogFn } from '../src/types.js';
 
 export const prepareMockOrchAccounts = (
