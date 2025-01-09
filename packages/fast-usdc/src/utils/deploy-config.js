@@ -42,6 +42,10 @@ const agoricAssetInfo = defaultAssetInfo.filter(
   ([_d, i]) => i.chainName === 'agoric',
 );
 
+/** ABI for DepositForBurn event in TokenMessenger contract */
+const DepositForBurnEvent =
+  'DepositForBurn(uint64,address,uint256,address,bytes32,uint32,bytes32,bytes32)';
+
 /**
  * @type {Record<string, Pick<FastUSDCConfig, 'oracles' | 'feedPolicy' | 'chainInfo' | 'assetInfo' >>}
  *
@@ -64,6 +68,7 @@ export const configurations = {
       nobleAgoricChannelId: 'channel-does-not-exist',
       nobleDomainId: 4,
       chainPolicies: ChainPolicies.TESTNET,
+      eventFilter: DepositForBurnEvent,
     },
     chainInfo: /** @type {Record<string, CosmosChainInfo & Passable>} */ (
       withChainCapabilities({
@@ -84,6 +89,7 @@ export const configurations = {
       nobleAgoricChannelId: 'channel-21',
       nobleDomainId: 4,
       chainPolicies: ChainPolicies.MAINNET,
+      eventFilter: DepositForBurnEvent,
     },
     chainInfo: /** @type {Record<string, CosmosChainInfo & Passable>} */ (
       withChainCapabilities(fetchedChainInfo)
@@ -102,6 +108,7 @@ export const configurations = {
       nobleAgoricChannelId: 'TODO',
       nobleDomainId: 4,
       chainPolicies: ChainPolicies.TESTNET,
+      eventFilter: DepositForBurnEvent,
     },
     chainInfo: /** @type {Record<string, CosmosChainInfo & Passable>} */ (
       withChainCapabilities(fetchedChainInfo) // TODO: use devnet values
@@ -117,6 +124,7 @@ export const configurations = {
       nobleAgoricChannelId: 'TODO',
       nobleDomainId: 4,
       chainPolicies: ChainPolicies.TESTNET,
+      eventFilter: DepositForBurnEvent,
     },
     chainInfo: /** @type {Record<string, CosmosChainInfo & Passable>} */ (
       withChainCapabilities(fetchedChainInfo) // TODO: use emerynet values
