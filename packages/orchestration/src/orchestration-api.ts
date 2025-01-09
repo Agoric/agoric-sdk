@@ -179,7 +179,7 @@ export interface OrchestrationAccountCommon {
    * @param amount - the amount to send
    * @returns void
    */
-  send: (toAccount: ChainAddress, amounts: AmountArg) => Promise<void>;
+  send: (toAccount: ChainAddress, amount: AmountArg) => Promise<void>;
 
   /**
    * Transfer multiple amounts to another account on the same chain. The promise settles when the transfer is complete.

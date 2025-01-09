@@ -56,6 +56,7 @@ const createTestExtensions = (t, common: CommonSetup) => {
 
   const { log, inspectLogs } = makeTestLogger(t.log);
 
+  chainHub.registerChain('agoric', fetchedChainInfo.agoric);
   chainHub.registerChain('dydx', fetchedChainInfo.dydx);
   chainHub.registerChain('osmosis', fetchedChainInfo.osmosis);
 
@@ -221,7 +222,7 @@ test('updates status to ADVANCING in happy path', async t => {
   t.deepEqual(inspectLogs(), [
     ['decoded EUD: osmo183dejcnmkka5dzcu9xw6mywq0p2m5peks28men'],
     [
-      'Advance transfer fulfilled',
+      'Advance succeeded',
       {
         advanceAmount: {
           brand: usdc.brand,
@@ -232,7 +233,6 @@ test('updates status to ADVANCING in happy path', async t => {
           encoding: 'bech32',
           value: 'osmo183dejcnmkka5dzcu9xw6mywq0p2m5peks28men',
         },
-        result: undefined,
       },
     ],
   ]);
@@ -364,7 +364,7 @@ test('calls notifyAdvancingResult (AdvancedFailed) on failed transfer', async t 
 
   t.deepEqual(inspectLogs(), [
     ['decoded EUD: dydx183dejcnmkka5dzcu9xw6mywq0p2m5peks28men'],
-    ['Advance transfer rejected', Error('simulated error')],
+    ['Advance failed', Error('simulated error')],
   ]);
 
   // We expect to see an `AdvancedFailed` update, but that is now Settler's job.
@@ -488,7 +488,7 @@ test('will not advance same txHash:chainId evidence twice', async t => {
   t.deepEqual(inspectLogs(), [
     ['decoded EUD: osmo183dejcnmkka5dzcu9xw6mywq0p2m5peks28men'],
     [
-      'Advance transfer fulfilled',
+      'Advance succeeded',
       {
         advanceAmount: { brand: usdc.brand, value: 146999999n },
         destination: {
@@ -496,7 +496,6 @@ test('will not advance same txHash:chainId evidence twice', async t => {
           encoding: 'bech32',
           value: 'osmo183dejcnmkka5dzcu9xw6mywq0p2m5peks28men',
         },
-        result: undefined,
       },
     ],
   ]);
@@ -712,5 +711,101 @@ test('no status update if `checkMintedEarly` returns true', async t => {
   t.deepEqual(inspectLogs(), [
     ['decoded EUD: dydx183dejcnmkka5dzcu9xw6mywq0p2m5peks28men'],
     // no add'l logs as we return early
+  ]);
+});
+
+test('uses bank send for agoric1 EUD', async t => {
+  const {
+    extensions: {
+      services: { advancer },
+      helpers: { inspectLogs, inspectNotifyCalls },
+      mocks: { mockPoolAccount, resolveLocalTransferV },
+    },
+    brands: { usdc },
+    bootstrap: { storage },
+  } = t.context;
+
+  const evidence = MockCctpTxEvidences.AGORIC_PLUS_AGORIC();
+  void advancer.handleTransactionEvent({ evidence, risk: {} });
+
+  // pretend borrow succeeded and funds were depositing to the LCA
+  resolveLocalTransferV();
+  // pretend the Bank Send settled
+  mockPoolAccount.sendVResolver.resolve();
+  // wait for handleTransactionEvent to do work
+  await eventLoopIteration();
+
+  t.deepEqual(inspectLogs(), [
+    ['decoded EUD: agoric13rj0cc0hm5ac2nt0sdup2l7gvkx4v9tyvgq3h2'],
+    [
+      'Advance succeeded',
+      {
+        advanceAmount: {
+          brand: usdc.brand,
+          value: 244999999n,
+        },
+        destination: {
+          chainId: 'agoric-3',
+          encoding: 'bech32',
+          value: 'agoric13rj0cc0hm5ac2nt0sdup2l7gvkx4v9tyvgq3h2',
+        },
+      },
+    ],
+  ]);
+
+  // ensure Settler is notified of successful advance
+  t.like(inspectNotifyCalls(), [
+    [
+      {
+        txHash: evidence.txHash,
+        forwardingAddress: evidence.tx.forwardingAddress,
+        fullAmount: usdc.make(evidence.tx.amount),
+        destination: {
+          value: decodeAddressHook(evidence.aux.recipientAddress).query.EUD,
+        },
+      },
+      true, // indicates send succeeded
+    ],
+  ]);
+});
+
+test('notifies of advance failure if bank send fails', async t => {
+  const {
+    extensions: {
+      services: { advancer },
+      helpers: { inspectLogs, inspectNotifyCalls },
+      mocks: { mockPoolAccount, resolveLocalTransferV },
+    },
+    brands: { usdc },
+  } = t.context;
+
+  const evidence = MockCctpTxEvidences.AGORIC_PLUS_AGORIC();
+  void advancer.handleTransactionEvent({ evidence, risk: {} });
+
+  // pretend borrow succeeded and funds were depositing to the LCA
+  resolveLocalTransferV();
+  // pretend the Bank Send failed
+  mockPoolAccount.sendVResolver.reject(new Error('simulated error'));
+  // wait for handleTransactionEvent to do work
+  await eventLoopIteration();
+
+  t.deepEqual(inspectLogs(), [
+    ['decoded EUD: agoric13rj0cc0hm5ac2nt0sdup2l7gvkx4v9tyvgq3h2'],
+    ['Advance failed', Error('simulated error')],
+  ]);
+
+  // ensure Settler is notified of failed advance
+  t.like(inspectNotifyCalls(), [
+    [
+      {
+        txHash: evidence.txHash,
+        forwardingAddress: evidence.tx.forwardingAddress,
+        fullAmount: usdc.make(evidence.tx.amount),
+        destination: {
+          value: decodeAddressHook(evidence.aux.recipientAddress).query.EUD,
+        },
+      },
+      false, // indicates send failed
+    ],
   ]);
 });

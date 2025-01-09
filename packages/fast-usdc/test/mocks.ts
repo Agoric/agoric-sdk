@@ -24,6 +24,7 @@ export const prepareMockOrchAccounts = (
   },
 ) => {
   // each can only be resolved/rejected once per test
+  const poolAccountSendVK = makeVowKit<undefined>();
   const poolAccountTransferVK = makeVowKit<undefined>();
   const settleAccountTransferVK = makeVowKit<undefined>();
 
@@ -36,6 +37,10 @@ export const prepareMockOrchAccounts = (
       log('PoolAccount.deposit() called with', payment);
       // XXX consider a mock for deposit failure
       return asVow(async () => usdc.issuer.getAmountOf(payment));
+    },
+    send(destination: ChainAddress, amount: DenomAmount) {
+      log('PoolAccount.send() called with', destination, amount);
+      return poolAccountSendVK.vow;
     },
   });
 
@@ -57,6 +62,7 @@ export const prepareMockOrchAccounts = (
     mockPoolAccount: {
       account: poolAccount,
       transferVResolver: poolAccountTransferVK.resolver,
+      sendVResolver: poolAccountSendVK.resolver,
     },
     settlement: {
       account: settlementAccount,

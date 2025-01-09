@@ -23,7 +23,7 @@ import { makeFeeTools } from '../utils/fees.js';
  * @import {ZoeTools} from '@agoric/orchestration/src/utils/zoe-tools.js';
  * @import {VowTools} from '@agoric/vow';
  * @import {Zone} from '@agoric/zone';
- * @import {CctpTxEvidence, AddressHook, EvmHash, FeeConfig, LogFn, NobleAddress, EvidenceWithRisk} from '../types.js';
+ * @import {AddressHook, EvmHash, FeeConfig, LogFn, NobleAddress, EvidenceWithRisk} from '../types.js';
  * @import {StatusManager} from './status-manager.js';
  * @import {LiquidityPoolKit} from './liquidity-pool.js';
  */
@@ -213,14 +213,20 @@ export const prepareAdvancerKit = (
          * @param {AdvancerVowCtx & { tmpSeat: ZCFSeat }} ctx
          */
         onFulfilled(result, ctx) {
-          const { poolAccount, intermediateRecipient } = this.state;
+          const { poolAccount, intermediateRecipient, settlementAddress } =
+            this.state;
           const { destination, advanceAmount, tmpSeat: _, ...detail } = ctx;
-          const transferV = E(poolAccount).transfer(
-            destination,
-            { denom: usdc.denom, value: advanceAmount.value },
-            { forwardOpts: { intermediateRecipient } },
-          );
-          return watch(transferV, this.facets.transferHandler, {
+          const amount = harden({
+            denom: usdc.denom,
+            value: advanceAmount.value,
+          });
+          const transferOrSendV =
+            destination.chainId === settlementAddress.chainId
+              ? E(poolAccount).send(destination, amount)
+              : E(poolAccount).transfer(destination, amount, {
+                  forwardOpts: { intermediateRecipient },
+                });
+          return watch(transferOrSendV, this.facets.transferHandler, {
             destination,
             advanceAmount,
             ...detail,
@@ -253,17 +259,13 @@ export const prepareAdvancerKit = (
       },
       transferHandler: {
         /**
-         * @param {unknown} result TODO confirm this is not a bigint (sequence)
+         * @param {undefined} result
          * @param {AdvancerVowCtx} ctx
          */
         onFulfilled(result, ctx) {
           const { notifyFacet } = this.state;
           const { advanceAmount, destination, ...detail } = ctx;
-          log('Advance transfer fulfilled', {
-            advanceAmount,
-            destination,
-            result,
-          });
+          log('Advance succeeded', { advanceAmount, destination });
           // During development, due to a bug, this call threw.
           // The failure was silent (no diagnostics) due to:
           //  - #10576 Vows do not report unhandled rejections
@@ -278,7 +280,7 @@ export const prepareAdvancerKit = (
          */
         onRejected(error, ctx) {
           const { notifyFacet } = this.state;
-          log('Advance transfer rejected', error);
+          log('Advance failed', error);
           const { advanceAmount: _, ...restCtx } = ctx;
           notifyFacet.notifyAdvancingResult(restCtx, false);
         },
