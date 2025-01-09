@@ -175,16 +175,6 @@ test.serial('writes fee config to vstorage', async t => {
   await documentStorageSchema(t, storage, doc);
 });
 
-test.serial('writes pool metrics to vstorage', async t => {
-  const { storage } = t.context;
-  const doc = {
-    node: 'fastUsdc.poolMetrics',
-    owner: 'FastUSC LiquidityPool exo',
-    showValue: defaultSerializer.parse,
-  };
-  await documentStorageSchema(t, storage, doc);
-});
-
 test.serial('writes account addresses to vstorage', async t => {
   const { storage } = t.context;
   const doc = {
@@ -340,6 +330,16 @@ test.serial('makes usdc advance', async t => {
   const doc = {
     node: `fastUsdc.txns`,
     owner: `the Ethereum transactions upon which Fast USDC is acting`,
+    showValue: defaultSerializer.parse,
+  };
+  await documentStorageSchema(t, storage, doc);
+});
+
+test.serial('writes pool metrics to vstorage', async t => {
+  const { storage } = t.context;
+  const doc = {
+    node: 'fastUsdc.poolMetrics',
+    owner: 'FastUSC LiquidityPool exo',
     showValue: defaultSerializer.parse,
   };
   await documentStorageSchema(t, storage, doc);
