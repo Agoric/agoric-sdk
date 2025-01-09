@@ -18,6 +18,8 @@ test('makeLoggingPresence logs calls on purse/payment actions', async t => {
   const purse = {
     actions: await makeLoggingPresence('Alleged: purse.actions', enqueue),
   };
+  /** @type {Payment} */
+  // @ts-expect-error mock
   const myPayment = Far('payment', {
     getAllegedBrand: () => assert.fail('mock'),
   });
