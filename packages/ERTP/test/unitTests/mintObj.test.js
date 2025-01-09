@@ -7,6 +7,10 @@ import { defineDurableKind, makeKindHandle } from '@agoric/vat-data';
 import { makeIssuerKit, AssetKind, AmountMath } from '../../src/index.js';
 import { claim, combine } from '../../src/legacy-payment-helpers.js';
 
+/**
+ * @import {IssuerKit} from '../../src/types.js'
+ */
+
 test('mint.getIssuer', t => {
   const { mint, issuer } = makeIssuerKit('fungible');
   t.is(mint.getIssuer(), issuer);
@@ -110,11 +114,14 @@ test('mint.mintPayment set AssetKind with invites', async t => {
 // This test models ballet tickets
 test('non-fungible tokens example', async t => {
   t.plan(11);
+
   const {
     mint: balletTicketMint,
     issuer: balletTicketIssuer,
     brand,
-  } = makeIssuerKit('Agoric Ballet Opera tickets', AssetKind.SET);
+  } = /**
+   * @type {IssuerKit<'set', { seat: number; show: string; start: string }>}
+   */ (makeIssuerKit('Agoric Ballet Opera tickets', AssetKind.SET));
 
   const startDateString = new Date(2020, 1, 17, 20, 30).toISOString();
 
