@@ -1,32 +1,38 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
-import type { TestFn } from 'ava';
 import { encodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
 import { configurations } from '@agoric/fast-usdc/src/utils/deploy-config.js';
 import { MockCctpTxEvidences } from '@agoric/fast-usdc/test/fixtures.js';
 import { documentStorageSchema } from '@agoric/governance/tools/storageDoc.js';
-import { Fail } from '@endo/errors';
-import { unmarshalFromVstorage } from '@agoric/internal/src/marshal.js';
-import { makeMarshal } from '@endo/marshal';
-import {
-  defaultMarshaller,
-  defaultSerializer,
-} from '@agoric/internal/src/storage-test-utils.js';
-import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { BridgeId, NonNullish } from '@agoric/internal';
+import { unmarshalFromVstorage } from '@agoric/internal/src/marshal.js';
+import { defaultSerializer } from '@agoric/internal/src/storage-test-utils.js';
+import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
+import type { BridgeHandler } from '@agoric/vats';
+import { Fail } from '@endo/errors';
+import { makeMarshal } from '@endo/marshal';
+import type { ExecutionContext, TestFn } from 'ava';
+import { readFile } from 'node:fs/promises';
+import { createRequire } from 'node:module';
+import {
+  AckBehavior,
+  insistManagerType,
+  makeSwingsetHarness,
+} from '../../tools/supports.js';
 import {
   makeWalletFactoryContext,
   type WalletFactoryTestContext,
 } from '../bootstrapTests/walletFactory.js';
-import {
-  makeSwingsetHarness,
-  insistManagerType,
-  AckBehavior,
-} from '../../tools/supports.js';
 
+const nodeRequire = createRequire(import.meta.url);
+const asset = async (specifier: string) =>
+  readFile(nodeRequire.resolve(specifier), 'utf8');
+
+type CoreEval = { json_permits: string; js_code: string };
 const test: TestFn<
   WalletFactoryTestContext & {
     harness?: ReturnType<typeof makeSwingsetHarness>;
+    runCoreEvals: (evals: CoreEval[]) => Promise<void>;
   }
 > = anyTest;
 
@@ -46,7 +52,17 @@ test.before('bootstrap', async t => {
     defaultManagerType,
     harness,
   });
-  t.context = { ...ctx, harness };
+
+  const runCoreEvals = async (evals: CoreEval[]) => {
+    const bridgeMessage = { type: 'CORE_EVAL', evals };
+    const { EV } = ctx.swingsetTestKit.runUtils;
+    const coreEvalBridgeHandler: BridgeHandler = await EV.vat(
+      'bootstrap',
+    ).consumeItem('coreEvalBridgeHandler');
+    await EV(coreEvalBridgeHandler).fromBridge(bridgeMessage);
+  };
+
+  t.context = { ...ctx, harness, runCoreEvals };
 });
 test.after.always(t => t.context.shutdown?.());
 
@@ -341,6 +357,32 @@ test.serial('writes pool metrics to vstorage', async t => {
     showValue: defaultSerializer.parse,
   };
   await documentStorageSchema(t, storage, doc);
+});
+
+test.serial('distributes fees per BLD staker decision', async t => {
+  const { runCoreEvals, walletFactoryDriver: wd } = t.context;
+
+  const dest = 'agoric1feeRecipient-REPLACE-ME';
+  const feeWallet = await wd.provideSmartWallet(dest);
+  const { purses: pre } = await feeWallet.getCurrentWalletRecord();
+  t.log('purse balances before', pre);
+
+  const permit = await asset(
+    '@agoric/fast-usdc/src/distribute-fees.permit.json',
+  );
+  t.log('permit OK?', JSON.parse(permit));
+  const script0 = await asset('@agoric/fast-usdc/src/distribute-fees.core.js');
+  // TODO: get the advance above to actually generate fees
+  const script = script0.replace(/ fees: [0-9_]+n/, 'fees: 0n');
+  t.log({
+    permit: `${permit.slice(0, 10)}...${permit.length}`,
+    script: `${script.slice(0, 10)}...${script.length}`,
+  });
+  await runCoreEvals([{ json_permits: permit, js_code: script }]);
+
+  const { purses: post } = await feeWallet.getCurrentWalletRecord();
+  t.log('purse balances after', post);
+  t.deepEqual(post, '@@@');
 });
 
 test.serial('skips usdc advance when risks identified', async t => {
