@@ -1,9 +1,10 @@
-import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
-import { allValues, makeTracer, objectMap, NonNullish } from '@agoric/internal';
+import { AmountMath, makeIssuerKit } from '@agoric/ertp';
+import { allValues, makeTracer, NonNullish, objectMap } from '@agoric/internal';
 import { makeNotifierFromSubscriber } from '@agoric/notifier';
 import { unsafeMakeBundleCache } from '@agoric/swingset-vat/tools/bundleTool.js';
 import {
   ceilMultiplyBy,
+  makePriceQuoteIssuer,
   makeRatio,
   makeRatioFromAmounts,
 } from '@agoric/zoe/src/contractSupport/index.js';
@@ -13,8 +14,8 @@ import { E } from '@endo/eventual-send';
 import { deeplyFulfilled } from '@endo/marshal';
 
 import { eventLoopIteration } from '@agoric/notifier/tools/testSupports.js';
-import { providePriceAuthorityRegistry } from '@agoric/vats/src/priceAuthorityRegistry.js';
 import { makeScalarBigMapStore } from '@agoric/vat-data/src/index.js';
+import { providePriceAuthorityRegistry } from '@agoric/vats/src/priceAuthorityRegistry.js';
 
 import {
   setupReserve,
@@ -30,6 +31,7 @@ import {
 } from '../supports.js';
 
 /**
+ * @import {PriceDescription} from '@agoric/zoe/tools/types.js';
  * @import {VaultFactoryContract as VFC} from '../../src/vaultFactory/vaultFactory.js';
  * @import {AmountUtils} from '@agoric/zoe/tools/test-utils.js';
  */
@@ -230,7 +232,7 @@ const setupServices = async (t, initialPrice, priceBase) => {
     actualBrandOut: run.brand,
     initialPrice: makeRatioFromAmounts(initialPrice, priceBase),
     timer,
-    quoteIssuerKit: makeIssuerKit('quote', AssetKind.SET),
+    quoteIssuerKit: makePriceQuoteIssuer(),
   });
   const baggage = makeScalarBigMapStore('baggage');
   const { priceAuthority: priceAuthorityReg, adminFacet: priceAuthorityAdmin } =
