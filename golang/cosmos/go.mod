@@ -189,7 +189,7 @@ replace (
 	// We need a fork of cosmos-sdk until all of the differences are merged.
 	github.com/cosmos/cosmos-sdk => github.com/agoric-labs/cosmos-sdk v0.46.16-alpha.agoric.2.4.0.20250107165624-dc1f8695204c
 	// Pick up an IAVL race fix.
-	github.com/cosmos/iavl => github.com/cosmos/iavl v0.19.7
+	github.com/cosmos/iavl => github.com/cosmos/iavl v1.3.5
 
 	// Use a version of ibc-go that is compatible with the above forks.
 	github.com/cosmos/ibc-go/v8 => github.com/agoric-labs/ibc-go/v8 v8.0.0-20250108053659-640b1f5094da
