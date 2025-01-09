@@ -9,6 +9,7 @@ import (
 	"testing"
 	"text/template"
 
+	"cosmossdk.io/store"
 	app "github.com/Agoric/agoric-sdk/golang/cosmos/app"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	"github.com/stretchr/testify/suite"
