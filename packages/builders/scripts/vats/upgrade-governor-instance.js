@@ -7,8 +7,8 @@
 
 import { E } from '@endo/far';
 
-const SELF = '@agoric/builders/scripts/vats/terminate-governor-instance.js';
-const USAGE = `Usage: agoric run /path/to/terminate-governor-instance.js \\
+const SELF = '@agoric/builders/scripts/vats/upgrade-governor-instance.js';
+const USAGE = `Usage: agoric run /path/to/upgrade-governor-instance.js \\
   <$governorInstanceHandleBoardID:$instanceKitLabel>...`;
 
 const repr = val =>
@@ -55,14 +55,19 @@ const parseTargets = (args = [], makeError = defaultMakeError) => {
 };
 
 /**
+ * Given boardIDs of some instances of contract governors,
+ * upgrade those governors to contractGovernorExecutor.js,
+ * which will terminate the governed contracts.
+ *
  * @param {BootstrapPowers} powers
- * @param {{ options: { governorExecutorBundle: any, targetSpecifiers: string[] } }} config
+ * @param {{ options: { governorExecutorBundleId: string, targetSpecifiers: string[] } }} config
  */
 export const upgradeGovernors = async (
   { consume: { board, governedContractKits } },
-  { options: { governorExecutorBundle, targetSpecifiers } },
+  { options: { governorExecutorBundleId, targetSpecifiers } },
 ) => {
   const { Fail, quote: q } = assert;
+  assert.typeof(governorExecutorBundleId, 'string');
   const targets = parseTargets(targetSpecifiers, Fail);
   const doneP = Promise.allSettled(
     targets.map(async ({ boardID, instanceKitLabel }) => {
@@ -81,9 +86,14 @@ export const upgradeGovernors = async (
         Fail`${q(logLabel)} unexpected instanceKit label, got ${label} but wanted ${q(instanceKitLabel)}`;
       (adminFacet && adminFacet !== governorAdminFacet) ||
         Fail`${q(logLabel)} instanceKit adminFacet should have been present and different from governorAdminFacet but was ${adminFacet}`;
-      const reason = harden(Error(`core-eval terminating ${label} governor`));
-      await E(governorAdminFacet).upgradeContract(governorExecutorBundle, undefined);
+      await E(governorAdminFacet).upgradeContract(
+        governorExecutorBundleId,
+        undefined,
+      );
       console.log(`${q(logLabel)} terminated governor`);
+      console.log('shutting down executor governor');
+      const reason = harden(Error(`core-eval terminating ${label} governor`));
+      await E(governorAdminFacet).terminateContract(reason);
     }),
   );
   const results = await doneP;
@@ -137,7 +147,7 @@ export const getManifest = async (
       },
     },
     installations: { governorExecutor: restoreRef(bundleRef) }, // do we need installations ???
-    options: { governorExecutorBundle: bundleRef, targetSpecifiers },
+    options: { governorExecutorBundleId: bundleRef.bundleID, targetSpecifiers },
   };
 };
 
@@ -167,7 +177,10 @@ export default async (homeP, endowments) => {
 // import { makeHelpers } from '@agoric/deploy-script-support';
 
 /** @type {import('@agoric/deploy-script-support/src/externalTypes.js').CoreEvalBuilder} */
-export const defaultProposalBuilder = async ({ publishRef, install }, targetSpecifiers) => {
+export const defaultProposalBuilder = async (
+  { publishRef, install },
+  targetSpecifiers,
+) => {
   parseTargets(targetSpecifiers);
   return harden({
     sourceSpec: SELF,
@@ -175,15 +188,13 @@ export const defaultProposalBuilder = async ({ publishRef, install }, targetSpec
       getManifest.name,
       {
         bundleRef: publishRef(
-          install(
-            '@agoric/governance/bundles/contractGovernorExecutor.js',
-          ),
+          install('@agoric/governance/src/contractGovernorExecutor.js'),
         ),
         targetSpecifiers,
       },
     ],
   });
-}
+};
 
 /* @type {import('@agoric/deploy-script-support/src/externalTypes.js').DeployScriptFunction} */
 /*
