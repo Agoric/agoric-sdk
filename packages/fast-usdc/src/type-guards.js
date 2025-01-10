@@ -126,6 +126,11 @@ export const ChainPolicyShape = {
   cctpTokenMessengerAddress: EvmHashShape,
   confirmations: M.number(),
   chainId: M.number(),
+  rateLimits: {
+    tx: M.bigint(),
+    blockWindow: M.bigint(),
+    blockWindowSize: M.number(),
+  },
 };
 harden(ChainPolicyShape);
 

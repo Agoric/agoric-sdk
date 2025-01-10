@@ -14,18 +14,10 @@ harden(oracleMnemonics);
 export const makeFeedPolicyPartial = (
   nobleAgoricChannelId: IBCChannelID,
 ): Omit<FeedPolicy, 'chainPolicies'> => {
+  // XXX consider using toExternalConfig to marshal bigints and send ChainPolicies
   return {
     nobleAgoricChannelId,
     nobleDomainId: 4,
-    chainPolicies: {
-      Arbitrum: {
-        attenuatedCttpBridgeAddress:
-          '0xe298b93ffB5eA1FB628e0C0D55A43aeaC268e347',
-        cctpTokenMessengerAddress: '0x19330d10D9Cc8751218eaf51E8885D058642E08A',
-        chainId: 42161,
-        confirmations: 2,
-      },
-    },
   };
 };
 harden(makeFeedPolicyPartial);

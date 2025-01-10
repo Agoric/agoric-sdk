@@ -89,20 +89,28 @@ export interface ChainPolicy {
   chainId: EvmChainID;
   /** the number of block confirmations to observe before reporting */
   confirmations: number;
+  rateLimits: {
+    /** do not advance more than this amount for an individual transaction */
+    tx: bigint;
+    /** do not advance more than this amount per block window */
+    blockWindow: bigint;
+    /** the number of blocks to consider for `blockWindow` */
+    blockWindowSize: number;
+  };
 }
 
-export interface FeedPolicy {
+export type FeedPolicy = {
   nobleDomainId: number;
   nobleAgoricChannelId: string;
   chainPolicies: Record<EvmChainName, ChainPolicy>;
   eventFilter?: string;
-}
+} & CopyRecord;
 
 export type FastUSDCConfig = {
   terms: FastUsdcTerms;
   oracles: Record<string, string>;
   feeConfig: FeeConfig;
-  feedPolicy: FeedPolicy & Passable;
+  feedPolicy: FeedPolicy;
   noNoble: boolean; // support a3p-integration, which has no noble chain
   chainInfo: Record<string, CosmosChainInfo & Passable>;
   assetInfo: [Denom, DenomDetail & { brandKey?: string }][];

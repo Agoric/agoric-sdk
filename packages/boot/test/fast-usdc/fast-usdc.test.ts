@@ -158,7 +158,7 @@ test.serial('writes feed policy to vstorage', async t => {
   const opts = {
     node: 'fastUsdc.feedPolicy',
     owner: 'the general and chain-specific policies for the Fast USDC feed',
-    showValue: JSON.parse,
+    showValue: defaultSerializer.parse,
   };
   await documentStorageSchema(t, storage, opts);
 });
