@@ -30,7 +30,6 @@ export const prepareInvitationKit = (baggage, shutdownZoeVat = undefined) => {
   }
 
   /** @type {IssuerKit<'set', InvitationDetails>} */
-  // @ts-expect-error cast
   const invitationKit = prepareIssuerKit(
     invitationKitBaggage,
     'Zoe Invitation',

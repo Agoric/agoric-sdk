@@ -28,13 +28,18 @@ test('mint.mintPayment default nat AssetKind', async t => {
   t.assert(AmountMath.isEqual(paymentBalance2, fungible1000));
 });
 
+/** @type {import('@agoric/internal').TypedPattern<string>} */
+const StringPattern = M.string();
+
 test('mint.mintPayment set w strings AssetKind', async t => {
   const { mint, issuer, brand } = makeIssuerKit(
     'items',
     AssetKind.SET,
     undefined,
     undefined,
-    { elementShape: M.string() },
+    {
+      elementShape: StringPattern,
+    },
   );
   const items1and2and4 = AmountMath.make(brand, harden(['1', '2', '4']));
   const payment1 = mint.mintPayment(items1and2and4);
