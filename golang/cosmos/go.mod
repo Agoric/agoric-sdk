@@ -1,8 +1,6 @@
 module github.com/Agoric/agoric-sdk/golang/cosmos
 
-go 1.22.7
-
-toolchain go1.23.4
+go 1.23
 
 require (
 	cosmossdk.io/api v0.7.5
@@ -13,7 +11,6 @@ require (
 	cosmossdk.io/x/evidence v0.1.1
 	cosmossdk.io/x/feegrant v0.1.1
 	cosmossdk.io/x/upgrade v0.1.4
-	github.com/armon/go-metrics v0.4.1
 	github.com/cometbft/cometbft v0.38.13
 	github.com/cometbft/cometbft-db v0.14.1
 	github.com/cosmos/cosmos-sdk v0.50.9
@@ -24,6 +21,7 @@ require (
 	github.com/golang/protobuf v1.5.4
 	github.com/gorilla/mux v1.8.1
 	github.com/grpc-ecosystem/grpc-gateway v1.16.0
+	github.com/hashicorp/go-metrics v0.5.3
 	github.com/pkg/errors v0.9.1
 	github.com/rakyll/statik v0.1.7
 	github.com/spf13/cast v1.6.0
@@ -122,7 +120,6 @@ require (
 	github.com/hashicorp/go-getter v1.7.4 // indirect
 	github.com/hashicorp/go-hclog v1.5.0 // indirect
 	github.com/hashicorp/go-immutable-radix v1.3.1 // indirect
-	github.com/hashicorp/go-metrics v0.5.3 // indirect
 	github.com/hashicorp/go-plugin v1.5.2 // indirect
 	github.com/hashicorp/go-safetemp v1.0.0 // indirect
 	github.com/hashicorp/go-version v1.6.0 // indirect

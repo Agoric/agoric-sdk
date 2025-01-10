@@ -7,10 +7,8 @@ import (
 	stdlog "log"
 	"math"
 
+	"cosmossdk.io/log"
 	sdkmath "cosmossdk.io/math"
-
-	"github.com/cometbft/cometbft/libs/log"
-
 	"cosmossdk.io/store/prefix"
 	storetypes "cosmossdk.io/store/types"
 	"github.com/cosmos/cosmos-sdk/baseapp"
@@ -323,8 +321,8 @@ func (k Keeper) ChargeBeans(
 	beansToDebit := nowOwing.Sub(remainderOwing)
 
 	// Convert the debit to coins.
-	beansPerFeeUnitDec := sdk.NewDecFromBigInt(beansPerUnit[types.BeansPerFeeUnit].BigInt())
-	beansToDebitDec := sdk.NewDecFromBigInt(beansToDebit.BigInt())
+	beansPerFeeUnitDec := sdkmath.LegacyNewDecFromBigInt(beansPerUnit[types.BeansPerFeeUnit].BigInt())
+	beansToDebitDec := sdkmath.LegacyNewDecFromBigInt(beansToDebit.BigInt())
 	feeUnitPrice := k.GetParams(ctx).FeeUnitPrice
 	feeDecCoins := sdk.NewDecCoinsFromCoins(feeUnitPrice...).MulDec(beansToDebitDec).QuoDec(beansPerFeeUnitDec)
 
