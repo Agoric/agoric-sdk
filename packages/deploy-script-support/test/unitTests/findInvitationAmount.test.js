@@ -1,15 +1,24 @@
-// @ts-nocheck
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
 import { makeIssuerKit, AssetKind, AmountMath } from '@agoric/ertp';
 
+import { InvitationElementShape } from '@agoric/zoe/src/typeGuards.js';
 import { makeOfferAndFindInvitationAmount } from '../../src/offer.js';
 
 test('findInvitationAmount', async t => {
-  const { mint, issuer, brand } = makeIssuerKit('invitations', AssetKind.SET);
+  const { mint, issuer, brand } = makeIssuerKit(
+    'invitations',
+    AssetKind.SET,
+    undefined,
+    undefined,
+    {
+      elementShape: InvitationElementShape,
+    },
+  );
   const zoeInvitationPurse = issuer.makeEmptyPurse();
 
   const walletAdmin = {};
+
   const zoe = {};
 
   const paymentAmount = AmountMath.make(
@@ -21,6 +30,7 @@ test('findInvitationAmount', async t => {
 
   const { findInvitationAmount } = makeOfferAndFindInvitationAmount(
     walletAdmin,
+    // @ts-expect-error mock
     zoe,
     zoeInvitationPurse,
   );

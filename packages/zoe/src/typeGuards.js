@@ -133,6 +133,7 @@ export const isAfterDeadlineExitRule = exit => {
 };
 harden(isAfterDeadlineExitRule);
 
+/** @type {TypedPattern<InvitationDetails>} */
 export const InvitationElementShape = M.splitRecord({
   description: M.string(),
   handle: InvitationHandleShape,
