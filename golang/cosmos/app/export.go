@@ -114,9 +114,17 @@ func (app *GaiaApp) prepForZeroHeightGenesis(ctx sdk.Context, jailAllowedAddrs [
 			panic(err)
 		}
 
-		feePool := app.DistrKeeper.GetFeePool(ctx)
+		feePool, err := app.DistrKeeper.FeePool.Get(ctx)
+		if err != nil {
+			panic(err)
+		}
 		feePool.CommunityPool = feePool.CommunityPool.Add(scraps...)
-		app.DistrKeeper.SetFeePool(ctx, feePool)
+
+		var err_ error
+		err_ = app.DistrKeeper.FeePool.Set(ctx, feePool)
+		if err_ != nil {
+			panic(err_)
+		}
 
 		if err := app.DistrKeeper.Hooks().AfterValidatorCreated(ctx, val.GetOperator()); err != nil {
 			panic(err)
@@ -193,7 +201,7 @@ func (app *GaiaApp) prepForZeroHeightGenesis(ctx sdk.Context, jailAllowedAddrs [
 
 	_, err_ = app.StakingKeeper.ApplyAndReturnValidatorSetUpdates(ctx)
 	if err_ != nil {
-		log.Fatal(err)
+		log.Fatal(err_)
 	}
 	/* Handle slashing state. */
 
