@@ -10,7 +10,7 @@ import (
 
 	serverconfig "github.com/cosmos/cosmos-sdk/server/config"
 
-	dbm "github.com/cometbft/cometbft"
+	dbm "github.com/cometbft/cometbft-db"
 	tmcfg "github.com/cometbft/cometbft/config"
 	tmcli "github.com/cometbft/cometbft/libs/cli"
 	"github.com/cometbft/cometbft/libs/log"
