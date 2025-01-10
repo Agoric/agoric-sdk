@@ -2,7 +2,7 @@ import type { LatestTopic } from '@agoric/notifier';
 import type { ERef } from '@endo/far';
 import type { RemotableObject } from '@endo/pass-style';
 import type { CopyBag, CopySet, Key, Pattern } from '@endo/patterns';
-import type { Tagged } from '@agoric/internal/src/tagged.js';
+import type { TypeTag } from '@agoric/internal/src/tagged.js';
 import type { AssetKind } from './amountMath.js';
 
 export type { AssetKind } from './amountMath.js';
@@ -407,7 +407,7 @@ export type Payment<
   K extends AssetKind = AssetKind,
   M extends Key = Key,
 > = RemotableObject &
-  Tagged<
+  TypeTag<
     {
       /**
        * Get the allegedBrand, indicating
