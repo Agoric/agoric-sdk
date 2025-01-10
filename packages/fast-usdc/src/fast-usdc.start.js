@@ -109,6 +109,7 @@ const publishFeedPolicy = async (node, policy) => {
  * }} FastUSDCCorePowers
  *
  * @typedef {StartedInstanceKitWithLabel & {
+ *   creatorFacet: Awaited<ReturnType<FastUsdcSF>>['creatorFacet'];
  *   privateArgs: StartParams<FastUsdcSF>['privateArgs'];
  * }} FastUSDCKit
  */

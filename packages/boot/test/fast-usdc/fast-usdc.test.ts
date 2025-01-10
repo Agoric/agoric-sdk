@@ -1,28 +1,30 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
-
 import type { TestFn } from 'ava';
+
 import { encodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
 import { configurations } from '@agoric/fast-usdc/src/utils/deploy-config.js';
 import { MockCctpTxEvidences } from '@agoric/fast-usdc/test/fixtures.js';
 import { documentStorageSchema } from '@agoric/governance/tools/storageDoc.js';
-import { Fail } from '@endo/errors';
+import {
+  BridgeId,
+  deeplyFulfilledObject,
+  NonNullish,
+  objectMap,
+} from '@agoric/internal';
 import { unmarshalFromVstorage } from '@agoric/internal/src/marshal.js';
+import { defaultSerializer } from '@agoric/internal/src/storage-test-utils.js';
+import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
+import { Fail } from '@endo/errors';
 import { makeMarshal } from '@endo/marshal';
 import {
-  defaultMarshaller,
-  defaultSerializer,
-} from '@agoric/internal/src/storage-test-utils.js';
-import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
-import { BridgeId, NonNullish } from '@agoric/internal';
+  AckBehavior,
+  insistManagerType,
+  makeSwingsetHarness,
+} from '../../tools/supports.js';
 import {
   makeWalletFactoryContext,
   type WalletFactoryTestContext,
 } from '../bootstrapTests/walletFactory.js';
-import {
-  makeSwingsetHarness,
-  insistManagerType,
-  AckBehavior,
-} from '../../tools/supports.js';
 
 const test: TestFn<
   WalletFactoryTestContext & {
@@ -462,4 +464,63 @@ test.serial('restart contract', async t => {
   const kit = await EV.vat('bootstrap').consumeItem('fastUsdcKit');
   const actual = await EV(kit.adminFacet).restartContract(kit.privateArgs);
   t.deepEqual(actual, { incarnationNumber: 1 });
+});
+
+test.serial('replace operators', async t => {
+  const {
+    agoricNamesRemotes,
+    storage,
+    runUtils: { EV },
+    walletFactoryDriver: wfd,
+  } = t.context;
+  const { creatorFacet } = await EV.vat('bootstrap').consumeItem('fastUsdcKit');
+
+  const EUD = 'dydx1anything';
+  const lastNodeValue = storage.getValues('published.fastUsdc').at(-1);
+  const { settlementAccount } = JSON.parse(NonNullish(lastNodeValue));
+  const evidence = MockCctpTxEvidences.AGORIC_PLUS_OSMO(
+    // mock with the real settlementAccount address
+    encodeAddressHook(settlementAccount, { EUD }),
+  );
+
+  // Remove old oracle operators (nested in block to isolate bindings)
+  {
+    // old oracles, which were started with MAINNET config
+    const { oracles } = configurations.MAINNET;
+
+    for (const [name, address] of Object.entries(oracles)) {
+      t.log('Removing operator', name, 'at', address);
+      await EV(creatorFacet).removeOperator(address);
+    }
+
+    const wallets = await Promise.all(
+      Object.values(oracles).map(addr => wfd.provideSmartWallet(addr)),
+    );
+
+    await Promise.all(
+      wallets.map(wallet =>
+        wallet.sendOffer({
+          id: 'submit-while-disabled',
+          invitationSpec: {
+            source: 'continuing',
+            previousOffer: 'claim-oracle-invitation',
+            invitationMakerName: 'SubmitEvidence',
+            invitationArgs: [evidence],
+          },
+          proposal: {},
+        }),
+      ),
+    );
+    for (const wd of wallets) {
+      t.like(wd.getLatestUpdateRecord(), {
+        status: {
+          id: 'submit-while-disabled',
+          error: 'Error: submitEvidence for disabled operator',
+        },
+      });
+    }
+  }
+
+  // TODO test adding new operators
+  // The naive approach is failing under XS. A new CoreEval may be necessary.
 });
