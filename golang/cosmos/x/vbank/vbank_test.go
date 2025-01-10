@@ -7,8 +7,9 @@ import (
 	"sort"
 	"testing"
 
+	sdkmath "cosmossdk.io/math"
 	"cosmossdk.io/store"
-	storetypes "cosmossdk.io/store"
+	storetypes "cosmossdk.io/store/types"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/app/params"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vbank/types"
@@ -219,7 +220,7 @@ func (b *mockBank) GetAllBalances(ctx sdk.Context, addr sdk.AccAddress) sdk.Coin
 
 func (b *mockBank) GetBalance(ctx sdk.Context, addr sdk.AccAddress, denom string) sdk.Coin {
 	b.record(fmt.Sprintf("GetBalance %s %s", addr, denom))
-	amount := sdk.ZeroInt()
+	amount := sdkmath.ZeroInt()
 	if balances, ok := b.balances[addr.String()]; ok {
 		amount = balances.AmountOf(denom)
 	}
@@ -254,8 +255,8 @@ func makeTestKit(account types.AccountKeeper, bank types.BankKeeper) (Keeper, sd
 		return nil
 	}
 
-	paramsTStoreKey := sdk.NewTransientStoreKey(paramstypes.TStoreKey)
-	paramsStoreKey := sdk.NewKVStoreKey(paramstypes.StoreKey)
+	paramsTStoreKey := storetypes.NewTransientStoreKey(paramstypes.TStoreKey)
+	paramsStoreKey := storetypes.NewKVStoreKey(paramstypes.StoreKey)
 	pk := paramskeeper.NewKeeper(cdc, encodingConfig.Amino, paramsStoreKey, paramsTStoreKey)
 
 	subspace := pk.Subspace(types.ModuleName)
@@ -416,7 +417,7 @@ func Test_Receive_GiveToRewardDistributor(t *testing.T) {
 			feeDenom:      "yoctoquatloos",
 			wantMintCoins: "123456789123456789123456789yoctoquatloos",
 			wantRate: sdk.NewCoins(
-				sdk.NewCoin("yoctoquatloos", sdk.NewInt(123456789123456789).MulRaw(1000).AddRaw(124)),
+				sdk.NewCoin("yoctoquatloos", sdkmath.NewInt(123456789123456789).MulRaw(1000).AddRaw(124)),
 			),
 		},
 		{
@@ -427,7 +428,7 @@ func Test_Receive_GiveToRewardDistributor(t *testing.T) {
 			feeDenom:      "yoctoquatloos",
 			wantMintCoins: "123456789123456789123456789yoctoquatloos",
 			wantRate: sdk.NewCoins(
-				sdk.NewCoin("yoctoquatloos", sdk.NewInt(123456789123456789).MulRaw(1000).AddRaw(124)),
+				sdk.NewCoin("yoctoquatloos", sdkmath.NewInt(123456789123456789).MulRaw(1000).AddRaw(124)),
 			),
 		},
 	}

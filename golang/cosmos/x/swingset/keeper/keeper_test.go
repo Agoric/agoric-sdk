@@ -193,7 +193,7 @@ var (
 	swingsetStoreKey = storetypes.NewKVStoreKey(types.StoreKey)
 )
 
-func makeTestStore() sdk.KVStore {
+func makeTestStore() storetypes.KVStore {
 	db := dbm.NewMemDB()
 	ms := store.NewCommitMultiStore(db)
 	ms.MountStoreWithDB(swingsetStoreKey, storetypes.StoreTypeIAVL, db)

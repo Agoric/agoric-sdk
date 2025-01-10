@@ -171,7 +171,7 @@ func (k Keeper) GetSmartWalletState(ctx sdk.Context, addr sdk.AccAddress) types.
 }
 
 func (k Keeper) InboundQueueLength(ctx sdk.Context) (int32, error) {
-	size := sdk.NewInt(0)
+	size := sdkmath.NewInt(0)
 
 	highPriorityQueueLength, err := k.vstorageKeeper.GetQueueLength(ctx, StoragePathHighPriorityQueue)
 	if err != nil {
@@ -489,7 +489,7 @@ func (k Keeper) SetMailbox(ctx sdk.Context, peer string, mailbox string) {
 	k.vstorageKeeper.LegacySetStorageAndNotify(ctx, agoric.NewKVEntry(path, mailbox))
 }
 
-func (k Keeper) GetSwingStore(ctx sdk.Context) sdk.KVStore {
+func (k Keeper) GetSwingStore(ctx sdk.Context) storetypes.KVStore {
 	store := ctx.KVStore(k.storeKey)
 	return prefix.NewStore(store, []byte(swingStoreKeyPrefix))
 }

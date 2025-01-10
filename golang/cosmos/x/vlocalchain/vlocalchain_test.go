@@ -12,6 +12,7 @@ import (
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vlocalchain"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vlocalchain/types"
 
+	sdkmath "cosmossdk.io/math"
 	"cosmossdk.io/store"
 	storetypes "cosmossdk.io/store/types"
 	"github.com/cometbft/cometbft/libs/log"
@@ -119,8 +120,8 @@ func (s *mockStaking) UnbondingDelegation(cctx context.Context, req *stakingtype
 			{
 				CreationHeight: 100,
 				CompletionTime: time.Now().UTC().Add(time.Hour * 24 * 7),
-				InitialBalance: sdk.NewInt(1000),
-				Balance:        sdk.NewInt(500),
+				InitialBalance: sdkmath.NewInt(1000),
+				Balance:        sdkmath.NewInt(500),
 			},
 		},
 	}
@@ -216,8 +217,8 @@ func TestQuery(t *testing.T) {
 	alreadyAddr := sdk.MustBech32ifyAddressBytes("cosmos", []byte("already"))
 	nonexistentAddr := sdk.MustBech32ifyAddressBytes("cosmos", []byte("nonexistent"))
 	bank := &mockBank{balances: map[string]sdk.Coins{
-		firstAddr:   []sdk.Coin{sdk.NewCoin("fresh", sdk.NewInt(123))},
-		alreadyAddr: []sdk.Coin{sdk.NewCoin("stale", sdk.NewInt(321))},
+		firstAddr:   []sdk.Coin{sdk.NewCoin("fresh", sdkmath.NewInt(123))},
+		alreadyAddr: []sdk.Coin{sdk.NewCoin("stale", sdkmath.NewInt(321))},
 	}}
 	transfer := &mockTransfer{}
 	staking := &mockStaking{}
@@ -358,8 +359,8 @@ func TestQuery(t *testing.T) {
 func TestExecuteTx(t *testing.T) {
 	alreadyAddr := sdk.MustBech32ifyAddressBytes("cosmos", []byte("already"))
 	bank := &mockBank{balances: map[string]sdk.Coins{
-		firstAddr:   []sdk.Coin{sdk.NewCoin("fresh", sdk.NewInt(123))},
-		alreadyAddr: []sdk.Coin{sdk.NewCoin("stale", sdk.NewInt(321))},
+		firstAddr:   []sdk.Coin{sdk.NewCoin("fresh", sdkmath.NewInt(123))},
+		alreadyAddr: []sdk.Coin{sdk.NewCoin("stale", sdkmath.NewInt(321))},
 	}}
 	transfer := &mockTransfer{}
 	staking := &mockStaking{}

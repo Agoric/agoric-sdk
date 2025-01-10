@@ -7,6 +7,7 @@ import (
 	stdlog "log"
 	"sort"
 
+	sdkmath "cosmossdk.io/math"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -157,7 +158,7 @@ func (ch portHandler) Receive(cctx context.Context, str string) (ret string, err
 		if err = sdk.ValidateDenom(msg.Denom); err != nil {
 			return "", fmt.Errorf("invalid denom %s: %s", msg.Denom, err)
 		}
-		value, ok := sdk.NewIntFromString(msg.Amount)
+		value, ok := sdkmath.NewIntFromString(msg.Amount)
 		if !ok {
 			return "", fmt.Errorf("cannot convert %s to int", msg.Amount)
 		}
@@ -185,7 +186,7 @@ func (ch portHandler) Receive(cctx context.Context, str string) (ret string, err
 		if err = sdk.ValidateDenom(msg.Denom); err != nil {
 			return "", fmt.Errorf("invalid denom %s: %s", msg.Denom, err)
 		}
-		value, ok := sdk.NewIntFromString(msg.Amount)
+		value, ok := sdkmath.NewIntFromString(msg.Amount)
 		if !ok {
 			return "", fmt.Errorf("cannot convert %s to int", msg.Amount)
 		}
@@ -206,7 +207,7 @@ func (ch portHandler) Receive(cctx context.Context, str string) (ret string, err
 		}
 
 	case "VBANK_GIVE_TO_REWARD_DISTRIBUTOR":
-		value, ok := sdk.NewIntFromString(msg.Amount)
+		value, ok := sdkmath.NewIntFromString(msg.Amount)
 		if !ok {
 			return "", fmt.Errorf("cannot convert %s to int", msg.Amount)
 		}
