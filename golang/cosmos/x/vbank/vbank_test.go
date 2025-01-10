@@ -715,7 +715,7 @@ func Test_EndBlock_Rewards(t *testing.T) {
 			keeper.SetParams(ctx, types.Params{
 				RewardEpochDurationBlocks: 3,
 				RewardSmoothingBlocks:     1,
-				PerEpochRewardFraction:    sdk.OneDec(),
+				PerEpochRewardFraction:    sdkmath.LegacyOneDec(),
 			})
 
 			updates := am.EndBlock(ctx, abci.RequestEndBlock{})
