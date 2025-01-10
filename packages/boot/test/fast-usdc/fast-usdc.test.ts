@@ -521,6 +521,63 @@ test.serial('replace operators', async t => {
     }
   }
 
-  // TODO test adding new operators
-  // The naive approach is failing under XS. A new CoreEval may be necessary.
+  // Add new oracle operators, using any configuration
+  const { oracles } = configurations.A3P_INTEGRATION;
+  const wallets = await Promise.all(
+    Object.values(oracles).map(addr => wfd.provideSmartWallet(addr)),
+  );
+
+  const namesByAddress =
+    await EV.vat('bootstrap').consumeItem('namesByAddress');
+  const oracleDepositFacets = await deeplyFulfilledObject(
+    objectMap(oracles, address =>
+      EV(namesByAddress).lookup(address, 'depositFacet'),
+    ),
+  );
+
+  await Promise.all(
+    Object.entries(oracleDepositFacets).map(async ([name, depositFacet]) => {
+      const toWatch = await EV(creatorFacet).makeOperatorInvitation(
+        oracles[name],
+      );
+      await EV(depositFacet).receive(toWatch);
+    }),
+  );
+
+  await Promise.all(
+    wallets.map(wallet =>
+      wallet.sendOffer({
+        id: 'claim-oracle-invitation',
+        invitationSpec: {
+          source: 'purse',
+          instance: agoricNamesRemotes.instance.fastUsdc,
+          description: 'oracle operator invitation',
+        },
+        proposal: {},
+      }),
+    ),
+  );
+
+  await Promise.all(
+    wallets.map(wallet =>
+      wallet.sendOffer({
+        id: 'submit',
+        invitationSpec: {
+          source: 'continuing',
+          previousOffer: 'claim-oracle-invitation',
+          invitationMakerName: 'SubmitEvidence',
+          invitationArgs: [evidence],
+        },
+        proposal: {},
+      }),
+    ),
+  );
+  for (const wd of wallets) {
+    t.like(wd.getLatestUpdateRecord(), {
+      status: {
+        id: 'submit',
+        result: 'inert; nothing should be expected from this offer',
+      },
+    });
+  }
 });
