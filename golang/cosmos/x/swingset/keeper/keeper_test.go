@@ -182,7 +182,7 @@ func Test_calculateFees(t *testing.T) {
 				t.Errorf("calculateFees() error = %v, want %v", err, tt.errMsg)
 				return
 			}
-			if !got.IsEqual(tt.want) {
+			if !got.Equal(tt.want) {
 				t.Errorf("calculateFees() = %v, want %v", got, tt.want)
 			}
 		})
@@ -193,7 +193,7 @@ var (
 	swingsetStoreKey = storetypes.NewKVStoreKey(types.StoreKey)
 )
 
-func makeTestStore() sdk.KVStore {
+func makeTestStore() storetypes.KVStore {
 	db := dbm.NewMemDB()
 	ms := store.NewCommitMultiStore(db)
 	ms.MountStoreWithDB(swingsetStoreKey, storetypes.StoreTypeIAVL, db)

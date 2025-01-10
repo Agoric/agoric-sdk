@@ -12,9 +12,10 @@ import (
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vlocalchain"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vlocalchain/types"
 
+	"cosmossdk.io/log"
+	sdkmath "cosmossdk.io/math"
 	"cosmossdk.io/store"
 	storetypes "cosmossdk.io/store/types"
-	"github.com/cometbft/cometbft/libs/log"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
@@ -29,7 +30,7 @@ import (
 )
 
 var (
-	vlocalchainStoreKey = sdk.NewKVStoreKey(types.StoreKey)
+	vlocalchainStoreKey = storetypes.NewKVStoreKey(types.StoreKey)
 )
 
 const (
@@ -119,8 +120,8 @@ func (s *mockStaking) UnbondingDelegation(cctx context.Context, req *stakingtype
 			{
 				CreationHeight: 100,
 				CompletionTime: time.Now().UTC().Add(time.Hour * 24 * 7),
-				InitialBalance: sdk.NewInt(1000),
-				Balance:        sdk.NewInt(500),
+				InitialBalance: sdkmath.NewInt(1000),
+				Balance:        sdkmath.NewInt(500),
 			},
 		},
 	}
@@ -216,8 +217,8 @@ func TestQuery(t *testing.T) {
 	alreadyAddr := sdk.MustBech32ifyAddressBytes("cosmos", []byte("already"))
 	nonexistentAddr := sdk.MustBech32ifyAddressBytes("cosmos", []byte("nonexistent"))
 	bank := &mockBank{balances: map[string]sdk.Coins{
-		firstAddr:   []sdk.Coin{sdk.NewCoin("fresh", sdk.NewInt(123))},
-		alreadyAddr: []sdk.Coin{sdk.NewCoin("stale", sdk.NewInt(321))},
+		firstAddr:   []sdk.Coin{sdk.NewCoin("fresh", sdkmath.NewInt(123))},
+		alreadyAddr: []sdk.Coin{sdk.NewCoin("stale", sdkmath.NewInt(321))},
 	}}
 	transfer := &mockTransfer{}
 	staking := &mockStaking{}
@@ -286,7 +287,7 @@ func TestQuery(t *testing.T) {
 				t.Fatalf("unexpected error unmarshalling reply: %v: %v", ret, err)
 			}
 
-			if !pb.Balances.IsEqual(tc.expected) {
+			if !pb.Balances.Equal(tc.expected) {
 				t.Errorf("unexpected balance: expected %v, got %v", tc.expected, pb.Balances)
 			}
 		})
@@ -358,8 +359,8 @@ func TestQuery(t *testing.T) {
 func TestExecuteTx(t *testing.T) {
 	alreadyAddr := sdk.MustBech32ifyAddressBytes("cosmos", []byte("already"))
 	bank := &mockBank{balances: map[string]sdk.Coins{
-		firstAddr:   []sdk.Coin{sdk.NewCoin("fresh", sdk.NewInt(123))},
-		alreadyAddr: []sdk.Coin{sdk.NewCoin("stale", sdk.NewInt(321))},
+		firstAddr:   []sdk.Coin{sdk.NewCoin("fresh", sdkmath.NewInt(123))},
+		alreadyAddr: []sdk.Coin{sdk.NewCoin("stale", sdkmath.NewInt(321))},
 	}}
 	transfer := &mockTransfer{}
 	staking := &mockStaking{}
