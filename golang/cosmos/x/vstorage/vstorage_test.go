@@ -14,8 +14,8 @@ import (
 	storetypes "cosmossdk.io/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
+	"cosmossdk.io/log"
 	agorictypes "github.com/Agoric/agoric-sdk/golang/cosmos/types"
-	"github.com/cometbft/cometbft/libs/log"
 
 	dbm "github.com/cometbft/cometbft-db"
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
