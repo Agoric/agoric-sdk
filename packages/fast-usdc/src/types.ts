@@ -82,7 +82,7 @@ export interface PoolMetrics extends PoolStats {
 
 export interface ChainPolicy {
   /** `msg.sender` of DepositAndBurn to TokenMessenger must be an attenuated wrapper contract that does not contain `replaceDepositForBurn` */
-  attenuatedCttpBridgeAddress: EvmHash;
+  attenuatedCttpBridgeAddresses: EvmHash[];
   /** @see {@link https://developers.circle.com/stablecoins/evm-smart-contracts} */
   cctpTokenMessengerAddress: EvmHash;
   /** e.g., `1` for ETH mainnet 42161 for Arbitrum One. @see {@link https://chainlist.org/} */
