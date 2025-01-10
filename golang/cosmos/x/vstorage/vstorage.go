@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 
+	storetypes "cosmossdk.io/store/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 
 	agoric "github.com/Agoric/agoric-sdk/golang/cosmos/types"
@@ -54,7 +55,7 @@ func (sh vstorageHandler) Receive(cctx context.Context, str string) (ret string,
 	defer func() {
 		if r := recover(); r != nil {
 			switch rType := r.(type) {
-			case sdk.ErrorOutOfGas:
+			case storetypes.ErrorOutOfGas:
 				err = fmt.Errorf(
 					"out of gas in location: %v; gasUsed: %d",
 					rType.Descriptor, ctx.GasMeter().GasConsumed(),
