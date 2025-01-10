@@ -30,7 +30,7 @@ import (
 )
 
 var (
-	vlocalchainStoreKey = sdk.NewKVStoreKey(types.StoreKey)
+	vlocalchainStoreKey = storetypes.NewKVStoreKey(types.StoreKey)
 )
 
 const (
@@ -287,7 +287,7 @@ func TestQuery(t *testing.T) {
 				t.Fatalf("unexpected error unmarshalling reply: %v: %v", ret, err)
 			}
 
-			if !pb.Balances.IsEqual(tc.expected) {
+			if !pb.Balances.Equal(tc.expected) {
 				t.Errorf("unexpected balance: expected %v, got %v", tc.expected, pb.Balances)
 			}
 		})

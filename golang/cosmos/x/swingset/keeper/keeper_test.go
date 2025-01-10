@@ -182,7 +182,7 @@ func Test_calculateFees(t *testing.T) {
 				t.Errorf("calculateFees() error = %v, want %v", err, tt.errMsg)
 				return
 			}
-			if !got.IsEqual(tt.want) {
+			if !got.Equal(tt.want) {
 				t.Errorf("calculateFees() = %v, want %v", got, tt.want)
 			}
 		})

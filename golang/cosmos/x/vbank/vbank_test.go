@@ -463,7 +463,7 @@ func Test_Receive_GiveToRewardDistributor(t *testing.T) {
 				t.Errorf("got error = %v", err)
 			}
 			state := keeper.GetState(ctx)
-			if !state.RewardBlockAmount.IsEqual(tt.wantRate) {
+			if !state.RewardBlockAmount.Equal(tt.wantRate) {
 				t.Errorf("got rate %v, want %v", state.RewardBlockAmount, tt.wantRate)
 			}
 		})
@@ -728,7 +728,7 @@ func Test_EndBlock_Rewards(t *testing.T) {
 			}
 
 			state = keeper.GetState(ctx)
-			if !state.RewardPool.IsEqual(tt.wantPool) {
+			if !state.RewardPool.Equal(tt.wantPool) {
 				t.Errorf("got pool %v, want %v", state.RewardPool, tt.wantPool)
 			}
 
