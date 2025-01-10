@@ -15,6 +15,10 @@ import { prepareOperatorKit } from './operator-kit.js';
 
 const trace = makeTracer('TxFeed', true);
 
+/**
+ * @typedef {Pick<OperatorKit, 'invitationMakers' | 'operator'>} OperatorOfferResult
+ */
+
 /** Name in the invitation purse (keyed also by this contract instance) */
 export const INVITATION_MAKERS_DESC = 'oracle operator invitation';
 
@@ -27,8 +31,10 @@ const TransactionFeedKitI = harden({
     ).returns(),
   }),
   creator: M.interface('Transaction Feed Creator', {
-    // TODO narrow the return shape to OperatorKit
-    initOperator: M.call(M.string()).returns(M.record()),
+    initOperator: M.call(M.string()).returns({
+      invitationMakers: M.remotable(),
+      operator: M.remotable(),
+    }),
     makeOperatorInvitation: M.call(M.string()).returns(M.promise()),
     removeOperator: M.call(M.string()).returns(),
   }),
@@ -92,14 +98,14 @@ export const prepareTransactionFeedKit = (zone, zcf) => {
          * CCTP transactions.
          *
          * @param {string} operatorId unique per contract instance
-         * @returns {Promise<Invitation<OperatorKit>>}
+         * @returns {Promise<Invitation<OperatorOfferResult>>}
          */
         makeOperatorInvitation(operatorId) {
           const { creator } = this.facets;
           trace('makeOperatorInvitation', operatorId);
 
           return zcf.makeInvitation(
-            /** @type {OfferHandler<OperatorKit>} */
+            /** @type {OfferHandler<OperatorOfferResult>} */
             seat => {
               seat.exit();
               return creator.initOperator(operatorId);
@@ -107,7 +113,10 @@ export const prepareTransactionFeedKit = (zone, zcf) => {
             INVITATION_MAKERS_DESC,
           );
         },
-        /** @param {string} operatorId */
+        /**
+         * @param {string} operatorId
+         * @returns {OperatorOfferResult}
+         */
         initOperator(operatorId) {
           const { operators, pending, risks } = this.state;
           trace('initOperator', operatorId);
@@ -123,7 +132,12 @@ export const prepareTransactionFeedKit = (zone, zcf) => {
           );
           risks.init(operatorId, zone.detached().mapStore('risk assessments'));
 
-          return operatorKit;
+          // Subset facets to all the off-chain operator needs
+          const { invitationMakers, operator } = operatorKit;
+          return {
+            invitationMakers,
+            operator,
+          };
         },
 
         /** @param {string} operatorId */

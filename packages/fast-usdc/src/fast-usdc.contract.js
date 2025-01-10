@@ -37,7 +37,7 @@ const ADDRESSES_BAGGAGE_KEY = 'addresses';
  * @import {Remote} from '@agoric/internal';
  * @import {Marshaller, StorageNode} from '@agoric/internal/src/lib-chainStorage.js'
  * @import {Zone} from '@agoric/zone';
- * @import {OperatorKit} from './exos/operator-kit.js';
+ * @import {OperatorOfferResult} from './exos/transaction-feed.js';
  * @import {CctpTxEvidence, FeeConfig, RiskAssessment} from './types.js';
  */
 
@@ -159,7 +159,7 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
   const { makeLocalAccount, makeNobleAccount } = orchestrateAll(flows, {});
 
   const creatorFacet = zone.exo('Fast USDC Creator', undefined, {
-    /** @type {(operatorId: string) => Promise<Invitation<OperatorKit>>} */
+    /** @type {(operatorId: string) => Promise<Invitation<OperatorOfferResult>>} */
     async makeOperatorInvitation(operatorId) {
       return feedKit.creator.makeOperatorInvitation(operatorId);
     },
