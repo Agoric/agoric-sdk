@@ -10,9 +10,6 @@ import (
 
 	serverconfig "github.com/cosmos/cosmos-sdk/server/config"
 
-	authcmd "cosmossdk.io/x/auth/client/cli"
-	"cosmossdk.io/x/auth/types"
-	vestingcli "cosmossdk.io/x/auth/vesting/client/cli"
 	dbm "github.com/cometbft/cometbft"
 	tmcfg "github.com/cometbft/cometbft/config"
 	tmcli "github.com/cometbft/cometbft/libs/cli"
@@ -28,6 +25,9 @@ import (
 	"github.com/cosmos/cosmos-sdk/server"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	authcmd "github.com/cosmos/cosmos-sdk/x/auth/client/cli"
+	"github.com/cosmos/cosmos-sdk/x/auth/types"
+	vestingcli "github.com/cosmos/cosmos-sdk/x/auth/vesting/client/cli"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	genutilcli "github.com/cosmos/cosmos-sdk/x/genutil/client/cli"
 	"github.com/spf13/cast"
