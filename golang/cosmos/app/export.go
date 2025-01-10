@@ -189,11 +189,12 @@ func (app *GaiaApp) prepForZeroHeightGenesis(ctx sdk.Context, jailAllowedAddrs [
 
 	iter.Close()
 
-	_, err := app.StakingKeeper.ApplyAndReturnValidatorSetUpdates(ctx)
-	if err != nil {
+	var err_ error
+
+	_, err_ = app.StakingKeeper.ApplyAndReturnValidatorSetUpdates(ctx)
+	if err_ != nil {
 		log.Fatal(err)
 	}
-
 	/* Handle slashing state. */
 
 	// reset start height on signing infos
