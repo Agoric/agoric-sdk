@@ -22,7 +22,6 @@ import { prepareStatusManager } from './exos/status-manager.js';
 import { prepareTransactionFeedKit } from './exos/transaction-feed.js';
 import * as flows from './fast-usdc.flows.js';
 import { FastUSDCTermsShape, FeeConfigShape } from './type-guards.js';
-import { defineInertInvitation } from './utils/zoe.js';
 
 const trace = makeTracer('FastUsdc');
 
@@ -37,7 +36,7 @@ const ADDRESSES_BAGGAGE_KEY = 'addresses';
  * @import {Remote} from '@agoric/internal';
  * @import {Marshaller, StorageNode} from '@agoric/internal/src/lib-chainStorage.js'
  * @import {Zone} from '@agoric/zone';
- * @import {OperatorKit} from './exos/operator-kit.js';
+ * @import {OperatorOfferResult} from './exos/transaction-feed.js';
  * @import {CctpTxEvidence, FeeConfig, RiskAssessment} from './types.js';
  */
 
@@ -151,17 +150,16 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
     { makeRecorderKit },
   );
 
-  const makeTestInvitation = defineInertInvitation(
-    zcf,
-    'test of forcing evidence',
-  );
-
   const { makeLocalAccount, makeNobleAccount } = orchestrateAll(flows, {});
 
   const creatorFacet = zone.exo('Fast USDC Creator', undefined, {
-    /** @type {(operatorId: string) => Promise<Invitation<OperatorKit>>} */
+    /** @type {(operatorId: string) => Promise<Invitation<OperatorOfferResult>>} */
     async makeOperatorInvitation(operatorId) {
       return feedKit.creator.makeOperatorInvitation(operatorId);
+    },
+    /** @type {(operatorId: string) => void} */
+    removeOperator(operatorId) {
+      return feedKit.creator.removeOperator(operatorId);
     },
     async connectToNoble() {
       return vowTools.when(nobleAccountV, nobleAccount => {
@@ -193,21 +191,6 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
   });
 
   const publicFacet = zone.exo('Fast USDC Public', undefined, {
-    // XXX to be removed before production
-    /**
-     * NB: Any caller with access to this invitation maker has the ability to
-     * force handling of evidence.
-     *
-     * Provide an API call in the form of an invitation maker, so that the
-     * capability is available in the smart-wallet bridge during UI testing.
-     *
-     * @param {CctpTxEvidence} evidence
-     * @param {RiskAssessment} [risk]
-     */
-    makeTestPushInvitation(evidence, risk = {}) {
-      void advancer.handleTransactionEvent({ evidence, risk });
-      return makeTestInvitation();
-    },
     makeDepositInvitation() {
       return poolKit.public.makeDepositInvitation();
     },

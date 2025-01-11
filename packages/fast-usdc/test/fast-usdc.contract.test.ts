@@ -39,6 +39,7 @@ import type { CctpTxEvidence, FeeConfig, PoolMetrics } from '../src/types.js';
 import { makeFeeTools } from '../src/utils/fees.js';
 import { MockCctpTxEvidences } from './fixtures.js';
 import { commonSetup, uusdcOnAgoric } from './supports.js';
+import type { OperatorOfferResult } from '../src/exos/transaction-feed.js';
 
 const dirname = path.dirname(new URL(import.meta.url).pathname);
 
@@ -223,7 +224,7 @@ const purseOf =
   };
 
 const makeOracleOperator = async (
-  opInv: Invitation<OperatorKit>,
+  opInv: Invitation<OperatorOfferResult>,
   txSubscriber: Subscriber<TxWithRisk>,
   zoe: ZoeService,
   t: ExecutionContext,
@@ -234,15 +235,9 @@ const makeOracleOperator = async (
     description: 'oracle operator invitation',
   });
 
-  // operator only gets `.invitationMakers`
-  // but for testing, we need `.admin` too. UNTIL #?????
-  const operatorKit = await E(E(zoe).offer(opInv)).getOfferResult();
-  t.deepEqual(Object.keys(operatorKit), [
-    'admin',
-    'invitationMakers',
-    'operator',
-  ]);
-  const { invitationMakers } = operatorKit;
+  const offerResult = await E(E(zoe).offer(opInv)).getOfferResult();
+  t.deepEqual(Object.keys(offerResult), ['invitationMakers', 'operator']);
+  const { invitationMakers } = offerResult;
 
   let active = true;
 
@@ -274,7 +269,7 @@ const makeOracleOperator = async (
     getDone: () => done,
     getFailures: () => harden([...failures]),
     // operator only gets .invitationMakers
-    getKit: () => operatorKit,
+    getKit: () => offerResult,
     setActive: flag => {
       active = flag;
     },
