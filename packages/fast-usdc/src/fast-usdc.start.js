@@ -22,6 +22,7 @@ import { fromExternalConfig } from './utils/config-marshal.js';
  * @import {Board} from '@agoric/vats'
  * @import {ManifestBundleRef} from '@agoric/deploy-script-support/src/externalTypes.js'
  * @import {BootstrapManifest} from '@agoric/vats/src/core/lib-boot.js'
+ * @import {Passable} from '@endo/pass-style'
  * @import {LegibleCapData} from './utils/config-marshal.js'
  * @import {FastUsdcSF} from './fast-usdc.contract.js'
  * @import {FeedPolicy, FastUSDCConfig} from './types.js'
@@ -93,7 +94,8 @@ const POOL_METRICS = 'poolMetrics';
  */
 const publishFeedPolicy = async (node, policy) => {
   const feedPolicy = E(node).makeChildNode(FEED_POLICY);
-  await E(feedPolicy).setValue(JSON.stringify(policy));
+  const value = marshalData.toCapData(policy);
+  await E(feedPolicy).setValue(JSON.stringify(value));
 };
 
 /**

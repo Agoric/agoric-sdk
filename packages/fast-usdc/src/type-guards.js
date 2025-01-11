@@ -122,10 +122,19 @@ harden(PoolMetricsShape);
 
 /** @type {TypedPattern<ChainPolicy>} */
 export const ChainPolicyShape = {
-  attenuatedCttpBridgeAddress: EvmHashShape,
+  attenuatedCttpBridgeAddresses: M.splitArray(
+    [EvmHashShape],
+    undefined,
+    M.arrayOf(EvmHashShape),
+  ),
   cctpTokenMessengerAddress: EvmHashShape,
   confirmations: M.number(),
   chainId: M.number(),
+  rateLimits: {
+    tx: M.bigint(),
+    blockWindow: M.bigint(),
+    blockWindowSize: M.number(),
+  },
 };
 harden(ChainPolicyShape);
 

@@ -17,7 +17,7 @@ import { parseArgs } from 'node:util';
 /**
  * @import {CoreEvalBuilder, DeployScriptFunction} from '@agoric/deploy-script-support/src/externalTypes.js'
  * @import {ParseArgsConfig} from 'node:util'
- * @import {FastUSDCConfig} from '@agoric/fast-usdc/src/types.js'
+ * @import {FastUSDCConfig, FeedPolicy} from '@agoric/fast-usdc/src/types.js'
  */
 
 const { keys } = Object;
@@ -114,6 +114,7 @@ export default async (homeP, endowments) => {
     },
   } = parseArgs({ args: scriptArgs, options });
 
+  /** @returns {FeedPolicy} */
   const parseFeedPolicy = () => {
     if (net) {
       if (!(net in configurations)) {
@@ -122,7 +123,17 @@ export default async (homeP, endowments) => {
       return configurations[net].feedPolicy;
     }
     if (!feedPolicy) throw Error(feedPolicyUsage);
-    return JSON.parse(feedPolicy);
+    const parsed = JSON.parse(feedPolicy);
+    if (!parsed.chainPolicies) {
+      return {
+        ...configurations.MAINNET.feedPolicy,
+        ...parsed,
+      };
+    } else {
+      // consider having callers use `toExternalConfig` to pass in bigints and
+      // use `fromExternalConfig` here to parse
+      throw Error('TODO: support unmarshalling feedPolicy');
+    }
   };
 
   const parseOracleArgs = () => {

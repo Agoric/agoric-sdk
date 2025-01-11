@@ -68,11 +68,14 @@ const makeKeyring = async (
   return { setupTestKeys, deleteTestKeys };
 };
 
-export const commonSetup = async (t: ExecutionContext) => {
+export const commonSetup = async (
+  t: ExecutionContext,
+  { config = '../config.yaml' } = {},
+) => {
   let useChain: MultichainRegistry['useChain'];
   try {
     const registry = await setupRegistry({
-      config: `../${process.env.FILE || 'config.yaml'}`,
+      config,
     });
     useChain = registry.useChain;
   } catch (e) {
