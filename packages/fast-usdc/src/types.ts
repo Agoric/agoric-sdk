@@ -107,6 +107,7 @@ export type FeedPolicy = {
 } & CopyRecord;
 
 export type FastUSDCConfig = {
+  usdcIssuer: Issuer<'nat'>; // allow using USDC_axl where no USDC is available
   terms: FastUsdcTerms;
   oracles: Record<string, string>;
   feeConfig: FeeConfig;

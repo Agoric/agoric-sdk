@@ -65,14 +65,18 @@ const assetInfoUsage =
  */
 
 const crossVatContext = /** @type {const} */ ({
+  /** @type {Issuer<'nat'>} */
+  ['issuer.USDC']: Far('USDC Issuer'),
+  /** @type {Issuer<'nat'>} */
+  ['issuer.USDC_axl']: Far('USDC_axl Issuer'),
   /** @type {Brand<'nat'>} */
-  USDC: Far('USDC Brand'),
+  ['brand.USDC']: Far('USDC Brand'),
 });
-const { USDC } = crossVatContext;
+const USDC = crossVatContext['brand.USDC'];
 const USDC_DECIMALS = 6;
 const unit = AmountMath.make(USDC, 10n ** BigInt(USDC_DECIMALS));
 
-/** @type {CoreEvalBuilder} */
+/** @satisfies {CoreEvalBuilder} */
 export const defaultProposalBuilder = async (
   { publishRef, install },
   /** @type {FastUSDCConfig} */ config,
@@ -200,6 +204,7 @@ export default async (homeP, endowments) => {
     chainInfo: parseChainInfo(),
     assetInfo: parseAssetInfo(),
     noNoble,
+    usdcIssuer: crossVatContext[noNoble ? `issuer.USDC_axl` : 'issuer.USDC'],
   });
 
   await writeCoreEval('start-fast-usdc', utils =>

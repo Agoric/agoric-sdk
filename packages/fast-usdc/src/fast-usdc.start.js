@@ -153,17 +153,17 @@ export const startFastUSDC = async (
   trace('startFastUSDC');
 
   await null;
-  /** @type {Issuer<'nat'>} */
-  const USDCissuer = await E(agoricNames).lookup('issuer', 'USDC');
-  const brands = harden({
-    USDC: await E(USDCissuer).getBrand(),
-  });
+  /** @type {[string, Issuer][]} */
+  const issuerEntries = await E(E(agoricNames).lookup('issuer')).entries();
+  /** @type {[string, Brand][]} */
+  const brandEntries = await E(E(agoricNames).lookup('brand')).entries();
+  const xVatContext = Object.fromEntries([
+    ...issuerEntries.map(([n, i]) => [`issuer.${n}`, i]),
+    ...brandEntries.map(([n, i]) => [`brand.${n}`, i]),
+  ]);
 
-  const { terms, oracles, feeConfig, feedPolicy, ...net } = fromExternalConfig(
-    config.options,
-    brands,
-    FastUSDCConfigShape,
-  );
+  const { usdcIssuer, terms, oracles, feeConfig, feedPolicy, ...net } =
+    fromExternalConfig(config.options, xVatContext, FastUSDCConfigShape);
   trace('using terms', terms);
   trace('using fee config', feeConfig);
 
@@ -207,7 +207,7 @@ export const startFastUSDC = async (
   const kit = await E(startUpgradable)({
     label: contractName,
     installation: fastUsdc,
-    issuerKeywordRecord: harden({ USDC: USDCissuer }),
+    issuerKeywordRecord: { USDC: usdcIssuer },
     terms,
     privateArgs,
   });
