@@ -155,6 +155,7 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
   const creatorFacet = zone.exo('Fast USDC Creator', undefined, {
     /** @type {(operatorId: string) => Promise<Invitation<OperatorOfferResult>>} */
     async makeOperatorInvitation(operatorId) {
+      console.log('makeOperatorInvitation', operatorId);
       return feedKit.creator.makeOperatorInvitation(operatorId);
     },
     /** @type {(operatorId: string) => void} */

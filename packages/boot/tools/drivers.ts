@@ -129,11 +129,19 @@ export const makeWalletFactoryDriver = async (
       walletAddress: string,
     ): Promise<ReturnType<typeof makeWalletDriver>> {
       const bank = await EV(bankManager).getBankForAddress(walletAddress);
+      console.log('got bank', bank);
       return EV(walletFactoryStartResult.creatorFacet)
         .provideSmartWallet(walletAddress, bank, namesByAddressAdmin)
-        .then(([walletPresence, isNew]) =>
-          makeWalletDriver(walletAddress, walletPresence, isNew),
-        );
+        .then(([walletPresence, isNew]) => {
+          console.log(
+            'provideSmartWallet',
+            walletAddress,
+            'returned',
+            walletPresence,
+            isNew,
+          );
+          return makeWalletDriver(walletAddress, walletPresence, isNew);
+        });
     },
   };
 };

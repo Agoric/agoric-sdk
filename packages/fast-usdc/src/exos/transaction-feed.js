@@ -107,6 +107,7 @@ export const prepareTransactionFeedKit = (zone, zcf) => {
           return zcf.makeInvitation(
             /** @type {OfferHandler<OperatorOfferResult>} */
             seat => {
+              trace('initOperator', operatorId);
               seat.exit();
               return creator.initOperator(operatorId);
             },
