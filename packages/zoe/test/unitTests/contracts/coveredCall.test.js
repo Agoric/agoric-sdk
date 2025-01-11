@@ -994,7 +994,7 @@ test('zoe - coveredCall non-fungible', async t => {
   // already escrowed.
 
   const invitationIssuer = await E(zoe).getInvitationIssuer();
-  /** @type {Payment<any>} */
+  /** @type {Payment<'set', InvitationDetails>} */
   const bobExclOption = await claim(
     E(invitationIssuer).makeEmptyPurse(),
     optionP,

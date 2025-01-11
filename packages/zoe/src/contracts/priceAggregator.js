@@ -1,6 +1,6 @@
-import { Fail, q } from '@endo/errors';
-import { AmountMath, AssetKind, makeIssuerKit } from '@agoric/ertp';
+import { AmountMath } from '@agoric/ertp';
 import { assertAllDefined } from '@agoric/internal';
+import { notForProductionUse } from '@agoric/internal/src/magic-cookie-test-only.js';
 import {
   makeNotifierKit,
   makeStoredPublishKit,
@@ -8,13 +8,14 @@ import {
 } from '@agoric/notifier';
 import { makeLegacyMap } from '@agoric/store';
 import { TimeMath } from '@agoric/time';
+import { Fail, q } from '@endo/errors';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
-import { notForProductionUse } from '@agoric/internal/src/magic-cookie-test-only.js';
 
 import {
   calculateMedian,
   makeOnewayPriceAuthorityKit,
+  makePriceQuoteIssuer,
 } from '../contractSupport/index.js';
 import {
   addRatios,
@@ -82,7 +83,7 @@ const start = async (zcf, privateArgs) => {
   const quoteMint =
     privateArgs.quoteMint ||
     // makeIssuerKit fails upgrade, this contract is for demo only
-    makeIssuerKit('quote', AssetKind.SET).mint;
+    makePriceQuoteIssuer().mint;
   const quoteIssuerRecord = await zcf.saveIssuer(
     E(quoteMint).getIssuer(),
     'Quote',
