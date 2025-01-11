@@ -631,7 +631,7 @@ test.serial('EC can govern reserve parameter', async t => {
   const { reserve } = agoricNamesRemotes.instance;
   const { IST } = agoricNamesRemotes.brand;
 
-  t.log('Proposing question using new charter invitation for reserve');
+  t.log('Proposing question using new charter invitation for reserve', reserve);
   await governanceDriver.proposeApiCall(
     reserve,
     'burnFeesToReduceShortfall',

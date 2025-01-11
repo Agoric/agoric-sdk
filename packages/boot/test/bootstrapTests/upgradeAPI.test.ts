@@ -4,12 +4,27 @@ import path from 'path';
 import bundleSource from '@endo/bundle-source';
 import { CONTRACT_ELECTORATE, ParamTypes } from '@agoric/governance';
 import { MALLEABLE_NUMBER } from '@agoric/governance/test/swingsetTests/contractGovernor/governedContract.js';
+import { makeAgoricNamesRemotesFromFakeStorage } from '@agoric/vats/tools/board-utils.js';
+
 import { makeSwingsetTestKit } from '../../tools/supports.js';
+import {
+  makeGovernanceDriver,
+  makeWalletFactoryDriver,
+} from '../../tools/drivers.js';
 
 const dirname = path.dirname(new URL(import.meta.url).pathname);
 
 const GOVERNED_CONTRACT_SRC = './governedContract.js';
 const GOVERNED_CONTRACT2_SRC = './governedContract2.js';
+
+const wallets = [
+  'agoric1gx9uu7y6c90rqruhesae2t7c2vlw4uyyxlqxrx',
+  'agoric1d4228cvelf8tj65f4h7n2td90sscavln2283h5',
+  'agoric14543m33dr28x7qhwc558hzlj9szwhzwzpcmw6a',
+  'agoric13p9adwk0na5npfq64g22l6xucvqdmu3xqe70wq',
+  'agoric1el6zqs8ggctj5vwyukyk4fh50wcpdpwgugd5l5',
+  'agoric1zayxg4e9vd0es9c9jlpt36qtth255txjp6a8yc',
+];
 
 const setUpGovernedContract = async (zoe, timer, EV, controller) => {
   const installBundle = contractBundle => EV(zoe).install(contractBundle);
@@ -102,9 +117,25 @@ const makeDefaultTestContext = async t => {
   const zoe: ZoeService = await EV.vat('bootstrap').consumeItem('zoe');
   const timer = await EV.vat('bootstrap').consumeItem('chainTimerService');
 
+  // has to be late enough for agoricNames data to have been published
+  const agoricNamesRemotes = makeAgoricNamesRemotesFromFakeStorage(storage);
+
+  const walletFactoryDriver = await makeWalletFactoryDriver(
+    runUtils,
+    storage,
+    agoricNamesRemotes,
+  );
+
+  const governanceDriver = await makeGovernanceDriver(
+    swingsetTestKit,
+    agoricNamesRemotes,
+    walletFactoryDriver,
+    wallets,
+  );
+
   const facets = await setUpGovernedContract(zoe, timer, EV, controller);
 
-  return { ...swingsetTestKit, facets };
+  return { ...swingsetTestKit, facets, governanceDriver };
 };
 
 const test = anyTest as TestFn<
@@ -132,22 +163,72 @@ test(`start contract; verify`, async t => {
   t.is(avogadro, 602214090000000000000000n);
 });
 
+const getQuestionId = id => `propose-question-${id}`;
+const getVoteId = id => `vote-${id}`;
+
+const offerIds = {
+  add1: { outgoing: 'add1' },
+  add2: { outgoing: 'add2' },
+};
+
 test(`verify API governance`, async t => {
-  const { runUtils, facets } = t.context;
+  const { runUtils, facets, governanceDriver, storage } = t.context;
   const {
-    governorFacets: { creatorFacet },
+    governorFacets: { creatorFacet, instance },
     voteCounterInstallation: vci,
   } = facets;
 
   const { EV } = runUtils;
+  const contractPublicFacet = await EV(creatorFacet).getPublicFacet();
 
-  const question = await EV(creatorFacet).voteOnApiInvocation(
+  const committee = governanceDriver.ecMembers;
+
+  const agoricNamesAdmin =
+    await EV.vat('bootstrap').consumeItem('agoricNamesAdmin');
+  // await EV(agoricNamesAdmin).reserve('governedContract');
+  const instanceAdmin = await EV(agoricNamesAdmin).lookupAdmin('instance');
+  console.log('UPGA ', { instanceAdmin });
+  await EV(instanceAdmin).update('governedContract', instance);
+  const agoricNamesRemotes = makeAgoricNamesRemotesFromFakeStorage(storage);
+  const { governedContract } = agoricNamesRemotes.instance;
+  console.log('UPGA ', { governedContract });
+
+  const { economicCommittee, econCommitteeCharter } =
+    agoricNamesRemotes.instance;
+
+  console.log('accepting committee invitations');
+  await null;
+  for (const member of committee) {
+    await member.acceptOutstandingCharterInvitation(offerIds.add1.outgoing);
+    await member.acceptOutstandingCommitteeInvitation(offerIds.add2.outgoing);
+  }
+
+  await governanceDriver.proposeApiCall(
+    governedContract,
     'add1',
     [],
-    vci,
-    37n,
+    committee[0],
+    getQuestionId(6),
+    offerIds.add1.outgoing,
   );
-  t.truthy(question.instance);
+
+  t.like(committee[0].getLatestUpdateRecord(), {
+    status: { id: getQuestionId(6), numWantsSatisfied: 1 },
+  });
+
+  await governanceDriver.enactLatestProposal(
+    committee.slice(0, 2),
+    getVoteId(6),
+    offerIds.add1.outgoing,
+  );
+  for (const w of committee.slice(0, 2)) {
+    t.like(w.getLatestUpdateRecord(), {
+      status: { id: getVoteId(6), numWantsSatisfied: 1 },
+    });
+  }
+
+  const calls = await EV(contractPublicFacet).getApiCalled();
+  t.is(calls, 1);
 
   await t.throwsAsync(
     () => EV(creatorFacet).voteOnApiInvocation('add2', [], vci, 37n),
@@ -157,7 +238,7 @@ test(`verify API governance`, async t => {
   );
 });
 
-test(`upgrade; verify enhanced API governance`, async t => {
+test(`upgrade`, async t => {
   const { runUtils, facets } = t.context;
   const {
     governorFacets: { creatorFacet },
@@ -180,4 +261,45 @@ test(`upgrade; verify enhanced API governance`, async t => {
     37n,
   );
   t.truthy(question2.instance);
+});
+
+test(`verify API governance post-upgrade`, async t => {
+  const { runUtils, facets, governanceDriver } = t.context;
+  const {
+    governorFacets: { creatorFacet, instance },
+    voteCounterInstallation: vci,
+  } = facets;
+
+  const { EV } = runUtils;
+  const contractPublicFacet = await EV(creatorFacet).getPublicFacet();
+
+  const committee = governanceDriver.ecMembers;
+
+  await governanceDriver.proposeApiCall(
+    instance,
+    'add2',
+    [],
+    committee[0],
+    getQuestionId(6),
+    offerIds.add1.incoming,
+  );
+
+  t.like(committee[0].getLatestUpdateRecord(), {
+    status: { id: getQuestionId(6), numWantsSatisfied: 1 },
+  });
+
+  await governanceDriver.enactLatestProposal(
+    committee.slice(0, 2),
+    getVoteId(6),
+    offerIds.add1.incoming,
+  );
+  for (const w of committee.slice(0, 2)) {
+    t.like(w.getLatestUpdateRecord(), {
+      status: { id: getVoteId(6), numWantsSatisfied: 1 },
+    });
+  }
+
+  const calls = await EV(contractPublicFacet).getApiCalled();
+  t.log('called add2', calls);
+  t.is(calls, 3);
 });

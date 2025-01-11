@@ -248,6 +248,7 @@ export const makeGovernanceDriver = async (
       charterOfferId = charterMembershipId,
       instance = agoricNamesRemotes.instance.econCommitteeCharter,
     ) => {
+      console.log('ECM accept', charterOfferId);
       if (!findInvitation(w, 'charter member invitation')) {
         console.log('No charter member invitation found');
         return;
@@ -320,6 +321,7 @@ export const makeGovernanceDriver = async (
   }));
 
   const ensureInvitationsAccepted = async () => {
+    console.log('DRIV  ensure', invitationsAccepted);
     if (invitationsAccepted) {
       return;
     }
@@ -400,6 +402,7 @@ export const makeGovernanceDriver = async (
     enactLatestProposal,
     getLatestOutcome,
     async changeParams(instance: Instance, params: Object, path?: object) {
+      console.log('DRIV changePs');
       instance || Fail`missing instance`;
       await ensureInvitationsAccepted();
       await proposeParams(instance, params, path);
