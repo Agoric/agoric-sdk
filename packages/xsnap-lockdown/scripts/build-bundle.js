@@ -28,7 +28,20 @@ const make = async name => {
   return { length: bundleString.length, sha256, where: spec };
 };
 
+/**
+ * @param {string} name
+ */
+const makeObjectInspect = async name => {
+  const spec = bundlePaths[name];
+  const entryPath = entryPaths[name];
+  await fsp.mkdir(path.dirname(spec), { recursive: true });
+  const bundle = await bundleSource(entryPath, { format: 'getExport' });
+  const bundleString = JSON.stringify(bundle);
+  await fsp.writeFile(spec, `export default ${bundleString};\n`);
+};
+
 const run = async () => {
+  await makeObjectInspect('objectInspect');
   const ld = await make('lockdown');
   console.log(`wrote ${ld.where}: ${ld.length} bytes`);
   console.log(`lockdown.bundle SHA256: ${ld.sha256}`);
