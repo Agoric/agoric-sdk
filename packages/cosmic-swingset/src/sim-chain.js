@@ -129,7 +129,6 @@ export async function connectToFakeChain(basedir, GCI, delay, inbound) {
     debugName: GCI,
     metricsProvider,
     slogSender,
-    swingsetConfig: {},
   });
 
   const { blockingSend, savedHeight } = s;
