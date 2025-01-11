@@ -22,7 +22,6 @@ import { prepareStatusManager } from './exos/status-manager.js';
 import { prepareTransactionFeedKit } from './exos/transaction-feed.js';
 import * as flows from './fast-usdc.flows.js';
 import { FastUSDCTermsShape, FeeConfigShape } from './type-guards.js';
-import { defineInertInvitation } from './utils/zoe.js';
 
 const trace = makeTracer('FastUsdc');
 
@@ -151,11 +150,6 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
     { makeRecorderKit },
   );
 
-  const makeTestInvitation = defineInertInvitation(
-    zcf,
-    'test of forcing evidence',
-  );
-
   const { makeLocalAccount, makeNobleAccount } = orchestrateAll(flows, {});
 
   const creatorFacet = zone.exo('Fast USDC Creator', undefined, {
@@ -193,21 +187,6 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
   });
 
   const publicFacet = zone.exo('Fast USDC Public', undefined, {
-    // XXX to be removed before production
-    /**
-     * NB: Any caller with access to this invitation maker has the ability to
-     * force handling of evidence.
-     *
-     * Provide an API call in the form of an invitation maker, so that the
-     * capability is available in the smart-wallet bridge during UI testing.
-     *
-     * @param {CctpTxEvidence} evidence
-     * @param {RiskAssessment} [risk]
-     */
-    makeTestPushInvitation(evidence, risk = {}) {
-      void advancer.handleTransactionEvent({ evidence, risk });
-      return makeTestInvitation();
-    },
     makeDepositInvitation() {
       return poolKit.public.makeDepositInvitation();
     },
