@@ -267,3 +267,56 @@ export const makeGovernanceDriver = async (fetch, networkConfig) => {
     getLatestQuestionHistory,
   };
 };
+
+/**
+ *
+ * @param {import('ava').ExecutionContext} t
+ * @param {Awaited<ReturnType<makeGovernanceDriver>>} governanceDriver
+ * @param {{
+ *   instanceName: string;
+ *   duration: number;
+ *   governanceAddresses: string[];
+ *   params: object
+ * }} electionParams
+ * @param {{ getLastUpdate: (addr: string) => Promise<import('@agoric/smart-wallet/src/smartWallet.js').UpdateRecord>}} io
+ */
+export const runCommitteeElectionParamChange = async (
+  t,
+  governanceDriver,
+  { instanceName, duration, governanceAddresses, params },
+  { getLastUpdate },
+) => {
+  const path = { paramPath: { key: 'governedParams' } };
+  await governanceDriver.proposeParamChange(
+    governanceAddresses[0],
+    params,
+    path,
+    instanceName,
+    duration,
+  );
+
+  const questionUpdate = await getLastUpdate(governanceAddresses[0]);
+  t.log(questionUpdate);
+  t.like(questionUpdate, {
+    status: { numWantsSatisfied: 1 },
+  });
+
+  t.log('Voting on param change');
+  for (const address of governanceAddresses) {
+    const committeeInvitationForVoter =
+      await governanceDriver.getCommitteeInvitation(address);
+
+    await governanceDriver.voteOnProposedChanges(
+      address,
+      committeeInvitationForVoter[0],
+    );
+
+    const voteUpdate = await getLastUpdate(address);
+    t.log(`${address} voted`);
+    t.like(voteUpdate, {
+      status: { numWantsSatisfied: 1 },
+    });
+  }
+
+  await governanceDriver.waitForElection();
+};

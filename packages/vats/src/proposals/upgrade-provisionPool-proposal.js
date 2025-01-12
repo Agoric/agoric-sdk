@@ -16,7 +16,7 @@ const trace = makeTracer('UpgradeProvisionPool');
 export const upgradeProvisionPool = async (
   {
     consume: {
-      economicCommitteeCreatorFacet: electorateCreatorFacet,
+      economicCommitteeCreatorFacet: electorateCreatorFacetP,
       instancePrivateArgs: instancePrivateArgsP,
       provisionPoolStartResult: provisionPoolStartResultP,
       bankManager,
@@ -38,18 +38,21 @@ export const upgradeProvisionPool = async (
     namesByAddressAdmin,
     walletFactoryStartResult,
     provisionWalletBridgeManager,
+    electorateCreatorFacet,
   ] = await Promise.all([
     provisionPoolStartResultP,
     instancePrivateArgsP,
     namesByAddressAdminP,
     walletFactoryStartResultP,
     provisionWalletBridgeManagerP,
+    electorateCreatorFacetP,
   ]);
   const {
     adminFacet,
     instance,
     creatorFacet: ppCreatorFacet,
     publicFacet: ppPublicFacet,
+    governorAdminFacet,
   } = provisionPoolStartResult;
   const { creatorFacet: wfCreatorFacet } = walletFactoryStartResult;
 
@@ -94,6 +97,15 @@ export const upgradeProvisionPool = async (
   trace('Setting new bridgeHandler...');
   // @ts-expect-error casting
   await E(provisionWalletBridgeManager).setHandler(bridgeHandler);
+
+  trace('Null upgrading governor...', {
+    economicCommitteeCreatorFacet: electorateCreatorFacet,
+    governed: newPrivateArgs,
+  });
+  await E(governorAdminFacet).restartContract({
+    economicCommitteeCreatorFacet: electorateCreatorFacet,
+    governed: newPrivateArgs,
+  });
 
   trace('Done.');
 };
