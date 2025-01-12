@@ -14,6 +14,8 @@ import { makeCollectionManager } from './collectionManager.js';
 import { makeWatchedPromiseManager } from './watchedPromises.js';
 import { makeBOYDKit } from './boyd-gc.js';
 
+const { freeze } = Object;
+
 const SYSCALL_CAPDATA_BODY_SIZE_LIMIT = 10_000_000;
 const SYSCALL_CAPDATA_SLOTS_LENGTH_LIMIT = 10_000;
 
@@ -864,8 +866,13 @@ function build(
     if (!slot || parseVatSlot(slot).type !== 'device') {
       throw Error('D() must be given a device node');
     }
+    /**
+     * `freeze` but not `harden` the proxy target so it remains trapping.
+     * @see https://github.com/endojs/endo/blob/master/packages/ses/docs/preparing-for-stabilize.md
+     */
+    const target = freeze({});
     const handler = DeviceHandler(slot);
-    const pr = harden(new Proxy({}, handler));
+    const pr = new Proxy(target, handler);
     outstandingProxies.add(pr);
     return pr;
   }
