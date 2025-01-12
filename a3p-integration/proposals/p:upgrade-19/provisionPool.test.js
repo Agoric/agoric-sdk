@@ -23,7 +23,7 @@
  * 7. Same as step 2. Checks manual provision works after null upgrade
  *
  * Note: We are also upgrading provisionPool's governor to meet https://github.com/Agoric/agoric-sdk/issues/10411.
- * THe governor's behavior is tested at https://github.com/Agoric/agoric-sdk/blob/master/a3p-integration/proposals/z%3Aacceptance/governance.test.js
+ * The governor's behavior is tested at https://github.com/Agoric/agoric-sdk/blob/master/a3p-integration/proposals/z%3Aacceptance/governance.test.js
  */
 
 import '@endo/init';
@@ -69,7 +69,7 @@ const ambientAuthority = {
   log: console.log,
 };
 
-const vats = {
+const postUpgradeVats = {
   provisionPool: { incarnation: 1 },
   'provisionPool-governor': { incarnation: 1 },
 };
@@ -89,10 +89,10 @@ test.serial('upgrade provisionPool', async t => {
   await evalBundles(UPGRADE_PP_DIR);
   const actual = {};
 
-  for await (const vatName of Object.keys(vats)) {
+  for await (const vatName of Object.keys(postUpgradeVats)) {
     actual[vatName] = await getVatDetails(vatName);
   }
-  t.like(actual, vats);
+  t.like(actual, postUpgradeVats);
   t.log(actual);
 });
 
