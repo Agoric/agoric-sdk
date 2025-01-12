@@ -3,7 +3,10 @@
 import test from 'ava';
 
 import { GOV1ADDR, GOV2ADDR } from '@agoric/synthetic-chain';
-import { makeGovernanceDriver } from './test-lib/governance.js';
+import {
+  makeGovernanceDriver,
+  runCommitteeElectionParamChange,
+} from './test-lib/governance.js';
 import { agdWalletUtils } from './test-lib/index.js';
 import { upgradeContract } from './test-lib/utils.js';
 import { networkConfig } from './test-lib/rpc.js';
@@ -20,42 +23,14 @@ test.serial(
     const params = {
       ChargingPeriod: 400n,
     };
-    const path = { paramPath: { key: 'governedParams' } };
-    t.log('Proposing param change', { params, path });
     const instanceName = 'VaultFactory';
 
-    await governanceDriver.proposeParamChange(
-      governanceAddresses[0],
-      params,
-      path,
-      instanceName,
-      30,
+    await runCommitteeElectionParamChange(
+      t,
+      governanceDriver,
+      { instanceName, duration: 30, governanceAddresses, params },
+      { getLastUpdate },
     );
-
-    const questionUpdate = await getLastUpdate(governanceAddresses[0]);
-    t.log(questionUpdate);
-    t.like(questionUpdate, {
-      status: { numWantsSatisfied: 1 },
-    });
-
-    t.log('Voting on param change');
-    for (const address of governanceAddresses) {
-      const committeeInvitationForVoter =
-        await governanceDriver.getCommitteeInvitation(address);
-
-      await governanceDriver.voteOnProposedChanges(
-        address,
-        committeeInvitationForVoter[0],
-      );
-
-      const voteUpdate = await getLastUpdate(address);
-      t.log(`${address} voted`);
-      t.like(voteUpdate, {
-        status: { numWantsSatisfied: 1 },
-      });
-    }
-
-    await governanceDriver.waitForElection();
   },
 );
 
@@ -78,7 +53,7 @@ test.serial(
       'vaultFactory ChargingPeriod parameter value is not the expected ',
     );
 
-    await upgradeContract('upgrade-vaultFactory', 'zcf-b1-6c08a-vaultFactory');
+    await upgradeContract('upgrade-vaultFactory', 'vaultFactory');
 
     const vaultFactoryParamsAfter = await readLatestHead(
       'published.vaultFactory.governance',
@@ -102,38 +77,14 @@ test.serial(
     const params = {
       PerAccountInitialAmount: { brand: brands.IST, value: 100_000n },
     };
-    const path = { paramPath: { key: 'governedParams' } };
     const instanceName = 'provisionPool';
 
-    await governanceDriver.proposeParamChange(
-      governanceAddresses[0],
-      params,
-      path,
-      instanceName,
-      30,
+    await runCommitteeElectionParamChange(
+      t,
+      governanceDriver,
+      { instanceName, duration: 30, governanceAddresses, params },
+      { getLastUpdate },
     );
-
-    const questionUpdate = await getLastUpdate(governanceAddresses[0]);
-    t.like(questionUpdate, {
-      status: { numWantsSatisfied: 1 },
-    });
-
-    for (const address of governanceAddresses) {
-      const committeeInvitationForVoter =
-        await governanceDriver.getCommitteeInvitation(address);
-
-      await governanceDriver.voteOnProposedChanges(
-        address,
-        committeeInvitationForVoter[0],
-      );
-
-      const voteUpdate = await getLastUpdate(address);
-      t.like(voteUpdate, {
-        status: { numWantsSatisfied: 1 },
-      });
-    }
-
-    await governanceDriver.waitForElection();
   },
 );
 
@@ -146,9 +97,9 @@ test.serial(
     );
 
     /*
-     * At the previous test ('economic committee can make governance proposal and vote on it')
-     * The value of ChargingPeriod was updated to 400
-     * The 'published.vaultFactory.governance' node should reflect that change.
+     * At the previous test('economic committee can make governance proposal for ProvisionPool')
+     * The value of PerAccountInitialAmount was updated to 100
+     * The 'published.provisionPool.governance' node should reflect that change.
      */
     t.is(
       provisionPoolParamsBefore.current.PerAccountInitialAmount.value.value,
@@ -156,10 +107,7 @@ test.serial(
       'provisionPool PerAccountInitialAmount parameter value is not the expected ',
     );
 
-    await upgradeContract(
-      'upgrade-provisionPool',
-      'zcf-b1-db93f-provisionPool',
-    );
+    await upgradeContract('upgrade-provisionPool', 'provisionPool');
 
     /** @type {any} */
     const provisionPoolParamsAfter = await readLatestHead(
@@ -174,6 +122,38 @@ test.serial(
   },
 );
 
+test.serial(
+  'make sure provisionPool governance works after governor upgrade',
+  async t => {
+    /** @type {any} */
+    const brand = await readLatestHead(`published.agoricNames.brand`);
+    const brands = Object.fromEntries(brand);
+
+    const params = {
+      PerAccountInitialAmount: { brand: brands.IST, value: 300_000n },
+    };
+    const instanceName = 'provisionPool';
+
+    await runCommitteeElectionParamChange(
+      t,
+      governanceDriver,
+      { instanceName, duration: 30, governanceAddresses, params },
+      { getLastUpdate },
+    );
+
+    /** @type {any} */
+    const provisionPoolParams = await readLatestHead(
+      'published.provisionPool.governance',
+    );
+
+    t.is(
+      provisionPoolParams.current.PerAccountInitialAmount.value.value,
+      300_000n,
+      'provisionPool PerAccountInitialAmount parameter value is not as expected after governor upgrade',
+    );
+  },
+);
+
 test.serial('Governance proposals history is visible', async t => {
   /*
    * List ordered from most recent to earliest of Economic Committee
@@ -183,6 +163,7 @@ test.serial('Governance proposals history is visible', async t => {
    * the acceptance tests scalability
    */
   const expectedParametersChanges = [
+    ['PerAccountInitialAmount'], // z:acceptance/governance.test.js
     ['PerAccountInitialAmount'], // z:acceptance/governance.test.js
     ['ChargingPeriod'], // z:acceptance/governance.test.js
     ['DebtLimit'], // z:acceptance/vaults.test.js
