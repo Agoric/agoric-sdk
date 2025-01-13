@@ -10,14 +10,15 @@ import (
 	"cosmossdk.io/log"
 	sdkmath "cosmossdk.io/math"
 	"cosmossdk.io/store"
+	storemetrics "cosmossdk.io/store/metrics"
 	storetypes "cosmossdk.io/store/types"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/app/params"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vbank/types"
-	dbm "github.com/cometbft/cometbft-db"
 	abci "github.com/cometbft/cometbft/abci/types"
 	"github.com/cometbft/cometbft/crypto/secp256k1"
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	dbm "github.com/cosmos/cosmos-db"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	paramskeeper "github.com/cosmos/cosmos-sdk/x/params/keeper"
@@ -263,7 +264,8 @@ func makeTestKit(account types.AccountKeeper, bank types.BankKeeper) (Keeper, sd
 	keeper := NewKeeper(cdc, vbankStoreKey, subspace, account, bank, "feeCollectorName", pushAction)
 
 	db := dbm.NewMemDB()
-	ms := store.NewCommitMultiStore(db)
+	logger := log.NewNopLogger()
+	ms := store.NewCommitMultiStore(db, logger, storemetrics.NewNoOpMetrics())
 	ms.MountStoreWithDB(vbankStoreKey, storetypes.StoreTypeIAVL, db)
 	ms.MountStoreWithDB(paramsStoreKey, storetypes.StoreTypeIAVL, db)
 	ms.MountStoreWithDB(paramsTStoreKey, storetypes.StoreTypeTransient, db)
@@ -526,7 +528,7 @@ func Test_EndBlock_Events(t *testing.T) {
 	}
 	keeper, ctx := makeTestKit(acct, bank)
 	// Turn off rewards.
-	keeper.SetParams(ctx, types.Params{PerEpochRewardFraction: sdk.ZeroDec(), AllowedMonitoringAccounts: []string{"*"}})
+	keeper.SetParams(ctx, types.Params{PerEpochRewardFraction: sdkmath.LegacyZeroDec(), AllowedMonitoringAccounts: []string{"*"}})
 	msgsSent := []string{}
 	keeper.PushAction = func(ctx sdk.Context, action vm.Action) error {
 		bz, err := json.Marshal(action)
@@ -542,39 +544,43 @@ func Test_EndBlock_Events(t *testing.T) {
 		{
 			Type: "coin_received",
 			Attributes: []abci.EventAttribute{
-				{Key: []byte("receiver"), Value: []byte(addr1)},
-				{Key: []byte("amount"), Value: []byte("500ubld,600urun,700ushmoo")},
+				{Key: "receiver", Value: addr1},
+				{Key: "amount", Value: "500ubld,600urun,700ushmoo"},
 			},
 		},
 		{
 			Type: "coin_spent",
 			Attributes: []abci.EventAttribute{
-				{Key: []byte("spender"), Value: []byte(addr2)},
-				{Key: []byte("amount"), Value: []byte("500ubld,600urun,700ushmoo")},
-				{Key: []byte("other"), Value: []byte(addr3)},
+				{Key: "spender", Value: addr2},
+				{Key: "amount", Value: "500ubld,600urun,700ushmoo"},
+				{Key: "other", Value: addr3},
 			},
 		},
 		{
 			Type: "something_else",
 			Attributes: []abci.EventAttribute{
-				{Key: []byte("receiver"), Value: []byte(addr4)},
-				{Key: []byte("spender"), Value: []byte(addr4)},
-				{Key: []byte("amount"), Value: []byte("500ubld,600urun,700ushmoo")},
+				{Key: "receiver", Value: addr4},
+				{Key: "spender", Value: addr4},
+				{Key: "amount", Value: "500ubld,600urun,700ushmoo"},
 			},
 		},
 		{
 			Type: "non_modaccount",
 			Attributes: []abci.EventAttribute{
-				{Key: []byte("receiver"), Value: []byte(addr3)},
-				{Key: []byte("spender"), Value: []byte(addr4)},
-				{Key: []byte("amount"), Value: []byte("100ubld")},
+				{Key: "receiver", Value: addr3},
+				{Key: "spender", Value: addr4},
+				{Key: "amount", Value: "100ubld"},
 			},
 		},
 	}
-	em := sdk.NewEventManagerWithHistory(events)
+	sdkEvents := make(sdk.Events, len(events))
+	for i, e := range events {
+		sdkEvents[i] = sdk.Event(e)
+	}
+	em := sdk.NewEventManagerWithHistory(sdkEvents)
 	ctx = ctx.WithEventManager(em)
 
-	updates := am.EndBlock(ctx, abci.RequestEndBlock{})
+	updates := am.EndBlock(ctx)
 	if len(updates) != 0 {
 		t.Errorf("EndBlock() got %+v, want empty", updates)
 	}
@@ -718,7 +724,7 @@ func Test_EndBlock_Rewards(t *testing.T) {
 				PerEpochRewardFraction:    sdkmath.LegacyOneDec(),
 			})
 
-			updates := am.EndBlock(ctx, abci.RequestEndBlock{})
+			updates := am.EndBlock(ctx)
 			if len(updates) != 0 {
 				t.Errorf("EndBlock() got %+v, want empty", updates)
 			}

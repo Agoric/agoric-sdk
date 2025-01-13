@@ -5,13 +5,14 @@ import (
 	"reflect"
 	"testing"
 
+	"cosmossdk.io/log"
 	"cosmossdk.io/store"
+	storemetrics "cosmossdk.io/store/metrics"
 	prefixstore "cosmossdk.io/store/prefix"
 	storetypes "cosmossdk.io/store/types"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/types"
+	dbm "github.com/cosmos/cosmos-db"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-
-	dbm "github.com/tendermint/tm-db"
 )
 
 func mkcoin(denom string) func(amt int64) sdk.Coin {
@@ -195,7 +196,8 @@ var (
 
 func makeTestStore() storetypes.KVStore {
 	db := dbm.NewMemDB()
-	ms := store.NewCommitMultiStore(db)
+	logger := log.NewNopLogger()
+	ms := store.NewCommitMultiStore(db, logger, storemetrics.NewNoOpMetrics())
 	ms.MountStoreWithDB(swingsetStoreKey, storetypes.StoreTypeIAVL, db)
 	err := ms.LoadLatestVersion()
 	if err != nil {

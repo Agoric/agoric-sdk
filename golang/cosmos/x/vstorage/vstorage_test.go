@@ -8,6 +8,8 @@ import (
 	"strings"
 	"testing"
 
+	storemetrics "cosmossdk.io/store/metrics"
+
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vstorage/types"
 
 	"cosmossdk.io/store"
@@ -16,9 +18,8 @@ import (
 
 	"cosmossdk.io/log"
 	agorictypes "github.com/Agoric/agoric-sdk/golang/cosmos/types"
-
-	dbm "github.com/cometbft/cometbft-db"
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
+	dbm "github.com/cosmos/cosmos-db"
 )
 
 var (
@@ -39,7 +40,8 @@ type testKit struct {
 func makeTestKit() testKit {
 	keeper := NewKeeper(storeKey)
 	db := dbm.NewMemDB()
-	ms := store.NewCommitMultiStore(db)
+	logger := log.NewNopLogger()
+	ms := store.NewCommitMultiStore(db, logger, storemetrics.NewNoOpMetrics())
 	ms.MountStoreWithDB(storeKey, storetypes.StoreTypeIAVL, db)
 	err := ms.LoadLatestVersion()
 	if err != nil {
