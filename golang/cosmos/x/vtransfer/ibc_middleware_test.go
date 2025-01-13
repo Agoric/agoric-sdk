@@ -9,11 +9,11 @@ import (
 	"testing"
 	"text/template"
 
+	"cosmossdk.io/log"
 	"cosmossdk.io/store"
 	app "github.com/Agoric/agoric-sdk/golang/cosmos/app"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	"github.com/stretchr/testify/suite"
-	"github.com/tendermint/tendermint/libs/log"
 	dbm "github.com/tendermint/tm-db"
 
 	"github.com/Agoric/agoric-sdk/golang/cosmos/types"
@@ -21,6 +21,8 @@ import (
 	swingsettypes "github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/types"
 	vibckeeper "github.com/Agoric/agoric-sdk/golang/cosmos/x/vibc/keeper"
 
+	sdkmath "cosmossdk.io/math"
+	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
@@ -29,7 +31,6 @@ import (
 	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
 	ibctesting "github.com/cosmos/ibc-go/v8/testing"
 	"github.com/cosmos/ibc-go/v8/testing/simapp"
-	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 )
 
 type IntegrationTestSuite struct {
@@ -150,7 +151,7 @@ func (s *IntegrationTestSuite) SetupTest() {
 
 		balance := banktypes.Balance{
 			Address: chain.SenderAccount.GetAddress().String(),
-			Coins:   sdk.NewCoins(sdk.NewCoin(sdk.DefaultBondDenom, sdk.NewInt(100000000000000))),
+			Coins:   sdk.NewCoins(sdk.NewCoin(sdk.DefaultBondDenom, sdkmath.NewInt(100000000000000))),
 		}
 
 		// create application and override files in the IBC test chain
@@ -279,7 +280,7 @@ func (s *IntegrationTestSuite) TransferFromSourceChain(
 	data ibctransfertypes.FungibleTokenPacketData,
 	src, dst *ibctesting.Endpoint,
 ) (channeltypes.Packet, error) {
-	tokenAmt, ok := sdk.NewIntFromString(data.Amount)
+	tokenAmt, ok := sdkmath.NewIntFromString(data.Amount)
 	s.Require().True(ok)
 
 	timeoutHeight := srcChain.GetTimeoutHeight()
@@ -305,11 +306,11 @@ func (s *IntegrationTestSuite) TransferFromSourceChain(
 
 func (s *IntegrationTestSuite) mintToAddress(chain *ibctesting.TestChain, addr sdk.AccAddress, denom, amount string) {
 	app := s.GetApp(chain)
-	tokenAmt, ok := sdk.NewIntFromString(amount)
+	tokenAmt, ok := sdkmath.NewIntFromString(amount)
 	s.Require().True(ok)
 	intAmt, err := strconv.ParseInt(amount, 10, 64)
 	s.Require().NoError(err)
-	coins := sdk.NewCoins(sdk.NewCoin(denom, tokenAmt.Mul(sdk.NewInt(intAmt))))
+	coins := sdk.NewCoins(sdk.NewCoin(denom, tokenAmt.Mul(sdkmath.NewInt(intAmt))))
 	err = app.BankKeeper.MintCoins(chain.GetContext(), ibctransfertypes.ModuleName, coins)
 	s.Require().NoError(err)
 	err = app.BankKeeper.SendCoinsFromModuleToAccount(chain.GetContext(), ibctransfertypes.ModuleName, addr, coins)
