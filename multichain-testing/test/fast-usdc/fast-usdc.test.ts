@@ -1,27 +1,27 @@
 import anyTest from '@endo/ses-ava/prepare-endo.js';
 
-import type { TestFn } from 'ava';
 import { encodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
+import type { QueryBalanceResponseSDKType } from '@agoric/cosmic-proto/cosmos/bank/v1beta1/query.js';
 import { AmountMath } from '@agoric/ertp';
-import type { Denom } from '@agoric/orchestration';
-import { divideBy, multiplyBy } from '@agoric/zoe/src/contractSupport/ratio.js';
-import type { IBCChannelID } from '@agoric/vats';
-import { makeDoOffer, type WalletDriver } from '../../tools/e2e-tools.js';
-import { makeDenomTools } from '../../tools/asset-info.js';
-import { createWallet } from '../../tools/wallet.js';
-import { makeQueryClient } from '../../tools/query.js';
-import { commonSetup, type SetupContextWithWallets } from '../support.js';
-import { makeFeedPolicyPartial, oracleMnemonics } from './config.js';
-import { makeRandomDigits } from '../../tools/random.js';
-import { makeTracer } from '@agoric/internal';
+import type { USDCProposalShapes } from '@agoric/fast-usdc/src/pool-share-math.js';
 import type {
   CctpTxEvidence,
   EvmAddress,
   PoolMetrics,
 } from '@agoric/fast-usdc/src/types.js';
+import { makeTracer } from '@agoric/internal';
+import type { Denom } from '@agoric/orchestration';
 import type { CurrentWalletRecord } from '@agoric/smart-wallet/src/smartWallet.js';
-import type { QueryBalanceResponseSDKType } from '@agoric/cosmic-proto/cosmos/bank/v1beta1/query.js';
-import type { USDCProposalShapes } from '@agoric/fast-usdc/src/pool-share-math.js';
+import type { IBCChannelID } from '@agoric/vats';
+import { divideBy, multiplyBy } from '@agoric/zoe/src/contractSupport/ratio.js';
+import type { TestFn } from 'ava';
+import { makeDenomTools } from '../../tools/asset-info.js';
+import { makeDoOffer, type WalletDriver } from '../../tools/e2e-tools.js';
+import { makeQueryClient } from '../../tools/query.js';
+import { makeRandomDigits } from '../../tools/random.js';
+import { createWallet } from '../../tools/wallet.js';
+import { commonSetup, type SetupContextWithWallets } from '../support.js';
+import { makeFeedPolicyPartial, oracleMnemonics } from './config.js';
 
 const log = makeTracer('MCFU');
 
