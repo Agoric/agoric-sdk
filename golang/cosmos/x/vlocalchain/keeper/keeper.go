@@ -138,7 +138,7 @@ func (k Keeper) Query(cctx context.Context, qm types.QueryRequest) (*types.Query
 		Height: ctx.BlockHeight(),
 	}
 
-	abcires, err := handler(ctx, req)
+	abcires, err := handler(ctx, &req)
 	if err != nil {
 		return nil, err
 	}
