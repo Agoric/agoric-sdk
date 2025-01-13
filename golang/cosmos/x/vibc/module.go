@@ -27,6 +27,11 @@ var (
 type AppModuleBasic struct {
 }
 
+// IsAppModule implements the appmodule.AppModule interface.
+func (am AppModule) IsAppModule() {}
+
+// IsOnePerModuleType is a marker function just indicates that this is a one-per-module type.
+func (am AppModule) IsOnePerModuleType() {}
 func (AppModuleBasic) Name() string {
 	return ModuleName
 }
@@ -86,11 +91,11 @@ func (AppModule) Name() string {
 func (AppModule) ConsensusVersion() uint64 { return 1 }
 
 // BeginBlock implements the AppModule interface
-func (am AppModule) BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock) {
+func (am AppModule) BeginBlock(ctx sdk.Context) {
 }
 
 // EndBlock implements the AppModule interface
-func (am AppModule) EndBlock(ctx sdk.Context, req abci.RequestEndBlock) []abci.ValidatorUpdate {
+func (am AppModule) EndBlock(ctx sdk.Context) []abci.ValidatorUpdate {
 	return []abci.ValidatorUpdate{}
 }
 

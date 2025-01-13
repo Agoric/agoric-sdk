@@ -26,6 +26,11 @@ var (
 type AppModuleBasic struct {
 }
 
+// IsAppModule implements the appmodule.AppModule interface.
+func (am AppModule) IsAppModule() {}
+
+// IsOnePerModuleType is a marker function just indicates that this is a one-per-module type.
+func (am AppModule) IsOnePerModuleType() {}
 func (AppModuleBasic) Name() string {
 	return ModuleName
 }
@@ -91,10 +96,10 @@ func (am AppModule) RegisterServices(cfg module.Configurator) {
 
 func (AppModule) ConsensusVersion() uint64 { return 1 }
 
-func (am AppModule) BeginBlock(ctx sdk.Context, req abci.RequestBeginBlock) {
+func (am AppModule) BeginBlock(ctx sdk.Context) {
 }
 
-func (am AppModule) EndBlock(ctx sdk.Context, req abci.RequestEndBlock) []abci.ValidatorUpdate {
+func (am AppModule) EndBlock(ctx sdk.Context) []abci.ValidatorUpdate {
 	// Prevent Cosmos SDK internal errors.
 	return []abci.ValidatorUpdate{}
 }
