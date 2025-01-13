@@ -1,4 +1,4 @@
-import { deeplyFulfilledObject, makeTracer, objectMap } from '@agoric/internal';
+import { deeplyFulfilledObject, makeTracer } from '@agoric/internal';
 import {
   CosmosChainInfoShape,
   DenomDetailShape,
@@ -14,7 +14,7 @@ import {
   FeedPolicyShape,
 } from './type-guards.js';
 import { fromExternalConfig } from './utils/config-marshal.js';
-import { publishFeedPolicy } from './utils/core-eval.js';
+import { inviteOracles, publishFeedPolicy } from './utils/core-eval.js';
 
 /**
  * @import {Amount, Brand, DepositFacet, Issuer, Payment} from '@agoric/ertp';
@@ -157,18 +157,6 @@ export const startFastUSDC = async (
   trace('using terms', terms);
   trace('using fee config', feeConfig);
 
-  trace('look up oracle deposit facets');
-  const oracleDepositFacets = await deeplyFulfilledObject(
-    objectMap(oracles, async address => {
-      /** @type {DepositFacet} */
-      const depositFacet = await E(namesByAddress).lookup(
-        address,
-        'depositFacet',
-      );
-      return depositFacet;
-    }),
-  );
-
   const { storageNode, marshaller } = await makePublishingStorageKit(
     contractName,
     {
@@ -224,16 +212,7 @@ export const startFastUSDC = async (
     brand: shareBrand,
   });
 
-  await Promise.all(
-    Object.entries(oracleDepositFacets).map(async ([name, depositFacet]) => {
-      const address = oracles[name];
-      trace('making invitation for', name, address);
-      const toWatch = await E(creatorFacet).makeOperatorInvitation(address);
-
-      const amt = await E(depositFacet).receive(toWatch);
-      trace('sent', amt, 'to', name);
-    }),
-  );
+  await inviteOracles({ creatorFacet, namesByAddress }, oracles);
 
   produceInstance.reset();
   produceInstance.resolve(instance);
