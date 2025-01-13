@@ -70,10 +70,14 @@ const { USDC } = crossVatContext;
 const USDC_DECIMALS = 6;
 const unit = AmountMath.make(USDC, 10n ** BigInt(USDC_DECIMALS));
 
-/** @type {CoreEvalBuilder} */
+/**
+ * @param {Parameters<CoreEvalBuilder>[0]} powers
+ * @param {FastUSDCConfig} config
+ * @satisfies {CoreEvalBuilder}
+ */
 export const defaultProposalBuilder = async (
   { publishRef, install },
-  /** @type {FastUSDCConfig} */ config,
+  config,
 ) => {
   return harden({
     sourceSpec: '@agoric/fast-usdc/src/start-fast-usdc.core.js',
