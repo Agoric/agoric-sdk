@@ -33,6 +33,7 @@ const makeRandomNumber = () => Math.random();
 const test = anyTest as TestFn<
   SetupContextWithWallets & {
     lpUser: WalletDriver;
+    feeUser: WalletDriver;
     oracleWds: WalletDriver[];
     nobleAgoricChannelId: IBCChannelID;
     usdcOnOsmosis: Denom;
@@ -41,7 +42,7 @@ const test = anyTest as TestFn<
   }
 >;
 
-const accounts = [...keys(oracleMnemonics), 'lp'];
+const accounts = [...keys(oracleMnemonics), 'lp', 'feeDest'];
 const contractName = 'fastUsdc';
 const contractBuilder =
   '../packages/builders/scripts/fast-usdc/start-fast-usdc.build.js';
@@ -95,10 +96,12 @@ test.before(async t => {
     USDC: 8_000n,
     BLD: 100n,
   });
+  const feeUser = await provisionSmartWallet(wallets['feeDest'], { BLD: 100n });
 
   t.context = {
     ...common,
     lpUser,
+    feeUser,
     oracleWds,
     nobleAgoricChannelId,
     usdcOnOsmosis,
@@ -399,6 +402,33 @@ const advanceAndSettleScenario = test.macro({
 
     await assertTxStatus('DISBURSED');
   },
+});
+
+test('distribute FastUSDC contract fees', async t => {
+  const io = t.context;
+  const queryClient = makeQueryClient(
+    await io.useChain('agoric').getRestEndpoint(),
+  );
+  const builder =
+    '../packages/builders/scripts/fast-usdc/fast-usdc-fees.build.js';
+
+  const opts = {
+    destinationAddress: io.wallets['feeDest'],
+    feePortion: 0.25,
+  };
+  t.log('build, run proposal to distribute fees', opts);
+  await io.deployBuilder(builder, {
+    ...opts,
+    feePortion: `${opts.feePortion}`,
+  });
+
+  const { balance } = await io.retryUntilCondition(
+    () => queryClient.queryBalance(opts.destinationAddress, io.usdcDenom),
+    ({ balance }) => !!balance && BigInt(balance.amount) > 0n,
+    `fees received at ${opts.destinationAddress}`,
+  );
+  t.log('fees received', balance);
+  t.truthy(balance?.amount);
 });
 
 test.serial(advanceAndSettleScenario, LP_DEPOSIT_AMOUNT / 4n, 'osmosis');
