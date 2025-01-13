@@ -14,6 +14,7 @@ import {
   FeedPolicyShape,
 } from './type-guards.js';
 import { fromExternalConfig } from './utils/config-marshal.js';
+import { publishFeedPolicy } from './utils/core-eval.js';
 
 /**
  * @import {Amount, Brand, DepositFacet, Issuer, Payment} from '@agoric/ertp';
@@ -85,18 +86,7 @@ const publishDisplayInfo = async (brand, { board, chainStorage }) => {
   await E(node).setValue(JSON.stringify(aux));
 };
 
-const FEED_POLICY = 'feedPolicy';
 const POOL_METRICS = 'poolMetrics';
-
-/**
- * @param {ERef<StorageNode>} node
- * @param {FeedPolicy} policy
- */
-const publishFeedPolicy = async (node, policy) => {
-  const feedPolicy = E(node).makeChildNode(FEED_POLICY);
-  const value = marshalData.toCapData(policy);
-  await E(feedPolicy).setValue(JSON.stringify(value));
-};
 
 /**
  * @typedef { PromiseSpaceOf<{
