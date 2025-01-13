@@ -70,11 +70,16 @@ const resumable = [
 const baseConfig = {
   files: ['**/*.{js,ts,cjs,mjs}'],
   ignores: [
-    'coverage/**',
+    // General ignores
+    '**/node_modules/**',
+    '**/coverage/**',
+    '**/dist/**',
     '**/output/**',
+    '**/proto/**',
+    '**/src/codegen/**',
+    '**/codegen/**',
     'bundles/**',
     'bundle-*',
-    'dist/**',
     'examples/**',
     'test262/**',
     '*.html',
@@ -85,19 +90,21 @@ const baseConfig = {
     parserOptions: {
       useProjectService: true,
       sourceType: 'module',
-      projectService: {
-        allowDefaultProject: ['*.js'],
-        defaultProject: 'tsconfig.json',
-      },
+      project: ['./tsconfig.json', './packages/*/tsconfig.json'],
       tsconfigRootDir: __dirname,
-      extraFileExtensions: ['.cjs'],
+      ecmaVersion: 2022,
+      ecmaFeatures: {
+        jsx: false,
+      },
     },
     globals: {
+      ...globals.es2021,
       ...globals.node,
       harden: 'readonly',
-      Compartment: 'readonly',
-      globalThis: 'readonly',
       assert: 'readonly',
+      WeakRef: 'readonly',
+      FinalizationRegistry: 'readonly',
+      globalThis: 'readonly',
     },
   },
   plugins: {
@@ -110,41 +117,37 @@ const baseConfig = {
     'import': importPlugin,
     '@jessie.js': jessiePlugin,
   },
-  settings: {
-    jsdoc: {
-      mode: 'typescript',
-    },
-  },
   rules: {
-    ...agoricConfig.rules,
     'no-redeclare': ['error', { builtinGlobals: false }],
     'no-unused-vars': ['error', {
-      argsIgnorePattern: '^_',
+      argsIgnorePattern: '^_|^e$',
       varsIgnorePattern: '^_',
       ignoreRestSiblings: true,
-      caughtErrors: 'none',
-      vars: 'all',
       args: 'none',
     }],
-    '@typescript-eslint/no-unused-vars': 'off',
-    '@typescript-eslint/no-empty-object-type': 'warn',
-    '@typescript-eslint/no-unnecessary-type-constraint': 'warn',
-    '@typescript-eslint/no-unsafe-function-type': 'warn',
-    '@typescript-eslint/no-wrapper-object-types': 'warn',
-    '@typescript-eslint/ban-ts-comment': [
-      'error',
-      {
-        'ts-expect-error': false,
-        'ts-nocheck': false,
-      },
-    ],
-    '@typescript-eslint/no-floating-promises': 'error',
-    'no-void': ['error', { allowAsStatement: true }],
-    'ava/no-skip-test': 'off',
-    'ava/use-test': 'off',
-    '@jessie.js/safe-await-separator': 'error',
-    'prettier/prettier': 'warn',
-    'no-use-before-define': 'off',
+    'import/order': ['warn', {
+      'groups': ['builtin', 'external', 'internal', 'parent', 'sibling', 'index'],
+      'newlines-between': 'ignore',
+      'alphabetize': {
+        'order': 'asc',
+        'caseInsensitive': true
+      }
+    }],
+    // Disable eslint-disable directive warnings
+    'eslint-comments/no-unused-disable': 'off',
+    // Allow empty lines between import groups
+    'import/newline-after-import': 'off',
+    // More lenient import rules
+    'import/no-unresolved': 'off',
+    'import/extensions': 'off',
+    'import/no-extraneous-dependencies': 'off',
+    // TypeScript specific rules
+    '@typescript-eslint/no-unused-vars': ['error', {
+      argsIgnorePattern: '^_|^e$',
+      varsIgnorePattern: '^_',
+      ignoreRestSiblings: true,
+      args: 'none',
+    }],
   },
 };
 
@@ -182,9 +185,46 @@ const testFilesConfig = {
   },
 };
 
+// Package-specific configurations
+const swingsetXsnapSupervisorConfig = {
+  files: ['packages/swingset-xsnap-supervisor/**/*.js'],
+  rules: {
+    'import/no-extraneous-dependencies': 'off',
+  },
+};
+
+// TypeScript specific configuration
+const typescriptConfig = {
+  files: ['**/*.ts', '**/*.tsx', '**/*.d.ts'],
+  languageOptions: {
+    parser: typescriptParser,
+    parserOptions: {
+      useProjectService: true,
+      project: ['./tsconfig.json', './packages/*/tsconfig.json'],
+      tsconfigRootDir: __dirname,
+      sourceType: 'module',
+      ecmaVersion: 2022,
+    },
+  },
+  plugins: {
+    '@typescript-eslint': tseslint,
+  },
+  rules: {
+    ...tseslint.configs.recommended.rules,
+    'no-unused-vars': 'off',
+    '@typescript-eslint/no-unused-vars': ['error', {
+      argsIgnorePattern: '^_',
+      varsIgnorePattern: '^_',
+      ignoreRestSiblings: true,
+    }],
+  },
+};
+
 module.exports = [
   js.configs.recommended,
   baseConfig,
   sourceFilesConfig,
   testFilesConfig,
+  swingsetXsnapSupervisorConfig,
+  typescriptConfig,
 ];

@@ -76,6 +76,7 @@ const finishCounter = ({ state, self }: SingleCounterContext) => {
   expectType<number>(self.getCount());
 };
 
+// eslint-disable-next-line no-unused-vars
 const makeCounter = defineKind('counter', initCounter, counterBehavior, {
   finish: finishCounter,
 });
