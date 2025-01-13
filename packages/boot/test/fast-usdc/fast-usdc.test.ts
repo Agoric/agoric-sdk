@@ -86,7 +86,7 @@ test.serial(
     bridgeUtils.setBech32Prefix('noble');
 
     const materials = buildProposal(
-      '@agoric/builders/scripts/fast-usdc/init-fast-usdc.js',
+      '@agoric/builders/scripts/fast-usdc/start-fast-usdc.build.js',
       ['--net', 'MAINNET'],
     );
     await evalProposal(materials);

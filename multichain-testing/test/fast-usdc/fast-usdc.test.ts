@@ -44,7 +44,7 @@ const test = anyTest as TestFn<
 const accounts = [...keys(oracleMnemonics), 'lp'];
 const contractName = 'fastUsdc';
 const contractBuilder =
-  '../packages/builders/scripts/fast-usdc/init-fast-usdc.js';
+  '../packages/builders/scripts/fast-usdc/start-fast-usdc.build.js';
 const LP_DEPOSIT_AMOUNT = 8_000n * 10n ** 6n;
 
 test.before(async t => {

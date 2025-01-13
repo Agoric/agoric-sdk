@@ -2,7 +2,7 @@
   "agoricProposal": {
     "source": "subdir",
     "sdk-generate": [
-      "fast-usdc/init-fast-usdc.js submission --net A3P_INTEGRATION --noNoble"
+      "fast-usdc/start-fast-usdc.build.js submission --net A3P_INTEGRATION --noNoble"
     ],
     "type": "/agoric.swingset.CoreEvalProposal"
   },
