@@ -34,11 +34,9 @@ import {
   agd as agdAmbient,
   agoric,
   getISTBalance,
-  getDetailsMatchingVats,
   GOV1ADDR,
   openVault,
   ATOM_DENOM,
-  getVatDetails,
 } from '@agoric/synthetic-chain';
 import {
   makeVstorageKit,
@@ -52,6 +50,7 @@ import {
   introduceAndProvision,
   provision,
 } from './test-lib/provision-helpers.js';
+import { getIncarnationFromDetails } from './test-lib/utils.js';
 
 const PROVISIONING_POOL_ADDR = 'agoric1megzytg65cyrgzs6fvzxgrcqvwwl7ugpt62346';
 
@@ -69,10 +68,7 @@ const ambientAuthority = {
   log: console.log,
 };
 
-const postUpgradeVats = {
-  provisionPool: { incarnation: 1 },
-  'provisionPool-governor': { incarnation: 1 },
-};
+const upgradedVats = ['provisionPool', 'provisionPool-governor'];
 
 test.before(async t => {
   const vstorageKit = await makeVstorageKit(
@@ -80,20 +76,33 @@ test.before(async t => {
     { rpcAddrs: ['http://localhost:26657'], chainName: 'agoriclocal' },
   );
 
+  const currentVatIncarnations = {};
+  for await (const vatName of upgradedVats) {
+    currentVatIncarnations[vatName] = await getIncarnationFromDetails(vatName);
+  }
+
   t.context = {
     vstorageKit,
+    currentVatIncarnations,
   };
 });
 
 test.serial('upgrade provisionPool', async t => {
+  // @ts-expect-error casting
+  const { currentVatIncarnations } = t.context;
+  console.log(currentVatIncarnations);
   await evalBundles(UPGRADE_PP_DIR);
-  const actual = {};
 
-  for await (const vatName of Object.keys(postUpgradeVats)) {
-    actual[vatName] = await getVatDetails(vatName);
+  for await (const vatName of upgradedVats) {
+    const incarnationAfterUpgrade = await getIncarnationFromDetails(vatName);
+    const previousIncarnation = currentVatIncarnations[vatName];
+
+    t.is(
+      incarnationAfterUpgrade,
+      previousIncarnation + 1,
+      `${vatName} does not meet the expected incarnation number`,
+    );
   }
-  t.like(actual, postUpgradeVats);
-  t.log(actual);
 });
 
 test.serial(
@@ -149,15 +158,14 @@ test.serial(
 );
 
 test.serial('null upgrade', async t => {
+  const incarnationBefore = await getIncarnationFromDetails('provisionPool');
+
   await evalBundles(NULL_UPGRADE_PP_DIR);
 
-  const vatDetailsAfter = await getDetailsMatchingVats('provisionPool');
-  const { incarnation } = vatDetailsAfter.find(vat =>
-    vat.vatName.endsWith('provisionPool'),
-  );
+  const incarnationAfter = await getIncarnationFromDetails('provisionPool');
 
-  t.log(vatDetailsAfter);
-  t.is(incarnation, 2, 'incorrect incarnation');
+  t.log({ incarnationBefore, incarnationAfter });
+  t.is(incarnationAfter, incarnationBefore + 1, 'incorrect incarnation');
 });
 
 test.serial('auto provision', async t => {
