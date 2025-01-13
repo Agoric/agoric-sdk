@@ -19,7 +19,7 @@ const FEED_POLICY = 'feedPolicy';
 const marshalData = makeMarshal(_val => Fail`data only`);
 
 /**
- * XXX copied from fast-usdc.start.js
+ * XXX copied from start-fast-usdc.core.js
  *
  * @param {ERef<StorageNode>} node
  * @param {FeedPolicy} policy
