@@ -258,7 +258,7 @@ const stakeScenario = test.macro(async (t, scenario: StakeIcaScenario) => {
 
 test.serial('send wallet offers stakeAtom contract', stakeScenario, {
   chain: 'cosmoshub',
-  chainId: 'gaialocal',
+  chainId: 'cosmoshublocal',
   contractName: 'stakeAtom',
   denom: 'uatom',
   expectedAddressPrefix: 'cosmos',

@@ -63,7 +63,7 @@ chains:
     resources:
       cpu: 1
       memory: 1Gi
-  - id: gaialocal
+  - id: cosmoshublocal
     name: cosmoshub
     numValidators: 1
     genesis:
@@ -89,24 +89,24 @@ chains:
       memory: 1Gi
 
 relayers:
-  - name: osmosis-gaia
+  - name: osmosis-cosmoshub
     type: hermes
     replicas: 1
     chains:
       - osmosislocal
-      - gaialocal
+      - cosmoshublocal
   - name: agoric-osmosis
     type: hermes
     replicas: 1
     chains:
       - agoriclocal
       - osmosislocal
-  - name: agoric-gaia
+  - name: agoric-cosmoshub
     type: hermes
     replicas: 1
     chains:
       - agoriclocal
-      - gaialocal
+      - cosmoshublocal
 
 explorer:
   enabled: false
