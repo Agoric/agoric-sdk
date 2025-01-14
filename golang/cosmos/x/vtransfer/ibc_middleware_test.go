@@ -24,13 +24,14 @@ import (
 	sdkmath "cosmossdk.io/math"
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/cosmos/cosmos-sdk/baseapp"
+	simtestutil "github.com/cosmos/cosmos-sdk/testutil/sims"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
+	simcli "github.com/cosmos/cosmos-sdk/x/simulation/client/cli"
 	ibctransfertypes "github.com/cosmos/ibc-go/v8/modules/apps/transfer/types"
 	channeltypes "github.com/cosmos/ibc-go/v8/modules/core/04-channel/types"
 	ibctesting "github.com/cosmos/ibc-go/v8/testing"
-	"github.com/cosmos/ibc-go/v8/testing/simapp"
 )
 
 type IntegrationTestSuite struct {
@@ -80,8 +81,8 @@ func SetupAgoricTestingApp(instance int) TestingAppMaker {
 			jsonReply = `true`
 			return jsonReply, nil
 		}
-		appd := app.NewAgoricApp(mockController, vm.NewAgdServer(), log.TestingLogger(), db, nil,
-			true, map[int64]bool{}, app.DefaultNodeHome, simapp.FlagPeriodValue, encCdc, simapp.EmptyAppOptions{}, interBlockCacheOpt())
+		appd := app.NewAgoricApp(mockController, vm.NewAgdServer(), log.NewNopLogger(), db, nil,
+			true, map[int64]bool{}, app.DefaultNodeHome, simcli.FlagPeriodValue, encCdc, simtestutil.EmptyAppOptions{}, interBlockCacheOpt())
 		genesisState := app.NewDefaultGenesisState()
 
 		t := template.Must(template.New("").Parse(`
