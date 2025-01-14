@@ -6,9 +6,7 @@ import { makeMarshal } from '@endo/marshal';
 const trace = makeTracer('FUCoreEval');
 
 /**
- * @import {Amount, Brand, DepositFacet, Issuer, Payment} from '@agoric/ertp';
- * @import {Passable} from '@endo/pass-style'
- * @import {BootstrapManifest} from '@agoric/vats/src/core/lib-boot.js'
+ * @import {Brand, DepositFacet} from '@agoric/ertp';
  * @import {FastUSDCKit} from '../start-fast-usdc.core.js'
  * @import {FeedPolicy} from '../types.js'
  */
@@ -53,4 +51,23 @@ export const inviteOracles = async (
       trace('sent', amt, 'to', name);
     }),
   );
+};
+
+const BOARD_AUX = 'boardAux';
+/**
+ * @param {Brand} brand
+ * @param {Pick<BootstrapPowers['consume'], 'board' | 'chainStorage'>} powers
+ */
+export const publishDisplayInfo = async (brand, { board, chainStorage }) => {
+  // chainStorage type includes undefined, which doesn't apply here.
+  // @ts-expect-error UNTIL https://github.com/Agoric/agoric-sdk/issues/8247
+  const boardAux = E(chainStorage).makeChildNode(BOARD_AUX);
+  const [id, displayInfo, allegedName] = await Promise.all([
+    E(board).getId(brand),
+    E(brand).getDisplayInfo(),
+    E(brand).getAllegedName(),
+  ]);
+  const node = E(boardAux).makeChildNode(id);
+  const aux = marshalData.toCapData(harden({ allegedName, displayInfo }));
+  await E(node).setValue(JSON.stringify(aux));
 };
