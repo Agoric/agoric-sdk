@@ -211,6 +211,14 @@ func TestExtractBaseAddressFromPacket(t *testing.T) {
 					}
 
 					require.Equal(t, ftPacketData, packetData)
+
+					roundTripBz, err := cdc.MarshalJSON(&packetData)
+					require.NoError(t, err)
+					require.Equal(t, packet.GetData(), roundTripBz)
+
+					roundTripPacket := packet
+					roundTripPacket.Data = roundTripBz
+					require.Equal(t, packet, roundTripPacket)
 				})
 			}
 		})
