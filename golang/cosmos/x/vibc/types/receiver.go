@@ -38,7 +38,7 @@ func NewReceiver(impl ReceiverImpl) Receiver {
 	}
 }
 
-type portMessage struct { // comes from swingset's IBC handler
+type PortMessage struct { // comes from swingset's IBC handler
 	Type              string              `json:"type"` // IBC_METHOD
 	Method            string              `json:"method"`
 	Packet            channeltypes.Packet `json:"packet"`
@@ -94,7 +94,7 @@ func (ir Receiver) Receive(cctx context.Context, jsonRequest string) (jsonReply 
 	ctx := sdk.UnwrapSDKContext(cctx)
 	impl := ir.impl
 
-	msg := new(portMessage)
+	msg := new(PortMessage)
 	err = json.Unmarshal([]byte(jsonRequest), &msg)
 	if err != nil {
 		return "", err

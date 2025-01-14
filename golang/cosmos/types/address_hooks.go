@@ -14,10 +14,14 @@ import (
 )
 
 type AddressRole string
+type PacketOrigin string
 
 const (
 	RoleSender   AddressRole = "Sender"
 	RoleReceiver AddressRole = "Receiver"
+
+	PacketSrc PacketOrigin = "src"
+	PacketDst PacketOrigin = "dst"
 
 	AddressHookVersion     = 0
 	BaseAddressLengthBytes = 2
