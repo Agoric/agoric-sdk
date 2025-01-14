@@ -13,6 +13,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/tx"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	"github.com/cosmos/gogoproto/proto"
+	protov2 "google.golang.org/protobuf/proto"
 )
 
 func TestInboundAnteHandle(t *testing.T) {
@@ -159,6 +160,12 @@ func TestInboundAnteHandle(t *testing.T) {
 	}
 }
 
+type testTx struct {
+	tx.Tx
+}
+
+func (tx testTx) GetMsgsV2() ([]protov2.Message, error) { return nil, nil }
+
 func makeTestTx(msgs ...proto.Message) sdk.Tx {
 	wrappedMsgs := make([]*types.Any, len(msgs))
 	for i, m := range msgs {
@@ -168,9 +175,11 @@ func makeTestTx(msgs ...proto.Message) sdk.Tx {
 		}
 		wrappedMsgs[i] = any
 	}
-	return &tx.Tx{
-		Body: &tx.TxBody{
-			Messages: wrappedMsgs,
+	return &testTx{
+		Tx: tx.Tx{
+			Body: &tx.TxBody{
+				Messages: wrappedMsgs,
+			},
 		},
 	}
 }
