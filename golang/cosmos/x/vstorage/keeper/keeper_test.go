@@ -4,21 +4,20 @@ import (
 	"reflect"
 	"testing"
 
-	"cosmossdk.io/api/tendermint/abci"
+	"cosmossdk.io/log"
 	"cosmossdk.io/store"
 	storemetrics "cosmossdk.io/store/metrics"
 	storetypes "cosmossdk.io/store/types"
 	agoric "github.com/Agoric/agoric-sdk/golang/cosmos/types"
-	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vstorage/types"
+	vstoragetypes "github.com/Agoric/agoric-sdk/golang/cosmos/x/vstorage/types"
+	abci "github.com/cometbft/cometbft/abci/types"
+	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	dbm "github.com/cosmos/cosmos-db"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-
-	"cosmossdk.io/log"
-	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 )
 
 var (
-	vstorageStoreKey = storetypes.NewKVStoreKey(types.StoreKey)
+	vstorageStoreKey = storetypes.NewKVStoreKey(vstoragetypes.StoreKey)
 )
 
 type testKit struct {
@@ -165,7 +164,7 @@ func TestStorage(t *testing.T) {
 	}
 
 	// Check the export.
-	expectedExport := []*types.DataEntry{
+	expectedExport := []*vstoragetypes.DataEntry{
 		{Path: "alpha2", Value: "value2"},
 		{Path: "beta3", Value: "value3"},
 		{Path: "inited", Value: ""},
@@ -178,7 +177,7 @@ func TestStorage(t *testing.T) {
 	}
 
 	// Check the export.
-	expectedKey2Export := []*types.DataEntry{
+	expectedKey2Export := []*vstoragetypes.DataEntry{
 		{Path: "child2.grandchild2", Value: "value2grandchild"},
 		{Path: "child2.grandchild2a", Value: "value2grandchilda"},
 	}
@@ -190,7 +189,7 @@ func TestStorage(t *testing.T) {
 	if keeper.HasEntry(ctx, "key2") {
 		t.Errorf("got leftover entries for key2 after removal")
 	}
-	expectedRemainingExport := []*types.DataEntry{
+	expectedRemainingExport := []*vstoragetypes.DataEntry{
 		{Path: "alpha2", Value: "value2"},
 		{Path: "beta3", Value: "value3"},
 		{Path: "inited", Value: ""},
@@ -228,51 +227,51 @@ func TestStorageNotify(t *testing.T) {
 		{
 			Type: "storage",
 			Attributes: []abci.EventAttribute{
-				{Key: []byte("path"), Value: []byte("notify.legacy")},
-				{Key: []byte("value"), Value: []byte("legacyValue")},
+				{Key: "path", Value: "notify.legacy"},
+				{Key: "value", Value: "legacyValue"},
 			},
 		},
 		{
 			Type: "state_change",
 			Attributes: []abci.EventAttribute{
-				{Key: []byte("store"), Value: []byte("vstorage")},
-				{Key: []byte("key"), Value: []byte("2\x00notify\x00legacy")},
-				{Key: []byte("anckey"), Value: []byte("\x012\x00notify\x00legacy\x01")},
-				{Key: []byte("value"), Value: []byte("legacyValue")},
+				{Key: "store", Value: "vstorage"},
+				{Key: "key", Value: "2\x00notify\x00legacy"},
+				{Key: "anckey", Value: "\x012\x00notify\x00legacy\x01"},
+				{Key: "value", Value: "legacyValue"},
 			},
 		},
 		{
 			Type: "storage",
 			Attributes: []abci.EventAttribute{
-				{Key: []byte("path"), Value: []byte("notify.legacy2")},
-				{Key: []byte("value"), Value: []byte("legacyValue2b")},
+				{Key: "path", Value: "notify.legacy2"},
+				{Key: "value", Value: "legacyValue2b"},
 			},
 		},
 		{
 			Type: "state_change",
 			Attributes: []abci.EventAttribute{
-				{Key: []byte("store"), Value: []byte("vstorage")},
-				{Key: []byte("key"), Value: []byte("2\x00notify\x00legacy2")},
-				{Key: []byte("anckey"), Value: []byte("\x012\x00notify\x00legacy2\x01")},
-				{Key: []byte("value"), Value: []byte("legacyValue2b")},
+				{Key: "store", Value: "vstorage"},
+				{Key: "key", Value: "2\x00notify\x00legacy2"},
+				{Key: "anckey", Value: "\x012\x00notify\x00legacy2\x01"},
+				{Key: "value", Value: "legacyValue2b"},
 			},
 		},
 		{
 			Type: "state_change",
 			Attributes: []abci.EventAttribute{
-				{Key: []byte("store"), Value: []byte("vstorage")},
-				{Key: []byte("key"), Value: []byte("2\x00notify\x00noLegacy")},
-				{Key: []byte("anckey"), Value: []byte("\x012\x00notify\x00noLegacy\x01")},
-				{Key: []byte("value"), Value: []byte("noLegacyValue")},
+				{Key: "store", Value: "vstorage"},
+				{Key: "key", Value: "2\x00notify\x00noLegacy"},
+				{Key: "anckey", Value: "\x012\x00notify\x00noLegacy\x01"},
+				{Key: "value", Value: "noLegacyValue"},
 			},
 		},
 		{
 			Type: "state_change",
 			Attributes: []abci.EventAttribute{
-				{Key: []byte("store"), Value: []byte("vstorage")},
-				{Key: []byte("key"), Value: []byte("2\x00notify\x00noLegacy2")},
-				{Key: []byte("anckey"), Value: []byte("\x012\x00notify\x00noLegacy2\x01")},
-				{Key: []byte("value"), Value: []byte("noLegacyValue2b")},
+				{Key: "store", Value: "vstorage"},
+				{Key: "key", Value: "2\x00notify\x00noLegacy2"},
+				{Key: "anckey", Value: "\x012\x00notify\x00noLegacy2\x01"},
+				{Key: "value", Value: "noLegacyValue2b"},
 			},
 		},
 	}
