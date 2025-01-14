@@ -331,7 +331,15 @@ test.serial('basic-flows', async t => {
       '@agoric/builders/scripts/orchestration/init-basic-flows.js',
       [
         '--chainInfo',
-        JSON.stringify(withChainCapabilities(fetchedChainInfo)),
+        JSON.stringify(
+          withChainCapabilities({
+            agoric: fetchedChainInfo.agoric,
+            osmosis: fetchedChainInfo.osmosis,
+            dydx: fetchedChainInfo.dydx,
+            noble: fetchedChainInfo.noble,
+            cosmoshub: fetchedChainInfo.cosmoshub,
+          }),
+        ),
         '--assetInfo',
         JSON.stringify([
           [
@@ -556,7 +564,15 @@ test.serial('basic-flows - portfolio holder', async t => {
       '@agoric/builders/scripts/orchestration/init-basic-flows.js',
       [
         '--chainInfo',
-        JSON.stringify(withChainCapabilities(fetchedChainInfo)),
+        JSON.stringify(
+          withChainCapabilities({
+            agoric: fetchedChainInfo.agoric,
+            osmosis: fetchedChainInfo.osmosis,
+            dydx: fetchedChainInfo.dydx,
+            noble: fetchedChainInfo.noble,
+            cosmoshub: fetchedChainInfo.cosmoshub,
+          }),
+        ),
         '--assetInfo',
         JSON.stringify([
           [

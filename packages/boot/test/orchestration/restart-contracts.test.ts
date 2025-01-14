@@ -39,7 +39,15 @@ test.serial('send-anywhere', async t => {
   await evalProposal(
     buildProposal('@agoric/builders/scripts/testing/init-send-anywhere.js', [
       '--chainInfo',
-      JSON.stringify(withChainCapabilities(fetchedChainInfo)),
+      JSON.stringify(
+        withChainCapabilities({
+          agoric: fetchedChainInfo.agoric,
+          osmosis: fetchedChainInfo.osmosis,
+          dydx: fetchedChainInfo.dydx,
+          noble: fetchedChainInfo.noble,
+          cosmoshub: fetchedChainInfo.cosmoshub,
+        }),
+      ),
       '--assetInfo',
       JSON.stringify([
         [

@@ -82,8 +82,9 @@ function toConnectionEntry(ibcInfo, name, chainInfo) {
  * Converts the given chain info to our local config format
  *
  * @param {Pick<ChainRegistryClient, 'chains' | 'ibcData'>} registry
+ * @param {(chainName: string) => boolean} icaEnabled
  */
-export const convertChainInfo = async registry => {
+export const convertChainInfo = async (registry, icaEnabled) => {
   /** @type {Record<string, CosmosChainInfo>} */
   const chainInfo = {};
 
@@ -95,6 +96,7 @@ export const convertChainInfo = async registry => {
       stakingTokens: chain.staking?.staking_tokens,
       // UNTIL https://github.com/Agoric/agoric-sdk/issues/9326
       icqEnabled: chain.chain_name === 'osmosis',
+      icaEnabled: icaEnabled(chain.chain_name),
     };
   }
 
