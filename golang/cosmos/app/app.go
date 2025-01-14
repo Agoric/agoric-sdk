@@ -1116,11 +1116,12 @@ func (app *GaiaApp) InitChainer(ctx sdk.Context, req abci.RequestInitChain) abci
 }
 
 // Commit tells the controller that the block is commited
-func (app *GaiaApp) Commit() abci.ResponseCommit {
+func (app *GaiaApp) Commit() (*abci.ResponseCommit, error) {
 	err := swingsetkeeper.WaitUntilSwingStoreExportStarted()
 
 	if err != nil {
 		app.Logger().Error("swing-store export failed to start", "err", err)
+		return nil, err
 	}
 
 	// Frontrun the BaseApp's Commit method
@@ -1141,10 +1142,11 @@ func (app *GaiaApp) Commit() abci.ResponseCommit {
 
 		if err != nil {
 			app.Logger().Error("failed to initiate swingset snapshot", "err", err)
+			return nil, err
 		}
 	}
 
-	return res
+	return &res, nil
 }
 
 // LoadHeight loads a particular height
