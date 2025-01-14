@@ -9,7 +9,6 @@ import (
 
 	sdkmath "cosmossdk.io/math"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
-	"github.com/cosmos/cosmos-sdk/baseapp"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
@@ -245,7 +244,7 @@ func (am AppModule) PushAction(ctx sdk.Context, action vm.Action) error {
 	// synthesize unique context information.
 	// We use a fixed placeholder value for the txHash context, and can simply use `0` for the
 	// message index as there is only one such action per block.
-	ctx = ctx.WithContext(context.WithValue(ctx.Context(), baseapp.TxHashContextKey, "x/vbank"))
-	ctx = ctx.WithContext(context.WithValue(ctx.Context(), baseapp.TxMsgIdxContextKey, 0))
+	ctx = ctx.WithContext(context.WithValue(ctx.Context(), sdk.ContextKey("tx-hash"), "x/vbank"))
+	ctx = ctx.WithContext(context.WithValue(ctx.Context(), sdk.ContextKey("tx-msg-idx"), 0))
 	return am.keeper.PushAction(ctx, action)
 }

@@ -11,7 +11,6 @@ import (
 	sdkmath "cosmossdk.io/math"
 	"cosmossdk.io/store/prefix"
 	storetypes "cosmossdk.io/store/types"
-	"github.com/cosmos/cosmos-sdk/baseapp"
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
@@ -115,11 +114,11 @@ func (k Keeper) pushAction(ctx sdk.Context, inboundQueuePath string, action vm.A
 	if err != nil {
 		return err
 	}
-	txHash, txHashOk := ctx.Context().Value(baseapp.TxHashContextKey).(string)
+	txHash, txHashOk := ctx.Context().Value(sdk.ContextKey("tx-hash")).(string)
 	if !txHashOk {
 		txHash = "unknown"
 	}
-	msgIdx, msgIdxOk := ctx.Context().Value(baseapp.TxMsgIdxContextKey).(int)
+	msgIdx, msgIdxOk := ctx.Context().Value(sdk.ContextKey("tx-msg-idx")).(int)
 	if !txHashOk || !msgIdxOk {
 		stdlog.Printf("error while extracting context for action %q\n", action)
 	}
