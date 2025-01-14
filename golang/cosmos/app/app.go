@@ -318,6 +318,10 @@ func NewGaiaApp(
 	)
 }
 
+func (app *GaiaApp) RegisterNodeService(clientCtx client.Context, cfg config.Config) {
+	nodeservice.RegisterNodeService(clientCtx, app.GRPCQueryRouter(), cfg)
+}
+
 func NewAgoricApp(
 	sendToController vm.Sender,
 	agdServer *vm.AgdServer,
