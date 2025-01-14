@@ -48,7 +48,7 @@ import type { SwingsetController } from '@agoric/swingset-vat/src/controller/con
 import type { BridgeHandler, IBCDowncallMethod, IBCMethod } from '@agoric/vats';
 import type { BootstrapRootObject } from '@agoric/vats/src/core/lib-boot.js';
 import type { EProxy } from '@endo/eventual-send';
-import type { FastUSDCCorePowers } from '@agoric/fast-usdc/src/fast-usdc.start.js';
+import type { FastUSDCCorePowers } from '@agoric/fast-usdc/src/start-fast-usdc.core.js';
 import {
   defaultBeansPerVatCreation,
   defaultBeansPerXsnapComputron,

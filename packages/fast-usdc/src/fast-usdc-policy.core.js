@@ -1,10 +1,9 @@
 /** @file core-eval to publish update to Fast USDC feedPolicy */
 
 import { E } from '@endo/far';
-import { makeMarshal } from '@endo/marshal';
-import { Fail } from '@endo/errors';
 import { fromExternalConfig } from './utils/config-marshal.js';
 import { FeedPolicyShape } from './type-guards.js';
+import { publishFeedPolicy } from './utils/core-eval.js';
 
 /**
  * @import {Issuer} from '@agoric/ertp';
@@ -15,20 +14,6 @@ import { FeedPolicyShape } from './type-guards.js';
  */
 
 const contractName = 'fastUsdc';
-const FEED_POLICY = 'feedPolicy';
-const marshalData = makeMarshal(_val => Fail`data only`);
-
-/**
- * XXX copied from fast-usdc.start.js
- *
- * @param {ERef<StorageNode>} node
- * @param {FeedPolicy} policy
- */
-const publishFeedPolicy = async (node, policy) => {
-  const feedPolicy = E(node).makeChildNode(FEED_POLICY);
-  const value = marshalData.toCapData(policy);
-  await E(feedPolicy).setValue(JSON.stringify(value));
-};
 
 /**
  * @param {BootstrapPowers &

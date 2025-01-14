@@ -41,7 +41,7 @@ Examples:
 
 const contractName = 'fastUsdc';
 const contractBuilder =
-  '../packages/builders/scripts/fast-usdc/init-fast-usdc.js';
+  '../packages/builders/scripts/fast-usdc/start-fast-usdc.build.js';
 
 /** ava test context partial, to appease dependencies expecting this */
 const runT = {

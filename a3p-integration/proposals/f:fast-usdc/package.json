@@ -2,7 +2,8 @@
   "agoricProposal": {
     "source": "subdir",
     "sdk-generate": [
-      "fast-usdc/init-fast-usdc.js submission --net A3P_INTEGRATION --noNoble"
+      "fast-usdc/start-fast-usdc.build.js submission --net A3P_INTEGRATION --noNoble",
+      "fast-usdc/add-operators.build.js add-operators --oracle oracleNew:agoric1hmdue96vs0p6zj42aa26x6zrqlythpxnvgsgpr"
     ],
     "type": "/agoric.swingset.CoreEvalProposal"
   },

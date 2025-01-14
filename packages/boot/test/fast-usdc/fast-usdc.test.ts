@@ -86,7 +86,7 @@ test.serial(
     bridgeUtils.setBech32Prefix('noble');
 
     const materials = buildProposal(
-      '@agoric/builders/scripts/fast-usdc/init-fast-usdc.js',
+      '@agoric/builders/scripts/fast-usdc/start-fast-usdc.build.js',
       ['--net', 'MAINNET'],
     );
     await evalProposal(materials);
@@ -469,6 +469,8 @@ test.serial('restart contract', async t => {
 test.serial('replace operators', async t => {
   const {
     agoricNamesRemotes,
+    buildProposal,
+    evalProposal,
     storage,
     runUtils: { EV },
     walletFactoryDriver: wfd,
@@ -521,6 +523,51 @@ test.serial('replace operators', async t => {
     }
   }
 
-  // TODO test adding new operators
-  // The naive approach is failing under XS. A new CoreEval may be necessary.
+  if (defaultManagerType === 'xs-worker') {
+    // XXX for some reason the code after this when run under XS fails with:
+    // message: 'unsettled value for "kp2526"',
+    return;
+  }
+
+  // Add some new oracle operator
+  const {
+    // any one would do
+    oracles: { gov1: address },
+  } = configurations.A3P_INTEGRATION;
+  const wallet = await wfd.provideSmartWallet(address);
+
+  const addOperators = buildProposal(
+    '@agoric/builders/scripts/fast-usdc/add-operators.build.js',
+    ['--oracle', `gov1a3p:${address}`],
+  );
+  await evalProposal(addOperators);
+
+  await wallet.sendOffer({
+    id: 'claim-oracle-invitation',
+    invitationSpec: {
+      source: 'purse',
+      instance: agoricNamesRemotes.instance.fastUsdc,
+      description: 'oracle operator invitation',
+    },
+    proposal: {},
+  });
+  console.log('accepted invitation');
+
+  await wallet.sendOffer({
+    id: 'submit',
+    invitationSpec: {
+      source: 'continuing',
+      previousOffer: 'claim-oracle-invitation',
+      invitationMakerName: 'SubmitEvidence',
+      invitationArgs: [evidence],
+    },
+    proposal: {},
+  });
+  console.log('submitted price');
+  t.like(wallet.getLatestUpdateRecord(), {
+    status: {
+      id: 'submit',
+      result: 'inert; nothing should be expected from this offer',
+    },
+  });
 });

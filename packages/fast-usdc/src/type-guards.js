@@ -1,5 +1,10 @@
 import { AmountShape, BrandShape, RatioShape } from '@agoric/ertp';
 import { M } from '@endo/patterns';
+import {
+  CosmosChainInfoShape,
+  DenomDetailShape,
+  DenomShape,
+} from '@agoric/orchestration';
 import { PendingTxStatus } from './constants.js';
 
 /**
@@ -7,7 +12,7 @@ import { PendingTxStatus } from './constants.js';
  * @import {TypedPattern} from '@agoric/internal';
  * @import {FastUsdcTerms} from './fast-usdc.contract.js';
  * @import {USDCProposalShapes} from './pool-share-math.js';
- * @import {CctpTxEvidence, FeeConfig, PendingTx, PoolMetrics, ChainPolicy, FeedPolicy, AddressHook, EvmAddress, EvmHash, RiskAssessment, EvidenceWithRisk} from './types.js';
+ * @import {CctpTxEvidence, FastUSDCConfig, FeeConfig, PendingTx, PoolMetrics, ChainPolicy, FeedPolicy, AddressHook, EvmAddress, EvmHash, RiskAssessment, EvidenceWithRisk} from './types.js';
  */
 
 /**
@@ -153,3 +158,13 @@ export const FeedPolicyShape = M.splitRecord(
   { eventFilter: M.string() },
 );
 harden(FeedPolicyShape);
+
+/** @type {TypedPattern<FastUSDCConfig>} */
+export const FastUSDCConfigShape = M.splitRecord({
+  terms: FastUSDCTermsShape,
+  oracles: M.recordOf(M.string(), M.string()),
+  feeConfig: FeeConfigShape,
+  feedPolicy: FeedPolicyShape,
+  chainInfo: M.recordOf(M.string(), CosmosChainInfoShape),
+  assetInfo: M.arrayOf([DenomShape, DenomDetailShape]),
+});

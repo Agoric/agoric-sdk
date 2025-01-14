@@ -1,19 +1,10 @@
-import { deeplyFulfilledObject, makeTracer, objectMap } from '@agoric/internal';
-import {
-  CosmosChainInfoShape,
-  DenomDetailShape,
-  DenomShape,
-} from '@agoric/orchestration';
+import { deeplyFulfilledObject, makeTracer } from '@agoric/internal';
 import { Fail } from '@endo/errors';
 import { E } from '@endo/far';
 import { makeMarshal } from '@endo/marshal';
-import { M } from '@endo/patterns';
-import {
-  FastUSDCTermsShape,
-  FeeConfigShape,
-  FeedPolicyShape,
-} from './type-guards.js';
+import { FastUSDCConfigShape } from './type-guards.js';
 import { fromExternalConfig } from './utils/config-marshal.js';
+import { inviteOracles, publishFeedPolicy } from './utils/core-eval.js';
 
 /**
  * @import {Amount, Brand, DepositFacet, Issuer, Payment} from '@agoric/ertp';
@@ -38,16 +29,6 @@ const ShareAssetInfo = /** @type {const} */ harden({
 const trace = makeTracer('FUSD-Start', true);
 
 const contractName = 'fastUsdc';
-
-/** @type {TypedPattern<FastUSDCConfig>} */
-export const FastUSDCConfigShape = M.splitRecord({
-  terms: FastUSDCTermsShape,
-  oracles: M.recordOf(M.string(), M.string()),
-  feeConfig: FeeConfigShape,
-  feedPolicy: FeedPolicyShape,
-  chainInfo: M.recordOf(M.string(), CosmosChainInfoShape),
-  assetInfo: M.arrayOf([DenomShape, DenomDetailShape]),
-});
 
 /**
  * XXX Shouldn't the bridge or board vat handle this?
@@ -85,18 +66,7 @@ const publishDisplayInfo = async (brand, { board, chainStorage }) => {
   await E(node).setValue(JSON.stringify(aux));
 };
 
-const FEED_POLICY = 'feedPolicy';
 const POOL_METRICS = 'poolMetrics';
-
-/**
- * @param {ERef<StorageNode>} node
- * @param {FeedPolicy} policy
- */
-const publishFeedPolicy = async (node, policy) => {
-  const feedPolicy = E(node).makeChildNode(FEED_POLICY);
-  const value = marshalData.toCapData(policy);
-  await E(feedPolicy).setValue(JSON.stringify(value));
-};
 
 /**
  * @typedef { PromiseSpaceOf<{
@@ -167,18 +137,6 @@ export const startFastUSDC = async (
   trace('using terms', terms);
   trace('using fee config', feeConfig);
 
-  trace('look up oracle deposit facets');
-  const oracleDepositFacets = await deeplyFulfilledObject(
-    objectMap(oracles, async address => {
-      /** @type {DepositFacet} */
-      const depositFacet = await E(namesByAddress).lookup(
-        address,
-        'depositFacet',
-      );
-      return depositFacet;
-    }),
-  );
-
   const { storageNode, marshaller } = await makePublishingStorageKit(
     contractName,
     {
@@ -234,16 +192,7 @@ export const startFastUSDC = async (
     brand: shareBrand,
   });
 
-  await Promise.all(
-    Object.entries(oracleDepositFacets).map(async ([name, depositFacet]) => {
-      const address = oracles[name];
-      trace('making invitation for', name, address);
-      const toWatch = await E(creatorFacet).makeOperatorInvitation(address);
-
-      const amt = await E(depositFacet).receive(toWatch);
-      trace('sent', amt, 'to', name);
-    }),
-  );
+  await inviteOracles({ creatorFacet, namesByAddress }, oracles);
 
   produceInstance.reset();
   produceInstance.resolve(instance);

@@ -1,10 +1,8 @@
 // @ts-check
 import { makeHelpers } from '@agoric/deploy-script-support';
 import { AmountMath } from '@agoric/ertp';
-import {
-  FastUSDCConfigShape,
-  getManifestForFastUSDC,
-} from '@agoric/fast-usdc/src/fast-usdc.start.js';
+import { getManifestForFastUSDC } from '@agoric/fast-usdc/src/start-fast-usdc.core.js';
+import { FastUSDCConfigShape } from '@agoric/fast-usdc/src/type-guards.js';
 import { toExternalConfig } from '@agoric/fast-usdc/src/utils/config-marshal.js';
 import { configurations } from '@agoric/fast-usdc/src/utils/deploy-config.js';
 import {
@@ -72,13 +70,17 @@ const { USDC } = crossVatContext;
 const USDC_DECIMALS = 6;
 const unit = AmountMath.make(USDC, 10n ** BigInt(USDC_DECIMALS));
 
-/** @type {CoreEvalBuilder} */
+/**
+ * @param {Parameters<CoreEvalBuilder>[0]} powers
+ * @param {FastUSDCConfig} config
+ * @satisfies {CoreEvalBuilder}
+ */
 export const defaultProposalBuilder = async (
   { publishRef, install },
-  /** @type {FastUSDCConfig} */ config,
+  config,
 ) => {
   return harden({
-    sourceSpec: '@agoric/fast-usdc/src/fast-usdc.start.js',
+    sourceSpec: '@agoric/fast-usdc/src/start-fast-usdc.core.js',
     /** @type {[string, Parameters<typeof getManifestForFastUSDC>[1]]} */
     getManifestCall: [
       getManifestForFastUSDC.name,
