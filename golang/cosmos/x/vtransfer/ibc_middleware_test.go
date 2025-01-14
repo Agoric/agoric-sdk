@@ -21,6 +21,7 @@ import (
 	swingsettesting "github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/testing"
 	swingsettypes "github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/types"
 	vibckeeper "github.com/Agoric/agoric-sdk/golang/cosmos/x/vibc/keeper"
+	vibctypes "github.com/Agoric/agoric-sdk/golang/cosmos/x/vibc/types"
 
 	"github.com/cosmos/cosmos-sdk/baseapp"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -356,6 +357,7 @@ func (s *IntegrationTestSuite) TestTransferFromAgdToAgd() {
 		// {"both targets, both hooks", true, true, []byte("?name=alice&peer=bob"), []byte("?what=arbitrary-data&why=to-test-bridge-targets")},
 	}
 
+	ibcReceiverB := vibctypes.NewReceiver(s.GetApp(s.chainB).VtransferKeeper)
 	path := s.NewTransferPath()
 	serial := make(chan struct{}, 1)
 	serial <- struct{}{}
@@ -466,7 +468,16 @@ func (s *IntegrationTestSuite) TestTransferFromAgdToAgd() {
 					// write out a different acknowledgement from the "contract", one block later.
 					s.coordinator.CommitBlock(s.chainB)
 
-					err = s.GetApp(s.chainB).VtransferKeeper.ReceiveWriteAcknowledgement(s.chainB.GetContext(), packet, finalAck)
+					pm := vibctypes.PortMessage{
+						Type:   "IBC_METHOD",
+						Method: "receiveExecuted",
+						Packet: packet,
+						Ack:    finalAck.Acknowledgement(),
+					}
+					jsonRequest, err := json.Marshal(&pm)
+					s.Require().NoError(err)
+
+					_, err = ibcReceiverB.Receive(s.chainB.GetContext(), string(jsonRequest))
 					s.Require().NoError(err)
 
 					s.coordinator.CommitBlock(s.chainB)
