@@ -23,7 +23,7 @@ const (
 )
 
 // NewQuerier is the module level router for state queries
-func NewQuerier(keeper Keeper, legacyQuerierCdc *codec.LegacyAmino) sdk.Querier {
+func NewQuerier(keeper Keeper, legacyQuerierCdc *codec.LegacyAmino) func(ctx sdk.Context, path []string, req abci.RequestQuery) ([]byte, error) {
 	return func(ctx sdk.Context, path []string, req abci.RequestQuery) (res []byte, err error) {
 		var queryType string
 		if len(path) > 0 {

@@ -32,7 +32,7 @@ func getVstorageEntryPath(urlPathSegments []string) (string, error) {
 // with vstorage path "foo.bar", and `/children/foo.bar` is a request for the
 // child path segments immediately underneath vstorage path "foo.bar" which may
 // be used to extend it to a vstorage path such as "foo.bar.baz").
-func NewQuerier(keeper Keeper, legacyQuerierCdc *codec.LegacyAmino) sdk.Querier {
+func NewQuerier(keeper Keeper, legacyQuerierCdc *codec.LegacyAmino) func(ctx sdk.Context, path []string, req abci.RequestQuery) ([]byte, error) {
 	return func(ctx sdk.Context, urlPathSegments []string, req abci.RequestQuery) (res []byte, err error) {
 		var queryType string
 		if len(urlPathSegments) > 0 {
