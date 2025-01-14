@@ -79,7 +79,7 @@ func NewExtensionSnapshotter(
 ) *ExtensionSnapshotter {
 	return &ExtensionSnapshotter{
 		isConfigured:                            func() bool { return app.SnapshotManager() != nil },
-		takeAppSnapshot:                         app.Snapshot,
+		takeAppSnapshot:                         app.SnapshotManager().SnapshotIfApplicable,
 		logger:                                  app.Logger().With("module", fmt.Sprintf("x/%s", types.ModuleName), "submodule", "extension snapshotter"),
 		swingStoreExportsHandler:                swingStoreExportsHandler,
 		getSwingStoreExportDataShadowCopyReader: getSwingStoreExportDataShadowCopyReader,
