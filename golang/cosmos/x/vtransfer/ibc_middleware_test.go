@@ -12,6 +12,7 @@ import (
 	app "github.com/Agoric/agoric-sdk/golang/cosmos/app"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	"github.com/cosmos/cosmos-sdk/store"
+	"github.com/cosmos/cosmos-sdk/testutil/testdata"
 	"github.com/stretchr/testify/suite"
 	"github.com/tendermint/tendermint/libs/log"
 	dbm "github.com/tendermint/tm-db"
@@ -25,6 +26,8 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
+	packetforwardkeeper "github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v6/packetforward/keeper"
+	packetforwardtypes "github.com/cosmos/ibc-apps/middleware/packet-forward-middleware/v6/packetforward/types"
 	ibctransfertypes "github.com/cosmos/ibc-go/v6/modules/apps/transfer/types"
 	channeltypes "github.com/cosmos/ibc-go/v6/modules/core/04-channel/types"
 	ibctesting "github.com/cosmos/ibc-go/v6/testing"
@@ -40,6 +43,8 @@ type IntegrationTestSuite struct {
 	// testing chains used for convenience and readability
 	chainA *ibctesting.TestChain
 	chainB *ibctesting.TestChain
+
+	channelOffset int
 
 	queryClient ibctransfertypes.QueryClient
 }
@@ -201,21 +206,36 @@ func (s *IntegrationTestSuite) GetApp(chain *ibctesting.TestChain) *app.GaiaApp 
 }
 
 func (s *IntegrationTestSuite) NewTransferPath() *ibctesting.Path {
+	chOffset := s.channelOffset
+	s.channelOffset += 1
 	path := ibctesting.NewPath(s.chainA, s.chainB)
-	_, _, channelASeq := computeSequences(0)
-	_, _, channelBSeq := computeSequences(1)
-	path.EndpointA.ChannelID = fmt.Sprintf("channel-%d", channelASeq)
-	path.EndpointB.ChannelID = fmt.Sprintf("channel-%d", channelBSeq)
+	channelAClient, channelAConnection, channelASeq := computeSequences(0)
+	channelBClient, channelBConnection, channelBSeq := computeSequences(1)
+	path.EndpointA.ChannelID = fmt.Sprintf("channel-%d", channelASeq+chOffset)
+	path.EndpointB.ChannelID = fmt.Sprintf("channel-%d", channelBSeq+chOffset)
 	path.EndpointA.ChannelConfig.PortID = ibctesting.TransferPort
 	path.EndpointB.ChannelConfig.PortID = ibctesting.TransferPort
 	path.EndpointA.ChannelConfig.Version = "ics20-1"
 	path.EndpointB.ChannelConfig.Version = "ics20-1"
 
-	s.coordinator.Setup(path)
+	if chOffset == 0 {
+		s.coordinator.SetupConnections(path)
+	} else {
+		path.EndpointA.ClientID = fmt.Sprintf("07-tendermint-%d", channelAClient)
+		path.EndpointA.ConnectionID = fmt.Sprintf("connection-%d", channelAConnection)
+		path.EndpointB.ClientID = fmt.Sprintf("07-tendermint-%d", channelBClient)
+		path.EndpointB.ConnectionID = fmt.Sprintf("connection-%d", channelBConnection)
+	}
+	s.coordinator.CreateChannels(path)
 
 	s.coordinator.CommitBlock(s.chainA, s.chainB)
 
 	return path
+}
+
+func (s *IntegrationTestSuite) resetActionQueue(chain *ibctesting.TestChain) {
+	err := swingsettesting.ResetActionQueue(s.T(), chain.GetContext(), s.GetApp(chain).SwingSetKeeper)
+	s.Require().NoError(err)
 }
 
 func (s *IntegrationTestSuite) assertActionQueue(chain *ibctesting.TestChain, expectedRecords []swingsettypes.InboundQueueRecord) {
@@ -224,6 +244,7 @@ func (s *IntegrationTestSuite) assertActionQueue(chain *ibctesting.TestChain, ex
 		chain.GetContext(),
 		s.GetApp(chain).SwingSetKeeper,
 	)
+	s.resetActionQueue(chain)
 	s.Require().NoError(err)
 
 	exLen := len(expectedRecords)
@@ -314,10 +335,67 @@ func (s *IntegrationTestSuite) mintToAddress(chain *ibctesting.TestChain, addr s
 	s.Require().NoError(err)
 	err = app.BankKeeper.SendCoinsFromModuleToAccount(chain.GetContext(), ibctransfertypes.ModuleName, addr, coins)
 	s.Require().NoError(err)
+}
 
-	// Verify success.
-	balances := app.BankKeeper.GetAllBalances(chain.GetContext(), addr)
-	s.Require().Equal(coins[0], balances[1])
+type SpyTransferKeeper struct {
+	tk        packetforwardtypes.TransferKeeper
+	pfk       *packetforwardkeeper.Keeper
+	s         *IntegrationTestSuite
+	chain     *ibctesting.TestChain
+	pfmPacket channeltypes.Packet
+}
+
+var _ packetforwardtypes.TransferKeeper = &SpyTransferKeeper{}
+
+func (s *IntegrationTestSuite) NewSpyTransferKeeper(pfk *packetforwardkeeper.Keeper, tk packetforwardtypes.TransferKeeper, chain *ibctesting.TestChain) *SpyTransferKeeper {
+	return &SpyTransferKeeper{
+		pfk:   pfk,
+		tk:    tk,
+		s:     s,
+		chain: chain,
+	}
+}
+
+func (stk *SpyTransferKeeper) Transfer(ctx context.Context, msg *ibctransfertypes.MsgTransfer) (*ibctransfertypes.MsgTransferResponse, error) {
+	tokenData := ibctransfertypes.NewFungibleTokenPacketData(
+		msg.Token.Denom,
+		msg.Token.Amount.String(),
+		msg.Sender,
+		msg.Receiver,
+		msg.Memo,
+	)
+
+	// Deliberately json-marshal the token data to diverge from tokenData.GetBytes().
+	tokenBz, err := json.Marshal(tokenData)
+	if err != nil {
+		return nil, err
+	}
+
+	sdkCtx := sdk.UnwrapSDKContext(ctx)
+	channel, ok := stk.s.GetApp(stk.chain).IBCKeeper.ChannelKeeper.GetChannel(sdkCtx, msg.SourcePort, msg.SourceChannel)
+	stk.s.Require().True(ok)
+
+	pp := &stk.pfmPacket
+	*pp = channeltypes.NewPacket(
+		tokenBz, 0,
+		msg.SourcePort, msg.SourceChannel,
+		channel.Counterparty.PortId, channel.Counterparty.ChannelId,
+		msg.TimeoutHeight, msg.TimeoutTimestamp)
+
+	chanCap := stk.chain.GetChannelCapability(msg.SourcePort, msg.SourceChannel)
+	sequence, err := stk.pfk.SendPacket(sdkCtx, chanCap, pp.SourcePort, pp.SourceChannel, pp.TimeoutHeight, pp.TimeoutTimestamp, pp.Data)
+	if err != nil {
+		return nil, err
+	}
+	pp.Sequence = sequence
+	res := &ibctransfertypes.MsgTransferResponse{
+		Sequence: sequence,
+	}
+	return res, nil
+}
+
+func (stk *SpyTransferKeeper) DenomPathFromHash(ctx sdk.Context, denom string) (string, error) {
+	return stk.tk.DenomPathFromHash(ctx, denom)
 }
 
 // TestTransferFromAgdToAgd relays an IBC transfer initiated from a chain A to a
@@ -327,126 +405,256 @@ func (s *IntegrationTestSuite) mintToAddress(chain *ibctesting.TestChain, addr s
 // between actions, the test verifies that the VM results are permitted to be
 // async across blocks.
 func (s *IntegrationTestSuite) TestTransferFromAgdToAgd() {
-	path := s.NewTransferPath()
-	s.Require().Equal(path.EndpointA.ChannelID, "channel-1050")
+	testCases := []struct {
+		name             string
+		senderIsTarget   bool
+		receiverIsTarget bool
+		senderHookData   []byte
+		receiverHookData []byte
+		pfmBounce        bool
+	}{
+		{"no targets, no hooks", false, false, nil, nil, false},
+		{"no targets, no hooks, PFM", false, false, nil, nil, true},
+		{"no targets, hooked receiver", false, true, nil, []byte("?what=arbitrary-data&why=to-test-bridge-targets"), false},
+		{"sender target, no hooks", true, false, nil, nil, false},
+		{"sender target, hooked receiver", true, false, nil, []byte("?what=arbitrary-data&why=to-test-bridge-targets"), false},
+		{"receiver target, no hooks", false, true, nil, nil, false},
+		{"receiver target, hooked receiver", false, true, nil, []byte("?what=arbitrary-data&why=to-test-bridge-targets"), false},
+		{"receiver target, no hooks, PFM", false, true, nil, nil, true},
+		{"receiver target, hooked receiver, PFM", false, true, nil, []byte("?what=arbitrary-data&why=to-test-bridge-targets"), true},
+		{"both targets, no hooks", true, true, nil, nil, false},
+		{"both targets, hooked receiver", true, true, nil, []byte("?what=arbitrary-data&why=to-test-bridge-targets"), false},
 
-	s.Run("TransferFromAgdToAgd", func() {
-		// create a transfer packet's data contents
-		baseReceiver := s.chainB.SenderAccounts[1].SenderAccount.GetAddress().String()
-		receiverHook, err := types.JoinHookedAddress(baseReceiver, []byte("?what=arbitrary-data&why=to-test-bridge-targets"))
-		s.Require().NoError(err)
-		transferData := ibctransfertypes.NewFungibleTokenPacketData(
-			"uosmo",
-			"1000000",
-			s.chainA.SenderAccount.GetAddress().String(),
-			receiverHook,
-			`"This is a JSON memo"`,
-		)
+		// TODO: Add tests for hooked sender after address hooks are tolerated by x/bank.
+		// {"no targets, hooked sender", true, true, []byte("?name=alice&peer=bob"), nil},
+		// {"no targets, both hooks", false, true, []byte("?name=alice&peer=bob"), []byte("?what=arbitrary-data&why=to-test-bridge-targets")},
+		// {"sender target, hooked sender", true, false, []byte("?name=alice&peer=bob"), nil},
+		// {"sender target, both hooks", true, false, []byte("?name=alice&peer=bob"), []byte("?what=arbitrary-data&why=to-test-bridge-targets")},
+		// {"receiver target, hooked sender", false, true, []byte("?name=alice&peer=bob"), nil},
+		// {"receiver target, both hooks", false, true, []byte("?name=alice&peer=bob"), []byte("?what=arbitrary-data&why=to-test-bridge-targets")},
+		// {"both targets, hooked sender", true, true, []byte("?name=alice&peer=bob"), nil},
+		// {"both targets, both hooks", true, true, []byte("?name=alice&peer=bob"), []byte("?what=arbitrary-data&why=to-test-bridge-targets")},
+	}
 
-		// Register the sender and receiver as bridge targets on their specific
-		// chain.
-		s.RegisterBridgeTarget(s.chainA, transferData.Sender)
-		s.RegisterBridgeTarget(s.chainB, baseReceiver)
+	serial := make(chan struct{}, 1)
+	serial <- struct{}{}
 
-		s.mintToAddress(s.chainA, s.chainA.SenderAccount.GetAddress(), transferData.Denom, transferData.Amount)
+	for _, tc := range testCases {
+		tc := tc
+		s.Run("TransferFromAgdToAgd "+tc.name, func() {
+			<-serial
+			pfkB := s.GetApp(s.chainB).PacketForwardKeeper
+			transferKeeperB := s.GetApp(s.chainB).TransferKeeper
+			defer func() {
+				pfkB.SetTransferKeeper(transferKeeperB)
+				serial <- struct{}{}
+			}()
 
-		// Initiate the transfer
-		packet, err := s.TransferFromSourceChain(s.chainA, transferData, path.EndpointA, path.EndpointB)
-		s.Require().NoError(err)
+			s.resetActionQueue(s.chainA)
+			s.resetActionQueue(s.chainB)
 
-		// Relay the packet
-		s.coordinator.CommitBlock(s.chainA)
-		err = path.EndpointB.UpdateClient()
-		s.Require().NoError(err)
-		s.coordinator.CommitBlock(s.chainB)
+			path := s.NewTransferPath()
 
-		writeAcknowledgementHeight := s.chainB.CurrentHeader.Height
-		writeAcknowledgementTime := s.chainB.CurrentHeader.Time.Unix()
+			_, _, baseSenderAddr := testdata.KeyTestPubAddr()
+			baseSender := baseSenderAddr.String()
 
-		err = path.EndpointB.RecvPacket(packet)
-		s.Require().NoError(err)
+			_, _, baseReceiverAddr := testdata.KeyTestPubAddr()
+			baseReceiver := baseReceiverAddr.String()
 
-		// Create a success ack as defined by ICS20.
-		ack := channeltypes.NewResultAcknowledgement([]byte{1})
-		// Create a different ack to show that a contract can change it.
-		contractAck := channeltypes.NewResultAcknowledgement([]byte{5})
-
-		s.coordinator.CommitBlock(s.chainA, s.chainB)
-
-		{
-			expectedRecords := []swingsettypes.InboundQueueRecord{}
-			s.assertActionQueue(s.chainA, expectedRecords)
-		}
-
-		{
-			expectedRecords := []swingsettypes.InboundQueueRecord{
-				{
-					Action: &vibckeeper.WriteAcknowledgementEvent{
-						ActionHeader: &vm.ActionHeader{
-							Type:        "VTRANSFER_IBC_EVENT",
-							BlockHeight: writeAcknowledgementHeight,
-							BlockTime:   writeAcknowledgementTime,
-						},
-						Event:           "writeAcknowledgement",
-						Target:          baseReceiver,
-						Packet:          packet,
-						Acknowledgement: ack.Acknowledgement(),
-					},
-					Context: swingsettypes.ActionContext{
-						BlockHeight: writeAcknowledgementHeight,
-						// TxHash is filled in below
-						MsgIdx: 0,
-					},
-				},
+			var receiver, sender string
+			var err error
+			if tc.senderHookData != nil {
+				sender, err = types.JoinHookedAddress(baseSender, tc.senderHookData)
+			} else {
+				sender = baseSender
 			}
-
-			s.assertActionQueue(s.chainB, expectedRecords)
-
-			// write out a different acknowledgement from the "contract", one block later.
-			s.coordinator.CommitBlock(s.chainB)
-			err = s.GetApp(s.chainB).VtransferKeeper.ReceiveWriteAcknowledgement(s.chainB.GetContext(), packet, contractAck)
+			s.Require().NoError(err)
+			if tc.receiverHookData != nil {
+				receiver, err = types.JoinHookedAddress(baseReceiver, tc.receiverHookData)
+			} else {
+				receiver = baseReceiver
+			}
 			s.Require().NoError(err)
 
-			s.coordinator.CommitBlock(s.chainB)
-		}
+			// create a transfer packet's data contents
+			var initialReceiver string
+			var memo string
+			m := struct {
+				Forward packetforwardtypes.ForwardMetadata `json:"forward"`
+			}{}
+			var spyTransferKeeperB *SpyTransferKeeper
+			receiverChain := s.chainB
+			if tc.pfmBounce {
+				initialReceiver = "pfm"
+				receiverChain = s.chainA
+				spyTransferKeeperB = s.NewSpyTransferKeeper(pfkB, transferKeeperB, s.chainB)
+				pfkB.SetTransferKeeper(spyTransferKeeperB)
 
-		// Update Client
-		err = path.EndpointA.UpdateClient()
-		s.Require().NoError(err)
+				memo = packetforwardtypes.ModuleName
+				m.Forward.Receiver = receiver
+				m.Forward.Port = path.EndpointB.ChannelConfig.PortID
+				m.Forward.Channel = path.EndpointB.ChannelID
+				memoBytes, err := json.Marshal(m)
+				s.Require().NoError(err)
+				memo = string(memoBytes)
+			} else {
+				initialReceiver = receiver
+				memo = `"This is a JSON memo"`
+			}
+			transferData := ibctransfertypes.NewFungibleTokenPacketData(
+				"uosmo",
+				"1000000",
+				sender,
+				initialReceiver,
+				memo,
+			)
 
-		acknowledgementHeight := s.chainA.CurrentHeader.Height
-		acknowledgementTime := s.chainA.CurrentHeader.Time.Unix()
-
-		// Prove the packet's acknowledgement.
-		err = path.EndpointA.AcknowledgePacket(packet, contractAck.Acknowledgement())
-		s.Require().NoError(err)
-
-		s.coordinator.CommitBlock(s.chainA, s.chainB)
-
-		{
-			expectedRecords := []swingsettypes.InboundQueueRecord{
-				{
-					Action: &vibckeeper.WriteAcknowledgementEvent{
-						ActionHeader: &vm.ActionHeader{
-							Type:        "VTRANSFER_IBC_EVENT",
-							BlockHeight: acknowledgementHeight,
-							BlockTime:   acknowledgementTime,
-						},
-						Event:           "acknowledgementPacket",
-						Target:          transferData.Sender,
-						Packet:          packet,
-						Acknowledgement: contractAck.Acknowledgement(),
-						Relayer:         s.chainA.SenderAccount.GetAddress(),
-					},
-					Context: swingsettypes.ActionContext{
-						BlockHeight: acknowledgementHeight,
-						// TxHash is filled in below
-						MsgIdx: 0,
-					},
-				},
+			// Register the sender and receiver as bridge targets on their specific
+			// chain.
+			if tc.senderIsTarget {
+				s.RegisterBridgeTarget(s.chainA, baseSender)
+			}
+			if tc.receiverIsTarget {
+				s.RegisterBridgeTarget(receiverChain, baseReceiver)
 			}
 
-			s.assertActionQueue(s.chainA, expectedRecords)
-		}
-	})
+			s.mintToAddress(s.chainA, baseSenderAddr, transferData.Denom, transferData.Amount)
+
+			// Initiate the transfer
+			initialPacket, err := s.TransferFromSourceChain(s.chainA, transferData, path.EndpointA, path.EndpointB)
+			s.Require().NoError(err)
+
+			// Relay the packet
+			s.coordinator.CommitBlock(s.chainA)
+			err = path.EndpointB.UpdateClient()
+			s.Require().NoError(err)
+			s.coordinator.CommitBlock(s.chainB)
+
+			writeAcknowledgementHeight := s.chainB.CurrentHeader.Height
+			writeAcknowledgementTime := s.chainB.CurrentHeader.Time.Unix()
+
+			err = path.EndpointB.RecvPacket(initialPacket)
+			s.Require().NoError(err)
+
+			// Create a success ack as defined by ICS20.
+			ack := channeltypes.NewResultAcknowledgement([]byte{1})
+			// Create a different ack to show that a contract can change it.
+			finalAck := channeltypes.NewResultAcknowledgement([]byte{5})
+
+			s.coordinator.CommitBlock(s.chainA, s.chainB)
+
+			{
+				expectedRecords := []swingsettypes.InboundQueueRecord{}
+				s.assertActionQueue(s.chainA, expectedRecords)
+			}
+
+			finalPacket := initialPacket
+			if tc.pfmBounce {
+				// The PFM should have received the packet and advertised a send back to the original chain.
+				finalPacket = spyTransferKeeperB.pfmPacket
+
+				err = path.EndpointA.UpdateClient()
+				s.Require().NoError(err)
+				s.coordinator.CommitBlock(s.chainA)
+
+				writeAcknowledgementHeight = s.chainA.CurrentHeader.Height
+				writeAcknowledgementTime = s.chainA.CurrentHeader.Time.Unix()
+
+				err = path.EndpointA.RecvPacket(finalPacket)
+				s.Require().NoError(err)
+
+				s.coordinator.CommitBlock(s.chainA, s.chainB)
+			}
+
+			{
+				expectedRecords := []swingsettypes.InboundQueueRecord{}
+				if tc.receiverIsTarget {
+					expectedRecords = append(expectedRecords, swingsettypes.InboundQueueRecord{
+						Action: &vibckeeper.WriteAcknowledgementEvent{
+							ActionHeader: &vm.ActionHeader{
+								Type:        "VTRANSFER_IBC_EVENT",
+								BlockHeight: writeAcknowledgementHeight,
+								BlockTime:   writeAcknowledgementTime,
+							},
+							Event:           "writeAcknowledgement",
+							Target:          baseReceiver,
+							Packet:          finalPacket,
+							Acknowledgement: ack.Acknowledgement(),
+						},
+						Context: swingsettypes.ActionContext{
+							BlockHeight: writeAcknowledgementHeight,
+							// TxHash is filled in below
+							MsgIdx: 0,
+						},
+					})
+				}
+
+				s.assertActionQueue(receiverChain, expectedRecords)
+
+				if tc.receiverIsTarget {
+					// write out a different acknowledgement from the "contract", one block later.
+					s.coordinator.CommitBlock(receiverChain)
+
+					err = s.GetApp(receiverChain).VtransferKeeper.ReceiveWriteAcknowledgement(receiverChain.GetContext(), finalPacket, finalAck)
+					s.Require().NoError(err)
+
+					s.coordinator.CommitBlock(receiverChain)
+				} else {
+					finalAck = ack
+				}
+			}
+
+			if tc.pfmBounce {
+				// Update Client
+				err = path.EndpointB.UpdateClient()
+				s.Require().NoError(err)
+
+				// Prove the PFM packet's acknowledgement.
+				err = path.EndpointB.AcknowledgePacket(finalPacket, finalAck.Acknowledgement())
+				s.Require().NoError(err)
+
+				s.coordinator.CommitBlock(s.chainA, s.chainB)
+			}
+
+			// Update Client
+			err = path.EndpointA.UpdateClient()
+			s.Require().NoError(err)
+
+			acknowledgementHeight := s.chainA.CurrentHeader.Height
+			acknowledgementTime := s.chainA.CurrentHeader.Time.Unix()
+
+			// Prove the initial packet's acknowledgement.
+			err = path.EndpointA.AcknowledgePacket(initialPacket, finalAck.Acknowledgement())
+			s.Require().NoError(err)
+
+			s.coordinator.CommitBlock(s.chainA, s.chainB)
+
+			{
+				expectedRecords := []swingsettypes.InboundQueueRecord{}
+				if tc.senderIsTarget {
+					expectedRecords = append(expectedRecords, swingsettypes.InboundQueueRecord{
+						Action: &vibckeeper.WriteAcknowledgementEvent{
+							ActionHeader: &vm.ActionHeader{
+								Type:        "VTRANSFER_IBC_EVENT",
+								BlockHeight: acknowledgementHeight,
+								BlockTime:   acknowledgementTime,
+							},
+							Event:           "acknowledgementPacket",
+							Target:          baseSender,
+							Packet:          initialPacket,
+							Acknowledgement: finalAck.Acknowledgement(),
+							Relayer:         s.chainA.SenderAccount.GetAddress(),
+						},
+						Context: swingsettypes.ActionContext{
+							BlockHeight: acknowledgementHeight,
+							// TxHash is filled in below
+							MsgIdx: 0,
+						},
+					})
+				}
+
+				s.assertActionQueue(s.chainA, expectedRecords)
+			}
+		})
+	}
 }
