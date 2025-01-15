@@ -760,7 +760,7 @@ type mockAuthKeeper struct {
 	modAddrs map[string]string
 }
 
-func (ma mockAuthKeeper) GetModuleAccount(ctx sdk.Context, name string) authtypes.ModuleAccountI {
+func (ma mockAuthKeeper) GetModuleAccount(ctx context.Context, name string) sdk.ModuleAccountI {
 	addr, ok := ma.modAddrs[name]
 	if !ok {
 		return nil
@@ -772,7 +772,7 @@ func (ma mockAuthKeeper) GetModuleAccount(ctx sdk.Context, name string) authtype
 	return acct.(authtypes.ModuleAccountI)
 }
 
-func (ma mockAuthKeeper) GetAccount(ctx sdk.Context, addr sdk.AccAddress) authtypes.AccountI {
+func (ma mockAuthKeeper) GetAccount(ctx context.Context, addr sdk.AccAddress) sdk.AccountI {
 	// fmt.Printf("GetAccount %s\n", addr.String())
 	return ma.accounts[addr.String()]
 }
