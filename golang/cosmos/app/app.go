@@ -84,11 +84,13 @@ import (
 	ibcconnectiontypes "github.com/cosmos/ibc-go/v8/modules/core/03-connection/types"
 
 	"cosmossdk.io/log"
+	gaiaappparams "github.com/Agoric/agoric-sdk/golang/cosmos/app/params"
 	abci "github.com/cometbft/cometbft/abci/types"
 	tmjson "github.com/cometbft/cometbft/libs/json"
 	tmos "github.com/cometbft/cometbft/libs/os"
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	dbm "github.com/cosmos/cosmos-db"
+	addresscodec "github.com/cosmos/cosmos-sdk/codec/address"
 	authcodec "github.com/cosmos/cosmos-sdk/x/auth/codec"
 	icahost "github.com/cosmos/ibc-go/v8/modules/apps/27-interchain-accounts/host"
 	icahostkeeper "github.com/cosmos/ibc-go/v8/modules/apps/27-interchain-accounts/host/keeper"
@@ -106,8 +108,6 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/rakyll/statik/fs"
 	"github.com/spf13/cast"
-
-	gaiaappparams "github.com/Agoric/agoric-sdk/golang/cosmos/app/params"
 
 	appante "github.com/Agoric/agoric-sdk/golang/cosmos/ante"
 	agorictypes "github.com/Agoric/agoric-sdk/golang/cosmos/types"
@@ -398,7 +398,7 @@ func NewAgoricApp(
 		runtime.NewKVStoreService(keys[authtypes.StoreKey]),
 		authtypes.ProtoBaseAccount,
 		maccPerms,
-		authcodec.NewBech32Codec(sdk.GetConfig().GetBech32AccountAddrPrefix()),
+		addresscodec.NewBech32Codec(sdk.GetConfig().GetBech32AccountAddrPrefix()),
 		sdk.GetConfig().GetBech32AccountAddrPrefix(),
 		authtypes.NewModuleAddress(govtypes.ModuleName).String(),
 	)
