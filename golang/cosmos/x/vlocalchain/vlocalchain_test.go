@@ -44,16 +44,16 @@ type mockAccounts struct {
 
 var _ types.AccountKeeper = (*mockAccounts)(nil)
 
-func (a *mockAccounts) NewAccountWithAddress(ctx sdk.Context, addr sdk.AccAddress) authtypes.AccountI {
+func (a *mockAccounts) NewAccountWithAddress(ctx context.Context, addr sdk.AccAddress) sdk.AccountI {
 	return authtypes.NewBaseAccountWithAddress(addr)
 }
 
-func (a *mockAccounts) HasAccount(ctx sdk.Context, addr sdk.AccAddress) bool {
+func (a *mockAccounts) HasAccount(ctx context.Context, addr sdk.AccAddress) bool {
 	existing := a.existing[addr.String()]
 	return existing
 }
 
-func (a *mockAccounts) SetAccount(ctx sdk.Context, acc authtypes.AccountI) {
+func (a *mockAccounts) SetAccount(ctx context.Context, acc sdk.AccountI) {
 	a.existing[acc.GetAddress().String()] = true
 }
 
