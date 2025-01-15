@@ -1,6 +1,7 @@
 package vbank
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"reflect"
@@ -205,12 +206,12 @@ func (b *mockBank) record(s string) {
 	b.calls = append(b.calls, s)
 }
 
-func (b *mockBank) BurnCoins(ctx sdk.Context, moduleName string, amt sdk.Coins) error {
+func (b *mockBank) BurnCoins(ctx context.Context, moduleName string, amt sdk.Coins) error {
 	b.record(fmt.Sprintf("BurnCoins %s %v", moduleName, amt))
 	return nil
 }
 
-func (b *mockBank) GetAllBalances(ctx sdk.Context, addr sdk.AccAddress) sdk.Coins {
+func (b *mockBank) GetAllBalances(ctx context.Context, addr sdk.AccAddress) sdk.Coins {
 	b.record(fmt.Sprintf("GetAllBalances %s", addr))
 	balances, ok := b.balances[addr.String()]
 	if !ok {
@@ -219,7 +220,7 @@ func (b *mockBank) GetAllBalances(ctx sdk.Context, addr sdk.AccAddress) sdk.Coin
 	return balances
 }
 
-func (b *mockBank) GetBalance(ctx sdk.Context, addr sdk.AccAddress, denom string) sdk.Coin {
+func (b *mockBank) GetBalance(ctx context.Context, addr sdk.AccAddress, denom string) sdk.Coin {
 	b.record(fmt.Sprintf("GetBalance %s %s", addr, denom))
 	amount := sdkmath.ZeroInt()
 	if balances, ok := b.balances[addr.String()]; ok {
@@ -228,22 +229,22 @@ func (b *mockBank) GetBalance(ctx sdk.Context, addr sdk.AccAddress, denom string
 	return sdk.NewCoin(denom, amount)
 }
 
-func (b *mockBank) MintCoins(ctx sdk.Context, moduleName string, amt sdk.Coins) error {
+func (b *mockBank) MintCoins(ctx context.Context, moduleName string, amt sdk.Coins) error {
 	b.record(fmt.Sprintf("MintCoins %s %s", moduleName, amt))
 	return nil
 }
 
-func (b *mockBank) SendCoinsFromAccountToModule(ctx sdk.Context, senderAddr sdk.AccAddress, recipientModule string, amt sdk.Coins) error {
+func (b *mockBank) SendCoinsFromAccountToModule(ctx context.Context, senderAddr sdk.AccAddress, recipientModule string, amt sdk.Coins) error {
 	b.record(fmt.Sprintf("SendCoinsFromAccountToModule %s %s %s", senderAddr, recipientModule, amt))
 	return nil
 }
 
-func (b *mockBank) SendCoinsFromModuleToAccount(ctx sdk.Context, senderModule string, recipientAddr sdk.AccAddress, amt sdk.Coins) error {
+func (b *mockBank) SendCoinsFromModuleToAccount(ctx context.Context, senderModule string, recipientAddr sdk.AccAddress, amt sdk.Coins) error {
 	b.record(fmt.Sprintf("SendCoinsFromModuleToAccount %s %s %s", senderModule, recipientAddr, amt))
 	return nil
 }
 
-func (b *mockBank) SendCoinsFromModuleToModule(ctx sdk.Context, senderModule, recipientModule string, amt sdk.Coins) error {
+func (b *mockBank) SendCoinsFromModuleToModule(ctx context.Context, senderModule, recipientModule string, amt sdk.Coins) error {
 	b.record(fmt.Sprintf("SendCoinsFromModuleToModule %s %s %s", senderModule, recipientModule, amt))
 	return nil
 }
