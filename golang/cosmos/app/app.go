@@ -81,7 +81,6 @@ import (
 	capabilitykeeper "github.com/cosmos/ibc-go/modules/capability/keeper"
 	capabilitytypes "github.com/cosmos/ibc-go/modules/capability/types"
 	ica "github.com/cosmos/ibc-go/v8/modules/apps/27-interchain-accounts"
-	ibcconnectiontypes "github.com/cosmos/ibc-go/v8/modules/core/03-connection/types"
 
 	"cosmossdk.io/log"
 	gaiaappparams "github.com/Agoric/agoric-sdk/golang/cosmos/app/params"
@@ -1057,22 +1056,7 @@ func NewAgoricApp(
 
 		app.UpgradeKeeper.SetUpgradeHandler(
 			name,
-			func(ctx context.Context, _ upgradetypes.Plan, _ module.VersionMap) (module.VersionMap, error) {
-				sdkCtx := sdk.UnwrapSDKContext(ctx)
-				app.IBCKeeper.ConnectionKeeper.SetParams(sdkCtx, ibcconnectiontypes.DefaultParams())
-				fromVM := make(map[string]uint64)
-
-				for moduleName := range app.mm.Modules {
-					m := app.mm.Modules[moduleName]
-					if module, ok := m.(module.HasConsensusVersion); ok {
-						fromVM[moduleName] = module.ConsensusVersion()
-					}
-				}
-
-				app.Logger().Info("start to run module migrations...")
-
-				return app.mm.RunMigrations(ctx, app.configurator, fromVM)
-			},
+			unreleasedUpgradeHandler(app, name),
 		)
 	}
 
