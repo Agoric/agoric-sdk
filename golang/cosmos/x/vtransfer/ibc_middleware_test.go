@@ -13,8 +13,8 @@ import (
 	"cosmossdk.io/store"
 	app "github.com/Agoric/agoric-sdk/golang/cosmos/app"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
+	dbm "github.com/cosmos/cosmos-db"
 	"github.com/stretchr/testify/suite"
-	dbm "github.com/tendermint/tm-db"
 
 	"github.com/Agoric/agoric-sdk/golang/cosmos/types"
 	swingsettesting "github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/testing"
