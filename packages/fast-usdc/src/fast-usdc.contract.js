@@ -161,6 +161,13 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
     removeOperator(operatorId) {
       return feedKit.creator.removeOperator(operatorId);
     },
+    async getContractFeeBalance() {
+      return poolKit.feeRecipient.getContractFeeBalance();
+    },
+    /** @type {() => Promise<Invitation<unknown>>} */
+    async makeWithdrawFeesInvitation() {
+      return poolKit.feeRecipient.makeWithdrawFeesInvitation();
+    },
     async connectToNoble() {
       return vowTools.when(nobleAccountV, nobleAccount => {
         trace('nobleAccount', nobleAccount);

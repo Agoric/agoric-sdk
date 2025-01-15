@@ -1,22 +1,22 @@
 import { deeplyFulfilledObject, makeTracer } from '@agoric/internal';
-import { Fail } from '@endo/errors';
 import { E } from '@endo/far';
-import { makeMarshal } from '@endo/marshal';
 import { FastUSDCConfigShape } from './type-guards.js';
 import { fromExternalConfig } from './utils/config-marshal.js';
-import { inviteOracles, publishFeedPolicy } from './utils/core-eval.js';
+import {
+  inviteOracles,
+  publishDisplayInfo,
+  publishFeedPolicy,
+} from './utils/core-eval.js';
 
 /**
- * @import {Amount, Brand, DepositFacet, Issuer, Payment} from '@agoric/ertp';
- * @import {TypedPattern} from '@agoric/internal'
+ * @import {Brand, Issuer} from '@agoric/ertp';
  * @import {Instance, StartParams} from '@agoric/zoe/src/zoeService/utils'
  * @import {Board} from '@agoric/vats'
  * @import {ManifestBundleRef} from '@agoric/deploy-script-support/src/externalTypes.js'
  * @import {BootstrapManifest} from '@agoric/vats/src/core/lib-boot.js'
- * @import {Passable} from '@endo/pass-style'
  * @import {LegibleCapData} from './utils/config-marshal.js'
  * @import {FastUsdcSF} from './fast-usdc.contract.js'
- * @import {FeedPolicy, FastUSDCConfig} from './types.js'
+ * @import {FastUSDCConfig} from './types.js'
  */
 
 const ShareAssetInfo = /** @type {const} */ harden({
@@ -46,26 +46,6 @@ const makePublishingStorageKit = async (path, { chainStorage, board }) => {
   return { storageNode, marshaller };
 };
 
-const BOARD_AUX = 'boardAux';
-const marshalData = makeMarshal(_val => Fail`data only`);
-/**
- * @param {Brand} brand
- * @param {Pick<BootstrapPowers['consume'], 'board' | 'chainStorage'>} powers
- */
-const publishDisplayInfo = async (brand, { board, chainStorage }) => {
-  // chainStorage type includes undefined, which doesn't apply here.
-  // @ts-expect-error UNTIL https://github.com/Agoric/agoric-sdk/issues/8247
-  const boardAux = E(chainStorage).makeChildNode(BOARD_AUX);
-  const [id, displayInfo, allegedName] = await Promise.all([
-    E(board).getId(brand),
-    E(brand).getDisplayInfo(),
-    E(brand).getAllegedName(),
-  ]);
-  const node = E(boardAux).makeChildNode(id);
-  const aux = marshalData.toCapData(harden({ allegedName, displayInfo }));
-  await E(node).setValue(JSON.stringify(aux));
-};
-
 const POOL_METRICS = 'poolMetrics';
 
 /**
@@ -79,7 +59,7 @@ const POOL_METRICS = 'poolMetrics';
  * }} FastUSDCCorePowers
  *
  * @typedef {StartedInstanceKitWithLabel & {
- *   creatorFacet: Awaited<ReturnType<FastUsdcSF>>['creatorFacet'];
+ *   creatorFacet: StartedInstanceKit<FastUsdcSF>['creatorFacet'];
  *   privateArgs: StartParams<FastUsdcSF>['privateArgs'];
  * }} FastUSDCKit
  */
@@ -245,10 +225,10 @@ export const getManifestForFastUSDC = (
           board: true,
         },
         issuer: {
-          produce: { FastLP: true }, // UNTIL #10432
+          produce: { FastLP: true },
         },
         brand: {
-          produce: { FastLP: true }, // UNTIL #10432
+          produce: { FastLP: true },
         },
         instance: {
           produce: { fastUsdc: true },
