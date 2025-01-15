@@ -559,7 +559,7 @@ export const makeE2ETools = async (
     runCoreEval: buildAndRunCoreEval,
     /**
      * @param {string} address
-     * @param {Record<string, bigint>} amount
+     * @param {Record<string, bigint>} amount - should include BLD to pay for provisioning
      */
     provisionSmartWallet: (address, amount) =>
       provisionSmartWallet(address, amount, {
