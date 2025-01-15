@@ -1,11 +1,11 @@
 import test from 'ava';
 
-import { QueryClient, setupStakingExtension } from '@cosmjs/stargate'; // fails to import after Endo/init
-
-import '@endo/init';
+// XXX the @cosmjs packages load `axios` and `protobufjs`  versions that are incompatible with Endo (which Ava has already inited)
+// UNTIL https://github.com/cosmology-tech/telescope/issues/692
+import { QueryClient, setupStakingExtension } from '@cosmjs/stargate';
+import { Tendermint34Client } from '@cosmjs/tendermint-rpc';
 
 import { GOV1ADDR } from '@agoric/synthetic-chain';
-import { Tendermint34Client } from '@cosmjs/tendermint-rpc';
 import assert from 'node:assert';
 import process from 'node:process';
 import { networkConfig, agdWalletUtils } from './test-lib/index.js';
