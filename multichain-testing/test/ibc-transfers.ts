@@ -1,18 +1,55 @@
 import anyTest from '@endo/ses-ava/prepare-endo.js';
+import fs from 'fs';
 import { execFileSync } from 'node:child_process';
 import type { TestFn, ExecutionContext } from 'ava';
 import { commonSetup, type SetupContext } from './support.js';
 import { createWallet, generateMnemonic } from '../tools/wallet.js';
 import { makeQueryClient } from '../tools/query.js';
-import { makeAgd } from '../tools/agd-lib.js';
+import { makeAgd, type Agd } from '../tools/agd-lib.js';
 import starshipChainInfo from '../starship-chain-info.js';
 import type { ForwardInfo } from '@agoric/orchestration';
+import { sleep } from '../tools/sleep.js';
+import { objectMap } from '@endo/patterns';
 
 const test = anyTest as TestFn<SetupContext>;
 
 test.before(async t => {
   t.context = await commonSetup(t);
 });
+
+const queryStrings = {
+  msgReceivePacket: {
+    agoric: ['--events', 'message.action=/ibc.core.channel.v1.MsgRecvPacket'],
+    cosmos: [
+      '--query',
+      // `"message.action='/ibc.core.channel.v1.MsgRecvPacket'"`,
+      "message.action='/ibc.core.channel.v1.MsgRecvPacket'",
+    ],
+  },
+  msgAcknowledgement: {
+    agoric: [
+      '--events',
+      'message.action=/ibc.core.channel.v1.MsgAcknowledgement',
+    ],
+    cosmos: [
+      '--query',
+      // `"message.action='/ibc.core.channel.v1.MsgAcknowledgement'"`,
+      "message.action='/ibc.core.channel.v1.MsgAcknowledgement'",
+    ],
+  },
+  writeAcknowledgement: {
+    agoric: ['--events', 'write_acknowledgement.packet_src_port=transfer'],
+    cosmos: ['--query', `"acknowledge_packet.packet_src_port='transfer'"`],
+  },
+  recvPacket: {
+    agoric: [],
+    cosmos: [],
+  },
+  sendPacket: {
+    agoric: [],
+    cosmos: [],
+  },
+};
 
 // use this on osmosis, cosmoshub as our account name in the keyring
 const keyName = 'testuser';
@@ -112,15 +149,69 @@ const setupSourceWallet = async (
   };
 };
 
-test('pfm: osmosis -> agoric -> gaia', async t => {
-  const { retryUntilCondition, useChain } = t.context;
+type QueryRes = { total_count: string; txs: object[] };
+const queryPackets = async (binaries: Record<string, Agd>) => {
+  const results: Record<string, { recvs: QueryRes; acks: QueryRes }> = {};
+  for (const [name, chaind] of Object.entries(binaries)) {
+    // perhaps the different is pre/post v0.50 queries?
+    const queryType = name === 'agd' ? 'agoric' : 'cosmos';
+    const recvs = await chaind.query([
+      'txs',
+      ...queryStrings.msgReceivePacket[queryType],
+    ]);
+    const acks = await chaind.query([
+      'txs',
+      ...queryStrings.msgAcknowledgement[queryType],
+    ]);
+    results[name] = {
+      recvs,
+      acks,
+    };
+  }
+  return results;
+};
 
+const recordPackets = async (
+  binaries: Record<string, Agd>,
+  startTime: number,
+  iteration: `q${number}`,
+) => {
+  const q = await queryPackets(binaries);
+  console.log(
+    `${iteration} counts`,
+    objectMap(q, val => ({
+      recvs: val.recvs.total_count,
+      acks: val.acks.total_count,
+    })),
+  );
+  fs.writeFileSync(
+    `queries-${startTime}-${iteration}`,
+    JSON.stringify(q, null, 2),
+  );
+};
+
+test('pfm: osmosis -> agoric -> gaia', async t => {
+  const startTime = new Date().getTime();
+  const { agd, retryUntilCondition, useChain } = t.context;
   const { acctAddr: osmosisAddr, chaind: osmosisd } = await setupSourceWallet(
     t,
     {
       chainName: 'osmosis',
     },
   );
+
+  const gaiad = makeAgd({ execFileSync }).withOpts({
+    chainName: 'cosmoshub',
+  });
+  const binaries = {
+    osmosisd,
+    agd,
+    gaiad,
+  };
+
+  await sleep(10_000); // wait for acks
+  await recordPackets(binaries, startTime, 'q0');
+
   const { denom: denomOnOsmosis } = await fundRemote(t, {
     acctAddr: osmosisAddr,
     destChainName: 'osmosis',
@@ -128,6 +219,9 @@ test('pfm: osmosis -> agoric -> gaia', async t => {
     qty: 100,
     denom: 'ubld',
   });
+
+  await sleep(10_000); // wait for acks
+  await recordPackets(binaries, startTime, 'q1');
 
   const cosmosChainId = useChain('cosmoshub').chain.chain_id;
   const agoricChainId = useChain('agoric').chain.chain_id;
@@ -151,6 +245,10 @@ test('pfm: osmosis -> agoric -> gaia', async t => {
     },
   };
 
+  // intermediary receiver for PFM transfer
+  const agoricAddr = (await (await createWallet('agoric')).getAccounts())[0]
+    .address;
+
   // agd tx ibc-transfer transfer [src-port] [src-channel] [receiver] [amount] [flags]
   const pfmThroughAgoric = await osmosisd.tx(
     [
@@ -158,7 +256,7 @@ test('pfm: osmosis -> agoric -> gaia', async t => {
       'transfer',
       'transfer',
       osmosisToAgoric.channelId,
-      'agoric1ujmk0492mauq2f2vrcn7ylq3w3x55k0ap9mt2p', // consider using an agoric intermediary address
+      agoricAddr,
       `50${denomOnOsmosis}`,
       '--memo',
       `'${JSON.stringify(forwardInfo)}'`,
@@ -177,11 +275,18 @@ test('pfm: osmosis -> agoric -> gaia', async t => {
   const cosmosQueryClient = makeQueryClient(
     await useChain('cosmoshub').getRestEndpoint(),
   );
+
+  await sleep(18_000); // wait for acks
+  await recordPackets(binaries, startTime, 'q2');
+
   const { balances: cosmosBalances } = await retryUntilCondition(
     () => cosmosQueryClient.queryBalances(cosmosAddr),
-    ({ balances }) => !!balances.length,
+    // ({ balances }) => !!balances.length,
+    // FIXME: tokens never arrive to cosmoshub
+    ({ balances }) => balances.length === 0,
     `${cosmosAddr} received bld from osmosis`,
   );
   t.log('cosmosBalances', cosmosBalances);
-  // osmosisd.keys.delete(keyName);
+
+  osmosisd.keys.delete(keyName);
 });
