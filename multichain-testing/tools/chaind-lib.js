@@ -101,10 +101,13 @@ export const makeAgd = ({ execFileSync }) => {
        * @param {| [kind: 'gov', domain: string, ...rest: any]
        *         | [kind: 'tx', txhash: string]
        *         | [mod: 'vstorage', kind: 'data' | 'children', path: string]
+       *         | [kind: 'txs', ...rest: any]
        * } qArgs
        */
       query: async qArgs => {
-        const out = exec(['query', ...qArgs, ...nodeArgs, ...outJson], {
+        const args = ['query', ...qArgs, ...nodeArgs, ...outJson];
+        console.log(`$$$ ${chainToBinary[chainName]}`, ...args);
+        const out = exec(args, {
           encoding: 'utf-8',
           stdio: ['ignore', 'pipe', 'pipe'],
         });
