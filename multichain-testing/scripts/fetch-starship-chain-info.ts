@@ -5,6 +5,7 @@ import fsp from 'node:fs/promises';
 import prettier from 'prettier';
 
 import { convertChainInfo } from '@agoric/orchestration/src/utils/registry.js';
+import { icaChainNames } from '@agoric/orchestration/scripts/fetch-chain-info.ts';
 
 import type { IBCInfo, Chains } from '@chain-registry/types';
 
@@ -32,7 +33,7 @@ const chainInfo = await convertChainInfo(
     chains,
     ibcData: ibc.data,
   },
-  () => true,
+  chainName => icaChainNames.has(chainName),
 );
 
 const record = JSON.stringify(chainInfo, null, 2);

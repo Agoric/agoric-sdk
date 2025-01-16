@@ -77,13 +77,13 @@ const CHAIN_ID_SEPARATOR = '_';
 /**
  * Vstorage keys can be only alphanumerics, dash, or underscore, which are all
  * valid characters in chain IDs. So, double each occurence of
- * {@link CHAIN_ID_SEPARATOR} in the chain ID to make it clear that it's part of
- * the chain ID rather than a separator.
+ * {@link CHAIN_ID_SEPARATOR} in the chain ID so the encoded tuple can be
+ * decoded.
  *
  * @param {string} chainId
  * @see {@link https://github.com/ChainAgnostic/CAIPs/blob/main/CAIPs/caip-2.md}
  */
-export const sanitizeChainId = chainId =>
+export const encodeChainId = chainId =>
   chainId.replaceAll(
     CHAIN_ID_SEPARATOR,
     `${CHAIN_ID_SEPARATOR}${CHAIN_ID_SEPARATOR}`,
@@ -98,8 +98,8 @@ export const sanitizeChainId = chainId =>
  * @param {string} chainId2
  */
 export const connectionKey = (chainId1, chainId2) => {
-  const chainId1Sanitized = sanitizeChainId(chainId1);
-  const chainId2Sanitized = sanitizeChainId(chainId2);
+  const chainId1Sanitized = encodeChainId(chainId1);
+  const chainId2Sanitized = encodeChainId(chainId2);
 
   return [chainId1Sanitized, chainId2Sanitized].sort().join(CHAIN_ID_SEPARATOR);
 };

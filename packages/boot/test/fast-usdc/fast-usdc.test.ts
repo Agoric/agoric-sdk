@@ -386,12 +386,6 @@ test.serial('distributes fees per BLD staker decision', async t => {
   const ContractFee = 302000n; // see split above
   t.is(((ContractFee - 250000n) * 5n) / 10n, 26000n);
 
-  if (defaultManagerType === 'xs-worker') {
-    // XXX for some reason the code after this when run under XS fails with:
-    // message: 'unsettled value for "kp2526"',
-    return;
-  }
-
   const cases = [
     { dest: 'agoric1a', args: ['--fixedFees', '0.25'], rxd: '250000' },
     { dest: 'agoric1b', args: ['--feePortion', '0.5'], rxd: '26000' },
@@ -529,12 +523,6 @@ test.serial('LP withdraws', async t => {
 test.serial('restart contract', async t => {
   const { EV } = t.context.runUtils;
   await null;
-  if (defaultManagerType === 'xs-worker') {
-    t.is(defaultManagerType, 'xs-worker');
-    // XXX for some reason the code after this when run under XS fails with:
-    // message: 'unsettled value for "kp2526"',
-    return;
-  }
   const kit = await EV.vat('bootstrap').consumeItem('fastUsdcKit');
   const actual = await EV(kit.adminFacet).restartContract(kit.privateArgs);
   t.deepEqual(actual, { incarnationNumber: 1 });
@@ -549,12 +537,6 @@ test.serial('replace operators', async t => {
     runUtils: { EV },
     walletFactoryDriver: wfd,
   } = t.context;
-  if (defaultManagerType === 'xs-worker') {
-    t.is(defaultManagerType, 'xs-worker');
-    // XXX for some reason the code after this when run under XS fails with:
-    // message: 'unsettled value for "kp2526"',
-    return;
-  }
   const { creatorFacet } = await EV.vat('bootstrap').consumeItem('fastUsdcKit');
 
   const EUD = 'dydx1anything';
@@ -601,12 +583,6 @@ test.serial('replace operators', async t => {
         },
       });
     }
-  }
-
-  if (defaultManagerType === 'xs-worker') {
-    // XXX for some reason the code after this when run under XS fails with:
-    // message: 'unsettled value for "kp2526"',
-    return;
   }
 
   // Add some new oracle operator
