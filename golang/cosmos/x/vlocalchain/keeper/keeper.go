@@ -180,8 +180,12 @@ type HasValidateBasic interface {
 func (k Keeper) authenticateTx(msgs []sdk.Msg, actualSigner string) error {
 	for _, msg := range msgs {
 		// Validate that all required signers are satisfied (i.e. they match the actual signer).
-		for _, requiredSignerAddress := range msg.GetSigners() {
-			requiredSigner := requiredSignerAddress.String()
+		signers, _, err := k.cdc.GetMsgV1Signers(msg)
+		if err != nil {
+			panic(err)
+		}
+		for _, requiredSignerAddress := range signers {
+			requiredSigner := sdk.AccAddress(requiredSignerAddress).String()
 			if requiredSigner != actualSigner {
 				err := fmt.Errorf("required signer %s does not match actual signer", requiredSigner)
 				return err
