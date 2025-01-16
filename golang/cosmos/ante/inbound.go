@@ -103,7 +103,10 @@ func (ia inboundAnte) isPriorityMessage(ctx sdk.Context, msg sdk.Msg) (bool, err
 // Look up the limit from the swingset state queue sizes: from QueueInboundMempool
 // if we're running CheckTx (for the hysteresis described above), otherwise QueueAllowed.
 func (ia inboundAnte) allowedInbound(ctx sdk.Context) (int32, error) {
-	state := ia.sk.GetState(ctx)
+	state, err := ia.sk.GetState(ctx)
+	if err != nil {
+		return 0, err
+	}
 	entry := swingtypes.QueueInbound
 	if ctx.IsCheckTx() {
 		entry = swingtypes.QueueInboundMempool

@@ -505,7 +505,7 @@ func NewAgoricApp(
 	// The SwingSetKeeper is the Keeper from the SwingSet module
 	app.SwingSetKeeper = swingset.NewKeeper(
 		appCodec,
-		keys[swingset.StoreKey],
+		runtime.NewKVStoreService(keys[swingset.StoreKey]),
 		app.GetSubspace(swingset.ModuleName),
 		app.AccountKeeper,
 		app.BankKeeper,

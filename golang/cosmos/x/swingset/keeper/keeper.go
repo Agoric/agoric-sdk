@@ -1,6 +1,7 @@
 package keeper
 
 import (
+	"cosmossdk.io/core/store"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -9,8 +10,6 @@ import (
 
 	"cosmossdk.io/log"
 	sdkmath "cosmossdk.io/math"
-	"cosmossdk.io/store/prefix"
-	storetypes "cosmossdk.io/store/types"
 	"github.com/cosmos/cosmos-sdk/codec"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
@@ -50,9 +49,9 @@ const (
 
 // Keeper maintains the link to data vstorage and exposes getter/setter methods for the various parts of the state machine
 type Keeper struct {
-	storeKey   storetypes.StoreKey
-	cdc        codec.Codec
-	paramSpace paramtypes.Subspace
+	storeService store.KVStoreService
+	cdc          codec.Codec
+	paramSpace   paramtypes.Subspace
 
 	accountKeeper    types.AccountKeeper
 	bankKeeper       bankkeeper.Keeper
@@ -68,7 +67,7 @@ var _ ante.SwingsetKeeper = &Keeper{}
 
 // NewKeeper creates a new IBC transfer Keeper instance
 func NewKeeper(
-	cdc codec.Codec, key storetypes.StoreKey, paramSpace paramtypes.Subspace,
+	cdc codec.Codec, storeService store.KVStoreService, paramSpace paramtypes.Subspace,
 	accountKeeper types.AccountKeeper, bankKeeper bankkeeper.Keeper,
 	vstorageKeeper vstoragekeeper.Keeper, feeCollectorName string,
 	callToController func(ctx sdk.Context, str string) (string, error),
@@ -80,7 +79,7 @@ func NewKeeper(
 	}
 
 	return Keeper{
-		storeKey:         key,
+		storeService:     storeService,
 		cdc:              cdc,
 		paramSpace:       paramSpace,
 		accountKeeper:    accountKeeper,
@@ -216,7 +215,10 @@ func (k Keeper) UpdateQueueAllowed(ctx sdk.Context) error {
 		inboundMempoolQueueAllowed = inboundMempoolQueueMax - inboundQueueSize
 	}
 
-	state := k.GetState(ctx)
+	state, err := k.GetState(ctx)
+	if err != nil {
+		return err
+	}
 	state.QueueAllowed = []types.QueueSize{
 		{Key: types.QueueInbound, Size_: inboundQueueAllowed},
 		{Key: types.QueueInboundMempool, Size_: inboundMempoolQueueAllowed},
@@ -254,18 +256,25 @@ func (k Keeper) SetParams(ctx sdk.Context, params types.Params) {
 	k.paramSpace.SetParamSet(ctx, &params)
 }
 
-func (k Keeper) GetState(ctx sdk.Context) types.State {
-	store := ctx.KVStore(k.storeKey)
-	bz := store.Get([]byte(stateKey))
+func (k Keeper) GetState(ctx sdk.Context) (types.State, error) {
+	s := k.storeService.OpenKVStore(ctx)
+	bz, err := s.Get([]byte(stateKey))
+	if err != nil {
+		return types.State{}, err
+	}
 	state := types.State{}
 	k.cdc.MustUnmarshal(bz, &state)
-	return state
+	return state, nil
 }
 
-func (k Keeper) SetState(ctx sdk.Context, state types.State) {
-	store := ctx.KVStore(k.storeKey)
+func (k Keeper) SetState(ctx sdk.Context, state types.State) error {
+	s := k.storeService.OpenKVStore(ctx)
 	bz := k.cdc.MustMarshal(&state)
-	store.Set([]byte(stateKey), bz)
+	err := s.Set([]byte(stateKey), bz)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 // GetBeansPerUnit returns a map taken from the current SwingSet parameters from
@@ -486,9 +495,9 @@ func (k Keeper) SetMailbox(ctx sdk.Context, peer string, mailbox string) {
 	k.vstorageKeeper.LegacySetStorageAndNotify(ctx, agoric.NewKVEntry(path, mailbox))
 }
 
-func (k Keeper) GetSwingStore(ctx sdk.Context) storetypes.KVStore {
-	store := ctx.KVStore(k.storeKey)
-	return prefix.NewStore(store, []byte(swingStoreKeyPrefix))
+func (k Keeper) GetSwingStore(ctx sdk.Context) store.KVStore {
+	s := k.storeService.OpenKVStore(ctx)
+	return s
 }
 
 func (k Keeper) PathToEncodedKey(path string) []byte {
