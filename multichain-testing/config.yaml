@@ -38,14 +38,14 @@ chains:
       app_state:
         feemarket:
           params:
-            min_base_gas_price: "0.000000000000000000"
+            min_base_gas_price: '0.000000000000000000'
             enabled: true
-            fee_denom: "uosmo"
+            fee_denom: 'uosmo'
         globalfee:
           params:
             minimum_gas_prices:
-              - denom: "uosmo"
-                amount: "0"
+              - denom: 'uosmo'
+                amount: '0'
         staking:
           params:
             unbonding_time: '2m'
@@ -80,14 +80,14 @@ chains:
       app_state:
         feemarket:
           params:
-            min_base_gas_price: "0.000000000000000000"
+            min_base_gas_price: '0.000000000000000000'
             enabled: true
-            fee_denom: "uatom"
+            fee_denom: 'uatom'
         globalfee:
           params:
             minimum_gas_prices:
-              - denom: "uatom"
-                amount: "0"
+              - denom: 'uatom'
+                amount: '0'
         staking:
           params:
             unbonding_time: '2m'
