@@ -1288,23 +1288,27 @@ func (app *GaiaApp) Commit() (*abci.ResponseCommit, error) {
 		panic(err.Error())
 	}
 
-	res, snapshotHeight := app.BaseApp.CommitWithoutSnapshot()
+	res, err := app.BaseApp.Commit()
+	if err != nil {
+		panic(err)
+	}
 
 	err = swingset.AfterCommitBlock(app.SwingSetKeeper)
 	if err != nil {
 		panic(err.Error())
 	}
 
-	if snapshotHeight > 0 {
-		err = app.SwingSetSnapshotter.InitiateSnapshot(snapshotHeight)
+	// TODO: temporarily comment this section of code
+	// if snapshotHeight > 0 {
+	// 	err = app.SwingSetSnapshotter.InitiateSnapshot(snapshotHeight)
 
-		if err != nil {
-			app.Logger().Error("failed to initiate swingset snapshot", "err", err)
-			return nil, err
-		}
-	}
+	// 	if err != nil {
+	// 		app.Logger().Error("failed to initiate swingset snapshot", "err", err)
+	// 		return nil, err
+	// 	}
+	// }
 
-	return &res, nil
+	return res, nil
 }
 
 // LoadHeight loads a particular height
