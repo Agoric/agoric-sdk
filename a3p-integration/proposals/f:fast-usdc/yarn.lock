@@ -459,18 +459,19 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@agoric/synthetic-chain@npm:^0.4.3":
-  version: 0.4.5
-  resolution: "@agoric/synthetic-chain@npm:0.4.5"
+"@agoric/synthetic-chain@npm:^0.5.0":
+  version: 0.5.0
+  resolution: "@agoric/synthetic-chain@npm:0.5.0"
   dependencies:
     "@endo/zip": "npm:^1.0.7"
     better-sqlite3: "npm:^9.6.0"
     chalk: "npm:^5.3.0"
     cosmjs-types: "npm:^0.9.0"
     execa: "npm:8.x"
+    glob: "npm:^11.0.0"
   bin:
     synthetic-chain: dist/cli/cli.js
-  checksum: 10c0/f693b52550fc54faa1e04450d9e4b399c929cdd4b5a177c20790465308a66407695ef0d19ac8d69298aba8cb32a912a2b06427b012e170a7ce2f1cf6b149abd2
+  checksum: 10c0/81d4bdca44fedbde5004597ec3a64f5e418affe263affa0578ebabfe0247277a95d4ca408bad6b556dd50eacd9cbe59c74c919d047a73db4adc87d24f87e6adb
   languageName: node
   linkType: hard
 
@@ -3165,6 +3166,22 @@ __metadata:
   languageName: node
   linkType: hard
 
+"glob@npm:^11.0.0":
+  version: 11.0.1
+  resolution: "glob@npm:11.0.1"
+  dependencies:
+    foreground-child: "npm:^3.1.0"
+    jackspeak: "npm:^4.0.1"
+    minimatch: "npm:^10.0.0"
+    minipass: "npm:^7.1.2"
+    package-json-from-dist: "npm:^1.0.0"
+    path-scurry: "npm:^2.0.0"
+  bin:
+    glob: dist/esm/bin.mjs
+  checksum: 10c0/2b32588be52e9e90f914c7d8dec32f3144b81b84054b0f70e9adfebf37cd7014570489f2a79d21f7801b9a4bd4cca94f426966bfd00fb64a5b705cfe10da3a03
+  languageName: node
+  linkType: hard
+
 "glob@npm:^7.1.6":
   version: 7.2.3
   resolution: "glob@npm:7.2.3"
@@ -3657,6 +3674,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"jackspeak@npm:^4.0.1":
+  version: 4.0.2
+  resolution: "jackspeak@npm:4.0.2"
+  dependencies:
+    "@isaacs/cliui": "npm:^8.0.2"
+  checksum: 10c0/b26039d11c0163a95b1e58851b9ac453cce64ad6d1eb98a00b303ad5eeb761b29d33c9419d1e16c016d3f7151c8edf7df223e6cf93a1907655fd95d6ce85c0de
+  languageName: node
+  linkType: hard
+
 "jessie.js@npm:^0.3.4":
   version: 0.3.4
   resolution: "jessie.js@npm:0.3.4"
@@ -3846,6 +3872,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"lru-cache@npm:^11.0.0":
+  version: 11.0.2
+  resolution: "lru-cache@npm:11.0.2"
+  checksum: 10c0/c993b8e06ead0b24b969c1dbb5b301716aed66e320e9014a80012f5febe280b438f28ff50046b2c55ff404e889351ccb332ff91f8dd175a21f5eae80e3fb155f
+  languageName: node
+  linkType: hard
+
 "magic-string@npm:^0.25.7":
   version: 0.25.9
   resolution: "magic-string@npm:0.25.9"
@@ -4002,6 +4035,15 @@ __metadata:
   version: 1.0.1
   resolution: "minimalistic-crypto-utils@npm:1.0.1"
   checksum: 10c0/790ecec8c5c73973a4fbf2c663d911033e8494d5fb0960a4500634766ab05d6107d20af896ca2132e7031741f19888154d44b2408ada0852446705441383e9f8
+  languageName: node
+  linkType: hard
+
+"minimatch@npm:^10.0.0":
+  version: 10.0.1
+  resolution: "minimatch@npm:10.0.1"
+  dependencies:
+    brace-expansion: "npm:^2.0.1"
+  checksum: 10c0/e6c29a81fe83e1877ad51348306be2e8aeca18c88fdee7a99df44322314279e15799e41d7cb274e4e8bb0b451a3bc622d6182e157dfa1717d6cda75e9cd8cd5d
   languageName: node
   linkType: hard
 
@@ -4449,6 +4491,16 @@ __metadata:
   languageName: node
   linkType: hard
 
+"path-scurry@npm:^2.0.0":
+  version: 2.0.0
+  resolution: "path-scurry@npm:2.0.0"
+  dependencies:
+    lru-cache: "npm:^11.0.0"
+    minipass: "npm:^7.1.2"
+  checksum: 10c0/3da4adedaa8e7ef8d6dc4f35a0ff8f05a9b4d8365f2b28047752b62d4c1ad73eec21e37b1579ef2d075920157856a3b52ae8309c480a6f1a8bbe06ff8e52b33c
+  languageName: node
+  linkType: hard
+
 "path-type@npm:^4.0.0":
   version: 4.0.0
   resolution: "path-type@npm:4.0.0"
@@ -4778,7 +4830,7 @@ __metadata:
   dependencies:
     "@agoric/client-utils": "npm:dev"
     "@agoric/fast-usdc": "npm:dev"
-    "@agoric/synthetic-chain": "npm:^0.4.3"
+    "@agoric/synthetic-chain": "npm:^0.5.0"
     "@endo/init": "npm:^1.1.7"
     agoric: "npm:dev"
     ava: "npm:^5.3.1"
