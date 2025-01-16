@@ -490,7 +490,7 @@ func NewAgoricApp(
 		app.CheckControllerInited(true)
 		// We use SwingSet-level metering to charge the user for the call.
 		defer app.AgdServer.SetControllerContext(ctx)()
-		return sendToController(sdk.WrapSDKContext(ctx), true, jsonRequest)
+		return sendToController(ctx, true, jsonRequest)
 	}
 
 	setBootstrapNeeded := func() {
@@ -662,7 +662,7 @@ func NewAgoricApp(
 	ics20TransferIBCModule = packetforward.NewIBCMiddleware(
 		ics20TransferIBCModule,
 		app.PacketForwardKeeper,
-		0, // retries on timeout
+		0,                                                                // retries on timeout
 		packetforwardkeeper.DefaultForwardTransferPacketTimeoutTimestamp, // forward timeout
 	)
 
