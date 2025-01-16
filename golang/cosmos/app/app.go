@@ -155,6 +155,7 @@ const (
 var (
 	// DefaultNodeHome default home directories for the application daemon
 	DefaultNodeHome string
+	ModuleBasics    module.BasicManager
 
 	// module account permissions
 	maccPerms = map[string][]string{
@@ -246,8 +247,7 @@ type GaiaApp struct { // nolint: golint
 	ScopedVibcKeeper     capabilitykeeper.ScopedKeeper
 
 	// the module manager
-	mm           *module.Manager
-	ModuleBasics module.BasicManager
+	mm *module.Manager
 
 	// simulation manager
 	sm           *module.SimulationManager
@@ -340,7 +340,7 @@ func NewAgoricApp(
 	// ModuleBasics defines the module BasicManager is in charge of setting up basic,
 	// non-dependant module elements, such as codec registration
 	// and genesis verification.
-	app.ModuleBasics = module.NewBasicManagerFromManager(
+	ModuleBasics = module.NewBasicManagerFromManager(
 		app.mm,
 		map[string]module.AppModuleBasic{
 			"gov": gov.NewAppModuleBasic(
@@ -1417,7 +1417,7 @@ func (app *GaiaApp) RegisterAPIRoutes(apiSvr *api.Server, apiConfig config.APICo
 	nodeservice.RegisterGRPCGatewayRoutes(clientCtx, apiSvr.GRPCGatewayRouter)
 
 	// Register grpc-gateway routes for all modules.
-	app.ModuleBasics.RegisterGRPCGatewayRoutes(clientCtx, apiSvr.GRPCGatewayRouter)
+	ModuleBasics.RegisterGRPCGatewayRoutes(clientCtx, apiSvr.GRPCGatewayRouter)
 
 	// register swagger API from root so that other applications can override easily
 	if apiConfig.Swagger {
