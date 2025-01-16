@@ -118,9 +118,6 @@ relayers:
     chains:
       - osmosislocal
       - cosmoshublocal
-    config:
-      global:
-        log_level: 'debug'
   - name: agoric-osmosis
     type: hermes
     # image: ghcr.io/cosmology-tech/starship/hermes:1.10.5
@@ -128,9 +125,6 @@ relayers:
     chains:
       - agoriclocal
       - osmosislocal
-    config:
-      global:
-        log_level: 'debug'
   - name: agoric-cosmoshub
     type: hermes
     # image: ghcr.io/cosmology-tech/starship/hermes:1.10.5
@@ -138,9 +132,6 @@ relayers:
     chains:
       - agoriclocal
       - cosmoshublocal
-    config:
-      global:
-        log_level: 'debug'
 
 explorer:
   enabled: true
