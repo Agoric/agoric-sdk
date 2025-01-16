@@ -248,6 +248,6 @@ replace (
 
 // For testing against a local cosmos-sdk, ibc-go, or cometbft
 // github.com/cosmos/cosmos-sdk => ../../../forks/cosmos-sdk
-// github.com/cosmos/ibc-go/v6 => ../../../forks/ibc-go/v6
+// github.com/cosmos/ibc-go/v8 => ../../../forks/ibc-go/v8
 // github.com/tendermint/tendermint => ../../../forks/cometbft
 )
