@@ -640,7 +640,7 @@ func NewAgoricApp(
 		app.AccountKeeper,
 		scopedICAHostKeeper,
 		app.MsgServiceRouter(),
-		authtypes.NewModuleAddress(icahosttypes.SubModuleName).String(), // TODO: verify using icahosttypes.SubModuleName
+		authtypes.NewModuleAddress(icahosttypes.SubModuleName).String(), // TODO-ICU: verify using icahosttypes.SubModuleName
 	)
 	icaHostIBCModule := icahost.NewIBCModule(app.ICAHostKeeper)
 	icaModule := ica.NewAppModule(nil, &app.ICAHostKeeper)
@@ -1467,7 +1467,7 @@ func initParamsKeeper(appCodec codec.BinaryCodec, legacyAmino *codec.LegacyAmino
 	paramsKeeper.Subspace(slashingtypes.ModuleName)
 	paramsKeeper.Subspace(govtypes.ModuleName).WithKeyTable(govtypesv1.ParamKeyTable())
 	paramsKeeper.Subspace(ibctransfertypes.ModuleName)
-	// TODO: temporarily remove WithKeyTable(packetforwardtypes.ParamKeyTable())
+	// TODO-ICU: temporarily remove WithKeyTable(packetforwardtypes.ParamKeyTable())
 	paramsKeeper.Subspace(packetforwardtypes.ModuleName)
 
 	paramsKeeper.Subspace(ibchost.ModuleName)

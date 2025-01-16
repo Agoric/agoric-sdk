@@ -314,7 +314,7 @@ Specify at least one pair of permit.json and code.js files`,
 				return err
 			}
 
-			// TODO: temporarily comment validateBasic call
+			// TODO-ICU: temporarily comment validateBasic call
 			// if err = msg.ValidateBasic(); err != nil {
 			// 	return err
 			// }
