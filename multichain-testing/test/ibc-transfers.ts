@@ -69,9 +69,8 @@ const fundRemote = async (
     `${acctAddr} received bld from agoric`,
   );
 
-  const amtOnDest = `${qty}${balances[0].denom}`;
-  t.log('amtOnDest', amtOnDest);
-  return { amtOnDest };
+  t.log('amtOnDest', `${qty}${balances[0].denom}`);
+  return { denom: balances[0].denom };
 };
 
 const setupSourceWallet = async (
@@ -122,7 +121,7 @@ test('pfm: osmosis -> agoric -> gaia', async t => {
       chainName: 'osmosis',
     },
   );
-  const { amtOnDest: amtOnOsmosis } = await fundRemote(t, {
+  const { denom: denomOnOsmosis } = await fundRemote(t, {
     acctAddr: osmosisAddr,
     destChainName: 'osmosis',
     srcChainName: 'agoric',
@@ -159,14 +158,15 @@ test('pfm: osmosis -> agoric -> gaia', async t => {
       'transfer',
       'transfer',
       osmosisToAgoric.channelId,
-      'pfm', // consider using an agoric intermediary address
-      amtOnOsmosis,
+      'agoric1ujmk0492mauq2f2vrcn7ylq3w3x55k0ap9mt2p', // consider using an agoric intermediary address
+      `50${denomOnOsmosis}`,
       '--memo',
       `'${JSON.stringify(forwardInfo)}'`,
+      // consider --packet-timeout-timestamp. default is 10mins
     ],
     {
       chainId: osmosisChainId,
-      from: 'testuser',
+      from: keyName,
       yes: true,
       fees: '200000uosmo',
     },
@@ -183,4 +183,5 @@ test('pfm: osmosis -> agoric -> gaia', async t => {
     `${cosmosAddr} received bld from osmosis`,
   );
   t.log('cosmosBalances', cosmosBalances);
+  // osmosisd.keys.delete(keyName);
 });
