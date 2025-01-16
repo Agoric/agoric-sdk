@@ -73,7 +73,7 @@ func isFirstTimeUpgradeOfThisVersion(app *GaiaApp, ctx sdk.Context) bool {
 	for _, name := range upgradeNamesOfThisVersion {
 		height, err := app.UpgradeKeeper.GetDoneHeight(ctx, name)
 		if err != nil {
-			panic(fmt.Errorf("Error getting done height:", err))
+			panic(fmt.Errorf("error getting done height: %s", err))
 		}
 		if height != 0 {
 			return false

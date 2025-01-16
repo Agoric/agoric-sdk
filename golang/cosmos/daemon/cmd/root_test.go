@@ -2,7 +2,6 @@ package cmd_test
 
 import (
 	"bytes"
-	"io"
 	"os"
 	"testing"
 	"text/template"
@@ -10,12 +9,9 @@ import (
 	"github.com/spf13/pflag"
 	"github.com/stretchr/testify/require"
 
-	"cosmossdk.io/log"
-	dbm "github.com/cometbft/cometbft-db"
 	"github.com/cosmos/cosmos-sdk/server"
 	svrcmd "github.com/cosmos/cosmos-sdk/server/cmd"
 	serverconfig "github.com/cosmos/cosmos-sdk/server/config"
-	servertypes "github.com/cosmos/cosmos-sdk/server/types"
 
 	app "github.com/Agoric/agoric-sdk/golang/cosmos/app"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/daemon/cmd"
@@ -159,15 +155,16 @@ func TestCLIFlags(t *testing.T) {
 	defer os.RemoveAll(homeDir)
 
 	// First get the command line flags that the base cosmos-sdk defines
-	dummyAppCreator := func(
-		logger log.Logger,
-		db dbm.DB,
-		traceStore io.Writer,
-		appOpts servertypes.AppOptions,
-	) servertypes.Application {
-		return new(app.GaiaApp)
-	}
-	cmd := server.StartCmd(dummyAppCreator, homeDir)
+	// TODO-ICU: passing nil to startcmd instead of dummyAppCreator
+	// dummyAppCreator := func(
+	// 	logger log.Logger,
+	// 	db dbm.DB,
+	// 	traceStore io.Writer,
+	// 	appOpts servertypes.AppOptions,
+	// ) servertypes.Application {
+	// 	return new(app.GaiaApp)
+	// }
+	cmd := server.StartCmd(nil, homeDir)
 	flags := cmd.Flags()
 	flags.SortFlags = true
 	flags.VisitAll(func(flag *pflag.Flag) {
