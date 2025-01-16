@@ -12,7 +12,7 @@
   "dependencies": {
     "@agoric/client-utils": "dev",
     "@agoric/fast-usdc": "dev",
-    "@agoric/synthetic-chain": "^0.4.3",
+    "@agoric/synthetic-chain": "^0.5.1",
     "@endo/init": "^1.1.7",
     "agoric": "dev",
     "ava": "^5.3.1"
