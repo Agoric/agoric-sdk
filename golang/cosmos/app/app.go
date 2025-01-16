@@ -1124,8 +1124,8 @@ func (app *GaiaApp) setupUpgradeHandlers() {
 
 				for moduleName := range app.mm.Modules {
 					m := app.mm.Modules[moduleName]
-					if module, ok := m.(module.HasConsensusVersion); ok {
-						fromVM[moduleName] = module.ConsensusVersion()
+					if moduleInstance, ok := m.(module.HasConsensusVersion); ok {
+						fromVM[moduleName] = moduleInstance.ConsensusVersion()
 					}
 				}
 
