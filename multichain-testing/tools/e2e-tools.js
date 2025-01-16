@@ -5,7 +5,7 @@ import { assert } from '@endo/errors';
 import { E, Far } from '@endo/far';
 import { Nat } from '@endo/nat';
 import { makePromiseKit } from '@endo/promise-kit';
-import { flags, makeAgd, makeCopyFiles } from './agd-lib.js';
+import { flags, makeAgd, makeCopyFiles } from './chaind-lib.js';
 import { makeHttpClient, makeAPI } from './makeHttpClient.js';
 import { dedup, makeQueryKit, poll } from './queryKit.js';
 import { makeVStorage } from './batchQuery.js';
@@ -95,7 +95,7 @@ export const makeBlockTool = ({ rpc, delay }) => {
  * @param {string} fullPath
  * @param {object} opts
  * @param {string} opts.id
- * @param {import('./agd-lib.js').Agd} opts.agd
+ * @param {import('./chaind-lib.js').Agd} opts.agd
  * @param {import('./queryKit.js').QueryTool['follow']} opts.follow
  * @param {(ms: number) => Promise<void>} opts.delay
  * @param {typeof console.log} [opts.progress]
@@ -150,7 +150,7 @@ const installBundle = async (fullPath, opts) => {
  * @param {string} address
  * @param {Record<string, number | bigint>} balances
  * @param {{
- *   agd: import('./agd-lib.js').Agd;
+ *   agd: import('./chaind-lib.js').Agd;
  *   blockTool: BlockTool;
  *   lcd: import('./makeHttpClient.js').LCD;
  *   delay: (ms: number) => Promise<void>;
@@ -376,7 +376,7 @@ const provisionSmartWalletAndMakeDriver = async (
 
 /**
  * @param {{
- *   agd: import('./agd-lib.js').Agd;
+ *   agd: import('./chaind-lib.js').Agd;
  *   blockTool: BlockTool;
  *   validator?: string;
  *   chainId?: string;
@@ -436,7 +436,7 @@ const voteLatestProposalAndWait = async ({
  *   description: string;
  * }} info
  * @param {{
- *   agd: import('./agd-lib.js').Agd;
+ *   agd: import('./chaind-lib.js').Agd;
  *   blockTool: BlockTool;
  *   proposer?: string;
  *   deposit?: string;
