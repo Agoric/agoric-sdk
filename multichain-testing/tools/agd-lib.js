@@ -4,15 +4,23 @@ import assert from 'node:assert';
 const { freeze } = Object;
 
 const kubectlBinary = 'kubectl';
-const binaryArgs = [
+
+const chainToBinary = {
+  agoric: 'agd',
+  cosmoshub: 'gaiad',
+  osmosis: 'osmosisd',
+  noble: 'nobled',
+};
+
+const binaryArgs = (chainName = 'agoric') => [
   'exec',
   '-i',
-  'agoriclocal-genesis-0',
+  `${chainName}local-genesis-0`,
   '-c',
   'validator',
   '--tty=false',
   '--',
-  'agd',
+  chainToBinary[chainName],
 ];
 
 /**
@@ -50,9 +58,17 @@ export const makeAgd = ({ execFileSync }) => {
    *       home?: string;
    *       keyringBackend?: string;
    *       rpcAddrs?: string[];
+   *       chainName?: string;
+   *       broadcastMode?: 'block' | 'sync' | 'async';
    *     }} opts
    */
-  const make = ({ home, keyringBackend, rpcAddrs } = {}) => {
+  const make = ({
+    home,
+    keyringBackend,
+    rpcAddrs,
+    chainName = 'agoric',
+    broadcastMode = 'block',
+  } = {}) => {
     const keyringArgs = flags({ home, 'keyring-backend': keyringBackend });
     if (rpcAddrs) {
       assert.equal(
@@ -70,7 +86,7 @@ export const makeAgd = ({ execFileSync }) => {
     const exec = (
       args,
       opts = { encoding: 'utf-8', stdio: ['ignore', 'pipe', 'ignore'] },
-    ) => execFileSync(kubectlBinary, [...binaryArgs, ...args], opts);
+    ) => execFileSync(kubectlBinary, [...binaryArgs(chainName), ...args], opts);
 
     const outJson = flags({ output: 'json' });
 
@@ -119,9 +135,9 @@ export const makeAgd = ({ execFileSync }) => {
       /**
        * TODO: gas
        * @param {string[]} txArgs
-       * @param {{ chainId: string; from: string; yes?: boolean }} opts
+       * @param {{ chainId: string; from: string; yes?: boolean, fees?: string }} opts
        */
-      tx: async (txArgs, { chainId, from, yes }) => {
+      tx: async (txArgs, { chainId, from, yes, fees }) => {
         const args = [
           'tx',
           ...txArgs,
@@ -129,14 +145,15 @@ export const makeAgd = ({ execFileSync }) => {
           ...keyringArgs,
           ...flags({ 'chain-id': chainId, from }),
           ...flags({
-            'broadcast-mode': 'block',
+            'broadcast-mode': broadcastMode,
             gas: 'auto',
             'gas-adjustment': '1.4',
           }),
+          ...(fees ? ['--fees', fees] : []),
           ...(yes ? ['--yes'] : []),
           ...outJson,
         ];
-        console.log('$$$ agd', ...args);
+        console.log(`$$$ ${chainToBinary[chainName]}`, ...args);
         const out = exec(args, { stdio: ['ignore', 'pipe', 'ignore'] });
         try {
           // XXX approximate type
@@ -163,7 +180,14 @@ export const makeAgd = ({ execFileSync }) => {
         add: (name, mnemonic) => {
           return execFileSync(
             kubectlBinary,
-            [...binaryArgs, ...keyringArgs, 'keys', 'add', name, '--recover'],
+            [
+              ...binaryArgs(chainName),
+              ...keyringArgs,
+              'keys',
+              'add',
+              name,
+              '--recover',
+            ],
             {
               encoding: 'utf-8',
               input: mnemonic,
@@ -175,7 +199,14 @@ export const makeAgd = ({ execFileSync }) => {
         showAddress: name => {
           return execFileSync(
             kubectlBinary,
-            [...binaryArgs, 'keys', 'show', name, '-a', ...keyringArgs],
+            [
+              ...binaryArgs(chainName),
+              'keys',
+              'show',
+              name,
+              '-a',
+              ...keyringArgs,
+            ],
             {
               encoding: 'utf-8',
               stdio: ['pipe', 'pipe', 'ignore'],
