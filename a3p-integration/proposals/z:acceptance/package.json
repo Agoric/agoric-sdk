@@ -2,12 +2,12 @@
   "agoricProposal": {
     "type": "/agoric.swingset.CoreEvalProposal",
     "sdk-generate": [
-      "testing/start-valueVow.js start-valueVow",
-      "testing/recorded-retired-instances.js recorded-instances-submission",
-      "vats/test-localchain.js localchaintest-submission",
-      "testing/restart-valueVow.js restart-valueVow",
-      "testing/upgrade-vaultFactory.js upgrade-vaultFactory",
-      "vats/upgrade-provisionPool.js upgrade-provisionPool",
+      "testing/start-valueVow.js test/start-valueVow",
+      "testing/recorded-retired-instances.js test/recorded-instances-submission",
+      "vats/test-localchain.js test/localchaintest-submission",
+      "testing/restart-valueVow.js test/restart-valueVow",
+      "testing/upgrade-vaultFactory.js test/upgrade-vaultFactory",
+      "vats/upgrade-provisionPool.js test/upgrade-provisionPool",
       "orchestration/init-stakeBld.js"
     ]
   },
@@ -91,6 +91,7 @@
     "serial": true,
     "timeout": "2m",
     "files": [
+      "test/**/*.test.*",
       "!submission"
     ]
   },
