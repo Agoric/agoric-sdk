@@ -1026,13 +1026,7 @@ func NewAgoricApp(
 	app.SetBeginBlocker(app.BeginBlocker)
 	app.SetEndBlocker(app.EndBlocker)
 
-	for _, name := range upgradeNamesOfThisVersion {
-
-		app.UpgradeKeeper.SetUpgradeHandler(
-			name,
-			unreleasedUpgradeHandler(app, name),
-		)
-	}
+	app.setupUpgradeHandlers()
 
 	// At this point we don't have a way to read from the store, so we have to
 	// rely on data saved by the x/upgrade module in the previous software.
@@ -1111,6 +1105,28 @@ type cosmosInitAction struct {
 	VibcPort        int `json:"vibcPort"`
 	VlocalchainPort int `json:"vlocalchainPort"`
 	VtransferPort   int `json:"vtransferPort"`
+}
+
+func (app *GaiaApp) setupUpgradeHandlers() {
+	for _, name := range upgradeNamesOfThisVersion {
+		app.UpgradeKeeper.SetUpgradeHandler(
+			name,
+			func(ctx context.Context, _ upgradetypes.Plan, _ module.VersionMap) (module.VersionMap, error) {
+				fromVM := make(map[string]uint64)
+
+				for moduleName := range app.mm.Modules {
+					m := app.mm.Modules[moduleName]
+					if module, ok := m.(module.HasConsensusVersion); ok {
+						fromVM[moduleName] = module.ConsensusVersion()
+					}
+				}
+
+				app.Logger().Info("Start to run module migrations...")
+
+				return app.mm.RunMigrations(ctx, app.configurator, fromVM)
+			},
+		)
+	}
 }
 
 // Name returns the name of the App
