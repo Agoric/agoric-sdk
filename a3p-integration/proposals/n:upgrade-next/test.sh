@@ -5,6 +5,10 @@ source /usr/src/upgrade-test-scripts/env_setup.sh
 # Place here any test that should be executed using the executed proposal.
 # The effects of this step are not persisted in further proposal layers.
 
+# segregate so changing these does not invalidate the proposal image
+# à la https://github.com/Agoric/agoric-3-proposals/pull/213
+cd test
+
 test_val \
   "$(agd q swingset params -o json | jq -Sc .vat_cleanup_budget)" \
   '[{"key":"default","value":"5"},{"key":"kv","value":"50"}]' \

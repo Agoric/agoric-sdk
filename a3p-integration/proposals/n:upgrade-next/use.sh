@@ -7,7 +7,7 @@ set -uxeo pipefail
 ./acceptInvites.js
 
 # "oracles" accept their invitations and provide prices to priceFeeds
-./verifyPushedPrice.js 'ATOM' 12.01
-./verifyPushedPrice.js 'stATOM' 12.01
+./setPrice.js 'ATOM' 12.01
+./setPrice.js 'stATOM' 12.01
 
 ./openVault.js

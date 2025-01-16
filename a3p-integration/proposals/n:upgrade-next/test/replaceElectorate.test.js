@@ -2,7 +2,7 @@ import test from 'ava';
 import '@endo/init/debug.js';
 import { GOV1ADDR, GOV2ADDR } from '@agoric/synthetic-chain';
 import { passStyleOf } from '@endo/marshal';
-import { GOV4ADDR, queryVstorageFormatted } from './agoric-tools.js';
+import { GOV4ADDR, queryVstorageFormatted } from '../agoric-tools.js';
 
 const governanceAddresses = [GOV4ADDR, GOV2ADDR, GOV1ADDR];
 
