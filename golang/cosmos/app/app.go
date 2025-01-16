@@ -914,8 +914,6 @@ func NewAgoricApp(
 	app.mm.SetOrderInitGenesis(moduleOrderForGenesisAndUpgrade...)
 	app.mm.SetOrderMigrations(moduleOrderForGenesisAndUpgrade...)
 
-	app.mm.RegisterRoutes(app.Router(), app.QueryRouter(), encodingConfig.Amino)
-
 	app.configurator = module.NewConfigurator(app.appCodec, app.MsgServiceRouter(), app.GRPCQueryRouter())
 	app.mm.RegisterServices(app.configurator)
 
