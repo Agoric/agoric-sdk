@@ -2,6 +2,7 @@ package swingset
 
 import (
 	"bytes"
+	"cosmossdk.io/core/store"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
@@ -10,7 +11,6 @@ import (
 	"io"
 	"strings"
 
-	storetypes "cosmossdk.io/store/types"
 	agoric "github.com/Agoric/agoric-sdk/golang/cosmos/types"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/keeper"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/types"
@@ -78,7 +78,8 @@ func InitGenesis(ctx sdk.Context, k Keeper, swingStoreExportsHandler *SwingStore
 			swingStore.Set([]byte(entry.Key), []byte(entry.Value))
 		}
 		getExportDataReader = func() (agoric.KVEntryReader, error) {
-			exportDataIterator := swingStore.Iterator(nil, nil)
+			exportDataIterator, err := swingStore.Iterator(nil, nil)
+			panic(fmt.Errorf("failed to iterate over swing-store export data: %w", err))
 			return agoric.NewKVIteratorReader(exportDataIterator), nil
 		}
 	} else {
@@ -152,9 +153,11 @@ func ExportGenesis(
 	swingStoreExportDir string,
 	swingStoreExportMode string,
 ) *types.GenesisState {
+	state, _ := k.GetState(ctx)
+
 	gs := &types.GenesisState{
 		Params:               k.GetParams(ctx),
-		State:                k.GetState(ctx),
+		State:                state,
 		SwingStoreExportData: nil,
 	}
 
@@ -205,7 +208,7 @@ func ExportGenesis(
 type swingStoreGenesisEventHandler struct {
 	exportDir      string
 	snapshotHeight uint64
-	swingStore     storetypes.KVStore
+	swingStore     store.KVStore
 	hasher         hash.Hash
 	exportMode     string
 }
@@ -223,7 +226,10 @@ func (eventHandler swingStoreGenesisEventHandler) OnExportRetrieved(provider kee
 
 	artifactsProvider := keeper.SwingStoreExportProvider{
 		GetExportDataReader: func() (agoric.KVEntryReader, error) {
-			exportDataIterator := eventHandler.swingStore.Iterator(nil, nil)
+			exportDataIterator, err := eventHandler.swingStore.Iterator(nil, nil)
+			if err != nil {
+				return nil, err
+			}
 			kvReader := agoric.NewKVIteratorReader(exportDataIterator)
 			eventHandler.hasher.Reset()
 			encoder := json.NewEncoder(eventHandler.hasher)

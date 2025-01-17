@@ -532,7 +532,7 @@ func NewAgoricApp(
 
 	getSwingStoreExportDataShadowCopyReader := func(height int64) agorictypes.KVEntryReader {
 		ctx := app.NewUncachedContext(false, tmproto.Header{Height: height})
-		exportDataIterator := app.SwingSetKeeper.GetSwingStore(ctx).Iterator(nil, nil)
+		exportDataIterator, _ := app.SwingSetKeeper.GetSwingStore(ctx).Iterator(nil, nil)
 		if !exportDataIterator.Valid() {
 			exportDataIterator.Close()
 			return nil
@@ -570,7 +570,7 @@ func NewAgoricApp(
 
 	app.VbankKeeper = vbank.NewKeeper(
 		appCodec,
-		keys[vbank.StoreKey],
+		runtime.NewKVStoreService(keys[vbank.StoreKey]),
 		app.GetSubspace(vbank.ModuleName),
 		app.AccountKeeper,
 		app.BankKeeper,
@@ -662,7 +662,7 @@ func NewAgoricApp(
 	ics20TransferIBCModule = packetforward.NewIBCMiddleware(
 		ics20TransferIBCModule,
 		app.PacketForwardKeeper,
-		0,                                                                // retries on timeout
+		0, // retries on timeout
 		packetforwardkeeper.DefaultForwardTransferPacketTimeoutTimestamp, // forward timeout
 	)
 

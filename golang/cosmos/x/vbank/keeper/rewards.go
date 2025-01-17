@@ -47,7 +47,10 @@ func mulCoins(a sdk.Coins, b sdkmath.LegacyDec) sdk.Coins {
 // DistributeRewards drives the rewards state machine.
 func (k Keeper) DistributeRewards(ctx sdk.Context) error {
 	// Distribute rewards.
-	state := k.GetState(ctx)
+	state, err := k.GetState(ctx)
+	if err != nil {
+		return err
+	}
 	params := k.GetParams(ctx)
 
 	smoothingBlocks := params.GetSmoothingBlocks()

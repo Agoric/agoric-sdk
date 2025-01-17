@@ -82,7 +82,7 @@ func getBalanceUpdate(ctx sdk.Context, keeper Keeper, addressToUpdate map[string
 		return nil
 	}
 
-	nonce := keeper.GetNextSequence(ctx)
+	nonce, _ := keeper.GetNextSequence(ctx)
 	event := VbankBalanceUpdate{
 		Nonce:   nonce,
 		Updated: make([]VbankSingleBalanceUpdate, 0, nentries),
@@ -214,7 +214,10 @@ func (ch portHandler) Receive(cctx context.Context, str string) (ret string, err
 		if err := keeper.StoreRewardCoins(ctx, coins); err != nil {
 			return "", fmt.Errorf("cannot store reward %s coins: %s", coins.Sort().String(), err)
 		}
-		state := keeper.GetState(ctx)
+		state, err := keeper.GetState(ctx)
+		if err != nil {
+			return "", err
+		}
 		state.RewardPool = state.RewardPool.Add(coins...)
 		keeper.SetState(ctx, state)
 		// We don't supply the module balance, since the controller shouldn't know.
