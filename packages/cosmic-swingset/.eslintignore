@@ -1,6 +1,0 @@
-/dist
-/src/bundles/
-t[0-9]/
-node_modules/
-build/
-t[0-9].*/
