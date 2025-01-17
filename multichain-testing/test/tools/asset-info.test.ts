@@ -6,7 +6,7 @@ const minChainInfo = {
   agoric: {
     chainId: 'agoriclocal',
     connections: {
-      gaialocal: {
+      cosmoshublocal: {
         transferChannel: {
           channelId: 'channel-1',
         },
@@ -19,7 +19,7 @@ const minChainInfo = {
     },
   },
   cosmoshub: {
-    chainId: 'gaialocal',
+    chainId: 'cosmoshublocal',
     connections: {
       agoriclocal: {
         transferChannel: {
@@ -41,7 +41,7 @@ const minChainInfo = {
           channelId: 'channel-1',
         },
       },
-      gaialocal: {
+      cosmoshublocal: {
         transferChannel: {
           channelId: 'channel-0',
         },

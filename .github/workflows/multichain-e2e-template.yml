@@ -97,7 +97,7 @@ jobs:
         working-directory: ./agoric-sdk/multichain-testing
 
       - name: Run @agoric/multichain-testing E2E Tests
-        run: yarn ${{ inputs.test_command }}
+        run: ${{ inputs.test_command }}
         working-directory: ./agoric-sdk/multichain-testing
         env:
           FILE: ${{ inputs.config }}

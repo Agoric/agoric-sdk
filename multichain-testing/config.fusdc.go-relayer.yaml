@@ -1,4 +1,4 @@
-name: agoric-multichain-testing-fusdc
+name: agoric-multichain-testing-fusdc-go-relayer
 version: 0.2.20
 
 chains:
@@ -85,19 +85,19 @@ chains:
 
 relayers:
   - name: osmosis-noble
-    type: hermes
+    type: go-relayer
     replicas: 1
     chains:
       - osmosislocal
       - noblelocal
   - name: agoric-osmosis
-    type: hermes
+    type: go-relayer
     replicas: 1
     chains:
       - agoriclocal
       - osmosislocal
   - name: agoric-noble
-    type: hermes
+    type: go-relayer
     replicas: 1
     chains:
       - agoriclocal
