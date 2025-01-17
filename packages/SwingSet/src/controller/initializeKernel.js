@@ -100,7 +100,6 @@ export async function initializeKernel(config, kernelStorage, options = {}) {
       // the VatManager, since it isn't available until the bundle is evaluated
       assertKnownOptions(creationOptions, [
         'enablePipelining',
-        'metered',
         'managerType',
         'enableDisavow',
         'enableSetup',
