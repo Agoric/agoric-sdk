@@ -14,6 +14,8 @@ import { makeTracer } from '@agoric/internal';
 
 /**
  * @import {OfferSpec} from '@agoric/smart-wallet/src/offers.js';
+ * @import {UpdateRecord} from '@agoric/smart-wallet/src/smartWallet.js';
+ *
  * @import { EnglishMnemonic } from '@cosmjs/crypto';
  * @import { RetryUntilCondition } from './sleep.js';
  */
@@ -109,6 +111,7 @@ const installBundle = async (fullPath, opts) => {
     ['swingset', 'install-bundle', `@${fullPath}`, '--gas', 'auto'],
     { from, chainId, yes: true },
   );
+  assert(tx);
 
   progress({ id, installTx: tx.txhash, height: tx.height });
 
@@ -222,8 +225,9 @@ export const provisionSmartWallet = async (
     return txInfo;
   };
 
-  /** @param {import('@agoric/smart-wallet/src/offers.js').OfferSpec} offer */
+  /** @param {OfferSpec} offer */
   async function* executeOffer(offer) {
+    /** @type {AsyncGenerator<UpdateRecord, void, void>} */
     const updates = q.follow(`published.wallet.${address}`, { delay });
     const txInfo = await sendAction({ method: 'executeOffer', offer });
     console.debug('spendAction', txInfo);
@@ -239,12 +243,15 @@ export const provisionSmartWallet = async (
   // XXX  /** @type {import('../test/wallet-tools.js').MockWallet['offers']} */
   const offers = Far('Offers', {
     executeOffer,
+    /** @param {OfferSpec} offer */
+    executeOfferTx: offer => sendAction({ method: 'executeOffer', offer }),
     /** @param {string | number} offerId */
     tryExit: offerId => sendAction({ method: 'tryExitOffer', offerId }),
   });
 
   // XXX  /** @type {import('../test/wallet-tools.js').MockWallet['deposit']} */
   const deposit = Far('DepositFacet', {
+    getAddress: () => address,
     receive: async payment => {
       const brand = await E(payment).getAllegedBrand();
       const asset = vbankEntries.find(([_denom, a]) => a.brand === brand);
