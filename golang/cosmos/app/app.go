@@ -340,17 +340,6 @@ func NewAgoricApp(
 	// ModuleBasics defines the module BasicManager is in charge of setting up basic,
 	// non-dependant module elements, such as codec registration
 	// and genesis verification.
-	ModuleBasics = module.NewBasicManagerFromManager(
-		app.mm,
-		map[string]module.AppModuleBasic{
-			"gov": gov.NewAppModuleBasic(
-				[]govclient.ProposalHandler{
-					paramsclient.ProposalHandler,
-					swingsetclient.CoreEvalProposalHandler,
-				},
-			),
-		},
-	)
 
 	app.ParamsKeeper = initParamsKeeper(
 		appCodec,
@@ -922,6 +911,18 @@ func NewAgoricApp(
 
 	app.configurator = module.NewConfigurator(app.appCodec, app.MsgServiceRouter(), app.GRPCQueryRouter())
 	app.mm.RegisterServices(app.configurator)
+
+	ModuleBasics = module.NewBasicManagerFromManager(
+		app.mm,
+		map[string]module.AppModuleBasic{
+			govtypes.ModuleName: gov.NewAppModuleBasic(
+				[]govclient.ProposalHandler{
+					paramsclient.ProposalHandler,
+					swingsetclient.CoreEvalProposalHandler,
+				},
+			),
+		},
+	)
 
 	// create the simulation manager and define the order of the modules for deterministic simulations
 	//

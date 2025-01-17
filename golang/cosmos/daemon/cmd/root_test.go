@@ -2,16 +2,20 @@ package cmd_test
 
 import (
 	"bytes"
+	"io"
 	"os"
 	"testing"
 	"text/template"
 
+	"cosmossdk.io/log"
 	"github.com/spf13/pflag"
 	"github.com/stretchr/testify/require"
 
+	dbm "github.com/cosmos/cosmos-db"
 	"github.com/cosmos/cosmos-sdk/server"
 	svrcmd "github.com/cosmos/cosmos-sdk/server/cmd"
 	serverconfig "github.com/cosmos/cosmos-sdk/server/config"
+	servertypes "github.com/cosmos/cosmos-sdk/server/types"
 
 	app "github.com/Agoric/agoric-sdk/golang/cosmos/app"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/daemon/cmd"
@@ -65,7 +69,7 @@ func TestCLIFlags(t *testing.T) {
 		"trace-store":           "",
 		"transport":             "",
 		"unsafe-skip-upgrades":  "",
-		"with-tendermint":       "",
+		"with-comet":            "",
 
 		"api.address":              "",
 		"api.enable":               "",
@@ -155,16 +159,15 @@ func TestCLIFlags(t *testing.T) {
 	defer os.RemoveAll(homeDir)
 
 	// First get the command line flags that the base cosmos-sdk defines
-	// TODO-ICU: passing nil to startcmd instead of dummyAppCreator
-	// dummyAppCreator := func(
-	// 	logger log.Logger,
-	// 	db dbm.DB,
-	// 	traceStore io.Writer,
-	// 	appOpts servertypes.AppOptions,
-	// ) servertypes.Application {
-	// 	return new(app.GaiaApp)
-	// }
-	cmd := server.StartCmd(nil, homeDir)
+	dummyAppCreator := func(
+		logger log.Logger,
+		db dbm.DB,
+		traceStore io.Writer,
+		appOpts servertypes.AppOptions,
+	) servertypes.Application {
+		return new(app.GaiaApp)
+	}
+	cmd := server.StartCmd(dummyAppCreator, homeDir)
 	flags := cmd.Flags()
 	flags.SortFlags = true
 	flags.VisitAll(func(flag *pflag.Flag) {
