@@ -18,6 +18,7 @@ import (
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vlocalchain/types"
 	dbm "github.com/cosmos/cosmos-db"
 	"github.com/cosmos/cosmos-sdk/baseapp"
+	"github.com/cosmos/cosmos-sdk/runtime"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
@@ -149,7 +150,7 @@ func makeTestKit(bank *mockBank, transfer *mockTransfer, staking *mockStaking, a
 	stakingtypes.RegisterQueryServer(queryRouter, staking)
 
 	// create a new Keeper
-	keeper := vlocalchain.NewKeeper(cdc, vlocalchainStoreKey, txRouter, queryRouter, accts)
+	keeper := vlocalchain.NewKeeper(cdc, runtime.NewKVStoreService(vlocalchainStoreKey), txRouter, queryRouter, accts)
 
 	db := dbm.NewMemDB()
 	logger := log.NewNopLogger()

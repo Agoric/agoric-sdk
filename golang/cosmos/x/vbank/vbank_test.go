@@ -20,6 +20,7 @@ import (
 	"github.com/cometbft/cometbft/crypto/secp256k1"
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	dbm "github.com/cosmos/cosmos-db"
+	"github.com/cosmos/cosmos-sdk/runtime"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	paramskeeper "github.com/cosmos/cosmos-sdk/x/params/keeper"
@@ -262,7 +263,8 @@ func makeTestKit(account types.AccountKeeper, bank types.BankKeeper) (Keeper, sd
 	pk := paramskeeper.NewKeeper(cdc, encodingConfig.Amino, paramsStoreKey, paramsTStoreKey)
 
 	subspace := pk.Subspace(types.ModuleName)
-	keeper := NewKeeper(cdc, vbankStoreKey, subspace, account, bank, "feeCollectorName", pushAction)
+
+	keeper := NewKeeper(cdc, runtime.NewKVStoreService(vbankStoreKey), subspace, account, bank, "feeCollectorName", pushAction)
 
 	db := dbm.NewMemDB()
 	logger := log.NewNopLogger()
@@ -465,7 +467,10 @@ func Test_Receive_GiveToRewardDistributor(t *testing.T) {
 			if err := keeper.DistributeRewards(ctx); err != nil {
 				t.Errorf("got error = %v", err)
 			}
-			state := keeper.GetState(ctx)
+			state, err := keeper.GetState(ctx)
+			if err != nil {
+				panic(err)
+			}
 			if !state.RewardBlockAmount.Equal(tt.wantRate) {
 				t.Errorf("got rate %v, want %v", state.RewardBlockAmount, tt.wantRate)
 			}
@@ -734,7 +739,11 @@ func Test_EndBlock_Rewards(t *testing.T) {
 				t.Errorf("got messages sent = %v, want empty", msgsSent)
 			}
 
-			state = keeper.GetState(ctx)
+			var err error
+			state, err = keeper.GetState(ctx)
+			if err != nil {
+				panic(err)
+			}
 			if !state.RewardPool.Equal(tt.wantPool) {
 				t.Errorf("got pool %v, want %v", state.RewardPool, tt.wantPool)
 			}
