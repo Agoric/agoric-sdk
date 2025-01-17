@@ -1,5 +1,6 @@
 import fs from 'fs';
 import process from 'process';
+import { naturalCompare } from '@agoric/internal/src/natural-sort.js';
 
 export function dumpStore(kernelStorage, outfile, rawMode, truncate = true) {
   const transcriptStore = kernelStorage.transcriptStore;
@@ -214,55 +215,20 @@ export function dumpStore(kernelStorage, outfile, rawMode, truncate = true) {
   }
 
   function* groupKeys(baseKey) {
-    const subkeys = Array.from(state.keys()).sort();
-    const end = `${baseKey}~`;
-    for (const key of subkeys) {
-      if (baseKey <= key && key < end) {
-        yield key;
-      }
+    // TODO: compareByCodePoints
+    // https://github.com/endojs/endo/pull/2008
+    const sortedKeys = [...state.keys()].sort();
+    for (const key of sortedKeys) {
+      if (key < baseKey) continue;
+      if (!key.startsWith(baseKey)) break;
+      yield key;
     }
   }
 
   function pgroup(baseKey) {
-    const toSort = [];
-    for (const key of groupKeys(baseKey)) {
-      toSort.push([key, eat(key)]);
-    }
-    // sort similar keys by their numeric portions if possible, e.g.,
-    // "ko7.owner" should be less than "ko43.owner" even though it would be the
-    // other way around if they were simply compared as strings.
-    toSort.sort((elem1, elem2) => {
-      // chop off baseKey, since it's not useful for comparisons
-      const key1 = elem1[0].slice(baseKey.length);
-      const key2 = elem2[0].slice(baseKey.length);
-
-      // find the first non leading digit position in each key
-      const cut1 = key1.search(/[^0-9]/);
-      const cut2 = key2.search(/[^0-9]/);
-
-      // if either key lacks leading digits, at least one of them has no number
-      // to compare, so just compare the keys themselves
-      if (cut1 === 0 || cut2 === 0) {
-        return key1.localeCompare(key2);
-      }
-
-      // treat the number parts as numbers
-      const num1 = Number(key1.substr(0, cut1));
-      const num2 = Number(key2.substr(0, cut2));
-
-      if (num1 !== num2) {
-        // if the numbers are different, the comparison is the comparison of the
-        // numbers
-        return num1 - num2;
-      } else {
-        // if the numbers are the same, the comparison is the comparison of the
-        // remainder of the key, which, because of how we got here, is the same
-        // as comparing the whole key
-        return key1.localeCompare(key2);
-      }
-    });
-    for (const [key, value] of toSort) {
-      pkv(key, value);
+    const sortedKeys = [...groupKeys(baseKey)].sort(naturalCompare);
+    for (const key of sortedKeys) {
+      pkv(key, eat(key));
     }
   }
 
