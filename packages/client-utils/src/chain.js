@@ -1,3 +1,7 @@
+import { makeIntervalIterable } from './clock-timer.js';
+
+const { freeze } = Object;
+
 /**
  * @import {StargateClient} from '@cosmjs/stargate';
  */
@@ -36,4 +40,57 @@ export const pollBlocks = opts => async lookup => {
       await delay(period);
     }
   }
+};
+
+/**
+ * @import {CosmosAPI} from './grpc-rest-api.js';
+ * @import {IntervalIO} from './clock-timer.js';
+ */
+/**
+ * @param {CosmosAPI} api
+ * @param {number} [height]
+ */
+export const queryBlock = (api, height) =>
+  api.getJSON(`/cosmos/base/tendermint/v1beta1/blocks/${height || 'latest'}`);
+
+/**
+ * @param {CosmosAPI} api
+ * @param {number} [delta]
+ */
+const recentBlockRate = async (api, delta = 2) => {
+  const relevant = ({ height, time }) => ({ height, time });
+  const { block: latest } = await queryBlock(api);
+  const heightRecent = Number(latest.header.height) - delta;
+  const { block: recent } = await queryBlock(api, heightRecent);
+  const t0 = Date.parse(recent.header.time);
+  const t1 = Date.parse(latest.header.time);
+  return {
+    delta,
+    latest: { ...relevant(latest.header) },
+    recent: { ...relevant(recent.header) },
+    elapsed: t1 - t0,
+    period: (t1 - t0) / delta,
+  };
+};
+
+/**
+ * @param {IntervalIO & { api: CosmosAPI, delta?: number }} io
+ */
+export const makeBlocksIterable = ({ api, delta = 2, ...io }) => {
+  return freeze({
+    async *[Symbol.asyncIterator]() {
+      const { period } = await recentBlockRate(api, delta);
+      const nyquist = period / 2;
+      let prev;
+      const ticks = makeIntervalIterable(nyquist, io);
+      for await (const tick of ticks) {
+        const { block } = await queryBlock(api);
+        const current = Number(block.header.height);
+        if (current === prev) continue;
+        prev = current;
+        const { time } = block.header;
+        yield freeze({ tick, height: current, time });
+      }
+    },
+  });
 };
