@@ -40,6 +40,7 @@
   },
   "resolutions": {
     "axios@npm:^1.6.0": "patch:axios@npm%3A1.7.7#~/.yarn/patches/axios-npm-1.7.7-cfbedc233d.patch",
+    "execa@npm:8.x": "npm:9.1.0",
     "protobufjs@npm:^6.8.8": "patch:protobufjs@npm%3A6.11.4#~/.yarn/patches/protobufjs-npm-6.11.4-af11968b80.patch"
   }
 }
