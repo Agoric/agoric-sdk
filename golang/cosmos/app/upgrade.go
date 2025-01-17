@@ -192,6 +192,26 @@ func terminateGovernorCoreProposal(upgradeName string) (vm.CoreProposalStep, err
 	)
 }
 
+func upgradeGovernorExecutorCoreProposal(upgradeName string) (vm.CoreProposalStep, error) {
+	// targets is a slice of "$boardID:$instanceKitLabel" strings.
+	var targets []string
+	switch getVariantFromUpgradeName(upgradeName) {
+	case "EMERYNET":
+		targets = []string{"board04149:auctioneer"} // v38: governor for v39
+		//"boardXXXYYY:autioneer",
+		// fixme: need some targets here
+	default:
+		return nil, nil
+	}
+
+	return buildProposalStepWithArgs(
+		"@agoric/builders/scripts/vats/upgrade-governor-instance.js",
+		// Request `defaultProposalBuilder(powers, targets)`.
+		"defaultProposalBuilder",
+		[]any{targets},
+	)
+}
+
 // func upgradeMintHolderCoreProposal(upgradeName string) (vm.CoreProposalStep, error) {
 // 	variant := getVariantFromUpgradeName(upgradeName)
 
