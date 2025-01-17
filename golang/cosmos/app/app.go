@@ -487,7 +487,8 @@ func NewAgoricApp(
 	}
 
 	app.VstorageKeeper = vstorage.NewKeeper(
-		keys[vstorage.StoreKey],
+		runtime.NewKVStoreService(keys[vstorage.StoreKey]),
+		keys[vstorage.StoreKey].String(),
 	)
 	app.vstoragePort = app.AgdServer.MustRegisterPortHandler("vstorage", vstorage.NewStorageHandler(app.VstorageKeeper))
 

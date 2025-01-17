@@ -132,7 +132,10 @@ func (sh vstorageHandler) Receive(cctx context.Context, str string) (ret string,
 			return
 		}
 
-		entry := keeper.GetEntry(ctx, path)
+		entry, err := keeper.GetEntry(ctx, path)
+		if err != nil {
+			return "", err
+		}
 		bz, err := json.Marshal(entry.Value())
 		if err != nil {
 			return "", err
@@ -163,7 +166,10 @@ func (sh vstorageHandler) Receive(cctx context.Context, str string) (ret string,
 		if err != nil {
 			return
 		}
-		value := keeper.HasStorage(ctx, path)
+		value, err := keeper.HasStorage(ctx, path)
+		if err != nil {
+			return "", err
+		}
 		if !value {
 			return "false", nil
 		}
@@ -176,7 +182,10 @@ func (sh vstorageHandler) Receive(cctx context.Context, str string) (ret string,
 		if err != nil {
 			return
 		}
-		children := keeper.GetChildren(ctx, path)
+		children, err := keeper.GetChildren(ctx, path)
+		if err != nil {
+			return "", err
+		}
 		if children.Children == nil {
 			return "[]", nil
 		}
@@ -192,10 +201,16 @@ func (sh vstorageHandler) Receive(cctx context.Context, str string) (ret string,
 		if err != nil {
 			return
 		}
-		children := keeper.GetChildren(ctx, path)
+		children, err := keeper.GetChildren(ctx, path)
+		if err != nil {
+			return "", err
+		}
 		entries := make([]agoric.KVEntry, len(children.Children))
 		for i, child := range children.Children {
-			entry := keeper.GetEntry(ctx, fmt.Sprintf("%s.%s", path, child))
+			entry, err := keeper.GetEntry(ctx, fmt.Sprintf("%s.%s", path, child))
+			if err != nil {
+				return "", err
+			}
 			if !entry.HasValue() {
 				entries[i] = agoric.NewKVEntryWithNoValue(child)
 			} else {
@@ -214,10 +229,18 @@ func (sh vstorageHandler) Receive(cctx context.Context, str string) (ret string,
 		if err != nil {
 			return
 		}
-		children := keeper.GetChildren(ctx, path)
+		children, err := keeper.GetChildren(ctx, path)
+		if err != nil {
+			return "", err
+		}
 		vals := make([]*string, len(children.Children))
 		for i, child := range children.Children {
-			vals[i] = keeper.GetEntry(ctx, fmt.Sprintf("%s.%s", path, child)).Value()
+
+			value, err := keeper.GetEntry(ctx, fmt.Sprintf("%s.%s", path, child))
+			if err != nil {
+				return "", err
+			}
+			vals[i] = value.Value()
 		}
 		bytes, err := json.Marshal(vals)
 		if err != nil {
@@ -231,7 +254,10 @@ func (sh vstorageHandler) Receive(cctx context.Context, str string) (ret string,
 		if err != nil {
 			return
 		}
-		children := keeper.GetChildren(ctx, path)
+		children, err := keeper.GetChildren(ctx, path)
+		if err != nil {
+			return "", err
+		}
 		if children.Children == nil {
 			return "0", nil
 		}

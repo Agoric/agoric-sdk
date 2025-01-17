@@ -149,21 +149,28 @@ func (k Keeper) PushHighPriorityAction(ctx sdk.Context, action vm.Action) error 
 
 func (k Keeper) IsHighPriorityAddress(ctx sdk.Context, addr sdk.AccAddress) (bool, error) {
 	path := StoragePathHighPrioritySenders + "." + addr.String()
-	return k.vstorageKeeper.HasEntry(ctx, path), nil
+	hasEntry, err := k.vstorageKeeper.HasEntry(ctx, path)
+	if err != nil {
+		return false, err
+	}
+	return hasEntry, nil
 }
 
 // GetSmartWalletState returns the provision state of the smart wallet for the account address
-func (k Keeper) GetSmartWalletState(ctx sdk.Context, addr sdk.AccAddress) types.SmartWalletState {
+func (k Keeper) GetSmartWalletState(ctx sdk.Context, addr sdk.AccAddress) (types.SmartWalletState, error) {
 	// walletStoragePath is path of `walletStorageNode` constructed in
 	// `provideSmartWallet` from packages/smart-wallet/src/walletFactory.js
 	walletStoragePath := StoragePathCustom + "." + WalletStoragePathSegment + "." + addr.String()
 
 	// TODO: implement a pending provision state
-	if k.vstorageKeeper.HasEntry(ctx, walletStoragePath) {
-		return types.SmartWalletStateProvisioned
+	hasEntry, err := k.vstorageKeeper.HasEntry(ctx, walletStoragePath)
+	if err != nil {
+		return types.SmartWalletStateNone, err
 	}
-
-	return types.SmartWalletStateNone
+	if hasEntry {
+		return types.SmartWalletStateProvisioned, nil
+	}
+	return types.SmartWalletStateNone, nil
 }
 
 func (k Keeper) InboundQueueLength(ctx sdk.Context) (int32, error) {
@@ -294,13 +301,16 @@ func getBeansOwingPathForAddress(addr sdk.AccAddress) string {
 
 // GetBeansOwing returns the number of beans that the given address owes to
 // the FeeAccount but has not yet paid.
-func (k Keeper) GetBeansOwing(ctx sdk.Context, addr sdk.AccAddress) sdkmath.Uint {
+func (k Keeper) GetBeansOwing(ctx sdk.Context, addr sdk.AccAddress) (sdkmath.Uint, error) {
 	path := getBeansOwingPathForAddress(addr)
-	entry := k.vstorageKeeper.GetEntry(ctx, path)
-	if !entry.HasValue() {
-		return sdkmath.ZeroUint()
+	entry, err := k.vstorageKeeper.GetEntry(ctx, path)
+	if err != nil {
+		return sdkmath.ZeroUint(), err
 	}
-	return sdkmath.NewUintFromString(entry.StringValue())
+	if !entry.HasValue() {
+		return sdkmath.ZeroUint(), nil
+	}
+	return sdkmath.NewUintFromString(entry.StringValue()), nil
 }
 
 // SetBeansOwing sets the number of beans that the given address owes to the
@@ -319,7 +329,10 @@ func (k Keeper) ChargeBeans(
 	addr sdk.AccAddress,
 	beans sdkmath.Uint,
 ) error {
-	wasOwing := k.GetBeansOwing(ctx, addr)
+	wasOwing, err := k.GetBeansOwing(ctx, addr)
+	if err != nil {
+		return err
+	}
 	nowOwing := wasOwing.Add(beans)
 
 	// Actually debit immediately in integer multiples of the minimum debit, since
@@ -433,20 +446,23 @@ func (k Keeper) ChargeForProvisioning(ctx sdk.Context, submitter, addr sdk.AccAd
 }
 
 // GetEgress gets the entire egress struct for a peer
-func (k Keeper) GetEgress(ctx sdk.Context, addr sdk.AccAddress) types.Egress {
+func (k Keeper) GetEgress(ctx sdk.Context, addr sdk.AccAddress) (types.Egress, error) {
 	path := StoragePathEgress + "." + addr.String()
-	entry := k.vstorageKeeper.GetEntry(ctx, path)
+	entry, err := k.vstorageKeeper.GetEntry(ctx, path)
+	if err != nil {
+		return types.Egress{}, err
+	}
 	if !entry.HasValue() {
-		return types.Egress{}
+		return types.Egress{}, nil
 	}
 
 	var egress types.Egress
-	err := json.Unmarshal([]byte(entry.StringValue()), &egress)
+	err = json.Unmarshal([]byte(entry.StringValue()), &egress)
 	if err != nil {
 		panic(err)
 	}
 
-	return egress
+	return egress, nil
 }
 
 // SetEgress sets the egress struct for a peer, and ensures its account exists
@@ -483,9 +499,13 @@ func (k Keeper) Logger(ctx sdk.Context) log.Logger {
 }
 
 // GetMailbox gets the entire mailbox struct for a peer
-func (k Keeper) GetMailbox(ctx sdk.Context, peer string) string {
+func (k Keeper) GetMailbox(ctx sdk.Context, peer string) (string, error) {
 	path := StoragePathMailbox + "." + peer
-	return k.vstorageKeeper.GetEntry(ctx, path).StringValue()
+	entry, err := k.vstorageKeeper.GetEntry(ctx, path)
+	if err != nil {
+		return "", err
+	}
+	return entry.StringValue(), nil
 }
 
 // SetMailbox sets the entire mailbox struct for a peer

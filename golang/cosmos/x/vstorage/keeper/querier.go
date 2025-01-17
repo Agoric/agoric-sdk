@@ -59,7 +59,11 @@ func NewQuerier(keeper Keeper, legacyQuerierCdc *codec.LegacyAmino) func(ctx sdk
 
 // nolint: unparam
 func queryData(ctx sdk.Context, path string, req abci.RequestQuery, keeper Keeper, legacyQuerierCdc *codec.LegacyAmino) (res []byte, err error) {
-	entry := keeper.GetEntry(ctx, path)
+	entry, err := keeper.GetEntry(ctx, path)
+	if err != nil {
+		return nil, err
+	}
+
 	if !entry.HasValue() {
 		return nil, sdkioerrors.Wrap(sdkerrors.ErrNotFound, "no data for vstorage path")
 	}
@@ -74,7 +78,10 @@ func queryData(ctx sdk.Context, path string, req abci.RequestQuery, keeper Keepe
 
 // nolint: unparam
 func queryChildren(ctx sdk.Context, path string, req abci.RequestQuery, keeper Keeper, legacyQuerierCdc *codec.LegacyAmino) (res []byte, err error) {
-	children := keeper.GetChildren(ctx, path)
+	children, err := keeper.GetChildren(ctx, path)
+	if err != nil {
+		return nil, err
+	}
 	klist := children.Children
 
 	if klist == nil {
