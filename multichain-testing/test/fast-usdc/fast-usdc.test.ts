@@ -280,6 +280,7 @@ const advanceAndSettleScenario = test.macro({
       retryUntilCondition,
       smartWalletKit,
       useChain,
+      usdcDenom,
       usdcOnOsmosis,
       vstorageClient,
     } = t.context;
@@ -352,10 +353,26 @@ const advanceAndSettleScenario = test.macro({
       await useChain(eudChain).getRestEndpoint(),
     );
 
+    const getUsdcDenom = (chainName: string) => {
+      switch (chainName) {
+        case 'agoric':
+          return usdcDenom;
+        case 'osmosis':
+          return usdcOnOsmosis;
+        case 'noble':
+          return 'uusdc';
+        default:
+          throw new Error(`${chainName} not supported in 'getUsdcDenom'`);
+      }
+    };
+
     await t.notThrowsAsync(() =>
       retryUntilCondition(
-        () => queryClient.queryBalance(EUD, usdcOnOsmosis),
-        ({ balance }) => !!balance?.amount && BigInt(balance.amount) < mintAmt,
+        () => queryClient.queryBalance(EUD, getUsdcDenom(eudChain)),
+        ({ balance }) =>
+          !!balance?.amount &&
+          BigInt(balance?.amount) > 0n &&
+          BigInt(balance.amount) < mintAmt,
         `${EUD} advance available from fast-usdc`,
         // this resolves quickly, so _decrease_ the interval so the timing is more apparent
         { retryIntervalMs: 500 },
