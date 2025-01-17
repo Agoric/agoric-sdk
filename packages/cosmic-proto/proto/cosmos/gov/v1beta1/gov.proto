@@ -37,7 +37,7 @@ message WeightedVoteOption {
   VoteOption option = 1;
   string     weight = 2 [
     (cosmos_proto.scalar)  = "cosmos.Dec",
-    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
     (gogoproto.nullable)   = false
   ];
 }
@@ -179,14 +179,14 @@ message TallyParams {
   //  Minimum percentage of total stake needed to vote for a result to be
   //  considered valid.
   bytes quorum = 1 [
-    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
     (gogoproto.nullable)   = false,
     (gogoproto.jsontag)    = "quorum,omitempty"
   ];
 
   //  Minimum proportion of Yes votes for proposal to pass. Default value: 0.5.
   bytes threshold = 2 [
-    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
     (gogoproto.nullable)   = false,
     (gogoproto.jsontag)    = "threshold,omitempty"
   ];
@@ -194,7 +194,7 @@ message TallyParams {
   //  Minimum value of Veto votes to Total votes ratio for proposal to be
   //  vetoed. Default value: 1/3.
   bytes veto_threshold = 3 [
-    (gogoproto.customtype) = "github.com/cosmos/cosmos-sdk/types.Dec",
+    (gogoproto.customtype) = "cosmossdk.io/math.LegacyDec",
     (gogoproto.nullable)   = false,
     (gogoproto.jsontag)    = "veto_threshold,omitempty"
   ];
