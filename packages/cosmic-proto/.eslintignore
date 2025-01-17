@@ -1,7 +1,0 @@
-# keep synchronized with ../../.eslintignore
-node_modules/
-coverage/
-dist/
-proto/
-# leading `**` ensures that this pattern still matches relative to project root
-**/src/codegen/
