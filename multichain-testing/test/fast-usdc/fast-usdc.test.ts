@@ -423,33 +423,6 @@ const advanceAndSettleScenario = test.macro({
   },
 });
 
-test('distribute FastUSDC contract fees', async t => {
-  const io = t.context;
-  const queryClient = makeQueryClient(
-    await io.useChain('agoric').getRestEndpoint(),
-  );
-  const builder =
-    '../packages/builders/scripts/fast-usdc/fast-usdc-fees.build.js';
-
-  const opts = {
-    destinationAddress: io.wallets['feeDest'],
-    feePortion: 0.25,
-  };
-  t.log('build, run proposal to distribute fees', opts);
-  await io.deployBuilder(builder, {
-    ...opts,
-    feePortion: `${opts.feePortion}`,
-  });
-
-  const { balance } = await io.retryUntilCondition(
-    () => queryClient.queryBalance(opts.destinationAddress, io.usdcDenom),
-    ({ balance }) => !!balance && BigInt(balance.amount) > 0n,
-    `fees received at ${opts.destinationAddress}`,
-  );
-  t.log('fees received', balance);
-  t.truthy(balance?.amount);
-});
-
 test.serial(advanceAndSettleScenario, LP_DEPOSIT_AMOUNT / 4n, 'osmosis');
 test.serial(advanceAndSettleScenario, LP_DEPOSIT_AMOUNT / 8n, 'noble');
 test.serial(advanceAndSettleScenario, LP_DEPOSIT_AMOUNT / 5n, 'agoric');
@@ -521,6 +494,33 @@ test.serial('lp withdraws', async t => {
       { log },
     ),
   );
+});
+
+test.serial('distribute FastUSDC contract fees', async t => {
+  const io = t.context;
+  const queryClient = makeQueryClient(
+    await io.useChain('agoric').getRestEndpoint(),
+  );
+  const builder =
+    '../packages/builders/scripts/fast-usdc/fast-usdc-fees.build.js';
+
+  const opts = {
+    destinationAddress: io.wallets['feeDest'],
+    feePortion: 0.25,
+  };
+  t.log('build, run proposal to distribute fees', opts);
+  await io.deployBuilder(builder, {
+    ...opts,
+    feePortion: `${opts.feePortion}`,
+  });
+
+  const { balance } = await io.retryUntilCondition(
+    () => queryClient.queryBalance(opts.destinationAddress, io.usdcDenom),
+    ({ balance }) => !!balance && BigInt(balance.amount) > 0n,
+    `fees received at ${opts.destinationAddress}`,
+  );
+  t.log('fees received', balance);
+  t.truthy(balance?.amount);
 });
 
 test.todo('insufficient LP funds; forward path');
