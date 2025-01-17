@@ -31,11 +31,13 @@ module.exports = {
     'prefer-regex-literals': 'off',
     'no-else-return': 'off',
     'no-console': 'off',
+    'no-lone-blocks': 'off',
     'no-unused-vars': [
       'error',
       {
         argsIgnorePattern: '^_',
         varsIgnorePattern: '^_',
+        caughtErrors: 'none', // Needed now that in ESLint v9.0.0, varsIgnorePattern no longer applies to errors in catch clauses
       },
     ],
     'no-inner-declarations': 'off',
@@ -49,7 +51,7 @@ module.exports = {
     'default-param-last': 'off', // unaware of TS type annotations
     'consistent-return': 'off', // unaware of throws. TS detects more reliably.
     'no-fallthrough': 'warn', // unaware of throws.
-
+    'no-redeclare': ['error', { builtinGlobals: false }], // Allow redeclaration of built-in globals when explicitly declared
     'spaced-comment': [
       'error',
       'always',
