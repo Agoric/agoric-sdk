@@ -2,7 +2,6 @@ package swingset
 
 import (
 	"bytes"
-	"cosmossdk.io/core/store"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
@@ -10,6 +9,8 @@ import (
 	"hash"
 	"io"
 	"strings"
+
+	"cosmossdk.io/core/store"
 
 	agoric "github.com/Agoric/agoric-sdk/golang/cosmos/types"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/swingset/keeper"
@@ -78,9 +79,9 @@ func InitGenesis(ctx sdk.Context, k Keeper, swingStoreExportsHandler *SwingStore
 			swingStore.Set([]byte(entry.Key), []byte(entry.Value))
 		}
 		getExportDataReader = func() (agoric.KVEntryReader, error) {
-			exportDataIterator, err := swingStore.Iterator(nil, nil)
-			panic(fmt.Errorf("failed to iterate over swing-store export data: %w", err))
-			return agoric.NewKVIteratorReader(exportDataIterator), nil
+			// exportDataIterator, err := swingStore.Iterator(nil, nil)
+			panic(fmt.Errorf("failed to iterate over swing-store export data: %s", err))
+			// return agoric.NewKVIteratorReader(exportDataIterator), nil
 		}
 	} else {
 		hashParts := strings.SplitN(data.SwingStoreExportDataHash, ":", 2)
