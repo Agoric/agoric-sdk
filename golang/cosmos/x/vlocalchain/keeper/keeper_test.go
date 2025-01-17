@@ -75,7 +75,7 @@ func TestKeeper_DeserializeTxMessages(t *testing.T) {
 			wantErr:  false,
 		},
 		{
-			name:     "misspelled key",
+			name:     "misspelled storeService",
 			json:     `{"messages":[{"@type":"/cosmos.bank.v1beta1.MsgSend","from_addresss":"cosmos1abc","to_address":"cosmos1xyz","amount":[{"denom":"stake","amount":"100"}]}]}`,
 			expected: expectedMsgSend,
 			wantErr:  true,

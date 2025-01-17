@@ -676,7 +676,7 @@ func NewAgoricApp(
 	// control a fresh account and/or query this Cosmos-SDK instance.
 	app.VlocalchainKeeper = vlocalchain.NewKeeper(
 		appCodec,
-		keys[vlocalchain.StoreKey],
+		runtime.NewKVStoreService(keys[vlocalchain.StoreKey]),
 		app.BaseApp.MsgServiceRouter(),
 		app.BaseApp.GRPCQueryRouter(),
 		app.AccountKeeper,

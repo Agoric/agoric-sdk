@@ -3,6 +3,7 @@ package keeper
 import (
 	"bytes"
 	"context"
+	"cosmossdk.io/core/store"
 	"fmt"
 	"reflect"
 	"strings"
@@ -11,7 +12,6 @@ import (
 	"github.com/cosmos/gogoproto/jsonpb"
 	"github.com/cosmos/gogoproto/proto"
 
-	storetypes "cosmossdk.io/store/types"
 	"github.com/cosmos/cosmos-sdk/codec"
 	codectypes "github.com/cosmos/cosmos-sdk/codec/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -24,27 +24,27 @@ import (
 
 // Keeper maintains the link to data storage and exposes getter/setter methods for the various parts of the state machine
 type Keeper struct {
-	key         storetypes.StoreKey
-	cdc         codec.Codec
-	msgRouter   types.MsgRouter
-	queryRouter types.GRPCQueryRouter
-	acctKeeper  types.AccountKeeper
+	storeService store.KVStoreService
+	cdc          codec.Codec
+	msgRouter    types.MsgRouter
+	queryRouter  types.GRPCQueryRouter
+	acctKeeper   types.AccountKeeper
 }
 
 // NewKeeper creates a new dIBC Keeper instance
 func NewKeeper(
 	cdc codec.Codec,
-	key storetypes.StoreKey,
+	key store.KVStoreService,
 	msgRouter types.MsgRouter,
 	queryRouter types.GRPCQueryRouter,
 	acctKeeper types.AccountKeeper,
 ) Keeper {
 	return Keeper{
-		key:         key,
-		cdc:         cdc,
-		msgRouter:   msgRouter,
-		queryRouter: queryRouter,
-		acctKeeper:  acctKeeper,
+		storeService: key,
+		cdc:          cdc,
+		msgRouter:    msgRouter,
+		queryRouter:  queryRouter,
+		acctKeeper:   acctKeeper,
 	}
 }
 
@@ -266,9 +266,9 @@ func (k Keeper) executeMsg(ctx sdk.Context, msg sdk.Msg) (*codectypes.Any, error
 // address, sequence number, the current block app hash, and the current block
 // data hash.  The sdk.AccAddress returned is a sub-address of the host module
 // account.
-func (k Keeper) AllocateAddress(cctx context.Context) sdk.AccAddress {
+func (k Keeper) AllocateAddress(cctx context.Context) (sdk.AccAddress, error) {
 	ctx := sdk.UnwrapSDKContext(cctx)
-	store := ctx.KVStore(k.key)
+	s := k.storeService.OpenKVStore(ctx)
 
 	localchainModuleAcc := sdkaddress.Module(types.ModuleName, []byte("localchain"))
 	header := ctx.BlockHeader()
@@ -276,10 +276,15 @@ func (k Keeper) AllocateAddress(cctx context.Context) sdk.AccAddress {
 	// Loop until we find an unused address.
 	for {
 		// Increment our sequence number.
-		seq := store.Get(types.KeyLastSequence)
+		seq, err := s.Get(types.KeyLastSequence)
+		if err != nil {
+			return nil, err
+		}
 		seq = types.NextSequence(seq)
-		store.Set(types.KeyLastSequence, seq)
-
+		err = s.Set(types.KeyLastSequence, seq)
+		if err != nil {
+			return nil, err
+		}
 		buf := seq
 		buf = append(buf, header.AppHash...)
 		buf = append(buf, header.DataHash...)
@@ -294,6 +299,6 @@ func (k Keeper) AllocateAddress(cctx context.Context) sdk.AccAddress {
 		k.acctKeeper.SetAccount(ctx, acct)
 
 		// All good, return the address.
-		return addr
+		return addr, nil
 	}
 }
