@@ -3,8 +3,11 @@ import sys, json, time, hashlib, base64
 from collections import defaultdict
 import subprocess
 
+print("writing to monitor.out")
+mf = open("monitor.out", "a", buffering=1)
+
 # run like this:
-#   tail -n 10000 -F chain.slog | python3 monitor-slog-block-time.py [keys.txt]
+#   tail -n 10000 -F chain.slog | python3 monitor-slog-block-time.py [keys.json]
 # produces output like:
 #
 
@@ -58,7 +61,7 @@ import subprocess
 #         approve it fast enough, more rounds may be needed, and this field
 #         will show "r1" or "r2" or higher. Elevated round counts may
 #         indicate that the proposer, or validators, are falling behind.
-# proposer: The moniker (if available via keys.txt) or abbreviated address of
+# proposer: The moniker (if available via keys.json) or abbreviated address of
 #           the validator which proposed this block.
 
 
@@ -75,14 +78,14 @@ def perc(n):
 # Activating do_count_signatures causes the tool to query the chain for each
 # block (by running agd, which must be in your $PATH), to
 # retrieve the number of rounds required, the number and types of signatures,
-# and the address of the block proposer. If we were given a suitable keys.txt
-# in sys.argv, use it to translate addresses to monikers. keys.txt can be
+# and the address of the block proposer. If we were given a suitable keys.json
+# in sys.argv, use it to translate addresses to monikers. keys.json can be
 # generated (for validators who were present in the genesis block) by
 # running:
 #
 # cat ~/.ag-chain-cosmos/config/genesis.json |jq -c
 # '.app_state | .genutil.gen_txs | map(.body.messages[0]) |
-# map([.description.moniker, .pubkey.key])' > keys.txt
+# map([.description.moniker, .pubkey.key])' > keys.json
 
 do_count_signatures = True
 
@@ -91,6 +94,7 @@ validators = {} # hexaddr -> moniker
 def load_genesis_keys(fn):
     with open(fn) as f:
         keys = json.load(f)
+    assert isinstance(keys, list)
     for (moniker, key_b64) in keys:
         hexaddr = hashlib.sha256(base64.b64decode(key_b64)).hexdigest()[:40].upper()
         # hexaddr appears in `query block` | jq .block_header.proposer_address
@@ -98,7 +102,15 @@ def load_genesis_keys(fn):
 
 def wait_for_block(height):
     while True:
-        out = subprocess.check_output(["agd", "status"]).decode()
+        # TODO: 'agd status' has started failing with messages like:
+        ## diff: node_modules/.cache/agoric/golang-built.sum.new: No such file or directory
+        ## golang/cosmos node_modules/.cache/agoric/golang-built.sum has changed
+        ## mv: cannot stat 'node_modules/.cache/agoric/golang-built.sum.new': No such file or directory
+        try:
+            out = subprocess.check_output(["agd", "status"]).decode()
+        except subprocess.CalledProcessError as e:
+            time.sleep(1)
+            continue
         now = int(json.loads(out)["SyncInfo"]["latest_block_height"])
         if now >= height:
             return
@@ -108,7 +120,10 @@ def count_signatures(height):
     if not do_count_signatures:
         return (0, 0, 0, "")
     wait_for_block(height)
+    #try:
     out = subprocess.check_output(["agd", "query", "block", str(height)]).decode()
+    #except subprocess.CalledProcessError as e:
+    #    return (0, 0, 0, "")
     block = json.loads(out)["block"]
     sigs = block["last_commit"]["signatures"]
     twos = len([s for s in sigs if s["block_id_flag"] == 2])
@@ -118,14 +133,19 @@ def count_signatures(height):
     proposer = block["header"]["proposer_address"]
     return (twos,threes, rounds, proposer)
 
-head = "- block  blockTime    lag  -> cranks(avg) computrons  swingset(avg)  +  cosmos = proc% (avg) [sigs2/3/tot] rounds proposer"
-fmt  = "  %5d   %2d(%4s)  %6s -> %4s(%5s)  %9d %6s(%6s)  +  %6s = %4s (%4s) [%3d/%3d/%3d] r%d %s"
+head = "-    block  blockTime    lag  -> cranks(avg) computrons  swingset(avg)  +  cosmos = proc% (avg) [sigs2/3/tot] rounds proposer"
+fmt  = "  %8d   %2d(%4s)  %6s -> %4s(%5s)  %9d %6s(%6s)  +  %6s = %4s (%4s) [%3d/%3d/%3d] r%d %s"
 
 class Summary:
     headline_counter = 0
+    total_swingset_time = 0
+    total_computrons = 0
+    total_cranks = 0
+    total_blocks = 0
+
     def summarize(self):
         if self.headline_counter == 0:
-            print(head)
+            print(head, file=mf)
             self.headline_counter = 20
         self.headline_counter -= 1
         ( height, cranks,
@@ -144,6 +164,12 @@ class Summary:
         avg_swingset_percentage = sum(b[7] for b in recent) / len(recent)
         moniker = validators.get(sigs[3], "(%s)" % sigs[3][:6])
 
+        self.total_swingset_time += swingset_time
+        self.total_computrons += computrons
+        if cranks:
+            self.total_cranks += cranks
+        self.total_blocks += 1
+
         print(fmt % (height,
                      chain_block_time, "%2.1f" % avg_chain_block_time,
                      abbrev(lag),
@@ -154,7 +180,13 @@ class Summary:
                      perc(proc_frac), abbrev1(100.0 * avg_proc_frac),
                      sigs[0], sigs[1], sigs[0]+sigs[1], sigs[2],
                      moniker,
-              ))
+              ), file=mf)
+
+    def finish(self):
+        print("-- total swingset time: %s" % (abbrev(self.total_swingset_time)))
+        print("-- total computrons: %d" % self.total_computrons)
+        print("-- total cranks: %d" % self.total_cranks)
+        print("-- total blocks: %d" % self.total_blocks)
 
 s = Summary()
 
@@ -171,7 +203,7 @@ for line in sys.stdin:
     if data["type"] == "deliver-result":
         mr = data["dr"][2];
         if mr and "compute" in mr:
-            computrons += mr["compute"]
+            computrons += mr["compute"] # TODO: includes replay? mismatch block 16543830
     if data["type"] in ["cosmic-swingset-begin-block",
                         "cosmic-swingset-end-block-start",
                         "cosmic-swingset-end-block-finish"]:
@@ -201,10 +233,11 @@ for line in sys.stdin:
                 if "last-crank" in blocks[height-1]:
                     cranks = blocks[height]["last-crank"] - blocks[height-1]["last-crank"]
                 chain_block_time = blocks[height]["blockTime"] - blocks[height-1]["blockTime"]
-            sigs = count_signatures(height)
+                sigs = count_signatures(height)
             recent_blocks.append([ height, cranks,
                                    block_time, proc_frac, cosmos_time, chain_block_time,
                                    swingset_time, swingset_percentage,
                                    lag, computrons, sigs])
             s.summarize()
 
+s.finish()
