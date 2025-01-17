@@ -25,7 +25,7 @@ service Query {
 // QueryInterchainAccountRequest is the request type for the Query/InterchainAccount RPC method.
 message QueryInterchainAccountRequest {
   string owner         = 1;
-  string connection_id = 2 [(gogoproto.moretags) = "yaml:\"connection_id\""];
+  string connection_id = 2;
 }
 
 // QueryInterchainAccountResponse the response type for the Query/InterchainAccount RPC method.

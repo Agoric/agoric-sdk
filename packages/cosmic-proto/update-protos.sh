@@ -17,7 +17,6 @@ cp -rf "$COSMOS_SDK"/proto/cosmos proto
 cp -rf "$AG_SDK"/golang/cosmos/third_party/proto .
 cp -rf "$AG_SDK"/golang/cosmos/proto/agoric proto
 cp -rf "$IBC_GO"/proto/ibc proto
-cp -rf "$IBC_GO"/third_party/proto/proofs.proto proto
 
 # clean up what we don't need
 chmod -R u+w proto
