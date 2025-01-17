@@ -204,16 +204,16 @@ func (msk mockSwingsetKeeper) InboundQueueLength(ctx sdk.Context) (int32, error)
 	return msk.inboundQueueLength, msk.inboundQueueLengthErr
 }
 
-func (msk mockSwingsetKeeper) GetState(ctx sdk.Context) swingtypes.State {
+func (msk mockSwingsetKeeper) GetState(ctx sdk.Context) (swingtypes.State, error) {
 	if msk.emptyQueueAllowed {
-		return swingtypes.State{}
+		return swingtypes.State{}, nil
 	}
 	return swingtypes.State{
 		QueueAllowed: []swingtypes.QueueSize{
 			swingtypes.NewQueueSize(swingtypes.QueueInbound, msk.inboundLimit),
 			swingtypes.NewQueueSize(swingtypes.QueueInboundMempool, msk.mempoolLimit),
 		},
-	}
+	}, nil
 }
 
 func (msk mockSwingsetKeeper) IsHighPriorityAddress(ctx sdk.Context, addr sdk.AccAddress) (bool, error) {
