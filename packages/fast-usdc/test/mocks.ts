@@ -89,6 +89,5 @@ export const makeTestFeeConfig = (usdc: Omit<AmountUtils, 'mint'>): FeeConfig =>
   harden({
     flat: usdc.make(1n),
     variableRate: makeRatio(2n, usdc.brand),
-    maxVariable: usdc.units(5),
     contractRate: makeRatio(20n, usdc.brand),
   });

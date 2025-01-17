@@ -24,7 +24,6 @@ const { keys } = Object;
 const options = {
   flatFee: { type: 'string', default: '0.01' },
   variableRate: { type: 'string', default: '0.01' },
-  maxVariableFee: { type: 'string', default: '5' },
   contractRate: { type: 'string', default: '0.2' },
   net: { type: 'string' },
   oracle: { type: 'string', multiple: true },
@@ -50,7 +49,6 @@ const assetInfoUsage =
  * @typedef {{
  *   flatFee: string;
  *   variableRate: string;
- *   maxVariableFee: string;
  *   contractRate: string;
  *   net?: string;
  *   oracle?: string[];
@@ -161,11 +159,10 @@ export default async (homeP, endowments) => {
   /** @param {string} numeral */
   const toRatio = numeral => parseRatio(numeral, USDC);
   const parseFeeConfigArgs = () => {
-    const { flatFee, variableRate, maxVariableFee, contractRate } = fees;
+    const { flatFee, variableRate, contractRate } = fees;
     return {
       flat: toAmount(flatFee),
       variableRate: toRatio(variableRate),
-      maxVariable: toAmount(maxVariableFee),
       contractRate: toRatio(contractRate),
     };
   };
