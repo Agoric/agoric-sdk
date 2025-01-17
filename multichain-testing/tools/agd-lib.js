@@ -139,6 +139,8 @@ export const makeAgd = ({ execFileSync }) => {
         console.log('$$$ agd', ...args);
         const out = exec(args, { stdio: ['ignore', 'pipe', 'ignore'] });
         try {
+          // XXX approximate type
+          /** @type {{ height: string, txhash: string, code: number, codespace: string, raw_log: string }} */
           const detail = JSON.parse(out);
           if (detail.code !== 0) {
             throw Error(detail.raw_log);
