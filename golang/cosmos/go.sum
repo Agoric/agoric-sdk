@@ -247,8 +247,8 @@ github.com/VividCortex/gohistogram v1.0.0/go.mod h1:Pf5mBqqDxYaXu3hDrrU+w6nw50o/
 github.com/adlio/schema v1.3.6 h1:k1/zc2jNfeiZBA5aFTRy37jlBIuCkXCm0XmvpzCKI9I=
 github.com/adlio/schema v1.3.6/go.mod h1:qkxwLgPBd1FgLRHYVCmQT/rrBr3JH38J9LjmVzWNudg=
 github.com/afex/hystrix-go v0.0.0-20180502004556-fa1af6a1f4f5/go.mod h1:SkGFH1ia65gfNATL8TAiHDNxPzPdmEL5uirI2Uyuz6c=
-github.com/agoric-labs/cosmos-sdk v0.46.16-alpha.agoric.2.4.0.20241231161927-03ea5e469b71 h1:MZtDM1tREQH8BcUQcuYj/fcbfp/H2FAw/a1wYAY4/2A=
-github.com/agoric-labs/cosmos-sdk v0.46.16-alpha.agoric.2.4.0.20241231161927-03ea5e469b71/go.mod h1:6Eesrx3ZE7vxBZWpK++30H+Uc7Q4ahQWCL7JKU/LEdU=
+github.com/agoric-labs/cosmos-sdk v0.46.16-alpha.agoric.2.4.0.20250118013225-f3f792d5d3d6 h1:mfFScDGsbBbz21WrpGBYmDLZhLN2xMVp2e9DjaH06iM=
+github.com/agoric-labs/cosmos-sdk v0.46.16-alpha.agoric.2.4.0.20250118013225-f3f792d5d3d6/go.mod h1:4kHP7AolqQ5VoaPRAsRioCRw59jRsJ06dsZJij7sJsM=
 github.com/agoric-labs/ibc-go/v8 v8.0.0-20250106120251-131babedfe63 h1:4NJW4Gpjf9LE7cTgFuLSQld3nbMx7m09jkcPESdK/P8=
 github.com/agoric-labs/ibc-go/v8 v8.0.0-20250106120251-131babedfe63/go.mod h1:IuVLVDlQ5/MPb9x29LL5eIQR6NA+holGnkcouKRjOaY=
 github.com/alecthomas/template v0.0.0-20160405071501-a0175ee3bccc/go.mod h1:LOuyumcjzFXgccqObfd/Ljyb9UuFJ6TxHnclSeseNhc=
@@ -956,8 +956,6 @@ github.com/rakyll/statik v0.1.7/go.mod h1:AlZONWzMtEnMs7W4e/1LURLiI49pIMmp6V9Ung
 github.com/rcrowley/go-metrics v0.0.0-20181016184325-3113b8401b8a/go.mod h1:bCqnVzQkZxMG4s8nGwiZ5l3QUCyqpo9Y+/ZMZ9VjZe4=
 github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475 h1:N/ElC8H3+5XpJzTSTfLsJV/mx9Q9g7kxmchpfZyxgzM=
 github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475/go.mod h1:bCqnVzQkZxMG4s8nGwiZ5l3QUCyqpo9Y+/ZMZ9VjZe4=
-github.com/regen-network/cosmos-proto v0.3.1 h1:rV7iM4SSFAagvy8RiyhiACbWEGotmqzywPxOvwMdxcg=
-github.com/regen-network/cosmos-proto v0.3.1/go.mod h1:jO0sVX6a1B36nmE8C9xBFXpNwWejXC7QqCOnH3O0+YM=
 github.com/regen-network/protobuf v1.3.3-alpha.regen.1 h1:OHEc+q5iIAXpqiqFKeLpu5NwTIkVXUs48vFMwzqpqY4=
 github.com/regen-network/protobuf v1.3.3-alpha.regen.1/go.mod h1:2DjTFR1HhMQhiWC5sZ4OhQ3+NtdbZ6oBDKQwq5Ou+FI=
 github.com/rogpeppe/fastuuid v0.0.0-20150106093220-6724a57986af/go.mod h1:XWv6SoW27p1b0cqNHllgS5HIMJraePCO15w5zCzIWYg=
