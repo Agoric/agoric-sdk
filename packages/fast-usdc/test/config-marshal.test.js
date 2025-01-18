@@ -29,7 +29,6 @@ test('cross-vat configuration of Fast USDC FeeConfig', t => {
   const config = harden({
     flat: make(USDC, 100n),
     variableRate: makeRatio(1n, USDC),
-    maxVariable: make(USDC, 100_000n),
     contractRate: makeRatio(20n, USDC),
   });
   testMatches(t, config, FeeConfigShape);
@@ -51,7 +50,6 @@ test('cross-vat configuration of Fast USDC FeeConfig', t => {
         },
       },
       flat: { brand: '$0', value: '+100' },
-      maxVariable: { brand: '$0', value: '+100000' },
       variableRate: {
         denominator: {
           brand: '$0',

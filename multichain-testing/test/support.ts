@@ -14,7 +14,7 @@ import {
 import { generateMnemonic } from '../tools/wallet.js';
 import { makeRetryUntilCondition } from '../tools/sleep.js';
 import { makeDeployBuilder } from '../tools/deploy.js';
-import { makeHermes } from '../tools/hermes-tools.js';
+import { makeRelayer } from '../tools/relayer-tools.js';
 import { makeNobleTools } from '../tools/noble-tools.js';
 import { makeAssetInfo } from '../tools/asset-info.js';
 import starshipChainInfo from '../starship-chain-info.js';
@@ -70,7 +70,10 @@ const makeKeyring = async (
 
 export const commonSetup = async (
   t: ExecutionContext,
-  { config = '../config.yaml' } = {},
+  {
+    relayerType = process.env.RELAYER_TYPE,
+    config = `../config${relayerType ? '.' + relayerType : ''}.yaml`,
+  } = {},
 ) => {
   let useChain: MultichainRegistry['useChain'];
   try {
@@ -89,7 +92,7 @@ export const commonSetup = async (
     log: t.log,
     setTimeout: globalThis.setTimeout,
   });
-  const hermes = makeHermes(childProcess);
+  const relayer = makeRelayer(childProcess);
   const nobleTools = makeNobleTools(childProcess);
   const assetInfo = makeAssetInfo(starshipChainInfo);
   const chainInfo = withChainCapabilities(starshipChainInfo);
@@ -138,7 +141,7 @@ export const commonSetup = async (
     ...keyring,
     retryUntilCondition,
     deployBuilder,
-    hermes,
+    relayer,
     nobleTools,
     startContract,
     assetInfo,

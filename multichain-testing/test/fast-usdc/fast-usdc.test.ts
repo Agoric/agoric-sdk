@@ -23,6 +23,8 @@ import { createWallet } from '../../tools/wallet.js';
 import { commonSetup, type SetupContextWithWallets } from '../support.js';
 import { makeFeedPolicyPartial, oracleMnemonics } from './config.js';
 
+const { RELAYER_TYPE } = process.env;
+
 const log = makeTracer('MCFU');
 
 const { keys, values, fromEntries } = Object;
@@ -50,7 +52,7 @@ const LP_DEPOSIT_AMOUNT = 8_000n * 10n ** 6n;
 
 test.before(async t => {
   const { setupTestKeys, ...common } = await commonSetup(t, {
-    config: '../config.fusdc.yaml',
+    config: `../config.fusdc${RELAYER_TYPE ? '.' + RELAYER_TYPE : ''}.yaml`,
   });
   const {
     chainInfo,
@@ -278,6 +280,7 @@ const advanceAndSettleScenario = test.macro({
       retryUntilCondition,
       smartWalletKit,
       useChain,
+      usdcDenom,
       usdcOnOsmosis,
       vstorageClient,
     } = t.context;
@@ -350,10 +353,26 @@ const advanceAndSettleScenario = test.macro({
       await useChain(eudChain).getRestEndpoint(),
     );
 
+    const getUsdcDenom = (chainName: string) => {
+      switch (chainName) {
+        case 'agoric':
+          return usdcDenom;
+        case 'osmosis':
+          return usdcOnOsmosis;
+        case 'noble':
+          return 'uusdc';
+        default:
+          throw new Error(`${chainName} not supported in 'getUsdcDenom'`);
+      }
+    };
+
     await t.notThrowsAsync(() =>
       retryUntilCondition(
-        () => queryClient.queryBalance(EUD, usdcOnOsmosis),
-        ({ balance }) => !!balance?.amount && BigInt(balance.amount) < mintAmt,
+        () => queryClient.queryBalance(EUD, getUsdcDenom(eudChain)),
+        ({ balance }) =>
+          !!balance?.amount &&
+          BigInt(balance?.amount) > 0n &&
+          BigInt(balance.amount) < mintAmt,
         `${EUD} advance available from fast-usdc`,
         // this resolves quickly, so _decrease_ the interval so the timing is more apparent
         { retryIntervalMs: 500 },
