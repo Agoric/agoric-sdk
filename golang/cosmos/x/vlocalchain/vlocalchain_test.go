@@ -3,6 +3,7 @@ package vlocalchain_test
 import (
 	"context"
 	"encoding/json"
+	"github.com/cosmos/cosmos-sdk/types/module/testutil"
 	"strings"
 	"testing"
 	"time"
@@ -12,7 +13,6 @@ import (
 	"cosmossdk.io/store"
 	storemetrics "cosmossdk.io/store/metrics"
 	storetypes "cosmossdk.io/store/types"
-	"github.com/Agoric/agoric-sdk/golang/cosmos/app/params"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/vm"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vlocalchain"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/x/vlocalchain/types"
@@ -131,8 +131,8 @@ func (s *mockStaking) UnbondingDelegation(cctx context.Context, req *stakingtype
 
 // makeTestKit creates a minimal Keeper and Context for use in testing.
 func makeTestKit(bank *mockBank, transfer *mockTransfer, staking *mockStaking, accts *mockAccounts) (vm.PortHandler, context.Context) {
-	encodingConfig := params.MakeEncodingConfig()
-	cdc := encodingConfig.Marshaler
+	encodingConfig := testutil.MakeTestEncodingConfig()
+	cdc := encodingConfig.Codec
 
 	txRouter := baseapp.NewMsgServiceRouter()
 	txRouter.SetInterfaceRegistry(encodingConfig.InterfaceRegistry)
@@ -167,8 +167,7 @@ func makeTestKit(bank *mockBank, transfer *mockTransfer, staking *mockStaking, a
 	handler := vm.NewProtectedPortHandler(vlocalchain.NewReceiver(keeper))
 
 	// create a new Go context
-	cctx := sdk.WrapSDKContext(ctx)
-	return handler, cctx
+	return handler, ctx
 }
 
 func TestAllocateAddress(t *testing.T) {
