@@ -151,7 +151,7 @@ const classifyRun = body => {
 
   if (body.source === BRIDGE_ID.WALLET) {
     const spendAction = JSON.parse(
-      (body.body?.spendAction || '#{}').replace(/^#+/g, ''),
+      (body.body?.spendAction || '{}').replace(/^#+/g, ''),
     ).body;
 
     if (spendAction.method === WALLET_SPEND_METHODS.EXECUTE_OFFER) {
