@@ -795,6 +795,21 @@ func NewAgoricApp(
 		vtransferModule,
 	)
 
+	ModuleBasics = module.NewBasicManagerFromManager(
+		app.mm,
+		map[string]module.AppModuleBasic{
+			govtypes.ModuleName: gov.NewAppModuleBasic(
+				[]govclient.ProposalHandler{
+					paramsclient.ProposalHandler,
+					swingsetclient.CoreEvalProposalHandler,
+				},
+			),
+		},
+	)
+
+	ModuleBasics.RegisterLegacyAminoCodec(encodingConfig.Amino)
+	ModuleBasics.RegisterInterfaces(interfaceRegistry)
+
 	// According to the upgrading guide (https://github.com/cosmos/cosmos-sdk/blob/main/UPGRADING.md#set-preblocker),
 	//upgrade types need to be added to the pre-blocker. While this part has been implemented, the guide also states
 	//that these types should be removed from begin blocker. If we need to actually remove them, we would need to modify
@@ -912,18 +927,6 @@ func NewAgoricApp(
 
 	app.configurator = module.NewConfigurator(app.appCodec, app.MsgServiceRouter(), app.GRPCQueryRouter())
 	app.mm.RegisterServices(app.configurator)
-
-	ModuleBasics = module.NewBasicManagerFromManager(
-		app.mm,
-		map[string]module.AppModuleBasic{
-			govtypes.ModuleName: gov.NewAppModuleBasic(
-				[]govclient.ProposalHandler{
-					paramsclient.ProposalHandler,
-					swingsetclient.CoreEvalProposalHandler,
-				},
-			),
-		},
-	)
 
 	// create the simulation manager and define the order of the modules for deterministic simulations
 	//
