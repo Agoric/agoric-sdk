@@ -7,6 +7,7 @@ import { $ } from 'execa';
 
 const waitForBootstrap = async () => {
   const endpoint = 'localhost';
+  // eslint-disable-next-line no-constant-condition
   while (true) {
     const { stdout: json } = await $({
       reject: false,
@@ -37,6 +38,7 @@ export const waitForBlock = async (n = 1) => {
   const h0 = await waitForBootstrap();
   let lastHeight = h0;
   for (let i = 0; i < n; i += 1) {
+    // eslint-disable-next-line no-constant-condition
     while (true) {
       await new Promise(r => setTimeout(r, 1000));
       const currentHeight = await waitForBootstrap();
