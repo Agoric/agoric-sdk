@@ -24,7 +24,11 @@ func GetQueueItems(ctx sdk.Context, vstorageKeeper keeper.Keeper, queuePath stri
 	var i int64
 	for i = 0; i < length; i++ {
 		path := fmt.Sprintf("%s.%s", queuePath, head.Add(sdkmath.NewInt(i)).String())
-		values[i] = vstorageKeeper.GetEntry(unlimitedCtx, path).StringValue()
+		value, err := vstorageKeeper.GetEntry(unlimitedCtx, path)
+		if err != nil {
+			return nil, err
+		}
+		values[i] = value.StringValue()
 	}
 	return values, nil
 }

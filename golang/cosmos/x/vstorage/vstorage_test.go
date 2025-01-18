@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/cosmos/cosmos-sdk/runtime"
 	"reflect"
 	"strings"
 	"testing"
@@ -38,7 +39,7 @@ type testKit struct {
 }
 
 func makeTestKit() testKit {
-	keeper := NewKeeper(storeKey)
+	keeper := NewKeeper(runtime.NewKVStoreService(storeKey), storeKey.String())
 	db := dbm.NewMemDB()
 	logger := log.NewNopLogger()
 	ms := store.NewCommitMultiStore(db, logger, storemetrics.NewNoOpMetrics())
