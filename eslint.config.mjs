@@ -337,4 +337,55 @@ export default [
       'import/no-extraneous-dependencies': 'off',
     },
   },
+  // Separate config for multichain-testing that doesn't inherit root rules
+  {
+    files: ['multichain-testing/**/*.{js,ts,mjs,cjs}'],
+    ignores: [], // Clear any ignores from previous configs
+    languageOptions: {
+      parser: typescriptEslint.parser,
+      parserOptions: {
+        ecmaVersion: 'latest',
+        sourceType: 'module',
+        project: './multichain-testing/tsconfig.json',
+      },
+    },
+    // Only enable the no-unused-vars rule
+    rules: {
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        {
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+        },
+      ],
+      // Disable all other rules
+      '@typescript-eslint/no-floating-promises': 'off',
+      'import/no-extraneous-dependencies': 'off',
+      'import/order': 'off',
+      'import/no-duplicates': 'off',
+      '@jessie.js/safe-await-separator': 'off',
+      'ava/no-import-test-files': 'off',
+      'ava/no-ignored-test-files': 'off',
+      'ava/no-async-fn-without-await': 'off',
+      'jsdoc/require-param': 'off',
+      'jsdoc/check-param-names': 'off',
+      'jsdoc/require-returns-type': 'off',
+      'jsdoc/check-types': 'off',
+      'jsdoc/no-defaults': 'off',
+      'jsdoc/check-tag-names': 'off',
+      'jsdoc/multiline-blocks': 'off',
+      'jsdoc/no-multi-asterisks': 'off',
+      camelcase: 'off',
+      'dot-notation': 'off',
+      'no-shadow': 'off',
+      'object-shorthand': 'off',
+      'no-plusplus': 'off',
+      'no-restricted-properties': 'off',
+      'no-unreachable': 'off',
+      'no-underscore-dangle': 'off',
+      'guard-for-in': 'off',
+      'prefer-template': 'off',
+      'prefer-exponentiation-operator': 'off',
+    },
+  },
 ];

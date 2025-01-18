@@ -3,7 +3,7 @@
 
 import '@endo/init';
 import starshipChainInfo from '../starship-chain-info.js';
-import { makeAssetInfo } from '../tools/asset-info.ts';
+import { makeAssetInfo } from '../tools/asset-info.js';
 
 const main = () => {
   if (!starshipChainInfo) {

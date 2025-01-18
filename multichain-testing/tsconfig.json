@@ -3,6 +3,7 @@
   "include": [
     "src",
     "tools",
-    "test"
+    "test",
+    "scripts"
   ]
 }
