@@ -113,7 +113,6 @@ const NatAmountShape = { brand: BrandShape, value: M.nat() };
 export const FeeConfigShape = {
   flat: NatAmountShape,
   variableRate: RatioShape,
-  maxVariable: NatAmountShape,
   contractRate: RatioShape,
 };
 harden(FeeConfigShape);

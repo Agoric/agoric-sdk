@@ -62,9 +62,11 @@ export interface PendingTx extends CctpTxEvidence {
 }
 
 export type FeeConfig = {
+  /** flat fee charged for every advance */
   flat: Amount<'nat'>;
+  /** proportion of advance kept as a fee */
   variableRate: Ratio;
-  maxVariable: Amount<'nat'>;
+  /** proportion of fees that goes to the contract (remaining goes to LPs) */
   contractRate: Ratio;
 };
 

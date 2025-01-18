@@ -298,7 +298,7 @@ test('updates status to OBSERVED on insufficient pool funds', async t => {
     [
       'Advancer error:',
       Error(
-        `Cannot borrow. Requested ${q(usdc.make(294999999n))} must be less than pool balance ${q(usdc.make(1n))}.`,
+        `Cannot borrow. Requested ${q(usdc.make(293999999n))} must be less than pool balance ${q(usdc.make(1n))}.`,
       ),
     ],
   ]);
