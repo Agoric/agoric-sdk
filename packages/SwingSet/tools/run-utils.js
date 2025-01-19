@@ -114,20 +114,11 @@ export const makeRunUtils = (controller, harness) => {
    */
   const objTarget = freeze({});
 
-  /**
-   * `freeze` but not `harden` the proxy target so it remains trapping.
-   * Although a frozen-only object will not be defensive, since it could still
-   * be made non-trapping, these are encapsulated only within proxies that
-   * will refuse to be made non-trapping, and so can safely be shared.
-   * @see https://github.com/endojs/endo/blob/master/packages/ses/docs/preparing-for-stabilize.md
-   */
-  const funcTarget = freeze(() => {});
-
   /** @type {EVProxy} */
   // @ts-expect-error cast, approximate
   const EV = Object.assign(
     presence =>
-      new Proxy(funcTarget, {
+      new Proxy(objTarget, {
         get: (_t, method, _rx) => {
           const boundMethod = (...args) =>
             queueAndRun(() =>
@@ -138,7 +129,7 @@ export const makeRunUtils = (controller, harness) => {
       }),
     {
       vat: vatName =>
-        new Proxy(funcTarget, {
+        new Proxy(objTarget, {
           get: (_t, method, _rx) => {
             const boundMethod = (...args) =>
               queueAndRun(() =>
@@ -148,7 +139,7 @@ export const makeRunUtils = (controller, harness) => {
           },
         }),
       sendOnly: presence =>
-        new Proxy(funcTarget, {
+        new Proxy(objTarget, {
           get: (_t, method, _rx) => {
             const boundMethod = (...args) =>
               queueAndRun(
