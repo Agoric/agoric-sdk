@@ -127,11 +127,9 @@ func (k Keeper) InterceptOnRecvPacket(ctx sdk.Context, ibcModule porttypes.IBCMo
 		err := sdkerrors.Wrapf(channeltypes.ErrChannelCapabilityNotFound, "could not retrieve channel capability at: %s", capName)
 		return channeltypes.NewErrorAcknowledgement(err)
 	}
+
 	// Give the VM a chance to write (or override) the ack.
-	if err := k.InterceptWriteAcknowledgement(ctx, chanCap, packet, ack); err != nil {
-		return channeltypes.NewErrorAcknowledgement(err)
-	}
-	return nil
+	return k.InterceptWriteAcknowledgement(ctx, chanCap, packet, ack)
 }
 
 // InterceptOnAcknowledgementPacket checks to see if the packet sender is a
@@ -199,20 +197,21 @@ func (k Keeper) InterceptOnTimeoutPacket(
 
 // InterceptWriteAcknowledgement checks to see if the packet's receiver is a
 // targeted account, and if so, delegates to the VM.
-func (k Keeper) InterceptWriteAcknowledgement(ctx sdk.Context, chanCap *capabilitytypes.Capability, packet ibcexported.PacketI, ack ibcexported.Acknowledgement) error {
+func (k Keeper) InterceptWriteAcknowledgement(ctx sdk.Context, chanCap *capabilitytypes.Capability, packet ibcexported.PacketI, ack ibcexported.Acknowledgement) ibcexported.Acknowledgement {
 	// Get the base baseReceiver from the packet, without computing a stripped packet.
 	baseReceiver, err := types.ExtractBaseAddressFromPacket(k.cdc, packet, types.RoleReceiver, nil)
 	if err != nil || !k.targetIsWatched(ctx, baseReceiver) {
 		// We can't parse, or not watching, but that means just to ack directly.
-		return k.WriteAcknowledgement(ctx, chanCap, packet, ack)
+		return ack
 	}
 
 	// Trigger VM with the original packet.
 	if err = k.vibcKeeper.TriggerWriteAcknowledgement(ctx, baseReceiver, packet, ack); err != nil {
 		errAck := channeltypes.NewErrorAcknowledgement(err)
-		return k.WriteAcknowledgement(ctx, chanCap, packet, errAck)
+		return errAck
 	}
 
+	// The VM has taken over the ack, so we return nil to indicate that the ack is async.
 	return nil
 }
 
