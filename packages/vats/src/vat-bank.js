@@ -24,7 +24,7 @@ import {
 /**
  * @import {Guarded} from '@endo/exo';
  * @import {Passable, RemotableObject} from '@endo/pass-style';
- * @import {VirtualPurseController} from './virtual-purse.js';
+ * @import {BridgeMessage} from '@agoric/cosmic-swingset/src/types.js';
  */
 
 const { VirtualPurseControllerI } = makeVirtualPurseKitIKit();
@@ -186,11 +186,13 @@ const prepareBankChannelHandler = zone =>
     /** @param {MapStore<string, MapStore<string, BalanceUpdater>>} denomToAddressUpdater */
     denomToAddressUpdater => ({ denomToAddressUpdater }),
     {
+      /** @param {BridgeMessage} obj */
       async fromBridge(obj) {
-        switch (obj && obj.type) {
+        switch (obj?.type) {
           case 'VBANK_BALANCE_UPDATE': {
             const { denomToAddressUpdater } = this.state;
             for (const update of obj.updated) {
+              // @ts-expect-error FIXME vbank.go says 'nonce' is on `obj`
               const { address, denom, amount: value, nonce } = update;
               /** @type {BalanceUpdater | undefined} */
               let updater;

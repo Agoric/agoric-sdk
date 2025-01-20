@@ -28,4 +28,16 @@ export type PleaseProvisionAction = {
   submitter: string;
 };
 
-export type BridgeMessage = CoreEvalAction | PleaseProvisionAction;
+/**
+ * @see VbankBalanceUpdate in vbank.go
+ */
+export type VbankBalanceUpdateAction = {
+  type: 'VBANK_BALANCE_UPDATE';
+  nonce: string;
+  updated: Array<{ address: string; denom: string; amount: string }>;
+};
+
+export type BridgeMessage =
+  | CoreEvalAction
+  | PleaseProvisionAction
+  | VbankBalanceUpdateAction;
