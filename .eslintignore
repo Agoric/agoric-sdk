@@ -1,6 +1,0 @@
-# also ignored in packages/cosmic-proto/.eslintignore, but IDE's pick up the root config
-packages/cosmic-proto/node_modules/
-packages/cosmic-proto/coverage/
-packages/cosmic-proto/dist/
-packages/cosmic-proto/proto/
-packages/cosmic-proto/src/codegen/

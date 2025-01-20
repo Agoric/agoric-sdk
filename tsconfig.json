@@ -18,7 +18,7 @@
     "noEmit": true
   },
   "include": [
-    ".eslintrc.cjs",
-    "dist"
+    "eslint.config.mjs",
+    "dist",
   ]
 }

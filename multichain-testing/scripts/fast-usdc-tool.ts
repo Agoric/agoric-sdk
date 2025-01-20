@@ -205,7 +205,6 @@ const main = async () => {
         instancePath: [contractName],
         callPipe: [['makeDepositInvitation']],
       },
-      // @ts-expect-error 'NatAmount' vs 'AnyAmount'
       proposal,
     });
   };
