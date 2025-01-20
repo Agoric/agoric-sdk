@@ -7,15 +7,15 @@ import (
 	"testing"
 	"text/template"
 
+	"cosmossdk.io/log"
 	"github.com/spf13/pflag"
 	"github.com/stretchr/testify/require"
 
+	dbm "github.com/cosmos/cosmos-db"
 	"github.com/cosmos/cosmos-sdk/server"
 	svrcmd "github.com/cosmos/cosmos-sdk/server/cmd"
 	serverconfig "github.com/cosmos/cosmos-sdk/server/config"
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
-	"github.com/tendermint/tendermint/libs/log"
-	dbm "github.com/tendermint/tm-db"
 
 	app "github.com/Agoric/agoric-sdk/golang/cosmos/app"
 	"github.com/Agoric/agoric-sdk/golang/cosmos/daemon/cmd"
@@ -69,7 +69,7 @@ func TestCLIFlags(t *testing.T) {
 		"trace-store":           "",
 		"transport":             "",
 		"unsafe-skip-upgrades":  "",
-		"with-tendermint":       "",
+		"with-comet":            "",
 
 		"api.address":              "",
 		"api.enable":               "",
