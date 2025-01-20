@@ -2,12 +2,12 @@
 set -ueo pipefail
 
 real0=$(readlink "${BASH_SOURCE[0]}" || echo "${BASH_SOURCE[0]}")
-thisdir=$(cd "$(dirname -- "$real0")" >/dev/null && pwd -P)
+thisdir=$(cd "$(dirname -- "$real0")" > /dev/null && pwd -P)
 
 export GOBIN="$thisdir/../../../golang/cosmos/build"
 export NETWORK_NAME=${NETWORK_NAME-localtest}
 
-SDK_SRC=${SDK_SRC-$(cd "$thisdir/../../.." >/dev/null && pwd -P)}
+SDK_SRC=${SDK_SRC-$(cd "$thisdir/../../.." > /dev/null && pwd -P)}
 
 LOADGEN=${LOADGEN-""}
 if [ -z "$LOADGEN" ] || [ "$LOADGEN" = "1" ]; then
@@ -21,7 +21,7 @@ fi
 
 if [ -d "$LOADGEN" ]; then
   # Get the absolute path.
-  LOADGEN=$(cd "$LOADGEN" >/dev/null && pwd -P)
+  LOADGEN=$(cd "$LOADGEN" > /dev/null && pwd -P)
 elif [ -n "$LOADGEN" ]; then
   echo "Cannot find loadgen (\$LOADGEN=$LOADGEN)" >&2
   exit 2
@@ -52,7 +52,7 @@ if [ -n "$LOADGEN" ]; then
   VAT_CONFIG="@agoric/vm-config/decentral-demo-config.json"
 fi
 
-"$thisdir/docker-deployment.cjs" >deployment.json
+"$thisdir/docker-deployment.cjs" > deployment.json
 
 # Set up the network from our above deployment.json.
 "$thisdir/setup.sh" init --noninteractive
@@ -64,7 +64,7 @@ AG_COSMOS_START_ARGS="--log_level=info" \
   "$thisdir/setup.sh" bootstrap ${1+"$@"}
 
 if [ -n "$LOADGEN" ]; then
-  "$SDK_SRC/packages/deployment/scripts/setup.sh" show-config >"$RESULTSDIR/network-config"
+  "$SDK_SRC/packages/deployment/scripts/setup.sh" show-config > "$RESULTSDIR/network-config"
   cp ag-chain-cosmos/data/genesis.json "$RESULTSDIR/genesis.json"
   cp "$AG_SETUP_COSMOS_HOME/ag-chain-cosmos/data/genesis.json" "$RESULTSDIR/genesis.json"
   cd "$LOADGEN"
