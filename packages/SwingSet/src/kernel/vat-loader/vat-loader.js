@@ -9,7 +9,7 @@ export function makeVatRootObjectSlot() {
 export function makeVatLoader(stuff) {
   const {
     overrideVatManagerOptions = {},
-    vatManagerFactory,
+    makeVatManager,
     kernelSlog,
     makeSourcedConsole,
     kernelKeeper,
@@ -127,7 +127,7 @@ export function makeVatLoader(stuff) {
     };
 
     const finish = starting && kernelSlog.startup(vatID);
-    const manager = await vatManagerFactory(vatID, {
+    const manager = await makeVatManager(vatID, {
       managerOptions,
       liveSlotsOptions,
     });
@@ -150,7 +150,7 @@ export function makeVatLoader(stuff) {
       ...overrideVatManagerOptions,
     };
     const liveSlotsOptions = {};
-    const manager = await vatManagerFactory(vatID, {
+    const manager = await makeVatManager(vatID, {
       managerOptions,
       liveSlotsOptions,
     });
