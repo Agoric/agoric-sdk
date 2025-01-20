@@ -22,11 +22,11 @@ func NewHandler(k Keeper) baseapp.MsgServiceHandler {
 		// Legacy deliver inbound.
 		// TODO: Sometime merge with IBC?
 		case *MsgDeliverInbound:
-			res, err := msgServer.DeliverInbound(sdk.WrapSDKContext(ctx), msg)
+			res, err := msgServer.DeliverInbound(ctx, msg)
 			return sdk.WrapServiceResult(ctx, res, err)
 
 		case *MsgProvision:
-			res, err := msgServer.Provision(sdk.WrapSDKContext(ctx), msg)
+			res, err := msgServer.Provision(ctx, msg)
 			return sdk.WrapServiceResult(ctx, res, err)
 
 		default:
