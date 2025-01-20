@@ -15,7 +15,7 @@ declare const CapDataShape: unique symbol;
 
 // Match the type in Zoe, which can't be imported because it's ambient.
 // This omits the parameters that aren't used in this module.
-type Invitation = Payment<'set'>;
+type Invitation = Payment<'set', InvitationDetails>;
 
 /**
  * A petname can either be a plain string or a path for which the first element
