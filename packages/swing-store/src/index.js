@@ -4,10 +4,12 @@ export { importSwingStore } from './importer.js';
 
 export { makeArchiveSnapshot, makeArchiveTranscript } from './archiver.js';
 
-// temporary, for the benefit of SwingSet/misc-tools/replay-transcript.js
+// for the benefit of tools like SwingSet/misc-tools/replay-transcript.js
+export { makeKVStore, getKeyType } from './kvStore.js';
+export { makeTranscriptStore } from './transcriptStore.js';
 export { makeSnapStore } from './snapStore.js';
-// and less temporary, for SwingSet/test/vat-warehouse/test-reload-snapshot.js
 export { makeSnapStoreIO } from './snapStoreIO.js';
+export { makeBundleStore, bundleIDFromName } from './bundleStore.js';
 
 // eslint-disable-next-line import/export
 export * from './types-index.js';

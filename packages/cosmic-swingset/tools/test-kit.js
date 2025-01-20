@@ -9,9 +9,10 @@ import {
 } from '@agoric/internal/src/action-types.js';
 import { makeInitMsg } from '@agoric/internal/src/chain-utils.js';
 import { deepCopyJsonable } from '@agoric/internal/src/js-utils.js';
+import { makeRunUtils } from '@agoric/swingset-vat/tools/run-utils.js';
 import { initSwingStore } from '@agoric/swing-store';
 import { makeSlogSender } from '@agoric/telemetry';
-import { launch } from '../src/launch-chain.js';
+import { launchAndShareInternals } from '../src/launch-chain.js';
 import { DEFAULT_SIM_SWINGSET_PARAMS } from '../src/sim-params.js';
 import {
   makeBufferedStorage,
@@ -238,7 +239,7 @@ export const makeCosmicSwingsetTestKit = async (
     slogSender = await makeSlogSender({ env });
   }
 
-  const launchResult = await launch({
+  const launchResult = await launchAndShareInternals({
     swingStore,
     actionQueueStorage,
     highPriorityQueueStorage,
@@ -253,13 +254,15 @@ export const makeCosmicSwingsetTestKit = async (
     slogSender,
     swingsetConfig,
   });
-  const { blockingSend, shutdown: shutdownKernel } = launchResult;
+  const { blockingSend, shutdown: shutdownKernel, internals } = launchResult;
   /** @type {(options?: { kernelOnly?: boolean }) => Promise<void>} */
   const shutdown = async ({ kernelOnly = false } = {}) => {
     await shutdownKernel();
     if (kernelOnly) return;
     await hostStorage.close();
   };
+  const { controller, bridgeInbound, timer } = internals;
+  const { queueAndRun, EV } = makeRunUtils(controller);
 
   // Remember information about the current block, starting with the init
   // message.
@@ -382,6 +385,13 @@ export const makeCosmicSwingsetTestKit = async (
     mailboxStorage,
     shutdown,
     swingStore,
+
+    // Controller-oriented helpers.
+    controller,
+    bridgeInbound,
+    timer,
+    queueAndRun,
+    EV,
 
     // Functions specific to this kit.
     getLastBlockInfo,
