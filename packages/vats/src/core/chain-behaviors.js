@@ -155,6 +155,7 @@ export const bridgeProvisioner = async ({
   // Register a provisioning handler over the bridge.
   const handler = provisioning
     ? Far('provisioningHandler', {
+        /** @param {BridgeMessage} obj */
         async fromBridge(obj) {
           switch (obj.type) {
             case 'PLEASE_PROVISION': {

@@ -1,3 +1,4 @@
+import { QueuedActionType } from '@agoric/internal/src/action-types.js';
 import type {
   CoreEval,
   CoreEvalSDKType,
@@ -12,8 +13,19 @@ interface BlockInfo {
  * @see coreEvalAction in proposal.go
  */
 export type CoreEvalAction = BlockInfo & {
-  type: ActionTypes.CORE_EVAL;
+  type: 'CORE_EVAL';
   evals: CoreEvalSDKType[];
 };
 
-export type BridgeMessage = CoreEvalAction;
+/**
+ * @see provisionAction in msg_server.go
+ */
+export type PleaseProvisionAction = {
+  type: 'PLEASE_PROVISION';
+  address: string;
+  nickname: string;
+  powerFlags: PowerFlags.SMART_WALLET;
+  submitter: string;
+};
+
+export type BridgeMessage = CoreEvalAction | PleaseProvisionAction;

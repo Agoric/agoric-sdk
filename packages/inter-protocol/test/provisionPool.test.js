@@ -378,7 +378,9 @@ test('makeBridgeProvisionTool handles duplicate requests', async t => {
   await handler.fromBridge({
     type: 'PLEASE_PROVISION',
     address,
+    nickname: 'test',
     powerFlags: PowerFlags.SMART_WALLET,
+    submitter: address,
   });
 
   t.deepEqual(
@@ -395,7 +397,9 @@ test('makeBridgeProvisionTool handles duplicate requests', async t => {
   await handler.fromBridge({
     type: 'PLEASE_PROVISION',
     address,
+    nickname: 'test',
     powerFlags: PowerFlags.SMART_WALLET,
+    submitter: address,
   });
   t.is(
     myDepositFacet,

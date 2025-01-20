@@ -23,6 +23,10 @@ import {
 import { InstanceHandleShape } from '@agoric/zoe/src/typeGuards.js';
 import { isUpgradeDisconnection } from '@agoric/internal/src/upgrade-api.js';
 
+/**
+ * @import {BridgeMessage} from '@agoric/cosmic-swingset/src/types.js';
+ */
+
 const trace = makeTracer('ProvPool');
 
 const FIRST_UPPER_KEYWORD = /^[A-Z][a-zA-Z0-9_$]*$/;
@@ -88,9 +92,10 @@ export const prepareBridgeProvisionTool = zone =>
       forHandler,
     }),
     {
+      /** @param {BridgeMessage} obj */
       async fromBridge(obj) {
-        obj.type === 'PLEASE_PROVISION' ||
-          Fail`Unrecognized request ${obj.type}`;
+        if (obj.type !== 'PLEASE_PROVISION')
+          throw Fail`Unrecognized request ${obj.type}`;
         trace('PLEASE_PROVISION', obj);
         const { address, powerFlags } = obj;
         powerFlags.includes(PowerFlags.SMART_WALLET) ||
