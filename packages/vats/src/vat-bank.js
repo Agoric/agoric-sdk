@@ -192,8 +192,7 @@ const prepareBankChannelHandler = zone =>
           case 'VBANK_BALANCE_UPDATE': {
             const { denomToAddressUpdater } = this.state;
             for (const update of obj.updated) {
-              // @ts-expect-error FIXME vbank.go says 'nonce' is on `obj`
-              const { address, denom, amount: value, nonce } = update;
+              const { address, denom, amount } = update;
               /** @type {BalanceUpdater | undefined} */
               let updater;
               try {
@@ -206,7 +205,7 @@ const prepareBankChannelHandler = zone =>
               }
               if (updater) {
                 try {
-                  updater.update(value, nonce);
+                  updater.update(amount, obj.nonce);
                 } catch (e) {
                   // ??? Is this an invariant that should complain louder?
 
