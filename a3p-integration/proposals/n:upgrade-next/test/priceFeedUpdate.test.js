@@ -23,7 +23,7 @@ import {
   verifyPushedPrice,
 } from './test-lib/price-feed.js';
 
-import { BID_OFFER_ID } from './agd-tools.js';
+import { BID_OFFER_ID } from '../agd-tools.js';
 
 export const checkForOracle = async (t, name) => {
   const instanceName = `${name}-USD price feed`;
