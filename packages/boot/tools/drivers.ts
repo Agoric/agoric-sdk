@@ -221,8 +221,6 @@ export const makeGovernanceDriver = async (
   const charterMembershipId = 'charterMembership';
   const committeeMembershipId = 'committeeMembership';
 
-  const { fromCapData } = makeMarshal(undefined, slotToBoardRemote);
-
   const chainTimerService: ERef<TimerService> =
     await EV.vat('bootstrap').consumeItem('chainTimerService');
 

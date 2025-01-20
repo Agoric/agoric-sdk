@@ -57,7 +57,7 @@
   "devDependencies": {
     "@agoric/ertp": "^0.16.2",
     "@endo/bundle-source": "^3.5.0",
-    "ava": "^5.3.0",
+    "ava": "^6.2.0",
     "c8": "^10.1.2"
   },
   "publishConfig": {
@@ -73,8 +73,7 @@
     "require": [
       "@endo/init/debug.js"
     ],
-    "timeout": "20m",
-    "workerThreads": false
+    "timeout": "20m"
   },
   "typeCoverage": {
     "atLeast": 74.02

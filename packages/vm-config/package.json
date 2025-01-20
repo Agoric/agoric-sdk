@@ -20,7 +20,7 @@
   "license": "Apache-2.0",
   "dependencies": {},
   "devDependencies": {
-    "ava": "^5.3.0",
+    "ava": "^6.2.0",
     "c8": "^10.1.2"
   },
   "files": [
@@ -45,8 +45,7 @@
     "require": [
       "@endo/init/debug.js"
     ],
-    "timeout": "20m",
-    "workerThreads": false
+    "timeout": "20m"
   },
   "typeCoverage": {
     "atLeast": 100
