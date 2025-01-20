@@ -70,15 +70,24 @@ export const CONNECTIONS_KEY = HubName.ChainConnection;
 export const ASSETS_KEY = HubName.ChainAssets;
 
 /**
- * Character used in a connection tuple key to separate the two chain ids. Valid
- * because a chainId can contain only alphanumerics and dash.
- *
- * Vstorage keys can be only alphanumerics, dash or underscore. That leaves
- * underscore as the only valid separator.
- *
- * @see {@link https://github.com/ChainAgnostic/CAIPs/blob/main/CAIPs/caip-2.md}
+ * Character used in a connection tuple key to separate the two chain ids.
  */
 const CHAIN_ID_SEPARATOR = '_';
+
+/**
+ * Vstorage keys can be only alphanumerics, dash, or underscore, which are all
+ * valid characters in chain IDs. So, double each occurence of
+ * {@link CHAIN_ID_SEPARATOR} in the chain ID so the encoded tuple can be
+ * decoded.
+ *
+ * @param {string} chainId
+ * @see {@link https://github.com/ChainAgnostic/CAIPs/blob/main/CAIPs/caip-2.md}
+ */
+export const encodeChainId = chainId =>
+  chainId.replaceAll(
+    CHAIN_ID_SEPARATOR,
+    `${CHAIN_ID_SEPARATOR}${CHAIN_ID_SEPARATOR}`,
+  );
 
 /**
  * The entries of the top-level namehubs in agoricNames are reflected to
@@ -89,13 +98,10 @@ const CHAIN_ID_SEPARATOR = '_';
  * @param {string} chainId2
  */
 export const connectionKey = (chainId1, chainId2) => {
-  if (
-    chainId1.includes(CHAIN_ID_SEPARATOR) ||
-    chainId2.includes(CHAIN_ID_SEPARATOR)
-  ) {
-    Fail`invalid chain id ${chainId1} or ${chainId2}`;
-  }
-  return [chainId1, chainId2].sort().join(CHAIN_ID_SEPARATOR);
+  const chainId1Sanitized = encodeChainId(chainId1);
+  const chainId2Sanitized = encodeChainId(chainId2);
+
+  return [chainId1Sanitized, chainId2Sanitized].sort().join(CHAIN_ID_SEPARATOR);
 };
 
 /**

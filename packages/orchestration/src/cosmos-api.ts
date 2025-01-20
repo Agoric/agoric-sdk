@@ -109,6 +109,7 @@ export type CosmosChainInfo = Readonly<{
    * cf https://github.com/cosmos/chain-registry/blob/master/chain.schema.json#L117
    */
   stakingTokens?: Readonly<Array<{ denom: string }>>;
+  icaEnabled?: boolean;
 }>;
 
 // #region Orchestration views on Cosmos response types
