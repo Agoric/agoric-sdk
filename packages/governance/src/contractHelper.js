@@ -191,9 +191,7 @@ const facetHelpers = (zcf, paramManager) => {
     limitedCreatorFacet,
     governedApis = {},
   ) => {
-    // Far side-effects the object, and can only be applied once
-    const farGovernedApis = Far('governedAPIs', governedApis);
-
+    const farGovernedApis = Far('governedAPIs', { ...governedApis });
     const governorFacet = prepareExo(
       baggage,
       'governorFacet',

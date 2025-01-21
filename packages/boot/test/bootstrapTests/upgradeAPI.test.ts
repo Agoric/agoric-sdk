@@ -6,6 +6,7 @@ import { CONTRACT_ELECTORATE, ParamTypes } from '@agoric/governance';
 import { MALLEABLE_NUMBER } from '@agoric/governance/test/swingsetTests/contractGovernor/governedContract.js';
 import { makeAgoricNamesRemotesFromFakeStorage } from '@agoric/vats/tools/board-utils.js';
 
+import { makePromiseKit } from '@endo/promise-kit';
 import { makeSwingsetTestKit } from '../../tools/supports.js';
 import {
   makeGovernanceDriver,
@@ -135,7 +136,8 @@ const makeDefaultTestContext = async t => {
 
   const facets = await setUpGovernedContract(zoe, timer, EV, controller);
 
-  return { ...swingsetTestKit, facets, governanceDriver };
+  const governedContract = makePromiseKit();
+  return { ...swingsetTestKit, facets, governedContract, governanceDriver };
 };
 
 const test = anyTest as TestFn<
@@ -172,10 +174,15 @@ const offerIds = {
   add2: { outgoing: 'add2' },
 };
 
-let governedContract;
 test.serial(`verify API governance`, async t => {
-  const { runUtils, facets, governanceDriver, storage, advanceTimeBy } =
-    t.context;
+  const {
+    runUtils,
+    facets,
+    governanceDriver,
+    storage,
+    advanceTimeBy,
+    governedContract,
+  } = t.context;
   const {
     governorFacets: { creatorFacet, instance },
     voteCounterInstallation: vci,
@@ -191,7 +198,7 @@ test.serial(`verify API governance`, async t => {
   const instanceAdmin = await EV(agoricNamesAdmin).lookupAdmin('instance');
   await EV(instanceAdmin).update('governedContract', instance);
   const agoricNamesRemotes = makeAgoricNamesRemotesFromFakeStorage(storage);
-  ({ governedContract } = agoricNamesRemotes.instance);
+  governedContract.resolve(agoricNamesRemotes.instance.governedContract);
 
   await null;
   for (const member of committee) {
@@ -210,8 +217,9 @@ test.serial(`verify API governance`, async t => {
     'governedContract',
   );
 
+  const governedContractInstance = await governedContract.promise;
   await governanceDriver.proposeApiCall(
-    governedContract,
+    governedContractInstance,
     'add1',
     [],
     committee[0],
@@ -266,7 +274,13 @@ test.serial(`upgrade`, async t => {
 });
 
 test.serial(`verify API governance post-upgrade`, async t => {
-  const { runUtils, facets, governanceDriver, advanceTimeBy } = t.context;
+  const {
+    runUtils,
+    facets,
+    governanceDriver,
+    advanceTimeBy,
+    governedContract,
+  } = t.context;
   const {
     governorFacets: { creatorFacet, instance },
     voteCounterInstallation: vci,
@@ -277,7 +291,7 @@ test.serial(`verify API governance post-upgrade`, async t => {
   const committee = governanceDriver.ecMembers;
 
   await governanceDriver.proposeApiCall(
-    governedContract,
+    await governedContract.promise,
     'add2',
     [],
     committee[0],
