@@ -98,6 +98,8 @@ export const prepareBridgeProvisionTool = zone =>
           throw Fail`Unrecognized request ${obj.type}`;
         trace('PLEASE_PROVISION', obj);
         const { address, powerFlags } = obj;
+        // XXX expects powerFlags to be an array, but if it's a string then
+        // this allows a string that has 'SMART_WALLET' in it.
         powerFlags.includes(PowerFlags.SMART_WALLET) ||
           Fail`missing SMART_WALLET in powerFlags`;
 
