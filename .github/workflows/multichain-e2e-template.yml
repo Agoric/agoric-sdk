@@ -80,6 +80,7 @@ jobs:
           version: 0.2.20
           timeout: 30m
           namespace: ${{ env.NAMESPACE }}
+          repo: https://hyperweb-io.github.io/starship
 
       - name: Fund Provision Pool
         run: |
