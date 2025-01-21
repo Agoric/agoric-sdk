@@ -23,9 +23,9 @@ const trace = makeTracer('E2ET');
 const BLD = '000000ubld';
 
 export const txAbbr = tx => {
-  // eslint-disable-next-line camelcase
+   
   const { txhash, code, height, gas_used } = tx;
-  // eslint-disable-next-line camelcase
+   
   return { txhash, code, height, gas_used };
 };
 
