@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "build": "exit 0",
-    "lint": "yarn tsc && yarn eslint --flag unstable_config_lookup_from_file .",
+    "lint": "yarn tsc && yarn eslint .",
     "lint-fix": "yarn lint --fix",
     "test": "echo 'Run specific test suites:\nyarn test:main (needs `make start`)\nyarn test:fast-usdc (needs `make start FILE=config.fusdc.yaml`)'",
     "test:main": "ava --config ava.main.config.js",
