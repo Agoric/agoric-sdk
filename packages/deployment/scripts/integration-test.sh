@@ -73,7 +73,11 @@ if [ -n "$LOADGEN" ]; then
     PATH="$thisdir/../bin:$SDK_SRC/bin:$PATH" \
     "$AG_SETUP_COSMOS_HOME/faucet-helper.sh" add-egress loadgen "$SOLO_ADDR"
 
+  CONTEXTUAL_SLOGFILE="$RESULTSDIR/contextual_slogs.json"
+  touch "$CONTEXTUAL_SLOGFILE"
+
   AG_CHAIN_COSMOS_HOME="$HOME/.agoric" \
+    CONTEXTUAL_SLOGFILE="$(realpath "$CONTEXTUAL_SLOGFILE")" \
     MUST_USE_PUBLISH_BUNDLE="1" \
     OUTPUT_DIR="$RESULTSDIR" \
     SDK_BUILD="0" \
