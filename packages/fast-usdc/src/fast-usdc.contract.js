@@ -22,11 +22,10 @@ import { prepareStatusManager } from './exos/status-manager.js';
 import { prepareTransactionFeedKit } from './exos/transaction-feed.js';
 import * as flows from './fast-usdc.flows.js';
 import { FastUSDCTermsShape, FeeConfigShape } from './type-guards.js';
-import { defineInertInvitation } from './utils/zoe.js';
 
 const trace = makeTracer('FastUsdc');
 
-const STATUS_NODE = 'status';
+const TXNS_NODE = 'txns';
 const FEE_NODE = 'feeConfig';
 const ADDRESSES_BAGGAGE_KEY = 'addresses';
 
@@ -37,9 +36,8 @@ const ADDRESSES_BAGGAGE_KEY = 'addresses';
  * @import {Remote} from '@agoric/internal';
  * @import {Marshaller, StorageNode} from '@agoric/internal/src/lib-chainStorage.js'
  * @import {Zone} from '@agoric/zone';
- * @import {OperatorKit} from './exos/operator-kit.js';
- * @import {CctpTxEvidence, FeeConfig} from './types.js';
- * @import {RepayAmountKWR, RepayPaymentKWR} from './exos/liquidity-pool.js';
+ * @import {OperatorOfferResult} from './exos/transaction-feed.js';
+ * @import {CctpTxEvidence, FeeConfig, RiskAssessment} from './types.js';
  */
 
 /**
@@ -110,8 +108,11 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
     marshaller,
   );
 
-  const statusNode = E(storageNode).makeChildNode(STATUS_NODE);
-  const statusManager = prepareStatusManager(zone, statusNode);
+  const statusManager = prepareStatusManager(
+    zone,
+    E(storageNode).makeChildNode(TXNS_NODE),
+    { marshaller },
+  );
 
   const { USDC } = terms.brands;
   const { withdrawToSeat } = tools.zoeTools;
@@ -149,17 +150,23 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
     { makeRecorderKit },
   );
 
-  const makeTestInvitation = defineInertInvitation(
-    zcf,
-    'test of forcing evidence',
-  );
-
   const { makeLocalAccount, makeNobleAccount } = orchestrateAll(flows, {});
 
   const creatorFacet = zone.exo('Fast USDC Creator', undefined, {
-    /** @type {(operatorId: string) => Promise<Invitation<OperatorKit>>} */
+    /** @type {(operatorId: string) => Promise<Invitation<OperatorOfferResult>>} */
     async makeOperatorInvitation(operatorId) {
       return feedKit.creator.makeOperatorInvitation(operatorId);
+    },
+    /** @type {(operatorId: string) => void} */
+    removeOperator(operatorId) {
+      return feedKit.creator.removeOperator(operatorId);
+    },
+    async getContractFeeBalance() {
+      return poolKit.feeRecipient.getContractFeeBalance();
+    },
+    /** @type {() => Promise<Invitation<unknown>>} */
+    async makeWithdrawFeesInvitation() {
+      return poolKit.feeRecipient.makeWithdrawFeesInvitation();
     },
     async connectToNoble() {
       return vowTools.when(nobleAccountV, nobleAccount => {
@@ -177,16 +184,12 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
     },
     async publishAddresses() {
       !baggage.has(ADDRESSES_BAGGAGE_KEY) || Fail`Addresses already published`;
-      const [poolAccountAddress, settlementAccountAddress] =
-        await vowTools.when(
-          vowTools.all([
-            E(poolAccount).getAddress(),
-            E(settlementAccount).getAddress(),
-          ]),
-        );
+      const [poolAccountAddress] = await vowTools.when(
+        vowTools.all([E(poolAccount).getAddress()]),
+      );
       const addresses = harden({
         poolAccount: poolAccountAddress.value,
-        settlementAccount: settlementAccountAddress.value,
+        settlementAccount: settlementAddress.value,
       });
       baggage.init(ADDRESSES_BAGGAGE_KEY, addresses);
       await publishAddresses(storageNode, addresses);
@@ -195,20 +198,6 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
   });
 
   const publicFacet = zone.exo('Fast USDC Public', undefined, {
-    // XXX to be removed before production
-    /**
-     * NB: Any caller with access to this invitation maker has the ability to
-     * force handling of evidence.
-     *
-     * Provide an API call in the form of an invitation maker, so that the
-     * capability is available in the smart-wallet bridge during UI testing.
-     *
-     * @param {CctpTxEvidence} evidence
-     */
-    makeTestPushInvitation(evidence) {
-      void advancer.handleTransactionEvent(evidence);
-      return makeTestInvitation();
-    },
     makeDepositInvitation() {
       return poolKit.public.makeDepositInvitation();
     },
@@ -282,6 +271,8 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
   );
   trace('settlementAccount', settlementAccount);
   trace('poolAccount', poolAccount);
+  const settlementAddress = await E(settlementAccount).getAddress();
+  trace('settlementAddress', settlementAddress);
 
   const [_agoric, _noble, agToNoble] = await vowTools.when(
     chainHub.getChainsAndConnection('agoric', 'noble'),
@@ -298,13 +289,14 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
       borrowerFacet: poolKit.borrower,
       notifyFacet: settlerKit.notify,
       poolAccount,
+      settlementAddress,
     }),
   );
   // Connect evidence stream to advancer
   void observeIteration(subscribeEach(feedKit.public.getEvidenceSubscriber()), {
-    updateState(evidence) {
+    updateState(evidenceWithRisk) {
       try {
-        void advancer.handleTransactionEvent(evidence);
+        void advancer.handleTransactionEvent(evidenceWithRisk);
       } catch (err) {
         trace('🚨 Error handling transaction event', err);
       }

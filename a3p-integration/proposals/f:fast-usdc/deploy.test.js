@@ -1,17 +1,15 @@
 // @ts-check
-/* global globalThis */
+/* eslint-env node */
 import test from 'ava';
 import '@endo/init/legacy.js'; // axios compat
-import { makeVstorageKit } from '@agoric/client-utils';
+import { LOCAL_CONFIG, makeSmartWalletKit } from '@agoric/client-utils';
 
-const io = { fetch: globalThis.fetch };
-const networkConfig = {
-  rpcAddrs: ['http://0.0.0.0:26657'],
-  chainName: 'agoriclocal',
+const io = {
+  delay: ms => new Promise(resolve => setTimeout(() => resolve(undefined), ms)),
+  fetch: global.fetch,
 };
-
 test('fastUsdc is in agoricNames.instance', async t => {
-  const { agoricNames } = await makeVstorageKit(io, networkConfig);
+  const { agoricNames } = await makeSmartWalletKit(io, LOCAL_CONFIG);
 
   t.log('agoricNames.instance keys', Object.keys(agoricNames.instance));
   t.truthy(agoricNames.instance.fastUsdc);

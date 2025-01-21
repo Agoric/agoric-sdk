@@ -81,6 +81,11 @@ module.exports = {
   reportUnusedDisableDirectives: true,
 
   rules: {
+    '@typescript-eslint/no-unused-expressions': 'off', // we use `cond || Fail`
+    '@typescript-eslint/no-empty-object-type': 'warn',
+    '@typescript-eslint/no-unnecessary-type-constraint': 'warn',
+    '@typescript-eslint/no-unsafe-function-type': 'warn',
+    '@typescript-eslint/no-wrapper-object-types': 'warn',
     '@typescript-eslint/ban-ts-comment': [
       'error',
       {

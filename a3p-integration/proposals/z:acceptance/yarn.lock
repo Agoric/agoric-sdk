@@ -1959,7 +1959,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"axios@npm:^1.6.0, axios@npm:^1.6.7":
+"axios@npm:1.7.7, axios@npm:^1.6.7":
   version: 1.7.7
   resolution: "axios@npm:1.7.7"
   dependencies:
@@ -1967,6 +1967,17 @@ __metadata:
     form-data: "npm:^4.0.0"
     proxy-from-env: "npm:^1.1.0"
   checksum: 10c0/4499efc89e86b0b49ffddc018798de05fab26e3bf57913818266be73279a6418c3ce8f9e934c7d2d707ab8c095e837fc6c90608fb7715b94d357720b5f568af7
+  languageName: node
+  linkType: hard
+
+"axios@patch:axios@npm%3A1.7.7#~/.yarn/patches/axios-npm-1.7.7-cfbedc233d.patch":
+  version: 1.7.7
+  resolution: "axios@patch:axios@npm%3A1.7.7#~/.yarn/patches/axios-npm-1.7.7-cfbedc233d.patch::version=1.7.7&hash=df7a05"
+  dependencies:
+    follow-redirects: "npm:^1.15.6"
+    form-data: "npm:^4.0.0"
+    proxy-from-env: "npm:^1.1.0"
+  checksum: 10c0/49964e1025a39e845ad1824cdf49f313202de26e55bbc4a67e81aaeaba78a8efcbfe3da42ca61c14fdbc249bdbd62b5478e9e54ea3456711d159ec068b12c392
   languageName: node
   linkType: hard
 
@@ -5325,7 +5336,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"protobufjs@npm:^6.8.8":
+"protobufjs@npm:6.11.4":
   version: 6.11.4
   resolution: "protobufjs@npm:6.11.4"
   dependencies:
@@ -5346,6 +5357,30 @@ __metadata:
     pbjs: bin/pbjs
     pbts: bin/pbts
   checksum: 10c0/c244d7b9b6d3258193da5c0d1e558dfb47f208ae345e209f90ec45c9dca911b90fa17e937892a9a39a4136ab9886981aae9efdf6039f7baff4f7225f5eeb9812
+  languageName: node
+  linkType: hard
+
+"protobufjs@patch:protobufjs@npm%3A6.11.4#~/.yarn/patches/protobufjs-npm-6.11.4-af11968b80.patch":
+  version: 6.11.4
+  resolution: "protobufjs@patch:protobufjs@npm%3A6.11.4#~/.yarn/patches/protobufjs-npm-6.11.4-af11968b80.patch::version=6.11.4&hash=1644ab"
+  dependencies:
+    "@protobufjs/aspromise": "npm:^1.1.2"
+    "@protobufjs/base64": "npm:^1.1.2"
+    "@protobufjs/codegen": "npm:^2.0.4"
+    "@protobufjs/eventemitter": "npm:^1.1.0"
+    "@protobufjs/fetch": "npm:^1.1.0"
+    "@protobufjs/float": "npm:^1.0.2"
+    "@protobufjs/inquire": "npm:^1.1.0"
+    "@protobufjs/path": "npm:^1.1.2"
+    "@protobufjs/pool": "npm:^1.1.0"
+    "@protobufjs/utf8": "npm:^1.1.0"
+    "@types/long": "npm:^4.0.1"
+    "@types/node": "npm:>=13.7.0"
+    long: "npm:^4.0.0"
+  bin:
+    pbjs: bin/pbjs
+    pbts: bin/pbts
+  checksum: 10c0/fea6b3d00dbb564157b24c0f0f69dc777b22f30ffbe1fed67fb9a2ef05e6e99e8da6d1811bea650a315ec98d7512638d72317e41136522b94be4fb3c89d8d0ab
   languageName: node
   linkType: hard
 
@@ -5576,6 +5611,8 @@ __metadata:
     "@agoric/store": "npm:dev"
     "@agoric/synthetic-chain": "npm:^0.4.3"
     "@agoric/zoe": "npm:dev"
+    "@cosmjs/stargate": "npm:^0.32.3"
+    "@cosmjs/tendermint-rpc": "npm:^0.32.3"
     "@endo/errors": "npm:^1.2.7"
     "@endo/far": "npm:^1.1.8"
     "@endo/init": "npm:^1.1.6"

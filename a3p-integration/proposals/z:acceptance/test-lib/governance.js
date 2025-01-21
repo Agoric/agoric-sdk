@@ -1,15 +1,28 @@
+/* global setTimeout */
+
 import { agops, agoric, executeOffer } from '@agoric/synthetic-chain';
-import { makeVstorageKit } from '@agoric/client-utils';
+import {
+  retryUntilCondition,
+  waitUntilElectionResult,
+} from '@agoric/client-utils';
+import { agdWalletUtils } from './index.js';
+import {
+  checkCommitteeElectionResult,
+  fetchLatestEcQuestion,
+} from './psm-lib.js';
+import { makeVstorageKit } from './rpc.js';
 
 /**
  * @param {typeof window.fetch} fetch
- * @param {import('@agoric/client-utils').MinimalNetworkConfig} networkConfig
+ * @param {import('./rpc.js').MinimalNetworkConfig} networkConfig
  */
 export const makeGovernanceDriver = async (fetch, networkConfig) => {
-  const { readLatestHead, marshaller } = await makeVstorageKit(
+  const { readLatestHead, marshaller, vstorage } = await makeVstorageKit(
     { fetch },
     networkConfig,
   );
+
+  let deadline;
 
   /** @param {string} previousOfferId */
   const generateVoteOffer = async previousOfferId => {
@@ -63,7 +76,7 @@ export const makeGovernanceDriver = async (fetch, networkConfig) => {
   };
 
   /**
-   * Generates a vault director parameter change proposal as a `executeOffer` message
+   * Generates a parameter change proposal as a `executeOffer` message
    * body.
    *
    * @param {string} previousOfferId - the `id` of the offer that this proposal is
@@ -72,13 +85,15 @@ export const makeGovernanceDriver = async (fetch, networkConfig) => {
    *   be open for (in seconds)
    * @param {any} params
    * @param {{ paramPath: any; }} paramsPath
+   * @param {string} instanceName
    * @returns {Promise<string>} - the `executeOffer` message body as a JSON string
    */
-  const generateVaultDirectorParamChange = async (
+  const generateParamChange = async (
     previousOfferId,
     voteDur,
     params,
     paramsPath,
+    instanceName,
   ) => {
     const instancesRaw = await agoric.follow(
       '-lF',
@@ -89,12 +104,12 @@ export const makeGovernanceDriver = async (fetch, networkConfig) => {
     const instances = Object.fromEntries(
       marshaller.fromCapData(JSON.parse(instancesRaw)),
     );
-    const { VaultFactory } = instances;
-    assert(VaultFactory);
+    const instance = instances[instanceName];
+    assert(instance);
 
     const msSinceEpoch = Date.now();
     const id = `propose-${msSinceEpoch}`;
-    const deadline = BigInt(Math.ceil(msSinceEpoch / 1000)) + BigInt(voteDur);
+    deadline = BigInt(Math.ceil(msSinceEpoch / 1000)) + BigInt(voteDur);
     const body = {
       method: 'executeOffer',
       offer: {
@@ -106,7 +121,7 @@ export const makeGovernanceDriver = async (fetch, networkConfig) => {
         },
         offerArgs: {
           deadline,
-          instance: VaultFactory,
+          instance,
           params,
           path: paramsPath,
         },
@@ -123,12 +138,16 @@ export const makeGovernanceDriver = async (fetch, networkConfig) => {
    * @param {string} address
    * @param {any} params
    * @param {{paramPath: any}} path
-   * @param {string} charterAcceptOfferId
+   * @param {string} instanceName
+   * @param {number} votingDuration
+   * @param {string} [charterAcceptOfferId]
    */
-  const proposeVaultDirectorParamChange = async (
+  const proposeParamChange = async (
     address,
     params,
     path,
+    instanceName,
+    votingDuration,
     charterAcceptOfferId,
   ) => {
     await null;
@@ -144,12 +163,160 @@ export const makeGovernanceDriver = async (fetch, networkConfig) => {
 
     return executeOffer(
       address,
-      generateVaultDirectorParamChange(offerId, 10, params, path),
+      generateParamChange(offerId, votingDuration, params, path, instanceName),
     );
+  };
+
+  const getCharterInvitation = async address => {
+    const { getCurrentWalletRecord } = agdWalletUtils;
+
+    /** @type {any} */
+    const instance = await readLatestHead(`published.agoricNames.instance`);
+    const instances = Object.fromEntries(instance);
+
+    const wallet = await getCurrentWalletRecord(address);
+    const usedInvitations = wallet.offerToUsedInvitation;
+
+    const charterInvitation = usedInvitations.find(
+      v =>
+        v[1].value[0].instance.getBoardId() ===
+        instances.econCommitteeCharter.getBoardId(),
+    );
+    assert(charterInvitation, 'missing charter invitation');
+
+    return charterInvitation;
+  };
+
+  const getCommitteeInvitation = async address => {
+    /** @type {any} */
+    const instance = await readLatestHead(`published.agoricNames.instance`);
+    const instances = Object.fromEntries(instance);
+
+    const voteWallet =
+      /** @type {import('@agoric/smart-wallet/src/smartWallet.js').CurrentWalletRecord} */ (
+        await readLatestHead(`published.wallet.${address}.current`)
+      );
+
+    const usedInvitationsForVoter = voteWallet.offerToUsedInvitation;
+
+    const committeeInvitationForVoter = usedInvitationsForVoter.find(
+      v =>
+        v[1].value[0].instance.getBoardId() ===
+        instances.economicCommittee.getBoardId(),
+    );
+    assert(
+      committeeInvitationForVoter,
+      `${address} must have committee invitation`,
+    );
+
+    return committeeInvitationForVoter;
+  };
+
+  const getLatestQuestion = async () => {
+    const { latestOutcome, latestQuestion } = await retryUntilCondition(
+      () => fetchLatestEcQuestion({ follow: agoric.follow }),
+      electionResult =>
+        checkCommitteeElectionResult(electionResult, {
+          outcome: 'win',
+          deadline,
+        }),
+      'Governed param change election failed',
+      { setTimeout, retryIntervalMs: 5000, maxRetries: 15 },
+    );
+
+    return { latestOutcome, latestQuestion };
+  };
+
+  const waitForElection = () =>
+    waitUntilElectionResult(
+      'published.committees.Economic_Committee',
+      { outcome: 'win', deadline },
+      // @ts-expect-error vstorage casting
+      { vstorage: { readLatestHead }, log: console.log, setTimeout },
+      {
+        errorMessage: 'Governed param change election failed',
+        retryIntervalMs: 5000,
+        maxRetries: 15,
+      },
+    );
+
+  const getLatestQuestionHistory = async () => {
+    const nodePath = 'published.committees.Economic_Committee.latestQuestion';
+
+    const historyIterator = await vstorage.readHistory(nodePath);
+    const history = [];
+
+    for await (const data of historyIterator) {
+      if (data) {
+        const question = marshaller.fromCapData(JSON.parse(data[0]));
+        const changes = question.positions[0].changes;
+        history.push(changes);
+      }
+    }
+
+    return history;
   };
 
   return {
     voteOnProposedChanges,
-    proposeVaultDirectorParamChange,
+    proposeParamChange,
+    getCharterInvitation,
+    getCommitteeInvitation,
+    getLatestQuestion,
+    waitForElection,
+    getLatestQuestionHistory,
   };
+};
+
+/**
+ *
+ * @param {import('ava').ExecutionContext} t
+ * @param {Awaited<ReturnType<makeGovernanceDriver>>} governanceDriver
+ * @param {{
+ *   instanceName: string;
+ *   duration: number;
+ *   governanceAddresses: string[];
+ *   params: object
+ * }} electionParams
+ * @param {{ getLastUpdate: (addr: string) => Promise<import('@agoric/smart-wallet/src/smartWallet.js').UpdateRecord>}} io
+ */
+export const runCommitteeElectionParamChange = async (
+  t,
+  governanceDriver,
+  { instanceName, duration, governanceAddresses, params },
+  { getLastUpdate },
+) => {
+  const path = { paramPath: { key: 'governedParams' } };
+  await governanceDriver.proposeParamChange(
+    governanceAddresses[0],
+    params,
+    path,
+    instanceName,
+    duration,
+  );
+
+  const questionUpdate = await getLastUpdate(governanceAddresses[0]);
+  t.log(questionUpdate);
+  t.like(questionUpdate, {
+    status: { numWantsSatisfied: 1 },
+  });
+
+  t.log('Voting on param change');
+  for (const address of governanceAddresses) {
+    const committeeInvitationForVoter =
+      await governanceDriver.getCommitteeInvitation(address);
+
+    await governanceDriver.voteOnProposedChanges(
+      address,
+      committeeInvitationForVoter[0],
+    );
+
+    const voteUpdate = await getLastUpdate(address);
+    t.log(`${address} voted`);
+    t.like(voteUpdate, {
+      status: { numWantsSatisfied: 1 },
+    });
+  }
+
+  await governanceDriver.waitForElection();
 };

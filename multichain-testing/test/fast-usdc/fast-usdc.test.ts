@@ -1,27 +1,41 @@
 import anyTest from '@endo/ses-ava/prepare-endo.js';
-import type { TestFn } from 'ava';
+
 import { encodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
+import type { QueryBalanceResponseSDKType } from '@agoric/cosmic-proto/cosmos/bank/v1beta1/query.js';
 import { AmountMath } from '@agoric/ertp';
+import type { USDCProposalShapes } from '@agoric/fast-usdc/src/pool-share-math.js';
+import type {
+  CctpTxEvidence,
+  EvmAddress,
+  PoolMetrics,
+} from '@agoric/fast-usdc/src/types.js';
+import { makeTracer } from '@agoric/internal';
 import type { Denom } from '@agoric/orchestration';
-import { divideBy, multiplyBy } from '@agoric/zoe/src/contractSupport/ratio.js';
+import type { CurrentWalletRecord } from '@agoric/smart-wallet/src/smartWallet.js';
 import type { IBCChannelID } from '@agoric/vats';
-import { makeDoOffer, type WalletDriver } from '../../tools/e2e-tools.js';
+import { divideBy, multiplyBy } from '@agoric/zoe/src/contractSupport/ratio.js';
+import type { TestFn } from 'ava';
 import { makeDenomTools } from '../../tools/asset-info.js';
-import { createWallet } from '../../tools/wallet.js';
+import { makeDoOffer, type WalletDriver } from '../../tools/e2e-tools.js';
 import { makeQueryClient } from '../../tools/query.js';
-import { commonSetup, type SetupContextWithWallets } from '../support.js';
-import { makeFeedPolicy, oracleMnemonics } from './config.js';
 import { makeRandomDigits } from '../../tools/random.js';
-import { balancesFromPurses } from '../../tools/purse.js';
+import { createWallet } from '../../tools/wallet.js';
+import { commonSetup, type SetupContextWithWallets } from '../support.js';
+import { makeFeedPolicyPartial, oracleMnemonics } from './config.js';
+
+const { RELAYER_TYPE } = process.env;
+
+const log = makeTracer('MCFU');
 
 const { keys, values, fromEntries } = Object;
-const { isGTE, isEmpty, make } = AmountMath;
+const { isGTE, isEmpty, make, subtract } = AmountMath;
 
 const makeRandomNumber = () => Math.random();
 
 const test = anyTest as TestFn<
   SetupContextWithWallets & {
     lpUser: WalletDriver;
+    feeUser: WalletDriver;
     oracleWds: WalletDriver[];
     nobleAgoricChannelId: IBCChannelID;
     usdcOnOsmosis: Denom;
@@ -30,14 +44,16 @@ const test = anyTest as TestFn<
   }
 >;
 
-const accounts = [...keys(oracleMnemonics), 'lp'];
+const accounts = [...keys(oracleMnemonics), 'lp', 'feeDest'];
 const contractName = 'fastUsdc';
 const contractBuilder =
-  '../packages/builders/scripts/fast-usdc/init-fast-usdc.js';
+  '../packages/builders/scripts/fast-usdc/start-fast-usdc.build.js';
 const LP_DEPOSIT_AMOUNT = 8_000n * 10n ** 6n;
 
 test.before(async t => {
-  const { setupTestKeys, ...common } = await commonSetup(t);
+  const { setupTestKeys, ...common } = await commonSetup(t, {
+    config: `../config.fusdc${RELAYER_TYPE ? '.' + RELAYER_TYPE : ''}.yaml`,
+  });
   const {
     chainInfo,
     commonBuilderOpts,
@@ -70,7 +86,7 @@ test.before(async t => {
   await startContract(contractName, contractBuilder, {
     oracle: keys(oracleMnemonics).map(n => `${n}:${wallets[n]}`),
     usdcDenom,
-    feedPolicy: JSON.stringify(makeFeedPolicy(nobleAgoricChannelId)),
+    feedPolicy: JSON.stringify(makeFeedPolicyPartial(nobleAgoricChannelId)),
     ...commonBuilderOpts,
   });
 
@@ -82,10 +98,12 @@ test.before(async t => {
     USDC: 8_000n,
     BLD: 100n,
   });
+  const feeUser = await provisionSmartWallet(wallets['feeDest'], { BLD: 100n });
 
   t.context = {
     ...common,
     lpUser,
+    feeUser,
     oracleWds,
     nobleAgoricChannelId,
     usdcOnOsmosis,
@@ -99,23 +117,62 @@ test.after(async t => {
   deleteTestKeys(accounts);
 });
 
+type VStorageClient = Awaited<ReturnType<typeof commonSetup>>['vstorageClient'];
+const agoricNamesQ = (vsc: VStorageClient) =>
+  harden({
+    brands: <K extends AssetKind>(_assetKind: K) =>
+      vsc
+        .queryData('published.agoricNames.brand')
+        .then(pairs => fromEntries(pairs) as Record<string, Brand<K>>),
+  });
+const walletQ = (vsc: VStorageClient) => {
+  const self = harden({
+    current: (addr: string) =>
+      vsc.queryData(
+        `published.wallet.${addr}.current`,
+      ) as Promise<CurrentWalletRecord>,
+    findInvitationDetail: async (addr: string, description: string) => {
+      const { Invitation } = await agoricNamesQ(vsc).brands('set');
+      const current = await self.current(addr);
+      const { purses } = current;
+      const { value: details } = purses.find(p => p.brand === Invitation)!
+        .balance as Amount<'set', InvitationDetails>;
+      const detail = details.find(x => x.description === description);
+      return { current, detail };
+    },
+  });
+  return self;
+};
+
+const fastLPQ = (vsc: VStorageClient) =>
+  harden({
+    metrics: () =>
+      vsc.queryData(`published.fastUsdc.poolMetrics`) as Promise<PoolMetrics>,
+    info: () =>
+      vsc.queryData(`published.${contractName}`) as Promise<{
+        poolAccount: string;
+        settlementAccount: string;
+      }>,
+  });
+
 const toOracleOfferId = (idx: number) => `oracle${idx + 1}-accept`;
 
 test.serial('oracles accept', async t => {
   const { oracleWds, retryUntilCondition, vstorageClient, wallets } = t.context;
-  const brands = await vstorageClient.queryData('published.agoricNames.brand');
-  const { Invitation } = Object.fromEntries(brands);
 
   const description = 'oracle operator invitation';
 
   // ensure we have an unused (or used) oracle invitation in each purse
   let hasAccepted = false;
   for (const name of keys(oracleMnemonics)) {
-    const { offerToUsedInvitation, purses } = await vstorageClient.queryData(
-      `published.wallet.${wallets[name]}.current`,
+    const {
+      current: { offerToUsedInvitation },
+      detail,
+    } = await walletQ(vstorageClient).findInvitationDetail(
+      wallets[name],
+      description,
     );
-    const { value: invitations } = balancesFromPurses(purses)[Invitation];
-    const hasInvitation = invitations.some(x => x.description === description);
+    const hasInvitation = !!detail;
     const usedInvitation = offerToUsedInvitation?.[0]?.[0] === `${name}-accept`;
     t.log({ name, hasInvitation, usedInvitation });
     t.true(hasInvitation || usedInvitation, 'has or accepted invitation');
@@ -153,25 +210,30 @@ test.serial('oracles accept', async t => {
           return offerToUsedInvitation[0][0] === `${name}-accept`;
         },
         `${name} invitation used`,
+        { log },
       ),
     );
   }
 });
 
+const toAmt = (
+  brand: Brand<'nat'>,
+  balance: QueryBalanceResponseSDKType['balance'],
+) => make(brand, BigInt(balance?.amount || 0));
+
 test.serial('lp deposits', async t => {
   const { lpUser, retryUntilCondition, vstorageClient, wallets } = t.context;
 
   const lpDoOffer = makeDoOffer(lpUser);
-  const brands = await vstorageClient.queryData('published.agoricNames.brand');
-  const { USDC, FastLP } = Object.fromEntries(brands);
 
-  const usdcToGive = make(USDC, LP_DEPOSIT_AMOUNT);
+  const { USDC, FastLP } = await agoricNamesQ(vstorageClient).brands('nat');
 
-  const { shareWorth: currShareWorth } = await vstorageClient.queryData(
-    `published.${contractName}.poolMetrics`,
-  );
-  const poolSharesWanted = divideBy(usdcToGive, currShareWorth);
+  const give = { USDC: make(USDC, LP_DEPOSIT_AMOUNT) };
 
+  const metricsPre = await fastLPQ(vstorageClient).metrics();
+  const want = { PoolShare: divideBy(give.USDC, metricsPre.shareWorth) };
+
+  const proposal: USDCProposalShapes['deposit'] = harden({ give, want });
   await lpDoOffer({
     id: `lp-deposit-${Date.now()}`,
     invitationSpec: {
@@ -179,30 +241,30 @@ test.serial('lp deposits', async t => {
       instancePath: [contractName],
       callPipe: [['makeDepositInvitation']],
     },
-    proposal: {
-      give: { USDC: usdcToGive },
-      want: { PoolShare: poolSharesWanted },
-    },
+    proposal,
   });
 
   await t.notThrowsAsync(() =>
     retryUntilCondition(
-      () => vstorageClient.queryData(`published.${contractName}.poolMetrics`),
+      () => fastLPQ(vstorageClient).metrics(),
       ({ shareWorth }) =>
-        !isGTE(currShareWorth.numerator, shareWorth.numerator),
+        !isGTE(metricsPre.shareWorth.numerator, shareWorth.numerator),
       'share worth numerator increases from deposit',
+      { log },
     ),
+  );
+
+  const { useChain } = t.context;
+  const queryClient = makeQueryClient(
+    await useChain('agoric').getRestEndpoint(),
   );
 
   await t.notThrowsAsync(() =>
     retryUntilCondition(
-      () =>
-        vstorageClient.queryData(`published.wallet.${wallets['lp']}.current`),
-      ({ purses }) => {
-        const currentPoolShares = balancesFromPurses(purses)[FastLP];
-        return currentPoolShares && isGTE(currentPoolShares, poolSharesWanted);
-      },
+      () => queryClient.queryBalance(wallets['lp'], 'ufastlp'),
+      ({ balance }) => isGTE(toAmt(FastLP, balance), want.PoolShare),
       'lp has pool shares',
+      { log },
     ),
   );
 });
@@ -216,7 +278,9 @@ const advanceAndSettleScenario = test.macro({
       nobleAgoricChannelId,
       oracleWds,
       retryUntilCondition,
+      smartWalletKit,
       useChain,
+      usdcDenom,
       usdcOnOsmosis,
       vstorageClient,
     } = t.context;
@@ -250,8 +314,7 @@ const advanceAndSettleScenario = test.macro({
     );
     t.log('got forwardingAddress', userForwardingAddr);
 
-    // TODO export CctpTxEvidence type
-    const evidence = harden({
+    const evidence: CctpTxEvidence = harden({
       blockHash:
         '0x90d7343e04f8160892e94f02d6a9b9f255663ed0ac34caca98544c8143fee665',
       blockNumber: 21037663n,
@@ -259,6 +322,7 @@ const advanceAndSettleScenario = test.macro({
       tx: {
         amount: mintAmt,
         forwardingAddress: userForwardingAddr,
+        sender: '0x9a9eE9e9e9e9e9e9e9e9e9e9e9e9e9e9e9e9e9e9' as EvmAddress,
       },
       aux: {
         forwardingChannel: nobleAgoricChannelId,
@@ -267,7 +331,7 @@ const advanceAndSettleScenario = test.macro({
       chainId: 42161,
     });
 
-    console.log('User initiates evm mint:', evidence.txHash);
+    log('User initiates evm mint:', evidence.txHash);
 
     // submit evidences
     await Promise.all(
@@ -289,27 +353,53 @@ const advanceAndSettleScenario = test.macro({
       await useChain(eudChain).getRestEndpoint(),
     );
 
+    const getUsdcDenom = (chainName: string) => {
+      switch (chainName) {
+        case 'agoric':
+          return usdcDenom;
+        case 'osmosis':
+          return usdcOnOsmosis;
+        case 'noble':
+          return 'uusdc';
+        default:
+          throw new Error(`${chainName} not supported in 'getUsdcDenom'`);
+      }
+    };
+
     await t.notThrowsAsync(() =>
       retryUntilCondition(
-        () => queryClient.queryBalance(EUD, usdcOnOsmosis),
-        ({ balance }) => !!balance?.amount && BigInt(balance.amount) < mintAmt,
+        () => queryClient.queryBalance(EUD, getUsdcDenom(eudChain)),
+        ({ balance }) =>
+          !!balance?.amount &&
+          BigInt(balance?.amount) > 0n &&
+          BigInt(balance.amount) < mintAmt,
         `${EUD} advance available from fast-usdc`,
         // this resolves quickly, so _decrease_ the interval so the timing is more apparent
         { retryIntervalMs: 500 },
       ),
     );
 
-    const queryTxStatus = async () =>
-      vstorageClient.queryData(
-        `published.${contractName}.status.${evidence.txHash}`,
+    const queryTxStatus = async () => {
+      const record = await smartWalletKit.readPublished(
+        `fastUsdc.txns.${evidence.txHash}`,
       );
+      if (!record) {
+        throw new Error(`no record for ${evidence.txHash}`);
+      }
+      // @ts-expect-error unknown may not have 'status'
+      if (!record.status) {
+        throw new Error(`no status for ${evidence.txHash}`);
+      }
+      // @ts-expect-error still unknown?
+      return record.status;
+    };
 
     const assertTxStatus = async (status: string) =>
       t.notThrowsAsync(() =>
         retryUntilCondition(
           () => queryTxStatus(),
           txStatus => {
-            console.log('tx status', txStatus);
+            log('tx status', txStatus);
             return txStatus === status;
           },
           `${evidence.txHash} is ${status}`,
@@ -317,12 +407,12 @@ const advanceAndSettleScenario = test.macro({
       );
 
     await assertTxStatus('ADVANCED');
-    console.log('Advance completed, waiting for mint...');
+    log('Advance completed, waiting for mint...');
 
     nobleTools.mockCctpMint(mintAmt, userForwardingAddr);
     await t.notThrowsAsync(() =>
       retryUntilCondition(
-        () => vstorageClient.queryData(`published.${contractName}.poolMetrics`),
+        () => fastLPQ(vstorageClient).metrics(),
         ({ encumberedBalance }) =>
           encumberedBalance && isEmpty(encumberedBalance),
         'encumberedBalance returns to 0',
@@ -331,6 +421,33 @@ const advanceAndSettleScenario = test.macro({
 
     await assertTxStatus('DISBURSED');
   },
+});
+
+test('distribute FastUSDC contract fees', async t => {
+  const io = t.context;
+  const queryClient = makeQueryClient(
+    await io.useChain('agoric').getRestEndpoint(),
+  );
+  const builder =
+    '../packages/builders/scripts/fast-usdc/fast-usdc-fees.build.js';
+
+  const opts = {
+    destinationAddress: io.wallets['feeDest'],
+    feePortion: 0.25,
+  };
+  t.log('build, run proposal to distribute fees', opts);
+  await io.deployBuilder(builder, {
+    ...opts,
+    feePortion: `${opts.feePortion}`,
+  });
+
+  const { balance } = await io.retryUntilCondition(
+    () => queryClient.queryBalance(opts.destinationAddress, io.usdcDenom),
+    ({ balance }) => !!balance && BigInt(balance.amount) > 0n,
+    `fees received at ${opts.destinationAddress}`,
+  );
+  t.log('fees received', balance);
+  t.truthy(balance?.amount);
 });
 
 test.serial(advanceAndSettleScenario, LP_DEPOSIT_AMOUNT / 4n, 'osmosis');
@@ -350,27 +467,28 @@ test.serial('lp withdraws', async t => {
     await useChain('agoric').getRestEndpoint(),
   );
   const lpDoOffer = makeDoOffer(lpUser);
-  const brands = await vstorageClient.queryData('published.agoricNames.brand');
-  const { FastLP } = Object.fromEntries(brands);
+  const { FastLP } = await agoricNamesQ(vstorageClient).brands('nat');
   t.log('FastLP brand', FastLP);
 
-  const { shareWorth: currShareWorth } = await vstorageClient.queryData(
-    `published.${contractName}.poolMetrics`,
-  );
-  const { purses } = await vstorageClient.queryData(
-    `published.wallet.${wallets['lp']}.current`,
-  );
-  const currentPoolShares = balancesFromPurses(purses)[FastLP];
-  t.log('currentPoolShares', currentPoolShares);
-  const usdcWanted = multiplyBy(currentPoolShares, currShareWorth);
-  t.log('usdcWanted', usdcWanted);
+  const metricsPre = await fastLPQ(vstorageClient).metrics();
 
-  const { balance: currentUSDCBalance } = await queryClient.queryBalance(
+  const { balance: lpCoins } = await queryClient.queryBalance(
+    wallets['lp'],
+    'ufastlp',
+  );
+  const give = { PoolShare: toAmt(FastLP, lpCoins) };
+  t.log('give', give, lpCoins);
+
+  const { balance: usdcCoinsPre } = await queryClient.queryBalance(
     wallets['lp'],
     usdcDenom,
   );
-  t.log(`current ${usdcDenom} balance`, currentUSDCBalance);
+  t.log('usdc coins pre', usdcCoinsPre);
 
+  const want = { USDC: multiplyBy(give.PoolShare, metricsPre.shareWorth) };
+  t.log('want', want);
+
+  const proposal: USDCProposalShapes['withdraw'] = harden({ give, want });
   await lpDoOffer({
     id: `lp-withdraw-${Date.now()}`,
     invitationSpec: {
@@ -378,32 +496,29 @@ test.serial('lp withdraws', async t => {
       instancePath: [contractName],
       callPipe: [['makeWithdrawInvitation']],
     },
-    proposal: {
-      give: { PoolShare: currentPoolShares },
-      want: { USDC: usdcWanted },
-    },
+    proposal,
   });
 
   await t.notThrowsAsync(() =>
     retryUntilCondition(
-      () =>
-        vstorageClient.queryData(`published.wallet.${wallets['lp']}.current`),
-      ({ purses }) => {
-        const currentPoolShares = balancesFromPurses(purses)[FastLP];
-        return !currentPoolShares || isEmpty(currentPoolShares);
-      },
+      () => queryClient.queryBalance(wallets['lp'], 'ufastlp'),
+      ({ balance }) => isEmpty(toAmt(FastLP, balance)),
       'lp no longer has pool shares',
+      { log },
     ),
   );
 
+  const USDC = want.USDC.brand;
   await t.notThrowsAsync(() =>
     retryUntilCondition(
       () => queryClient.queryBalance(wallets['lp'], usdcDenom),
       ({ balance }) =>
-        !!balance?.amount &&
-        BigInt(balance.amount) - BigInt(currentUSDCBalance!.amount!) >
-          LP_DEPOSIT_AMOUNT,
+        !isGTE(
+          make(USDC, LP_DEPOSIT_AMOUNT),
+          subtract(toAmt(USDC, balance), toAmt(USDC, usdcCoinsPre)),
+        ),
       "lp's USDC balance increases",
+      { log },
     ),
   );
 });

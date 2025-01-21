@@ -1,4 +1,3 @@
-/* eslint-disable @jessie.js/safe-await-separator */
 /**
  * @file uses .ts syntax to be able to declare types (e.g. of kit.creatorFacet
  *   as {}) because "there is no JavaScript syntax for passing a a type

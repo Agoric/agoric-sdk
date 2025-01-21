@@ -6,22 +6,24 @@ import { pickFacet } from '@agoric/vat-data';
 import { VowShape } from '@agoric/vow';
 import { E } from '@endo/far';
 import { M, mustMatch } from '@endo/patterns';
+import { Fail, q } from '@endo/errors';
 import {
-  CctpTxEvidenceShape,
   AddressHookShape,
   EvmHashShape,
+  EvidenceWithRiskShape,
 } from '../type-guards.js';
 import { makeFeeTools } from '../utils/fees.js';
 
 /**
  * @import {HostInterface} from '@agoric/async-flow';
+ * @import {Amount, Brand} from '@agoric/ertp';
  * @import {TypedPattern} from '@agoric/internal'
  * @import {NatAmount} from '@agoric/ertp';
  * @import {ChainAddress, ChainHub, Denom, OrchestrationAccount} from '@agoric/orchestration';
  * @import {ZoeTools} from '@agoric/orchestration/src/utils/zoe-tools.js';
  * @import {VowTools} from '@agoric/vow';
  * @import {Zone} from '@agoric/zone';
- * @import {CctpTxEvidence, AddressHook, EvmHash, FeeConfig, LogFn, NobleAddress} from '../types.js';
+ * @import {AddressHook, EvmHash, FeeConfig, LogFn, NobleAddress, EvidenceWithRisk} from '../types.js';
  * @import {StatusManager} from './status-manager.js';
  * @import {LiquidityPoolKit} from './liquidity-pool.js';
  */
@@ -54,7 +56,7 @@ const AdvancerVowCtxShape = M.splitRecord(
 /** type guards internal to the AdvancerKit */
 const AdvancerKitI = harden({
   advancer: M.interface('AdvancerI', {
-    handleTransactionEvent: M.callWhen(CctpTxEvidenceShape).returns(),
+    handleTransactionEvent: M.callWhen(EvidenceWithRiskShape).returns(),
     setIntermediateRecipient: M.call(ChainAddressShape).returns(),
   }),
   depositHandler: M.interface('DepositHandlerI', {
@@ -62,7 +64,6 @@ const AdvancerKitI = harden({
     onRejected: M.call(M.error(), AdvancerVowCtxShape).returns(),
   }),
   transferHandler: M.interface('TransferHandlerI', {
-    // TODO confirm undefined, and not bigint (sequence)
     onFulfilled: M.call(M.undefined(), AdvancerVowCtxShape).returns(
       M.undefined(),
     ),
@@ -116,6 +117,7 @@ export const prepareAdvancerKit = (
      *   notifyFacet: import('./settler.js').SettlerKit['notify'];
      *   borrowerFacet: LiquidityPoolKit['borrower'];
      *   poolAccount: HostInterface<OrchestrationAccount<{chainId: 'agoric'}>>;
+     *   settlementAddress: ChainAddress;
      *   intermediateRecipient?: ChainAddress;
      * }} config
      */
@@ -135,9 +137,9 @@ export const prepareAdvancerKit = (
          * `StatusManager` - so we don't need to concern ourselves with
          * preserving the vow chain for callers.
          *
-         * @param {CctpTxEvidence} evidence
+         * @param {EvidenceWithRisk} evidenceWithRisk
          */
-        async handleTransactionEvent(evidence) {
+        async handleTransactionEvent({ evidence, risk }) {
           await null;
           try {
             if (statusManager.hasBeenObserved(evidence)) {
@@ -145,16 +147,32 @@ export const prepareAdvancerKit = (
               return;
             }
 
-            const { borrowerFacet, poolAccount } = this.state;
+            if (risk.risksIdentified?.length) {
+              log('risks identified, skipping advance');
+              statusManager.skipAdvance(evidence, risk.risksIdentified);
+              return;
+            }
+            const { settlementAddress } = this.state;
             const { recipientAddress } = evidence.aux;
             const decoded = decodeAddressHook(recipientAddress);
             mustMatch(decoded, AddressHookShape);
+            if (decoded.baseAddress !== settlementAddress.value) {
+              throw Fail`⚠️ baseAddress of address hook ${q(decoded.baseAddress)} does not match the expected address ${q(settlementAddress.value)}`;
+            }
             const { EUD } = /** @type {AddressHook['query']} */ (decoded.query);
             log(`decoded EUD: ${EUD}`);
             // throws if the bech32 prefix is not found
             const destination = chainHub.makeChainAddress(EUD);
 
             const fullAmount = toAmount(evidence.tx.amount);
+            const { borrowerFacet, notifyFacet, poolAccount } = this.state;
+            // do not advance if we've already received a mint/settlement
+            const mintedEarly = notifyFacet.checkMintedEarly(
+              evidence,
+              destination,
+            );
+            if (mintedEarly) return;
+
             // throws if requested does not exceed fees
             const advanceAmount = feeTools.calculateAdvance(fullAmount);
 
@@ -172,10 +190,10 @@ export const prepareAdvancerKit = (
               harden({ USDC: advanceAmount }),
             );
             void watch(depositV, this.facets.depositHandler, {
-              fullAmount,
               advanceAmount,
               destination,
               forwardingAddress: evidence.tx.forwardingAddress,
+              fullAmount,
               tmpSeat,
               txHash: evidence.txHash,
             });
@@ -195,14 +213,20 @@ export const prepareAdvancerKit = (
          * @param {AdvancerVowCtx & { tmpSeat: ZCFSeat }} ctx
          */
         onFulfilled(result, ctx) {
-          const { poolAccount, intermediateRecipient } = this.state;
-          const { destination, advanceAmount, ...detail } = ctx;
-          const transferV = E(poolAccount).transfer(
-            destination,
-            { denom: usdc.denom, value: advanceAmount.value },
-            { forwardOpts: { intermediateRecipient } },
-          );
-          return watch(transferV, this.facets.transferHandler, {
+          const { poolAccount, intermediateRecipient, settlementAddress } =
+            this.state;
+          const { destination, advanceAmount, tmpSeat: _, ...detail } = ctx;
+          const amount = harden({
+            denom: usdc.denom,
+            value: advanceAmount.value,
+          });
+          const transferOrSendV =
+            destination.chainId === settlementAddress.chainId
+              ? E(poolAccount).send(destination, amount)
+              : E(poolAccount).transfer(destination, amount, {
+                  forwardOpts: { intermediateRecipient },
+                });
+          return watch(transferOrSendV, this.facets.transferHandler, {
             destination,
             advanceAmount,
             ...detail,
@@ -235,17 +259,13 @@ export const prepareAdvancerKit = (
       },
       transferHandler: {
         /**
-         * @param {unknown} result TODO confirm this is not a bigint (sequence)
+         * @param {undefined} result
          * @param {AdvancerVowCtx} ctx
          */
         onFulfilled(result, ctx) {
           const { notifyFacet } = this.state;
           const { advanceAmount, destination, ...detail } = ctx;
-          log('Advance transfer fulfilled', {
-            advanceAmount,
-            destination,
-            result,
-          });
+          log('Advance succeeded', { advanceAmount, destination });
           // During development, due to a bug, this call threw.
           // The failure was silent (no diagnostics) due to:
           //  - #10576 Vows do not report unhandled rejections
@@ -260,8 +280,9 @@ export const prepareAdvancerKit = (
          */
         onRejected(error, ctx) {
           const { notifyFacet } = this.state;
-          log('Advance transfer rejected', error);
-          notifyFacet.notifyAdvancingResult(ctx, false);
+          log('Advance failed', error);
+          const { advanceAmount: _, ...restCtx } = ctx;
+          notifyFacet.notifyAdvancingResult(restCtx, false);
         },
       },
     },
@@ -271,6 +292,7 @@ export const prepareAdvancerKit = (
         borrowerFacet: M.remotable(),
         poolAccount: M.remotable(),
         intermediateRecipient: M.opt(ChainAddressShape),
+        settlementAddress: M.opt(ChainAddressShape),
       }),
     },
   );

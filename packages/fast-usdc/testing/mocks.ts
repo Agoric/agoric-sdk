@@ -43,11 +43,11 @@ export const makeVstorageMock = (records: { [key: string]: any }) => {
   return { vstorage, getQueryCounts: () => queryCounts };
 };
 
-export const makeFetchMock = (records: { [key: string]: any }) => {
+export const makeFetchMock = get => {
   const queryCounts = {};
   const fetch = async (path: string) => {
     queryCounts[path] = (queryCounts[path] ?? 0) + 1;
-    return { json: async () => records[path] };
+    return { json: async () => get(path) };
   };
 
   return { fetch, getQueryCounts: () => queryCounts };

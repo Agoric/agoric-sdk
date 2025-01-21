@@ -1,6 +1,6 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { testProp, fc } from '@fast-check/ava';
-import { AmountMath, makeIssuerKit } from '@agoric/ertp';
+import { AmountMath, makeIssuerKit, type Amount } from '@agoric/ertp';
 import {
   multiplyBy,
   parseRatio,
@@ -58,8 +58,12 @@ test('initial withdrawal fails', t => {
 test('withdrawal after deposit OK', t => {
   const { PoolShares, USDC } = brands;
   const state0 = makeParity(make(USDC, 1n), PoolShares);
+  const emptyShares = makeEmpty(PoolShares);
 
-  const pDep = { give: { USDC: make(USDC, 100n) } };
+  const pDep = {
+    give: { USDC: make(USDC, 100n) },
+    want: { PoolShare: emptyShares },
+  };
   const { shareWorth: state1 } = depositCalc(state0, pDep);
 
   const proposal = harden({
@@ -81,8 +85,12 @@ test('withdrawal after deposit OK', t => {
 
 test('deposit offer underestimates value of share', t => {
   const { PoolShares, USDC } = brands;
+  const emptyShares = makeEmpty(PoolShares);
 
-  const pDep = { give: { USDC: make(USDC, 100n) } };
+  const pDep = {
+    give: { USDC: make(USDC, 100n) },
+    want: { PoolShare: emptyShares },
+  };
   const { shareWorth: state1 } = depositCalc(parity, pDep);
   const state2 = withFees(state1, make(USDC, 20n));
 
@@ -119,9 +127,13 @@ test('deposit offer overestimates value of share', t => {
 
 test('withdrawal offer underestimates value of share', t => {
   const { PoolShares, USDC } = brands;
+  const emptyShares = makeEmpty(PoolShares);
   const state0 = makeParity(make(USDC, 1n), PoolShares);
 
-  const proposal1 = harden({ give: { USDC: make(USDC, 100n) } });
+  const proposal1 = harden({
+    give: { USDC: make(USDC, 100n) },
+    want: { PoolShare: emptyShares },
+  });
   const { shareWorth: state1 } = depositCalc(state0, proposal1);
 
   const proposal = harden({
@@ -143,9 +155,13 @@ test('withdrawal offer underestimates value of share', t => {
 
 test('withdrawal offer overestimates value of share', t => {
   const { PoolShares, USDC } = brands;
+  const emptyShares = makeEmpty(PoolShares);
   const state0 = makeParity(make(USDC, 1n), PoolShares);
 
-  const d100 = { give: { USDC: make(USDC, 100n) } };
+  const d100 = {
+    give: { USDC: make(USDC, 100n) },
+    want: { PoolShare: emptyShares },
+  };
   const { shareWorth: state1 } = depositCalc(state0, d100);
 
   const proposal = harden({
@@ -196,7 +212,12 @@ testProp(
   'deposit properties',
   [arbShareWorth, arbUSDC],
   (t, shareWorth, In) => {
-    const actual = depositCalc(shareWorth, { give: { USDC: In } });
+    const { PoolShares } = brands;
+    const emptyShares = makeEmpty(PoolShares);
+    const actual = depositCalc(shareWorth, {
+      give: { USDC: In },
+      want: { PoolShare: emptyShares },
+    });
     const {
       payouts: { PoolShare },
       shareWorth: post,
@@ -234,7 +255,10 @@ testProp(
 
     for (const { party, action } of actions) {
       if ('In' in action) {
-        const d = depositCalc(shareWorth, { give: { USDC: action.In } });
+        const d = depositCalc(shareWorth, {
+          give: { USDC: action.In },
+          want: { PoolShare: emptyShares },
+        });
         myShares[party] = add(
           myShares[party] || emptyShares,
           d.payouts.PoolShare,

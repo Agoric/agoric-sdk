@@ -1,5 +1,5 @@
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
-import { makeIssuerKit, AmountMath } from '@agoric/ertp';
+import { makeIssuerKit, AmountMath, type Amount } from '@agoric/ertp';
 import { makeRatioFromAmounts } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
 import { q } from '@endo/errors';
@@ -22,7 +22,6 @@ const USDCRatio = (numerator: bigint, denominator: bigint = 100n) =>
 const aFeeConfig: FeeConfig = {
   flat: USDC(10n),
   variableRate: USDCRatio(2n),
-  maxVariable: USDC(100n),
   contractRate: USDCRatio(20n),
 };
 harden(aFeeConfig);
@@ -66,32 +65,6 @@ const feeToolsScenario = test.macro({
       ...split,
       Principal: advance,
     });
-  },
-});
-
-test(feeToolsScenario, {
-  name: 'below max variable fee',
-  requested: USDC(1000n),
-  expected: {
-    totalFee: USDC(30n), // 10 flat + 20 variable
-    advance: USDC(970n),
-    split: {
-      ContractFee: USDC(6n),
-      PoolFee: USDC(24n),
-    },
-  },
-});
-
-test(feeToolsScenario, {
-  name: 'above max variable fee',
-  requested: USDC(10000n),
-  expected: {
-    totalFee: USDC(110n), // 10 flat + 100 max
-    advance: USDC(9890n),
-    split: {
-      ContractFee: USDC(22n),
-      PoolFee: USDC(88n),
-    },
   },
 });
 
@@ -148,32 +121,13 @@ test(feeToolsScenario, {
 });
 
 test(feeToolsScenario, {
-  // TODO consider behavior where 0 or undefined means "no fee cap"
-  name: 'only flat is charged if `maxVariable: 0`',
-  requested: USDC(10000n),
-  config: {
-    ...aFeeConfig,
-    variableRate: USDCRatio(20n),
-    maxVariable: USDC(0n),
-  },
-  expected: {
-    totalFee: USDC(10n), // only flat
-    advance: USDC(9990n),
-    split: {
-      ContractFee: USDC(2n),
-      PoolFee: USDC(8n),
-    },
-  },
-});
-
-test(feeToolsScenario, {
   name: 'AGORIC_PLUS_OSMO with commonPrivateArgs.feeConfig',
   // 150_000_000n
   requested: USDC(MockCctpTxEvidences.AGORIC_PLUS_OSMO().tx.amount),
   // same as commonPrivateArgs.feeConfig from `CommonSetup`
   config: makeTestFeeConfig(withAmountUtils(issuerKits.USDC)),
   expected: {
-    totalFee: USDC(3000001n), // 1n + min(2% of 150USDC, 5USDC)
+    totalFee: USDC(3000001n), // 1n + 2% of 150USDC
     advance: USDC(146999999n),
     split: {
       ContractFee: USDC(600000n), // 20% of fee
@@ -189,11 +143,11 @@ test(feeToolsScenario, {
   // same as commonPrivateArgs.feeConfig from `CommonSetup`
   config: makeTestFeeConfig(withAmountUtils(issuerKits.USDC)),
   expected: {
-    totalFee: USDC(5000001n), // 1n + min(2% of 300USDC, 5USDC)
-    advance: USDC(294999999n),
+    totalFee: USDC(6000001n), // 1n + 2% of 300USDC
+    advance: USDC(293999999n),
     split: {
-      ContractFee: USDC(1000000n), // 20% of fee
-      PoolFee: USDC(4000001n),
+      ContractFee: USDC(1200000n), // 20% of fee
+      PoolFee: USDC(4800001n),
     },
   },
 });

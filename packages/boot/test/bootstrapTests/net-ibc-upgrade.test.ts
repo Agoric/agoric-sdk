@@ -185,7 +185,7 @@ test.serial('upgrade at many points in network API flow', async t => {
   // continuation after upgrade.
   const pausedFlows = [] as Array<{
     result: any;
-    remainingSteps: [string, Function][];
+    remainingSteps: [string, (lastResult: any) => unknown][];
   }>;
   for (let i = 0; i < flow.length; i += 1) {
     const [beforeStepName] = flow[i];

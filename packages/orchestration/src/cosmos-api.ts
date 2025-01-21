@@ -353,10 +353,10 @@ export interface IBCMsgTransferOptions {
 export type CosmosChainAccountMethods<CCI extends CosmosChainInfo> =
   IcaAccountMethods &
     (CCI extends {
-      stakingTokens: {};
+      stakingTokens: object;
     }
       ? StakingAccountActions & StakingAccountQueries
-      : {});
+      : object);
 
 export type ICQQueryFunction = (
   msgs: JsonSafe<RequestQuery>[],

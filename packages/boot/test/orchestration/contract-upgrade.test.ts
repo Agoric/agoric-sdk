@@ -6,6 +6,7 @@ import { BridgeId } from '@agoric/internal';
 import { buildVTransferEvent } from '@agoric/orchestration/tools/ibc-mocks.js';
 import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
 import { withChainCapabilities } from '@agoric/orchestration';
+import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
 import {
   makeWalletFactoryContext,
   type WalletFactoryTestContext,
@@ -100,6 +101,8 @@ test('resume', async t => {
   await runInbound(
     BridgeId.VTRANSFER,
     buildVTransferEvent({
+      sender: makeTestAddress(),
+      target: makeTestAddress(),
       sourceChannel: 'channel-5',
       sequence: '1',
     }),

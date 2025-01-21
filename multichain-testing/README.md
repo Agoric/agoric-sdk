@@ -21,6 +21,8 @@ Install the relevant dependencies:
 yarn install
 ```
 
+(Note that the '@agoric/*' deps will come from the parent directory due to `yarn link --relative .. --all`)
+
 Ensure you have Kubernetes available. See https://docs.cosmology.zone/starship/get-started/step-2.
 
 The following will install `kubectl`, `kind`, `helm`, and `yq` as needed:
@@ -86,8 +88,17 @@ make tail-slog
 kubectl logs agoriclocal-genesis-0 --container=validator --follow
 
 # relayer logs
-kubectl logs hermes-agoric-gaia-0 --container=relayer --follow
-kubectl logs hermes-osmosis-gaia-0 --container=relayer --follow
+kubectl logs hermes-agoric-cosmoshub-0 --container=relayer --follow
+kubectl logs hermes-osmosis-cosmoshub-0 --container=relayer --follow
+```
+
+## Running with Go Relayer
+
+```sh
+# run tests with go-relayer configuration
+make start FILE=config.go-relayer.yaml
+
+RELAYER_TYPE=go-relayer yarn test
 ```
 
 ## Agoric Smart Wallet
@@ -114,6 +125,6 @@ These only work if you've done `make port-forward`.
 
 - http://localhost:8081/chains/agoriclocal
 - http://localhost:8081/chains/osmosislocal
-- http://localhost:8081/chains/gaialocal
+- http://localhost:8081/chains/cosmoshublocal
 - http://localhost:8081/chains/agoriclocal/keys
 - http://localhost:8081/ibc

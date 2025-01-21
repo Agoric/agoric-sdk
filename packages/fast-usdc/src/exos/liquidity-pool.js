@@ -1,4 +1,4 @@
-import { AmountMath } from '@agoric/ertp';
+import { AmountMath, AmountShape } from '@agoric/ertp';
 import {
   makeRecorderTopic,
   TopicsRecordShape,
@@ -20,6 +20,7 @@ import {
 } from '../type-guards.js';
 
 /**
+ * @import {Amount, Brand, Payment} from '@agoric/ertp';
  * @import {Zone} from '@agoric/zone';
  * @import {Remote} from '@agoric/internal'
  * @import {StorageNode} from '@agoric/internal/src/lib-chainStorage.js'
@@ -106,10 +107,17 @@ export const prepareLiquidityPoolKit = (zone, zcf, USDC, tools) => {
       withdrawHandler: M.interface('withdrawHandler', {
         handle: M.call(SeatShape, M.any()).returns(M.promise()),
       }),
+      withdrawFeesHandler: M.interface('withdrawFeesHandler', {
+        handle: M.call(SeatShape, M.any()).returns(M.promise()),
+      }),
       public: M.interface('public', {
         makeDepositInvitation: M.call().returns(M.promise()),
         makeWithdrawInvitation: M.call().returns(M.promise()),
         getPublicTopics: M.call().returns(TopicsRecordShape),
+      }),
+      feeRecipient: M.interface('feeRecipient', {
+        getContractFeeBalance: M.call().returns(AmountShape),
+        makeWithdrawFeesInvitation: M.call().returns(M.promise()),
       }),
     },
     /**
@@ -325,6 +333,21 @@ export const prepareLiquidityPoolKit = (zone, zcf, USDC, tools) => {
           external.publishPoolMetrics();
         },
       },
+      withdrawFeesHandler: {
+        /** @param {ZCFSeat} seat */
+        async handle(seat) {
+          const { feeSeat } = this.state;
+
+          const { want } = seat.getProposal();
+          const available = feeSeat.getAmountAllocated('USDC', want.USDC.brand);
+          isGTE(available, want.USDC) ||
+            Fail`cannot withdraw ${want.USDC}; only ${available} available`;
+
+          // COMMIT POINT
+          zcf.atomicRearrange(harden([[feeSeat, seat, want]]));
+          seat.exit();
+        },
+      },
       public: {
         makeDepositInvitation() {
           return zcf.makeInvitation(
@@ -350,6 +373,22 @@ export const prepareLiquidityPoolKit = (zone, zcf, USDC, tools) => {
               poolMetricsRecorderKit,
             ),
           };
+        },
+      },
+      feeRecipient: {
+        getContractFeeBalance() {
+          const { feeSeat } = this.state;
+          /** @type {Amount<'nat'>} */
+          const balance = feeSeat.getCurrentAllocation().USDC;
+          return balance;
+        },
+        makeWithdrawFeesInvitation() {
+          return zcf.makeInvitation(
+            this.facets.withdrawFeesHandler,
+            'Withdraw Fees',
+            undefined,
+            this.state.proposalShapes.withdrawFees,
+          );
         },
       },
     },

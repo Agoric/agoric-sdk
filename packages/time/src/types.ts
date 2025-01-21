@@ -105,7 +105,7 @@ export type CancelToken = object;
  * schedule a single wake() call, create a repeater that will allow scheduling
  * of events at regular intervals, or remove scheduled calls.
  */
-export interface TimerServiceI {
+export interface TimerServiceCommon {
   /**
    * Retrieve the latest timestamp
    */
@@ -180,9 +180,9 @@ export interface TimerServiceI {
   getTimerBrand: () => TimerBrand;
 }
 // XXX copied from Remotable helper return type
-export type TimerService = TimerServiceI &
+export type TimerService = TimerServiceCommon &
   RemotableObject<'TimerService'> &
-  RemotableBrand<{}, TimerServiceI>;
+  RemotableBrand<object, TimerServiceCommon>;
 
 /**
  * Read-only access to a TimeService's current time. This allows reading the

@@ -1,6 +1,7 @@
 import type { IBCChannelID } from '@agoric/vats';
 import type { ExecSync } from './agd-lib.js';
 import type { ChainAddress } from '@agoric/orchestration';
+import type { NobleAddress } from '@agoric/fast-usdc/src/types.js';
 
 const kubectlBinary = 'kubectl';
 const noblePod = 'noblelocal-genesis-0';
@@ -32,17 +33,10 @@ export const makeNobleTools = (
     opts = { encoding: 'utf-8' as const, stdio: ['ignore', 'pipe', 'ignore'] },
   ) => execFileSync(kubectlBinary, [...makeKubeArgs(), ...args], opts);
 
-  const checkEnv = () => {
-    if (process.env.FILE !== 'config.fusdc.yaml') {
-      console.error('Warning: Noble chain must be running for this to work');
-    }
-  };
-
   const registerForwardingAcct = (
     channelId: IBCChannelID,
     address: ChainAddress['value'],
   ): { txhash: string; code: number; data: string; height: string } => {
-    checkEnv();
     log('creating forwarding address', address, channelId);
     return JSON.parse(
       exec([
@@ -60,7 +54,6 @@ export const makeNobleTools = (
   };
 
   const mockCctpMint = (amount: bigint, destination: ChainAddress['value']) => {
-    checkEnv();
     const denomAmount = `${Number(amount)}uusdc`;
     log('mock cctp mint', destination, denomAmount);
     return JSON.parse(
@@ -82,8 +75,7 @@ export const makeNobleTools = (
   const queryForwardingAddress = (
     channelId: IBCChannelID,
     address: ChainAddress['value'],
-  ): { address: string; exists: boolean } => {
-    checkEnv();
+  ): { address: NobleAddress; exists: boolean } => {
     log('querying forwarding address', address, channelId);
     return JSON.parse(
       exec([

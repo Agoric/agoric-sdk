@@ -291,9 +291,14 @@ export const fakeLocalChainBridgeQueryHandler = message => {
 /**
  * @param {import('@agoric/zone').Zone} zone
  * @param {(obj) => void} [onToBridge]
+ * @param {(number) => string} makeAddressFn
  * @returns {ScopedBridgeManager<'vlocalchain'>}
  */
-export const makeFakeLocalchainBridge = (zone, onToBridge = () => {}) => {
+export const makeFakeLocalchainBridge = (
+  zone,
+  onToBridge = () => {},
+  makeAddressFn = index => `${LOCALCHAIN_DEFAULT_ADDRESS}${index || ''}`,
+) => {
   /** @type {Remote<BridgeHandler>} */
   let hndlr;
   let lcaExecuteTxSequence = 0;
@@ -306,7 +311,7 @@ export const makeFakeLocalchainBridge = (zone, onToBridge = () => {}) => {
       trace('toBridge', type, method, params);
       switch (type) {
         case 'VLOCALCHAIN_ALLOCATE_ADDRESS': {
-          const address = `${LOCALCHAIN_DEFAULT_ADDRESS}${accountsCreated || ''}`;
+          const address = makeAddressFn(accountsCreated);
           accountsCreated += 1;
           return address;
         }

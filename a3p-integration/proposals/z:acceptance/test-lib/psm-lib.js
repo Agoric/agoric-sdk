@@ -218,7 +218,7 @@ export const fetchLatestEcQuestion = async io => {
   return { latestOutcome, latestQuestion };
 };
 
-const checkCommitteeElectionResult = (
+export const checkCommitteeElectionResult = (
   /** @type {{ latestOutcome: { outcome: any; question: any; }; latestQuestion: { closingRule: { deadline: any; }; questionHandle: any; }; }} */ electionResult,
   /** @type {{ outcome: any; deadline: any; }} */ expectedResult,
 ) => {
@@ -434,6 +434,8 @@ export const initializeNewUser = async (name, fund, io) => {
 };
 
 /**
+ * UNTIL https://github.com/Agoric/agoric-sdk/issues/10746 better to use {@link sendOfferAgd}
+ *
  * Similar to
  * https://github.com/Agoric/agoric-3-proposals/blob/422b163fecfcf025d53431caebf6d476778b5db3/packages/synthetic-chain/src/lib/commonUpgradeHelpers.ts#L123-L139
  * However, for an address that is not provisioned, `agoric wallet send` is
@@ -478,7 +480,6 @@ export const sendOfferAgd = async (address, offerPromise) => {
       [`--keyring-backend=test`, `--from=${address}`],
       ['tx', 'swingset', 'wallet-action', '--allow-spend', offer],
       '--yes',
-      '-bblock',
       '-ojson',
     )
   );
@@ -522,7 +523,7 @@ export const sendOfferAgd = async (address, offerPromise) => {
  * }} io
  */
 export const psmSwap = async (address, params, io) => {
-  const { now, sendOffer = sendOfferAgoric, ...waitIO } = io;
+  const { now, sendOffer = sendOfferAgd, ...waitIO } = io;
   const offerId = `${address}-psm-swap-${now()}`;
   const newParams = ['psm', ...params, '--offerId', offerId];
   const offerPromise = executeCommand(agopsLocation, newParams);

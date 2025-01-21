@@ -3,16 +3,21 @@ import { buildVTransferEvent } from '@agoric/orchestration/tools/ibc-mocks.js';
 import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
 import type { ChainAddress } from '@agoric/orchestration';
 import type { VTransferIBCEvent } from '@agoric/vats';
-import type { CctpTxEvidence } from '../src/types.js';
+import type { CctpTxEvidence, EvmAddress } from '../src/types.js';
 
 const mockScenarios = [
   'AGORIC_PLUS_OSMO',
   'AGORIC_PLUS_DYDX',
+  'AGORIC_PLUS_AGORIC',
   'AGORIC_NO_PARAMS',
   'AGORIC_UNKNOWN_EUD',
 ] as const;
 
 type MockScenario = (typeof mockScenarios)[number];
+
+export const Senders = {
+  default: '0xDefaultFakeEthereumAddress',
+} as unknown as Record<string, EvmAddress>;
 
 export const MockCctpTxEvidences: Record<
   MockScenario,
@@ -27,15 +32,15 @@ export const MockCctpTxEvidences: Record<
     tx: {
       amount: 150000000n,
       forwardingAddress: 'noble1x0ydg69dh6fqvr27xjvp6maqmrldam6yfelqkd',
+      sender: Senders.default,
     },
     aux: {
       forwardingChannel: 'channel-21',
       recipientAddress:
         receiverAddress ||
-        encodeAddressHook(
-          'agoric16kv2g7snfc4q24vg3pjdlnnqgngtjpwtetd2h689nz09lcklvh5s8u37ek',
-          { EUD: 'osmo183dejcnmkka5dzcu9xw6mywq0p2m5peks28men' },
-        ),
+        encodeAddressHook(settlementAddress.value, {
+          EUD: 'osmo183dejcnmkka5dzcu9xw6mywq0p2m5peks28men',
+        }),
     },
     chainId: 1,
   }),
@@ -48,15 +53,36 @@ export const MockCctpTxEvidences: Record<
     tx: {
       amount: 300000000n,
       forwardingAddress: 'noble1x0ydg69dh6fqvr27xjvp6maqmrldam6yfelktz',
+      sender: Senders.default,
     },
     aux: {
       forwardingChannel: 'channel-21',
       recipientAddress:
         receiverAddress ||
-        encodeAddressHook(
-          'agoric16kv2g7snfc4q24vg3pjdlnnqgngtjpwtetd2h689nz09lcklvh5s8u37ek',
-          { EUD: 'dydx183dejcnmkka5dzcu9xw6mywq0p2m5peks28men' },
-        ),
+        encodeAddressHook(settlementAddress.value, {
+          EUD: 'dydx183dejcnmkka5dzcu9xw6mywq0p2m5peks28men',
+        }),
+    },
+    chainId: 1,
+  }),
+  AGORIC_PLUS_AGORIC: (receiverAddress?: string) => ({
+    blockHash:
+      '0x80d7343e04f8160892e94f02d6a9b9f255663ed0ac34caca98544c8143fee6z9',
+    blockNumber: 21037600n,
+    txHash:
+      '0xd81bc6105b60a234c7c50ac17816ebcd5561d366df8bf3be59ff3875527617z9',
+    tx: {
+      amount: 250000000n,
+      forwardingAddress: 'noble17ww3rfusv895d92c0ncgj0fl9trntn70jz7hd5',
+      sender: Senders.default,
+    },
+    aux: {
+      forwardingChannel: 'channel-21',
+      recipientAddress:
+        receiverAddress ||
+        encodeAddressHook(settlementAddress.value, {
+          EUD: 'agoric13rj0cc0hm5ac2nt0sdup2l7gvkx4v9tyvgq3h2',
+        }),
     },
     chainId: 1,
   }),
@@ -69,12 +95,11 @@ export const MockCctpTxEvidences: Record<
     tx: {
       amount: 200000000n,
       forwardingAddress: 'noble1x0ydg69dh6fqvr27xjvp6maqmrldam6yfelyyy',
+      sender: Senders.default,
     },
     aux: {
       forwardingChannel: 'channel-21',
-      recipientAddress:
-        receiverAddress ||
-        'agoric16kv2g7snfc4q24vg3pjdlnnqgngtjpwtetd2h689nz09lcklvh5s8u37ek',
+      recipientAddress: receiverAddress || settlementAddress.value,
     },
     chainId: 1,
   }),
@@ -87,15 +112,15 @@ export const MockCctpTxEvidences: Record<
     tx: {
       amount: 200000000n,
       forwardingAddress: 'noble1x0ydg69dh6fqvr27xjvp6maqmrldam6yfelyyy',
+      sender: Senders.default,
     },
     aux: {
       forwardingChannel: 'channel-21',
       recipientAddress:
         receiverAddress ||
-        encodeAddressHook(
-          'agoric16kv2g7snfc4q24vg3pjdlnnqgngtjpwtetd2h689nz09lcklvh5s8u37ek',
-          { EUD: 'random1addr' },
-        ),
+        encodeAddressHook(settlementAddress.value, {
+          EUD: 'random1addr',
+        }),
     },
     chainId: 1,
   }),
@@ -133,6 +158,15 @@ export const MockVTransferEvents: Record<
         recieverAddress ||
         MockCctpTxEvidences.AGORIC_PLUS_DYDX().aux.recipientAddress,
     }),
+  AGORIC_PLUS_AGORIC: (recieverAddress?: string) =>
+    buildVTransferEvent({
+      ...nobleDefaultVTransferParams,
+      amount: MockCctpTxEvidences.AGORIC_PLUS_AGORIC().tx.amount,
+      sender: MockCctpTxEvidences.AGORIC_PLUS_AGORIC().tx.forwardingAddress,
+      receiver:
+        recieverAddress ||
+        MockCctpTxEvidences.AGORIC_PLUS_AGORIC().aux.recipientAddress,
+    }),
   AGORIC_NO_PARAMS: (recieverAddress?: string) =>
     buildVTransferEvent({
       ...nobleDefaultVTransferParams,
@@ -157,4 +191,11 @@ export const intermediateRecipient: ChainAddress = harden({
   chainId: 'noble-1',
   value: 'noble1test',
   encoding: 'bech32',
+});
+
+export const settlementAddress: ChainAddress = harden({
+  chainId: 'agoric-3',
+  encoding: 'bech32' as const,
+  // Random value, copied from tests of address hooks
+  value: 'agoric16kv2g7snfc4q24vg3pjdlnnqgngtjpwtetd2h689nz09lcklvh5s8u37ek',
 });

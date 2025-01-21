@@ -1,26 +1,24 @@
-import { M } from '@endo/patterns';
-import { Fail, makeError, q } from '@endo/errors';
-import { appendToStoredArray } from '@agoric/store/src/stores/store-utils.js';
-import { E } from '@endo/eventual-send';
 import { makeTracer } from '@agoric/internal';
+import { appendToStoredArray } from '@agoric/store/src/stores/store-utils.js';
+import { AmountKeywordRecordShape } from '@agoric/zoe/src/typeGuards.js';
+import { Fail, makeError, q } from '@endo/errors';
+import { E } from '@endo/eventual-send';
+import { M } from '@endo/patterns';
+import { PendingTxStatus, TerminalTxStatus, TxStatus } from '../constants.js';
 import {
   CctpTxEvidenceShape,
   EvmHashShape,
   PendingTxShape,
 } from '../type-guards.js';
-import { PendingTxStatus, TxStatus } from '../constants.js';
 
 /**
  * @import {MapStore, SetStore} from '@agoric/store';
  * @import {Zone} from '@agoric/zone';
- * @import {CctpTxEvidence, NobleAddress, PendingTx, EvmHash, LogFn} from '../types.js';
+ * @import {CctpTxEvidence, NobleAddress, PendingTx, EvmHash, LogFn, TransactionRecord, EvidenceWithRisk, RiskAssessment} from '../types.js';
  */
 
 /**
  * @typedef {`pendingTx:${bigint}:${NobleAddress}`} PendingTxKey
- * The string template is for developer visibility but not meant to ever be parsed.
- *
- * @typedef {`seenTx:${string}:${EvmHash}`} SeenTxKey
  * The string template is for developer visibility but not meant to ever be parsed.
  */
 
@@ -29,13 +27,13 @@ import { PendingTxStatus, TxStatus } from '../constants.js';
  *
  * The key is a composite but not meant to be parsable.
  *
- * @param {NobleAddress} addr
+ * @param {NobleAddress} nfa Noble Forwarding Account (implies EUD)
  * @param {bigint} amount
  * @returns {PendingTxKey}
  */
-const makePendingTxKey = (addr, amount) =>
+const makePendingTxKey = (nfa, amount) =>
   // amount can't contain colon
-  `pendingTx:${amount}:${addr}`;
+  `pendingTx:${amount}:${nfa}`;
 
 /**
  * Get the key for the pendingTxs MapStore.
@@ -49,22 +47,9 @@ const pendingTxKeyOf = evidence => {
 };
 
 /**
- * Get the key for the seenTxs SetStore.
- *
- * The key is a composite but not meant to be parsable.
- *
- * @param {CctpTxEvidence} evidence
- * @returns {SeenTxKey}
- */
-const seenTxKeyOf = evidence => {
-  const { txHash, chainId } = evidence;
-  // chainId can't contain colon
-  return `seenTx:${chainId}:${txHash}`;
-};
-
-/**
  * @typedef {{
  *  log?: LogFn;
+ *  marshaller: ERef<Marshaller>;
  * }} StatusManagerPowers
  */
 
@@ -76,35 +61,82 @@ const seenTxKeyOf = evidence => {
  * XXX consider separate facets for `Advancing` and `Settling` capabilities.
  *
  * @param {Zone} zone
- * @param {ERef<StorageNode>} transactionsNode
+ * @param {ERef<StorageNode>} txnsNode
  * @param {StatusManagerPowers} caps
  */
 export const prepareStatusManager = (
   zone,
-  transactionsNode,
+  txnsNode,
   {
-    log = makeTracer('Advancer', true),
+    marshaller,
+    // eslint-disable-next-line no-unused-vars
+    log = makeTracer('StatusManager', true),
   } = /** @type {StatusManagerPowers} */ ({}),
 ) => {
-  /** @type {MapStore<PendingTxKey, PendingTx[]>} */
-  const pendingTxs = zone.mapStore('PendingTxs', {
+  /**
+   * Keyed by a tuple of the Noble Forwarding Account and amount.
+   * @type {MapStore<PendingTxKey, PendingTx[]>}
+   */
+  const pendingSettleTxs = zone.mapStore('PendingSettleTxs', {
     keyShape: M.string(),
     valueShape: M.arrayOf(PendingTxShape),
   });
 
-  /** @type {SetStore<SeenTxKey>} */
+  /**
+   * Transactions seen *ever* by the contract.
+   *
+   * Note that like all durable stores, this SetStore is stored in IAVL. It
+   * grows without bound (though the amount of growth per incoming message to
+   * the contract is bounded). At some point in the future we may want to prune.
+   * @type {SetStore<EvmHash>}
+   */
   const seenTxs = zone.setStore('SeenTxs', {
     keyShape: M.string(),
   });
 
   /**
-   * @param {CctpTxEvidence['txHash']} hash
-   * @param {TxStatus} status
+   * Transactions that have completed, but are still in vstorage.
+   *
+   * @type {SetStore<EvmHash>}
    */
-  const publishStatus = (hash, status) => {
-    const txnNodeP = E(transactionsNode).makeChildNode(hash);
+  const storedCompletedTxs = zone.setStore('StoredCompletedTxs', {
+    keyShape: M.string(),
+  });
+
+  /**
+   * @param {EvmHash} txId
+   * @param {TransactionRecord} record
+   * @returns {Promise<void>}
+   */
+  const publishTxnRecord = async (txId, record) => {
+    const txNode = E(txnsNode).makeChildNode(txId, {
+      sequence: true, // avoid overwriting other output in the block
+    });
+
+    // XXX awkward for publish* to update a store, but it's temporary
+    if (record.status && TerminalTxStatus[record.status]) {
+      // UNTIL https://github.com/Agoric/agoric-sdk/issues/7405
+      // Queue it for deletion later because if we deleted it now the earlier
+      // writes in this block would be wiped. For now we keep track of what to
+      // delete when we know it'll be another block.
+      storedCompletedTxs.add(txId);
+    }
+
+    const capData = await E(marshaller).toCapData(record);
+
+    await E(txNode).setValue(JSON.stringify(capData));
+  };
+
+  /**
+   * @param {CctpTxEvidence['txHash']} hash
+   * @param {CctpTxEvidence} evidence
+   */
+  const publishEvidence = (hash, evidence) => {
     // Don't await, just writing to vstorage.
-    void E(txnNodeP).setValue(status);
+    void publishTxnRecord(
+      hash,
+      harden({ evidence, status: TxStatus.Observed }),
+    );
   };
 
   /**
@@ -115,69 +147,76 @@ export const prepareStatusManager = (
    *
    * @param {CctpTxEvidence} evidence
    * @param {PendingTxStatus} status
+   * @param {string[]} [risksIdentified]
    */
-  const initPendingTx = (evidence, status) => {
-    const seenKey = seenTxKeyOf(evidence);
-    if (seenTxs.has(seenKey)) {
-      throw makeError(`Transaction already seen: ${q(seenKey)}`);
+  const initPendingTx = (evidence, status, risksIdentified) => {
+    const { txHash } = evidence;
+    if (seenTxs.has(txHash)) {
+      throw makeError(`Transaction already seen: ${q(txHash)}`);
     }
-    seenTxs.add(seenKey);
+    seenTxs.add(txHash);
 
     appendToStoredArray(
-      pendingTxs,
+      pendingSettleTxs,
       pendingTxKeyOf(evidence),
       harden({ ...evidence, status }),
     );
-    publishStatus(evidence.txHash, status);
+    publishEvidence(txHash, evidence);
+    if (status === PendingTxStatus.AdvanceSkipped) {
+      void publishTxnRecord(txHash, harden({ status, risksIdentified }));
+    } else if (status !== PendingTxStatus.Observed) {
+      // publishEvidence publishes Observed
+      void publishTxnRecord(txHash, harden({ status }));
+    }
   };
 
   /**
    * Update the pending transaction status.
    *
-   * @param {{sender: NobleAddress, amount: bigint}} keyParts
+   * @param {{nfa: NobleAddress, amount: bigint}} keyParts
    * @param {PendingTxStatus} status
    */
-  function setPendingTxStatus({ sender, amount }, status) {
-    const key = makePendingTxKey(sender, amount);
-    pendingTxs.has(key) || Fail`no advancing tx with ${{ sender, amount }}`;
-    const pending = pendingTxs.get(key);
+  function setPendingTxStatus({ nfa, amount }, status) {
+    const key = makePendingTxKey(nfa, amount);
+    pendingSettleTxs.has(key) || Fail`no advancing tx with ${{ nfa, amount }}`;
+    const pending = pendingSettleTxs.get(key);
     const ix = pending.findIndex(tx => tx.status === PendingTxStatus.Advancing);
-    ix >= 0 || Fail`no advancing tx with ${{ sender, amount }}`;
+    ix >= 0 || Fail`no advancing tx with ${{ nfa, amount }}`;
     const [prefix, tx, suffix] = [
       pending.slice(0, ix),
       pending[ix],
       pending.slice(ix + 1),
     ];
     const txpost = { ...tx, status };
-    pendingTxs.set(key, harden([...prefix, txpost, ...suffix]));
-    publishStatus(tx.txHash, status);
+    pendingSettleTxs.set(key, harden([...prefix, txpost, ...suffix]));
+    void publishTxnRecord(tx.txHash, harden({ status }));
   }
 
   return zone.exo(
     'Fast USDC Status Manager',
     M.interface('StatusManagerI', {
       // TODO: naming scheme for transition events
-      advance: M.call(CctpTxEvidenceShape).returns(M.undefined()),
+      advance: M.call(CctpTxEvidenceShape).returns(),
       advanceOutcome: M.call(M.string(), M.nat(), M.boolean()).returns(),
-      observe: M.call(CctpTxEvidenceShape).returns(M.undefined()),
+      skipAdvance: M.call(CctpTxEvidenceShape, M.arrayOf(M.string())).returns(),
+      advanceOutcomeForMintedEarly: M.call(EvmHashShape, M.boolean()).returns(),
+      advanceOutcomeForUnknownMint: M.call(CctpTxEvidenceShape).returns(),
+      observe: M.call(CctpTxEvidenceShape).returns(),
       hasBeenObserved: M.call(CctpTxEvidenceShape).returns(M.boolean()),
+      deleteCompletedTxs: M.call().returns(M.undefined()),
       dequeueStatus: M.call(M.string(), M.bigint()).returns(
         M.or(
           {
             txHash: EvmHashShape,
-            status: M.or(
-              PendingTxStatus.Advanced,
-              PendingTxStatus.AdvanceFailed,
-              PendingTxStatus.Observed,
-            ),
+            status: M.or(...Object.values(PendingTxStatus)),
           },
           M.undefined(),
         ),
       ),
-      disbursed: M.call(EvmHashShape).returns(M.undefined()),
-      forwarded: M.call(M.opt(EvmHashShape), M.string(), M.nat()).returns(
+      disbursed: M.call(EvmHashShape, AmountKeywordRecordShape).returns(
         M.undefined(),
       ),
+      forwarded: M.call(EvmHashShape, M.boolean()).returns(),
       lookupPending: M.call(M.string(), M.bigint()).returns(
         M.arrayOf(PendingTxShape),
       ),
@@ -186,7 +225,8 @@ export const prepareStatusManager = (
       /**
        * Add a new transaction with ADVANCING status
        *
-       * NB: this acts like observe() but skips recording the OBSERVED state
+       * NB: this acts like observe() but subsequently records an ADVANCING
+       * state
        *
        * @param {CctpTxEvidence} evidence
        */
@@ -195,18 +235,72 @@ export const prepareStatusManager = (
       },
 
       /**
-       * Record result of ADVANCING
+       * Add a new transaction with ADVANCE_SKIPPED status
        *
-       * @param {NobleAddress} sender
+       * NB: this acts like observe() but subsequently records an
+       * ADVANCE_SKIPPED state along with risks identified
+       *
+       * @param {CctpTxEvidence} evidence
+       * @param {string[]} risksIdentified
+       */
+      skipAdvance(evidence, risksIdentified) {
+        initPendingTx(
+          evidence,
+          PendingTxStatus.AdvanceSkipped,
+          risksIdentified,
+        );
+      },
+
+      /**
+       * Record result of an ADVANCING transaction
+       *
+       * @param {NobleAddress} nfa Noble Forwarding Account
        * @param {import('@agoric/ertp').NatValue} amount
        * @param {boolean} success - Advanced vs. AdvanceFailed
        * @throws {Error} if nothing to advance
        */
-      advanceOutcome(sender, amount, success) {
+      advanceOutcome(nfa, amount, success) {
         setPendingTxStatus(
-          { sender, amount },
+          { nfa, amount },
           success ? PendingTxStatus.Advanced : PendingTxStatus.AdvanceFailed,
         );
+      },
+
+      /**
+       * If minted while advancing, publish a status update for the advance
+       * to vstorage.
+       *
+       * Does not add or amend `pendingSettleTxs` as this has
+       * already settled.
+       *
+       * @param {EvmHash} txHash
+       * @param {boolean} success whether the Transfer succeeded
+       */
+      advanceOutcomeForMintedEarly(txHash, success) {
+        void publishTxnRecord(
+          txHash,
+          harden({
+            status: success
+              ? PendingTxStatus.Advanced
+              : PendingTxStatus.AdvanceFailed,
+          }),
+        );
+      },
+
+      /**
+       * If minted before observed and the evidence is eventually
+       * reported, publish the evidence without adding to `pendingSettleTxs`
+       *
+       * @param {CctpTxEvidence} evidence
+       */
+      advanceOutcomeForUnknownMint(evidence) {
+        const { txHash } = evidence;
+        // unexpected path, since `hasBeenObserved` will be called before this
+        if (seenTxs.has(txHash)) {
+          throw makeError(`Transaction already seen: ${q(txHash)}`);
+        }
+        seenTxs.add(txHash);
+        publishEvidence(txHash, evidence);
       },
 
       /**
@@ -223,39 +317,49 @@ export const prepareStatusManager = (
        * @param {CctpTxEvidence} evidence
        */
       hasBeenObserved(evidence) {
-        const seenKey = seenTxKeyOf(evidence);
-        return seenTxs.has(seenKey);
+        return seenTxs.has(evidence.txHash);
+      },
+
+      // UNTIL https://github.com/Agoric/agoric-sdk/issues/7405
+      deleteCompletedTxs() {
+        for (const txHash of storedCompletedTxs.values()) {
+          // As of now, setValue('') on a non-sequence node will delete it
+          const txNode = E(txnsNode).makeChildNode(txHash, {
+            sequence: false,
+          });
+          void E(txNode)
+            .setValue('')
+            .then(() => storedCompletedTxs.delete(txHash));
+        }
       },
 
       /**
-       * Remove and return an `ADVANCED` or `OBSERVED` tx waiting to be `SETTLED`.
+       * Remove and return the oldest pending settlement transaction that matches the given
+       * forwarding account and amount. Since multiple pending transactions may exist with
+       * identical (account, amount) pairs, we process them in FIFO order.
        *
-       * @param {NobleAddress} address
+       * @param {NobleAddress} nfa
        * @param {bigint} amount
-       * @returns {Pick<PendingTx, 'status' | 'txHash'> | undefined} undefined if nothing
-       *   with this address and amount has been marked pending.
+       * @returns {Pick<PendingTx, 'status' | 'txHash'> | undefined} undefined if no pending
+       *   transactions exist for this address and amount combination.
        */
-      dequeueStatus(address, amount) {
-        const key = makePendingTxKey(address, amount);
-        if (!pendingTxs.has(key)) return undefined;
-        const pending = pendingTxs.get(key);
+      dequeueStatus(nfa, amount) {
+        const key = makePendingTxKey(nfa, amount);
+        if (!pendingSettleTxs.has(key)) return undefined;
+        const pending = pendingSettleTxs.get(key);
 
-        const dequeueIdx = pending.findIndex(
-          x => x.status !== PendingTxStatus.Advancing,
-        );
-        if (dequeueIdx < 0) return undefined;
+        if (pending.length === 0) {
+          return undefined;
+        }
+        // extract first item
+        const [{ status, txHash }, ...remaining] = pending;
 
-        if (pending.length > 1) {
-          const pendingCopy = [...pending];
-          pendingCopy.splice(dequeueIdx, 1);
-          pendingTxs.set(key, harden(pendingCopy));
+        if (remaining.length) {
+          pendingSettleTxs.set(key, harden(remaining));
         } else {
-          pendingTxs.delete(key);
+          pendingSettleTxs.delete(key);
         }
 
-        const { status, txHash } = pending[dequeueIdx];
-        // TODO: store txHash -> evidence for txs pending settlement?
-        // If necessary for vstorage writes in `forwarded` and `settled`
         return harden({ status, txHash });
       },
 
@@ -263,27 +367,28 @@ export const prepareStatusManager = (
        * Mark a transaction as `DISBURSED`
        *
        * @param {EvmHash} txHash
+       * @param {import('./liquidity-pool.js').RepayAmountKWR} split
        */
-      disbursed(txHash) {
-        publishStatus(txHash, TxStatus.Disbursed);
+      disbursed(txHash, split) {
+        void publishTxnRecord(
+          txHash,
+          harden({ split, status: TxStatus.Disbursed }),
+        );
       },
 
       /**
-       * Mark a transaction as `FORWARDED`
+       * Mark a transaction as `FORWARDED` or `FORWARD_FAILED`
        *
-       * @param {EvmHash | undefined} txHash - undefined in case mint before observed
-       * @param {NobleAddress} address
-       * @param {bigint} amount
+       * @param {EvmHash} txHash
+       * @param {boolean} success
        */
-      forwarded(txHash, address, amount) {
-        if (txHash) {
-          publishStatus(txHash, TxStatus.Forwarded);
-        } else {
-          // TODO store (early) `Minted` transactions to check against incoming evidence
-          log(
-            `⚠️ Forwarded minted amount ${amount} from account ${address} before it was observed.`,
-          );
-        }
+      forwarded(txHash, success) {
+        void publishTxnRecord(
+          txHash,
+          harden({
+            status: success ? TxStatus.Forwarded : TxStatus.ForwardFailed,
+          }),
+        );
       },
 
       /**
@@ -291,16 +396,16 @@ export const prepareStatusManager = (
        *
        * XXX only used in tests. should we remove?
        *
-       * @param {NobleAddress} address
+       * @param {NobleAddress} nfa
        * @param {bigint} amount
        * @returns {PendingTx[]}
        */
-      lookupPending(address, amount) {
-        const key = makePendingTxKey(address, amount);
-        if (!pendingTxs.has(key)) {
+      lookupPending(nfa, amount) {
+        const key = makePendingTxKey(nfa, amount);
+        if (!pendingSettleTxs.has(key)) {
           return harden([]);
         }
-        return pendingTxs.get(key);
+        return pendingSettleTxs.get(key);
       },
     },
   );

@@ -7,6 +7,7 @@ import { resolve as importMetaResolve } from 'import-meta-resolve';
 import { basename, join } from 'path';
 import { inspect } from 'util';
 
+import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
 import { buildSwingset } from '@agoric/cosmic-swingset/src/launch-chain.js';
 import type { TypedPublished } from '@agoric/client-utils';
 import {
@@ -47,7 +48,7 @@ import type { SwingsetController } from '@agoric/swingset-vat/src/controller/con
 import type { BridgeHandler, IBCDowncallMethod, IBCMethod } from '@agoric/vats';
 import type { BootstrapRootObject } from '@agoric/vats/src/core/lib-boot.js';
 import type { EProxy } from '@endo/eventual-send';
-import type { FastUSDCCorePowers } from '@agoric/fast-usdc/src/fast-usdc.start.js';
+import type { FastUSDCCorePowers } from '@agoric/fast-usdc/src/start-fast-usdc.core.js';
 import {
   defaultBeansPerVatCreation,
   defaultBeansPerXsnapComputron,
@@ -538,7 +539,7 @@ export const makeSwingsetTestKit = async (
         return undefined;
       }
       case `${BridgeId.VLOCALCHAIN}:VLOCALCHAIN_ALLOCATE_ADDRESS`: {
-        const address = `${LOCALCHAIN_DEFAULT_ADDRESS}${lcaAccountsCreated || ''}`;
+        const address = makeTestAddress(lcaAccountsCreated);
         lcaAccountsCreated += 1;
         return address;
       }

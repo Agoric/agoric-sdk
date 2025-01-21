@@ -6,3 +6,5 @@ starship-chain-info.js
 start*
 # builder prefix for core evals
 eval-*
+# ci logs for archive upload
+logs/

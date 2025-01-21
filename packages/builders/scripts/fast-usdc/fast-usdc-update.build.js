@@ -22,10 +22,14 @@ const feedPolicyUsage = 'use --feedPolicy <policy> ...';
  * }} FastUSDCUpdateOpts
  */
 
-/** @type {CoreEvalBuilder} */
+/**
+ * @param {Parameters<CoreEvalBuilder>[0]} powers
+ * @param {FastUSDCConfig} config
+ * @satisfies {CoreEvalBuilder}
+ */
 export const updateProposalBuilder = async (
-  _utils,
-  /** @type {FastUSDCConfig} */ config,
+  powers,
+  /** @type {Pick<FastUSDCConfig, 'feedPolicy'>} */ config,
 ) => {
   return harden({
     sourceSpec: '@agoric/fast-usdc/src/fast-usdc-policy.core.js',

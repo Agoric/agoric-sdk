@@ -1,12 +1,18 @@
 import { AmountShape, BrandShape, RatioShape } from '@agoric/ertp';
 import { M } from '@endo/patterns';
+import {
+  CosmosChainInfoShape,
+  DenomDetailShape,
+  DenomShape,
+} from '@agoric/orchestration';
 import { PendingTxStatus } from './constants.js';
 
 /**
+ * @import {Amount, Brand, NatValue, Payment} from '@agoric/ertp';
  * @import {TypedPattern} from '@agoric/internal';
  * @import {FastUsdcTerms} from './fast-usdc.contract.js';
  * @import {USDCProposalShapes} from './pool-share-math.js';
- * @import {CctpTxEvidence, FeeConfig, PendingTx, PoolMetrics, ChainPolicy, FeedPolicy, AddressHook} from './types.js';
+ * @import {CctpTxEvidence, FastUSDCConfig, FeeConfig, PendingTx, PoolMetrics, ChainPolicy, FeedPolicy, AddressHook, EvmAddress, EvmHash, RiskAssessment, EvidenceWithRisk} from './types.js';
  */
 
 /**
@@ -19,16 +25,20 @@ export const makeNatAmountShape = (brand, min) =>
 /** @param {Record<'PoolShares' | 'USDC', Brand<'nat'>>} brands */
 export const makeProposalShapes = ({ PoolShares, USDC }) => {
   /** @type {TypedPattern<USDCProposalShapes['deposit']>} */
-  const deposit = M.splitRecord(
-    { give: { USDC: makeNatAmountShape(USDC, 1n) } },
-    { want: M.splitRecord({}, { PoolShare: makeNatAmountShape(PoolShares) }) },
-  );
+  const deposit = M.splitRecord({
+    give: { USDC: makeNatAmountShape(USDC, 1n) },
+    want: { PoolShare: makeNatAmountShape(PoolShares) },
+  });
   /** @type {TypedPattern<USDCProposalShapes['withdraw']>} */
   const withdraw = M.splitRecord({
     give: { PoolShare: makeNatAmountShape(PoolShares, 1n) },
     want: { USDC: makeNatAmountShape(USDC, 1n) },
   });
-  return harden({ deposit, withdraw });
+  /** @type {TypedPattern<USDCProposalShapes['withdrawFees']>} */
+  const withdrawFees = M.splitRecord({
+    want: { USDC: makeNatAmountShape(USDC, 1n) },
+  });
+  return harden({ deposit, withdraw, withdrawFees });
 };
 
 /** @type {TypedPattern<FastUsdcTerms>} */
@@ -36,11 +46,27 @@ export const FastUSDCTermsShape = harden({
   usdcDenom: M.string(),
 });
 
-/** @type {TypedPattern<string>} */
+/** @type {TypedPattern<EvmAddress>} */
+export const EvmAddressShape = M.string({
+  // 0x + 40 hex digits
+  stringLengthLimit: 42,
+});
+harden(EvmAddressShape);
+
+/** @type {TypedPattern<EvmHash>} */
 export const EvmHashShape = M.string({
   stringLengthLimit: 66,
 });
 harden(EvmHashShape);
+
+/** @type {TypedPattern<RiskAssessment>} */
+export const RiskAssessmentShape = M.splitRecord(
+  {},
+  {
+    risksIdentified: M.arrayOf(M.string()),
+  },
+);
+harden(RiskAssessmentShape);
 
 /** @type {TypedPattern<CctpTxEvidence>} */
 export const CctpTxEvidenceShape = {
@@ -54,10 +80,18 @@ export const CctpTxEvidenceShape = {
   tx: {
     amount: M.nat(),
     forwardingAddress: M.string(),
+    sender: EvmAddressShape,
   },
   txHash: EvmHashShape,
 };
 harden(CctpTxEvidenceShape);
+
+/** @type {TypedPattern<EvidenceWithRisk>} */
+export const EvidenceWithRiskShape = {
+  evidence: CctpTxEvidenceShape,
+  risk: RiskAssessmentShape,
+};
+harden(EvidenceWithRiskShape);
 
 /** @type {TypedPattern<PendingTx>} */
 // @ts-expect-error TypedPattern not recognized as record
@@ -79,7 +113,6 @@ const NatAmountShape = { brand: BrandShape, value: M.nat() };
 export const FeeConfigShape = {
   flat: NatAmountShape,
   variableRate: RatioShape,
-  maxVariable: NatAmountShape,
   contractRate: RatioShape,
 };
 harden(FeeConfigShape);
@@ -97,10 +130,19 @@ harden(PoolMetricsShape);
 
 /** @type {TypedPattern<ChainPolicy>} */
 export const ChainPolicyShape = {
-  attenuatedCttpBridgeAddress: EvmHashShape,
+  attenuatedCttpBridgeAddresses: M.splitArray(
+    [EvmHashShape],
+    undefined,
+    M.arrayOf(EvmHashShape),
+  ),
   cctpTokenMessengerAddress: EvmHashShape,
   confirmations: M.number(),
   chainId: M.number(),
+  rateLimits: {
+    tx: M.bigint(),
+    blockWindow: M.bigint(),
+    blockWindowSize: M.number(),
+  },
 };
 harden(ChainPolicyShape);
 
@@ -119,3 +161,13 @@ export const FeedPolicyShape = M.splitRecord(
   { eventFilter: M.string() },
 );
 harden(FeedPolicyShape);
+
+/** @type {TypedPattern<FastUSDCConfig>} */
+export const FastUSDCConfigShape = M.splitRecord({
+  terms: FastUSDCTermsShape,
+  oracles: M.recordOf(M.string(), M.string()),
+  feeConfig: FeeConfigShape,
+  feedPolicy: FeedPolicyShape,
+  chainInfo: M.recordOf(M.string(), CosmosChainInfoShape),
+  assetInfo: M.arrayOf([DenomShape, DenomDetailShape]),
+});

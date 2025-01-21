@@ -5,7 +5,10 @@
       "testing/start-valueVow.js start-valueVow",
       "testing/recorded-retired-instances.js recorded-instances-submission",
       "vats/test-localchain.js localchaintest-submission",
-      "testing/restart-valueVow.js restart-valueVow"
+      "testing/restart-valueVow.js restart-valueVow",
+      "testing/upgrade-vaultFactory.js upgrade-vaultFactory",
+      "vats/upgrade-provisionPool.js upgrade-provisionPool",
+      "orchestration/init-stakeBld.js"
     ]
   },
   "type": "module",
@@ -18,6 +21,8 @@
     "@agoric/store": "dev",
     "@agoric/synthetic-chain": "^0.4.3",
     "@agoric/zoe": "dev",
+    "@cosmjs/stargate": "^0.32.3",
+    "@cosmjs/tendermint-rpc": "^0.32.3",
     "@endo/errors": "^1.2.7",
     "@endo/far": "^1.1.8",
     "@endo/init": "^1.1.6",
@@ -74,7 +79,9 @@
     "@agoric/wallet-backend": "portal:../../agoric-sdk/packages/wallet/api",
     "@agoric/xsnap-lockdown": "portal:../../agoric-sdk/packages/xsnap-lockdown",
     "@agoric/zoe": "portal:../../agoric-sdk/packages/zoe",
-    "@agoric/zone": "portal:../../agoric-sdk/packages/zone"
+    "@agoric/zone": "portal:../../agoric-sdk/packages/zone",
+    "axios@npm:^1.6.0": "patch:axios@npm%3A1.7.7#~/.yarn/patches/axios-npm-1.7.7-cfbedc233d.patch",
+    "protobufjs@npm:^6.8.8": "patch:protobufjs@npm%3A6.11.4#~/.yarn/patches/protobufjs-npm-6.11.4-af11968b80.patch"
   },
   "ava": {
     "require": [

@@ -3,6 +3,7 @@ package gaia
 import (
 	"encoding/json"
 	"fmt"
+	"reflect"
 	"strings"
 	"text/template"
 
@@ -77,14 +78,27 @@ func isFirstTimeUpgradeOfThisVersion(app *GaiaApp, ctx sdk.Context) bool {
 	return true
 }
 
-func buildProposalStepWithArgs(moduleName string, entrypoint string, opts map[string]any) (vm.CoreProposalStep, error) {
+func buildProposalStepWithArgs(moduleName string, entrypoint string, extra any) (vm.CoreProposalStep, error) {
 	t := template.Must(template.New("").Parse(`{
-		"module": "{{.moduleName}}",
-		"entrypoint": "{{.entrypoint}}",
-		"args": [ {{.optsArg}} ]
-	}`))
+  "module": "{{.moduleName}}",
+  "entrypoint": "{{.entrypoint}}",
+  "args": {{.args}}
+}`))
 
-	optsArg, err := json.Marshal(opts)
+	var args []byte
+	var err error
+	if extra == nil {
+		// The specified entrypoint will be called with no extra arguments after powers.
+		args = []byte(`[]`)
+	} else if reflect.TypeOf(extra).Kind() == reflect.Map && reflect.TypeOf(extra).Key().Kind() == reflect.String {
+		// The specified entrypoint will be called with this options argument after powers.
+		args, err = json.Marshal([]any{extra})
+	} else if reflect.TypeOf(extra).Kind() == reflect.Slice {
+		// The specified entrypoint will be called with each of these arguments after powers.
+		args, err = json.Marshal(extra)
+	} else {
+		return nil, fmt.Errorf("proposal extra must be nil, array, or string map, not %v", extra)
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -93,7 +107,7 @@ func buildProposalStepWithArgs(moduleName string, entrypoint string, opts map[st
 	err = t.Execute(&result, map[string]any{
 		"moduleName": moduleName,
 		"entrypoint": entrypoint,
-		"optsArg":    string(optsArg),
+		"args":       string(args),
 	})
 	if err != nil {
 		return nil, err
@@ -154,6 +168,26 @@ func replacePriceFeedsCoreProposal(upgradeName string) (vm.CoreProposalStep, err
 		map[string]any{
 			"variant": variant,
 		},
+	)
+}
+
+func terminateGovernorCoreProposal(upgradeName string) (vm.CoreProposalStep, error) {
+	// targets is a slice of "$boardID:$instanceKitLabel" strings.
+	var targets []string
+	switch getVariantFromUpgradeName(upgradeName) {
+		case "MAINNET":
+			targets = []string{"board052184:stkATOM-USD_price_feed"}
+		case "A3P_INTEGRATION":
+			targets = []string{"board04091:stATOM-USD_price_feed"}
+		default:
+			return nil, nil
+	}
+
+	return buildProposalStepWithArgs(
+		"@agoric/builders/scripts/vats/terminate-governor-instance.js",
+		// Request `defaultProposalBuilder(powers, targets)`.
+		"defaultProposalBuilder",
+		[]any{targets},
 	)
 }
 
@@ -228,6 +262,17 @@ func unreleasedUpgradeHandler(app *GaiaApp, targetUpgrade string) func(sdk.Conte
 					// Upgrade to include a cleanup from https://github.com/Agoric/agoric-sdk/pull/10319
 					"@agoric/builders/scripts/smart-wallet/build-wallet-factory2-upgrade.js",
 				),
+				vm.CoreProposalStepForModules(
+					"@agoric/builders/scripts/vats/upgrade-board.js",
+				),
+			)
+
+			// Upgrade vats using Vows in Upgrade 18 in order to use a new liveslots that
+			// avoids a memory leak in watchPromise.
+			CoreProposalSteps = append(CoreProposalSteps,
+				vm.CoreProposalStepForModules(
+					"@agoric/builders/scripts/vats/upgrade-orchestration.js",
+				),
 			)
 
 			// CoreProposals for Upgrade 19. These should not be introduced
@@ -248,9 +293,6 @@ func unreleasedUpgradeHandler(app *GaiaApp, targetUpgrade string) func(sdk.Conte
 			// 		"@agoric/builders/scripts/vats/upgrade-paRegistry.js",
 			// 	),
 			// 	vm.CoreProposalStepForModules(
-			// 		"@agoric/builders/scripts/vats/upgrade-board.js",
-			// 	),
-			// 	vm.CoreProposalStepForModules(
 			// 		"@agoric/builders/scripts/vats/upgrade-provisionPool.js",
 			// 	),
 			// 	vm.CoreProposalStepForModules(
@@ -259,7 +301,20 @@ func unreleasedUpgradeHandler(app *GaiaApp, targetUpgrade string) func(sdk.Conte
 			// 	vm.CoreProposalStepForModules(
 			// 		"@agoric/builders/scripts/vats/upgrade-agoricNames.js",
 			// 	),
+			// 	vm.CoreProposalStepForModules(
+			// 		"@agoric/builders/scripts/vats/upgrade-asset-reserve.js",
+			// 	),
+			// 	vm.CoreProposalStepForModules(
+			// 		"@agoric/builders/scripts/vats/upgrade-psm.js",
+			// 	),
 			// )
+
+			terminateOldGovernor, err := terminateGovernorCoreProposal(targetUpgrade)
+			if err != nil {
+				return nil, err
+			} else if terminateOldGovernor != nil {
+				CoreProposalSteps = append(CoreProposalSteps, terminateOldGovernor)
+			}
 		}
 
 		app.upgradeDetails = &upgradeDetails{

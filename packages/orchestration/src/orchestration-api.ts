@@ -69,12 +69,13 @@ export type ChainAddress = {
  *
  * The methods available depend on the chain and its capabilities.
  */
-export type OrchestrationAccount<CI extends ChainInfo> = OrchestrationAccountI &
-  (CI extends CosmosChainInfo
-    ? CI['chainId'] extends `agoric${string}`
-      ? LocalAccountMethods
-      : CosmosChainAccountMethods<CI>
-    : {});
+export type OrchestrationAccount<CI extends ChainInfo> =
+  OrchestrationAccountCommon &
+    (CI extends CosmosChainInfo
+      ? CI['chainId'] extends `agoric${string}`
+        ? LocalAccountMethods
+        : CosmosChainAccountMethods<CI>
+      : object);
 
 /**
  * An object for access the core functions of a remote chain.
@@ -132,7 +133,7 @@ export interface Orchestrator {
     chainName: C,
   ) => Promise<
     Chain<C extends keyof KnownChains ? KnownChains[C] : any> &
-      (C extends 'agoric' ? AgoricChainMethods : {})
+      (C extends 'agoric' ? AgoricChainMethods : object)
   >;
 
   /**
@@ -160,7 +161,7 @@ export interface Orchestrator {
 /**
  * An object that supports high-level operations for an account on a remote chain.
  */
-export interface OrchestrationAccountI {
+export interface OrchestrationAccountCommon {
   /**
    * @returns the address of the account on the remote chain
    */
@@ -178,7 +179,7 @@ export interface OrchestrationAccountI {
    * @param amount - the amount to send
    * @returns void
    */
-  send: (toAccount: ChainAddress, amounts: AmountArg) => Promise<void>;
+  send: (toAccount: ChainAddress, amount: AmountArg) => Promise<void>;
 
   /**
    * Transfer multiple amounts to another account on the same chain. The promise settles when the transfer is complete.

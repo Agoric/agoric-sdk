@@ -1,10 +1,8 @@
 // @ts-check
 import { makeHelpers } from '@agoric/deploy-script-support';
 import { AmountMath } from '@agoric/ertp';
-import {
-  FastUSDCConfigShape,
-  getManifestForFastUSDC,
-} from '@agoric/fast-usdc/src/fast-usdc.start.js';
+import { getManifestForFastUSDC } from '@agoric/fast-usdc/src/start-fast-usdc.core.js';
+import { FastUSDCConfigShape } from '@agoric/fast-usdc/src/type-guards.js';
 import { toExternalConfig } from '@agoric/fast-usdc/src/utils/config-marshal.js';
 import { configurations } from '@agoric/fast-usdc/src/utils/deploy-config.js';
 import {
@@ -17,7 +15,7 @@ import { parseArgs } from 'node:util';
 /**
  * @import {CoreEvalBuilder, DeployScriptFunction} from '@agoric/deploy-script-support/src/externalTypes.js'
  * @import {ParseArgsConfig} from 'node:util'
- * @import {FastUSDCConfig} from '@agoric/fast-usdc/src/types.js'
+ * @import {FastUSDCConfig, FeedPolicy} from '@agoric/fast-usdc/src/types.js'
  */
 
 const { keys } = Object;
@@ -26,7 +24,6 @@ const { keys } = Object;
 const options = {
   flatFee: { type: 'string', default: '0.01' },
   variableRate: { type: 'string', default: '0.01' },
-  maxVariableFee: { type: 'string', default: '5' },
   contractRate: { type: 'string', default: '0.2' },
   net: { type: 'string' },
   oracle: { type: 'string', multiple: true },
@@ -52,7 +49,6 @@ const assetInfoUsage =
  * @typedef {{
  *   flatFee: string;
  *   variableRate: string;
- *   maxVariableFee: string;
  *   contractRate: string;
  *   net?: string;
  *   oracle?: string[];
@@ -72,13 +68,17 @@ const { USDC } = crossVatContext;
 const USDC_DECIMALS = 6;
 const unit = AmountMath.make(USDC, 10n ** BigInt(USDC_DECIMALS));
 
-/** @type {CoreEvalBuilder} */
+/**
+ * @param {Parameters<CoreEvalBuilder>[0]} powers
+ * @param {FastUSDCConfig} config
+ * @satisfies {CoreEvalBuilder}
+ */
 export const defaultProposalBuilder = async (
   { publishRef, install },
-  /** @type {FastUSDCConfig} */ config,
+  config,
 ) => {
   return harden({
-    sourceSpec: '@agoric/fast-usdc/src/fast-usdc.start.js',
+    sourceSpec: '@agoric/fast-usdc/src/start-fast-usdc.core.js',
     /** @type {[string, Parameters<typeof getManifestForFastUSDC>[1]]} */
     getManifestCall: [
       getManifestForFastUSDC.name,
@@ -114,6 +114,7 @@ export default async (homeP, endowments) => {
     },
   } = parseArgs({ args: scriptArgs, options });
 
+  /** @returns {FeedPolicy} */
   const parseFeedPolicy = () => {
     if (net) {
       if (!(net in configurations)) {
@@ -122,7 +123,17 @@ export default async (homeP, endowments) => {
       return configurations[net].feedPolicy;
     }
     if (!feedPolicy) throw Error(feedPolicyUsage);
-    return JSON.parse(feedPolicy);
+    const parsed = JSON.parse(feedPolicy);
+    if (!parsed.chainPolicies) {
+      return {
+        ...configurations.MAINNET.feedPolicy,
+        ...parsed,
+      };
+    } else {
+      // consider having callers use `toExternalConfig` to pass in bigints and
+      // use `fromExternalConfig` here to parse
+      throw Error('TODO: support unmarshalling feedPolicy');
+    }
   };
 
   const parseOracleArgs = () => {
@@ -148,11 +159,10 @@ export default async (homeP, endowments) => {
   /** @param {string} numeral */
   const toRatio = numeral => parseRatio(numeral, USDC);
   const parseFeeConfigArgs = () => {
-    const { flatFee, variableRate, maxVariableFee, contractRate } = fees;
+    const { flatFee, variableRate, contractRate } = fees;
     return {
       flat: toAmount(flatFee),
       variableRate: toRatio(variableRate),
-      maxVariable: toAmount(maxVariableFee),
       contractRate: toRatio(contractRate),
     };
   };

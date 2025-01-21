@@ -4,7 +4,7 @@ import { Fail } from '@endo/errors';
 import { mustMatch } from '@endo/patterns';
 import { FeeConfigShape } from '../type-guards.js';
 
-const { add, isGTE, min, subtract } = AmountMath;
+const { add, isGTE, subtract } = AmountMath;
 
 /**
  * @import {Amount} from '@agoric/ertp';
@@ -15,7 +15,7 @@ const { add, isGTE, min, subtract } = AmountMath;
 /** @param {FeeConfig} feeConfig */
 export const makeFeeTools = feeConfig => {
   mustMatch(feeConfig, FeeConfigShape, 'Must provide feeConfig');
-  const { flat, variableRate, maxVariable } = feeConfig;
+  const { flat, variableRate } = feeConfig;
   const feeTools = harden({
     /**
      * Calculate the net amount to advance after withholding fees.
@@ -34,8 +34,7 @@ export const makeFeeTools = feeConfig => {
      * @throws {Error} if requested does not exceed fees
      */
     calculateAdvanceFee(requested) {
-      const variable = min(multiplyBy(requested, variableRate), maxVariable);
-      const fee = add(variable, flat);
+      const fee = add(multiplyBy(requested, variableRate), flat);
       !isGTE(fee, requested) || Fail`Request must exceed fees.`;
       return fee;
     },
