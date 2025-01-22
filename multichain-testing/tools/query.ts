@@ -10,8 +10,15 @@ import type { QueryDenomHashResponseSDKType } from '@agoric/cosmic-proto/ibc/app
 import type { QueryChannelResponseSDKType } from '@agoric/cosmic-proto/ibc/core/channel/v1/query.js';
 import type { QueryChannelsResponseSDKType } from '@agoric/cosmic-proto/ibc/core/channel/v1/query.js';
 
+// TODO: export tendermint Block from @agoric/cosmic-proto
+type BlockHeaderPartial = {
+  height: number;
+  time: string;
+};
+
 // TODO use telescope generated query client from @agoric/cosmic-proto
 // https://github.com/Agoric/agoric-sdk/issues/9200
+// TODO: inject fetch
 export function makeQueryClient(apiUrl: string) {
   const query = async <T>(path: string): Promise<T> => {
     try {
@@ -26,6 +33,10 @@ export function makeQueryClient(apiUrl: string) {
 
   return {
     query,
+    queryBlock: (height?: number) =>
+      query<{ block: { header: BlockHeaderPartial } }>(
+        `/cosmos/base/tendermint/v1beta1/blocks/${height || 'latest'}`,
+      ),
     queryBalances: (address: string) =>
       query<QueryAllBalancesResponseSDKType>(
         `/cosmos/bank/v1beta1/balances/${address}`,
