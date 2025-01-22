@@ -13,11 +13,6 @@ __ZCFSeat.exit() Flow:__
 
 ![ZCFSeat Exit Flow](./zcf-seat-exit-flow.png)
 
-__ZCF.reallocate() Flow:__
-
-![ZCF Reallocate Flow](./zcf-reallocate-flow.png)
-
-
 ## UserSeat 
 
 The `UserSeat` is what is returned when a user calls
