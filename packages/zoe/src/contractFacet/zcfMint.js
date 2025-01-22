@@ -87,12 +87,6 @@ export const prepareZcMint = (
           gains,
         );
 
-        // Increment the stagedAllocation if it exists so that the
-        // stagedAllocation is kept up to the currentAllocation
-        if (zcfSeat.hasStagedAllocation()) {
-          zcfSeat.incrementBy(gains);
-        }
-
         // Offer safety should never be able to be violated here, as
         // we are adding assets. However, we keep this check so that
         // all reallocations are covered by offer safety checks, and
@@ -128,12 +122,6 @@ export const prepareZcMint = (
         // verifies offer safety
         zcfSeat.isOfferSafe(allocationMinusLosses) ||
           Fail`The allocation after burning losses ${allocationMinusLosses} for the zcfSeat was not offer safe`;
-
-        // Decrement the stagedAllocation if it exists so that the
-        // stagedAllocation is kept up to the currentAllocation
-        if (zcfSeat.hasStagedAllocation()) {
-          zcfSeat.decrementBy(losses);
-        }
 
         // No effects above, apart from decrementBy. Note COMMIT POINT within
         // reallocator.reallocate(). The following two steps *should* be
