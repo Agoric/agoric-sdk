@@ -60,8 +60,8 @@ export const SLOG_TYPES = {
       START: 'cosmic-swingset-bootstrap-block-start',
     },
     COMMIT: {
-      FINISH: 'cosmic-swingset-commit-finish',
-      START: 'cosmic-swingset-commit-start',
+      FINISH: 'cosmic-swingset-commit-block-finish',
+      START: 'cosmic-swingset-commit-block-start',
     },
     END_BLOCK: {
       FINISH: 'cosmic-swingset-end-block-finish',

@@ -42,6 +42,10 @@ export const makeSlogSender = async options => {
    * @type {Awaited<ReturnType<typeof makeFsStreamWriter>> | null}
    */
   let currentStream = null;
+  /**
+   * @type {Awaited<ReturnType<typeof makeFsStreamWriter>> | null}
+   */
+  let lastBlockStream = null;
 
   /**
    * Immediately frees the `currentStream` assignment and lazily closes the open file stream
@@ -68,15 +72,13 @@ export const makeSlogSender = async options => {
       throw Error(`Couldn't create a write stream on file "${filePath}"`);
   };
 
-  const ignore = () => {};
-
   /**
    * @param {import('./context-aware-slog.js').Slog} slog
    */
   const slogSender = async slog => {
     await new Promise(resolve => resolve(null));
 
-    const { type: slogType } = slog;
+    const { blockHeight, type: slogType } = slog;
 
     switch (slogType) {
       case SLOG_TYPES.KERNEL.INIT.START: {
@@ -91,6 +93,12 @@ export const makeSlogSender = async options => {
         );
         break;
       }
+      case SLOG_TYPES.COSMIC_SWINGSET.BEGIN_BLOCK: {
+        createFileStreamPromise = createFileStream(
+          `block_${blockHeight}_${new Date().getTime()}`,
+        );
+        break;
+      }
       default: {
         break;
       }
@@ -101,16 +109,29 @@ export const makeSlogSender = async options => {
     if (createFileStreamPromise) await createFileStreamPromise;
     createFileStreamPromise = null;
 
-    if (currentStream)
-      currentStream // eslint-disable-next-line prefer-template
-        .write(serializeSlogObj(contextualSlog) + '\n')
-        .catch(ignore);
-    else console.error(`No stream found for logging slog "${slogType}"`);
+    writeSlogToStream(
+      contextualSlog,
+      slogType === SLOG_TYPES.COSMIC_SWINGSET.AFTER_COMMIT_STATS
+        ? lastBlockStream
+        : currentStream,
+    )?.catch(console.error);
 
     switch (slogType) {
       case SLOG_TYPES.KERNEL.INIT.FINISH:
       case SLOG_TYPES.COSMIC_SWINGSET.BOOTSTRAP_BLOCK.FINISH: {
-        closeStream()?.catch(ignore);
+        closeStream()?.catch(console.error);
+        break;
+      }
+      case SLOG_TYPES.COSMIC_SWINGSET.COMMIT.FINISH: {
+        lastBlockStream = currentStream;
+        currentStream = null;
+        break;
+      }
+      case SLOG_TYPES.COSMIC_SWINGSET.AFTER_COMMIT_STATS: {
+        lastBlockStream
+          ?.close()
+          .catch(console.error)
+          .finally(() => (lastBlockStream = null));
         break;
       }
       default: {
@@ -118,6 +139,15 @@ export const makeSlogSender = async options => {
       }
     }
   };
+
+  /**
+   * @param {ReturnType<contextualSlogProcessor>} slog
+   * @param {Awaited<ReturnType<typeof makeFsStreamWriter>> | null} stream
+   */
+  const writeSlogToStream = (slog, stream) =>
+    !stream
+      ? console.error(`No stream available for slog type "${slog.body.type}"`) // eslint-disable-next-line prefer-template
+      : stream.write(serializeSlogObj(slog) + '\n');
 
   return Object.assign(slogSender, {
     forceFlush: () => currentStream?.flush(),
