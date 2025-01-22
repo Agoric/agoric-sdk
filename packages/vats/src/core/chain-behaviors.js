@@ -20,6 +20,10 @@ import { BASIC_BOOTSTRAP_PERMITS } from './basic-behaviors.js';
 import { agoricNamesReserved, callProperties, extractPowers } from './utils.js';
 import { makeScopedBridge } from '../bridge.js';
 
+/**
+ * @import {BridgeMessage} from '@agoric/cosmic-swingset/src/types.js';
+ */
+
 const { keys } = Object;
 
 /**
@@ -57,10 +61,10 @@ export const bridgeCoreEval = async allPowers => {
 
   // Register a coreEval handler over the bridge.
   const handler = Far('coreHandler', {
+    /** @param {BridgeMessage} obj */
     async fromBridge(obj) {
       switch (obj.type) {
         case 'CORE_EVAL': {
-          /** @type {import('@agoric/cosmic-proto/swingset/swingset.js').CoreEvalProposalSDKType} */
           const { evals } = obj;
           return Promise.all(
             evals.map(({ json_permits: jsonPermit, js_code: code }) =>
@@ -151,6 +155,7 @@ export const bridgeProvisioner = async ({
   // Register a provisioning handler over the bridge.
   const handler = provisioning
     ? Far('provisioningHandler', {
+        /** @param {BridgeMessage} obj */
         async fromBridge(obj) {
           switch (obj.type) {
             case 'PLEASE_PROVISION': {
