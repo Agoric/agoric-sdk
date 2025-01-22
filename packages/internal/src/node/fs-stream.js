@@ -49,13 +49,11 @@ const noPath = /** @type {import('fs').PathLike} */ (
 export const makeFsStreamWriter = async filePath => {
   if (!filePath) return undefined;
 
-  const isStdOutStream = filePath === '-';
+  const handle = await (filePath === '-' ? undefined : open(filePath, 'a'));
 
-  const handle = await (isStdOutStream ? undefined : open(filePath, 'a'));
-
-  const stream = isStdOutStream
-    ? process.stdout
-    : createWriteStream(noPath, { autoClose: false, fd: handle.fd });
+  const stream = handle
+    ? createWriteStream(noPath, { autoClose: false, fd: handle.fd })
+    : process.stdout;
   await fsStreamReady(stream);
 
   let flushed = Promise.resolve();
@@ -95,7 +93,7 @@ export const makeFsStreamWriter = async filePath => {
 
   const flush = async () => {
     await flushed;
-    if (!isStdOutStream)
+    if (handle)
       await handle.sync().catch(err => {
         if (err.code === 'EINVAL') {
           return;
@@ -109,9 +107,9 @@ export const makeFsStreamWriter = async filePath => {
     closed = true;
     await flush();
 
-    if (!isStdOutStream) {
-      await new Promise(resolve => stream.end(resolve));
-      await handle?.close();
+    if (handle) {
+      await new Promise(resolve => stream.end(() => resolve(null)));
+      await handle.close();
     }
   };
 

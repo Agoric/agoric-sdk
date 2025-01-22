@@ -42,10 +42,6 @@ export const makeSlogSender = async options => {
    * @type {Awaited<ReturnType<typeof makeFsStreamWriter>> | null}
    */
   let currentStream = null;
-  /**
-   * @type {Awaited<ReturnType<typeof makeFsStreamWriter>> | null}
-   */
-  let lastBlockStream = null;
 
   /**
    * Immediately frees the `currentStream` assignment and lazily closes the open file stream
@@ -109,29 +105,13 @@ export const makeSlogSender = async options => {
     if (createFileStreamPromise) await createFileStreamPromise;
     createFileStreamPromise = null;
 
-    writeSlogToStream(
-      contextualSlog,
-      slogType === SLOG_TYPES.COSMIC_SWINGSET.AFTER_COMMIT_STATS
-        ? lastBlockStream
-        : currentStream,
-    )?.catch(console.error);
+    writeSlogToStream(contextualSlog)?.catch(console.error);
 
     switch (slogType) {
       case SLOG_TYPES.KERNEL.INIT.FINISH:
-      case SLOG_TYPES.COSMIC_SWINGSET.BOOTSTRAP_BLOCK.FINISH: {
-        closeStream()?.catch(console.error);
-        break;
-      }
-      case SLOG_TYPES.COSMIC_SWINGSET.COMMIT.FINISH: {
-        lastBlockStream = currentStream;
-        currentStream = null;
-        break;
-      }
+      case SLOG_TYPES.COSMIC_SWINGSET.BOOTSTRAP_BLOCK.FINISH:
       case SLOG_TYPES.COSMIC_SWINGSET.AFTER_COMMIT_STATS: {
-        lastBlockStream
-          ?.close()
-          .catch(console.error)
-          .finally(() => (lastBlockStream = null));
+        closeStream()?.catch(console.error);
         break;
       }
       default: {
@@ -142,12 +122,11 @@ export const makeSlogSender = async options => {
 
   /**
    * @param {ReturnType<contextualSlogProcessor>} slog
-   * @param {Awaited<ReturnType<typeof makeFsStreamWriter>> | null} stream
    */
-  const writeSlogToStream = (slog, stream) =>
-    !stream
+  const writeSlogToStream = slog =>
+    !currentStream
       ? console.error(`No stream available for slog type "${slog.body.type}"`) // eslint-disable-next-line prefer-template
-      : stream.write(serializeSlogObj(slog) + '\n');
+      : currentStream.write(serializeSlogObj(slog) + '\n');
 
   return Object.assign(slogSender, {
     forceFlush: () => currentStream?.flush(),
