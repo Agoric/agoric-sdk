@@ -1,0 +1,10 @@
+{
+    "extends": [
+        "./tsconfig.json",
+        "../../tsconfig-build-options.json"
+    ],
+    "exclude": [
+        "src/types-index.js",
+        "test",
+    ]
+}
