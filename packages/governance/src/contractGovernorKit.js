@@ -123,15 +123,14 @@ export const prepareContractGovernorKit = (baggage, powers) => {
           await null;
           if (!apiGovernance) {
             trace('awaiting governed API dependencies');
-            const [governedApis, governedNames] = await Promise.all([
-              E(creatorFacet).getGovernedApis(),
-              E(creatorFacet).getGovernedApiNames(),
-            ]);
+            const governedNames = await E(creatorFacet).getGovernedApiNames();
             trace('setupApiGovernance');
             apiGovernance = governedNames.length
-              ? // @ts-expect-error FIXME
-                setupApiGovernance(governedApis, governedNames, timer, () =>
-                  this.facets.helper.getUpdatedPoserFacet(),
+              ? setupApiGovernance(
+                  () => E(creatorFacet).getGovernedApis(),
+                  () => E(creatorFacet).getGovernedApiNames(),
+                  timer,
+                  () => this.facets.helper.getUpdatedPoserFacet(),
                 )
               : {
                   // if we aren't governing APIs, voteOnApiInvocation shouldn't be called
