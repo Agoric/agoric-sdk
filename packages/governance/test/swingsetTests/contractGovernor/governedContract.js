@@ -1,7 +1,7 @@
+import { Far } from '@endo/marshal';
 import { handleParamGovernance } from '../../../src/contractHelper.js';
 import { ParamTypes } from '../../../src/index.js';
 import { CONTRACT_ELECTORATE } from '../../../src/contractGovernance/governParam.js';
-import { Far } from '@endo/marshal';
 
 /**
  * @import {GovernanceTerms} from '../../../src/types.js';
@@ -42,7 +42,9 @@ const start = async (zcf, privateArgs) => {
       getNum: () => params.getMalleableNumber(),
       getApiCalled: () => governanceAPICalled,
     }),
-    creatorFacet: makeFarGovernorFacet(Far('governedContract creatorFacet'), { governanceApi }),
+    creatorFacet: makeFarGovernorFacet(Far('governedContract creatorFacet'), {
+      governanceApi,
+    }),
   };
 };
 

@@ -40,25 +40,18 @@ export const startGovernedInstance = async (
     produce,
   },
   {
-    options: {
-      contractInstallation,
-      producedKey,
-      label = 'governedContract',
-    },
+    options: { contractInstallation, producedKey, label = 'governedContract' },
   },
 ) => {
   trace('Governed Contract start');
 
   const poserInvitationP = E(electorateCreatorFacet).getPoserInvitation();
-  const [
-    chainTimerService,
-    poserInvitation,
-    governedContractKits,
-  ] = await Promise.all([
-    chainTimerServiceP,
-    poserInvitationP,
-    governedContractKitsP,
-  ]);
+  const [chainTimerService, poserInvitation, governedContractKits] =
+    await Promise.all([
+      chainTimerServiceP,
+      poserInvitationP,
+      governedContractKitsP,
+    ]);
 
   const invitationIssuer = await E(zoe).getInvitationIssuer();
   const invitationAmount =
@@ -97,7 +90,7 @@ export const startGovernedInstance = async (
     {},
     governorTerms,
     {
-      //electorateCreatorFacet,
+      // electorateCreatorFacet,
       governed: {
         initialPoserInvitation: poserInvitation,
       },
@@ -105,17 +98,19 @@ export const startGovernedInstance = async (
     `${label}.governor`,
   );
 
-  const kit = await deeplyFulfilledObject(harden({
-    label,
-    creatorFacet: E(governorStartResult.creatorFacet).getCreatorFacet(),
-    adminFacet: E(governorStartResult.creatorFacet).getAdminFacet(),
-    publicFacet: E(governorStartResult.creatorFacet).getPublicFacet(),
-    instance: E(governorStartResult.creatorFacet).getInstance(),
+  const kit = await deeplyFulfilledObject(
+    harden({
+      label,
+      creatorFacet: E(governorStartResult.creatorFacet).getCreatorFacet(),
+      adminFacet: E(governorStartResult.creatorFacet).getAdminFacet(),
+      publicFacet: E(governorStartResult.creatorFacet).getPublicFacet(),
+      instance: E(governorStartResult.creatorFacet).getInstance(),
 
-    governor: governorStartResult.instance,
-    governorCreatorFacet: governorStartResult.creatorFacet,
-    governorAdminFacet: governorStartResult.adminFacet,
-  }));
+      governor: governorStartResult.instance,
+      governorCreatorFacet: governorStartResult.creatorFacet,
+      governorAdminFacet: governorStartResult.adminFacet,
+    }),
+  );
 
   governedContractKits.init(kit.instance, kit);
 
@@ -160,7 +155,10 @@ export const getManifestForGovernedContract = async (
 };
 
 /** @type {import('@agoric/deploy-script-support/src/externalTypes.js').CoreEvalBuilder} */
-export const defaultProposalBuilder = async ({ publishRef, install }, [producedKey, label = producedKey] = []) => {
+export const defaultProposalBuilder = async (
+  { publishRef, install },
+  [producedKey, label = producedKey] = [],
+) => {
   const { getSpecifier } = await import('@agoric/internal/src/module-utils.js');
   const SELF = await getSpecifier(import.meta.url);
 
@@ -175,9 +173,7 @@ export const defaultProposalBuilder = async ({ publishRef, install }, [producedK
           ),
         ),
         governorBundleRef: publishRef(
-          install(
-            '@agoric/governance/src/contractGovernor.js',
-          ),
+          install('@agoric/governance/src/contractGovernor.js'),
         ),
         producedKey,
         label,
