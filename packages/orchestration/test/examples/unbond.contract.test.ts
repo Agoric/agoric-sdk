@@ -56,7 +56,7 @@ test('start', async t => {
         buildQueryResponseString(QueryBalanceResponse, {
           balance: { denom: 'uosmo', amount: '1234' },
         }),
-      'eyJ0eXBlIjoxLCJkYXRhIjoiQ25rS0tTOXBZbU11WVhCd2JHbGpZWFJwYjI1ekxuUnlZVzV6Wm1WeUxuWXhMazF6WjFSeVlXNXpabVZ5RWt3S0NIUnlZVzV6Wm1WeUVndGphR0Z1Ym1Wc0xUTXlOaG9OQ2dWMWIzTnRieElFTVRJek5DSUxZMjl6Ylc5ek1YUmxjM1FxREdOdmMyMXZjekYwWlhOME1USUFPSUR3MXRUQ3pySUciLCJtZW1vIjoiIn0=':
+      'eyJ0eXBlIjoxLCJkYXRhIjoiQ25rS0tTOXBZbU11WVhCd2JHbGpZWFJwYjI1ekxuUnlZVzV6Wm1WeUxuWXhMazF6WjFSeVlXNXpabVZ5RWt3S0NIUnlZVzV6Wm1WeUVndGphR0Z1Ym1Wc0xUTXlOaG9OQ2dWMWIzTnRieElFTVRJek5DSUxZMjl6Ylc5ek1YUmxjM1FxREdOdmMyMXZjekYwWlhOME1USUFPSURnNlorZzE3SUciLCJtZW1vIjoiIn0=':
         buildMsgResponseString(MsgTransferResponse, {}),
     };
   };

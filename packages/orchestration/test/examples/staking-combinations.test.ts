@@ -147,7 +147,7 @@ test('start', async t => {
   );
   ibcBridge.addMockAck(
     // MsgTransfer from cosmos1test to osmo1receiver observed in console
-    'eyJ0eXBlIjoxLCJkYXRhIjoiQ25nS0tTOXBZbU11WVhCd2JHbGpZWFJwYjI1ekxuUnlZVzV6Wm1WeUxuWXhMazF6WjFSeVlXNXpabVZ5RWtzS0NIUnlZVzV6Wm1WeUVndGphR0Z1Ym1Wc0xURTBNUm9NQ2dWMWIzTnRieElETVRBd0lndGpiM050YjNNeGRHVnpkQ29OYjNOdGJ6RnlaV05sYVhabGNqSUFPSUNRK0lTZ21nRT0iLCJtZW1vIjoiIn0=',
+    'eyJ0eXBlIjoxLCJkYXRhIjoiQ25nS0tTOXBZbU11WVhCd2JHbGpZWFJwYjI1ekxuUnlZVzV6Wm1WeUxuWXhMazF6WjFSeVlXNXpabVZ5RWtzS0NIUnlZVzV6Wm1WeUVndGphR0Z1Ym1Wc0xURTBNUm9NQ2dWMWIzTnRieElETVRBd0lndGpiM050YjNNeGRHVnpkQ29OYjNOdGJ6RnlaV05sYVhabGNqSUFPSUNBaTlEOW9nRT0iLCJtZW1vIjoiIn0=',
     buildMsgResponseString(MsgTransferResponse, { sequence: 0n }),
   );
   const destination = {

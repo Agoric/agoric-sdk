@@ -200,7 +200,7 @@ test('transfer', async t => {
       revisionHeight: 0n,
       revisionNumber: 0n,
     },
-    timeoutTimestamp: 300000000000n, // 5 mins in ns
+    timeoutTimestamp: 600000000000n, // 10 mins in ns
     memo: '',
   };
   const buildMocks = () => {

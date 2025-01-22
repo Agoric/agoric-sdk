@@ -25,7 +25,7 @@ export function makeTimestampHelper(timer) {
      * determine a timeout timestamp in nanoseconds. Useful for
      * {@link MsgTransfer.timeoutTimestamp}.
      *
-     * @param {RelativeTimeRecord} [relativeTime] defaults to 5 minutes
+     * @param {RelativeTimeRecord} [relativeTime] defaults to 10 minutes
      * @returns {Promise<bigint>} Timeout timestamp in absolute nanoseconds
      *   since unix epoch
      */
@@ -34,7 +34,7 @@ export function makeTimestampHelper(timer) {
       const timeout =
         relativeTime ||
         TimeMath.coerceRelativeTimeRecord(
-          SECONDS_PER_MINUTE * 5n,
+          SECONDS_PER_MINUTE * 10n,
           currentTime.timerBrand,
         );
       return (

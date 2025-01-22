@@ -179,6 +179,7 @@ const ChainIdArgShape = M.or(
 const DefaultPfmTimeoutOpts = harden(
   /** @type {const} */ ({
     retries: 3,
+    // 10m OK?
     timeout: /** @type {const} */ ('10m'),
   }),
 );

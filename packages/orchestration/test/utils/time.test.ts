@@ -16,8 +16,8 @@ test('makeTimestampHelper - getCurrentTimestamp', async t => {
   await null;
   t.is(
     await getTimeoutTimestampNS(),
-    5n * SECONDS_PER_MINUTE * NANOSECONDS_PER_SECOND,
-    'default timestamp is 5 minutes from current time, in nanoseconds',
+    10n * SECONDS_PER_MINUTE * NANOSECONDS_PER_SECOND,
+    'default timestamp is 10 minutes from current time, in nanoseconds',
   );
 
   t.is(
