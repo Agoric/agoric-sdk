@@ -496,7 +496,7 @@ export const makeZCFZygote = async (
             priorPublicFacet = zcfBaggage.get('publicFacet');
             priorCreatorInvitation = zcfBaggage.get('creatorInvitation');
           } catch (e) {
-            Fail`restartContract failed: original contract facets were not durable`;
+            Fail`restartContract failed: original contract facets were not durable (${e})`;
           }
 
           (priorCreatorFacet === creatorFacet &&
