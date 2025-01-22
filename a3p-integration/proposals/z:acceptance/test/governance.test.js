@@ -17,14 +17,21 @@ const governanceAddresses = [GOV4ADDR, GOV2ADDR, GOV1ADDR];
 const { getLastUpdate, readLatestHead } = agdWalletUtils;
 const governanceDriver = await makeGovernanceDriver(fetch, networkConfig);
 
+/**
+ * @typedef {{
+ *   current: { ChargingPeriod: Amount },
+ *  }} ChargingPeriodRecord
+ */
+
 test.serial(
   'economic committee can make governance proposal and vote on it',
   async t => {
+    /** @type {ChargingPeriodRecord} */
+    // @ts-expect-error cast
     const vaultFactoryParamsBefore = await readLatestHead(
       'published.vaultFactory.governance',
     );
     const newChargingPeriod =
-      // @ts-expect-error it's a record
       vaultFactoryParamsBefore.current.ChargingPeriod.value === 400n
         ? 300n
         : 400n;
@@ -66,12 +73,13 @@ test.serial(
 
     await governanceDriver.waitForElection();
 
+    /** @type {ChargingPeriodRecord} */
+    // @ts-expect-error cast
     const vaultFactoryParamsAfter = await readLatestHead(
       'published.vaultFactory.governance',
     );
 
     t.is(
-      // @ts-expect-error it's a record
       vaultFactoryParamsAfter.current.ChargingPeriod.value,
       newChargingPeriod,
       'vaultFactory governed parameters did not match',
