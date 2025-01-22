@@ -1,27 +1,29 @@
 import anyTest from '@endo/ses-ava/prepare-endo.js';
 
-import type { TestFn } from 'ava';
 import { encodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
+import type { QueryBalanceResponseSDKType } from '@agoric/cosmic-proto/cosmos/bank/v1beta1/query.js';
 import { AmountMath } from '@agoric/ertp';
-import type { Denom } from '@agoric/orchestration';
-import { divideBy, multiplyBy } from '@agoric/zoe/src/contractSupport/ratio.js';
-import type { IBCChannelID } from '@agoric/vats';
-import { makeDoOffer, type WalletDriver } from '../../tools/e2e-tools.js';
-import { makeDenomTools } from '../../tools/asset-info.js';
-import { createWallet } from '../../tools/wallet.js';
-import { makeQueryClient } from '../../tools/query.js';
-import { commonSetup, type SetupContextWithWallets } from '../support.js';
-import { makeFeedPolicy, oracleMnemonics } from './config.js';
-import { makeRandomDigits } from '../../tools/random.js';
-import { makeTracer } from '@agoric/internal';
+import type { USDCProposalShapes } from '@agoric/fast-usdc/src/pool-share-math.js';
 import type {
   CctpTxEvidence,
   EvmAddress,
   PoolMetrics,
 } from '@agoric/fast-usdc/src/types.js';
+import { makeTracer } from '@agoric/internal';
+import type { Denom } from '@agoric/orchestration';
 import type { CurrentWalletRecord } from '@agoric/smart-wallet/src/smartWallet.js';
-import type { QueryBalanceResponseSDKType } from '@agoric/cosmic-proto/cosmos/bank/v1beta1/query.js';
-import type { USDCProposalShapes } from '@agoric/fast-usdc/src/pool-share-math.js';
+import type { IBCChannelID } from '@agoric/vats';
+import { divideBy, multiplyBy } from '@agoric/zoe/src/contractSupport/ratio.js';
+import type { TestFn } from 'ava';
+import { makeDenomTools } from '../../tools/asset-info.js';
+import { makeDoOffer, type WalletDriver } from '../../tools/e2e-tools.js';
+import { makeQueryClient } from '../../tools/query.js';
+import { makeRandomDigits } from '../../tools/random.js';
+import { createWallet } from '../../tools/wallet.js';
+import { commonSetup, type SetupContextWithWallets } from '../support.js';
+import { makeFeedPolicyPartial, oracleMnemonics } from './config.js';
+
+const { RELAYER_TYPE } = process.env;
 
 const log = makeTracer('MCFU');
 
@@ -33,6 +35,7 @@ const makeRandomNumber = () => Math.random();
 const test = anyTest as TestFn<
   SetupContextWithWallets & {
     lpUser: WalletDriver;
+    feeUser: WalletDriver;
     oracleWds: WalletDriver[];
     nobleAgoricChannelId: IBCChannelID;
     usdcOnOsmosis: Denom;
@@ -41,14 +44,16 @@ const test = anyTest as TestFn<
   }
 >;
 
-const accounts = [...keys(oracleMnemonics), 'lp'];
+const accounts = [...keys(oracleMnemonics), 'lp', 'feeDest'];
 const contractName = 'fastUsdc';
 const contractBuilder =
-  '../packages/builders/scripts/fast-usdc/init-fast-usdc.js';
+  '../packages/builders/scripts/fast-usdc/start-fast-usdc.build.js';
 const LP_DEPOSIT_AMOUNT = 8_000n * 10n ** 6n;
 
 test.before(async t => {
-  const { setupTestKeys, ...common } = await commonSetup(t);
+  const { setupTestKeys, ...common } = await commonSetup(t, {
+    config: `../config.fusdc${RELAYER_TYPE ? '.' + RELAYER_TYPE : ''}.yaml`,
+  });
   const {
     chainInfo,
     commonBuilderOpts,
@@ -81,7 +86,7 @@ test.before(async t => {
   await startContract(contractName, contractBuilder, {
     oracle: keys(oracleMnemonics).map(n => `${n}:${wallets[n]}`),
     usdcDenom,
-    feedPolicy: JSON.stringify(makeFeedPolicy(nobleAgoricChannelId)),
+    feedPolicy: JSON.stringify(makeFeedPolicyPartial(nobleAgoricChannelId)),
     ...commonBuilderOpts,
   });
 
@@ -93,10 +98,12 @@ test.before(async t => {
     USDC: 8_000n,
     BLD: 100n,
   });
+  const feeUser = await provisionSmartWallet(wallets['feeDest'], { BLD: 100n });
 
   t.context = {
     ...common,
     lpUser,
+    feeUser,
     oracleWds,
     nobleAgoricChannelId,
     usdcOnOsmosis,
@@ -273,6 +280,7 @@ const advanceAndSettleScenario = test.macro({
       retryUntilCondition,
       smartWalletKit,
       useChain,
+      usdcDenom,
       usdcOnOsmosis,
       vstorageClient,
     } = t.context;
@@ -345,10 +353,26 @@ const advanceAndSettleScenario = test.macro({
       await useChain(eudChain).getRestEndpoint(),
     );
 
+    const getUsdcDenom = (chainName: string) => {
+      switch (chainName) {
+        case 'agoric':
+          return usdcDenom;
+        case 'osmosis':
+          return usdcOnOsmosis;
+        case 'noble':
+          return 'uusdc';
+        default:
+          throw new Error(`${chainName} not supported in 'getUsdcDenom'`);
+      }
+    };
+
     await t.notThrowsAsync(() =>
       retryUntilCondition(
-        () => queryClient.queryBalance(EUD, usdcOnOsmosis),
-        ({ balance }) => !!balance?.amount && BigInt(balance.amount) < mintAmt,
+        () => queryClient.queryBalance(EUD, getUsdcDenom(eudChain)),
+        ({ balance }) =>
+          !!balance?.amount &&
+          BigInt(balance?.amount) > 0n &&
+          BigInt(balance.amount) < mintAmt,
         `${EUD} advance available from fast-usdc`,
         // this resolves quickly, so _decrease_ the interval so the timing is more apparent
         { retryIntervalMs: 500 },
@@ -397,6 +421,33 @@ const advanceAndSettleScenario = test.macro({
 
     await assertTxStatus('DISBURSED');
   },
+});
+
+test('distribute FastUSDC contract fees', async t => {
+  const io = t.context;
+  const queryClient = makeQueryClient(
+    await io.useChain('agoric').getRestEndpoint(),
+  );
+  const builder =
+    '../packages/builders/scripts/fast-usdc/fast-usdc-fees.build.js';
+
+  const opts = {
+    destinationAddress: io.wallets['feeDest'],
+    feePortion: 0.25,
+  };
+  t.log('build, run proposal to distribute fees', opts);
+  await io.deployBuilder(builder, {
+    ...opts,
+    feePortion: `${opts.feePortion}`,
+  });
+
+  const { balance } = await io.retryUntilCondition(
+    () => queryClient.queryBalance(opts.destinationAddress, io.usdcDenom),
+    ({ balance }) => !!balance && BigInt(balance.amount) > 0n,
+    `fees received at ${opts.destinationAddress}`,
+  );
+  t.log('fees received', balance);
+  t.truthy(balance?.amount);
 });
 
 test.serial(advanceAndSettleScenario, LP_DEPOSIT_AMOUNT / 4n, 'osmosis');

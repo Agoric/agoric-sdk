@@ -16,6 +16,7 @@ import {
 
 /**
  * @import {FungibleTokenPacketData} from '@agoric/cosmic-proto/ibc/applications/transfer/v2/packet.js';
+ * @import {Amount, Brand, NatValue, Payment} from '@agoric/ertp';
  * @import {Denom, OrchestrationAccount, ChainHub, ChainAddress} from '@agoric/orchestration';
  * @import {WithdrawToSeat} from '@agoric/orchestration/src/utils/zoe-tools'
  * @import {IBCChannelID, VTransferIBCEvent} from '@agoric/vats';

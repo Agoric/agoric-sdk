@@ -80,6 +80,7 @@ jobs:
           version: 0.2.20
           timeout: 30m
           namespace: ${{ env.NAMESPACE }}
+          repo: https://hyperweb-io.github.io/starship
 
       - name: Fund Provision Pool
         run: |
@@ -97,7 +98,7 @@ jobs:
         working-directory: ./agoric-sdk/multichain-testing
 
       - name: Run @agoric/multichain-testing E2E Tests
-        run: yarn ${{ inputs.test_command }}
+        run: ${{ inputs.test_command }}
         working-directory: ./agoric-sdk/multichain-testing
         env:
           FILE: ${{ inputs.config }}

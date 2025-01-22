@@ -10,6 +10,7 @@ import { Fail, q } from '@endo/errors';
 const { getValue, add, isEmpty, isEqual, isGTE, subtract } = AmountMath;
 
 /**
+ * @import {Amount, Brand, DepositFacet, NatValue, Payment} from '@agoric/ertp';
  * @import {PoolStats} from './types';
  * @import {RepayAmountKWR} from './exos/liquidity-pool';
  */
@@ -43,6 +44,9 @@ export const makeParity = (numerator, denominatorBrand) => {
  *   withdraw: {
  *     give: { PoolShare: Amount<'nat'> }
  *     want: { USDC: Amount<'nat'> },
+ *   },
+ *   withdrawFees: {
+ *     want: { USDC: Amount<'nat'> }
  *   }
  * }} USDCProposalShapes
  */

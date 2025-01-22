@@ -1,28 +1,26 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
-
 import type { TestFn } from 'ava';
+
 import { encodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
 import { configurations } from '@agoric/fast-usdc/src/utils/deploy-config.js';
 import { MockCctpTxEvidences } from '@agoric/fast-usdc/test/fixtures.js';
 import { documentStorageSchema } from '@agoric/governance/tools/storageDoc.js';
-import { Fail } from '@endo/errors';
+import { BridgeId, NonNullish } from '@agoric/internal';
 import { unmarshalFromVstorage } from '@agoric/internal/src/marshal.js';
+import { defaultSerializer } from '@agoric/internal/src/storage-test-utils.js';
+import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
+import { buildVTransferEvent } from '@agoric/orchestration/tools/ibc-mocks.js';
+import { Fail } from '@endo/errors';
 import { makeMarshal } from '@endo/marshal';
 import {
-  defaultMarshaller,
-  defaultSerializer,
-} from '@agoric/internal/src/storage-test-utils.js';
-import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
-import { BridgeId, NonNullish } from '@agoric/internal';
+  AckBehavior,
+  insistManagerType,
+  makeSwingsetHarness,
+} from '../../tools/supports.js';
 import {
   makeWalletFactoryContext,
   type WalletFactoryTestContext,
 } from '../bootstrapTests/walletFactory.js';
-import {
-  makeSwingsetHarness,
-  insistManagerType,
-  AckBehavior,
-} from '../../tools/supports.js';
 
 const test: TestFn<
   WalletFactoryTestContext & {
@@ -51,8 +49,8 @@ test.before('bootstrap', async t => {
 test.after.always(t => t.context.shutdown?.());
 
 test.serial('oracles provision before contract deployment', async t => {
-  const { walletFactoryDriver: wd } = t.context;
-  const watcherWallet = await wd.provideSmartWallet('agoric1watcher1');
+  const { walletFactoryDriver: wfd } = t.context;
+  const watcherWallet = await wfd.provideSmartWallet('agoric1watcher1');
   t.truthy(watcherWallet);
 });
 
@@ -66,12 +64,12 @@ test.serial(
       evalProposal,
       refreshAgoricNamesRemotes,
       storage,
-      walletFactoryDriver: wd,
+      walletFactoryDriver: wfd,
     } = t.context;
 
     const { oracles } = configurations.MAINNET;
     const [watcherWallet] = await Promise.all(
-      Object.values(oracles).map(addr => wd.provideSmartWallet(addr)),
+      Object.values(oracles).map(addr => wfd.provideSmartWallet(addr)),
     );
 
     // inbound `startChannelOpenInit` responses immediately.
@@ -84,7 +82,7 @@ test.serial(
     bridgeUtils.setBech32Prefix('noble');
 
     const materials = buildProposal(
-      '@agoric/builders/scripts/fast-usdc/init-fast-usdc.js',
+      '@agoric/builders/scripts/fast-usdc/start-fast-usdc.build.js',
       ['--net', 'MAINNET'],
     );
     await evalProposal(materials);
@@ -158,7 +156,7 @@ test.serial('writes feed policy to vstorage', async t => {
   const opts = {
     node: 'fastUsdc.feedPolicy',
     owner: 'the general and chain-specific policies for the Fast USDC feed',
-    showValue: JSON.parse,
+    showValue: defaultSerializer.parse,
   };
   await documentStorageSchema(t, storage, opts);
 });
@@ -168,16 +166,6 @@ test.serial('writes fee config to vstorage', async t => {
   const doc = {
     node: 'fastUsdc.feeConfig',
     owner: 'the fee configuration for Fast USDC',
-    showValue: defaultSerializer.parse,
-  };
-  await documentStorageSchema(t, storage, doc);
-});
-
-test.serial('writes pool metrics to vstorage', async t => {
-  const { storage } = t.context;
-  const doc = {
-    node: 'fastUsdc.poolMetrics',
-    owner: 'FastUSC LiquidityPool exo',
     showValue: defaultSerializer.parse,
   };
   await documentStorageSchema(t, storage, doc);
@@ -201,8 +189,8 @@ test.serial('writes account addresses to vstorage', async t => {
 });
 
 test.serial('LP deposits', async t => {
-  const { walletFactoryDriver: wd, agoricNamesRemotes } = t.context;
-  const lp = await wd.provideSmartWallet(
+  const { walletFactoryDriver: wfd, agoricNamesRemotes } = t.context;
+  const lp = await wfd.provideSmartWallet(
     'agoric19uscwxdac6cf6z7d5e26e0jm0lgwstc47cpll8',
   );
 
@@ -270,15 +258,15 @@ test.serial('LP deposits', async t => {
 
 test.serial('makes usdc advance', async t => {
   const {
-    walletFactoryDriver: wd,
+    walletFactoryDriver: wfd,
     storage,
     agoricNamesRemotes,
     harness,
   } = t.context;
   const oracles = await Promise.all([
-    wd.provideSmartWallet('agoric19uscwxdac6cf6z7d5e26e0jm0lgwstc47cpll8'),
-    wd.provideSmartWallet('agoric1krunjcqfrf7la48zrvdfeeqtls5r00ep68mzkr'),
-    wd.provideSmartWallet('agoric1n4fcxsnkxe4gj6e24naec99hzmc4pjfdccy5nj'),
+    wfd.provideSmartWallet('agoric19uscwxdac6cf6z7d5e26e0jm0lgwstc47cpll8'),
+    wfd.provideSmartWallet('agoric1krunjcqfrf7la48zrvdfeeqtls5r00ep68mzkr'),
+    wfd.provideSmartWallet('agoric1n4fcxsnkxe4gj6e24naec99hzmc4pjfdccy5nj'),
   ]);
   await Promise.all(
     oracles.map(wallet =>
@@ -296,9 +284,11 @@ test.serial('makes usdc advance', async t => {
 
   const EUD = 'dydx1anything';
   const lastNodeValue = storage.getValues('published.fastUsdc').at(-1);
-  const { settlementAccount } = JSON.parse(NonNullish(lastNodeValue));
+  const { settlementAccount, poolAccount } = JSON.parse(
+    NonNullish(lastNodeValue),
+  );
   const evidence = MockCctpTxEvidences.AGORIC_PLUS_OSMO(
-    // mock with the read settlementAccount address
+    // mock with the real settlementAccount address
     encodeAddressHook(settlementAccount, { EUD }),
   );
 
@@ -325,15 +315,52 @@ test.serial('makes usdc advance', async t => {
     );
   harness?.resetRunPolicy();
 
-  t.deepEqual(
+  const getTxStatus = txHash =>
     storage
-      .getValues(`published.fastUsdc.txns.${evidence.txHash}`)
-      .map(defaultSerializer.parse),
-    [
-      { evidence, status: 'OBSERVED' }, // observation includes evidence observed
-      { status: 'ADVANCING' },
-    ],
+      .getValues(`published.fastUsdc.txns.${txHash}`)
+      .map(defaultSerializer.parse);
+
+  t.deepEqual(getTxStatus(evidence.txHash), [
+    { evidence, status: 'OBSERVED' }, // observation includes evidence observed
+    { status: 'ADVANCING' },
+  ]);
+
+  const { runInbound } = t.context.bridgeUtils;
+  await runInbound(
+    BridgeId.VTRANSFER,
+    buildVTransferEvent({
+      sender: poolAccount,
+      target: poolAccount,
+      sourceChannel: 'channel-62',
+      sequence: '1',
+    }),
   );
+
+  // in due course, minted USDC arrives
+  await runInbound(
+    BridgeId.VTRANSFER,
+
+    buildVTransferEvent({
+      sequence: '1', // arbitrary; not used
+      amount: evidence.tx.amount,
+      denom: 'uusdc',
+      sender: evidence.tx.forwardingAddress,
+      target: settlementAccount,
+      receiver: encodeAddressHook(settlementAccount, { EUD }),
+      sourceChannel: evidence.aux.forwardingChannel,
+      destinationChannel: 'channel-62', // fetchedChainInfo
+      // destinationChannel: evidence.aux.forwardingChannel,
+      // sourceChannel: 'channel-62', // fetchedChainInfo
+    }),
+  );
+
+  await eventLoopIteration();
+  t.like(getTxStatus(evidence.txHash), [
+    { status: 'OBSERVED' },
+    { status: 'ADVANCING' },
+    { status: 'ADVANCED' },
+    { status: 'DISBURSED', split: { ContractFee: { value: 302000n } } },
+  ]);
 
   const doc = {
     node: `fastUsdc.txns`,
@@ -343,19 +370,55 @@ test.serial('makes usdc advance', async t => {
   await documentStorageSchema(t, storage, doc);
 });
 
+test.serial('writes pool metrics to vstorage', async t => {
+  const { storage } = t.context;
+  const doc = {
+    node: 'fastUsdc.poolMetrics',
+    owner: 'FastUSC LiquidityPool exo',
+    showValue: defaultSerializer.parse,
+  };
+  await documentStorageSchema(t, storage, doc);
+});
+
+test.serial('distributes fees per BLD staker decision', async t => {
+  const { walletFactoryDriver: wd, buildProposal, evalProposal } = t.context;
+
+  const ContractFee = 302000n; // see split above
+  t.is(((ContractFee - 250000n) * 5n) / 10n, 26000n);
+  const cases = [
+    { dest: 'agoric1a', args: ['--fixedFees', '0.25'], rxd: '250000' },
+    { dest: 'agoric1b', args: ['--feePortion', '0.5'], rxd: '26000' },
+  ];
+  for (const { dest, args, rxd } of cases) {
+    await wd.provideSmartWallet(dest);
+    const materials = buildProposal(
+      '@agoric/builders/scripts/fast-usdc/fast-usdc-fees.build.js',
+      ['--destinationAddress', dest, ...args],
+    );
+    await evalProposal(materials);
+
+    const { getOutboundMessages } = t.context.bridgeUtils;
+    const found = getOutboundMessages(BridgeId.BANK).find(
+      msg => msg.recipient === dest && msg.type === 'VBANK_GIVE',
+    );
+    t.log('dest vbank msg', found);
+    t.like(found, { amount: rxd });
+  }
+});
+
 test.serial('skips usdc advance when risks identified', async t => {
-  const { walletFactoryDriver: wd, storage } = t.context;
+  const { walletFactoryDriver: wfd, storage } = t.context;
   const oracles = await Promise.all([
-    wd.provideSmartWallet('agoric19uscwxdac6cf6z7d5e26e0jm0lgwstc47cpll8'),
-    wd.provideSmartWallet('agoric1krunjcqfrf7la48zrvdfeeqtls5r00ep68mzkr'),
-    wd.provideSmartWallet('agoric1n4fcxsnkxe4gj6e24naec99hzmc4pjfdccy5nj'),
+    wfd.provideSmartWallet('agoric19uscwxdac6cf6z7d5e26e0jm0lgwstc47cpll8'),
+    wfd.provideSmartWallet('agoric1krunjcqfrf7la48zrvdfeeqtls5r00ep68mzkr'),
+    wfd.provideSmartWallet('agoric1n4fcxsnkxe4gj6e24naec99hzmc4pjfdccy5nj'),
   ]);
 
   const EUD = 'dydx1riskyeud';
   const lastNodeValue = storage.getValues('published.fastUsdc').at(-1);
   const { settlementAccount } = JSON.parse(NonNullish(lastNodeValue));
   const evidence = MockCctpTxEvidences.AGORIC_PLUS_DYDX(
-    // mock with the read settlementAccount address
+    // mock with the real settlementAccount address
     encodeAddressHook(settlementAccount, { EUD }),
   );
 
@@ -394,8 +457,8 @@ test.serial('skips usdc advance when risks identified', async t => {
 });
 
 test.serial('LP withdraws', async t => {
-  const { walletFactoryDriver: wd, agoricNamesRemotes } = t.context;
-  const lp = await wd.provideSmartWallet(
+  const { walletFactoryDriver: wfd, agoricNamesRemotes } = t.context;
+  const lp = await wfd.provideSmartWallet(
     'agoric19uscwxdac6cf6z7d5e26e0jm0lgwstc47cpll8',
   );
 
@@ -462,4 +525,110 @@ test.serial('restart contract', async t => {
   const kit = await EV.vat('bootstrap').consumeItem('fastUsdcKit');
   const actual = await EV(kit.adminFacet).restartContract(kit.privateArgs);
   t.deepEqual(actual, { incarnationNumber: 1 });
+});
+
+test.serial('replace operators', async t => {
+  const {
+    agoricNamesRemotes,
+    buildProposal,
+    evalProposal,
+    storage,
+    runUtils: { EV },
+    walletFactoryDriver: wfd,
+  } = t.context;
+  const { creatorFacet } = await EV.vat('bootstrap').consumeItem('fastUsdcKit');
+
+  const EUD = 'dydx1anything';
+  const lastNodeValue = storage.getValues('published.fastUsdc').at(-1);
+  const { settlementAccount } = JSON.parse(NonNullish(lastNodeValue));
+  const evidence = MockCctpTxEvidences.AGORIC_PLUS_OSMO(
+    // mock with the real settlementAccount address
+    encodeAddressHook(settlementAccount, { EUD }),
+  );
+
+  // Remove old oracle operators (nested in block to isolate bindings)
+  {
+    // old oracles, which were started with MAINNET config
+    const { oracles } = configurations.MAINNET;
+
+    for (const [name, address] of Object.entries(oracles)) {
+      t.log('Removing operator', name, 'at', address);
+      await EV(creatorFacet).removeOperator(address);
+    }
+
+    const wallets = await Promise.all(
+      Object.values(oracles).map(addr => wfd.provideSmartWallet(addr)),
+    );
+
+    await Promise.all(
+      wallets.map(wallet =>
+        wallet.sendOffer({
+          id: 'submit-while-disabled',
+          invitationSpec: {
+            source: 'continuing',
+            previousOffer: 'claim-oracle-invitation',
+            invitationMakerName: 'SubmitEvidence',
+            invitationArgs: [evidence],
+          },
+          proposal: {},
+        }),
+      ),
+    );
+    for (const wd of wallets) {
+      t.like(wd.getLatestUpdateRecord(), {
+        status: {
+          id: 'submit-while-disabled',
+          error: 'Error: submitEvidence for disabled operator',
+        },
+      });
+    }
+  }
+
+  if (defaultManagerType === 'xs-worker') {
+    // XXX for some reason the code after this when run under XS fails with:
+    // message: 'unsettled value for "kp2526"',
+    return;
+  }
+
+  // Add some new oracle operator
+  const {
+    // any one would do
+    oracles: { gov1: address },
+  } = configurations.A3P_INTEGRATION;
+  const wallet = await wfd.provideSmartWallet(address);
+
+  const addOperators = buildProposal(
+    '@agoric/builders/scripts/fast-usdc/add-operators.build.js',
+    ['--oracle', `gov1a3p:${address}`],
+  );
+  await evalProposal(addOperators);
+
+  await wallet.sendOffer({
+    id: 'claim-oracle-invitation',
+    invitationSpec: {
+      source: 'purse',
+      instance: agoricNamesRemotes.instance.fastUsdc,
+      description: 'oracle operator invitation',
+    },
+    proposal: {},
+  });
+  console.log('accepted invitation');
+
+  await wallet.sendOffer({
+    id: 'submit',
+    invitationSpec: {
+      source: 'continuing',
+      previousOffer: 'claim-oracle-invitation',
+      invitationMakerName: 'SubmitEvidence',
+      invitationArgs: [evidence],
+    },
+    proposal: {},
+  });
+  console.log('submitted price');
+  t.like(wallet.getLatestUpdateRecord(), {
+    status: {
+      id: 'submit',
+      result: 'inert; nothing should be expected from this offer',
+    },
+  });
 });

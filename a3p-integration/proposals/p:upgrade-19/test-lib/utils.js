@@ -1,6 +1,7 @@
 /* eslint-env node */
 import { makeStargateClient, makeVstorageKit } from '@agoric/client-utils';
 import { readFile, writeFile } from 'node:fs/promises';
+import { getDetailsMatchingVats } from '@agoric/synthetic-chain';
 import { networkConfig } from './index.js';
 
 export const stargateClientP = makeStargateClient(networkConfig, { fetch });
@@ -63,4 +64,19 @@ export const listVaults = async (addr, { getCurrentWalletRecord }) => {
   );
 
   return vaultStoragePaths;
+};
+
+/**
+ * Copy from https://github.com/Agoric/agoric-sdk/blob/d7031902b5666ba2aec5d049b051a15c5f2ef59b/a3p-integration/proposals/z%3Aacceptance/test-lib/utils.js#L106
+ * @param {string} vatName
+ * @returns {Promise<number>}
+ */
+export const getIncarnationFromDetails = async vatName => {
+  const matchingVats = await getDetailsMatchingVats(vatName);
+  const expectedVat = matchingVats.find(
+    /** @param {{ vatName: string }} vat */
+    vat => vat.vatName.endsWith(vatName),
+  );
+  assert(expectedVat, `No matching Vat was found for ${vatName}`);
+  return expectedVat.incarnation;
 };

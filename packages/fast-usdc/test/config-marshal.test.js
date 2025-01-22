@@ -10,7 +10,9 @@ import {
   toLegible,
 } from '../src/utils/config-marshal.js';
 
-/** @import {SmallCapsStructureOf} from '../src/utils/config-marshal.js' */
+/**
+ * @import {Amount, Brand, DepositFacet, NatValue, Payment} from '@agoric/ertp';
+ */
 
 const testMatches = (t, specimen, pattern) => {
   t.notThrows(() => mustMatch(specimen, pattern));
@@ -27,7 +29,6 @@ test('cross-vat configuration of Fast USDC FeeConfig', t => {
   const config = harden({
     flat: make(USDC, 100n),
     variableRate: makeRatio(1n, USDC),
-    maxVariable: make(USDC, 100_000n),
     contractRate: makeRatio(20n, USDC),
   });
   testMatches(t, config, FeeConfigShape);
@@ -49,7 +50,6 @@ test('cross-vat configuration of Fast USDC FeeConfig', t => {
         },
       },
       flat: { brand: '$0', value: '+100' },
-      maxVariable: { brand: '$0', value: '+100000' },
       variableRate: {
         denominator: {
           brand: '$0',

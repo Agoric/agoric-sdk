@@ -1,16 +1,14 @@
 import type { HostInterface } from '@agoric/async-flow';
+import type { Brand, Issuer, Payment } from '@agoric/ertp';
 import type {
   ChainAddress,
   DenomAmount,
   OrchestrationAccount,
 } from '@agoric/orchestration';
-import type { Zone } from '@agoric/zone';
 import type { VowTools } from '@agoric/vow';
 import { makeRatio } from '@agoric/zoe/src/contractSupport/ratio.js';
-import type {
-  AmountUtils,
-  withAmountUtils,
-} from '@agoric/zoe/tools/test-utils.js';
+import type { AmountUtils } from '@agoric/zoe/tools/test-utils.js';
+import type { Zone } from '@agoric/zone';
 import type { FeeConfig, LogFn } from '../src/types.js';
 
 export const prepareMockOrchAccounts = (
@@ -26,6 +24,7 @@ export const prepareMockOrchAccounts = (
   },
 ) => {
   // each can only be resolved/rejected once per test
+  const poolAccountSendVK = makeVowKit<undefined>();
   const poolAccountTransferVK = makeVowKit<undefined>();
   const settleAccountTransferVK = makeVowKit<undefined>();
 
@@ -38,6 +37,10 @@ export const prepareMockOrchAccounts = (
       log('PoolAccount.deposit() called with', payment);
       // XXX consider a mock for deposit failure
       return asVow(async () => usdc.issuer.getAmountOf(payment));
+    },
+    send(destination: ChainAddress, amount: DenomAmount) {
+      log('PoolAccount.send() called with', destination, amount);
+      return poolAccountSendVK.vow;
     },
   });
 
@@ -59,6 +62,7 @@ export const prepareMockOrchAccounts = (
     mockPoolAccount: {
       account: poolAccount,
       transferVResolver: poolAccountTransferVK.resolver,
+      sendVResolver: poolAccountSendVK.resolver,
     },
     settlement: {
       account: settlementAccount,
@@ -85,6 +89,5 @@ export const makeTestFeeConfig = (usdc: Omit<AmountUtils, 'mint'>): FeeConfig =>
   harden({
     flat: usdc.make(1n),
     variableRate: makeRatio(2n, usdc.brand),
-    maxVariable: usdc.units(5),
     contractRate: makeRatio(20n, usdc.brand),
   });

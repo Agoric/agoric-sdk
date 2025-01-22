@@ -8,6 +8,7 @@ import type { CctpTxEvidence, EvmAddress } from '../src/types.js';
 const mockScenarios = [
   'AGORIC_PLUS_OSMO',
   'AGORIC_PLUS_DYDX',
+  'AGORIC_PLUS_AGORIC',
   'AGORIC_NO_PARAMS',
   'AGORIC_UNKNOWN_EUD',
 ] as const;
@@ -60,6 +61,27 @@ export const MockCctpTxEvidences: Record<
         receiverAddress ||
         encodeAddressHook(settlementAddress.value, {
           EUD: 'dydx183dejcnmkka5dzcu9xw6mywq0p2m5peks28men',
+        }),
+    },
+    chainId: 1,
+  }),
+  AGORIC_PLUS_AGORIC: (receiverAddress?: string) => ({
+    blockHash:
+      '0x80d7343e04f8160892e94f02d6a9b9f255663ed0ac34caca98544c8143fee6z9',
+    blockNumber: 21037600n,
+    txHash:
+      '0xd81bc6105b60a234c7c50ac17816ebcd5561d366df8bf3be59ff3875527617z9',
+    tx: {
+      amount: 250000000n,
+      forwardingAddress: 'noble17ww3rfusv895d92c0ncgj0fl9trntn70jz7hd5',
+      sender: Senders.default,
+    },
+    aux: {
+      forwardingChannel: 'channel-21',
+      recipientAddress:
+        receiverAddress ||
+        encodeAddressHook(settlementAddress.value, {
+          EUD: 'agoric13rj0cc0hm5ac2nt0sdup2l7gvkx4v9tyvgq3h2',
         }),
     },
     chainId: 1,
@@ -135,6 +157,15 @@ export const MockVTransferEvents: Record<
       receiver:
         recieverAddress ||
         MockCctpTxEvidences.AGORIC_PLUS_DYDX().aux.recipientAddress,
+    }),
+  AGORIC_PLUS_AGORIC: (recieverAddress?: string) =>
+    buildVTransferEvent({
+      ...nobleDefaultVTransferParams,
+      amount: MockCctpTxEvidences.AGORIC_PLUS_AGORIC().tx.amount,
+      sender: MockCctpTxEvidences.AGORIC_PLUS_AGORIC().tx.forwardingAddress,
+      receiver:
+        recieverAddress ||
+        MockCctpTxEvidences.AGORIC_PLUS_AGORIC().aux.recipientAddress,
     }),
   AGORIC_NO_PARAMS: (recieverAddress?: string) =>
     buildVTransferEvent({

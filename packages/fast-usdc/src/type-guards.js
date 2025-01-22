@@ -1,12 +1,18 @@
 import { AmountShape, BrandShape, RatioShape } from '@agoric/ertp';
 import { M } from '@endo/patterns';
+import {
+  CosmosChainInfoShape,
+  DenomDetailShape,
+  DenomShape,
+} from '@agoric/orchestration';
 import { PendingTxStatus } from './constants.js';
 
 /**
+ * @import {Amount, Brand, NatValue, Payment} from '@agoric/ertp';
  * @import {TypedPattern} from '@agoric/internal';
  * @import {FastUsdcTerms} from './fast-usdc.contract.js';
  * @import {USDCProposalShapes} from './pool-share-math.js';
- * @import {CctpTxEvidence, FeeConfig, PendingTx, PoolMetrics, ChainPolicy, FeedPolicy, AddressHook, EvmAddress, EvmHash, RiskAssessment, EvidenceWithRisk} from './types.js';
+ * @import {CctpTxEvidence, FastUSDCConfig, FeeConfig, PendingTx, PoolMetrics, ChainPolicy, FeedPolicy, AddressHook, EvmAddress, EvmHash, RiskAssessment, EvidenceWithRisk} from './types.js';
  */
 
 /**
@@ -28,7 +34,11 @@ export const makeProposalShapes = ({ PoolShares, USDC }) => {
     give: { PoolShare: makeNatAmountShape(PoolShares, 1n) },
     want: { USDC: makeNatAmountShape(USDC, 1n) },
   });
-  return harden({ deposit, withdraw });
+  /** @type {TypedPattern<USDCProposalShapes['withdrawFees']>} */
+  const withdrawFees = M.splitRecord({
+    want: { USDC: makeNatAmountShape(USDC, 1n) },
+  });
+  return harden({ deposit, withdraw, withdrawFees });
 };
 
 /** @type {TypedPattern<FastUsdcTerms>} */
@@ -103,7 +113,6 @@ const NatAmountShape = { brand: BrandShape, value: M.nat() };
 export const FeeConfigShape = {
   flat: NatAmountShape,
   variableRate: RatioShape,
-  maxVariable: NatAmountShape,
   contractRate: RatioShape,
 };
 harden(FeeConfigShape);
@@ -121,10 +130,19 @@ harden(PoolMetricsShape);
 
 /** @type {TypedPattern<ChainPolicy>} */
 export const ChainPolicyShape = {
-  attenuatedCttpBridgeAddress: EvmHashShape,
+  attenuatedCttpBridgeAddresses: M.splitArray(
+    [EvmHashShape],
+    undefined,
+    M.arrayOf(EvmHashShape),
+  ),
   cctpTokenMessengerAddress: EvmHashShape,
   confirmations: M.number(),
   chainId: M.number(),
+  rateLimits: {
+    tx: M.bigint(),
+    blockWindow: M.bigint(),
+    blockWindowSize: M.number(),
+  },
 };
 harden(ChainPolicyShape);
 
@@ -143,3 +161,13 @@ export const FeedPolicyShape = M.splitRecord(
   { eventFilter: M.string() },
 );
 harden(FeedPolicyShape);
+
+/** @type {TypedPattern<FastUSDCConfig>} */
+export const FastUSDCConfigShape = M.splitRecord({
+  terms: FastUSDCTermsShape,
+  oracles: M.recordOf(M.string(), M.string()),
+  feeConfig: FeeConfigShape,
+  feedPolicy: FeedPolicyShape,
+  chainInfo: M.recordOf(M.string(), CosmosChainInfoShape),
+  assetInfo: M.arrayOf([DenomShape, DenomDetailShape]),
+});

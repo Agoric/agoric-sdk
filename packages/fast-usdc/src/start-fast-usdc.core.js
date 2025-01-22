@@ -1,30 +1,22 @@
-import { deeplyFulfilledObject, makeTracer, objectMap } from '@agoric/internal';
-import {
-  CosmosChainInfoShape,
-  DenomDetailShape,
-  DenomShape,
-} from '@agoric/orchestration';
-import { Fail } from '@endo/errors';
+import { deeplyFulfilledObject, makeTracer } from '@agoric/internal';
 import { E } from '@endo/far';
-import { makeMarshal } from '@endo/marshal';
-import { M } from '@endo/patterns';
-import {
-  FastUSDCTermsShape,
-  FeeConfigShape,
-  FeedPolicyShape,
-} from './type-guards.js';
+import { FastUSDCConfigShape } from './type-guards.js';
 import { fromExternalConfig } from './utils/config-marshal.js';
+import {
+  inviteOracles,
+  publishDisplayInfo,
+  publishFeedPolicy,
+} from './utils/core-eval.js';
 
 /**
- * @import {DepositFacet} from '@agoric/ertp/src/types.js'
- * @import {TypedPattern} from '@agoric/internal'
+ * @import {Brand, Issuer} from '@agoric/ertp';
  * @import {Instance, StartParams} from '@agoric/zoe/src/zoeService/utils'
  * @import {Board} from '@agoric/vats'
  * @import {ManifestBundleRef} from '@agoric/deploy-script-support/src/externalTypes.js'
  * @import {BootstrapManifest} from '@agoric/vats/src/core/lib-boot.js'
  * @import {LegibleCapData} from './utils/config-marshal.js'
  * @import {FastUsdcSF} from './fast-usdc.contract.js'
- * @import {FeedPolicy, FastUSDCConfig} from './types.js'
+ * @import {FastUSDCConfig} from './types.js'
  */
 
 const ShareAssetInfo = /** @type {const} */ harden({
@@ -37,16 +29,6 @@ const ShareAssetInfo = /** @type {const} */ harden({
 const trace = makeTracer('FUSD-Start', true);
 
 const contractName = 'fastUsdc';
-
-/** @type {TypedPattern<FastUSDCConfig>} */
-export const FastUSDCConfigShape = M.splitRecord({
-  terms: FastUSDCTermsShape,
-  oracles: M.recordOf(M.string(), M.string()),
-  feeConfig: FeeConfigShape,
-  feedPolicy: FeedPolicyShape,
-  chainInfo: M.recordOf(M.string(), CosmosChainInfoShape),
-  assetInfo: M.arrayOf([DenomShape, DenomDetailShape]),
-});
 
 /**
  * XXX Shouldn't the bridge or board vat handle this?
@@ -64,37 +46,7 @@ const makePublishingStorageKit = async (path, { chainStorage, board }) => {
   return { storageNode, marshaller };
 };
 
-const BOARD_AUX = 'boardAux';
-const marshalData = makeMarshal(_val => Fail`data only`);
-/**
- * @param {Brand} brand
- * @param {Pick<BootstrapPowers['consume'], 'board' | 'chainStorage'>} powers
- */
-const publishDisplayInfo = async (brand, { board, chainStorage }) => {
-  // chainStorage type includes undefined, which doesn't apply here.
-  // @ts-expect-error UNTIL https://github.com/Agoric/agoric-sdk/issues/8247
-  const boardAux = E(chainStorage).makeChildNode(BOARD_AUX);
-  const [id, displayInfo, allegedName] = await Promise.all([
-    E(board).getId(brand),
-    E(brand).getDisplayInfo(),
-    E(brand).getAllegedName(),
-  ]);
-  const node = E(boardAux).makeChildNode(id);
-  const aux = marshalData.toCapData(harden({ allegedName, displayInfo }));
-  await E(node).setValue(JSON.stringify(aux));
-};
-
-const FEED_POLICY = 'feedPolicy';
 const POOL_METRICS = 'poolMetrics';
-
-/**
- * @param {ERef<StorageNode>} node
- * @param {FeedPolicy} policy
- */
-const publishFeedPolicy = async (node, policy) => {
-  const feedPolicy = E(node).makeChildNode(FEED_POLICY);
-  await E(feedPolicy).setValue(JSON.stringify(policy));
-};
 
 /**
  * @typedef { PromiseSpaceOf<{
@@ -107,6 +59,7 @@ const publishFeedPolicy = async (node, policy) => {
  * }} FastUSDCCorePowers
  *
  * @typedef {StartedInstanceKitWithLabel & {
+ *   creatorFacet: StartedInstanceKit<FastUsdcSF>['creatorFacet'];
  *   privateArgs: StartParams<FastUsdcSF>['privateArgs'];
  * }} FastUSDCKit
  */
@@ -164,18 +117,6 @@ export const startFastUSDC = async (
   trace('using terms', terms);
   trace('using fee config', feeConfig);
 
-  trace('look up oracle deposit facets');
-  const oracleDepositFacets = await deeplyFulfilledObject(
-    objectMap(oracles, async address => {
-      /** @type {DepositFacet} */
-      const depositFacet = await E(namesByAddress).lookup(
-        address,
-        'depositFacet',
-      );
-      return depositFacet;
-    }),
-  );
-
   const { storageNode, marshaller } = await makePublishingStorageKit(
     contractName,
     {
@@ -231,16 +172,7 @@ export const startFastUSDC = async (
     brand: shareBrand,
   });
 
-  await Promise.all(
-    Object.entries(oracleDepositFacets).map(async ([name, depositFacet]) => {
-      const address = oracles[name];
-      trace('making invitation for', name, address);
-      const toWatch = await E(creatorFacet).makeOperatorInvitation(address);
-
-      const amt = await E(depositFacet).receive(toWatch);
-      trace('sent', amt, 'to', name);
-    }),
-  );
+  await inviteOracles({ creatorFacet, namesByAddress }, oracles);
 
   produceInstance.reset();
   produceInstance.resolve(instance);
@@ -293,10 +225,10 @@ export const getManifestForFastUSDC = (
           board: true,
         },
         issuer: {
-          produce: { FastLP: true }, // UNTIL #10432
+          produce: { FastLP: true },
         },
         brand: {
-          produce: { FastLP: true }, // UNTIL #10432
+          produce: { FastLP: true },
         },
         instance: {
           produce: { fastUsdc: true },

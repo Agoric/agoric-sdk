@@ -3,8 +3,10 @@
 import { E } from '@endo/far';
 import { fromExternalConfig } from './utils/config-marshal.js';
 import { FeedPolicyShape } from './type-guards.js';
+import { publishFeedPolicy } from './utils/core-eval.js';
 
 /**
+ * @import {Issuer} from '@agoric/ertp';
  * @import {Passable} from '@endo/pass-style'
  * @import {BootstrapManifest} from '@agoric/vats/src/core/lib-boot.js'
  * @import {LegibleCapData} from './utils/config-marshal.js'
@@ -12,18 +14,6 @@ import { FeedPolicyShape } from './type-guards.js';
  */
 
 const contractName = 'fastUsdc';
-const FEED_POLICY = 'feedPolicy';
-
-/**
- * XXX copied from fast-usdc.start.js
- *
- * @param {ERef<StorageNode>} node
- * @param {FeedPolicy} policy
- */
-const publishFeedPolicy = async (node, policy) => {
-  const feedPolicy = E(node).makeChildNode(FEED_POLICY);
-  await E(feedPolicy).setValue(JSON.stringify(policy));
-};
 
 /**
  * @param {BootstrapPowers &

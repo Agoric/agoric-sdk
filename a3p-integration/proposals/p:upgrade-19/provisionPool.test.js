@@ -21,6 +21,9 @@
  *   6c. Try to open a vault WITHOUT provisioning the newly introduced account
  *   6d. Observe the new account's address under `published.wallet`
  * 7. Same as step 2. Checks manual provision works after null upgrade
+ *
+ * Note: We are also upgrading provisionPool's governor to meet https://github.com/Agoric/agoric-sdk/issues/10411.
+ * The governor's behavior is tested at https://github.com/Agoric/agoric-sdk/blob/master/a3p-integration/proposals/z%3Aacceptance/governance.test.js
  */
 
 import '@endo/init';
@@ -31,7 +34,6 @@ import {
   agd as agdAmbient,
   agoric,
   getISTBalance,
-  getDetailsMatchingVats,
   GOV1ADDR,
   openVault,
   ATOM_DENOM,
@@ -48,6 +50,7 @@ import {
   introduceAndProvision,
   provision,
 } from './test-lib/provision-helpers.js';
+import { getIncarnationFromDetails } from './test-lib/utils.js';
 
 const PROVISIONING_POOL_ADDR = 'agoric1megzytg65cyrgzs6fvzxgrcqvwwl7ugpt62346';
 
@@ -65,28 +68,41 @@ const ambientAuthority = {
   log: console.log,
 };
 
+const upgradedVats = ['provisionPool', 'provisionPool-governor'];
+
 test.before(async t => {
   const vstorageKit = await makeVstorageKit(
     { fetch },
     { rpcAddrs: ['http://localhost:26657'], chainName: 'agoriclocal' },
   );
 
+  const currentVatIncarnations = {};
+  for await (const vatName of upgradedVats) {
+    currentVatIncarnations[vatName] = await getIncarnationFromDetails(vatName);
+  }
+
   t.context = {
     vstorageKit,
+    currentVatIncarnations,
   };
 });
 
 test.serial('upgrade provisionPool', async t => {
+  // @ts-expect-error casting
+  const { currentVatIncarnations } = t.context;
+  console.log(currentVatIncarnations);
   await evalBundles(UPGRADE_PP_DIR);
 
-  const vatDetailsAfter = await getDetailsMatchingVats('provisionPool');
-  const { incarnation } = vatDetailsAfter.find(vat =>
-    vat.vatName.endsWith('provisionPool'),
-  );
+  for await (const vatName of upgradedVats) {
+    const incarnationAfterUpgrade = await getIncarnationFromDetails(vatName);
+    const previousIncarnation = currentVatIncarnations[vatName];
 
-  t.log(vatDetailsAfter);
-  t.is(incarnation, 1, 'incorrect incarnation');
-  t.pass();
+    t.is(
+      incarnationAfterUpgrade,
+      previousIncarnation + 1,
+      `${vatName} does not meet the expected incarnation number`,
+    );
+  }
 });
 
 test.serial(
@@ -142,14 +158,14 @@ test.serial(
 );
 
 test.serial('null upgrade', async t => {
+  const incarnationBefore = await getIncarnationFromDetails('provisionPool');
+
   await evalBundles(NULL_UPGRADE_PP_DIR);
 
-  const vatDetailsAfter = await getDetailsMatchingVats('provisionPool');
-  const { incarnation } = vatDetailsAfter.find(vat => vat.vatID === 'v28'); // provisionPool is v28
+  const incarnationAfter = await getIncarnationFromDetails('provisionPool');
 
-  t.log(vatDetailsAfter);
-  t.is(incarnation, 2, 'incorrect incarnation');
-  t.pass();
+  t.log({ incarnationBefore, incarnationAfter });
+  t.is(incarnationAfter, incarnationBefore + 1, 'incorrect incarnation');
 });
 
 test.serial('auto provision', async t => {
