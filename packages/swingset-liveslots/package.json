@@ -14,7 +14,9 @@
     "lint-fix": "yarn lint:eslint --fix",
     "lint": "run-s --continue-on-error lint:*",
     "lint:types": "tsc",
-    "lint:eslint": "eslint ."
+    "lint:eslint": "eslint .",
+    "prepack": "tsc --build tsconfig.build.json",
+    "postpack": "git clean -f ':!src/types-index.d.ts' '*.d.ts*' '*.tsbuildinfo'"
   },
   "dependencies": {
     "@endo/errors": "^1.2.8",
@@ -36,9 +38,8 @@
     "@agoric/kmarshal": "^0.1.0"
   },
   "files": [
-    "src/**/*.js",
-    "src/**/*.d.ts",
-    "test/**/*.js",
+    "src",
+    "test",
     "tools",
     "exported.js"
   ],
