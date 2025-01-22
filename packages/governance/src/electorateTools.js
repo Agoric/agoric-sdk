@@ -3,6 +3,7 @@ import { E } from '@endo/eventual-send';
 import { deeplyFulfilled, Far } from '@endo/marshal';
 
 /**
+ * @import {MapStore} from '@agoric/swingset-liveslots';
  * @import {VoteCounterCreatorFacet, VoteCounterPublicFacet, QuestionSpec, OutcomeRecord, AddQuestion, AddQuestionReturn} from './types.js';
  */
 

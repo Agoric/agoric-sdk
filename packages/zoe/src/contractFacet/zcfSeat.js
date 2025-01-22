@@ -24,6 +24,11 @@ import { makeAllocationMap } from './reallocate.js';
 import { TransferPartShape } from '../contractSupport/atomicTransfer.js';
 
 /**
+ * @import {LegacyWeakMap, WeakMapStore} from '@agoric/store';
+ * @import {MapStore} from '@agoric/swingset-liveslots';
+ */
+
+/**
  * The SeatManager holds the active zcfSeats and can reallocate and
  * make new zcfSeats.
  *
