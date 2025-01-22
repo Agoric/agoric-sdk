@@ -117,5 +117,5 @@ export const makeFsStreamWriter = async filePath => {
 
   stream.on('error', err => updateFlushed(Promise.reject(err)));
 
-  return harden({ write, flush, close });
+  return harden({ close, filePath, flush, write });
 };

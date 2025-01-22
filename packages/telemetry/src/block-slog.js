@@ -43,12 +43,14 @@ export const makeSlogSender = async options => {
    */
   let currentStream = null;
 
-  const closeStream = async () => {
-    await new Promise(resolve => resolve(null));
-
+  /**
+   * Immediately frees the `currentStream` assignment and lazily closes the open file stream
+   */
+  const closeStream = () => {
     if (currentStream) {
-      await currentStream.close();
+      const streamClosePromise = currentStream.close();
       currentStream = null;
+      return streamClosePromise;
     } else console.error('No stream to close');
   };
 
@@ -56,6 +58,9 @@ export const makeSlogSender = async options => {
    * @param {string} fileName
    */
   const createFileStream = async fileName => {
+    if (currentStream)
+      throw Error(`Stream already open on file ${currentStream.filePath}`);
+
     const filePath = `${options.stateDir || CONTEXTUAL_BLOCK_SLOGS}/slogfile_${fileName}.jsonl`;
     currentStream = await makeFsStreamWriter(filePath);
 
@@ -80,6 +85,12 @@ export const makeSlogSender = async options => {
         );
         break;
       }
+      case SLOG_TYPES.COSMIC_SWINGSET.BOOTSTRAP_BLOCK.START: {
+        createFileStreamPromise = createFileStream(
+          `bootstrap_${new Date().getTime()}`,
+        );
+        break;
+      }
       default: {
         break;
       }
@@ -97,8 +108,9 @@ export const makeSlogSender = async options => {
     else console.error(`No stream found for logging slog "${slogType}"`);
 
     switch (slogType) {
-      case SLOG_TYPES.KERNEL.INIT.FINISH: {
-        await closeStream();
+      case SLOG_TYPES.KERNEL.INIT.FINISH:
+      case SLOG_TYPES.COSMIC_SWINGSET.BOOTSTRAP_BLOCK.FINISH: {
+        closeStream()?.catch(ignore);
         break;
       }
       default: {
