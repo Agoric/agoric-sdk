@@ -4,13 +4,13 @@ import type { TestFn } from 'ava';
 
 import { BridgeId } from '@agoric/internal';
 import { buildVTransferEvent } from '@agoric/orchestration/tools/ibc-mocks.js';
-import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
 import { withChainCapabilities } from '@agoric/orchestration';
 import { makeTestAddress } from '@agoric/orchestration/tools/make-test-address.js';
 import {
   makeWalletFactoryContext,
   type WalletFactoryTestContext,
 } from '../bootstrapTests/walletFactory.js';
+import { minimalChainInfos } from '../tools/chainInfo.js';
 
 const test: TestFn<WalletFactoryTestContext> = anyTest;
 test.before(async t => {
@@ -45,7 +45,7 @@ test('resume', async t => {
   await evalProposal(
     buildProposal('@agoric/builders/scripts/testing/init-send-anywhere.js', [
       '--chainInfo',
-      JSON.stringify(withChainCapabilities(fetchedChainInfo)),
+      JSON.stringify(withChainCapabilities(minimalChainInfos)),
       '--assetInfo',
       JSON.stringify([
         [

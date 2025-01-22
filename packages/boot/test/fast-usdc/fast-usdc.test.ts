@@ -385,6 +385,7 @@ test.serial('distributes fees per BLD staker decision', async t => {
 
   const ContractFee = 302000n; // see split above
   t.is(((ContractFee - 250000n) * 5n) / 10n, 26000n);
+
   const cases = [
     { dest: 'agoric1a', args: ['--fixedFees', '0.25'], rxd: '250000' },
     { dest: 'agoric1b', args: ['--feePortion', '0.5'], rxd: '26000' },
@@ -582,12 +583,6 @@ test.serial('replace operators', async t => {
         },
       });
     }
-  }
-
-  if (defaultManagerType === 'xs-worker') {
-    // XXX for some reason the code after this when run under XS fails with:
-    // message: 'unsettled value for "kp2526"',
-    return;
   }
 
   // Add some new oracle operator
