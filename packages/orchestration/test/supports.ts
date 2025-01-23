@@ -151,7 +151,10 @@ export const commonSetup = async (t: ExecutionContext<any>) => {
     ibcSequenceNonce += 1n;
     // let the promise for the transfer start
     await eventLoopIteration();
-    const lastMsgTransfer = localBridgeMessages.at(-1).messages[0];
+    const last = localBridgeMessages.at(-1);
+    if (last.type !== 'VLOCALCHAIN_EXECUTE_TX')
+      throw Error(`unexpected type: ${last.type}`);
+    const lastMsgTransfer = last.messages[0];
     await E(transferBridge).fromBridge(
       buildVTransferEvent({
         receiver: lastMsgTransfer.receiver,
