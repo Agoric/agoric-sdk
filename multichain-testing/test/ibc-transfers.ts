@@ -76,8 +76,8 @@ const fundRemote = async (
       yes: true,
     },
   );
-  t.is(fundInitial.code, 0);
-  t.log('Success. TxHash:', fundInitial.txhash);
+  t.is(fundInitial?.code, 0);
+  t.log('Success. TxHash:', fundInitial?.txhash);
 
   const queryClient = makeQueryClient(
     await useChain(destChainName).getRestEndpoint(),
@@ -272,8 +272,8 @@ test('pfm: osmosis -> agoric -> cosmoshub', async t => {
       fees: '200000uosmo',
     },
   );
-  t.is(pfmThroughAgoric.code, 0);
-  t.log('PFM Transfer success. Tx:', pfmThroughAgoric.txhash);
+  t.is(pfmThroughAgoric?.code, 0);
+  t.log('PFM Transfer success. Tx:', pfmThroughAgoric?.txhash);
 
   const cosmosQueryClient = makeQueryClient(
     await useChain('cosmoshub').getRestEndpoint(),
