@@ -1,6 +1,6 @@
 #! /bin/bash
 
-set -o errexit -o errtrace -o pipefail
+set -o errexit -o errtrace -o pipefail -o xtrace
 
 DIRECTORY_PATH="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &> /dev/null && pwd)"
 BRANCH_NAME="usman/monitoring-follower"
