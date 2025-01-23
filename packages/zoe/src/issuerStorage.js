@@ -9,6 +9,10 @@ import { makeIssuerRecord } from './issuerRecord.js';
 const STORAGE_INSTANTIATED_KEY = 'IssuerStorageInstantiated';
 
 /**
+ * @import {LegacyWeakMap, WeakMapStore} from '@agoric/store';
+ */
+
+/**
  * Make the Issuer Storage.
  *
  * @param {import('@agoric/vat-data').Baggage} zcfBaggage

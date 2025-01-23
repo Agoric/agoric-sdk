@@ -10,6 +10,10 @@ import './internal-types.js';
 import { cleanKeywords } from '../cleanProposal.js';
 
 /**
+ * @import {LegacyWeakMap, WeakMapStore} from '@agoric/store';
+ */
+
+/**
  * Store the pool purses whose purpose is to escrow assets, with one
  * purse per brand.
  *

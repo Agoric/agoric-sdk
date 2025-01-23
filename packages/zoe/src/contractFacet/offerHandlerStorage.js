@@ -7,6 +7,11 @@ import { canBeDurable, provideDurableWeakMapStore } from '@agoric/vat-data';
 import { defineDurableHandle } from '../makeHandle.js';
 
 /**
+ * @import {LegacyWeakMap, WeakMapStore} from '@agoric/store';
+ * @import {MapStore} from '@agoric/swingset-liveslots';
+ */
+
+/**
  * The following should work. But for some reason, @endo/errors does
  * not export the type `Details`.
  * See https://github.com/endojs/endo/issues/2339
