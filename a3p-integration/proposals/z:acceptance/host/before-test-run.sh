@@ -29,7 +29,9 @@ TEMP="${DIRECTORY_PATH#*/proposals/}"
 
 FOLDER_NAME="${TEMP%%/*}"
 
-FOLLOWER_CONTAINER_NAME="$(echo "$FOLDER_NAME" | cut --delimiter ':' --fields '2')-follower"
+PROPOSAL_NAME="$(echo "$FOLDER_NAME" | cut --delimiter ':' --fields '2')"
+
+FOLLOWER_CONTAINER_NAME="$PROPOSAL_NAME-follower"
 
 create_volume_assets() {
   touch "$HOST_MESSAGE_FILE_PATH"
