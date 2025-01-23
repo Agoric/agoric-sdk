@@ -5,7 +5,7 @@ chains:
   - id: agoriclocal
     name: agoric
     image: ghcr.io/agoric/agoric-sdk:dev
-    numValidators: 1
+    numValidators: 2 # multiple to detect divergence
     env:
       - name: DEBUG
         value: SwingSet:vat,SwingSet:ls
