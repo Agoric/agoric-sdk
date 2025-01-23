@@ -44,35 +44,6 @@ const DESTINATION_EVM_ADDRESS = '0x20E68F6c276AC6E297aC46c84Ab260928276691D';
 const DESTINATION_EVM_CHAIN = 'avalanche';
 
 /**
- * @typedef {{
- *   evmChains: Record<string, unknown>;
- *   ibcConnections: Record<
- *     string,
- *     { transferChannel: Partial<IBCConnectionInfo['transferChannel']> }
- *   >;
- * }} AxelarConfig
- */
-
-/**
- * https://docs.axelar.dev/resources/contract-addresses/testnet/
- *
- * @satisfies {AxelarConfig}
- */
-const AxelarTestNet = /** @type {const} */ ({
-  evmChains: {
-    avalanche: {},
-    base: {},
-  },
-  ibcConnections: {
-    osmosis: {
-      transferChannel: {
-        counterPartyChannelId: 'channel-4118',
-      },
-    },
-  },
-});
-
-/**
  * @template {AxelarConfig} AC
  * @param {keyof AC['evmChains']} destinationChain
  * @param {ChainAddress['value']} destinationAddress 0x...
