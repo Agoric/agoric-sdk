@@ -18,7 +18,14 @@ const DENOM_SENDING_TOKEN =
   'ibc/D6077E64A3747322E1C053ED156B902F78CC40AE4C7240349A26E3BC216497BF';
 const DENOM_GAS_FEE = 'ubld';
 const AMOUNT_IN_ATOMIC_UNITS = '1000000';
-const AXELAR_ADDRESS =
+
+/**
+ * "Axelar Network utilizes a canonical account axelar1dv... to facilitate GMP
+ * communication." --
+ * https://github.com/axelarnetwork/evm-cosmos-gmp-sample/blob/main/native-integration/README.md
+ * 2bfc3ac 11 Aug 2023
+ */
+const AXELAR_GMP_ADDRESS =
   'axelar1dv4u5k73pzqrxlzujxg3qp8kvc3pje7jtdvu72npnt5zhq05ejcsn5qme5';
 const OSMOSIS_ADDRESS = 'osmo1yh3ra8eage5xtr9a3m5utg6mx0pmqreytudaqj';
 
@@ -81,7 +88,7 @@ export const sendByAxelar = async (
 
   const memo = {
     forward: {
-      receiver: AXELAR_ADDRESS,
+      receiver: AXELAR_GMP_ADDRESS,
       port: 'transfer',
       channel: OSMOSIS_TO_AXELAR_CHANNEL_ID,
       timeout: '10m',
