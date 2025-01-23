@@ -7,7 +7,7 @@ import { M, mustMatch } from '@endo/patterns';
  * @import {Vow} from '@agoric/vow';
  * @import {LocalOrchestrationAccountKit} from '../exos/local-orchestration-account.js';
  * @import {ZoeTools} from '../utils/zoe-tools.js';
- * @import {Orchestrator, OrchestrationFlow, LocalAccountMethods, OrchestrationAccountCommon, OrchestrationAccount} from '../types.js';
+ * @import {Orchestrator, OrchestrationFlow, LocalAccountMethods, OrchestrationAccountCommon, OrchestrationAccount, IBCConnectionInfo, ChainAddress} from '../types.js';
  */
 
 const { entries } = Object;
@@ -27,10 +27,62 @@ const AMOUNT_IN_ATOMIC_UNITS = '1000000';
  */
 const AXELAR_GMP_ADDRESS =
   'axelar1dv4u5k73pzqrxlzujxg3qp8kvc3pje7jtdvu72npnt5zhq05ejcsn5qme5';
+
+/**
+ * https://github.com/axelarnetwork/evm-cosmos-gmp-sample/tree/main/native-integration#cosmos---evm
+ */
+const AxelarGMPType = /** @type {const} */ ({
+  pureMessage: 1,
+  messageWithToken: 2,
+  pureTokenTransfer: 3,
+});
+harden(AxelarGMPType);
+
 const OSMOSIS_ADDRESS = 'osmo1yh3ra8eage5xtr9a3m5utg6mx0pmqreytudaqj';
 
 const DESTINATION_EVM_ADDRESS = '0x20E68F6c276AC6E297aC46c84Ab260928276691D';
 const DESTINATION_EVM_CHAIN = 'avalanche';
+
+/**
+ * @typedef {{
+ *   evmChains: Record<string, unknown>;
+ *   ibcConnections: Record<
+ *     string,
+ *     { transferChannel: Partial<IBCConnectionInfo['transferChannel']> }
+ *   >;
+ * }} AxelarConfig
+ */
+
+/**
+ * https://docs.axelar.dev/resources/contract-addresses/testnet/
+ *
+ * @satisfies {AxelarConfig}
+ */
+const AxelarTestNet = /** @type {const} */ ({
+  evmChains: {
+    avalanche: {},
+    base: {},
+  },
+  ibcConnections: {
+    osmosis: {
+      transferChannel: {
+        counterPartyChannelId: 'channel-4118',
+      },
+    },
+  },
+});
+
+/**
+ * @template {AxelarConfig} AC
+ * @param {keyof AC['evmChains']} destinationChain
+ * @param {ChainAddress['value']} destinationAddress 0x...
+ */
+const axelarTransferMemo = (destinationChain, destinationAddress) =>
+  harden({
+    destination_chain: destinationChain,
+    destination_address: destinationAddress,
+    type: AxelarGMPType.pureTokenTransfer,
+  });
 
 // TODO use case should be handled by `sendIt` based on the destination
 /**
@@ -79,12 +131,7 @@ export const sendByAxelar = async (
 
   void log(`completed transfer to localAccount`);
 
-  const memoToAxelar = {
-    destination_chain: DESTINATION_EVM_CHAIN,
-    destination_address: DESTINATION_EVM_ADDRESS,
-    payload: null,
-    type: 3,
-  };
+  const memoToAxelar = axelarTransferMemo(chainName, destAddr);
 
   const memo = {
     forward: {
