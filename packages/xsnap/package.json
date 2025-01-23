@@ -45,7 +45,7 @@
     "@endo/base64": "^1.0.9",
     "@endo/nat": "^5.0.13",
     "@types/glob": "^8.1.0",
-    "ava": "^5.3.0",
+    "ava": "^6.2.0",
     "c8": "^10.1.2"
   },
   "files": [
@@ -72,8 +72,7 @@
     "require": [
       "@endo/init/debug.js"
     ],
-    "timeout": "2m",
-    "workerThreads": false
+    "timeout": "2m"
   },
   "typeCoverage": {
     "atLeast": 93.51
