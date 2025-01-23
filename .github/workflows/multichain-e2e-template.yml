@@ -79,12 +79,15 @@ jobs:
 
       - name: Setup Starship Infrastructure
         id: starship-infra
-        uses: cosmology-tech/starship-action@0.3.0
+        # in lieu of cosmology-tech/starship-action@0.3.0
+        # (see local .github/actions/starship-action/README.md)
+        uses: ./agoric-sdk/.github/actions/starship-action
         with:
           values: ./agoric-sdk/multichain-testing/${{ inputs.config }}
           port-forward: true
           version: 0.2.20
           timeout: 30m
+          # Load the locally-built dev Docker image for the chain into kind.
           load-docker-images: ghcr.io/agoric/agoric-sdk:dev
           namespace: ${{ env.NAMESPACE }}
           repo: https://hyperweb-io.github.io/starship
