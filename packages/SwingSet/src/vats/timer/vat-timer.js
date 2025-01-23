@@ -14,6 +14,8 @@ import { makeScalarWeakMapStore } from '@agoric/store';
 import { TimeMath } from '@agoric/time';
 
 /**
+ * @import {LegacyWeakMap, WeakMapStore} from '@agoric/store';
+ * @import {MapStore} from '@agoric/swingset-liveslots';
  * @import {Passable, RemotableObject} from '@endo/pass-style';
  * @import {Key} from '@endo/patterns';
  */

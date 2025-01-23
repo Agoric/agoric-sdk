@@ -19,6 +19,7 @@ import {
 import { CONTRACT_ELECTORATE } from './governParam.js';
 
 /**
+ * @import {MapStore} from '@agoric/swingset-liveslots';
  * @import {AnyParamManager, GovernanceSubscriptionState, ParamManagerBase, ParamStateRecord, ParamValueTyped, UpdateParams} from '../types.js';
  */
 

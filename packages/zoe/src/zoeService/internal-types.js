@@ -132,7 +132,7 @@
  * @property {GetInstallationForInstance} getInstallationForInstance
  * @property {GetInstanceAdmin} getInstanceAdmin
  * @property {UnwrapInstallation} unwrapInstallation
- * @property {(invitationHandle: InvitationHandle) => Pattern | undefined} getProposalShapeForInvitation
+ * @property {(invitationHandle: InvitationHandle) => import('@endo/patterns').Pattern | undefined} getProposalShapeForInvitation
  */
 
 /**

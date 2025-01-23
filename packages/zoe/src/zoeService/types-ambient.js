@@ -44,7 +44,7 @@
  * @property {GetFeeIssuer} getFeeIssuer
  * @property {GetConfiguration} getConfiguration
  * @property {GetBundleIDFromInstallation} getBundleIDFromInstallation
- * @property {(invitationHandle: InvitationHandle) => Pattern | undefined} getProposalShapeForInvitation
+ * @property {(invitationHandle: InvitationHandle) => import('@endo/patterns').Pattern | undefined} getProposalShapeForInvitation
  *   Return the pattern (if any) associated with the invitationHandle that a
  *   proposal is required to match to be accepted by zoe.offer().
  */
