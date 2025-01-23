@@ -36,6 +36,9 @@ const txChannelDefaults = {
 
 const AgoricDevnetConfig = {
   chains: {
+    axelar: {
+      chainId: 'axelar-testnet-lisbon-3',
+    },
     osmosis: {
       chainId: 'osmo-test-5',
       bech32Prefix: 'osmosis',
@@ -58,6 +61,22 @@ const AgoricDevnetConfig = {
     } as CosmosChainInfo,
   },
   connections: {
+    'axelar-testnet-lisbon-3': {
+      // arbitrary ids...
+      id: 'connection-8600',
+      client_id: '07-tendermint-12700',
+      state: 3, // STATE_OPEN
+      counterparty: {
+        client_id: '07-tendermint-432600',
+        connection_id: 'connection-379300',
+      },
+      transferChannel: {
+        counterPartyChannelId: 'channel-1006200',
+        channelId: 'channel-6500',
+        ...txChannelDefaults,
+      },
+    } as IBCConnectionInfo,
+
     'osmo-test-5': {
       id: 'connection-86',
       client_id: '07-tendermint-127',
@@ -106,8 +125,12 @@ test('agoric / osmosis / axelar USDC denom info', t => {
 const registerAUSDC = async ({ bankManager, agoricNamesAdmin }) => {
   const ausdcKit = withAmountUtils(makeIssuerKit('AUSDC'));
   const { issuer, mint, brand } = ausdcKit;
-  const denom =
-    'ibc/D6077E64A3747322E1C053ED156B902F78CC40AE4C7240349A26E3BC216497BF';
+
+  const { axelar } = AgoricDevnetConfig.chains;
+  const { channelId: agoricToAxelar } =
+    AgoricDevnetConfig.connections[axelar.chainId].transferChannel;
+  const denom = `ibc/${denomHash({ channelId: agoricToAxelar, denom: 'uausdc' })}`;
+
   const issuerName = 'AUSDC_axl_osmo';
   const proposedName = 'Axelar USDC via Osmosis';
   await E(bankManager).addAsset(denom, issuerName, proposedName, {
@@ -223,7 +246,8 @@ test('send to avalance via osmosis and axelar', async t => {
     t.log('local bridge', txfr);
     t.like(txfr, {
       '@type': '/ibc.applications.transfer.v1.MsgTransfer',
-      receiver: 'pfm', // XXX not sure
+      receiver:
+        'axelar1dv4u5k73pzqrxlzujxg3qp8kvc3pje7jtdvu72npnt5zhq05ejcsn5qme5', // XXX not sure
       // receiver: 'osmo1yh3ra8eage5xtr9a3m5utg6mx0pmqreytudaqj',
       sender: fakeLocalChainAddr,
       sourceChannel: 'channel-65',
@@ -231,26 +255,19 @@ test('send to avalance via osmosis and axelar', async t => {
         amount: '4250000',
         // see test above
         denom:
-          'ibc/D6077E64A3747322E1C053ED156B902F78CC40AE4C7240349A26E3BC216497BF',
+          'ibc/3700CA58769864917DC803669BE7993283BD5F375926F4E7C6A935588F872765',
       },
     });
+    t.is(
+      ausdcKit.denom,
+      'ibc/3700CA58769864917DC803669BE7993283BD5F375926F4E7C6A935588F872765',
+    );
     // check memo for Axelar
     t.deepEqual(JSON.parse(txfr.memo), {
-      // FIXME
-      forward: {
-        receiver:
-          'axelar1dv4u5k73pzqrxlzujxg3qp8kvc3pje7jtdvu72npnt5zhq05ejcsn5qme5',
-        port: 'transfer',
-        channel: 'channel-4118',
-        retries: 2,
-        timeout: '10m',
-        next: JSON.stringify({
-          destination_chain: 'avalanche',
-          destination_address: '0x20E68F6c276AC6E297aC46c84Ab260928276691D',
-          payload: null,
-          type: 3, // TODO get enum for this Transfer value
-        }),
-      },
+      destination_chain: 'avalanche',
+      destination_address: '0x20E68F6c276AC6E297aC46c84Ab260928276691D',
+      payload: null,
+      type: 3,
     });
   }
 });

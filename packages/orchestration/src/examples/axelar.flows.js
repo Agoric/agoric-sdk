@@ -109,7 +109,7 @@ export const sendByAxelar = async (
   );
 
   const relayChain =
-    chainName in AxelarTestNet.evmChains ? 'osmosis' : chainName; // XXX
+    chainName in AxelarTestNet.evmChains ? 'axelar' : chainName; // XXX
   const chain = await orch.getChain(relayChain);
   const info = await chain.getChainInfo();
   const { chainId } = info;
@@ -151,17 +151,17 @@ export const sendByAxelar = async (
   //   ];
 
   /** @satisfies {ChainAddress} */
-  const osmosisRelayAddr = {
-    value: OSMOSIS_ADDRESS, // destAddr,
+  const gmpRelay = {
+    value: AXELAR_GMP_ADDRESS,
     encoding: 'bech32',
     chainId,
   };
 
   try {
     await sharedLocalAccount.transfer(
-      osmosisRelayAddr,
+      gmpRelay,
       { denom, value: amt.value },
-      { memo: JSON.stringify(txfrViaGMP) },
+      { memo: JSON.stringify(txferToDestAddr) },
     );
     void log(`completed transfer to ${destAddr}`);
   } catch (e) {
