@@ -8,6 +8,7 @@ on:
         type: choice
         required: true
         options:
+          - ibc-transfers-hermes
           - orchestration-api-hermes
           - fast-usdc-hermes
           - orchestration-api-go-relayer
@@ -15,6 +16,17 @@ on:
   workflow_call:
 
 jobs:
+  ibc-transfers-hermes:
+    name: Multichain E2E (IBC Transfers - Hermes)
+    if: |
+      github.event_name == 'workflow_call' ||
+      github.event_name == 'pull_request' ||
+      (github.event_name == 'workflow_dispatch' && inputs.test_type == 'ibc-transfers-hermes')
+    uses: ./.github/workflows/multichain-e2e-template.yml
+    with:
+      config: config.yaml
+      test_command: yarn test:main test/ibc-transfers.ts
+
   orchestration-api-hermes:
     name: Multichain E2E (Orchestration API - Hermes)
     if: |
