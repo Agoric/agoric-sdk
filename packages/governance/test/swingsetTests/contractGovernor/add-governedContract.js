@@ -1,4 +1,14 @@
-// import { makeHelpers } from '@agoric/deploy-script-support';
+/**
+ * @file Source for a core-eval to start a new governed instance of
+ * ./governedContract.js.
+ * Also functions as an off-chain builder script for such core-evals:
+ *     agoric run /path/to/$0 [<bootstrap powers produce key> [<label>]]
+ */
+
+/// <reference types="@agoric/vats/src/core/types-ambient"/>
+
+// dynamic import { makeHelpers } from '@agoric/deploy-script-support';
+// dynamic import { getSpecifier } from '@agoric/internal/src/module-utils.js';
 import { deeplyFulfilledObject, makeTracer } from '@agoric/internal';
 import { E } from '@endo/far';
 
@@ -8,24 +18,17 @@ import { MALLEABLE_NUMBER } from '@agoric/governance/test/swingsetTests/contract
 const trace = makeTracer('GovC-coreEval', true);
 
 /**
- * @typedef {PromiseSpaceOf<{
- *   auctionUpgradeNewInstance: Instance;
- *   auctionUpgradeNewGovCreator: any;
- *   newContractGovBundleId: string;
- *   retiredContractInstances: MapStore<string, Instance>;
- * }>} interlockPowers
- */
-
-/**
- * @param {import('@agoric/inter-protocol/src/proposals/econ-behaviors.js').EconomyBootstrapPowers &
- *   interlockPowers} powers
- * @param {{
- *   options: {
- *     contractInstallation: Installation;
- *     producedKey: string | undefined;
- *     label: string | undefined;
- *   };
- * }} options
+ * Start a new governed contract instance.
+ *
+ * @param {import('@agoric/inter-protocol/src/proposals/econ-behaviors.js').EconomyBootstrapPowers} powers
+ * @param {object} config
+ * @param {object} config.options
+ * @param {Installation} [config.options.contractInstallation]
+ *   source installation for the new governed contract
+ * @param {string} [config.options.producedKey] if present, the Bootstrap Powers
+ *   key with which a reference to the `boardID`-enhanced governed contract kit
+ *   should be associated
+ * @param {string} [config.options.label] for identification
  */
 export const startGovernedInstance = async (
   {
@@ -43,19 +46,24 @@ export const startGovernedInstance = async (
     options: { contractInstallation, producedKey, label = 'governedContract' },
   },
 ) => {
-  trace('Governed Contract start');
+  trace('start');
 
-  const poserInvitationP = E(electorateCreatorFacet).getPoserInvitation();
-  const [chainTimerService, poserInvitation, governedContractKits] =
-    await Promise.all([
-      chainTimerServiceP,
-      poserInvitationP,
-      governedContractKitsP,
-    ]);
-
-  const invitationIssuer = await E(zoe).getInvitationIssuer();
+  const governorInstallationPath = ['installation', 'contractGovernor'];
+  const consumePs = harden({
+    chainTimerService: chainTimerServiceP,
+    governedContractKits: governedContractKitsP,
+    governorInstallation: E(agoricNames).lookup(...governorInstallationPath),
+    poserInvitation: E(electorateCreatorFacet).getPoserInvitation(),
+  });
+  const {
+    chainTimerService,
+    governedContractKits,
+    governorInstallation,
+    poserInvitation,
+  } = await deeplyFulfilledObject(consumePs);
+  const invitationIssuerP = E(zoe).getInvitationIssuer();
   const invitationAmount =
-    await E(invitationIssuer).getAmountOf(poserInvitation);
+    await E(invitationIssuerP).getAmountOf(poserInvitation);
 
   const governedTerms = {
     governedParams: {
@@ -69,7 +77,6 @@ export const startGovernedInstance = async (
       },
     },
   };
-
   const governorTerms = {
     chainTimerService,
     governedContractInstallation: contractInstallation,
@@ -90,7 +97,6 @@ export const startGovernedInstance = async (
     {},
     governorTerms,
     {
-      // electorateCreatorFacet,
       governed: {
         initialPoserInvitation: poserInvitation,
       },
@@ -123,11 +129,17 @@ export const startGovernedInstance = async (
 };
 
 /**
- * Add a new auction to a chain that already has one.
+ * Return a manifest for instantiating a new governed contract instance.
  *
  * @param {object} utils
- * @param {any} utils.restoreRef
- * @param {any} addAuctionOptions
+ * @param {(b: ERef<ManifestBundleRef>) => Promise<Installation>} utils.restoreRef
+ * @param {object} details
+ * @param {ERef<ManifestBundleRef>} details.contractBundleRef source bundle for
+ *   the new governed contract
+ * @param {string} [details.producedKey] if present, the Bootstrap Powers key
+ *   with which a reference to the `boardID`-enhanced governed contract kit
+ *   should be associated
+ * @param {string} [details.label] for identification
  */
 export const getManifestForGovernedContract = async (
   { restoreRef },
@@ -148,8 +160,8 @@ export const getManifestForGovernedContract = async (
         produce: producedKey === undefined ? {} : { [producedKey]: true },
       },
     },
-    // XXX we should be able to receive contractGovernorInstallation via
-    // installations.consume, but the received installation isn't right.
+    // Provide `startGovernedInstance` a second argument like
+    // `{ options: { contractInstallation, producedKey, label } }`.
     options: { contractInstallation, producedKey, label },
   };
 };
@@ -159,6 +171,7 @@ export const defaultProposalBuilder = async (
   { publishRef, install },
   [producedKey, label = producedKey] = [],
 ) => {
+  // Dynamic import to avoid inclusion in the proposal bundle.
   const { getSpecifier } = await import('@agoric/internal/src/module-utils.js');
   const SELF = await getSpecifier(import.meta.url);
 
@@ -185,8 +198,8 @@ export const defaultProposalBuilder = async (
 /** @type {import('@agoric/deploy-script-support/src/externalTypes.js').DeployScriptFunction} */
 export default async (homeP, endowments) => {
   const { scriptArgs } = endowments;
-  const dspModule = await import('@agoric/deploy-script-support');
-  const { makeHelpers } = dspModule;
+  // Dynamic import to avoid inclusion in the proposal bundle.
+  const { makeHelpers } = await import('@agoric/deploy-script-support');
   const { writeCoreEval } = await makeHelpers(homeP, endowments);
   await writeCoreEval(startGovernedInstance.name, utils =>
     defaultProposalBuilder(utils, scriptArgs),
