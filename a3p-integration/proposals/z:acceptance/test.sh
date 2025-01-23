@@ -44,8 +44,8 @@ echo "VALIDATOR_ADDRESS: $VALIDATOR_ADDRESS from delegator $DELEGATOR_ADDRRESS (
 yarn ava stakeBld.test.js
 
 if ! test -z "$MESSAGE_FILE_PATH"; then
-    echo -n "stop at $(agd status | jq --raw-output '.SyncInfo.latest_block_height')" >>"$MESSAGE_FILE_PATH"
-    node ./wait-for-follower.mjs
+  echo -n "stop at $(agd status | jq --raw-output '.SyncInfo.latest_block_height')" >> "$MESSAGE_FILE_PATH"
+  node ./wait-for-follower.mjs
 fi
 
 echo ACCEPTANCE TESTING state sync

@@ -1,8 +1,8 @@
 #! /bin/bash
 
-set -o errexit -o errtrace -o pipefail
+set -o errexit -o errtrace -o pipefail -o xtrace
 
-DIRECTORY_PATH="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
+DIRECTORY_PATH="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &> /dev/null && pwd)"
 BRANCH_NAME="usman/monitoring-follower"
 CHAIN_ID="agoriclocal"
 FOLLOWER_API_PORT="2317"
@@ -30,55 +30,55 @@ FOLLOWER_CONTAINER_NAME="$PROPOSAL_NAME-follower"
 FOLLOWER_LOGS_FILE="/tmp/loadgen-follower-logs"
 
 create_volume_assets() {
-    touch "$HOST_MESSAGE_FILE_PATH"
-    mkdir --parents "$OUTPUT_DIRECTORY"
+  touch "$HOST_MESSAGE_FILE_PATH"
+  mkdir --parents "$OUTPUT_DIRECTORY"
 }
 
 run_command_inside_container() {
-    local entrypoint="$1"
-    shift
+  local entrypoint="$1"
+  shift
 
-    docker container run \
-        --entrypoint "/bin/bash" \
-        --name "$FOLLOWER_CONTAINER_NAME" \
-        --network "host" \
-        --quiet \
-        --rm \
-        --user "root" \
-        "$@" \
-        "$CONTAINER_IMAGE_NAME:test-$PROPOSAL_NAME" \
-        -c "$entrypoint"
+  docker container run \
+    --entrypoint "/bin/bash" \
+    --name "$FOLLOWER_CONTAINER_NAME" \
+    --network "host" \
+    --quiet \
+    --rm \
+    --user "root" \
+    "$@" \
+    "$CONTAINER_IMAGE_NAME:test-$PROPOSAL_NAME" \
+    -c "$entrypoint"
 }
 
 set_node_id() {
-    VALIDATOR_NODE_ID="$(
-        run_command_inside_container \
-            "agd tendermint show-node-id"
-    )"
+  VALIDATOR_NODE_ID="$(
+    run_command_inside_container \
+      "agd tendermint show-node-id"
+  )"
 }
 
 set_trusted_block_data() {
-    local entrypoint
-    local last_block_info
+  local entrypoint
+  local last_block_info
 
-    entrypoint="
+  entrypoint="
             #! /bin/bash
             set -o errexit -o errtrace -o pipefail
 
             source /usr/src/upgrade-test-scripts/env_setup.sh > /dev/null 2>&1
             cat \$STATUS_FILE
         "
-    last_block_info="$(
-        run_command_inside_container \
-            "$entrypoint"
-    )"
+  last_block_info="$(
+    run_command_inside_container \
+      "$entrypoint"
+  )"
 
-    TRUSTED_BLOCK_HASH="$(echo "$last_block_info" | jq '.SyncInfo.latest_block_hash' --raw-output)"
-    TRUSTED_BLOCK_HEIGHT="$(echo "$last_block_info" | jq '.SyncInfo.latest_block_height' --raw-output)"
+  TRUSTED_BLOCK_HASH="$(echo "$last_block_info" | jq '.SyncInfo.latest_block_hash' --raw-output)"
+  TRUSTED_BLOCK_HEIGHT="$(echo "$last_block_info" | jq '.SyncInfo.latest_block_height' --raw-output)"
 }
 
 start_follower() {
-    local entrypoint="
+  local entrypoint="
                 #! /bin/bash
 
                 clone_repository() {
@@ -118,24 +118,24 @@ start_follower() {
                 clone_repository
                 start_loadgen
         "
-    run_command_inside_container \
-        "$entrypoint" \
-        --env "API_PORT=$FOLLOWER_API_PORT" \
-        --env "GRPC_PORT=$FOLLOWER_GRPC_PORT" \
-        --env "MESSAGE_FILE_PATH=$CONTAINER_MESSAGE_FILE_PATH" \
-        --env "OUTPUT_DIR=$OUTPUT_DIRECTORY" \
-        --env "P2P_PORT=$FOLLOWER_P2P_PORT" \
-        --env "PPROF_PORT=$FOLLOWER_PPROF_PORT" \
-        --env "RPC_PORT=$FOLLOWER_RPC_PORT" \
-        --env "TRUSTED_BLOCK_HASH=$TRUSTED_BLOCK_HASH" \
-        --env "TRUSTED_BLOCK_HEIGHT=$TRUSTED_BLOCK_HEIGHT" \
-        --mount "source=$HOST_MESSAGE_FILE_PATH,target=$CONTAINER_MESSAGE_FILE_PATH,type=bind" \
-        --mount "source=$OUTPUT_DIRECTORY,target=$OUTPUT_DIRECTORY,type=bind" \
-        --mount "source=$NETWORK_CONFIG_FILE_PATH,target=$NETWORK_CONFIG_FILE_PATH/network-config,type=bind" >"$FOLLOWER_LOGS_FILE" &
+  run_command_inside_container \
+    "$entrypoint" \
+    --env "API_PORT=$FOLLOWER_API_PORT" \
+    --env "GRPC_PORT=$FOLLOWER_GRPC_PORT" \
+    --env "MESSAGE_FILE_PATH=$CONTAINER_MESSAGE_FILE_PATH" \
+    --env "OUTPUT_DIR=$OUTPUT_DIRECTORY" \
+    --env "P2P_PORT=$FOLLOWER_P2P_PORT" \
+    --env "PPROF_PORT=$FOLLOWER_PPROF_PORT" \
+    --env "RPC_PORT=$FOLLOWER_RPC_PORT" \
+    --env "TRUSTED_BLOCK_HASH=$TRUSTED_BLOCK_HASH" \
+    --env "TRUSTED_BLOCK_HEIGHT=$TRUSTED_BLOCK_HEIGHT" \
+    --mount "source=$HOST_MESSAGE_FILE_PATH,target=$CONTAINER_MESSAGE_FILE_PATH,type=bind" \
+    --mount "source=$OUTPUT_DIRECTORY,target=$OUTPUT_DIRECTORY,type=bind" \
+    --mount "source=$NETWORK_CONFIG_FILE_PATH,target=$NETWORK_CONFIG_FILE_PATH/network-config,type=bind" > "$FOLLOWER_LOGS_FILE" &
 }
 
 write_network_config() {
-    echo "
+  echo "
             {
                     \"chainName\": \"$CHAIN_ID\",
                     \"rpcAddrs\": [\"http://localhost:$VALIDATOR_RPC_PORT\"],
@@ -143,7 +143,7 @@ write_network_config() {
                     \"peers\":[\"$VALIDATOR_NODE_ID@localhost:$VALIDATOR_P2P_PORT\"],
                     \"seeds\":[]
             }
-        " >"$NETWORK_CONFIG_FILE_PATH"
+        " > "$NETWORK_CONFIG_FILE_PATH"
 }
 
 create_volume_assets
