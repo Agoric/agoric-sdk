@@ -11,6 +11,8 @@ import type {
 import { commonSetup } from '../supports.js';
 import { denomHash } from '../../src/utils/denomHash.js';
 import { AxelarTestNet } from '../../src/fixtures/axelar-testnet.js';
+import { makeIssuerKit } from '@agoric/ertp';
+import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
 import type { DenomDetail } from '../../src/types.js';
 
 const dirname = path.dirname(new URL(import.meta.url).pathname);
@@ -37,7 +39,22 @@ const AgoricDevnetConfig = {
     osmosis: {
       chainId: 'osmo-test-5',
       bech32Prefix: 'osmosis',
-      ...chainInfoDefaults,
+      connections: {
+        'axelar-testnet-lisbon-3': {
+          id: 'connection-1233333', // XXX???
+          client_id: '07-tendermint-1258',
+          state: 3, // STATE_OPEN,
+          counterparty: {
+            client_id: 'XXXX???',
+            connection_id: 'connection-87665', // XXX???
+          },
+          transferChannel: {
+            channelId: 'channel-566434324', // XXX???
+            counterPartyChannelId: 'channel-112233', // ???
+            ...txChannelDefaults,
+          },
+        } as IBCConnectionInfo,
+      },
     } as CosmosChainInfo,
   },
   connections: {
@@ -86,6 +103,32 @@ test('agoric / osmosis / axelar USDC denom info', t => {
   t.is(denom, DENOM_SENDING_TOKEN);
 });
 
+const registerAUSDC = async ({ bankManager, agoricNamesAdmin }) => {
+  const ausdcKit = withAmountUtils(makeIssuerKit('AUSDC'));
+  const { issuer, mint, brand } = ausdcKit;
+  const denom =
+    'ibc/D6077E64A3747322E1C053ED156B902F78CC40AE4C7240349A26E3BC216497BF';
+  const issuerName = 'AUSDC_axl_osmo';
+  const proposedName = 'Axelar USDC via Osmosis';
+  await E(bankManager).addAsset(denom, issuerName, proposedName, {
+    issuer,
+    mint,
+    brand,
+  });
+  await E(E(agoricNamesAdmin).lookupAdmin('vbankAsset')).update(
+    denom,
+    /** @type {AssetInfo} */ harden({
+      brand,
+      issuer,
+      issuerName,
+      denom,
+      proposedName,
+      displayInfo: { IOU: true },
+    }),
+  );
+  return harden({ ...ausdcKit, denom });
+};
+
 test('send to avalance via osmosis and axelar', async t => {
   t.log('bootstrap, orchestration core-eval');
   const {
@@ -103,11 +146,8 @@ test('send to avalance via osmosis and axelar', async t => {
   const installation: Installation<StartFn> =
     await bundleAndInstall(contractFile);
 
-  const baseDetail: DenomDetail = {
-    baseName: 'axelar',
-    chainName: 'agoric',
-    baseDenom: 'uausdc',
-  };
+  const { bankManager, agoricNamesAdmin } = bootstrap;
+  const ausdcKit = await registerAUSDC({ bankManager, agoricNamesAdmin });
 
   const storageNode = await E(bootstrap.storage.rootNode).makeChildNode(
     contractName,
@@ -123,24 +163,46 @@ test('send to avalance via osmosis and axelar', async t => {
   const connections = {
     ...agoric.connections,
     ...AgoricDevnetConfig.connections,
+    // XXX to get from Agoric to axelar, use osmosis
+    'axelar-testnet-lisbon-3': AgoricDevnetConfig.connections[osmosis.chainId],
   };
   const chainInfo = {
     ...withoutOsmosis,
     osmosis,
     agoric: { ...agoric, connections },
     avalanche: AxelarTestNet.evmChains.avalanche,
+    axelar: { chainId: 'axelar-testnet-lisbon-3', pfmEnabled: true },
   };
+  const assetInfo: Array<[string, DenomDetail]> = [
+    ...commonPrivateArgs.assetInfo,
+    [
+      ausdcKit.denom,
+      {
+        baseDenom: 'uausdc',
+        baseName: 'axelar',
+        chainName: 'agoric',
+        brand: ausdcKit.brand,
+      },
+    ],
+  ];
   const sendKit = await E(zoe).startInstance(
     installation,
-    { Stable: ist.issuer },
+    { Stable: ist.issuer, AUSDC: ausdcKit.issuer },
     {},
-    { ...commonPrivateArgs, chainInfo, storageNode },
+    {
+      ...commonPrivateArgs,
+      assetInfo,
+      chainInfo,
+      storageNode,
+    },
   );
 
   t.log('client uses contract to send to EVM chain');
   {
-    const anAmt = ist.units(4.25);
-    const Send = await pourPayment(anAmt);
+    const anAmt = ausdcKit.units(4.25);
+    const Send = await E(ausdcKit.mint).mintPayment(anAmt);
+    // const anAmt = ist.units(4.25);
+    // const Send = await pourPayment(anAmt);
     const publicFacet = await E(zoe).getPublicFacet(sendKit.instance);
     const inv = E(publicFacet).makeSendInvitation();
     const userSeat = await E(zoe).offer(
@@ -155,16 +217,22 @@ test('send to avalance via osmosis and axelar', async t => {
     await transmitTransferAck();
     await vt.when(E(userSeat).getOfferResult());
     const history = inspectLocalBridge();
-    const { messages, address: execAddr } = history.at(-1);
+    const { messages, address: fakeLocalChainAddr } = history.at(-1);
     t.is(messages.length, 1);
     const [txfr] = messages;
     t.log('local bridge', txfr);
     t.like(txfr, {
       '@type': '/ibc.applications.transfer.v1.MsgTransfer',
-      receiver: 'osmo1yh3ra8eage5xtr9a3m5utg6mx0pmqreytudaqj',
-      sender: execAddr,
+      receiver: 'pfm', // XXX not sure
+      // receiver: 'osmo1yh3ra8eage5xtr9a3m5utg6mx0pmqreytudaqj',
+      sender: fakeLocalChainAddr,
       sourceChannel: 'channel-65',
-      token: { amount: '4250000', denom: 'uist' },
+      token: {
+        amount: '4250000',
+        // see test above
+        denom:
+          'ibc/D6077E64A3747322E1C053ED156B902F78CC40AE4C7240349A26E3BC216497BF',
+      },
     });
     // check memo for Axelar
     t.deepEqual(JSON.parse(txfr.memo), {
