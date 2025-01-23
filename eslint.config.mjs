@@ -330,11 +330,4 @@ export default [
       '@typescript-eslint/no-floating-promises': 'off',
     },
   },
-  {
-    // Rules specific to swingset-xsnap-supervisor
-    files: ['packages/swingset-xsnap-supervisor/**/*.js'],
-    rules: {
-      'import/no-extraneous-dependencies': 'off',
-    },
-  },
 ];
