@@ -36,6 +36,7 @@ install:
 	$(CURDIR)/scripts/install.sh --config $(FILE) --name $(NAME) --version $(HELM_VERSION)
 
 delete:
+	-helm repo remove $(HELM_REPO)
 	-helm delete $(NAME)
 
 ###############################################################################
