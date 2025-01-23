@@ -9,6 +9,8 @@ import type {
   IBCConnectionInfo,
 } from '../../src/cosmos-api.js';
 import { commonSetup } from '../supports.js';
+import { denomHash } from '../../src/utils/denomHash.js';
+import { AxelarTestNet } from '../../src/fixtures/axelar-testnet.js';
 
 const dirname = path.dirname(new URL(import.meta.url).pathname);
 
@@ -28,6 +30,29 @@ const txChannelDefaults = {
   ordering: 1, // ORDER_UNORDERED
   state: 3, // STATE_OPEN
 };
+
+test('agoric / osmosis / axelar USDC denom info', t => {
+  // Where did this denom come from?
+  const DENOM_SENDING_TOKEN =
+    'ibc/D6077E64A3747322E1C053ED156B902F78CC40AE4C7240349A26E3BC216497BF';
+
+  // aha!
+  // $ agd query ibc channel client-state transfer channel-65 --node https://devnet.rpc.agoric.net:443 -o json | jq -C '.client_state.chain_id'
+  // "osmo-test-5"
+  // denom_trace:
+  //   base_denom: uausdc
+  //   path: transfer/channel-65/transfer/channel-4118
+
+  const baseDenom = 'uausdc';
+  const agoricToOsmosis = 'channel-65';
+  const { counterPartyChannelId: osmosisToAxelar } =
+    AxelarTestNet.ibcConnections.osmosis.transferChannel;
+  const path = `transfer/${agoricToOsmosis}/transfer/${osmosisToAxelar}`;
+
+  t.log({ baseDenom, agoricToOsmosis, osmosisToAxelar, path });
+  const denom = `ibc/${denomHash({ path, denom: baseDenom })}`;
+  t.is(denom, DENOM_SENDING_TOKEN);
+});
 
 test('send using arbitrary chain info', async t => {
   t.log('bootstrap, orchestration core-eval');
