@@ -1,21 +1,20 @@
 import { NonNullish } from '@agoric/internal';
 import { makeError, q } from '@endo/errors';
 import { M, mustMatch } from '@endo/patterns';
+import { AxelarTestNet } from '../fixtures/axelar-testnet.js';
 
 /**
  * @import {GuestInterface, GuestOf} from '@agoric/async-flow';
  * @import {Vow} from '@agoric/vow';
  * @import {LocalOrchestrationAccountKit} from '../exos/local-orchestration-account.js';
  * @import {ZoeTools} from '../utils/zoe-tools.js';
- * @import {Orchestrator, OrchestrationFlow, LocalAccountMethods, OrchestrationAccountCommon, OrchestrationAccount, IBCConnectionInfo, ChainAddress} from '../types.js';
+ * @import {Orchestrator, OrchestrationFlow, LocalAccountMethods, OrchestrationAccountCommon, OrchestrationAccount, IBCConnectionInfo, ChainAddress, ForwardInfo} from '../types.js';
+ * @import {IBCChannelID} from '@agoric/vats';
+ * @import {AxelarConfig} from '../fixtures/axelar-testnet.js'
  */
 
 const { entries } = Object;
 
-const AGORIC_TO_OSMOSIS_CHANNEL_ID = 'channel-65';
-const OSMOSIS_TO_AXELAR_CHANNEL_ID = 'channel-4118';
-const DENOM_SENDING_TOKEN =
-  'ibc/D6077E64A3747322E1C053ED156B902F78CC40AE4C7240349A26E3BC216497BF';
 const DENOM_GAS_FEE = 'ubld';
 const AMOUNT_IN_ATOMIC_UNITS = '1000000';
 
@@ -48,11 +47,32 @@ const DESTINATION_EVM_CHAIN = 'avalanche';
  * @param {keyof AC['evmChains']} destinationChain
  * @param {ChainAddress['value']} destinationAddress 0x...
  */
-const axelarTransferMemo = (destinationChain, destinationAddress) =>
+const makeGMPTransfer = (destinationChain, destinationAddress) =>
   harden({
     destination_chain: destinationChain,
     destination_address: destinationAddress,
+    payload: null, // TODO: prune? irrelevant?
     type: AxelarGMPType.pureTokenTransfer,
+  });
+
+/**
+ * @template GMP
+ * @param {IBCChannelID} channel
+ * @param {GMP} gmpMessage
+ * @returns {{
+ *   forward: Omit<ForwardInfo['forward'], 'next'> & { next?: string };
+ * }}
+ */
+const forwardToGMP = (channel, gmpMessage) =>
+  harden({
+    forward: {
+      receiver: AXELAR_GMP_ADDRESS,
+      port: 'transfer',
+      channel,
+      timeout: '10m',
+      retries: 2,
+      next: JSON.stringify(gmpMessage),
+    },
   });
 
 // TODO use case should be handled by `sendIt` based on the destination
@@ -87,7 +107,9 @@ export const sendByAxelar = async (
     `${amt.brand} not registered in vbank`,
   );
 
-  const chain = await orch.getChain(chainName);
+  const relayChain =
+    chainName in AxelarTestNet.evmChains ? 'osmosis' : chainName;
+  const chain = await orch.getChain(relayChain);
   const info = await chain.getChainInfo();
   const { chainId } = info;
   assert(typeof chainId === 'string', 'bad chainId');
@@ -102,18 +124,12 @@ export const sendByAxelar = async (
 
   void log(`completed transfer to localAccount`);
 
-  const memoToAxelar = axelarTransferMemo(chainName, destAddr);
+  const txferToDestAddr = makeGMPTransfer(chainName, destAddr);
 
-  const memo = {
-    forward: {
-      receiver: AXELAR_GMP_ADDRESS,
-      port: 'transfer',
-      channel: OSMOSIS_TO_AXELAR_CHANNEL_ID,
-      timeout: '10m',
-      retries: 2,
-      next: JSON.stringify(memoToAxelar),
-    },
-  };
+  const txfrViaGMP = forwardToGMP(
+    AxelarTestNet.ibcConnections.osmosis.transferChannel.counterPartyChannelId,
+    txferToDestAddr,
+  );
 
   //   const payload = [
   //     {
@@ -132,15 +148,19 @@ export const sendByAxelar = async (
   //       }),
   //     },
   //   ];
+
+  /** @satisfies {ChainAddress} */
+  const osmosisRelayAddr = {
+    value: OSMOSIS_ADDRESS, // destAddr,
+    encoding: 'bech32',
+    chainId,
+  };
+
   try {
     await sharedLocalAccount.transfer(
-      {
-        value: destAddr,
-        encoding: 'bech32',
-        chainId,
-      },
+      osmosisRelayAddr,
       { denom, value: amt.value },
-      { memo: JSON.stringify(memo) },
+      { memo: JSON.stringify(txfrViaGMP) },
     );
     void log(`completed transfer to ${destAddr}`);
   } catch (e) {

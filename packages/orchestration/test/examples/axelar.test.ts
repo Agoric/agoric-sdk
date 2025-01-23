@@ -11,6 +11,7 @@ import type {
 import { commonSetup } from '../supports.js';
 import { denomHash } from '../../src/utils/denomHash.js';
 import { AxelarTestNet } from '../../src/fixtures/axelar-testnet.js';
+import type { DenomDetail } from '../../src/types.js';
 
 const dirname = path.dirname(new URL(import.meta.url).pathname);
 
@@ -31,20 +32,51 @@ const txChannelDefaults = {
   state: 3, // STATE_OPEN
 };
 
+const AgoricDevnetConfig = {
+  chains: {
+    osmosis: {
+      chainId: 'osmo-test-5',
+      bech32Prefix: 'osmosis',
+      ...chainInfoDefaults,
+    } as CosmosChainInfo,
+  },
+  connections: {
+    'osmo-test-5': {
+      id: 'connection-86',
+      client_id: '07-tendermint-127',
+      state: 3, // STATE_OPEN
+      counterparty: {
+        client_id: '07-tendermint-4326',
+        connection_id: 'connection-3793',
+      },
+      transferChannel: {
+        counterPartyChannelId: 'channel-10062',
+        channelId: 'channel-65',
+        ...txChannelDefaults,
+      },
+    } as IBCConnectionInfo,
+  },
+};
+
 test('agoric / osmosis / axelar USDC denom info', t => {
   // Where did this denom come from?
   const DENOM_SENDING_TOKEN =
     'ibc/D6077E64A3747322E1C053ED156B902F78CC40AE4C7240349A26E3BC216497BF';
 
   // aha!
-  // $ agd query ibc channel client-state transfer channel-65 --node https://devnet.rpc.agoric.net:443 -o json | jq -C '.client_state.chain_id'
-  // "osmo-test-5"
+  // $ agd query ibc-transfer denom-trace D6077E64A3747322E1C053ED156B902F78CC40AE4C7240349A26E3BC216497BF --node https://devnet.rpc.agoric.net:443
   // denom_trace:
   //   base_denom: uausdc
   //   path: transfer/channel-65/transfer/channel-4118
+  //
+  // Now what is channel-65?
+  // $ agd query ibc channel client-state transfer channel-65 --node https://devnet.rpc.agoric.net:443 -o json | jq -C '.client_state.chain_id'
+  // "osmo-test-5"
 
   const baseDenom = 'uausdc';
-  const agoricToOsmosis = 'channel-65';
+  const { osmosis } = AgoricDevnetConfig.chains;
+  const { channelId: agoricToOsmosis } =
+    AgoricDevnetConfig.connections[osmosis.chainId].transferChannel;
   const { counterPartyChannelId: osmosisToAxelar } =
     AxelarTestNet.ibcConnections.osmosis.transferChannel;
   const path = `transfer/${agoricToOsmosis}/transfer/${osmosisToAxelar}`;
@@ -54,7 +86,7 @@ test('agoric / osmosis / axelar USDC denom info', t => {
   t.is(denom, DENOM_SENDING_TOKEN);
 });
 
-test('send using arbitrary chain info', async t => {
+test('send to avalance via osmosis and axelar', async t => {
   t.log('bootstrap, orchestration core-eval');
   const {
     bootstrap,
@@ -71,138 +103,54 @@ test('send using arbitrary chain info', async t => {
   const installation: Installation<StartFn> =
     await bundleAndInstall(contractFile);
 
+  const baseDetail: DenomDetail = {
+    baseName: 'axelar',
+    chainName: 'agoric',
+    baseDenom: 'uausdc',
+  };
+
   const storageNode = await E(bootstrap.storage.rootNode).makeChildNode(
     contractName,
   );
+
+  // Mix osmosis from AgoricDevnetConfig with commonPrivateArgs
+  const {
+    agoric,
+    osmosis: _x,
+    ...withoutOsmosis
+  } = commonPrivateArgs.chainInfo;
+  const { osmosis } = AgoricDevnetConfig.chains;
+  const connections = {
+    ...agoric.connections,
+    ...AgoricDevnetConfig.connections,
+  };
+  const chainInfo = {
+    ...withoutOsmosis,
+    osmosis,
+    agoric: { ...agoric, connections },
+    avalanche: AxelarTestNet.evmChains.avalanche,
+  };
   const sendKit = await E(zoe).startInstance(
     installation,
     { Stable: ist.issuer },
     {},
-    { ...commonPrivateArgs, storageNode },
+    { ...commonPrivateArgs, chainInfo, storageNode },
   );
 
-  const hotChainInfo = harden({
-    chainId: 'hot-new-chain-0',
-    stakingTokens: [{ denom: 'uhot' }],
-    ...chainInfoDefaults,
-  }) as CosmosChainInfo;
-  t.log('admin adds chain using creatorFacet', hotChainInfo.chainId);
-  const agoricToHotConnection = {
-    id: 'connection-1',
-    client_id: '07-tendermint-1',
-    state: 3, // STATE_OPEN
-    counterparty: {
-      client_id: '07-tendermint-2109',
-      connection_id: 'connection-1649',
-    },
-    transferChannel: {
-      counterPartyChannelId: 'channel-1',
-      channelId: 'channel-0',
-      ...txChannelDefaults,
-    },
-  } as IBCConnectionInfo;
-  const chainName = 'hot';
-  await E(sendKit.creatorFacet).registerChain(
-    chainName,
-    hotChainInfo,
-    agoricToHotConnection,
-  );
-
-  t.log('client uses contract to send to hot new chain');
-  {
-    const publicFacet = await E(zoe).getPublicFacet(sendKit.instance);
-    const inv = E(publicFacet).makeSendInvitation();
-    const amt = await E(zoe).getInvitationDetails(inv);
-    t.is(amt.description, 'send');
-
-    const anAmt = ist.units(3.5);
-    const Send = await pourPayment(anAmt);
-    const userSeat = await E(zoe).offer(
-      inv,
-      { give: { Send: anAmt } },
-      { Send },
-      { destAddr: 'hot1destAddr', chainName },
-    );
-    await transmitTransferAck();
-    await vt.when(E(userSeat).getOfferResult());
-
-    const history = inspectLocalBridge();
-    t.like(history, [
-      { type: 'VLOCALCHAIN_ALLOCATE_ADDRESS' },
-      { type: 'VLOCALCHAIN_EXECUTE_TX' },
-    ]);
-    const [_alloc, { messages, address: execAddr }] = history;
-    t.is(messages.length, 1);
-    const [txfr] = messages;
-    t.log('local bridge', txfr);
-    t.like(txfr, {
-      '@type': '/ibc.applications.transfer.v1.MsgTransfer',
-      receiver: 'hot1destAddr',
-      sender: execAddr,
-      sourceChannel: 'channel-0',
-      sourcePort: 'transfer',
-      token: { amount: '3500000', denom: 'uist' },
-    });
-  }
-
-  t.log('well-known chains such as cosmos work the same way');
-  {
-    const anAmt = ist.units(1.25);
-    const Send = await pourPayment(anAmt);
-    const publicFacet = await E(zoe).getPublicFacet(sendKit.instance);
-    const inv = E(publicFacet).makeSendInvitation();
-    const userSeat = await E(zoe).offer(
-      inv,
-      { give: { Send: anAmt } },
-      { Send },
-      { destAddr: 'cosmos1destAddr', chainName: 'cosmoshub' },
-    );
-    await transmitTransferAck();
-    await vt.when(E(userSeat).getOfferResult());
-    const history = inspectLocalBridge();
-    const { messages, address: execAddr } = history.at(-1);
-    t.is(messages.length, 1);
-    const [txfr] = messages;
-    t.log('local bridge', txfr);
-    t.like(txfr, {
-      '@type': '/ibc.applications.transfer.v1.MsgTransfer',
-      receiver: 'cosmos1destAddr',
-      sender: execAddr,
-      sourceChannel: 'channel-5',
-      token: { amount: '1250000', denom: 'uist' },
-    });
-  }
-
-  t.log('hot chain is endorsed by chain governance');
-  const { agoricNamesAdmin } = bootstrap;
-  await registerChain(
-    agoricNamesAdmin,
-    'hot',
-    harden({
-      ...hotChainInfo,
-      connections: { 'agoric-3': agoricToHotConnection },
-    }),
-  );
-
-  t.log('another contract uses the now well-known hot chain');
-  const orchKit = await E(zoe).startInstance(
-    installation,
-    { Stable: ist.issuer },
-    {},
-    { ...commonPrivateArgs, storageNode },
-  );
-
-  t.log('client can send to hot chain without admin action');
+  t.log('client uses contract to send to EVM chain');
   {
     const anAmt = ist.units(4.25);
     const Send = await pourPayment(anAmt);
-    const publicFacet = await E(zoe).getPublicFacet(orchKit.instance);
+    const publicFacet = await E(zoe).getPublicFacet(sendKit.instance);
     const inv = E(publicFacet).makeSendInvitation();
     const userSeat = await E(zoe).offer(
       inv,
       { give: { Send: anAmt } },
       { Send },
-      { destAddr: 'hot1destAddr', chainName: 'hot' },
+      {
+        destAddr: '0x20E68F6c276AC6E297aC46c84Ab260928276691D',
+        chainName: 'avalanche',
+      },
     );
     await transmitTransferAck();
     await vt.when(E(userSeat).getOfferResult());
@@ -213,9 +161,9 @@ test('send using arbitrary chain info', async t => {
     t.log('local bridge', txfr);
     t.like(txfr, {
       '@type': '/ibc.applications.transfer.v1.MsgTransfer',
-      receiver: 'hot1destAddr',
+      receiver: 'osmo1yh3ra8eage5xtr9a3m5utg6mx0pmqreytudaqj',
       sender: execAddr,
-      sourceChannel: 'channel-1',
+      sourceChannel: 'channel-65',
       token: { amount: '4250000', denom: 'uist' },
     });
     // check memo for Axelar
