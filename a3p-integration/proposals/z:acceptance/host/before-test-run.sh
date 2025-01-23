@@ -1,12 +1,13 @@
 #! /bin/bash
 
-set -o errexit -o errtrace -o pipefail -o xtrace
+set -o errexit -o errtrace -o pipefail
 
 DIRECTORY_PATH="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &> /dev/null && pwd)"
 BRANCH_NAME="usman/monitoring-follower"
 CHAIN_ID="agoriclocal"
 FOLLOWER_API_PORT="2317"
 FOLLOWER_GRPC_PORT="10090"
+FOLLOWER_LOGS_FILE="/tmp/loadgen-follower-logs"
 FOLLOWER_P2P_PORT="36656"
 FOLLOWER_PPROF_PORT="7060"
 FOLLOWER_RPC_PORT="36657"
@@ -24,10 +25,11 @@ HOST_MESSAGE_FILE_PATH="$HOME/$MESSAGE_FILE_NAME"
 LOADGEN_REPOSITORY_LINK="https://github.com/$ORGANIZATION_NAME/$LOADGEN_REPOSITORY_NAME.git"
 NETWORK_CONFIG_FILE_PATH="/tmp/network-config-$TIMESTAMP"
 OUTPUT_DIRECTORY="/tmp/loadgen-output"
-PROPOSAL_NAME="$(echo "$DIRECTORY_PATH" | cut --delimiter ':' --fields '2')"
+TEMP="${DIRECTORY_PATH#*/proposals/}"
 
-FOLLOWER_CONTAINER_NAME="$PROPOSAL_NAME-follower"
-FOLLOWER_LOGS_FILE="/tmp/loadgen-follower-logs"
+FOLDER_NAME="${TEMP%%/*}"
+
+FOLLOWER_CONTAINER_NAME="$(echo "$FOLDER_NAME" | cut --delimiter ':' --fields '2')-follower"
 
 create_volume_assets() {
   touch "$HOST_MESSAGE_FILE_PATH"
