@@ -22,10 +22,9 @@ jobs:
           path: ./agoric-sdk
 
       - name: docker build (sdk)
-        # Produces ghcr.io/agoric/agoric-sdk:dev used in the following test.
+        # Produces local ghcr.io/agoric/agoric-sdk:dev used in the following test.
         run: |
-          make docker-build-sdk
-          docker tag ghcr.io/agoric/agoric-sdk:unreleased ghcr.io/agoric/agoric-sdk:dev
+          make docker-build-sdk TAG=dev
         working-directory: ./agoric-sdk/packages/deployment
 
       - uses: ./agoric-sdk/.github/actions/restore-node
@@ -86,6 +85,7 @@ jobs:
           port-forward: true
           version: 0.2.20
           timeout: 30m
+          load-docker-images: ghcr.io/agoric/agoric-sdk:dev
           namespace: ${{ env.NAMESPACE }}
           repo: https://hyperweb-io.github.io/starship
 
