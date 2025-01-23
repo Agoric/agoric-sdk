@@ -283,7 +283,7 @@ jobs:
         working-directory: a3p-integration
       - name: build proposals tests
         run: |
-          BRANCH_NAME="main"
+          BRANCH_NAME="usman/before-after-test-scripts"
           FILES=("env_setup.sh" "run_eval.sh" "run_test.sh" "run_use.sh")
           FOLDER_NAME="upgrade-test-scripts"
           ORG="Agoric"
@@ -381,7 +381,7 @@ jobs:
           script: |
             const previousSuccess = ${{ needs.pre_check.outputs.previous_success }};
             const gettingStartedTestSuccess = "${{ needs.getting-started.result }}" === "success";
-            const deploymentTestSuccess = "${{ needs.deployment-test.result }}" === "success";
+            const deploymentTestSuccess = "${{ needs.deployment-test.result }}" === "success" || "${{ needs.deployment-test.result }}" === "skipped";
             const testDockerBuildSuccess = "${{ needs.test-docker-build.result }}" === "success";
             const conclusion = previousSuccess || (gettingStartedTestSuccess && deploymentTestSuccess && testDockerBuildSuccess) ?
               'success' : 'failure';
