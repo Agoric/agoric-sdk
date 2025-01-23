@@ -93,6 +93,7 @@ export const sendByAxelar = async (
   seat,
   offerArgs,
 ) => {
+  debugger; // XXX
   mustMatch(offerArgs, harden({ chainName: M.scalar(), destAddr: M.string() }));
   const { chainName, destAddr } = offerArgs;
   // NOTE the proposal shape ensures that the `give` is a single asset
@@ -108,7 +109,7 @@ export const sendByAxelar = async (
   );
 
   const relayChain =
-    chainName in AxelarTestNet.evmChains ? 'osmosis' : chainName;
+    chainName in AxelarTestNet.evmChains ? 'osmosis' : chainName; // XXX
   const chain = await orch.getChain(relayChain);
   const info = await chain.getChainInfo();
   const { chainId } = info;
