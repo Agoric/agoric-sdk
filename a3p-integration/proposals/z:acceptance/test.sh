@@ -1,6 +1,8 @@
 #!/bin/bash
 set -o errexit -o nounset -o pipefail
 
+DIRECTORY_PATH="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &> /dev/null && pwd)"
+
 # Place here any test that should be executed using the executed proposal.
 # The effects of this step are not persisted in further proposal layers.
 
@@ -49,7 +51,7 @@ yarn ava stakeBld.test.js
 
 if ! test -z "$MESSAGE_FILE_PATH"; then
   echo -n "stop at $(agd status | jq --raw-output '.SyncInfo.latest_block_height')" >> "$MESSAGE_FILE_PATH"
-  node ./wait-for-follower.mjs
+  node "$DIRECTORY_PATH/wait-for-follower.mjs"
 fi
 
 echo ACCEPTANCE TESTING state sync
