@@ -7,6 +7,8 @@ import { makeQueue } from '@endo/stream';
  * @import { RunPolicy } from '../src/types-external.js'
  */
 
+const { freeze } = Object;
+
 /** @typedef {{ provideRunPolicy: () => RunPolicy | undefined }} RunHarness */
 
 /**
@@ -103,11 +105,20 @@ export const makeRunUtils = (controller, harness) => {
   // promise that can remain pending indefinitely, possibly to be settled by a
   // future message delivery.
 
+  /**
+   * `freeze` but not `harden` the proxy target so it remains trapping.
+   * Although a frozen-only object will not be defensive, since it could still
+   * be made non-trapping, these are encapsulated only within proxies that
+   * will refuse to be made non-trapping, and so can safely be shared.
+   * @see https://github.com/endojs/endo/blob/master/packages/ses/docs/preparing-for-stabilize.md
+   */
+  const objTarget = freeze({});
+
   /** @type {EVProxy} */
   // @ts-expect-error cast, approximate
   const EV = Object.assign(
     presence =>
-      new Proxy(harden({}), {
+      new Proxy(objTarget, {
         get: (_t, method, _rx) => {
           const boundMethod = (...args) =>
             queueAndRun(() =>
@@ -118,7 +129,7 @@ export const makeRunUtils = (controller, harness) => {
       }),
     {
       vat: vatName =>
-        new Proxy(harden({}), {
+        new Proxy(objTarget, {
           get: (_t, method, _rx) => {
             const boundMethod = (...args) =>
               queueAndRun(() =>
@@ -128,7 +139,7 @@ export const makeRunUtils = (controller, harness) => {
           },
         }),
       sendOnly: presence =>
-        new Proxy(harden({}), {
+        new Proxy(objTarget, {
           get: (_t, method, _rx) => {
             const boundMethod = (...args) =>
               queueAndRun(
@@ -139,7 +150,7 @@ export const makeRunUtils = (controller, harness) => {
           },
         }),
       get: presence =>
-        new Proxy(harden({}), {
+        new Proxy(objTarget, {
           get: (_t, pathElement, _rx) =>
             queueAndRun(() =>
               controller.queueToVatRoot('bootstrap', 'awaitVatObject', [

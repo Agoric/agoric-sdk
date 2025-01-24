@@ -8,6 +8,17 @@ import {
 } from '../lib/parseVatSlots.js';
 import { insistCapData } from '../lib/capdata.js';
 
+const { freeze } = Object;
+
+/**
+ * `freeze` but not `harden` the proxy target so it remains trapping.
+ * Although a frozen-only object will not be defensive, since it could still
+ * be made non-trapping, these are encapsulated only within proxies that
+ * will refuse to be made non-trapping, and so can safely be shared.
+ * @see https://github.com/endojs/endo/blob/master/packages/ses/docs/preparing-for-stabilize.md
+ */
+const target = freeze({});
+
 // 'makeDeviceSlots' is a subset of makeLiveSlots, for device code
 
 export function makeDeviceSlots(
@@ -142,7 +153,7 @@ export function makeDeviceSlots(
     (slot && parseVatSlot(slot).type === 'object') ||
       Fail`SO(x) must be called on a Presence, not ${x}`;
     const handler = PresenceHandler(slot);
-    const p = harden(new Proxy({}, handler));
+    const p = new Proxy(target, handler);
     outstandingProxies.add(p);
     return p;
   }
