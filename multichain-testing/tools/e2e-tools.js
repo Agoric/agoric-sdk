@@ -22,6 +22,9 @@ import { makeTracer } from '@agoric/internal';
 
 const trace = makeTracer('E2ET');
 
+// The default of 6 retries was failing.
+const SMART_WALLET_PROVISION_RETRIES = 15;
+
 const BLD = '000000ubld';
 
 export const txAbbr = tx => {
@@ -204,7 +207,10 @@ export const provisionSmartWallet = async (
     () => q.queryData(`published.wallet.${address}.current`),
     result => !!result,
     `wallet in vstorage ${address}`,
-    { log: () => {} }, // suppress logs as this is already noisy
+    {
+      log: () => {}, // suppress logs as this is already noisy
+      maxRetries: SMART_WALLET_PROVISION_RETRIES,
+    },
   );
   progress({
     provisioned: address,
