@@ -59,7 +59,7 @@ selected position(s) to their electorate, which they know and trust.
 This structure of Electorates and VoteCounters allows voters and observers to
 verify how votes will be counted, and who can vote on them, but doesn't
 constrain the process of creating questions. ElectionManagers make that process
-visible. ContractGovernor is a particular example of that that makes it possible
+visible. ContractGovernor is a particular example of that makes it possible
 for a contract to publish details of how its parameters will be subject to
 governance.
 
