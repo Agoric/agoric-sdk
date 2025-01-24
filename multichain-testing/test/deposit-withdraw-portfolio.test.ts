@@ -34,7 +34,7 @@ const portfolioAccountScenario = test.macro({
     const {
       wallets,
       provisionSmartWallet,
-      vstorageClient,
+      smartWalletKit,
       retryUntilCondition,
       useChain,
     } = t.context;
@@ -64,8 +64,9 @@ const portfolioAccountScenario = test.macro({
     });
 
     const { offerToPublicSubscriberPaths } = await retryUntilCondition(
-      () => vstorageClient.queryData(`published.wallet.${agoricAddr}.current`),
+      () => smartWalletKit.readPublished(`wallet.${agoricAddr}.current`),
       ({ offerToPublicSubscriberPaths }) =>
+        // @ts-expect-error retryUntilCondition expects a boolean return
         Object.fromEntries(offerToPublicSubscriberPaths)[
           makePortfolioAcctOfferId
         ],
@@ -81,13 +82,11 @@ const portfolioAccountScenario = test.macro({
 
     const agoricLcaAddress = accountPaths.agoric.split('.').at(-1);
     const remoteIcaAddress = accountPaths[chainName].split('.').at(-1);
-    t.truthy(agoricLcaAddress, 'Agoric LCA address is in storage path');
-    t.truthy(remoteIcaAddress, `${chainName} ICA address is in storage path`);
+    assert(agoricLcaAddress, 'Agoric LCA address is in storage path');
+    assert(remoteIcaAddress, `${chainName} ICA address is in storage path`);
 
     // Get IST brand
-    const brands = await vstorageClient.queryData(
-      'published.agoricNames.brand',
-    );
+    const brands = await smartWalletKit.readPublished('agoricNames.brand');
     const istBrand = Object.fromEntries(brands).IST;
 
     // Setup query clients

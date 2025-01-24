@@ -38,7 +38,7 @@ const makeAccountScenario = test.macro({
     const {
       wallets,
       provisionSmartWallet,
-      vstorageClient,
+      smartWalletKit,
       retryUntilCondition,
     } = t.context;
 
@@ -66,8 +66,9 @@ const makeAccountScenario = test.macro({
     // TODO fix above so we don't have to poll for the offer result to be published
     // https://github.com/Agoric/agoric-sdk/issues/9643
     const currentWalletRecord = await retryUntilCondition(
-      () => vstorageClient.queryData(`published.wallet.${agoricAddr}.current`),
+      () => smartWalletKit.readPublished(`wallet.${agoricAddr}.current`),
       ({ offerToPublicSubscriberPaths }) =>
+        // @ts-expect-error retryUntilCondition expects a boolean return
         Object.fromEntries(offerToPublicSubscriberPaths)[offerId],
       `${offerId} continuing invitation is in vstorage`,
     );
@@ -80,17 +81,19 @@ const makeAccountScenario = test.macro({
       .split('.')
       .pop();
     t.log('Got address:', address);
+    assert(address);
     t.regex(
       address,
       new RegExp(`^${config.expectedAddressPrefix}1`),
       `address for ${chainName} is valid`,
     );
 
-    const latestWalletUpdate = await vstorageClient.queryData(
-      `published.wallet.${agoricAddr}`,
+    const latestWalletUpdate = await smartWalletKit.readPublished(
+      `wallet.${agoricAddr}`,
     );
     t.log('latest wallet update', latestWalletUpdate);
     t.like(
+      // @ts-expect-error UpdateRecord may not have 'status'
       latestWalletUpdate.status,
       {
         id: offerId,

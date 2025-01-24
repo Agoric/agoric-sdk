@@ -31,7 +31,7 @@ test('Deposit IST to orchAccount and then withdraw', async t => {
   const {
     wallets,
     provisionSmartWallet,
-    vstorageClient,
+    smartWalletKit,
     retryUntilCondition,
     useChain,
   } = t.context;
@@ -61,8 +61,9 @@ test('Deposit IST to orchAccount and then withdraw', async t => {
 
   // Wait for the orchAccount to be created
   const { offerToPublicSubscriberPaths } = await retryUntilCondition(
-    () => vstorageClient.queryData(`published.wallet.${agoricAddr}.current`),
+    () => smartWalletKit.readPublished(`wallet.${agoricAddr}.current`),
     ({ offerToPublicSubscriberPaths }) =>
+      // @ts-expect-error retryUntilCondition expects a boolean return
       Object.fromEntries(offerToPublicSubscriberPaths)[makeAccountOfferId],
     'makeAccount offer result is in vstorage',
   );
@@ -72,10 +73,10 @@ test('Deposit IST to orchAccount and then withdraw', async t => {
     makeAccountOfferId
   ]!.account;
   const lcaAddress = accountStoragePath.split('.').at(-1);
-  t.truthy(lcaAddress, 'Account address is in storage path');
+  assert(lcaAddress, 'Account address is in storage path');
 
   // Get IST brand
-  const brands = await vstorageClient.queryData('published.agoricNames.brand');
+  const brands = await smartWalletKit.readPublished('agoricNames.brand');
   const istBrand = Object.fromEntries(brands).IST;
 
   // Deposit IST to orchAccount
@@ -150,7 +151,7 @@ test('Deposit IST to orchAccount and then withdraw', async t => {
 test.todo('Deposit and Withdraw ATOM/OSMO to localOrchAccount via offer #9966');
 
 test('Attempt to withdraw more than available balance', async t => {
-  const { wallets, provisionSmartWallet, vstorageClient, retryUntilCondition } =
+  const { wallets, provisionSmartWallet, smartWalletKit, retryUntilCondition } =
     t.context;
 
   // Provision the Agoric smart wallet
@@ -178,8 +179,9 @@ test('Attempt to withdraw more than available balance', async t => {
 
   // Wait for the orchAccount to be created
   const { offerToPublicSubscriberPaths } = await retryUntilCondition(
-    () => vstorageClient.queryData(`published.wallet.${agoricAddr}.current`),
+    () => smartWalletKit.readPublished(`wallet.${agoricAddr}.current`),
     ({ offerToPublicSubscriberPaths }) =>
+      // @ts-expect-error retryUntilCondition expects a boolean return
       Object.fromEntries(offerToPublicSubscriberPaths)[makeAccountOfferId],
     `${makeAccountOfferId} offer result is in vstorage`,
   );
@@ -191,7 +193,7 @@ test('Attempt to withdraw more than available balance', async t => {
   t.truthy(lcaAddress, 'Account address is in storage path');
 
   // Get IST brand
-  const brands = await vstorageClient.queryData('published.agoricNames.brand');
+  const brands = await smartWalletKit.readPublished('agoricNames.brand');
   const istBrand = Object.fromEntries(brands).IST;
 
   // Attempt to withdraw more than available balance
@@ -212,11 +214,13 @@ test('Attempt to withdraw more than available balance', async t => {
 
   // Verify that the withdrawal failed
   const offerResult = await retryUntilCondition(
-    () => vstorageClient.queryData(`published.wallet.${agoricAddr}`),
+    () => smartWalletKit.readPublished(`wallet.${agoricAddr}`),
+    // @ts-expect-error UpdateRecord may not have 'status'
     ({ status }) => status.id === withdrawOfferId && status.error !== undefined,
     'Withdrawal offer error is in vstorage',
   );
   t.is(
+    // @ts-expect-error UpdateRecord may not have 'status'
     offerResult.status.error,
     'Error: One or more withdrawals failed ["[Error: cannot grab 200uist coins: 0uist is smaller than 200uist: insufficient funds]"]',
   );

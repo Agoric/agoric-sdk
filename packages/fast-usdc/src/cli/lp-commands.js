@@ -157,7 +157,6 @@ export const addLPCommands = (
       const usdcAmount = parseUSDCAmount(opts.amount, usdc);
 
       /** @type {import('../types.js').PoolMetrics} */
-      // @ts-expect-error it treats this as "unknown"
       const metrics = await swk.readPublished('fastUsdc.poolMetrics');
       const fastLPAmount = ceilDivideBy(usdcAmount, metrics.shareWorth);
 
