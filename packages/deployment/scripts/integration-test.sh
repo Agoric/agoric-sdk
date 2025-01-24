@@ -10,7 +10,7 @@ export NETWORK_NAME=${NETWORK_NAME-localtest}
 SDK_SRC=${SDK_SRC-$(cd "$thisdir/../../.." > /dev/null && pwd -P)}
 
 LOADGEN=${LOADGEN-""}
-if [ -z "$LOADGEN" ] || [ "x$LOADGEN" = "x1" ]; then
+if [ -z "$LOADGEN" ] || [ "$LOADGEN" = "1" ]; then
   for dir in "$SDK_SRC/../testnet-load-generator" /usr/src/testnet-load-generator; do
     if [ -d "$dir" ]; then
       LOADGEN="$dir"
@@ -68,15 +68,34 @@ if [ -n "$LOADGEN" ]; then
   cp ag-chain-cosmos/data/genesis.json "$RESULTSDIR/genesis.json"
   cp "$AG_SETUP_COSMOS_HOME/ag-chain-cosmos/data/genesis.json" "$RESULTSDIR/genesis.json"
   cd "$LOADGEN"
-  SOLO_COINS=40000000000uist PATH="$thisdir/../bin:$SDK_SRC/bin:$PATH" \
+
+  SOLO_COINS=40000000000uist \
+    PATH="$thisdir/../bin:$SDK_SRC/bin:$PATH" \
     "$AG_SETUP_COSMOS_HOME/faucet-helper.sh" add-egress loadgen "$SOLO_ADDR"
-  SLOGSENDER=@agoric/telemetry/src/otel-trace.js SOLO_SLOGSENDER="" \
-    SLOGSENDER_FAIL_ON_ERROR=1 SLOGSENDER_AGENT=process \
-    AG_CHAIN_COSMOS_HOME=$HOME/.agoric \
-    SDK_BUILD=0 MUST_USE_PUBLISH_BUNDLE=1 SDK_SRC=$SDK_SRC OUTPUT_DIR="$RESULTSDIR" ./start.sh \
+
+  CONTEXTUAL_SLOGFILE="$RESULTSDIR/contextual_slogs.json"
+  touch "$CONTEXTUAL_SLOGFILE"
+
+  AG_CHAIN_COSMOS_HOME="$HOME/.agoric" \
+    CONTEXTUAL_SLOGFILE="$(realpath "$CONTEXTUAL_SLOGFILE")" \
+    MUST_USE_PUBLISH_BUNDLE="1" \
+    OUTPUT_DIR="$RESULTSDIR" \
+    SDK_BUILD="0" \
+    SDK_SRC="$SDK_SRC" \
+    SLOGSENDER="@agoric/telemetry/src/context-aware-slog-file.js" \
+    SLOGSENDER_AGENT="process" \
+    SLOGSENDER_FAIL_ON_ERROR="1" \
+    SOLO_SLOGSENDER="" \
+    ./start.sh \
+    --custom-bootstrap \
+    --no-reset \
     --no-stage.save-storage \
-    --stages=3 --stage.duration=10 --stage.loadgen.cycles=4 \
-    --stage.loadgen.faucet.interval=6 --stage.loadgen.faucet.limit=4 \
-    --profile=testnet "--testnet-origin=file://$RESULTSDIR" --use-state-sync \
-    --no-reset --custom-bootstrap
+    --profile "testnet" \
+    --stages "3" \
+    --stage.duration "10" \
+    --stage.loadgen.cycles "4" \
+    --stage.loadgen.faucet.interval "6" \
+    --stage.loadgen.faucet.limit "4" \
+    --testnet-origin "file://$RESULTSDIR" \
+    --use-state-sync
 fi
