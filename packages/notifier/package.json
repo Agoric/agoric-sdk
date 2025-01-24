@@ -36,7 +36,7 @@
     "@endo/errors": "^1.2.8",
     "@agoric/internal": "^0.3.2",
     "@agoric/vat-data": "^0.5.2",
-    "@endo/far": "^1.1.9",
+    "@endo/far": "^1.1.10",
     "@endo/marshal": "^1.6.2",
     "@endo/patterns": "^1.4.7",
     "@endo/promise-kit": "^1.1.8"

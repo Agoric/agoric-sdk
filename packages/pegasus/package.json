@@ -41,7 +41,7 @@
     "@endo/bundle-source": "^3.5.0",
     "@agoric/zone": "^0.2.2",
     "@endo/captp": "^4.4.3",
-    "@endo/far": "^1.1.9",
+    "@endo/far": "^1.1.10",
     "@endo/init": "^1.1.7",
     "@endo/nat": "^5.0.13",
     "@endo/promise-kit": "^1.1.8"

@@ -36,7 +36,7 @@
     "@endo/errors": "^1.2.8",
     "@endo/import-bundle": "^1.3.2",
     "@endo/init": "^1.1.7",
-    "@endo/far": "^1.1.9",
+    "@endo/far": "^1.1.10",
     "@endo/marshal": "^1.6.2",
     "@endo/nat": "^5.0.13",
     "@endo/patterns": "^1.4.7",
