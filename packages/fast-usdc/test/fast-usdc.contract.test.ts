@@ -347,7 +347,12 @@ const makeLP = async (
       const usdcPmt = await E(sharePurse)
         .withdraw(proposal.give.PoolShare)
         .then(pmt => E(zoe).offer(toWithdraw, proposal, { PoolShare: pmt }))
-        .then(seat => E(seat).getPayout('USDC'));
+        .then(async seat => {
+          // be sure to collect refund
+          void E(sharePurse).deposit(await E(seat).getPayout('PoolShare'));
+          t.log(await E(seat).getOfferResult());
+          return E(seat).getPayout('USDC');
+        });
       const amt = await E(usdcPurse).deposit(usdcPmt);
       t.log(name, 'withdraw payout', ...logAmt(amt));
       t.true(isGTE(amt, proposal.want.USDC));
@@ -778,6 +783,52 @@ test.serial('STORY05(cont): LPs withdraw all liquidity', async t => {
   t.log({ a, b, sum: add(a, b) });
   t.truthy(a);
   t.truthy(b);
+});
+
+test.serial('withdraw all liquidity while ADVANCING', async t => {
+  const {
+    bridges: { snapshot, since },
+    common: {
+      commonPrivateArgs: { feeConfig },
+      utils,
+      brands: { usdc },
+      bootstrap: { storage },
+    },
+    evm: { cctp, txPub },
+    mint,
+    startKit: { zoe, instance, metricsSub },
+  } = t.context;
+
+  const usdcPurse = purseOf(usdc.issuer, utils);
+  // 1. Alice deposits 10 USDC for 10 FastLP
+  const alice = makeLP('Alice', usdcPurse(10_000_000n), zoe, instance);
+  await E(alice).deposit(t, 10_000_000n);
+
+  // 2. Bob initiates an advance of 6, reducing the pool to 4
+  const bob = makeCustomer('Bob', cctp, txPub.publisher, feeConfig);
+  const bridgePos = snapshot();
+  const sent = await bob.sendFast(t, 6_000_000n, 'osmo123bob5');
+  await eventLoopIteration();
+  bob.checkSent(t, since(bridgePos));
+
+  // 3. Alice proposes to withdraw 7 USDC
+  await t.throwsAsync(E(alice).withdraw(t, 0.7), {
+    message:
+      'cannot withdraw {"brand":"[Alleged: USDC brand]","value":"[7000000n]"}; {"brand":"[Alleged: USDC brand]","value":"[5879999n]"} is in use; stand by for pool to return to {"brand":"[Alleged: USDC brand]","value":"[10000001n]"}',
+  });
+
+  // 4. Bob's advance is settled
+  await mint(sent);
+  await utils.transmitTransferAck();
+  t.like(storage.getDeserialized(`fun.txns.${sent.txHash}`), [
+    { evidence: sent, status: 'OBSERVED' },
+    { status: 'ADVANCING' },
+    { status: 'ADVANCED' },
+    { status: 'DISBURSED' },
+  ]);
+
+  // Now Alice can withdraw all her liquidity.
+  await E(alice).withdraw(t, 1);
 });
 
 test.serial('withdraw fees using creatorFacet', async t => {

@@ -3,7 +3,7 @@
     "source": "subdir",
     "sdk-generate": [
       "fast-usdc/start-fast-usdc.build.js submission --net A3P_INTEGRATION --noNoble",
-      "fast-usdc/add-operators.build.js add-operators --oracle oracleNew:agoric1hmdue96vs0p6zj42aa26x6zrqlythpxnvgsgpr"
+      "fast-usdc/add-operators.build.js test/add-operators --oracle oracleNew:agoric1hmdue96vs0p6zj42aa26x6zrqlythpxnvgsgpr"
     ],
     "type": "/agoric.swingset.CoreEvalProposal"
   },
@@ -12,7 +12,7 @@
   "dependencies": {
     "@agoric/client-utils": "dev",
     "@agoric/fast-usdc": "dev",
-    "@agoric/synthetic-chain": "^0.4.3",
+    "@agoric/synthetic-chain": "^0.5.1",
     "@endo/init": "^1.1.7",
     "agoric": "dev",
     "ava": "^5.3.1"
@@ -21,6 +21,7 @@
     "concurrency": 1,
     "timeout": "2m",
     "files": [
+      "test/**/*.test.*",
       "!submission"
     ]
   },

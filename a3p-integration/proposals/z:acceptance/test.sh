@@ -4,6 +4,10 @@ set -o errexit -o nounset -o pipefail
 # Place here any test that should be executed using the executed proposal.
 # The effects of this step are not persisted in further proposal layers.
 
+# segregate so changing these does not invalidate the proposal image
+# à la https://github.com/Agoric/agoric-3-proposals/pull/213
+cd test
+
 # test the state right after the previous proposals
 yarn ava initial.test.js
 
