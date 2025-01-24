@@ -208,7 +208,7 @@ test.serial('stakeAtom', async t => {
 // to fresh contract state on each iteration, and since this is a bootstrap test
 // that means either restarting bootstrap or starting a new contract and
 // restarting that one. For them to share bootstrap they'll each need a unique
-// instance name, which will require paramatizing the the two builders scripts
+// instance name, which will require paramatizing the two builders scripts
 // and the two core-eval functions.
 test.serial('basicFlows', async t => {
   const {

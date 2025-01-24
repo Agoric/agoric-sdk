@@ -54,7 +54,7 @@ Those packages are:
 * packages/agoric-cli (`packages/agoric-cli/template/contract/package.json`)
 * packages/cosmic-swingset (`packages/cosmic-swingset/package.json`)
 
-To test that that the Zoe update works (in the most basic sense) with cosmic-swingset, do:
+To test that the Zoe update works (in the most basic sense) with cosmic-swingset, do:
 
 1. Run `yarn install` from the workspace root
 2. Run `yarn build` from the workspace root
