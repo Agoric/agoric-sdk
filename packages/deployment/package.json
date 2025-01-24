@@ -19,9 +19,9 @@
   "author": "Agoric",
   "license": "Apache-2.0",
   "dependencies": {
-    "@endo/errors": "^1.2.8",
-    "@endo/init": "^1.1.7",
-    "@endo/marshal": "^1.6.2",
+    "@endo/errors": "^1.2.9",
+    "@endo/init": "^1.1.8",
+    "@endo/marshal": "^1.6.3",
     "better-sqlite3": "^9.1.1",
     "chalk": "^5.2.0",
     "deterministic-json": "^1.0.5",
