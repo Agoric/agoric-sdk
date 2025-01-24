@@ -388,7 +388,7 @@ export async function launch({
   }
   const { kernelStorage, hostStorage } =
     swingStore ||
-    openSwingStore(/** @type {string} */ (kernelStateDBDir), {
+    openSwingStore(/** @type {string} */(kernelStateDBDir), {
       traceFile: swingStoreTraceFile,
       exportCallback: swingStoreExportSyncCallback,
       keepSnapshots,
@@ -413,6 +413,35 @@ export async function launch({
 
   // Not to be confused with the gas model, this meter is for OpenTelemetry.
   const metricMeter = metricsProvider.getMeter('ag-chain-cosmos');
+
+  // Define the action types and their corresponding metric names
+  const actionMetrics = {
+    CORE_EVAL: metricMeter.createCounter('action_core_eval_total', {
+      description: 'Total number of CORE_EVAL actions',
+    }),
+    DELIVER_INBOUND: metricMeter.createCounter('action_deliver_inbound_total', {
+      description: 'Total number of DELIVER_INBOUND actions',
+    }),
+    IBC_EVENT: metricMeter.createCounter('action_ibc_event_total', {
+      description: 'Total number of IBC_EVENT actions',
+    }),
+    INSTALL_BUNDLE: metricMeter.createCounter('action_install_bundle_total', {
+      description: 'Total number of INSTALL_BUNDLE actions',
+    }),
+    PLEASE_PROVISION: metricMeter.createCounter('action_please_provision_total', {
+      description: 'Total number of PLEASE_PROVISION actions',
+    }),
+    VBANK_BALANCE_UPDATE: metricMeter.createCounter('action_vbank_balance_update_total', {
+      description: 'Total number of VBANK_BALANCE_UPDATE actions',
+    }),
+    WALLET_ACTION: metricMeter.createCounter('action_wallet_total', {
+      description: 'Total number of WALLET_ACTION actions',
+    }),
+    WALLET_SPEND_ACTION: metricMeter.createCounter('action_wallet_spend_total', {
+      description: 'Total number of WALLET_SPEND_ACTION actions',
+    }),
+  };
+
   const slogCallbacks = makeSlogCallbacks({
     metricMeter,
   });
@@ -640,6 +669,12 @@ export async function launch({
   async function performAction(action, inboundNum) {
     // blockManagerConsole.error('Performing action', action);
     let p;
+
+    // Increment the corresponding metric for the action type
+    if (actionMetrics[action.type]) {
+      actionMetrics[action.type].add(1);
+    }
+
     switch (action.type) {
       case ActionType.DELIVER_INBOUND: {
         p = deliverInbound(
