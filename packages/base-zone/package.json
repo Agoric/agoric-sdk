@@ -31,7 +31,7 @@
     "@endo/common": "^1.2.8",
     "@endo/errors": "^1.2.8",
     "@endo/exo": "^1.5.7",
-    "@endo/far": "^1.1.9",
+    "@endo/far": "^1.1.10",
     "@endo/pass-style": "^1.4.7",
     "@endo/patterns": "^1.4.7"
   },

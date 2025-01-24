@@ -44,7 +44,7 @@
     "@agoric/zoe": "^0.26.2",
     "@endo/base64": "^1.0.9",
     "@endo/bundle-source": "^3.5.0",
-    "@endo/far": "^1.1.9",
+    "@endo/far": "^1.1.10",
     "@endo/marshal": "^1.6.2",
     "@endo/nat": "^5.0.13",
     "@endo/promise-kit": "^1.1.8",

@@ -21,7 +21,7 @@
     "lint:eslint": "eslint ."
   },
   "dependencies": {
-    "@endo/far": "^1.1.9",
+    "@endo/far": "^1.1.10",
     "@endo/marshal": "^1.6.2",
     "@endo/errors": "^1.2.8"
   },

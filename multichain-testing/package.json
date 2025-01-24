@@ -23,7 +23,7 @@
     "@cosmjs/proto-signing": "^0.32.4",
     "@cosmjs/stargate": "^0.32.4",
     "@endo/errors": "^1.2.8",
-    "@endo/far": "^1.1.9",
+    "@endo/far": "^1.1.10",
     "@endo/nat": "^5.0.13",
     "@endo/ses-ava": "^1.2.8",
     "@types/eslint": "^8",

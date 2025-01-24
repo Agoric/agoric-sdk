@@ -64,7 +64,7 @@
     "@endo/captp": "^4.4.3",
     "@endo/compartment-mapper": "^1.4.0",
     "@endo/env-options": "^1.1.8",
-    "@endo/far": "^1.1.9",
+    "@endo/far": "^1.1.10",
     "@endo/init": "^1.1.7",
     "@endo/marshal": "^1.6.2",
     "@endo/nat": "^5.0.13",
