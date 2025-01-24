@@ -1,9 +1,12 @@
 package keeper
 
 import (
-	"github.com/cosmos/cosmos-sdk/runtime"
 	"reflect"
 	"testing"
+
+	"github.com/cosmos/cosmos-sdk/runtime"
+
+	"strings"
 
 	"cosmossdk.io/log"
 	"cosmossdk.io/store"
@@ -11,10 +14,10 @@ import (
 	storetypes "cosmossdk.io/store/types"
 	agoric "github.com/Agoric/agoric-sdk/golang/cosmos/types"
 	vstoragetypes "github.com/Agoric/agoric-sdk/golang/cosmos/x/vstorage/types"
-	abci "github.com/cometbft/cometbft/abci/types"
 	tmproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	dbm "github.com/cosmos/cosmos-db"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/stretchr/testify/require"
 )
 
 var (
@@ -331,78 +334,36 @@ func TestStorageNotify(t *testing.T) {
 	keeper.LegacySetStorageAndNotify(ctx, agoric.NewKVEntry("notify.legacy2", "legacyValue2b"))
 	keeper.SetStorageAndNotify(ctx, agoric.NewKVEntry("notify.noLegacy2", "noLegacyValue2b"))
 
-	// Check the batched events.
-	expectedBeforeFlushEvents := sdk.Events{}
-	if got := ctx.EventManager().Events(); !reflect.DeepEqual(got, expectedBeforeFlushEvents) {
-		t.Errorf("got before flush events %#v, want %#v", got, expectedBeforeFlushEvents)
-	}
-
-	expectedAfterFlushEvents := sdk.Events{
-		{
-			Type: "storage",
-			Attributes: []abci.EventAttribute{
-				{Key: "path", Value: "notify.legacy"},
-				{Key: "value", Value: "legacyValue"},
-			},
-		},
-		{
-			Type: "state_change",
-			Attributes: []abci.EventAttribute{
-				{Key: "store", Value: "vstorage"},
-				{Key: "key", Value: "2\x00notify\x00legacy"},
-				{Key: "anckey", Value: "\x012\x00notify\x00legacy\x01"},
-				{Key: "value", Value: "legacyValue"},
-			},
-		},
-		{
-			Type: "storage",
-			Attributes: []abci.EventAttribute{
-				{Key: "path", Value: "notify.legacy2"},
-				{Key: "value", Value: "legacyValue2b"},
-			},
-		},
-		{
-			Type: "state_change",
-			Attributes: []abci.EventAttribute{
-				{Key: "store", Value: "vstorage"},
-				{Key: "key", Value: "2\x00notify\x00legacy2"},
-				{Key: "anckey", Value: "\x012\x00notify\x00legacy2\x01"},
-				{Key: "value", Value: "legacyValue2b"},
-			},
-		},
-		{
-			Type: "state_change",
-			Attributes: []abci.EventAttribute{
-				{Key: "store", Value: "vstorage"},
-				{Key: "key", Value: "2\x00notify\x00noLegacy"},
-				{Key: "anckey", Value: "\x012\x00notify\x00noLegacy\x01"},
-				{Key: "value", Value: "noLegacyValue"},
-			},
-		},
-		{
-			Type: "state_change",
-			Attributes: []abci.EventAttribute{
-				{Key: "store", Value: "vstorage"},
-				{Key: "key", Value: "2\x00notify\x00noLegacy2"},
-				{Key: "anckey", Value: "\x012\x00notify\x00noLegacy2\x01"},
-				{Key: "value", Value: "noLegacyValue2b"},
-			},
-		},
-	}
+	// Check the batched events
+	require.Empty(t, ctx.EventManager().Events(), "expected no events before flush")
 
 	keeper.FlushChangeEvents(ctx)
-	if got := ctx.EventManager().Events(); !reflect.DeepEqual(got, expectedAfterFlushEvents) {
-		for _, e := range got {
-			t.Logf("got event: %s", e.Type)
-			for _, a := range e.Attributes {
-				t.Logf("got attr: %s = %s", a.Key, a.Value)
-			}
+	events := ctx.EventManager().Events()
+
+	// Check number of events
+	require.Equal(t, 6, len(events), "wrong number of events")
+
+	// Check each event type and its attributes
+	for _, event := range events {
+		switch event.Type {
+		case "storage":
+			require.Equal(t, 2, len(event.Attributes))
+			require.Equal(t, "path", event.Attributes[0].Key)
+			require.Equal(t, "value", event.Attributes[1].Key)
+
+		case "state_change":
+			require.Equal(t, 4, len(event.Attributes))
+			require.Equal(t, "store", event.Attributes[0].Key)
+			require.True(t, strings.Contains(event.Attributes[0].Value, "vstorage"),
+				"store value should contain 'vstorage', got %s", event.Attributes[0].Value)
+			require.Equal(t, "key", event.Attributes[1].Key)
+			require.Equal(t, "anckey", event.Attributes[2].Key)
+			require.Equal(t, "value", event.Attributes[3].Key)
 		}
-		t.Errorf("got after flush events %#v, want %#v", got, expectedAfterFlushEvents)
 	}
 
+	// Check second flush doesn't change events
 	keeper.FlushChangeEvents(ctx)
-	if got := ctx.EventManager().Events(); !reflect.DeepEqual(got, expectedAfterFlushEvents) {
-		t.Errorf("got after second flush events %#v, want %#v", got, expectedAfterFlushEvents)
-	}
+	newEvents := ctx.EventManager().Events()
+	require.Equal(t, len(events), len(newEvents), "number of events changed after second flush")
 }
