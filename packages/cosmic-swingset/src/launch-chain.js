@@ -416,28 +416,28 @@ export async function launch({
 
   // Define the action types and their corresponding metric names
   const actionMetrics = {
-    CORE_EVAL: metricMeter.createCounter('action_core_eval_total', {
+    [ActionType.CORE_EVAL]: metricMeter.createCounter('action_core_eval_total', {
       description: 'Total number of CORE_EVAL actions',
     }),
-    DELIVER_INBOUND: metricMeter.createCounter('action_deliver_inbound_total', {
+    [ActionType.DELIVER_INBOUND]: metricMeter.createCounter('action_deliver_inbound_total', {
       description: 'Total number of DELIVER_INBOUND actions',
     }),
-    IBC_EVENT: metricMeter.createCounter('action_ibc_event_total', {
+    [ActionType.IBC_EVENT]: metricMeter.createCounter('action_ibc_event_total', {
       description: 'Total number of IBC_EVENT actions',
     }),
-    INSTALL_BUNDLE: metricMeter.createCounter('action_install_bundle_total', {
+    [ActionType.INSTALL_BUNDLE]: metricMeter.createCounter('action_install_bundle_total', {
       description: 'Total number of INSTALL_BUNDLE actions',
     }),
-    PLEASE_PROVISION: metricMeter.createCounter('action_please_provision_total', {
+    [ActionType.PLEASE_PROVISION]: metricMeter.createCounter('action_please_provision_total', {
       description: 'Total number of PLEASE_PROVISION actions',
     }),
-    VBANK_BALANCE_UPDATE: metricMeter.createCounter('action_vbank_balance_update_total', {
+    [ActionType.VBANK_BALANCE_UPDATE]: metricMeter.createCounter('action_vbank_balance_update_total', {
       description: 'Total number of VBANK_BALANCE_UPDATE actions',
     }),
-    WALLET_ACTION: metricMeter.createCounter('action_wallet_total', {
+    [ActionType.WALLET_ACTION]: metricMeter.createCounter('action_wallet_total', {
       description: 'Total number of WALLET_ACTION actions',
     }),
-    WALLET_SPEND_ACTION: metricMeter.createCounter('action_wallet_spend_total', {
+    [ActionType.WALLET_SPEND_ACTION]: metricMeter.createCounter('action_wallet_spend_total', {
       description: 'Total number of WALLET_SPEND_ACTION actions',
     }),
   };
@@ -666,6 +666,13 @@ export async function launch({
   let decohered;
   let afterCommitWorkDone = Promise.resolve();
 
+  /**
+   * FIXME: Need description and better typing
+   *
+   * @param {{ type: ActionType.QueuedActionType } & Record<string, unknown>} action
+   * @param {*} inboundNum
+   * @returns
+   */
   async function performAction(action, inboundNum) {
     // blockManagerConsole.error('Performing action', action);
     let p;
@@ -673,6 +680,9 @@ export async function launch({
     // Increment the corresponding metric for the action type
     if (actionMetrics[action.type]) {
       actionMetrics[action.type].add(1);
+    } else {
+      // @ts-expect-error This is an exhaustive check for action types
+      console.error(`Missing metric for action type: ${type}`);
     }
 
     switch (action.type) {
@@ -696,6 +706,7 @@ export async function launch({
         break;
       }
 
+      // FIXME: not part of ActionType.QueuedActionType
       case ActionType.VTRANSFER_IBC_EVENT: {
         p = doBridgeInbound(BRIDGE_ID.VTRANSFER, action, inboundNum);
         break;
@@ -706,6 +717,7 @@ export async function launch({
         break;
       }
 
+      // FIXME: not part of ActionType.QueuedActionType
       case ActionType.KERNEL_UPGRADE_EVENTS: {
         p = doKernelUpgradeEvents(inboundNum);
         break;
