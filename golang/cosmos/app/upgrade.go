@@ -287,6 +287,10 @@ func unreleasedUpgradeHandler(app *GaiaApp, targetUpgrade string) func(sdk.Conte
 			//
 			// CoreProposalSteps = append(CoreProposalSteps,
 			// 	vm.CoreProposalStepForModules(
+			// 		"@agoric/builders/scripts/vats/upgrade-zcf.js",
+			// 	),
+			// CoreProposalSteps = append(CoreProposalSteps,
+			// 	vm.CoreProposalStepForModules(
 			// 		"@agoric/builders/scripts/inter-protocol/replace-feeDistributor.js",
 			// 	),
 			// 	vm.CoreProposalStepForModules(

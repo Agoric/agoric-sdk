@@ -2,6 +2,7 @@
   "agoricProposal": {
     "type": "/agoric.swingset.CoreEvalProposal",
     "sdk-generate": [
+      "vats/upgrade-zcf.js",
       "testing/replace-feeDistributor-short.js replaceFeeDistributor",
       "testing/add-USD-LEMONS.js addUsdLemons",
       "vats/upgrade-provisionPool.js upgradeProvisionPool",
