@@ -283,7 +283,6 @@ export const makeZCFZygote = async (
   /** @type {ZCF} */
   const zcf = prepareExo(zcfBaggage, 'zcf', ZcfI, {
     atomicRearrange: transfers => seatManager.atomicRearrange(transfers),
-    reallocate: (...seats) => seatManager.reallocate(...seats),
     assertUniqueKeyword: kwd => getInstanceRecHolder().assertUniqueKeyword(kwd),
     saveIssuer: async (issuerP, keyword) => {
       // TODO: The checks of the keyword for uniqueness are

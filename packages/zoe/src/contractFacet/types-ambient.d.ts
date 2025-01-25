@@ -25,11 +25,6 @@ type ZCF<CT = Record<string, unknown>> = {
    */
   atomicRearrange: (transfers: TransferPart[]) => void;
   /**
-   * - reallocate amounts among seats.
-   * @deprecated Use atomicRearrange instead.
-   */
-  reallocate: Reallocate;
-  /**
    * - check
    * whether a keyword is valid and unique and could be added in
    * `saveIssuer`
@@ -86,34 +81,6 @@ type ZCF<CT = Record<string, unknown>> = {
   getInstance: () => Instance;
 };
 
-/**
- * @deprecated Use atomicRearrange instead
- *
- * The contract can reallocate over seats, which commits the staged
- * allocation for each seat. On commit, the staged allocation becomes
- * the current allocation and the staged allocation is deleted.
- *
- * The reallocation will only succeed if the reallocation 1) conserves
- * rights (the amounts specified have the same total value as the
- * current total amount), and 2) is 'offer-safe' for all parties
- * involved. All seats that have staged allocations must be included
- * as arguments to `reallocate`, or an error is thrown. Additionally,
- * an error is thrown if any seats included in `reallocate` do not
- * have a staged allocation.
- *
- * The reallocation is partial, meaning that it applies only to the
- * seats passed in as arguments. By induction, if rights conservation
- * and offer safety hold before, they will hold after a safe
- * reallocation, even though we only re-validate for the seats whose
- * allocations will change. Since rights are conserved for the change,
- * overall rights will be unchanged, and a reallocation can only
- * effect offer safety for seats whose allocations change.
- */
-type Reallocate = (
-  seat1: ZCFSeat,
-  seat2: ZCFSeat,
-  ...seatRest: Array<ZCFSeat>
-) => void;
 type TransferPart = [
   fromSeat?: ZCFSeat,
   toSeat?: ZCFSeat,
@@ -184,31 +151,7 @@ type ZCFSeat = import('@endo/pass-style').RemotableObject & {
     brand?: B,
   ) => B extends Brand<infer K> ? Amount<K> : Amount;
   getCurrentAllocation: () => Allocation;
-  /**
-   * @deprecated Use atomicRearrange instead
-   */
-  getStagedAllocation: () => Allocation;
-  /**
-   * @deprecated Use atomicRearrange instead
-   */
-  hasStagedAllocation: () => boolean;
   isOfferSafe: (newAllocation: Allocation) => boolean;
-  /**
-   * @deprecated Use atomicRearrange instead
-   */
-  incrementBy: (
-    amountKeywordRecord: AmountKeywordRecord,
-  ) => AmountKeywordRecord;
-  /**
-   * @deprecated Use atomicRearrange instead
-   */
-  decrementBy: (
-    amountKeywordRecord: AmountKeywordRecord,
-  ) => AmountKeywordRecord;
-  /**
-   * @deprecated Use atomicRearrange instead
-   */
-  clear: () => void;
 };
 type ZcfSeatKit = {
   zcfSeat: ZCFSeat;
