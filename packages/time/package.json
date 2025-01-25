@@ -32,13 +32,13 @@
   "homepage": "https://github.com/Agoric/agoric-sdk#readme",
   "dependencies": {
     "@agoric/store": "^0.9.2",
-    "@endo/errors": "^1.2.8",
-    "@endo/nat": "^5.0.13",
-    "@endo/patterns": "^1.4.7"
+    "@endo/errors": "^1.2.9",
+    "@endo/nat": "^5.0.14",
+    "@endo/patterns": "^1.4.8"
   },
   "devDependencies": {
-    "@endo/far": "^1.1.9",
-    "@endo/init": "^1.1.7",
+    "@endo/far": "^1.1.10",
+    "@endo/init": "^1.1.8",
     "ava": "^5.3.0"
   },
   "ava": {
