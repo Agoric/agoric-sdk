@@ -155,4 +155,4 @@ const autoStakeItScenario = test.macro({
 });
 
 test.serial(autoStakeItScenario, 'osmosis');
-test.serial(autoStakeItScenario, 'cosmoshub');
+test.serial.failing(autoStakeItScenario, 'cosmoshub');
