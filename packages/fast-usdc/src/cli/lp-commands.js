@@ -96,7 +96,6 @@ export const addLPCommands = (
 
       const usdcAmount = parseUSDCAmount(opts.amount, usdc);
 
-      /** @type {import('../types.js').PoolMetrics} */
       const metrics = await swk.readPublished('fastUsdc.poolMetrics');
       const fastLPAmount = floorDivideBy(usdcAmount, metrics.shareWorth);
 
@@ -155,7 +154,6 @@ export const addLPCommands = (
 
       const usdcAmount = parseUSDCAmount(opts.amount, usdc);
 
-      /** @type {import('../types.js').PoolMetrics} */
       const metrics = await swk.readPublished('fastUsdc.poolMetrics');
       const fastLPAmount = ceilDivideBy(usdcAmount, metrics.shareWorth);
 
