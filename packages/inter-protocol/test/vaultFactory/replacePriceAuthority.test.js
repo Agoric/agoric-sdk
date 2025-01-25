@@ -162,7 +162,6 @@ export const setupElectorateReserveAndAuction = async (
 
   await startEconomicCommittee(space, electorateTerms);
   await setupReserve(space);
-  // const quoteIssuerKit = makeIssuerKit('quote', AssetKind.SET);
 
   /** @type {import('@agoric/vat-data').Baggage} */
   const paBaggage = makeScalarMapStore();

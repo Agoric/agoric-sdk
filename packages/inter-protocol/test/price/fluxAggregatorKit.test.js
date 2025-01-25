@@ -16,6 +16,7 @@ import { buildZoeManualTimer } from '@agoric/zoe/tools/manualTimer.js';
 import { TimeMath } from '@agoric/time';
 import { prepareRecorderKitMakers } from '@agoric/zoe/src/contractSupport/recorder.js';
 import { documentStorageSchema } from '@agoric/governance/tools/storageDoc.js';
+import { makePriceQuoteIssuer } from '@agoric/zoe/src/contractSupport/priceQuote.js';
 import { prepareFluxAggregatorKit } from '../../src/price/fluxAggregatorKit.js';
 import { topicPath } from '../supports.js';
 
@@ -49,7 +50,7 @@ const makeContext = async () => {
     const toTS = val => TimeMath.coerceTimestampRecord(val, timerBrand);
 
     const baggage = makeScalarBigMapStore('test baggage');
-    const quoteIssuerKit = makeIssuerKit('quote', AssetKind.SET);
+    const quoteIssuerKit = makePriceQuoteIssuer();
 
     const { makeDurablePublishKit, makeRecorder } = prepareRecorderKitMakers(
       baggage,

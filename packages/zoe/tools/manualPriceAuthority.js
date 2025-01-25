@@ -1,13 +1,14 @@
 // @jessie-check
 
-import { AmountMath, makeIssuerKit, AssetKind } from '@agoric/ertp';
+import { AmountMath } from '@agoric/ertp';
+import { makeNotifierKit } from '@agoric/notifier';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
-import { makeNotifierKit } from '@agoric/notifier';
 import {
-  makeOnewayPriceAuthorityKit,
-  floorMultiplyBy,
   floorDivideBy,
+  floorMultiplyBy,
+  makeOnewayPriceAuthorityKit,
+  makePriceQuoteIssuer,
 } from '../src/contractSupport/index.js';
 
 /**
@@ -20,7 +21,7 @@ import {
  * @param {Brand<'nat'>} options.actualBrandOut
  * @param {Ratio} options.initialPrice
  * @param {import('@agoric/time').TimerService} options.timer
- * @param {IssuerKit<'set'>} [options.quoteIssuerKit]
+ * @param {IssuerKit<'set', PriceDescription>} [options.quoteIssuerKit]
  * @returns {PriceAuthority & { setPrice: (Ratio) => void; disable: () => void }}
  */
 export function makeManualPriceAuthority(options) {
@@ -29,7 +30,7 @@ export function makeManualPriceAuthority(options) {
     actualBrandOut,
     initialPrice, // brandOut / brandIn
     timer,
-    quoteIssuerKit = makeIssuerKit('quote', AssetKind.SET),
+    quoteIssuerKit = makePriceQuoteIssuer(),
   } = options;
   const { brand, issuer: quoteIssuer, mint: quoteMint } = quoteIssuerKit;
 
