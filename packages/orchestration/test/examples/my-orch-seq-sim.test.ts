@@ -53,6 +53,10 @@ const makeCosmosAccount = (addr: string) => {
         await self.send(t, amt, makeICAAccount(fwd.to));
       }
     },
+    async getBalances(t: Ex): Promise<Coins> {
+      t.log(addr, 'checking balances');
+      return [{ denom: 'stATOM', amount: 9 }]; // Mock balance for demo
+    },
   };
   return freeze(self);
 };
@@ -119,7 +123,8 @@ const makeUA = (orch: Awaited<ReturnType<typeof makeOrchContract>>) => {
       // Check final balance
       const destAcct = makeCosmosAccount('elsy176');
       t.log('checking final balance at', destAcct);
-      t.log('final balance:', [{ denom: 'stATOM', amount: amt[0].amount * 0.9 }]);
+      const balance = await destAcct.getBalances(t);
+      t.log('final balance:', balance);
     },
   });
   return self;
