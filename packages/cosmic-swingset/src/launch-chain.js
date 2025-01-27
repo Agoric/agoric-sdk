@@ -464,6 +464,24 @@ export async function launch({
         description: 'Total number of WALLET_SPEND_ACTION actions',
       },
     ),
+    [ActionType.CALCULATE_FEES_IN_BEANS]: metricMeter.createCounter(
+      'action_calculate_fees_in_beans_total',
+      {
+        description: 'Total number of CALCULATE_FEES_IN_BEANS actions',
+      },
+    ),
+    [ActionType.VTRANSFER_IBC_EVENT]: metricMeter.createCounter(
+      'action_vtransfer_ibc_event_total',
+      {
+        description: 'Total number of VTRANSFER_IBC_EVENT actions',
+      },
+    ),
+    [ActionType.KERNEL_UPGRADE_EVENTS]: metricMeter.createCounter(
+      'action_kernel_upgrade_events_total',
+      {
+        description: 'Total number of KERNEL_UPGRADE_EVENTS actions',
+      },
+    ),
   };
 
   const slogCallbacks = makeSlogCallbacks({
