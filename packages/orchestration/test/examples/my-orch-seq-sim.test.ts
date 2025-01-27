@@ -29,7 +29,7 @@ const makeCosmosAccount = (addr: string) => {
 };
 type CosmosAccount = ReturnType<typeof makeCosmosAccount>;
 
-const makeLocalOrchAccount = (addr: string) => {
+const makeLocalOrchAccount = (addr: string, strideAddr: string) => {
   const base = makeCosmosAccount(addr);
   let tap = false;
   const self = freeze({
@@ -57,9 +57,9 @@ const makeLocalOrchAccount = (addr: string) => {
 };
 
 const makeOrchContract = async () => {
-  const hookAcct = makeLocalOrchAccount('agoric1orchFEED');
-  await hookAcct.monitorTransfers();
   const strideAddr = 'stride123';
+  const hookAcct = makeLocalOrchAccount('agoric1orchFEED', strideAddr);
+  await hookAcct.monitorTransfers();
   return freeze({
     getHookAccount: async () => hookAcct,
     getStrideAddr: () => strideAddr,
