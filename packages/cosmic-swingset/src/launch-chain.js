@@ -52,6 +52,7 @@ import { computronCounter } from './computron-counter.js';
 /** @import { BlockInfo } from '@agoric/internal/src/chain-utils.js' */
 /** @import { Mailbox, RunPolicy, SwingSetConfig } from '@agoric/swingset-vat' */
 /** @import { KVStore, BufferedKVStore } from './helpers/bufferedStorage.js' */
+/** @import { Counter } from '@opentelemetry/api/build/src/metrics/Metric' */
 
 /** @typedef {ReturnType<typeof makeQueue<{context: any, action: any}>>} InboundQueue */
 
@@ -415,10 +416,10 @@ export async function launch({
   const metricMeter = metricsProvider.getMeter('ag-chain-cosmos');
 
   // Define the action types and their corresponding metric names dynamically
-  /** @type {Record<QueuedActionType, Counter>} */
+  /** @type {Record<ActionType.QueuedActionType, Counter>} */
   const actionMetrics = Object.fromEntries(
-    Object.keys(QueuedActionType).map(actionType => [
-      QueuedActionType[actionType],
+    Object.keys(ActionType.QueuedActionType).map(actionType => [
+      ActionType.QueuedActionType[actionType],
       metricMeter.createCounter(`action_${actionType.toLowerCase()}_total`, {
         description: `Total number of ${actionType} actions`,
       }),
