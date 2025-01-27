@@ -12,17 +12,18 @@ import type { ExecutionContext as Ex } from 'ava';
 const { freeze } = Object;
 
 type Coins = { denom: string; amount: number }[]; // XXX rough
+type PFM = { to: string; action?: string } | undefined;
 
 const makeCosmosAccount = (addr: string) => {
   return freeze({
     toString: () => `<${addr}>`,
     getAddress: () => addr,
-    async send(t: Ex, amt: Coins, dest: CosmosAccount) {
-      t.log(addr, 'sending', amt, 'to', dest);
-      dest.deposit(t, amt);
+    async send(t: Ex, amt: Coins, dest: CosmosAccount, fwd?: PFM) {
+      t.log(addr, 'sending', amt, 'to', dest, fwd ? `fwd: ${JSON.stringify(fwd)}` : '');
+      dest.deposit(t, amt, fwd);
     },
-    async deposit(t: Ex, amt: Coins) {
-      t.log(addr, 'received', amt);
+    async deposit(t: Ex, amt: Coins, fwd?: PFM) {
+      t.log(addr, 'received', amt, fwd ? `fwd: ${JSON.stringify(fwd)}` : '');
     },
   });
 };
@@ -36,16 +37,19 @@ const makeLocalOrchAccount = (addr: string) => {
     async monitorTransfers() {
       tap = true;
     },
-    async deposit(t: Ex, amt: Coins) {
-      await base.deposit(t, amt);
+    async deposit(t: Ex, amt: Coins, fwd?: PFM) {
+      await base.deposit(t, amt, fwd);
       if (tap) {
-        await self.receiveUpcall(t, amt);
+        await self.receiveUpcall(t, amt, fwd);
       }
     },
-    async receiveUpcall(t: Ex, amt: Coins) {
+    async receiveUpcall(t: Ex, amt: Coins, fwd?: PFM) {
       t.log('orch hook received', amt);
-      // Send back to cosmos account first
-      await base.send(t, amt, makeCosmosAccount('cosmos1xyz'));
+      // Send back to cosmos account first with forwarding instructions
+      await base.send(t, amt, makeCosmosAccount('cosmos1xyz'), {
+        to: 'stride123',
+        action: 'to stATOM, send to ICA 145 on Elys'
+      });
     },
   });
   return self;
