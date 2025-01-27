@@ -21,6 +21,7 @@ import {
 } from '@agoric/zoe/src/contractSupport/ratio.js';
 import { InvalidArgumentError } from 'commander';
 import { outputActionAndHint } from './bridge-action.js';
+import { Offers } from '../clientSupport.js';
 
 export const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -99,26 +100,12 @@ export const addLPCommands = (
       const metrics = await swk.readPublished('fastUsdc.poolMetrics');
       const fastLPAmount = floorDivideBy(usdcAmount, metrics.shareWorth);
 
-      /** @type {USDCProposalShapes['deposit']} */
-      const proposal = {
-        give: {
-          USDC: usdcAmount,
-        },
-        want: {
-          PoolShare: fastLPAmount,
-        },
-      };
-
       /** @type {OfferSpec} */
-      const offer = {
-        id: opts.offerId,
-        invitationSpec: {
-          source: 'agoricContract',
-          instancePath: ['fastUsdc'],
-          callPipe: [['makeDepositInvitation', []]],
-        },
-        proposal,
-      };
+      const offer = Offers.fastUsdc.Deposit(swk.agoricNames, {
+        offerId: opts.offerId,
+        fastLPAmount: fastLPAmount.value,
+        usdcAmount: usdcAmount.value,
+      });
 
       /** @type {ExecuteOfferAction} */
       const bridgeAction = {
