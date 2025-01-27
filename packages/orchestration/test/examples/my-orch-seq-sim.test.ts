@@ -15,6 +15,7 @@ type Coins = { denom: string; amount: number }[]; // XXX rough
 
 const makeCosmosAccount = (addr: string) => {
   return freeze({
+    toString: () => `<${addr}>`,
     getAddress: () => addr,
     async send(t: Ex, amt: Coins, dest: CosmosAccount) {
       t.log(addr, 'sending', amt, 'to', dest);
