@@ -17,8 +17,7 @@
       "vats/upgrade-agoricNames.js agoricNamesCoreEvals/upgradeAgoricNames",
       "testing/add-USD-OLIVES.js agoricNamesCoreEvals/addUsdOlives",
       "testing/publish-test-info.js agoricNamesCoreEvals/publishTestInfo",
-      "vats/upgrade-mintHolder.js upgrade-mintHolder A3P_INTEGRATION",
-      "vats/terminate-governor-instance.js terminate-governor board02963:ATOM-USD_price_feed"
+      "vats/upgrade-mintHolder.js upgrade-mintHolder A3P_INTEGRATION"
     ]
   },
   "type": "module",
