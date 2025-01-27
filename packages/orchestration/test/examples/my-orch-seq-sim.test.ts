@@ -43,6 +43,8 @@ const makeLocalOrchAccount = (addr: string) => {
     },
     async receiveUpcall(t: Ex, amt: Coins) {
       t.log('orch hook received', amt);
+      // Forward to stride chain
+      await base.send(t, amt, makeCosmosAccount('stride123'));
     },
   });
   return self;
