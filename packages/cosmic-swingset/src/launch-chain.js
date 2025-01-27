@@ -38,7 +38,6 @@ import { fileURLToPath } from 'url';
 
 import {
   makeDefaultMeterProvider,
-  makeInboundQueueMetrics,
   exportKernelStats,
   makeSlogCallbacks,
 } from './kernel-stats.js';
@@ -96,6 +95,8 @@ const parseUpgradePlanInfo = (upgradePlan, prefix = '') => {
  *   - queued: queued work the follows timer advancement
  *   - cleanup: for dealing with data from terminated vats
  */
+
+/** @typedef {Extract<CrankerPhase, 'queued' | 'high-priority' | 'forced'>} InboundQueueName */
 
 /** @type {CrankerPhase} */
 const CLEANUP = 'cleanup';
@@ -466,15 +467,17 @@ export async function launch({
     ? parseInt(env.END_BLOCK_SPIN_MS, 10)
     : 0;
 
-  const inboundQueueMetrics = makeInboundQueueMetrics(
-    actionQueue.size() + highPriorityQueue.size(),
-  );
-  const { crankScheduler } = exportKernelStats({
+  const initialQueueLengths = /** @type {Record<InboundQueueName, number>} */ ({
+    queued: actionQueue.size(),
+    'high-priority': highPriorityQueue.size(),
+    forced: runThisBlock.size(),
+  });
+  const { crankScheduler, inboundQueueMetrics } = exportKernelStats({
     controller,
     metricMeter,
     // @ts-expect-error Type 'Logger<BaseLevels>' is not assignable to type 'Console'.
     log: console,
-    inboundQueueMetrics,
+    initialQueueLengths,
   });
 
   /**
@@ -734,13 +737,13 @@ export async function launch({
    *
    * @param {InboundQueue} inboundQueue
    * @param {Cranker} runSwingset
-   * @param {CrankerPhase} phase
+   * @param {InboundQueueName} phase
    */
   async function processActions(inboundQueue, runSwingset, phase) {
     let keepGoing = true;
     for await (const { action, context } of inboundQueue.consumeAll()) {
       const inboundNum = `${context.blockHeight}-${context.txHash}-${context.msgIdx}`;
-      inboundQueueMetrics.decStat();
+      inboundQueueMetrics.decStat(phase);
       countInboundAction(action.type);
       await performAction(action, inboundNum);
       keepGoing = await runSwingset(phase);
@@ -814,9 +817,12 @@ export async function launch({
 
     // First, record new actions (bridge/mailbox/etc events that cosmos
     // added up for delivery to swingset) into our inboundQueue metrics
-    inboundQueueMetrics.updateLength(
-      actionQueue.size() + highPriorityQueue.size() + runThisBlock.size(),
-    );
+    const newLengths = /** @type {Record<InboundQueueName, number>} */ ({
+      queued: actionQueue.size(),
+      'high-priority': highPriorityQueue.size(),
+      forced: runThisBlock.size(),
+    });
+    inboundQueueMetrics.updateLengths(newLengths);
 
     // If we have work to complete this block, it needs to run to completion.
     // It will also run to completion any work that swingset still had pending.
