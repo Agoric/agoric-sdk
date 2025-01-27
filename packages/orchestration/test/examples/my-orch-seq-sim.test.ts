@@ -14,7 +14,7 @@ const { freeze } = Object;
 type Coins = { denom: string; amount: number }[]; // XXX rough
 type PFM = { to: string; action?: string } | undefined;
 
-const makeICAAccount = (addr: string) => {
+const makeStrideICAAccount = (addr: string) => {
   const base = makeCosmosAccount(addr);
   return freeze({
     ...base,
@@ -50,7 +50,7 @@ const makeCosmosAccount = (addr: string) => {
       t.log(addr, 'received', amt, fwd ? `fwd: ${JSON.stringify(fwd)}` : '');
       // If this is the Stride chain and we have forwarding instructions, send to ICA
       if (addr === 'stride123' && fwd?.to) {
-        await self.send(t, amt, makeICAAccount(fwd.to));
+        await self.send(t, amt, makeStrideICAAccount(fwd.to));
       }
     },
     async getBalances(t: Ex): Promise<Coins> {
