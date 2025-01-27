@@ -17,7 +17,7 @@ type PFM = { to: string; action?: string } | undefined;
 const makeICAAccount = (addr: string) => makeCosmosAccount(addr);
 
 const makeCosmosAccount = (addr: string) => {
-  return freeze({
+  const self = {
     toString: () => `<${addr}>`,
     getAddress: () => addr,
     async send(t: Ex, amt: Coins, dest: CosmosAccount, fwd?: PFM) {
@@ -38,7 +38,8 @@ const makeCosmosAccount = (addr: string) => {
         await self.send(t, amt, makeICAAccount(fwd.to));
       }
     },
-  });
+  };
+  return freeze(self);
 };
 type CosmosAccount = ReturnType<typeof makeCosmosAccount>;
 
