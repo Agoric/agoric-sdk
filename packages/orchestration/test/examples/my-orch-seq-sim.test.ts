@@ -118,13 +118,14 @@ const makeUA = (orch: Awaited<ReturnType<typeof makeOrchContract>>) => {
   };
 
   const self = freeze({
-    async openPosition(t: Ex, amt: Coins) {
+    async openPosition(t: Ex, amt: Coins): Promise<Coins> {
       await signAndBroadcast(t, amt, await myAcct.getAddress());
       // Check final balance
       const destAcct = makeCosmosAccount('elsy176');
       t.log('checking final balance at', destAcct);
       const balance = await destAcct.getBalances(t);
       t.log('final balance:', balance);
+      return balance;
     },
   });
   return self;
@@ -133,6 +134,6 @@ const makeUA = (orch: Awaited<ReturnType<typeof makeOrchContract>>) => {
 test('user opens a position with 10 ATOM', async t => {
   const orch = await makeOrchContract();
   const u1 = makeUA(orch);
-  const actual = await u1.openPosition(t, [{ denom: 'ATOM', amount: 10 }]);
-  t.is(actual, undefined);
+  const balance = await u1.openPosition(t, [{ denom: 'ATOM', amount: 10 }]);
+  t.deepEqual(balance, [{ denom: 'stATOM', amount: 9 }]);
 });
