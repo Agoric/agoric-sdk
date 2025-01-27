@@ -1,0 +1,32 @@
+%%{init: {
+  'theme': 'base',
+  'themeVariables': {
+    'primaryColor': '#f0f8ff',
+    'primaryTextColor': '#2c3e50',
+    'primaryBorderColor': '#7fb2e6',
+    'lineColor': '#7fb2e6',
+    'secondaryColor': '#f6f8fa',
+    'tertiaryColor': '#fff5e6'
+  }
+}}%%
+sequenceDiagram
+    title Elys Orchestration Flow - Transactional Model
+    autonumber
+    actor webUA as Elys WebApp<br/>[Browser]
+    %% [Where it runs]
+    participant chainOrig as Cosmos Hub
+    participant chainAg as Agoric Chain
+    participant chainLS as Stride Chain
+    participant chainMy as Elys Chain
+
+    %% Notation: ->> for initial message, -->> for consequences
+
+    webUA ->> chainOrig: User signs Cosmos Hub IBC tx to<br/>move 10 ATOM
+    chainOrig -->> chainAg: 10 ATOM arrives in Agoric Address Hook account
+    chainAg -->> chainOrig: ATOM sent via Stride Autopilot / PFM to arrive on Elys as stATOM in account held by Agoric ICA
+    chainOrig -->> chainLS: 
+    chainLS -->> chainMy: 
+    chainMy -->> chainAg: Agoric contract notified that assets have arrived
+    chainAg -->> chainMy: Agoric ICA executes transfer & deposit functions on Elys Network
+    chainMy -->> chainMy: Assets transferred<br/>from ICA to user<br/>account and depositied
+    chainMy -->> webUA: User notified that execution is complete and position is created
