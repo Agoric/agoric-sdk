@@ -14,18 +14,17 @@ const { freeze } = Object;
 type Coins = { denom: string; amount: number }[]; // XXX rough
 type PFM = { to: string; action?: string } | undefined;
 
-const makeStrideICAAccount = (addr: string) => {
+const makeStrideAccount = (addr: string) => {
   const base = makeCosmosAccount(addr);
   return freeze({
     ...base,
     async deposit(t: Ex, amt: Coins, fwd?: PFM) {
-      await base.deposit(t, amt, fwd);
+      await base.deposit(t, amt);
       // After receiving ATOM, send ack and convert to stATOM
-      if (amt[0].denom === 'ATOM') {
-        const orchAcct = makeLocalOrchAccount('agoric1orchFEED', 'stride123');
-        await orchAcct.resolve(t, 'ack');
+      if (amt[0].denom === 'ATOM' && fwd?.action === 'Liquid Stake to stATOM') {
+        const strideAmt = [{ denom: 'stATOM', amount: amt[0].amount * 0.9 }];
         // Send stATOM to user's Elys account
-        await base.send(t, [{ denom: 'stATOM', amount: amt[0].amount * 0.9 }], makeCosmosAccount('elsy176'));
+        await base.send(t, strideAmt, makeCosmosAccount(fwd.to));
       }
     },
   });
@@ -48,9 +47,11 @@ const makeCosmosAccount = (addr: string) => {
     },
     async deposit(t: Ex, amt: Coins, fwd?: PFM) {
       t.log(addr, 'received', amt, fwd ? `fwd: ${JSON.stringify(fwd)}` : '');
-      // If this is the Stride chain and we have forwarding instructions, send to ICA
-      if (addr === 'stride123' && fwd?.to) {
-        await self.send(t, amt, makeStrideICAAccount(fwd.to));
+      // If we have forwarding instructions, do so
+      if (fwd) {
+        const { to } = fwd;
+        const dest = accountMaker(to)(to, 'stride123');
+        await self.send(t, amt, dest);
       }
     },
     async getBalances(t: Ex): Promise<Coins> {
@@ -61,6 +62,13 @@ const makeCosmosAccount = (addr: string) => {
   return freeze(self);
 };
 type CosmosAccount = ReturnType<typeof makeCosmosAccount>;
+
+const accountMaker = (to: string) =>
+  to.startsWith('stride1')
+    ? makeStrideAccount
+    : to.startsWith('agoric1')
+      ? makeLocalOrchAccount
+      : makeCosmosAccount;
 
 const makeLocalOrchAccount = (addr: string, strideAddr: string) => {
   const base = makeCosmosAccount(addr);
@@ -79,13 +87,10 @@ const makeLocalOrchAccount = (addr: string, strideAddr: string) => {
     async receiveUpcall(t: Ex, amt: Coins, fwd?: PFM) {
       t.log('orch hook received', amt);
       // Send back to cosmos account first with forwarding instructions
-      await base.send(t, amt, makeCosmosAccount(strideAddr), {
+      await base.send(t, amt, makeStrideAccount(strideAddr), {
         to: 'elys145',
         action: 'Liquid Stake to stATOM',
       });
-    },
-    async resolve(t: Ex, msg: string) {
-      t.log('orch hook resolved:', msg);
     },
   });
   return self;
@@ -104,7 +109,6 @@ const makeOrchContract = async () => {
 const makeUA = (orch: Awaited<ReturnType<typeof makeOrchContract>>) => {
   const myAcct = makeCosmosAccount('cosmos1xyz');
   const hookAcctP = orch.getHookAccount();
-  const strideAddr = orch.getStrideAddr();
 
   const signAndBroadcast = async (
     t: Ex,
@@ -122,7 +126,7 @@ const makeUA = (orch: Awaited<ReturnType<typeof makeOrchContract>>) => {
       await signAndBroadcast(t, amt, await myAcct.getAddress());
       // Check final balance
       const destAcct = makeCosmosAccount('elsy176');
-      t.log('checking final balance at', destAcct);
+      t.log('checking final balance at', `${destAcct}`);
       const balance = await destAcct.getBalances(t);
       t.log('final balance:', balance);
       return balance;
