@@ -414,76 +414,16 @@ export async function launch({
   // Not to be confused with the gas model, this meter is for OpenTelemetry.
   const metricMeter = metricsProvider.getMeter('ag-chain-cosmos');
 
-  // Define the action types and their corresponding metric names
-  const actionMetrics = {
-    [ActionType.CORE_EVAL]: metricMeter.createCounter(
-      'action_core_eval_total',
-      {
-        description: 'Total number of CORE_EVAL actions',
-      },
-    ),
-    [ActionType.DELIVER_INBOUND]: metricMeter.createCounter(
-      'action_deliver_inbound_total',
-      {
-        description: 'Total number of DELIVER_INBOUND actions',
-      },
-    ),
-    [ActionType.IBC_EVENT]: metricMeter.createCounter(
-      'action_ibc_event_total',
-      {
-        description: 'Total number of IBC_EVENT actions',
-      },
-    ),
-    [ActionType.INSTALL_BUNDLE]: metricMeter.createCounter(
-      'action_install_bundle_total',
-      {
-        description: 'Total number of INSTALL_BUNDLE actions',
-      },
-    ),
-    [ActionType.PLEASE_PROVISION]: metricMeter.createCounter(
-      'action_please_provision_total',
-      {
-        description: 'Total number of PLEASE_PROVISION actions',
-      },
-    ),
-    [ActionType.VBANK_BALANCE_UPDATE]: metricMeter.createCounter(
-      'action_vbank_balance_update_total',
-      {
-        description: 'Total number of VBANK_BALANCE_UPDATE actions',
-      },
-    ),
-    [ActionType.WALLET_ACTION]: metricMeter.createCounter(
-      'action_wallet_total',
-      {
-        description: 'Total number of WALLET_ACTION actions',
-      },
-    ),
-    [ActionType.WALLET_SPEND_ACTION]: metricMeter.createCounter(
-      'action_wallet_spend_total',
-      {
-        description: 'Total number of WALLET_SPEND_ACTION actions',
-      },
-    ),
-    [ActionType.CALCULATE_FEES_IN_BEANS]: metricMeter.createCounter(
-      'action_calculate_fees_in_beans_total',
-      {
-        description: 'Total number of CALCULATE_FEES_IN_BEANS actions',
-      },
-    ),
-    [ActionType.VTRANSFER_IBC_EVENT]: metricMeter.createCounter(
-      'action_vtransfer_ibc_event_total',
-      {
-        description: 'Total number of VTRANSFER_IBC_EVENT actions',
-      },
-    ),
-    [ActionType.KERNEL_UPGRADE_EVENTS]: metricMeter.createCounter(
-      'action_kernel_upgrade_events_total',
-      {
-        description: 'Total number of KERNEL_UPGRADE_EVENTS actions',
-      },
-    ),
-  };
-
+  // Define the action types and their corresponding metric names dynamically
+  /** @type {Record<QueuedActionType, Counter>} */
+  const actionMetrics = Object.fromEntries(
+    Object.keys(QueuedActionType).map(actionType => [
+      QueuedActionType[actionType],
+      metricMeter.createCounter(`action_${actionType.toLowerCase()}_total`, {
+        description: `Total number of ${actionType} actions`,
+      }),
+    ]),
+  );
   const slogCallbacks = makeSlogCallbacks({
     metricMeter,
   });
