@@ -13,41 +13,75 @@ const { freeze } = Object;
 
 type Coins = { denom: string; amount: number }[]; // XXX rough
 
-const makeOrchContract = (t: Ex, addr = 'agoric1orchFEED') => {
+const makeCosmosAccount = (addr: string) => {
   return freeze({
-    async receiveUpcall(amt: Coins) {
-      t.log('orch contract received', amt);
+    getAddress: () => addr,
+    async send(t: Ex, amt: Coins, dest: CosmosAccount) {
+      t.log(addr, 'sending', amt, 'to', dest);
+      dest.deposit(t, amt);
+    },
+    async deposit(t: Ex, amt: Coins) {
+      t.log(addr, 'received', amt);
     },
   });
 };
+type CosmosAccount = ReturnType<typeof makeCosmosAccount>;
 
-const makeCosmosAccount = (t: Ex, addr: string, orch?: ReturnType<typeof makeOrchContract>) => {
-  return freeze({
-    async deposit(amt: Coins) {
-      t.log('account received deposit', amt);
-      if (addr === 'agoric1orchFEED' && orch) {
-        await orch.receiveUpcall(amt);
+const makeLocalOrchAccount = (addr: string) => {
+  const base = makeCosmosAccount(addr);
+  let tap = false;
+  const self = freeze({
+    ...base,
+    async monitorTransfers() {
+      tap = true;
+    },
+    async deposit(t: Ex, amt: Coins) {
+      base.deposit(t, amt);
+      if (tap) {
+        await self.receiveUpcall(t, amt);
       }
     },
-  });
-};
-
-const makeUA = (t: Ex) => {
-  return freeze({
-    signAndBroadcast(t: Ex, amt: Coins, destAddr: string, memo = '') {
-      const dest = makeCosmosAccount(t, destAddr);
-      return dest.deposit(amt);
+    async receiveUpcall(t: Ex, amt: Coins) {
+      t.log('orch hook received', amt);
     },
   });
+  return self;
 };
 
-test('user sends 10 atom', async t => {
-  const orch = makeOrchContract(t);
-  const u1 = makeUA(t);
-  const actual = await u1.signAndBroadcast(
-    t,
-    [{ denom: 'ATOM', amount: 10 }],
-    'agoric1orchFEED',
-  );
+const makeOrchContract = async () => {
+  const hookAcct = makeLocalOrchAccount('agoric1orchFEED');
+  await hookAcct.monitorTransfers();
+  return freeze({
+    getHookAccount: async () => hookAcct,
+  });
+};
+
+const makeUA = (orch: Awaited<ReturnType<typeof makeOrchContract>>) => {
+  const myAcct = makeCosmosAccount('cosmos1xyz');
+  const hookAcctP = orch.getHookAccount();
+
+  const signAndBroadcast = async (
+    t: Ex,
+    amt: Coins,
+    destAddr: string,
+    memo = '',
+  ) => {
+    if (destAddr !== myAcct.getAddress()) throw Error('unsupported');
+    const acct = await hookAcctP;
+    return acct.deposit(t, amt);
+  };
+
+  const self = freeze({
+    async openPosition(t: Ex, amt: Coins) {
+      await signAndBroadcast(t, amt, await myAcct.getAddress());
+    },
+  });
+  return self;
+};
+
+test('user opens a position with 10 ATOM', async t => {
+  const orch = await makeOrchContract();
+  const u1 = makeUA(orch);
+  const actual = await u1.openPosition(t, [{ denom: 'ATOM', amount: 10 }]);
   t.is(actual, undefined);
 });
