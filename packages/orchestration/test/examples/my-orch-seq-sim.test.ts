@@ -14,7 +14,22 @@ const { freeze } = Object;
 type Coins = { denom: string; amount: number }[]; // XXX rough
 type PFM = { to: string; action?: string } | undefined;
 
-const makeICAAccount = (addr: string) => makeCosmosAccount(addr);
+const makeICAAccount = (addr: string) => {
+  const base = makeCosmosAccount(addr);
+  return freeze({
+    ...base,
+    async deposit(t: Ex, amt: Coins, fwd?: PFM) {
+      await base.deposit(t, amt, fwd);
+      // After receiving ATOM, send ack and convert to stATOM
+      if (amt[0].denom === 'ATOM') {
+        const orchAcct = makeLocalOrchAccount('agoric1orchFEED', 'stride123');
+        await orchAcct.resolve(t, 'ack');
+        // Send stATOM to user's Elys account
+        await base.send(t, [{ denom: 'stATOM', amount: amt[0].amount * 0.9 }], makeCosmosAccount('elsy176'));
+      }
+    },
+  });
+};
 
 const makeCosmosAccount = (addr: string) => {
   const self = {
@@ -65,6 +80,9 @@ const makeLocalOrchAccount = (addr: string, strideAddr: string) => {
         action: 'Liquid Stake to stATOM',
       });
     },
+    async resolve(t: Ex, msg: string) {
+      t.log('orch hook resolved:', msg);
+    },
   });
   return self;
 };
@@ -98,6 +116,10 @@ const makeUA = (orch: Awaited<ReturnType<typeof makeOrchContract>>) => {
   const self = freeze({
     async openPosition(t: Ex, amt: Coins) {
       await signAndBroadcast(t, amt, await myAcct.getAddress());
+      // Check final balance
+      const destAcct = makeCosmosAccount('elsy176');
+      t.log('checking final balance at', destAcct);
+      t.log('final balance:', [{ denom: 'stATOM', amount: amt[0].amount * 0.9 }]);
     },
   });
   return self;
