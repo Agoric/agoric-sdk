@@ -100,7 +100,6 @@ export const addLPCommands = (
       const metrics = await swk.readPublished('fastUsdc.poolMetrics');
       const fastLPAmount = floorDivideBy(usdcAmount, metrics.shareWorth);
 
-      /** @type {OfferSpec} */
       const offer = Offers.fastUsdc.Deposit(swk.agoricNames, {
         offerId: opts.offerId,
         fastLPAmount: fastLPAmount.value,
@@ -144,26 +143,11 @@ export const addLPCommands = (
       const metrics = await swk.readPublished('fastUsdc.poolMetrics');
       const fastLPAmount = ceilDivideBy(usdcAmount, metrics.shareWorth);
 
-      /** @type {USDCProposalShapes['withdraw']} */
-      const proposal = {
-        give: {
-          PoolShare: fastLPAmount,
-        },
-        want: {
-          USDC: usdcAmount,
-        },
-      };
-
-      /** @type {OfferSpec} */
-      const offer = {
-        id: opts.offerId,
-        invitationSpec: {
-          source: 'agoricContract',
-          instancePath: ['fastUsdc'],
-          callPipe: [['makeWithdrawInvitation', []]],
-        },
-        proposal,
-      };
+      const offer = Offers.fastUsdc.Withdraw(swk.agoricNames, {
+        offerId: opts.offerId,
+        fastLPAmount: fastLPAmount.value,
+        usdcAmount: usdcAmount.value,
+      });
 
       outputActionAndHint(
         { method: 'executeOffer', offer },

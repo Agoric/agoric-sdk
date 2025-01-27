@@ -106,7 +106,7 @@ test('fast-usdc withdraw command', async t => {
       invitationSpec: {
         source: 'agoricContract',
         instancePath: ['fastUsdc'],
-        callPipe: [['makeWithdrawInvitation', []]],
+        callPipe: [['makeWithdrawInvitation']],
       },
       proposal: {
         give: {
