@@ -19,7 +19,14 @@ const makeCosmosAccount = (addr: string) => {
     toString: () => `<${addr}>`,
     getAddress: () => addr,
     async send(t: Ex, amt: Coins, dest: CosmosAccount, fwd?: PFM) {
-      t.log(addr, 'sending', amt, 'to', dest, fwd ? `fwd: ${JSON.stringify(fwd)}` : '');
+      t.log(
+        addr,
+        'sending',
+        amt,
+        'to',
+        `${dest}`,
+        fwd ? `fwd: ${JSON.stringify(fwd)}` : '',
+      );
       dest.deposit(t, amt, fwd);
     },
     async deposit(t: Ex, amt: Coins, fwd?: PFM) {
@@ -40,16 +47,15 @@ const makeLocalOrchAccount = (addr: string, strideAddr: string) => {
     async deposit(t: Ex, amt: Coins, fwd?: PFM) {
       await base.deposit(t, amt, fwd);
       if (tap) {
-        await self.receiveUpcall(t, amt, { to: strideAddr });
+        await self.receiveUpcall(t, amt, fwd);
       }
     },
     async receiveUpcall(t: Ex, amt: Coins, fwd?: PFM) {
       t.log('orch hook received', amt);
       // Send back to cosmos account first with forwarding instructions
-      if (!fwd?.to) throw Error('forwarding address required');
-      await base.send(t, amt, makeCosmosAccount(fwd.to), {
-        to: 'stride123',
-        action: 'to stATOM, send to ICA 145 on Elys'
+      await base.send(t, amt, makeCosmosAccount(strideAddr), {
+        to: 'elys145',
+        action: 'Liquid Stake to stATOM',
       });
     },
   });
