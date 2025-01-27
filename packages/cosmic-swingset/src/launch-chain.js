@@ -52,7 +52,7 @@ import { computronCounter } from './computron-counter.js';
 /** @import { BlockInfo } from '@agoric/internal/src/chain-utils.js' */
 /** @import { Mailbox, RunPolicy, SwingSetConfig } from '@agoric/swingset-vat' */
 /** @import { KVStore, BufferedKVStore } from './helpers/bufferedStorage.js' */
-/** @import { Counter } from '@opentelemetry/api/build/src/metrics/Metric' */
+/** @import { Counter } from '@opentelemetry/api' */
 
 /** @typedef {ReturnType<typeof makeQueue<{context: any, action: any}>>} InboundQueue */
 
@@ -654,7 +654,7 @@ export async function launch({
    * and performing the appropriate operation based on the action type.
    *
    * @param {{ type: ActionType.QueuedActionType } & Record<string, unknown>} action
-   * @param {*} inboundNum
+   * @param {string} inboundNum
    * @returns {Promise<void>}
    */
   async function performAction(action, inboundNum) {
