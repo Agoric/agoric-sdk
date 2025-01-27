@@ -40,7 +40,7 @@ const makeLocalOrchAccount = (addr: string) => {
     async deposit(t: Ex, amt: Coins, fwd?: PFM) {
       await base.deposit(t, amt, fwd);
       if (tap) {
-        await self.receiveUpcall(t, amt, fwd);
+        await self.receiveUpcall(t, amt, { to: strideAddr });
       }
     },
     async receiveUpcall(t: Ex, amt: Coins, fwd?: PFM) {
@@ -59,14 +59,17 @@ const makeLocalOrchAccount = (addr: string) => {
 const makeOrchContract = async () => {
   const hookAcct = makeLocalOrchAccount('agoric1orchFEED');
   await hookAcct.monitorTransfers();
+  const strideAddr = 'stride123';
   return freeze({
     getHookAccount: async () => hookAcct,
+    getStrideAddr: () => strideAddr,
   });
 };
 
 const makeUA = (orch: Awaited<ReturnType<typeof makeOrchContract>>) => {
   const myAcct = makeCosmosAccount('cosmos1xyz');
   const hookAcctP = orch.getHookAccount();
+  const strideAddr = orch.getStrideAddr();
 
   const signAndBroadcast = async (
     t: Ex,
