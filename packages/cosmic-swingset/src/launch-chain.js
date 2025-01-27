@@ -709,7 +709,8 @@ export async function launch({
   let afterCommitWorkDone = Promise.resolve();
 
   /**
-   * FIXME: Need description and better typing
+   * Handles various types of actions by incrementing the corresponding metric
+   * and performing the appropriate operation based on the action type.
    *
    * @param {{ type: ActionType.QueuedActionType } & Record<string, unknown>} action
    * @param {*} inboundNum
