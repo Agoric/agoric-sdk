@@ -37,7 +37,7 @@ const makeLocalOrchAccount = (addr: string) => {
       tap = true;
     },
     async deposit(t: Ex, amt: Coins) {
-      base.deposit(t, amt);
+      await base.deposit(t, amt);
       if (tap) {
         await self.receiveUpcall(t, amt);
       }
