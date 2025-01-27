@@ -46,7 +46,8 @@ const makeLocalOrchAccount = (addr: string) => {
     async receiveUpcall(t: Ex, amt: Coins, fwd?: PFM) {
       t.log('orch hook received', amt);
       // Send back to cosmos account first with forwarding instructions
-      await base.send(t, amt, makeCosmosAccount('cosmos1xyz'), {
+      if (!fwd?.to) throw Error('forwarding address required');
+      await base.send(t, amt, makeCosmosAccount(fwd.to), {
         to: 'stride123',
         action: 'to stATOM, send to ICA 145 on Elys'
       });
