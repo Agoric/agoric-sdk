@@ -12,17 +12,16 @@ import {
   KERNEL_STATS_UPDOWN_METRICS,
 } from '@agoric/swingset-vat/src/kernel/metrics.js';
 
-// import { diag, DiagConsoleLogger, DiagLogLevel } from '@opentelemetry/api';
-
-// diag.setLogger(new DiagConsoleLogger(), DiagLogLevel.VERBOSE);
-
-/** @import {MetricAttributes as Attributes} from '@opentelemetry/api' */
-/** @import {Histogram} from '@opentelemetry/api' */
-
 import { getTelemetryProviders as getTelemetryProvidersOriginal } from '@agoric/telemetry';
 
 import v8 from 'node:v8';
 import process from 'node:process';
+
+/** @import {Histogram, Meter as OTelMeter, MetricAttributes} from '@opentelemetry/api' */
+
+// import { diag, DiagConsoleLogger, DiagLogLevel } from '@opentelemetry/api';
+
+// diag.setLogger(new DiagConsoleLogger(), DiagLogLevel.VERBOSE);
 
 /**
  * TODO Would be nice somehow to label the vats individually, but it's too
@@ -48,7 +47,9 @@ export const HISTOGRAM_MS_LATENCY_BOUNDARIES = [
 export const HISTOGRAM_SECONDS_LATENCY_BOUNDARIES =
   HISTOGRAM_MS_LATENCY_BOUNDARIES.map(ms => ms / 1000);
 
-const baseMetricOptions = /** @type {const} */ ({
+// TODO: Validate these boundaries. We're not going to have 5ms blocks, but
+// we probably care about the difference between 10 vs. 30 seconds.
+const HISTOGRAM_METRICS = /** @type {const} */ ({
   swingset_crank_processing_time: {
     description: 'Processing time per crank (ms)',
     boundaries: [1, 11, 21, 31, 41, 51, 61, 71, 81, 91, Infinity],
@@ -88,12 +89,19 @@ const recordToKey = record =>
     Object.entries(record).sort(([ka], [kb]) => (ka < kb ? -1 : 1)),
   );
 
+/**
+ * Return an array of Views defining explicit buckets for Histogram instruments
+ * to which we record measurements.
+ */
 export function getMetricsProviderViews() {
-  return Object.entries(baseMetricOptions).map(
+  return Object.entries(HISTOGRAM_METRICS).map(
     ([instrumentName, { boundaries }]) =>
+      // TODO: Add `instrumentType: InstrumentType.HISTOGRAM` and `meterName`
+      // filters (the latter of which should be a parameter of the exported
+      // function).
       new View({
-        aggregation: new ExplicitBucketHistogramAggregation([...boundaries]),
         instrumentName,
+        aggregation: new ExplicitBucketHistogramAggregation([...boundaries]),
       }),
   );
 }
@@ -111,19 +119,16 @@ export function getTelemetryProviders(powers = {}) {
 }
 
 /**
- * @param {import('@opentelemetry/api').Meter} metricMeter
+ * @param {OTelMeter} metricMeter
  * @param {string} name
  */
 function createHistogram(metricMeter, name) {
-  const { description } = baseMetricOptions[name] || {};
+  const { description } = HISTOGRAM_METRICS[name] || {};
   return metricMeter.createHistogram(name, { description });
 }
 
 /**
- * @param {{
- *   metricMeter: import('@opentelemetry/api').Meter,
- *   attributes?: import('@opentelemetry/api').MetricAttributes,
- * }} param0
+ * @param {{ metricMeter: OTelMeter, attributes?: MetricAttributes }} options
  */
 export function makeSlogCallbacks({ metricMeter, attributes = {} }) {
   // Legacy because legacyMaps are not passable
@@ -133,9 +138,9 @@ export function makeSlogCallbacks({ metricMeter, attributes = {} }) {
    * This function reuses or creates per-group named metrics.
    *
    * @param {string} name name of the base metric
-   * @param {Attributes} [group] the
-   * attributes to associate with a group
-   * @param {Attributes} [instance] the specific metric attributes
+   * @param {MetricAttributes} [group] the
+   *   attributes to associate with a group
+   * @param {MetricAttributes} [instance] the specific metric attributes
    * @returns {Pick<Histogram, 'record'>} the attribute-aware recorder
    */
   const getGroupedRecorder = (name, group = undefined, instance = {}) => {
@@ -215,21 +220,16 @@ export function makeSlogCallbacks({ metricMeter, attributes = {} }) {
         (deltaMS, [[_status, _problem, meterUsage]]) => {
           const group = getVatGroup(vatID);
           getGroupedRecorder('swingset_vat_delivery', group).record(deltaMS);
-          if (meterUsage) {
-            // Add to aggregated metering stats.
-            for (const [key, value] of Object.entries(meterUsage)) {
-              if (key === 'meterType') {
-                continue;
-              }
-              getGroupedRecorder(`swingset_meter_usage`, group, {
-                // The meterType is an instance-specific attribute--a change in
-                // it will result in the old value being discarded.
-                ...(meterUsage.meterType && {
-                  meterType: meterUsage.meterType,
-                }),
-                stat: key,
-              }).record(value || 0);
-            }
+          const { meterType, ...measurements } = meterUsage || {};
+          for (const [key, value] of Object.entries(measurements)) {
+            if (typeof value === 'object') continue;
+            // TODO: Each measurement key should have its own histogram; there's
+            // no reason to mix e.g. allocate/compute/currentHeapCount.
+            // cf. https://prometheus.io/docs/practices/naming/#metric-names
+            const detail = { ...(meterType ? { meterType } : {}), stat: key };
+            getGroupedRecorder('swingset_meter_usage', group, detail).record(
+              value || 0,
+            );
           }
         },
       );
@@ -240,12 +240,9 @@ export function makeSlogCallbacks({ metricMeter, attributes = {} }) {
 }
 
 /**
- * Create a metrics manager for the 'inboundQueue' structure, which
- * can be scaped to report current length, and the number of
- * increments and decrements. This must be created with the initial
- * length as extracted from durable storage, but after that we assume
- * that we're told about every up and down, so our RAM-backed shadow
- * 'length' will remain accurate.
+ * Create a metrics manager for inbound queues. It must be initialized with the
+ * length from durable storage and informed of each subsequent change so that
+ * metrics can be provided from RAM.
  *
  * Note that the add/remove counts will get reset at restart, but
  * Prometheus/etc tools can tolerate that just fine.
@@ -282,12 +279,12 @@ export function makeInboundQueueMetrics(initialLength) {
 }
 
 /**
- * @param {object} param0
- * @param {any} param0.controller
- * @param {import('@opentelemetry/api').Meter} param0.metricMeter
- * @param {Console} param0.log
- * @param {Attributes} [param0.attributes]
- * @param {any} [param0.inboundQueueMetrics]
+ * @param {object} config
+ * @param {any} config.controller
+ * @param {OTelMeter} config.metricMeter
+ * @param {Console} config.log
+ * @param {MetricAttributes} [config.attributes]
+ * @param {ReturnType<typeof makeInboundQueueMetrics>} [config.inboundQueueMetrics]
  */
 export function exportKernelStats({
   controller,
