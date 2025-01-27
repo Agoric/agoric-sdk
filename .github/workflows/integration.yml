@@ -226,7 +226,7 @@ jobs:
 
   test-docker-build:
     needs: pre_check
-    # if: needs.pre_check.outputs.should_run == 'true'
+    if: needs.pre_check.outputs.should_run == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -312,7 +312,7 @@ jobs:
           done
 
           curl \
-           "https://storage.googleapis.com/agoric-snapshots-public/share/temp-a3p-cli.js" \
+           "https://storage.googleapis.com/agoric-snapshots-public/share/temp-a3p-cli-v2.js" \
            --location \
            --output "node_modules/@agoric/synthetic-chain/dist/cli/cli.js" \
            --silent
