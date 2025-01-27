@@ -309,6 +309,7 @@ jobs:
       - name: run proposals tests
         run: yarn test
         working-directory: a3p-integration
+        timeout-minutes: 40
       - name: copy a3p-integration
         if: (success() || failure())
         run: |

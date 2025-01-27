@@ -28,12 +28,10 @@ FOLDER_NAME="${TEMP%%/*}"
 
 PROPOSAL_NAME="$(echo "$FOLDER_NAME" | cut --delimiter ':' --fields '2')"
 
-CONTAINER_MESSAGE_FILE_PATH="/root/$PROPOSAL_NAME-message-file.tmp"
+CONTAINER_MESSAGE_FILE_PATH="/root/$PROPOSAL_NAME.tmp"
 FOLLOWER_CONTAINER_NAME="$PROPOSAL_NAME-follower"
-HOST_MESSAGE_FILE_PATH="$HOME/$PROPOSAL_NAME-message-file.tmp"
 
 create_volume_assets() {
-  touch "$HOST_MESSAGE_FILE_PATH"
   mkdir --parents "$OUTPUT_DIRECTORY"
 }
 
@@ -132,7 +130,7 @@ start_follower() {
     --env "RPC_PORT=$FOLLOWER_RPC_PORT" \
     --env "TRUSTED_BLOCK_HASH=$TRUSTED_BLOCK_HASH" \
     --env "TRUSTED_BLOCK_HEIGHT=$TRUSTED_BLOCK_HEIGHT" \
-    --mount "source=$HOST_MESSAGE_FILE_PATH,target=$CONTAINER_MESSAGE_FILE_PATH,type=bind" \
+    --mount "source=$MESSAGE_FILE_PATH,target=$CONTAINER_MESSAGE_FILE_PATH,type=bind" \
     --mount "source=$OUTPUT_DIRECTORY,target=$OUTPUT_DIRECTORY,type=bind" \
     --mount "source=$NETWORK_CONFIG_FILE_PATH,target=$NETWORK_CONFIG_FILE_PATH/network-config,type=bind" > "$FOLLOWER_LOGS_FILE" &
 }
