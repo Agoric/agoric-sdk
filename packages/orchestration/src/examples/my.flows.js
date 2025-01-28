@@ -20,3 +20,11 @@ export const makeHookAccount = async (orch, _ctx, tap) => {
   return hookAccount;
 };
 harden(makeHookAccount);
+
+/**
+ * @satisfies {OrchestrationFlow}
+ * @param {Orchestrator} orch
+ */
+export const makePosition = async orch => {
+  throw Error('TODO!');
+};
