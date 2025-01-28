@@ -5,6 +5,11 @@ import * as flows from './my.flows.js';
 import { E } from '@endo/far';
 
 /**
+ * @import {VTransferIBCEvent} from '@agoric/vats'
+ */
+const interfaceTODO = undefined;
+
+/**
  * @import {Zone} from '@agoric/zone';
  * @import {OrchestrationTools} from '../types.js';
  */
@@ -34,7 +39,7 @@ export const contract = async (_zcf, _privateArgs, zone, tools) => {
   const { when } = tools.vowTools;
 
   return {
-    publicFacet: zone.exo('MyPub', undefined, {
+    publicFacet: zone.exo('MyPub', interfaceTODO, {
       getHookAddress: () => E(when(hookAccountV)).getAddress(),
     }),
     creatorFacet: zone.exo('MyCreator', undefined, {}),
