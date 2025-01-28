@@ -1,3 +1,5 @@
+import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
+
 import {
   QueryAllBalancesRequest,
   QueryAllBalancesResponse,
@@ -41,7 +43,6 @@ import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import type { IBCMethod } from '@agoric/vats';
 import { SIMULATED_ERRORS } from '@agoric/vats/tools/fake-bridge.js';
 import { heapVowE as E } from '@agoric/vow/vat.js';
-import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import { withAmountUtils } from '@agoric/zoe/tools/test-utils.js';
 import { decodeBase64 } from '@endo/base64';
 import type { EReturn } from '@endo/far';
