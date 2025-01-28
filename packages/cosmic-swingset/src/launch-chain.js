@@ -52,7 +52,6 @@ import { computronCounter } from './computron-counter.js';
 /** @import { BlockInfo } from '@agoric/internal/src/chain-utils.js' */
 /** @import { Mailbox, RunPolicy, SwingSetConfig } from '@agoric/swingset-vat' */
 /** @import { KVStore, BufferedKVStore } from './helpers/bufferedStorage.js' */
-/** @import { Counter } from '@opentelemetry/api' */
 
 /** @typedef {ReturnType<typeof makeQueue<{context: any, action: any}>>} InboundQueue */
 
@@ -415,18 +414,20 @@ export async function launch({
   // Not to be confused with the gas model, this meter is for OpenTelemetry.
   const metricMeter = metricsProvider.getMeter('ag-chain-cosmos');
 
-  // Define a single counter for all action types with dimensional attributes
-  const actionCounter = metricMeter.createCounter('action_total', {
-    description: 'Total number of actions',
-  });
+  const knownActionTypes = new Set(Object.values(ActionType.QueuedActionType));
 
-  /** @type {Record<ActionType.QueuedActionType, (attributes?: Record<string, unknown>) => void>} */
-  const actionMetrics = Object.fromEntries(
-    Object.keys(ActionType.QueuedActionType).map(actionType => [
-      ActionType.QueuedActionType[actionType],
-      (attributes = {}) => actionCounter.add(1, { actionType, ...attributes }),
-    ]),
+  const processedInboundActionCounter = metricMeter.createCounter(
+    'cosmic_swingset_inbound_actions',
+    { description: 'Processed inbound action counts by type' },
   );
+
+  /** @type {(actionType: ActionType.QueuedActionType) => void>} */
+  const countInboundAction = actionType => {
+    if (!knownActionTypes.has(actionType)) {
+      console.warn(`unknown inbound action type ${JSON.stringify(queueName)}`);
+    }
+    processedInboundActionCounter.add(1, { actionType });
+  };
   const slogCallbacks = makeSlogCallbacks({
     metricMeter,
   });
@@ -663,12 +664,7 @@ export async function launch({
     // blockManagerConsole.error('Performing action', action);
     let p;
 
-    // Increment the corresponding metric for the action type
-    if (actionMetrics[action.type]) {
-      actionMetrics[action.type]();
-    } else {
-      console.error(`Missing metric for action type: ${action.type}`);
-    }
+    countInboundAction(action.type);
 
     switch (action.type) {
       case ActionType.DELIVER_INBOUND: {
