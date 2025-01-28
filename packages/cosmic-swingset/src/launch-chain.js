@@ -652,8 +652,8 @@ export async function launch({
   let afterCommitWorkDone = Promise.resolve();
 
   /**
-   * Handles various types of actions by incrementing the corresponding metric
-   * and performing the appropriate operation based on the action type.
+   * Dispatch an action from an inbound queue to an appropriate handler based on
+   * action type.
    *
    * @param {{ type: ActionType.QueuedActionType } & Record<string, unknown>} action
    * @param {string} inboundNum
