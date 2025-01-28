@@ -5,6 +5,7 @@ import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { E, passStyleOf } from '@endo/far';
 import { M, mustMatch } from '@endo/patterns';
 import { createRequire } from 'module';
+import { ChainAddressShape } from '../../src/typeGuards.js';
 import { commonSetup } from '../supports.js';
 
 const nodeRequire = createRequire(import.meta.url);
@@ -39,4 +40,8 @@ test('start my orch contract', async t => {
       }),
     ),
   );
+
+  const hookAddress = await E(myKit.publicFacet).getHookAddress();
+  t.log('hookAddress', hookAddress);
+  t.notThrows(() => mustMatch(hookAddress, ChainAddressShape));
 });
