@@ -15,7 +15,7 @@ import type { TestFn } from 'ava';
 import { makeTracer } from '@agoric/internal';
 import { M, mustMatch } from '@endo/patterns';
 import { PendingTxStatus } from '../../src/constants.js';
-import { prepareAdvancer } from '../../src/exos/advancer.js';
+import { prepareAdvancer, stateShape } from '../../src/exos/advancer.js';
 import {
   makeAdvanceDetailsShape,
   type SettlerKit,
@@ -187,6 +187,10 @@ test.beforeEach(async t => {
     ...common,
     extensions: createTestExtensions(t, common),
   };
+});
+
+test('stateShape', t => {
+  t.snapshot(stateShape);
 });
 
 test('updates status to ADVANCING in happy path', async t => {

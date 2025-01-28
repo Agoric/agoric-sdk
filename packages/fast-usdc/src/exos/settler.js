@@ -45,6 +45,16 @@ export const makeAdvanceDetailsShape = USDC =>
     txHash: EvmHashShape,
   });
 
+export const stateShape = harden({
+  repayer: M.remotable('Repayer'),
+  settlementAccount: M.remotable('Account'),
+  registration: M.or(M.undefined(), M.remotable('Registration')),
+  sourceChannel: M.string(),
+  remoteDenom: M.string(),
+  mintedEarly: M.remotable('mintedEarly'),
+  intermediateRecipient: M.opt(ChainAddressShape),
+});
+
 /**
  * @param {Zone} zone
  * @param {object} caps
@@ -337,15 +347,7 @@ export const prepareSettler = (
       },
     },
     {
-      stateShape: harden({
-        repayer: M.remotable('Repayer'),
-        settlementAccount: M.remotable('Account'),
-        registration: M.or(M.undefined(), M.remotable('Registration')),
-        sourceChannel: M.string(),
-        remoteDenom: M.string(),
-        mintedEarly: M.remotable('mintedEarly'),
-        intermediateRecipient: M.opt(ChainAddressShape),
-      }),
+      stateShape,
     },
   );
 };

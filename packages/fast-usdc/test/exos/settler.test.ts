@@ -7,7 +7,11 @@ import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
 import type { Zone } from '@agoric/zone';
 import { PendingTxStatus, TxStatus } from '../../src/constants.js';
-import { prepareSettler, type SettlerKit } from '../../src/exos/settler.js';
+import {
+  prepareSettler,
+  stateShape,
+  type SettlerKit,
+} from '../../src/exos/settler.js';
 import { prepareStatusManager } from '../../src/exos/status-manager.js';
 import type { CctpTxEvidence } from '../../src/types.js';
 import { makeFeeTools } from '../../src/utils/fees.js';
@@ -210,6 +214,10 @@ const makeTestContext = async t => {
 const test = anyTest as TestFn<Awaited<ReturnType<typeof makeTestContext>>>;
 
 test.beforeEach(async t => (t.context = await makeTestContext(t)));
+
+test('stateShape', t => {
+  t.snapshot(stateShape);
+});
 
 test('happy path: disburse to LPs; StatusManager removes tx', async t => {
   const {

@@ -81,6 +81,14 @@ const AdvancerKitI = harden({
  * }} AdvancerVowCtx
  */
 
+export const stateShape = harden({
+  notifyFacet: M.remotable(),
+  borrowerFacet: M.remotable(),
+  poolAccount: M.remotable(),
+  intermediateRecipient: M.opt(ChainAddressShape),
+  settlementAddress: M.opt(ChainAddressShape),
+});
+
 /**
  * @param {Zone} zone
  * @param {AdvancerKitPowers} caps
@@ -287,13 +295,7 @@ export const prepareAdvancerKit = (
       },
     },
     {
-      stateShape: harden({
-        notifyFacet: M.remotable(),
-        borrowerFacet: M.remotable(),
-        poolAccount: M.remotable(),
-        settlementAddress: ChainAddressShape,
-        intermediateRecipient: M.opt(ChainAddressShape),
-      }),
+      stateShape,
     },
   );
 };
