@@ -415,14 +415,16 @@ export async function launch({
   // Not to be confused with the gas model, this meter is for OpenTelemetry.
   const metricMeter = metricsProvider.getMeter('ag-chain-cosmos');
 
-  // Define the action types and their corresponding metric names dynamically
-  /** @type {Record<ActionType.QueuedActionType, Counter>} */
+  // Define a single counter for all action types with dimensional attributes
+  const actionCounter = metricMeter.createCounter('action_total', {
+    description: 'Total number of actions',
+  });
+
+  /** @type {Record<ActionType.QueuedActionType, (attributes?: Record<string, unknown>) => void>} */
   const actionMetrics = Object.fromEntries(
     Object.keys(ActionType.QueuedActionType).map(actionType => [
       ActionType.QueuedActionType[actionType],
-      metricMeter.createCounter(`action_${actionType.toLowerCase()}_total`, {
-        description: `Total number of ${actionType} actions`,
-      }),
+      (attributes = {}) => actionCounter.add(1, { actionType, ...attributes }),
     ]),
   );
   const slogCallbacks = makeSlogCallbacks({
@@ -663,7 +665,7 @@ export async function launch({
 
     // Increment the corresponding metric for the action type
     if (actionMetrics[action.type]) {
-      actionMetrics[action.type].add(1);
+      actionMetrics[action.type]();
     } else {
       console.error(`Missing metric for action type: ${action.type}`);
     }
