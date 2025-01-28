@@ -338,8 +338,6 @@ jobs:
           name: a3p-integration
           path: |
             /tmp/export/a3p-integration
-            /tmp/loadgen-follower-logs
-            /tmp/loadgen-output
             /tmp/acceptance
       - name: archive slogfile
         if: (success() || failure())
