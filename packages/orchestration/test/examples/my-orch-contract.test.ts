@@ -9,7 +9,6 @@ import { E, passStyleOf } from '@endo/far';
 import { Nat } from '@endo/nat';
 import { M, mustMatch } from '@endo/patterns';
 import { createRequire } from 'module';
-import { vowTools } from '@agoric/internal/src/testing-utils.js';
 import { ChainAddressShape } from '../../src/typeGuards.js';
 import { buildVTransferEvent } from '../../tools/ibc-mocks.js';
 import { commonSetup } from '../supports.js';
@@ -67,6 +66,6 @@ test('start my orch contract', async t => {
   };
 
   await t.notThrowsAsync(
-    vowTools.watch(deposit({ amount: '10000000', denom: 'uatom' })),
+    E.when(deposit({ amount: '10000000', denom: 'uatom' })),
   );
 });
