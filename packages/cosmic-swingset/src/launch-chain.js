@@ -424,7 +424,7 @@ export async function launch({
   /** @type {(actionType: ActionType.QueuedActionType) => void>} */
   const countInboundAction = actionType => {
     if (!knownActionTypes.has(actionType)) {
-      console.warn(`unknown inbound action type ${JSON.stringify(queueName)}`);
+      console.warn(`unknown inbound action type ${JSON.stringify(actionType)}`);
     }
     processedInboundActionCounter.add(1, { actionType });
   };
