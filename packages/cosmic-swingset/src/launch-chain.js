@@ -413,6 +413,21 @@ export async function launch({
 
   // Not to be confused with the gas model, this meter is for OpenTelemetry.
   const metricMeter = metricsProvider.getMeter('ag-chain-cosmos');
+
+  const knownActionTypes = new Set(Object.values(ActionType.QueuedActionType));
+
+  const processedInboundActionCounter = metricMeter.createCounter(
+    'cosmic_swingset_inbound_actions',
+    { description: 'Processed inbound action counts by type' },
+  );
+
+  /** @type {(actionType: ActionType.QueuedActionType) => void} */
+  const countInboundAction = actionType => {
+    if (!knownActionTypes.has(actionType)) {
+      console.warn(`unknown inbound action type ${JSON.stringify(actionType)}`);
+    }
+    processedInboundActionCounter.add(1, { actionType });
+  };
   const slogCallbacks = makeSlogCallbacks({
     metricMeter,
   });
@@ -637,9 +652,18 @@ export async function launch({
   let decohered;
   let afterCommitWorkDone = Promise.resolve();
 
+  /**
+   * Dispatch an action from an inbound queue to an appropriate handler based on
+   * action type.
+   *
+   * @param {{ type: ActionType.QueuedActionType } & Record<string, unknown>} action
+   * @param {string} inboundNum
+   * @returns {Promise<void>}
+   */
   async function performAction(action, inboundNum) {
     // blockManagerConsole.error('Performing action', action);
     let p;
+
     switch (action.type) {
       case ActionType.DELIVER_INBOUND: {
         p = deliverInbound(
@@ -717,6 +741,7 @@ export async function launch({
     for await (const { action, context } of inboundQueue.consumeAll()) {
       const inboundNum = `${context.blockHeight}-${context.txHash}-${context.msgIdx}`;
       inboundQueueMetrics.decStat();
+      countInboundAction(action.type);
       await performAction(action, inboundNum);
       keepGoing = await runSwingset(phase);
       if (!keepGoing) {
