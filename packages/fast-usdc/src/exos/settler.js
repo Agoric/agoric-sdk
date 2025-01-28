@@ -91,7 +91,7 @@ export const prepareSettler = (
       tap: M.interface('SettlerTapI', {
         receiveUpcall: M.call(M.record()).returns(M.promise()),
       }),
-      notify: M.interface('SettlerNotifyI', {
+      notifier: M.interface('SettlerNotifyI', {
         notifyAdvancingResult: M.call(
           makeAdvanceDetailsShape(USDC),
           M.boolean(),
@@ -216,7 +216,7 @@ export const prepareSettler = (
           }
         },
       },
-      notify: {
+      notifier: {
         /**
          * @param {object} ctx
          * @param {EvmHash} ctx.txHash
@@ -353,7 +353,5 @@ export const prepareSettler = (
 };
 harden(prepareSettler);
 
-/**
- * XXX consider using pickFacet (do we have pickFacets?)
- * @typedef {ReturnType<ReturnType<typeof prepareSettler>>} SettlerKit
- */
+// Expose the whole kit because the contract needs `creatorFacet` and the Advancer needs `notifier`
+/** @typedef {ReturnType<ReturnType<typeof prepareSettler>>} SettlerKit */

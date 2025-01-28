@@ -109,7 +109,7 @@ const createTestExtensions = (t, common: CommonSetup) => {
     zcf: mockZCF,
   });
 
-  type NotifyArgs = Parameters<SettlerKit['notify']['notifyAdvancingResult']>;
+  type NotifyArgs = Parameters<SettlerKit['notifier']['notifyAdvancingResult']>;
   const notifyAdvancingResultCalls: NotifyArgs[] = [];
   const mockNotifyF = Far('Settler Notify Facet', {
     notifyAdvancingResult: (...args: NotifyArgs) => {
@@ -142,8 +142,8 @@ const createTestExtensions = (t, common: CommonSetup) => {
   });
 
   const advancer = makeAdvancer({
-    borrowerFacet: mockBorrowerF,
-    notifyFacet: mockNotifyF,
+    borrower: mockBorrowerF,
+    notifier: mockNotifyF,
     poolAccount: mockAccounts.mockPoolAccount.account,
     intermediateRecipient,
     settlementAddress,
@@ -280,8 +280,8 @@ test('updates status to OBSERVED on insufficient pool funds', async t => {
 
   // make a new advancer that intentionally throws
   const advancer = makeAdvancer({
-    borrowerFacet: mockBorrowerFacet,
-    notifyFacet: mockNotifyF,
+    borrower: mockBorrowerFacet,
+    notifier: mockNotifyF,
     poolAccount: mockPoolAccount.account,
     intermediateRecipient,
     settlementAddress,
@@ -603,8 +603,8 @@ test('alerts if `returnToPool` fallback fails', async t => {
 
   // make a new advancer that intentionally throws during returnToPool
   const advancer = makeAdvancer({
-    borrowerFacet: mockBorrowerFacet,
-    notifyFacet: mockNotifyF,
+    borrower: mockBorrowerFacet,
+    notifier: mockNotifyF,
     poolAccount: mockPoolAccount.account,
     intermediateRecipient,
     settlementAddress,
@@ -695,8 +695,8 @@ test('no status update if `checkMintedEarly` returns true', async t => {
   });
 
   const advancer = makeAdvancer({
-    borrowerFacet: mockBorrowerF,
-    notifyFacet: mockNotifyF,
+    borrower: mockBorrowerF,
+    notifier: mockNotifyF,
     poolAccount: mockPoolAccount.account,
     intermediateRecipient,
     settlementAddress,

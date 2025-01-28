@@ -100,7 +100,7 @@ const makeTestContext = async t => {
     intermediateRecipient,
   });
 
-  const makeSimulate = (notifyFacet: SettlerKit['notify']) => {
+  const makeSimulate = (notifier: SettlerKit['notifier']) => {
     const makeEvidence = (evidence?: CctpTxEvidence): CctpTxEvidence =>
       harden({
         ...MockCctpTxEvidences.AGORIC_PLUS_OSMO(),
@@ -145,7 +145,7 @@ const makeTestContext = async t => {
         const { Advanced, AdvanceFailed } = TxStatus;
         t.log(`Simulate ${success ? Advanced : AdvanceFailed}`);
         const info = makeNotifyInfo(evidence);
-        notifyFacet.notifyAdvancingResult(info, success);
+        notifier.notifyAdvancingResult(info, success);
       },
       /**
        * start and finish advance successfully
@@ -184,7 +184,7 @@ const makeTestContext = async t => {
         const cctpTxEvidence = makeEvidence(evidence);
         const { destination, forwardingAddress, fullAmount, txHash } =
           makeNotifyInfo(cctpTxEvidence);
-        notifyFacet.checkMintedEarly(cctpTxEvidence, destination);
+        notifier.checkMintedEarly(cctpTxEvidence, destination);
         return cctpTxEvidence;
       },
     });
@@ -238,7 +238,7 @@ test('happy path: disburse to LPs; StatusManager removes tx', async t => {
     settlementAccount: accounts.settlement.account,
     ...defaultSettlerParams,
   });
-  const simulate = makeSimulate(settler.notify);
+  const simulate = makeSimulate(settler.notifier);
   const cctpTxEvidence = simulate.advance();
   t.deepEqual(
     statusManager.lookupPending(
@@ -339,7 +339,7 @@ test('slow path: forward to EUD; remove pending tx', async t => {
     settlementAccount: accounts.settlement.account,
     ...defaultSettlerParams,
   });
-  const simulate = makeSimulate(settler.notify);
+  const simulate = makeSimulate(settler.notifier);
   const cctpTxEvidence = simulate.observe();
   t.deepEqual(
     statusManager.lookupPending(
@@ -418,7 +418,7 @@ test('skip advance: forward to EUD; remove pending tx', async t => {
     ...defaultSettlerParams,
   });
 
-  const simulate = makeSimulate(settler.notify);
+  const simulate = makeSimulate(settler.notifier);
   const cctpTxEvidence = simulate.skipAdvance(['TOO_LARGE_AMOUNT']);
   t.deepEqual(
     statusManager.lookupPending(
@@ -499,7 +499,7 @@ test('Settlement for unknown transaction (minted early)', async t => {
     settlementAccount: accounts.settlement.account,
     ...defaultSettlerParams,
   });
-  const simulate = makeSimulate(settler.notify);
+  const simulate = makeSimulate(settler.notifier);
 
   t.log('Simulate incoming IBC settlement');
   void settler.tap.receiveUpcall(MockVTransferEvents.AGORIC_PLUS_OSMO());
@@ -571,7 +571,7 @@ test('Settlement for Advancing transaction (advance succeeds)', async t => {
     settlementAccount: accounts.settlement.account,
     ...defaultSettlerParams,
   });
-  const simulate = makeSimulate(settler.notify);
+  const simulate = makeSimulate(settler.notifier);
   const cctpTxEvidence = simulate.startAdvance();
   const { forwardingAddress, amount } = cctpTxEvidence.tx;
 
@@ -625,7 +625,7 @@ test('Settlement for Advancing transaction (advance fails)', async t => {
     settlementAccount: accounts.settlement.account,
     ...defaultSettlerParams,
   });
-  const simulate = makeSimulate(settler.notify);
+  const simulate = makeSimulate(settler.notifier);
   const cctpTxEvidence = simulate.startAdvance();
 
   t.log('Simulate incoming IBC settlement');
@@ -691,7 +691,7 @@ test('slow path, and forward fails (terminal state)', async t => {
     settlementAccount: accounts.settlement.account,
     ...defaultSettlerParams,
   });
-  const simulate = makeSimulate(settler.notify);
+  const simulate = makeSimulate(settler.notifier);
   const cctpTxEvidence = simulate.observe();
   t.deepEqual(
     statusManager.lookupPending(
