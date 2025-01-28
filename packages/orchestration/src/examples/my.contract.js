@@ -32,9 +32,22 @@ harden(meta);
  */
 export const contract = async (_zcf, _privateArgs, zone, tools) => {
   const { orchestrateAll } = tools;
-  const { makeHookAccount } = orchestrateAll(flows, {});
+  const { makeHookAccount, makePosition } = orchestrateAll(flows, {});
 
-  const hookAccountV = zone.makeOnce('hookAccount', _key => makeHookAccount());
+  const tap = zone.makeOnce('tapPosition', _key => {
+    console.log('making tap');
+    return zone.exo('tap', interfaceTODO, {
+      /** @param {VTransferIBCEvent} event */
+      async receiveUpcall(event) {
+        console.log(event);
+        return makePosition(); // TODO: vow handling?
+      },
+    });
+  });
+
+  const hookAccountV = zone.makeOnce('hookAccount', _key =>
+    makeHookAccount(tap),
+  );
 
   const { when } = tools.vowTools;
 
