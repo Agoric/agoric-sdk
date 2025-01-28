@@ -65,5 +65,6 @@ test('start my orch contract', async t => {
     await eventLoopIteration(); // let contract do work
   };
 
+  // add vowTools.watch() around this deposit call AI!
   await t.notThrowsAsync(deposit({ amount: '10000000', denom: 'uatom' }));
 });
