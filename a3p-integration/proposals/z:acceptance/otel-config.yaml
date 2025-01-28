@@ -1,6 +1,6 @@
 exporters:
   file:
-    flush_interval: 5
+    # flush_interval: 5
     path: $EXPORT_DIRECTORY/metrics.json
 
 receivers:
