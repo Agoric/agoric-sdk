@@ -1,7 +1,5 @@
 #!/bin/bash
-set -o errexit -o nounset -o pipefail
-
-DIRECTORY_PATH="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &> /dev/null && pwd)"
+set -ueo pipefail
 
 # Place here any test that should be executed using the executed proposal.
 # The effects of this step are not persisted in further proposal layers.
