@@ -1,11 +1,16 @@
 // prepare-test-env has to go 1st; use a blank line to separate it
 import { test } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 
+import type { CoinSDKType } from '@agoric/cosmic-proto/cosmos/base/v1beta1/coin.js';
+import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
+import { heapVowE as VE } from '@agoric/vow/vat.js';
 import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
 import { E, passStyleOf } from '@endo/far';
+import { Nat } from '@endo/nat';
 import { M, mustMatch } from '@endo/patterns';
 import { createRequire } from 'module';
 import { ChainAddressShape } from '../../src/typeGuards.js';
+import { buildVTransferEvent } from '../../tools/ibc-mocks.js';
 import { commonSetup } from '../supports.js';
 
 const nodeRequire = createRequire(import.meta.url);
@@ -15,7 +20,7 @@ const contractFile = nodeRequire.resolve('../../src/examples/my.contract.js');
 type StartFn = typeof import('../../src/examples/my.contract.js').start;
 
 test('start my orch contract', async t => {
-  const { commonPrivateArgs } = await commonSetup(t);
+  const common = await commonSetup(t);
   const { zoe, bundleAndInstall } = await setUpZoeForTest();
   t.log('contract deployment', contractName);
 
@@ -27,7 +32,7 @@ test('start my orch contract', async t => {
     installation,
     {}, // issuers
     {}, // terms
-    commonPrivateArgs, // privateArgs
+    common.commonPrivateArgs,
   );
   t.notThrows(() =>
     mustMatch(
@@ -44,4 +49,21 @@ test('start my orch contract', async t => {
   const hookAddress = await E(myKit.publicFacet).getHookAddress();
   t.log('hookAddress', hookAddress);
   t.notThrows(() => mustMatch(hookAddress, ChainAddressShape));
+
+  const { transferBridge } = common.mocks;
+  const deposit = async (coins: CoinSDKType) => {
+    await VE(transferBridge).fromBridge(
+      buildVTransferEvent({
+        receiver: 'rx TODO',
+        target: 'agoric1fakeLCAAddress',
+        sourceChannel: 'channel-1', // TODO: hubToAg.transferChannel.counterPartyChannelId,
+        denom: coins.denom,
+        amount: Nat(BigInt(coins.amount)),
+        sender: 'cosmos1xyz',
+      }),
+    );
+    await eventLoopIteration(); // let contract do work
+  };
+
+  await t.notThrowsAsync(deposit({ amount: '10000000', denom: 'uatom' }));
 });
