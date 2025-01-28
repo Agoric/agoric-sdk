@@ -37,12 +37,12 @@
     "typedoc": "^0.26.7",
     "typedoc-plugin-markdown": "^4.2.1",
     "typescript": "~5.7.1",
-    "typescript-eslint": "^8.18.2"
+    "typescript-eslint": "^8.22.0"
   },
   "resolutions": {
     "**/protobufjs": "^7.2.6",
     "**/@types/estree": "^1.0.0",
-    "@endo/eslint-plugin/typescript-eslint": "^8.18.2"
+    "@endo/eslint-plugin/typescript-eslint": "^8.22.0"
   },
   "engines": {
     "node": "^18.12 || ^20.9"
