@@ -97,6 +97,10 @@ export default [
 
     linterOptions: {
       reportUnusedDisableDirectives: true,
+      // TODO get this working by fixing jessie linter that triggers
+      //   Unused inline config ('no-bitwise' is already configured to 'error')
+      //   Unused inline config ('no-var' is already configured to 'error')
+      // reportUnusedInlineConfigs: 'error',
     },
 
     languageOptions: {
