@@ -1,0 +1,13 @@
+{
+    "consume": {
+        "bankManager": true,
+        "agoricNamesAdmin": true,
+        "reserveKit": true,
+        "startUpgradable": true
+    },
+    "installation": {
+        "consume": {
+            "mintHolder": true
+        }
+    }
+}
