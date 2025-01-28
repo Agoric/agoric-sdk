@@ -664,8 +664,6 @@ export async function launch({
     // blockManagerConsole.error('Performing action', action);
     let p;
 
-    countInboundAction(action.type);
-
     switch (action.type) {
       case ActionType.DELIVER_INBOUND: {
         p = deliverInbound(
@@ -743,6 +741,7 @@ export async function launch({
     for await (const { action, context } of inboundQueue.consumeAll()) {
       const inboundNum = `${context.blockHeight}-${context.txHash}-${context.msgIdx}`;
       inboundQueueMetrics.decStat();
+      countInboundAction(action.type);
       await performAction(action, inboundNum);
       keepGoing = await runSwingset(phase);
       if (!keepGoing) {
