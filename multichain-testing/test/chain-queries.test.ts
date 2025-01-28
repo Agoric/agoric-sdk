@@ -48,7 +48,7 @@ const queryICQChain = test.macro({
     const {
       wallets,
       provisionSmartWallet,
-      vstorageClient,
+      smartWalletKit,
       retryUntilCondition,
       useChain,
     } = t.context;
@@ -108,7 +108,8 @@ const queryICQChain = test.macro({
     });
 
     const offerResult = await retryUntilCondition(
-      () => vstorageClient.queryData(`published.wallet.${agoricAddr}`),
+      () => smartWalletKit.readPublished(`wallet.${agoricAddr}`),
+      // @ts-expect-error UpdateRecord may not have 'status'
       ({ status }) => status.id === offerId && (status.result || status.error),
       `${offerId} offer result is in vstorage`,
       {
@@ -117,6 +118,7 @@ const queryICQChain = test.macro({
     );
     t.log('ICQ Query Offer Result', offerResult);
     const {
+      // @ts-expect-error UpdateRecord may not have 'status'
       status: { result, error },
     } = offerResult;
     t.is(error, undefined, 'No error observed');
@@ -160,7 +162,7 @@ const queryChainWithoutICQ = test.macro({
     const {
       wallets,
       provisionSmartWallet,
-      vstorageClient,
+      smartWalletKit,
       retryUntilCondition,
       useChain,
     } = t.context;
@@ -200,7 +202,8 @@ const queryChainWithoutICQ = test.macro({
     });
 
     const offerResult = await retryUntilCondition(
-      () => vstorageClient.queryData(`published.wallet.${agoricAddr}`),
+      () => smartWalletKit.readPublished(`wallet.${agoricAddr}`),
+      // @ts-expect-error UpdateRecord may not have 'status'
       ({ status }) => status.id === offerId && (status.result || status.error),
       `${offerId} continuing invitation is in vstorage`,
       {
@@ -208,6 +211,7 @@ const queryChainWithoutICQ = test.macro({
       },
     );
     t.is(
+      // @ts-expect-error UpdateRecord may not have 'status'
       offerResult.status.error,
       `Error: Queries not available for chain "${chain_id}"`,
       'Queries not available error returned',
@@ -216,7 +220,7 @@ const queryChainWithoutICQ = test.macro({
 });
 
 test.serial('Send Local Query from chain object', async t => {
-  const { wallets, provisionSmartWallet, vstorageClient, retryUntilCondition } =
+  const { wallets, provisionSmartWallet, smartWalletKit, retryUntilCondition } =
     t.context;
 
   const agoricAddr = wallets['agoric'];
@@ -268,7 +272,8 @@ test.serial('Send Local Query from chain object', async t => {
   });
 
   const offerResult = await retryUntilCondition(
-    () => vstorageClient.queryData(`published.wallet.${agoricAddr}`),
+    () => smartWalletKit.readPublished(`wallet.${agoricAddr}`),
+    // @ts-expect-error UpdateRecord may not have 'status'
     ({ status }) => status.id === offerId && (status.result || status.error),
     `${offerId} continuing invitation is in vstorage`,
     {
@@ -276,6 +281,7 @@ test.serial('Send Local Query from chain object', async t => {
     },
   );
 
+  // @ts-expect-error UpdateRecord may not have 'status'
   const parsedResults = JSON.parse(offerResult.status.result);
   t.truthy(parsedResults[0].height, 'query height is returned');
   t.is(parsedResults[0].error, '', 'error is empty');

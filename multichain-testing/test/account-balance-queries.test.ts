@@ -40,7 +40,7 @@ const queryAccountBalances = test.macro({
     const {
       wallets,
       provisionSmartWallet,
-      vstorageClient,
+      smartWalletKit,
       retryUntilCondition,
     } = t.context;
 
@@ -67,7 +67,8 @@ const queryAccountBalances = test.macro({
     });
 
     const offerResult = await retryUntilCondition(
-      () => vstorageClient.queryData(`published.wallet.${agoricAddr}`),
+      () => smartWalletKit.readPublished(`wallet.${agoricAddr}`),
+      // @ts-expect-error UpdateRecord may not have 'status'
       ({ status }) => status.id === offerId && (status.result || status.error),
       `${offerId} offer result is in vstorage`,
       MAKE_ACCOUNT_AND_QUERY_BALANCE_TIMEOUT,
@@ -83,6 +84,7 @@ const queryAccountBalances = test.macro({
     );
 
     const {
+      // @ts-expect-error UpdateRecord may not have 'status'
       status: { result, error },
     } = offerResult;
     if (expectValidResult) {
@@ -110,7 +112,7 @@ const queryAccountBalance = test.macro({
     const {
       wallets,
       provisionSmartWallet,
-      vstorageClient,
+      smartWalletKit,
       retryUntilCondition,
       useChain,
     } = t.context;
@@ -146,7 +148,8 @@ const queryAccountBalance = test.macro({
     });
 
     const offerResult = await retryUntilCondition(
-      () => vstorageClient.queryData(`published.wallet.${agoricAddr}`),
+      () => smartWalletKit.readPublished(`wallet.${agoricAddr}`),
+      // @ts-expect-error UpdateRecord may not have 'status'
       ({ status }) => status.id === offerId && (status.result || status.error),
       `${offerId} offer result is in vstorage`,
       MAKE_ACCOUNT_AND_QUERY_BALANCE_TIMEOUT,
@@ -162,6 +165,7 @@ const queryAccountBalance = test.macro({
     );
 
     const {
+      // @ts-expect-error UpdateRecord may not have 'status'
       status: { result, error },
     } = offerResult;
     if (expectValidResult) {

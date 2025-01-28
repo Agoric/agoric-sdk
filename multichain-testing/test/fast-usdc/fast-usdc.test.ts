@@ -233,8 +233,8 @@ const advanceAndSettleScenario = test.macro({
     t.log(`EUD wallet created: ${EUD}`);
 
     // parameterize agoric address
-    const { settlementAccount } = await vstorageClient.queryData(
-      `published.${contractName}`,
+    const { settlementAccount } = await smartWalletKit.readPublished(
+      `${contractName}`,
     );
     t.log('settlementAccount address', settlementAccount);
 

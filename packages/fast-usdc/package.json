@@ -8,6 +8,7 @@
     "src",
     "tools"
   ],
+  "main": "src/main.js",
   "bin": {
     "fast-usdc": "./src/cli/bin.js"
   },

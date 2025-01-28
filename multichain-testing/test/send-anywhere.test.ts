@@ -51,7 +51,7 @@ const sendAnywhereScenario = test.macro({
     const {
       wallets,
       provisionSmartWallet,
-      vstorageClient,
+      smartWalletKit,
       retryUntilCondition,
       useChain,
     } = t.context;
@@ -69,9 +69,7 @@ const sendAnywhereScenario = test.macro({
 
     const doOffer = makeDoOffer(wdUser1);
 
-    const brands = await vstorageClient.queryData(
-      'published.agoricNames.brand',
-    );
+    const brands = await smartWalletKit.readPublished('agoricNames.brand');
     const brand = Object.fromEntries(brands)[brandKw];
 
     const apiUrl = await useChain(destChainName).getRestEndpoint();
