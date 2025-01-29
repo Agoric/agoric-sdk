@@ -10,7 +10,7 @@ receivers:
           scrape_interval: 10s
           static_configs:
             - targets:
-                -  http://0.0.0.0:$OTEL_EXPORTER_PROMETHEUS_PORT
+                -  0.0.0.0:$OTEL_EXPORTER_PROMETHEUS_PORT
 
 service:
   pipelines:
