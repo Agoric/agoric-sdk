@@ -1,6 +1,6 @@
 exporters:
   file:
-    path: $EXPORT_DIRECTORY/metrics.json
+    path: $EXPORT_FILE
 
 receivers:
   prometheus:
@@ -10,7 +10,7 @@ receivers:
           scrape_interval: 10s
           static_configs:
             - targets:
-                -  0.0.0.0:$OTEL_EXPORTER_PROMETHEUS_PORT
+                -  http://0.0.0.0:$OTEL_EXPORTER_PROMETHEUS_PORT
 
 service:
   pipelines:
