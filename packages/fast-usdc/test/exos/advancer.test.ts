@@ -15,7 +15,7 @@ import type { TestFn } from 'ava';
 import { makeTracer } from '@agoric/internal';
 import { M, mustMatch } from '@endo/patterns';
 import { PendingTxStatus } from '../../src/constants.js';
-import { prepareAdvancer } from '../../src/exos/advancer.js';
+import { prepareAdvancer, stateShape } from '../../src/exos/advancer.js';
 import {
   makeAdvanceDetailsShape,
   type SettlerKit,
@@ -48,10 +48,10 @@ type CommonSetup = Awaited<ReturnType<typeof commonSetup>>;
 
 const createTestExtensions = (t, common: CommonSetup) => {
   const {
-    bootstrap: { rootZone, vowTools },
     facadeServices: { chainHub },
     brands: { usdc },
     commonPrivateArgs: { storageNode },
+    utils: { contractZone, vowTools },
   } = common;
 
   const { log, inspectLogs } = makeTestLogger(t.log);
@@ -61,16 +61,19 @@ const createTestExtensions = (t, common: CommonSetup) => {
   chainHub.registerChain('osmosis', fetchedChainInfo.osmosis);
 
   const statusManager = prepareStatusManager(
-    rootZone.subZone('status-manager'),
+    contractZone.subZone('status-manager'),
     storageNode.makeChildNode('txns'),
     { marshaller: common.commonPrivateArgs.marshaller },
   );
 
-  const mockAccounts = prepareMockOrchAccounts(rootZone.subZone('accounts'), {
-    vowTools,
-    log: t.log,
-    usdc,
-  });
+  const mockAccounts = prepareMockOrchAccounts(
+    contractZone.subZone('accounts'),
+    {
+      vowTools,
+      log: t.log,
+      usdc,
+    },
+  );
 
   const mockZCF = Far('MockZCF', {
     makeEmptySeatKit: () => ({ zcfSeat: Far('MockZCFSeat', {}) }),
@@ -94,7 +97,7 @@ const createTestExtensions = (t, common: CommonSetup) => {
   });
 
   const feeConfig = makeTestFeeConfig(usdc);
-  const makeAdvancer = prepareAdvancer(rootZone.subZone('advancer'), {
+  const makeAdvancer = prepareAdvancer(contractZone.subZone('advancer'), {
     chainHub,
     feeConfig,
     localTransfer: mockZoeTools.localTransfer,
@@ -109,7 +112,7 @@ const createTestExtensions = (t, common: CommonSetup) => {
     zcf: mockZCF,
   });
 
-  type NotifyArgs = Parameters<SettlerKit['notify']['notifyAdvancingResult']>;
+  type NotifyArgs = Parameters<SettlerKit['notifier']['notifyAdvancingResult']>;
   const notifyAdvancingResultCalls: NotifyArgs[] = [];
   const mockNotifyF = Far('Settler Notify Facet', {
     notifyAdvancingResult: (...args: NotifyArgs) => {
@@ -142,8 +145,8 @@ const createTestExtensions = (t, common: CommonSetup) => {
   });
 
   const advancer = makeAdvancer({
-    borrowerFacet: mockBorrowerF,
-    notifyFacet: mockNotifyF,
+    borrower: mockBorrowerF,
+    notifier: mockNotifyF,
     poolAccount: mockAccounts.mockPoolAccount.account,
     intermediateRecipient,
     settlementAddress,
@@ -187,6 +190,10 @@ test.beforeEach(async t => {
     ...common,
     extensions: createTestExtensions(t, common),
   };
+});
+
+test('stateShape', t => {
+  t.snapshot(stateShape);
 });
 
 test('updates status to ADVANCING in happy path', async t => {
@@ -276,8 +283,8 @@ test('updates status to OBSERVED on insufficient pool funds', async t => {
 
   // make a new advancer that intentionally throws
   const advancer = makeAdvancer({
-    borrowerFacet: mockBorrowerFacet,
-    notifyFacet: mockNotifyF,
+    borrower: mockBorrowerFacet,
+    notifier: mockNotifyF,
     poolAccount: mockPoolAccount.account,
     intermediateRecipient,
     settlementAddress,
@@ -599,8 +606,8 @@ test('alerts if `returnToPool` fallback fails', async t => {
 
   // make a new advancer that intentionally throws during returnToPool
   const advancer = makeAdvancer({
-    borrowerFacet: mockBorrowerFacet,
-    notifyFacet: mockNotifyF,
+    borrower: mockBorrowerFacet,
+    notifier: mockNotifyF,
     poolAccount: mockPoolAccount.account,
     intermediateRecipient,
     settlementAddress,
@@ -691,8 +698,8 @@ test('no status update if `checkMintedEarly` returns true', async t => {
   });
 
   const advancer = makeAdvancer({
-    borrowerFacet: mockBorrowerF,
-    notifyFacet: mockNotifyF,
+    borrower: mockBorrowerF,
+    notifier: mockNotifyF,
     poolAccount: mockPoolAccount.account,
     intermediateRecipient,
     settlementAddress,

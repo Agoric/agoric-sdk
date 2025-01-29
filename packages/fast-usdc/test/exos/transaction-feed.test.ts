@@ -5,6 +5,7 @@ import { deeplyFulfilledObject } from '@agoric/internal';
 import { makeHeapZone } from '@agoric/zone';
 import {
   prepareTransactionFeedKit,
+  stateShape,
   type TransactionFeedKit,
 } from '../../src/exos/transaction-feed.js';
 import { MockCctpTxEvidences } from '../fixtures.js';
@@ -26,6 +27,10 @@ const makeOperators = (feedKit: TransactionFeedKit) => {
   );
   return deeplyFulfilledObject(harden(operators));
 };
+
+test('stateShape', t => {
+  t.snapshot(stateShape);
+});
 
 test('facets', t => {
   const kit = makeFeedKit();

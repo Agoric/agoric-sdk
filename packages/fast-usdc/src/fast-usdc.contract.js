@@ -284,8 +284,8 @@ export const contract = async (zcf, privateArgs, zone, tools) => {
 
   const advancer = zone.makeOnce('Advancer', () =>
     makeAdvancer({
-      borrowerFacet: poolKit.borrower,
-      notifyFacet: settlerKit.notify,
+      borrower: poolKit.borrower,
+      notifier: settlerKit.notifier,
       poolAccount,
       settlementAddress,
     }),
