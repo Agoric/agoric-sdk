@@ -72,7 +72,7 @@ test('fast-usdc deposit command', async t => {
       invitationSpec: {
         source: 'agoricContract',
         instancePath: ['fastUsdc'],
-        callPipe: [['makeDepositInvitation', []]],
+        callPipe: [['makeDepositInvitation']],
       },
       proposal: {
         give: {
@@ -106,7 +106,7 @@ test('fast-usdc withdraw command', async t => {
       invitationSpec: {
         source: 'agoricContract',
         instancePath: ['fastUsdc'],
-        callPipe: [['makeWithdrawInvitation', []]],
+        callPipe: [['makeWithdrawInvitation']],
       },
       proposal: {
         give: {
