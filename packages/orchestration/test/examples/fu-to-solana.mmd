@@ -1,0 +1,60 @@
+%%{init: {
+  'theme': 'base',
+  'themeVariables': {
+    'primaryColor': '#f0f8ff',
+    'primaryTextColor': '#2c3e50',
+    'primaryBorderColor': '#7fb2e6',
+    'lineColor': '#7fb2e6',
+    'secondaryColor': '#f6f8fa',
+    'tertiaryColor': '#fff5e6'
+  }
+}}%%
+sequenceDiagram
+    title Fast USDC to Solana
+    autonumber
+    actor webUA as Alice's MetaMask<br/>[Browser]
+
+    box Grey Ethereum
+    participant ethAcct1
+    participant acctDest as Alice's acct<br />0x423l5j3
+    end
+
+    participant OCW
+
+    box Red Agoric Chain
+    participant fastUsdc
+    participant myOrch as Orch. Contract
+    participant orchLCA1 as agoric1orchHook1
+    end
+
+
+    box Yellow as Noble
+    participant noble123 as Noble LCA<br/> Acct123
+    %% noble12l2w4ugfz4m6dd73yysz477jszqnfughxvkss5
+    participant cctpContract
+    end
+
+    box lightBlue as Solana
+    participant dest2
+    end
+
+    %% Notation: ->> for initial message, -->> for consequences
+
+    note right of webUA: User Initiates Action
+    webUA -->> ethAcct1: depositForBurn(?EUD=agoric1orchHook1&next=solana343)
+    OCW -->> ethAcct1: any news?
+    ethAcct1 -->> OCW: yes!
+    OCW -->> fastUsdc: incoming!
+    fastUsdc -->> orchLCA1: 3 USDC
+
+    orchLCA1 -->> noble123: deposit(3 USDC)
+    noble123 -->> orchLCA1: resolve(ack)
+    note left of noble123: how do we invoke the cctp contract?
+    orchLCA1 -->> noble123: invoke(cctpContract: MsgDepositForBurn(<br/>3e6 uusdc, domain: 0=eth, enc(0x423l5j3)))
+    noble123 -->> cctpContract: MsgDepositForBurn...
+    cctpContract -->> dest2: deposit(3 USDC)
+
+    dest2 -->> cctpContract: resolve(ack)
+    cctpContract -->> noble123: resolve(ack)
+    noble123 -->> orchLCA1: resolve(ack)
+    orchLCA1 -->> webUA: resolve(ack)
