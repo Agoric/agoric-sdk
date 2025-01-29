@@ -8,6 +8,10 @@ import path from 'node:path';
 import { Fail } from '@endo/errors';
 import { serializeSlogObj } from './serialize-slog-obj.js';
 
+/**
+ * @import {EReturn} from '@endo/far';
+ */
+
 export const DEFAULT_CBUF_SIZE = 100 * 1024 * 1024;
 export const DEFAULT_CBUF_FILE = 'flight-recorder.bin';
 export const SLOG_MAGIC = 0x41472d534c4f4721n; // 'AG-SLOG!'
@@ -63,7 +67,7 @@ const initializeCircularBuffer = async (bufferFile, circularBufferSize) => {
   return arenaSize;
 };
 
-/** @typedef {Awaited<ReturnType<typeof makeSimpleCircularBuffer>>} CircularBuffer */
+/** @typedef {EReturn<typeof makeSimpleCircularBuffer>} CircularBuffer */
 
 /**
  *
@@ -270,7 +274,7 @@ export const makeSimpleCircularBuffer = async ({
 
 /**
  *
- * @param {Pick<Awaited<ReturnType<typeof makeSimpleCircularBuffer>>, 'writeCircBuf'>} circBuf
+ * @param {Pick<EReturn<typeof makeSimpleCircularBuffer>, 'writeCircBuf'>} circBuf
  */
 export const makeSlogSenderFromBuffer = ({ writeCircBuf }) => {
   /** @type {Promise<void>} */

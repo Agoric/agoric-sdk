@@ -10,6 +10,7 @@ import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
 import { buildVTransferEvent } from '@agoric/orchestration/tools/ibc-mocks.js';
 import type { Zone } from '@agoric/zone';
+import type { EReturn } from '@endo/far';
 import { PendingTxStatus, TxStatus } from '../../src/constants.js';
 import {
   prepareSettler,
@@ -215,7 +216,7 @@ const makeTestContext = async t => {
   };
 };
 
-const test = anyTest as TestFn<Awaited<ReturnType<typeof makeTestContext>>>;
+const test = anyTest as TestFn<EReturn<typeof makeTestContext>>;
 
 test.beforeEach(async t => (t.context = await makeTestContext(t)));
 

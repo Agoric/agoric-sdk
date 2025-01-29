@@ -17,6 +17,7 @@ import { prepareVaultKit } from './vaultKit.js';
 const trace = makeTracer('Vault', true);
 
 /**
+ * @import {EReturn} from '@endo/far';
  * @import {Brand} from '@agoric/ertp/src/types.js';
  * @import {NormalizedDebt} from './storeUtils.js';
  */
@@ -874,4 +875,4 @@ export const prepareVault = (baggage, makeRecorderKit, zcf) => {
   return maker;
 };
 
-/** @typedef {ReturnType<ReturnType<typeof prepareVault>>['self']} Vault */
+/** @typedef {EReturn<EReturn<typeof prepareVault>>['self']} Vault */

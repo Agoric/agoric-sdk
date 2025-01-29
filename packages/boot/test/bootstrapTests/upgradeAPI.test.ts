@@ -1,4 +1,5 @@
 import { test as anyTest } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
+
 import type { TestFn } from 'ava';
 import path from 'path';
 import bundleSource from '@endo/bundle-source';

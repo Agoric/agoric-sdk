@@ -8,6 +8,10 @@ import { prepareVaultHolder } from './vaultHolder.js';
 const trace = makeTracer('VK', true);
 
 /**
+ * @import {EReturn} from '@endo/far';
+ */
+
+/**
  * Wrap the VaultHolder duration object in a record suitable for the result of
  * an invitation.
  *
@@ -44,4 +48,4 @@ export const prepareVaultKit = (baggage, makeRecorderKit) => {
   return makeVaultKit;
 };
 
-/** @typedef {ReturnType<ReturnType<typeof prepareVaultKit>>} VaultKit */
+/** @typedef {EReturn<EReturn<typeof prepareVaultKit>>} VaultKit */

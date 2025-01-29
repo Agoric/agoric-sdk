@@ -36,6 +36,10 @@ import { makeStartXSnap } from './startXSnap.js';
 import { makeStartSubprocessWorkerNode } from './startNodeSubprocess.js';
 
 /**
+ * @import {EReturn} from '@endo/far';
+ */
+
+/**
  * @typedef { import('../types-internal.js').VatID } VatID
  */
 
@@ -494,7 +498,7 @@ export async function makeSwingsetController(
 
   return controller;
 }
-/** @typedef {Awaited<ReturnType<typeof makeSwingsetController>>} SwingsetController */
+/** @typedef {EReturn<typeof makeSwingsetController>} SwingsetController */
 
 /**
  * NB: To be used only in tests. An app with this may not survive a reboot.

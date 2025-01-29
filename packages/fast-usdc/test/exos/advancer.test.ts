@@ -5,15 +5,16 @@ import {
   encodeAddressHook,
 } from '@agoric/cosmic-proto/address-hooks.js';
 import type { NatAmount } from '@agoric/ertp';
+import { makeTracer } from '@agoric/internal';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import { ChainAddressShape, denomHash } from '@agoric/orchestration';
 import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
 import { type ZoeTools } from '@agoric/orchestration/src/utils/zoe-tools.js';
 import { q } from '@endo/errors';
+import type { EReturn } from '@endo/far';
 import { Far } from '@endo/pass-style';
-import type { TestFn } from 'ava';
-import { makeTracer } from '@agoric/internal';
 import { M, mustMatch } from '@endo/patterns';
+import type { TestFn } from 'ava';
 import { PendingTxStatus } from '../../src/constants.js';
 import { prepareAdvancer, stateShape } from '../../src/exos/advancer.js';
 import {
@@ -21,12 +22,13 @@ import {
   type SettlerKit,
 } from '../../src/exos/settler.js';
 import { prepareStatusManager } from '../../src/exos/status-manager.js';
+import { CctpTxEvidenceShape } from '../../src/type-guards.js';
 import type { LiquidityPoolKit } from '../../src/types.js';
 import { makeFeeTools } from '../../src/utils/fees.js';
 import {
+  intermediateRecipient,
   MockCctpTxEvidences,
   settlementAddress,
-  intermediateRecipient,
 } from '../fixtures.js';
 import {
   makeTestFeeConfig,
@@ -34,7 +36,6 @@ import {
   prepareMockOrchAccounts,
 } from '../mocks.js';
 import { commonSetup } from '../supports.js';
-import { CctpTxEvidenceShape } from '../../src/type-guards.js';
 
 const trace = makeTracer('AdvancerTest', false);
 
@@ -44,7 +45,7 @@ const LOCAL_DENOM = `ibc/${denomHash({
     fetchedChainInfo.agoric.connections['noble-1'].transferChannel.channelId,
 })}`;
 
-type CommonSetup = Awaited<ReturnType<typeof commonSetup>>;
+type CommonSetup = EReturn<typeof commonSetup>;
 
 const createTestExtensions = (t, common: CommonSetup) => {
   const {

@@ -19,6 +19,7 @@ import { prepareOracleAdminKit } from './priceOracleKit.js';
 import { prepareRoundsManagerKit } from './roundsManager.js';
 
 /**
+ * @import {EReturn} from '@endo/far';
  * @import {TypedPattern} from '@agoric/internal';
  * @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js';
  */
@@ -371,4 +372,4 @@ export const prepareFluxAggregatorKit = async (
   return makeFluxAggregatorKit;
 };
 harden(prepareFluxAggregatorKit);
-/** @typedef {ReturnType<Awaited<ReturnType<typeof prepareFluxAggregatorKit>>>} FluxAggregatorKit */
+/** @typedef {EReturn<EReturn<typeof prepareFluxAggregatorKit>>} FluxAggregatorKit */
