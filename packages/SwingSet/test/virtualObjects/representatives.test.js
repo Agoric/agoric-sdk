@@ -410,7 +410,7 @@ test('virtual object gc', async t => {
     8,9       no              n/a              no      no (retained unused)
 
     Things 5, 6, and 7 are essentially the same as 4, but they are dropped by a
-    loop at the end, to make sure that that works.
+    loop at the end, to make sure that works.
 
     Things 8 and 9 are both the same. They are never used and so are retained
     where they were originally stashed on creation
