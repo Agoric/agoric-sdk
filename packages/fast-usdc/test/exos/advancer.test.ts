@@ -48,10 +48,10 @@ type CommonSetup = Awaited<ReturnType<typeof commonSetup>>;
 
 const createTestExtensions = (t, common: CommonSetup) => {
   const {
-    bootstrap: { rootZone, vowTools },
     facadeServices: { chainHub },
     brands: { usdc },
     commonPrivateArgs: { storageNode },
+    utils: { contractZone, vowTools },
   } = common;
 
   const { log, inspectLogs } = makeTestLogger(t.log);
@@ -61,16 +61,19 @@ const createTestExtensions = (t, common: CommonSetup) => {
   chainHub.registerChain('osmosis', fetchedChainInfo.osmosis);
 
   const statusManager = prepareStatusManager(
-    rootZone.subZone('status-manager'),
+    contractZone.subZone('status-manager'),
     storageNode.makeChildNode('txns'),
     { marshaller: common.commonPrivateArgs.marshaller },
   );
 
-  const mockAccounts = prepareMockOrchAccounts(rootZone.subZone('accounts'), {
-    vowTools,
-    log: t.log,
-    usdc,
-  });
+  const mockAccounts = prepareMockOrchAccounts(
+    contractZone.subZone('accounts'),
+    {
+      vowTools,
+      log: t.log,
+      usdc,
+    },
+  );
 
   const mockZCF = Far('MockZCF', {
     makeEmptySeatKit: () => ({ zcfSeat: Far('MockZCFSeat', {}) }),
@@ -94,7 +97,7 @@ const createTestExtensions = (t, common: CommonSetup) => {
   });
 
   const feeConfig = makeTestFeeConfig(usdc);
-  const makeAdvancer = prepareAdvancer(rootZone.subZone('advancer'), {
+  const makeAdvancer = prepareAdvancer(contractZone.subZone('advancer'), {
     chainHub,
     feeConfig,
     localTransfer: mockZoeTools.localTransfer,

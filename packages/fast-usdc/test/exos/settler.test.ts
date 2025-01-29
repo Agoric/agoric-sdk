@@ -49,7 +49,7 @@ const mockZcf = (zone: Zone) => {
 
 const makeTestContext = async t => {
   const common = await commonSetup(t);
-  const { rootZone: zone } = common.bootstrap;
+  const { contractZone: zone } = common.utils;
   const { log, inspectLogs } = makeTestLogger(t.log);
   const statusManager = prepareStatusManager(
     zone.subZone('status-manager'),
@@ -58,9 +58,9 @@ const makeTestContext = async t => {
   );
   const { zcf, callLog } = mockZcf(zone.subZone('Mock ZCF'));
 
-  const { rootZone, vowTools } = common.bootstrap;
+  const { vowTools } = common.utils;
   const { usdc } = common.brands;
-  const mockAccounts = prepareMockOrchAccounts(rootZone.subZone('accounts'), {
+  const mockAccounts = prepareMockOrchAccounts(zone.subZone('accounts'), {
     vowTools,
     log: t.log,
     usdc,
@@ -87,7 +87,7 @@ const makeTestContext = async t => {
     zcf,
     withdrawToSeat: mockWithdrawToSeat,
     feeConfig: common.commonPrivateArgs.feeConfig,
-    vowTools: common.bootstrap.vowTools,
+    vowTools: common.utils.vowTools,
     chainHub,
     log,
   });
