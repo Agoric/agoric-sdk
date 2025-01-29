@@ -1,10 +1,14 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import type { TestFn } from 'ava';
 
-import { decodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
+import {
+  decodeAddressHook,
+  encodeAddressHook,
+} from '@agoric/cosmic-proto/address-hooks.js';
 import { defaultMarshaller } from '@agoric/internal/src/storage-test-utils.js';
 import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
 import fetchedChainInfo from '@agoric/orchestration/src/fetched-chain-info.js';
+import { buildVTransferEvent } from '@agoric/orchestration/tools/ibc-mocks.js';
 import type { Zone } from '@agoric/zone';
 import { PendingTxStatus, TxStatus } from '../../src/constants.js';
 import {
@@ -737,3 +741,92 @@ test('slow path, and forward fails (terminal state)', async t => {
 test.todo('creator facet methods');
 
 test.todo('ignored packets');
+
+test('bad packet data', async t => {
+  const { makeSettler, defaultSettlerParams, repayer, accounts, inspectLogs } =
+    t.context;
+  const settler = makeSettler({
+    repayer,
+    settlementAccount: accounts.settlement.account,
+    ...defaultSettlerParams,
+  });
+
+  await settler.tap.receiveUpcall(
+    buildVTransferEvent({ sourceChannel: 'channel-21' }),
+  );
+  t.deepEqual(inspectLogs().at(-1), [
+    'invalid event packet',
+    ['unexpected denom', { actual: 'uatom', expected: 'uusdc' }],
+  ]);
+
+  await settler.tap.receiveUpcall(
+    buildVTransferEvent({ sourceChannel: 'channel-21', denom: 'uusdc' }),
+  );
+  t.deepEqual(inspectLogs().at(-1), [
+    'invalid event packet',
+    ['no query params', 'agoric1fakeLCAAddress'],
+  ]);
+
+  await settler.tap.receiveUpcall(
+    buildVTransferEvent({
+      sourceChannel: 'channel-21',
+      denom: 'uusdc',
+      receiver: encodeAddressHook(
+        // valid but meaningless address
+        'agoric1c9gyu460lu70rtcdp95vummd6032psmpdx7wdy',
+        {},
+      ),
+    }),
+  );
+  t.deepEqual(inspectLogs().at(-1), [
+    'invalid event packet',
+    [
+      'no EUD parameter',
+      'agoric10rchps2sfet5lleu7xhs6ztgeehkm5lz5rpkz0cqzs95zdge',
+    ],
+  ]);
+
+  await settler.tap.receiveUpcall(
+    buildVTransferEvent({
+      sourceChannel: 'channel-21',
+      denom: 'uusdc',
+      receiver: encodeAddressHook(
+        // valid but meaningless address
+        'agoric1c9gyu460lu70rtcdp95vummd6032psmpdx7wdy',
+        { EUD: 'cosmos1foo' },
+      ),
+      // @ts-expect-error intentionally bad
+      amount: 'bad',
+    }),
+  );
+  t.deepEqual(inspectLogs().at(-1), [
+    'invalid event packet',
+    ['invalid amount', 'bad'],
+  ]);
+
+  const goodEvent = buildVTransferEvent({
+    sourceChannel: 'channel-21',
+    denom: 'uusdc',
+    receiver: encodeAddressHook(
+      // valid but meaningless address
+      'agoric1c9gyu460lu70rtcdp95vummd6032psmpdx7wdy',
+      { EUD: 'cosmos1foo' },
+    ),
+  });
+  await settler.tap.receiveUpcall(goodEvent);
+  t.deepEqual(inspectLogs().at(-1), [
+    '⚠️ tap: minted before observed',
+    'cosmos1AccAddress',
+    10n,
+  ]);
+
+  const badJson = {
+    ...goodEvent,
+    packet: { ...goodEvent.packet, data: 'not json' },
+  };
+  await settler.tap.receiveUpcall(badJson);
+  t.deepEqual(inspectLogs().at(-1), [
+    'invalid event packet',
+    ['could not parse packet data', 'not json'],
+  ]);
+});

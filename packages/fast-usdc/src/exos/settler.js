@@ -19,13 +19,60 @@ import {
  * @import {Amount, Brand, NatValue, Payment} from '@agoric/ertp';
  * @import {Denom, OrchestrationAccount, ChainHub, ChainAddress} from '@agoric/orchestration';
  * @import {WithdrawToSeat} from '@agoric/orchestration/src/utils/zoe-tools'
- * @import {IBCChannelID, VTransferIBCEvent} from '@agoric/vats';
+ * @import {IBCChannelID, IBCPacket, VTransferIBCEvent} from '@agoric/vats';
  * @import {Zone} from '@agoric/zone';
  * @import {HostOf, HostInterface} from '@agoric/async-flow';
  * @import {TargetRegistration} from '@agoric/vats/src/bridge-target.js';
  * @import {NobleAddress, LiquidityPoolKit, FeeConfig, EvmHash, LogFn, CctpTxEvidence} from '../types.js';
  * @import {StatusManager} from './status-manager.js';
  */
+
+/**
+ * @param {IBCPacket} data
+ * @param {string} remoteDenom
+ * @returns {{ nfa: NobleAddress, amount: bigint, EUD: string } | {error: object[]}}
+ */
+const decodeEventPacket = ({ data }, remoteDenom) => {
+  // NB: may not be a FungibleTokenPacketData or even JSON
+  /** @type {FungibleTokenPacketData} */
+  let tx;
+  try {
+    tx = JSON.parse(atob(data));
+  } catch (e) {
+    return { error: ['could not parse packet data', data] };
+  }
+
+  // given the sourceChannel check, we can be certain of this cast
+  const nfa = /** @type {NobleAddress} */ (tx.sender);
+
+  if (tx.denom !== remoteDenom) {
+    const { denom: actual } = tx;
+    return { error: ['unexpected denom', { actual, expected: remoteDenom }] };
+  }
+
+  let EUD;
+  try {
+    ({ EUD } = decodeAddressHook(tx.receiver).query);
+    if (!EUD) {
+      return { error: ['no EUD parameter', tx.receiver] };
+    }
+    if (typeof EUD !== 'string') {
+      return { error: ['EUD is not a string', EUD] };
+    }
+  } catch (e) {
+    return { error: ['no query params', tx.receiver] };
+  }
+
+  let amount;
+  try {
+    amount = BigInt(tx.amount);
+  } catch (e) {
+    return { error: ['invalid amount', tx.amount] };
+  }
+
+  return { nfa, amount, EUD };
+};
+harden(decodeEventPacket);
 
 /**
  * NOTE: not meant to be parsable.
@@ -158,38 +205,13 @@ export const prepareSettler = (
             return;
           }
 
-          // TODO: why is it safe to cast this without a runtime check?
-          const tx = /** @type {FungibleTokenPacketData} */ (
-            JSON.parse(atob(packet.data))
-          );
-
-          // given the sourceChannel check, we can be certain of this cast
-          const nfa = /** @type {NobleAddress} */ (tx.sender);
-
-          if (tx.denom !== remoteDenom) {
-            const { denom: actual } = tx;
-            log('unexpected denom', { actual, expected: remoteDenom });
+          const decoded = decodeEventPacket(event.packet, remoteDenom);
+          if ('error' in decoded) {
+            log('invalid event packet', decoded.error);
             return;
           }
 
-          let EUD;
-          try {
-            ({ EUD } = decodeAddressHook(tx.receiver).query);
-            if (!EUD) {
-              log('no EUD parameter', tx.receiver);
-              return;
-            }
-            if (typeof EUD !== 'string') {
-              log('EUD is not a string', EUD);
-              return;
-            }
-          } catch (e) {
-            log('no query params', tx.receiver);
-            return;
-          }
-
-          const amount = BigInt(tx.amount); // TODO: what if this throws?
-
+          const { nfa, amount, EUD } = decoded;
           const { self } = this.facets;
           const found = statusManager.dequeueStatus(nfa, amount);
           log('dequeued', found, 'for', nfa, amount);
