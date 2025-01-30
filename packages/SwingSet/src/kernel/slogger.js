@@ -4,69 +4,70 @@ const IDLE = 'idle';
 const STARTUP = 'startup';
 const DELIVERY = 'delivery';
 
-function makeCallbackRegistry(callbacks) {
-  const todo = new Set(Object.keys(callbacks));
+/** @typedef {(...finishArgs: unknown[]) => unknown} AnyFinisher */
+
+/**
+ * Support composition of asynchronous callbacks that are invoked at the start
+ * of an operation and return either a non-function result or a "finisher"
+ * function to be invoked upon operation completion.
+ * This maker accepts a collection of wrapper functions that receive the same
+ * arguments as the method they wrap, along with the result of that method
+ * (e.g., its finisher), and are expected to return a finisher of their own that
+ * will invoke that wrapped finisher.
+ *
+ * @param {Record<string, (methodName: string, args: unknown[], finisher: AnyFinisher) => unknown>} wrappers
+ */
+function makeFinishersKit(wrappers) {
+  const unused = new Set(Object.keys(wrappers));
   return harden({
     /**
-     * Robustly wrap a method with a callbacks[method] function, if defined.  We
-     * incur no runtime overhead if the given callback method isn't defined.
+     * Robustly wrap a method if a wrapper is defined.
      *
-     * @param {string} method wrap with callbacks[method]
-     * @param {(...args: Array<unknown>) => unknown} impl the original
-     * implementation of the method
-     * @returns {(...args: Array<unknown>) => unknown} the wrapped method if the
-     * callback is defined, or original method if not
+     * @template {(...args: unknown[]) => (Finisher | unknown)} F
+     * @template {AnyFinisher} [Finisher=AnyFinisher]
+     * @param {string} method name
+     * @param {F} impl the original implementation
+     * @returns {F} the wrapped method
      */
-    registerCallback(method, impl) {
-      todo.delete(method);
-      const cb = callbacks[method];
-      if (!cb) {
-        // No registered callback, just use the implementation directly.
-        // console.error('no registered callback for', method);
-        return impl;
-      }
+    wrap(method, impl) {
+      unused.delete(method);
+      const wrapper = wrappers[method];
 
-      return (...args) => {
-        // Invoke the implementation first.
-        const ret = impl(...args);
+      // If there is no registered wrapper, return the implementation directly.
+      if (!wrapper) return impl;
+
+      const wrapped = (...args) => {
+        const maybeFinisher = /** @type {Finisher} */ (impl(...args));
         try {
-          // Allow the callback to observe the call synchronously, and affect
-          // the finisher function, but not to throw an exception.
-          const cbRet = cb(method, args, ret);
-          if (typeof ret === 'function') {
-            // We wrap the finisher in the callback's return value.
-            return (...finishArgs) => {
-              try {
-                return cbRet(...finishArgs);
-              } catch (e) {
-                console.error(
-                  `failed to call registered ${method}.finish function:`,
-                  e,
-                );
-              }
-              return ret(...args);
-            };
-          }
-          // We just return the callback's return value.
-          return cbRet;
+          // Allow the callback to observe the call synchronously, and replace
+          // the implementation's finisher function, but not to throw an exception.
+          const wrapperFinisher = wrapper(method, args, maybeFinisher);
+          if (typeof maybeFinisher !== 'function') return wrapperFinisher;
+
+          // We wrap the finisher in the callback's return value.
+          return (...finishArgs) => {
+            try {
+              return /** @type {Finisher} */ (wrapperFinisher)(...finishArgs);
+            } catch (e) {
+              console.error(`${method} wrapper finisher failed:`, e);
+              return maybeFinisher(...finishArgs);
+            }
+          };
         } catch (e) {
-          console.error('failed to call registered', method, 'callback:', e);
+          console.error(`${method} wrapper failed:`, e);
+          return maybeFinisher;
         }
-        return ret;
       };
+      return /** @type {F} */ (wrapped);
     },
     /**
-     * Declare that all the methods have been registered.
+     * Declare that all wrapping is done.
      *
-     * @param {string} errorUnusedMsg message to display if there are callback
-     * names that don't correspond to a registration
+     * @param {string} msg message to display if there are unused wrappers
      */
-    doneRegistering(errorUnusedMsg = `Unrecognized callback names:`) {
-      const cbNames = [...todo.keys()];
-      if (!cbNames.length) {
-        return;
-      }
-      console.warn(errorUnusedMsg, cbNames.map(q).sort().join(', '));
+    done(msg = 'Unused wrappers') {
+      if (!unused.size) return;
+      console.warn(msg, ...[...unused.keys()].sort().map(q));
     },
   });
 }
@@ -77,27 +78,25 @@ function makeCallbackRegistry(callbacks) {
  * @returns {KernelSlog}
  */
 export function makeDummySlogger(slogCallbacks, dummyConsole) {
-  const { registerCallback: reg, doneRegistering } =
-    makeCallbackRegistry(slogCallbacks);
+  const { wrap, done } = makeFinishersKit(slogCallbacks);
   const dummySlogger = harden({
-    provideVatSlogger: reg('provideVatSlogger', () =>
+    provideVatSlogger: wrap('provideVatSlogger', () =>
       harden({
         vatSlog: {
           delivery: () => () => 0,
         },
       }),
     ),
-    vatConsole: reg('vatConsole', () => dummyConsole),
-    startup: reg('startup', () => () => 0), // returns nop finish() function
-    replayVatTranscript: reg('replayVatTranscript', () => () => 0),
-    delivery: reg('delivery', () => () => 0),
-    syscall: reg('syscall', () => () => 0),
-    changeCList: reg('changeCList', () => () => 0),
-    terminateVat: reg('terminateVat', () => () => 0),
+    vatConsole: wrap('vatConsole', () => dummyConsole),
+    startup: wrap('startup', () => () => 0), // returns nop finish() function
+    replayVatTranscript: wrap('replayVatTranscript', () => () => 0),
+    delivery: wrap('delivery', () => () => 0),
+    syscall: wrap('syscall', () => () => 0),
+    changeCList: wrap('changeCList', () => () => 0),
+    terminateVat: wrap('terminateVat', () => () => 0),
     write: () => 0,
   });
-  doneRegistering(`Unrecognized makeDummySlogger slogCallbacks names:`);
-  // @ts-expect-error xxx
+  done('Unused makeDummySlogger slogCallbacks method names');
   return dummySlogger;
 }
 
@@ -258,32 +257,30 @@ export function makeSlogger(slogCallbacks, writeObj) {
   //   write({ type: 'annotate-vat', vatID, data });
   // }
 
-  const { registerCallback: reg, doneRegistering } =
-    makeCallbackRegistry(slogCallbacks);
+  const { wrap, done } = makeFinishersKit(slogCallbacks);
   const slogger = harden({
-    provideVatSlogger: reg('provideVatSlogger', provideVatSlogger),
-    vatConsole: reg('vatConsole', (vatID, ...args) =>
+    provideVatSlogger: wrap('provideVatSlogger', provideVatSlogger),
+    vatConsole: wrap('vatConsole', (vatID, ...args) =>
       provideVatSlogger(vatID).vatSlog.vatConsole(...args),
     ),
-    startup: reg('startup', (vatID, ...args) =>
+    startup: wrap('startup', (vatID, ...args) =>
       provideVatSlogger(vatID).vatSlog.startup(...args),
     ),
     replayVatTranscript,
-    delivery: reg('delivery', (vatID, ...args) =>
+    delivery: wrap('delivery', (vatID, ...args) =>
       provideVatSlogger(vatID).vatSlog.delivery(...args),
     ),
-    syscall: reg('syscall', (vatID, ...args) =>
+    syscall: wrap('syscall', (vatID, ...args) =>
       provideVatSlogger(vatID).vatSlog.syscall(...args),
     ),
-    changeCList: reg('changeCList', (vatID, ...args) =>
+    changeCList: wrap('changeCList', (vatID, ...args) =>
       provideVatSlogger(vatID).vatSlog.changeCList(...args),
     ),
-    terminateVat: reg('terminateVat', (vatID, ...args) =>
+    terminateVat: wrap('terminateVat', (vatID, ...args) =>
       provideVatSlogger(vatID).vatSlog.terminateVat(...args),
     ),
     write,
   });
-  doneRegistering(`Unrecognized makeSlogger slogCallbacks names:`);
-  // @ts-expect-error xxx
+  done('Unused makeSlogger slogCallbacks method names');
   return slogger;
 }
