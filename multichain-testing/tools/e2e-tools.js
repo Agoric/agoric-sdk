@@ -109,10 +109,11 @@ const installBundle = async (fullPath, opts) => {
   // };
   // const updates = follow('bundles', { delay: explainDelay });
   // await updates.next();
-  const tx = await agd.tx(
-    ['swingset', 'install-bundle', `@${fullPath}`, '--gas', 'auto'],
-    { from, chainId, yes: true },
-  );
+  const tx = await agd.tx(['swingset', 'install-bundle', `@${fullPath}`], {
+    from,
+    chainId,
+    yes: true,
+  });
   assert(tx);
 
   progress({ id, installTx: tx.txhash, height: tx.height });
