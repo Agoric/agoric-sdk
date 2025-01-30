@@ -12289,7 +12289,7 @@ typescript-eslint@^7.3.1, typescript-eslint@^8.14.0, typescript-eslint@^8.22.0:
     "@typescript-eslint/parser" "8.22.0"
     "@typescript-eslint/utils" "8.22.0"
 
-"typescript@5.1.6 - 5.7.x", typescript@^5.4.5, typescript@~5.7.1, typescript@~5.7.3:
+"typescript@5.1.6 - 5.7.x", typescript@^5.4.5:
   version "5.7.3"
   resolved "https://registry.yarnpkg.com/typescript/-/typescript-5.7.3.tgz#919b44a7dbb8583a9b856d162be24a54bf80073e"
   integrity sha512-84MVSjMEHP+FQRPy3pX9sTVV/INIex71s9TL2Gm5FG/WG1SqXeKyZ0k7/blY/4FdOzI12CBy1vGc4og/eus0fw==
@@ -12298,6 +12298,11 @@ typescript-eslint@^7.3.1, typescript-eslint@^8.14.0, typescript-eslint@^8.22.0:
   version "4.9.5"
   resolved "https://registry.yarnpkg.com/typescript/-/typescript-4.9.5.tgz#095979f9bcc0d09da324d58d03ce8f8374cbe65a"
   integrity sha512-1FXk9E2Hm+QzZQ7z+McJiHL4NW1F2EzMu9Nq9i3zAaGqibafqYwCVU6WyWAuyQRRzOlxou8xZSyXLEN8oKj24g==
+
+typescript@^5.8.0-beta, typescript@~5.8.0-beta:
+  version "5.8.0-dev.20250130"
+  resolved "https://registry.yarnpkg.com/typescript/-/typescript-5.8.0-dev.20250130.tgz#eede4cf5d813f9845c6ee2b508d2392d544cb76e"
+  integrity sha512-qeH56cqOnOE0NO4zUsuuc5kyIQlzOPurHcguomUpSTfUE2He5dABg+fBBUeYIf4MreflM6ArXyj/rIrcHQ5g0g==
 
 typescript@~5.6.3:
   version "5.6.3"
