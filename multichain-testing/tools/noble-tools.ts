@@ -26,7 +26,8 @@ export const makeNobleTools = (
   }: {
     execFileSync: ExecSync;
   },
-  log: (...args: unknown[]) => void = console.log,
+  log: (...args: unknown[]) => void = (...args) =>
+    console.log('NobleTools', ...args),
 ) => {
   const exec = (
     args: string[],
