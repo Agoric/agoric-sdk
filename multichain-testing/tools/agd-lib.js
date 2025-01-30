@@ -1,5 +1,8 @@
 // @ts-check
+import { makeTracer } from '@agoric/internal';
 import assert from 'node:assert';
+
+const trace = makeTracer('Agd');
 
 const { freeze } = Object;
 
@@ -136,12 +139,13 @@ export const makeAgd = ({ execFileSync }) => {
           ...(yes ? ['--yes'] : []),
           ...outJson,
         ];
-        console.log('$$$ agd', ...args);
+        trace('$ agd', ...args);
         const out = exec(args, { stdio: ['ignore', 'pipe', 'ignore'] });
         try {
           // XXX approximate type
           /** @type {{ height: string, txhash: string, code: number, codespace: string, raw_log: string }} */
           const detail = JSON.parse(out);
+          trace('agd returned;', detail);
           if (detail.code !== 0) {
             throw Error(detail.raw_log);
           }
