@@ -4,6 +4,8 @@ const IDLE = 'idle';
 const STARTUP = 'startup';
 const DELIVERY = 'delivery';
 
+const noopFinisher = harden(() => {});
+
 /** @typedef {(...finishArgs: unknown[]) => unknown} AnyFinisher */
 
 /**
@@ -80,21 +82,17 @@ function makeFinishersKit(wrappers) {
 export function makeDummySlogger(slogCallbacks, dummyConsole) {
   const { wrap, done } = makeFinishersKit(slogCallbacks);
   const dummySlogger = harden({
-    provideVatSlogger: wrap('provideVatSlogger', () =>
-      harden({
-        vatSlog: {
-          delivery: () => () => 0,
-        },
-      }),
-    ),
+    provideVatSlogger: wrap('provideVatSlogger', () => {
+      return harden({ vatSlog: { delivery: () => noopFinisher } });
+    }),
     vatConsole: wrap('vatConsole', () => dummyConsole),
-    startup: wrap('startup', () => () => 0), // returns nop finish() function
-    replayVatTranscript: wrap('replayVatTranscript', () => () => 0),
-    delivery: wrap('delivery', () => () => 0),
-    syscall: wrap('syscall', () => () => 0),
-    changeCList: wrap('changeCList', () => () => 0),
-    terminateVat: wrap('terminateVat', () => () => 0),
-    write: () => 0,
+    startup: wrap('startup', () => noopFinisher),
+    replayVatTranscript: wrap('replayVatTranscript', () => noopFinisher),
+    delivery: wrap('delivery', () => noopFinisher),
+    syscall: wrap('syscall', () => noopFinisher),
+    changeCList: wrap('changeCList', () => noopFinisher),
+    terminateVat: wrap('terminateVat', () => noopFinisher),
+    write: noopFinisher,
   });
   done('Unused makeDummySlogger slogCallbacks method names');
   return dummySlogger;
