@@ -147,6 +147,8 @@ export const makeAgd = ({ execFileSync }) => {
           const detail = JSON.parse(out);
           trace('agd returned;', detail);
           if (detail.code !== 0) {
+            // FIXME we're getting: account sequence mismatch, expected 30, got 29: incorrect account sequence
+            // Does that mean `broadcast-mode: block` didn't work?
             throw Error(detail.raw_log);
           }
           return detail;
