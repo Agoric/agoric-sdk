@@ -140,7 +140,6 @@ const baseConfig = harden({
  * @param {Replacer<SwingSetConfig>} [options.fixupConfig] a final opportunity
  *   to make any changes
  * @param {import('@agoric/telemetry').SlogSender} [options.slogSender]
- * @param {import('../src/chain-main.js').CosmosSwingsetConfig} [options.swingsetConfig]
  * @param {import('@agoric/swing-store').SwingStore} [options.swingStore]
  *   defaults to a new in-memory store
  * @param {SwingSetConfig['vats']} [options.vats] extra static vat configuration
@@ -170,7 +169,6 @@ export const makeCosmicSwingsetTestKit = async (
     fixupInitMessage,
     fixupConfig,
     slogSender,
-    swingsetConfig = {},
     swingStore,
     vats,
 
@@ -251,7 +249,6 @@ export const makeCosmicSwingsetTestKit = async (
     env,
     debugName,
     slogSender,
-    swingsetConfig,
   });
   const { blockingSend, shutdown: shutdownKernel } = launchResult;
   /** @type {(options?: { kernelOnly?: boolean }) => Promise<void>} */

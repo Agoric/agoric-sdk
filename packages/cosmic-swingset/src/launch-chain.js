@@ -324,10 +324,8 @@ export async function buildSwingset(
  * @property {ReturnType<typeof import('@agoric/swing-store').makeArchiveSnapshot>} [archiveSnapshot]
  * @property {ReturnType<typeof import('@agoric/swing-store').makeArchiveTranscript>} [archiveTranscript]
  * @property {() => object | Promise<object>} [afterCommitCallback]
- * @property {import('./chain-main.js').CosmosSwingsetConfig} swingsetConfig
- *   TODO refactor to clarify relationship vs. import('@agoric/swingset-vat').SwingSetConfig
- *   --- maybe partition into in-consensus "config" vs. consensus-independent "options"?
- *   (which would mostly just require `bundleCachePath` to become a `buildSwingset` input)
+ * @property {number} [maxVatsOnline]
+ * @property {boolean} [restartWorkerOnSnapshot]
  */
 
 /**
@@ -357,7 +355,8 @@ export async function launch({
   archiveSnapshot,
   archiveTranscript,
   afterCommitCallback = async () => ({}),
-  swingsetConfig,
+  maxVatsOnline,
+  restartWorkerOnSnapshot,
 }) {
   console.info('Launching SwingSet kernel');
 
@@ -450,8 +449,10 @@ export async function launch({
   });
 
   console.debug(`buildSwingset`);
+  /** @type {import('@agoric/swingset-vat').VatWarehousePolicy} */
   const warehousePolicy = {
-    maxVatsOnline: swingsetConfig.maxVatsOnline,
+    maxVatsOnline,
+    restartWorkerOnSnapshot,
   };
   const {
     coreProposals: bootstrapCoreProposals,
