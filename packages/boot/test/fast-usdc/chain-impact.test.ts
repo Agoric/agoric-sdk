@@ -23,9 +23,19 @@ test.before(async t => {
 });
 test.after.always(t => t.context.shutdown?.());
 
-test('access kernel stats after bootstrap', async t => {
+test('access relevant kernel stats after bootstrap', async t => {
   const { controller } = t.context;
   const stats = controller.getStats();
-  t.log('kernel stats', stats);
+  const { promiseQueuesLength, kernelPromises, kernelObjects, clistEntries } =
+    stats;
+  const relevant = {
+    promiseQueuesLength,
+    kernelPromises,
+    kernelObjects,
+    clistEntries,
+  };
+  t.log('relevant kernel stats', relevant);
   t.truthy(stats);
 });
+
+test.todo('uncompressedSize of heap snapshots of vats');
