@@ -15,7 +15,8 @@ import { initSwingStore } from '@agoric/swing-store';
 
 import { mustMatch, M } from '@endo/patterns';
 import { checkBundle } from '@endo/check-bundle/lite.js';
-import { deepCopyJsonable, logLevels } from '@agoric/internal/src/js-utils.js';
+import { deepCopyJsonable } from '@agoric/internal/src/js-utils.js';
+import { makeLimitedConsole } from '@agoric/internal/src/ses-utils.js';
 import engineGC from '@agoric/internal/src/lib-nodejs/engine-gc.js';
 import { startSubprocessWorker } from '@agoric/internal/src/lib-nodejs/spawnSubprocessWorker.js';
 import { waitUntilQuiescent } from '@agoric/internal/src/lib-nodejs/waitUntilQuiescent.js';
@@ -37,7 +38,6 @@ import { makeStartSubprocessWorkerNode } from './startNodeSubprocess.js';
 
 /**
  * @import {EReturn} from '@endo/far';
- * @import {LimitedConsole, LogLevel} from '@agoric/internal/src/js-utils.js';
  */
 
 /**
@@ -65,32 +65,24 @@ export function computeSha512(bytes) {
  * @param {string | ((originalSource: unknown) => string)} prefixer
  */
 function makeConsole(prefixer) {
-  /** @type {(level: LogLevel) => (args: unknown[]) => void} */
-  let makeLoggerForLevel;
   if (typeof prefixer !== 'function') {
     const logger = anylogger(prefixer);
-    makeLoggerForLevel = level => logger[level];
-  } else {
-    const prefixToLogger = new Map();
-    makeLoggerForLevel = level => {
-      return (source, ...args) => {
-        const prefix = prefixer(source);
-        let logger = prefixToLogger.get(prefix);
-        if (!logger) {
-          logger = anylogger(prefix);
-          prefixToLogger.set(prefix, logger);
-        }
-
-        return logger[level](...args);
-      };
-    };
+    return makeLimitedConsole(level => logger[level]);
   }
-  const loggerEntries = logLevels.map(level => [
-    level,
-    makeLoggerForLevel(level),
-  ]);
-  const cons = /** @type {any} */ (Object.fromEntries(loggerEntries));
-  return /** @type {LimitedConsole} */ (harden(cons));
+
+  const prefixToLogger = new Map();
+  return makeLimitedConsole(level => {
+    return (source, ...args) => {
+      const prefix = prefixer(source);
+      let logger = prefixToLogger.get(prefix);
+      if (!logger) {
+        logger = anylogger(prefix);
+        prefixToLogger.set(prefix, logger);
+      }
+
+      return logger[level](...args);
+    };
+  });
 }
 
 /**

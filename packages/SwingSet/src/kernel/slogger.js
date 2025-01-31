@@ -1,5 +1,5 @@
 import { q } from '@endo/errors';
-import { logLevels } from '@agoric/internal/src/js-utils.js';
+import { makeLimitedConsole } from '@agoric/internal/src/ses-utils.js';
 
 /** @import {LimitedConsole} from '@agoric/internal/src/js-utils.js'; */
 
@@ -78,13 +78,6 @@ function makeFinishersKit(wrappers) {
   });
 }
 
-/** @param {(level: string) => (...args: unknown[]) => void} makeLogger */
-const makeLimitedConsole = makeLogger => {
-  const limitedConsole = /** @type {any} */ (
-    Object.fromEntries(logLevels.map(level => [level, makeLogger(level)]))
-  );
-  return /** @type {LimitedConsole} */ (harden(limitedConsole));
-};
 export const badConsole = makeLimitedConsole(level => () => {
   throw Error(`unexpected use of badConsole.${level}`);
 });
