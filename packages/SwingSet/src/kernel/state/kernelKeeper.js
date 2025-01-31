@@ -1,5 +1,6 @@
 import { Nat, isNat } from '@endo/nat';
 import { assert, Fail } from '@endo/errors';
+import { makeDummySlogger, noopConsole } from '../slogger.js';
 import {
   initializeVatState,
   makeVatKeeper,
@@ -329,7 +330,7 @@ export const DEFAULT_GC_KREFS_PER_BOYD = 20;
 /**
  * @param {SwingStoreKernelStorage} kernelStorage
  * @param {number | 'uninitialized'} expectedVersion
- * @param {KernelSlog} [kernelSlog]
+ * @param {KernelSlog} [kernelSlog] optional only for expectedVersion 'uninitialized'
  */
 export default function makeKernelKeeper(
   kernelStorage,
@@ -355,10 +356,13 @@ export default function makeKernelKeeper(
     if (versionString) {
       throw Error(`kernel DB already initialized (v${versionString})`);
     }
+    kernelSlog ||= makeDummySlogger({}, noopConsole);
   } else if (expectedVersion !== version) {
     throw Error(
       `kernel DB is too old: has version v${version}, but expected v${expectedVersion}`,
     );
+  } else if (!kernelSlog) {
+    throw Error('kernelSlog is required for an already-initialized kernel DB');
   } else {
     // DB is up-to-date, so populate any caches we use
     terminatedVats = JSON.parse(getRequired('vats.terminated'));
