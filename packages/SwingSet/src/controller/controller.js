@@ -215,11 +215,18 @@ export async function makeSwingsetController(
   function kernelRequire(what) {
     Fail`kernelRequire unprepared to satisfy require(${what})`;
   }
+  const kernelConsole = makeConsole(`${debugPrefix}SwingSet:kernel`);
+  const sloggingKernelConsole = makeLimitedConsole(level => {
+    return (...args) => {
+      kernelConsole[level](...args);
+      writeSlogObject({ type: 'console', source: 'kernel', args });
+    };
+  });
   writeSlogObject({ type: 'import-kernel-start' });
   const kernelNS = await importBundle(kernelBundle, {
     filePrefix: 'kernel/...',
     endowments: {
-      console: makeConsole(`${debugPrefix}SwingSet:kernel`),
+      console: sloggingKernelConsole,
       // See https://github.com/Agoric/agoric-sdk/issues/9515
       assert: globalThis.assert,
       require: kernelRequire,
