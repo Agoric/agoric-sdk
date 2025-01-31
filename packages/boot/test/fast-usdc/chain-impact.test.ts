@@ -8,6 +8,8 @@ import {
   type WalletFactoryTestContext,
 } from '../bootstrapTests/walletFactory.js';
 import type { SwingsetController } from '@agoric/swingset-vat/src/controller/controller.js';
+import { BridgeId } from '@agoric/internal';
+import { AckBehavior } from '../../tools/supports.js';
 
 const test: TestFn<
   WalletFactoryTestContext & { observations: { id: unknown; kernel: Object }[] }
@@ -84,6 +86,39 @@ test.serial('oracles provision before contract deployment', async t => {
   const { controller, observations } = t.context;
   observations.push({
     id: 'post-ocw-provision',
+    kernel: getResourceUsageStats(controller),
+  });
+});
+
+test.serial('start-fast-usdc', async t => {
+  const {
+    agoricNamesRemotes,
+    bridgeUtils,
+    buildProposal,
+    evalProposal,
+    refreshAgoricNamesRemotes,
+  } = t.context;
+
+  // inbound `startChannelOpenInit` responses immediately.
+  // needed since the Fusdc StartFn relies on an ICA being created
+  bridgeUtils.setAckBehavior(
+    BridgeId.DIBC,
+    'startChannelOpenInit',
+    AckBehavior.Immediate,
+  );
+  bridgeUtils.setBech32Prefix('noble');
+
+  const materials = buildProposal(
+    '@agoric/builders/scripts/fast-usdc/start-fast-usdc.build.js',
+    ['--net', 'MAINNET'],
+  );
+  await evalProposal(materials);
+  refreshAgoricNamesRemotes();
+  t.truthy(agoricNamesRemotes.instance.fastUsdc);
+
+  const { controller, observations } = t.context;
+  observations.push({
+    id: 'post-start-fast-usdc',
     kernel: getResourceUsageStats(controller),
   });
 });
