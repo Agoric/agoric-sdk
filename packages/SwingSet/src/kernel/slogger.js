@@ -1,4 +1,7 @@
 import { q } from '@endo/errors';
+import { logLevels } from '@agoric/internal/src/js-utils.js';
+
+/** @import {LimitedConsole} from '@agoric/internal/src/js-utils.js'; */
 
 const IDLE = 'idle';
 const STARTUP = 'startup';
@@ -7,6 +10,7 @@ const DELIVERY = 'delivery';
 const noopFinisher = harden(() => {});
 
 /** @typedef {(...finishArgs: unknown[]) => unknown} AnyFinisher */
+/** @typedef {Partial<Record<Exclude<keyof KernelSlog, 'write'>, (methodName: string, args: unknown[], finisher: AnyFinisher) => unknown>>} SlogWrappers */
 
 /**
  * Support composition of asynchronous callbacks that are invoked at the start
@@ -17,7 +21,7 @@ const noopFinisher = harden(() => {});
  * (e.g., its finisher), and are expected to return a finisher of their own that
  * will invoke that wrapped finisher.
  *
- * @param {Record<string, (methodName: string, args: unknown[], finisher: AnyFinisher) => unknown>} wrappers
+ * @param {SlogWrappers} wrappers
  */
 function makeFinishersKit(wrappers) {
   const unused = new Set(Object.keys(wrappers));
@@ -74,12 +78,24 @@ function makeFinishersKit(wrappers) {
   });
 }
 
+/** @param {(level: string) => (...args: unknown[]) => void} makeLogger */
+const makeDummyConsole = makeLogger => {
+  const dummyConsole = /** @type {any} */ (
+    Object.fromEntries(logLevels.map(level => [level, makeLogger(level)]))
+  );
+  return /** @type {LimitedConsole} */ (harden(dummyConsole));
+};
+export const badConsole = makeDummyConsole(level => () => {
+  throw Error(`unexpected use of badConsole.${level}`);
+});
+export const noopConsole = makeDummyConsole(_level => () => {});
+
 /**
- * @param {*} slogCallbacks
- * @param {Pick<Console, 'debug'|'log'|'info'|'warn'|'error'>} dummyConsole
+ * @param {SlogWrappers} slogCallbacks
+ * @param {LimitedConsole} [dummyConsole]
  * @returns {KernelSlog}
  */
-export function makeDummySlogger(slogCallbacks, dummyConsole) {
+export function makeDummySlogger(slogCallbacks, dummyConsole = badConsole) {
   const { wrap, done } = makeFinishersKit(slogCallbacks);
   const dummySlogger = harden({
     provideVatSlogger: wrap('provideVatSlogger', () => {
@@ -99,8 +115,8 @@ export function makeDummySlogger(slogCallbacks, dummyConsole) {
 }
 
 /**
- * @param {*} slogCallbacks
- * @param {*} writeObj
+ * @param {SlogWrappers} slogCallbacks
+ * @param {(obj: object) => void} [writeObj]
  * @returns {KernelSlog}
  */
 export function makeSlogger(slogCallbacks, writeObj) {
@@ -133,7 +149,7 @@ export function makeSlogger(slogCallbacks, writeObj) {
 
     function vatConsole(sourcedConsole) {
       const vc = {};
-      for (const level of ['debug', 'log', 'info', 'warn', 'error']) {
+      for (const level of logLevels) {
         vc[level] = (sourceTag, ...args) => {
           if (replay) {
             // Don't duplicate stale console output.
@@ -264,6 +280,7 @@ export function makeSlogger(slogCallbacks, writeObj) {
     startup: wrap('startup', (vatID, ...args) =>
       provideVatSlogger(vatID).vatSlog.startup(...args),
     ),
+    // TODO: Remove this seemingly dead code.
     replayVatTranscript,
     delivery: wrap('delivery', (vatID, ...args) =>
       provideVatSlogger(vatID).vatSlog.delivery(...args),
