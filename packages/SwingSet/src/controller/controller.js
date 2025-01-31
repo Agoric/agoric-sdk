@@ -15,7 +15,7 @@ import { initSwingStore } from '@agoric/swing-store';
 
 import { mustMatch, M } from '@endo/patterns';
 import { checkBundle } from '@endo/check-bundle/lite.js';
-import { deepCopyJsonable } from '@agoric/internal/src/js-utils.js';
+import { deepCopyJsonable, logLevels } from '@agoric/internal/src/js-utils.js';
 import engineGC from '@agoric/internal/src/lib-nodejs/engine-gc.js';
 import { startSubprocessWorker } from '@agoric/internal/src/lib-nodejs/spawnSubprocessWorker.js';
 import { waitUntilQuiescent } from '@agoric/internal/src/lib-nodejs/waitUntilQuiescent.js';
@@ -37,6 +37,7 @@ import { makeStartSubprocessWorkerNode } from './startNodeSubprocess.js';
 
 /**
  * @import {EReturn} from '@endo/far';
+ * @import {LimitedConsole} from '@agoric/internal/src/js-utils.js';
  */
 
 /**
@@ -79,11 +80,12 @@ function makeConsole(tagOrTagCreator) {
     const logger = anylogger(tagOrTagCreator);
     makeLoggerForLevel = level => logger[level];
   }
-  const cons = {};
-  for (const level of ['debug', 'log', 'info', 'warn', 'error']) {
-    cons[level] = makeLoggerForLevel(level);
-  }
-  return harden(cons);
+  const loggerEntries = logLevels.map(level => [
+    level,
+    makeLoggerForLevel(level),
+  ]);
+  const cons = /** @type {any} */ (Object.fromEntries(loggerEntries));
+  return /** @type {LimitedConsole} */ (harden(cons));
 }
 
 /**
