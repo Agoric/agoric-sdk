@@ -37,7 +37,7 @@ import { makeStartSubprocessWorkerNode } from './startNodeSubprocess.js';
 
 /**
  * @import {EReturn} from '@endo/far';
- * @import {LimitedConsole} from '@agoric/internal/src/js-utils.js';
+ * @import {LimitedConsole, LogLevel} from '@agoric/internal/src/js-utils.js';
  */
 
 /**
@@ -57,28 +57,33 @@ export function computeSha512(bytes) {
   return hash.digest().toString('hex');
 }
 
-/** @param {string | ((args: unknown[]) => string)} tagOrTagCreator */
-function makeConsole(tagOrTagCreator) {
-  /** @type {(level: string) => (args: unknown[]) => void} */
+/**
+ * Make logger functions from either a prefix string or a function that receives
+ * the first argument of a log-method invocation and returns a replacement that
+ * provides more detail for source identification.
+ *
+ * @param {string | ((originalSource: unknown) => string)} prefixer
+ */
+function makeConsole(prefixer) {
+  /** @type {(level: LogLevel) => (args: unknown[]) => void} */
   let makeLoggerForLevel;
-  if (typeof tagOrTagCreator === 'function') {
-    const tagToLogger = new Map();
-    makeLoggerForLevel =
-      level =>
-      (...args) => {
-        // Retrieve the logger from cache.
-        const tag = tagOrTagCreator(args);
-        let logger = tagToLogger.get(tag);
+  if (typeof prefixer !== 'function') {
+    const logger = anylogger(prefixer);
+    makeLoggerForLevel = level => logger[level];
+  } else {
+    const prefixToLogger = new Map();
+    makeLoggerForLevel = level => {
+      return (source, ...args) => {
+        const prefix = prefixer(source);
+        let logger = prefixToLogger.get(prefix);
         if (!logger) {
-          logger = anylogger(tag);
-          tagToLogger.set(tag, logger);
+          logger = anylogger(prefix);
+          prefixToLogger.set(prefix, logger);
         }
-        // Actually log the message.
+
         return logger[level](...args);
       };
-  } else {
-    const logger = anylogger(tagOrTagCreator);
-    makeLoggerForLevel = level => logger[level];
+    };
   }
   const loggerEntries = logLevels.map(level => [
     level,

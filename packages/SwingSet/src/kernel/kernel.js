@@ -167,10 +167,9 @@ export default function buildKernel(
   harden(testLog);
 
   function makeSourcedConsole(vatID) {
-    const origConsole = makeConsole(args => {
-      const source = args.shift();
-      return `${debugPrefix}SwingSet:${source}:${vatID}`;
-    });
+    const origConsole = makeConsole(
+      source => `${debugPrefix}SwingSet:${source}:${vatID}`,
+    );
     return kernelSlog.vatConsole(vatID, origConsole);
   }
 
