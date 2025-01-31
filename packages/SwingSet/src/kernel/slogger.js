@@ -79,16 +79,16 @@ function makeFinishersKit(wrappers) {
 }
 
 /** @param {(level: string) => (...args: unknown[]) => void} makeLogger */
-const makeDummyConsole = makeLogger => {
-  const dummyConsole = /** @type {any} */ (
+const makeLimitedConsole = makeLogger => {
+  const limitedConsole = /** @type {any} */ (
     Object.fromEntries(logLevels.map(level => [level, makeLogger(level)]))
   );
-  return /** @type {LimitedConsole} */ (harden(dummyConsole));
+  return /** @type {LimitedConsole} */ (harden(limitedConsole));
 };
-export const badConsole = makeDummyConsole(level => () => {
+export const badConsole = makeLimitedConsole(level => () => {
   throw Error(`unexpected use of badConsole.${level}`);
 });
-export const noopConsole = makeDummyConsole(_level => () => {});
+export const noopConsole = makeLimitedConsole(_level => () => {});
 
 /**
  * @param {SlogWrappers} slogCallbacks
@@ -149,20 +149,17 @@ export function makeSlogger(slogCallbacks, writeObj) {
     }
 
     function vatConsole(sourcedConsole) {
-      const vc = {};
-      for (const level of logLevels) {
-        vc[level] = (sourceTag, ...args) => {
-          if (replay) {
-            // Don't duplicate stale console output.
-            return;
-          }
-          sourcedConsole[level](sourceTag, ...args);
-          const when = { state, crankNum, vatID, deliveryNum };
-          const source = sourceTag === 'ls' ? 'liveslots' : sourceTag;
-          safeWrite({ type: 'console', source, ...when, level, args });
-        };
-      }
-      return harden(vc);
+      return makeLimitedConsole(level => (source, ...args) => {
+        // Don't duplicate stale output.
+        if (replay) return;
+
+        // Write to the console, then to the slog.
+        sourcedConsole[level](source, ...args);
+        // TODO: Just use "liveslots" rather than "ls"?
+        if (source === 'ls') source = 'liveslots';
+        const when = { state, crankNum, vatID, deliveryNum };
+        safeWrite({ type: 'console', source, ...when, level, args });
+      });
     }
 
     function startup() {
