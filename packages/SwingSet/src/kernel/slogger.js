@@ -120,14 +120,15 @@ export function makeDummySlogger(slogCallbacks, dummyConsole = badConsole) {
  * @returns {KernelSlog}
  */
 export function makeSlogger(slogCallbacks, writeObj) {
-  const safeWrite = e => {
-    try {
-      writeObj(e);
-    } catch (err) {
-      console.error('WARNING: slogger write error', err);
-    }
-  };
-  const write = writeObj ? safeWrite : () => 0;
+  const safeWrite = writeObj
+    ? obj => {
+        try {
+          writeObj(obj);
+        } catch (err) {
+          console.error('WARNING: slogger write error', err);
+        }
+      }
+    : () => {};
 
   const vatSlogs = new Map(); // vatID -> vatSlog
 
@@ -143,7 +144,7 @@ export function makeSlogger(slogCallbacks, writeObj) {
         console.error(
           `WARNING: slogger state confused: vat ${vatID} in ${state}, not ${exp}: ${msg}`,
         );
-        write({ type: 'slogger-confused', vatID, state, exp, msg });
+        safeWrite({ type: 'slogger-confused', vatID, state, exp, msg });
       }
     }
 
@@ -158,7 +159,7 @@ export function makeSlogger(slogCallbacks, writeObj) {
           sourcedConsole[level](sourceTag, ...args);
           const when = { state, crankNum, vatID, deliveryNum };
           const source = sourceTag === 'ls' ? 'liveslots' : sourceTag;
-          write({ type: 'console', source, ...when, level, args });
+          safeWrite({ type: 'console', source, ...when, level, args });
         };
       }
       return harden(vc);
@@ -168,11 +169,11 @@ export function makeSlogger(slogCallbacks, writeObj) {
       // provide a context for console calls during startup
       checkOldState(IDLE, 'did startup get called twice?');
       state = STARTUP;
-      write({ type: 'vat-startup-start', vatID });
+      safeWrite({ type: 'vat-startup-start', vatID });
       function finish() {
         checkOldState(STARTUP, 'startup-finish called twice?');
         state = IDLE;
-        write({ type: 'vat-startup-finish', vatID });
+        safeWrite({ type: 'vat-startup-finish', vatID });
       }
       return harden(finish);
     }
@@ -185,13 +186,13 @@ export function makeSlogger(slogCallbacks, writeObj) {
       deliveryNum = newDeliveryNum;
       replay = inReplay;
       const when = { crankNum, vatID, deliveryNum, replay };
-      write({ type: 'deliver', ...when, kd, vd });
+      safeWrite({ type: 'deliver', ...when, kd, vd });
       syscallNum = 0;
 
       // dr: deliveryResult
       function finish(dr) {
         checkOldState(DELIVERY, 'delivery-finish called twice?');
-        write({ type: 'deliver-result', ...when, dr });
+        safeWrite({ type: 'deliver-result', ...when, dr });
         state = IDLE;
       }
       return harden(finish);
@@ -201,24 +202,24 @@ export function makeSlogger(slogCallbacks, writeObj) {
     function syscall(ksc, vsc) {
       checkOldState(DELIVERY, 'syscall invoked outside of delivery');
       const when = { crankNum, vatID, deliveryNum, syscallNum, replay };
-      write({ type: 'syscall', ...when, ksc, vsc });
+      safeWrite({ type: 'syscall', ...when, ksc, vsc });
       syscallNum += 1;
 
       // ksr: kernelSyscallResult, vsr: vatSyscallResult
       function finish(ksr, vsr) {
         checkOldState(DELIVERY, 'syscall finished after delivery?');
-        write({ type: 'syscall-result', ...when, ksr, vsr });
+        safeWrite({ type: 'syscall-result', ...when, ksr, vsr });
       }
       return harden(finish);
     }
 
     // mode: 'import' | 'export' | 'drop'
     function changeCList(crank, mode, kobj, vobj) {
-      write({ type: 'clist', crankNum: crank, mode, vatID, kobj, vobj });
+      safeWrite({ type: 'clist', crankNum: crank, mode, vatID, kobj, vobj });
     }
 
     function terminateVat(shouldReject, info) {
-      write({ type: 'terminate', vatID, shouldReject, info });
+      safeWrite({ type: 'terminate', vatID, shouldReject, info });
     }
 
     return harden({
@@ -246,7 +247,7 @@ export function makeSlogger(slogCallbacks, writeObj) {
     }
     const vatSlog = makeVatSlog(vatID);
     vatSlogs.set(vatID, vatSlog);
-    write({
+    safeWrite({
       type: 'create-vat',
       vatID,
       dynamic,
@@ -260,15 +261,15 @@ export function makeSlogger(slogCallbacks, writeObj) {
   }
 
   function replayVatTranscript(vatID) {
-    write({ type: 'replay-transcript-start', vatID });
+    safeWrite({ type: 'replay-transcript-start', vatID });
     function finish() {
-      write({ type: 'replay-transcript-finish', vatID });
+      safeWrite({ type: 'replay-transcript-finish', vatID });
     }
     return harden(finish);
   }
 
   // function annotateVat(vatID, data) {
-  //   write({ type: 'annotate-vat', vatID, data });
+  //   safeWrite({ type: 'annotate-vat', vatID, data });
   // }
 
   const { wrap, done } = makeFinishersKit(slogCallbacks);
@@ -294,7 +295,7 @@ export function makeSlogger(slogCallbacks, writeObj) {
     terminateVat: wrap('terminateVat', (vatID, ...args) =>
       provideVatSlogger(vatID).vatSlog.terminateVat(...args),
     ),
-    write,
+    write: safeWrite,
   });
   done('Unused makeSlogger slogCallbacks method names');
   return slogger;
