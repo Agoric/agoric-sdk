@@ -86,7 +86,7 @@ export function initializeVatState(
 /**
  * @typedef {object} VatKeeperPowers
  * @property {TranscriptStore} transcriptStore  Accompanying transcript store, for the transcripts
- * @property {*} kernelSlog
+ * @property {KernelSlog} [kernelSlog]
  * @property {*} addKernelObject  Kernel function to add a new object to the kernel's mapping tables.
  * @property {*} addKernelPromiseForVat  Kernel function to add a new promise to the kernel's mapping tables.
  * @property {(kernelSlot: string) => boolean} kernelObjectExists
