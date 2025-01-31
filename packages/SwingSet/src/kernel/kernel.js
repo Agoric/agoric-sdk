@@ -110,11 +110,10 @@ export default function buildKernel(
     warehousePolicy,
     overrideVatManagerOptions = {},
   } = kernelRuntimeOptions;
-  const logStartup = verbose ? console.debug : () => 0;
+  const logStartup = verbose ? console.debug : () => {};
 
   const vatAdminRootKref = kernelStorage.kvStore.get('vatAdminRootKref');
 
-  /** @type { KernelSlog } */
   const kernelSlog = writeSlogObject
     ? makeSlogger(slogCallbacks, writeSlogObject)
     : makeDummySlogger(slogCallbacks, makeConsole('disabled slogger'));
