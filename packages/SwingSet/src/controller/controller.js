@@ -212,9 +212,6 @@ export async function makeSwingsetController(
     process.on('unhandledRejection', unhandledRejectionHandler);
   }
 
-  function kernelRequire(what) {
-    Fail`kernelRequire unprepared to satisfy require(${what})`;
-  }
   const kernelConsole = makeConsole(`${debugPrefix}SwingSet:kernel`);
   const sloggingKernelConsole = makeLimitedConsole(level => {
     return (...args) => {
@@ -229,7 +226,9 @@ export async function makeSwingsetController(
       console: sloggingKernelConsole,
       // See https://github.com/Agoric/agoric-sdk/issues/9515
       assert: globalThis.assert,
-      require: kernelRequire,
+      require: harden(
+        what => Fail`kernelRequire unprepared to satisfy require(${what})`,
+      ),
       URL: globalThis.Base64, // Unavailable only on XSnap
       Base64: globalThis.Base64, // Available only on XSnap
     },
