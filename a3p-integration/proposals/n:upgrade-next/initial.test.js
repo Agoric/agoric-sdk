@@ -9,8 +9,8 @@ const vats = {
   localchain: { incarnation: 2 },
   orchestration: { incarnation: 1 },
   transfer: { incarnation: 2 },
-  walletFactory: { incarnation: 5 },
-  zoe: { incarnation: 3 },
+  walletFactory: { incarnation: 6 },
+  zoe: { incarnation: 4 },
   // Terminated in a future proposal.
   '-ATOM-USD_price_feed-governor': { incarnation: 0 },
 };
