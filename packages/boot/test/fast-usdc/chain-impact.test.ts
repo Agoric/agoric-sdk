@@ -1,15 +1,18 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import type { TestFn } from 'ava';
 
+import type { PoolMetrics } from '@agoric/fast-usdc';
+import { Offers } from '@agoric/fast-usdc/src/clientSupport.js';
 import { configurations } from '@agoric/fast-usdc/src/utils/deploy-config.js';
+import { BridgeId } from '@agoric/internal';
+import { defaultMarshaller } from '@agoric/internal/src/storage-test-utils.js';
 import type { SnapStoreDebug } from '@agoric/swing-store';
+import type { SwingsetController } from '@agoric/swingset-vat/src/controller/controller.js';
+import { AckBehavior } from '../../tools/supports.js';
 import {
   makeWalletFactoryContext,
   type WalletFactoryTestContext,
 } from '../bootstrapTests/walletFactory.js';
-import type { SwingsetController } from '@agoric/swingset-vat/src/controller/controller.js';
-import { BridgeId } from '@agoric/internal';
-import { AckBehavior } from '../../tools/supports.js';
 
 const test: TestFn<
   WalletFactoryTestContext & { observations: { id: unknown; kernel: Object }[] }
@@ -121,6 +124,47 @@ test.serial('start-fast-usdc', async t => {
     id: 'post-start-fast-usdc',
     kernel: getResourceUsageStats(controller),
   });
+});
+
+const makeLP = (ctx: WalletFactoryTestContext, addr: string) => {
+  const { agoricNamesRemotes, walletFactoryDriver: wfd } = ctx;
+  const lpP = wfd.provideSmartWallet(addr);
+
+  let nonce = 0;
+
+  return harden({
+    async deposit(value: bigint) {
+      const offerId = `deposit-lp-${(nonce += 1)}`;
+      const offerSpec = Offers.fastUsdc.Deposit(agoricNamesRemotes, {
+        offerId,
+        fastLPAmount: value,
+        usdcAmount: value,
+      });
+      const lp = await lpP;
+      await lp.sendOffer(offerSpec);
+      return offerSpec;
+    },
+  });
+};
+
+const getMetrics = (ctx: WalletFactoryTestContext) => {
+  const { storage } = ctx;
+
+  const metrics: PoolMetrics = defaultMarshaller.fromCapData(
+    JSON.parse(storage.getValues('published.fastUsdc.poolMetrics').at(-1)!),
+  );
+  return metrics;
+};
+
+test.serial('LP deposits', async t => {
+  const lp = makeLP(t.context, 'agoric19uscwxdac6cf6z7d5e26e0jm0lgwstc47cpll8');
+  const { proposal, id } = await lp.deposit(150_000_000n);
+
+  const metrics = getMetrics(t.context);
+  t.true(metrics.shareWorth.numerator.value >= proposal.give.USDC.value);
+
+  const { controller, observations } = t.context;
+  observations.push({ id, kernel: getResourceUsageStats(controller) });
 });
 
 test.serial('analyze observations', async t => {
