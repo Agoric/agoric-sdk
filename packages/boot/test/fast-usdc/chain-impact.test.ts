@@ -1,13 +1,25 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
-import type { TestFn } from 'ava';
+import type { ExecutionContext, TestFn } from 'ava';
 
-import type { PoolMetrics } from '@agoric/fast-usdc';
+import { encodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
+import type {
+  CctpTxEvidence,
+  ContractRecord,
+  EvmAddress,
+  NobleAddress,
+  PoolMetrics,
+} from '@agoric/fast-usdc';
 import { Offers } from '@agoric/fast-usdc/src/clientSupport.js';
 import { configurations } from '@agoric/fast-usdc/src/utils/deploy-config.js';
 import { BridgeId } from '@agoric/internal';
 import { defaultMarshaller } from '@agoric/internal/src/storage-test-utils.js';
+import { eventLoopIteration } from '@agoric/internal/src/testing-utils.js';
+import { buildVTransferEvent } from '@agoric/orchestration/tools/ibc-mocks.js';
+import type { OfferSpec } from '@agoric/smart-wallet/src/offers.js';
 import type { SnapStoreDebug } from '@agoric/swing-store';
 import type { SwingsetController } from '@agoric/swingset-vat/src/controller/controller.js';
+import type { IBCChannelID } from '@agoric/vats';
+import { makePromiseKit } from '@endo/promise-kit';
 import { AckBehavior } from '../../tools/supports.js';
 import {
   makeWalletFactoryContext,
@@ -15,7 +27,10 @@ import {
 } from '../bootstrapTests/walletFactory.js';
 
 const test: TestFn<
-  WalletFactoryTestContext & { observations: { id: unknown; kernel: Object }[] }
+  WalletFactoryTestContext & {
+    oracles: TxOracle[];
+    observations: { id: unknown; kernel: Object }[];
+  }
 > = anyTest;
 
 const config = '@agoric/vm-config/decentral-itest-fast-usdc-config.json';
@@ -30,7 +45,11 @@ test.before(async t => {
     slogFile,
     defaultManagerType,
   });
-  t.context = { ...ctx, observations: [] };
+  const oracles = Object.entries(configurations.MAINNET.oracles).map(
+    ([name, addr]) => makeTxOracle(ctx, name, addr),
+  );
+
+  t.context = { ...ctx, oracles, observations: [] };
 });
 test.after.always(t => t.context.shutdown?.());
 
@@ -77,14 +96,62 @@ test.serial(
   },
 );
 
-test.serial('oracles provision before contract deployment', async t => {
-  const { walletFactoryDriver: wfd } = t.context;
+type SmartWallet = Awaited<
+  ReturnType<
+    WalletFactoryTestContext['walletFactoryDriver']['provideSmartWallet']
+  >
+>;
 
-  const { oracles } = configurations.MAINNET;
-  const [watcherWallet] = await Promise.all(
-    Object.values(oracles).map(addr => wfd.provideSmartWallet(addr)),
-  );
-  t.truthy(watcherWallet);
+const makeTxOracle = (
+  ctx: WalletFactoryTestContext,
+  name: string,
+  addr: string,
+) => {
+  const { agoricNamesRemotes, walletFactoryDriver: wfd } = ctx;
+  const walletSync = makePromiseKit<SmartWallet>();
+
+  let nonce = 0;
+
+  return harden({
+    async provision() {
+      walletSync.resolve(wfd.provideSmartWallet(addr));
+      return walletSync.promise;
+    },
+    async claim() {
+      const wallet = await walletSync.promise;
+      await wallet.sendOffer({
+        id: 'claim-oracle-invitation',
+        invitationSpec: {
+          source: 'purse',
+          instance: agoricNamesRemotes.instance.fastUsdc,
+          description: 'oracle operator invitation',
+        },
+        proposal: {},
+      });
+    },
+    async submit(evidence: CctpTxEvidence) {
+      const wallet = await walletSync.promise;
+      const it: OfferSpec = {
+        id: `submit-evidence-${(nonce += 1)}`,
+        invitationSpec: {
+          source: 'continuing',
+          previousOffer: 'claim-oracle-invitation',
+          invitationMakerName: 'SubmitEvidence',
+          invitationArgs: [evidence],
+        },
+        proposal: {},
+      };
+      await wallet.sendOffer(it);
+      return it;
+    },
+  });
+};
+type TxOracle = ReturnType<typeof makeTxOracle>;
+
+test.serial('oracles provision before contract deployment', async t => {
+  const { oracles } = t.context;
+  const [watcher0] = await Promise.all(oracles.map(o => o.provision()));
+  t.truthy(watcher0);
 
   const { controller, observations } = t.context;
   observations.push({
@@ -126,6 +193,17 @@ test.serial('start-fast-usdc', async t => {
   });
 });
 
+test.serial('oracles accept invitations', async t => {
+  const { oracles } = t.context;
+  await t.notThrowsAsync(Promise.all(oracles.map(o => o.claim())));
+
+  const { controller, observations } = t.context;
+  observations.push({
+    id: 'post-ocws-claim-invitations',
+    kernel: getResourceUsageStats(controller),
+  });
+});
+
 const makeLP = (ctx: WalletFactoryTestContext, addr: string) => {
   const { agoricNamesRemotes, walletFactoryDriver: wfd } = ctx;
   const lpP = wfd.provideSmartWallet(addr);
@@ -147,24 +225,218 @@ const makeLP = (ctx: WalletFactoryTestContext, addr: string) => {
   });
 };
 
-const getMetrics = (ctx: WalletFactoryTestContext) => {
+const makeFastUsdcQuery = (ctx: WalletFactoryTestContext) => {
   const { storage } = ctx;
-
-  const metrics: PoolMetrics = defaultMarshaller.fromCapData(
-    JSON.parse(storage.getValues('published.fastUsdc.poolMetrics').at(-1)!),
-  );
-  return metrics;
+  return harden({
+    metrics: () => {
+      const metrics: PoolMetrics = defaultMarshaller.fromCapData(
+        JSON.parse(storage.getValues('published.fastUsdc.poolMetrics').at(-1)!),
+      );
+      return metrics;
+    },
+    contractRecord: () => {
+      const { storage } = ctx;
+      const values = storage.getValues('published.fastUsdc');
+      const it: ContractRecord = JSON.parse(values.at(-1)!);
+      return it;
+    },
+    txStatus: (txHash: string) =>
+      storage
+        .getValues(`published.fastUsdc.txns.${txHash}`)
+        .map(txt => defaultMarshaller.fromCapData(JSON.parse(txt))),
+  });
 };
 
 test.serial('LP deposits', async t => {
+  const fastQ = makeFastUsdcQuery(t.context);
   const lp = makeLP(t.context, 'agoric19uscwxdac6cf6z7d5e26e0jm0lgwstc47cpll8');
   const { proposal, id } = await lp.deposit(150_000_000n);
 
-  const metrics = getMetrics(t.context);
-  t.true(metrics.shareWorth.numerator.value >= proposal.give.USDC.value);
+  const {
+    shareWorth: { numerator: poolBalance },
+  } = fastQ.metrics();
+  t.true(poolBalance.value >= proposal.give.USDC.value);
 
   const { controller, observations } = t.context;
   observations.push({ id, kernel: getResourceUsageStats(controller) });
+});
+
+const makeDestAcct = (
+  ctx: WalletFactoryTestContext,
+  address: string,
+  sourceChannel: IBCChannelID,
+) => {
+  const { runInbound } = ctx.bridgeUtils;
+  let sequence = 0;
+  return harden({
+    address,
+    async ack(sender: string) {
+      await runInbound(
+        BridgeId.VTRANSFER,
+        buildVTransferEvent({
+          sender,
+          target: sender,
+          sourceChannel,
+          sequence: `${(sequence += 1)}`,
+        }),
+      );
+    },
+  });
+};
+
+const makeCctp = (
+  ctx: WalletFactoryTestContext,
+  forwardingChannel: IBCChannelID,
+  destinationChannel: IBCChannelID,
+) => {
+  const { runInbound } = ctx.bridgeUtils;
+  let nonce = 0;
+
+  return harden({
+    depositForBurn(
+      amount: bigint,
+      sender: EvmAddress,
+      forwardingAddress: NobleAddress,
+    ) {
+      const hex1 = (nonce * 51).toString(16);
+      const hex2 = (nonce * 73).toString(16);
+      const txInfo: Omit<CctpTxEvidence, 'aux'> = harden({
+        blockHash: `0x${hex2.repeat(64 / hex1.length)}`,
+        blockNumber: 21037663n + BigInt(nonce),
+        txHash: `0x${hex1.repeat(64 / hex1.length)}`,
+        tx: { amount, forwardingAddress, sender },
+        chainId: 42161,
+      });
+      return txInfo;
+    },
+    async mint(
+      amount: bigint,
+      sender: string,
+      target: string,
+      receiver: string,
+    ) {
+      // in due course, minted USDC arrives
+      await runInbound(
+        BridgeId.VTRANSFER,
+
+        buildVTransferEvent({
+          sequence: '1', // arbitrary; not used
+          amount,
+          denom: 'uusdc',
+          sender,
+          target,
+          receiver,
+          sourceChannel: forwardingChannel,
+          destinationChannel,
+        }),
+      );
+    },
+  });
+};
+
+/**
+ * https://github.com/noble-assets/forwarding/blob/main/types/account.go#L19
+ *
+ * @param channel
+ * @param recipient
+ * @param fallback
+ */
+const deriveNobleForwardingAddress = (
+  channel: IBCChannelID,
+  recipient: string,
+  fallback: string,
+) => {
+  if (fallback) throw Error('not supported');
+  const out: NobleAddress = `noble1${channel}${recipient.slice(-30)}`;
+  return out;
+};
+
+const makeUA = (
+  address: EvmAddress,
+  settlementAccount: string,
+  nobleAgoricChannelId: IBCChannelID,
+  fastQ: ReturnType<typeof makeFastUsdcQuery>,
+  cctp: ReturnType<typeof makeCctp>,
+  oracles: TxOracle[],
+) => {
+  return harden({
+    async advance(t: ExecutionContext, amount: bigint, EUD: string) {
+      const recipientAddress = encodeAddressHook(settlementAccount, { EUD });
+      const forwardingAddress = deriveNobleForwardingAddress(
+        nobleAgoricChannelId,
+        recipientAddress,
+        '',
+      );
+      const txInfo = cctp.depositForBurn(amount, address, forwardingAddress);
+      const evidence: CctpTxEvidence = {
+        ...txInfo,
+        aux: { forwardingChannel: nobleAgoricChannelId, recipientAddress },
+      };
+
+      // TODO: connect this to the CCTP contract?
+      await Promise.all(oracles.map(o => o.submit(evidence)));
+
+      t.like(fastQ.txStatus(evidence.txHash), [
+        { status: 'OBSERVED' },
+        { status: 'ADVANCING' },
+      ]);
+
+      return { recipientAddress, forwardingAddress, evidence };
+    },
+  });
+};
+
+test.serial('makes usdc advance, mint', async t => {
+  const nobleAgoricChannelId = 'channel-21';
+  const { oracles } = t.context;
+  const fastQ = makeFastUsdcQuery(t.context);
+  const cctp = makeCctp(t.context, nobleAgoricChannelId, 'channel-62');
+
+  const { settlementAccount, poolAccount } = fastQ.contractRecord();
+  const webUI = makeUA(
+    '0xDEADBEEF' as EvmAddress,
+    settlementAccount,
+    nobleAgoricChannelId,
+    fastQ,
+    cctp,
+    oracles,
+  );
+
+  const dest = makeDestAcct(t.context, 'dydx1anything', 'channel-62');
+  const { recipientAddress, forwardingAddress, evidence } = await webUI.advance(
+    t,
+    15_000_000n,
+    dest.address,
+  );
+  const amount = 15_000_000n;
+
+  await dest.ack(poolAccount);
+  await eventLoopIteration();
+
+  const { controller, observations } = t.context;
+  observations.push({
+    id: `post-advance`,
+    kernel: getResourceUsageStats(controller),
+  });
+
+  // in due course, minted USDC arrives
+  await cctp.mint(
+    amount,
+    forwardingAddress,
+    settlementAccount,
+    recipientAddress,
+  );
+  await eventLoopIteration();
+  t.like(fastQ.txStatus(evidence.txHash), [
+    { status: 'OBSERVED' },
+    { status: 'ADVANCING' },
+    { status: 'ADVANCED' },
+    { status: 'DISBURSED' },
+  ]);
+  observations.push({
+    id: `post-mint`,
+    kernel: getResourceUsageStats(controller),
+  });
 });
 
 test.serial('analyze observations', async t => {
