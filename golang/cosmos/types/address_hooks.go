@@ -177,17 +177,12 @@ func extractBaseTransferData(transferData transfertypes.FungibleTokenPacketData,
 // If newPacket is not nil, it is populated with a new transfer packet whose
 // corresponding Sender or Receiver is replaced with the extracted base address.
 func ExtractBaseAddressFromPacket(cdc codec.Codec, packet ibcexported.PacketI, role AddressRole, newPacket *channeltypes.Packet) (string, error) {
-	transferData := transfertypes.FungibleTokenPacketData{}
-	if err := cdc.UnmarshalJSON(packet.GetData(), &transferData); err != nil {
-		return "", err
-	}
-
-	var newTransferData *transfertypes.FungibleTokenPacketData
+	var newDataP *[]byte
 	if newPacket != nil {
-		// Capture the transfer data for the new packet.
-		newTransferData = &transfertypes.FungibleTokenPacketData{}
+		// Capture the data for the new packet.
+		newDataP = new([]byte)
 	}
-	target, err := extractBaseTransferData(transferData, role, newTransferData)
+	target, err := ExtractBaseAddressFromData(cdc, packet.GetData(), role, newDataP)
 	if err != nil {
 		return target, err
 	}
@@ -197,19 +192,11 @@ func ExtractBaseAddressFromPacket(cdc codec.Codec, packet ibcexported.PacketI, r
 	}
 
 	// Create a new packet with the new transfer packet data.
-	// Re-serialize the packet data with the base addresses.
-	newData, err := cdc.MarshalJSON(newTransferData)
-	if err != nil {
-		return target, err
-	}
-
-	// Create the new packet.
-	th := packet.GetTimeoutHeight()
 	*newPacket = channeltypes.NewPacket(
-		newData, packet.GetSequence(),
+		*newDataP, packet.GetSequence(),
 		packet.GetSourcePort(), packet.GetSourceChannel(),
 		packet.GetDestPort(), packet.GetDestChannel(),
-		clienttypes.NewHeight(th.GetRevisionNumber(), th.GetRevisionHeight()),
+		clienttypes.MustParseHeight(packet.GetTimeoutHeight().String()),
 		packet.GetTimeoutTimestamp(),
 	)
 
