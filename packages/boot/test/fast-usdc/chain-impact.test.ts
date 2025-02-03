@@ -1,7 +1,10 @@
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
 import type { ExecutionContext, TestFn } from 'ava';
 
-import { encodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
+import {
+  encodeAddressHook,
+  encodeBech32,
+} from '@agoric/cosmic-proto/address-hooks.js';
 import type {
   CctpTxEvidence,
   ContractRecord,
@@ -30,6 +33,8 @@ import {
 const test: TestFn<
   WalletFactoryTestContext & {
     oracles: TxOracle[];
+    toNoble: MockChannel;
+    fromNoble: IBCChannelID;
     observations: Array<{ id: unknown } & Record<string, unknown>>;
     writeStats?: (txt: string) => Promise<void>;
   }
@@ -56,8 +61,6 @@ const makeTxOracle = (
   const { agoricNamesRemotes, walletFactoryDriver: wfd } = ctx;
   const walletSync = makePromiseKit<SmartWallet>();
 
-  let nonce = 0;
-
   return harden({
     async provision() {
       walletSync.resolve(wfd.provideSmartWallet(addr));
@@ -75,10 +78,10 @@ const makeTxOracle = (
         proposal: {},
       });
     },
-    async submit(evidence: CctpTxEvidence) {
+    async submit(evidence: CctpTxEvidence, nonce: Number) {
       const wallet = await walletSync.promise;
       const it: OfferSpec = {
-        id: `submit-evidence-${(nonce += 1)}`,
+        id: `submit-evidence-${nonce}`,
         invitationSpec: {
           source: 'continuing',
           previousOffer: 'claim-oracle-invitation',
@@ -120,22 +123,20 @@ const makeLP = (ctx: WalletFactoryTestContext, addr: string) => {
   const { agoricNamesRemotes, walletFactoryDriver: wfd } = ctx;
   const lpP = wfd.provideSmartWallet(addr);
 
-  let nonce = 0;
-
   const pollOffer = async (lp: SmartWallet, id: string) => {
     for (;;) {
       const info = lp.getLatestUpdateRecord();
       if (info.updated !== 'offerStatus') continue;
       if (info.status.id !== id) continue;
       if (info.status.error) throw Error(info.status.error);
-      if (info.status.payouts) return info.status.payouts;
+      if (info.status.payouts) return info.status;
       await eventLoopIteration();
     }
   };
 
   return harden({
-    async deposit(value: bigint) {
-      const offerId = `lp-deposit-${(nonce += 1)}`;
+    async deposit(value: bigint, nonce: number) {
+      const offerId = `lp-deposit-${nonce}`;
       const offerSpec = Offers.fastUsdc.Deposit(agoricNamesRemotes, {
         offerId,
         fastLPAmount: BigInt(Math.round(Number(value) * 0.6)), // XXX use poolMetrics?,
@@ -146,8 +147,8 @@ const makeLP = (ctx: WalletFactoryTestContext, addr: string) => {
       await pollOffer(lp, offerId);
       return offerSpec;
     },
-    async withdraw(value: bigint) {
-      const offerId = `lp-withdraw-${(nonce += 1)}`;
+    async withdraw(value: bigint, nonce: number) {
+      const offerId = `lp-withdraw-${nonce}`;
       const offerSpec = Offers.fastUsdc.Withdraw(agoricNamesRemotes, {
         offerId,
         fastLPAmount: value,
@@ -167,15 +168,14 @@ const makeCctp = (
   destinationChannel: IBCChannelID,
 ) => {
   const { runInbound } = ctx.bridgeUtils;
-  let nonce = 0;
 
   return harden({
     depositForBurn(
       amount: bigint,
       sender: EvmAddress,
       forwardingAddress: NobleAddress,
+      nonce: number,
     ) {
-      nonce += 1;
       const hex1 = (nonce * 51).toString(16);
       const hex2 = (nonce * 73).toString(16);
       const txInfo: Omit<CctpTxEvidence, 'aux'> = harden({
@@ -238,21 +238,31 @@ const makeUA = (
   oracles: TxOracle[],
 ) => {
   return harden({
-    async advance(t: ExecutionContext, amount: bigint, EUD: string) {
+    async advance(
+      t: ExecutionContext,
+      amount: bigint,
+      EUD: string,
+      nonce: number,
+    ) {
       const recipientAddress = encodeAddressHook(settlementAccount, { EUD });
       const forwardingAddress = deriveNobleForwardingAddress(
         nobleAgoricChannelId,
         recipientAddress,
         '',
       );
-      const txInfo = cctp.depositForBurn(amount, address, forwardingAddress);
+      const txInfo = cctp.depositForBurn(
+        amount,
+        address,
+        forwardingAddress,
+        nonce,
+      );
       const evidence: CctpTxEvidence = {
         ...txInfo,
         aux: { forwardingChannel: nobleAgoricChannelId, recipientAddress },
       };
 
       // TODO: connect this to the CCTP contract?
-      await Promise.all(oracles.map(o => o.submit(evidence)));
+      await Promise.all(oracles.map(o => o.submit(evidence, nonce)));
 
       t.like(fastQ.txStatus(evidence.txHash), [
         { status: 'OBSERVED' },
@@ -264,15 +274,13 @@ const makeUA = (
   });
 };
 
-const makeDestAcct = (
-  ctx: WalletFactoryTestContext,
-  address: string,
+const makeIBCChannel = (
+  bridgeUtils: WalletFactoryTestContext['bridgeUtils'],
   sourceChannel: IBCChannelID,
 ) => {
-  const { runInbound } = ctx.bridgeUtils;
+  const { runInbound } = bridgeUtils;
   let sequence = 0;
   return harden({
-    address,
     async ack(sender: string) {
       await runInbound(
         BridgeId.VTRANSFER,
@@ -280,21 +288,25 @@ const makeDestAcct = (
           sender,
           target: sender,
           sourceChannel,
-          sequence: `1`, // XXX `${(sequence += 1)}`,
+          sequence: `${(sequence += 1)}`,
         }),
       );
     },
   });
 };
+type MockChannel = ReturnType<typeof makeIBCChannel>;
 
 const makeSimulation = async (
   ctx: WalletFactoryTestContext,
+  toNoble: MockChannel,
   oracles: TxOracle[],
 ) => {
   const cctp = makeCctp(ctx, nobleAgoricChannelId, 'channel-62');
 
   const fastQ = makeFastUsdcQuery(ctx);
-  const lps = prefixedRange(3, 'agoric1lp').map(a => makeLP(ctx, a));
+  const lps = range(3).map(ix =>
+    makeLP(ctx, encodeBech32('agoric', [100, ix])),
+  );
   const { settlementAccount, poolAccount } = fastQ.contractRecord();
   const users = prefixedRange(5, `0xFEED`).map(addr =>
     makeUA(
@@ -314,7 +326,7 @@ const makeSimulation = async (
     async iteration(t: ExecutionContext, iter: number) {
       await Promise.all(
         lps.map(async (lp, ix) => {
-          await lp.deposit(BigInt((ix + 1) * 2000) * 1_000_000n);
+          await lp.deposit(BigInt((ix + 1) * 2000) * 1_000_000n, iter);
         }),
       );
       const {
@@ -325,17 +337,13 @@ const makeSimulation = async (
       // XXX doesn't work in Promise.all due to mock bridge limitation
       for (const who of range(users.length)) {
         const webUI = users[who];
-        const dest = makeDestAcct(
-          ctx,
-          `dydx1anything${who}${iter}`,
-          'channel-62',
-        );
+        const destAddr = encodeBech32('dydx', [1, 2, 3, who, iter]);
         const amount = BigInt(Math.round(part * (1 - who * 0.1)));
 
         const { recipientAddress, forwardingAddress, evidence } =
-          await webUI.advance(t, amount, dest.address);
+          await webUI.advance(t, amount, destAddr, iter * users.length + who);
 
-        await dest.ack(poolAccount);
+        await toNoble.ack(poolAccount);
         await eventLoopIteration();
 
         // in due course, minted USDC arrives
@@ -356,15 +364,17 @@ const makeSimulation = async (
 
       await eventLoopIteration();
 
-      const {
-        shareWorth: { numerator: poolBeforeWithdraw },
-      } = await fastQ.metrics();
-      const partWd = Number(poolBeforeWithdraw.value) / lps.length;
+      const beforeWithdraw = await fastQ.metrics();
+      if (beforeWithdraw.encumberedBalance.value > 0n) {
+        throw t.fail(`still encumbered: ${beforeWithdraw.encumberedBalance}`);
+      }
+      const partWd =
+        Number(beforeWithdraw.shareWorth.numerator.value) / lps.length;
       await Promise.all(
         lps.map(async (lp, ix) => {
           const amount = BigInt(Math.round(partWd * (1 - ix * 0.1)));
           // XXX simulate failed withrawals?
-          await lp.withdraw(amount);
+          await lp.withdraw(amount, iter);
         }),
       );
     },
@@ -389,7 +399,17 @@ test.before(async t => {
   const writeStats = STATS_FILE
     ? (txt: string) => writeFile(STATS_FILE, txt)
     : undefined;
-  t.context = { ...ctx, oracles, observations: [], writeStats };
+  const toNoble = makeIBCChannel(ctx.bridgeUtils, 'channel-62');
+  const fromNoble = 'channel-21';
+
+  t.context = {
+    ...ctx,
+    oracles,
+    observations: [],
+    writeStats,
+    fromNoble,
+    toNoble,
+  };
 });
 test.after.always(t => t.context.shutdown?.());
 
@@ -503,10 +523,10 @@ test.serial('oracles accept invitations', async t => {
   });
 });
 
-test.skip('LP deposits', async t => {
+test.serial('LP deposits', async t => {
   const fastQ = makeFastUsdcQuery(t.context);
   const lp = makeLP(t.context, 'agoric19uscwxdac6cf6z7d5e26e0jm0lgwstc47cpll8');
-  const { proposal, id } = await lp.deposit(150_000_000n);
+  const { proposal, id } = await lp.deposit(150_000_000n, 123);
 
   const {
     shareWorth: { numerator: poolBalance },
@@ -517,9 +537,8 @@ test.skip('LP deposits', async t => {
   observations.push({ id, kernel: getResourceUsageStats(controller) });
 });
 
-test.skip('makes usdc advance, mint', async t => {
-  const nobleAgoricChannelId = 'channel-21';
-  const { oracles } = t.context;
+test.serial('makes usdc advance, mint', async t => {
+  const { oracles, toNoble } = t.context;
   const fastQ = makeFastUsdcQuery(t.context);
   const cctp = makeCctp(t.context, nobleAgoricChannelId, 'channel-62');
 
@@ -533,15 +552,16 @@ test.skip('makes usdc advance, mint', async t => {
     oracles,
   );
 
-  const dest = makeDestAcct(t.context, 'dydx1anything', 'channel-62');
+  const destAddr = 'dydx1anything';
   const { recipientAddress, forwardingAddress, evidence } = await webUI.advance(
     t,
     15_000_000n,
-    dest.address,
+    destAddr,
+    100,
   );
   const amount = 15_000_000n;
 
-  await dest.ack(poolAccount);
+  await toNoble.ack(poolAccount);
   await eventLoopIteration();
 
   const { controller, observations } = t.context;
@@ -571,8 +591,8 @@ test.skip('makes usdc advance, mint', async t => {
 });
 
 test.serial('iterate simulation several times', async t => {
-  const { controller, observations, oracles, storage } = t.context;
-  const sim = await makeSimulation(t.context, oracles);
+  const { controller, observations, oracles, storage, toNoble } = t.context;
+  const sim = await makeSimulation(t.context, toNoble, oracles);
 
   for (const ix of range(32)) {
     await sim.iteration(t, ix);
