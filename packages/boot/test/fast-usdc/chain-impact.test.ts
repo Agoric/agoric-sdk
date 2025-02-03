@@ -619,6 +619,8 @@ test.serial('iterate simulation several times', async t => {
   const { doCoreEval } = t.context;
   const sim = await makeSimulation(t.context, toNoble, oracles);
 
+  await writeFile('kernel-0.json', JSON.stringify(controller.dump(), null, 2));
+
   for (const ix of range(64)) {
     await sim.iteration(t, ix);
     observations.push({
@@ -638,6 +640,8 @@ test.serial('iterate simulation several times', async t => {
       });
     }
   }
+
+  await writeFile('kernel-1.json', JSON.stringify(controller.dump(), null, 2));
 });
 
 test.serial('analyze observations', async t => {
