@@ -30,9 +30,7 @@ import {
 const test: TestFn<
   WalletFactoryTestContext & {
     oracles: TxOracle[];
-    observations: Array<
-      { id: unknown; kernel: object } & Record<string, unknown>
-    >;
+    observations: Array<{ id: unknown } & Record<string, unknown>>;
     writeStats?: (txt: string) => Promise<void>;
   }
 > = anyTest;
@@ -379,17 +377,28 @@ test.before(async t => {
 });
 test.after.always(t => t.context.shutdown?.());
 
-const getResourceUsageStats = (controller: SwingsetController) => {
+const getResourceUsageStats = (
+  controller: SwingsetController,
+  data?: Map<unknown, unknown>,
+) => {
   const stats = controller.getStats();
   const { promiseQueuesLength, kernelPromises, kernelObjects, clistEntries } =
     stats;
-  const relevant = {
+  const exportedObjects = { clistEntries, kernelObjects };
+  const pendingWork = { promiseQueuesLength, kernelPromises };
+
+  data ||= new Map();
+  const { size: vstorageEntries } = data;
+  const { length: vstorageTotalSize } = JSON.stringify([...data.entries()]);
+
+  return harden({
     promiseQueuesLength,
     kernelPromises,
     kernelObjects,
     clistEntries,
-  };
-  return relevant;
+    vstorageEntries,
+    vstorageTotalSize,
+  });
 };
 
 test.serial('access relevant kernel stats after bootstrap', async t => {
@@ -397,7 +406,7 @@ test.serial('access relevant kernel stats after bootstrap', async t => {
   const relevant = getResourceUsageStats(controller);
   t.log('relevant kernel stats', relevant);
   t.truthy(relevant);
-  observations.push({ id: 'post-boot', kernel: relevant });
+  observations.push({ id: 'post-boot', ...relevant });
 });
 
 test.serial(
@@ -430,7 +439,7 @@ test.serial('oracles provision before contract deployment', async t => {
   const { controller, observations } = t.context;
   observations.push({
     id: 'post-ocw-provision',
-    kernel: getResourceUsageStats(controller),
+    ...getResourceUsageStats(controller),
   });
 });
 
@@ -463,7 +472,7 @@ test.serial('start-fast-usdc', async t => {
   const { controller, observations } = t.context;
   observations.push({
     id: 'post-start-fast-usdc',
-    kernel: getResourceUsageStats(controller),
+    ...getResourceUsageStats(controller),
   });
 });
 
@@ -474,7 +483,7 @@ test.serial('oracles accept invitations', async t => {
   const { controller, observations } = t.context;
   observations.push({
     id: 'post-ocws-claim-invitations',
-    kernel: getResourceUsageStats(controller),
+    ...getResourceUsageStats(controller),
   });
 });
 
@@ -522,7 +531,7 @@ test.serial('makes usdc advance, mint', async t => {
   const { controller, observations } = t.context;
   observations.push({
     id: `post-advance`,
-    kernel: getResourceUsageStats(controller),
+    ...getResourceUsageStats(controller),
   });
 
   // in due course, minted USDC arrives
@@ -541,31 +550,34 @@ test.serial('makes usdc advance, mint', async t => {
   ]);
   observations.push({
     id: `post-mint`,
-    kernel: getResourceUsageStats(controller),
+    ...getResourceUsageStats(controller),
   });
 });
 
 test.serial('iterate simulation several times', async t => {
-  const { controller, observations, oracles } = t.context;
+  const { controller, observations, oracles, storage } = t.context;
   const sim = await makeSimulation(t.context, oracles);
 
-  for (const ix of range(10)) {
+  for (const ix of range(32)) {
     await sim.iteration(t);
     observations.push({
       id: `iter-${ix}`,
-      computrons: 'TODO',
-      kernel: getResourceUsageStats(controller),
+      //   computrons: 'TODO: xs-worker',
+      //   heap: 'TODO: xs-worker',
+      ...getResourceUsageStats(controller, storage.data),
     });
   }
 });
 
 test.serial('analyze observations', async t => {
   const { observations, writeStats } = t.context;
-  for (const { id, kernel } of observations) {
-    t.log({ id, ...kernel });
+  for (const obs of observations) {
+    t.log(obs);
   }
   if (writeStats) {
-    const lines = observations.map(o => JSON.stringify(o) + '\n');
+    const lines = observations.map(
+      (o, ix) => JSON.stringify({ ix, ...o }) + '\n',
+    );
     await writeStats(lines.join(''));
   }
   t.pass();
