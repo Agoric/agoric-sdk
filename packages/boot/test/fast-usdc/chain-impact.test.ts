@@ -175,10 +175,11 @@ const makeCctp = (
       sender: EvmAddress,
       forwardingAddress: NobleAddress,
     ) {
+      nonce += 1;
       const hex1 = (nonce * 51).toString(16);
       const hex2 = (nonce * 73).toString(16);
       const txInfo: Omit<CctpTxEvidence, 'aux'> = harden({
-        blockHash: `0x${hex2.repeat(64 / hex1.length)}`,
+        blockHash: `0x${hex2.repeat(64 / hex2.length)}`,
         blockNumber: 21037663n + BigInt(nonce),
         txHash: `0x${hex1.repeat(64 / hex1.length)}`,
         tx: { amount, forwardingAddress, sender },
