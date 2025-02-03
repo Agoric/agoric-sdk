@@ -606,6 +606,16 @@ test.skip('makes usdc advance, mint', async t => {
   });
 });
 
+test.skip('prune vstorage', async t => {
+  const { doCoreEval, observations, controller, storage } = t.context;
+  await doCoreEval('@agoric/fast-usdc/scripts/delete-completed-txs.js');
+  observations.push({
+    id: `post-prune`,
+    ...getResourceUsageStats(controller, storage.data),
+  });
+  t.pass();
+});
+
 test.serial('iterate simulation several times', async t => {
   const { controller, observations, oracles, storage, toNoble } = t.context;
   const sim = await makeSimulation(t.context, toNoble, oracles);
