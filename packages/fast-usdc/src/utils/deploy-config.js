@@ -98,11 +98,8 @@ export const configurations = {
   },
   DEVNET: {
     oracles: {
-      DSRV: 'agoric1lw4e4aas9q84tq0q92j85rwjjjapf8dmnllnft',
-      Stakin: 'agoric1zj6vrrrjq4gsyr9lw7dplv4vyejg3p8j2urm82',
-      '01node': 'agoric1ra0g6crtsy6r3qnpu7ruvm7qd4wjnznyzg5nu4',
-      'Simply Staking': 'agoric1qj07c7vfk3knqdral0sej7fa6eavkdn8vd8etf',
-      P2P: 'agoric10vjkvkmpp9e356xeh6qqlhrny2htyzp8hf88fk',
+      jcv1: 'agoric1f6au5xffuuph97w85zg9qf062gddsnw0sx9xj3',
+      jcv2: 'agoric1vxygktgl0zd7aznq9kw2msdx6gfyz0t0wjreag',
     },
     feedPolicy: {
       nobleAgoricChannelId: 'TODO',
