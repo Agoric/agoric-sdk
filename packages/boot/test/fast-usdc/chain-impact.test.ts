@@ -429,7 +429,7 @@ test.after.always(t => t.context.shutdown?.());
 
 const getResourceUsageStats = (
   controller: SwingsetController,
-  data: Map<unknown, unknown>,
+  data: Map<string, string>,
 ) => {
   const stats = controller.getStats();
   const { promiseQueuesLength, kernelPromises, kernelObjects, clistEntries } =
@@ -437,6 +437,9 @@ const getResourceUsageStats = (
 
   const { size: vstorageEntries } = data;
   const { length: vstorageTotalSize } = JSON.stringify([...data.entries()]);
+  const { length: vstorageFusdcSize } = JSON.stringify(
+    [...data.entries()].filter(e => e[0].startsWith('published.fastUsdc')),
+  );
 
   return harden({
     promiseQueuesLength,
@@ -445,6 +448,7 @@ const getResourceUsageStats = (
     clistEntries,
     vstorageEntries,
     vstorageTotalSize,
+    vstorageFusdcSize,
   });
 };
 
