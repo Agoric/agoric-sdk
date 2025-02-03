@@ -635,9 +635,9 @@ test.serial('iterate simulation several times', async t => {
     });
     // force GC and prune vstorage every 8 iterations
     if (ix % 8 === 0) {
+      await doCoreEval('@agoric/fast-usdc/src/delete-completed-txs.js');
       controller.reapAllVats();
       await controller.run();
-      await doCoreEval('@agoric/fast-usdc/src/delete-completed-txs.js');
       observations.push({
         id: `post-prune-${ix}`,
         ...getResourceUsageStats(controller, storage.data),
