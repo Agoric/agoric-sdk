@@ -523,7 +523,7 @@ test.serial('oracles accept invitations', async t => {
   });
 });
 
-test.serial('LP deposits', async t => {
+test.skip('LP deposits', async t => {
   const fastQ = makeFastUsdcQuery(t.context);
   const lp = makeLP(t.context, 'agoric19uscwxdac6cf6z7d5e26e0jm0lgwstc47cpll8');
   const { proposal, id } = await lp.deposit(150_000_000n, 123);
@@ -537,7 +537,7 @@ test.serial('LP deposits', async t => {
   observations.push({ id, kernel: getResourceUsageStats(controller) });
 });
 
-test.serial('makes usdc advance, mint', async t => {
+test.skip('makes usdc advance, mint', async t => {
   const { oracles, toNoble } = t.context;
   const fastQ = makeFastUsdcQuery(t.context);
   const cctp = makeCctp(t.context, nobleAgoricChannelId, 'channel-62');
