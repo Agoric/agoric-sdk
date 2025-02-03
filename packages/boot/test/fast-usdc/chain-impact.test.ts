@@ -313,28 +313,22 @@ const makeSimulation = async (
     lps,
     users,
     async iteration(t: ExecutionContext) {
-      console.log('@@@iter: deposits');
       await Promise.all(
         lps.map(async (lp, ix) => {
           await lp.deposit(BigInt((ix + 1) * 2000) * 1_000_000n);
-          console.log('@@@deposit done', ix);
         }),
       );
 
-      console.log('@@@iter: advance/settles');
       await Promise.all(
         users.map(async (webUI, ix) => {
-          console.log('@@@iter: user', ix);
           // XXX varying dest addr results in lack of progress???
           const dest = makeDestAcct(ctx, `dydx1anything`, 'channel-62');
           const amount = BigInt((ix + 1) * 350) * 1_000_000n;
 
           const { recipientAddress, forwardingAddress, evidence } =
             await webUI.advance(t, amount, dest.address);
-          console.log('@@@iter: user', ix, 'advanced');
 
           await dest.ack(poolAccount);
-          console.log('@@@iter: user', ix, 'ackd');
           await eventLoopIteration();
 
           // in due course, minted USDC arrives
@@ -344,7 +338,6 @@ const makeSimulation = async (
             settlementAccount,
             recipientAddress,
           );
-          console.log('@@@iter: user', ix, 'minted');
           await eventLoopIteration();
           t.like(fastQ.txStatus(evidence.txHash), [
             { status: 'OBSERVED' },
@@ -355,11 +348,9 @@ const makeSimulation = async (
         }),
       );
 
-      console.log('@@@iter: lp withdraws');
       await Promise.all(
         lps.map(async (lp, ix) => {
           await lp.withdraw(BigInt((ix + 1) * 1500) * 1_000_000n);
-          console.log('@@@iter: lp', ix, 'withdrew');
         }),
       );
     },
