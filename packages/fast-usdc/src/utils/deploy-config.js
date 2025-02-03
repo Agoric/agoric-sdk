@@ -102,7 +102,8 @@ export const configurations = {
       jcv2: 'agoric1vxygktgl0zd7aznq9kw2msdx6gfyz0t0wjreag',
     },
     feedPolicy: {
-      nobleAgoricChannelId: 'TODO',
+      // grand-1->agoricdev-23: channel-304
+      nobleAgoricChannelId: 'channel-304',
       nobleDomainId: 4,
       chainPolicies: ChainPolicies.TESTNET,
       eventFilter: DepositForBurnEvent,
