@@ -409,7 +409,7 @@ test.after.always(t => t.context.shutdown?.());
 
 const getResourceUsageStats = (
   controller: SwingsetController,
-  data?: Map<unknown, unknown>,
+  data: Map<unknown, unknown>,
 ) => {
   const stats = controller.getStats();
   const { promiseQueuesLength, kernelPromises, kernelObjects, clistEntries } =
@@ -417,7 +417,6 @@ const getResourceUsageStats = (
   const exportedObjects = { clistEntries, kernelObjects };
   const pendingWork = { promiseQueuesLength, kernelPromises };
 
-  data ||= new Map();
   const { size: vstorageEntries } = data;
   const { length: vstorageTotalSize } = JSON.stringify([...data.entries()]);
 
@@ -432,8 +431,8 @@ const getResourceUsageStats = (
 };
 
 test.serial('access relevant kernel stats after bootstrap', async t => {
-  const { controller, observations } = t.context;
-  const relevant = getResourceUsageStats(controller);
+  const { controller, observations, storage } = t.context;
+  const relevant = getResourceUsageStats(controller, storage.data);
   t.log('relevant kernel stats', relevant);
   t.truthy(relevant);
   observations.push({ id: 'post-boot', ...relevant });
@@ -466,10 +465,10 @@ test.serial('oracles provision before contract deployment', async t => {
   const [watcher0] = await Promise.all(oracles.map(o => o.provision()));
   t.truthy(watcher0);
 
-  const { controller, observations } = t.context;
+  const { controller, observations, storage } = t.context;
   observations.push({
     id: 'post-ocw-provision',
-    ...getResourceUsageStats(controller),
+    ...getResourceUsageStats(controller, storage.data),
   });
 });
 
@@ -499,10 +498,10 @@ test.serial('start-fast-usdc', async t => {
   refreshAgoricNamesRemotes();
   t.truthy(agoricNamesRemotes.instance.fastUsdc);
 
-  const { controller, observations } = t.context;
+  const { controller, observations, storage } = t.context;
   observations.push({
     id: 'post-start-fast-usdc',
-    ...getResourceUsageStats(controller),
+    ...getResourceUsageStats(controller, storage.data),
   });
 });
 
@@ -510,10 +509,10 @@ test.serial('oracles accept invitations', async t => {
   const { oracles } = t.context;
   await t.notThrowsAsync(Promise.all(oracles.map(o => o.claim())));
 
-  const { controller, observations } = t.context;
+  const { controller, observations, storage } = t.context;
   observations.push({
     id: 'post-ocws-claim-invitations',
-    ...getResourceUsageStats(controller),
+    ...getResourceUsageStats(controller, storage.data),
   });
 });
 
@@ -527,8 +526,11 @@ test.skip('LP deposits', async t => {
   } = fastQ.metrics();
   t.true(poolBalance.value >= proposal.give.USDC.value);
 
-  const { controller, observations } = t.context;
-  observations.push({ id, kernel: getResourceUsageStats(controller) });
+  const { controller, observations, storage } = t.context;
+  observations.push({
+    id,
+    kernel: getResourceUsageStats(controller, storage.data),
+  });
 });
 
 test.skip('makes usdc advance, mint', async t => {
@@ -558,10 +560,10 @@ test.skip('makes usdc advance, mint', async t => {
   await toNoble.ack(poolAccount);
   await eventLoopIteration();
 
-  const { controller, observations } = t.context;
+  const { controller, observations, storage } = t.context;
   observations.push({
     id: `post-advance`,
-    ...getResourceUsageStats(controller),
+    ...getResourceUsageStats(controller, storage.data),
   });
 
   // in due course, minted USDC arrives
@@ -580,7 +582,7 @@ test.skip('makes usdc advance, mint', async t => {
   ]);
   observations.push({
     id: `post-mint`,
-    ...getResourceUsageStats(controller),
+    ...getResourceUsageStats(controller, storage.data),
   });
 });
 
