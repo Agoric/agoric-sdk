@@ -5,6 +5,19 @@
  *   dependent upon a hardened environment.
  */
 
+export const logLevels = /** @type {const} */ ([
+  'debug',
+  'log',
+  'info',
+  'warn',
+  'error',
+]);
+Object.freeze(logLevels);
+
+/** @typedef {(typeof logLevels)[keyof logLevels & number]} LogLevel */
+
+/** @typedef {Pick<Console, LogLevel>} LimitedConsole */
+
 /**
  * Deep-copy a value by round-tripping it through JSON (which drops
  * function/symbol/undefined values and properties that are non-enumerable

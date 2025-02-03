@@ -110,11 +110,10 @@ export default function buildKernel(
     warehousePolicy,
     overrideVatManagerOptions = {},
   } = kernelRuntimeOptions;
-  const logStartup = verbose ? console.debug : () => 0;
+  const logStartup = verbose ? console.debug : () => {};
 
   const vatAdminRootKref = kernelStorage.kvStore.get('vatAdminRootKref');
 
-  /** @type { KernelSlog } */
   const kernelSlog = writeSlogObject
     ? makeSlogger(slogCallbacks, writeSlogObject)
     : makeDummySlogger(slogCallbacks, makeConsole('disabled slogger'));
@@ -167,10 +166,9 @@ export default function buildKernel(
   harden(testLog);
 
   function makeSourcedConsole(vatID) {
-    const origConsole = makeConsole(args => {
-      const source = args.shift();
-      return `${debugPrefix}SwingSet:${source}:${vatID}`;
-    });
+    const origConsole = makeConsole(
+      source => `${debugPrefix}SwingSet:${source}:${vatID}`,
+    );
     return kernelSlog.vatConsole(vatID, origConsole);
   }
 

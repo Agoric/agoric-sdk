@@ -10,10 +10,22 @@ import { deeplyFulfilled, isObject } from '@endo/marshal';
 import { makePromiseKit } from '@endo/promise-kit';
 import { makeQueue } from '@endo/stream';
 import { asyncGenerate } from 'jessie.js';
+import { logLevels } from './js-utils.js';
+
+/** @import {LimitedConsole} from './js-utils.js'; */
 
 const { fromEntries, keys, values } = Object;
 
 /** @import {ERef} from '@endo/far' */
+
+/** @param {(level: string) => (...args: unknown[]) => void} makeLogger */
+export const makeLimitedConsole = makeLogger => {
+  const limitedConsole = /** @type {any} */ (
+    fromEntries(logLevels.map(level => [level, makeLogger(level)]))
+  );
+  return /** @type {LimitedConsole} */ (harden(limitedConsole));
+};
+harden(makeLimitedConsole);
 
 /**
  * @template T
