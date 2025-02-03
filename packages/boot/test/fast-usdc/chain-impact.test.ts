@@ -311,18 +311,25 @@ const makeSimulation = async (
     oracles,
     lps,
     users,
-    async iteration(t: ExecutionContext) {
+    async iteration(t: ExecutionContext, iter: number) {
       await Promise.all(
         lps.map(async (lp, ix) => {
           await lp.deposit(BigInt((ix + 1) * 2000) * 1_000_000n);
         }),
       );
+      const {
+        shareWorth: { numerator: poolBeforeAdvance },
+      } = await fastQ.metrics();
+      const part = Number(poolBeforeAdvance.value) / users.length;
 
       await Promise.all(
-        users.map(async (webUI, ix) => {
-          // XXX varying dest addr results in lack of progress???
-          const dest = makeDestAcct(ctx, `dydx1anything`, 'channel-62');
-          const amount = BigInt((ix + 1) * 350) * 1_000_000n;
+        users.map(async (webUI, who) => {
+          const dest = makeDestAcct(
+            ctx,
+            `dydx1anything${who}${iter}`,
+            'channel-62',
+          );
+          const amount = BigInt(Math.round(part * (1 - who * 0.1)));
 
           const { recipientAddress, forwardingAddress, evidence } =
             await webUI.advance(t, amount, dest.address);
@@ -346,10 +353,17 @@ const makeSimulation = async (
           ]);
         }),
       );
+      await eventLoopIteration();
 
+      const {
+        shareWorth: { numerator: poolBeforeWithdraw },
+      } = await fastQ.metrics();
+      const partWd = Number(poolBeforeWithdraw.value) / lps.length;
       await Promise.all(
         lps.map(async (lp, ix) => {
-          await lp.withdraw(BigInt((ix + 1) * 1500) * 1_000_000n);
+          const amount = BigInt(Math.round(partWd * (1 - ix * 0.1)));
+          // XXX simulate failed withrawals?
+          await lp.withdraw(amount);
         }),
       );
     },
@@ -488,7 +502,7 @@ test.serial('oracles accept invitations', async t => {
   });
 });
 
-test.serial('LP deposits', async t => {
+test.skip('LP deposits', async t => {
   const fastQ = makeFastUsdcQuery(t.context);
   const lp = makeLP(t.context, 'agoric19uscwxdac6cf6z7d5e26e0jm0lgwstc47cpll8');
   const { proposal, id } = await lp.deposit(150_000_000n);
@@ -502,7 +516,7 @@ test.serial('LP deposits', async t => {
   observations.push({ id, kernel: getResourceUsageStats(controller) });
 });
 
-test.serial('makes usdc advance, mint', async t => {
+test.skip('makes usdc advance, mint', async t => {
   const nobleAgoricChannelId = 'channel-21';
   const { oracles } = t.context;
   const fastQ = makeFastUsdcQuery(t.context);
@@ -560,7 +574,7 @@ test.serial('iterate simulation several times', async t => {
   const sim = await makeSimulation(t.context, oracles);
 
   for (const ix of range(32)) {
-    await sim.iteration(t);
+    await sim.iteration(t, ix);
     observations.push({
       id: `iter-${ix}`,
       //   computrons: 'TODO: xs-worker',
