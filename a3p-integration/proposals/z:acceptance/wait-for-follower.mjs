@@ -11,10 +11,7 @@ const FILE_PATH = process.env.MESSAGE_FILE_PATH;
  */
 const checkFileContent = async (filePath, message) => {
   const fileContent = (await readFile(filePath, FILE_ENCODING)).trim();
-  if (!new RegExp(message).test(fileContent)) {
-    console.warn('Ignoring unsupported file content: ', fileContent);
-    return '';
-  }
+  if (!new RegExp(message).test(fileContent)) return '';
   return fileContent;
 };
 
