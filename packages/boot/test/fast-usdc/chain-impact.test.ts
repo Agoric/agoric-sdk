@@ -280,7 +280,7 @@ const makeDestAcct = (
           sender,
           target: sender,
           sourceChannel,
-          sequence: `${(sequence += 1)}`,
+          sequence: `1`, // XXX `${(sequence += 1)}`,
         }),
       );
     },
