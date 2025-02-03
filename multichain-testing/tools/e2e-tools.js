@@ -83,7 +83,7 @@ const makeBlockTool = ({ rpc, delay }) => {
     }
   };
 
-  return { waitForBootstrap, waitForBlock };
+  return { waitForBlock };
 };
 /** @typedef {ReturnType<makeBlockTool>} BlockTool */
 
