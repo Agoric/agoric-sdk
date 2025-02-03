@@ -223,7 +223,8 @@ export const prepareAdvancerKit = (
         onFulfilled(result, ctx) {
           const { poolAccount, intermediateRecipient, settlementAddress } =
             this.state;
-          const { destination, advanceAmount, tmpSeat: _, ...detail } = ctx;
+          const { destination, advanceAmount, tmpSeat, ...detail } = ctx;
+          tmpSeat.exit();
           const amount = harden({
             denom: usdc.denom,
             value: advanceAmount.value,
@@ -260,6 +261,7 @@ export const prepareAdvancerKit = (
             const { borrower, notifier } = this.state;
             notifier.notifyAdvancingResult(restCtx, false);
             borrower.returnToPool(tmpSeat, advanceAmount);
+            tmpSeat.exit();
           } catch (e) {
             log('🚨 deposit to localOrchAccount failure recovery failed', e);
           }
