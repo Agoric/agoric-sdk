@@ -7,21 +7,37 @@ const FILE_PATH = process.env.MESSAGE_FILE_PATH;
 
 /**
  * @param {string} filePath
+ * @param {string} message
+ */
+const checkFileContent = async (filePath, message) => {
+  const fileContent = (await readFile(filePath, FILE_ENCODING)).trim();
+  if (!new RegExp(message).test(fileContent)) {
+    console.warn('Ignoring unsupported file content: ', fileContent);
+    return '';
+  }
+  return fileContent;
+};
+
+/**
+ * @param {string} filePath
  */
 const watchSharedFile = async filePath => {
+  const [, , message] = process.argv;
+
+  let possibleContent = await checkFileContent(filePath, message);
+  if (possibleContent) return possibleContent;
+
   for await (const { eventType } of watch(filePath)) {
     if (eventType === 'change') {
-      const fileContent = (await readFile(filePath, FILE_ENCODING)).trim();
-      const parsed = /^stopped at ([0-9]+)$/.exec(fileContent);
-      if (!parsed)
-        console.warn('Ignoring unsupported file content: ', fileContent);
-      else return Number(parsed[1]);
+      possibleContent = await checkFileContent(filePath, message);
+      if (possibleContent) return possibleContent;
     }
   }
-  return 0;
+
+  return undefined;
 };
 
 FILE_PATH &&
-  watchSharedFile(FILE_PATH).then(height =>
-    console.log(`Follower stopped at height ${height}`),
+  watchSharedFile(FILE_PATH).then(
+    fileContent => fileContent && console.log(fileContent),
   );

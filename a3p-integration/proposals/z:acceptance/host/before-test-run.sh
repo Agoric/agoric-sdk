@@ -1,22 +1,16 @@
 #! /bin/bash
+# shellcheck disable=SC2155
 
 set -o errexit -o errtrace -o pipefail -o xtrace
 
+CONTAINER_MESSAGE_FILE_PATH="/root/message-file-path"
 DIRECTORY_PATH="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &> /dev/null && pwd)"
 BRANCH_NAME="usman/monitoring-follower"
-CHAIN_ID="agoriclocal"
-FOLLOWER_API_PORT="2317"
-FOLLOWER_GRPC_PORT="10090"
 FOLLOWER_LOGS_FILE="/tmp/loadgen-follower-logs"
-FOLLOWER_P2P_PORT="36656"
-FOLLOWER_PPROF_PORT="7060"
-FOLLOWER_RPC_PORT="36657"
 LOADGEN_REPOSITORY_NAME="testnet-load-generator"
+LOGS_FILE="/tmp/before-test-run-hook-logs"
 ORGANIZATION_NAME="agoric"
 TIMESTAMP="$(date '+%s')"
-VALIDATOR_NODE_ID=""
-VALIDATOR_P2P_PORT="26656"
-VALIDATOR_RPC_PORT="26657"
 
 CONTAINER_IMAGE_NAME="ghcr.io/$ORGANIZATION_NAME/agoric-3-proposals"
 LOADGEN_REPOSITORY_LINK="https://github.com/$ORGANIZATION_NAME/$LOADGEN_REPOSITORY_NAME.git"
@@ -28,11 +22,16 @@ FOLDER_NAME="${TEMP%%/*}"
 
 PROPOSAL_NAME="$(echo "$FOLDER_NAME" | cut --delimiter ':' --fields '2')"
 
-CONTAINER_MESSAGE_FILE_PATH="/root/$PROPOSAL_NAME.tmp"
 FOLLOWER_CONTAINER_NAME="$PROPOSAL_NAME-follower"
 
 create_volume_assets() {
   mkdir --parents "$OUTPUT_DIRECTORY"
+}
+
+main() {
+  create_volume_assets
+  set_trusted_block_data
+  start_follower &
 }
 
 run_command_inside_container() {
@@ -49,13 +48,6 @@ run_command_inside_container() {
     "$@" \
     "$CONTAINER_IMAGE_NAME:test-$PROPOSAL_NAME" \
     -c "$entrypoint"
-}
-
-set_node_id() {
-  VALIDATOR_NODE_ID="$(
-    run_command_inside_container \
-      "agd tendermint show-node-id"
-  )"
 }
 
 set_trusted_block_data() {
@@ -79,6 +71,8 @@ set_trusted_block_data() {
 }
 
 start_follower() {
+  wait_for_network_config
+
   local entrypoint="
                 #! /bin/bash
 
@@ -109,9 +103,20 @@ start_follower() {
                 ##################################################################################
 
                 start_loadgen() {
-                        cd \$HOME/$LOADGEN_REPOSITORY_NAME/monitor
-                        ./start.sh \
-                         --testnet-origin file://$NETWORK_CONFIG_FILE_PATH --use-state-sync
+                        cd \$HOME/$LOADGEN_REPOSITORY_NAME
+                        yarn --cwd runner install
+                        AG_CHAIN_COSMOS_HOME=\$HOME/.agoric \
+                        SDK_BUILD=0 \
+                        ./runner/bin/loadgen-runner \
+                         --chain-only \
+                         --custom-bootstrap \
+                         --integrate-acceptance \
+                         --no-stage.save-storage \
+                         --output-dir ./results/a3p-test/ \
+                         --profile testnet \
+                         --stages 2 \
+                         --testnet-origin file://$NETWORK_CONFIG_FILE_PATH \
+                         --use-state-sync
                 }
 
                 install_dependencies
@@ -121,34 +126,19 @@ start_follower() {
         "
   run_command_inside_container \
     "$entrypoint" \
-    --env "API_PORT=$FOLLOWER_API_PORT" \
-    --env "GRPC_PORT=$FOLLOWER_GRPC_PORT" \
     --env "MESSAGE_FILE_PATH=$CONTAINER_MESSAGE_FILE_PATH" \
     --env "OUTPUT_DIR=$OUTPUT_DIRECTORY" \
-    --env "P2P_PORT=$FOLLOWER_P2P_PORT" \
-    --env "PPROF_PORT=$FOLLOWER_PPROF_PORT" \
-    --env "RPC_PORT=$FOLLOWER_RPC_PORT" \
     --env "TRUSTED_BLOCK_HASH=$TRUSTED_BLOCK_HASH" \
     --env "TRUSTED_BLOCK_HEIGHT=$TRUSTED_BLOCK_HEIGHT" \
     --mount "source=$MESSAGE_FILE_PATH,target=$CONTAINER_MESSAGE_FILE_PATH,type=bind" \
     --mount "source=$OUTPUT_DIRECTORY,target=$OUTPUT_DIRECTORY,type=bind" \
-    --mount "source=$NETWORK_CONFIG_FILE_PATH,target=$NETWORK_CONFIG_FILE_PATH/network-config,type=bind" > "$FOLLOWER_LOGS_FILE" &
+    --mount "source=$NETWORK_CONFIG_FILE_PATH,target=$NETWORK_CONFIG_FILE_PATH/network-config,type=bind" > "$FOLLOWER_LOGS_FILE"
 }
 
-write_network_config() {
-  echo "
-            {
-                    \"chainName\": \"$CHAIN_ID\",
-                    \"rpcAddrs\": [\"http://localhost:$VALIDATOR_RPC_PORT\"],
-                    \"gci\": \"http://localhost:$VALIDATOR_RPC_PORT/genesis\",
-                    \"peers\":[\"$VALIDATOR_NODE_ID@localhost:$VALIDATOR_P2P_PORT\"],
-                    \"seeds\":[]
-            }
-        " > "$NETWORK_CONFIG_FILE_PATH"
+wait_for_network_config() {
+  local network_config=$(node "$DIRECTORY_PATH/../wait-for-follower.mjs" "^{.*")
+  echo "Got network config: $network_config"
+  echo "$network_config" > "$NETWORK_CONFIG_FILE_PATH"
 }
 
-create_volume_assets
-set_node_id
-set_trusted_block_data
-write_network_config
-start_follower
+main > "$LOGS_FILE" 2>&1
