@@ -19,7 +19,7 @@
     "@agoric/inter-protocol": "dev",
     "@agoric/internal": "dev",
     "@agoric/store": "dev",
-    "@agoric/synthetic-chain": "^0.5.1",
+    "@agoric/synthetic-chain": "^0.5.2",
     "@agoric/zoe": "dev",
     "@cosmjs/stargate": "^0.32.3",
     "@cosmjs/tendermint-rpc": "^0.32.3",

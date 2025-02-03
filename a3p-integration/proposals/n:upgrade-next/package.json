@@ -26,7 +26,7 @@
     "@agoric/client-utils": "dev",
     "@agoric/ertp": "dev",
     "@agoric/internal": "dev",
-    "@agoric/synthetic-chain": "^0.5.1",
+    "@agoric/synthetic-chain": "^0.5.2",
     "@agoric/zoe": "dev",
     "@endo/errors": "^1.2.9",
     "@endo/init": "^1.1.8",
