@@ -5,6 +5,7 @@ import {
   encodeAddressHook,
   encodeBech32,
 } from '@agoric/cosmic-proto/address-hooks.js';
+import type { CoreEvalSDKType } from '@agoric/cosmic-proto/agoric/swingset/swingset.js';
 import type {
   CctpTxEvidence,
   ContractRecord,
@@ -21,14 +22,17 @@ import { buildVTransferEvent } from '@agoric/orchestration/tools/ibc-mocks.js';
 import type { OfferSpec } from '@agoric/smart-wallet/src/offers.js';
 import type { SnapStoreDebug } from '@agoric/swing-store';
 import type { SwingsetController } from '@agoric/swingset-vat/src/controller/controller.js';
-import type { IBCChannelID } from '@agoric/vats';
+import type { BridgeHandler, IBCChannelID } from '@agoric/vats';
 import { makePromiseKit } from '@endo/promise-kit';
-import { writeFile } from 'fs/promises';
+import { readFile, writeFile } from 'fs/promises';
+import { createRequire } from 'module';
 import { AckBehavior } from '../../tools/supports.js';
 import {
   makeWalletFactoryContext,
   type WalletFactoryTestContext,
 } from '../bootstrapTests/walletFactory.js';
+
+const nodeRequire = createRequire(import.meta.url);
 
 const test: TestFn<
   WalletFactoryTestContext & {
@@ -37,6 +41,7 @@ const test: TestFn<
     fromNoble: IBCChannelID;
     observations: Array<{ id: unknown } & Record<string, unknown>>;
     writeStats?: (txt: string) => Promise<void>;
+    doCoreEval: (specifier: string) => Promise<void>;
   }
 > = anyTest;
 
@@ -396,6 +401,20 @@ test.before(async t => {
   const toNoble = makeIBCChannel(ctx.bridgeUtils, 'channel-62');
   const fromNoble = 'channel-21';
 
+  const { log } = console;
+  const doCoreEval = async (specifier: string) => {
+    const { EV } = ctx.runUtils;
+    const script = await readFile(nodeRequire.resolve(specifier), 'utf-8');
+    const eval0: CoreEvalSDKType = { js_code: script, json_permits: 'true' };
+    log('executing proposal');
+    const bridgeMessage = { type: 'CORE_EVAL', evals: [eval0] };
+    const coreEvalBridgeHandler: BridgeHandler = await EV.vat(
+      'bootstrap',
+    ).consumeItem('coreEvalBridgeHandler');
+    await EV(coreEvalBridgeHandler).fromBridge(bridgeMessage);
+    log(`proposal executed`);
+  };
+
   t.context = {
     ...ctx,
     oracles,
@@ -403,6 +422,7 @@ test.before(async t => {
     writeStats,
     fromNoble,
     toNoble,
+    doCoreEval,
   };
 });
 test.after.always(t => t.context.shutdown?.());
