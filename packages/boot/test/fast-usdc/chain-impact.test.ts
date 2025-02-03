@@ -322,37 +322,38 @@ const makeSimulation = async (
       } = await fastQ.metrics();
       const part = Number(poolBeforeAdvance.value) / users.length;
 
-      await Promise.all(
-        users.map(async (webUI, who) => {
-          const dest = makeDestAcct(
-            ctx,
-            `dydx1anything${who}${iter}`,
-            'channel-62',
-          );
-          const amount = BigInt(Math.round(part * (1 - who * 0.1)));
+      // XXX doesn't work in Promise.all due to mock bridge limitation
+      for (const who of range(users.length)) {
+        const webUI = users[who];
+        const dest = makeDestAcct(
+          ctx,
+          `dydx1anything${who}${iter}`,
+          'channel-62',
+        );
+        const amount = BigInt(Math.round(part * (1 - who * 0.1)));
 
-          const { recipientAddress, forwardingAddress, evidence } =
-            await webUI.advance(t, amount, dest.address);
+        const { recipientAddress, forwardingAddress, evidence } =
+          await webUI.advance(t, amount, dest.address);
 
-          await dest.ack(poolAccount);
-          await eventLoopIteration();
+        await dest.ack(poolAccount);
+        await eventLoopIteration();
 
-          // in due course, minted USDC arrives
-          await cctp.mint(
-            amount,
-            forwardingAddress,
-            settlementAccount,
-            recipientAddress,
-          );
-          await eventLoopIteration();
-          t.like(fastQ.txStatus(evidence.txHash), [
-            { status: 'OBSERVED' },
-            { status: 'ADVANCING' },
-            { status: 'ADVANCED' },
-            { status: 'DISBURSED' },
-          ]);
-        }),
-      );
+        // in due course, minted USDC arrives
+        await cctp.mint(
+          amount,
+          forwardingAddress,
+          settlementAccount,
+          recipientAddress,
+        );
+        await eventLoopIteration();
+        t.like(fastQ.txStatus(evidence.txHash), [
+          { status: 'OBSERVED' },
+          { status: 'ADVANCING' },
+          { status: 'ADVANCED' },
+          { status: 'DISBURSED' },
+        ]);
+      }
+
       await eventLoopIteration();
 
       const {
