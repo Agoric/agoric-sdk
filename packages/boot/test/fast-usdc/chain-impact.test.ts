@@ -138,7 +138,7 @@ const makeLP = (ctx: WalletFactoryTestContext, addr: string) => {
       const offerId = `lp-deposit-${(nonce += 1)}`;
       const offerSpec = Offers.fastUsdc.Deposit(agoricNamesRemotes, {
         offerId,
-        fastLPAmount: BigInt(Number(value) * 0.6), // XXX use poolMetrics?,
+        fastLPAmount: BigInt(Math.round(Number(value) * 0.6)), // XXX use poolMetrics?,
         usdcAmount: value,
       });
       const lp = await lpP;
@@ -151,7 +151,7 @@ const makeLP = (ctx: WalletFactoryTestContext, addr: string) => {
       const offerSpec = Offers.fastUsdc.Withdraw(agoricNamesRemotes, {
         offerId,
         fastLPAmount: value,
-        usdcAmount: BigInt(Number(value) * 0.9), // XXX use poolMetrics?
+        usdcAmount: BigInt(Math.round(Number(value) * 0.9)), // XXX use poolMetrics?
       });
       const lp = await lpP;
       await lp.sendOffer(offerSpec);
