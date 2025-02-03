@@ -372,7 +372,8 @@ const makeSimulation = async (
         Number(beforeWithdraw.shareWorth.numerator.value) / lps.length;
       await Promise.all(
         lps.map(async (lp, ix) => {
-          const amount = BigInt(Math.round(partWd * (1 - ix * 0.1)));
+          // 0.8 to avoid: Withdrawal of X failed because the purse only contained Y
+          const amount = BigInt(Math.round(partWd * (0.8 - ix * 0.1)));
           // XXX simulate failed withrawals?
           await lp.withdraw(amount, iter);
         }),
