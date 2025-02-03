@@ -29,78 +29,24 @@ import {
 const test: TestFn<
   WalletFactoryTestContext & {
     oracles: TxOracle[];
-    observations: { id: unknown; kernel: Object }[];
+    observations: Array<
+      { id: unknown; kernel: object } & Record<string, unknown>
+    >;
   }
 > = anyTest;
-
-const config = '@agoric/vm-config/decentral-itest-fast-usdc-config.json';
-
-test.before(async t => {
-  const { env } = globalThis.process;
-  const {
-    SLOGFILE: slogFile,
-    SWINGSET_WORKER_TYPE: defaultManagerType = 'local', // or 'xs-worker',
-  } = env;
-  const ctx = await makeWalletFactoryContext(t, config, {
-    slogFile,
-    defaultManagerType,
-  });
-  const oracles = Object.entries(configurations.MAINNET.oracles).map(
-    ([name, addr]) => makeTxOracle(ctx, name, addr),
-  );
-
-  t.context = { ...ctx, oracles, observations: [] };
-});
-test.after.always(t => t.context.shutdown?.());
-
-const getResourceUsageStats = (controller: SwingsetController) => {
-  const stats = controller.getStats();
-  const { promiseQueuesLength, kernelPromises, kernelObjects, clistEntries } =
-    stats;
-  const relevant = {
-    promiseQueuesLength,
-    kernelPromises,
-    kernelObjects,
-    clistEntries,
-  };
-  return relevant;
-};
-
-test.serial('access relevant kernel stats after bootstrap', async t => {
-  const { controller, observations } = t.context;
-  const relevant = getResourceUsageStats(controller);
-  t.log('relevant kernel stats', relevant);
-  t.truthy(relevant);
-  observations.push({ id: 'post-boot', kernel: relevant });
-});
-
-test.serial(
-  'access uncompressedSize of heap snapshots of vats (WIP)',
-  async t => {
-    const { controller, swingStore } = t.context;
-
-    const snapStore = swingStore.internal
-      .snapStore as unknown as SnapStoreDebug;
-
-    await controller.reapAllVats(); // force GC
-    await controller.run(); // clear any reactions
-    const active: string[] = [];
-    for (const snapshot of snapStore.listAllSnapshots()) {
-      const { vatID, uncompressedSize } = snapshot;
-      t.log({ vatID, uncompressedSize });
-      t.log('TODO: filter by active', snapshot);
-      active.push(vatID);
-    }
-    t.log('active vats', active);
-    t.pass();
-  },
-);
 
 type SmartWallet = Awaited<
   ReturnType<
     WalletFactoryTestContext['walletFactoryDriver']['provideSmartWallet']
   >
 >;
+
+const config = '@agoric/vm-config/decentral-itest-fast-usdc-config.json';
+const nobleAgoricChannelId = 'channel-21';
+
+const range = (n: Number) => Array.from(Array(n).keys());
+const prefixedRange = (n: Number, pfx: string) =>
+  range(n).map(ix => `${pfx}${ix}`);
 
 const makeTxOracle = (
   ctx: WalletFactoryTestContext,
@@ -148,83 +94,6 @@ const makeTxOracle = (
 };
 type TxOracle = ReturnType<typeof makeTxOracle>;
 
-test.serial('oracles provision before contract deployment', async t => {
-  const { oracles } = t.context;
-  const [watcher0] = await Promise.all(oracles.map(o => o.provision()));
-  t.truthy(watcher0);
-
-  const { controller, observations } = t.context;
-  observations.push({
-    id: 'post-ocw-provision',
-    kernel: getResourceUsageStats(controller),
-  });
-});
-
-test.serial('start-fast-usdc', async t => {
-  const {
-    agoricNamesRemotes,
-    bridgeUtils,
-    buildProposal,
-    evalProposal,
-    refreshAgoricNamesRemotes,
-  } = t.context;
-
-  // inbound `startChannelOpenInit` responses immediately.
-  // needed since the Fusdc StartFn relies on an ICA being created
-  bridgeUtils.setAckBehavior(
-    BridgeId.DIBC,
-    'startChannelOpenInit',
-    AckBehavior.Immediate,
-  );
-  bridgeUtils.setBech32Prefix('noble');
-
-  const materials = buildProposal(
-    '@agoric/builders/scripts/fast-usdc/start-fast-usdc.build.js',
-    ['--net', 'MAINNET'],
-  );
-  await evalProposal(materials);
-  refreshAgoricNamesRemotes();
-  t.truthy(agoricNamesRemotes.instance.fastUsdc);
-
-  const { controller, observations } = t.context;
-  observations.push({
-    id: 'post-start-fast-usdc',
-    kernel: getResourceUsageStats(controller),
-  });
-});
-
-test.serial('oracles accept invitations', async t => {
-  const { oracles } = t.context;
-  await t.notThrowsAsync(Promise.all(oracles.map(o => o.claim())));
-
-  const { controller, observations } = t.context;
-  observations.push({
-    id: 'post-ocws-claim-invitations',
-    kernel: getResourceUsageStats(controller),
-  });
-});
-
-const makeLP = (ctx: WalletFactoryTestContext, addr: string) => {
-  const { agoricNamesRemotes, walletFactoryDriver: wfd } = ctx;
-  const lpP = wfd.provideSmartWallet(addr);
-
-  let nonce = 0;
-
-  return harden({
-    async deposit(value: bigint) {
-      const offerId = `deposit-lp-${(nonce += 1)}`;
-      const offerSpec = Offers.fastUsdc.Deposit(agoricNamesRemotes, {
-        offerId,
-        fastLPAmount: value,
-        usdcAmount: value,
-      });
-      const lp = await lpP;
-      await lp.sendOffer(offerSpec);
-      return offerSpec;
-    },
-  });
-};
-
 const makeFastUsdcQuery = (ctx: WalletFactoryTestContext) => {
   const { storage } = ctx;
   return harden({
@@ -247,39 +116,47 @@ const makeFastUsdcQuery = (ctx: WalletFactoryTestContext) => {
   });
 };
 
-test.serial('LP deposits', async t => {
-  const fastQ = makeFastUsdcQuery(t.context);
-  const lp = makeLP(t.context, 'agoric19uscwxdac6cf6z7d5e26e0jm0lgwstc47cpll8');
-  const { proposal, id } = await lp.deposit(150_000_000n);
+const makeLP = (ctx: WalletFactoryTestContext, addr: string) => {
+  const { agoricNamesRemotes, walletFactoryDriver: wfd } = ctx;
+  const lpP = wfd.provideSmartWallet(addr);
 
-  const {
-    shareWorth: { numerator: poolBalance },
-  } = fastQ.metrics();
-  t.true(poolBalance.value >= proposal.give.USDC.value);
+  let nonce = 0;
 
-  const { controller, observations } = t.context;
-  observations.push({ id, kernel: getResourceUsageStats(controller) });
-});
+  const pollOffer = async (lp: SmartWallet, id: string) => {
+    for (;;) {
+      const info = lp.getLatestUpdateRecord();
+      if (info.updated !== 'offerStatus') continue;
+      if (info.status.id !== id) continue;
+      if (info.status.error) throw Error(info.status.error);
+      if (info.status.payouts) return info.status.payouts;
+      await eventLoopIteration();
+    }
+  };
 
-const makeDestAcct = (
-  ctx: WalletFactoryTestContext,
-  address: string,
-  sourceChannel: IBCChannelID,
-) => {
-  const { runInbound } = ctx.bridgeUtils;
-  let sequence = 0;
   return harden({
-    address,
-    async ack(sender: string) {
-      await runInbound(
-        BridgeId.VTRANSFER,
-        buildVTransferEvent({
-          sender,
-          target: sender,
-          sourceChannel,
-          sequence: `${(sequence += 1)}`,
-        }),
-      );
+    async deposit(value: bigint) {
+      const offerId = `lp-deposit-${(nonce += 1)}`;
+      const offerSpec = Offers.fastUsdc.Deposit(agoricNamesRemotes, {
+        offerId,
+        fastLPAmount: BigInt(Number(value) * 0.6), // XXX use poolMetrics?,
+        usdcAmount: value,
+      });
+      const lp = await lpP;
+      await lp.sendOffer(offerSpec);
+      await pollOffer(lp, offerId);
+      return offerSpec;
+    },
+    async withdraw(value: bigint) {
+      const offerId = `lp-withdraw-${(nonce += 1)}`;
+      const offerSpec = Offers.fastUsdc.Withdraw(agoricNamesRemotes, {
+        offerId,
+        fastLPAmount: value,
+        usdcAmount: BigInt(Number(value) * 0.9), // XXX use poolMetrics?
+      });
+      const lp = await lpP;
+      await lp.sendOffer(offerSpec);
+      await pollOffer(lp, offerId);
+      return offerSpec;
     },
   });
 };
@@ -386,6 +263,238 @@ const makeUA = (
   });
 };
 
+const makeDestAcct = (
+  ctx: WalletFactoryTestContext,
+  address: string,
+  sourceChannel: IBCChannelID,
+) => {
+  const { runInbound } = ctx.bridgeUtils;
+  let sequence = 0;
+  return harden({
+    address,
+    async ack(sender: string) {
+      await runInbound(
+        BridgeId.VTRANSFER,
+        buildVTransferEvent({
+          sender,
+          target: sender,
+          sourceChannel,
+          sequence: `${(sequence += 1)}`,
+        }),
+      );
+    },
+  });
+};
+
+const makeSimulation = async (
+  ctx: WalletFactoryTestContext,
+  oracles: TxOracle[],
+) => {
+  const cctp = makeCctp(ctx, nobleAgoricChannelId, 'channel-62');
+
+  const fastQ = makeFastUsdcQuery(ctx);
+  const lps = prefixedRange(3, 'agoric1lp').map(a => makeLP(ctx, a));
+  const { settlementAccount, poolAccount } = fastQ.contractRecord();
+  const users = prefixedRange(5, `0xFEED`).map(addr =>
+    makeUA(
+      addr as EvmAddress,
+      settlementAccount,
+      nobleAgoricChannelId,
+      fastQ,
+      cctp,
+      oracles,
+    ),
+  );
+
+  return harden({
+    oracles,
+    lps,
+    users,
+    async iteration(t: ExecutionContext) {
+      console.log('@@@iter: deposits');
+      await Promise.all(
+        lps.map(async (lp, ix) => {
+          await lp.deposit(BigInt((ix + 1) * 2000) * 1_000_000n);
+          console.log('@@@deposit done', ix);
+        }),
+      );
+
+      console.log('@@@iter: advance/settles');
+      await Promise.all(
+        users.map(async (webUI, ix) => {
+          console.log('@@@iter: user', ix);
+          // XXX varying dest addr results in lack of progress???
+          const dest = makeDestAcct(ctx, `dydx1anything`, 'channel-62');
+          const amount = BigInt((ix + 1) * 350) * 1_000_000n;
+
+          const { recipientAddress, forwardingAddress, evidence } =
+            await webUI.advance(t, amount, dest.address);
+          console.log('@@@iter: user', ix, 'advanced');
+
+          await dest.ack(poolAccount);
+          console.log('@@@iter: user', ix, 'ackd');
+          await eventLoopIteration();
+
+          // in due course, minted USDC arrives
+          await cctp.mint(
+            amount,
+            forwardingAddress,
+            settlementAccount,
+            recipientAddress,
+          );
+          console.log('@@@iter: user', ix, 'minted');
+          await eventLoopIteration();
+          t.like(fastQ.txStatus(evidence.txHash), [
+            { status: 'OBSERVED' },
+            { status: 'ADVANCING' },
+            { status: 'ADVANCED' },
+            { status: 'DISBURSED' },
+          ]);
+        }),
+      );
+
+      console.log('@@@iter: lp withdraws');
+      await Promise.all(
+        lps.map(async (lp, ix) => {
+          await lp.withdraw(BigInt((ix + 1) * 1500) * 1_000_000n);
+          console.log('@@@iter: lp', ix, 'withdrew');
+        }),
+      );
+    },
+  });
+};
+
+test.before(async t => {
+  const { env } = globalThis.process;
+  const {
+    SLOGFILE: slogFile,
+    SWINGSET_WORKER_TYPE: defaultManagerType = 'local', // or 'xs-worker',
+  } = env;
+  const ctx = await makeWalletFactoryContext(t, config, {
+    slogFile,
+    defaultManagerType,
+  });
+  const oracles = Object.entries(configurations.MAINNET.oracles).map(
+    ([name, addr]) => makeTxOracle(ctx, name, addr),
+  );
+
+  t.context = { ...ctx, oracles, observations: [] };
+});
+test.after.always(t => t.context.shutdown?.());
+
+const getResourceUsageStats = (controller: SwingsetController) => {
+  const stats = controller.getStats();
+  const { promiseQueuesLength, kernelPromises, kernelObjects, clistEntries } =
+    stats;
+  const relevant = {
+    promiseQueuesLength,
+    kernelPromises,
+    kernelObjects,
+    clistEntries,
+  };
+  return relevant;
+};
+
+test.serial('access relevant kernel stats after bootstrap', async t => {
+  const { controller, observations } = t.context;
+  const relevant = getResourceUsageStats(controller);
+  t.log('relevant kernel stats', relevant);
+  t.truthy(relevant);
+  observations.push({ id: 'post-boot', kernel: relevant });
+});
+
+test.serial(
+  'access uncompressedSize of heap snapshots of vats (WIP)',
+  async t => {
+    const { controller, swingStore } = t.context;
+
+    const snapStore = swingStore.internal
+      .snapStore as unknown as SnapStoreDebug;
+
+    await controller.reapAllVats(); // force GC
+    await controller.run(); // clear any reactions
+    const active: string[] = [];
+    for (const snapshot of snapStore.listAllSnapshots()) {
+      const { vatID, uncompressedSize } = snapshot;
+      t.log({ vatID, uncompressedSize });
+      t.log('TODO: filter by active', snapshot);
+      active.push(vatID);
+    }
+    t.log('active vats', active);
+    t.pass();
+  },
+);
+
+test.serial('oracles provision before contract deployment', async t => {
+  const { oracles } = t.context;
+  const [watcher0] = await Promise.all(oracles.map(o => o.provision()));
+  t.truthy(watcher0);
+
+  const { controller, observations } = t.context;
+  observations.push({
+    id: 'post-ocw-provision',
+    kernel: getResourceUsageStats(controller),
+  });
+});
+
+test.serial('start-fast-usdc', async t => {
+  const {
+    agoricNamesRemotes,
+    bridgeUtils,
+    buildProposal,
+    evalProposal,
+    refreshAgoricNamesRemotes,
+  } = t.context;
+
+  // inbound `startChannelOpenInit` responses immediately.
+  // needed since the Fusdc StartFn relies on an ICA being created
+  bridgeUtils.setAckBehavior(
+    BridgeId.DIBC,
+    'startChannelOpenInit',
+    AckBehavior.Immediate,
+  );
+  bridgeUtils.setBech32Prefix('noble');
+
+  const materials = buildProposal(
+    '@agoric/builders/scripts/fast-usdc/start-fast-usdc.build.js',
+    ['--net', 'MAINNET'],
+  );
+  await evalProposal(materials);
+  refreshAgoricNamesRemotes();
+  t.truthy(agoricNamesRemotes.instance.fastUsdc);
+
+  const { controller, observations } = t.context;
+  observations.push({
+    id: 'post-start-fast-usdc',
+    kernel: getResourceUsageStats(controller),
+  });
+});
+
+test.serial('oracles accept invitations', async t => {
+  const { oracles } = t.context;
+  await t.notThrowsAsync(Promise.all(oracles.map(o => o.claim())));
+
+  const { controller, observations } = t.context;
+  observations.push({
+    id: 'post-ocws-claim-invitations',
+    kernel: getResourceUsageStats(controller),
+  });
+});
+
+test.serial('LP deposits', async t => {
+  const fastQ = makeFastUsdcQuery(t.context);
+  const lp = makeLP(t.context, 'agoric19uscwxdac6cf6z7d5e26e0jm0lgwstc47cpll8');
+  const { proposal, id } = await lp.deposit(150_000_000n);
+
+  const {
+    shareWorth: { numerator: poolBalance },
+  } = fastQ.metrics();
+  t.true(poolBalance.value >= proposal.give.USDC.value);
+
+  const { controller, observations } = t.context;
+  observations.push({ id, kernel: getResourceUsageStats(controller) });
+});
+
 test.serial('makes usdc advance, mint', async t => {
   const nobleAgoricChannelId = 'channel-21';
   const { oracles } = t.context;
@@ -437,6 +546,20 @@ test.serial('makes usdc advance, mint', async t => {
     id: `post-mint`,
     kernel: getResourceUsageStats(controller),
   });
+});
+
+test.serial('iterate simulation several times', async t => {
+  const { controller, observations, oracles } = t.context;
+  const sim = await makeSimulation(t.context, oracles);
+
+  for (const ix of range(10)) {
+    await sim.iteration(t);
+    observations.push({
+      id: `iter-${ix}`,
+      computrons: 'TODO',
+      kernel: getResourceUsageStats(controller),
+    });
+  }
 });
 
 test.serial('analyze observations', async t => {
