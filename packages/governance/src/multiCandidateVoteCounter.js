@@ -19,6 +19,7 @@ import { makeQuorumCounter } from './quorumCounter.js';
 import { breakTie } from './breakTie.js';
 
 /**
+ * @import {MapStore} from '@agoric/swingset-liveslots';
  * @import {QuestionSpec, BuildMultiVoteCounter, MultiOutcomeRecord, Position, VoteStatistics} from './types.js';
  */
 

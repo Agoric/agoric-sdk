@@ -59,6 +59,12 @@ const allRisksIdentified = (riskStores, txHash) => {
   return [...setOfRisks.values()].sort();
 };
 
+export const stateShape = {
+  operators: M.remotable(),
+  pending: M.remotable(),
+  risks: M.remotable(),
+};
+
 /**
  * @param {Zone} zone
  * @param {ZCF} zcf
@@ -245,6 +251,7 @@ export const prepareTransactionFeedKit = (zone, zcf) => {
         getEvidenceSubscriber: () => subscriber,
       },
     },
+    { stateShape },
   );
 };
 harden(prepareTransactionFeedKit);

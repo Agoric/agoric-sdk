@@ -28,6 +28,7 @@ import {
 } from './util.js';
 
 /**
+ * @import {EReturn} from '@endo/far';
  * @import {Baggage} from '@agoric/vat-data';
  * @import {PriceAuthority} from '@agoric/zoe/tools/types.js';
  * @import {TypedPattern} from '@agoric/internal';
@@ -790,4 +791,4 @@ export const prepareAuctionBook = (baggage, zcf, makeRecorderKit) => {
 };
 harden(prepareAuctionBook);
 
-/** @typedef {ReturnType<ReturnType<typeof prepareAuctionBook>>} AuctionBook */
+/** @typedef {EReturn<EReturn<typeof prepareAuctionBook>>} AuctionBook */

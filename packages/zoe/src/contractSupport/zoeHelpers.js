@@ -7,6 +7,10 @@ import { fromUniqueEntries } from '@agoric/internal';
 import { satisfiesWant } from '../contractFacet/offerSafety.js';
 import { atomicTransfer, fromOnly, toOnly } from './atomicTransfer.js';
 
+/**
+ * @import {Pattern} from '@endo/patterns';
+ */
+
 export const defaultAcceptanceMsg = `The offer has been accepted. Once the contract has been completed, please check your payout`;
 
 const getKeysSorted = obj => harden(Reflect.ownKeys(obj || {}).sort());

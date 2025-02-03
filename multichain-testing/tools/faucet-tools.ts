@@ -4,6 +4,9 @@ import { makeFundAndTransfer } from './ibc-transfer.js';
 import type { MultichainRegistry } from './registry.js';
 import type { RetryUntilCondition } from './sleep.js';
 import type { AgdTools } from './agd-tools.js';
+import { makeTracer } from '@agoric/internal';
+
+const trace = makeTracer('Faucet');
 
 type ChainName = string;
 
@@ -29,7 +32,7 @@ export const makeFaucetTools = (
      */
     fundFaucet: async (assets: [ChainName, Denom][], qty = DEFAULT_QTY) => {
       const faucetAddr = agd.keys.showAddress('faucet');
-      console.log(`Faucet address: ${faucetAddr}`);
+      trace(`Faucet address: ${faucetAddr}`);
 
       for (const [chainName, denom] of assets) {
         await fundAndTransfer(chainName, faucetAddr, qty, denom);

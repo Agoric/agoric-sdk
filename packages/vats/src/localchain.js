@@ -13,6 +13,7 @@ import { Shape as NetworkShape } from '@agoric/network';
 const { Vow$ } = NetworkShape;
 
 /**
+ * @import {EReturn} from '@endo/far';
  * @import {TypedJson, ResponseTo, JsonSafe} from '@agoric/cosmic-proto';
  * @import {PromiseVow, VowTools} from '@agoric/vow';
  * @import {TargetApp, TargetRegistration} from './bridge-target.js';
@@ -215,6 +216,7 @@ export const prepareLocalChainAccountKit = (zone, { watch }) =>
       },
     },
   );
+/** @typedef {EReturn<EReturn<typeof prepareLocalChain>>} LocalChain */
 
 /**
  * @typedef {Awaited<
@@ -337,6 +339,4 @@ export const prepareLocalChainTools = (zone, vowTools) => {
   return harden({ makeLocalChain });
 };
 harden(prepareLocalChainTools);
-
 /** @typedef {ReturnType<typeof prepareLocalChainTools>} LocalChainTools */
-/** @typedef {ReturnType<LocalChainTools['makeLocalChain']>} LocalChain */

@@ -53,6 +53,12 @@ const pendingTxKeyOf = evidence => {
  * }} StatusManagerPowers
  */
 
+export const stateShape = harden({
+  pendingSettleTxs: M.remotable(),
+  seenTxs: M.remotable(),
+  storedCompletedTxs: M.remotable(),
+});
+
 /**
  * The `StatusManager` keeps track of Pending and Seen Transactions
  * via {@link PendingTxStatus} states, aiding in coordination between the `Advancer`
@@ -408,6 +414,7 @@ export const prepareStatusManager = (
         return pendingSettleTxs.get(key);
       },
     },
+    { stateShape },
   );
 };
 harden(prepareStatusManager);

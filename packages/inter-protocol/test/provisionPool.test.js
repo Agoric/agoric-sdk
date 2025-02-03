@@ -28,6 +28,7 @@ import {
 } from './supports.js';
 
 /**
+ * @import {EReturn} from '@endo/far';
  * @import {Bank} from '@agoric/vats/src/vat-bank.js'
  * @import {SmartWallet} from '@agoric/smart-wallet/src/smartWallet.js'
  * @import {WalletReviver} from '@agoric/smart-wallet/src/walletFactory.js'
@@ -133,7 +134,7 @@ test.before(async t => {
   t.context = await makeTestContext();
 });
 
-/** @param {Awaited<ReturnType<typeof makeTestContext>>} context */
+/** @param {EReturn<typeof makeTestContext>} context */
 const tools = context => {
   const { zoe, anchor, installs, storageRoot } = context;
   // @ts-expect-error missing mint
@@ -377,8 +378,13 @@ test('makeBridgeProvisionTool handles duplicate requests', async t => {
   t.log('1st request to provision a SMART_WALLET for', address);
   await handler.fromBridge({
     type: 'PLEASE_PROVISION',
+    blockHeight: '123',
+    blockTime: '1737432662',
     address,
-    powerFlags: PowerFlags.SMART_WALLET,
+    autoProvision: true,
+    nickname: 'test',
+    powerFlags: [PowerFlags.SMART_WALLET],
+    submitter: address,
   });
 
   t.deepEqual(
@@ -394,8 +400,13 @@ test('makeBridgeProvisionTool handles duplicate requests', async t => {
   t.log('2nd request to provision a SMART_WALLET for', address);
   await handler.fromBridge({
     type: 'PLEASE_PROVISION',
+    blockHeight: '123',
+    blockTime: '1737432662',
     address,
-    powerFlags: PowerFlags.SMART_WALLET,
+    autoProvision: true,
+    nickname: 'test',
+    powerFlags: [PowerFlags.SMART_WALLET],
+    submitter: address,
   });
   t.is(
     myDepositFacet,

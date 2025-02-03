@@ -1,13 +1,15 @@
-import { AmountMath, AmountShape } from '@agoric/ertp';
+import { AmountMath, AmountShape, RatioShape } from '@agoric/ertp';
 import {
   makeRecorderTopic,
+  RecorderKitShape,
   TopicsRecordShape,
-} from '@agoric/zoe/src/contractSupport/topics.js';
+} from '@agoric/zoe/src/contractSupport/index.js';
 import { SeatShape } from '@agoric/zoe/src/typeGuards.js';
 import { M } from '@endo/patterns';
 import { Fail, q } from '@endo/errors';
 import {
   borrowCalc,
+  checkPoolBalance,
   depositCalc,
   makeParity,
   repayCalc,
@@ -29,32 +31,7 @@ import {
  * @import {PoolStats} from '../types.js';
  */
 
-const { add, isEqual, isGTE, makeEmpty } = AmountMath;
-
-/** @param {Brand} brand */
-const makeDust = brand => AmountMath.make(brand, 1n);
-
-/**
- * Verifies that the total pool balance (unencumbered + encumbered) matches the
- * shareWorth numerator. The total pool balance consists of:
- * 1. unencumbered balance - USDC available in the pool for borrowing
- * 2. encumbered balance - USDC currently lent out
- *
- * A negligible `dust` amount is used to initialize shareWorth with a non-zero
- * denominator. It must remain in the pool at all times.
- *
- * @param {ZCFSeat} poolSeat
- * @param {ShareWorth} shareWorth
- * @param {Brand} USDC
- * @param {Amount<'nat'>} encumberedBalance
- */
-const checkPoolBalance = (poolSeat, shareWorth, USDC, encumberedBalance) => {
-  const unencumberedBalance = poolSeat.getAmountAllocated('USDC', USDC);
-  const dust = makeDust(USDC);
-  const grossBalance = add(add(unencumberedBalance, dust), encumberedBalance);
-  isEqual(grossBalance, shareWorth.numerator) ||
-    Fail`🚨 pool balance ${q(unencumberedBalance)} and encumbered balance ${q(encumberedBalance)} inconsistent with shareWorth ${q(shareWorth)}`;
-};
+const { add, isGTE, makeEmpty } = AmountMath;
 
 /**
  * @typedef {{
@@ -71,6 +48,22 @@ const checkPoolBalance = (poolSeat, shareWorth, USDC, encumberedBalance) => {
  *  ContractFee: Payment<'nat'>;
  * }} RepayPaymentKWR
  */
+
+export const stateShape = harden({
+  encumberedBalance: AmountShape,
+  feeSeat: M.remotable(),
+  poolStats: M.record(),
+  poolMetricsRecorderKit: RecorderKitShape,
+  poolSeat: M.remotable(),
+  PoolShares: M.remotable(),
+  proposalShapes: {
+    deposit: M.pattern(),
+    withdraw: M.pattern(),
+    withdrawFees: M.pattern(),
+  },
+  shareMint: M.remotable(),
+  shareWorth: RatioShape,
+});
 
 /**
  * @param {Zone} zone
@@ -127,7 +120,7 @@ export const prepareLiquidityPoolKit = (zone, zcf, USDC, tools) => {
     (shareMint, node) => {
       const { brand: PoolShares } = shareMint.getIssuerRecord();
       const proposalShapes = makeProposalShapes({ USDC, PoolShares });
-      const shareWorth = makeParity(makeDust(USDC), PoolShares);
+      const shareWorth = makeParity(USDC, PoolShares);
       const { zcfSeat: poolSeat } = zcf.makeEmptySeatKit();
       const { zcfSeat: feeSeat } = zcf.makeEmptySeatKit();
       const poolMetricsRecorderKit = tools.makeRecorderKit(
@@ -215,7 +208,11 @@ export const prepareLiquidityPoolKit = (zone, zcf, USDC, tools) => {
             poolStats,
             shareWorth,
           } = this.state;
-          checkPoolBalance(poolSeat, shareWorth, USDC, encumberedBalance);
+          checkPoolBalance(
+            poolSeat.getCurrentAllocation(),
+            shareWorth,
+            encumberedBalance,
+          );
 
           const fromSeatAllocation = fromSeat.getCurrentAllocation();
           // Validate allocation equals amounts and Principal <= encumberedBalance
@@ -272,7 +269,11 @@ export const prepareLiquidityPoolKit = (zone, zcf, USDC, tools) => {
           /** @type {USDCProposalShapes['deposit']} */
           // @ts-expect-error ensured by proposalShape
           const proposal = lp.getProposal();
-          checkPoolBalance(poolSeat, shareWorth, USDC, encumberedBalance);
+          checkPoolBalance(
+            poolSeat.getCurrentAllocation(),
+            shareWorth,
+            encumberedBalance,
+          );
           const post = depositCalc(shareWorth, proposal);
 
           // COMMIT POINT
@@ -308,8 +309,12 @@ export const prepareLiquidityPoolKit = (zone, zcf, USDC, tools) => {
           // @ts-expect-error ensured by proposalShape
           const proposal = lp.getProposal();
           const { zcfSeat: burn } = zcf.makeEmptySeatKit();
-          checkPoolBalance(poolSeat, shareWorth, USDC, encumberedBalance);
-          const post = withdrawCalc(shareWorth, proposal);
+          const post = withdrawCalc(
+            shareWorth,
+            proposal,
+            poolSeat.getCurrentAllocation(),
+            encumberedBalance,
+          );
 
           // COMMIT POINT
           try {
@@ -396,6 +401,7 @@ export const prepareLiquidityPoolKit = (zone, zcf, USDC, tools) => {
       finish: ({ facets: { external } }) => {
         void external.publishPoolMetrics();
       },
+      stateShape,
     },
   );
 };

@@ -2,8 +2,9 @@
  * @file cribbed from
  *   packages/zoe/test/swingsetTests/upgradeCoveredCall/test-coveredCall-service-upgrade.js
  */
-import { resolve as importMetaResolve } from 'import-meta-resolve';
 import { test as anyTest } from '@agoric/swingset-vat/tools/prepare-test-env-ava.js';
+
+import { resolve as importMetaResolve } from 'import-meta-resolve';
 import { buildVatController } from '@agoric/swingset-vat';
 
 /**

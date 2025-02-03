@@ -14,18 +14,22 @@ import { makeTracer } from '@agoric/internal';
 
 /**
  * @import {OfferSpec} from '@agoric/smart-wallet/src/offers.js';
+ * @import {UpdateRecord} from '@agoric/smart-wallet/src/smartWallet.js';
+ *
  * @import { EnglishMnemonic } from '@cosmjs/crypto';
  * @import { RetryUntilCondition } from './sleep.js';
  */
 
 const trace = makeTracer('E2ET');
 
+// The default of 6 retries was failing.
+const SMART_WALLET_PROVISION_RETRIES = 15;
+
 const BLD = '000000ubld';
 
 export const txAbbr = tx => {
-  // eslint-disable-next-line camelcase
   const { txhash, code, height, gas_used } = tx;
-  // eslint-disable-next-line camelcase
+
   return { txhash, code, height, gas_used };
 };
 
@@ -105,10 +109,12 @@ const installBundle = async (fullPath, opts) => {
   // };
   // const updates = follow('bundles', { delay: explainDelay });
   // await updates.next();
-  const tx = await agd.tx(
-    ['swingset', 'install-bundle', `@${fullPath}`, '--gas', 'auto'],
-    { from, chainId, yes: true },
-  );
+  const tx = await agd.tx(['swingset', 'install-bundle', `@${fullPath}`], {
+    from,
+    chainId,
+    yes: true,
+  });
+  assert(tx);
 
   progress({ id, installTx: tx.txhash, height: tx.height });
 
@@ -152,6 +158,7 @@ export const provisionSmartWallet = async (
     retryUntilCondition,
   },
 ) => {
+  trace('provisionSmartWallet', address);
   // TODO: skip this query if balances is {}
   const vbankEntries = await q.queryData('published.agoricNames.vbankAsset');
   const byName = Object.fromEntries(
@@ -168,6 +175,7 @@ export const provisionSmartWallet = async (
    * @param {bigint} value
    */
   const sendFromWhale = async (denom, value) => {
+    trace('sendFromWhale', address, denom, value);
     const amount = `${value}${denom}`;
     progress({ amount, to: address });
     // TODO: refactor agd.tx to support a per-sender object
@@ -202,7 +210,10 @@ export const provisionSmartWallet = async (
     () => q.queryData(`published.wallet.${address}.current`),
     result => !!result,
     `wallet in vstorage ${address}`,
-    { log: () => {} }, // suppress logs as this is already noisy
+    {
+      log: () => {}, // suppress logs as this is already noisy
+      maxRetries: SMART_WALLET_PROVISION_RETRIES,
+    },
   );
   progress({
     provisioned: address,
@@ -222,11 +233,12 @@ export const provisionSmartWallet = async (
     return txInfo;
   };
 
-  /** @param {import('@agoric/smart-wallet/src/offers.js').OfferSpec} offer */
+  /** @param {OfferSpec} offer */
   async function* executeOffer(offer) {
+    /** @type {AsyncGenerator<UpdateRecord, void, void>} */
     const updates = q.follow(`published.wallet.${address}`, { delay });
     const txInfo = await sendAction({ method: 'executeOffer', offer });
-    console.debug('spendAction', txInfo);
+    trace('spendAction', txInfo);
     for await (const update of updates) {
       trace('update', address, update);
       if (update.updated !== 'offerStatus' || update.status.id !== offer.id) {
@@ -239,12 +251,15 @@ export const provisionSmartWallet = async (
   // XXX  /** @type {import('../test/wallet-tools.js').MockWallet['offers']} */
   const offers = Far('Offers', {
     executeOffer,
+    /** @param {OfferSpec} offer */
+    executeOfferTx: offer => sendAction({ method: 'executeOffer', offer }),
     /** @param {string | number} offerId */
     tryExit: offerId => sendAction({ method: 'tryExitOffer', offerId }),
   });
 
   // XXX  /** @type {import('../test/wallet-tools.js').MockWallet['deposit']} */
   const deposit = Far('DepositFacet', {
+    getAddress: () => address,
     receive: async payment => {
       const brand = await E(payment).getAllegedBrand();
       const asset = vbankEntries.find(([_denom, a]) => a.brand === brand);
@@ -469,7 +484,7 @@ export const makeE2ETools = async (
     if (typeof info === 'object' && Object.keys(info).length > 0) {
       // XXX normally we have the caller pass in the log function
       // later, but the way blockTool is factored, we have to supply it early.
-      trace({ ...info, delay: ms / 1000 }, '...');
+      trace('delay', { ...info, delay: ms / 1000 }, '...');
     }
     return delay(ms);
   };
@@ -608,7 +623,7 @@ export const seatLike = updates => {
         if ('result' in update.status) sync.result.resolve(result);
         if ('payouts' in update.status && payouts) {
           sync.payouts.resolve(payouts);
-          console.debug('paid out', update.status.id);
+          trace('paid out', update.status.id);
           return;
         }
       }
