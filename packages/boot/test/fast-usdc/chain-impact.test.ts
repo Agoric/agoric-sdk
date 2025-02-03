@@ -20,6 +20,7 @@ import type { SnapStoreDebug } from '@agoric/swing-store';
 import type { SwingsetController } from '@agoric/swingset-vat/src/controller/controller.js';
 import type { IBCChannelID } from '@agoric/vats';
 import { makePromiseKit } from '@endo/promise-kit';
+import { writeFile } from 'fs/promises';
 import { AckBehavior } from '../../tools/supports.js';
 import {
   makeWalletFactoryContext,
@@ -32,6 +33,7 @@ const test: TestFn<
     observations: Array<
       { id: unknown; kernel: object } & Record<string, unknown>
     >;
+    writeStats?: (txt: string) => Promise<void>;
   }
 > = anyTest;
 
@@ -369,6 +371,7 @@ test.before(async t => {
   const {
     SLOGFILE: slogFile,
     SWINGSET_WORKER_TYPE: defaultManagerType = 'local', // or 'xs-worker',
+    STATS_FILE,
   } = env;
   const ctx = await makeWalletFactoryContext(t, config, {
     slogFile,
@@ -378,7 +381,10 @@ test.before(async t => {
     ([name, addr]) => makeTxOracle(ctx, name, addr),
   );
 
-  t.context = { ...ctx, oracles, observations: [] };
+  const writeStats = STATS_FILE
+    ? (txt: string) => writeFile(STATS_FILE, txt)
+    : undefined;
+  t.context = { ...ctx, oracles, observations: [], writeStats };
 });
 test.after.always(t => t.context.shutdown?.());
 
@@ -563,9 +569,13 @@ test.serial('iterate simulation several times', async t => {
 });
 
 test.serial('analyze observations', async t => {
-  const { observations } = t.context;
+  const { observations, writeStats } = t.context;
   for (const { id, kernel } of observations) {
     t.log({ id, ...kernel });
+  }
+  if (writeStats) {
+    const lines = observations.map(o => JSON.stringify(o) + '\n');
+    await writeStats(lines.join(''));
   }
   t.pass();
 });
