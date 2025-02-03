@@ -618,6 +618,7 @@ test.skip('prune vstorage', async t => {
 
 test.serial('iterate simulation several times', async t => {
   const { controller, observations, oracles, storage, toNoble } = t.context;
+  const { doCoreEval } = t.context;
   const sim = await makeSimulation(t.context, toNoble, oracles);
 
   for (const ix of range(64)) {
@@ -628,10 +629,15 @@ test.serial('iterate simulation several times', async t => {
       //   heap: 'TODO: xs-worker',
       ...getResourceUsageStats(controller, storage.data),
     });
-    // force GC every 8 iterations
+    // force GC and prune vstorage every 8 iterations
     if (ix % 8 === 0) {
       controller.reapAllVats();
       await controller.run();
+      await doCoreEval('@agoric/fast-usdc/src/delete-completed-txs.js');
+      observations.push({
+        id: `post-prune-${ix}`,
+        ...getResourceUsageStats(controller, storage.data),
+      });
     }
   }
 });
