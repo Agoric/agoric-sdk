@@ -434,8 +434,6 @@ const getResourceUsageStats = (
   const stats = controller.getStats();
   const { promiseQueuesLength, kernelPromises, kernelObjects, clistEntries } =
     stats;
-  const exportedObjects = { clistEntries, kernelObjects };
-  const pendingWork = { promiseQueuesLength, kernelPromises };
 
   const { size: vstorageEntries } = data;
   const { length: vstorageTotalSize } = JSON.stringify([...data.entries()]);
