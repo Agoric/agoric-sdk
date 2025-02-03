@@ -6,10 +6,13 @@ set -euo pipefail
 # Usage:
 #   agd keys show [name_or_address [name_or_address...]] [flags]
 
-yarn fast-usdc operator accept >| accept.json
+echo CLI test accepting operator invitation
+ACCEPT_OFFER_ID=fastUsdcTestAccept
+yarn fast-usdc operator accept --offerId $ACCEPT_OFFER_ID >| accept.json
 cat accept.json
 yarn agoric wallet send --offer accept.json --from agoric1ee9hr0jyrxhy999y755mp862ljgycmwyp4pl7q --keyring-backend test
-ACCEPT_OFFER_ID=$(agoric wallet extract-id --offer accept.json)
+# UNTIL https://github.com/Agoric/agoric-sdk/issues/10891
+# ACCEPT_OFFER_ID=$(agoric wallet extract-id --offer accept.json)
 
 yarn fast-usdc operator attest --previousOfferId="$ACCEPT_OFFER_ID" --forwardingChannel=foo --recipientAddress=agoric1foo --blockHash=0xfoo --blockNumber=1 --chainId=3 --amount=123 --forwardingAddress=noble1foo --sender 0xfoo --txHash=0xtx >| attest.json
 cat attest.json

@@ -142,6 +142,7 @@ test('makeExportContext.serialize handles unregistered identities', t => {
 
   t.deepEqual(context.fromCapData(actual), invitationAmount);
 
+  // @ts-expect-error missing [tag] for set-like key
   const myPayment = /** @type {Payment} */ (
     Far('payment', { getAllegedBrand: () => assert.fail('no impl') })
   );

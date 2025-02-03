@@ -28,7 +28,7 @@ import {
 } from '@agoric/zoe/src/contractSupport/ratio.js';
 import type { Instance } from '@agoric/zoe/src/zoeService/utils.js';
 import { setUpZoeForTest } from '@agoric/zoe/tools/setup-zoe.js';
-import { E } from '@endo/far';
+import { E, type EReturn } from '@endo/far';
 import { matches } from '@endo/patterns';
 import { makePromiseKit } from '@endo/promise-kit';
 import path from 'path';
@@ -61,7 +61,7 @@ const getInvitationProperties = async (
 // Spec for Mainnet. Other values are covered in unit tests of TransactionFeed.
 const operatorQty = 3;
 
-type CommonSetup = Awaited<ReturnType<typeof commonSetup>>;
+type CommonSetup = EReturn<typeof commonSetup>;
 const startContract = async (
   common: Pick<CommonSetup, 'brands' | 'commonPrivateArgs' | 'utils'>,
 ) => {
@@ -124,7 +124,7 @@ const makeTestContext = async (t: ExecutionContext) => {
   });
 
   const sync = {
-    ocw: makePromiseKit<Awaited<ReturnType<typeof makeOracleOperator>>[]>(),
+    ocw: makePromiseKit<EReturn<typeof makeOracleOperator>[]>(),
     lp: makePromiseKit<Record<string, ReturnType<typeof makeLP>>>(),
   };
 
@@ -171,7 +171,7 @@ const makeTestContext = async (t: ExecutionContext) => {
   };
 };
 
-type FucContext = Awaited<ReturnType<typeof makeTestContext>>;
+type FucContext = EReturn<typeof makeTestContext>;
 const test = anyTest as TestFn<FucContext>;
 test.before(async t => (t.context = await makeTestContext(t)));
 

@@ -6,18 +6,32 @@
     "upgradeInfo": {
       "coreProposals": []
     },
+    "type": "Software Upgrade Proposal",
     "sdk-generate": [
-      "testing/test-upgraded-board.js testUpgradedBoard"
-    ],
-    "type": "Software Upgrade Proposal"
+      "testing/replace-feeDistributor-short.js replaceFeeDistributor",
+      "testing/add-USD-LEMONS.js addUsdLemons",
+      "vats/upgrade-provisionPool.js upgradeProvisionPool",
+      "vats/upgrade-asset-reserve.js upgradeAssetReserve",
+      "vats/upgrade-psm.js upgradePSM",
+      "vats/upgrade-paRegistry.js",
+      "vats/upgrade-agoricNames.js agoricNamesCoreEvals/upgradeAgoricNames",
+      "testing/add-USD-OLIVES.js agoricNamesCoreEvals/addUsdOlives",
+      "testing/publish-test-info.js agoricNamesCoreEvals/publishTestInfo",
+      "vats/upgrade-mintHolder.js upgrade-mintHolder A3P_INTEGRATION"
+    ]
   },
   "type": "module",
   "license": "Apache-2.0",
   "dependencies": {
     "@agoric/client-utils": "dev",
+    "@agoric/ertp": "dev",
+    "@agoric/internal": "dev",
     "@agoric/synthetic-chain": "^0.5.1",
+    "@agoric/zoe": "dev",
+    "@endo/errors": "^1.2.9",
     "@endo/init": "^1.1.8",
     "@endo/marshal": "^1.6.3",
+    "agoric": "dev",
     "ava": "^5.3.1",
     "better-sqlite3": "^9.6.0",
     "execa": "9.1.0"
@@ -39,7 +53,7 @@
     "typescript": "^5.6.3"
   },
   "resolutions": {
-    "axios@npm:^1.6.0": "patch:axios@npm%3A1.7.7#~/.yarn/patches/axios-npm-1.7.7-cfbedc233d.patch",
-    "protobufjs@npm:^6.8.8": "patch:protobufjs@npm%3A6.11.4#~/.yarn/patches/protobufjs-npm-6.11.4-af11968b80.patch"
+    "protobufjs@npm:^6.8.8": "patch:protobufjs@npm%3A6.11.4#~/.yarn/patches/protobufjs-npm-6.11.4-af11968b80.patch",
+    "axios@npm:^1.6.0": "patch:axios@npm%3A1.7.7#~/.yarn/patches/axios-npm-1.7.7-cfbedc233d.patch"
   }
 }

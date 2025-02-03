@@ -1,5 +1,6 @@
 /** @file upgrade network / IBC vat at many points in state machine */
 import { test as anyTest } from '@agoric/zoe/tools/prepare-test-env-ava.js';
+
 import { makeNodeBundleCache } from '@endo/bundle-source/cache.js';
 import type { TestFn } from 'ava';
 import { createRequire } from 'module';

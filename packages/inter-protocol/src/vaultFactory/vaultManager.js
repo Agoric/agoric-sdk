@@ -66,7 +66,7 @@ import { calculateDistributionPlan } from './proceeds.js';
 import { AuctionPFShape } from '../auction/auctioneer.js';
 
 /**
- * @import {Baggage} from '@agoric/vat-data';
+ * @import {EReturn} from '@endo/far';
  * @import {PriceAuthority, PriceDescription, PriceQuote, PriceQuoteValue, PriceQuery,} from '@agoric/zoe/tools/types.js';
  */
 
@@ -1306,7 +1306,7 @@ export const prepareVaultManagerKit = (
   return makeVaultManagerKit;
 };
 
-/** @typedef {Awaited<ReturnType<ReturnType<typeof prepareVaultManagerKit>>>} VaultManagerKit */
+/** @typedef {EReturn<EReturn<typeof prepareVaultManagerKit>>} VaultManagerKit */
 /**
  * @typedef {VaultManagerKit['self']} VaultManager Each VaultManager manages a
  *   single collateral type.

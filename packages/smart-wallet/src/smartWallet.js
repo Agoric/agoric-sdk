@@ -45,7 +45,11 @@ import { shape } from './typeGuards.js';
 import { objectMapStoragePath } from './utils.js';
 import { prepareOfferWatcher, makeWatchOfferOutcomes } from './offerWatcher.js';
 
-/** @import {OfferId, OfferStatus} from './offers.js'; */
+/**
+ * @import {WeakMapStore, MapStore} from '@agoric/store'
+ * @import {EReturn} from '@endo/far';
+ * @import {OfferId, OfferStatus} from './offers.js';
+ */
 
 const trace = makeTracer('SmrtWlt');
 
@@ -1138,5 +1142,4 @@ export const prepareSmartWallet = (baggage, shared) => {
   return makeSmartWallet;
 };
 harden(prepareSmartWallet);
-
-/** @typedef {Awaited<ReturnType<ReturnType<typeof prepareSmartWallet>>>} SmartWallet */
+/** @typedef {EReturn<EReturn<typeof prepareSmartWallet>>} SmartWallet */

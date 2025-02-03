@@ -4,6 +4,7 @@ import type { TestFn } from 'ava';
 import { encodeAddressHook } from '@agoric/cosmic-proto/address-hooks.js';
 import { configurations } from '@agoric/fast-usdc/src/utils/deploy-config.js';
 import { MockCctpTxEvidences } from '@agoric/fast-usdc/test/fixtures.js';
+import { Offers } from '@agoric/fast-usdc/src/clientSupport.js';
 import { documentStorageSchema } from '@agoric/governance/tools/storageDoc.js';
 import { BridgeId, NonNullish } from '@agoric/internal';
 import { unmarshalFromVstorage } from '@agoric/internal/src/marshal.js';
@@ -217,22 +218,13 @@ test.serial('LP deposits', async t => {
     },
   });
 
-  await lp.sendOffer({
-    id: 'deposit-lp-1',
-    invitationSpec: {
-      source: 'agoricContract',
-      instancePath: ['fastUsdc'],
-      callPipe: [['makeDepositInvitation', []]],
-    },
-    proposal: {
-      give: {
-        USDC: { brand: usdc, value: 150_000_000n },
-      },
-      want: {
-        PoolShare: { brand: fastLP, value: 150_000_000n },
-      },
-    },
-  });
+  await lp.sendOffer(
+    Offers.fastUsdc.Deposit(agoricNamesRemotes, {
+      offerId: 'deposit-lp-1',
+      fastLPAmount: 150_000_000n,
+      usdcAmount: 150_000_000n,
+    }),
+  );
   await eventLoopIteration();
 
   const { getOutboundMessages } = t.context.bridgeUtils;
@@ -486,22 +478,13 @@ test.serial('LP withdraws', async t => {
     },
   });
 
-  await lp.sendOffer({
-    id: 'withdraw-lp-1',
-    invitationSpec: {
-      source: 'agoricContract',
-      instancePath: ['fastUsdc'],
-      callPipe: [['makeWithdrawInvitation', []]],
-    },
-    proposal: {
-      give: {
-        PoolShare: { brand: fastLP, value: 369_000n },
-      },
-      want: {
-        USDC: { brand: usdc, value: 369_000n },
-      },
-    },
-  });
+  await lp.sendOffer(
+    Offers.fastUsdc.Withdraw(agoricNamesRemotes, {
+      offerId: 'withdraw-lp-1',
+      fastLPAmount: 369_000n,
+      usdcAmount: 369_000n,
+    }),
+  );
   await eventLoopIteration();
 
   const { denom: usdcDenom } = agoricNamesRemotes.vbankAsset.USDC;
