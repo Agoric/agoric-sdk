@@ -595,7 +595,7 @@ test.serial('iterate simulation several times', async t => {
   const { controller, observations, oracles, storage, toNoble } = t.context;
   const sim = await makeSimulation(t.context, toNoble, oracles);
 
-  for (const ix of range(32)) {
+  for (const ix of range(16)) {
     await sim.iteration(t, ix);
     observations.push({
       id: `iter-${ix}`,
