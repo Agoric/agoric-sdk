@@ -324,43 +324,40 @@ const makeSimulation = async (
     lps,
     users,
     async iteration(t: ExecutionContext, iter: number) {
-      await Promise.all(
-        lps.map(async (lp, ix) => {
-          await lp.deposit(BigInt((ix + 1) * 2000) * 1_000_000n, iter);
-        }),
-      );
+      const lpIx = iter % lps.length;
+      const lp = lps[lpIx];
+      await lp.deposit(BigInt((lpIx + 1) * 2000) * 1_000_000n, iter);
+
       const {
         shareWorth: { numerator: poolBeforeAdvance },
       } = await fastQ.metrics();
       const part = Number(poolBeforeAdvance.value) / users.length;
 
-      // XXX doesn't work in Promise.all due to mock bridge limitation
-      for (const who of range(users.length)) {
-        const webUI = users[who];
-        const destAddr = encodeBech32('dydx', [1, 2, 3, who, iter]);
-        const amount = BigInt(Math.round(part * (1 - who * 0.1)));
+      const who = iter % users.length;
+      const webUI = users[who];
+      const destAddr = encodeBech32('dydx', [1, 2, 3, who, iter]);
+      const amount = BigInt(Math.round(part * (1 - who * 0.1)));
 
-        const { recipientAddress, forwardingAddress, evidence } =
-          await webUI.advance(t, amount, destAddr, iter * users.length + who);
+      const { recipientAddress, forwardingAddress, evidence } =
+        await webUI.advance(t, amount, destAddr, iter * users.length + who);
 
-        await toNoble.ack(poolAccount);
-        await eventLoopIteration();
+      await toNoble.ack(poolAccount);
+      await eventLoopIteration();
 
-        // in due course, minted USDC arrives
-        await cctp.mint(
-          amount,
-          forwardingAddress,
-          settlementAccount,
-          recipientAddress,
-        );
-        await eventLoopIteration();
-        t.like(fastQ.txStatus(evidence.txHash), [
-          { status: 'OBSERVED' },
-          { status: 'ADVANCING' },
-          { status: 'ADVANCED' },
-          { status: 'DISBURSED' },
-        ]);
-      }
+      // in due course, minted USDC arrives
+      await cctp.mint(
+        amount,
+        forwardingAddress,
+        settlementAccount,
+        recipientAddress,
+      );
+      await eventLoopIteration();
+      t.like(fastQ.txStatus(evidence.txHash), [
+        { status: 'OBSERVED' },
+        { status: 'ADVANCING' },
+        { status: 'ADVANCED' },
+        { status: 'DISBURSED' },
+      ]);
 
       await eventLoopIteration();
 
@@ -370,14 +367,10 @@ const makeSimulation = async (
       }
       const partWd =
         Number(beforeWithdraw.shareWorth.numerator.value) / lps.length;
-      await Promise.all(
-        lps.map(async (lp, ix) => {
-          // 0.8 to avoid: Withdrawal of X failed because the purse only contained Y
-          const amount = BigInt(Math.round(partWd * (0.8 - ix * 0.1)));
-          // XXX simulate failed withrawals?
-          await lp.withdraw(amount, iter);
-        }),
-      );
+      // 0.8 to avoid: Withdrawal of X failed because the purse only contained Y
+      const amountWd = BigInt(Math.round(partWd * (0.8 - lpIx * 0.1)));
+      // XXX simulate failed withrawals?
+      await lp.withdraw(amountWd, iter);
     },
   });
 };
@@ -595,7 +588,7 @@ test.serial('iterate simulation several times', async t => {
   const { controller, observations, oracles, storage, toNoble } = t.context;
   const sim = await makeSimulation(t.context, toNoble, oracles);
 
-  for (const ix of range(16)) {
+  for (const ix of range(64)) {
     await sim.iteration(t, ix);
     observations.push({
       id: `iter-${ix}`,
@@ -603,6 +596,11 @@ test.serial('iterate simulation several times', async t => {
       //   heap: 'TODO: xs-worker',
       ...getResourceUsageStats(controller, storage.data),
     });
+    // force GC every 8 iterations
+    if (ix % 8 === 0) {
+      controller.reapAllVats();
+      await controller.run();
+    }
   }
 });
 
