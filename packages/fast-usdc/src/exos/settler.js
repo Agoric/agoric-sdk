@@ -327,6 +327,7 @@ export const prepareSettler = (
             harden([[settlingSeat, settlingSeat, { In: received }, split]]),
           );
           repayer.repay(settlingSeat, split);
+          settlingSeat.exit();
 
           // update status manager, marking tx `DISBURSED`
           statusManager.disbursed(txHash, split);

@@ -47,6 +47,8 @@ const LOCAL_DENOM = `ibc/${denomHash({
 
 type CommonSetup = EReturn<typeof commonSetup>;
 
+const theExit = harden(() => {}); // for ava comparison
+
 const createTestExtensions = (t, common: CommonSetup) => {
   const {
     facadeServices: { chainHub },
@@ -77,7 +79,9 @@ const createTestExtensions = (t, common: CommonSetup) => {
   );
 
   const mockZCF = Far('MockZCF', {
-    makeEmptySeatKit: () => ({ zcfSeat: Far('MockZCFSeat', {}) }),
+    makeEmptySeatKit: () => ({
+      zcfSeat: Far('MockZCFSeat', { exit: theExit }),
+    }),
   });
 
   const localTransferVK = vowTools.makeVowKit<void>();
@@ -551,7 +555,7 @@ test('returns payment to LP if zoeTools.localTransfer fails', async t => {
   const { borrow, returnToPool } = inspectBorrowerFacetCalls();
 
   const expectedArguments = [
-    Far('MockZCFSeat', {}),
+    Far('MockZCFSeat', { exit: theExit }),
     usdc.make(146999999n), // net of fees
   ];
 

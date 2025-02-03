@@ -192,7 +192,9 @@ export const prepareLiquidityPoolKit = (zone, zcf, USDC, tools) => {
           zcf.atomicRearrange(
             harden([[borrowSeat, repaySeat, { USDC: amount }, returnAmounts]]),
           );
-          return this.facets.repayer.repay(repaySeat, returnAmounts);
+          this.facets.repayer.repay(repaySeat, returnAmounts);
+          borrowSeat.exit();
+          repaySeat.exit();
         },
       },
       repayer: {
