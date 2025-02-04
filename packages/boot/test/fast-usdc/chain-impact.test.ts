@@ -625,11 +625,13 @@ test.skip('prune vstorage', async t => {
 test.serial('iterate simulation several times', async t => {
   const { controller, observations, oracles, storage, toNoble } = t.context;
   const { doCoreEval } = t.context;
+  const { updateNewCellBlockHeight } = storage;
   const sim = await makeSimulation(t.context, toNoble, oracles);
 
   await writeFile('kernel-0.json', JSON.stringify(controller.dump(), null, 2));
 
   for (const ix of range(64)) {
+    updateNewCellBlockHeight(); // look at only the latest value written
     await sim.iteration(t, ix);
     observations.push({
       id: `iter-${ix}`,
