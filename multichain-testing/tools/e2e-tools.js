@@ -23,7 +23,8 @@ import { makeTracer } from '@agoric/internal';
 const trace = makeTracer('E2ET');
 
 // The default of 6 retries was failing.
-const SMART_WALLET_PROVISION_RETRIES = 15;
+// XXX even 15 wasn't enough
+const SMART_WALLET_PROVISION_RETRIES = 30;
 
 const BLD = '000000ubld';
 
@@ -65,25 +66,29 @@ const makeBlockTool = ({ rpc, delay }) => {
     }
   };
 
-  let last;
-  const waitForBlock = async (times = 1, info = {}) => {
+  /**
+   * @param {number} [advance] number of blocks to wait for
+   * @param {object} [info] add to logging
+   * @returns {Promise<void>}
+   */
+  const waitForBlock = async (advance = 1, info = {}) => {
     await null;
-    for (let time = 0; time < times; time += 1) {
-      for (;;) {
-        const cur = await waitForBootstrap(2000, { ...info, last });
+    const startHeight = await waitForBootstrap();
+    for (
+      let latestHeight = startHeight;
+      latestHeight < startHeight + advance;
 
-        if (cur !== last) {
-          last = cur;
-          break;
-        }
-
-        await delay(1000, info);
-      }
-      time += 1;
+    ) {
+      // Give some time for a new block
+      await delay(1000, { ...info, latestHeight });
+      latestHeight = await waitForBootstrap(2000, {
+        ...info,
+        startHeight,
+      });
     }
   };
 
-  return { waitForBootstrap, waitForBlock };
+  return { waitForBlock };
 };
 /** @typedef {ReturnType<makeBlockTool>} BlockTool */
 
@@ -171,11 +176,13 @@ export const provisionSmartWallet = async (
   progress({ send: balances, to: address });
 
   /**
+   * Submit the `bank send` and wait for the next block.
+   * (Clients have an obligation not to submit >1 tx/block.)
+   *
    * @param {string} denom
    * @param {bigint} value
    */
   const sendFromWhale = async (denom, value) => {
-    trace('sendFromWhale', address, denom, value);
     const amount = `${value}${denom}`;
     progress({ amount, to: address });
     // TODO: refactor agd.tx to support a per-sender object
@@ -186,7 +193,7 @@ export const provisionSmartWallet = async (
       from: whale,
       yes: true,
     });
-    await blockTool.waitForBlock(1, { step: 'bank send' });
+    await blockTool.waitForBlock(1, { address, step: 'bank send' });
   };
 
   for await (const [name, qty] of Object.entries(balances)) {
@@ -206,12 +213,12 @@ export const provisionSmartWallet = async (
     { chainId, from: address, yes: true },
   );
 
+  trace('waiting for wallet to appear in vstorage', address);
   const info = await retryUntilCondition(
     () => q.queryData(`published.wallet.${address}.current`),
     result => !!result,
     `wallet in vstorage ${address}`,
     {
-      log: () => {}, // suppress logs as this is already noisy
       maxRetries: SMART_WALLET_PROVISION_RETRIES,
     },
   );
