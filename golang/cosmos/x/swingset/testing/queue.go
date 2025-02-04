@@ -15,3 +15,11 @@ func GetActionQueueRecords(t *testing.T, ctx sdk.Context, swingsetKeeper keeper.
 	actionQueueName := keeper.StoragePathActionQueue
 	return vstoragetesting.GetQueueItems(ctx, vstorageKeeper, actionQueueName)
 }
+
+// ResetActionQueue resets the action queue.
+// This is a testing utility function.
+func ResetActionQueue(t *testing.T, ctx sdk.Context, swingsetKeeper keeper.Keeper) error {
+	vstorageKeeper := keeper.GetVstorageKeeper(t, swingsetKeeper)
+	actionQueueName := keeper.StoragePathActionQueue
+	return vstoragetesting.ResetQueue(ctx, vstorageKeeper, actionQueueName)
+}
