@@ -1,8 +1,5 @@
-import { QueuedActionType } from '@agoric/internal/src/action-types.js';
-import type {
-  CoreEval,
-  CoreEvalSDKType,
-} from '@agoric/cosmic-proto/agoric/swingset/swingset.js';
+import type { CoreEvalSDKType } from '@agoric/cosmic-proto/agoric/swingset/swingset.js';
+import type { BridgeBigInt } from '@agoric/internal';
 
 // TODO move `walletFlags.js` from @agoric/vats to @agoric/cosmic-proto
 type PowerFlag = 'SMART_WALLET' | 'REMOTE_WALLET';
@@ -11,10 +8,12 @@ type PowerFlag = 'SMART_WALLET' | 'REMOTE_WALLET';
 // structs or use some other shared type truth
 // https://github.com/Agoric/agoric-sdk/issues/8545
 
+export type { BridgeBigInt };
+
 interface ActionContext<T extends Uppercase<string>> {
   type: T;
-  blockHeight: string;
-  blockTime: string;
+  blockHeight: BridgeBigInt;
+  blockTime: BridgeBigInt;
 }
 
 /**
@@ -39,7 +38,7 @@ export type PleaseProvisionAction = ActionContext<'PLEASE_PROVISION'> & {
  * @see VbankBalanceUpdate in vbank.go
  */
 export type VbankBalanceUpdateAction = ActionContext<'VBANK_BALANCE_UPDATE'> & {
-  nonce: string;
+  nonce: BridgeBigInt;
   updated: Array<{ address: string; denom: string; amount: string }>;
 };
 
