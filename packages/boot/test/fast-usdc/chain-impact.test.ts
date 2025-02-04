@@ -440,6 +440,9 @@ const getResourceUsageStats = (
   const { length: vstorageFusdcSize } = JSON.stringify(
     [...data.entries()].filter(e => e[0].startsWith('published.fastUsdc')),
   );
+  const { length: vstorageWalletSize } = JSON.stringify(
+    [...data.entries()].filter(e => e[0].startsWith('published.wallet')),
+  );
 
   return harden({
     promiseQueuesLength,
@@ -449,6 +452,7 @@ const getResourceUsageStats = (
     vstorageEntries,
     vstorageTotalSize,
     vstorageFusdcSize,
+    vstorageWalletSize,
   });
 };
 
