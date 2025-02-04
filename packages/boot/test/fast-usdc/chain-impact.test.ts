@@ -635,6 +635,7 @@ test.serial('iterate simulation several times', async t => {
     await sim.iteration(t, ix);
     observations.push({
       id: `iter-${ix}`,
+      time: Date.now(),
       //   computrons: 'TODO: xs-worker',
       //   heap: 'TODO: xs-worker',
       ...getResourceUsageStats(controller, storage.data),
