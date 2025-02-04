@@ -31,7 +31,7 @@ export const makeOtelTracingProvider = opts => {
   const resource = new Resource(getResourceAttributes(opts));
 
   const exporter = new OTLPTraceExporter();
-  console.info('Enabling OTLP Traces Exporter to', exporter.getDefaultUrl({}));
+  console.info('Enabling OTLP Traces Exporter');
 
   const provider = new BasicTracerProvider({ resource });
   provider.addSpanProcessor(
