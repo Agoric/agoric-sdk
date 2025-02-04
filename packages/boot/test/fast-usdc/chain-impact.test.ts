@@ -58,6 +58,53 @@ const range = (n: Number) => Array.from(Array(n).keys());
 const prefixedRange = (n: Number, pfx: string) =>
   range(n).map(ix => `${pfx}${ix}`);
 
+test.before(async t => {
+  const { env } = globalThis.process;
+  const {
+    SLOGFILE: slogFile,
+    SWINGSET_WORKER_TYPE: defaultManagerType = 'local', // or 'xs-worker',
+    STATS_FILE,
+  } = env;
+  const ctx = await makeWalletFactoryContext(t, config, {
+    slogFile,
+    defaultManagerType,
+  });
+  const oracles = Object.entries(configurations.MAINNET.oracles).map(
+    ([name, addr]) => makeTxOracle(ctx, name, addr),
+  );
+
+  const writeStats = STATS_FILE
+    ? (txt: string) => writeFile(STATS_FILE, txt)
+    : undefined;
+  const toNoble = makeIBCChannel(ctx.bridgeUtils, 'channel-62');
+  const fromNoble = 'channel-21';
+
+  const { log } = console;
+  const doCoreEval = async (specifier: string) => {
+    const { EV } = ctx.runUtils;
+    const script = await readFile(nodeRequire.resolve(specifier), 'utf-8');
+    const eval0: CoreEvalSDKType = { js_code: script, json_permits: 'true' };
+    log('executing proposal');
+    const bridgeMessage = { type: 'CORE_EVAL', evals: [eval0] };
+    const coreEvalBridgeHandler: BridgeHandler = await EV.vat(
+      'bootstrap',
+    ).consumeItem('coreEvalBridgeHandler');
+    await EV(coreEvalBridgeHandler).fromBridge(bridgeMessage);
+    log(`proposal executed`);
+  };
+
+  t.context = {
+    ...ctx,
+    oracles,
+    observations: [],
+    writeStats,
+    fromNoble,
+    toNoble,
+    doCoreEval,
+  };
+});
+test.after.always(t => t.context.shutdown?.());
+
 const makeTxOracle = (
   ctx: WalletFactoryTestContext,
   name: string,
@@ -379,53 +426,6 @@ const makeSimulation = async (
     },
   });
 };
-
-test.before(async t => {
-  const { env } = globalThis.process;
-  const {
-    SLOGFILE: slogFile,
-    SWINGSET_WORKER_TYPE: defaultManagerType = 'local', // or 'xs-worker',
-    STATS_FILE,
-  } = env;
-  const ctx = await makeWalletFactoryContext(t, config, {
-    slogFile,
-    defaultManagerType,
-  });
-  const oracles = Object.entries(configurations.MAINNET.oracles).map(
-    ([name, addr]) => makeTxOracle(ctx, name, addr),
-  );
-
-  const writeStats = STATS_FILE
-    ? (txt: string) => writeFile(STATS_FILE, txt)
-    : undefined;
-  const toNoble = makeIBCChannel(ctx.bridgeUtils, 'channel-62');
-  const fromNoble = 'channel-21';
-
-  const { log } = console;
-  const doCoreEval = async (specifier: string) => {
-    const { EV } = ctx.runUtils;
-    const script = await readFile(nodeRequire.resolve(specifier), 'utf-8');
-    const eval0: CoreEvalSDKType = { js_code: script, json_permits: 'true' };
-    log('executing proposal');
-    const bridgeMessage = { type: 'CORE_EVAL', evals: [eval0] };
-    const coreEvalBridgeHandler: BridgeHandler = await EV.vat(
-      'bootstrap',
-    ).consumeItem('coreEvalBridgeHandler');
-    await EV(coreEvalBridgeHandler).fromBridge(bridgeMessage);
-    log(`proposal executed`);
-  };
-
-  t.context = {
-    ...ctx,
-    oracles,
-    observations: [],
-    writeStats,
-    fromNoble,
-    toNoble,
-    doCoreEval,
-  };
-});
-test.after.always(t => t.context.shutdown?.());
 
 const getResourceUsageStats = (
   controller: SwingsetController,
