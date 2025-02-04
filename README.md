@@ -5,7 +5,6 @@
 ![unit tests status](https://github.com/Agoric/agoric-sdk/actions/workflows/test-all-packages.yml/badge.svg)
 ![integration tests status](https://github.com/Agoric/agoric-sdk/actions/workflows/integration.yml/badge.svg)
 [![license](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](./LICENSE)
-[![Mutable.ai Auto Wiki](https://img.shields.io/badge/Auto_Wiki-Mutable.ai-blue)](https://wiki.mutable.ai/Agoric/agoric-sdk)
 
 This repository contains most of the packages that make up the upper
 layers of the Agoric platform, with
