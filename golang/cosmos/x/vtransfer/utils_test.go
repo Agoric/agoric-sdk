@@ -12,6 +12,7 @@ import (
 )
 
 // acknowledgePacketWithResult sends a MsgAcknowledgement to the channel associated with the endpoint.
+// [AGORIC] Would be nice to create a new ibctesting.AcknowledgePacketWithResult
 func acknowledgePacketWithResult(endpoint *ibctesting.Endpoint, packet channeltypes.Packet, ack []byte) (*sdk.Result, error) {
 	// get proof of acknowledgement on counterparty
 	packetKey := host.PacketAcknowledgementKey(packet.GetDestPort(), packet.GetDestChannel(), packet.GetSequence())
@@ -24,11 +25,13 @@ func acknowledgePacketWithResult(endpoint *ibctesting.Endpoint, packet channelty
 
 // ParseAckFromEvents parses events emitted from a MsgRecvPacket and returns the
 // acknowledgement.
+// [AGORIC] Signature taken from ibctesting.ParseAckFromEvents
 func ParseAckFromEvents(events sdk.Events) ([]byte, error) {
 	return ParseAckFromFilteredEvents(events, channeltypes.EventTypeWriteAck)
 }
 
 // ParseAckFromFilteredEvents parses events emitted matching filteredType and returns the acknowledgement.
+// [AGORIC] Would be nice to improve the implementation and upstream it
 func ParseAckFromFilteredEvents(events sdk.Events, filteredType string) ([]byte, error) {
 	for _, ev := range events {
 		if ev.Type == filteredType {
@@ -44,11 +47,13 @@ func ParseAckFromFilteredEvents(events sdk.Events, filteredType string) ([]byte,
 
 // ParsePacketFromEvents parses the send_packet type events emitted by the IBC
 // module and returns the packet.
+// [AGORIC] Signature taken from ibctesting.ParsePacketFromEvents
 func ParsePacketFromEvents(events sdk.Events) (channeltypes.Packet, error) {
 	return ParsePacketFromFilteredEvents(events, channeltypes.EventTypeSendPacket)
 }
 
 // ParsePacketFromFilteredEvents parses events emitted matching filteredType and returns the packet.
+// [AGORIC] Would be nice to improve the implementation and upstream it
 func ParsePacketFromFilteredEvents(events sdk.Events, filteredType string) (channeltypes.Packet, error) {
 	for _, ev := range events {
 		if ev.Type == filteredType {
