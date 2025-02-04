@@ -53,7 +53,7 @@ export const makeRunUtils = (controller, harness) => {
   };
 
   /**
-   * @typedef {import('@endo/eventual-send').EProxy | object} EVProxyMethods
+   * @typedef EVProxyMethods
    * @property {(presence: unknown) => Record<string, (...args: any) => Promise<void>>} sendOnly
    *   Returns a "methods proxy" for the presence that ignores the results of
    *   each method invocation.
@@ -137,19 +137,20 @@ export const makeRunUtils = (controller, harness) => {
       },
     });
 
-  /** @type {EVProxy} */
-  const EV = Object.assign(
-    presence => makeMethodsProxy(controller.queueToVatObject, presence),
-    {
-      vat: vatName => makeMethodsProxy(controller.queueToVatRoot, vatName),
-      sendOnly: presence =>
-        makeMethodsProxy(controller.queueToVatObject, presence, true),
-      get: presence =>
-        new Proxy(harden({}), {
-          get: (_t, key, _rx) =>
-            EV.vat('bootstrap').awaitVatObject(presence, [key]),
-        }),
-    },
+  const EV = /** @type {EVProxy} */ (
+    Object.assign(
+      presence => makeMethodsProxy(controller.queueToVatObject, presence),
+      {
+        vat: vatName => makeMethodsProxy(controller.queueToVatRoot, vatName),
+        sendOnly: presence =>
+          makeMethodsProxy(controller.queueToVatObject, presence, true),
+        get: presence =>
+          new Proxy(harden({}), {
+            get: (_t, key, _rx) =>
+              EV.vat('bootstrap').awaitVatObject(presence, [key]),
+          }),
+      },
+    )
   );
   return harden({ queueAndRun, EV });
 };
