@@ -105,10 +105,14 @@ start_follower() {
                 start_loadgen() {
                         cd \$HOME/$LOADGEN_REPOSITORY_NAME
                         yarn --cwd runner install
+                        agoric install
 
                         cwd=\$(pwd)
-                        mkdir --parents \$cwd/runner/golang/cosmos/build
-                        ln --force --symbolic \$(which agd) \$cwd/runner/golang/cosmos/build/agd
+                        agd_path=\$(which agd)
+
+                        mkdir --parents \$cwd/node_modules/cosmic-swingset/bin \$cwd/golang/cosmos/build
+                        ln --force --symbolic \$agd_path \$cwd/node_modules/cosmic-swingset/bin/ag-chain-cosmos
+                        ln --force --symbolic \$agd_path \$cwd/golang/cosmos/build/ag-cosmos-helper
 
                         AG_CHAIN_COSMOS_HOME=\$HOME/.agoric \
                         SDK_BUILD=0 \
