@@ -31,7 +31,7 @@ create_volume_assets() {
 main() {
   create_volume_assets
   set_trusted_block_data
-  start_follower &
+  start_follower
 }
 
 run_command_inside_container() {
@@ -105,6 +105,11 @@ start_follower() {
                 start_loadgen() {
                         cd \$HOME/$LOADGEN_REPOSITORY_NAME
                         yarn --cwd runner install
+
+                        cwd=\$(pwd)
+                        mkdir --parents \$cwd/runner/golang/cosmos/build
+                        ln --force --symbolic \$(which agd) \$cwd/runner/golang/cosmos/build/agd
+
                         AG_CHAIN_COSMOS_HOME=\$HOME/.agoric \
                         SDK_BUILD=0 \
                         ./runner/bin/loadgen-runner \
@@ -114,7 +119,7 @@ start_follower() {
                          --no-stage.save-storage \
                          --output-dir ./results/a3p-test/ \
                          --profile testnet \
-                         --stages 2 \
+                         --stages 3 \
                          --testnet-origin file://$NETWORK_CONFIG_FILE_PATH \
                          --use-state-sync
                 }
@@ -132,7 +137,7 @@ start_follower() {
     --env "TRUSTED_BLOCK_HEIGHT=$TRUSTED_BLOCK_HEIGHT" \
     --mount "source=$MESSAGE_FILE_PATH,target=$CONTAINER_MESSAGE_FILE_PATH,type=bind" \
     --mount "source=$OUTPUT_DIRECTORY,target=$OUTPUT_DIRECTORY,type=bind" \
-    --mount "source=$NETWORK_CONFIG_FILE_PATH,target=$NETWORK_CONFIG_FILE_PATH/network-config,type=bind" > "$FOLLOWER_LOGS_FILE"
+    --mount "source=$NETWORK_CONFIG_FILE_PATH,target=$NETWORK_CONFIG_FILE_PATH/network-config,type=bind" > "$FOLLOWER_LOGS_FILE" 2>&1
 }
 
 wait_for_network_config() {
@@ -141,4 +146,4 @@ wait_for_network_config() {
   echo "$network_config" > "$NETWORK_CONFIG_FILE_PATH"
 }
 
-main > "$LOGS_FILE" 2>&1
+main > "$LOGS_FILE" 2>&1 &

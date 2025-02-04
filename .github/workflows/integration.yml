@@ -259,7 +259,7 @@ jobs:
         working-directory: packages/deployment
       - uses: ./.github/actions/restore-node
         with:
-          node-version: 18.18
+          node-version: '18.x'
           # Rebuilding the SDK image with resolved endo packages is not currently supported
           # and since we can't build core eval submissions from the SDK using a newer endo,
           # simply ignore any endo branch integration (this means we don't have full coverage)
@@ -309,7 +309,6 @@ jobs:
       - name: run proposals tests
         run: yarn test
         working-directory: a3p-integration
-        timeout-minutes: 40
       - name: copy a3p-integration
         if: (success() || failure())
         run: |
