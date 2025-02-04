@@ -11,6 +11,7 @@ import { buildRootObject } from '../src/vat-bank.js';
 /**
  * @import {Remote} from '@agoric/internal';
  * @import {BridgeHandler, ScopedBridgeManager} from '../src/types.js';
+ * @import {VbankBalanceUpdateAction} from '@agoric/cosmic-swingset/src/types.js';
  */
 
 const { fakeVomKit } = reincarnate({ relaxDurabilityRules: false });
@@ -200,7 +201,14 @@ test('communication', async t => {
   const notifier = E(vpurse).getCurrentAmountNotifier();
   const updateRecord = await E(notifier).getUpdateSince();
   const balance = { address: 'agoricfoo', denom: 'ubld', amount: '92929' };
-  const obj = { type: 'VBANK_BALANCE_UPDATE', updated: [balance] };
+  /** @type {VbankBalanceUpdateAction} */
+  const obj = {
+    type: 'VBANK_BALANCE_UPDATE',
+    blockHeight: 992827,
+    nonce: 123,
+    blockTime: Date.now() / 1000,
+    updated: [balance],
+  };
   assert(bankHandler);
   await E(bankHandler).fromBridge(obj);
 
