@@ -14,10 +14,14 @@ import (
 )
 
 type AddressRole string
+type PacketOrigin string
 
 const (
 	RoleSender   AddressRole = "Sender"
 	RoleReceiver AddressRole = "Receiver"
+
+	PacketSrc PacketOrigin = "src"
+	PacketDst PacketOrigin = "dst"
 
 	AddressHookVersion     = 0
 	BaseAddressLengthBytes = 2
@@ -173,17 +177,12 @@ func extractBaseTransferData(transferData transfertypes.FungibleTokenPacketData,
 // If newPacket is not nil, it is populated with a new transfer packet whose
 // corresponding Sender or Receiver is replaced with the extracted base address.
 func ExtractBaseAddressFromPacket(cdc codec.Codec, packet ibcexported.PacketI, role AddressRole, newPacket *channeltypes.Packet) (string, error) {
-	transferData := transfertypes.FungibleTokenPacketData{}
-	if err := cdc.UnmarshalJSON(packet.GetData(), &transferData); err != nil {
-		return "", err
-	}
-
-	var newTransferData *transfertypes.FungibleTokenPacketData
+	var newDataP *[]byte
 	if newPacket != nil {
-		// Capture the transfer data for the new packet.
-		newTransferData = &transfertypes.FungibleTokenPacketData{}
+		// Capture the data for the new packet.
+		newDataP = new([]byte)
 	}
-	target, err := extractBaseTransferData(transferData, role, newTransferData)
+	target, err := ExtractBaseAddressFromData(cdc, packet.GetData(), role, newDataP)
 	if err != nil {
 		return target, err
 	}
@@ -193,21 +192,51 @@ func ExtractBaseAddressFromPacket(cdc codec.Codec, packet ibcexported.PacketI, r
 	}
 
 	// Create a new packet with the new transfer packet data.
-	// Re-serialize the packet data with the base addresses.
-	newData, err := cdc.MarshalJSON(newTransferData)
+	*newPacket = channeltypes.NewPacket(
+		*newDataP, packet.GetSequence(),
+		packet.GetSourcePort(), packet.GetSourceChannel(),
+		packet.GetDestPort(), packet.GetDestChannel(),
+		clienttypes.MustParseHeight(packet.GetTimeoutHeight().String()),
+		packet.GetTimeoutTimestamp(),
+	)
+
+	return target, nil
+}
+
+// ExtractBaseAddressFromData returns the base address from a transfer packet's data,
+// either Sender (if role is RoleSender) or Receiver (if role is RoleReceiver).
+// Errors in determining the base address are ignored... we then assume the base
+// address is exactly the original address.
+// If newDataP is not nil, it is populated with new transfer packet data whose
+// corresponding Sender or Receiver is replaced with the extracted base address.
+func ExtractBaseAddressFromData(cdc codec.Codec, data []byte, role AddressRole, newDataP *[]byte) (string, error) {
+	transferData := transfertypes.FungibleTokenPacketData{}
+
+	if err := cdc.UnmarshalJSON(data, &transferData); err != nil {
+		return "", err
+	}
+
+	var newTransferData *transfertypes.FungibleTokenPacketData
+	if newDataP != nil {
+		// Capture the transfer data for the new packet data.
+		newTransferData = &transfertypes.FungibleTokenPacketData{}
+	}
+	target, err := extractBaseTransferData(transferData, role, newTransferData)
 	if err != nil {
 		return target, err
 	}
 
-	// Create the new packet.
-	th := packet.GetTimeoutHeight()
-	*newPacket = channeltypes.NewPacket(
-		newData, packet.GetSequence(),
-		packet.GetSourcePort(), packet.GetSourceChannel(),
-		packet.GetDestPort(), packet.GetDestChannel(),
-		clienttypes.NewHeight(th.GetRevisionNumber(), th.GetRevisionHeight()),
-		packet.GetTimeoutTimestamp(),
-	)
+	if newDataP == nil {
+		return target, nil
+	}
+
+	// Reuse the original data if we didn't transform it.
+	if transferData == *newTransferData {
+		*newDataP = bytes.Clone(data)
+	} else {
+		// Re-serialize the packet data with the new base address.
+		*newDataP = newTransferData.GetBytes()
+	}
 
 	return target, nil
 }

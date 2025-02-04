@@ -100,6 +100,14 @@ export const makeFakeStorageKit = (rootPath, rootOptions) => {
   const resolvedOptions = { sequence: true, ...rootOptions };
   /** @type {TotalMap<string, string>} */
   const data = new Map();
+  let currentBlockHeight = 0;
+
+  const updateNewCellBlockHeight = (blockHeight = currentBlockHeight + 1) => {
+    blockHeight > currentBlockHeight ||
+      Fail`blockHeight ${blockHeight} must be greater than ${currentBlockHeight}`;
+    currentBlockHeight = blockHeight;
+  };
+
   /** @param {string} prefix */
   const getChildEntries = prefix => {
     assert(prefix.endsWith('.'));
@@ -177,10 +185,13 @@ export const makeFakeStorageKit = (rootPath, rootOptions) => {
                 streamCell = undefined;
               }
             }
-            if (streamCell === undefined) {
+            if (
+              streamCell === undefined ||
+              Number(streamCell.blockHeight) !== currentBlockHeight
+            ) {
               streamCell = {
-                blockHeight: '0',
-                values: oldVal != null ? [oldVal] : [],
+                blockHeight: String(currentBlockHeight),
+                values: !streamCell && oldVal != null ? [oldVal] : [],
               };
             }
             streamCell.values.push(value);
@@ -219,6 +230,7 @@ export const makeFakeStorageKit = (rootPath, rootOptions) => {
     rootNode,
     // eslint-disable-next-line object-shorthand
     data: /** @type {Map<string, string>} */ (data),
+    updateNewCellBlockHeight,
     getValues,
     messages,
     toStorage,
