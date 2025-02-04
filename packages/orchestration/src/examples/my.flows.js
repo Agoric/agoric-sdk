@@ -44,7 +44,7 @@ export const makeNobleAccount = async (orch, _ctx) => {
  */
 
 /**
- * cf. CCTP docs
+ * cf. CCTP docs https://developers.circle.com/stablecoins/supported-domains
  */
 const domains = {
   ethereum: 0,
@@ -92,6 +92,12 @@ export const sendToEth = async (orch, _ctx, event, accounts) => {
   const { dest } = query;
   assert.typeof(dest, 'string');
 
+  // TODO: fees?!?!
+
+  // register mapping from chainlist (eth is 1) to domain (eth is 0) in chainHub
+  const ethChainAddr = { ethChainId: 1, address: frobEthThingy(dest) };
+  nobleAcct.depositForBurn({ amount, denom }, ethChainAddr);
+
   const msg = {
     typeUrl: '/circle.cctp.v1.MsgDepositForBurn',
     value: {
@@ -104,4 +110,35 @@ export const sendToEth = async (orch, _ctx, event, accounts) => {
   };
 
   throw Error('IOU');
+};
+
+const ethChainId = '1';
+
+/**
+ * @satisfies {OrchestrationFlow}
+ * @param {Orchestrator} orch
+ * @param {unknown} _ctx
+ * @param {import('@agoric/vats').VTransferIBCEvent & Passable} event
+ * @param {Accounts} accounts
+ */
+export const sendToEthNiceLevel2 = async (orch, _ctx, event, accounts) => {
+  const hookAcct = await accounts.hook;
+
+  const { packet } = event;
+  0;
+  const tx = /** @type {FungibleTokenPacketData} */ (
+    JSON.parse(atob(packet.data))
+  );
+  console.log('@@@@tx', tx);
+
+  // this contract pays CCTP fees
+
+  const { amount, denom: denom } = tx;
+  await hookAcct.transfer(
+    { chainId: ethChainId, value: '0xDEADBEEF...', encoding: 'ethereum' },
+    { amount, denom },
+  );
+
+  // if USDC (ibc/...), decide based on dest ChainAddress whether to use CCTP
+  // fees: CCTP is presumably cheaper than some other IBC route
 };
