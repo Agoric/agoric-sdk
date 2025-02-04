@@ -644,9 +644,12 @@ test.serial('iterate simulation several times', async t => {
       await doCoreEval('@agoric/fast-usdc/src/delete-completed-txs.js');
       controller.reapAllVats();
       await controller.run();
+      const { kernelTable } = controller.dump();
       observations.push({
         id: `post-prune-${ix}`,
+        time: Date.now(),
         ...getResourceUsageStats(controller, storage.data),
+        kernelTable,
       });
     }
   }
