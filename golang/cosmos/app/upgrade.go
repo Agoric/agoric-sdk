@@ -131,23 +131,31 @@ func getVariantFromUpgradeName(upgradeName string) string {
 		return "DEVNET"
 	case "UNRELEASED_emerynet":
 		return "EMERYNET"
-		// Noupgrade for this version.
 	case "UNRELEASED_BASIC":
+		// Noupgrade for this version.
 		return ""
 	default:
 		return ""
 	}
 }
 
-func upgradeMintHolderCoreProposal(upgradeName string) (vm.CoreProposalStep, error) {
-	variant := getVariantFromUpgradeName(upgradeName)
+func upgradeMintHolderCoreProposal(targetUpgrade string) (vm.CoreProposalStep, error) {
+	return buildProposalStepFromScript(targetUpgrade, "@agoric/builders/scripts/vats/upgrade-mintHolder.js")
+}
+
+func restartFeeDistributorCoreProposal(targetUpgrade string) (vm.CoreProposalStep, error) {
+	return buildProposalStepFromScript(targetUpgrade, "@agoric/builders/scripts/inter-protocol/replace-feeDistributor-combo.js")
+}
+
+func buildProposalStepFromScript(targetUpgrade string, builderScript string) (vm.CoreProposalStep, error) {
+	variant := getVariantFromUpgradeName(targetUpgrade)
 
 	if variant == "" {
 		return nil, nil
 	}
 
 	return buildProposalStepWithArgs(
-		"@agoric/builders/scripts/vats/upgrade-mintHolder.js",
+		builderScript,
 		"defaultProposalBuilder",
 		map[string]any{
 			"variant": variant,
@@ -188,11 +196,14 @@ func unreleasedUpgradeHandler(app *GaiaApp, targetUpgrade string) func(sdk.Conte
 			} else if upgradeMintHolderStep != nil {
 				CoreProposalSteps = append(CoreProposalSteps, upgradeMintHolderStep)
 			}
+			restartFeeDistributorStep, err := restartFeeDistributorCoreProposal(targetUpgrade)
+			if err != nil {
+				return nil, err
+			} else if restartFeeDistributorStep != nil {
+				CoreProposalSteps = append(CoreProposalSteps, restartFeeDistributorStep)
+			}
 
 			CoreProposalSteps = append(CoreProposalSteps,
-				vm.CoreProposalStepForModules(
-					"@agoric/builders/scripts/inter-protocol/replace-feeDistributor.js",
-				),
 				vm.CoreProposalStepForModules(
 					"@agoric/builders/scripts/vats/upgrade-paRegistry.js",
 				),

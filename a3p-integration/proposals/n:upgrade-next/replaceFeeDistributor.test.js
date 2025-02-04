@@ -18,15 +18,11 @@
 
 import '@endo/init/debug.js';
 import test from 'ava';
-import {
-  retryUntilCondition,
-  makeVstorageKit,
-  sleep,
-} from '@agoric/client-utils';
+import { retryUntilCondition, makeVstorageKit } from '@agoric/client-utils';
 import {
   ATOM_DENOM,
   bankSend,
-  evalBundles,
+  getISTBalance,
   openVault,
   USER1ADDR,
 } from '@agoric/synthetic-chain';
@@ -50,7 +46,6 @@ import { floorMultiplyBy } from '@agoric/zoe/src/contractSupport/ratio.js';
  */
 
 const config = {
-  coreEvalDir: 'replaceFeeDistributor',
   mintValue: '100.0',
   collateralValue: '200.0',
   managerIndex: 0,
@@ -85,6 +80,7 @@ const produceFeesAndWait = async (vstorage, feeAmount) => {
   const metricsBefore = /** @type {ReserveAllocations} */ (
     await vstorage.readLatestHead('published.reserve.metrics')
   );
+
   // XXX Probably better to not rely on synthetic-chain for opening a vault as per https://github.com/Agoric/agoric-sdk/pull/10396.
   // But to make the switch also requires either copying z:acceptance/test-lib here (which is not wanted) or creating a root level
   // lib and link it here which requires an all around work across all proposals. Probably a better idea to do it as a separate work.
@@ -96,6 +92,7 @@ const produceFeesAndWait = async (vstorage, feeAmount) => {
     () => vstorage.readLatestHead('published.reserve.metrics'),
     metrics =>
       AmountMath.isEqual(
+        // @ts-expect-error metrics has these fields.
         metrics.allocations.Fee,
         AmountMath.add(metricsBefore.allocations.Fee, feeAmount),
       ),
@@ -142,7 +139,6 @@ test.before(async t => {
   );
   const vstorage = await makeVstorageKit({ fetch }, config.networkConfig);
   const toAmount = (value, brandKeyword) =>
-    // @ts-expect-error casting
     AmountMath.make(vstorage.agoricNames.brand[brandKeyword], value);
 
   t.context = {
@@ -151,14 +147,10 @@ test.before(async t => {
   };
 });
 
-test('replace feeDistributor', async t => {
+test('test feeDistributor', async t => {
   // @ts-expect-error type
   const { vstorage, toAmount } = t.context;
-  const { collectionInterval, vaultCount, coreEvalDir } = config;
-
-  await evalBundles(coreEvalDir);
-  // Wait for a round to give the new feeDistributor time to clear out outstanding fees, if any.
-  await sleep(collectionInterval + 5000, { log: console.log, setTimeout });
+  const { vaultCount } = config;
 
   const feeAmount = await calculateFee(
     config.managerIndex,
