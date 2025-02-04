@@ -15,7 +15,7 @@ const test: TestFn<
   WalletFactoryTestContext & { observations: { id: unknown; kernel: Object }[] }
 > = anyTest;
 
-const config = '@agoric/vm-config/decentral-itest-orchestration-config.json';
+const config = '@agoric/vm-config/decentral-itest-fast-usdc-config.json';
 
 test.before(async t => {
   const { env } = globalThis.process;
