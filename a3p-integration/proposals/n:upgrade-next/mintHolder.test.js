@@ -8,7 +8,6 @@ import {
   getAssetList,
   swap,
   getPSMChildren,
-  upgradeMintHolder,
 } from './test-lib/mintHolder-helpers.js';
 import { networkConfig } from './test-lib/index.js';
 
@@ -18,7 +17,6 @@ test('mintHolder contract is upgraded', async t => {
 
   let assetList = await getAssetList();
   t.log('List of mintHolder vats being upgraded: ', assetList);
-  await upgradeMintHolder(`upgrade-mintHolder`, assetList);
   await mintPayment(t, receiver, assetList, 10);
 
   const psmLabelList = await getPSMChildren(fetch, networkConfig);

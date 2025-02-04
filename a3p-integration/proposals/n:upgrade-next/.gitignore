@@ -1,9 +1,6 @@
-replaceFeeDistributor/
+addCollateral/
 addUsdLemons/
-addUsdOlives/
-upgradeProvisionPool/
-upgradeAgoricNames/
-publishTestInfo/
-upgrade-mintHolder/
-upgradeAssetReserve/
-upgradePSM/
+agoricNamesCoreEvals/
+depositUSD-LEMONS/
+nullUpgradePP/
+swapAnchorForMintedSeat/

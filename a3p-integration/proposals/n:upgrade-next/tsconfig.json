@@ -13,8 +13,11 @@
     "skipLibCheck": true
   },
   "exclude": [
+    "addCollateral/",
     "addUsdLemons/",
-    "replaceFeeDistributor/",
-    "upgradeProvisionPool/"
+    "agoricNamesCoreEvals/",
+    "depositUSD-LEMONS/",
+    "nullUpgradePP/",
+    "swapAnchorForMintedSeat/"
   ]
 }

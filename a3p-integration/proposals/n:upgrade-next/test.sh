@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -euo pipefail
+
 yarn ava initial.test.js
 yarn ava replaceFeeDistributor.test.js
 yarn ava mintHolder.test.js

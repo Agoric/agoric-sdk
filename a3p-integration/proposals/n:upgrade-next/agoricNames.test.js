@@ -69,7 +69,6 @@ import {
 import { getBalances, listVaults } from './test-lib/utils.js';
 import { walletUtils } from './test-lib/index.js';
 
-const AGORIC_NAMES_UPGRADE_DIR = 'agoricNamesCoreEvals/upgradeAgoricNames';
 const WRITE_AGORIC_NAMES_DIR = 'agoricNamesCoreEvals/writeToAgoricNames';
 const ADD_USD_OLIVES_DIR = 'agoricNamesCoreEvals/addUsdOlives';
 const DEPOSIT_USD_OLIVES_DIR = 'agoricNamesCoreEvals/depositUsdOlives';
@@ -118,9 +117,7 @@ test.serial('publish test info', async t => {
   });
 });
 
-test.serial('upgrade agoricNames', async t => {
-  await evalBundles(AGORIC_NAMES_UPGRADE_DIR);
-
+test.serial('verify incarnation', async t => {
   const incarnation = await getIncarnation('agoricNames');
   t.is(incarnation, 1, 'incorrect incarnation');
 });
