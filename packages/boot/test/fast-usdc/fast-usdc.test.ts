@@ -254,6 +254,7 @@ test.serial('makes usdc advance', async t => {
     storage,
     agoricNamesRemotes,
     harness,
+    runUtils: { EV },
   } = t.context;
   const oracles = await Promise.all([
     wfd.provideSmartWallet('agoric19uscwxdac6cf6z7d5e26e0jm0lgwstc47cpll8'),
@@ -316,6 +317,11 @@ test.serial('makes usdc advance', async t => {
     { evidence, status: 'OBSERVED' }, // observation includes evidence observed
     { status: 'ADVANCING' },
   ]);
+
+  // Restart contract to make sure it doesn't break advance flow
+  const kit = await EV.vat('bootstrap').consumeItem('fastUsdcKit');
+  const actual = await EV(kit.adminFacet).restartContract(kit.privateArgs);
+  t.deepEqual(actual, { incarnationNumber: 1 });
 
   const { runInbound } = t.context.bridgeUtils;
   await runInbound(
@@ -501,14 +507,6 @@ test.serial('LP withdraws', async t => {
     BigInt(lpBankDeposits[2].amount) >= 369_000n,
     'vbank GIVEs USDC back to LP',
   );
-});
-
-test.serial('restart contract', async t => {
-  const { EV } = t.context.runUtils;
-  await null;
-  const kit = await EV.vat('bootstrap').consumeItem('fastUsdcKit');
-  const actual = await EV(kit.adminFacet).restartContract(kit.privateArgs);
-  t.deepEqual(actual, { incarnationNumber: 1 });
 });
 
 test.serial('replace operators', async t => {
