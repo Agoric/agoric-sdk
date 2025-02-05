@@ -2,6 +2,7 @@ import { assert, Fail } from '@endo/errors';
 import { E } from '@endo/eventual-send';
 import { Far } from '@endo/marshal';
 import { makePromiseKit } from '@endo/promise-kit';
+import { M, mustMatch } from '@endo/patterns';
 import { AmountMath } from '@agoric/ertp';
 
 import {
@@ -16,6 +17,10 @@ import { calculateInterest, makeDebtCalculator } from './updateDebt.js';
 import { makeCloseLoanInvitation } from './close.js';
 import { makeAddCollateralInvitation } from './addCollateral.js';
 
+/**
+ * @import {NatAmount} from '@agoric/ertp';
+ */
+
 /** @type {MakeBorrowInvitation} */
 export const makeBorrowInvitation = (zcf, config) => {
   const {
@@ -28,7 +33,9 @@ export const makeBorrowInvitation = (zcf, config) => {
   } = config;
 
   // We can only lend what the lender has already escrowed.
-  const maxLoan = lenderSeat.getAmountAllocated('Loan');
+  const maxLoan = /** @type {NatAmount} */ (
+    lenderSeat.getAmountAllocated('Loan')
+  );
 
   /** @type {OfferHandler} */
   const borrow = async borrowerSeat => {
@@ -43,7 +50,10 @@ export const makeBorrowInvitation = (zcf, config) => {
         borrowerSeat.getProposal().give.Collateral.brand
       ),
     );
-    const loanWanted = borrowerSeat.getProposal().want.Loan;
+    const loanWanted = /** @type {NatAmount} */ (
+      borrowerSeat.getProposal().want.Loan
+    );
+    mustMatch(loanWanted.value, M.nat());
     const loanBrand = zcf.getTerms().brands.Loan;
 
     // The value of the collateral in the Loan brand

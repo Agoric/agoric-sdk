@@ -1,12 +1,20 @@
 import { M } from '@agoric/store';
-import { AmountKeywordRecordShape, SeatShape } from '../typeGuards.js';
+import {
+  AmountKeywordRecordShape,
+  AmountBoundKeywordRecordShape,
+  SeatShape,
+} from '../typeGuards.js';
 
 /**
- * @import {TransferPart, ZCF, ZCFSeat} from '@agoric/zoe';
+ * @import {TransferPart, ZCF, ZCFSeat, AmountBoundKeywordRecord} from '@agoric/zoe';
  */
 
 export const TransferPartShape = M.splitArray(
-  harden([M.opt(SeatShape), M.opt(SeatShape), M.opt(AmountKeywordRecordShape)]),
+  harden([
+    M.opt(SeatShape),
+    M.opt(SeatShape),
+    M.opt(AmountBoundKeywordRecordShape),
+  ]),
   harden([M.opt(AmountKeywordRecordShape)]),
 );
 
@@ -62,11 +70,11 @@ export const atomicRearrange = (zcf, transfers) => {
  * `fromOnly` are non-optional, as otherwise it doesn't make much sense.
  *
  * @param {ZCFSeat} fromSeat
- * @param {AmountKeywordRecord} fromAmounts
+ * @param {AmountBoundKeywordRecord} fromAmountBounds
  * @returns {TransferPart}
  */
-export const fromOnly = (fromSeat, fromAmounts) =>
-  harden([fromSeat, undefined, fromAmounts]);
+export const fromOnly = (fromSeat, fromAmountBounds) =>
+  harden([fromSeat, undefined, fromAmountBounds]);
 
 /**
  * Sometimes a TransferPart in an atomicRearrange only expresses what amounts

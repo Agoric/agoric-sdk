@@ -1,6 +1,7 @@
 // @jessie-check
 
 import {
+  AmountBoundShape,
   AmountShape,
   AssetKindShape,
   BrandShape,
@@ -31,9 +32,9 @@ export const InstallationShape = M.remotable('Installation');
 export const SeatShape = M.remotable('Seat');
 
 export const AmountKeywordRecordShape = M.recordOf(KeywordShape, AmountShape);
-export const AmountPatternKeywordRecordShape = M.recordOf(
+export const AmountBoundKeywordRecordShape = M.recordOf(
   KeywordShape,
-  M.pattern(),
+  AmountBoundShape,
 );
 export const PaymentPKeywordRecordShape = M.recordOf(
   KeywordShape,
@@ -80,7 +81,7 @@ export const TimerShape = makeHandleShape('timer');
  * @see {ProposalRecord} type
  */
 export const FullProposalShape = {
-  want: AmountPatternKeywordRecordShape,
+  want: AmountBoundKeywordRecordShape,
   give: AmountKeywordRecordShape,
   // To accept only one, we could use M.or rather than M.splitRecord,
   // but the error messages would have been worse. Rather,

@@ -46,6 +46,10 @@ import type { FastUsdcSF } from '../src/fast-usdc.contract.ts';
 import type { OperatorOfferResult } from '../src/exos/transaction-feed.ts';
 import { commonSetup, uusdcOnAgoric } from './supports.js';
 
+/**
+ * @import {Payment} from '@agoric/ertp'
+ */
+
 const dirname = path.dirname(new URL(import.meta.url).pathname);
 
 const contractFile = `${dirname}/../src/fast-usdc.contract.ts`;
@@ -380,6 +384,7 @@ const makeLP = async (
         });
       const amt = await E(usdcPurse).deposit(usdcPmt);
       t.log(name, 'withdraw payout', ...logAmt(amt));
+      // @ts-expect-error cast?
       t.true(isGTE(amt, proposal.want.USDC));
       // min() in case things changed between checking metrics and withdrawing
       investment = subtract(investment, min(amt, investment));
