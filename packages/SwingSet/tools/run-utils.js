@@ -53,7 +53,7 @@ export const makeRunUtils = (controller, harness) => {
   };
 
   /**
-   * @typedef {import('@endo/eventual-send').EProxy | object} EVProxyMethods
+   * @typedef EVProxyMethods
    * @property {(presence: unknown) => Record<string, (...args: any) => Promise<void>>} sendOnly
    *   Returns a "methods proxy" for the presence that ignores the results of
    *   each method invocation.
@@ -118,28 +118,39 @@ export const makeRunUtils = (controller, harness) => {
   // promise that can remain pending indefinitely, possibly to be settled by a
   // future message delivery.
 
+  /**
+   * @template {(typeof controller.queueToVatObject) | (typeof controller.queueToVatRoot)} T
+   * @param {T} invoker
+   * @param {Parameters<T>[0]} target
+   * @param {boolean} [voidResult]
+   */
   const makeMethodsProxy = (invoker, target, voidResult = false) =>
     new Proxy(harden({}), {
       get: (_t, method, _rx) => {
+        const resultPolicy = voidResult ? 'none' : undefined;
         const boundMethod = (...args) =>
-          queueAndRun(() => invoker(target, method, args), voidResult);
+          queueAndRun(
+            () => invoker(target, method, args, resultPolicy),
+            voidResult,
+          );
         return harden(boundMethod);
       },
     });
 
-  /** @type {EVProxy} */
-  const EV = Object.assign(
-    presence => makeMethodsProxy(controller.queueToVatObject, presence),
-    {
-      vat: vatName => makeMethodsProxy(controller.queueToVatRoot, vatName),
-      sendOnly: presence =>
-        makeMethodsProxy(controller.queueToVatObject, presence, true),
-      get: presence =>
-        new Proxy(harden({}), {
-          get: (_t, key, _rx) =>
-            EV.vat('bootstrap').awaitVatObject(presence, [key]),
-        }),
-    },
+  const EV = /** @type {EVProxy} */ (
+    Object.assign(
+      presence => makeMethodsProxy(controller.queueToVatObject, presence),
+      {
+        vat: vatName => makeMethodsProxy(controller.queueToVatRoot, vatName),
+        sendOnly: presence =>
+          makeMethodsProxy(controller.queueToVatObject, presence, true),
+        get: presence =>
+          new Proxy(harden({}), {
+            get: (_t, key, _rx) =>
+              EV.vat('bootstrap').awaitVatObject(presence, [key]),
+          }),
+      },
+    )
   );
   return harden({ queueAndRun, EV });
 };
