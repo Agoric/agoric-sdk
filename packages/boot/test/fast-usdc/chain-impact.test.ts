@@ -26,7 +26,7 @@ import type { BridgeHandler, IBCChannelID } from '@agoric/vats';
 import { makePromiseKit } from '@endo/promise-kit';
 import { readFile, writeFile } from 'fs/promises';
 import { createRequire } from 'module';
-import { AckBehavior } from '../../tools/supports.js';
+import { AckBehavior, makeSwingsetHarness } from '../../tools/supports.js';
 import {
   makeWalletFactoryContext,
   type WalletFactoryTestContext,
@@ -36,6 +36,7 @@ const nodeRequire = createRequire(import.meta.url);
 
 const test: TestFn<
   WalletFactoryTestContext & {
+    harness: ReturnType<typeof makeSwingsetHarness>;
     oracles: TxOracle[];
     toNoble: MockChannel;
     fromNoble: IBCChannelID;
@@ -62,12 +63,14 @@ test.before(async t => {
   const { env } = globalThis.process;
   const {
     SLOGFILE: slogFile,
-    SWINGSET_WORKER_TYPE: defaultManagerType = 'local', // or 'xs-worker',
+    SWINGSET_WORKER_TYPE: defaultManagerType = 'xs-worker', // or 'local',
     STATS_FILE,
   } = env;
+  const harness = makeSwingsetHarness();
   const ctx = await makeWalletFactoryContext(t, config, {
     slogFile,
     defaultManagerType,
+    harness,
   });
   const oracles = Object.entries(configurations.MAINNET.oracles).map(
     ([name, addr]) => makeTxOracle(ctx, name, addr),
@@ -95,6 +98,7 @@ test.before(async t => {
 
   t.context = {
     ...ctx,
+    harness,
     oracles,
     observations: [],
     writeStats,
@@ -624,39 +628,49 @@ test.skip('prune vstorage (independent of iterations)', async t => {
 
 test.serial('iterate simulation several times', async t => {
   const { controller, observations, oracles, storage, toNoble } = t.context;
-  const { doCoreEval } = t.context;
+  const { doCoreEval, harness, swingStore } = t.context;
   const { updateNewCellBlockHeight } = storage;
   const sim = await makeSimulation(t.context, toNoble, oracles);
 
   await writeFile('kernel-0.json', JSON.stringify(controller.dump(), null, 2));
 
-  for (const ix of range(64)) {
+  harness.useRunPolicy(true); // start tracking computrons
+  const snapStore = swingStore.internal.snapStore as unknown as SnapStoreDebug;
+
+  for (const ix of range(32)) {
     updateNewCellBlockHeight(); // look at only the latest value written
     await sim.iteration(t, ix);
+
     observations.push({
       id: `iter-${ix}`,
       time: Date.now(),
-      //   computrons: 'TODO: xs-worker',
-      //   heap: 'TODO: xs-worker',
+      computrons: harness.totalComputronCount(),
       ...getResourceUsageStats(controller, storage.data),
     });
-    // force GC and prune vstorage every 8 iterations
-    if (ix % 8 === 0) {
+    harness.resetRunPolicy(); // stay under block budget
+
+    // force GC and prune vstorage at regular intervals
+    if (ix % 4 === 0) {
       await doCoreEval('@agoric/fast-usdc/src/delete-completed-txs.js');
       controller.reapAllVats();
       await controller.run();
       const { kernelTable } = controller.dump();
+      const snapshots = [...snapStore.listAllSnapshots()];
+
       observations.push({
         id: `post-prune-${ix}`,
         time: Date.now(),
-        ...getResourceUsageStats(controller, storage.data),
         kernelTable,
+        snapshots,
+        ...getResourceUsageStats(controller, storage.data),
       });
     }
   }
 
   await writeFile('kernel-1.json', JSON.stringify(controller.dump(), null, 2));
 });
+
+const stringifyBigint = (_p, v) => (typeof v === 'bigint' ? `${v}` : v);
 
 test.serial('analyze observations', async t => {
   const { observations, writeStats } = t.context;
@@ -665,7 +679,7 @@ test.serial('analyze observations', async t => {
   }
   if (writeStats) {
     const lines = observations.map(
-      (o, ix) => JSON.stringify({ ix, ...o }) + '\n',
+      (o, ix) => JSON.stringify({ ix, ...o }, stringifyBigint) + '\n',
     );
     await writeStats(lines.join(''));
   }
