@@ -1,15 +1,16 @@
 import { q, Fail } from '@endo/errors';
-import { passStyleOf, assertRemotable, assertRecord } from '@endo/marshal';
+import { assertRemotable, assertRecord } from '@endo/pass-style';
+import { kindOf } from '@endo/patterns';
 
-import { M, matches } from '@agoric/store';
 import { natMathHelpers } from './mathHelpers/natMathHelpers.js';
 import { setMathHelpers } from './mathHelpers/setMathHelpers.js';
 import { copySetMathHelpers } from './mathHelpers/copySetMathHelpers.js';
 import { copyBagMathHelpers } from './mathHelpers/copyBagMathHelpers.js';
 
 /**
+ * @import {Passable} from '@endo/pass-style'
  * @import {CopyBag, CopySet} from '@endo/patterns';
- * @import {Amount, AssetValueForKind, Brand, CopyBagAmount, CopySetAmount, MathHelpers, NatAmount, NatValue, SetAmount, SetValue} from './types.js';
+ * @import {Amount, AmountBound, AmountValueBound, AssetValueForKind, Brand, CopyBagAmount, CopySetAmount, MathHelpers, NatAmount, NatValue, SetAmount, SetValue} from './types.js';
  */
 
 // NB: AssetKind is both a constant for enumerated values and a type for those values.
@@ -75,29 +76,35 @@ const helpers = {
   copyBag: copyBagMathHelpers,
 };
 
-/** @type {(value: unknown) => 'nat' | 'set' | 'copySet' | 'copyBag'} } */
-const assertValueGetAssetKind = value => {
-  const passStyle = passStyleOf(value);
-  if (passStyle === 'bigint') {
-    return 'nat';
+/**
+ * @template {AmountValueBound} V=AmountValueBound
+ * @param {V} value
+ * @param {AssetKind} [defaultKind]
+ * @returns {AssetKind}
+ */
+const assertValueBoundGetAssetKind = (value, defaultKind = undefined) => {
+  const kind = kindOf(value);
+  switch (kind) {
+    case 'bigint': {
+      return 'nat';
+    }
+    case 'copyArray': {
+      return 'set';
+    }
+    case 'copySet':
+    case 'copyBag': {
+      return kind;
+    }
+    case 'match:has': {
+      if (defaultKind === undefined) {
+        throw Fail`defaultKind expected for right has-bound ${value}`;
+      }
+      return defaultKind;
+    }
+    default: {
+      throw Fail`value ${value} must be an AmountValueBound, not ${q(kind)}`;
+    }
   }
-  if (passStyle === 'copyArray') {
-    return 'set';
-  }
-  if (matches(value, M.set())) {
-    return 'copySet';
-  }
-  if (matches(value, M.bag())) {
-    return 'copyBag';
-  }
-  // TODO This isn't quite the right error message, in case valuePassStyle
-  // is 'tagged'. We would need to distinguish what kind of tagged
-  // object it is.
-  // Also, this kind of manual listing is a maintenance hazard we
-  // (TODO) will encounter when we extend the math helpers further.
-  throw Fail`value ${value} must be a bigint, copySet, copyBag, or an array, not ${q(
-    passStyle,
-  )}`;
 };
 
 /**
@@ -105,13 +112,14 @@ const assertValueGetAssetKind = value => {
  *
  * Made available only for testing, but it is harmless for other uses.
  *
- * @template V
+ * @template {AmountValueBound} V=AmountValueBound
  * @param {V} value
+ * @param {AssetKind} [defaultKind]
  * @returns {MathHelpers<V>}
  */
-export const assertValueGetHelpers = value =>
+export const assertValueBoundGetHelpers = (value, defaultKind = undefined) =>
   // @ts-expect-error cast
-  helpers[assertValueGetAssetKind(value)];
+  helpers[assertValueBoundGetAssetKind(value, defaultKind)];
 
 /** @type {(allegedBrand: Brand, brand?: Brand) => void} */
 const optionalBrandCheck = (allegedBrand, brand) => {
@@ -127,15 +135,19 @@ const optionalBrandCheck = (allegedBrand, brand) => {
 /**
  * @template {AssetKind} K
  * @param {Amount<K>} leftAmount
- * @param {Amount<K>} rightAmount
+ * @param {AmountBound<K>} rightAmountBound
  * @param {Brand<K> | undefined} brand
  * @returns {MathHelpers<any>}
  */
-const checkLRAndGetHelpers = (leftAmount, rightAmount, brand = undefined) => {
+const checkLRAndGetHelpers = (
+  leftAmount,
+  rightAmountBound,
+  brand = undefined,
+) => {
   assertRecord(leftAmount, 'leftAmount');
-  assertRecord(rightAmount, 'rightAmount');
-  const { value: leftValue, brand: leftBrand } = leftAmount;
-  const { value: rightValue, brand: rightBrand } = rightAmount;
+  assertRecord(rightAmountBound, 'rightAmountBound');
+  const { brand: leftBrand, value: leftValue } = leftAmount;
+  const { brand: rightBrand, value: rightValueBound } = rightAmountBound;
   assertRemotable(leftBrand, 'leftBrand');
   assertRemotable(rightBrand, 'rightBrand');
   optionalBrandCheck(leftBrand, brand);
@@ -144,41 +156,41 @@ const checkLRAndGetHelpers = (leftAmount, rightAmount, brand = undefined) => {
     Fail`Brands in left ${q(leftBrand)} and right ${q(
       rightBrand,
     )} should match but do not`;
-  const leftHelpers = assertValueGetHelpers(leftValue);
-  const rightHelpers = assertValueGetHelpers(rightValue);
-  leftHelpers === rightHelpers ||
-    Fail`The left ${leftAmount} and right amount ${rightAmount} had different assetKinds`;
-  return leftHelpers;
+  const leftKind = assertValueBoundGetAssetKind(leftValue);
+  const rightKind = assertValueBoundGetAssetKind(rightValueBound, leftKind);
+  leftKind === rightKind ||
+    Fail`The left ${leftAmount} and right amount ${rightAmountBound} had different assetKinds: ${q(leftKind)} vs ${q(rightKind)}`;
+  return helpers[leftKind];
 };
 
 /**
  * @template {AssetKind} K
  * @param {MathHelpers<AssetValueForKind<K>>} h
  * @param {Amount<K>} leftAmount
- * @param {Amount<K>} rightAmount
+ * @param {AmountBound<K>} rightAmountBound
  * @returns {[K, K]}
  */
-const coerceLR = (h, leftAmount, rightAmount) => {
+const coerceLR = (h, leftAmount, rightAmountBound) => {
   // @ts-expect-error could be arbitrary subtype
-  return [h.doCoerce(leftAmount.value), h.doCoerce(rightAmount.value)];
+  return [h.doCoerce(leftAmount.value), h.doCoerce(rightAmountBound.value)];
 };
 
 /**
- * Returns true if the leftAmount is greater than or equal to the rightAmount.
- * The notion of "greater than or equal to" depends on the kind of amount, as
- * defined by the MathHelpers. For example, whether rectangle A is greater than
- * rectangle B depends on whether rectangle A includes rectangle B as defined by
- * the logic in MathHelpers.
+ * Returns true if the leftAmount is greater than or equal to the
+ * rightAmountBound. The notion of "greater than or equal to" depends on the
+ * kind of amount, as defined by the MathHelpers. For example, whether rectangle
+ * A is greater than rectangle B depends on whether rectangle A includes
+ * rectangle B as defined by the logic in MathHelpers.
  *
  * @template {AssetKind} K
  * @param {Amount<K>} leftAmount
- * @param {Amount<K>} rightAmount
+ * @param {AmountBound<K>} rightAmountBound
  * @param {Brand<K>} [brand]
  * @returns {boolean}
  */
-const isGTE = (leftAmount, rightAmount, brand = undefined) => {
-  const h = checkLRAndGetHelpers(leftAmount, rightAmount, brand);
-  return h.doIsGTE(...coerceLR(h, leftAmount, rightAmount));
+const isGTE = (leftAmount, rightAmountBound, brand = undefined) => {
+  const h = checkLRAndGetHelpers(leftAmount, rightAmountBound, brand);
+  return h.doIsGTE(...coerceLR(h, leftAmount, rightAmountBound));
 };
 
 /**
@@ -215,7 +227,7 @@ export const AmountMath = {
    */
   make: (brand, allegedValue) => {
     assertRemotable(brand, 'brand');
-    const h = assertValueGetHelpers(allegedValue);
+    const h = assertValueBoundGetHelpers(allegedValue);
     const value = h.doCoerce(allegedValue);
     // @ts-expect-error cast
     return harden({ brand, value });
@@ -275,7 +287,7 @@ export const AmountMath = {
   makeEmptyFromAmount: amount => {
     assertRecord(amount, 'amount');
     const { brand, value } = amount;
-    const assetKind = assertValueGetAssetKind(value);
+    const assetKind = assertValueBoundGetAssetKind(value);
     // @ts-expect-error different subtype
     return AmountMath.makeEmpty(brand, assetKind);
   },
@@ -291,7 +303,7 @@ export const AmountMath = {
     const { brand: allegedBrand, value } = amount;
     assertRemotable(allegedBrand, 'brand');
     optionalBrandCheck(allegedBrand, brand);
-    const h = assertValueGetHelpers(value);
+    const h = assertValueBoundGetHelpers(value);
     return h.doIsEmpty(h.doCoerce(value));
   },
   isGTE,
@@ -387,6 +399,6 @@ harden(AmountMath);
 export const getAssetKind = amount => {
   assertRecord(amount, 'amount');
   const { value } = amount;
-  return assertValueGetAssetKind(value);
+  return assertValueBoundGetAssetKind(value);
 };
 harden(getAssetKind);
