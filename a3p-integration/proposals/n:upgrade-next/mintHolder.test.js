@@ -11,13 +11,15 @@ import {
 } from './test-lib/mintHolder-helpers.js';
 import { networkConfig } from './test-lib/index.js';
 
-test('mintHolder contract is upgraded', async t => {
+test('verify mintHolder contract upgrade', async t => {
   const receiver = await addUser('receiver');
   await provisionSmartWallet(receiver, `20000000ubld`);
 
   let assetList = await getAssetList();
   t.log('List of mintHolder vats being upgraded: ', assetList);
-  await mintPayment(t, receiver, assetList, 10);
+  // FastUSDC doesn't have a contractKit indexed by its label
+  const assetListNoFastUSDC = assetList.filter(x => x.label !== 'FastLP');
+  await mintPayment(t, receiver, assetListNoFastUSDC, 10);
 
   const psmLabelList = await getPSMChildren(fetch, networkConfig);
   assetList = await getAssetList(psmLabelList);
