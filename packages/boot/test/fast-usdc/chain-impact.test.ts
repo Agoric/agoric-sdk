@@ -542,7 +542,7 @@ test.serial('oracles accept invitations', async t => {
   });
 });
 
-test.skip('LP deposits', async t => {
+test.skip('LP deposits (independent of iterations)', async t => {
   const fastQ = makeFastUsdcQuery(t.context);
   const lp = makeLP(t.context, 'agoric19uscwxdac6cf6z7d5e26e0jm0lgwstc47cpll8');
   const { proposal, id } = await lp.deposit(150_000_000n, 123);
@@ -559,7 +559,7 @@ test.skip('LP deposits', async t => {
   });
 });
 
-test.skip('makes usdc advance, mint', async t => {
+test.skip('makes usdc advance, mint (independent of iterations)', async t => {
   const { oracles, toNoble } = t.context;
   const fastQ = makeFastUsdcQuery(t.context);
   const cctp = makeCctp(t.context, nobleAgoricChannelId, 'channel-62');
@@ -612,7 +612,7 @@ test.skip('makes usdc advance, mint', async t => {
   });
 });
 
-test.skip('prune vstorage', async t => {
+test.skip('prune vstorage (independent of iterations)', async t => {
   const { doCoreEval, observations, controller, storage } = t.context;
   await doCoreEval('@agoric/fast-usdc/scripts/delete-completed-txs.js');
   observations.push({
