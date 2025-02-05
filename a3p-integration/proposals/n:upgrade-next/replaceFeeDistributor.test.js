@@ -22,7 +22,6 @@ import { retryUntilCondition, makeVstorageKit } from '@agoric/client-utils';
 import {
   ATOM_DENOM,
   bankSend,
-  getISTBalance,
   openVault,
   USER1ADDR,
 } from '@agoric/synthetic-chain';
